@@ -214,6 +214,10 @@ Range types emit `oas-calendar-change` (`detail.value` is `[start, end|null]`) o
 
 Use `oas-date-picker` (this component) for popover selection; use `oas-calendar` for always-visible inline panels (same family capabilities: `mode=year`, week numbers, cell rendering).
 
+## Mobile form (bottom sheet)
+
+On touch screens (coarse pointer) or narrow viewports (<768px), the panel is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the desktop form keeps the original floating dropdown. Dual-month range panels shrink on narrow screens to avoid horizontal overflow.
+
 ## API
 
 ### Attributes
@@ -228,7 +232,7 @@ Use `oas-date-picker` (this component) for popover selection; use `oas-calendar`
 | `max` | Selectable range (ISO date); navigation buttons gray out at the boundary | `string` | — |
 | `min` | Selectable range (ISO date); navigation buttons gray out at the boundary | `string` | — |
 | `multiple` | Multiple selection (only `type=date`), value is a JSON array; the typing channel is read-only in this mode | `boolean` | — |
-| `open` | Controlled open: present = open, removed = closed; gestures only emit `oas-open-change` for the host to write back | — | — |
+| `open` | Controlled open: present = open, removed = closed; gestures only emit `oas-open-change` for the host to write back; in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | — | — |
 | `placeholder` | Placeholder text | — | — |
 | `placement` | Popup placement, 12 directions: `top`/`bottom`/`left`/`right` × `-start`/`-end` (default `bottom-start`); auto right-aligns near the viewport right edge, flips upward when space below is insufficient, and clamps into the viewport | `string` | `bottom-start` |
 | `readonly` | Readonly: the panel can be opened and browsed (cells keyboard-navigable), but no interaction commits | `boolean` | — |

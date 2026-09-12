@@ -1,0 +1,35 @@
+{
+  "className": "OASBottomSheet",
+  "sourceFile": "packages/ui/src/feedback/bottom-sheet/oas-bottom-sheet.ts",
+  "attrs": [
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "max-height",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "passive",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-close",
+      "detail": "{ reason }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

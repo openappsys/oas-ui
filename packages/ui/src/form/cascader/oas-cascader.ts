@@ -1,4 +1,7 @@
 import { OASElement } from '@oas-ui/core'
+// 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
+import '../../feedback/bottom-sheet/index.js'
+import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 
@@ -277,6 +280,27 @@ const STYLE = `
 .dropdown.open {
   display: block;
 }
+/* 移动形态（data-mobile-sheet）：bottom-sheet 底部抽屉承载，dropdown 变静态内嵌内容
+   （容器/手势/安全区由 oas-bottom-sheet 统一承载，dropdown 不再 fixed 锚定） */
+:host([data-mobile-sheet]) .dropdown {
+  position: static;
+  z-index: auto;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0 var(--oas-space-1) var(--oas-space-1);
+  min-width: 0 !important;
+  top: auto !important;
+  left: auto !important;
+}
+/* 多级面板在窄屏横向可滑：bottom-sheet 内容区纵向滚动，列级面板横向滚动互不干扰 */
+:host([data-mobile-sheet]) .panels {
+  max-width: 100%;
+  overflow-x: auto;
+}
+:host([data-mobile-sheet]) .panel {
+  flex-shrink: 0;
+}
 .search-input {
   box-sizing: border-box;
   width: 100%;
@@ -414,6 +438,8 @@ export class OASCascader extends OASElement {
   private dropdown: HTMLElement | null = null
   private panelsEl: HTMLElement | null = null
   private searchInputEl: HTMLInputElement | null = null
+  /** 移动端底部抽屉承载件（oas-bottom-sheet；PC 形态 passive 透传） */
+  private sheetEl: OASBottomSheet | null = null
   private _options: CascaderOption[] = []
 
   /** Vue/React 会把 options 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
@@ -496,10 +522,12 @@ export class OASCascader extends OASElement {
             <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
-        <div class="dropdown" part="dropdown" tabindex="-1">
-          <input class="search-input" part="search-input" type="text" hidden autocomplete="off" />
-          <div class="panels" part="panels"></div>
-        </div>
+        <oas-bottom-sheet part="sheet" passive>
+          <div class="dropdown" part="dropdown" tabindex="-1">
+            <input class="search-input" part="search-input" type="text" hidden autocomplete="off" />
+            <div class="panels" part="panels"></div>
+          </div>
+        </oas-bottom-sheet>
       </div>
     `
   }
@@ -510,6 +538,9 @@ export class OASCascader extends OASElement {
     this.dropdown = this.shadow.querySelector('.dropdown')
     this.panelsEl = this.shadow.querySelector('.panels')
     this.searchInputEl = this.shadow.querySelector('.search-input')
+    // 移动端底部抽屉承载件：oas-close（下滑/backdrop/Esc）→ 同步收起
+    this.sheetEl = this.shadow.querySelector<OASBottomSheet>('oas-bottom-sheet')
+    this.sheetEl?.addEventListener('oas-close', () => this.setOpen(false))
 
     this.dropdown?.addEventListener('keydown', (e: KeyboardEvent) => this.handleDropdownKey(e))
     this.triggerEl?.addEventListener('click', () => this.toggle())
@@ -532,16 +563,19 @@ export class OASCascader extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（trigger/dropdown/panels 存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（trigger/dropdown/panels/bottom-sheet 存在）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('.trigger')) return false
     if (!this.shadow.querySelector('.dropdown')) return false
     if (!this.shadow.querySelector('.panels')) return false
+    if (!this.shadow.querySelector('oas-bottom-sheet')) return false
     this.bind()
     return true
   }
 
   protected override update(): void {
+    // 移动形态同步：coarse pointer（触屏）或窄视口（<768px）→ bottom-sheet 底部抽屉承载
+    this.syncMobileMode()
     this.parseOptions()
     this.mirrorSizeStatus()
     this.searchInputEl?.setAttribute('aria-label', this.t('select.search'))
@@ -863,9 +897,33 @@ export class OASCascader extends OASElement {
       this.cancelHover()
     }
     if (open && !transitioned) this.renderPanels()
-    if (open) this.positionDropdown()
+    if (open) {
+      // 移动形态：bottom-sheet 承载容器（设置 open 展开底部抽屉）；PC 形态：computePosition 锚定 trigger
+      if (this.isMobileSheet()) {
+        this.sheetEl?.setAttribute('open', '')
+      } else {
+        this.sheetEl?.removeAttribute('open')
+        this.positionDropdown()
+      }
+    } else {
+      this.sheetEl?.removeAttribute('open')
+    }
     this.lastOpenState = open
     if (transitioned) this.emit('open-change', { open })
+  }
+
+  /** 移动形态判定：触屏（coarse pointer）或窄视口（<768px）→ 面板由 bottom-sheet 底部抽屉承载 */
+  private isMobileSheet(): boolean {
+    if (typeof window === 'undefined') return false
+    if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) return true
+    return window.innerWidth < 768
+  }
+
+  /** 移动形态同步：移动端 bottom-sheet 去 passive 变容器、宿主打 data-mobile-sheet（dropdown 静态化）；PC 恢复 passive */
+  private syncMobileMode(): void {
+    const mobile = this.isMobileSheet()
+    this.toggleAttribute('data-mobile-sheet', mobile)
+    this.sheetEl?.toggleAttribute('passive', !mobile)
   }
 
   /** 打开时的浏览轨迹初始化：单选对齐当前值路径；多选对齐首个勾选路径 */
@@ -887,6 +945,7 @@ export class OASCascader extends OASElement {
 
   /** 复用浮层定位引擎：锚定 trigger 下方，空间不足自动翻转/避让；最小宽度对齐 trigger（面板可自然加宽） */
   private positionDropdown(): void {
+    if (this.isMobileSheet()) return // 移动形态由 bottom-sheet 承载，跳过 fixed 锚定
     if (!this.dropdown || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const panelRect = this.dropdown.getBoundingClientRect()
