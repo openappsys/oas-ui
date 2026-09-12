@@ -1129,6 +1129,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - oas-bottom-sheet 归入 feedback 族（原置于 overlay/ 却在 feedback 族注册，触发族目录不变量断言；overlay/ 只留定位引擎基建）
 - tree-select「受控开合」demo 默认收起（原默认 `open`，移动端 bottom-sheet 一展开即全屏遮罩拦截整页交互）
+- 浮层组件移动/PC 形态切换不重判定（须强刷）：移动形态此前只在 update()/打开时判定一次，窗口缩放/横竖屏/设备仿真切换后形态冻结——新增共享 `watchMobileSheetMode()`（pointer:coarse + max-width 越界订阅）重判定 + 展开态重排承载方式
 
 ### 验收
 
