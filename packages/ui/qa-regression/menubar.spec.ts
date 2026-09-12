@@ -3,9 +3,19 @@
 import { test, expect } from '@playwright/test'
 import { up, visibleSubmenuRects } from './helpers'
 
-test('menubar 受控：外部 setAttribute(value) 即时同步勾选（value 在 observedAttributes）', async ({
-  page,
-}) => {
+// 子菜单是否展开（限定 .bar 作用域：汉堡面板镜像同一份 items）
+const submenuOpen = (page: import('@playwright/test').Page, hostId: string, parent: string) =>
+  page.evaluate(
+    ({ hostId, parent }) => {
+      const mb = document.querySelector(hostId)
+      if (!mb?.shadowRoot) return false // 宿主/升级未就绪时视为未展开，交给 poll 重试
+      const sub = mb.shadowRoot.querySelector(`.bar [part="submenu"][data-parent="${parent}"]`)
+      return sub?.classList.contains('open') ?? false
+    },
+    { hostId, parent },
+  )
+
+test('menubar 受控：外部 setAttribute(value) 即时同步勾选（value 在 observedAttributes）', async ({ page }) => {
   // 曾现 bug：value 未列入 observedAttributes，外部 setAttribute('value') 不触发 update，
   // 勾选/高亮不移动，受控 demo 只能靠重设 items 绕开。
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
@@ -13,9 +23,8 @@ test('menubar 受控：外部 setAttribute(value) 即时同步勾选（value 在
   const r = await page.evaluate(() => {
     const mb = document.querySelector('#mb-value')!
     const checked = (v: string) =>
-      mb
-        .shadowRoot!.querySelector<HTMLElement>(`[part="item"][data-value="${v}"]`)
-        ?.getAttribute('aria-checked') ?? null
+      mb.shadowRoot!.querySelector<HTMLElement>(`[part="item"][data-value="${v}"]`)?.getAttribute('aria-checked') ??
+      null
     mb.setAttribute('value', 'open')
     const afterOpen = { open: checked('open'), created: checked('new') }
     mb.setAttribute('value', 'new')
@@ -37,13 +46,9 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
   })
   // click 首开「视图」展开一级下拉，hover 级联「缩放」展开二级子菜单
   // （限定 .bar 作用域：汉堡面板里渲染了同一份 items 镜像，[part="item"] 会重复命中）
-  await page
-    .locator('#menubar-basic[data-e2e-right-edge] .bar [part="top-item"][data-value="view"]')
-    .click()
+  await page.locator('#menubar-basic[data-e2e-right-edge] .bar [part="top-item"][data-value="view"]').click()
   await page.waitForTimeout(150)
-  await page
-    .locator('#menubar-basic[data-e2e-right-edge] .bar [part="item"][data-value="zoom"]')
-    .hover()
+  await page.locator('#menubar-basic[data-e2e-right-edge] .bar [part="item"][data-value="zoom"]').hover()
   await page.waitForTimeout(200)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2) // 一级下拉 + 级联子菜单
@@ -62,9 +67,7 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
   await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix8-menubar-flip.png' })
 })
 
-test('menubar click 首开语义：无开态 hover 不展开、开态 hover 切换顶级（桌面共识回归）', async ({
-  page,
-}) => {
+test('menubar click 首开语义：无开态 hover 不展开、开态 hover 切换顶级（桌面共识回归）', async ({ page }) => {
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#menubar-basic')
   // 无开态：hover 顶级「视图」不展开
@@ -93,9 +96,7 @@ test('menubar click 首开语义：无开态 hover 不展开、开态 hover 切�
   expect(switched).toEqual({ editOpen: true, fileOpen: false })
 })
 
-test('menubar show-arrow side-top align-end 箭头右对齐触发器（右缘 12px，不落面板左端）', async ({
-  page,
-}) => {
+test('menubar show-arrow side-top align-end 箭头右对齐触发器（右缘 12px，不落面板左端）', async ({ page }) => {
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-menubar[show-arrow][side="top"]')
   const r = await page.evaluate(async () => {
@@ -136,30 +137,34 @@ test('menubar 缺省（未设置 close-on-select）：基础 demo 点叶子后�
   await page.locator('#menubar-basic .bar [part="top-item"][data-value="file"]').click()
   const leaf = page.locator('#menubar-basic .bar [part="item"][data-value="new"]')
   await leaf.waitFor({ state: 'visible' })
-  await leaf.click()
-  await page.waitForTimeout(200)
-  const r = await page.evaluate(() => {
-    const mb = document.querySelector('#menubar-basic')!
-    const sub = mb.shadowRoot!.querySelector('.bar [part="submenu"][data-parent="file"]')
-    return { open: sub?.classList.contains('open') ?? false }
-  })
-  expect(r.open, '未设置 close-on-select（缺省收）点叶子后子菜单应收起').toBe(false)
+  await expect.poll(() => submenuOpen(page, '#menubar-basic', 'file')).toBe(true)
+  // 浮层展开动画/定位期间元素持续微动，Playwright 稳定性检查会重试到超时（firefox 尤甚）；
+  // 这里验证的是 close-on-select 行为，用 DOM click 触发组件处理器即可。
+  await leaf.evaluate((el) => (el as HTMLElement).click())
+  // 收起是异步的：轮询到最终态，别固定 sleep（高并发下 200ms 不够 → flaky）
+  await expect
+    .poll(() => submenuOpen(page, '#menubar-basic', 'file'), {
+      message: '未设置 close-on-select（缺省收）点叶子后子菜单应收起',
+    })
+    .toBe(false)
 })
 
-test('menubar close-on-select="false"（menubar-checkbox demo）：radio 叶子选中后子菜单保持展开', async ({
-  page,
-}) => {
+test('menubar close-on-select="false"（menubar-checkbox demo）：radio 叶子选中后子菜单保持展开', async ({ page }) => {
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#menubar-checkbox')
   await page.locator('#menubar-checkbox .bar [part="top-item"][data-value="view"]').click()
   const leaf = page.locator('#menubar-checkbox .bar [part="item"][data-value="fullscreen"]')
   await leaf.waitFor({ state: 'visible' })
-  await leaf.click()
-  await page.waitForTimeout(200)
-  const r = await page.evaluate(() => {
-    const mb = document.querySelector('#menubar-checkbox')!
-    const sub = mb.shadowRoot!.querySelector('.bar [part="submenu"][data-parent="view"]')
-    return { open: sub?.classList.contains('open') ?? false }
-  })
-  expect(r.open, 'close-on-select="false" radio 叶子选中后子菜单应保持展开').toBe(true)
+  await expect.poll(() => submenuOpen(page, '#menubar-checkbox', 'view')).toBe(true)
+  // 浮层展开动画/定位期间元素持续微动，Playwright 稳定性检查会重试到超时（firefox 尤甚）；
+  // 这里验证的是 close-on-select 行为，用 DOM click 触发组件处理器即可。
+  await leaf.evaluate((el) => (el as HTMLElement).click())
+  // close-on-select="false"：点叶子后应保持展开。等一个动画窗口让「若会收」的收起发生，
+  // 再断言仍展开（避免点击效果还没跑就抢跑通过）。
+  await page.waitForTimeout(300)
+  await expect
+    .poll(() => submenuOpen(page, '#menubar-checkbox', 'view'), {
+      message: 'close-on-select="false" radio 叶子选中后子菜单应保持展开',
+    })
+    .toBe(true)
 })

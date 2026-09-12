@@ -29,8 +29,8 @@ An animation component that eases a number from its current value to the target 
 <DemoBlock title="active pause/resume + play() replay">
   <oas-number-animation id="num-anim-active" value="8888" from="0" duration="1500"></oas-number-animation>
   <oas-number-animation value="8888" from="6666" active="false" duration="1500"></oas-number-animation>
-  <oas-button id="num-anim-toggle" size="sm">Pause</oas-button>
-  <oas-button id="num-anim-play" size="sm">Replay</oas-button>
+  <oas-button id="num-anim-toggle" size="small">Pause</oas-button>
+  <oas-button id="num-anim-play" size="small">Replay</oas-button>
 </DemoBlock>
 
 ## Easing
