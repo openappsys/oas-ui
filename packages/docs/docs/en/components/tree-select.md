@@ -138,7 +138,7 @@ When backend field names differ, declare the mapping of `label` / `value` / `chi
 ## Controlled Open (open)
 
 <DemoBlock title="Controlled open (open + oas-open-change)">
-  <oas-tree-select id="ts-open" open="" placeholder="Controlled by the open attribute" options='[{"label":"Frontend","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
+  <oas-tree-select id="ts-open" placeholder="Controlled by the open attribute" options='[{"label":"Frontend","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
   <oas-button id="ts-open-btn" size="small">Toggle open</oas-button>
   <span id="ts-open-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
@@ -318,7 +318,7 @@ onMounted(() => {
   // controlled open demo: host writes the open attribute back
   const tsOpen = document.getElementById('ts-open')
   const tsOpenOut = document.getElementById('ts-open-out')
-  let openState = true
+  let openState = false
   document.getElementById('ts-open-btn')?.addEventListener('click', () => {
     openState = !openState
     tsOpen?.setAttribute('open', openState ? '' : 'false')
