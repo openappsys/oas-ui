@@ -1114,6 +1114,32 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ---
 
+## v2.6.0 移动端专项（bottom-sheet 浮层协议 + 触摸/触屏适配）🚧 进行中（P4 待收口）
+
+### 特性
+
+- **oas-bottom-sheet（新组件，feedback 族）**：移动端底部抽屉统一承载件——backdrop 点击关闭 / drag handle 下滑超阈值关闭 / Esc 关闭 / safe-area-inset-bottom 刘海屏手势区 / 焦点陷阱 / `max-height`（默认 85vh）/ `open` 受控 / `oas-close`（detail `{ reason: drag | backdrop | esc }`）/ **`passive` 被动透传模式**（浮层组件 PC 形态的结构占位，SSR/客户端结构严格一致防水合不一致）
+- **移动形态接入（select / date-picker / cascader / tree-select）**：coarse pointer（触屏）或窄视口（<768px）自动把下拉切换为底部抽屉承载——模板恒包 `oas-bottom-sheet`（结构一致），移动端去 passive 变容器（dropdown 静态内嵌、不再 fixed 锚定），PC 恢复 passive + computePosition 锚定；各面板适配（date-picker 双月滚动 / cascader 多级横向滑动 / tree-select 搜索 + 树）
+- **触摸目标 ≥44px（P2）**：新 token `--oas-touch-target-min`（默认 44px）+ `@media (pointer: coarse)` 下浮层 option/item 最小高度抬升，桌面（fine pointer）不受影响
+- **触屏 hover 降级（P3）**：tooltip / hover-card 在 coarse pointer 下 hover 通道停用、改 tap 切换（外点关闭；长按打开 800ms 内抬手跳过防误关）
+- **switch 块级整行热区（P5）**：块级拉伸时宿主整行可点（composedPath 防内部按钮双触发），对齐移动端设置项整行点击语义
+
+### 修复
+
+- oas-bottom-sheet 归入 feedback 族（原置于 overlay/ 却在 feedback 族注册，触发族目录不变量断言；overlay/ 只留定位引擎基建）
+- tree-select「受控开合」demo 默认收起（原默认 `open`，移动端 bottom-sheet 一展开即全屏遮罩拦截整页交互）
+
+### 待办（P4 浮层视口适配）
+
+- 浮层碰撞检测现用 `window.innerWidth/innerHeight`（布局视口）；移动仿真下 visualViewport 小于布局视口时未见向上翻转（hover-card 底缘轻微裁切）。**真机影响面待确认**，统一改 `visualViewport` 作为 P4 收口（移动专项整体关闭前）
+
+### 验收
+
+- 全量单测 6773 / typecheck 0 / build 0 / api:check（WIP 0）/ trace 0 命中
+- e2e：移动仿真 qa-regression（select/date-picker/cascader/tree-select bottom-sheet 开合 + 触摸目标 + tap 切换 + switch 整行）+ 全量 smoke/dark/code/visual/console-sweep/vue-prop-hijack/a11y/interaction 全绿；light/dark 截图复核 + console 零告警
+
+---
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
