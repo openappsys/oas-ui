@@ -40,8 +40,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@oas-ui/i18n": "2.5.0",
-    "@oas-ui/ui": "2.5.0",
+    "@oas-ui/i18n": "workspace:*",
+    "@oas-ui/ui": "workspace:*",
     "happy-dom": "^20.11.2"
   }
 }
