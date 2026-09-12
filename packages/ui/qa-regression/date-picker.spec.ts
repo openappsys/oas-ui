@@ -119,3 +119,82 @@ test('date-picker 移动端：底部抽屉贴视口底展开 + dropdown 静态�
     await ctx.close()
   }
 })
+
+test('date-picker 月/年/区间面板：内容铺满不留右侧空白（非范围收窄为 240）', async ({ page }) => {
+  // 曾现 bug：月/年网格的 fr 轨道在 shrink-to-fit 容器下塌缩到内容宽，把面板撑到 378/431 且右侧留大片
+  // 空白；范围面板两栏按内容宽排布、右侧同样留白。修复：非范围面板收窄为 240 + 网格显式等宽 + range-grid 均分。
+  await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-date-picker')
+  const closePanel = (sel: string) =>
+    page.evaluate((s) => {
+      const trig = document.querySelector(s)!.shadowRoot!.querySelector('[part="trigger"]') as HTMLElement
+      trig.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+      trig.blur()
+    }, sel)
+  for (const [name, sel] of [
+    ['month', 'oas-date-picker[type="month"]'],
+    ['year', 'oas-date-picker[type="year"]'],
+    ['monthrange', 'oas-date-picker[type="monthrange"]'],
+    ['yearrange', 'oas-date-picker[type="yearrange"]'],
+    ['daterange', 'oas-date-picker[type="daterange"]'],
+  ] as const) {
+    const host = page.locator(sel).first()
+    await host.scrollIntoViewIfNeeded()
+    await host.locator('[part="trigger"]').click()
+    await page.waitForFunction(
+      (s) => document.querySelector(s)?.shadowRoot?.querySelector('[part="dropdown"]')?.classList.contains('open'),
+      sel,
+      { timeout: 5000 },
+    )
+    const r = await host.evaluate((el) => {
+      const panel = el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+      const pr = panel.getBoundingClientRect()
+      const rs = [...panel.querySelectorAll<HTMLElement>('.month-cell, .year-cell, .quarter-cell, .day')].map((c) =>
+        c.getBoundingClientRect(),
+      )
+      return {
+        panelW: pr.width,
+        blankRight: pr.right - Math.max(...rs.map((x) => x.right)),
+        blankLeft: Math.min(...rs.map((x) => x.left)) - pr.left,
+      }
+    })
+    expect(r.blankRight, `${name} 面板右侧不应留大片空白`).toBeLessThanOrEqual(2)
+    expect(r.blankLeft, `${name} 面板左侧不应留白`).toBeLessThanOrEqual(2)
+    if (name === 'month' || name === 'year') {
+      expect(r.panelW, `${name} 非范围面板应收窄为 240`).toBeCloseTo(240, 0)
+    }
+    await closePanel(sel)
+  }
+})
+
+test('date-picker 单元格渲染：template[slot=cell] 内容保留、每个日格有数字与标记点', async ({ page }) => {
+  // 曾现 bug：docs demo 里的 <template slot="cell"> 被 Vue 编译管线吞空，组件克隆到空模板 →
+  // 日格 textContent 被清空，42 个日期数字全消失（只剩背景块）。修复：demo 宿主加 v-pre。
+  await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#date-picker-cell-render')
+  const host = page.locator('#date-picker-cell-render')
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#date-picker-cell-render')
+      const dd = el?.shadowRoot?.querySelector('[part="dropdown"]')
+      return !!dd?.classList.contains('open') && !!el?.shadowRoot?.querySelector('.day')
+    },
+    null,
+    { timeout: 5000 },
+  )
+  const r = await host.evaluate((el) => {
+    const tpl = el.querySelector('template[slot="cell"]')
+    const days = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.day')]
+    return {
+      hasTemplateContent: !!tpl && tpl.innerHTML.trim().length > 0,
+      dayCount: days.length,
+      withNumber: days.filter((d) => /\d/.test(d.textContent ?? '')).length,
+      hasDot: !!el.shadowRoot!.querySelector('.day .cell-dot'),
+    }
+  })
+  expect(r.hasTemplateContent, 'template[slot=cell] 内容应被保留').toBe(true)
+  expect(r.dayCount).toBeGreaterThan(0)
+  expect(r.withNumber, '每个日格都应有日期数字').toBe(r.dayCount)
+  expect(r.hasDot, '应渲染自定义标记点').toBe(true)
+})
