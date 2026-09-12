@@ -104,6 +104,28 @@
 | active / focus-visible | focus-visible 必须有可见焦点环（`--oas-focus-ring`）        |
 | empty（数据类）        | 统一 Empty 占位                                             |
 
+### 2.4 图标使用与内置集边界
+
+**内置集定位**：`@oas-ui/icons` 是**组件自用 + 常用 UI 的最小集**，不是通用图标库。新增内置图标必须满足其一：
+
+1. **组件内置需要**（缺则补，属缺陷修复）；
+2. **常用 UI 复用**：库内多个组件/demo 复用，或不内置就得在各处手写同一 svg；
+3. 不满足则一律走自定义通路——`slot`（单点内联 svg）/ `registerIcon(name, svg)`（应用级注册，可覆盖同名内置）/ `registerIconLibrary(name, { resolver, mutator, spriteSheet })`（远程库按需 fetch，零包体）。详见 `components/icon.md`。
+
+**为什么不做大**：
+
+- **内置集是全员包体税**：`iconRegistry` 被组件 eagerly 引用（逐个 import，不可 tree-shake），全量 47 个 ≈ **11.2 KB gzip（≈0.24 KB gzip/图标）**；任何用到 `iconRegistry` 的组件链整包带上（如 `@oas-ui/ui/basic/button` 链预算说明即写「含全量 icon 注册表」）；
+- **原创约束**：图标须原创手绘，每个新增都是设计 + 评审成本；
+- 通用图标库是独立赛道（体量数千），组件库内置集不与其竞争。
+
+**组件内图标策略**：组件 chrome 图标统一从 `@oas-ui/icons` 取内置（`@oas-ui/ui` 已依赖该包），避免各组件自行复制 path 造成漂移；仅组件专属语义美术（如 tree 的 folder/file、color-picker 的 eyedropper）允许本地常量，且应评估是否升级为内置。
+
+**2026-09 覆盖核对结论**（全量扫描组件源码 + 文档 demo 对内置 47 的差集，见需求档案）：
+
+- 组件源码 49 个内联 svg 块中 **23 个与内置完全相同**（close / chevron-down / star / menu / arrow-up 等被各自手绘复制）→ 按上策略统一改用内置；
+- **26 个组件独有**中，`plus` / `minus` / `check` / `close` / `edit` / `external-link` / `filter` 等**已有同名内置**（手绘副本），其余为通用缺口（`folder` / `folder-open` / `file` / `camera` / `eyedropper` / `move-up` / `move-down` 等）→ 按判据 1/2 补入内置；
+- 文档 demo 46 个独有 svg 多为示范美术（品牌/插画/自绘示例），不进内置。
+
 ## 3. 交互与无障碍基线
 
 - 键盘可达：Tab 进、方向键/Enter/Space 操作、Esc 关闭浮层（焦点返回触发元素）
