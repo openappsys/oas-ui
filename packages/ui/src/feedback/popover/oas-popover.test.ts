@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASPopover } from './index.js'
 import '../tooltip/index.js' // 副作用：确保 oas-tooltip 已注册（嵌套关闭断言用）
 // 右键族（右键光标定位 / 触屏长按 / 断点响应）为 contextmenu 能力包；本文件含 P20/P23
@@ -2782,5 +2782,103 @@ describe('OASPopover P25 render-panel（无触发纯面板）', () => {
     el.setAttribute('open', '')
     expect(p.style.left).toBe('108px')
     expect(p.style.top).toBe('50px')
+  })
+})
+
+// ================= 触屏降级（P3 扩展）：coarse pointer 下 hover 回落 tap 切换 =================
+
+describe('触屏降级（P3）：coarse pointer 下 trigger 含 hover 回落 tap 切换', () => {
+  /** mock 触屏环境（pointer: coarse；addEventListener 兜底防 contextmenu 能力断点监听炸） */
+  function mockCoarsePointer(): void {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList,
+    )
+  }
+
+  /** 无 touches 构造器的 touch 事件（happy-dom 不实现 Touch/TouchList） */
+  function touchEvent(type: string, touches: Array<{ clientX: number; clientY: number }>): Event {
+    const e = new Event(type, { bubbles: true, cancelable: true })
+    Object.defineProperty(e, 'touches', { value: touches })
+    return e
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('coarse：hover 通道停用（tap 合成的 mouseenter 不打开），点按锚点 tap 切换开/关', () => {
+    mockCoarsePointer()
+    const el = mount({ trigger: 'hover', title: 'x' })
+    const btn = el.querySelector('button')!
+    // mouseenter 不冒泡：直接派发宿主（hover 监听绑在宿主上）
+    el.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(el.hasAttribute('open'), '触屏下 hover 不得打开').toBe(false)
+    // 点按开
+    btn.click()
+    expect(el.hasAttribute('open')).toBe(true)
+    // 再点按关
+    btn.click()
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('coarse：focusin 不打开（tap 会 focusin+click 连发，防"刚开即关"）', () => {
+    mockCoarsePointer()
+    const el = mount({ trigger: 'hover focus', title: 'x' })
+    el.querySelector('button')!.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('coarse：tap 打开后点按文档其他位置关闭（外点关闭，触屏无 hover-out 语义）', () => {
+    mockCoarsePointer()
+    const el = mount({ trigger: 'hover', title: 'x' })
+    const btn = el.querySelector('button')!
+    btn.click()
+    expect(el.hasAttribute('open')).toBe(true)
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('coarse：tap 切换仍派发 oas-open-change（受控闭环不变）', () => {
+    mockCoarsePointer()
+    const el = mount({ trigger: 'hover', title: 'x' })
+    const detail: Array<{ open: boolean }> = []
+    el.addEventListener('oas-open-change', (e) => detail.push((e as CustomEvent).detail as { open: boolean }))
+    el.querySelector('button')!.click()
+    expect(detail).toEqual([{ open: true }])
+  })
+
+  it('coarse：触屏长按（long-press-delay）打开后抬手的 click 不立即关闭', async () => {
+    mockCoarsePointer()
+    const el = mount({ trigger: 'contextmenu hover', 'long-press-delay': '20', title: 'x' })
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(touchEvent('touchstart', [{ clientX: 100, clientY: 100 }]))
+    await sleep(60) // 超过 long-press-delay=20，长按到点打开
+    expect(el.hasAttribute('open')).toBe(true)
+    btn.dispatchEvent(touchEvent('touchend', []))
+    btn.click() // 长按手势收尾的合成 click：不得切换关闭
+    expect(el.hasAttribute('open')).toBe(true)
+    await sleep(850) // 超出长按收尾守卫窗口
+    btn.click() // 下一次点按才切换关闭
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('coarse：disabled 时点按不打开', () => {
+    mockCoarsePointer()
+    const el = mount({ trigger: 'hover', disabled: '', title: 'x' })
+    el.querySelector('button')!.click()
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('coarse：manual 不受 tap 降级影响（受控语义保持）', () => {
+    mockCoarsePointer()
+    const el = mount({ trigger: 'manual', title: 'x' })
+    el.querySelector('button')!.click()
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('fine pointer：hover 打开行为不受影响（回归保护）', () => {
+    const el = mount({ trigger: 'hover', 'hover-delay': '0', title: 'x' })
+    el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    expect(el.hasAttribute('open')).toBe(true)
   })
 })

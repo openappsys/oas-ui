@@ -21,7 +21,7 @@ import {
   renderPickerMonthGrid,
   isoWeekYear,
 } from './picker-grid.js'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
@@ -104,6 +104,8 @@ const STYLE = `
   width: 220px;
   /* 尺寸档内部控高变量（data-size 镜像切换；不占公开 API，外部请用 size 属性） */
   --_ch: var(--oas-control-height-md);
+  /* 非范围面板的收窄宽度（月/年/季面板与日网格统一 240；内部变量，不占公开 API） */
+  --_dp-narrow-w: 240px;
 }
 :host([data-size='small']) {
   --_ch: var(--oas-control-height-sm);
@@ -284,8 +286,18 @@ const STYLE = `
 [part='panel'] {
   min-width: 240px;
 }
+/* 非范围面板收窄到与日网格同宽：月/年网格的 fr 轨道在 shrink-to-fit 容器里会塌缩到内容宽、
+   把面板撑宽并在右侧留大片空白（实测 month 面板 378→240 后右侧空白归零）。 */
+[part='panel']:not(.range-panel) {
+  width: var(--_dp-narrow-w);
+}
 [part='panel'].range-panel {
   min-width: 480px;
+}
+/* 范围面板两栏均分（原先按内容宽排布，右侧留白） */
+[part='panel'] .range-grid {
+  flex: 1;
+  min-width: 0;
 }
 [part='panel'] .panel-body {
   min-width: 0;
@@ -415,6 +427,11 @@ const STYLE = `
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--oas-space-1);
+}
+/* 非范围时显式等于面板宽：网格宽度确定后 fr 轨道才会均分；否则轨道塌缩到内容宽、右侧留白 */
+[part='panel']:not(.range-panel):not(.shortcuts-left) .months,
+[part='panel']:not(.range-panel):not(.shortcuts-left) .years {
+  width: var(--_dp-narrow-w);
 }
 [part='panel'] .quarters {
   display: grid;
@@ -1297,7 +1314,7 @@ export class OASDatePicker extends OASElement {
     if (!this.dropdown || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const popupRect = this.dropdown.getBoundingClientRect()
-    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const viewport = getViewport()
     const padding = 8 // 视口夹取边距：range 双月面板 480px 宽，避让余量更足
     const placement = this.adjustCrossAlignment(anchorRect, popupRect, viewport, padding, this.resolvePlacement())
     const {
@@ -1845,12 +1862,15 @@ export class OASDatePicker extends OASElement {
    */
   private fillCells(grid: HTMLElement): void {
     const tpl = this.querySelector<HTMLTemplateElement>('template[slot="cell"]')
+    // 模板可能为空：宿主写了 <template slot="cell"> 但内容被上层编译器吞掉（Vue 在 dev 下会吞），
+    // 此时不要清空日格，保留组件写入的日期数字，避免整月数字消失。
+    const hasTpl = !!tpl && tpl.content.childNodes.length > 0
     for (const btn of grid.querySelectorAll<HTMLButtonElement>('.day')) {
       const date = parseISODate(btn.dataset.date ?? '')
       if (!date) continue
-      if (tpl) {
+      if (hasTpl) {
         btn.textContent = ''
-        btn.appendChild(tpl.content.cloneNode(true))
+        btn.appendChild(tpl!.content.cloneNode(true))
         const binder = btn.querySelector<HTMLElement>('[data-cell-date]')
         if (binder) binder.textContent = String(date.getDate())
       }

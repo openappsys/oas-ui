@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 export interface Option {
   label: string
@@ -818,7 +818,7 @@ export class OASMentions extends OASElement {
       anchorRect,
       panelRect,
       `${base}-start` as Placement,
-      { width: window.innerWidth, height: window.innerHeight },
+      getViewport(),
       8,
       !forced,
     )

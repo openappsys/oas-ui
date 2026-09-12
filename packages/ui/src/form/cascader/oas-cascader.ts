@@ -2,7 +2,7 @@ import { OASElement } from '@oas-ui/core'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 
 export interface CascaderOption {
@@ -949,10 +949,7 @@ export class OASCascader extends OASElement {
     if (!this.dropdown || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const panelRect = this.dropdown.getBoundingClientRect()
-    const { top, left } = computePosition(anchorRect, panelRect, 'bottom' as Placement, {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    })
+    const { top, left } = computePosition(anchorRect, panelRect, 'bottom' as Placement, getViewport())
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
     this.dropdown.style.minWidth = `${anchorRect.width}px`

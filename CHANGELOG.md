@@ -4,6 +4,15 @@
 
 ## [未发布]
 
+### 特性
+
+- **oas-bottom-sheet（新组件，移动端底部抽屉承载件）**：底部升起面板 + drag handle 下滑超阈值关闭 + backdrop 点击关闭 + Esc 关闭 + safe-area-inset-bottom 刘海屏手势区 + 焦点陷阱；`max-height`（默认 85vh）/ `open` 受控 / `oas-close`（detail `{ reason: drag | backdrop | esc }`）；`passive` 被动透传模式供浮层组件 PC 形态结构占位（SSR/客户端结构严格一致）
+- **浮层组件移动形态（bottom-sheet 底部抽屉承载）**：select / date-picker / cascader / tree-select / time-picker / combobox 在触屏（coarse pointer）或窄视口（<768px）自动把下拉切换为底部抽屉承载，PC 形态不变；各面板适配（双月滚动/多级横滑/搜索+树/时间列/列表滚动）
+- **触摸目标 ≥44px**：新 token `--oas-touch-target-min`（默认 44px），`@media (pointer: coarse)` 下浮层 option/item 最小高度抬升，桌面（fine pointer）不受影响
+- **触屏 hover 降级**：tooltip / hover-card / popover / dropdown 在 coarse pointer 下 hover 触发自动降级为点按切换（外点关闭；长按打开 800ms 内抬手跳过防误关），PC 的 hover 行为不变
+- **switch 块级整行热区**：块级拉伸（如竖向 flex 容器）时宿主整行可点，对齐移动端设置项整行点击语义
+- **浮层视口适配**：新增共享 `getViewport()`——浮层碰撞边界优先 `visualViewport`（软键盘/浏览器工具栏/捏合缩放时用户真正能看到的区域），回退 `innerWidth/innerHeight`；全部浮层组件统一消费
+
 ### 修复
 
 - **tree `parseIdList` 数字 key 静默丢弃 + 非法输入零告警**：v2.5.0 契约收紧为 JSON 数组后，`expanded`/`checked`/multiple 态 `selected` 传入数字 key 的合法 JSON 数组（如 `expanded="[1,2]"`）被 `typeof string` 过滤静默丢弃成全折叠/全不选；解析失败（典型：旧版逗号串）无任何提示。修复为数字 key 统一 `String()` 归一化（空串/`undefined`/`null` 项滤除），解析失败按空集合回落并在 dev 下 `console.warn` 一次（同值去重，文案含迁移写法）。回归：oas-tree.test.ts 单测 2 例 + qa-regression/tree.spec.ts 固化断言（oas-ui-templates 三端 menus/dept 页实抓上报）

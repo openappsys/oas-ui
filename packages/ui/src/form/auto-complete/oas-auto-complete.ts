@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 interface Option {
   label: string
@@ -600,18 +600,16 @@ export class OASAutoComplete extends OASElement {
     }
   }
 
-  /** 复用浮层定位引擎：锚定输入框下方，空间不足自动翻转/避让，宽度对齐输入框 */
+  /** 复用浮层定位引擎：锚定输入框下方，空间不足自动翻转/避让，宽度对齐输入框、左缘对齐（bottom-start） */
   private positionDropdown(): void {
     if (!this.dropdown || !this.input) return
     const anchorRect = this.input.getBoundingClientRect()
+    // 先撑宽再测量/定位：dropdown 为 auto 宽度，撑宽前测会按固有宽度算 left → 首次展开偏右。
+    this.dropdown.style.width = `${anchorRect.width}px`
     const panelRect = this.dropdown.getBoundingClientRect()
-    const { top, left } = computePosition(anchorRect, panelRect, 'bottom' as Placement, {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    })
+    const { top, left } = computePosition(anchorRect, panelRect, 'bottom-start' as Placement, getViewport())
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
-    this.dropdown.style.width = `${anchorRect.width}px`
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {
