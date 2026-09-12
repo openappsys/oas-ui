@@ -60,9 +60,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@oas-ui/core": "2.5.0",
-    "@oas-ui/i18n": "2.5.0",
-    "@oas-ui/icons": "2.5.0"
+    "@oas-ui/core": "workspace:*",
+    "@oas-ui/i18n": "workspace:*",
+    "@oas-ui/icons": "workspace:*"
   },
   "devDependencies": {
     "@oas-ui/ssr": "workspace:*"

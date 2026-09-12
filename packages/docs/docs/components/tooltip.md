@@ -179,7 +179,7 @@
 
 ## 触发方式
 
-`trigger` 属性支持空格分隔的多选组合：`hover`（悬停）/ `focus`（聚焦）/ `click`（点击）/ `contextmenu`（右键）/ `touch`（长按）/ `manual`（完全受控）。默认 `hover focus touch`——触屏长按开箱即用（桌面鼠标自动过滤，长按时长 `touch-delay` 可调）。
+`trigger` 属性支持空格分隔的多选组合：`hover`（悬停）/ `focus`（聚焦）/ `click`（点击）/ `contextmenu`（右键）/ `touch`（长按）/ `manual`（完全受控）。默认 `hover focus touch`——触屏长按开箱即用（桌面鼠标自动过滤，长按时长 `touch-delay` 可调）。触屏（coarse pointer）下 `hover` 触发自动降级为**点按切换**：点按打开、再点按关闭、点按其他位置关闭（桌面悬停行为不变）。
 
 <DemoBlock title="点击触发">
   <oas-tooltip trigger="click" content="点击我试试">
@@ -233,6 +233,14 @@
     <oas-button>长按我（触屏）</oas-button>
   </oas-tooltip>
 </DemoBlock>
+
+<DemoBlock title="触屏点按切换（coarse pointer 自动生效）">
+  <oas-tooltip id="tt-coarse-tap" content="点按切换：再点一次或点外部关闭">
+    <oas-button>点按我（触屏）</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+在触屏设备（`pointer: coarse`）上，`hover` 通道自动停用——触屏点按会同时合成 hover/focus/click 事件，若仍按桌面悬停语义会在点按瞬间"刚开即关"。降级后由点按接管切换，与 `click` 触发一致：打开后点按文档其他位置（或按 Esc）关闭。
 
 ## 富内容
 

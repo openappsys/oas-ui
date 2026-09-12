@@ -257,7 +257,7 @@ test('tooltip 箭头：#tt-follow 打开后 .arrow 可见且位于面板顶部�
   expect(r.arrowAtTop, 'bottom placement 箭头应在面板顶部').toBe(true)
   expect(r.arrowCentered, '箭头应水平居中指向锚点').toBe(true)
   expect(r.arrowProtrudes, '箭头尖端应探出面板外沿').toBe(true)
-  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix-tooltip-arrow.png' })
+  await page.screenshot({ path: test.info().outputPath('fix-tooltip-arrow.png') })
 })
 
 test('tooltip arrow="false"：打开后无可见箭头元素（hidden 属性 + 0 尺寸，part 保留）', async ({ page }) => {
@@ -827,4 +827,75 @@ test('tooltip 无空格长串在 max-width 内断行不溢出（overflow-wrap: a
   expect(r, '应找到带长路径的 ellipsis 示例与 tooltip').not.toBeNull()
   expect(r!.overflowWrap).toBe('anywhere')
   expect(r!.scrollW - r!.width, '内容不超出浮层盒').toBeLessThanOrEqual(2)
+})
+
+// 移动端专项 P3 回归：coarse pointer 下 hover 触发降级为 tap 切换（iPhone 触屏仿真）
+test.describe('触屏降级（P3，iPhone 仿真）', () => {
+  // iPhone 13 触屏仿真（defaultBrowserType 不可在 describe 内 use，逐项展开）
+  test.use({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 3,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+  })
+
+  test('coarse pointer：hover 不打开，点按锚点 tap 切换开/关，外点关闭', async ({ page }) => {
+    await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+    await up(page, '#tt-coarse-tap')
+    const tipState = () =>
+      page.evaluate(() =>
+        document
+          .querySelector('#tt-coarse-tap')
+          ?.shadowRoot?.querySelector('[part="tip"]')
+          ?.getAttribute('aria-hidden'),
+      )
+    // 指针悬停（触屏仿真下 tap 会合成 hover）不再打开
+    const btn = page.locator('#tt-coarse-tap button')
+    await btn.scrollIntoViewIfNeeded()
+    const box = (await btn.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.waitForTimeout(400)
+    expect(await tipState(), '触屏下 hover 不得打开 tooltip').toBe('true')
+    // 点按打开
+    await page.tap('#tt-coarse-tap button')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('#tt-coarse-tap')
+          ?.shadowRoot?.querySelector('[part="tip"]')
+          ?.getAttribute('aria-hidden') === 'false',
+      { timeout: 5000 },
+    )
+    // 再点按关闭
+    await page.tap('#tt-coarse-tap button')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('#tt-coarse-tap')
+          ?.shadowRoot?.querySelector('[part="tip"]')
+          ?.getAttribute('aria-hidden') === 'true',
+      { timeout: 5000 },
+    )
+    // 再次打开后外点关闭（light dismiss）
+    await page.tap('#tt-coarse-tap button')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('#tt-coarse-tap')
+          ?.shadowRoot?.querySelector('[part="tip"]')
+          ?.getAttribute('aria-hidden') === 'false',
+      { timeout: 5000 },
+    )
+    await page.touchscreen.tap(6, Math.floor(page.viewportSize()!.height / 2))
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('#tt-coarse-tap')
+          ?.shadowRoot?.querySelector('[part="tip"]')
+          ?.getAttribute('aria-hidden') === 'true',
+      { timeout: 5000 },
+    )
+  })
 })

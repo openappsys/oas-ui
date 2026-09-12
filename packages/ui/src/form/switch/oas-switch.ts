@@ -323,6 +323,13 @@ export class OASSwitch extends OASElement {
     this.btn?.addEventListener('focus', () => this.emit('focus'))
     this.btn?.addEventListener('blur', () => this.emit('blur'))
 
+    // 块级拉伸热区：宿主被显式拉宽（竖向 oas-space align-stretch / 宿主 width:100%）时，
+    // 点击落在宿主自身空白区（非 shadow 内 button/ext-label）的指针经委托切换——对齐
+    // iOS 设置项整行点击语义；默认收缩形态（width: fit-content）下宿主无空白区，行为不变。
+    // shadow 事件 retarget 后 target 恒为宿主，判定走 composedPath 首节点：
+    // 首节点是宿主自身 = 点了空白区；首节点是 shadow 内元素 = 各自通道已处理，跳过防双触发
+    this.addEventListener('click', (e) => this.onHostClick(e))
+
     // light DOM 默认插槽内容观察：label slot 通道内容增删/文本变化 → 重算标签可见性
     if (!this.childObserver) {
       const observer = new MutationObserver(() => {
@@ -456,7 +463,6 @@ export class OASSwitch extends OASElement {
   override focus(options?: FocusOptions): void {
     this.btn?.focus(options)
   }
-
   override blur(): void {
     this.btn?.blur()
   }
@@ -477,6 +483,17 @@ export class OASSwitch extends OASElement {
     if (tv === '' && fv === '') return next
     if (next) return tv !== '' ? tv : true
     return fv !== '' ? fv : false
+  }
+
+  /**
+   * 宿主自身空白区点击委托：块级拉伸（宿主宽于内容）时整行可点。
+   * composedPath 首节点为宿主自身才委托——shadow 内 button/ext-label 的点击
+   * 首节点是各自元素，由自身通道处理，跳过以避免双触发；拦截语义与 button 一致
+   * （disabled/loading/before-change 统一走 requestToggle）。
+   */
+  private onHostClick(e: Event): void {
+    if (e.composedPath()[0] !== this) return
+    this.requestToggle()
   }
 
   /** 切换请求统一入口：disabled/loading/pending 拦截，before-change 钩子仲裁 */

@@ -72,6 +72,7 @@
   "oas-backdrop",
   "oas-modal",
   "oas-drawer",
+  "oas-bottom-sheet",
   "oas-popconfirm",
   "oas-alert",
   "oas-progress",

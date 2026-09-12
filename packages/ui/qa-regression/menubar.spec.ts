@@ -64,7 +64,7 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
     return subs.some((s) => s.classList.contains('flip-left') || s.classList.contains('flip-right'))
   })
   expect(flipped, '贴右缘的子菜单应翻转（flip-left/flip-right），而非被裁掉').toBe(true)
-  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix8-menubar-flip.png' })
+  await page.screenshot({ path: test.info().outputPath('fix8-menubar-flip.png') })
 })
 
 test('menubar click 首开语义：无开态 hover 不展开、开态 hover 切换顶级（桌面共识回归）', async ({ page }) => {

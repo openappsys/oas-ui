@@ -51,6 +51,6 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@oas-ui/core": "2.5.0"
+    "@oas-ui/core": "workspace:*"
   }
 }

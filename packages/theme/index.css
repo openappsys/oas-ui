@@ -100,6 +100,9 @@
   --oas-control-height-md: 32px;
   --oas-control-height-lg: 40px;
   --oas-control-height-xl: 48px;
+  /* 触摸目标最小尺寸（iOS HIG）：coarse pointer 下浮层交互行（option/item/tab 等）
+     以此为最小高度；尺寸 token 不分主题，light/dark/high-contrast 共用 */
+  --oas-touch-target-min: 44px;
 
   --oas-transition-fast: 120ms;
   --oas-transition-base: 180ms;

@@ -1020,4 +1020,65 @@ describe('OASHoverCard', () => {
       expect(card(el).getAttribute('aria-hidden')).toBe('false')
     })
   })
+
+  // ================= 触屏降级（P3）：coarse pointer 下 tap 切换 =================
+
+  /** mock 触屏环境（pointer: coarse） */
+  function mockCoarsePointer(): void {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true }) as MediaQueryList)
+  }
+
+  describe('触屏降级（P3）：coarse pointer 下 hover 回落 tap 切换', () => {
+    it('coarse：hover/focus 通道停用，点按锚点 tap 切换打开', () => {
+      mockCoarsePointer()
+      const el = mount({ title: 'x' })
+      const btn = anchorOf(el)
+      btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+      vi.advanceTimersByTime(400)
+      expect(card(el).getAttribute('aria-hidden'), '触屏下 hover 不打开').toBe('true')
+      btn.dispatchEvent(new FocusEvent('focusin'))
+      vi.advanceTimersByTime(400)
+      expect(card(el).getAttribute('aria-hidden'), '触屏下 focusin 不打开（防 tap 连发刚开即关）').toBe('true')
+      btn.click()
+      expect(card(el).getAttribute('aria-hidden')).toBe('false')
+    })
+
+    it('coarse：再点按锚点关闭，点按文档其他位置关闭（light dismiss）', () => {
+      mockCoarsePointer()
+      const el = mount({ title: 'x' })
+      const btn = anchorOf(el)
+      btn.click()
+      expect(card(el).getAttribute('aria-hidden')).toBe('false')
+      btn.click()
+      expect(card(el).getAttribute('aria-hidden')).toBe('true')
+      btn.click()
+      expect(card(el).getAttribute('aria-hidden')).toBe('false')
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(card(el).getAttribute('aria-hidden')).toBe('true')
+    })
+
+    it('coarse：tap 切换派发 oas-open-change，与受控 open 兼容', () => {
+      mockCoarsePointer()
+      const el = mount({ title: 'x' })
+      const detail: Array<{ open: boolean }> = []
+      el.addEventListener('oas-open-change', (e) => detail.push((e as CustomEvent).detail as { open: boolean }))
+      anchorOf(el).click()
+      expect(detail).toEqual([{ open: true }])
+    })
+
+    it('coarse：disabled 时点按不打开', () => {
+      mockCoarsePointer()
+      const el = mount({ title: 'x', disabled: '' })
+      anchorOf(el).click()
+      expect(card(el).getAttribute('aria-hidden')).toBe('true')
+    })
+
+    it('fine pointer：hover 打开行为不受影响（回归保护）', () => {
+      vi.restoreAllMocks() // 还原上一条用例的 matchMedia mock（本文件 beforeEach 未统一还原）
+      const el = mount({ title: 'x', delay: '0' })
+      anchorOf(el).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+      vi.advanceTimersByTime(1)
+      expect(card(el).getAttribute('aria-hidden')).toBe('false')
+    })
+  })
 })

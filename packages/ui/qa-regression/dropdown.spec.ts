@@ -52,7 +52,7 @@ test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口�
     expect(r.right, `子菜单 right=${r.right} 越出视口右缘`).toBeLessThanOrEqual(r.vw + 1)
     expect(r.bottom, `子菜单 bottom=${r.bottom} 越出视口下缘`).toBeLessThanOrEqual(r.vh + 1)
   }
-  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix8-dropdown-flip.png' })
+  await page.screenshot({ path: test.info().outputPath('fix8-dropdown-flip.png') })
 })
 
 // —— 缺陷 9：rate 半选视觉 ——
@@ -210,7 +210,7 @@ test('dropdown 箭头：#dd-arrow 打开后 .arrow 可见且位于面板顶部�
   expect(r.arrowAtTop, 'bottom placement 箭头应在面板顶部').toBe(true)
   expect(r.arrowCentered, '触发按钮居中于面板下方 → 箭头指向触发元素中心').toBe(true)
   expect(r.arrowProtrudes, '箭头尖端应探出面板外沿指向触发按钮').toBe(true)
-  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix-dropdown-arrow.png' })
+  await page.screenshot({ path: test.info().outputPath('fix-dropdown-arrow.png') })
 })
 
 test('dropdown 箭头 arrow="false"：#dd-arrow-none 打开后无箭头（hidden 属性）且菜单正常', async ({ page }) => {

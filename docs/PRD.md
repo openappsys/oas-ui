@@ -40,7 +40,7 @@
 
 - **构建补课**：dist 产出 `.d.ts`；多入口 exports（每组件可独立子路径引入）；`sideEffects` 策略与 tree-shaking 验证（产物体积对比）✅
 - **`OASElement` 重构**：渲染一次 + 属性增量更新（不重建 shadow DOM），焦点/输入态不因属性变化丢失 ✅
-- **icon**：SVG 源目录脚本生成，按名称按需导出，支持 `name/size/color`，tree-shakable ✅（42 个原创线性图标，@oas-ui/icons 独立包）
+- **icon**：SVG 源目录脚本生成，按名称按需导出，支持 `name/size/color`，tree-shakable ✅（**47 个原创线性图标**，`@oas-ui/icons` 独立包）。**内置集边界**：只做「组件自用 + 常用 UI」的最小集，不做通用图标库（依据与三条扩展通路见 `ui-spec` §2.4）
 - **tag**：`type/size/closable/round`，关闭事件 `oas-close` ✅
 - **badge**：`value/max/showZero/dot`，红点/数字两种形态 ✅
 - **space**：`direction/size/wrap/align`，等距布局 ✅
