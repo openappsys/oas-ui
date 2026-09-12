@@ -277,11 +277,25 @@ const STYLE = `
 :host([data-mobile-sheet]) [part='panel'].range-panel {
   min-width: 0;
 }
+/* 单月面板：在抽屉里水平居中 + 加宽到触摸友好（日格对齐触摸目标；窄屏充满、宽屏不稀疏） */
+:host([data-mobile-sheet]) [part='panel']:not(.range-panel):not(.shortcuts-left) {
+  width: min(100%, 360px);
+  margin-inline: auto;
+}
+/* 范围双月：窄屏堆叠成单列纵向滚动（双列日格太小点不准；移动端范围选择通行形态） */
 :host([data-mobile-sheet]) [part='panel'] .range-grids {
-  gap: var(--oas-space-2);
+  flex-direction: column;
+  gap: var(--oas-space-3);
+}
+:host([data-mobile-sheet]) [part='panel'] .range-grid {
+  flex: none;
+  width: 100%;
 }
 :host([data-mobile-sheet]) [part='panel'] .range-grid + .range-grid {
-  padding-left: var(--oas-space-2);
+  padding-left: 0;
+  border-left: none;
+  border-top: 1px solid var(--oas-color-border);
+  padding-top: var(--oas-space-3);
 }
 [part='panel'] {
   min-width: 240px;

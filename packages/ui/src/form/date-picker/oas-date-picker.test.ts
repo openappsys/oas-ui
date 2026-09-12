@@ -1078,4 +1078,16 @@ describe('OASDatePicker 移动端底部抽屉（bottom-sheet 接入）', () => {
     expect(sheet(el).hasAttribute('open')).toBe(false)
     expect(computePositionMock.mock.calls.length).toBeGreaterThan(callsBefore)
   })
+
+  it('移动端单月面板水平居中 + 触摸友好宽度；范围双月堆叠成单列纵向滚动', () => {
+    stubPointer(true)
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 单月面板：居中（margin-inline: auto）+ 触摸友好宽度（min(100%, cap)），日格对齐触摸目标
+    expect(css).toContain(":host([data-mobile-sheet]) [part='panel']:not(.range-panel):not(.shortcuts-left)")
+    expect(css).toContain('margin-inline: auto')
+    // 范围双月：移动形态堆叠成单列（窄屏双列日格太小点不准）
+    expect(css).toContain(":host([data-mobile-sheet]) [part='panel'] .range-grids")
+    expect(css).toContain('flex-direction: column')
+  })
 })

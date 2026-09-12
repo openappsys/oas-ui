@@ -7,7 +7,7 @@
 ### 特性
 
 - **oas-bottom-sheet（新组件，移动端底部抽屉承载件）**：底部升起面板 + drag handle 下滑超阈值关闭 + backdrop 点击关闭 + Esc 关闭 + safe-area-inset-bottom 刘海屏手势区 + 焦点陷阱；`max-height`（默认 85vh）/ `open` 受控 / `oas-close`（detail `{ reason: drag | backdrop | esc }`）；`passive` 被动透传模式供浮层组件 PC 形态结构占位（SSR/客户端结构严格一致）
-- **浮层组件移动形态（bottom-sheet 底部抽屉承载）**：select / date-picker / cascader / tree-select / time-picker / combobox 在触屏（coarse pointer）或窄视口（<768px）自动把下拉切换为底部抽屉承载，PC 形态不变；各面板适配（双月滚动/多级横滑/搜索+树/时间列/列表滚动）
+- **浮层组件移动形态（bottom-sheet 底部抽屉承载）**：select / date-picker / cascader / tree-select / time-picker / combobox 在触屏（coarse pointer）或窄视口（<768px）自动把下拉切换为底部抽屉承载，PC 形态不变；各面板适配（双月滚动/多级横滑/搜索+树/时间列/列表滚动；date-picker 单月面板水平居中 + 触摸友好宽度、范围双月堆叠成单列纵向滚动）
 - **触摸目标 ≥44px**：新 token `--oas-touch-target-min`（默认 44px），`@media (pointer: coarse)` 下浮层 option/item 最小高度抬升，桌面（fine pointer）不受影响
 - **触屏 hover 降级**：tooltip / hover-card / popover / dropdown 在 coarse pointer 下 hover 触发自动降级为点按切换（外点关闭；长按打开 800ms 内抬手跳过防误关），PC 的 hover 行为不变
 - **switch 块级整行热区**：块级拉伸（如竖向 flex 容器）时宿主整行可点，对齐移动端设置项整行点击语义

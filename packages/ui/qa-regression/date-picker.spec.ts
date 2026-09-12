@@ -120,6 +120,90 @@ test('date-picker 移动端：底部抽屉贴视口底展开 + dropdown 静态�
   }
 })
 
+// 移动端专项：单月面板在抽屉里水平居中 + 日格触摸友好（≈44px），范围双月堆叠成单列纵向滚动
+test('date-picker 移动端：单月面板水平居中 + 日格触摸友好，范围双月单列堆叠', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-date-picker')
+
+    // —— 单月（首个无 type 的 date-picker）——
+    const single = page.locator('oas-date-picker:not([type])').first()
+    await expect(single).toHaveAttribute('data-mobile-sheet', '')
+    await single.locator('[part="trigger"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('oas-date-picker')!.shadowRoot!.querySelector('oas-bottom-sheet')!.hasAttribute('open'),
+      null,
+      { timeout: 5000 },
+    )
+    // 等底部抽屉升起动画落定再量几何
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector('oas-date-picker')!
+        const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet') as HTMLElement
+        const panel = sheet.shadowRoot!.querySelector('.sheet') as HTMLElement
+        return Math.abs(panel.getBoundingClientRect().bottom - window.innerHeight) < 1
+      },
+      null,
+      { timeout: 5000 },
+    )
+    const s = await single.evaluate((el) => {
+      const panel = el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+      const day = panel.querySelector<HTMLElement>('.day')!
+      const pr = panel.getBoundingClientRect()
+      const dr = day.getBoundingClientRect()
+      return { left: pr.left, right: pr.right, cellW: dr.width, vw: window.innerWidth }
+    })
+    // 面板水平居中：左右边距对称（≤2px 容差）
+    expect(
+      Math.abs(s.left - (s.vw - s.right)),
+      `单月面板应水平居中（左边距 ${Math.round(s.left)} / 右边距 ${Math.round(s.vw - s.right)}）`,
+    ).toBeLessThanOrEqual(2)
+    // 日格触摸友好：宽 ≥ 40px（≈44 触摸目标）
+    expect(s.cellW, `日格宽度 ${Math.round(s.cellW)}px 应触摸友好（≥40）`).toBeGreaterThanOrEqual(40)
+
+    // 收起单月
+    await single.evaluate((el) => {
+      const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet') as HTMLElement
+      sheet.shadowRoot!.querySelector<HTMLElement>('.backdrop')!.click()
+    })
+    await page.waitForFunction(
+      () =>
+        !document.querySelector('oas-date-picker')!.shadowRoot!.querySelector('oas-bottom-sheet')!.hasAttribute('open'),
+      null,
+      { timeout: 5000 },
+    )
+
+    // —— 范围（type=daterange）：双月堆叠成单列 ——
+    const range = page.locator('oas-date-picker[type="daterange"]').first()
+    await range.locator('[part="trigger"]').click()
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('oas-date-picker[type="daterange"]')!
+          .shadowRoot!.querySelector('oas-bottom-sheet')!
+          .hasAttribute('open'),
+      null,
+      { timeout: 5000 },
+    )
+    const g = await range.evaluate((el) => {
+      const grids = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.range-grid')]
+      const a = grids[0]!.getBoundingClientRect()
+      const b = grids[1]!.getBoundingClientRect()
+      return { aBottom: a.bottom, bTop: b.top }
+    })
+    // 第二月在第一月下方（堆叠），而非并排
+    expect(
+      g.bTop,
+      `范围第二月应堆叠在第一月下方（第二月 top=${Math.round(g.bTop)} 应 ≥ 第一月 bottom=${Math.round(g.aBottom)}）`,
+    ).toBeGreaterThanOrEqual(g.aBottom - 1)
+  } finally {
+    await ctx.close()
+  }
+})
+
 test('date-picker 月/年/区间面板：内容铺满不留右侧空白（非范围收窄为 240）', async ({ page }) => {
   // 曾现 bug：月/年网格的 fr 轨道在 shrink-to-fit 容器下塌缩到内容宽，把面板撑到 378/431 且右侧留大片
   // 空白；范围面板两栏按内容宽排布、右侧同样留白。修复：非范围面板收窄为 240 + 网格显式等宽 + range-grid 均分。
