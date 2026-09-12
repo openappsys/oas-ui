@@ -179,7 +179,7 @@ Virtual mode (`virtual`) does not bind to a host trigger element: `open` is full
 
 ## Triggers
 
-The `trigger` attribute supports space-separated multi-selection: `hover` / `focus` / `click` / `contextmenu` / `touch` (long press) / `manual` (fully controlled). Defaults to `hover focus touch` — long press works out of the box on touch screens (mouse pointers are filtered automatically; the hold duration is tuned by `touch-delay`).
+The `trigger` attribute supports space-separated multi-selection: `hover` / `focus` / `click` / `contextmenu` / `touch` (long press) / `manual` (fully controlled). Defaults to `hover focus touch` — long press works out of the box on touch screens (mouse pointers are filtered automatically; the hold duration is tuned by `touch-delay`). On coarse pointers (touch screens), `hover` automatically degrades to **tap to toggle**: tap to open, tap again or tap elsewhere to close (desktop hover behavior is unchanged).
 
 <DemoBlock title="Click trigger">
   <oas-tooltip trigger="click" content="Click me to see the tooltip">
@@ -233,6 +233,14 @@ On touch devices a long press shows the hint (`touch` is included by default; `t
     <oas-button>Long-press me (touch)</oas-button>
   </oas-tooltip>
 </DemoBlock>
+
+<DemoBlock title="Tap to toggle on touch (automatic on coarse pointers)">
+  <oas-tooltip id="tt-coarse-tap" content="Tap to toggle: tap again or outside to close">
+    <oas-button>Tap me (touch)</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+On touch devices (`pointer: coarse`) the `hover` channel is disabled — a tap synthesizes hover/focus/click events at once, and keeping desktop hover semantics would close the tip immediately after opening ("open-and-shut"). After degradation the tap takes over toggling, consistent with the `click` trigger: once open, tap anywhere outside (or press Esc) to close.
 
 ## Rich content
 
