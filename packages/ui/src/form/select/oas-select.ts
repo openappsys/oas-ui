@@ -5,6 +5,7 @@ import type { OASVirtualList } from '../../data/virtual-list/index.js'
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { OASElement } from '@oas-ui/core'
 
 export interface Option {
@@ -395,6 +396,10 @@ ${OPTION_STYLE}
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
 }
+/* 触摸目标抬升：coarse pointer 下 option 行最小高度 ≥44px（token 开口可调）。
+   只进 select 自身 shadow——虚拟模式行高由 vlist 布局数学固定（item-height），
+   不在 vlist 注入，避免行高与定位数学打架 */
+${TOUCH_TARGET_CSS}
 `
 
 export class OASSelect extends OASElement {

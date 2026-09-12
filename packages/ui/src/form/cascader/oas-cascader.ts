@@ -3,6 +3,7 @@ import { OASElement } from '@oas-ui/core'
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 
 export interface CascaderOption {
   label: string
@@ -405,6 +406,8 @@ const STYLE = `
   font-size: var(--oas-font-size-sm);
   min-width: 120px;
 }
+/* 触摸目标抬升：coarse pointer 下级联选项行最小高度 ≥44px（token 开口可调） */
+${TOUCH_TARGET_CSS}
 `
 
 export class OASCascader extends OASElement {

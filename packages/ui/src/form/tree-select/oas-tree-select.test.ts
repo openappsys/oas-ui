@@ -888,6 +888,24 @@ describe('OASTreeSelect focus 委托', () => {
   })
 })
 
+describe('OASTreeSelect 触摸目标（coarse pointer 抬升）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('coarse pointer 媒体查询进样式表，node 最小高度走 --oas-touch-target-min（默认 44px）', () => {
+    const el = new OASTreeSelect()
+    el.setAttribute('options', OPTIONS)
+    document.body.appendChild(el)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+  })
+})
+
 describe('OASTreeSelect 移动端底部抽屉（bottom-sheet 接入）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

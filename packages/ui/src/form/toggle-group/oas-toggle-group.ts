@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 
 export interface ToggleItem {
   /** 按钮文案（icon-only 项可省略，可访问名兜底走图标名/ariaLabel） */
@@ -229,6 +230,8 @@ const STYLE = `
   border-color: var(--oas-color-danger);
   color: var(--oas-color-text-on-danger);
 }
+/* 触摸目标抬升：coarse pointer 下切换项最小高度 ≥44px（token 开口可调） */
+${TOUCH_TARGET_CSS}
 `
 
 /**

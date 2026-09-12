@@ -2176,4 +2176,98 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     await Promise.resolve()
     expect(detail).toEqual([{ open: true, source: 'focus', reason: '' }])
   })
+
+  // ================= 触屏降级（P3）：coarse pointer 下 hover 回落 tap 切换 =================
+
+  /** mock 触屏环境（pointer: coarse） */
+  function mockCoarsePointer(): void {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true }) as MediaQueryList)
+  }
+
+  it('P3 coarse pointer：hover 通道停用（tap 合成的 mouseenter 不打开），点按锚点 tap 切换', async () => {
+    mockCoarsePointer()
+    const el = mount({ content: 'x' })
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden'), '触屏下 hover 不再打开').toBe('true')
+    // 点按开
+    btn.click()
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+    // 再点按关
+    btn.click()
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('P3 coarse pointer：focusin 不打开（tap 会 focusin+click 连发，防"刚开即关"）', async () => {
+    mockCoarsePointer()
+    const el = mount({ content: 'x' })
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('P3 coarse pointer：tap 打开后点按文档其他位置关闭（light dismiss）', async () => {
+    mockCoarsePointer()
+    const el = mount({ content: 'x' })
+    const btn = el.querySelector('button')!
+    btn.click()
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('P3 coarse pointer：tap 切换仍派发 oas-open-change（detail 携带 source）', async () => {
+    mockCoarsePointer()
+    const el = mount({ content: 'x' })
+    const detail: Array<{ open: boolean; source: string }> = []
+    el.addEventListener('oas-open-change', (e) =>
+      detail.push((e as CustomEvent).detail as { open: boolean; source: string }),
+    )
+    const btn = el.querySelector('button')!
+    btn.click()
+    await Promise.resolve()
+    expect(detail).toEqual([{ open: true, source: 'click', reason: '' }])
+  })
+
+  it('P3 coarse pointer：长按打开后抬手的 click 不立即关闭（touch 通道与 tap 切换互斥）', async () => {
+    mockCoarsePointer()
+    vi.useFakeTimers()
+    const el = mount({ content: 'x' })
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }))
+    vi.advanceTimersByTime(500) // 长按到点打开（touch-delay 默认 500ms）
+    await Promise.resolve()
+    expect(el.hasAttribute('open')).toBe(true)
+    btn.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch' }))
+    btn.click() // 长按手势收尾的 click：不切换
+    await Promise.resolve()
+    expect(el.hasAttribute('open')).toBe(true)
+    vi.advanceTimersByTime(1000) // 模拟两次点按之间的真实间隔（超出长按收尾守卫窗口）
+    btn.click() // 下一次点按才切换关闭
+    await Promise.resolve()
+    expect(el.hasAttribute('open')).toBe(false)
+    vi.useRealTimers()
+  })
+
+  it('P3 coarse pointer：manual/virtual 不受 tap 降级影响（受控语义保持）', async () => {
+    mockCoarsePointer()
+    const manual = mount({ trigger: 'manual', content: 'x' })
+    manual.querySelector('button')!.click()
+    await Promise.resolve()
+    expect(manual.hasAttribute('open')).toBe(false)
+  })
+
+  it('P3 fine pointer：hover 打开行为不受影响（回归保护）', async () => {
+    const el = mount({ content: 'x' })
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+  })
 })
