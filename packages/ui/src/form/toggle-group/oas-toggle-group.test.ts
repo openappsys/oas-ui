@@ -643,3 +643,18 @@ describe('OASToggleGroup 组可访问名与配色（aria-label / color / status�
     expect(css).toMatch(/:host\(\[data-status='error'\]\) \.item[^{]*{[^}]*--oas-color-danger/)
   })
 })
+
+describe('OASToggleGroup 触摸目标（coarse pointer 抬升）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('coarse pointer 媒体查询进样式表，item 最小高度走 --oas-touch-target-min（默认 44px）', () => {
+    const css = styleText(mount())
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+  })
+})

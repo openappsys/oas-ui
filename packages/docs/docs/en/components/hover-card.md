@@ -244,6 +244,16 @@ onMounted(() => {
 })
 </script>
 
+## Tap to toggle on touch
+
+Hover is unreliable on touch devices (`pointer: coarse`): the hover card automatically degrades to **tap to toggle** — tap the trigger to open, tap again to close, or tap anywhere outside the card and the trigger to close. Desktop hover behavior is unchanged.
+
+<DemoBlock title="Tap to toggle (automatic on coarse pointers)">
+  <oas-hover-card id="hc-coarse-tap" title="Touch card" content="Tap to toggle: tap again or outside to close" placement="bottom">
+    <oas-button>Tap me (touch)</oas-button>
+  </oas-hover-card>
+</DemoBlock>
+
 ## API
 
 ### Attributes
