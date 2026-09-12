@@ -2,15 +2,11 @@
 
 import { test, expect } from '@playwright/test'
 
-test('sidebar resizable：拖拽 rail 边缘宽度实时跟随并写回 width 属性（内置 rail）', async ({
-  page,
-}) => {
+test('sidebar resizable：拖拽 rail 边缘宽度实时跟随并写回 width 属性（内置 rail）', async ({ page }) => {
   await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForFunction(
-    () => document.querySelector('#sidebar-resizable')?.shadowRoot != null,
-    undefined,
-    { timeout: 15000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#sidebar-resizable')?.shadowRoot != null, undefined, {
+    timeout: 15000,
+  })
   const r = await page.evaluate(async () => {
     const sb = document.querySelector('#sidebar-resizable') as HTMLElement
     sb.scrollIntoView({ block: 'center' })
@@ -20,20 +16,14 @@ test('sidebar resizable：拖拽 rail 边缘宽度实时跟随并写回 width �
     const cx = rect.x + rect.width / 2
     const cy = rect.y + rect.height / 2
     const w0 = Math.round(sb.getBoundingClientRect().width)
-    rail.dispatchEvent(
-      new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, button: 0 }),
-    )
+    rail.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, button: 0 }))
     const widths: number[] = []
     for (let i = 1; i <= 3; i++) {
-      document.dispatchEvent(
-        new PointerEvent('pointermove', { bubbles: true, clientX: cx + i * 30, clientY: cy }),
-      )
+      document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx + i * 30, clientY: cy }))
       await new Promise((res) => setTimeout(res, 60))
       widths.push(Math.round(sb.getBoundingClientRect().width))
     }
-    document.dispatchEvent(
-      new PointerEvent('pointerup', { bubbles: true, clientX: cx + 90, clientY: cy }),
-    )
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: cx + 90, clientY: cy }))
     await new Promise((res) => setTimeout(res, 200))
     return {
       w0,
@@ -90,32 +80,42 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr
   // 现行机制：grid-template-rows 0fr/1fr 平滑过渡 + visibility 联动（收起时出渲染树防聚焦）。
   // 本断言量 computed visibility 与高度（真实视觉），不是只查 hidden 属性。
   await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForFunction(
-    () => document.querySelector('#sidebar-decl')?.shadowRoot != null,
-    undefined,
-    { timeout: 15000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#sidebar-decl')?.shadowRoot != null, undefined, {
+    timeout: 15000,
+  })
   const r = await page.evaluate(async () => {
     const host = document.getElementById('sidebar-decl') as HTMLElement
-    const biz = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')].find(
-      (i) => i.dataset.value === 'biz',
-    )!
+    const getBiz = () =>
+      [...host.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')].find((i) => i.dataset.value === 'biz')!
     const sub = () => host.shadowRoot!.querySelector('[part="submenu"]') as HTMLElement
     const visibility = () => getComputedStyle(sub()).visibility
-    const before = { aria: biz.getAttribute('aria-expanded'), visibility: visibility() }
-    biz.click()
-    await new Promise((r2) => setTimeout(r2, 500))
-    const afterClick = {
-      aria: biz.getAttribute('aria-expanded'),
-      visibility: visibility(),
-      rectH: Math.round(sub().getBoundingClientRect().height),
+    const rectH = () => Math.round(sub().getBoundingClientRect().height)
+    // 过渡驱动的断言必须轮询到预期态，不能固定 sleep：高并发下 rAF 被拖慢，固定等待内动画未完，
+    // 第二次点击会被吞掉（afterReclick 仍 hidden）→ flaky。每步先等 aria-expanded 翻转（同步信号）
+    // 再等视觉稳定；点击前重新查询元素，避免组件重渲染后引用失效。
+    const settle = async (pred: () => boolean, timeout = 5000) => {
+      const t0 = performance.now()
+      while (performance.now() - t0 < timeout) {
+        if (pred()) return
+        await new Promise((res) => requestAnimationFrame(res))
+      }
     }
-    biz.click()
-    await new Promise((r2) => setTimeout(r2, 500))
-    const afterReclick = {
-      aria: biz.getAttribute('aria-expanded'),
+    const before = { aria: getBiz().getAttribute('aria-expanded'), visibility: visibility() }
+    getBiz().click()
+    await settle(() => getBiz().getAttribute('aria-expanded') === 'false')
+    await settle(() => visibility() === 'hidden' && rectH() === 0)
+    const afterClick = {
+      aria: getBiz().getAttribute('aria-expanded'),
       visibility: visibility(),
-      rectH: Math.round(sub().getBoundingClientRect().height),
+      rectH: rectH(),
+    }
+    getBiz().click()
+    await settle(() => getBiz().getAttribute('aria-expanded') === 'true')
+    await settle(() => visibility() === 'visible' && rectH() > 0)
+    const afterReclick = {
+      aria: getBiz().getAttribute('aria-expanded'),
+      visibility: visibility(),
+      rectH: rectH(),
     }
     return { before, afterClick, afterReclick }
   })

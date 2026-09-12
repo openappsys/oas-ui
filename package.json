@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "test:e2e:docs": "playwright test --project=docs-site",
     "test:e2e:components": "playwright test --project=chromium --project=firefox",
+    "test:e2e:shards": "node scripts/e2e/shards.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "api:scan": "node scripts/api-docs/scan.mjs",

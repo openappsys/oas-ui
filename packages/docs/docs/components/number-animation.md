@@ -29,8 +29,8 @@
 <DemoBlock title="active 暂停/恢复 + play() 重播">
   <oas-number-animation id="num-anim-active" value="8888" from="0" duration="1500"></oas-number-animation>
   <oas-number-animation value="8888" from="6666" active="false" duration="1500"></oas-number-animation>
-  <oas-button id="num-anim-toggle" size="sm">暂停</oas-button>
-  <oas-button id="num-anim-play" size="sm">重播</oas-button>
+  <oas-button id="num-anim-toggle" size="small">暂停</oas-button>
+  <oas-button id="num-anim-play" size="small">重播</oas-button>
 </DemoBlock>
 
 ## 缓动档 easing
