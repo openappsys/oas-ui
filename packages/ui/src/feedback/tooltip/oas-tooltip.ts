@@ -320,6 +320,8 @@ export class OAStooltip extends OASElement {
   private hideTimer: ReturnType<typeof setTimeout> | null = null
   /** touch 长按定时器 */
   private touchTimer: ReturnType<typeof setTimeout> | null = null
+  /** 长按打开时刻：抬手 click 在窗口期内视为手势收尾，不参与 tap 切换 */
+  private touchOpenedAt = 0
   /** auto-close 定时器 */
   private autoTimer: ReturnType<typeof setTimeout> | null = null
   /** 富内容插槽 */
@@ -411,7 +413,10 @@ export class OAStooltip extends OASElement {
     })
     this.anchor?.addEventListener('focusout', () => this.scheduleHide('focus'))
     this.anchor?.addEventListener('click', () => {
-      if (!this.triggerHas('click')) return
+      if (!this.triggerHas('click') && !this.tapToggleOnCoarse()) return
+      // 长按（touch 通道）刚打开后抬手的 click 是手势收尾，跳过本次切换，
+      // 避免"长按打开 → 抬手即被 tap 切换关掉"
+      if (this.hasAttr('open') && Date.now() - this.touchOpenedAt < 800) return
       if (this.hasAttr('open')) this.setOpen(false, 'click')
       else this.setOpen(true, 'click')
     })
@@ -472,7 +477,10 @@ export class OAStooltip extends OASElement {
     if (!this.triggerHas('touch')) return
     this.cancelTouch()
     const delay = this.getNum('touch-delay', 500)
-    this.touchTimer = setTimeout(() => this.setOpen(true, 'touch', 'long-press'), delay)
+    this.touchTimer = setTimeout(() => {
+      this.touchOpenedAt = Date.now()
+      this.setOpen(true, 'touch', 'long-press')
+    }, delay)
   }
 
   private cancelTouch(): void {
@@ -488,6 +496,22 @@ export class OAStooltip extends OASElement {
     if (this.hasAttr('virtual')) return false
     const raw = this.getAttr('trigger', 'hover focus touch')
     return raw.split(/\s+/).filter(Boolean).includes(name)
+  }
+
+  /** 触屏检测（pointer: coarse），与 select 的 isMobileSheet/speed-dial 同一模式 */
+  private isCoarsePointer(): boolean {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+    return window.matchMedia('(pointer: coarse)').matches
+  }
+
+  /**
+   * hover 依赖的触屏降级判定：coarse pointer 且 trigger 含 hover。
+   * 触屏 tap 会合成 mouseenter/focusin 与 click 连发——hover/focus 打开通道在 coarse 下
+   * 停用（停用即"tap 切换"语义：点按开、再点按关/外点关），click 通道接管切换；
+   * fine pointer 行为完全不变。manual 由 triggerHas('manual') 天然排除（不含 hover）。
+   */
+  private tapToggleOnCoarse(): boolean {
+    return this.isCoarsePointer() && this.triggerHas('hover')
   }
 
   protected override render(): void {
@@ -535,6 +559,9 @@ export class OAStooltip extends OASElement {
   private scheduleShow(trigger: 'hover' | 'focus'): void {
     if (!this.triggerHas(trigger)) return
     if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
+    // 触屏降级：coarse 下 hover/focus 打开通道停用（tap 切换经 click 通道接管，
+    // 避免触屏 tap 合成的 mouseenter/focusin 与 click 连发"刚开即关"）
+    if (this.tapToggleOnCoarse()) return
     this.cancelHide()
     this.cancelShow()
     if (trigger === 'focus') {
@@ -556,6 +583,9 @@ export class OAStooltip extends OASElement {
   private scheduleHide(trigger: 'hover' | 'focus'): void {
     if (!this.triggerHas(trigger)) return
     if (this.hasAttr('virtual')) return
+    // 触屏降级：coarse 下 hover/focus 关闭通道同样停用（打开被 click 通道接管，
+    // tap 合成 mouseleave 不得关掉刚 tap 打开的浮层）
+    if (this.tapToggleOnCoarse()) return
     this.cancelShow()
     this.cancelHide()
     const delay = this.getNum('close-delay', 0)
@@ -1274,7 +1304,10 @@ export class OAStooltip extends OASElement {
    * 命中检测走 composedPath——浮层 portal 到 body 后路径仍含浮层元素自身。
    */
   private syncOutsideDismiss(open: boolean): void {
-    const engage = open && !this.hasAttr('virtual') && (this.triggerHas('click') || this.triggerHas('contextmenu'))
+    const engage =
+      open &&
+      !this.hasAttr('virtual') &&
+      (this.triggerHas('click') || this.triggerHas('contextmenu') || this.tapToggleOnCoarse())
     if (engage) document.addEventListener('pointerdown', this.onDocPointerDown, true)
     else document.removeEventListener('pointerdown', this.onDocPointerDown, true)
   }

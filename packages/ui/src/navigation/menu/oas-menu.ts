@@ -1,7 +1,8 @@
 import { OASElement } from '@oas-ui/core'
-// 图标查表走 oas-icon 同一通道（customIcons 注册优先、内置 iconRegistry 兜底）：
-// 用户 `registerIcon()` 注册的自定义图标菜单家族可见；oas-icon.ts 不依赖 menu，无循环引用
+// 图标走与 oas-icon 同一通道（customIcons 注册表优先级 > iconRegistry 兜底）——
+// 用户 `registerIcon()` 注册自定义图标后可见（oas-icon.ts 详细说明）；menu 不循环依赖
 import { lookupIcon } from '../../basic/icon/oas-icon.js'
+import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 
 export type MenuItemType = 'item' | 'group' | 'divider'
 
@@ -342,6 +343,9 @@ const STYLE = `
 :host(:not([mode='horizontal'])[collapsed]) .item > .icon {
   margin-right: 0;
 }
+/* 触摸目标抬升：coarse pointer 下菜单项行最小高度 ≥44px（token 开口可调）。
+   dropdown item / menu-item 由本组件统一渲染，随此处一并生效 */
+${TOUCH_TARGET_CSS}
 `
 
 export class OASMenu extends OASElement {

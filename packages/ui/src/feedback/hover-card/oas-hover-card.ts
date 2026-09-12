@@ -385,6 +385,8 @@ export class OASHoverCard extends OASElement {
     this.anchor?.addEventListener('mouseleave', () => this.onAnchorLeave())
     this.anchor?.addEventListener('focusin', () => this.onFocusEnter())
     this.anchor?.addEventListener('focusout', (e) => this.onFocusLeave(e as FocusEvent))
+    // 触屏降级（P3）：coarse pointer 下 hover/focus 通道停用，点按锚点 tap 切换（开/关）
+    this.anchor?.addEventListener('click', () => this.onAnchorTap())
     this.card?.addEventListener('mouseenter', () => this.onCardEnter())
     this.card?.addEventListener('mouseleave', () => this.onCardLeave())
     // title 插槽内容增减时重刷标题区显隐（双通道 slot 覆盖判空）
@@ -396,6 +398,7 @@ export class OASHoverCard extends OASElement {
       this.unregisterGroup()
       this.destroyPortal()
       this.stopScrollWatch()
+      document.removeEventListener('click', this.handleOutsideClick, true)
     })
   }
 
@@ -417,7 +420,45 @@ export class OASHoverCard extends OASElement {
 
   // —— 触发 ——
 
+  /** 触屏检测（pointer: coarse），与 select 的 isMobileSheet/tooltip 同一模式 */
+  private isCoarsePointer(): boolean {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+    return window.matchMedia('(pointer: coarse)').matches
+  }
+
+  /**
+   * 触屏降级（P3）：coarse pointer 下点按锚点 tap 切换——点按开、再点按关、外点关。
+   * 与受控 open 属性兼容（走属性迁移 + oas-open-change，同 hover 触发路径）；
+   * disabled 拦截与 hover 通道一致。
+   */
+  private onAnchorTap(): void {
+    if (!this.isCoarsePointer()) return
+    if (this.hasAttr('disabled')) return
+    this.cancelPending()
+    if (this.hasAttr('open')) this.removeAttribute('open')
+    else this.setAttribute('open', '')
+  }
+
+  /** 外点关闭（触屏场景必需）：tap 切换打开时，命中锚点与卡片之外的点击即关。
+   *  同一次打开的 click 在监听注册前已走过捕获阶段，天然时序安全；命中检测走 composedPath，
+   *  portal 到 body 后路径仍含卡片元素自身 */
+  private handleOutsideClick = (e: MouseEvent): void => {
+    if (!this.hasAttr('open')) return
+    const path = e.composedPath()
+    if (path.includes(this)) return
+    if (this.card && path.includes(this.card)) return
+    this.removeAttribute('open')
+  }
+
+  /** 外点关闭监听随开合同步（仅 coarse 形态启用；fine pointer 行为不变） */
+  private syncOutsideDismiss(open: boolean): void {
+    const engage = open && this.isCoarsePointer()
+    if (engage) document.addEventListener('click', this.handleOutsideClick, true)
+    else document.removeEventListener('click', this.handleOutsideClick, true)
+  }
+
   private onAnchorEnter(): void {
+    if (this.isCoarsePointer()) return // 触屏降级：hover 展开停用（tap 切换接管）
     if (this.hasAttr('disabled')) {
       this.cancelPending()
       return
@@ -448,6 +489,7 @@ export class OASHoverCard extends OASElement {
   }
 
   private onAnchorLeave(): void {
+    if (this.isCoarsePointer()) return // 触屏降级：tap 合成 mouseleave 不得关掉刚 tap 打开的卡片
     if (this.showTimer) {
       clearTimeout(this.showTimer)
       this.showTimer = null
@@ -457,6 +499,7 @@ export class OASHoverCard extends OASElement {
 
   /** 指针进入卡片（含 slotted 内容）：取消排队的关闭 → 保持打开 */
   private onCardEnter(): void {
+    if (this.isCoarsePointer()) return // 触屏降级：无 hover 语义，关闭只走 tap/外点
     if (this.hideTimer) {
       clearTimeout(this.hideTimer)
       this.hideTimer = null
@@ -464,6 +507,7 @@ export class OASHoverCard extends OASElement {
   }
 
   private onCardLeave(): void {
+    if (this.isCoarsePointer()) return // 触屏降级：tap 合成 mouseleave 不得关掉刚 tap 打开的卡片
     if (this.showTimer) {
       clearTimeout(this.showTimer)
       this.showTimer = null
@@ -472,6 +516,7 @@ export class OASHoverCard extends OASElement {
   }
 
   private onFocusEnter(): void {
+    if (this.isCoarsePointer()) return // 触屏降级：tap 会 focusin+click 连发，打开统一走 tap 切换
     if (this.hasAttr('disabled')) return
     this.cancelPending()
     if (this.hasAttr('open')) return
@@ -483,6 +528,7 @@ export class OASHoverCard extends OASElement {
    * 否则排队关闭。
    */
   private onFocusLeave(e: FocusEvent): void {
+    if (this.isCoarsePointer()) return // 触屏降级：焦点迁移不关闭（tap 打开的卡片的关闭走 tap/外点）
     const rt = e.relatedTarget
     if (rt instanceof Node && (this.contains(rt) || this.shadow.contains(rt))) {
       if (this.hideTimer) {
@@ -628,6 +674,7 @@ export class OASHoverCard extends OASElement {
       this.destroyPortal()
       this.syncScrollWatch(false)
     }
+    this.syncOutsideDismiss(open)
   }
 
   /** width 定制：数值 px / trigger（target）与触发器同宽；未设置清空走 CSS min-width */
