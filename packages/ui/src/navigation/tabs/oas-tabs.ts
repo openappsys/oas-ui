@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import type { OASTabPanel } from './oas-tab-panel.js'
 import { registeredTabsCapabilities, onTabsCapabilityRegistered } from './oas-tabs-capability.js'
 
@@ -647,6 +648,8 @@ a.tab[aria-selected='true'] {
   visibility: hidden;
   font-weight: 500;
 }
+/* 触摸目标抬升：coarse pointer 下页签最小高度 ≥44px（token 开口可调） */
+${TOUCH_TARGET_CSS}
 `
 
 export class OASTabs extends OASElement {

@@ -1734,4 +1734,15 @@ describe('OASTabs', () => {
       expect(tabA.getAttribute('aria-label')).toBe('消息') // aria 兜底
     })
   })
+
+  describe('触摸目标（coarse pointer 抬升）', () => {
+    it('coarse pointer 媒体查询进样式表，tab 最小高度走 --oas-touch-target-min（默认 44px）', () => {
+      const el = new OASTabs()
+      el.innerHTML = '<oas-tab-panel label="A" value="a"><p>x</p></oas-tab-panel>'
+      document.body.appendChild(el)
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain('@media (pointer: coarse)')
+      expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    })
+  })
 })
