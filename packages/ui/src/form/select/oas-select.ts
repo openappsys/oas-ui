@@ -4,7 +4,7 @@ import type { OASVirtualList } from '../../data/virtual-list/index.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { OASElement } from '@oas-ui/core'
 
@@ -724,7 +724,7 @@ export class OASSelect extends OASElement {
       anchorRect,
       panelRect,
       (forced ? raw : 'bottom') as Placement,
-      { width: window.innerWidth, height: window.innerHeight },
+      getViewport(),
       8,
       !forced,
     )
