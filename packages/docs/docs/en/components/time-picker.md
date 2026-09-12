@@ -120,6 +120,10 @@ Confirm actions (Enter, outside click, Now) emit `oas-confirm` alongside `oas-ch
 
 Same positioning contract as date-picker: `fixed` + collision flipping + viewport clamping; the panel width matches the trigger. 12 directions (default `bottom-start`).
 
+## Mobile form (bottom sheet)
+
+On touch screens (coarse pointer) or narrow viewports (<768px), the panel is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the hour/minute/second columns (including the dual-column range layout) scroll inside the sheet; the desktop form keeps the original floating dropdown.
+
 ## API
 
 ### Attributes
@@ -130,7 +134,7 @@ Same positioning contract as date-picker: `fixed` + collision flipping + viewpor
 | `disabled` | Disabled | `boolean` | — |
 | `format` | Display format tokens; a column appears only when the corresponding token exists | `string` | `HH:mm:ss` |
 | `is-range` | Time range: value is a JSON array `["HH:mm:ss","HH:mm:ss"]`, auto-ordered on confirm; the typing channel is read-only in this mode | `boolean` | — |
-| `open` | Controlled open: present = open, removed = closed; gestures only emit `oas-open-change` for the host to write back | — | — |
+| `open` | Controlled open: present = open, removed = closed; gestures only emit `oas-open-change` for the host to write back; in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | — | — |
 | `placeholder` | Placeholder text | — | — |
 | `placement` | Popup placement, 12 directions (default `bottom-start`), `fixed` + collision flipping + viewport clamping (same contract as date-picker) | `string` | `bottom-start` |
 | `readonly` | Readonly: the panel can be opened and browsed, but no interaction commits | `boolean` | — |
