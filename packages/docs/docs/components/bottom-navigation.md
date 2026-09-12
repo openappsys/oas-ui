@@ -130,6 +130,20 @@ onMounted(() => {
 
 点击切换选中项，观察选中项 icon 上浮放大、未选中项平滑回落。
 
+## 胶囊形态（pill）
+
+`pill` 让整条栏呈**浮动胶囊**：`tablist` 全圆角 + 四周描边（替代通栏顶边分隔线）+ 轻投影；宿主左右自动让出留白，配合 `fixed` 时再加底部留白、四边悬浮。留白 / 投影走 `--oas-bottom-navigation-pill-inset` / `--oas-bottom-navigation-pill-shadow` 变量开口，dark 自动走 token。
+
+<DemoBlock title="胶囊形态（静态）">
+  <oas-bottom-navigation pill value="home" style="width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"消息","icon":"mail","value":"mail","badge":"5"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+</DemoBlock>
+
+<DemoBlock title="留白 / 投影可调（CSS 变量）">
+  <oas-bottom-navigation pill value="home" style="width: 100%; max-width: 480px; --oas-bottom-navigation-pill-inset: 24px; --oas-bottom-navigation-pill-shadow: 0 6px 18px rgb(0 0 0 / 0.16)" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+</DemoBlock>
+
+> 移动端真实场景加 `fixed`（+ 可选 `safe-area`）即得贴底悬浮胶囊（四边自动留白）；演示页保持 static 避免遮挡内容。
+
 ## 变量定制
 
 不加 prop、纯 CSS 变量开口，dark 下自动走 token：
@@ -151,6 +165,7 @@ onMounted(() => {
 | `hide-on-scroll` | 滚动隐藏（需配合 `fixed`）：页面向下滚动时导航条 `translateY(100%)` 滑出隐藏、向上滚动滑回显示（滚动差 >4px 判方向，transition 只动 transform）；纯视觉收起，不加 `aria-hidden`（tab 语义与键盘焦点保持可达），滚回即恢复；非 fixed 无效果 | `boolean` | — |
 | `items` | 导航项 JSON | `string` | `[]` |
 | `layout` | 布局模式：`stacked`（默认，icon 上文字下）/ `horizontal`（icon 左文字右，同一行）；非法值回落 `stacked` 并告警（同值去重） | `string` | `stacked` |
+| `pill` | 胶囊形态：整条栏呈浮动胶囊（`tablist` 全圆角 + 四周描边替代通栏顶边分隔线 + 轻投影；宿主左右让出留白，`fixed` 下再加底部留白四边悬浮）；留白/投影走 `--oas-bottom-navigation-pill-inset` / `--oas-bottom-navigation-pill-shadow` 变量开口，dark 自动走 token | — | — |
 | `safe-area` | fixed 模式下底部加安全区内边距（`env(safe-area-inset-bottom)`），避开刘海屏 home 指示条；非 fixed 无效果 | `boolean` | — |
 | `shift` | 选中动效：选中项 icon 上浮（translateY(-2px)）并放大（scale 1.08）、文字同步微放大，未选中项回落；纯 CSS transition（只动 transform，不碰布局），prefers-reduced-motion 下过渡停用 | `boolean` | — |
 | `show-label` | label 展示模式：`true`（默认，全部项显示文字）/ `active`（icon-only 紧凑形态：仅选中项显示文字，未选中项只显示 icon；label 视觉隐藏后每项 aria-label 自动写入该项 label 文本，读屏不受 CSS 隐藏影响）；非法值回落 `true` 并告警（同值去重） | `string` | `true` |

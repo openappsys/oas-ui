@@ -1137,6 +1137,20 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ---
 
+## 未发布：bottom-navigation 胶囊形态（pill）
+
+### 特性
+
+- **oas-bottom-navigation `pill`**：布尔属性，整条栏呈**浮动胶囊**——`tablist` 全圆角（`--oas-radius-full` 开口）+ 四周描边（替代通栏顶边分隔线）+ 轻投影；宿主左右自动让出留白，`fixed` 下再加底部留白四边悬浮。留白 / 投影走 `--oas-bottom-navigation-pill-inset` / `--oas-bottom-navigation-pill-shadow` 变量开口，dark 自动走 token。
+- 默认关闭（零破坏）；语义（`tablist`/`tab`/`aria-selected`）、受控 `value`、roving 键盘契约不变；`pill` 与 `fixed` / `hide-on-scroll` / `safe-area` / `layout` / `show-label` / `shift` 正交组合。
+
+### 验收
+
+- 单测：`pill` 入 observedAttributes + CSS 规则（全圆角 / 四周描边 / 轻投影 / 左右与底部留白）+ 语义与选中切换不受影响；`pnpm test` / typecheck / build / api:check 全绿
+- e2e：bottom-navigation 页 smoke / console-sweep / visual 全绿 + light/dark 截图复核
+
+---
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
