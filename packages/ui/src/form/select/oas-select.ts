@@ -1,6 +1,9 @@
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
+// 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
+import '../../overlay/bottom-sheet/index.js'
+import type { OASBottomSheet } from '../../overlay/bottom-sheet/index.js'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
 import { OASElement } from '@oas-ui/core'
 
@@ -322,6 +325,19 @@ const STYLE = `
 .dropdown.open {
   display: block;
 }
+/* 移动形态（data-mobile-sheet）：bottom-sheet 底部抽屉承载，dropdown 变静态内嵌内容
+   （容器/手势/安全区由 oas-bottom-sheet 统一承载，dropdown 不再 fixed 锚定） */
+:host([data-mobile-sheet]) .dropdown {
+  position: static;
+  z-index: auto;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  width: auto !important;
+  top: auto !important;
+  left: auto !important;
+}
 .search-input {
   box-sizing: border-box;
   width: 100%;
@@ -412,6 +428,8 @@ export class OASSelect extends OASElement {
   private dropdown: HTMLElement | null = null
   private listbox: HTMLElement | null = null
   private vlist: OASVirtualList | null = null
+  /** 移动端底部抽屉承载件（oas-bottom-sheet；PC 形态 passive 透传） */
+  private sheetEl: OASBottomSheet | null = null
   private _options: Option[] = []
   /** 子元素通道观察器：light DOM 里 oas-option 增删或属性/文本变化 → 重解析渲染 */
   private childObserver: MutationObserver | null = null
@@ -487,16 +505,18 @@ export class OASSelect extends OASElement {
             </svg>
           </span>
           <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 6 L8 10 L12 6 L4 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
-        <div class="dropdown" part="dropdown">
-          <input class="search-input" part="search-input" type="text" hidden />
-          <div class="dropdown-header" part="header" hidden></div>
-          <div class="listbox" part="listbox" role="listbox"></div>
-          <oas-virtual-list class="vlist" part="virtual-list" hidden></oas-virtual-list>
-          <div class="dropdown-footer" part="footer" hidden></div>
-        </div>
+        <oas-bottom-sheet part="sheet" passive>
+          <div class="dropdown" part="dropdown">
+            <input class="search-input" part="search-input" type="text" hidden />
+            <div class="dropdown-header" part="header" hidden></div>
+            <div class="listbox" part="listbox" role="listbox"></div>
+            <oas-virtual-list class="vlist" part="virtual-list" hidden></oas-virtual-list>
+            <div class="dropdown-footer" part="footer" hidden></div>
+          </div>
+        </oas-bottom-sheet>
       </div>
     `
   }
@@ -507,6 +527,9 @@ export class OASSelect extends OASElement {
     this.dropdown = this.shadow.querySelector('.dropdown')
     this.listbox = this.shadow.querySelector('.listbox')
     this.vlist = this.shadow.querySelector<OASVirtualList>('oas-virtual-list')
+    // 移动端底部抽屉承载件：oas-close（下滑/backdrop/Esc）→ 同步收起
+    this.sheetEl = this.shadow.querySelector<OASBottomSheet>('oas-bottom-sheet')
+    this.sheetEl?.addEventListener('oas-close', () => this.requestOpen(false))
 
     this.shadow.querySelector<HTMLInputElement>('.search-input')?.addEventListener('input', (e) => {
       const v = (e.target as HTMLInputElement).value
@@ -584,6 +607,8 @@ export class OASSelect extends OASElement {
   }
 
   protected override update(): void {
+    // 移动形态同步：coarse pointer（触屏）或窄视口（<768px）→ bottom-sheet 底部抽屉承载
+    this.syncMobileMode()
     // 子元素通道观察器（重连后重建；options 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
     this.parseOptions()
@@ -597,6 +622,20 @@ export class OASSelect extends OASElement {
     this.syncTrigger()
     // 展开态同步（初始 open 属性、展开中的属性变化重定位等）
     this.syncDropdown()
+  }
+
+  /** 移动形态判定：触屏（coarse pointer）或窄视口（<768px）→ 下拉由 bottom-sheet 底部抽屉承载 */
+  private isMobileSheet(): boolean {
+    if (typeof window === 'undefined') return false
+    if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) return true
+    return window.innerWidth < 768
+  }
+
+  /** 移动形态同步：移动端 bottom-sheet 去 passive 变容器、宿主打 data-mobile-sheet（dropdown 静态化）；PC 恢复 passive */
+  private syncMobileMode(): void {
+    const mobile = this.isMobileSheet()
+    this.toggleAttribute('data-mobile-sheet', mobile)
+    this.sheetEl?.toggleAttribute('passive', !mobile)
   }
 
   private toggle(): void {
@@ -632,9 +671,16 @@ export class OASSelect extends OASElement {
         searchInput.focus()
       }
     }
+    const mobile = this.isMobileSheet()
     if (this.openState) {
       document.addEventListener('click', this.handleOutsideClick, true)
-      this.positionDropdown()
+      // 移动形态：bottom-sheet 承载容器（设置 open 展开底部抽屉）；PC 形态：computePosition 锚定 trigger
+      if (mobile) {
+        this.sheetEl?.setAttribute('open', '')
+      } else {
+        this.sheetEl?.removeAttribute('open')
+        this.positionDropdown()
+      }
       // 展开时重读下拉高度变量（宿主改 --oas-select-dropdown-height 后无需触发属性变化，重开即生效）
       this.vlist?.setAttribute('height', String(this.dropdownHeight()))
       if (!wasOpen) {
@@ -645,6 +691,7 @@ export class OASSelect extends OASElement {
         this.syncActive()
       }
     } else {
+      this.sheetEl?.removeAttribute('open')
       document.removeEventListener('click', this.handleOutsideClick, true)
       this.syncAriaActiveDescendant()
     }
