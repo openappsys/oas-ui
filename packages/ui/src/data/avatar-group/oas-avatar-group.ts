@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { computePosition } from '../../overlay/floating/index.js'
+import { computePosition, getViewport } from '../../overlay/floating/index.js'
 
 /** 浮层与触发元素的默认间距（与 computePosition 的 GAP 一致） */
 const GAP = 8
@@ -357,7 +357,7 @@ export class OASAvatarGroup extends OASElement {
   private positionOverflow(): void {
     if (!this.countEl || !this.panelEl || !this.overflowOpen) return
     const anchorRect = this.countEl.getBoundingClientRect()
-    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const viewport = getViewport()
     const panelRect = this.panelEl.getBoundingClientRect()
     const r = computePosition(anchorRect, panelRect, 'top', viewport, GAP, true, {
       collisionPadding: COLLISION_PAD,

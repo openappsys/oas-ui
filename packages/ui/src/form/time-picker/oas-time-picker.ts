@@ -1,6 +1,6 @@
 import { OASElement, escapeHtml } from '@oas-ui/core'
 import { formatToken, resolveLocale } from '../calendar/date-grid.js'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 const STYLE = `
  :host {
@@ -1162,7 +1162,7 @@ export class OASTimePicker extends OASElement {
     if (!this.dropdown || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const popupRect = this.dropdown.getBoundingClientRect()
-    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const viewport = getViewport()
     const {
       top,
       left,
