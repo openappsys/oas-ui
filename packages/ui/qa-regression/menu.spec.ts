@@ -26,6 +26,7 @@ test('menu 多级子菜单贴近视口右缘：翻转后全部落在视口内', 
     expect(r.right, `子菜单 right=${r.right} 越出视口右缘`).toBeLessThanOrEqual(r.vw + 1)
     expect(r.bottom, `子菜单 bottom=${r.bottom} 越出视口下缘`).toBeLessThanOrEqual(r.vh + 1)
   }
+  await page.screenshot({ path: test.info().outputPath('fix8-menu-flip.png') })
 })
 
 test('menu 水平模式子菜单浮层不被裁剪——.menu 容器 overflow-x:clip（曾 overflow:hidden 双轴裁剪致浮层不可见）', async ({
