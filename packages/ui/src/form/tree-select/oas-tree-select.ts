@@ -2,6 +2,9 @@ import { OASElement } from '@oas-ui/core'
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
+// 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
+import '../../feedback/bottom-sheet/index.js'
+import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { computePosition } from '../../overlay/floating/index.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 // 共享树内核：flatten/字段归一 + 勾选级联 + 懒加载状态机 + 模板克隆（与 oas-tree 同一实现）
@@ -344,6 +347,23 @@ const STYLE = `
 .dropdown.open {
   display: block;
 }
+/* 移动形态（data-mobile-sheet）：bottom-sheet 底部抽屉承载，dropdown 变静态内嵌内容
+   （容器/手势/安全区由 oas-bottom-sheet 统一承载，dropdown 不再 fixed 锚定；
+   搜索框 + 树面板在抽屉内容区内纵向滚动） */
+:host([data-mobile-sheet]) .dropdown {
+  position: static;
+  z-index: auto;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0 var(--oas-space-1) var(--oas-space-1);
+  width: auto !important;
+  top: auto !important;
+  left: auto !important;
+}
+:host([data-mobile-sheet]) .tree {
+  max-height: none;
+}
 .panel-header,
 .panel-footer {
   padding: var(--oas-space-1) var(--oas-space-2);
@@ -521,6 +541,8 @@ export class OASTreeSelect extends OASElement {
   private dropdown: HTMLElement | null = null
   private treeWrap: HTMLElement | null = null
   private vlist: OASVirtualList | null = null
+  /** 移动端底部抽屉承载件（oas-bottom-sheet；PC 形态 passive 透传） */
+  private sheetEl: OASBottomSheet | null = null
   private _options: TreeOption[] = []
   private optionsAttr = ''
   /** 键盘导航高亮：visibleFlat() 的索引 */
@@ -581,17 +603,19 @@ export class OASTreeSelect extends OASElement {
             <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
-        <div class="dropdown" part="dropdown">
-          <div class="panel-header" part="panel-header" hidden></div>
-          <input class="search-input" part="search-input" type="text" hidden />
-          <div class="tree" part="tree" role="tree" id="ts-tree"></div>
-          <oas-virtual-list class="vlist" part="virtual-list" hidden></oas-virtual-list>
-          <div class="empty" part="empty" hidden></div>
-          <div class="loading" part="loading" hidden>
-            <span class="loading-spinner" role="status"></span>
+        <oas-bottom-sheet part="sheet" passive>
+          <div class="dropdown" part="dropdown">
+            <div class="panel-header" part="panel-header" hidden></div>
+            <input class="search-input" part="search-input" type="text" hidden />
+            <div class="tree" part="tree" role="tree" id="ts-tree"></div>
+            <oas-virtual-list class="vlist" part="virtual-list" hidden></oas-virtual-list>
+            <div class="empty" part="empty" hidden></div>
+            <div class="loading" part="loading" hidden>
+              <span class="loading-spinner" role="status"></span>
+            </div>
+            <div class="panel-footer" part="panel-footer" hidden></div>
           </div>
-          <div class="panel-footer" part="panel-footer" hidden></div>
-        </div>
+        </oas-bottom-sheet>
       </div>
     `
   }
@@ -602,6 +626,9 @@ export class OASTreeSelect extends OASElement {
     this.dropdown = this.shadow.querySelector('.dropdown')
     this.treeWrap = this.shadow.querySelector('.tree')
     this.vlist = this.shadow.querySelector<OASVirtualList>('oas-virtual-list')
+    // 移动端底部抽屉承载件：oas-close（下滑/backdrop/Esc）→ 同步收起
+    this.sheetEl = this.shadow.querySelector<OASBottomSheet>('oas-bottom-sheet')
+    this.sheetEl?.addEventListener('oas-close', () => this.setOpen(false))
 
     this.triggerEl?.addEventListener('click', () => this.toggle())
     this.triggerEl?.addEventListener('keydown', (e: KeyboardEvent) => this.handleTriggerKey(e))
@@ -639,17 +666,20 @@ export class OASTreeSelect extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（trigger/dropdown/tree/virtual-list 存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（trigger/dropdown/tree/virtual-list/bottom-sheet 存在）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('.trigger')) return false
     if (!this.shadow.querySelector('.dropdown')) return false
     if (!this.shadow.querySelector('.tree')) return false
     if (!this.shadow.querySelector('oas-virtual-list')) return false
+    if (!this.shadow.querySelector('oas-bottom-sheet')) return false
     this.bind()
     return true
   }
 
   protected override update(): void {
+    // 移动形态同步：coarse pointer（触屏）或窄视口（<768px）→ bottom-sheet 底部抽屉承载
+    this.syncMobileMode()
     this.normalizeLegacyAlias('prefix-text', 'prefix')
     this.normalizeLegacyAlias('suffix-text', 'suffix')
     this.parseFieldNames()
@@ -808,7 +838,13 @@ export class OASTreeSelect extends OASElement {
     }
     if (this.openState) {
       document.addEventListener('click', this.handleOutsideClick, true)
-      this.positionDropdown()
+      // 移动形态：bottom-sheet 承载容器（设置 open 展开底部抽屉）；PC 形态：computePosition 锚定 trigger
+      if (this.isMobileSheet()) {
+        this.sheetEl?.setAttribute('open', '')
+      } else {
+        this.sheetEl?.removeAttribute('open')
+        this.positionDropdown()
+      }
       const vis = this.visibleFlat()
       const values = this.currentValues()
       let idx = 0
@@ -820,9 +856,24 @@ export class OASTreeSelect extends OASElement {
       this.scrollActiveIntoView()
       this.syncActive()
     } else {
+      this.sheetEl?.removeAttribute('open')
       document.removeEventListener('click', this.handleOutsideClick, true)
       this.syncAriaActiveDescendant()
     }
+  }
+
+  /** 移动形态判定：触屏（coarse pointer）或窄视口（<768px）→ 面板由 bottom-sheet 底部抽屉承载 */
+  private isMobileSheet(): boolean {
+    if (typeof window === 'undefined') return false
+    if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) return true
+    return window.innerWidth < 768
+  }
+
+  /** 移动形态同步：移动端 bottom-sheet 去 passive 变容器、宿主打 data-mobile-sheet（dropdown 静态化）；PC 恢复 passive */
+  private syncMobileMode(): void {
+    const mobile = this.isMobileSheet()
+    this.toggleAttribute('data-mobile-sheet', mobile)
+    this.sheetEl?.toggleAttribute('passive', !mobile)
   }
 
   /** fixed 定位：锚定 trigger 下方，空间不足自动翻转避让，宽度对齐 trigger（与 select/combobox 同思路） */

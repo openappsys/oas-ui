@@ -22,6 +22,9 @@ import {
   isoWeekYear,
 } from './picker-grid.js'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
+// 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
+import '../../feedback/bottom-sheet/index.js'
+import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 
 type PickerType =
   | 'date'
@@ -253,6 +256,30 @@ const STYLE = `
 }
 [part='dropdown'].open {
   display: block;
+}
+/* 移动形态（data-mobile-sheet）：bottom-sheet 底部抽屉承载，dropdown 静态化内嵌
+   （容器/手势/安全区由 oas-bottom-sheet 统一承载，不再 fixed 锚定；
+   双月/时间区等大面板在抽屉内容区内滚动） */
+:host([data-mobile-sheet]) [part='dropdown'] {
+  position: static;
+  z-index: auto;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: var(--oas-space-2);
+  top: auto !important;
+  left: auto !important;
+  max-height: none;
+}
+/* 双月范围面板收窄：取消 480px 最小宽防窄屏横向溢出，网格在窄屏自然压缩 */
+:host([data-mobile-sheet]) [part='panel'].range-panel {
+  min-width: 0;
+}
+:host([data-mobile-sheet]) [part='panel'] .range-grids {
+  gap: var(--oas-space-2);
+}
+:host([data-mobile-sheet]) [part='panel'] .range-grid + .range-grid {
+  padding-left: var(--oas-space-2);
 }
 [part='panel'] {
   min-width: 240px;
@@ -617,6 +644,8 @@ export class OASDatePicker extends OASElement {
   private triggerEl: HTMLInputElement | null = null
   private dropdown: HTMLElement | null = null
   private panel: HTMLElement | null = null
+  /** 移动端底部抽屉承载件（oas-bottom-sheet；PC 形态 passive 透传） */
+  private sheetEl: OASBottomSheet | null = null
   private openState = false
   /** 展开态下面板是否已完成 open() 式状态初始化（防止 update 重入 boot） */
   private panelBooted = false
@@ -723,9 +752,11 @@ export class OASDatePicker extends OASElement {
         <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
           <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <div class="dropdown" part="dropdown">
-          <div class="panel" part="panel"></div>
-        </div>
+        <oas-bottom-sheet part="sheet" passive>
+          <div class="dropdown" part="dropdown">
+            <div class="panel" part="panel"></div>
+          </div>
+        </oas-bottom-sheet>
       </div>
     `
   }
@@ -735,6 +766,9 @@ export class OASDatePicker extends OASElement {
     this.triggerEl = this.shadow.querySelector<HTMLInputElement>('[part="trigger"]')
     this.dropdown = this.shadow.querySelector<HTMLElement>('[part="dropdown"]')
     this.panel = this.shadow.querySelector<HTMLElement>('[part="panel"]')
+    // 移动端底部抽屉承载件：oas-close（下滑/backdrop/Esc）→ 同步收起
+    this.sheetEl = this.shadow.querySelector<OASBottomSheet>('oas-bottom-sheet')
+    this.sheetEl?.addEventListener('oas-close', () => this.requestOpen(false))
     this.triggerEl?.addEventListener('click', () => this.toggle())
     this.triggerEl?.addEventListener('keydown', (e) => this.handleTriggerKey(e as KeyboardEvent))
     // 手输通道：键入置 typing 标记（update 不回写显示），失焦解析合法提交 / 非法回退
@@ -791,16 +825,19 @@ export class OASDatePicker extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（trigger/dropdown/panel 存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（trigger/dropdown/panel/bottom-sheet 存在）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('[part="trigger"]')) return false
     if (!this.shadow.querySelector('[part="dropdown"]')) return false
     if (!this.shadow.querySelector('[part="panel"]')) return false
+    if (!this.shadow.querySelector('oas-bottom-sheet')) return false
     this.bind()
     return true
   }
 
   protected override update(): void {
+    // 移动形态同步：coarse pointer（触屏）或窄视口（<768px）→ bottom-sheet 底部抽屉承载
+    this.syncMobileMode()
     this.syncSizeStatus()
     this.syncTrigger()
     // 初始 open 属性（upgrade 前的属性通知被基类吞掉）：挂载即展开，不抢焦点
@@ -884,9 +921,30 @@ export class OASDatePicker extends OASElement {
     this.triggerEl.setAttribute('aria-expanded', String(this.openState))
     if (this.openState) {
       document.addEventListener('click', this.handleOutsideClick, true)
+      // 移动形态：bottom-sheet 承载容器（设置 open 展开底部抽屉）；PC 形态：移除 open 回落自身 fixed 定位
+      if (this.isMobileSheet()) {
+        this.sheetEl?.setAttribute('open', '')
+      } else {
+        this.sheetEl?.removeAttribute('open')
+      }
     } else {
+      this.sheetEl?.removeAttribute('open')
       document.removeEventListener('click', this.handleOutsideClick, true)
     }
+  }
+
+  /** 移动形态判定：触屏（coarse pointer）或窄视口（<768px）→ 面板由 bottom-sheet 底部抽屉承载 */
+  private isMobileSheet(): boolean {
+    if (typeof window === 'undefined') return false
+    if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) return true
+    return window.innerWidth < 768
+  }
+
+  /** 移动形态同步：移动端 bottom-sheet 去 passive 变容器、宿主打 data-mobile-sheet（dropdown 静态化）；PC 恢复 passive */
+  private syncMobileMode(): void {
+    const mobile = this.isMobileSheet()
+    this.toggleAttribute('data-mobile-sheet', mobile)
+    this.sheetEl?.toggleAttribute('passive', !mobile)
   }
 
   // ---- 值格式化 / 解析（按 type） ----
@@ -1235,6 +1293,7 @@ export class OASDatePicker extends OASElement {
    * 结果写入 style.top/left 与 data-placement（真实浏览器像素级断言钩子）
    */
   private positionDropdown(): void {
+    if (this.isMobileSheet()) return // 移动形态由 bottom-sheet 承载，跳过 fixed 锚定
     if (!this.dropdown || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const popupRect = this.dropdown.getBoundingClientRect()

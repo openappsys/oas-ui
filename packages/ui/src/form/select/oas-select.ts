@@ -2,8 +2,8 @@
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
-import '../../overlay/bottom-sheet/index.js'
-import type { OASBottomSheet } from '../../overlay/bottom-sheet/index.js'
+import '../../feedback/bottom-sheet/index.js'
+import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { OASElement } from '@oas-ui/core'
