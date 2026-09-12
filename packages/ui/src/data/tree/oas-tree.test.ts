@@ -87,10 +87,13 @@ describe('OASTree 展开（expanded JSON 数组）+ 选中', () => {
   })
 
   it('expanded JSON 数组含数字 key：归一化为字符串参与展开（v2.5.0 静默丢弃数字 key 缺陷回归）', () => {
-    const el = mount({ expanded: '[1,2]', data: JSON.stringify([
-      { key: '1', label: '节点 1', children: [{ key: '1-1', label: '子节点 1-1' }] },
-      { key: '2', label: '节点 2' },
-    ]) })
+    const el = mount({
+      expanded: '[1,2]',
+      data: JSON.stringify([
+        { key: '1', label: '节点 1', children: [{ key: '1-1', label: '子节点 1-1' }] },
+        { key: '2', label: '节点 2' },
+      ]),
+    })
     expect(labels(el)).toBe('节点 1|子节点 1-1|节点 2')
   })
 
@@ -98,7 +101,9 @@ describe('OASTree 展开（expanded JSON 数组）+ 选中', () => {
     const el = mount({ expanded: 'a,b' })
     expect(labels(el)).toBe('节点 A|节点 B')
     // 非法输入必须告警一次（含迁移指引）；模块级同值去重，'a,b' 仅此用例使用
-    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes('[oas-tree]') && String(c[0]).includes('JSON'))).toBe(true)
+    expect(warnSpy.mock.calls.some((c) => String(c[0]).includes('[oas-tree]') && String(c[0]).includes('JSON'))).toBe(
+      true,
+    )
   })
 
   it('点击展开按钮写入 expanded JSON 数组', () => {
