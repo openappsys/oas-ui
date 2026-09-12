@@ -257,6 +257,7 @@ test('tooltip 箭头：#tt-follow 打开后 .arrow 可见且位于面板顶部�
   expect(r.arrowAtTop, 'bottom placement 箭头应在面板顶部').toBe(true)
   expect(r.arrowCentered, '箭头应水平居中指向锚点').toBe(true)
   expect(r.arrowProtrudes, '箭头尖端应探出面板外沿').toBe(true)
+  await page.screenshot({ path: test.info().outputPath('fix-tooltip-arrow.png') })
 })
 
 test('tooltip arrow="false"：打开后无可见箭头元素（hidden 属性 + 0 尺寸，part 保留）', async ({ page }) => {

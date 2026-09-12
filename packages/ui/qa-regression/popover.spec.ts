@@ -209,6 +209,7 @@ test('popover 箭头：#pop-point 打开后 .arrow 可见且位于面板左缘�
   expect(r.arrowCentered, '箭头应垂直居中指向锚点').toBe(true)
   expect(r.arrowProtrudes, '箭头尖端应探出面板外沿').toBe(true)
   await point.evaluate((e) => e.removeAttribute('open'))
+  await page.screenshot({ path: test.info().outputPath('fix-popover-arrow.png') })
 })
 
 // —— 缺陷回归：tooltip/popover 箭头能力补齐（arrow 显隐 / arrow-point-at-center / auto-adjust-overflow）——

@@ -1,7 +1,7 @@
 // 约定守卫（防复发）：测试与脚本里禁止硬编码绝对路径——不可跨操作系统。
-// 教训：qa-regression 9 处调试截图写死了某台机器 C 盘 Temp 目录下的 png 路径，
-// 该目录本机恰好存在故本地侥幸通过，Linux/macOS CI 必 ENOENT 挂；且属无人消费的调试残留。
-// 正路：相对路径、`import.meta.dirname`、`os.tmpdir()`、`test.info().outputPath()`。
+// 教训：qa-regression 9 处调试截图曾写死某台机器 C 盘 Temp 目录下的 png 路径，
+// 该目录本机恰好存在故本地侥幸通过，Linux/macOS CI 必 ENOENT 挂。
+// 正路：相对路径、`import.meta.dirname`、`os.tmpdir()`、playwright 的 `test.info().outputPath()`。
 import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
