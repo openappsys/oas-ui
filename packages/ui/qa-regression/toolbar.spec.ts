@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('toolbar 窄容器子项防收缩：项保持固有宽度、溢出触发「···」、弹层镜像项为 menuitemcheckbox', async ({
-  page,
-}) => {
+test('toolbar 窄容器子项防收缩：项保持固有宽度、溢出触发「···」、弹层镜像项为 menuitemcheckbox', async ({ page }) => {
   await page.goto('/components/toolbar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tb-overflow')
   const r = await page.evaluate(async () => {
@@ -36,15 +34,10 @@ test('toolbar 窄容器子项防收缩：项保持固有宽度、溢出触发「
   })
   expect(r.moreVisible, '「···」收纳项应可见').toBe(true)
   expect(r.collapsedCount, '应有被收纳项').toBeGreaterThan(0)
-  expect(
-    r.minW,
-    '未收纳按钮不应被压扁（两字中文按钮固有宽约 24px+，压扁态为 ~13px）',
-  ).toBeGreaterThan(24)
+  expect(r.minW, '未收纳按钮不应被压扁（两字中文按钮固有宽约 24px+，压扁态为 ~13px）').toBeGreaterThan(24)
   expect(r.panelRoles.length, '弹层应有镜像项').toBeGreaterThan(0)
   for (const role of r.panelRoles) {
-    expect(['menuitem', 'menuitemcheckbox'], '镜像项角色应为 menuitem/menuitemcheckbox').toContain(
-      role,
-    )
+    expect(['menuitem', 'menuitemcheckbox'], '镜像项角色应为 menuitem/menuitemcheckbox').toContain(role)
   }
 })
 

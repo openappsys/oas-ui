@@ -4,16 +4,7 @@ import { OASElement } from '@oas-ui/core'
 export type DrawerPlacement = 'left' | 'right' | 'top' | 'bottom'
 
 /** 关闭来源：before-close 拦截与 oas-close 事件 detail.source */
-export type DrawerCloseSource =
-  | 'ok'
-  | 'cancel'
-  | 'close'
-  | 'mask'
-  | 'esc'
-  | 'swipe'
-  | 'resize'
-  | 'api'
-  | 'external'
+export type DrawerCloseSource = 'ok' | 'cancel' | 'close' | 'mask' | 'esc' | 'swipe' | 'resize' | 'api' | 'external'
 
 /**
  * 打开中的抽屉栈（模块级 registry，跨实例共享）：
@@ -497,9 +488,7 @@ export class OASDrawer extends OASElement {
 
   /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
   private hasSlotContent(slot: HTMLSlotElement): boolean {
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -548,9 +537,7 @@ export class OASDrawer extends OASElement {
     this.footerActions = this.shadow.querySelector('.footer-actions')
     this.footerEl = this.shadow.querySelector('.footer')
     this.footerSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="footer"]')
-    this.headerActionsSlot = this.shadow.querySelector<HTMLSlotElement>(
-      'slot[name="header-actions"]',
-    )
+    this.headerActionsSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="header-actions"]')
     this.okBtn = this.shadow.querySelector('[part="ok"]')
     this.cancelBtn = this.shadow.querySelector('[part="cancel"]')
     this.rail = this.shadow.querySelector('.rail')
@@ -697,12 +684,7 @@ export class OASDrawer extends OASElement {
     const panel = this.panel
     if (!panel) return
     const p = this.getAttr('placement', 'right')
-    if (
-      this.hasAttr('snap-points') &&
-      (p === 'bottom' || p === 'top') &&
-      !this.railDragging &&
-      !this.swiping
-    ) {
+    if (this.hasAttr('snap-points') && (p === 'bottom' || p === 'top') && !this.railDragging && !this.swiping) {
       const pts = this.snapPointsPx()
       if (pts.length > 0) {
         panel.style.height = `${pts[pts.length - 1]!}px`
@@ -747,7 +729,10 @@ export class OASDrawer extends OASElement {
     this.panel?.removeAttribute('data-swiping')
     this.panel?.style.removeProperty('transform')
     this.focusInitial()
-    this.emitOnAnimEnd(() => this.emit('opened'), () => this.isOpen)
+    this.emitOnAnimEnd(
+      () => this.emit('opened'),
+      () => this.isOpen,
+    )
   }
 
   /** 关闭动画：派发 oas-close（含来源）、出栈（立即让位下层抽屉）、移除 data-open、动画结束后收尾 */
@@ -763,7 +748,10 @@ export class OASDrawer extends OASElement {
     this.panel?.removeAttribute('data-open')
     this.panel?.removeAttribute('data-swiping')
     this.panel?.style.removeProperty('transform')
-    this.emitOnAnimEnd(() => this.onClosed(), () => !this.isOpen)
+    this.emitOnAnimEnd(
+      () => this.onClosed(),
+      () => !this.isOpen,
+    )
   }
 
   /** 关闭动画完成：closed 事件 + 滚动解锁 + 焦点归还 + destroy-on-close */
@@ -1074,8 +1062,7 @@ export class OASDrawer extends OASElement {
       this.destroyPortal()
       return
     }
-    const target =
-      sel === 'body' ? document.body : (document.querySelector(sel) as HTMLElement | null)
+    const target = sel === 'body' ? document.body : (document.querySelector(sel) as HTMLElement | null)
     if (!target) {
       this.destroyPortal()
       return
@@ -1084,8 +1071,7 @@ export class OASDrawer extends OASElement {
     this.destroyPortal()
     const host = document.createElement('div')
     host.setAttribute('data-oas-drawer-portal', '')
-    host.style.cssText =
-      'position: fixed; inset: 0; pointer-events: none; z-index: 0;'
+    host.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: 0;'
     target.appendChild(host)
     const root = host.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${STYLE}</style>`
@@ -1172,9 +1158,7 @@ export class OASDrawer extends OASElement {
 
     // header-actions 插槽：空时隐藏容器
     if (this.headerActions) {
-      this.headerActions.hidden = this.headerActionsSlot
-        ? !this.hasSlotContent(this.headerActionsSlot)
-        : true
+      this.headerActions.hidden = this.headerActionsSlot ? !this.hasSlotContent(this.headerActionsSlot) : true
     }
 
     // resizable：rail 显隐 + aria（方向随 placement）
@@ -1182,10 +1166,7 @@ export class OASDrawer extends OASElement {
       const show = this.hasAttr('resizable') && this.isOpen
       this.rail.hidden = !show
       if (show) {
-        this.rail.setAttribute(
-          'aria-orientation',
-          this.isHorizontal() ? 'vertical' : 'horizontal',
-        )
+        this.rail.setAttribute('aria-orientation', this.isHorizontal() ? 'vertical' : 'horizontal')
         this.rail.setAttribute('aria-label', this.t('drawer.resize'))
       }
     }

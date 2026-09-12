@@ -268,17 +268,7 @@ const LEGACY_COLOR: Record<string, string> = {
 
 export class OASTimelineItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return [
-      'time',
-      'type',
-      'color',
-      'pending',
-      'loading',
-      'variant',
-      'icon',
-      'data-mode',
-      'data-direction',
-    ]
+    return ['time', 'type', 'color', 'pending', 'loading', 'variant', 'icon', 'data-mode', 'data-direction']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -336,11 +326,8 @@ export class OASTimelineItem extends OASElement {
     // type 归一化：type 优先；color 旧值映射（迁移兼容）；缺省 primary
     const type = this.getAttr('type', '')
     const legacy = LEGACY_COLOR[this.getAttr('color', '')]
-    dot.setAttribute('data-type', TYPES.has(type) ? type : legacy ?? 'primary')
-    dot.setAttribute(
-      'data-variant',
-      this.getAttr('variant', '') === 'outlined' ? 'outlined' : 'filled',
-    )
+    dot.setAttribute('data-type', TYPES.has(type) ? type : (legacy ?? 'primary'))
+    dot.setAttribute('data-variant', this.getAttr('variant', '') === 'outlined' ? 'outlined' : 'filled')
 
     // icon 属性：oas-icon 替换圆点（slot="dot" 优先于 icon）
     const dotSlot = dot.querySelector<HTMLSlotElement>('slot[name="dot"]')!

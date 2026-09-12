@@ -467,8 +467,7 @@ export class OASToggleGroup extends OASElement {
                 !!o &&
                 typeof o === 'object' &&
                 typeof (o as ToggleItem).value === 'string' &&
-                (typeof (o as ToggleItem).label === 'string' ||
-                  typeof (o as ToggleItem).icon === 'string'),
+                (typeof (o as ToggleItem).label === 'string' || typeof (o as ToggleItem).icon === 'string'),
             )
             // label 归一化为常在字符串（icon-only 项缺省 ''），下游判定统一走真值
             .map((o) => ({ ...o, label: o.label ?? '' }))

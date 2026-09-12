@@ -160,9 +160,7 @@ test('avatar-group 折叠弹层：hover +N 展开全部被折叠成员，Escape 
   await group.locator('[part="count"]').hover()
   const panel = group.locator('[part="overflow"]')
   await expect(panel).toHaveAttribute('aria-hidden', 'false', { timeout: 5000 })
-  const clones = await group
-    .locator('[part="overflow-list"] oas-avatar')
-    .count()
+  const clones = await group.locator('[part="overflow-list"] oas-avatar').count()
   expect(clones).toBe(2)
 
   await page.keyboard.press('Escape')

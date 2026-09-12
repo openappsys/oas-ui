@@ -95,10 +95,7 @@ describe('OASSpace', () => {
   // ===== v2.0 能力补齐：separator / justify / reverse / size 数组 / fill =====
 
   it('separator：字符串在相邻子项间注入分隔符', () => {
-    const el = mountWith(
-      { separator: '|' },
-      '<button>一</button><button>二</button><button>三</button>',
-    )
+    const el = mountWith({ separator: '|' }, '<button>一</button><button>二</button><button>三</button>')
     const seps = el.querySelectorAll<HTMLElement>(':scope > .oas-space-separator')
     expect(seps.length).toBe(2)
     expect(seps[0]!.textContent).toBe('|')
@@ -123,10 +120,7 @@ describe('OASSpace', () => {
   })
 
   it('separator：slot="separator" 自定义分隔优先于字符串', () => {
-    const el = mountWith(
-      { separator: '|' },
-      '<button>一</button><span slot="separator">·</span><button>二</button>',
-    )
+    const el = mountWith({ separator: '|' }, '<button>一</button><span slot="separator">·</span><button>二</button>')
     // 自定义分隔采纳：不注入字符串 span
     expect(el.querySelectorAll<HTMLElement>(':scope > [data-oas-space-sep]').length).toBe(0)
     // slot 元素去除 slot 属性并标记为分隔元素（留在原位参与布局）

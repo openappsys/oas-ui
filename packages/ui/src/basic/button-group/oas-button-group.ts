@@ -254,10 +254,7 @@ export class OASButtonGroup extends OASElement {
     }
 
     // 容器 role="group" + aria-label（默认走 i18n，可被 aria-label 属性覆盖）
-    this.groupEl?.setAttribute(
-      'aria-label',
-      this.getAttr('aria-label', this.t('buttonGroup.group')),
-    )
+    this.groupEl?.setAttribute('aria-label', this.getAttr('aria-label', this.t('buttonGroup.group')))
   }
 
   /** 当前选中值：单选返回 [value]，多选返回 value 逗号分隔的数组 */

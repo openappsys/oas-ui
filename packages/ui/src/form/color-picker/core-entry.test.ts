@@ -34,8 +34,7 @@ describe('OASColorPicker 纯核入口（core：不含 designer 能力）', () =>
   })
 
   it('dev 告警：mode=gradient + core 入口 → 提示显式引能力包或换回主路径（同值去重）', () => {
-    const isDesignerHint = (call: unknown[]): boolean =>
-      String(call[0]).includes('form/color-picker/designer')
+    const isDesignerHint = (call: unknown[]): boolean => String(call[0]).includes('form/color-picker/designer')
     // 首个带 gradient 配置的实例：告警一次
     mount({ mode: 'gradient', value: GRAD_VALUE })
     const first = warnSpy.mock.calls.filter(isDesignerHint)

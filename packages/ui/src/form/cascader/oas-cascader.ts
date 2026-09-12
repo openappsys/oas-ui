@@ -593,9 +593,7 @@ export class OASCascader extends OASElement {
   }
 
   private normalizeOptionList(input: unknown): CascaderOption[] {
-    return Array.isArray(input)
-      ? input.filter((o): o is CascaderOption => !!o && typeof o.value === 'string')
-      : []
+    return Array.isArray(input) ? input.filter((o): o is CascaderOption => !!o && typeof o.value === 'string') : []
   }
 
   private currentPath(): string[] {
@@ -1084,9 +1082,7 @@ export class OASCascader extends OASElement {
       for (const o of list) {
         const path = [...prefix, o.value]
         const op = [...optPath, o]
-        const hit = this._filter
-          ? this._filter(query, op)
-          : op.some((n) => n.label.toLowerCase().includes(lower))
+        const hit = this._filter ? this._filter(query, op) : op.some((n) => n.label.toLowerCase().includes(lower))
         if (hit) out.push(path)
         walk(this.childrenOf(o, path), path, op)
       }
@@ -1178,8 +1174,7 @@ export class OASCascader extends OASElement {
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       const cur = enabled.indexOf(this.activeRow)
-      this.activeRow =
-        enabled[(cur - 1 + enabled.length) % enabled.length] ?? enabled[enabled.length - 1] ?? 0
+      this.activeRow = enabled[(cur - 1 + enabled.length) % enabled.length] ?? enabled[enabled.length - 1] ?? 0
       this.syncActiveHighlight()
     } else if (e.key === 'ArrowRight') {
       e.preventDefault()

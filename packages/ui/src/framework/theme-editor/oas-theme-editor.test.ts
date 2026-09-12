@@ -47,10 +47,7 @@ const DEFAULT_VARS: Record<string, string> = {
   '--oas-control-height-xl': '48px',
 }
 
-function mount(
-  attrs: Record<string, string> = {},
-  vars: Record<string, string> = DEFAULT_VARS,
-): OASThemeEditor {
+function mount(attrs: Record<string, string> = {}, vars: Record<string, string> = DEFAULT_VARS): OASThemeEditor {
   const el = new OASThemeEditor()
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
   for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v)
@@ -91,9 +88,7 @@ function groups(el: OASThemeEditor): HTMLDetailsElement[] {
 }
 
 function groupFor(el: OASThemeEditor, title: string): HTMLDetailsElement | undefined {
-  return groups(el).find(
-    (g) => g.querySelector('.group-title')!.textContent === title,
-  )
+  return groups(el).find((g) => g.querySelector('.group-title')!.textContent === title)
 }
 
 describe('OASThemeEditor', () => {
@@ -368,9 +363,7 @@ describe('OASThemeEditor importJson / exportCss', () => {
     const el = mount({
       token: JSON.stringify(['--oas-color-primary', '--oas-font-size-md']),
     })
-    expect(el.exportCss()).toBe(
-      ':root {\n  --oas-color-primary: #0b6cff;\n  --oas-font-size-md: 14px;\n}',
-    )
+    expect(el.exportCss()).toBe(':root {\n  --oas-color-primary: #0b6cff;\n  --oas-font-size-md: 14px;\n}')
   })
 })
 

@@ -62,8 +62,7 @@ function checkedOf(el: OASTree): string[] {
   return JSON.parse(el.getAttribute('checked') ?? '[]') as string[]
 }
 
-const flushMicro = (): Promise<void> =>
-  new Promise((resolve) => queueMicrotask(() => resolve(undefined)))
+const flushMicro = (): Promise<void> => new Promise((resolve) => queueMicrotask(() => resolve(undefined)))
 
 describe('OASTree 展开（expanded JSON 数组）+ 选中', () => {
   beforeEach(() => {
@@ -104,29 +103,21 @@ describe('OASTree 展开（expanded JSON 数组）+ 选中', () => {
 
   it('locale：展开/选择 aria-label 随 setLocale 切换', () => {
     const el = mount({ checkable: '' })
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label'),
-    ).toBe('展开/收起')
-    expect(
-      el
-        .shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!
-        .getAttribute('aria-label'),
-    ).toBe('选择 节点 A')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe('展开/收起')
+    expect(el.shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!.getAttribute('aria-label')).toBe(
+      '选择 节点 A',
+    )
 
     setLocale(en)
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label'),
-    ).toBe('Expand/Collapse')
-    expect(
-      el
-        .shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!
-        .getAttribute('aria-label'),
-    ).toBe('Select 节点 A')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe(
+      'Expand/Collapse',
+    )
+    expect(el.shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!.getAttribute('aria-label')).toBe(
+      'Select 节点 A',
+    )
 
     setLocale('zh-CN')
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label'),
-    ).toBe('展开/收起')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe('展开/收起')
   })
 })
 
@@ -644,8 +635,7 @@ describe('OASTree field-names / tree-lines / empty', () => {
     ])
     const el = mount({
       data,
-      'field-names':
-        '{"key":"id","label":"name","children":"subs","disabled":"off","isLeaf":"leaf"}',
+      'field-names': '{"key":"id","label":"name","children":"subs","disabled":"off","isLeaf":"leaf"}',
     })
     expect(labels(el)).toBe('部门')
     toggles(el)[0]!.click()
@@ -817,8 +807,7 @@ function virtualRows(el: OASTree): HTMLElement[] {
   return [...vlist.shadowRoot!.querySelectorAll('[part="item"]')] as HTMLElement[]
 }
 
-const flushRaf = (): Promise<void> =>
-  new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
 describe('OASTree 虚拟化', () => {
   beforeEach(() => {
@@ -909,9 +898,7 @@ describe('OASTree 键盘 roving（↑↓ 移动 / → 展开 / ← 收起 / Home
 
   function press(el: OASTree, rowIndex: number, key: string): void {
     rows(el)[rowIndex]!.focus()
-    rows(el)[rowIndex]!.dispatchEvent(
-      new KeyboardEvent('keydown', { key, bubbles: true, composed: true }),
-    )
+    rows(el)[rowIndex]!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, composed: true }))
   }
 
   it('方向键 ↓ 移动 roving 焦点（tabindex 随行）', () => {
@@ -1013,9 +1000,7 @@ describe('OASTree 声明式数据通道 / 水合 / 自定义渲染 / 目录', ()
   it('oas-node-render：每行派发 { node, element }', () => {
     const el = mount()
     const details: Array<{ node: TreeNode; element: HTMLElement }> = []
-    el.addEventListener('oas-node-render', (e: Event) =>
-      details.push((e as CustomEvent).detail as never),
-    )
+    el.addEventListener('oas-node-render', (e: Event) => details.push((e as CustomEvent).detail as never))
     el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.click()
     expect(details.length).toBe(3)
     expect(details[0]!.node.key).toBe('a')
@@ -1146,9 +1131,7 @@ describe('OASTree 节点重命名（can-rename / 双击 or F2 内联编辑）', 
   it('Enter 提交（监听先挂）派发事件并退出编辑', () => {
     const el = mount({ 'can-rename': '', data: CASCADE_DATA })
     const details: unknown[] = []
-    el.addEventListener('oas-node-rename', (e: Event) =>
-      details.push((e as CustomEvent).detail),
-    )
+    el.addEventListener('oas-node-rename', (e: Event) => details.push((e as CustomEvent).detail))
     dblClickLabel(el, 0)
     const input = renameInputOf(el)!
     input.value = '新名字'
@@ -1189,9 +1172,7 @@ describe('OASTree 节点重命名（can-rename / 双击 or F2 内联编辑）', 
   it('Escape 取消：不派发事件、还原旧 label、退出编辑', () => {
     const el = mount({ 'can-rename': '', data: CASCADE_DATA })
     const details: unknown[] = []
-    el.addEventListener('oas-node-rename', (e: Event) =>
-      details.push((e as CustomEvent).detail),
-    )
+    el.addEventListener('oas-node-rename', (e: Event) => details.push((e as CustomEvent).detail))
     dblClickLabel(el, 0)
     const input = renameInputOf(el)!
     input.value = '改名失败'
@@ -1204,9 +1185,7 @@ describe('OASTree 节点重命名（can-rename / 双击 or F2 内联编辑）', 
   it('blur 提交：失焦即派发 oas-node-rename', () => {
     const el = mount({ 'can-rename': '', data: CASCADE_DATA })
     const details: unknown[] = []
-    el.addEventListener('oas-node-rename', (e: Event) =>
-      details.push((e as CustomEvent).detail),
-    )
+    el.addEventListener('oas-node-rename', (e: Event) => details.push((e as CustomEvent).detail))
     dblClickLabel(el, 0)
     const input = renameInputOf(el)!
     input.value = '失焦提交'
@@ -1218,14 +1197,10 @@ describe('OASTree 节点重命名（can-rename / 双击 or F2 内联编辑）', 
   it('内容未变 / 空内容：静默退出（不派发事件）', () => {
     const el = mount({ 'can-rename': '', data: CASCADE_DATA })
     const details: unknown[] = []
-    el.addEventListener('oas-node-rename', (e: Event) =>
-      details.push((e as CustomEvent).detail),
-    )
+    el.addEventListener('oas-node-rename', (e: Event) => details.push((e as CustomEvent).detail))
     // 未改
     dblClickLabel(el, 0)
-    renameInputOf(el)!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
-    )
+    renameInputOf(el)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     // 清空后 Enter → 还原（非破坏默认）
     dblClickLabel(el, 0)
     const input = renameInputOf(el)!
@@ -1239,9 +1214,7 @@ describe('OASTree 节点重命名（can-rename / 双击 or F2 内联编辑）', 
   it('F2 进入编辑：roving 行上按 F2 内联编辑，Enter 提交后焦点回行', () => {
     const el = mount({ 'can-rename': '', data: CASCADE_DATA })
     rows(el)[0]!.focus()
-    rows(el)[0]!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'F2', bubbles: true, composed: true }),
-    )
+    rows(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', bubbles: true, composed: true }))
     const input = renameInputOf(el)
     expect(input).not.toBeNull()
     expect(input!.value).toBe('节点 A')

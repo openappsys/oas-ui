@@ -61,11 +61,9 @@ test('同内容去重：grouping 合并为一条并显示 ×N 计数徽标', asy
   const groupingBtn = block.locator('oas-button').nth(2)
   await groupingBtn.click()
   await groupingBtn.click()
-  await page.waitForFunction(
-    () => document.querySelectorAll('oas-toast:not(.declarative-toast)').length === 1,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelectorAll('oas-toast:not(.declarative-toast)').length === 1, null, {
+    timeout: 5000,
+  })
   const badge = await page.evaluate(() => {
     const t = document.querySelector('oas-toast:not(.declarative-toast)')!
     const b = t.shadowRoot!.querySelector<HTMLElement>('[part="count"]')!
@@ -83,11 +81,9 @@ test('max 队列：超出排队，关闭后补位', async ({ page }) => {
   const stormBtn = block.locator('oas-button').nth(0)
   for (let i = 0; i < 4; i++) await stormBtn.click()
   // 第 4 条排队：仅 3 条可见
-  await page.waitForFunction(
-    () => document.querySelectorAll('oas-toast:not(.declarative-toast)').length === 3,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelectorAll('oas-toast:not(.declarative-toast)').length === 3, null, {
+    timeout: 5000,
+  })
   const hasFourth = await page.evaluate(() =>
     [...document.querySelectorAll('oas-toast:not(.declarative-toast)')].some(
       (t) => t.shadowRoot?.querySelector('[part="title"]')?.textContent === '通知 4',
@@ -130,22 +126,18 @@ test('Esc 关闭当前 toast：焦点在 toast 内时按 Esc 移除', async ({ p
   await toastReady(page)
   const block = page.locator('.demo-block', { hasText: 'Esc 关闭与屏幕阅读器敏感度' })
   await block.locator('oas-button').nth(0).click() // Esc 关闭（duration 0）
-  await page.waitForFunction(
-    () => document.querySelectorAll('oas-toast:not(.declarative-toast)').length === 1,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelectorAll('oas-toast:not(.declarative-toast)').length === 1, null, {
+    timeout: 5000,
+  })
   // 聚焦到 toast 的关闭按钮，再按 Esc
   await page.evaluate(() => {
     const t = document.querySelector('oas-toast:not(.declarative-toast)')!
     t.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.focus()
   })
   await page.keyboard.press('Escape')
-  await page.waitForFunction(
-    () => document.querySelectorAll('oas-toast:not(.declarative-toast)').length === 0,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelectorAll('oas-toast:not(.declarative-toast)').length === 0, null, {
+    timeout: 5000,
+  })
 })
 
 test('声明式用法：open 属性受控显隐', async ({ page }) => {
@@ -180,11 +172,9 @@ test('折叠堆叠：stacked 出现 +N 徽标，关闭后计数更新', async ({
   const btn = block.locator('oas-button')
   await btn.click()
   await btn.click()
-  await page.waitForFunction(
-    () => document.querySelector('.oas-toast-stack[data-stacked]') != null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('.oas-toast-stack[data-stacked]') != null, null, {
+    timeout: 5000,
+  })
   const badge = await page.evaluate(() => {
     const stack = document.querySelector('.oas-toast-stack[data-stacked]')!
     const b = stack.querySelector<HTMLElement>('.oas-toast-stack-badge')!
@@ -198,7 +188,9 @@ test('变体与进度可视化：plain/translucent 属性 + 进度条/进度环�
   await page.goto('/components/toast.html', { waitUntil: 'domcontentloaded' })
   await toastReady(page)
   // 变体
-  const variantBlock = page.locator('.demo-block', { hasText: '变体（plain/translucent）与动画配置' })
+  const variantBlock = page.locator('.demo-block', {
+    hasText: '变体（plain/translucent）与动画配置',
+  })
   await variantBlock.locator('oas-button').nth(1).click() // plain
   await variantBlock.locator('oas-button').nth(2).click() // translucent
   await page.waitForFunction(
@@ -220,10 +212,7 @@ test('变体与进度可视化：plain/translucent 属性 + 进度条/进度环�
           (t) =>
             t.shadowRoot?.querySelector<HTMLElement>('[part="progress"]') &&
             !t.shadowRoot.querySelector<HTMLElement>('[part="progress"]')!.hidden,
-        ) &&
-        all.some(
-          (t) => !t.shadowRoot?.querySelector<HTMLElement>('.ring')!.hidden,
-        )
+        ) && all.some((t) => !t.shadowRoot?.querySelector<HTMLElement>('.ring')!.hidden)
       )
     },
     null,
@@ -237,11 +226,9 @@ test('hover 暂停计时：悬停期间进度条定格，离开后继续', async
   await toastReady(page)
   const pauseBlock = page.locator('.demo-block', { hasText: 'hover/聚焦暂停计时' })
   await pauseBlock.locator('oas-button').nth(0).click() // duration 5000 + showProgress
-  await page.waitForFunction(
-    () => document.querySelectorAll('oas-toast:not(.declarative-toast)').length === 1,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelectorAll('oas-toast:not(.declarative-toast)').length === 1, null, {
+    timeout: 5000,
+  })
   const box = page.locator('oas-toast:not(.declarative-toast) [part="box"]')
   await box.hover()
   const paused = await page.evaluate(() => {
@@ -251,10 +238,14 @@ test('hover 暂停计时：悬停期间进度条定格，离开后继续', async
   })
   expect(paused).toBe('paused')
   await page.mouse.move(10, 10) // 移出 toast
-  await page.waitForFunction(() => {
-    const t = document.querySelector('oas-toast:not(.declarative-toast)')
-    if (!t) return false
-    const fill = t.shadowRoot!.querySelector<HTMLElement>('.progress-fill')
-    return fill?.style.animationPlayState !== 'paused'
-  }, null, { timeout: 5000 })
+  await page.waitForFunction(
+    () => {
+      const t = document.querySelector('oas-toast:not(.declarative-toast)')
+      if (!t) return false
+      const fill = t.shadowRoot!.querySelector<HTMLElement>('.progress-fill')
+      return fill?.style.animationPlayState !== 'paused'
+    },
+    null,
+    { timeout: 5000 },
+  )
 })

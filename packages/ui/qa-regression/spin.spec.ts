@@ -121,9 +121,7 @@ test('spin fullscreen：fixed 定位 + z-index 默认 3500', async ({ page }) =>
   expect(r.bodyDisplay).not.toBe('none')
 })
 
-test('spin percent determinate：SVG 进度环 + dashoffset 真实值 + tip-position 布局', async ({
-  page,
-}) => {
+test('spin percent determinate：SVG 进度环 + dashoffset 真实值 + tip-position 布局', async ({ page }) => {
   await page.goto('/components/spin.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-spin')
   const r = await page.evaluate(() => {
@@ -140,9 +138,7 @@ test('spin percent determinate：SVG 进度环 + dashoffset 真实值 + tip-posi
     const svgCs = getComputedStyle(svg)
     const C = 2 * Math.PI * 21
     const offset = Number(
-      (half.shadowRoot!.querySelector('[part="progress-bar"]') as SVGCircleElement).getAttribute(
-        'stroke-dashoffset',
-      ),
+      (half.shadowRoot!.querySelector('[part="progress-bar"]') as SVGCircleElement).getAttribute('stroke-dashoffset'),
     )
     const out = {
       svgDisplay: svgCs.display,
@@ -216,13 +212,16 @@ test('spin show-overlay=false 与命令式 fullscreen 句柄', async ({ page }) 
 
     const h = OASSpin.fullscreen({ tip: '命令式' })
     const fs = document.querySelector('oas-spin[fullscreen]')!
-    const fsVisible = getComputedStyle(
-      fs.shadowRoot!.querySelector('[part="body"]') as HTMLElement,
-    ).display
-    const fsPosition = getComputedStyle(fs.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement)
-      .position
+    const fsVisible = getComputedStyle(fs.shadowRoot!.querySelector('[part="body"]') as HTMLElement).display
+    const fsPosition = getComputedStyle(fs.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).position
     h.close()
-    return { noMask, fsConnected: fs.isConnected, fsVisible, fsPosition, closedAfter: fs.isConnected }
+    return {
+      noMask,
+      fsConnected: fs.isConnected,
+      fsVisible,
+      fsPosition,
+      closedAfter: fs.isConnected,
+    }
   })
   expect(r.noMask).toBe('none')
   expect(r.fsVisible).not.toBe('none')

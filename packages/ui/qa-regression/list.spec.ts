@@ -37,11 +37,7 @@ test('list 分组组头在滚动容器内吸顶（computedStyle position=sticky 
     const list = document.querySelector('#list-grouped')
     const sh = list?.shadowRoot
     const body = sh?.querySelector('[part="body"]') as HTMLElement | null
-    return (
-      (sh?.querySelectorAll('.group-header')?.length ?? 0) >= 3 &&
-      !!body &&
-      body.scrollHeight > body.clientHeight
-    )
+    return (sh?.querySelectorAll('.group-header')?.length ?? 0) >= 3 && !!body && body.scrollHeight > body.clientHeight
   })
   const r = await page.evaluate(() => {
     const list = document.querySelector('#list-grouped')!
@@ -55,9 +51,7 @@ test('list 分组组头在滚动容器内吸顶（computedStyle position=sticky 
     let violated = false
     for (let top = 0; top <= max; top += 6) {
       body.scrollTop = top
-      const pinned = headers.filter(
-        (h) => Math.abs(h.getBoundingClientRect().top - bodyTop) < 1,
-      )
+      const pinned = headers.filter((h) => Math.abs(h.getBoundingClientRect().top - bodyTop) < 1)
       // 多个组头同钉顶时，DOM 靠后的盖在顶层（可见者取最后）
       const visible = pinned.length ? headers.indexOf(pinned[pinned.length - 1]!) : -1
       if (visible !== -1 && prev !== -1 && visible < prev) {

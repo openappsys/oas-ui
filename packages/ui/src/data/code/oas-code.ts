@@ -46,15 +46,7 @@ function warnOnce(kind: string, raw: string, fallback: string, valid: readonly s
 }
 
 /** token 类别 → CSS class（配色见 STYLE 的 .tok-* 规则） */
-type TokenClass =
-  | 'keyword'
-  | 'string'
-  | 'comment'
-  | 'number'
-  | 'tag'
-  | 'attr'
-  | 'function'
-  | 'operator'
+type TokenClass = 'keyword' | 'string' | 'comment' | 'number' | 'tag' | 'attr' | 'function' | 'operator'
 
 const JS_KEYWORDS = [
   'const',
@@ -452,11 +444,7 @@ export class OASCode extends OASElement {
         // inline 的 variant / size / color 走 class + 变量
         const variant = this.normalizeAttr('variant', VALID_VARIANTS, 'subtle')
         const size = this.normalizeAttr('size', VALID_SIZES, 'medium')
-        const classes = [
-          'inline',
-          variant !== 'subtle' ? variant : '',
-          size !== 'medium' ? size : '',
-        ]
+        const classes = ['inline', variant !== 'subtle' ? variant : '', size !== 'medium' ? size : '']
           .filter(Boolean)
           .join(' ')
         if (classes) inlineEl.className = classes
@@ -465,10 +453,7 @@ export class OASCode extends OASElement {
         const color = this.getAttr('color', '')
         if (color) {
           const isPreset = (CODE_PRESET_COLORS as readonly string[]).includes(color)
-          inlineEl.style.setProperty(
-            '--oas-code-color',
-            isPreset ? `var(--oas-preset-${color}-text)` : color,
-          )
+          inlineEl.style.setProperty('--oas-code-color', isPreset ? `var(--oas-preset-${color}-text)` : color)
         } else {
           inlineEl.style.removeProperty('--oas-code-color')
         }

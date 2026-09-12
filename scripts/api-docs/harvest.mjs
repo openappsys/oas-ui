@@ -106,12 +106,9 @@ function classify(headerCells, lang) {
     return { type: 'skip', reason: `表头不识别（首列组件/Component，第二列「${headerCells[1]}」）` }
   }
 
-  if (HEADER.field.has(first))
-    return { type: 'skip', reason: '字段表（| 字段 | 说明 | ... |，非组件属性）' }
-  if (HEADER.method.has(first))
-    return { type: 'skip', reason: '方法表（| 方法 | 说明 |，语料不含方法）' }
-  if (HEADER.part.has(first))
-    return { type: 'skip', reason: '部件表（| 部件 | 说明 |，语料不含部件）' }
+  if (HEADER.field.has(first)) return { type: 'skip', reason: '字段表（| 字段 | 说明 | ... |，非组件属性）' }
+  if (HEADER.method.has(first)) return { type: 'skip', reason: '方法表（| 方法 | 说明 |，语料不含方法）' }
+  if (HEADER.part.has(first)) return { type: 'skip', reason: '部件表（| 部件 | 说明 |，语料不含部件）' }
 
   return { type: 'skip', reason: `表头不识别：${headerCells.join(' | ')}` }
 }
@@ -268,8 +265,7 @@ function parseFile(file, lang) {
 
         // 一行文档化多个属性的写法：`min` / `max`、`sort-key` / `sort-order`
         const tokens = rawName.split(/\s*\/\s*/).map(cleanKey)
-        const multi =
-          tokens.length > 1 && tokens.every((t) => t && !CJK_RE.test(t) && !/\s/.test(t))
+        const multi = tokens.length > 1 && tokens.every((t) => t && !CJK_RE.test(t) && !/\s/.test(t))
         if (multi) {
           for (const t of tokens) ensureTag(target).attrs[t] = desc
           continue
@@ -328,9 +324,7 @@ function parseFile(file, lang) {
         const raw = row[0] ?? ''
         const desc = (row[1] ?? '').trim()
         // tag 前缀的默认插槽写法：`oas-descriptions-item` 默认插槽 / default slot
-        const prefixed = raw
-          .trim()
-          .match(/^`?(oas-[a-z0-9-]+)`?\s+(默认插槽|默认|default slot|default)$/i)
+        const prefixed = raw.trim().match(/^`?(oas-[a-z0-9-]+)`?\s+(默认插槽|默认|default slot|default)$/i)
         let tag
         let key
         if (prefixed) {
@@ -504,10 +498,7 @@ function printReport(zh, en) {
     ['英文', en],
   ]) {
     const s = res.stats
-    const types = classifyAllTables(
-      lang === '中文' ? ZH_DIR : EN_DIR,
-      lang === '中文' ? 'zh' : 'en',
-    )
+    const types = classifyAllTables(lang === '中文' ? ZH_DIR : EN_DIR, lang === '中文' ? 'zh' : 'en')
     console.log(`\n【${lang}】${s.pagesTotal} 页，含 ## API：${s.pagesWithApi} 页`)
     console.log(
       `表格：属性 ${types.attr} / 合并属性 ${types.mergedAttr} / 事件 ${types.event} / 插槽 ${types.slot} / 跳过 ${types.skipped}；` +
@@ -523,22 +514,16 @@ function printReport(zh, en) {
 
   // 一致性抽查
   const cmp = compareKeys(zh, en)
-  console.log(
-    `\n【中英一致性抽查】共同 tag ${cmp.sharedCount} 个，抽前 ${cmp.sample.length} 个（字母序）`,
-  )
+  console.log(`\n【中英一致性抽查】共同 tag ${cmp.sharedCount} 个，抽前 ${cmp.sample.length} 个（字母序）`)
   if (cmp.issues.length === 0) {
     console.log('抽查 10 个 tag 的 attrs/events/slots key 集合完全一致 ✅')
   } else {
     for (const it of cmp.issues) {
-      console.log(
-        `  ⚠ ${it.tag}.${it.group}：仅 zh ${it.onlyZh.join(',') || '—'}；仅 en ${it.onlyEn.join(',') || '—'}`,
-      )
+      console.log(`  ⚠ ${it.tag}.${it.group}：仅 zh ${it.onlyZh.join(',') || '—'}；仅 en ${it.onlyEn.join(',') || '—'}`)
     }
   }
   const mismatchCount = cmp.allMismatchTags.length
-  console.log(
-    `全量 key 不一致 tag 数：${mismatchCount}${mismatchCount ? `（${cmp.allMismatchTags.join(', ')}）` : ''}`,
-  )
+  console.log(`全量 key 不一致 tag 数：${mismatchCount}${mismatchCount ? `（${cmp.allMismatchTags.join(', ')}）` : ''}`)
   if (cmp.zhOnly.length || cmp.enOnly.length) {
     if (cmp.zhOnly.length) console.log(`仅 zh 存在：${cmp.zhOnly.join(', ')}`)
     if (cmp.enOnly.length) console.log(`仅 en 存在：${cmp.enOnly.join(', ')}`)

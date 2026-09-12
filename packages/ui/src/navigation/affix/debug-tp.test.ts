@@ -10,12 +10,20 @@ function mount(attrs: Record<string, string> = {}): OASAffix {
 }
 
 describe('debug 动态重传', () => {
-  beforeEach(() => { document.body.innerHTML = '' })
-  afterEach(() => { document.body.innerHTML = '' })
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
 
   it('debug', () => {
-    const a = document.createElement('div'); a.id = 'affix-a'; document.body.appendChild(a)
-    const b = document.createElement('div'); b.id = 'affix-b'; document.body.appendChild(b)
+    const a = document.createElement('div')
+    a.id = 'affix-a'
+    document.body.appendChild(a)
+    const b = document.createElement('div')
+    b.id = 'affix-b'
+    document.body.appendChild(b)
     const el = mount({ 'append-to': '#affix-a', offset: '80' })
     expect(a.querySelector('.wrap')).not.toBeNull()
     el.setAttribute('append-to', '#affix-b')

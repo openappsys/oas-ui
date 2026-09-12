@@ -71,8 +71,7 @@ function walk(node, fn) {
 // 字符串字面量 / 模板字面量取原始值
 function litText(node) {
   if (!node) return undefined
-  if (node.kind === K.StringLiteral || node.kind === K.NoSubstitutionTemplateLiteral)
-    return node.text
+  if (node.kind === K.StringLiteral || node.kind === K.NoSubstitutionTemplateLiteral) return node.text
   return undefined
 }
 
@@ -138,7 +137,8 @@ function listClassFiles(dirAbs) {
 //   2) `export const OASX = factory(...)` 工厂创建类（如 typography 的 createTypography），
 //      返回工厂内部 `class ... extends OASElement` 的声明节点
 // 返回值：{ node, factoryCall?, factoryFn? }
-function findClassNode(sourceFile, className) {  let found = null
+function findClassNode(sourceFile, className) {
+  let found = null
   walk(sourceFile, (n) => {
     if (found) return
     if (n.kind === K.ClassDeclaration && n.name?.text === className) {
@@ -175,9 +175,7 @@ function findClassNode(sourceFile, className) {  let found = null
 
 /** 类是否直接声明 observedAttributes getter（组装类自身不声明时需回退基类） */
 function hasObservedGetter(cls) {
-  return (cls.members || []).some(
-    (m) => m.kind === K.GetAccessor && m.name?.text === 'observedAttributes',
-  )
+  return (cls.members || []).some((m) => m.kind === K.GetAccessor && m.name?.text === 'observedAttributes')
 }
 
 /** 解析类声明中的 extends 基类（同目录类文件）；用于组装类（星骨架+index 组装）的 API 承载回退 */
@@ -260,9 +258,7 @@ function resolveArrayExpr(expr, unresolved, factoryCall, factoryFn) {
 }
 
 function getObservedAttributes(cls, unresolved, factoryCall, factoryFn) {
-  const getter = (cls.members || []).find(
-    (m) => m.kind === K.GetAccessor && m.name?.text === OBSERVED_GETTER,
-  )
+  const getter = (cls.members || []).find((m) => m.kind === K.GetAccessor && m.name?.text === OBSERVED_GETTER)
   if (!getter || !getter.body) return []
   const ret = (getter.body.statements || []).find((s) => s.kind === K.ReturnStatement)
   return resolveArrayExpr(ret?.expression, unresolved, factoryCall, factoryFn)
@@ -280,18 +276,12 @@ function getObservedAttributes(cls, unresolved, factoryCall, factoryFn) {
 function extractAttrs(cls, observed, propNames) {
   // 中间结构：name -> { type?, default?, observed, has, get, inferTypes }
   const map = new Map()
-  for (const name of observed)
-    map.set(name, { name, observed: true, has: false, get: false, inferTypes: [] })
+  for (const name of observed) map.set(name, { name, observed: true, has: false, get: false, inferTypes: [] })
 
   walk(cls, (n) => {
     if (n.kind !== K.CallExpression) return
     const callee = n.expression
-    if (
-      !callee ||
-      callee.kind !== K.PropertyAccessExpression ||
-      callee.expression?.kind !== K.ThisKeyword
-    )
-      return
+    if (!callee || callee.kind !== K.PropertyAccessExpression || callee.expression?.kind !== K.ThisKeyword) return
     const helper = callee.name?.text
     if (!ATTR_HELPERS.has(helper)) return
 
@@ -332,11 +322,7 @@ function extractAttrs(cls, observed, propNames) {
     const lit = litText(dArg)
     if (lit !== undefined) {
       entry.default = lit
-    } else if (
-      dArg.kind === K.NumericLiteral ||
-      dArg.kind === K.TrueKeyword ||
-      dArg.kind === K.FalseKeyword
-    ) {
+    } else if (dArg.kind === K.NumericLiteral || dArg.kind === K.TrueKeyword || dArg.kind === K.FalseKeyword) {
       entry.default = dArg.text
     }
     // 字面量 → 可推断类型
@@ -363,24 +349,26 @@ function extractAttrs(cls, observed, propNames) {
 
   // 排序：observed 在前（按声明顺序），非 observed 在后
   const observedOrder = new Map(observed.map((name, i) => [name, i]))
-  return [...map.values()]
-    .filter(({ name }) => !GLOBAL_CONVENTION_ATTRS.has(name))
-    // data-* 前缀是 HTML 规范保留的内部数据通道（组件间下发/状态镜像），
-    // 不是公开 API，一律不进 API 表（全库现状零依赖，纯防御性过滤）
-    .filter(({ name }) => !name.startsWith('data-'))
-    .sort((a, b) => {
-      const ao = a.observed ? (observedOrder.get(a.name) ?? 0) : 1e9
-      const bo = b.observed ? (observedOrder.get(b.name) ?? 0) : 1e9
-      return ao - bo
-    })
-    .map(({ name, type, default: def, observed }) => {
-      // 按 { name, type?, default?, observed } 顺序输出
-      const item = { name }
-      if (type !== undefined) item.type = type
-      if (def !== undefined) item.default = def
-      item.observed = observed
-      return item
-    })
+  return (
+    [...map.values()]
+      .filter(({ name }) => !GLOBAL_CONVENTION_ATTRS.has(name))
+      // data-* 前缀是 HTML 规范保留的内部数据通道（组件间下发/状态镜像），
+      // 不是公开 API，一律不进 API 表（全库现状零依赖，纯防御性过滤）
+      .filter(({ name }) => !name.startsWith('data-'))
+      .sort((a, b) => {
+        const ao = a.observed ? (observedOrder.get(a.name) ?? 0) : 1e9
+        const bo = b.observed ? (observedOrder.get(b.name) ?? 0) : 1e9
+        return ao - bo
+      })
+      .map(({ name, type, default: def, observed }) => {
+        // 按 { name, type?, default?, observed } 顺序输出
+        const item = { name }
+        if (type !== undefined) item.type = type
+        if (def !== undefined) item.default = def
+        item.observed = observed
+        return item
+      })
+  )
 }
 
 // ---------- props：get/set 访问器 + 公共字段 ----------
@@ -410,8 +398,7 @@ function extractProps(cls) {
     // 静态成员（observedAttributes 等）与普通方法不作 props
     const mods = (m.modifiers || []).map((x) => x.kind)
     if (mods.includes(K.StaticKeyword)) continue
-    if (m.kind !== K.GetAccessor && m.kind !== K.SetAccessor && m.kind !== K.PropertyDeclaration)
-      continue
+    if (m.kind !== K.GetAccessor && m.kind !== K.SetAccessor && m.kind !== K.PropertyDeclaration) continue
     const name = m.name?.text
     if (!name || name === OBSERVED_GETTER) continue
 
@@ -470,11 +457,7 @@ function extractProps(cls) {
 function getterBackingField(retExpr) {
   if (!retExpr) return undefined
   // return this.X
-  if (
-    retExpr.kind === K.PropertyAccessExpression &&
-    retExpr.expression?.kind === K.ThisKeyword &&
-    retExpr.name?.text
-  ) {
+  if (retExpr.kind === K.PropertyAccessExpression && retExpr.expression?.kind === K.ThisKeyword && retExpr.name?.text) {
     return retExpr.name.text
   }
   // return this.X.slice() / this.X.map(...) 等：this.X 上的方法调用
@@ -515,8 +498,7 @@ function literalDefault(node) {
     if ((node.elements || []).length === 0) return '[]'
     return undefined
   }
-  if (node.kind === K.StringLiteral || node.kind === K.NoSubstitutionTemplateLiteral)
-    return node.text
+  if (node.kind === K.StringLiteral || node.kind === K.NoSubstitutionTemplateLiteral) return node.text
   if (node.kind === K.NumericLiteral) return node.text
   if (node.kind === K.TrueKeyword) return 'true'
   if (node.kind === K.FalseKeyword) return 'false'
@@ -589,9 +571,7 @@ function extractEvents(cls, unresolved) {
           return
         }
       }
-      unresolved.push(
-        `emit(${nameNode.text})：事件名来自变量，参数类型注解非字符串字面量联合，无法回溯`,
-      )
+      unresolved.push(`emit(${nameNode.text})：事件名来自变量，参数类型注解非字符串字面量联合，无法回溯`)
       return
     }
     if (nameNode && nameNode.kind === K.ConditionalExpression) {
@@ -674,9 +654,7 @@ function extractSlots(cls) {
       scanTemplateSlotRefs(n.text, names)
     }
   })
-  return [...names]
-    .sort((a, b) => (a === '' ? -1 : b === '' ? 1 : a < b ? -1 : 1))
-    .map((name) => ({ name }))
+  return [...names].sort((a, b) => (a === '' ? -1 : b === '' ? 1 : a < b ? -1 : 1)).map((name) => ({ name }))
 }
 
 // ---------- 解析单个组件目录 ----------

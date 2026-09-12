@@ -234,10 +234,7 @@ export class OASContextMenu extends OASElement {
     if (!touch) return
     const dx = touch.clientX - this.longPressX
     const dy = touch.clientY - this.longPressY
-    if (
-      Math.abs(dx) > OASContextMenu.MOVE_THRESHOLD ||
-      Math.abs(dy) > OASContextMenu.MOVE_THRESHOLD
-    ) {
+    if (Math.abs(dx) > OASContextMenu.MOVE_THRESHOLD || Math.abs(dy) > OASContextMenu.MOVE_THRESHOLD) {
       window.clearTimeout(this.longPressTimer)
     }
   }
@@ -324,11 +321,7 @@ export class OASContextMenu extends OASElement {
     for (const node of el.childNodes) {
       if (node instanceof Element) {
         const tag = node.tagName
-        if (
-          tag === 'OAS-CONTEXT-MENU-ITEM' ||
-          tag === 'OAS-CONTEXT-MENU-GROUP' ||
-          tag === 'OAS-CONTEXT-MENU-DIVIDER'
-        ) {
+        if (tag === 'OAS-CONTEXT-MENU-ITEM' || tag === 'OAS-CONTEXT-MENU-GROUP' || tag === 'OAS-CONTEXT-MENU-DIVIDER') {
           continue
         }
       }

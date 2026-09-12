@@ -309,9 +309,7 @@ export class OASCheckboxGroup extends OASElement {
     if (!(related instanceof Node)) return false
     const fieldset = this.shadow.querySelector('fieldset')
     if (fieldset?.contains(related) || this.contains(related)) return true
-    return this.items.some(
-      (it) => it === related || (it.shadowRoot?.contains(related) ?? false),
-    )
+    return this.items.some((it) => it === related || (it.shadowRoot?.contains(related) ?? false))
   }
 
   private parseValue(): string[] {
@@ -329,8 +327,7 @@ export class OASCheckboxGroup extends OASElement {
       const parsed = JSON.parse(raw)
       return Array.isArray(parsed)
         ? parsed.filter(
-            (o): o is CheckboxOption =>
-              !!o && typeof o === 'object' && typeof (o as CheckboxOption).value === 'string',
+            (o): o is CheckboxOption => !!o && typeof o === 'object' && typeof (o as CheckboxOption).value === 'string',
           )
         : []
     } catch {

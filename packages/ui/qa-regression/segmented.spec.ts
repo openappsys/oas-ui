@@ -17,10 +17,7 @@ test('segmented 未选中项文字对比度达标（text-primary，axe 色彩对
     return {
       unselectedColor: getComputedStyle(items[1]!).color,
       groupBg: getComputedStyle(group).backgroundColor, // 轨道色，item 与之构成对比对
-      selectedChecked:
-        items
-          .find((b) => b.querySelector('input')!.checked)
-          ?.querySelector('input')?.checked ?? null,
+      selectedChecked: items.find((b) => b.querySelector('input')!.checked)?.querySelector('input')?.checked ?? null,
     }
   })
   // 未选中项应为 text-primary（#18181b），而非 text-secondary（#71717a）——

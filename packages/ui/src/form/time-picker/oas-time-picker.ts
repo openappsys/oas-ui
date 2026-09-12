@@ -372,11 +372,9 @@ export class OASTimePicker extends OASElement {
     return this._disabledTime
   }
 
-  set disabledTime(
-    fn:
-      | ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } | null)
-      | null,
-  ) {
+  set disabledTime(fn:
+    | ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } | null)
+    | null,) {
     this._disabledTime = fn
     if (this.isConnected && this.openState) this.renderColumns(false)
   }
@@ -395,11 +393,7 @@ export class OASTimePicker extends OASElement {
    * 受控 open：属性即真相——在场=展开、移除=收起（宿主手势只派发
    * oas-open-change 通知宿主，由宿主决定是否增删属性，组件不强制写回）。
    */
-  override attributeChangedCallback(
-    name: string,
-    oldValue: string | null,
-    newValue: string | null,
-  ): void {
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if (name === 'open' && oldValue !== newValue && this.hasRendered) {
       if (newValue !== null && !this.openState) {
         this.bootPanel(false)
@@ -754,8 +748,7 @@ export class OASTimePicker extends OASElement {
     const disabled = new Set<number>()
     const dt = this._disabledTime?.(this.sides[sideIdx] ?? this.sides[0]!)
     if (dt) {
-      const list =
-        unit === 'h' ? dt.hours : unit === 'm' ? dt.minutes : unit === 's' ? dt.seconds : null
+      const list = unit === 'h' ? dt.hours : unit === 'm' ? dt.minutes : unit === 's' ? dt.seconds : null
       if (list) {
         for (const raw of list) {
           if (unit === 'h' && this.use12()) {
@@ -787,11 +780,11 @@ export class OASTimePicker extends OASElement {
     if (unit === 'ampm') {
       const isPm = v === 1
       const h12 = this.hour12Of(parts.h)
-      parts.h = isPm ? h12 % 12 + 12 : h12 % 12
+      parts.h = isPm ? (h12 % 12) + 12 : h12 % 12
       return
     }
     if (unit === 'h' && this.use12()) {
-      parts.h = parts.h >= 12 ? v % 12 + 12 : v % 12
+      parts.h = parts.h >= 12 ? (v % 12) + 12 : v % 12
       return
     }
     parts[unit] = v
@@ -899,8 +892,9 @@ export class OASTimePicker extends OASElement {
     if (focusNow) {
       const colNodes = [...cols.querySelectorAll<HTMLElement>('.column')]
       const col = colNodes[this.activeColumn]
-      const option = col?.querySelector<HTMLButtonElement>('.option.selected')
-        ?? col?.querySelector<HTMLButtonElement>('.option:not(.disabled)')
+      const option =
+        col?.querySelector<HTMLButtonElement>('.option.selected') ??
+        col?.querySelector<HTMLButtonElement>('.option:not(.disabled)')
       option?.focus()
       option?.scrollIntoView?.({ block: 'center' })
     }
@@ -980,9 +974,7 @@ export class OASTimePicker extends OASElement {
       else {
         // 已展开：焦点送进当前列（输入框 → 面板）
         const colNodes = [...(this.columnsEl?.querySelectorAll<HTMLElement>('.column') ?? [])]
-        colNodes[this.activeColumn]
-          ?.querySelector<HTMLButtonElement>('.option.selected')
-          ?.focus()
+        colNodes[this.activeColumn]?.querySelector<HTMLButtonElement>('.option.selected')?.focus()
       }
     } else if (e.key === 'Escape' && this.openState) {
       e.preventDefault()
@@ -1076,12 +1068,7 @@ export class OASTimePicker extends OASElement {
     const clearBtn = this.shadow.querySelector<HTMLElement>('[part="clear"]')
     if (clearBtn) {
       clearBtn.setAttribute('aria-label', this.t('input.clear'))
-      clearBtn.hidden = !(
-        this.hasAttr('clearable') &&
-        !disabled &&
-        !readonly &&
-        this.getAttr('value', '') !== ''
-      )
+      clearBtn.hidden = !(this.hasAttr('clearable') && !disabled && !readonly && this.getAttr('value', '') !== '')
     }
   }
 
@@ -1176,15 +1163,13 @@ export class OASTimePicker extends OASElement {
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const popupRect = this.dropdown.getBoundingClientRect()
     const viewport = { width: window.innerWidth, height: window.innerHeight }
-    const { top, left, placement: actual } = computePosition(
-      anchorRect,
-      popupRect,
-      this.resolvePlacement(),
-      viewport,
-      4,
-      true,
-      { collisionPadding: 8 },
-    )
+    const {
+      top,
+      left,
+      placement: actual,
+    } = computePosition(anchorRect, popupRect, this.resolvePlacement(), viewport, 4, true, {
+      collisionPadding: 8,
+    })
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
     this.dropdown.style.width = `${Math.max(anchorRect.width, 120)}px`

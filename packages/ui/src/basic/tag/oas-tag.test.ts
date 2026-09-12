@@ -364,9 +364,7 @@ describe('OASTag', () => {
       const el = mount({ color: '#7c3aed', type: 'primary' })
       const r = root(el)
       expect(r.style.getPropertyValue('--oas-tag-color')).toBe('#7c3aed')
-      expect(r.style.getPropertyValue('--oas-tag-color-deep')).toBe(
-        'color-mix(in srgb, #7c3aed 80%, black)',
-      )
+      expect(r.style.getPropertyValue('--oas-tag-color-deep')).toBe('color-mix(in srgb, #7c3aed 80%, black)')
       expect(r.classList.contains('filled')).toBe(true)
       expect(r.classList.contains('primary')).toBe(true)
     })
@@ -579,9 +577,7 @@ describe('OASTag', () => {
       ]
       for (const name of presets) {
         const el = mount({ color: name })
-        expect(root(el).style.getPropertyValue('--oas-tag-color'), `preset=${name}`).toBe(
-          `var(--oas-preset-${name})`,
-        )
+        expect(root(el).style.getPropertyValue('--oas-tag-color'), `preset=${name}`).toBe(`var(--oas-preset-${name})`)
         el.remove()
       }
     })

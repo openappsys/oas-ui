@@ -182,69 +182,39 @@ describe('computePosition 浮层定位', () => {
 
   describe('skidding（交叉轴偏移）', () => {
     it('top 系列：skidding 正值沿交叉轴正方向偏移（向右）', () => {
-      const pos = computePosition(
-        rect(200, 200, 120, 40),
-        rect(0, 0, 80, 30),
-        'top',
-        viewport,
-        8,
-        true,
-        { skidding: 10 },
-      )
+      const pos = computePosition(rect(200, 200, 120, 40), rect(0, 0, 80, 30), 'top', viewport, 8, true, {
+        skidding: 10,
+      })
       expect(pos.left).toBe(230) // 居中 220（260 - 40）+ 10
     })
 
     it('top-start + skidding：start 对齐基础上再偏移', () => {
-      const pos = computePosition(
-        rect(200, 200, 120, 40),
-        rect(0, 0, 80, 30),
-        'top-start',
-        viewport,
-        8,
-        true,
-        { skidding: -5 },
-      )
+      const pos = computePosition(rect(200, 200, 120, 40), rect(0, 0, 80, 30), 'top-start', viewport, 8, true, {
+        skidding: -5,
+      })
       expect(pos.left).toBe(200 - 5)
     })
 
     it('left 系列：skidding 正值沿纵向正方向偏移（向下）', () => {
-      const pos = computePosition(
-        rect(200, 200, 120, 40),
-        rect(0, 0, 80, 30),
-        'left',
-        viewport,
-        8,
-        true,
-        { skidding: 6 },
-      )
+      const pos = computePosition(rect(200, 200, 120, 40), rect(0, 0, 80, 30), 'left', viewport, 8, true, {
+        skidding: 6,
+      })
       expect(pos.top).toBe(211) // 居中 205（220 - 15）+ 6
     })
   })
 
   describe('collisionPadding（视口边缘边距）', () => {
     it('collisionPadding=16：避让后距视口边缘 16px（默认 4）', () => {
-      const pos = computePosition(
-        rect(0, 100, 40, 40),
-        rect(0, 0, 300, 50),
-        'bottom',
-        viewport,
-        8,
-        true,
-        { collisionPadding: 16 },
-      )
+      const pos = computePosition(rect(0, 100, 40, 40), rect(0, 0, 300, 50), 'bottom', viewport, 8, true, {
+        collisionPadding: 16,
+      })
       expect(pos.left).toBe(16) // 默认 4 → 现在 16
     })
 
     it('collisionPadding 不影响有空间时的位置', () => {
-      const pos = computePosition(
-        rect(300, 200, 100, 40),
-        rect(0, 0, 100, 50),
-        'bottom',
-        viewport,
-        8,
-        true,
-        { collisionPadding: 20 },
-      )
+      const pos = computePosition(rect(300, 200, 100, 40), rect(0, 0, 100, 50), 'bottom', viewport, 8, true, {
+        collisionPadding: 20,
+      })
       expect(pos.left).toBe(300) // 350 - 50
     })
   })
@@ -253,27 +223,13 @@ describe('computePosition 浮层定位', () => {
     // `autoAdjustOverflow: false`：flip 与视口避让都关闭，
     // 保持声明 placement（可能溢出视口）。
     it('空间不足不翻转：保持声明 placement', () => {
-      const pos = computePosition(
-        rect(100, 550, 200, 40),
-        rect(0, 0, 100, 50),
-        'bottom',
-        viewport,
-        8,
-        false,
-      )
+      const pos = computePosition(rect(100, 550, 200, 40), rect(0, 0, 100, 50), 'bottom', viewport, 8, false)
       expect(pos.placement).toBe('bottom')
       expect(pos.top).toBe(598) // 550+40+8，无翻转
     })
 
     it('不避让视口边缘：left 可为负（溢出）', () => {
-      const pos = computePosition(
-        rect(0, 100, 40, 40),
-        rect(0, 0, 300, 50),
-        'bottom',
-        viewport,
-        8,
-        false,
-      )
+      const pos = computePosition(rect(0, 100, 40, 40), rect(0, 0, 300, 50), 'bottom', viewport, 8, false)
       expect(pos.placement).toBe('bottom')
       expect(pos.left).toBe(-130) // 20 - 150，无 clamp
       expect(pos.top).toBe(148)

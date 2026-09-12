@@ -161,9 +161,7 @@ describe('OASRadio checked-icon 插槽与 description / label-position / variant
     tpl.innerHTML = '<span class="dot">◉</span>'
     el.appendChild(tpl)
     document.body.appendChild(el)
-    const holder = el
-      .shadowRoot!.querySelector('.indicator-checked')!
-      .querySelector('.indicator-tpl')
+    const holder = el.shadowRoot!.querySelector('.indicator-checked')!.querySelector('.indicator-tpl')
     expect(holder).not.toBeNull()
     expect(holder!.querySelector('.dot')).not.toBeNull()
   })
@@ -314,9 +312,7 @@ describe('OASRadioGroup 组级能力', () => {
 
   it('direction 镜像 data-direction，默认 vertical', () => {
     expect(mountGroup().getAttribute('data-direction')).toBe('vertical')
-    expect(mountGroup({ direction: 'horizontal' }).getAttribute('data-direction')).toBe(
-      'horizontal',
-    )
+    expect(mountGroup({ direction: 'horizontal' }).getAttribute('data-direction')).toBe('horizontal')
   })
 
   it('options 数据通道渲染子项并可交互', () => {
@@ -380,7 +376,12 @@ describe('OASRadioGroup 键盘组模式（roving tabindex + 方向键循环）',
   function key(el: OASRadioGroup, keyName: string, fromValue: string): void {
     const host = el.querySelector(`oas-radio[value="${fromValue}"]`)!
     host.dispatchEvent(
-      new KeyboardEvent('keydown', { key: keyName, bubbles: true, composed: true, cancelable: true }),
+      new KeyboardEvent('keydown', {
+        key: keyName,
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      }),
     )
   }
 
@@ -457,9 +458,7 @@ describe('OASRadioGroup 键盘组模式（roving tabindex + 方向键循环）',
   it('焦点随移动转移到目标项 input', () => {
     const el = mountGroup({ value: 'a' })
     key(el, 'ArrowDown', 'a')
-    expect(el.querySelector('oas-radio[value="b"]')!.shadowRoot!.activeElement).toBe(
-      itemInput(el, 'b'),
-    )
+    expect(el.querySelector('oas-radio[value="b"]')!.shadowRoot!.activeElement).toBe(itemInput(el, 'b'))
   })
 
   it('组级 readonly 时方向键不切换', () => {
@@ -494,7 +493,12 @@ describe('OASRadioGroup 键盘组模式（roving tabindex + 方向键循环）',
     document.body.appendChild(el)
     const items = [...el.shadowRoot!.querySelectorAll('oas-radio')]
     items[0]!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true, cancelable: true }),
+      new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      }),
     )
     expect(el.getAttribute('value')).toBe('y')
   })

@@ -151,24 +151,16 @@ describe('OASButtonGroup 扩展：pill / 嵌套组 / 分隔符', () => {
   it('pill 胶囊：首/尾按钮圆角用 --oas-radius-full（横向首左圆/尾右圆）', () => {
     const css = styleText(mountGroup({ pill: '' }))
     expect(css).toContain(':host([pill]) ::slotted(oas-button:first-child)')
-    expect(css).toContain(
-      '--oas-button-group-radius: var(--oas-radius-full, 999px) 0 0 var(--oas-radius-full, 999px)',
-    )
-    expect(css).toContain(
-      '--oas-button-group-radius: 0 var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0',
-    )
+    expect(css).toContain('--oas-button-group-radius: var(--oas-radius-full, 999px) 0 0 var(--oas-radius-full, 999px)')
+    expect(css).toContain('--oas-button-group-radius: 0 var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0')
     expect(css).toContain('--oas-button-group-start-radius: var(--oas-radius-full, 999px)')
   })
 
   it('pill + vertical：首上圆/尾下圆', () => {
     const css = styleText(mountGroup({ pill: '', vertical: '' }))
     expect(css).toContain(':host([vertical][pill])')
-    expect(css).toContain(
-      '--oas-button-group-radius: var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0 0',
-    )
-    expect(css).toContain(
-      '--oas-button-group-radius: 0 0 var(--oas-radius-full, 999px) var(--oas-radius-full, 999px)',
-    )
+    expect(css).toContain('--oas-button-group-radius: var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0 0')
+    expect(css).toContain('--oas-button-group-radius: 0 0 var(--oas-radius-full, 999px) var(--oas-radius-full, 999px)')
   })
 
   it('嵌套组：CSS 与按钮同等处理（贴合/圆角合并），并经 start/end 变量穿透整体圆角', () => {
@@ -309,9 +301,7 @@ describe('OASButtonGroup 扩展：spread 均分 / variant·round 透传', () => 
 
   it('spread：嵌套组作为整体一项等宽均分，不透传拉满到内部按钮', () => {
     const css = styleText(mountGroup({ spread: '' }))
-    const nestedRule = css.match(
-      /:host\(\[spread\]\) ::slotted\(oas-button-group\)\s*\{[^}]*}/,
-    )?.[0]
+    const nestedRule = css.match(/:host\(\[spread\]\) ::slotted\(oas-button-group\)\s*\{[^}]*}/)?.[0]
     expect(nestedRule).toContain('flex: 1 1 0')
     expect(nestedRule).not.toContain('--oas-button-group-width')
   })

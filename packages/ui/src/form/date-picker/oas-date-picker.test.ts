@@ -188,9 +188,7 @@ describe('OASDatePicker', () => {
     const el = mount({ type: 'datetime', value: '2026-08-09T00:00:00' })
     open(el)
     day(el, '2026-08-09').click()
-    const hourOpt = el.shadowRoot!.querySelector<HTMLElement>(
-      '.time-col[data-unit="h"] .time-option[data-value="9"]',
-    )!
+    const hourOpt = el.shadowRoot!.querySelector<HTMLElement>('.time-col[data-unit="h"] .time-option[data-value="9"]')!
     const minuteOpt = el.shadowRoot!.querySelector<HTMLElement>(
       '.time-col[data-unit="m"] .time-option[data-value="30"]',
     )!
@@ -268,24 +266,18 @@ describe('OASDatePicker', () => {
   it('shortcuts：未设置时 date 类型渲染内置「今天」预设（locale）', () => {
     const el = mount({ value: '2026-08-09' })
     open(el)
-    const labels = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.shortcut')].map(
-      (b) => b.textContent,
-    )
+    const labels = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.shortcut')].map((b) => b.textContent)
     expect(labels).toContain('今天')
   })
 
   it('shortcuts：datetime / month 类型补齐内置预设', () => {
     const dt = mount({ type: 'datetime', value: '2026-08-09T09:30:00' })
     open(dt)
-    const dtLabels = [...dt.shadowRoot!.querySelectorAll<HTMLElement>('.shortcut')].map(
-      (b) => b.textContent,
-    )
+    const dtLabels = [...dt.shadowRoot!.querySelectorAll<HTMLElement>('.shortcut')].map((b) => b.textContent)
     expect(dtLabels).toContain('今天')
     const mo = mount({ type: 'month', value: '2026-08' })
     open(mo)
-    const moLabels = [...mo.shadowRoot!.querySelectorAll<HTMLElement>('.shortcut')].map(
-      (b) => b.textContent,
-    )
+    const moLabels = [...mo.shadowRoot!.querySelectorAll<HTMLElement>('.shortcut')].map((b) => b.textContent)
     expect(moLabels).toContain('本月')
   })
 
@@ -472,9 +464,7 @@ describe('type 面板族补齐', () => {
     const cells = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.month-cell')]
     expect(cells.length).toBe(24)
     const calEvents: unknown[] = []
-    el.addEventListener('oas-calendar-change', (e: Event) =>
-      calEvents.push((e as CustomEvent).detail),
-    )
+    el.addEventListener('oas-calendar-change', (e: Event) => calEvents.push((e as CustomEvent).detail))
     cells.find((c) => c.getAttribute('data-month') === '2026-03')!.click()
     expect(calEvents[0]).toEqual({ value: ['2026-03', null] })
     cells.find((c) => c.getAttribute('data-month') === '2026-08')!.click()
@@ -495,13 +485,14 @@ describe('type 面板族补齐', () => {
   })
 
   it('datetimerange：双月 + 起止时间区 + 确定提交，派发 oas-change / oas-confirm / oas-calendar-change', () => {
-    const el = mount({ type: 'datetimerange', value: '["2026-08-10T09:00:00","2026-08-20T18:00:00"]' })
+    const el = mount({
+      type: 'datetimerange',
+      value: '["2026-08-10T09:00:00","2026-08-20T18:00:00"]',
+    })
     open(el)
     expect(grids(el).length).toBe(2)
     const calEvents: unknown[] = []
-    el.addEventListener('oas-calendar-change', (e: Event) =>
-      calEvents.push((e as CustomEvent).detail),
-    )
+    el.addEventListener('oas-calendar-change', (e: Event) => calEvents.push((e as CustomEvent).detail))
     day(el, '2026-08-05').click()
     day(el, '2026-08-15').click()
     expect(calEvents[0]).toEqual({ value: ['2026-08-05', null] })
@@ -643,9 +634,7 @@ describe('受控 open 与事件', () => {
   it('受控模式：trigger 手势只派发 oas-open-change，不自行开合', () => {
     const el = mount({ value: '2026-08-09', open: '' })
     const events: boolean[] = []
-    el.addEventListener('oas-open-change', (e: Event) =>
-      events.push((e as CustomEvent).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
     trigger(el).click()
     expect(events).toEqual([false])
     expect(expanded(el)).toBe('true') // 属性仍在场 → 保持展开
@@ -658,9 +647,7 @@ describe('受控 open 与事件', () => {
   it('非受控：开合均派发 oas-open-change', () => {
     const el = mount({ value: '2026-08-09' })
     const events: boolean[] = []
-    el.addEventListener('oas-open-change', (e: Event) =>
-      events.push((e as CustomEvent).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
     trigger(el).click()
     expect(events).toEqual([true])
     panel(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
@@ -676,9 +663,7 @@ describe('受控 open 与事件', () => {
     input(el).dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
     expect(focused).toBe(1)
     // 组件内转移（input → 面板日格）不派发 blur
-    rovingRef(el)?.dispatchEvent(
-      new FocusEvent('focusout', { bubbles: true, relatedTarget: rovingRef(el) }),
-    )
+    rovingRef(el)?.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: rovingRef(el) }))
     expect(blurred).toBe(0)
     input(el).dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }))
     expect(blurred).toBe(1)
@@ -706,9 +691,7 @@ describe('面板能力', () => {
     const el = mount({ type: 'daterange', 'default-value': '2026-08-01' })
     open(el)
     const events: unknown[] = []
-    el.addEventListener('oas-calendar-change', (e: Event) =>
-      events.push((e as CustomEvent).detail),
-    )
+    el.addEventListener('oas-calendar-change', (e: Event) => events.push((e as CustomEvent).detail))
     day(el, '2026-08-10').click()
     day(el, '2026-08-20').click()
     expect(events[0]).toEqual({ value: ['2026-08-10', null] })
@@ -719,9 +702,7 @@ describe('面板能力', () => {
     const linked = mount({ type: 'daterange', value: '["2026-08-05","2026-08-15"]' })
     open(linked)
     const titles = () =>
-      [...linked.shadowRoot!.querySelectorAll<HTMLElement>('.range-grid .title')].map(
-        (t) => t.textContent,
-      )
+      [...linked.shadowRoot!.querySelectorAll<HTMLElement>('.range-grid .title')].map((t) => t.textContent)
     expect(titles()[0]).toContain('2026年8月')
     expect(titles()[1]).toContain('2026年9月')
     linked.shadowRoot!.querySelectorAll<HTMLElement>('.range-grid [part="next"]')[0]!.click()
@@ -735,9 +716,7 @@ describe('面板能力', () => {
     })
     open(unlinked)
     const titles2 = () =>
-      [...unlinked.shadowRoot!.querySelectorAll<HTMLElement>('.range-grid .title')].map(
-        (t) => t.textContent,
-      )
+      [...unlinked.shadowRoot!.querySelectorAll<HTMLElement>('.range-grid .title')].map((t) => t.textContent)
     unlinked.shadowRoot!.querySelectorAll<HTMLElement>('.range-grid [part="next"]')[0]!.click()
     expect(titles2()[0]).toContain('2026年9月')
     expect(titles2()[1]).toContain('2026年9月') // 第二面板不动
@@ -762,14 +741,10 @@ describe('面板能力', () => {
   it('first-day-of-week 覆写周起始（默认 zh 周一，覆写 0 周日）', () => {
     const def = mount({ value: '2026-08-09' })
     open(def)
-    expect(grids(def)[0]!.querySelector<HTMLButtonElement>('.day')!.getAttribute('data-date')).toBe(
-      '2026-07-27',
-    )
+    expect(grids(def)[0]!.querySelector<HTMLButtonElement>('.day')!.getAttribute('data-date')).toBe('2026-07-27')
     const sun = mount({ value: '2026-08-09', 'first-day-of-week': '0' })
     open(sun)
-    expect(grids(sun)[0]!.querySelector<HTMLButtonElement>('.day')!.getAttribute('data-date')).toBe(
-      '2026-07-26',
-    )
+    expect(grids(sun)[0]!.querySelector<HTMLButtonElement>('.day')!.getAttribute('data-date')).toBe('2026-07-26')
   })
 
   it('键盘：Home/End 跳周首尾，PageUp/PageDown 换月（Shift 换年），自动换页跟随', () => {
@@ -960,8 +935,7 @@ describe('浮层定位（placement / fixed 锚定）', () => {
     // 人为摆几何：锚点上方空间充足、右缘不出视口 → 无翻转/对齐调整，入参即声明值
     trigger(el).getBoundingClientRect = () =>
       ({ left: 100, top: 400, width: 200, height: 32, right: 300, bottom: 432 }) as DOMRect
-    dropdownEl(el).getBoundingClientRect = () =>
-      ({ left: 0, top: 0, width: 200, height: 200 }) as DOMRect
+    dropdownEl(el).getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 200 }) as DOMRect
     open(el)
     const call = lastCall()
     expect(call[2]).toBe('top-end')
@@ -996,8 +970,7 @@ describe('浮层定位（placement / fixed 锚定）', () => {
     const el = mount({ type: 'daterange' })
     trigger(el).getBoundingClientRect = () =>
       ({ left: 900, top: 100, width: 200, height: 32, right: 1100, bottom: 132 }) as DOMRect
-    dropdownEl(el).getBoundingClientRect = () =>
-      ({ left: 0, top: 0, width: 480, height: 300 }) as DOMRect
+    dropdownEl(el).getBoundingClientRect = () => ({ left: 0, top: 0, width: 480, height: 300 }) as DOMRect
     open(el)
     const call = lastCall()
     expect(call[2]).toBe('bottom-end')

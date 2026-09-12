@@ -363,8 +363,7 @@ export class OASEditable extends OASElement {
     if (!editEl) return
     const wantTextarea = this.hasAttr('multiline')
     const current =
-      this.fieldEl ??
-      (editEl.querySelector('input, textarea') as HTMLInputElement | HTMLTextAreaElement | null)
+      this.fieldEl ?? (editEl.querySelector('input, textarea') as HTMLInputElement | HTMLTextAreaElement | null)
     const isTextarea = current?.tagName === 'TEXTAREA'
     if (current && ((wantTextarea && isTextarea) || (!wantTextarea && !isTextarea))) {
       if (this.fieldEl === current) return
@@ -373,9 +372,7 @@ export class OASEditable extends OASElement {
       return
     }
     current?.remove()
-    const field = wantTextarea
-      ? document.createElement('textarea')
-      : document.createElement('input')
+    const field = wantTextarea ? document.createElement('textarea') : document.createElement('input')
     this.bindField(field)
     editEl.insertBefore(field, editEl.firstChild)
   }

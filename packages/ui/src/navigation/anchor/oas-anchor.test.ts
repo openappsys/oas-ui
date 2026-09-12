@@ -165,12 +165,7 @@ describe('OASAnchor', () => {
       return { el, container, sections }
     }
 
-    function setRects(
-      sc: ReturnType<typeof scenario>,
-      tops: number[],
-      containerTop = 100,
-      height = 240,
-    ): void {
+    function setRects(sc: ReturnType<typeof scenario>, tops: number[], containerTop = 100, height = 240): void {
       sc.container.getBoundingClientRect = () => rect(containerTop, height) as DOMRect
       sc.sections.forEach((s, i) => (s.getBoundingClientRect = () => rect(tops[i] ?? 0) as DOMRect))
     }
@@ -409,13 +404,7 @@ describe('OASAnchor', () => {
       expect(subsub.children.length).toBe(1)
       expect((subsub.children[0] as HTMLElement).dataset.level).toBe('3')
       // 文本顺序深度优先
-      expect(links.map((l) => l.textContent)).toEqual([
-        '第一章',
-        '1.1 小节',
-        '1.2 小节',
-        '1.2.1 小节',
-        '第二章',
-      ])
+      expect(links.map((l) => l.textContent)).toEqual(['第一章', '1.1 小节', '1.2 小节', '1.2.1 小节', '第二章'])
     })
 
     it('嵌套子项参与滚动高亮与事件', () => {
@@ -435,9 +424,7 @@ describe('OASAnchor', () => {
       document.body.appendChild(container)
       el.setAttribute('scroll-container', '#nested-sc')
       const details: string[] = []
-      el.addEventListener('oas-change', (e: Event) =>
-        details.push((e as CustomEvent).detail.href as string),
-      )
+      el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail.href as string))
       const fire = (): void => {
         container.dispatchEvent(new Event('scroll'))
         flushRaf()
@@ -563,9 +550,7 @@ describe('OASAnchor', () => {
         s.getBoundingClientRect = () => rect(tops[i]!) as DOMRect
       })
       const details: string[] = []
-      el.addEventListener('oas-change', (e: Event) =>
-        details.push((e as CustomEvent).detail.href as string),
-      )
+      el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail.href as string))
       container.dispatchEvent(new Event('scroll'))
       flushRaf()
       expect(activeLink(el)).toBe('#section3')
@@ -641,9 +626,7 @@ describe('OASAnchor', () => {
 
     it('variant 样式变体映射 nav class', () => {
       const el = mount({ variant: 'underline' })
-      expect(el.shadowRoot!.querySelector('nav')!.classList.contains('variant-underline')).toBe(
-        true,
-      )
+      expect(el.shadowRoot!.querySelector('nav')!.classList.contains('variant-underline')).toBe(true)
       const block = mount({ variant: 'block' })
       expect(block.shadowRoot!.querySelector('nav')!.classList.contains('variant-block')).toBe(true)
     })
@@ -668,9 +651,7 @@ describe('OASAnchor', () => {
   describe('target=_blank / internal-scrollable', () => {
     it('item target=_blank：不拦截默认行为并带 rel=noopener noreferrer', () => {
       const el = mount({
-        items: JSON.stringify([
-          { href: 'https://example.com/docs', title: '外部文档', target: '_blank' },
-        ]),
+        items: JSON.stringify([{ href: 'https://example.com/docs', title: '外部文档', target: '_blank' }]),
       })
       const a = el.shadowRoot!.querySelector('[part="link"]')!
       expect(a.getAttribute('target')).toBe('_blank')
@@ -691,9 +672,7 @@ describe('OASAnchor', () => {
 
     it('internal-scrollable 锚点栏自身内部滚动 class', () => {
       const el = mount({ 'internal-scrollable': '' })
-      expect(el.shadowRoot!.querySelector('nav')!.classList.contains('internal-scrollable')).toBe(
-        true,
-      )
+      expect(el.shadowRoot!.querySelector('nav')!.classList.contains('internal-scrollable')).toBe(true)
     })
   })
 
@@ -742,9 +721,7 @@ describe('OASAnchor', () => {
 
     it('外部链接项（target=_blank）点击仍派发 oas-click，不派发 oas-change', () => {
       const el = mount({
-        items: JSON.stringify([
-          { href: 'https://example.com/docs', title: '外部文档', target: '_blank' },
-        ]),
+        items: JSON.stringify([{ href: 'https://example.com/docs', title: '外部文档', target: '_blank' }]),
       })
       const clicks: Array<{ href: string }> = []
       let changes = 0
@@ -1032,10 +1009,9 @@ describe('子元素声明式通道', () => {
   })
 
   it('item 级 target-offset 覆盖全局 target-offset（点击落点）', () => {
-    const el = mountChildren(
-      `<oas-anchor-item href="#section1" target-offset="40">第一章</oas-anchor-item>`,
-      { 'target-offset': '120' },
-    )
+    const el = mountChildren(`<oas-anchor-item href="#section1" target-offset="40">第一章</oas-anchor-item>`, {
+      'target-offset': '120',
+    })
     // 前面 block=nearest 测试把 window.scrollY 改为 800（defineProperty 不复原），此处显式归零
     Object.defineProperty(window, 'scrollY', { value: 0, configurable: true })
     const d = document.createElement('div')

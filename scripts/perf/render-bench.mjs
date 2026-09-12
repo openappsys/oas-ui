@@ -175,8 +175,7 @@ function selectOptions(seed = 0) {
 function buildTabs() {
   const el = makeElement('oas-tabs')
   let html = ''
-  for (let i = 0; i < 10; i++)
-    html += `<oas-tab-panel label="标签${i}" value="${i}"><p>内容${i}</p></oas-tab-panel>`
+  for (let i = 0; i < 10; i++) html += `<oas-tab-panel label="标签${i}" value="${i}"><p>内容${i}</p></oas-tab-panel>`
   el.innerHTML = html
   return el
 }
@@ -204,23 +203,17 @@ function run(id, label, stat) {
 run(
   'button-first-render',
   'button',
-  benchFirstRender('oas-button', () =>
-    makeElement('oas-button', { type: 'primary', size: 'medium' }),
-  ),
+  benchFirstRender('oas-button', () => makeElement('oas-button', { type: 'primary', size: 'medium' })),
 )
 run(
   'input-first-render',
   'input',
-  benchFirstRender('oas-input', () =>
-    makeElement('oas-input', { placeholder: '请输入', label: '姓名' }),
-  ),
+  benchFirstRender('oas-input', () => makeElement('oas-input', { placeholder: '请输入', label: '姓名' })),
 )
 run(
   'table-100rows-first-render',
   'table(100 行)',
-  benchFirstRender('oas-table', () =>
-    makeElement('oas-table', { columns: COLUMNS, data: tableData() }),
-  ),
+  benchFirstRender('oas-table', () => makeElement('oas-table', { columns: COLUMNS, data: tableData() })),
 )
 run(
   'select-100opt-first-render',
@@ -244,9 +237,7 @@ const tableUpdate = benchUpdate(tableEl, (el, i) => el.setAttribute('data', tabl
 
 const selectEl = makeElement('oas-select', { options: selectOptions() })
 document.body.appendChild(selectEl)
-const selectUpdate = benchUpdate(selectEl, (el, i) =>
-  el.setAttribute('options', selectOptions(i + 1)),
-)
+const selectUpdate = benchUpdate(selectEl, (el, i) => el.setAttribute('options', selectOptions(i + 1)))
 
 console.log('\n=== update 增量耗时（ms） ===')
 run('table-data-update', 'table 数据更新', tableUpdate)

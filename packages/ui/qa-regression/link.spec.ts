@@ -25,20 +25,15 @@ test('link 三态下划线 + icon + external + rel：hover 悬停出下划线、
   await page.goto('/components/link.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-link')
   const r = await page.evaluate(() => {
-    const block = [...document.querySelectorAll('.demo-block')].find((b) =>
-      b.textContent?.includes('hover'),
-    )
+    const block = [...document.querySelectorAll('.demo-block')].find((b) => b.textContent?.includes('hover'))
     const links = [...block!.querySelectorAll('oas-link')]
-    const deco = (el: Element) =>
-      getComputedStyle(el.shadowRoot!.querySelector('a')!).textDecorationLine
+    const deco = (el: Element) => getComputedStyle(el.shadowRoot!.querySelector('a')!).textDecorationLine
     return {
       hoverRest: deco(links[0]!),
       alwaysRest: deco(links[1]!),
       neverRest: deco(links[2]!),
       iconDemo: (() => {
-        const iconBlock = [...document.querySelectorAll('.demo-block')].find((b) =>
-          b.textContent?.includes('搜索文档'),
-        )
+        const iconBlock = [...document.querySelectorAll('.demo-block')].find((b) => b.textContent?.includes('搜索文档'))
         const withIcon = iconBlock!.querySelector('oas-link[icon]')!
         const a = withIcon.shadowRoot!.querySelector('a')!
         return {
@@ -71,36 +66,25 @@ test('link 三态下划线 + icon + external + rel：hover 悬停出下划线、
   await hoverLink.hover()
   await page.waitForTimeout(200)
   const hoverDeco = await page.evaluate(() => {
-    const el = [...document.querySelectorAll('oas-link')].find((l) =>
-      l.textContent?.includes('hover'),
-    )
+    const el = [...document.querySelectorAll('oas-link')].find((l) => l.textContent?.includes('hover'))
     return getComputedStyle(el!.shadowRoot!.querySelector('a')!).textDecorationLine
   })
   expect(hoverDeco).toContain('underline')
 })
 
-test('link 色板达标：预设名映射 -text 达标 token、自定义色原值渲染、type 语义色改指 text 变体', async ({
-  page,
-}) => {
+test('link 色板达标：预设名映射 -text 达标 token、自定义色原值渲染、type 语义色改指 text 变体', async ({ page }) => {
   // v2.1 link 色板对齐（设计期文字 token 模型）：预设亮色（gold 等）白底本色不达标，
   // 预设名映射 --oas-preset-*-text 达标 token；自定义色值原值渲染（责任在宿主）；
   // 存量隐患修复：type=success/warning/danger 文字色改指 -text 变体（此前 3.3:1 不达 AA）。
   await page.goto('/components/link.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-link')
   const r = await page.evaluate(() => {
-    const block = [...document.querySelectorAll('.demo-block')].find((b) =>
-      b.textContent?.includes('magenta'),
-    )
+    const block = [...document.querySelectorAll('.demo-block')].find((b) => b.textContent?.includes('magenta'))
     const color = (name: string) =>
-      getComputedStyle(
-        block!.querySelector(`oas-link[color="${name}"]`)!.shadowRoot!.querySelector('a')!,
-      ).color
-    const sem = [...document.querySelectorAll('.demo-block')].find((b) =>
-      b.textContent?.includes('主要链接'),
-    )
+      getComputedStyle(block!.querySelector(`oas-link[color="${name}"]`)!.shadowRoot!.querySelector('a')!).color
+    const sem = [...document.querySelectorAll('.demo-block')].find((b) => b.textContent?.includes('主要链接'))
     const typeColor = (t: string) =>
-      getComputedStyle(sem!.querySelector(`oas-link[type="${t}"]`)!.shadowRoot!.querySelector('a')!)
-        .color
+      getComputedStyle(sem!.querySelector(`oas-link[type="${t}"]`)!.shadowRoot!.querySelector('a')!).color
     const custom = document.querySelector('oas-link[color="#0e7490"]')
     return {
       gold: color('gold'),

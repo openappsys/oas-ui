@@ -82,9 +82,7 @@ export class OASSider extends OASElement {
 
   protected override update(): void {
     // 侧边栏 aria-label locale 驱动（setLocale 切换自动重刷）
-    this.shadow
-      .querySelector<HTMLElement>('[part="sider"]')
-      ?.setAttribute('aria-label', this.t('layout.sider'))
+    this.shadow.querySelector<HTMLElement>('[part="sider"]')?.setAttribute('aria-label', this.t('layout.sider'))
   }
 
   /** 内部侧栏折叠/展开时同步自身 collapsed（保持外轨宽度与内栏图标条匹配） */

@@ -172,9 +172,7 @@ export class OASFormItem extends OASElement {
       direct.focus()
       return
     }
-    const focusable = this.querySelector<HTMLElement>(
-      'input, select, textarea, [tabindex], button, [role="button"]',
-    )
+    const focusable = this.querySelector<HTMLElement>('input, select, textarea, [tabindex], button, [role="button"]')
     focusable?.focus()
   }
 

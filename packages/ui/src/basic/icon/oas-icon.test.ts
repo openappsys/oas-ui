@@ -120,9 +120,7 @@ describe('OASIcon', () => {
   describe('自定义图标（src / slot）', () => {
     it('src 属性 → fetch 加载内联渲染（viewBox 同步、fill 走 currentColor）', async () => {
       const svgStr = '<svg viewBox="0 0 24 24"><path d="M1 1 L5 5"/></svg>'
-      const fetchMock = vi.fn(() =>
-        Promise.resolve({ ok: true, text: () => Promise.resolve(svgStr) }),
-      )
+      const fetchMock = vi.fn(() => Promise.resolve({ ok: true, text: () => Promise.resolve(svgStr) }))
       vi.stubGlobal('fetch', fetchMock)
       try {
         const el = mount({ name: 'check', src: '/demo-icon.svg' })
@@ -178,9 +176,7 @@ describe('OASIcon', () => {
       const resolver = vi.fn((name: string) => `/icons/${name}.svg`)
       registerIconLibrary('lib-demo', { resolver })
       const svgStr = '<svg viewBox="0 0 24 24"><path d="M2 2 L20 20"/></svg>'
-      const fetchMock = vi.fn(() =>
-        Promise.resolve({ ok: true, text: () => Promise.resolve(svgStr) }),
-      )
+      const fetchMock = vi.fn(() => Promise.resolve({ ok: true, text: () => Promise.resolve(svgStr) }))
       vi.stubGlobal('fetch', fetchMock)
       try {
         const el = mount({ library: 'lib-demo', name: 'heart' })
@@ -274,9 +270,7 @@ describe('OASIcon', () => {
     })
 
     it('family/variant 属性透传给 resolver', async () => {
-      const resolver = vi.fn(
-        (name: string, family?: string, variant?: string) => `/x/${family}/${variant}/${name}.svg`,
-      )
+      const resolver = vi.fn((name: string, family?: string, variant?: string) => `/x/${family}/${variant}/${name}.svg`)
       registerIconLibrary('lib-fv', { resolver })
       const fetchMock = vi.fn(() =>
         Promise.resolve({

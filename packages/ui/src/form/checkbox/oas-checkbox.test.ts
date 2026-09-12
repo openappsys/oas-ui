@@ -186,9 +186,7 @@ describe('OASCheckbox 自定义指示器插槽', () => {
     tpl.innerHTML = '<span class="fav">♥</span>'
     el.appendChild(tpl)
     document.body.appendChild(el)
-    const holder = el
-      .shadowRoot!.querySelector('.indicator-checked')!
-      .querySelector('.indicator-tpl')
+    const holder = el.shadowRoot!.querySelector('.indicator-checked')!.querySelector('.indicator-tpl')
     expect(holder).not.toBeNull()
     expect(holder!.querySelector('.fav')).not.toBeNull()
   })
@@ -240,9 +238,7 @@ describe('OASCheckbox 辅助文本（description）', () => {
     const desc = el.shadowRoot!.querySelector('.description') as HTMLElement
     expect(desc.hidden).toBe(false)
     const descSlot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="description"]')!
-    expect(
-      descSlot.assignedElements().some((n) => (n.textContent ?? '').includes('插槽文本')),
-    ).toBe(true)
+    expect(descSlot.assignedElements().some((n) => (n.textContent ?? '').includes('插槽文本'))).toBe(true)
     // 有分发时属性文本节点让位隐藏
     expect((desc.querySelector('.desc-text') as HTMLElement).hidden).toBe(true)
   })
@@ -405,9 +401,7 @@ describe('OASCheckboxGroup 组级能力', () => {
 
   it('direction 镜像 data-direction，默认 vertical', () => {
     expect(mountGroup().getAttribute('data-direction')).toBe('vertical')
-    expect(mountGroup({ direction: 'horizontal' }).getAttribute('data-direction')).toBe(
-      'horizontal',
-    )
+    expect(mountGroup({ direction: 'horizontal' }).getAttribute('data-direction')).toBe('horizontal')
     expect(mountGroup({ direction: 'diagonal' }).getAttribute('data-direction')).toBe('vertical')
   })
 

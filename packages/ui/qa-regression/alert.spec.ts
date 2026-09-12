@@ -29,9 +29,7 @@ test('alert 退场过渡收尾：data-closing 移除、open 属性回写移除�
   expect(await host.getAttribute('open')).toBeNull()
 })
 
-test('alert 受控重开：关闭后 demo 按钮重设 open 恢复可见（oas-open-change 闭环可见反馈）', async ({
-  page,
-}) => {
+test('alert 受控重开：关闭后 demo 按钮重设 open 恢复可见（oas-open-change 闭环可见反馈）', async ({ page }) => {
   await page.goto('/components/alert.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#alert-reopen')
   const host = page.locator('#alert-reopen')
@@ -43,9 +41,7 @@ test('alert 受控重开：关闭后 demo 按钮重设 open 恢复可见（oas-o
   expect(await host.getAttribute('hidden')).toBeNull()
 })
 
-test('alert demo 属性存活（Vue 不剥离）：close-text / max-line / banner / border 均在宿主上', async ({
-  page,
-}) => {
+test('alert demo 属性存活（Vue 不剥离）：close-text / max-line / banner / border 均在宿主上', async ({ page }) => {
   await page.goto('/components/alert.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-alert[close-text]')
   expect(await page.locator('oas-alert[close-text]').count()).toBeGreaterThan(0)

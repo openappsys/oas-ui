@@ -3,7 +3,13 @@
 // 主路径 `@oas-ui/ui/feedback/modal` 已默认内含 prompt 能力——仅需纯核瘦身的消费者
 // 显式选本路径，并按需 import './prompt/index.js' 补能力。
 import '@oas-ui/i18n'
-import { OASModal, type ModalVariant, type ModalCloseSource, type ModalTransition, type ModalSizePreset } from '../oas-modal.js'
+import {
+  OASModal,
+  type ModalVariant,
+  type ModalCloseSource,
+  type ModalTransition,
+  type ModalSizePreset,
+} from '../oas-modal.js'
 import {
   modal,
   destroyAll,
@@ -20,11 +26,7 @@ import {
   type OptionsHandle,
   type OptionsType,
 } from '../modal.js'
-import {
-  registerModalCapability,
-  registeredModalCapabilities,
-  hasModalCapability,
-} from '../oas-modal-capability.js'
+import { registerModalCapability, registeredModalCapabilities, hasModalCapability } from '../oas-modal-capability.js'
 
 if (!customElements.get('oas-modal')) {
   customElements.define('oas-modal', OASModal)

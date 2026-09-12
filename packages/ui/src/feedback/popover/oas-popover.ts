@@ -1,10 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry } from '@oas-ui/icons'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
-import {
-  registeredPopoverCapabilities,
-  onPopoverCapabilityRegistered,
-} from './oas-popover-capability.js'
+import { registeredPopoverCapabilities, onPopoverCapabilityRegistered } from './oas-popover-capability.js'
 
 /** 面板与触发器的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
@@ -435,14 +432,7 @@ function preventModalScroll(e: Event): void {
 function preventModalScrollKeydown(e: KeyboardEvent): void {
   const t = e.target as HTMLElement | null
   // 输入类控件内不拦截（保留正常输入），仅拦截会滚动页面的按键
-  if (
-    t &&
-    (t.tagName === 'INPUT' ||
-      t.tagName === 'TEXTAREA' ||
-      t.tagName === 'SELECT' ||
-      t.isContentEditable)
-  )
-    return
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return
   if (SCROLL_KEYS.has(e.key)) e.preventDefault()
 }
 
@@ -597,9 +587,7 @@ export class OASPopover extends OASElement {
 
   /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
   private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** 任意命名 slot 是否有真实内容（元素节点或非空白文本）——header/footer/description 判空通用 */
@@ -853,9 +841,7 @@ export class OASPopover extends OASElement {
         .composedPath()
         .find(
           (n) =>
-            n instanceof HTMLElement &&
-            n.hasAttribute('data-popover') &&
-            n.getAttribute('data-popover') === 'close',
+            n instanceof HTMLElement && n.hasAttribute('data-popover') && n.getAttribute('data-popover') === 'close',
         )
       if (!closer) return
       if (this.closeWith('declarative')) this.restoreFocus()
@@ -869,9 +855,7 @@ export class OASPopover extends OASElement {
       const path = e.composedPath()
       const inPanel = path.includes(this.panel as unknown as EventTarget)
       const inNamedSlot = path.some(
-        (n) =>
-          n instanceof HTMLElement &&
-          (SLOT_NAMES as readonly string[]).includes(n.getAttribute('slot') ?? ''),
+        (n) => n instanceof HTMLElement && (SLOT_NAMES as readonly string[]).includes(n.getAttribute('slot') ?? ''),
       )
       if (!inPanel && !inNamedSlot) return
       this.closeWith('dismiss')
@@ -1136,11 +1120,7 @@ export class OASPopover extends OASElement {
    *  virtual（宿主自管触发器）与 render-panel（无触发语义）跳过；
    *  SSR 渲染端跳过（快照为关闭态骨架，浏览器水合后 bind/update 补齐——同测量组件未校正态惯例） */
   private syncAnchorAria(showPanel: boolean): void {
-    if (
-      typeof window !== 'undefined' &&
-      (window as unknown as Record<string, unknown>).__OAS_SSR__ === true
-    )
-      return
+    if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__OAS_SSR__ === true) return
     const anchor = this.anchor
     if (!anchor || !(anchor instanceof HTMLElement)) return
     if (this.hasAttr('virtual') || this.hasAttr('render-panel') || anchor === this) return
@@ -1269,26 +1249,17 @@ export class OASPopover extends OASElement {
       if (autoAdjust && !stickToEdge) {
         const candidates = [requested, ...fallbacks]
         actual =
-          candidates.find((p) =>
-            this.fitsMain(p, anchorRect, panelRect, distance, padding, viewport),
-          ) ?? candidates[candidates.length - 1]!
+          candidates.find((p) => this.fitsMain(p, anchorRect, panelRect, distance, padding, viewport)) ??
+          candidates[candidates.length - 1]!
       } else {
         actual = requested
       }
     }
 
-    const r = computePosition(
-      anchorRect,
-      panelRect,
-      actual as Placement,
-      viewport,
-      distance,
-      autoAdjust,
-      {
-        skidding: skid,
-        collisionPadding: padding,
-      },
-    )
+    const r = computePosition(anchorRect, panelRect, actual as Placement, viewport, distance, autoAdjust, {
+      skidding: skid,
+      collisionPadding: padding,
+    })
     this.panel.style.top = `${r.top}px`
     this.panel.style.left = `${r.left}px`
     this.panel.setAttribute('data-placement', r.placement)
@@ -1298,10 +1269,7 @@ export class OASPopover extends OASElement {
   }
 
   /** 锚点矩形夹取到视口内（sticky=always 贴边保位的锚点侧等价矩形） */
-  private clampRectToViewport(
-    r: DOMRect,
-    viewport: { width: number; height: number },
-  ): DOMRect {
+  private clampRectToViewport(r: DOMRect, viewport: { width: number; height: number }): DOMRect {
     const pad = this.collisionPadding()
     const w = Math.min(r.width, viewport.width - pad * 2)
     const h = Math.min(r.height, viewport.height - pad * 2)
@@ -1358,25 +1326,10 @@ export class OASPopover extends OASElement {
         : placement.startsWith('left')
           ? 'left'
           : 'right'
-    const align: Align = placement.endsWith('-start')
-      ? 'start'
-      : placement.endsWith('-end')
-        ? 'end'
-        : ''
-    const cross = (s: string, e: string): string =>
-      align === 'start' ? s : align === 'end' ? e : 'center'
-    const originX =
-      base === 'top' || base === 'bottom'
-        ? cross('left', 'right')
-        : base === 'left'
-          ? 'right'
-          : 'left'
-    const originY =
-      base === 'left' || base === 'right'
-        ? cross('top', 'bottom')
-        : base === 'top'
-          ? 'bottom'
-          : 'top'
+    const align: Align = placement.endsWith('-start') ? 'start' : placement.endsWith('-end') ? 'end' : ''
+    const cross = (s: string, e: string): string => (align === 'start' ? s : align === 'end' ? e : 'center')
+    const originX = base === 'top' || base === 'bottom' ? cross('left', 'right') : base === 'left' ? 'right' : 'left'
+    const originY = base === 'left' || base === 'right' ? cross('top', 'bottom') : base === 'top' ? 'bottom' : 'top'
     this.panel?.style.setProperty('--oas-origin-x', originX)
     this.panel?.style.setProperty('--oas-origin-y', originY)
   }
@@ -1406,17 +1359,11 @@ export class OASPopover extends OASElement {
     const clampV = (v: number, max: number): number => Math.max(ARROW_PAD, Math.min(v, max))
     if (placement.startsWith('top') || placement.startsWith('bottom')) {
       const center = anchorRect.left + anchorRect.width / 2
-      const x = clampV(
-        center - panelRect.left - ARROW_SIZE / 2,
-        panelRect.width - ARROW_PAD - ARROW_SIZE,
-      )
+      const x = clampV(center - panelRect.left - ARROW_SIZE / 2, panelRect.width - ARROW_PAD - ARROW_SIZE)
       arrow.style.setProperty('--arrow-x', `${x}px`)
     } else {
       const center = anchorRect.top + anchorRect.height / 2
-      const y = clampV(
-        center - panelRect.top - ARROW_SIZE / 2,
-        panelRect.height - ARROW_PAD - ARROW_SIZE,
-      )
+      const y = clampV(center - panelRect.top - ARROW_SIZE / 2, panelRect.height - ARROW_PAD - ARROW_SIZE)
       arrow.style.setProperty('--arrow-y', `${y}px`)
     }
   }
@@ -1456,8 +1403,7 @@ export class OASPopover extends OASElement {
     }
     const sel = this.getAttr('initial-focus', '').trim()
     if (sel) {
-      const target =
-        this.querySelector<HTMLElement>(sel) ?? document.querySelector<HTMLElement>(sel)
+      const target = this.querySelector<HTMLElement>(sel) ?? document.querySelector<HTMLElement>(sel)
       if (target) {
         target.focus()
         return
@@ -1527,7 +1473,9 @@ export class OASPopover extends OASElement {
     const host = document.createElement('div')
     host.setAttribute('data-oas-popover-portal', '')
     host.style.cssText = `position: fixed; inset: 0; pointer-events: none; z-index: ${
-      this.hasAttr('modal') ? 'calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040)) + 1)' : 'calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000))'
+      this.hasAttr('modal')
+        ? 'calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040)) + 1)'
+        : 'calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000))'
     };`
     target.appendChild(host)
     const root = host.attachShadow({ mode: 'open' })
@@ -1593,8 +1541,7 @@ export class OASPopover extends OASElement {
   /** 当前是否为最上层需要接管焦点陷阱的层（modal 或 trap-focus；嵌套时仅最内层接管） */
   private isTopModal(): boolean {
     const trappable = openLayers.filter(
-      (l) =>
-        l.hasAttribute('open') && (l.hasAttribute('modal') || l.hasAttribute('trap-focus')),
+      (l) => l.hasAttribute('open') && (l.hasAttribute('modal') || l.hasAttribute('trap-focus')),
     )
     return trappable[trappable.length - 1] === this
   }
@@ -1710,10 +1657,7 @@ export class OASPopover extends OASElement {
       // 降级：无 slot 结构（旧版 SSR 快照）直接写标题区文本
       titleEl.textContent = title
     }
-    this.panel.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
-      'content',
-      '',
-    )
+    this.panel.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr('content', '')
   }
 
   /** 头部显隐：无标题且非 closable 时整行折叠（关闭按钮仍保留在 DOM）；
@@ -1831,8 +1775,7 @@ export class OASPopover extends OASElement {
    */
   private syncScrollFollow(open: boolean): void {
     if (typeof window === 'undefined') return
-    const track =
-      open && !this.hasVirtualPoint() && this.getAttr('sticky', 'partial') !== 'off'
+    const track = open && !this.hasVirtualPoint() && this.getAttr('sticky', 'partial') !== 'off'
     if (track && !this.scrollFollow) {
       this.scrollFollow = true
       window.addEventListener('scroll', this.onScroll, { capture: true, passive: true })

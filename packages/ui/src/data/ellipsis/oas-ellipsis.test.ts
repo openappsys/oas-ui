@@ -234,8 +234,7 @@ describe('OASEllipsis', () => {
     return el
   }
 
-  const flushRaf = (): Promise<void> =>
-    new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+  const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
   it('DSD 水合：首帧不写省略类，rAF 后按真实溢出校正', async () => {
     const el = dsdEllipsis({ text: '这是一段很长的文本' })
@@ -277,7 +276,12 @@ describe('OASEllipsis', () => {
 
   describe('自定义展开/收起文案（expand-text / collapse-text）', () => {
     it('属性文案优先于 i18n 缺省', () => {
-      const el = mount({ text: '长文本', expandable: '', 'expand-text': '更多', 'collapse-text': '收起吧' })
+      const el = mount({
+        text: '长文本',
+        expandable: '',
+        'expand-text': '更多',
+        'collapse-text': '收起吧',
+      })
       forceOverflow(el, true)
       expect(toggleEl(el).textContent).toBe('更多')
       toggleEl(el).click()
@@ -363,9 +367,7 @@ describe('OASEllipsis', () => {
     const FULL = '这是一段很长很长的文本，用于行内展开链接形态的截断演示，需要足够长'
 
     function stubFit(el: OASEllipsis, keep: number): void {
-      vi.spyOn(el as unknown as { fitPrefixLength: () => number }, 'fitPrefixLength').mockReturnValue(
-        keep,
-      )
+      vi.spyOn(el as unknown as { fitPrefixLength: () => number }, 'fitPrefixLength').mockReturnValue(keep)
     }
 
     it('溢出时：文本截断带省略号，展开链接行内（inline 类、root 直接子级不嵌套文本）', () => {
@@ -467,10 +469,7 @@ describe('OASEllipsis', () => {
       method: 'truncateMiddleMulti' | 'truncateStartMulti',
       ret: string,
     ): ReturnType<typeof vi.spyOn> {
-      return vi.spyOn(
-        el as unknown as Record<string, (f: string, r: number) => string>,
-        method,
-      ).mockReturnValue(ret)
+      return vi.spyOn(el as unknown as Record<string, (f: string, r: number) => string>, method).mockReturnValue(ret)
     }
 
     it('rows≥2 + middle + 溢出：调用镜像截断并写入保首尾内容', () => {
@@ -529,10 +528,12 @@ describe('OASEllipsis', () => {
 
     it('tail + suffix + 溢出：截断为「正文…后缀」，suffix 不被裁掉', () => {
       const el = mount({ text: FULL, suffix: '.pdf' })
-      const spy = vi.spyOn(
-        el as unknown as { truncateTailSuffix: (f: string, r: number, s: string) => string },
-        'truncateTailSuffix',
-      ).mockReturnValue('2026 年度….pdf')
+      const spy = vi
+        .spyOn(
+          el as unknown as { truncateTailSuffix: (f: string, r: number, s: string) => string },
+          'truncateTailSuffix',
+        )
+        .mockReturnValue('2026 年度….pdf')
       forceOverflow(el, true)
       expect(spy).toHaveBeenCalled()
       expect(textEl(el).textContent).toBe('2026 年度….pdf')
@@ -556,9 +557,7 @@ describe('OASEllipsis', () => {
 
     it('expandable + tail + suffix：手动截断内容保留后缀，展开链接在后', () => {
       const el = mount({ text: FULL, expandable: '', suffix: '.pdf' })
-      vi.spyOn(el as unknown as { fitPrefixLength: () => number }, 'fitPrefixLength').mockReturnValue(
-        8,
-      )
+      vi.spyOn(el as unknown as { fitPrefixLength: () => number }, 'fitPrefixLength').mockReturnValue(8)
       forceOverflow(el, true)
       expect(textEl(el).textContent).toBe(`${FULL.slice(0, 8)}….pdf`)
       const btn = toggleEl(el)
@@ -573,7 +572,11 @@ describe('OASEllipsis', () => {
     })
 
     it('click 模式：溢出时文本 role=button + tabindex=0 + aria-expanded=false，按钮隐藏', () => {
-      const el = mount({ text: '这是一段很长很长的文本用于点文本展开演示', expandable: '', 'expand-trigger': 'click' })
+      const el = mount({
+        text: '这是一段很长很长的文本用于点文本展开演示',
+        expandable: '',
+        'expand-trigger': 'click',
+      })
       forceOverflow(el, true)
       const t = textEl(el)
       expect(t.getAttribute('role')).toBe('button')
@@ -583,7 +586,11 @@ describe('OASEllipsis', () => {
     })
 
     it('点击文本展开：派 oas-expand、反射 expanded、aria-expanded=true、展示全文', () => {
-      const el = mount({ text: '这是一段很长很长的文本用于点文本展开演示', expandable: '', 'expand-trigger': 'click' })
+      const el = mount({
+        text: '这是一段很长很长的文本用于点文本展开演示',
+        expandable: '',
+        'expand-trigger': 'click',
+      })
       forceOverflow(el, true)
       let detail: unknown
       el.addEventListener('oas-expand', (e: Event) => (detail = (e as CustomEvent).detail))
@@ -595,7 +602,11 @@ describe('OASEllipsis', () => {
     })
 
     it('Enter / Space 键盘触发等价点击', () => {
-      const el = mount({ text: '这是一段很长很长的文本用于点文本展开演示', expandable: '', 'expand-trigger': 'click' })
+      const el = mount({
+        text: '这是一段很长很长的文本用于点文本展开演示',
+        expandable: '',
+        'expand-trigger': 'click',
+      })
       forceOverflow(el, true)
       textEl(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
       expect(el.hasAttribute('expanded')).toBe(true)
@@ -604,7 +615,11 @@ describe('OASEllipsis', () => {
     })
 
     it('展开后再次点击收起：派 oas-collapse、aria-expanded=false', () => {
-      const el = mount({ text: '这是一段很长很长的文本用于点文本展开演示', expandable: '', 'expand-trigger': 'click' })
+      const el = mount({
+        text: '这是一段很长很长的文本用于点文本展开演示',
+        expandable: '',
+        'expand-trigger': 'click',
+      })
       forceOverflow(el, true)
       textEl(el).click()
       let detail: unknown

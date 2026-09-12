@@ -47,9 +47,7 @@ function warnOnce(kind: string, raw: string, fallback: string, valid: readonly s
   const key = `${kind}:${raw}`
   if (warnedValues.has(key)) return
   warnedValues.add(key)
-  console.warn(
-    `[oas-divider] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`,
-  )
+  console.warn(`[oas-divider] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
 }
 
 const STYLE = `
@@ -276,8 +274,7 @@ export class OASDivider extends OASElement {
     // 跨方向词（horizontal+top、vertical+left 等）回落 center 并告警
     let position: DividerPosition = 'center'
     const rawPosition = this.getAttr('content-position', '')
-    const validPositions =
-      direction === 'vertical' ? VALID_VERTICAL_POSITIONS : VALID_HORIZONTAL_POSITIONS
+    const validPositions = direction === 'vertical' ? VALID_VERTICAL_POSITIONS : VALID_HORIZONTAL_POSITIONS
     if (rawPosition) {
       if ((validPositions as readonly string[]).includes(rawPosition)) {
         position = rawPosition as DividerPosition

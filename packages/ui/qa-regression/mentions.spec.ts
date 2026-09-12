@@ -35,10 +35,7 @@ test('mentions whole：光标紧跟提及段按 Backspace 一次删除整段（�
     const el = document.querySelector('oas-mentions#mention-whole')!
     const t = el.shadowRoot!.querySelector('textarea')!
     t.focus()
-    t.setSelectionRange(
-      t.value.indexOf('@') + '@张三'.length,
-      t.value.indexOf('@') + '@张三'.length,
-    )
+    t.setSelectionRange(t.value.indexOf('@') + '@张三'.length, t.value.indexOf('@') + '@张三'.length)
     t.dispatchEvent(new Event('input'))
   })
   await page.keyboard.press('Backspace')
@@ -59,9 +56,7 @@ test('mentions whole：光标紧跟提及段按 Backspace 一次删除整段（�
   })
 })
 
-test('mentions type=input：单行形态（rows=1 且 data-type 镜像），属性在 Vue demo 中存活', async ({
-  page,
-}) => {
+test('mentions type=input：单行形态（rows=1 且 data-type 镜像），属性在 Vue demo 中存活', async ({ page }) => {
   await page.goto('/components/mentions.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-mentions#mention-single')
   const r = await page.evaluate(() => {
@@ -78,16 +73,12 @@ test('mentions type=input：单行形态（rows=1 且 data-type 镜像），属�
   expect(r.rows).toBe('1')
 })
 
-test('mentions trigger 数组属性在 Vue demo 中存活（覆盖 DOM 内建 prefix 冲突：@/# 多触发符）', async ({
-  page,
-}) => {
+test('mentions trigger 数组属性在 Vue demo 中存活（覆盖 DOM 内建 prefix 冲突：@/# 多触发符）', async ({ page }) => {
   await page.goto('/components/mentions.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-mentions[trigger]')
   const r = await page.evaluate(() => {
     // 找到 trigger 为数组的那个 demo（@/# 分流）
-    const el = [...document.querySelectorAll('oas-mentions')].find(
-      (x) => x.getAttribute('trigger')?.startsWith('['),
-    )
+    const el = [...document.querySelectorAll('oas-mentions')].find((x) => x.getAttribute('trigger')?.startsWith('['))
     if (!el) return { found: false }
     return { found: true, triggerAttr: el.getAttribute('trigger') }
   })
@@ -95,4 +86,3 @@ test('mentions trigger 数组属性在 Vue demo 中存活（覆盖 DOM 内建 pr
   expect(r.triggerAttr).toContain('@')
   expect(r.triggerAttr).toContain('#')
 })
-

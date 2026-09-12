@@ -12,9 +12,7 @@ import { useOasEvents, type OasEventHandlers } from './use-oas-events.js'
  * 3. 事件名集合变化（增删类型）时重新绑定，新类型生效、旧类型保留；
  * 4. 卸载后全部解绑，事件不再触发。
  */
-
-;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
-  true
+;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 interface FiredRecord {
   type: string
@@ -32,7 +30,11 @@ function MultiEventHost(props: {
   return createElement('div', { ref })
 }
 
-function mount(host: ReturnType<typeof createElement>): { root: Root; container: HTMLDivElement; el: HTMLDivElement } {
+function mount(host: ReturnType<typeof createElement>): {
+  root: Root
+  container: HTMLDivElement
+  el: HTMLDivElement
+} {
   const container = document.createElement('div')
   document.body.append(container)
   const root = createRoot(container)

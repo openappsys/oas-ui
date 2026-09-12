@@ -45,8 +45,7 @@ test('gradient-text 描边：属性渲染钩子 + 描边与渐变共存样式', 
       typedClipped: typedText.classList.contains('clipped'),
       animatedAnimated: animatedText.classList.contains('animated'),
       animatedClipped: animatedText.classList.contains('clipped'),
-      animatedLayerDisplay: css(animated.shadowRoot!.querySelector('[part="stroke"]') as HTMLElement)
-        .display,
+      animatedLayerDisplay: css(animated.shadowRoot!.querySelector('[part="stroke"]') as HTMLElement).display,
     }
   })
   // 渲染钩子：host stroked 类 + 宽度/颜色变量（缺省色走 text-primary token）

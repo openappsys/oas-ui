@@ -395,9 +395,7 @@ describe('OASElement', () => {
     })
 
     it('wasHydrated：回退 render（指纹不匹配 / 结构校验失败）时为 false', () => {
-      const { dsdRoot } = makeDsdRoot(
-        '<meta data-oas-ssr="oas-button" data-oas-ssr-v="1"><span id="label"></span>',
-      )
+      const { dsdRoot } = makeDsdRoot('<meta data-oas-ssr="oas-button" data-oas-ssr-v="1"><span id="label"></span>')
       DsdHydrateFixture.dsdRoot = dsdRoot
       const el = document.createElement('oas-dsd-hydrate') as DsdHydrateFixture
       document.body.appendChild(el)
@@ -425,7 +423,11 @@ describe('OASElement ReactiveController 支持', () => {
     document.body.innerHTML = ''
   })
 
-  function makeController(): { c: { hostConnected: ReturnType<typeof vi.fn>; hostDisconnected: ReturnType<typeof vi.fn> }; add: () => void; remove: () => void } {
+  function makeController(): {
+    c: { hostConnected: ReturnType<typeof vi.fn>; hostDisconnected: ReturnType<typeof vi.fn> }
+    add: () => void
+    remove: () => void
+  } {
     const c = {
       hostConnected: vi.fn(),
       hostDisconnected: vi.fn(),
@@ -475,4 +477,3 @@ describe('OASElement ReactiveController 支持', () => {
     expect(c2.hostDisconnected).toHaveBeenCalledTimes(1)
   })
 })
-

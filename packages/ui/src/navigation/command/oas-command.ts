@@ -761,10 +761,7 @@ export class OASCommand extends OASElement {
         this.itemsList = Array.isArray(parsed)
           ? parsed.filter(
               (i): i is CommandItem =>
-                !!i &&
-                typeof i === 'object' &&
-                typeof i.label === 'string' &&
-                typeof i.value === 'string',
+                !!i && typeof i === 'object' && typeof i.label === 'string' && typeof i.value === 'string',
             )
           : []
       } catch {
@@ -894,8 +891,7 @@ export class OASCommand extends OASElement {
     }
     // childList：变更发生在 oas-command-item 内（如 label 文本整体替换，target 即该载体、
     // added/removed 为文本节点）；或新增/移除的节点是 oas-command-item、子树内含 oas-command-item
-    if (record.target instanceof Element && record.target.tagName === 'OAS-COMMAND-ITEM')
-      return true
+    if (record.target instanceof Element && record.target.tagName === 'OAS-COMMAND-ITEM') return true
     for (const n of [...record.addedNodes, ...record.removedNodes]) {
       if (!(n instanceof Element)) continue
       if (n.tagName === 'OAS-COMMAND-ITEM') return true
@@ -1108,9 +1104,7 @@ export class OASCommand extends OASElement {
         const parsed: unknown = JSON.parse(raw)
         if (Array.isArray(parsed)) {
           this.recents = parsed
-            .filter(
-              (r): r is RecentEntry => !!r && typeof r === 'object' && typeof r.value === 'string',
-            )
+            .filter((r): r is RecentEntry => !!r && typeof r === 'object' && typeof r.value === 'string')
             .slice(0, MAX_RECENTS)
         }
       }
@@ -1125,10 +1119,7 @@ export class OASCommand extends OASElement {
     if (item.icon) entry.icon = item.icon
     if (item.shortcut) entry.shortcut = item.shortcut
     if (item.description) entry.description = item.description
-    this.recents = [entry, ...this.recents.filter((r) => r.value !== entry.value)].slice(
-      0,
-      MAX_RECENTS,
-    )
+    this.recents = [entry, ...this.recents.filter((r) => r.value !== entry.value)].slice(0, MAX_RECENTS)
     const key = this.recentStorageKey()
     if (!key) return
     try {
@@ -1248,9 +1239,7 @@ export class OASCommand extends OASElement {
 
   /** 插槽桥接：宿主 light DOM 的 empty / footer / view-* 节点移入 portal host light DOM */
   private bridgeSlotContent(host: HTMLElement): void {
-    for (const n of this.querySelectorAll<HTMLElement>(
-      '[slot="empty"], [slot="footer"], [slot^="view-"]',
-    )) {
+    for (const n of this.querySelectorAll<HTMLElement>('[slot="empty"], [slot="footer"], [slot^="view-"]')) {
       host.appendChild(n)
     }
   }
@@ -1314,8 +1303,7 @@ export class OASCommand extends OASElement {
 
     let visible = this.computeVisible()
     // 最近使用：空搜索词时置顶（reorder 去重），虚拟/子页不启用
-    const recentsShown =
-      this.hasAttr('recent') && q0 === '' && !this.hasAttr('virtual') && this.pages.length === 0
+    const recentsShown = this.hasAttr('recent') && q0 === '' && !this.hasAttr('virtual') && this.pages.length === 0
     let recentRows: CommandItem[] = []
     if (recentsShown) {
       recentRows = this.recents.slice(0, MAX_RECENTS)
@@ -1324,15 +1312,12 @@ export class OASCommand extends OASElement {
     }
     // 虚拟滚动：有分组/最近项时回退全量渲染（定高模型不适配组标题）
     const hasGroups = this.activeItems.some((i) => i.group !== undefined)
-    const showVirtual =
-      !!vlist && this.hasAttr('virtual') && !hasGroups && !recentsShown && q0 === ''
+    const showVirtual = !!vlist && this.hasAttr('virtual') && !hasGroups && !recentsShown && q0 === ''
     if (!showVirtual && visible.length > this.limitValue()) {
       visible = visible.slice(0, this.limitValue())
     }
     // forceMount 项：忽略过滤强制渲染（追加在尾部）
-    const forced = this.activeItems.filter(
-      (i) => i.forceMount && !visible.includes(i) && !recentRows.includes(i),
-    )
+    const forced = this.activeItems.filter((i) => i.forceMount && !visible.includes(i) && !recentRows.includes(i))
     visible = [...visible, ...forced]
 
     if (showVirtual) {
@@ -1455,11 +1440,7 @@ export class OASCommand extends OASElement {
     row.setAttribute('aria-disabled', String(item.disabled ?? false))
     row.setAttribute(
       'aria-selected',
-      String(
-        this.hasAttr('multiple')
-          ? this.multiValues.includes(item.value)
-          : shownIndex === this.activeIndex,
-      ),
+      String(this.hasAttr('multiple') ? this.multiValues.includes(item.value) : shownIndex === this.activeIndex),
     )
     row.setAttribute('data-value', item.value)
     row.setAttribute('data-index', String(shownIndex))
@@ -1592,9 +1573,7 @@ export class OASCommand extends OASElement {
       row.classList.toggle('active', idx === this.activeIndex)
       row.setAttribute('aria-selected', String(idx === this.activeIndex))
     }
-    const activeRow = this.renderedOptionRows().find(
-      (r) => Number(r.getAttribute('data-index')) === this.activeIndex,
-    )
+    const activeRow = this.renderedOptionRows().find((r) => Number(r.getAttribute('data-index')) === this.activeIndex)
     if (activeRow && this.searchEl) {
       this.searchEl.setAttribute('aria-activedescendant', activeRow.id)
     } else {
@@ -1642,8 +1621,7 @@ export class OASCommand extends OASElement {
     // 多选确认按钮：有勾选时显示
     const showConfirm = this.hasAttr('multiple') && this.multiValues.length > 0
     confirm.hidden = !showConfirm
-    if (showConfirm)
-      confirm.textContent = this.t('command.multiRun', { n: this.multiValues.length })
+    if (showConfirm) confirm.textContent = this.t('command.multiRun', { n: this.multiValues.length })
   }
 
   private fillHints(): void {
@@ -1682,9 +1660,7 @@ export class OASCommand extends OASElement {
     // （happy-dom 下 document.activeElement 只会回到宿主，真实浏览器里两者一致）。
     const activeRoot = this.portalHost?.shadowRoot ?? this.shadow
     const current = list.indexOf(activeRoot.activeElement as HTMLElement)
-    const next = e.shiftKey
-      ? (current - 1 + list.length) % list.length
-      : (current + 1) % list.length
+    const next = e.shiftKey ? (current - 1 + list.length) % list.length : (current + 1) % list.length
     list[next]?.focus()
   }
 }

@@ -28,9 +28,7 @@ function group(el: OASSegmented): HTMLElement {
 }
 
 function key(el: OASSegmented, k: string): void {
-  group(el).dispatchEvent(
-    new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }),
-  )
+  group(el).dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
 }
 
 describe('OASSegmented', () => {
@@ -301,7 +299,12 @@ describe('OASSegmented', () => {
     const first = items(el)[0]!
     // happy-dom 无布局：stub 选中项几何，让门禁有可比对的实值
     const stubBox = (w: number, h: number, l: number, t: number) => {
-      for (const [k, v] of Object.entries({ offsetWidth: w, offsetHeight: h, offsetLeft: l, offsetTop: t })) {
+      for (const [k, v] of Object.entries({
+        offsetWidth: w,
+        offsetHeight: h,
+        offsetLeft: l,
+        offsetTop: t,
+      })) {
         Object.defineProperty(first, k, { value: v, configurable: true })
       }
     }

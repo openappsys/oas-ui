@@ -39,7 +39,7 @@ export interface PickerGridOptions {
 export function normalizeWeekStart(ws: number): 0 | 1 | 2 | 3 | 4 | 5 | 6 {
   const n = Math.trunc(ws)
   if (Number.isNaN(n)) return 1
-  return ((((n % 7) + 7) % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6)
+  return (((n % 7) + 7) % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6
 }
 
 /** ISO 周历年份（该周周四所在年份，与周号配套使用） */
@@ -109,9 +109,7 @@ export function renderPickerMonthGrid(container: HTMLElement, opts: PickerGridOp
   const ws = normalizeWeekStart(opts.weekStart)
   const cells = buildPickerCells(viewDate, ws)
   const today = opts.today ? startOfDay(opts.today) : null
-  const selectedList = (
-    opts.selected ? (Array.isArray(opts.selected) ? opts.selected : [opts.selected]) : []
-  )
+  const selectedList = (opts.selected ? (Array.isArray(opts.selected) ? opts.selected : [opts.selected]) : [])
     .map(startOfDay)
     .filter((d) => !Number.isNaN(d.getTime()))
   const min = opts.min ? startOfDay(opts.min) : null
@@ -154,8 +152,7 @@ export function renderPickerMonthGrid(container: HTMLElement, opts: PickerGridOp
       const d = startOfDay(cell.date)
       const outOfRange = (min != null && d < min) || (max != null && d > max)
       const isDisabled = outOfRange || (opts.disabledDate?.(cell.date) ?? false)
-      const weekMatch =
-        week != null && isoWeekYear(d) === week.year && isoWeek(d) === week.week
+      const weekMatch = week != null && isoWeekYear(d) === week.year && isoWeek(d) === week.week
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'day'

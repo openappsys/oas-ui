@@ -466,9 +466,7 @@ export class OASSwitch extends OASElement {
     const slot = this.shadow.querySelector('slot')
     const nodes = slot?.assignedNodes({ flatten: true }) ?? []
     return nodes.some(
-      (n) =>
-        n.nodeType === Node.ELEMENT_NODE ||
-        (n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim() !== ''),
+      (n) => n.nodeType === Node.ELEMENT_NODE || (n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim() !== ''),
     )
   }
 

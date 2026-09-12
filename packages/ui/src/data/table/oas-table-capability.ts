@@ -36,7 +36,10 @@ export function onTableCapabilityRegistered(cb: () => void): () => void {
 }
 
 /** 当前已注册能力快照（OASTableBase 构造时遍历注入） */
-export function registeredTableCapabilities(): Array<{ name: string; factory: TableCapabilityFactory }> {
+export function registeredTableCapabilities(): Array<{
+  name: string
+  factory: TableCapabilityFactory
+}> {
   return [...capabilityRegistry.entries()].map(([name, factory]) => ({ name, factory }))
 }
 

@@ -394,9 +394,7 @@ export class OASCombobox extends OASElement {
   private parseOptions(): void {
     try {
       const parsed = JSON.parse(this.getAttr('options', '[]'))
-      this._options = Array.isArray(parsed)
-        ? parsed.filter((o): o is Option => o && typeof o.value === 'string')
-        : []
+      this._options = Array.isArray(parsed) ? parsed.filter((o): o is Option => o && typeof o.value === 'string') : []
     } catch {
       this._options = []
     }
@@ -550,8 +548,7 @@ export class OASCombobox extends OASElement {
       const status = document.createElement('div')
       status.className = 'empty'
       status.setAttribute('role', 'status')
-      status.textContent =
-        this._options.length === 0 ? this.t('combobox.empty') : this.t('combobox.noMatch')
+      status.textContent = this._options.length === 0 ? this.t('combobox.empty') : this.t('combobox.noMatch')
       listbox.appendChild(status)
       this.syncActive()
       return
@@ -586,12 +583,7 @@ export class OASCombobox extends OASElement {
   }
 
   /** 构建一个选项行（角色/aria/高亮/点击/增量 mousemove），非虚拟与虚拟（vlist oas-item）两路共用 */
-  private createOptionRow(
-    option: Option,
-    optionIdx: number,
-    value: string,
-    container: HTMLElement,
-  ): void {
+  private createOptionRow(option: Option, optionIdx: number, value: string, container: HTMLElement): void {
     const row = document.createElement('div')
     row.className = 'option'
     if (option.group !== undefined) row.classList.add('grouped')

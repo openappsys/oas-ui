@@ -281,9 +281,7 @@ describe('A 遮罩与形态', () => {
 
   it('step 级 gap offset（property 通道对象）', async () => {
     const el = mount()
-    el.steps = [
-      { target: document.getElementById('step1')!, title: 's1', gap: { offset: [5, 10] } },
-    ]
+    el.steps = [{ target: document.getElementById('step1')!, title: 's1', gap: { offset: [5, 10] } }]
     el.setAttribute('open', '')
     await tick()
     const h = el.shadowRoot!.querySelector<HTMLElement>('.highlight')!
@@ -399,9 +397,7 @@ describe('A 导航与按钮', () => {
   it('close-icon 自定义关闭按钮内容（HTML）', async () => {
     const el = mount({ 'close-icon': '<b>X</b>' })
     el.setAttribute('open', '')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.innerHTML).toContain(
-      '<b>X</b>',
-    )
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.innerHTML).toContain('<b>X</b>')
   })
 
   it('hide-prev / hide-skip / hide-next / hide-counter 控制显隐', async () => {
@@ -509,9 +505,7 @@ describe('B 步骤配置与内容', () => {
   })
 
   it('cover 图片：step.cover → img 显示且 src 正确', async () => {
-    const steps = JSON.stringify([
-      { selector: '#step1', title: 's1', cover: 'https://example.com/a.png' },
-    ])
+    const steps = JSON.stringify([{ selector: '#step1', title: 's1', cover: 'https://example.com/a.png' }])
     const el = mount({}, steps)
     el.setAttribute('open', '')
     const img = el.shadowRoot!.querySelector<HTMLImageElement>('.cover-img')!
@@ -593,9 +587,7 @@ describe('B 步骤配置与内容', () => {
   it('progress-text 模板：{{current}}/{{total}} 替换', async () => {
     const el = mount({ 'progress-text': '{{current}}/{{total}} 步' })
     el.setAttribute('open', '')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="step-count"]')!.textContent).toContain(
-      '1/2',
-    )
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="step-count"]')!.textContent).toContain('1/2')
   })
 
   it('show-progress：进度条宽度随步骤推进（内联宽度百分比）', async () => {
@@ -655,9 +647,7 @@ describe('B 指示器与生命周期', () => {
   it('indicators=number：步骤序号显示', async () => {
     const el = mount({ indicators: 'number' })
     el.setAttribute('open', '')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="step-count"]')!.textContent).toContain(
-      '1',
-    )
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="step-count"]')!.textContent).toContain('1')
   })
 
   it('slot="indicators"：有内容时隐藏内置圆点/数字指示器', () => {
@@ -715,9 +705,7 @@ describe('B 指示器与生命周期', () => {
 
 describe('hints / 记忆 / 多页 / 打字机 / 挂载', () => {
   it('hints 信标渲染并定位到目标中心', async () => {
-    const hints = JSON.stringify([
-      { id: 'h1', selector: '#step1', title: '提示一', description: '这里有个功能' },
-    ])
+    const hints = JSON.stringify([{ id: 'h1', selector: '#step1', title: '提示一', description: '这里有个功能' }])
     const el = mount({ hints })
     await tick()
     const beacons = el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.beacon')
@@ -727,9 +715,7 @@ describe('hints / 记忆 / 多页 / 打字机 / 挂载', () => {
   })
 
   it('点击信标弹气泡，点「知道了」关闭', async () => {
-    const hints = JSON.stringify([
-      { id: 'h1', selector: '#step1', title: '提示一', description: '这里有个功能' },
-    ])
+    const hints = JSON.stringify([{ id: 'h1', selector: '#step1', title: '提示一', description: '这里有个功能' }])
     const el = mount({ hints })
     await tick()
     el.shadowRoot!.querySelector<HTMLButtonElement>('.beacon')!.click()
@@ -741,9 +727,7 @@ describe('hints / 记忆 / 多页 / 打字机 / 挂载', () => {
   })
 
   it('hint dismissable：点知道了后 localStorage 记忆，信标消失', async () => {
-    const hints = JSON.stringify([
-      { id: 'h1', selector: '#step1', title: '提示一', dismissable: true },
-    ])
+    const hints = JSON.stringify([{ id: 'h1', selector: '#step1', title: '提示一', dismissable: true }])
     const el = mount({ hints })
     await tick()
     el.shadowRoot!.querySelector<HTMLButtonElement>('.beacon')!.click()
@@ -823,9 +807,7 @@ describe('hints / 记忆 / 多页 / 打字机 / 挂载', () => {
     expect(bridged).not.toBeNull()
     expect(bridged!.textContent).toBe('封面富内容')
     // popup 内 <slot name="cover"> 能跨 host 分配到桥接节点（不断供）
-    const slotEl = portalHost.shadowRoot!.querySelector<HTMLSlotElement>(
-      '.popup slot[name="cover"]',
-    )!
+    const slotEl = portalHost.shadowRoot!.querySelector<HTMLSlotElement>('.popup slot[name="cover"]')!
     expect(slotEl.assignedNodes().some((n) => n.textContent === '封面富内容')).toBe(true)
     // 关闭：portal 拆除，节点移回宿主，无孤儿
     el.removeAttribute('open')

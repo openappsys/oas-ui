@@ -36,9 +36,7 @@ function normalizeLabelMode(raw: string): BottomNavLabelMode {
   if ((VALID_LABEL_MODES as readonly string[]).includes(raw)) return raw as BottomNavLabelMode
   if (!warnedLabelModes.has(raw)) {
     warnedLabelModes.add(raw)
-    console.warn(
-      `[oas-bottom-navigation] 非法 show-label "${raw}"，已回落 true；合法值：true/active`,
-    )
+    console.warn(`[oas-bottom-navigation] 非法 show-label "${raw}"，已回落 true；合法值：true/active`)
   }
   return 'true'
 }

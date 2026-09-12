@@ -103,11 +103,7 @@ export class OASApp extends OASElement {
   protected override update(): void {
     // 解析 message/notification/toast 全局默认配置（非法 JSON 告警已内置），配置变化时重注册保持最新
     this.messageConfig = this.parseConfig('message', MESSAGE_CONFIG_KEYS, warnedMessage)
-    this.notificationConfig = this.parseConfig(
-      'notification',
-      NOTIFICATION_CONFIG_KEYS,
-      warnedNotification,
-    )
+    this.notificationConfig = this.parseConfig('notification', NOTIFICATION_CONFIG_KEYS, warnedNotification)
     this.toastConfig = this.parseConfig('toast', TOAST_CONFIG_KEYS, warnedToast)
     registerAppHost(this, this.appConfig())
   }
@@ -124,11 +120,7 @@ export class OASApp extends OASElement {
    * 解析 app 配置 JSON：只拾取现有 options 白名单键（不新造）；
    * 非法 JSON / 非 JSON 对象忽略 + dev 告警（同值去重）；属性为空返回 null。
    */
-  private parseConfig(
-    attr: string,
-    keys: Set<string>,
-    warned: Set<string>,
-  ): Record<string, unknown> | null {
+  private parseConfig(attr: string, keys: Set<string>, warned: Set<string>): Record<string, unknown> | null {
     const raw = this.getAttr(attr, '').trim()
     if (raw === '') return null
     let obj: unknown

@@ -87,7 +87,9 @@ describe('OASAvatarGroup spacing（间距控制）', () => {
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toContain('var(--oas-avatar-group-overlap, -8px)')
     // 成员描边防透叠：token ring（页面背景色，含 dark 变体）
-    expect(css).toMatch(/::slotted\(oas-avatar\)[^{]*\{[^}]*box-shadow:\s*0 0 0 2px var\(--oas-avatar-group-ring, var\(--oas-color-bg\)\)/s)
+    expect(css).toMatch(
+      /::slotted\(oas-avatar\)[^{]*\{[^}]*box-shadow:\s*0 0 0 2px var\(--oas-avatar-group-ring, var\(--oas-color-bg\)\)/s,
+    )
   })
 
   it('spacing 属性（数字）注入叠距变量，正负均可', () => {
@@ -130,9 +132,7 @@ describe('OASAvatarGroup +N 折叠弹层', () => {
     const btn = countBtn(el)
     expect(btn.tagName).toBe('BUTTON')
     expect(btn.getAttribute('aria-expanded')).toBe('false')
-    expect(btn.getAttribute('aria-controls')).toBe(
-      panel(el).getAttribute('id'),
-    )
+    expect(btn.getAttribute('aria-controls')).toBe(panel(el).getAttribute('id'))
   })
 
   it('点击 +N：弹出浮层展示全部被折叠成员（克隆头像，display 已复位）', async () => {

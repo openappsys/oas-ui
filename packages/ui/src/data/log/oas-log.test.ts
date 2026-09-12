@@ -221,9 +221,7 @@ describe('OASLog', () => {
     // 通道变更重刷已有行
     el.setAttribute('highlight', '["INFO"]')
     expect(el.shadowRoot!.querySelectorAll('[part="line"]')[0]!.querySelector('.mark')).toBeNull()
-    expect(
-      el.shadowRoot!.querySelectorAll('[part="line"]')[1]!.querySelector('.mark')!.textContent,
-    ).toBe('INFO')
+    expect(el.shadowRoot!.querySelectorAll('[part="line"]')[1]!.querySelector('.mark')!.textContent).toBe('INFO')
   })
 
   it('highlight 支持正则条目，非法正则被跳过；匹配文本走 textContent 防注入', () => {
@@ -312,9 +310,7 @@ describe('OASLog', () => {
     const el = mount(['aaa', 'bbb keyword', 'ccc', 'ddd keyword'])
     el.setAttribute('line-number', '')
     el.setAttribute('keyword', 'keyword')
-    const gutters = Array.from(el.shadowRoot!.querySelectorAll('.gutter')).map(
-      (g) => g.textContent,
-    )
+    const gutters = Array.from(el.shadowRoot!.querySelectorAll('.gutter')).map((g) => g.textContent)
     expect(gutters).toEqual(['2', '4'])
   })
 

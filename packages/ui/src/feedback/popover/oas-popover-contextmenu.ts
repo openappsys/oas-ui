@@ -40,9 +40,7 @@ export interface PopoverContextmenuHost {
  * （右键仍可基础打开、无长按/断点），宿主对相应配置 dev 告警提示显式引能力包或换回
  * 主路径（见 oas-popover.ts 的 warnContextmenuCapability）。
  */
-export class PopoverContextmenuController
-  implements ReactiveController, PopoverContextmenuCapability
-{
+export class PopoverContextmenuController implements ReactiveController, PopoverContextmenuCapability {
   private host: PopoverContextmenuHost
   private anchor: Element | null = null
   private mqls: MediaQueryList[] = []

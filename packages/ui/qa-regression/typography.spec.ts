@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('typography 补齐：修饰六布尔原生标签语义、line-clamp 两行截断、copy-text 覆盖、depth 弱化', async ({
-  page,
-}) => {
+test('typography 补齐：修饰六布尔原生标签语义、line-clamp 两行截断、copy-text 覆盖、depth 弱化', async ({ page }) => {
   // v2.1 typography 能力补齐回归：code/delete 换原生 <code>/<del>；line-clamp 两行截断（高度=2×行高）；
   // copy-text 覆盖复制内容；depth 三档弱化递进。
   await page.goto('/components/typography.html', { waitUntil: 'domcontentloaded' })
@@ -20,10 +18,7 @@ test('typography 补齐：修饰六布尔原生标签语义、line-clamp 两行�
     }
     const code = mk({ code: '' })
     const del = mk({ delete: '' })
-    const clamp = mk(
-      { 'line-clamp': '2' },
-      '很长很长很长的文本很长很长很长的文本很长很长很长的文本很长很长很长的文本',
-    )
+    const clamp = mk({ 'line-clamp': '2' }, '很长很长很长的文本很长很长很长的文本很长很长很长的文本很长很长很长的文本')
     clamp.style.maxWidth = '300px'
     clamp.style.display = 'block'
     await new Promise((res) => setTimeout(res, 100))
@@ -95,8 +90,7 @@ test('typography 省略约束链：ellipsis/ellipsis-suffix/line-clamp 均不溢
       el.textContent = text
       return el
     }
-    const longText =
-      'To be, or not to be, that is the question: Whether tis nobler in the mind to suffer'
+    const longText = 'To be, or not to be, that is the question: Whether tis nobler in the mind to suffer'
     const suffix = wrap300(mk({ ellipsis: '', 'ellipsis-suffix': '--结尾' }, longText))
     const plain = wrap300(mk({ ellipsis: '' }, longText))
     const clamp = wrap300(mk({ 'line-clamp': '2' }, longText))

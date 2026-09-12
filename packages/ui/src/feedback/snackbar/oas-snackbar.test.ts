@@ -25,7 +25,12 @@ function unhover(el: OASSnackbar): void {
 /** 模拟 Escape 键 */
 function escOn(target: EventTarget): void {
   target.dispatchEvent(
-    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true, composed: true }),
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    }),
   )
 }
 
@@ -185,9 +190,7 @@ describe('P1 堆叠布局（缺陷级：多条纵向排列不重叠）', () => {
     const events: Array<{ el: OASSnackbar; reason: string }> = []
     for (let i = 0; i < 4; i++) {
       const el = mount({ open: '', message: `消息${i}` })
-      el.addEventListener('oas-close', (e) =>
-        events.push({ el, reason: (e as CustomEvent).detail.reason }),
-      )
+      el.addEventListener('oas-close', (e) => events.push({ el, reason: (e as CustomEvent).detail.reason }))
       els.push(el)
     }
     expect(events.map((x) => x.el)).toEqual([els[0]])
@@ -196,9 +199,7 @@ describe('P1 堆叠布局（缺陷级：多条纵向排列不重叠）', () => {
     expect(els[1]!.classList.contains('oas-open')).toBe(true)
     expect(els[3]!.classList.contains('oas-open')).toBe(true)
     // 剩余三条重排：最老的贴最高栈位
-    expect(els[1]!.style.getPropertyValue('--snackbar-stack-shift')).toBe(
-      `${STACK_GAP * 2}px`,
-    )
+    expect(els[1]!.style.getPropertyValue('--snackbar-stack-shift')).toBe(`${STACK_GAP * 2}px`)
   })
 
   it('P16 焦点管理：仅最新一条可 Tab（其余 inert），关闭后接力解除', () => {
@@ -224,7 +225,7 @@ describe('P2 closable 关闭按钮', () => {
   it('默认无关闭按钮；closable 时渲染且 aria-label 走 locale（snackbar.close）', () => {
     const el = mount({ open: '', message: '提示' })
     expect(el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!.hidden).toBe(true)
-    const el2 = mount({ open: '', message: '提示', closable: '', 'duration': '0' })
+    const el2 = mount({ open: '', message: '提示', closable: '', duration: '0' })
     const btn = el2.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!
     expect(btn.hidden).toBe(false)
     expect(btn.type).toBe('button')
@@ -233,7 +234,7 @@ describe('P2 closable 关闭按钮', () => {
   })
 
   it('点击关闭按钮派发 oas-close（reason=close）', () => {
-    const el = mount({ open: '', message: '提示', closable: '', 'duration': '0' })
+    const el = mount({ open: '', message: '提示', closable: '', duration: '0' })
     const reasons: string[] = []
     el.addEventListener('oas-close', (e) => reasons.push((e as CustomEvent).detail.reason))
     el.shadowRoot!.querySelector<HTMLButtonElement>('[part="close"]')!.click()
@@ -347,8 +348,8 @@ describe('P5 Escape 关闭 + P6 reason', () => {
   })
 
   it('焦点在 snackbar 上时 Esc 关当前（reason=escape）', () => {
-    const a = mount({ open: '', message: 'A', closable: '', 'duration': '0' })
-    const b = mount({ open: '', message: 'B', 'duration': '0' })
+    const a = mount({ open: '', message: 'A', closable: '', duration: '0' })
+    const b = mount({ open: '', message: 'B', duration: '0' })
     const reasons: string[] = []
     b.addEventListener('oas-close', (e) => reasons.push((e as CustomEvent).detail.reason))
     a.addEventListener('oas-close', () => reasons.push('A-closed'))
@@ -357,8 +358,8 @@ describe('P5 Escape 关闭 + P6 reason', () => {
   })
 
   it('无焦点归属时 Esc 关最老一条', () => {
-    const a = mount({ open: '', message: 'A', 'duration': '0' })
-    const b = mount({ open: '', message: 'B', 'duration': '0' })
+    const a = mount({ open: '', message: 'A', duration: '0' })
+    const b = mount({ open: '', message: 'B', duration: '0' })
     const closed: string[] = []
     a.addEventListener('oas-close', () => closed.push('A'))
     b.addEventListener('oas-close', () => closed.push('B'))
@@ -368,7 +369,7 @@ describe('P5 Escape 关闭 + P6 reason', () => {
   })
 
   it('已被 preventDefault 的 Escape 不响应（不与浮层抢 Esc）', () => {
-    const el = mount({ open: '', message: 'A', 'duration': '0' })
+    const el = mount({ open: '', message: 'A', duration: '0' })
     let closes = 0
     el.addEventListener('oas-close', () => closes++)
     document.body.addEventListener('keydown', (e) => e.preventDefault(), { capture: true })
@@ -441,7 +442,7 @@ describe('P12 滑动关闭（swipe）', () => {
   })
 
   it('纵向滑动超过阈值松手 → oas-close（reason=swipe），滑动中跟手位移', () => {
-    const el = mount({ open: '', message: 'A', swipe: '', 'duration': '0' })
+    const el = mount({ open: '', message: 'A', swipe: '', duration: '0' })
     const b = box(el)
     const reasons: string[] = []
     el.addEventListener('oas-close', (e) => reasons.push((e as CustomEvent).detail.reason))
@@ -454,7 +455,7 @@ describe('P12 滑动关闭（swipe）', () => {
   })
 
   it('未达阈值回弹，不关闭', () => {
-    const el = mount({ open: '', message: 'A', swipe: '', 'duration': '0' })
+    const el = mount({ open: '', message: 'A', swipe: '', duration: '0' })
     const b = box(el)
     let closes = 0
     el.addEventListener('oas-close', () => closes++)
@@ -466,7 +467,7 @@ describe('P12 滑动关闭（swipe）', () => {
   })
 
   it('未开 swipe 属性时不响应拖拽', () => {
-    const el = mount({ open: '', message: 'A', 'duration': '0' })
+    const el = mount({ open: '', message: 'A', duration: '0' })
     const b = box(el)
     let closes = 0
     el.addEventListener('oas-close', () => closes++)

@@ -13,11 +13,7 @@ test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先
     const host = page.locator(`oas-${name}`).first()
     await host.locator('[part="trigger"]').click()
     await page.waitForFunction(
-      (sel) =>
-        document
-          .querySelector(sel)
-          ?.shadowRoot?.querySelector('[part="dropdown"]')
-          ?.classList.contains('open'),
+      (sel) => document.querySelector(sel)?.shadowRoot?.querySelector('[part="dropdown"]')?.classList.contains('open'),
       `oas-${name}`,
       { timeout: 5000 },
     )
@@ -43,8 +39,7 @@ test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先
     // 上翻 gap=4 在上，两种朝向均合法）+ 视口内不裁 + 碰撞翻转钩子可读（data-placement）
     expect(r.dropdownPosition, `${name} dropdown 应为 fixed 定位`).toBe('fixed')
     expect(r.placement, `${name} 应有 data-placement 定位钩子`).toBeTruthy()
-    const gap =
-      r.dropdownTop - r.triggerBottom >= 0 ? r.dropdownTop - r.triggerBottom : r.triggerTop - r.dropdownBottom
+    const gap = r.dropdownTop - r.triggerBottom >= 0 ? r.dropdownTop - r.triggerBottom : r.triggerTop - r.dropdownBottom
     expect(gap, `${name} 面板应与触发器相邻（gap 4，下翻或上翻）`).toBeCloseTo(4, 1)
     expect(r.inViewport, `${name} 面板应完整在视口内`).toBe(true)
   }

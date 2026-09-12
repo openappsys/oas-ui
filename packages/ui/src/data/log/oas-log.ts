@@ -236,9 +236,7 @@ export class OASLog extends OASElement {
    * Element.scrollTo 的 ScrollToOptions 并集，签名兼容基类）。
    * 非法目标忽略；滚动后重算贴底状态。
    */
-  override scrollTo(
-    target?: (ScrollToOptions & { position?: 'top' | 'bottom' }) | 'top' | 'bottom' | number,
-  ): void {
+  override scrollTo(target?: (ScrollToOptions & { position?: 'top' | 'bottom' }) | 'top' | 'bottom' | number): void {
     const vp = this.viewport
     if (!vp) return
     let top: number | null = null
@@ -252,8 +250,7 @@ export class OASLog extends OASElement {
     }
     if (top == null) return
     this.setScrollTop(vp, Math.max(0, top))
-    this.stickToBottom =
-      vp.scrollHeight - vp.scrollTop - vp.clientHeight <= AUTO_SCROLL_THRESHOLD
+    this.stickToBottom = vp.scrollHeight - vp.scrollTop - vp.clientHeight <= AUTO_SCROLL_THRESHOLD
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -394,11 +391,7 @@ export class OASLog extends OASElement {
     let p = 0
     while (p < prevCount && p < next.length && oldTexts[p] === next[p]) p++
     let s = 0
-    while (
-      s < prevCount - p &&
-      s < next.length - p &&
-      oldTexts[prevCount - 1 - s] === next[next.length - 1 - s]
-    ) {
+    while (s < prevCount - p && s < next.length - p && oldTexts[prevCount - 1 - s] === next[next.length - 1 - s]) {
       s++
     }
 
@@ -510,12 +503,7 @@ export class OASLog extends OASElement {
         }
         if (item && typeof item === 'object') {
           const o = item as Record<string, unknown>
-          const src =
-            typeof o.pattern === 'string'
-              ? o.pattern
-              : typeof o.text === 'string'
-                ? escapeRegExp(o.text)
-                : ''
+          const src = typeof o.pattern === 'string' ? o.pattern : typeof o.text === 'string' ? escapeRegExp(o.text) : ''
           if (!src) continue
           const flags = typeof o.flags === 'string' && /^[dgimsuvy]*$/.test(o.flags) ? o.flags : 'gi'
           out.push(new RegExp(src, flags.includes('g') ? flags : `${flags}g`))
@@ -556,9 +544,7 @@ export class OASLog extends OASElement {
     if (!text) return
     // 数据非空但过滤无命中 → 「无匹配」空态；数据本空 → 常规空态文案
     const noMatch = Boolean(keyword) && this.data.length > 0
-    text.textContent = noMatch
-      ? this.t('log.no-match')
-      : this.getAttr('empty-text', this.t('log.empty'))
+    text.textContent = noMatch ? this.t('log.no-match') : this.getAttr('empty-text', this.t('log.empty'))
   }
 
   /** 搜索过滤结果上报：keyword 或数据内容变化时派发（同状态去重，不连发） */

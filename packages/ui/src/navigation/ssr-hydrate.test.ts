@@ -117,10 +117,7 @@ const FIXTURES: Fixture[] = [
     name: 'steps',
     cls: OASSteps,
     setup: (e) =>
-      e.setAttribute(
-        'steps',
-        JSON.stringify([{ title: '第一步' }, { title: '第二步' }, { title: '第三步' }]),
-      ),
+      e.setAttribute('steps', JSON.stringify([{ title: '第一步' }, { title: '第二步' }, { title: '第三步' }])),
     probe: '.steps',
   },
   {
@@ -373,9 +370,7 @@ describe('导航布局组件 DSD 真水合批次 4', () => {
 
     // oas-menu：点击叶子项 → oas-select + value 同步
     const menuSnap = captureSnapshot(OASMenu, (e) => e.setAttribute('items', MENU_ITEMS))
-    const menu = upgradeFromSnapshot(OASMenu, menuSnap, (e) =>
-      e.setAttribute('items', MENU_ITEMS),
-    ).el
+    const menu = upgradeFromSnapshot(OASMenu, menuSnap, (e) => e.setAttribute('items', MENU_ITEMS)).el
     let menuDetail: unknown = null
     menu.addEventListener('oas-select', (e: Event) => (menuDetail = (e as CustomEvent).detail))
     menu.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="home"]')!.click()
@@ -416,12 +411,8 @@ describe('导航布局组件 DSD 真水合批次 4', () => {
     expect(dd.shadowRoot!.querySelector('.menu-anchor')!.hasAttribute('hidden')).toBe(false)
 
     // oas-speed-dial：点击 fab → open
-    const sdSnap = captureSnapshot(OASSpeedDial, (e) =>
-      e.setAttribute('actions', '[{"label":"分享"}]'),
-    )
-    const sd = upgradeFromSnapshot(OASSpeedDial, sdSnap, (e) =>
-      e.setAttribute('actions', '[{"label":"分享"}]'),
-    ).el
+    const sdSnap = captureSnapshot(OASSpeedDial, (e) => e.setAttribute('actions', '[{"label":"分享"}]'))
+    const sd = upgradeFromSnapshot(OASSpeedDial, sdSnap, (e) => e.setAttribute('actions', '[{"label":"分享"}]')).el
     sd.shadowRoot!.querySelector<HTMLElement>('[part="fab"]')!.click()
     expect(sd.hasAttribute('open')).toBe(true)
   })

@@ -122,8 +122,7 @@ describe('OASPageHeader', () => {
       const title = sr.querySelector<HTMLElement>('[part="title"]')!
       expect(back).not.toBeNull()
       expect(avatar).not.toBeNull()
-      const isFollowing = (a: Node, b: Node) =>
-        (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+      const isFollowing = (a: Node, b: Node) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
       expect(isFollowing(back, avatar)).toBe(true)
       expect(isFollowing(avatar, title)).toBe(true)
     })
@@ -336,9 +335,7 @@ describe('OASPageHeader', () => {
       document.body.appendChild(el)
       const css = cssOf(el)
       expect(css).toMatch(/:host\(\.oas-page-header--ghost\)\s*\{[^}]*background:\s*none/)
-      expect(css).toMatch(
-        /:host\(\.oas-page-header--ghost\)\s+\.footer\s*\{[^}]*border-top:\s*none/,
-      )
+      expect(css).toMatch(/:host\(\.oas-page-header--ghost\)\s+\.footer\s*\{[^}]*border-top:\s*none/)
       // 默认态无背景声明（现状透明底，ghost 是显式覆盖通道）
       expect(css).not.toMatch(/:host\s*\{[^}]*background/)
     })
@@ -439,12 +436,8 @@ describe('OASPageHeader responsive 响应式紧凑', () => {
     document.body.appendChild(el)
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toMatch(/:host\(\[data-compact\]\)\s+\.row\s*\{[^}]*flex-wrap:\s*wrap/)
-    expect(css).toMatch(
-      /:host\(\[data-compact\]\)\s+\.title\s*\{[^}]*font-size:\s*var\(--oas-font-size-lg\)/,
-    )
-    expect(css).toMatch(
-      /:host\(\[data-compact\]\)\s+\.subtitle\s*\{[^}]*font-size:\s*var\(--oas-font-size-sm\)/,
-    )
+    expect(css).toMatch(/:host\(\[data-compact\]\)\s+\.title\s*\{[^}]*font-size:\s*var\(--oas-font-size-lg\)/)
+    expect(css).toMatch(/:host\(\[data-compact\]\)\s+\.subtitle\s*\{[^}]*font-size:\s*var\(--oas-font-size-sm\)/)
   })
 
   it('onCleanup：断开连接清理 ResizeObserver（重连幂等重建）', () => {

@@ -397,9 +397,7 @@ export class OASToolbarToggle extends OASElement {
     if (disabled && !focusable) return
     const items = this.itemsList
     if (items.length === 0) return
-    const enabled = items
-      .map((it, i) => (it.disabled || (disabled && !focusable) ? -1 : i))
-      .filter((i) => i >= 0)
+    const enabled = items.map((it, i) => (it.disabled || (disabled && !focusable) ? -1 : i)).filter((i) => i >= 0)
     if (enabled.length === 0) return
     const multiple = this.hasAttr('multiple')
 

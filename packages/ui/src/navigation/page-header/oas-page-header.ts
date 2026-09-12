@@ -137,7 +137,8 @@ export class OASPageHeader extends OASElement {
   /** responsive：宿主是否窄于断点（clientWidth>0 且 <768；0=未布局/SSR 不误判） */
   private narrow = false
 
-  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（back 存在性由宿主属性决定） */  private template(): string {
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（back 存在性由宿主属性决定） */
+  private template(): string {
     return `
       <style>${STYLE}</style>
       <div class="breadcrumb" part="breadcrumb" hidden>

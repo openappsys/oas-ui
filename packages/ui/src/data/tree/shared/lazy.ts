@@ -25,17 +25,10 @@ export function loadPendingNode<N>(node: N, acc: TreeAccessors<N>, lazy: boolean
 }
 
 /** 宿主回填子节点（children 就绪 / isLeaf / loaded）后释放对应加载态 */
-export function releaseLoading<N>(
-  model: TreeModel<N>,
-  acc: TreeAccessors<N>,
-  loading: Set<string>,
-): void {
+export function releaseLoading<N>(model: TreeModel<N>, acc: TreeAccessors<N>, loading: Set<string>): void {
   for (const { node } of model.rows) {
     const id = acc.idOf(node)
-    if (
-      loading.has(id) &&
-      (acc.childrenOf(node) !== undefined || acc.isLeafOf(node) || acc.loadedOf(node))
-    ) {
+    if (loading.has(id) && (acc.childrenOf(node) !== undefined || acc.isLeafOf(node) || acc.loadedOf(node))) {
       loading.delete(id)
     }
   }

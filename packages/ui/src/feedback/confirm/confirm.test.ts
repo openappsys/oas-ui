@@ -48,9 +48,7 @@ describe('confirm 命令式 API', () => {
   it('onOk 异步：确定后对话框保持打开并进入 loading，resolve 后关闭并 resolve 外层', async () => {
     let result: 'ok' | 'cancel' | 'pending' = 'pending'
     let release!: () => void
-    confirm({ title: '测试', onOk: () => new Promise<void>((r) => (release = r)) }).then(
-      () => (result = 'ok'),
-    )
+    confirm({ title: '测试', onOk: () => new Promise<void>((r) => (release = r)) }).then(() => (result = 'ok'))
     await Promise.resolve()
     const modal = document.body.querySelector('oas-modal')!
     modal.dispatchEvent(new CustomEvent('oas-ok'))

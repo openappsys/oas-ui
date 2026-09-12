@@ -369,8 +369,7 @@ describe('OASSpeedDial 子动作级联动画', () => {
 
   it('CSS：prefers-reduced-motion 下级联 delay 归零、过渡停用', () => {
     const stl = styleText(mount())
-    const mq =
-      stl.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\}/)?.[0] ?? ''
+    const mq = stl.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\}/)?.[0] ?? ''
     expect(mq).toContain('.action')
     expect(mq).toContain('transition-delay: 0ms')
     expect(mq).toContain('transition: none')
@@ -657,15 +656,12 @@ describe('OASSpeedDial 圆弧几何展开', () => {
       /:host\(\.arc\) \.dial\.open \.action\s*\{[^}]*transform:\s*translate\(\s*calc\(var\(--t-x,\s*0px\)\s*-\s*50%\),\s*calc\(var\(--t-y,\s*0px\)\s*-\s*50%\)\s*\)/s,
     )
     // 收起态：translate(-50%, -50%) 堆叠圆心（由 .action 基础规则承载，transform 复位 + 既有过渡）
-    expect(stl).toMatch(
-      /:host\(\.arc\) \.dial \.action\s*\{[^}]*transform:\s*translate\(-50%,\s*-50%\)/,
-    )
+    expect(stl).toMatch(/:host\(\.arc\) \.dial \.action\s*\{[^}]*transform:\s*translate\(-50%,\s*-50%\)/)
   })
 
   it('reduced-motion：圆弧 transform 过渡停用（位置直切）', () => {
     const stl = styleText(mount())
-    const mq =
-      stl.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\}/)?.[0] ?? ''
+    const mq = stl.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\}/)?.[0] ?? ''
     expect(mq).toContain('.action')
     expect(mq).toContain('transition: none')
   })

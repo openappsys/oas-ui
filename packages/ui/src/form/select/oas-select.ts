@@ -466,11 +466,7 @@ export class OASSelect extends OASElement {
    * 受控 open：属性即真相——在场=展开、移除=收起（宿主手势只派发
    * oas-open-change 通知宿主，由宿主决定是否增删属性，组件不强制写回）。
    */
-  override attributeChangedCallback(
-    name: string,
-    oldValue: string | null,
-    newValue: string | null,
-  ): void {
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if (name === 'open' && oldValue !== newValue) {
       this.openState = newValue !== null
     }
@@ -535,12 +531,10 @@ export class OASSelect extends OASElement {
     this.shadow
       .querySelector<HTMLInputElement>('.search-input')
       ?.addEventListener('keydown', (e: KeyboardEvent) => this.handleSearchKey(e))
-    this.shadow
-      .querySelector<HTMLButtonElement>('.clear-btn')
-      ?.addEventListener('click', (e: MouseEvent) => {
-        e.stopPropagation()
-        this.clearValue()
-      })
+    this.shadow.querySelector<HTMLButtonElement>('.clear-btn')?.addEventListener('click', (e: MouseEvent) => {
+      e.stopPropagation()
+      this.clearValue()
+    })
 
     this.triggerEl?.addEventListener('click', () => this.toggle())
     this.triggerEl?.addEventListener('keydown', (e: KeyboardEvent) => this.handleTriggerKey(e))
@@ -598,9 +592,7 @@ export class OASSelect extends OASElement {
     // 下拉头尾插槽（header/footer template 克隆）
     this.syncDropdownChrome()
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
-    this.shadow
-      .querySelector<HTMLInputElement>('.search-input')
-      ?.setAttribute('aria-label', this.t('select.search'))
+    this.shadow.querySelector<HTMLInputElement>('.search-input')?.setAttribute('aria-label', this.t('select.search'))
     this.renderListbox()
     this.syncTrigger()
     // 展开态同步（初始 open 属性、展开中的属性变化重定位等）
@@ -647,8 +639,7 @@ export class OASSelect extends OASElement {
       this.vlist?.setAttribute('height', String(this.dropdownHeight()))
       if (!wasOpen) {
         const current = this.currentValues()
-        const idx =
-          current.length > 0 ? this.visibleOptions().findIndex((o) => o.value === current[0]) : 0
+        const idx = current.length > 0 ? this.visibleOptions().findIndex((o) => o.value === current[0]) : 0
         this.activeIndex = Math.max(idx, 0)
         this.scrollActiveIntoView()
         this.syncActive()
@@ -784,9 +775,7 @@ export class OASSelect extends OASElement {
 
   /** 搜索框原始查询词（trim 后，保留原始大小写供「创建」用） */
   private currentQuery(): string {
-    return (
-      this.shadow.querySelector<HTMLInputElement>('.search-input')?.getAttribute('data-query') ?? ''
-    ).trim()
+    return (this.shadow.querySelector<HTMLInputElement>('.search-input')?.getAttribute('data-query') ?? '').trim()
   }
 
   /** 虚拟滚动定高：默认 36（与 oas-virtual-list 默认一致，匹配选项行视觉高度） */
@@ -876,12 +865,7 @@ export class OASSelect extends OASElement {
   }
 
   /** 构建一个选项行（角色/aria/高亮/点击/自定义渲染），非虚拟与虚拟（vlist oas-item）两路共用 */
-  private createOptionRow(
-    option: Option,
-    optionIdx: number,
-    values: string[],
-    container: HTMLElement,
-  ): void {
+  private createOptionRow(option: Option, optionIdx: number, values: string[], container: HTMLElement): void {
     const row = document.createElement('div')
     row.className = 'option'
     if (option.group !== undefined) row.classList.add('grouped')
@@ -1106,9 +1090,7 @@ export class OASSelect extends OASElement {
   private selectValue(value: string): void {
     if (this.hasAttr('multiple')) {
       const current = this.currentValues()
-      const next = current.includes(value)
-        ? current.filter((v) => v !== value)
-        : [...current, value]
+      const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value]
       this.setAttribute('value', JSON.stringify(next))
       this.emit('change', { value: next, options: this.optionsOf(next) })
     } else {
@@ -1171,9 +1153,7 @@ export class OASSelect extends OASElement {
     if (this.hasAttribute('options')) {
       try {
         const parsed = JSON.parse(this.getAttr('options', '[]'))
-        base = Array.isArray(parsed)
-          ? parsed.filter((o): o is Option => o && typeof o.value === 'string')
-          : []
+        base = Array.isArray(parsed) ? parsed.filter((o): o is Option => o && typeof o.value === 'string') : []
       } catch {
         base = []
       }
@@ -1182,9 +1162,7 @@ export class OASSelect extends OASElement {
     }
     // allow-create 创建的选项持久（源数据刷新/重渲染不丢失，已选 label 与 detail.option 可反查）；
     // 源数据后来补上同值选项时以源为准（去重）
-    const created = this.createdOptions.filter(
-      (c) => !base.some((b) => b.value === c.value),
-    )
+    const created = this.createdOptions.filter((c) => !base.some((b) => b.value === c.value))
     this._options = [...base, ...created]
   }
 
@@ -1296,12 +1274,7 @@ export class OASSelect extends OASElement {
     // 清空按钮：clearable && 有值 && 未禁用 && 非只读 时显示
     const clearBtn = this.shadow.querySelector<HTMLButtonElement>('.clear-btn')
     if (clearBtn) {
-      clearBtn.hidden = !(
-        this.hasAttr('clearable') &&
-        !disabled &&
-        !readonly &&
-        values.length > 0
-      )
+      clearBtn.hidden = !(this.hasAttr('clearable') && !disabled && !readonly && values.length > 0)
       clearBtn.setAttribute('aria-label', this.t('input.clear'))
     }
 

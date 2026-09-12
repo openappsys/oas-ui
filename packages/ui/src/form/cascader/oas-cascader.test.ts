@@ -108,9 +108,7 @@ describe('OASCascader', () => {
 
   it('options property setter 反射 attribute（宿主 property 通道）', () => {
     const el = mount({ options: '[]' })
-    el.options = [
-      { label: 'A', value: 'a', children: [{ label: 'A1', value: 'a1' }] },
-    ]
+    el.options = [{ label: 'A', value: 'a', children: [{ label: 'A1', value: 'a1' }] }]
     expect(JSON.parse(el.getAttribute('options') ?? '[]')).toHaveLength(1)
     trigger(el).click()
     expect(rows(el, 0).length).toBe(1)
@@ -172,11 +170,7 @@ describe('OASCascader multiple 多选', () => {
     const el = mount({ multiple: '' })
     trigger(el).click()
     ;(rows(el, 0)[0]!.querySelector('.check') as HTMLElement).click() // 勾选浙江
-    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([
-      ['zj'],
-      ['zj', 'hz'],
-      ['zj', 'nb'],
-    ])
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([['zj'], ['zj', 'hz'], ['zj', 'nb']])
   })
 
   it('勾选部分子级：父级行呈现半选态', () => {
@@ -184,8 +178,7 @@ describe('OASCascader multiple 多选', () => {
     trigger(el).click()
     ;(rows(el, 0)[0] as HTMLElement).click()
     ;(rows(el, 1)[0]!.querySelector('.check') as HTMLElement).click() // 仅杭州
-    const zjCheck = el.shadowRoot!.querySelectorAll<HTMLElement>('.panel')[0]!
-      .querySelector('[role="option"] .check')!
+    const zjCheck = el.shadowRoot!.querySelectorAll<HTMLElement>('.panel')[0]!.querySelector('[role="option"] .check')!
     expect(zjCheck.classList.contains('half')).toBe(true)
   })
 
@@ -251,18 +244,17 @@ describe('OASCascader value-mode 值策略', () => {
     const el = mount({ multiple: '', 'value-mode': 'onlyLeaf' })
     trigger(el).click()
     ;(rows(el, 0)[0]!.querySelector('.check') as HTMLElement).click()
-    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([['zj', 'hz'], ['zj', 'nb']])
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([
+      ['zj', 'hz'],
+      ['zj', 'nb'],
+    ])
   })
 
   it('非法值回落 all', () => {
     const el = mount({ multiple: '', 'value-mode': 'bogus' })
     trigger(el).click()
     ;(rows(el, 0)[0]!.querySelector('.check') as HTMLElement).click()
-    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([
-      ['zj'],
-      ['zj', 'hz'],
-      ['zj', 'nb'],
-    ])
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([['zj'], ['zj', 'hz'], ['zj', 'nb']])
   })
 })
 
@@ -370,7 +362,11 @@ describe('OASCascader lazy 动态加载', () => {
     el.load = spy
     trigger(el).click()
     ;(rows(el, 0)[0] as HTMLElement).click()
-    expect(spy).toHaveBeenCalledWith({ option: expect.objectContaining({ value: 'a' }), path: ['a'], depth: 1 })
+    expect(spy).toHaveBeenCalledWith({
+      option: expect.objectContaining({ value: 'a' }),
+      path: ['a'],
+      depth: 1,
+    })
     expect(el.shadowRoot!.textContent).toContain('加载中')
     await tick()
     expect(rows(el, 1).length).toBe(2)
@@ -566,9 +562,7 @@ describe('OASCascader 受控 open', () => {
   it('Esc 关闭并还焦 trigger', () => {
     const el = mount()
     trigger(el).click()
-    dropdown(el).dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-    )
+    dropdown(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(el.hasAttribute('open')).toBe(false)
     expect(el.shadowRoot!.activeElement).toBe(trigger(el))
   })
@@ -696,11 +690,7 @@ describe('OASCascader 键盘', () => {
     const el = mount({ multiple: '' })
     trigger(el).click()
     key(el, 'Enter')
-    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([
-      ['zj'],
-      ['zj', 'hz'],
-      ['zj', 'nb'],
-    ])
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([['zj'], ['zj', 'hz'], ['zj', 'nb']])
     expect(el.hasAttribute('open')).toBe(true)
   })
 
@@ -732,8 +722,6 @@ describe('OASCascader focus 委托', () => {
     el.setAttribute('options', OPTIONS)
     document.body.appendChild(el)
     el.focus()
-    expect(el.shadowRoot!.activeElement).toBe(
-      el.shadowRoot!.querySelector('button[part="trigger"]'),
-    )
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('button[part="trigger"]'))
   })
 })

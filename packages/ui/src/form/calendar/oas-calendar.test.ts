@@ -100,9 +100,7 @@ describe('OASCalendar', () => {
   it('show-week-number 渲染周号列', () => {
     const el = mount({ value: '2026-08-09', 'show-week-number': '' })
     // 表头第一格是空占位，仅取数据行的周号
-    const weekNumbers = [...el.shadowRoot!.querySelectorAll('.week .week-number')].map((n) =>
-      n.textContent!.trim(),
-    )
+    const weekNumbers = [...el.shadowRoot!.querySelectorAll('.week .week-number')].map((n) => n.textContent!.trim())
     expect(weekNumbers).toContain('32')
     expect(weekNumbers[0]).toBe('31')
   })
@@ -206,12 +204,8 @@ describe('OASCalendar', () => {
   it('year 模式点击月份：value 更新 yyyy-MM、切回 month 视图并派发 oas-mode-change', () => {
     const el = mount({ value: '2026-07', mode: 'year' })
     const events: Array<[string, unknown]> = []
-    el.addEventListener('oas-change', (e: Event) =>
-      events.push(['change', (e as CustomEvent).detail]),
-    )
-    el.addEventListener('oas-mode-change', (e: Event) =>
-      events.push(['mode', (e as CustomEvent).detail]),
-    )
+    el.addEventListener('oas-change', (e: Event) => events.push(['change', (e as CustomEvent).detail]))
+    el.addEventListener('oas-mode-change', (e: Event) => events.push(['mode', (e as CustomEvent).detail]))
     el.shadowRoot!.querySelectorAll('.month-cell')[6]!.dispatchEvent(new MouseEvent('click'))
     expect(events).toContainEqual(['change', { value: '2026-07' }])
     expect(events).toContainEqual(['mode', { mode: 'month' }])
@@ -227,12 +221,8 @@ describe('OASCalendar', () => {
     // 默认 month 视图 → 宿主 setAttribute('mode','year') → 点 2026 年 7 月
     const el = mount({ value: '2026-08-09' })
     const events: Array<[string, unknown]> = []
-    el.addEventListener('oas-change', (e: Event) =>
-      events.push(['change', (e as CustomEvent).detail]),
-    )
-    el.addEventListener('oas-mode-change', (e: Event) =>
-      events.push(['mode', (e as CustomEvent).detail]),
-    )
+    el.addEventListener('oas-change', (e: Event) => events.push(['change', (e as CustomEvent).detail]))
+    el.addEventListener('oas-mode-change', (e: Event) => events.push(['mode', (e as CustomEvent).detail]))
     el.setAttribute('mode', 'year')
     el.shadowRoot!.querySelectorAll('.month-cell')[6]!.dispatchEvent(new MouseEvent('click'))
     // 两个事件都派发：选月切回月视图 + value 更新
@@ -307,9 +297,7 @@ describe('OASCalendar', () => {
     grid(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true }))
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年7月')
     expect(rovingFocus(el).getAttribute('data-date')).toBe('2026-07-16')
-    grid(el).dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'PageDown', shiftKey: true, bubbles: true }),
-    )
+    grid(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', shiftKey: true, bubbles: true }))
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2027年7月')
     expect(rovingFocus(el).getAttribute('data-date')).toBe('2027-07-16')
     expect(pages).toEqual(['2026-07-01', '2027-07-01'])

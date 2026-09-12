@@ -392,9 +392,7 @@ export class OASProgress extends OASElement {
    * deterministic：只读不反射、不同步。宿主直觉写 value 不会静默无效
    */
   private readValue(): number {
-    const raw = this.hasAttr('percent')
-      ? this.getAttr('percent', '0')
-      : this.getAttr('value', '0')
+    const raw = this.hasAttr('percent') ? this.getAttr('percent', '0') : this.getAttr('value', '0')
     return Number(raw) || 0
   }
 
@@ -408,22 +406,17 @@ export class OASProgress extends OASElement {
   /** 默认 slot 内容检测（元素或有非空文本节点即视为有内容） */
   private hasSlotContent(): boolean {
     if (!this.slotEl) return false
-    return this.slotEl.assignedNodes({ flatten: true }).some(
-      (n) =>
-        n.nodeType === Node.ELEMENT_NODE ||
-        (n.nodeType === Node.TEXT_NODE && !!(n.textContent ?? '').trim()),
-    )
+    return this.slotEl
+      .assignedNodes({ flatten: true })
+      .some(
+        (n) => n.nodeType === Node.ELEMENT_NODE || (n.nodeType === Node.TEXT_NODE && !!(n.textContent ?? '').trim()),
+      )
   }
 
   /** slot 物理归位（幂等：已在目标容器则不动，避免 slotchange 重入抖动） */
   private placeSlot(type: 'line' | 'circle' | 'dashboard', textInside: boolean): void {
     if (!this.slotEl) return
-    const target =
-      type === 'line'
-        ? textInside
-          ? this.insideEl
-          : this.text
-        : this.circleText
+    const target = type === 'line' ? (textInside ? this.insideEl : this.text) : this.circleText
     if (target && this.slotEl.parentElement !== target) target.appendChild(this.slotEl)
   }
 
@@ -446,11 +439,7 @@ export class OASProgress extends OASElement {
       // steps 模式下连续 bar 让位（宽度归零）；不确定态宽度交由 CSS 类接管；
       // 条纹/渐变类名同步（不确定态压制条纹）
       const striped = !indeterminate && (this.hasAttr('striped') || this.hasAttr('striped-flow'))
-      this.bar.style.width = indeterminate
-        ? ''
-        : stepsCount > 0
-          ? '0%'
-          : `${percent}%`
+      this.bar.style.width = indeterminate ? '' : stepsCount > 0 ? '0%' : `${percent}%`
       this.bar.classList.toggle('indeterminate', indeterminate && type === 'line')
       this.bar.classList.toggle('striped', striped)
       this.bar.classList.toggle('striped-flow', striped && this.hasAttr('striped-flow'))
@@ -466,8 +455,7 @@ export class OASProgress extends OASElement {
     if (this.bufferEl) {
       const raw = this.getAttr('buffer', '')
       const bufValue = raw === '' ? null : this.clampValue(Number(raw) || 0, max)
-      this.bufferEl.hidden =
-        bufValue === null || type !== 'line' || stepsCount > 0 || indeterminate
+      this.bufferEl.hidden = bufValue === null || type !== 'line' || stepsCount > 0 || indeterminate
       this.bufferEl.style.width = bufValue === null ? '' : `${(bufValue / max) * 100}%`
     }
 
@@ -545,9 +533,7 @@ export class OASProgress extends OASElement {
       this.style.removeProperty(varName)
       return
     }
-    const base = (PROGRESS_PRESET_COLORS as readonly string[]).includes(value)
-      ? `var(--oas-preset-${value})`
-      : value
+    const base = (PROGRESS_PRESET_COLORS as readonly string[]).includes(value) ? `var(--oas-preset-${value})` : value
     this.style.setProperty(varName, base)
   }
 
@@ -592,14 +578,8 @@ export class OASProgress extends OASElement {
       ring?.setAttribute('stroke-width', String(strokeWidth))
       ring?.setAttribute('stroke-dasharray', ring === barCircle ? barDash : String(arc))
     }
-    barCircle?.setAttribute(
-      'stroke-dashoffset',
-      indeterminate ? '0' : String(arc * (1 - percent / 100)),
-    )
-    barCircle?.setAttribute(
-      'stroke-linecap',
-      this.getAttr('stroke-linecap', 'round') === 'butt' ? 'butt' : 'round',
-    )
+    barCircle?.setAttribute('stroke-dashoffset', indeterminate ? '0' : String(arc * (1 - percent / 100)))
+    barCircle?.setAttribute('stroke-linecap', this.getAttr('stroke-linecap', 'round') === 'butt' ? 'butt' : 'round')
     barCircle?.classList.toggle('done', percent >= 100 && !status)
     if (barCircle) this.setStatusAttr(barCircle as SVGElement, status)
 
@@ -632,12 +612,7 @@ export class OASProgress extends OASElement {
   }
 
   /** 圆心状态图标名：slot > 图标 > 百分比 的优先级中返回图标名或 null */
-  private statusIconName(
-    status: string,
-    percent: number,
-    indeterminate: boolean,
-    slotHas: boolean,
-  ): string | null {
+  private statusIconName(status: string, percent: number, indeterminate: boolean, slotHas: boolean): string | null {
     if (indeterminate || slotHas) return null
     if (status === 'success') return 'check-circle'
     if (status === 'error') return 'close-circle'

@@ -60,11 +60,7 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
       placement: tip.getAttribute('data-placement'),
       top: parseFloat(tip.style.top),
       left: parseFloat(tip.style.left),
-      inViewport:
-        tb.top >= 0 &&
-        tb.left >= 0 &&
-        tb.bottom <= window.innerHeight &&
-        tb.right <= window.innerWidth,
+      inViewport: tb.top >= 0 && tb.left >= 0 && tb.bottom <= window.innerHeight && tb.right <= window.innerWidth,
     }
   })
   expect(r.openCount, '鼠标移入应派发 oas-open-change').toBeGreaterThan(0)
@@ -79,20 +75,14 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
   await page.mouse.move(box!.x + box!.width + 60, box!.y + 40)
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('#tt-follow')
-        ?.shadowRoot?.querySelector('[part="tip"]')
-        ?.getAttribute('aria-hidden') === 'true',
+      document.querySelector('#tt-follow')?.shadowRoot?.querySelector('[part="tip"]')?.getAttribute('aria-hidden') ===
+      'true',
   )
-  const closed = await page.evaluate(
-    () => document.querySelector('#tt-follow-status')?.textContent ?? '',
-  )
+  const closed = await page.evaluate(() => document.querySelector('#tt-follow-status')?.textContent ?? '')
   expect(closed).toContain('未跟随')
 })
 
-test('tooltip virtual-anchor：hover 图表点位 tooltip 锚定该点显示、切换点位跟随', async ({
-  page,
-}) => {
+test('tooltip virtual-anchor：hover 图表点位 tooltip 锚定该点显示、切换点位跟随', async ({ page }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('#tt-anchor', { state: 'attached', timeout: 15000 })
   await page.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, '#tt-anchor', {
@@ -244,10 +234,7 @@ test('tooltip 箭头：#tt-follow 打开后 .arrow 可见且位于面板顶部�
   await page.waitForFunction(() => {
     const t = document.querySelector('#tt-follow')
     const tip = t?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
-    return (
-      tip?.getAttribute('aria-hidden') === 'false' &&
-      tip.querySelector('[data-popper-arrow]') != null
-    )
+    return tip?.getAttribute('aria-hidden') === 'false' && tip.querySelector('[data-popper-arrow]') != null
   })
   const r = await page.evaluate(() => {
     const t = document.querySelector('#tt-follow')!
@@ -273,9 +260,7 @@ test('tooltip 箭头：#tt-follow 打开后 .arrow 可见且位于面板顶部�
   await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix-tooltip-arrow.png' })
 })
 
-test('tooltip arrow="false"：打开后无可见箭头元素（hidden 属性 + 0 尺寸，part 保留）', async ({
-  page,
-}) => {
+test('tooltip arrow="false"：打开后无可见箭头元素（hidden 属性 + 0 尺寸，part 保留）', async ({ page }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tt-arrow-off')
   await page.evaluate(() => {
@@ -303,9 +288,7 @@ test('tooltip arrow="false"：打开后无可见箭头元素（hidden 属性 + 0
   expect(r.h, 'hidden 箭头不应渲染（高 0）').toBe(0)
 })
 
-test('tooltip arrow-point-at-center：面板被视口边缘避让 clamp 偏移后，箭头仍指向锚点中心', async ({
-  page,
-}) => {
+test('tooltip arrow-point-at-center：面板被视口边缘避让 clamp 偏移后，箭头仍指向锚点中心', async ({ page }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tt-arrow-center')
   // 把触发元素钉到视口左缘（placement 默认 top）：面板水平居中会被 clamp 到视口左缘，
@@ -402,12 +385,7 @@ test('tooltip 箭头形态（用户场景）：top 方向底部箭头完整菱�
       // 尖端（rect.bottom）到锚点顶边 = offset 8 − 半对角线 5.66 = 2.34
       apexGap: bb.top - ab.bottom,
       tipVsAnchorCenter: Math.abs((tb.left + tb.right) / 2 - (bb.left + bb.right) / 2),
-      overlap: !(
-        ab.right <= bb.left ||
-        ab.left >= bb.right ||
-        ab.bottom <= bb.top ||
-        ab.top >= bb.bottom
-      ),
+      overlap: !(ab.right <= bb.left || ab.left >= bb.right || ab.bottom <= bb.top || ab.top >= bb.bottom),
       pureRot,
     }
   })
@@ -417,14 +395,9 @@ test('tooltip 箭头形态（用户场景）：top 方向底部箭头完整菱�
   expect(r.pureRot, '箭头 transform 应为纯 rotate(45deg)（无缩放/平移残留）').toBe(true)
   expect(r.centerOnEdge, '菱心应悬在气泡底边上').toBeLessThanOrEqual(0.7)
   expect(r.arrowVsTipCenter, '箭头应居气泡中线').toBeLessThanOrEqual(0.7)
-  expect(
-    r.tipVsAnchorCenter,
-    '气泡中线应对齐锚点中线（动画污染测量曾致 ~4px 偏移）',
-  ).toBeLessThanOrEqual(0.7)
+  expect(r.tipVsAnchorCenter, '气泡中线应对齐锚点中线（动画污染测量曾致 ~4px 偏移）').toBeLessThanOrEqual(0.7)
   // 修复前（scale 污染测量）：gap = 8 − 3.2 − 5.66 ≈ −0.86（扎进按钮）
-  expect(r.apexGap, `箭头尖端距锚点应为 2.34px（实测 ${r.apexGap.toFixed(2)}）`).toBeGreaterThan(
-    1.5,
-  )
+  expect(r.apexGap, `箭头尖端距锚点应为 2.34px（实测 ${r.apexGap.toFixed(2)}）`).toBeGreaterThan(1.5)
   expect(r.apexGap).toBeLessThan(3.2)
   expect(r.overlap, '箭头不得与锚点按钮相交').toBe(false)
   await page.mouse.move(8, 8)
@@ -577,9 +550,7 @@ test('tooltip merge 直角三角贴角共边 8 向：直角点贴面板角点、
           const a = verts[(i + 1) % 3]!
           const b = verts[(i + 2) % 3]!
           const v = verts[i]!
-          if (
-            Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01
-          ) {
+          if (Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01) {
             rv = v
             others = verts.filter((_, j) => j !== i)
           }
@@ -617,20 +588,10 @@ test('tooltip merge 直角三角贴角共边 8 向：直角点贴面板角点、
     expect(r.actual, `${r.p} 中置视口不应翻转`).toBe(r.p)
     expect(r.transformNone, `${r.p} 箭头不旋转（直角三角形态）`).toBe(true)
     expect(r.hasPolygon, `${r.p} clip-path 应裁出三角`).toBe(true)
-    expect(Math.abs(r.rdx as number), `${r.p} 三角直角点应与面板角点重合 X`).toBeLessThanOrEqual(
-      0.5,
-    )
-    expect(Math.abs(r.rdy as number), `${r.p} 三角直角点应与面板角点重合 Y`).toBeLessThanOrEqual(
-      0.5,
-    )
-    expect(
-      Math.abs(r.fdx as number),
-      `${r.p} 箭头盒应贴角（主轴外悬/侧边贴齐）X`,
-    ).toBeLessThanOrEqual(0.5)
-    expect(
-      Math.abs(r.fdy as number),
-      `${r.p} 箭头盒应贴角（主轴外悬/侧边贴齐）Y`,
-    ).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(r.rdx as number), `${r.p} 三角直角点应与面板角点重合 X`).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(r.rdy as number), `${r.p} 三角直角点应与面板角点重合 Y`).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(r.fdx as number), `${r.p} 箭头盒应贴角（主轴外悬/侧边贴齐）X`).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(r.fdy as number), `${r.p} 箭头盒应贴角（主轴外悬/侧边贴齐）Y`).toBeLessThanOrEqual(0.5)
     expect(r.legsOk, `${r.p} 直角边与面板边共边 + 尖端正交外探 8px 指向锚点侧`).toBe(true)
     expect(r.cornerZero, `${r.p} 对应角 radius 应置零`).toBe(true)
   }
@@ -651,9 +612,7 @@ test('tooltip 窄气泡圆角封顶：空内容 16px 气泡 radius 收到 (16−
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
   await page.waitForFunction(
     () => {
-      const h = Array.from(document.querySelectorAll('oas-tooltip')).find((x) =>
-        x.textContent?.includes('无内容提示'),
-      )
+      const h = Array.from(document.querySelectorAll('oas-tooltip')).find((x) => x.textContent?.includes('无内容提示'))
       return h?.shadowRoot != null
     },
     undefined,
@@ -688,9 +647,7 @@ test('tooltip 窄气泡圆角封顶：空内容 16px 气泡 radius 收到 (16−
 
 // —— 增强批（2026-09 拍板清单）浏览器回归：滚动关闭 / 外点关闭 / label / follow-cursor / width / 事件来源 ——
 
-test('tooltip 增强-close-on-scroll：容器滚动 → 打开中的 tooltip 关闭（demo 可见反馈）', async ({
-  page,
-}) => {
+test('tooltip 增强-close-on-scroll：容器滚动 → 打开中的 tooltip 关闭（demo 可见反馈）', async ({ page }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tooltip[close-on-scroll]')
   const host = page.locator('oas-tooltip[close-on-scroll]')
@@ -701,12 +658,7 @@ test('tooltip 增强-close-on-scroll：容器滚动 → 打开中的 tooltip 关
     if (box) box.scrollTop = 160
     void tip
   })
-  await page.waitForFunction(
-    () =>
-      !document
-        .querySelector('oas-tooltip[close-on-scroll]')
-        ?.hasAttribute('open'),
-  )
+  await page.waitForFunction(() => !document.querySelector('oas-tooltip[close-on-scroll]')?.hasAttribute('open'))
   // 再滚动一次不抛错、保持关闭（监听已随关闭卸载）
   await host.evaluate((el) => {
     const box = el.closest('.tt-scrollbox')
@@ -727,26 +679,18 @@ test('tooltip 增强-click 外点关闭：document pointerdown（浮层/锚点�
     const t = document.querySelector('#tt-outside')
     return t?.shadowRoot?.querySelector('[part="tip"]')?.getAttribute('aria-hidden') === 'false'
   })
-  const statusOpen = await page.evaluate(
-    () => document.querySelector('#tt-outside-status')?.textContent ?? '',
-  )
+  const statusOpen = await page.evaluate(() => document.querySelector('#tt-outside-status')?.textContent ?? '')
   expect(statusOpen, 'demo 状态 tag 应反馈 open').toContain('open')
   // 外点（document 上 pointerdown，命中浮层与锚点之外）
   await page.evaluate(() => {
     document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
   })
-  await page.waitForFunction(
-    () => !document.querySelector('#tt-outside')?.hasAttribute('open'),
-  )
-  const statusClosed = await page.evaluate(
-    () => document.querySelector('#tt-outside-status')?.textContent ?? '',
-  )
+  await page.waitForFunction(() => !document.querySelector('#tt-outside')?.hasAttribute('open'))
+  const statusClosed = await page.evaluate(() => document.querySelector('#tt-outside-status')?.textContent ?? '')
   expect(statusClosed).toContain('closed')
 })
 
-test('tooltip 增强-a11y="label"：打开挂 aria-labelledby、关闭还原（宿主 aria-label 不被覆盖）', async ({
-  page,
-}) => {
+test('tooltip 增强-a11y="label"：打开挂 aria-labelledby、关闭还原（宿主 aria-label 不被覆盖）', async ({ page }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tt-label')
   const host = page.locator('#tt-label')
@@ -792,9 +736,7 @@ test('tooltip 增强-a11y="label"：打开挂 aria-labelledby、关闭还原（�
   expect(ariaLabelAfter).toBe('收藏按钮')
 })
 
-test('tooltip 增强-follow-cursor：区域内移动 → 浮层跟随光标（几何随光标变化）', async ({
-  page,
-}) => {
+test('tooltip 增强-follow-cursor：区域内移动 → 浮层跟随光标（几何随光标变化）', async ({ page }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tt-fc')
   const area = page.locator('#tt-fc .tt-area')
@@ -857,10 +799,7 @@ test('tooltip 增强-width="trigger"：浮层宽度与触发按钮同宽', async
     }
   })
   // .tip 为 border-box：内联宽（锚点 gBCR 宽，可能小数）与视觉宽一致
-  expect(
-    Math.abs(parseFloat(r.inlineW) - r.anchorW),
-    '内联宽度应对齐锚点宽度',
-  ).toBeLessThanOrEqual(1)
+  expect(Math.abs(parseFloat(r.inlineW) - r.anchorW), '内联宽度应对齐锚点宽度').toBeLessThanOrEqual(1)
   expect(Math.abs(r.tipW - r.anchorW), '浮层实际宽度 ≈ 触发元素宽度').toBeLessThanOrEqual(1)
 })
 
@@ -869,9 +808,7 @@ test('tooltip 无空格长串在 max-width 内断行不溢出（overflow-wrap: a
   await page.goto('/components/ellipsis.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-ellipsis')
   const r = await page.evaluate(async () => {
-    const el = [...document.querySelectorAll('oas-ellipsis')].find((e) =>
-      (e.getAttribute('text') ?? '').includes('/'),
-    )
+    const el = [...document.querySelectorAll('oas-ellipsis')].find((e) => (e.getAttribute('text') ?? '').includes('/'))
     if (!el) return null
     const tip = el.shadowRoot!.querySelector('oas-tooltip')
     if (!tip) return null

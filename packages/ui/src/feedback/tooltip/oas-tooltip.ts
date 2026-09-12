@@ -372,9 +372,7 @@ export class OAStooltip extends OASElement {
     const child = this.querySelector(':scope > *')
     if (
       child &&
-      child.matches(
-        'button[disabled], input[disabled], select[disabled], textarea[disabled], [aria-disabled="true"]',
-      )
+      child.matches('button[disabled], input[disabled], select[disabled], textarea[disabled], [aria-disabled="true"]')
     ) {
       return this
     }
@@ -652,8 +650,7 @@ export class OAStooltip extends OASElement {
       this.destroyPortal()
       return
     }
-    const target =
-      sel === 'body' ? document.body : (document.querySelector(sel) as HTMLElement | null)
+    const target = sel === 'body' ? document.body : (document.querySelector(sel) as HTMLElement | null)
     if (!target) {
       this.destroyPortal()
       return
@@ -729,9 +726,7 @@ export class OAStooltip extends OASElement {
       warning: ['var(--oas-color-warning)', 'var(--oas-color-text-on-warning)'],
       danger: ['var(--oas-color-danger)', 'var(--oas-color-text-on-danger)'],
     }
-    const preset = /^(magenta|red|volcano|orange|gold|lime|green|cyan|blue|geekblue|purple)$/.test(
-      color,
-    )
+    const preset = /^(magenta|red|volcano|orange|gold|lime|green|cyan|blue|geekblue|purple)$/.test(color)
     const { bg, on } = semantic[color]
       ? { bg: semantic[color][0], on: semantic[color][1] }
       : preset
@@ -824,10 +819,7 @@ export class OAStooltip extends OASElement {
     // 内容：fresh 默认 true（关闭时也持续更新）；fresh="false" 仅打开时写入
     const fresh = this.getAttr('fresh', 'true') !== 'false'
     if (fresh || open) {
-      this.tipEl.querySelector<HTMLElement>('.tip-content')!.textContent = this.getAttr(
-        'content',
-        '',
-      )
+      this.tipEl.querySelector<HTMLElement>('.tip-content')!.textContent = this.getAttr('content', '')
     }
     this.syncContent()
     // 箭头显隐：arrow 布尔属性默认 true（显示），arrow="false" 隐藏；元素与 ::part(arrow) 保留
@@ -884,7 +876,14 @@ export class OAStooltip extends OASElement {
     }
     // follow-cursor：光标坐标作为 0 尺寸点位（与 virtual-x/y 同通道，rAF 节流更新）
     if (this.hasAttr('follow-cursor') && Number.isFinite(this.cursorX) && Number.isFinite(this.cursorY)) {
-      return { left: this.cursorX, top: this.cursorY, right: this.cursorX, bottom: this.cursorY, width: 0, height: 0 } as DOMRect
+      return {
+        left: this.cursorX,
+        top: this.cursorY,
+        right: this.cursorX,
+        bottom: this.cursorY,
+        width: 0,
+        height: 0,
+      } as DOMRect
     }
     return this.anchor?.getBoundingClientRect() ?? null
   }
@@ -892,14 +891,17 @@ export class OAStooltip extends OASElement {
   /** placement 主向拆分（auto 前缀先行解析为四向后已无 auto） */
   private mainOf(p: string): 'top' | 'bottom' | 'left' | 'right' {
     const m = /^(top|bottom|left|right)/.exec(p.trim())?.[0]
-    return m && (m === 'top' || m === 'bottom' || m === 'left' || m === 'right')
-      ? m
-      : 'top'
+    return m && (m === 'top' || m === 'bottom' || m === 'left' || m === 'right') ? m : 'top'
   }
 
   /** 主向对侧翻转（保留 -start/-end 对齐后缀）：bottom-start → top-start */
   private flipPlacement(p: string): string {
-    const flip: Record<string, string> = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }
+    const flip: Record<string, string> = {
+      top: 'bottom',
+      bottom: 'top',
+      left: 'right',
+      right: 'left',
+    }
     const base = this.mainOf(p)
     return flip[base] + p.slice(base.length)
   }
@@ -993,7 +995,14 @@ export class OAStooltip extends OASElement {
   }
 
   /** 碰撞边界矩形：property 通道元素 > collision-boundary 属性选择器 > 视口（0 原点） */
-  private resolveBoundary(): { left: number; top: number; right: number; bottom: number; width: number; height: number } {
+  private resolveBoundary(): {
+    left: number
+    top: number
+    right: number
+    bottom: number
+    width: number
+    height: number
+  } {
     const el = this.collisionBoundaryEl ?? this.resolveBoundaryFromAttr()
     if (el) {
       const r = el.getBoundingClientRect()
@@ -1076,10 +1085,24 @@ export class OAStooltip extends OASElement {
       boundary.width !== window.innerWidth ||
       boundary.height !== window.innerHeight
     const anchorForEngine: DOMRect = customBoundary
-      ? (({ left: anchorRect.left - boundary.left, top: anchorRect.top - boundary.top, right: anchorRect.right - boundary.left, bottom: anchorRect.bottom - boundary.top, width: anchorRect.width, height: anchorRect.height }) as DOMRect)
+      ? ({
+          left: anchorRect.left - boundary.left,
+          top: anchorRect.top - boundary.top,
+          right: anchorRect.right - boundary.left,
+          bottom: anchorRect.bottom - boundary.top,
+          width: anchorRect.width,
+          height: anchorRect.height,
+        } as DOMRect)
       : anchorRect
     const popupForEngine: DOMRect = customBoundary
-      ? (({ left: popup.left - boundary.left, top: popup.top - boundary.top, right: popup.right - boundary.left, bottom: popup.bottom - boundary.top, width: popup.width, height: popup.height }) as DOMRect)
+      ? ({
+          left: popup.left - boundary.left,
+          top: popup.top - boundary.top,
+          right: popup.right - boundary.left,
+          bottom: popup.bottom - boundary.top,
+          width: popup.width,
+          height: popup.height,
+        } as DOMRect)
       : popup
     const {
       top,
@@ -1089,7 +1112,10 @@ export class OAStooltip extends OASElement {
       anchorForEngine,
       popupForEngine,
       actual as Placement,
-      { width: customBoundary ? boundary.width : window.innerWidth, height: customBoundary ? boundary.height : window.innerHeight },
+      {
+        width: customBoundary ? boundary.width : window.innerWidth,
+        height: customBoundary ? boundary.height : window.innerHeight,
+      },
       gap,
       autoAdjust,
       { skidding, collisionPadding: padding },
@@ -1163,12 +1189,8 @@ export class OAStooltip extends OASElement {
       )
       const arrowSize = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 12
       const rect = this.tipEl.getBoundingClientRect()
-      const crossSize = vertical
-        ? this.tipEl.offsetWidth || rect.width
-        : this.tipEl.offsetHeight || rect.height
-      const popupStart = vertical
-        ? parseFloat(this.tipEl.style.left)
-        : parseFloat(this.tipEl.style.top)
+      const crossSize = vertical ? this.tipEl.offsetWidth || rect.width : this.tipEl.offsetHeight || rect.height
+      const popupStart = vertical ? parseFloat(this.tipEl.style.left) : parseFloat(this.tipEl.style.top)
       if (!Number.isFinite(popupStart) || !Number.isFinite(crossSize) || crossSize <= 0) return
       const anchorCrossCenter = vertical
         ? anchorRect.left + anchorRect.width / 2
@@ -1183,15 +1205,9 @@ export class OAStooltip extends OASElement {
     if (!this.hasAttr('arrow-point-at-center')) return
     const rect = this.tipEl.getBoundingClientRect()
     // 交叉轴尺寸用布局尺寸（offset*，不受进场动画 scale 污染），0 时回落 rect
-    const crossSize = vertical
-      ? this.tipEl.offsetWidth || rect.width
-      : this.tipEl.offsetHeight || rect.height
-    const popupEdge = vertical
-      ? parseFloat(this.tipEl.style.left)
-      : parseFloat(this.tipEl.style.top)
-    const anchorCrossCenter = vertical
-      ? anchorRect.left + anchorRect.width / 2
-      : anchorRect.top + anchorRect.height / 2
+    const crossSize = vertical ? this.tipEl.offsetWidth || rect.width : this.tipEl.offsetHeight || rect.height
+    const popupEdge = vertical ? parseFloat(this.tipEl.style.left) : parseFloat(this.tipEl.style.top)
+    const anchorCrossCenter = vertical ? anchorRect.left + anchorRect.width / 2 : anchorRect.top + anchorRect.height / 2
     const size = crossSize
     if (!Number.isFinite(size) || size <= 0) return
     // 锚点中心映射到面板局部坐标，夹取到面板内（4px 边距），避免箭头探出面板

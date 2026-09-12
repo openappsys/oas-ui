@@ -268,9 +268,7 @@ export class OASForm extends OASElement {
    * 校验失败时插入/更新，通过时移除。
    */
   private syncErrorText(element: Element, message: string | null): void {
-    const item = element.closest('oas-form-item') as
-      | (Element & { setError?: (m: string | null) => void })
-      | null
+    const item = element.closest('oas-form-item') as (Element & { setError?: (m: string | null) => void }) | null
     if (item?.setError) {
       item.setError(message)
       return

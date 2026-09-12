@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('tree-select check-strategy：parent/child 勾选父级后值按策略过滤并可见回显', async ({
-  page,
-}) => {
+test('tree-select check-strategy：parent/child 勾选父级后值按策略过滤并可见回显', async ({ page }) => {
   await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ts-strategy-parent')
   // parent：勾选根节点「前端」→ value 只含 fe
@@ -49,9 +47,7 @@ test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、�
     () => {
       const el = document.querySelector('#ts-virtual')!
       return (
-        el
-          .shadowRoot!.querySelector('oas-virtual-list')!
-          .shadowRoot!.querySelectorAll('[role="treeitem"]').length > 0
+        el.shadowRoot!.querySelector('oas-virtual-list')!.shadowRoot!.querySelectorAll('[role="treeitem"]').length > 0
       )
     },
     null,
@@ -89,9 +85,7 @@ test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、�
       const inner = el
         .shadowRoot!.querySelector('oas-virtual-list')!
         .shadowRoot!.querySelector('.inner') as HTMLElement | null
-      return (
-        !!inner && inner.style.height !== '' && Number.parseInt(inner.style.height, 10) > 100000
-      )
+      return !!inner && inner.style.height !== '' && Number.parseInt(inner.style.height, 10) > 100000
     },
     null,
     { timeout: 5000 },
@@ -116,9 +110,7 @@ test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、�
   expect(after.count).toBe(16)
 })
 
-test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedescendant 跟随', async ({
-  page,
-}) => {
+test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedescendant 跟随', async ({ page }) => {
   await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ts-virtual')
   await page.waitForFunction(
@@ -133,9 +125,7 @@ test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedesc
   // 高亮项滚动进视口（viewport scrollTop > 0）
   const scrolled = await page.evaluate(() => {
     const el = document.querySelector('#ts-virtual')!
-    const vp = el
-      .shadowRoot!.querySelector('oas-virtual-list')!
-      .shadowRoot!.querySelector('.viewport')!
+    const vp = el.shadowRoot!.querySelector('oas-virtual-list')!.shadowRoot!.querySelector('.viewport')!
     return vp.scrollTop
   })
   expect(scrolled).toBeGreaterThan(0)

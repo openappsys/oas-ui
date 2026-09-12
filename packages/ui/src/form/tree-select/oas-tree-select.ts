@@ -18,12 +18,7 @@ import {
   labelPath,
   cloneSlotContent,
 } from '../../data/tree/shared/index.js'
-import type {
-  ResolvedFields,
-  TreeAccessors,
-  TreeModel,
-  CheckContext,
-} from '../../data/tree/shared/index.js'
+import type { ResolvedFields, TreeAccessors, TreeModel, CheckContext } from '../../data/tree/shared/index.js'
 
 export interface TreeOption {
   label: string
@@ -699,9 +694,7 @@ export class OASTreeSelect extends OASElement {
       const parsed = JSON.parse(raw)
       const valueField = this.fields.idField
       this._options = Array.isArray(parsed)
-        ? parsed.filter(
-            (o) => o && typeof (o as unknown as Record<string, unknown>)[valueField] === 'string',
-          )
+        ? parsed.filter((o) => o && typeof (o as unknown as Record<string, unknown>)[valueField] === 'string')
         : []
     } catch {
       this._options = []
@@ -864,11 +857,7 @@ export class OASTreeSelect extends OASElement {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault()
         this.setOpen(true)
-      } else if (
-        e.key === 'Backspace' &&
-        this.hasAttr('multiple') &&
-        this.currentValues().length > 0
-      ) {
+      } else if (e.key === 'Backspace' && this.hasAttr('multiple') && this.currentValues().length > 0) {
         e.preventDefault()
         this.removeLastValue()
       }
@@ -928,9 +917,7 @@ export class OASTreeSelect extends OASElement {
   private visibleFlat(): FlatNode[] {
     if (this.filtering()) return this.filterVisible()
     const expanded = this.getExpandedNodes()
-    return this.flat.filter(
-      (item) => item.depth === 0 || expanded.has(this.valueKeyOf(item.parent!)),
-    )
+    return this.flat.filter((item) => item.depth === 0 || expanded.has(this.valueKeyOf(item.parent!)))
   }
 
   /**
@@ -1315,8 +1302,7 @@ export class OASTreeSelect extends OASElement {
       return
     }
     const custom = this.getAttr('empty', '')
-    emptyEl.textContent =
-      custom || (this.filtering() ? this.t('select.noMatch') : this.t('treeSelect.empty'))
+    emptyEl.textContent = custom || (this.filtering() ? this.t('select.noMatch') : this.t('treeSelect.empty'))
   }
 
   /** 虚拟模式：切到 vlist 渲染（窗口化）并喂入可见节点 */
@@ -1427,8 +1413,7 @@ export class OASTreeSelect extends OASElement {
     if (multiple) {
       const check = document.createElement('span')
       check.className = 'check'
-      const isHalf =
-        !isChecked && !this.checkStrictly() && halfByDescendant(this.checkCtx(), checked, value)
+      const isHalf = !isChecked && !this.checkStrictly() && halfByDescendant(this.checkCtx(), checked, value)
       check.classList.toggle('checked', isChecked)
       check.classList.toggle('half', isHalf)
       check.textContent = isChecked ? '✓' : isHalf ? '—' : ''

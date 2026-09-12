@@ -189,18 +189,7 @@ const STYLE = `
 
 export class OASFloatButton extends OASElement {
   static override get observedAttributes(): string[] {
-    return [
-      'badge',
-      'shape',
-      'type',
-      'size',
-      'disabled',
-      'href',
-      'target',
-      'aria-label',
-      'draggable',
-      'magnetic',
-    ]
+    return ['badge', 'shape', 'type', 'size', 'disabled', 'href', 'target', 'aria-label', 'draggable', 'magnetic']
   }
 
   private btn: HTMLElement | null = null
@@ -291,9 +280,7 @@ export class OASFloatButton extends OASElement {
     this.btn?.addEventListener('pointerup', this.handlePointerUp)
     this.btn?.addEventListener('pointercancel', this.handlePointerCancel)
     // 默认插槽内容增减时重算扩展文字形态（icon slot 变化不影响 extended）
-    this.shadow
-      .querySelector<HTMLSlotElement>('slot:not([name])')
-      ?.addEventListener('slotchange', () => this.update())
+    this.shadow.querySelector<HTMLSlotElement>('slot:not([name])')?.addEventListener('slotchange', () => this.update())
   }
 
   protected override render(): void {
@@ -401,9 +388,7 @@ export class OASFloatButton extends OASElement {
       const distRight = maxX - left
       const target = distLeft <= distRight ? 0 : maxX
       if (Math.abs(target - left) > 0.5) {
-        this.style.transition = reduced
-          ? 'none'
-          : `left var(--oas-transition-base) var(--oas-ease-out)`
+        this.style.transition = reduced ? 'none' : `left var(--oas-transition-base) var(--oas-ease-out)`
         this.style.left = `${target}px`
       }
     } else {
@@ -411,9 +396,7 @@ export class OASFloatButton extends OASElement {
       const distBottom = maxY - top
       const target = distTop <= distBottom ? 0 : maxY
       if (Math.abs(target - top) > 0.5) {
-        this.style.transition = reduced
-          ? 'none'
-          : `top var(--oas-transition-base) var(--oas-ease-out)`
+        this.style.transition = reduced ? 'none' : `top var(--oas-transition-base) var(--oas-ease-out)`
         this.style.top = `${target}px`
       }
     }
@@ -427,13 +410,8 @@ export class OASFloatButton extends OASElement {
   }
 
   /** href/target/disabled 变化会改变内部元素类型（button ↔ a ↔ span），需重建 shadow；其余属性走 update() */
-  override attributeChangedCallback(
-    name: string,
-    oldValue: string | null,
-    newValue: string | null,
-  ): void {
-    const affectsTag =
-      name === 'href' || name === 'target' || (name === 'disabled' && this.getAttr('href', '') !== '')
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    const affectsTag = name === 'href' || name === 'target' || (name === 'disabled' && this.getAttr('href', '') !== '')
     if (affectsTag && this.hasRendered) {
       this.shadow.innerHTML = this.template()
       this.bind()

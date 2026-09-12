@@ -13,12 +13,7 @@ function mount(innerHTML = ''): OASToolbar {
 }
 
 /** 把 `<oas-xxx attr="v" bare>` 字符串转成可控创建的 widget（attrs 逐个 setAttribute 后 append） */
-function mountWidget<T extends HTMLElement>(
-  cls: new () => T,
-  tag: string,
-  attrs: string,
-  items?: string,
-): T {
+function mountWidget<T extends HTMLElement>(cls: new () => T, tag: string, attrs: string, items?: string): T {
   const el = new cls()
   if (items != null) el.setAttribute('items', items)
   for (const m of attrs.matchAll(/([a-z-]+)="([^"]*)"/g)) {
@@ -111,9 +106,7 @@ describe('OASToolbar', () => {
   })
 
   it('data-toolbar-ignore 排除项不参与', () => {
-    const el = mount(
-      '<button>加粗</button><button data-toolbar-ignore>忽略</button><button>斜体</button>',
-    )
+    const el = mount('<button>加粗</button><button data-toolbar-ignore>忽略</button><button>斜体</button>')
     const btns = buttons(el)
     expect(btns[1]!.getAttribute('tabindex')).toBeNull()
     btns[0]!.focus()
@@ -248,9 +241,7 @@ describe('OASToolbar 属性增强', () => {
   })
 
   it('oas-toolbar-separator：role=separator + 自动 data-toolbar-ignore，不参与 roving', () => {
-    const el = mount(
-      '<button>一</button><oas-toolbar-separator></oas-toolbar-separator><button>二</button>',
-    )
+    const el = mount('<button>一</button><oas-toolbar-separator></oas-toolbar-separator><button>二</button>')
     const sep = el.querySelector('oas-toolbar-separator')!
     expect(sep.hasAttribute('data-toolbar-ignore')).toBe(true)
     expect(sep.hasAttribute('tabindex')).toBe(false)

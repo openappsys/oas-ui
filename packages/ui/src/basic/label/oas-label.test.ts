@@ -165,9 +165,7 @@ describe('OASLabel', () => {
 
     it('预设名映射 --oas-preset-*-text 达标 token', () => {
       const el = mountLabel({ color: 'geekblue' })
-      expect(labelEl(el).style.getPropertyValue('--oas-label-color')).toBe(
-        'var(--oas-preset-geekblue-text)',
-      )
+      expect(labelEl(el).style.getPropertyValue('--oas-label-color')).toBe('var(--oas-preset-geekblue-text)')
     })
 
     it('11 预设名全量映射 -text token', () => {

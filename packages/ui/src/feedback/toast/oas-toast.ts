@@ -252,15 +252,7 @@ export interface ToastAction {
   variant?: ToastActionVariant
 }
 
-export type ToastCloseTrigger =
-  | 'auto'
-  | 'manual'
-  | 'action'
-  | 'close-button'
-  | 'esc'
-  | 'swipe'
-  | 'preempt'
-  | 'external'
+export type ToastCloseTrigger = 'auto' | 'manual' | 'action' | 'close-button' | 'esc' | 'swipe' | 'preempt' | 'external'
 
 export interface ToastRefreshOptions {
   type?: ToastType
@@ -335,9 +327,7 @@ export class OASToast extends OASElement {
 
   /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案/Node 通道的判空依据 */
   private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   protected override render(): void {
@@ -511,9 +501,7 @@ export class OASToast extends OASElement {
 
     this.syncUi()
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
-    this.shadow
-      .querySelector<HTMLElement>('[part="close"]')
-      ?.setAttribute('aria-label', this.t('toast.close'))
+    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('toast.close'))
     // 暂停开关变化时同步清掉已失效的暂停源
     this.syncPauseSources()
     this.syncProgressState()
@@ -598,9 +586,7 @@ export class OASToast extends OASElement {
   private syncActions(): void {
     const actionsEl = this.actionsEl
     if (!actionsEl) return
-    const sig = this.actions
-      .map((a) => `${a.label}|${a.variant ?? 'default'}|${a.noDismiss ? 1 : 0}`)
-      .join(',')
+    const sig = this.actions.map((a) => `${a.label}|${a.variant ?? 'default'}|${a.noDismiss ? 1 : 0}`).join(',')
     if (sig === this.actionsSignature) return
     this.actionsSignature = sig
     actionsEl.textContent = ''
@@ -636,12 +622,7 @@ export class OASToast extends OASElement {
   }
 
   private pauseEnabled(source: 'hover' | 'focus' | 'blur'): boolean {
-    const attr =
-      source === 'hover'
-        ? 'pause-on-hover'
-        : source === 'focus'
-          ? 'pause-on-focus'
-          : 'pause-on-window-blur'
+    const attr = source === 'hover' ? 'pause-on-hover' : source === 'focus' ? 'pause-on-focus' : 'pause-on-window-blur'
     return this.getAttr(attr, 'true') !== 'false'
   }
 
@@ -788,8 +769,7 @@ export class OASToast extends OASElement {
       (dir === 'left' && x <= -SWIPE_THRESHOLD) ||
       (dir === 'down' && y >= SWIPE_THRESHOLD) ||
       (dir === 'up' && y <= -SWIPE_THRESHOLD) ||
-      (dir === 'both' &&
-        (Math.abs(x) >= SWIPE_THRESHOLD || Math.abs(y) >= SWIPE_THRESHOLD))
+      (dir === 'both' && (Math.abs(x) >= SWIPE_THRESHOLD || Math.abs(y) >= SWIPE_THRESHOLD))
     const box = this.box
     if (!box) return
     if (dirHit) {

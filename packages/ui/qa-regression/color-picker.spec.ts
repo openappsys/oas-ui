@@ -13,10 +13,7 @@ test('color-picker 右缘触发：面板 fixed 视口内、不撑横向滚动条
   await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#cp-edge')
 
-  const noHScroll = () =>
-    page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
-    )
+  const noHScroll = () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
   expect(await noHScroll(), '打开前页面不应有横向滚动').toBe(true)
 
   await page.evaluate(() => {
@@ -26,10 +23,8 @@ test('color-picker 右缘触发：面板 fixed 视口内、不撑横向滚动条
   })
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('#cp-edge')
-        ?.shadowRoot?.querySelector('[part="panel"]')
-        ?.classList.contains('open') === true,
+      document.querySelector('#cp-edge')?.shadowRoot?.querySelector('[part="panel"]')?.classList.contains('open') ===
+      true,
     null,
     { timeout: 5000 },
   )
@@ -79,14 +74,12 @@ test('color-picker 触发器贴近视口底部：面板向上翻转完整落位�
 
   await page.evaluate(() => {
     const el = document.querySelector('#cp-2d')!
-    ;(el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!).click()
+    el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!.click()
   })
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('#cp-2d')
-        ?.shadowRoot?.querySelector('[part="panel"]')
-        ?.classList.contains('open') === true,
+      document.querySelector('#cp-2d')?.shadowRoot?.querySelector('[part="panel"]')?.classList.contains('open') ===
+      true,
     null,
     { timeout: 5000 },
   )
@@ -117,14 +110,10 @@ test('color-picker 真实浏览器：slot 自定义触发器点击沿 slot 冒�
   const custom = page.locator('#cp-slot span[slot="trigger"]')
   await expect(custom).toHaveCount(1)
   await custom.click()
-  await page.waitForFunction(
-    () => document.querySelector('#cp-slot')?.hasAttribute('open') === true,
-    null,
-    { timeout: 5000 },
-  )
-  expect(await page.evaluate(() => document.querySelector('#cp-slot')?.hasAttribute('open'))).toBe(
-    true,
-  )
+  await page.waitForFunction(() => document.querySelector('#cp-slot')?.hasAttribute('open') === true, null, {
+    timeout: 5000,
+  })
+  expect(await page.evaluate(() => document.querySelector('#cp-slot')?.hasAttribute('open'))).toBe(true)
 })
 
 test('color-picker alpha 滑杆拖动：值回写 8 位 hex，触发器文本同步（show-alpha demo）', async ({ page }) => {
@@ -137,10 +126,8 @@ test('color-picker alpha 滑杆拖动：值回写 8 位 hex，触发器文本同
   })
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('#cp-alpha')
-        ?.shadowRoot?.querySelector('[part="panel"]')
-        ?.classList.contains('open') === true,
+      document.querySelector('#cp-alpha')?.shadowRoot?.querySelector('[part="panel"]')?.classList.contains('open') ===
+      true,
     null,
     { timeout: 5000 },
   )
@@ -150,17 +137,11 @@ test('color-picker alpha 滑杆拖动：值回写 8 位 hex，触发器文本同
     alpha.value = '25'
     alpha.dispatchEvent(new Event('input', { bubbles: true }))
   })
-  await page.waitForFunction(
-    () => document.querySelector('#cp-alpha')?.getAttribute('value') === '#0b6cff40',
-    null,
-    { timeout: 5000 },
-  )
-  const text = await page.evaluate(
-    () =>
-      document
-        .querySelector('#cp-alpha')
-        ?.shadowRoot?.querySelector('.hex-text')
-        ?.textContent?.trim(),
+  await page.waitForFunction(() => document.querySelector('#cp-alpha')?.getAttribute('value') === '#0b6cff40', null, {
+    timeout: 5000,
+  })
+  const text = await page.evaluate(() =>
+    document.querySelector('#cp-alpha')?.shadowRoot?.querySelector('.hex-text')?.textContent?.trim(),
   )
   expect(text).toBe('#0b6cff40')
 })
@@ -175,10 +156,8 @@ test('color-picker clearable：oas-clear + 空态占位 + demo 可见反馈', as
   })
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('#cp-clear')
-        ?.shadowRoot?.querySelector('[part="panel"]')
-        ?.classList.contains('open') === true,
+      document.querySelector('#cp-clear')?.shadowRoot?.querySelector('[part="panel"]')?.classList.contains('open') ===
+      true,
     null,
     { timeout: 5000 },
   )
@@ -186,11 +165,9 @@ test('color-picker clearable：oas-clear + 空态占位 + demo 可见反馈', as
     const el = document.querySelector('#cp-clear')!
     ;(el.shadowRoot!.querySelector('[part="clear"]') as HTMLElement).click()
   })
-  await page.waitForFunction(
-    () => document.querySelector('#cp-clear')?.hasAttribute('value') === false,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#cp-clear')?.hasAttribute('value') === false, null, {
+    timeout: 5000,
+  })
   const state = await page.evaluate(() => {
     const el = document.querySelector('#cp-clear')!
     const text = el.shadowRoot!.querySelector('.hex-text')!
@@ -216,10 +193,8 @@ test('color-picker hex 输入：非法值红框不生效，合法值提交并派
   })
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('#cp-event')
-        ?.shadowRoot?.querySelector('[part="panel"]')
-        ?.classList.contains('open') === true,
+      document.querySelector('#cp-event')?.shadowRoot?.querySelector('[part="panel"]')?.classList.contains('open') ===
+      true,
     null,
     { timeout: 5000 },
   )
@@ -251,11 +226,9 @@ test('color-picker hex 输入：非法值红框不生效，合法值提交并派
     input.value = '#336699'
     input.dispatchEvent(new Event('change', { bubbles: true }))
   })
-  await page.waitForFunction(
-    () => document.querySelector('#cp-event')?.getAttribute('value') === '#336699',
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#cp-event')?.getAttribute('value') === '#336699', null, {
+    timeout: 5000,
+  })
   const ok = await page.evaluate(() => {
     const el = document.querySelector('#cp-event')!
     const input = el.shadowRoot!.querySelector('[part="hex-input"]')!
@@ -276,27 +249,19 @@ test('color-picker 受控 open：外部按钮开/关 + oas-open-change 可见反
   await page.evaluate(() => {
     ;(document.querySelector('#cp-open-btn') as HTMLElement).click()
   })
-  await page.waitForFunction(
-    () => document.querySelector('#cp-ctrl')?.hasAttribute('open') === true,
-    null,
-    { timeout: 5000 },
-  )
-  const opened = await page.evaluate(
-    () => document.querySelector('#cp-ctrl-output')?.textContent ?? '',
-  )
+  await page.waitForFunction(() => document.querySelector('#cp-ctrl')?.hasAttribute('open') === true, null, {
+    timeout: 5000,
+  })
+  const opened = await page.evaluate(() => document.querySelector('#cp-ctrl-output')?.textContent ?? '')
   expect(opened).toContain('oas-open-change: true')
 
   await page.evaluate(() => {
     ;(document.querySelector('#cp-close-btn') as HTMLElement).click()
   })
-  await page.waitForFunction(
-    () => document.querySelector('#cp-ctrl')?.hasAttribute('open') === false,
-    null,
-    { timeout: 5000 },
-  )
-  const closed = await page.evaluate(
-    () => document.querySelector('#cp-ctrl-output')?.textContent ?? '',
-  )
+  await page.waitForFunction(() => document.querySelector('#cp-ctrl')?.hasAttribute('open') === false, null, {
+    timeout: 5000,
+  })
+  const closed = await page.evaluate(() => document.querySelector('#cp-ctrl-output')?.textContent ?? '')
   expect(closed).toContain('oas-open-change: false')
 
   // readonly：点击不打开、无 open 属性
@@ -315,9 +280,7 @@ test('color-picker 受控 open：外部按钮开/关 + oas-open-change 可见反
   expect(readonlyState.open).toBe(false)
 })
 
-test('color-picker Vue demo 属性存活：size / show-alpha / uppercase / preset-columns 未被剥离', async ({
-  page,
-}) => {
+test('color-picker Vue demo 属性存活：size / show-alpha / uppercase / preset-columns 未被剥离', async ({ page }) => {
   await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#cp-upper')
   const attrs = await page.evaluate(() => {
@@ -342,12 +305,8 @@ test('color-picker Vue demo 属性存活：size / show-alpha / uppercase / prese
   expect(attrs.presets).toContain('preset')
   expect(attrs.clear).toContain('clearable')
   // 值未被 Vue 处理丢语义：hex 文本按 uppercase 大写渲染
-  const upperText = await page.evaluate(
-    () =>
-      document
-        .querySelector('#cp-upper')
-        ?.shadowRoot?.querySelector('.hex-text')
-        ?.textContent?.trim(),
+  const upperText = await page.evaluate(() =>
+    document.querySelector('#cp-upper')?.shadowRoot?.querySelector('.hex-text')?.textContent?.trim(),
   )
   expect(upperText).toBe('#0B6CFF')
 })
@@ -364,10 +323,8 @@ test('color-picker 二期 2D 色域：打开面板出现 .sv2d/.hue，方向键�
   })
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('#cp-2d')
-        ?.shadowRoot?.querySelector('[part="panel"]')
-        ?.classList.contains('open') === true,
+      document.querySelector('#cp-2d')?.shadowRoot?.querySelector('[part="panel"]')?.classList.contains('open') ===
+      true,
     null,
     { timeout: 5000 },
   )
@@ -393,9 +350,9 @@ test('color-picker 二期 2D 色域：打开面板出现 .sv2d/.hue，方向键�
   // 2D 色域方向键 → oas-change + demo 可见反馈
   await page.evaluate(() => {
     const root = document.querySelector('#cp-2d')!.shadowRoot!
-    root.querySelector<HTMLElement>('.sv2d')!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
-    )
+    root
+      .querySelector<HTMLElement>('.sv2d')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
   })
   await page.waitForFunction(
     () => (document.querySelector('#cp-2d-output')?.textContent ?? '').startsWith('oas-change:'),
@@ -406,9 +363,7 @@ test('color-picker 二期 2D 色域：打开面板出现 .sv2d/.hue，方向键�
   expect(feedback).toContain('#')
 })
 
-test('color-picker 二期渐变：mode=gradient 面板出现渐变轴，多 stop 操作写回 linear-gradient', async ({
-  page,
-}) => {
+test('color-picker 二期渐变：mode=gradient 面板出现渐变轴，多 stop 操作写回 linear-gradient', async ({ page }) => {
   await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#cp-grad')
 
@@ -424,10 +379,8 @@ test('color-picker 二期渐变：mode=gradient 面板出现渐变轴，多 stop
   })
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('#cp-grad')
-        ?.shadowRoot?.querySelector('[part="panel"]')
-        ?.classList.contains('open') === true,
+      document.querySelector('#cp-grad')?.shadowRoot?.querySelector('[part="panel"]')?.classList.contains('open') ===
+      true,
     null,
     { timeout: 5000 },
   )
@@ -486,11 +439,9 @@ test('color-picker 二期 inline：面板就地渲染，无 trigger 弹层，RGB
     g.value = '0'
     g.dispatchEvent(new Event('input', { bubbles: true }))
   })
-  await page.waitForFunction(
-    () => document.querySelector('#cp-inline')?.getAttribute('value') === '#9300ea',
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#cp-inline')?.getAttribute('value') === '#9300ea', null, {
+    timeout: 5000,
+  })
   const out = await page.evaluate(() => document.querySelector('#cp-inline-output')?.textContent)
   expect(out).toContain('#9300ea')
 })
@@ -500,8 +451,7 @@ test('color-picker 二期属性存活：mode / inline 未被 Vue 剥离', async 
   await up(page, '#cp-grad')
   await up(page, '#cp-inline')
   const attrs = await page.evaluate(() => {
-    const names = (id: string) =>
-      [...(document.querySelector(id)?.attributes ?? [])].map((a) => a.name)
+    const names = (id: string) => [...(document.querySelector(id)?.attributes ?? [])].map((a) => a.name)
     return {
       grad: names('#cp-grad'),
       inline: names('#cp-inline'),

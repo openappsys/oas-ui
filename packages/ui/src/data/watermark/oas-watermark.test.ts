@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { OASWatermark, textTileDataUri, textTileCanvas, canvasAvailable, parseTextLines, resolveTileSize } from './index.js'
+import {
+  OASWatermark,
+  textTileDataUri,
+  textTileCanvas,
+  canvasAvailable,
+  parseTextLines,
+  resolveTileSize,
+} from './index.js'
 
 function mount(attrs: Record<string, string> = {}, content = ''): OASWatermark {
   const el = new OASWatermark()
@@ -278,9 +285,7 @@ describe('OASWatermark', () => {
     const el = mount({ text: 'x', repeat: '', movable: '' })
     expect(styleOf(el)).toContain('pointer-events: auto')
     const layer = layerOf(el)
-    layer.dispatchEvent(
-      new PointerEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true, button: 0 }),
-    )
+    layer.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true, button: 0 }))
     document.dispatchEvent(new PointerEvent('pointermove', { clientX: 140, clientY: 130 }))
     await new Promise((r) => setTimeout(r, 0))
     // 起步 offset = 自适应 tile（约 99×72）/ 2 = [49.5,36]，+ 位移 (40,30) → [90,66]

@@ -32,9 +32,7 @@ test('image-group：容器收集子图为共享图集，点击打开共享预览
     const mask = portal.shadowRoot!.querySelector('.preview-mask')!
     const counter = portal.shadowRoot!.querySelector('[part="preview-counter"]')!
     const g = document.querySelector('#image-group-demo')!
-    const childMask = g
-      .querySelectorAll('oas-image')[1]!
-      .shadowRoot!.querySelector('.preview-mask')!
+    const childMask = g.querySelectorAll('oas-image')[1]!.shadowRoot!.querySelector('.preview-mask')!
     return {
       maskHidden: mask.hasAttribute('hidden'),
       counter: counter.textContent,
@@ -68,19 +66,15 @@ test('image-group：容器收集子图为共享图集，点击打开共享预览
 
   // Esc 关闭共享预览：portal 拆除，无孤儿浮层
   await page.keyboard.press('Escape')
-  await page.waitForFunction(
-    () => document.querySelector('[data-oas-image-preview-portal]') === null,
-    null,
-    { timeout: 15000 },
-  )
+  await page.waitForFunction(() => document.querySelector('[data-oas-image-preview-portal]') === null, null, {
+    timeout: 15000,
+  })
 
   // 动态增删子图：图集列表同步（+1 / 还原）
   const synced = await page.evaluate(async () => {
     const g = document.querySelector('#image-group-demo')!
     const read = () =>
-      JSON.parse(
-        g.shadowRoot!.querySelector('oas-image')!.getAttribute('preview-src-list') || '[]',
-      ).length
+      JSON.parse(g.shadowRoot!.querySelector('oas-image')!.getAttribute('preview-src-list') || '[]').length
     const before = read()
     const el = document.createElement('oas-image')
     el.setAttribute('src', 'https://picsum.photos/seed/isui-group-added/480/300')
@@ -97,9 +91,7 @@ test('image-group：容器收集子图为共享图集，点击打开共享预览
 })
 
 // 回归：自定义工具栏——模板克隆替换默认按钮组 + oas-toolbar-render 命令通道实际生效。
-test('image 自定义工具栏：模板克隆替换默认按钮组，actions 命令接线后缩放/翻页实际生效', async ({
-  page,
-}) => {
+test('image 自定义工具栏：模板克隆替换默认按钮组，actions 命令接线后缩放/翻页实际生效', async ({ page }) => {
   await page.goto('/components/image.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#image-custom-toolbar')
   await page.locator('#image-custom-toolbar').click()
@@ -145,9 +137,7 @@ test('image 自定义工具栏：模板克隆替换默认按钮组，actions 命
   })
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('[data-oas-image-preview-portal]')!
-        .shadowRoot!.querySelector('[part="preview-counter"]')!
+      document.querySelector('[data-oas-image-preview-portal]')!.shadowRoot!.querySelector('[part="preview-counter"]')!
         .textContent === '2/3',
     null,
     { timeout: 15000 },
@@ -167,7 +157,9 @@ test('image 自定义工具栏：模板克隆替换默认按钮组，actions 命
     }
     // Shift+Tab 从首个按钮往回环绕
     first.focus()
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }))
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }),
+    )
     const shiftWrap = root.activeElement?.getAttribute('data-cmd') ?? root.activeElement?.getAttribute('part') ?? null
     return { seq, shiftWrap }
   })
@@ -180,16 +172,12 @@ test('image 自定义工具栏：模板克隆替换默认按钮组，actions 命
 
   // Esc 关闭：portal 拆除，无孤儿浮层
   await page.keyboard.press('Escape')
-  await page.waitForFunction(
-    () => document.querySelector('[data-oas-image-preview-portal]') === null,
-    null,
-    { timeout: 15000 },
-  )
+  await page.waitForFunction(() => document.querySelector('[data-oas-image-preview-portal]') === null, null, {
+    timeout: 15000,
+  })
 })
 
-test('image 懒加载：视口外图片不加载（img 无 src、占位显示），滚动进入视口后逐图加载', async ({
-  page,
-}) => {
+test('image 懒加载：视口外图片不加载（img 无 src、占位显示），滚动进入视口后逐图加载', async ({ page }) => {
   // 回归：lazy 必须真正延迟加载——视口外 img 没有 src，进入视口后才发起加载。
   // 外部图床（picsum）不可靠：断网可能一直挂起而不返回错误，导致 error 事件不触发、
   // fallback 不接管、aria-busy 永远不复位。这里统一拦截 picsum 让其立即失败，
@@ -198,11 +186,9 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
   await page.goto('/components/image.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-image[lazy]')
   // 动态创建的懒加载列表由 demo onMounted 填充，静态首图存在不代表列表已建完
-  await page.waitForFunction(
-    () => document.querySelectorAll('#image-lazy-list oas-image[lazy]').length >= 6,
-    null,
-    { timeout: 15000 },
-  )
+  await page.waitForFunction(() => document.querySelectorAll('#image-lazy-list oas-image[lazy]').length >= 6, null, {
+    timeout: 15000,
+  })
   // 懒加载列表块整体位于页面首屏之外（demo 页需先滚页面才可见）——
   // 仅滚内层容器时列表块仍在视口外，IO 永远不触发。先把列表整体滚入页面视口。
   await page.evaluate(() => document.querySelector('#image-lazy-list')?.scrollIntoView())

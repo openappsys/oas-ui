@@ -346,17 +346,7 @@ const STYLE = `
 
 export class OASMenu extends OASElement {
   static override get observedAttributes(): string[] {
-    return [
-      'items',
-      'value',
-      'mode',
-      'collapsed',
-      'theme',
-      'max-height',
-      'expanded',
-      'accordion',
-      'close-on-select',
-    ]
+    return ['items', 'value', 'mode', 'collapsed', 'theme', 'max-height', 'expanded', 'accordion', 'close-on-select']
   }
 
   private itemsList: MenuItem[] = []
@@ -695,12 +685,7 @@ export class OASMenu extends OASElement {
    * 递归渲染一层菜单。scope = 叶子归属的 radio 组 id（最近 `type:"group"` 祖先的 value，
    * 无组为 ''）；group 递归时把组 id 传下去。
    */
-  private renderLevel(
-    container: HTMLElement,
-    items: MenuItem[],
-    scope: string,
-    depth: number,
-  ): void {
+  private renderLevel(container: HTMLElement, items: MenuItem[], scope: string, depth: number): void {
     const horizontal = this.getAttr('mode') === 'horizontal'
     const inline = this.getAttr('mode') === 'inline'
     for (const item of items) {
@@ -809,18 +794,13 @@ export class OASMenu extends OASElement {
         const action = item.kind === 'action'
         const checkbox = item.kind === 'checkbox'
         // role：action=menuitem（无勾选态）/ checkbox=menuitemcheckbox / radio（默认）=menuitemradio
-        li.setAttribute(
-          'role',
-          action ? 'menuitem' : checkbox ? 'menuitemcheckbox' : 'menuitemradio',
-        )
+        li.setAttribute('role', action ? 'menuitem' : checkbox ? 'menuitemcheckbox' : 'menuitemradio')
         // danger 破坏性项：红色语义
         if (item.danger) li.classList.add('danger')
         if (!action) {
           li.setAttribute(
             'aria-checked',
-            String(
-              checkbox ? this.isChecked(item.value) : item.value === this.selectedValueOf(scope),
-            ),
+            String(checkbox ? this.isChecked(item.value) : item.value === this.selectedValueOf(scope)),
           )
           const check = document.createElement('span')
           check.className = checkbox ? 'check check--box' : 'check'
@@ -879,9 +859,7 @@ export class OASMenu extends OASElement {
     const content = lookupIcon(icon)
     if (!content) return null
     const stroke = iconColor || 'currentColor'
-    const coloredContent = iconColor
-      ? content.replace(/stroke="currentColor"/g, `stroke="${stroke}"`)
-      : content
+    const coloredContent = iconColor ? content.replace(/stroke="currentColor"/g, `stroke="${stroke}"`) : content
     const span = document.createElement('span')
     span.className = className
     span.setAttribute('aria-hidden', 'true')
@@ -949,9 +927,7 @@ export class OASMenu extends OASElement {
     }
     const current = this.currentItems()[this.activeIndex]
     if (!current || current.value == null) return
-    const el = this.menuEl.querySelector<HTMLElement>(
-      `[part="item"][data-value="${current.value}"]`,
-    )
+    const el = this.menuEl.querySelector<HTMLElement>(`[part="item"][data-value="${current.value}"]`)
     el?.classList.add('active')
   }
 
@@ -994,8 +970,7 @@ export class OASMenu extends OASElement {
     const raw = this.getAttr('value', '')
     try {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed))
-        return new Set(parsed.filter((v): v is string => typeof v === 'string'))
+      if (Array.isArray(parsed)) return new Set(parsed.filter((v): v is string => typeof v === 'string'))
     } catch {
       // 非数组：空勾选集
     }
@@ -1123,9 +1098,7 @@ export class OASMenu extends OASElement {
       const found = levelItems.find((i) => i.value === ancestorValue)
       levelItems = found?.children ?? []
     }
-    return levelItems
-      .filter((i) => i.children?.length && i.value !== value)
-      .map((i) => i.value ?? '')
+    return levelItems.filter((i) => i.children?.length && i.value !== value).map((i) => i.value ?? '')
   }
 
   /** 水平溢出收纳：horizontal 模式容器宽度不足时，超宽项收进末尾「···」收纳子菜单 */
@@ -1134,9 +1107,7 @@ export class OASMenu extends OASElement {
     const menuEl = this.menuEl
     if (!menuEl) return
     // 顶层项（排除收纳项本身——它是镜像容器不是数据项；曾误纳入计算致自己被 data-collapsed 隐藏）
-    const topItems = [
-      ...menuEl.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)'),
-    ]
+    const topItems = [...menuEl.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)')]
     if (topItems.length === 0) return
     const moreItem = this.moreItemEl ?? menuEl.querySelector<HTMLElement>('.menu-more')
     // 先复位再测量：collapsed 项 display:none 宽为 0，收纳项隐藏时也不占宽，
@@ -1213,9 +1184,7 @@ export class OASMenu extends OASElement {
     const selectedInside =
       hasOverflow &&
       !!this.selectedValueOf('') &&
-      topItems.some(
-        (t) => t.hasAttribute('data-collapsed') && t.dataset.value === this.selectedValueOf(''),
-      )
+      topItems.some((t) => t.hasAttribute('data-collapsed') && t.dataset.value === this.selectedValueOf(''))
     moreItem.classList.toggle('child-selected', selectedInside)
     if (selectedInside) moreItem.setAttribute('aria-current', 'true')
     else moreItem.removeAttribute('aria-current')
@@ -1262,9 +1231,7 @@ export class OASMenu extends OASElement {
 
   private handleKey(e: KeyboardEvent): void {
     const items = this.currentItems()
-    const enabled = items
-      .map((i, idx) => (i.disabled || i.loading ? -1 : idx))
-      .filter((i) => i >= 0)
+    const enabled = items.map((i, idx) => (i.disabled || i.loading ? -1 : idx)).filter((i) => i >= 0)
     if (enabled.length === 0) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
@@ -1295,9 +1262,7 @@ export class OASMenu extends OASElement {
       if (active.children?.length) {
         this.enterSubmenu(active)
       } else {
-        const activeEl = this.menuEl!.querySelector<HTMLElement>(
-          `[part="item"][data-value="${active.value}"]`,
-        )
+        const activeEl = this.menuEl!.querySelector<HTMLElement>(`[part="item"][data-value="${active.value}"]`)
         this.select(active, activeEl?.dataset.scope ?? '')
       }
     } else if (e.key === 'Home') {
@@ -1333,9 +1298,7 @@ export class OASMenu extends OASElement {
     this.activeIndex = idx
     const item = items[idx]
     if (item) {
-      const el = this.menuEl!.querySelector<HTMLElement>(
-        `[part="item"][data-value="${item.value}"]`,
-      )
+      const el = this.menuEl!.querySelector<HTMLElement>(`[part="item"][data-value="${item.value}"]`)
       el?.focus({ preventScroll: true })
     }
   }

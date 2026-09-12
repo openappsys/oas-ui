@@ -35,9 +35,7 @@ test('navigation-menu 箭头跟随触发器：面板箭头 --arrow-x 随触发�
 // —— 缺陷回归：breadcrumb ellipsis 模式项下拉不被 nav 自裁剪 ——
 // 曾现缺陷：nav.ellipsis 的 overflow:hidden 双轴裁剪会裁掉向下展开的项下拉面板。
 // 修复为 overflow-x:clip + overflow-y:visible（只裁横轴防溢出闪动，纵轴放行下拉）。
-test('navigation-menu 箭头几何对准触发器中心（水平+垂直）且营销位不溢出面板（真实 rect 断言）', async ({
-  page,
-}) => {
+test('navigation-menu 箭头几何对准触发器中心（水平+垂直）且营销位不溢出面板（真实 rect 断言）', async ({ page }) => {
   await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-navigation-menu')
   const probe = async (sel: string, vertical: boolean) =>
@@ -74,17 +72,11 @@ test('navigation-menu 箭头几何对准触发器中心（水平+垂直）且营
     )
   const horiz = await probe('#nav-arrow', false)
   expect(horiz).not.toBeNull()
-  expect(
-    Math.abs(horiz!.arrowC - horiz!.trigC),
-    '水平箭头中心对准触发器中心（±2px）',
-  ).toBeLessThanOrEqual(2)
+  expect(Math.abs(horiz!.arrowC - horiz!.trigC), '水平箭头中心对准触发器中心（±2px）').toBeLessThanOrEqual(2)
   expect(horiz!.arrowInVp, '箭头不越出面板').toBe(true)
   const vert = await probe('oas-navigation-menu[orientation="vertical"]', true)
   expect(vert).not.toBeNull()
-  expect(
-    Math.abs(vert!.arrowC - vert!.trigC),
-    '垂直箭头中心对准触发器中心（±2px）',
-  ).toBeLessThanOrEqual(2)
+  expect(Math.abs(vert!.arrowC - vert!.trigC), '垂直箭头中心对准触发器中心（±2px）').toBeLessThanOrEqual(2)
   const footer = await probe('#nav-footer', false)
   expect(footer).not.toBeNull()
   expect(footer!.pfOverflow, '营销位底缘不超出面板（≤0px 溢出）').toBeLessThanOrEqual(0)
@@ -117,9 +109,7 @@ test('navigation-menu flip-up 后箭头贴面板底边指向触发器（不悬�
       // flip-up 箭头朝向：贴面板底边、尖朝下指触发器——rotate45 菱形用右下两描边边
       // （border-right + border-bottom）构成 ▼ chevron；非 rotate 矩阵或缺描边即方向错
       tipDown:
-        cs.transform.includes('matrix') &&
-        parseFloat(cs.borderRightWidth) > 0 &&
-        parseFloat(cs.borderBottomWidth) > 0,
+        cs.transform.includes('matrix') && parseFloat(cs.borderRightWidth) > 0 && parseFloat(cs.borderBottomWidth) > 0,
       // 面板在触发器上方；箭头应贴面板底边（顶部 ≥ 面板底-12，底部 ≤ 面板底+12）
       arrowAttachedToPanel: arR.top >= vr.bottom - 12 && arR.bottom <= vr.bottom + 12,
       // 箭头在触发器与面板之间（不悬空到面板另一侧之外）
@@ -139,9 +129,7 @@ test('navigation-menu flip-up 后箭头贴面板底边指向触发器（不悬�
 // 曾现缺陷：箭头 clip-path 直角三角 top:calc(100%+space-1-1px) 高 6px——5px 埋在面板
 // 内部、仅 1px 探出顶边，视觉上缩成面板里的小凹槽而非「从面板探出的箭头」。
 // 修复：改 menubar 同款 rotate45 描边菱形、跨面板边缘悬置（探出侧指向宿主）。
-test('navigation-menu 箭头跨面板边缘探出指向宿主（rotate45 悬置，不内缩面板）', async ({
-  page,
-}) => {
+test('navigation-menu 箭头跨面板边缘探出指向宿主（rotate45 悬置，不内缩面板）', async ({ page }) => {
   await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#nav-arrow')
   const r = await page.evaluate(async () => {
@@ -186,8 +174,9 @@ test('navigation-menu delay-duration=0 移入子菜单不收回（关闭宽限�
   await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-navigation-menu')
   const r = await page.evaluate(async () => {
-    const nav = [...document.querySelectorAll('oas-navigation-menu')]
-      .find((n) => n.getAttribute('delay-duration') === '0')!
+    const nav = [...document.querySelectorAll('oas-navigation-menu')].find(
+      (n) => n.getAttribute('delay-duration') === '0',
+    )!
     const root = nav.shadowRoot!
     const trigger = root.querySelectorAll('[part="top-item"]')[0] as HTMLElement
     const tr = trigger.getBoundingClientRect()
@@ -207,8 +196,9 @@ test('navigation-menu delay-duration=0 移入子菜单不收回（关闭宽限�
   await page.mouse.move(r.cx, r.cy, { steps: 8 })
   await page.waitForTimeout(500)
   const still = await page.evaluate(() => {
-    const nav = [...document.querySelectorAll('oas-navigation-menu')]
-      .find((n) => n.getAttribute('delay-duration') === '0')!
+    const nav = [...document.querySelectorAll('oas-navigation-menu')].find(
+      (n) => n.getAttribute('delay-duration') === '0',
+    )!
     const vp = nav.shadowRoot!.querySelector('[part="viewport"]') as HTMLElement
     const cs = getComputedStyle(vp)
     return cs.display !== 'none' && Number(cs.opacity) > 0
@@ -220,7 +210,9 @@ test('navigation-menu delay-duration=0 移入子菜单不收回（关闭宽限�
 // 曾缺：oas-menu / oas-menubar / oas-navigation-menu 图标固定 currentColor 随文字色，
 // 仅 oas-sidebar 有 iconColor。修复后：items JSON 的 iconColor 与子元素 icon-color 通道
 // 均固定图标色（svg 外层 stroke + 内置 path 的 currentColor 替换），缺省保持 currentColor。
-test('navigation-menu 垂直方向指示条对准活动触发器（bottom 锚点未重置 + 同帧 offsetTop 旧值双坑）', async ({ page }) => {
+test('navigation-menu 垂直方向指示条对准活动触发器（bottom 锚点未重置 + 同帧 offsetTop 旧值双坑）', async ({
+  page,
+}) => {
   await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-navigation-menu')
   // 找垂直形态的 nav（bar.vertical），真实 hover 第一个带子项的触发器
@@ -238,8 +230,8 @@ test('navigation-menu 垂直方向指示条对准活动触发器（bottom 锚点
   await page.mouse.move(target.x, target.y)
   await page.waitForTimeout(600)
   const r = await page.evaluate(() => {
-    const nav = [...document.querySelectorAll('oas-navigation-menu')].find(
-      (n) => n.shadowRoot?.querySelector('.bar.vertical'),
+    const nav = [...document.querySelectorAll('oas-navigation-menu')].find((n) =>
+      n.shadowRoot?.querySelector('.bar.vertical'),
     )!
     const root = nav.shadowRoot!
     const open = nav.getAttribute('value') || root.querySelector('.indicator')?.getAttribute('data-state')

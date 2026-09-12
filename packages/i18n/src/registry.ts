@@ -47,9 +47,7 @@ export function setLocale(nameOrLocale: string | Locale): string {
   if (typeof nameOrLocale === 'string') {
     const found = locales.get(nameOrLocale)
     if (!found) {
-      throw new Error(
-        `[oas-ui/i18n] 未注册的 locale「${nameOrLocale}」，请先 registerLocale() 或直接传入语言包对象`,
-      )
+      throw new Error(`[oas-ui/i18n] 未注册的 locale「${nameOrLocale}」，请先 registerLocale() 或直接传入语言包对象`)
     }
     current = found
   } else {
@@ -84,9 +82,7 @@ export function onLocaleChange(cb: (name: string) => void): () => void {
 
 /** 把当前翻译能力注入 core（OASElement.t 的委托目标） */
 function syncTranslator(): void {
-  setTranslator((key: string, params?: Record<string, string | number>) =>
-    t(key as LocaleKey, params),
-  )
+  setTranslator((key: string, params?: Record<string, string | number>) => t(key as LocaleKey, params))
 }
 
 // 模块加载即注入默认 zh-CN 翻译器，组件开箱即用中文

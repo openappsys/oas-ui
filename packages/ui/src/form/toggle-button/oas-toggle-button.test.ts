@@ -103,12 +103,8 @@ describe('OASToggleButton 尺寸档（size）', () => {
 
   it('CSS：size 档控高/字号走 control-height/font-size token', () => {
     const css = mount().shadowRoot!.querySelector('style')!.textContent ?? ''
-    expect(css).toMatch(
-      /:host\(\[data-size='small'\]\) button\s*{[^}]*--oas-control-height-sm[^}]*--oas-font-size-sm/,
-    )
-    expect(css).toMatch(
-      /:host\(\[data-size='large'\]\) button\s*{[^}]*--oas-control-height-lg[^}]*--oas-font-size-lg/,
-    )
+    expect(css).toMatch(/:host\(\[data-size='small'\]\) button\s*{[^}]*--oas-control-height-sm[^}]*--oas-font-size-sm/)
+    expect(css).toMatch(/:host\(\[data-size='large'\]\) button\s*{[^}]*--oas-control-height-lg[^}]*--oas-font-size-lg/)
   })
 })
 
@@ -205,9 +201,7 @@ describe('OASToggleButton 选中色（color，ui-spec 三级协议）', () => {
 
   it('CSS：pressed 选中态引用 --oas-toggle-color（含主色兜底）', () => {
     const css = mount().shadowRoot!.querySelector('style')!.textContent ?? ''
-    expect(css).toMatch(
-      /button\[aria-pressed='true'\]\s*{[^}]*var\(--oas-toggle-color,\s*var\(--oas-color-primary\)\)/,
-    )
+    expect(css).toMatch(/button\[aria-pressed='true'\]\s*{[^}]*var\(--oas-toggle-color,\s*var\(--oas-color-primary\)\)/)
   })
 })
 

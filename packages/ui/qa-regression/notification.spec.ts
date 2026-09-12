@@ -11,20 +11,16 @@ async function ready(page: import('@playwright/test').Page) {
   })
 }
 
-test('notification 进度条：show-progress 渲染、动画时长与 duration 同步、位于底部', async ({
-  page,
-}) => {
+test('notification 进度条：show-progress 渲染、动画时长与 duration 同步、位于底部', async ({ page }) => {
   await page.goto('/components/notification.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
   await page.waitForFunction(() => typeof (window as any).notification !== 'undefined', null, {
     timeout: 10000,
   })
   await page.locator('.demo-block', { hasText: '带进度条' }).locator('oas-button').first().click()
-  await page.waitForFunction(
-    () => document.querySelector('oas-notification[show-progress]') != null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('oas-notification[show-progress]') != null, null, {
+    timeout: 5000,
+  })
   const r = await page.evaluate(() => {
     const el = document.querySelector('oas-notification[show-progress]')!
     const root = el.shadowRoot!
@@ -61,11 +57,9 @@ test('notification 进度条 progress-position=top：进度条切到描述上方
     timeout: 10000,
   })
   await page.locator('.demo-block', { hasText: '带进度条' }).locator('oas-button').nth(1).click()
-  await page.waitForFunction(
-    () => document.querySelector('oas-notification[progress-position="top"]') != null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('oas-notification[progress-position="top"]') != null, null, {
+    timeout: 5000,
+  })
   const r = await page.evaluate(() => {
     const el = document.querySelector('oas-notification[progress-position="top"]')!
     const root = el.shadowRoot!
@@ -125,9 +119,7 @@ test('notification 长内容可滚动：描述区限高 + overflow-y auto 且真
 // 覆盖：悬停暂停（计时+进度条）、closable 开关、onClick 点击回调、四角栈定位、
 // max 挤出、collapsible 折叠徽章、footer 操作区、loading spinner、进度条颜色变量。
 
-test('notification 悬停暂停：hover 后进度条 animation-play-state=paused 且不自动关闭', async ({
-  page,
-}) => {
+test('notification 悬停暂停：hover 后进度条 animation-play-state=paused 且不自动关闭', async ({ page }) => {
   await ready(page)
   await page.locator('.demo-block', { hasText: '悬停暂停' }).locator('oas-button').first().click()
   const notif = page.locator('oas-notification[show-progress]').first()
@@ -153,11 +145,9 @@ test('notification 悬停暂停：hover 后进度条 animation-play-state=paused
 test('notification closable=false：关闭按钮渲染但隐藏', async ({ page }) => {
   await ready(page)
   await page.locator('.demo-block', { hasText: '关闭开关' }).locator('oas-button').first().click()
-  await page.waitForFunction(
-    () => document.querySelector('oas-notification[closable="false"]') != null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('oas-notification[closable="false"]') != null, null, {
+    timeout: 5000,
+  })
   const hidden = await page.evaluate(
     () =>
       document
@@ -167,21 +157,15 @@ test('notification closable=false：关闭按钮渲染但隐藏', async ({ page 
   expect(hidden).toBe(true)
 })
 
-test('notification onClick：卡片可点击（clickable 属性 + oas-click 触发计数）', async ({
-  page,
-}) => {
+test('notification onClick：卡片可点击（clickable 属性 + oas-click 触发计数）', async ({ page }) => {
   await ready(page)
   await page.locator('.demo-block', { hasText: '点击回调' }).locator('oas-button').first().click()
-  await page.waitForFunction(
-    () => document.querySelector('oas-notification[clickable]') != null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('oas-notification[clickable]') != null, null, {
+    timeout: 5000,
+  })
   await page.locator('oas-notification[clickable] [part="box"]').click()
   await page.waitForFunction(
-    () =>
-      (document.getElementById('notif-click-count')?.textContent?.match(/(\d+)/)?.[1] ?? '0') !==
-      '0',
+    () => (document.getElementById('notif-click-count')?.textContent?.match(/(\d+)/)?.[1] ?? '0') !== '0',
     null,
     { timeout: 5000 },
   )
@@ -190,11 +174,9 @@ test('notification onClick：卡片可点击（clickable 属性 + oas-click 触�
 test('notification position 四角：bottom-left 栈定位正确', async ({ page }) => {
   await ready(page)
   await page.locator('.demo-block', { hasText: '位置四角' }).locator('oas-button').nth(2).click()
-  await page.waitForFunction(
-    () => document.querySelectorAll('oas-notification').length > 0,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelectorAll('oas-notification').length > 0, null, {
+    timeout: 5000,
+  })
   const r = await page.evaluate(() => {
     const el = document.querySelector<HTMLElement>('oas-notification')!
     const stack = el.parentElement!
@@ -207,21 +189,15 @@ test('notification position 四角：bottom-left 栈定位正确', async ({ page
 test('notification max：连发 6 条（max=3）只存活 3 条', async ({ page }) => {
   await ready(page)
   await page.locator('.demo-block', { hasText: '数量上限' }).locator('oas-button').first().click()
-  await page.waitForFunction(
-    () => document.querySelectorAll('oas-notification').length === 3,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelectorAll('oas-notification').length === 3, null, { timeout: 5000 })
 })
 
 test('notification collapsible：超阈值折叠 + "+N" 徽章点击展开', async ({ page }) => {
   await ready(page)
   await page.locator('.demo-block', { hasText: '栈治理' }).locator('oas-button').first().click()
-  await page.waitForFunction(
-    () => document.querySelector('.oas-notification-stack .stack-badge') != null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('.oas-notification-stack .stack-badge') != null, null, {
+    timeout: 5000,
+  })
   const collapsedCount = await page.evaluate(() => {
     const stack = document.querySelector('.oas-notification-stack.stack-collapsible')!
     return [...stack.querySelectorAll('oas-notification')].filter((el) =>
@@ -262,11 +238,9 @@ test('notification footer：操作区渲染且按钮可点', async ({ page }) =>
 test('notification loading：spinner 渲染、type=loading、无关闭按钮', async ({ page }) => {
   await ready(page)
   await page.locator('.demo-block', { hasText: 'loading' }).locator('oas-button').first().click()
-  await page.waitForFunction(
-    () => document.querySelector('oas-notification[type="loading"]') != null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('oas-notification[type="loading"]') != null, null, {
+    timeout: 5000,
+  })
   const r = await page.evaluate(() => {
     const el = document.querySelector('oas-notification[type="loading"]')!
     const root = el.shadowRoot!
@@ -279,16 +253,12 @@ test('notification loading：spinner 渲染、type=loading、无关闭按钮', a
   expect(r.closeHidden).toBe(true)
 })
 
-test('notification 进度条颜色变量：--oas-notification-progress-color 计算值可穿透', async ({
-  page,
-}) => {
+test('notification 进度条颜色变量：--oas-notification-progress-color 计算值可穿透', async ({ page }) => {
   await ready(page)
   await page.locator('.demo-block', { hasText: '进度条颜色' }).locator('oas-button').click()
-  await page.waitForFunction(
-    () => document.querySelector('oas-notification[show-progress]') != null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('oas-notification[show-progress]') != null, null, {
+    timeout: 5000,
+  })
   const r = await page.evaluate(() => {
     const el = document.querySelector('oas-notification[show-progress]')!
     const fill = el.shadowRoot!.querySelector<HTMLElement>('.progress-fill')!
@@ -302,4 +272,3 @@ test('notification 进度条颜色变量：--oas-notification-progress-color 计
   expect(r.inColorHost).toBe(true)
   expect(r.backgroundColor).not.toBe('')
 })
-

@@ -30,9 +30,7 @@ const warnedBreakpoints = new Set<string>()
 function warnBreakpoint(name: string): void {
   if (warnedBreakpoints.has(name)) return
   warnedBreakpoints.add(name)
-  console.warn(
-    `[oas-grid-item] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`,
-  )
+  console.warn(`[oas-grid-item] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
 }
 
 const warnedSpanValues = new Set<string>()
@@ -41,9 +39,7 @@ const warnedSpanValues = new Set<string>()
 function warnSpanValue(value: string): void {
   if (warnedSpanValues.has(value)) return
   warnedSpanValues.add(value)
-  console.warn(
-    `[oas-grid-item] 断点 span 值 "${value}" 非法，已回落基础 span；合法值：正整数或 auto`,
-  )
+  console.warn(`[oas-grid-item] 断点 span 值 "${value}" 非法，已回落基础 span；合法值：正整数或 auto`)
 }
 
 const warnedOffsetValues = new Set<string>()
@@ -62,9 +58,7 @@ function warnOffsetValue(value: string): void {
  * - 首个 token 不含冒号视为基础值，缺省时回落（span 24 / offset 0）；
  * - 非法断点名丢弃该规则 + dev 告警（同值去重），合法断点值由调用方归一化。
  */
-function parseBreakpointShorthand(
-  raw: string,
-): { base: string; rules: Array<{ name: string; value: string }> } | null {
+function parseBreakpointShorthand(raw: string): { base: string; rules: Array<{ name: string; value: string }> } | null {
   if (!raw.includes(' ')) return null
   const tokens = raw.trim().split(/\s+/)
   if (!tokens.some((t) => t.includes(':'))) return null
@@ -156,9 +150,7 @@ export class OASGridItem extends OASElement {
    * 序列化 shadowRoot.innerHTML 同步产出，两段路径一致）。无断点时清空。
    */
   private syncBreakpointStyle(css: string): void {
-    const styleEl = this.shadow.querySelector<HTMLStyleElement>(
-      'style[data-oas-grid-item-breakpoints]',
-    )
+    const styleEl = this.shadow.querySelector<HTMLStyleElement>('style[data-oas-grid-item-breakpoints]')
     if (!styleEl) return
     styleEl.textContent = css
   }
@@ -169,8 +161,7 @@ export class OASGridItem extends OASElement {
     // - min-child-width：auto-fit 流式自算列数。
     const grid = this.closest('oas-grid')
     const autoLayout =
-      (grid?.getAttribute('columns') ?? '') !== '' ||
-      (grid?.getAttribute('min-child-width') ?? '') !== ''
+      (grid?.getAttribute('columns') ?? '') !== '' || (grid?.getAttribute('min-child-width') ?? '') !== ''
 
     // order 排序：数字直写，非法/缺省回落 0
     const order = Number(this.getAttr('order', '0'))
@@ -188,12 +179,8 @@ export class OASGridItem extends OASElement {
     const offsetShorthand = parseBreakpointShorthand(offsetRaw)
 
     // 基础值：断点简写缺基础时回落默认（span 24 / offset 0）
-    const baseSpan = resolveSpanValue(
-      spanShorthand ? spanShorthand.base || '24' : spanRaw,
-    ) ?? '24'
-    const baseOffset = resolveOffsetValue(
-      offsetShorthand ? offsetShorthand.base || '0' : offsetRaw,
-    ) ?? 0
+    const baseSpan = resolveSpanValue(spanShorthand ? spanShorthand.base || '24' : spanRaw) ?? '24'
+    const baseOffset = resolveOffsetValue(offsetShorthand ? offsetShorthand.base || '0' : offsetRaw) ?? 0
 
     // 并集断点集：span 规则先入（offset 回落基础），offset 规则补齐/覆盖（span 回落基础）
     const perBreakpoint = new Map<string, { span: string; offset: number }>()
@@ -225,9 +212,7 @@ export class OASGridItem extends OASElement {
       // 宿主 var() 兜底基础值 + shadow @media 规则覆盖（space 断点协议的同款实现路径）
       this.style.gridColumn = `var(--oas-grid-item-column, ${baseColumn})`
       const css = [...perBreakpoint.entries()]
-        .sort(
-          (a, b) => BREAKPOINT_ORDER.indexOf(a[0]) - BREAKPOINT_ORDER.indexOf(b[0]),
-        )
+        .sort((a, b) => BREAKPOINT_ORDER.indexOf(a[0]) - BREAKPOINT_ORDER.indexOf(b[0]))
         .map(
           ([name, { span, offset }]) =>
             `@media (min-width: ${BREAKPOINTS[name]}) { :host { --oas-grid-item-column: ${columnFrom(span, offset)} } }`,

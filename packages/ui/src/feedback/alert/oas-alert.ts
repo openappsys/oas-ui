@@ -42,10 +42,7 @@ function normalizeSize(raw: string): AlertSize {
 
 /** prefers-reduced-motion 探测（happy-dom 等环境可能缺失 matchMedia） */
 function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
-  )
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 }
 
 const CLOSE_ANIM_MS = 200
@@ -314,9 +311,7 @@ export class OASAlert extends OASElement {
 
   /** 插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
   private hasSlotContent(slot: HTMLSlotElement): boolean {
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -340,12 +335,10 @@ export class OASAlert extends OASElement {
   /** 绑定交互事件（render 与水合路径共用） */
   private bind(): void {
     this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.close())
-    this.shadow
-      .querySelector<HTMLButtonElement>('[part="toggle"]')
-      ?.addEventListener('click', () => {
-        this.expanded = !this.expanded
-        this.update()
-      })
+    this.shadow.querySelector<HTMLButtonElement>('[part="toggle"]')?.addEventListener('click', () => {
+      this.expanded = !this.expanded
+      this.update()
+    })
     // title/description/icon 插槽内容增减（slot 覆盖属性文案）时重刷双通道
     for (const name of ['title', 'description', 'icon']) {
       this.shadow

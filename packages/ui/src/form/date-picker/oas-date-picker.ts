@@ -65,12 +65,7 @@ const VALID_TYPES: readonly PickerType[] = [
   'quarter',
 ]
 
-const RANGE_TYPES: ReadonlySet<PickerType> = new Set([
-  'daterange',
-  'datetimerange',
-  'monthrange',
-  'yearrange',
-])
+const RANGE_TYPES: ReadonlySet<PickerType> = new Set(['daterange', 'datetimerange', 'monthrange', 'yearrange'])
 
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
@@ -670,11 +665,7 @@ export class OASDatePicker extends OASElement {
    * 受控 open：属性即真相——在场=展开、移除=收起（宿主手势只派发
    * oas-open-change 通知宿主，由宿主决定是否增删属性，组件不强制写回）。
    */
-  override attributeChangedCallback(
-    name: string,
-    oldValue: string | null,
-    newValue: string | null,
-  ): void {
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if (name === 'open' && oldValue !== newValue && this.hasRendered) {
       if (newValue !== null && !this.openState) {
         this.bootPanel(false)
@@ -1091,12 +1082,7 @@ export class OASDatePicker extends OASElement {
     const clearBtn = this.shadow.querySelector<HTMLElement>('[part="clear"]')
     if (clearBtn) {
       clearBtn.setAttribute('aria-label', this.t('input.clear'))
-      clearBtn.hidden = !(
-        this.hasAttr('clearable') &&
-        !disabled &&
-        !readonly &&
-        this.getAttr('value', '') !== ''
-      )
+      clearBtn.hidden = !(this.hasAttr('clearable') && !disabled && !readonly && this.getAttr('value', '') !== '')
     }
   }
 
@@ -1254,13 +1240,7 @@ export class OASDatePicker extends OASElement {
     const popupRect = this.dropdown.getBoundingClientRect()
     const viewport = { width: window.innerWidth, height: window.innerHeight }
     const padding = 8 // 视口夹取边距：range 双月面板 480px 宽，避让余量更足
-    const placement = this.adjustCrossAlignment(
-      anchorRect,
-      popupRect,
-      viewport,
-      padding,
-      this.resolvePlacement(),
-    )
+    const placement = this.adjustCrossAlignment(anchorRect, popupRect, viewport, padding, this.resolvePlacement())
     const {
       top,
       left,
@@ -1337,9 +1317,7 @@ export class OASDatePicker extends OASElement {
     const grid = body.querySelector<HTMLElement>('[part="grid"]')!
     const title = body.querySelector<HTMLElement>('[part="title"]')!
     title.textContent =
-      this.subPanel === 'months'
-        ? formatYear(this.viewDate, locale)
-        : formatYearMonth(this.viewDate, locale)
+      this.subPanel === 'months' ? formatYear(this.viewDate, locale) : formatYearMonth(this.viewDate, locale)
 
     if (this.subPanel === 'months') {
       this.buildMonthCells(grid, this.viewDate.getFullYear(), {
@@ -1364,12 +1342,8 @@ export class OASDatePicker extends OASElement {
       this.subPanel = this.subPanel === 'days' ? 'months' : 'days'
       this.renderPanel(false)
     })
-    body.querySelector<HTMLElement>('[part="today"]')?.addEventListener('click', () =>
-      this.pickToday(),
-    )
-    body.querySelector<HTMLElement>('[part="confirm"]')?.addEventListener('click', () =>
-      this.confirmDateTime(),
-    )
+    body.querySelector<HTMLElement>('[part="today"]')?.addEventListener('click', () => this.pickToday())
+    body.querySelector<HTMLElement>('[part="confirm"]')?.addEventListener('click', () => this.confirmDateTime())
     grid.addEventListener('keydown', (e) => this.handleGridKey(e as KeyboardEvent, grid, 0))
   }
 
@@ -1490,8 +1464,7 @@ export class OASDatePicker extends OASElement {
     const body = this.panelSkeleton(panel)
     const year = this.viewDate.getFullYear()
     const selected = this.parseValueAnchor(this.getAttr('value', ''))
-    const selectedQuarter =
-      selected?.getFullYear() === year ? Math.floor(selected.getMonth() / 3) : -1
+    const selectedQuarter = selected?.getFullYear() === year ? Math.floor(selected.getMonth() / 3) : -1
     body.innerHTML = `
       <div class="header">
         <button type="button" class="nav" part="prev" aria-label="${this.t('calendar.prevYear')}">‹</button>
@@ -1513,8 +1486,7 @@ export class OASDatePicker extends OASElement {
       btn.textContent = `Q${q + 1}`
       const qStart = new Date(year, q * 3, 1)
       const qEnd = new Date(year, q * 3 + 3, 0)
-      const disabled =
-        (min != null && qEnd < startOfDay(min)) || (max != null && qStart > startOfDay(max))
+      const disabled = (min != null && qEnd < startOfDay(min)) || (max != null && qStart > startOfDay(max))
       if (disabled) btn.classList.add('disabled')
       if (q === selectedQuarter) btn.classList.add('selected')
       btn.setAttribute('aria-label', formatYearMonth(qStart, locale))
@@ -1588,8 +1560,7 @@ export class OASDatePicker extends OASElement {
     const locale = resolveLocale(this)
     const t = this.pickerType
     const body = this.panelSkeleton(panel)
-    const unit: 'day' | 'month' | 'year' =
-      t === 'monthrange' ? 'month' : t === 'yearrange' ? 'year' : 'day'
+    const unit: 'day' | 'month' | 'year' = t === 'monthrange' ? 'month' : t === 'yearrange' ? 'year' : 'day'
     const viewA = this.viewDate
     const viewB = this.rangeSecondView()
     body.innerHTML = `
@@ -1685,7 +1656,9 @@ export class OASDatePicker extends OASElement {
     })
 
     // 导航：linked 模式双栏同翻；unlink-panels 各自独立
-    const navBtns = [...body.querySelectorAll<HTMLButtonElement>('.range-grid [part="prev"], .range-grid [part="next"]')]
+    const navBtns = [
+      ...body.querySelectorAll<HTMLButtonElement>('.range-grid [part="prev"], .range-grid [part="next"]'),
+    ]
     const canStepOf = (idx: number, dir: 1 | -1): boolean => {
       const view = idx === 0 ? viewA : viewB
       if (unit === 'day') return this.canStepDays(view, dir)
@@ -1700,9 +1673,7 @@ export class OASDatePicker extends OASElement {
       btn.addEventListener('click', () => this.stepRangeView(idx, dir))
     })
 
-    body.querySelector<HTMLElement>('[part="confirm"]')?.addEventListener('click', () =>
-      this.confirmDateTimeRange(),
-    )
+    body.querySelector<HTMLElement>('[part="confirm"]')?.addEventListener('click', () => this.confirmDateTimeRange())
   }
 
   /** 12 格年单元格构建（year 面板 + yearrange 双栏共用） */
@@ -1731,19 +1702,13 @@ export class OASDatePicker extends OASElement {
       btn.setAttribute('part', 'year-cell')
       btn.setAttribute('data-year', String(y))
       btn.textContent = String(y)
-      const disabled =
-        (opts.minYear != null && y < opts.minYear) || (opts.maxYear != null && y > opts.maxYear)
+      const disabled = (opts.minYear != null && y < opts.minYear) || (opts.maxYear != null && y > opts.maxYear)
       if (disabled) btn.classList.add('disabled')
       if (opts.selectedYear === y) btn.classList.add('selected')
       if (range) {
         if (range.start && sameY(range.start, y)) btn.classList.add('range-start')
         if (range.end && sameY(range.end, y)) btn.classList.add('range-end')
-        if (
-          range.start &&
-          range.end &&
-          y > range.start.getFullYear() &&
-          y < range.end.getFullYear()
-        ) {
+        if (range.start && range.end && y > range.start.getFullYear() && y < range.end.getFullYear()) {
           btn.classList.add('in-range')
         }
       }
@@ -1784,9 +1749,7 @@ export class OASDatePicker extends OASElement {
       const mStart = new Date(year, m, 1)
       const mEnd = new Date(year, m + 1, 0)
       const disabled =
-        (min != null && mEnd < min) ||
-        (max != null && mStart > max) ||
-        (opts.disabledDate?.(mStart) ?? false)
+        (min != null && mEnd < min) || (max != null && mStart > max) || (opts.disabledDate?.(mStart) ?? false)
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'month-cell'
@@ -1797,16 +1760,10 @@ export class OASDatePicker extends OASElement {
       if (disabled) btn.classList.add('disabled')
       if (opts.selectedMonth === m) btn.classList.add('selected')
       if (range) {
-        const sameM = (a: Date): boolean =>
-          a.getFullYear() === year && a.getMonth() === m
+        const sameM = (a: Date): boolean => a.getFullYear() === year && a.getMonth() === m
         if (range.start && sameM(range.start)) btn.classList.add('range-start')
         if (range.end && sameM(range.end)) btn.classList.add('range-end')
-        if (
-          range.start &&
-          range.end &&
-          mStart > range.start &&
-          mStart < range.end
-        ) {
+        if (range.start && range.end && mStart > range.start && mStart < range.end) {
           btn.classList.add('in-range')
         }
       }
@@ -2260,7 +2217,8 @@ export class OASDatePicker extends OASElement {
   private handleGridKey(e: KeyboardEvent, grid: HTMLElement, gridIndex: number): void {
     if (this.subPanel === 'months') return
     const t = this.pickerType
-    const anchor = t === 'datetime' ? this.pendingDate : this.focusDate ?? this.parseValueAnchor(this.getAttr('value', ''))
+    const anchor =
+      t === 'datetime' ? this.pendingDate : (this.focusDate ?? this.parseValueAnchor(this.getAttr('value', '')))
     const focus = anchor ?? startOfDay(new Date())
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()

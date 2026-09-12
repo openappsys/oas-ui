@@ -349,18 +349,10 @@ export class OASCalendar extends OASElement {
   /** 缓存节点引用 + 绑定导航/标题/今天/网格键盘事件（render 与水合路径共用） */
   private bind(): void {
     this.grid = this.shadow.querySelector<HTMLElement>('[part="grid"]')
-    this.shadow
-      .querySelector<HTMLElement>('[part="prev"]')
-      ?.addEventListener('click', () => this.navigate(-1))
-    this.shadow
-      .querySelector<HTMLElement>('[part="next"]')
-      ?.addEventListener('click', () => this.navigate(1))
-    this.shadow
-      .querySelector<HTMLElement>('[part="title"]')
-      ?.addEventListener('click', () => this.onTitleClick())
-    this.shadow
-      .querySelector<HTMLElement>('[part="today"]')
-      ?.addEventListener('click', () => this.goToday())
+    this.shadow.querySelector<HTMLElement>('[part="prev"]')?.addEventListener('click', () => this.navigate(-1))
+    this.shadow.querySelector<HTMLElement>('[part="next"]')?.addEventListener('click', () => this.navigate(1))
+    this.shadow.querySelector<HTMLElement>('[part="title"]')?.addEventListener('click', () => this.onTitleClick())
+    this.shadow.querySelector<HTMLElement>('[part="today"]')?.addEventListener('click', () => this.goToday())
     this.grid?.addEventListener('keydown', (e) => this.handleGridKey(e as KeyboardEvent))
   }
 
@@ -438,14 +430,8 @@ export class OASCalendar extends OASElement {
     const yearNav = this.panel !== 'days'
     const prev = this.shadow.querySelector<HTMLButtonElement>('[part="prev"]')
     const next = this.shadow.querySelector<HTMLButtonElement>('[part="next"]')
-    prev?.setAttribute(
-      'aria-label',
-      yearNav ? this.t('calendar.prevYear') : this.t('calendar.prevMonth'),
-    )
-    next?.setAttribute(
-      'aria-label',
-      yearNav ? this.t('calendar.nextYear') : this.t('calendar.nextMonth'),
-    )
+    prev?.setAttribute('aria-label', yearNav ? this.t('calendar.prevYear') : this.t('calendar.prevMonth'))
+    next?.setAttribute('aria-label', yearNav ? this.t('calendar.nextYear') : this.t('calendar.nextMonth'))
     // min/max 翻页边界置灰 + 全局禁用
     if (prev) prev.disabled = dis || !this.canStep(-1)
     if (next) next.disabled = dis || !this.canStep(1)
@@ -480,8 +466,7 @@ export class OASCalendar extends OASElement {
     grid.classList.remove('months-view')
     grid.classList.toggle('has-week-number', this.hasAttr('show-week-number'))
 
-    const hadFocus =
-      focusNow || (this.shadow.activeElement != null && grid.contains(this.shadow.activeElement))
+    const hadFocus = focusNow || (this.shadow.activeElement != null && grid.contains(this.shadow.activeElement))
     const selected = this.selectedDate()
     const focus = this.focusDate ?? selected ?? startOfDay(new Date())
 
@@ -540,8 +525,7 @@ export class OASCalendar extends OASElement {
     for (let m = 0; m < 12; m++) {
       const mStart = new Date(year, m, 1)
       const mEnd = new Date(year, m + 1, 0)
-      const disabled =
-        (min != null && mEnd < startOfDay(min)) || (max != null && mStart > startOfDay(max))
+      const disabled = (min != null && mEnd < startOfDay(min)) || (max != null && mStart > startOfDay(max))
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'month-cell'
@@ -577,8 +561,7 @@ export class OASCalendar extends OASElement {
       const y = start + i
       const yStart = new Date(y, 0, 1)
       const yEnd = new Date(y, 11, 31)
-      const disabled =
-        (min != null && yEnd < startOfDay(min)) || (max != null && yStart > startOfDay(max))
+      const disabled = (min != null && yEnd < startOfDay(min)) || (max != null && yStart > startOfDay(max))
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'year-cell'
@@ -715,9 +698,7 @@ export class OASCalendar extends OASElement {
     this.focusDate = next
     this.userNavigated = true
     // 跨月目标不在当前网格 → 面板翻页跟随（走 update 刷新标题/边界钮后聚焦目标格）
-    const inView =
-      next.getFullYear() === this.viewDate.getFullYear() &&
-      next.getMonth() === this.viewDate.getMonth()
+    const inView = next.getFullYear() === this.viewDate.getFullYear() && next.getMonth() === this.viewDate.getMonth()
     if (inView) {
       this.renderGrid(true)
     } else {

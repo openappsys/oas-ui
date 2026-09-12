@@ -132,11 +132,7 @@ export class OASSplitter extends OASElement {
   private lastAttr = ''
   private renderedOnce = false
 
-  override attributeChangedCallback(
-    name: string,
-    oldValue: string | null,
-    newValue: string | null,
-  ): void {
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     this.lastAttr = name
     super.attributeChangedCallback(name, oldValue, newValue)
   }
@@ -386,10 +382,7 @@ export class OASSplitter extends OASElement {
     this.dragging = true
     this.dragIndex = index
     this.startPos = this.hasAttr('vertical') ? e.clientY : e.clientX
-    this.startPercent =
-      this.mode === 'legacy'
-        ? Number(this.getAttr('percent', '50')) || 50
-        : (this.sizes[index] ?? 50)
+    this.startPercent = this.mode === 'legacy' ? Number(this.getAttr('percent', '50')) || 50 : (this.sizes[index] ?? 50)
     this.dragPercent = this.startPercent
     this.setAttribute('dragging', '')
     this.splitters[index]?.classList.add('is-active')
@@ -409,9 +402,7 @@ export class OASSplitter extends OASElement {
     const p = this.startPercent + (raw / size) * 100
     // 统一按 min/max（multi 含配对和约束）夹取，ghost 与最终落盘一致
     const pairSum =
-      this.mode === 'multi'
-        ? (this.sizes[this.dragIndex] ?? 0) + (this.sizes[this.dragIndex + 1] ?? 0)
-        : null
+      this.mode === 'multi' ? (this.sizes[this.dragIndex] ?? 0) + (this.sizes[this.dragIndex + 1] ?? 0) : null
     this.dragPercent = this.clampPercent(p, pairSum)
     if (this.hasAttr('lazy')) {
       // lazy：拖拽中只动分隔条视觉位置，不写 percent/重渲面板
@@ -632,10 +623,7 @@ export class OASSplitter extends OASElement {
         splitter.appendChild(btn)
       }
       const collapsed = this.collapsedPanels.has(i)
-      btn.setAttribute(
-        'aria-label',
-        collapsed ? this.t('splitter.expand') : this.t('splitter.collapse'),
-      )
+      btn.setAttribute('aria-label', collapsed ? this.t('splitter.expand') : this.t('splitter.collapse'))
       btn.innerHTML = `<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">${this.collapseIcon(collapsed)}</svg>`
     })
   }
@@ -646,13 +634,7 @@ export class OASSplitter extends OASElement {
     }
     return (
       iconRegistry[
-        collapsed
-          ? this.isRTL
-            ? 'chevron-left'
-            : 'chevron-right'
-          : this.isRTL
-            ? 'chevron-right'
-            : 'chevron-left'
+        collapsed ? (this.isRTL ? 'chevron-left' : 'chevron-right') : this.isRTL ? 'chevron-right' : 'chevron-left'
       ] ?? ''
     )
   }
@@ -672,8 +654,7 @@ export class OASSplitter extends OASElement {
     this.splitters.forEach((splitter, i) => {
       splitter.setAttribute('aria-orientation', orientation)
       splitter.setAttribute('aria-label', this.t('splitter.adjust'))
-      const p =
-        this.mode === 'legacy' ? Number(this.getAttr('percent', '50')) || 50 : (this.sizes[i] ?? 50)
+      const p = this.mode === 'legacy' ? Number(this.getAttr('percent', '50')) || 50 : (this.sizes[i] ?? 50)
       splitter.setAttribute('aria-valuenow', String(Math.round(p * 100) / 100))
       splitter.setAttribute('aria-valuemin', String(min))
       splitter.setAttribute('aria-valuemax', String(max))

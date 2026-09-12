@@ -403,8 +403,7 @@ export class OASToolbar extends OASElement {
           if (el.getAttribute('aria-disabled') === 'true' && !focusableDisabled) return false
           const tag = el.tagName
           const role = el.getAttribute('role')
-          if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA')
-            return true
+          if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return true
           if (tag === 'A' && el.hasAttribute('href')) return true
           if (role && INTERACTIVE_ROLES.has(role)) return true
           if (tag.includes('-')) return true
@@ -608,11 +607,7 @@ export class OASToolbar extends OASElement {
     }
   }
 
-  private createMirrorButton(
-    label: string,
-    origin: HTMLElement,
-    value?: string,
-  ): HTMLButtonElement {
+  private createMirrorButton(label: string, origin: HTMLElement, value?: string): HTMLButtonElement {
     const btn = document.createElement('button')
     btn.type = 'button'
     btn.className = 'mirror'

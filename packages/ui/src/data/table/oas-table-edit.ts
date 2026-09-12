@@ -27,12 +27,15 @@ export interface TableEditHost {
   /** 翻译内置文案（就近 config-provider / locale） */
   translateText(key: string, params?: Record<string, string | number>): string
   /** 派发编辑结果事件（提交/取消；事件名集中于此，detail 由本 controller 组好） */
-  notifyEdit(kind: 'edit' | 'edit-cancel', detail: {
-    rowIndex: number
-    key: string
-    column: string
-    value: string
-  }): void
+  notifyEdit(
+    kind: 'edit' | 'edit-cancel',
+    detail: {
+      rowIndex: number
+      key: string
+      column: string
+      value: string
+    },
+  ): void
   /** 行数据（提交回写时经此取当前全量） */
   readonly data: Array<Record<string, unknown>>
 }
@@ -252,9 +255,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     const oldValue = String(row[colKey] ?? '')
     const displayIndex = this.displayIndexOf(tr)
     const editor =
-      col.editor === 'select'
-        ? this.buildSelectEditor(col, key, oldValue)
-        : this.buildInputEditor(col, key, oldValue)
+      col.editor === 'select' ? this.buildSelectEditor(col, key, oldValue) : this.buildInputEditor(col, key, oldValue)
     // 不可见占位：保留原单元格文本的布局贡献（auto 表格布局下列宽/行高与常态逐像素一致），
     // 编辑器绝对定位覆于其上零贡献——进/出编辑不撑列、不挤邻列、不跳行高
     const sizer = document.createElement('span')
@@ -441,10 +442,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     return value
   }
 
-  private editDetail(
-    st: EditState,
-    value: string,
-  ): { rowIndex: number; key: string; column: string; value: string } {
+  private editDetail(st: EditState, value: string): { rowIndex: number; key: string; column: string; value: string } {
     return { rowIndex: st.displayIndex, key: st.key, column: st.colKey, value }
   }
 

@@ -1399,8 +1399,7 @@ export class OASBadge extends OASElement {
     const slot = this.ribbonSlotEl
     if (!ribbonEl) return
 
-    const ribbonMode =
-      this.hasAttr('ribbon') || (this.getAttr('mode', 'count') as BadgeMode) === 'ribbon'
+    const ribbonMode = this.hasAttr('ribbon') || (this.getAttr('mode', 'count') as BadgeMode) === 'ribbon'
     const color = this.getAttr('color', 'danger') as BadgeColor | BadgePresetColor
     const placement = this.getAttr('placement', 'end') as BadgePlacement
     const position = this.getAttr('ribbon-position', 'hang') as BadgeRibbonPosition
@@ -1414,8 +1413,7 @@ export class OASBadge extends OASElement {
     ribbonEl.classList.toggle('color-warning', color === 'warning')
     ribbonEl.classList.toggle('color-danger', color === 'danger')
     // ribbon-form 七形态：未显式设置（或非法值）回落 fold 且不写任何 form-* class（基类即 fold，向后兼容）
-    const formValid =
-      this.hasAttr('ribbon-form') && (VALID_RIBBON_FORMS as readonly string[]).includes(form)
+    const formValid = this.hasAttr('ribbon-form') && (VALID_RIBBON_FORMS as readonly string[]).includes(form)
     for (const name of VALID_RIBBON_FORMS) {
       ribbonEl.classList.toggle(`form-${name}`, formValid && form === name)
     }
@@ -1441,9 +1439,7 @@ export class OASBadge extends OASElement {
     // ribbon-direction 尖头方向：仅 bookmark 形态生效；down 与非法值回落基类（不写标记），
     // left/right 写 direction-* class（其余形态忽略，同 wide 规矩）
     const dirValid =
-      formValid &&
-      form === 'bookmark' &&
-      (VALID_RIBBON_DIRECTIONS as readonly string[]).includes(direction)
+      formValid && form === 'bookmark' && (VALID_RIBBON_DIRECTIONS as readonly string[]).includes(direction)
     ribbonEl.classList.toggle('direction-left', dirValid && direction === 'left')
     ribbonEl.classList.toggle('direction-right', dirValid && direction === 'right')
     // ribbon-vertical 纵向位置：仅 bookmark 侧挂（left/right）生效；center 与非法值回落基类
@@ -1460,8 +1456,7 @@ export class OASBadge extends OASElement {
     // ribbon-size 斜带档位：仅与 diagonal 组合；其他形态静默忽略（不写入 class，无视觉影响）。
     // 档位只改 --oas-badge-diagonal-* 的 fallback 默认值，宿主 CSS 变量优先级更高
     const size = this.getAttr('ribbon-size', 'sm') as BadgeRibbonSize
-    const sizeValid =
-      formValid && form === 'diagonal' && (VALID_RIBBON_SIZES as readonly string[]).includes(size)
+    const sizeValid = formValid && form === 'diagonal' && (VALID_RIBBON_SIZES as readonly string[]).includes(size)
     ribbonEl.classList.toggle('ribbon-size-md', sizeValid && size === 'md')
     ribbonEl.classList.toggle('ribbon-size-lg', sizeValid && size === 'lg')
 
@@ -1542,9 +1537,7 @@ export class OASBadge extends OASElement {
         const offset = parseOffset(this.getAttr('offset', ''))
         // corner 四角定位（默认 top-right；非法值静默回落）
         const corner = this.getAttr('corner', 'top-right') as BadgeCorner
-        const cornerName = (VALID_CORNER as readonly string[]).includes(corner)
-          ? corner
-          : 'top-right'
+        const cornerName = (VALID_CORNER as readonly string[]).includes(corner) ? corner : 'top-right'
         el.classList.toggle('corner-top-left', cornerName === 'top-left')
         el.classList.toggle('corner-bottom-right', cornerName === 'bottom-right')
         el.classList.toggle('corner-bottom-left', cornerName === 'bottom-left')
@@ -1571,10 +1564,7 @@ export class OASBadge extends OASElement {
         el.classList.toggle('attention-pulse', validAttention && attention === 'pulse')
         el.classList.toggle('attention-bounce', validAttention && attention === 'bounce')
         if (validAttention && attention === 'bounce') {
-          el.style.setProperty(
-            '--oas-badge-pos',
-            pos || (standalone ? 'translate(0, 0)' : 'translate(50%, -50%)'),
-          )
+          el.style.setProperty('--oas-badge-pos', pos || (standalone ? 'translate(0, 0)' : 'translate(50%, -50%)'))
         } else {
           el.style.removeProperty('--oas-badge-pos')
         }

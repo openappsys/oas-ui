@@ -30,12 +30,7 @@ function warnOnce(kind: string, raw: string, fallback: string, valid: readonly s
 }
 
 /** 枚举归一化：合法值原样返回，空/非法值回落默认并告警（空值静默回落） */
-function normalizeChoice(
-  kind: string,
-  raw: string,
-  fallback: string,
-  valid: readonly string[],
-): string {
+function normalizeChoice(kind: string, raw: string, fallback: string, valid: readonly string[]): string {
   if (raw === '') return fallback
   if ((valid as readonly string[]).includes(raw)) return raw
   warnOnce(kind, raw, fallback, valid)
@@ -44,9 +39,7 @@ function normalizeChoice(
 
 /** 字素（grapheme）计数：Intl.Segmenter 优先（emoji/ZWJ 组合/变音符正确计数），Array.from 兜底 */
 const graphemeSegmenter =
-  typeof Intl !== 'undefined' && 'Segmenter' in Intl
-    ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
-    : null
+  typeof Intl !== 'undefined' && 'Segmenter' in Intl ? new Intl.Segmenter(undefined, { granularity: 'grapheme' }) : null
 
 function countGraphemes(value: string): number {
   if (graphemeSegmenter) {
@@ -851,8 +844,7 @@ export class OASInput extends OASElement {
     if (!this.countEl || !this.inputEl) return
     const show = this.hasAttr('show-count')
     this.countEl.hidden = !show
-    const position =
-      this.getAttr('count-position', '') === 'inside' ? 'inside' : 'outside'
+    const position = this.getAttr('count-position', '') === 'inside' ? 'inside' : 'outside'
     this.countEl.setAttribute('data-position', position)
     this.toggleAttribute('data-count-inside', show && position === 'inside')
     if (!show) return
@@ -885,8 +877,7 @@ export class OASInput extends OASElement {
       if (fallback) fallback.textContent = text
       // 注意不能用 flatten:true——空 slot 的扁平化结果会包含 fallback 子节点，导致恒判有内容
       const slotHasContent =
-        slotEl !== null &&
-        slotEl.assignedNodes().some((n) => n.nodeType === 1 || (n.textContent ?? '').trim() !== '')
+        slotEl !== null && slotEl.assignedNodes().some((n) => n.nodeType === 1 || (n.textContent ?? '').trim() !== '')
       el.hidden = text === '' && !slotHasContent
       if (slotHasContent) this.setAttribute(slotMark, '')
       else this.removeAttribute(slotMark)
@@ -930,8 +921,7 @@ export class OASInput extends OASElement {
       if (fallback) fallback.textContent = text
       // 注意不能用 flatten:true——空 slot 的扁平化结果会包含 fallback 子节点，导致恒判有内容
       const slotHasContent =
-        slotEl !== null &&
-        slotEl.assignedNodes().some((n) => n.nodeType === 1 || (n.textContent ?? '').trim() !== '')
+        slotEl !== null && slotEl.assignedNodes().some((n) => n.nodeType === 1 || (n.textContent ?? '').trim() !== '')
       const visible = text !== '' || slotHasContent
       el.hidden = !visible
       // host 布局联动：slot 有内容时打标记驱动 input 内边距选择器（CSS :host([data-slot-*])）

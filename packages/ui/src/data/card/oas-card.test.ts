@@ -155,21 +155,14 @@ describe('OASCard', () => {
     it('cover 插槽有内容时封面区显示', () => {
       const el = mount({}, '<img slot="cover" src="x.jpg"><p>正文</p>')
       expect(part(el, 'cover').hasAttribute('hidden')).toBe(false)
-      expect(
-        el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="cover"]')!.hasAttribute('hidden'),
-      ).toBe(false)
+      expect(el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="cover"]')!.hasAttribute('hidden')).toBe(false)
     })
 
     it('cover-src 与 cover 插槽同存在时 cover-src 优先', () => {
-      const el = mount(
-        { 'cover-src': 'https://example.com/a.jpg' },
-        '<img slot="cover" src="b.jpg">',
-      )
+      const el = mount({ 'cover-src': 'https://example.com/a.jpg' }, '<img slot="cover" src="b.jpg">')
       const img = el.shadowRoot!.querySelector<HTMLImageElement>('[part="cover-img"]')!
       expect(img.hasAttribute('hidden')).toBe(false)
-      expect(
-        el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="cover"]')!.hasAttribute('hidden'),
-      ).toBe(true)
+      expect(el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="cover"]')!.hasAttribute('hidden')).toBe(true)
     })
   })
 
@@ -312,9 +305,7 @@ describe('OASCard', () => {
     it('actions 分隔线用 border token', () => {
       const el = mount({})
       const css = styleText(el)
-      expect(css).toMatch(
-        /\.actions\s*\{[^}]*border-top:\s*1px\s+solid\s+var\(--oas-color-border\)/,
-      )
+      expect(css).toMatch(/\.actions\s*\{[^}]*border-top:\s*1px\s+solid\s+var\(--oas-color-border\)/)
     })
   })
 
@@ -357,9 +348,7 @@ describe('OASCard', () => {
       const el = mount({ size: 'small' })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
       expect(css).toMatch(/:host\(\[size="small"\]\)\s*\.body\s*\{[^}]*padding:\s*var\(--oas-space-3\)/)
-      expect(css).toMatch(
-        /:host\(\[size="small"\]\)\s*\.title\s*\{[^}]*font-size:\s*var\(--oas-font-size-md\)/,
-      )
+      expect(css).toMatch(/:host\(\[size="small"\]\)\s*\.title\s*\{[^}]*font-size:\s*var\(--oas-font-size-md\)/)
     })
   })
 
@@ -386,10 +375,7 @@ describe('OASCard', () => {
     })
 
     it('footer 与 actions 是两个独立底区，可同时存在', () => {
-      const el = mount(
-        {},
-        '<button slot="actions">操作</button><p slot="footer">说明</p><p>正文</p>',
-      )
+      const el = mount({}, '<button slot="actions">操作</button><p slot="footer">说明</p><p>正文</p>')
       expect(part(el, 'actions').hasAttribute('hidden')).toBe(false)
       expect(part(el, 'footer').hasAttribute('hidden')).toBe(false)
     })
@@ -397,9 +383,7 @@ describe('OASCard', () => {
     it('footer 分隔线用 border token', () => {
       const el = mount({})
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(css).toMatch(
-        /\.footer\s*\{[^}]*border-top:\s*1px\s+solid\s+var\(--oas-color-border\)/,
-      )
+      expect(css).toMatch(/\.footer\s*\{[^}]*border-top:\s*1px\s+solid\s+var\(--oas-color-border\)/)
     })
   })
 
@@ -414,9 +398,7 @@ describe('OASCard', () => {
     it('header-bordered="false"：关闭分割线（CSS 契约）', () => {
       const el = mount({ title: '卡片标题', 'header-bordered': 'false' })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(css).toMatch(
-        /:host\(\[header-bordered="false"\]\)\s*\.header\s*\{[^}]*border-bottom:\s*none/,
-      )
+      expect(css).toMatch(/:host\(\[header-bordered="false"\]\)\s*\.header\s*\{[^}]*border-bottom:\s*none/)
     })
   })
 
@@ -558,9 +540,7 @@ describe('OASCard', () => {
     it('href 焦点环落在内部锚点上（.card-link:focus-visible）', () => {
       const el = mount({ href: 'https://example.com' })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(css).toMatch(
-        /\.card-link:focus-visible\s+\.card\s*\{[^}]*box-shadow:\s*var\(--oas-focus-ring\)/,
-      )
+      expect(css).toMatch(/\.card-link:focus-visible\s+\.card\s*\{[^}]*box-shadow:\s*var\(--oas-focus-ring\)/)
     })
   })
 
@@ -696,12 +676,8 @@ describe('OASCard', () => {
     it('选中态 CSS 契约：primary 描边（含 borderless 兼容的 inset 环）+ 浅 primary 底 + 角标 token', () => {
       const el = mount({ selectable: '', selected: '' })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(css).toMatch(
-        /:host\(\[selectable\]\[selected\]\)\s*\{[^}]*border-color:\s*var\(--oas-color-primary\)/,
-      )
-      expect(css).toMatch(
-        /:host\(\[selectable\]\[selected\]\)\s*\{[^}]*background:[^}]*var\(--oas-color-primary\)/,
-      )
+      expect(css).toMatch(/:host\(\[selectable\]\[selected\]\)\s*\{[^}]*border-color:\s*var\(--oas-color-primary\)/)
+      expect(css).toMatch(/:host\(\[selectable\]\[selected\]\)\s*\{[^}]*background:[^}]*var\(--oas-color-primary\)/)
       expect(css).toMatch(/\.check-badge\s*\{[^}]*position:\s*absolute/)
       expect(css).toMatch(/check-corner[^}]*var\(--oas-color-primary\)/)
       expect(css).toMatch(/check-icon[^}]*var\(--oas-color-text-on-primary\)/)

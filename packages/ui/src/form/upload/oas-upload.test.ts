@@ -335,7 +335,9 @@ class FakeUploadXHR {
   body: FormData | null = null
   status = 0
   responseText = ''
-  upload: { onprogress: ((e: { lengthComputable: boolean; loaded: number; total: number }) => void) | null } = {
+  upload: {
+    onprogress: ((e: { lengthComputable: boolean; loaded: number; total: number }) => void) | null
+  } = {
     onprogress: null,
   }
   onabort: (() => void) | null = null
@@ -606,7 +608,9 @@ describe('OASUpload directory / paste / show-file-list', () => {
   it('paste：组件上粘贴文件进列表（preventDefault）', () => {
     const el = mount({ paste: '' })
     const e = new Event('paste', { bubbles: true, cancelable: true })
-    Object.defineProperty(e, 'clipboardData', { value: { files: [makeFile('p.png', 'image/png')] } })
+    Object.defineProperty(e, 'clipboardData', {
+      value: { files: [makeFile('p.png', 'image/png')] },
+    })
     el.dispatchEvent(e)
     expect(el.files.length).toBe(1)
     expect(e.defaultPrevented).toBe(true)
@@ -615,7 +619,9 @@ describe('OASUpload directory / paste / show-file-list', () => {
   it('未开 paste 时粘贴不拦截', () => {
     const el = mount()
     const e = new Event('paste', { bubbles: true, cancelable: true })
-    Object.defineProperty(e, 'clipboardData', { value: { files: [makeFile('p.png', 'image/png')] } })
+    Object.defineProperty(e, 'clipboardData', {
+      value: { files: [makeFile('p.png', 'image/png')] },
+    })
     el.dispatchEvent(e)
     expect(el.files.length).toBe(0)
     expect(e.defaultPrevented).toBe(false)

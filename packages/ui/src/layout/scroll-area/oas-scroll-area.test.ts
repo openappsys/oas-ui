@@ -35,8 +35,7 @@ function scrollTo(el: OASScrollArea, left: number, top: number): void {
   vp.dispatchEvent(new Event('scroll'))
 }
 
-const flushRaf = (): Promise<void> =>
-  new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
 /** 冲洗 MutationObserver 微任务回调 */
 const flushMicrotasks = (): Promise<void> => Promise.resolve()
@@ -304,9 +303,7 @@ describe('OASScrollArea', () => {
       // 轨道高 96（top/bottom 各 2px）、thumb 高 25 → travel = 71，maxScroll = 300
       Object.defineProperty(vTrack, 'clientHeight', { value: 96, configurable: true })
       Object.defineProperty(vThumb, 'clientHeight', { value: 25, configurable: true })
-      vThumb.dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, button: 0, clientY: 10 }),
-      )
+      vThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientY: 10 }))
       window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientY: 45.5 }))
       // delta=35.5 → 35.5/71*300 = 150
       expect(vp.scrollTop).toBe(150)
@@ -326,9 +323,7 @@ describe('OASScrollArea', () => {
       const hThumb = thumb(el, 'thumb-h')
       Object.defineProperty(hTrack, 'clientWidth', { value: 96, configurable: true })
       Object.defineProperty(hThumb, 'clientWidth', { value: 25, configurable: true })
-      hThumb.dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 10 }),
-      )
+      hThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 10 }))
       window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 45.5 }))
       expect(vp.scrollLeft).toBe(150)
       window.dispatchEvent(new PointerEvent('pointerup', {}))
@@ -342,9 +337,7 @@ describe('OASScrollArea', () => {
       const hThumb = thumb(el, 'thumb-h')
       Object.defineProperty(hTrack, 'clientWidth', { value: 96, configurable: true })
       Object.defineProperty(hThumb, 'clientWidth', { value: 25, configurable: true })
-      hThumb.dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 10 }),
-      )
+      hThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 10 }))
       window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 500 }))
       expect(vp.scrollLeft).toBe(300)
       window.dispatchEvent(new PointerEvent('pointerup', {}))
@@ -355,9 +348,7 @@ describe('OASScrollArea', () => {
       const vp = viewport(el)
       mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
       const hThumb = thumb(el, 'thumb-h')
-      hThumb.dispatchEvent(
-        new PointerEvent('pointerdown', { bubbles: true, button: 2, clientX: 10 }),
-      )
+      hThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 2, clientX: 10 }))
       window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 45 }))
       expect(vp.scrollLeft).toBe(0)
     })
@@ -422,7 +413,8 @@ describe('OASScrollArea', () => {
         // 无参 → 委托视口自身滚动（scrollIntoView 语义回退）
         el.scrollIntoView()
         expect(spy).toHaveBeenCalledTimes(3)
-        expect(spy.mock.instances[2]).toBe(vp)      } finally {
+        expect(spy.mock.instances[2]).toBe(vp)
+      } finally {
         Element.prototype.scrollIntoView = orig
       }
     })
@@ -434,9 +426,7 @@ describe('OASScrollArea', () => {
       const vp = viewport(el)
       mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
       const dirs: string[] = []
-      el.addEventListener('oas-end-reached', (e: Event) =>
-        dirs.push((e as CustomEvent).detail.direction),
-      )
+      el.addEventListener('oas-end-reached', (e: Event) => dirs.push((e as CustomEvent).detail.direction))
       scrollTo(el, 0, 200) // 到底（maxScroll = 200）
       await flushRaf()
       expect(dirs).toEqual(['bottom'])

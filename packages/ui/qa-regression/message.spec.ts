@@ -5,9 +5,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性/声明式/自定义类型/杂项', async ({
-  page,
-}) => {
+test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性/声明式/自定义类型/杂项', async ({ page }) => {
   await page.goto('/components/message.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
   await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
@@ -32,9 +30,8 @@ test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性
   )
   const updText = await page.evaluate(
     () =>
-      document.querySelector('oas-message[key="upload"]')?.shadowRoot?.querySelector(
-        '[part="text"]',
-      )?.textContent ?? '',
+      document.querySelector('oas-message[key="upload"]')?.shadowRoot?.querySelector('[part="text"]')?.textContent ??
+      '',
   )
   expect(updText).toBe('上传成功')
   await asyncBlock.locator('oas-button').nth(2).click()
@@ -59,9 +56,8 @@ test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性
   for (let i = 0; i < 4; i++) await maxBlock.locator('oas-button').nth(1).click()
   await page.waitForFunction(
     () =>
-      [...document.querySelectorAll('oas-message')].filter((el) =>
-        (el.textContent ?? '').startsWith('队列消息'),
-      ).length === 2,
+      [...document.querySelectorAll('oas-message')].filter((el) => (el.textContent ?? '').startsWith('队列消息'))
+        .length === 2,
   )
   const queueTexts = await page.evaluate(() =>
     [...document.querySelectorAll('oas-message')]
@@ -76,15 +72,10 @@ test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性
   const promiseBlock = page.locator('.demo-block', { hasText: 'Promise 链' })
   await promiseBlock.locator('oas-button').nth(0).click()
   await page.waitForFunction(() =>
-    [...document.querySelectorAll('oas-message')].some((el) =>
-      (el.textContent ?? '').includes('请求中'),
-    ),
+    [...document.querySelectorAll('oas-message')].some((el) => (el.textContent ?? '').includes('请求中')),
   )
   await page.waitForFunction(
-    () =>
-      [...document.querySelectorAll('oas-message')].some((el) =>
-        (el.textContent ?? '').includes('成功：数据'),
-      ),
+    () => [...document.querySelectorAll('oas-message')].some((el) => (el.textContent ?? '').includes('成功：数据')),
     null,
     { timeout: 10000 },
   )
@@ -93,14 +84,9 @@ test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性
   const pauseBlock = page.locator('.demo-block', { hasText: '悬停暂停' })
   await pauseBlock.locator('oas-button').nth(0).click()
   await page.waitForFunction(() =>
-    [...document.querySelectorAll('oas-message')].some((el) =>
-      (el.textContent ?? '').includes('悬停我可暂停计时'),
-    ),
+    [...document.querySelectorAll('oas-message')].some((el) => (el.textContent ?? '').includes('悬停我可暂停计时')),
   )
-  const pauseMsg = page
-    .locator('oas-message')
-    .filter({ hasText: '悬停我可暂停计时' })
-    .last()
+  const pauseMsg = page.locator('oas-message').filter({ hasText: '悬停我可暂停计时' }).last()
   await pauseMsg.hover()
   await page.waitForFunction(() =>
     [...document.querySelectorAll('oas-message')].some(
@@ -145,9 +131,7 @@ test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性
   )
   await customBlock.locator('oas-button').nth(2).click() // 自定义类型
   await page.waitForFunction(() =>
-    [...document.querySelectorAll('oas-message')].some(
-      (el) => el.getAttribute('type') === 'custom-alert',
-    ),
+    [...document.querySelectorAll('oas-message')].some((el) => el.getAttribute('type') === 'custom-alert'),
   )
   await customBlock.locator('oas-button').nth(3).click() // 遮罩
   await page.waitForFunction(() =>
@@ -159,9 +143,7 @@ test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性
   )
   // 点击遮罩关闭消息
   await page.evaluate(() => {
-    const el = [...document.querySelectorAll('oas-message')].find((e) =>
-      (e.textContent ?? '').includes('带遮罩'),
-    )
+    const el = [...document.querySelectorAll('oas-message')].find((e) => (e.textContent ?? '').includes('带遮罩'))
     el?.shadowRoot?.querySelector<HTMLElement>('[part="mask"]')?.click()
   })
   await page.waitForFunction(() =>
@@ -172,9 +154,8 @@ test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性
   const richBlock = page.locator('.demo-block', { hasText: '富内容' })
   await richBlock.locator('oas-button').nth(1).click()
   await page.waitForFunction(() =>
-    [...document.querySelectorAll('oas-message')].some(
-      (el) =>
-        (el.shadowRoot?.querySelector('[part="text"]')?.textContent ?? '').includes('加粗内容'),
+    [...document.querySelectorAll('oas-message')].some((el) =>
+      (el.shadowRoot?.querySelector('[part="text"]')?.textContent ?? '').includes('加粗内容'),
     ),
   )
 
@@ -182,9 +163,7 @@ test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性
   const declBlock = page.locator('.demo-block', { hasText: '声明式用法' })
   const declEl = declBlock.locator('oas-message').first()
   await declEl.waitFor({ state: 'visible' })
-  const declText = await declEl.evaluate(
-    (el) => el.shadowRoot?.querySelector('[part="text"]')?.textContent ?? '',
-  )
+  const declText = await declEl.evaluate((el) => el.shadowRoot?.querySelector('[part="text"]')?.textContent ?? '')
   expect(declText).toContain('声明式成功消息')
   const declClose = await declEl.evaluate(
     (el) => el.shadowRoot?.querySelector<HTMLElement>('[part="close"]')?.style.display,

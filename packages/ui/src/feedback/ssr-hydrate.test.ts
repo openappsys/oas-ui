@@ -215,8 +215,6 @@ describe('feedback 组件 DSD 真水合批次 2', () => {
       e.innerHTML = '<button>删除</button>'
     }).el
     ;(pc.querySelector('button') as HTMLElement).click()
-    expect(pc.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe(
-      'false',
-    )
+    expect(pc.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe('false')
   })
 })

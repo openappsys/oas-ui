@@ -354,9 +354,7 @@ describe('OASAvatar color（背景色统一协议）', () => {
     el.setAttribute('color', 'danger')
     document.body.appendChild(el)
     expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('var(--oas-color-danger)')
-    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe(
-      'var(--oas-color-text-on-danger)',
-    )
+    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('var(--oas-color-text-on-danger)')
     el.setAttribute('color', 'success')
     expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('var(--oas-color-success)')
   })
@@ -366,9 +364,7 @@ describe('OASAvatar color（背景色统一协议）', () => {
     el.setAttribute('color', 'blue')
     document.body.appendChild(el)
     expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('var(--oas-preset-blue)')
-    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe(
-      'var(--oas-color-text-on-primary)',
-    )
+    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('var(--oas-color-text-on-primary)')
   })
 
   it('任意色值：原值注入，文字色按亮度自动取黑/白（pickOnColor 协议）', () => {

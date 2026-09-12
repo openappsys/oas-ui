@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('breadcrumb 折叠：超出 max-items 中间项折叠为 …，点击展开下拉、点击项派发 oas-select', async ({
-  page,
-}) => {
+test('breadcrumb 折叠：超出 max-items 中间项折叠为 …，点击展开下拉、点击项派发 oas-select', async ({ page }) => {
   // 真实链接不阻止默认行为（原生跳转）。测试模拟 SPA 宿主拦截导航：capture 阶段 preventDefault，
   // 事件仍派发 oas-select（宿主可借此做路由），页面不卸载。
   // 注意：shadow DOM 内锚点点击在 document 层 target 已重定向为宿主，须用 composedPath() 找锚点。
@@ -68,9 +66,7 @@ test('breadcrumb 折叠：超出 max-items 中间项折叠为 …，点击展开
   expect(output).toContain('已点击')
 })
 
-test('breadcrumb 真实链接：原生跳转不阻止 + oas-select 照常派发（target=_blank 新窗）', async ({
-  page,
-}) => {
+test('breadcrumb 真实链接：原生跳转不阻止 + oas-select 照常派发（target=_blank 新窗）', async ({ page }) => {
   await page.goto('/components/breadcrumb.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-breadcrumb#bc-real')
   // 链接为真实 <a href>（原生跳转能力保留），target=_blank 自动补 rel（第 2 个链接）
@@ -133,10 +129,7 @@ test('breadcrumb ellipsis 模式项下拉不被裁剪：面板 elementFromPoint 
     const panel = host.shadowRoot!.querySelector<HTMLElement>('.menu-panel.open')
     if (!panel) return { skip: false as const, open: false }
     const rect = panel.getBoundingClientRect()
-    const hit = document.elementFromPoint(
-      rect.left + rect.width / 2,
-      Math.min(rect.top + 8, rect.bottom - 4),
-    )
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, Math.min(rect.top + 8, rect.bottom - 4))
     return {
       skip: false as const,
       open: true,

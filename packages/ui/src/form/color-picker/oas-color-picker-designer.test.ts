@@ -152,7 +152,10 @@ describe('OASColorPicker designer（import 即注册）', () => {
   // ---------- P-E 渐变模式 ----------
 
   it('mode=gradient：面板出现渐变编辑条，value 解析为 stops', () => {
-    const el = mount({ mode: 'gradient', value: 'linear-gradient(90deg, #ff0000 0%, #0000ff 100%)' })
+    const el = mount({
+      mode: 'gradient',
+      value: 'linear-gradient(90deg, #ff0000 0%, #0000ff 100%)',
+    })
     open(el)
     const grad = el.shadowRoot!.querySelector<HTMLElement>('.grad')!
     expect(grad.hasAttribute('hidden')).toBe(false)
@@ -209,7 +212,10 @@ describe('OASColorPicker designer（import 即注册）', () => {
   })
 
   it('渐变 stop 键盘方向键移动位置（夹取在邻居之间）', () => {
-    const el = mount({ mode: 'gradient', value: 'linear-gradient(90deg, #000 0%, #888 50%, #fff 100%)' })
+    const el = mount({
+      mode: 'gradient',
+      value: 'linear-gradient(90deg, #000 0%, #888 50%, #fff 100%)',
+    })
     open(el)
     const stops = gradStopsOf(el)
     expect(stops.length).toBe(3)
@@ -256,7 +262,10 @@ describe('OASColorPicker designer（import 即注册）', () => {
   })
 
   it('渐变模式：hue 竖条/sv2d 编辑改写活动 stop（非整体色）', () => {
-    const el = mount({ mode: 'gradient', value: 'linear-gradient(90deg, #ff0000 0%, #0000ff 100%)' })
+    const el = mount({
+      mode: 'gradient',
+      value: 'linear-gradient(90deg, #ff0000 0%, #0000ff 100%)',
+    })
     open(el)
     // 激活第 0 个 stop（#ff0000 h0），sv2d 拖到 s=0 v=1 → 白
     gradStopsOf(el)[0]!.dispatchEvent(new MouseEvent('focusin', { bubbles: true }))

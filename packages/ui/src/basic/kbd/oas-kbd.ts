@@ -241,9 +241,7 @@ export class OASKbd extends OASElement {
     }
 
     // className 整体赋值（非 toggle 逐个）——toggle(false) 会留空 class 属性残留进 SSR 快照
-    const classes = [variant !== 'raised' ? variant : '', size !== 'medium' ? size : '']
-      .filter(Boolean)
-      .join(' ')
+    const classes = [variant !== 'raised' ? variant : '', size !== 'medium' ? size : ''].filter(Boolean).join(' ')
     if (classes) kbd.className = classes
     else kbd.removeAttribute('class')
 

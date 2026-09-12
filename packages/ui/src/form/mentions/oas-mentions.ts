@@ -403,11 +403,7 @@ export class OASMentions extends OASElement {
     // 尺寸/形态/校验态镜像（size 就近读取 config-provider 注入，与全局密度联动）
     const size = normalizeChoice(this.injectValue('size', 'medium'), 'medium', VALID_SIZES)
     this.setAttribute('data-size', size)
-    const variant = normalizeChoice(
-      this.getAttr('variant', 'outlined'),
-      'outlined',
-      VALID_VARIANTS,
-    )
+    const variant = normalizeChoice(this.getAttr('variant', 'outlined'), 'outlined', VALID_VARIANTS)
     this.setAttribute('data-variant', variant)
     const type = normalizeChoice(this.getAttr('type', 'textarea'), 'textarea', VALID_TYPES)
     this.setAttribute('data-type', type)
@@ -444,10 +440,7 @@ export class OASMentions extends OASElement {
     if (readonly) t.setAttribute('aria-readonly', 'true')
     else t.removeAttribute('aria-readonly')
     // 内置文案走 locale registry（label/placeholder 属性优先，setLocale 切换自动刷新）
-    t.setAttribute(
-      'aria-label',
-      this.getAttr('label', placeholder) || this.t('mentions.defaultLabel'),
-    )
+    t.setAttribute('aria-label', this.getAttr('label', placeholder) || this.t('mentions.defaultLabel'))
 
     // autosize：高度由 min-rows/max-rows 约束；关闭时清内联高度还交 CSS。
     // 单行形态（type=input）恒锁高，autosize 对单行无意义——单行时 rows 固定 1，
@@ -549,8 +542,7 @@ export class OASMentions extends OASElement {
 
   /** 触发落地：状态变化时重建列表；同段光标重扫（query/prefix 未变）只保持不重复渲染 */
   private applyTrigger(start: number, prefix: string, query: string): void {
-    const changed =
-      start !== this.queryStart || prefix !== this.activeTrigger || query !== this.queryText
+    const changed = start !== this.queryStart || prefix !== this.activeTrigger || query !== this.queryText
     this.queryStart = start
     this.activeTrigger = prefix
     this.queryText = query
@@ -727,8 +719,9 @@ export class OASMentions extends OASElement {
     if (!q) return this._options
     return this._options.filter(
       (o) =>
-        String(o.label ?? '').toLowerCase().includes(q) ||
-        String(o.value).toLowerCase().includes(q),
+        String(o.label ?? '')
+          .toLowerCase()
+          .includes(q) || String(o.value).toLowerCase().includes(q),
     )
   }
 
@@ -985,9 +978,7 @@ export class OASMentions extends OASElement {
   private parseOptions(): void {
     try {
       const parsed: unknown = JSON.parse(this.getAttr('options', '[]'))
-      this._options = Array.isArray(parsed)
-        ? parsed.filter((o): o is Option => o && typeof o.value === 'string')
-        : []
+      this._options = Array.isArray(parsed) ? parsed.filter((o): o is Option => o && typeof o.value === 'string') : []
     } catch {
       this._options = []
     }

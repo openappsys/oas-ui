@@ -130,9 +130,7 @@ describe('OASQRCode', () => {
       preset.remove()
       // 缺省固定深色（dark 可扫性：与固定白静区配套，currentColor 在 dark 下是浅色不可扫）
       const dft = mount({ value: 'hi' })
-      expect(svgOf(dft).querySelector('path')!.getAttribute('fill')).toBe(
-        'var(--oas-qrcode-color, #18181b)',
-      )
+      expect(svgOf(dft).querySelector('path')!.getAttribute('fill')).toBe('var(--oas-qrcode-color, #18181b)')
     })
 
     it('margin 静区：默认 4 模块，path 整体偏移；margin=0 贴边', () => {
@@ -173,9 +171,7 @@ describe('OASQRCode', () => {
       const html = svgOf(el).innerHTML
       expect(html).not.toContain('?b="1"')
       expect(html).toContain('&quot;')
-      expect(svgOf(el).querySelector('image')!.getAttribute('href')).toBe(
-        'https://x.dev/a.png?b="1"&c=2',
-      )
+      expect(svgOf(el).querySelector('image')!.getAttribute('href')).toBe('https://x.dev/a.png?b="1"&c=2')
     })
   })
 

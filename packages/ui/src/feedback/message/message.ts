@@ -1,10 +1,5 @@
 import { resolveMessageHost, getAppMessageConfig } from '../../framework/app/app-host.js'
-import type {
-  OASMessage,
-  MessageType,
-  MessageContent,
-  CustomMessageType,
-} from './oas-message.js'
+import type { OASMessage, MessageType, MessageContent, CustomMessageType } from './oas-message.js'
 import { registerMessageType, getCustomMessageType } from './oas-message.js'
 
 export type MessagePlacement = 'top' | 'bottom'
@@ -131,9 +126,7 @@ function ensureStack(placement: MessagePlacement, offset: number): HTMLElement {
 /** max 上限：栈内活跃（未进入关闭流程）消息数超出时丢最旧派 */
 function enforceMax(stack: HTMLElement, max?: number): void {
   if (!max || max < 1) return
-  const active = Array.from(stack.querySelectorAll<OASMessage>('oas-message')).filter(
-    (el) => !el.closed,
-  )
+  const active = Array.from(stack.querySelectorAll<OASMessage>('oas-message')).filter((el) => !el.closed)
   while (active.length > max) {
     active.shift()!.close('destroy')
   }
@@ -158,10 +151,7 @@ function mergeAppConfig(options: MessageOptions): MessageOptions {
   if (merged.pauseOnHover === undefined && typeof appConfig.pauseOnHover === 'boolean') {
     merged.pauseOnHover = appConfig.pauseOnHover
   }
-  if (
-    merged.placement === undefined &&
-    (appConfig.placement === 'top' || appConfig.placement === 'bottom')
-  ) {
+  if (merged.placement === undefined && (appConfig.placement === 'top' || appConfig.placement === 'bottom')) {
     merged.placement = appConfig.placement
   }
   if (merged.offset === undefined && typeof appConfig.offset === 'number') {
@@ -229,11 +219,7 @@ function mergeByGroup(
   return handle(el)
 }
 
-function show(
-  type: string,
-  content: MessageContent,
-  durationOrOptions?: number | MessageOptions,
-): MessageHandle {
+function show(type: string, content: MessageContent, durationOrOptions?: number | MessageOptions): MessageHandle {
   const options = mergeAppConfig(normalizeOptions(durationOrOptions))
   // key 命中 → 更新现有消息（内容/类型替换，计数重置）
   if (options.key) {
@@ -256,10 +242,7 @@ function show(
   }
   const el = document.createElement('oas-message') as OASMessage
   el.setAttribute('type', type)
-  el.setAttribute(
-    'duration',
-    String(options.duration ?? (type === 'loading' ? 0 : 3000)),
-  )
+  el.setAttribute('duration', String(options.duration ?? (type === 'loading' ? 0 : 3000)))
   if (options.closable === false) el.setAttribute('closable', 'false')
   if (options.group) el.setAttribute('group', options.group)
   if (options.key) el.setAttribute('key', options.key)
@@ -304,14 +287,12 @@ function show(
 }
 
 export const message = {
-  info: (content: MessageContent, options?: number | MessageOptions): MessageHandle =>
-    show('info', content, options),
+  info: (content: MessageContent, options?: number | MessageOptions): MessageHandle => show('info', content, options),
   success: (content: MessageContent, options?: number | MessageOptions): MessageHandle =>
     show('success', content, options),
   warning: (content: MessageContent, options?: number | MessageOptions): MessageHandle =>
     show('warning', content, options),
-  error: (content: MessageContent, options?: number | MessageOptions): MessageHandle =>
-    show('error', content, options),
+  error: (content: MessageContent, options?: number | MessageOptions): MessageHandle => show('error', content, options),
   /** 疑问类型（问号图标 + primary 配色） */
   question: (content: MessageContent, options?: number | MessageOptions): MessageHandle =>
     show('question', content, options),
@@ -329,12 +310,7 @@ export const message = {
       const entry = entries.get(existing)!
       entry.content = options.content
       entry.onClose = options.onClose ?? entry.onClose
-      existing.refresh(
-        options.content,
-        options.type,
-        options.duration,
-        1,
-      )
+      existing.refresh(options.content, options.type, options.duration, 1)
       return handle(existing)
     }
     return show(options.type ?? 'info', options.content, {
@@ -355,13 +331,11 @@ export const message = {
     const handle = show('loading', options.loading, { key, duration: 0 })
     p.then(
       (data) => {
-        const content =
-          typeof options.success === 'function' ? options.success(data) : options.success
+        const content = typeof options.success === 'function' ? options.success(data) : options.success
         message.update(key, { content, type: 'success', duration: 3000 })
       },
       (err) => {
-        const content =
-          typeof options.error === 'function' ? options.error(err) : options.error
+        const content = typeof options.error === 'function' ? options.error(err) : options.error
         message.update(key, { content, type: 'error', duration: 3000 })
       },
     )
@@ -369,8 +343,7 @@ export const message = {
   },
 
   /** 注册自定义消息类型（图标/配色/可关性），注册后 show(type) 与声明式均生效 */
-  registerType: (name: string, config: CustomMessageType): void =>
-    registerMessageType(name, config),
+  registerType: (name: string, config: CustomMessageType): void => registerMessageType(name, config),
 }
 
 export function destroyAll(): void {

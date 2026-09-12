@@ -126,8 +126,7 @@ export class OASToolbarInput extends OASElement {
     input.disabled = disabled
     // 工具栏 focusable-when-disabled：输入框可聚焦但禁输入（readonly 保留焦点，aria-disabled 语义同步）
     const tb = this.closest('oas-toolbar')
-    const focusableDisabled =
-      tb?.hasAttribute('disabled') && tb.hasAttribute('focusable-when-disabled')
+    const focusableDisabled = tb?.hasAttribute('disabled') && tb.hasAttribute('focusable-when-disabled')
     if (disabled) input.removeAttribute('aria-disabled')
     else if (focusableDisabled) {
       input.setAttribute('aria-disabled', 'true')

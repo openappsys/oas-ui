@@ -49,7 +49,10 @@ function fnBodyParts(input: string): string[] | null {
   const m = input.match(/^[a-z]+\(([^)]*)\)$/i)
   if (!m) return null
   const body = m[1]!.replace(/\/\s*[\d.]+%?/, '').replace(/,/g, ' ')
-  const parts = body.split(/\s+/).map((s) => s.trim()).filter(Boolean)
+  const parts = body
+    .split(/\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
   return parts.length > 0 ? parts : null
 }
 
@@ -122,8 +125,7 @@ function oklabToSrgb(L: number, a: number, b: number): [number, number, number] 
   const r = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
   const g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
   const bl = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s
-  const lin2srgb = (c: number): number =>
-    c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055
+  const lin2srgb = (c: number): number => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055)
   return [clamp01(lin2srgb(r)), clamp01(lin2srgb(g)), clamp01(lin2srgb(bl))]
 }
 
@@ -422,31 +424,22 @@ const DEFAULT_GROUPS: TokenGroup[] = [
   {
     key: 'space',
     labelKey: 'themeEditor.group.space',
-    tokens: [
-      '--oas-space-1',
-      '--oas-space-2',
-      '--oas-space-3',
-      '--oas-space-4',
-      '--oas-space-5',
-      '--oas-space-6',
-    ].map((name) => ({ name, type: 'number' as const, min: 0, max: 64, step: 1 })),
+    tokens: ['--oas-space-1', '--oas-space-2', '--oas-space-3', '--oas-space-4', '--oas-space-5', '--oas-space-6'].map(
+      (name) => ({ name, type: 'number' as const, min: 0, max: 64, step: 1 }),
+    ),
   },
   {
     key: 'radius',
     labelKey: 'themeEditor.group.radius',
-    tokens: [
-      '--oas-radius-xs',
-      '--oas-radius-sm',
-      '--oas-radius-md',
-      '--oas-radius-lg',
-      '--oas-radius-xl',
-    ].map((name) => ({
-      name,
-      type: 'number' as const,
-      min: 0,
-      max: 32,
-      step: 1,
-    })),
+    tokens: ['--oas-radius-xs', '--oas-radius-sm', '--oas-radius-md', '--oas-radius-lg', '--oas-radius-xl'].map(
+      (name) => ({
+        name,
+        type: 'number' as const,
+        min: 0,
+        max: 32,
+        step: 1,
+      }),
+    ),
   },
   {
     key: 'controlHeight',
@@ -647,9 +640,7 @@ export class OASThemeEditor extends OASElement {
     }
     if (!this.invalidPresetWarned.has(normalized)) {
       this.invalidPresetWarned.add(normalized)
-      console.warn(
-        `[oas-theme-editor] 未知预设主题 "${name}"，已忽略（可用：compact / comfortable / default）`,
-      )
+      console.warn(`[oas-theme-editor] 未知预设主题 "${name}"，已忽略（可用：compact / comfortable / default）`)
     }
   }
 
@@ -914,17 +905,13 @@ export class OASThemeEditor extends OASElement {
     try {
       const parsed: unknown = JSON.parse(raw)
       if (!Array.isArray(parsed)) return DEFAULT_GROUPS
-      const names = parsed.filter(
-        (n): n is string => typeof n === 'string' && n.startsWith('--') && n.length > 2,
-      )
+      const names = parsed.filter((n): n is string => typeof n === 'string' && n.startsWith('--') && n.length > 2)
       if (names.length === 0) return DEFAULT_GROUPS
       const byGroup = new Map<string, ThemeTokenDef[]>()
       for (const name of names) {
         const key = this.groupOf(name)
         const def: ThemeTokenDef =
-          key === 'color'
-            ? { name, type: 'color' }
-            : { name, type: 'number', min: 0, max: 100, step: 1 }
+          key === 'color' ? { name, type: 'color' } : { name, type: 'number', min: 0, max: 100, step: 1 }
         const list = byGroup.get(key)
         if (list) list.push(def)
         else byGroup.set(key, [def])

@@ -267,10 +267,7 @@ export class OASGradientText extends OASElement {
     }
     this.style.setProperty('--oas-gradient-text-stroke-w', width)
     const color = this.getAttr('stroke-color', '').trim()
-    this.style.setProperty(
-      '--oas-gradient-text-stroke-c',
-      COLOR_RE.test(color) ? color : DEFAULT_STROKE_COLOR,
-    )
+    this.style.setProperty('--oas-gradient-text-stroke-c', COLOR_RE.test(color) ? color : DEFAULT_STROKE_COLOR)
   }
 
   /** type 归一：受支持语义色名，非法/空返回 '' */
@@ -304,11 +301,7 @@ function palindrome(colors: string[]): string[] {
  * 仅动画态需要，静态走 scoped CSS）。
  */
 const TYPE_STOPS_INLINE: Record<string, [string, string, string]> = {
-  primary: [
-    'var(--oas-color-primary)',
-    'var(--oas-color-primary-hover)',
-    'var(--oas-color-primary)',
-  ],
+  primary: ['var(--oas-color-primary)', 'var(--oas-color-primary-hover)', 'var(--oas-color-primary)'],
   success: [
     'var(--oas-color-success)',
     'color-mix(in srgb, var(--oas-color-success) 72%, var(--oas-color-text-primary))',

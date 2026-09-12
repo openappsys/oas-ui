@@ -106,9 +106,7 @@ describe('notification 命令式 API', () => {
     await Promise.resolve()
     const el = document.body.querySelector('oas-notification')!
     expect(el.getAttribute('scrollable')).toBe('false')
-    expect(
-      el.shadowRoot!.querySelector('[part="description"]')!.classList.contains('scrollable'),
-    ).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="description"]')!.classList.contains('scrollable')).toBe(false)
   })
 
   it('命令式 API 透传 scrollable / show-progress 组合', async () => {
@@ -328,9 +326,7 @@ describe('notification 命令式 API', () => {
     it('无 onClick 不设 clickable 属性', async () => {
       notification.info({ title: 'x', duration: 0 })
       await Promise.resolve()
-      expect(document.body.querySelector('oas-notification')!.hasAttribute('clickable')).toBe(
-        false,
-      )
+      expect(document.body.querySelector('oas-notification')!.hasAttribute('clickable')).toBe(false)
     })
   })
 
@@ -726,7 +722,12 @@ describe('notification 命令式 API', () => {
 
     it('collapsible：自定义 threshold', async () => {
       for (let i = 1; i <= 3; i++) {
-        notification.info({ title: `n${i}`, duration: 0, stackMode: 'collapsible', stackThreshold: 1 })
+        notification.info({
+          title: `n${i}`,
+          duration: 0,
+          stackMode: 'collapsible',
+          stackThreshold: 1,
+        })
         await Promise.resolve()
       }
       const stack = document.body.querySelector('oas-notification')!.parentElement!

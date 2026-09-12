@@ -155,8 +155,7 @@ describe('OASForm', () => {
 
   it('校验失败后字段后有 .error-text 显示 message，修正后移除', () => {
     const el = mount()
-    const submit = () =>
-      el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    const submit = () => el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
     const name = el.querySelector('oas-input[name="name"]')!
     const email = el.querySelector('oas-input[name="email"]')!
 
@@ -280,10 +279,7 @@ describe('OASForm 行内布局（inline）', () => {
   it('inline：校验失败错误文本写入 form-item 错误位（角色 alert 可见）', () => {
     const el = new OASForm()
     el.setAttribute('inline', '')
-    el.setAttribute(
-      'rules',
-      JSON.stringify({ name: [{ required: true, message: '请输入用户名' }] }),
-    )
+    el.setAttribute('rules', JSON.stringify({ name: [{ required: true, message: '请输入用户名' }] }))
     const item = new OASFormItem()
     item.setAttribute('label', '用户名')
     item.setAttribute('required', '')
@@ -357,8 +353,7 @@ describe('OASForm 栅格布局增强', () => {
     item.innerHTML = '<oas-input name="name"></oas-input>'
     el.appendChild(item)
     document.body.appendChild(el)
-    const submit = () =>
-      el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    const submit = () => el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
 
     submit()
     const input = item.querySelector('oas-input')!

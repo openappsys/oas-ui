@@ -60,9 +60,8 @@ test('ellipsis suffix：tail 截断保留扩展名', async ({ page }) => {
   await up(page, 'oas-ellipsis[suffix=".pdf"]')
   await page.waitForFunction(
     () => {
-      const t = document
-        .querySelector('oas-ellipsis[suffix=".pdf"]')!
-        .shadowRoot!.querySelector('[part="text"]')!.textContent!
+      const t = document.querySelector('oas-ellipsis[suffix=".pdf"]')!.shadowRoot!.querySelector('[part="text"]')!
+        .textContent!
       return t.includes('…')
     },
     null,
@@ -70,18 +69,15 @@ test('ellipsis suffix：tail 截断保留扩展名', async ({ page }) => {
   )
   const text = await page.evaluate(
     () =>
-      document
-        .querySelector('oas-ellipsis[suffix=".pdf"]')!
-        .shadowRoot!.querySelector<HTMLElement>('[part="text"]')!.textContent!,
+      document.querySelector('oas-ellipsis[suffix=".pdf"]')!.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!
+        .textContent!,
   )
   expect(text.endsWith('.pdf')).toBe(true)
   expect(text).toContain('…')
   expect(text.length).toBeLessThan(60)
 })
 
-test('ellipsis expand-trigger=click：点文本展开/收起，aria 态同步，无按钮形态', async ({
-  page,
-}) => {
+test('ellipsis expand-trigger=click：点文本展开/收起，aria 态同步，无按钮形态', async ({ page }) => {
   await page.goto('/components/ellipsis.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-ellipsis[expand-trigger="click"]')
   await page.waitForFunction(
@@ -136,7 +132,10 @@ test('ellipsis expand-trigger=click：点文本展开/收起，aria 态同步，
   const collapsed = await page.evaluate(() => {
     const el = document.querySelector('oas-ellipsis[expand-trigger="click"]')!
     const t = el.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!
-    return { ariaExpanded: t.getAttribute('aria-expanded'), truncated: t.textContent!.includes('…') }
+    return {
+      ariaExpanded: t.getAttribute('aria-expanded'),
+      truncated: t.textContent!.includes('…'),
+    }
   })
   expect(collapsed.ariaExpanded).toBe('false')
   expect(collapsed.truncated).toBe(true)

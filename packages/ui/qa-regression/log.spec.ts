@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('log 搜索过滤：keyword 过滤行数正确、mark 高亮存在、oas-search detail 正确、清空恢复', async ({
-  page,
-}) => {
+test('log 搜索过滤：keyword 过滤行数正确、mark 高亮存在、oas-search detail 正确、清空恢复', async ({ page }) => {
   await page.goto('/components/log.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#log-search')
   // demo 数据为 12 行（3 行 ERROR），等异步填充完成
@@ -50,9 +48,7 @@ test('log 搜索过滤：keyword 过滤行数正确、mark 高亮存在、oas-se
   ])
 })
 
-test('log 搜索过滤：无命中显示「无匹配」空态（locale），暗色下 mark 底色换 token 仍可读', async ({
-  page,
-}) => {
+test('log 搜索过滤：无命中显示「无匹配」空态（locale），暗色下 mark 底色换 token 仍可读', async ({ page }) => {
   await page.goto('/components/log.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#log-search')
   await page.waitForFunction(

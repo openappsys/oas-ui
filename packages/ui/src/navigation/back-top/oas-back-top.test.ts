@@ -627,9 +627,7 @@ describe('OASBackTop', () => {
   it('aria-label 无障碍名称', () => {
     const el = new OASBackTop()
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="btn"]')!.getAttribute('aria-label')).toBe(
-      '回到顶部',
-    )
+    expect(el.shadowRoot!.querySelector('[part="btn"]')!.getAttribute('aria-label')).toBe('回到顶部')
   })
 
   it('断开连接移除滚动监听，重连恢复', () => {
@@ -703,9 +701,7 @@ describe('OASBackTop', () => {
       expect(el.style.top).toBe('100px')
       expect(el.style.bottom).toBe('')
       expect(el.style.right).toBe('')
-      el.dispatchEvent(
-        new PointerEvent('pointerup', { pointerId: 1, clientX: 500, clientY: 100, bubbles: true }),
-      )
+      el.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, clientX: 500, clientY: 100, bubbles: true }))
       expect(JSON.parse(window.localStorage.getItem(DRAG_POS_KEY)!)).toEqual({
         left: 500,
         top: 100,
@@ -735,9 +731,7 @@ describe('OASBackTop', () => {
           bubbles: true,
         }),
       )
-      el.dispatchEvent(
-        new PointerEvent('pointerup', { pointerId: 1, clientX: 102, clientY: 101, bubbles: true }),
-      )
+      el.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, clientX: 102, clientY: 101, bubbles: true }))
       ;(el.shadowRoot!.querySelector('[part="btn"]') as HTMLElement).click()
       expect(fired).toBe(1)
       expect(spy).toHaveBeenCalledWith({ top: 0, behavior: 'auto' })
@@ -764,9 +758,7 @@ describe('OASBackTop', () => {
           bubbles: true,
         }),
       )
-      el.dispatchEvent(
-        new PointerEvent('pointerup', { pointerId: 1, clientX: 500, clientY: 700, bubbles: true }),
-      )
+      el.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, clientX: 500, clientY: 700, bubbles: true }))
       // 拖拽结束后浏览器会在捕获目标上合成 click → 被抑制
       el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       expect(fired).toBe(0)

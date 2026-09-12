@@ -1,11 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASBreadcrumb } from './index.js'
 
-const ITEMS = JSON.stringify([
-  { label: '首页', href: '/' },
-  { label: '组件', href: '/components' },
-  { label: '按钮' },
-])
+const ITEMS = JSON.stringify([{ label: '首页', href: '/' }, { label: '组件', href: '/components' }, { label: '按钮' }])
 
 function mount(): OASBreadcrumb {
   const el = new OASBreadcrumb()
@@ -74,11 +70,7 @@ describe('OASBreadcrumb', () => {
     const dd = root.querySelector('.ellipsis-dropdown')!
     expect(dd.classList.contains('open')).toBe(false)
     expect(dd.querySelectorAll('a').length).toBe(3)
-    expect([...dd.querySelectorAll('a')].map((a) => a.textContent)).toEqual([
-      '组件',
-      '导航',
-      '数据展示',
-    ])
+    expect([...dd.querySelectorAll('a')].map((a) => a.textContent)).toEqual(['组件', '导航', '数据展示'])
     // 可见链接：首页 + 反馈；当前页为末项
     expect(root.querySelectorAll('nav > .item > [part="link"]').length).toBe(2)
     expect(root.querySelector('[part="current"]')!.textContent).toBe('面包屑')
@@ -275,26 +267,18 @@ describe('OASBreadcrumb', () => {
     })
     const root = el.shadowRoot!
     // 可见序列：首页 / 组件 / … / 面包屑
-    const visible = [...root.querySelectorAll('nav > .item > a[part="link"]')].map(
-      (a) => a.textContent,
-    )
+    const visible = [...root.querySelectorAll('nav > .item > a[part="link"]')].map((a) => a.textContent)
     expect(visible).toEqual(['首页', '组件'])
     expect(root.querySelector('[part="current"]')!.textContent).toBe('面包屑')
     // 被折叠项：导航 / 数据展示 / 反馈
     const dd = root.querySelector('.ellipsis-dropdown')!
-    expect([...dd.querySelectorAll('a')].map((a) => a.textContent)).toEqual([
-      '导航',
-      '数据展示',
-      '反馈',
-    ])
+    expect([...dd.querySelectorAll('a')].map((a) => a.textContent)).toEqual(['导航', '数据展示', '反馈'])
   })
 
   it('A5 折叠保留数缺省时保持旧行为（首 1 + 末 max-items-2）', () => {
     const el = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': '4' })
     const root = el.shadowRoot!
-    const visible = [...root.querySelectorAll('nav > .item > a[part="link"]')].map(
-      (a) => a.textContent,
-    )
+    const visible = [...root.querySelectorAll('nav > .item > a[part="link"]')].map((a) => a.textContent)
     expect(visible).toEqual(['首页', '反馈'])
     expect(root.querySelectorAll('.item').length).toBe(4) // 首页 + … + 反馈 + 面包屑
   })
@@ -443,9 +427,7 @@ describe('OASBreadcrumb', () => {
     expect(current.textContent).toBe('组件')
     // 末项有 href 且非当前 → 渲染为可点链接
     expect(
-      [...root.querySelectorAll<HTMLAnchorElement>('a[part="link"]')].map((a) =>
-        a.getAttribute('href'),
-      ),
+      [...root.querySelectorAll<HTMLAnchorElement>('a[part="link"]')].map((a) => a.getAttribute('href')),
     ).toContain('/breadcrumb')
   })
 
@@ -618,10 +600,7 @@ describe('子元素声明式通道', () => {
 
   it('items 属性显式设置时优先（子元素被忽略）', () => {
     const el = document.createElement('oas-breadcrumb')
-    el.setAttribute(
-      'items',
-      JSON.stringify([{ label: '数据项', href: '/data' }, { label: '末项' }]),
-    )
+    el.setAttribute('items', JSON.stringify([{ label: '数据项', href: '/data' }, { label: '末项' }]))
     el.innerHTML = `<oas-breadcrumb-item href="/">首页</oas-breadcrumb-item>`
     document.body.appendChild(el)
     const root = el.shadowRoot!

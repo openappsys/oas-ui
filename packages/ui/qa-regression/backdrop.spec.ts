@@ -19,19 +19,14 @@ async function waitHost(page: import('@playwright/test').Page, id: string) {
 }
 
 /** 打开「全屏 loading」遮罩（P1 内容插槽 demo） */
-test('backdrop 内容插槽：点击内容区不关闭、点击遮罩本体关闭（P1+P5 点击判定）', async ({
-  page,
-}) => {
+test('backdrop 内容插槽：点击内容区不关闭、点击遮罩本体关闭（P1+P5 点击判定）', async ({ page }) => {
   await page.goto('/components/backdrop.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
   await waitDemo(page, 'openLoadingBackdrop')
   await page.locator('oas-button', { hasText: '全屏 loading' }).click()
   await waitHost(page, 'backdrop-loading')
   await page.waitForFunction(
-    () =>
-      document
-        .querySelector('#backdrop-loading')
-        ?.shadowRoot?.querySelector('[part="content"]') != null,
+    () => document.querySelector('#backdrop-loading')?.shadowRoot?.querySelector('[part="content"]') != null,
     null,
     { timeout: 5000 },
   )
@@ -53,10 +48,7 @@ test('backdrop persistent：点击遮罩不关闭、内容 shake 反馈、内容
   await page.locator('oas-button', { hasText: '打开持久遮罩' }).click()
   await waitHost(page, 'backdrop-persistent')
   await page.waitForFunction(
-    () =>
-      document
-        .querySelector('#backdrop-persistent')
-        ?.shadowRoot?.querySelector('[part="content"]') != null,
+    () => document.querySelector('#backdrop-persistent')?.shadowRoot?.querySelector('[part="content"]') != null,
     null,
     { timeout: 5000 },
   )
@@ -104,23 +96,17 @@ test('backdrop 淡入淡出生命周期：after-show / after-close 事件与卸�
     document.body.appendChild(el)
   })
   // 淡入结束后派发 after-show（遮罩进入可见态 data-shown）
-  await page.waitForFunction(
-    () => (window as any).__bdEvents?.includes('show'),
-    null,
-    { timeout: 5000 },
-  )
-  await page.waitForFunction(
-    () => document.querySelector('#backdrop-ev')?.hasAttribute('data-shown') === true,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => (window as any).__bdEvents?.includes('show'), null, {
+    timeout: 5000,
+  })
+  await page.waitForFunction(() => document.querySelector('#backdrop-ev')?.hasAttribute('data-shown') === true, null, {
+    timeout: 5000,
+  })
   // 关闭：退场动画结束后派发 after-close 并卸载节点（无孤儿 DOM）
   await page.evaluate(() => document.getElementById('backdrop-ev')?.removeAttribute('open'))
-  await page.waitForFunction(
-    () => (window as any).__bdEvents?.includes('close'),
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => (window as any).__bdEvents?.includes('close'), null, {
+    timeout: 5000,
+  })
   await page.waitForFunction(() => !document.querySelector('#backdrop-ev'), null, {
     timeout: 5000,
   })
@@ -136,13 +122,8 @@ test('backdrop 颜色/浓度/模糊属性注入 scrim（demo 属性存活）', a
   await waitHost(page, 'backdrop-thick')
   await page.waitForFunction(
     () => {
-      const scrim = document
-        .querySelector('#backdrop-thick')
-        ?.shadowRoot?.querySelector<HTMLElement>('[part="scrim"]')
-      return (
-        scrim?.style.opacity === '0.75' &&
-        getComputedStyle(scrim).backgroundColor === 'rgb(24, 24, 27)'
-      )
+      const scrim = document.querySelector('#backdrop-thick')?.shadowRoot?.querySelector<HTMLElement>('[part="scrim"]')
+      return scrim?.style.opacity === '0.75' && getComputedStyle(scrim).backgroundColor === 'rgb(24, 24, 27)'
     },
     null,
     { timeout: 5000 },

@@ -37,7 +37,10 @@ export function onModalCapabilityRegistered(cb: () => void): () => void {
 }
 
 /** 当前已注册能力快照（OASModal 构造时遍历注入） */
-export function registeredModalCapabilities(): Array<{ name: string; factory: ModalCapabilityFactory }> {
+export function registeredModalCapabilities(): Array<{
+  name: string
+  factory: ModalCapabilityFactory
+}> {
   return [...capabilityRegistry.entries()].map(([name, factory]) => ({ name, factory }))
 }
 

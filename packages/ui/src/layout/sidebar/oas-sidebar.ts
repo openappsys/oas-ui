@@ -631,12 +631,8 @@ export class OASSidebar extends OASElement {
   private bind(): void {
     this.shadow.querySelector('.mask')?.addEventListener('click', () => this.closeDrawer())
     this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.closeDrawer())
-    this.shadow
-      .querySelector('[part="trigger"]')
-      ?.addEventListener('click', () => this.openDrawer())
-    this.shadow
-      .querySelector('[part="toggle"]')
-      ?.addEventListener('click', () => this.toggleCollapsed())
+    this.shadow.querySelector('[part="trigger"]')?.addEventListener('click', () => this.openDrawer())
+    this.shadow.querySelector('[part="toggle"]')?.addEventListener('click', () => this.toggleCollapsed())
 
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') this.closeDrawer()
@@ -762,8 +758,7 @@ export class OASSidebar extends OASElement {
   }
 
   private syncMq(): void {
-    const bp =
-      Number(this.getAttr('mobile-breakpoint', String(DEFAULT_BREAKPOINT))) || DEFAULT_BREAKPOINT
+    const bp = Number(this.getAttr('mobile-breakpoint', String(DEFAULT_BREAKPOINT))) || DEFAULT_BREAKPOINT
     const media = `(max-width: ${bp}px)`
     if (this.mq && this.mq.media === media) return
     this.mq?.removeEventListener('change', this.mqListener)
@@ -775,17 +770,14 @@ export class OASSidebar extends OASElement {
   private onNavKey(e: Event): void {
     const ke = e as KeyboardEvent
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(ke.key)) return
-    const items = [...this.shadow.querySelectorAll<HTMLElement>('.nav [part="item"]')].filter(
-      (b) => !b.hidden,
-    )
+    const items = [...this.shadow.querySelectorAll<HTMLElement>('.nav [part="item"]')].filter((b) => !b.hidden)
     if (!items.length) return
     e.preventDefault()
     const activeEl = this.shadow.activeElement as HTMLElement | null
     const idx = activeEl ? items.indexOf(activeEl) : -1
     let next = 0
     if (ke.key === 'ArrowDown') next = idx < 0 ? 0 : (idx + 1) % items.length
-    else if (ke.key === 'ArrowUp')
-      next = idx < 0 ? items.length - 1 : (idx - 1 + items.length) % items.length
+    else if (ke.key === 'ArrowUp') next = idx < 0 ? items.length - 1 : (idx - 1 + items.length) % items.length
     else if (ke.key === 'Home') next = 0
     else next = items.length - 1
     items[next]?.focus()
@@ -820,16 +812,11 @@ export class OASSidebar extends OASElement {
     if (close) close.hidden = !drawerOpen
 
     // 内置文案走 locale registry（setLocale 切换自动重刷 update）
-    this.shadow
-      .querySelector<HTMLElement>('.nav')
-      ?.setAttribute('aria-label', this.t('sidebar.nav'))
+    this.shadow.querySelector<HTMLElement>('.nav')?.setAttribute('aria-label', this.t('sidebar.nav'))
     if (toggle) {
       const collapsed = this.hasAttr('collapsed')
       toggle.setAttribute('aria-expanded', String(!collapsed))
-      toggle.setAttribute(
-        'aria-label',
-        collapsed ? this.t('sidebar.expand') : this.t('sidebar.toggle'),
-      )
+      toggle.setAttribute('aria-label', collapsed ? this.t('sidebar.expand') : this.t('sidebar.toggle'))
       toggle.textContent = collapsed ? '»' : '«'
     }
     if (trigger) trigger.setAttribute('aria-label', this.t('sidebar.openMenu'))
@@ -899,12 +886,7 @@ export class OASSidebar extends OASElement {
   }
 
   /** 渲染单个菜单项（含徽标/操作/嵌套子项；collapsed=桌面图标条态） */
-  private renderItem(
-    item: SidebarItem,
-    collapsed: boolean,
-    active: string,
-    depth: number,
-  ): HTMLElement {
+  private renderItem(item: SidebarItem, collapsed: boolean, active: string, depth: number): HTMLElement {
     const hasChildren = !!item.children?.length
     // 折叠图标条态下嵌套父项按纯图标项处理：子树本就隐藏，展开箭头/aria-expanded/
     // 展开点击属死交互（实测「点了没反应」）；点击按普通项派发 select
@@ -999,14 +981,10 @@ export class OASSidebar extends OASElement {
             for (const sib of this.siblingValuesOf(item.value)) {
               if (!this.expanded.has(sib)) continue
               this.expanded.delete(sib)
-              const sibBtn = this.shadow.querySelector<HTMLElement>(
-                `[part="item"][data-value="${sib}"]`,
-              )
+              const sibBtn = this.shadow.querySelector<HTMLElement>(`[part="item"][data-value="${sib}"]`)
               if (sibBtn) {
                 sibBtn.setAttribute('aria-expanded', 'false')
-                const sibSub = sibBtn
-                  .closest('.item-block')
-                  ?.querySelector<HTMLElement>('[part="submenu"]')
+                const sibSub = sibBtn.closest('.item-block')?.querySelector<HTMLElement>('[part="submenu"]')
                 if (sibSub) sibSub.hidden = true
               }
             }
@@ -1120,9 +1098,7 @@ export class OASSidebar extends OASElement {
     try {
       const parsed = JSON.parse(this.getAttr('items', '[]'))
       this._items = Array.isArray(parsed)
-        ? parsed
-            .map((e): SidebarEntry | null => this.parseEntry(e))
-            .filter((e): e is SidebarEntry => e !== null)
+        ? parsed.map((e): SidebarEntry | null => this.parseEntry(e)).filter((e): e is SidebarEntry => e !== null)
         : []
     } catch {
       this._items = []
@@ -1158,9 +1134,7 @@ export class OASSidebar extends OASElement {
       children: Array.isArray(entry.children)
         ? ((entry.children as unknown[])
             .map((c) => this.parseEntry(c))
-            .filter(
-              (c): c is SidebarItem => c !== null && (c as SidebarItem).label !== undefined,
-            ) as SidebarItem[])
+            .filter((c): c is SidebarItem => c !== null && (c as SidebarItem).label !== undefined) as SidebarItem[])
         : undefined,
     }
     return item

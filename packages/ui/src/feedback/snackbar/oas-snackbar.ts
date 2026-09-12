@@ -315,19 +315,15 @@ export class OASSnackbar extends OASElement {
     this.addEventListener('focusin', () => this.pauseFor('focus'))
     this.addEventListener('focusout', () => this.resumeFor('focus'))
     // 操作按钮（P14 精神：多动作场景由插槽自理，内置只保留单 action 便捷通道）
-    this.shadow
-      .querySelector<HTMLButtonElement>('[part="action"]')
-      ?.addEventListener('click', () => {
-        if (this.swipeMoved) return
-        this.emit('action')
-      })
+    this.shadow.querySelector<HTMLButtonElement>('[part="action"]')?.addEventListener('click', () => {
+      if (this.swipeMoved) return
+      this.emit('action')
+    })
     // 关闭按钮（P2）
-    this.shadow
-      .querySelector<HTMLButtonElement>('[part="close"]')
-      ?.addEventListener('click', () => {
-        if (this.swipeMoved) return
-        this.dismiss('close')
-      })
+    this.shadow.querySelector<HTMLButtonElement>('[part="close"]')?.addEventListener('click', () => {
+      if (this.swipeMoved) return
+      this.dismiss('close')
+    })
     // 默认插槽（P3）：有真实内容时覆盖 message 属性文本
     this.shadow.querySelector<HTMLSlotElement>('slot')?.addEventListener('slotchange', () => {
       this.syncSlotFilled()
@@ -388,11 +384,7 @@ export class OASSnackbar extends OASElement {
       const message = this.getAttr('message', '')
       const candidates = [...openLists[dir], ...waitQueues[dir]]
       const target = candidates.find(
-        (o) =>
-          o !== this &&
-          o.getAttr('group', '') === group &&
-          !o.slotFilled &&
-          o.getAttr('message', '') === message,
+        (o) => o !== this && o.getAttr('group', '') === group && !o.slotFilled && o.getAttr('message', '') === message,
       )
       if (target) {
         target.absorbGroupHit()

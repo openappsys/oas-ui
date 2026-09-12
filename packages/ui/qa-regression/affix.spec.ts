@@ -42,8 +42,12 @@ test('affix 吸附-解除-占位：top 滚过吸附线吸附、回滚解除、fi
   expect(stuck.docHeight).toBe(3000)
   // 回滚到 0：占位 top = 300 > 100 → 解除，占位高度清空
   await page.evaluate(() => window.scrollTo(0, 0))
-  await page.waitForFunction(() =>
-    !document.querySelector('oas-affix')!.shadowRoot!.querySelector<HTMLElement>('.wrap')!.classList.contains('fixed'),
+  await page.waitForFunction(
+    () =>
+      !document
+        .querySelector('oas-affix')!
+        .shadowRoot!.querySelector<HTMLElement>('.wrap')!
+        .classList.contains('fixed'),
   )
   const released = await page.evaluate(() => {
     const el = document.querySelector('oas-affix')!

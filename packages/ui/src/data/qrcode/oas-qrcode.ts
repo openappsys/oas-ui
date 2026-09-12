@@ -173,9 +173,7 @@ export class OASQRCode extends OASElement {
   /** 缓存节点引用 + 绑定交互（render 与水合路径共用） */
   private bind(): void {
     this.overlayEl = this.shadow.querySelector<HTMLElement>('.overlay')
-    this.shadow
-      .querySelector<HTMLButtonElement>('.refresh')
-      ?.addEventListener('click', () => this.emit('refresh'))
+    this.shadow.querySelector<HTMLButtonElement>('.refresh')?.addEventListener('click', () => this.emit('refresh'))
   }
 
   protected override render(): void {
@@ -451,8 +449,7 @@ export class OASQRCode extends OASElement {
     const bg = this.resolveBgForCanvas()
     const icon = this.getAttr('icon', '')
     let inner = `<rect width="${px}" height="${px}" fill="${bg}"/>`
-    const d = matrixToPath(modules, size, margin)
-      .replace(/(\d+(?:\.\d+)?)/g, (m) => String(Number(m) * scale))
+    const d = matrixToPath(modules, size, margin).replace(/(\d+(?:\.\d+)?)/g, (m) => String(Number(m) * scale))
     inner += `<path d="${d}" fill="${fg}" shape-rendering="crispEdges"/>`
     if (icon) {
       const iconModules = (this.normalizeIconSize(this.normalizeSize()) / this.normalizeSize()) * total
@@ -496,9 +493,5 @@ export class OASQRCode extends OASElement {
 
 /** HTML 属性值转义（注入模板字符串前防断链） */
 function escapeAttr(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }

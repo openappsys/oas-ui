@@ -569,11 +569,7 @@ export class OASDynamicTags extends OASElement {
     } else if (e.key === 'Backspace' && inputEl.value === '') {
       e.preventDefault()
       this.removeLastTag()
-    } else if (
-      this.hasAttr('sortable') &&
-      inputEl.value === '' &&
-      (e.key === 'ArrowLeft' || e.key === 'ArrowRight')
-    ) {
+    } else if (this.hasAttr('sortable') && inputEl.value === '' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
       // 空输入时方向键进入标签导航（← 末尾 / → 首个）
       const chips = [...(this.tagsEl?.querySelectorAll<HTMLElement>('.tag') ?? [])]
       const target = e.key === 'ArrowLeft' ? chips[chips.length - 1] : chips[0]
@@ -714,11 +710,7 @@ export class OASDynamicTags extends OASElement {
     const path = e.composedPath() as Element[]
     // 焦点在移除按钮或编辑输入框上时走各自的原生语义
     if (
-      path.some(
-        (n) =>
-          n instanceof Element &&
-          (n.classList.contains('tag-remove') || n.classList.contains('tag-edit')),
-      )
+      path.some((n) => n instanceof Element && (n.classList.contains('tag-remove') || n.classList.contains('tag-edit')))
     ) {
       return
     }

@@ -218,9 +218,7 @@ describe('OASKbd', () => {
       ]
       for (const name of presets) {
         const el = mountKbd({ keys: 'ctrl', color: name })
-        expect(kbdEl(el).style.getPropertyValue('--oas-kbd-color'), `preset=${name}`).toBe(
-          `var(--oas-preset-${name})`,
-        )
+        expect(kbdEl(el).style.getPropertyValue('--oas-kbd-color'), `preset=${name}`).toBe(`var(--oas-preset-${name})`)
         el.remove()
       }
     })

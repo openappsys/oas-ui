@@ -101,19 +101,14 @@ test('slider range：双滑块区间 + 双输入框联动且方向反向（rever
     }
   })
   expect(rev.dir).toBe('rtl')
-  expect(parseFloat(rev.fillLeft), 'reverse 填充左边应与 thumb 中心同公式（px）').toBeCloseTo(
-    rev.fillLeftExpected,
-    0,
-  )
+  expect(parseFloat(rev.fillLeft), 'reverse 填充左边应与 thumb 中心同公式（px）').toBeCloseTo(rev.fillLeftExpected, 0)
   expect(rev.fillRight).toBe('')
   expect(parseFloat(rev.fillWidth)).toBeGreaterThan(0)
   expect(rev.ariaLabel).toBeTruthy()
   expect(rev.ariaNow).toBe('60')
 })
 
-test('slider custom-thumb：模板内容克隆进滑块、值气泡显示当前值、原生 thumb 隐藏', async ({
-  page,
-}) => {
+test('slider custom-thumb：模板内容克隆进滑块、值气泡显示当前值、原生 thumb 隐藏', async ({ page }) => {
   await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-slider[show-tooltip]')
   const r = await page.evaluate(() => {
@@ -137,9 +132,7 @@ test('slider custom-thumb：模板内容克隆进滑块、值气泡显示当前�
   expect(parseFloat(r.dataPct ?? '')).toBe(60)
 })
 
-test('slider 基础用法：自定义滑块/数值输入区 hidden 真实隐藏（默认与拖动后均无残留圆环）', async ({
-  page,
-}) => {
+test('slider 基础用法：自定义滑块/数值输入区 hidden 真实隐藏（默认与拖动后均无残留圆环）', async ({ page }) => {
   // 曾现 bug：.custom-thumb{display:flex} 压过 UA [hidden] 规则 → 三个自定义滑块恒可见：
   // 默认态全堆在 left:0（轨道起点多一个白圈，被误认为正常）；一拖动车 'value' 滑块被定位
   // 到值位置后松手 hidden=true 仍显示 → 原生蓝 thumb 旁残留白圈（双滑块假象）。
@@ -206,14 +199,10 @@ test('slider range：拖动中自定义滑块中心与原生 thumb 中心对齐�
     }
   })
   expect(r.visible, '拖动中自定义滑块应显示').toBe(true)
-  expect(Math.abs(r.delta), '自定义滑块中心与原生 thumb 中心偏差不得超 1.5px').toBeLessThanOrEqual(
-    1.5,
-  )
+  expect(Math.abs(r.delta), '自定义滑块中心与原生 thumb 中心偏差不得超 1.5px').toBeLessThanOrEqual(1.5)
 })
 
-test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见（灰轨道不得盖住 fill）', async ({
-  page,
-}) => {
+test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见（灰轨道不得盖住 fill）', async ({ page }) => {
   // 曾现 bug：range 模式 pointerdown 把目标 input 提 z-index 抢拖动权，但原生 input 的
   // 灰色轨道背景（::-webkit-slider-runnable-track）随之上浮盖住 .fill → 蓝色区间填充
   // 消失（dark 下 20-77 之间无蓝条）。修复：灰轨道下沉到 .track-wrap::before 底层，
@@ -251,14 +240,10 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
   expect(r.fillBg, 'fill 应为 primary 填充色').not.toMatch(/transparent|rgba\(0, 0, 0, 0\)/)
   expect(r.raisedZ, 'pointerdown 后 z-index 提升逻辑仍应生效').toBe('2')
   // 视觉遮挡根因锁定：原生轨道背景必须透明，否则 z-index 提升后灰轨道盖住 fill
-  expect(r.trackBg, '原生轨道背景应透明（灰轨道由底层伪元素承担）').toMatch(
-    /transparent|rgba\(0, 0, 0, 0\)/,
-  )
+  expect(r.trackBg, '原生轨道背景应透明（灰轨道由底层伪元素承担）').toMatch(/transparent|rgba\(0, 0, 0, 0\)/)
 })
 
-test('slider vertical：data-vertical 镜像、orient/aria-orientation 同步、填充换 top 轴', async ({
-  page,
-}) => {
+test('slider vertical：data-vertical 镜像、orient/aria-orientation 同步、填充换 top 轴', async ({ page }) => {
   await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-slider[vertical]')
   const r = await page.evaluate(() => {
@@ -286,17 +271,14 @@ test('slider vertical：data-vertical 镜像、orient/aria-orientation 同步、
   expect(r.orient).toBe('vertical')
   expect(r.ariaOrientation).toBe('vertical')
   // fill 上缘 = 值 40 的 thumb 中心（0.6×(轨长-直径)+半径），高 = 40% 行程
-  expect(parseFloat(r.fillTop), '垂直 fill 上缘应等于值 thumb 中心（px，min 在下）').toBeCloseTo(
-    r.fillTopExpected,
-    0,
+  expect(parseFloat(r.fillTop), '垂直 fill 上缘应等于值 thumb 中心（px，min 在下）').toBeCloseTo(r.fillTopExpected, 0)
+  expect(Math.abs(parseFloat(r.fillHeight) - r.fillHeightExpected), '垂直 fill 高应为值占比行程').toBeLessThanOrEqual(
+    1.5,
   )
-  expect(Math.abs(parseFloat(r.fillHeight) - r.fillHeightExpected), '垂直 fill 高应为值占比行程').toBeLessThanOrEqual(1.5)
   expect(r.fillLeft).toBe('')
 })
 
-test('slider tooltip 格式化双通道：format 模板串与 formatTooltip 函数同源进 aria-valuetext', async ({
-  page,
-}) => {
+test('slider tooltip 格式化双通道：format 模板串与 formatTooltip 函数同源进 aria-valuetext', async ({ page }) => {
   await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-slider[format]')
   const tpl = await page.evaluate(() => {
@@ -428,9 +410,7 @@ test('slider 键盘大步进：PageUp 按默认 10×step 跳进并派发事件',
   expect(r.changeEvents).toBe(1)
 })
 
-test('slider vertical：真实鼠标拖动可改值（pointer 接管）+ 输入框拉满轨道高度', async ({
-  page,
-}) => {
+test('slider vertical：真实鼠标拖动可改值（pointer 接管）+ 输入框拉满轨道高度', async ({ page }) => {
   // 曾现 bug：垂直用 writing-mode 实现，Chromium 原生竖直拖拽 hit-test 失效拖不动
   // （value 40→40），且 input 未显式高度（默认 20px）导致原生轨道缩在顶部、
   // 填充/thumb/tooltip 全面错位。修复：input 拉满轨道高度 + 原生 thumb 隐藏 +
@@ -466,9 +446,7 @@ test('slider vertical：真实鼠标拖动可改值（pointer 接管）+ 输入�
   expect(Number(after), '垂直拖动应使值变化（向上拖 → 值变大）').toBeGreaterThan(40)
 })
 
-test('slider 水平拇指在填充末端保持完整圆（底色描边，不再「半圆融入」破相）', async ({
-  page,
-}) => {
+test('slider 水平拇指在填充末端保持完整圆（底色描边，不再「半圆融入」破相）', async ({ page }) => {
   // 曾现 bug：纯色 thumb 跨在蓝色填充末端时，与填充同色的半圆融入填充，
   // 视觉上像「错位半圆」。修复：thumb 加底色描边。Chromium getComputedStyle
   // 不支持 range 伪元素（回退返回元素自身样式），断言走像素：扫描 thumb 中心行，
@@ -509,12 +487,8 @@ test('slider 水平拇指在填充末端保持完整圆（底色描边，不再�
     }
     return runs
   }, buf.toString('base64'))
-  expect(
-    runs,
-    'thumb 中心行应出现 ≥2 段蓝色（描边把填充与圆盘断开），无描边时融合为 1 段',
-  ).toBeGreaterThanOrEqual(2)
+  expect(runs, 'thumb 中心行应出现 ≥2 段蓝色（描边把填充与圆盘断开），无描边时融合为 1 段').toBeGreaterThanOrEqual(2)
 })
-
 
 test('slider 范围模式双拇指叠层对齐轨道中线 + 单值填充起点贴边（无拇指半径灰缝）', async ({ page }) => {
   // 缺陷固化（用户实测）：①range 模式 min/max 两个原生 input 是相对定位正常流上下堆叠，
@@ -524,7 +498,9 @@ test('slider 范围模式双拇指叠层对齐轨道中线 + 单值填充起点�
   await up(page, 'oas-slider')
   const r = await page.evaluate(() => {
     // range 双拇指（水平 range demo）
-    const rs = [...document.querySelectorAll('oas-slider')].find((s) => s.hasAttribute('range') && !s.hasAttribute('vertical'))!
+    const rs = [...document.querySelectorAll('oas-slider')].find(
+      (s) => s.hasAttribute('range') && !s.hasAttribute('vertical'),
+    )!
     const wrap = rs.shadowRoot!.querySelector('.track-wrap')!.getBoundingClientRect()
     const wrapCY = wrap.top + wrap.height / 2
     const inputs = [...rs.shadowRoot!.querySelectorAll('input[type="range"]:not([hidden])')]
@@ -534,7 +510,11 @@ test('slider 范围模式双拇指叠层对齐轨道中线 + 单值填充起点�
     })
     // 单值填充贴边（颜色 demo value=40 无 start-point）
     const single = [...document.querySelectorAll('oas-slider')].find(
-      (s) => !s.hasAttribute('range') && !s.hasAttribute('vertical') && !s.hasAttribute('start-point') && s.getAttribute('value') === '40',
+      (s) =>
+        !s.hasAttribute('range') &&
+        !s.hasAttribute('vertical') &&
+        !s.hasAttribute('start-point') &&
+        s.getAttribute('value') === '40',
     )!
     const fill = single.shadowRoot!.querySelector('.fill')!.getBoundingClientRect()
     const wrap2 = single.shadowRoot!.querySelector('.track-wrap')!.getBoundingClientRect()
@@ -557,7 +537,9 @@ test('slider 拇指视觉统一：无自定义内容时 custom-thumb 与原生�
   await up(page, 'oas-slider')
   const r = await page.evaluate(() => {
     // 垂直 demo 的 custom-thumb（无自定义内容，应实心）
-    const v = [...document.querySelectorAll('oas-slider')].find((s) => s.hasAttribute('vertical') && !s.hasAttribute('show-input'))!
+    const v = [...document.querySelectorAll('oas-slider')].find(
+      (s) => s.hasAttribute('vertical') && !s.hasAttribute('show-input'),
+    )!
     const vth = v.shadowRoot!.querySelector('.custom-thumb:not([hidden])')!
     const vcs = getComputedStyle(vth)
     // 自定义内容 demo（🎯 slot）应空心环

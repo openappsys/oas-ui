@@ -419,8 +419,7 @@ describe('OASSelect 声明式数据通道与真水合', () => {
   it('真水合回退：快照缺关键结构时回退 render 全量重建，功能仍正常', () => {
     const snap = new OASSelect()
     // 指纹命中但结构不完整（无 .trigger）→ hydrate 返回 false → render 重建
-    snap.shadowRoot!.innerHTML =
-      '<meta data-oas-ssr="oas-select" data-oas-ssr-v="1"><span>broken</span>'
+    snap.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-select" data-oas-ssr-v="1"><span>broken</span>'
     snap.setAttribute('options', OPTIONS)
     document.body.appendChild(snap)
     expect(snap.shadowRoot!.querySelector('.trigger')).not.toBeNull()
@@ -444,9 +443,7 @@ describe('OASSelect focus 委托', () => {
     el.setAttribute('options', OPTIONS)
     document.body.appendChild(el)
     el.focus()
-    expect(el.shadowRoot!.activeElement).toBe(
-      el.shadowRoot!.querySelector('button[part="trigger"]'),
-    )
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('button[part="trigger"]'))
   })
 })
 
@@ -535,9 +532,7 @@ describe('OASSelect 虚拟滚动（virtual）', () => {
   })
 
   function manyOptions(n: number): string {
-    return JSON.stringify(
-      Array.from({ length: n }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })),
-    )
+    return JSON.stringify(Array.from({ length: n }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })))
   }
 
   function vlistOf(el: OASSelect): HTMLElement {
@@ -548,8 +543,7 @@ describe('OASSelect 虚拟滚动（virtual）', () => {
     return [...vlistOf(el).shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')]
   }
 
-  const flushRaf = (): Promise<void> =>
-    new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+  const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
   it('virtual：仅渲染可见窗口 + buffer，不渲染全量；非 virtual 全量渲染', () => {
     const el = mount({ virtual: '', options: manyOptions(100) })
@@ -860,15 +854,7 @@ describe('OASSelect 尺寸与校验态（size / status）', () => {
 
   it('新属性进入 observedAttributes', () => {
     expect(OASSelect.observedAttributes).toEqual(
-      expect.arrayContaining([
-        'size',
-        'status',
-        'open',
-        'max-count',
-        'placement',
-        'readonly',
-        'debounce',
-      ]),
+      expect.arrayContaining(['size', 'status', 'open', 'max-count', 'placement', 'readonly', 'debounce']),
     )
   })
 
@@ -1047,9 +1033,7 @@ describe('OASSelect 受控展开（open + oas-open-change）', () => {
   it('非受控展开/收起均派发 oas-open-change（detail.open）', () => {
     const el = mount()
     const events: boolean[] = []
-    el.addEventListener('oas-open-change', (e: Event) =>
-      events.push((e as CustomEvent).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
     open(el)
     expect(events).toEqual([true])
     trigger(el).click()
@@ -1060,9 +1044,7 @@ describe('OASSelect 受控展开（open + oas-open-change）', () => {
   it('设置 open 属性直接展开（受控声明式）', () => {
     const el = mount({ open: '' })
     expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('.dropdown')!.classList.contains('open')).toBe(
-      true,
-    )
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.dropdown')!.classList.contains('open')).toBe(true)
   })
 
   it('open property 通道反射 attribute（宿主框架 :open 绑定）', () => {
@@ -1087,9 +1069,7 @@ describe('OASSelect 受控展开（open + oas-open-change）', () => {
   it('受控 open：点击 trigger 只派发事件不强制写回（属性在场仍展开），宿主移除属性后收起', () => {
     const el = mount({ open: '' })
     const events: boolean[] = []
-    el.addEventListener('oas-open-change', (e: Event) =>
-      events.push((e as CustomEvent).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
     trigger(el).click()
     expect(events).toEqual([false])
     expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
@@ -1100,9 +1080,7 @@ describe('OASSelect 受控展开（open + oas-open-change）', () => {
   it('受控 open：点击外部只派发事件，属性移除后收起', () => {
     const el = mount({ open: '' })
     const events: boolean[] = []
-    el.addEventListener('oas-open-change', (e: Event) =>
-      events.push((e as CustomEvent).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(events).toEqual([false])
     expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
@@ -1114,9 +1092,7 @@ describe('OASSelect 受控展开（open + oas-open-change）', () => {
     const el = mount()
     open(el)
     const events: boolean[] = []
-    el.addEventListener('oas-open-change', (e: Event) =>
-      events.push((e as CustomEvent).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
     trigger(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(events).toEqual([false])
   })
@@ -1125,9 +1101,7 @@ describe('OASSelect 受控展开（open + oas-open-change）', () => {
     const el = mount()
     open(el)
     const events: boolean[] = []
-    el.addEventListener('oas-open-change', (e: Event) =>
-      events.push((e as CustomEvent).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
     const rows = el.shadowRoot!.querySelectorAll('[role="option"]')
     ;(rows[0] as HTMLElement).click()
     expect(events).toEqual([false])
@@ -1277,11 +1251,7 @@ describe('OASSelect 自定义过滤（filterMethod property 通道）', () => {
     // 每轮渲染会多次调用（renderListbox/syncActive 各一次）；契约是每个选项都被咨询且收到原始词
     const forQuery = seen.filter((s) => s.q === 'APP')
     expect(forQuery.length).toBeGreaterThanOrEqual(3)
-    expect([...new Set(forQuery.map((s) => s.value))].sort()).toEqual([
-      'apple',
-      'banana',
-      'orange',
-    ])
+    expect([...new Set(forQuery.map((s) => s.value))].sort()).toEqual(['apple', 'banana', 'orange'])
   })
 
   it('filterMethod 全 false → 空态', () => {
@@ -1552,9 +1522,7 @@ describe('OASSelect 下拉高度 CSS 变量', () => {
   })
 
   it('虚拟模式 vlist 高度跟随 CSS 变量（宿主覆盖生效）', () => {
-    const many = JSON.stringify(
-      Array.from({ length: 100 }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })),
-    )
+    const many = JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })))
     const el = mount({ virtual: '', options: many })
     el.style.setProperty('--oas-select-dropdown-height', '300px')
     open(el)
@@ -1563,9 +1531,7 @@ describe('OASSelect 下拉高度 CSS 变量', () => {
   })
 
   it('虚拟模式默认高度 240', () => {
-    const many = JSON.stringify(
-      Array.from({ length: 100 }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })),
-    )
+    const many = JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })))
     const el = mount({ virtual: '', options: many })
     open(el)
     const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!

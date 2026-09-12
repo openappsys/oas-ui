@@ -359,9 +359,7 @@ describe('OASCombobox 能力补齐：group / size / status / filter / open / vir
   it('oas-open-change：内部开合与宿主驱动都派发（首帧挂载不派发）', () => {
     const el = mount()
     const events: boolean[] = []
-    el.addEventListener('oas-open-change', (e: Event) =>
-      events.push((e as CustomEvent).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
     // 聚焦展开 → true
     open(el)
     expect(events).toEqual([true])
@@ -408,9 +406,7 @@ describe('OASCombobox 虚拟滚动（virtual）', () => {
   })
 
   function manyOptions(n: number): string {
-    return JSON.stringify(
-      Array.from({ length: n }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })),
-    )
+    return JSON.stringify(Array.from({ length: n }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })))
   }
 
   function vlistOf(el: OASCombobox): HTMLElement {
@@ -421,8 +417,7 @@ describe('OASCombobox 虚拟滚动（virtual）', () => {
     return [...vlistOf(el).shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')]
   }
 
-  const flushRaf = (): Promise<void> =>
-    new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+  const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
   it('virtual：仅渲染可见窗口 + buffer，非 virtual 全量渲染', () => {
     const el = mount({ virtual: '', options: manyOptions(100) })

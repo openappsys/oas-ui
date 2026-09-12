@@ -2,9 +2,7 @@
 
 import { test, expect } from '@playwright/test'
 
-test('oas-splitter + sidebar：拖拽分割条 sidebar 宽度实时跟随（不被窄面板遮住）', async ({
-  page,
-}) => {
+test('oas-splitter + sidebar：拖拽分割条 sidebar 宽度实时跟随（不被窄面板遮住）', async ({ page }) => {
   await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
   // 等 splitter 与其内部 sidebar 升级
   await page.waitForFunction(
@@ -27,20 +25,14 @@ test('oas-splitter + sidebar：拖拽分割条 sidebar 宽度实时跟随（不�
     const cy = rect.y + rect.height / 2
     const w0 = Math.round(sb.getBoundingClientRect().width)
     const inlineVar0 = sb.style.getPropertyValue('--oas-sidebar-width')
-    handle.dispatchEvent(
-      new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, button: 0 }),
-    )
+    handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, button: 0 }))
     const widths: number[] = []
     for (let i = 1; i <= 4; i++) {
-      document.dispatchEvent(
-        new PointerEvent('pointermove', { bubbles: true, clientX: cx + i * 30, clientY: cy }),
-      )
+      document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx + i * 30, clientY: cy }))
       await new Promise((res) => setTimeout(res, 60))
       widths.push(Math.round(sb.getBoundingClientRect().width))
     }
-    document.dispatchEvent(
-      new PointerEvent('pointerup', { bubbles: true, clientX: cx + 120, clientY: cy }),
-    )
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: cx + 120, clientY: cy }))
     return { w0, widths, inlineVar0, percentAfter: sp.getAttribute('percent') }
   })
   // width="100%" 属性存活（update 不清除），sidebar 填满左面板

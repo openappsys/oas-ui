@@ -258,9 +258,7 @@ describe('OASCountdown', () => {
     await new Promise((r) => setTimeout(r, 0))
     const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="prefix"]')!
     expect(slot.assignedNodes()).toContain(p)
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="prefix"] [data-fallback]')!.hidden).toBe(
-      true,
-    )
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="prefix"] [data-fallback]')!.hidden).toBe(true)
   })
 
   it('水合：SSR 快照含标题文本时恢复 title 缓存', () => {

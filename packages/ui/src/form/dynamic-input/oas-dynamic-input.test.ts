@@ -30,9 +30,7 @@ function removeBtn(el: OASDynamicInput, idx: number): HTMLButtonElement {
 
 function typeRow(el: OASDynamicInput, idx: number, value: string): void {
   const inner = rowInput(el, idx)
-  inner.dispatchEvent(
-    new CustomEvent('oas-input', { detail: { value }, bubbles: true, composed: true }),
-  )
+  inner.dispatchEvent(new CustomEvent('oas-input', { detail: { value }, bubbles: true, composed: true }))
 }
 
 describe('OASDynamicInput', () => {
@@ -251,9 +249,7 @@ describe('OASDynamicInput template[slot=row] 行内容自定义', () => {
     el.appendChild(tpl)
     await Promise.resolve()
     const inner = rows(el)[0]!.querySelector('oas-input')!
-    inner.dispatchEvent(
-      new CustomEvent('oas-input', { detail: { value: 'changed' }, bubbles: true, composed: true }),
-    )
+    inner.dispatchEvent(new CustomEvent('oas-input', { detail: { value: 'changed' }, bubbles: true, composed: true }))
     expect(el.modelValue).toEqual(['changed'])
   })
 

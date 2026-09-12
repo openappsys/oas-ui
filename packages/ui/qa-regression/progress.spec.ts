@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('progress value 别名渲染：percent 缺失时写 value 生效（宽度/ARIA/文本）', async ({
-  page,
-}) => {
+test('progress value 别名渲染：percent 缺失时写 value 生效（宽度/ARIA/文本）', async ({ page }) => {
   // 曾现 bug：宿主直觉写 value 静默无效（组件只认 percent）。修复=value 作为 percent 的
   // 别名纳入 observedAttributes，percent 存在时优先，否则读 value。
   await page.goto('/components/progress.html', { waitUntil: 'domcontentloaded' })
@@ -30,9 +28,7 @@ test('progress value 别名渲染：percent 缺失时写 value 生效（宽度/A
   expect(r.text, '百分比文本同步').toContain('60%')
 })
 
-test('progress 同设 value + percent 时 percent 优先；移除 percent 后回退 value', async ({
-  page,
-}) => {
+test('progress 同设 value + percent 时 percent 优先；移除 percent 后回退 value', async ({ page }) => {
   await page.goto('/components/progress.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-progress')
   const r = await page.evaluate(() => {

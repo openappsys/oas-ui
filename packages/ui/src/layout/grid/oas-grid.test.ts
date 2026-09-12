@@ -175,25 +175,17 @@ describe('OASGrid', () => {
   // ===== 布局批 2：columns 断点简写 / min-child-width 自适应宫格 =====
 
   function breakpointCss(grid: OASGrid): string {
-    return grid.shadowRoot!.querySelector<HTMLStyleElement>(
-      'style[data-oas-grid-breakpoints]',
-    )!.textContent
+    return grid.shadowRoot!.querySelector<HTMLStyleElement>('style[data-oas-grid-breakpoints]')!.textContent
   }
 
   it('columns 断点简写：宿主 var() 兜底基础值 + shadow @media 规则注入（sm/md 升序）', () => {
     const grid = new OASGrid()
     grid.setAttribute('columns', '3 md:2 sm:1')
     document.body.appendChild(grid)
-    expect(grid.style.gridTemplateColumns).toBe(
-      'var(--oas-grid-columns, repeat(3, 1fr))',
-    )
+    expect(grid.style.gridTemplateColumns).toBe('var(--oas-grid-columns, repeat(3, 1fr))')
     const css = breakpointCss(grid)
-    expect(css).toContain(
-      '@media (min-width: 640px) { :host { --oas-grid-columns: repeat(1, 1fr) } }',
-    )
-    expect(css).toContain(
-      '@media (min-width: 768px) { :host { --oas-grid-columns: repeat(2, 1fr) } }',
-    )
+    expect(css).toContain('@media (min-width: 640px) { :host { --oas-grid-columns: repeat(1, 1fr) } }')
+    expect(css).toContain('@media (min-width: 768px) { :host { --oas-grid-columns: repeat(2, 1fr) } }')
   })
 
   it('columns 纯单值零回归：不包 var()、不生成 @media 规则', () => {
@@ -233,9 +225,7 @@ describe('OASGrid', () => {
     document.body.appendChild(grid)
     const css = breakpointCss(grid)
     expect(css).not.toContain('foo')
-    expect(css).toContain(
-      '@media (min-width: 768px) { :host { --oas-grid-columns: repeat(2, 1fr) } }',
-    )
+    expect(css).toContain('@media (min-width: 768px) { :host { --oas-grid-columns: repeat(2, 1fr) } }')
     expect(warn).toHaveBeenCalledTimes(1)
     warn.mockRestore()
     grid.remove()
@@ -245,18 +235,14 @@ describe('OASGrid', () => {
     const grid = new OASGrid()
     grid.setAttribute('min-child-width', '200px')
     document.body.appendChild(grid)
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fit, minmax(200px, 1fr))',
-    )
+    expect(grid.style.gridTemplateColumns).toBe('repeat(auto-fit, minmax(200px, 1fr))')
   })
 
   it('min-child-width 纯数字补 px', () => {
     const grid = new OASGrid()
     grid.setAttribute('min-child-width', '180')
     document.body.appendChild(grid)
-    expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fit, minmax(180px, 1fr))',
-    )
+    expect(grid.style.gridTemplateColumns).toBe('repeat(auto-fit, minmax(180px, 1fr))')
   })
 
   it('columns 与 min-child-width 并存：columns 优先（忽略 min-child-width）', () => {

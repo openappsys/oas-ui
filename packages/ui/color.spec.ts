@@ -41,9 +41,7 @@ test('tag color 自定义色值：缺省浅底/描边/实心/浅底都按色值�
   expect(r.filled.bg, 'filled 浅底（12% tint）').toContain('0.12')
 })
 
-test('tag 预设色：color 预设名解析到 --oas-preset-* token（filled/solid 都生效）', async ({
-  page,
-}) => {
+test('tag 预设色：color 预设名解析到 --oas-preset-* token（filled/solid 都生效）', async ({ page }) => {
   await page.goto('/components/tag.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tag[color="magenta"]')
   const r = await page.evaluate(() => {

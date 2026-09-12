@@ -301,9 +301,7 @@ function onDocumentKey(e: KeyboardEvent): void {
 /** slot 是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案 / 隐藏内置区的判空依据 */
 function hasSlotContent(slot: HTMLSlotElement | null): boolean {
   if (!slot) return false
-  return slot
-    .assignedNodes()
-    .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+  return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
 }
 
 export class OASPopconfirm extends OASElement {
@@ -601,11 +599,7 @@ export class OASPopconfirm extends OASElement {
 
   /** 指针/焦点移到的目标是否仍在「宿主 + 面板」区域内（跨 shadow 时 relatedTarget 已 retarget） */
   private hoverTargetInside(rel: EventTarget | null): boolean {
-    return (
-      !!rel &&
-      rel instanceof Node &&
-      (this.contains(rel) || this.shadow.contains(rel) || rel === this)
-    )
+    return !!rel && rel instanceof Node && (this.contains(rel) || this.shadow.contains(rel) || rel === this)
   }
 
   private onFocusIn = (): void => {
@@ -670,15 +664,9 @@ export class OASPopconfirm extends OASElement {
     const viewport = { width: window.innerWidth, height: window.innerHeight }
     const panelRect = this.popoverEl.getBoundingClientRect()
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
-    const r = computePosition(
-      anchorRect,
-      panelRect,
-      this.placementAttr() as Placement,
-      viewport,
-      GAP,
-      autoAdjust,
-      { collisionPadding: COLLISION_PAD },
-    )
+    const r = computePosition(anchorRect, panelRect, this.placementAttr() as Placement, viewport, GAP, autoAdjust, {
+      collisionPadding: COLLISION_PAD,
+    })
     this.popoverEl.style.top = `${r.top}px`
     this.popoverEl.style.left = `${r.left}px`
     this.popoverEl.setAttribute('data-placement', r.placement)
@@ -696,12 +684,9 @@ export class OASPopconfirm extends OASElement {
           ? 'left'
           : 'right'
     const align = placement.endsWith('-start') ? 'start' : placement.endsWith('-end') ? 'end' : ''
-    const cross = (s: string, e: string): string =>
-      align === 'start' ? s : align === 'end' ? e : 'center'
-    const originX =
-      base === 'top' || base === 'bottom' ? cross('left', 'right') : base === 'left' ? 'right' : 'left'
-    const originY =
-      base === 'left' || base === 'right' ? cross('top', 'bottom') : base === 'top' ? 'bottom' : 'top'
+    const cross = (s: string, e: string): string => (align === 'start' ? s : align === 'end' ? e : 'center')
+    const originX = base === 'top' || base === 'bottom' ? cross('left', 'right') : base === 'left' ? 'right' : 'left'
+    const originY = base === 'left' || base === 'right' ? cross('top', 'bottom') : base === 'top' ? 'bottom' : 'top'
     this.popoverEl?.style.setProperty('--oas-origin-x', originX)
     this.popoverEl?.style.setProperty('--oas-origin-y', originY)
   }
@@ -723,17 +708,11 @@ export class OASPopconfirm extends OASElement {
     const clampV = (v: number, max: number): number => Math.max(ARROW_PAD, Math.min(v, max))
     if (placement.startsWith('top') || placement.startsWith('bottom')) {
       const center = anchorRect.left + anchorRect.width / 2
-      const x = clampV(
-        center - panelRect.left - ARROW_SIZE / 2,
-        panelRect.width - ARROW_PAD - ARROW_SIZE,
-      )
+      const x = clampV(center - panelRect.left - ARROW_SIZE / 2, panelRect.width - ARROW_PAD - ARROW_SIZE)
       arrow.style.setProperty('--arrow-x', `${x}px`)
     } else {
       const center = anchorRect.top + anchorRect.height / 2
-      const y = clampV(
-        center - panelRect.top - ARROW_SIZE / 2,
-        panelRect.height - ARROW_PAD - ARROW_SIZE,
-      )
+      const y = clampV(center - panelRect.top - ARROW_SIZE / 2, panelRect.height - ARROW_PAD - ARROW_SIZE)
       arrow.style.setProperty('--arrow-y', `${y}px`)
     }
   }

@@ -541,9 +541,7 @@ export class OASSpin extends OASElement {
     this.setAttribute('aria-busy', String(spinning))
     const wrap = this.shadow.querySelector('[part="wrap"]')
     if (wrap) {
-      const hasContent = (
-        this.shadow.querySelector('slot') as HTMLSlotElement | null
-      )?.assignedNodes().length
+      const hasContent = (this.shadow.querySelector('slot') as HTMLSlotElement | null)?.assignedNodes().length
         ? true
         : false
       wrap.classList.toggle('empty', !hasContent)
@@ -554,9 +552,9 @@ export class OASSpin extends OASElement {
     this.syncTip()
     const indicator = this.shadow.querySelector<HTMLElement>('[part="indicator"]')
     if (indicator) {
-      const hasIcon = (
-        this.shadow.querySelector('slot[name="icon"]') as HTMLSlotElement | null
-      )?.assignedNodes({ flatten: true }).length
+      const hasIcon = (this.shadow.querySelector('slot[name="icon"]') as HTMLSlotElement | null)?.assignedNodes({
+        flatten: true,
+      }).length
         ? true
         : false
       indicator.classList.toggle('custom-icon', hasIcon)
@@ -571,9 +569,7 @@ export class OASSpin extends OASElement {
       this.syncPercent(indicator, hasIcon)
     }
     this.syncSrLabel()
-    this.shadow
-      .querySelector('[part="custom"]')
-      ?.toggleAttribute('data-rotate', this.hasAttr('rotate'))
+    this.shadow.querySelector('[part="custom"]')?.toggleAttribute('data-rotate', this.hasAttr('rotate'))
   }
 
   /**
@@ -636,10 +632,7 @@ export class OASSpin extends OASElement {
         const bar = this.shadow.querySelector<SVGCircleElement>('[part="progress-bar"]')
         if (indicator) indicator.setAttribute('aria-valuenow', String(Math.round(this.autoPercent)))
         if (bar) {
-          bar.setAttribute(
-            'stroke-dashoffset',
-            String(SPIN_CIRCUMFERENCE * (1 - this.autoPercent / 100)),
-          )
+          bar.setAttribute('stroke-dashoffset', String(SPIN_CIRCUMFERENCE * (1 - this.autoPercent / 100)))
         }
       }, AUTO_TICK_MS)
     } else if (!shouldRun && this.autoTimer) {
@@ -663,7 +656,12 @@ export class OASSpin extends OASElement {
       return
     }
     const tipSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="tip"]')
-    const slotText = tipSlot?.assignedNodes({ flatten: true }).map((n) => n.textContent ?? '').join('').trim() ?? ''
+    const slotText =
+      tipSlot
+        ?.assignedNodes({ flatten: true })
+        .map((n) => n.textContent ?? '')
+        .join('')
+        .trim() ?? ''
     label.textContent = slotText !== '' ? slotText : this.t('loading.loading')
   }
 
@@ -672,9 +670,9 @@ export class OASSpin extends OASElement {
     const tipEl = this.shadow.querySelector('[part="tip"]')
     const textEl = this.shadow.querySelector<HTMLElement>('[part="tip-text"]')
     if (!tipEl || !textEl) return
-    const hasSlotTip = (
-      this.shadow.querySelector('slot[name="tip"]') as HTMLSlotElement | null
-    )?.assignedNodes({ flatten: true }).length
+    const hasSlotTip = (this.shadow.querySelector('slot[name="tip"]') as HTMLSlotElement | null)?.assignedNodes({
+      flatten: true,
+    }).length
       ? true
       : false
     const attrTip = this.getAttr('tip', '')
@@ -685,9 +683,6 @@ export class OASSpin extends OASElement {
     textEl.hidden = hasSlotTip || attrTip === ''
     const body = this.shadow.querySelector('[part="body"]')
     const pos = this.getAttr('tip-position', 'below')
-    body?.setAttribute(
-      'data-tip-position',
-      pos === 'above' || pos === 'before' || pos === 'after' ? pos : 'below',
-    )
+    body?.setAttribute('data-tip-position', pos === 'above' || pos === 'before' || pos === 'after' ? pos : 'below')
   }
 }

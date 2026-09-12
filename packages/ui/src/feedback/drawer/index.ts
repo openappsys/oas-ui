@@ -6,10 +6,4 @@ if (!customElements.get('oas-drawer')) {
   customElements.define('oas-drawer', OASDrawer)
 }
 
-export {
-  OASDrawer,
-  drawer,
-  destroyAll,
-  type DrawerHandle,
-  type DrawerOptions,
-}
+export { OASDrawer, drawer, destroyAll, type DrawerHandle, type DrawerOptions }

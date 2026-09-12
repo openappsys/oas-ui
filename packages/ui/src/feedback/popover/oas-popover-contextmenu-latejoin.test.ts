@@ -10,10 +10,7 @@ import { OASPopover } from './core/index.js'
 // 长按为唯一纯能力 DOM 行为（core 不绑 touch 监听）：未注入时长按不打开、注入后长按打开。
 
 /** 构造带 touches 的 touch 事件（happy-dom 不完整支持 Touch，挂数组兜底） */
-function touchEvent(
-  type: string,
-  touches: Array<{ clientX: number; clientY: number }>,
-): Event {
+function touchEvent(type: string, touches: Array<{ clientX: number; clientY: number }>): Event {
   const e = new Event(type, { bubbles: true, cancelable: true })
   Object.defineProperty(e, 'touches', { value: touches })
   return e
@@ -72,9 +69,7 @@ describe('OASPopover contextmenu 能力晚加入（late-join）', () => {
       el.remove()
       document.body.appendChild(el)
     }
-    el.querySelector('button')!.dispatchEvent(
-      touchEvent('touchstart', [{ clientX: 20, clientY: 20 }]),
-    )
+    el.querySelector('button')!.dispatchEvent(touchEvent('touchstart', [{ clientX: 20, clientY: 20 }]))
     await sleep(60)
     expect(el.hasAttribute('open')).toBe(true)
     el.remove()

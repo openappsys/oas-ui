@@ -209,7 +209,18 @@ describe('OASTimePicker', () => {
     expect(cols.length).toBe(4)
     const hourOpts = optionsIn(cols[0]!)
     expect(hourOpts.map((o) => o.textContent)).toEqual([
-      '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12',
+      '01',
+      '02',
+      '03',
+      '04',
+      '05',
+      '06',
+      '07',
+      '08',
+      '09',
+      '10',
+      '11',
+      '12',
     ])
     expect(selectedOption(el, 0)!.textContent).toBe('03')
     const ampm = optionsIn(cols[3]!)
@@ -382,9 +393,7 @@ describe('OASTimePicker', () => {
     const el = mount({ value: '09:05:30', open: '' })
     expect(expanded(el)).toBe('true')
     const events: boolean[] = []
-    el.addEventListener('oas-open-change', (e: Event) =>
-      events.push((e as CustomEvent).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
     trigger(el).click()
     expect(events).toEqual([false])
     expect(expanded(el)).toBe('true')
@@ -395,9 +404,7 @@ describe('OASTimePicker', () => {
   it('非受控：开合均派发 oas-open-change', () => {
     const el = mount({ value: '09:05:30' })
     const events: boolean[] = []
-    el.addEventListener('oas-open-change', (e: Event) =>
-      events.push((e as CustomEvent).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e: Event) => events.push((e as CustomEvent).detail.open))
     trigger(el).click()
     keydown(el, 'Escape')
     expect(events).toEqual([true, false])
@@ -506,8 +513,7 @@ describe('浮层定位（fixed + computePosition 12 向）', () => {
     const el = mount({ value: '09:05:30', placement: 'top-end' })
     trigger(el).getBoundingClientRect = () =>
       ({ left: 100, top: 400, width: 200, height: 32, right: 300, bottom: 432 }) as DOMRect
-    dropdown(el).getBoundingClientRect = () =>
-      ({ left: 0, top: 0, width: 200, height: 220 }) as DOMRect
+    dropdown(el).getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 220 }) as DOMRect
     open(el)
     expect(lastCall()[2]).toBe('top-end')
     expect(dropdown(el).getAttribute('data-placement')).toBe('top-end')

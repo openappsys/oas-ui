@@ -14,7 +14,11 @@ test('卡片模式：type=card 属性存活，当前卡居中、邻卡两侧露�
     const er = el.getBoundingClientRect()
     const rect = (i: number) => {
       const r = el.children[i]!.getBoundingClientRect()
-      return { left: r.left - er.left, width: r.width, opacity: getComputedStyle(el.children[i]!).opacity }
+      return {
+        left: r.left - er.left,
+        width: r.width,
+        opacity: getComputedStyle(el.children[i]!).opacity,
+      }
     }
     const cur = rect(idx)
     const next = rect((idx + 1) % n)
@@ -27,8 +31,7 @@ test('卡片模式：type=card 属性存活，当前卡居中、邻卡两侧露�
       nextVisible: next.width > 0 && next.left < er.width,
       prevVisible: prev.width > 0 && prev.left + prev.width > 0,
       neighborOpacity: next.opacity,
-      trackTransform:
-        el.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!.style.transform,
+      trackTransform: el.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!.style.transform,
     }
   })
   // 当前卡占主体（默认 60%）且水平居中
@@ -63,9 +66,7 @@ test('显式暂停按钮：点击切换 aria-pressed 与图标，autoplay 停走
   await up(page, 'oas-carousel[pause-button]')
   const btn = page.locator('oas-carousel[pause-button] [part="pause-button"]')
   await expect(btn).toBeVisible()
-  const before = await page.evaluate(
-    () => document.querySelector('oas-carousel[pause-button]')!.getAttribute('index')!,
-  )
+  const before = await page.evaluate(() => document.querySelector('oas-carousel[pause-button]')!.getAttribute('index')!)
   await btn.click()
   await expect(btn).toHaveAttribute('aria-pressed', 'true')
   // 显式暂停后超过两个间隔（2 * 2000ms）仍停走
@@ -76,9 +77,7 @@ test('显式暂停按钮：点击切换 aria-pressed 与图标，autoplay 停走
   expect(pausedIndex).toBe(before)
   // 图标随暂停态切换（pause 图标隐藏、play 图标显示）
   const icon = await page.evaluate(() => {
-    const b = document
-      .querySelector('oas-carousel[pause-button]')!
-      .shadowRoot!.querySelector('[part="pause-button"]')!
+    const b = document.querySelector('oas-carousel[pause-button]')!.shadowRoot!.querySelector('[part="pause-button"]')!
     return {
       pause: getComputedStyle(b.querySelector('.icon-pause')!).display,
       play: getComputedStyle(b.querySelector('.icon-play')!).display,

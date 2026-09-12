@@ -10,9 +10,7 @@ test('grid 单值 gap 真实生效：简写不被后续长hand清空（真实浏
   await up(page, 'oas-grid')
   const r = await page.evaluate(() => {
     const single = document.querySelector('oas-grid[gap="12px"]')!
-    const twoVal = [...document.querySelectorAll('oas-grid')].find(
-      (g) => (g.getAttribute('gap') || '').includes(' '),
-    )!
+    const twoVal = [...document.querySelectorAll('oas-grid')].find((g) => (g.getAttribute('gap') || '').includes(' '))!
     const cs1 = getComputedStyle(single)
     const cs2 = getComputedStyle(twoVal)
     return {

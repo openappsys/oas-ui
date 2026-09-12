@@ -30,13 +30,7 @@ for (const page of PAGES) {
 
     const badWarns = warns.filter((w) => !WARN_ALLOW.some((re) => re.test(w)))
     const badErrs = errs.filter((e) => !ERR_ALLOW.some((re) => re.test(e)))
-    expect(
-      badErrs,
-      `${page} console error:\n${[...new Set(badErrs)].slice(0, 5).join('\n')}`,
-    ).toEqual([])
-    expect(
-      badWarns,
-      `${page} console warning:\n${[...new Set(badWarns)].slice(0, 5).join('\n')}`,
-    ).toEqual([])
+    expect(badErrs, `${page} console error:\n${[...new Set(badErrs)].slice(0, 5).join('\n')}`).toEqual([])
+    expect(badWarns, `${page} console warning:\n${[...new Set(badWarns)].slice(0, 5).join('\n')}`).toEqual([])
   })
 }

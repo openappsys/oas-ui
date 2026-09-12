@@ -40,9 +40,7 @@ describe('OASProgress', () => {
 
   it('status="success" 整条变绿（data-status 同步）', () => {
     const el = mount({ percent: '80', status: 'success' })
-    expect(el.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('data-status')).toBe(
-      'success',
-    )
+    expect(el.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('data-status')).toBe('success')
   })
 
   // ---- circle 圆环形态 ----
@@ -62,9 +60,7 @@ describe('OASProgress', () => {
   it('默认 type 为 line（不破坏现有形态）', () => {
     const el = mount({ percent: '30' })
     expect(el.shadowRoot!.querySelector<HTMLElement>('.track')!.hasAttribute('hidden')).toBe(false)
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="circle"]')!.hasAttribute('hidden'),
-    ).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="circle"]')!.hasAttribute('hidden')).toBe(true)
   })
 
   it('percent 驱动 stroke-dashoffset（默认 size=48 / stroke-width=6 → r=21）', () => {
@@ -77,24 +73,16 @@ describe('OASProgress', () => {
 
   it('percent 夹取 0–100', () => {
     const high = mount({ type: 'circle', percent: '150' })
-    expect(high.shadowRoot!.querySelector('[part="circle"]')!.getAttribute('aria-valuenow')).toBe(
-      '100',
-    )
+    expect(high.shadowRoot!.querySelector('[part="circle"]')!.getAttribute('aria-valuenow')).toBe('100')
     const low = mount({ type: 'circle', percent: '-10' })
-    expect(low.shadowRoot!.querySelector('[part="circle"]')!.getAttribute('aria-valuenow')).toBe(
-      '0',
-    )
+    expect(low.shadowRoot!.querySelector('[part="circle"]')!.getAttribute('aria-valuenow')).toBe('0')
   })
 
   it('status="success|error" 整环变色（data-status 同步）', () => {
     const ok = mount({ type: 'circle', percent: '80', status: 'success' })
-    expect(ok.shadowRoot!.querySelector('.circle .bar-circle')!.getAttribute('data-status')).toBe(
-      'success',
-    )
+    expect(ok.shadowRoot!.querySelector('.circle .bar-circle')!.getAttribute('data-status')).toBe('success')
     const err = mount({ type: 'circle', percent: '80', status: 'error' })
-    expect(err.shadowRoot!.querySelector('.circle .bar-circle')!.getAttribute('data-status')).toBe(
-      'error',
-    )
+    expect(err.shadowRoot!.querySelector('.circle .bar-circle')!.getAttribute('data-status')).toBe('error')
   })
 
   it('size / stroke-width 应用到 svg 与圆环几何', () => {
@@ -137,9 +125,7 @@ describe('OASProgress', () => {
 
   it('max 下 percent 夹取 0–max', () => {
     const high = mount({ percent: '300', max: '200' })
-    expect(high.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('aria-valuenow')).toBe(
-      '200',
-    )
+    expect(high.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('aria-valuenow')).toBe('200')
     expect(high.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!.style.width).toBe('100%')
     const low = mount({ percent: '-10', max: '200' })
     expect(low.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('aria-valuenow')).toBe('0')
@@ -154,13 +140,9 @@ describe('OASProgress', () => {
 
   it('label 属性写入 aria-label（line 与 circle 均同步）', () => {
     const el = mount({ percent: '40', label: '文件上传进度' })
-    expect(el.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('aria-label')).toBe(
-      '文件上传进度',
-    )
+    expect(el.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('aria-label')).toBe('文件上传进度')
     el.setAttribute('type', 'circle')
-    expect(el.shadowRoot!.querySelector('[part="circle"]')!.getAttribute('aria-label')).toBe(
-      '文件上传进度',
-    )
+    expect(el.shadowRoot!.querySelector('[part="circle"]')!.getAttribute('aria-label')).toBe('文件上传进度')
   })
 
   it('移除 label 后 aria-label 同步摘除', () => {
@@ -173,13 +155,9 @@ describe('OASProgress', () => {
 
   it('status="warning" 橙色（data-status 同步，line 与 circle）', () => {
     const el = mount({ percent: '66', status: 'warning' })
-    expect(el.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('data-status')).toBe(
-      'warning',
-    )
+    expect(el.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('data-status')).toBe('warning')
     el.setAttribute('type', 'circle')
-    expect(el.shadowRoot!.querySelector('.circle .bar-circle')!.getAttribute('data-status')).toBe(
-      'warning',
-    )
+    expect(el.shadowRoot!.querySelector('.circle .bar-circle')!.getAttribute('data-status')).toBe('warning')
   })
 
   // ---- color / track-color 自定义色 ----
@@ -188,9 +166,7 @@ describe('OASProgress', () => {
     const el = mount({ percent: '40', color: '#7c3aed' })
     expect(el.style.getPropertyValue('--oas-progress-color')).toBe('#7c3aed')
     el.setAttribute('color', 'linear-gradient(90deg, #7c3aed, #22d3ee)')
-    expect(el.style.getPropertyValue('--oas-progress-color')).toBe(
-      'linear-gradient(90deg, #7c3aed, #22d3ee)',
-    )
+    expect(el.style.getPropertyValue('--oas-progress-color')).toBe('linear-gradient(90deg, #7c3aed, #22d3ee)')
   })
 
   it('color 预设名解析为 --oas-preset-* 变量', () => {
@@ -381,18 +357,14 @@ describe('OASProgress', () => {
     })
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="steps"]')!.hidden).toBe(true)
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="buffer"]')!.hidden).toBe(true)
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!.classList.contains('striped')).toBe(
-      false,
-    )
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!.classList.contains('striped')).toBe(false)
   })
 
   it('indeterminate 内置百分比隐藏；slot 自定义内容照常显示', () => {
     const el = mount({ indeterminate: '' })
     expect(el.shadowRoot!.querySelector<HTMLElement>('.text-value')!.hidden).toBe(true)
     el.innerHTML = '<span>加载中…</span>'
-    el.shadowRoot!.querySelector<HTMLSlotElement>('[part="text"] slot')!.dispatchEvent(
-      new Event('slotchange'),
-    )
+    el.shadowRoot!.querySelector<HTMLSlotElement>('[part="text"] slot')!.dispatchEvent(new Event('slotchange'))
     expect(el.shadowRoot!.querySelector<HTMLElement>('.text-value')!.hidden).toBe(true)
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!.hidden).toBe(false)
   })
@@ -436,13 +408,9 @@ describe('OASProgress', () => {
     const bar = el.shadowRoot!.querySelector('.circle .bar-circle')!
     expect(bar.getAttribute('stroke-linecap')).toBe('round')
     el.setAttribute('stroke-linecap', 'butt')
-    expect(el.shadowRoot!.querySelector('.circle .bar-circle')!.getAttribute('stroke-linecap')).toBe(
-      'butt',
-    )
+    expect(el.shadowRoot!.querySelector('.circle .bar-circle')!.getAttribute('stroke-linecap')).toBe('butt')
     el.setAttribute('stroke-linecap', 'bogus')
-    expect(el.shadowRoot!.querySelector('.circle .bar-circle')!.getAttribute('stroke-linecap')).toBe(
-      'round',
-    )
+    expect(el.shadowRoot!.querySelector('.circle .bar-circle')!.getAttribute('stroke-linecap')).toBe('round')
   })
 
   // ---- circle 状态图标替代文本 ----
@@ -473,9 +441,7 @@ describe('OASProgress', () => {
   it('slot 自定义内容优先于状态图标', () => {
     const el = mount({ type: 'circle', percent: '100' })
     el.innerHTML = '<b>完成</b>'
-    el.shadowRoot!.querySelector<HTMLSlotElement>('.circle-text slot')?.dispatchEvent(
-      new Event('slotchange'),
-    )
+    el.shadowRoot!.querySelector<HTMLSlotElement>('.circle-text slot')?.dispatchEvent(new Event('slotchange'))
     expect(el.shadowRoot!.querySelector('.circle-icon svg')).toBeNull()
   })
 
@@ -496,9 +462,7 @@ describe('OASProgress', () => {
     const bar = el.shadowRoot!.querySelector('.circle .bar-circle')!
     const c = 2 * Math.PI * 21
     expect(bar.getAttribute('stroke-dashoffset')).toBe(String(c * 0.4))
-    expect(el.shadowRoot!.querySelector('[part="circle"]')!.getAttribute('aria-valuenow')).toBe(
-      '60',
-    )
+    expect(el.shadowRoot!.querySelector('[part="circle"]')!.getAttribute('aria-valuenow')).toBe('60')
   })
 
   it('value：与 percent 同设时 percent 优先', () => {

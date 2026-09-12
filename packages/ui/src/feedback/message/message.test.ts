@@ -289,9 +289,7 @@ describe('message 事件与关闭来源', () => {
     document.body.addEventListener('oas-close', listener)
     message.info('可点击', { onClick, duration: 0 })
     await Promise.resolve()
-    const box = document.body
-      .querySelector('oas-message')!
-      .shadowRoot!.querySelector<HTMLElement>('[part="box"]')!
+    const box = document.body.querySelector('oas-message')!.shadowRoot!.querySelector<HTMLElement>('[part="box"]')!
     box.click()
     expect(onClick).toHaveBeenCalledTimes(1)
     expect(listener.mock.calls[0]![0].detail.source).toBe('click')
@@ -340,18 +338,14 @@ describe('P1 type 图标与 icon 自定义', () => {
     await Promise.resolve()
     const el = document.body.querySelector('oas-message')!
     expect(el.getAttribute('show-icon')).toBe('false')
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!.style.display,
-    ).toBe('none')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!.style.display).toBe('none')
   })
 
   it('默认显示图标（show-icon 未指定时 inline 显示）', async () => {
     message.info('默认图标')
     await Promise.resolve()
     const el = document.body.querySelector('oas-message')!
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!.style.display,
-    ).not.toBe('none')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!.style.display).not.toBe('none')
   })
 })
 
@@ -375,12 +369,8 @@ describe('P2 loading 类型', () => {
     expect(el.getAttribute('type')).toBe('loading')
     expect(el.getAttribute('duration')).toBe('0')
     expect(vi.getTimerCount()).toBe(0)
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display,
-    ).toBe('none')
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="spinner"]')!.style.display,
-    ).not.toBe('none')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display).toBe('none')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="spinner"]')!.style.display).not.toBe('none')
     vi.advanceTimersByTime(60000)
     await Promise.resolve()
     expect(document.body.querySelector('oas-message')).not.toBeNull()
@@ -395,9 +385,7 @@ describe('P2 loading 类型', () => {
     expect(el.getAttribute('type')).toBe('success')
     expect(el.shadowRoot!.querySelector('[part="text"]')!.textContent).toBe('上传成功')
     // 成功后出现关闭按钮
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display,
-    ).not.toBe('none')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display).not.toBe('none')
     vi.advanceTimersByTime(2000)
     await Promise.resolve()
     expect(document.body.querySelectorAll('oas-message').length).toBe(0)
@@ -421,9 +409,7 @@ describe('P3 closable 开关', () => {
     message.info('常驻', { duration: 0 })
     await Promise.resolve()
     const el = document.body.querySelector('oas-message')!
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display,
-    ).not.toBe('none')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display).not.toBe('none')
   })
 
   it('closable=false 隐藏关闭按钮', async () => {
@@ -431,9 +417,7 @@ describe('P3 closable 开关', () => {
     await Promise.resolve()
     const el = document.body.querySelector('oas-message')!
     expect(el.getAttribute('closable')).toBe('false')
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display,
-    ).toBe('none')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display).toBe('none')
   })
 })
 
@@ -568,9 +552,7 @@ describe('P4 hover/focus/页面隐藏暂停与编程式 pause/resume', () => {
   it('样式含 paused 时进度条动画暂停规则', async () => {
     message.info('进度暂停', { duration: 3000, showProgress: true })
     await Promise.resolve()
-    const styleText = document.body
-      .querySelector('oas-message')!
-      .shadowRoot!.querySelector('style')!.textContent!
+    const styleText = document.body.querySelector('oas-message')!.shadowRoot!.querySelector('style')!.textContent!
     expect(styleText).toContain(':host([paused]) .progress-fill')
   })
 })
@@ -602,9 +584,7 @@ describe('P5 placement 与 offset', () => {
     const stack = document.body.querySelector('oas-message')!.parentElement!
     expect(stack.style.bottom).toBe('16px')
     expect(stack.style.flexDirection).toBe('column-reverse')
-    expect(document.body.querySelector('oas-message')!.getAttribute('placement')).toBe(
-      'bottom',
-    )
+    expect(document.body.querySelector('oas-message')!.getAttribute('placement')).toBe('bottom')
   })
 
   it('offset 单数字应用到栈', async () => {
@@ -623,11 +603,7 @@ describe('P5 placement 与 offset', () => {
     message.info('上')
     message.info('下', { placement: 'bottom' })
     await Promise.resolve()
-    const stacks = new Set(
-      Array.from(document.body.querySelectorAll('oas-message')).map(
-        (m) => m.parentElement!,
-      ),
-    )
+    const stacks = new Set(Array.from(document.body.querySelectorAll('oas-message')).map((m) => m.parentElement!))
     expect(stacks.size).toBe(2)
   })
 })
@@ -708,9 +684,7 @@ describe('P7 富内容（string | Node）', () => {
     message.info('纯文本', { duration: 0 })
     await Promise.resolve()
     const el = document.body.querySelector('oas-message')!
-    expect(el.shadowRoot!.querySelector<HTMLElement>('.text-inner')!.textContent).toBe(
-      '纯文本',
-    )
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.text-inner')!.textContent).toBe('纯文本')
   })
 
   it('update 支持 Node 内容替换', async () => {
@@ -721,9 +695,7 @@ describe('P7 富内容（string | Node）', () => {
     message.update('k', { content: node })
     await Promise.resolve()
     const el = document.body.querySelector('oas-message')!
-    expect(el.shadowRoot!.querySelector<HTMLElement>('.text-inner')!.contains(node)).toBe(
-      true,
-    )
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.text-inner')!.contains(node)).toBe(true)
   })
 })
 
@@ -743,9 +715,7 @@ describe('P8 进出场动画', () => {
   it('样式含进出场 keyframes、时长 CSS 变量、prefers-reduced-motion 降级', async () => {
     message.info('动画')
     await Promise.resolve()
-    const styleText = document.body
-      .querySelector('oas-message')!
-      .shadowRoot!.querySelector('style')!.textContent!
+    const styleText = document.body.querySelector('oas-message')!.shadowRoot!.querySelector('style')!.textContent!
     expect(styleText).toContain('@keyframes oas-msg-in')
     expect(styleText).toContain('@keyframes oas-msg-out')
     expect(styleText).toContain('--oas-message-anim-in')
@@ -757,9 +727,7 @@ describe('P8 进出场动画', () => {
     await Promise.resolve()
     const el = document.body.querySelector<OASMessage>('oas-message')!
     el.close('auto')
-    expect(el.shadowRoot!.querySelector('.box')!.classList.contains('leaving')).toBe(
-      false,
-    )
+    expect(el.shadowRoot!.querySelector('.box')!.classList.contains('leaving')).toBe(false)
     expect(document.body.querySelectorAll('oas-message').length).toBe(0)
   })
 
@@ -873,26 +841,20 @@ describe('P12 倒计时进度条', () => {
     const el = document.body.querySelector('oas-message')!
     const progress = el.shadowRoot!.querySelector<HTMLElement>('[part="progress"]')!
     expect(progress.hidden).toBe(false)
-    expect(progress.querySelector<HTMLElement>('.progress-fill')!.style.animationDuration).toBe(
-      '4000ms',
-    )
+    expect(progress.querySelector<HTMLElement>('.progress-fill')!.style.animationDuration).toBe('4000ms')
   })
 
   it('未开 showProgress 或 duration=0 时隐藏', async () => {
     message.info('无进度', 3000)
     await Promise.resolve()
     expect(
-      document.body
-        .querySelector('oas-message')!
-        .shadowRoot!.querySelector<HTMLElement>('[part="progress"]')!.hidden,
+      document.body.querySelector('oas-message')!.shadowRoot!.querySelector<HTMLElement>('[part="progress"]')!.hidden,
     ).toBe(true)
     destroyAll()
     message.info('常驻进度', { duration: 0, showProgress: true })
     await Promise.resolve()
     expect(
-      document.body
-        .querySelector('oas-message')!
-        .shadowRoot!.querySelector<HTMLElement>('[part="progress"]')!.hidden,
+      document.body.querySelector('oas-message')!.shadowRoot!.querySelector<HTMLElement>('[part="progress"]')!.hidden,
     ).toBe(true)
   })
 
@@ -900,9 +862,7 @@ describe('P12 倒计时进度条', () => {
     message.loading('加载中')
     await Promise.resolve()
     expect(
-      document.body
-        .querySelector('oas-message')!
-        .shadowRoot!.querySelector<HTMLElement>('[part="progress"]')!.hidden,
+      document.body.querySelector('oas-message')!.shadowRoot!.querySelector<HTMLElement>('[part="progress"]')!.hidden,
     ).toBe(true)
   })
 })
@@ -927,12 +887,8 @@ describe('P13 定制杂项', () => {
       message.info('内容', { avatar, duration: 0 })
       await Promise.resolve()
       const el = document.body.querySelector('oas-message')!
-      expect(el.shadowRoot!.querySelector<HTMLElement>('.avatar')!.contains(avatar)).toBe(
-        true,
-      )
-      expect(
-        el.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden,
-      ).toBe(false)
+      expect(el.shadowRoot!.querySelector<HTMLElement>('.avatar')!.contains(avatar)).toBe(true)
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden).toBe(false)
     })
 
     it('声明式 slot="avatar" 渲染，未提供时 avatar 区隐藏', async () => {
@@ -941,15 +897,11 @@ describe('P13 定制杂项', () => {
       el.innerHTML = '<span slot="avatar">A</span>'
       document.body.appendChild(el)
       await Promise.resolve()
-      expect(
-        el.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden,
-      ).toBe(false)
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden).toBe(false)
       const el2 = document.createElement('oas-message')
       el2.setAttribute('duration', '0')
       document.body.appendChild(el2)
-      expect(el2.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden).toBe(
-        true,
-      )
+      expect(el2.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden).toBe(true)
     })
   })
 
@@ -957,9 +909,7 @@ describe('P13 定制杂项', () => {
     it('默认 spinner：CSS 圆环 + 旋转 keyframes', async () => {
       message.loading('加载')
       await Promise.resolve()
-      const styleText = document.body
-        .querySelector('oas-message')!
-        .shadowRoot!.querySelector('style')!.textContent!
+      const styleText = document.body.querySelector('oas-message')!.shadowRoot!.querySelector('style')!.textContent!
       expect(styleText).toContain('@keyframes oas-msg-spin')
     })
 
@@ -967,9 +917,7 @@ describe('P13 定制杂项', () => {
       message.loading('加载', { spinner: 'refresh' })
       await Promise.resolve()
       const el = document.body.querySelector('oas-message')!
-      expect(el.shadowRoot!.querySelector('.spinner-fallback')!.innerHTML).toContain(
-        '<svg',
-      )
+      expect(el.shadowRoot!.querySelector('.spinner-fallback')!.innerHTML).toContain('<svg')
     })
 
     it('spinner 传 Node：Node 注入 spinner 区', async () => {
@@ -978,9 +926,7 @@ describe('P13 定制杂项', () => {
       message.loading('加载', { spinner: node })
       await Promise.resolve()
       const el = document.body.querySelector('oas-message')!
-      expect(el.shadowRoot!.querySelector<HTMLElement>('.spinner-fallback')!.contains(node)).toBe(
-        true,
-      )
+      expect(el.shadowRoot!.querySelector<HTMLElement>('.spinner-fallback')!.contains(node)).toBe(true)
     })
   })
 
@@ -995,9 +941,7 @@ describe('P13 定制杂项', () => {
       expect(el.style.getPropertyValue('--oas-msg-type-color')).toBe('#7c3aed')
       const styleText = el.shadowRoot!.querySelector('style')!.textContent!
       expect(styleText).toContain('--oas-msg-type-color')
-      expect(
-        el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display,
-      ).not.toBe('none')
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display).not.toBe('none')
     })
 
     it('注册类型 closable:false 隐藏关闭按钮', async () => {
@@ -1005,9 +949,7 @@ describe('P13 定制杂项', () => {
       message.show('custom-fixed', '不可关', { duration: 0 })
       await Promise.resolve()
       const el = document.body.querySelector('oas-message')!
-      expect(
-        el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display,
-      ).toBe('none')
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display).toBe('none')
     })
 
     it('未注册类型回落 info（dev 告警）', async () => {
@@ -1052,9 +994,7 @@ describe('P13 定制杂项', () => {
       message.info('普通', { group: 'g', duration: 0 })
       await Promise.resolve()
       expect(
-        document.body
-          .querySelector('oas-message')!
-          .shadowRoot!.querySelector<HTMLElement>('[part="badge"]')!.hidden,
+        document.body.querySelector('oas-message')!.shadowRoot!.querySelector<HTMLElement>('[part="badge"]')!.hidden,
       ).toBe(true)
     })
   })
@@ -1077,9 +1017,7 @@ describe('P13 定制杂项', () => {
       message.info('无遮罩', { duration: 0 })
       await Promise.resolve()
       expect(
-        document.body
-          .querySelector('oas-message')!
-          .shadowRoot!.querySelector<HTMLElement>('[part="mask"]')!.hidden,
+        document.body.querySelector('oas-message')!.shadowRoot!.querySelector<HTMLElement>('[part="mask"]')!.hidden,
       ).toBe(true)
     })
   })
@@ -1179,9 +1117,7 @@ describe('P16 app 全局默认白名单', () => {
     const el = app.querySelector('oas-message')!
     expect(el.getAttribute('placement')).toBe('top')
     expect(el.hasAttribute('closable')).toBe(false)
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display,
-    ).not.toBe('none')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.style.display).not.toBe('none')
   })
 
   it('非白名单键不生效（group/key/onClose 运行时键）', async () => {

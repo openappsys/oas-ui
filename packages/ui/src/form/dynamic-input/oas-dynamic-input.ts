@@ -206,10 +206,8 @@ export class OASDynamicInput extends OASElement {
       this.handleRowInput(e)) as EventListener)
     this.rowsEl?.addEventListener('click', (e: MouseEvent) => this.handleClick(e))
     // 行内 oas-focus / oas-blur：封口重派发（detail 换行 index，内部事件不外泄）
-    this.rowsEl?.addEventListener('oas-focus', ((e: Event) =>
-      this.handleRowFocusBlur(e, 'focus')) as EventListener)
-    this.rowsEl?.addEventListener('oas-blur', ((e: Event) =>
-      this.handleRowFocusBlur(e, 'blur')) as EventListener)
+    this.rowsEl?.addEventListener('oas-focus', ((e: Event) => this.handleRowFocusBlur(e, 'focus')) as EventListener)
+    this.rowsEl?.addEventListener('oas-blur', ((e: Event) => this.handleRowFocusBlur(e, 'blur')) as EventListener)
     this.addBtn?.addEventListener('click', () => this.handleAdd())
 
     // row 模板增删 → 重建行内容（模板在 light DOM，行内容渲染时克隆）
@@ -269,9 +267,7 @@ export class OASDynamicInput extends OASElement {
       if (preset === 'pair') {
         this.values = this.values.map((v) => (typeof v === 'string' ? { key: v, value: '' } : v))
       } else {
-        this.values = this.values.map((v) =>
-          typeof v === 'string' ? v : v.key !== '' ? v.key : v.value,
-        )
+        this.values = this.values.map((v) => (typeof v === 'string' ? v : v.key !== '' ? v.key : v.value))
       }
       this.lastPreset = preset
       this.writeBack()
@@ -363,11 +359,7 @@ export class OASDynamicInput extends OASElement {
   }
 
   /** 单行内容同步：预设行写入值/占位符/禁用态；模板行更新数据绑定 */
-  private syncRowContent(
-    row: HTMLElement,
-    i: number,
-    opts: { size: string; status: string; frozen: boolean },
-  ): void {
+  private syncRowContent(row: HTMLElement, i: number, opts: { size: string; status: string; frozen: boolean }): void {
     const value = this.values[i] ?? ''
     const pair = typeof value === 'object' ? value : null
     const inputs = [...row.querySelectorAll('oas-input')]
@@ -378,8 +370,7 @@ export class OASDynamicInput extends OASElement {
       const single = row.querySelector('oas-input[part="row-input"]')
       if (pair && keyInput && valueInput) {
         if (keyInput.getAttribute('value') !== pair.key) keyInput.setAttribute('value', pair.key)
-        if (valueInput.getAttribute('value') !== pair.value)
-          valueInput.setAttribute('value', pair.value)
+        if (valueInput.getAttribute('value') !== pair.value) valueInput.setAttribute('value', pair.value)
         keyInput.setAttribute('placeholder', this.getAttr('key-placeholder', ''))
         valueInput.setAttribute('placeholder', this.getAttr('value-placeholder', ''))
       } else if (!pair && single) {
@@ -509,9 +500,7 @@ export class OASDynamicInput extends OASElement {
     if (this.isPair()) {
       const current = this.values[idx]
       const pair: DynamicInputPair =
-        typeof current === 'object'
-          ? { key: current.key, value: current.value }
-          : { key: '', value: '' }
+        typeof current === 'object' ? { key: current.key, value: current.value } : { key: '', value: '' }
       if (target?.getAttribute('part') === 'row-key') pair.key = raw
       else pair.value = raw
       this.values[idx] = pair

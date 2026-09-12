@@ -415,11 +415,7 @@ export interface EquationEngine {
 
 /** 形态校验：注入对象必须携带可调用的 renderToString */
 function isEngine(v: unknown): v is EquationEngine {
-  return (
-    typeof v === 'object' &&
-    v !== null &&
-    typeof (v as EquationEngine).renderToString === 'function'
-  )
+  return typeof v === 'object' && v !== null && typeof (v as EquationEngine).renderToString === 'function'
 }
 
 /**

@@ -82,15 +82,7 @@ describe('tree-kernel：flatten 与字段归一', () => {
 
   it('flatten 输出 DFS 前序行 + parent 链路 + byId 索引', () => {
     const flat = rows()
-    expect(flat.map((n) => n.value)).toEqual([
-      'fe',
-      'framework',
-      'react',
-      'vue',
-      'css',
-      'be',
-      'node',
-    ])
+    expect(flat.map((n) => n.value)).toEqual(['fe', 'framework', 'react', 'vue', 'css', 'be', 'node'])
     const depths = ctx.model.rows.map((r) => r.depth)
     expect(depths).toEqual([0, 1, 2, 2, 1, 0, 1])
     expect(ctx.model.byId.get('react')).toBe(OPTIONS[0]!.children![0]!.children![0])
@@ -127,9 +119,7 @@ describe('tree-kernel：勾选级联闭包 + half + 导出策略', () => {
     expect(applyCheckStrategy(ctx, full, 'all', []).sort()).toEqual(
       ['fe', 'be', 'framework', 'react', 'vue', 'css', 'node'].sort(),
     )
-    expect(applyCheckStrategy(ctx, full, 'child', []).sort()).toEqual(
-      ['react', 'vue', 'css', 'node'].sort(),
-    )
+    expect(applyCheckStrategy(ctx, full, 'child', []).sort()).toEqual(['react', 'vue', 'css', 'node'].sort())
     expect(applyCheckStrategy(ctx, full, 'parent', []).sort()).toEqual(['fe', 'be'].sort())
   })
 
@@ -182,12 +172,7 @@ describe('tree-kernel：勾选级联闭包 + half + 导出策略', () => {
 
   it('descendantNodes 全量后代（含 inert）', () => {
     const fe = ctx.model.byId.get('fe')!
-    expect(descendantNodes(ctx, fe).map((n) => n.value)).toEqual([
-      'framework',
-      'react',
-      'vue',
-      'css',
-    ])
+    expect(descendantNodes(ctx, fe).map((n) => n.value)).toEqual(['framework', 'react', 'vue', 'css'])
   })
 
   it('labelPath：根到自身 label 序列（show-path 回显）', () => {
@@ -213,13 +198,7 @@ describe('tree-kernel：懒加载状态机 + 模板克隆', () => {
   }
 
   it('expandableNode：children/isLeaf/loaded/children:[] 判定', () => {
-    expect(
-      expandableNode(
-        { value: 'a', label: 'A', children: [{ value: 'x', label: 'X' }] },
-        lazyAcc,
-        true,
-      ),
-    ).toBe(true)
+    expect(expandableNode({ value: 'a', label: 'A', children: [{ value: 'x', label: 'X' }] }, lazyAcc, true)).toBe(true)
     expect(expandableNode({ value: 'b', label: 'B' }, lazyAcc, true)).toBe(true)
     expect(expandableNode({ value: 'c', label: 'C', isLeaf: true }, lazyAcc, true)).toBe(false)
     expect(expandableNode({ value: 'd', label: 'D', loaded: true }, lazyAcc, true)).toBe(false)

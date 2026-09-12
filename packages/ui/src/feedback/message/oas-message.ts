@@ -391,21 +391,14 @@ export class OASMessage extends OASElement {
   protected override update(): void {
     this.syncUi()
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
-    this.shadow
-      .querySelector<HTMLElement>('[part="close"]')
-      ?.setAttribute('aria-label', this.t('message.close'))
+    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('message.close'))
   }
 
   /**
    * 命令式层刷新入口：更新内容/类型/时长/合并计数并重置自动关闭计时。
    * content 支持 string（文本通道）与 Node（富内容通道）。
    */
-  refresh(
-    content: MessageContent,
-    type?: MessageType,
-    duration?: number,
-    count?: number,
-  ): void {
+  refresh(content: MessageContent, type?: MessageType, duration?: number, count?: number): void {
     this.applyContent(content)
     if (type) this.setAttribute('type', type)
     if (duration !== undefined) this.setAttribute('duration', String(duration))
@@ -478,9 +471,7 @@ export class OASMessage extends OASElement {
     const type = this.getAttr('type', 'info') || 'info'
     const custom = this.customType()
     // role：error 用 alert，其余 status
-    this.shadow
-      .querySelector<HTMLElement>('[part="box"]')
-      ?.setAttribute('role', type === 'error' ? 'alert' : 'status')
+    this.shadow.querySelector<HTMLElement>('[part="box"]')?.setAttribute('role', type === 'error' ? 'alert' : 'status')
     // 自定义类型配色：宿主 CSS 变量穿透（--oas-msg-type-color），无则清除回落
     if (custom?.color) this.style.setProperty('--oas-msg-type-color', custom.color)
     else this.style.removeProperty('--oas-msg-type-color')
@@ -545,10 +536,7 @@ export class OASMessage extends OASElement {
   private syncClose(type: string, custom: CustomMessageType | undefined): void {
     const closeEl = this.shadow.querySelector<HTMLElement>('[part="close"]')
     if (!closeEl) return
-    const closable =
-      this.getAttr('closable', 'true') !== 'false' &&
-      type !== 'loading' &&
-      custom?.closable !== false
+    const closable = this.getAttr('closable', 'true') !== 'false' && type !== 'loading' && custom?.closable !== false
     closeEl.style.display = closable ? '' : 'none'
   }
 
@@ -585,9 +573,7 @@ export class OASMessage extends OASElement {
     }
     const hasSlot =
       slot !== null &&
-      slot
-        .assignedNodes()
-        .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+      slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
     avatar.hidden = !hasSlot && this.avatarNode === null
   }
 

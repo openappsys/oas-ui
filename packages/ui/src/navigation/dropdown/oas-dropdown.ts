@@ -370,10 +370,7 @@ export class OASDropdown extends OASElement {
   private onHoverEnter = (): void => {
     if (!this.hasTrigger('hover') || this.hasAttr('disabled')) return
     this.clearHoverHide()
-    this.hoverShowTimer = setTimeout(
-      () => this.setOpen(true),
-      this.hoverDelay('hover-delay', HOVER_DELAY),
-    )
+    this.hoverShowTimer = setTimeout(() => this.setOpen(true), this.hoverDelay('hover-delay', HOVER_DELAY))
   }
 
   private onHoverLeave = (e: MouseEvent): void => {
@@ -383,10 +380,7 @@ export class OASDropdown extends OASElement {
     // 指针移到浮层面板（shadow 内）或宿主 light DOM 内不关：悬停区域 = 宿主 + 面板
     if (this.hoverTargetInside(e.relatedTarget)) return
     this.clearHoverShow()
-    this.hoverHideTimer = setTimeout(
-      () => this.setOpen(false),
-      this.hoverDelay('hover-hide-delay', HOVER_HIDE_DELAY),
-    )
+    this.hoverHideTimer = setTimeout(() => this.setOpen(false), this.hoverDelay('hover-hide-delay', HOVER_HIDE_DELAY))
   }
 
   private onPanelEnter = (): void => {
@@ -397,10 +391,7 @@ export class OASDropdown extends OASElement {
   private onPanelLeave = (e: MouseEvent): void => {
     if (!this.hasTrigger('hover')) return
     if (this.hoverTargetInside(e.relatedTarget)) return
-    this.hoverHideTimer = setTimeout(
-      () => this.setOpen(false),
-      this.hoverDelay('hover-hide-delay', HOVER_HIDE_DELAY),
-    )
+    this.hoverHideTimer = setTimeout(() => this.setOpen(false), this.hoverDelay('hover-hide-delay', HOVER_HIDE_DELAY))
   }
 
   /** 指针/焦点移到的目标是否仍在「宿主 + 浮层面板」区域内（跨 shadow 时 relatedTarget 已 retarget 到 shadow host） */
@@ -495,9 +486,7 @@ export class OASDropdown extends OASElement {
       // 收起内层菜单残留的级联展开态，避免重开时子菜单直接可见；
       // SSR/Node 渲染环境无 MouseEvent，跳过（SSR 快照本就是关闭态）
       if (typeof MouseEvent !== 'undefined') {
-        this.menuEl.shadowRoot
-          ?.querySelector('.menu')
-          ?.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+        this.menuEl.shadowRoot?.querySelector('.menu')?.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
       }
     }
     this.wasOpen = open
@@ -624,25 +613,10 @@ export class OASDropdown extends OASElement {
         : placement.startsWith('left')
           ? 'left'
           : 'right'
-    const align: Align = placement.endsWith('-start')
-      ? 'start'
-      : placement.endsWith('-end')
-        ? 'end'
-        : ''
-    const cross = (s: string, e: string): string =>
-      align === 'start' ? s : align === 'end' ? e : 'center'
-    const originX =
-      base === 'top' || base === 'bottom'
-        ? cross('left', 'right')
-        : base === 'left'
-          ? 'right'
-          : 'left'
-    const originY =
-      base === 'left' || base === 'right'
-        ? cross('top', 'bottom')
-        : base === 'top'
-          ? 'bottom'
-          : 'top'
+    const align: Align = placement.endsWith('-start') ? 'start' : placement.endsWith('-end') ? 'end' : ''
+    const cross = (s: string, e: string): string => (align === 'start' ? s : align === 'end' ? e : 'center')
+    const originX = base === 'top' || base === 'bottom' ? cross('left', 'right') : base === 'left' ? 'right' : 'left'
+    const originY = base === 'left' || base === 'right' ? cross('top', 'bottom') : base === 'top' ? 'bottom' : 'top'
     this.anchorEl?.style.setProperty('--oas-origin-x', originX)
     this.anchorEl?.style.setProperty('--oas-origin-y', originY)
   }
@@ -667,18 +641,12 @@ export class OASDropdown extends OASElement {
     const clamp = (v: number, max: number): number => Math.max(ARROW_PAD, Math.min(v, max))
     if (placement.startsWith('top') || placement.startsWith('bottom')) {
       const center = anchorRect.left + anchorRect.width / 2
-      const x = clamp(
-        center - panelRect.left - ARROW_SIZE / 2,
-        panelRect.width - ARROW_PAD - ARROW_SIZE,
-      )
+      const x = clamp(center - panelRect.left - ARROW_SIZE / 2, panelRect.width - ARROW_PAD - ARROW_SIZE)
       this.arrowEl.style.setProperty('--arrow-x', `${x}px`)
       this.arrowEl.style.removeProperty('--arrow-y')
     } else {
       const center = anchorRect.top + anchorRect.height / 2
-      const y = clamp(
-        center - panelRect.top - ARROW_SIZE / 2,
-        panelRect.height - ARROW_PAD - ARROW_SIZE,
-      )
+      const y = clamp(center - panelRect.top - ARROW_SIZE / 2, panelRect.height - ARROW_PAD - ARROW_SIZE)
       this.arrowEl.style.setProperty('--arrow-y', `${y}px`)
       this.arrowEl.style.removeProperty('--arrow-x')
     }
@@ -796,11 +764,7 @@ export class OASDropdown extends OASElement {
     for (const node of el.childNodes) {
       if (node instanceof Element) {
         const tag = node.tagName
-        if (
-          tag === 'OAS-DROPDOWN-ITEM' ||
-          tag === 'OAS-DROPDOWN-GROUP' ||
-          tag === 'OAS-DROPDOWN-DIVIDER'
-        ) {
+        if (tag === 'OAS-DROPDOWN-ITEM' || tag === 'OAS-DROPDOWN-GROUP' || tag === 'OAS-DROPDOWN-DIVIDER') {
           continue
         }
       }

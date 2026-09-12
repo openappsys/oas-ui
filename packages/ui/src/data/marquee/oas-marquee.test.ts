@@ -161,7 +161,9 @@ describe('OASMarquee', () => {
     expect(fadeRule).toContain('mask-image')
     expect(fadeRule).toContain('var(--oas-marquee-fade-size')
     // 默认关：渐隐只挂在 [fade-edges] 选择器下，基础 .track 规则无 mask
-    const trackRule = css.split('}').find((rule) => rule.includes('.track {') || rule.includes('.track\n') || rule.includes('.track\r'))
+    const trackRule = css
+      .split('}')
+      .find((rule) => rule.includes('.track {') || rule.includes('.track\n') || rule.includes('.track\r'))
     expect(trackRule).toBeDefined()
     expect(trackRule).not.toContain('mask-image')
   })
@@ -221,8 +223,9 @@ describe('OASMarquee', () => {
   it('内容更新相位保持：getAnimations 记录相位并以负 animation-delay 恢复', () => {
     const el = mount()
     const t = track(el)
-    ;(t as unknown as { getAnimations: () => Array<{ currentTime: number | null }> }).getAnimations =
-      () => [{ currentTime: 2500 }]
+    ;(t as unknown as { getAnimations: () => Array<{ currentTime: number | null }> }).getAnimations = () => [
+      { currentTime: 2500 },
+    ]
     const span = document.createElement('span')
     span.textContent = '动态追加'
     el.appendChild(span)

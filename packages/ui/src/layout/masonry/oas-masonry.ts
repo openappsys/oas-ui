@@ -84,9 +84,7 @@ const warnedBreakpoints = new Set<string>()
 function warnBreakpoint(name: string): void {
   if (warnedBreakpoints.has(name)) return
   warnedBreakpoints.add(name)
-  console.warn(
-    `[oas-masonry] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`,
-  )
+  console.warn(`[oas-masonry] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
 }
 
 const warnedBreakpointColumnValues = new Set<string>()
@@ -95,9 +93,7 @@ const warnedBreakpointColumnValues = new Set<string>()
 function warnBreakpointColumnValue(value: string): void {
   if (warnedBreakpointColumnValues.has(value)) return
   warnedBreakpointColumnValues.add(value)
-  console.warn(
-    `[oas-masonry] 断点列数值 "${value}" 非法，已回落基础列数；合法值：正整数`,
-  )
+  console.warn(`[oas-masonry] 断点列数值 "${value}" 非法，已回落基础列数；合法值：正整数`)
 }
 
 const warnedColumnValues = new Set<string>()
@@ -106,9 +102,7 @@ const warnedColumnValues = new Set<string>()
 function warnColumnValue(value: string): void {
   if (warnedColumnValues.has(value)) return
   warnedColumnValues.add(value)
-  console.warn(
-    `[oas-masonry] 子项 column 值 "${value}" 非法，已忽略；合法值：1 ~ 当前列数的整数`,
-  )
+  console.warn(`[oas-masonry] 子项 column 值 "${value}" 非法，已忽略；合法值：1 ~ 当前列数的整数`)
 }
 
 /**
@@ -118,9 +112,7 @@ function warnColumnValue(value: string): void {
  * - 首个 token 不含冒号视为基础值，缺省时回落默认列数；
  * - 非法断点名丢弃该规则 + dev 告警（同值去重），合法断点值由调用方归一化。
  */
-function parseBreakpointShorthand(
-  raw: string,
-): { base: string; rules: Array<{ name: string; value: string }> } | null {
+function parseBreakpointShorthand(raw: string): { base: string; rules: Array<{ name: string; value: string }> } | null {
   if (!raw.includes(' ')) return null
   const tokens = raw.trim().split(/\s+/)
   if (!tokens.some((t) => t.includes(':'))) return null
@@ -160,13 +152,8 @@ function resolveGapValue(value: string): string | null {
 }
 
 /** 基础列数：断点简写缺省基础值回落默认列数；非法（非正整数）静默回落 1 */
-function resolveBaseColumns(
-  shorthand: ReturnType<typeof parseBreakpointShorthand>,
-  raw: string,
-): number {
-  return (
-    resolveColumnsValue(shorthand ? shorthand.base || String(DEFAULT_COLUMNS) : raw) ?? 1
-  )
+function resolveBaseColumns(shorthand: ReturnType<typeof parseBreakpointShorthand>, raw: string): number {
+  return resolveColumnsValue(shorthand ? shorthand.base || String(DEFAULT_COLUMNS) : raw) ?? 1
 }
 
 /**
@@ -260,9 +247,7 @@ export class OASMasonry extends OASElement {
    * 序列化 shadowRoot.innerHTML 同步产出，两段路径一致）。无断点时清空。
    */
   private syncBreakpointStyle(css: string): void {
-    const styleEl = this.shadow.querySelector<HTMLStyleElement>(
-      'style[data-oas-masonry-breakpoints]',
-    )
+    const styleEl = this.shadow.querySelector<HTMLStyleElement>('style[data-oas-masonry-breakpoints]')
     if (!styleEl) return
     styleEl.textContent = css
   }
@@ -316,13 +301,13 @@ export class OASMasonry extends OASElement {
    */
   private applyGap(): void {
     const raw = this.getAttr('gap', String(DEFAULT_GAP))
-    const parts = raw.trim().split(/\s+/).filter((s) => s !== '')
+    const parts = raw
+      .trim()
+      .split(/\s+/)
+      .filter((s) => s !== '')
     if (parts.length === 2) {
       this.rootEl!.style.columnGap = resolveGapValue(parts[1]!) ?? `${DEFAULT_GAP}px`
-      this.rootEl!.style.setProperty(
-        '--oas-masonry-item-gap',
-        resolveGapValue(parts[0]!) ?? `${DEFAULT_GAP}px`,
-      )
+      this.rootEl!.style.setProperty('--oas-masonry-item-gap', resolveGapValue(parts[0]!) ?? `${DEFAULT_GAP}px`)
     } else if (parts.length === 1) {
       this.rootEl!.style.columnGap = resolveGapValue(parts[0]!) ?? `${DEFAULT_GAP}px`
       this.rootEl!.style.removeProperty('--oas-masonry-item-gap')
@@ -527,9 +512,7 @@ export class OASMasonry extends OASElement {
     }
     // 每次 update 重建观察目标（覆盖新增/移除子项；observe 已观察元素幂等无害）
     this.freshObserver.disconnect()
-    const rendered = this.rootEl
-      ? [...this.rootEl.querySelectorAll('.masonry-item')]
-      : []
+    const rendered = this.rootEl ? [...this.rootEl.querySelectorAll('.masonry-item')] : []
     const targets = rendered.length > 0 ? rendered : Array.from(this.children)
     for (const target of targets) {
       this.freshObserver.observe(target)

@@ -22,8 +22,7 @@ async function rightStack(page: import('@playwright/test').Page, selector: strin
     return {
       inputRight: ir.right,
       inputLeft: ir.left,
-      innerRightDelta:
-        sr.querySelector<HTMLElement>('[part="inner"]')!.getBoundingClientRect().right - ir.right,
+      innerRightDelta: sr.querySelector<HTMLElement>('[part="inner"]')!.getBoundingClientRect().right - ir.right,
       controls: rel(sr.querySelector<HTMLElement>('[part="controls"]')),
       clear: rel(sr.querySelector<HTMLElement>('[part="clear"]')),
       suffix: rel(sr.querySelector<HTMLElement>('[part="suffix"]')),
@@ -32,9 +31,7 @@ async function rightStack(page: import('@playwright/test').Page, selector: strin
   }, selector)
 }
 
-test('input-number clearable+controls：步进钮完整内嵌（upOverflow ≤ 0）且 inner 与 input 同宽', async ({
-  page,
-}) => {
+test('input-number clearable+controls：步进钮完整内嵌（upOverflow ≤ 0）且 inner 与 input 同宽', async ({ page }) => {
   await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#num-event')
   const r = await rightStack(page, '#num-event')
@@ -53,16 +50,11 @@ test('input-number suffix+controls：后缀内嵌、与步进钮不重叠', asyn
   await up(page, 'oas-input-number[suffix-text]')
   const r = await rightStack(page, 'oas-input-number[suffix-text]')
   expect(r.suffix!.right, '后缀右缘应在 input 内（历史渲染在框外）').toBeLessThanOrEqual(0)
-  expect(
-    r.suffix!.right,
-    '后缀应完全位于步进钮左侧，不重叠',
-  ).toBeLessThanOrEqual(r.controls!.left)
+  expect(r.suffix!.right, '后缀应完全位于步进钮左侧，不重叠').toBeLessThanOrEqual(r.controls!.left)
   expect(r.controls!.right, '步进钮右缘应 ≤ input 右缘').toBeLessThanOrEqual(0)
 })
 
-test('input-number clearable+suffix+controls 叠加：序排列 步进钮→清除→后缀 全内嵌', async ({
-  page,
-}) => {
+test('input-number clearable+suffix+controls 叠加：序排列 步进钮→清除→后缀 全内嵌', async ({ page }) => {
   await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-input-number[suffix-text="元"]')
   const r = await rightStack(page, 'oas-input-number[suffix-text="元"]')

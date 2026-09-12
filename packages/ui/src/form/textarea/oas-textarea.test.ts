@@ -268,8 +268,7 @@ describe('OASTextarea clearable', () => {
   })
 
   it('clearable 在空值 / disabled / readonly 时清除按钮隐藏', () => {
-    const clearHidden = (el: OASTextarea) =>
-      el.shadowRoot!.querySelector<HTMLElement>('.clear-btn')!.hidden
+    const clearHidden = (el: OASTextarea) => el.shadowRoot!.querySelector<HTMLElement>('.clear-btn')!.hidden
     expect(clearHidden(mount({ clearable: '' }))).toBe(true)
     expect(clearHidden(mount({ clearable: '', value: 'x', disabled: '' }))).toBe(true)
     expect(clearHidden(mount({ clearable: '', value: 'x', readonly: '' }))).toBe(true)
@@ -306,12 +305,8 @@ describe('OASTextarea focus / blur / change 事件与方法', () => {
   it('聚焦/失焦派发 oas-focus / oas-blur，detail 携带当前值', () => {
     const el = mount({ value: 'abc' })
     const got: string[] = []
-    el.addEventListener('oas-focus', (e: Event) =>
-      got.push(`focus:${(e as CustomEvent).detail.value}`),
-    )
-    el.addEventListener('oas-blur', (e: Event) =>
-      got.push(`blur:${(e as CustomEvent).detail.value}`),
-    )
+    el.addEventListener('oas-focus', (e: Event) => got.push(`focus:${(e as CustomEvent).detail.value}`))
+    el.addEventListener('oas-blur', (e: Event) => got.push(`blur:${(e as CustomEvent).detail.value}`))
     ta(el).dispatchEvent(new Event('focus'))
     ta(el).dispatchEvent(new Event('blur'))
     expect(got).toEqual(['focus:abc', 'blur:abc'])

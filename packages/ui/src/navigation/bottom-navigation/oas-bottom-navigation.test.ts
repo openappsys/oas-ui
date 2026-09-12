@@ -247,9 +247,7 @@ describe('OASBottomNavigation 子元素声明式通道', () => {
   })
 
   it('MutationObserver：运行时 append oas-bottom-navigation-item 后列表刷新', async () => {
-    const el = mountChildren(
-      `<oas-bottom-navigation-item value="home" icon="user">首页</oas-bottom-navigation-item>`,
-    )
+    const el = mountChildren(`<oas-bottom-navigation-item value="home" icon="user">首页</oas-bottom-navigation-item>`)
     expect(tabs(el).length).toBe(1)
     const item = document.createElement('oas-bottom-navigation-item')
     item.setAttribute('value', 'about')
@@ -426,9 +424,7 @@ describe('OASBottomNavigation 横排布局（layout）', () => {
   it('CSS：horizontal 时 .tab flex-direction: row、gap 走 token、label 不换行', () => {
     const stl = styleText(mount())
     expect(stl).toMatch(/:host\(\[data-layout='horizontal'\]\)\s+\.tab\s*\{[^}]*flex-direction:\s*row/)
-    expect(stl).toMatch(
-      /:host\(\[data-layout='horizontal'\]\)\s+\.tab\s*\{[^}]*gap:\s*var\(--oas-space-2\)/,
-    )
+    expect(stl).toMatch(/:host\(\[data-layout='horizontal'\]\)\s+\.tab\s*\{[^}]*gap:\s*var\(--oas-space-2\)/)
     expect(stl).toMatch(/\.tab-label\s*\{[^}]*white-space:\s*nowrap/)
   })
 

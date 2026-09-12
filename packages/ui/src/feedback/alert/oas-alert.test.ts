@@ -208,9 +208,7 @@ describe('OASAlert', () => {
       expect(actionSlot.assignedNodes().length).toBeGreaterThan(0)
       expect((actionSlot.assignedNodes()[0] as HTMLElement).textContent).toBe('查看详情')
       // action 在 close 之前
-      expect(Array.from(box.children).indexOf(actionEl)).toBeLessThan(
-        Array.from(box.children).indexOf(closeEl),
-      )
+      expect(Array.from(box.children).indexOf(actionEl)).toBeLessThan(Array.from(box.children).indexOf(closeEl))
     })
 
     it('无 action 时操作区为空（零孤儿）', () => {
@@ -468,9 +466,7 @@ describe('OASAlert', () => {
       expect(el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!.hidden).toBe(false)
       const css = el.shadowRoot!.querySelector('style')!.textContent
       expect(css).toMatch(/:host\(\[prominent\]\)/)
-      expect(el.shadowRoot!.querySelector('[part="box"]')!.hasAttribute('data-prominent')).toBe(
-        true,
-      )
+      expect(el.shadowRoot!.querySelector('[part="box"]')!.hasAttribute('data-prominent')).toBe(true)
     })
   })
 

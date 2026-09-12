@@ -110,9 +110,7 @@ describe('OASBackdrop', () => {
   describe('P2 color / opacity 定制', () => {
     it('color 任意 CSS 色值注入 scrim 背景', () => {
       const el = mount({ open: '', color: '#123456' })
-      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!.style.background).toBe(
-        '#123456',
-      )
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!.style.background).toBe('#123456')
     })
 
     it('color 预设名映射 preset token（协议 §4.1）', () => {
@@ -151,24 +149,20 @@ describe('OASBackdrop', () => {
       const el = mount({ open: '', blur: '' })
       const scrim = el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!
       expect(scrim.style.backdropFilter).toBe('blur(4px)')
-      const webkit = (
-        scrim.style as CSSStyleDeclaration & { webkitBackdropFilter?: string }
-      ).webkitBackdropFilter
+      const webkit = (scrim.style as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter
       expect(webkit).toBe('blur(4px)')
     })
 
     it('blur 支持任意 CSS 滤镜全值', () => {
       const el = mount({ open: '', blur: 'blur(6px) saturate(150%)' })
-      expect(
-        el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!.style.backdropFilter,
-      ).toBe('blur(6px) saturate(150%)')
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!.style.backdropFilter).toBe(
+        'blur(6px) saturate(150%)',
+      )
     })
 
     it('未设置时回落 CSS 变量（--oas-backdrop-blur）', () => {
       const el = mount({ open: '' })
-      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!.style.backdropFilter).toBe(
-        '',
-      )
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!.style.backdropFilter).toBe('')
       expect(el.shadowRoot!.querySelector('style')!.textContent).toContain('var(--oas-backdrop-blur')
     })
   })
@@ -309,22 +303,14 @@ describe('OASBackdrop', () => {
     it('非 persistent 点击不触发 shake', () => {
       const el = mount({ open: '' }, '<span>内容</span>')
       maskClick(el)
-      expect(
-        el.shadowRoot!.querySelector<HTMLElement>('[part="content"]')!.classList.contains(
-          'oas-shake',
-        ),
-      ).toBe(false)
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="content"]')!.classList.contains('oas-shake')).toBe(false)
     })
 
     it('prefers-reduced-motion 下 persistent 点击不触发 shake', () => {
       vi.stubGlobal('matchMedia', () => ({ matches: true }))
       const el = mount({ open: '', persistent: '' }, '<span>内容</span>')
       maskClick(el)
-      expect(
-        el.shadowRoot!.querySelector<HTMLElement>('[part="content"]')!.classList.contains(
-          'oas-shake',
-        ),
-      ).toBe(false)
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="content"]')!.classList.contains('oas-shake')).toBe(false)
       vi.unstubAllGlobals()
     })
 
@@ -345,9 +331,9 @@ describe('OASBackdrop', () => {
 
     it('close-label 属性覆盖 aria-label', () => {
       const el = mount({ open: '', 'close-label': '关闭遮罩' })
-      expect(
-        el.shadowRoot!.querySelector<HTMLElement>('[part="sr-close"]')!.getAttribute('aria-label'),
-      ).toBe('关闭遮罩')
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="sr-close"]')!.getAttribute('aria-label')).toBe(
+        '关闭遮罩',
+      )
     })
 
     it('激活关闭按钮派发 oas-click（键盘/SR 关闭通道可达）', () => {
@@ -366,9 +352,9 @@ describe('OASBackdrop', () => {
       const el = mount({ open: '', persistent: '' })
       let n = 0
       el.addEventListener('oas-click', () => n++)
-      el.shadowRoot!
-        .querySelector<HTMLElement>('[part="sr-close"]')!
-        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      el.shadowRoot!.querySelector<HTMLElement>('[part="sr-close"]')!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
       expect(n).toBe(0)
     })
 

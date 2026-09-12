@@ -21,14 +21,7 @@
  *
  * 用法：先 `pnpm build`，再 `pnpm perf:size`。
  */
-import {
-  readFileSync,
-  writeFileSync,
-  readdirSync,
-  statSync,
-  existsSync,
-  realpathSync,
-} from 'node:fs'
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve, relative } from 'node:path'
 import { gzipSync, brotliCompressSync, constants } from 'node:zlib'
 import { ROOT, writeSection, fmtKB, fmtBytes, today } from './lib/baseline.mjs'
@@ -206,18 +199,8 @@ const cdn = {
 
 const packageRows = [
   ['@oas-ui/ui (dist 总大小)', `${fmtBytes(uiDistTotal)}`, '', ''],
-  [
-    '@oas-ui/ui (浏览器可加载 JS)',
-    `${uiJs.files} 文件`,
-    fmtKB(uiJs.rawBytes),
-    fmtKB(uiJs.gzipBytes),
-  ],
-  [
-    '@oas-ui/ui (全量入口链)',
-    `${fullEntry.files} 文件`,
-    fmtKB(fullEntry.rawBytes),
-    fmtKB(fullEntry.gzipBytes),
-  ],
+  ['@oas-ui/ui (浏览器可加载 JS)', `${uiJs.files} 文件`, fmtKB(uiJs.rawBytes), fmtKB(uiJs.gzipBytes)],
+  ['@oas-ui/ui (全量入口链)', `${fullEntry.files} 文件`, fmtKB(fullEntry.rawBytes), fmtKB(fullEntry.gzipBytes)],
   ['@oas-ui/ui (dist/cdn.js)', '1 文件', fmtKB(cdn.rawBytes), fmtKB(cdn.gzipBytes)],
   ['@oas-ui/theme (index.css)', '1 文件', fmtKB(theme.rawBytes), fmtKB(theme.gzipBytes)],
   ['@oas-ui/core', `${core.files} 文件`, fmtKB(core.rawBytes), fmtKB(core.gzipBytes)],
@@ -293,8 +276,7 @@ const BUDGETS = [
     name: '@oas-ui/ui/form/form 链 gzip',
     get: () => componentMeasures.form.gzipBytes,
     limit: 19 * 1024, // 19 KB（2026-09-09 重定档）
-    basis:
-      '实测 gzip 16.4 KB（v2.5.0 后；含 core + i18n），上浮约 16%；前档 14 KB 定档于 v2.1（11,873 B）',
+    basis: '实测 gzip 16.4 KB（v2.5.0 后；含 core + i18n），上浮约 16%；前档 14 KB 定档于 v2.1（11,873 B）',
   },
   {
     name: '@oas-ui/theme index.css gzip',

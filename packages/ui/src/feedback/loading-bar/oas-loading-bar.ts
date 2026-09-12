@@ -220,10 +220,7 @@ export class OASLoadingBar extends OASElement {
   private tick(): void {
     if (this.leaving || this.sessionCount === 0) return
     const remaining = AUTO_CAP - this.progress
-    this.progress = Math.min(
-      AUTO_CAP,
-      this.progress + Math.max(0.3, remaining * 0.12 + (Math.random() - 0.35) * 4),
-    )
+    this.progress = Math.min(AUTO_CAP, this.progress + Math.max(0.3, remaining * 0.12 + (Math.random() - 0.35) * 4))
     this.update()
     this.schedule()
   }

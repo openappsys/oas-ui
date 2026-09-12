@@ -218,9 +218,7 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
     })
     tab.addEventListener('dragend', () => {
       this.dragSource = null
-      tablist
-        .querySelectorAll('.tab--drag-over')
-        .forEach((t) => t.classList.remove('tab--drag-over'))
+      tablist.querySelectorAll('.tab--drag-over').forEach((t) => t.classList.remove('tab--drag-over'))
     })
   }
 
@@ -240,9 +238,7 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
    * 导致浏览器判定双击目标已变而不派发 dblclick——委托到稳定的 tablist 容器避开该问题）。
    */
   private onTablistDblClick = (e: Event): void => {
-    const btn = (e.target as HTMLElement).closest?.(
-      '[role="tab"][data-value]',
-    ) as HTMLElement | null
+    const btn = (e.target as HTMLElement).closest?.('[role="tab"][data-value]') as HTMLElement | null
     if (!btn) return
     const value = btn.getAttribute('data-value') ?? ''
     const panel = this.panelOf(value)
@@ -306,9 +302,7 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
   /** 右键标签：弹批量关闭菜单（新建/关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部） */
   private onTablistContextMenu = (e: MouseEvent): void => {
     if (!this.host.hasAttribute('context-menu')) return
-    const btn = (e.target as HTMLElement).closest?.(
-      '[role="tab"][data-value]',
-    ) as HTMLElement | null
+    const btn = (e.target as HTMLElement).closest?.('[role="tab"][data-value]') as HTMLElement | null
     if (!btn) return
     e.preventDefault()
     e.stopPropagation()
@@ -360,12 +354,7 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
             return
           }
           // menu 模式 roving：方向键/Home/End 在菜单项间移动（与 more-dropdown 一致）
-          if (
-            ke.key === 'ArrowDown' ||
-            ke.key === 'ArrowUp' ||
-            ke.key === 'Home' ||
-            ke.key === 'End'
-          ) {
+          if (ke.key === 'ArrowDown' || ke.key === 'ArrowUp' || ke.key === 'Home' || ke.key === 'End') {
             ke.preventDefault()
             const btns = [...menu.querySelectorAll<HTMLElement>('.ctx-item')]
             const i = btns.indexOf(item)
@@ -470,8 +459,6 @@ export class TabsManagerController implements ReactiveController, TabsManagerCap
 }
 
 /** 便捷：构造 manager 能力 controller（供能力注册表 / 组装类 addController 用） */
-export function createTabsManagerController(
-  host: HTMLElement & TabsManagerHost,
-): TabsManagerController {
+export function createTabsManagerController(host: HTMLElement & TabsManagerHost): TabsManagerController {
   return new TabsManagerController(host)
 }

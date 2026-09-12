@@ -185,8 +185,7 @@ describe('OASTagGroup', () => {
     it('指纹 tag 不匹配：回退 render() 重建', () => {
       const el = new OASTagGroup()
       el.setAttribute('value', 'a')
-      el.shadowRoot!.innerHTML =
-        '<meta data-oas-ssr="oas-tag" data-oas-ssr-v="1"><div part="group"><slot></slot></div>'
+      el.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-tag" data-oas-ssr-v="1"><div part="group"><slot></slot></div>'
       const pre = el.shadowRoot!.querySelector('[part="group"]')
       document.body.appendChild(el)
       expect(el.shadowRoot!.querySelector('[part="group"]')).not.toBe(pre)

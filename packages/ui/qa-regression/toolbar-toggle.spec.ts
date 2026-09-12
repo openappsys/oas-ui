@@ -27,17 +27,15 @@ test('toolbar-toggle 选中态主题可见——light/dark 下选中与未选中
   const readAlign = () =>
     page.evaluate(() => {
       const tg = document.querySelector('oas-toolbar-toggle#tb-align')!
-      return [...(tg.shadowRoot?.querySelectorAll<HTMLButtonElement>('button.item') || [])].map(
-        (b) => {
-          const cs = getComputedStyle(b)
-          return {
-            text: b.textContent,
-            pressed: b.getAttribute('aria-pressed'),
-            bg: cs.backgroundColor,
-            color: cs.color,
-          }
-        },
-      )
+      return [...(tg.shadowRoot?.querySelectorAll<HTMLButtonElement>('button.item') || [])].map((b) => {
+        const cs = getComputedStyle(b)
+        return {
+          text: b.textContent,
+          pressed: b.getAttribute('aria-pressed'),
+          bg: cs.backgroundColor,
+          color: cs.color,
+        }
+      })
     })
 
   // ---- light：选中=primary 蓝底，未选中=透明底 ----

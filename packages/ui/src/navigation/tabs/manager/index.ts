@@ -1,9 +1,5 @@
 import { registerTabsCapability } from '../oas-tabs-capability.js'
-import {
-  TabsManagerController,
-  createTabsManagerController,
-  type TabsManagerHost,
-} from '../oas-tabs-manager.js'
+import { TabsManagerController, createTabsManagerController, type TabsManagerHost } from '../oas-tabs-manager.js'
 
 /**
  * tabs manager 能力包入口（ESM 子路径 `@oas-ui/ui/navigation/tabs/manager`）。
@@ -17,9 +13,7 @@ import {
  * 属性或面板 `editable` 配置时需显式 import 本模块（否则配置静默失效并 dev 告警一次，
  * 见 oas-tabs.ts 的 warnManagerNotImported）。全量入口（@oas-ui/ui）与 CDN 导航族包同样已内含。
  */
-registerTabsCapability('manager', (host) =>
-  createTabsManagerController(host as HTMLElement & TabsManagerHost),
-)
+registerTabsCapability('manager', (host) => createTabsManagerController(host as HTMLElement & TabsManagerHost))
 
 export { TabsManagerController, createTabsManagerController }
 export type { TabsManagerHost }

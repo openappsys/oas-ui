@@ -12,9 +12,7 @@ function mount(attrs: Record<string, string> = {}): OASHoverCard {
 function card(el: OASHoverCard): HTMLElement {
   // append-to portal 期间卡片在 portal host 的 shadow 内，需两处查
   return (el.shadowRoot!.querySelector('[part="card"]') ??
-    document
-      .querySelector<HTMLElement>('[data-oas-hover-card-portal]')
-      ?.shadowRoot?.querySelector('[part="card"]'))!
+    document.querySelector<HTMLElement>('[data-oas-hover-card-portal]')?.shadowRoot?.querySelector('[part="card"]'))!
 }
 
 function anchorOf(el: OASHoverCard): HTMLElement {
@@ -22,10 +20,7 @@ function anchorOf(el: OASHoverCard): HTMLElement {
 }
 
 /** happy-dom 无布局引擎：stub 元素 getBoundingClientRect，让定位数学可精确断言 */
-function stubRect(
-  el: HTMLElement,
-  r: { left: number; top: number; width: number; height: number },
-): void {
+function stubRect(el: HTMLElement, r: { left: number; top: number; width: number; height: number }): void {
   el.getBoundingClientRect = () =>
     ({
       x: r.left,
@@ -236,9 +231,7 @@ describe('OASHoverCard', () => {
       el.setAttribute('open', '')
       await Promise.resolve()
       const arrow = card(el).querySelector<HTMLElement>('[data-popper-arrow]')!
-      expect(arrow.style[prop], `${placement} 箭头应指向锚点中心投影（${prop}=${value}）`).toBe(
-        value,
-      )
+      expect(arrow.style[prop], `${placement} 箭头应指向锚点中心投影（${prop}=${value}）`).toBe(value)
     }
   })
 
@@ -316,9 +309,7 @@ describe('OASHoverCard', () => {
     const el = mount({ content: 'x' })
     await Promise.resolve()
     const fired: Array<{ open: boolean }> = []
-    el.addEventListener('oas-open-change', (e) =>
-      fired.push((e as CustomEvent<{ open: boolean }>).detail),
-    )
+    el.addEventListener('oas-open-change', (e) => fired.push((e as CustomEvent<{ open: boolean }>).detail))
     el.setAttribute('open', '')
     await Promise.resolve()
     el.removeAttribute('open')
@@ -330,9 +321,7 @@ describe('OASHoverCard', () => {
     const el = mount({ content: 'x', 'open-delay': '0', 'close-delay': '0' })
     await Promise.resolve()
     const fired: boolean[] = []
-    el.addEventListener('oas-open-change', (e) =>
-      fired.push((e as CustomEvent<{ open: boolean }>).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e) => fired.push((e as CustomEvent<{ open: boolean }>).detail.open))
     anchorOf(el).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     vi.advanceTimersByTime(1)
     anchorOf(el).dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
@@ -344,9 +333,7 @@ describe('OASHoverCard', () => {
     const el = mount({ open: '', content: 'x' })
     await Promise.resolve()
     const fired: boolean[] = []
-    el.addEventListener('oas-open-change', (e) =>
-      fired.push((e as CustomEvent<{ open: boolean }>).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e) => fired.push((e as CustomEvent<{ open: boolean }>).detail.open))
     el.setAttribute('content', 'y')
     await Promise.resolve()
     expect(fired).toEqual([])
@@ -629,9 +616,7 @@ describe('OASHoverCard', () => {
       'right-end': 'border-bottom-left-radius: 0;',
     }
     for (const [p, decl] of Object.entries(cornerOf)) {
-      expect(css, `merge ${p} 应置零 ${decl}`).toContain(
-        `.card.arrow-merge[data-placement='${p}'] { ${decl} }`,
-      )
+      expect(css, `merge ${p} 应置零 ${decl}`).toContain(`.card.arrow-merge[data-placement='${p}'] { ${decl} }`)
     }
   })
 
@@ -677,10 +662,7 @@ describe('OASHoverCard', () => {
     // 每向：clip-path 顶点（盒内 8×8 百分比坐标）→ 面板角点位于盒的哪个角 + 三角朝向
     // corner: 面板角点在箭头盒内的位置；edge: 贴边腿顶点相对角点的位移（沿面板边向内 8px，
     // 该腿与面板真实边段共边）；tip: 尖端相对角点的正交位移 8px（指向锚点侧）
-    const geom: Record<
-      string,
-      { corner: [number, number]; edge: [number, number]; tip: [number, number] }
-    > = {
+    const geom: Record<string, { corner: [number, number]; edge: [number, number]; tip: [number, number] }> = {
       // bottom 系：盒悬顶边上方 → 角点在盒底边；start 贴左（贴边腿向右）、end 贴右（向左）；尖端朝上
       'bottom-start': { corner: [0, 8], edge: [8, 0], tip: [0, -8] },
       'bottom-end': { corner: [8, 8], edge: [-8, 0], tip: [0, -8] },
@@ -720,16 +702,12 @@ describe('OASHoverCard', () => {
       expect(rightIdx, `${p} clip-path 应含直角顶点`).toBeGreaterThanOrEqual(0)
       const rv = vs[rightIdx]!
       // 直角顶点精确落面板角点（角点在盒内的已知位置）
-      expect(near(rv[0], corner[0]) && near(rv[1], corner[1]), `${p} 直角顶点应落面板角点`).toBe(
-        true,
-      )
+      expect(near(rv[0], corner[0]) && near(rv[1], corner[1]), `${p} 直角顶点应落面板角点`).toBe(true)
       // 另两顶点：一个沿面板边向内 8px（贴边腿与面板真实边段共边）、一个为尖端
       // （角点 + 正交位移 8px 指向锚点侧）
       const others = vs.filter((_, i) => i !== rightIdx)
-      const isEdge = (v: [number, number]): boolean =>
-        near(v[0] - rv[0], edge[0]) && near(v[1] - rv[1], edge[1])
-      const isTip = (v: [number, number]): boolean =>
-        near(v[0] - rv[0], tip[0]) && near(v[1] - rv[1], tip[1])
+      const isEdge = (v: [number, number]): boolean => near(v[0] - rv[0], edge[0]) && near(v[1] - rv[1], edge[1])
+      const isTip = (v: [number, number]): boolean => near(v[0] - rv[0], tip[0]) && near(v[1] - rv[1], tip[1])
       expect(
         (isEdge(others[0]!) && isTip(others[1]!)) || (isTip(others[0]!) && isEdge(others[1]!)),
         `${p} 两直角边应分别与面板边共边（向内 8px）与正交外探尖端（8px）`,
@@ -940,9 +918,7 @@ describe('OASHoverCard', () => {
       el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-hover-card" data-oas-ssr-v="1">${snap}`
       document.body.appendChild(el)
       expect(
-        el.shadowRoot!.querySelector<HTMLElement>('[part="card"]')!.querySelector(
-          '[part="title"]',
-        )!.textContent,
+        el.shadowRoot!.querySelector<HTMLElement>('[part="card"]')!.querySelector('[part="title"]')!.textContent,
       ).toBe('水合卡片')
       expect(el.hasAttribute('title')).toBe(false)
       el.remove()

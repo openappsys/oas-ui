@@ -372,15 +372,13 @@ describe('OASSwitch', () => {
 
   it('宿主宽度收缩到内容宽（width: fit-content 进样式表，防竖向容器整行拉伸）', () => {
     mount()
-    const style = document.querySelector('oas-switch')!.shadowRoot!.querySelector('style')!
-      .textContent!
+    const style = document.querySelector('oas-switch')!.shadowRoot!.querySelector('style')!.textContent!
     expect(style).toContain('width: fit-content')
   })
 
   it('CSS 变量宽度通道：--oas-switch-width/--oas-switch-height/--oas-switch-thumb-size 进样式表（各尺寸档兜底）', () => {
     mount()
-    const style = document.querySelector('oas-switch')!.shadowRoot!.querySelector('style')!
-      .textContent!
+    const style = document.querySelector('oas-switch')!.shadowRoot!.querySelector('style')!.textContent!
     expect(style).toContain('var(--oas-switch-width, 40px)')
     expect(style).toContain('var(--oas-switch-width, 28px)')
     expect(style).toContain('var(--oas-switch-height, 22px)')

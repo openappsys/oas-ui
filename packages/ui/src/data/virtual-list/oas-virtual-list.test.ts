@@ -26,8 +26,7 @@ function scrollTo(el: OASVirtualList, top: number): void {
   vp.dispatchEvent(new Event('scroll'))
 }
 
-const flushRaf = (): Promise<void> =>
-  new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
 const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i)
 

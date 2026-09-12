@@ -82,8 +82,7 @@ describe('OASDescriptions', () => {
     it('slot 有内容时覆盖属性文本（兜底隐藏、插槽渲染、属性仍被吸收）', () => {
       const el = new OASDescriptions()
       el.setAttribute('title', '属性标题')
-      el.innerHTML =
-        '<oas-descriptions-item label="a">1</oas-descriptions-item><b slot="title">富标题</b>'
+      el.innerHTML = '<oas-descriptions-item label="a">1</oas-descriptions-item><b slot="title">富标题</b>'
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
@@ -96,8 +95,7 @@ describe('OASDescriptions', () => {
 
     it('仅 slot 无属性：标题区渲染插槽内容', () => {
       const el = new OASDescriptions()
-      el.innerHTML =
-        '<oas-descriptions-item label="a">1</oas-descriptions-item><span slot="title">插槽标题</span>'
+      el.innerHTML = '<oas-descriptions-item label="a">1</oas-descriptions-item><span slot="title">插槽标题</span>'
       document.body.appendChild(el)
       const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
@@ -116,8 +114,7 @@ describe('OASDescriptions', () => {
     it('动态移除 slot 内容后回落属性文本', async () => {
       const el = new OASDescriptions()
       el.setAttribute('title', '属性标题')
-      el.innerHTML =
-        '<oas-descriptions-item label="a">1</oas-descriptions-item><span slot="title">插槽标题</span>'
+      el.innerHTML = '<oas-descriptions-item label="a">1</oas-descriptions-item><span slot="title">插槽标题</span>'
       document.body.appendChild(el)
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
       expect(fallback.hidden).toBe(true)
@@ -184,12 +181,8 @@ describe('OASDescriptions', () => {
     })
 
     it('size 三档：small/large 下发字号变量；medium/缺省/非法值不限制字号（跟随外层）', () => {
-      expect(mount({ size: 'small' }).style.getPropertyValue('--oas-desc-font-size')).toBe(
-        'var(--oas-font-size-sm)',
-      )
-      expect(mount({ size: 'large' }).style.getPropertyValue('--oas-desc-font-size')).toBe(
-        'var(--oas-font-size-lg)',
-      )
+      expect(mount({ size: 'small' }).style.getPropertyValue('--oas-desc-font-size')).toBe('var(--oas-font-size-sm)')
+      expect(mount({ size: 'large' }).style.getPropertyValue('--oas-desc-font-size')).toBe('var(--oas-font-size-lg)')
       expect(mount().style.getPropertyValue('--oas-desc-font-size')).toBe('')
       expect(mount({ size: 'medium' }).style.getPropertyValue('--oas-desc-font-size')).toBe('')
       expect(mount({ size: 'weird' }).style.getPropertyValue('--oas-desc-font-size')).toBe('')
@@ -199,9 +192,7 @@ describe('OASDescriptions', () => {
       const el = mount({ bordered: '', size: 'large' })
       expect(el.style.getPropertyValue('--oas-desc-cell-py')).toBe('var(--oas-space-3)')
       expect(el.style.getPropertyValue('--oas-desc-cell-px')).toBe('var(--oas-space-4)')
-      expect(mount({ bordered: '' }).style.getPropertyValue('--oas-desc-cell-py')).toBe(
-        'var(--oas-space-2)',
-      )
+      expect(mount({ bordered: '' }).style.getPropertyValue('--oas-desc-cell-py')).toBe('var(--oas-space-2)')
       expect(mount().style.getPropertyValue('--oas-desc-cell-py')).toBe('')
     })
 
@@ -211,9 +202,7 @@ describe('OASDescriptions', () => {
       expect(items.style.getPropertyValue('--oas-desc-columns')).toBe('')
       const fixed = mount({ column: '2' })
       expect(
-        fixed.shadowRoot!.querySelector<HTMLElement>('[part="items"]')!.style.getPropertyValue(
-          '--oas-desc-columns',
-        ),
+        fixed.shadowRoot!.querySelector<HTMLElement>('[part="items"]')!.style.getPropertyValue('--oas-desc-columns'),
       ).toBe('2')
     })
 
@@ -232,10 +221,7 @@ describe('OASDescriptions', () => {
 })
 
 describe('OASDescriptionsItem', () => {
-  function mountItem(
-    attrs: Record<string, string> = {},
-    html = '<span>张三</span>',
-  ): OASDescriptionsItem {
+  function mountItem(attrs: Record<string, string> = {}, html = '<span>张三</span>'): OASDescriptionsItem {
     const el = new OASDescriptionsItem()
     for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
     el.innerHTML = html
