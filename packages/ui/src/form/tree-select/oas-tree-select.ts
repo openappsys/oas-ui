@@ -876,15 +876,16 @@ export class OASTreeSelect extends OASElement {
     this.sheetEl?.toggleAttribute('passive', !mobile)
   }
 
-  /** fixed 定位：锚定 trigger 下方，空间不足自动翻转避让，宽度对齐 trigger（与 select/combobox 同思路） */
+  /** fixed 定位：锚定 trigger 下方，空间不足自动翻转避让，宽度对齐 trigger、左缘对齐（bottom-start） */
   private positionDropdown(): void {
     if (!this.dropdown || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
+    // 先撑宽再测量/定位：dropdown 为 auto 宽度，撑宽前测会按固有宽度算 left → 首次展开偏右。
+    this.dropdown.style.width = `${anchorRect.width}px`
     const panelRect = this.dropdown.getBoundingClientRect()
-    const { top, left } = computePosition(anchorRect, panelRect, 'bottom', getViewport())
+    const { top, left } = computePosition(anchorRect, panelRect, 'bottom-start', getViewport())
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
-    this.dropdown.style.width = `${anchorRect.width}px`
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {

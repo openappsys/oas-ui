@@ -1,7 +1,7 @@
 // 复核回归：cascader——历史缺陷固化断言。
 
 import { test, expect } from '@playwright/test'
-import { up } from './helpers'
+import { panelGeometryAcrossOpens, up } from './helpers'
 
 test('cascader 结构恒包 bottom-sheet，PC 形态 passive 透传', async ({ page }) => {
   await page.goto('/components/cascader.html', { waitUntil: 'domcontentloaded' })
@@ -98,4 +98,15 @@ test('cascader 移动端：底部抽屉贴视口底展开 + 多级面板可用 +
   } finally {
     await ctx.close()
   }
+})
+
+test('cascader 浮层定位：首开与再开一致（面板宽度取内容固有宽度，不受定位时序影响）', async ({ page }) => {
+  // cascader 面板用 min-width + 内容固有宽度（列定宽），首开即终值，故定位不随「撑宽时机」漂移。
+  // 锁定稳定不变量，防未来误改为先定位后设宽而复现 select 家族的首开偏移。
+  await page.goto('/components/cascader.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-cascader')
+  const g = await panelGeometryAcrossOpens(page, 'oas-cascader', async (host) => {
+    await host.locator('[part="trigger"]').click()
+  })
+  expect(Math.abs(g.first.left - g.second.left)).toBeLessThanOrEqual(1)
 })

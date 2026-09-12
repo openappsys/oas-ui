@@ -1,7 +1,7 @@
 // 复核回归：select——历史缺陷固化断言。
 
 import { test, expect } from '@playwright/test'
-import { up } from './helpers'
+import { panelGeometryAcrossOpens, up } from './helpers'
 
 test('select multiple：chip 结构完整（label + 移除按钮）且样式不拥挤', async ({ page }) => {
   // 曾现 bug：chip 无行高、label 与 × 间距仅 2px、padding 只有横向，文字贴边、行间粘连。
@@ -289,4 +289,17 @@ test('select 移动端：底部抽屉贴视口底展开 + dropdown 静态化 + �
   } finally {
     await ctx.close()
   }
+})
+
+test('select 浮层定位：首开左缘对齐 trigger 且与再开一致', async ({ page }) => {
+  // 曾现 bug：positionDropdown 先用面板固有宽度（选项文字 ~72px）按 bottom(center) 算 left，
+  // 之后才把 style.width 撑到 trigger 宽度 → 首开左缘偏右（实测 +74px），再开（内联宽度已在）才对齐。
+  // 不变量：面板左缘 == trigger 左缘，且首开/再开完全一致。
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-select')
+  const g = await panelGeometryAcrossOpens(page, 'oas-select', async (host) => {
+    await host.locator('[part="trigger"]').click()
+  })
+  expect(Math.abs(g.first.left - g.first.anchorLeft)).toBeLessThanOrEqual(1)
+  expect(Math.abs(g.first.left - g.second.left)).toBeLessThanOrEqual(1)
 })

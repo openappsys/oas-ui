@@ -710,27 +710,29 @@ export class OASSelect extends OASElement {
   }
 
   /**
-   * fixed 定位：宽度对齐 trigger（同 combobox）。
+   * fixed 定位：宽度对齐 trigger（同 combobox），左缘对齐 trigger 左缘（bottom-start/top-start）。
    * placement：auto（默认）= 下方优先 + 空间不足自动翻转（现状行为）；
    * top / bottom = 强制方向不翻转不避让（宿主显式指定时尊重声明，可能溢出视口）。
    */
   private positionDropdown(): void {
     if (!this.dropdown || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
+    // 先按 trigger 宽度撑开面板，再测量/定位：dropdown 是 auto 宽度（固有宽度=选项文字宽，远小于
+    // trigger），若在撑开前测量，对齐会按塌缩宽度算 left → 首次展开偏右；再次展开因内联宽度仍在才对齐。
+    this.dropdown.style.width = `${anchorRect.width}px`
     const panelRect = this.dropdown.getBoundingClientRect()
     const raw = this.getAttr('placement', 'auto')
     const forced = raw === 'top' || raw === 'bottom'
     const { top, left } = computePosition(
       anchorRect,
       panelRect,
-      (forced ? raw : 'bottom') as Placement,
+      (forced ? `${raw}-start` : 'bottom-start') as Placement,
       getViewport(),
       8,
       !forced,
     )
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
-    this.dropdown.style.width = `${anchorRect.width}px`
   }
 
   /** trigger 键盘：Esc 关闭；关闭态 Enter/Space/↑/↓ 展开（readonly 拦截）；展开态 ↑/↓ 移动、Enter 选中 */
