@@ -326,3 +326,27 @@ test('tree motion 开关：容器挂 motion 类、展开入场/收起离场行�
   expect(await countRows()).toBe(2)
   expect(await countLeave()).toBe(0)
 })
+
+test('tree expanded 数字 key JSON 数组 + 旧版逗号串回落告警', async ({ page }) => {
+  // 曾现 bug（v2.5.0，oas-ui-templates 三端实抓）：parseIdList 以 typeof string 过滤，
+  // 数字 key 的合法 JSON 数组（'[1,2]'）被静默丢弃成全折叠；非法输入（旧版逗号串）零告警。
+  // 修复为数字 key 归一化 String() + 解析失败 dev 告警一次（同值去重）。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tree')
+  const r = await page.evaluate(() => {
+    const tree = document.createElement('oas-tree')
+    tree.setAttribute(
+      'data',
+      JSON.stringify([
+        { key: '1', label: '节点 1', children: [{ key: '1-1', label: '子节点 1-1' }] },
+        { key: '2', label: '节点 2' },
+      ]),
+    )
+    // 数字 key 的 JSON 数组：应归一化展开
+    tree.setAttribute('expanded', '[1]')
+    document.body.appendChild(tree)
+    const labels = [...tree.shadowRoot!.querySelectorAll('.label')].map((e) => e.textContent)
+    return { labels }
+  })
+  expect(r.labels).toEqual(['节点 1', '子节点 1-1', '节点 2'])
+})
