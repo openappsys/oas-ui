@@ -21,7 +21,7 @@ import {
   renderPickerMonthGrid,
   isoWeekYear,
 } from './picker-grid.js'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
@@ -1297,7 +1297,7 @@ export class OASDatePicker extends OASElement {
     if (!this.dropdown || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const popupRect = this.dropdown.getBoundingClientRect()
-    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const viewport = getViewport()
     const padding = 8 // 视口夹取边距：range 双月面板 480px 宽，避让余量更足
     const placement = this.adjustCrossAlignment(anchorRect, popupRect, viewport, padding, this.resolvePlacement())
     const {

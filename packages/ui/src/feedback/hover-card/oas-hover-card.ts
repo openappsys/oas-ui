@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { getViewport } from '../../overlay/floating/index.js'
 
 type Base = 'top' | 'bottom' | 'left' | 'right'
 type Align = '' | 'start' | 'end'
@@ -708,7 +709,7 @@ export class OASHoverCard extends OASElement {
       width: this.card.offsetWidth || rawRect.width,
       height: this.card.offsetHeight || rawRect.height,
     } as DOMRect
-    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const viewport = getViewport()
     // collision-boundary：碰撞/夹取边界可换成指定元素 rect（默认视口）
     const boundary = this.resolveBoundary()
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
@@ -831,13 +832,14 @@ export class OASHoverCard extends OASElement {
         height: r.height,
       }
     }
+    const vp = getViewport()
     return {
       left: 0,
       top: 0,
-      right: window.innerWidth,
-      bottom: window.innerHeight,
-      width: window.innerWidth,
-      height: window.innerHeight,
+      right: vp.width,
+      bottom: vp.height,
+      width: vp.width,
+      height: vp.height,
     }
   }
 

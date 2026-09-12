@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry } from '@oas-ui/icons'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { registeredPopoverCapabilities, onPopoverCapabilityRegistered } from './oas-popover-capability.js'
 
 /** 面板与触发器的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
@@ -1223,7 +1223,7 @@ export class OASPopover extends OASElement {
     if (!this.panel) return
     let anchorRect = anchorOverride ?? this.anchorRect()
     if (!anchorRect) return
-    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const viewport = getViewport()
     const sticky = this.getAttr('sticky', 'partial')
     const detachedNow = this.detached(anchorRect, viewport)
     // hide-when-detached：锚点完全脱离视口 → 面板隐藏（打开语义保留，避免孤悬屏外）；
@@ -1292,7 +1292,7 @@ export class OASPopover extends OASElement {
     }
     const pad = this.collisionPadding()
     const { distance } = this.parseOffset()
-    const vh = window.innerHeight
+    const vh = getViewport().height
     let avail: number
     if (placement.startsWith('top')) avail = anchorRect.top - distance - pad
     else if (placement.startsWith('bottom')) avail = vh - anchorRect.bottom - distance - pad

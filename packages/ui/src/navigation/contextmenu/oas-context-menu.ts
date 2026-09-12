@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { getViewport } from '../../overlay/floating/index.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
 import type { OASMenu } from '../menu/index.js'
 import type { MenuItem, MenuItemKind } from '../menu/index.js'
@@ -163,7 +164,7 @@ export class OASContextMenu extends OASElement {
     if (!this.anchorEl) return
     let left = x
     let top = y
-    const { innerWidth: w, innerHeight: h } = window
+    const { width: w, height: h } = getViewport()
     const rect = this.anchorEl.getBoundingClientRect()
     if (left + rect.width > w) left = Math.max(0, x - rect.width)
     if (top + rect.height > h) top = Math.max(0, y - rect.height)

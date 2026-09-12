@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { parseColor, formatColor, formatSwatch, type RGBA } from './color.js'
 import { registeredColorPickerCapabilities, onColorPickerCapabilityRegistered } from './oas-color-picker-capability.js'
 
@@ -976,7 +976,7 @@ export class OASColorPicker extends OASElement {
     if (!this.panel || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const popupRect = this.panel.getBoundingClientRect()
-    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const viewport = getViewport()
     const placement = this.adjustCrossAlignment(anchorRect, popupRect, viewport, this.resolvePlacement())
     const {
       top,

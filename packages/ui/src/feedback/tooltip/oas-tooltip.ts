@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 const STYLE = `
 :host {
@@ -1045,13 +1045,14 @@ export class OAStooltip extends OASElement {
         height: r.height,
       }
     }
+    const vp = getViewport()
     return {
       left: 0,
       top: 0,
-      right: window.innerWidth,
-      bottom: window.innerHeight,
-      width: window.innerWidth,
-      height: window.innerHeight,
+      right: vp.width,
+      bottom: vp.height,
+      width: vp.width,
+      height: vp.height,
     }
   }
 
@@ -1086,6 +1087,7 @@ export class OAStooltip extends OASElement {
     const padding = this.getNum('collision-padding', 4)
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
     const boundary = this.resolveBoundary()
+    const vp = getViewport()
     const requested = this.resolveRequestedPlacement()
 
     // 组件层候选解析（仅高级项激活时参与；纯 12 向请求交给引擎翻转，路径与旧实现一致）
@@ -1110,10 +1112,7 @@ export class OAStooltip extends OASElement {
 
     // 碰撞边界非视口 → 平移坐标进边界局部系（引擎 viewport 从 0 起）；视口边界不平移（零漂移）
     const customBoundary =
-      boundary.left !== 0 ||
-      boundary.top !== 0 ||
-      boundary.width !== window.innerWidth ||
-      boundary.height !== window.innerHeight
+      boundary.left !== 0 || boundary.top !== 0 || boundary.width !== vp.width || boundary.height !== vp.height
     const anchorForEngine: DOMRect = customBoundary
       ? ({
           left: anchorRect.left - boundary.left,
@@ -1143,8 +1142,8 @@ export class OAStooltip extends OASElement {
       popupForEngine,
       actual as Placement,
       {
-        width: customBoundary ? boundary.width : window.innerWidth,
-        height: customBoundary ? boundary.height : window.innerHeight,
+        width: customBoundary ? boundary.width : vp.width,
+        height: customBoundary ? boundary.height : vp.height,
       },
       gap,
       autoAdjust,

@@ -5,7 +5,7 @@ import type { OASVirtualList } from '../../data/virtual-list/index.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
-import { computePosition } from '../../overlay/floating/index.js'
+import { computePosition, getViewport } from '../../overlay/floating/index.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 // 共享树内核：flatten/字段归一 + 勾选级联 + 懒加载状态机 + 模板克隆（与 oas-tree 同一实现）
 import {
@@ -881,10 +881,7 @@ export class OASTreeSelect extends OASElement {
     if (!this.dropdown || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const panelRect = this.dropdown.getBoundingClientRect()
-    const { top, left } = computePosition(anchorRect, panelRect, 'bottom', {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    })
+    const { top, left } = computePosition(anchorRect, panelRect, 'bottom', getViewport())
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
     this.dropdown.style.width = `${anchorRect.width}px`

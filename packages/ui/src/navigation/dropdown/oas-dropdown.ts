@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry } from '@oas-ui/icons'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
 import type { OASMenu } from '../menu/index.js'
 import type { MenuItem, MenuItemKind } from '../menu/index.js'
@@ -534,7 +534,7 @@ export class OASDropdown extends OASElement {
     const { base, align } = this.parsePlacement(this.getAttr('placement', 'bottom'))
     const offset = this.parseOffset()
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
-    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const viewport = getViewport()
 
     let top: number
     let left: number

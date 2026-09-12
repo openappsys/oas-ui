@@ -1,7 +1,7 @@
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { OASElement } from '@oas-ui/core'
 
 interface Option {
@@ -694,10 +694,7 @@ export class OASCombobox extends OASElement {
     if (!this.dropdown || !this.input) return
     const anchorRect = this.input.getBoundingClientRect()
     const panelRect = this.dropdown.getBoundingClientRect()
-    const { top, left } = computePosition(anchorRect, panelRect, 'bottom' as Placement, {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    })
+    const { top, left } = computePosition(anchorRect, panelRect, 'bottom' as Placement, getViewport())
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
     this.dropdown.style.width = `${anchorRect.width}px`
