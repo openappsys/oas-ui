@@ -120,6 +120,23 @@ test('date-picker 移动端：底部抽屉贴视口底展开 + dropdown 静态�
   }
 })
 
+// 移动端专项：视口/指针形态变化（窗口缩放、设备仿真、横竖屏）时重判定移动/PC 形态——不必强刷
+test('date-picker 视口切换：PC↔窄视口不刷新即重判定形态', async ({ page }) => {
+  // PC 起步（宽视口，fine pointer——无触摸模拟）
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-date-picker')
+  const host = page.locator('oas-date-picker').first()
+  // PC：不带 data-mobile-sheet
+  await expect(host).not.toHaveAttribute('data-mobile-sheet')
+  // 缩到窄视口（不刷新）→ 应变移动形态
+  await page.setViewportSize({ width: 375, height: 667 })
+  await expect(host).toHaveAttribute('data-mobile-sheet', '')
+  // 拉宽回 PC（不刷新）→ 应回落 PC 形态
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expect(host).not.toHaveAttribute('data-mobile-sheet')
+})
+
 // 移动端专项：单月面板在抽屉里水平居中 + 日格触摸友好（≈44px），范围双月堆叠成单列纵向滚动
 test('date-picker 移动端：单月面板水平居中 + 日格触摸友好，范围双月单列堆叠', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })

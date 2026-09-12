@@ -4,6 +4,7 @@ import type { OASVirtualList } from '../../data/virtual-list/index.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
+import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { OASElement } from '@oas-ui/core'
@@ -594,6 +595,8 @@ export class OASSelect extends OASElement {
     this.onCleanup(() => {
       if (this.inputTimer !== null) window.clearTimeout(this.inputTimer)
     })
+    // 视口/指针形态变化（缩放/横竖屏/设备仿真）时重判定移动/PC 形态（不强刷）
+    this.onCleanup(watchMobileSheetMode(() => this.resyncMobileMode()))
   }
 
   protected override render(): void {
@@ -641,6 +644,12 @@ export class OASSelect extends OASElement {
     const mobile = this.isMobileSheet()
     this.toggleAttribute('data-mobile-sheet', mobile)
     this.sheetEl?.toggleAttribute('passive', !mobile)
+  }
+
+  /** 移动/PC 形态切换时重同步：重判定形态 + 展开态重排承载方式（syncDropdown 的 PC 分支自带 positionDropdown） */
+  private resyncMobileMode(): void {
+    this.syncMobileMode()
+    this.syncDropdown()
   }
 
   private toggle(): void {

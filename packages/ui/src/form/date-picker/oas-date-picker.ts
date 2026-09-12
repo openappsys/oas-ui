@@ -25,6 +25,7 @@ import { computePosition, getViewport, type Placement } from '../../overlay/floa
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
+import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 
 type PickerType =
   | 'date'
@@ -848,6 +849,9 @@ export class OASDatePicker extends OASElement {
     this.onCleanup(() => window.removeEventListener('resize', reposition))
     window.addEventListener('scroll', reposition, true)
     this.onCleanup(() => window.removeEventListener('scroll', reposition, true))
+    // 视口/指针形态变化（窗口缩放、横竖屏、设备仿真切换）时重判定移动/PC 形态——
+    // 否则形态冻结在上次 update 的结果（PC↔mobile 切换不重判定、强刷才对）
+    this.onCleanup(watchMobileSheetMode(() => this.resyncMobileMode()))
   }
 
   protected override render(): void {
@@ -976,6 +980,13 @@ export class OASDatePicker extends OASElement {
     const mobile = this.isMobileSheet()
     this.toggleAttribute('data-mobile-sheet', mobile)
     this.sheetEl?.toggleAttribute('passive', !mobile)
+  }
+
+  /** 移动/PC 形态切换时重同步：重判定形态 + 展开态重排承载方式（sheet open ↔ fixed 定位） */
+  private resyncMobileMode(): void {
+    this.syncMobileMode()
+    this.syncDropdown()
+    if (this.openState) this.positionDropdown() // PC 形态重定位（移动形态内早退）
   }
 
   // ---- 值格式化 / 解析（按 type） ----
