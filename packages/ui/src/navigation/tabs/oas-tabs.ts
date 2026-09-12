@@ -808,12 +808,9 @@ export class OASTabs extends OASElement {
     this.itemsSyncing = true
     try {
       // 一致性检查：现有面板 value 序列与 items 一致则跳过（防 MutationObserver 重复 update 重建）
-      const existing = [...this.querySelectorAll(':scope > oas-tab-panel')].map((p) =>
-        p.getAttribute('value'),
-      )
+      const existing = [...this.querySelectorAll(':scope > oas-tab-panel')].map((p) => p.getAttribute('value'))
       const itemValues = items.map((i) => String(i.value ?? ''))
-      const same =
-        existing.length === itemValues.length && existing.every((v, i) => v === itemValues[i])
+      const same = existing.length === itemValues.length && existing.every((v, i) => v === itemValues[i])
       if (same) return
       // 清掉现有直接子面板（items 优先，子元素忽略）
       for (const p of [...this.querySelectorAll(':scope > oas-tab-panel')]) p.remove()
@@ -1221,10 +1218,7 @@ export class OASTabs extends OASElement {
     const onDocClick = (e: Event) => {
       if (!this.moreOpen) return
       const path = e.composedPath()
-      if (
-        !path.includes(moreBtn) &&
-        !path.includes(this.shadow.querySelector('.more-dropdown') as Node)
-      ) {
+      if (!path.includes(moreBtn) && !path.includes(this.shadow.querySelector('.more-dropdown') as Node)) {
         this.moreOpen = false
         this.syncMoreDropdown()
       }
@@ -1287,8 +1281,7 @@ export class OASTabs extends OASElement {
       ke.preventDefault()
       let next = 0
       if (ke.key === 'ArrowDown') next = idx < 0 ? 0 : (idx + 1) % items.length
-      else if (ke.key === 'ArrowUp')
-        next = idx < 0 ? items.length - 1 : (idx - 1 + items.length) % items.length
+      else if (ke.key === 'ArrowUp') next = idx < 0 ? items.length - 1 : (idx - 1 + items.length) % items.length
       else if (ke.key === 'Home') next = 0
       else next = items.length - 1
       items[next]?.focus()
@@ -1359,9 +1352,7 @@ export class OASTabs extends OASElement {
     const search = this.shadow.querySelector('.more-search') as HTMLInputElement | null
     if (!dropdown || !list) return
     list.innerHTML = ''
-    const offview = [
-      ...this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value][data-offview]'),
-    ]
+    const offview = [...this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value][data-offview]')]
     const active = this.getAttr('active', '') || (this.panels[0]?.getAttribute('value') ?? '')
     // 搜索框：视口外项较多时才有意义（>5 个才显示搜索）
     const showSearch = offview.length > 5
@@ -1416,12 +1407,7 @@ export class OASTabs extends OASElement {
    * 暂存/恢复操作的是面板 light DOM 子节点（Fragment 承载），不触发 tabs 的 childList observer
    * （observer 监听的是 host 直接子节点 panel 增删，不监听 panel 内部）。
    */
-  private syncPanelContent(
-    panel: HTMLElement,
-    value: string,
-    isActive: boolean,
-    mode: TabsPanelMode,
-  ): void {
+  private syncPanelContent(panel: HTMLElement, value: string, isActive: boolean, mode: TabsPanelMode): void {
     if (mode === 'keep') return
     if (isActive) {
       // 激活：若曾暂存则恢复子节点，并标记已访问
@@ -1525,9 +1511,7 @@ export class OASTabs extends OASElement {
   private warnManagerCapability(): void {
     if (this.managerCap) return
     const needsManager =
-      this.hasAttr('context-menu') ||
-      this.hasAttr('sortable') ||
-      this.panels.some((p) => p.hasAttribute('editable'))
+      this.hasAttr('context-menu') || this.hasAttr('sortable') || this.panels.some((p) => p.hasAttribute('editable'))
     if (needsManager) warnManagerNotImported()
   }
 
@@ -1580,10 +1564,7 @@ export class OASTabs extends OASElement {
   }
 
   /** 重建后按捕获的焦点归属恢复焦点；标签被移除时落到当前选中标签 */
-  private restoreFocus(
-    focused: { type: 'tab' | 'close' | 'add'; value: string } | null,
-    added: boolean,
-  ): void {
+  private restoreFocus(focused: { type: 'tab' | 'close' | 'add'; value: string } | null, added: boolean): void {
     if (!focused) return
     if (focused.type === 'add') {
       // + 按钮触发且宿主新增了面板 → 焦点落到新标签（最后追加的面板）；
@@ -1598,9 +1579,7 @@ export class OASTabs extends OASElement {
       ;(target ?? btn).focus({ preventScroll: true })
     } else {
       // 焦点所在标签已被移除 → 落到当前选中标签
-      this.shadow
-        .querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
-        ?.focus({ preventScroll: true })
+      this.shadow.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus({ preventScroll: true })
     }
   }
 

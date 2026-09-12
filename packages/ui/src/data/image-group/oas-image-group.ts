@@ -92,9 +92,7 @@ export class OASImageGroup extends OASElement {
   /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
   private bind(): void {
     this.inner = this.shadow.querySelector<OASImage>('oas-image')
-    this.shadow
-      .querySelector('slot')
-      ?.addEventListener('slotchange', () => this.syncAll())
+    this.shadow.querySelector('slot')?.addEventListener('slotchange', () => this.syncAll())
 
     if (this.inner) {
       // 打开预览：原样转发 detail（src 为当前张地址）

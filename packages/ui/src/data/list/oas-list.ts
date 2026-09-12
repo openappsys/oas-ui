@@ -295,12 +295,9 @@ export class OASList extends OASElement {
     const virtualRequested = this.getAttr('height', '') !== ''
     // 分组 + 虚拟滚动：虚拟窗口下的吸顶与变高组头复杂，本批自动回退全量渲染
     // （组头普通块、不吸顶），避免虚拟列表误吞组头破坏行索引契约
-    const virtual =
-      !loading && dataActive && this.rows.length > 0 && virtualRequested && !grouped
+    const virtual = !loading && dataActive && this.rows.length > 0 && virtualRequested && !grouped
 
-    const hasDeclarative = Array.from(this.children).some(
-      (c) => c.tagName.toLowerCase() === 'oas-list-item',
-    )
+    const hasDeclarative = Array.from(this.children).some((c) => c.tagName.toLowerCase() === 'oas-list-item')
     const isEmpty = !loading && (this.hasAttr('empty') || (dataActive ? this.rows.length === 0 : !hasDeclarative))
 
     body.hidden = loading || isEmpty
@@ -355,9 +352,7 @@ export class OASList extends OASElement {
   private slotHasContent(name: string): boolean {
     const slot = this.shadow.querySelector<HTMLSlotElement>(`slot[name="${name}"]`)
     if (!slot) return false
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** 数据通道行渲染：oas-list-item 承载模板克隆 + [data-index] 上下文绑定。
@@ -470,9 +465,7 @@ export class OASList extends OASElement {
   /** 虚拟行点击代理：从内嵌虚拟列表行 div 的 data-index 还原 index/item */
   private handleVirtualClick = (e: Event): void => {
     const path = e.composedPath()
-    const row = path.find(
-      (n): n is HTMLElement => n instanceof HTMLElement && n.hasAttribute('data-index'),
-    )
+    const row = path.find((n): n is HTMLElement => n instanceof HTMLElement && n.hasAttribute('data-index'))
     if (!row) return
     const index = Number(row.getAttribute('data-index'))
     if (!Number.isInteger(index) || index < 0 || index >= this.rows.length) return
@@ -500,5 +493,3 @@ function cloneSlotContent(tpl: HTMLTemplateElement): DocumentFragment {
   }
   return frag
 }
-
-

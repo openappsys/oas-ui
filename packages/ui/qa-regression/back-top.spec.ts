@@ -2,9 +2,7 @@
 
 import { test, expect } from '@playwright/test'
 
-test('back-top append-to 不触发 SSR 水合告警（组件 chunk 先于水合 chunk 到达的竞态时序）', async ({
-  page,
-}) => {
+test('back-top append-to 不触发 SSR 水合告警（组件 chunk 先于水合 chunk 到达的竞态时序）', async ({ page }) => {
   // 缺陷回归：connectedCallback 即时把宿主 teleport 进 append-to 容器，组件 chunk
   // （customElements.define）先于页面 chunk（Vue mount 水合链）到达时，水合在 SSR
   // 原位置找不到节点 → console error「Hydration completed but contains mismatches.」。

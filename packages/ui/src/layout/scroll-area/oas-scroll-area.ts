@@ -405,8 +405,7 @@ export class OASScrollArea extends OASElement {
     const thumbSize = d.axis === 'v' ? thumb.clientHeight : thumb.clientWidth
     const travel = trackSize - thumbSize
     if (travel <= 0) return
-    const maxScroll =
-      d.axis === 'v' ? vp.scrollHeight - vp.clientHeight : vp.scrollWidth - vp.clientWidth
+    const maxScroll = d.axis === 'v' ? vp.scrollHeight - vp.clientHeight : vp.scrollWidth - vp.clientWidth
     if (maxScroll <= 0) return
     const pointer = d.axis === 'v' ? e.clientY : e.clientX
     const delta = ((pointer - d.startPointer) / travel) * maxScroll
@@ -454,7 +453,11 @@ export class OASScrollArea extends OASElement {
   scrollToBottom(options?: { behavior?: ScrollBehavior }): void {
     const vp = this.viewport
     if (!vp) return
-    vp.scrollTo({ top: vp.scrollHeight, left: vp.scrollLeft, behavior: options?.behavior ?? 'smooth' })
+    vp.scrollTo({
+      top: vp.scrollHeight,
+      left: vp.scrollLeft,
+      behavior: options?.behavior ?? 'smooth',
+    })
   }
 
   /**

@@ -111,9 +111,7 @@ function key(el: OASNavigationMenu, k: string): void {
 
 function panelFocusables(el: OASNavigationMenu): HTMLElement[] {
   return [
-    ...panel(el).querySelectorAll<HTMLElement>(
-      '[part="card-link"], [part="section-title"], [part="section-links"] a',
-    ),
+    ...panel(el).querySelectorAll<HTMLElement>('[part="card-link"], [part="section-title"], [part="section-links"] a'),
   ]
 }
 
@@ -594,9 +592,7 @@ describe('OASNavigationMenu', () => {
 
   it('disabled 顶级触发器不可展开', () => {
     const el = mount({
-      items: JSON.stringify([
-        { label: '禁用', value: 'x', disabled: true, children: [{ label: '子', value: 'sub' }] },
-      ]),
+      items: JSON.stringify([{ label: '禁用', value: 'x', disabled: true, children: [{ label: '子', value: 'sub' }] }]),
       'delay-duration': '0',
     })
     let fired = 0
@@ -990,9 +986,7 @@ describe('子元素声明式通道', () => {
   })
 
   it('子元素变化（MutationObserver）动态重渲染：增删与属性更新', async () => {
-    const el = mountChildren(
-      `<oas-navigation-menu-item value="home" href="/">首页</oas-navigation-menu-item>`,
-    )
+    const el = mountChildren(`<oas-navigation-menu-item value="home" href="/">首页</oas-navigation-menu-item>`)
     expect(topItems(el).length).toBe(1)
     const item = document.createElement('oas-navigation-menu-item')
     item.setAttribute('value', 'about')

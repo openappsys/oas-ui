@@ -98,9 +98,7 @@ describe('OASTable 编辑能力边界（纯核 core 入口：未 import edit 能
     document.body.appendChild(plain)
     expect(plain.shadowRoot!.querySelectorAll('tr.row td').length).toBe(2)
     expect(plain.shadowRoot!.textContent).toContain('张三')
-    const editWarns = warnSpy.mock.calls.filter((call: unknown[]) =>
-      String(call[0]).includes('table/edit'),
-    )
+    const editWarns = warnSpy.mock.calls.filter((call: unknown[]) => String(call[0]).includes('table/edit'))
     expect(editWarns.length).toBe(0)
   })
 
@@ -109,7 +107,12 @@ describe('OASTable 编辑能力边界（纯核 core 入口：未 import edit 能
     el.setAttribute('editable', '')
     el.setAttribute('data', JSON.stringify([{ name: '张三', age: 30 }]))
     el.columns = [
-      { key: 'name', title: '姓名', editable: true, validate: (v: string) => (v === 'bad' ? 'x' : '') },
+      {
+        key: 'name',
+        title: '姓名',
+        editable: true,
+        validate: (v: string) => (v === 'bad' ? 'x' : ''),
+      },
       { key: 'age', title: '年龄' },
     ]
     document.body.appendChild(el)

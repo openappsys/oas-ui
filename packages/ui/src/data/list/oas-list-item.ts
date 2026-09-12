@@ -133,9 +133,7 @@ export class OASListItem extends OASElement {
   /** 插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
   private slotHasContent(slot: HTMLSlotElement | null): boolean {
     if (!slot) return false
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** 缓存节点引用（render 与水合路径共用；title/description/avatar 插槽内容增减时重刷） */
@@ -207,9 +205,7 @@ export class OASListItem extends OASElement {
     const descFallback = this.shadow.querySelector<HTMLElement>('.desc-text')
     const defaultSlot = this.shadow.querySelector<HTMLSlotElement>('slot:not([name])')
     if (descEl && descSlot && descFallback) {
-      const attr =
-        this.getAttr('description', '') ||
-        (meta?.description != null ? String(meta.description) : '')
+      const attr = this.getAttr('description', '') || (meta?.description != null ? String(meta.description) : '')
       descFallback.textContent = attr
       // 插槽（description 或默认插槽）有内容时隐藏属性兜底，防双显
       const hasDesc = this.slotHasContent(descSlot) || this.slotHasContent(defaultSlot)
@@ -221,8 +217,7 @@ export class OASListItem extends OASElement {
     const avatarEl = this.shadow.querySelector<HTMLElement>('[part="avatar"]')
     const avatarSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="avatar"]')
     const avatarImg = this.shadow.querySelector<HTMLImageElement>('.avatar-img')
-    const avatarUrl =
-      this.getAttr('avatar', '') || (meta?.avatar != null ? String(meta.avatar) : '')
+    const avatarUrl = this.getAttr('avatar', '') || (meta?.avatar != null ? String(meta.avatar) : '')
     if (avatarEl && avatarSlot && avatarImg) {
       const hasSlot = this.slotHasContent(avatarSlot)
       avatarImg.hidden = hasSlot || avatarUrl === ''

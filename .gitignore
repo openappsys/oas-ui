@@ -11,6 +11,7 @@ test-results/
 **/.vitepress/cache/
 **/.vitepress/dist/
 **/.vitepress/temp/
+**/.vitepress/.temp/
 
 # playground 构建产物（hash 文件名，可从源码再生产）
 packages/playground/dist-react/

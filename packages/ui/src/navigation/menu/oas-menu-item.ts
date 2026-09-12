@@ -18,18 +18,7 @@ const ITEM_STYLE = `
  */
 export class OASMenuItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return [
-      'value',
-      'disabled',
-      'loading',
-      'icon',
-      'icon-color',
-      'kind',
-      'danger',
-      'href',
-      'target',
-      'rel',
-    ]
+    return ['value', 'disabled', 'loading', 'icon', 'icon-color', 'kind', 'danger', 'href', 'target', 'rel']
   }
 
   protected override render(): void {

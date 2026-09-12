@@ -29,10 +29,8 @@ test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo
   await child.evaluate((e) => e.setAttribute('open', ''))
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('#pop-child')
-        ?.shadowRoot?.querySelector('[part="panel"]')
-        ?.getAttribute('aria-hidden') === 'false',
+      document.querySelector('#pop-child')?.shadowRoot?.querySelector('[part="panel"]')?.getAttribute('aria-hidden') ===
+      'false',
     null,
     { timeout: 5000 },
   )
@@ -62,10 +60,8 @@ test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo
   await child.evaluate((e) => e.setAttribute('open', ''))
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('#pop-child')
-        ?.shadowRoot?.querySelector('[part="panel"]')
-        ?.getAttribute('aria-hidden') === 'false',
+      document.querySelector('#pop-child')?.shadowRoot?.querySelector('[part="panel"]')?.getAttribute('aria-hidden') ===
+      'false',
     null,
     { timeout: 5000 },
   )
@@ -75,9 +71,7 @@ test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo
   expect(s.cAria, '父关闭应级联关闭子层').toBe('true')
 })
 
-test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-open-change 可见反馈', async ({
-  page,
-}) => {
+test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-open-change 可见反馈', async ({ page }) => {
   await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
   // oas-popover host 零尺寸（inline-block 无内容），waitForSelector 默认等可见会超时 → 等 attached + shadowRoot
   await page.waitForSelector('#pop-point', { state: 'attached', timeout: 15000 })
@@ -106,11 +100,9 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
   expect(Math.abs(box.y - (90 - box.height / 2))).toBeLessThanOrEqual(2)
 
   // oas-open-change 可见反馈：demo 状态 tag 回显 open
-  await page.waitForFunction(
-    () => document.getElementById('pop-point-status')?.textContent === 'open: true',
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.getElementById('pop-point-status')?.textContent === 'open: true', null, {
+    timeout: 5000,
+  })
 
   // 外部点击不关闭（虚拟模式生命周期由宿主控制）
   await page.mouse.click(5, 5)
@@ -124,9 +116,7 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
   await expect(panel).toHaveAttribute('aria-hidden', 'false')
   await page.waitForFunction(
     () => {
-      const p = document
-        .querySelector('#pop-point')!
-        .shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+      const p = document.querySelector('#pop-point')!.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
       return p.style.left === '708px' // 700 + 8（gap）
     },
     null,
@@ -162,9 +152,7 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
 // 曾现缺口：多选只有父子级联一种取值模型、无 check-strategy 取值策略（parent 只父级 / child 只叶子）；万级数据下拉无窗口化渲染。
 // 本批补：策略对比 demo 值回显、虚拟滚动窗口化渲染 + 滚动窗口平移 + 键盘导航 ARIA。
 
-test('popover.md 虚拟画布：#virt-canvas 有可见宽度且提示文字单行居中（不竖排）', async ({
-  page,
-}) => {
+test('popover.md 虚拟画布：#virt-canvas 有可见宽度且提示文字单行居中（不竖排）', async ({ page }) => {
   await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('#virt-canvas', { timeout: 15000 })
   const r = await page.evaluate(() => {
@@ -362,9 +350,7 @@ test('popover arrow-merge 直角三角贴角共边 8 向：直角点贴面板角
           const a = verts[(i + 1) % 3]!
           const b = verts[(i + 2) % 3]!
           const v = verts[i]!
-          if (
-            Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01
-          ) {
+          if (Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01) {
             rv = v
             others = verts.filter((_, j) => j !== i)
           }
@@ -420,14 +406,8 @@ test('popover arrow-merge 直角三角贴角共边 8 向：直角点贴面板角
     expect(r.hasPolygon, `${r.p} clip-path 应裁出三角`).toBe(true)
     expect(r.boxW, `${r.p} 箭头盒应为 8px 宽（不旋转）`).toBeCloseTo(8, 1)
     expect(r.boxH, `${r.p} 箭头盒应为 8px 高（不旋转）`).toBeCloseTo(8, 1)
-    expect(r.rdx, `${r.p} 直角点相对面板角点 X 应为 ${r.vdx}（描边带让位）`).toBeCloseTo(
-      r.vdx as number,
-      1,
-    )
-    expect(r.rdy, `${r.p} 直角点相对面板角点 Y 应为 ${r.vdy}（描边带让位）`).toBeCloseTo(
-      r.vdy as number,
-      1,
-    )
+    expect(r.rdx, `${r.p} 直角点相对面板角点 X 应为 ${r.vdx}（描边带让位）`).toBeCloseTo(r.vdx as number, 1)
+    expect(r.rdy, `${r.p} 直角点相对面板角点 Y 应为 ${r.vdy}（描边带让位）`).toBeCloseTo(r.vdy as number, 1)
     expect(r.legsOk, `${r.p} 直角边与面板边共边 + 尖端正交外探 8px 指向锚点侧`).toBe(true)
     expect(r.legsOnly, `${r.p} 外露直角边描边 1px、贴面板融合边无描边`).toBe(true)
     expect(r.othersZero, `${r.p} 斜边与其余边不得有描边`).toBe(true)
@@ -440,18 +420,14 @@ test('popover arrow-merge 直角三角贴角共边 8 向：直角点贴面板角
 // 曾现缺陷：碰撞边界解析只取目标元素 rect 的宽高、丢原点，夹取与翻转按视口 (0,0) 原点系
 // 折算——边界位于页面中部时卡片被夹到视口左上角（完全脱离边界容器与锚点）。
 // 修复：边界解析保留完整 rect（left/top/right/bottom），fits 判定与夹取均以边界原点计算。
-test('popover 12 向箭头对准锚点：demo 4 实例箭头中心落在锚点投影区间内（曾恒居中脱离锚点）', async ({
-  page,
-}) => {
+test('popover 12 向箭头对准锚点：demo 4 实例箭头中心落在锚点投影区间内（曾恒居中脱离锚点）', async ({ page }) => {
   await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
   const firstSel = '.demo-block__body oas-popover[placement="bottom-start"]'
   await page.locator(firstSel).first().waitFor({ state: 'attached', timeout: 15000 })
   await page.waitForFunction(
     () =>
       document.querySelectorAll('oas-popover').length > 0 &&
-      [...document.querySelectorAll('oas-popover')].every(
-        (e) => (e as HTMLElement).shadowRoot != null,
-      ),
+      [...document.querySelectorAll('oas-popover')].every((e) => (e as HTMLElement).shadowRoot != null),
   )
   for (const pl of ['bottom-start', 'bottom-end', 'right-start', 'top-end']) {
     const sel = `.demo-block__body oas-popover[placement="${pl}"]`
@@ -508,9 +484,7 @@ test('popover portal 样式保真：append-to 面板 fixed + 有背景边框，�
       position: cs.position,
       hasBg: cs.backgroundColor !== 'rgba(0, 0, 0, 0)',
       hasBorder: cs.borderTopWidth !== '0px',
-      gapOk:
-        Math.abs(panel.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <=
-        2,
+      gapOk: Math.abs(panel.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <= 2,
     }
   }, sel)
   expect(r1.hostInBody, 'portal host 应挂在 body').toBe(true)
@@ -527,9 +501,7 @@ test('popover portal 样式保真：append-to 面板 fixed + 有背景边框，�
     const host = document.querySelector<HTMLElement>('[data-oas-popover-portal]')
     const panel = host?.shadowRoot?.querySelector<HTMLElement>('[part="panel"]')!
     const anchor = pop.querySelector<HTMLElement>(':scope > *')!
-    return (
-      Math.abs(panel.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <= 2
-    )
+    return Math.abs(panel.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <= 2
   }, sel)
   expect(r2, '滚动后面板应跟随锚点（曾乱飘）').toBe(true)
   await page.evaluate((s) => document.querySelector(s)!.removeAttribute('open'), sel)
@@ -562,18 +534,13 @@ test('popover closable：右上角 ✕ 按钮真实可见（display 非 none 且
       atTopRight: b.right <= pb.right + 2 && b.top >= pb.top && b.top <= pb.top + 24,
     }
   }, sel)
-  expect(
-    r.display,
-    '✕ 应可见（display 非 none，曾规则钩子 .panel.oas-closable 无人挂类）',
-  ).not.toBe('none')
+  expect(r.display, '✕ 应可见（display 非 none，曾规则钩子 .panel.oas-closable 无人挂类）').not.toBe('none')
   expect(r.visible, '✕ 应有渲染尺寸').toBe(true)
   expect(r.atTopRight, '✕ 应位于面板右上角').toBe(true)
   await page.evaluate((s) => document.querySelector(s)!.removeAttribute('open'), sel)
 })
 
-test('popover virtual 定点：(160,90) 标记点可见且箭头对准该点（曾无标记、对准哪里不可感知）', async ({
-  page,
-}) => {
+test('popover virtual 定点：(160,90) 标记点可见且箭头对准该点（曾无标记、对准哪里不可感知）', async ({ page }) => {
   await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('#pop-point', { state: 'attached', timeout: 15000 })
   await page.waitForFunction(() => {
@@ -603,9 +570,7 @@ test('popover virtual 定点：(160,90) 标记点可见且箭头对准该点（�
   expect(Math.abs(r.markCenter.x - 160), '标记中心应在视口 x=160').toBeLessThanOrEqual(1)
   expect(Math.abs(r.markCenter.y - 90), '标记中心应在视口 y=90').toBeLessThanOrEqual(1)
   // placement=right：箭头垂直中心对准点 y=90
-  expect(Math.abs(r.arrowCenter.y - 90), '箭头应对准虚拟锚点坐标点（P6 定夺）').toBeLessThanOrEqual(
-    3,
-  )
+  expect(Math.abs(r.arrowCenter.y - 90), '箭头应对准虚拟锚点坐标点（P6 定夺）').toBeLessThanOrEqual(3)
   await page.evaluate(() => {
     ;(window as unknown as { popPointHide: () => void }).popPointHide()
   })
@@ -618,17 +583,13 @@ test('popover virtual 定点：(160,90) 标记点可见且箭头对准该点（�
 // —— 能力增强批次（P1-P25）回归：ARIA 关联 / 触发键幂等 / 开关默认值 / 结构化插槽 ——
 // 本批新增能力的机制级断言（Vue demo 属性存活 + 交互反馈）；视觉判定由主 agent 截图复核。
 
-test('popover P1/P2/P6/P11：锚点 ARIA 三时机 + trigger-keys 默认值 + size 档位 + 结构化插槽渲染', async ({
-  page,
-}) => {
+test('popover P1/P2/P6/P11：锚点 ARIA 三时机 + trigger-keys 默认值 + size 档位 + 结构化插槽渲染', async ({ page }) => {
   await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('oas-popover', { timeout: 15000 })
   await page.waitForFunction(
     () =>
       document.querySelectorAll('oas-popover').length > 0 &&
-      [...document.querySelectorAll('oas-popover')].every(
-        (e) => (e as HTMLElement).shadowRoot != null,
-      ),
+      [...document.querySelectorAll('oas-popover')].every((e) => (e as HTMLElement).shadowRoot != null),
   )
 
   // P1：demo 首个实例的触发元素带 aria-haspopup=dialog + aria-expanded 随开合同步
@@ -638,7 +599,11 @@ test('popover P1/P2/P6/P11：锚点 ARIA 三时机 + trigger-keys 默认值 + si
   const anchorAria = () =>
     first.evaluate((e) => {
       const a = e.querySelector(':scope > *') as HTMLElement
-      return { haspopup: a.getAttribute('aria-haspopup'), expanded: a.getAttribute('aria-expanded'), controls: a.getAttribute('aria-controls') }
+      return {
+        haspopup: a.getAttribute('aria-haspopup'),
+        expanded: a.getAttribute('aria-expanded'),
+        controls: a.getAttribute('aria-controls'),
+      }
     })
   let aria = await anchorAria()
   expect(aria.haspopup).toBe('dialog')
@@ -653,10 +618,7 @@ test('popover P1/P2/P6/P11：锚点 ARIA 三时机 + trigger-keys 默认值 + si
 
   // P2：键盘开合 demo——点击打开（幂等守卫下合成 click 单次切换），Enter 键盘路径关闭
   //（oas-button host 无 tabindex，host.focus() 静默失效，故 keydown 直接派发到锚点验证监听路径）
-  const kb = page
-    .locator('.demo-block__body oas-popover')
-    .filter({ hasText: '聚焦后按 Enter / 空格' })
-    .first()
+  const kb = page.locator('.demo-block__body oas-popover').filter({ hasText: '聚焦后按 Enter / 空格' }).first()
   await kb.scrollIntoViewIfNeeded()
   await kb.evaluate((e) => (e.querySelector(':scope > *') as HTMLElement).click())
   await expect(kb.locator('[part="panel"]')).toHaveAttribute('aria-hidden', 'false')
@@ -726,9 +688,7 @@ test('popover P3/P4/P5/P13/P15：trap-focus 无遮罩 + 关闭开关 + before-cl
   await page.waitForFunction(
     () =>
       document.querySelectorAll('oas-popover').length > 0 &&
-      [...document.querySelectorAll('oas-popover')].every(
-        (e) => (e as HTMLElement).shadowRoot != null,
-      ),
+      [...document.querySelectorAll('oas-popover')].every((e) => (e as HTMLElement).shadowRoot != null),
     null,
     { timeout: 15000 },
   )
@@ -784,10 +744,7 @@ test('popover P3/P4/P5/P13/P15：trap-focus 无遮罩 + 关闭开关 + before-cl
     check?.removeAttribute('checked')
   })
   await guard.locator('[part="close"]').click()
-  await expect(guard.locator('[part="panel"]'), '取消拦截后 ✕ 应关闭').toHaveAttribute(
-    'aria-hidden',
-    'true',
-  )
+  await expect(guard.locator('[part="panel"]'), '取消拦截后 ✕ 应关闭').toHaveAttribute('aria-hidden', 'true')
 
   // P13：final-focus demo——关闭后焦点到指定输入框
   const fin = page.locator('oas-popover[final-focus]')
@@ -795,9 +752,7 @@ test('popover P3/P4/P5/P13/P15：trap-focus 无遮罩 + 关闭开关 + before-cl
   await fin.evaluate((e) => e.setAttribute('open', ''))
   await fin.locator('[part="close"]').click()
   await page.waitForTimeout(120)
-  const focused = await page.evaluate(
-    () => document.activeElement?.id === 'pop-final-input',
-  )
+  const focused = await page.evaluate(() => document.activeElement?.id === 'pop-final-input')
   expect(focused, '关闭后焦点应到 final-focus 指定输入框').toBe(true)
 
   // P15：hide-empty demo——打开态清空 title（吸收生效，关闭态清会被冻结 gate 拦住）→
@@ -810,17 +765,11 @@ test('popover P3/P4/P5/P13/P15：trap-focus 无遮罩 + 关闭开关 + before-cl
   await empty.evaluate((e) => e.removeAttribute('open'))
   await empty.evaluate((e) => (e.querySelector(':scope > *') as HTMLElement).click())
   await page.waitForTimeout(250)
-  expect(
-    await empty.evaluate((e) => e.hasAttribute('open')),
-    'hide-empty 空内容时触发路径不应挂 open',
-  ).toBe(false)
+  expect(await empty.evaluate((e) => e.hasAttribute('open')), 'hide-empty 空内容时触发路径不应挂 open').toBe(false)
   // 填回内容后正常打开
   await empty.evaluate((e) => e.setAttribute('content', '有内容了'))
   await empty.evaluate((e) => (e.querySelector(':scope > *') as HTMLElement).click())
-  await expect(empty.locator('[part="panel"]'), '有内容后应正常打开').toHaveAttribute(
-    'aria-hidden',
-    'false',
-  )
+  await expect(empty.locator('[part="panel"]'), '有内容后应正常打开').toHaveAttribute('aria-hidden', 'false')
   await empty.evaluate((e) => e.removeAttribute('open'))
 })
 
@@ -831,23 +780,16 @@ test('popover P20/P21/P22/P25：contextmenu 光标定位 + dismiss-on-select + d
   await page.waitForFunction(
     () =>
       document.querySelectorAll('oas-popover').length > 0 &&
-      [...document.querySelectorAll('oas-popover')].every(
-        (e) => (e as HTMLElement).shadowRoot != null,
-      ),
+      [...document.querySelectorAll('oas-popover')].every((e) => (e as HTMLElement).shadowRoot != null),
     null,
     { timeout: 15000 },
   )
 
   // P20：contextmenu demo——右键光标处定位（面板左缘 ≈ 光标 x + 8）
   //（用 hasText 过滤到本批新 demo；:scope > * 在 playwright pierce 语义下有歧义，走原生查询）
-  const ctx = page
-    .locator('oas-popover[trigger="contextmenu"]')
-    .filter({ hasText: '在这一带的任意位置右键' })
-    .first()
+  const ctx = page.locator('oas-popover[trigger="contextmenu"]').filter({ hasText: '在这一带的任意位置右键' }).first()
   await ctx.scrollIntoViewIfNeeded()
-  const anchorBox = await ctx.evaluate((e) =>
-    (e.querySelector(':scope > *') as HTMLElement).getBoundingClientRect(),
-  )
+  const anchorBox = await ctx.evaluate((e) => (e.querySelector(':scope > *') as HTMLElement).getBoundingClientRect())
   const cx = Math.round(anchorBox.x + anchorBox.width / 2)
   const cy = Math.round(anchorBox.y + anchorBox.height / 2)
   await page.mouse.click(cx, cy, { button: 'right' })
@@ -870,11 +812,9 @@ test('popover P20/P21/P22/P25：contextmenu 光标定位 + dismiss-on-select + d
     'aria-hidden',
     'true',
   )
-  await page.waitForFunction(
-    () => document.getElementById('pop-dismiss-status')?.textContent === 'open: false',
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.getElementById('pop-dismiss-status')?.textContent === 'open: false', null, {
+    timeout: 5000,
+  })
 
   // P22：destroy-on-hide demo——关闭后 slot 内容脱离分配（hidden），状态 tag 回显
   const destroy = page.locator('#pop-destroy')
@@ -921,11 +861,9 @@ test('popover P20/P21/P22/P25：contextmenu 光标定位 + dismiss-on-select + d
     } as MouseEvent)
   })
   await expect(panel.locator('[part="panel"]')).toHaveAttribute('aria-hidden', 'false')
-  await page.waitForFunction(
-    () => document.getElementById('pop-render-status')?.textContent === 'open: true',
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.getElementById('pop-render-status')?.textContent === 'open: true', null, {
+    timeout: 5000,
+  })
   await page.evaluate(() => {
     ;(window as unknown as { popPanelHide: () => void }).popPanelHide()
   })
@@ -936,11 +874,9 @@ test('popover P23 断点响应：placement="bottom md:right" 随视口宽度切�
   page,
 }) => {
   await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForFunction(
-    () => document.querySelectorAll('oas-popover').length > 0,
-    null,
-    { timeout: 15000 },
-  )
+  await page.waitForFunction(() => document.querySelectorAll('oas-popover').length > 0, null, {
+    timeout: 15000,
+  })
   const bp = page.locator('oas-popover[placement="bottom md:right"]').first()
   await bp.scrollIntoViewIfNeeded()
 
@@ -951,22 +887,24 @@ test('popover P23 断点响应：placement="bottom md:right" 随视口宽度切�
 
   // 缩到 <768：matchMedia change → update 重算 → bottom
   await page.setViewportSize({ width: 700, height: 800 })
-  await page.waitForFunction(() => {
-    const e = document.querySelector('oas-popover[placement="bottom md:right"]')
-    return (
-      e?.shadowRoot
-        ?.querySelector('[part="panel"]')
-        ?.getAttribute('data-placement') === 'bottom'
-    )
-  }, null, { timeout: 5000 })
+  await page.waitForFunction(
+    () => {
+      const e = document.querySelector('oas-popover[placement="bottom md:right"]')
+      return e?.shadowRoot?.querySelector('[part="panel"]')?.getAttribute('data-placement') === 'bottom'
+    },
+    null,
+    { timeout: 5000 },
+  )
 
   // 再放大回 ≥768：right 恢复
   await page.setViewportSize({ width: 1280, height: 800 })
-  await page.waitForFunction(() => {
-    const e = document.querySelector('oas-popover[placement="bottom md:right"]')
-    return (
-      e?.shadowRoot?.querySelector('[part="panel"]')?.getAttribute('data-placement') === 'right'
-    )
-  }, null, { timeout: 5000 })
+  await page.waitForFunction(
+    () => {
+      const e = document.querySelector('oas-popover[placement="bottom md:right"]')
+      return e?.shadowRoot?.querySelector('[part="panel"]')?.getAttribute('data-placement') === 'right'
+    },
+    null,
+    { timeout: 5000 },
+  )
   await bp.evaluate((e) => e.removeAttribute('open'))
 })

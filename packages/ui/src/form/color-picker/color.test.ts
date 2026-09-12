@@ -270,9 +270,7 @@ describe('gradient：linear-gradient 串解析 / 输出（二期渐变模式）'
     expect(formatGradient(stops, { format: 'rgb', alpha: true })).toBe(
       'linear-gradient(90deg, rgba(255, 0, 0, 0.5) 0%, rgba(0, 0, 255, 1) 100%)',
     )
-    expect(formatGradient(stops, { alpha: true })).toBe(
-      'linear-gradient(90deg, #ff000080 0%, #0000ffff 100%)',
-    )
+    expect(formatGradient(stops, { alpha: true })).toBe('linear-gradient(90deg, #ff000080 0%, #0000ffff 100%)')
   })
 
   it('gradientAt：线性插值取色', () => {

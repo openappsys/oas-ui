@@ -2,15 +2,11 @@
 
 import { test, expect } from '@playwright/test'
 
-test('layout viewport：高度锁定 + 侧栏/内容各自独立滚动 + 顶栏不随内容动（实测缺陷回归）', async ({
-  page,
-}) => {
+test('layout viewport：高度锁定 + 侧栏/内容各自独立滚动 + 顶栏不随内容动（实测缺陷回归）', async ({ page }) => {
   await page.goto('/components/layout.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForFunction(
-    () => document.querySelector('#layout-viewport')?.shadowRoot != null,
-    undefined,
-    { timeout: 15000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#layout-viewport')?.shadowRoot != null, undefined, {
+    timeout: 15000,
+  })
   const r = await page.evaluate(() => {
     const layout = document.querySelector('#layout-viewport')!
     const sr = layout.shadowRoot!
@@ -39,15 +35,11 @@ test('layout viewport：高度锁定 + 侧栏/内容各自独立滚动 + 顶栏�
   expect(r.sbPanelScrollable, '内嵌 sidebar panel 应在侧栏内独立滚动').toBe(true)
 })
 
-test('sider 内嵌 sidebar 宽度自动对齐：填满轨道而非自身默认宽（实测缺陷回归）', async ({
-  page,
-}) => {
+test('sider 内嵌 sidebar 宽度自动对齐：填满轨道而非自身默认宽（实测缺陷回归）', async ({ page }) => {
   await page.goto('/components/layout.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForFunction(
-    () => document.querySelector('#layout-viewport-sidebar')?.shadowRoot != null,
-    undefined,
-    { timeout: 15000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#layout-viewport-sidebar')?.shadowRoot != null, undefined, {
+    timeout: 15000,
+  })
   const r = await page.evaluate(() => {
     const layout = document.querySelector('#layout-viewport') as HTMLElement
     const sider = layout.querySelector('oas-sider') as HTMLElement

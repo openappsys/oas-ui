@@ -70,12 +70,8 @@ describe('OASTabs 主路径入口（index 内含 manager 能力）', () => {
       effectAllowed: '',
       dropEffect: '',
     } as unknown as DataTransfer
-    tabs[0]!.dispatchEvent(
-      new DragEvent('dragstart', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }),
-    )
-    tabs[1]!.dispatchEvent(
-      new DragEvent('drop', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }),
-    )
+    tabs[0]!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }))
+    tabs[1]!.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }))
     expect(fired).toBe(1)
   })
 

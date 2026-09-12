@@ -11,9 +11,7 @@ test('theme-editor 颜色函数值：rgb() 色板非黑 hex + 文本框编辑写
   const r = await page.evaluate(() => {
     const el = document.querySelector('#te-fn') as HTMLElement
     const rowOf = (name: string) =>
-      [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="row"]')].find((x) =>
-        x.textContent!.includes(name),
-      )!
+      [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="row"]')].find((x) => x.textContent!.includes(name))!
     const rgbRow = rowOf('--demo-color-rgb')
     const mixRow = rowOf('--demo-color-mix')
     const swatch = rgbRow.querySelector<HTMLInputElement>('input[type="color"]')!
@@ -39,4 +37,3 @@ test('theme-editor 颜色函数值：rgb() 色板非黑 hex + 文本框编辑写
   expect(r.mixDisabled, '含 var() 的 color-mix 值色板应禁用').toBe(true)
   expect(r.mixText, 'color-mix 值文本框应保留原始字符串').toContain('color-mix(')
 })
-

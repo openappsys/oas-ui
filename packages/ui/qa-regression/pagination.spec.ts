@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('pagination 宿主声明式 hidden 不被 update 撕掉（动态 total 触发重渲后仍隐藏）', async ({
-  page,
-}) => {
+test('pagination 宿主声明式 hidden 不被 update 撕掉（动态 total 触发重渲后仍隐藏）', async ({ page }) => {
   // 曾现 bug：update() 在非 hide-on-single 分支末尾无条件 removeAttribute('hidden')，
   // React/Vue 声明式宿主的 hidden 在 total/current 变化时被组件撕掉 → 元素意外可见。
   // 本用例用 demo 里真实驱动 total 变化的按钮（#pagination-boundary-inc → total 30→300）
@@ -39,9 +37,7 @@ test('pagination 宿主声明式 hidden 不被 update 撕掉（动态 total 触�
   })
 })
 
-test('pagination 宿主 hidden + hide-on-single 叠加：多页恢复不误摘宿主 hidden', async ({
-  page,
-}) => {
+test('pagination 宿主 hidden + hide-on-single 叠加：多页恢复不误摘宿主 hidden', async ({ page }) => {
   // 单属性 world 下组件只能摘除自己因 hide-on-single 写入的 hidden：宿主声明式隐藏时组件
   // 不取得所有权，恢复多页后宿主的 hidden 必须原样保留。
   await page.goto('/components/pagination.html', { waitUntil: 'domcontentloaded' })

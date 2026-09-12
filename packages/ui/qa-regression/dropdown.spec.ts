@@ -61,9 +61,7 @@ test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口�
 // clip-path 垂直分割（inset(0 50% 0 0)）实现。断言：覆盖层存在、clip 只留左半、
 // 覆盖层为 warning 色、基础星为未激活 border 色。
 
-test('dropdown split：Vue demo 属性存活、箭头按钮 aria 同步、主按钮 oas-action 有可见反馈', async ({
-  page,
-}) => {
+test('dropdown split：Vue demo 属性存活、箭头按钮 aria 同步、主按钮 oas-action 有可见反馈', async ({ page }) => {
   await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-dropdown[split]')
   await page.waitForFunction(() => typeof (window as any).ddSplitAction === 'function', null, {
@@ -133,9 +131,7 @@ test('dropdown loading 菜单项：spinner 视觉 + 禁点，异步恢复后还�
   await page.waitForFunction(
     () => {
       const dd = document.querySelector('#dd-async')!
-      const save = JSON.parse(dd.getAttribute('items') ?? '[]').find(
-        (i: { value: string }) => i.value === 'save',
-      )
+      const save = JSON.parse(dd.getAttribute('items') ?? '[]').find((i: { value: string }) => i.value === 'save')
       return save?.loading === true
     },
     null,
@@ -161,9 +157,7 @@ test('dropdown loading 菜单项：spinner 视觉 + 禁点，异步恢复后还�
   await page.waitForFunction(
     () => {
       const dd = document.querySelector('#dd-async')!
-      const save = JSON.parse(dd.getAttribute('items') ?? '[]').find(
-        (i: { value: string }) => i.value === 'save',
-      )
+      const save = JSON.parse(dd.getAttribute('items') ?? '[]').find((i: { value: string }) => i.value === 'save')
       return save && !save.loading
     },
     null,
@@ -219,9 +213,7 @@ test('dropdown 箭头：#dd-arrow 打开后 .arrow 可见且位于面板顶部�
   await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix-dropdown-arrow.png' })
 })
 
-test('dropdown 箭头 arrow="false"：#dd-arrow-none 打开后无箭头（hidden 属性）且菜单正常', async ({
-  page,
-}) => {
+test('dropdown 箭头 arrow="false"：#dd-arrow-none 打开后无箭头（hidden 属性）且菜单正常', async ({ page }) => {
   await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#dd-arrow-none')
   const dd = page.locator('#dd-arrow-none')
@@ -274,10 +266,7 @@ test('dropdown 关闭过程箭头与面板透明度逐帧同步（不慢一拍�
   const fading = samples.filter((s) => s.menu > 0 && s.menu < 1)
   expect(fading.length, '应采样到淡出过程帧').toBeGreaterThan(0)
   for (const s of fading) {
-    expect(
-      Math.abs(s.arrow - s.menu),
-      '箭头与面板 opacity 应逐帧同步（差 ≤0.05）',
-    ).toBeLessThanOrEqual(0.05)
+    expect(Math.abs(s.arrow - s.menu), '箭头与面板 opacity 应逐帧同步（差 ≤0.05）').toBeLessThanOrEqual(0.05)
   }
 })
 

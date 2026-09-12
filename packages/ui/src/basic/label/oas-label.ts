@@ -200,10 +200,7 @@ export class OASLabel extends OASElement {
     const color = this.getAttr('color', '')
     if (color) {
       const isPreset = (LABEL_PRESET_COLORS as readonly string[]).includes(color)
-      this.labelEl.style.setProperty(
-        '--oas-label-color',
-        isPreset ? `var(--oas-preset-${color}-text)` : color,
-      )
+      this.labelEl.style.setProperty('--oas-label-color', isPreset ? `var(--oas-preset-${color}-text)` : color)
     } else {
       this.labelEl.style.removeProperty('--oas-label-color')
     }

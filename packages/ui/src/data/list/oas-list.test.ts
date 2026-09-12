@@ -34,9 +34,7 @@ describe('OASList', () => {
   it('bordered 时加边框', () => {
     const el = mount()
     el.setAttribute('bordered', '')
-    expect(el.shadowRoot!.querySelector('[part="list"]')!.getAttribute('data-bordered')).toBe(
-      'true',
-    )
+    expect(el.shadowRoot!.querySelector('[part="list"]')!.getAttribute('data-bordered')).toBe('true')
   })
 
   it('loading 时显示骨架占位、隐藏列表项', () => {
@@ -305,9 +303,7 @@ describe('OASList', () => {
       const empty = el.shadowRoot!.querySelector<HTMLElement>('[part="empty"]')!
       expect(empty.hidden).toBe(false)
       expect(slotHidden(el, 'empty')).toBe(false)
-      expect(
-        el.shadowRoot!.querySelector<HTMLElement>('[part="empty-default"]')!.hidden,
-      ).toBe(true)
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="empty-default"]')!.hidden).toBe(true)
       expect(el.shadowRoot!.textContent).not.toContain('暂无数据')
     })
   })
@@ -627,11 +623,7 @@ describe('OASList', () => {
 
     it('同一组字符串被非组行隔开视为两段（各自插组头）', () => {
       const el = new OASList()
-      el.data = [
-        { title: '甲', group: 'A' },
-        { title: '乙' },
-        { title: '丙', group: 'A' },
-      ]
+      el.data = [{ title: '甲', group: 'A' }, { title: '乙' }, { title: '丙', group: 'A' }]
       document.body.appendChild(el)
       expect(groupedRows(el).length).toBe(2)
     })

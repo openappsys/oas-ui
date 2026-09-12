@@ -71,9 +71,7 @@ export class OASCollapse extends OASElement {
 
   /** 只收集直接子 item：嵌套 collapse 的内部 item 归内层容器管，互不干扰 */
   private items(): OASCollapseItem[] {
-    return Array.from(this.children).filter(
-      (el): el is OASCollapseItem => el.tagName === 'OAS-COLLAPSE-ITEM',
-    )
+    return Array.from(this.children).filter((el): el is OASCollapseItem => el.tagName === 'OAS-COLLAPSE-ITEM')
   }
 
   private parseList(raw: string | null): string[] {
@@ -191,9 +189,7 @@ export class OASCollapse extends OASElement {
     // 经 composedPath 找头 button：shadow 内按键（happy-dom 不做 target 重定向）与
     // 真实浏览器行为都覆盖；slotted 富标题 / extra 内控件的按键路径里不含 head，天然跳过
     const path = typeof ke.composedPath === 'function' ? ke.composedPath() : []
-    const onHead = path.some(
-      (n) => n instanceof Element && n.getAttribute('part') === 'head',
-    )
+    const onHead = path.some((n) => n instanceof Element && n.getAttribute('part') === 'head')
     if (!onHead) return
     const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End']
     if (!keys.includes(ke.key)) return

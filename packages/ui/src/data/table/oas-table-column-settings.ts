@@ -123,7 +123,10 @@ export class TableColumnSettingsController implements ReactiveController {
   /** 目标列按指针在左/右半区 → 插前/插后 */
   private splitTarget(th: HTMLElement, clientX: number): { key: string; pos: 'before' | 'after' } {
     const rect = th.getBoundingClientRect()
-    return { key: th.dataset.key ?? '', pos: clientX < rect.left + rect.width / 2 ? 'before' : 'after' }
+    return {
+      key: th.dataset.key ?? '',
+      pos: clientX < rect.left + rect.width / 2 ? 'before' : 'after',
+    }
   }
 
   /** 指针不在任何列头上时，就近取目标列头并定插前/插后 */
@@ -211,18 +214,15 @@ export class TableColumnSettingsController implements ReactiveController {
 }
 
 /** 便捷：构造列设置 controller（供组装类 addController 用） */
-export function createColumnSettingsController(host: HTMLElement & TableColumnSettingsHost): TableColumnSettingsController {
+export function createColumnSettingsController(
+  host: HTMLElement & TableColumnSettingsHost,
+): TableColumnSettingsController {
   return new TableColumnSettingsController(host)
 }
 
 /** 计算列拖拽重排后的列顺序：把 fromKey 移到 toKey 之前/之后（pos），返回新 keys 数组。
     纯函数便于单测锁定重排逻辑；toKey 不存在时兜底插到最前/最后。 */
-export function applyColumnReorder(
-  keys: string[],
-  fromKey: string,
-  toKey: string,
-  pos: 'before' | 'after',
-): string[] {
+export function applyColumnReorder(keys: string[], fromKey: string, toKey: string, pos: 'before' | 'after'): string[] {
   const rest = keys.filter((k) => k !== fromKey)
   const idx = rest.indexOf(toKey)
   if (pos === 'before') rest.splice(idx < 0 ? 0 : idx, 0, fromKey)

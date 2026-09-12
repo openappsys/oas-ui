@@ -9,8 +9,7 @@ function mount(attrs: Record<string, string> = {}): OASAffix {
   return el
 }
 
-const flushRaf = (): Promise<void> =>
-  new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
 /** happy-dom 无布局引擎：构造最小 DOMRect mock（top/bottom 由用例控制） */
 function mockRect(top: number, bottom: number): DOMRect {
@@ -457,5 +456,3 @@ describe('OASAffix append-to（teleport 传送）', () => {
     expect(dest.querySelector<HTMLElement>('.wrap')).not.toBeNull()
   })
 })
-
-

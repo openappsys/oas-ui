@@ -2,9 +2,7 @@
 
 import { test, expect } from '@playwright/test'
 
-test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完成 + 不消失，点完成才关闭', async ({
-  page,
-}) => {
+test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完成 + 不消失，点完成才关闭', async ({ page }) => {
   await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
   await page.waitForSelector('#tour-basic', { state: 'attached', timeout: 15000 })
   await page.waitForFunction(() => document.querySelector('#tour-basic')?.shadowRoot != null, {
@@ -19,8 +17,7 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
       const hlR = hl?.getBoundingClientRect()
       const b1 = document.querySelector('#tour-b1')?.getBoundingClientRect()
       const b2 = document.querySelector('#tour-b2')?.getBoundingClientRect()
-      const near = (a: any, b: any) =>
-        a && b && Math.abs(a.x - b.x) < 10 && Math.abs(a.y - b.y) < 10
+      const near = (a: any, b: any) => a && b && Math.abs(a.x - b.x) < 10 && Math.abs(a.y - b.y) < 10
       return {
         open: host.hasAttribute('open'),
         current: host.getAttribute('current'),
@@ -31,9 +28,7 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
       }
     })
   await page.evaluate(() => {
-    const btn = [...document.querySelectorAll('oas-button')].find((x) =>
-      /开始引导/.test(x.textContent),
-    )!
+    const btn = [...document.querySelectorAll('oas-button')].find((x) => /开始引导/.test(x.textContent))!
     ;(btn as HTMLElement).click()
   })
   await page.waitForTimeout(500)
@@ -42,9 +37,7 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
   expect(s1.onB1, 'step1 高亮在区域一').toBe(true)
   // 点下一步
   await page.evaluate(() =>
-    (
-      document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement
-    ).click(),
+    (document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement).click(),
   )
   await page.waitForTimeout(500)
   const s2 = await step()
@@ -55,9 +48,7 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
   expect(s2.btnText, '最后一步按钮应变「完成」').toBe('完成')
   // 点完成才关闭
   await page.evaluate(() =>
-    (
-      document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement
-    ).click(),
+    (document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement).click(),
   )
   await page.waitForTimeout(400)
   const s3 = await step()
@@ -76,24 +67,17 @@ test('tour 弹窗可交互：真实鼠标点击弹窗内部不关闭（pointer-e
     timeout: 15000,
   })
   await page.evaluate(() => {
-    ;[...document.querySelectorAll<HTMLElement>('oas-button')]
-      .find((x) => /开始引导/.test(x.textContent))!
-      .click()
+    ;[...document.querySelectorAll<HTMLElement>('oas-button')].find((x) => /开始引导/.test(x.textContent))!.click()
   })
   await page.waitForTimeout(500)
   const center = await page.evaluate(() => {
-    const r = document
-      .querySelector('#tour-basic')!
-      .shadowRoot!.querySelector('.popup')!
-      .getBoundingClientRect()
+    const r = document.querySelector('#tour-basic')!.shadowRoot!.querySelector('.popup')!.getBoundingClientRect()
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
   })
   // 真实鼠标点击弹窗中心（带 pointerdown + 命中测试）
   await page.mouse.click(center.x, center.y)
   await page.waitForTimeout(400)
-  const open = await page.evaluate(() =>
-    document.querySelector('#tour-basic')!.hasAttribute('open'),
-  )
+  const open = await page.evaluate(() => document.querySelector('#tour-basic')!.hasAttribute('open'))
   expect(open, '真实点击弹窗内部不应关闭（pointer-events 须为 auto）').toBe(true)
 })
 
@@ -101,9 +85,7 @@ test('tour 弹窗可交互：真实鼠标点击弹窗内部不关闭（pointer-e
 // 曾现缺陷：ensurePortal 镜像 data-open 属性，但共享 STYLE 的 :host([open]) 显示门控只认 open
 // 属性——portal host（普通 div，只有 data-open）不命中 → display:none，浮层全 0×0 不可见。
 // 修复：host 显示规则同时认 [open] 与 [data-open]。
-test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框住挂载目标', async ({
-  page,
-}) => {
+test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框住挂载目标', async ({ page }) => {
   await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
   await page.waitForSelector('#tour-portal', { state: 'attached', timeout: 15000 })
   await page.waitForFunction(() => document.querySelector('#tour-portal')?.shadowRoot != null, {
@@ -118,9 +100,7 @@ test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框�
   })
   await page.waitForTimeout(800)
   const r = await page.evaluate(() => {
-    const ph = [...document.body.children].find(
-      (c) => c.shadowRoot && c.shadowRoot.querySelector('.popup'),
-    )
+    const ph = [...document.body.children].find((c) => c.shadowRoot && c.shadowRoot.querySelector('.popup'))
     if (!ph) return { noPortal: true }
     const sr = ph.shadowRoot!
     const popup = sr.querySelector('.popup')!
@@ -158,9 +138,7 @@ test('tour typewriter：描述逐字增长（非一次性全显示）', async ({
   })
   const samples = await page.evaluate(async () => {
     const btn = [...document.querySelectorAll<HTMLElement>('oas-button')].find(
-      (x) =>
-        /开始引导/.test(x.textContent) &&
-        x.closest('.demo-block')?.textContent.includes('打字机动画'),
+      (x) => /开始引导/.test(x.textContent) && x.closest('.demo-block')?.textContent.includes('打字机动画'),
     )!
     const host = document.querySelector('#tour-tw')!
     btn.scrollIntoView({ block: 'center' })
@@ -183,9 +161,7 @@ test('tour typewriter：描述逐字增长（非一次性全显示）', async ({
 // 曾现缺陷：目标初始在视口外，position() 按错位目标位置算「安全兜底位」显示弹窗，
 // scrollToTarget 平滑滚动期间弹窗卡在错位处（长滚动时明显），滚动末尾才跳正——「首次点击错位」。
 // 修复：目标需滚动进视口时弹窗进入「定位待定」（opacity 0 隐藏），scrollend/定位正确后显示。
-test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现错位），滚动停止后正确显示', async ({
-  page,
-}) => {
+test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现错位），滚动停止后正确显示', async ({ page }) => {
   await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
   await page.waitForSelector('#tour-interact', { state: 'attached', timeout: 15000 })
   await page.waitForFunction(() => document.querySelector('#tour-interact')?.shadowRoot != null, {
@@ -237,16 +213,14 @@ test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现
       if (i === 0) return false
       const prev = samples[i - 1]!
       const moving =
-        s.scrollY !== prev.scrollY ||
-        (s.scrollY !== samples.at(-1)!.scrollY && s.scrollY !== samples[0]!.scrollY)
+        s.scrollY !== prev.scrollY || (s.scrollY !== samples.at(-1)!.scrollY && s.scrollY !== samples[0]!.scrollY)
       return moving && s.scrollY !== samples.at(-1)!.scrollY
     })
     expect(midScroll.length, '平滑滚动期间应有中间帧').toBeGreaterThan(0)
     for (const s of midScroll) {
-      expect(
-        s.pending || s.opacity < 0.1,
-        `滚动途中帧（scrollY=${s.scrollY}）弹窗应隐藏（pending 或近透明）`,
-      ).toBe(true)
+      expect(s.pending || s.opacity < 0.1, `滚动途中帧（scrollY=${s.scrollY}）弹窗应隐藏（pending 或近透明）`).toBe(
+        true,
+      )
     }
   }
   // 终态断言（两种形态都必须满足）：滚动停止后弹窗正确显示

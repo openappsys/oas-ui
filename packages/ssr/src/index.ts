@@ -547,11 +547,7 @@ function injectNestedDSD(el: HTMLElement, document: Document): void {
 
 /** 属性值 HTML 转义（& " < >），防止注入闭合引号/标签 */
 function escapeAttr(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 /** registerLocale + setLocale：先注册语言包再按名切换（与 @oas-ui/i18n 约定一致） */

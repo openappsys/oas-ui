@@ -223,7 +223,12 @@ export function trackCommandModal(el: OASModal): CommandModalScope {
     el.addEventListener('oas-closed', doRemove, { once: true })
   }
   active.push({ el, dispose })
-  return { get disposed(): boolean { return disposed }, dispose }
+  return {
+    get disposed(): boolean {
+      return disposed
+    },
+    dispose,
+  }
 }
 
 function applyCommonAttrs(el: OASModal, options: ModalOptions): HTMLParagraphElement | null {
@@ -239,10 +244,7 @@ function applyCommonAttrs(el: OASModal, options: ModalOptions): HTMLParagraphEle
   return null
 }
 
-function open(
-  variant: ModalVariant | '',
-  rawOptions?: ModalOptions,
-): ModalHandle {
+function open(variant: ModalVariant | '', rawOptions?: ModalOptions): ModalHandle {
   const options = normalizeOptions<ModalOptions>(rawOptions)
   const el = createCommandModal()
   // 语义变体：对应图标 + 单「确定」按钮（取消按钮隐藏）
@@ -477,8 +479,7 @@ export const modal = {
   options: (rawOptions?: OptionsOptions): OptionsHandle => {
     const opts = normalizeOptions<OptionsOptions>(rawOptions)
     const items = Array.isArray(opts.items) ? opts.items : []
-    const mode: OptionsType =
-      opts.type === 'checkbox' || opts.type === 'toggle' ? opts.type : 'radio'
+    const mode: OptionsType = opts.type === 'checkbox' || opts.type === 'toggle' ? opts.type : 'radio'
     ensureOptionsStyle()
     const el = createCommandModal()
     if (opts.title !== undefined) el.setAttribute('title', opts.title)
@@ -510,8 +511,7 @@ export const modal = {
     }
     for (const item of items) {
       const label = document.createElement('label')
-      label.className =
-        'oas-modal-opt' + (mode === 'toggle' ? ' oas-modal-opt-toggle' : '')
+      label.className = 'oas-modal-opt' + (mode === 'toggle' ? ' oas-modal-opt-toggle' : '')
       if (item.disabled) label.classList.add('is-disabled')
       const input = document.createElement('input')
       input.className = 'oas-modal-opt-input'

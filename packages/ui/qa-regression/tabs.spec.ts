@@ -20,9 +20,7 @@ test('tabs tab-position=right：tab 内容右对齐（justify-content: flex-end�
   expect(r.justifyContent).toBe('flex-end')
 })
 
-test('tabs 动态增删：+ 新增默认标签（locale 文案、选中、roving tabindex），× 关闭可见反馈', async ({
-  page,
-}) => {
+test('tabs 动态增删：+ 新增默认标签（locale 文案、选中、roving tabindex），× 关闭可见反馈', async ({ page }) => {
   await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tabs[addable] oas-tab-panel')
   const r1 = await page.evaluate(() => {
@@ -128,9 +126,7 @@ test('tabs 非激活项 hover 有视觉反馈（line 与 card 模式）', async 
   expect(after, 'hover 后背景应变化').not.toBe(before)
 })
 
-test('tabs 溢出（滚动/更多）时标签不压缩换行——white-space nowrap + flex-shrink 0（防文字竖排）', async ({
-  page,
-}) => {
+test('tabs 溢出（滚动/更多）时标签不压缩换行——white-space nowrap + flex-shrink 0（防文字竖排）', async ({ page }) => {
   // 缺陷固化：more/滚动模式下 tab 曾被 flex 压缩致文字逐字竖排（应 nowrap + flex-shrink:0 保持宽度，
   // 溢出交给滚动箭头或「更多」下拉，而非挤压标签）
   await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
@@ -154,9 +150,7 @@ test('tabs 溢出（滚动/更多）时标签不压缩换行——white-space no
   }
 })
 
-test('tabs editable 真实双击进入重命名编辑态（真实 dblclick，非 dispatchEvent）', async ({
-  page,
-}) => {
+test('tabs editable 真实双击进入重命名编辑态（真实 dblclick，非 dispatchEvent）', async ({ page }) => {
   // 缺陷固化：真实双击前两次 click 触发 activate→update 重建 tablist，导致浏览器判定双击目标
   // 已变而不派发 dblclick，重命名永不进入编辑态。修复=activate 重复点击守卫 + dblclick 委托到
   // 稳定的 tablist 容器。此处用 Playwright 真实 dblclick 复现路径（dispatchEvent 无法暴露该 bug）。
@@ -196,15 +190,11 @@ test('tabs editable 编辑态与非编辑态几何一致（编辑框贴合标签
   // 浏览器会自动滚动把它带进视口（tab 整体位移几十像素），视口坐标跨滚动比较必然假失败
   const beforeOffset = before.labelTop - before.tabTop
   const afterOffset = after.inputTop - after.tabTop
-  expect(Math.abs(afterOffset - beforeOffset), '编辑框与原标签在 tab 内纵向对齐').toBeLessThanOrEqual(
-    0.5,
-  )
+  expect(Math.abs(afterOffset - beforeOffset), '编辑框与原标签在 tab 内纵向对齐').toBeLessThanOrEqual(0.5)
   expect(Math.abs(after.inputH - before.labelH), '编辑框与原标签同高').toBeLessThanOrEqual(0.5)
 })
 
-test('tabs 选中下划线与文字同主色且为 2px 细线（light/dark，无 border 叠加变粗）', async ({
-  page,
-}) => {
+test('tabs 选中下划线与文字同主色且为 2px 细线（light/dark，无 border 叠加变粗）', async ({ page }) => {
   // 缺陷固化：①tablist overflow-x:auto 时 overflow-y 连带裁剪，tab border 溢出的激活下划线被裁
   // 导致 dark 下选中下划线丢失主色；②改 box-shadow 后与残留 border 占位叠加变粗。
   // 修复=纯 box-shadow inset 2px 主色（无 border 占位）。断言选中下划线颜色==选中文字颜色、且
@@ -230,9 +220,7 @@ test('tabs 选中下划线与文字同主色且为 2px 细线（light/dark，无
   expect(probe.borderBottomWidth, 'border 不应再占位').toBe('0px')
   // card 模式：激活用边框连通（border-bottom bg 色），::after 不叠加主色（否则变粗）
   const cardProbe = await page.evaluate(() => {
-    const el = [...document.querySelectorAll('oas-tabs')].find((t) =>
-      t.classList.contains('oas-tabs--card'),
-    )
+    const el = [...document.querySelectorAll('oas-tabs')].find((t) => t.classList.contains('oas-tabs--card'))
     if (!el) return null
     const sel = el.shadowRoot!.querySelector('[role="tab"][aria-selected="true"]') as HTMLElement
     return getComputedStyle(sel, '::after').backgroundColor
@@ -261,28 +249,19 @@ test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉�
   expect(noHidden, 'more 模式 tab 应全部渲染不隐藏').toBe(true)
   // 打开 more 下拉，列出视口外 tab
   await page.evaluate(() => {
-    document
-      .querySelector('oas-tabs[more]')!
-      .shadowRoot!.querySelector<HTMLElement>('.more-btn')!
-      .click()
+    document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector<HTMLElement>('.more-btn')!.click()
   })
   await page.waitForTimeout(200)
   const dropCount = await page.evaluate(
-    () =>
-      document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll('.more-item').length,
+    () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll('.more-item').length,
   )
   expect(dropCount, 'more 下拉应列出视口外 tab').toBeGreaterThan(0)
   // 点选最后一个视口外项 → 平滑滚动到可见 + 激活
   const scrollBefore = await page.evaluate(
-    () =>
-      document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector('.tablist')!.scrollLeft,
+    () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector('.tablist')!.scrollLeft,
   )
   await page.evaluate(() => {
-    const items = [
-      ...document
-        .querySelector('oas-tabs[more]')!
-        .shadowRoot!.querySelectorAll<HTMLElement>('.more-item'),
-    ]
+    const items = [...document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')]
     items[items.length - 1]?.click()
   })
   await page.waitForTimeout(600) // 等平滑滚动

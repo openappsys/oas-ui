@@ -25,15 +25,11 @@ function cancelBtn(el: OASEditable): HTMLButtonElement {
 }
 
 function pressField(el: OASEditable, keyName: string): void {
-  field(el).dispatchEvent(
-    new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true }),
-  )
+  field(el).dispatchEvent(new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true }))
 }
 
 function pressDisplay(el: OASEditable, keyName: string): void {
-  display(el).dispatchEvent(
-    new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true }),
-  )
+  display(el).dispatchEvent(new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true }))
 }
 
 describe('OASEditable', () => {
@@ -344,9 +340,7 @@ describe('OASEditable multiline 多行编辑', () => {
   }
 
   function pressMulti(el: OASEditable, key: string, ctrl = false): void {
-    textarea(el).dispatchEvent(
-      new KeyboardEvent('keydown', { key, ctrlKey: ctrl, bubbles: true, cancelable: true }),
-    )
+    textarea(el).dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey: ctrl, bubbles: true, cancelable: true }))
   }
 
   it('multiline 渲染 textarea 而非 input', () => {
@@ -438,14 +432,10 @@ describe('OASEditable trigger=icon 图标触发', () => {
 
   it('铅笔按钮键盘可达（Enter/空格进入编辑）', () => {
     const el = mount({ value: 'a', trigger: 'icon' })
-    pencil(el).dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
-    )
+    pencil(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(display(el).hidden).toBe(true)
     const el2 = mount({ value: 'a', trigger: 'icon' })
-    pencil(el2).dispatchEvent(
-      new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-    )
+    pencil(el2).dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }))
     expect(display(el2).hidden).toBe(true)
   })
 })
@@ -517,8 +507,12 @@ describe('OASEditable oas-editing 事件（进入/退出各一次）', () => {
 })
 
 describe('OASEditable trigger=dblclick 双击触发', () => {
-  beforeEach(() => { document.body.innerHTML = '' })
-  afterEach(() => { document.body.innerHTML = '' })
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
 
   it('dblclick 触发：单击不进编辑，双击进入', () => {
     const el = mount({ value: 'a', trigger: 'dblclick' })

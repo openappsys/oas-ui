@@ -230,13 +230,11 @@ export class OASNotification extends OASElement {
     this.shadow
       .querySelector<HTMLSlotElement>('slot[name="footer"]')
       ?.addEventListener('slotchange', () => this.syncFooter())
-    this.shadow
-      .querySelector<HTMLButtonElement>('.close')
-      ?.addEventListener('click', (e) => {
-        // 关闭钮点击不冒泡为通知体点击（P5 排除语义）
-        e.stopPropagation()
-        this.close('button')
-      })
+    this.shadow.querySelector<HTMLButtonElement>('.close')?.addEventListener('click', (e) => {
+      // 关闭钮点击不冒泡为通知体点击（P5 排除语义）
+      e.stopPropagation()
+      this.close('button')
+    })
     this.shadow.querySelector<HTMLElement>('.box')?.addEventListener('click', () => {
       this.emit('click')
     })
@@ -337,11 +335,7 @@ export class OASNotification extends OASElement {
     this.timer = setTimeout(() => this.close('auto'), this.remaining)
   }
 
-  override attributeChangedCallback(
-    name: string,
-    oldValue: string | null,
-    newValue: string | null,
-  ): void {
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     super.attributeChangedCallback(name, oldValue, newValue)
     // duration 变化（命令式 update / transition）→ 计时与进度动画都按新时长重置
     if (name === 'duration' && oldValue !== newValue && this.hasRendered) {
@@ -373,9 +367,7 @@ export class OASNotification extends OASElement {
   }
 
   private hasSlotContent(slot: HTMLSlotElement): boolean {
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** 描述区双通道：slot="content" 有内容时以插槽为准；无则兜底 span 承载
@@ -410,12 +402,8 @@ export class OASNotification extends OASElement {
   protected override update(): void {
     const type = (this.getAttr('type', 'info') || 'info') as NotificationType
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
-    this.shadow
-      .querySelector<HTMLElement>('[part="box"]')
-      ?.setAttribute('aria-label', this.t('notification.region'))
-    this.shadow
-      .querySelector<HTMLElement>('[part="close"]')
-      ?.setAttribute('aria-label', this.t('notification.close'))
+    this.shadow.querySelector<HTMLElement>('[part="box"]')?.setAttribute('aria-label', this.t('notification.region'))
+    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('notification.close'))
 
     // 类型图标 fallback 刷新（slot="icon" 有 assigned 内容时覆盖，fallback 不显示）
     const iconSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="icon"]')

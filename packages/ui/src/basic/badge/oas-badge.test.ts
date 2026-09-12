@@ -2,16 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import '@oas-ui/i18n' // 副作用：注册默认 zh-CN translator（aria-label 内置文案断言依赖）
 import { OASBadge } from './index.js'
 
-const VALID_ANCHORS = [
-  'top',
-  'right',
-  'bottom',
-  'left',
-  'top-left',
-  'top-right',
-  'bottom-left',
-  'bottom-right',
-]
+const VALID_ANCHORS = ['top', 'right', 'bottom', 'left', 'top-left', 'top-right', 'bottom-left', 'bottom-right']
 
 function mount(attrs: Record<string, string> = {}, slot = '内容'): OASBadge {
   const el = new OASBadge()
@@ -268,18 +259,14 @@ describe('OASBadge 颜色全模式', () => {
     const el = mount({ value: '5', color: 'success' })
     const b = badge(el)!
     expect(b.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-color-success)')
-    expect(b.style.getPropertyValue('--oas-badge-on-color')).toBe(
-      'var(--oas-color-text-on-success)',
-    )
+    expect(b.style.getPropertyValue('--oas-badge-on-color')).toBe('var(--oas-color-text-on-success)')
   })
 
   it('color 语义色应用于 dot 徽标', () => {
     const el = mount({ dot: '', color: 'warning' })
     const b = badge(el)!
     expect(b.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-color-warning)')
-    expect(b.style.getPropertyValue('--oas-badge-on-color')).toBe(
-      'var(--oas-color-text-on-warning)',
-    )
+    expect(b.style.getPropertyValue('--oas-badge-on-color')).toBe('var(--oas-color-text-on-warning)')
   })
 
   it('color 预设名解析到 --oas-preset-* 变量（count 与 dot 均支持）', () => {
@@ -304,9 +291,7 @@ describe('OASBadge 颜色全模式', () => {
     }
     const d = mount({ dot: '', color: 'purple' })
     expect(badge(d)!.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-preset-purple)')
-    expect(badge(d)!.style.getPropertyValue('--oas-badge-on-color')).toBe(
-      'var(--oas-color-text-on-primary)',
-    )
+    expect(badge(d)!.style.getPropertyValue('--oas-badge-on-color')).toBe('var(--oas-color-text-on-primary)')
   })
 
   it('color 任意 CSS 色值：实心文字按底色亮度取黑/白', () => {
@@ -395,9 +380,9 @@ describe('OASBadge status 状态点', () => {
     const s = statusEl(el)!
     expect(s.hidden).toBe(false)
     expect(s.classList.contains('success')).toBe(true)
-    expect(
-      s.querySelector<HTMLElement>('.status-dot')!.style.getPropertyValue('--oas-status-color'),
-    ).toBe('var(--oas-color-success)')
+    expect(s.querySelector<HTMLElement>('.status-dot')!.style.getPropertyValue('--oas-status-color')).toBe(
+      'var(--oas-color-success)',
+    )
     expect(s.querySelector<HTMLElement>('.status-text')!.textContent).toBe('运行中')
     // 互斥：badge 与 ribbon 隐藏
     expect(badge(el)!.hidden).toBe(true)
@@ -409,9 +394,9 @@ describe('OASBadge status 状态点', () => {
     const s = statusEl(el)!
     expect(s.hidden).toBe(false)
     expect(s.classList.contains('processing')).toBe(true)
-    expect(
-      s.querySelector<HTMLElement>('.status-dot')!.style.getPropertyValue('--oas-status-color'),
-    ).toBe('var(--oas-color-primary)')
+    expect(s.querySelector<HTMLElement>('.status-dot')!.style.getPropertyValue('--oas-status-color')).toBe(
+      'var(--oas-color-primary)',
+    )
   })
 
   it('status 各语义色映射', () => {
@@ -506,9 +491,7 @@ describe('OASBadge attention 吸引动画', () => {
 
   it('bounce 时注入 --oas-badge-pos 基址（含 corner/offset 平移）', () => {
     const el = mount({ value: '5', attention: 'bounce', corner: 'top-left', offset: '3,4' })
-    expect(badge(el)!.style.getPropertyValue('--oas-badge-pos')).toBe(
-      'translate(calc(-50% + 3px), calc(-50% + 4px))',
-    )
+    expect(badge(el)!.style.getPropertyValue('--oas-badge-pos')).toBe('translate(calc(-50% + 3px), calc(-50% + 4px))')
     el.removeAttribute('attention')
     expect(badge(el)!.style.getPropertyValue('--oas-badge-pos')).toBe('')
   })
@@ -831,16 +814,13 @@ describe('OASBadge ribbon-form 形态维度', () => {
   })
 
   it('各形态关键几何规则在样式中落地（斜带镜像 / 三角 / 燕尾 / 侧挂 / 横幅）', () => {
-    const style = mount({ ribbon: '', text: 'HOT' }).shadowRoot!.querySelector('style')!
-      .textContent!
+    const style = mount({ ribbon: '', text: 'HOT' }).shadowRoot!.querySelector('style')!.textContent!
     // diagonal：经典 corner ribbon——带长 141%，中心钉角点内侧 calc(pin - 70.5%)，rotate ±45°
     expect(cssRule(style, '.ribbon.form-diagonal')).toContain('width: 141%')
     expect(cssRule(style, '.ribbon.form-diagonal.anchor-top-left')).toContain(
       'inset-inline-start: calc(var(--oas-diag-pin) - 70.5%)',
     )
-    expect(cssRule(style, '.ribbon.form-diagonal.anchor-top-left')).toContain(
-      'transform: rotate(-45deg)',
-    )
+    expect(cssRule(style, '.ribbon.form-diagonal.anchor-top-left')).toContain('transform: rotate(-45deg)')
     expect(cssRule(style, '.ribbon.form-diagonal.anchor-top-right')).toContain(
       'inset-inline-end: calc(var(--oas-diag-pin) - 70.5%)',
     )
@@ -864,9 +844,7 @@ describe('OASBadge ribbon-form 形态维度', () => {
     expect(cssRule(style, '.ribbon.form-triangle.anchor-top-right')).toContain(
       'clip-path: polygon(0 0, 100% 0, 100% 100%)',
     )
-    expect(cssRule(style, '.ribbon.form-triangle.anchor-top-left')).toContain(
-      'clip-path: polygon(0 0, 100% 0, 0 100%)',
-    )
+    expect(cssRule(style, '.ribbon.form-triangle.anchor-top-left')).toContain('clip-path: polygon(0 0, 100% 0, 0 100%)')
     expect(cssRule(style, '.ribbon.form-triangle.anchor-bottom-left')).toContain('bottom: 0')
     expect(cssRule(style, '.ribbon.form-triangle.anchor-bottom-right')).toContain('bottom: 0')
     // bookmark：底部燕尾 V 缺口
@@ -909,12 +887,8 @@ describe('OASBadge ribbon-form 形态维度', () => {
     const banner = cssRule(style, '.ribbon.form-banner')
     expect(banner).toContain('width: 100%')
     expect(banner).not.toContain('clip-path')
-    expect(cssRule(style, '.ribbon.form-banner::before')).toContain(
-      'clip-path: polygon(0 0, 100% 0, 0 100%)',
-    )
-    expect(cssRule(style, '.ribbon.form-banner .ribbon-corner')).toContain(
-      'clip-path: polygon(0 0, 100% 0, 100% 100%)',
-    )
+    expect(cssRule(style, '.ribbon.form-banner::before')).toContain('clip-path: polygon(0 0, 100% 0, 0 100%)')
+    expect(cssRule(style, '.ribbon.form-banner .ribbon-corner')).toContain('clip-path: polygon(0 0, 100% 0, 100% 100%)')
   })
 
   it('各形态与 placement 组合不冲突（form 与 placement class 并存且互不干扰）', () => {
@@ -1087,12 +1061,8 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     expect(style).toContain('.ribbon.form-flag .ribbon-corner')
     expect(cssRule(style, '.ribbon.form-flag .ribbon-corner')).toContain('bottom: 0;')
-    expect(cssRule(style, '.ribbon.form-flag.placement-end .ribbon-corner')).toContain(
-      'inset-inline-start: 0',
-    )
-    expect(cssRule(style, '.ribbon.form-flag.placement-start .ribbon-corner')).toContain(
-      'inset-inline-end: 0',
-    )
+    expect(cssRule(style, '.ribbon.form-flag.placement-end .ribbon-corner')).toContain('inset-inline-start: 0')
+    expect(cssRule(style, '.ribbon.form-flag.placement-start .ribbon-corner')).toContain('inset-inline-end: 0')
     expect(cssRule(style, '.ribbon.form-flag.placement-start .ribbon-corner')).toContain(
       'clip-path: polygon(100% 100%, 100% 0, 0 100%)',
     )
@@ -1103,33 +1073,21 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
     const elR = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'rounded' })
     expect(ribbon(elR)!.classList.contains('form-rounded')).toBe(true)
     const styleR = elR.shadowRoot!.querySelector('style')!.textContent!
-    expect(cssRule(styleR, '.ribbon.form-rounded.placement-end')).toContain(
-      'border-start-start-radius: 999px',
-    )
-    expect(cssRule(styleR, '.ribbon.form-rounded.placement-end')).toContain(
-      'border-end-start-radius: 999px',
-    )
-    expect(cssRule(styleR, '.ribbon.form-rounded.placement-start')).toContain(
-      'border-start-end-radius: 999px',
-    )
-    expect(cssRule(styleR, '.ribbon.form-rounded.placement-start')).toContain(
-      'border-end-end-radius: 999px',
-    )
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-end')).toContain('border-start-start-radius: 999px')
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-end')).toContain('border-end-start-radius: 999px')
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-start')).toContain('border-start-end-radius: 999px')
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-start')).toContain('border-end-end-radius: 999px')
     // zigzag：placement-end → 锯齿在左端朝卡内（8px 齿）；placement-start → 锯齿在右端朝卡内（calc(100%-8px) 齿）
     const elZ = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'zigzag' })
     expect(ribbon(elZ)!.classList.contains('form-zigzag')).toBe(true)
     const styleZ = elZ.shadowRoot!.querySelector('style')!.textContent!
     expect(cssRule(styleZ, '.ribbon.form-zigzag.placement-end')).toContain('8px 62.5%')
-    expect(cssRule(styleZ, '.ribbon.form-zigzag.placement-start')).toContain(
-      'calc(100% - 8px) 62.5%',
-    )
+    expect(cssRule(styleZ, '.ribbon.form-zigzag.placement-start')).toContain('calc(100% - 8px) 62.5%')
     // arrow：大箭头——元素加高 1.6 倍，头部大三角占满全高；placement-end 尖朝左 / placement-start 尖朝右
     const elA = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'arrow' })
     expect(ribbon(elA)!.classList.contains('form-arrow')).toBe(true)
     const styleA = elA.shadowRoot!.querySelector('style')!.textContent!
-    expect(cssRule(styleA, '.ribbon.form-arrow')).toContain(
-      'height: calc(var(--oas-control-height-xs) * 1.6)',
-    )
+    expect(cssRule(styleA, '.ribbon.form-arrow')).toContain('height: calc(var(--oas-control-height-xs) * 1.6)')
     expect(cssRule(styleA, '.ribbon.form-arrow.placement-end')).toContain(
       'clip-path: polygon(\n    100% 18.75%,\n    22px 18.75%,\n    22px 0,\n    0 50%,\n    22px 100%,\n    22px 81.25%,\n    100% 81.25%\n  )',
     )
@@ -1137,18 +1095,10 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
       'clip-path: polygon(\n    0 18.75%,\n    calc(100% - 22px) 18.75%,\n    calc(100% - 22px) 0,\n    100% 50%,\n    calc(100% - 22px) 100%,\n    calc(100% - 22px) 81.25%,\n    0 81.25%\n  )',
     )
     // 三形态折叠角在挂点外端（base 端）：placement-end 在右下、placement-start 在左下，与装饰端分两端
-    expect(cssRule(styleR, '.ribbon.form-rounded.placement-end .ribbon-corner')).toContain(
-      'inset-inline-end: 0',
-    )
-    expect(cssRule(styleR, '.ribbon.form-rounded.placement-start .ribbon-corner')).toContain(
-      'inset-inline-start: 0',
-    )
-    expect(cssRule(styleZ, '.ribbon.form-zigzag.placement-end .ribbon-corner')).toContain(
-      'inset-inline-end: 0',
-    )
-    expect(cssRule(styleA, '.ribbon.form-arrow.placement-end .ribbon-corner')).toContain(
-      'inset-inline-end: 0',
-    )
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-end .ribbon-corner')).toContain('inset-inline-end: 0')
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-start .ribbon-corner')).toContain('inset-inline-start: 0')
+    expect(cssRule(styleZ, '.ribbon.form-zigzag.placement-end .ribbon-corner')).toContain('inset-inline-end: 0')
+    expect(cssRule(styleA, '.ribbon.form-arrow.placement-end .ribbon-corner')).toContain('inset-inline-end: 0')
   })
 
   it('flag 与其他属性正交：color / placement 并存', () => {
@@ -1346,12 +1296,8 @@ describe('OASBadge premium 金属质感', () => {
     expect(r.classList.contains('premium')).toBe(true)
     expect(r.classList.contains('color-success')).toBe(true)
     const style = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(style.indexOf('.ribbon.premium {')).toBeGreaterThan(
-      style.indexOf('.ribbon.color-success {'),
-    )
-    expect(style.indexOf('.ribbon.premium {')).toBeGreaterThan(
-      style.indexOf('.ribbon.color-danger {'),
-    )
+    expect(style.indexOf('.ribbon.premium {')).toBeGreaterThan(style.indexOf('.ribbon.color-success {'))
+    expect(style.indexOf('.ribbon.premium {')).toBeGreaterThan(style.indexOf('.ribbon.color-danger {'))
     // premium 自带渐变/描边/文字色声明，不依赖 color 变量注入
     const premiumRule = cssRule(style, '.ribbon.premium')
     expect(premiumRule).toContain('background: linear-gradient')
@@ -1383,16 +1329,7 @@ describe('OASBadge premium 金属质感', () => {
   })
 
   it('premium 与形态正交：form 与 premium class 并存', () => {
-    for (const f of [
-      'fold',
-      'seal',
-      'banner',
-      'diagonal',
-      'triangle',
-      'bookmark',
-      'side',
-      'flag',
-    ]) {
+    for (const f of ['fold', 'seal', 'banner', 'diagonal', 'triangle', 'bookmark', 'side', 'flag']) {
       const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': f, premium: '' })
       const r = ribbon(el)!
       expect(r.classList.contains('premium'), f).toBe(true)

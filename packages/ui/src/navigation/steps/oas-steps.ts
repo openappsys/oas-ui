@@ -1007,7 +1007,7 @@ export class OASSteps extends OASElement {
             pctText.className = 'percent-text'
             pctText.textContent = `${pct}%`
             icon.appendChild(pctText)
-          }           else {
+          } else {
             // percent 越界/非法：回落序号（此分支必为 process 步）
             icon.textContent = String(this.stepNumber(idx))
           }
@@ -1128,9 +1128,7 @@ export class OASSteps extends OASElement {
   private parseSteps(): void {
     try {
       const parsed = JSON.parse(this.getAttr('steps', '[]'))
-      this._steps = Array.isArray(parsed)
-        ? parsed.filter((s): s is StepItem => s && typeof s.title === 'string')
-        : []
+      this._steps = Array.isArray(parsed) ? parsed.filter((s): s is StepItem => s && typeof s.title === 'string') : []
     } catch {
       this._steps = []
     }

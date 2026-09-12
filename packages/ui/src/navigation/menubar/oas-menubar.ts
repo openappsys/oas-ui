@@ -646,9 +646,7 @@ export class OASMenubar extends OASElement {
     })
     // 移动端外部点击关闭汉堡面板
     document.addEventListener('pointerdown', this.handleDocumentPointerDown)
-    this.onCleanup(() =>
-      document.removeEventListener('pointerdown', this.handleDocumentPointerDown),
-    )
+    this.onCleanup(() => document.removeEventListener('pointerdown', this.handleDocumentPointerDown))
     document.addEventListener('keydown', this.handleDocumentKey)
     this.onCleanup(() => document.removeEventListener('keydown', this.handleDocumentKey))
     // typeahead 缓冲定时器：断开连接时清理，避免残留
@@ -862,11 +860,7 @@ export class OASMenubar extends OASElement {
     for (const node of el.childNodes) {
       if (node instanceof Element) {
         const tag = node.tagName
-        if (
-          tag === 'OAS-MENUBAR-ITEM' ||
-          tag === 'OAS-MENUBAR-GROUP' ||
-          tag === 'OAS-MENUBAR-DIVIDER'
-        ) {
+        if (tag === 'OAS-MENUBAR-ITEM' || tag === 'OAS-MENUBAR-GROUP' || tag === 'OAS-MENUBAR-DIVIDER') {
           continue
         }
       }
@@ -1000,17 +994,13 @@ export class OASMenubar extends OASElement {
     return {
       label: '···',
       value: '__more__',
-      children: this.itemsList.filter(
-        (i) => i.value != null && this.collapsedValues.includes(i.value),
-      ),
+      children: this.itemsList.filter((i) => i.value != null && this.collapsedValues.includes(i.value)),
     }
   }
 
   /** 收纳弹层 DOM 元素（键盘导航在弹层内时的查询作用域） */
   private moreSubmenu(): HTMLElement | null {
-    return (
-      this.shadow?.querySelector<HTMLElement>('[part="submenu"][data-parent="__more__"]') ?? null
-    )
+    return this.shadow?.querySelector<HTMLElement>('[part="submenu"][data-parent="__more__"]') ?? null
   }
 
   private flattenLevel(items: MenuItem[]): MenuItem[] {
@@ -1239,13 +1229,7 @@ export class OASMenubar extends OASElement {
       li.setAttribute('part', 'item')
       li.setAttribute(
         'role',
-        hasChildren
-          ? 'menuitem'
-          : action
-            ? 'menuitem'
-            : checkbox
-              ? 'menuitemcheckbox'
-              : 'menuitemradio',
+        hasChildren ? 'menuitem' : action ? 'menuitem' : checkbox ? 'menuitemcheckbox' : 'menuitemradio',
       )
       li.setAttribute('tabindex', '-1')
       if (!hasChildren && item.href) {
@@ -1352,9 +1336,7 @@ export class OASMenubar extends OASElement {
     const content = lookupIcon(icon)
     if (!content) return null
     const stroke = iconColor || 'currentColor'
-    const coloredContent = iconColor
-      ? content.replace(/stroke="currentColor"/g, `stroke="${stroke}"`)
-      : content
+    const coloredContent = iconColor ? content.replace(/stroke="currentColor"/g, `stroke="${stroke}"`) : content
     const span = document.createElement('span')
     span.className = className
     span.setAttribute('aria-hidden', 'true')
@@ -1683,8 +1665,7 @@ export class OASMenubar extends OASElement {
     // （选中项在溢出弹层里条上看不到 ✓，由收纳指示器本身高亮表达"选中项在其中"）+ aria-current 供读屏
     const checked = this.checkedSet()
     const rootValue = this.selectedValueOf('')
-    const selectedInside =
-      hasOverflow && this.collapsedValues.some((v) => v === rootValue || checked.has(v))
+    const selectedInside = hasOverflow && this.collapsedValues.some((v) => v === rootValue || checked.has(v))
     moreBtn?.classList.toggle('child-selected', selectedInside)
     if (selectedInside) moreBtn?.setAttribute('aria-current', 'true')
     else moreBtn?.removeAttribute('aria-current')
@@ -1724,9 +1705,7 @@ export class OASMenubar extends OASElement {
     if (!action) {
       li.setAttribute(
         'aria-checked',
-        mixed
-          ? 'mixed'
-          : String(checkbox ? this.isChecked(item.value) : item.value === this.selectedValueOf('')),
+        mixed ? 'mixed' : String(checkbox ? this.isChecked(item.value) : item.value === this.selectedValueOf('')),
       )
       const check = document.createElement('span')
       check.className = checkbox ? 'check check--box' : 'check'
@@ -1757,11 +1736,8 @@ export class OASMenubar extends OASElement {
     for (const el of root.querySelectorAll('.active')) el.classList.remove('active')
     const item = this.currentItems()[this.activeIndex]
     if (!item || item.value == null) return
-    const selector =
-      this.mobileMode || this.activeStack.length > 0 ? '[part="item"]' : '[part="top-item"]'
-    root
-      .querySelector<HTMLElement>(`${selector}[data-value="${item.value}"]`)
-      ?.classList.add('active')
+    const selector = this.mobileMode || this.activeStack.length > 0 ? '[part="item"]' : '[part="top-item"]'
+    root.querySelector<HTMLElement>(`${selector}[data-value="${item.value}"]`)?.classList.add('active')
   }
 
   /** roving tabindex：仅当前顶级项可 Tab 到达；整栏 disabled 时全部 -1 */
@@ -1779,9 +1755,7 @@ export class OASMenubar extends OASElement {
     const top = this.topLevelItems()[topIdx]
     if (top?.value != null) {
       const sel = this.mobileMode ? '[part="item"]' : '[part="top-item"]'
-      root
-        .querySelector<HTMLElement>(`${sel}[data-value="${top.value}"]`)
-        ?.setAttribute('tabindex', '0')
+      root.querySelector<HTMLElement>(`${sel}[data-value="${top.value}"]`)?.setAttribute('tabindex', '0')
     }
   }
 
@@ -1930,8 +1904,7 @@ export class OASMenubar extends OASElement {
     this.expanded = new Set(this.activeStack)
     const children = this.currentItems()
     const enabled = children.map((c, i) => (c.disabled ? -1 : i)).filter((i) => i >= 0)
-    this.activeIndex =
-      enabled.length > 0 ? (focusLast ? enabled[enabled.length - 1]! : enabled[0]!) : 0
+    this.activeIndex = enabled.length > 0 ? (focusLast ? enabled[enabled.length - 1]! : enabled[0]!) : 0
   }
 
   /** 键盘返回父级：收起子菜单并聚焦父级项 */
@@ -2123,8 +2096,7 @@ export class OASMenubar extends OASElement {
     const item = items[idx]
     if (item) {
       const root = this.navRoot()
-      const sel =
-        this.mobileMode || this.activeStack.length > 0 ? '[part="item"]' : '[part="top-item"]'
+      const sel = this.mobileMode || this.activeStack.length > 0 ? '[part="item"]' : '[part="top-item"]'
       const el = root.querySelector<HTMLElement>(`${sel}[data-value="${item.value}"]`)
       el?.focus({ preventScroll: true })
     }
@@ -2199,9 +2171,7 @@ export class OASMenubar extends OASElement {
       if (focusable.length === 0) return
       e.preventDefault()
       const current = focusable.indexOf(this.shadow.activeElement as HTMLElement)
-      const next = e.shiftKey
-        ? (current - 1 + focusable.length) % focusable.length
-        : (current + 1) % focusable.length
+      const next = e.shiftKey ? (current - 1 + focusable.length) % focusable.length : (current + 1) % focusable.length
       focusable[next]?.focus()
     }
   }
@@ -2304,13 +2274,7 @@ export class OASMenubar extends OASElement {
         const meta = mods.has('meta') || mods.has('cmd') || mods.has('command')
         const shift = mods.has('shift')
         const alt = mods.has('alt') || mods.has('option')
-        if (
-          e.ctrlKey === ctrl &&
-          e.metaKey === meta &&
-          e.shiftKey === shift &&
-          e.altKey === alt &&
-          key === hitKey
-        ) {
+        if (e.ctrlKey === ctrl && e.metaKey === meta && e.shiftKey === shift && e.altKey === alt && key === hitKey) {
           return item
         }
       }

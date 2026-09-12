@@ -97,9 +97,7 @@ describe('OASFormItem', () => {
   it('label 属性渲染为标签文本；无 label 时标签行隐藏', () => {
     const withLabel = mount({ label: '姓名' })
     expect(withLabel.shadowRoot!.querySelector('.label-text')!.textContent).toBe('姓名')
-    expect(withLabel.shadowRoot!.querySelector('[part="label"]')!.hasAttribute('hidden')).toBe(
-      false,
-    )
+    expect(withLabel.shadowRoot!.querySelector('[part="label"]')!.hasAttribute('hidden')).toBe(false)
 
     document.body.innerHTML = ''
     const noLabel = mount({})

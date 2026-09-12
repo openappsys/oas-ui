@@ -23,10 +23,7 @@ export type OasEventHandlers = Record<string, OasEventHandler<any>>
  * @param ref 指向目标元素（宿主 ref）的 RefObject
  * @param handlers 事件名 → 处理函数映射
  */
-export function useOasEvents(
-  ref: RefObject<HTMLElement | null>,
-  handlers: OasEventHandlers,
-): void {
+export function useOasEvents(ref: RefObject<HTMLElement | null>, handlers: OasEventHandlers): void {
   // handlers 最新化：事件触发时按 ev.type 从 ref 取最新处理函数（引用变化不重绑）
   const handlersRef = useRef(handlers)
   handlersRef.current = handlers

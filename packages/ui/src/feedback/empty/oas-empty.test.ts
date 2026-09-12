@@ -280,7 +280,9 @@ describe('OASEmpty', () => {
       await new Promise((r) => setTimeout(r, 0))
       const content = el.shadowRoot!.querySelector<HTMLElement>('[part="illustration"]')!
       expect(content.hidden).toBe(true)
-      expect(el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="illustration"]')!.assignedNodes().length).toBeGreaterThan(0)
+      expect(
+        el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="illustration"]')!.assignedNodes().length,
+      ).toBeGreaterThan(0)
     })
   })
 

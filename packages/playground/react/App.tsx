@@ -59,18 +59,10 @@ export default function App() {
       <div className="demo-block">
         <h3>主题切换</h3>
         <div className="switch-row">
-          <oas-button
-            size="small"
-            onClick={() => setTheme('light')}
-            type={theme === 'light' ? 'primary' : 'default'}
-          >
+          <oas-button size="small" onClick={() => setTheme('light')} type={theme === 'light' ? 'primary' : 'default'}>
             Light
           </oas-button>
-          <oas-button
-            size="small"
-            onClick={() => setTheme('dark')}
-            type={theme === 'dark' ? 'primary' : 'default'}
-          >
+          <oas-button size="small" onClick={() => setTheme('dark')} type={theme === 'dark' ? 'primary' : 'default'}>
             Dark
           </oas-button>
           <oas-button

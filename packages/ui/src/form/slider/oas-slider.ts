@@ -803,8 +803,7 @@ export class OASSlider extends OASElement {
       if (this.numMaxInput) this.numMaxInput.value = String(hi)
     } else {
       const value = this.getAttr('value', '')
-      const shown =
-        value === '' ? '' : markMode ? String(this.snapToMark(Number(value))) : value
+      const shown = value === '' ? '' : markMode ? String(this.snapToMark(Number(value))) : value
       if (this.input.value !== shown) this.input.value = shown
       if (this.numInput) this.numInput.value = String(Number(this.input.value))
     }
@@ -916,8 +915,7 @@ export class OASSlider extends OASElement {
   private handleKeydown(e: KeyboardEvent): void {
     if (this.injectDisabled()) return
     const key = e.key
-    const isArrow =
-      key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown'
+    const isArrow = key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown'
     const isPage = key === 'PageUp' || key === 'PageDown'
     const isBound = key === 'Home' || key === 'End'
     if (!isArrow && !isPage && !isBound) return
@@ -936,8 +934,7 @@ export class OASSlider extends OASElement {
     e.preventDefault()
     const step = Number(this.getAttr('step', '1')) || 1
     const largeRaw = this.getAttr('large-step', '')
-    const large =
-      largeRaw !== '' && Number.isFinite(Number(largeRaw)) ? Number(largeRaw) : step * 10
+    const large = largeRaw !== '' && Number.isFinite(Number(largeRaw)) ? Number(largeRaw) : step * 10
     const sign = this.keySign(key)
     this.applyKeyboardValue(input, (Number(input.value) || 0) + sign * large)
   }
@@ -947,7 +944,7 @@ export class OASSlider extends OASElement {
     let sign = 0
     if (key === 'ArrowRight' || key === 'ArrowUp' || key === 'PageUp') sign = 1
     else if (key === 'ArrowLeft' || key === 'ArrowDown' || key === 'PageDown') sign = -1
-  if (sign !== 0 && key.startsWith('Arrow') && this.hasAttr('reverse')) sign = -sign
+    if (sign !== 0 && key.startsWith('Arrow') && this.hasAttr('reverse')) sign = -sign
     return sign
   }
 
@@ -1140,8 +1137,7 @@ export class OASSlider extends OASElement {
 
   /** 数值输入提交：夹取范围 → 驱动滑块 → 输入框归一化 → 派发事件 */
   private commitFromNumber(role: 'num' | 'num-min' | 'num-max', emitChange: boolean): void {
-    const input =
-      role === 'num' ? this.numInput : role === 'num-min' ? this.numMinInput : this.numMaxInput
+    const input = role === 'num' ? this.numInput : role === 'num-min' ? this.numMinInput : this.numMaxInput
     if (!input) return
     const raw = input.value.trim()
     const v = Number(raw)
@@ -1233,10 +1229,7 @@ export class OASSlider extends OASElement {
   // ---------- 自定义滑块 / 填充 / 气泡 ----------
 
   private hasCustomThumb(): boolean {
-    return (
-      !!this.querySelector('template[slot="custom-thumb"]') ||
-      !!this.querySelector('[slot="custom-thumb"]')
-    )
+    return !!this.querySelector('template[slot="custom-thumb"]') || !!this.querySelector('[slot="custom-thumb"]')
   }
 
   /** 把 light DOM 自定义滑块内容（template 或元素）克隆进每个可见滑块 */
@@ -1277,8 +1270,7 @@ export class OASSlider extends OASElement {
     const isRange = this.hasAttr('range')
     const focused = this.hasAttribute('data-focused')
     // 气泡可见：常显 > 拖动 > 聚焦（focus 语义，不依赖 show-tooltip）
-    const tipsVisible =
-      this.hasAttr('show-tooltip') || this.hasAttr('tooltip-always') || this.dragging || focused
+    const tipsVisible = this.hasAttr('show-tooltip') || this.hasAttr('tooltip-always') || this.dragging || focused
 
     // 拖动/聚焦/常显中启用自定义滑块（拖动时临时显示值气泡，无需 show-tooltip）；
     // 垂直模式恒启用：原生 thumb 隐藏，.custom-thumb 承担默认拇指视觉与拖动反馈
@@ -1295,8 +1287,7 @@ export class OASSlider extends OASElement {
     const [lo, hi] = isRange ? this.currentRange() : [sp, Number(this.input?.value ?? 0)]
     const pctOf = (v: number): number => ((v - min) / span) * 100
     // 视觉轴归一（水平从左起算 / 垂直从上起算）：水平默认 min 在左、垂直默认 min 在下，reverse 各自镜像
-    const vis = (pct: number): number =>
-      vertical ? (reverse ? pct : 100 - pct) : reverse ? 100 - pct : pct
+    const vis = (pct: number): number => (vertical ? (reverse ? pct : 100 - pct) : reverse ? 100 - pct : pct)
     fill.dataset.pct = String(reverse ? 100 - pctOf(hi) : pctOf(hi))
     // 定位轴切换（vertical 用 top/height），切轴时清理另一轴的位置与尺寸残留
     const axis = vertical ? 'top' : 'left'
@@ -1310,9 +1301,7 @@ export class OASSlider extends OASElement {
     // 填充继续用 % 会在两端偏差最多半个直径（7px）。有布局尺寸时按像素对齐
     // （thumb 同公式）；无尺寸（SSR/hidden/测试环境）回落 % 保持旧行为。
     const trackInput = isRange ? (this.maxInput ?? this.input) : this.input
-    const trackLen = vertical
-      ? (trackInput?.clientHeight ?? 0)
-      : (trackInput?.clientWidth ?? 0)
+    const trackLen = vertical ? (trackInput?.clientHeight ?? 0) : (trackInput?.clientWidth ?? 0)
     if (trackLen) {
       const size = this.thumbSize()
       const posPx = (v: number): number => {
@@ -1340,9 +1329,7 @@ export class OASSlider extends OASElement {
     for (const th of this.shadow.querySelectorAll<HTMLElement>('.custom-thumb')) {
       const which = th.dataset.thumb
       const visible =
-        which === 'value'
-          ? useOverlay && !isRange
-          : (which === 'min' || which === 'max') && useOverlay && isRange
+        which === 'value' ? useOverlay && !isRange : (which === 'min' || which === 'max') && useOverlay && isRange
       const tip = th.querySelector<HTMLElement>('.thumb-tip')
       if (tip) {
         tip.textContent = this.formatValue(which === 'min' ? lo : hi)

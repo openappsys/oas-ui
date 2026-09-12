@@ -1,15 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
-import {
-  parseColor,
-  formatColor,
-  formatSwatch,
-  type RGBA,
-} from './color.js'
-import {
-  registeredColorPickerCapabilities,
-  onColorPickerCapabilityRegistered,
-} from './oas-color-picker-capability.js'
+import { parseColor, formatColor, formatSwatch, type RGBA } from './color.js'
+import { registeredColorPickerCapabilities, onColorPickerCapabilityRegistered } from './oas-color-picker-capability.js'
 
 /** placement 合法取值：12 向（四基向 × start/end 交叉轴对齐），默认 bottom（与 date-picker 同一枚举） */
 const VALID_PLACEMENTS: readonly Placement[] = [
@@ -686,9 +678,9 @@ export class OASColorPicker extends OASElement {
     })
 
     const num = (sel: string, key: 'r' | 'g' | 'b'): void => {
-      this.shadow.querySelector<HTMLInputElement>(sel)?.addEventListener('input', (e) =>
-        this.fromRgb((e.target as HTMLInputElement).value, key),
-      )
+      this.shadow
+        .querySelector<HTMLInputElement>(sel)
+        ?.addEventListener('input', (e) => this.fromRgb((e.target as HTMLInputElement).value, key))
     }
     num('.r', 'r')
     num('.g', 'g')
@@ -865,7 +857,10 @@ export class OASColorPicker extends OASElement {
         } else if (item && typeof item === 'object') {
           const o = item as { color?: unknown; label?: unknown }
           if (typeof o.color === 'string' && parseColor(o.color)) {
-            entries.push({ color: o.color, label: typeof o.label === 'string' ? o.label : undefined })
+            entries.push({
+              color: o.color,
+              label: typeof o.label === 'string' ? o.label : undefined,
+            })
           }
         }
       }
@@ -983,15 +978,13 @@ export class OASColorPicker extends OASElement {
     const popupRect = this.panel.getBoundingClientRect()
     const viewport = { width: window.innerWidth, height: window.innerHeight }
     const placement = this.adjustCrossAlignment(anchorRect, popupRect, viewport, this.resolvePlacement())
-    const { top, left, placement: actual } = computePosition(
-      anchorRect,
-      popupRect,
-      placement,
-      viewport,
-      PANEL_GAP,
-      true,
-      { collisionPadding: VIEWPORT_PADDING },
-    )
+    const {
+      top,
+      left,
+      placement: actual,
+    } = computePosition(anchorRect, popupRect, placement, viewport, PANEL_GAP, true, {
+      collisionPadding: VIEWPORT_PADDING,
+    })
     this.panel.style.top = `${top}px`
     this.panel.style.left = `${left}px`
     this.panel.setAttribute('data-placement', actual)

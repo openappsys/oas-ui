@@ -7,11 +7,7 @@ const STEPS = JSON.stringify([
   { title: '完成发货', description: '等待收货' },
 ])
 
-function mount(
-  attrs: Record<string, string> = {},
-  steps = STEPS,
-  panelCount = 3,
-): OASStepper {
+function mount(attrs: Record<string, string> = {}, steps = STEPS, panelCount = 3): OASStepper {
   const el = new OASStepper()
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
   if (!attrs.steps) el.setAttribute('steps', steps)
@@ -32,9 +28,7 @@ function panels(el: OASStepper): Element[] {
 }
 
 function pressKey(el: OASStepper, key: string): void {
-  el.shadowRoot!.querySelector('.tablist')!.dispatchEvent(
-    new KeyboardEvent('keydown', { key, bubbles: true }),
-  )
+  el.shadowRoot!.querySelector('.tablist')!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
 }
 
 describe('OASStepper 渲染与状态', () => {
@@ -58,9 +52,7 @@ describe('OASStepper 渲染与状态', () => {
   it('tablist 容器 role=tablist，方向默认 horizontal（aria-orientation）', () => {
     const el = mount()
     expect(el.shadowRoot!.querySelector('.tablist')!.getAttribute('role')).toBe('tablist')
-    expect(el.shadowRoot!.querySelector('.tablist')!.getAttribute('aria-orientation')).toBe(
-      'horizontal',
-    )
+    expect(el.shadowRoot!.querySelector('.tablist')!.getAttribute('aria-orientation')).toBe('horizontal')
   })
 
   it('current 同步 aria-selected（默认 0 第一项选中）', () => {
@@ -104,11 +96,7 @@ describe('OASStepper 渲染与状态', () => {
 
   it('icon 字段：显式 icon（iconRegistry 键）优先于状态默认图标渲染内联 SVG', () => {
     const el = mount({
-      steps: JSON.stringify([
-        { title: 'A', icon: 'check-circle' },
-        { title: 'B' },
-        { title: 'C' },
-      ]),
+      steps: JSON.stringify([{ title: 'A', icon: 'check-circle' }, { title: 'B' }, { title: 'C' }]),
     })
     const list = tabs(el)
     expect(list[0]!.querySelector('.indicator svg')).not.toBeNull()
@@ -221,11 +209,7 @@ describe('OASStepper 点击跳步（oas-change）', () => {
 
   it('disabled 步骤：aria-disabled + 点击静默', () => {
     const el = mount({
-      steps: JSON.stringify([
-        { title: 'A' },
-        { title: 'B', disabled: true },
-        { title: 'C' },
-      ]),
+      steps: JSON.stringify([{ title: 'A' }, { title: 'B', disabled: true }, { title: 'C' }]),
     })
     const list = tabs(el)
     expect(list[1]!.getAttribute('aria-disabled')).toBe('true')
@@ -273,12 +257,7 @@ describe('OASStepper 键盘（roving tabindex）', () => {
 
   it('方向键跳过 disabled 步骤', () => {
     const el = mount({
-      steps: JSON.stringify([
-        { title: 'A' },
-        { title: 'B' },
-        { title: 'C', disabled: true },
-        { title: 'D' },
-      ]),
+      steps: JSON.stringify([{ title: 'A' }, { title: 'B' }, { title: 'C', disabled: true }, { title: 'D' }]),
     })
     // B（index 1）→ ArrowRight 跳过 C（disabled）到 D（index 3）
     focusTab(el, 1)
@@ -288,12 +267,7 @@ describe('OASStepper 键盘（roving tabindex）', () => {
 
   it('Home 跳首位、End 跳末位（跳过 disabled）', () => {
     const el = mount({
-      steps: JSON.stringify([
-        { title: 'A' },
-        { title: 'B', disabled: true },
-        { title: 'C' },
-        { title: 'D' },
-      ]),
+      steps: JSON.stringify([{ title: 'A' }, { title: 'B', disabled: true }, { title: 'C' }, { title: 'D' }]),
     })
     focusTab(el, 2)
     pressKey(el, 'End')
@@ -346,9 +320,7 @@ describe('OASStepper 键盘（roving tabindex）', () => {
 
   it('direction=vertical：ArrowUp/ArrowDown 移动焦点', () => {
     const el = mount({ current: '0', direction: 'vertical' })
-    expect(el.shadowRoot!.querySelector('.tablist')!.getAttribute('aria-orientation')).toBe(
-      'vertical',
-    )
+    expect(el.shadowRoot!.querySelector('.tablist')!.getAttribute('aria-orientation')).toBe('vertical')
     focusTab(el, 0)
     pressKey(el, 'ArrowDown')
     expect(el.shadowRoot!.activeElement).toBe(tabs(el)[1])
@@ -427,9 +399,7 @@ describe('OASStepper 样式契约', () => {
   it('vertical：tablist flex-direction column（CSS 变量开口、逻辑属性）', () => {
     const el = mount({ direction: 'vertical' })
     const css = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(css).toMatch(
-      /:host\(\.oas-stepper--vertical\)\s*\.tablist\s*\{\s*flex-direction:\s*column/,
-    )
+    expect(css).toMatch(/:host\(\.oas-stepper--vertical\)\s*\.tablist\s*\{\s*flex-direction:\s*column/)
     expect(el.classList.contains('oas-stepper--vertical')).toBe(true)
   })
 
@@ -437,9 +407,7 @@ describe('OASStepper 样式契约', () => {
     const el = mount()
     const slot = el.shadowRoot!.querySelector<HTMLElement>('slot[part="panels"]')
     expect(slot).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('style')!.textContent!).toContain(
-      'var(--oas-space-4)',
-    )
+    expect(el.shadowRoot!.querySelector('style')!.textContent!).toContain('var(--oas-space-4)')
   })
 
   it('focus-visible 焦点环走 --oas-focus-ring', () => {

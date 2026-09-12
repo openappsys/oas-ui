@@ -61,11 +61,7 @@ export function startOfDay(d: Date): Date {
 }
 
 export function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  )
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 
 export function isSameMonth(a: Date, b: Date): boolean {
@@ -159,9 +155,7 @@ export function weekdayLabels(locale: string, weekStart: number): string[] {
   const names: string[] = []
   for (let i = 0; i < 7; i++) {
     // 2026-01-04 为周日，作为基准行
-    names.push(
-      new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(new Date(2026, 0, 4 + i)),
-    )
+    names.push(new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(new Date(2026, 0, 4 + i)))
   }
   const ws = normalizeWeekStart(weekStart)
   return [...names.slice(ws), ...names.slice(0, ws)]
@@ -233,12 +227,7 @@ export function formatYear(d: Date, locale: string): string {
  * - PageUp/PageDown：跳上一/下一月同日；Shift 时跳上一/下一年同日（月末钳制）
  * 未识别的键返回 null。
  */
-export function moveGridDate(
-  d: Date,
-  key: string,
-  weekStart = 0,
-  shift = false,
-): Date | null {
+export function moveGridDate(d: Date, key: string, weekStart = 0, shift = false): Date | null {
   const ws = normalizeWeekStart(weekStart)
   const y = d.getFullYear()
   const m = d.getMonth()
@@ -291,9 +280,7 @@ export function renderMonthGrid(container: HTMLElement, opts: MonthGridRenderOpt
   const ws = opts.weekStart != null ? normalizeWeekStart(opts.weekStart) : getWeekStart(locale)
   const cells = buildMonthCells(viewDate, locale, ws)
   const today = opts.today ? startOfDay(opts.today) : null
-  const selectedList = (
-    opts.selected ? (Array.isArray(opts.selected) ? opts.selected : [opts.selected]) : []
-  )
+  const selectedList = (opts.selected ? (Array.isArray(opts.selected) ? opts.selected : [opts.selected]) : [])
     .map(startOfDay)
     .filter((d) => !Number.isNaN(d.getTime()))
   const min = opts.min ? startOfDay(opts.min) : null

@@ -332,7 +332,10 @@ describe('OASInputNumber 格式化（声明式 + 函数式）', () => {
 
   it('format=currency:USD 货币显示（含 aria-valuetext）', () => {
     const el = mount({ value: '1234.5', format: 'currency:USD' })
-    const expected = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(1234.5)
+    const expected = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: 'USD',
+    }).format(1234.5)
     expect(input(el).value).toBe(expected)
     expect(input(el).getAttribute('aria-valuetext')).toBe(expected)
     type(el, expected)
@@ -585,9 +588,7 @@ describe('OASInputNumber 滚轮步进', () => {
   it('wheel 属性 + 聚焦时滚轮步进并阻止页面滚动', () => {
     const el = mount({ value: '5', wheel: '' })
     el.focus()
-    const down = input(el).dispatchEvent(
-      new WheelEvent('wheel', { deltaY: 120, cancelable: true, bubbles: true }),
-    )
+    const down = input(el).dispatchEvent(new WheelEvent('wheel', { deltaY: 120, cancelable: true, bubbles: true }))
     expect(down).toBe(false) // preventDefault 生效
     expect(input(el).value).toBe('4')
     input(el).dispatchEvent(new WheelEvent('wheel', { deltaY: -120, cancelable: true, bubbles: true }))

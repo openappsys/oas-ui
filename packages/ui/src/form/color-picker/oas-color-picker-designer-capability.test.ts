@@ -40,8 +40,7 @@ describe('OASColorPicker designer 能力边界（纯核 core 入口：未 import
     warnSpy.mockRestore()
   })
 
-  const isDesignerHint = (call: unknown[]): boolean =>
-    String(call[0]).includes('form/color-picker/designer')
+  const isDesignerHint = (call: unknown[]): boolean => String(call[0]).includes('form/color-picker/designer')
 
   it('dev 告警：mode=gradient + 未 import designer → 提示按需 import（同值去重：多实例只告警一次）', () => {
     mount({ mode: 'gradient', value: GRAD_VALUE })

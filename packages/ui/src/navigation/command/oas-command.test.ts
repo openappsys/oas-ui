@@ -317,16 +317,12 @@ describe('OASCommand', () => {
     const el = mount({ hotkey: 'ctrl+shift+p' })
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
     expect(el.hasAttribute('open')).toBe(false)
-    document.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, shiftKey: true }),
-    )
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, shiftKey: true }))
     expect(el.hasAttribute('open')).toBe(true)
     // 缺 shift 不触发（严格匹配）
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true }))
     expect(el.hasAttribute('open')).toBe(true)
-    document.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, shiftKey: true }),
-    )
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, shiftKey: true }))
     expect(el.hasAttribute('open')).toBe(false)
   })
 
@@ -358,9 +354,7 @@ describe('OASCommand', () => {
   it('oas-open-change：打开与关闭各派发一次', () => {
     const el = mount()
     const opened: boolean[] = []
-    el.addEventListener('oas-open-change', (e: Event) =>
-      opened.push((e as CustomEvent<{ open: boolean }>).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e: Event) => opened.push((e as CustomEvent<{ open: boolean }>).detail.open))
     el.setAttribute('open', '')
     expect(opened).toEqual([true])
     esc()
@@ -417,9 +411,7 @@ describe('OASCommand', () => {
   // ============ limit 渲染上限 ============
 
   it('limit 限制渲染条数', () => {
-    const items = JSON.stringify(
-      Array.from({ length: 100 }, (_, i) => ({ label: `命令 ${i}`, value: `c${i}` })),
-    )
+    const items = JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ label: `命令 ${i}`, value: `c${i}` })))
     const el = mount({ open: '', items, limit: '3' })
     expect(options(el).length).toBe(3)
   })
@@ -777,9 +769,7 @@ describe('OASCommand', () => {
   // ============ 虚拟滚动 ============
 
   it('virtual：只渲染可见窗口（不渲染全量）', () => {
-    const items = JSON.stringify(
-      Array.from({ length: 1000 }, (_, i) => ({ label: `命令 ${i}`, value: `c${i}` })),
-    )
+    const items = JSON.stringify(Array.from({ length: 1000 }, (_, i) => ({ label: `命令 ${i}`, value: `c${i}` })))
     const el = mount({ open: '', virtual: '', items })
     const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
     expect((vlist as HTMLElement).hidden).toBe(false)
@@ -789,9 +779,7 @@ describe('OASCommand', () => {
   })
 
   it('virtual：键盘导航滚动窗口使高亮可见', async () => {
-    const items = JSON.stringify(
-      Array.from({ length: 1000 }, (_, i) => ({ label: `命令 ${i}`, value: `c${i}` })),
-    )
+    const items = JSON.stringify(Array.from({ length: 1000 }, (_, i) => ({ label: `命令 ${i}`, value: `c${i}` })))
     const el = mount({ open: '', virtual: '', items })
     const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
     for (let i = 0; i < 25; i++) arrow(el, 'ArrowDown')
@@ -878,9 +866,7 @@ describe('OASCommand', () => {
   })
 
   it('aria-controls 在虚拟滚动模式指向虚拟列表容器', () => {
-    const items = JSON.stringify(
-      Array.from({ length: 1000 }, (_, i) => ({ label: `命令 ${i}`, value: `c${i}` })),
-    )
+    const items = JSON.stringify(Array.from({ length: 1000 }, (_, i) => ({ label: `命令 ${i}`, value: `c${i}` })))
     const el = mount({ open: '', virtual: '', items })
     const vlist = el.shadowRoot!.querySelector<HTMLElement>('oas-virtual-list')!
     expect(search(el).getAttribute('aria-controls')).toBe(vlist.id)
@@ -1002,10 +988,7 @@ describe('子元素声明式通道', () => {
     const labels = options(el).map((o) => o.querySelector('.option-label')?.textContent)
     expect(labels).toEqual(['新建文件', '打开文件', '撤销'])
     // 分组标题（group 属性映射）
-    expect([...el.shadowRoot!.querySelectorAll('.group')].map((g) => g.textContent)).toEqual([
-      '文件',
-      '编辑',
-    ])
+    expect([...el.shadowRoot!.querySelectorAll('.group')].map((g) => g.textContent)).toEqual(['文件', '编辑'])
     // separator 渲染分隔行且不进选项序列
     expect(el.shadowRoot!.querySelectorAll('[part="separator"]').length).toBe(1)
     expect(options(el).length).toBe(3)
@@ -1025,10 +1008,7 @@ describe('子元素声明式通道', () => {
         { label: '末项', value: 'last' },
       ]),
     })
-    expect(options(el).map((o) => o.querySelector('.option-label')?.textContent)).toEqual([
-      '数据项',
-      '末项',
-    ])
+    expect(options(el).map((o) => o.querySelector('.option-label')?.textContent)).toEqual(['数据项', '末项'])
     expect(el.shadowRoot!.querySelector('[data-value="child"]')).toBeNull()
   })
 
@@ -1067,10 +1047,7 @@ describe('子元素声明式通道', () => {
       { open: '' },
     )
     // 根页 label 不含嵌套子页文本（childLabel 跳过嵌套载体）
-    expect(options(el).map((o) => o.querySelector('.option-label')?.textContent)).toEqual([
-      '更改主题',
-      '打开',
-    ])
+    expect(options(el).map((o) => o.querySelector('.option-label')?.textContent)).toEqual(['更改主题', '打开'])
     let detail: unknown
     el.addEventListener('oas-page-change', (e: Event) => (detail = (e as CustomEvent).detail))
     arrow(el, 'Enter')
@@ -1079,10 +1056,7 @@ describe('子元素声明式通道', () => {
     expect(q(el, '.breadcrumb')!.hidden).toBe(false)
     // 面包屑返回按钮回退根页
     el.shadowRoot!.querySelector<HTMLButtonElement>('[part="back"]')!.click()
-    expect(options(el).map((o) => o.querySelector('.option-label')?.textContent)).toEqual([
-      '更改主题',
-      '打开',
-    ])
+    expect(options(el).map((o) => o.querySelector('.option-label')?.textContent)).toEqual(['更改主题', '打开'])
     expect(q(el, '.breadcrumb')!.hidden).toBe(true)
   })
 
@@ -1111,10 +1085,9 @@ describe('子元素声明式通道', () => {
   })
 
   it('view 字段：选中进入面板内嵌视图插槽路径不变', () => {
-    const el = mountCommandChildren(
-      `<oas-command-item value="deploy" view="deploy">部署应用</oas-command-item>`,
-      { open: '' },
-    )
+    const el = mountCommandChildren(`<oas-command-item value="deploy" view="deploy">部署应用</oas-command-item>`, {
+      open: '',
+    })
     const form = document.createElement('div')
     form.slot = 'view-deploy'
     form.textContent = '表单内容'

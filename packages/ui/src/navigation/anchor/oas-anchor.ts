@@ -615,9 +615,7 @@ export class OASAnchor extends OASElement {
     if (this.hasAttribute('items')) {
       try {
         const parsed = JSON.parse(this.getAttr('items', '[]'))
-        this._items = Array.isArray(parsed)
-          ? parsed.filter((i): i is AnchorItem => this.isValidItem(i))
-          : []
+        this._items = Array.isArray(parsed) ? parsed.filter((i): i is AnchorItem => this.isValidItem(i)) : []
       } catch {
         this._items = []
       }
@@ -759,9 +757,9 @@ export class OASAnchor extends OASElement {
         if (to !== undefined) item.targetOffset = Number(to)
         a.addEventListener('click', (e: MouseEvent) => this.handleLinkClick(item, e))
         this.flatItems.push(item)
-        const sub = Array.from(liEl.children).find((c) =>
-          (c as HTMLElement).classList.contains('anchor-children'),
-        ) as HTMLElement | undefined
+        const sub = Array.from(liEl.children).find((c) => (c as HTMLElement).classList.contains('anchor-children')) as
+          | HTMLElement
+          | undefined
         if (sub) walk(sub)
       }
     }

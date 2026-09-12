@@ -21,9 +21,7 @@ function removeBtn(el: OASDynamicTags, idx: number): HTMLButtonElement {
 }
 
 function pressKey(el: OASDynamicTags, keyName: string): void {
-  inputEl(el).dispatchEvent(
-    new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true }),
-  )
+  inputEl(el).dispatchEvent(new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true }))
 }
 
 function typeValue(el: OASDynamicTags, value: string): void {
@@ -330,9 +328,7 @@ describe('OASDynamicTags sortable 排序', () => {
   }
 
   function pressChip(el: OASDynamicTags, idx: number, key: string, alt = false): void {
-    chip(el, idx).dispatchEvent(
-      new KeyboardEvent('keydown', { key, altKey: alt, bubbles: true, cancelable: true }),
-    )
+    chip(el, idx).dispatchEvent(new KeyboardEvent('keydown', { key, altKey: alt, bubbles: true, cancelable: true }))
   }
 
   it('sortable 时标签可聚焦（tabindex=-1）且 draggable', () => {
@@ -628,9 +624,7 @@ describe('OASDynamicTags 编辑现有标签', () => {
     let changeDetail: unknown
     el.addEventListener('oas-edit', (e: Event) => (editDetail = (e as CustomEvent).detail))
     el.addEventListener('oas-change', (e: Event) => (changeDetail = (e as CustomEvent).detail))
-    editInput(el)!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
-    )
+    editInput(el)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(el.modelValue).toEqual(['z', 'b'])
     expect(editDetail).toEqual({ index: 0, value: 'z', oldValue: 'a' })
     expect(changeDetail).toEqual({ value: ['z', 'b'], trigger: 'edit' })
@@ -640,9 +634,7 @@ describe('OASDynamicTags 编辑现有标签', () => {
     const el = mount({ 'model-value': '["a"]' })
     chip(el, 0).dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }))
     editInput(el)!.value = 'changed'
-    editInput(el)!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
-    )
+    editInput(el)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
     expect(el.modelValue).toEqual(['a'])
     expect(editInput(el)).toBeNull()
   })
@@ -651,9 +643,7 @@ describe('OASDynamicTags 编辑现有标签', () => {
     const el = mount({ 'model-value': '["a","b"]' })
     chip(el, 0).dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }))
     editInput(el)!.value = 'b'
-    editInput(el)!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
-    )
+    editInput(el)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(el.modelValue).toEqual(['a', 'b'])
     expect(editInput(el)).not.toBeNull()
     expect(editInput(el)!.getAttribute('aria-invalid')).toBe('true')
@@ -664,9 +654,7 @@ describe('OASDynamicTags 编辑现有标签', () => {
     const el = mount({ 'model-value': '["a"]' })
     chip(el, 0).dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }))
     editInput(el)!.value = ' '
-    editInput(el)!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
-    )
+    editInput(el)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(el.modelValue).toEqual(['a'])
     expect(editInput(el)).toBeNull()
   })
@@ -674,9 +662,7 @@ describe('OASDynamicTags 编辑现有标签', () => {
   it('sortable 下标签聚焦后 Enter 进入编辑', () => {
     const el = mount({ sortable: '', 'model-value': '["a"]' })
     chip(el, 0).focus()
-    chip(el, 0).dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
-    )
+    chip(el, 0).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(editInput(el)).not.toBeNull()
   })
 

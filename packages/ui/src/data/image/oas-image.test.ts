@@ -124,9 +124,7 @@ describe('OASImage', () => {
 
     setLocale(en)
     expect(el.shadowRoot!.querySelector('[part="placeholder"]')!.textContent).toContain('Loading')
-    expect(el.shadowRoot!.querySelector('[part="fallback"]')!.textContent).toContain(
-      'Image failed to load',
-    )
+    expect(el.shadowRoot!.querySelector('[part="fallback"]')!.textContent).toContain('Image failed to load')
 
     setLocale('zh-CN')
     expect(el.shadowRoot!.querySelector('[part="fallback"]')!.textContent).toContain('图片加载失败')
@@ -664,9 +662,7 @@ describe('OASImage 图集预览', () => {
     const el = mountGallery()
     openIt(el)
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
-    document.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }),
-    )
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }))
     expect(pq<HTMLElement>(el, '.preview-mask').hasAttribute('hidden')).toBe(false)
   })
 })
@@ -696,12 +692,8 @@ describe('OASImage preview-src', () => {
     document.body.appendChild(el)
     ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
     const root = pdoc(el)
-    expect(root.querySelector<HTMLImageElement>('[part="preview-image"]')!.getAttribute('src')).toBe(
-      '/full.png',
-    )
-    expect(
-      root.querySelector<HTMLAnchorElement>('[part="preview-download"]')!.getAttribute('href'),
-    ).toBe('/full.png')
+    expect(root.querySelector<HTMLImageElement>('[part="preview-image"]')!.getAttribute('src')).toBe('/full.png')
+    expect(root.querySelector<HTMLAnchorElement>('[part="preview-download"]')!.getAttribute('href')).toBe('/full.png')
   })
 })
 
@@ -760,9 +752,7 @@ describe('OASImage 受控预览', () => {
     el.setAttribute('preview', '')
     document.body.appendChild(el)
     const details: unknown[] = []
-    el.addEventListener('oas-preview-change', (e: Event) =>
-      details.push((e as CustomEvent).detail),
-    )
+    el.addEventListener('oas-preview-change', (e: Event) => details.push((e as CustomEvent).detail))
     ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
     expect(details).toEqual([{ open: true }])
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
@@ -779,9 +769,7 @@ describe('OASImage 受控预览', () => {
     el.setAttribute('preview', '')
     document.body.appendChild(el)
     const details: unknown[] = []
-    el.addEventListener('oas-preview-change', (e: Event) =>
-      details.push((e as CustomEvent).detail),
-    )
+    el.addEventListener('oas-preview-change', (e: Event) => details.push((e as CustomEvent).detail))
     el.openPreview()
     expect(maskOf(el).hasAttribute('hidden')).toBe(false)
     expect(el.hasAttribute('preview-open')).toBe(true)
@@ -910,18 +898,17 @@ describe('OASImage 自定义工具栏（slot=toolbar + oas-toolbar-render）', (
   </template>`
 
   /** 挂监听 → 挂载（挂载与打开均会派发 oas-toolbar-render，先挂监听确保不丢） */
-  function mountToolbar(
-    extra: Record<string, string> = {},
-  ): { el: OASImage; details: Array<{ element: HTMLElement; actions: Record<string, () => void> }> } {
+  function mountToolbar(extra: Record<string, string> = {}): {
+    el: OASImage
+    details: Array<{ element: HTMLElement; actions: Record<string, () => void> }>
+  } {
     const el = new OASImage()
     el.setAttribute('src', '/a.png')
     el.setAttribute('preview', '')
     for (const [k, v] of Object.entries(extra)) el.setAttribute(k, v)
     el.innerHTML = TOOLBAR_TPL
     const details: Array<{ element: HTMLElement; actions: Record<string, () => void> }> = []
-    el.addEventListener('oas-toolbar-render', (e: Event) =>
-      details.push((e as CustomEvent).detail as never),
-    )
+    el.addEventListener('oas-toolbar-render', (e: Event) => details.push((e as CustomEvent).detail as never))
     document.body.appendChild(el)
     return { el, details }
   }
@@ -1036,9 +1023,7 @@ describe('OASImage 自定义工具栏（slot=toolbar + oas-toolbar-render）', (
     const bar = barOf(el)
     bar.querySelector<HTMLElement>('[data-cmd="next"]')!.click()
     expect(pdoc(el).querySelector('[part="preview-counter"]')!.textContent).toBe('2/3')
-    expect(pdoc(el).querySelector<HTMLImageElement>('[part="preview-image"]')!.getAttribute('src')).toBe(
-      '/b.png',
-    )
+    expect(pdoc(el).querySelector<HTMLImageElement>('[part="preview-image"]')!.getAttribute('src')).toBe('/b.png')
     bar.querySelector<HTMLElement>('[data-cmd="prev"]')!.click()
     expect(pdoc(el).querySelector('[part="preview-counter"]')!.textContent).toBe('1/3')
   })
@@ -1066,9 +1051,7 @@ describe('OASImage 自定义工具栏（slot=toolbar + oas-toolbar-render）', (
     expect(bar.querySelector('[part="preview-close"]')).not.toBeNull()
     // 默认按钮仍可用
     bar.querySelector<HTMLElement>('[part="preview-zoom-in"]')!.click()
-    expect(
-      pdoc(el).querySelector<HTMLElement>('[part="preview-image"]')!.style.transform,
-    ).toContain('scale(1.5)')
+    expect(pdoc(el).querySelector<HTMLElement>('[part="preview-image"]')!.style.transform).toContain('scale(1.5)')
   })
 
   it('无模板时维持默认工具栏（oas-toolbar-render 不派发）', () => {
@@ -1089,9 +1072,7 @@ describe('OASImage 自定义工具栏（slot=toolbar + oas-toolbar-render）', (
     wire(el, details[details.length - 1]!)
     for (let i = 0; i < 12; i++) {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
-      document.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }),
-      )
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }))
     }
     expect(pdoc(el).querySelector('.preview-mask')!.hasAttribute('hidden')).toBe(false)
   })
@@ -1115,10 +1096,7 @@ describe('OASImage flip 翻转', () => {
     document.body.appendChild(el)
     ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
     const portal = document.querySelector('[data-oas-image-preview-portal]')
-    const root = () =>
-      portal?.shadowRoot?.querySelector('.preview-mask')
-        ? portal.shadowRoot
-        : el.shadowRoot!
+    const root = () => (portal?.shadowRoot?.querySelector('.preview-mask') ? portal.shadowRoot : el.shadowRoot!)
     return { el, img: root().querySelector('[part="preview-image"]') as HTMLElement, root }
   }
 
@@ -1199,9 +1177,7 @@ describe('OASImage 拖拽平移与滚轮缩放', () => {
 
   it('pointer 拖拽平移更新 translate，pointerup 后停止跟随', () => {
     const { stage, img } = setup()
-    stage.dispatchEvent(
-      new PointerEvent('pointerdown', { clientX: 10, clientY: 10, button: 0, pointerId: 1 }),
-    )
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 10, clientY: 10, button: 0, pointerId: 1 }))
     stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 30, clientY: 25, pointerId: 1 }))
     expect(img.style.transform).toContain('translate(20px, 15px)')
     stage.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
@@ -1212,12 +1188,20 @@ describe('OASImage 拖拽平移与滚轮缩放', () => {
   it('拖拽超出可视范围时按边界 clamp', () => {
     const { stage, img } = setup()
     const rect = (w: number, h: number) =>
-      ({ width: w, height: h, top: 0, left: 0, right: w, bottom: h, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+      ({
+        width: w,
+        height: h,
+        top: 0,
+        left: 0,
+        right: w,
+        bottom: h,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
     stage.getBoundingClientRect = () => rect(1000, 800)
     img.getBoundingClientRect = () => rect(2000, 1600)
-    stage.dispatchEvent(
-      new PointerEvent('pointerdown', { clientX: 0, clientY: 0, button: 0, pointerId: 1 }),
-    )
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 0, clientY: 0, button: 0, pointerId: 1 }))
     // 拖拽远超边界：x 限 500，y 限 400
     stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 900, clientY: 900, pointerId: 1 }))
     expect(img.style.transform).toContain('translate(500px, 400px)')
@@ -1225,9 +1209,7 @@ describe('OASImage 拖拽平移与滚轮缩放', () => {
 
   it('非主键（右键）不触发拖拽', () => {
     const { stage, img } = setup()
-    stage.dispatchEvent(
-      new PointerEvent('pointerdown', { clientX: 10, clientY: 10, button: 2, pointerId: 1 }),
-    )
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 10, clientY: 10, button: 2, pointerId: 1 }))
     stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 30, clientY: 25, pointerId: 1 }))
     expect(img.style.transform).not.toContain('translate(20px, 15px)')
   })
@@ -1291,9 +1273,7 @@ describe('OASImage 预览挂载点（portal 到 body）', () => {
     el.setAttribute('preview-open', '')
     document.body.appendChild(el)
     expect(portal()).not.toBeNull()
-    expect(
-      portal()!.shadowRoot!.querySelector('.preview-mask')!.hasAttribute('hidden'),
-    ).toBe(false)
+    expect(portal()!.shadowRoot!.querySelector('.preview-mask')!.hasAttribute('hidden')).toBe(false)
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(portal()).toBeNull()
   })

@@ -69,9 +69,7 @@ describe('OASTable 纯核入口（core：不含编辑能力）', () => {
   it('无 editable 配置时 core 入口渲染正常且不告警', () => {
     const el = mount()
     expect(el.shadowRoot!.querySelectorAll('tr.row td').length).toBe(2)
-    const editWarns = warnSpy.mock.calls.filter((call: unknown[]) =>
-      String(call[0]).includes('table/edit'),
-    )
+    const editWarns = warnSpy.mock.calls.filter((call: unknown[]) => String(call[0]).includes('table/edit'))
     expect(editWarns.length).toBe(0)
   })
 })

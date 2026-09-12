@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('button color 自定义色：无 type 也按 variant 着色，文字色按底色亮度自适应', async ({
-  page,
-}) => {
+test('button color 自定义色：无 type 也按 variant 着色，文字色按底色亮度自适应', async ({ page }) => {
   // 曾现 bug：--btn-color 只在 type 类上定义、solid 规则只认 primary——无 type 的 color
   // 按钮全部渲染成灰色（自定义颜色 demo 肉眼可见失效）。修复：base 兜底 --btn-color +
   // has-color 实心规则 + 文字色按底色亮度取黑/白（暗色主题下中间调底色配深字不可读）。
@@ -30,18 +28,14 @@ test('button color 自定义色：无 type 也按 variant 着色，文字色按�
   expect(dark[0]!.color, '暗色下紫底仍是白字（亮度自适应）').toBe('rgb(255, 255, 255)')
 })
 
-test('button wrap：默认 nowrap 不换行，显式 wrap 才换行增高，icon-only 保持正方形', async ({
-  page,
-}) => {
+test('button wrap：默认 nowrap 不换行，显式 wrap 才换行增高，icon-only 保持正方形', async ({ page }) => {
   // 用户定夺：默认不换行（正常使用即正常表现）；只有显式 wrap 属性才让长文本换行、
   // 盒随内容长高（min-height 兜底单行高度）；icon-only/circle 固定尺寸保形。
   await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button[wrap]')
   const r = await page.evaluate(() => {
     const wrapBtn = document.querySelector('oas-button[wrap]')!.shadowRoot!.querySelector('button')!
-    const plain = [...document.querySelectorAll('oas-button')].find(
-      (b) => b.textContent?.trim() === '普通按钮',
-    )!
+    const plain = [...document.querySelectorAll('oas-button')].find((b) => b.textContent?.trim() === '普通按钮')!
     const plainBtn = plain.shadowRoot!.querySelector('button')!
     const iconOnly = document.querySelector('oas-button[icon]')!
     const iconBtn = iconOnly.shadowRoot!.querySelector('button')!
@@ -61,9 +55,7 @@ test('button wrap：默认 nowrap 不换行，显式 wrap 才换行增高，icon
   expect(r.iconSquare, 'icon-only 保持正方形').toBe(true)
 })
 
-test('button href anchor 变体：静止态不永久显示选中色（a 镜像规则的 :host 前缀回归）', async ({
-  page,
-}) => {
+test('button href anchor 变体：静止态不永久显示选中色（a 镜像规则的 :host 前缀回归）', async ({ page }) => {
   // 曾现 bug：选中态的 a[part='button'] 镜像规则丢了 :host([aria-pressed='true']) 前缀，
   // 带 href 的 primary/text 按钮静止时永久渲染选中色（primary-active 深底）。
   await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
@@ -85,9 +77,7 @@ test('button href anchor 变体：静止态不永久显示选中色（a 镜像�
   expect(r.default.bg, 'href 默认链接静止应为白底').toBe('rgb(255, 255, 255)')
 })
 
-test('button 语义色状态方向统一：success hover 变暗（0.94）、选中更深（0.85）', async ({
-  page,
-}) => {
+test('button 语义色状态方向统一：success hover 变暗（0.94）、选中更深（0.85）', async ({ page }) => {
   // 曾现不一致：primary hover 变暗（color-mix 85% black），success/warning/danger hover
   // 却用 brightness(1.08) 变亮——同库 hover 明暗方向相反。统一为变暗递进：hover 0.94、
   // 选中 0.85（与 primary 的 85%/75% 两档比例对齐）。
@@ -150,8 +140,7 @@ test('button primary（solid）：hover/选中背景不被自定义底色兜底�
   const r = await page.evaluate(() => {
     const g = document.querySelector('oas-button-group[type="primary"]')!
     const btns = [...g.querySelectorAll('oas-button')]
-    const bg = (b: Element) =>
-      getComputedStyle(b.shadowRoot!.querySelector('button')!).backgroundColor
+    const bg = (b: Element) => getComputedStyle(b.shadowRoot!.querySelector('button')!).backgroundColor
     return {
       pressed: btns[1]!.getAttribute('aria-pressed'),
       selected: bg(btns[1]!),

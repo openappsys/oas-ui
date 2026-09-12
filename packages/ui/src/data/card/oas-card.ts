@@ -383,11 +383,7 @@ export class OASCard extends OASElement {
   private reflectingSelected = false
   private selectedControlled = false
 
-  override attributeChangedCallback(
-    name: string,
-    oldValue: string | null,
-    newValue: string | null,
-  ): void {
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if (name === 'selected' && oldValue !== newValue && !this.reflectingSelected) {
       this.selectedControlled = true
     }
@@ -410,16 +406,12 @@ export class OASCard extends OASElement {
    *  宿主自身与卡自身的包装锚点 [part="link"] 不算——它是卡结构的一部分） */
   private hitsInteractive(e: Event): boolean {
     const link = this.shadow.querySelector('[part="link"]')
-    return e
-      .composedPath()
-      .some((n) => n instanceof Element && n !== this && n !== link && n.matches(INTERACTIVE_SEL))
+    return e.composedPath().some((n) => n instanceof Element && n !== this && n !== link && n.matches(INTERACTIVE_SEL))
   }
 
   /** 标题插槽是否有真实内容（元素节点或非空白文本）—— slot 覆盖属性文案的判空依据 */
   private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */

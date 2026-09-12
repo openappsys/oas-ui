@@ -26,9 +26,7 @@ describe('@oas-ui/core escape', () => {
 
   it('注入样例被中和（不产生可执行内容）', () => {
     const payload = '</script><img src=x onerror=alert(1)>'
-    expect(escapeHtml(payload)).toBe(
-      '&lt;/script&gt;&lt;img src=x onerror=alert(1)&gt;',
-    )
+    expect(escapeHtml(payload)).toBe('&lt;/script&gt;&lt;img src=x onerror=alert(1)&gt;')
     expect(escapeHtml(payload).includes('<script')).toBe(false)
   })
 

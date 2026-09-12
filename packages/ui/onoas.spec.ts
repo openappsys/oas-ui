@@ -1,10 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-async function openReady(
-  page: import('@playwright/test').Page,
-  url: string,
-  selector: string,
-): Promise<void> {
+async function openReady(page: import('@playwright/test').Page, url: string, selector: string): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 })
   // 自定义元素注册/升级是异步的（并行负载下可能远超 1s）：等到目标组件 shadowRoot
   // 就绪再交互，否则点击会落在未升级元素上、事件丢失

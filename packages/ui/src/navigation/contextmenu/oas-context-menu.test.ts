@@ -25,10 +25,7 @@ function anchor(el: OASContextMenu): HTMLElement {
 }
 
 /** 构造带 touches 的 touch 事件（happy-dom 不完整支持 Touch，挂数组兜底） */
-function touchEvent(
-  type: string,
-  touches: Array<{ clientX: number; clientY: number }>,
-): TouchEvent {
+function touchEvent(type: string, touches: Array<{ clientX: number; clientY: number }>): TouchEvent {
   const e = new Event(type, { bubbles: true }) as unknown as TouchEvent
   Object.defineProperty(e, 'touches', { value: touches })
   return e
@@ -48,9 +45,7 @@ describe('OASContextMenu', () => {
   it('contextmenu 事件打开菜单并定位到鼠标位置', async () => {
     const el = mount()
     const target = el.querySelector('div')!
-    target.dispatchEvent(
-      new MouseEvent('contextmenu', { bubbles: true, clientX: 120, clientY: 80 }),
-    )
+    target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 120, clientY: 80 }))
     await Promise.resolve()
     expect(anchor(el).hasAttribute('hidden')).toBe(false)
     expect(anchor(el).getAttribute('style')).toContain('120px')
@@ -199,9 +194,7 @@ describe('OASContextMenu', () => {
       el.addEventListener('oas-open-change', (e: Event) =>
         changes.push((e as CustomEvent<{ open: boolean }>).detail.open),
       )
-      el.querySelector('div')!.dispatchEvent(
-        new MouseEvent('contextmenu', { bubbles: true, clientX: 50, clientY: 60 }),
-      )
+      el.querySelector('div')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 50, clientY: 60 }))
       await Promise.resolve()
       expect(changes).toEqual([true])
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
@@ -226,9 +219,7 @@ describe('OASContextMenu', () => {
       const el = mount()
       el.show(100, 100)
       expect(anchor(el).hasAttribute('hidden')).toBe(false)
-      document.dispatchEvent(
-        new MouseEvent('contextmenu', { bubbles: true, clientX: 500, clientY: 400 }),
-      )
+      document.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 500, clientY: 400 }))
       expect(anchor(el).hasAttribute('hidden')).toBe(true)
     })
 
@@ -249,9 +240,7 @@ describe('OASContextMenu', () => {
       await Promise.resolve()
       document.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 999, clientY: 999 }))
       expect(anchor(el).hasAttribute('hidden')).toBe(true)
-      target.dispatchEvent(
-        new MouseEvent('contextmenu', { bubbles: true, clientX: 80, clientY: 70 }),
-      )
+      target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 80, clientY: 70 }))
       await Promise.resolve()
       expect(anchor(el).hasAttribute('hidden')).toBe(false)
     })
@@ -350,9 +339,7 @@ describe('OASContextMenu 子元素声明式通道', () => {
     )
     el.querySelector('div')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
     await Promise.resolve()
-    const labels = [...innerMenuRoot(el).querySelectorAll('[part="item"] .label')].map(
-      (l) => l.textContent,
-    )
+    const labels = [...innerMenuRoot(el).querySelectorAll('[part="item"] .label')].map((l) => l.textContent)
     expect(labels).toEqual(['数据项'])
     expect(innerMenuRoot(el).querySelector('[data-value="home"]')).toBeNull()
   })
@@ -400,9 +387,7 @@ describe('OASContextMenu 子元素声明式通道', () => {
     grid.click()
     expect(detail).toMatchObject({ value: 'grid' })
     expect(
-      innerMenuRoot(el)
-        .querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
-        .getAttribute('aria-checked'),
+      innerMenuRoot(el).querySelector<HTMLElement>('[part="item"][data-value="grid"]')!.getAttribute('aria-checked'),
     ).toBe('true')
     // contextmenu 宿主不写回 value（既有语义，仅转发事件）
     expect(el.getAttribute('value')).toBeNull()
@@ -430,9 +415,7 @@ describe('OASContextMenu 子元素声明式通道', () => {
       <div>右键区域</div>
       <oas-context-menu-item value="copy">复制</oas-context-menu-item>
     `)
-    el.querySelector('div')!.dispatchEvent(
-      new MouseEvent('contextmenu', { bubbles: true, clientX: 120, clientY: 80 }),
-    )
+    el.querySelector('div')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 120, clientY: 80 }))
     await Promise.resolve()
     expect(anchor(el).hasAttribute('hidden')).toBe(false)
     expect(anchor(el).getAttribute('style')).toContain('120px')

@@ -35,11 +35,7 @@ const DESC_EN_PATH = join(ROOT, 'docs', 'api-descriptions.en.json')
 const ZH_DIR = join(ROOT, 'packages', 'docs', 'docs', 'components')
 const EN_DIR = join(ROOT, 'packages', 'docs', 'docs', 'en', 'components')
 
-const MODE = process.argv.includes('--dry')
-  ? 'dry'
-  : process.argv.includes('--check')
-    ? 'check'
-    : 'write'
+const MODE = process.argv.includes('--dry') ? 'dry' : process.argv.includes('--check') ? 'check' : 'write'
 
 // ---------- 表头词表（与 harvest.mjs 保持一致） ----------
 const HEADER = {
@@ -302,10 +298,7 @@ function mdTable(header, rows) {
 }
 
 function renderAttrTable(rows, lang) {
-  const header =
-    lang === 'zh'
-      ? ['属性', '说明', '类型', '默认值']
-      : ['Attribute', 'Description', 'Type', 'Default']
+  const header = lang === 'zh' ? ['属性', '说明', '类型', '默认值'] : ['Attribute', 'Description', 'Type', 'Default']
   return mdTable(
     header,
     rows.map((r) => [
@@ -382,8 +375,7 @@ function isConsumed(b, blocks, i, pageTags) {
     }
     return false
   }
-  if (b.kind === 'heading' && b.level === 3 && TAG_RE.test(b.text) && pageTags.includes(b.text))
-    return true
+  if (b.kind === 'heading' && b.level === 3 && TAG_RE.test(b.text) && pageTags.includes(b.text)) return true
   return false
 }
 
@@ -418,8 +410,7 @@ function processPage(file, lang) {
 
   const primaryTag = `oas-${file.replace(/\.md$/, '')}`
   const tags = collectPageTags(blocks, primaryTag, MANIFEST)
-  if (tags.length === 0)
-    return { status: 'skip', reason: `无法归属 tag（primary ${primaryTag} 不在 manifest）` }
+  if (tags.length === 0) return { status: 'skip', reason: `无法归属 tag（primary ${primaryTag} 不在 manifest）` }
 
   const generated = buildGenerated(tags, lang)
 
@@ -537,9 +528,7 @@ function main() {
   // ---------- 输出报告 ----------
   const line = '─'.repeat(72)
   if (MODE === 'dry') {
-    console.log(
-      `[api:gen --dry] 计划改动 ${stats.changed} 页，跳过 ${stats.skip.length} 页（不写文件）`,
-    )
+    console.log(`[api:gen --dry] 计划改动 ${stats.changed} 页，跳过 ${stats.skip.length} 页（不写文件）`)
   } else if (MODE === 'check') {
     console.log(`[api:gen --check] 生成内容与现有文件比对：${stats.changed} 页有漂移`)
   } else {
@@ -563,9 +552,7 @@ function main() {
 
   if (blindList.length) {
     console.log(line)
-    console.log(
-      `--- 语料行但 manifest 缺失（${blindList.length} 条，扫描盲区，行已保留需人工核对） ---`,
-    )
+    console.log(`--- 语料行但 manifest 缺失（${blindList.length} 条，扫描盲区，行已保留需人工核对） ---`)
     for (const b of blindList) console.log(`  - ${b}`)
   }
 
@@ -583,9 +570,7 @@ function main() {
       const path = join(c.lang === 'zh' ? ZH_DIR : EN_DIR, c.file)
       writeFileSync(path, c.text, 'utf8')
     }
-    console.log(
-      `=> 已写入 ${stats.changed} 个文件（${relative(ROOT, ZH_DIR)} / ${relative(ROOT, EN_DIR)}）`,
-    )
+    console.log(`=> 已写入 ${stats.changed} 个文件（${relative(ROOT, ZH_DIR)} / ${relative(ROOT, EN_DIR)}）`)
   } else if (MODE === 'check') {
     if (stats.changed > 0) {
       console.error(

@@ -116,9 +116,7 @@ export class OASCountdown extends OASElement {
   /** 插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
   private slotHasContent(slot: HTMLSlotElement | null): boolean {
     if (!slot) return false
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** 缓存节点引用 + 注册清理（render 与水合路径共用；countdown 无交互事件，仅定时器） */
@@ -161,9 +159,7 @@ export class OASCountdown extends OASElement {
 
   /** 正计时当前已计时真值（ms）：走表段按时间戳推算，暂停/待起段用固化值 */
   private countupNow(): number {
-    return this.paused
-      ? this.elapsed
-      : (this.pendingElapsed ?? this.elapsed + (Date.now() - this.startAt))
+    return this.paused ? this.elapsed : (this.pendingElapsed ?? this.elapsed + (Date.now() - this.startAt))
   }
 
   /** tick 粒度：模板含 SSS 毫秒 token 时按 50ms 刷新，否则 250ms（秒边界对齐） */

@@ -7,13 +7,19 @@ test('command 基础回归：open 打开、过滤驱动可见行、方向键高�
   await page.goto('/components/command.html', { waitUntil: 'domcontentloaded' })
   // command 关闭态 host 高度为 0（overlay 隐藏），up() 的 visible 等待会超时——改等 attached + shadow 就绪
   await page.waitForSelector('#command-basic', { state: 'attached', timeout: 15000 })
-  await page.waitForFunction(() => document.querySelector('#command-basic')?.shadowRoot != null, null, { timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#command-basic')?.shadowRoot != null, null, {
+    timeout: 15000,
+  })
   // 打开（受控 open；demo 用 ⌘J 或外部按钮，这里直接设属性等价）
   await page.evaluate(() => document.querySelector('#command-basic')?.setAttribute('open', ''))
-  await page.waitForFunction(() => {
-    const overlay = document.querySelector('#command-basic')?.shadowRoot?.querySelector('.overlay')
-    return overlay && getComputedStyle(overlay).display !== 'none'
-  }, null, { timeout: 5000 })
+  await page.waitForFunction(
+    () => {
+      const overlay = document.querySelector('#command-basic')?.shadowRoot?.querySelector('.overlay')
+      return overlay && getComputedStyle(overlay).display !== 'none'
+    },
+    null,
+    { timeout: 5000 },
+  )
   const r = await page.evaluate(async () => {
     const cmd = document.querySelector('#command-basic')!
     const root = cmd.shadowRoot!
@@ -32,7 +38,13 @@ test('command 基础回归：open 打开、过滤驱动可见行、方向键高�
     const active = root.querySelectorAll('.option.active').length
     // Enter 选中 → oas-select 派发（detail { value }）
     let selected = ''
-    cmd.addEventListener('oas-select', (e) => { selected = (e as CustomEvent).detail?.value ?? '' }, { once: true })
+    cmd.addEventListener(
+      'oas-select',
+      (e) => {
+        selected = (e as CustomEvent).detail?.value ?? ''
+      },
+      { once: true },
+    )
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     await new Promise((r2) => setTimeout(r2, 200))
     return { before, after, filtered: after > 0 && after < before, active, selected }

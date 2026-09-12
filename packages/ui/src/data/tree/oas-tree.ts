@@ -16,13 +16,7 @@ import {
   halfByDescendant,
   cloneSlotContent,
 } from './shared/index.js'
-import type {
-  ResolvedFields,
-  TreeAccessors,
-  TreeModel,
-  FlatRow,
-  CheckStrategy,
-} from './shared/index.js'
+import type { ResolvedFields, TreeAccessors, TreeModel, FlatRow, CheckStrategy } from './shared/index.js'
 
 export interface TreeNode {
   key: string
@@ -367,11 +361,7 @@ export class OASTree extends OASElement {
   filterNode?: (label: string, node: TreeNode) => boolean
 
   /** 拖拽落点守卫：(payload) => boolean，false 拒绝该落点（dragover/drop 均生效） */
-  allowDrop?: (payload: {
-    dragKey: string
-    dropKey: string
-    position: 'before' | 'after' | 'inner'
-  }) => boolean
+  allowDrop?: (payload: { dragKey: string; dropKey: string; position: 'before' | 'after' | 'inner' }) => boolean
 
   /** 拖拽源守卫：(node) => boolean，false 该节点不可拖拽 */
   allowDrag?: (node: TreeNode) => boolean
@@ -508,11 +498,7 @@ export class OASTree extends OASElement {
   }
 
   /** expanded 外部注入深层 key 时按 auto-expand-parent 自动补全祖先（写回归一化） */
-  override attributeChangedCallback(
-    name: string,
-    oldValue: string | null,
-    newValue: string | null,
-  ): void {
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if (name === 'expanded' && this.hasAttr('auto-expand-parent') && !this.syncingExpanded) {
       this.syncingExpanded = true
       try {
@@ -602,10 +588,7 @@ export class OASTree extends OASElement {
 
   private internalChecked(): Set<string> {
     if (this.checkStrictly()) return new Set(parseIdList(this.getAttr('checked', '')))
-    return closureFromValues(
-      { model: this.model, acc: this.acc },
-      parseIdList(this.getAttr('checked', '')),
-    )
+    return closureFromValues({ model: this.model, acc: this.acc }, parseIdList(this.getAttr('checked', '')))
   }
 
   private currentSelected(): string[] {
@@ -721,10 +704,7 @@ export class OASTree extends OASElement {
     }
     this.visible = this.visibleRows()
     // 编辑行从可见集消失（数据/过滤变化）→ 静默退出编辑，防悬挂草稿态
-    if (
-      this.rename &&
-      !this.visible.some((r) => this.acc.idOf(r.node) === this.rename!.key)
-    ) {
+    if (this.rename && !this.visible.some((r) => this.acc.idOf(r.node) === this.rename!.key)) {
       this.rename = null
       this.renameFocusPending = false
     }
@@ -1274,8 +1254,7 @@ export class OASTree extends OASElement {
       row.style.opacity = '0'
       void row.offsetHeight // 强制 reflow 固化起点
       const ms = this.motionMs()
-      row.style.transition =
-        `max-height ${ms}ms var(--oas-ease-out), opacity ${ms}ms var(--oas-ease-out)`
+      row.style.transition = `max-height ${ms}ms var(--oas-ease-out), opacity ${ms}ms var(--oas-ease-out)`
       row.style.maxHeight = `${height}px`
       row.style.opacity = '1'
       // 过渡结束后清掉行内样式与钩子类（重建会自然清掉，这里兜底防残留）
@@ -1313,8 +1292,7 @@ export class OASTree extends OASElement {
       void rows[0]!.offsetHeight // 固化起始 max-height（auto → 定值需先落一次）
       for (const row of rows) {
         if (!row.style.maxHeight) continue
-        row.style.transition =
-          `max-height ${ms}ms var(--oas-ease-in-out), opacity ${ms}ms var(--oas-ease-out)`
+        row.style.transition = `max-height ${ms}ms var(--oas-ease-in-out), opacity ${ms}ms var(--oas-ease-out)`
         row.style.maxHeight = '0px'
         row.style.opacity = '0'
       }
@@ -1394,10 +1372,7 @@ export class OASTree extends OASElement {
    * 虚拟模式滚 vlist 视口；非虚拟用 scrollIntoView（nearest 不滚动已可见祖先）。
    * 注：与 HTMLElement.scrollTo 同名的签名必须兼容基类重载，数值/ScrollToOptions 调用回退原生行为。
    */
-  override scrollTo(
-    target?: string | number | ScrollToOptions,
-    optionsOrY?: number | { expand?: boolean },
-  ): void {
+  override scrollTo(target?: string | number | ScrollToOptions, optionsOrY?: number | { expand?: boolean }): void {
     if (target === undefined) {
       super.scrollTo()
       return
@@ -1477,8 +1452,7 @@ export class OASTree extends OASElement {
   private rowFromEvent(e: Event): HTMLElement | null {
     const path = e.composedPath()
     for (const node of path) {
-      if (node instanceof Element && node.getAttribute?.('part') === 'row')
-        return node as HTMLElement
+      if (node instanceof Element && node.getAttribute?.('part') === 'row') return node as HTMLElement
     }
     return null
   }
@@ -1644,8 +1618,7 @@ export class OASTree extends OASElement {
       return
     }
     const custom = this.getAttr('empty', '')
-    container.textContent =
-      custom || (this.filtering() ? this.t('select.noMatch') : this.t('treeSelect.empty'))
+    container.textContent = custom || (this.filtering() ? this.t('select.noMatch') : this.t('treeSelect.empty'))
   }
 
   // ---------- 部件填充（template 骨架克隆） ----------
@@ -1709,14 +1682,9 @@ export class OASTree extends OASElement {
     icon.className = 'node-icon'
     icon.setAttribute('part', 'node-icon')
     icon.setAttribute('aria-hidden', 'true')
-    const kind = this.isExpandableNode(node)
-      ? expanded.has(this.acc.idOf(node))
-        ? 'folder-open'
-        : 'folder'
-      : 'file'
+    const kind = this.isExpandableNode(node) ? (expanded.has(this.acc.idOf(node)) ? 'folder-open' : 'folder') : 'file'
     icon.setAttribute('data-kind', kind)
-    icon.innerHTML =
-      kind === 'file' ? FILE_ICON_SVG : kind === 'folder' ? FOLDER_ICON_SVG : FOLDER_OPEN_ICON_SVG
+    icon.innerHTML = kind === 'file' ? FILE_ICON_SVG : kind === 'folder' ? FOLDER_ICON_SVG : FOLDER_OPEN_ICON_SVG
     row.appendChild(icon)
   }
 
@@ -1754,9 +1722,7 @@ export class OASTree extends OASElement {
       e.preventDefault()
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
       this.clearDropMarkers()
-      row.classList.add(
-        pos === 'before' ? 'drop-before' : pos === 'after' ? 'drop-after' : 'drop-inner',
-      )
+      row.classList.add(pos === 'before' ? 'drop-before' : pos === 'after' ? 'drop-after' : 'drop-inner')
     }) as EventListener)
     row.addEventListener('dragleave', (() => {
       row.classList.remove('drop-before', 'drop-after', 'drop-inner')
@@ -1775,20 +1741,12 @@ export class OASTree extends OASElement {
     }) as EventListener)
   }
 
-  private guardDrop(payload: {
-    dragKey: string
-    dropKey: string
-    position: 'before' | 'after' | 'inner'
-  }): boolean {
+  private guardDrop(payload: { dragKey: string; dropKey: string; position: 'before' | 'after' | 'inner' }): boolean {
     if (typeof this.allowDrop !== 'function') return true
     return this.allowDrop(payload) !== false
   }
 
-  private dropPosition(
-    row: HTMLElement,
-    e: DragEvent,
-    node: TreeNode,
-  ): 'before' | 'after' | 'inner' {
+  private dropPosition(row: HTMLElement, e: DragEvent, node: TreeNode): 'before' | 'after' | 'inner' {
     const rect = row.getBoundingClientRect()
     const ratio = rect.height ? (e.clientY - rect.top) / rect.height : 0.5
     if (ratio < 0.25) return 'before'

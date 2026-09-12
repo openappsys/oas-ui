@@ -101,16 +101,10 @@ export class OASSkeletonItem extends OASElement {
     if (!this.indicator) return
     // type 校验：七档之外回落 text（不告警，静默兜底）
     const rawType = this.getAttr('type', 'text')
-    this.indicator.setAttribute(
-      'data-type',
-      (TYPES as readonly string[]).includes(rawType) ? rawType : 'text',
-    )
+    this.indicator.setAttribute('data-type', (TYPES as readonly string[]).includes(rawType) ? rawType : 'text')
     // 动效三档与 oas-skeleton 的 effect 语义一致（item 独立使用时自控，默认 none）
     const rawEff = this.getAttr('effect', '')
-    this.indicator.setAttribute(
-      'data-effect',
-      rawEff === 'sheen' || rawEff === 'pulse' ? rawEff : 'none',
-    )
+    this.indicator.setAttribute('data-effect', rawEff === 'sheen' || rawEff === 'pulse' ? rawEff : 'none')
     // width/height 为自由 CSS 值直接透传内联样式；缺省清空回落各 type 的样式默认
     this.indicator.style.width = this.getAttr('width', '')
     this.indicator.style.height = this.getAttr('height', '')

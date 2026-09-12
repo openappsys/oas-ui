@@ -62,9 +62,7 @@ test('virtual-list 滚轮增量滚动不失控（overflow-anchor 回归）', asy
   expect(d3).toBeLessThanOrEqual(240)
 })
 
-test('virtual-list buffer 宿主 property 遮蔽原型方法后渲染不崩（命名冲突回归）', async ({
-  page,
-}) => {
+test('virtual-list buffer 宿主 property 遮蔽原型方法后渲染不崩（命名冲突回归）', async ({ page }) => {
   // 曾现 bug：私有方法 buffer() 与公开 attribute buffer 同名，React/Vue 对自定义元素同名
   // 绑定走 property 通道（el.buffer = 8 在实例挂自有属性遮蔽原型方法），连接即渲染时
   // this.buffer() 抛 TypeError 崩溃。修复=私有方法改名 bufferSize()，attribute 语义不变。
@@ -87,9 +85,7 @@ test('virtual-list buffer 宿主 property 遮蔽原型方法后渲染不崩（�
   expect(r.first, '首项索引 0').toBe('0')
 })
 
-test('virtual-list 动态行高：不等高行实测渲染 + 总高修正 + scrollToIndex 定位', async ({
-  page,
-}) => {
+test('virtual-list 动态行高：不等高行实测渲染 + 总高修正 + scrollToIndex 定位', async ({ page }) => {
   await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#vl-dyn')
   await page.waitForTimeout(800)

@@ -409,10 +409,7 @@ export class OASBreadcrumb extends OASElement {
     const maxItems = this.maxItemsValue()
     const collapsed = this.hasAttr('collapsed') && items.length > maxItems
     const before = this.countValue(this.getAttr('items-before-collapse', ''), 1)
-    const after = this.countValue(
-      this.getAttr('items-after-collapse', ''),
-      Math.max(0, maxItems - 2),
-    )
+    const after = this.countValue(this.getAttr('items-after-collapse', ''), Math.max(0, maxItems - 2))
     let hiddenItems: BreadcrumbItem[] = []
     // seq 携带原始 items 下标：当前项判定 / 下拉 data-key / 项级分隔符都按原始下标定位
     let seq: Array<{ item: BreadcrumbItem; idx: number } | 'ellipsis'> = items.map((item, idx) => ({
@@ -465,9 +462,7 @@ export class OASBreadcrumb extends OASElement {
   private parseItems(): BreadcrumbItem[] {
     try {
       const parsed = JSON.parse(this.getAttr('items', '[]'))
-      return Array.isArray(parsed)
-        ? parsed.filter((i): i is BreadcrumbItem => i && typeof i.label === 'string')
-        : []
+      return Array.isArray(parsed) ? parsed.filter((i): i is BreadcrumbItem => i && typeof i.label === 'string') : []
     } catch {
       return []
     }
@@ -581,17 +576,7 @@ export class OASBreadcrumb extends OASElement {
       subtree: true,
       attributes: true,
       characterData: true,
-      attributeFilter: [
-        'href',
-        'target',
-        'icon',
-        'disabled',
-        'max-width',
-        'separator',
-        'dropdown',
-        'active',
-        'slot',
-      ],
+      attributeFilter: ['href', 'target', 'icon', 'disabled', 'max-width', 'separator', 'dropdown', 'active', 'slot'],
     })
     this.childObserver = observer
     this.onCleanup(() => {
@@ -701,8 +686,7 @@ export class OASBreadcrumb extends OASElement {
   /** 单项宽度：item.maxWidth 覆盖全局 max-item-width */
   private itemMaxWidth(item: BreadcrumbItem, global: number): number {
     if (item.maxWidth !== undefined) {
-      const n =
-        typeof item.maxWidth === 'number' ? item.maxWidth : Number.parseFloat(String(item.maxWidth))
+      const n = typeof item.maxWidth === 'number' ? item.maxWidth : Number.parseFloat(String(item.maxWidth))
       if (Number.isFinite(n) && n > 0) return n
     }
     return global
@@ -832,11 +816,7 @@ export class OASBreadcrumb extends OASElement {
   }
 
   /** 项下拉触发器 + 面板（item.dropdown）：点击展开，互斥收起 */
-  private buildDropdownControl(
-    item: BreadcrumbItem,
-    idx: number,
-    maxItemWidth: number,
-  ): HTMLElement {
+  private buildDropdownControl(item: BreadcrumbItem, idx: number, maxItemWidth: number): HTMLElement {
     const key = `dd-${idx}`
     const btn = document.createElement('button')
     btn.type = 'button'
@@ -984,9 +964,7 @@ export class OASBreadcrumb extends OASElement {
     const nav = this.shadow.querySelector('nav')
     if (!nav) return
     const focusables = [
-      ...nav.querySelectorAll<HTMLElement>(
-        'a[part="link"], button.ellipsis-btn, button.dropdown-trigger',
-      ),
+      ...nav.querySelectorAll<HTMLElement>('a[part="link"], button.ellipsis-btn, button.dropdown-trigger'),
     ].filter((el) => el.parentElement?.classList.contains('item'))
     if (focusables.length === 0) return
     const idx = focusables.indexOf(e.target as HTMLElement)

@@ -36,7 +36,10 @@ export function onPopoverCapabilityRegistered(cb: () => void): () => void {
 }
 
 /** 当前已注册能力快照（OASPopover 构造时遍历注入） */
-export function registeredPopoverCapabilities(): Array<{ name: string; factory: PopoverCapabilityFactory }> {
+export function registeredPopoverCapabilities(): Array<{
+  name: string
+  factory: PopoverCapabilityFactory
+}> {
   return [...capabilityRegistry.entries()].map(([name, factory]) => ({ name, factory }))
 }
 

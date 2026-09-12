@@ -138,9 +138,7 @@ test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA �
   )
 })
 
-test('tree slot 模板：Vue CSR 直插形态（insertBefore 到模板自身、content 为空）也能克隆渲染', async ({
-  page,
-}) => {
+test('tree slot 模板：Vue CSR 直插形态（insertBefore 到模板自身、content 为空）也能克隆渲染', async ({ page }) => {
   // 回归：dev（Vue CSR 挂载）下 insertBefore 直插 template 元素，子节点落在元素自身 childNodes、
   // content 为空（Chromium 不转发进 content），曾致 #tree-custom 自定义节点行空白；preview 走
   // SSR 快照 content 有值所以正常。此处用 insertBefore 在真实 Chromium 复现 CSR 形态。
@@ -228,9 +226,7 @@ test('tree 目录模式：文件夹/文件图标、展开态切换与 ARIA', asy
   ).toBe(true)
 })
 
-test('tree 自定义节点：#tree-custom 每行 .label 实际渲染宽度 > 0（文字不被 flex 压没）', async ({
-  page,
-}) => {
+test('tree 自定义节点：#tree-custom 每行 .label 实际渲染宽度 > 0（文字不被 flex 压没）', async ({ page }) => {
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-custom')
   await page.waitForTimeout(800)
@@ -258,9 +254,7 @@ test('tree 自定义节点：#tree-custom 每行 .label 实际渲染宽度 > 0�
   await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix-tree-custom-label.png' })
 })
 
-test('tree 内联重命名：双击 label 进编辑 + Enter 提交宿主回写（oas-node-rename）', async ({
-  page,
-}) => {
+test('tree 内联重命名：双击 label 进编辑 + Enter 提交宿主回写（oas-node-rename）', async ({ page }) => {
   // 回归：双击进编辑在行重建架构下原生 dblclick 不可靠（首击选中重建行），
   // 需手工判定（capture click 同 key 500ms 两击）；提交只派发事件、由宿主更新 data 显示新名。
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
@@ -305,9 +299,8 @@ test('tree motion 开关：容器挂 motion 类、展开入场/收起离场行�
   const countEnter = () =>
     page.evaluate(() => {
       const tree = document.querySelector('#tree-motion')!
-      return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].filter((r) =>
-        r.classList.contains('oas-row-enter'),
-      ).length
+      return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].filter((r) => r.classList.contains('oas-row-enter'))
+        .length
     })
   const countRows = () =>
     page.evaluate(() => {
@@ -317,9 +310,8 @@ test('tree motion 开关：容器挂 motion 类、展开入场/收起离场行�
   const countLeave = () =>
     page.evaluate(() => {
       const tree = document.querySelector('#tree-motion')!
-      return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].filter((r) =>
-        r.classList.contains('oas-row-leave'),
-      ).length
+      return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].filter((r) => r.classList.contains('oas-row-leave'))
+        .length
     })
   await page.locator('#tree-motion [part="toggle"]').first().click()
   await page.waitForTimeout(60)

@@ -64,9 +64,7 @@ export class OASDescriptionsItem extends OASElement {
 
   /** label 插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
   private hasLabelSlotContent(slot: HTMLSlotElement): boolean {
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** 缓存节点引用（render 与水合路径共用；label 插槽内容增减时重刷双通道显隐） */

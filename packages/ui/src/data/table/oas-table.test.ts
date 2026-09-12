@@ -84,7 +84,15 @@ describe('OASTable', () => {
     el.setAttribute('data', DATA)
     el.columns = [
       { key: 'name', title: '姓名' },
-      { key: 'op', title: '操作', render: () => { const b = document.createElement('button'); b.textContent = '删除'; return b } },
+      {
+        key: 'op',
+        title: '操作',
+        render: () => {
+          const b = document.createElement('button')
+          b.textContent = '删除'
+          return b
+        },
+      },
     ]
     document.body.appendChild(el)
     let rowClick = 0
@@ -222,9 +230,7 @@ describe('OASTable', () => {
   it('locale：全选/行选择 aria-label 随 setLocale 切换', () => {
     const el = mount({ checkable: '', 'row-key': 'name' })
     expect(
-      el
-        .shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!
-        .getAttribute('aria-label'),
+      el.shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!.getAttribute('aria-label'),
     ).toBe('全选')
     expect(
       el
@@ -234,9 +240,7 @@ describe('OASTable', () => {
 
     setLocale(en)
     expect(
-      el
-        .shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!
-        .getAttribute('aria-label'),
+      el.shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!.getAttribute('aria-label'),
     ).toBe('Select all')
     expect(
       el
@@ -246,9 +250,7 @@ describe('OASTable', () => {
 
     setLocale('zh-CN')
     expect(
-      el
-        .shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!
-        .getAttribute('aria-label'),
+      el.shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!.getAttribute('aria-label'),
     ).toBe('全选')
   })
 
@@ -271,8 +273,7 @@ describe('OASTable', () => {
   })
 })
 
-const flushRaf = (): Promise<void> =>
-  new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
 function cells(el: OASTable): HTMLElement[] {
   return [...el.shadowRoot!.querySelectorAll('tbody td')] as HTMLElement[]
@@ -282,9 +283,7 @@ function scrollWrap(el: OASTable): HTMLElement {
   return el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!
 }
 
-const BIG_DATA = JSON.stringify(
-  Array.from({ length: 50 }, (_, i) => ({ id: i, name: `行${i}`, age: 20 + (i % 20) })),
-)
+const BIG_DATA = JSON.stringify(Array.from({ length: 50 }, (_, i) => ({ id: i, name: `行${i}`, age: 20 + (i % 20) })))
 
 describe('OASTable 固定列', () => {
   beforeEach(() => {
@@ -442,9 +441,7 @@ describe('OASTable 虚拟滚动', () => {
     })
     let detail: unknown
     el.addEventListener('oas-check', (e: Event) => (detail = (e as CustomEvent).detail))
-    const boxes = el.shadowRoot!.querySelectorAll<HTMLInputElement>(
-      '.check-cell input[type="checkbox"]',
-    )
+    const boxes = el.shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="checkbox"]')
     // 表头 + 9 可见行
     expect(boxes.length).toBe(10)
     boxes[1]!.click()
@@ -584,8 +581,7 @@ describe('OASTable 属性/attribute 声明式通道', () => {
   it('真水合回退：快照缺关键结构时回退 render 全量重建，功能仍正常', () => {
     const snap = new OASTable()
     // 指纹命中但结构不完整（无 table-scroll）→ hydrate 返回 false → render 重建
-    snap.shadowRoot!.innerHTML =
-      '<meta data-oas-ssr="oas-table" data-oas-ssr-v="1"><span>broken</span>'
+    snap.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-table" data-oas-ssr-v="1"><span>broken</span>'
     document.body.appendChild(snap)
     expect(snap.shadowRoot!.querySelector('.table-scroll')).not.toBeNull()
     expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
@@ -934,9 +930,7 @@ describe('OASTable 行内编辑（inline editing）', () => {
     ]
     document.body.appendChild(el)
     const btnTd = cells(el).find((td) => td.getAttribute('data-col') === 'name')!
-    btnTd.querySelector<HTMLElement>('oas-button')!.dispatchEvent(
-      new MouseEvent('dblclick', { bubbles: true }),
-    )
+    btnTd.querySelector<HTMLElement>('oas-button')!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     expect(btnTd.querySelector('input.cell-editor'), '双击 oas-button 不应进入编辑').toBeNull()
     expect(el.shadowRoot!.querySelector('[data-editing="true"]')).toBeNull()
     // 对照：双击同表纯文本可编辑格照常进入编辑（扩展排除未误伤普通双击）
@@ -1009,7 +1003,12 @@ describe('OASTable 行内编辑（inline editing）', () => {
     el.setAttribute('row-key', 'name')
     el.setAttribute('data', JSON.stringify([{ name: '张三', age: 30 }]))
     el.columns = [
-      { key: 'name', title: '姓名', editable: true, validate: (v: string) => (v === 'bad' ? '名称不合法' : '') },
+      {
+        key: 'name',
+        title: '姓名',
+        editable: true,
+        validate: (v: string) => (v === 'bad' ? '名称不合法' : ''),
+      },
       { key: 'age', title: '年龄', editable: true },
     ]
     document.body.appendChild(el)
@@ -1277,9 +1276,7 @@ const STICKY_COLUMNS = JSON.stringify([
   { key: 'name', title: '姓名' },
   { key: 'age', title: '年龄', fixed: 'right', width: '80px' },
 ])
-const STICKY_DATA = JSON.stringify(
-  Array.from({ length: 6 }, (_, i) => ({ id: i, name: `行${i}`, age: 20 + i })),
-)
+const STICKY_DATA = JSON.stringify(Array.from({ length: 6 }, (_, i) => ({ id: i, name: `行${i}`, age: 20 + i })))
 
 describe('OASTable 吸顶行（sticky-rows）', () => {
   beforeEach(() => {
@@ -1329,9 +1326,7 @@ describe('OASTable 吸顶行（sticky-rows）', () => {
         { key: 'name', title: '姓名' },
         { key: 'age', title: '年龄' },
       ]),
-      data: JSON.stringify(
-        Array.from({ length: 50 }, (_, i) => ({ id: i, name: `行${i}`, age: i })),
-      ),
+      data: JSON.stringify(Array.from({ length: 50 }, (_, i) => ({ id: i, name: `行${i}`, age: i }))),
     })
     expect(rows(el)[0]!.getAttribute('data-sticky')).toBe('true')
     expect(rows(el)[1]!.getAttribute('data-sticky')).toBe('true')
@@ -1460,9 +1455,7 @@ describe('OASTable 列设置（column-keys / hidden）', () => {
 describe('OASTable 单元格渲染与 hidden（实测缺陷回归）', () => {
   it('#9 尊重 [hidden]：table.hidden=true 时 display:none（:host 覆盖修复）', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('style')!.textContent).toMatch(
-      /:host\(\[hidden\]\)\s*\{\s*display:\s*none/,
-    )
+    expect(el.shadowRoot!.querySelector('style')!.textContent).toMatch(/:host\(\[hidden\]\)\s*\{\s*display:\s*none/)
     el.hidden = true
     expect(getComputedStyle(el).display).toBe('none')
   })
@@ -1669,9 +1662,7 @@ describe('OASTable 分页（pagination）', () => {
     { key: 'name', title: '姓名' },
     { key: 'age', title: '年龄' },
   ])
-  const PAG_DATA = JSON.stringify(
-    Array.from({ length: 12 }, (_, i) => ({ name: 'n' + i, age: i })),
-  )
+  const PAG_DATA = JSON.stringify(Array.from({ length: 12 }, (_, i) => ({ name: 'n' + i, age: i })))
 
   it('#13 开启分页：只渲染当前页（page-size 行），并挂载 oas-pagination', () => {
     const el = mount({ columns: PAG_COLS, data: PAG_DATA, pagination: '', 'page-size': '5' })
@@ -1741,7 +1732,12 @@ describe('OASTable 列过滤（filter）', () => {
     // filterMatch 是函数，走 columns property 通路（JSON attribute 丢函数）
     const el = new OASTable()
     el.columns = [
-      { key: 'age', title: '年龄', filterable: true, filterMatch: (c: unknown, fv: string | number) => Number(c) >= Number(fv) },
+      {
+        key: 'age',
+        title: '年龄',
+        filterable: true,
+        filterMatch: (c: unknown, fv: string | number) => Number(c) >= Number(fv),
+      },
       { key: 'name', title: '姓名' },
     ]
     el.setAttribute('data', DATA)
@@ -1889,10 +1885,9 @@ describe('OASTable 子元素声明式通道（oas-table-column）', () => {
   })
 
   it('#16 columns attribute 优先于子元素声明式通道', () => {
-    const el = mountChild(
-      '<oas-table-column key="name" title="姓名" sortable></oas-table-column>',
-      { columns: '[{"key":"name","title":"姓名"}]' },
-    )
+    const el = mountChild('<oas-table-column key="name" title="姓名" sortable></oas-table-column>', {
+      columns: '[{"key":"name","title":"姓名"}]',
+    })
     // 显式 columns attr 生效：name 列无 sortable
     const nameTh = el.shadowRoot!.querySelector('th[data-key="name"]')!
     expect(nameTh.classList.contains('sortable')).toBe(false)
@@ -1966,7 +1961,8 @@ describe('OASTable 子元素声明式通道（oas-table-column）', () => {
   })
 })
 
-describe('列拖拽重排顺序计算（applyColumnReorder）', () => {  const BASE = ['id', 'name', 'age', 'city']
+describe('列拖拽重排顺序计算（applyColumnReorder）', () => {
+  const BASE = ['id', 'name', 'age', 'city']
 
   it('插前：fromKey 移到 toKey 之前', () => {
     expect(applyColumnReorder(BASE, 'age', 'name', 'before')).toEqual(['id', 'age', 'name', 'city'])
@@ -1988,8 +1984,9 @@ describe('列拖拽重排顺序计算（applyColumnReorder）', () => {  const B
 
 describe('OASTable 行选择单选（checkable="radio"）', () => {
   const mountRadio = () => mount({ checkable: 'radio', 'row-key': 'name' })
-  const radios = (el: OASTable) =>
-    [...el.shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="radio"]')]
+  const radios = (el: OASTable) => [
+    ...el.shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="radio"]'),
+  ]
 
   it('radio 档：行渲染 radio、表头无全选框但保留空白选择列头（列对齐）', () => {
     const el = mountRadio()
@@ -2273,9 +2270,7 @@ describe('OASTable 受控合并（spanMethod property）', () => {
 describe('OASTable 受控属性补全（selected / empty-text 进 observedAttributes）', () => {
   it('selected：外部 setAttribute 立即重渲染行高亮（纯受控宿主驱动）', () => {
     const el = mount({ 'row-key': 'name' })
-    expect(
-      (OASTable as unknown as { observedAttributes: string[] }).observedAttributes,
-    ).toContain('selected')
+    expect((OASTable as unknown as { observedAttributes: string[] }).observedAttributes).toContain('selected')
     expect(rows(el)[0]!.getAttribute('data-selected')).toBe('false')
     el.setAttribute('selected', '张三')
     expect(rows(el)[0]!.getAttribute('data-selected')).toBe('true')
@@ -2286,9 +2281,7 @@ describe('OASTable 受控属性补全（selected / empty-text 进 observedAttrib
 
   it('empty-text：外部 setAttribute 立即更新空态文案（纯受控宿主驱动）', () => {
     const el = mount({ data: '[]' })
-    expect(
-      (OASTable as unknown as { observedAttributes: string[] }).observedAttributes,
-    ).toContain('empty-text')
+    expect((OASTable as unknown as { observedAttributes: string[] }).observedAttributes).toContain('empty-text')
     expect(el.shadowRoot!.textContent).toContain('暂无数据')
     el.setAttribute('empty-text', '自定义空态')
     expect(el.shadowRoot!.textContent).toContain('自定义空态')
@@ -2310,9 +2303,7 @@ describe('OASTable 多级表头 + column-keys 重排一致性', () => {
 
   it('组内重排：叶头顺序与数据列顺序一致', () => {
     const el = mount({ columns: GROUP3_COLS, data: DATA, 'column-keys': '["city","age","name"]' })
-    const leafThs = [...el.shadowRoot!.querySelectorAll('th[data-key]')].map((t) =>
-      t.getAttribute('data-key'),
-    )
+    const leafThs = [...el.shadowRoot!.querySelectorAll('th[data-key]')].map((t) => t.getAttribute('data-key'))
     expect(leafThs).toEqual(['city', 'age', 'name'])
     const tds = [...rows(el)[0]!.querySelectorAll('td')].map((td) => td.getAttribute('data-col'))
     expect(tds).toEqual(['city', 'age', 'name'])
@@ -2325,9 +2316,7 @@ describe('OASTable 多级表头 + column-keys 重排一致性', () => {
     expect(topThs[0]!.getAttribute('rowspan')).toBe('2')
     expect(topThs[1]!.textContent).toBe('基础信息')
     expect(topThs[1]!.getAttribute('colspan')).toBe('2')
-    const leafThs = [...el.shadowRoot!.querySelectorAll('th[data-key]')].map((t) =>
-      t.getAttribute('data-key'),
-    )
+    const leafThs = [...el.shadowRoot!.querySelectorAll('th[data-key]')].map((t) => t.getAttribute('data-key'))
     expect(leafThs).toEqual(['city', 'name', 'age'])
   })
 
@@ -2351,8 +2340,8 @@ describe('OASTable 多级表头 + column-keys 重排一致性', () => {
     expect(topThs[0]!.textContent).toBe('基础信息')
     expect(topThs[1]!.textContent).toBe('城市')
     expect(topThs[1]!.getAttribute('rowspan')).toBe('2')
-    const bottomKeys = [...el.shadowRoot!.querySelectorAll('thead > tr')[1]!.querySelectorAll('th')].map(
-      (t) => t.getAttribute('data-key'),
+    const bottomKeys = [...el.shadowRoot!.querySelectorAll('thead > tr')[1]!.querySelectorAll('th')].map((t) =>
+      t.getAttribute('data-key'),
     )
     expect(bottomKeys).toEqual(['name'])
     const tds = [...rows(el)[0]!.querySelectorAll('td')].map((td) => td.getAttribute('data-col'))
@@ -2367,8 +2356,8 @@ describe('OASTable 多级表头 + column-keys 重排一致性', () => {
     expect(topThs[0]!.getAttribute('colspan')).toBe('2')
     expect(topThs[1]!.textContent).toBe('城市')
     expect(topThs[1]!.getAttribute('rowspan')).toBe('2')
-    const bottomKeys = [...el.shadowRoot!.querySelectorAll('thead > tr')[1]!.querySelectorAll('th')].map(
-      (t) => t.getAttribute('data-key'),
+    const bottomKeys = [...el.shadowRoot!.querySelectorAll('thead > tr')[1]!.querySelectorAll('th')].map((t) =>
+      t.getAttribute('data-key'),
     )
     expect(bottomKeys).toEqual(['name', 'age'])
     const tds = [...rows(el)[0]!.querySelectorAll('td')].map((td) => td.getAttribute('data-col'))

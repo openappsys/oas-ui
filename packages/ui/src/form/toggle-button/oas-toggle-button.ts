@@ -233,9 +233,7 @@ export class OASToggleButton extends OASElement {
     const hasIcon = content !== undefined
     const hasText = (this.textContent ?? '').trim().length > 0
     const iconOnly = hasIcon && !hasText
-    btn.className = [hasIcon ? 'has-icon' : '', iconOnly ? 'icon-only' : '']
-      .filter(Boolean)
-      .join(' ')
+    btn.className = [hasIcon ? 'has-icon' : '', iconOnly ? 'icon-only' : ''].filter(Boolean).join(' ')
     const iconEl = this.shadow.querySelector<HTMLElement>('.icon')
     if (iconEl) {
       iconEl.hidden = !hasIcon

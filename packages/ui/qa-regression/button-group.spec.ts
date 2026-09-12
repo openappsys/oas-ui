@@ -8,9 +8,7 @@ test('button-group 单选选中态可见（primary 字 + 浅底）', async ({ pa
   await up(page, 'oas-button-group oas-button')
   const r = await page.evaluate(() => {
     const group = document.querySelector('oas-button-group[value]')!
-    const sel = [...group.querySelectorAll('oas-button')].find(
-      (b) => b.getAttribute('aria-pressed') === 'true',
-    )!
+    const sel = [...group.querySelectorAll('oas-button')].find((b) => b.getAttribute('aria-pressed') === 'true')!
     const cs = getComputedStyle(sel.shadowRoot!.querySelector('[part=button]')!)
     return { color: cs.color, bg: cs.backgroundColor }
   })
@@ -26,9 +24,8 @@ test('button-group 多选点击切换选中态', async ({ page }) => {
   await b.click()
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('oas-button-group[multiple] oas-button[value="b"]')
-        ?.getAttribute('aria-pressed') !== 'false',
+      document.querySelector('oas-button-group[multiple] oas-button[value="b"]')?.getAttribute('aria-pressed') !==
+      'false',
     null,
     { timeout: 5000 },
   )
@@ -78,9 +75,7 @@ test('button-group 横向圆角合并', async ({ page }) => {
   expect(r[2]).toBe('0px,6px')
 })
 
-test('button-group 有色组：分段缝常驻可见（非首按钮带 1px 半透明白缝，首按钮无）', async ({
-  page,
-}) => {
+test('button-group 有色组：分段缝常驻可见（非首按钮带 1px 半透明白缝，首按钮无）', async ({ page }) => {
   // 曾现缺陷：primary 等有色实心组静止时无缝合线，三段融成一整个按钮，
   // 「多选一」结构不可发现。修复：非首按钮宿主外侧 box-shadow 画 1px 白缝。
   await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })

@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import './index.js'
 import '../config-provider/index.js'
 import { message, destroyAll as destroyAllMessage } from '../../feedback/message/index.js'
-import {
-  notification,
-  destroyAll as destroyAllNotification,
-} from '../../feedback/notification/index.js'
+import { notification, destroyAll as destroyAllNotification } from '../../feedback/notification/index.js'
 
 /**
  * app 容器测试：
@@ -217,10 +214,7 @@ describe('oas-app', () => {
   describe('notification 全局默认配置（notification JSON 属性）', () => {
     it('duration/showProgress/scrollable 默认值生效', async () => {
       const app = document.createElement('oas-app')
-      app.setAttribute(
-        'notification',
-        '{"duration": 6000, "showProgress": true, "scrollable": false}',
-      )
+      app.setAttribute('notification', '{"duration": 6000, "showProgress": true, "scrollable": false}')
       document.body.appendChild(app)
 
       notification.success({ title: '默认配置' })
@@ -263,9 +257,7 @@ describe('oas-app', () => {
         const app = document.createElement('oas-app')
         app.setAttribute('notification', '[1,2]')
         document.body.appendChild(app)
-        expect(warn).toHaveBeenCalledWith(
-          expect.stringContaining('非法 notification 配置'),
-        )
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('非法 notification 配置'))
 
         // 同值跨元素去重：不重复告警
         const app2 = document.createElement('oas-app')

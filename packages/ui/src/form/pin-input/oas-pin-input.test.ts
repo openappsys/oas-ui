@@ -26,16 +26,10 @@ function typeCell(cell: HTMLInputElement, value: string): void {
 }
 
 function key(cell: HTMLInputElement, keyName: string): void {
-  cell.dispatchEvent(
-    new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true }),
-  )
+  cell.dispatchEvent(new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true }))
 }
 
-function fireFocus(
-  cell: HTMLInputElement,
-  type: 'focusin' | 'focusout',
-  relatedTarget: EventTarget | null,
-): void {
+function fireFocus(cell: HTMLInputElement, type: 'focusin' | 'focusout', relatedTarget: EventTarget | null): void {
   cell.dispatchEvent(new FocusEvent(type, { bubbles: true, composed: true, relatedTarget }))
 }
 
@@ -265,7 +259,11 @@ describe('OASPinInput', () => {
     const evt = new Event('paste', { bubbles: true, cancelable: true })
     Object.defineProperty(evt, 'clipboardData', { value: { getData: () => '1a2b' } })
     container(el).dispatchEvent(evt)
-    expect(cells(el).map((c) => c.value).join('')).toBe('12')
+    expect(
+      cells(el)
+        .map((c) => c.value)
+        .join(''),
+    ).toBe('12')
   })
 
   // ===== otp 自动填充 =====

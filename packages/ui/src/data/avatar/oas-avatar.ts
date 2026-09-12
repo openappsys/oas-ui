@@ -318,9 +318,7 @@ export class OASAvatar extends OASElement {
     this.shadow
       .querySelector<HTMLSlotElement>('slot[name="fallback"]')
       ?.addEventListener('slotchange', () => this.update())
-    this.shadow
-      .querySelector<HTMLSlotElement>('slot[name="icon"]')
-      ?.addEventListener('slotchange', () => this.update())
+    this.shadow.querySelector<HTMLSlotElement>('slot[name="icon"]')?.addEventListener('slotchange', () => this.update())
     this.shadow
       .querySelector<HTMLSlotElement>('slot[name="trigger"]')
       ?.addEventListener('slotchange', () => this.update())
@@ -373,9 +371,7 @@ export class OASAvatar extends OASElement {
     const assigned = (name: string): boolean => {
       const slot = this.shadow.querySelector<HTMLSlotElement>(`slot[name="${name}"]`)
       return slot
-        ? slot
-            .assignedNodes()
-            .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+        ? slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
         : false
     }
     // icon 显式给出时优先于首字符（不截首字）；其次 fallback 命名插槽；最后内置 text
@@ -392,14 +388,10 @@ export class OASAvatar extends OASElement {
     const slot = this.shadow.querySelector<HTMLSlotElement>('slot[name="trigger"]')
     if (!trigger || !slot) return
     const nodes = slot.assignedNodes()
-    const active = nodes.some(
-      (n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '',
-    )
+    const active = nodes.some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
     trigger.hidden = !active
     const hasContent = nodes.some(
-      (n) =>
-        (n.textContent ?? '').trim() !== '' ||
-        (n.nodeType === Node.ELEMENT_NODE && n.childNodes.length > 0),
+      (n) => (n.textContent ?? '').trim() !== '' || (n.nodeType === Node.ELEMENT_NODE && n.childNodes.length > 0),
     )
     trigger.classList.toggle('has-content', hasContent)
     trigger.setAttribute('aria-label', this.t('avatar.changeAvatar'))
@@ -424,11 +416,7 @@ export class OASAvatar extends OASElement {
     let fs = base
     textEl.style.fontSize = `${fs}px`
     let guard = 0
-    while (
-      textEl.scrollWidth > container.clientWidth &&
-      fs > TEXT_FLOOR_PX &&
-      guard < TEXT_FIT_MAX_ITER
-    ) {
+    while (textEl.scrollWidth > container.clientWidth && fs > TEXT_FLOOR_PX && guard < TEXT_FIT_MAX_ITER) {
       fs = Math.max(TEXT_FLOOR_PX, fs - 1)
       textEl.style.fontSize = `${fs}px`
       guard++
@@ -451,10 +439,7 @@ export class OASAvatar extends OASElement {
     badgeEl.classList.toggle('color-primary', color === 'primary')
     badgeEl.classList.toggle('color-success', color === 'success')
     badgeEl.classList.toggle('color-warning', color === 'warning')
-    badgeEl.classList.toggle(
-      'color-danger',
-      color !== 'primary' && color !== 'success' && color !== 'warning',
-    )
+    badgeEl.classList.toggle('color-danger', color !== 'primary' && color !== 'success' && color !== 'warning')
 
     const placement = this.getAttr('badge-placement', 'top-right')
     badgeEl.classList.toggle('placement-top-right', placement !== 'bottom-right')

@@ -108,9 +108,7 @@ describe('OASDropdown', () => {
     const el = mount({ open: '', items: NESTED_ITEMS })
     await Promise.resolve()
     const root = innerMenuRoot(el)
-    root
-      .querySelector<HTMLElement>('[part="item"][data-value="file"]')!
-      .dispatchEvent(new MouseEvent('mouseenter'))
+    root.querySelector<HTMLElement>('[part="item"][data-value="file"]')!.dispatchEvent(new MouseEvent('mouseenter'))
     expect(root.querySelectorAll('.item.open').length).toBeGreaterThan(0)
     // 外部点击关闭 → 重开：级联展开态应清空
     document.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -236,10 +234,7 @@ describe('OASDropdown 箭头（arrow）', () => {
   }
 
   /** happy-dom 无布局引擎：stub 元素矩形，让定位拿到确定性尺寸 */
-  function stubRect(
-    el: Element,
-    r: { left: number; top: number; width: number; height: number },
-  ): void {
+  function stubRect(el: Element, r: { left: number; top: number; width: number; height: number }): void {
     ;(el as HTMLElement).getBoundingClientRect = () =>
       ({
         x: r.left,
@@ -305,18 +300,13 @@ describe('OASDropdown 箭头（arrow）', () => {
       // 边框对：var 颜色 happy-dom 不解析，锁样式规则文本（left/right 曾把外露边框对写反）
       // 12 向 placement（bottom-start 等）使 data-placement 带对齐后缀，箭头落边规则用前缀匹配
       const styleText = el.shadowRoot!.querySelector('style')!.textContent!
-      const block = styleText
-        .split(`.menu-anchor[data-placement^='${p}'] .arrow {`)[1]!
-        .split('}')[0]!
+      const block = styleText.split(`.menu-anchor[data-placement^='${p}'] .arrow {`)[1]!.split('}')[0]!
       for (const prop of ['top', 'right', 'bottom', 'left']) {
-        const expectBorder = (cases[p].borders as readonly string[]).includes(
-          `border-${prop}-width`,
-        )
+        const expectBorder = (cases[p].borders as readonly string[]).includes(`border-${prop}-width`)
         const hasBorder = block.includes(`border-${prop}: 1px solid var(--oas-color-border)`)
-        expect(
-          hasBorder,
-          `placement=${p} border-${prop} 应${expectBorder ? '' : '不'}出现在箭头规则中`,
-        ).toBe(expectBorder)
+        expect(hasBorder, `placement=${p} border-${prop} 应${expectBorder ? '' : '不'}出现在箭头规则中`).toBe(
+          expectBorder,
+        )
       }
     }
   })
@@ -462,10 +452,7 @@ describe('OASDropdown 12 向 placement', () => {
     document.body.innerHTML = ''
   })
 
-  function stubRect(
-    el: Element,
-    r: { left: number; top: number; width: number; height: number },
-  ): void {
+  function stubRect(el: Element, r: { left: number; top: number; width: number; height: number }): void {
     ;(el as HTMLElement).getBoundingClientRect = () =>
       ({
         x: r.left,
@@ -571,9 +558,7 @@ describe('OASDropdown oas-open-change 事件', () => {
   it('点击切换派发 oas-open-change（detail.open 布尔，开关各一次）', () => {
     const el = mount()
     const log: boolean[] = []
-    el.addEventListener('oas-open-change', (e) =>
-      log.push((e as CustomEvent<{ open: boolean }>).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e) => log.push((e as CustomEvent<{ open: boolean }>).detail.open))
     ;(el.querySelector('button') as HTMLElement).click()
     ;(el.querySelector('button') as HTMLElement).click()
     expect(log).toEqual([true, false])
@@ -582,9 +567,7 @@ describe('OASDropdown oas-open-change 事件', () => {
   it('受控 setAttribute 同样触发（同 tooltip/popover 语义），无变化不派发', () => {
     const el = mount()
     const log: boolean[] = []
-    el.addEventListener('oas-open-change', (e) =>
-      log.push((e as CustomEvent<{ open: boolean }>).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e) => log.push((e as CustomEvent<{ open: boolean }>).detail.open))
     el.setAttribute('open', '')
     el.setAttribute('open', '') // 无状态迁移不派发
     el.removeAttribute('open')
@@ -594,9 +577,7 @@ describe('OASDropdown oas-open-change 事件', () => {
   it('初始 open 不派发（首帧无迁移，同 tooltip/popover）', () => {
     const el = mount({ open: '' })
     const log: boolean[] = []
-    el.addEventListener('oas-open-change', (e) =>
-      log.push((e as CustomEvent<{ open: boolean }>).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e) => log.push((e as CustomEvent<{ open: boolean }>).detail.open))
     el.removeAttribute('open')
     expect(log).toEqual([false])
   })
@@ -605,9 +586,7 @@ describe('OASDropdown oas-open-change 事件', () => {
     const el = mount({ open: '' })
     await Promise.resolve()
     const log: boolean[] = []
-    el.addEventListener('oas-open-change', (e) =>
-      log.push((e as CustomEvent<{ open: boolean }>).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e) => log.push((e as CustomEvent<{ open: boolean }>).detail.open))
     ;(innerMenuRoot(el).querySelector('[part="item"]') as HTMLElement).click()
     expect(log).toEqual([false])
   })
@@ -615,9 +594,7 @@ describe('OASDropdown oas-open-change 事件', () => {
   it('hover 触发开合同样派发 oas-open-change', async () => {
     const el = mount({ trigger: 'hover', 'hover-delay': '0', 'hover-hide-delay': '0' })
     const log: boolean[] = []
-    el.addEventListener('oas-open-change', (e) =>
-      log.push((e as CustomEvent<{ open: boolean }>).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e) => log.push((e as CustomEvent<{ open: boolean }>).detail.open))
     el.dispatchEvent(new MouseEvent('mouseenter'))
     await sleep(20)
     el.dispatchEvent(new MouseEvent('mouseleave'))
@@ -700,10 +677,7 @@ describe('OASDropdown 开合动画与滚动重定位', () => {
     document.body.innerHTML = ''
   })
 
-  function stubRect(
-    el: Element,
-    r: { left: number; top: number; width: number; height: number },
-  ): void {
+  function stubRect(el: Element, r: { left: number; top: number; width: number; height: number }): void {
     ;(el as HTMLElement).getBoundingClientRect = () =>
       ({
         x: r.left,
@@ -878,9 +852,7 @@ describe('OASDropdown 子元素声明式通道', () => {
     )
     el.setAttribute('open', '')
     await Promise.resolve()
-    const labels = [...innerMenuRoot(el).querySelectorAll('[part="item"] .label')].map(
-      (l) => l.textContent,
-    )
+    const labels = [...innerMenuRoot(el).querySelectorAll('[part="item"] .label')].map((l) => l.textContent)
     expect(labels).toEqual(['数据项', '末项'])
     expect(innerMenuRoot(el).querySelector('[data-value="home"]')).toBeNull()
   })
@@ -963,10 +935,9 @@ describe('OASDropdown 子元素声明式通道', () => {
   })
 
   it('placement 翻转不受影响（子元素通道数据同样走定位引擎）', () => {
-    const el = mountDropdownChild(
-      `<button>操作</button><oas-dropdown-item value="home">首页</oas-dropdown-item>`,
-      { placement: 'bottom' },
-    )
+    const el = mountDropdownChild(`<button>操作</button><oas-dropdown-item value="home">首页</oas-dropdown-item>`, {
+      placement: 'bottom',
+    })
     ;(el.querySelector('button') as HTMLElement).getBoundingClientRect = () =>
       ({ left: 400, top: 740, width: 80, height: 32, right: 480, bottom: 772 }) as DOMRect
     ;(anchorEl(el) as HTMLElement).getBoundingClientRect = () =>

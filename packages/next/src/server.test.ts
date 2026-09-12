@@ -84,9 +84,7 @@ describe('@oas-ui/next 服务端集成', () => {
         children: '提交',
       })
       const markup = renderToStaticMarkup(el)
-      expect(markup).toContain(
-        '<div class="oas-ssr"><oas-button type="primary"><template shadowrootmode="open">',
-      )
+      expect(markup).toContain('<div class="oas-ssr"><oas-button type="primary"><template shadowrootmode="open">')
       expect(markup).toContain('</template>提交</oas-button></div>')
     })
 
@@ -97,7 +95,9 @@ describe('@oas-ui/next 服务端集成', () => {
         children: '记住我',
       })
       const markup = renderToStaticMarkup(el)
-      expect(markup).toContain('<oas-checkbox checked="true" data-size="medium" data-variant="default"><template shadowrootmode="open">')
+      expect(markup).toContain(
+        '<oas-checkbox checked="true" data-size="medium" data-variant="default"><template shadowrootmode="open">',
+      )
     })
 
     it('slotHTML 原始 HTML 优先于 children', async () => {

@@ -14,9 +14,7 @@ describe('OASSpin', () => {
     const el = new OASSpin()
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('[part="indicator"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe(
-      'medium',
-    )
+    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe('medium')
   })
 
   it('size 五档：xs/small/medium/large/xl 映射到 data-size', () => {
@@ -39,10 +37,9 @@ describe('OASSpin', () => {
       const el = new OASSpin()
       el.setAttribute('size', raw)
       document.body.appendChild(el)
-      expect(
-        el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size'),
-        `size=${raw}`,
-      ).toBe(normalized)
+      expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size'), `size=${raw}`).toBe(
+        normalized,
+      )
       el.remove()
     }
   })
@@ -367,9 +364,7 @@ describe('OASSpin size 任意值', () => {
     const el = new OASSpin()
     el.setAttribute('size', 'abc')
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe(
-      'medium',
-    )
+    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe('medium')
     el.setAttribute('size', '-20')
     expect(warn).toHaveBeenCalledTimes(2)
     // 同值去重：再设回 abc 不重复警
@@ -395,9 +390,7 @@ describe('OASSpin size 任意值', () => {
     const el = new OASSpin()
     el.setAttribute('size', '')
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe(
-      'medium',
-    )
+    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe('medium')
     expect(warn).not.toHaveBeenCalled()
   })
 })
@@ -468,7 +461,9 @@ describe('OASSpin 读屏可读文本与 reduced-motion', () => {
     const label = el.shadowRoot!.querySelector('[part="label"]')!
     expect(label.textContent).not.toBe('')
     // 兜底文案来自 locale registry（loading.loading，注入的 zh 翻译器生效）
-    expect(el.shadowRoot!.textContent).toContain(el.shadowRoot!.textContent!.match(/加载中|Loading|loading\.loading/)![0])
+    expect(el.shadowRoot!.textContent).toContain(
+      el.shadowRoot!.textContent!.match(/加载中|Loading|loading\.loading/)![0],
+    )
   })
 
   it('tip 属性时读屏文本读 tip', () => {
@@ -582,13 +577,9 @@ describe('OASSpin variant 形态变体', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = new OASSpin()
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-variant')).toBe(
-      'ring',
-    )
+    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-variant')).toBe('ring')
     el.setAttribute('variant', 'wave')
-    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-variant')).toBe(
-      'ring',
-    )
+    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-variant')).toBe('ring')
     expect(warn).toHaveBeenCalledTimes(1)
     el.setAttribute('variant', 'wave')
     expect(warn).toHaveBeenCalledTimes(1)
@@ -671,10 +662,9 @@ describe('OASSpin percent determinate 进度', () => {
       const el = new OASSpin()
       el.setAttribute('percent', raw)
       document.body.appendChild(el)
-      expect(
-        el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('aria-valuenow'),
-        `percent=${raw}`,
-      ).toBe(now)
+      expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('aria-valuenow'), `percent=${raw}`).toBe(
+        now,
+      )
       el.remove()
     }
   })

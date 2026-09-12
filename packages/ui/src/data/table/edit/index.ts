@@ -1,9 +1,5 @@
 import { registerTableCapability } from '../oas-table-capability.js'
-import {
-  TableEditController,
-  createEditController,
-  type TableEditHost,
-} from '../oas-table-edit.js'
+import { TableEditController, createEditController, type TableEditHost } from '../oas-table-edit.js'
 
 /**
  * table 编辑能力包入口（ESM 子路径 `@oas-ui/ui/data/table/edit`）。

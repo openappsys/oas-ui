@@ -10,9 +10,7 @@ test('hover-card collision-boundary：边界在页面中部时卡片被夹取在
   await up(page, 'oas-hover-card[collision-boundary]')
   const r = await page.evaluate(async () => {
     const host = document.querySelector('oas-hover-card[collision-boundary]')!
-    ;(host.firstElementChild as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(host.firstElementChild as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await new Promise((res) => setTimeout(res, 500))
     const card = host.shadowRoot!.querySelector('.card') as HTMLElement
     const box = document.querySelector('#hc-cb-box') as HTMLElement
@@ -176,9 +174,7 @@ test('hover-card arrow-merge 直角三角贴角共边 8 向：直角点贴面板
           const a = verts[(i + 1) % 3]!
           const b = verts[(i + 2) % 3]!
           const v = verts[i]!
-          if (
-            Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01
-          ) {
+          if (Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01) {
             rv = v
             others = verts.filter((_, j) => j !== i)
           }
@@ -234,14 +230,8 @@ test('hover-card arrow-merge 直角三角贴角共边 8 向：直角点贴面板
     expect(r.hasPolygon, `${r.p} clip-path 应裁出三角`).toBe(true)
     expect(r.boxW, `${r.p} 箭头盒应为 8px 宽（不旋转）`).toBeCloseTo(8, 1)
     expect(r.boxH, `${r.p} 箭头盒应为 8px 高（不旋转）`).toBeCloseTo(8, 1)
-    expect(r.rdx, `${r.p} 直角点相对面板角点 X 应为 ${r.vdx}（描边带让位）`).toBeCloseTo(
-      r.vdx as number,
-      1,
-    )
-    expect(r.rdy, `${r.p} 直角点相对面板角点 Y 应为 ${r.vdy}（描边带让位）`).toBeCloseTo(
-      r.vdy as number,
-      1,
-    )
+    expect(r.rdx, `${r.p} 直角点相对面板角点 X 应为 ${r.vdx}（描边带让位）`).toBeCloseTo(r.vdx as number, 1)
+    expect(r.rdy, `${r.p} 直角点相对面板角点 Y 应为 ${r.vdy}（描边带让位）`).toBeCloseTo(r.vdy as number, 1)
     expect(r.legsOk, `${r.p} 直角边与面板边共边 + 尖端正交外探 8px 指向锚点侧`).toBe(true)
     expect(r.legsOnly, `${r.p} 外露直角边描边 1px、贴面板融合边无描边`).toBe(true)
     expect(r.othersZero, `${r.p} 斜边与其余边不得有描边`).toBe(true)
@@ -270,9 +260,7 @@ test('hover-card 浮层可悬停：触发器 → 卡片跨间隙移动不闪关'
   await page.waitForFunction(
     (s) => {
       const host = document.querySelector(s) as HTMLElement
-      return (
-        host?.shadowRoot?.querySelector('[part="card"]')?.getAttribute('aria-hidden') === 'false'
-      )
+      return host?.shadowRoot?.querySelector('[part="card"]')?.getAttribute('aria-hidden') === 'false'
     },
     sel,
     { timeout: 5000 },

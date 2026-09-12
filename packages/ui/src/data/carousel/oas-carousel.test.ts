@@ -17,7 +17,14 @@ function track(el: OASCarousel): HTMLElement {
 }
 
 function pointer(type: string, x: number, y = 0): PointerEvent {
-  return new PointerEvent(type, { bubbles: true, cancelable: true, button: 0, pointerId: 1, clientX: x, clientY: y })
+  return new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    pointerId: 1,
+    clientX: x,
+    clientY: y,
+  })
 }
 
 describe('OASCarousel', () => {
@@ -50,12 +57,8 @@ describe('OASCarousel', () => {
     const el = mount()
     expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')).not.toBeNull()
     expect(el.shadowRoot!.querySelector('[part="arrow-next"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')?.getAttribute('aria-label')).toBe(
-      '上一屏',
-    )
-    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.getAttribute('aria-label')).toBe(
-      '下一屏',
-    )
+    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')?.getAttribute('aria-label')).toBe('上一屏')
+    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.getAttribute('aria-label')).toBe('下一屏')
   })
 
   it('arrows=never 时箭头隐藏（hidden），不渲染可见箭头元素', () => {
@@ -125,15 +128,11 @@ describe('OASCarousel', () => {
     setLocale(en)
     expect(prev.getAttribute('aria-label')).toBe('Previous slide')
     expect(next.getAttribute('aria-label')).toBe('Next slide')
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!.getAttribute('aria-label'),
-    ).toBe('Slide 1')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!.getAttribute('aria-label')).toBe('Slide 1')
 
     setLocale('zh-CN')
     expect(prev.getAttribute('aria-label')).toBe('上一屏')
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!.getAttribute('aria-label'),
-    ).toBe('第 1 张')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!.getAttribute('aria-label')).toBe('第 1 张')
   })
 
   describe('指示器 API', () => {
@@ -183,10 +182,7 @@ describe('OASCarousel', () => {
       extra.className = 'slide'
       extra.textContent = '四'
       el.appendChild(extra)
-      await vi.waitFor(
-        () => expect(el.shadowRoot!.querySelectorAll('[part="dot"]').length).toBe(4),
-        { timeout: 500 },
-      )
+      await vi.waitFor(() => expect(el.shadowRoot!.querySelectorAll('[part="dot"]').length).toBe(4), { timeout: 500 })
     })
 
     it('删除轮播项后指示器数量同步更新且 index 收敛', async () => {
@@ -475,9 +471,9 @@ describe('OASCarousel', () => {
 
   describe('键盘导航', () => {
     function key(el: OASCarousel, k: string): void {
-      el.shadowRoot!
-        .querySelector<HTMLElement>('[part="dots"]')!
-        .dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }))
+      el.shadowRoot!.querySelector<HTMLElement>('[part="dots"]')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: k, bubbles: true }),
+      )
     }
 
     it('方向键切换屏幕', () => {
@@ -598,7 +594,8 @@ describe('OASCarousel', () => {
       expect(track(el).style.transform).toContain('/ 2')
     })
 
-    it('卡片样式规则引用 token 变量（卡宽/卡间距可调），邻卡缩放走 token', () => {      const el = mount({ type: 'card' }, 3)
+    it('卡片样式规则引用 token 变量（卡宽/卡间距可调），邻卡缩放走 token', () => {
+      const el = mount({ type: 'card' }, 3)
       const style = el.shadowRoot!.querySelector('style')!.textContent!
       expect(style).toContain('--oas-carousel-card-width')
       expect(style).toContain('--oas-carousel-card-gap')
@@ -611,9 +608,7 @@ describe('OASCarousel', () => {
   describe('显式暂停按钮（pause-button）', () => {
     it('pause-button 时渲染可见按钮，未设置时隐藏', () => {
       const off = mount()
-      expect(off.shadowRoot!.querySelector('[part="pause-button"]')?.hasAttribute('hidden')).toBe(
-        true,
-      )
+      expect(off.shadowRoot!.querySelector('[part="pause-button"]')?.hasAttribute('hidden')).toBe(true)
       const el = mount({ autoplay: '', 'pause-button': '' })
       const btn = el.shadowRoot!.querySelector<HTMLElement>('[part="pause-button"]')!
       expect(btn.hasAttribute('hidden')).toBe(false)
@@ -673,13 +668,9 @@ describe('OASCarousel', () => {
   describe('无障碍', () => {
     it('autoplay 时视口 aria-live=off，否则 polite', () => {
       const el = mount({ autoplay: '' })
-      expect(el.shadowRoot!.querySelector('[part="viewport"]')?.getAttribute('aria-live')).toBe(
-        'off',
-      )
+      expect(el.shadowRoot!.querySelector('[part="viewport"]')?.getAttribute('aria-live')).toBe('off')
       el.removeAttribute('autoplay')
-      expect(el.shadowRoot!.querySelector('[part="viewport"]')?.getAttribute('aria-live')).toBe(
-        'polite',
-      )
+      expect(el.shadowRoot!.querySelector('[part="viewport"]')?.getAttribute('aria-live')).toBe('polite')
     })
 
     it('激活指示器 aria-current=true', () => {

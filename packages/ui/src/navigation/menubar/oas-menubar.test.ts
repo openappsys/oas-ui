@@ -244,9 +244,7 @@ describe('OASMenubar', () => {
     const el = mount()
     el.setAttribute(
       'items',
-      JSON.stringify([
-        { label: '帮助', value: 'help', children: [{ label: '关于', value: 'about' }] },
-      ]),
+      JSON.stringify([{ label: '帮助', value: 'help', children: [{ label: '关于', value: 'about' }] }]),
     )
     expect(topItems(el).length).toBe(1)
     expect(topItems(el)[0]!.textContent).toBe('帮助')
@@ -308,13 +306,9 @@ describe('OASMenubar', () => {
     expect(css).toContain('.submenu.flip-right')
     expect(css).toContain('.submenu.flip-up')
     // 展开一级与级联后 syncSubmenuPositions 在 happy-dom 下安全执行（rect 全 0 不误判翻转）
-    const editTop = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="top-item"][data-value="edit"]',
-    )!
+    const editTop = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="edit"]')!
     editTop.click()
-    const insertItem = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="insert"]',
-    )
+    const insertItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="insert"]')
     expect(insertItem).not.toBeNull()
   })
 
@@ -359,9 +353,7 @@ describe('OASMenubar', () => {
   it('#4 JSON value 按组作用域：两组各自独立勾选', () => {
     const el = mount({ items: GROUP_ITEMS, value: '{"mode":"preview","theme":"dark"}' })
     const edit = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
-    const preview = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="preview"]',
-    )!
+    const preview = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
     const light = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="light"]')!
     const dark = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dark"]')!
     expect(preview.getAttribute('aria-checked')).toBe('true')
@@ -373,9 +365,7 @@ describe('OASMenubar', () => {
   it('#4 字符串 value 不穿透组作用域：组内叶子不被全局字符串命中', () => {
     const el = mount({ items: GROUP_ITEMS, value: 'preview' })
     const edit = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
-    const preview = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="preview"]',
-    )!
+    const preview = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
     const light = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="light"]')!
     const dark = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dark"]')!
     // 全部叶子都在组内（scope=mode/theme），字符串 value 只命中根作用域，故组内都不勾选（隔离）
@@ -402,9 +392,7 @@ describe('OASMenubar', () => {
     expect(v.mode).toBe('preview')
     expect(v.theme).toBe('dark')
     // 勾选同步
-    const preview = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="preview"]',
-    )!
+    const preview = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
     expect(preview.getAttribute('aria-checked')).toBe('true')
     expect(dark.getAttribute('aria-checked')).toBe('true')
     const light = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="light"]')!
@@ -723,9 +711,7 @@ describe('图标 icon', () => {
     const top = topItems(el)[0]!.querySelector('.icon svg')!
     expect(top.getAttribute('stroke')).toBe('#f50')
     expect(top.querySelector('path')!.getAttribute('stroke')).toBe('#f50')
-    const sub = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="new"] .icon svg',
-    )!
+    const sub = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"] .icon svg')!
     expect(sub.getAttribute('stroke')).toBe('currentColor')
     expect(sub.querySelector('path')!.getAttribute('stroke')).toBe('currentColor')
   })
@@ -1005,11 +991,7 @@ describe('divider 语义', () => {
         {
           label: '文件',
           value: 'file',
-          children: [
-            { label: '新建', value: 'new' },
-            { type: 'divider' },
-            { label: '退出', value: 'quit' },
-          ],
+          children: [{ label: '新建', value: 'new' }, { type: 'divider' }, { label: '退出', value: 'quit' }],
         },
       ]),
     })
@@ -1117,9 +1099,7 @@ const MANY_ITEMS = JSON.stringify([
 describe('水平溢出收纳（ellipsis）', () => {
   it('水平模式渲染「···」收纳项（默认隐藏）；竖排不渲染', () => {
     const el = mount({ items: MANY_ITEMS })
-    const more = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="top-item"][data-value="__more__"]',
-    )
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')
     expect(more).not.toBeNull()
     expect(more!.hidden).toBe(true)
     const v = mount({ items: MANY_ITEMS, orientation: 'vertical' })
@@ -1133,14 +1113,11 @@ describe('水平溢出收纳（ellipsis）', () => {
     // （shim 的元素属性返回非零 offsetWidth，零宽守卫必须拦住这种假溢出）
     Object.defineProperty(itemsEl, 'clientWidth', { value: 0, configurable: true })
     const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
-    for (const w of wraps)
-      Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    for (const w of wraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
     await new Promise((r) => requestAnimationFrame(r))
     await new Promise((r) => requestAnimationFrame(r))
     const collapsed = [...itemsEl.querySelectorAll(':scope > .top-wrap[data-collapsed]')]
-    const more = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="top-item"][data-value="__more__"]',
-    )
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')
     expect(collapsed, '零宽环境不得给项标 data-collapsed（快照会烤进误判态）').toHaveLength(0)
     expect(more!.hidden, '零宽环境「···」保持隐藏').toBe(true)
   })
@@ -1151,23 +1128,18 @@ describe('水平溢出收纳（ellipsis）', () => {
     Object.defineProperty(itemsEl, 'clientWidth', { value: 120, configurable: true })
     const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
     const dataWraps = wraps.filter((w) => w.dataset.value !== '__more__')
-    for (const w of dataWraps)
-      Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    for (const w of dataWraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
     const moreWrap = itemsEl.querySelector<HTMLElement>(':scope > .top-wrap[data-value="__more__"]')
     Object.defineProperty(moreWrap!, 'offsetWidth', { value: 40, configurable: true })
     await new Promise((r) => requestAnimationFrame(r))
     const collapsed = dataWraps.filter((w) => w.hasAttribute('data-collapsed'))
     expect(collapsed.length).toBeGreaterThan(0)
-    const more = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="top-item"][data-value="__more__"]',
-    )!
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
     expect(more.hidden).toBe(false)
     // 打开「···」弹层：显示被收项镜像
     more.click()
     expect(more.getAttribute('aria-expanded')).toBe('true')
-    const moreSub = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="submenu"][data-parent="__more__"]',
-    )!
+    const moreSub = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"][data-parent="__more__"]')!
     expect(moreSub.classList.contains('open')).toBe(true)
     const mirrors = moreSub.querySelectorAll<HTMLElement>('[part="item"]')
     expect(mirrors.length).toBe(collapsed.length)
@@ -1185,14 +1157,11 @@ describe('水平溢出收纳（ellipsis）', () => {
     Object.defineProperty(itemsEl, 'clientWidth', { value: 80, configurable: true })
     const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
     const dataWraps = wraps.filter((w) => w.dataset.value !== '__more__')
-    for (const w of dataWraps)
-      Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    for (const w of dataWraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
     await new Promise((r) => requestAnimationFrame(r))
     el.setAttribute('value', 'solutions') // 被收纳项
     await new Promise((r) => requestAnimationFrame(r)) // 等重算「···」高亮
-    const more = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="top-item"][data-value="__more__"]',
-    )!
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
     expect(more.classList.contains('child-selected')).toBe(true)
     expect(more.getAttribute('aria-current')).toBe('true')
   })
@@ -1200,9 +1169,7 @@ describe('水平溢出收纳（ellipsis）', () => {
   it('无溢出时「···」保持隐藏，所有项留在条上', async () => {
     const el = mount({ items: MANY_ITEMS })
     await new Promise((r) => requestAnimationFrame(r))
-    const more = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="top-item"][data-value="__more__"]',
-    )!
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
     expect(more.hidden).toBe(true)
     const collapsed = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.top-wrap[data-collapsed]')]
     expect(collapsed.length).toBe(0)
@@ -1214,12 +1181,9 @@ describe('水平溢出收纳（ellipsis）', () => {
     Object.defineProperty(itemsEl, 'clientWidth', { value: 80, configurable: true })
     const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
     const dataWraps = wraps.filter((w) => w.dataset.value !== '__more__')
-    for (const w of dataWraps)
-      Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    for (const w of dataWraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
     await new Promise((r) => requestAnimationFrame(r))
-    const more = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="top-item"][data-value="__more__"]',
-    )!
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
     key(el, 'End') // 「···」在顶级导航序列末位，End 直接落到它
     expect(more.classList.contains('active')).toBe(true)
     key(el, 'ArrowDown') // 打开弹层并聚焦首镜像项
@@ -1283,9 +1247,7 @@ describe('子元素声明式通道', () => {
     topItems(el)[0]!.click()
     expect(openSubmenus(el).length).toBe(1)
     // 子菜单内：叶子项/组标题/分隔线齐备（作用域限定 bar——hamburger 面板内是同一份 items 副本）
-    const fileSub = el.shadowRoot!.querySelector(
-      '[part="bar"] .top-wrap[data-value="file"] > [part="submenu"]',
-    )!
+    const fileSub = el.shadowRoot!.querySelector('[part="bar"] .top-wrap[data-value="file"] > [part="submenu"]')!
     expect(fileSub.querySelector('.group-label')).not.toBeNull()
     expect(fileSub.querySelectorAll('[part="divider"]').length).toBe(1)
     const newItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
@@ -1338,9 +1300,7 @@ describe('子元素声明式通道', () => {
     grid.click()
     expect(JSON.parse(el.getAttribute('value')!)).toEqual(['grid'])
     // danger 红字类
-    expect(
-      root.querySelector('[part="item"][data-value="del"]')!.classList.contains('danger'),
-    ).toBe(true)
+    expect(root.querySelector('[part="item"][data-value="del"]')!.classList.contains('danger')).toBe(true)
     // href 链接项渲染为 <a>
     const docs = root.querySelector<HTMLAnchorElement>('[part="item"][data-value="docs"]')!
     expect(docs.tagName).toBe('A')
@@ -1353,14 +1313,10 @@ describe('子元素声明式通道', () => {
         <oas-menubar-item value="new" icon="plus">新建</oas-menubar-item>
       </oas-menubar-item>
     `)
-    const top = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="top-item"][data-value="file"] .icon svg',
-    )!
+    const top = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="file"] .icon svg')!
     expect(top.getAttribute('stroke')).toBe('#f50')
     expect(top.querySelector('path')!.getAttribute('stroke')).toBe('#f50')
-    const sub = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="new"] .icon svg',
-    )!
+    const sub = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"] .icon svg')!
     expect(sub.getAttribute('stroke')).toBe('currentColor')
     expect(sub.querySelector('path')!.getAttribute('stroke')).toBe('currentColor')
   })

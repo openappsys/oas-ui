@@ -114,7 +114,12 @@ describe('OASMentions', () => {
     key(t, 'Enter')
     expect(t.value).toBe('@Apricot ')
     expect(selects).toEqual([
-      { value: 'apricot', label: 'Apricot', option: { label: 'Apricot', value: 'apricot' }, prefix: '@' },
+      {
+        value: 'apricot',
+        label: 'Apricot',
+        option: { label: 'Apricot', value: 'apricot' },
+        prefix: '@',
+      },
     ])
     expect(changes).toEqual([{ value: '@Apricot ' }])
     expect(openState(el)).toBe(false)
@@ -658,7 +663,10 @@ describe('OASMentions', () => {
   })
 
   it('⑥ whole 整段删除：光标在长成员名（含空格）段末尾一次 Backspace 删除 prefix+label', () => {
-    const el = mount({ whole: '', options: JSON.stringify([{ label: '张 三', value: 'zhangsan' }]) })
+    const el = mount({
+      whole: '',
+      options: JSON.stringify([{ label: '张 三', value: 'zhangsan' }]),
+    })
     const t = ta(el)
     // 光标紧跟提及段（`@张 三`）之后（无尾随内容），一次删除整段
     t.value = '你好 @张 三'

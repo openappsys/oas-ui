@@ -59,9 +59,7 @@ describe('OASImageGroup', () => {
     expect(box.getAttribute('role')).toBe('group')
     expect(box.getAttribute('aria-label')).toBe('图集')
     setLocale(en)
-    expect(g.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label')).toBe(
-      'Image gallery',
-    )
+    expect(g.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label')).toBe('Image gallery')
   })
 
   it('收集子图 src 为图集列表（preview-src-list 透传内部预览宿主）', () => {

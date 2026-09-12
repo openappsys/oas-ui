@@ -47,9 +47,7 @@ describe('OASSteps', () => {
 
   it('direction=vertical 时纵向布局', () => {
     const el = mount({ direction: 'vertical' })
-    expect(el.shadowRoot!.querySelector('[part="steps"]')!.getAttribute('data-direction')).toBe(
-      'vertical',
-    )
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.getAttribute('data-direction')).toBe('vertical')
   })
 
   it('显式 status 覆盖推导：error 步骤即使已过仍为 error', () => {
@@ -63,12 +61,7 @@ describe('OASSteps', () => {
       ]),
     })
     const list = items(el)
-    expect(list.map((i) => i.getAttribute('data-status'))).toEqual([
-      'error',
-      'process',
-      'wait',
-      'finish',
-    ])
+    expect(list.map((i) => i.getAttribute('data-status'))).toEqual(['error', 'process', 'wait', 'finish'])
   })
 
   it('四种状态渲染对应图标：wait/process 序号，finish ✓，error ✕', () => {
@@ -123,13 +116,9 @@ describe('OASSteps', () => {
     const list = items(el)
     let fired = 0
     el.addEventListener('oas-change', () => fired++)
-    ;(list[1] as HTMLElement).dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
-    )
+    ;(list[1] as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(fired).toBe(1)
-    ;(list[0] as HTMLElement).dispatchEvent(
-      new KeyboardEvent('keydown', { key: ' ', bubbles: true }),
-    )
+    ;(list[0] as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
     expect(fired).toBe(2)
     expect(el.getAttribute('current')).toBe('0')
   })
@@ -162,9 +151,7 @@ describe('OASSteps', () => {
 describe('progress-dot（点状步骤）', () => {
   it('progress-dot 属性：容器标记 data-progress-dot', () => {
     const el = mount({ 'progress-dot': '' })
-    expect(el.shadowRoot!.querySelector('[part="steps"]')!.getAttribute('data-progress-dot')).toBe(
-      'true',
-    )
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.getAttribute('data-progress-dot')).toBe('true')
   })
 
   it('点状模式：指示器为空圆点（不渲染序号/✓/✕）且 aria-hidden 装饰性', () => {
@@ -181,16 +168,10 @@ describe('progress-dot（点状步骤）', () => {
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toContain(".steps[data-progress-dot='true'] .item:not(:last-child)::after")
     expect(css).toContain('var(--oas-color-text-disabled)')
-    expect(css).toContain(
-      ".steps[data-progress-dot='true'] .item[data-status='process'] .icon::before",
-    )
+    expect(css).toContain(".steps[data-progress-dot='true'] .item[data-status='process'] .icon::before")
     expect(css).toContain('var(--oas-color-primary)')
-    expect(css).toContain(
-      ".steps[data-progress-dot='true'] .item[data-status='finish'] .icon::before",
-    )
-    expect(css).toContain(
-      ".steps[data-progress-dot='true'] .item[data-status='error'] .icon::before",
-    )
+    expect(css).toContain(".steps[data-progress-dot='true'] .item[data-status='finish'] .icon::before")
+    expect(css).toContain(".steps[data-progress-dot='true'] .item[data-status='error'] .icon::before")
     expect(css).toContain('var(--oas-color-danger)')
   })
 
@@ -200,9 +181,7 @@ describe('progress-dot（点状步骤）', () => {
     expect(list[0]!.getAttribute('role')).toBe('button')
     let fired = 0
     el.addEventListener('oas-change', () => fired++)
-    ;(list[2] as HTMLElement).dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
-    )
+    ;(list[2] as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(fired).toBe(1)
     expect(el.getAttribute('current')).toBe('2')
   })
@@ -348,11 +327,7 @@ describe('StepItem.disabled（禁用步骤）', () => {
     const el = mount({
       clickable: '',
       current: '0',
-      steps: JSON.stringify([
-        { title: 'A' },
-        { title: 'B', disabled: true },
-        { title: 'C' },
-      ]),
+      steps: JSON.stringify([{ title: 'A' }, { title: 'B', disabled: true }, { title: 'C' }]),
     })
     const list = items(el)
     expect(list[1]!.getAttribute('role')).toBeNull()
@@ -362,9 +337,7 @@ describe('StepItem.disabled（禁用步骤）', () => {
     let fired = 0
     el.addEventListener('oas-change', () => fired++)
     ;(list[1] as HTMLElement).click()
-    ;(list[1] as HTMLElement).dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
-    )
+    ;(list[1] as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(fired).toBe(0)
     expect(el.getAttribute('current')).toBe('0')
     // 非 disabled 项仍可点
@@ -398,11 +371,7 @@ describe('StepItem.disabled（禁用步骤）', () => {
     const el = mount({
       navigation: '',
       current: '1',
-      steps: JSON.stringify([
-        { title: 'A' },
-        { title: 'B', disabled: true },
-        { title: 'C' },
-      ]),
+      steps: JSON.stringify([{ title: 'A' }, { title: 'B', disabled: true }, { title: 'C' }]),
     })
     const list = items(el)
     expect(list[0]!.getAttribute('role')).toBe('button')
@@ -489,34 +458,24 @@ describe('label-placement（标签排布）', () => {
 
   it('label-placement 缺省 / 显式 vertical：不设 data-label-placement（保持现状）', () => {
     const plain = mount({})
-    expect(
-      plain.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement'),
-    ).toBe(false)
+    expect(plain.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement')).toBe(false)
     const v = mount({ 'label-placement': 'vertical' })
-    expect(
-      v.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement'),
-    ).toBe(false)
+    expect(v.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement')).toBe(false)
   })
 
   it('label-placement=horizontal 在 progress-dot 下退化为现状点状（不设标记）', () => {
     const el = mount({ 'progress-dot': '', 'label-placement': 'horizontal' })
-    expect(
-      el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement'),
-    ).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement')).toBe(false)
   })
 
   it('label-placement=horizontal 在 navigation 下强制现状（不设标记）', () => {
     const el = mount({ navigation: '', 'label-placement': 'horizontal' })
-    expect(
-      el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement'),
-    ).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement')).toBe(false)
   })
 
   it('label-placement=horizontal 在 direction=vertical 下不生效（纵向保持图标左/标题右）', () => {
     const el = mount({ direction: 'vertical', 'label-placement': 'horizontal' })
-    expect(
-      el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement'),
-    ).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement')).toBe(false)
   })
 })
 
@@ -538,10 +497,7 @@ describe('容器 status（覆盖当前步状态）', () => {
     const el = mount({
       current: '1',
       status: 'error',
-      steps: JSON.stringify([
-        { title: 'A', status: 'finish' },
-        { title: 'B' },
-      ]),
+      steps: JSON.stringify([{ title: 'A', status: 'finish' }, { title: 'B' }]),
     })
     const list = items(el)
     // A 显式 finish（前序步）不被容器 status 影响
@@ -665,9 +621,7 @@ describe('oas-before-change（跳步前拦截）', () => {
     el.addEventListener('oas-before-change', (e: Event) => e.preventDefault())
     let fired = 0
     el.addEventListener('oas-change', () => fired++)
-    ;(items(el)[1] as HTMLElement).dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
-    )
+    ;(items(el)[1] as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(fired).toBe(0)
     expect(el.getAttribute('current')).toBe('0')
   })
@@ -688,11 +642,7 @@ describe('oas-before-change（跳步前拦截）', () => {
       clickable: '',
       linear: '',
       current: '1',
-      steps: JSON.stringify([
-        { title: 'A' },
-        { title: 'B' },
-        { title: 'C', disabled: true },
-      ]),
+      steps: JSON.stringify([{ title: 'A' }, { title: 'B' }, { title: 'C', disabled: true }]),
     })
     let befores = 0
     el.addEventListener('oas-before-change', () => befores++)
@@ -715,11 +665,7 @@ describe('StepItem.loading（加载指示器）', () => {
   it('loading：指示器渲染旋转圈（.spinner），序号/✓/✕ 让位', () => {
     const el = mount({
       current: '0',
-      steps: JSON.stringify([
-        { title: 'A' },
-        { title: 'B', loading: true },
-        { title: 'C', status: 'finish' },
-      ]),
+      steps: JSON.stringify([{ title: 'A' }, { title: 'B', loading: true }, { title: 'C', status: 'finish' }]),
     })
     const list = items(el)
     // A 是当前步（process）：非 loading 照常渲染序号
@@ -740,7 +686,10 @@ describe('StepItem.loading（加载指示器）', () => {
   })
 
   it('progress-dot / navigation / simple 下 loading 让位（不渲染 spinner）', () => {
-    const dot = mount({ 'progress-dot': '', steps: JSON.stringify([{ title: 'A', loading: true }]) })
+    const dot = mount({
+      'progress-dot': '',
+      steps: JSON.stringify([{ title: 'A', loading: true }]),
+    })
     expect(items(dot)[0]!.querySelector('.icon .spinner')).toBeNull()
     const nav = mount({ navigation: '', steps: JSON.stringify([{ title: 'A', loading: true }]) })
     expect(items(nav)[0]!.querySelector('.spinner')).toBeNull()
@@ -842,18 +791,14 @@ describe('simple（紧凑模式）', () => {
 
   it('simple 下 label-placement 不生效（simple 自身单行布局）', () => {
     const el = mount({ simple: '', 'label-placement': 'horizontal' })
-    expect(
-      el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement'),
-    ).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-label-placement')).toBe(false)
   })
 })
 
 describe('separator（连接线形态）', () => {
   it('separator 缺省为 line：不设 data-separator', () => {
     const el = mount({})
-    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-separator')).toBe(
-      false,
-    )
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-separator')).toBe(false)
   })
 
   it('separator=dashed：data-separator 标记 + CSS border dashed（走 token）', () => {
@@ -878,16 +823,12 @@ describe('separator（连接线形态）', () => {
 
   it('separator 非法值回落 line（不设 data-separator）', () => {
     const el = mount({ separator: 'zigzag' })
-    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-separator')).toBe(
-      false,
-    )
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-separator')).toBe(false)
   })
 
   it('navigation 下 separator 不生效（导航自身箭头形态）', () => {
     const el = mount({ navigation: '', separator: 'arrow' })
-    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-separator')).toBe(
-      false,
-    )
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-separator')).toBe(false)
   })
 })
 
@@ -1026,7 +967,10 @@ describe('StepItem.prefix（自定义编号）', () => {
     const loading = mount({ steps: JSON.stringify([{ title: 'A', prefix: '01', loading: true }]) })
     expect(items(loading)[0]!.querySelector('.icon .spinner')).not.toBeNull()
     expect(items(loading)[0]!.querySelector('.icon')!.textContent).toBe('')
-    const pct = mount({ current: '0', steps: JSON.stringify([{ title: 'A', prefix: '01', percent: 40 }]) })
+    const pct = mount({
+      current: '0',
+      steps: JSON.stringify([{ title: 'A', prefix: '01', percent: 40 }]),
+    })
     expect(items(pct)[0]!.querySelector('.icon .progress-bar')).not.toBeNull()
   })
 
@@ -1044,9 +988,7 @@ describe('StepItem.prefix（自定义编号）', () => {
 })
 
 describe('max-count（中段折叠省略）', () => {
-  const TEN = JSON.stringify(
-    Array.from({ length: 10 }, (_, i) => ({ title: `S${i + 1}` })),
-  )
+  const TEN = JSON.stringify(Array.from({ length: 10 }, (_, i) => ({ title: `S${i + 1}` })))
 
   it('步骤数 <= max-count：全部显示，无省略步', () => {
     const el = mount({ 'max-count': '5', steps: STEPS })
@@ -1165,11 +1107,7 @@ describe('reverse（视觉倒序）', () => {
 
   it('状态推导不变：仍按 steps 数组序（前序 finish / 当前 process / 后续 wait）', () => {
     const el = mount({ reverse: '', current: '1' })
-    expect(items(el).map((i) => i.getAttribute('data-status'))).toEqual([
-      'finish',
-      'process',
-      'wait',
-    ])
+    expect(items(el).map((i) => i.getAttribute('data-status'))).toEqual(['finish', 'process', 'wait'])
   })
 
   it('aria-current 仍在数组 current 步（DOM 位置不变）', () => {
@@ -1220,9 +1158,7 @@ describe('reverse（视觉倒序）', () => {
 describe('content-placement（内容块位置）', () => {
   it('缺省 bottom：不设 data-content-placement（内容在指示器下方）', () => {
     const el = mount({})
-    expect(
-      el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
-    ).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement')).toBe(false)
   })
 
   it('right + 横向：容器标记 data-content-placement=right，item flex 行布局（icon 左、内容块右）', () => {
@@ -1237,9 +1173,7 @@ describe('content-placement（内容块位置）', () => {
 
   it('纵向忽略：direction=vertical 时不设标记（纵向本身即图标左/内容右）', () => {
     const el = mount({ direction: 'vertical', 'content-placement': 'right' })
-    expect(
-      el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
-    ).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement')).toBe(false)
   })
 
   it('与 label-placement 正交：同设时两个标记并存（各自独立语义）', () => {
@@ -1251,24 +1185,16 @@ describe('content-placement（内容块位置）', () => {
 
   it('非法值忽略（不设标记）', () => {
     const el = mount({ 'content-placement': 'top' })
-    expect(
-      el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
-    ).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement')).toBe(false)
   })
 
   it('progress-dot / navigation / simple 下让位（与 label-placement 同规则）', () => {
     const dot = mount({ 'progress-dot': '', 'content-placement': 'right' })
-    expect(
-      dot.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
-    ).toBe(false)
+    expect(dot.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement')).toBe(false)
     const nav = mount({ navigation: '', 'content-placement': 'right' })
-    expect(
-      nav.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
-    ).toBe(false)
+    expect(nav.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement')).toBe(false)
     const simple = mount({ simple: '', 'content-placement': 'right' })
-    expect(
-      simple.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
-    ).toBe(false)
+    expect(simple.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement')).toBe(false)
   })
 
   it('right 模式描述/extra 保留在右侧内容块（不隐藏）', () => {
@@ -1284,9 +1210,7 @@ describe('content-placement（内容块位置）', () => {
   it('right 模式连线对准指示器中心（与 label-placement=horizontal 同几何）', () => {
     const el = mount({ 'content-placement': 'right' })
     const css = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(css).toContain(
-      ".steps[data-content-placement='right'] .item:not(:last-child)::after",
-    )
+    expect(css).toContain(".steps[data-content-placement='right'] .item:not(:last-child)::after")
   })
 })
 
@@ -1390,9 +1314,7 @@ describe('arrow（箭头分格形态）', () => {
     expect(css).toContain(".steps[data-arrow='true'] .item[data-status='process']")
     expect(css).toContain('--oas-steps-item-bg: var(--oas-color-primary)')
     expect(css).toContain(".steps[data-arrow='true'] .item[data-status='finish']")
-    expect(css).toContain(
-      '--oas-steps-item-bg: color-mix(in srgb, var(--oas-color-primary) 15%, transparent)',
-    )
+    expect(css).toContain('--oas-steps-item-bg: color-mix(in srgb, var(--oas-color-primary) 15%, transparent)')
     expect(css).toContain(".steps[data-arrow='true'] .item[data-status='error']")
     expect(css).toContain('--oas-steps-item-bg: var(--oas-color-danger)')
     expect(css).toContain(".steps[data-arrow='true'] .item[data-status='wait']")
@@ -1404,9 +1326,7 @@ describe('arrow（箭头分格形态）', () => {
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     for (let i = 1; i <= 8; i++) {
       expect(css).toContain(`.steps[data-arrow='true'] .item:nth-child(${i})`)
-      expect(css).toContain(
-        `--oas-steps-arrow-item-bg-${i}, var(--oas-steps-item-bg, var(--oas-color-bg-hover))`,
-      )
+      expect(css).toContain(`--oas-steps-arrow-item-bg-${i}, var(--oas-steps-item-bg, var(--oas-color-bg-hover))`)
     }
   })
 

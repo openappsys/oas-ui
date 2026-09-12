@@ -170,9 +170,7 @@ describe('OASTabs', () => {
 
   it('左右方向键切换', () => {
     const el = mount()
-    el.shadowRoot!.querySelector('[role="tablist"]')!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'ArrowRight' }),
-    )
+    el.shadowRoot!.querySelector('[role="tablist"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
     expect(el.getAttribute('active')).toBe('b')
   })
 
@@ -281,9 +279,7 @@ describe('OASTabs', () => {
     expect(el.classList.contains('oas-tabs--left')).toBe(true)
     expect(el.classList.contains('oas-tabs--right')).toBe(false)
     expect(el.classList.contains('oas-tabs--bottom')).toBe(false)
-    expect(
-      el.shadowRoot!.querySelector('[role="tablist"]')!.classList.contains('tablist--vertical'),
-    ).toBe(true)
+    expect(el.shadowRoot!.querySelector('[role="tablist"]')!.classList.contains('tablist--vertical')).toBe(true)
   })
 
   it('tab-position 默认 top，可切换 right / bottom 并同步类名', () => {
@@ -331,8 +327,7 @@ describe('OASTabs', () => {
     expect(el.classList.contains('oas-tabs--vertical')).toBe(true)
     expect(el.classList.contains('oas-tabs--right')).toBe(true)
     const style = el.shadowRoot!.querySelector('style')!.textContent!
-    const cardRule =
-      style.match(/:host\(\.oas-tabs--card\.oas-tabs--vertical\) \.tab\s*\{[^}]*\}/)?.[0] ?? ''
+    const cardRule = style.match(/:host\(\.oas-tabs--card\.oas-tabs--vertical\) \.tab\s*\{[^}]*\}/)?.[0] ?? ''
     // 卡片盒式规则必须保留边框与圆角，且不覆盖右对齐
     expect(cardRule).toContain('border-radius: var(--oas-radius-md)')
     expect(cardRule).not.toContain('justify-content')
@@ -410,8 +405,7 @@ describe('OASTabs', () => {
 
   it('roving tabindex：仅选中标签 tabindex=0，切换后同步', () => {
     const el = mount()
-    const get = () =>
-      [...el.shadowRoot!.querySelectorAll('[role="tab"]')].map((t) => t.getAttribute('tabindex'))
+    const get = () => [...el.shadowRoot!.querySelectorAll('[role="tab"]')].map((t) => t.getAttribute('tabindex'))
     expect(get()).toEqual(['0', '-1'])
     el.setAttribute('active', 'b')
     expect(get()).toEqual(['-1', '0'])
@@ -421,9 +415,7 @@ describe('OASTabs', () => {
     const el = mount()
     const first = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"]')!
     first.focus()
-    el.shadowRoot!.querySelector('[role="tablist"]')!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'ArrowRight' }),
-    )
+    el.shadowRoot!.querySelector('[role="tablist"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
     const tabs = el.shadowRoot!.querySelectorAll('[role="tab"]')
     expect(el.getAttribute('active')).toBe('b')
     expect(el.shadowRoot!.activeElement).toBe(tabs[1])
@@ -474,9 +466,7 @@ describe('OASTabs', () => {
     const nav = el.shadowRoot!.querySelector('.nav')!
     // tablist 直接子元素全部是真 tab（+ 已移出滚动区）
     const children = [...tablist.children]
-    expect(
-      children.every((c) => c.getAttribute('role') === 'tab' && c.hasAttribute('data-value')),
-    ).toBe(true)
+    expect(children.every((c) => c.getAttribute('role') === 'tab' && c.hasAttribute('data-value'))).toBe(true)
     // + 按钮在 nav（滚动区外），role=button、可聚焦
     const add = nav.querySelector('.tab-add')!
     expect(tablist.contains(add)).toBe(false) // 不在 tablist 内
@@ -518,8 +508,7 @@ describe('OASTabs', () => {
     expect(svg!.getAttribute('aria-hidden')).toBe('true')
     // 非法 icon 名不渲染图标容器
     const bad = new OASTabs()
-    bad.innerHTML =
-      '<oas-tab-panel label="X" value="x" icon="not-exist"><p>内容</p></oas-tab-panel>'
+    bad.innerHTML = '<oas-tab-panel label="X" value="x" icon="not-exist"><p>内容</p></oas-tab-panel>'
     document.body.appendChild(bad)
     expect(bad.shadowRoot!.querySelector('.tab-icon')).toBeNull()
   })
@@ -553,12 +542,9 @@ describe('OASTabs', () => {
   it('非激活 tab hover 反馈：line 与 card 两模式均有规则且不覆盖选中项', () => {
     const el = mount({ type: 'card' })
     const style = el.shadowRoot!.querySelector('style')!.textContent!
-    const lineHover =
-      style.match(/\.tab:not\(\[aria-selected='true'\]\):hover\s*\{[^}]*\}/)?.[0] ?? ''
+    const lineHover = style.match(/\.tab:not\(\[aria-selected='true'\]\):hover\s*\{[^}]*\}/)?.[0] ?? ''
     const cardHover =
-      style.match(
-        /:host\(\.oas-tabs--card\) \.tab:not\(\[aria-selected='true'\]\):hover\s*\{[^}]*\}/,
-      )?.[0] ?? ''
+      style.match(/:host\(\.oas-tabs--card\) \.tab:not\(\[aria-selected='true'\]\):hover\s*\{[^}]*\}/)?.[0] ?? ''
     expect(lineHover).toContain('background')
     expect(lineHover).toContain('var(--oas-color-primary)')
     expect(cardHover).toContain('color-mix')
@@ -658,8 +644,7 @@ describe('OASTabs', () => {
       const el = new OASTabs()
       const panels = Array.from(
         { length: 10 },
-        (_, i) =>
-          `<oas-tab-panel label="标签${i + 1}" value="t${i}"><p>内容${i + 1}</p></oas-tab-panel>`,
+        (_, i) => `<oas-tab-panel label="标签${i + 1}" value="t${i}"><p>内容${i + 1}</p></oas-tab-panel>`,
       ).join('')
       el.innerHTML = panels
       document.body.appendChild(el)
@@ -740,8 +725,7 @@ describe('OASTabs', () => {
       el.setAttribute('more', '')
       el.innerHTML = Array.from(
         { length: count },
-        (_, i) =>
-          `<oas-tab-panel label="标签${i + 1}" value="t${i}"><p>内容${i + 1}</p></oas-tab-panel>`,
+        (_, i) => `<oas-tab-panel label="标签${i + 1}" value="t${i}"><p>内容${i + 1}</p></oas-tab-panel>`,
       ).join('')
       document.body.appendChild(el)
       const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
@@ -813,9 +797,7 @@ describe('OASTabs', () => {
       const el = mountMore(10, 100, 400) // 视口 0~400，可见 t0-t3，视口外 t4-t9
       ;(el as any).syncMore?.()
       ;(el.shadowRoot!.querySelector('.more-btn') as HTMLElement).click()
-      const dropValues = [...el.shadowRoot!.querySelectorAll('.more-item')].map((i) =>
-        i.getAttribute('data-value'),
-      )
+      const dropValues = [...el.shadowRoot!.querySelectorAll('.more-item')].map((i) => i.getAttribute('data-value'))
       // 视口外 t4-t9（下拉里），视口内 t0-t3 不在
       expect(dropValues).toContain('t9')
       expect(dropValues).not.toContain('t0')
@@ -847,17 +829,17 @@ describe('OASTabs', () => {
       const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
       ;(el as any).syncMore?.()
       // 初始 scrollLeft=0：视口外 t4-t9
-      const before = [
-        ...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-offview]'),
-      ].map((t) => t.getAttribute('data-value'))
+      const before = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-offview]')].map((t) =>
+        t.getAttribute('data-value'),
+      )
       expect(before).toContain('t9')
       expect(before).not.toContain('t0')
       // 滚到最右（scrollLeft=600）：视口 600~1000，t0-t3 滚出视口（左），t6-t9 可见
       Object.defineProperty(tablist, 'scrollLeft', { value: 600, configurable: true })
       ;(el as any).updateMoreOffview?.()
-      const after = [
-        ...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-offview]'),
-      ].map((t) => t.getAttribute('data-value'))
+      const after = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-offview]')].map((t) =>
+        t.getAttribute('data-value'),
+      )
       expect(after).toContain('t0') // 左侧滚出
       expect(after).not.toContain('t9') // 右侧已在视口
     })
@@ -938,8 +920,7 @@ describe('OASTabs', () => {
       document.body.appendChild(el)
       return el
     }
-    const panelOf = (el: OASTabs, v: string) =>
-      el.querySelector(`oas-tab-panel[value="${v}"]`) as HTMLElement
+    const panelOf = (el: OASTabs, v: string) => el.querySelector(`oas-tab-panel[value="${v}"]`) as HTMLElement
 
     it('keep（默认）：未激活面板 hidden 但内容保留 DOM', () => {
       const el = mountMode('keep')
@@ -1212,15 +1193,9 @@ describe('OASTabs', () => {
         dropEffect: '',
       } as unknown as DataTransfer
       // 拖 a 到 b 上
-      tabs[0]!.dispatchEvent(
-        new DragEvent('dragstart', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }),
-      )
-      tabs[1]!.dispatchEvent(
-        new DragEvent('dragover', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }),
-      )
-      tabs[1]!.dispatchEvent(
-        new DragEvent('drop', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }),
-      )
+      tabs[0]!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }))
+      tabs[1]!.dispatchEvent(new DragEvent('dragover', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }))
+      tabs[1]!.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }))
       expect(detail).toEqual({ fromIndex: 0, toIndex: 1 })
     })
   })
@@ -1299,9 +1274,7 @@ describe('OASTabs', () => {
         set: (v) => (scrollLeftVal = v),
         configurable: true,
       })
-      tablist.dispatchEvent(
-        new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true }),
-      )
+      tablist.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true }))
       expect(scrollLeftVal).toBeGreaterThan(0)
     })
 
@@ -1365,8 +1338,7 @@ describe('OASTabs', () => {
       el.setAttribute('more', '')
       el.innerHTML = Array.from(
         { length: count },
-        (_, i) =>
-          `<oas-tab-panel label="标签${i + 1}" value="t${i}"><p>内容${i + 1}</p></oas-tab-panel>`,
+        (_, i) => `<oas-tab-panel label="标签${i + 1}" value="t${i}"><p>内容${i + 1}</p></oas-tab-panel>`,
       ).join('')
       document.body.appendChild(el)
       const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
@@ -1400,8 +1372,7 @@ describe('OASTabs', () => {
       moreBtn.click()
       await Promise.resolve()
       const search = el.shadowRoot!.querySelector('.more-search') as HTMLInputElement
-      const allItems = () =>
-        [...el.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')].filter((i) => !i.hidden)
+      const allItems = () => [...el.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')].filter((i) => !i.hidden)
       const totalBefore = allItems().length
       expect(totalBefore).toBeGreaterThan(0)
       search.value = '标签9'
@@ -1518,9 +1489,7 @@ describe('OASTabs', () => {
     it('hide-indicator：选中 tab 的 ::after 指示线隐藏', () => {
       const el = mount({ 'hide-indicator': '' })
       const style = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(style).toMatch(
-        /hide-indicator[^{]*::after[^{]*\{[^}]*display:\s*none|hide-indicator[^{]*\.tab::after/,
-      )
+      expect(style).toMatch(/hide-indicator[^{]*::after[^{]*\{[^}]*display:\s*none|hide-indicator[^{]*\.tab::after/)
     })
   })
 
@@ -1545,9 +1514,7 @@ describe('OASTabs', () => {
       tablist.scrollBy = ((opts: ScrollToOptions) => {
         scrolled = (opts.left as number) ?? 0
       }) as typeof tablist.scrollBy
-      tablist.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true, cancelable: true }),
-      )
+      tablist.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true, cancelable: true }))
       expect(scrolled).toBeGreaterThan(0)
     })
 
@@ -1558,9 +1525,7 @@ describe('OASTabs', () => {
       tablist.scrollBy = ((opts: ScrollToOptions) => {
         scrolled = (opts.left as number) ?? 0
       }) as typeof tablist.scrollBy
-      tablist.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true, cancelable: true }),
-      )
+      tablist.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true, cancelable: true }))
       expect(scrolled).toBeLessThan(0)
     })
   })
@@ -1654,14 +1619,10 @@ describe('OASTabs', () => {
         <oas-tab-panel label="标签二" value="b"><p>内容</p></oas-tab-panel>
       `
       document.body.appendChild(el)
-      const closeA = el.shadowRoot!.querySelector<HTMLElement>(
-        '[role="tab"][data-value="a"] .tab-close',
-      )!
+      const closeA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"] .tab-close')!
       expect(closeA.textContent).toContain('✕✕')
       // 无 slot 的用默认 ×
-      const closeB = el.shadowRoot!.querySelector<HTMLElement>(
-        '[role="tab"][data-value="b"] .tab-close',
-      )!
+      const closeB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"] .tab-close')!
       expect(closeB.querySelector('svg')).not.toBeNull()
     })
 
@@ -1765,8 +1726,7 @@ describe('OASTabs', () => {
   describe('icon-only 纯图标标签', () => {
     it('panel icon-only：标签只渲染图标无文字（需 aria-label 兜底）', () => {
       const el = new OASTabs()
-      el.innerHTML =
-        '<oas-tab-panel label="消息" value="a" icon="mail" icon-only><p>内容</p></oas-tab-panel>'
+      el.innerHTML = '<oas-tab-panel label="消息" value="a" icon="mail" icon-only><p>内容</p></oas-tab-panel>'
       document.body.appendChild(el)
       const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
       expect(tabA.querySelector('.tab-icon')).not.toBeNull()

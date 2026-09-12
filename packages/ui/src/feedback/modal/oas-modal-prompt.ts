@@ -60,8 +60,7 @@ export class PromptController implements ReactiveController, ModalPromptCapabili
 
     // 输入控件 + 错误提示（light DOM；错误文案颜色/边框走 CSS 变量 token，含 dark 变体）
     const isTextarea = opts.inputType === 'textarea'
-    const input = document.createElement(isTextarea ? 'textarea' : 'input') as HTMLInputElement &
-      HTMLTextAreaElement
+    const input = document.createElement(isTextarea ? 'textarea' : 'input') as HTMLInputElement & HTMLTextAreaElement
     if (!isTextarea) input.type = (opts.inputType ?? 'text') as HTMLInputElement['type']
     input.value = opts.inputValue ?? ''
     input.setAttribute('aria-invalid', 'false')
@@ -79,8 +78,7 @@ export class PromptController implements ReactiveController, ModalPromptCapabili
     err.hidden = true
     err.setAttribute('role', 'alert')
     err.style.cssText =
-      'color: var(--oas-color-danger); font-size: var(--oas-font-size-sm); ' +
-      'line-height: 1.5; min-height: 1.2em;'
+      'color: var(--oas-color-danger); font-size: var(--oas-font-size-sm); ' + 'line-height: 1.5; min-height: 1.2em;'
     const wrap = document.createElement('div')
     wrap.className = 'oas-modal-prompt'
     wrap.style.cssText = 'margin-top: 12px; display: flex; flex-direction: column; gap: 4px;'

@@ -50,8 +50,7 @@ test('Vue property 劫持门禁：全页 SPA 扫描', async ({ page }) => {
         const vnode = (el as any).__vnode
         if (!vnode?.props) continue
         const lost = Object.keys(vnode.props).filter(
-          (k) =>
-            !/^(class|style|key|ref|on[A-Z])/.test(k) && !el.hasAttribute(k) && !hasSetter(el, k),
+          (k) => !/^(class|style|key|ref|on[A-Z])/.test(k) && !el.hasAttribute(k) && !hasSetter(el, k),
         )
         if (lost.length) {
           const tag = el.tagName.toLowerCase()

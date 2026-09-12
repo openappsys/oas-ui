@@ -565,11 +565,7 @@ export class OASTag extends OASElement {
   }
 
   /** href/target 增删会改变内部元素类型（span ↔ a），需重建 shadow；其余属性走 update() */
-  override attributeChangedCallback(
-    name: string,
-    oldValue: string | null,
-    newValue: string | null,
-  ): void {
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if ((name === 'href' || name === 'target') && this.hasRendered) {
       this.shadow.innerHTML = this.template()
       this.bind()
@@ -596,8 +592,7 @@ export class OASTag extends OASElement {
     // variant 形态维度：显式合法值生效；color 存在且未显式 variant 时按 filled 渲染（color 覆盖 type）
     const rawVariant = this.getAttr('variant', '')
     let variant = ''
-    if ((VALID_TAG_VARIANTS as readonly string[]).includes(rawVariant))
-      variant = rawVariant as TagVariant
+    if ((VALID_TAG_VARIANTS as readonly string[]).includes(rawVariant)) variant = rawVariant as TagVariant
     else if (color) variant = 'filled'
 
     const dot = this.hasAttr('dot')
@@ -632,10 +627,7 @@ export class OASTag extends OASElement {
       const isPreset = (PRESET_COLORS as readonly string[]).includes(color)
       const base = isPreset ? `var(--oas-preset-${color})` : color
       this.tagRoot.style.setProperty('--oas-tag-color', base)
-      this.tagRoot.style.setProperty(
-        '--oas-tag-color-deep',
-        `color-mix(in srgb, ${base} 80%, black)`,
-      )
+      this.tagRoot.style.setProperty('--oas-tag-color-deep', `color-mix(in srgb, ${base} 80%, black)`)
     } else {
       this.tagRoot.style.removeProperty('--oas-tag-color')
       this.tagRoot.style.removeProperty('--oas-tag-color-deep')

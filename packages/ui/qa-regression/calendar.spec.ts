@@ -27,10 +27,7 @@ test('calendar 模式切换：year 选中月份后自动切回月视图（value 
   await page.locator('#calendar-mode-year').click()
   await page.waitForFunction(() => {
     const el = document.querySelector('oas-calendar#calendar-mode')!
-    return (
-      el.getAttribute('mode') === 'year' &&
-      el.shadowRoot!.querySelectorAll('.month-cell').length === 12
-    )
+    return el.getAttribute('mode') === 'year' && el.shadowRoot!.querySelectorAll('.month-cell').length === 12
   })
   // 年视图下点 2026 年 7 月 → value 更新 + 自动切回月视图
   await page.evaluate(() => {
@@ -83,5 +80,3 @@ test('calendar header 组合：外部操作条 + 组件卡片，内置导航仍�
   expect(r.nextBtn).toBe(true)
   expect(r.titleText).toContain('2026')
 })
-
-

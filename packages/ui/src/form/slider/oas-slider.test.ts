@@ -145,18 +145,10 @@ describe('OASSlider', () => {
         max: '100',
         marks: JSON.stringify([0, 26, 60]),
       })
-      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual([
-        'true',
-        'true',
-        'false',
-      ])
+      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual(['true', 'true', 'false'])
       // 值增大后增量刷新高亮
       el.setAttribute('value', '70')
-      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual([
-        'true',
-        'true',
-        'true',
-      ])
+      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual(['true', 'true', 'true'])
       expect(markItems(el)).toHaveLength(3)
     })
 
@@ -355,12 +347,7 @@ describe('OASSlider', () => {
         max: '100',
         marks: JSON.stringify([0, 26, 60, 100]),
       })
-      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual([
-        'false',
-        'true',
-        'true',
-        'false',
-      ])
+      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual(['false', 'true', 'true', 'false'])
     })
   })
 
@@ -805,7 +792,13 @@ describe('OASSlider', () => {
     })
 
     it('拖动到非刻度值吸附最近刻度（含 value 写回）', () => {
-      const el = mount({ step: 'mark', marks: JSON.stringify([0, 26, 60]), min: '0', max: '100', value: '26' })
+      const el = mount({
+        step: 'mark',
+        marks: JSON.stringify([0, 26, 60]),
+        min: '0',
+        max: '100',
+        value: '26',
+      })
       const input = range(el)
       input.value = '30'
       input.dispatchEvent(new Event('input'))
@@ -817,7 +810,13 @@ describe('OASSlider', () => {
     })
 
     it('受控 value 为非刻度值时显示层吸附', () => {
-      const el = mount({ step: 'mark', marks: JSON.stringify([0, 26, 60]), min: '0', max: '100', value: '40' })
+      const el = mount({
+        step: 'mark',
+        marks: JSON.stringify([0, 26, 60]),
+        min: '0',
+        max: '100',
+        value: '40',
+      })
       expect(Number(range(el).value)).toBe(26)
     })
 
@@ -846,20 +845,28 @@ describe('OASSlider', () => {
     })
 
     it('键盘 Arrow 在刻度间跳档（非连续步进）', () => {
-      const el = mount({ step: 'mark', marks: JSON.stringify([0, 26, 60, 100]), min: '0', max: '100', value: '26' })
+      const el = mount({
+        step: 'mark',
+        marks: JSON.stringify([0, 26, 60, 100]),
+        min: '0',
+        max: '100',
+        value: '26',
+      })
       const input = range(el)
-      input.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
-      )
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }))
       expect(Number(input.value)).toBe(60)
-      input.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
-      )
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }))
       expect(Number(input.value)).toBe(26)
     })
 
     it('键盘 Home/End 跳到首末刻度', () => {
-      const el = mount({ step: 'mark', marks: JSON.stringify([0, 26, 60, 100]), min: '0', max: '100', value: '26' })
+      const el = mount({
+        step: 'mark',
+        marks: JSON.stringify([0, 26, 60, 100]),
+        min: '0',
+        max: '100',
+        value: '26',
+      })
       const input = range(el)
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }))
       expect(Number(input.value)).toBe(100)
@@ -946,16 +953,17 @@ describe('OASSlider', () => {
         value: '-40',
         marks: JSON.stringify([-100, -20, 0, 60]),
       })
-      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual([
-        'false',
-        'true',
-        'true',
-        'false',
-      ])
+      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual(['false', 'true', 'true', 'false'])
     })
 
     it('range 模式忽略 start-point（区间填充不变）', () => {
-      const el = mount({ range: '', 'start-point': '0', min: '-100', max: '100', value: '[20, 60]' })
+      const el = mount({
+        range: '',
+        'start-point': '0',
+        min: '-100',
+        max: '100',
+        value: '[20, 60]',
+      })
       const fill = fillEl(el)
       expect(fill.style.left).toBe('60%')
       expect(fill.style.width).toBe('20%')

@@ -90,9 +90,7 @@ describe('OASCode', () => {
       configurable: true,
     })
     const el = mount({ code: 'const a = 1' })
-    const copyEvent = new Promise<CustomEvent>((res) =>
-      el.addEventListener('oas-copy', res as EventListener),
-    )
+    const copyEvent = new Promise<CustomEvent>((res) => el.addEventListener('oas-copy', res as EventListener))
     el.shadowRoot!.querySelector<HTMLButtonElement>('[part="copy"]')!.click()
     const evt = await copyEvent
     expect((evt.detail as { text: string }).text).toBe('const a = 1')
@@ -104,9 +102,7 @@ describe('OASCode', () => {
       configurable: true,
     })
     const el = mount({ code: 'x' })
-    const errEvent = new Promise<CustomEvent>((res) =>
-      el.addEventListener('oas-copy-error', res as EventListener),
-    )
+    const errEvent = new Promise<CustomEvent>((res) => el.addEventListener('oas-copy-error', res as EventListener))
     el.shadowRoot!.querySelector<HTMLButtonElement>('[part="copy"]')!.click()
     const evt = await errEvent
     expect((evt.detail as { text: string }).text).toBe('x')
@@ -250,9 +246,7 @@ describe('OASCode', () => {
     it('预设名映射 --oas-preset-*-text 达标 token（inline 语境文字色）', () => {
       const el = mount({ code: 'x', inline: '', color: 'geekblue' })
       const inlineEl = el.shadowRoot!.querySelector('.inline') as HTMLElement
-      expect(inlineEl.style.getPropertyValue('--oas-code-color')).toBe(
-        'var(--oas-preset-geekblue-text)',
-      )
+      expect(inlineEl.style.getPropertyValue('--oas-code-color')).toBe('var(--oas-preset-geekblue-text)')
     })
 
     it('任意 CSS 色值直注入（#hex）', () => {

@@ -85,12 +85,8 @@ describe('OASTabs manager 能力边界（纯核 core 入口：未 import manager
       effectAllowed: '',
       dropEffect: '',
     } as unknown as DataTransfer
-    tabs[0]!.dispatchEvent(
-      new DragEvent('dragstart', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }),
-    )
-    tabs[1]!.dispatchEvent(
-      new DragEvent('drop', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }),
-    )
+    tabs[0]!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }))
+    tabs[1]!.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }))
     expect(fired).toBe(0)
   })
 

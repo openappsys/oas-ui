@@ -24,34 +24,26 @@ test('form-item label 点击聚焦 oas-input 的 shadow 内 input（focus 委托
   expect(r.sameAsInput).toBe(true)
 })
 
-test('form inline：表单项水平排列（同一行）、label 在控件左侧、空提交必填错误在控件下方', async ({
-  page,
-}) => {
+test('form inline：表单项水平排列（同一行）、label 在控件左侧、空提交必填错误在控件下方', async ({ page }) => {
   // 曾现风险：inline 仅声明属性但无视觉效果（form 未切 flex / form-item 未感知行内）
   await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-form[inline] oas-form-item oas-input')
   const r = await page.evaluate(() => {
     const form = document.querySelector('#form-inline-login')!
     const formEl = form.shadowRoot!.querySelector('form')!
-    const items = [...form.querySelectorAll('oas-form-item')].filter((i) =>
-      i.querySelector('oas-input, oas-select'),
-    )
+    const items = [...form.querySelectorAll('oas-form-item')].filter((i) => i.querySelector('oas-input, oas-select'))
     const first = items[0]!
     const second = items[1]!
     const a = first.getBoundingClientRect()
     const b = second.getBoundingClientRect()
-    const labelBox = first
-      .shadowRoot!.querySelector<HTMLElement>('[part="label"]')!
-      .getBoundingClientRect()
+    const labelBox = first.shadowRoot!.querySelector<HTMLElement>('[part="label"]')!.getBoundingClientRect()
     const controlBox = first.querySelector<HTMLElement>('oas-input')!.getBoundingClientRect()
     return {
       flex: getComputedStyle(formEl).display,
       wrap: getComputedStyle(formEl).flexWrap,
       sameRow: Math.abs(a.top - b.top) < 4 && b.left > a.right,
       labelLeftOfControl: labelBox.right <= controlBox.left + 1,
-      labelWidth: first
-        .shadowRoot!.querySelector<HTMLElement>('[part="label"]')!
-        .getBoundingClientRect().width,
+      labelWidth: first.shadowRoot!.querySelector<HTMLElement>('[part="label"]')!.getBoundingClientRect().width,
     }
   })
   expect(r.flex).toBe('flex')
@@ -76,9 +68,7 @@ test('form inline：表单项水平排列（同一行）、label 在控件左侧
       text: err.textContent,
       belowInput: errBox.top >= input.bottom - 1,
       labelLeftOfInput:
-        item.shadowRoot!.querySelector<HTMLElement>('[part="label"]')!.getBoundingClientRect()
-          .right <=
-        input.left + 1,
+        item.shadowRoot!.querySelector<HTMLElement>('[part="label"]')!.getBoundingClientRect().right <= input.left + 1,
     }
   })
   expect(err.text).toContain('请输入用户名')

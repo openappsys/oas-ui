@@ -14,13 +14,7 @@ const STYLE = `
 }
 `
 
-type Justify =
-  | 'flex-start'
-  | 'center'
-  | 'flex-end'
-  | 'space-between'
-  | 'space-around'
-  | 'space-evenly'
+type Justify = 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly'
 type Align = 'stretch' | 'flex-start' | 'center' | 'flex-end' | 'baseline'
 
 // justify 简写（start/end/between/around/evenly）与旧枚举（flex-* / space-*）双向兼容
@@ -66,9 +60,7 @@ const warnedBreakpoints = new Set<string>()
 function warnBreakpoint(name: string): void {
   if (warnedBreakpoints.has(name)) return
   warnedBreakpoints.add(name)
-  console.warn(
-    `[oas-flex] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`,
-  )
+  console.warn(`[oas-flex] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
 }
 
 const warnedDirectionValues = new Set<string>()
@@ -88,9 +80,7 @@ function warnDirectionValue(value: string): void {
  * - 首个 token 不含冒号视为基础值，缺省时回落（方向 row / 间距 normal=0）；
  * - 非法断点名丢弃该规则 + dev 告警（同值去重）。
  */
-function parseBreakpointShorthand(
-  raw: string,
-): { base: string; rules: Array<{ name: string; value: string }> } | null {
+function parseBreakpointShorthand(raw: string): { base: string; rules: Array<{ name: string; value: string }> } | null {
   if (!raw.includes(' ')) return null
   const tokens = raw.trim().split(/\s+/)
   if (!tokens.some((t) => t.includes(':'))) return null
@@ -172,9 +162,7 @@ export class OASFlex extends OASElement {
     const direction = this.getAttr('direction', 'row')
     const dirShorthand = vertical ? null : parseBreakpointShorthand(direction)
     const dirBase =
-      directionToFlex(
-        vertical ? 'column' : dirShorthand ? dirShorthand.base || 'row' : direction,
-      ) || 'row'
+      directionToFlex(vertical ? 'column' : dirShorthand ? dirShorthand.base || 'row' : direction) || 'row'
 
     // direction：断点简写 → var() 兜底基础值 + shadow @media 规则；纯基础值保持原内联直写
     let directionCss = ''
@@ -199,10 +187,7 @@ export class OASFlex extends OASElement {
     if (gapShorthand) {
       wrap.style.gap = `var(--oas-flex-gap, ${toLen(gapShorthand.base) || 'normal'})`
       gapCss = gapShorthand.rules
-        .map(
-          (r) =>
-            `@media (min-width: ${BREAKPOINTS[r.name]}) { :host { --oas-flex-gap: ${toLen(r.value)} } }`,
-        )
+        .map((r) => `@media (min-width: ${BREAKPOINTS[r.name]}) { :host { --oas-flex-gap: ${toLen(r.value)} } }`)
         .join('\n')
     } else {
       wrap.style.gap = toLen(gap)
@@ -223,9 +208,7 @@ export class OASFlex extends OASElement {
    * 序列化 shadowRoot.innerHTML 同步产出，两段路径一致）。无断点时清空。
    */
   private syncBreakpointStyle(directionCss: string, gapCss: string): void {
-    const styleEl = this.shadow.querySelector<HTMLStyleElement>(
-      'style[data-oas-flex-breakpoints]',
-    )
+    const styleEl = this.shadow.querySelector<HTMLStyleElement>('style[data-oas-flex-breakpoints]')
     if (!styleEl) return
     styleEl.textContent = [directionCss, gapCss].filter(Boolean).join('\n')
   }

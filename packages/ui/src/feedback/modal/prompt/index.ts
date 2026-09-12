@@ -1,9 +1,6 @@
 import { registerModalCapability } from '../oas-modal-capability.js'
 import { OASModal } from '../oas-modal.js'
-import {
-  PromptController,
-  createPromptController,
-} from '../oas-modal-prompt.js'
+import { PromptController, createPromptController } from '../oas-modal-prompt.js'
 
 /**
  * modal 输入确认（prompt）能力包入口（ESM 子路径 `@oas-ui/ui/feedback/modal/prompt`）。

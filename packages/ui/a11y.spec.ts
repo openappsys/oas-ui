@@ -37,9 +37,7 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
         .disableRules(['color-contrast'])
         .analyze()
-      const serious = results.violations.filter((v) =>
-        ['critical', 'serious'].includes(v.impact ?? ''),
-      )
+      const serious = results.violations.filter((v) => ['critical', 'serious'].includes(v.impact ?? ''))
       expect(serious.map((v) => `${v.id}: ${v.help}`)).toEqual([])
     })
   }
