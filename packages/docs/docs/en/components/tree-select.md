@@ -410,6 +410,10 @@ onMounted(() => {
 })
 </script>
 
+## Mobile form (bottom sheet)
+
+On touch screens (coarse pointer) or narrow viewports (<768px), the panel is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the search box and tree scroll inside the sheet; the desktop form keeps the original floating dropdown.
+
 ## API
 
 ### Attributes
@@ -434,7 +438,7 @@ onMounted(() => {
 | `max` | Multi-select limit (by checked-set size) | `string` | — |
 | `max-tag-count` | Collapse multi-select tags beyond the count into +N (title lists hidden items) | `string` | — |
 | `multiple` | Multiple select + parent-child cascade | `boolean` | — |
-| `open` | Controlled open (presence = controlled; `"false"` = controlled-closed); flips fire oas-open-change | `string` | — |
+| `open` | Controlled open (presence = controlled; `"false"` = controlled-closed); flips fire oas-open-change; in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | `string` | — |
 | `options` | Tree options, JSON array, supports `children` / `disabled` | `TreeOption[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
 | `prefix-text` | Trigger prefix content (slot="prefix" accepts any content) | `string` | — |

@@ -464,7 +464,7 @@
       "expand-trigger": "Sub-level expansion trigger: `click` (default) / `hover` (120ms delay to prevent misfires)",
       "size": "Size preset `small` / `medium` (default) / `large`",
       "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid",
-      "open": "Controlled open state (single source of truth)",
+      "open": "Controlled open state (single source of truth); in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown",
       "max-tag-count": "Collapse multi-select tags beyond the count into +N (with title listing hidden items)"
     },
     "events": {
@@ -762,7 +762,7 @@
       "max": "Selectable range (ISO date); navigation buttons gray out at the boundary",
       "min": "Selectable range (ISO date); navigation buttons gray out at the boundary",
       "multiple": "Multiple selection (only `type=date`), value is a JSON array; the typing channel is read-only in this mode",
-      "open": "Controlled open: present = open, removed = closed; gestures only emit `oas-open-change` for the host to write back",
+      "open": "Controlled open: present = open, removed = closed; gestures only emit `oas-open-change` for the host to write back; in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown",
       "placeholder": "Placeholder text",
       "placement": "Popup placement, 12 directions: `top`/`bottom`/`left`/`right` × `-start`/`-end` (default `bottom-start`); auto right-aligns near the viewport right edge, flips upward when space below is insufficient, and clamps into the viewport",
       "readonly": "Readonly: the panel can be opened and browsed (cells keyboard-navigable), but no interaction commits",
@@ -3024,7 +3024,7 @@
       "field-names": "Field-alias JSON (e.g. `{\"label\":\"name\",\"value\":\"id\",\"children\":\"subs\"}`; options are not copy-mapped — node-render receives your original objects)",
       "max-tag-count": "Collapse multi-select tags beyond the count into +N (title lists hidden items)",
       "max": "Multi-select limit (by checked-set size)",
-      "open": "Controlled open (presence = controlled; `\"false\"` = controlled-closed); flips fire oas-open-change",
+      "open": "Controlled open (presence = controlled; `\"false\"` = controlled-closed); flips fire oas-open-change; in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown",
       "default-expand-all": "Expand all nodes by default (applies when the expanded attribute is absent; frozen after the first internal toggle)",
       "tree-lines": "Tree indentation guide lines",
       "loading": "Panel loading state (during lazy load / remote search)",
