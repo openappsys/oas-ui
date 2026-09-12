@@ -799,6 +799,17 @@ describe('面板能力', () => {
     expect(aug1.querySelector('.cell-dot')).not.toBeNull()
     expect(aug1.querySelector<HTMLElement>('[data-cell-date]')!.textContent).toBe('1')
   })
+
+  it('cell 渲染防御：template[slot=cell] 为空（内容被上层编译器吞掉）时不清空日格，保留日期数字', () => {
+    const el = mount({ value: '2026-08-09' })
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'cell')
+    el.appendChild(tpl) // 空模板
+    open(el)
+    const aug1 = day(el, '2026-08-01')
+    expect(aug1.querySelector('.cell-dot')).toBeNull()
+    expect(aug1.textContent!.trim()).toBe('1')
+  })
 })
 
 // ---- 手输通道（单值类型：date / month / year / week / datetime） ----
