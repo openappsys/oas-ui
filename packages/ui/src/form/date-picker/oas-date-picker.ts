@@ -104,6 +104,8 @@ const STYLE = `
   width: 220px;
   /* 尺寸档内部控高变量（data-size 镜像切换；不占公开 API，外部请用 size 属性） */
   --_ch: var(--oas-control-height-md);
+  /* 非范围面板的收窄宽度（月/年/季面板与日网格统一 240；内部变量，不占公开 API） */
+  --_dp-narrow-w: 240px;
 }
 :host([data-size='small']) {
   --_ch: var(--oas-control-height-sm);
@@ -284,8 +286,18 @@ const STYLE = `
 [part='panel'] {
   min-width: 240px;
 }
+/* 非范围面板收窄到与日网格同宽：月/年网格的 fr 轨道在 shrink-to-fit 容器里会塌缩到内容宽、
+   把面板撑宽并在右侧留大片空白（实测 month 面板 378→240 后右侧空白归零）。 */
+[part='panel']:not(.range-panel) {
+  width: var(--_dp-narrow-w);
+}
 [part='panel'].range-panel {
   min-width: 480px;
+}
+/* 范围面板两栏均分（原先按内容宽排布，右侧留白） */
+[part='panel'] .range-grid {
+  flex: 1;
+  min-width: 0;
 }
 [part='panel'] .panel-body {
   min-width: 0;
@@ -415,6 +427,11 @@ const STYLE = `
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--oas-space-1);
+}
+/* 非范围时显式等于面板宽：网格宽度确定后 fr 轨道才会均分；否则轨道塌缩到内容宽、右侧留白 */
+[part='panel']:not(.range-panel):not(.shortcuts-left) .months,
+[part='panel']:not(.range-panel):not(.shortcuts-left) .years {
+  width: var(--_dp-narrow-w);
 }
 [part='panel'] .quarters {
   display: grid;

@@ -137,7 +137,7 @@ format 支持 `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` token（week / quarter 为固定�
 ## 单元格渲染
 
 <DemoBlock title="日历标记（oas-cell-render / template[slot=cell]）">
-  <oas-date-picker id="date-picker-cell-render" value="2026-08-09">
+  <oas-date-picker v-pre id="date-picker-cell-render" value="2026-08-09">
     <template slot="cell">
       <span class="cell-dot"></span>
       <span data-cell-date></span>
