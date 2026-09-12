@@ -21,8 +21,11 @@ for (const page of PAGES) {
     for (let i = 0; i < count; i++) {
       const block = blocks.nth(i)
       await block.locator('.demo-block__toggle').click()
-      const code = block.locator('.demo-block__code code')
-      // 点击后代码块异步渲染（v-show + 高亮），用自动重试等待非空，避免并行高负载下读空 flaky
+      // 代码块异步渲染：先 fallback（`.demo-block__code > pre`），Shiki 高亮完成后换成
+      // `.demo-block__code-body`（template+script 两段、各含 <code>）。用「二选一状态」的容器定位，
+      // 避免命中多个 code 触发 strict mode——快 server 下高亮更快完成，旧的 `.demo-block__code code`
+      // 会同时匹配 fallback 与高亮两处/多段而挂（曾误报为空）。
+      const code = block.locator('.demo-block__code-body, .demo-block__code > pre')
       await expect(code, `${page} 第 ${i + 1} 个 DemoBlock 示例代码为空`).not.toBeEmpty()
       // 图标墙块源码只有 <div id="icon-wall">，oas-icon 由 onMounted 动态 import 生成
       // （纯 SVG 画廊），故按内容精准豁免（曾用序号豁免，demo 块增减后序号漂移误伤）；
@@ -31,9 +34,7 @@ for (const page of PAGES) {
       const isIconWallBlock = blockHtml.includes('id="icon-wall"')
       if (!isIconWallBlock) {
         // 代码里应包含至少一个 oas- 组件标签
-        await expect(code, `${page} 第 ${i + 1} 个 DemoBlock 无组件标签`).toContainText(
-          /oas-[a-z-]+/,
-        )
+        await expect(code, `${page} 第 ${i + 1} 个 DemoBlock 无组件标签`).toContainText(/oas-[a-z-]+/)
       }
     }
   })

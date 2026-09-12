@@ -66,9 +66,7 @@ test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', as
     const table = document.querySelector('#table-edit')!
     const input = table.shadowRoot!.querySelector<HTMLInputElement>('input.cell-editor')!
     input.value = '演示提交'
-    input.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true }),
-    )
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true }))
   })
   await page.waitForFunction(
     () => {
@@ -111,9 +109,7 @@ test('table 行内编辑：真实双击进入编辑（真实 dblclick，非 disp
   expect(hasEditor, '真实双击应进入行内编辑').toBe(true)
 })
 
-test('table 行内编辑几何稳定：进/出编辑列宽与行高零跳变（input 与 select 编辑器）', async ({
-  page,
-}) => {
+test('table 行内编辑几何稳定：进/出编辑列宽与行高零跳变（input 与 select 编辑器）', async ({ page }) => {
   // 缺陷固化：进编辑时整列被撑宽（89→187）、邻列挤窄文字换行、行高联动 49→73——三个来源：
   // ①input 默认 size=20 的内在宽度成为 auto 布局 min-content 贡献；②select 内在宽度=最长选项
   // +下拉钮；③操作列「编辑」→「保存/取消」变宽挤压邻列。修复=不可见占位保原文本布局贡献
@@ -125,9 +121,7 @@ test('table 行内编辑几何稳定：进/出编辑列宽与行高零跳变（i
     page.evaluate(() => {
       const sr = document.querySelector('#table-edit')!.shadowRoot!
       return {
-        cols: [...sr.querySelectorAll('thead th')].map((th) =>
-          Math.round(th.getBoundingClientRect().width),
-        ),
+        cols: [...sr.querySelectorAll('thead th')].map((th) => Math.round(th.getBoundingClientRect().width)),
         rowH: Math.round(sr.querySelector('tbody tr.row')!.getBoundingClientRect().height),
       }
     })
@@ -145,10 +139,7 @@ test('table 行内编辑几何稳定：进/出编辑列宽与行高零跳变（i
   expect((await measure()).cols, '退出编辑列宽应还原').toEqual(base.cols)
 
   // select 编辑器（职位列）
-  const selectCell = page
-    .locator('#table-edit tbody tr.row')
-    .first()
-    .locator('td.editable-cell[data-col="position"]')
+  const selectCell = page.locator('#table-edit tbody tr.row').first().locator('td.editable-cell[data-col="position"]')
   await selectCell.dblclick()
   await page.waitForTimeout(300)
   const inSelect = await measure()
@@ -206,9 +197,7 @@ test('table 吸顶行：sticky-rows 前 N 行带 data-sticky 且与固定列共�
   expect(parseFloat(r[0]!.top), '吸顶行 top 应大于 0（表头下方）').toBeGreaterThan(0)
 })
 
-test('table size 密度档位：small/medium/large 三档 padding+字号阶梯，组件级变量覆盖优先', async ({
-  page,
-}) => {
+test('table size 密度档位：small/medium/large 三档 padding+字号阶梯，组件级变量覆盖优先', async ({ page }) => {
   // 设计（主流三档密度惯例）：档位全走 CSS 变量 token
   // （--_cell-py/--_cell-px/font-size），宿主 --oas-table-* 变量优先级高于档位；
   // row-height 显式值与档位正交（虚拟滚动行高由 row-height 管，不受档位影响）。
@@ -322,9 +311,7 @@ test('table 表头吸顶：非固定列表头纵向 sticky 不被覆盖失效（
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-table')
   const result = await page.evaluate(() => {
-    const block = [...document.querySelectorAll('.demo-block')].find((b) =>
-      b.textContent.includes('sticky-rows'),
-    )!
+    const block = [...document.querySelectorAll('.demo-block')].find((b) => b.textContent.includes('sticky-rows'))!
     const table = block.querySelector('oas-table')!
     const sr = table.shadowRoot!
     const scroll = sr.querySelector('.table-scroll') as HTMLElement
@@ -334,7 +321,11 @@ test('table 表头吸顶：非固定列表头纵向 sticky 不被覆盖失效（
       position: getComputedStyle(th).position,
       top: Math.round(th.getBoundingClientRect().top),
     }))
-    return { scrollTop: scroll.scrollTop, scrollTop0: Math.round(scroll.getBoundingClientRect().top), ths }
+    return {
+      scrollTop: scroll.scrollTop,
+      scrollTop0: Math.round(scroll.getBoundingClientRect().top),
+      ths,
+    }
   })
   expect(result.scrollTop, '容器应已滚动').toBe(300)
   for (const th of result.ths) {
@@ -344,9 +335,7 @@ test('table 表头吸顶：非固定列表头纵向 sticky 不被覆盖失效（
   }
 })
 
-test('table 单元格模板 cellTemplate：property 通道注入的模板渲染自定义单元格（docs demo 同路径）', async ({
-  page,
-}) => {
+test('table 单元格模板 cellTemplate：property 通道注入的模板渲染自定义单元格（docs demo 同路径）', async ({ page }) => {
   // 缺陷固化：cellTemplate demo 的 <template> 子内容被 md/Vue 编译管线吃空（dev 与生产构建
   // 处理不一致），姓名/价格列全空（用户实测）。demo 改 property 通道（JS 构造 HTMLTemplateElement，
   // whenDefined 后赋值防升级前 expando 遮蔽）。本断言锁定模板列真实渲染（含插值与样式标记）。
@@ -368,9 +357,7 @@ test('table 单元格模板 cellTemplate：property 通道注入的模板渲染�
   expect(cells[2]!.text, '城市列常规渲染').toBe('北京')
 })
 
-test('table 多级表头：非 bordered 模式顶层头行零竖线（竖线只属 bordered 全网格模式）', async ({
-  page,
-}) => {
+test('table 多级表头：非 bordered 模式顶层头行零竖线（竖线只属 bordered 全网格模式）', async ({ page }) => {
   // 设计固化：非 bordered 表全表无纵向分隔线（单层表头/正文一致），分组层级靠「居中大标题跨列 +
   // 子表头行」表达；竖线只属 :host([bordered])。曾有 th.header-group+th.header-group 左线是
   // 语言孤例（且只覆盖组/组相邻——用户实测「地址有线、成绩没线」的不一致），已删。
@@ -398,37 +385,31 @@ test('table 多级表头：非 bordered 模式顶层头行零竖线（竖线只�
   }
 })
 
-test('table 子元素声明式通道：Vue 宿主下 key 被剥离也能经 data-key 正常渲染单元格', async ({
-  page,
-}) => {
-
+test('table 子元素声明式通道：Vue 宿主下 key 被剥离也能经 data-key 正常渲染单元格', async ({ page }) => {
   // 缺陷固化：`key` 是 Vue 模板保留字（vnode key），在 Vue 宿主（含文档站）被剥离不到 DOM——
   // 声明式列 key 全空 → 表头有、内容行全空（用户实测）。修复：key 双通道（key ?? data-key），
   // demo 全部改写 data-key。本断言在真实 Vue 宿主（vitepress 页面）验证端到端。
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-table')
   const result = await page.evaluate(() => {
-    const block = [...document.querySelectorAll('.demo-block')].find((b) =>
-      b.querySelector('oas-table-column'),
-    )!
+    const block = [...document.querySelectorAll('.demo-block')].find((b) => b.querySelector('oas-table-column'))!
     const table = block.querySelector('oas-table')!
     const sr = table.shadowRoot!
     return {
       headers: [...sr.querySelectorAll('thead th')].map((th) => th.textContent!.trim()),
-      firstRow: [...sr.querySelectorAll('tbody tr.row')[0]!.querySelectorAll('td')].map((td) =>
-        td.textContent!.trim(),
-      ),
+      firstRow: [...sr.querySelectorAll('tbody tr.row')[0]!.querySelectorAll('td')].map((td) => td.textContent!.trim()),
     }
   })
   expect(result.headers.length).toBeGreaterThanOrEqual(3)
   expect(result.firstRow[0], '首行首列应有值（张三）').toBe('张三')
   expect(result.firstRow[1], '首行次列应有值（30）').toBe('30')
-  expect(result.firstRow.some((c) => c === ''), '首行不应有空单元格').toBe(false)
+  expect(
+    result.firstRow.some((c) => c === ''),
+    '首行不应有空单元格',
+  ).toBe(false)
 })
 
-test('table 行内 oas-button 点击不连带 oas-row-click（宿主无 role，排除清单须点名组件）', async ({
-  page,
-}) => {
+test('table 行内 oas-button 点击不连带 oas-row-click（宿主无 role，排除清单须点名组件）', async ({ page }) => {
   // 缺陷固化：行点击排除清单 button,a,input,select,textarea,[role],oas-popconfirm 命中不了
   // <oas-button> 宿主——自定义组件宿主自身无 role 属性，行内放 oas-button（如行编辑按钮）点击
   // 会连带派发 oas-row-click → 「行点击 + 按钮点击」双重响应（真实场景双弹窗）。修复=排除清单
@@ -584,10 +565,25 @@ test('table 可编辑格内 oas-button 双击不进入编辑（编辑路径排�
       ]),
     )
     ;(document.querySelector('.vp-doc') ?? document.body).append(t)
-    const btn = document.createElement('oas-button')
-    btn.textContent = '改名'
-    t.shadowRoot!.querySelector('td[data-col="name"]')!.appendChild(btn)
   })
+  // 表格连接后异步渲染 shadow，会覆盖此前手动 append 的节点——用 waitForFunction 反复补挂，
+  // 直到 oas-button 稳定存在于格内（避免与异步渲染竞态；快 server 下渲染更早、更易撞上）。
+  await page.waitForFunction(
+    () => {
+      const t = document.querySelector('#qa-edit-inline-oas-button') as HTMLElement | null
+      const td = t?.shadowRoot?.querySelector('td[data-col="name"]')
+      if (!td) return false
+      if (!td.querySelector('oas-button')) {
+        const btn = document.createElement('oas-button')
+        btn.textContent = '改名'
+        td.appendChild(btn)
+        return false
+      }
+      return true
+    },
+    null,
+    { timeout: 15000 },
+  )
   // 真实双击可编辑格内 oas-button：按钮连点不得判为「双击编辑」
   await page.locator('#qa-edit-inline-oas-button td[data-col="name"] oas-button').dblclick()
   await page.waitForTimeout(300)
@@ -648,9 +644,7 @@ test('table selected / empty-text 进 observedAttributes：纯受控 setAttribut
   expect(r.emptyText, 'setAttribute empty-text 应立即更新空态文案').toBe('受控空态文案')
 })
 
-test('table 多级表头 + column-keys 重排：表头叶列与数据列顺序一致（组头按数据列顺序重组）', async ({
-  page,
-}) => {
+test('table 多级表头 + column-keys 重排：表头叶列与数据列顺序一致（组头按数据列顺序重组）', async ({ page }) => {
   // 缺陷固化：buildHeaderGrid 按原始列树渲染组头/叶头，数据列走 effectiveColumns
   // （column-keys 过滤+排序）——列拖拽重排（写回 column-keys）后表头叶列与数据列顺序脱节。
   // 修复：column-keys 受控时按有效叶序重组表头树（连续同组叶子并入原组）。
@@ -688,9 +682,7 @@ test('table 多级表头 + column-keys 重排：表头叶列与数据列顺序�
     const thKey = (th: Element) => th.getAttribute('data-key')
     const topRow = [...t.shadowRoot!.querySelectorAll('thead > tr')][0]!
     const bottomRow = [...t.shadowRoot!.querySelectorAll('thead > tr')][1]!
-    const dataCols = [...t.shadowRoot!.querySelectorAll('tbody tr.row td')].map((td) =>
-      td.getAttribute('data-col'),
-    )
+    const dataCols = [...t.shadowRoot!.querySelectorAll('tbody tr.row td')].map((td) => td.getAttribute('data-col'))
     const out = {
       top: [...topRow.querySelectorAll('th')].map((th) => ({
         text: th.textContent!.trim(),
@@ -827,4 +819,3 @@ test('table 行单选（checkable="radio"）：真实点击互斥 + 再点已选
   expect(afterDeselect.selected ?? '', '再点已选行应取消选中').toBe('')
   expect(afterDeselect.checked).toEqual([false, false])
 })
-
