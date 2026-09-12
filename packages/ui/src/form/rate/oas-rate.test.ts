@@ -157,9 +157,7 @@ describe('OASRate', () => {
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
     // 垂直分割保留左半 + 覆盖层用激活色（color/void-color/colors 通道经 --oas-rate-active 变量注入）
     expect(css).toMatch(/\.half-fill\s*\{[^}]*clip-path:\s*inset\(0\s+50%\s+0\s+0\)/)
-    expect(css).toMatch(
-      /\.half-fill\s*\{[^}]*color:\s*var\(--oas-rate-active,\s*var\(--oas-color-warning\)\)/,
-    )
+    expect(css).toMatch(/\.half-fill\s*\{[^}]*color:\s*var\(--oas-rate-active,\s*var\(--oas-color-warning\)\)/)
     expect(css).toMatch(/\.star\s*\{[^}]*position:\s*relative/)
     // 未到半星的星没有覆盖层
     expect(s[3]!.querySelector('.half-fill')).toBeNull()
@@ -365,9 +363,7 @@ describe('OASRate 能力补齐', () => {
 
   it('void-color：注入 --oas-rate-void，移除后回落', () => {
     const el = mount({ 'void-color': 'var(--oas-color-text-secondary)' })
-    expect(el.style.getPropertyValue('--oas-rate-void')).toBe(
-      'var(--oas-color-text-secondary)',
-    )
+    expect(el.style.getPropertyValue('--oas-rate-void')).toBe('var(--oas-color-text-secondary)')
     el.removeAttribute('void-color')
     expect(el.style.getPropertyValue('--oas-rate-void')).toBe('')
   })
@@ -503,9 +499,7 @@ describe('OASRate 能力补齐', () => {
   it('slot="icon-N" 逐位插槽：每颗星投影对应内容（声明式通道）', async () => {
     const emojis = ['😡', '😠', '😐', '🙂', '😍']
     const el = new OASRate()
-    el.innerHTML = emojis
-      .map((e, i) => `<span slot="icon-${i + 1}">${e}</span>`)
-      .join('')
+    el.innerHTML = emojis.map((e, i) => `<span slot="icon-${i + 1}">${e}</span>`).join('')
     document.body.appendChild(el)
     await new Promise((r) => setTimeout(r, 0))
     const s = stars(el)

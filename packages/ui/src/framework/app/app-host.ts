@@ -48,9 +48,7 @@ export function unregisterAppHost(el: HTMLElement): void {
 /** 当前生效宿主：仍在文档中的宿主里嵌套最深优先，互不嵌套后注册优先 */
 function current(): HostEntry | null {
   const connected = hosts.filter((h) => h.el.isConnected)
-  const innermost = connected.filter(
-    (h) => !connected.some((o) => o !== h && h.el.contains(o.el)),
-  )
+  const innermost = connected.filter((h) => !connected.some((o) => o !== h && h.el.contains(o.el)))
   return innermost[innermost.length - 1] ?? null
 }
 

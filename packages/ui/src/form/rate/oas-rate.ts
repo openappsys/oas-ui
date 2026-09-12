@@ -22,8 +22,7 @@ function normalizeRateSize(raw: string): RateSize {
 }
 
 /** 预设色板名（映射 --oas-preset-* token，color/void-color/colors 支持按名引用；统一协议见 ui-spec §4.1） */
-const RATE_COLOR_PRESETS =
-  /^(magenta|red|volcano|orange|gold|lime|green|cyan|blue|geekblue|purple)$/
+const RATE_COLOR_PRESETS = /^(magenta|red|volcano|orange|gold|lime|green|cyan|blue|geekblue|purple)$/
 
 function resolveColorValue(raw: string): string {
   return RATE_COLOR_PRESETS.test(raw) ? `var(--oas-preset-${raw})` : raw

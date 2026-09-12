@@ -43,8 +43,7 @@ test('menu 水平模式子菜单浮层不被裁剪——.menu 容器 overflow-x:
   await item.hover()
   await page.waitForTimeout(400)
   const result = await item.evaluate((li) => {
-    const host =
-      li.getRootNode() instanceof ShadowRoot ? (li.getRootNode() as ShadowRoot).host : null
+    const host = li.getRootNode() instanceof ShadowRoot ? (li.getRootNode() as ShadowRoot).host : null
     const menuRoot = host?.shadowRoot?.querySelector('.menu') as HTMLElement | null
     const sub = li.querySelector(':scope > .submenu') as HTMLElement | null
     if (!host || !menuRoot || !sub) return null
@@ -76,9 +75,7 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
   await page.waitForTimeout(400) // 等 rAF 测量
   const st = await menu.evaluate((host) => {
     const root = host.shadowRoot!.querySelector('.menu')!
-    const items = [
-      ...root.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)'),
-    ]
+    const items = [...root.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)')]
     const more = root.querySelector<HTMLElement>('.menu-more')!
     const visible = items.filter((t) => !t.hasAttribute('data-collapsed'))
     const lastVisible = visible[visible.length - 1]
@@ -114,9 +111,7 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
     const root = host.shadowRoot!.querySelector('.menu')!
     const more = root.querySelector<HTMLElement>('.menu-more')!
     const firstMirror = root.querySelector<HTMLElement>('.menu-more-sub [role="menuitemradio"]')
-    const visibleChecked = [
-      ...root.querySelectorAll<HTMLElement>(':scope > [part="item"]:not(.menu-more)'),
-    ]
+    const visibleChecked = [...root.querySelectorAll<HTMLElement>(':scope > [part="item"]:not(.menu-more)')]
       .filter((t) => !t.hasAttribute('data-collapsed'))
       .some((t) => t.getAttribute('aria-checked') === 'true')
     return {
@@ -140,9 +135,7 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
 // 缺省按形态（inline 不收 / 浮出收）。docs 无空值 demo（menu-keep-open/inline-close 分别是
 // 显式 "false"/"true"），空串存在即真由单测覆盖，此处不硬造。
 
-test('menu close-on-select="false"（menu-keep-open demo）：点叶子后子菜单保持展开（连选场景）', async ({
-  page,
-}) => {
+test('menu close-on-select="false"（menu-keep-open demo）：点叶子后子菜单保持展开（连选场景）', async ({ page }) => {
   await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#menu-keep-open')
   // 浮出形态子菜单靠 hover 展开（对齐本文件既有三级链用例的交互惯例）
@@ -165,9 +158,7 @@ test('menu close-on-select="false"（menu-keep-open demo）：点叶子后子菜
   expect(r.value, '选中值应写回 copy').toBe('copy')
 })
 
-test('menu inline + close-on-select="true"（menu-inline-close demo）：点叶子后收起父级子菜单', async ({
-  page,
-}) => {
+test('menu inline + close-on-select="true"（menu-inline-close demo）：点叶子后收起父级子菜单', async ({ page }) => {
   await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#menu-inline-close')
   await page.locator('#menu-inline-close [data-value="dash"]').click()

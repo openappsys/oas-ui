@@ -182,13 +182,9 @@ describe('基础纯展示 + 浮层触发 + 框架容器 DSD 真水合批次 5', 
       e.setAttribute('content', '提示')
       e.innerHTML = '<button>悬停</button>'
     }).el
-    ;(tt.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(tt.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     expect(tt.shadowRoot!.querySelector('.tip')!.getAttribute('aria-hidden')).toBe('false')
-    ;(tt.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseleave', { bubbles: true }),
-    )
+    ;(tt.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
     expect(tt.shadowRoot!.querySelector('.tip')!.getAttribute('aria-hidden')).toBe('true')
 
     // oas-popover：点击触发按钮 → 面板展开
@@ -289,9 +285,7 @@ describe('基础纯展示 + 浮层触发 + 框架容器 DSD 真水合批次 5', 
 
     // oas-config-provider：水合后 theme 属性 → data-theme 同步
     const cpSnap = captureSnapshot(OASConfigProvider, (e) => e.setAttribute('theme', 'dark'))
-    const cp = upgradeFromSnapshot(OASConfigProvider, cpSnap, (e) =>
-      e.setAttribute('theme', 'dark'),
-    ).el
+    const cp = upgradeFromSnapshot(OASConfigProvider, cpSnap, (e) => e.setAttribute('theme', 'dark')).el
     expect(cp.dataset.theme).toBe('dark')
     cp.setAttribute('theme', 'light')
     expect(cp.dataset.theme).toBe('light')

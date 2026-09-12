@@ -10,10 +10,7 @@ test('modal fullscreen：铺满视口、无圆角、width 被忽略、Esc/遮罩
     document.querySelector('#modal-fullscreen')?.setAttribute('visible', '')
   })
   await page.waitForFunction(
-    () =>
-      document
-        .querySelector('#modal-fullscreen')
-        ?.shadowRoot?.querySelector('.dialog[data-fullscreen]') != null,
+    () => document.querySelector('#modal-fullscreen')?.shadowRoot?.querySelector('.dialog[data-fullscreen]') != null,
     null,
     { timeout: 5000 },
   )
@@ -44,16 +41,12 @@ test('modal fullscreen：铺满视口、无圆角、width 被忽略、Esc/遮罩
   expect(r.ariaHidden).toBe('false')
   // Esc 关闭照常
   await page.keyboard.press('Escape')
-  await page.waitForFunction(
-    () => !document.querySelector('#modal-fullscreen')?.hasAttribute('visible'),
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => !document.querySelector('#modal-fullscreen')?.hasAttribute('visible'), null, {
+    timeout: 5000,
+  })
 })
 
-test('modal 命令式确认 loading：确定进入 loading、1.5s 后自动关闭并弹出成功 message', async ({
-  page,
-}) => {
+test('modal 命令式确认 loading：确定进入 loading、1.5s 后自动关闭并弹出成功 message', async ({ page }) => {
   await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
   await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
@@ -90,9 +83,7 @@ test('modal 命令式确认 loading：确定进入 loading、1.5s 后自动关�
   )
   // onOk resolve（1.5s）后自动关闭并弹成功 message
   await page.waitForFunction(
-    () =>
-      document.querySelector('oas-modal[visible]') == null &&
-      document.querySelectorAll('oas-message').length > 0,
+    () => document.querySelector('oas-modal[visible]') == null && document.querySelectorAll('oas-message').length > 0,
     null,
     { timeout: 8000 },
   )
@@ -137,11 +128,9 @@ test('modal prompt：校验失败保持打开 + 错误可见，修正后可提�
   await page.evaluate(() => {
     ;(window as any).openPromptValidated()
   })
-  await page.waitForFunction(
-    () => document.querySelector('oas-modal[visible]')?.querySelector('input') != null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('oas-modal[visible]')?.querySelector('input') != null, null, {
+    timeout: 5000,
+  })
   // 输入过短 → 确定 → 校验失败：对话框保持打开、错误文案可见（role=alert）
   await page.evaluate(() => {
     const m = document.querySelector('oas-modal[visible]')!
@@ -154,9 +143,7 @@ test('modal prompt：校验失败保持打开 + 错误可见，修正后可提�
     const err = m?.querySelector('.oas-modal-prompt-error') as HTMLElement | null
     return err != null && !err.hidden && (err.textContent ?? '').length > 0
   })
-  const keptOpen = await page.evaluate(
-    () => document.querySelector('oas-modal[visible]') != null,
-  )
+  const keptOpen = await page.evaluate(() => document.querySelector('oas-modal[visible]') != null)
   expect(keptOpen).toBe(true)
   // 修正输入 → 错误清除 → 再次确定 → 成功关闭
   await page.evaluate(() => {
@@ -166,11 +153,9 @@ test('modal prompt：校验失败保持打开 + 错误可见，修正后可提�
     input.dispatchEvent(new Event('input', { bubbles: true }))
     ;(m.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
   })
-  await page.waitForFunction(
-    () => document.querySelector('oas-modal[visible]') == null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('oas-modal[visible]') == null, null, {
+    timeout: 5000,
+  })
 })
 
 test('modal before-close：取消类关闭被拦截（visible 保持 + 警告消息可见）', async ({ page }) => {
@@ -185,14 +170,10 @@ test('modal before-close：取消类关闭被拦截（visible 保持 + 警告消
   await page.waitForFunction(() => document.querySelector('#modal-guard[visible]') != null)
   // Esc 关闭被拦截：仍可见 + 右上角出现警告消息
   await page.keyboard.press('Escape')
-  await page.waitForFunction(
-    () => document.querySelectorAll('oas-message').length > 0,
-    null,
-    { timeout: 5000 },
-  )
-  const stillVisible = await page.evaluate(() =>
-    document.querySelector('#modal-guard')?.hasAttribute('visible'),
-  )
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, {
+    timeout: 5000,
+  })
+  const stillVisible = await page.evaluate(() => document.querySelector('#modal-guard')?.hasAttribute('visible'))
   expect(stillVisible).toBe(true)
 })
 
@@ -230,11 +211,7 @@ test('modal append-to：dialog/mask 挂载到 portal host（body 级容器）', 
   await page.evaluate(() => {
     document.querySelector('#modal-portal')?.setAttribute('visible', '')
   })
-  await page.waitForFunction(
-    () => document.querySelector('[data-oas-modal-portal]') != null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('[data-oas-modal-portal]') != null, null, { timeout: 5000 })
   const r = await page.evaluate(() => {
     const portal = document.querySelector('[data-oas-modal-portal]')
     return {
@@ -288,9 +265,7 @@ async function exposeMessageReader(page: import('@playwright/test').Page): Promi
   })
 }
 
-test('modal 开合动画：oas-opened / oas-closed 在动画结束后派发（右上角消息可见）', async ({
-  page,
-}) => {
+test('modal 开合动画：oas-opened / oas-closed 在动画结束后派发（右上角消息可见）', async ({ page }) => {
   await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-modal')
   await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
@@ -313,14 +288,10 @@ test('modal 开合动画：oas-opened / oas-closed 在动画结束后派发（�
     null,
     { timeout: 5000 },
   )
-  expect(
-    await page.evaluate(() => !document.querySelector('#modal-anim')?.hasAttribute('visible')),
-  ).toBe(true)
+  expect(await page.evaluate(() => !document.querySelector('#modal-anim')?.hasAttribute('visible'))).toBe(true)
 })
 
-test('modal 声明式 trigger：点击绑定元素自动 setAttribute visible（受控模型不变）', async ({
-  page,
-}) => {
+test('modal 声明式 trigger：点击绑定元素自动 setAttribute visible（受控模型不变）', async ({ page }) => {
   await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
   await page.locator('#modal-trigger-btn').click()
@@ -397,9 +368,7 @@ test('modal fullscreen-breakpoint：视口窄于阈值自动全屏、拉宽自�
   })
 })
 
-test('modal shake 防误关：取消类关闭被拦截时抖动 + 对话框保持打开（可见反馈）', async ({
-  page,
-}) => {
+test('modal shake 防误关：取消类关闭被拦截时抖动 + 对话框保持打开（可见反馈）', async ({ page }) => {
   await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
   await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
@@ -462,7 +431,10 @@ test('modal close-icon 插槽：slot 内容分配进关闭按钮（默认 ✕ �
     const m = document.querySelector('#modal-closeicon')!
     const slot = m.shadowRoot!.querySelector('slot[name="close-icon"]') as HTMLSlotElement
     const assigned = slot?.assignedNodes() ?? []
-    return { assigned: assigned.length, text: (assigned[0] as HTMLElement | null)?.textContent ?? '' }
+    return {
+      assigned: assigned.length,
+      text: (assigned[0] as HTMLElement | null)?.textContent ?? '',
+    }
   })
   expect(r.assigned).toBeGreaterThan(0)
   expect(r.text).toContain('✕')
@@ -520,7 +492,14 @@ test('modal 拖拽钳制：大幅拖出视口后对话框仍完整留在视口�
   const rect = await page.evaluate(() => {
     const m = document.querySelector('#modal-clamp')!
     const d = m.shadowRoot!.querySelector<HTMLElement>('.dialog')!.getBoundingClientRect()
-    return { left: d.left, top: d.top, right: d.right, bottom: d.bottom, vw: innerWidth, vh: innerHeight }
+    return {
+      left: d.left,
+      top: d.top,
+      right: d.right,
+      bottom: d.bottom,
+      vw: innerWidth,
+      vh: innerHeight,
+    }
   })
   expect(rect.left).toBeGreaterThanOrEqual(0)
   expect(rect.top).toBeGreaterThanOrEqual(0)
@@ -534,11 +513,15 @@ test('modal no-footer 底角圆角（overflow hidden 裁切回归：body 直角�
   await page.waitForSelector('#modal-nofooter', { state: 'attached', timeout: 15000 })
   await up(page, '#modal-nofooter')
   await page.evaluate(() => document.querySelector('#modal-nofooter')?.setAttribute('visible', ''))
-  await page.waitForFunction(() => {
-    const m = document.querySelector('#modal-nofooter')
-    const d = m?.shadowRoot?.querySelector<HTMLElement>('.dialog')
-    return d?.hasAttribute('data-open') === true
-  }, null, { timeout: 5000 })
+  await page.waitForFunction(
+    () => {
+      const m = document.querySelector('#modal-nofooter')
+      const d = m?.shadowRoot?.querySelector<HTMLElement>('.dialog')
+      return d?.hasAttribute('data-open') === true
+    },
+    null,
+    { timeout: 5000 },
+  )
   const r = await page.evaluate(() => {
     const m = document.querySelector('#modal-nofooter')!
     const dialog = m.shadowRoot!.querySelector('.dialog')!
@@ -577,28 +560,20 @@ test('modal 对话框内点击不透传遮罩：document 根委托可达、dialo
   try {
     // 点 dialog body 空白：document 委托收到且不误关
     await page.evaluate(() => {
-      const d = document.querySelector('#modal-ctrl')!.shadowRoot!.querySelector<HTMLElement>(
-        '[part="body"]',
-      )!
+      const d = document.querySelector('#modal-ctrl')!.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!
       d.click()
     })
     await page.waitForFunction(() => (window as any).__docClicks >= 1, null, { timeout: 5000 })
-    const stillOpen = await page.evaluate(() =>
-      document.querySelector('#modal-ctrl')?.hasAttribute('visible'),
-    )
+    const stillOpen = await page.evaluate(() => document.querySelector('#modal-ctrl')?.hasAttribute('visible'))
     expect(stillOpen, '点对话框空白不得触发遮罩关闭').toBe(true)
     // 点 ✕：委托同样收到，关闭路径照常 + visible 回写
     await page.evaluate(() => {
-      const x = document.querySelector('#modal-ctrl')!.shadowRoot!.querySelector<HTMLElement>(
-        '[part="close"]',
-      )!
+      const x = document.querySelector('#modal-ctrl')!.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!
       x.click()
     })
-    await page.waitForFunction(
-      () => !document.querySelector('#modal-ctrl')?.hasAttribute('visible'),
-      null,
-      { timeout: 5000 },
-    )
+    await page.waitForFunction(() => !document.querySelector('#modal-ctrl')?.hasAttribute('visible'), null, {
+      timeout: 5000,
+    })
     // 遮罩本体点击仍能关闭（重开后点 mask）
     await page.evaluate(() => {
       document.querySelector('#modal-ctrl')?.setAttribute('visible', '')
@@ -610,11 +585,9 @@ test('modal 对话框内点击不透传遮罩：document 根委托可达、dialo
       const m = document.querySelector('#modal-ctrl')!
       ;(m.shadowRoot!.querySelector('.mask') as HTMLElement).click()
     })
-    await page.waitForFunction(
-      () => !document.querySelector('#modal-ctrl')?.hasAttribute('visible'),
-      null,
-      { timeout: 5000 },
-    )
+    await page.waitForFunction(() => !document.querySelector('#modal-ctrl')?.hasAttribute('visible'), null, {
+      timeout: 5000,
+    })
     const clicks = await page.evaluate(() => (window as any).__docClicks)
     expect(clicks, 'dialog 内每次点击都应冒泡到 document 委托').toBeGreaterThanOrEqual(2)
   } finally {

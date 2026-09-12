@@ -348,10 +348,7 @@ export class OASCheckbox extends OASElement {
     }
 
     // 形态镜像（default/card）
-    this.setAttribute(
-      'data-variant',
-      normalizeChoice(this.getAttr('variant', ''), 'default', VALID_VARIANTS),
-    )
+    this.setAttribute('data-variant', normalizeChoice(this.getAttr('variant', ''), 'default', VALID_VARIANTS))
 
     input.checked = checked
     input.disabled = disabled

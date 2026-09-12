@@ -22,14 +22,7 @@ export interface RadioOption {
 }
 
 /** 键盘导航键集合（radiogroup 模式：方向键 + Home/End） */
-const NAV_KEYS = new Set([
-  'ArrowDown',
-  'ArrowUp',
-  'ArrowLeft',
-  'ArrowRight',
-  'Home',
-  'End',
-])
+const NAV_KEYS = new Set(['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'])
 
 const STYLE = `
 :host {
@@ -212,9 +205,7 @@ export class OASRadioGroup extends OASElement {
   /** roving tabindex：选中项（无选中时首个可用项）为唯一 Tab 停靠点，其余 -1 */
   private syncRoving(): void {
     const value = this.getAttr('value', '')
-    let stop = this.items.findIndex(
-      (r) => !this.isItemBlocked(r) && r.getAttribute('value') === value,
-    )
+    let stop = this.items.findIndex((r) => !this.isItemBlocked(r) && r.getAttribute('value') === value)
     if (stop < 0) stop = this.items.findIndex((r) => !this.isItemBlocked(r))
     this.items.forEach((r, i) => {
       const input = r.shadowRoot?.querySelector('input')
@@ -284,8 +275,7 @@ export class OASRadioGroup extends OASElement {
       const parsed = JSON.parse(raw)
       return Array.isArray(parsed)
         ? parsed.filter(
-            (o): o is RadioOption =>
-              !!o && typeof o === 'object' && typeof (o as RadioOption).value === 'string',
+            (o): o is RadioOption => !!o && typeof o === 'object' && typeof (o as RadioOption).value === 'string',
           )
         : []
     } catch {

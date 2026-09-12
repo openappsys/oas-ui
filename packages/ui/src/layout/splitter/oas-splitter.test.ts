@@ -108,9 +108,7 @@ describe('OASSplitter', () => {
     key(el, 'ArrowDown')
     expect(Number(el.getAttribute('percent'))).toBe(50)
     // 垂直分隔条光标走 row-resize（样式类已按 vertical 覆盖）
-    expect(JSON.stringify(el.shadowRoot!.querySelector('style')!.textContent)).toContain(
-      'cursor: row-resize',
-    )
+    expect(JSON.stringify(el.shadowRoot!.querySelector('style')!.textContent)).toContain('cursor: row-resize')
   })
 
   it('RTL：dir=rtl 下拖拽方向翻转（向右拖 → 百分比减小）', () => {
@@ -227,8 +225,7 @@ describe('OASSplitter', () => {
     // 无 handle：默认 grip 圆点
     expect(splitter.querySelector('.grip')).not.toBeNull()
     // 有 handle：分隔条内 slot 分发自定义内容
-    el.innerHTML =
-      '<div slot="left">左</div><div slot="right">右</div><span slot="handle" class="custom-dot">·</span>'
+    el.innerHTML = '<div slot="left">左</div><div slot="right">右</div><span slot="handle" class="custom-dot">·</span>'
     expect(splitter.querySelector('slot[name="handle"]')).not.toBeNull()
     expect(el.querySelector('[slot="handle"]')?.textContent).toBe('·')
     // handle 不影响拖拽
@@ -313,8 +310,7 @@ describe('OASSplitter', () => {
     const el = mountMulti()
     el.setAttribute('sizes', '30,70')
     const panes = el.shadowRoot!.querySelectorAll('.pane')
-    const flexOf = (i: number) =>
-      parseFloat((panes[i] as HTMLElement).style.flex.split(' ')[2] ?? '')
+    const flexOf = (i: number) => parseFloat((panes[i] as HTMLElement).style.flex.split(' ')[2] ?? '')
     expect(flexOf(0)).toBeCloseTo(33.33, 1)
     expect(flexOf(1)).toBeCloseTo(33.33, 1)
   })
@@ -358,9 +354,7 @@ describe('OASSplitter', () => {
 })
 
 function pointer(type: string, clientX: number): Event {
-  const Ctor = (globalThis as Record<string, unknown>).PointerEvent as
-    | typeof PointerEvent
-    | undefined
+  const Ctor = (globalThis as Record<string, unknown>).PointerEvent as typeof PointerEvent | undefined
   if (typeof Ctor === 'function') {
     return new Ctor(type, { bubbles: true, clientX })
   }

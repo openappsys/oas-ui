@@ -115,12 +115,7 @@ export function applyCheckStrategy<N>(
  * - 级联：勾选 → 自身 + 全部可勾选后代后归一化；取消 → 自身 + 后代移出后归一化。
  * 返回原集合引用（已原地变更）。
  */
-export function flipChecked<N>(
-  ctx: CheckContext<N>,
-  checked: Set<string>,
-  id: string,
-  strictly: boolean,
-): Set<string> {
+export function flipChecked<N>(ctx: CheckContext<N>, checked: Set<string>, id: string, strictly: boolean): Set<string> {
   const acc = ctx.acc
   const node = ctx.model.byId.get(id)
   if (!node) {
@@ -153,11 +148,7 @@ export function flipChecked<N>(
 }
 
 /** half 态：自身未勾选但存在（任意）勾选后代（半选回显，strictly 时组件侧不调用） */
-export function halfByDescendant<N>(
-  ctx: CheckContext<N>,
-  checked: Set<string>,
-  id: string,
-): boolean {
+export function halfByDescendant<N>(ctx: CheckContext<N>, checked: Set<string>, id: string): boolean {
   const node = ctx.model.byId.get(id)
   if (!node || checked.has(id)) return false
   const acc = ctx.acc

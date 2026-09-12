@@ -139,7 +139,16 @@ function cloneSlotContent(tpl: HTMLTemplateElement): DocumentFragment {
 
 export class OASCollapseItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['name', 'header', 'open', 'disabled', 'icon-placement', 'heading-level', 'destroy-on-collapse', 'force-render']
+    return [
+      'name',
+      'header',
+      'open',
+      'disabled',
+      'icon-placement',
+      'heading-level',
+      'destroy-on-collapse',
+      'force-render',
+    ]
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */

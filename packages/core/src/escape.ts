@@ -14,10 +14,7 @@ function resolve(input: unknown): string {
 
 /** 文本上下文最小转义：`&` `<` `>`（code/equation 预转义用，避免引入引号实体） */
 export function escapeText(input: unknown): string {
-  return resolve(input)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+  return resolve(input).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 /** 全量转义：`&` `<` `>` `"` `'`——文本 / 双引号属性值通用 */

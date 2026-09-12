@@ -43,20 +43,11 @@ function normalizePagerCount(raw: string): number {
  *   （省略号两端至少留 2 页，首尾页可达），窗口大小 = pager-count - 4，
  *   夹取到 [2, pageCount-1] 并始终含当前页，保证渲染页码数 ≤ pager-count
  */
-function buildPages(
-  current: number,
-  pageCount: number,
-  siblings: number,
-  pagerCount: number,
-): number[] {
+function buildPages(current: number, pageCount: number, siblings: number, pagerCount: number): number[] {
   const candidate = new Set<number>()
   candidate.add(1)
   candidate.add(pageCount)
-  for (
-    let i = Math.max(2, current - siblings);
-    i <= Math.min(pageCount - 1, current + siblings);
-    i++
-  ) {
+  for (let i = Math.max(2, current - siblings); i <= Math.min(pageCount - 1, current + siblings); i++) {
     candidate.add(i)
   }
   if (candidate.size <= pagerCount) return [...candidate].sort((a, b) => a - b)
@@ -417,14 +408,7 @@ export class OASPagination extends OASElement {
     if (showMore) {
       const current = Math.max(1, Number(this.getAttr('current', '1')) || 1)
       group.appendChild(
-        nav(
-          '‹',
-          'prev',
-          this.t('pagination.prev'),
-          current <= 1,
-          current - 1,
-          '<slot name="prev-icon">‹</slot>',
-        ),
+        nav('‹', 'prev', this.t('pagination.prev'), current <= 1, current - 1, '<slot name="prev-icon">‹</slot>'),
       )
       const moreBtn = document.createElement('button')
       moreBtn.className = 'btn more-btn'
@@ -435,14 +419,7 @@ export class OASPagination extends OASElement {
       moreBtn.textContent = this.t('pagination.more')
       group.appendChild(moreBtn)
       group.appendChild(
-        nav(
-          '›',
-          'next',
-          this.t('pagination.next'),
-          false,
-          current + 1,
-          '<slot name="next-icon">›</slot>',
-        ),
+        nav('›', 'next', this.t('pagination.next'), false, current + 1, '<slot name="next-icon">›</slot>'),
       )
       return
     }
@@ -460,20 +437,11 @@ export class OASPagination extends OASElement {
 
     // 首/末页双箭头钮（show-edges，边界禁用；simple 极简形态不叠加）
     if (this.hasAttr('show-edges') && !simple) {
-      group.appendChild(
-        nav('«', 'first', this.t('pagination.first'), current === 1, 1),
-      )
+      group.appendChild(nav('«', 'first', this.t('pagination.first'), current === 1, 1))
     }
 
     group.appendChild(
-      nav(
-        '‹',
-        'prev',
-        this.t('pagination.prev'),
-        current === 1,
-        current - 1,
-        '<slot name="prev-icon">‹</slot>',
-      ),
+      nav('‹', 'prev', this.t('pagination.prev'), current === 1, current - 1, '<slot name="prev-icon">‹</slot>'),
     )
 
     if (simple) {
@@ -490,9 +458,7 @@ export class OASPagination extends OASElement {
         if (page - last > 1) {
           // 省略号可点跳页：向该侧跳 siblings+1 页（边界夹取 [1, pageCount]，受 before-change 拦截）
           const backward = last < current
-          const jump = backward
-            ? Math.max(1, current - siblings - 1)
-            : Math.min(pageCount, current + siblings + 1)
+          const jump = backward ? Math.max(1, current - siblings - 1) : Math.min(pageCount, current + siblings + 1)
           const ell = nav(
             '…',
             'ellipsis',
@@ -505,10 +471,7 @@ export class OASPagination extends OASElement {
         }
         const p = nav(String(page), 'page', this.t('pagination.page', { page }), false, page)
         // 当前页标记：链接模式用 aria-current="page"，按钮模式沿用 'true'/'false'
-        p.setAttribute(
-          'aria-current',
-          page === current ? (hrefTemplate !== '' ? 'page' : 'true') : 'false',
-        )
+        p.setAttribute('aria-current', page === current ? (hrefTemplate !== '' ? 'page' : 'true') : 'false')
         group.appendChild(p)
         last = page
       }
@@ -526,9 +489,7 @@ export class OASPagination extends OASElement {
     )
 
     if (this.hasAttr('show-edges') && !simple) {
-      group.appendChild(
-        nav('»', 'last', this.t('pagination.last'), current === pageCount, pageCount),
-      )
+      group.appendChild(nav('»', 'last', this.t('pagination.last'), current === pageCount, pageCount))
     }
 
     // 每页条数下拉
@@ -536,8 +497,7 @@ export class OASPagination extends OASElement {
     // total-boundary：设置后仅 total > 阈值才渲染条数切换器（total ≤ 阈值隐藏）；
     // 未设置时维持现状（有 page-sizes 即显示，零回归）；非法值（非数字）忽略
     const boundaryRaw = Number(this.getAttr('total-boundary', ''))
-    const totalBoundary =
-      this.hasAttr('total-boundary') && Number.isFinite(boundaryRaw) ? boundaryRaw : null
+    const totalBoundary = this.hasAttr('total-boundary') && Number.isFinite(boundaryRaw) ? boundaryRaw : null
     if (sizes.length > 0 && (totalBoundary === null || rawTotal > totalBoundary)) {
       const options = new Set(sizes)
       options.add(pageSize)

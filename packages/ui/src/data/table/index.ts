@@ -15,13 +15,9 @@ import {
   type SummaryType,
   type SummaryConfig,
   type EditOption,
-  } from './oas-table.js'
+} from './oas-table.js'
 import { createColumnSettingsController } from './oas-table-column-settings.js'
-import {
-  registerTableCapability,
-  registeredTableCapabilities,
-  hasTableCapability,
-} from './oas-table-capability.js'
+import { registerTableCapability, registeredTableCapabilities, hasTableCapability } from './oas-table-capability.js'
 
 /**
  * 组装后的 OASTable：核心骨架 + 能力控制器。

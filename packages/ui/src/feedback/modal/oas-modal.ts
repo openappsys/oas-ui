@@ -1,9 +1,6 @@
 import { OASElement, type ReactiveController } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
-import {
-  registeredModalCapabilities,
-  onModalCapabilityRegistered,
-} from './oas-modal-capability.js'
+import { registeredModalCapabilities, onModalCapabilityRegistered } from './oas-modal-capability.js'
 
 export type ModalVariant = 'info' | 'success' | 'warning' | 'error'
 
@@ -14,13 +11,7 @@ export type ModalTransition = 'zoom' | 'fade' | 'none'
 export type ModalSizePreset = 'sm' | 'lg'
 
 /** 关闭来源：before-close 拦截与 oas-close 事件 detail.source */
-export type ModalCloseSource =
-  | 'ok'
-  | 'cancel'
-  | 'close-btn'
-  | 'mask'
-  | 'esc'
-  | 'programmatic'
+export type ModalCloseSource = 'ok' | 'cancel' | 'close-btn' | 'mask' | 'esc' | 'programmatic'
 
 /** 关闭来源 → 动作语义（A32：✕/遮罩/Esc 归为 close，取消按钮归为 cancel，确定归为 confirm） */
 const CLOSE_ACTION: Record<ModalCloseSource, 'confirm' | 'cancel' | 'close'> = {
@@ -508,9 +499,7 @@ export class OASModal extends OASElement {
 
   /** 插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
   private hasSlotContent(slot: HTMLSlotElement): boolean {
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /**
@@ -684,8 +673,7 @@ export class OASModal extends OASElement {
     })
     if (hasTextInput) return false
     // 真实焦点（happy-dom 会把 shadow 焦点重定向为宿主，回退 shadowRoot.activeElement）
-    const ae =
-      this.resolveActive() ?? (document.activeElement as HTMLElement | null)
+    const ae = this.resolveActive() ?? (document.activeElement as HTMLElement | null)
     if (ae && ae !== this && ae !== document.body) {
       // 焦点在按钮/链接/role=button 上：交还原生 Enter 激活，避免双触发
       if (ae instanceof HTMLButtonElement) return false
@@ -933,7 +921,10 @@ export class OASModal extends OASElement {
     }
     this.emit('open')
     this.applyClickOrigin()
-    this.emitOnAnimEnd(() => this.emit('opened'), () => this.isOpen)
+    this.emitOnAnimEnd(
+      () => this.emit('opened'),
+      () => this.isOpen,
+    )
   }
 
   /**
@@ -959,7 +950,10 @@ export class OASModal extends OASElement {
     this.emit('close', { source, action: CLOSE_ACTION[source] })
     if (source !== 'ok') this.emit('cancel')
     if (!this.hasAttr('no-scroll-lock')) unlockBodyScroll()
-    this.emitOnAnimEnd(() => this.onClosed(), () => !this.isOpen)
+    this.emitOnAnimEnd(
+      () => this.onClosed(),
+      () => !this.isOpen,
+    )
   }
 
   /** 关闭动画完成：oas-closed + destroy-on-close 清空 light DOM 内容（P10） */
@@ -974,9 +968,7 @@ export class OASModal extends OASElement {
     let target: HTMLElement | null = null
     const initSel = this.getAttr('initial-focus')
     if (initSel) {
-      target =
-        this.dialog?.querySelector<HTMLElement>(initSel) ??
-        this.querySelector<HTMLElement>(initSel)
+      target = this.dialog?.querySelector<HTMLElement>(initSel) ?? this.querySelector<HTMLElement>(initSel)
     }
     if (!target && this.hasAttr('focus-ok')) {
       target = this.okBtn
@@ -1242,8 +1234,7 @@ export class OASModal extends OASElement {
       this.destroyPortal()
       return
     }
-    const target =
-      sel === 'body' ? document.body : (document.querySelector(sel) as HTMLElement | null)
+    const target = sel === 'body' ? document.body : (document.querySelector(sel) as HTMLElement | null)
     if (!target) {
       this.destroyPortal()
       return

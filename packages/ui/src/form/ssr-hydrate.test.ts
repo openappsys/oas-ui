@@ -84,8 +84,7 @@ const FIXTURES: Fixture[] = [
     cls: OASCheckboxGroup,
     setup: (e) => {
       e.setAttribute('value', '["a"]')
-      e.innerHTML =
-        '<oas-checkbox value="a">A</oas-checkbox><oas-checkbox value="b">B</oas-checkbox>'
+      e.innerHTML = '<oas-checkbox value="a">A</oas-checkbox><oas-checkbox value="b">B</oas-checkbox>'
     },
     probe: 'fieldset',
   },
@@ -322,12 +321,8 @@ describe('form 组件 DSD 真水合批次 1', () => {
     expect(rate.shadowRoot!.querySelectorAll('.star').length).toBe(5)
 
     // oas-dynamic-input：快照按 model-value 渲染 2 行，水合后 syncRows 不得重复追加
-    const diSnap = captureSnapshot(OASDynamicInput, (e) =>
-      e.setAttribute('model-value', '["a","b"]'),
-    )
-    const di = upgradeFromSnapshot(OASDynamicInput, diSnap, (e) =>
-      e.setAttribute('model-value', '["a","b"]'),
-    ).el
+    const diSnap = captureSnapshot(OASDynamicInput, (e) => e.setAttribute('model-value', '["a","b"]'))
+    const di = upgradeFromSnapshot(OASDynamicInput, diSnap, (e) => e.setAttribute('model-value', '["a","b"]')).el
     expect(di.shadowRoot!.querySelectorAll('.row').length).toBe(2)
   })
 
@@ -362,9 +357,7 @@ describe('form 组件 DSD 真水合批次 1', () => {
       { key: 'b', label: '香蕉' },
     ])
     const tfSnap = captureSnapshot(OASTransfer, (e) => e.setAttribute('data', transferData))
-    const tf = upgradeFromSnapshot(OASTransfer, tfSnap, (e) =>
-      e.setAttribute('data', transferData),
-    ).el
+    const tf = upgradeFromSnapshot(OASTransfer, tfSnap, (e) => e.setAttribute('data', transferData)).el
     const firstLeft = tf.shadowRoot!.querySelector<HTMLElement>('.listbox.left .option')!
     firstLeft.click()
     // renderPanel 重建行：重新查询而非读已分离的旧引用

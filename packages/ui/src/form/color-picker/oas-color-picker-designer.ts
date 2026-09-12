@@ -79,9 +79,7 @@ function hueGradientCss(): string {
   return `linear-gradient(to bottom, ${parts.join(', ')})`
 }
 
-export class ColorPickerDesignerController
-  implements ReactiveController, ColorPickerDesignerCapability
-{
+export class ColorPickerDesignerController implements ReactiveController, ColorPickerDesignerCapability {
   private hostEl: HTMLElement & ColorPickerDesignerHost
 
   /** 渐变模式 stops（mode=gradient 时生效；single 模式保持单色语义） */
@@ -567,9 +565,7 @@ export class ColorPickerDesignerController
       return
     }
     this.hostEl.setAttribute('value', out)
-    this.hostEl.dispatchEvent(
-      new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: out } }),
-    )
+    this.hostEl.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: out } }))
   }
 
   // ---------- 渐变值展示 ----------
@@ -750,8 +746,6 @@ export class ColorPickerDesignerController
 }
 
 /** 便捷：构造 designer 能力 controller（供能力注册表 / 组装类 addController 用） */
-export function createDesignerController(
-  host: HTMLElement & ColorPickerDesignerHost,
-): ColorPickerDesignerController {
+export function createDesignerController(host: HTMLElement & ColorPickerDesignerHost): ColorPickerDesignerController {
   return new ColorPickerDesignerController(host)
 }

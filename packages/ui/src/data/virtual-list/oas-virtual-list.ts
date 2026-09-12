@@ -374,13 +374,7 @@ export class OASVirtualList extends OASElement {
       this.heightCache.configure(count, this.estimatedHeight())
       const total = this.heightCache.total()
       const scrollTop = Math.min(Math.max(0, target ? target.scrollTop : 0), Math.max(0, total - vh))
-      const win = computeDynamicWindow(
-        this.prefixArray(count),
-        count,
-        scrollTop,
-        vh,
-        this.bufferSize(),
-      )
+      const win = computeDynamicWindow(this.prefixArray(count), count, scrollTop, vh, this.bufferSize())
       this.start = win.start
       this.end = win.end
       if (this.inner) this.inner.style.height = `${total}px`
@@ -393,10 +387,7 @@ export class OASVirtualList extends OASElement {
     }
     const ih = this.itemHeight()
     // 数据收缩时夹取 scrollTop，避免窗口越界
-    const scrollTop = Math.min(
-      Math.max(0, target ? target.scrollTop : 0),
-      Math.max(0, count * ih - vh),
-    )
+    const scrollTop = Math.min(Math.max(0, target ? target.scrollTop : 0), Math.max(0, count * ih - vh))
     const win = computeVirtualWindow(scrollTop, vh, ih, count, this.bufferSize())
     this.start = win.start
     this.end = win.end
@@ -440,8 +431,7 @@ export class OASVirtualList extends OASElement {
         // 先派发 oas-item 让宿主（如 oas-tree）填充内容；宿主没填才回退 String(item)，
         // 且仅用于原始值行——对象行 String() 只会得到 "[object Object]"
         this.emit('item', { index: i, item, element: el })
-        if (!el.hasChildNodes() && (item == null || typeof item !== 'object'))
-          el.textContent = String(item ?? '')
+        if (!el.hasChildNodes() && (item == null || typeof item !== 'object')) el.textContent = String(item ?? '')
       }
       itemsEl.appendChild(el)
     }

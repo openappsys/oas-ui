@@ -848,8 +848,7 @@ export class OASInputNumber extends OASElement {
       if (fallback) fallback.textContent = text
       // 注意不能用 flatten:true——空 slot 的扁平化结果会包含 fallback 子节点，导致恒判有内容
       const slotHasContent =
-        slotEl !== null &&
-        slotEl.assignedNodes().some((n) => n.nodeType === 1 || (n.textContent ?? '').trim() !== '')
+        slotEl !== null && slotEl.assignedNodes().some((n) => n.nodeType === 1 || (n.textContent ?? '').trim() !== '')
       el.hidden = text === '' && !slotHasContent
       if (part === 'suffix' || part === 'prefix') {
         const mark = `data-slot-${part}`

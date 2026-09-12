@@ -371,8 +371,7 @@ export const notification = {
     const handle = show('loading', { title: options.loading, duration: 0, closable: undefined })
     p.then(
       (data) => {
-        const title =
-          typeof options.success === 'function' ? options.success(data) : options.success
+        const title = typeof options.success === 'function' ? options.success(data) : options.success
         handle.element.transition('success', title)
       },
       (err) => {

@@ -641,9 +641,7 @@ export class OASTour extends OASElement {
     this.shadow.querySelector('[part="dont-show"] input')?.addEventListener('change', (e) => {
       this.dontShowChecked = (e.target as HTMLInputElement).checked
     })
-    this.shadow
-      .querySelector('[part="hint-dismiss"]')
-      ?.addEventListener('click', () => this.dismissHint())
+    this.shadow.querySelector('[part="hint-dismiss"]')?.addEventListener('click', () => this.dismissHint())
     // 遮罩点击行为：四段遮罩共用 handler
     for (const seg of this.maskSegs) {
       seg.addEventListener('click', () => this.onMaskClick())
@@ -710,18 +708,13 @@ export class OASTour extends OASElement {
 
   private parseSteps(): void {
     if (this._stepsRaw) {
-      this._steps = this._stepsRaw.filter(
-        (s) => s && (typeof s.title === 'string' || s.target || s.selector),
-      )
+      this._steps = this._stepsRaw.filter((s) => s && (typeof s.title === 'string' || s.target || s.selector))
       return
     }
     try {
       const parsed = JSON.parse(this.getAttr('steps', '[]'))
       this._steps = Array.isArray(parsed)
-        ? parsed.filter(
-            (s): s is TourStep =>
-              s && (typeof s.selector === 'string' || typeof s.title === 'string'),
-          )
+        ? parsed.filter((s): s is TourStep => s && (typeof s.selector === 'string' || typeof s.title === 'string'))
         : []
     } catch {
       this._steps = []
@@ -835,8 +828,7 @@ export class OASTour extends OASElement {
       this.destroyPortal()
       return
     }
-    const target =
-      sel === 'body' ? document.body : (document.querySelector(sel) as HTMLElement | null)
+    const target = sel === 'body' ? document.body : (document.querySelector(sel) as HTMLElement | null)
     if (!target) {
       this.destroyPortal()
       return
@@ -866,9 +858,7 @@ export class OASTour extends OASElement {
    *  light DOM（popup 随 overlay 进入 portal shadow 后，插槽只分配 portal host 的 light
    *  子节点——不移桥则宿主塞的插槽内容跨 host 断供消失） */
   private bridgeSlots(host: HTMLElement): void {
-    for (const n of this.querySelectorAll<HTMLElement>(
-      '[slot="cover"], [slot="indicators"], [slot="actions"]',
-    )) {
+    for (const n of this.querySelectorAll<HTMLElement>('[slot="cover"], [slot="indicators"], [slot="actions"]')) {
       host.appendChild(n)
     }
   }
@@ -954,11 +944,7 @@ export class OASTour extends OASElement {
     if (!target || !this.hasAttr('advance-on-click')) return
     const step = this._steps[this.current]
     if (step?.advanceOnClick === false) return
-    if (
-      step &&
-      this.getAttr('target-area-clickable', 'false') === 'false' &&
-      !step.targetAreaClickable
-    ) {
+    if (step && this.getAttr('target-area-clickable', 'false') === 'false' && !step.targetAreaClickable) {
       // interceptor 显示时点击走 interceptor，无需挂目标
       return
     }
@@ -991,8 +977,7 @@ export class OASTour extends OASElement {
     if (!desc) return
     // typewriter 是 opt-in 布尔属性：getAttribute 对无值布尔返回 '' 而非 'true'，
     // 用 getAttr(...)!=='true' 判定会把布尔写法误判为关（'' !== 'true' → 跳过打字机）
-    const typewriterOn =
-      this.hasAttr('typewriter') && this.getAttr('typewriter', 'true') !== 'false'
+    const typewriterOn = this.hasAttr('typewriter') && this.getAttr('typewriter', 'true') !== 'false'
     if (!typewriterOn) {
       desc.textContent = text
       return
@@ -1230,8 +1215,7 @@ export class OASTour extends OASElement {
   /** 关闭按钮：show-close 开关 + close-icon 自定义内容 */
   private syncClose(): void {
     const btn = this.popup!.querySelector<HTMLElement>('[part="close"]')!
-    btn.style.display =
-      this.hasAttr('show-close') && this.getAttr('show-close', 'true') === 'false' ? 'none' : ''
+    btn.style.display = this.hasAttr('show-close') && this.getAttr('show-close', 'true') === 'false' ? 'none' : ''
     btn.setAttribute('aria-label', this.t('tour.close'))
     const icon = this.getAttr('close-icon', '')
     if (icon) {
@@ -1249,8 +1233,7 @@ export class OASTour extends OASElement {
     const checked = popup.querySelector<HTMLInputElement>('[part="dont-show"] input')!
     if (this.hasAttr('dont-show-again')) {
       label.style.display = ''
-      popup.querySelector<HTMLElement>('.dont-show-text')!.textContent =
-        this.t('tour.dontShowAgain')
+      popup.querySelector<HTMLElement>('.dont-show-text')!.textContent = this.t('tour.dontShowAgain')
       // 勾选态不被重复 update 清掉（用户已勾选）
       if (!this.dontShowChecked) checked.checked = false
     } else {
@@ -1375,12 +1358,8 @@ export class OASTour extends OASElement {
     if (!aligned && !this.hasAttr('arrow-point-at-center')) return
     const vertical = placement.startsWith('top') || placement.startsWith('bottom')
     const rect = this.popup.getBoundingClientRect()
-    const popupEdge = vertical
-      ? parseFloat(this.popup.style.left)
-      : parseFloat(this.popup.style.top)
-    const anchorCrossCenter = vertical
-      ? anchorRect.left + anchorRect.width / 2
-      : anchorRect.top + anchorRect.height / 2
+    const popupEdge = vertical ? parseFloat(this.popup.style.left) : parseFloat(this.popup.style.top)
+    const anchorCrossCenter = vertical ? anchorRect.left + anchorRect.width / 2 : anchorRect.top + anchorRect.height / 2
     const size = vertical ? rect.width : rect.height
     if (!Number.isFinite(size) || size <= 0) return
     // 锚点中心映射到弹层局部坐标，夹取到弹层边内（4px 边距），避免箭头探出弹层
@@ -1397,10 +1376,7 @@ export class OASTour extends OASElement {
     if (typeof step.targetAreaClickable === 'boolean') return step.targetAreaClickable
     // target-area-clickable 是布尔属性：bare（无值）时 getAttribute 返回 ''，
     // getAttr(...)!=='false' 同时兼容 bare / ="true" / ="false"（同 typewriter 修法）
-    return (
-      this.hasAttr('target-area-clickable') &&
-      this.getAttr('target-area-clickable', 'true') !== 'false'
-    )
+    return this.hasAttr('target-area-clickable') && this.getAttr('target-area-clickable', 'true') !== 'false'
   }
 
   /** 目标滚动到视口 + scroll-padding 生效（scroll-margin 标准方案） */
@@ -1443,10 +1419,7 @@ export class OASTour extends OASElement {
 
   private savePersist(): void {
     if (!this.hasAttr('persist') || !this.persistRestored) return
-    safeSet(
-      this.storageKey(),
-      JSON.stringify({ open: this.hasAttr('open'), current: this.current }),
-    )
+    safeSet(this.storageKey(), JSON.stringify({ open: this.hasAttr('open'), current: this.current }))
   }
 
   /** hints 信标：常驻脉冲点 + 点击气泡 + dismiss 记忆（与 open 无关，常驻渲染） */
@@ -1493,8 +1466,7 @@ export class OASTour extends OASElement {
       bubble.hidden = false
       bubble.querySelector<HTMLElement>('.hint-title')!.textContent = entry.hint.title ?? ''
       bubble.querySelector<HTMLElement>('.hint-desc')!.textContent = entry.hint.description ?? ''
-      bubble.querySelector<HTMLElement>('[part="hint-dismiss"]')!.textContent =
-        this.t('tour.hintGotIt')
+      bubble.querySelector<HTMLElement>('[part="hint-dismiss"]')!.textContent = this.t('tour.hintGotIt')
       const bubbleRect = bubble.getBoundingClientRect()
       const { top, left } = computePosition(
         entry.rect,
@@ -1536,10 +1508,7 @@ export class OASTour extends OASElement {
     this.bindKeydown()
     this.parseSteps()
     this.restorePersist()
-    this.current = Math.min(
-      Math.max(Number(this.getAttr('current', '0')) || 0, 0),
-      this._steps.length - 1,
-    )
+    this.current = Math.min(Math.max(Number(this.getAttr('current', '0')) || 0, 0), this._steps.length - 1)
     const open = this.hasAttr('open')
     if (open && this.dismissedBefore()) {
       this.removeAttribute('open')

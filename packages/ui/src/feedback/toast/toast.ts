@@ -1,10 +1,5 @@
 import { resolveMessageHost, getAppToastConfig } from '../../framework/app/app-host.js'
-import type {
-  OASToast,
-  ToastType,
-  ToastAction,
-  ToastCloseTrigger,
-} from './oas-toast.js'
+import type { OASToast, ToastType, ToastAction, ToastCloseTrigger } from './oas-toast.js'
 
 export type ToastPosition =
   | 'top-right'
@@ -361,10 +356,7 @@ class Toaster {
   }
 
   private signature(type: ToastType, options: ToastOptions): string {
-    const title =
-      typeof options.title === 'string'
-        ? options.title
-        : (options.title?.textContent ?? '')
+    const title = typeof options.title === 'string' ? options.title : (options.title?.textContent ?? '')
     return `${type}|${title}|${options.description ?? ''}`
   }
 
@@ -519,15 +511,8 @@ class Toaster {
     }
   }
 
-  private ensureStack(
-    position: ToastPosition,
-    container?: HTMLElement | (() => HTMLElement),
-  ): StackState {
-    const target = container
-      ? typeof container === 'function'
-        ? container()
-        : container
-      : resolveMessageHost()
+  private ensureStack(position: ToastPosition, container?: HTMLElement | (() => HTMLElement)): StackState {
+    const target = container ? (typeof container === 'function' ? container() : container) : resolveMessageHost()
     const cached = this.stacks.get(position)
     if (cached && target.contains(cached.el)) return cached
     const el = document.createElement('div')
@@ -599,8 +584,7 @@ export const toast = {
     })
     p.then(
       (data) => {
-        const title =
-          typeof options.success === 'function' ? options.success(data) : options.success
+        const title = typeof options.success === 'function' ? options.success(data) : options.success
         handle.update({ type: 'success', title, duration: 3000 })
       },
       (err) => {
@@ -612,8 +596,7 @@ export const toast = {
   },
 
   /** 按 id 原位更新已显示/排队中的 toast（key 不存在则新建） */
-  update: (id: string, options: ToastUpdateOptions): ToastHandle =>
-    defaultToaster.update(id, options),
+  update: (id: string, options: ToastUpdateOptions): ToastHandle => defaultToaster.update(id, options),
 
   /** 按 id 关闭 toast（可见或排队中）；不存在则静默无操作 */
   dismiss: (id: string): void => defaultToaster.dismiss(id),
@@ -622,7 +605,9 @@ export const toast = {
   config: (options: ToastConfigOptions): void => defaultToaster.config(options),
 
   /** 命名 toaster 实例：独立栈/队列/配置并行管理（默认 'default' 共享全局 toast） */
-  toaster: (name: string): {
+  toaster: (
+    name: string,
+  ): {
     info: (options: ToastOptions) => ToastHandle
     success: (options: ToastOptions) => ToastHandle
     warning: (options: ToastOptions) => ToastHandle

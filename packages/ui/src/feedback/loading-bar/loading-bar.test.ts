@@ -139,9 +139,7 @@ describe('loadingBar 命令式 API', () => {
     expect(el).not.toBeNull()
     expect(el!.hasAttribute('local')).toBe(true)
     // 默认宿主（body 直接子级）不出现局部条
-    expect(
-      Array.from(document.body.children).some((n) => n.tagName === 'OAS-LOADING-BAR'),
-    ).toBe(false)
+    expect(Array.from(document.body.children).some((n) => n.tagName === 'OAS-LOADING-BAR')).toBe(false)
   })
 
   it('P4 start({ to: 选择器 }) 与无效选择器抛错', async () => {

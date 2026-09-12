@@ -22,9 +22,7 @@ test('scroll-area 横向可滚：滚轮增量横向滚动 + 横向/纵向 thumb 
   await page.mouse.move(r.x + r.w / 2, r.y + r.h / 2)
   await page.mouse.wheel(0, 120)
   await page.waitForTimeout(300)
-  const afterWheel = await area.evaluate(
-    (el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollLeft,
-  )
+  const afterWheel = await area.evaluate((el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollLeft)
   expect(afterWheel).toBeGreaterThan(0)
 
   // 横向 thumb 拖拽：scrollLeft 变化
@@ -40,9 +38,7 @@ test('scroll-area 横向可滚：滚轮增量横向滚动 + 横向/纵向 thumb 
   await page.mouse.move(h.x + h.w / 2, h.y + h.h / 2, { steps: 4 })
   await page.mouse.up()
   await page.waitForTimeout(300)
-  const afterHDrag = await area.evaluate(
-    (el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollLeft,
-  )
+  const afterHDrag = await area.evaluate((el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollLeft)
   expect(afterHDrag).not.toBe(h.before)
 
   // 纵向 thumb 拖拽（基础 demo，第 1 个）：scrollTop 增大
@@ -65,9 +61,7 @@ test('scroll-area 横向可滚：滚轮增量横向滚动 + 横向/纵向 thumb 
   await page.mouse.move(v.x + v.w / 2, v.y + v.h - 10, { steps: 4 })
   await page.mouse.up()
   await page.waitForTimeout(300)
-  const afterVDrag = await area0.evaluate(
-    (el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollTop,
-  )
+  const afterVDrag = await area0.evaluate((el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollTop)
   expect(afterVDrag).toBeGreaterThan(v.before)
 })
 

@@ -331,9 +331,7 @@ describe('OASFloatButton draggable + magnetic', () => {
   })
 
   it('reduced-motion：磁吸位置直切（无过渡）', () => {
-    vi.spyOn(window, 'matchMedia').mockImplementation(
-      () => ({ matches: true }) as MediaQueryList,
-    )
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true }) as MediaQueryList)
     const el = mount({ draggable: '', magnetic: 'x' })
     vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
       left: 100,

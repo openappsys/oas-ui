@@ -315,36 +315,24 @@ export class OASTransfer extends OASElement {
     this.virtualLeft = this.shadow.querySelector<OASVirtualList>('.vlist-left')
     this.virtualRight = this.shadow.querySelector<OASVirtualList>('.vlist-right')
 
-    this.shadow
-      .querySelector('.to-right')
-      ?.addEventListener('click', () => this.move('left', 'right'))
-    this.shadow
-      .querySelector('.to-left')
-      ?.addEventListener('click', () => this.move('right', 'left'))
+    this.shadow.querySelector('.to-right')?.addEventListener('click', () => this.move('left', 'right'))
+    this.shadow.querySelector('.to-left')?.addEventListener('click', () => this.move('right', 'left'))
 
     this.shadow
       .querySelector<HTMLInputElement>('.check-left')
-      ?.addEventListener('change', (e) =>
-        this.toggleSelectAll('left', (e.target as HTMLInputElement).checked),
-      )
+      ?.addEventListener('change', (e) => this.toggleSelectAll('left', (e.target as HTMLInputElement).checked))
     this.shadow
       .querySelector<HTMLInputElement>('.check-right')
-      ?.addEventListener('change', (e) =>
-        this.toggleSelectAll('right', (e.target as HTMLInputElement).checked),
-      )
+      ?.addEventListener('change', (e) => this.toggleSelectAll('right', (e.target as HTMLInputElement).checked))
 
-    this.shadow
-      .querySelector<HTMLInputElement>('.search-left')
-      ?.addEventListener('input', (e) => {
-        this.renderPanel('left')
-        this.emit('search', { side: 'left', query: (e.target as HTMLInputElement).value })
-      })
-    this.shadow
-      .querySelector<HTMLInputElement>('.search-right')
-      ?.addEventListener('input', (e) => {
-        this.renderPanel('right')
-        this.emit('search', { side: 'right', query: (e.target as HTMLInputElement).value })
-      })
+    this.shadow.querySelector<HTMLInputElement>('.search-left')?.addEventListener('input', (e) => {
+      this.renderPanel('left')
+      this.emit('search', { side: 'left', query: (e.target as HTMLInputElement).value })
+    })
+    this.shadow.querySelector<HTMLInputElement>('.search-right')?.addEventListener('input', (e) => {
+      this.renderPanel('right')
+      this.emit('search', { side: 'right', query: (e.target as HTMLInputElement).value })
+    })
 
     this.leftListbox?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e, 'left'))
     this.rightListbox?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e, 'right'))
@@ -443,9 +431,7 @@ export class OASTransfer extends OASElement {
         ? this._data.map((i) => (value.includes(i.key) ? { ...i, disabled: true } : { ...i }))
         : this.rightItemsBySort(value)
     }
-    return side === 'left'
-      ? this._data.filter((i) => !value.includes(i.key))
-      : this.rightItemsBySort(value)
+    return side === 'left' ? this._data.filter((i) => !value.includes(i.key)) : this.rightItemsBySort(value)
   }
 
   private rightItemsBySort(value: string[]): TransferItem[] {
@@ -563,11 +549,7 @@ export class OASTransfer extends OASElement {
   }
 
   /** 静态（非虚拟）面板渲染：选项行 + 空态 */
-  private renderStatic(
-    side: 'left' | 'right',
-    visible: TransferItem[],
-    listbox: HTMLElement | null,
-  ): void {
+  private renderStatic(side: 'left' | 'right', visible: TransferItem[], listbox: HTMLElement | null): void {
     if (!listbox) return
     listbox.innerHTML = ''
     const query = this.queryFor(side)
@@ -602,11 +584,7 @@ export class OASTransfer extends OASElement {
   }
 
   /** 虚拟列表单行渲染：与静态模式同一套选中/禁用/点击语义 */
-  private createVirtualRow(
-    item: TransferItem,
-    container: HTMLElement,
-    side: 'left' | 'right',
-  ): void {
+  private createVirtualRow(item: TransferItem, container: HTMLElement, side: 'left' | 'right'): void {
     const row = document.createElement('div')
     row.className = 'option'
     row.setAttribute('part', 'option')
@@ -642,9 +620,7 @@ export class OASTransfer extends OASElement {
     const readOnly = this.hasAttr('one-way') && side === 'right'
 
     // 标题
-    const title = this.shadow.querySelector<HTMLElement>(
-      `.title.${side === 'left' ? 'source' : 'target'}`,
-    )
+    const title = this.shadow.querySelector<HTMLElement>(`.title.${side === 'left' ? 'source' : 'target'}`)
     if (title) title.textContent = this.titleFor(side)
 
     // 计数（已选/可见 N/M，i18n 模板；只读面板隐藏）
@@ -740,10 +716,7 @@ export class OASTransfer extends OASElement {
     if (this.hasAttr('one-way') && side === 'right') return
     if (this.hasAttr('simple')) {
       const value = this.currentValue()
-      const next =
-        side === 'left'
-          ? this.mergeIntoTarget(value, [item.key])
-          : value.filter((k) => k !== item.key)
+      const next = side === 'left' ? this.mergeIntoTarget(value, [item.key]) : value.filter((k) => k !== item.key)
       this.setAttribute('value', JSON.stringify(next))
       this.emit('change', { value: next })
       this.renderPanels()

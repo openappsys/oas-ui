@@ -72,9 +72,7 @@ describe('OASTransfer', () => {
   it('disabled 项不可选中，穿梭按钮随选中清空禁用', () => {
     const el = mount()
     ;(leftOptions(el)[2] as HTMLElement).click() // c 是 disabled
-    expect(
-      el.shadowRoot!.querySelector('.listbox.left .option[aria-disabled="true"]'),
-    ).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('.listbox.left .option[aria-disabled="true"]')).not.toBeNull()
     expect(toRightBtn(el).disabled).toBe(true)
   })
 
@@ -132,8 +130,7 @@ describe('OASTransfer', () => {
       { key: 'a', label: 'Apple' },
       { key: 'b', label: 'apricot' },
     ]
-    const searchOf = (el: OASTransfer) =>
-      el.shadowRoot!.querySelector<HTMLInputElement>('.search-left')!
+    const searchOf = (el: OASTransfer) => el.shadowRoot!.querySelector<HTMLInputElement>('.search-left')!
 
     // 默认：'ap' 大小写不敏感命中两项
     const el1 = new OASTransfer()
@@ -248,8 +245,7 @@ describe('OASTransfer', () => {
 
   const BIG = Array.from({ length: 5000 }, (_, i) => ({ key: `k${i}`, label: `Item ${i}` }))
 
-  const flushRaf = (): Promise<void> =>
-    new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+  const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
   function leftVlist(el: OASTransfer): Element {
     return el.shadowRoot!.querySelector('.vlist-left')!
@@ -275,9 +271,7 @@ describe('OASTransfer', () => {
     const vroot = leftVlist(el).shadowRoot!
     const inner = vroot.querySelector<HTMLElement>('[part="inner"]')!
     expect(inner.style.height).toBe(`${5000 * 36}px`)
-    expect(vroot.querySelector<HTMLElement>('[part="padding-bottom"]')!.style.height).not.toBe(
-      '0px',
-    )
+    expect(vroot.querySelector<HTMLElement>('[part="padding-bottom"]')!.style.height).not.toBe('0px')
   })
 
   it('virtual：点击行选中并穿梭，滚动后选中态保持', async () => {
@@ -315,9 +309,7 @@ describe('OASTransfer', () => {
     vp.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
     vp.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
     const selected = (k: string) =>
-      leftVRows(el).some(
-        (r) => r.getAttribute('data-key') === k && r.getAttribute('aria-selected') === 'true',
-      )
+      leftVRows(el).some((r) => r.getAttribute('data-key') === k && r.getAttribute('aria-selected') === 'true')
     expect(selected('k1')).toBe(true)
     vp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(el.getAttribute('value')).toBe('["k1"]')
@@ -367,9 +359,7 @@ describe('OASTransfer disabled', () => {
     expect(el.shadowRoot!.querySelector<HTMLInputElement>('.check-left')!.disabled).toBe(true)
     const lb = el.shadowRoot!.querySelector<HTMLElement>('.listbox.left')!
     lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
-    expect(
-      el.shadowRoot!.querySelector('.listbox.left .option[aria-selected="true"]'),
-    ).toBeNull()
+    expect(el.shadowRoot!.querySelector('.listbox.left .option[aria-selected="true"]')).toBeNull()
   })
 
   it('disabled：searchable 搜索框禁用', () => {
@@ -450,9 +440,7 @@ describe('OASTransfer item 插槽', () => {
     tpl.innerHTML = '<em class="tick">✓</em><span data-item-label></span>'
     el.appendChild(tpl)
     el.data = Array.from({ length: 100 }, (_, i) => ({ key: `k${i}`, label: `Item ${i}` }))
-    const row = el.shadowRoot!.querySelector('.vlist-left')!.shadowRoot!.querySelectorAll(
-      '[part="item"] .option',
-    )[0]!
+    const row = el.shadowRoot!.querySelector('.vlist-left')!.shadowRoot!.querySelectorAll('[part="item"] .option')[0]!
     expect(row.querySelector('.tick')).not.toBeNull()
     expect(row.querySelector('[data-item-label]')!.textContent).toBe('Item 0')
   })
@@ -665,8 +653,9 @@ describe('OASTransfer target-draggable', () => {
     el.setAttribute('target-draggable', '')
     document.body.appendChild(el)
     el.data = Array.from({ length: 100 }, (_, i) => ({ key: `k${i}`, label: `Item ${i}` }))
-    const leftRows = () =>
-      [...el.shadowRoot!.querySelector('.vlist-left')!.shadowRoot!.querySelectorAll('[part="item"] .option')]
+    const leftRows = () => [
+      ...el.shadowRoot!.querySelector('.vlist-left')!.shadowRoot!.querySelectorAll('[part="item"] .option'),
+    ]
     // 先用键盘穿梭 k0：ArrowDown 选中首项 + Enter
     const vp = el.shadowRoot!.querySelector('.vlist-left')!.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
     vp.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))

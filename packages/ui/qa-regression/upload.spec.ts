@@ -3,15 +3,12 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('upload picture-card：list-type 属性在 Vue demo 存活，预置照片渲染缩略图卡片', async ({
-  page,
-}) => {
+test('upload picture-card：list-type 属性在 Vue demo 存活，预置照片渲染缩略图卡片', async ({ page }) => {
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#upload-full')
   // #upload-full 预置 3 张 SVG 图片（onMounted 异步 import 后设置 files）
   await page.waitForFunction(
-    () =>
-      document.querySelector('#upload-full')?.shadowRoot?.querySelectorAll('.card').length === 3,
+    () => document.querySelector('#upload-full')?.shadowRoot?.querySelectorAll('.card').length === 3,
     null,
     { timeout: 10000 },
   )
@@ -56,9 +53,7 @@ test('upload 拖拽 drop：真实拖放文件到拖拽区即渲染', async ({ pa
   expect(r.hasName).toBe('drag.txt')
 })
 
-test('upload 超限 max：drop 超过 max 的文件触发 oas-exceed 并弹出 message 可见反馈', async ({
-  page,
-}) => {
+test('upload 超限 max：drop 超过 max 的文件触发 oas-exceed 并弹出 message 可见反馈', async ({ page }) => {
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#upload-wall-exceed')
   await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {

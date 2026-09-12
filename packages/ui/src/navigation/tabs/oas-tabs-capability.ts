@@ -36,7 +36,10 @@ export function onTabsCapabilityRegistered(cb: () => void): () => void {
 }
 
 /** 当前已注册能力快照（OASTabs 构造时遍历注入） */
-export function registeredTabsCapabilities(): Array<{ name: string; factory: TabsCapabilityFactory }> {
+export function registeredTabsCapabilities(): Array<{
+  name: string
+  factory: TabsCapabilityFactory
+}> {
   return [...capabilityRegistry.entries()].map(([name, factory]) => ({ name, factory }))
 }
 

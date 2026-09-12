@@ -23,9 +23,7 @@ function clickHead(item: OASCollapseItem): void {
 }
 
 function press(item: OASCollapseItem, key: string): void {
-  head(item).dispatchEvent(
-    new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true }),
-  )
+  head(item).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true }))
 }
 
 function items(el: OASCollapse): OASCollapseItem[] {
@@ -100,9 +98,7 @@ describe('OASCollapse', () => {
       const el = mount({ variant: 'borderless' })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
       expect(css).toMatch(/:host\(\[variant="borderless"\]\)\s*\.group\s*\{[^}]*border:\s*none/)
-      expect(css).toMatch(
-        /:host\(\[variant="borderless"\]\)\s*\.item\s*\{[^}]*border-bottom:\s*none/,
-      )
+      expect(css).toMatch(/:host\(\[variant="borderless"\]\)\s*\.item\s*\{[^}]*border-bottom:\s*none/)
     })
 
     it('默认 outlined 保留组边框', () => {
@@ -147,9 +143,7 @@ describe('OASCollapse', () => {
       press(items(el)[0]!, 'ArrowDown')
       expect(head(items(el)[1]!).getAttribute('tabindex')).toBe('0')
       expect(head(items(el)[0]!).getAttribute('tabindex')).toBe('-1')
-      expect(items(el)[1]!.shadowRoot!.activeElement ?? document.activeElement).toBe(
-        head(items(el)[1]!),
-      )
+      expect(items(el)[1]!.shadowRoot!.activeElement ?? document.activeElement).toBe(head(items(el)[1]!))
       press(items(el)[1]!, 'ArrowUp')
       expect(head(items(el)[0]!).getAttribute('tabindex')).toBe('0')
     })
@@ -388,7 +382,10 @@ describe('OASCollapseItem', () => {
     })
     expect(el.hasAttribute('has-header-slot')).toBe(true)
     const slotEl = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="header"]')!
-    const assigned = slotEl.assignedNodes().map((n) => n.textContent).join('')
+    const assigned = slotEl
+      .assignedNodes()
+      .map((n) => n.textContent)
+      .join('')
     expect(assigned).toContain('富')
     expect(el.shadowRoot!.querySelector('[part="header"]')!.textContent).not.toContain('属性标题')
   })
@@ -413,10 +410,9 @@ describe('OASCollapseItem', () => {
   })
 
   it('自定义展开图标：template[slot="toggle"] 克隆进箭头位', () => {
-    const el = mountItem(
-      '<template slot="toggle"><svg id="my-icon" viewBox="0 0 16 16"></svg></template><p>内容</p>',
-      { header: '标题' },
-    )
+    const el = mountItem('<template slot="toggle"><svg id="my-icon" viewBox="0 0 16 16"></svg></template><p>内容</p>', {
+      header: '标题',
+    })
     expect(el.shadowRoot!.querySelector('#my-icon')).not.toBeNull()
     expect(el.shadowRoot!.querySelector('[part="arrow"]')!.textContent).not.toContain('›')
   })

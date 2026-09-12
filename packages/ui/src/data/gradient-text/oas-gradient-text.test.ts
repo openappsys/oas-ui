@@ -160,9 +160,7 @@ describe('OASGradientText', () => {
     expect(el.classList.contains('stroked')).toBe(true)
     expect(el.style.getPropertyValue('--oas-gradient-text-stroke-w')).toBe('2px')
     // 缺省描边色走 text-primary token（随主题亮暗自动切换）
-    expect(el.style.getPropertyValue('--oas-gradient-text-stroke-c')).toBe(
-      'var(--oas-color-text-primary)',
-    )
+    expect(el.style.getPropertyValue('--oas-gradient-text-stroke-c')).toBe('var(--oas-color-text-primary)')
     const layer = el.shadowRoot!.querySelector<HTMLElement>('[part="stroke"]')!
     expect(layer).not.toBeNull()
     expect(layer.textContent).toBe('渐变文字')
@@ -181,9 +179,7 @@ describe('OASGradientText', () => {
     const el = mount({ stroke: '1px', 'stroke-color': '#123456' })
     expect(el.style.getPropertyValue('--oas-gradient-text-stroke-c')).toBe('#123456')
     const elBad = mount({ stroke: '1px', 'stroke-color': 'red;injected' })
-    expect(elBad.style.getPropertyValue('--oas-gradient-text-stroke-c')).toBe(
-      'var(--oas-color-text-primary)',
-    )
+    expect(elBad.style.getPropertyValue('--oas-gradient-text-stroke-c')).toBe('var(--oas-color-text-primary)')
   })
 
   it('描边与渐变共存：stroked + clipped + 渐变内联背景三者并存（含 animated）', () => {

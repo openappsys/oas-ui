@@ -158,9 +158,7 @@ describe('OASPopconfirm', () => {
     it('virtual 模式不注册外部点击关闭（宿主控制生命周期）', async () => {
       const el = mount({ open: '', virtual: '', 'virtual-x': '10', 'virtual-y': '10' }, '')
       await Promise.resolve()
-      document.body.dispatchEvent(
-        new MouseEvent('click', { bubbles: true, composed: true }),
-      )
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
       expect(el.hasAttribute('open')).toBe(true)
     })
   })
@@ -196,9 +194,7 @@ describe('OASPopconfirm', () => {
         expect(el.hasAttribute('open')).toBe(false) // 防抖期内未开
         vi.advanceTimersByTime(200)
         expect(el.hasAttribute('open')).toBe(true)
-        el.dispatchEvent(
-          new MouseEvent('mouseleave', { relatedTarget: document.body }),
-        )
+        el.dispatchEvent(new MouseEvent('mouseleave', { relatedTarget: document.body }))
         vi.advanceTimersByTime(200)
         expect(el.hasAttribute('open')).toBe(false)
       } finally {
@@ -263,9 +259,7 @@ describe('OASPopconfirm', () => {
       const el = mount({})
       await Promise.resolve()
       const reasons: unknown[] = []
-      el.addEventListener('oas-open-change', (e: Event) =>
-        reasons.push((e as CustomEvent).detail),
-      )
+      el.addEventListener('oas-open-change', (e: Event) => reasons.push((e as CustomEvent).detail))
       ;(el.querySelector('button') as HTMLElement).click()
       expect(reasons).toEqual([{ open: true, reason: 'trigger' }])
     })
@@ -275,9 +269,7 @@ describe('OASPopconfirm', () => {
       await Promise.resolve()
       ;(el.querySelector('button') as HTMLElement).click()
       const reasons: unknown[] = []
-      el.addEventListener('oas-open-change', (e: Event) =>
-        reasons.push((e as CustomEvent).detail),
-      )
+      el.addEventListener('oas-open-change', (e: Event) => reasons.push((e as CustomEvent).detail))
       ;(el.querySelector('button') as HTMLElement).click()
       expect(reasons).toEqual([{ open: false, reason: 'trigger' }])
     })
@@ -286,9 +278,7 @@ describe('OASPopconfirm', () => {
       const el = mount({ open: '' })
       await Promise.resolve()
       const reasons: string[] = []
-      el.addEventListener('oas-open-change', (e: Event) =>
-        reasons.push((e as CustomEvent).detail.reason),
-      )
+      el.addEventListener('oas-open-change', (e: Event) => reasons.push((e as CustomEvent).detail.reason))
       ;(el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
       expect(reasons).toEqual(['ok'])
       // 宿主直改 open 重开（reason=api 是设计内行为）后再点取消
@@ -301,9 +291,7 @@ describe('OASPopconfirm', () => {
       const el = mount({ open: '' })
       await Promise.resolve()
       const reasons: string[] = []
-      el.addEventListener('oas-open-change', (e: Event) =>
-        reasons.push((e as CustomEvent).detail.reason),
-      )
+      el.addEventListener('oas-open-change', (e: Event) => reasons.push((e as CustomEvent).detail.reason))
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
       expect(el.hasAttribute('open')).toBe(false)
       expect(reasons).toEqual(['esc'])
@@ -313,9 +301,7 @@ describe('OASPopconfirm', () => {
       const el = mount({ open: '' })
       await Promise.resolve()
       const reasons: string[] = []
-      el.addEventListener('oas-open-change', (e: Event) =>
-        reasons.push((e as CustomEvent).detail.reason),
-      )
+      el.addEventListener('oas-open-change', (e: Event) => reasons.push((e as CustomEvent).detail.reason))
       document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
       expect(el.hasAttribute('open')).toBe(false)
       expect(reasons).toEqual(['outside'])
@@ -325,9 +311,7 @@ describe('OASPopconfirm', () => {
       const el = mount({})
       await Promise.resolve()
       const details: unknown[] = []
-      el.addEventListener('oas-open-change', (e: Event) =>
-        details.push((e as CustomEvent).detail),
-      )
+      el.addEventListener('oas-open-change', (e: Event) => details.push((e as CustomEvent).detail))
       el.setAttribute('open', '')
       expect(details).toEqual([{ open: true, reason: 'api' }])
     })
@@ -336,9 +320,7 @@ describe('OASPopconfirm', () => {
       const el = mount({})
       await Promise.resolve()
       const details: unknown[] = []
-      el.addEventListener('oas-open-change', (e: Event) =>
-        details.push((e as CustomEvent).detail),
-      )
+      el.addEventListener('oas-open-change', (e: Event) => details.push((e as CustomEvent).detail))
       el.show()
       el.hide()
       expect(details).toEqual([
@@ -429,10 +411,7 @@ describe('OASPopconfirm', () => {
     })
 
     it('actions 插槽替代内置按钮时聚焦插槽内首个可聚焦元素', async () => {
-      const el = mount(
-        {},
-        '<button>删除</button><div slot="actions"><button data-x="custom">自定义</button></div>',
-      )
+      const el = mount({}, '<button>删除</button><div slot="actions"><button data-x="custom">自定义</button></div>')
       await Promise.resolve()
       ;(el.querySelector('button') as HTMLElement).click()
       const custom = el.querySelector('[data-x="custom"]') as HTMLElement
@@ -530,10 +509,7 @@ describe('OASPopconfirm', () => {
     })
 
     it('icon 插槽有内容时覆盖默认图标', async () => {
-      const el = mount(
-        { open: '' },
-        '<button>删除</button><span slot="icon">⚠️</span>',
-      )
+      const el = mount({ open: '' }, '<button>删除</button><span slot="icon">⚠️</span>')
       await Promise.resolve()
       const icon = el.shadowRoot!.querySelector('[part="icon"]') as HTMLElement
       const slot = icon.querySelector('slot[name="icon"]') as HTMLSlotElement
@@ -548,9 +524,7 @@ describe('OASPopconfirm', () => {
     it('description 属性渲染进描述区', async () => {
       const el = mount({ open: '', title: '确认', description: '删除后不可恢复' })
       await Promise.resolve()
-      expect(el.shadowRoot!.querySelector('[part="description"]')!.textContent).toContain(
-        '删除后不可恢复',
-      )
+      expect(el.shadowRoot!.querySelector('[part="description"]')!.textContent).toContain('删除后不可恢复')
     })
 
     it('description 插槽覆盖属性文案', async () => {
@@ -559,9 +533,7 @@ describe('OASPopconfirm', () => {
         '<button>删除</button><span slot="description">插槽描述</span>',
       )
       await Promise.resolve()
-      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>(
-        'slot[name="description"]',
-      )!
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="description"]')!
       const fallback = el.shadowRoot!.querySelector<HTMLElement>('.description-text')!
       expect(slot.assignedNodes().length).toBeGreaterThan(0)
       expect(fallback.hidden).toBe(true)
@@ -582,17 +554,13 @@ describe('OASPopconfirm', () => {
     it('默认显示取消按钮', async () => {
       const el = mount({ open: '' })
       await Promise.resolve()
-      expect((el.shadowRoot!.querySelector('[part="cancel"]') as HTMLElement).hidden).toBe(
-        false,
-      )
+      expect((el.shadowRoot!.querySelector('[part="cancel"]') as HTMLElement).hidden).toBe(false)
     })
 
     it('show-cancel="false" 隐藏取消按钮（单按钮确认）', async () => {
       const el = mount({ open: '', 'show-cancel': 'false' })
       await Promise.resolve()
-      expect((el.shadowRoot!.querySelector('[part="cancel"]') as HTMLElement).hidden).toBe(
-        true,
-      )
+      expect((el.shadowRoot!.querySelector('[part="cancel"]') as HTMLElement).hidden).toBe(true)
     })
   })
 
@@ -659,10 +627,7 @@ describe('OASPopconfirm', () => {
 
   describe('actions 插槽 + show()/hide()', () => {
     it('actions 插槽有内容时隐藏内置按钮区', async () => {
-      const el = mount(
-        { open: '' },
-        '<button>删除</button><div slot="actions"><button>知道了</button></div>',
-      )
+      const el = mount({ open: '' }, '<button>删除</button><div slot="actions"><button>知道了</button></div>')
       await Promise.resolve()
       const builtin = el.shadowRoot!.querySelector('.builtin-actions') as HTMLElement
       expect(builtin.hidden).toBe(true)

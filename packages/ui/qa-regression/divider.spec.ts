@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('divider 线型/缩进/间距档/strong：variant 驱动、dashed 布尔兼容、变量开口、vertical 撑满', async ({
-  page,
-}) => {
+test('divider 线型/缩进/间距档/strong：variant 驱动、dashed 布尔兼容、变量开口、vertical 撑满', async ({ page }) => {
   // v2.1 divider 能力补齐回归：variant 四线型（含 double 双线间隙）、inset/middle 缩进、
   // size 三档、strong 文字、CSS 变量开口（spacing 注入实测）、vertical 在 flex 容器撑满。
   await page.goto('/components/divider.html', { waitUntil: 'domcontentloaded' })
@@ -35,16 +33,11 @@ test('divider 线型/缩进/间距档/strong：variant 驱动、dashed 布尔兼
     document.body.appendChild(wrap)
     // spacing 变量注入实测
     const spacing = mk({})
-    spacing
-      .shadowRoot!.querySelector<HTMLElement>('.divider')!
-      .style.setProperty('--oas-divider-spacing', '0px')
+    spacing.shadowRoot!.querySelector<HTMLElement>('.divider')!.style.setProperty('--oas-divider-spacing', '0px')
     await new Promise((res) => setTimeout(res, 100))
     const spacingMargin = getComputedStyle(spacing.shadowRoot!.querySelector('.divider')!).marginTop
     const doubleH = mk({ variant: 'double' })
-    const doubleBefore = getComputedStyle(
-      doubleH.shadowRoot!.querySelector('.divider')!,
-      '::before',
-    )
+    const doubleBefore = getComputedStyle(doubleH.shadowRoot!.querySelector('.divider')!, '::before')
     const out = {
       dotted: cls(dotted),
       compat: cls(compat),
@@ -60,19 +53,7 @@ test('divider 线型/缩进/间距档/strong：variant 驱动、dashed 布尔兼
       doubleBorderTop: doubleBefore.borderTopStyle,
       doubleBorderBottom: doubleBefore.borderBottomStyle,
     }
-    for (const el of [
-      dotted,
-      compat,
-      both,
-      inset,
-      large,
-      strong,
-      badVar,
-      badSize,
-      spacing,
-      doubleH,
-    ])
-      el.remove()
+    for (const el of [dotted, compat, both, inset, large, strong, badVar, badSize, spacing, doubleH]) el.remove()
     wrap.remove()
     return out
   })

@@ -37,9 +37,7 @@ function nodes(el: OASTreeSelect): HTMLElement[] {
 }
 
 function byLabel(el: OASTreeSelect, label: string): HTMLElement {
-  return [...el.shadowRoot!.querySelectorAll('.node')].find((n) =>
-    n.textContent?.includes(label),
-  ) as HTMLElement
+  return [...el.shadowRoot!.querySelectorAll('.node')].find((n) => n.textContent?.includes(label)) as HTMLElement
 }
 
 function rowLabels(el: OASTreeSelect): string {
@@ -118,7 +116,7 @@ describe('OASTreeSelect', () => {
     expect(chips[0]!.textContent).toContain('Vue')
     let detail: unknown
     el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
-      ;(chips[1]!.querySelector('button') as HTMLElement).click()
+    ;(chips[1]!.querySelector('button') as HTMLElement).click()
     expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual(['vue'])
     expect(detail).toEqual({ value: ['vue'], labels: ['Vue'] })
   })
@@ -163,13 +161,7 @@ describe('OASTreeSelect 勾选策略（check-strategy）', () => {
     const el = mount({ multiple: '' })
     trigger(el).click()
     byLabel(el, '前端').click()
-    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([
-      'fe',
-      'framework',
-      'react',
-      'vue',
-      'css',
-    ])
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual(['fe', 'framework', 'react', 'vue', 'css'])
   })
 
   it('parent：勾选父级 value 只含父级', () => {
@@ -364,7 +356,9 @@ describe('OASTreeSelect 懒加载（lazy / load）', () => {
     el.load = (payload: { value: string }) => (propValue = payload.value)
     trigger(el).click()
     expect(nodes(el)[0]!.querySelector('.toggle')).toBeTruthy() // 未加载节点有展开箭头
-    nodes(el)[0]!.querySelector('.toggle')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    nodes(el)[0]!
+      .querySelector('.toggle')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(eventValue).toBe('root')
     expect(propValue).toBe('root')
     expect(el.shadowRoot!.querySelector('.toggle-spinner')).toBeTruthy()
@@ -373,7 +367,9 @@ describe('OASTreeSelect 懒加载（lazy / load）', () => {
   it('宿主回填 children 后 spinner 消失、子节点渲染', () => {
     const el = mount({ lazy: '', options: JSON.stringify([{ label: '根', value: 'root' }]) })
     trigger(el).click()
-    nodes(el)[0]!.querySelector('.toggle')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    nodes(el)[0]!
+      .querySelector('.toggle')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
     el.options = [{ label: '根', value: 'root', children: [{ label: '子级', value: 'c1' }] }]
     expect(el.shadowRoot!.querySelector('.toggle-spinner')).toBe(null)
     expect(rowLabels(el)).toBe('根|子级')
@@ -718,8 +714,7 @@ describe('OASTreeSelect 面板增强（loading / empty / header / footer / node 
   it('template[slot=node]：自定义节点模板 + data-node-label 绑定', () => {
     const el = new OASTreeSelect()
     el.setAttribute('options', OPTIONS)
-    el.innerHTML =
-      '<template slot="node"><span class="node-custom"><b data-node-label></b></span></template>'
+    el.innerHTML = '<template slot="node"><span class="node-custom"><b data-node-label></b></span></template>'
     document.body.appendChild(el)
     trigger(el).click()
     const label = byLabel(el, '前端').querySelector('.label')!
@@ -768,15 +763,13 @@ describe('OASTreeSelect 虚拟滚动（virtual）', () => {
     },
   ])
 
-  const vlistOf = (el: OASTreeSelect): HTMLElement =>
-    el.shadowRoot!.querySelector('oas-virtual-list')!
+  const vlistOf = (el: OASTreeSelect): HTMLElement => el.shadowRoot!.querySelector('oas-virtual-list')!
 
   const virtualRows = (el: OASTreeSelect): HTMLElement[] => [
     ...vlistOf(el).shadowRoot!.querySelectorAll<HTMLElement>('[role="treeitem"]'),
   ]
 
-  const flushRaf = (): Promise<void> =>
-    new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+  const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
   // 非 virtual 分支同步渲染 10001 个节点，jsdom 全量并发下实测 >11s，远超默认 5s 超时
   it('virtual：万级节点仅渲染可见窗口；非 virtual 全量渲染可见行', () => {
@@ -891,8 +884,6 @@ describe('OASTreeSelect focus 委托', () => {
     el.setAttribute('options', OPTIONS)
     document.body.appendChild(el)
     el.focus()
-    expect(el.shadowRoot!.activeElement).toBe(
-      el.shadowRoot!.querySelector('button[part="trigger"]'),
-    )
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('button[part="trigger"]'))
   })
 })

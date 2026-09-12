@@ -1,12 +1,6 @@
 import '@oas-ui/i18n'
 import { OASMessage, type MessageType } from './oas-message.js'
-import {
-  message,
-  destroyAll,
-  type MessageHandle,
-  type MessageOptions,
-  type MessageUpdateOptions,
-} from './message.js'
+import { message, destroyAll, type MessageHandle, type MessageOptions, type MessageUpdateOptions } from './message.js'
 import type { MessageCloseSource, MessageContent, CustomMessageType } from './oas-message.js'
 import type { MessagePlacement, MessagePromiseOptions } from './message.js'
 

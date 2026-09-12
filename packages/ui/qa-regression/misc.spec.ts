@@ -17,9 +17,7 @@ test('demo 事件反馈（点击 button 弹出 message）', async ({ page }) => 
   expect(n).toBeGreaterThan(0)
 })
 
-test('size 五档：button/tag/switch 在 demo 中渲染对应 size class（不静默吞值）', async ({
-  page,
-}) => {
+test('size 五档：button/tag/switch 在 demo 中渲染对应 size class（不静默吞值）', async ({ page }) => {
   const SIZES = ['xs', 'small', 'medium', 'large', 'xl']
   // button：shadow button 应带对应 size class
   await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
@@ -78,14 +76,10 @@ test('DemoBlock 示例代码：连排闭合标签逐行拆分（</svg></oas-icon
   const canvasCode = canvasBlock.locator('.demo-block__code code').first()
   await expect(canvasCode).not.toBeEmpty()
   const canvasText = await canvasCode.innerText()
-  expect(canvasText).toContain(
-    '<oas-icon name="check" canvas="fixed" color="var(--oas-color-primary)"></oas-icon>',
-  )
+  expect(canvasText).toContain('<oas-icon name="check" canvas="fixed" color="var(--oas-color-primary)"></oas-icon>')
 })
 
-test('展示型组件字号继承：A 类跟随外层 font-size、B 类大数字默认固定且组件级变量可覆盖', async ({
-  page,
-}) => {
+test('展示型组件字号继承：A 类跟随外层 font-size、B 类大数字默认固定且组件级变量可覆盖', async ({ page }) => {
   // 设计决策（通用做法，详见组件 :host 注释）：
   //   A 类展示文本（gradient-text/comment/equation/log/timeline/breadcrumb/descriptions-item）
   //     :host font-size = var(--组件级变量, inherit) → 跟随外层；code 特例 0.875em 略缩
@@ -132,10 +126,7 @@ test('展示型组件字号继承：A 类跟随外层 font-size、B 类大数字
       code: fs('oas-code'),
     }
     // B 类开口验证：组件级变量覆盖
-    ;(wrap.querySelector('oas-statistic') as HTMLElement).style.setProperty(
-      '--oas-statistic-font',
-      '40px',
-    )
+    ;(wrap.querySelector('oas-statistic') as HTMLElement).style.setProperty('--oas-statistic-font', '40px')
     out.statisticOverride = getComputedStyle(wrap.querySelector('oas-statistic')!).fontSize
     wrap.remove()
     return out
@@ -163,9 +154,7 @@ test('slider/input-number 受控写回：交互后宿主 value 属性同步（�
   await up(page, 'oas-slider[show-input]')
   const r = await page.evaluate(() => {
     const el = document.querySelector('oas-slider[show-input]')!
-    const num = el.shadowRoot!.querySelector<HTMLInputElement>(
-      '[role="textbox"], input[type="number"]',
-    )
+    const num = el.shadowRoot!.querySelector<HTMLInputElement>('[role="textbox"], input[type="number"]')
     return { before: el.getAttribute('value'), hasNum: !!num }
   })
   expect(r.before).not.toBeNull()
@@ -181,9 +170,7 @@ test('slider/input-number 受控写回：交互后宿主 value 属性同步（�
   expect(written).toBe('60')
 })
 
-test('菜单家族 iconColor：menu/menubar/navigation-menu 图标固定颜色，缺省 currentColor 不回归', async ({
-  page,
-}) => {
+test('菜单家族 iconColor：menu/menubar/navigation-menu 图标固定颜色，缺省 currentColor 不回归', async ({ page }) => {
   await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-menu')
   await page.evaluate(() => {
@@ -238,16 +225,14 @@ test('菜单家族 iconColor：menu/menubar/navigation-menu 图标固定颜色�
   })
   await page.waitForFunction(
     () =>
-      [...document.querySelectorAll('oas-menubar')].some(
-        (m) => m.shadowRoot?.querySelector('.top-item .icon svg path'),
+      [...document.querySelectorAll('oas-menubar')].some((m) =>
+        m.shadowRoot?.querySelector('.top-item .icon svg path'),
       ),
     undefined,
     { timeout: 5000 },
   )
   const barResult = await page.evaluate(() => {
-    const el = [...document.querySelectorAll('oas-menubar')][
-      [...document.querySelectorAll('oas-menubar')].length - 1
-    ]!
+    const el = [...document.querySelectorAll('oas-menubar')][[...document.querySelectorAll('oas-menubar')].length - 1]!
     const root = el.shadowRoot!
     const read = (svg: Element) => ({
       outer: svg.getAttribute('stroke'),
@@ -290,8 +275,8 @@ test('菜单家族 iconColor：menu/menubar/navigation-menu 图标固定颜色�
   })
   await page.waitForFunction(
     () =>
-      [...document.querySelectorAll('oas-navigation-menu')].some(
-        (m) => m.shadowRoot?.querySelector('.card .icon svg path'),
+      [...document.querySelectorAll('oas-navigation-menu')].some((m) =>
+        m.shadowRoot?.querySelector('.card .icon svg path'),
       ),
     undefined,
     { timeout: 5000 },
@@ -316,7 +301,11 @@ test('menubar/navigation-menu/sidebar 粗指针触控目标 ≥48px xl 档（poi
   // 模板方反馈：窄屏 ☰ 弹出菜单顶级项 52×32px，粗指针设备不达标（目标 ≥44px）
   // 库侧治本：三组件 STYLE 内 @media (pointer: coarse) 触控基线；模板临时 ::part 补丁可移除
   // 移动设备模拟（isMobile+hasTouch → DevTools 设备仿真把 pointer 翻为 coarse）
-  const context = await browser.newContext({ viewport: { width: 760, height: 700 }, isMobile: true, hasTouch: true })
+  const context = await browser.newContext({
+    viewport: { width: 760, height: 700 },
+    isMobile: true,
+    hasTouch: true,
+  })
   const page = await context.newPage()
   const coarse = await page.evaluate(() => matchMedia('(pointer: coarse)').matches)
   expect(coarse, '设备模拟应使 pointer:coarse 命中').toBe(true)
@@ -330,7 +319,9 @@ test('menubar/navigation-menu/sidebar 粗指针触控目标 ≥48px xl 档（poi
   await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-navigation-menu')
   r.navTop = await page.evaluate(() => {
-    const t = document.querySelector('oas-navigation-menu')!.shadowRoot!.querySelector('[part="top-item"]') as HTMLElement
+    const t = document
+      .querySelector('oas-navigation-menu')!
+      .shadowRoot!.querySelector('[part="top-item"]') as HTMLElement
     return Math.round(t.getBoundingClientRect().height)
   })
   // sidebar（.item 桌面 lg 40 → coarse xl 48，.item.sub 子项同类名一并覆盖）
@@ -339,10 +330,13 @@ test('menubar/navigation-menu/sidebar 粗指针触控目标 ≥48px xl 档（poi
   const sidebarPage = await context.newPage()
   await sidebarPage.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
   await sidebarPage.waitForSelector('oas-sidebar', { state: 'attached', timeout: 45000 })
-  await sidebarPage.waitForFunction(() => {
-    const s = document.querySelector('oas-sidebar')
-    return s != null && s.shadowRoot != null
-  }, { timeout: 15000 })
+  await sidebarPage.waitForFunction(
+    () => {
+      const s = document.querySelector('oas-sidebar')
+      return s != null && s.shadowRoot != null
+    },
+    { timeout: 15000 },
+  )
   await sidebarPage.waitForTimeout(400)
   r.sidebarItem = await sidebarPage.evaluate(() => {
     const items = [...document.querySelectorAll('oas-sidebar')]

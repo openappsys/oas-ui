@@ -22,10 +22,7 @@ function mountVirtual(attrs: Record<string, string> = {}): OAStooltip {
 }
 
 /** happy-dom 无布局引擎：stub 元素 getBoundingClientRect，让定位数学可精确断言 */
-function stubRect(
-  el: HTMLElement,
-  r: { left: number; top: number; width: number; height: number },
-): void {
+function stubRect(el: HTMLElement, r: { left: number; top: number; width: number; height: number }): void {
   el.getBoundingClientRect = () =>
     ({
       x: r.left,
@@ -67,14 +64,10 @@ describe('OAStooltip', () => {
 
   it('mouseenter 触发显示，mouseleave 隐藏', async () => {
     const el = mount({ content: '提示' })
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseleave', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
     expect(tip(el).getAttribute('aria-hidden')).toBe('true')
   })
 
@@ -211,12 +204,8 @@ describe('OAStooltip', () => {
   it('virtual 模式下 anchor hover/focus 不触发（open 只受外部控制）', async () => {
     const el = mount({ virtual: '', content: 'x' })
     await Promise.resolve()
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new FocusEvent('focusin', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('true')
   })
@@ -257,9 +246,7 @@ describe('OAStooltip', () => {
     const el = mount({ content: 'x' })
     await Promise.resolve()
     const fired: Array<Record<string, unknown>> = []
-    el.addEventListener('oas-open-change', (e) =>
-      fired.push((e as CustomEvent).detail as Record<string, unknown>),
-    )
+    el.addEventListener('oas-open-change', (e) => fired.push((e as CustomEvent).detail as Record<string, unknown>))
     el.setAttribute('open', '')
     await Promise.resolve()
     el.removeAttribute('open')
@@ -275,16 +262,10 @@ describe('OAStooltip', () => {
     const el = mount({ content: 'x' })
     await Promise.resolve()
     const fired: boolean[] = []
-    el.addEventListener('oas-open-change', (e) =>
-      fired.push((e as CustomEvent<{ open: boolean }>).detail.open),
-    )
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    el.addEventListener('oas-open-change', (e) => fired.push((e as CustomEvent<{ open: boolean }>).detail.open))
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await Promise.resolve()
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseleave', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
     await Promise.resolve()
     expect(fired).toEqual([true, false])
   })
@@ -293,9 +274,7 @@ describe('OAStooltip', () => {
     const el = mount({ open: '', content: 'x' })
     await Promise.resolve()
     const fired: boolean[] = []
-    el.addEventListener('oas-open-change', (e) =>
-      fired.push((e as CustomEvent<{ open: boolean }>).detail.open),
-    )
+    el.addEventListener('oas-open-change', (e) => fired.push((e as CustomEvent<{ open: boolean }>).detail.open))
     el.setAttribute('content', 'y')
     await Promise.resolve()
     expect(fired).toEqual([])
@@ -371,10 +350,9 @@ describe('OAStooltip', () => {
       const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
       const cs = window.getComputedStyle(arrow)
       // 该 placement 对应的悬空边 = 箭头尺寸/2 的负值（默认 12px → -6px 语义，走变量 calc）
-      expect(
-        cs.getPropertyValue(cases[p].edge),
-        `placement=${p} 箭头应悬面板${cases[p].edge}边`,
-      ).toBe('calc(12px / -2)')
+      expect(cs.getPropertyValue(cases[p].edge), `placement=${p} 箭头应悬面板${cases[p].edge}边`).toBe(
+        'calc(12px / -2)',
+      )
     }
   })
 
@@ -585,9 +563,7 @@ describe('OAStooltip', () => {
   it('trigger 不含 focus：focusin 不触发', async () => {
     const el = mount({ trigger: 'hover', content: 'x' })
     await Promise.resolve()
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new FocusEvent('focusin', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('true')
   })
@@ -595,9 +571,7 @@ describe('OAStooltip', () => {
   it('trigger 不含 hover：mouseenter 不触发', async () => {
     const el = mount({ trigger: 'focus', content: 'x' })
     await Promise.resolve()
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('true')
   })
@@ -605,9 +579,7 @@ describe('OAStooltip', () => {
   it('trigger 默认 hover+focus：mouseenter 触发（向后兼容）', async () => {
     const el = mount({ content: 'x' })
     await Promise.resolve()
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
   })
@@ -624,9 +596,7 @@ describe('OAStooltip', () => {
       content: 'x',
     })
     await Promise.resolve()
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     vi.advanceTimersByTime(99)
     expect(tip(el).getAttribute('aria-hidden')).toBe('true')
     vi.advanceTimersByTime(2)
@@ -777,9 +747,7 @@ describe('OAStooltip', () => {
   it('disabled：hover 不触发', async () => {
     const el = mount({ disabled: '', content: 'x' })
     await Promise.resolve()
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('true')
   })
@@ -795,9 +763,7 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     el.removeAttribute('disabled')
     await Promise.resolve()
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
   })
@@ -840,9 +806,7 @@ describe('OAStooltip', () => {
     vi.advanceTimersByTime(0)
     // 关闭后立刻 hover 下一个（open-delay=200 应被跳过）
     const b = mount({ trigger: 'hover', 'open-delay': '200', content: 'b' })
-    ;(b.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(b.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     vi.advanceTimersByTime(0)
     expect(tip(b).getAttribute('aria-hidden')).toBe('false')
     vi.useRealTimers()
@@ -859,9 +823,7 @@ describe('OAStooltip', () => {
     // 等待超过 skip-delay（默认 300ms）
     vi.advanceTimersByTime(400)
     const b = mount({ trigger: 'hover', 'open-delay': '200', content: 'b' })
-    ;(b.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(b.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     vi.advanceTimersByTime(199)
     expect(tip(b).getAttribute('aria-hidden')).toBe('true')
     vi.advanceTimersByTime(2)
@@ -883,9 +845,7 @@ describe('OAStooltip', () => {
       'skip-delay-duration': '0',
       content: 'b',
     })
-    ;(b.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(b.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     vi.advanceTimersByTime(0)
     expect(tip(b).getAttribute('aria-hidden')).toBe('true')
     vi.advanceTimersByTime(200)
@@ -1094,9 +1054,7 @@ describe('OAStooltip', () => {
     el.innerHTML = '<span><button disabled>不可用</button></span>'
     document.body.appendChild(el)
     await Promise.resolve()
-    ;(el.querySelector('span') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: false }),
-    )
+    ;(el.querySelector('span') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }))
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
   })
@@ -1150,9 +1108,7 @@ describe('OAStooltip', () => {
     vi.useFakeTimers()
     const el = mount({ trigger: 'click', 'auto-close': '200', content: 'x' })
     await Promise.resolve()
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('click', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }))
     vi.advanceTimersByTime(0)
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
     vi.advanceTimersByTime(200)
@@ -1195,9 +1151,7 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     await Promise.resolve()
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
-      new MouseEvent('mouseenter', { bubbles: true }),
-    )
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
   })
@@ -1335,22 +1289,14 @@ describe('OAStooltip', () => {
     const css = styleCss(mount())
     // 盒定位：主轴边外整悬 -8px（盒底贴主轴边）、起止侧边线贴齐 0；不旋转 + clip-path 直角三角
     const rules: Record<string, string> = {
-      'bottom-start':
-        'top: -8px; left: 0; transform: none; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);',
-      'bottom-end':
-        'top: -8px; right: 0; transform: none; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);',
-      'top-start':
-        'bottom: -8px; left: 0; transform: none; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);',
-      'top-end':
-        'bottom: -8px; right: 0; transform: none; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);',
-      'left-start':
-        'right: -8px; top: 0; transform: none; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);',
-      'left-end':
-        'right: -8px; bottom: 0; transform: none; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);',
-      'right-start':
-        'left: -8px; top: 0; transform: none; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);',
-      'right-end':
-        'left: -8px; bottom: 0; transform: none; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);',
+      'bottom-start': 'top: -8px; left: 0; transform: none; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);',
+      'bottom-end': 'top: -8px; right: 0; transform: none; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);',
+      'top-start': 'bottom: -8px; left: 0; transform: none; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);',
+      'top-end': 'bottom: -8px; right: 0; transform: none; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);',
+      'left-start': 'right: -8px; top: 0; transform: none; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);',
+      'left-end': 'right: -8px; bottom: 0; transform: none; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);',
+      'right-start': 'left: -8px; top: 0; transform: none; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);',
+      'right-end': 'left: -8px; bottom: 0; transform: none; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);',
     }
     for (const [p, decl] of Object.entries(rules)) {
       expect(css, `merge ${p} 箭头应为直角三角贴角共边`).toContain(
@@ -1358,9 +1304,7 @@ describe('OAStooltip', () => {
       )
     }
     // 旧「菱心骑角」规则（盒半宽 -4px 居中骑角）不得残留
-    expect(css).not.toContain(
-      "[data-arrow-position='merge'][data-placement='bottom-start'] .arrow,",
-    )
+    expect(css).not.toContain("[data-arrow-position='merge'][data-placement='bottom-start'] .arrow,")
     expect(css).not.toContain("[data-arrow-position='merge'][data-placement='left-start'] .arrow,")
   })
 
@@ -1369,10 +1313,7 @@ describe('OAStooltip', () => {
     // 每向：clip-path 顶点（盒内 8×8 百分比坐标）→ 面板角点位于盒的哪个角 + 三角朝向
     // corner: 面板角点在箭头盒内的位置；edge: 贴边腿顶点相对角点的位移（沿面板边向内 8px，
     // 该腿与面板真实边段共边）；tip: 尖端相对角点的正交位移 8px（指向锚点侧）
-    const geom: Record<
-      string,
-      { corner: [number, number]; edge: [number, number]; tip: [number, number] }
-    > = {
+    const geom: Record<string, { corner: [number, number]; edge: [number, number]; tip: [number, number] }> = {
       // bottom 系：盒悬顶边上方 → 角点在盒底边；start 贴左（贴边腿向右）、end 贴右（向左）；尖端朝上
       'bottom-start': { corner: [0, 8], edge: [8, 0], tip: [0, -8] },
       'bottom-end': { corner: [8, 8], edge: [-8, 0], tip: [0, -8] },
@@ -1412,16 +1353,12 @@ describe('OAStooltip', () => {
       expect(rightIdx, `${p} clip-path 应含直角顶点`).toBeGreaterThanOrEqual(0)
       const rv = vs[rightIdx]!
       // 直角顶点精确落面板角点（角点在盒内的已知位置）
-      expect(near(rv[0], corner[0]) && near(rv[1], corner[1]), `${p} 直角顶点应落面板角点`).toBe(
-        true,
-      )
+      expect(near(rv[0], corner[0]) && near(rv[1], corner[1]), `${p} 直角顶点应落面板角点`).toBe(true)
       // 另两顶点：一个沿面板边向内 8px（贴边腿与面板真实边段共边）、一个为尖端
       // （角点 + 正交位移 8px 指向锚点侧）
       const others = vs.filter((_, i) => i !== rightIdx)
-      const isEdge = (v: [number, number]): boolean =>
-        near(v[0] - rv[0], edge[0]) && near(v[1] - rv[1], edge[1])
-      const isTip = (v: [number, number]): boolean =>
-        near(v[0] - rv[0], tip[0]) && near(v[1] - rv[1], tip[1])
+      const isEdge = (v: [number, number]): boolean => near(v[0] - rv[0], edge[0]) && near(v[1] - rv[1], edge[1])
+      const isTip = (v: [number, number]): boolean => near(v[0] - rv[0], tip[0]) && near(v[1] - rv[1], tip[1])
       expect(
         (isEdge(others[0]!) && isTip(others[1]!)) || (isTip(others[0]!) && isEdge(others[1]!)),
         `${p} 两直角边应分别与面板边共边（向内 8px）与正交外探尖端（8px）`,
@@ -1719,9 +1656,7 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     const hoverEl = mount({ content: 'x', 'close-delay': '0' })
     await Promise.resolve()
     const hoverSrc: string[] = []
-    hoverEl.addEventListener('oas-open-change', (e) =>
-      hoverSrc.push((e as CustomEvent).detail.source),
-    )
+    hoverEl.addEventListener('oas-open-change', (e) => hoverSrc.push((e as CustomEvent).detail.source))
     const btn = hoverEl.querySelector('button')!
     btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await Promise.resolve()
@@ -1732,9 +1667,7 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     const ctxEl = mount({ trigger: 'contextmenu', content: 'x' })
     await Promise.resolve()
     const ctxSrc: string[] = []
-    ctxEl.addEventListener('oas-open-change', (e) =>
-      ctxSrc.push((e as CustomEvent).detail.source),
-    )
+    ctxEl.addEventListener('oas-open-change', (e) => ctxSrc.push((e as CustomEvent).detail.source))
     const ctxBtn = ctxEl.querySelector('button')!
     ctxBtn.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
     await Promise.resolve()
@@ -1767,9 +1700,7 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     const el = mount({ content: 'x' })
     await Promise.resolve()
     const btn = el.querySelector('button')!
-    btn.dispatchEvent(
-      new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }),
-    )
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }))
     vi.advanceTimersByTime(499)
     expect(tip(el).getAttribute('aria-hidden')).toBe('true')
     vi.advanceTimersByTime(2)
@@ -1802,7 +1733,6 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     expect(detail).toEqual([{ open: true, source: 'touch', reason: 'long-press' }])
     vi.useRealTimers()
   })
-
 
   // ---------- P3 label 语义切换 + aria 关联还原（保存原值、关闭还原） ----------
 
@@ -2240,9 +2170,7 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     const el = mount({ trigger: 'focus', 'open-delay': '300', content: 'x' })
     await Promise.resolve()
     const detail: Array<{ source: string }> = []
-    el.addEventListener('oas-open-change', (e) =>
-      detail.push((e as CustomEvent).detail as { source: string }),
-    )
+    el.addEventListener('oas-open-change', (e) => detail.push((e as CustomEvent).detail as { source: string }))
     const btn = el.querySelector('button')!
     btn.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
     await Promise.resolve()

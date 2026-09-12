@@ -399,12 +399,8 @@ export class OASImage extends OASElement {
           break
       }
     })
-    this.shadow
-      .querySelector<HTMLElement>('[part="preview-prev"]')
-      ?.addEventListener('click', () => this.stepImage(-1))
-    this.shadow
-      .querySelector<HTMLElement>('[part="preview-next"]')
-      ?.addEventListener('click', () => this.stepImage(1))
+    this.shadow.querySelector<HTMLElement>('[part="preview-prev"]')?.addEventListener('click', () => this.stepImage(-1))
+    this.shadow.querySelector<HTMLElement>('[part="preview-next"]')?.addEventListener('click', () => this.stepImage(1))
     this.shadow
       .querySelector<HTMLElement>('[part="preview-close"]')
       ?.addEventListener('click', () => this.closePreview())
@@ -423,9 +419,7 @@ export class OASImage extends OASElement {
       stage.addEventListener('pointerup', this.onPointerUp)
       stage.addEventListener('pointercancel', this.onPointerUp)
     }
-    this.shadow
-      .querySelector('.preview-dialog')
-      ?.addEventListener('click', (e) => e.stopPropagation())
+    this.shadow.querySelector('.preview-dialog')?.addEventListener('click', (e) => e.stopPropagation())
     this.shadow.querySelector('.preview-mask')?.addEventListener('click', (e) => {
       if (e.target === e.currentTarget) this.closePreview()
     })
@@ -817,8 +811,7 @@ export class OASImage extends OASElement {
       shadowActive = null
     }
     const active = (shadowActive ?? document.activeElement) as HTMLElement | null
-    const inside =
-      active != null && (active === this || active === this.portalHost || mask.contains(active))
+    const inside = active != null && (active === this || active === this.portalHost || mask.contains(active))
     if (e.shiftKey) {
       if (active === first || !inside) {
         e.preventDefault()
@@ -966,9 +959,7 @@ export class OASImage extends OASElement {
       this.toolbarCustom = true
       bar.classList.add('custom')
       // template 克隆 content（克隆 template 外壳会得到惰性节点）；普通元素整节点克隆
-      bar.replaceChildren(
-        tpl instanceof HTMLTemplateElement ? tpl.content.cloneNode(true) : el!.cloneNode(true),
-      )
+      bar.replaceChildren(tpl instanceof HTMLTemplateElement ? tpl.content.cloneNode(true) : el!.cloneNode(true))
       this.emitToolbarRender()
     } else if (this.toolbarCustom) {
       this.toolbarCustom = false
@@ -1022,9 +1013,7 @@ export class OASImage extends OASElement {
     if (!bar) return null
     return (
       [...bar.querySelectorAll<HTMLElement>('button, a, [tabindex]')].find(
-        (el) =>
-          !(el instanceof HTMLButtonElement && el.disabled) &&
-          el.getAttribute('tabindex') !== '-1',
+        (el) => !(el instanceof HTMLButtonElement && el.disabled) && el.getAttribute('tabindex') !== '-1',
       ) ?? null
     )
   }
@@ -1068,10 +1057,7 @@ export class OASImage extends OASElement {
       if (total > 0) {
         const index = this.galleryIndex + 1
         counter.textContent = `${index}/${total}`
-        counter.setAttribute(
-          'aria-label',
-          this.t('image.preview.progress', { index, total }),
-        )
+        counter.setAttribute('aria-label', this.t('image.preview.progress', { index, total }))
       }
     }
     const infinite = this.hasAttr('infinite')

@@ -238,11 +238,7 @@ export class OASSegmented extends OASElement {
     // 宿主态镜像：size（就近读取注入）/ direction / readonly
     const size = normalizeChoice(this.injectValue('size', 'medium'), 'medium', VALID_SIZES)
     this.setAttribute('data-size', size)
-    const direction = normalizeChoice(
-      this.getAttr('direction', 'horizontal'),
-      'horizontal',
-      ['horizontal', 'vertical'],
-    )
+    const direction = normalizeChoice(this.getAttr('direction', 'horizontal'), 'horizontal', ['horizontal', 'vertical'])
     this.setAttribute('data-direction', direction)
     group.setAttribute('aria-orientation', direction)
     if (this.hasAttr('readonly')) group.setAttribute('aria-readonly', 'true')
@@ -444,7 +440,10 @@ export class OASSegmented extends OASElement {
     if (jump === 'first') target = enabled[0]
     else if (jump === 'last') target = enabled[enabled.length - 1]
     else {
-      const from = Math.max(enabled.findIndex((o) => o.value === current), 0)
+      const from = Math.max(
+        enabled.findIndex((o) => o.value === current),
+        0,
+      )
       target = enabled[(from + dir! + enabled.length) % enabled.length]
     }
     if (!target || target.value === current) return

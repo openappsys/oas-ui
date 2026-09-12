@@ -13,10 +13,7 @@ declare global {
 // 自动收集型 spec（smoke/visual 等）只扫 components 目录，不含首页
 // qa-regression.spec.ts 不另加断言：防复发铁律针对「修的 bug」，本 spec 即固化载体
 const stats = JSON.parse(
-  readFileSync(
-    resolve(import.meta.dirname, '../docs/docs/.vitepress/generated/stats.json'),
-    'utf8',
-  ),
+  readFileSync(resolve(import.meta.dirname, '../docs/docs/.vitepress/generated/stats.json'), 'utf8'),
 )
 
 test.describe.configure({ mode: 'parallel' })
@@ -147,9 +144,7 @@ test.describe('官网首页（重设计版）', () => {
     await ctxZh.close()
   })
 
-  test('首访语言适配：手动切换持久化（localStorage oas-lang 优先于浏览器语言）', async ({
-    browser,
-  }) => {
+  test('首访语言适配：手动切换持久化（localStorage oas-lang 优先于浏览器语言）', async ({ browser }) => {
     // en 浏览器 + 已存 zh 偏好 → 留中文（pref 覆盖浏览器探测）
     const ctx = await browser.newContext({ locale: 'en-US' })
     const p = await ctx.newPage()
@@ -167,7 +162,6 @@ test.describe('官网首页（重设计版）', () => {
     await ctx.close()
     await ctx2.close()
   })
-
 
   test('页脚：自定义四栏页脚 + 双许可与版权', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
@@ -202,9 +196,7 @@ test.describe('官网首页（重设计版）', () => {
       .toBe(true)
   })
 
-  test('SPA 导航回首页后滚动入场动画可触发（回归：首载非首页时 reveal 永不显示）', async ({
-    page,
-  }) => {
+  test('SPA 导航回首页后滚动入场动画可触发（回归：首载非首页时 reveal 永不显示）', async ({ page }) => {
     // 首载落在组件页（非 home 布局）→ Layout onMounted 查不到 .home-reveal
     await page.goto('/components/button', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('.VPDoc')).toBeAttached()

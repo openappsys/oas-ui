@@ -327,9 +327,7 @@ export class OASHoverCard extends OASElement {
 
   /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
   private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   private showTimer: ReturnType<typeof setTimeout> | null = null
@@ -390,9 +388,7 @@ export class OASHoverCard extends OASElement {
     this.card?.addEventListener('mouseenter', () => this.onCardEnter())
     this.card?.addEventListener('mouseleave', () => this.onCardLeave())
     // title 插槽内容增减时重刷标题区显隐（双通道 slot 覆盖判空）
-    this.card
-      ?.querySelector<HTMLSlotElement>('slot[name="title"]')
-      ?.addEventListener('slotchange', () => this.update())
+    this.card?.querySelector<HTMLSlotElement>('slot[name="title"]')?.addEventListener('slotchange', () => this.update())
     this.syncGroup()
     this.onCleanup(() => {
       if (this.showTimer) clearTimeout(this.showTimer)
@@ -612,10 +608,7 @@ export class OASHoverCard extends OASElement {
       titleEl.textContent = title
       titleEl.hidden = title === ''
     }
-    this.card.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
-      'content',
-      '',
-    )
+    this.card.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr('content', '')
     const arrow = this.card.querySelector<HTMLElement>('[data-popper-arrow]')
     if (arrow) arrow.hidden = this.getAttr('arrow', 'true') === 'false'
     this.card.classList.toggle('arrow-merge', this.hasAttr('arrow-merge'))
@@ -753,14 +746,8 @@ export class OASHoverCard extends OASElement {
 
     // 碰撞边界夹取：collision-padding 定制边距（以边界 rect 原点计算，默认视口，可换成自定义元素 rect）
     if (autoAdjust) {
-      left = Math.max(
-        boundary.left + padding,
-        Math.min(left, boundary.right - cardRect.width - padding),
-      )
-      top = Math.max(
-        boundary.top + padding,
-        Math.min(top, boundary.bottom - cardRect.height - padding),
-      )
+      left = Math.max(boundary.left + padding, Math.min(left, boundary.right - cardRect.width - padding))
+      top = Math.max(boundary.top + padding, Math.min(top, boundary.bottom - cardRect.height - padding))
     }
 
     const actual = actualBase + (align ? `-${align}` : '')
@@ -898,25 +885,10 @@ export class OASHoverCard extends OASElement {
         : placement.startsWith('left')
           ? 'left'
           : 'right'
-    const align: Align = placement.endsWith('-start')
-      ? 'start'
-      : placement.endsWith('-end')
-        ? 'end'
-        : ''
-    const cross = (s: string, e: string): string =>
-      align === 'start' ? s : align === 'end' ? e : 'center'
-    const originX =
-      base === 'top' || base === 'bottom'
-        ? cross('left', 'right')
-        : base === 'left'
-          ? 'right'
-          : 'left'
-    const originY =
-      base === 'left' || base === 'right'
-        ? cross('top', 'bottom')
-        : base === 'top'
-          ? 'bottom'
-          : 'top'
+    const align: Align = placement.endsWith('-start') ? 'start' : placement.endsWith('-end') ? 'end' : ''
+    const cross = (s: string, e: string): string => (align === 'start' ? s : align === 'end' ? e : 'center')
+    const originX = base === 'top' || base === 'bottom' ? cross('left', 'right') : base === 'left' ? 'right' : 'left'
+    const originY = base === 'left' || base === 'right' ? cross('top', 'bottom') : base === 'top' ? 'bottom' : 'top'
     this.card.style.transformOrigin = `${originX} ${originY}`
   }
 
@@ -942,9 +914,7 @@ export class OASHoverCard extends OASElement {
     const vertical = placement.startsWith('top') || placement.startsWith('bottom')
     const rect = this.card.getBoundingClientRect()
     const popupEdge = vertical ? parseFloat(this.card.style.left) : parseFloat(this.card.style.top)
-    const anchorCrossCenter = vertical
-      ? anchorRect.left + anchorRect.width / 2
-      : anchorRect.top + anchorRect.height / 2
+    const anchorCrossCenter = vertical ? anchorRect.left + anchorRect.width / 2 : anchorRect.top + anchorRect.height / 2
     const size = vertical ? rect.width : rect.height
     if (!Number.isFinite(size) || size <= 0) return
     // 锚点中心映射到面板局部坐标，夹取到面板内（4px 边距），避免箭头探出面板

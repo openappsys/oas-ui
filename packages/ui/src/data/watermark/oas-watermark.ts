@@ -430,10 +430,7 @@ export class OASWatermark extends OASElement {
     const rotate = normalizeNumber(this.getAttr('rotate', '-30'), -30)
     const widthAttr = this.getAttr('width', '')
     const heightAttr = this.getAttr('height', '')
-    const autoSize =
-      !image && (!widthAttr || !heightAttr)
-        ? resolveTileSize(text, { fontSize, rotate })
-        : null
+    const autoSize = !image && (!widthAttr || !heightAttr) ? resolveTileSize(text, { fontSize, rotate }) : null
     return {
       width: widthAttr ? normalizeNumber(widthAttr, 240, 1) : (autoSize?.width ?? 240),
       height: heightAttr ? normalizeNumber(heightAttr, 120, 1) : (autoSize?.height ?? 120),
@@ -476,22 +473,26 @@ export class OASWatermark extends OASElement {
 
     // 平铺间隙与起始偏移（JSON [x,y]；offset 缺省 gap/2，与旧版 center 视觉等价）
     const gap = parseNumberPair(this.getAttr('gap', '')) ?? [width, height]
-    const offset =
-      parseNumberPair(this.getAttr('offset', '')) ?? [gap[0] / 2, gap[1] / 2]
+    const offset = parseNumberPair(this.getAttr('offset', '')) ?? [gap[0] / 2, gap[1] / 2]
 
     // 背景图：image 优先；canvas 可用走 canvas tile（DPR 高清），否则 SVG data-uri 回退
     let bg = 'none'
     if (image) {
       bg = this.imageBackground(image, grayscale, repeat, gap)
     } else {
-      bg = this.textBackground(text, {
-        width,
-        height,
-        rotate,
-        fontSize,
-        fontWeight: this.getAttr('font-weight', '400'),
-        fontFamily: this.getAttr('font-family', 'sans-serif'),
-      }, color, layer)
+      bg = this.textBackground(
+        text,
+        {
+          width,
+          height,
+          rotate,
+          fontSize,
+          fontWeight: this.getAttr('font-weight', '400'),
+          fontFamily: this.getAttr('font-family', 'sans-serif'),
+        },
+        color,
+        layer,
+      )
     }
 
     let backgroundRepeat = 'repeat'
@@ -501,15 +502,12 @@ export class OASWatermark extends OASElement {
       // 单枚：contain 居中；显式 offset 时按偏移定位（拖拽单枚水印可用）
       backgroundRepeat = 'no-repeat'
       backgroundSize = 'contain'
-      backgroundPosition = this.getAttr('offset', '')
-        ? `${offset[0]}px ${offset[1]}px`
-        : 'center'
+      backgroundPosition = this.getAttr('offset', '') ? `${offset[0]}px ${offset[1]}px` : 'center'
     }
     if (staggered) {
       // 双层背景：第二层偏移半 tile → 奇偶行错位排布
       backgroundSize = `${backgroundSize}, ${backgroundSize}`
-      backgroundPosition =
-        `${backgroundPosition}, ${offset[0] + gap[0] / 2}px ${offset[1] + gap[1] / 2}px`
+      backgroundPosition = `${backgroundPosition}, ${offset[0] + gap[0] / 2}px ${offset[1] + gap[1] / 2}px`
       if (bg !== 'none') bg = `${bg}, ${bg}`
     }
 
@@ -531,12 +529,7 @@ export class OASWatermark extends OASElement {
   }
 
   /** 文字背景：canvas 主路径（缓存 + DPR + 解析色入签名）；无 canvas 回退 SVG data-uri */
-  private textBackground(
-    text: string,
-    options: WatermarkTextOptions,
-    colorCss: string,
-    layer: HTMLElement,
-  ): string {
+  private textBackground(text: string, options: WatermarkTextOptions, colorCss: string, layer: HTMLElement): string {
     if (!canvasAvailable()) {
       const uri = textTileDataUri(text, options)
       return uri ? `url("${uri}")` : 'none'
@@ -566,12 +559,7 @@ export class OASWatermark extends OASElement {
   }
 
   /** 图片背景：grayscale 走 canvas drawImage（跨域污染/加载失败回退原 URL）；否则直用 URL */
-  private imageBackground(
-    url: string,
-    grayscale: boolean,
-    repeat: boolean,
-    gap: [number, number],
-  ): string {
+  private imageBackground(url: string, grayscale: boolean, repeat: boolean, gap: [number, number]): string {
     if (!grayscale || !canvasAvailable()) return `url("${url}")`
     const key = JSON.stringify(['img', url, grayscale, repeat, gap, devicePixelRatioOf()])
     if (key === this.tileKey && this.tileUrl) return `url("${this.tileUrl}")`

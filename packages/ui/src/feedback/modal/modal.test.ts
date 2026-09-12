@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import {
-  modal,
-  destroyAll,
-  type ModalOptions,
-  type OptionsOptions,
-} from './index.js'
+import { modal, destroyAll, type ModalOptions, type OptionsOptions } from './index.js'
 import { registerAppHost, unregisterAppHost } from '../../framework/app/app-host.js'
 import { iconRegistry } from '@oas-ui/icons'
 // prompt 用例经主路径 index 已默认含 prompt 能力（v2.5.0 语义：主路径内置能力包），
@@ -468,9 +463,7 @@ describe('modal 命令式 API', () => {
     const viaMask = modal.prompt({ title: 'b' })
     await Promise.resolve()
     const el2 = document.body.querySelector('oas-modal')!
-    el2.shadowRoot!.querySelector('.mask')!.dispatchEvent(
-      new MouseEvent('click', { bubbles: true }),
-    )
+    el2.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await expect(viaMask).resolves.toEqual({ value: '', action: 'cancel' })
     endAnim(el2)
 

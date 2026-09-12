@@ -297,9 +297,7 @@ describe('OASInput', () => {
     const el = mount()
     let fired = false
     el.addEventListener('oas-enter', () => (fired = true))
-    input(el).dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, isComposing: true }),
-    )
+    input(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, isComposing: true }))
     expect(fired).toBe(false)
   })
 
@@ -354,9 +352,7 @@ describe('OASInput', () => {
     expect(slotOf(el, 'prefix').assignedNodes()).toContain(icon)
     expect(part(el, 'prefix').hidden).toBe(false)
     expect(el.hasAttribute('data-slot-prefix')).toBe(true)
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="prefix"] [data-fallback]')!.textContent,
-    ).toBe('¥')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="prefix"] [data-fallback]')!.textContent).toBe('¥')
   })
 
   it('动态增删 slot 内容：slotchange 后显隐与 data-slot-prefix 同步', async () => {

@@ -19,7 +19,9 @@ function warnInvalid(raw: string, valid: readonly string[], label: string, warne
   if (valid.includes(raw)) return
   if (!warned.has(raw)) {
     warned.add(raw)
-    console.warn(`[oas-empty] 非法 ${label} "${raw}"，已回落默认；合法值：${valid.map((v) => (v === '' ? '(空)' : v)).join('/')}`)
+    console.warn(
+      `[oas-empty] 非法 ${label} "${raw}"，已回落默认；合法值：${valid.map((v) => (v === '' ? '(空)' : v)).join('/')}`,
+    )
   }
 }
 
@@ -256,9 +258,7 @@ export class OASEmpty extends OASElement {
 
   /** 插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性通道的判空依据 */
   private hasSlotContent(slot: HTMLSlotElement): boolean {
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** 媒体区尺寸：image-size 数值精调优先，否则按 size 档联动（small 72 / medium 96 / large 120） */

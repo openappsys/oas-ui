@@ -6,11 +6,7 @@ import { test, expect } from '@playwright/test'
 // 3. popconfirm：确定/取消关闭气泡（含键盘/脚本激活的合成 click 场景）
 // 4. splitter：鼠标拖拽改变 percent
 // 5. image：preview 点击派发 oas-preview
-async function openReady(
-  page: import('@playwright/test').Page,
-  url: string,
-  ready: string,
-): Promise<void> {
+async function openReady(page: import('@playwright/test').Page, url: string, ready: string): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 })
   // 等待自定义元素升级完成（shadowRoot 就绪）——仅等 attached 在并行负载下
   // 会过早（元素已存在但 JS 尚未注册/升级），点击落在未升级元素上事件丢失

@@ -59,11 +59,7 @@ export function notifyConfigProviders(provider: HTMLElement): void {
  * - 解析结果按「provider 元素 + 属性原文」缓存：config 属性未变化时复用（同值去重）
  * - 非法 JSON 的 dev 告警由 config-provider 组件负责，本 helper 只读不告警
  */
-export function readConfigValue<T = string>(
-  el: Element,
-  tag: string,
-  key: string,
-): T | undefined {
+export function readConfigValue<T = string>(el: Element, tag: string, key: string): T | undefined {
   const provider = findConfigProvider(el)
   if (!provider) return undefined
   const config = parseProviderConfig(provider)
@@ -104,9 +100,7 @@ const configCache = new WeakMap<
 >()
 
 /** 解析 provider 的 config JSON（缓存：属性原文未变化时复用上次解析结果） */
-function parseProviderConfig(
-  provider: HTMLElement,
-): Record<string, Record<string, unknown>> | null {
+function parseProviderConfig(provider: HTMLElement): Record<string, Record<string, unknown>> | null {
   const raw = provider.getAttribute('config')
   const hit = configCache.get(provider)
   if (hit && hit.raw === raw) return hit.parsed

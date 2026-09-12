@@ -53,14 +53,10 @@ describe('OASFlex', () => {
 
   it('wrap 为布尔：存在即 flex-wrap:wrap，缺省 nowrap', () => {
     const a = mount({ wrap: '' })
-    expect((a.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.flexWrap).toBe(
-      'wrap',
-    )
+    expect((a.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.flexWrap).toBe('wrap')
     document.body.innerHTML = ''
     const b = mount({})
-    expect((b.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.flexWrap).toBe(
-      'nowrap',
-    )
+    expect((b.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.flexWrap).toBe('nowrap')
   })
 
   it('justify 简写枚举补全：start/end/between/around', () => {
@@ -113,14 +109,10 @@ describe('OASFlex', () => {
 
   it('justify 补 space-evenly 档：evenly 与旧枚举双向兼容', () => {
     const a = mount({ justify: 'evenly' })
-    expect((a.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.justifyContent).toBe(
-      'space-evenly',
-    )
+    expect((a.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.justifyContent).toBe('space-evenly')
     a.remove()
     const b = mount({ justify: 'space-evenly' })
-    expect((b.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.justifyContent).toBe(
-      'space-evenly',
-    )
+    expect((b.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.justifyContent).toBe('space-evenly')
   })
 
   it('fill：子项等分填满容器（flex: 1 等价物）', () => {

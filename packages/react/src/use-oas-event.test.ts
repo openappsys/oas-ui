@@ -14,8 +14,7 @@ import { useOasEvent } from './use-oas-event.js'
  */
 
 // 让 react act() 正常工作（避免 "not wrapped in act" 告警）
-;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
-  true
+;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 /** 事件触发记录 */
 interface FiredRecord {
@@ -34,7 +33,11 @@ function SingleEventHost(props: { type: string; onFired: (r: FiredRecord) => voi
 }
 
 /** 渲染辅助：挂到 body，返回容器与其首个元素 */
-function mount(host: ReturnType<typeof createElement>): { root: Root; container: HTMLDivElement; el: HTMLDivElement } {
+function mount(host: ReturnType<typeof createElement>): {
+  root: Root
+  container: HTMLDivElement
+  el: HTMLDivElement
+} {
   const container = document.createElement('div')
   document.body.append(container)
   const root = createRoot(container)

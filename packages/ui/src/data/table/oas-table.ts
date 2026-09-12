@@ -1,9 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
-import {
-  registeredTableCapabilities,
-  onTableCapabilityRegistered,
-} from './oas-table-capability.js'
+import { registeredTableCapabilities, onTableCapabilityRegistered } from './oas-table-capability.js'
 // 行内交互宿主排除清单（行点击/双击编辑共用的单一事实来源，含维护纪律注释）
 import { ROW_INTERACTIVE_EXCLUSION } from './oas-table-interactive.js'
 
@@ -675,7 +672,8 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
 
 const CHECK_CELL_WIDTH = 40
 const EXPAND_CELL_WIDTH = 40
-const FILTER_ICON = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M4.5 6.5h7M6.5 10h3"/></svg>'
+const FILTER_ICON =
+  '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M4.5 6.5h7M6.5 10h3"/></svg>'
 
 export class OASTableBase extends OASElement {
   static override get observedAttributes(): string[] {
@@ -939,8 +937,7 @@ export class OASTableBase extends OASElement {
     selectAll.type = 'checkbox'
     selectAll.setAttribute('aria-label', this.t('table.selectAll'))
     selectAll.checked =
-      flat.length > 0 &&
-      flat.every((f) => selected.includes(String(f.row[rowKey] ?? JSON.stringify(f.row))))
+      flat.length > 0 && flat.every((f) => selected.includes(String(f.row[rowKey] ?? JSON.stringify(f.row))))
     selectAll.addEventListener('change', () => {
       const keys = flat.map((f) => String(f.row[rowKey] ?? JSON.stringify(f.row)))
       this.setAttribute('selected', selectAll.checked ? keys.join(',') : '')
@@ -1182,12 +1179,7 @@ export class OASTableBase extends OASElement {
 
   /** 分页器挂载：开启分页时在 .pagination 容器放入 oas-pagination（复用现有分页组件），
       翻页/改页大小 → 写回 current/page-size 并派发 page-change（宿主可接服务端分页） */
-  private renderPagination(
-    enabled: boolean,
-    total: number,
-    pageSize: number,
-    current: number,
-  ): void {
+  private renderPagination(enabled: boolean, total: number, pageSize: number, current: number): void {
     const holder = this.shadow.querySelector('.pagination')
     if (!holder) return
     holder.innerHTML = ''
@@ -1457,12 +1449,7 @@ export class OASTableBase extends OASElement {
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
     scrollTop = this.wrap ? this.wrap.scrollTop : 0,
   ): void {
-    const win = computeVirtualWindow(
-      scrollTop,
-      this.tableHeight(),
-      this.rowHeight(),
-      display.length,
-    )
+    const win = computeVirtualWindow(scrollTop, this.tableHeight(), this.rowHeight(), display.length)
     const colSpan = this.columnCount()
     // 吸顶行恒渲染在列表顶部（视口外的吸顶行也从窗口中排除，避免重复渲染）
     const sticky = this.stickyRowCount()
@@ -1472,9 +1459,7 @@ export class OASTableBase extends OASElement {
       for (let i = 0; i < stickyEnd; i++) {
         const f = display[i]!
         const tr =
-          f.kind === 'expand'
-            ? this.buildExpandRow(f)
-            : this.buildRow(f, i, rowKey, selected, expanded, layout)
+          f.kind === 'expand' ? this.buildExpandRow(f) : this.buildRow(f, i, rowKey, selected, expanded, layout)
         tr.style.height = `${this.rowHeight()}px`
         body.appendChild(tr)
       }
@@ -1491,10 +1476,7 @@ export class OASTableBase extends OASElement {
 
     for (let i = windowStart; i < win.end; i++) {
       const f = display[i]!
-      const tr =
-        f.kind === 'expand'
-          ? this.buildExpandRow(f)
-          : this.buildRow(f, i, rowKey, selected, expanded, layout)
+      const tr = f.kind === 'expand' ? this.buildExpandRow(f) : this.buildRow(f, i, rowKey, selected, expanded, layout)
       tr.style.height = `${this.rowHeight()}px`
       body.appendChild(tr)
     }
@@ -1540,9 +1522,7 @@ export class OASTableBase extends OASElement {
     let cols = this.flattenLeaves(this._columns)
     if (this._columnKeys.length > 0) {
       const order = new Map(this._columnKeys.map((k, i) => [k, i]))
-      cols = cols
-        .filter((c) => order.has(c.key))
-        .sort((a, b) => (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0))
+      cols = cols.filter((c) => order.has(c.key)).sort((a, b) => (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0))
     }
     return cols.filter((c) => c.hidden !== true)
   }
@@ -1568,10 +1548,7 @@ export class OASTableBase extends OASElement {
 
   /** 派发编辑结果事件（提交/取消；detail 由 edit 能力组好）。事件名以字面量书写在此，
       供 api 扫描静态识别事件清单；未 import 编辑能力时不会有任何调用 */
-  notifyEdit(
-    kind: 'edit' | 'edit-cancel',
-    detail: TableEditDetail,
-  ): void {
+  notifyEdit(kind: 'edit' | 'edit-cancel', detail: TableEditDetail): void {
     this.emit(kind === 'edit' ? 'edit' : 'edit-cancel', detail)
   }
 
@@ -1661,8 +1638,13 @@ export class OASTableBase extends OASElement {
     isLeaf: boolean
   }[] {
     const depth = this.headerDepth()
-    const rows: { col: TableColumn; level: number; rowspan: number; colspan: number; isLeaf: boolean }[][] =
-      Array.from({ length: depth }, () => [])
+    const rows: {
+      col: TableColumn
+      level: number
+      rowspan: number
+      colspan: number
+      isLeaf: boolean
+    }[][] = Array.from({ length: depth }, () => [])
     const fill = (cols: TableColumn[], level: number): void => {
       for (const col of cols) {
         const count = this.leafCount(col)
@@ -1740,10 +1722,7 @@ export class OASTableBase extends OASElement {
   }
 
   /** 该行是否命中所有过滤条件 */
-  private matchesFilters(
-    row: Record<string, unknown>,
-    filterValues: Record<string, string | number>,
-  ): boolean {
+  private matchesFilters(row: Record<string, unknown>, filterValues: Record<string, string | number>): boolean {
     const leaves = this.flattenLeaves(this._columns)
     for (const [key, fv] of Object.entries(filterValues)) {
       const col = leaves.find((c) => c.key === key)
@@ -1856,13 +1835,16 @@ export class OASTableBase extends OASElement {
   /**
    * 解析当前排序状态：无 multi-sort 时回退单列 sort-key/sort-order（向后兼容）。
    * 返回数组按优先级排序（先比较首个，相等再比较次个）。
-   */  private resolveSorts(): SortState[] {
+   */ private resolveSorts(): SortState[] {
     const raw = this.getAttr('multi-sort', '')
     if (raw) {
       try {
         const arr = JSON.parse(raw) as Array<{ key: string; order?: SortOrder }>
         const out = (Array.isArray(arr) ? arr : [])
-          .filter((s): s is { key: string; order: 'asc' | 'desc' } => !!s && typeof s.key === 'string' && (s.order === 'asc' || s.order === 'desc'))
+          .filter(
+            (s): s is { key: string; order: 'asc' | 'desc' } =>
+              !!s && typeof s.key === 'string' && (s.order === 'asc' || s.order === 'desc'),
+          )
           .map((s): SortState => ({ key: s.key, order: s.order }))
         return out
       } catch {
@@ -1880,11 +1862,7 @@ export class OASTableBase extends OASElement {
    * Linux small-ICU 码点排序结果不同，导致跨环境行为不一致）；语言感知排序（如中文
    * 拼音）应由宿主在数据侧预排序或提供自定义 comparator。
    */
-  private compareRows(
-    a: Record<string, unknown>,
-    b: Record<string, unknown>,
-    sorts: SortState[],
-  ): number {
+  private compareRows(a: Record<string, unknown>, b: Record<string, unknown>, sorts: SortState[]): number {
     for (const { key, order } of sorts) {
       if (!order) continue
       const av = a[key]
@@ -1907,11 +1885,7 @@ export class OASTableBase extends OASElement {
    * 返回的 flat 是完整列表（树形含隐藏子行），visibleFlat 再做可见性过滤。
    * roots 传入时只遍历这些顶层行（供分页切片用），否则遍历 this._data。
    */
-  private buildFlat(
-    sorts: SortState[],
-    rowKey: string,
-    roots: Array<Record<string, unknown>> = this._data,
-  ): FlatRow[] {
+  private buildFlat(sorts: SortState[], rowKey: string, roots: Array<Record<string, unknown>> = this._data): FlatRow[] {
     const flat: FlatRow[] = []
     const walk = (nodes: Array<Record<string, unknown>>, depth: number, parent?: string): void => {
       const list = [...nodes]
@@ -1943,12 +1917,7 @@ export class OASTableBase extends OASElement {
       const children = row.children
       const hasChildren = Array.isArray(children) && children.length > 0
       const key = String(row[rowKey] ?? JSON.stringify(row))
-      if (
-        !hasChildren &&
-        expanded.has(key) &&
-        typeof row.expand === 'string' &&
-        row.expand.length > 0
-      ) {
+      if (!hasChildren && expanded.has(key) && typeof row.expand === 'string' && row.expand.length > 0) {
         out.push({
           row,
           depth: f.depth,
@@ -2025,8 +1994,7 @@ export class OASTableBase extends OASElement {
         }
       }
       if (cfg.type === 'sum') values.set(cfg.key, String(sum))
-      else if (cfg.type === 'avg')
-        values.set(cfg.key, String(cnt ? Math.round((sum / cnt) * 100) / 100 : 0))
+      else if (cfg.type === 'avg') values.set(cfg.key, String(cnt ? Math.round((sum / cnt) * 100) / 100 : 0))
       else values.set(cfg.key, String(cnt))
     }
     return values
@@ -2364,11 +2332,10 @@ export class OASTableBase extends OASElement {
     // 列定义经 property 赋值且含函数时，内存 `_columns` 已是权威（attribute JSON 无函数），跳过重解析
     if (!this._columnsFromProperty) {
       this._columns = this.resolveColumns()
-    }    try {
+    }
+    try {
       const keys = JSON.parse(this.getAttr('column-keys', '[]'))
-      this._columnKeys = Array.isArray(keys)
-        ? keys.filter((k) => typeof k === 'string')
-        : []
+      this._columnKeys = Array.isArray(keys) ? keys.filter((k) => typeof k === 'string') : []
     } catch {
       this._columnKeys = []
     }
@@ -2394,16 +2361,16 @@ function columnWidth(col: TableColumn): number {
 
 /** 归一化 span-method 返回值：[r, c] 元组或 {rowspan, colspan} 对象。
     非法分量（NaN/缺省）按 1 处理；rowspan/colspan 为 0 保留给「本格被覆盖不渲染」语义 */
-function normalizeSpan(
-  v: [number, number] | { rowspan: number; colspan: number } | void,
-): { rowspan: number; colspan: number } {
+function normalizeSpan(v: [number, number] | { rowspan: number; colspan: number } | void): {
+  rowspan: number
+  colspan: number
+} {
   const num = (x: unknown): number => {
     const n = Number(x)
     return Number.isFinite(n) ? n : 1
   }
   if (Array.isArray(v)) return { rowspan: num(v[0]), colspan: num(v[1]) }
-  if (v && typeof v === 'object')
-    return { rowspan: num(v.rowspan), colspan: num(v.colspan) }
+  if (v && typeof v === 'object') return { rowspan: num(v.rowspan), colspan: num(v.colspan) }
   return { rowspan: 1, colspan: 1 }
 }
 
@@ -2411,10 +2378,7 @@ function normalizeSpan(
  * 克隆 `<template>` 内容并用当前行数据水合：把文本节点与元素属性里的 `{{row.字段}}`
  * 替换为该行对应值（缺省空串）。返回值是水合后的 DocumentFragment（可 appendChild 进 td）。
  */
-function hydrateRowTemplate(
-  template: HTMLTemplateElement,
-  row: Record<string, unknown>,
-): DocumentFragment {
+function hydrateRowTemplate(template: HTMLTemplateElement, row: Record<string, unknown>): DocumentFragment {
   const frag = template.content.cloneNode(true) as DocumentFragment
   const bind = (node: Node): void => {
     if (node.nodeType === Node.TEXT_NODE) {
@@ -2425,7 +2389,10 @@ function hydrateRowTemplate(
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as Element
       for (const attr of [...el.attributes]) {
-        el.setAttribute(attr.name, attr.value.replace(/\{\{\s*row\.(\w+)\s*\}\}/g, (_, k: string) => String(row[k] ?? '')))
+        el.setAttribute(
+          attr.name,
+          attr.value.replace(/\{\{\s*row\.(\w+)\s*\}\}/g, (_, k: string) => String(row[k] ?? '')),
+        )
       }
       for (const child of [...el.childNodes]) bind(child)
     }
@@ -2439,9 +2406,7 @@ function rowHasExpand(row: Record<string, unknown>): boolean {
   if (typeof row.expand === 'string' && row.expand.length > 0) return true
   const children = row.children
   if (Array.isArray(children)) {
-    return children.some(
-      (c) => c && typeof c === 'object' && rowHasExpand(c as Record<string, unknown>),
-    )
+    return children.some((c) => c && typeof c === 'object' && rowHasExpand(c as Record<string, unknown>))
   }
   return false
 }

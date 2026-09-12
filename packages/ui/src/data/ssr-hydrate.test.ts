@@ -290,18 +290,12 @@ describe('data 展示组件 DSD 真水合批次 3', () => {
   it('回归：log 水合后行数不翻倍（reconcileRows 采纳快照已有行）、marquee 克隆组不翻倍', () => {
     // oas-log：快照含 2 行，水合后 reconcileRows 不得重复追加
     const logSnap = captureSnapshot(OASLog, (e) => e.setAttribute('lines', '["第一行","第二行"]'))
-    const log = upgradeFromSnapshot(OASLog, logSnap, (e) =>
-      e.setAttribute('lines', '["第一行","第二行"]'),
-    ).el
+    const log = upgradeFromSnapshot(OASLog, logSnap, (e) => e.setAttribute('lines', '["第一行","第二行"]')).el
     expect(log.shadowRoot!.querySelectorAll('.row').length).toBe(2)
 
     // oas-marquee：快照含 1 组克隆，水合后 syncClone 清空重克隆仍为 1 组
     const mqSnap = captureSnapshot(OASMarquee, (e) => (e.innerHTML = '<span>滚动内容</span>'))
-    const mq = upgradeFromSnapshot(
-      OASMarquee,
-      mqSnap,
-      (e) => (e.innerHTML = '<span>滚动内容</span>'),
-    ).el
+    const mq = upgradeFromSnapshot(OASMarquee, mqSnap, (e) => (e.innerHTML = '<span>滚动内容</span>')).el
     const clones = mq.shadowRoot!.querySelectorAll('.clone .group > *, .group.clone > *')
     expect(clones.length).toBe(1)
     expect(mq.shadowRoot!.querySelector('.clone')!.textContent).toContain('滚动内容')

@@ -264,9 +264,7 @@ describe('oas-config-provider', () => {
         const cp = document.createElement('oas-config-provider')
         cp.setAttribute('config', '{bad json')
         document.body.appendChild(cp)
-        expect(warn).toHaveBeenCalledWith(
-          expect.stringContaining('[oas-config-provider] 非法 config JSON'),
-        )
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('[oas-config-provider] 非法 config JSON'))
 
         // 同值跨元素去重：不重复告警
         const cp2 = document.createElement('oas-config-provider')
@@ -333,9 +331,7 @@ describe('oas-config-provider', () => {
         cp.setAttribute('direction', 'sideways')
         document.body.appendChild(cp)
         expect(cp.getAttribute('dir')).toBe('ltr')
-        expect(warn).toHaveBeenCalledWith(
-          expect.stringContaining('[oas-config-provider] 非法 direction'),
-        )
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('[oas-config-provider] 非法 direction'))
 
         // 同值跨元素去重：不重复告警
         const cp2 = document.createElement('oas-config-provider')
@@ -378,9 +374,7 @@ describe('oas-config-provider', () => {
         // 非正整数（负值/小数/0）→ 忽略（清掉已有写入）+ 告警
         cp.setAttribute('z-index', '-5')
         expect(cp.style.getPropertyValue('--oas-z-index-base')).toBe('')
-        expect(warn).toHaveBeenCalledWith(
-          expect.stringContaining('[oas-config-provider] 非法 z-index'),
-        )
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('[oas-config-provider] 非法 z-index'))
 
         cp.setAttribute('z-index', '10.5')
         expect(cp.style.getPropertyValue('--oas-z-index-base')).toBe('')

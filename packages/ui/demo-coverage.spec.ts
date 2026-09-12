@@ -29,14 +29,7 @@ const DEMO_OVERRIDE: Record<string, string> = {
 const DIR_EXTRA: Record<string, string[]> = { space: ['compact'] }
 // CSS-only 属性（只被 :host([x]) 规则消费、不经 getAttr/hasAttr，正则扫描不到）显式登记补覆盖
 const SUPPLEMENT_ATTRS: Record<string, string[]> = { compact: ['block'] }
-const IMPERATIVE = new Set([
-  'message',
-  'notification',
-  'toast',
-  'snackbar',
-  'confirm',
-  'loading-bar',
-])
+const IMPERATIVE = new Set(['message', 'notification', 'toast', 'snackbar', 'confirm', 'loading-bar'])
 
 function walk(dir: string): string[] {
   const out: string[] = []
@@ -198,11 +191,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   carousel: [['oas-carousel [part="arrow-next"]', 'click', '点下一张箭头 → oas-change']],
   'color-picker': [
     ['oas-color-picker[clearable] [part="clear"]', 'domclick', '清空钮（demo 带 value）→ oas-clear'],
-    [
-      '#cp-presets [part="preset"]',
-      'domclick',
-      '点自定义预设首格（该实例无初始 value）→ oas-change',
-    ],
+    ['#cp-presets [part="preset"]', 'domclick', '点自定义预设首格（该实例无初始 value）→ oas-change'],
   ],
   tag: [
     ['oas-tag[clickable]:not([disabled]) [part="tag"]', 'click', '点整签派发 oas-click'],
@@ -227,25 +216,15 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       '超限 + 后续交互致失焦 → oas-validate',
     ],
   ],
-  textarea: [
-    ['oas-textarea[clearable] [part="clear"]', 'click', 'demo 带初始内容，清除钮可见 → oas-clear'],
-  ],
+  textarea: [['oas-textarea[clearable] [part="clear"]', 'click', 'demo 带初始内容，清除钮可见 → oas-clear']],
   'input-number': [
     ['oas-input-number[clearable] [part="clear"]', 'click', 'demo 带 value，清除钮可见 → oas-clear'],
     ['oas-input-number [part="up"]', 'click', '步进提交 → oas-change'],
   ],
   select: [
     ['oas-select[clearable] [part="clear"]', 'click', '有选中值时清空钮可见 → oas-clear'],
-    [
-      'oas-select[remote] [part="trigger"]',
-      'click',
-      '展开远程下拉（搜索框常驻仅受 searchable 控制）',
-    ],
-    [
-      'oas-select[remote] [part="search-input"]',
-      'fill:x',
-      'remote 模式输入 → oas-input（过滤交给宿主）',
-    ],
+    ['oas-select[remote] [part="trigger"]', 'click', '展开远程下拉（搜索框常驻仅受 searchable 控制）'],
+    ['oas-select[remote] [part="search-input"]', 'fill:x', 'remote 模式输入 → oas-input（过滤交给宿主）'],
     ['oas-select[max-count] [part="trigger"]', 'click', '展开多选上限 demo'],
     ['oas-select[max-count] [role="option"]', 'click', '选第 1 项'],
     ['oas-select[max-count] [role="option"]', 'click:n1', '选第 2 项（达上限）'],
@@ -258,11 +237,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   rate: [
     ['oas-rate:not([disabled]) [part="star"]', 'click'],
-    [
-      'oas-rate:not([disabled]) [part="star"]',
-      'click:n1',
-      '点不同星兜底（防 allow-clear 恰好清空）',
-    ],
+    ['oas-rate:not([disabled]) [part="star"]', 'click:n1', '点不同星兜底（防 allow-clear 恰好清空）'],
   ],
   'auto-complete': [
     ['oas-auto-complete:not([disabled]) input', 'fill:苹', '匹配「苹果」保证有选项'],
@@ -306,11 +281,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   'time-picker': [
     ['oas-time-picker:not([disabled]) [part="trigger"]', 'click', '展开时间列'],
-    [
-      'oas-time-picker [role="option"]',
-      'click:n1',
-      '点第 2 个时值（首个即当前选中值，点它不会产生 diff）',
-    ],
+    ['oas-time-picker [role="option"]', 'click:n1', '点第 2 个时值（首个即当前选中值，点它不会产生 diff）'],
     ['keyboard', 'press:Enter', '面板聚焦时 Enter → confirm → oas-change'],
     ['oas-time-picker[clearable] [part="clear"]', 'click', '清空钮（校验态 demo 带 value）→ oas-clear'],
   ],
@@ -388,11 +359,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   snackbar: [
     ['oas-snackbar', 'open', '静态实例置 open → oas-open'],
     ['wait:300', 'wait'],
-    [
-      'oas-snackbar[action-text] [part="action"]',
-      'domclick',
-      'DOM click：真实点击会被同位置堆叠的 tmp 实例拦走',
-    ],
+    ['oas-snackbar[action-text] [part="action"]', 'domclick', 'DOM click：真实点击会被同位置堆叠的 tmp 实例拦走'],
     [
       'oas-button:has-text("连发四条") button',
       'click',
@@ -400,11 +367,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ],
   ],
   toast: [
-    [
-      'oas-button:has-text("不自动关闭") button',
-      'domclick',
-      '创建 duration=0 常驻 toast（句柄存 window.toastHandle）',
-    ],
+    ['oas-button:has-text("不自动关闭") button', 'domclick', '创建 duration=0 常驻 toast（句柄存 window.toastHandle）'],
     ['wait:200', 'wait', '等入场动画'],
     [
       'oas-button:has-text("手动关闭") button',
@@ -467,54 +430,24 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['wait:300', 'wait', '等关闭动画 → oas-closed'],
   ],
   drawer: [
-    [
-      '#drawer-right',
-      'rmattr:visible',
-      '复位右抽屉（通用探针可能留开，open 幂等不重放动画）',
-    ],
+    ['#drawer-right', 'rmattr:visible', '复位右抽屉（通用探针可能留开，open 幂等不重放动画）'],
     ['wait:350', 'wait', '等可能的关闭动画播完'],
-    [
-      'oas-button:has-text("右侧抽屉") button',
-      'domclick',
-      'DOM click 打开右侧抽屉 → oas-open',
-    ],
+    ['oas-button:has-text("右侧抽屉") button', 'domclick', 'DOM click 打开右侧抽屉 → oas-open'],
     ['wait:420', 'wait', '等打开动画结束 → oas-opened'],
     ['#drawer-right[visible] [part="ok"]', 'click', '点确定 → oas-before-close + oas-ok'],
     ['wait:450', 'wait', '等关闭动画 → oas-close + oas-closed'],
-    [
-      '#drawer-resize',
-      'rmattr:visible',
-      '复位 resizable 抽屉（重复探针时先收掉上一轮残留）',
-    ],
+    ['#drawer-resize', 'rmattr:visible', '复位 resizable 抽屉（重复探针时先收掉上一轮残留）'],
     ['wait:350', 'wait', '等可能的关闭动画播完'],
-    [
-      'oas-button:has-text("打开可调宽抽屉") button',
-      'domclick',
-      'DOM click 打开 resizable 抽屉（rail 拖拽调宽演示）',
-    ],
+    ['oas-button:has-text("打开可调宽抽屉") button', 'domclick', 'DOM click 打开 resizable 抽屉（rail 拖拽调宽演示）'],
     ['wait:450', 'wait', '等打开动画结束'],
     ['#drawer-resize [part="rail"]', 'drag', '真实指针拖拽 rail → oas-resize'],
     ['wait:300', 'wait'],
   ],
-  message: [
-    [
-      'oas-message [part="close"]',
-      'click',
-      '点消息右上角关闭 ×（通用探针已点按钮创建消息）→ oas-close',
-    ],
-  ],
+  message: [['oas-message [part="close"]', 'click', '点消息右上角关闭 ×（通用探针已点按钮创建消息）→ oas-close']],
   notification: [
-    [
-      'oas-button:has-text("信息") button',
-      'domclick',
-      'DOM click 点“信息”创建一条通知（默认 4.5s 自动关）',
-    ],
+    ['oas-button:has-text("信息") button', 'domclick', 'DOM click 点“信息”创建一条通知（默认 4.5s 自动关）'],
     ['oas-notification', 'click', '点通知体（避开 ✕ 中心区域）→ oas-click'],
-    [
-      'oas-notification [part="close"]',
-      'click',
-      '点 ✕ → oas-close（detail.source=close）',
-    ],
+    ['oas-notification [part="close"]', 'click', '点 ✕ → oas-close（detail.source=close）'],
   ],
   popconfirm: [
     ['oas-popconfirm', 'click', '点触发器打开气泡'],
@@ -524,19 +457,11 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   alert: [['oas-alert[closeable] [part="close"]', 'click', '点关闭钮 → oas-close']],
   dropdown: [
-    [
-      '#dd-split > oas-button',
-      'domclick',
-      '点拆分主按钮（精确定位非 disabled 的 split demo）→ oas-action',
-    ],
+    ['#dd-split > oas-button', 'domclick', '点拆分主按钮（精确定位非 disabled 的 split demo）→ oas-action'],
     ['#dd-split [part="split-arrow"]', 'domclick', '点箭头 → 展开拆分菜单'],
     ['#dd-split [role="menuitemradio"]', 'domclick', '选拆分菜单项 → oas-select'],
     ['oas-dropdown:not([split]):not([disabled])', 'domclick', '普通下拉展开'],
-    [
-      'oas-dropdown:not([split]):not([disabled]) [role="menuitemradio"]',
-      'domclick',
-      '选菜单项 → oas-select',
-    ],
+    ['oas-dropdown:not([split]):not([disabled]) [role="menuitemradio"]', 'domclick', '选菜单项 → oas-select'],
   ],
   contextmenu: [
     ['oas-context-menu', 'rightclick', '右键打开菜单'],
@@ -559,20 +484,12 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-button:has-text("隐藏") button', 'domclick', '受控隐藏 → oas-open-change'],
   ],
   menubar: [
-    [
-      'oas-menubar [part="top-item"]',
-      'domclick',
-      'DOM click 避开 mouseenter 展开与 click 收起的抵消',
-    ],
+    ['oas-menubar [part="top-item"]', 'domclick', 'DOM click 避开 mouseenter 展开与 click 收起的抵消'],
     ['oas-menubar [part="item"]', 'click', '点子菜单项 → oas-select'],
   ],
   toolbar: [
     ['oas-toolbar-toggle[multiple] [part="item"]', 'click:n0', '点多选切换组（加粗）→ oas-change'],
-    [
-      'oas-toolbar-toggle:not([multiple]) [part="item"]',
-      'click:n1',
-      '点单选对齐组第 2 项 → oas-change',
-    ],
+    ['oas-toolbar-toggle:not([multiple]) [part="item"]', 'click:n1', '点单选对齐组第 2 项 → oas-change'],
     ['oas-toolbar-input input', 'fill:x', '输入 → oas-input'],
     ['oas-toolbar-input input', 'press:Enter', 'Enter 提交 → oas-change'],
   ],
@@ -584,20 +501,12 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-speed-dial:not([disabled]) [part="fab"]', 'click', '展开 → oas-open'],
     ['oas-speed-dial [part="actions"] button', 'click', '点动作 → oas-select'],
   ],
-  'theme-editor': [
-    ['oas-theme-editor input[type="number"]', 'fill:13', '改数字 token → oas-change'],
-  ],
+  'theme-editor': [['oas-theme-editor input[type="number"]', 'fill:13', '改数字 token → oas-change']],
   anchor: [['oas-anchor [part="link"]', 'click', '点锚点 → oas-change（组件已 preventDefault）']],
   avatar: [
-    [
-      'oas-avatar [part="trigger"]',
-      'domclick',
-      '点换头像遮罩（hover/focus 才显形，DOM click 直达）→ oas-trigger',
-    ],
+    ['oas-avatar [part="trigger"]', 'domclick', '点换头像遮罩（hover/focus 才显形，DOM click 直达）→ oas-trigger'],
   ],
-  'bottom-navigation': [
-    ['oas-bottom-navigation [part="tab"]', 'click:n1', '点非激活 tab → oas-change'],
-  ],
+  'bottom-navigation': [['oas-bottom-navigation [part="tab"]', 'click:n1', '点非激活 tab → oas-change']],
   sidebar: [
     ['oas-sidebar [part="toggle"]', 'domclick', '折叠开关 → oas-collapse'],
     ['oas-sidebar [part="item"]', 'domclick', '菜单项 → oas-select'],
@@ -626,17 +535,9 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       'domclick',
       'DOM click + 按钮：+ 在视口外远处，搜索浮层 backdrop 可能拦截真实点击 → oas-add',
     ],
-    [
-      '#tabs-before [role="tab"][data-value="b"]',
-      'domclick',
-      '点击触发 oas-before-change（+ oas-change）',
-    ],
+    ['#tabs-before [role="tab"][data-value="b"]', 'domclick', '点击触发 oas-before-change（+ oas-change）'],
     ['#tabs-sortable', 'wait:300', '等 sortable demo 升级渲染'],
-    [
-      '#tabs-sortable [role="tab"][data-value]',
-      'dragmock',
-      '拖拽第 1 个标签到第 2 个 → oas-reorder',
-    ],
+    ['#tabs-sortable [role="tab"][data-value]', 'dragmock', '拖拽第 1 个标签到第 2 个 → oas-reorder'],
     ['#tabs-rename [role="tab"][data-value="a"]', 'dblclick', '双击 editable 标签进入重命名输入态'],
     ['#tabs-rename', 'wait:200', '等重命名输入框渲染'],
     ['#tabs-rename', 'renamecommit:重命名X', '输入框赋值 + Enter 确认 → oas-rename'],
@@ -645,7 +546,11 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-tree[checkable] input[type="checkbox"]', 'click', '勾选 → oas-check'],
     ['oas-tree[lazy] [part="toggle"]', 'click', '展开未加载节点（dir-a）→ oas-load'],
     ['oas-tree[draggable] [part="row"]', 'dragto', '拖第 1 行到第 2 行 → oas-node-drop'],
-    ['#tree-lazy-fail [part="row"][data-key="fail"] [part="toggle"]', 'click', '懒加载失败节点（fail）→ oas-load-error'],
+    [
+      '#tree-lazy-fail [part="row"][data-key="fail"] [part="toggle"]',
+      'click',
+      '懒加载失败节点（fail）→ oas-load-error',
+    ],
     ['oas-list [part="item"]', 'click', 'list 行点击 → oas-click'],
     ['oas-timeline-item', 'click', 'timeline 节点点击 → oas-click'],
   ],
@@ -657,30 +562,16 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-table .action-btn', 'click', '再次进入编辑'],
     ['oas-table input.cell-editor', 'fill:回退', '修改值'],
     ['oas-table .action-btn.danger', 'click', '点取消 → oas-edit-cancel'],
-    [
-      '#table-builtin-pager .pagination oas-pagination [part="next"]',
-      'click',
-      '内置分页下一页 → oas-page-change',
-    ],
+    ['#table-builtin-pager .pagination oas-pagination [part="next"]', 'click', '内置分页下一页 → oas-page-change'],
     ['#table-filter .filter-btn', 'click', '点列头过滤图标打开弹层'],
     ['#table-filter .filter-option', 'click', '点选项应用过滤 → oas-filter-change'],
     ['#table-col-setting th[data-key]', 'dragmock', '拖列头重排 → oas-column-order'],
     ['#table-col-setting th[data-key]', 'resizecol', '列宽热区拖拽 → oas-column-resize'],
   ],
-  'page-header': [
-    [
-      'oas-page-header[back] [part="back"]',
-      'domclick',
-      '返回钮 → oas-back（真实点击会被下方元素拦截）',
-    ],
-  ],
+  'page-header': [['oas-page-header[back] [part="back"]', 'domclick', '返回钮 → oas-back（真实点击会被下方元素拦截）']],
   splitter: [['oas-splitter [part="splitter"]', 'drag', '拖拽分隔条 → oas-resize']],
   'scroll-area': [
-    [
-      'oas-scroll-area',
-      'scrollbottom',
-      '视口确定性滚到底（shadow .viewport scrollTop=scrollHeight）→ oas-end-reached',
-    ],
+    ['oas-scroll-area', 'scrollbottom', '视口确定性滚到底（shadow .viewport scrollTop=scrollHeight）→ oas-end-reached'],
   ],
   tour: [
     ['oas-tour .beacon', 'click', '点信标 → 打开气泡'],
@@ -727,9 +618,7 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
       } else if (act.startsWith('rmattr:')) {
         // 移除匹配元素的指定属性（受控显隐复位：探针重复时让组件重新走开/合动画）
         const attr = act.slice(7)
-        await page
-          .locator(sel)
-          .evaluateAll((els, name) => els.forEach((e) => e.removeAttribute(name)), attr)
+        await page.locator(sel).evaluateAll((els, name) => els.forEach((e) => e.removeAttribute(name)), attr)
       } else if (act.startsWith('fillall:')) {
         const v = act.slice(8)
         const els = page.locator(sel)
@@ -798,9 +687,7 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
         // 双击（DOM dispatchEvent，规避真实双击的浮层 backdrop 拦截）
         const el = page.locator(sel).first()
         if (await el.count())
-          await el.evaluate((e) =>
-            (e as HTMLElement).dispatchEvent(new MouseEvent('dblclick', { bubbles: true })),
-          )
+          await el.evaluate((e) => (e as HTMLElement).dispatchEvent(new MouseEvent('dblclick', { bubbles: true })))
       } else if (act === 'dragmock') {
         // HTML5 DnD 模拟（dragstart/dragover/drop 序列，mock dataTransfer）：真实 dragTo 在
         // 部分环境（button draggable / CI 高负载）drop 不命中，用 DOM 事件序列确定性触发
@@ -951,10 +838,7 @@ for (const [name, m] of Object.entries(manifest)) {
         return
       }
       // 读 demo 源文件（模板 + script setup 全在里面，比渲染后 HTML 更全：受控 setAttribute 也能抓到）
-      const md = readFileSync(
-        join(process.cwd(), 'packages', 'docs', 'docs', 'components', `${m.demo}.md`),
-        'utf8',
-      )
+      const md = readFileSync(join(process.cwd(), 'packages', 'docs', 'docs', 'components', `${m.demo}.md`), 'utf8')
       const demoRegion = md.split(/^##\s*API/m)[0] ?? md
       const exempt = new Set(EXEMPT_ATTRS[name] ?? [])
       const missing = m.attrs.filter((a) => !exempt.has(a) && !attrDemoedInMd(demoRegion, a))
@@ -1006,10 +890,7 @@ for (const [name, m] of Object.entries(manifest)) {
         fired = await page.evaluate(() => [...window.__fired])
         notFired = m.events.filter((e) => !fired.includes(e) && !EXEMPT_EVENTS.has(e))
       }
-      expect(
-        notFired,
-        `未触发事件: ${notFired.join(', ')}（已触发: ${fired.join(', ') || '无'}）`,
-      ).toEqual([])
+      expect(notFired, `未触发事件: ${notFired.join(', ')}（已触发: ${fired.join(', ') || '无'}）`).toEqual([])
     })
   })
 }

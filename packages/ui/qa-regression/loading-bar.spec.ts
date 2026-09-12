@@ -56,11 +56,9 @@ test('会话计数：A+B 计数 2，每完成一个减一，最后一个才移�
 
 test('局部容器：条挂进指定容器（local 属性），全局宿主无条', async ({ page }) => {
   await page.locator('#lb-local-btn').click()
-  await page.waitForFunction(
-    () => document.querySelector('#lb-local-box oas-loading-bar') !== null,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#lb-local-box oas-loading-bar') !== null, null, {
+    timeout: 5000,
+  })
   const list = await bars(page)
   expect(list.length).toBe(1)
   expect(list[0]!.local).toBe(true)

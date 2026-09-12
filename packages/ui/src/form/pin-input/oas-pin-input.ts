@@ -29,12 +29,7 @@ function warnOnce(msg: string): void {
   }
 }
 
-function normalizeEnum(
-  raw: string,
-  valid: readonly string[],
-  fallback: string,
-  label: string,
-): string {
+function normalizeEnum(raw: string, valid: readonly string[], fallback: string, label: string): string {
   if (valid.includes(raw)) return raw
   warnOnce(`[oas-pin-input] 非法 ${label} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
   return fallback
@@ -333,12 +328,7 @@ export class OASPinInput extends OASElement {
 
   /** 语义化 type 归一化（非法值回落 number 并单次告警） */
   private normalizeType(): PinType {
-    return normalizeEnum(
-      this.getAttr('type', 'number') || 'number',
-      VALID_TYPES,
-      'number',
-      'type',
-    ) as PinType
+    return normalizeEnum(this.getAttr('type', 'number') || 'number', VALID_TYPES, 'number', 'type') as PinType
   }
 
   /**
@@ -364,7 +354,9 @@ export class OASPinInput extends OASElement {
   private filterText(text: string): string {
     const re = this.charsetFilter()
     if (!re) return text
-    return Array.from(text).filter((ch) => re.test(ch)).join('')
+    return Array.from(text)
+      .filter((ch) => re.test(ch))
+      .join('')
   }
 
   private buildCells(length: number): void {
@@ -444,12 +436,7 @@ export class OASPinInput extends OASElement {
       return
     }
     const index = indexOrOptions
-    if (
-      typeof index === 'number' &&
-      Number.isInteger(index) &&
-      index >= 0 &&
-      index < this.cells.length
-    ) {
+    if (typeof index === 'number' && Number.isInteger(index) && index >= 0 && index < this.cells.length) {
       this.cells[index]?.focus()
       return
     }
@@ -477,9 +464,7 @@ export class OASPinInput extends OASElement {
       e.preventDefault()
       // RTL 下视觉序反转：ArrowLeft 前进、ArrowRight 后退
       const forward = this.isRTL() ? e.key === 'ArrowLeft' : e.key === 'ArrowRight'
-      const next = forward
-        ? Math.min(this.cells.length - 1, idx + 1)
-        : Math.max(0, idx - 1)
+      const next = forward ? Math.min(this.cells.length - 1, idx + 1) : Math.max(0, idx - 1)
       this.cells[next]?.focus()
     } else if (e.key === 'Backspace') {
       e.preventDefault()

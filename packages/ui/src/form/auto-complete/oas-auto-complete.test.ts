@@ -150,9 +150,7 @@ describe('OASAutoComplete 机制补齐', () => {
     const el = mount()
     const i = input(el)
     let inputEvents: string[] = []
-    el.addEventListener('oas-input', (e: Event) =>
-      inputEvents.push((e as CustomEvent).detail.value),
-    )
+    el.addEventListener('oas-input', (e: Event) => inputEvents.push((e as CustomEvent).detail.value))
     // 组合开始：拼音串进入输入框，但不派发不过滤不展开
     i.dispatchEvent(new Event('compositionstart'))
     i.value = 'zhong'

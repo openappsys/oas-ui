@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('steps progress-dot：属性在 Vue demo 存活、指示器为装饰性圆点、连线细且对齐圆心', async ({
-  page,
-}) => {
+test('steps progress-dot：属性在 Vue demo 存活、指示器为装饰性圆点、连线细且对齐圆心', async ({ page }) => {
   await page.goto('/components/steps.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-steps[progress-dot]')
   const r = await page.evaluate(() => {
@@ -24,9 +22,7 @@ test('steps progress-dot：属性在 Vue demo 存活、指示器为装饰性圆�
       lineHeight: line.height,
       lineTop: line.top,
       iconCenterY: Math.round(iconRect.top + iconRect.height / 2 - itemRect.top),
-      processAriaCurrent: items
-        .find((i) => i.getAttribute('data-status') === 'process')
-        ?.getAttribute('aria-current'),
+      processAriaCurrent: items.find((i) => i.getAttribute('data-status') === 'process')?.getAttribute('aria-current'),
       processDotWider:
         parseFloat(
           getComputedStyle(
@@ -78,9 +74,7 @@ test('steps navigation：底部上一步/下一步可见，点击切换 current 
       processAriaCurrent: process.getAttribute('aria-current'),
       processBg: getComputedStyle(process).backgroundColor,
       processColor: getComputedStyle(process.querySelector('.text')!).color,
-      itemClickable: items.every(
-        (i) => i.getAttribute('role') === 'button' && i.getAttribute('tabindex') === '0',
-      ),
+      itemClickable: items.every((i) => i.getAttribute('role') === 'button' && i.getAttribute('tabindex') === '0'),
       descHidden: items.every((i) => !i.querySelector('.desc')),
       arrowExists: getComputedStyle(items[0]!, '::after').width === '16px',
     }
@@ -162,13 +156,20 @@ test('steps 点状/普通模式连接线对准指示器中心（基线间隙 + �
     const dotCenter = ir.top + ir.height / 2
     const after = getComputedStyle(item, '::after')
     const lineCenter = parseFloat(after.top) + item.getBoundingClientRect().top + parseFloat(after.height) / 2
-    return { dotCenter: Math.round(dotCenter * 10) / 10, lineCenter: Math.round(lineCenter * 10) / 10 }
+    return {
+      dotCenter: Math.round(dotCenter * 10) / 10,
+      lineCenter: Math.round(lineCenter * 10) / 10,
+    }
   })
-  expect(Math.abs(result.dotCenter - result.lineCenter), `圆点中心 ${result.dotCenter} 应与线中心 ${result.lineCenter} 对齐（±0.5px）`).toBeLessThanOrEqual(0.5)
+  expect(
+    Math.abs(result.dotCenter - result.lineCenter),
+    `圆点中心 ${result.dotCenter} 应与线中心 ${result.lineCenter} 对齐（±0.5px）`,
+  ).toBeLessThanOrEqual(0.5)
   // 普通模式（大圆圈 28 盒含 border）：圆心 sm/2+2，线中心同——三模式（普通/点状/纵向）几何一致
   const normal = await page.evaluate(async () => {
     const el = [...document.querySelectorAll('oas-steps')].find(
-      (x) => !x.hasAttribute('progress-dot') && !x.hasAttribute('navigation') && x.getAttribute('direction') !== 'vertical',
+      (x) =>
+        !x.hasAttribute('progress-dot') && !x.hasAttribute('navigation') && x.getAttribute('direction') !== 'vertical',
     )!
     el.scrollIntoView({ block: 'center' })
     await new Promise((r) => setTimeout(r, 200))
@@ -179,8 +180,12 @@ test('steps 点状/普通模式连接线对准指示器中心（基线间隙 + �
     const after = getComputedStyle(item, '::after')
     return {
       circle: Math.round((ir.top + ir.height / 2) * 10) / 10,
-      line: Math.round((item.getBoundingClientRect().top + parseFloat(after.top) + parseFloat(after.height) / 2) * 10) / 10,
+      line:
+        Math.round((item.getBoundingClientRect().top + parseFloat(after.top) + parseFloat(after.height) / 2) * 10) / 10,
     }
   })
-  expect(Math.abs(normal.circle - normal.line), `普通模式圆心 ${normal.circle} 应与线中心 ${normal.line} 对齐（±0.5px）`).toBeLessThanOrEqual(0.5)
+  expect(
+    Math.abs(normal.circle - normal.line),
+    `普通模式圆心 ${normal.circle} 应与线中心 ${normal.line} 对齐（±0.5px）`,
+  ).toBeLessThanOrEqual(0.5)
 })

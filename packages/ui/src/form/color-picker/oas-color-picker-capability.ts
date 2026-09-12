@@ -18,10 +18,7 @@ const capabilityRegistry = new Map<string, ColorPickerCapabilityFactory>()
 const lateJoinListeners = new Set<() => void>()
 
 /** 注册一个 color-picker 能力包（重复注册同名能力被幂等忽略；新注册时通知全部晚加入监听） */
-export function registerColorPickerCapability(
-  name: string,
-  factory: ColorPickerCapabilityFactory,
-): void {
+export function registerColorPickerCapability(name: string, factory: ColorPickerCapabilityFactory): void {
   if (capabilityRegistry.has(name)) return
   capabilityRegistry.set(name, factory)
   for (const cb of [...lateJoinListeners]) cb()

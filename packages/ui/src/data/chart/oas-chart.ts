@@ -405,9 +405,7 @@ export class OASChart extends OASElement {
     // 堆叠基准：每分类各系列之和的最大值
     const stackMax = Math.max(
       0,
-      ...data.labels.map((_, i) =>
-        data.series.reduce((acc, s) => acc + Math.max(0, s.data[i] ?? 0), 0),
-      ),
+      ...data.labels.map((_, i) => data.series.reduce((acc, s) => acc + Math.max(0, s.data[i] ?? 0), 0)),
     )
     const ticks = this.niceTicks(stackMax)
     const bandW = plotW / n
@@ -501,10 +499,7 @@ export class OASChart extends OASElement {
   }
 
   /** 水平网格线 + y 轴刻度文字 */
-  private renderGrid(
-    ticks: { max: number; step: number; values: number[] },
-    plotH: number,
-  ): string {
+  private renderGrid(ticks: { max: number; step: number; values: number[] }, plotH: number): string {
     let out = ''
     const lines = 5
     for (let i = 0; i < lines; i++) {
@@ -525,11 +520,7 @@ export class OASChart extends OASElement {
     const bandW = plotW / n
     for (let i = 0; i < n; i++) {
       const cx =
-        anchor === 'middle'
-          ? PAD.l + i * bandW + bandW / 2
-          : n > 1
-            ? PAD.l + (i * plotW) / (n - 1)
-            : PAD.l + plotW / 2
+        anchor === 'middle' ? PAD.l + i * bandW + bandW / 2 : n > 1 ? PAD.l + (i * plotW) / (n - 1) : PAD.l + plotW / 2
       out += `<text class="axis-label" x="${cx.toFixed(1)}" y="${H - 8}">${this.escapeText(labels[i] ?? '')}</text>`
     }
     return out

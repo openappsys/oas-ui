@@ -94,9 +94,7 @@ describe('OASLink', () => {
       const el = mount({ href: '#' })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
       expect(css).toMatch(/text-underline-offset:\s*var\(--oas-link-underline-offset,\s*2px\)/)
-      expect(css).toMatch(
-        /text-decoration-color:\s*var\(--oas-link-underline-color,\s*currentColor\)/,
-      )
+      expect(css).toMatch(/text-decoration-color:\s*var\(--oas-link-underline-color,\s*currentColor\)/)
     })
   })
 
@@ -199,13 +197,9 @@ describe('color 属性（统一协议：11 预设名→token / 任意 CSS 色值
 
   it('预设名映射 --oas-preset-*-text 达标文字 token（非本色）', () => {
     const el = mount({ href: '#', color: 'geekblue' })
-    expect(link(el).style.getPropertyValue('--oas-link-color')).toBe(
-      'var(--oas-preset-geekblue-text)',
-    )
+    expect(link(el).style.getPropertyValue('--oas-link-color')).toBe('var(--oas-preset-geekblue-text)')
     const gold = mount({ href: '#', color: 'gold' })
-    expect(link(gold).style.getPropertyValue('--oas-link-color')).toBe(
-      'var(--oas-preset-gold-text)',
-    )
+    expect(link(gold).style.getPropertyValue('--oas-link-color')).toBe('var(--oas-preset-gold-text)')
   })
 
   it('11 预设名全量映射 -text token', () => {

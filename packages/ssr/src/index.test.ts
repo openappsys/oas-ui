@@ -59,13 +59,9 @@ describe('@oas-ui/ssr renderToString', () => {
   it('真水合指纹：快照 shadow 内容最前面（style 之前）嵌入 data-oas-ssr meta，值为对应 tag', async () => {
     const btn = await renderToString('oas-button', {}, '确定')
     // 指纹紧随 template 开头；shadow 内容可能以空白文本节点起始，故 meta 与 style 之间允许有空白
-    expect(btn).toContain(
-      '<template shadowrootmode="open"><meta data-oas-ssr="oas-button" data-oas-ssr-v="1">',
-    )
+    expect(btn).toContain('<template shadowrootmode="open"><meta data-oas-ssr="oas-button" data-oas-ssr-v="1">')
     // 指纹在 style 之前
-    expect(btn.indexOf('<meta data-oas-ssr="oas-button" data-oas-ssr-v="1">')).toBeLessThan(
-      btn.indexOf('<style>'),
-    )
+    expect(btn.indexOf('<meta data-oas-ssr="oas-button" data-oas-ssr-v="1">')).toBeLessThan(btn.indexOf('<style>'))
     const tag = await renderToString('oas-tag', {}, '标签')
     expect(tag).toContain('<meta data-oas-ssr="oas-tag" data-oas-ssr-v="1">')
     const empty = await renderToString('oas-empty', {}, '')
@@ -361,8 +357,7 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-checkbox-group / oas-radio-group：fieldset 骨架 + light DOM 子项保留（子组件嵌套 DSD 序列化）', async () => {
-    const children =
-      '<oas-checkbox value="a">A</oas-checkbox><oas-checkbox value="b">B</oas-checkbox>'
+    const children = '<oas-checkbox value="a">A</oas-checkbox><oas-checkbox value="b">B</oas-checkbox>'
     const cg = await renderToString('oas-checkbox-group', { value: '["a"]' }, children)
     expect(cg).toContain('<template shadowrootmode="open">')
     expect(cg).toContain('<fieldset part="group">')
@@ -370,21 +365,23 @@ describe('@oas-ui/ssr renderToString', () => {
     // 子项原样保留 + 每个已 upgrade 的子组件被包成嵌套 DSD（含子组件指纹）；
     // checked 由 checkbox-group 对 light DOM 同步写入（处理后的 el.innerHTML）；
     // 序列化属性序：value → data-size → data-variant → checked（能力收尾批起镜像 data-*）
-    expect(cg).toContain('<oas-checkbox value="a" data-size="medium" data-variant="default" checked=""><template shadowrootmode="open">')
+    expect(cg).toContain(
+      '<oas-checkbox value="a" data-size="medium" data-variant="default" checked=""><template shadowrootmode="open">',
+    )
     expect(cg).toContain('<meta data-oas-ssr="oas-checkbox" data-oas-ssr-v="1">')
-    expect(cg).toContain('<oas-checkbox value="b" data-size="medium" data-variant="default"><template shadowrootmode="open">')
+    expect(cg).toContain(
+      '<oas-checkbox value="b" data-size="medium" data-variant="default"><template shadowrootmode="open">',
+    )
     expect(cg).toContain('A</oas-checkbox>')
     expect(cg).toContain('B</oas-checkbox>')
 
-    const rg = await renderToString(
-      'oas-radio-group',
-      { value: 'a' },
-      '<oas-radio value="a">A</oas-radio>',
-    )
+    const rg = await renderToString('oas-radio-group', { value: 'a' }, '<oas-radio value="a">A</oas-radio>')
     expect(rg).toContain('<oas-radio-group value="a" data-direction="vertical">')
     // radio-group 的 fieldset 带 role="radiogroup"（键盘组模式改造加的正确语义）
     expect(rg).toContain('<fieldset part="group" role="radiogroup">')
-    expect(rg).toContain('<oas-radio value="a" data-size="medium" data-variant="default" name="oas-radio-group-1" checked="">')
+    expect(rg).toContain(
+      '<oas-radio value="a" data-size="medium" data-variant="default" name="oas-radio-group-1" checked="">',
+    )
     expect(rg).toContain('<template shadowrootmode="open">')
     expect(rg).toContain('<meta data-oas-ssr="oas-radio" data-oas-ssr-v="1">')
   })
@@ -464,9 +461,7 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-tree-select：options JSON 通道 + 已选节点 label 展示', async () => {
-    const options = JSON.stringify([
-      { label: '节点 A', value: 'a', children: [{ label: '子节点 1', value: 'a-1' }] },
-    ])
+    const options = JSON.stringify([{ label: '节点 A', value: 'a', children: [{ label: '子节点 1', value: 'a-1' }] }])
     const html = await renderToString('oas-tree-select', { options, value: 'a' }, '')
     expect(html).toContain('<oas-tree-select options=')
     expect(html).toContain('value="a"')
@@ -624,11 +619,7 @@ describe('@oas-ui/ssr renderToString', () => {
 
   it('oas-form：form 骨架 + rules JSON 通道保留（嵌套 form-item DSD 序列化）', async () => {
     const rules = JSON.stringify({ name: [{ required: true }] })
-    const html = await renderToString(
-      'oas-form',
-      { rules },
-      '<oas-form-item label="姓名"></oas-form-item>',
-    )
+    const html = await renderToString('oas-form', { rules }, '<oas-form-item label="姓名"></oas-form-item>')
     expect(html).toContain('<oas-form rules=')
     expect(html).toContain('<form part="form"')
     // form-item 嵌套 DSD：组件对 light DOM 的同步（data-form-label-align）也保留
@@ -640,11 +631,7 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-form-item：label 文本同步入快照（嵌套 oas-input DSD 序列化）', async () => {
-    const html = await renderToString(
-      'oas-form-item',
-      { label: '姓名', required: '' },
-      '<oas-input></oas-input>',
-    )
+    const html = await renderToString('oas-form-item', { label: '姓名', required: '' }, '<oas-input></oas-input>')
     expect(html).toContain('<oas-form-item')
     expect(html).toContain('label="姓名"')
     expect(html).toContain('required=""')
@@ -705,11 +692,7 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(line).toContain('aria-valuenow="60"')
     expect(line).toContain('<span class="text-value">60%</span>')
 
-    const circle = await renderToString(
-      'oas-progress',
-      { type: 'circle', percent: '50', size: '72' },
-      '',
-    )
+    const circle = await renderToString('oas-progress', { type: 'circle', percent: '50', size: '72' }, '')
     expect(circle).toContain('<oas-progress type="circle" percent="50" size="72">')
     expect(circle).toContain('part="circle"')
     expect(circle).toContain('viewBox="0 0 72 72"')
@@ -726,11 +709,7 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-skeleton：行/头像/标题部件按属性直出（rows/title/avatar）', async () => {
-    const html = await renderToString(
-      'oas-skeleton',
-      { rows: '4', title: 'title', avatar: 'avatar' },
-      '',
-    )
+    const html = await renderToString('oas-skeleton', { rows: '4', title: 'title', avatar: 'avatar' }, '')
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('<oas-skeleton rows="4" avatar="avatar">')
     expect(html).toContain('part="block"')
@@ -791,14 +770,9 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-drawer：panel 骨架 + title/placement 同步', async () => {
-    const html = await renderToString(
-      'oas-drawer',
-      { visible: '', title: '筛选', placement: 'left' },
-      '',
-      {
-        locale: 'zh-CN',
-      },
-    )
+    const html = await renderToString('oas-drawer', { visible: '', title: '筛选', placement: 'left' }, '', {
+      locale: 'zh-CN',
+    })
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('<oas-drawer visible="" placement="left">')
     expect(html).toContain('part="panel"')
@@ -810,14 +784,9 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-popconfirm：触发 slot 原样保留 + 气泡骨架（默认关闭态 aria-hidden=true）', async () => {
-    const html = await renderToString(
-      'oas-popconfirm',
-      { title: '确认删除？' },
-      '<button>删除</button>',
-      {
-        locale: 'zh-CN',
-      },
-    )
+    const html = await renderToString('oas-popconfirm', { title: '确认删除？' }, '<button>删除</button>', {
+      locale: 'zh-CN',
+    })
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('<oas-popconfirm>')
     expect(html).toContain('part="popover"')
@@ -835,13 +804,7 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('命令式反馈组件无初始 DOM 不 SSR：message/toast/notification/snackbar/loading-bar/confirm 均不在白名单', async () => {
-    for (const tag of [
-      'oas-message',
-      'oas-toast',
-      'oas-notification',
-      'oas-snackbar',
-      'oas-loading-bar',
-    ]) {
+    for (const tag of ['oas-message', 'oas-toast', 'oas-notification', 'oas-snackbar', 'oas-loading-bar']) {
       await expect(renderToString(tag)).rejects.toThrow(/非白名单 tag/)
     }
     // confirm 无独立 tag（命令式 API 动态创建 oas-modal），oas-modal 在白名单
@@ -901,9 +864,7 @@ describe('@oas-ui/ssr renderToString', () => {
     // 宿主 active 属性保留（浏览器 upgrade 后据此展开面板）
     expect(html).toContain('<oas-collapse active="a">')
     // light DOM 面板保留 + 嵌套 DSD（含子组件指纹）+ open 态由组件 update 同步写入
-    expect(html).toContain(
-      '<oas-collapse-item name="a" header="面板一" open=""><template shadowrootmode="open">',
-    )
+    expect(html).toContain('<oas-collapse-item name="a" header="面板一" open=""><template shadowrootmode="open">')
     expect(html).toContain('<meta data-oas-ssr="oas-collapse-item" data-oas-ssr-v="1">')
     expect(html).toContain('内容一</oas-collapse-item></oas-collapse>')
   })
@@ -970,12 +931,9 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-statistic：value 按 locale 格式化入快照 + prefix/suffix 文本', async () => {
-    const html = await renderToString(
-      'oas-statistic',
-      { value: '12345', prefix: '¥', suffix: '元' },
-      '',
-      { locale: 'zh-CN' },
-    )
+    const html = await renderToString('oas-statistic', { value: '12345', prefix: '¥', suffix: '元' }, '', {
+      locale: 'zh-CN',
+    })
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('part="value"')
     expect(html).toContain('12,345')
@@ -1003,12 +961,9 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-code：正则高亮同步直出（token span + 行号），copyable 默认显示复制按钮', async () => {
-    const html = await renderToString(
-      'oas-code',
-      { code: 'const a = 1', language: 'js', 'show-line-number': '' },
-      '',
-      { locale: 'zh-CN' },
-    )
+    const html = await renderToString('oas-code', { code: 'const a = 1', language: 'js', 'show-line-number': '' }, '', {
+      locale: 'zh-CN',
+    })
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('part="block"')
     expect(html).toContain('<span class="line"')
@@ -1026,14 +981,9 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-log：lines JSON 通道产出日志行快照 + 空态默认文案走 locale', async () => {
-    const html = await renderToString(
-      'oas-log',
-      { lines: '["第一行","第二行"]', 'line-number': '' },
-      '',
-      {
-        locale: 'zh-CN',
-      },
-    )
+    const html = await renderToString('oas-log', { lines: '["第一行","第二行"]', 'line-number': '' }, '', {
+      locale: 'zh-CN',
+    })
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('part="row"')
     expect(html).toContain('第一行')
@@ -1083,11 +1033,7 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-gradient-text：渐变 JSON 白名单校验后写内联样式', async () => {
-    const html = await renderToString(
-      'oas-gradient-text',
-      { gradient: '["#ff0000","#0000ff"]' },
-      '渐变文字',
-    )
+    const html = await renderToString('oas-gradient-text', { gradient: '["#ff0000","#0000ff"]' }, '渐变文字')
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('linear-gradient(to right, #ff0000, #0000ff)')
     expect(html).toContain('</template>渐变文字</oas-gradient-text>')
@@ -1102,11 +1048,7 @@ describe('@oas-ui/ssr renderToString', () => {
 
   it('oas-virtual-list：items JSON 通道产出首屏窗口行 + padding 占位（scrollTop=0 窗口）', async () => {
     const items = JSON.stringify(Array.from({ length: 100 }, (_, i) => `项${i}`))
-    const html = await renderToString(
-      'oas-virtual-list',
-      { height: '100', 'item-height': '20', items },
-      '',
-    )
+    const html = await renderToString('oas-virtual-list', { height: '100', 'item-height': '20', items }, '')
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('part="viewport"')
     // 窗口 = ceil(100/20)+buffer4 = 9 项（可见 5 + 上下各 4）
@@ -1162,9 +1104,7 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('<meta data-oas-ssr="oas-form-item" data-oas-ssr-v="1">')
     expect(html).toContain('<meta data-oas-ssr="oas-input" data-oas-ssr-v="1">')
     // 内层 oas-input 的嵌套 template 出现在外层 form-item 之后（深度优先内层先处理）
-    expect(html.indexOf('data-oas-ssr="oas-input"')).toBeGreaterThan(
-      html.indexOf('data-oas-ssr="oas-form-item"'),
-    )
+    expect(html.indexOf('data-oas-ssr="oas-input"')).toBeGreaterThan(html.indexOf('data-oas-ssr="oas-form-item"'))
     // 子组件 shadow 内容入快照：form-item label 文本 + input 骨架
     expect(html).toContain('>邮箱<')
     expect(html).toContain('<input part="input"')
@@ -1181,9 +1121,7 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(count).toBe(2)
     // 组件对 light DOM 的同步（非激活面板 hidden）保留在处理后的 el.innerHTML 中
     expect(
-      html
-        .toLowerCase()
-        .includes('<oas-tab-panel label="b" value="b" hidden=""><template shadowrootmode="open">'),
+      html.toLowerCase().includes('<oas-tab-panel label="b" value="b" hidden=""><template shadowrootmode="open">'),
     ).toBe(true)
     expect(html).toContain('面板B内容')
     expect(html).toContain('面板A内容')
@@ -1344,11 +1282,7 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-tooltip：触发 slot 原样保留 + 关闭态气泡骨架（aria-hidden=true + content 同步 + 箭头骨架）', async () => {
-    const html = await renderToString(
-      'oas-tooltip',
-      { content: '提示', placement: 'bottom' },
-      '<button>悬停</button>',
-    )
+    const html = await renderToString('oas-tooltip', { content: '提示', placement: 'bottom' }, '<button>悬停</button>')
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('<style>')
     expect(html).toContain('<oas-tooltip content="提示" placement="bottom">')
@@ -1361,11 +1295,7 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-popover：触发 slot 原样保留 + 关闭态面板骨架（title/content 同步）', async () => {
-    const html = await renderToString(
-      'oas-popover',
-      { title: '标题', content: '内容' },
-      '<button>点击</button>',
-    )
+    const html = await renderToString('oas-popover', { title: '标题', content: '内容' }, '<button>点击</button>')
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('<style>')
     expect(html).toContain('<oas-popover content="内容">')
@@ -1402,8 +1332,6 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('theme-editor 排除：开发工具组件 SSR 意义低，不在白名单', async () => {
-    await expect(renderToString('oas-theme-editor')).rejects.toThrow(
-      /非白名单 tag「oas-theme-editor」/,
-    )
+    await expect(renderToString('oas-theme-editor')).rejects.toThrow(/非白名单 tag「oas-theme-editor」/)
   })
 })

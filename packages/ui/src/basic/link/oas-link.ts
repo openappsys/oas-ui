@@ -317,8 +317,7 @@ export class OASLink extends OASElement {
       iconEl.innerHTML = svg
       // 位置：start=文字前（firstChild），end=文字后（appendChild）
       if (iconPosition === 'end' && iconEl !== a.lastElementChild) a.appendChild(iconEl)
-      if (iconPosition === 'start' && iconEl !== a.firstElementChild)
-        a.insertBefore(iconEl, a.firstChild)
+      if (iconPosition === 'start' && iconEl !== a.firstElementChild) a.insertBefore(iconEl, a.firstChild)
     } else if (existingIcon) {
       existingIcon.remove()
     }

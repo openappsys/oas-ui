@@ -31,9 +31,7 @@ describe('OASModal', () => {
 
   it('visible 缺省时隐藏', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[role="dialog"]')!.getAttribute('aria-hidden')).toBe(
-      'true',
-    )
+    expect(el.shadowRoot!.querySelector('[role="dialog"]')!.getAttribute('aria-hidden')).toBe('true')
   })
 
   it('body 滚动边缘有视觉指示（CSS-only scroll shadow：上下 bg 覆盖层 local + 径向阴影 scroll 分层）', () => {
@@ -43,9 +41,7 @@ describe('OASModal', () => {
     expect(bodyRule, 'body 应有 bg 覆盖层（local attachment，边缘遮住阴影）').toContain(
       'background-attachment: local, local, scroll, scroll',
     )
-    expect(bodyRule, 'body 应有上下径向阴影（scroll attachment 固定视口边缘）').toContain(
-      'radial-gradient',
-    )
+    expect(bodyRule, 'body 应有上下径向阴影（scroll attachment 固定视口边缘）').toContain('radial-gradient')
     expect(bodyRule).toContain('background-color: var(--oas-color-bg)')
   })
 
@@ -329,9 +325,7 @@ describe('OASModal', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
     expect(root.activeElement).toBe(close)
     close.focus()
-    document.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }),
-    )
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }))
     expect(root.activeElement).toBe(ok)
     // 中间元素 Tab 不触发 preventDefault（happy-dom 不实现原生 Tab 移动，故不断言位置）
   })
@@ -490,9 +484,7 @@ describe('OASModal', () => {
       el.setAttribute('width', '600px') // 触发二次 update
       expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('弹窗标题')
       expect(el.hasAttribute('title')).toBe(false)
-      expect(
-        el.shadowRoot!.querySelector('[role="dialog"]')!.getAttribute('aria-labelledby'),
-      ).toBe('oas-modal-title')
+      expect(el.shadowRoot!.querySelector('[role="dialog"]')!.getAttribute('aria-labelledby')).toBe('oas-modal-title')
     })
 
     it('运行时改 title 属性：新值吸收渲染，宿主仍无残留', async () => {
@@ -692,22 +684,11 @@ describe('OASModal 一期能力增强', () => {
     // 遮罩
     el.setAttribute('visible', '')
     el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    expect(records).toEqual([
-      'ok:confirm',
-      'cancel:cancel',
-      'close-btn:close',
-      'mask:close',
-    ])
+    expect(records).toEqual(['ok:confirm', 'cancel:cancel', 'close-btn:close', 'mask:close'])
     // Esc
     el.setAttribute('visible', '')
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-    expect(records).toEqual([
-      'ok:confirm',
-      'cancel:cancel',
-      'close-btn:close',
-      'mask:close',
-      'esc:close',
-    ])
+    expect(records).toEqual(['ok:confirm', 'cancel:cancel', 'close-btn:close', 'mask:close', 'esc:close'])
   })
 
   it('A32 取消/关闭兼容：✕/遮罩/Esc 同时派发 oas-cancel（旧语义保留）；取消按钮也派发', async () => {
@@ -801,9 +782,7 @@ describe('OASModal 一期能力增强', () => {
   it('P5 无 footer 插槽内容时内置按钮照常显示', async () => {
     const el = mount({ visible: '' })
     await Promise.resolve()
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="footer-actions"]')!.hidden).toBe(
-      false,
-    )
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="footer-actions"]')!.hidden).toBe(false)
   })
 
   // —— P10 destroy-on-close ——
@@ -1404,12 +1383,9 @@ describe('OASModal 对话框点击冒泡与关闭回写契约', () => {
     const paths: Array<[string, (el: OASModal) => void]> = [
       [
         '遮罩点击',
-        (el) =>
-          el.shadowRoot!.querySelector('.mask')!.dispatchEvent(
-            new MouseEvent('click', { bubbles: true }),
-          ),
+        (el) => el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true })),
       ],
-      ['✕ 按钮', (el) => (el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!).click()],
+      ['✕ 按钮', (el) => el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.click()],
       ['Esc', () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))],
       ['编程 close()', (el) => el.close('programmatic')],
     ]
@@ -1426,9 +1402,7 @@ describe('OASModal 对话框点击冒泡与关闭回写契约', () => {
 })
 
 function pointer(type: string, clientX: number, clientY = 0): Event {
-  const Ctor = (globalThis as Record<string, unknown>).PointerEvent as
-    | typeof PointerEvent
-    | undefined
+  const Ctor = (globalThis as Record<string, unknown>).PointerEvent as typeof PointerEvent | undefined
   if (typeof Ctor === 'function') {
     return new Ctor(type, { bubbles: true, clientX, clientY })
   }

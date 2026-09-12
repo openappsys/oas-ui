@@ -29,9 +29,7 @@ export interface UploadRequestOptions {
 export type UploadCustomRequest = (options: UploadRequestOptions) => { abort?: () => void } | void
 
 /** before-upload 钩子：返回 false 拒绝；返回 File 转换（transform 语义）；Promise 同理 */
-export type UploadBeforeUpload = (
-  file: File,
-) => boolean | File | Promise<boolean | File | void> | void
+export type UploadBeforeUpload = (file: File) => boolean | File | Promise<boolean | File | void> | void
 
 interface FileStatus {
   percent: number
@@ -692,8 +690,7 @@ export class OASUpload extends OASElement {
     input.multiple = this.hasAttr('multiple')
     input.disabled = disabled
     // 目录上传：webkitdirectory 落到隐藏 input（File.webkitRelativePath 保留相对路径进列表）
-    ;(input as HTMLInputElement & { webkitdirectory?: boolean }).webkitdirectory =
-      this.hasAttr('directory')
+    ;(input as HTMLInputElement & { webkitdirectory?: boolean }).webkitdirectory = this.hasAttr('directory')
     zone.setAttribute('aria-disabled', String(disabled))
     zone.setAttribute('aria-label', disabled ? '' : this.t('upload.drag'))
     const hint = zone.querySelector('.hint')
@@ -800,10 +797,7 @@ export class OASUpload extends OASElement {
       next.push(f)
     }
     const unchanged =
-      replaced.length === 0 &&
-      rejected.length === 0 &&
-      sizeRejected.length === 0 &&
-      next.length === this._files.length
+      replaced.length === 0 && rejected.length === 0 && sizeRejected.length === 0 && next.length === this._files.length
     if (unchanged) return
     for (const e of next) {
       if (!this.statusMap.has(e)) this.statusMap.set(e, { percent: 0, status: 'pending' })
@@ -930,8 +924,7 @@ export class OASUpload extends OASElement {
         this.renderList()
       },
     }
-    const ctrl =
-      typeof this._customRequest === 'function' ? this._customRequest(opts) : this.xhrUpload(opts)
+    const ctrl = typeof this._customRequest === 'function' ? this._customRequest(opts) : this.xhrUpload(opts)
     const abortFn = ctrl?.abort
     if (typeof abortFn === 'function') this.uploadControllers.set(file, { abort: abortFn })
     this.renderList()
@@ -1277,10 +1270,7 @@ export class OASUpload extends OASElement {
       item.className = 'item'
       if (st.status === 'error') item.classList.add('is-error')
       item.setAttribute('part', 'item')
-      item.append(
-        this.makeItemMeta(entry),
-        this.makeProgress(st),
-      )
+      item.append(this.makeItemMeta(entry), this.makeProgress(st))
       if (st.status === 'error') item.appendChild(this.makeActInline('retry', entry))
       if (st.status === 'uploading' && entry instanceof File && this.uploadControllers.has(entry)) {
         item.appendChild(this.makeActInline('cancel', entry))

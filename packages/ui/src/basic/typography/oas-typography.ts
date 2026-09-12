@@ -182,10 +182,7 @@ type TypographyConstructor = CustomElementConstructor & {
   observedAttributes: string[]
 }
 
-function createTypography(
-  tag: string,
-  options: { levels?: boolean; part: string },
-): TypographyConstructor {
+function createTypography(tag: string, options: { levels?: boolean; part: string }): TypographyConstructor {
   const { levels = false, part } = options
 
   class OASTypography extends OASElement {
@@ -315,10 +312,8 @@ function createTypography(
       const useCodeTag = this.hasAttr('code')
       const useDelTag = this.hasAttr('delete')
       const tagAttr = this.getAttr('tag', '')
-      const customTag =
-        tagAttr && OASTypography.VALID_TAGS.has(tagAttr.toLowerCase()) ? tagAttr.toLowerCase() : ''
-      const wantTag =
-        customTag || (useCodeTag ? 'code' : useDelTag ? 'del' : levels ? this.rootTagName() : tag)
+      const customTag = tagAttr && OASTypography.VALID_TAGS.has(tagAttr.toLowerCase()) ? tagAttr.toLowerCase() : ''
+      const wantTag = customTag || (useCodeTag ? 'code' : useDelTag ? 'del' : levels ? this.rootTagName() : tag)
       if (this.root!.tagName.toLowerCase() !== wantTag) this.syncTag(wantTag)
       // level（仅 title；与修饰 code/delete 冲突时 level 优先——标题语义重于修饰）
       if (levels && !useCodeTag && !useDelTag && !customTag) {
@@ -350,15 +345,7 @@ function createTypography(
         root.classList.toggle(`depth-${d}`, useDepth && depthRaw === d)
       }
       // 修饰六布尔（class 驱动样式；code/delete 换原生标签已在换标签链处理）+ numeric 数字等宽
-      for (const b of [
-        'strong',
-        'mark',
-        'code',
-        'underline',
-        'delete',
-        'italic',
-        'numeric',
-      ] as const) {
+      for (const b of ['strong', 'mark', 'code', 'underline', 'delete', 'italic', 'numeric'] as const) {
         root.classList.toggle(b, this.hasAttr(b))
       }
       // 文本对齐（align 四档；text-align 的 start/end 为逻辑值，RTL 安全）
@@ -380,10 +367,7 @@ function createTypography(
       const hasActionsContent = actionsSlot.assignedNodes().length > 0
       if (this.actionsEl) {
         this.actionsEl.hidden = !(hasActionsContent || this.hasAttr('copyable'))
-        this.actionsEl.classList.toggle(
-          'start',
-          this.getAttr('actions-position', 'end') === 'start',
-        )
+        this.actionsEl.classList.toggle('start', this.getAttr('actions-position', 'end') === 'start')
       }
       // copyable 按钮
       if (this.copyBtn) {

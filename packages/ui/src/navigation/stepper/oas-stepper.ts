@@ -26,9 +26,7 @@ function normalizeStepperSize(raw: string): StepperSize {
   if ((VALID_STEPPER_SIZES as readonly string[]).includes(raw)) return raw as StepperSize
   if (!warnedSizes.has(raw)) {
     warnedSizes.add(raw)
-    console.warn(
-      `[oas-stepper] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`,
-    )
+    console.warn(`[oas-stepper] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
   }
   return 'medium'
 }
@@ -331,8 +329,7 @@ export class OASStepper extends OASElement {
       if (svg) {
         indicator.innerHTML = `<svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${svg}</svg>`
       } else {
-        indicator.textContent =
-          status === 'finish' ? '✓' : status === 'error' ? '✕' : String(idx + 1)
+        indicator.textContent = status === 'finish' ? '✓' : status === 'error' ? '✕' : String(idx + 1)
       }
       btn.appendChild(indicator)
 

@@ -3,13 +3,7 @@ import { OASElement } from '@oas-ui/core'
 export type SpaceDirection = 'horizontal' | 'vertical'
 export type SpaceSize = 'xs' | 'small' | 'medium' | 'large' | 'xl' | number
 export type SpaceAlign = 'start' | 'center' | 'end' | 'baseline' | 'stretch'
-export type SpaceJustify =
-  | 'start'
-  | 'center'
-  | 'end'
-  | 'space-between'
-  | 'space-around'
-  | 'space-evenly'
+export type SpaceJustify = 'start' | 'center' | 'end' | 'space-between' | 'space-around' | 'space-evenly'
 
 const SIZE_MAP: Record<string, string> = {
   xs: 'var(--oas-space-1)',
@@ -39,9 +33,7 @@ const warnedBreakpoints = new Set<string>()
 function warnBreakpoint(name: string): void {
   if (warnedBreakpoints.has(name)) return
   warnedBreakpoints.add(name)
-  console.warn(
-    `[oas-space] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`,
-  )
+  console.warn(`[oas-space] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
 }
 
 const warnedDirectionValues = new Set<string>()
@@ -50,9 +42,7 @@ const warnedDirectionValues = new Set<string>()
 function warnDirectionValue(value: string): void {
   if (warnedDirectionValues.has(value)) return
   warnedDirectionValues.add(value)
-  console.warn(
-    `[oas-space] 断点 direction 值 "${value}" 非法，已回落基础方向；合法值：horizontal/vertical`,
-  )
+  console.warn(`[oas-space] 断点 direction 值 "${value}" 非法，已回落基础方向；合法值：horizontal/vertical`)
 }
 
 /**
@@ -61,9 +51,7 @@ function warnDirectionValue(value: string): void {
  * - 首个 token 不含冒号视为基础值，缺省时回落（方向 horizontal / 间距 medium）；
  * - 非法断点名丢弃该规则 + dev 告警（同值去重），合法断点值不做值校验（由调用方归一化）。
  */
-function parseBreakpointShorthand(
-  raw: string,
-): { base: string; rules: Array<{ name: string; value: string }> } | null {
+function parseBreakpointShorthand(raw: string): { base: string; rules: Array<{ name: string; value: string }> } | null {
   if (!raw.includes(' ')) return null
   const tokens = raw.trim().split(/\s+/)
   if (!tokens.some((t) => t.includes(':'))) return null
@@ -116,9 +104,7 @@ function normalizeSpaceSize(raw: string): string {
   if (!Number.isNaN(num)) return `${num}px`
   if (!warnedSizes.has(raw)) {
     warnedSizes.add(raw)
-    console.warn(
-      `[oas-space] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl 或数字 px`,
-    )
+    console.warn(`[oas-space] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl 或数字 px`)
   }
   return SIZE_MAP.medium!
 }
@@ -166,17 +152,7 @@ const SEPARATOR_STYLE = `
 
 export class OASSpace extends OASElement {
   static override get observedAttributes(): string[] {
-    return [
-      'direction',
-      'size',
-      'wrap',
-      'align',
-      'separator',
-      'justify',
-      'reverse',
-      'fill',
-      'fill-ratio',
-    ]
+    return ['direction', 'size', 'wrap', 'align', 'separator', 'justify', 'reverse', 'fill', 'fill-ratio']
   }
 
   /**
@@ -216,8 +192,7 @@ export class OASSpace extends OASElement {
 
     // direction：断点简写 → 宿主 var() 兜底基础值 + shadow @media 规则；纯基础值保持原内联直写
     const dirShorthand = parseBreakpointShorthand(direction)
-    const dirBase =
-      directionToFlex(dirShorthand ? dirShorthand.base || 'horizontal' : direction) || 'row'
+    const dirBase = directionToFlex(dirShorthand ? dirShorthand.base || 'horizontal' : direction) || 'row'
     let directionCss = ''
     if (dirShorthand) {
       this.style.flexDirection = `var(--oas-space-direction, ${reverse ? `${dirBase}-reverse` : dirBase})`
@@ -287,10 +262,7 @@ export class OASSpace extends OASElement {
         el.removeAttribute('slot')
         el.classList.add('oas-space-separator')
         customSeps.push(el)
-      } else if (
-        el.classList.contains('oas-space-separator') &&
-        !el.hasAttribute('data-oas-space-sep')
-      ) {
+      } else if (el.classList.contains('oas-space-separator') && !el.hasAttribute('data-oas-space-sep')) {
         customSeps.push(el)
       }
     }
@@ -298,9 +270,7 @@ export class OASSpace extends OASElement {
     const separator = this.getAttr('separator', '')
     if (separator === '' || customSeps.length > 0) return
 
-    const items = Array.from(this.children).filter(
-      (el) => !el.classList.contains('oas-space-separator'),
-    )
+    const items = Array.from(this.children).filter((el) => !el.classList.contains('oas-space-separator'))
     for (let i = 0; i < items.length - 1; i++) {
       const span = document.createElement('span')
       span.className = 'oas-space-separator'

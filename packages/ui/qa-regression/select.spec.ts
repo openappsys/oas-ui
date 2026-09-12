@@ -78,9 +78,7 @@ test('select 折叠示例：max-tag-count 显式启用时折叠为 +N（单行 n
   expect(r.plusText).toBe('+2')
 })
 
-test('select 展开态 active 选项在暗色主题下文字/背景对比度 ≥ 4.5（on-primary token）', async ({
-  page,
-}) => {
+test('select 展开态 active 选项在暗色主题下文字/背景对比度 ≥ 4.5（on-primary token）', async ({ page }) => {
   // 曾现 bug：.option.active 硬编码 color:#fff，暗色下 primary 变亮（旧值 #4d9fff）白字仅 ~2.7:1。
   // 修复：改用 --oas-color-text-on-primary（暗色为深色文字），回归锁定对比度。
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
@@ -125,11 +123,7 @@ test('select virtual：1 万条选项仅渲染可视窗口，滚动后窗口平�
   await page.waitForFunction(() => {
     const s = document.querySelector('#select-virtual')
     const vlist = s?.shadowRoot?.querySelector('oas-virtual-list') as HTMLElement | null
-    return (
-      vlist != null &&
-      !vlist.hidden &&
-      (vlist.shadowRoot?.querySelectorAll('[role="option"]').length ?? 0) > 0
-    )
+    return vlist != null && !vlist.hidden && (vlist.shadowRoot?.querySelectorAll('[role="option"]').length ?? 0) > 0
   })
   const initial = await page.evaluate(() => {
     const s = document.querySelector('#select-virtual')!
@@ -166,9 +160,7 @@ test('select virtual：1 万条选项仅渲染可视窗口，滚动后窗口平�
   expect(after.firstLabel).toMatch(/选项 1\d{2}/)
 })
 
-test('select virtual：键盘导航高亮项滚动进视口且 aria-activedescendant 指向可见项', async ({
-  page,
-}) => {
+test('select virtual：键盘导航高亮项滚动进视口且 aria-activedescendant 指向可见项', async ({ page }) => {
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#select-virtual')
   const sel = page.locator('#select-virtual')
@@ -176,11 +168,7 @@ test('select virtual：键盘导航高亮项滚动进视口且 aria-activedescen
   await page.waitForFunction(() => {
     const s = document.querySelector('#select-virtual')
     const vlist = s?.shadowRoot?.querySelector('oas-virtual-list') as HTMLElement | null
-    return (
-      vlist != null &&
-      !vlist.hidden &&
-      (vlist.shadowRoot?.querySelectorAll('[role="option"]').length ?? 0) > 0
-    )
+    return vlist != null && !vlist.hidden && (vlist.shadowRoot?.querySelectorAll('[role="option"]').length ?? 0) > 0
   })
   const r = await page.evaluate(async () => {
     const s = document.querySelector('#select-virtual')!

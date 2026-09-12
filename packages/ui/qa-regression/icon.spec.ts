@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('icon slot 内联 SVG：源 svg 不渲染（slot display:none）且表现属性随克隆保留', async ({
-  page,
-}) => {
+test('icon slot 内联 SVG：源 svg 不渲染（slot display:none）且表现属性随克隆保留', async ({ page }) => {
   // 曾现 bug1：宿主全局 reset（img/svg{display:block}）跨树压过 shadow 普通 ::slotted 规则，
   //           源 svg 黑色副本外露（duotone demo 一个图标渲染成两个）。修复：slot{display:none}。
   // 曾现 bug2：克隆只拷 viewBox，fill/stroke 丢失 → 描边 svg 变实心块/不可见；
@@ -62,9 +60,7 @@ test('icon 宿主 inline-flex：tag 内图标与文字中心线对齐（行高�
   expect(r.diff, '图标与文字中心线偏差应 ≤1px').toBeLessThanOrEqual(1)
 })
 
-test('icon duotone：显式 data-layer 分层的透明度不被元素序 fallback 覆盖（真实 computed 断言）', async ({
-  page,
-}) => {
+test('icon duotone：显式 data-layer 分层的透明度不被元素序 fallback 覆盖（真实 computed 断言）', async ({ page }) => {
   await page.goto('/components/icon.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-icon[duotone]')
   const r = await page.evaluate(() => {

@@ -100,12 +100,7 @@ describe('OASTimeline', () => {
     `
     document.body.appendChild(el)
     const dots = items(el).map((i) => row(i).querySelector('[part="dot"]')!)
-    expect(dots.map((d) => d.getAttribute('data-type'))).toEqual([
-      'success',
-      'danger',
-      'neutral',
-      'warning',
-    ])
+    expect(dots.map((d) => d.getAttribute('data-type'))).toEqual(['success', 'danger', 'neutral', 'warning'])
   })
 
   it('任意色走 --oas-timeline-dot-color CSS 变量（dot 背景变量链优先取它）', () => {
@@ -126,9 +121,7 @@ describe('OASTimeline', () => {
     const item = items(el)[0]!
     expect(item.getAttribute('data-direction')).toBe('horizontal')
     expect(item.getAttribute('data-mode')).toBe('alternate')
-    expect(
-      el.shadowRoot!.querySelector('[part="timeline"]')!.getAttribute('data-direction'),
-    ).toBe('horizontal')
+    expect(el.shadowRoot!.querySelector('[part="timeline"]')!.getAttribute('data-direction')).toBe('horizontal')
     // 运行时切换同步下发
     el.setAttribute('direction', 'vertical')
     expect(item.getAttribute('data-direction')).toBe('vertical')
@@ -176,9 +169,7 @@ describe('OASTimeline', () => {
     document.body.appendChild(el)
     const item = items(el)[0]!
     expect(item.textContent).toContain('正在开发中')
-    expect(
-      row(item).querySelector<HTMLElement>('[part="pending-text"]')!.hidden,
-    ).toBe(true)
+    expect(row(item).querySelector<HTMLElement>('[part="pending-text"]')!.hidden).toBe(true)
   })
 
   it('loading 节点：内容区 aria-busy，dot 渲染 spinner 钩子', () => {
@@ -246,9 +237,7 @@ describe('OASTimeline', () => {
     const title = r.querySelector<HTMLElement>('[part="title"]')!
     expect(title.hidden).toBe(false)
     const titleSlot = title.querySelector<HTMLSlotElement>('slot[name="title"]')!
-    expect(
-      titleSlot.assignedNodes().some((n: Node) => (n.textContent ?? '').includes('v1.2.0')),
-    ).toBe(true)
+    expect(titleSlot.assignedNodes().some((n: Node) => (n.textContent ?? '').includes('v1.2.0'))).toBe(true)
     expect(r.querySelector('[part="content"]')).not.toBeNull()
   })
 
@@ -276,9 +265,7 @@ describe('OASTimeline', () => {
       </oas-timeline-item>
     `
     document.body.appendChild(single)
-    expect(row(items(single)[0]!).querySelector<HTMLElement>('[part="opposite"]')!.hidden).toBe(
-      true,
-    )
+    expect(row(items(single)[0]!).querySelector<HTMLElement>('[part="opposite"]')!.hidden).toBe(true)
   })
 
   it('item 点击派发 oas-click（detail 带 index）', () => {

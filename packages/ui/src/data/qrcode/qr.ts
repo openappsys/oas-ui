@@ -46,18 +46,42 @@ export interface QRResult {
  * 数组下标 = 版本号（下标 0 占位）。
  */
 const ECC_CODEWORDS_PER_BLOCK: Record<QrErrorCorrection, number[]> = {
-  l: [0, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
-  m: [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28],
-  q: [0, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30, 24, 28, 28, 26, 30, 28, 30, 30, 30, 30, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
-  h: [0, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+  l: [
+    0, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26, 28, 30, 30,
+    30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
+  ],
+  m: [
+    0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28,
+    28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28,
+  ],
+  q: [
+    0, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30, 24, 28, 28, 26, 30, 28, 30, 30, 30, 30, 28, 30, 30,
+    30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
+  ],
+  h: [
+    0, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30, 30, 30, 30,
+    30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
+  ],
 }
 
 /** 每个版本、每个纠错级别的 RS 块数（数组下标 = 版本号，下标 0 占位） */
 const NUM_ERROR_CORRECTION_BLOCKS: Record<QrErrorCorrection, number[]> = {
-  l: [0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12, 12, 12, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 24, 25],
-  m: [0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49],
-  q: [0, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29, 34, 34, 35, 38, 40, 43, 45, 48, 51, 53, 56, 59, 62, 65, 68],
-  h: [0, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81],
+  l: [
+    0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12, 12, 12, 13, 14, 15, 16, 17, 18, 19,
+    19, 20, 21, 22, 24, 25,
+  ],
+  m: [
+    0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33,
+    35, 37, 38, 40, 43, 45, 47, 49,
+  ],
+  q: [
+    0, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29, 34, 34, 35, 38, 40, 43,
+    45, 48, 51, 53, 56, 59, 62, 65, 68,
+  ],
+  h: [
+    0, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51,
+    54, 57, 60, 63, 66, 70, 74, 77, 81,
+  ],
 }
 
 /** 纠错级别 → 格式信息 2 位指示 */
@@ -285,9 +309,7 @@ export function encodeDataCodewords(
   } else if (mode === 'alphanumeric') {
     let i = 0
     for (; i + 1 < n; i += 2) {
-      const pair =
-        ALPHANUMERIC_CHARS.indexOf(value.charAt(i)) * 45 +
-        ALPHANUMERIC_CHARS.indexOf(value.charAt(i + 1))
+      const pair = ALPHANUMERIC_CHARS.indexOf(value.charAt(i)) * 45 + ALPHANUMERIC_CHARS.indexOf(value.charAt(i + 1))
       pushBits(bits, pair, 11)
     }
     if (i < n) pushBits(bits, ALPHANUMERIC_CHARS.indexOf(value.charAt(i)), 6)
@@ -403,13 +425,7 @@ function drawTiming(modules: Uint8Array, size: number): void {
   }
 }
 
-function drawFormatBits(
-  modules: Uint8Array,
-  size: number,
-  version: number,
-  mask: number,
-  ec: QrErrorCorrection,
-): void {
+function drawFormatBits(modules: Uint8Array, size: number, version: number, mask: number, ec: QrErrorCorrection): void {
   const bits = formatBits(mask, ec)
   const getBit = (v: number, i: number): number => (v >>> i) & 1
   // 第一拷贝（左上附近）
@@ -438,12 +454,7 @@ function drawVersion(modules: Uint8Array, size: number, version: number): void {
 }
 
 /** 数据位 zigzag 放置 */
-function drawCodewords(
-  modules: Uint8Array,
-  func: Uint8Array,
-  size: number,
-  codewords: number[],
-): void {
+function drawCodewords(modules: Uint8Array, func: Uint8Array, size: number, codewords: number[]): void {
   let i = 0
   for (let right = size - 1; right >= 1; right -= 2) {
     if (right === 6) right = 5
@@ -512,8 +523,7 @@ class RunHistory {
   countPatterns(): number {
     const n = this.runs[1]!
     if (n <= 0) return 0
-    const core =
-      this.runs[2] === n && this.runs[4] === n && this.runs[5] === n && this.runs[3] === n * 3
+    const core = this.runs[2] === n && this.runs[4] === n && this.runs[5] === n && this.runs[3] === n * 3
     if (!core) return 0
     let count = 0
     if (this.runs[0]! >= n * 4 && this.runs[6]! >= n) count++
@@ -581,11 +591,7 @@ function penaltyScore(modules: Uint8Array, size: number): number {
  * 数据码字 + ECC 分块交错（短块/长块拆分，标准交错顺序）。
  * data 长度必须等于该版本/级别的数据码字数。
  */
-function addEccAndInterleave(
-  data: number[],
-  version: number,
-  ec: QrErrorCorrection,
-): number[] {
+function addEccAndInterleave(data: number[], version: number, ec: QrErrorCorrection): number[] {
   const numBlocks = NUM_ERROR_CORRECTION_BLOCKS[ec][version]!
   const eccPerBlock = ECC_CODEWORDS_PER_BLOCK[ec][version]!
   const rawCodewords = totalCodewords(version)

@@ -37,9 +37,7 @@ const warnedBreakpoints = new Set<string>()
 function warnBreakpoint(name: string): void {
   if (warnedBreakpoints.has(name)) return
   warnedBreakpoints.add(name)
-  console.warn(
-    `[oas-grid] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`,
-  )
+  console.warn(`[oas-grid] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
 }
 
 const warnedColumnValues = new Set<string>()
@@ -48,9 +46,7 @@ const warnedColumnValues = new Set<string>()
 function warnColumnValue(value: string): void {
   if (warnedColumnValues.has(value)) return
   warnedColumnValues.add(value)
-  console.warn(
-    `[oas-grid] 断点 columns 值 "${value}" 非法，已丢弃该断点规则；合法值：正整数`,
-  )
+  console.warn(`[oas-grid] 断点 columns 值 "${value}" 非法，已丢弃该断点规则；合法值：正整数`)
 }
 
 const warnedColumnBases = new Set<string>()
@@ -68,9 +64,7 @@ const warnedMinChildWidths = new Set<string>()
 function warnMinChildWidth(value: string): void {
   if (warnedMinChildWidths.has(value)) return
   warnedMinChildWidths.add(value)
-  console.warn(
-    `[oas-grid] min-child-width 应为单个长度值（如 200px 或 180），非法值 "${value}" 已忽略（回落默认列数）`,
-  )
+  console.warn(`[oas-grid] min-child-width 应为单个长度值（如 200px 或 180），非法值 "${value}" 已忽略（回落默认列数）`)
 }
 
 /**
@@ -80,9 +74,7 @@ function warnMinChildWidth(value: string): void {
  * - 首个 token 不含冒号视为基础值，缺省时回落 1 列；
  * - 非法断点名丢弃该规则 + dev 告警（同值去重），合法断点值由调用方归一化。
  */
-function parseBreakpointShorthand(
-  raw: string,
-): { base: string; rules: Array<{ name: string; value: string }> } | null {
+function parseBreakpointShorthand(raw: string): { base: string; rules: Array<{ name: string; value: string }> } | null {
   if (!raw.includes(' ')) return null
   const tokens = raw.trim().split(/\s+/)
   if (!tokens.some((t) => t.includes(':'))) return null
@@ -129,9 +121,7 @@ const warnedJustify = new Set<string>()
 function warnJustifyValue(value: string): void {
   if (warnedJustify.has(value)) return
   warnedJustify.add(value)
-  console.warn(
-    `[oas-grid] 非法 justify "${value}"，已回落 stretch；合法值：start/center/end/stretch`,
-  )
+  console.warn(`[oas-grid] 非法 justify "${value}"，已回落 stretch；合法值：start/center/end/stretch`)
 }
 
 const warnedAlign = new Set<string>()
@@ -140,9 +130,7 @@ const warnedAlign = new Set<string>()
 function warnAlignValue(value: string): void {
   if (warnedAlign.has(value)) return
   warnedAlign.add(value)
-  console.warn(
-    `[oas-grid] 非法 align "${value}"，已回落 stretch；合法值：start/center/end/stretch/baseline`,
-  )
+  console.warn(`[oas-grid] 非法 align "${value}"，已回落 stretch；合法值：start/center/end/stretch/baseline`)
 }
 
 export class OASGrid extends OASElement {
@@ -243,9 +231,7 @@ export class OASGrid extends OASElement {
    * 序列化 shadowRoot.innerHTML 同步产出，两段路径一致）。无断点时清空。
    */
   private syncBreakpointStyle(css: string): void {
-    const styleEl = this.shadow.querySelector<HTMLStyleElement>(
-      'style[data-oas-grid-breakpoints]',
-    )
+    const styleEl = this.shadow.querySelector<HTMLStyleElement>('style[data-oas-grid-breakpoints]')
     if (!styleEl) return
     styleEl.textContent = css
   }
@@ -279,8 +265,7 @@ export class OASGrid extends OASElement {
       })
       .sort((a, b) => BREAKPOINT_ORDER.indexOf(a.name) - BREAKPOINT_ORDER.indexOf(b.name))
       .map(
-        (r) =>
-          `@media (min-width: ${BREAKPOINTS[r.name]}) { :host { --oas-grid-columns: repeat(${r.value}, 1fr) } }`,
+        (r) => `@media (min-width: ${BREAKPOINTS[r.name]}) { :host { --oas-grid-columns: repeat(${r.value}, 1fr) } }`,
       )
 
     if (rules.length > 0) {

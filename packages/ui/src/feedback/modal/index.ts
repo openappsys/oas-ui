@@ -2,7 +2,13 @@
 // 纯核瘦身走 `@oas-ui/ui/feedback/modal/core` 子路径（不含能力，见 ./core/index.ts）。
 import './prompt/index.js'
 import '@oas-ui/i18n'
-import { OASModal, type ModalVariant, type ModalCloseSource, type ModalTransition, type ModalSizePreset } from './oas-modal.js'
+import {
+  OASModal,
+  type ModalVariant,
+  type ModalCloseSource,
+  type ModalTransition,
+  type ModalSizePreset,
+} from './oas-modal.js'
 import {
   modal,
   destroyAll,
@@ -19,11 +25,7 @@ import {
   type OptionsHandle,
   type OptionsType,
 } from './modal.js'
-import {
-  registerModalCapability,
-  registeredModalCapabilities,
-  hasModalCapability,
-} from './oas-modal-capability.js'
+import { registerModalCapability, registeredModalCapabilities, hasModalCapability } from './oas-modal-capability.js'
 
 if (!customElements.get('oas-modal')) {
   customElements.define('oas-modal', OASModal)

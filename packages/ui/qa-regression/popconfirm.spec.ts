@@ -84,9 +84,7 @@ test('popconfirm 基础链路：确定派发反馈 + 关闭回焦 trigger + aria
   expect(focusBack.isTrigger, '关闭后焦点应回到 trigger').toBe(true)
 })
 
-test('popconfirm 异步确认：ok-loading 阻止自动关闭，完成后关闭（demo 可见反馈链路）', async ({
-  page,
-}) => {
+test('popconfirm 异步确认：ok-loading 阻止自动关闭，完成后关闭（demo 可见反馈链路）', async ({ page }) => {
   await page.goto('/components/popconfirm.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#pc-async')
 
@@ -105,11 +103,9 @@ test('popconfirm 异步确认：ok-loading 阻止自动关闭，完成后关闭�
     const el = document.querySelector('#pc-async')!
     ;(el.querySelector('oas-button') as HTMLElement).click()
   })
-  await page.waitForFunction(
-    () => document.querySelector('#pc-async')?.hasAttribute('open') === true,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#pc-async')?.hasAttribute('open') === true, null, {
+    timeout: 5000,
+  })
 
   await page.evaluate(() => {
     const el = document.querySelector('#pc-async')!
@@ -129,11 +125,9 @@ test('popconfirm 异步确认：ok-loading 阻止自动关闭，完成后关闭�
   expect(s.busy).toBe('true')
 
   // 1.5s 后宿主完成：移除 loading + 关闭
-  await page.waitForFunction(
-    () => document.querySelector('#pc-async')?.hasAttribute('open') === false,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#pc-async')?.hasAttribute('open') === false, null, {
+    timeout: 5000,
+  })
   s = await snapshot()
   expect(s.loading).toBe(false)
 })
@@ -211,9 +205,7 @@ test('popconfirm 12 向 placement：fixed 定位写视口坐标 + 箭头在场',
   expect(Math.abs(s.left - s.anchorLeft)).toBeLessThanOrEqual(2)
 })
 
-test('popconfirm Vue demo 属性存活：theme/ok-text/show-cancel/hide-icon/trigger 不被剥离', async ({
-  page,
-}) => {
+test('popconfirm Vue demo 属性存活：theme/ok-text/show-cancel/hide-icon/trigger 不被剥离', async ({ page }) => {
   await page.goto('/components/popconfirm.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#pc-basic')
   const attrs = await page.evaluate(() => {
@@ -229,12 +221,9 @@ test('popconfirm Vue demo 属性存活：theme/ok-text/show-cancel/hide-icon/tri
       virtualCount: blocks.filter((b) => b.hasAttribute('virtual')).length,
       widthCount: blocks.filter((b) => b.hasAttribute('width')).length,
       arrowFalseCount: blocks.filter((b) => b.getAttribute('arrow') === 'false').length,
-      autoAdjustFalseCount: blocks.filter((b) => b.getAttribute('auto-adjust-overflow') === 'false')
-        .length,
+      autoAdjustFalseCount: blocks.filter((b) => b.getAttribute('auto-adjust-overflow') === 'false').length,
       positionCount: blocks.filter((b) => b.hasAttribute('position')).length,
-      virtualXyCount: blocks.filter(
-        (b) => b.hasAttribute('virtual-x') || b.hasAttribute('virtual-y'),
-      ).length,
+      virtualXyCount: blocks.filter((b) => b.hasAttribute('virtual-x') || b.hasAttribute('virtual-y')).length,
     }
   })
   expect(attrs.themedCount, 'theme 属性在 Vue demo 中存活').toBeGreaterThanOrEqual(2)
@@ -263,21 +252,15 @@ test('popconfirm oas-open-change：关闭原因流转（outside/ok）', async ({
     })
     ;(el.querySelector('oas-button') as HTMLElement).click()
   })
-  await page.waitForFunction(
-    () => document.querySelector('#pc-basic')?.hasAttribute('open') === true,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#pc-basic')?.hasAttribute('open') === true, null, {
+    timeout: 5000,
+  })
   // 点击页面空白处 → outside
   await page.mouse.click(400, 10)
-  await page.waitForFunction(
-    () => document.querySelector('#pc-basic')?.hasAttribute('open') === false,
-    null,
-    { timeout: 5000 },
-  )
-  const reasons = (await page.evaluate(
-    () => (window as unknown as { __pcReasons: string[] }).__pcReasons,
-  )) as string[]
+  await page.waitForFunction(() => document.querySelector('#pc-basic')?.hasAttribute('open') === false, null, {
+    timeout: 5000,
+  })
+  const reasons = (await page.evaluate(() => (window as unknown as { __pcReasons: string[] }).__pcReasons)) as string[]
   expect(reasons).toEqual(['trigger', 'outside'])
 })
 

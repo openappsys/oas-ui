@@ -84,9 +84,7 @@ describe('OASMasonry', () => {
   // ===== 布局批 3：响应式列数 / 行列间距 / fresh / column 指定列 =====
 
   function breakpointCss(el: OASMasonry): string {
-    return (
-      el.shadowRoot!.querySelector('style[data-oas-masonry-breakpoints]')!.textContent ?? ''
-    )
+    return el.shadowRoot!.querySelector('style[data-oas-masonry-breakpoints]')!.textContent ?? ''
   }
 
   function orderClasses(el: OASMasonry): string[] {
@@ -97,12 +95,8 @@ describe('OASMasonry', () => {
     const el = mount({ columns: '1 md:2 lg:4' })
     expect(root(el).style.columnCount).toBe('var(--oas-masonry-columns, 1)')
     const css = breakpointCss(el)
-    expect(css).toContain(
-      '@media (min-width: 768px) { :host { --oas-masonry-columns: 2 } }',
-    )
-    expect(css).toContain(
-      '@media (min-width: 1024px) { :host { --oas-masonry-columns: 4 } }',
-    )
+    expect(css).toContain('@media (min-width: 768px) { :host { --oas-masonry-columns: 2 } }')
+    expect(css).toContain('@media (min-width: 1024px) { :host { --oas-masonry-columns: 4 } }')
   })
 
   it('columns 非法断点名：丢弃该断点 + dev 告警（同值去重）', () => {
@@ -123,9 +117,7 @@ describe('OASMasonry', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount({ columns: '2 lg:abc' })
     const css = breakpointCss(el)
-    expect(css).toContain(
-      '@media (min-width: 1024px) { :host { --oas-masonry-columns: 2 } }',
-    )
+    expect(css).toContain('@media (min-width: 1024px) { :host { --oas-masonry-columns: 2 } }')
     expect(warn).toHaveBeenCalledTimes(1)
     warn.mockRestore()
     el.remove()
@@ -296,10 +288,7 @@ describe('OASMasonry', () => {
 
   it('items 渲染进 shadow .masonry：项数与文本断言', () => {
     const el = new OASMasonry()
-    el.setAttribute(
-      'items',
-      JSON.stringify([{ text: '卡片 A' }, { text: '卡片 B' }, { text: '卡片 C' }]),
-    )
+    el.setAttribute('items', JSON.stringify([{ text: '卡片 A' }, { text: '卡片 B' }, { text: '卡片 C' }]))
     document.body.appendChild(el)
     const items = itemsEls(el)
     expect(items.length).toBe(3)
@@ -318,10 +307,7 @@ describe('OASMasonry', () => {
       <div class="card">slot 一</div>
       <div class="card">slot 二</div>
     `
-    el.setAttribute(
-      'items',
-      JSON.stringify([{ text: 'data 一' }, { text: 'data 二' }, { text: 'data 三' }]),
-    )
+    el.setAttribute('items', JSON.stringify([{ text: 'data 一' }, { text: 'data 二' }, { text: 'data 三' }]))
     document.body.appendChild(el)
     // 只渲染 items（3 项）；slot 隐藏、light DOM 子元素保留未被移除
     expect(itemsEls(el).length).toBe(3)

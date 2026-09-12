@@ -144,9 +144,7 @@ describe('OASStatistic', () => {
     const order = ['title', 'value'].map((p) => partEl(el, p))
     const stat = el.shadowRoot!.querySelector('[part="statistic"]')!
     expect(
-      order.every(
-        (node, i) => i === 0 || stat.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING,
-      ),
+      order.every((node, i) => i === 0 || stat.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING),
     ).toBe(true)
   })
 

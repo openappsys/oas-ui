@@ -11,9 +11,7 @@ function el(): OASToast {
 }
 
 function all(): OASToast[] {
-  return [
-    ...(document.body.querySelectorAll('oas-toast') as NodeListOf<OASToast>),
-  ]
+  return [...(document.body.querySelectorAll('oas-toast') as NodeListOf<OASToast>)]
 }
 
 function titleOf(t: OASToast): string {
@@ -199,9 +197,7 @@ describe('toast 命令式 API（既有能力回归）', () => {
 
   it('关闭按钮 aria-label 走 locale（toast.close）', () => {
     toast.info({ title: '标题' })
-    expect(
-      el().shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.getAttribute('aria-label'),
-    ).toBe('关闭')
+    expect(el().shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.getAttribute('aria-label')).toBe('关闭')
   })
 
   describe('title 吸收（消除宿主原生 tooltip）', () => {
@@ -342,9 +338,7 @@ describe('P1 onClose 回调 + 生命周期事件', () => {
   it('close 事件可被宿主监听（命令式，携带 trigger=auto）', () => {
     const onCloseEvent = vi.fn()
     toast.info({ title: 'x' })
-    el().addEventListener('oas-close', (e) =>
-      onCloseEvent((e as CustomEvent).detail?.trigger),
-    )
+    el().addEventListener('oas-close', (e) => onCloseEvent((e as CustomEvent).detail?.trigger))
     vi.advanceTimersByTime(3000)
     expect(onCloseEvent).toHaveBeenCalledWith('auto')
   })
@@ -814,15 +808,9 @@ describe('P10 滑动关闭（swipe）', () => {
 
   function swipe(fromX: number, toX: number): void {
     const box = el().shadowRoot!.querySelector<HTMLElement>('.box')!
-    box.dispatchEvent(
-      new PointerEvent('pointerdown', { clientX: fromX, clientY: 50, pointerId: 1 }),
-    )
-    window.dispatchEvent(
-      new PointerEvent('pointermove', { clientX: toX, clientY: 50, pointerId: 1 }),
-    )
-    window.dispatchEvent(
-      new PointerEvent('pointerup', { clientX: toX, clientY: 50, pointerId: 1 }),
-    )
+    box.dispatchEvent(new PointerEvent('pointerdown', { clientX: fromX, clientY: 50, pointerId: 1 }))
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: toX, clientY: 50, pointerId: 1 }))
+    window.dispatchEvent(new PointerEvent('pointerup', { clientX: toX, clientY: 50, pointerId: 1 }))
   }
 
   it('超过阈值（80px）滑动关闭', async () => {
@@ -1117,9 +1105,7 @@ describe('P18 动画配置（默认进出场，时长走 CSS 变量开口）', (
     // 离场中：仍在 DOM
     const closing = document.body.querySelector('oas-toast[id="y"]') as OASToast
     expect(closing).not.toBeNull()
-    expect(
-      closing.shadowRoot!.querySelector('[part="box"]')!.classList.contains('closing'),
-    ).toBe(true)
+    expect(closing.shadowRoot!.querySelector('[part="box"]')!.classList.contains('closing')).toBe(true)
     await settleClose()
     expect(document.body.querySelector('oas-toast[id="y"]')).toBeNull()
     expect(all().length).toBe(1)

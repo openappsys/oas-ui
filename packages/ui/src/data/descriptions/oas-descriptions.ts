@@ -63,9 +63,7 @@ export class OASDescriptions extends OASElement {
 
   /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
   private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
-    return slot
-      .assignedNodes()
-      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** 缓存节点引用（render 与水合路径共用；title 插槽内容增减时重刷标题区显隐） */
@@ -128,10 +126,7 @@ export class OASDescriptions extends OASElement {
     // layout（默认 horizontal，破坏性变更）：item 内部按继承变量切换横/纵排布
     const layout = this.getAttr('layout', 'horizontal') === 'vertical' ? 'vertical' : 'horizontal'
     this.style.setProperty('--oas-desc-layout-dir', layout === 'vertical' ? 'column' : 'row')
-    this.style.setProperty(
-      '--oas-desc-item-gap',
-      layout === 'vertical' ? 'var(--oas-space-1)' : 'var(--oas-space-2)',
-    )
+    this.style.setProperty('--oas-desc-item-gap', layout === 'vertical' ? 'var(--oas-space-1)' : 'var(--oas-space-2)')
     this.setAttribute('data-layout', layout)
 
     // bordered：网格线成表。线宽/label 底色/单元格内边距经继承变量下发给 item

@@ -11,8 +11,9 @@ test('countdown countup 正计时：走时递增、active 暂停冻结、reset()
   await up(page, 'oas-countdown#countup-active')
   const read = () =>
     page.evaluate(
-      () => document.querySelector('oas-countdown#countup-active')!.shadowRoot!
-        .querySelector('[part="display"]')!.textContent,
+      () =>
+        document.querySelector('oas-countdown#countup-active')!.shadowRoot!.querySelector('[part="display"]')!
+          .textContent,
     )
   const first = await read()
   expect(first, '正计时初始为 00:00:00').toBe('00:00:00')
@@ -49,8 +50,9 @@ test('countdown countup 正计时：dark 主题下显示与 light 一致可读',
   await up(page, 'oas-countdown#countup-active')
   const readColor = () =>
     page.evaluate(() => {
-      const display = document.querySelector('oas-countdown#countup-active')!.shadowRoot!
-        .querySelector('[part="display"]')!
+      const display = document
+        .querySelector('oas-countdown#countup-active')!
+        .shadowRoot!.querySelector('[part="display"]')!
       return getComputedStyle(display).color
     })
   const light = await readColor()

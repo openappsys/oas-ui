@@ -25,19 +25,11 @@ const EASINGS: Record<string, (t: number) => number> = {
   'expo-in': (t) => (t === 0 ? 0 : Math.pow(2, 10 * t - 10)),
   'expo-out': (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)),
   'expo-in-out': (t) =>
-    t === 0
-      ? 0
-      : t === 1
-        ? 1
-        : t < 0.5
-          ? Math.pow(2, 20 * t - 10) / 2
-          : (2 - Math.pow(2, -20 * t + 10)) / 2,
+    t === 0 ? 0 : t === 1 ? 1 : t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2,
   'circ-in': (t) => 1 - Math.sqrt(1 - Math.pow(t, 2)),
   'circ-out': (t) => Math.sqrt(1 - Math.pow(t - 1, 2)),
   'circ-in-out': (t) =>
-    t < 0.5
-      ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2
-      : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2,
+    t < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2,
   'back-in': (t) => {
     const c1 = 1.70158
     const c3 = c1 + 1
@@ -542,10 +534,7 @@ export class OASBackTop extends OASElement {
     ) {
       return true
     }
-    if (
-      (overflowX === 'auto' || overflowX === 'scroll' || overflowX === 'overlay') &&
-      h.scrollWidth > h.clientWidth
-    ) {
+    if ((overflowX === 'auto' || overflowX === 'scroll' || overflowX === 'overlay') && h.scrollWidth > h.clientWidth) {
       return true
     }
     return false

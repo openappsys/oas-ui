@@ -1,12 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import {
-  registerLocale,
-  setLocale,
-  getLocale,
-  getLocaleName,
-  t,
-  onLocaleChange,
-} from './registry.js'
+import { registerLocale, setLocale, getLocale, getLocaleName, t, onLocaleChange } from './registry.js'
 import { zhCN } from './locales/zh-CN.js'
 import { en } from './locales/en.js'
 

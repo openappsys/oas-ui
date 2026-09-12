@@ -85,19 +85,15 @@ test('drawer 关闭拦截：before-close preventDefault 保持打开并弹提示
   await page.evaluate(() => {
     document.querySelector('#drawer-guard')?.setAttribute('visible', '')
   })
-  await page.waitForFunction(
-    () => document.querySelector('#drawer-guard')?.hasAttribute('visible') === true,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#drawer-guard')?.hasAttribute('visible') === true, null, {
+    timeout: 5000,
+  })
   // 点取消 → 被拦截：保持打开 + warning 消息
   await page.evaluate(() => {
     const el = document.querySelector('#drawer-guard')!
     ;(el.shadowRoot!.querySelector('[part="cancel"]') as HTMLElement).click()
   })
-  expect(
-    await page.evaluate(() => document.querySelector('#drawer-guard')?.hasAttribute('visible')),
-  ).toBe(true)
+  expect(await page.evaluate(() => document.querySelector('#drawer-guard')?.hasAttribute('visible'))).toBe(true)
   await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, {
     timeout: 5000,
   })
@@ -106,11 +102,9 @@ test('drawer 关闭拦截：before-close preventDefault 保持打开并弹提示
     const el = document.querySelector('#drawer-guard')!
     ;(el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
   })
-  await page.waitForFunction(
-    () => !document.querySelector('#drawer-guard')?.hasAttribute('visible'),
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => !document.querySelector('#drawer-guard')?.hasAttribute('visible'), null, {
+    timeout: 5000,
+  })
 })
 
 test('drawer 嵌套层级：后开者盖先开者，Esc 逐层关闭', async ({ page }) => {
@@ -119,19 +113,15 @@ test('drawer 嵌套层级：后开者盖先开者，Esc 逐层关闭', async ({ 
   await page.evaluate(() => {
     document.querySelector('#drawer-outer')?.setAttribute('visible', '')
   })
-  await page.waitForFunction(
-    () => document.querySelector('#drawer-outer')?.hasAttribute('visible') === true,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#drawer-outer')?.hasAttribute('visible') === true, null, {
+    timeout: 5000,
+  })
   await page.evaluate(() => {
     document.querySelector('#drawer-inner')?.setAttribute('visible', '')
   })
-  await page.waitForFunction(
-    () => document.querySelector('#drawer-inner')?.hasAttribute('visible') === true,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#drawer-inner')?.hasAttribute('visible') === true, null, {
+    timeout: 5000,
+  })
   const zs = await page.evaluate(() => {
     const z = (el: Element | null): string | null =>
       el?.shadowRoot?.querySelector<HTMLElement>('[part="panel"]')?.style.zIndex ?? null
@@ -146,21 +136,15 @@ test('drawer 嵌套层级：后开者盖先开者，Esc 逐层关闭', async ({ 
   expect(innerZ).toBeGreaterThan(outerZ)
   // Esc 先关内层
   await page.keyboard.press('Escape')
-  await page.waitForFunction(
-    () => !document.querySelector('#drawer-inner')?.hasAttribute('visible'),
-    null,
-    { timeout: 5000 },
-  )
-  expect(
-    await page.evaluate(() => document.querySelector('#drawer-outer')?.hasAttribute('visible')),
-  ).toBe(true)
+  await page.waitForFunction(() => !document.querySelector('#drawer-inner')?.hasAttribute('visible'), null, {
+    timeout: 5000,
+  })
+  expect(await page.evaluate(() => document.querySelector('#drawer-outer')?.hasAttribute('visible'))).toBe(true)
   // 再 Esc 关外层
   await page.keyboard.press('Escape')
-  await page.waitForFunction(
-    () => !document.querySelector('#drawer-outer')?.hasAttribute('visible'),
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => !document.querySelector('#drawer-outer')?.hasAttribute('visible'), null, {
+    timeout: 5000,
+  })
 })
 
 test('drawer resizable：拖拽调宽生效并弹出 oas-resize 提示', async ({ page }) => {
@@ -173,18 +157,14 @@ test('drawer resizable：拖拽调宽生效并弹出 oas-resize 提示', async (
     document.querySelector('#drawer-resize')?.setAttribute('visible', '')
   })
   await page.waitForFunction(() => {
-    const rail = document
-      .querySelector('#drawer-resize')
-      ?.shadowRoot?.querySelector<HTMLElement>('[part="rail"]')
+    const rail = document.querySelector('#drawer-resize')?.shadowRoot?.querySelector<HTMLElement>('[part="rail"]')
     return rail != null && !rail.hasAttribute('hidden')
   })
   // 等打开动画结束（data-open 后仍滑入 ~180ms）再拖——动画期间 rail 位移中，
   // 按动画起点量出的坐标按下会落在面板上而非 rail，拖拽不生效
   await page.waitForTimeout(450)
   const railBox = await page.evaluate(() => {
-    const rail = document
-      .querySelector('#drawer-resize')!
-      .shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
+    const rail = document.querySelector('#drawer-resize')!.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
     const r = rail.getBoundingClientRect()
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 }
   })
@@ -198,15 +178,11 @@ test('drawer resizable：拖拽调宽生效并弹出 oas-resize 提示', async (
     null,
     { timeout: 5000 },
   )
-  const width = await page.evaluate(
-    () => document.querySelector('#drawer-resize')?.getAttribute('width'),
-  )
+  const width = await page.evaluate(() => document.querySelector('#drawer-resize')?.getAttribute('width'))
   expect(width).toMatch(/^6\d\dpx$/) // 480 + 120 ≈ 600
-  await page.waitForFunction(
-    () => document.querySelectorAll('oas-message').length > 0,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, {
+    timeout: 5000,
+  })
 })
 
 test('drawer 命令式 API：drawer() 打开、handle.close 播放动画后销毁', async ({ page }) => {
@@ -250,23 +226,21 @@ test('drawer destroy-on-close：关闭动画结束后内容清空', async ({ pag
   await page.evaluate(() => {
     document.querySelector('#drawer-destroy')?.setAttribute('visible', '')
   })
-  await page.waitForFunction(
-    () => document.querySelector('#drawer-destroy')?.hasAttribute('visible') === true,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#drawer-destroy')?.hasAttribute('visible') === true, null, {
+    timeout: 5000,
+  })
   await page.evaluate(() => {
     const el = document.querySelector('#drawer-destroy')!
     ;(el.shadowRoot!.querySelector('[part="close"]') as HTMLElement).click()
   })
-  await page.waitForFunction(
-    () => document.querySelector('#drawer-destroy')?.children.length === 0,
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#drawer-destroy')?.children.length === 0, null, {
+    timeout: 5000,
+  })
 })
 
-test('drawer 面板打开后可视位置在视口内（CSS 顺序回归：placement 关闭位 transform 不得覆盖 data-open 打开位）', async ({ page }) => {
+test('drawer 面板打开后可视位置在视口内（CSS 顺序回归：placement 关闭位 transform 不得覆盖 data-open 打开位）', async ({
+  page,
+}) => {
   // 曾漏检：placement 规则后置覆盖 .panel[data-open] { transform: none }，面板 data-open 在、
   // 机制断言全绿，但视觉上永远停在屏幕外（left:-360 / right:1280）。本断言锚定可视位置。
   await page.goto('/components/drawer.html', { waitUntil: 'domcontentloaded' })
@@ -275,8 +249,8 @@ test('drawer 面板打开后可视位置在视口内（CSS 顺序回归：placem
     label,
     act: async () => {
       await page.evaluate((l) => {
-        const btn = [...document.querySelectorAll('oas-button')].find(
-          (x): x is HTMLElement => (x.textContent || '').includes(l),
+        const btn = [...document.querySelectorAll('oas-button')].find((x): x is HTMLElement =>
+          (x.textContent || '').includes(l),
         )
         btn?.click()
       }, label)
@@ -318,10 +292,8 @@ test('drawer 面板内点击不透传遮罩：document 根委托可达、面板�
   })
   await page.waitForFunction(
     () =>
-      document
-        .querySelector('#drawer-ctrl')
-        ?.shadowRoot?.querySelector('[part="panel"]')
-        ?.getAttribute('data-open') === '',
+      document.querySelector('#drawer-ctrl')?.shadowRoot?.querySelector('[part="panel"]')?.getAttribute('data-open') ===
+      '',
     null,
     { timeout: 5000 },
   )
@@ -334,47 +306,35 @@ test('drawer 面板内点击不透传遮罩：document 根委托可达、面板�
   try {
     // 点面板 body 空白：document 委托收到且不误关
     await page.evaluate(() => {
-      const p = document.querySelector('#drawer-ctrl')!.shadowRoot!.querySelector<HTMLElement>(
-        '[part="body"]',
-      )!
+      const p = document.querySelector('#drawer-ctrl')!.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!
       p.click()
     })
     await page.waitForFunction(() => (window as any).__docClicks >= 1, null, { timeout: 5000 })
-    const stillOpen = await page.evaluate(() =>
-      document.querySelector('#drawer-ctrl')?.hasAttribute('visible'),
-    )
+    const stillOpen = await page.evaluate(() => document.querySelector('#drawer-ctrl')?.hasAttribute('visible'))
     expect(stillOpen, '点面板空白不得触发遮罩关闭').toBe(true)
     // 点 ✕：委托同样收到，关闭路径照常
     await page.evaluate(() => {
-      const p = document.querySelector('#drawer-ctrl')!.shadowRoot!.querySelector<HTMLElement>(
-        '[part="close"]',
-      )!
+      const p = document.querySelector('#drawer-ctrl')!.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!
       p.click()
     })
     await page.waitForFunction(() => (window as any).__docClicks >= 2, null, { timeout: 5000 })
-    await page.waitForFunction(
-      () => !document.querySelector('#drawer-ctrl')?.hasAttribute('visible'),
-      null,
-      { timeout: 5000 },
-    )
+    await page.waitForFunction(() => !document.querySelector('#drawer-ctrl')?.hasAttribute('visible'), null, {
+      timeout: 5000,
+    })
     // 遮罩本体点击仍能关闭（重开后点 mask）
     await page.evaluate(() => {
       document.querySelector('#drawer-ctrl')?.setAttribute('visible', '')
     })
-    await page.waitForFunction(
-      () => document.querySelector('#drawer-ctrl')?.hasAttribute('visible') === true,
-      null,
-      { timeout: 5000 },
-    )
+    await page.waitForFunction(() => document.querySelector('#drawer-ctrl')?.hasAttribute('visible') === true, null, {
+      timeout: 5000,
+    })
     await page.evaluate(() => {
       const el = document.querySelector('#drawer-ctrl')!
       ;(el.shadowRoot!.querySelector('.mask') as HTMLElement).click()
     })
-    await page.waitForFunction(
-      () => !document.querySelector('#drawer-ctrl')?.hasAttribute('visible'),
-      null,
-      { timeout: 5000 },
-    )
+    await page.waitForFunction(() => !document.querySelector('#drawer-ctrl')?.hasAttribute('visible'), null, {
+      timeout: 5000,
+    })
     const clicks = await page.evaluate(() => (window as any).__docClicks)
     expect(clicks, 'panel 内每次点击都应冒泡到 document 委托').toBeGreaterThanOrEqual(2)
   } finally {
@@ -394,11 +354,15 @@ test('drawer title 动态更新：打开态 setAttribute title → 标题区文�
     el.setAttribute('visible', '')
     el.setAttribute('title', '动态更新标题')
   })
-  await page.waitForFunction(() => {
-    const el = document.querySelector('#drawer-ctrl')
-    const text = el?.shadowRoot?.querySelector('[part="title"]')?.textContent ?? ''
-    return text.includes('动态更新标题')
-  }, null, { timeout: 5000 })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#drawer-ctrl')
+      const text = el?.shadowRoot?.querySelector('[part="title"]')?.textContent ?? ''
+      return text.includes('动态更新标题')
+    },
+    null,
+    { timeout: 5000 },
+  )
   const r = await page.evaluate(() => {
     const el = document.querySelector('#drawer-ctrl')!
     return {

@@ -3,9 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('card clickable：整卡 role/tabindex 存活、点击派发 oas-click 有可见反馈、内部按钮不触发整卡', async ({
-  page,
-}) => {
+test('card clickable：整卡 role/tabindex 存活、点击派发 oas-click 有可见反馈、内部按钮不触发整卡', async ({ page }) => {
   // 曾现风险：clickable 属性被 Vue 剥离、整卡点击静默失败、actions 内按钮误触整卡
   await page.goto('/components/card.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-card[clickable]')
@@ -56,7 +54,8 @@ test('card title 吸收：宿主不残留原生 title（消除整卡悬浮 toolt
     return {
       total: cards.length,
       residue: cards.filter((c) => c.hasAttribute('title')).length,
-      renderedTitles: cards.filter((c) => (c.shadowRoot?.querySelector('[part="title"]')?.textContent ?? '') !== '').length,
+      renderedTitles: cards.filter((c) => (c.shadowRoot?.querySelector('[part="title"]')?.textContent ?? '') !== '')
+        .length,
     }
   })
   expect(r.total, '页面应有 card demo').toBeGreaterThan(0)
@@ -64,9 +63,7 @@ test('card title 吸收：宿主不残留原生 title（消除整卡悬浮 toolt
   expect(r.renderedTitles, '带 title 的卡片应照常渲染标题区').toBeGreaterThan(0)
 })
 
-test('card selectable：点击切换选中 + aria-checked/角标同步 + 内部按钮不触发 + 受控单选宿主回写', async ({
-  page,
-}) => {
+test('card selectable：点击切换选中 + aria-checked/角标同步 + 内部按钮不触发 + 受控单选宿主回写', async ({ page }) => {
   await page.goto('/components/card.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-card[selectable]')
   await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
@@ -103,11 +100,9 @@ test('card selectable：点击切换选中 + aria-checked/角标同步 + 内部�
 
   // 点击整卡 → 选中态全套钩子（属性反射 + aria-checked + 角标）+ 计数与消息可见反馈
   await clickBody('oas-card[selectable]:not([data-select-radio])')
-  await page.waitForFunction(
-    () => document.querySelector('#card-select-count')?.textContent?.includes('1'),
-    null,
-    { timeout: 5000 },
-  )
+  await page.waitForFunction(() => document.querySelector('#card-select-count')?.textContent?.includes('1'), null, {
+    timeout: 5000,
+  })
   const after = await page.evaluate(() => {
     const card = document.querySelector<HTMLElement>('oas-card[selectable]:not([data-select-radio])')!
     return {
@@ -126,14 +121,10 @@ test('card selectable：点击切换选中 + aria-checked/角标同步 + 内部�
   })
 
   // 点击卡内 actions 按钮 → 不触发选中切换（选中态保持、计数不变、无新增选中）
-  const beforeSelected = await page.evaluate(
-    () => document.querySelectorAll('oas-card[selectable][selected]').length,
-  )
+  const beforeSelected = await page.evaluate(() => document.querySelectorAll('oas-card[selectable][selected]').length)
   await page.locator('oas-card[selectable]:not([data-select-radio]) oas-button').first().click()
   await page.waitForTimeout(400)
-  const afterSelected = await page.evaluate(
-    () => document.querySelectorAll('oas-card[selectable][selected]').length,
-  )
+  const afterSelected = await page.evaluate(() => document.querySelectorAll('oas-card[selectable][selected]').length)
   expect(afterSelected, '点内部按钮不应改变选中态').toBe(beforeSelected)
 
   // 键盘 Enter 切换（聚焦整卡后派发 keydown）
@@ -143,7 +134,10 @@ test('card selectable：点击切换选中 + aria-checked/角标同步 + 内部�
   })
   const kb = await page.evaluate(() => {
     const card = document.querySelector<HTMLElement>('oas-card[selectable]:not([data-select-radio])')!
-    return { selected: card.hasAttribute('selected'), ariaChecked: card.getAttribute('aria-checked') }
+    return {
+      selected: card.hasAttribute('selected'),
+      ariaChecked: card.getAttribute('aria-checked'),
+    }
   })
   expect(kb.selected).toBe(false)
   expect(kb.ariaChecked).toBe('false')
@@ -151,7 +145,10 @@ test('card selectable：点击切换选中 + aria-checked/角标同步 + 内部�
   // 受控单选卡组：宿主角色 role=radio 保留；点第二张 → 互斥回写（第一张取消、第二张选中）
   const radio = await page.evaluate(() => {
     const cards = [...document.querySelectorAll<HTMLElement>('oas-card[data-select-radio]')]
-    return { roles: cards.map((c) => c.getAttribute('role')), initial: cards.map((c) => c.hasAttribute('selected')) }
+    return {
+      roles: cards.map((c) => c.getAttribute('role')),
+      initial: cards.map((c) => c.hasAttribute('selected')),
+    }
   })
   expect(radio.roles, '宿主显式 role=radio 不被组件覆盖').toEqual(['radio', 'radio', 'radio'])
   expect(radio.initial).toEqual([true, false, false])

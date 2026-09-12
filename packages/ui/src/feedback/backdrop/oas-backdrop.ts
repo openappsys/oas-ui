@@ -150,10 +150,7 @@ const COLOR_PRESETS = [
 
 /** prefers-reduced-motion 探测（happy-dom 等环境可能缺失 matchMedia） */
 function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
-  )
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 }
 
 /**
@@ -172,14 +169,7 @@ function preventScroll(e: Event): void {
 function preventScrollKeydown(e: KeyboardEvent): void {
   const t = e.target as HTMLElement | null
   // 输入类控件内不拦截（保留正常输入），仅拦截会滚动页面的按键
-  if (
-    t &&
-    (t.tagName === 'INPUT' ||
-      t.tagName === 'TEXTAREA' ||
-      t.tagName === 'SELECT' ||
-      t.isContentEditable)
-  )
-    return
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return
   if (SCROLL_KEYS.has(e.key)) e.preventDefault()
 }
 
@@ -415,8 +405,7 @@ export class OASBackdrop extends OASElement {
     const blur = this.resolveBlur()
     scrim.style.backdropFilter = blur
     // Safari 前缀（TS DOM lib 无该 vendor 属性，cast 声明）
-    ;(scrim.style as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter =
-      blur
+    ;(scrim.style as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter = blur
 
     // P8：读屏关闭通道文案（close-label 属性 > locale 兜底）
     this.shadow

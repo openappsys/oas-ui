@@ -338,9 +338,7 @@ export class OASAutoComplete extends OASElement {
   private parseOptions(): void {
     try {
       const parsed = JSON.parse(this.getAttr('options', '[]'))
-      this._options = Array.isArray(parsed)
-        ? parsed.filter((o): o is Option => o && typeof o.value === 'string')
-        : []
+      this._options = Array.isArray(parsed) ? parsed.filter((o): o is Option => o && typeof o.value === 'string') : []
     } catch {
       this._options = []
     }
@@ -356,11 +354,7 @@ export class OASAutoComplete extends OASElement {
   private syncClear(): void {
     if (!this.clearBtn || !this.input) return
     this.clearBtn.setAttribute('aria-label', this.t('input.clear'))
-    this.clearBtn.hidden = !(
-      this.hasAttr('clearable') &&
-      !this.injectDisabled() &&
-      this.input.value !== ''
-    )
+    this.clearBtn.hidden = !(this.hasAttr('clearable') && !this.injectDisabled() && this.input.value !== '')
   }
 
   // ---- 输入链路（IME 守卫 + debounce） ----
@@ -596,10 +590,7 @@ export class OASAutoComplete extends OASElement {
     const list = this.listbox
     if (!list) return
     for (const row of list.querySelectorAll<HTMLElement>('.option[data-index]')) {
-      row.classList.toggle(
-        'active',
-        Number(row.getAttribute('data-index')) === this.activeIndex,
-      )
+      row.classList.toggle('active', Number(row.getAttribute('data-index')) === this.activeIndex)
     }
     const n = this.filtered().length
     if (this.openState && n > 0 && this.activeIndex < n) {

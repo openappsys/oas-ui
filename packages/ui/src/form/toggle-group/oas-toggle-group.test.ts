@@ -297,12 +297,8 @@ describe('OASToggleGroup 尺寸与形态（size / vertical / attached / spread�
 
   it('CSS：size 档控高/字号走 token', () => {
     const css = styleText(mount())
-    expect(css).toMatch(
-      /:host\(\[data-size='small'\]\) \.item\s*{[^}]*--oas-control-height-sm[^}]*--oas-font-size-sm/,
-    )
-    expect(css).toMatch(
-      /:host\(\[data-size='large'\]\) \.item\s*{[^}]*--oas-control-height-lg[^}]*--oas-font-size-lg/,
-    )
+    expect(css).toMatch(/:host\(\[data-size='small'\]\) \.item\s*{[^}]*--oas-control-height-sm[^}]*--oas-font-size-sm/)
+    expect(css).toMatch(/:host\(\[data-size='large'\]\) \.item\s*{[^}]*--oas-control-height-lg[^}]*--oas-font-size-lg/)
   })
 
   it('vertical：aria-orientation 同步 + CSS 纵向规则', () => {
@@ -322,9 +318,7 @@ describe('OASToggleGroup 尺寸与形态（size / vertical / attached / spread�
 
   it('attached 纵向：margin-block-start 负边距 + 上下圆角合并', () => {
     const css = styleText(mount({ attached: '', vertical: '' }))
-    expect(css).toMatch(
-      /:host\(\[attached\]\[vertical\]\) \.item ~ \.item\s*{[^}]*margin-block-start:\s*-1px/,
-    )
+    expect(css).toMatch(/:host\(\[attached\]\[vertical\]\) \.item ~ \.item\s*{[^}]*margin-block-start:\s*-1px/)
   })
 
   it('spread：CSS 满宽均分规则（host flex + item flex 1）', () => {
@@ -643,9 +637,7 @@ describe('OASToggleGroup 组可访问名与配色（aria-label / color / status�
 
   it('CSS：选中态引用 --oas-toggle-color 兜底链 + data-status 边框规则', () => {
     const css = styleText(mount())
-    expect(css).toMatch(
-      /\.item\[aria-checked='true'\]\s*{[^}]*var\(--oas-toggle-color,\s*var\(--oas-color-primary\)\)/,
-    )
+    expect(css).toMatch(/\.item\[aria-checked='true'\]\s*{[^}]*var\(--oas-toggle-color,\s*var\(--oas-color-primary\)\)/)
     expect(css).toMatch(/:host\(\[data-status='success'\]\) \.item\s*{[^}]*--oas-color-success/)
     // error 与宿主 aria-invalid 等效通道并列（选择器列表），匹配时允许逗号续行
     expect(css).toMatch(/:host\(\[data-status='error'\]\) \.item[^{]*{[^}]*--oas-color-danger/)

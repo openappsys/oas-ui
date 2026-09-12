@@ -17,9 +17,7 @@ test('context-menu 多级子菜单贴近视口右缘：翻转后全部落在视�
   const box = await page.locator('oas-context-menu[data-e2e-right-edge]').boundingBox()
   await page.mouse.click(box!.x + box!.width - 12, box!.y + 60, { button: 'right' })
   // 逐级展开两级子菜单链：新建 → 项目 →（Git 仓库/空白）
-  await page
-    .locator('oas-context-menu[data-e2e-right-edge] [part="item"][data-value="new"]')
-    .hover({ timeout: 5000 })
+  await page.locator('oas-context-menu[data-e2e-right-edge] [part="item"][data-value="new"]').hover({ timeout: 5000 })
   await page
     .locator('oas-context-menu[data-e2e-right-edge] [part="item"][data-value="new-project"]')
     .hover({ timeout: 5000 })

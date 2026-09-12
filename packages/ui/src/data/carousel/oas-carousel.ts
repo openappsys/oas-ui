@@ -453,9 +453,7 @@ export class OASCarousel extends OASElement {
       if (!this.drag) return
       const ev = e as PointerEvent
       const vertical = !this.isCard() && this.getAttr('direction', 'horizontal') === 'vertical'
-      const delta = vertical
-        ? this.drag.delta
-        : ev.clientX - this.drag.startX || this.drag.delta
+      const delta = vertical ? this.drag.delta : ev.clientX - this.drag.startX || this.drag.delta
       this.drag = null
       this.dragPaused = false
       const t = trackOf(this)
@@ -478,8 +476,7 @@ export class OASCarousel extends OASElement {
 
   /** 真水合：校验 SSR 快照结构（视口/轨道存在）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('.viewport') || !this.shadow.querySelector('.track'))
-      return false
+    if (!this.shadow.querySelector('.viewport') || !this.shadow.querySelector('.track')) return false
     this.bind()
     return true
   }
@@ -538,9 +535,7 @@ export class OASCarousel extends OASElement {
     // 常规形态（每屏 1 项、无间距）输出最简形式，SSR 快照体积与旧版一致
     if (per === 1 && this.gapPx() === 0) {
       const base = `-${offsetSlides * 100}%`
-      return deltaPx
-        ? `translate${axis}(calc(${base} + ${deltaPx}px))`
-        : `translate${axis}(${base})`
+      return deltaPx ? `translate${axis}(calc(${base} + ${deltaPx}px))` : `translate${axis}(${base})`
     }
     const gap = `${this.gapPx()}px`
     const slideW = `((100% - ${per - 1} * ${gap}) / ${per})`
@@ -589,19 +584,11 @@ export class OASCarousel extends OASElement {
     this.shadow.querySelector('[part="arrow-next"]')?.toggleAttribute('hidden', arrows === 'never')
     // 非循环模式下边界箭头禁用
     const loop = this.getAttr('loop', '') !== 'false'
-    this.shadow
-      .querySelector('[part="arrow-prev"]')
-      ?.toggleAttribute('disabled', !loop && index === 0)
-    this.shadow
-      .querySelector('[part="arrow-next"]')
-      ?.toggleAttribute('disabled', !loop && index === pages - 1)
+    this.shadow.querySelector('[part="arrow-prev"]')?.toggleAttribute('disabled', !loop && index === 0)
+    this.shadow.querySelector('[part="arrow-next"]')?.toggleAttribute('disabled', !loop && index === pages - 1)
     // 箭头/指示器内置文案走 locale registry（setLocale 切换自动刷新）
-    this.shadow
-      .querySelector<HTMLElement>('[part="arrow-prev"]')
-      ?.setAttribute('aria-label', this.t('carousel.prev'))
-    this.shadow
-      .querySelector<HTMLElement>('[part="arrow-next"]')
-      ?.setAttribute('aria-label', this.t('carousel.next'))
+    this.shadow.querySelector<HTMLElement>('[part="arrow-prev"]')?.setAttribute('aria-label', this.t('carousel.prev'))
+    this.shadow.querySelector<HTMLElement>('[part="arrow-next"]')?.setAttribute('aria-label', this.t('carousel.next'))
 
     // 显式暂停按钮：pause-button 开启时显示；aria-pressed 与文案同步暂停态
     const pauseBtn = this.shadow.querySelector<HTMLElement>('[part="pause-button"]')
@@ -610,10 +597,7 @@ export class OASCarousel extends OASElement {
       pauseBtn.toggleAttribute('hidden', !show)
       if (show) {
         pauseBtn.setAttribute('aria-pressed', String(this.userPaused))
-        pauseBtn.setAttribute(
-          'aria-label',
-          this.t(this.userPaused ? 'carousel.play' : 'carousel.pause'),
-        )
+        pauseBtn.setAttribute('aria-label', this.t(this.userPaused ? 'carousel.play' : 'carousel.pause'))
       }
     }
 

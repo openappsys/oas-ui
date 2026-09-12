@@ -50,10 +50,7 @@ function stubPanelRect(p: HTMLElement, w: number, h: number): void {
 }
 
 /** 通用 stub：任意元素固定矩形（锚点用） */
-function stubRect(
-  el: HTMLElement,
-  r: { left: number; top: number; width: number; height: number },
-): void {
+function stubRect(el: HTMLElement, r: { left: number; top: number; width: number; height: number }): void {
   el.getBoundingClientRect = () =>
     ({
       x: r.left,
@@ -114,9 +111,7 @@ describe('OASPopover', () => {
   it('点击触发元素切换 open', async () => {
     const el = mount({ title: 'x' })
     ;(el.querySelector('button') as HTMLElement).click()
-    expect(el.shadowRoot!.querySelector('[part="panel"]')!.getAttribute('aria-hidden')).toBe(
-      'false',
-    )
+    expect(el.shadowRoot!.querySelector('[part="panel"]')!.getAttribute('aria-hidden')).toBe('false')
   })
 
   it('外部点击关闭（退场动画结束后隐藏）', async () => {
@@ -268,9 +263,7 @@ describe('OASPopover', () => {
     it('open 变化派发 oas-open-change（detail.open 布尔）', () => {
       const el = mount({ title: 'x' })
       const opened: boolean[] = []
-      el.addEventListener('oas-open-change', (e) =>
-        opened.push((e as CustomEvent<{ open: boolean }>).detail.open),
-      )
+      el.addEventListener('oas-open-change', (e) => opened.push((e as CustomEvent<{ open: boolean }>).detail.open))
       el.setAttribute('open', '')
       expect(opened).toEqual([true])
       el.removeAttribute('open')
@@ -356,10 +349,9 @@ describe('OASPopover', () => {
       for (const prop of ['top', 'right', 'bottom', 'left']) {
         const expectBorder = (c.borders as readonly string[]).includes(`border-${prop}-width`)
         const hasBorder = block.includes(`border-${prop}: 1px solid var(--pop-border)`)
-        expect(
-          hasBorder,
-          `placement=${p} border-${prop} 应${expectBorder ? '' : '不'}出现在箭头规则中`,
-        ).toBe(expectBorder)
+        expect(hasBorder, `placement=${p} border-${prop} 应${expectBorder ? '' : '不'}出现在箭头规则中`).toBe(
+          expectBorder,
+        )
       }
     }
   })
@@ -461,13 +453,7 @@ describe('OASPopover 触发方式（trigger）', () => {
 
   it('trigger / hover-delay / hover-hide-delay / open-delay / close-delay 列入 observedAttributes', () => {
     expect(OASPopover.observedAttributes).toEqual(
-      expect.arrayContaining([
-        'trigger',
-        'hover-delay',
-        'hover-hide-delay',
-        'open-delay',
-        'close-delay',
-      ]),
+      expect.arrayContaining(['trigger', 'hover-delay', 'hover-hide-delay', 'open-delay', 'close-delay']),
     )
   })
 
@@ -706,10 +692,7 @@ describe('OASPopover 12 向箭头对准锚点（-start/-end 贴向对齐端部�
     for (const [placement, { prop, value }] of Object.entries(cases)) {
       const el = openWithSyncedRect(placement)
       const arrow = panelOf(el).querySelector<HTMLElement>('[data-popper-arrow]')!
-      expect(
-        arrow.style.getPropertyValue(prop),
-        `${placement} 箭头应指向锚点中心投影（${prop}=${value}）`,
-      ).toBe(value)
+      expect(arrow.style.getPropertyValue(prop), `${placement} 箭头应指向锚点中心投影（${prop}=${value}）`).toBe(value)
     }
   })
 
@@ -1108,7 +1091,8 @@ describe('OASPopover 碰撞细调（collision-padding / fallback-placements / hi
     el.setAttribute('content', 'x')
     expect(p.style.top).toBe('340px') // 332 + 8
     stubRect(btn, { left: 400, top: 250, width: 80, height: 32 }) // 页面滚动：锚点随视口上移
-    setScrollY(300); window.dispatchEvent(new Event('scroll'))
+    setScrollY(300)
+    window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
     expect(p.style.top).toBe('290px') // 282 + 8
   })
@@ -1233,9 +1217,7 @@ describe('OASPopover modal 化', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
     expect(document.activeElement).toBe(a)
     a.focus()
-    document.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }),
-    )
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }))
     expect(document.activeElement).toBe(b)
   })
 
@@ -1364,9 +1346,7 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
       'right-end': 'border-bottom-left-radius: 0;',
     }
     for (const [p, decl] of Object.entries(cornerOf)) {
-      expect(css, `merge ${p} 应置零 ${decl}`).toContain(
-        `[data-placement='${p}'][data-arrow-merge] { ${decl} }`,
-      )
+      expect(css, `merge ${p} 应置零 ${decl}`).toContain(`[data-placement='${p}'][data-arrow-merge] { ${decl} }`)
     }
   })
 
@@ -1435,10 +1415,7 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
     // 每向：clip-path 顶点（盒内 8×8 百分比坐标）→ 面板角点位于盒的哪个角 + 三角朝向
     // corner: 面板角点在箭头盒内的位置；edge: 贴边腿顶点相对角点的位移（沿面板边向内 8px，
     // 该腿与面板真实边段共边）；tip: 尖端相对角点的正交位移 8px（指向锚点侧）
-    const geom: Record<
-      string,
-      { corner: [number, number]; edge: [number, number]; tip: [number, number] }
-    > = {
+    const geom: Record<string, { corner: [number, number]; edge: [number, number]; tip: [number, number] }> = {
       // bottom 系：盒悬顶边上方 → 角点在盒底边；start 贴左（贴边腿向右）、end 贴右（向左）；尖端朝上
       'bottom-start': { corner: [0, 8], edge: [8, 0], tip: [0, -8] },
       'bottom-end': { corner: [8, 8], edge: [-8, 0], tip: [0, -8] },
@@ -1478,16 +1455,12 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
       expect(rightIdx, `${p} clip-path 应含直角顶点`).toBeGreaterThanOrEqual(0)
       const rv = vs[rightIdx]!
       // 直角顶点精确落面板角点（角点在盒内的已知位置）
-      expect(near(rv[0], corner[0]) && near(rv[1], corner[1]), `${p} 直角顶点应落面板角点`).toBe(
-        true,
-      )
+      expect(near(rv[0], corner[0]) && near(rv[1], corner[1]), `${p} 直角顶点应落面板角点`).toBe(true)
       // 另两顶点：一个沿面板边向内 8px（贴边腿与面板真实边段共边）、一个为尖端
       // （角点 + 正交位移 8px 指向锚点侧）
       const others = vs.filter((_, i) => i !== rightIdx)
-      const isEdge = (v: [number, number]): boolean =>
-        near(v[0] - rv[0], edge[0]) && near(v[1] - rv[1], edge[1])
-      const isTip = (v: [number, number]): boolean =>
-        near(v[0] - rv[0], tip[0]) && near(v[1] - rv[1], tip[1])
+      const isEdge = (v: [number, number]): boolean => near(v[0] - rv[0], edge[0]) && near(v[1] - rv[1], edge[1])
+      const isTip = (v: [number, number]): boolean => near(v[0] - rv[0], tip[0]) && near(v[1] - rv[1], tip[1])
       expect(
         (isEdge(others[0]!) && isTip(others[1]!)) || (isTip(others[0]!) && isEdge(others[1]!)),
         `${p} 两直角边应分别与面板边共边（向内 8px）与正交外探尖端（8px）`,
@@ -1573,150 +1546,146 @@ describe('OASPopover title 吸收（消除宿主原生 tooltip）', () => {
     expect(el.hasAttribute('title')).toBe(false)
   })
 
-    it('水合恢复：快照标题区有文本时恢复缓存，水合后标题不丢失', () => {
-      const ref = new OASPopover()
-      ref.setAttribute('title', '水合标题')
-      ref.innerHTML = '<button>触发</button>'
-      document.body.appendChild(ref)
-      const snap = ref.shadowRoot!.innerHTML
-      ref.remove()
+  it('水合恢复：快照标题区有文本时恢复缓存，水合后标题不丢失', () => {
+    const ref = new OASPopover()
+    ref.setAttribute('title', '水合标题')
+    ref.innerHTML = '<button>触发</button>'
+    document.body.appendChild(ref)
+    const snap = ref.shadowRoot!.innerHTML
+    ref.remove()
 
-      const el = new OASPopover()
-      el.innerHTML = '<button>触发</button>'
-      el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-popover" data-oas-ssr-v="1">${snap}`
-      document.body.appendChild(el)
-      expect(
-        el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.querySelector(
-          '[part="title"]',
-        )!.textContent,
-      ).toBe('水合标题')
-      expect(el.hasAttribute('title')).toBe(false)
-      el.remove()
-    })
+    const el = new OASPopover()
+    el.innerHTML = '<button>触发</button>'
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-popover" data-oas-ssr-v="1">${snap}`
+    document.body.appendChild(el)
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.querySelector('[part="title"]')!.textContent,
+    ).toBe('水合标题')
+    expect(el.hasAttribute('title')).toBe(false)
+    el.remove()
+  })
+})
+
+describe('OASPopover title 双通道（slot="title" 富内容覆盖属性文本）', () => {
+  it('slot 有内容时覆盖属性文本（兜底隐藏、插槽渲染、aria 保持可访问名）', () => {
+    const el = new OASPopover()
+    el.setAttribute('open', '')
+    el.setAttribute('title', '属性标题')
+    el.innerHTML = `<button>触发</button><b slot="title">富标题</b>`
+    document.body.appendChild(el)
+    mounted.push(el)
+    const p = panelOf(el)
+    const slot = p.querySelector<HTMLSlotElement>('slot[name="title"]')!
+    const fallback = p.querySelector<HTMLElement>('.title-text')!
+    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    expect(fallback.hidden).toBe(true)
+    // 属性仍被吸收缓存（兜底隐而不删），宿主无残留原生悬浮提示
+    expect(fallback.textContent).toBe('属性标题')
+    expect(el.hasAttribute('title')).toBe(false)
+    // aria-labelledby 关联标题区容器（含插槽内容）→ 富内容同样构成面板可访问名
+    expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
   })
 
-  describe('OASPopover title 双通道（slot="title" 富内容覆盖属性文本）', () => {
-    it('slot 有内容时覆盖属性文本（兜底隐藏、插槽渲染、aria 保持可访问名）', () => {
-      const el = new OASPopover()
-      el.setAttribute('open', '')
-      el.setAttribute('title', '属性标题')
-      el.innerHTML = `<button>触发</button><b slot="title">富标题</b>`
-      document.body.appendChild(el)
-      mounted.push(el)
-      const p = panelOf(el)
-      const slot = p.querySelector<HTMLSlotElement>('slot[name="title"]')!
-      const fallback = p.querySelector<HTMLElement>('.title-text')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
-      expect(fallback.hidden).toBe(true)
-      // 属性仍被吸收缓存（兜底隐而不删），宿主无残留原生悬浮提示
-      expect(fallback.textContent).toBe('属性标题')
-      expect(el.hasAttribute('title')).toBe(false)
-      // aria-labelledby 关联标题区容器（含插槽内容）→ 富内容同样构成面板可访问名
-      expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
-    })
-
-    it('仅 slot 无属性：标题区渲染插槽内容，head 不折叠', () => {
-      const el = new OASPopover()
-      el.setAttribute('open', '')
-      el.innerHTML = `<button>触发</button><span slot="title">插槽标题</span>`
-      document.body.appendChild(el)
-      mounted.push(el)
-      const p = panelOf(el)
-      const slot = p.querySelector<HTMLSlotElement>('slot[name="title"]')!
-      expect(slot.assignedNodes().length).toBeGreaterThan(0)
-      expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(true)
-      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(false)
-      expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
-    })
-
-    it('双空（无 title 无 slot）：头部折叠保持（oas-empty）', () => {
-      const el = mount({ open: '' })
-      const p = panelOf(el)
-      expect(p.querySelector<HTMLElement>('.title-text')!.textContent).toBe('')
-      expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(false)
-      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(true)
-      expect(p.hasAttribute('aria-labelledby')).toBe(false)
-    })
-
-    it('fresh 冻结：关闭态 slot 变更不重写面板（冻结语义回归），打开后以插槽为准', async () => {
-      const el = mount() // 关闭、非 fresh
-      const p = panelOf(el)
-      // 初始写入已完成（contentWritten=true），关闭态非 fresh → 冻结
-      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(true)
-      // 关闭态加 slot 标题：slotchange 被冻结 gate 拦截 → 面板不被重写（头部仍折叠、aria 不新增）
-      const rich = document.createElement('b')
-      rich.setAttribute('slot', 'title')
-      rich.textContent = '富标题'
-      el.appendChild(rich)
-      await new Promise((r) => setTimeout(r, 0))
-      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(true)
-      expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(false)
-      expect(p.hasAttribute('aria-labelledby')).toBe(false)
-      // 打开：解除冻结 → slot 生效（兜底隐藏、head 展开、aria 就位）
-      el.setAttribute('open', '')
-      expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(true)
-      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(false)
-      expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
-    })
-
-    it('fresh 开启：关闭态 slot 变更即生效（不被冻结）', async () => {
-      const el = mount({ fresh: '' })
-      const p = panelOf(el)
-      const rich = document.createElement('b')
-      rich.setAttribute('slot', 'title')
-      rich.textContent = '富标题'
-      el.appendChild(rich)
-      await new Promise((r) => setTimeout(r, 0))
-      expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(true)
-      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(false)
-      expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
-    })
-
-    it('动态移除 slot 内容后回落属性文本（头部状态同步）', async () => {
-      const el = new OASPopover()
-      el.setAttribute('open', '')
-      el.setAttribute('title', '属性标题')
-      el.innerHTML = `<button>触发</button><span slot="title">插槽标题</span>`
-      document.body.appendChild(el)
-      mounted.push(el)
-      const p = panelOf(el)
-      const fallback = p.querySelector<HTMLElement>('.title-text')!
-      expect(fallback.hidden).toBe(true)
-      const node = el.querySelector('span[slot="title"]')!
-      el.removeChild(node)
-      await new Promise((r) => setTimeout(r, 0))
-      expect(fallback.hidden).toBe(false)
-      expect(fallback.textContent).toBe('属性标题')
-      expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
-    })
-
-    it('append-to portal 期间 title slot 桥接（跨 host 分配不断供），关闭移回宿主', () => {
-      const el = mount({ open: '', 'append-to': 'body' })
-      const rich = document.createElement('b')
-      rich.setAttribute('slot', 'title')
-      rich.textContent = '富标题'
-      el.appendChild(rich)
-      el.setAttribute('content', 'x') // 触发 update 桥接
-      const host = document.querySelector<HTMLElement>('[data-oas-popover-portal]')!
-      expect(host.contains(rich)).toBe(true)
-      const p = el.shadowRoot!.querySelector('[part="panel"]') ??
-        document.querySelector<HTMLElement>('[data-oas-popover-portal]')?.shadowRoot?.querySelector('[part="panel"]')
-      const slot = p!.querySelector<HTMLSlotElement>('slot[name="title"]')!
-      expect(slot.assignedNodes()).toContain(rich)
-      el.removeAttribute('open')
-      expect(el.contains(rich)).toBe(true)
-    })
+  it('仅 slot 无属性：标题区渲染插槽内容，head 不折叠', () => {
+    const el = new OASPopover()
+    el.setAttribute('open', '')
+    el.innerHTML = `<button>触发</button><span slot="title">插槽标题</span>`
+    document.body.appendChild(el)
+    mounted.push(el)
+    const p = panelOf(el)
+    const slot = p.querySelector<HTMLSlotElement>('slot[name="title"]')!
+    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(true)
+    expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(false)
+    expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
   })
+
+  it('双空（无 title 无 slot）：头部折叠保持（oas-empty）', () => {
+    const el = mount({ open: '' })
+    const p = panelOf(el)
+    expect(p.querySelector<HTMLElement>('.title-text')!.textContent).toBe('')
+    expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(false)
+    expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(true)
+    expect(p.hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('fresh 冻结：关闭态 slot 变更不重写面板（冻结语义回归），打开后以插槽为准', async () => {
+    const el = mount() // 关闭、非 fresh
+    const p = panelOf(el)
+    // 初始写入已完成（contentWritten=true），关闭态非 fresh → 冻结
+    expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(true)
+    // 关闭态加 slot 标题：slotchange 被冻结 gate 拦截 → 面板不被重写（头部仍折叠、aria 不新增）
+    const rich = document.createElement('b')
+    rich.setAttribute('slot', 'title')
+    rich.textContent = '富标题'
+    el.appendChild(rich)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(true)
+    expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(false)
+    expect(p.hasAttribute('aria-labelledby')).toBe(false)
+    // 打开：解除冻结 → slot 生效（兜底隐藏、head 展开、aria 就位）
+    el.setAttribute('open', '')
+    expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(true)
+    expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(false)
+    expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
+  })
+
+  it('fresh 开启：关闭态 slot 变更即生效（不被冻结）', async () => {
+    const el = mount({ fresh: '' })
+    const p = panelOf(el)
+    const rich = document.createElement('b')
+    rich.setAttribute('slot', 'title')
+    rich.textContent = '富标题'
+    el.appendChild(rich)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(true)
+    expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(false)
+    expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
+  })
+
+  it('动态移除 slot 内容后回落属性文本（头部状态同步）', async () => {
+    const el = new OASPopover()
+    el.setAttribute('open', '')
+    el.setAttribute('title', '属性标题')
+    el.innerHTML = `<button>触发</button><span slot="title">插槽标题</span>`
+    document.body.appendChild(el)
+    mounted.push(el)
+    const p = panelOf(el)
+    const fallback = p.querySelector<HTMLElement>('.title-text')!
+    expect(fallback.hidden).toBe(true)
+    const node = el.querySelector('span[slot="title"]')!
+    el.removeChild(node)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(fallback.hidden).toBe(false)
+    expect(fallback.textContent).toBe('属性标题')
+    expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
+  })
+
+  it('append-to portal 期间 title slot 桥接（跨 host 分配不断供），关闭移回宿主', () => {
+    const el = mount({ open: '', 'append-to': 'body' })
+    const rich = document.createElement('b')
+    rich.setAttribute('slot', 'title')
+    rich.textContent = '富标题'
+    el.appendChild(rich)
+    el.setAttribute('content', 'x') // 触发 update 桥接
+    const host = document.querySelector<HTMLElement>('[data-oas-popover-portal]')!
+    expect(host.contains(rich)).toBe(true)
+    const p =
+      el.shadowRoot!.querySelector('[part="panel"]') ??
+      document.querySelector<HTMLElement>('[data-oas-popover-portal]')?.shadowRoot?.querySelector('[part="panel"]')
+    const slot = p!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+    expect(slot.assignedNodes()).toContain(rich)
+    el.removeAttribute('open')
+    expect(el.contains(rich)).toBe(true)
+  })
+})
 
 // ============================================================================
 // 能力增强（P1-P25，2026-09 批次）
 // ============================================================================
 
 /** 构造带 touches 的 touch 事件（happy-dom 不完整支持 Touch，挂数组兜底；同 context-menu 测试） */
-function touchEvent(
-  type: string,
-  touches: Array<{ clientX: number; clientY: number }>,
-): Event {
+function touchEvent(type: string, touches: Array<{ clientX: number; clientY: number }>): Event {
   const e = new Event(type, { bubbles: true, cancelable: true })
   Object.defineProperty(e, 'touches', { value: touches })
   return e
@@ -1793,9 +1762,7 @@ describe('OASPopover P2 trigger-keys 默认 Enter/Space', () => {
 
   it('未设置 trigger-keys：非 Enter/Space 按键不响应', () => {
     const el = mountDivAnchor()
-    el.querySelector('div')!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true }),
-    )
+    el.querySelector('div')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true }))
     expect(el.hasAttribute('open')).toBe(false)
   })
 
@@ -1846,17 +1813,13 @@ describe('OASPopover P2 trigger-keys 默认 Enter/Space', () => {
   it('按键重复（e.repeat）不重复触发', () => {
     const el = mountDivAnchor()
     const div = el.querySelector('div')!
-    div.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, repeat: true }),
-    )
+    div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, repeat: true }))
     // repeat 的第一次 keydown 视为持续按住的重复事件，不触发
     expect(el.hasAttribute('open')).toBe(false)
     div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     expect(el.hasAttribute('open')).toBe(true)
     // 按住不放的后续 repeat 不把面板关掉
-    div.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, repeat: true }),
-    )
+    div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, repeat: true }))
     expect(el.hasAttribute('open')).toBe(true)
   })
 
@@ -1889,9 +1852,7 @@ describe('OASPopover P3 trap-focus 独立开关', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
     expect(document.activeElement).toBe(a)
     a.focus()
-    document.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }),
-    )
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }))
     expect(document.activeElement).toBe(b)
     expect(el.shadowRoot!.querySelector('.backdrop')!.classList.contains('oas-show')).toBe(false)
   })
@@ -2041,9 +2002,7 @@ describe('OASPopover P5 可取消 oas-before-close', () => {
   it('未拦截时正常关闭且 detail.source 正确（外点 = outside）', () => {
     const el = mount({ open: '' })
     const sources: string[] = []
-    el.addEventListener('oas-before-close', (e) =>
-      sources.push((e as CustomEvent<{ source: string }>).detail.source),
-    )
+    el.addEventListener('oas-before-close', (e) => sources.push((e as CustomEvent<{ source: string }>).detail.source))
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(el.hasAttribute('open')).toBe(false)
     expect(sources).toEqual(['outside'])
@@ -2301,7 +2260,8 @@ describe('OASPopover P14 close-on-scroll', () => {
     stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
-    setScrollY(300); window.dispatchEvent(new Event('scroll'))
+    setScrollY(300)
+    window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
     expect(el.hasAttribute('open')).toBe(false)
   })
@@ -2313,7 +2273,8 @@ describe('OASPopover P14 close-on-scroll', () => {
     stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
-    setScrollY(300); window.dispatchEvent(new Event('scroll'))
+    setScrollY(300)
+    window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
     expect(el.hasAttribute('open')).toBe(true)
   })
@@ -2371,7 +2332,8 @@ describe('OASPopover P18 sticky（关闭位粘滞三档）', () => {
     el.setAttribute('content', 'x')
     expect(p.style.top).toBe('340px')
     stubRect(el.querySelector('button')!, { left: 400, top: 250, width: 80, height: 32 })
-    setScrollY(300); window.dispatchEvent(new Event('scroll'))
+    setScrollY(300)
+    window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
     expect(p.style.top).toBe('290px')
   })
@@ -2385,7 +2347,8 @@ describe('OASPopover P18 sticky（关闭位粘滞三档）', () => {
     el.setAttribute('content', 'x')
     expect(p.style.top).toBe('340px')
     stubRect(el.querySelector('button')!, { left: 400, top: 250, width: 80, height: 32 })
-    setScrollY(300); window.dispatchEvent(new Event('scroll'))
+    setScrollY(300)
+    window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
     expect(p.style.top).toBe('340px')
   })
@@ -2400,7 +2363,8 @@ describe('OASPopover P18 sticky（关闭位粘滞三档）', () => {
     expect(p.style.top).toBe('340px')
     // 锚点滚出视口底：面板贴视口（clamp 到 800-60-4=736 内）
     stubRect(el.querySelector('button')!, { left: 400, top: 900, width: 80, height: 32 })
-    setScrollY(300); window.dispatchEvent(new Event('scroll'))
+    setScrollY(300)
+    window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
     expect(p.hidden).toBe(false)
     expect(parseFloat(p.style.top)).toBeLessThanOrEqual(736)
@@ -2414,7 +2378,8 @@ describe('OASPopover P18 sticky（关闭位粘滞三档）', () => {
     setViewport(1280, 800)
     el.setAttribute('content', 'x')
     stubRect(el.querySelector('button')!, { left: 400, top: 900, width: 80, height: 32 })
-    setScrollY(300); window.dispatchEvent(new Event('scroll'))
+    setScrollY(300)
+    window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
     expect(p.hidden).toBe(false)
   })
@@ -2466,12 +2431,18 @@ describe('OASPopover P20 contextmenu 光标定位 + 触屏长按', () => {
     stubRect(btn, { left: 400, top: 300, width: 80, height: 32 })
     setViewport(1280, 800)
     btn.dispatchEvent(
-      new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 600, clientY: 200 }),
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 600,
+        clientY: 200,
+      }),
     )
     expect(p.style.left).toBe('608px')
     // 滚动：锚点上移 50 → 回到锚点定位：left = 480 + 8 = 488、top = 锚点中心 266 - 30 = 236
     stubRect(btn, { left: 400, top: 250, width: 80, height: 32 })
-    setScrollY(300); window.dispatchEvent(new Event('scroll'))
+    setScrollY(300)
+    window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
     expect(p.style.left).toBe('488px')
     expect(p.style.top).toBe('236px')
@@ -2497,7 +2468,12 @@ describe('OASPopover P20 contextmenu 光标定位 + 触屏长按', () => {
     stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })
     setViewport(1280, 800)
     el.querySelector('button')!.dispatchEvent(
-      new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 600, clientY: 200 }),
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 600,
+        clientY: 200,
+      }),
     )
     expect(p.style.left).toBe('608px')
     // 打开后到达的滞留 scroll（scrollY 与打开瞬间相同 → 无有效滚动）

@@ -65,8 +65,7 @@ test('transfer one-way：左侧含全部数据且已穿梭项禁用，右侧无�
     return {
       total: rows.length,
       disabledSelected: rows.filter(
-        (r) =>
-          r.getAttribute('aria-disabled') === 'true' && r.getAttribute('aria-selected') === 'true',
+        (r) => r.getAttribute('aria-disabled') === 'true' && r.getAttribute('aria-selected') === 'true',
       ).length,
       toLeftHidden: (s.querySelector('.to-left') as HTMLButtonElement).hidden,
     }
@@ -80,9 +79,7 @@ test('transfer virtual：万级数据窗口化渲染且滚动后窗口平移', a
   await page.goto('/components/transfer.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-transfer[virtual]')
   await page.waitForFunction(() => {
-    const vlist = document
-      .querySelector('#transfer-virtual')
-      ?.shadowRoot?.querySelector('.vlist-left')
+    const vlist = document.querySelector('#transfer-virtual')?.shadowRoot?.querySelector('.vlist-left')
     return !!vlist && !!vlist.shadowRoot?.querySelector('[part="item"]')
   })
   const before = await page.locator('#transfer-virtual').evaluate((el) => {

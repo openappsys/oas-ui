@@ -118,9 +118,7 @@ describe('OASMenu', () => {
 
   it('方向键导航移动 active', () => {
     const el = mount()
-    el.shadowRoot!.querySelector('[role="menu"]')!.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'ArrowDown' }),
-    )
+    el.shadowRoot!.querySelector('[role="menu"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
     expect(items(el)[0]!.classList.contains('active')).toBe(true)
   })
 
@@ -312,9 +310,7 @@ describe('OASMenu', () => {
     expect(css).toMatch(
       /:host\(:not\(\[mode='horizontal'\]\)\[collapsed\]\)\s*\.item\s*\{[^}]*justify-content:\s*center/,
     )
-    expect(css).toMatch(
-      /:host\(:not\(\[mode='horizontal'\]\)\[collapsed\]\)\s*>\s*\.menu\s*>\s*\.item\s*>\s*\.label/,
-    )
+    expect(css).toMatch(/:host\(:not\(\[mode='horizontal'\]\)\[collapsed\]\)\s*>\s*\.menu\s*>\s*\.item\s*>\s*\.label/)
     // hover 浮出子菜单（子菜单为完整菜单）
     items(el)[0]!.dispatchEvent(new MouseEvent('mouseenter'))
     expect(items(el)[0]!.getAttribute('aria-expanded')).toBe('true')
@@ -417,9 +413,7 @@ describe('OASMenu', () => {
     const el = mount({ items: NESTED_ITEMS })
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
     expect(css).toMatch(/\.submenu\.flip-left\s*\{[^}]*left:\s*auto;\s*right:\s*100%/)
-    expect(css).toMatch(
-      /\.submenu\.flip-up\s*\{[^}]*top:\s*auto;\s*bottom:\s*calc\(-1\s*\*\s*var\(--oas-space-1\)\)/,
-    )
+    expect(css).toMatch(/\.submenu\.flip-up\s*\{[^}]*top:\s*auto;\s*bottom:\s*calc\(-1\s*\*\s*var\(--oas-space-1\)\)/)
     // 水平模式一级子菜单向上翻转：bottom:100%（在父项上方浮出）
     const h = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
     const hcss = h.shadowRoot!.querySelector('style')!.textContent ?? ''
@@ -705,9 +699,7 @@ describe('OASMenu loading 菜单项', () => {
       ]),
       value: '{"sort":"time"}',
     })
-    const refresh = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="refresh"]',
-    )!
+    const refresh = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="refresh"]')!
     expect(refresh.getAttribute('role')).toBe('menuitem')
     expect(refresh.hasAttribute('aria-checked')).toBe(false)
     refresh.click()
@@ -882,9 +874,7 @@ describe('OASMenu loading 菜单项', () => {
       let detail: unknown
       el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
       // 点叶子子项（value 写回触发全量重建，需重新查询）
-      el.shadowRoot!.querySelector<HTMLElement>(
-        '[part="item"][data-value="dash-overview"]',
-      )!.click()
+      el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dash-overview"]')!.click()
       expect(detail).toEqual({ value: 'dash-overview' })
       const subAfter = el.shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')!
       expect(subAfter.classList.contains('open')).toBe(true)
@@ -969,9 +959,7 @@ describe('OASMenu loading 菜单项', () => {
     it('horizontal 超宽项收进「···」子菜单（ResizeObserver 溢出检测）', () => {
       const el = mount({
         mode: 'horizontal',
-        items: JSON.stringify(
-          Array.from({ length: 10 }, (_, i) => ({ label: `菜单${i}`, value: `m${i}` })),
-        ),
+        items: JSON.stringify(Array.from({ length: 10 }, (_, i) => ({ label: `菜单${i}`, value: `m${i}` }))),
       })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
       // 水平溢出收纳的机制（··· 收纳项/overflow 容器）
@@ -1021,9 +1009,7 @@ describe('close-on-select 选中收起策略', () => {
   it('浮出（vertical）默认：点叶子后收起展开的子菜单（既有行为对照，不回归）', () => {
     const el = mount({ items: NESTED2 })
     el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.click()
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.classList.contains('open'),
-    ).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.classList.contains('open')).toBe(true)
     el.shadowRoot!.querySelector<HTMLElement>('[data-value="copy"]')!.click()
     const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!
     expect(parent.classList.contains('open')).toBe(false)
@@ -1034,9 +1020,7 @@ describe('close-on-select 选中收起策略', () => {
   it('浮出 + close-on-select="false"：点叶子后子菜单保持展开（连选多项场景）', () => {
     const el = mount({ items: NESTED2, 'close-on-select': 'false' })
     el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.click()
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.classList.contains('open'),
-    ).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.classList.contains('open')).toBe(true)
     el.shadowRoot!.querySelector<HTMLElement>('[data-value="copy"]')!.click()
     const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!
     expect(parent.classList.contains('open')).toBe(true)
@@ -1047,9 +1031,7 @@ describe('close-on-select 选中收起策略', () => {
   it('浮出 + close-on-select 空串（存在即真）：点叶子后收起（空串非 "false"，按显式开启处理）', () => {
     const el = mount({ items: NESTED2, 'close-on-select': '' })
     el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.click()
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.classList.contains('open'),
-    ).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.classList.contains('open')).toBe(true)
     el.shadowRoot!.querySelector<HTMLElement>('[data-value="copy"]')!.click()
     const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!
     expect(parent.classList.contains('open')).toBe(false)
@@ -1086,11 +1068,7 @@ describe('close-on-select 选中收起策略', () => {
       ]),
     })
     el.shadowRoot!.querySelector<HTMLElement>('[data-value="display"]')!.click()
-    expect(
-      el
-        .shadowRoot!.querySelector<HTMLElement>('[data-value="display"]')!
-        .classList.contains('open'),
-    ).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[data-value="display"]')!.classList.contains('open')).toBe(true)
     el.shadowRoot!.querySelector<HTMLElement>('[data-value="gridlines"]')!.click()
     const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="display"]')!
     expect(parent.classList.contains('open')).toBe(true)
@@ -1214,14 +1192,10 @@ describe('子元素声明式通道', () => {
       `<oas-menu-item value="home" icon="star" icon-color="#f50">首页</oas-menu-item>` +
         `<oas-menu-item value="about" icon="gear">关于</oas-menu-item>`,
     )
-    const colored = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="home"] .icon svg',
-    )!
+    const colored = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="home"] .icon svg')!
     expect(colored.getAttribute('stroke')).toBe('#f50')
     expect(colored.querySelector('path')!.getAttribute('stroke')).toBe('#f50')
-    const plain = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="about"] .icon svg',
-    )!
+    const plain = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="about"] .icon svg')!
     expect(plain.getAttribute('stroke')).toBe('currentColor')
     expect(plain.querySelector('path')!.getAttribute('stroke')).toBe('currentColor')
   })
@@ -1257,9 +1231,7 @@ describe('子元素声明式通道', () => {
     expect(el.getAttribute('value')).toBe('{"mode":"edit"}')
     // value 写回触发重建，重新查询节点断言勾选态
     const editAfter = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
-    const previewAfter = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="preview"]',
-    )!
+    const previewAfter = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
     expect(editAfter.getAttribute('aria-checked')).toBe('true')
     expect(previewAfter.getAttribute('aria-checked')).toBe('false')
   })

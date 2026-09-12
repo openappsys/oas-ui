@@ -51,10 +51,7 @@ function stubPanelRect(p: HTMLElement, w: number, h: number): void {
 }
 
 /** 通用 stub：任意元素固定矩形（锚点用） */
-function stubRect(
-  el: HTMLElement,
-  r: { left: number; top: number; width: number; height: number },
-): void {
+function stubRect(el: HTMLElement, r: { left: number; top: number; width: number; height: number }): void {
   el.getBoundingClientRect = () =>
     ({
       x: r.left,
@@ -76,10 +73,7 @@ function setViewport(w: number, h: number): void {
 }
 
 /** 构造带 touches 的 touch 事件（happy-dom 不完整支持 Touch，挂数组兜底） */
-function touchEvent(
-  type: string,
-  touches: Array<{ clientX: number; clientY: number }>,
-): Event {
+function touchEvent(type: string, touches: Array<{ clientX: number; clientY: number }>): Event {
   const e = new Event(type, { bubbles: true, cancelable: true })
   Object.defineProperty(e, 'touches', { value: touches })
   return e

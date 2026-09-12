@@ -34,15 +34,16 @@ function dragGesture(
 ): void {
   const nowMock = vi.spyOn(performance, 'now').mockReturnValue(1000)
   target.dispatchEvent(
-    new PointerEvent('pointerdown', { clientX: from.x ?? 0, clientY: from.y ?? 0, button: 0, bubbles: true }),
+    new PointerEvent('pointerdown', {
+      clientX: from.x ?? 0,
+      clientY: from.y ?? 0,
+      button: 0,
+      bubbles: true,
+    }),
   )
   nowMock.mockReturnValue(1000 + durationMs)
-  document.dispatchEvent(
-    new PointerEvent('pointermove', { clientX: to.x ?? 0, clientY: to.y ?? 0, bubbles: true }),
-  )
-  document.dispatchEvent(
-    new PointerEvent('pointerup', { clientX: to.x ?? 0, clientY: to.y ?? 0, bubbles: true }),
-  )
+  document.dispatchEvent(new PointerEvent('pointermove', { clientX: to.x ?? 0, clientY: to.y ?? 0, bubbles: true }))
+  document.dispatchEvent(new PointerEvent('pointerup', { clientX: to.x ?? 0, clientY: to.y ?? 0, bubbles: true }))
 }
 
 describe('OASDrawer', () => {
@@ -297,7 +298,10 @@ describe('OASDrawer', () => {
 
   it('关闭来源 detail：遮罩=mask / Esc=esc / 取消=cancel / 确定=ok', () => {
     const sources: Array<[string, (el: OASDrawer) => void]> = [
-      ['mask', (el) => el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))],
+      [
+        'mask',
+        (el) => el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true })),
+      ],
       ['esc', () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))],
       ['cancel', (el) => (el.shadowRoot!.querySelector('[part="cancel"]') as HTMLElement).click()],
       ['ok', (el) => (el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()],
@@ -337,9 +341,7 @@ describe('OASDrawer', () => {
 
   it('no-footer 隐藏整个底部区', () => {
     const el = mount({ visible: '', 'no-footer': '' })
-    expect((el.shadowRoot!.querySelector('[part="footer"]') as HTMLElement).style.display).toBe(
-      'none',
-    )
+    expect((el.shadowRoot!.querySelector('[part="footer"]') as HTMLElement).style.display).toBe('none')
   })
 
   it('ok-text / cancel-text 覆盖内置文案', () => {
@@ -508,9 +510,7 @@ describe('OASDrawer', () => {
     expect(el.shadowRoot!.querySelector('[part="skeleton"]')!.hasAttribute('hidden')).toBe(false)
     expect(el.shadowRoot!.querySelector('slot:not([name])')!.hasAttribute('hidden')).toBe(true)
     expect((el.shadowRoot!.querySelector('[part="ok"]') as HTMLButtonElement).disabled).toBe(true)
-    expect(
-      (el.shadowRoot!.querySelector('[part="cancel"]') as HTMLButtonElement).disabled,
-    ).toBe(true)
+    expect((el.shadowRoot!.querySelector('[part="cancel"]') as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('ok-loading：确定按钮 spinner + disabled + aria-busy，点击被忽略', () => {
@@ -578,7 +578,13 @@ describe('OASDrawer', () => {
   })
 
   it('resizable：min/max 钳制拖拽结果', () => {
-    const el = mount({ visible: '', resizable: '', width: '400px', 'resize-min': '200', 'resize-max': '500' })
+    const el = mount({
+      visible: '',
+      resizable: '',
+      width: '400px',
+      'resize-min': '200',
+      'resize-max': '500',
+    })
     const rail = el.shadowRoot!.querySelector('[part="rail"]')!
     // 向左猛拖 → 远超 max
     rail.dispatchEvent(new PointerEvent('pointerdown', { clientX: 1000, button: 0, bubbles: true }))
@@ -657,9 +663,7 @@ describe('OASDrawer', () => {
     const a = mount({ visible: '' })
     const b = mount({ visible: '' })
     closeSync(b)
-    expect(panel(a).style.zIndex).toBe(
-      'calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040) + 1)',
-    )
+    expect(panel(a).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040) + 1)')
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(a.hasAttribute('visible')).toBe(false)
   })
@@ -819,10 +823,7 @@ describe('OASDrawer', () => {
     const paths: Array<[string, (el: OASDrawer) => void]> = [
       [
         '遮罩点击',
-        (el) =>
-          el.shadowRoot!.querySelector('.mask')!.dispatchEvent(
-            new MouseEvent('click', { bubbles: true }),
-          ),
+        (el) => el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true })),
       ],
       ['✕ 按钮', (el) => (el.shadowRoot!.querySelector('[part="close"]') as HTMLElement).click()],
       ['Esc', () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))],

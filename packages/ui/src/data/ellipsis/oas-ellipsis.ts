@@ -400,9 +400,7 @@ export class OASEllipsis extends OASElement {
 
     const fits = (n: number): boolean => {
       mirror.textContent = `${full.slice(0, n)}…${reserve}`
-      return rows >= 2
-        ? mirror.scrollHeight - mirror.clientHeight <= 1
-        : mirror.scrollWidth <= mirror.clientWidth + 1
+      return rows >= 2 ? mirror.scrollHeight - mirror.clientHeight <= 1 : mirror.scrollWidth <= mirror.clientWidth + 1
     }
     let lo = 0
     let hi = full.length
@@ -457,9 +455,7 @@ export class OASEllipsis extends OASElement {
     if (client <= 0 || scroll <= client) return full
     const keepTotal = Math.max(side * 2 + 1, Math.floor(full.length * (client / scroll)))
     const each = Math.max(side, Math.floor((keepTotal - 1) / 2))
-    return (
-      full.slice(0, Math.min(each, full.length)) + '…' + full.slice(Math.max(0, full.length - each))
-    )
+    return full.slice(0, Math.min(each, full.length)) + '…' + full.slice(Math.max(0, full.length - each))
   }
 
   /**
