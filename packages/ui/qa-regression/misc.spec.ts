@@ -351,3 +351,24 @@ test('menubar/navigation-menu/sidebar 粗指针触控目标 ≥48px xl 档（poi
   expect(r.navTop, `navigation-menu 顶级项粗指针高度应 ≥48（实测 ${r.navTop}）`).toBeGreaterThanOrEqual(48)
   expect(r.sidebarItem, `sidebar 菜单项粗指针高度应 ≥48（实测 ${r.sidebarItem}）`).toBeGreaterThanOrEqual(48)
 })
+
+// 移动端专项：视口/指针形态变化（窗口缩放/设备仿真/横竖屏）时，浮层组件重判定移动/PC 形态（不强刷）
+test('浮层组件视口切换：PC↔窄视口不刷新即重判定移动形态', async ({ page }) => {
+  const pages = ['select', 'date-picker', 'cascader', 'tree-select', 'time-picker', 'combobox']
+  for (const name of pages) {
+    const tag = `oas-${name}`
+    // PC 起步（宽视口，fine pointer——无触摸模拟）
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto(`/components/${name}.html`, { waitUntil: 'domcontentloaded' })
+    await up(page, tag)
+    const host = page.locator(tag).first()
+    // PC（宽视口）：不带 data-mobile-sheet
+    await expect(host, `${tag} PC 宽视口不应带 data-mobile-sheet`).not.toHaveAttribute('data-mobile-sheet')
+    // 缩到窄视口（不刷新）→ 应变移动形态
+    await page.setViewportSize({ width: 375, height: 667 })
+    await expect(host, `${tag} 缩窄后应带 data-mobile-sheet`).toHaveAttribute('data-mobile-sheet', '')
+    // 拉宽回 PC（不刷新）→ 应回落
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await expect(host, `${tag} 拉宽后应回落 PC（去掉 data-mobile-sheet）`).not.toHaveAttribute('data-mobile-sheet')
+  }
+})

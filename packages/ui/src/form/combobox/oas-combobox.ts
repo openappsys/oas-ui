@@ -4,6 +4,7 @@ import type { OASVirtualList } from '../../data/virtual-list/index.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
+import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { OASElement } from '@oas-ui/core'
 
@@ -331,6 +332,8 @@ export class OASCombobox extends OASElement {
       }
     }) as EventListener)
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
+    // 视口/指针形态变化（缩放/横竖屏/设备仿真）时重判定移动/PC 形态（不强刷）
+    this.onCleanup(watchMobileSheetMode(() => this.resyncMobileMode()))
   }
 
   protected override render(): void {
@@ -431,6 +434,11 @@ export class OASCombobox extends OASElement {
     const mobile = this.isMobileSheet()
     this.toggleAttribute('data-mobile-sheet', mobile)
     this.sheetEl?.toggleAttribute('passive', !mobile)
+  }
+
+  /** 移动/PC 形态切换时重同步：重跑 update（内重判定形态 + 展开态重排承载方式） */
+  private resyncMobileMode(): void {
+    this.update()
   }
 
   /** 当前 value 对应的选项 label（无匹配项时回退原始 value，无值回空串） */
