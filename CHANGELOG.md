@@ -2,6 +2,12 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [未发布]
+
+### 修复
+
+- **tree `parseIdList` 数字 key 静默丢弃 + 非法输入零告警**：v2.5.0 契约收紧为 JSON 数组后，`expanded`/`checked`/multiple 态 `selected` 传入数字 key 的合法 JSON 数组（如 `expanded="[1,2]"`）被 `typeof string` 过滤静默丢弃成全折叠/全不选；解析失败（典型：旧版逗号串）无任何提示。修复为数字 key 统一 `String()` 归一化（空串/`undefined`/`null` 项滤除），解析失败按空集合回落并在 dev 下 `console.warn` 一次（同值去重，文案含迁移写法）。回归：oas-tree.test.ts 单测 2 例 + qa-regression/tree.spec.ts 固化断言（oas-ui-templates 三端 menus/dept 页实抓上报）
+
 ## [2.5.0] - 2026-09-09
 
 ### 特性
