@@ -43,6 +43,16 @@
   </oas-space>
 </DemoBlock>
 
+### 触屏降级（coarse pointer 自动生效）
+
+触屏设备（`pointer: coarse`，如手机 / 平板）没有稳定的 hover 语义：点按会同时合成 hover 与 click，若沿用桌面行为会出现「刚展开即收起」。当 `trigger` 含 `hover` 时，触屏下 hover 通道自动停用、降级为**点按切换**——点按触发器展开、再点按收起、点按菜单外部关闭（外点关闭替代 hover-out）；fine pointer（桌面鼠标）行为完全不变，与受控 `open` 兼容。
+
+<DemoBlock title="触屏点按切换（触屏设备自动生效）">
+  <oas-dropdown id="dd-coarse-tap" trigger="hover" items='[{"label":"编辑","value":"edit"},{"label":"复制","value":"copy"},{"label":"删除","value":"delete"}]'>
+    <oas-button>触屏点我</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
 ## 放置方向
 
 <DemoBlock title="四个方向">
@@ -428,7 +438,7 @@ onMounted(() => {
 | `open` | 受控显示（布尔属性，存在即展开） | `boolean` | — |
 | `placement` | 浮层位置 | `string` | `bottom` |
 | `split` | 拆分下拉按钮（布尔属性）：主按钮 + 箭头按钮，点箭头开菜单、主按钮派发 oas-action | `boolean` | — |
-| `trigger` | 触发方式：`click`（默认）/ `hover` / `focus`，空格分隔可多选（如 `"click hover"`） | `string` | `click` |
+| `trigger` | 触发方式：`click`（默认）/ `hover` / `focus`，空格分隔可多选（如 `"click hover"`）。含 `hover` 时触屏（coarse pointer）自动降级为点按切换：点按展开、再点按/外点关闭，桌面 hover 行为不变 | `string` | `click` |
 | `value` | 当前选中值 | `string` | — |
 
 | 事件 | 说明 |

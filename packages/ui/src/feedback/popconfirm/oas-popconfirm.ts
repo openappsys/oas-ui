@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry } from '@oas-ui/icons'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 /** 面板与触发元素的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
@@ -661,7 +661,7 @@ export class OASPopconfirm extends OASElement {
     if (!this.popoverEl) return
     const anchorRect = this.anchorRect()
     if (!anchorRect) return
-    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const viewport = getViewport()
     const panelRect = this.popoverEl.getBoundingClientRect()
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
     const r = computePosition(anchorRect, panelRect, this.placementAttr() as Placement, viewport, GAP, autoAdjust, {

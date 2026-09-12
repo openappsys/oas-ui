@@ -147,6 +147,10 @@ When options are empty, the dropdown shows the empty state; when filtering yield
   <oas-combobox disabled value="apple" placeholder="Disabled" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-combobox>
 </DemoBlock>
 
+## Mobile form (bottom sheet)
+
+On touch screens (coarse pointer) or narrow viewports (<768px), the option list is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the input stays in place and focusing it still pops the list inside the sheet for selection; the desktop form keeps the original floating dropdown.
+
 ## Events
 
 <DemoBlock title="Event output">
@@ -228,7 +232,7 @@ onMounted(() => {
 | `filterable` | Filter labels in real time while typing (`filterable="false"` disables local filtering) | `string` | `true` |
 | `item-height` | Virtual-scroll fixed row height (px, with `virtual`, default 36) | `string` | `36` |
 | `loading` | Loading placeholder (dropdown shows "加载中…") | `boolean` | — |
-| `open` | Controlled open state (internal open/close writes back to the attribute; every transition dispatches `oas-open-change`; forced closed under readonly/disabled) | `boolean` | — |
+| `open` | Controlled open state (internal open/close writes back to the attribute; every transition dispatches `oas-open-change`; forced closed under readonly/disabled); in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | `boolean` | — |
 | `options` | Options, JSON array `[{ label, value, disabled?, group? }]` (group is the group title, same contract as oas-select) | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
 | `readonly` | Readonly (focusable & copyable, no value change; focus and keyboard never open the dropdown) | `boolean` | — |

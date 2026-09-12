@@ -1,47 +1,21 @@
-// 复核回归：cascader——历史缺陷固化断言。
+// 复核回归：time-picker——历史缺陷固化断言。
 
 import { test, expect } from '@playwright/test'
-import { panelGeometryAcrossOpens, up } from './helpers'
-
-test('cascader 结构恒包 bottom-sheet，PC 形态 passive 透传', async ({ page }) => {
-  await page.goto('/components/cascader.html', { waitUntil: 'domcontentloaded' })
-  await up(page, 'oas-cascader')
-  const host = page.locator('oas-cascader').first()
-  const info = await host.evaluate((el) => {
-    const root = el.shadowRoot!
-    const sheet = root.querySelector('oas-bottom-sheet')
-    const dropdown = root.querySelector<HTMLElement>('[part="dropdown"]')!
-    return {
-      sheetExists: sheet != null,
-      sheetPart: sheet?.getAttribute('part') ?? null,
-      sheetPassive: sheet?.hasAttribute('passive') ?? null,
-      sheetWrapsDropdown: sheet?.contains(dropdown) ?? false,
-      mobileSheet: el.hasAttribute('data-mobile-sheet'),
-      dropdownPosition: getComputedStyle(dropdown).position,
-    }
-  })
-  // 结构恒包 oas-bottom-sheet（SSR/客户端一致），PC 形态 passive 透传、不标移动态
-  expect(info.sheetExists).toBe(true)
-  expect(info.sheetPart).toBe('sheet')
-  expect(info.sheetPassive).toBe(true)
-  expect(info.sheetWrapsDropdown).toBe(true)
-  expect(info.mobileSheet).toBe(false)
-  expect(info.dropdownPosition).toBe('fixed')
-})
+import { up } from './helpers'
 
 // 移动端专项：bottom-sheet 底部抽屉承载（data-mobile-sheet 标记 + sheet open + dropdown 静态化 + oas-close 同步收起）
-test('cascader 移动端：底部抽屉贴视口底展开 + 多级面板可用 + 点遮罩同步收起', async ({ browser }) => {
+test('time-picker 移动端：底部抽屉贴视口底展开 + 时间列可交互 + 点遮罩同步收起', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
   const page = await ctx.newPage()
   try {
-    await page.goto('/components/cascader.html', { waitUntil: 'domcontentloaded' })
-    await up(page, 'oas-cascader')
-    const host = page.locator('oas-cascader').first()
+    await page.goto('/components/time-picker.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-time-picker')
+    const host = page.locator('oas-time-picker').first()
     await expect(host).toHaveAttribute('data-mobile-sheet', '')
     await host.locator('[part="trigger"]').click()
     await page.waitForFunction(
       () => {
-        const root = document.querySelector('oas-cascader')!.shadowRoot!
+        const root = document.querySelector('oas-time-picker')!.shadowRoot!
         return root.querySelector('[part="dropdown"]')!.classList.contains('open')
       },
       null,
@@ -50,7 +24,7 @@ test('cascader 移动端：底部抽屉贴视口底展开 + 多级面板可用 +
     // 等底部抽屉升起动画落定（transform 收敛、面板贴视口底）后再量几何，避免量到动画中途
     await page.waitForFunction(
       () => {
-        const root = document.querySelector('oas-cascader')!.shadowRoot!
+        const root = document.querySelector('oas-time-picker')!.shadowRoot!
         const sheet = root.querySelector('oas-bottom-sheet') as HTMLElement
         const panel = sheet.shadowRoot!.querySelector('.sheet') as HTMLElement
         return Math.abs(panel.getBoundingClientRect().bottom - window.innerHeight) < 1
@@ -64,6 +38,7 @@ test('cascader 移动端：底部抽屉贴视口底展开 + 多级面板可用 +
       const sheetRoot = sheet.shadowRoot!
       const panel = sheetRoot.querySelector<HTMLElement>('.sheet')!
       const backdrop = sheetRoot.querySelector<HTMLElement>('.backdrop')!
+      const handle = sheetRoot.querySelector<HTMLElement>('.handle')!
       const dropdown = root.querySelector<HTMLElement>('[part="dropdown"]')!
       const pr = panel.getBoundingClientRect()
       return {
@@ -76,7 +51,10 @@ test('cascader 移动端：底部抽屉贴视口底展开 + 多级面板可用 +
         vw: window.innerWidth,
         vh: window.innerHeight,
         backdropOpacity: Number(getComputedStyle(backdrop).opacity),
-        options: dropdown.querySelectorAll('[role="option"]').length,
+        handleVisible: getComputedStyle(handle).display !== 'none',
+        // 面板可用：抽屉内能取到时间列选项
+        columns: dropdown.querySelectorAll('.column').length,
+        options: dropdown.querySelectorAll('.option').length,
       }
     })
     expect(info.sheetOpen, '移动端展开时 sheet 应带 open').toBe(true)
@@ -86,7 +64,17 @@ test('cascader 移动端：底部抽屉贴视口底展开 + 多级面板可用 +
     expect(info.panelLeft, '抽屉面板应左贴视口').toBe(0)
     expect(Math.abs(info.panelRight - info.vw), '抽屉面板应右贴视口（≤1px 亚像素容差）').toBeLessThanOrEqual(1)
     expect(info.backdropOpacity, '遮罩应可见').toBeGreaterThan(0.5)
-    expect(info.options, '抽屉内多级面板应可交互（有选项）').toBeGreaterThan(0)
+    expect(info.handleVisible, 'drag handle 应可见').toBe(true)
+    expect(info.columns, '抽屉内应渲染时间列').toBeGreaterThan(0)
+    expect(info.options, '抽屉内时间列应有可点选项').toBeGreaterThan(0)
+    // 抽屉内点选交互：点第一列首个可选项 → 组件进入待提交态（选中态可见）
+    await host.evaluate((el) => {
+      const col = el.shadowRoot!.querySelector<HTMLElement>('.column')!
+      const opt = col.querySelector<HTMLElement>('.option:not(.disabled)')!
+      opt.click()
+    })
+    const selected = await host.evaluate((el) => el.shadowRoot!.querySelectorAll('.option.selected').length)
+    expect(selected, '抽屉内点选应产生选中态').toBeGreaterThan(0)
     // oas-close 同步收起：点遮罩
     await host.evaluate((el) => {
       const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
@@ -98,15 +86,4 @@ test('cascader 移动端：底部抽屉贴视口底展开 + 多级面板可用 +
   } finally {
     await ctx.close()
   }
-})
-
-test('cascader 浮层定位：首开与再开一致（面板宽度取内容固有宽度，不受定位时序影响）', async ({ page }) => {
-  // cascader 面板用 min-width + 内容固有宽度（列定宽），首开即终值，故定位不随「撑宽时机」漂移。
-  // 锁定稳定不变量，防未来误改为先定位后设宽而复现 select 家族的首开偏移。
-  await page.goto('/components/cascader.html', { waitUntil: 'domcontentloaded' })
-  await up(page, 'oas-cascader')
-  const g = await panelGeometryAcrossOpens(page, 'oas-cascader', async (host) => {
-    await host.locator('[part="trigger"]').click()
-  })
-  expect(Math.abs(g.first.left - g.second.left)).toBeLessThanOrEqual(1)
 })

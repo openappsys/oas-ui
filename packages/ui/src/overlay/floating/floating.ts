@@ -23,6 +23,17 @@ export interface Viewport {
   height: number
 }
 
+/**
+ * 浮层碰撞边界视口尺寸：优先 visualViewport（软键盘/浏览器工具栏/捏合缩放时用户
+ * 真正能看到的区域，会小于布局视口），回退 innerWidth/innerHeight（SSR/老浏览器/测试）。
+ * 定位引擎的翻转与避让均基于此边界，避免浮层被软键盘或浏览器 UI 遮挡。
+ */
+export function getViewport(win: Window = window): Viewport {
+  const vv = win.visualViewport
+  if (vv && vv.width > 0 && vv.height > 0) return { width: vv.width, height: vv.height }
+  return { width: win.innerWidth, height: win.innerHeight }
+}
+
 /** 浮层定位选项：skidding 交叉轴偏移（px，正方向：top/bottom 向右、left/right 向下）；collisionPadding 视口避让边距 */
 export interface PositionOptions {
   skidding?: number

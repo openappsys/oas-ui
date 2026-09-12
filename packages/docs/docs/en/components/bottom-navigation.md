@@ -130,6 +130,20 @@ The `shift` boolean attribute lifts the selected item: its icon moves up slightl
 
 Click to switch the selected item and observe the icon lifting/scaling up and unselected items settling back smoothly.
 
+## Pill shape (pill)
+
+`pill` turns the whole bar into a **floating capsule**: the `tablist` is fully rounded, gets a full outline (replacing the top-only divider) and a soft shadow; the host insets itself on both sides and, with `fixed`, also leaves bottom spacing so it floats on all edges. Insets / shadow are exposed via the `--oas-bottom-navigation-pill-inset` / `--oas-bottom-navigation-pill-shadow` variables; dark mode picks up tokens automatically.
+
+<DemoBlock title="Pill shape (static)">
+  <oas-bottom-navigation pill value="home" style="width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Mail","icon":"mail","value":"mail","badge":"5"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+</DemoBlock>
+
+<DemoBlock title="Tunable insets / shadow (CSS variables)">
+  <oas-bottom-navigation pill value="home" style="width: 100%; max-width: 480px; --oas-bottom-navigation-pill-inset: 24px; --oas-bottom-navigation-pill-shadow: 0 6px 18px rgb(0 0 0 / 0.16)" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+</DemoBlock>
+
+> On real mobile add `fixed` (optionally with `safe-area`) for a bottom-floating capsule (all edges inset automatically); this demo stays static so it does not cover the content.
+
 ## Variable customization
 
 Pure CSS variable openings (no attribute); dark mode picks up tokens automatically:
@@ -151,6 +165,7 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | `hide-on-scroll` | Hide on scroll (requires `fixed`): slides out with `translateY(100%)` while scrolling down and slides back while scrolling up (a scroll delta >4px decides the direction; the transition animates transform only). A purely visual collapse without `aria-hidden` (tab semantics and keyboard focus stay reachable), restored on scroll-back; no effect when not fixed | `boolean` | — |
 | `items` | Navigation items JSON | `string` | `[]` |
 | `layout` | Layout mode: `stacked` (default, icon above text) / `horizontal` (icon left, text right, same row); invalid values fall back to `stacked` with a warning (deduped) | `string` | `stacked` |
+| `pill` | Pill shape: turns the whole bar into a floating capsule (`tablist` fully rounded + a full outline replacing the top-only divider + a soft shadow; the host insets itself on both sides and, in `fixed` mode, leaves bottom spacing to float on all edges). Insets/shadow are exposed via the `--oas-bottom-navigation-pill-inset` / `--oas-bottom-navigation-pill-shadow` variables; dark theme follows tokens automatically | — | — |
 | `safe-area` | Adds bottom safe-area padding (`env(safe-area-inset-bottom)`) in fixed mode to avoid the home indicator of notched screens; no effect in non-fixed mode | `boolean` | — |
 | `shift` | Selected-item lift animation: the selected tab's icon lifts slightly (translateY(-2px)) and scales up (scale 1.08) with the label scaling up too, unselected items settle back; pure CSS transition (transform only, no layout impact), disabled under prefers-reduced-motion | `boolean` | — |
 | `show-label` | Label display mode: `true` (default, all items show text) / `active` (icon-only compact mode: only the selected item shows text, unselected items show only the icon — each tab's accessible name is backed by an auto-written `aria-label` from the item label, unaffected by the CSS hide); invalid values fall back to `true` with a warning (deduped) | `string` | `true` |
