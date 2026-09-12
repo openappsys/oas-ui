@@ -138,7 +138,7 @@
 ## 受控开合（open）
 
 <DemoBlock title="受控开合（open + oas-open-change）">
-  <oas-tree-select id="ts-open" open="" placeholder="open 属性受控" options='[{"label":"前端","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
+  <oas-tree-select id="ts-open" placeholder="open 属性受控" options='[{"label":"前端","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
   <oas-button id="ts-open-btn" size="small">切换 open</oas-button>
   <span id="ts-open-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
@@ -318,7 +318,7 @@ onMounted(() => {
   // 受控开合 demo：宿主回写 open 属性
   const tsOpen = document.getElementById('ts-open')
   const tsOpenOut = document.getElementById('ts-open-out')
-  let openState = true
+  let openState = false
   document.getElementById('ts-open-btn')?.addEventListener('click', () => {
     openState = !openState
     tsOpen?.setAttribute('open', openState ? '' : 'false')

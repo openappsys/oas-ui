@@ -47,6 +47,17 @@ test('cascader 移动端：底部抽屉贴视口底展开 + 多级面板可用 +
       null,
       { timeout: 5000 },
     )
+    // 等底部抽屉升起动画落定（transform 收敛、面板贴视口底）后再量几何，避免量到动画中途
+    await page.waitForFunction(
+      () => {
+        const root = document.querySelector('oas-cascader')!.shadowRoot!
+        const sheet = root.querySelector('oas-bottom-sheet') as HTMLElement
+        const panel = sheet.shadowRoot!.querySelector('.sheet') as HTMLElement
+        return Math.abs(panel.getBoundingClientRect().bottom - window.innerHeight) < 1
+      },
+      null,
+      { timeout: 5000 },
+    )
     const info = await host.evaluate((el) => {
       const root = el.shadowRoot!
       const sheet = root.querySelector('oas-bottom-sheet')!
@@ -71,9 +82,9 @@ test('cascader 移动端：底部抽屉贴视口底展开 + 多级面板可用 +
     expect(info.sheetOpen, '移动端展开时 sheet 应带 open').toBe(true)
     expect(info.sheetPassive, '移动端 sheet 应去 passive 变容器').toBe(false)
     expect(info.dropdownPosition, '移动端 dropdown 应静态化').toBe('static')
-    expect(info.panelBottom, '抽屉面板应贴视口底').toBeCloseTo(info.vh, 0)
+    expect(Math.abs(info.panelBottom - info.vh), '抽屉面板应贴视口底（≤1px 亚像素容差）').toBeLessThanOrEqual(1)
     expect(info.panelLeft, '抽屉面板应左贴视口').toBe(0)
-    expect(info.panelRight, '抽屉面板应右贴视口').toBeCloseTo(info.vw, 0)
+    expect(Math.abs(info.panelRight - info.vw), '抽屉面板应右贴视口（≤1px 亚像素容差）').toBeLessThanOrEqual(1)
     expect(info.backdropOpacity, '遮罩应可见').toBeGreaterThan(0.5)
     expect(info.options, '抽屉内多级面板应可交互（有选项）').toBeGreaterThan(0)
     // oas-close 同步收起：点遮罩
