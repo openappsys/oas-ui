@@ -222,6 +222,10 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 
 弹层选择用 `oas-date-picker`（本组件，触发器 + 浮层面板）；筛选侧栏等常驻内嵌日历场景用 `oas-calendar`（纯面板形态，支持 `mode=year`、周号、单元格渲染等同族能力）。
 
+## 移动形态（底部抽屉）
+
+触屏（coarse pointer）或窄视口（<768px）下，面板自动改由 `oas-bottom-sheet` 底部抽屉承载：贴视口底升起 + 遮罩 + 拖拽把手下滑关闭（点遮罩 / Esc 同样收起），底部避让安全区；PC 形态保持原有浮层下拉不变。双月范围面板在窄屏自动收窄防横向溢出。
+
 ## API
 
 ### 属性
@@ -236,7 +240,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `max` | 可选范围（ISO 日期）；翻页到界时导航按钮置灰 | `string` | — |
 | `min` | 可选范围（ISO 日期）；翻页到界时导航按钮置灰 | `string` | — |
 | `multiple` | 多选（仅 `type=date`），值存 JSON 数组；该形态手输通道只读 | `boolean` | — |
-| `open` | 受控开合：在场=展开、移除=收起；手势只派发 `oas-open-change` 由宿主回写 | — | — |
+| `open` | 受控开合：在场=展开、移除=收起；手势只派发 `oas-open-change` 由宿主回写；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | — | — |
 | `placeholder` | 占位提示 | — | — |
 | `placement` | 浮层位置，12 向：`top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `bottom-start`）；触发器贴近视口右缘时自动右对齐翻转、下方空间不足时上翻，并夹取到视口内 | `string` | `bottom-start` |
 | `readonly` | 只读：面板可展开浏览（单元格可键盘导航），点选/快捷/清除/手输均不提交 | `boolean` | — |

@@ -230,6 +230,10 @@ onMounted(() => {
 })
 </script>
 
+## Mobile form (bottom sheet)
+
+On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level panels are automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; panel columns scroll horizontally inside the sheet; the desktop form keeps the original floating dropdown.
+
 ## API
 
 ### Attributes
@@ -244,7 +248,7 @@ onMounted(() => {
 | `filterable` | Searchable (flat path results) | `boolean` | — |
 | `max-tag-count` | Collapse multi-select tags beyond the count into +N (with title listing hidden items) | `boolean` | — |
 | `multiple` | Multi-select (cascading checkboxes; fully-checked children roll the parent into the value) | `boolean` | — |
-| `open` | Controlled open state (single source of truth) | `boolean` | — |
+| `open` | Controlled open state (single source of truth); in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | `boolean` | — |
 | `options` | Cascade options, JSON array, supports `children` / `disabled` | `CascaderOption[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
 | `separator` | Path separator (default ` / `) | `string` | ` / ` |

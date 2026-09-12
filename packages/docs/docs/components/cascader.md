@@ -230,6 +230,10 @@ onMounted(() => {
 })
 </script>
 
+## 移动形态（底部抽屉）
+
+触屏（coarse pointer）或窄视口（<768px）下，多级面板自动改由 `oas-bottom-sheet` 底部抽屉承载：贴视口底升起 + 遮罩 + 拖拽把手下滑关闭（点遮罩 / Esc 同样收起），底部避让安全区；多级列在抽屉内容区内横向滑动；PC 形态保持原有浮层下拉不变。
+
 ## API
 
 ### 属性
@@ -244,7 +248,7 @@ onMounted(() => {
 | `filterable` | 可搜索（扁平路径结果） | `boolean` | — |
 | `max-tag-count` | 多选标签按数量折叠 +N（带 title 列隐藏项） | `boolean` | — |
 | `multiple` | 多选（复选框级联勾选；子级全选父级自动进值） | `boolean` | — |
-| `open` | 受控展开状态（唯一状态源） | `boolean` | — |
+| `open` | 受控展开状态（唯一状态源）；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | `boolean` | — |
 | `options` | 级联选项，JSON 数组，支持 `children` / `disabled` | `CascaderOption[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
 | `separator` | 路径分隔符（默认 ` / `） | `string` | ` / ` |

@@ -725,3 +725,71 @@ describe('OASCascader focus 委托', () => {
     expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('button[part="trigger"]'))
   })
 })
+
+describe('OASCascader 移动端底部抽屉（bottom-sheet 接入）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  /** 可控 matchMedia stub：模拟触屏（coarse pointer）或桌面（fine pointer） */
+  function stubPointer(coarse: boolean): void {
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({
+          matches: coarse && query.includes('(pointer: coarse)'),
+          media: query,
+          onchange: null,
+          addEventListener() {},
+          removeEventListener() {},
+          addListener() {},
+          removeListener() {},
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    )
+  }
+
+  function sheet(el: OASCascader): HTMLElement {
+    return el.shadowRoot!.querySelector('oas-bottom-sheet')!
+  }
+
+  it('模板恒包 oas-bottom-sheet（SSR/客户端结构一致），PC 默认 passive 透传', () => {
+    const el = mount()
+    expect(sheet(el)).toBeTruthy()
+    expect(sheet(el).getAttribute('part')).toBe('sheet')
+    expect(sheet(el).hasAttribute('passive')).toBe(true)
+    expect(sheet(el).contains(dropdown(el))).toBe(true)
+    expect(el.hasAttribute('data-mobile-sheet')).toBe(false)
+  })
+
+  it('触屏进入移动形态：去 passive + data-mobile-sheet，展开走 sheet，oas-close 同步收起', () => {
+    stubPointer(true)
+    const el = mount()
+    el.setAttribute('placeholder', 'x') // 触发 update → syncMobileMode
+    expect(el.hasAttribute('data-mobile-sheet')).toBe(true)
+    expect(sheet(el).hasAttribute('passive')).toBe(false)
+    trigger(el).click()
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(sheet(el).hasAttribute('open')).toBe(true)
+    // oas-close（下滑/backdrop/Esc 由 bottom-sheet 派发）→ 组件同步收起
+    sheet(el).dispatchEvent(new Event('oas-close'))
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(sheet(el).hasAttribute('open')).toBe(false)
+  })
+
+  it('PC 恢复：data-mobile-sheet 移除、passive 恢复', () => {
+    stubPointer(true)
+    const el = mount()
+    el.setAttribute('placeholder', 'x')
+    expect(el.hasAttribute('data-mobile-sheet')).toBe(true)
+    stubPointer(false)
+    el.setAttribute('placeholder', 'y')
+    expect(el.hasAttribute('data-mobile-sheet')).toBe(false)
+    expect(sheet(el).hasAttribute('passive')).toBe(true)
+  })
+})
