@@ -149,7 +149,7 @@
     },
     {
       "name": "allowDrop",
-      "type": "(payload: { dragKey: string dropKey: string position: 'before' | 'after' | 'inner' }) => boolean"
+      "type": "(payload: { dragKey: string; dropKey: string; position: 'before' | 'after' | 'inner' }) => boolean"
     },
     {
       "name": "allowDrag",
