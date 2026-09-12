@@ -301,12 +301,24 @@ function makeTreeAccessors(fields: ResolvedFields): TreeAccessors<TreeNode> {
 function parseIdList(raw: string): string[] {
   if (raw === '') return []
   try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    // 数字 key 归一化为字符串（v2.5.0 曾以 typeof string 过滤静默丢弃数字 key，属缺陷）；
+    // 空串/无值项在归一化后滤除
+    return parsed.map((v) => String(v)).filter((v) => v !== '' && v !== 'undefined' && v !== 'null')
   } catch {
+    // 解析失败（典型：v2.5 前的旧版逗号串）——按空集合回落 + dev 告警一次（同值去重）给迁移指引
+    if (!invalidIdListWarned.has(raw)) {
+      invalidIdListWarned.add(raw)
+      console.warn(
+        `[oas-tree] expanded/checked/selected 只接受 JSON 字符串数组（自 v2.5 起旧版逗号串已废弃）。收到："${raw}"，已按空集合处理；迁移写法：expanded='["k1","k2"]'`,
+      )
+    }
     return []
   }
 }
+/** 非法 ID 列表的 dev 告警同值去重集合 */
+const invalidIdListWarned = new Set<string>()
 
 /**
  * oas-tree —— 树形控件，支持大数据量虚拟化与键盘/勾选/过滤等完整交互。
