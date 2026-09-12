@@ -1862,12 +1862,15 @@ export class OASDatePicker extends OASElement {
    */
   private fillCells(grid: HTMLElement): void {
     const tpl = this.querySelector<HTMLTemplateElement>('template[slot="cell"]')
+    // 模板可能为空：宿主写了 <template slot="cell"> 但内容被上层编译器吞掉（Vue 在 dev 下会吞），
+    // 此时不要清空日格，保留组件写入的日期数字，避免整月数字消失。
+    const hasTpl = !!tpl && tpl.content.childNodes.length > 0
     for (const btn of grid.querySelectorAll<HTMLButtonElement>('.day')) {
       const date = parseISODate(btn.dataset.date ?? '')
       if (!date) continue
-      if (tpl) {
+      if (hasTpl) {
         btn.textContent = ''
-        btn.appendChild(tpl.content.cloneNode(true))
+        btn.appendChild(tpl!.content.cloneNode(true))
         const binder = btn.querySelector<HTMLElement>('[data-cell-date]')
         if (binder) binder.textContent = String(date.getDate())
       }

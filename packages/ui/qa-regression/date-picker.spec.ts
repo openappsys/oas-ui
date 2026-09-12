@@ -190,11 +190,12 @@ test('date-picker 单元格渲染：template[slot=cell] 内容保留、每个日
       hasTemplateContent: !!tpl && tpl.innerHTML.trim().length > 0,
       dayCount: days.length,
       withNumber: days.filter((d) => /\d/.test(d.textContent ?? '')).length,
-      hasDot: !!el.shadowRoot!.querySelector('.day .cell-dot'),
+      dotCount: el.shadowRoot!.querySelectorAll('.day .cell-dot').length,
     }
   })
   expect(r.hasTemplateContent, 'template[slot=cell] 内容应被保留').toBe(true)
   expect(r.dayCount).toBeGreaterThan(0)
   expect(r.withNumber, '每个日格都应有日期数字').toBe(r.dayCount)
-  expect(r.hasDot, '应渲染自定义标记点').toBe(true)
+  // 标记点只给固定几天（2026-08-10/20/28）：曾误把 .cell-dot 放进模板，导致每格都长红点
+  expect(r.dotCount, '标记点应只出现在固定几天，不能每格都有').toBe(3)
 })

@@ -133,12 +133,7 @@ Range panels navigate in lockstep by default; `unlink-panels` lets both months f
 ## Cell Rendering
 
 <DemoBlock title="Calendar marks (oas-cell-render / template[slot=cell])">
-<oas-date-picker v-pre id="date-picker-cell-render" value="2026-08-09">
-<template slot="cell">
-      <span class="cell-dot"></span>
-      <span data-cell-date></span>
-    </template>
-  </oas-date-picker>
+<oas-date-picker id="date-picker-cell-render" value="2026-08-09"></oas-date-picker>
 </DemoBlock>
 
 Same dual channel as `oas-calendar`: `template[slot="cell"]` clones into each day cell (`[data-cell-date]` binds the day number), and every rebuild emits `oas-cell-render` with `detail: { date, element }` (listeners must be idempotent).
@@ -315,11 +310,25 @@ onMounted(() => {
     return d < t
   }
 
+  // Cell rendering: inject the template via JS (an inline <template slot="cell"> is swallowed by the
+  // Vue compile pipeline, especially in dev). The template only provides the day-number skeleton;
+  // dots are appended by the oas-cell-render listener for a few fixed days only (idempotent).
   const cr = document.getElementById('date-picker-cell-render')
+  if (cr && !cr.querySelector('template[slot="cell"]')) {
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'cell')
+    tpl.innerHTML = '<span data-cell-date></span>'
+    cr.appendChild(tpl)
+  }
   const marks = new Set(['2026-08-10', '2026-08-20', '2026-08-28'])
   cr?.addEventListener('oas-cell-render', (e) => {
-    if (marks.has(e.detail.element.getAttribute('data-date'))) {
-      e.detail.element.querySelector('.cell-dot')?.style.setProperty('background', 'var(--oas-color-danger)')
+    const cell = e.detail.element
+    if (marks.has(cell.getAttribute('data-date')) && !cell.querySelector('.cell-dot')) {
+      const dot = document.createElement('span')
+      dot.className = 'cell-dot'
+      dot.setAttribute('role', 'img')
+      dot.setAttribute('aria-label', 'marked')
+      cell.appendChild(dot)
     }
   })
 })
