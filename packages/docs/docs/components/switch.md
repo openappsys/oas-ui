@@ -31,7 +31,13 @@
   </oas-space>
 </DemoBlock>
 
-热区说明：开关宿主宽度收缩为控件实际宽度（`width: fit-content`），在竖向布局容器（如上面的 `oas-space direction="vertical"`）中不会被拉伸成整行宽——视觉宽度与点击热区保持一致；需要扩大点击热区时用 `label` 提供可点文本。无 `label` 时宿主也可自设 `aria-label`（自动镜像到内部按钮作可访问名称）。
+热区说明：开关宿主宽度收缩为控件实际宽度（`width: fit-content`），默认形态下视觉宽度与点击热区一致；当宿主被显式拉宽（竖向 `oas-space` 的 `align-stretch`、宿主 `width: 100%`）时，**整行空白区点击同样切换**——对齐 iOS 设置项的整行点击语义（内部按钮与 `label` 标签区域仍走各自通道，不会重复触发）。需要旁侧文本热区时用 `label` 提供可点标签。无 `label` 时宿主也可自设 `aria-label`（自动镜像到内部按钮作可访问名称）。
+
+<DemoBlock title="块级拉伸整行可点">
+  <oas-switch id="switch-block" label="整行点击（点右侧空白试试）" style="width: 100%"></oas-switch>
+</DemoBlock>
+
+`disabled` / `loading` 状态下整行热区同样拦截，行为与拨杆一致。
 
 ## 开关文案
 

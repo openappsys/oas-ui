@@ -384,4 +384,42 @@ describe('OASSwitch', () => {
     expect(style).toContain('var(--oas-switch-height, 22px)')
     expect(style).toContain('var(--oas-switch-thumb-size, 18px)')
   })
+
+  // ===== 块级拉伸热区：宿主被显式拉宽时整行可点（对齐 iOS 设置项点击语义） =====
+
+  it('块级拉伸时点击宿主自身空白区可切换（宿主 click 委托 toggle）', () => {
+    const el = mount()
+    el.style.width = '360px' // 模拟竖向容器把宿主拉成整行宽
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('checked')).toBe(true)
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('checked')).toBe(false)
+  })
+
+  it('宿主委托不重复触发：点击内部 button 仍只切换一次', () => {
+    const el = mount()
+    let count = 0
+    el.addEventListener('oas-change', () => count++)
+    sw(el).click()
+    expect(count).toBe(1)
+    expect(el.hasAttribute('checked')).toBe(true)
+  })
+
+  it('点击外部 label 区域走 label for 通道，不重复触发', () => {
+    const el = mount({ label: '消息通知' })
+    let count = 0
+    el.addEventListener('oas-change', () => count++)
+    extLabel(el).click()
+    expect(count).toBe(1)
+    expect(el.hasAttribute('checked')).toBe(true)
+  })
+
+  it('disabled/loading 时宿主空白区点击不切换（拦截与 button 一致）', () => {
+    const disabled = mount({ disabled: '' })
+    disabled.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(disabled.hasAttribute('checked')).toBe(false)
+    const loading = mount({ loading: '' })
+    loading.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(loading.hasAttribute('checked')).toBe(false)
+  })
 })

@@ -1537,4 +1537,11 @@ describe('OASSelect 下拉高度 CSS 变量', () => {
     const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
     expect(vlist.getAttribute('height')).toBe('240')
   })
+
+  it('触摸目标：coarse pointer 媒体查询进样式表，option 最小高度走 --oas-touch-target-min（默认 44px）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+  })
 })
