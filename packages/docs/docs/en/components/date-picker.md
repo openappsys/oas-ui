@@ -133,8 +133,8 @@ Range panels navigate in lockstep by default; `unlink-panels` lets both months f
 ## Cell Rendering
 
 <DemoBlock title="Calendar marks (oas-cell-render / template[slot=cell])">
-  <oas-date-picker id="date-picker-cell-render" value="2026-08-09">
-    <template slot="cell">
+<oas-date-picker v-pre id="date-picker-cell-render" value="2026-08-09">
+<template slot="cell">
       <span class="cell-dot"></span>
       <span data-cell-date></span>
     </template>
