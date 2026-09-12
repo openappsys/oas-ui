@@ -122,6 +122,10 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 
 与 date-picker 同定位契约：`fixed` + 碰撞翻转 + 视口夹取，面板宽度对齐触发器；`placement` 支持 12 向（默认 `bottom-start`）。
 
+## 移动形态（底部抽屉）
+
+触屏（coarse pointer）或窄视口（<768px）下，面板自动改由 `oas-bottom-sheet` 底部抽屉承载：贴视口底升起 + 遮罩 + 拖拽把手下滑关闭（点遮罩 / Esc 同样收起），底部避让安全区；时分秒列（含范围双列组）在抽屉内容区内各自滚动；PC 形态保持原有浮层下拉不变。
+
 ## API
 
 ### 属性
@@ -132,7 +136,7 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 | `disabled` | 禁用 | `boolean` | — |
 | `format` | 展示格式 token；含 `HH`/`mm`/`ss` 时对应列出现 | `string` | `HH:mm:ss` |
 | `is-range` | 时间范围：值为 JSON 数组 `["HH:mm:ss","HH:mm:ss"]`，确认时起止自动排序；该形态手输通道只读 | `boolean` | — |
-| `open` | 受控开合：在场=展开、移除=收起；手势只派发 `oas-open-change` 由宿主回写 | — | — |
+| `open` | 受控开合：在场=展开、移除=收起；手势只派发 `oas-open-change` 由宿主回写；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | — | — |
 | `placeholder` | 占位提示 | — | — |
 | `placement` | 浮层位置，12 向（默认 `bottom-start`），`fixed` + 碰撞翻转 + 视口夹取（与 date-picker 同契约） | `string` | `bottom-start` |
 | `readonly` | 只读：面板可展开浏览，点选/此刻/预设/清除/手输均不提交 | `boolean` | — |

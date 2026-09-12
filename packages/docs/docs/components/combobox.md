@@ -217,6 +217,10 @@ onMounted(() => {
 })
 </script>
 
+## 移动形态（底部抽屉）
+
+触屏（coarse pointer）或窄视口（<768px）下，选项列表自动改由 `oas-bottom-sheet` 底部抽屉承载：贴视口底升起 + 遮罩 + 拖拽把手下滑关闭（点遮罩 / Esc 同样收起），底部避让安全区；输入框保持在原位，聚焦仍在抽屉内弹出列表并可点选；PC 形态保持原有浮层下拉不变。
+
 ## API
 
 ### 属性
@@ -229,7 +233,7 @@ onMounted(() => {
 | `filterable` | 输入实时过滤 label（`filterable="false"` 关闭本地过滤） | `string` | `true` |
 | `item-height` | 虚拟滚动定高（px，配合 `virtual`，默认 36） | `string` | `36` |
 | `loading` | 加载占位（下拉显示「加载中…」） | `boolean` | — |
-| `open` | 受控展开状态（组件内部开合同步写回属性，任何迁移派发 `oas-open-change`；readonly/disabled 下强制收起） | `boolean` | — |
+| `open` | 受控展开状态（组件内部开合同步写回属性，任何迁移派发 `oas-open-change`；readonly/disabled 下强制收起）；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | `boolean` | — |
 | `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]`（group 为分组标题，与 oas-select 同一契约） | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
 | `readonly` | 只读（可聚焦可复制不可改值，聚焦与键盘不展开下拉） | `boolean` | — |
