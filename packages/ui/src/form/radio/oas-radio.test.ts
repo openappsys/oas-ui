@@ -521,3 +521,54 @@ describe('OASRadio focus 委托', () => {
     expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('input'))
   })
 })
+
+describe('OASRadio RTL 逻辑方向化', () => {
+  it('圆点与文本间距走逻辑属性（flex gap），无物理方向 padding/margin', () => {
+    const el = mountRadio({}, '选项 A')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/label \{[^}]*gap: var\(--oas-space-2\)/)
+    expect(css).not.toMatch(/(padding|margin)-(left|right)/)
+    expect(css).not.toMatch(/(^|[^-a-z])(left|right):\s/)
+  })
+})
+
+describe('OASRadioGroup RTL 键盘镜像', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountRtlGroup(): OASRadioGroup {
+    const el = new OASRadioGroup()
+    el.setAttribute('value', 'a')
+    el.setAttribute('dir', 'rtl')
+    el.innerHTML = `
+      <oas-radio value="a">A</oas-radio>
+      <oas-radio value="b">B</oas-radio>
+      <oas-radio value="c" disabled>C（禁用）</oas-radio>
+      <oas-radio value="d">D</oas-radio>
+    `
+    document.body.appendChild(el)
+    return el
+  }
+
+  function pressFrom(el: OASRadioGroup, keyName: string, fromValue: string): void {
+    el.querySelector(`oas-radio[value="${fromValue}"]`)!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: keyName, bubbles: true, composed: true, cancelable: true }),
+    )
+  }
+
+  it('dir=rtl 时水平方向键视觉镜像：ArrowLeft 前进、ArrowRight 后退', () => {
+    const el = mountRtlGroup()
+    pressFrom(el, 'ArrowLeft', 'a')
+    expect(el.getAttribute('value')).toBe('b')
+    pressFrom(el, 'ArrowRight', 'b')
+    expect(el.getAttribute('value')).toBe('a')
+    // 上下键语义不变
+    pressFrom(el, 'ArrowDown', 'a')
+    expect(el.getAttribute('value')).toBe('b')
+  })
+})
