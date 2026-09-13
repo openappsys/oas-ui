@@ -753,3 +753,78 @@ describe('OASPopconfirm', () => {
     })
   })
 })
+
+// ================= 移动端缺口：窄视口 vw 保护 + coarse pointer hover 降级 =================
+
+describe('移动端缺口（窄视口 vw 保护 + coarse pointer hover 降级）', () => {
+  /** mock 触屏环境（pointer: coarse），与 popover 触屏降级测试同模式 */
+  function mockCoarsePointer(): void {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList,
+    )
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('面板 max-width 含 100vw 兜底（窄视口不溢出视口）', () => {
+    const el = mount({ title: '确认？' })
+    const styleText = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(styleText).toContain('max-width: min(360px, calc(100vw - var(--oas-space-6)))')
+  })
+
+  it('coarse：hover 通道停用（tap 合成的 mouseenter 不打开），点按锚点 tap 切换开/关', () => {
+    mockCoarsePointer()
+    const el = mount({ trigger: 'hover', title: '确认？' })
+    const btn = el.querySelector('button')!
+    // mouseenter 不冒泡：直接派发宿主（hover 监听绑在宿主上）
+    el.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(el.hasAttribute('open'), '触屏下 hover 不得打开').toBe(false)
+    // 点按开（无 150ms hover 防抖，tap 立即切换）
+    btn.click()
+    expect(el.hasAttribute('open')).toBe(true)
+    // 再点按关
+    btn.click()
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('coarse：tap 打开后点按文档其他位置关闭（外点关闭，触屏无 hover-out 语义）', () => {
+    mockCoarsePointer()
+    const el = mount({ trigger: 'hover', title: '确认？' })
+    el.querySelector('button')!.click()
+    expect(el.hasAttribute('open')).toBe(true)
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('coarse：focusin 不打开（tap 会 focusin+click 连发，防"刚开即关"）', () => {
+    mockCoarsePointer()
+    const el = mount({ trigger: 'hover focus', title: '确认？' })
+    el.querySelector('button')!.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('coarse：tap 切换仍派发 oas-open-change（受控闭环不变）', () => {
+    mockCoarsePointer()
+    const el = mount({ trigger: 'hover', title: '确认？' })
+    const detail: Array<{ open: boolean; reason?: string }> = []
+    el.addEventListener('oas-open-change', (e) => detail.push((e as CustomEvent).detail as { open: boolean }))
+    el.querySelector('button')!.click()
+    expect(detail).toEqual([{ open: true, reason: 'trigger' }])
+  })
+
+  it('fine pointer：trigger=hover 行为不变（mouseenter 走防抖打开）', async () => {
+    vi.useFakeTimers()
+    try {
+      const el = mount({ trigger: 'hover', title: '确认？' })
+      await Promise.resolve()
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      expect(el.hasAttribute('open')).toBe(false) // 防抖期内未开
+      vi.advanceTimersByTime(200)
+      expect(el.hasAttribute('open')).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

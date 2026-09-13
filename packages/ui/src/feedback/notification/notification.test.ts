@@ -921,3 +921,46 @@ describe('notification 命令式 API', () => {
     })
   })
 })
+
+// ================= 移动端缺口：窄视口 vw 保护 + peek 栈 tap 展开 =================
+
+describe('P18 移动端缺口（窄视口 vw 保护 + peek 栈 tap 展开）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    destroyAll()
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  it(':host 宽度含 100vw 兜底（固定 320px 在窄视口被钳制不溢出）', async () => {
+    notification.info({ title: '通知' })
+    await Promise.resolve()
+    const styleText = document.body.querySelector('oas-notification')!.shadowRoot!.querySelector('style')!.textContent!
+    expect(styleText).toContain('max-width: calc(100vw - var(--oas-space-6))')
+  })
+
+  it('peek：点按栈容器切换 stack-peek-expanded 展开/收起（触屏无 hover 的展开通道）', async () => {
+    for (let i = 0; i < 3; i++) {
+      notification.info({ title: `n${i}`, duration: 0, stackMode: 'peek' })
+    }
+    await Promise.resolve()
+    const stack = document.body.querySelector<HTMLElement>('.oas-notification-stack.stack-peek')!
+    expect(stack.classList.contains('stack-peek-expanded')).toBe(false)
+    // 点按展开（触屏 tap 等价通道）
+    stack.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(stack.classList.contains('stack-peek-expanded')).toBe(true)
+    // 再点按收起
+    stack.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(stack.classList.contains('stack-peek-expanded')).toBe(false)
+  })
+
+  it('peek：全局样式含 stack-peek-expanded 规则（与 :hover 展开同声明组）', () => {
+    notification.info({ title: 'a', duration: 0, stackMode: 'peek' })
+    const style = document.querySelector<HTMLStyleElement>('style[data-oas-notification-stack]')!
+    expect(style.textContent).toContain('.stack-peek-expanded')
+  })
+})

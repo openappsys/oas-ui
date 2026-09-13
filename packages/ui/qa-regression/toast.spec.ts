@@ -249,3 +249,35 @@ test('hover 暂停计时：悬停期间进度条定格，离开后继续', async
     { timeout: 5000 },
   )
 })
+
+test('toast 窄视口 vw 保护：320px 屏宽时长文本 toast 不溢出视口', async ({ page }) => {
+  // 曾现缺口：:host 固定 max-width 360px 无 vw 兜底，窄视口(<360px)长文本两边溢出。
+  // 现要求 max-width 带 100vw 钳制（两侧各留 12px）。
+  await page.setViewportSize({ width: 320, height: 667 })
+  await page.goto('/components/toast.html', { waitUntil: 'domcontentloaded' })
+  await toastReady(page)
+  const longTitle = '窄视口回归：这是一条足够长会触发换行的 toast 标题内容，用于验证不溢出屏幕边界。'.repeat(2)
+  await page.evaluate((t) => (window as any).toast.info({ title: t, duration: 0 }), longTitle)
+  await page.waitForFunction(() => document.querySelectorAll('oas-toast:not(.declarative-toast)').length > 0, null, {
+    timeout: 5000,
+  })
+  const r = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('oas-toast:not(.declarative-toast)')].pop()!
+    const box = el.shadowRoot!.querySelector<HTMLElement>('[part="box"]')!.getBoundingClientRect()
+    const host = el.getBoundingClientRect()
+    return {
+      vw: window.innerWidth,
+      hostLeft: host.left,
+      hostRight: host.right,
+      boxLeft: box.left,
+      boxRight: box.right,
+      maxWidth: getComputedStyle(el).maxWidth,
+    }
+  })
+  expect(r.hostLeft).toBeGreaterThanOrEqual(0)
+  expect(r.hostRight).toBeLessThanOrEqual(r.vw)
+  expect(r.boxLeft).toBeGreaterThanOrEqual(0)
+  expect(r.boxRight).toBeLessThanOrEqual(r.vw)
+  // computed max-width = min(360, 100vw - 24) = 296px @320 视口
+  expect(parseFloat(r.maxWidth), 'max-width 被 vw 兜底钳制').toBeLessThanOrEqual(296.5)
+})
