@@ -5,6 +5,7 @@ import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
+import { resolveDirection } from '../../overlay/direction.js'
 
 const STYLE = `
  :host {
@@ -1237,6 +1238,7 @@ export class OASTimePicker extends OASElement {
       placement: actual,
     } = computePosition(anchorRect, popupRect, this.resolvePlacement(), viewport, 4, true, {
       collisionPadding: 8,
+      direction: resolveDirection(this),
     })
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
