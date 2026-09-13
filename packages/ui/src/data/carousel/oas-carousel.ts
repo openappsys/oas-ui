@@ -206,6 +206,34 @@ const STYLE = `
   display: flex;
   align-items: center;
 }
+/* 触屏（coarse）：命中区抬到 44px 触控目标（--oas-touch-target-min）。
+   箭头/暂停钮为绝对定位浮钮，直接放大钮体（图标尺寸不变）；
+   指示圆点视觉保持 12px，padding 扩热区 + margin 负补偿不占布局，
+   间距同步放大（32px）保证相邻命中区不重叠误触。纯 CSS 增强，DOM 无分叉 */
+@media (pointer: coarse) {
+  .arrow,
+  .pause-btn {
+    width: max(var(--oas-control-height-md), var(--oas-touch-target-min, 44px));
+    height: max(var(--oas-control-height-md), var(--oas-touch-target-min, 44px));
+  }
+  .dots {
+    gap: 32px;
+  }
+  .dot {
+    box-sizing: content-box;
+    padding: 16px;
+    margin: -16px;
+  }
+  /* 线性指示器：按 20×4（水平）/ 4×20（垂直）补足 44px 命中区 */
+  .dots.line .dot {
+    padding: 20px 12px;
+    margin: -20px -12px;
+  }
+  :host([direction='vertical']) .dots.line .dot {
+    padding: 12px 20px;
+    margin: -12px -20px;
+  }
+}
 .arrow {
   position: absolute;
   top: 50%;

@@ -681,4 +681,30 @@ describe('OASCarousel', () => {
       expect(dots[1]!.getAttribute('aria-current')).toBe('true')
     })
   })
+
+  describe('触屏命中区（pointer: coarse）', () => {
+    it('样式含 coarse 块：箭头/暂停钮命中区 ≥44px，圆点 padding 扩热区且视觉尺寸不变', () => {
+      const el = mount()
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(style).toContain('@media (pointer: coarse)')
+      // 箭头/暂停钮：触控目标抬到 44px（max 保底，不缩 PC 既有尺寸）
+      expect(style).toMatch(
+        /\.arrow[\s\S]*?width:\s*max\(var\(--oas-control-height-md\),\s*var\(--oas-touch-target-min,\s*44px\)\)/,
+      )
+      // 圆点：视觉保持 12px，padding 扩出 44px 命中区，margin 负补偿不占布局
+      expect(style).toMatch(/\.dot\s*\{[^}]*width:\s*12px/)
+      expect(style).toMatch(/@media \(pointer: coarse\)[\s\S]*\.dot\s*\{[^}]*padding:\s*16px/)
+      expect(style).toMatch(/@media \(pointer: coarse\)[\s\S]*\.dot\s*\{[^}]*margin:\s*-16px/)
+      // 相邻圆点命中区间距补偿（防热区重叠误触）
+      expect(style).toMatch(/@media \(pointer: coarse\)[\s\S]*\.dots\s*\{[^}]*gap:\s*32px/)
+    })
+
+    it('箭头/暂停钮/圆点 DOM 结构与 PC 一致（coarse 纯 CSS 增强，无结构分叉）', () => {
+      const el = mount({ autoplay: '', 'pause-button': '' })
+      expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelector('[part="arrow-next"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelector('[part="pause-button"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="dot"]').length).toBe(3)
+    })
+  })
 })

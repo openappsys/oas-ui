@@ -28,9 +28,18 @@ import { registerTableCapability, registeredTableCapabilities, hasTableCapabilit
  * 编辑配置静默失效并 dev 告警。全量入口（@oas-ui/ui）与 CDN 数据族包已内含编辑能力。
  */
 class OASTable extends OASTableBase {
+  private colSettings: ReturnType<typeof createColumnSettingsController>
   constructor() {
     super()
-    this.addController(createColumnSettingsController(this))
+    this.colSettings = createColumnSettingsController(this)
+    this.addController(this.colSettings)
+  }
+  protected override update(): void {
+    super.update()
+    // 部分更新路径（core 的 locale/config 订阅回调）直调 update() 绕过 controller 通知，
+    // 表头重建后此处补同步列设置能力（幂等：syncMoveButtons 按 .col-move 在场查重，
+    // draggable 重写无副作用），保证触屏重排按钮与 DnD 在任意重渲染后都在场
+    this.colSettings.hostUpdated()
   }
 }
 if (!customElements.get('oas-table')) {

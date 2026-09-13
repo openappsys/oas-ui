@@ -253,3 +253,45 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
     { timeout: 15000 },
   )
 })
+
+test('image 预览：双指捏合缩放可用（pointer 双触点驱动 scale，与单指拖拽共存）', async ({ page }) => {
+  // 固化缺口：预览缩放只有滚轮 + 按钮步进，触屏无 pinch。修复：预览舞台 pointer 双触点
+  // 捏合（touch-action:none 既有），指距比例驱动缩放、锚定双指中点；单指拖拽平移不受影响。
+  await page.goto('/components/image.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#image-preview')
+  await page.locator('#image-preview').click()
+  await page.waitForSelector('[data-oas-image-preview-portal]', { timeout: 15000 })
+  const t0 = await page.evaluate(() => {
+    const portal = document.querySelector('[data-oas-image-preview-portal]')!
+    const img = portal.shadowRoot!.querySelector<HTMLElement>('[part="preview-image"]')!
+    return img.style.transform
+  })
+  await page.evaluate(() => {
+    const portal = document.querySelector('[data-oas-image-preview-portal]')!
+    const stage = portal.shadowRoot!.querySelector<HTMLElement>('.preview-stage')!
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 300, button: 0, pointerId: 1 }))
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 300, clientY: 300, button: 0, pointerId: 2 }))
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 100, clientY: 300, pointerId: 1 }))
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 400, clientY: 300, pointerId: 2 }))
+  })
+  const t1 = await page.evaluate(() => {
+    const portal = document.querySelector('[data-oas-image-preview-portal]')!
+    return portal.shadowRoot!.querySelector<HTMLElement>('[part="preview-image"]')!.style.transform
+  })
+  expect(t0).toContain('scale(1)')
+  // 指距 200 → 300（1.5 倍），双指中点右移 → scale 1.5 且带平移跟随
+  expect(t1).toContain('scale(1.5)')
+  expect(t1).not.toBe(t0)
+  // 抬起一指后结束：剩余指针移动不再缩放
+  await page.evaluate(() => {
+    const portal = document.querySelector('[data-oas-image-preview-portal]')!
+    const stage = portal.shadowRoot!.querySelector<HTMLElement>('.preview-stage')!
+    stage.dispatchEvent(new PointerEvent('pointerup', { pointerId: 2 }))
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 600, clientY: 300, pointerId: 1 }))
+  })
+  const t2 = await page.evaluate(() => {
+    const portal = document.querySelector('[data-oas-image-preview-portal]')!
+    return portal.shadowRoot!.querySelector<HTMLElement>('[part="preview-image"]')!.style.transform
+  })
+  expect(t2).toContain('scale(1.5)')
+})

@@ -339,6 +339,8 @@
 
 说明：列拖拽重排 / 调宽分别派发 `oas-column-order` / `oas-column-resize`（宿主持久化可用）。列显隐两种方式：受控 `column-keys`（JSON 数组，可同时控制顺序）或在列配置写 `hidden: true` 默认隐藏。
 
+触屏适配：HTML5 拖拽（dragstart）在触屏上不可用，触控（coarse pointer）下每个列头自动提供上移 / 下移按钮（桌面隐藏）与相邻列交换顺序；表头过滤钮、展开钮、列宽拖拽手柄的命中区在触屏下扩到 44px；过滤面板定位自动避让视口边缘（空间不足时翻转，窄屏不溢出）。
+
 ## 多列排序
 
 <DemoBlock title="Shift 点击多列排序（multi-sort）">

@@ -350,3 +350,27 @@ test('tree expanded 数字 key JSON 数组 + 旧版逗号串回落告警', async
   })
   expect(r.labels).toEqual(['节点 1', '子节点 1-1', '节点 2'])
 })
+
+test('tree 触屏：展开钮 coarse 热区到 44px（::before 外扩），视觉尺寸保持 20px，双路注入一致', async ({ page }) => {
+  // 固化缺口：展开钮仅 20x20px，触屏点中率低。修复：coarse 下 ::before 透明热区外扩到 44px，
+  // 视觉图标不变；ROW_STYLE 经树自身 shadow 与 vlist shadow 双路注入，命中区两处一致。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tree')
+  const r = await page.evaluate(() => {
+    const tree = document.querySelector('oas-tree')!
+    const style = tree.shadowRoot!.querySelector('style')!.textContent!
+    const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')
+    const vStyle = vlist?.shadowRoot?.querySelector('style[data-oas-tree-rows]')?.textContent ?? ''
+    const toggle = tree.shadowRoot!.querySelector<HTMLElement>('.toggle')!
+    return {
+      hostCoarse: style.includes('@media (pointer: coarse)') && style.includes('inset: -12px'),
+      vlistCoarse: vStyle.includes('@media (pointer: coarse)') && vStyle.includes('inset: -12px'),
+      toggleWidth: getComputedStyle(toggle).width,
+      toggleHeight: getComputedStyle(toggle).height,
+    }
+  })
+  expect(r.hostCoarse).toBe(true)
+  expect(r.vlistCoarse).toBe(true)
+  expect(r.toggleWidth).toBe('20px')
+  expect(r.toggleHeight).toBe('20px')
+})

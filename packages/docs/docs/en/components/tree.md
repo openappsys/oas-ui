@@ -16,6 +16,8 @@ Displays hierarchical data with support for expand / collapse, selection, cascad
 
 Click the expand arrow to show / hide child nodes; click a node label to select it. The tree is fully keyboard operable (↑/↓ move focus, → expand, ← collapse, Home/End, Space toggles a checkbox, Enter activates).
 
+Touch adaptation: the expand arrow stays visually 20px, while its hit area grows to the 44px touch target under coarse pointers (via an invisible ::before overlay), keeping both tap accuracy and visual density.
+
 ## Controlled Expansion and Selection
 
 <DemoBlock title="Initial expansion and selection">

@@ -123,6 +123,19 @@ const ROW_STYLE = `
 .toggle.leaf {
   visibility: hidden;
 }
+/* 触屏（coarse）：展开钮命中区扩到 44px 触控目标（--oas-touch-target-min），
+   视觉图标保持 20px——::before 透明热区外扩，不影响行内布局与图标尺寸。
+   该块随 ROW_STYLE 双路注入（树自身 shadow + vlist shadow），命中区两处一致 */
+@media (pointer: coarse) {
+  .toggle {
+    position: relative;
+  }
+  .toggle::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+  }
+}
 .toggle.open {
   transform: rotate(90deg);
 }
