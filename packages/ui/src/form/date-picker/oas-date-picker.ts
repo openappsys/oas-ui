@@ -22,6 +22,7 @@ import {
   isoWeekYear,
 } from './picker-grid.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
+import { resolveDirection } from '../../overlay/direction.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
@@ -1361,7 +1362,7 @@ export class OASDatePicker extends OASElement {
       viewport,
       4, // 保持既有「触发器下方 4px」视觉间距
       true,
-      { collisionPadding: padding },
+      { collisionPadding: padding, direction: resolveDirection(this) },
     )
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`

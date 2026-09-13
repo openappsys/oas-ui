@@ -34,10 +34,11 @@ export function getViewport(win: Window = window): Viewport {
   return { width: win.innerWidth, height: win.innerHeight }
 }
 
-/** 浮层定位选项：skidding 交叉轴偏移（px，正方向：top/bottom 向右、left/right 向下）；collisionPadding 视口避让边距 */
+/** 浮层定位选项：skidding 交叉轴偏移（px，正方向：top/bottom 向右、left/right 向下）；collisionPadding 视口避让边距；direction 书写方向（rtl 时镜像 start/end 与 left/right） */
 export interface PositionOptions {
   skidding?: number
   collisionPadding?: number
+  direction?: 'ltr' | 'rtl'
 }
 
 const GAP = 8
@@ -73,6 +74,7 @@ function joinPlacement(main: 'top' | 'bottom' | 'left' | 'right', align: 'start'
  * @param options.skidding 交叉轴偏移（px）：top/bottom 系列沿水平轴（正右负左），
  *   left/right 系列沿垂直轴（正下负上）。不随翻转反向（对齐语义固定）。
  * @param options.collisionPadding 视口避让边距（px），默认 4
+ * @param options.direction 书写方向（默认 ltr）；rtl 时镜像对齐与主轴，start 变为右缘对齐
  */
 export function computePosition(
   anchor: DOMRect,
@@ -88,6 +90,14 @@ export function computePosition(
   const padding = options.collisionPadding ?? DEFAULT_PADDING
   let actualMain: 'top' | 'bottom' | 'left' | 'right' = main
   let actualAlign: 'start' | 'end' | 'center' = align
+
+  // RTL：书写起点在右，镜像对齐（start↔end）与主轴（left↔right），使「start 对齐」= 面板右缘贴锚点右缘
+  if (options.direction === 'rtl') {
+    if (actualMain === 'left') actualMain = 'right'
+    else if (actualMain === 'right') actualMain = 'left'
+    if (actualAlign === 'start') actualAlign = 'end'
+    else if (actualAlign === 'end') actualAlign = 'start'
+  }
 
   const anchorCenterX = anchor.left + anchor.width / 2
   const anchorCenterY = anchor.top + anchor.height / 2

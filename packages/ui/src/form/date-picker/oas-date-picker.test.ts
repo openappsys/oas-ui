@@ -950,7 +950,9 @@ describe('浮层定位（placement / fixed 锚定）', () => {
     open(el)
     const call = lastCall()
     expect(call[2]).toBe('top-end')
-    expect(call[6]).toEqual({ collisionPadding: 8 })
+    // 定位选项带书写方向（RTL 公共机制）；本环境无 dir 注入，方向随当前 locale
+    expect(call[6]).toMatchObject({ collisionPadding: 8 })
+    expect(['ltr', 'rtl']).toContain((call[6] as { direction?: string }).direction)
   })
 
   it('CSS 定位契约：dropdown 为 position: fixed（逃出祖先 overflow），不再 absolute left:0', () => {

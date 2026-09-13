@@ -6,6 +6,7 @@ import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
+import { resolveDirection } from '../../overlay/direction.js'
 import { OASElement } from '@oas-ui/core'
 
 interface Option {
@@ -761,7 +762,9 @@ export class OASCombobox extends OASElement {
     // 先撑宽再测量/定位：dropdown 为 auto 宽度，撑宽前测会按固有宽度算 left → 首次展开偏右。
     this.dropdown.style.width = `${anchorRect.width}px`
     const panelRect = this.dropdown.getBoundingClientRect()
-    const { top, left } = computePosition(anchorRect, panelRect, 'bottom-start' as Placement, getViewport())
+    const { top, left } = computePosition(anchorRect, panelRect, 'bottom-start' as Placement, getViewport(), 8, true, {
+      direction: resolveDirection(this),
+    })
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
   }

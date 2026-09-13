@@ -42,9 +42,53 @@ export function resolveLocale(el: Element): string {
   return injected && injected !== '' ? injected : getLocaleName()
 }
 
-/** 周起始：中文语言系周一起始，其余默认周日 */
-export function getWeekStart(locale: string): 0 | 1 {
-  return /^zh/i.test(locale) ? 1 : 0
+/**
+ * 周起始表（0=周日 … 6=周六）：内置语言显式给定以保证稳定——
+ * 中文/俄/德/法/西/葡周一起始，日/韩/英/阿周日起始。
+ */
+const WEEK_START: Record<string, number> = {
+  zh: 1,
+  ru: 1,
+  de: 1,
+  fr: 1,
+  es: 1,
+  pt: 1,
+  ja: 0,
+  ko: 0,
+  en: 0,
+  ar: 0,
+}
+
+/** 非内置 locale：优先问 Intl.Locale 的周信息（firstDay 1=周一 … 7=周日） */
+function intlWeekStart(locale: string): number | null {
+  const LocaleCtor = (
+    Intl as unknown as {
+      Locale?: new (
+        tag: string,
+      ) => {
+        weekInfo?: { firstDay?: number }
+        getWeekInfo?: () => { firstDay?: number }
+      }
+    }
+  ).Locale
+  if (!LocaleCtor) return null
+  try {
+    const li = new LocaleCtor(locale)
+    const info = typeof li.getWeekInfo === 'function' ? li.getWeekInfo() : li.weekInfo
+    const firstDay = info?.firstDay
+    if (typeof firstDay === 'number' && firstDay >= 1 && firstDay <= 7) return firstDay % 7
+  } catch {
+    /* 非法 tag 等：走回退 */
+  }
+  return null
+}
+
+/** 周起始：内置语言查表（zh/ru/de/fr/es/pt 周一；ja/ko/en/ar 周日），其余 locale 走 Intl，最终回落周日 */
+export function getWeekStart(locale: string): number {
+  const key = locale.toLowerCase()
+  const base = key.split('-')[0] ?? ''
+  if (base in WEEK_START) return WEEK_START[base]!
+  return intlWeekStart(locale) ?? 0
 }
 
 /** 任意周起始归一化（0=周日 … 6=周六）；非有限值回退 0，负数/溢出回绕 */

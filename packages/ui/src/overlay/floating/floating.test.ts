@@ -289,3 +289,37 @@ describe('getViewport 碰撞边界视口', () => {
     restoreVisualViewport()
   })
 })
+
+describe('computePosition RTL 镜像', () => {
+  // 锚点 left=100 width=200 → right=300；面板宽 120
+  const anchor = rect(100, 100, 200, 40)
+  const popup = rect(0, 0, 120, 50)
+  const rtl = { direction: 'rtl' as const }
+
+  it('ltr：bottom-start 面板左缘对齐锚点左缘', () => {
+    expect(computePosition(anchor, popup, 'bottom-start', viewport).left).toBe(100)
+  })
+
+  it('rtl：bottom-start 镜像为右缘对齐（start 语义翻到书写起点一侧）', () => {
+    const pos = computePosition(anchor, popup, 'bottom-start', viewport, 8, true, rtl)
+    expect(pos.left).toBe(300 - 120)
+    expect(pos.placement).toBe('bottom-end')
+  })
+
+  it('rtl：bottom-end 镜像为左缘对齐', () => {
+    expect(computePosition(anchor, popup, 'bottom-end', viewport, 8, true, rtl).left).toBe(100)
+  })
+
+  it('rtl：center 对齐不镜像', () => {
+    const ltr = computePosition(anchor, popup, 'bottom', viewport)
+    const mirrored = computePosition(anchor, popup, 'bottom', viewport, 8, true, rtl)
+    expect(mirrored.left).toBe(ltr.left)
+  })
+
+  it('rtl：主轴 left/right 镜像（right-start → 面板落在锚点左侧）', () => {
+    const anchor2 = rect(400, 100, 200, 40)
+    const pos = computePosition(anchor2, popup, 'right-start', viewport, 8, true, rtl)
+    expect(pos.left).toBe(400 - 120 - 8)
+    expect(pos.placement).toBe('left-end')
+  })
+})

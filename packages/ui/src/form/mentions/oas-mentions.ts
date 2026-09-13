@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
+import { resolveDirection } from '../../overlay/direction.js'
 
 export interface Option {
   label: string
@@ -821,6 +822,7 @@ export class OASMentions extends OASElement {
       getViewport(),
       8,
       !forced,
+      { direction: resolveDirection(this) },
     )
     this.panel.style.top = `${top}px`
     this.panel.style.left = `${left}px`
