@@ -299,7 +299,7 @@ onMounted(() => {
 | `case-sensitive` | 搜索区分大小写（默认大小写不敏感） | `boolean` | — |
 | `data` | 数据（JSON attribute 声明式通道，property 赋值单向反射，[{ key, label, disabled }]） | `TransferItem[] \| string` | `[]` |
 | `disabled` | 禁用（行点击/按钮/搜索全部失效；宿主镜像 data-disabled） | `boolean` | — |
-| `item-height` | 虚拟滚动每行固定高度（px），默认 36 | `string` | `36` |
+| `item-height` | 虚拟滚动每行固定高度（px），默认 36 | `string` | — |
 | `one-way` | 单向模式：只能左→右移动，右侧只读；左侧展示全部数据，已穿梭项禁用并显示为已选 | `boolean` | — |
 | `searchable` | 面板内搜索过滤（左右各自过滤） | `boolean` | — |
 | `simple` | 选中即移动（免点穿梭按钮，默认关） | `boolean` | — |

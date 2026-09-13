@@ -299,7 +299,7 @@ onMounted(() => {
 | `case-sensitive` | Search filtering is case-sensitive (case-insensitive by default) | `boolean` | — |
 | `data` | Data (JSON attribute channel; property assignment reflects to attribute, [{ key, label, disabled }]) | `TransferItem[] \| string` | `[]` |
 | `disabled` | Disabled (row clicks/buttons/search all inert; host mirrors data-disabled) | `boolean` | — |
-| `item-height` | Fixed row height for virtual scrolling (px), default 36 | `string` | `36` |
+| `item-height` | Fixed row height for virtual scrolling (px), default 36 | `string` | — |
 | `one-way` | One-way mode: move left to right only, right panel is read-only; left panel shows all data, already transferred items are disabled and shown as selected | `boolean` | — |
 | `searchable` | Search filtering within panels (filtered independently per panel) | `boolean` | — |
 | `simple` | Move on selection (skip the shuttle buttons, off by default) | `boolean` | — |
