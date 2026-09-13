@@ -211,7 +211,7 @@ Use `oas-date-picker` (this component) for popover selection; use `oas-calendar`
 
 ## Mobile form (bottom sheet)
 
-On touch screens (coarse pointer) or narrow viewports (<768px), the panel is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the desktop form keeps the original floating dropdown. Dual-month range panels shrink on narrow screens to avoid horizontal overflow.
+On touch screens (coarse pointer) or narrow viewports (<768px), the panel is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the desktop form keeps the original floating dropdown. Dual-month range panels shrink on narrow screens to avoid horizontal overflow; inside the sheet, day cells are lifted to a 44px touch target (`--oas-touch-target-min`) so they are easy to hit on touch screens.
 
 ## API
 
