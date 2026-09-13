@@ -729,4 +729,19 @@ describe('OASCard', () => {
     expect(css).toMatch(/\.extra\s*\{[^}]*gap:\s*var\(--oas-space-2\)/)
     el.remove()
   })
+
+  it('RTL：dir=rtl 下卡片布局无物理方向残留（间距/分隔线均为对称值或逻辑属性）', () => {
+    const el = document.createElement('oas-card')
+    el.setAttribute('dir', 'rtl')
+    document.body.appendChild(el)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 选中角标等定位走逻辑属性；无 margin/padding 物理方向值（border-top/bottom 为对称分隔线）
+    expect(css).toContain('inset-inline-end')
+    expect(css).not.toMatch(/margin-left:/)
+    expect(css).not.toMatch(/margin-right:/)
+    expect(css).not.toMatch(/padding-left:/)
+    expect(css).not.toMatch(/padding-right:/)
+    expect(el.shadowRoot!.querySelector('[part="card"]')).not.toBeNull()
+    el.remove()
+  })
 })

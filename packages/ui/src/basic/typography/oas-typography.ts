@@ -141,13 +141,13 @@ const BASE_STYLE = `
   display: inline-flex;
   align-items: baseline;
   gap: var(--oas-space-1);
-  margin-left: var(--oas-space-1);
+  margin-inline-start: var(--oas-space-1);
   order: 2;
 }
 .actions.start {
   order: 0;
-  margin-left: 0;
-  margin-right: var(--oas-space-1);
+  margin-inline-start: 0;
+  margin-inline-end: var(--oas-space-1);
 }
 .actions[hidden] {
   display: none;
@@ -156,7 +156,8 @@ const BASE_STYLE = `
   appearance: none;
   border: none;
   background: transparent;
-  padding: 0 0 0 var(--oas-space-1);
+  padding: 0;
+  padding-inline-start: var(--oas-space-1);
   cursor: pointer;
   color: var(--oas-color-primary);
   font-size: 1em;

@@ -237,7 +237,7 @@ const STYLE = `
   background: var(--oas-color-bg);
 }
 .lang {
-  margin-right: auto;
+  margin-inline-end: auto;
   /* 次级文本按比例跟随 host（原 xs/sm ≈ 12/13） */
   font-size: 0.923em;
   color: var(--oas-color-text-secondary);
@@ -280,14 +280,18 @@ pre.code {
 .line-number {
   display: inline-block;
   width: 2.5em;
-  margin-right: var(--oas-space-3);
-  text-align: right;
+  margin-inline-end: var(--oas-space-3);
+  text-align: end;
   color: var(--oas-color-text-disabled);
   user-select: none;
   font-variant-numeric: tabular-nums;
 }
 .line-code {
   white-space: pre;
+  /* 代码内容恒 LTR：代码不做方向镜像（通行做法），RTL 宿主下仅行号区换边，
+     代码文本保持从左到右（isolate 隔离宿主 direction 继承） */
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 /* word-wrap：长代码换行不横向滚动 */
 .block.word-wrap .line-code {
@@ -300,6 +304,9 @@ pre.code {
    inline-block 保持正常文本流，token 高亮的 span 与相邻文本间的空格完整保留 */
 .inline {
   display: inline-block;
+  /* 代码内容恒 LTR（同块级代码；inline-block 自身构成 bidi isolate，锁定内部方向即可） */
+  direction: ltr;
+  unicode-bidi: isolate;
   padding: 0.1em var(--oas-space-1);
   background: var(--oas-color-bg-hover);
   border-radius: var(--oas-radius-sm);

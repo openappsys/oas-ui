@@ -1580,4 +1580,16 @@ describe('OASBadge size 多尺寸档', () => {
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     expect(cssRule(style, '.badge.small')).toContain('height: 13px')
   })
+
+  it('RTL：dir=rtl 下 corner 角定位保持显式物理 API（四角语义不随书写方向翻转）', () => {
+    const el = mount({ value: '5', dir: 'rtl' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    // corner 是显式物理四角 API：RTL 下默认仍右上角（top/right 物理定位保留）
+    expect(cssRule(style, '.badge')).toContain('top: 0')
+    expect(cssRule(style, '.badge')).toContain('right: 0')
+    expect(cssRule(style, '.badge.corner-top-left')).toContain('left: 0')
+    // 其余 ribbon 定位已逻辑化（inset-inline-*）
+    expect(style).toContain('inset-inline-end')
+    expect(badge(el)).not.toBeNull()
+  })
 })

@@ -289,4 +289,14 @@ describe('OASSpace', () => {
     expect(styleAttr).toContain('column-gap: var(--oas-space-column-gap, var(--oas-space-2))')
     expect(styleAttr).toContain('row-gap: var(--oas-space-row-gap, var(--oas-space-2))')
   })
+
+  it('RTL：dir=rtl 下间距走逻辑 gap（column-gap/row-gap 随 flex 主轴自动换向），无物理 margin', () => {
+    const el = mount({ direction: 'row', dir: 'rtl' })
+    // gap 经宿主内联 style 表达（column-gap/row-gap 通道），flex 行内轴 RTL 自动反转，组件无需级镜像
+    expect(el.style.columnGap).not.toBe('')
+    expect(el.style.rowGap).not.toBe('')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).not.toMatch(/margin-left|margin-right|padding-left|padding-right/)
+    expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
+  })
 })

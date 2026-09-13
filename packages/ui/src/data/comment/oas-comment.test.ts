@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASComment } from './index.js'
 
-function mount(inner = ''): OASComment {
+function mount(inner = '', attrs: Record<string, string> = {}): OASComment {
   const el = new OASComment()
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
   el.innerHTML = inner
   document.body.appendChild(el)
   return el
@@ -95,6 +96,18 @@ describe('OASComment', () => {
     expect(css).toContain(':host([align="right"])')
     expect(css).toContain('margin-inline-start: auto')
     expect(css).toContain('justify-content: flex-end')
+  })
+
+  it('RTL：dir=rtl 下头像/缩进/嵌套线走逻辑属性，渲染无物理翻转残留', () => {
+    const el = mount('<span slot="content">内容</span>', { dir: 'rtl' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 子评论缩进、引导线、引用边全部逻辑属性（RTL 自动镜像）
+    expect(css).toMatch(/\.children\s*\{[^}]*margin-inline-start:\s*var\(--oas-space-6\)/)
+    expect(css).toMatch(/\.children\s*\{[^}]*border-inline-start:\s*1px solid/)
+    expect(css).toMatch(/\.reply,\s*\n?\.quote\s*\{[^}]*border-inline-start:\s*2px solid/)
+    expect(css).not.toMatch(/margin-left:/)
+    expect(css).not.toMatch(/padding-left:/)
+    expect(el.shadowRoot!.querySelector('[part="content"]')).not.toBeNull()
   })
 
   it('quote/reply 插槽：结构存在、空隐藏、有内容显示', async () => {

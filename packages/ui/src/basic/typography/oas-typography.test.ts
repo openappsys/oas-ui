@@ -294,6 +294,17 @@ describe('OAS typography', () => {
         el.remove()
       }
     })
+    it('RTL：dir=rtl 下 actions 间距与复制按钮留白走逻辑属性', () => {
+      const el = mount(OASText, { copyable: '', dir: 'rtl' }, '文本')
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      // actions 后置间距 margin-inline-start、前置变体 margin-inline-end、复制按钮 padding-inline-start
+      expect(css).toMatch(/\.actions\s*\{[^}]*margin-inline-start:\s*var\(--oas-space-1\)/)
+      expect(css).toMatch(/\.actions\.start\s*\{[^}]*margin-inline-end:\s*var\(--oas-space-1\)/)
+      expect(css).toMatch(/\.copy-btn\s*\{[^}]*padding-inline-start:\s*var\(--oas-space-1\)/)
+      expect(css).not.toMatch(/\.actions\s*\{[^}]*margin-left/)
+      expect(css).not.toMatch(/\.copy-btn\s*\{[^}]*padding:\s*0 0 0/)
+      expect(el.shadowRoot!.querySelector('.copy-btn')).not.toBeNull()
+    })
     it('align 非法值忽略（回落无内联对齐）', () => {
       const el = mount(OASText, { align: 'left' }, '文本')
       expect((el.shadowRoot!.querySelector('.text') as HTMLElement).style.textAlign).toBe('')
