@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 import type { OASButton } from '../button/oas-button.js'
 
 const STYLE = `
@@ -14,28 +15,35 @@ const STYLE = `
   flex-direction: column;
   align-items: stretch;
 }
-/* 相邻按钮/嵌套组贴合，边框合并 */
+/* 相邻按钮/嵌套组贴合，边框合并（margin 走逻辑属性：RTL 下 flex 行内轴自动反转，贴合边随向） */
 ::slotted(oas-button),
 ::slotted(oas-button-group) {
   position: relative;
 }
 ::slotted(oas-button:not(:first-child)),
 ::slotted(oas-button-group:not(:first-child)) {
-  margin-left: -1px;
+  margin-inline-start: -1px;
 }
 :host([vertical]) ::slotted(oas-button:not(:first-child)),
 :host([vertical]) ::slotted(oas-button-group:not(:first-child)) {
-  margin-left: 0;
-  margin-top: -1px;
+  margin-inline-start: 0;
+  margin-block-start: -1px;
 }
 /* 有色实心组：分段缝常驻可见（白 35% 细线），静止也能读出「多选一」结构。
    缝画在后项宿主外侧 1px（margin -1px 重叠区，后项压住前项边框）；
-   hover/选中项 z-index 提升后其边框自动盖过缝线，状态优先不打架 */
+   hover/选中项 z-index 提升后其边框自动盖过缝线，状态优先不打架。
+   box-shadow 偏移是物理向量：RTL 下行内轴反向（后项在视觉左），缝镜像到另一侧 */
 :host([type='primary']:not([vertical])) ::slotted(oas-button:not(:first-child)),
 :host([type='success']:not([vertical])) ::slotted(oas-button:not(:first-child)),
 :host([type='warning']:not([vertical])) ::slotted(oas-button:not(:first-child)),
 :host([type='danger']:not([vertical])) ::slotted(oas-button:not(:first-child)) {
   box-shadow: -1px 0 0 0 rgb(255 255 255 / 0.35);
+}
+:host([data-rtl][type='primary']:not([vertical])) ::slotted(oas-button:not(:first-child)),
+:host([data-rtl][type='success']:not([vertical])) ::slotted(oas-button:not(:first-child)),
+:host([data-rtl][type='warning']:not([vertical])) ::slotted(oas-button:not(:first-child)),
+:host([data-rtl][type='danger']:not([vertical])) ::slotted(oas-button:not(:first-child)) {
+  box-shadow: 1px 0 0 0 rgb(255 255 255 / 0.35);
 }
 :host([vertical][type='primary']) ::slotted(oas-button:not(:first-child)),
 :host([vertical][type='success']) ::slotted(oas-button:not(:first-child)),
@@ -84,6 +92,15 @@ const STYLE = `
   --oas-button-group-start-radius: var(--oas-radius-md);
   --oas-button-group-end-radius: var(--oas-radius-md);
 }
+/* RTL：flex 行内轴反转（首项在视觉右），圆角四值首尾互换（border-radius 简写为物理值） */
+:host([data-rtl]) ::slotted(oas-button:first-child),
+:host([data-rtl]) ::slotted(oas-button-group:first-child) {
+  --oas-button-group-radius: 0 var(--oas-radius-md) var(--oas-radius-md) 0;
+}
+:host([data-rtl]) ::slotted(oas-button:last-child),
+:host([data-rtl]) ::slotted(oas-button-group:last-child) {
+  --oas-button-group-radius: var(--oas-radius-md) 0 0 var(--oas-radius-md);
+}
 /* pill 胶囊：首/尾圆角改用 radius full（999px），组整体呈胶囊（横向：首左圆/尾右圆） */
 :host([pill]) ::slotted(oas-button:first-child),
 :host([pill]) ::slotted(oas-button-group:first-child) {
@@ -96,6 +113,15 @@ const STYLE = `
   --oas-button-group-radius: 0 var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0;
   --oas-button-group-start-radius: 0;
   --oas-button-group-end-radius: var(--oas-radius-full, 999px);
+}
+/* pill RTL：胶囊首尾圆角随行内轴互换 */
+:host([data-rtl][pill]) ::slotted(oas-button:first-child),
+:host([data-rtl][pill]) ::slotted(oas-button-group:first-child) {
+  --oas-button-group-radius: 0 var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0;
+}
+:host([data-rtl][pill]) ::slotted(oas-button:last-child),
+:host([data-rtl][pill]) ::slotted(oas-button-group:last-child) {
+  --oas-button-group-radius: var(--oas-radius-full, 999px) 0 0 var(--oas-radius-full, 999px);
 }
 :host([pill]) ::slotted(oas-button:not(:first-child):not(:last-child)),
 :host([pill]) ::slotted(oas-button-group:not(:first-child):not(:last-child)) {
@@ -218,6 +244,8 @@ export class OASButtonGroup extends OASElement {
   }
 
   protected override update(): void {
+    // RTL 书写方向标记（缝线 box-shadow 物理向量镜像用；见 shared/direction 消费约定）
+    this.toggleAttribute('data-rtl', isRtl(this))
     const type = this.getAttr('type', '')
     const size = this.getAttr('size', '')
     const variant = this.getAttr('variant', '')

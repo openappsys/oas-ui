@@ -123,6 +123,17 @@ describe('OASSplitter', () => {
     document.dispatchEvent(pointer('pointerup', 600))
   })
 
+  it('RTL：方向键语义镜像（ArrowLeft → 前面板放大，与视觉行内轴一致）', () => {
+    const el = mount()
+    el.setAttribute('dir', 'rtl')
+    el.setAttribute('percent', '50')
+    const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
+    splitter.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    expect(Number(el.getAttribute('percent'))).toBe(51)
+    splitter.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(Number(el.getAttribute('percent'))).toBe(50)
+  })
+
   // ---------- collapsible ----------
 
   it('collapsible：折叠按钮渲染 + 点击收起（左面板 0%）+ collapsed 回写 + oas-collapse + 再点展开', () => {

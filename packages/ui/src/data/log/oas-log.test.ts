@@ -365,4 +365,18 @@ describe('OASLog', () => {
     el.removeAttribute('keyword')
     expect(el.lines).toEqual(['ERROR a', 'INFO b'])
   })
+
+  it('RTL：dir=rtl 下行号列走逻辑属性（行内轴末端对齐），渲染正常', () => {
+    const el = new OASLog()
+    el.setAttribute('dir', 'rtl')
+    el.lines = ['ERROR a']
+    document.body.appendChild(el)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\.gutter\s*\{[^}]*padding-inline-end:\s*var\(--oas-space-3\)/)
+    expect(css).toMatch(/\.gutter\s*\{[^}]*text-align:\s*end/)
+    expect(css).not.toMatch(/padding-right:/)
+    expect(css).not.toMatch(/padding-left:/)
+    expect(el.shadowRoot!.querySelectorAll('.row').length).toBe(1)
+    el.remove()
+  })
 })

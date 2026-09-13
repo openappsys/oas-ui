@@ -149,7 +149,7 @@ describe('OASModal', () => {
 
   // 协作缺陷回归：dialog 用 transform 居中会让后代 position:fixed 浮层（select 等）以它为
   // 包含块，computePosition 按视口算的 left/top 被错位解释（实测：modal 内下拉升到屏幕外）。
-  // 居中必须走 left/right 0 + margin auto（默认）/ inset 0 + margin auto（centered），不用 transform
+  // 居中必须走行内轴两端归零 + margin auto（inset-inline: 0 + margin-inline: auto），不用 transform
   it('dialog 居中不用 transform（margin auto 方案），fixed 后代浮层包含块不被劫持', async () => {
     const el = mount({ visible: '' })
     await Promise.resolve()
@@ -157,9 +157,9 @@ describe('OASModal', () => {
     // 断言针对真实声明：先剔除注释（注释里解释性文本可能含 "transform:" 字样，非声明）
     const clean = css.replace(/\/\*[\s\S]*?\*\//g, '')
     const base = /\.dialog\s*\{[^}]*\}/.exec(clean)?.[0] ?? ''
-    expect(base).toMatch(/left:\s*0/)
-    expect(base).toMatch(/right:\s*0/)
-    expect(base).toMatch(/margin:\s*0 auto/)
+    // 逻辑属性居中：行内轴两端归零 + margin-inline auto（RTL 语义等价，无物理 left/right）
+    expect(base).toMatch(/inset-inline:\s*0/)
+    expect(base).toMatch(/margin-inline:\s*auto/)
     expect(base).not.toMatch(/transform\s*:/) // 无 transform 声明
     const centered = /\.dialog\[data-centered\]\s*\{[^}]*\}/.exec(clean)?.[0] ?? ''
     expect(centered).toMatch(/inset:\s*0/)

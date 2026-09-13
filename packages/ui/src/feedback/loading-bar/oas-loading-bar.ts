@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 /**
  * oas-loading-bar —— 页面/局部容器顶部的加载进度条（命令式 API 驱动）。
@@ -58,10 +59,10 @@ const STYLE = `
 }
 /* 反向推进：从行内末端生长；RTL 下行内起点在右，默认即从右生长 */
 :host([reverse]) .track,
-:host(:dir(rtl)) .track {
+:host([data-rtl]) .track {
   transform-origin: 100% 50%;
 }
-:host([reverse]:dir(rtl)) .track {
+:host([reverse][data-rtl]) .track {
   transform-origin: 0 50%;
 }
 .track[data-status='error'] {
@@ -124,6 +125,8 @@ export class OASLoadingBar extends OASElement {
   }
 
   protected override update(): void {
+    // RTL 书写方向标记（进度生长方向 transform-origin 镜像用；见 shared/direction 消费约定）
+    this.toggleAttribute('data-rtl', isRtl(this))
     // speed 属性 → 节拍（夹取防跑飞）
     const speed = Number(this.getAttr('speed', '200')) || 200
     this.tickMs = Math.min(SPEED_MAX, Math.max(SPEED_MIN, speed))

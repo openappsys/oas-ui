@@ -1,7 +1,8 @@
 import { OASElement } from '@oas-ui/core'
-// 图标查表走 oas-icon 同一通道（customIcons 注册优先、内置 iconRegistry 兜底）：
-// 用户 `registerIcon()` 注册的自定义图标 sidebar 可见；oas-icon.ts 不依赖 sidebar，无循环引用
+// 图标渲染与 oas-icon 同一通道（customIcons 注册表读取，不经 iconRegistry 直查），
+// 用户 `registerIcon()` 注册的自定义图标 sidebar 可见（oas-icon.ts 契约，sidebar 不越界）
 import { lookupIcon } from '../../basic/icon/oas-icon.js'
+import { isRtl } from '../../shared/direction.js'
 
 /** 菜单项操作按钮：悬停项时出现，点击派发 `oas-action` */
 export interface SidebarItemAction {
@@ -93,12 +94,15 @@ aside {
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040));
   visibility: hidden;
   transform: translateX(-100%);
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
   transition:
     transform var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
     visibility 0s var(--oas-transition-base, 180ms);
 }
-:host(:dir(rtl)) .panel {
+/* RTL：抽屉贴视觉右缘（inset-inline-start 逻辑镜像），关闭态藏到右外（transform 物理向量手动镜像） */
+:host([data-rtl]) .panel {
   transform: translateX(100%);
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
 }
 :host([data-mobile]) .panel.drawer-open {
   visibility: visible;
@@ -444,6 +448,9 @@ aside {
   z-index: calc(var(--oas-z-dropdown, 1000) + 1);
   box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
 }
+:host([data-rtl]:not([data-mobile])[collapsed][expand-on-hover]:hover) {
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
+}
 :host(:not([data-mobile])[collapsed][expand-on-hover]:hover) .item .label,
 :host(:not([data-mobile])[collapsed][expand-on-hover]:hover) .group-title {
   display: inline;
@@ -458,7 +465,7 @@ aside {
 :host(:not([data-mobile])[collapsed][expand-on-hover]:hover) .item[hidden] {
   display: flex;
 }
-/* side=right：移动抽屉从右侧滑入、触发按钮居右 */
+/* side=right：移动抽屉从行内末端滑入、触发按钮在行内末端（逻辑映射，RTL 自动换边） */
 :host([data-mobile][side='right']) .panel {
   inset-inline-start: auto;
   inset-inline-end: 0;
@@ -472,11 +479,12 @@ aside {
   inset-inline-start: auto;
   inset-inline-end: var(--oas-space-4, 16px);
 }
-:host(:dir(rtl)) [data-mobile][side='right'] .panel,
-:host([data-mobile][side='right']:dir(rtl)) .panel {
+/* side=right + RTL：抽屉贴视觉左缘，关闭态藏到左外 */
+:host([data-mobile][side='right'][data-rtl]) .panel {
   transform: translateX(-100%);
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
 }
-:host([data-mobile][side='right']:dir(rtl)) .panel.drawer-open {
+:host([data-mobile][side='right'][data-rtl]) .panel.drawer-open {
   transform: translateX(0);
 }
 /* variant=floating：悬浮形态（外边距 + 圆角 + 阴影） */
@@ -690,8 +698,8 @@ export class OASSidebar extends OASElement {
 
   private onRailDrag = (e: PointerEvent): void => {
     if (!this.railDragging) return
-    // side=right 的侧栏在屏幕右侧，向左拖才变宽（delta 取反）
-    const sign = this.getAttr('side') === 'right' ? -1 : 1
+    // side=right（行内末端）的侧栏向行内起点拖才变宽（delta 取反）；RTL 下 rail 视觉换边，再取反
+    const sign = (this.getAttr('side') === 'right' ? -1 : 1) * (isRtl(this) ? -1 : 1)
     const next = this.railStartWidth + sign * (e.clientX - this.railStartX)
     this.setWidthPx(next)
   }
@@ -710,11 +718,11 @@ export class OASSidebar extends OASElement {
     return Number.isFinite(fromAttr) && fromAttr > 0 ? fromAttr : this.getBoundingClientRect().width
   }
 
-  /** 方向键微调宽度（±8px；Home/End 跳最小/最大） */
+  /** 方向键微调宽度（±8px；Home/End 跳最小/最大）；RTL 下 rail 视觉换边，方向语义随之镜像 */
   private onRailKey(e: Event): void {
     const ke = e as KeyboardEvent
     const step = 8
-    const sign = this.getAttr('side') === 'right' ? -1 : 1
+    const sign = (this.getAttr('side') === 'right' ? -1 : 1) * (isRtl(this) ? -1 : 1)
     const cur = this.currentWidthPx()
     if (ke.key === 'ArrowRight') {
       ke.preventDefault()
@@ -784,6 +792,8 @@ export class OASSidebar extends OASElement {
   }
 
   protected override update(): void {
+    // RTL 书写方向标记（移动抽屉滑入方向/阴影投影/rail 拖拽语义镜像用；见 shared/direction 消费约定）
+    this.toggleAttribute('data-rtl', isRtl(this))
     // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
     this.syncMq()
@@ -817,7 +827,9 @@ export class OASSidebar extends OASElement {
       const collapsed = this.hasAttr('collapsed')
       toggle.setAttribute('aria-expanded', String(!collapsed))
       toggle.setAttribute('aria-label', collapsed ? this.t('sidebar.expand') : this.t('sidebar.toggle'))
-      toggle.textContent = collapsed ? '»' : '«'
+      // 箭头语义 = 折叠图标条的展开方向（视觉）：RTL 下视觉换边，字符随之镜像
+      const rtl = isRtl(this)
+      toggle.textContent = collapsed ? (rtl ? '«' : '»') : rtl ? '»' : '«'
     }
     if (trigger) trigger.setAttribute('aria-label', this.t('sidebar.openMenu'))
     if (close) close.setAttribute('aria-label', this.t('sidebar.closeMenu'))
