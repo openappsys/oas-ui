@@ -865,3 +865,40 @@ describe('OASTag', () => {
     })
   })
 })
+
+describe('OASTag 触控目标（coarse pointer 抬升）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('coarse 媒体查询进样式表：clickable/checkable 整签与关闭按钮命中区走 --oas-touch-target-min', () => {
+    const el = mount({ clickable: '', checkable: '', closable: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    // 关闭按钮扩展命中区（::before 伪元素，视觉 × 图标不变大）
+    expect(css).toMatch(/button::before/)
+    // clickable/checkable 整签最小高度抬升（含 multiline 组合，防多行档 min-height 压回小值）
+    expect(css).toMatch(/\.tag\.multiline\.clickable/)
+    expect(css).toMatch(/\.tag\.multiline\.checkable/)
+  })
+
+  it('触控规则只在 coarse 媒体查询内：fine pointer（PC）样式表零抬升', () => {
+    const el = mount({ clickable: '', checkable: '', closable: '' })
+    // 剥离注释后再扫（注释里也提到 token，不算样式规则）
+    const css = el.shadowRoot!.querySelector('style')!.textContent!.replace(/\/\*[\s\S]*?\*\//g, '')
+    const mediaIdx = css.indexOf('@media (pointer: coarse)')
+    expect(mediaIdx).toBeGreaterThan(-1)
+    // coarse 块置于样式表末尾：所有触控 token 出现位置都在媒体查询之后（PC 不会命中）
+    let idx = -1
+    while ((idx = css.indexOf('--oas-touch-target-min', idx + 1)) !== -1) {
+      expect(idx).toBeGreaterThan(mediaIdx)
+    }
+    // 基础 .tag 块仍由固定 height 控制（PC 24px 高度不变）
+    expect(css).toMatch(/\.tag\s*\{[^}]*height: var\(--oas-control-height-sm\)/)
+  })
+})

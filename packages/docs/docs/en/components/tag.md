@@ -435,6 +435,15 @@ A set of `closable` tags supports native HTML5 drag & drop reordering (`dragstar
   </oas-tag-group>
 </DemoBlock>
 
+## Touch targets on mobile
+
+On touch devices (`pointer: coarse`) interactive hit areas grow automatically; desktop (fine pointer) is completely unaffected:
+
+- The closable × hit area expands to 44px (`--oas-touch-target-min`) while the visible × icon stays the same size;
+- `clickable` / `checkable` tags get a 44px minimum height (including `multiline`); non-interactive tags keep their original size.
+
+Try it with DevTools device emulation (e.g. iPhone SE 375×667); desktop browsers see no change.
+
 ## API
 
 ### oas-tag
