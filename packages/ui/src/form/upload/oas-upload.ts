@@ -296,7 +296,9 @@ const STYLE = `
   justify-content: center;
   border: none;
   border-radius: var(--oas-radius-sm);
-  background: var(--oas-color-overlay);
+  /* 底色/字色成对取 text-primary+bg：light 深底白字、dark 浅底深字。
+     不用 color-overlay 底（双主题均为深色半透明）——dark 下配 bg 字色 × 与底融为一体不可读 */
+  background: var(--oas-color-text-primary);
   color: var(--oas-color-bg);
   cursor: pointer;
   opacity: 0;

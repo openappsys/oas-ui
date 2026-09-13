@@ -226,10 +226,12 @@ const STYLE = `
   cursor: not-allowed;
 }
 /* ---- 触屏（pointer: coarse）：日格/月格/年格与头部导航触控目标 ≥44px ---- */
+/* 日格只抬高度不撑宽度：7 列 × 44px min-width 会撑破窄容器（375 卡片内容宽 ~250px），
+   周日列溢出被裁不可见不可点。格宽随容器 1fr 均分，触控热区由高度 + 整格可点保障；
+   月格/年格不受 7 列约束，宽高抬升保留。 */
 @media (pointer: coarse) {
   [part='grid'] .day {
     min-height: var(--oas-touch-target-min, 44px);
-    min-width: var(--oas-touch-target-min, 44px);
   }
   [part='grid'] .month-cell,
   [part='grid'] .year-cell {

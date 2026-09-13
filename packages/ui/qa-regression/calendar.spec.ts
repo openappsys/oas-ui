@@ -102,8 +102,44 @@ test('calendar 触屏（coarse）：日格/月格/头部按钮触控目标 ≥44
   expect(r.coarse, 'touch context 应命中 pointer: coarse').toBe(true)
   // 修复前日格 32px 高、7 列格宽 <44px，触屏不可点
   expect(r.dayMinH).toBe('44px')
-  expect(r.dayMinW).toBe('44px')
+  // 缺陷修复：日格只抬高度不撑宽度（7 列 × 44px min-width 撑破窄容器，周日列被裁）
+  expect(r.dayMinW, '未设 min-width（Chrome 计算值为 auto/0px）').not.toBe('44px')
   expect(r.headerMinW).toBe('44px')
   expect(r.headerMinH).toBe('44px')
   await ctx.close()
+})
+
+// —— 移动端缺陷修复回归：coarse 日格 min-width:44px 撑破 7 列 → 周日列溢出被裁 ——
+// 375/320 窄视口下首行 7 列必须完整可见可点（命中检测落在日格上）。
+test('calendar 触屏窄视口（375/320）：7 列日格完整可见可点（周日列不溢出被裁）', async ({ browser }) => {
+  for (const width of [375, 320]) {
+    const ctx = await browser.newContext({ hasTouch: true, viewport: { width, height: 667 } })
+    const p = await ctx.newPage()
+    await p.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+    await up(p, 'oas-calendar#calendar-cell-render')
+    const r = await p.evaluate(() => {
+      const el = document.querySelector('oas-calendar#calendar-cell-render')!
+      el.scrollIntoView({ block: 'center' })
+      const firstWeek = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.week .day')].slice(0, 7)
+      const host = el.getBoundingClientRect()
+      const last = firstWeek[6]!.getBoundingClientRect()
+      const pt = { x: last.left + last.width / 2, y: last.top + last.height / 2 }
+      // 命中检测：穿透 shadow DOM 只会拿到宿主，命中宿主或其内部日格均算可点
+      const hit = document.elementFromPoint(pt.x, pt.y)
+      return {
+        vw: document.documentElement.clientWidth,
+        hostW: Math.round(host.width),
+        cols: new Set(firstWeek.map((d) => Math.round(d.getBoundingClientRect().left))).size,
+        lastRight: last.right,
+        hostRight: host.right,
+        hitOk: hit === el || hit === firstWeek[6] || firstWeek[6]!.contains(hit),
+        scrollW: document.documentElement.scrollWidth,
+      }
+    })
+    expect(r.hostW, `${width} 视口日历宿主不应宽于视口`).toBeLessThanOrEqual(r.vw)
+    expect(r.cols, `${width} 视口首行应 7 列完整渲染`).toBe(7)
+    expect(r.lastRight, `${width} 视口周日列右缘不超宿主右缘（不溢出被裁）`).toBeLessThanOrEqual(r.hostRight + 1)
+    expect(r.hitOk, `${width} 视口周日列命中检测可点`).toBe(true)
+    await ctx.close()
+  }
 })

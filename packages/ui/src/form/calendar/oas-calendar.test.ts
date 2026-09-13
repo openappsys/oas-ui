@@ -465,6 +465,21 @@ describe('OASCalendar', () => {
     expect(css).toContain("[part='grid'] .year-cell")
     expect(css).toContain("[part='header'] button")
   })
+
+  it('触屏（pointer: coarse）：日格只抬高度不撑宽度（7 列 1fr 均分窄容器，周日列不溢出被裁）', () => {
+    const el = mount({ value: '2026-08-09' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // coarse 媒体块内日格规则：保留 min-height，禁止 min-width——
+    // 7 列 × 44px min-width 会撑破窄容器（375 卡片内容宽 ~250px），周日列溢出不可见不可点
+    const coarseCss = css.slice(css.indexOf('@media (pointer: coarse)'))
+    const dayRule = coarseCss.match(/\[part='grid'\] \.day \{([^}]*)\}/)?.[1] ?? ''
+    expect(dayRule).toContain('min-height')
+    expect(dayRule).not.toContain('min-width')
+    // 基线不变：日网格 7 列 1fr 均分，日格宽随容器（width: 100%）
+    expect(css).toContain('grid-template-columns: repeat(7, 1fr)')
+    const baseDayRule = css.match(/^\[part='grid'\] \.day \{([^}]*)\}/m)?.[1] ?? ''
+    expect(baseDayRule).toContain('width: 100%')
+  })
 })
 
 function toISO(d: Date): string {

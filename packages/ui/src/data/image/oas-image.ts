@@ -134,6 +134,8 @@ img {
   justify-content: center;
   text-decoration: none;
   box-sizing: border-box;
+  /* 标签禁换行：窄屏挤压时逐字竖排（「放/大」分行）比横向溢出更糟 */
+  white-space: nowrap;
 }
 .tool:hover {
   background: var(--oas-color-bg-hover);
@@ -216,6 +218,18 @@ img {
 .preview-toolbar.custom :is(button, a):focus-visible {
   outline: none;
   box-shadow: var(--oas-focus-ring);
+}
+/* ---- 触屏（pointer: coarse）：预览工具栏窄屏收纳 ---- */
+/* 7 个工具钮一排约 330px，窄屏（375/320）一排放不下：钮体不缩不折（nowrap 防逐字竖排），
+   工具栏限宽横向滚动收纳；缩放等命令逻辑不动，仅展示形态变化 */
+@media (pointer: coarse) {
+  .preview-toolbar {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .preview-toolbar .tool {
+    flex: none;
+  }
 }
 `
 
