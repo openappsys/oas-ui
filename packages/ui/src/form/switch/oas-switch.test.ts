@@ -423,3 +423,22 @@ describe('OASSwitch', () => {
     expect(loading.hasAttribute('checked')).toBe(false)
   })
 })
+
+describe('OASSwitch RTL 逻辑方向化', () => {
+  it('dir=rtl 时宿主镜像 data-rtl，默认 LTR 不带该标记', () => {
+    const ltr = mount()
+    expect(ltr.hasAttribute('data-rtl')).toBe(false)
+    const rtl = mount({ dir: 'rtl' })
+    expect(rtl.hasAttribute('data-rtl')).toBe(true)
+  })
+
+  it('CSS 含滑块锚定侧反向覆盖（data-rtl 下未开启贴视觉终点、开启贴视觉起点），label/spinner 走逻辑属性', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(":host([data-rtl]) button:not([aria-checked='true']) .thumb")
+    expect(css).toContain(":host([data-rtl]) button[aria-checked='true'] .thumb")
+    // 轨道内文案让位与 spinner 对侧定位逻辑化（物理 padding-left/right、left/right 定位清零）
+    expect(css).not.toMatch(/padding-(left|right)/)
+    expect(css).not.toMatch(/\.spinner \{[^}]*[^-a-z](left|right):/)
+  })
+})

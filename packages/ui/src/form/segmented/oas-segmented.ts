@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { isRtl } from '../../shared/direction.js'
 
 export interface SegmentedOption {
   label: string
@@ -425,8 +426,9 @@ export class OASSegmented extends OASElement {
       if (e.key === 'ArrowDown') dir = 1
       else if (e.key === 'ArrowUp') dir = -1
     } else {
-      if (e.key === 'ArrowRight') dir = 1
-      else if (e.key === 'ArrowLeft') dir = -1
+      // RTL：视觉序镜像——ArrowLeft 视觉向前（下一项）、ArrowRight 视觉向后（上一项，对齐原生 RTL radio 行为）
+      if (e.key === 'ArrowRight') dir = isRtl(this) ? -1 : 1
+      else if (e.key === 'ArrowLeft') dir = isRtl(this) ? 1 : -1
     }
     if (e.key === 'Home') jump = 'first'
     else if (e.key === 'End') jump = 'last'
