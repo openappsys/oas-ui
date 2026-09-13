@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { resolveDirection } from '../../shared/direction.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
@@ -958,7 +959,15 @@ export class OASCascader extends OASElement {
     if (!this.dropdown || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const panelRect = this.dropdown.getBoundingClientRect()
-    const { top, left } = computePosition(anchorRect, panelRect, 'bottom' as Placement, getViewport())
+    const { top, left } = computePosition(
+      anchorRect,
+      panelRect,
+      'bottom' as Placement,
+      getViewport(),
+      undefined,
+      undefined,
+      { direction: resolveDirection(this) },
+    )
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
     this.dropdown.style.minWidth = `${anchorRect.width}px`
