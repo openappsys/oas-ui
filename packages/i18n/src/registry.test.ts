@@ -1,7 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { registerLocale, setLocale, getLocale, getLocaleName, t, onLocaleChange } from './registry.js'
+import {
+  registerLocale,
+  setLocale,
+  getLocale,
+  getLocaleName,
+  getDirection,
+  loadLocale,
+  t,
+  onLocaleChange,
+} from './registry.js'
 import { zhCN } from './locales/zh-CN.js'
 import { en } from './locales/en.js'
+import arLocale from './ar.js'
 
 // setLocale 接受完整 Locale 对象（name + messages），或已注册的名字
 const enLocale = { name: 'en', messages: en }
@@ -68,5 +78,25 @@ describe('locale registry', () => {
     off()
     setLocale(enLocale)
     expect(names).toEqual(['en', 'zh-CN'])
+  })
+
+  it('getDirection：默认 ltr；RTL 语言包（ar）标注 rtl', () => {
+    expect(getDirection()).toBe('ltr')
+    registerLocale(arLocale)
+    expect(getDirection('ar')).toBe('rtl')
+    setLocale('ar')
+    expect(getDirection()).toBe('rtl')
+  })
+
+  it('loadLocale：按需动态加载内置语言包并注册；未知名字报错', async () => {
+    const ja = await loadLocale('ja')
+    expect(ja.name).toBe('ja')
+    expect(typeof ja.messages['modal.ok']).toBe('string')
+    expect(ja.messages['modal.ok']!.length).toBeGreaterThan(0)
+    setLocale('ja')
+    expect(t('modal.ok')).toBe(ja.messages['modal.ok'])
+    // 已注册后再取直接返回（不重复加载）
+    expect(await loadLocale('ja')).toBe(ja)
+    await expect(loadLocale('xx' as never)).rejects.toThrow()
   })
 })

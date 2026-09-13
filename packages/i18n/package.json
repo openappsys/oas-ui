@@ -35,6 +35,38 @@
     "./en": {
       "types": "./dist/en.d.ts",
       "default": "./dist/en.js"
+    },
+    "./ja": {
+      "types": "./dist/ja.d.ts",
+      "default": "./dist/ja.js"
+    },
+    "./ko": {
+      "types": "./dist/ko.d.ts",
+      "default": "./dist/ko.js"
+    },
+    "./de": {
+      "types": "./dist/de.d.ts",
+      "default": "./dist/de.js"
+    },
+    "./fr": {
+      "types": "./dist/fr.d.ts",
+      "default": "./dist/fr.js"
+    },
+    "./es": {
+      "types": "./dist/es.d.ts",
+      "default": "./dist/es.js"
+    },
+    "./pt": {
+      "types": "./dist/pt.d.ts",
+      "default": "./dist/pt.js"
+    },
+    "./ru": {
+      "types": "./dist/ru.d.ts",
+      "default": "./dist/ru.js"
+    },
+    "./ar": {
+      "types": "./dist/ar.d.ts",
+      "default": "./dist/ar.js"
     }
   },
   "sideEffects": [
