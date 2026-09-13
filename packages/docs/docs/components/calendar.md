@@ -10,6 +10,8 @@
 
 点击日期选中并派发 `oas-change`；标题可点开月选择面板快速跳月。
 
+触屏（pointer: coarse）下日格最小高/宽、月格/年格最小高与头部导航钮自动抬到 44px 触控目标。
+
 ## 年视图
 
 <DemoBlock title="年视图（mode=year）">

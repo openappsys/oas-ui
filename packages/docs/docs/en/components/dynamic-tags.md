@@ -44,14 +44,17 @@ Always-visible input + tag flow: press Enter or a separator to create tags; supp
 
 ## Reordering
 
-<DemoBlock title="sortable drag + keyboard reorder">
+<DemoBlock title="sortable: drag + buttons + keyboard reorder">
   <oas-dynamic-tags sortable model-value='["tag-1","tag-2","tag-3"]'></oas-dynamic-tags>
 </DemoBlock>
 
-`sortable` enables two reorder channels; a reorder dispatches `oas-change` (`detail.trigger = "sort"`):
+`sortable` enables three reorder channels; a reorder dispatches `oas-change` (`detail.trigger = "sort"`):
 
+- Buttons: per-tag "move up / move down" icon buttons swap with the neighbor on click (touch reachable — HTML5 drag is not available on touch screens)
 - Drag: hold a tag and drop it on the target position
 - Keyboard: with the input empty, `←` focuses the last tag / `→` the first; `←` / `→` walk between tags (both ends return to the input); `Alt + ←` / `Alt + →` swap with the neighbor
+
+On touch screens (pointer: coarse) tags grow to a 44px row height, and the remove / sort / clear button hit targets widen to 44px.
 
 ## Overflow Collapsing
 

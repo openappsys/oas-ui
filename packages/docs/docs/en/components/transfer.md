@@ -44,9 +44,9 @@ Move left to right only; the right panel is read-only. The left panel shows all 
 - `push`: append newly transferred items to the end
 - `unshift`: insert newly transferred items at the head, one by one
 
-`target-draggable` enables drag sorting on the right panel (the "selected list" scenario where order carries business meaning). Keyboard alternative: click a right row first, then `Alt + ↑/↓` to move it (drag interactions must have an accessible alternative). With `original` the order is decided by the data source, so dragging does not apply — pair `push` / `unshift` when manual sorting is needed.
+`target-draggable` enables drag sorting on the right panel (the "selected list" scenario where order carries business meaning). Touch (pointer: coarse) and keyboard alternatives: per-row "move up / move down" buttons (move by one on click), or click a right row first and press `Alt + ↑/↓` (drag interactions must have an accessible alternative). With `original` the order is decided by the data source, so neither dragging nor sort buttons apply — pair `push` / `unshift` when manual sorting is needed.
 
-<DemoBlock title="target-sort=push + target-draggable">
+<DemoBlock title="target-sort=push + target-draggable (row move up/down buttons + drag)">
   <oas-transfer id="transfer-sort" target-sort="push" target-draggable value='["a"]'></oas-transfer>
 </DemoBlock>
 
@@ -57,6 +57,8 @@ Move left to right only; the right panel is read-only. The left panel shows all 
 ## Select to Move (simple)
 
 With `simple`, clicking a row shuttles it immediately (no central button; touch friendly); the central buttons are hidden. Off by default, keeping "select then press the button" as the primary form.
+
+On narrow viewports (≤480px) the two panels stack vertically and the shuttle buttons switch to a centered horizontal row instead of the rigid 180px×2 width. On touch screens (pointer: coarse) option rows and shuttle buttons grow to a 44px hit target.
 
 <DemoBlock title="simple">
   <oas-transfer id="transfer-simple" simple></oas-transfer>

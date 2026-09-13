@@ -44,9 +44,9 @@
 - `push`：新穿梭项追加到尾部
 - `unshift`：新穿梭项依次插入头部
 
-`target-draggable` 开启右面板拖拽排序（顺序即业务含义的「已选清单」场景）；键盘替代：先点选右侧某行，`Alt + ↑/↓` 移动其位置（拖拽必须有无障碍替代通道）。`original` 模式顺序由数据源决定，拖拽不生效——需要手动排序时请配 `push` / `unshift`。
+`target-draggable` 开启右面板拖拽排序（顺序即业务含义的「已选清单」场景）；触屏（pointer: coarse）与键盘可达的替代通道：行内「上移/下移」按钮（点击移一位），键盘先点选右侧某行 `Alt + ↑/↓` 移动其位置。`original` 模式顺序由数据源决定，拖拽与排序按钮均不生效——需要手动排序时请配 `push` / `unshift`。
 
-<DemoBlock title="target-sort=push + target-draggable">
+<DemoBlock title="target-sort=push + target-draggable（行内上移/下移按钮 + 拖拽）">
   <oas-transfer id="transfer-sort" target-sort="push" target-draggable value='["a"]'></oas-transfer>
 </DemoBlock>
 
@@ -57,6 +57,8 @@
 ## 选中即移动（simple）
 
 `simple` 开启后点击行立即穿梭（免中央按钮，触屏友好），中央按钮隐藏；默认关闭，维持「选完点按钮」的主形态。
+
+窄屏（视口 ≤480px）下双面板自动纵向堆叠、穿梭按钮改横排居中，不再保持 180px×2 的刚性宽度；触屏（pointer: coarse）下选项行高与穿梭按钮热区自动抬到 44px。
 
 <DemoBlock title="simple">
   <oas-transfer id="transfer-simple" simple></oas-transfer>

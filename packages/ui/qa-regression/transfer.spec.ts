@@ -110,3 +110,65 @@ test('transfer virtual：万级数据窗口化渲染且滚动后窗口平移', a
 // —— notification P1 补缺：进度条 + 可滚动 ——
 // 曾现缺口：notification 无自动关闭倒计时反馈（用户不知何时消失）、长内容撑破卡片。
 // 本次补 show-progress（进度动画时长=duration）+ progress-position + scrollable。
+
+// —— 移动端硬伤修复回归：窄屏堆叠不溢出 + 触屏按钮排序（HTML5 DnD 触屏不可用）——
+test('transfer 375 窄屏：双面板纵向堆叠，无横向溢出', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 667 })
+  await page.goto('/components/transfer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#transfer-basic')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#transfer-basic')!
+    const hostRect = el.getBoundingClientRect()
+    const actions = el.shadowRoot!.querySelector('.actions') as HTMLElement
+    const panel = el.shadowRoot!.querySelector('.panel') as HTMLElement
+    return {
+      hostW: Math.round(hostRect.width),
+      hostRight: Math.round(hostRect.right),
+      vw: document.documentElement.clientWidth,
+      hostDir: getComputedStyle(el).flexDirection,
+      actionsDir: getComputedStyle(actions).flexDirection,
+      panelW: Math.round(panel.getBoundingClientRect().width),
+    }
+  })
+  // 修复前 180px×2 + 34px + gap ≈ 430px 刚性宽度在 375 视口溢出
+  expect(r.hostDir).toBe('column')
+  expect(r.actionsDir).toBe('row')
+  expect(r.hostW).toBeLessThanOrEqual(r.vw)
+  expect(r.hostRight).toBeLessThanOrEqual(r.vw)
+  expect(r.panelW).toBeLessThanOrEqual(r.vw)
+})
+
+test('transfer 触屏（coarse）：行触控高 44 + 按钮排序可点（DnD 触屏不可用的替代通道）', async ({ browser }) => {
+  const ctx = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } })
+  const p = await ctx.newPage()
+  await p.goto('/components/transfer.html', { waitUntil: 'domcontentloaded' })
+  await up(p, '#transfer-sort')
+  const coarse = await p.evaluate(() => window.matchMedia('(pointer: coarse)').matches)
+  expect(coarse, 'touch context 应命中 pointer: coarse').toBe(true)
+  const before = await p.evaluate(() => {
+    const el = document.querySelector('#transfer-sort')!
+    const rows = [...el.shadowRoot!.querySelectorAll('.listbox.right .option')]
+    return {
+      value: el.getAttribute('value'),
+      rowMinH: getComputedStyle(rows[0]!).minHeight,
+      btnW: getComputedStyle(el.shadowRoot!.querySelector('.actions button')!).minWidth,
+    }
+  })
+  expect(before.rowMinH).toBe('44px')
+  expect(before.btnW).toBe('44px')
+  // 按钮式排序：目标侧需 ≥2 项才有可点的下移钮（demo 预置 1 项，先补到 2 项）
+  await p.evaluate(() => document.querySelector('#transfer-sort')!.setAttribute('value', '["a","b"]'))
+  await p.waitForFunction(() => {
+    const el = document.querySelector('#transfer-sort')!
+    return el.shadowRoot!.querySelectorAll('.listbox.right .option').length === 2
+  })
+  const before2 = await p.evaluate(() => document.querySelector('#transfer-sort')!.getAttribute('value'))
+  await p.evaluate(() => {
+    const el = document.querySelector('#transfer-sort')!
+    const down = el.shadowRoot!.querySelector<HTMLButtonElement>('.listbox.right .move-down')!
+    down.click()
+  })
+  const after = await p.evaluate(() => document.querySelector('#transfer-sort')!.getAttribute('value'))
+  expect(after).not.toBe(before2)
+  await ctx.close()
+})
