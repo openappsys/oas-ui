@@ -408,6 +408,32 @@ const STYLE = `
 .tag .checked-icon[hidden] {
   display: none;
 }
+/* ===== 触控目标抬升（仅 coarse pointer 命中）：
+   关闭按钮 × 命中区用透明 ::before 扩到 --oas-touch-target-min（视觉 × 图标不变大，
+   伪元素超出按钮盒的部分同样可点，点击归属按钮，整签 click 监听按 composedPath 排除）；
+   clickable/checkable 整签最小高度抬到 --oas-touch-target-min（min-height 大于固定 height
+   时按 min-height 取值；multiline 组合选择器对齐 (0,3,0) 权重，压过多行档自带 min-height）。
+   规则全部收在媒体查询内，fine pointer（PC）零影响。 ===== */
+@media (pointer: coarse) {
+  .tag button {
+    position: relative;
+  }
+  .tag button::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--oas-touch-target-min, 44px);
+    height: var(--oas-touch-target-min, 44px);
+    transform: translate(-50%, -50%);
+  }
+  .tag.clickable,
+  .tag.checkable,
+  .tag.multiline.clickable,
+  .tag.multiline.checkable {
+    min-height: var(--oas-touch-target-min, 44px);
+  }
+}
 `
 
 export class OASTag extends OASElement {
