@@ -375,4 +375,25 @@ describe('OASFloatButton draggable + magnetic', () => {
     el.removeAttribute('draggable')
     expect(el.style.touchAction).toBe('')
   })
+
+  // ===== RTL（右到左）逻辑方向化 =====
+
+  describe('RTL 逻辑方向化', () => {
+    it('dir=rtl 时宿主打 data-rtl 钩子，移除 dir 后回退', () => {
+      const el = mount()
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+      el.setAttribute('dir', 'rtl')
+      expect(el.hasAttribute('data-rtl')).toBe(true)
+      el.removeAttribute('dir')
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+    })
+
+    it('RTL：badge 走逻辑 inset；悬浮定位开口保留物理（--oas-float-button-right 显式物理 API）', () => {
+      const el = mount({ badge: '5' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.badge\s*\{[^}]*inset-inline-end:/)
+      // 位置 API 保留物理：宿主覆盖变量仍作用于 right
+      expect(css).toContain('--oas-float-button-right')
+    })
+  })
 })

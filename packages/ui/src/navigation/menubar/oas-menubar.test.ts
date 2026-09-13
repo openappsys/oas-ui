@@ -1361,4 +1361,38 @@ describe('子元素声明式通道', () => {
     grid.click()
     expect(JSON.parse(el.getAttribute('value')!)).toEqual(['grid'])
   })
+
+  // ===== RTL（右到左）逻辑方向化 =====
+
+  it('RTL：dir=rtl 时宿主打 data-rtl 钩子，移除 dir 后回退', () => {
+    const el = mount()
+    expect(el.hasAttribute('data-rtl')).toBe(false)
+    el.setAttribute('dir', 'rtl')
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    el.removeAttribute('dir')
+    expect(el.hasAttribute('data-rtl')).toBe(false)
+  })
+
+  it('RTL：竖排缺省弹出侧逻辑镜像（LTR right → RTL left）', () => {
+    const el = mount({ orientation: 'vertical', dir: 'rtl' })
+    topItems(el)[0]!.click()
+    const sub = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"].popup-first')!
+    // RTL 下缺省弹出侧从物理 right 镜像为 left（书写终点方向），显式 side 属性不镜像
+    expect(sub.classList.contains('side-left')).toBe(true)
+  })
+
+  it('RTL：水平弹出动画开口镜像（align-start：LTR top left → RTL top right）', () => {
+    const el = mount({ dir: 'rtl' })
+    topItems(el)[0]!.click()
+    const sub = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"].popup-first')!
+    // transform-origin 是内联样式（JS 写入），机制可断言；视觉缩放方向待浏览器复核
+    expect(sub.style.transformOrigin).toBe('top right')
+  })
+
+  it('RTL：样式表含 data-rtl 镜像规则（子菜单 chevron 翻转 + 逻辑 inset 覆盖）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host([data-rtl]) .arrow svg')
+    expect(css).toContain('scaleX(-1)')
+  })
 })
