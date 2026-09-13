@@ -74,7 +74,7 @@ In year mode, selecting a month dispatches `yyyy-MM`.
   <oas-calendar value="2026-08-09" first-day-of-week="0"></oas-calendar>
 </DemoBlock>
 
-`first-day-of-week` accepts `0` (Sunday) through `6` (Saturday); defaults to the locale (Monday for Chinese locales, Sunday otherwise).
+`first-day-of-week` accepts `0` (Sunday) through `6` (Saturday); defaults to the locale (Monday for European/Chinese locales, Sunday for Japanese/Korean/English/Arabic; otherwise derived from `Intl.Locale` week info).
 
 ## Panel Month Anchor
 
@@ -126,7 +126,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | --- | --- | --- | --- |
 | `disabled` | Globally disabled: greys out the calendar and stops all interaction (picking / paging / keyboard) | `boolean` | — |
 | `disabledDate` | Disabled callback (property) | `((d: Date) => boolean) \| null` | — |
-| `first-day-of-week` | Week start override: `0` (Sunday) to `6` (Saturday); defaults to the locale (Monday for Chinese, Sunday otherwise) | `string` | — |
+| `first-day-of-week` | Week start override: `0` (Sunday) to `6` (Saturday); defaults to the locale (Monday for European/Chinese, Sunday for Japanese/Korean/English/Arabic) | `string` | — |
 | `max` | Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range | `string` | — |
 | `min` | Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range | `string` | — |
 | `mode` | `month` / `year` (in year mode, picking a month auto-switches back to month view) | `string` | `month` |

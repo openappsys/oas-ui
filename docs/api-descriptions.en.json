@@ -373,7 +373,7 @@
     "attrs": {
       "disabledDate": "Disabled callback (property)",
       "disabled": "Globally disabled: greys out the calendar and stops all interaction (picking / paging / keyboard)",
-      "first-day-of-week": "Week start override: `0` (Sunday) to `6` (Saturday); defaults to the locale (Monday for Chinese, Sunday otherwise)",
+      "first-day-of-week": "Week start override: `0` (Sunday) to `6` (Saturday); defaults to the locale (Monday for European/Chinese, Sunday for Japanese/Korean/English/Arabic)",
       "max": "Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range",
       "min": "Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range",
       "mode": "`month` / `year` (in year mode, picking a month auto-switches back to month view)",

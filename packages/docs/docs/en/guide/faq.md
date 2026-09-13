@@ -108,6 +108,38 @@ compile-time errors). `oas-config-provider` supports local injection (the `local
 attribute): components inside it prefer the injected locale for built-in texts
 without any global setup.
 
+### Which languages are built in? Can they be loaded on demand?
+
+Ten locales ship built in: `zh-CN` (default), `en`, `ja`, `ko`, `de`, `fr`, `es`,
+`pt`, `ru`, `ar` (RTL). The main entry only carries `zh-CN`; the rest are loaded
+**on demand** and never enter the initial bundle:
+
+```ts
+import { loadLocale, setLocale } from '@oas-ui/i18n'
+await loadLocale('ja') // dynamic import('@oas-ui/i18n/ja'), a separate chunk
+setLocale('ja')
+```
+
+You can also import a pack statically (tree-shaking: only what you use ships):
+
+```ts
+import ja from '@oas-ui/i18n/ja'
+setLocale(ja)
+```
+
+Date and number formatting go through native `Intl`
+(`Intl.DateTimeFormat` / `Intl.NumberFormat`), so these locales display correctly
+with no extra translations; the default `first-day-of-week` is derived from the
+locale too (Monday for European/Chinese, Sunday for Japanese/Korean/English/Arabic).
+
+### How are RTL locales handled?
+
+The `ar` pack is tagged `dir: 'rtl'`, so switching to `ar` mirrors floating-layer
+positioning automatically (select / combobox / auto-complete / tree-select /
+date-picker / time-picker / mentions, …); you can also enable it explicitly or
+locally with `oas-config-provider direction="rtl"`. Direction is resolved as
+config-provider > nearest ancestor `dir` > `document.dir` > current locale.
+
 ## Theming
 
 ### The page body stays white after switching to dark?
