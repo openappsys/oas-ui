@@ -33,6 +33,20 @@ describe('OASEquation', () => {
     expect(sup!.textContent).toBe('2')
   })
 
+  it('RTL：公式内容锁定 LTR 不镜像，内部间距走逻辑属性', () => {
+    const el = mount({ code: 'x^2 + a_i', dir: 'rtl' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    // 公式排版不做方向镜像：.equation 显式锁 LTR（覆盖宿主 RTL 继承）
+    expect(style).toMatch(/\.equation\s*\{[^}]*direction:\s*ltr/)
+    // 上下标/根号间距走逻辑属性（LTR 语境下与原物理值等价，零回归）
+    expect(style).toMatch(/\.sup\s*\{[^}]*margin-inline-start:\s*0\.08em/)
+    expect(style).toMatch(/\.sub\s*\{[^}]*margin-inline-start:\s*0\.08em/)
+    expect(style).toMatch(/\.sqrt::before\s*\{[^}]*margin-inline-end:\s*0\.05em/)
+    expect(style).not.toMatch(/\.sup\s*\{[^}]*margin-left/)
+    // RTL 下渲染结构正常
+    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+  })
+
   it('下标 a_{i} 渲染 sub', () => {
     const el = mount({ code: 'a_{i}' })
     const sub = eqOf(el).querySelector('.sub')

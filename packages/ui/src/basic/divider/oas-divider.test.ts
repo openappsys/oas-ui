@@ -102,14 +102,17 @@ describe('OASDivider', () => {
       expect(line(mid)!.classList.contains('middle')).toBe(true)
     })
 
-    it('CSS：inset 起始侧留空（margin-left）/ middle 两侧留空（margin-left + margin-right），线段 flex:1 贯通', () => {
+    it('CSS：inset 起始侧留空（margin-inline-start）/ middle 两侧留空（margin-inline-start + end），线段 flex:1 贯通', () => {
       const el = mount({}, '')
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(css).toMatch(/\.divider\.inset::before\s*\{[^}]*margin-left:\s*var\(--oas-divider-title-inset/)
-      expect(css).toMatch(/\.divider\.middle::before\s*\{[^}]*margin-left:\s*var\(--oas-divider-middle-inset/)
-      expect(css).toMatch(/\.divider\.middle::after\s*\{[^}]*margin-right:\s*var\(--oas-divider-middle-inset/)
+      expect(css).toMatch(/\.divider\.inset::before\s*\{[^}]*margin-inline-start:\s*var\(--oas-divider-title-inset/)
+      expect(css).toMatch(/\.divider\.middle::before\s*\{[^}]*margin-inline-start:\s*var\(--oas-divider-middle-inset/)
+      expect(css).toMatch(/\.divider\.middle::after\s*\{[^}]*margin-inline-end:\s*var\(--oas-divider-middle-inset/)
       // 仅水平布局生效（vertical 排除）
       expect(css).toMatch(/:host\(:not\(\[direction='vertical'\]\)\)\s*\.divider\.inset::before/)
+      // RTL：缩进走逻辑属性，宿主 dir=rtl 下自动镜像（不出现物理 margin-left/right）
+      expect(css).not.toMatch(/margin-left:\s*var\(--oas-divider/)
+      expect(css).not.toMatch(/margin-right:\s*var\(--oas-divider/)
     })
 
     it('无内容时 inset/middle 同样生效（空线缩进）', () => {
