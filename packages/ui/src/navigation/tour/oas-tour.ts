@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 /** 弹层方位：12 向 + center（无目标/对话框模式居中） */
 export type TourPlacement = Placement | 'center'
@@ -310,6 +310,19 @@ const STYLE = `
   border-color: var(--oas-color-primary);
   color: var(--oas-color-text-on-primary);
   opacity: 0.9;
+}
+
+/* ===== 移动端触摸目标：coarse pointer 下关闭钮与步骤钮抬到 --oas-touch-target-min（默认 44px） ===== */
+@media (pointer: coarse) {
+  /* 关闭钮是固定 24px 方形小钮：整钮放大成 44px 触控方块（图标保持 14px 视觉尺寸） */
+  .close {
+    width: var(--oas-touch-target-min, 44px);
+    height: var(--oas-touch-target-min, 44px);
+  }
+  /* 步骤钮（上一步/下一步/跳过等）最小高度抬升，固定 height 被 min-height 覆盖 */
+  .btn {
+    min-height: var(--oas-touch-target-min, 44px);
+  }
 }
 
 /* 不再显示 */
@@ -930,11 +943,13 @@ export class OASTour extends OASElement {
     }
   }
 
-  /** 目标是否需要滚动才能完整进入视口（决定是否进入「定位待定」隐藏期，防按错位位置闪现） */
+  /** 目标是否需要滚动才能完整进入视口（决定是否进入「定位待定」隐藏期，防按错位位置闪现）。
+   *  边界走 getViewport（visualViewport 优先）：软键盘/浏览器工具栏压缩后的可见区域才算数。 */
   private targetNeedsScroll(target: HTMLElement): boolean {
     const r = target.getBoundingClientRect()
-    const vh = window.innerHeight
-    const vw = window.innerWidth
+    const vp = getViewport()
+    const vh = vp.height
+    const vw = vp.width
     return r.top < 0 || r.bottom > vh || r.left < 0 || r.right > vw
   }
 
@@ -1250,7 +1265,9 @@ export class OASTour extends OASElement {
     const gap = this.resolveGap(step)
     const mask = this.resolveMask(step)
     const placement = this.resolvePlacement(step, !!target)
-    const viewport = { width: window.innerWidth || 800, height: window.innerHeight || 600 }
+    // 定位边界走 getViewport（visualViewport 优先）：软键盘/工具栏压缩时遮罩与弹层按可见区域避让
+    const vp = getViewport()
+    const viewport = { width: vp.width || 800, height: vp.height || 600 }
     const p = gap.padding
     const oh = gap.offsetH
     const ov = gap.offsetV
@@ -1468,11 +1485,12 @@ export class OASTour extends OASElement {
       bubble.querySelector<HTMLElement>('.hint-desc')!.textContent = entry.hint.description ?? ''
       bubble.querySelector<HTMLElement>('[part="hint-dismiss"]')!.textContent = this.t('tour.hintGotIt')
       const bubbleRect = bubble.getBoundingClientRect()
+      const hintVp = getViewport()
       const { top, left } = computePosition(
         entry.rect,
         bubbleRect,
         entry.hint.placement ?? 'top',
-        { width: window.innerWidth || 800, height: window.innerHeight || 600 },
+        { width: hintVp.width || 800, height: hintVp.height || 600 },
         8,
         true,
       )

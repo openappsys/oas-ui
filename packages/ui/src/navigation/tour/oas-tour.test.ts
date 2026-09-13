@@ -892,3 +892,38 @@ describe('SSR 模板结构', () => {
     expect(shadow.querySelector('slot[name="actions"]')).not.toBeNull()
   })
 })
+
+// ===== 移动端适配（触摸目标抬升 + 定位走 visualViewport） =====
+
+describe('OASTour 移动端适配', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  it('触摸目标：coarse pointer 媒体查询进样式表，关闭钮与步骤钮最小高度走 --oas-touch-target-min（默认 44px）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    const coarse = css.split('@media (pointer: coarse)')[1]!
+    expect(coarse).toContain('.close')
+    expect(coarse).toContain('.btn')
+    expect(coarse).toContain('min-height')
+  })
+
+  it('定位边界走 visualViewport：软键盘/工具栏压缩后的可见区域参与遮罩与弹层避让', async () => {
+    const el = mount()
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    // 布局视口 800×600 不变，visualViewport 压缩到 400×300（模拟软键盘顶起）：
+    // 目标 bottom 280+40=320 超出 300 → 判定需要滚动；遮罩底段按 300 计算应为 0
+    // （若误用 innerHeight=600，底段会得到 600-320-pad ≈ 270 的非零值）
+    setTargetRect('step1', rect(100, 280, 120, 40))
+    vi.stubGlobal('visualViewport', { width: 400, height: 300, offsetLeft: 0, offsetTop: 0, scale: 1 })
+    forceUpdate(el)
+    await tick()
+    const bottomSeg = el.shadowRoot!.querySelector<HTMLElement>('[data-mask-seg="bottom"]')!
+    expect(parseFloat(bottomSeg.style.height)).toBe(0)
+  })
+})

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASBreadcrumb } from './index.js'
 
 const ITEMS = JSON.stringify([{ label: '首页', href: '/' }, { label: '组件', href: '/components' }, { label: '按钮' }])
@@ -729,5 +729,47 @@ describe('折叠展开事件与下拉缺陷修复', () => {
     btn.click() // 收起
     btn.click() // 重新展开
     expect(panel.classList.contains('flip-right')).toBe(false)
+  })
+
+  it('下拉垂直翻转：面板下缘超出视口（visualViewport 优先）时加 flip-down，空间充足则移除', () => {
+    const el = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': '4' })
+    const root = el.shadowRoot!
+    const btn = root.querySelector<HTMLButtonElement>('.ellipsis-btn')!
+    const panel = root.querySelector<HTMLElement>('.ellipsis-dropdown')!
+    Object.defineProperty(panel, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(panel, 'offsetHeight', { value: 120, configurable: true })
+    Object.defineProperty(btn, 'getBoundingClientRect', {
+      value: () => ({ right: 100, top: 250 }) as DOMRect,
+      configurable: true,
+    })
+    // 布局视口很高（不会触发），visualViewport 很矮（触发）→ 证明判定走 visualViewport
+    Object.defineProperty(window, 'innerWidth', { value: 800, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true })
+    vi.stubGlobal('visualViewport', { width: 800, height: 300, offsetLeft: 0, offsetTop: 0, scale: 1 })
+    // 面板下缘 250 + 120 = 370 > 300 - 8 → 向上翻转
+    btn.click()
+    expect(panel.classList.contains('flip-down')).toBe(true)
+    // 空间充足：面板下缘 250 + 120 = 370 < 800 - 8 → 不翻转（重新展开时重新判定）
+    vi.stubGlobal('visualViewport', { width: 800, height: 800, offsetLeft: 0, offsetTop: 0, scale: 1 })
+    btn.click() // 收起
+    btn.click() // 重新展开
+    expect(panel.classList.contains('flip-down')).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('触摸目标：coarse pointer 媒体查询进样式表，折叠钮/触发器/下拉行最小高度走 --oas-touch-target-min（默认 44px）', () => {
+    const el = mountWith({
+      items: JSON.stringify([{ label: '更多', dropdown: [{ label: '子项', href: '/a' }] }]),
+      collapsed: '',
+      'max-items': '1',
+    })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    const coarse = css.split('@media (pointer: coarse)')[1]!
+    expect(coarse).toContain('.ellipsis-btn')
+    expect(coarse).toContain('.dropdown-trigger')
+    expect(coarse).toContain('.ellipsis-item')
+    expect(coarse).toContain('min-height')
   })
 })
