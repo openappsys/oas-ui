@@ -1149,6 +1149,40 @@ describe('OASSlider', () => {
     })
   })
 
+  describe('RTL 逻辑方向化', () => {
+    it('dir=rtl 时水平轴有效反转：原生 input dir=rtl、填充镜像到视觉右段（右缘贴轨道终点）', async () => {
+      const el = mount({ dir: 'rtl', value: '30', min: '0', max: '100' })
+      await Promise.resolve()
+      expect(range(el).getAttribute('dir')).toBe('rtl')
+      expect(fillEl(el).style.left).toBe('70%')
+      // LTR 对照：同值填充贴视觉起点（left 0%）
+      const ltr = mount({ value: '30', min: '0', max: '100' })
+      await Promise.resolve()
+      expect(range(ltr).getAttribute('dir')).toBe('ltr')
+      expect(fillEl(ltr).style.left).toBe('0%')
+    })
+
+    it('dir=rtl 时键盘大步方向镜像（Shift+ArrowRight 大步为减值），vertical 不受 RTL 影响', async () => {
+      const press = (slider: OASSlider, role: string, init: KeyboardEventInit): void => {
+        byRole(slider, role).dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
+      }
+      const el = mount({ dir: 'rtl', value: '50', min: '0', max: '100' })
+      await Promise.resolve()
+      press(el, 'range', { key: 'ArrowRight', shiftKey: true })
+      expect(Number(range(el).value)).toBe(40)
+      const v = mount({ dir: 'rtl', vertical: '', value: '50', min: '0', max: '100' })
+      await Promise.resolve()
+      press(v, 'range', { key: 'ArrowUp', shiftKey: true })
+      expect(Number(range(v).value)).toBe(60)
+    })
+
+    it('marks 视觉位置随 RTL 镜像（值 0 的刻度在视觉右端 100%）', async () => {
+      const el = mount({ dir: 'rtl', value: '50', min: '0', max: '100', marks: JSON.stringify([0, 50, 100]) })
+      await Promise.resolve()
+      expect(markItems(el).map((n) => n.style.left)).toEqual(['100%', '50%', '0%'])
+    })
+  })
+
   describe('表单序列化（range 双值）', () => {
     it('oas-form 内拖动提交后，字段值为合法 JSON 数组字符串', () => {
       const form = document.createElement('oas-form') as Element & { shadowRoot: ShadowRoot }

@@ -2,6 +2,7 @@
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 // 注册 oas-icon（穿梭按钮内嵌 oas-icon 组件，复用图标集/自定义注册/currentColor 着色）
 import '../../basic/icon/index.js'
 
@@ -257,6 +258,12 @@ ${OPTION_STYLE}
     min-height: var(--oas-touch-target-min, 44px);
   }
 }
+/* RTL：flex 顺序镜像后源面板在视觉右、目标面板在视觉左，穿梭方向视觉反转，
+   左右箭头图标随之水平镜像（oas-icon 需非 inline 才能承受 transform） */
+:host([data-rtl]) .actions oas-icon {
+  display: inline-block;
+  transform: scaleX(-1);
+}
 /* 窄屏（移动竖屏）：双面板纵向堆叠，避免 180px×2 + 34px + gap 的刚性宽度溢出 */
 @media (max-width: 480px) {
   :host {
@@ -450,6 +457,9 @@ export class OASTransfer extends OASElement {
   protected override update(): void {
     // 禁用态镜像宿主 data-disabled（覆盖注入场景，供 :host([data-disabled]) 样式消费）
     this.toggleAttribute('data-disabled', this.injectDisabled())
+    // 书写方向镜像（data-rtl 供 :host([data-rtl]) 穿梭箭头镜像消费；
+    // 面板 side 键（left/right）是产品形态语义，不随书写方向改写）
+    this.toggleAttribute('data-rtl', isRtl(this))
     this.parseData()
     this.renderPanels()
   }

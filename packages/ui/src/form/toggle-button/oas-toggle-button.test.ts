@@ -244,4 +244,11 @@ describe('OASToggleButton 校验态（status）', () => {
     // error 与宿主 aria-invalid 等效通道并列（选择器列表），匹配时允许逗号续行
     expect(css).toMatch(/:host\(\[data-status='error'\]\) button[^{]*{[^}]*--oas-color-danger/)
   })
+
+  it('RTL：布局间距走逻辑属性（padding-inline，无物理方向 padding/margin）', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).not.toMatch(/(padding|margin)-(left|right)/)
+    expect(css).not.toMatch(/(border)-(left|right)/)
+    expect(css).not.toMatch(/(^|[^-a-z])(left|right):\s/)
+  })
 })

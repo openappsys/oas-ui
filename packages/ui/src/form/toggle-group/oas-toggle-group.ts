@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { isRtl } from '../../shared/direction.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 
 export interface ToggleItem {
@@ -660,10 +661,13 @@ export class OASToggleGroup extends OASElement {
     if (enabled.length === 0) return
     const multiple = this.hasAttr('multiple')
 
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    // RTL：水平方向键视觉镜像（ArrowLeft=下一项，对齐原生 RTL radio 行为）；上下键不变
+    const forward = isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
+    const backward = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
+    if (e.key === forward || e.key === 'ArrowDown') {
       e.preventDefault()
       this.move(1, enabled)
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    } else if (e.key === backward || e.key === 'ArrowUp') {
       e.preventDefault()
       this.move(-1, enabled)
     } else if (e.key === 'Home') {

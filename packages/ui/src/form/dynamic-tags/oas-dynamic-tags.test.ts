@@ -787,3 +787,41 @@ describe('OASDynamicTags sortable 按钮排序与触屏', () => {
     expect(css).toContain('var(--oas-touch-target-min, 44px)')
   })
 })
+
+describe('OASDynamicTags RTL 逻辑方向化', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function chipAt(el: OASDynamicTags, idx: number): HTMLElement {
+    return tagEls(el)[idx]!
+  }
+
+  function pressChipAt(el: OASDynamicTags, idx: number, key: string, alt = false): void {
+    chipAt(el, idx).dispatchEvent(new KeyboardEvent('keydown', { key, altKey: alt, bubbles: true, cancelable: true }))
+  }
+
+  it('RTL：空输入方向键进标签导航视觉序镜像（ArrowRight 到末尾 chip）', () => {
+    const el = mount({ sortable: '', 'model-value': '["a","b"]', dir: 'rtl' })
+    pressKey(el, 'ArrowRight')
+    expect(el.shadowRoot!.activeElement).toBe(chipAt(el, 1))
+  })
+
+  it('RTL：chip 间遍历镜像（ArrowLeft = 视觉向前 = 下一枚）', () => {
+    const el = mount({ sortable: '', 'model-value': '["a","b"]', dir: 'rtl' })
+    chipAt(el, 0).focus()
+    pressChipAt(el, 0, 'ArrowLeft')
+    expect(el.shadowRoot!.activeElement).toBe(chipAt(el, 1))
+  })
+
+  it('RTL：Alt+ArrowRight 重排方向镜像（视觉向后移 = idx-1）', () => {
+    const el = mount({ sortable: '', 'model-value': '["a","b","c"]', dir: 'rtl' })
+    chipAt(el, 1).focus()
+    pressChipAt(el, 1, 'ArrowRight', true)
+    expect(el.modelValue).toEqual(['b', 'a', 'c'])
+  })
+})

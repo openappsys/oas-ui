@@ -103,11 +103,11 @@ textarea:disabled:hover {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--oas-color-success) 30%, transparent);
 }
 
-/* ---- 清除按钮（右上角：避开 resize 手柄与滚动条） ---- */
+/* ---- 清除按钮（inline-end 侧上角：避开 resize 手柄与滚动条，RTL 下自动镜像到左上） ---- */
 .clear-btn {
   position: absolute;
   top: var(--oas-space-2);
-  right: var(--oas-space-2);
+  inset-inline-end: var(--oas-space-2);
   appearance: none;
   border: none;
   background: transparent;
@@ -129,11 +129,11 @@ textarea:disabled:hover {
   display: none;
 }
 
-/* ---- show-count 字数统计（框外右下，n/max 口径，超限 danger；aria-live 读屏播报） ---- */
+/* ---- show-count 字数统计（框外 inline-end 侧下角，n/max 口径，超限 danger；aria-live 读屏播报） ---- */
 .count {
   display: block;
   margin-top: var(--oas-space-1, 4px);
-  text-align: right;
+  text-align: end;
   font-size: var(--oas-font-size-sm);
   line-height: 1.4;
   color: var(--oas-color-text-secondary);

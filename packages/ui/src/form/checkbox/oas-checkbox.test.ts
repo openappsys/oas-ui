@@ -668,3 +668,15 @@ describe('OASCheckbox 全局禁用注入（config-provider disabled）', () => {
     expect(i.checked).toBe(false)
   })
 })
+
+describe('OASCheckbox RTL 逻辑方向化', () => {
+  it('勾选框与文本间距走逻辑属性（flex gap），无物理方向 padding/margin', () => {
+    const el = mountCheckbox({}, '记住我')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/label \{[^}]*gap: var\(--oas-space-2\)/)
+    expect(css).not.toMatch(/(padding|margin)-(left|right)/)
+    expect(css).not.toMatch(/(^|[^-a-z])(left|right):\s/)
+    // label-position=start 的镜像走 row-reverse（RTL 下 flex 自动再镜像）
+    expect(css).toContain('flex-direction: row-reverse')
+  })
+})
