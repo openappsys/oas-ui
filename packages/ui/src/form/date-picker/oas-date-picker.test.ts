@@ -1090,4 +1090,15 @@ describe('OASDatePicker 移动端底部抽屉（bottom-sheet 接入）', () => {
     expect(css).toContain(":host([data-mobile-sheet]) [part='panel'] .range-grids")
     expect(css).toContain('flex-direction: column')
   })
+
+  it('移动形态日格触控目标抬升：min-height/min-width 对齐 --oas-touch-target-min，PC 基础高度不变', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 移动形态（抽屉内）：日格最小尺寸抬到触摸目标 token（theme 默认 44px）
+    expect(css).toContain(":host([data-mobile-sheet]) [part='grid'] .day")
+    expect(css).toContain('min-height: var(--oas-touch-target-min, 44px)')
+    expect(css).toContain('min-width: var(--oas-touch-target-min, 44px)')
+    // PC 基础规则不受影响：日格高度仍走控件高度 token（32px 档）
+    expect(css).toContain('height: var(--oas-control-height-md)')
+  })
 })
