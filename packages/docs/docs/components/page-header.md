@@ -170,7 +170,6 @@ onMounted(async () => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `back` | 是否显示返回按钮 | `boolean` | — |
-| `dir` | — | — | — |
 | `ghost` | 透明背景变体：页头背景规则置 `none`（强制透明，让所在容器/页面底色透出），footer 分隔线一并去除；标题/文字色保持主题前景 token；其余布局不变 | `boolean` | — |
 | `responsive` | 响应式紧凑：组件宽 <768px 时标题字号降档（xl→lg）、副标题字号降档（sm）、副标题与 extra 换行（.row flex-wrap）；ResizeObserver 观察宿主宽度，onCleanup 清理 | `boolean` | — |
 | `subtitle` | 副标题文案 | `string` | — |

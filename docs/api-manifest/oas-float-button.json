@@ -57,10 +57,6 @@
       "type": "string",
       "default": "",
       "observed": true
-    },
-    {
-      "name": "dir",
-      "observed": true
     }
   ],
   "props": [],

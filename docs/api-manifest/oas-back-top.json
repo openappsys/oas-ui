@@ -110,10 +110,6 @@
       "name": "draggable",
       "type": "boolean",
       "observed": true
-    },
-    {
-      "name": "dir",
-      "observed": true
     }
   ],
   "props": [],

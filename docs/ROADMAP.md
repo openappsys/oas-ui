@@ -66,6 +66,8 @@
 
 > 组件总数：v1.0 核心集约 68 件；v1.x 长尾推进至约 115~120 件，100% 覆盖。原 13 个未排期组件已全部分配：轻量基础组件（button-group/label/kbd/visually-hidden）提到最前的 v1.1（独立、无前置依赖、快速交付），其余按功能族归到 v1.3/v1.4/v1.5/v1.7，无遗漏。
 
+| **v2.5.3** | **RTL 逻辑方向化：全组件铺开（承接 v2.5.2 边界）**：浮层定位接线补全（avatar-group/table/popconfirm/popover/tooltip/color-picker/cascader/dropdown/tour 统一传 direction）+ hover-card 自研定位镜像 + menu 级联子菜单逻辑 inset/翻转 isRtl + 全库物理 CSS 逻辑属性改造（margin/padding/border/text-align → inline/block 逻辑值）+ 方向敏感行为镜像（switch knob/slider 滑选/rate 半星/segmented·toggle-group·radio-group·dynamic-tags·tabs·toolbar·navigation-menu 方向键/menubar 汉堡与级联/steps 序号与 arrow 形态/sidebar 折叠与拖拽/splitter 拖拽 delta）+ 代码与公式内容 LTR 锁定 + dir 观察重判定（10 组件 observedAttributes）+ 方向判定收敛 shared/direction 单源；显式物理 API（badge corner/float-button/drawer·timeline·sidebar side 等）保留。全量 6968 单测 + typecheck/build/api:check/trace 全绿 | 🚧 进行中 |
+
 ## 版本号规则
 
 - **MINOR（0.x.0）**：每个路线图功能块一个 MINOR 版本

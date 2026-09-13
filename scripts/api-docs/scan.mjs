@@ -37,8 +37,10 @@ const K = tsast.SyntaxKind
 const OBSERVED_GETTER = 'observedAttributes'
 
 /** 全局约定属性：跨组件通用、属库级约定而非组件自身 API，一律不进 manifest / API 表
- *  （如全局禁用注入的组件级逃逸口 `disabled-skip`，由 config-provider 文档统一说明） */
-const GLOBAL_CONVENTION_ATTRS = new Set(['disabled-skip'])
+ *  （如全局禁用注入的组件级逃逸口 `disabled-skip`，由 config-provider 文档统一说明；
+ *   标准全局属性 `dir`——书写方向，config-provider direction / 根级 dir 控制，
+ *   RTL 批次起方向敏感组件观察它触发重判定，行为由 RTL 说明覆盖） */
+const GLOBAL_CONVENTION_ATTRS = new Set(['disabled-skip', 'dir'])
 const ATTR_HELPERS = new Set(['getAttr', 'hasAttr', 'injectValue', 'injectDisabled'])
 
 // 跨组件属性补充：父组件通过 `getAttribute('x')` 读取子元素上的属性

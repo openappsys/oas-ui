@@ -179,7 +179,6 @@ onMounted(() => {
 | `backdrop` | 打开时显示遮罩（点击遮罩关闭） | `boolean` | — |
 | `columns` | 面板网格列数，默认 2（大面板多列链接卡） | `string` | `2` |
 | `delay-duration` | hover 开合延迟（毫秒），默认 200；点击/键盘立即生效不受影响 | `string` | `200` |
-| `dir` | — | — | — |
 | `items` | 导航项 JSON（层级结构；叶子项可带 `description` 描述与 `icon` 图标渲染大面板链接卡） | `string` | `[]` |
 | `keep-mounted` | 关闭时保留面板 DOM 不销毁（供爬虫索引/SEO） | `boolean` | — |
 | `loop` | 顶级方向键循环导航开关，缺省 `true`（边界循环）；显式 `loop="false"` 时边界停止（与 menubar 对齐） | `string` | — |

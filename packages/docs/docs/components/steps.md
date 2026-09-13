@@ -287,7 +287,6 @@
 | `clickable` | 步骤可点击跳转（布尔，存在即开启） | `boolean` | — |
 | `content-placement` | 内容块位置：`bottom`（默认，标题/描述在指示器下方）/ `right`（整体置于指示器右侧，横向模式）；纵向忽略；与 label-placement 正交 | `string` | — |
 | `current` | 当前步骤索引（0 起） | `string` | `0` |
-| `dir` | — | — | — |
 | `direction` | 方向（导航模式下强制横向；responsive 窄屏时优先转纵向） | `string` | `horizontal` |
 | `label-placement` | 标签排布：`vertical`（默认，图标上/标题下）/ `horizontal`（图标左/标题右同行） | `string` | — |
 | `linear` | 线性模式：仅允许点击 `index <= current` 的步骤（布尔，存在即开启；未来步禁点，点击静默） | `boolean` | — |
