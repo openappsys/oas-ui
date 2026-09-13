@@ -716,3 +716,118 @@ describe('OASTransfer 键盘（ctrl+A / Space）', () => {
     expect(leftOptions(el)[0]!.getAttribute('aria-selected')).toBe('false')
   })
 })
+
+// ---- 触屏适配：按钮式排序（HTML5 DnD 触屏不可用）+ coarse 触控目标 + 窄屏堆叠 ----
+describe('OASTransfer 触屏与按钮排序', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('target-draggable 时右侧行渲染上移/下移按钮，点击重排 value 并派发 oas-change', () => {
+    const el = mount({ value: '["a","b","c"]', 'target-sort': 'push', 'target-draggable': '' })
+    const ups = () => [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.listbox.right .move-up')]
+    const downs = () => [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.listbox.right .move-down')]
+    expect(ups().length).toBe(3)
+    expect(downs().length).toBe(3)
+    // 边界禁用：首行禁上移、末行禁下移
+    expect(ups()[0]!.disabled).toBe(true)
+    expect(ups()[1]!.disabled).toBe(false)
+    expect(downs()[2]!.disabled).toBe(true)
+    expect(downs()[0]!.disabled).toBe(false)
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    downs()[0]!.click() // a 下移一位
+    expect(el.getAttribute('value')).toBe('["b","a","c"]')
+    expect(details).toEqual([{ value: ['b', 'a', 'c'] }])
+    ups()[1]!.click() // a 回到顶部
+    expect(el.getAttribute('value')).toBe('["a","b","c"]')
+  })
+
+  it('排序按钮带 aria-label 与 part（复用 dynamicInput.moveUp/moveDown 文案键）', () => {
+    const el = mount({ value: '["a","b"]', 'target-sort': 'push', 'target-draggable': '' })
+    const up = el.shadowRoot!.querySelector<HTMLButtonElement>('.listbox.right .move-up')!
+    const down = el.shadowRoot!.querySelector<HTMLButtonElement>('.listbox.right .move-down')!
+    expect(up.getAttribute('part')).toBe('move-up')
+    expect(down.getAttribute('part')).toBe('move-down')
+    expect(up.getAttribute('aria-label')).toBeTruthy()
+    expect(down.getAttribute('aria-label')).toBeTruthy()
+  })
+
+  it('original 模式或无 target-draggable 时不渲染排序按钮', () => {
+    const el = mount({ value: '["a","b"]', 'target-sort': 'push' })
+    expect(el.shadowRoot!.querySelector('.listbox.right .move-up')).toBeNull()
+    expect(el.shadowRoot!.querySelector('.listbox.right .move-down')).toBeNull()
+    const el2 = mount({ value: '["a","b"]', 'target-draggable': '' }) // 默认 original：顺序由数据源决定
+    expect(el2.shadowRoot!.querySelector('.listbox.right .move-up')).toBeNull()
+  })
+
+  it('虚拟行同样渲染排序按钮（触屏下窗口化行内可达）', () => {
+    const el = new OASTransfer()
+    el.setAttribute('virtual', '')
+    el.setAttribute('target-sort', 'push')
+    el.setAttribute('target-draggable', '')
+    document.body.appendChild(el)
+    el.data = Array.from({ length: 30 }, (_, i) => ({ key: `k${i}`, label: `Item ${i}` }))
+    el.setAttribute('value', '["k0","k1","k2"]')
+    const vrootR = el.shadowRoot!.querySelector('.vlist-right')!.shadowRoot!
+    const moveUps = vrootR.querySelectorAll('.option .move-up')
+    expect(moveUps.length).toBe(3)
+    ;(moveUps[1] as HTMLButtonElement).click() // k1 上移
+    expect(el.getAttribute('value')).toBe('["k1","k0","k2"]')
+  })
+
+  it('样式表包含 coarse 触控目标与窄屏堆叠规则', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    // 窄屏（移动竖屏）双面板堆叠，避免 180px×2+34px 刚性宽度溢出
+    expect(css).toContain('@media (max-width: 480px)')
+    expect(css).toContain('flex-direction: column')
+  })
+
+  it('coarse 下虚拟列表默认 item-height 抬到 44（显式 item-height 优先）', () => {
+    const had = Object.prototype.hasOwnProperty.call(window, 'matchMedia')
+    const orig = window.matchMedia?.bind(window)
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (q: string) =>
+        ({
+          matches: q.includes('(pointer: coarse)'),
+          media: q,
+          addEventListener() {},
+          removeEventListener() {},
+          addListener() {},
+          removeListener() {},
+          onchange: null,
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    })
+    try {
+      const el = new OASTransfer()
+      el.setAttribute('virtual', '')
+      el.setAttribute('target-sort', 'push')
+      el.setAttribute('target-draggable', '')
+      document.body.appendChild(el)
+      el.data = DATA
+      el.setAttribute('value', '["a","b"]')
+      const vlist = el.shadowRoot!.querySelector('.vlist-right')!
+      expect(vlist.getAttribute('item-height')).toBe('44')
+      const el2 = new OASTransfer()
+      el2.setAttribute('virtual', '')
+      el2.setAttribute('item-height', '32')
+      document.body.appendChild(el2)
+      el2.data = DATA
+      el2.setAttribute('value', '["a","b"]')
+      const vlist2 = el2.shadowRoot!.querySelector('.vlist-right')!
+      expect(vlist2.getAttribute('item-height')).toBe('32')
+    } finally {
+      if (had && orig) Object.defineProperty(window, 'matchMedia', { configurable: true, value: orig })
+      else delete (window as { matchMedia?: unknown }).matchMedia
+    }
+  })
+})

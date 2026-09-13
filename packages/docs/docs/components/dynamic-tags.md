@@ -44,14 +44,17 @@
 
 ## 排序
 
-<DemoBlock title="sortable 拖拽 + 键盘重排">
+<DemoBlock title="sortable 拖拽 + 按钮 + 键盘重排">
   <oas-dynamic-tags sortable model-value='["标签一","标签二","标签三"]'></oas-dynamic-tags>
 </DemoBlock>
 
-`sortable` 开启双通道重排，重排派发 `oas-change`（`detail.trigger = "sort"`）：
+`sortable` 开启三通道重排，重排派发 `oas-change`（`detail.trigger = "sort"`）：
 
+- 按钮：标签内「上移/下移」图标钮，点击与相邻标签交换（触屏可达，HTML5 拖拽在触屏上不可用）
 - 拖拽：按住标签拖到目标位置
 - 键盘：输入框为空时 `←` 聚焦末尾标签 / `→` 聚焦首个标签；标签上 `←` / `→` 遍历（两端回到输入框）；`Alt + ←` / `Alt + →` 与相邻标签交换
+
+触屏（pointer: coarse）下标签整体抬到 44px 行高，删除×/排序钮/清空钮热区加宽到 44px。
 
 ## 超量折叠
 
