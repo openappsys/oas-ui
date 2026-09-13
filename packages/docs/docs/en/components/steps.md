@@ -287,6 +287,7 @@ Combination semantics: `simple` takes priority over `progress-dot` / `navigation
 | `clickable` | Steps are clickable to jump (boolean; enabled when present) | `boolean` | — |
 | `content-placement` | Content block placement: `bottom` (default, title/description below the indicator) / `right` (whole block to the right of the indicator, horizontal mode); ignored in vertical; orthogonal to label-placement | `string` | — |
 | `current` | Current step index (0-based) | `string` | `0` |
+| `dir` | — | — | — |
 | `direction` | Direction (forced to horizontal in navigation mode; responsive switches to vertical on narrow screens) | `string` | `horizontal` |
 | `label-placement` | Label placement: `vertical` (default, icon above title) / `horizontal` (icon and title on the same row) | `string` | — |
 | `linear` | Linear mode: only steps with `index <= current` are clickable (boolean; enabled when present; future steps are blocked, clicks are silent) | `boolean` | — |

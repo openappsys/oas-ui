@@ -607,6 +607,7 @@ onMounted(async () => {
 | `centered` | Center the tab bar (when horizontal) | `boolean` | — |
 | `closable` | Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel) | `boolean` | — |
 | `context-menu` | Right-click action menu on tabs (New / Close / Close others / Close all to the left / Close all to the right / Close all; New fires oas-add, each close fires oas-close once per target tab) | `boolean` | — |
+| `dir` | — | — | — |
 | `hide-content` | Pure navigation mode: render the tab bar without the panel area (tabs act as a nav strip; the host takes over content/routing) | `boolean` | — |
 | `hide-indicator` | Hide the active indicator line (the ::after underline in line mode) | `boolean` | — |
 | `items` | Data-driven rendering: JSON array `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`; takes precedence over `oas-tab-panel` children when both present | `string` | — |

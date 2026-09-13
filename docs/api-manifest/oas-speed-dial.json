@@ -34,6 +34,10 @@
     {
       "name": "radius",
       "observed": true
+    },
+    {
+      "name": "dir",
+      "observed": true
     }
   ],
   "props": [],
