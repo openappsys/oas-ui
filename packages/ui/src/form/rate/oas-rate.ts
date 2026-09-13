@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 // 复用 oas-tooltip 作为逐星提示浮层（浅集成：virtual 点定位，确保其已注册）
 import '../../feedback/tooltip/index.js'
 
@@ -99,6 +100,10 @@ const STYLE = `
   clip-path: inset(0 50% 0 0);
   color: var(--oas-rate-active, var(--oas-color-warning));
   pointer-events: none;
+}
+/* RTL：值增长方向视觉镜像（首星在右），半星保留视觉前半（右半）——裁剪侧反向 */
+:host([data-rtl]) .star .half-fill {
+  clip-path: inset(0 0 0 50%);
 }
 .star:hover {
   transform: scale(1.1);
@@ -231,8 +236,11 @@ export class OASRate extends OASElement {
         // allow-half：键盘步进 0.5（交互步进固定 0.5）
         const step = this.hasAttr('allow-half') ? 0.5 : 1
         let value = this.currentValue()
-        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') value = Math.min(value + step, max)
-        else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') value = Math.max(value - step, 0)
+        // RTL：值增长方向视觉镜像——ArrowLeft 增、ArrowRight 减（上下键语义不变）
+        const inc = isRtl(this) ? e.key === 'ArrowLeft' : e.key === 'ArrowRight'
+        const dec = isRtl(this) ? e.key === 'ArrowRight' : e.key === 'ArrowLeft'
+        if (inc || e.key === 'ArrowUp') value = Math.min(value + step, max)
+        else if (dec || e.key === 'ArrowDown') value = Math.max(value - step, 0)
         else if (e.key === 'Home') value = 0
         else if (e.key === 'End') value = max
         else return
@@ -296,6 +304,8 @@ export class OASRate extends OASElement {
     const readonly = this.hasAttr('readonly')
     this.toggleAttribute('data-disabled', disabled)
     this.toggleAttribute('data-readonly', readonly)
+    // 书写方向镜像（data-rtl 供 :host([data-rtl]) 半星裁剪反向消费；键盘/指针取值同读 isRtl）
+    this.toggleAttribute('data-rtl', isRtl(this))
     const sizeRaw = this.getAttr('size', '')
     this.setAttribute('data-size', sizeRaw === '' ? 'medium' : normalizeRateSize(sizeRaw))
     this.slider.setAttribute('aria-disabled', String(disabled))
@@ -359,12 +369,15 @@ export class OASRate extends OASElement {
     }
   }
 
-  /** 半区判定：clientX 落在星左半（含中点）取 idx-0.5，右半取 idx */
+  /** 半区判定：取值低的半区是视觉前半——LTR 为星左半（含中点）取 idx-0.5；
+   *  RTL 值向左增长，视觉前半是右半，镜像判定 */
   private halfAwareValue(idx: number, e: MouseEvent): number {
     const star = this.starEls[idx - 1]
     if (!star) return idx
     const rect = star.getBoundingClientRect()
-    return e.clientX <= rect.left + rect.width / 2 ? idx - 0.5 : idx
+    const mid = rect.left + rect.width / 2
+    const firstHalf = isRtl(this) ? e.clientX >= mid : e.clientX <= mid
+    return firstHalf ? idx - 0.5 : idx
   }
 
   /** hover 填充预览：mouseenter / mousemove（allow-half 半区重算）；预览不提交 value */
@@ -667,16 +680,25 @@ export class OASRate extends OASElement {
     if (this.dragMoved) this.suppressClick = true
   }
 
-  /** 由指针 x 坐标折算分值：滑出首星左侧为 0；allow-half 按星内半区取 0.5 粒度 */
+  /** 由指针 x 坐标折算分值：滑出值域边界外为 0；allow-half 按星内半区取 0.5 粒度。
+   *  RTL 首星在视觉右端（值向左增长）——星格按物理 x 升序重排后，格 k 的值 = 总星数 - k，
+   *  半区判定同步镜像（视觉前半 = 物理右半） */
   private valueFromX(x: number): number | null {
-    const rects = this.starEls.map((s) => s.getBoundingClientRect())
-    if (!rects.length) return null
+    const count = this.starEls.length
+    if (!count) return null
     const allowHalf = this.hasAttr('allow-half')
-    if (x < rects[0]!.left) return 0
-    for (let i = 0; i < rects.length; i++) {
-      const r = rects[i]!
-      if (x <= r.right || i === rects.length - 1) {
-        return allowHalf && x <= r.left + r.width / 2 ? i + 0.5 : i + 1
+    const rtl = isRtl(this)
+    const ordered = this.starEls
+      .map((s, i) => ({ rect: s.getBoundingClientRect(), value: i + 1 }))
+      .sort((a, b) => a.rect.left - b.rect.left)
+    if (x < ordered[0]!.rect.left) return rtl ? count : 0
+    for (let k = 0; k < ordered.length; k++) {
+      const { rect, value } = ordered[k]!
+      if (x <= rect.right || k === ordered.length - 1) {
+        if (!allowHalf) return value
+        const mid = rect.left + rect.width / 2
+        const firstHalf = rtl ? x >= mid : x <= mid
+        return firstHalf ? value - 0.5 : value
       }
     }
     return null

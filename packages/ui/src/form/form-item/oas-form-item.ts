@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 const STYLE = `
 :host {
@@ -34,6 +35,11 @@ const STYLE = `
 :host([data-form-label-align='right']) .label {
   justify-content: flex-end;
   text-align: right;
+}
+/* label-align=left/right 是显式物理 API：RTL 下标签仍物理右对齐——
+   flex-end 会随书写方向镜像到左侧，用 data-rtl 反向钉回物理右侧 */
+:host([data-rtl][data-form-label-align='right']) .label {
+  justify-content: flex-start;
 }
 .required {
   color: var(--oas-color-danger);
@@ -126,6 +132,8 @@ export class OASFormItem extends OASElement {
   }
 
   protected override update(): void {
+    // 书写方向镜像（data-rtl 供 :host([data-rtl]) 物理对齐 API 钉定消费）
+    this.toggleAttribute('data-rtl', isRtl(this))
     // 感知父 oas-form 的布局配置（closest 读属性；form 属性变化时由 form 侧调 refreshLayout 同步）。
     // inline 优先于 layout：标签强制左侧、label-width 自动、span 忽略。
     const form = this.closest('oas-form')

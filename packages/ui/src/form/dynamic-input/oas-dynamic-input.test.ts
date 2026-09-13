@@ -435,3 +435,12 @@ describe('OASDynamicInput 新增属性与事件', () => {
     expect(addBtn(el).disabled).toBe(true)
   })
 })
+
+describe('OASDynamicInput RTL 逻辑方向化', () => {
+  it('加号图标与文案间距走逻辑属性（margin-inline-end，RTL 下间隙自动落另一侧）', () => {
+    const el = mount({ 'model-value': '["a"]' })
+    const icon = addBtn(el).querySelector('svg')!
+    expect(icon.style.getPropertyValue('margin-inline-end')).toBe('var(--oas-space-1)')
+    expect(icon.style.getPropertyValue('margin-right')).toBe('')
+  })
+})

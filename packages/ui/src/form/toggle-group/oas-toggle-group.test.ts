@@ -658,3 +658,23 @@ describe('OASToggleGroup 触摸目标（coarse pointer 抬升）', () => {
     expect(css).toContain('var(--oas-touch-target-min, 44px)')
   })
 })
+
+describe('OASToggleGroup RTL 键盘镜像', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('dir=rtl 时水平方向键视觉镜像：ArrowLeft 下一项、ArrowRight 上一项（单选移动即选中）', () => {
+    const el = mount({ dir: 'rtl', value: 'week' })
+    key(el, 'ArrowLeft')
+    expect(el.getAttribute('value')).toBe('month')
+    key(el, 'ArrowRight')
+    expect(el.getAttribute('value')).toBe('week')
+    // 上下键语义不变
+    key(el, 'ArrowDown')
+    expect(el.getAttribute('value')).toBe('month')
+  })
+})

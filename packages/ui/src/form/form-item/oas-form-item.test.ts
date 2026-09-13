@@ -197,3 +197,18 @@ describe('OASFormItem', () => {
     expect(el.shadowRoot!.querySelector('.label-text')!.textContent).toBe('姓名')
   })
 })
+
+describe('OASFormItem RTL 逻辑方向化', () => {
+  it('dir=rtl 时宿主镜像 data-rtl，默认 LTR 不带该标记', () => {
+    const ltr = mount({ label: '姓名' })
+    expect(ltr.hasAttribute('data-rtl')).toBe(false)
+    const rtl = mount({ dir: 'rtl', label: '姓名' })
+    expect(rtl.hasAttribute('data-rtl')).toBe(true)
+  })
+
+  it('label-align=right 物理对齐 API 在 RTL 下的钉定规则存在（flex-start 抵消 flex-end 的 dir 镜像）', () => {
+    const el = mount({ label: '姓名' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(":host([data-rtl][data-form-label-align='right']) .label")
+  })
+})

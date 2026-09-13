@@ -617,3 +617,52 @@ describe('OASRate 能力补齐', () => {
     expect(el.hasAttribute('value')).toBe(false)
   })
 })
+
+describe('OASRate RTL 逻辑方向化', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('dir=rtl 时宿主镜像 data-rtl，CSS 含半星裁剪镜像规则', async () => {
+    const el = mount({ dir: 'rtl' })
+    await Promise.resolve()
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host([data-rtl]) .star .half-fill')
+    expect(css).toMatch(/:host\(\[data-rtl\]\) \.star \.half-fill \{[^}]*clip-path:\s*inset\(0 0 0 50%\)/)
+  })
+
+  it('RTL：键盘 ArrowLeft 增值 / ArrowRight 减值（上下键语义不变）', async () => {
+    const el = mount({ dir: 'rtl', value: '2' })
+    await Promise.resolve()
+    const press = (key: string): void => {
+      sliderOf(el).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+    }
+    press('ArrowLeft')
+    expect(el.getAttribute('value')).toBe('3')
+    press('ArrowRight')
+    expect(el.getAttribute('value')).toBe('2')
+    press('ArrowUp')
+    expect(el.getAttribute('value')).toBe('3')
+    press('ArrowDown')
+    expect(el.getAttribute('value')).toBe('2')
+  })
+
+  it('RTL：触屏滑选取值随视觉方向镜像（value1 星在视觉右端、值向左增长）', async () => {
+    const el = mount({ dir: 'rtl', 'allow-half': '' })
+    await Promise.resolve()
+    const s = stars(el)
+    // RTL 视觉布局：value=i+1 的星物理 left 递减（首星贴右端）
+    const lefts = [80, 60, 40, 20, 0]
+    s.forEach((star, i) => rectAt(star, lefts[i]!, 20))
+    const slider = sliderOf(el)
+    slider.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', clientX: 10, pointerId: 1 }))
+    // 拖到 x=35：落在 value4 星（物理 20~40）的右半（视觉前半 → 4 - 0.5）
+    slider.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'touch', clientX: 35, pointerId: 1 }))
+    expect(el.getAttribute('value')).toBe('3.5')
+  })
+})

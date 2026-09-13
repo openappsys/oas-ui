@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 // options 数据通道渲染 oas-radio 需保证自定义元素已定义（运行时副作用导入）
 import './oas-radio.js'
 import type { OASRadio } from './oas-radio.js'
@@ -242,7 +243,9 @@ export class OASRadioGroup extends OASElement {
     } else if (e.key === 'End') {
       next = enabled[enabled.length - 1]
     } else {
-      const dir = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : -1
+      // RTL：水平方向键视觉镜像（ArrowLeft=下一项，对齐原生 RTL radio 行为）；上下键不变
+      const forward = e.key === 'ArrowDown' || (isRtl(this) ? e.key === 'ArrowLeft' : e.key === 'ArrowRight')
+      const dir = forward ? 1 : -1
       next = enabled[(cur + dir + enabled.length) % enabled.length]
     }
     if (next === undefined) return

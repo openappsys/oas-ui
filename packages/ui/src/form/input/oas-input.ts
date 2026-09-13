@@ -196,37 +196,42 @@ input:disabled:hover {
   background: var(--oas-color-bg-disabled);
   color: var(--oas-color-text-disabled);
 }
+/* addon 圆角合并走逻辑角属性（border-start-*-radius 随书写方向镜像：RTL 下 prepend 在右侧） */
 :host([addon-before]) [part='prepend']  {
-  border-radius: var(--oas-radius-md) 0 0 var(--oas-radius-md);
-  border-right: none;
+  border-start-start-radius: var(--oas-radius-md);
+  border-end-start-radius: var(--oas-radius-md);
+  border-inline-end: none;
 }
 :host([data-slot-prepend]) [part='prepend']  {
-  border-radius: var(--oas-radius-md) 0 0 var(--oas-radius-md);
-  border-right: none;
+  border-start-start-radius: var(--oas-radius-md);
+  border-end-start-radius: var(--oas-radius-md);
+  border-inline-end: none;
 }
 :host([addon-after]) [part='append']  {
-  border-radius: 0 var(--oas-radius-md) var(--oas-radius-md) 0;
-  border-left: none;
+  border-start-end-radius: var(--oas-radius-md);
+  border-end-end-radius: var(--oas-radius-md);
+  border-inline-start: none;
 }
 :host([data-slot-append]) [part='append']  {
-  border-radius: 0 var(--oas-radius-md) var(--oas-radius-md) 0;
-  border-left: none;
+  border-start-end-radius: var(--oas-radius-md);
+  border-end-end-radius: var(--oas-radius-md);
+  border-inline-start: none;
 }
 :host([addon-before]) input  {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
 }
 :host([data-slot-prepend]) input  {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
 }
 :host([addon-after]) input  {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
 }
 :host([data-slot-append]) input  {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
 }
 /* hidden 属性需要显式覆盖 display（避免 class 的 display 优先级压过 UA 的 [hidden] 规则） */
 .addon[hidden] {
@@ -257,120 +262,121 @@ input:disabled:hover {
   height: 14px;
   display: block;
 }
+/* 内嵌前后缀定位走逻辑属性（inset-inline-*：RTL 下 prefix 在右、suffix 在左自动镜像） */
 [part='prefix-icon'] {
-  left: var(--oas-space-3);
+  inset-inline-start: var(--oas-space-3);
 }
 [part='prefix'] {
-  left: var(--oas-space-8, 40px);
+  inset-inline-start: var(--oas-space-8, 40px);
 }
 :host(:not([prefix-icon])) [part='prefix'] {
-  left: var(--oas-space-3);
+  inset-inline-start: var(--oas-space-3);
 }
 [part='suffix-icon'] {
-  right: var(--oas-space-8, 40px);
+  inset-inline-end: var(--oas-space-8, 40px);
 }
 [part='suffix'] {
-  right: calc(var(--oas-space-8, 40px) + 16px);
+  inset-inline-end: calc(var(--oas-space-8, 40px) + 16px);
 }
 :host(:not([suffix-icon])) [part='suffix'] {
-  right: var(--oas-space-8, 40px);
+  inset-inline-end: var(--oas-space-8, 40px);
 }
 :host(:not([clearable])) [part='suffix-icon'] {
-  right: var(--oas-space-3);
+  inset-inline-end: var(--oas-space-3);
 }
 :host(:not([clearable])) [part='suffix'] {
-  right: var(--oas-space-3);
+  inset-inline-end: var(--oas-space-3);
 }
 .affix[hidden],
 .affix-icon[hidden] {
   display: none;
 }
 
-/* 有前缀/图标时 input 左侧留位，有后缀/图标/可清空时右侧留位。
-   slot 分发（data-slot-*）与 attribute（prefix/suffix）两条通道等价驱动布局；
-   测宽 mirror 同享留位（保证 auto-width 测量含让位内边距） */
+/* 有前缀/图标时 input 起始侧留位，有后缀/图标/可清空时结束侧留位（padding-inline-* 随书写方向镜像）。
+    slot 分发（data-slot-*）与 attribute（prefix/suffix）两条通道等价驱动布局；
+    测宽 mirror 同享留位（保证 auto-width 测量含让位内边距） */
 :host([prefix-text]) :is(input, .measure)  {
-  padding-left: var(--oas-space-8, 40px);
+  padding-inline-start: var(--oas-space-8, 40px);
 }
 :host([data-slot-prefix]) :is(input, .measure)  {
-  padding-left: var(--oas-space-8, 40px);
+  padding-inline-start: var(--oas-space-8, 40px);
 }
 :host([prefix-icon]) :is(input, .measure)  {
-  padding-left: var(--oas-space-8, 40px);
+  padding-inline-start: var(--oas-space-8, 40px);
 }
 :host([prefix-text][prefix-icon]) :is(input, .measure)  {
-  padding-left: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  padding-inline-start: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([data-slot-prefix][prefix-icon]) :is(input, .measure)  {
-  padding-left: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  padding-inline-start: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([suffix-text]) :is(input, .measure)  {
-  padding-right: var(--oas-space-8, 40px);
+  padding-inline-end: var(--oas-space-8, 40px);
 }
 :host([data-slot-suffix]) :is(input, .measure)  {
-  padding-right: var(--oas-space-8, 40px);
+  padding-inline-end: var(--oas-space-8, 40px);
 }
 :host([suffix-icon]) :is(input, .measure)  {
-  padding-right: var(--oas-space-8, 40px);
+  padding-inline-end: var(--oas-space-8, 40px);
 }
 :host([clearable]) :is(input, .measure)  {
-  padding-right: var(--oas-space-8, 40px);
+  padding-inline-end: var(--oas-space-8, 40px);
 }
 :host([clearable][suffix-text]) :is(input, .measure)  {
-  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([clearable][data-slot-suffix]) :is(input, .measure)  {
-  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([clearable][suffix-icon]) :is(input, .measure)  {
-  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 
-/* show-password 眼睛按钮让位：输入框/清除按钮/内嵌后缀整体左移 */
+/* show-password 眼睛按钮让位：输入框/清除按钮/内嵌后缀整体移到结束侧 */
 :host([show-password]) :is(input, .measure) {
-  padding-right: var(--oas-space-8, 40px);
+  padding-inline-end: var(--oas-space-8, 40px);
 }
 :host([show-password][clearable]) :is(input, .measure)  {
-  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([show-password][suffix-text]) :is(input, .measure)  {
-  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([show-password][data-slot-suffix]) :is(input, .measure)  {
-  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([show-password][suffix-icon]) :is(input, .measure)  {
-  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([show-password][clearable][suffix-text]) :is(input, .measure)  {
-  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
 }
 :host([show-password][clearable][data-slot-suffix]) :is(input, .measure)  {
-  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
 }
 :host([show-password][clearable][suffix-icon]) :is(input, .measure)  {
-  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
 }
 :host([show-password][type='password']) .clear-btn {
-  right: var(--oas-space-8, 40px);
+  inset-inline-end: var(--oas-space-8, 40px);
 }
 :host([show-password][clearable][suffix-icon]) .clear-btn {
-  right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  inset-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([show-password]) [part='suffix-icon'] {
-  right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  inset-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([show-password]:not([suffix-icon])) [part='suffix'] {
-  right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+  inset-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([show-password]) [part='suffix'] {
-  right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + 16px);
+  inset-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + 16px);
 }
 
 /* ---- 清除按钮 ---- */
 .clear-btn {
   position: absolute;
-  right: var(--oas-space-2);
+  inset-inline-end: var(--oas-space-2);
   appearance: none;
   border: none;
   background: transparent;
@@ -400,7 +406,7 @@ input:disabled:hover {
 /* ---- show-password 眼睛切换按钮 ---- */
 .eye-btn {
   position: absolute;
-  right: var(--oas-space-2);
+  inset-inline-end: var(--oas-space-2);
   appearance: none;
   border: none;
   background: transparent;
@@ -434,7 +440,7 @@ input:disabled:hover {
   display: none;
 }
 
-/* ---- show-count 字数统计（outside 输入框右下角 / inside 输入区内右侧） ---- */
+/* ---- show-count 字数统计（outside 输入框 inline-end 侧下方 / inside 输入区内结束侧） ---- */
 .count {
   position: absolute;
   top: 100%;

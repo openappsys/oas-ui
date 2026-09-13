@@ -999,3 +999,19 @@ describe('OASInput 能力补齐', () => {
     expect(el.style.getPropertyValue('--oas-input-measured')).toBe('50px')
   })
 })
+
+describe('OASInput RTL 逻辑方向化', () => {
+  it('前后缀留位与定位全部走逻辑属性（padding-inline-*/inset-inline-*/逻辑圆角，无物理 left/right 留位）', () => {
+    const el = mount({ 'prefix-icon': 'user', 'suffix-icon': 'calendar', clearable: '' })
+    const css = styleText(el)
+    expect(css).toContain('padding-inline-start')
+    expect(css).toContain('padding-inline-end')
+    expect(css).toContain('inset-inline-start')
+    expect(css).toContain('inset-inline-end')
+    // 物理方向属性清零：RTL 下由逻辑属性自动镜像，无需 data-rtl 覆盖
+    expect(css).not.toMatch(/padding-(left|right)/)
+    expect(css).not.toMatch(/border-(left|right)/)
+    expect(css).not.toMatch(/(^|[^-a-z])left:\s/)
+    expect(css).not.toMatch(/(^|[^-a-z])right:\s/)
+  })
+})

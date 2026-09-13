@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 /** 单个刻度：数值 + 展示标签（show-stops 生成的刻度点无标签） */
 interface MarkEntry {
@@ -660,7 +661,7 @@ export class OASSlider extends OASElement {
         : rect.width
           ? ((e.clientX - rect.left) / rect.width) * 100
           : 50
-      const reverse = this.hasAttr('reverse')
+      const reverse = this.horizontalReverse()
       const span = max - min || 1
       const valueAt = min + (reverse ? 100 - pct : pct) * (span / 100)
       const mid = (lo + hi) / 2
@@ -733,8 +734,9 @@ export class OASSlider extends OASElement {
     const markMode = this.isMarkStep()
     // 原生 step：mark 模式给 any（吸附由组件接管），无 marks 时回退 1
     const step = this.getAttr('step', '1') === 'mark' ? (markMode ? 'any' : '1') : this.getAttr('step', '1')
-    // 方向：horizontal reverse=rtl（min 在右）；vertical 默认 min 在下（rtl），reverse 镜像到上
-    const dir = vertical ? (reverse ? 'ltr' : 'rtl') : reverse ? 'rtl' : 'ltr'
+    // 方向：horizontal 有效反转（reverse 属性 XOR RTL 书写方向）时 min 在右（dir=rtl 由原生 range 镜像）；
+    // vertical 默认 min 在下（rtl），reverse 镜像到上（vertical 不随书写方向镜像）
+    const dir = vertical ? (reverse ? 'ltr' : 'rtl') : this.horizontalReverse() ? 'rtl' : 'ltr'
 
     // 宿主状态镜像（data-* 非 observed 属性，写入不触发 attributeChangedCallback 循环）
     this.toggleAttribute('data-vertical', vertical)
@@ -939,13 +941,22 @@ export class OASSlider extends OASElement {
     this.applyKeyboardValue(input, (Number(input.value) || 0) + sign * large)
   }
 
-  /** 键 → 值方向：箭头键受 reverse 视觉镜像反转（值增长方向与箭头视觉方向一致），页键保持值语义 */
+  /** 键 → 值方向：箭头键受视觉镜像反转（值增长方向与箭头视觉方向一致），页键保持值语义。
+   *  视觉镜像 = horizontal 有效反转（reverse 属性 XOR RTL 书写方向）；vertical 用 reverse 属性本身 */
   private keySign(key: string): number {
     let sign = 0
     if (key === 'ArrowRight' || key === 'ArrowUp' || key === 'PageUp') sign = 1
     else if (key === 'ArrowLeft' || key === 'ArrowDown' || key === 'PageDown') sign = -1
-    if (sign !== 0 && key.startsWith('Arrow') && this.hasAttr('reverse')) sign = -sign
+    if (sign !== 0 && key.startsWith('Arrow')) {
+      const flipped = this.hasAttr('vertical') ? this.hasAttr('reverse') : this.horizontalReverse()
+      if (flipped) sign = -sign
+    }
     return sign
+  }
+
+  /** 水平轴有效视觉反转：reverse 属性 XOR RTL 书写方向（vertical 不随书写方向镜像，不适用） */
+  private horizontalReverse(): boolean {
+    return this.hasAttr('reverse') !== isRtl(this)
   }
 
   /** step="mark" 键盘：在刻度档位间跳转（大步跳 MARK_BIG_STEP 档，Home/End 到首末刻度） */
@@ -1265,7 +1276,8 @@ export class OASSlider extends OASElement {
     const min = Number(this.getAttr('min', '0'))
     const max = Number(this.getAttr('max', '100'))
     const span = max - min || 1
-    const reverse = this.hasAttr('reverse')
+    // 视觉反转取轴相关值：horizontal = 有效反转（reverse XOR RTL）；vertical = reverse 属性本身
+    const reverse = this.hasAttr('vertical') ? this.hasAttr('reverse') : this.horizontalReverse()
     const vertical = this.hasAttr('vertical')
     const isRange = this.hasAttr('range')
     const focused = this.hasAttribute('data-focused')
@@ -1286,7 +1298,8 @@ export class OASSlider extends OASElement {
     const sp = this.startPointValue(min, max)
     const [lo, hi] = isRange ? this.currentRange() : [sp, Number(this.input?.value ?? 0)]
     const pctOf = (v: number): number => ((v - min) / span) * 100
-    // 视觉轴归一（水平从左起算 / 垂直从上起算）：水平默认 min 在左、垂直默认 min 在下，reverse 各自镜像
+    // 视觉轴归一（水平从左起算 / 垂直从上起算）：水平默认 min 在左、垂直默认 min 在下，
+    // reverse 各自镜像（horizontal 的 reverse 已并入 RTL 书写方向的有效反转）
     const vis = (pct: number): number => (vertical ? (reverse ? pct : 100 - pct) : reverse ? 100 - pct : pct)
     fill.dataset.pct = String(reverse ? 100 - pctOf(hi) : pctOf(hi))
     // 定位轴切换（vertical 用 top/height），切轴时清理另一轴的位置与尺寸残留
@@ -1450,7 +1463,7 @@ export class OASSlider extends OASElement {
     marksEl.hidden = false
     const min = Number(this.getAttr('min', '0'))
     const max = Number(this.getAttr('max', '100'))
-    const reverse = this.hasAttr('reverse')
+    const reverse = this.hasAttr('vertical') ? this.hasAttr('reverse') : this.horizontalReverse()
     const vertical = this.hasAttr('vertical')
     const key =
       `${vertical ? 'v' : ''}${reverse ? 'r' : ''}:${min}:${max}:${this.getAttr('step', '1')}:${this.hasAttr('show-stops')}|` +
@@ -1475,7 +1488,7 @@ export class OASSlider extends OASElement {
 
   private renderMarks(container: HTMLElement, ticks: MarkEntry[], min: number, max: number): void {
     const span = max - min || 1
-    const reverse = this.hasAttr('reverse')
+    const reverse = this.hasAttr('vertical') ? this.hasAttr('reverse') : this.horizontalReverse()
     const vertical = this.hasAttr('vertical')
     container.innerHTML = ''
     for (const mark of ticks) {
