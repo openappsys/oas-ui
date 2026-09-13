@@ -58,3 +58,28 @@ test('pagination 宿主 hidden + hide-on-single 叠加：多页恢复不误摘�
   expect(kept.hiddenAtSingle, '单页时宿主 hidden 应在').toBe(true)
   expect(kept.hiddenAfterGrow, 'hide-on-single 恢复不得误摘宿主 hidden').toBe(true)
 })
+
+// 移动端专项：coarse pointer 下页码/前后钮/条数切换/跳转输入最小高度 ≥44px（触控目标抬升）
+test('pagination 移动端：coarse 下可点元素最小高度 ≥44px（--oas-touch-target-min）', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/components/pagination.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-pagination')
+    const r = await page.evaluate(() => {
+      const root = document.querySelector('oas-pagination')!.shadowRoot!
+      const css = root.querySelector('style')!.textContent!
+      const pick = (sel: string) => parseFloat(getComputedStyle(root.querySelector(sel) as HTMLElement).minHeight)
+      return {
+        coarseRule: css.includes('@media (pointer: coarse)') && css.includes('--oas-touch-target-min'),
+        pageMin: pick('[part="page"]'),
+        prevMin: pick('[part="prev"]'),
+      }
+    })
+    expect(r.coarseRule, '样式表应有 coarse 触摸目标规则').toBe(true)
+    expect(r.pageMin, '页码钮 coarse 下最小高度 ≥44px').toBeGreaterThanOrEqual(44)
+    expect(r.prevMin, '前后钮 coarse 下最小高度 ≥44px').toBeGreaterThanOrEqual(44)
+  } finally {
+    await ctx.close()
+  }
+})

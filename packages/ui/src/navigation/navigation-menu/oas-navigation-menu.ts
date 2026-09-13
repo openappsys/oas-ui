@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { getViewport } from '../../overlay/floating/index.js'
 import type { MenuItem } from '../menu/index.js'
 import type { MenuItemKind } from '../menu/oas-menu.js'
 // 图标查表走 oas-icon 同一通道（customIcons 注册优先、内置 iconRegistry 兜底）：
@@ -129,6 +130,8 @@ const STYLE = `
   min-width: 200px;
   width: var(--vp-w, auto);
   height: var(--vp-h, auto);
+  /* 窄屏宽度兜底：--vp-w 来自内容 scrollWidth，超宽时按视口裁剪（网格列 minmax(0,1fr) 自动收缩） */
+  max-width: calc(100vw - 2 * var(--oas-space-2, 8px));
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
@@ -504,6 +507,95 @@ const STYLE = `
     min-height: var(--oas-control-height-xl);
   }
 }
+/* ===== 顶级溢出收纳：窄屏装不下的尾部顶级项收进「···」弹层（参照 toolbar 收纳模式） ===== */
+.top-item[data-collapsed] {
+  display: none;
+}
+.top-more {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--oas-color-text-primary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-md);
+  height: var(--oas-control-height-md);
+  padding: 0 var(--oas-space-3);
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.top-more:hover,
+.top-more[aria-expanded='true'] {
+  background: var(--oas-color-bg-hover);
+}
+.top-more:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.top-more[hidden] {
+  display: none;
+}
+.overflow-panel {
+  position: absolute;
+  top: calc(100% + var(--oas-space-1));
+  right: 0;
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
+  min-width: 160px;
+  max-width: calc(100vw - 2 * var(--oas-space-2, 8px));
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--oas-space-1);
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-1);
+}
+/* 弹层下缘超出视口可见区域时向上翻转（判定走 getViewport，JS 切类） */
+.overflow-panel.flip-up {
+  top: auto;
+  bottom: calc(100% + var(--oas-space-1));
+}
+.overflow-panel[hidden] {
+  display: none;
+}
+.overflow-item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--oas-color-text-primary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-md);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-1);
+  white-space: nowrap;
+  text-decoration: none;
+}
+.overflow-item:hover {
+  background: var(--oas-color-bg-hover);
+}
+.overflow-item:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.overflow-item[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 `
 
 let viewportSeq = 0
@@ -558,6 +650,16 @@ export class OASNavigationMenu extends OASElement {
   /** 上次关闭时刻（skip-delay-duration 跳过打开延迟） */
   private lastCloseAt = 0
 
+  /** 顶级溢出收纳：「···」按钮与弹层节点引用（render/水合路径共用） */
+  private moreBtn: HTMLButtonElement | null = null
+  private overflowPanelEl: HTMLElement | null = null
+  /** 顶级溢出收纳：容器宽度监听（清理走 onCleanup） */
+  private overflowObserver: ResizeObserver | null = null
+  /** 被收纳的顶级项 value 集合（键盘导航/roving 跳过、指示条不误定位） */
+  private collapsedValues = new Set<string>()
+  /** 「···」弹层开合 */
+  private moreOpen = false
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
@@ -565,6 +667,7 @@ export class OASNavigationMenu extends OASElement {
       <div class="nav" part="nav" role="navigation">
         <div class="bar" part="bar">
           <span class="indicator" part="indicator" data-state="closed" aria-hidden="true"></span>
+          <button class="top-more" part="top-more" type="button" aria-haspopup="menu" aria-expanded="false" hidden>···</button>
         </div>
         <span class="arrow" part="arrow" aria-hidden="true"></span>
         <div class="viewport" part="viewport">
@@ -572,6 +675,7 @@ export class OASNavigationMenu extends OASElement {
           <div class="panel-footer" part="panel-footer" hidden><slot name="panel-footer"></slot></div>
           <div class="sub-panel" part="sub-panel" hidden></div>
         </div>
+        <div class="overflow-panel" part="overflow-panel" role="menu" hidden></div>
         <div class="backdrop" part="backdrop" aria-hidden="true"></div>
       </div>
     `
@@ -588,8 +692,32 @@ export class OASNavigationMenu extends OASElement {
     this.backdropEl = this.shadow.querySelector('.backdrop')
     this.subPanelEl = this.shadow.querySelector('.sub-panel')
     this.panelFooterEl = this.shadow.querySelector('.panel-footer')
+    this.moreBtn = this.shadow.querySelector('.top-more')
+    this.overflowPanelEl = this.shadow.querySelector('.overflow-panel')
     this.viewportEl?.setAttribute('id', this.viewportId)
     this.subPanelEl?.setAttribute('id', this.subPanelId)
+    this.moreBtn?.setAttribute('aria-label', this.t('menu.more'))
+    this.overflowPanelEl?.setAttribute('aria-label', this.t('menu.more'))
+    // 「···」点击开合收纳弹层；弹层内 Esc 收起并归还焦点
+    this.moreBtn?.addEventListener('click', () => {
+      if (this.moreOpen) this.closeOverflow(true)
+      else this.openOverflow()
+    })
+    this.overflowPanelEl?.addEventListener('keydown', (e) => {
+      if ((e as KeyboardEvent).key === 'Escape') {
+        e.stopPropagation()
+        this.closeOverflow(true)
+      }
+    })
+    // 顶级溢出收纳：容器宽度变化重算（断连清理后 update 幂等重建）
+    if (typeof ResizeObserver !== 'undefined' && !this.overflowObserver) {
+      this.overflowObserver = new ResizeObserver(() => this.syncOverflowCollapse())
+      this.overflowObserver.observe(this)
+      this.onCleanup(() => {
+        this.overflowObserver?.disconnect()
+        this.overflowObserver = null
+      })
+    }
     // 营销位插槽内容动态增减 → 重算容器显隐（宿主后插内容也能生效）
     const footerSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="panel-footer"]')
     footerSlot?.addEventListener('slotchange', () => this.syncPanelFooter())
@@ -647,6 +775,8 @@ export class OASNavigationMenu extends OASElement {
     this.syncActive()
     this.syncRoving()
     this.syncPanelFooter()
+    // 顶级溢出收纳重算（renderBar 重建了触发器，data-collapsed 需重新判定；未布局/SSR 不误判）
+    this.syncOverflowCollapse()
   }
 
   /** panel-footer 营销位插槽容器：有内容才显示（宿主放 CTA 卡片） */
@@ -929,6 +1059,138 @@ export class OASNavigationMenu extends OASElement {
         el.appendChild(this.createChevron())
       }
     })
+    // 「···」收纳钮始终保持在触发器行末尾（renderBar 每次重建触发器，尾部位置需重排）
+    if (this.moreBtn) barEl.appendChild(this.moreBtn)
+  }
+
+  // ================= 顶级溢出收纳（窄屏「···」弹层） =================
+
+  /**
+   * 重算顶级溢出收纳：bar 装不下时尾部顶级项打 data-collapsed 隐藏并镜像进「···」弹层。
+   * 公开：宿主可在布局变化后手动触发（ResizeObserver 已自动监听本宿主）。
+   * 只作用于横向形态；竖排列排无横向溢出概念，不收纳。SSR/未布局（clientWidth=0）不误判。
+   */
+  syncOverflowCollapse(): void {
+    const bar = this.barEl
+    const more = this.moreBtn
+    if (!bar || !more) return
+    const tops = [...bar.querySelectorAll<HTMLElement>('[part="top-item"]')]
+    // 先复位再测量：collapsed 项 display:none 宽为 0，直接量会把已收纳态误判成无溢出
+    for (const t of tops) t.removeAttribute('data-collapsed')
+    this.collapsedValues.clear()
+    const none = (): void => {
+      more.hidden = true
+      more.setAttribute('aria-expanded', 'false')
+      this.closeOverflow()
+    }
+    if (this.isVertical() || tops.length < 2) {
+      none()
+      return
+    }
+    const avail = bar.clientWidth
+    if (avail <= 0) {
+      none()
+      return
+    }
+    // 显示「···」量出其宽度（有溢出时它要占位，可用宽度须扣除）
+    more.hidden = false
+    const moreWidth = more.offsetWidth
+    // 溢出判定用 scrollWidth > clientWidth（真实溢出），防 shrink-to-fit 假溢出
+    const realOverflow = bar.scrollWidth > bar.clientWidth + 1
+    // flex gap 不占 offsetWidth，按计算样式解析（未解析时兜底 --oas-space-1 = 4px）
+    let gap = 4
+    const gm = /([\d.]+)px/.exec(getComputedStyle(bar).gap || '')
+    if (gm) gap = Number(gm[1])
+    const calc = (availWidth: number): number => {
+      let acc = 0
+      for (let i = 0; i < tops.length; i++) {
+        acc += tops[i]!.offsetWidth + (i > 0 ? gap : 0)
+        if (acc > availWidth) return i
+      }
+      return -1
+    }
+    let firstOverflow = realOverflow ? calc(avail) : -1
+    if (firstOverflow !== -1 && moreWidth > 0) {
+      // 「···」自身占位后重算首个溢出项；兜底至少收最后一项腾位
+      firstOverflow = calc(avail - moreWidth)
+      if (firstOverflow === -1) firstOverflow = tops.length - 1
+    }
+    if (firstOverflow === -1) {
+      none()
+      return
+    }
+    tops.forEach((t, i) => {
+      const collapsed = i >= firstOverflow
+      t.toggleAttribute('data-collapsed', collapsed)
+      if (collapsed && t.dataset.value != null) this.collapsedValues.add(t.dataset.value)
+    })
+    more.hidden = false
+    more.setAttribute('aria-expanded', String(this.moreOpen))
+    // roving 基准落在被收纳项时回退到首个可见项（隐藏项不可聚焦）
+    const active = this.itemsList[this.activeIndex]
+    if (!active || this.collapsedValues.has(active.value ?? '')) {
+      const firstVisible = this.itemsList.findIndex((i) => !i.disabled && !this.collapsedValues.has(i.value ?? ''))
+      if (firstVisible >= 0) this.activeIndex = firstVisible
+    }
+    this.syncRoving()
+    this.renderOverflowPanel(tops.slice(firstOverflow))
+  }
+
+  /** 打开「···」收纳弹层：内容已在 syncOverflowCollapse 渲染，此处只做显隐 + 上翻判定 */
+  private openOverflow(): void {
+    const panel = this.overflowPanelEl
+    if (!panel || panel.querySelectorAll('[part="overflow-item"]').length === 0) return
+    this.moreOpen = true
+    panel.hidden = false
+    this.moreBtn?.setAttribute('aria-expanded', 'true')
+    // 下缘超出视口可见区域（getViewport：visualViewport 优先）时向上翻转
+    const rect = panel.getBoundingClientRect()
+    panel.classList.toggle('flip-up', rect.top + rect.height > getViewport().height - 8)
+  }
+
+  /** 收起「···」收纳弹层；returnFocus 时焦点归还「···」按钮 */
+  private closeOverflow(returnFocus = false): void {
+    this.moreOpen = false
+    if (this.overflowPanelEl) this.overflowPanelEl.hidden = true
+    this.moreBtn?.setAttribute('aria-expanded', 'false')
+    if (returnFocus) this.moreBtn?.focus()
+  }
+
+  /** 弹层镜像：被收顶级项 → 链接（叶子）或按钮（带 children，尾随 chevron），点击派发到原语义 */
+  private renderOverflowPanel(collapsed: HTMLElement[]): void {
+    const panel = this.overflowPanelEl
+    if (!panel) return
+    panel.innerHTML = ''
+    for (const origin of collapsed) {
+      const value = origin.dataset.value ?? ''
+      const item = this.itemsList.find((i) => i.value === value)
+      const hasChildren = origin.hasAttribute('aria-controls')
+      const el =
+        hasChildren || !origin.hasAttribute('href') ? document.createElement('button') : document.createElement('a')
+      el.className = 'overflow-item'
+      el.setAttribute('part', 'overflow-item')
+      el.textContent = origin.getAttribute('aria-label') ?? origin.textContent ?? ''
+      if (hasChildren) {
+        el.setAttribute('type', 'button')
+        el.appendChild(this.createChevron())
+      } else if (origin.hasAttribute('href')) {
+        el.setAttribute('href', origin.getAttribute('href') ?? '')
+        if (origin.getAttribute('target')) el.setAttribute('target', origin.getAttribute('target')!)
+        if (origin.getAttribute('aria-current') === 'page') el.setAttribute('aria-current', 'page')
+      }
+      if (origin.getAttribute('aria-disabled') === 'true') el.setAttribute('aria-disabled', 'true')
+      el.addEventListener('click', () => {
+        if (el.getAttribute('aria-disabled') === 'true') return
+        this.closeOverflow()
+        if (hasChildren) {
+          // 打开其大面板（viewport 展示 children 网格；被收纳触发器不驱动指示条，见 syncIndicator）
+          if (this.effectiveOpen() !== value) this.open(value)
+        } else if (item) {
+          this.select(item)
+        }
+      })
+      panel.appendChild(el)
+    }
   }
 
   private createChevron(): HTMLElement {
@@ -1291,6 +1553,8 @@ export class OASNavigationMenu extends OASElement {
       clearTimeout(this.closeTimer)
       this.closeTimer = null
     }
+    // 打开大面板时同步收起「···」收纳弹层（互斥浮层，避免双重悬挂）
+    this.closeOverflow()
     this.setOpenValue(value)
   }
 
@@ -1304,6 +1568,8 @@ export class OASNavigationMenu extends OASElement {
       clearTimeout(this.closeTimer)
       this.closeTimer = null
     }
+    // 大面板关闭时同步收起「···」收纳弹层（两者互斥，避免浮层悬挂）
+    this.closeOverflow()
     this.setOpenValue('')
   }
 
@@ -1401,11 +1667,12 @@ export class OASNavigationMenu extends OASElement {
   // ================= 外部点击关闭 =================
 
   private handleDocPointer = (e: PointerEvent): void => {
-    if (!this.effectiveOpen()) return
+    if (!this.effectiveOpen() && !this.moreOpen) return
     const t = e.target as Node | null
     if (t && (t === this || this.contains(t))) return
     this.keyboardMode = false
-    this.close()
+    if (this.effectiveOpen()) this.close()
+    if (this.moreOpen) this.closeOverflow()
   }
 
   // ================= 状态同步 =================
@@ -1470,7 +1737,12 @@ export class OASNavigationMenu extends OASElement {
       // 右边界 = min(视口, 导航栏右缘)；navRight 为 0（未布局/测试环境）回退视口
       const boundRight = navRight > 0 ? Math.min(vw, navRight) : vw
       const rightEdge = barRect.left + size.w
-      vp.classList.toggle('flip-right', rightEdge > boundRight - margin)
+      // 翻转后不越视口左缘；不翻转（贴 bar 左对齐）不越视口右缘
+      const flipKeepsLeft = barRect.right - size.w >= margin
+      const unflippedKeepsRight = rightEdge <= vw - margin
+      // 容器右缘溢出时优先 flip-right；但窄屏 bar 比面板还窄时 flip 会把面板顶出视口左缘——
+      // 此时只要不翻转能在视口内放得下，就保持左对齐（优先保证面板整体可见）
+      vp.classList.toggle('flip-right', rightEdge > boundRight - margin && (!unflippedKeepsRight || flipKeepsLeft))
       vp.classList.remove('flip-left')
     }
     const vpRect = vp.getBoundingClientRect()
@@ -1515,7 +1787,12 @@ export class OASNavigationMenu extends OASElement {
     const open = this.effectiveOpen()
     if (!open) return
     const trigger = this.shadow.querySelector<HTMLElement>(`[part="top-item"][data-value="${open}"]`)
-    if (!trigger) return
+    // 触发器被收纳（从「···」弹层打开）或缺失：指示条/箭头不定位到隐藏项（offset 全 0 会错位）
+    if (!trigger || trigger.hasAttribute('data-collapsed')) {
+      ind.setAttribute('data-state', 'closed')
+      if (this.arrowEl) this.arrowEl.hidden = true
+      return
+    }
     if (this.isVertical()) {
       // 坑：垂直形态开面板 toggle bar 的 vertical 类同帧触发横→竖重排，此时 offsetTop
       // 还是旧布局值（与 writeArrow 同因）——rAF 等一帧重排后写入，指示条才对准触发器
@@ -1582,7 +1859,8 @@ export class OASNavigationMenu extends OASElement {
     const target = open || this.itemsList[this.activeIndex]?.value || ''
     for (const el of this.shadow.querySelectorAll<HTMLElement>('[part="top-item"]')) {
       const v = el.dataset.value ?? ''
-      el.setAttribute('tabindex', v === target ? '0' : '-1')
+      // 被收纳的隐藏项恒 -1（不可聚焦），其余仅 roving 基准项进 Tab 顺序
+      el.setAttribute('tabindex', v === target && !this.collapsedValues.has(v) ? '0' : '-1')
     }
   }
 
@@ -1615,8 +1893,19 @@ export class OASNavigationMenu extends OASElement {
   }
 
   private handleTopKey(e: KeyboardEvent): void {
+    // 「···」收纳弹层打开时 Esc 收起并归还焦点（不进入下方的主面板/顶级逻辑）
+    if (this.moreOpen) {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        this.closeOverflow(true)
+      }
+      return
+    }
     const items = this.itemsList
-    const enabled = items.map((i, idx) => (i.disabled ? -1 : idx)).filter((i) => i >= 0)
+    // 被收纳的隐藏顶级项不参与键盘导航（焦点落不到 display:none 上）
+    const enabled = items
+      .map((i, idx) => (i.disabled || this.collapsedValues.has(i.value ?? '') ? -1 : idx))
+      .filter((i) => i >= 0)
     if (enabled.length === 0) return
     this.keyboardMode = true
     const vertical = this.isVertical()
