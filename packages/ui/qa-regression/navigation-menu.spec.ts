@@ -251,3 +251,61 @@ test('navigation-menu 垂直方向指示条对准活动触发器（bottom 锚点
   expect(r.topDiff, '指示条 top 应对准触发器 top').toBeLessThan(4)
   expect(r.hDiff, '指示条高度应等于触发器高度').toBeLessThan(4)
 })
+
+// 移动端专项：窄屏顶级溢出收纳——尾部顶级项收进「···」弹层，弹层项可打开大面板/派发选择
+test('navigation-menu 移动端：窄屏顶级溢出收纳进「···」弹层，弹层项可交互', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-navigation-menu')
+    const r = await page.evaluate(async () => {
+      const el = document.createElement('oas-navigation-menu')
+      el.setAttribute(
+        'items',
+        JSON.stringify([
+          { label: '产品中心', value: 'p', children: [{ label: '组件', value: 'c', href: '/c' }] },
+          { label: '资源中心', value: 'r', children: [{ label: '主题', value: 't', href: '/t' }] },
+          { label: '定价', value: 'pricing', href: '/pricing' },
+          { label: '关于', value: 'about', href: '/about' },
+          { label: '联系', value: 'contact', href: '/contact' },
+        ]),
+      )
+      el.style.cssText = 'display:block;width:150px'
+      document.body.appendChild(el)
+      // 等 ResizeObserver 重算收纳
+      await new Promise((res) => setTimeout(res, 300))
+      const root = el.shadowRoot!
+      const more = root.querySelector<HTMLElement>('[part="top-more"]')!
+      if (more.hidden) return { collapsed: false as const }
+      const collapsed = [...root.querySelectorAll('[part="top-item"][data-collapsed]')]
+      more.click()
+      await new Promise((res) => setTimeout(res, 200))
+      const panel = root.querySelector<HTMLElement>('[part="overflow-panel"]')!
+      const items = [...panel.querySelectorAll<HTMLElement>('[part="overflow-item"]')]
+      // 弹层 children 项点击应打开大面板
+      const withChildren = items.find((i) => i.tagName === 'BUTTON')!
+      withChildren.click()
+      await new Promise((res) => setTimeout(res, 200))
+      const viewport = root.querySelector<HTMLElement>('[part="viewport"]')!
+      const out = {
+        collapsed: true as const,
+        collapsedCount: collapsed.length,
+        mirrorCount: items.length,
+        panelOpensViewport: viewport.classList.contains('open'),
+        vpMaxWidthCss: root.querySelector('style')!.textContent!.includes('100vw'),
+      }
+      el.remove()
+      return out
+    })
+    expect(r.collapsed, '150px 窄容器应触发顶级溢出收纳').toBe(true)
+    if (r.collapsed) {
+      expect(r.collapsedCount, '应有尾部顶级项被收纳').toBeGreaterThan(0)
+      expect(r.mirrorCount, '「···」弹层应有镜像项').toBeGreaterThan(0)
+      expect(r.panelOpensViewport, '弹层 children 项点击应打开大面板').toBe(true)
+      expect(r.vpMaxWidthCss, 'viewport 应有 100vw 窄屏宽度兜底').toBe(true)
+    }
+  } finally {
+    await ctx.close()
+  }
+})

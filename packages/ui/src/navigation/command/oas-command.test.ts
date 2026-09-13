@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import '@oas-ui/i18n'
 import { OASCommand } from './index.js'
 
@@ -1123,5 +1123,51 @@ describe('子元素声明式通道', () => {
     await new Promise((r) => setTimeout(r, 0))
     const portalOpts = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]')]
     expect(portalOpts.map((o) => o.textContent)).toEqual(['命令 A', '命令 B'])
+  })
+})
+
+// ===== 移动端触摸目标（coarse pointer 抬升 ≥44px） =====
+
+describe('OASCommand 触摸目标（coarse pointer 抬升）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  it('coarse pointer 媒体查询进样式表，选项行最小高度走 --oas-touch-target-min（默认 44px）', () => {
+    const el = mount({ open: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    const coarse = css.split('@media (pointer: coarse)')[1]!
+    expect(coarse).toContain('.option')
+    expect(coarse).toContain('.back')
+    expect(coarse).toContain('min-height')
+  })
+
+  it('virtual：coarse pointer 下虚拟行高抬到触摸目标下限（步长与实际行高不错位）', () => {
+    vi.stubGlobal('matchMedia', ((query: string) => ({
+      matches: query.includes('coarse'),
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      onchange: null,
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia)
+    const items = JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ label: `命令 ${i}`, value: `c${i}` })))
+    const el = mount({ open: '', virtual: '', items })
+    const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+    // item-height 默认 36，coarse 下抬到 44（--oas-touch-target-min 默认值）
+    expect(vlist.getAttribute('item-height')).toBe('44')
+    const elCustom = mount({ open: '', virtual: '', items, 'item-height': '56' })
+    const vlistCustom = elCustom.shadowRoot!.querySelector('oas-virtual-list')!
+    // 宿主显式行高大于触摸下限时尊重宿主值
+    expect(vlistCustom.getAttribute('item-height')).toBe('56')
   })
 })
