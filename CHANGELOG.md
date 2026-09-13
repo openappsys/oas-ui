@@ -2,6 +2,16 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.5.3] - 未发布
+
+### 特性
+
+- **RTL 逻辑方向化（全组件批次）**：在 v2.5.2 方向解析基建上全量铺开——浮层定位接线补全（avatar-group / table / popconfirm / popover / tooltip / color-picker / cascader / dropdown / tour 统一传 `direction`，RTL 下主轴与对齐自动镜像）；hover-card 自研定位接镜像；menu 级联子菜单逻辑 inset + 翻转判定接 isRtl；全库物理方向 CSS 逻辑属性改造（input/transfer/menubar/navigation-menu/table/timeline/code 等）；方向敏感行为镜像（switch knob / slider 滑选 / rate 半星 / segmented·toggle-group·radio-group·dynamic-tags·tabs·toolbar·navigation-menu 方向键 / steps 序号与 arrow 形态 / sidebar 折叠与拖拽 / splitter 拖拽 delta / page-header 返回箭头）；代码块与数学公式内容保持 LTR 不镜像；显式物理 API（badge corner、float-button 位置、drawer/timeline/sidebar side 等）保留；`dir` 属性观察触发重判定（运行时切方向即时生效，`dir` 为全局约定属性不进 API 表）
+
+### 修复
+
+- ellipsis 3 处断言对齐 i18n「开箱即用」默认翻译行为（方向接线使 i18n 模块进入其模块图后，t() 返回 zh-CN 译文而非裸 key——既定设计，非行为回归）
+
 ## [2.5.2] - 2026-09-13
 
 ### 特性

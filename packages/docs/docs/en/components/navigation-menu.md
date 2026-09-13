@@ -179,7 +179,6 @@ onMounted(() => {
 | `backdrop` | Show an overlay when open (clicking the overlay closes) | `boolean` | — |
 | `columns` | Panel grid columns, default 2 (mega-panel multi-column link cards) | `string` | `2` |
 | `delay-duration` | Hover open/close delay in ms, default 200; clicks and keyboard are immediate | `string` | `200` |
-| `dir` | — | — | — |
 | `items` | Navigation items JSON (hierarchical; leaf items can carry `description` text and an `icon` to render mega-panel link cards) | `string` | `[]` |
 | `keep-mounted` | Keep the panel DOM mounted when closed (crawler/SEO indexing) | `boolean` | — |
 | `loop` | Top-level arrow-key wrap-around toggle, default `true` (loops at edges); explicit `loop="false"` stops at the edges (aligned with menubar) | `string` | — |

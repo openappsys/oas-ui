@@ -1192,6 +1192,35 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 其余组件纯 CSS 逻辑属性（硬编码 `left/right/padding-left/text-align/transform` 等）的 RTL 审计与迁移单列专项，本批不做。
 
+### 边界（不在本批）
+
+- 其余组件纯 CSS 逻辑属性（硬编码 `left/right/padding-left/text-align/transform` 等）的 RTL 审计与迁移单列专项，本批不做。
+
+---
+
+## v2.5.3 RTL 逻辑方向化：全组件铺开（承接 v2.5.2 边界）✅
+
+### 特性
+
+- **浮层定位接线补全**：v2.5.2 只接了 7 个 form 浮层；本批补齐 avatar-group / table / popconfirm / popover / tooltip / color-picker / cascader / dropdown / tour（含 hints）的 computePosition `direction` 传参——RTL 下主轴 left↔right 与对齐 start↔end 自动镜像，声明值保持物理（零 API 变化）
+- **hover-card 自研定位接 RTL**：主轴与对齐同规则镜像（不依赖共享引擎的组件对齐处理）
+- **menu 级联子菜单**：定位改逻辑 inset（`inset-inline-start:100%`，RTL 自动开在左侧）；翻转判定接 `isRtl`（LTR 检右缘溢出 / RTL 检左缘）；`data-rtl` 镜像开关
+- **组件 CSS 逻辑属性改造**（物理 → inline/block 逻辑值，自动跟随书写方向）：input（prefix/suffix 留位与 affix 定位 24 处）、transfer（75 处）、menubar（24 处）、navigation-menu（13 处）、popover/tooltip/hover-card/dropdown/table/timeline/code/equation/sidebar/layout/splitter/switch/slider/form-item/checkbox/radio/pin-input/rate/segmented/toggle-group/dynamic-tags/dynamic-input/editable/breadcrumb/steps/toolbar/back-top/float-button/page-header 等
+- **方向敏感行为镜像**（`data-rtl` + `isRtl`）：switch knob 位移反向；slider 滑选 `reverse XOR isRtl`；rate 半星裁剪与触屏滑选按物理坐标重排；segmented/toggle-group/radio-group/dynamic-tags/tabs/toolbar/navigation-menu 方向键镜像；menubar 竖排缺省弹出侧与汉堡面板镜像；navigation-menu 面板翻转/动画/方向键镜像；speed-dial 展开方向镜像；steps 序号方向与 arrow 形态镜像；sidebar 折叠箭头/阴影/rail 拖拽 delta 取反；splitter 拖拽 delta 取反；page-header 返回箭头翻转；table 列重排触屏按钮语义
+- **内容不镜像的例外**（通行做法）：代码块（`direction:ltr` + `unicode-bidi:isolate`）与数学公式内容保持 LTR；显式物理 API 保留（badge corner、float-button 位置、drawer/timeline/sidebar 的 side/mode、speed-dial/back-top 方位枚举、form-item label-align）
+- **dir 观察重判定**：menubar / navigation-menu / tabs / toolbar / breadcrumb / steps / back-top / float-button / page-header / speed-dial 的 observedAttributes 增加 `dir`——运行时切换书写方向即时重判定（`dir` 列为全局约定属性，不进 API 表）
+- **方向判定收敛单源**：`shared/direction`（resolveDirection：config-provider → 就近 `[dir]` → document.dir → locale 回退；isRtl 布尔口），`overlay/direction` 移除（内部路径直接 breaking 不留别名）；组件 CSS 镜像统一 `data-rtl` 属性方案（不使用 `:host-context`）
+
+### 修复
+
+- ellipsis 3 处断言对齐 i18n「开箱即用」默认翻译行为（方向接线使 i18n 模块进入其模块图后，t() 返回 zh-CN 译文而非裸 key——既定设计）
+
+### 验收
+
+- 全量单测 6968 / typecheck 0 / build 0 / api:check 0（`dir` 全局约定不进 API 表）/ trace --all 0 / perf:size、bench PASS
+
+---
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：

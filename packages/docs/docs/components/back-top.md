@@ -182,7 +182,6 @@ onMounted(async () => {
 | `append-to` | teleport 挂载点：CSS 选择器，连接后把组件迁移到该容器下（不设置则保持原位） | `string` | — |
 | `badge` | 角标内容：按钮右上角小徽标显示的文本/数字 | `string` | — |
 | `bottom` | 距视口底部距离 | `string` | `32px` |
-| `dir` | — | — | — |
 | `draggable` | 可拖拽定位：按住拖动自由移动位置（位移超过 4px 算拖拽、不触发回顶；以内算点击仍回顶）；位置持久化到 localStorage（key 为 `oas-back-top-pos`，宿主可清理重置） | `boolean` | — |
 | `duration` | 平滑滚动时长（毫秒），默认 400；0 或 `prefers-reduced-motion` 时直接跳转 | `string` | `400` |
 | `easing` | 滚动缓动函数：`linear` / `ease` / `ease-in` / `ease-out` / `ease-in-out` / `quad-*` / `cubic-*` / `quart-*` / `quint-*` / `expo-*` / `circ-*` / `back-*`，默认 `quart-out` | `string` | `quart-out` |

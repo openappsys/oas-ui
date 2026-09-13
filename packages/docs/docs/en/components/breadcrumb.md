@@ -316,7 +316,6 @@ Font size follows the outer context (inherited) by default; override with the CS
 | `collapse-text` | Custom text for the collapse ellipsis (default `…`) | `string` | `…` |
 | `collapsed` | Collapse mode: when there are more items than `max-items`, middle items collapse into `…`; click to expand the dropdown | `boolean` | — |
 | `color` | Visual variant: the current item and link hover use the specified semantic color (`primary`/`success`/`warning`/`danger`/`info`) | `string` | — |
-| `dir` | — | — | — |
 | `ellipsis` | Single-line ellipsis: the breadcrumb never wraps; overflowing link text is truncated with an ellipsis | `boolean` | — |
 | `items` | Breadcrumb items JSON: `label`/`href`/`icon`/`disabled`/`target`/`separator`/`dropdown`/`maxWidth`/`active` | `string` | `[]` |
 | `items-after-collapse` | Number of items kept after the collapse ellipsis (default `max-items - 2`) | `string` | — |

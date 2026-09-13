@@ -284,7 +284,6 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `dir` | — | — | — |
 | `disabled` | Disable the whole toolbar (`aria-disabled` + `inert`; items skip roving) | `boolean` | — |
 | `focusable-when-disabled` | Keep items focusable while disabled (`aria-disabled` + clicks blocked; handy for tooltips explaining why) | `boolean` | — |
 | `loop` | Wrap-around arrow navigation: on by default; `false` stops at the ends | `string` | — |

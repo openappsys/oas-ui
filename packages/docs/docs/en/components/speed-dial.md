@@ -199,7 +199,6 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `actions` | Sub-action JSON (`[{ label, icon?, 'hide-label'? }]`; `hide-label: true` renders the sub-action as a circular icon-only button with the label visually hidden, shown as a text bubble on hover/keyboard focus; falls back to showing the label when no renderable icon is provided) | `string` | `[]` |
-| `dir` | — | — | — |
 | `direction` | Expansion direction | `string` | `up` |
 | `geometry` | Expansion geometry: `linear` (default, chained layout) / `circle` (full circle, evenly spaced from the top) / `semi-circle` (half circle around the `direction` axis) / `quarter-circle` (90° arc whose starting quadrant follows `direction`: up=top-left, down=bottom-right, left=bottom-left, right=top-right) | `string` | `linear` |
 | `open` | Expanded state (controlled) | `boolean` | — |

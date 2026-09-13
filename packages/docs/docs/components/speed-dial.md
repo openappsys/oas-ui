@@ -199,7 +199,6 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `actions` | 子动作 JSON（`[{ label, icon?, 'hide-label'? }]`；`hide-label: true` 时子动作只渲染 icon 为圆形小钮，label 视觉隐藏、hover/键盘聚焦时浮出文字气泡；未提供可渲染 icon 时回落显示 label） | `string` | `[]` |
-| `dir` | — | — | — |
 | `direction` | 展开方向 | `string` | `up` |
 | `geometry` | 展开几何：`linear`（默认，链式排布）/ `circle`（整圆，从正上均分）/ `semi-circle`（半圆，以 `direction` 为轴）/ `quarter-circle`（四分之一圆，起始象限随 `direction`：up=左上、down=右下、left=左下、right=右上） | `string` | `linear` |
 | `open` | 展开态（受控） | `boolean` | — |

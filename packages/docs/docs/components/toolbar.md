@@ -284,7 +284,6 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `dir` | — | — | — |
 | `disabled` | 整栏禁用（`aria-disabled` + `inert`，子项不参与 roving） | `boolean` | — |
 | `focusable-when-disabled` | 禁用时子项保持可聚焦（`aria-disabled` + 点击拦截，适合挂 tooltip 解释禁用原因） | `boolean` | — |
 | `loop` | 方向键循环导航开关：缺省开启；`false` 时在首尾停止 | `string` | — |
