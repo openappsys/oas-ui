@@ -14,8 +14,8 @@ Full TypeScript types · tree-shakable · light/dark themes · SSR + DSD · fram
 | Full CDN bundle (gzip) | 153.2 KB |
 | Button chain (gzip) | 20.7 KB |
 | Unit tests | 2200+ |
-| Locales | zh-CN / en |
-| Current version | v2.0.0 |
+| Locales | 10 built-in: zh-CN / en / ja / ko / de / fr / es / pt / ru / ar (ar is RTL) |
+| Current version | v2.5.2 |
 
 ## Getting Started
 
