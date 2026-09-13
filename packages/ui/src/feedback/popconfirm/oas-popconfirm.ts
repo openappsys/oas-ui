@@ -47,7 +47,8 @@ const STYLE = `
   box-shadow: 0 4px 16px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent);
   padding: var(--oas-space-3);
   min-width: ${MIN_WIDTH}px;
-  max-width: 360px;
+  /* 窄视口保护：小于 360px 的屏宽时按视口宽度钳制（两侧各留 12px），不溢出视口 */
+  max-width: min(360px, calc(100vw - var(--oas-space-6)));
   font-size: var(--oas-font-size-md);
   color: var(--oas-color-text-primary);
   outline: none;
@@ -392,7 +393,8 @@ export class OASPopconfirm extends OASElement {
     // —— trigger 触发方式（空格分隔多选；运行时改 trigger 走同一监听，处理内按当前属性 gate）——
     this.anchor.addEventListener('click', (e: Event) => {
       if (this.isVirtual() || this.isDisabled()) return
-      if (!this.hasTrigger('click')) return
+      // 触屏降级：coarse 且 trigger 含 hover 时点击通道接管 tap 切换（hover 通道已停用）
+      if (!this.hasTrigger('click') && !this.tapToggleOnCoarse()) return
       // 合成 click（element.click()/键盘激活）composed=false，跨 shadow boundary 时
       // e.target 被 retarget 成 host 自身——用 composedPath()[0] 判定是否来自触发元素侧
       const origin = e.composedPath()[0] as Node | undefined
@@ -503,6 +505,22 @@ export class OASPopconfirm extends OASElement {
     return this.triggerList().includes(t)
   }
 
+  /** 触屏检测（pointer: coarse），与 popover / tooltip / hover-card 同一模式 */
+  private isCoarsePointer(): boolean {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+    return window.matchMedia('(pointer: coarse)').matches
+  }
+
+  /**
+   * 触屏降级：coarse pointer 且 trigger 含 hover。触屏 tap 会合成 mouseenter/focusin
+   * 与 click 连发——hover/focus 通道在 coarse 下停用（停用即「tap 切换」语义：点按开、
+   * 再点按/外点关，外点关闭复用既有的 handleOutside 监听），点击通道接管切换；
+   * fine pointer 行为完全不变。
+   */
+  private tapToggleOnCoarse(): boolean {
+    return this.isCoarsePointer() && this.hasTrigger('hover')
+  }
+
   private isVirtual(): boolean {
     return this.hasAttr('virtual')
   }
@@ -521,7 +539,8 @@ export class OASPopconfirm extends OASElement {
   private requestOpen(reason: OpenChangeReason = 'api'): void {
     if (this.isDisabled()) return
     this.clearCloseTimer()
-    if (this.hasTrigger('hover')) {
+    // 触屏降级：coarse 下 tap 切换立即打开，不走 hover 防抖延时
+    if (this.hasTrigger('hover') && !this.tapToggleOnCoarse()) {
       this.clearOpenTimer()
       this.openTimer = setTimeout(() => this.applyOpen(reason), HOVER_DELAY)
     } else {
@@ -537,7 +556,7 @@ export class OASPopconfirm extends OASElement {
   /** 关闭请求：记录来源 → 移除 open 属性（公开供模块级 Esc 栈调用；非文档化 API） */
   requestClose(reason: OpenChangeReason = 'api'): void {
     this.clearOpenTimer()
-    if (this.hasTrigger('hover') && reason !== 'trigger') {
+    if (this.hasTrigger('hover') && !this.tapToggleOnCoarse() && reason !== 'trigger') {
       // hover 触发下的非动作关闭走防抖（移出宿主/面板不闪关）；动作类关闭立即
       this.clearCloseTimer()
       this.closeTimer = setTimeout(() => this.applyClose(reason), HOVER_HIDE_DELAY)
@@ -567,6 +586,8 @@ export class OASPopconfirm extends OASElement {
 
   private onHoverEnter = (): void => {
     if (!this.hasTrigger('hover')) return
+    // 触屏降级：coarse 下 hover 打开停用（tap 切换接管）
+    if (this.tapToggleOnCoarse()) return
     if (this.isDisabled()) return
     this.clearCloseTimer()
     if (!this.hasAttr('open')) {
@@ -577,6 +598,8 @@ export class OASPopconfirm extends OASElement {
 
   private onHoverLeave = (e: MouseEvent): void => {
     if (!this.hasTrigger('hover')) return
+    // 触屏降级：tap 合成的 mouseleave 不得关掉刚 tap 打开的面板（关闭走 tap/外点）
+    if (this.tapToggleOnCoarse()) return
     if (this.hoverTargetInside(e.relatedTarget)) return
     this.clearOpenTimer()
     if (this.hasAttr('open')) {
@@ -587,11 +610,15 @@ export class OASPopconfirm extends OASElement {
 
   private onPanelEnter = (): void => {
     if (!this.hasTrigger('hover')) return
+    // 触屏降级：无 hover 语义
+    if (this.tapToggleOnCoarse()) return
     this.clearCloseTimer()
   }
 
   private onPanelLeave = (e: MouseEvent): void => {
     if (!this.hasTrigger('hover')) return
+    // 触屏降级：tap 合成的 mouseleave 不得关掉刚 tap 打开的面板
+    if (this.tapToggleOnCoarse()) return
     if (this.hoverTargetInside(e.relatedTarget)) return
     this.clearOpenTimer()
     this.closeTimer = setTimeout(() => this.applyClose('trigger'), HOVER_HIDE_DELAY)
@@ -604,6 +631,8 @@ export class OASPopconfirm extends OASElement {
 
   private onFocusIn = (): void => {
     if (!this.hasTrigger('focus')) return
+    // 触屏降级：tap 会 focusin+click 连发，打开统一走 tap 切换（防「刚开即关」）
+    if (this.tapToggleOnCoarse()) return
     // 回焦豁免：restoreFocus 程序性回焦触发的 focusin 不开层（防「关闭→回焦→重开」死循环）
     if (this.refocusing) return
     if (this.isDisabled()) return
@@ -613,6 +642,8 @@ export class OASPopconfirm extends OASElement {
 
   private onFocusOut = (e: FocusEvent): void => {
     if (!this.hasTrigger('focus')) return
+    // 触屏降级：焦点迁移不关闭（tap 打开的面板的关闭走 tap/外点）
+    if (this.tapToggleOnCoarse()) return
     if (this.hoverTargetInside(e.relatedTarget)) return
     this.clearOpenTimer()
     this.applyClose('trigger')

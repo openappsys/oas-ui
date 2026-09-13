@@ -1131,3 +1131,26 @@ describe('P16 app 全局默认白名单', () => {
     expect(el.getAttribute('group')).toBeNull()
   })
 })
+
+// ================= 移动端缺口：窄视口 vw 宽度保护 =================
+
+describe('P17 窄视口 vw 宽度保护', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+    mockReducedMotion(true)
+  })
+
+  afterEach(() => {
+    destroyAll()
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  it(':host max-width 含 100vw 兜底（窄视口长文本不溢出视口）', async () => {
+    message.info('窄屏保护')
+    await Promise.resolve()
+    const styleText = document.body.querySelector('oas-message')!.shadowRoot!.querySelector('style')!.textContent!
+    expect(styleText).toContain('max-width: min(360px, calc(100vw - var(--oas-space-6)))')
+  })
+})

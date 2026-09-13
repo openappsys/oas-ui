@@ -1250,3 +1250,25 @@ describe('P25 进度环式关闭按钮', () => {
     expect(css).toContain('stroke: var(--oas-color-bg-hover)')
   })
 })
+
+// ================= 移动端缺口：窄视口 vw 宽度保护 =================
+
+describe('P26 窄视口 vw 宽度保护', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    destroyAll()
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  it(':host max-width 含 100vw 兜底（窄视口长文本不溢出视口）', async () => {
+    toast.info({ title: '窄屏保护' })
+    await Promise.resolve()
+    const styleText = el().shadowRoot!.querySelector('style')!.textContent!
+    expect(styleText).toContain('max-width: min(360px, calc(100vw - var(--oas-space-6)))')
+  })
+})

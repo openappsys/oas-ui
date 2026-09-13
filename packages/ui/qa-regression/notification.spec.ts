@@ -272,3 +272,90 @@ test('notification 进度条颜色变量：--oas-notification-progress-color 计
   expect(r.inColorHost).toBe(true)
   expect(r.backgroundColor).not.toBe('')
 })
+
+test('notification 窄视口 vw 保护：320px 屏宽时固定宽卡被钳制不溢出视口', async ({ page }) => {
+  // 曾现缺口：:host 固定 width 320px（large 380px）无 vw 兜底，窄视口直接溢出。
+  // 现要求 max-width 带 100vw 钳制（两侧各留 12px）。
+  await page.setViewportSize({ width: 320, height: 667 })
+  await page.goto('/components/notification.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => typeof (window as any).notification !== 'undefined', null, { timeout: 10000 })
+  await page.evaluate(() => {
+    const longDesc = '窄视口回归：足够长的描述内容用于验证通知卡在窄屏不溢出视口边界。'.repeat(2)
+    ;(window as any).notification.info({ title: '窄屏通知', description: longDesc, duration: 0 })
+  })
+  await page.waitForFunction(() => document.querySelector('oas-notification') != null, null, { timeout: 5000 })
+  const r = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('oas-notification')].pop()!
+    const host = el.getBoundingClientRect()
+    return {
+      vw: window.innerWidth,
+      left: host.left,
+      right: host.right,
+      maxWidth: getComputedStyle(el).maxWidth,
+    }
+  })
+  expect(r.left).toBeGreaterThanOrEqual(0)
+  expect(r.right).toBeLessThanOrEqual(r.vw)
+  // computed max-width = 100vw - 24 = 296px @320 视口
+  expect(parseFloat(r.maxWidth), 'max-width 被 vw 兜底钳制').toBeLessThanOrEqual(296.5)
+})
+
+test('notification peek 栈触屏 tap 展开：点按栈容器切换 stack-peek-expanded（hover 之外的触屏通道）', async ({
+  page,
+}) => {
+  // 曾现缺口：peek 栈折叠态仅靠 :hover 展开，触屏无 hover 永远展不开。
+  // 现要求点按栈容器切换 stack-peek-expanded 类（与 :hover 展开同 CSS 声明组）。
+  await page.goto('/components/notification.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => typeof (window as any).notification !== 'undefined', null, { timeout: 10000 })
+  await page.evaluate(() => {
+    for (let i = 0; i < 3; i++) {
+      ;(window as any).notification.info({ title: `peek回归${i}`, duration: 0, stackMode: 'peek' })
+    }
+  })
+  await page.waitForFunction(() => document.querySelector('.oas-notification-stack.stack-peek') != null, null, {
+    timeout: 5000,
+  })
+  // 折叠态：非最新卡 max-height 收起（12px）
+  const collapsed = await page.evaluate(() => {
+    const stack = document.querySelector('.oas-notification-stack.stack-peek')!
+    const first = stack.querySelector('oas-notification')!
+    return parseFloat(getComputedStyle(first).maxHeight)
+  })
+  expect(collapsed).toBeLessThanOrEqual(12)
+  // 点按展开（真实 tap：事件从通知卡冒泡到栈容器）
+  await page.evaluate(() => {
+    const stack = document.querySelector('.oas-notification-stack.stack-peek')!
+    stack.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+  await page.waitForFunction(
+    () => document.querySelector('.oas-notification-stack.stack-peek')?.classList.contains('stack-peek-expanded'),
+    null,
+    { timeout: 5000 },
+  )
+  // max-height 有 0.25s transition：轮询等到计算值释放（12px → 60vh）
+  await page.waitForFunction(
+    () => {
+      const stack = document.querySelector('.oas-notification-stack.stack-peek')!
+      const first = stack.querySelector('oas-notification')!
+      return parseFloat(getComputedStyle(first).maxHeight) > 12
+    },
+    null,
+    { timeout: 5000 },
+  )
+  const expanded = await page.evaluate(() => {
+    const stack = document.querySelector('.oas-notification-stack.stack-peek')!
+    const first = stack.querySelector('oas-notification')!
+    return parseFloat(getComputedStyle(first).maxHeight)
+  })
+  expect(expanded, '展开后非最新卡 max-height 释放').toBeGreaterThan(12)
+  // 再点按收起
+  await page.evaluate(() => {
+    const stack = document.querySelector('.oas-notification-stack.stack-peek')!
+    stack.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+  await page.waitForFunction(
+    () => !document.querySelector('.oas-notification-stack.stack-peek')?.classList.contains('stack-peek-expanded'),
+    null,
+    { timeout: 5000 },
+  )
+})
