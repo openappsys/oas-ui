@@ -721,3 +721,69 @@ describe('OASDynamicTags change trigger 与 focus/blur', () => {
     expect(events).toEqual(['focus', 'blur'])
   })
 })
+
+// ---- 按钮式排序（触屏可达，HTML5 DnD 触屏不可用）+ coarse 触控热区 ----
+describe('OASDynamicTags sortable 按钮排序与触屏', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('sortable 时每个标签渲染上移/下移按钮，点击重排并派发 change(trigger=sort)', () => {
+    const el = mount({ sortable: '', 'model-value': '["a","b","c"]' })
+    const ups = () => [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.tag-sort-up')]
+    const downs = () => [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.tag-sort-down')]
+    expect(ups().length).toBe(3)
+    expect(downs().length).toBe(3)
+    // 边界禁用：首行禁上移、末行禁下移
+    expect(ups()[0]!.disabled).toBe(true)
+    expect(ups()[1]!.disabled).toBe(false)
+    expect(downs()[2]!.disabled).toBe(true)
+    expect(downs()[0]!.disabled).toBe(false)
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    downs()[0]!.click() // a 下移一位
+    expect(el.getAttribute('model-value')).toBe('["b","a","c"]')
+    expect(details).toEqual([{ value: ['b', 'a', 'c'], trigger: 'sort' }])
+    ups()[1]!.click() // a 回到顶部
+    expect(el.getAttribute('model-value')).toBe('["a","b","c"]')
+  })
+
+  it('排序按钮点击后焦点跟随移动后的标签（交互上下文不丢）', () => {
+    const el = mount({ sortable: '', 'model-value': '["a","b"]' })
+    const down = el.shadowRoot!.querySelector<HTMLButtonElement>('.tag-sort-down')!
+    down.focus()
+    down.click()
+    expect(el.getAttribute('model-value')).toBe('["b","a"]')
+    const focused = el.shadowRoot!.activeElement
+    expect(focused?.classList.contains('tag')).toBe(true)
+  })
+
+  it('非 sortable / disabled / readonly 不渲染排序按钮', () => {
+    const el = mount({ 'model-value': '["a","b"]' })
+    expect(el.shadowRoot!.querySelector('.tag-sort-up')).toBeNull()
+    const el2 = mount({ sortable: '', disabled: '', 'model-value': '["a"]' })
+    expect(el2.shadowRoot!.querySelector('.tag-sort-up')).toBeNull()
+    const el3 = mount({ sortable: '', readonly: '', 'model-value': '["a"]' })
+    expect(el3.shadowRoot!.querySelector('.tag-sort-up')).toBeNull()
+  })
+
+  it('编辑态标签不渲染排序按钮（原位编辑输入框场景）', () => {
+    const el = mount({ sortable: '', 'model-value': '["a","b"]' })
+    // 双击首个标签进入编辑
+    tagEls(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const editChip = el.shadowRoot!.querySelector('.tag-edit')
+    expect(editChip).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.tag-sort-up').length).toBe(1) // 仅 b 的 chip 有
+  })
+
+  it('coarse 样式：chip min-height 44 与删除钮/清空钮热区规则进样式表', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+  })
+})
