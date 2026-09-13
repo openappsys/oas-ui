@@ -628,6 +628,18 @@ button.loading-with-text .spinner {
     transform: rotate(360deg);
   }
 }
+/* ===== 触控目标抬升（仅 coarse pointer 命中）：按钮最小高度抬到 --oas-touch-target-min。
+   min-height 大于各档固定 height 时按 min-height 取值（xs 20px / md 32px 等被抬到 44px，
+   已 ≥44px 的档如 xl 不变）；icon-only / circle 经 aspect-ratio 同步放宽到 44×44。
+   只抬 min-height，padding / 字号 / 圆角一律不动。!important 压过 .size.wrap 的
+   min-height（如 xs.wrap 的 24px），保证 coarse 下 wrap 按钮同样 ≥44px。
+   规则全部收在媒体查询内，fine pointer（PC）零影响。 ===== */
+@media (pointer: coarse) {
+  button,
+  a[part='button'] {
+    min-height: var(--oas-touch-target-min, 44px) !important;
+  }
+}
 `
 
 export class OASButton extends OASElement {

@@ -666,3 +666,41 @@ describe('OASButton 全局禁用注入（config-provider disabled）', () => {
     expect(fired).toBe(true)
   })
 })
+
+describe('OASButton 触控目标（coarse pointer 抬升）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('coarse 媒体查询进样式表：按钮与链接按钮 min-height 走 --oas-touch-target-min', () => {
+    const el = new OASButton()
+    el.textContent = '按钮'
+    document.body.appendChild(el)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    // 只抬 min-height：padding / 字号 / 圆角规则不被 coarse 块触碰
+    expect(css).not.toMatch(/@media \(pointer: coarse\)[\s\S]*padding:/)
+  })
+
+  it('触控规则只在 coarse 媒体查询内：fine pointer（PC）样式表零抬升', () => {
+    const el = new OASButton()
+    el.textContent = '按钮'
+    document.body.appendChild(el)
+    // 剥离注释后再扫（注释里也提到 token，不算样式规则）
+    const css = el.shadowRoot!.querySelector('style')!.textContent!.replace(/\/\*[\s\S]*?\*\//g, '')
+    const mediaIdx = css.indexOf('@media (pointer: coarse)')
+    expect(mediaIdx).toBeGreaterThan(-1)
+    // coarse 块置于样式表末尾：所有触控 token 出现位置都在媒体查询之后（PC 不会命中）
+    let idx = -1
+    while ((idx = css.indexOf('--oas-touch-target-min', idx + 1)) !== -1) {
+      expect(idx).toBeGreaterThan(mediaIdx)
+    }
+    // 基础按钮仍由固定 height 控制（PC 各档高度不变）
+    expect(css).toMatch(/button,\s*a\[part='button'\]\s*\{[^}]*height: var\(--oas-control-height-md\)/)
+  })
+})
