@@ -1505,6 +1505,9 @@ export class OASMenubar extends OASElement {
     const vw = window.innerWidth
     const vh = window.innerHeight
     const rtl = isRtl(this)
+    // 运行时切方向（根级/祖先 dir 变化不触发本组件 update）→ 面板同步时刷新镜像开关，
+    // 保证 CSS 逻辑 inset 按 RTL/LTR 正确应用（否则沿用上次形态，顶级面板会溢出视口）
+    this.toggleAttribute('data-rtl', rtl)
     const barRight = this.barEl?.getBoundingClientRect().right ?? vw
     const barLeft = this.barEl?.getBoundingClientRect().left ?? 0
     for (const sub of this.shadow.querySelectorAll<HTMLElement>('[part="submenu"].open')) {

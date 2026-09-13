@@ -202,6 +202,14 @@ const STYLE = `
 :host(.oas-menu--inline) .item.open .arrow {
   transform: rotate(90deg);
 }
+/* RTL：级联右向 chevron 镜像为左向（子菜单开在父项左侧）；inline 的 down 箭头水平对称不受影响 */
+:host([data-rtl]) .item[aria-haspopup] > .arrow svg {
+  transform: scaleX(-1);
+}
+/* RTL：inline 展开旋转反向（开态指向行内轴另一侧） */
+:host([data-rtl].oas-menu--inline) .item.open .arrow {
+  transform: rotate(-90deg);
+}
 /* ===== 水平溢出收纳：超宽项收进「···」收纳子菜单 ===== */
 /* 被收项在主流隐藏（data-collapsed），收纳子菜单里镜像显示 */
 :host([mode='horizontal']) .item[data-collapsed] {
