@@ -4,25 +4,39 @@ import type { TableColumn } from './oas-table.js'
 /**
  * 列设置能力（行为类）——通过 ReactiveController 注入宿主（OASTableBase）。
  *
- * 提供两类列级交互：
+ * 提供三类列级交互：
  * 1. 列拖拽重排：表头 th 可拖拽，dragstart/dragover/drop 委托到 thead，重排后调宿主 setColumnOrder；
- * 2. 列宽调整：表头 th 右缘 resize 热区（CSS ::after），pointerdown/move 拖拽调宽后调宿主 setColumnWidth。
+ * 2. 触屏列重排（HTML5 DnD 触屏不可用）：为每个列头注入上移/下移按钮（PC 由 CSS 隐藏，
+ *    coarse 显示），点击与相邻可见列交换顺序，经宿主 setColumnOrder 写回；
+ * 3. 列宽调整：表头 th 右缘 resize 热区（CSS ::after + JS 坐标判定），pointerdown/move 拖拽
+ *    调宽后调宿主 setColumnWidth；coarse 下热区抬到 44px 触控目标。
  *
  * 只做交互与状态流转，不碰渲染结构——列显隐（column-keys/hidden）由核心 effectiveColumns 承载。
  * 宿主仅需暴露 setColumnOrder/setColumnWidth（基础列操作 API），能力通过它们写回并触发重渲染。
  */
 export interface TableColumnSettingsHost {
   getColumns(): TableColumn[]
+  effectiveColumns(): TableColumn[]
   setColumnOrder(keys: string[]): void
   setColumnWidth(key: string, width: number): void
+  translateText(key: string, params?: Record<string, string | number>): string
   /** 宿主关闭/重渲染时需解绑的清理（默认无） */
   /* 无显式接口，绑定清理走控制器内部 */
 }
 
-/** 列宽调整的拖拽半径（热区宽度 px） */
+/** 列宽调整的拖拽半径（热区宽度 px，fine pointer） */
 const RESIZE_ZONE = 8
 /** 列宽最小（px） */
 const MIN_WIDTH = 40
+
+/** 触屏（coarse）列宽拖拽热区：44px 触控目标（--oas-touch-target-min 同值） */
+const RESIZE_ZONE_COARSE = 44
+
+/** 上移/下移按钮图标（原创内联 SVG，与 dynamic-input 排序按钮同风格；单行无空白文本节点防污染 th.textContent） */
+const MOVE_UP_ICON =
+  '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 10 L8 5.5 L12 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+const MOVE_DOWN_ICON =
+  '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 6 L8 10.5 L12 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 
 export class TableColumnSettingsController implements ReactiveController {
   private hostEl: HTMLElement & TableColumnSettingsHost
@@ -42,13 +56,15 @@ export class TableColumnSettingsController implements ReactiveController {
     this.unbind()
   }
 
-  /** 宿主每次更新后：为可拖拽列头设置 draggable（列头重渲染后重新生效） */
+  /** 宿主每次更新后：为可拖拽列头设置 draggable（列头重渲染后重新生效），并同步触屏重排按钮 */
   hostUpdated(): void {
     const thead = this.hostEl.shadowRoot?.querySelector('thead')
     if (!thead) return
-    for (const th of thead.querySelectorAll<HTMLElement>('th[data-key]')) {
+    const ths = [...thead.querySelectorAll<HTMLElement>('th[data-key]')]
+    for (const th of ths) {
       th.setAttribute('draggable', 'true')
     }
+    this.syncMoveButtons(ths)
   }
 
   private bind(): void {
@@ -166,14 +182,71 @@ export class TableColumnSettingsController implements ReactiveController {
     }
   }
 
-  /** 判断事件目标是否落在列头右缘 resize 热区内 */
+  /* ---------------- 触屏列重排按钮（HTML5 DnD 触屏不可用的替代路径） ---------------- */
+
+  /** 为每个列头确保上移/下移按钮存在并同步禁用态（th 重渲染后由 hostUpdated 重建） */
+  private syncMoveButtons(ths: HTMLElement[]): void {
+    const leaves = this.hostEl.effectiveColumns().map((c) => c.key)
+    for (const th of ths) {
+      if (!th.querySelector('.col-move')) {
+        th.appendChild(this.buildMoveButton('up'))
+        th.appendChild(this.buildMoveButton('down'))
+      }
+      const idx = leaves.indexOf(th.dataset.key ?? '')
+      const up = th.querySelector<HTMLButtonElement>('.col-move.up')
+      const down = th.querySelector<HTMLButtonElement>('.col-move.down')
+      if (up) up.disabled = idx <= 0
+      if (down) down.disabled = idx < 0 || idx >= leaves.length - 1
+    }
+  }
+
+  private buildMoveButton(dir: 'up' | 'down'): HTMLButtonElement {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = `col-move ${dir}`
+    btn.setAttribute('part', `col-move-${dir}`)
+    // 复用通用上移/下移文案 key（dynamic-input 已定义同语义词条，避免重复造词）
+    btn.setAttribute(
+      'aria-label',
+      this.hostEl.translateText(dir === 'up' ? 'dynamicInput.moveUp' : 'dynamicInput.moveDown'),
+    )
+    btn.innerHTML = dir === 'up' ? MOVE_UP_ICON : MOVE_DOWN_ICON
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation() // 不冒泡到 thead 的排序 click
+      this.moveColumn(btn.closest('th')?.getAttribute('data-key') ?? '', dir === 'up' ? -1 : 1)
+    })
+    return btn
+  }
+
+  /** 与相邻可见列交换顺序（dir=-1 上移 / 1 下移），写回宿主 setColumnOrder 触发重渲染 */
+  private moveColumn(key: string, dir: -1 | 1): void {
+    const leaves = this.hostEl.effectiveColumns().map((c) => c.key)
+    const i = leaves.indexOf(key)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= leaves.length) return
+    const next = [...leaves]
+    next[i] = leaves[j]!
+    next[j] = leaves[i]!
+    this.hostEl.setColumnOrder(next)
+  }
+
+  /** 判断事件目标是否落在列头右缘 resize 热区内（fine 8px / coarse 44px，见 resizeZone()） */
   private inResizeZone(e: PointerEvent): HTMLElement | null {
     const target = e.target as HTMLElement | null
+    // 触屏重排按钮在列头右缘命中区内：点按钮走重排，不进入列宽拖拽
+    if (target?.closest('.col-move')) return null
     const th = target?.closest<HTMLElement>('th[data-key]') ?? null
     if (!th) return null
     const rect = th.getBoundingClientRect()
-    // 命中 th 右缘 RESIZE_ZONE 内
-    return e.clientX >= rect.right - RESIZE_ZONE && e.clientX <= rect.right ? th : null
+    // 命中 th 右缘 resize 热区内
+    return e.clientX >= rect.right - this.resizeZone() && e.clientX <= rect.right ? th : null
+  }
+
+  /** 列宽拖拽热区宽度：fine 8px；触屏（coarse）抬到 44px 触控目标（CSS 手柄宽度同步加宽） */
+  private resizeZone(): number {
+    return typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches
+      ? RESIZE_ZONE_COARSE
+      : RESIZE_ZONE
   }
 
   private onPointerDown = (e: PointerEvent): void => {

@@ -1213,6 +1213,64 @@ describe('OASImage 拖拽平移与滚轮缩放', () => {
     stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 30, clientY: 25, pointerId: 1 }))
     expect(img.style.transform).not.toContain('translate(20px, 15px)')
   })
+
+  it('双指捏合缩放：指距比例驱动 scale，抬起一指后捏合结束', () => {
+    const { stage, img } = setup()
+    // 双指按下：指距 100
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 0, clientY: 0, button: 0, pointerId: 1 }))
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 0, button: 0, pointerId: 2 }))
+    // 撑开：指距 100 → 200（2 倍）
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 0, clientY: 0, pointerId: 1 }))
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: 0, pointerId: 2 }))
+    expect(img.style.transform).toContain('scale(2)')
+    // 捏回：指距 200 → 100（回到 1）
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 50, clientY: 0, pointerId: 1 }))
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 150, clientY: 0, pointerId: 2 }))
+    expect(img.style.transform).toContain('scale(1)')
+    // 抬起一指：捏合结束，剩余手指移动不再改缩放
+    stage.dispatchEvent(new PointerEvent('pointerup', { pointerId: 2 }))
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 400, clientY: 0, pointerId: 1 }))
+    expect(img.style.transform).toContain('scale(1)')
+  })
+
+  it('双指中点锚定：捏合时中点下的图像位置不动（中点移动自带平移）', () => {
+    const { stage, img } = setup()
+    const rect = (w: number, h: number) =>
+      ({
+        width: w,
+        height: h,
+        top: 0,
+        left: 0,
+        right: w,
+        bottom: h,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    stage.getBoundingClientRect = () => rect(400, 400)
+    img.getBoundingClientRect = () => rect(800, 800)
+    // 双指按下：中点恰在舞台中心 (200,200)，指距 200
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 200, button: 0, pointerId: 1 }))
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 300, clientY: 200, button: 0, pointerId: 2 }))
+    // 中点移到 (300,200)，指距 300（1.5 倍）：
+    // 锚定按下瞬间中点下的图像点（此处恰为图像中心，舞台中心 (200,200)）：
+    // 该点跟随中点 → pan = d = (100,0)，缩放围绕该点
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 150, clientY: 200, pointerId: 1 }))
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 450, clientY: 200, pointerId: 2 }))
+    expect(img.style.transform).toContain('scale(1.5)')
+    expect(img.style.transform).toContain('translate(100px, 0px)')
+  })
+
+  it('捏合缩放受 --oas-image-zoom-* 上下限约束', () => {
+    const { el, stage, img } = setup()
+    el.style.setProperty('--oas-image-zoom-max', '1.5')
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 0, clientY: 0, button: 0, pointerId: 1 }))
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 0, button: 0, pointerId: 2 }))
+    // 指距拉满：scale 顶到 max=1.5
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: -500, clientY: 0, pointerId: 1 }))
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 1500, clientY: 0, pointerId: 2 }))
+    expect(img.style.transform).toContain('scale(1.5)')
+  })
 })
 
 describe('OASImage 预览挂载点（portal 到 body）', () => {
