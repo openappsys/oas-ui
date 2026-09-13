@@ -1175,4 +1175,28 @@ describe('OASSidebar 图标通道与着色', () => {
     // observedAttributes 覆盖（属性动态变化可触发 update）
     expect(OASSidebar.observedAttributes).toContain('hide-toggle')
   })
+
+  it('RTL：dir=rtl 下 data-rtl 标记 + 移动抽屉滑入方向镜像（data-rtl 机制，不用 :dir）', () => {
+    stubMatchMedia(true)
+    const el = mount({ dir: 'rtl' })
+    expect(el.hasAttribute('data-rtl'), 'RTL 宿主应标记 data-rtl').toBe(true)
+    const stl = el.shadowRoot!.querySelector('style')!.textContent!
+    // 抽屉贴行内起点（RTL 视觉右缘），关闭态藏到右外（transform 物理向量经 data-rtl 镜像）
+    expect(stl).toMatch(/\.panel\s*\{[^}]*inset-inline-start:\s*0/)
+    expect(stl).toMatch(/:host\(\[data-rtl\]\)\s+\.panel\s*\{[^}]*translateX\(100%\)/)
+    // side=right + RTL 组合规则存在
+    expect(stl).toMatch(/:host\(\[data-mobile\]\[side='right'\]\[data-rtl\]\)\s+\.panel\s*\{[^}]*translateX\(-100%\)/)
+    // 不再用 :dir() 伪类（统一 data-rtl 机制，浏览器兼容）
+    expect(stl).not.toContain(':dir(')
+    // rail 拖拽/键盘 delta 的 RTL 取反规则内联在逻辑中（见对应行为测试）
+  })
+
+  it('RTL：dir=rtl 折叠按钮箭头字符镜像（语义=展开方向随视觉换边）', () => {
+    stubMatchMedia(false)
+    const el = mount({ dir: 'rtl', collapsed: '' })
+    const toggle = el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')
+    expect(toggle!.textContent).toBe('«')
+    el.removeAttribute('collapsed')
+    expect(toggle!.textContent).toBe('»')
+  })
 })

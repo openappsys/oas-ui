@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry } from '@oas-ui/icons'
+import { isRtl } from '../../shared/direction.js'
 
 const STYLE = `
 :host {
@@ -347,8 +348,8 @@ export class OASSplitter extends OASElement {
       else if (e.key === 'ArrowDown') delta = 1
     } else {
       // 水平：ArrowLeft 缩小上一面板；RTL 镜像翻转（逻辑方向）
-      if (e.key === 'ArrowLeft') delta = this.isRTL ? 1 : -1
-      else if (e.key === 'ArrowRight') delta = this.isRTL ? -1 : 1
+      if (e.key === 'ArrowLeft') delta = isRtl(this) ? 1 : -1
+      else if (e.key === 'ArrowRight') delta = isRtl(this) ? -1 : 1
     }
     if (delta === 0) return
     e.preventDefault()
@@ -398,7 +399,7 @@ export class OASSplitter extends OASElement {
     if (!size) return
     const raw = this.hasAttr('vertical')
       ? e.clientY - this.startPos
-      : (e.clientX - this.startPos) * (this.isRTL ? -1 : 1)
+      : (e.clientX - this.startPos) * (isRtl(this) ? -1 : 1)
     const p = this.startPercent + (raw / size) * 100
     // 统一按 min/max（multi 含配对和约束）夹取，ghost 与最终落盘一致
     const pairSum =
@@ -422,7 +423,7 @@ export class OASSplitter extends OASElement {
     const px = size ? ((p - this.startPercent) / 100) * size : 0
     splitter.style.transform = this.hasAttr('vertical')
       ? `translate(0, ${px}px)`
-      : `translate(${px * (this.isRTL ? -1 : 1)}px, 0)`
+      : `translate(${px * (isRtl(this) ? -1 : 1)}px, 0)`
   }
 
   private endDrag = (): void => {
@@ -634,7 +635,7 @@ export class OASSplitter extends OASElement {
     }
     return (
       iconRegistry[
-        collapsed ? (this.isRTL ? 'chevron-left' : 'chevron-right') : this.isRTL ? 'chevron-right' : 'chevron-left'
+        collapsed ? (isRtl(this) ? 'chevron-left' : 'chevron-right') : isRtl(this) ? 'chevron-right' : 'chevron-left'
       ] ?? ''
     )
   }
@@ -659,17 +660,5 @@ export class OASSplitter extends OASElement {
       splitter.setAttribute('aria-valuemin', String(min))
       splitter.setAttribute('aria-valuemax', String(max))
     })
-  }
-
-  /** RTL 检测：就近取 dir 属性（宿主自身或最近祖先），逻辑方向自动镜像 */
-  private get isRTL(): boolean {
-    let node: HTMLElement | null = this
-    while (node) {
-      const dir = node.getAttribute('dir')
-      if (dir === 'rtl') return true
-      if (dir === 'ltr') return false
-      node = node.parentElement
-    }
-    return false
   }
 }

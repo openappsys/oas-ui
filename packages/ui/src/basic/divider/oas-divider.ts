@@ -200,13 +200,13 @@ const STYLE = `
    仅水平布局生效（同 size 惯例）；宽度走变量开口。垂直缩进不走 margin（margin % 相对宽度不适用），
    由上方 grid 行模板的空白行实现（行 % 相对容器高度） */
 :host(:not([direction='vertical'])) .divider.inset::before {
-  margin-left: var(--oas-divider-title-inset, 5%);
+  margin-inline-start: var(--oas-divider-title-inset, 5%);
 }
 :host(:not([direction='vertical'])) .divider.middle::before {
-  margin-left: var(--oas-divider-middle-inset, 16.67%);
+  margin-inline-start: var(--oas-divider-middle-inset, 16.67%);
 }
 :host(:not([direction='vertical'])) .divider.middle::after {
-  margin-right: var(--oas-divider-middle-inset, 16.67%);
+  margin-inline-end: var(--oas-divider-middle-inset, 16.67%);
 }
 /* size 间距档（仅水平布局生效；vertical 分支 margin 固定） */
 .divider.small {
