@@ -6,7 +6,7 @@ import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
-import { resolveDirection } from '../../overlay/direction.js'
+import { resolveDirection } from '../../shared/direction.js'
 import { OASElement } from '@oas-ui/core'
 
 interface Option {

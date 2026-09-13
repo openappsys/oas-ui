@@ -7,7 +7,7 @@ import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
-import { resolveDirection } from '../../overlay/direction.js'
+import { resolveDirection } from '../../shared/direction.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 // 共享树内核：flatten/字段归一 + 勾选级联 + 懒加载状态机 + 模板克隆（与 oas-tree 同一实现）
 import {

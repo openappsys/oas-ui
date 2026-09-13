@@ -22,7 +22,7 @@ import {
   isoWeekYear,
 } from './picker-grid.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
-import { resolveDirection } from '../../overlay/direction.js'
+import { resolveDirection } from '../../shared/direction.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'

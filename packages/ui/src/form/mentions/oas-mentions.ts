@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
-import { resolveDirection } from '../../overlay/direction.js'
+import { resolveDirection } from '../../shared/direction.js'
 
 export interface Option {
   label: string
