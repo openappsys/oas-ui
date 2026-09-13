@@ -1404,4 +1404,36 @@ describe('responsive（窄屏自动纵向）', () => {
     el.remove()
     expect(spy).toHaveBeenCalled()
   })
+
+  // ===== RTL（右到左）逻辑方向化 =====
+
+  describe('RTL 逻辑方向化', () => {
+    it('dir=rtl 时宿主打 data-rtl 钩子，移除 dir 后回退', () => {
+      const el = mount()
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+      el.setAttribute('dir', 'rtl')
+      expect(el.hasAttribute('data-rtl')).toBe(true)
+      el.removeAttribute('dir')
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+    })
+
+    it('RTL：样式表含水平连接线/箭头镜像规则（flex 行随 dir 自动反转，物理线位镜像覆盖）', () => {
+      const el = mount()
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      // 默认形态连接线：从书写方向中心向另一侧延伸（RTL 下 right:50%）
+      expect(css).toMatch(/:host\(\[data-rtl\]\)[^{]*\.steps[^{]*\.item:not\(:last-child\)::after/)
+      // navigation 模式 chevron 分格与 arrow 分格形态：clip-path 镜像
+      expect(css).toContain(':host([data-rtl]) .steps[data-navigation')
+      expect(css).toContain(':host([data-rtl]) .steps[data-arrow')
+      // 文本对齐逻辑化（不再有物理 text-align: left）
+      expect(css).not.toMatch(/text-align:\s*left/)
+    })
+
+    it('RTL + reverse：reverse 语义保持视觉倒序（与 RTL 镜像叠加不冲突）', () => {
+      const el = mount({ dir: 'rtl', reverse: '' })
+      const stepsEl = el.shadowRoot!.querySelector('.steps')!
+      expect(el.hasAttribute('data-rtl')).toBe(true)
+      expect(stepsEl.getAttribute('data-reverse')).toBe('true')
+    })
+  })
 })

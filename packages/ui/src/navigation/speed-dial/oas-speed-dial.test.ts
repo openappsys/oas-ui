@@ -665,4 +665,48 @@ describe('OASSpeedDial 圆弧几何展开', () => {
     expect(mq).toContain('.action')
     expect(mq).toContain('transition: none')
   })
+
+  // ===== RTL（右到左）逻辑方向化 =====
+
+  describe('RTL 逻辑方向化', () => {
+    it('dir=rtl 时宿主打 data-rtl 钩子，移除 dir 后回退', () => {
+      const el = mount()
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+      el.setAttribute('dir', 'rtl')
+      expect(el.hasAttribute('data-rtl')).toBe(true)
+      el.removeAttribute('dir')
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+    })
+
+    it('RTL：横向展开方向镜像（direction="left" → 有效方向 right；纵向 up/down 不镜像）', () => {
+      const el = mount({ dir: 'rtl', direction: 'left' })
+      expect(dial(el).getAttribute('data-dir')).toBe('right')
+      el.setAttribute('direction', 'right')
+      expect(dial(el).getAttribute('data-dir')).toBe('left')
+      el.setAttribute('direction', 'up')
+      expect(dial(el).getAttribute('data-dir')).toBe('up')
+      // LTR 基准：显式 left 保持物理左
+      el.removeAttribute('dir')
+      el.setAttribute('direction', 'left')
+      expect(dial(el).getAttribute('data-dir')).toBe('left')
+    })
+
+    it('RTL：圆弧几何跟随镜像方向（quarter-circle 首末动作 x 偏移反号）', () => {
+      const el = mount({ actions: ACTIONS, direction: 'right', geometry: 'quarter-circle', radius: '100' })
+      const btns = el.shadowRoot!.querySelectorAll<HTMLElement>('.action')
+      const ltrX = btns[1]!.style.getPropertyValue('--t-x')
+      el.setAttribute('dir', 'rtl')
+      const btnsRtl = el.shadowRoot!.querySelectorAll<HTMLElement>('.action')
+      const rtlX = btnsRtl[1]!.style.getPropertyValue('--t-x')
+      expect(Number(ltrX)).toBe(-Number(rtlX))
+      expect(Number(ltrX)).not.toBe(0)
+    })
+
+    it('RTL：悬浮宿主定位走逻辑 inset（样式表无物理 right 定位缺省）', () => {
+      const el = mount()
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/:host\s*\{[^}]*inset-inline-end:\s*var\(--oas-space-6\)/)
+      expect(css).not.toMatch(/:host\s*\{[^}]*right:\s*var\(--oas-space-6\)/)
+    })
+  })
 })

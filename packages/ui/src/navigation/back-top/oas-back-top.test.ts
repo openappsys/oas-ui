@@ -866,4 +866,36 @@ describe('OASBackTop', () => {
       expect(el.style.touchAction).toBe('')
     })
   })
+
+  // ===== RTL（右到左）逻辑方向化 =====
+
+  describe('RTL 逻辑方向化', () => {
+    function mountPlain(): OASBackTop {
+      const el = new OASBackTop()
+      el.setAttribute('visible', '')
+      document.body.appendChild(el)
+      return el
+    }
+
+    it('dir=rtl 时宿主打 data-rtl 钩子，移除 dir 后回退', () => {
+      const el = mountPlain()
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+      el.setAttribute('dir', 'rtl')
+      expect(el.hasAttribute('data-rtl')).toBe(true)
+      el.removeAttribute('dir')
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+    })
+
+    it('RTL：tooltip/badge 走逻辑 inset；position/bottom/right 显式定位 API 保留物理', () => {
+      const el = mountPlain()
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.tooltip\s*\{[^}]*inset-inline-end:\s*0/)
+      expect(css).toMatch(/\.badge\s*\{[^}]*inset-inline-end:/)
+      // 显式方位枚举仍写物理 left/right 内联样式
+      el.setAttribute('position', 'top-left')
+      expect(el.style.left).toBe('0px')
+      el.setAttribute('position', 'top-right')
+      expect(el.style.right).toBe('0px')
+    })
+  })
 })

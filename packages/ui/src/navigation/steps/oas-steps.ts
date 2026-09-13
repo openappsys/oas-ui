@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '../../basic/icon/oas-icon.js'
+import { isRtl } from '../../shared/direction.js'
 
 /** 步骤状态：wait 等待 / process 进行中 / finish 完成 / error 错误 */
 export type StepStatus = 'wait' | 'process' | 'finish' | 'error'
@@ -54,7 +55,7 @@ const STYLE = `
 }
 .steps[data-direction='vertical'] .item {
   display: flex;
-  text-align: left;
+  text-align: start;
   gap: var(--oas-space-3);
   padding-bottom: var(--oas-space-5);
 }
@@ -248,7 +249,7 @@ const STYLE = `
   display: flex;
   align-items: center;
   gap: var(--oas-space-2);
-  text-align: left;
+  text-align: start;
 }
 .steps[data-label-placement='horizontal'] .text {
   margin-top: 0;
@@ -264,7 +265,7 @@ const STYLE = `
   display: flex;
   align-items: center;
   gap: var(--oas-space-2);
-  text-align: left;
+  text-align: start;
 }
 .steps[data-content-placement='right'] .text {
   margin-top: 0;
@@ -431,7 +432,7 @@ const STYLE = `
   display: flex;
   align-items: center;
   gap: var(--oas-space-2);
-  text-align: left;
+  text-align: start;
 }
 .steps[data-simple='true'] .icon {
   width: calc(var(--oas-control-height-sm) - 6px);
@@ -496,7 +497,7 @@ const STYLE = `
 }
 .steps[data-direction='vertical'] .item-ellipsis {
   display: flex;
-  text-align: left;
+  text-align: start;
   gap: var(--oas-space-3);
   padding-bottom: var(--oas-space-5);
 }
@@ -755,6 +756,122 @@ const STYLE = `
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+/* ===== RTL（右到左）：物理定位的连接线/箭头形状镜像 =====
+   步骤 flex 行随宿主 dir 自动反转（序号方向 1→N 变为从右到左），
+   以下规则只镜像 ::before/::after 连接线锚点与 clip-path 箭头形状等物理值。
+   content-placement='right' 是显式物理 API（内容块在指示器物理右侧）：RTL 下
+   row-reverse 保持该物理关系，其连接线锚点不镜像。 */
+:host([data-rtl]) .steps:not([data-direction='vertical']):not([data-arrow='true'])
+  .item:not(:last-child)::after {
+  left: auto;
+  right: 50%;
+}
+/* 纵向：item 内图标/文字随 dir 反转（图标到右侧），竖线锚点镜像 */
+:host([data-rtl]) .steps[data-direction='vertical']:not([data-separator='arrow']) .item:not(:last-child)::after,
+:host([data-rtl]) .steps[data-direction='vertical'] .item-ellipsis:not(:last-child)::after {
+  left: auto;
+  right: calc(var(--oas-control-height-sm) / 2 + 1px);
+}
+:host([data-rtl]) .steps[data-progress-dot='true'][data-direction='vertical'] .item:not(:last-child)::after,
+:host([data-rtl]) .steps[data-progress-dot='true'][data-direction='vertical'] .item-ellipsis:not(:last-child)::after {
+  right: calc(var(--oas-control-height-sm) / 2 - 1px);
+}
+/* label-placement horizontal / simple：横线起点对准指示器中心（镜像到右侧） */
+:host([data-rtl]) .steps[data-label-placement='horizontal'] .item:not(:last-child)::after {
+  left: auto;
+  right: calc(var(--oas-control-height-sm) / 2);
+}
+:host([data-rtl]) .steps[data-simple='true']:not([data-direction='vertical']) .item:not(:last-child)::after {
+  left: auto;
+  right: calc(var(--oas-control-height-sm) / 2 - 3px);
+}
+:host([data-rtl]) .steps[data-simple='true'][data-direction='vertical'] .item:not(:last-child)::after {
+  left: auto;
+  right: calc(var(--oas-control-height-sm) / 2 - 4px);
+}
+/* separator='arrow' 三角：LTR 末端右向三角 → RTL 末端左向三角（线长规则不变） */
+:host([data-rtl]) .steps[data-separator='arrow']:not([data-direction='vertical'])
+  .item:not(:last-child)::before {
+  right: auto;
+  left: calc(14px - 50%);
+  border-right: none;
+  border-left: 8px solid var(--oas-color-border);
+}
+:host([data-rtl]) .steps[data-separator='arrow'] .item[data-status='process']:not(:last-child)::before {
+  border-left-color: var(--oas-color-primary);
+  border-right-color: transparent;
+}
+:host([data-rtl]) .steps[data-separator='arrow'] .item[data-status='finish']:not(:last-child)::before {
+  border-left-color: var(--oas-color-success);
+  border-right-color: transparent;
+}
+:host([data-rtl]) .steps[data-separator='arrow'] .item[data-status='error']:not(:last-child)::before {
+  border-left-color: var(--oas-color-danger);
+  border-right-color: transparent;
+}
+:host([data-rtl]) .steps[data-separator='arrow'][data-simple='true']:not([data-direction='vertical'])
+  .item:not(:last-child)::before {
+  right: auto;
+  left: calc(var(--oas-control-height-sm) / 2 - 7px);
+}
+/* separator='arrow' 纵向：三角朝下但锚点随图标镜像到右侧 */
+:host([data-rtl]) .steps[data-separator='arrow'][data-direction='vertical'] .item:not(:last-child)::before {
+  left: auto;
+  right: calc(var(--oas-control-height-sm) / 2 + 1px - 4px);
+}
+/* navigation 模式：分格间 chevron 已随 inset-inline-end 落到镜像侧，三角形状镜像为朝左 */
+:host([data-rtl]) .steps[data-navigation='true'] .item:not(:last-child)::after {
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+/* arrow 箭头分格形态：clip-path 镜像（x → 100% - x），凹凸 padding 同步互换 */
+:host([data-rtl]) .steps[data-arrow='true'] .item {
+  padding-inline-start: var(--oas-space-3);
+  padding-inline-end: calc(var(--oas-space-3) + var(--oas-steps-arrow));
+  clip-path: polygon(
+    100% 0,
+    var(--oas-steps-arrow) 0,
+    0 50%,
+    var(--oas-steps-arrow) 100%,
+    100% 100%,
+    calc(100% - var(--oas-steps-arrow)) 50%
+  );
+}
+:host([data-rtl]) .steps[data-arrow='true'] .item:first-child {
+  padding-inline-start: var(--oas-space-3);
+  padding-inline-end: var(--oas-space-4);
+  clip-path: polygon(100% 0, var(--oas-steps-arrow) 0, 0 50%, var(--oas-steps-arrow) 100%, 100% 100%);
+}
+:host([data-rtl]) .steps[data-arrow='true'] .item:last-child {
+  clip-path: polygon(100% 0, 0 0, 0 100%, 100% 100%, calc(100% - var(--oas-steps-arrow)) 50%);
+}
+/* arrow + reverse：镜像逻辑同上（视觉首末项互换） */
+:host([data-rtl]) .steps[data-arrow='true'][data-reverse='true'] .item {
+  padding-inline-start: calc(var(--oas-space-3) + var(--oas-steps-arrow));
+  padding-inline-end: var(--oas-space-3);
+  clip-path: polygon(
+    100% 0,
+    var(--oas-steps-arrow) 0,
+    0 50%,
+    var(--oas-steps-arrow) 100%,
+    100% 100%,
+    calc(100% - var(--oas-steps-arrow)) 50%
+  );
+}
+:host([data-rtl]) .steps[data-arrow='true'][data-reverse='true'] .item:first-child {
+  padding-inline-start: calc(var(--oas-space-3) + var(--oas-steps-arrow));
+  padding-inline-end: var(--oas-space-3);
+  clip-path: polygon(100% 0, 0 0, 0 100%, 100% 100%, calc(100% - var(--oas-steps-arrow)) 50%);
+}
+:host([data-rtl]) .steps[data-arrow='true'][data-reverse='true'] .item:last-child {
+  padding-inline-start: var(--oas-space-4);
+  padding-inline-end: var(--oas-space-3);
+  clip-path: polygon(100% 0, var(--oas-steps-arrow) 0, 0 50%, var(--oas-steps-arrow) 100%, 100% 100%);
+}
+/* content-placement='right'：显式物理 API——RTL 下 row-reverse 保持「内容在指示器物理右侧」 */
+:host([data-rtl]) .steps[data-content-placement='right'] .item {
+  flex-direction: row-reverse;
+}
 `
 
 export class OASSteps extends OASElement {
@@ -777,6 +894,8 @@ export class OASSteps extends OASElement {
       'reverse',
       'content-placement',
       'arrow',
+      // 书写方向：dir 变化触发重算 data-rtl（连接线/箭头形态镜像随方向）
+      'dir',
     ]
   }
 
@@ -866,6 +985,8 @@ export class OASSteps extends OASElement {
   protected override update(): void {
     const stepsEl = this.shadow.querySelector('.steps')
     if (!stepsEl) return
+    // RTL 逻辑方向化钩子：flex 行随 dir 自动反转，data-rtl 供 CSS 镜像物理线位/箭头形状
+    this.toggleAttribute('data-rtl', isRtl(this))
     this.parseSteps()
     const clickable = this.hasAttr('clickable')
     const navigation = this.hasAttr('navigation')

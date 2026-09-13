@@ -1,4 +1,5 @@
 import { OASElement, escapeAttr } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 /** 尺寸档位：xs/sm/md/lg/xl（默认 lg，对应 48px 常规 FAB 观感） */
 const VALID_SIZES = ['xs', 'sm', 'md', 'lg', 'xl'] as const
@@ -172,7 +173,8 @@ const STYLE = `
 .badge {
   position: absolute;
   top: calc(-1 * var(--oas-space-1));
-  right: calc(-1 * var(--oas-space-1));
+  /* 逻辑 inset：徽标挂书写方向终点角（LTR 右上 / RTL 左上） */
+  inset-inline-end: calc(-1 * var(--oas-space-1));
   min-width: var(--oas-control-height-xs);
   height: var(--oas-control-height-xs);
   border-radius: var(--oas-radius-full, 999px);
@@ -189,7 +191,19 @@ const STYLE = `
 
 export class OASFloatButton extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['badge', 'shape', 'type', 'size', 'disabled', 'href', 'target', 'aria-label', 'draggable', 'magnetic']
+    return [
+      'badge',
+      'shape',
+      'type',
+      'size',
+      'disabled',
+      'href',
+      'target',
+      'aria-label',
+      'draggable',
+      'magnetic',
+      'dir',
+    ]
   }
 
   private btn: HTMLElement | null = null
@@ -424,6 +438,8 @@ export class OASFloatButton extends OASElement {
   protected override update(): void {
     const btnEl = this.btn
     if (!btnEl) return
+    // RTL 逻辑方向化钩子：badge 走逻辑 inset 自动镜像；悬浮定位为显式物理 API 保留
+    this.toggleAttribute('data-rtl', isRtl(this))
     const shape = this.getAttr('shape', 'circle')
     const type = this.getAttr('type', 'primary')
     const size = normalizeSize(this.getAttr('size', 'lg'))

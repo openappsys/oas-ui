@@ -3,6 +3,7 @@ import type { MenuItem, MenuItemKind } from '../menu/index.js'
 // 图标查表走 oas-icon 同一通道（customIcons 注册优先、内置 iconRegistry 兜底）：
 // 用户 `registerIcon()` 注册的自定义图标菜单家族可见；oas-icon.ts 不依赖 menu，无循环引用
 import { lookupIcon } from '../../basic/icon/oas-icon.js'
+import { isRtl } from '../../shared/direction.js'
 
 export interface MenubarItem extends MenuItem {
   /** Alt 访问键（可选，单字符）；缺省时取 label 首个 ASCII 字母 */
@@ -69,7 +70,7 @@ const STYLE = `
   opacity: 0.5;
 }
 .top-item .icon {
-  margin-right: var(--oas-space-1);
+  margin-inline-end: var(--oas-space-1);
 }
 /* ===== 竖排 menubar：bar 纵向排布，顶级项整行可点 ===== */
 :host([orientation='vertical']) .bar {
@@ -101,10 +102,10 @@ const STYLE = `
   display: none;
 }
 .bar-start {
-  margin-right: var(--oas-space-1);
+  margin-inline-end: var(--oas-space-1);
 }
 .bar-end {
-  margin-left: var(--oas-space-1);
+  margin-inline-start: var(--oas-space-1);
 }
 /* 顶级项容器：独立 flex 行（与 start/end 插槽并存），水平溢出收纳测量以此为宽 */
 .bar-items {
@@ -126,12 +127,12 @@ const STYLE = `
   color: var(--oas-color-primary);
   font-weight: 500;
 }
-/* 收纳弹层右对齐其右缘（在条末尾，向左开会超出容器右缘被裁掉）；
-   与一级下拉的 side/align 类互斥——syncSubmenuPositions 对该弹层跳过几何类注入 */
+/* 收纳弹层对齐收纳项书写方向末端（在条尾端展开不会越出容器被裁）；
+   与一级下拉的 side/align 类互斥——syncSubmenuPositions 对该弹层跳过几何类注入。
+   inset 逻辑化：RTL 自动镜像为左端展开 */
 .submenu.more-popup {
-  left: auto;
-  right: 0;
-  transform-origin: top right;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
 }
 /* ===== 整栏 disabled：降饱和 + 禁指针（键盘拦截走 JS） ===== */
 :host([disabled]) .bar,
@@ -146,7 +147,8 @@ const STYLE = `
   padding: var(--oas-space-1);
   position: absolute;
   top: 100%;
-  left: 0;
+  /* 逻辑 inset：LTR 贴父项左缘、RTL 贴父项右缘（书写方向起点），汉堡面板同规则自动镜像 */
+  inset-inline-start: 0;
   min-width: 160px;
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
@@ -157,19 +159,20 @@ const STYLE = `
 .submenu.open {
   display: block;
 }
-/* 级联子菜单：向右浮出 */
+/* 级联子菜单：向书写方向终点侧浮出（LTR 右 / RTL 左，逻辑 inset 自动镜像） */
 .submenu .submenu {
   top: calc(-1 * var(--oas-space-1));
-  left: 100%;
+  inset-inline-start: 100%;
 }
-/* 视口边界翻转（JS 检测后切类）：级联子菜单右侧不足向左展开；一级下拉右缘不足右对齐；底部不足向上 */
+/* 视口边界翻转（JS 检测后切类）：级联子菜单浮出侧不足向起点侧回折；一级下拉终点缘不足
+   对齐父项终点缘回折；底部不足向上。inset 全逻辑化——RTL 下各翻转类自动镜像到对称侧 */
 .submenu .submenu.flip-left {
-  left: auto;
-  right: 100%;
+  inset-inline-start: auto;
+  inset-inline-end: 100%;
 }
 .submenu.flip-right {
-  left: auto;
-  right: 0;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
 }
 .submenu.flip-up {
   top: auto;
@@ -179,7 +182,9 @@ const STYLE = `
   top: auto;
   bottom: calc(-1 * var(--oas-space-1));
 }
-/* ===== 一级下拉：side/align/offset 定位（--popup-offset 由 JS 内联注入） ===== */
+/* ===== 一级下拉：side/align/offset 定位（--popup-offset 由 JS 内联注入） =====
+   side 属性是显式物理方位 API（side="right" 即物理右侧，RTL 不镜像）——保留物理 inset；
+   side 缺省（水平 bottom / 竖排随书写方向）与 align start/end 走逻辑 inset 自动镜像 */
 .submenu.popup-first.side-top {
   top: auto;
   bottom: calc(100% + var(--popup-offset, 4px));
@@ -198,11 +203,11 @@ const STYLE = `
   right: calc(100% + var(--popup-offset, 4px));
   top: 0;
 }
-/* align：仅对水平弹出的下拉生效（side top/bottom） */
+/* align：仅对水平弹出的下拉生效（side top/bottom）；start/end 逻辑化（RTL 自动对调） */
 .submenu.popup-first.side-top.align-start,
 .submenu.popup-first.side-bottom.align-start {
-  left: 0;
-  right: auto;
+  inset-inline-start: 0;
+  inset-inline-end: auto;
 }
 .submenu.popup-first.side-top.align-center,
 .submenu.popup-first.side-bottom.align-center {
@@ -212,8 +217,8 @@ const STYLE = `
 }
 .submenu.popup-first.side-top.align-end,
 .submenu.popup-first.side-bottom.align-end {
-  left: auto;
-  right: 0;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
 }
 /* align：竖弹（side left/right）沿垂直轴对齐 */
 .submenu.popup-first.side-left.align-center,
@@ -226,11 +231,12 @@ const STYLE = `
   top: auto;
   bottom: 0;
 }
-/* 一级下拉视口翻转（offset 感知；align-center 翻转时清除 translate 防偏移） */
+/* 一级下拉视口翻转（offset 感知；align-center 翻转时清除 translate 防偏移）；
+   flip-right 逻辑 inset：LTR 右对齐回折、RTL 自动镜像为左对齐回折 */
 .submenu.popup-first.side-bottom.flip-right,
 .submenu.popup-first.side-top.flip-right {
-  left: auto;
-  right: 0;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
 }
 .submenu.popup-first.side-right.flip-left {
   left: auto;
@@ -283,15 +289,15 @@ const STYLE = `
   transform: rotate(45deg);
 }
 :host([show-arrow]) .submenu.popup-first.side-bottom.align-start::before {
-  left: 12px;
+  inset-inline-start: 12px;
 }
 :host([show-arrow]) .submenu.popup-first.side-bottom.align-center::before {
   left: 50%;
   margin-left: -5px;
 }
 :host([show-arrow]) .submenu.popup-first.side-bottom.align-end::before {
-  left: auto;
-  right: 12px;
+  inset-inline-start: auto;
+  inset-inline-end: 12px;
 }
 :host([show-arrow]) .submenu.popup-first.side-top::before {
   bottom: -6px;
@@ -299,18 +305,18 @@ const STYLE = `
   border-bottom: 1px solid var(--oas-color-border);
   transform: rotate(45deg);
 }
-/* side-top 的 align 定位（与 side-bottom 对称）：缺省无 left/right 时 position:absolute
-   落在面板内容起始位（左缘附近），右对齐触发器时箭头会偏左不指触发器 */
+/* side-top 的 align 定位（与 side-bottom 对称）：缺省无 inset 时 position:absolute
+   落在面板内容起始位（书写起点缘附近），对齐终点缘时箭头会偏移不指触发器 */
 :host([show-arrow]) .submenu.popup-first.side-top.align-start::before {
-  left: 12px;
+  inset-inline-start: 12px;
 }
 :host([show-arrow]) .submenu.popup-first.side-top.align-center::before {
   left: 50%;
   margin-left: -5px;
 }
 :host([show-arrow]) .submenu.popup-first.side-top.align-end::before {
-  left: auto;
-  right: 12px;
+  inset-inline-start: auto;
+  inset-inline-end: 12px;
 }
 :host([show-arrow]) .submenu.popup-first.side-right::before {
   left: -6px;
@@ -342,7 +348,7 @@ const STYLE = `
 .subitem .label {
   flex: 1;
   min-width: 0;
-  text-align: left;
+  text-align: start;
 }
 .subitem:hover,
 .subitem.active {
@@ -375,7 +381,7 @@ const STYLE = `
   color: inherit;
 }
 .subitem .icon {
-  margin-right: var(--oas-space-2);
+  margin-inline-end: var(--oas-space-2);
 }
 .icon svg {
   display: block;
@@ -423,7 +429,7 @@ const STYLE = `
   border-radius: 1px;
 }
 .shortcut {
-  margin-left: var(--oas-space-3);
+  margin-inline-start: var(--oas-space-3);
   padding: 0 var(--oas-space-1);
   font-size: var(--oas-font-size-sm);
   font-family: var(--oas-font-family-mono, monospace);
@@ -438,7 +444,7 @@ const STYLE = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: var(--oas-space-3);
+  margin-inline-start: var(--oas-space-3);
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
   flex-shrink: 0;
@@ -447,6 +453,10 @@ const STYLE = `
   display: block;
   width: 1em;
   height: 1em;
+}
+/* RTL：指向书写终点的子菜单 chevron 镜像为指向另一侧 */
+:host([data-rtl]) .arrow svg {
+  transform: scaleX(-1);
 }
 .group {
   list-style: none;
@@ -543,6 +553,8 @@ export class OASMenubar extends OASElement {
       'close-on-select',
       'orientation',
       'breakpoint',
+      // 书写方向：dir 变化触发重算 data-rtl（弹出侧/开口方向/翻转判定随方向重同步）
+      'dir',
     ]
   }
 
@@ -708,6 +720,8 @@ export class OASMenubar extends OASElement {
     }
     this.barEl?.setAttribute('aria-label', this.t('menubar.label'))
     this.barEl?.setAttribute('aria-disabled', String(this.isBarDisabled()))
+    // RTL 逻辑方向化钩子：CSS :host([data-rtl]) 写镜像规则（chevron 翻转等）
+    this.toggleAttribute('data-rtl', isRtl(this))
     this.syncOrientation()
     this.syncBarSlots()
     this.syncOpenFromAttr()
@@ -944,11 +958,13 @@ export class OASMenubar extends OASElement {
     return this.getAttr('loop', '') !== 'false'
   }
 
-  /** 弹出侧：显式 side 属性优先；缺省水平=bottom、竖排=right */
+  /** 弹出侧：显式 side 属性优先（显式物理方位，RTL 不镜像）；缺省水平=bottom、
+      竖排=书写起点侧延伸方向（LTR right / RTL left 逻辑镜像） */
   private popupSide(): string {
     const s = this.getAttr('side', '')
     if (s) return s
-    return this.getAttr('orientation') === 'vertical' ? 'right' : 'bottom'
+    if (this.getAttr('orientation') === 'vertical') return isRtl(this) ? 'left' : 'right'
+    return 'bottom'
   }
 
   /** 弹出对齐：缺省 start */
@@ -1488,34 +1504,47 @@ export class OASMenubar extends OASElement {
     const margin = 8
     const vw = window.innerWidth
     const vh = window.innerHeight
+    const rtl = isRtl(this)
     const barRight = this.barEl?.getBoundingClientRect().right ?? vw
+    const barLeft = this.barEl?.getBoundingClientRect().left ?? 0
     for (const sub of this.shadow.querySelectorAll<HTMLElement>('[part="submenu"].open')) {
       // 级联子菜单的父项是 li；一级下拉的容器是 div（wrap），closest('li') 为 null 时回退直接父元素
       const parentItem = (sub.closest('li') ?? sub.parentElement) as HTMLElement | null
       if (!parentItem) continue
-      const parentLeft = parentItem.getBoundingClientRect().left
+      const parentRect = parentItem.getBoundingClientRect()
+      const parentLeft = parentRect.left
+      const parentRight = parentRect.right
       const itemWidth = parentItem.offsetWidth
       const subWidth = sub.offsetWidth
       const subHeight = sub.offsetHeight
       const isNested = !!parentItem.parentElement?.closest('[part="submenu"]')
       if (isNested) {
-        // 级联：右侧不足向左展开、底部不足向上
-        sub.classList.toggle('flip-left', parentLeft + itemWidth + subWidth > vw - margin)
+        // 级联：浮出侧（书写终点侧）空间不足回折、底部不足向上。
+        // RTL 下面板贴父项左缘向左浮出，改检父项左缘减面板宽是否越出视口左缘
+        const overflowsEnd = rtl ? parentLeft - subWidth < margin : parentLeft + itemWidth + subWidth > vw - margin
+        sub.classList.toggle('flip-left', overflowsEnd)
         sub.classList.remove('flip-right')
         const subTop = sub.getBoundingClientRect().top
         sub.classList.toggle('flip-up', subTop + subHeight > vh - margin)
         sub.classList.remove('flip-down')
       } else {
         const side = this.popupSide()
-        // 一级下拉右边界：视口与 bar 右缘取小（bar 在窄容器内被 max-width 约束时，越过 bar 会被裁）
-        const rightBound = Math.min(vw, barRight) - margin
         if (side === 'right') {
+          // 显式物理 side：判定保持物理（与 side 类的物理 inset 对应，RTL 不镜像）
           sub.classList.toggle('flip-left', parentLeft + itemWidth + subWidth > vw - margin)
           sub.classList.remove('flip-right')
         } else if (side === 'left') {
           sub.classList.toggle('flip-right', parentLeft - subWidth < margin)
           sub.classList.remove('flip-left')
+        } else if (rtl) {
+          // 缺省（bottom）RTL：面板贴父项右缘向左展开，检左缘溢出；边界取视口与 bar 左缘取大
+          // （bar 在窄容器内被约束时越过 bar 会被裁）
+          const leftBound = Math.max(margin, barLeft) + margin
+          sub.classList.toggle('flip-right', parentRight - subWidth < leftBound)
+          sub.classList.remove('flip-left')
         } else {
+          // 缺省（bottom）LTR：面板贴父项左缘向右展开，检右缘溢出；边界取视口与 bar 右缘取小
+          const rightBound = Math.min(vw, barRight) - margin
           sub.classList.toggle('flip-right', parentLeft + subWidth > rightBound)
           sub.classList.remove('flip-left')
         }
@@ -1555,28 +1584,37 @@ export class OASMenubar extends OASElement {
     }
   }
 
-  /** 弹出动画开口方向：一级按 side/align，级联向右（flip-left 向左）；翻转后开口反向；收纳弹层固定右上 */
+  /** 弹出动画开口方向：一级按 side/align，级联向浮出侧（flip 回折反向）；翻转后开口反向；
+      收纳弹层固定对齐书写终点缘。RTL 下逻辑侧镜像（收纳弹层左端、级联浮出侧向左） */
   private popupOrigin(sub: HTMLElement): string {
+    const rtl = isRtl(this)
     if (sub.dataset.parent === '__more__') {
-      return sub.classList.contains('flip-up') ? 'bottom right' : 'top right'
+      const endSide = rtl ? 'left' : 'right'
+      return sub.classList.contains('flip-up') ? `bottom ${endSide}` : `top ${endSide}`
     }
     const isNested = !!sub.parentElement?.closest('[part="submenu"]')
-    if (isNested) return sub.classList.contains('flip-left') ? 'right top' : 'left top'
+    // 级联：origin 取面板贴父项一侧（浮出侧的反向缘）；RTL 浮出侧镜像
+    if (isNested) {
+      const outward = rtl ? 'left' : 'right'
+      return sub.classList.contains('flip-left') ? `${outward === 'right' ? 'left' : 'right'} top` : `${outward} top`
+    }
     const side = this.popupSide()
     const ax = this.popupAlignX()
     const flippedUp = sub.classList.contains('flip-up')
     const flippedDown = sub.classList.contains('flip-down')
     if (side === 'bottom') return flippedUp ? `bottom ${ax}` : `top ${ax}`
     if (side === 'top') return flippedDown ? `top ${ax}` : `bottom ${ax}`
+    // side left/right 为显式物理方位（与物理 inset 类对应），origin 不随 RTL 镜像
     if (side === 'right') return 'left center'
     return 'right center'
   }
 
+  /** align 的物理轴向映射（transform-origin 用）：start/end 是逻辑语义，按书写方向落物理侧 */
   private popupAlignX(): string {
     const a = this.popupAlign()
     if (a === 'center') return 'center'
-    if (a === 'end') return 'right'
-    return 'left'
+    const end = a === 'end'
+    return isRtl(this) ? (end ? 'left' : 'right') : end ? 'right' : 'left'
   }
 
   /**

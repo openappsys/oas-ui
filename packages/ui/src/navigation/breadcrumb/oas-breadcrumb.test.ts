@@ -772,4 +772,49 @@ describe('折叠展开事件与下拉缺陷修复', () => {
     expect(coarse).toContain('.ellipsis-item')
     expect(coarse).toContain('min-height')
   })
+
+  // ===== RTL（右到左）逻辑方向化 =====
+
+  describe('RTL 逻辑方向化', () => {
+    it('dir=rtl 时宿主打 data-rtl 钩子，移除 dir 后回退', () => {
+      const el = mount()
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+      el.setAttribute('dir', 'rtl')
+      expect(el.hasAttribute('data-rtl')).toBe(true)
+      el.removeAttribute('dir')
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+    })
+
+    it('RTL：下拉面板翻转判定镜像（书写起点侧溢出检查）', () => {
+      const el = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': '4', dir: 'rtl' })
+      const root = el.shadowRoot!
+      const dd = root.querySelector<HTMLElement>('.ellipsis-dropdown')!
+      // happy-dom 无布局：mock 面板宽 200、视口 1024。触发器 rect 全 0——
+      // RTL 判定 rect.left(0) - 200 < 8 → 溢出 → flip-right（RTL 下该类 CSS 镜像为左对齐回折）
+      Object.defineProperty(dd, 'offsetWidth', { value: 200, configurable: true })
+      const btn = root.querySelector<HTMLButtonElement>('.ellipsis-btn')!
+      btn.click()
+      expect(dd.classList.contains('flip-right')).toBe(true)
+    })
+
+    it('LTR：面板不溢出时不翻转——镜像基准', () => {
+      const el = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': '4' })
+      const root = el.shadowRoot!
+      const dd = root.querySelector<HTMLElement>('.ellipsis-dropdown')!
+      Object.defineProperty(dd, 'offsetWidth', { value: 200, configurable: true })
+      const btn = root.querySelector<HTMLButtonElement>('.ellipsis-btn')!
+      btn.click()
+      // LTR：rect.right(0) + 200 = 200 < 1024 - 8 → 不翻转
+      expect(dd.classList.contains('flip-right')).toBe(false)
+    })
+
+    it('RTL：样式表含面板逻辑 inset 与 flip 镜像规则（无物理 left/right 定位）', () => {
+      const el = mount()
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain('inset-inline-start')
+      // menu-panel 定位与 flip 类全部逻辑化，不再有物理 left:0 / right:0
+      expect(css).not.toMatch(/\.menu-panel\s*\{[^}]*left:\s*0/)
+      expect(css).not.toMatch(/\.menu-panel\.flip-right\s*\{[^}]*right:\s*0/)
+    })
+  })
 })
