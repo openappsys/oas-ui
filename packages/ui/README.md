@@ -7,7 +7,7 @@ OAS-UI 组件库主包 —— 框架无关的 Web Components UI 组件库（Cust
 - TypeScript 全量类型，tree-shakable
 - light / dark 双主题（CSS 变量 token，无需重新引入 JS）
 - SSR + Declarative Shadow DOM（DSD）快照支持
-- 框架无关 i18n（zh-CN / en）
+- 框架无关 i18n（内置 10 种语言：zh-CN / en / ja / ko / de / fr / es / pt / ru / ar，ar 为 RTL，支持按需加载）
 - MIT OR Apache-2.0 双许可
 
 ### 安装
@@ -73,7 +73,7 @@ import '@oas-ui/ui/basic/button'
 - Fully typed TypeScript, tree-shakable
 - light / dark themes (CSS variable tokens, no extra JS needed)
 - SSR + Declarative Shadow DOM (DSD) snapshot support
-- Framework-agnostic i18n (zh-CN / en)
+- Framework-agnostic i18n (10 built-in locales: zh-CN / en / ja / ko / de / fr / es / pt / ru / ar — ar is RTL, loaded on demand)
 - Dual-licensed MIT OR Apache-2.0
 
 ### Install

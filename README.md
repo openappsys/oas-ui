@@ -14,8 +14,8 @@ TypeScript 全量类型 · tree-shakable · light/dark 双主题 · SSR + DSD ·
 | CDN 全量单文件（gzip） | 153.2 KB |
 | 按钮单链（gzip） | 20.7 KB |
 | 单测 | 2200+ |
-| 语言包 | zh-CN / en |
-| 当前版本 | v2.0.0 |
+| 语言包 | 内置 10 种：zh-CN / en / ja / ko / de / fr / es / pt / ru / ar（ar 为 RTL） |
+| 当前版本 | v2.5.2 |
 
 ## 快速开始
 
