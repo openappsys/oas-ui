@@ -54,3 +54,54 @@ test('tag 页事件反馈不自激：点选项 A 后消息自动关闭不再触�
     '不应出现「标签已关闭」自激消息',
   ).toEqual([])
 })
+
+test.describe('tag 移动端触控目标（coarse pointer 抬升）', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 3,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+  })
+
+  test('coarse 下 checkable/clickable 整签高 ≥44px，关闭 × 命中区（::before）≥44px', async ({ page }) => {
+    await page.goto('/components/tag.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-tag[checkable]')
+    const r = await page.evaluate(() => {
+      const tagH = (sel: string) => {
+        const el = document.querySelector(sel)
+        if (!el) return -1
+        return el.shadowRoot!.querySelector('.tag')!.getBoundingClientRect().height
+      }
+      const closeable = document.querySelector('oas-tag[closable]')!
+      const btn = closeable.shadowRoot!.querySelector('button')!
+      const before = getComputedStyle(btn, '::before')
+      return {
+        checkableH: tagH('oas-tag[checkable]'),
+        clickableH: tagH('oas-tag[clickable]'),
+        beforeW: parseFloat(before.width),
+        beforeH: parseFloat(before.height),
+      }
+    })
+    expect(r.checkableH, 'coarse 下 checkable 整签 ≥44px').toBeGreaterThanOrEqual(44)
+    expect(r.clickableH, 'coarse 下 clickable 整签 ≥44px').toBeGreaterThanOrEqual(44)
+    expect(r.beforeW, 'coarse 下关闭 × 命中区宽 ≥44px').toBeGreaterThanOrEqual(44)
+    expect(r.beforeH, 'coarse 下关闭 × 命中区高 ≥44px').toBeGreaterThanOrEqual(44)
+  })
+})
+
+test('PC fine pointer 下 tag 零抬升：checkable 整签 24px、关闭钮无扩展命中伪元素', async ({ page }) => {
+  // 锁定 coarse 规则不泄漏到桌面：PC 下整签高度不变、::before 命中伪元素不生成
+  await page.goto('/components/tag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tag[checkable]')
+  const r = await page.evaluate(() => {
+    const checkable = document.querySelector('oas-tag[checkable]')!
+    const tagH = checkable.shadowRoot!.querySelector('.tag')!.getBoundingClientRect().height
+    const closeable = document.querySelector('oas-tag[closable]')!
+    const btn = closeable.shadowRoot!.querySelector('button')!
+    return { tagH, beforeContent: getComputedStyle(btn, '::before').content }
+  })
+  expect(r.tagH, 'PC 下 checkable 整签仍为 24px').toBe(24)
+  expect(r.beforeContent, 'PC 下不生成扩展命中伪元素').toBe('none')
+})

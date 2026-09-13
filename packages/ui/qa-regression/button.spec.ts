@@ -150,3 +150,51 @@ test('button primary（solid）：hover/选中背景不被自定义底色兜底�
   expect(r.pressed).toBe('true')
   expect(r.selected, '选中项底色应与未选项可区分').not.toBe(r.rest)
 })
+
+test.describe('button 移动端触控目标（coarse pointer 抬升）', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 3,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+  })
+
+  test('coarse 下按钮渲染高度 ≥44px（含 xs 档与 icon-only），PC 下默认档仍 32px', async ({ page }) => {
+    await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-button')
+    const r = await page.evaluate(() => {
+      const heights = [...document.querySelectorAll('oas-button')]
+        .map((el) => {
+          const inner = el.shadowRoot!.querySelector<HTMLElement>('button, a[part="button"]')!
+          return inner.getBoundingClientRect().height
+        })
+        .filter((h) => h > 0)
+      const iconEl = document.querySelector('oas-button[icon]')!
+      const ib = iconEl.shadowRoot!.querySelector('button')!.getBoundingClientRect()
+      const xsEl = document.querySelector('oas-button[size="xs"]')!
+      const xsH = xsEl.shadowRoot!.querySelector('button')!.getBoundingClientRect().height
+      return { heights, iconW: ib.width, iconH: ib.height, xsH }
+    })
+    expect(r.heights.length, '页面应渲染出可见按钮').toBeGreaterThan(0)
+    for (const h of r.heights) {
+      expect(h, `触屏下按钮高度 ${h}px 应 ≥44px`).toBeGreaterThanOrEqual(44)
+    }
+    expect(r.xsH, 'xs 档触屏下抬到 44px').toBeGreaterThanOrEqual(44)
+    expect(Math.abs(r.iconW - r.iconH), 'icon-only 保持正方形（aspect-ratio 随高度同步放宽）').toBeLessThanOrEqual(1)
+  })
+})
+
+test('PC fine pointer 下 button 零抬升：默认档 32px、xs 档 20px', async ({ page }) => {
+  // 锁定 coarse 规则不泄漏到桌面（PC 布局密度完全不变）
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button')
+  const r = await page.evaluate(() => {
+    const h = (sel: string) =>
+      document.querySelector(sel)!.shadowRoot!.querySelector('button')!.getBoundingClientRect().height
+    return { md: h('oas-button[size="medium"]'), xs: h('oas-button[size="xs"]') }
+  })
+  expect(r.md, 'PC 下默认档仍 32px').toBe(32)
+  expect(r.xs, 'PC 下 xs 档仍 20px').toBe(20)
+})
