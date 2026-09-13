@@ -171,7 +171,7 @@ test('date-picker 移动端：单月面板水平居中 + 日格触摸友好，�
       const day = panel.querySelector<HTMLElement>('.day')!
       const pr = panel.getBoundingClientRect()
       const dr = day.getBoundingClientRect()
-      return { left: pr.left, right: pr.right, cellW: dr.width, vw: window.innerWidth }
+      return { left: pr.left, right: pr.right, cellW: dr.width, cellH: dr.height, vw: window.innerWidth }
     })
     // 面板水平居中：左右边距对称（≤2px 容差）
     expect(
@@ -180,6 +180,8 @@ test('date-picker 移动端：单月面板水平居中 + 日格触摸友好，�
     ).toBeLessThanOrEqual(2)
     // 日格触摸友好：宽 ≥ 40px（≈44 触摸目标）
     expect(s.cellW, `日格宽度 ${Math.round(s.cellW)}px 应触摸友好（≥40）`).toBeGreaterThanOrEqual(40)
+    // 日格触控目标抬升：移动形态下日格高度 ≥44px（--oas-touch-target-min）
+    expect(s.cellH, `移动形态日格高度 ${Math.round(s.cellH)}px 应 ≥44px（触摸目标）`).toBeGreaterThanOrEqual(44)
 
     // 收起单月
     await single.evaluate((el) => {

@@ -580,4 +580,15 @@ describe('OASCombobox 移动端底部抽屉（bottom-sheet 接入）', () => {
     // PC 形态写内联坐标（fixed 锚定）
     expect(dropdown(el).style.top).toMatch(/^\d+px$/)
   })
+
+  it('移动形态选项行触控目标抬升：.option min-height 对齐 --oas-touch-target-min', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 移动形态（抽屉内）：选项行最小高度抬到触摸目标 token（theme 默认 44px）
+    expect(css).toContain(':host([data-mobile-sheet]) .option')
+    expect(css).toContain('min-height: var(--oas-touch-target-min, 44px)')
+    // PC 基础规则不携带该抬升（仅存在于 data-mobile-sheet 块内）
+    const pcCss = css.split(':host([data-mobile-sheet])')[0]!
+    expect(pcCss).not.toContain('min-height: var(--oas-touch-target-min, 44px)')
+  })
 })

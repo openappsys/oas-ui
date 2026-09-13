@@ -69,6 +69,11 @@ test('combobox 移动端：底部抽屉贴视口底展开 + 列表可交互 + �
         handleVisible: getComputedStyle(handle).display !== 'none',
         // 面板可用：抽屉内能取到选项行
         options: dropdown.querySelectorAll('[role="option"]').length,
+        // 触控目标抬升：首个选项行几何
+        optionH: (() => {
+          const row = dropdown.querySelector<HTMLElement>('.option')!
+          return row.getBoundingClientRect().height
+        })(),
       }
     })
     expect(info.sheetOpen, '移动端展开时 sheet 应带 open').toBe(true)
@@ -80,6 +85,8 @@ test('combobox 移动端：底部抽屉贴视口底展开 + 列表可交互 + �
     expect(info.backdropOpacity, '遮罩应可见').toBeGreaterThan(0.5)
     expect(info.handleVisible, 'drag handle 应可见').toBe(true)
     expect(info.options, '抽屉内列表应可交互（有选项行）').toBeGreaterThan(0)
+    // 触控目标抬升：移动形态下选项行高度 ≥44px（--oas-touch-target-min）
+    expect(info.optionH, `移动形态选项行高度 ${Math.round(info.optionH)}px 应 ≥44px`).toBeGreaterThanOrEqual(44)
     // 抽屉内点选交互：点第一项 → 选中并回写 value
     await host.evaluate((el) => {
       const row = el.shadowRoot!.querySelector<HTMLElement>('[part="dropdown"] [role="option"]')!
