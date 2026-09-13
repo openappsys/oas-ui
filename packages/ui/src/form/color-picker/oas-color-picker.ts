@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { resolveDirection } from '../../shared/direction.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { parseColor, formatColor, formatSwatch, type RGBA } from './color.js'
 import { registeredColorPickerCapabilities, onColorPickerCapabilityRegistered } from './oas-color-picker-capability.js'
@@ -983,6 +984,7 @@ export class OASColorPicker extends OASElement {
       left,
       placement: actual,
     } = computePosition(anchorRect, popupRect, placement, viewport, PANEL_GAP, true, {
+      direction: resolveDirection(this),
       collisionPadding: VIEWPORT_PADDING,
     })
     this.panel.style.top = `${top}px`

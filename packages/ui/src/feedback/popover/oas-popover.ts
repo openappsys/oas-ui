@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { resolveDirection } from '../../shared/direction.js'
 import { iconRegistry } from '@oas-ui/icons'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { registeredPopoverCapabilities, onPopoverCapabilityRegistered } from './oas-popover-capability.js'
@@ -1295,6 +1296,7 @@ export class OASPopover extends OASElement {
     }
 
     const r = computePosition(anchorRect, panelRect, actual as Placement, viewport, distance, autoAdjust, {
+      direction: resolveDirection(this),
       skidding: skid,
       collisionPadding: padding,
     })

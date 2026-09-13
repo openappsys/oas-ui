@@ -3,6 +3,7 @@ import { OASElement } from '@oas-ui/core'
 // 用户 `registerIcon()` 注册自定义图标后可见（oas-icon.ts 详细说明）；menu 不循环依赖
 import { lookupIcon } from '../../basic/icon/oas-icon.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
+import { isRtl } from '../../shared/direction.js'
 
 export type MenuItemType = 'item' | 'group' | 'divider'
 
@@ -268,14 +269,15 @@ const STYLE = `
   background: var(--oas-color-border);
   cursor: default;
 }
-/* 级联浮出子菜单：默认隐藏，父项 .open 时显示；独立浮层定位在父项右侧 */
+/* 级联浮出子菜单：默认隐藏，父项 .open 时显示；逻辑定位在父项行内轴起始侧的对面
+   （LTR 开在右侧、RTL 开在左侧，inset-inline-start 自动跟随书写方向） */
 .submenu {
   display: none;
   list-style: none;
   margin: 0;
   padding: var(--oas-space-1);
   position: absolute;
-  left: 100%;
+  inset-inline-start: 100%;
   top: calc(-1 * var(--oas-space-1));
   min-width: 140px;
   background: var(--oas-color-bg);
@@ -287,10 +289,11 @@ const STYLE = `
 .item.open > .submenu {
   display: block;
 }
-/* 视口边界翻转（JS 检测后切类）：右侧空间不足向左展开、底部不足向上展开 */
+/* 视口边界翻转（JS 检测后切类）：行内轴前方空间不足时翻到另一侧展开、底部不足向上展开
+   （flip-left 类名沿用历史语义 = 「子菜单翻到行内轴另一侧」，逻辑 inset 使其自动跟随方向） */
 .submenu.flip-left {
-  left: auto;
-  right: 100%;
+  inset-inline-start: auto;
+  inset-inline-end: 100%;
 }
 .submenu.flip-up {
   top: auto;
@@ -422,6 +425,8 @@ export class OASMenu extends OASElement {
   }
 
   protected override update(): void {
+    // RTL 镜像开关：子菜单展开侧/翻转判定与 CSS 镜像（chevron 等）消费
+    this.toggleAttribute('data-rtl', isRtl(this))
     // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
     // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
@@ -911,12 +916,17 @@ export class OASMenu extends OASElement {
     const margin = 8
     const vw = window.innerWidth
     const vh = window.innerHeight
+    const rtl = isRtl(this)
     for (const item of this.menuEl.querySelectorAll<HTMLElement>('.item.open')) {
       const sub = item.querySelector<HTMLElement>(':scope > .submenu')
       if (!sub) continue
       const itemRect = item.getBoundingClientRect()
       const subRect = sub.getBoundingClientRect()
-      sub.classList.toggle('flip-left', itemRect.right + subRect.width > vw - margin)
+      // 行内轴前方空间不足 → 翻到另一侧（LTR 检右缘溢出、RTL 检左缘溢出）
+      sub.classList.toggle(
+        'flip-left',
+        rtl ? itemRect.left - subRect.width < margin : itemRect.right + subRect.width > vw - margin,
+      )
       // 重新测量（水平翻转已生效），垂直向同样按实际布局判定
       const subRectV = sub.getBoundingClientRect()
       sub.classList.toggle('flip-up', subRectV.bottom > vh - margin)

@@ -109,7 +109,8 @@ describe('OASEllipsis', () => {
     el.addEventListener('oas-collapse', (e: Event) => (detail = (e as CustomEvent).detail))
     btn.click()
     expect(detail).toEqual({ expanded: false })
-    expect(btn.textContent).toContain('ellipsis.expand')
+    // i18n 模块加载即注册默认 zh-CN 翻译器（开箱即用设计），标签为译文而非裸 key
+    expect(btn.textContent).toContain('展开')
     expect(el.shadowRoot!.querySelector('oas-tooltip')).not.toBeNull()
   })
 
@@ -320,7 +321,7 @@ describe('OASEllipsis', () => {
       el.addEventListener('oas-expand', () => expands++)
       el.setAttribute('expanded', '')
       expect(expands).toBe(0)
-      expect(toggleEl(el).textContent).toContain('ellipsis.collapse')
+      expect(toggleEl(el).textContent).toContain('收起')
     })
   })
 
@@ -403,7 +404,7 @@ describe('OASEllipsis', () => {
       const t = textEl(el)
       expect(t.textContent).toContain(FULL.slice(0, 10))
       expect(t.textContent).not.toContain('…')
-      expect(toggleEl(el).textContent).toContain('ellipsis.collapse')
+      expect(toggleEl(el).textContent).toContain('收起')
       expect(el.shadowRoot!.querySelector('oas-tooltip')).toBeNull()
     })
 
