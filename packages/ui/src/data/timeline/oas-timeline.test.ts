@@ -145,6 +145,37 @@ describe('OASTimeline', () => {
     expect(item.getAttribute('data-mode')).toBe('alternate')
   })
 
+  it('RTL：dir=rtl 下条目标记 data-rtl，轴线/间距走逻辑属性（mode 显式 API 保留）', () => {
+    // dir 在连接前设置（data-rtl 于连接时 update 判定）
+    const el = new OASTimeline()
+    el.setAttribute('dir', 'rtl')
+    el.innerHTML = `
+      <oas-timeline-item time="2024-01-01"><p>事件一</p></oas-timeline-item>
+      <oas-timeline-item time="2024-02-01"><p>事件二</p></oas-timeline-item>
+    `
+    document.body.appendChild(el)
+    const item = items(el)[0]!
+    expect(item.hasAttribute('data-rtl')).toBe(true)
+    const style = item.shadowRoot!.querySelector('style')!.textContent!
+    // 纵向连接线、横向间距/横线走逻辑 inset/padding/border（RTL 自动镜像）
+    expect(style).toMatch(/\.axis::after\s*\{[^}]*inset-inline-start:\s*4px/)
+    expect(style).toMatch(/border-inline-start:\s*2px dashed/)
+    expect(style).toMatch(/padding-inline-end:\s*var\(--oas-space-5\)/)
+    // RTL 圆点位移镜像规则存在（transform 物理向量手动翻转）
+    expect(style).toMatch(/:host\(\[data-rtl\]\)\s+\.dot\s*\{[^}]*translateX\(50%\)/)
+    // 不残留物理方向定位
+    expect(style).not.toMatch(/\bleft:\s*4px/)
+    expect(style).not.toMatch(/padding-right:/)
+  })
+
+  it('LTR：dir=ltr 下条目不标记 data-rtl', () => {
+    const el = new OASTimeline()
+    el.setAttribute('dir', 'ltr')
+    el.innerHTML = '<oas-timeline-item time="2024-01-01"><p>事件一</p></oas-timeline-item>'
+    document.body.appendChild(el)
+    expect(items(el)[0]!.hasAttribute('data-rtl')).toBe(false)
+  })
+
   it('pending 尾节点：默认文案与脉冲态样式钩子', () => {
     const el = new OASTimeline()
     el.innerHTML = `

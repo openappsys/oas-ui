@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 const STYLE = `
 :host {
@@ -43,7 +44,7 @@ const STYLE = `
   position: absolute;
   top: calc(4px + var(--oas-timeline-dot-size, 10px));
   bottom: calc(-1 * var(--oas-space-5) - 4px);
-  left: 4px;
+  inset-inline-start: 4px;
   width: 2px;
   background: var(--oas-color-border);
 }
@@ -54,10 +55,11 @@ const STYLE = `
 .dot {
   position: absolute;
   top: 4px;
-  /* 水平中心锚定连接线中心（5px）：left:0 时圆心随尺寸移动（6px→3、16px→8），
-     只有 10px 默认对齐；改 left:5px + translateX(-50%) 使任意尺寸圆心恒在 x=5 上，
-     与连接线中心（left:4px + 2px 宽 → 5px）恒对齐，点大小不再导致中心线偏移 */
-  left: 5px;
+  /* 水平中心锚定连接线中心（5px）：inset-inline-start:0 时圆心随尺寸移动（6px→3、16px→8），
+     只有 10px 默认对齐；改 inline-start:5px + 行内轴居中位移使任意尺寸圆心恒在 5px 上，
+     与连接线中心（inline-start:4px + 2px 宽 → 5px）恒对齐，点大小不再导致中心线偏移；
+     RTL 行内轴反向，data-rtl 下位移取正（transform 物理值不随方向自动翻转） */
+  inset-inline-start: 5px;
   transform: translateX(-50%);
   width: var(--oas-timeline-dot-size, 10px);
   height: var(--oas-timeline-dot-size, 10px);
@@ -66,6 +68,9 @@ const STYLE = `
   /* 任意色开口：--oas-timeline-dot-color 优先于 type 语义色 */
   background: var(--oas-timeline-dot-color, var(--dot-color, var(--oas-color-primary)));
   z-index: 1;
+}
+:host([data-rtl]) .dot {
+  transform: translateX(50%);
 }
 .dot[data-type='success'] { --dot-color: var(--oas-color-success); }
 .dot[data-type='warning'] { --dot-color: var(--oas-color-warning); }
@@ -85,9 +90,12 @@ const STYLE = `
   color: var(--oas-timeline-dot-color, var(--dot-color, var(--oas-color-primary)));
   width: auto;
   height: auto;
-  left: calc(var(--oas-timeline-dot-size, 10px) / 2);
+  inset-inline-start: calc(var(--oas-timeline-dot-size, 10px) / 2);
   top: calc(4px + var(--oas-timeline-dot-size, 10px) / 2);
   transform: translate(-50%, -50%);
+}
+:host([data-rtl]) .dot[data-icon] {
+  transform: translate(50%, -50%);
 }
 /* dot 插槽自定义节点：完全交给宿主内容，同样中心锚定到圆点心 */
 .dot[data-custom] {
@@ -95,9 +103,12 @@ const STYLE = `
   border-color: transparent;
   width: auto;
   height: auto;
-  left: calc(var(--oas-timeline-dot-size, 10px) / 2);
+  inset-inline-start: calc(var(--oas-timeline-dot-size, 10px) / 2);
   top: calc(4px + var(--oas-timeline-dot-size, 10px) / 2);
   transform: translate(-50%, -50%);
+}
+:host([data-rtl]) .dot[data-custom] {
+  transform: translate(50%, -50%);
 }
 .dot oas-icon {
   display: block;
@@ -133,7 +144,7 @@ const STYLE = `
 }
 :host([pending]) .axis::after {
   background: transparent;
-  border-left: 2px dashed var(--oas-color-border);
+  border-inline-start: 2px dashed var(--oas-color-border);
   width: 0;
 }
 /* 进行中尾节点：保留一截短虚线桩（其余末条目完全断线） */
@@ -203,7 +214,7 @@ const STYLE = `
   gap: var(--oas-space-2);
   height: 100%;
   padding-bottom: 0;
-  padding-right: var(--oas-space-5);
+  padding-inline-end: var(--oas-space-5);
 }
 :host([data-direction='horizontal']) .axis {
   width: auto;
@@ -212,23 +223,30 @@ const STYLE = `
 }
 :host([data-direction='horizontal']) .dot {
   top: 0;
-  /* 横向普通 dot 中心锚定横线起点（size/2）：left:0 时圆心随尺寸移（仅 10px 对齐），
-     改 left=size/2 + translateX(-50%) 使任意尺寸圆心恒在横线左端（横线从 size/2 起） */
-  left: calc(var(--oas-timeline-dot-size, 10px) / 2);
+  /* 横向普通 dot 中心锚定横线起点（size/2）：inline-start:0 时圆心随尺寸移（仅 10px 对齐），
+     改 inline-start=size/2 + 行内轴居中位移使任意尺寸圆心恒在横线起点（横线从 size/2 起） */
+  inset-inline-start: calc(var(--oas-timeline-dot-size, 10px) / 2);
   transform: translateX(-50%);
 }
-/* 横向 icon/自定义节点：中心锚定到轴心（左 半尺寸 / 上 轴高一半） */
+:host([data-rtl][data-direction='horizontal']) .dot {
+  transform: translateX(50%);
+}
+/* 横向 icon/自定义节点：中心锚定到轴心（行内轴起点侧 半尺寸 / 上 轴高一半） */
 :host([data-direction='horizontal']) .dot[data-icon],
 :host([data-direction='horizontal']) .dot[data-custom] {
-  left: calc(var(--oas-timeline-dot-size, 10px) / 2);
+  inset-inline-start: calc(var(--oas-timeline-dot-size, 10px) / 2);
   top: calc(var(--oas-timeline-dot-size, 10px) / 2);
   transform: translate(-50%, -50%);
+}
+:host([data-rtl][data-direction='horizontal']) .dot[data-icon],
+:host([data-rtl][data-direction='horizontal']) .dot[data-custom] {
+  transform: translate(50%, -50%);
 }
 :host([data-direction='horizontal']) .axis::after {
   /* 线中心对齐 dot 中心：dot 高 dot-size(10px) 中心在 5px；线高 2px 需 top=5-1=4px 才使线中心=5=dot中心 */
   top: calc(var(--oas-timeline-dot-size, 10px) / 2 - 1px);
-  left: calc(var(--oas-timeline-dot-size, 10px) / 2); /* 从 dot 中心横穿（此前 left:14px 在 dot 右缘外留 4px 左缝） */
-  right: calc(-1 * var(--oas-space-5) - 4px); /* 穿过 padding-right + 下一列圆点 left 偏移，横线接下一列圆点无缝 */
+  inset-inline-start: calc(var(--oas-timeline-dot-size, 10px) / 2); /* 从 dot 中心横穿，接下一列圆点无缝 */
+  inset-inline-end: calc(-1 * var(--oas-space-5) - 4px); /* 穿过 padding-inline-end + 下一列圆点偏移，横线接下一列圆点无缝 */
   bottom: auto;
   width: auto;
   height: 2px;
@@ -238,13 +256,13 @@ const STYLE = `
 }
 :host([data-direction='horizontal'][pending]) .axis::after {
   background: transparent;
-  border-left: none;
+  border-inline-start: none;
   border-top: 2px dashed var(--oas-color-border);
   height: 0;
 }
 :host([data-direction='horizontal'][pending]:last-child) .axis::after {
   display: block;
-  right: auto;
+  inset-inline-end: auto;
   width: var(--oas-space-2);
 }
 /* 横向 mode=right：内容在轴上方 */
@@ -321,6 +339,8 @@ export class OASTimelineItem extends OASElement {
   }
 
   protected override update(): void {
+    // RTL 书写方向标记（CSS :host([data-rtl]) 镜像 dot 位移；见 shared/direction 消费约定）
+    this.toggleAttribute('data-rtl', isRtl(this))
     const dot = this.shadow.querySelector<HTMLElement>('[part="dot"]')
     if (!dot) return
     // type 归一化：type 优先；color 旧值映射（迁移兼容）；缺省 primary

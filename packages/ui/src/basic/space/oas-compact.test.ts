@@ -36,11 +36,11 @@ describe('OASCompact', () => {
     document.body.innerHTML = ''
   })
 
-  it('相邻控件贴合：后项 margin-left -1px，首项无负 margin', () => {
+  it('相邻控件贴合：后项 margin-inline-start -1px，首项无负 margin', () => {
     const el = mountCompact()
     const items = el.querySelectorAll<HTMLElement>(':scope > oas-button')
-    expect(items[0]!.style.marginLeft).toBe('')
-    expect(items[1]!.style.marginLeft).toBe('-1px')
+    expect(items[0]!.style.getPropertyValue('margin-inline-start')).toBe('')
+    expect(items[1]!.style.getPropertyValue('margin-inline-start')).toBe('-1px')
   })
 
   it('首尾圆角、中间直角（--oas-button-group-radius 注入）', () => {
@@ -61,16 +61,28 @@ describe('OASCompact', () => {
     expect(radius(item)).toBe('var(--oas-radius-md)')
   })
 
-  it('vertical：纵向贴合（margin-top -1px）与上/下圆角', () => {
+  it('vertical：纵向贴合（margin-block-start -1px）与上/下圆角', () => {
     const el = mountCompact({ vertical: '' }, [
       ['oas-button', '一'],
       ['oas-button', '二'],
     ])
     const items = el.querySelectorAll<HTMLElement>(':scope > oas-button')
-    expect(items[0]!.style.marginTop).toBe('')
-    expect(items[1]!.style.marginTop).toBe('-1px')
+    expect(items[0]!.style.getPropertyValue('margin-block-start')).toBe('')
+    expect(items[1]!.style.getPropertyValue('margin-block-start')).toBe('-1px')
     expect(radius(items[0]!)).toBe('var(--oas-radius-md) var(--oas-radius-md) 0 0')
     expect(radius(items[1]!)).toBe('0 0 var(--oas-radius-md) var(--oas-radius-md)')
+  })
+
+  it('RTL：dir=rtl 下水平贴合走 margin-inline-start，首尾圆角四值互换', () => {
+    const el = mountCompact({ dir: 'rtl' }, [
+      ['oas-button', '一'],
+      ['oas-button', '二'],
+    ])
+    const items = el.querySelectorAll<HTMLElement>(':scope > oas-button')
+    expect(items[1]!.style.getPropertyValue('margin-inline-start')).toBe('-1px')
+    // RTL 行内轴反转：首项在视觉右（右圆角），尾项在视觉左（左圆角）
+    expect(radius(items[0]!)).toBe('0 var(--oas-radius-md) var(--oas-radius-md) 0')
+    expect(radius(items[1]!)).toBe('var(--oas-radius-md) 0 0 var(--oas-radius-md)')
   })
 
   it('disabled 透传全组禁用（四类控件均带 disabled）', () => {
@@ -93,12 +105,12 @@ describe('OASCompact', () => {
 
   it('子项增减后重新贴合（slotchange → update 重算 margin/圆角）', async () => {
     const el = mountCompact({}, [['oas-button', '一']])
-    expect(el.querySelector<HTMLElement>(':scope > oas-button')!.style.marginLeft).toBe('')
+    expect(el.querySelector<HTMLElement>(':scope > oas-button')!.style.getPropertyValue('margin-inline-start')).toBe('')
     const second = document.createElement('oas-button')
     el.appendChild(second)
     await new Promise((r) => setTimeout(r, 0))
     const items = el.querySelectorAll<HTMLElement>(':scope > oas-button')
-    expect(items[1]!.style.marginLeft).toBe('-1px')
+    expect(items[1]!.style.getPropertyValue('margin-inline-start')).toBe('-1px')
     expect(radius(items[0]!)).toBe('var(--oas-radius-md) 0 0 var(--oas-radius-md)')
   })
 })

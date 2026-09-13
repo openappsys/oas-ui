@@ -329,6 +329,9 @@ const STYLE = `
   font-family: 'Times New Roman', 'STIX Two Math', 'Cambria Math', serif;
   font-style: italic;
   white-space: nowrap;
+  /* 公式内容恒 LTR：数学排版不做方向镜像（通行做法），RTL 宿主下仅组件布局间距逻辑化，
+     公式内部结构（上下标/根号/分式）保持从左到右 */
+  direction: ltr;
 }
 .sup,
 .sub {
@@ -338,11 +341,11 @@ const STYLE = `
 }
 .sup {
   vertical-align: super;
-  margin-left: 0.08em;
+  margin-inline-start: 0.08em;
 }
 .sub {
   vertical-align: sub;
-  margin-left: 0.08em;
+  margin-inline-start: 0.08em;
 }
 .frac {
   display: inline-flex;
@@ -367,7 +370,7 @@ const STYLE = `
 .sqrt::before {
   content: '√';
   font-style: normal;
-  margin-right: 0.05em;
+  margin-inline-end: 0.05em;
 }
 .sqrt .sqrt-index {
   font-size: 0.6em;
@@ -396,7 +399,7 @@ const STYLE = `
 }
 .op-limits .sup,
 .op-limits .sub {
-  margin-left: 0;
+  margin-inline-start: 0;
 }
 `
 

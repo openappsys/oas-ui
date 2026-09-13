@@ -77,6 +77,24 @@ describe('OASCode', () => {
     expect(el.shadowRoot!.querySelector('[part="line-number"]')).toBeNull()
   })
 
+  it('RTL：行号区逻辑化（跟随书写方向换边），代码内容恒 LTR 不镜像', () => {
+    const el = mount({ code: 'a\nb', 'show-line-number': '', dir: 'rtl' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    // 行号与代码间距、行号对齐走逻辑属性（RTL 下行号区自然到代码右侧）
+    expect(style).toMatch(/\.line-number\s*\{[^}]*margin-inline-end:\s*var\(--oas-space-3\)/)
+    expect(style).toMatch(/\.line-number\s*\{[^}]*text-align:\s*end/)
+    // 代码内容锁 LTR（isolate），不做方向镜像
+    expect(style).toMatch(/\.line-code\s*\{[^}]*direction:\s*ltr/)
+    expect(style).toMatch(/\.line-code\s*\{[^}]*unicode-bidi:\s*isolate/)
+    expect(style).toMatch(/\.inline\s*\{[^}]*direction:\s*ltr/)
+    // 不残留物理方向声明
+    expect(style).not.toMatch(/\.line-number\s*\{[^}]*margin-right/)
+    expect(style).not.toMatch(/\.line-number\s*\{[^}]*text-align:\s*right/)
+    expect(style).not.toMatch(/\.lang\s*\{[^}]*margin-right/)
+    // RTL 下渲染结构不抛错、行号仍在
+    expect(el.shadowRoot!.querySelector('[part="line-number"]')).not.toBeNull()
+  })
+
   it('复制按钮默认显示，copyable=false 隐藏', () => {
     const el = mount({ code: 'hi' })
     expect(el.shadowRoot!.querySelector('[part="copy"]')).not.toBeNull()

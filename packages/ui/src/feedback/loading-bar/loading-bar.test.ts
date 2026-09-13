@@ -326,7 +326,7 @@ describe('loadingBar 命令式 API', () => {
 
   // ---------- P9 reverse / RTL ----------
 
-  it('P9 reverse 属性反转推进方向；逻辑属性布局 + :dir(rtl) 适配', async () => {
+  it('P9 reverse 属性反转推进方向；逻辑属性布局 + RTL（data-rtl）适配', async () => {
     loadingBar.start({ reverse: true })
     await Promise.resolve()
     const el = bar()
@@ -334,10 +334,24 @@ describe('loadingBar 命令式 API', () => {
     const st = styleText(el)
     expect(st).toContain('inset-block-start')
     expect(st).toContain('inset-inline-start')
-    expect(st).toContain(':dir(rtl)')
+    expect(st).toContain(':host([data-rtl])')
     expect(st).toContain(':host([reverse])')
     // 不使用物理方向属性做定位
     expect(st).not.toMatch(/inset\s*:\s*0|(?:^|\W)top\s*:\s*0|(?:^|\W)left\s*:\s*0/)
+  })
+
+  it('P9 RTL：dir=rtl 下 data-rtl 标记生效，进度生长方向规则就绪', async () => {
+    // 服务层不透传 dir；直接挂载组件验证 RTL 判定（宿主 dir 属性在连接前设置）
+    const el = document.createElement('oas-loading-bar')
+    el.setAttribute('dir', 'rtl')
+    document.body.appendChild(el)
+    await Promise.resolve()
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    const st = styleText(el as unknown as BarEl)
+    // RTL 默认从行内末端生长（origin 100%），reverse + RTL 回到行内起点（origin 0）
+    expect(st).toContain(':host([data-rtl]) .track')
+    expect(st).toContain(':host([reverse][data-rtl]) .track')
+    el.remove()
   })
 
   // ---------- P10 error 兜底 ----------
