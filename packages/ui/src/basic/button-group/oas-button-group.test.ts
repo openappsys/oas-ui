@@ -338,4 +338,27 @@ describe('OASButtonGroup 扩展：spread 均分 / variant·round 透传', () => 
     expect(innerBtn.getAttribute('variant')).toBeNull()
     expect(innerBtn.hasAttribute('round')).toBe(false)
   })
+
+  it('RTL：dir=rtl 下贴合边走 margin-inline-start，缝线与首尾圆角按 data-rtl 镜像', () => {
+    const el = new OASButtonGroup()
+    el.setAttribute('dir', 'rtl')
+    el.setAttribute('type', 'primary')
+    const btnA = makeButton('a')
+    const btnB = makeButton('b')
+    el.appendChild(btnA)
+    el.appendChild(btnB)
+    document.body.appendChild(el)
+
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 贴合边逻辑化（flex 行内轴 RTL 反转后仍压前项边框）
+    expect(css).toMatch(/::slotted\(oas-button:not\(:first-child\)\)[^{]*\{[^}]*margin-inline-start:\s*-1px/)
+    // RTL 缝线/圆角镜像规则存在（物理向量手动翻转）
+    expect(css).toMatch(/:host\(\[data-rtl\]\[type='primary'\][^{]*\{[^}]*box-shadow:\s*1px 0 0 0/)
+    expect(css).toMatch(
+      /:host\(\[data-rtl\]\)\s*::slotted\(oas-button:first-child\)[^{]*\{[^}]*0 var\(--oas-radius-md\)/,
+    )
+    // 不残留物理贴合方向
+    expect(css).not.toMatch(/margin-left:\s*-1px/)
+  })
 })

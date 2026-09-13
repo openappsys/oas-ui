@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 /** 参与贴合合并的表单控件（相邻 -1px 重叠 + 首尾圆角合并协议） */
 const CONTROL_SELECTOR = 'oas-button, oas-input, oas-input-number, oas-select'
@@ -83,29 +84,34 @@ export class OASCompact extends OASElement {
     const n = items.length
 
     items.forEach((el, i) => {
-      // 相邻贴合：后项沿主轴 -1px 重叠（重叠区后项压前项边框）
-      const mainMargin = vertical ? 'marginTop' : 'marginLeft'
-      const crossMargin = vertical ? 'marginLeft' : 'marginTop'
+      // 相邻贴合：后项沿主轴 -1px 重叠（重叠区后项压前项边框）。
+      // margin 用逻辑属性（RTL 下 flex 主轴反转，贴合边自动随向；horizontal 主轴即行内轴）
+      const mainMargin = vertical ? 'margin-block-start' : 'margin-inline-start'
+      const crossMargin = vertical ? 'margin-inline-start' : 'margin-block-start'
       if (i > 0) {
-        el.style[mainMargin] = '-1px'
-        el.style[crossMargin] = ''
+        el.style.setProperty(mainMargin, '-1px')
+        el.style.setProperty(crossMargin, '')
       } else {
-        el.style.marginTop = ''
-        el.style.marginLeft = ''
+        el.style.setProperty('margin-block-start', '')
+        el.style.setProperty('margin-inline-start', '')
       }
 
-      // 首尾圆角、中间直角（协议变量穿透到控件内部；单控件整体圆角）
+      // 首尾圆角、中间直角（协议变量穿透到控件内部；单控件整体圆角）。
+      // 水平四值为物理 border-radius：RTL 行内轴反转（首项在视觉右），首尾值互换
+      const rtl = !vertical && isRtl(this)
+      const first = rtl
+        ? `0 var(--oas-radius-md) var(--oas-radius-md) 0`
+        : `var(--oas-radius-md) 0 0 var(--oas-radius-md)`
+      const last = rtl
+        ? `var(--oas-radius-md) 0 0 var(--oas-radius-md)`
+        : `0 var(--oas-radius-md) var(--oas-radius-md) 0`
       let radius: string
       if (n === 1) {
         radius = 'var(--oas-radius-md)'
       } else if (i === 0) {
-        radius = vertical
-          ? 'var(--oas-radius-md) var(--oas-radius-md) 0 0'
-          : 'var(--oas-radius-md) 0 0 var(--oas-radius-md)'
+        radius = vertical ? 'var(--oas-radius-md) var(--oas-radius-md) 0 0' : first
       } else if (i === n - 1) {
-        radius = vertical
-          ? '0 0 var(--oas-radius-md) var(--oas-radius-md)'
-          : '0 var(--oas-radius-md) var(--oas-radius-md) 0'
+        radius = vertical ? '0 0 var(--oas-radius-md) var(--oas-radius-md)' : last
       } else {
         radius = '0'
       }

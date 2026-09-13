@@ -103,11 +103,10 @@ const STYLE = `
 .dialog {
   position: fixed;
   top: 100px;
-  /* 水平居中不用 transform：fixed + left/right 0 + margin auto（transform 会让后代
-     position:fixed 的浮层以其为包含块，modal 内 select 等下拉按视口算的坐标被错位解释） */
-  left: 0;
-  right: 0;
-  margin: 0 auto;
+  /* 水平居中不用 transform：fixed + 行内轴两端归零 + margin-inline auto（transform 会让后代
+      position:fixed 的浮层以其为包含块，modal 内 select 等下拉按视口算的坐标被错位解释） */
+  inset-inline: 0;
+  margin-inline: auto;
   width: 520px;
   min-width: 360px;
   max-width: 90vw;
