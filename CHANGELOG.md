@@ -20,6 +20,9 @@
 - **浮层组件移动/PC 形态切换不重判定（须强刷）**：select / date-picker / cascader / tree-select / time-picker / combobox 的移动形态此前只在 `update()`/打开时判定一次，窗口缩放、横竖屏、设备仿真切换 PC↔mobile 后形态冻结、要强刷才对。新增共享 `watchMobileSheetMode()`（订阅 `pointer:coarse` + `max-width` 越界才触发）→ 形态一变即重判定，展开态同步重排承载方式（底部抽屉 ↔ fixed 锚定）
 - **移动端专项视觉复核实抓修复**：calendar 触屏日格 `min-width` 撑破 7 列致周日列被裁（收窄为只抬高度）；upload picture-card 删除× dark 对比度不足（徽标底色/字色成对 token）；docs 演示块按钮行不换行撑宽布局视口致右锚定 notification/toast 窄屏出屏（docs 侧 flex-wrap + 窄屏 overflow-x:clip）；image 预览工具栏窄屏竖排分行（nowrap + 横向滚动收纳）
 - **tree `parseIdList` 数字 key 静默丢弃 + 非法输入零告警**：v2.5.0 契约收紧为 JSON 数组后，`expanded`/`checked`/multiple 态 `selected` 传入数字 key 的合法 JSON 数组（如 `expanded="[1,2]"`）被 `typeof string` 过滤静默丢弃成全折叠/全不选；解析失败（典型：旧版逗号串）无任何提示。修复为数字 key 统一 `String()` 归一化（空串/`undefined`/`null` 项滤除），解析失败按空集合回落并在 dev 下 `console.warn` 一次（同值去重，文案含迁移写法）。回归：oas-tree.test.ts 单测 2 例 + qa-regression/tree.spec.ts 固化断言（oas-ui-templates 三端 menus/dept 页实抓上报）
+- **select / combobox / auto-complete / tree-select 浮层首次展开未左对齐**：定位时先用面板固有（塌缩）宽度算 left、之后才把宽度撑到触发器宽 → 首开偏右（实测 +70~89px），再开才对齐。修复为先按触发器宽度撑开、再测量、bottom-start 左缘对齐，首开即与再开一致（cascader 面板取内容固有宽度不受影响）
+- **date-picker 面板右侧大片空白**：月/年网格 1fr 轨道在 shrink-to-fit 容器下塌缩到内容宽、把面板撑到 378/431px 且右侧留白。修复为非范围面板收窄为 240（与日网格同宽）+ 月/年网格显式等宽 + 范围面板两栏 flex 均分（month/year/monthrange/yearrange/daterange 留白归零）
+- **date-picker 单元格渲染 demo 日期数字丢失 + 每格误现标记点**：内联 `<template slot="cell">` 被 Vue 编译管线吞成空模板，组件克隆空模板后清空日格 → 日期数字全消失。修复为组件侧 `fillCells` 加防御（模板为空不清空日格、保留日期数字）+ demo 改 JS 注入模板；标记点改为只给指定日期追加（原模板内置默认红点导致每格都有点）
 
 ## [2.5.0] - 2026-09-09
 
