@@ -10,7 +10,9 @@ export {
   setLocale,
   getLocale,
   getLocaleName,
+  getDirection,
+  loadLocale,
   t,
   onLocaleChange,
 } from './registry.js'
-export type { Locale, LocaleKey, LocaleMessages, LocaleParams } from './types.js'
+export type { Locale, LocaleKey, LocaleMessages, LocaleName, LocaleParams } from './types.js'
