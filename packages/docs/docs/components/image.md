@@ -110,7 +110,7 @@
 <DemoBlock title="点击预览（内置浮层）">
   <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTlhZWY1Jy8+PC9zdmc+" alt="可预览图片"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-    点击图片打开全屏预览浮层：工具栏支持放大/缩小/旋转/水平翻转/垂直翻转/下载，放大后可拖拽平移、滚动滚轮缩放；Esc 或点击遮罩关闭；打开时聚焦关闭按钮，关闭后还原焦点。派发 <code>oas-preview</code> 事件（detail 含 src）。
+    点击图片打开全屏预览浮层：工具栏支持放大/缩小/旋转/水平翻转/垂直翻转/下载，放大后可拖拽平移、滚动滚轮缩放；触屏支持双指捏合缩放（锚定双指中点，中点移动自带平移）与单指拖拽平移；Esc 或点击遮罩关闭；打开时聚焦关闭按钮，关闭后还原焦点。派发 <code>oas-preview</code> 事件（detail 含 src）。
   </p>
 </DemoBlock>
 

@@ -331,6 +331,11 @@ export class OASImage extends OASElement {
   private dragging = false
   private dragStartX = 0
   private dragStartY = 0
+  /** 预览舞台上按住的指针集合（pointerId → 最新坐标）：第二指落下进入双指捏合缩放 */
+  private activePointers = new Map<number, { x: number; y: number }>()
+  /** 捏合基准：双指齐按时的指距/缩放/中点/平移——锚定中点下的图像点此后跟随手指 */
+  private pinchBase: { dist: number; scale: number; midX: number; midY: number; panX: number; panY: number } | null =
+    null
   /** 图集：解析后的 URL 列表（update 时缓存） */
   private gallery: string[] = []
   private galleryIndex = 0
@@ -755,6 +760,8 @@ export class OASImage extends OASElement {
       this.emitToolbarRender()
     } else {
       this.dragging = false
+      this.activePointers.clear()
+      this.pinchBase = null
       this.maskEl()?.setAttribute('hidden', '')
       this.destroyPortal()
       document.removeEventListener('keydown', this.onKey)
@@ -915,9 +922,24 @@ export class OASImage extends OASElement {
 
   private onPointerDown = (e: PointerEvent): void => {
     if (!this.previewOpen || e.button !== 0) return
-    this.dragging = true
-    this.dragStartX = e.clientX - this.panX
-    this.dragStartY = e.clientY - this.panY
+    this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (this.activePointers.size >= 2) {
+      // 第二指落下：进入双指捏合缩放，取消单指拖拽态（单指平移与捏合互斥）
+      const [mx, my] = this.pinchMidpoint()
+      this.pinchBase = {
+        dist: this.pinchDistance(),
+        scale: this.scale,
+        midX: mx,
+        midY: my,
+        panX: this.panX,
+        panY: this.panY,
+      }
+      this.dragging = false
+    } else {
+      this.dragging = true
+      this.dragStartX = e.clientX - this.panX
+      this.dragStartY = e.clientY - this.panY
+    }
     const stage = this.pquery<HTMLElement>('.preview-stage')
     try {
       stage?.setPointerCapture?.(e.pointerId)
@@ -928,6 +950,15 @@ export class OASImage extends OASElement {
   }
 
   private onPointerMove = (e: PointerEvent): void => {
+    const tracked = this.activePointers.get(e.pointerId)
+    if (tracked) {
+      tracked.x = e.clientX
+      tracked.y = e.clientY
+    }
+    if (this.pinchBase && this.activePointers.size >= 2) {
+      this.applyPinch()
+      return
+    }
     if (!this.dragging) return
     const [x, y] = this.clampPan(e.clientX - this.dragStartX, e.clientY - this.dragStartY)
     this.panX = round2(x)
@@ -935,9 +966,55 @@ export class OASImage extends OASElement {
     this.applyTransform()
   }
 
-  private onPointerUp = (): void => {
+  private onPointerUp = (e: PointerEvent): void => {
+    this.activePointers.delete(e.pointerId)
+    if (this.activePointers.size < 2) this.pinchBase = null
     if (!this.dragging) return
     this.dragging = false
+    this.applyTransform()
+  }
+
+  /** 当前双指距离（取按下的前两指；不足两指返回 0） */
+  private pinchDistance(): number {
+    const [a, b] = [...this.activePointers.values()]
+    if (!a || !b) return 0
+    return Math.hypot(a.x - b.x, a.y - b.y)
+  }
+
+  /** 当前双指中点（锚定缩放中心；不足两指返回原点） */
+  private pinchMidpoint(): [number, number] {
+    const [a, b] = [...this.activePointers.values()]
+    if (!a || !b) return [0, 0]
+    return [(a.x + b.x) / 2, (a.y + b.y) / 2]
+  }
+
+  /** 双指捏合缩放：指距比例驱动缩放（相对双指齐按时的基准），锚定按下瞬间双指中点下的
+      图像点——该点此后跟随中点移动（中点移动自带平移），缩放围绕该点进行；
+      公式无状态（只依赖基准与当前帧），两指的 move 事件分别触发结果一致；上下限同滚轮配置 */
+  private applyPinch(): void {
+    if (!this.pinchBase || this.pinchBase.dist < 1) return
+    const dist = this.pinchDistance()
+    if (dist < 1) return
+    const { min, max } = this.zoomConfig()
+    const k = dist / this.pinchBase.dist
+    const next = round2(clamp(this.pinchBase.scale * k, min, max))
+    // pan = d - k*(d_base - pan_base)，d = 中点 - 舞台中心；舞台零尺寸布局未定时 d 退化为 0（锚舞台中心）
+    const stage = this.pquery<HTMLElement>('.preview-stage')
+    const sRect = stage?.getBoundingClientRect()
+    const hasStage = !!sRect && sRect.width > 0 && sRect.height > 0
+    const [mx, my] = this.pinchMidpoint()
+    const baseDx = hasStage ? this.pinchBase.midX - (sRect!.left + sRect!.width / 2) : 0
+    const baseDy = hasStage ? this.pinchBase.midY - (sRect!.top + sRect!.height / 2) : 0
+    const dx = hasStage ? mx - (sRect!.left + sRect!.width / 2) : 0
+    const dy = hasStage ? my - (sRect!.top + sRect!.height / 2) : 0
+    const nextX = round2(dx - k * (baseDx - this.pinchBase.panX))
+    const nextY = round2(dy - k * (baseDy - this.pinchBase.panY))
+    // 缩放与平移都无变化才跳过（双指纯平移：指距不变但中点移动，同样要跟随）
+    if (next === this.scale && nextX === this.panX && nextY === this.panY) return
+    const [cx, cy] = this.clampPan(nextX, nextY)
+    this.panX = cx
+    this.panY = cy
+    this.scale = next
     this.applyTransform()
   }
 

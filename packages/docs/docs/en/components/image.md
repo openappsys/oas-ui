@@ -110,7 +110,7 @@ When the image fails to load, a "图片加载失败" placeholder is shown by def
 <DemoBlock title="Click to preview (built-in overlay)">
   <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTlhZWY1Jy8+PC9zdmc+" alt="Preview image"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-    Click the image to open a full-screen preview overlay: the toolbar supports zoom in / out, rotate, flip horizontal / vertical, and download; after zooming in you can drag to pan and use the wheel to zoom. Press Esc or click the mask to close. The close button is focused when opened, and focus is restored on close. Emits <code>oas-preview</code> (detail contains src).
+    Click the image to open a full-screen preview overlay: the toolbar supports zoom in / out, rotate, flip horizontal / vertical, and download; after zooming in you can drag to pan and use the wheel to zoom. On touch screens, pinch with two fingers to zoom (anchored at the finger midpoint, which also pans as it moves) or drag with one finger to pan. Press Esc or click the mask to close. The close button is focused when opened, and focus is restored on close. Emits <code>oas-preview</code> (detail contains src).
   </p>
 </DemoBlock>
 

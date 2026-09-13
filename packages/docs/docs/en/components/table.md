@@ -339,6 +339,8 @@ Empty state priority: the `slot="empty"` slot (either `<template slot="empty">` 
 
 Column drag reorder / resize fire `oas-column-order` / `oas-column-resize` (for host persistence). Two ways to hide a column: controlled `column-keys` (JSON array, also controls order) or `hidden: true` in the column config.
 
+Touch adaptation: HTML5 drag-and-drop (dragstart) does not work on touch screens. Under coarse pointers each header cell shows move-up / move-down buttons (hidden on desktop) to swap a column with its neighbor; the header filter button, expand toggle and column-resize handle all grow to the 44px touch target; the filter panel positions itself away from viewport edges (flipping when space is short, never overflowing on narrow screens).
+
 ## Multi-column sorting
 
 <DemoBlock title="Shift-click to multi-sort (multi-sort)">

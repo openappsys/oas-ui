@@ -4,6 +4,19 @@ import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
 import { OASTable } from './index.js'
 import { applyColumnReorder } from './oas-table-column-settings.js'
+
+/** floating 引擎 spy：记录 computePosition 的 placement 实参（透传原始实现，行为不变） */
+const floatingSpy = vi.hoisted(() => ({ placements: [] as string[] }))
+vi.mock('../../overlay/floating/index.js', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../../overlay/floating/index.js')>()
+  return {
+    ...mod,
+    computePosition: (...args: Parameters<typeof mod.computePosition>) => {
+      floatingSpy.placements.push(args[2])
+      return mod.computePosition(...args)
+    },
+  }
+})
 // 行内编辑用例经主路径 index 已默认含编辑能力（v2.5.0 语义：主路径内置能力包）；
 // 本文件仍显式 import 编辑能力包（幂等冗余，与族包/全量入口同注册路径）。
 // 纯核 core 入口（不含编辑能力）的静默失效边界见 oas-table-edit-capability.test.ts。
@@ -1782,6 +1795,21 @@ describe('OASTable 列过滤（filter）', () => {
     // 应用后弹层关闭
     expect(el.shadowRoot!.querySelector('.filter-panel')).toBeNull()
   })
+
+  it('#14 过滤面板定位走共享 floating 引擎（bottom-start 锚定 + 视口夹取）', () => {
+    floatingSpy.placements.length = 0
+    const el = mount({ columns: FILTER_COLS, data: DATA })
+    const btn = el.shadowRoot!.querySelector('th[data-key="name"] .filter-btn')! as HTMLElement
+    ;(btn as HTMLElement).click()
+    const panel = el.shadowRoot!.querySelector('.filter-panel')! as HTMLElement
+    // 定位经 computePosition（bottom-start），其结果写入面板 left/top
+    expect(floatingSpy.placements).toContain('bottom-start')
+    expect(panel.style.left).not.toBe('')
+    expect(panel.style.top).not.toBe('')
+    // 视口夹取：happy-dom 视口 1024x768，collisionPadding 默认 4
+    expect(parseFloat(panel.style.left)).toBeGreaterThanOrEqual(4)
+    expect(parseFloat(panel.style.top)).toBeGreaterThanOrEqual(4)
+  })
 })
 
 describe('OASTable 合并单元格（merge）', () => {
@@ -2382,5 +2410,175 @@ describe('OASTable 虚拟滚动 + 展开行超高防重叠', () => {
     expect(el.shadowRoot!.querySelector('[part="expand-row"]')).not.toBeNull()
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     expect(style).toMatch(/\[data-virtual='true'\]\s+tr\.expand-row td\s*\{[^}]*overflow:\s*hidden/)
+  })
+})
+
+describe('OASTable 触屏命中区与触屏列重排（pointer: coarse）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  /** 可控 matchMedia stub：模拟触屏（coarse pointer）/桌面（fine pointer）环境 */
+  function stubPointer(coarse: boolean): void {
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({
+          matches: coarse && query.includes('(pointer: coarse)'),
+          media: query,
+          onchange: null,
+          addEventListener() {},
+          removeEventListener() {},
+          addListener() {},
+          removeListener() {},
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    )
+  }
+
+  const MOVE_COLS = JSON.stringify([
+    { key: 'name', title: '姓名', sortable: true },
+    { key: 'age', title: '年龄' },
+    { key: 'city', title: '城市' },
+  ])
+
+  it('样式含 coarse 热区：filter 钮/展开钮 ::before 扩到 44px，列宽拖拽手柄 coarse 加宽', () => {
+    const el = mount({ columns: MOVE_COLS, data: DATA })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain('@media (pointer: coarse)')
+    // filter 钮 18px → ::before 外扩 13px = 44px 命中区（视觉尺寸不变）
+    expect(style).toMatch(/\.filter-btn::before\s*\{[^}]*inset:\s*-13px/)
+    // 展开钮 20px → ::before 外扩 12px = 44px 命中区
+    expect(style).toMatch(/\.toggle::before\s*\{[^}]*inset:\s*-12px/)
+    // 列宽拖拽手柄：coarse 下 44px（fine 保持 8px）
+    expect(style).toMatch(/width:\s*8px/)
+    expect(style).toMatch(
+      /@media \(pointer: coarse\)[\s\S]*:host\(\[data-col-resizing\]\)\s+th\[data-key\]::after\s*\{[^}]*width:\s*44px/,
+    )
+  })
+
+  it('表头注入上移/下移按钮（PC display:none，coarse 显示；点击交换列序并派发 oas-column-order）', () => {
+    const el = mount({ columns: MOVE_COLS, data: DATA })
+    const ths = [...el.shadowRoot!.querySelectorAll<HTMLElement>('thead th[data-key]')]
+    expect(ths.length).toBe(3)
+    for (const th of ths) {
+      expect(th.querySelector('.col-move.up')).not.toBeNull()
+      expect(th.querySelector('.col-move.down')).not.toBeNull()
+    }
+    // PC 态不可见（默认 display:none），coarse 媒体块恢复 inline-flex
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toMatch(/\.col-move\s*\{[^}]*display:\s*none/)
+    expect(style).toMatch(/@media \(pointer: coarse\)[\s\S]*\.col-move\s*\{[^}]*display:\s*inline-flex/)
+    // 首尾禁用态
+    expect((ths[0]!.querySelector('.col-move.up') as HTMLButtonElement).disabled).toBe(true)
+    expect((ths[2]!.querySelector('.col-move.down') as HTMLButtonElement).disabled).toBe(true)
+    expect((ths[1]!.querySelector('.col-move.up') as HTMLButtonElement).disabled).toBe(false)
+    // 点「年龄」上移：name/age 交换
+    let detail: unknown
+    el.addEventListener('oas-column-order', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(ths[1]!.querySelector('.col-move.up') as HTMLElement).click()
+    expect(el.getAttribute('column-keys')).toBe(JSON.stringify(['age', 'name', 'city']))
+    expect((detail as { keys: string[] }).keys).toEqual(['age', 'name', 'city'])
+    // 重渲染后表头顺序同步、按钮跟随新位置（age 已到首位，up 禁用）
+    const ths2 = [...el.shadowRoot!.querySelectorAll<HTMLElement>('thead th[data-key]')]
+    expect(ths2.map((t) => t.getAttribute('data-key'))).toEqual(['age', 'name', 'city'])
+    expect((ths2[0]!.querySelector('.col-move.up') as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('直调 update() 路径（core locale/config 订阅绕过 controller 通知）后按钮与 draggable 仍在', () => {
+    const el = mount({ columns: MOVE_COLS, data: DATA })
+    // 模拟基类 core 订阅回调：直调 update() 不经过 runUpdateAndNotify（无 hostUpdated 补注）
+    ;(el as unknown as { update(): void }).update.call(el)
+    const ths = [...el.shadowRoot!.querySelectorAll<HTMLElement>('thead th[data-key]')]
+    expect(ths.length).toBe(3)
+    for (const th of ths) {
+      expect(th.querySelector('.col-move.up')).not.toBeNull()
+      expect(th.querySelector('.col-move.down')).not.toBeNull()
+      expect(th.getAttribute('draggable')).toBe('true')
+    }
+  })
+
+  it('重排按钮点击不冒泡触发列排序（stopPropagation）', () => {
+    const el = mount({ columns: MOVE_COLS, data: DATA })
+    const thName = el.shadowRoot!.querySelector<HTMLElement>('thead th[data-key="name"]')!
+    ;(thName.querySelector('.col-move.down') as HTMLElement).click()
+    // 排序未被触发（sort-key 未写入）
+    expect(el.getAttribute('sort-key')).toBeNull()
+    expect(el.getAttribute('column-keys')).toBe(JSON.stringify(['age', 'name', 'city']))
+  })
+
+  it('列宽拖拽热区：fine 8px / coarse 44px（matchMedia 驱动，坐标判定）', () => {
+    stubPointer(false)
+    const el = mount({ columns: MOVE_COLS, data: DATA })
+    const th = el.shadowRoot!.querySelector<HTMLElement>('thead th[data-key="name"]')!
+    vi.spyOn(th, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      right: 100,
+      top: 0,
+      bottom: 40,
+      width: 100,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect)
+    // fine：距右缘 25px 不进入列宽拖拽
+    th.dispatchEvent(
+      new PointerEvent('pointerdown', { clientX: 75, clientY: 20, button: 0, pointerId: 1, bubbles: true }),
+    )
+    expect(el.hasAttribute('data-col-resizing')).toBe(false)
+    // coarse：同位置进入列宽拖拽
+    stubPointer(true)
+    th.dispatchEvent(
+      new PointerEvent('pointerdown', { clientX: 75, clientY: 20, button: 0, pointerId: 2, bubbles: true }),
+    )
+    expect(el.hasAttribute('data-col-resizing')).toBe(true)
+    th.dispatchEvent(new PointerEvent('pointerup', { clientX: 75, clientY: 20, pointerId: 2, bubbles: true }))
+    expect(el.hasAttribute('data-col-resizing')).toBe(false)
+    vi.restoreAllMocks()
+  })
+
+  it('列宽拖拽：点在上移/下移按钮上不进入拖拽（热区排除）', () => {
+    stubPointer(true)
+    const el = mount({ columns: MOVE_COLS, data: DATA })
+    const th = el.shadowRoot!.querySelector<HTMLElement>('thead th[data-key="city"]')!
+    vi.spyOn(th, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      right: 100,
+      top: 0,
+      bottom: 40,
+      width: 100,
+      height: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect)
+    const btn = th.querySelector<HTMLElement>('.col-move.up')!
+    btn.dispatchEvent(
+      new PointerEvent('pointerdown', { clientX: 95, clientY: 20, button: 0, pointerId: 1, bubbles: true }),
+    )
+    expect(el.hasAttribute('data-col-resizing')).toBe(false)
+    vi.restoreAllMocks()
+  })
+
+  it('回归：light DOM 变动触发的重渲染（Vue hydration / 声明式列增删）后，重排按钮与 draggable 保持注入', async () => {
+    const el = mount({ columns: MOVE_COLS, data: DATA })
+    const th = () => el.shadowRoot!.querySelector<HTMLElement>('thead th[data-key="name"]')!
+    expect(th()!.querySelector('.col-move.down')).not.toBeNull()
+    expect(th()!.getAttribute('draggable')).toBe('true')
+    // 模拟宿主动态增删声明式列（子元素声明式通道的 MutationObserver 重渲染路径）：
+    // 该路径曾绕过 controller 通知直接 update，把注入的按钮/draggable 冲掉且不补注
+    const col = document.createElement('oas-table-column')
+    col.setAttribute('data-key', 'email')
+    col.setAttribute('title', '邮箱')
+    el.appendChild(col)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(th().querySelector('.col-move.down')).not.toBeNull()
+    expect(th().getAttribute('draggable')).toBe('true')
   })
 })

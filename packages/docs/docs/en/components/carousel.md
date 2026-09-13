@@ -16,6 +16,8 @@ Cycles through multiple screens of content in the same viewport, with manual swi
 
 Click the dots at the bottom to switch screens; autoplay is off by default.
 
+Touch adaptation: under coarse pointers the arrow / pause buttons grow to the 44px touch target (larger button, same icon size); the dots stay visually 12px and gain an invisible 44px hit area, with dot spacing widened to prevent adjacent hit areas from overlapping.
+
 ## Initial Index
 
 <DemoBlock title="Controlled index">

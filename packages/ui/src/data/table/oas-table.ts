@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
+import { computePosition, getViewport } from '../../overlay/floating/index.js'
 import { registeredTableCapabilities, onTableCapabilityRegistered } from './oas-table-capability.js'
 // 行内交互宿主排除清单（行点击/双击编辑共用的单一事实来源，含维护纪律注释）
 import { ROW_INTERACTIVE_EXCLUSION } from './oas-table-interactive.js'
@@ -668,6 +669,65 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
+/* 触屏列重排按钮：HTML5 DnD（dragstart）触屏不可用，coarse 下提供上移/下移按钮替代。
+   PC 态 display:none 零视觉/无障碍影响，拖拽重排不受影响；按钮由列设置能力注入。
+   箭头为原创内联 SVG（与 dynamic-input 排序按钮同风格） */
+.col-move {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+  padding: 0;
+  border: none;
+  border-radius: var(--oas-radius-xs, 4px);
+  background: transparent;
+  color: var(--oas-color-text-secondary);
+  cursor: pointer;
+  vertical-align: middle;
+}
+.col-move svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+.col-move:hover {
+  color: var(--oas-color-primary);
+  background: var(--oas-color-bg-hover);
+}
+.col-move:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.col-move:disabled:hover {
+  color: var(--oas-color-text-secondary);
+  background: transparent;
+}
+/* 触屏（coarse）：小触控点群命中区抬到 44px 触控目标（--oas-touch-target-min），
+   视觉尺寸不变——::before 透明热区外扩；列宽拖拽手柄 coarse 加宽到 44px（JS 热区判定同步） */
+@media (pointer: coarse) {
+  .col-move {
+    display: inline-flex;
+  }
+  .filter-btn,
+  .toggle {
+    position: relative;
+  }
+  .filter-btn::before {
+    content: '';
+    position: absolute;
+    inset: -13px;
+  }
+  .toggle::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+  }
+  :host([data-col-resizing]) th[data-key]::after {
+    width: 44px;
+  }
+}
 `
 
 const CHECK_CELL_WIDTH = 40
@@ -806,7 +866,7 @@ export class OASTableBase extends OASElement {
       // 列定义含函数/模板节点（render/filterMatch/validate/cellTemplate/headerTemplate）：JSON 序列化会丢 → 直接存内存并标记，跳过 attribute 重解析
       this._columns = value.filter((c) => c && typeof c.key === 'string')
       this._columnsFromProperty = true
-      this.update()
+      this.runUpdateAndNotify()
       return
     }
     this._columnsFromProperty = false
@@ -822,7 +882,7 @@ export class OASTableBase extends OASElement {
       return
     }
     this._columnKeys = Array.isArray(value) ? value.filter((k) => typeof k === 'string') : []
-    this.update()
+    this.runUpdateAndNotify()
   }
   get data(): Array<Record<string, unknown>> {
     return this._data
@@ -838,7 +898,7 @@ export class OASTableBase extends OASElement {
   }
   set rowClass(fn: TableRowClass | null) {
     this._rowClass = typeof fn === 'function' ? fn : null
-    this.update()
+    this.runUpdateAndNotify()
   }
 
   /** 受控合并函数（property 函数通道）：(row, column, rowIndex, columnIndex) =>
@@ -848,7 +908,7 @@ export class OASTableBase extends OASElement {
   }
   set spanMethod(fn: TableSpanMethod | null) {
     this._spanMethod = typeof fn === 'function' ? fn : null
-    this.update()
+    this.runUpdateAndNotify()
   }
 
   /** 行选择模式：单选档 = checkable="radio"（裸 checkable 为多选，向后兼容） */
@@ -942,7 +1002,7 @@ export class OASTableBase extends OASElement {
       const keys = flat.map((f) => String(f.row[rowKey] ?? JSON.stringify(f.row)))
       this.setAttribute('selected', selectAll.checked ? keys.join(',') : '')
       this.emit('check', { keys: selectAll.checked ? keys : [] })
-      this.update()
+      this.runUpdateAndNotify()
     })
     th.appendChild(selectAll)
     return th
@@ -967,7 +1027,7 @@ export class OASTableBase extends OASElement {
   protected override render(): void {
     this.shadow.innerHTML = this.template()
     this.bind()
-    this.update()
+    this.runUpdateAndNotify()
   }
 
   /** 真水合：校验 SSR 快照结构（关键节点存在）后直接接管，跳过 shadow 重建 */
@@ -1253,7 +1313,7 @@ export class OASTableBase extends OASElement {
           const next = selected.includes(key) ? [] : [key]
           this.setAttribute('selected', next.join(','))
           this.emit('check', { keys: next })
-          this.update()
+          this.runUpdateAndNotify()
         })
       } else {
         box.addEventListener('change', (e) => {
@@ -1263,7 +1323,7 @@ export class OASTableBase extends OASElement {
           else next.delete(key)
           this.setAttribute('selected', [...next].join(','))
           this.emit('check', { keys: [...next] })
-          this.update()
+          this.runUpdateAndNotify()
         })
       }
       td.appendChild(box)
@@ -1282,7 +1342,7 @@ export class OASTableBase extends OASElement {
       else next.add(key)
       this.setAttribute('selected', [...next].join(','))
       this.emit('row-click', { row, key })
-      this.update()
+      this.runUpdateAndNotify()
     })
     const children = row.children
     const hasChildren = Array.isArray(children) && children.length > 0
@@ -1573,7 +1633,7 @@ export class OASTableBase extends OASElement {
       )
     if (this._columnsFromProperty) {
       this._columns = update(this._columns)
-      this.update()
+      this.runUpdateAndNotify()
       this.emit('column-resize', { key, width })
       return
     }
@@ -1786,8 +1846,9 @@ export class OASTableBase extends OASElement {
       panel.appendChild(item)
     }
     this.filterPanel = panel
-    this.positionFilterPanel(panel, trigger)
+    // 先挂 DOM（fixed 定位不占布局）再定位：面板尺寸量取依赖真实渲染盒子
     this.shadowRoot?.appendChild(panel)
+    this.positionFilterPanel(panel, trigger)
     this.bindFilterPanelClose(panel)
   }
 
@@ -1808,11 +1869,13 @@ export class OASTableBase extends OASElement {
     this.emit('filter-change', { filters: values })
   }
 
-  /** fixed 定位过滤面板到触发按钮下方 */
+  /** 过滤面板定位走共享 floating 引擎：bottom-start 锚定 + 空间不足翻转 + 视口夹取（含 visualViewport） */
   private positionFilterPanel(panel: HTMLElement, trigger: HTMLElement): void {
     const rect = trigger.getBoundingClientRect()
-    panel.style.left = `${rect.left}px`
-    panel.style.top = `${rect.bottom + 6}px`
+    const pRect = panel.getBoundingClientRect()
+    const pos = computePosition(rect, pRect, 'bottom-start', getViewport(), 6)
+    panel.style.left = `${pos.left}px`
+    panel.style.top = `${pos.top}px`
   }
 
   /** 点击面板外 / Escape 关闭过滤面板 */
@@ -1937,7 +2000,7 @@ export class OASTableBase extends OASElement {
     else set.delete(key)
     this.setAttribute('expanded', [...set].join(','))
     this.emit('expand', { key, expanded })
-    this.update()
+    this.runUpdateAndNotify()
   }
 
   /** 总列数（勾选列 + 数据列 + 可展开行尾列） */
@@ -2293,7 +2356,7 @@ export class OASTableBase extends OASElement {
   /** 子元素声明式通道观察器：light DOM <oas-table-column> 增删/属性/文本变化 → 重解析列 */
   private ensureChildColumnsObserver(): void {
     if (this.childColumnsObserver) return
-    const observer = new MutationObserver(() => this.update())
+    const observer = new MutationObserver(() => this.runUpdateAndNotify())
     observer.observe(this, {
       childList: true,
       subtree: true,
