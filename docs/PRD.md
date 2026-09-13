@@ -1172,6 +1172,26 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ---
 
+## 国际化扩充：多语言 + 按需加载 + RTL 公共机制（未发布）
+
+### 特性
+
+- **语言包扩到 10 种**：内置 `zh-CN`（默认）/ `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt` / `ru` / `ar`（RTL），每包与 `zh-CN` 的 key 全集严格一致（`locale-completeness` 测试兜底）。
+- **按需加载**：主入口仅带 `zh-CN`；其余为独立子路径（`@oas-ui/i18n/ja` 等，tree-shakable），并提供 `loadLocale(name)`——内部静态 `import()` 映射，bundler 可切独立 chunk，调用时才下载并注册。
+- **方向元数据 + RTL 公共机制**：`Locale` 增 `dir?: 'ltr' | 'rtl'`；新增 `getDirection()` 与 `ui` 侧 `resolveDirection(el)`（解析顺序 config-provider > 最近祖先 `dir` > `document.dir` > 当前 locale）；`computePosition` 增 `direction` 选项，RTL 下镜像 `start/end` 与 `left/right` 主轴，接入 select / combobox / auto-complete / tree-select / date-picker / time-picker / mentions。
+- **周起始 locale 感知**：`getWeekStart` 由「zh 周一、其余周日」改为查表 + `Intl.Locale.weekInfo` 回退（zh/ru/de/fr/es/pt 周一；ja/ko/en/ar 周日）。
+- **格式化沿用原生 `Intl`**：日期/数字（`Intl.DateTimeFormat` / `Intl.NumberFormat`）已本地化，新增语言无需额外翻译。
+
+### 验收
+
+- `pnpm test` 全绿：completeness 覆盖 10 包、`registry` 覆盖 `getDirection`/`loadLocale`、`date-grid` 覆盖周起始、`floating` 覆盖 RTL 镜像；`pnpm typecheck` / `pnpm build` 通过，`@oas-ui/i18n` 各子路径产物 + d.ts 齐全。
+- 浏览器验证：切 `ar`（或 `config-provider direction="rtl"`）后重点浮层左/右对齐镜像正确、方向解析按优先级生效。
+- 文档（faq / config-provider 中英）补内置语言列表、`loadLocale()` 用法与 RTL 说明。
+
+### 边界（不在本批）
+
+- 其余组件纯 CSS 逻辑属性（硬编码 `left/right/padding-left/text-align/transform` 等）的 RTL 审计与迁移单列专项，本批不做。
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：

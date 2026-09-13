@@ -79,7 +79,7 @@ The config-provider's `theme` writes `data-theme` onto itself, and the wrapped s
 
 ## Direction injection
 
-`direction` writes the host `dir` attribute: CSS `direction` inherits through light/shadow subtrees, and components (e.g. scroll-area's RTL horizontal wheel translation) consume it via the injected value.
+`direction` writes the host `dir` attribute: CSS `direction` inherits through light/shadow subtrees, and components (e.g. scroll-area's RTL horizontal wheel translation) consume it via the injected value. Floating-layer positioning mirrors with direction too: `start/end` alignment for `select` / `combobox` / `auto-complete` / `tree-select` / `date-picker` / `time-picker` / `mentions` flips to the writing-start side under RTL. Direction is resolved as config-provider > nearest ancestor `dir` > `document.dir` > current locale — the `ar` pack is tagged `dir: 'rtl'`, so switching to `ar` enables RTL automatically.
 
 <DemoBlock title="Direction injection">
   <oas-space>

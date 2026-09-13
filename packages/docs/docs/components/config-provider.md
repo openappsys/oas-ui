@@ -79,7 +79,7 @@ config-provider 的 `theme` 会写入 `data-theme` 到自身，包裹的子树�
 
 ## Direction 全局方向
 
-`direction` 设置时写入宿主 `dir` 属性：CSS `direction` 沿继承穿透 light/shadow 子树，组件（如 scroll-area 的 RTL 横向滚动转译）经注入值消费。
+`direction` 设置时写入宿主 `dir` 属性：CSS `direction` 沿继承穿透 light/shadow 子树，组件（如 scroll-area 的 RTL 横向滚动转译）经注入值消费。浮层定位同样按方向镜像：`select` / `combobox` / `auto-complete` / `tree-select` / `date-picker` / `time-picker` / `mentions` 的 `start/end` 对齐在 RTL 下翻到书写起点一侧。方向解析顺序为「config-provider > 最近祖先 `dir` > `document.dir` > 当前 locale」——`ar` 语言包标注 `dir: 'rtl'`，切到 `ar` 即自动 RTL。
 
 <DemoBlock title="Direction 全局方向">
   <oas-space>

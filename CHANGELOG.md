@@ -2,6 +2,12 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [未发布]
+
+### 特性
+
+- **国际化扩充（多语言 + 按需加载 + RTL 公共机制）**：内置语言包由 2 种扩到 10 种——`zh-CN`（默认）/ `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt` / `ru` / `ar`（RTL），每包 key 全集与 `zh-CN` 一致（completeness 测试兜底）；主入口仅带 `zh-CN`，其余为 tree-shakable 子路径并提供 `loadLocale(name)` 动态 `import()` 按需加载（独立 chunk，调用时才下载）；`Locale.dir` + `getDirection()` + `resolveDirection()` + `computePosition(direction)` 组成 RTL 公共机制（select / combobox / auto-complete / tree-select / date-picker / time-picker / mentions 的 start/end 对齐镜像）；`getWeekStart` 由写死改为 locale 感知（查表 + `Intl.Locale` 回退）。日期/数字沿用原生 `Intl`，新增语言无需额外翻译
+
 ## [2.5.1] - 2026-09-13
 
 ### 特性
