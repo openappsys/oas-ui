@@ -458,3 +458,26 @@ describe('OASStepper DSD 水合双路径', () => {
     expect(tabs(el).length).toBe(3)
   })
 })
+
+// ===== 移动端窄屏（coarse pointer 横向溢出滚动，不再硬压缩省略） =====
+
+describe('OASStepper 移动端窄屏', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('coarse pointer 媒体查询进样式表：tablist 横向可滚、tab 不收缩（宽度走内容、最小 44px 触控）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    const coarse = css.split('@media (pointer: coarse)')[1]!
+    expect(coarse).toContain('.tablist')
+    expect(coarse).toContain('overflow-x: auto')
+    expect(coarse).toMatch(/\.tab\s*\{[^}]*flex/)
+    expect(coarse).toContain('var(--oas-touch-target-min, 44px)')
+  })
+})

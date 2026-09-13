@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, iconNames, type IconName } from '@oas-ui/icons'
+import { getViewport } from '../../overlay/floating/index.js'
 
 export interface BreadcrumbItem {
   label: string
@@ -181,6 +182,11 @@ nav.ellipsis .item-text {
   left: auto;
   right: 0;
 }
+/* 下拉垂直翻转：面板下缘超出视口（页面底部/软键盘压缩可见区）时翻到触发器上方 */
+.menu-panel.flip-down {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
 /* 折叠省略按钮：锚定下拉面板 */
 .ellipsis-btn {
   appearance: none;
@@ -328,6 +334,22 @@ nav.variant-underline [part='link'] {
 }
 nav.variant-underline [part='link']:hover {
   text-decoration-color: var(--oas-color-primary);
+}
+/* ===== 移动端触摸目标：coarse pointer 下折叠钮/触发器/下拉行最小高度抬到 --oas-touch-target-min ===== */
+@media (pointer: coarse) {
+  .ellipsis-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--oas-touch-target-min, 44px);
+  }
+  .dropdown-trigger {
+    min-height: var(--oas-touch-target-min, 44px);
+  }
+  .ellipsis-item {
+    min-height: var(--oas-touch-target-min, 44px);
+    display: flex;
+    align-items: center;
+  }
 }
 `
 
@@ -935,15 +957,23 @@ export class OASBreadcrumb extends OASElement {
     }
   }
 
-  /** 下拉水平翻转：面板右缘超出视口（offsetWidth 布局尺寸判定）→ right:0 对齐回折进视口 */
+  /** 下拉水平翻转：面板右缘超出视口（offsetWidth 布局尺寸判定）→ right:0 对齐回折进视口。
+   *  垂直翻转：面板下缘超出可见视口（getViewport：visualViewport 优先，软键盘/工具栏压缩后仍准确）
+   *  → 翻到触发器上方（flip-down）。 */
   private placePanel(panel: HTMLElement, btn: HTMLElement): void {
     const rect = btn.getBoundingClientRect()
-    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0
+    const vp = getViewport()
     const panelWidth = panel.offsetWidth
-    if (viewportWidth > 0 && panelWidth > 0 && rect.right + panelWidth > viewportWidth - 8) {
+    if (vp.width > 0 && panelWidth > 0 && rect.right + panelWidth > vp.width - 8) {
       panel.classList.add('flip-right')
     } else {
       panel.classList.remove('flip-right')
+    }
+    const panelHeight = panel.offsetHeight
+    if (vp.height > 0 && panelHeight > 0 && rect.top + panelHeight > vp.height - 8) {
+      panel.classList.add('flip-down')
+    } else {
+      panel.classList.remove('flip-down')
     }
   }
 
