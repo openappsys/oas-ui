@@ -344,6 +344,7 @@ onMounted(() => {
 | `align` | First-level popup alignment: `start` (default) / `center` / `end`; with `side` top/bottom it aligns on the horizontal axis, with left/right on the vertical axis | `string` | — |
 | `breakpoint` | Mobile breakpoint (px, e.g. `600`): when the viewport width is ≤ the breakpoint the bar collapses into a hamburger button + popup menu (narrow-width folding) | `string` | — |
 | `close-on-select` | Whether selecting a leaf closes the open submenu, default `true` (desktop menubar convention); `close-on-select="false"` keeps it open (multi-select scenario); `kind:"checkbox"` items never close on toggle | `string` | — |
+| `dir` | — | — | — |
 | `disabled` | Disable the whole bar: top-level/sub-item clicks, keyboard navigation, shortcut hotkeys and Alt access keys are all blocked; visually desaturated | `boolean` | — |
 | `items` | Top-level menu items JSON (with submenu `children`) | `string` | `[]` |
 | `loop` | Arrow-key wrap-around toggle, default `true` (loops at edges); explicit `loop="false"` stops at the edges | `string` | — |

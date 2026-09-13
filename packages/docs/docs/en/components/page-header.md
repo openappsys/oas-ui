@@ -170,6 +170,7 @@ The `responsive` boolean attribute switches to a compact layout automatically wh
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `back` | Whether to show the back button | `boolean` | — |
+| `dir` | — | — | — |
 | `ghost` | Transparent-background variant: the header background rule is set to `none` (forced transparent so the container/page background shows through) and the footer divider is removed; title/text colors keep the theme foreground token; all other layout is unchanged | `boolean` | — |
 | `responsive` | Responsive compact layout: when the component width is below 768px the title font-size steps down (xl→lg), the subtitle steps down (sm) and the subtitle/extra wrap (.row flex-wrap); a ResizeObserver watches the host width, cleaned up via onCleanup | `boolean` | — |
 | `subtitle` | Subtitle text | `string` | — |

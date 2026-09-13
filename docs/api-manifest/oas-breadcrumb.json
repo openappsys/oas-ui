@@ -76,6 +76,10 @@
       "name": "active-last",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "dir",
+      "observed": true
     }
   ],
   "props": [],
