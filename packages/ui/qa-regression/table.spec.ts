@@ -819,3 +819,94 @@ test('table 行单选（checkable="radio"）：真实点击互斥 + 再点已选
   expect(afterDeselect.selected ?? '', '再点已选行应取消选中').toBe('')
   expect(afterDeselect.checked).toEqual([false, false])
 })
+
+test('table 触屏：列重排上移/下移按钮（HTML5 DnD 触屏替代）+ 小钮 coarse 热区', async ({ page }) => {
+  // 固化缺口：列重排走 HTML5 DnD（dragstart/dragover）触屏不可用。修复：每个列头注入
+  // 上移/下移按钮（PC display:none 零影响，coarse 显示），点击与相邻可见列交换顺序；
+  // filter 钮/展开钮/列宽拖拽手柄 coarse 下命中区抬到 44px。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-table')
+  // DSD 快照下 shadowRoot 在 upgrade 前已存在：须等列重排按钮真正注入（controller hostUpdated 跑过）
+  await page.waitForFunction(
+    () => document.querySelector('oas-table')?.shadowRoot?.querySelector('.col-move') != null,
+    undefined,
+    { timeout: 15000 },
+  )
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-table')!
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    const ths = [...el.shadowRoot!.querySelectorAll<HTMLElement>('thead th[data-key]')]
+    const moves = ths.map((th) => ({
+      key: th.getAttribute('data-key')!,
+      up: !!th.querySelector('.col-move.up'),
+      down: !!th.querySelector('.col-move.down'),
+      upDisabled: (th.querySelector('.col-move.up') as HTMLButtonElement | null)?.disabled ?? null,
+    }))
+    return {
+      thCount: ths.length,
+      moves,
+      coarse: style.includes('@media (pointer: coarse)'),
+      colMoveHidden: /\.col-move\s*\{[^}]*display:\s*none/.test(style),
+      filterHit: /\.filter-btn::before\s*\{[^}]*inset:\s*-13px/.test(style),
+      resizeCoarse: /data-col-resizing[\s\S]*?width:\s*44px/.test(style),
+      moveVisible: /@media \(pointer: coarse\)[\s\S]*\.col-move\s*\{[^}]*display:\s*inline-flex/.test(style),
+    }
+  })
+  expect(r.thCount).toBeGreaterThanOrEqual(2)
+  // 每个列头都有上移/下移钮，首列 up 禁用
+  for (const m of r.moves) {
+    expect(m.up, `${m.key} 上移钮在场`).toBe(true)
+    expect(m.down, `${m.key} 下移钮在场`).toBe(true)
+  }
+  expect(r.moves[0]!.upDisabled).toBe(true)
+  // PC 态隐藏、coarse 显示；filter/resize 热区在场
+  expect(r.colMoveHidden).toBe(true)
+  expect(r.moveVisible).toBe(true)
+  expect(r.coarse).toBe(true)
+  expect(r.filterHit).toBe(true)
+  expect(r.resizeCoarse).toBe(true)
+  // 点击下移按钮实际交换列序（JS click 不受 display:none 影响，走真实事件路径）
+  const before = await page.evaluate(() => {
+    const el = document.querySelector('oas-table')!
+    return [...el.shadowRoot!.querySelectorAll('thead th[data-key]')].map((t) => t.getAttribute('data-key'))
+  })
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-table')!
+    const th = el.shadowRoot!.querySelector('thead th[data-key]')!
+    ;(th.querySelector('.col-move.down') as HTMLElement).click()
+  })
+  const after = await page.evaluate(() => {
+    const el = document.querySelector('oas-table')!
+    return [...el.shadowRoot!.querySelectorAll('thead th[data-key]')].map((t) => t.getAttribute('data-key'))
+  })
+  expect(after).toEqual([before[1], before[0], ...before.slice(2)])
+})
+
+test('table 过滤面板：打开后定位夹取在视口内（floating 引擎视口碰撞）', async ({ page }) => {
+  // 固化缺口：过滤面板 fixed 定位只写 rect.left/bottom 无视口碰撞夹取，窄屏溢出。
+  // 修复：定位走共享 floating 引擎（computePosition + getViewport），空间不足翻转、视口边缘夹取。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-table')
+  // demo 首个表格未必有 filterable 列：动态注入一列 filterable 后打开面板
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-table') as HTMLElement & { columns?: unknown }
+    const cols = JSON.parse(el.getAttribute('columns') ?? '[]') as Array<Record<string, unknown>>
+    cols[0] = { ...cols[0], filterable: true }
+    el.setAttribute('columns', JSON.stringify(cols))
+  })
+  await page.waitForTimeout(200)
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-table')!
+    const btn = el.shadowRoot!.querySelector<HTMLElement>('th[data-key] .filter-btn')!
+    btn.click()
+  })
+  const rect = await page.evaluate(() => {
+    const panel = document.querySelector('oas-table')!.shadowRoot!.querySelector<HTMLElement>('.filter-panel')!
+    const r = panel.getBoundingClientRect()
+    return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, vw: innerWidth, vh: innerHeight }
+  })
+  expect(rect.left).toBeGreaterThanOrEqual(0)
+  expect(rect.top).toBeGreaterThanOrEqual(0)
+  expect(rect.right).toBeLessThanOrEqual(rect.vw)
+  expect(rect.bottom).toBeLessThanOrEqual(rect.vh)
+})

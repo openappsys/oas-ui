@@ -246,4 +246,21 @@ describe('OASImageGroup', () => {
     d.element.querySelector<HTMLElement>('[data-cmd="next"]')!.click()
     expect(pq(g, '[part="preview-counter"]').textContent).toBe('2/3')
   })
+
+  it('双指捏合缩放经共享预览宿主透传生效（图集预览与单图同机制）', () => {
+    const g = mount(wall(['/a.png', '/b.png', '/c.png']))
+    clickChild(g, 0)
+    const stage = pq(g, '.preview-stage')
+    const img = pq<HTMLElement>(g, '[part="preview-image"]')
+    // 双指按下（指距 100）→ 撑开至 200：scale 2
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 0, clientY: 0, button: 0, pointerId: 1 }))
+    stage.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 0, button: 0, pointerId: 2 }))
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 0, clientY: 0, pointerId: 1 }))
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: 0, pointerId: 2 }))
+    expect(img.style.transform).toContain('scale(2)')
+    // 抬起一指后捏合结束
+    stage.dispatchEvent(new PointerEvent('pointerup', { pointerId: 2 }))
+    stage.dispatchEvent(new PointerEvent('pointermove', { clientX: 400, clientY: 0, pointerId: 1 }))
+    expect(img.style.transform).toContain('scale(2)')
+  })
 })

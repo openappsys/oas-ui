@@ -97,3 +97,29 @@ test('显式暂停按钮：点击切换 aria-pressed 与图标，autoplay 停走
   )
   expect(Number(resumedIndex)).not.toBe(Number(before))
 })
+
+test('carousel 触屏：箭头/暂停钮/圆点 coarse 命中区到 44px，圆点视觉保持 12px', async ({ page }) => {
+  // 固化缺口：箭头/暂停钮 32px、指示圆点 12px，触屏点中率低。修复：coarse 下箭头/暂停钮
+  // 抬到 44px（max 保底），圆点 padding 扩热区 + margin 负补偿 + 间距放大防相邻热区重叠，
+  // 视觉圆点不变大；纯 CSS 增强，DOM 结构与 PC 一致。
+  await page.goto('/components/carousel.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-carousel')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-carousel')!
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    const dot = el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!
+    return {
+      coarse: style.includes('@media (pointer: coarse)'),
+      arrowMax: style.includes('max(var(--oas-control-height-md), var(--oas-touch-target-min, 44px))'),
+      dotPad: /padding:\s*16px/.test(style) && /margin:\s*-16px/.test(style),
+      dotsGap: /gap:\s*32px/.test(style),
+      dotWidth: getComputedStyle(dot).width,
+    }
+  })
+  expect(r.coarse).toBe(true)
+  expect(r.arrowMax).toBe(true)
+  expect(r.dotPad).toBe(true)
+  expect(r.dotsGap).toBe(true)
+  // 视觉圆点仍为 12px（getComputedStyle 不含 coarse padding，padding 不扩 content 宽）
+  expect(r.dotWidth).toBe('12px')
+})
