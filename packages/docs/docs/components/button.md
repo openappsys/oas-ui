@@ -253,6 +253,10 @@
   <oas-button wrap type="primary" style="max-width: 160px;">窄容器里的主按钮长文本自动换行显示</oas-button>
 </DemoBlock>
 
+## 移动端触控
+
+触屏设备（`pointer: coarse`）下按钮最小高度自动抬升至 44px（`--oas-touch-target-min`）：默认 32px、xs 20px 等小尺寸档在触屏上变为 44px 高，已 ≥44px 的档（如 xl）不变；`icon-only` / `circle` 经 `aspect-ratio` 同步变为 44×44 命中。只抬高度，padding、字号、圆角均不动；桌面（fine pointer）零影响。
+
 ## API
 
 ### 属性
