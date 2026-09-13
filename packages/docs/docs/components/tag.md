@@ -435,6 +435,15 @@ onMounted(async () => {
   </oas-tag-group>
 </DemoBlock>
 
+## 移动端触控
+
+触屏设备（`pointer: coarse`）下触控目标自动抬升，桌面（fine pointer）完全不受影响：
+
+- `closable` 的关闭 × 命中区扩展至 44px（`--oas-touch-target-min`），视觉 × 图标大小不变；
+- `clickable` / `checkable` 整签最小高度抬升至 44px（含 `multiline` 多行档）；非交互标签保持原尺寸。
+
+可用 DevTools 设备仿真（如 iPhone SE 375×667）体验；桌面浏览器访问无变化。
+
 ## API
 
 ### oas-tag

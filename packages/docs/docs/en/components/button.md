@@ -253,6 +253,10 @@ Buttons are single-line by default (`white-space: nowrap`). With the explicit `w
   <oas-button wrap type="primary" style="max-width: 160px;">Long primary button text wraps in a narrow container</oas-button>
 </DemoBlock>
 
+## Touch targets on mobile
+
+On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`--oas-touch-target-min`): small sizes such as the 32px default or the 20px xs become 44px tall on touch, while sizes already ≥44px (e.g. xl) are unchanged; `icon-only` / `circle` buttons become 44×44 hit areas via `aspect-ratio`. Only the height grows — padding, font size, and border radius stay untouched; desktop (fine pointer) is unaffected.
+
 ## API
 
 ### Attributes
