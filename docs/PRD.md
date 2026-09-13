@@ -1133,7 +1133,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ### 验收
 
-- 全量单测 6800 / typecheck 0 / build 0 / api:check（WIP 0）/ trace 0 命中
+- 全量单测 6879 / typecheck 0 / build 0 / api:check（WIP 0）/ trace 0 命中
 - e2e：移动仿真 qa-regression（select/date-picker/cascader/tree-select/time-picker/combobox bottom-sheet 开合 + 触摸目标 + tap 切换 + switch 整行 + hover-card 不越出 visualViewport + popover/dropdown 触屏降级）+ 全量 smoke/dark/code/visual/console-sweep/vue-prop-hijack/a11y/interaction 全绿；light/dark 截图复核 + console 零告警
 
 ### 第二批：硬伤 + 高频缺口收口
