@@ -353,6 +353,8 @@ const STYLE = `
   background: var(--oas-color-bg);
   color: var(--oas-color-text-primary);
   cursor: pointer;
+  /* 触控热区伪元素（coarse）的定位基准 */
+  position: relative;
 }
 .card .actions .act:hover {
   color: var(--oas-color-primary);
@@ -374,6 +376,34 @@ const STYLE = `
   background: var(--oas-color-overlay);
   /* 纯信息展示，不拦截缩略图点击 */
   pointer-events: none;
+}
+/* ---- 触屏（pointer: coarse）适配：无 hover 可依赖，操作层改状态常显 + 触控热区 ≥44px ---- */
+@media (pointer: coarse) {
+  /* 右上角删除×常显；20px 视觉不动，::after 透明扩展出 ≥44px 热区（跟随 --oas-touch-target-min） */
+  .card .remove {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .card .remove::after {
+    content: '';
+    position: absolute;
+    inset: calc((20px - var(--oas-touch-target-min, 44px)) / 2);
+  }
+  /* 失败/上传中态的操作遮罩常显（触屏无法 hover 唤起；正常态预览走缩略图点按、删除走右上角×） */
+  .card.is-error .actions,
+  .card.is-uploading .actions {
+    opacity: 1;
+  }
+  .card.is-error .actions .act,
+  .card.is-uploading .actions .act {
+    pointer-events: auto;
+  }
+  /* 操作钮 28px 视觉 → ≥44px 热区（相邻热区轻微重叠由 paint 序裁决，可接受） */
+  .card .actions .act::after {
+    content: '';
+    position: absolute;
+    inset: calc((28px - var(--oas-touch-target-min, 44px)) / 2);
+  }
 }
 /* 预览浮层 */
 .preview-mask {
@@ -1319,6 +1349,8 @@ export class OASUpload extends OASElement {
       const card = document.createElement('div')
       card.className = 'card'
       if (st.status === 'error') card.classList.add('is-error')
+      // 上传中态类名：触屏（coarse）下操作遮罩常显的定位锚
+      if (st.status === 'uploading') card.classList.add('is-uploading')
       card.setAttribute('part', 'item')
 
       const thumb = document.createElement('div')
