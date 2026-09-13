@@ -149,7 +149,7 @@ When options are empty, the dropdown shows the empty state; when filtering yield
 
 ## Mobile form (bottom sheet)
 
-On touch screens (coarse pointer) or narrow viewports (<768px), the option list is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the input stays in place and focusing it still pops the list inside the sheet for selection; the desktop form keeps the original floating dropdown.
+On touch screens (coarse pointer) or narrow viewports (<768px), the option list is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the input stays in place and focusing it still pops the list inside the sheet for selection; the desktop form keeps the original floating dropdown. Inside the sheet, option rows are lifted to a 44px touch target (`--oas-touch-target-min`).
 
 ## Events
 

@@ -607,4 +607,15 @@ describe('OASTimePicker 移动端底部抽屉（bottom-sheet 接入）', () => {
     expect(sheet(el).hasAttribute('open')).toBe(false)
     expect(computePositionMock.mock.calls.length).toBeGreaterThan(0)
   })
+
+  it('移动形态时间列选项触控目标抬升：.option min-height 对齐 --oas-touch-target-min', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 移动形态（抽屉内）：时分秒选项行最小高度抬到触摸目标 token（theme 默认 44px）
+    expect(css).toContain(":host([data-mobile-sheet]) [part='dropdown'] .option")
+    expect(css).toContain('min-height: var(--oas-touch-target-min, 44px)')
+    // PC 基础规则不携带该抬升（仅存在于 data-mobile-sheet 块内）
+    const pcCss = css.split(':host([data-mobile-sheet])')[0]!
+    expect(pcCss).not.toContain('min-height: var(--oas-touch-target-min, 44px)')
+  })
 })

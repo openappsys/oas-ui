@@ -298,6 +298,14 @@ const STYLE = `
   border-top: 1px solid var(--oas-color-border);
   padding-top: var(--oas-space-3);
 }
+/* 日格触控目标抬升：移动形态（抽屉内）日格最小尺寸对齐触摸目标 token
+   （--oas-touch-target-min，theme 默认 44px；字号同步升档保持触屏可读），
+   PC 基础高度不受影响；抽屉内容区 overflow-y 滚动承载加高后的网格 */
+:host([data-mobile-sheet]) [part='grid'] .day {
+  min-height: var(--oas-touch-target-min, 44px);
+  min-width: var(--oas-touch-target-min, 44px);
+  font-size: var(--oas-font-size-md);
+}
 [part='panel'] {
   min-width: 240px;
 }
