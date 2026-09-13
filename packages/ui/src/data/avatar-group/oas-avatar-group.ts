@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { resolveDirection } from '../../shared/direction.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
 
 /** 浮层与触发元素的默认间距（与 computePosition 的 GAP 一致） */
@@ -360,6 +361,7 @@ export class OASAvatarGroup extends OASElement {
     const viewport = getViewport()
     const panelRect = this.panelEl.getBoundingClientRect()
     const r = computePosition(anchorRect, panelRect, 'top', viewport, GAP, true, {
+      direction: resolveDirection(this),
       collisionPadding: COLLISION_PAD,
     })
     this.panelEl.style.top = `${r.top}px`

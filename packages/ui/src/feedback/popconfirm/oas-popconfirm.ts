@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { resolveDirection } from '../../shared/direction.js'
 import { iconRegistry } from '@oas-ui/icons'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
@@ -696,6 +697,7 @@ export class OASPopconfirm extends OASElement {
     const panelRect = this.popoverEl.getBoundingClientRect()
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
     const r = computePosition(anchorRect, panelRect, this.placementAttr() as Placement, viewport, GAP, autoAdjust, {
+      direction: resolveDirection(this),
       collisionPadding: COLLISION_PAD,
     })
     this.popoverEl.style.top = `${r.top}px`

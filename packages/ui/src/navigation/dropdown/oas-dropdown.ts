@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { resolveDirection } from '../../shared/direction.js'
 import { iconRegistry } from '@oas-ui/icons'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
@@ -566,7 +567,9 @@ export class OASDropdown extends OASElement {
     let left: number
     let baseActual: PlacementBase
     if (autoAdjust) {
-      const r = computePosition(anchorRect, panelRect, base, viewport, offset)
+      const r = computePosition(anchorRect, panelRect, base, viewport, offset, true, {
+        direction: resolveDirection(this),
+      })
       top = r.top
       left = r.left
       // 入参为 4 向基向（center 对齐），引擎返回 placement 必为 4 向基向（含翻转），类型上收窄

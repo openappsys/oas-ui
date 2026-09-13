@@ -260,9 +260,9 @@ describe('OASMenu', () => {
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
     // 菜单项禁止中文断裂换行
     expect(css).toContain('white-space: nowrap;')
-    // 子菜单：级联浮出（绝对定位于父项右侧，独立背景/边框/阴影）
+    // 子菜单：级联浮出（绝对定位于父项行内轴起始侧对面——LTR 右侧/RTL 左侧，独立背景/边框/阴影）
     expect(css).toMatch(/\.submenu\s*\{[^}]*position:\s*absolute/)
-    expect(css).toMatch(/\.submenu\s*\{[^}]*left:\s*100%/)
+    expect(css).toMatch(/\.submenu\s*\{[^}]*inset-inline-start:\s*100%/)
     expect(css).toMatch(/\.item\s*\{[^}]*position:\s*relative/)
     // 实际 DOM 中嵌套项均带 item 类
     for (const it of items(el)) {
@@ -409,10 +409,10 @@ describe('OASMenu', () => {
   // 翻转由样式表类表达（calc/var 在样式表内，happy-dom 无法解析 inline calc(…var())），
   // 多级嵌套逐级检测；happy-dom 无真实布局，rect 用桩值驱动。
 
-  it('样式表声明翻转规则：flip-left 向左（right:100%）、flip-up 向上（bottom 翻转）', () => {
+  it('样式表声明翻转规则：flip-left 翻到行内轴另一侧（逻辑 inset）、flip-up 向上（bottom 翻转）', () => {
     const el = mount({ items: NESTED_ITEMS })
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
-    expect(css).toMatch(/\.submenu\.flip-left\s*\{[^}]*left:\s*auto;\s*right:\s*100%/)
+    expect(css).toMatch(/\.submenu\.flip-left\s*\{[^}]*inset-inline-start:\s*auto;\s*inset-inline-end:\s*100%/)
     expect(css).toMatch(/\.submenu\.flip-up\s*\{[^}]*top:\s*auto;\s*bottom:\s*calc\(-1\s*\*\s*var\(--oas-space-1\)\)/)
     // 水平模式一级子菜单向上翻转：bottom:100%（在父项上方浮出）
     const h = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
@@ -445,6 +445,35 @@ describe('OASMenu', () => {
     stubRect(sub, { left: 170, top: 36, right: 310, bottom: 176, width: 140, height: 140 })
     parent.dispatchEvent(new MouseEvent('mouseenter'))
     expect(sub.classList.contains('flip-left')).toBe(false)
+  })
+
+  it('RTL：翻转判定镜像（父项贴左缘 → 翻向右）+ 打 data-rtl', () => {
+    // —— RTL 挂载：父项贴近视口左缘，向左展开空间不足 → 翻转向右 ——
+    document.documentElement.setAttribute('dir', 'rtl')
+    stubViewport(800, 600)
+    const el = mount({ items: NESTED_ITEMS })
+    // RTL 镜像开关（update 里同步）
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 10, top: 40, right: 170, bottom: 76, width: 160, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(sub, { left: -130, top: 36, right: 10, bottom: 176, width: 140, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.classList.contains('flip-left')).toBe(true)
+
+    // —— LTR 挂载（相同几何）：右缘空间充足 → 不翻转 ——
+    document.documentElement.setAttribute('dir', 'ltr')
+    const el2 = mount({ items: NESTED_ITEMS })
+    expect(el2.hasAttribute('data-rtl')).toBe(false)
+    const parent2 = topItems(el2)[0]!
+    stubRect(parent2, { left: 10, top: 40, right: 170, bottom: 76, width: 160, height: 36 })
+    const sub2 = parent2.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(sub2, { left: -130, top: 36, right: 10, bottom: 176, width: 140, height: 140 })
+    parent2.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub2.classList.contains('flip-left')).toBe(false)
+
+    // 清理：落回 ltr（同文件后续用例按 LTR 书写）
+    document.documentElement.setAttribute('dir', 'ltr')
   })
 
   it('底部空间不足：级联子菜单向上翻转（flip-up）', () => {

@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { getViewport } from '../../overlay/floating/index.js'
+import { isRtl } from '../../shared/direction.js'
 
 type Base = 'top' | 'bottom' | 'left' | 'right'
 type Align = '' | 'start' | 'end'
@@ -731,13 +732,24 @@ export class OASHoverCard extends OASElement {
     this.card.classList.remove('oas-detached')
 
     const { base, align } = parsePlacement(this.getAttr('placement', 'top'))
+    // RTL：与共享定位引擎同规则——镜像主轴（left↔right）与对齐（start↔end），
+    // 使「start 对齐」在 RTL 下等于面板右缘贴锚点右缘
+    const rtl = isRtl(this)
+    let effBase = base
+    let effAlign = align
+    if (rtl) {
+      if (effBase === 'left') effBase = 'right'
+      else if (effBase === 'right') effBase = 'left'
+      if (effAlign === 'start') effAlign = 'end'
+      else if (effAlign === 'end') effAlign = 'start'
+    }
     const offset = this.num(this.getAttr('offset'), 8)
     const skidding = this.num(this.getAttr('skidding'), 0)
     const padding = this.num(this.getAttr('collision-padding'), 4)
 
     // 主向选择：fallback-placements 自定义回退序列；缺省时默认翻转到对向。
     // sticky=always 且锚点已脱离：跳过翻转（按声明 placement 贴边保位，避免滚动时对向翻转跳动）
-    let actualBase = base
+    let actualBase = effBase
     if (autoAdjust && !(sticky === 'always' && detached)) {
       const flips: Record<Base, Base> = {
         top: 'bottom',
@@ -746,7 +758,7 @@ export class OASHoverCard extends OASElement {
         right: 'left',
       }
       const fallbacks = this.parseFallbacks()
-      const candidates = fallbacks.length ? [base, ...fallbacks] : [base, flips[base]]
+      const candidates = fallbacks.length ? [base, ...fallbacks] : [effBase, flips[effBase]]
       for (const cand of candidates) {
         if (fits(anchorRect, cardRect, cand, offset, boundary, padding)) {
           actualBase = cand
@@ -778,12 +790,12 @@ export class OASHoverCard extends OASElement {
         break
     }
 
-    // 交叉轴对齐：-start/-end 让面板边贴合锚点边
+    // 交叉轴对齐：-start/-end 让面板边贴合锚点边（RTL 下 start/end 已镜像）
     const vertical = actualBase === 'top' || actualBase === 'bottom'
-    if (align === 'start') {
+    if (effAlign === 'start') {
       if (vertical) left = anchorRect.left
       else top = anchorRect.top
-    } else if (align === 'end') {
+    } else if (effAlign === 'end') {
       if (vertical) left = anchorRect.right - cardRect.width
       else top = anchorRect.bottom - cardRect.height
     }
@@ -798,7 +810,7 @@ export class OASHoverCard extends OASElement {
       top = Math.max(boundary.top + padding, Math.min(top, boundary.bottom - cardRect.height - padding))
     }
 
-    const actual = actualBase + (align ? `-${align}` : '')
+    const actual = actualBase + (effAlign ? `-${effAlign}` : '')
     this.writePosition(top, left, actual, anchorRect)
   }
 

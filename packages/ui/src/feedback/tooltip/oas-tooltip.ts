@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { resolveDirection } from '../../shared/direction.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 const STYLE = `
@@ -1147,7 +1148,7 @@ export class OAStooltip extends OASElement {
       },
       gap,
       autoAdjust,
-      { skidding, collisionPadding: padding },
+      { skidding, collisionPadding: padding, direction: resolveDirection(this) },
     )
     this.tipEl.style.top = `${customBoundary ? top + boundary.top : top}px`
     this.tipEl.style.left = `${customBoundary ? left + boundary.left : left}px`

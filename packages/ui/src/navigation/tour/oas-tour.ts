@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { resolveDirection } from '../../shared/direction.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 /** 弹层方位：12 向 + center（无目标/对话框模式居中） */
@@ -1349,7 +1350,9 @@ export class OASTour extends OASElement {
       top,
       left,
       placement: actual,
-    } = computePosition(anchor, popupRect, placement as Placement, viewport, 8, autoAdjust)
+    } = computePosition(anchor, popupRect, placement as Placement, viewport, 8, autoAdjust, {
+      direction: resolveDirection(this),
+    })
     this.popup.style.top = `${top}px`
     this.popup.style.left = `${left}px`
     this.popup.style.transform = ''
@@ -1493,6 +1496,7 @@ export class OASTour extends OASElement {
         { width: hintVp.width || 800, height: hintVp.height || 600 },
         8,
         true,
+        { direction: resolveDirection(this) },
       )
       bubble.style.top = `${top}px`
       bubble.style.left = `${left}px`

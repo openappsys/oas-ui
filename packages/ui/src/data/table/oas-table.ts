@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { resolveDirection } from '../../shared/direction.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
 import { registeredTableCapabilities, onTableCapabilityRegistered } from './oas-table-capability.js'
@@ -1873,7 +1874,9 @@ export class OASTableBase extends OASElement {
   private positionFilterPanel(panel: HTMLElement, trigger: HTMLElement): void {
     const rect = trigger.getBoundingClientRect()
     const pRect = panel.getBoundingClientRect()
-    const pos = computePosition(rect, pRect, 'bottom-start', getViewport(), 6)
+    const pos = computePosition(rect, pRect, 'bottom-start', getViewport(), 6, true, {
+      direction: resolveDirection(this),
+    })
     panel.style.left = `${pos.left}px`
     panel.style.top = `${pos.top}px`
   }
