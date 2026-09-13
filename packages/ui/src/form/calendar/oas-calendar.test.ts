@@ -454,6 +454,17 @@ describe('OASCalendar', () => {
     expect(details).toEqual([{ value: '2020-01' }])
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2020年1月')
   })
+
+  it('触屏（pointer: coarse）：日格/月格/年格与头部按钮触控目标 ≥44px 规则进样式表', () => {
+    const el = mount({ value: '2026-08-09' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    expect(css).toContain("[part='grid'] .day")
+    expect(css).toContain("[part='grid'] .month-cell")
+    expect(css).toContain("[part='grid'] .year-cell")
+    expect(css).toContain("[part='header'] button")
+  })
 })
 
 function toISO(d: Date): string {

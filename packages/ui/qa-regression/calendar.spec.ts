@@ -80,3 +80,30 @@ test('calendar header 组合：外部操作条 + 组件卡片，内置导航仍�
   expect(r.nextBtn).toBe(true)
   expect(r.titleText).toContain('2026')
 })
+
+// —— 移动端硬伤修复回归：触屏日格触控目标 ≥44px ——
+test('calendar 触屏（coarse）：日格/月格/头部按钮触控目标 ≥44px', async ({ browser }) => {
+  const ctx = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } })
+  const p = await ctx.newPage()
+  await p.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+  await up(p, 'oas-calendar#calendar-cell-render')
+  const r = await p.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-cell-render')!
+    const day = el.shadowRoot!.querySelector('.day') as HTMLElement
+    const headerBtn = el.shadowRoot!.querySelector('[part="prev"]') as HTMLElement
+    return {
+      coarse: window.matchMedia('(pointer: coarse)').matches,
+      dayMinH: getComputedStyle(day).minHeight,
+      dayMinW: getComputedStyle(day).minWidth,
+      headerMinW: getComputedStyle(headerBtn).minWidth,
+      headerMinH: getComputedStyle(headerBtn).minHeight,
+    }
+  })
+  expect(r.coarse, 'touch context 应命中 pointer: coarse').toBe(true)
+  // 修复前日格 32px 高、7 列格宽 <44px，触屏不可点
+  expect(r.dayMinH).toBe('44px')
+  expect(r.dayMinW).toBe('44px')
+  expect(r.headerMinW).toBe('44px')
+  expect(r.headerMinH).toBe('44px')
+  await ctx.close()
+})

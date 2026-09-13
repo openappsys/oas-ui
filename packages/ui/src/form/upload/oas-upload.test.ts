@@ -799,3 +799,36 @@ describe('OASUpload picture-card error 态', () => {
     expect(FakeUploadXHR.instances.length).toBe(2)
   })
 })
+
+// ---- picture-card 触屏适配（pointer: coarse 无 hover，操作层须常显 + 触控热区 ≥44px）----
+describe('OASUpload picture-card 触屏', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('样式表包含 coarse 规则：删除×常显、失败/上传中操作层常显、操作钮 44px 热区', () => {
+    const el = mount({ 'list-type': 'picture-card' })
+    el.files = [makeFile('a.png', 'image/png')]
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    // 删除×触屏常显（无 hover 可依赖）
+    expect(css).toContain('.card.is-error .actions')
+    expect(css).toContain('.card.is-uploading .actions')
+    // 删除×/操作钮视觉尺寸不动，::after 透明扩展出 ≥44px 热区（token 驱动）
+    expect(css).toContain('calc((20px - var(--oas-touch-target-min, 44px)) / 2)')
+    expect(css).toContain('calc((28px - var(--oas-touch-target-min, 44px)) / 2)')
+  })
+
+  it('上传中卡片带 is-uploading 类名（触屏操作遮罩常显的定位锚）', () => {
+    const el = mount({ 'list-type': 'picture-card' })
+    el.files = [makeFile('a.png', 'image/png')]
+    el.startUpload() // 无 action/custom-request → 模拟通道，立即进入 uploading
+    const card = el.shadowRoot!.querySelector('.card')!
+    expect(card.classList.contains('is-uploading')).toBe(true)
+  })
+})
