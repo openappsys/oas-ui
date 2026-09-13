@@ -155,6 +155,14 @@ nav.size-large [part='link'] {
   font-size: var(--oas-font-size-md);
   padding: var(--oas-space-2) var(--oas-space-3);
 }
+/* ===== 移动端触摸目标：coarse pointer 下链接行最小高度抬到 --oas-touch-target-min（默认 44px） ===== */
+@media (pointer: coarse) {
+  [part='link'] {
+    min-height: var(--oas-touch-target-min, 44px);
+    display: flex;
+    align-items: center;
+  }
+}
 `
 
 /** 滚动落点对齐方式 */

@@ -53,3 +53,29 @@ test('command 基础回归：open 打开、过滤驱动可见行、方向键高�
   expect(r.active, '方向键后应有 .active 高亮行').toBeGreaterThan(0)
   expect(r.selected, 'Enter 应派发 oas-select 并携带选中 value').toBeTruthy()
 })
+
+// 移动端专项：coarse 下选项行最小高度 ≥44px（触控目标抬升）
+test('command 移动端：coarse 下选项行最小高度 ≥44px（--oas-touch-target-min）', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/components/command.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-command')
+    const r = await page.evaluate(async () => {
+      const el = document.querySelector('oas-command')!
+      el.setAttribute('open', '')
+      await new Promise((res) => setTimeout(res, 300))
+      const root = el.shadowRoot!
+      const css = root.querySelector('style')!.textContent!
+      const opt = root.querySelector<HTMLElement>('.option')!
+      return {
+        coarseRule: css.includes('@media (pointer: coarse)') && css.includes('--oas-touch-target-min'),
+        optMin: parseFloat(getComputedStyle(opt).minHeight),
+      }
+    })
+    expect(r.coarseRule, '样式表应有 coarse 触摸目标规则').toBe(true)
+    expect(r.optMin, '选项行 coarse 下最小高度 ≥44px').toBeGreaterThanOrEqual(44)
+  } finally {
+    await ctx.close()
+  }
+})

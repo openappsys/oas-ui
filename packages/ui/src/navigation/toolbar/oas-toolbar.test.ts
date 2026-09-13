@@ -842,3 +842,27 @@ describe('OASToolbarInput', () => {
     expect(el.shadowRoot!.activeElement).toBe(inner)
   })
 })
+
+// ===== 移动端触摸目标（coarse pointer 抬升 ≥44px） =====
+
+describe('OASToolbar 触摸目标（coarse pointer 抬升）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  it('coarse pointer 媒体查询进样式表，「···」收纳钮与镜像行最小高度走 --oas-touch-target-min（默认 44px）', () => {
+    const el = mount('<button>一</button>')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    const coarse = css.split('@media (pointer: coarse)')[1]!
+    expect(coarse).toContain('.more')
+    expect(coarse).toContain('.mirror')
+    expect(coarse).toContain('min-height')
+  })
+})

@@ -235,3 +235,38 @@ test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现
 // 但 sidebar update() 在无 width 属性时会 removeProperty('--oas-sidebar-width')——内联变量被清、
 // sidebar 回落 220px 固定宽，被 22% 窄面板遮住（宽度不随拖拽变化）。修复：demo 改用 width="100%"
 // 属性（update 保留并写入）。本断言真实拖拽分割条，验证 sidebar 宽度实时跟随面板变化。
+
+// 移动端专项：coarse 下关闭钮（整钮 44px 方块）与步骤钮最小高度 ≥44px（触控目标抬升）
+test('tour 移动端：coarse 下关闭钮/步骤钮触控 ≥44px', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/components/tour.html', { waitUntil: 'domcontentloaded' })
+    await page.waitForFunction(() => customElements.get('oas-tour') != null, null, { timeout: 15000 })
+    const r = await page.evaluate(async () => {
+      const target = document.createElement('div')
+      target.id = 'qa-tour-target'
+      target.style.cssText = 'width:120px;height:40px;margin:120px 0 0 20px'
+      document.body.appendChild(target)
+      const el = document.createElement('oas-tour')
+      el.setAttribute('steps', JSON.stringify([{ selector: '#qa-tour-target', title: '引导', description: '描述' }]))
+      el.setAttribute('open', '')
+      document.body.appendChild(el)
+      await new Promise((res) => setTimeout(res, 300))
+      const root = el.shadowRoot!
+      const close = root.querySelector<HTMLElement>('[part="close"]')!
+      const next = root.querySelector<HTMLElement>('[part="next"]')!
+      const out = {
+        closeBox: close.getBoundingClientRect().height,
+        nextMin: parseFloat(getComputedStyle(next).minHeight),
+      }
+      el.remove()
+      target.remove()
+      return out
+    })
+    expect(r.closeBox, '关闭钮 coarse 下应为 ≥44px 触控方块').toBeGreaterThanOrEqual(44)
+    expect(r.nextMin, '步骤钮 coarse 下最小高度 ≥44px').toBeGreaterThanOrEqual(44)
+  } finally {
+    await ctx.close()
+  }
+})

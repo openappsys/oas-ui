@@ -176,6 +176,13 @@ const STYLE = `
   z-index: calc(var(--oas-z-index-base, 0) + 20);
   overflow: visible;
 }
+/* ===== 移动端触摸目标：coarse pointer 下「···」收纳钮与镜像行最小高度抬到 --oas-touch-target-min ===== */
+@media (pointer: coarse) {
+  .more,
+  .mirror {
+    min-height: var(--oas-touch-target-min, 44px);
+  }
+}
 `
 
 /** 参与工具栏导航的角色（native 控件按标签判断） */

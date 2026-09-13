@@ -381,6 +381,13 @@ mark.hl {
 .empty[hidden] {
   display: none;
 }
+/* ===== 移动端触摸目标：coarse pointer 下选项行/返回钮最小高度抬到 --oas-touch-target-min ===== */
+@media (pointer: coarse) {
+  .option,
+  .back {
+    min-height: var(--oas-touch-target-min, 44px);
+  }
+}
 .view {
   padding: var(--oas-space-3);
 }
@@ -1162,9 +1169,21 @@ export class OASCommand extends OASElement {
     return Number.isNaN(n) || n < 1 ? 50 : n
   }
 
+  /** coarse pointer 判定（SSR/测试环境无 matchMedia 时回落 false） */
+  private coarsePointer(): boolean {
+    return (
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches
+    )
+  }
+
   private virtualItemHeight(): number {
     const n = Number.parseInt(this.getAttr('item-height', '36'), 10)
-    return Number.isNaN(n) || n < 1 ? 36 : n
+    const base = Number.isNaN(n) || n < 1 ? 36 : n
+    // coarse 下行高抬到触摸目标下限（44 = --oas-touch-target-min 默认值），
+    // 保证虚拟列表定高步长与实际行高一致（与 CSS 的 min-height 抬升对齐，不错位）
+    return this.coarsePointer() ? Math.max(base, 44) : base
   }
 
   /** 过滤 + 打分排序（should-filter=false 时不做本地过滤；filter 函数优先于内置） */
