@@ -7,6 +7,7 @@ import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
+import { resolveDirection } from '../../overlay/direction.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 // 共享树内核：flatten/字段归一 + 勾选级联 + 懒加载状态机 + 模板克隆（与 oas-tree 同一实现）
 import {
@@ -892,7 +893,9 @@ export class OASTreeSelect extends OASElement {
     // 先撑宽再测量/定位：dropdown 为 auto 宽度，撑宽前测会按固有宽度算 left → 首次展开偏右。
     this.dropdown.style.width = `${anchorRect.width}px`
     const panelRect = this.dropdown.getBoundingClientRect()
-    const { top, left } = computePosition(anchorRect, panelRect, 'bottom-start', getViewport())
+    const { top, left } = computePosition(anchorRect, panelRect, 'bottom-start', getViewport(), 8, true, {
+      direction: resolveDirection(this),
+    })
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
   }

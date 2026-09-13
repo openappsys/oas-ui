@@ -62,6 +62,21 @@ describe('date-grid 共享模块（纯函数）', () => {
     expect(toISODate(inMonth[inMonth.length - 1]!.date)).toBe('2026-08-31')
   })
 
+  it('getWeekStart：按 locale 给出周起始（欧陆/中文周一，日韩英阿周日），含基语言回退', () => {
+    // 周一起始
+    for (const l of ['zh-CN', 'zh', 'de', 'fr', 'es', 'pt', 'ru', 'de-AT', 'fr-CA', 'ru-RU']) {
+      expect(getWeekStart(l), l).toBe(1)
+    }
+    // 周日起始
+    for (const l of ['en', 'en-US', 'ja', 'ko', 'ar', 'ar-SA']) {
+      expect(getWeekStart(l), l).toBe(0)
+    }
+    // 未收录且有 Intl 周信息时走 Intl；无论如何结果在 0-6 内
+    const unknown = getWeekStart('xx-XX')
+    expect(unknown).toBeGreaterThanOrEqual(0)
+    expect(unknown).toBeLessThanOrEqual(6)
+  })
+
   it('isoWeek 输出 ISO 8601 周号', () => {
     expect(isoWeek(new Date(2026, 7, 9))).toBe(32)
     expect(isoWeek(new Date(2026, 6, 27))).toBe(31)
