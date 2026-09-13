@@ -1136,6 +1136,26 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 全量单测 6800 / typecheck 0 / build 0 / api:check（WIP 0）/ trace 0 命中
 - e2e：移动仿真 qa-regression（select/date-picker/cascader/tree-select/time-picker/combobox bottom-sheet 开合 + 触摸目标 + tap 切换 + switch 整行 + hover-card 不越出 visualViewport + popover/dropdown 触屏降级）+ 全量 smoke/dark/code/visual/console-sweep/vue-prop-hijack/a11y/interaction 全绿；light/dark 截图复核 + console 零告警
 
+### 第二批：硬伤 + 高频缺口收口
+
+**真硬伤（触屏不可用/溢出）**：
+- **upload**：picture-card 删除×/操作钮仅 hover 显现 → coarse 下常显可达 + 44px 热区
+- **transfer**：固定 ~430px 刚性布局窄屏溢出 → ≤480px 纵向堆叠；HTML5 DnD 触屏不可用 → 按钮式 move-up/down 排序；行/钮 coarse ≥44px
+- **stepper**：无窄屏处理 → coarse 下步骤条横向溢出滚动 + tab ≥44px
+- **tag**：closable × 钮 ≈12px → coarse 下 44px 隐形热区 + checkable/clickable 整签 ≥44px
+
+**高频缺口**：
+- **触摸目标抬升**（`--oas-touch-target-min` + pointer:coarse）：date-picker 日格 / time-picker 列 / combobox 选项 / calendar 日格 / command 选项 / pagination / anchor / breadcrumb / toolbar / tour / tree 展开钮 / carousel 箭头圆点 / table 小钮 / button 本体
+- **横幅 vw 宽度保护**：message / notification / toast / popconfirm 面板加 `calc(100vw - …)` 兜底防窄屏溢出；notification peek 栈补触屏 tap 展开
+- **popconfirm trigger=hover 触屏降级**为 tap 切换（照 popover 范式）
+- **HTML5 DnD 触屏替代**：transfer / dynamic-tags 按钮式排序、table 列重排上移/下移按钮
+- **navigation-menu 顶级 bar 溢出「···」收纳**（RO 驱动）+ 面板窄屏宽度兜底
+- **image/image-group 预览 pinch 双指缩放**；table 过滤面板改走共享 floating 引擎视口夹取
+
+**缺陷修复（视觉复核实抓）**：calendar 触屏日格 min-width 撑破 7 列致周日列被裁（收窄为只抬高度）；upload picture-card 删除× dark 对比度；docs 演示块按钮行不换行撑宽布局视口致右锚定浮层出屏（docs 侧换行 + overflow-x:clip）；image 预览工具栏窄屏竖排分行（nowrap + 横向滚动收纳）
+
+**验收**：全量单测 6879 / typecheck 0 / build 0 / api:check 0 / trace --all 0 / chromium 全量 e2e 1243 + firefox 抽样 1893 全绿 / 移动仿真 light+dark 截图复核 + 真点交互验证
+
 ---
 
 ## 未发布：bottom-navigation 胶囊形态（pill）
