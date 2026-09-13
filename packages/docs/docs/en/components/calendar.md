@@ -10,6 +10,8 @@ A calendar component with month/year modes, supporting selection, disabled dates
 
 Click a date to select it and dispatch `oas-change`; the title opens a month-selection panel for quick month jumps.
 
+On touch screens (pointer: coarse) day cells get a 44px minimum height/width, month/year cells a 44px minimum height, and header navigation buttons a 44px hit target.
+
 ## Year View
 
 <DemoBlock title="Year view (mode=year)">

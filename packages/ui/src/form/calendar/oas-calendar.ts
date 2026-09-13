@@ -225,6 +225,21 @@ const STYLE = `
   color: var(--oas-color-text-disabled);
   cursor: not-allowed;
 }
+/* ---- 触屏（pointer: coarse）：日格/月格/年格与头部导航触控目标 ≥44px ---- */
+@media (pointer: coarse) {
+  [part='grid'] .day {
+    min-height: var(--oas-touch-target-min, 44px);
+    min-width: var(--oas-touch-target-min, 44px);
+  }
+  [part='grid'] .month-cell,
+  [part='grid'] .year-cell {
+    min-height: var(--oas-touch-target-min, 44px);
+  }
+  [part='header'] button {
+    min-width: var(--oas-touch-target-min, 44px);
+    min-height: var(--oas-touch-target-min, 44px);
+  }
+}
 `
 
 /** 面板层级：days 日网格 / months 12 月网格 / years decade 年网格（内部导航态） */

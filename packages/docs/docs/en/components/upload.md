@@ -44,6 +44,8 @@ Drag files directly into the dashed area and release to add them (multiple suppo
 
 Image files render thumbnails (`URL.createObjectURL`); non-image files show a file icon and name. Click a thumbnail to open the preview overlay (close with Esc or by clicking the mask); remove via the top-right ×, and hover shows preview/remove actions. A circular avatar card can be achieved with the CSS variable `--oas-upload-card-radius: 50%`.
 
+On touch screens (pointer: coarse) there is no hover to rely on: the top-right remove × stays visible, the action overlay (preview/retry/cancel) stays visible on error/uploading cards, and the remove × / action buttons get a 44px hit target.
+
 ### Remove, preview & max rejection
 
 <DemoBlock title="Picture wall · remove/preview/exceed">

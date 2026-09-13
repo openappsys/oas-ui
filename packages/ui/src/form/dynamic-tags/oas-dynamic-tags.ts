@@ -111,9 +111,14 @@ const STYLE = `
   cursor: pointer;
   padding: 0;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   color: var(--oas-color-text-secondary);
   border-radius: 50%;
   flex: none;
+  position: relative;
 }
 .tag-remove:hover:not(:disabled) {
   color: var(--oas-color-text-primary);
@@ -127,6 +132,37 @@ const STYLE = `
   box-shadow: var(--oas-focus-ring);
 }
 .tag-remove[hidden] {
+  display: none;
+}
+/* 按钮式排序（触屏可达通道）：与删除×同款 16px 图标钮 */
+.tag-sort {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--oas-color-text-secondary);
+  border-radius: var(--oas-radius-sm);
+  flex: none;
+}
+.tag-sort:hover:not(:disabled) {
+  color: var(--oas-color-text-primary);
+}
+.tag-sort:disabled {
+  cursor: not-allowed;
+  color: var(--oas-color-text-disabled);
+}
+.tag-sort:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.tag-sort[hidden] {
   display: none;
 }
 .entry {
@@ -232,12 +268,38 @@ input[hidden] {
 .hint[hidden] {
   display: none;
 }
+/* ---- 触屏（pointer: coarse）：chip 抬高 + 删除/排序/清空钮热区 ≥44px ----
+   置于样式表末尾：coarse 规则须覆盖上方 .clear 等基础尺寸规则（同优先级，后写胜出） */
+@media (pointer: coarse) {
+  .tag {
+    min-height: var(--oas-touch-target-min, 44px);
+  }
+  /* 真实加宽按钮盒（图标仍居中、盒透明），相邻按钮间隙不重叠 */
+  .tag-remove,
+  .tag-sort {
+    width: var(--oas-touch-target-min, 44px);
+    align-self: stretch;
+    height: auto;
+  }
+  /* 清空钮：32px 视觉（贴满控件高度）+ 盒加宽到 44px */
+  .clear {
+    width: var(--oas-touch-target-min, 44px);
+    height: 32px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
 `
 
 const CLOSE_ICON = `
 <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
   <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
 </svg>`
+
+/** 排序按钮箭头图标（与 dynamic-input 的按钮式排序同一套原创图形；单行无空白，避免污染 chip textContent） */
+const MOVE_UP_ICON = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 10 L8 5.5 L12 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+
+const MOVE_DOWN_ICON = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 6 L8 10.5 L12 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 
 const CLEAR_ICON = `
 <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
@@ -494,6 +556,22 @@ export class OASDynamicTags extends OASElement {
       item.appendChild(text)
     }
 
+    // 排序按钮（按钮式 move 上移/下移：HTML5 DnD 触屏不可用，此为触屏/鼠标可达通道）
+    if (this.hasAttr('sortable') && !this.isFrozen()) {
+      const mk = (delta: 1 | -1): HTMLButtonElement => {
+        const b = document.createElement('button')
+        b.type = 'button'
+        b.className = `tag-sort ${delta === -1 ? 'tag-sort-up' : 'tag-sort-down'}`
+        b.setAttribute('part', delta === -1 ? 'sort-up' : 'sort-down')
+        b.setAttribute('aria-label', this.t(delta === -1 ? 'dynamicInput.moveUp' : 'dynamicInput.moveDown'))
+        b.innerHTML = delta === -1 ? MOVE_UP_ICON : MOVE_DOWN_ICON
+        b.disabled = delta === -1 ? idx === 0 : idx === this.tags.length - 1
+        b.addEventListener('click', () => this.sortTagFromButton(idx, delta))
+        return b
+      }
+      item.append(mk(-1), mk(1))
+    }
+
     const btn = document.createElement('button')
     btn.type = 'button'
     btn.className = 'tag-remove'
@@ -535,11 +613,22 @@ export class OASDynamicTags extends OASElement {
     const sortable = this.hasAttr('sortable')
     const interactive = sortable && !frozen
     const chips = [...(this.tagsEl?.querySelectorAll<HTMLElement>('.tag') ?? [])]
-    for (const chip of chips) {
+    chips.forEach((chip, i) => {
       const btn = chip.querySelector<HTMLButtonElement>('.tag-remove')
       if (btn) {
         btn.disabled = disabled
         btn.hidden = readonly
+      }
+      // 排序钮：全局禁用与边界禁用同步（重建时按 idx 算好的边界态，这里叠加全局态）
+      const up = chip.querySelector<HTMLButtonElement>('.tag-sort-up')
+      if (up) {
+        up.disabled = disabled || i === 0
+        up.hidden = readonly
+      }
+      const down = chip.querySelector<HTMLButtonElement>('.tag-sort-down')
+      if (down) {
+        down.disabled = disabled || i === chips.length - 1
+        down.hidden = readonly
       }
       if (interactive) {
         chip.setAttribute('tabindex', '-1')
@@ -548,7 +637,7 @@ export class OASDynamicTags extends OASElement {
         chip.removeAttribute('tabindex')
         chip.draggable = false
       }
-    }
+    })
 
     if (this.clearEl) {
       this.clearEl.innerHTML = CLEAR_ICON
@@ -708,9 +797,16 @@ export class OASDynamicTags extends OASElement {
   private onTagsKeydown(e: KeyboardEvent): void {
     if (isComposing(e)) return
     const path = e.composedPath() as Element[]
-    // 焦点在移除按钮或编辑输入框上时走各自的原生语义
+    // 焦点在移除按钮、排序按钮或编辑输入框上时走各自的原生语义
     if (
-      path.some((n) => n instanceof Element && (n.classList.contains('tag-remove') || n.classList.contains('tag-edit')))
+      path.some(
+        (n) =>
+          n instanceof Element &&
+          (n.classList.contains('tag-remove') ||
+            n.classList.contains('tag-sort-up') ||
+            n.classList.contains('tag-sort-down') ||
+            n.classList.contains('tag-edit')),
+      )
     ) {
       return
     }
@@ -744,8 +840,19 @@ export class OASDynamicTags extends OASElement {
     else chips[to]?.focus()
   }
 
+  /** 排序按钮通道：move 上移/下移一位，重建后焦点跟随移动后的标签（交互上下文不丢） */
+  private sortTagFromButton(idx: number, delta: 1 | -1): void {
+    if (this.isFrozen()) return
+    const to = idx + delta
+    if (to < 0 || to >= this.tags.length) return
+    this.sortTag(idx, to)
+    const fresh = [...(this.tagsEl?.querySelectorAll<HTMLElement>('.tag') ?? [])]
+    fresh[to]?.focus()
+  }
+
   /** 重排：移动下标并派发 change(trigger=sort) */
   private sortTag(from: number, to: number): void {
+    if (this.isFrozen()) return
     if (from === to) return
     if (from < 0 || from >= this.tags.length || to < 0 || to >= this.tags.length) return
     const [moved] = this.tags.splice(from, 1)
@@ -806,7 +913,16 @@ export class OASDynamicTags extends OASElement {
 
   private handleDblClick(e: MouseEvent): void {
     const path = e.composedPath() as Element[]
-    if (path.some((n) => n instanceof Element && n.classList.contains('tag-remove'))) return
+    if (
+      path.some(
+        (n) =>
+          n instanceof Element &&
+          (n.classList.contains('tag-remove') ||
+            n.classList.contains('tag-sort-up') ||
+            n.classList.contains('tag-sort-down')),
+      )
+    )
+      return
     const chip = path.find((n) => n instanceof Element && n.classList.contains('tag'))
     if (!chip) return
     const chips = [...(this.tagsEl?.querySelectorAll<HTMLElement>('.tag') ?? [])]

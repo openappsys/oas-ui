@@ -13,6 +13,11 @@ export interface TransferItem {
 
 export type TargetSortMode = 'original' | 'push' | 'unshift'
 
+/** 排序按钮箭头图标（与 dynamic-input 的按钮式排序同一套原创图形；单行无空白，避免污染行 textContent） */
+const MOVE_UP_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M4 10 L8 5.5 L12 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+
+const MOVE_DOWN_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M4 6 L8 10.5 L12 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+
 /** 选项行样式（非虚拟模式渲染在 transfer 自身 shadow；虚拟模式需注入到 vlist shadow，两处共用） */
 const OPTION_STYLE = `
 .option {
@@ -20,6 +25,10 @@ const OPTION_STYLE = `
   border-radius: var(--oas-radius-sm);
   cursor: pointer;
   font-size: var(--oas-font-size-md);
+  /* 行内按钮（排序上移/下移）横向排布 */
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-1);
 }
 .option:hover {
   background: var(--oas-color-bg-hover);
@@ -45,6 +54,44 @@ const OPTION_STYLE = `
 }
 .option.drop-after {
   box-shadow: inset 0 -2px 0 0 var(--oas-color-primary);
+}
+/* 按钮式排序（HTML5 DnD 触屏不可用，触屏/键盘可达的替代通道，dynamic-input 同款） */
+.option .sort-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: var(--oas-radius-sm);
+  color: var(--oas-color-text-secondary);
+  cursor: pointer;
+}
+.option .sort-btn:hover:not(:disabled) {
+  color: var(--oas-color-primary);
+}
+.option .sort-btn:disabled {
+  color: var(--oas-color-text-disabled);
+  cursor: not-allowed;
+}
+.option .sort-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+@media (pointer: coarse) {
+  .option {
+    min-height: var(--oas-touch-target-min, 44px);
+  }
+  /* 触控热区 ≥44px：真实加宽按钮盒（图标仍居中），相邻按钮间隙不重叠 */
+  .option .sort-btn {
+    width: var(--oas-touch-target-min, 44px);
+    height: var(--oas-touch-target-min, 44px);
+  }
 }
 `
 
@@ -202,6 +249,27 @@ ${OPTION_STYLE}
   cursor: not-allowed;
   color: var(--oas-color-text-disabled);
   background: var(--oas-color-bg-disabled);
+}
+/* 中央穿梭按钮：触屏热区 ≥44px */
+@media (pointer: coarse) {
+  .actions button {
+    min-width: var(--oas-touch-target-min, 44px);
+    min-height: var(--oas-touch-target-min, 44px);
+  }
+}
+/* 窄屏（移动竖屏）：双面板纵向堆叠，避免 180px×2 + 34px + gap 的刚性宽度溢出 */
+@media (max-width: 480px) {
+  :host {
+    flex-direction: column;
+    width: 100%;
+  }
+  .panel {
+    width: 100%;
+  }
+  .actions {
+    flex-direction: row;
+    justify-content: center;
+  }
 }
 `
 
@@ -465,11 +533,19 @@ export class OASTransfer extends OASElement {
     })
   }
 
-  /** 虚拟滚动定高：默认 36（与 oas-virtual-list 默认一致，匹配选项行视觉高度） */
+  /** 虚拟滚动定高：显式 item-height 优先；未设置时默认 36（fine）/ 44（coarse，触控目标） */
   private virtualItemHeight(): number {
-    const raw = this.getAttr('item-height', '36')
-    const n = Number.parseInt(raw, 10)
-    return Number.isNaN(n) ? 36 : n
+    const raw = this.getAttr('item-height', '')
+    if (raw !== '') {
+      const n = Number.parseInt(raw, 10)
+      return Number.isNaN(n) ? 36 : n
+    }
+    return this.isCoarsePointer() ? 44 : 36
+  }
+
+  /** 触屏检测（pointer: coarse），与 select / tooltip 同一模式 */
+  private isCoarsePointer(): boolean {
+    return typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches
   }
 
   private renderPanels(): void {
@@ -578,6 +654,7 @@ export class OASTransfer extends OASElement {
       this.fillRowContent(row, item)
       row.addEventListener('click', () => this.toggleItem(side, item))
       this.attachDrag(row, side, item)
+      this.attachSortButtons(row, side, item)
       listbox.appendChild(row)
     }
     this.syncPanelHead(side, visible)
@@ -596,6 +673,7 @@ export class OASTransfer extends OASElement {
     this.fillRowContent(row, item)
     row.addEventListener('click', () => this.toggleItem(side, item))
     this.attachDrag(row, side, item)
+    this.attachSortButtons(row, side, item)
     container.appendChild(row)
   }
 
@@ -824,6 +902,49 @@ export class OASTransfer extends OASElement {
     const next = value.filter((k) => k !== fromKey)
     const ti = next.indexOf(targetKey)
     next.splice(before ? ti : ti + 1, 0, fromKey)
+    this.setAttribute('value', JSON.stringify(next))
+    this.emit('change', { value: next })
+    this.renderPanels()
+  }
+
+  /**
+   * 按钮式排序（触屏可达：HTML5 DnD 在触屏上不可用，此为 dragEnabled 的第二通道）：
+   * 目标侧行内渲染上移/下移钮，点击把该项在 value 中移一位；
+   * 文案键复用 dynamicInput.moveUp / moveDown（「上移/下移」语义通用，不新增公开属性）。
+   */
+  private attachSortButtons(row: HTMLElement, side: 'left' | 'right', item: TransferItem): void {
+    if (side !== 'right' || !this.dragEnabled()) return
+    const value = this.currentValue()
+    const idx = value.indexOf(item.key)
+    if (idx < 0) return
+    const mk = (delta: 1 | -1): HTMLButtonElement => {
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = `sort-btn ${delta === -1 ? 'move-up' : 'move-down'}`
+      b.setAttribute('part', delta === -1 ? 'move-up' : 'move-down')
+      b.setAttribute('aria-label', this.t(delta === -1 ? 'dynamicInput.moveUp' : 'dynamicInput.moveDown'))
+      b.innerHTML = delta === -1 ? MOVE_UP_ICON : MOVE_DOWN_ICON
+      b.disabled = delta === -1 ? idx === 0 : idx === value.length - 1
+      b.addEventListener('click', (e: Event) => {
+        // 不冒泡到行选中切换（点排序 ≠ 点选）
+        e.stopPropagation()
+        this.moveTarget(item.key, delta)
+      })
+      return b
+    }
+    row.append(mk(-1), mk(1))
+  }
+
+  /** 按钮式排序执行：key 在 value 中上移/下移一位，派发 oas-change */
+  private moveTarget(key: string, delta: 1 | -1): void {
+    if (!this.dragEnabled()) return
+    const value = this.currentValue()
+    const idx = value.indexOf(key)
+    const to = idx + delta
+    if (idx < 0 || to < 0 || to >= value.length) return
+    const next = [...value]
+    next.splice(idx, 1)
+    next.splice(to, 0, key)
     this.setAttribute('value', JSON.stringify(next))
     this.emit('change', { value: next })
     this.renderPanels()

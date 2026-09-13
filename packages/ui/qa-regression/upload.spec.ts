@@ -110,3 +110,37 @@ test('upload 预览浮层关闭态不拦截指针事件 + 拖拽区图标尺寸�
   expect(r.iconW).toBe('28px')
   expect(r.iconH).toBe('28px')
 })
+
+// —— picture-card 触屏适配：coarse 下删除×常显（无 hover 可依赖）——
+test('upload picture-card 触屏（coarse）：删除×常显且触控热区规则在样式表', async ({ browser }) => {
+  const ctx = await browser.newContext({ hasTouch: true, viewport: { width: 375, height: 667 } })
+  const p = await ctx.newPage()
+  await p.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(p, '#upload-full')
+  await p.waitForFunction(
+    () => document.querySelector('#upload-full')?.shadowRoot?.querySelectorAll('.card').length === 3,
+    null,
+    { timeout: 10000 },
+  )
+  const r = await p.evaluate(() => {
+    const root = document.querySelector('#upload-full')!.shadowRoot!
+    const remove = root.querySelector('.card .remove') as HTMLElement
+    const css = root.querySelector('style')!.textContent!
+    const coarse = window.matchMedia('(pointer: coarse)').matches
+    const cs = getComputedStyle(remove)
+    return {
+      coarse,
+      opacity: cs.opacity,
+      pointerEvents: cs.pointerEvents,
+      coarseCss: css.includes('@media (pointer: coarse)'),
+      tokenCss: css.includes('var(--oas-touch-target-min, 44px)'),
+    }
+  })
+  expect(r.coarse, 'touch context 应命中 pointer: coarse').toBe(true)
+  expect(r.coarseCss).toBe(true)
+  expect(r.tokenCss).toBe(true)
+  // 删除×触屏常显（修复前 opacity:0 + pointer-events:none，触屏不可达）
+  expect(r.opacity).toBe('1')
+  expect(r.pointerEvents).toBe('auto')
+  await ctx.close()
+})
