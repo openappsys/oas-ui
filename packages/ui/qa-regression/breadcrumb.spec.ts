@@ -147,3 +147,48 @@ test('breadcrumb ellipsis 模式项下拉不被裁剪：面板 elementFromPoint 
 // 曾现缺陷：slotted 子项无 flex-shrink:0，窄容器下被 flex 压扁成窄条，
 // scrollWidth 恒等于 clientWidth，溢出收纳判定永不触发（「···」不出现）。
 // 修复：::slotted(*) flex-shrink:0，溢出真实出现后由 syncOverflow 收纳。
+
+// 移动端专项：coarse 下折叠钮/触发器/下拉行最小高度 ≥44px；下拉面板支持 flip-down 垂直翻转（视口底部避让）
+test('breadcrumb 移动端：coarse 下折叠钮与下拉行 ≥44px，面板含 flip-down 垂直翻转规则', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/components/breadcrumb.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-breadcrumb')
+    const r = await page.evaluate(() => {
+      const el = document.createElement('oas-breadcrumb')
+      el.setAttribute(
+        'items',
+        JSON.stringify([
+          { label: '首页', href: '/' },
+          { label: '组件', href: '/components' },
+          { label: '导航', href: '/components/anchor' },
+          { label: '面包屑', href: '/components/breadcrumb' },
+          { label: '当前页' },
+        ]),
+      )
+      el.setAttribute('collapsed', '')
+      el.setAttribute('max-items', '2')
+      document.body.appendChild(el)
+      const root = el.shadowRoot!
+      const css = root.querySelector('style')!.textContent!
+      const btn = root.querySelector<HTMLElement>('.ellipsis-btn')!
+      btn.click()
+      const row = root.querySelector<HTMLElement>('.ellipsis-dropdown .ellipsis-item')!
+      const out = {
+        coarseRule: css.includes('@media (pointer: coarse)') && css.includes('--oas-touch-target-min'),
+        flipDownCss: css.includes('.menu-panel.flip-down'),
+        btnMin: parseFloat(getComputedStyle(btn).minHeight),
+        rowMin: parseFloat(getComputedStyle(row).minHeight),
+      }
+      el.remove()
+      return out
+    })
+    expect(r.coarseRule, '样式表应有 coarse 触摸目标规则').toBe(true)
+    expect(r.flipDownCss, '样式表应有 flip-down 垂直翻转规则（getViewport 判定）').toBe(true)
+    expect(r.btnMin, '折叠钮 coarse 下最小高度 ≥44px').toBeGreaterThanOrEqual(44)
+    expect(r.rowMin, '下拉行 coarse 下最小高度 ≥44px').toBeGreaterThanOrEqual(44)
+  } finally {
+    await ctx.close()
+  }
+})

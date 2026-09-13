@@ -1077,3 +1077,28 @@ describe('子元素声明式通道', () => {
     expect(activeLink(el)).toBe('#child-target-2')
   })
 })
+
+// ===== 移动端触摸目标（coarse pointer 抬升 ≥44px） =====
+
+describe('OASAnchor 触摸目标（coarse pointer 抬升）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  it('coarse pointer 媒体查询进样式表，链接行最小高度走 --oas-touch-target-min（默认 44px）', () => {
+    const el = document.createElement('oas-anchor') as OASAnchor
+    el.setAttribute('items', JSON.stringify([{ href: '#a', title: '第一章' }]))
+    document.body.appendChild(el)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    const coarse = css.split('@media (pointer: coarse)')[1]!
+    expect(coarse).toContain("[part='link']")
+    expect(coarse).toContain('min-height')
+  })
+})

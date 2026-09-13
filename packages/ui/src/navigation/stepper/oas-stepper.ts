@@ -221,6 +221,23 @@ const STYLE = `
   display: block;
   padding-top: var(--oas-space-4);
 }
+/* ===== 移动端窄屏：coarse pointer 下步骤头横向可滚，tab 不再被 flex 硬压缩省略 ===== */
+@media (pointer: coarse) {
+  .tablist {
+    overflow-x: auto;
+    /* 滚动条不占据空间，保持步骤头视觉干净（iOS 默认overlay滚动条，桌面触屏隐藏） */
+    scrollbar-width: none;
+  }
+  .tablist::-webkit-scrollbar {
+    display: none;
+  }
+  /* flex:1 0 auto：装得下仍均分填满，装不下按内容宽自然溢出滚动；最小触控高 44px */
+  .tab {
+    flex: 1 0 auto;
+    min-height: var(--oas-touch-target-min, 44px);
+    justify-content: center;
+  }
+}
 `
 
 const VALID_STATUS = new Set<StepperStatus>(['wait', 'process', 'finish', 'error'])

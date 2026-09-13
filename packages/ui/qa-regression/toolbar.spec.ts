@@ -41,6 +41,42 @@ test('toolbar 窄容器子项防收缩：项保持固有宽度、溢出触发「
   }
 })
 
+// 移动端专项：coarse pointer 下「···」收纳钮与镜像行最小高度 ≥44px（触控目标抬升）
+test('toolbar 移动端：coarse 下「···」钮与镜像行最小高度 ≥44px（--oas-touch-target-min）', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/components/toolbar.html', { waitUntil: 'domcontentloaded' })
+    await up(page, '#tb-overflow')
+    const r = await page.evaluate(async () => {
+      const host = document.querySelector('#tb-overflow')!
+      host.scrollIntoView({ block: 'center' })
+      await new Promise((res) => setTimeout(res, 500))
+      const root = host.shadowRoot!
+      const css = root.querySelector('style')!.textContent!
+      const more = root.querySelector<HTMLElement>('.more')!
+      if (more.hidden) return { collapsed: false as const }
+      more.click()
+      await new Promise((res) => setTimeout(res, 300))
+      const mirror = root.querySelector<HTMLElement>('.more-panel [part="mirror-item"]')!
+      return {
+        collapsed: true as const,
+        coarseRule: css.includes('@media (pointer: coarse)') && css.includes('--oas-touch-target-min'),
+        moreMin: parseFloat(getComputedStyle(more).minHeight),
+        mirrorMin: parseFloat(getComputedStyle(mirror).minHeight),
+      }
+    })
+    expect(r.collapsed, '窄容器 demo 应触发溢出收纳').toBe(true)
+    if (r.collapsed) {
+      expect(r.coarseRule, '样式表应有 coarse 触摸目标规则').toBe(true)
+      expect(r.moreMin, '「···」钮 coarse 下最小高度 ≥44px').toBeGreaterThanOrEqual(44)
+      expect(r.mirrorMin, '镜像行 coarse 下最小高度 ≥44px').toBeGreaterThanOrEqual(44)
+    }
+  } finally {
+    await ctx.close()
+  }
+})
+
 // —— 缺陷回归：icon duotone 显式 data-layer 分层被元素序 fallback 劫持 ——
 // 曾现缺陷：[data-layer='primary'/'secondary'] 显式分层规则与「前两个直接子元素」
 // fallback 规则特异性相同（0,2,1）且 fallback 声明在后——SVG 按自然绘制序摆放

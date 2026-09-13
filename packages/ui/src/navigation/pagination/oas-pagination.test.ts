@@ -1001,4 +1001,19 @@ describe('OASPagination', () => {
     el.setAttribute('total', '50')
     expect(el.hasAttribute('hidden')).toBe(false)
   })
+
+  // ===== 批次 22：移动端触摸目标（coarse pointer 抬升 ≥44px）=====
+
+  it('触摸目标：coarse pointer 媒体查询进样式表，页码/前后钮/条数切换/跳转输入最小高度走 --oas-touch-target-min（默认 44px）', () => {
+    const el = mount({ 'show-jumper': '', 'page-sizes': '[10,20]' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    // 抬升规则须覆盖全部可点元素：页码/前后/首末钮（.btn）、条数切换（.size-select）、跳转输入（.jumper-input）
+    const coarse = css.split('@media (pointer: coarse)')[1]!
+    expect(coarse).toContain('.btn')
+    expect(coarse).toContain('.size-select')
+    expect(coarse).toContain('.jumper-input')
+    expect(coarse).toContain('min-height')
+  })
 })

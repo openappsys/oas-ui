@@ -210,6 +210,14 @@ const STYLE = `
   background: var(--oas-color-bg-disabled);
   color: var(--oas-color-text-disabled);
 }
+/* ===== 移动端触摸目标：coarse pointer 下可点元素最小高度抬到 --oas-touch-target-min（默认 44px） ===== */
+@media (pointer: coarse) {
+  .btn,
+  .size-select,
+  .jumper-input {
+    min-height: var(--oas-touch-target-min, 44px);
+  }
+}
 `
 
 /** responsive 断点：组件宽度 < 640px 时自动按 simple 形态渲染 */

@@ -1040,3 +1040,197 @@ describe('子元素声明式通道', () => {
     expect(isOpen(el)).toBe(false)
   })
 })
+
+// ===== 顶级溢出收纳（窄屏「···」弹层）与窄屏面板宽度兜底 =====
+
+describe('OASNavigationMenu 顶级溢出收纳（移动端窄屏）', () => {
+  function moreBtn(el: OASNavigationMenu): HTMLButtonElement {
+    return el.shadowRoot!.querySelector<HTMLButtonElement>('[part="top-more"]')!
+  }
+
+  function overflowPanel(el: OASNavigationMenu): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('[part="overflow-panel"]')!
+  }
+
+  /** 布局 mock：容器 130px、内容 192px 真实溢出，每项 60px、「···」24px（参照 toolbar 溢出测试手法） */
+  function mockNarrowLayout(el: OASNavigationMenu): void {
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    Object.defineProperty(bar, 'clientWidth', { value: 130, configurable: true })
+    Object.defineProperty(bar, 'scrollWidth', { value: 192, configurable: true })
+    for (const t of topItems(el)) Object.defineProperty(t, 'offsetWidth', { value: 60, configurable: true })
+    Object.defineProperty(moreBtn(el), 'offsetWidth', { value: 24, configurable: true })
+  }
+
+  it('溢出时尾部顶级项收进「···」弹层：data-collapsed + more 可见 + 弹层镜像项', () => {
+    const el = mount()
+    mockNarrowLayout(el)
+    el.syncOverflowCollapse()
+    const tops = topItems(el)
+    expect(tops[0]!.hasAttribute('data-collapsed')).toBe(false)
+    expect(tops[1]!.hasAttribute('data-collapsed')).toBe(true)
+    expect(tops[2]!.hasAttribute('data-collapsed')).toBe(true)
+    expect(moreBtn(el).hidden).toBe(false)
+    // 收纳项 tabindex 置 -1（不可聚焦，键盘不会落进隐藏项）
+    expect(tops[1]!.getAttribute('tabindex')).toBe('-1')
+    expect(tops[2]!.getAttribute('tabindex')).toBe('-1')
+    // 打开弹层：镜像项 = 被收顶级项（资源 带 children 渲染为 button，定价 为链接）
+    moreBtn(el).click()
+    expect(overflowPanel(el).hidden).toBe(false)
+    const items = overflowPanel(el).querySelectorAll<HTMLElement>('[part="overflow-item"]')
+    expect(items.length).toBe(2)
+    expect(items[0]!.textContent).toContain('资源')
+    expect(items[0]!.tagName).toBe('BUTTON')
+    expect(items[1]!.textContent).toContain('定价')
+    expect(items[1]!.tagName).toBe('A')
+    expect(moreBtn(el).getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('弹层 children 项点击打开其大面板（收纳态下指示条不误定位到隐藏触发器）', () => {
+    const el = mount()
+    mockNarrowLayout(el)
+    el.syncOverflowCollapse()
+    moreBtn(el).click()
+    const items = overflowPanel(el).querySelectorAll<HTMLElement>('[part="overflow-item"]')
+    // 资源（有 children）→ 打开大面板（viewport 展开其 children 网格），弹层关闭
+    ;(items[0] as HTMLElement).click()
+    expect(isOpen(el)).toBe(true)
+    expect(overflowPanel(el).hidden).toBe(true)
+    expect(grid(el)).not.toBeNull()
+    expect(grid(el)!.textContent).toContain('主题')
+    // 被收纳的隐藏触发器不驱动指示条（指示条复位关闭，而非定位到 offset 0）
+    const indicator = el.shadowRoot!.querySelector<HTMLElement>('[part="indicator"]')!
+    expect(indicator.getAttribute('data-state')).toBe('closed')
+  })
+
+  it('叶子顶级项收进弹层后点击派发 oas-select（value 正确透传）', () => {
+    const el = mount()
+    mockNarrowLayout(el)
+    el.syncOverflowCollapse()
+    moreBtn(el).click()
+    const leaf = [...overflowPanel(el).querySelectorAll<HTMLElement>('[part="overflow-item"]')].find(
+      (i) => i.tagName === 'A',
+    )!
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    leaf.click()
+    expect(detail).toEqual({ value: 'pricing' })
+    expect(overflowPanel(el).hidden).toBe(true)
+  })
+
+  it('再点一次「···」/Esc 收起弹层', () => {
+    const el = mount()
+    mockNarrowLayout(el)
+    el.syncOverflowCollapse()
+    moreBtn(el).click()
+    expect(overflowPanel(el).hidden).toBe(false)
+    moreBtn(el).click()
+    expect(overflowPanel(el).hidden).toBe(true)
+    moreBtn(el).click()
+    overflowPanel(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(overflowPanel(el).hidden).toBe(true)
+  })
+
+  it('无溢出（scrollWidth ≤ clientWidth）时「···」隐藏、无收纳', () => {
+    const el = mount()
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    Object.defineProperty(bar, 'clientWidth', { value: 500, configurable: true })
+    Object.defineProperty(bar, 'scrollWidth', { value: 180, configurable: true })
+    el.syncOverflowCollapse()
+    expect(moreBtn(el).hidden).toBe(true)
+    expect(topItems(el).every((t) => !t.hasAttribute('data-collapsed'))).toBe(true)
+  })
+
+  it('未布局（clientWidth=0，SSR/水合前）不误收纳', () => {
+    const el = mount()
+    // happy-dom 无布局：clientWidth/scrollWidth 恒 0
+    el.syncOverflowCollapse()
+    expect(moreBtn(el).hidden).toBe(true)
+    expect(topItems(el).every((t) => !t.hasAttribute('data-collapsed'))).toBe(true)
+  })
+
+  it('vertical 竖排不收纳（列排无横向溢出概念）', () => {
+    const el = mount({ orientation: 'vertical' })
+    mockNarrowLayout(el)
+    el.syncOverflowCollapse()
+    expect(moreBtn(el).hidden).toBe(true)
+    expect(topItems(el).every((t) => !t.hasAttribute('data-collapsed'))).toBe(true)
+  })
+
+  it('键盘导航跳过被收纳项：ArrowRight 从末个可见项回绕到首个可见项', () => {
+    const el = mount()
+    mockNarrowLayout(el)
+    el.syncOverflowCollapse()
+    const tops = topItems(el)
+    // 聚焦首个可见项（产品），ArrowRight 应收绕回自身（只剩它可见）
+    tops[0]!.focus()
+    key(el, 'ArrowRight')
+    expect(el.shadowRoot!.activeElement).toBe(tops[0]!)
+    // 被收纳项 roving tabindex 已置 -1
+    expect(tops[1]!.getAttribute('tabindex')).toBe('-1')
+  })
+
+  it('ResizeObserver 驱动：宽度变化后重算收纳（断开连接清理观察器）', () => {
+    let lastRO: { cb: () => void; observed: Element[] } | null = null
+    class FakeRO {
+      cb: () => void
+      observed: Element[] = []
+      constructor(cb: () => void) {
+        this.cb = cb
+        lastRO = this
+      }
+      observe(el: Element) {
+        this.observed.push(el)
+      }
+      disconnect() {}
+      unobserve() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+    const el = mount()
+    expect(lastRO).not.toBeNull()
+    expect(lastRO!.observed).toContain(el)
+    mockNarrowLayout(el)
+    lastRO!.cb()
+    expect(topItems(el)[2]!.hasAttribute('data-collapsed')).toBe(true)
+    const spy = vi.spyOn(FakeRO.prototype, 'disconnect')
+    el.remove()
+    expect(spy).toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
+  it('窄屏面板宽度兜底：viewport 与大面板 max-width 走 100vw，不越出视口', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const viewportRule = css.split('.viewport {')[1]!.split('}')[0]!
+    expect(viewportRule).toContain('max-width')
+    expect(viewportRule).toContain('100vw')
+  })
+
+  it('窄屏翻转守卫：bar 比面板窄时 flip-right 不得把面板顶出视口左缘（保持左对齐）', () => {
+    const el = mount()
+    const root = el.shadowRoot!
+    const bar = root.querySelector<HTMLElement>('[part="bar"]')!
+    const nav = root.querySelector<HTMLElement>('[part="nav"]')!
+    const panel = root.querySelector<HTMLElement>('[part="panel"]')!
+    Object.defineProperty(window, 'innerWidth', { value: 375, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 667, configurable: true })
+    // 窄 bar（150px）在视口左侧（left 8），面板内容宽 202（min-width 200 档）
+    Object.defineProperty(bar, 'getBoundingClientRect', {
+      value: () => ({ left: 8, right: 158, top: 0 }) as DOMRect,
+      configurable: true,
+    })
+    Object.defineProperty(nav, 'getBoundingClientRect', {
+      value: () => ({ right: 158 }) as DOMRect,
+      configurable: true,
+    })
+    Object.defineProperty(panel, 'scrollWidth', { value: 202, configurable: true })
+    Object.defineProperty(panel, 'scrollHeight', { value: 82, configurable: true })
+    topItems(el)[0]!.click() // 产品（children）→ 打开大面板
+    // 容器右缘溢出（210 > 158-8），但 flip 会把面板顶到 x=-44 越出视口左缘——应保持左对齐
+    expect(viewport(el).classList.contains('flip-right')).toBe(false)
+    // 反例：面板宽到不翻转连视口右缘都越出（400 → 8+400=408 > 367）→ 仍翻转
+    Object.defineProperty(panel, 'scrollWidth', { value: 400, configurable: true })
+    ;(el as unknown as { close(): void }).close()
+    topItems(el)[0]!.click()
+    expect(viewport(el).classList.contains('flip-right')).toBe(true)
+  })
+})
