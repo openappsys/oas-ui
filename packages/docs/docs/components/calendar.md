@@ -74,7 +74,7 @@
   <oas-calendar value="2026-08-09" first-day-of-week="0"></oas-calendar>
 </DemoBlock>
 
-`first-day-of-week` 取值 `0`（周日）～`6`（周六），缺省随 locale（中文语言系周一起始，其余周日）。
+`first-day-of-week` 取值 `0`（周日）～`6`（周六），缺省随 locale（欧陆/中文周一起始，日/韩/英/阿周日起始；其余走 `Intl.Locale` 周信息）。
 
 ## 面板月锚点
 
@@ -152,7 +152,7 @@
 | --- | --- | --- | --- |
 | `disabled` | 整体禁用：置灰并停止全部交互（点选/翻页/键盘） | `boolean` | — |
 | `disabledDate` | 禁用回调（property） | `((d: Date) => boolean) \| null` | — |
-| `first-day-of-week` | 周起始覆写：`0`（周日）～`6`（周六）；缺省随 locale（中文周一、其余周日） | `string` | — |
+| `first-day-of-week` | 周起始覆写：`0`（周日）～`6`（周六）；缺省随 locale（欧陆/中文周一、日/韩/英/阿周日） | `string` | — |
 | `max` | 可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰 | `string` | — |
 | `min` | 可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰 | `string` | — |
 | `mode` | `month` / `year`（年模式选中月份后自动切回月视图） | `string` | `month` |

@@ -71,6 +71,29 @@ CSS 规范限制：`::part()` 伪元素后**只能接伪类**（`:hover` / `:foc
 
 `@oas-ui/i18n` 提供全局 locale registry：`registerLocale(locale)` 注册自定义语言包、`setLocale(name)` 全局切换；语言包结构对齐内置 `zh-CN`（key 全集类型化，缺 key 编译期报错）。`oas-config-provider` 支持就近注入（`locale` 属性），包裹内组件优先用注入的 locale 翻译内置文案，无需全局设置。
 
+### 内置支持哪些语言？可以按需加载吗？
+
+内置 10 种：`zh-CN`（默认）、`en`、`ja`、`ko`、`de`、`fr`、`es`、`pt`、`ru`、`ar`（RTL）。主入口只带 `zh-CN`，其余**按需加载**，不会进首屏：
+
+```ts
+import { loadLocale, setLocale } from '@oas-ui/i18n'
+await loadLocale('ja') // 动态 import('@oas-ui/i18n/ja')，独立 chunk
+setLocale('ja')
+```
+
+也可静态按需引入（tree-shaking，只有用到的语言包进产物）：
+
+```ts
+import ja from '@oas-ui/i18n/ja'
+setLocale(ja)
+```
+
+日期与数字格式化走原生 `Intl`（`Intl.DateTimeFormat` / `Intl.NumberFormat`），这些语言无需额外翻译即可正确显示；`first-day-of-week` 缺省值也按 locale 推导（欧陆/中文周一起始，日/韩/英/阿周日起始）。
+
+### RTL 方向语言怎么处理？
+
+`ar` 语言包标注 `dir: 'rtl'`，切到 `ar` 后浮层定位自动镜像（select / combobox / auto-complete / tree-select / date-picker / time-picker / mentions 等）；也可用 `oas-config-provider direction="rtl"` 显式或局部开启，组件按「config-provider > 祖先 `dir` > `document.dir` > 当前 locale」解析方向。
+
 ## 主题
 
 ### 切暗色后页面 body 还是白的？

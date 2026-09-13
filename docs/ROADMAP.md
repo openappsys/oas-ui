@@ -60,6 +60,8 @@
 
 | **未发布** | **bottom-navigation 胶囊形态（pill）**：`pill` 布尔让整条栏呈浮动胶囊——`tablist` 全圆角（`--oas-radius-full` 开口）+ 四周描边（替代通栏顶边分隔线）+ 轻投影；宿主左右让出留白、`fixed` 下再加底部留白四边悬浮；留白/投影走 `--oas-bottom-navigation-pill-inset` / `--oas-bottom-navigation-pill-shadow` 变量开口；默认关闭（零破坏），语义/受控/键盘契约不变 | 🚧 进行中 |
 
+| **未发布** | **国际化扩充（多语言 + 按需加载 + RTL 公共机制）**：内置语言包由 2 种扩到 10 种——`zh-CN`（默认）/ `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt` / `ru` / `ar`（RTL），每包与 `zh-CN` key 全集一致（completeness 测试兜底）；主入口仅带 `zh-CN`，其余为独立子路径（tree-shakable）并提供 `loadLocale(name)` 动态 `import()` 按需加载；`Locale.dir` + `getDirection()` + `resolveDirection()`（config-provider > 祖先 `dir` > `document.dir` > locale）+ `computePosition(direction)` 组成 RTL 公共机制（select / combobox / auto-complete / tree-select / date-picker / time-picker / mentions 的 start/end 对齐镜像）；`getWeekStart` 由写死改为 locale 感知（查表 + `Intl.Locale` 回退）。日期/数字沿用原生 `Intl`，新增语言无需额外翻译。**边界**：其余组件纯 CSS 逻辑属性（硬编码 left/right/padding/text-align/transform）的 RTL 审计另开专项 | 🚧 进行中 |
+
 > **注（可选工具包）**：`@oas-ui/react` 桥接包**不单独发布**，降级为仓库内可选工具包——React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`；桥接 hooks（`useOasEvent`/`useOasEvents`）供需要 camelCase 惯例 / TS 类型 / React 17-18 兼容的宿主按需使用，不随版本发布、不写入发布清单（详见 PRD）。
 
 > 组件总数：v1.0 核心集约 68 件；v1.x 长尾推进至约 115~120 件，100% 覆盖。原 13 个未排期组件已全部分配：轻量基础组件（button-group/label/kbd/visually-hidden）提到最前的 v1.1（独立、无前置依赖、快速交付），其余按功能族归到 v1.3/v1.4/v1.5/v1.7，无遗漏。
