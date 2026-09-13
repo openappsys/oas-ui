@@ -1158,7 +1158,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ---
 
-## 未发布：bottom-navigation 胶囊形态（pill）
+## bottom-navigation 胶囊形态 pill（随 v2.5.1 发布）
 
 ### 特性
 

@@ -13,6 +13,7 @@
 - **switch 块级整行热区**：块级拉伸（如竖向 flex 容器）时宿主整行可点，对齐移动端设置项整行点击语义
 - **浮层视口适配**：新增共享 `getViewport()`——浮层碰撞边界优先 `visualViewport`（软键盘/浏览器工具栏/捏合缩放时用户真正能看到的区域），回退 `innerWidth/innerHeight`；全部浮层组件统一消费
 - **移动端硬伤 + 高频缺口收口（第二批）**：upload picture-card 触屏操作可达（coarse 常显 + 44px 热区）；transfer 窄屏纵向堆叠 + 按钮式排序；stepper 窄屏横向溢出滚动；tag 关闭×/整签、button 本体触控目标 ≥44px；date-picker 日格/time-picker 列/combobox 选项/calendar 日格/command 选项/pagination/anchor/breadcrumb/toolbar/tour/tree 展开钮/carousel 箭头圆点/table 小钮触控目标抬升；message/notification/toast/popconfirm 横幅窄屏 vw 宽度保护 + notification peek 栈触屏 tap 展开；popconfirm trigger=hover 触屏降级 tap；transfer/dynamic-tags/table 拖拽改按钮式（触屏替代 HTML5 DnD）；navigation-menu 顶级 bar 溢出「···」收纳；image/image-group 预览 pinch 双指缩放；table 过滤面板走共享 floating 引擎视口夹取
+- **bottom-navigation `pill` 胶囊形态**：悬浮胶囊导航——tablist 全圆角（`--oas-radius-full`）+ 悬浮边框 + 投影 + 窄屏自动收窄，fixed 悬浮加底部留白；内缩/投影走 `--oas-bottom-navigation-pill-inset` / `--oas-bottom-navigation-pill-shadow` 变量开口，dark 自动 token；默认关闭，与 fixed / hide-on-scroll / safe-area / layout / show-label / shift 全兼容；受控 value + roving 键盘 + aria-selected
 
 ### 修复
 
