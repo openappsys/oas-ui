@@ -168,3 +168,23 @@ test('menubar close-on-select="false"（menubar-checkbox demo）：radio 叶子�
     })
     .toBe(true)
 })
+
+// RTL 回归：根级 dir=rtl 时（页面加载后动态设置亦可）顶级下拉面板不得溢出视口右缘
+// ——曾现 bug：data-rtl 仅在 update() 刷新，加载后设 dir 面板沿用 LTR 形态右溢 24px
+test('menubar RTL：根级 dir=rtl 顶级下拉不溢出视口（data-rtl 面板同步时实时刷新）', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menubar')
+  await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'))
+  const info = await page.evaluate(() => {
+    const mb = document.querySelector('#menubar-basic')!
+    mb.shadowRoot!.querySelector<HTMLElement>('.bar [part="top-item"][data-value="view"]')!.click()
+    const sub = [...mb.shadowRoot!.querySelectorAll<HTMLElement>('[part="submenu"]')].find((s) =>
+      s.classList.contains('open'),
+    )!
+    const r = sub.getBoundingClientRect()
+    return { left: r.left, right: r.right, vw: window.innerWidth, dataRtl: mb.hasAttribute('data-rtl') }
+  })
+  expect(info.dataRtl, '打开面板时应同步 data-rtl 镜像开关').toBe(true)
+  expect(info.right, `面板右缘 ${Math.round(info.right)} 越出视口 ${info.vw}`).toBeLessThanOrEqual(info.vw + 1)
+})
