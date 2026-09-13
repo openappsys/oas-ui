@@ -468,4 +468,30 @@ describe('OASPageHeader responsive 响应式紧凑', () => {
     document.body.appendChild(el)
     expect(constructed).toBe(1)
   })
+
+  // ===== RTL（右到左）逻辑方向化 =====
+
+  describe('RTL 逻辑方向化', () => {
+    it('dir=rtl 时宿主打 data-rtl 钩子，移除 dir 后回退', () => {
+      const el = new OASPageHeader()
+      el.setAttribute('title', '页面标题')
+      document.body.appendChild(el)
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+      el.setAttribute('dir', 'rtl')
+      expect(el.hasAttribute('data-rtl')).toBe(true)
+      el.removeAttribute('dir')
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+    })
+
+    it('RTL：返回箭头镜像规则存在（指左 chevron 翻转为指向书写终点）', () => {
+      const el = new OASPageHeader()
+      el.setAttribute('title', '页面标题')
+      el.setAttribute('back', '')
+      el.setAttribute('dir', 'rtl')
+      document.body.appendChild(el)
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain(':host([data-rtl]) .back-icon')
+      expect(css).toContain('scaleX(-1)')
+    })
+  })
 })
