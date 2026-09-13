@@ -350,7 +350,8 @@ export class OASDynamicInput extends OASElement {
       addBtn.textContent = ''
       const icon = this.buildAddIcon()
       icon.style.verticalAlign = '-2px'
-      icon.style.marginRight = 'var(--oas-space-1)'
+      // 图标与文案间距走逻辑属性（RTL 下间隙自动落到文案另一侧）
+      icon.style.setProperty('margin-inline-end', 'var(--oas-space-1)')
       addBtn.appendChild(icon)
       const span = document.createElement('span')
       span.textContent = this.t('dynamicInput.add')

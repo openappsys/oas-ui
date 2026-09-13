@@ -831,3 +831,19 @@ describe('OASTransfer 触屏与按钮排序', () => {
     }
   })
 })
+
+describe('OASTransfer RTL 逻辑方向化', () => {
+  it('dir=rtl 时宿主镜像 data-rtl，默认 LTR 不带该标记', () => {
+    const ltr = mount()
+    expect(ltr.hasAttribute('data-rtl')).toBe(false)
+    const rtl = mount({ dir: 'rtl' })
+    expect(rtl.hasAttribute('data-rtl')).toBe(true)
+  })
+
+  it('CSS 含穿梭箭头镜像规则（data-rtl 下 scaleX(-1)，面板 flex 顺序自动镜像）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host([data-rtl]) .actions oas-icon')
+    expect(css).toContain('transform: scaleX(-1)')
+  })
+})

@@ -403,3 +403,15 @@ describe('OASTextarea autosize 无上限出口', () => {
     expect(t.style.maxHeight).toBe(`${Math.round(lh * 6 + 16)}px`)
   })
 })
+
+describe('OASTextarea RTL 逻辑方向化', () => {
+  it('清除钮与字数统计走逻辑属性（inset-inline-end / text-align: end），物理 right 清零', () => {
+    const el = mount({ clearable: '', 'show-count': '', maxlength: '10' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\.clear-btn \{[^}]*inset-inline-end:/)
+    expect(css).toContain('text-align: end')
+    expect(css).not.toContain('text-align: right')
+    expect(css).not.toMatch(/(^|[^-a-z])right:\s/)
+    expect(css).not.toMatch(/padding-(left|right)/)
+  })
+})
