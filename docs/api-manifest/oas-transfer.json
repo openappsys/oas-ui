@@ -49,7 +49,7 @@
     {
       "name": "item-height",
       "type": "string",
-      "default": "36",
+      "default": "",
       "observed": true
     },
     {
