@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
+import { isRtl } from '../../shared/direction.js'
 import type { OASTabPanel } from './oas-tab-panel.js'
 import { registeredTabsCapabilities, onTabsCapabilityRegistered } from './oas-tabs-capability.js'
 
@@ -468,6 +469,10 @@ a.tab[aria-selected='true'] {
 .scroll-btn[hidden] {
   display: none;
 }
+/* RTL：横向滚动箭头图标镜像（prev/next 指向随书写方向反转；纵向箭头不镜像） */
+:host([data-rtl]) .scroll-btn svg {
+  transform: scaleX(-1);
+}
 .scroll-btn:hover:not(:disabled) {
   color: var(--oas-color-primary);
   background: var(--oas-color-bg-hover);
@@ -607,8 +612,7 @@ a.tab[aria-selected='true'] {
   font-weight: 500;
 }
 
-/* ===== animated：选中态过渡 + 面板淡入（只动 color/border/opacity，不碰 layout） ===== */
-:host(.oas-tabs--animated) .tab {
+/* ===== animated：选中态过渡 + 面板淡入（只动 color/border/opacity，不碰 layout） ===== */:host(.oas-tabs--animated) .tab {
   transition:
     color var(--oas-transition-base) var(--oas-ease-out),
     border-color var(--oas-transition-base) var(--oas-ease-out),
@@ -678,6 +682,8 @@ export class OASTabs extends OASElement {
       'hide-content',
       'items',
       'context-menu',
+      // 书写方向：dir 变化触发重算 data-rtl 与滚动/方向键镜像
+      'dir',
     ]
   }
 
@@ -838,6 +844,8 @@ export class OASTabs extends OASElement {
   }
 
   protected override update(): void {
+    // RTL 逻辑方向化钩子：CSS :host([data-rtl]) 写镜像规则（滚动箭头图标翻转等）
+    this.toggleAttribute('data-rtl', isRtl(this))
     // items 数据驱动：items 属性存在时按其生成 oas-tab-panel（与子元素并存时 items 优先）
     this.syncItemsToPanels()
     // 只取直接子面板：嵌套 tabs（panel 内再放 oas-tabs）的面板归内层管理，不误抓
@@ -1122,7 +1130,8 @@ export class OASTabs extends OASElement {
       { passive: true },
     )
     // 滚轮滑动：横向标签栏溢出时滚轮纵向滚动转为横向滑动标签（浏览器标签栏交互惯例）；
-    // 仅溢出时 preventDefault 拦截（不溢出放行页面纵向滚动）；纵向标签栏滚轮本就纵向，无需转换
+    // 仅溢出时 preventDefault 拦截（不溢出放行页面纵向滚动）；纵向标签栏滚轮本就纵向，无需转换。
+    // RTL：横向 scrollLeft 为负值区间 [-max, 0]，前进方向与 LTR 相反（delta 取反，同 scroll-area）
     tablist.addEventListener(
       'wheel',
       (e: Event) => {
@@ -1134,7 +1143,7 @@ export class OASTabs extends OASElement {
         const delta = Math.abs(we.deltaY) >= Math.abs(we.deltaX) ? we.deltaY : we.deltaX
         if (delta === 0) return
         we.preventDefault()
-        tablist.scrollLeft += delta
+        tablist.scrollLeft += !this.isVertical() && isRtl(this) ? -delta : delta
       },
       { passive: false },
     )
@@ -1155,17 +1164,21 @@ export class OASTabs extends OASElement {
     return pos === 'left' || pos === 'right'
   }
 
-  /** 点击箭头滚动一段（约一个视口的 60%） */
+  /** 点击箭头滚动一段（约一个视口的 60%）。
+   *  RTL：横向 scrollLeft 为负值区间，滚动方向镜像（dir 取反；纵向不镜像） */
   private scrollTabs(dir: 1 | -1): void {
     const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
     if (!tablist) return
     const vertical = this.isVertical()
-    const amount = (vertical ? tablist.clientHeight : tablist.clientWidth) * 0.6 * dir
+    const mirror = !vertical && isRtl(this) ? -1 : 1
+    const amount = (vertical ? tablist.clientHeight : tablist.clientWidth) * 0.6 * dir * mirror
     if (vertical) tablist.scrollBy({ top: amount, behavior: 'smooth' })
     else tablist.scrollBy({ left: amount, behavior: 'smooth' })
   }
 
-  /** 按溢出与滚动位置同步箭头显隐/可用态（可外部触发：ResizeObserver / scroll / update） */
+  /** 按溢出与滚动位置同步箭头显隐/可用态（可外部触发：ResizeObserver / scroll / update）。
+   *  RTL：横向 scrollLeft ∈ [-max, 0]——书写起点（右端）为 0、终点（左端）为 -max，
+   *  atStart/atEnd 按该语义换算（同 scroll-area 正例的 min/max 语义） */
   private syncScrollControls(): void {
     const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
     const start = this.shadow.querySelector('.scroll-start') as HTMLButtonElement | null
@@ -1181,9 +1194,17 @@ export class OASTabs extends OASElement {
     start.hidden = !overflow
     end.hidden = !overflow
     if (!overflow) return
-    // 到起点禁用 prev，到终点禁用 next（阈值 1px 容差）
-    const atStart = scrollPos <= 1
-    const atEnd = scrollPos + clientSize >= scrollSize - 1
+    // 到书写起点禁用 prev、到书写终点禁用 next（阈值 1px 容差）
+    let atStart: boolean
+    let atEnd: boolean
+    if (!vertical && isRtl(this)) {
+      const max = scrollSize - clientSize
+      atStart = scrollPos >= -1
+      atEnd = scrollPos <= -(max - 1)
+    } else {
+      atStart = scrollPos <= 1
+      atEnd = scrollPos + clientSize >= scrollSize - 1
+    }
     start.disabled = atStart
     end.disabled = atEnd
     start.setAttribute('aria-disabled', String(atStart))
@@ -1331,19 +1352,23 @@ export class OASTabs extends OASElement {
     this.renderMoreDropdown()
   }
 
-  /** 计算并标记「不完全可见」的 tab（data-offview；左滚出 + 右滚出 + 部分滚出），滚动/resize 时更新 */
+  /** 计算并标记「不完全可见」的 tab（data-offview；两端滚出 + 部分滚出），滚动/resize 时更新。
+   *  RTL：横向 scrollLeft 为负值，物理可见区间起点换算为 scrollWidth - clientWidth + scrollLeft */
   private updateMoreOffview(): void {
     const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
     if (!tablist || !this.hasAttr('more')) return
     const vertical = this.isVertical()
+    const rtl = !vertical && isRtl(this)
     const scrollStart = vertical ? tablist.scrollTop : tablist.scrollLeft
     const clientSize = vertical ? tablist.clientHeight : tablist.clientWidth
-    const viewEnd = scrollStart + clientSize
+    // RTL：scrollStart 为负值，物理视口区间 = [scrollWidth - clientWidth + scrollLeft, + clientWidth]
+    const viewStart = rtl ? tablist.scrollWidth - clientSize + scrollStart : scrollStart
+    const viewEnd = viewStart + clientSize
     for (const t of this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value]')) {
       const start = vertical ? t.offsetTop : t.offsetLeft
       const end = start + (vertical ? t.offsetHeight : t.offsetWidth)
       // 不完全可见即收进 more（部分滚出也算；floor 容差避免 0.5px 抖动）
-      const offview = start < scrollStart || Math.floor(end) > Math.floor(viewEnd)
+      const offview = start < viewStart || Math.floor(end) > Math.floor(viewEnd)
       t.toggleAttribute('data-offview', offview)
     }
   }
@@ -1440,12 +1465,16 @@ export class OASTabs extends OASElement {
     const manual = this.getAttr('activation', 'auto') === 'manual'
     const active = this.getAttr('active', '') || enabledValues[0] || ''
     const idx = enabledValues.indexOf(active)
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    // 横向形态方向键跟随书写方向：RTL 下 ArrowRight = prev（ARIA 横向 tab 键序随 dir 镜像）
+    const horizontalRtl = !this.isVertical() && isRtl(this)
+    const nextKey = horizontalRtl ? 'ArrowLeft' : 'ArrowRight'
+    const prevKey = horizontalRtl ? 'ArrowRight' : 'ArrowLeft'
+    if (e.key === nextKey || e.key === 'ArrowDown') {
       e.preventDefault()
       const next = enabledValues[(idx + 1) % enabledValues.length] ?? ''
       if (manual) this.moveFocus(next)
       else this.activate(next)
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    } else if (e.key === prevKey || e.key === 'ArrowUp') {
       e.preventDefault()
       const prev = enabledValues[(idx - 1 + enabledValues.length) % enabledValues.length] ?? ''
       if (manual) this.moveFocus(prev)
@@ -1461,7 +1490,7 @@ export class OASTabs extends OASElement {
         this.activate(value)
       }
     } else if (e.key === 'PageDown' || e.key === 'PageUp') {
-      // 溢出时 PageDown/PageUp 滚动一屏（键盘可达的溢出滚动）
+      // 溢出时 PageDown/PageUp 滚动一屏（键盘可达的溢出滚动）；RTL 横向滚动方向镜像
       const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
       if (!tablist) return
       const vertical = this.isVertical()
@@ -1471,7 +1500,8 @@ export class OASTabs extends OASElement {
         : tablist.scrollWidth > tablist.clientWidth + 1
       if (!overflow) return
       e.preventDefault()
-      const amount = size * (e.key === 'PageDown' ? 1 : -1)
+      const mirror = !vertical && isRtl(this) ? -1 : 1
+      const amount = size * (e.key === 'PageDown' ? 1 : -1) * mirror
       if (vertical) tablist.scrollBy({ top: amount, behavior: 'smooth' })
       else tablist.scrollBy({ left: amount, behavior: 'smooth' })
     }

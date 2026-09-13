@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, iconNames, type IconName } from '@oas-ui/icons'
 import { getViewport } from '../../overlay/floating/index.js'
+import { isRtl } from '../../shared/direction.js'
 
 export interface BreadcrumbItem {
   label: string
@@ -159,11 +160,12 @@ nav.ellipsis .item-text {
   white-space: nowrap;
   max-width: 100%;
 }
-/* 折叠/下拉共用面板：锚定 .item（position:relative），top 100% 落在项下方 */
+/* 折叠/下拉共用面板：锚定 .item（position:relative），top 100% 落在项下方。
+   inset 逻辑化：LTR 贴触发项左缘、RTL 自动镜像贴右缘（书写方向起点对齐） */
 .menu-panel {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  inset-inline-start: 0;
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
   min-width: 140px;
   max-width: 260px;
@@ -177,10 +179,11 @@ nav.ellipsis .item-text {
 .menu-panel.open {
   display: block;
 }
-/* 下拉水平翻转：面板右缘超出视口（窄视口长链接）时 right:0 对齐回折进视口（JS 检测后切类） */
+/* 下拉水平翻转：面板浮出侧缘超出视口（窄视口长链接）时对齐另一缘回折进视口（JS 检测后切类）。
+   flip-right 逻辑 inset：LTR 右对齐回折、RTL 自动镜像为左对齐回折 */
 .menu-panel.flip-right {
-  left: auto;
-  right: 0;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
 }
 /* 下拉垂直翻转：面板下缘超出视口（页面底部/软键盘压缩可见区）时翻到触发器上方 */
 .menu-panel.flip-down {
@@ -369,6 +372,8 @@ export class OASBreadcrumb extends OASElement {
       'color',
       'variant',
       'active-last',
+      // 书写方向：dir 变化触发重算 data-rtl 与翻转判定
+      'dir',
     ]
   }
 
@@ -410,6 +415,8 @@ export class OASBreadcrumb extends OASElement {
   protected override update(): void {
     const nav = this.shadow.querySelector('nav')
     if (!nav) return
+    // RTL 逻辑方向化钩子：面板定位/翻转走逻辑 inset 自动镜像，data-rtl 供样式钩子与测试
+    this.toggleAttribute('data-rtl', isRtl(this))
     // 子元素通道：items 属性未显式设置时监听 light DOM 子元素变化（重连后重建观察器）
     this.ensureChildObserver()
     // 导航 aria-label locale 驱动（setLocale 切换自动重刷）
@@ -957,15 +964,18 @@ export class OASBreadcrumb extends OASElement {
     }
   }
 
-  /** 下拉水平翻转：面板右缘超出视口（offsetWidth 布局尺寸判定）→ right:0 对齐回折进视口。
+  /** 下拉水平翻转：LTR 检面板右缘超出视口；RTL 下面板贴触发项右缘向左展开，改检左缘。
+   *  flip-right 类 CSS 已逻辑化，RTL 下自动镜像为左对齐回折。
    *  垂直翻转：面板下缘超出可见视口（getViewport：visualViewport 优先，软键盘/工具栏压缩后仍准确）
    *  → 翻到触发器上方（flip-down）。 */
   private placePanel(panel: HTMLElement, btn: HTMLElement): void {
     const rect = btn.getBoundingClientRect()
     const vp = getViewport()
     const panelWidth = panel.offsetWidth
-    if (vp.width > 0 && panelWidth > 0 && rect.right + panelWidth > vp.width - 8) {
-      panel.classList.add('flip-right')
+    const rtl = isRtl(this)
+    if (vp.width > 0 && panelWidth > 0) {
+      const overflows = rtl ? rect.left - panelWidth < 8 : rect.right + panelWidth > vp.width - 8
+      panel.classList.toggle('flip-right', overflows)
     } else {
       panel.classList.remove('flip-right')
     }

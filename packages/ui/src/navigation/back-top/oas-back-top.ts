@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 /**
  * 缓动函数表：滚动动画的缓动曲线（t ∈ [0,1]）。
@@ -271,7 +272,8 @@ const STYLE = `
 .tooltip {
   position: absolute;
   bottom: calc(100% + var(--oas-space-2));
-  right: 0;
+  /* 逻辑 inset：对齐按钮书写方向终点缘（LTR 右 / RTL 左） */
+  inset-inline-end: 0;
   z-index: 1;
   padding: var(--oas-space-1) var(--oas-space-2);
   border-radius: var(--oas-radius-sm);
@@ -297,7 +299,8 @@ const STYLE = `
 .badge {
   position: absolute;
   top: -4px;
-  right: -4px;
+  /* 逻辑 inset：徽标挂书写方向终点角（LTR 右上 / RTL 左上） */
+  inset-inline-end: -4px;
   z-index: 1;
   min-width: var(--oas-control-height-xs);
   height: var(--oas-control-height-xs);
@@ -344,6 +347,8 @@ export class OASBackTop extends OASElement {
       'tooltip',
       'badge',
       'draggable',
+      // 书写方向：dir 变化触发重算 data-rtl
+      'dir',
     ]
   }
 
@@ -873,6 +878,8 @@ export class OASBackTop extends OASElement {
   protected override update(): void {
     const btn = this.btn
     if (!btn) return
+    // RTL 逻辑方向化钩子：tooltip/badge 走逻辑 inset 自动镜像；显式定位 API 保留物理
+    this.toggleAttribute('data-rtl', isRtl(this))
     this.updateScrollTarget()
     // 按钮 aria-label locale 驱动（setLocale 切换自动重刷）
     btn.setAttribute('aria-label', this.t('backTop.backToTop'))

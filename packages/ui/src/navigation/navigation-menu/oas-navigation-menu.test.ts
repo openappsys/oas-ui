@@ -1234,3 +1234,46 @@ describe('OASNavigationMenu 顶级溢出收纳（移动端窄屏）', () => {
     expect(viewport(el).classList.contains('flip-right')).toBe(true)
   })
 })
+
+// ============ RTL（右到左）逻辑方向化 ============
+
+describe('RTL 逻辑方向化', () => {
+  it('dir=rtl 时宿主打 data-rtl 钩子，移除 dir 后回退', () => {
+    const el = mount()
+    expect(el.hasAttribute('data-rtl')).toBe(false)
+    el.setAttribute('dir', 'rtl')
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    el.removeAttribute('dir')
+    expect(el.hasAttribute('data-rtl')).toBe(false)
+  })
+
+  it('RTL：面板翻转判定镜像（左缘溢出检查替代右缘）', () => {
+    const el = mount({ 'delay-duration': '0', dir: 'rtl' })
+    const p = panel(el)
+    // 视口宽 1024、面板 300：LTR 下右缘不溢出不翻转；RTL 下面板缺省右对齐 bar 向左展开，
+    // barRect.right(0) - 300 < 8 判左缘溢出 → flip-right（RTL 下该类 CSS 镜像为左对齐回折）
+    Object.defineProperty(p, 'scrollWidth', { value: 300, configurable: true })
+    Object.defineProperty(window, 'innerWidth', { value: 1024, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 2000, configurable: true })
+    topItems(el)[0]!.click()
+    expect(viewport(el).classList.contains('flip-right')).toBe(true)
+  })
+
+  it('RTL：横向方向键镜像（ArrowRight = 书写起点方向 = prev）', () => {
+    const el = mount({ dir: 'rtl' })
+    // LTR 下 ArrowLeft 从首项回绕到末项；RTL 镜像后 ArrowRight 走同路径（active 落末项）
+    topItems(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(topItems(el)[2]!.classList.contains('active')).toBe(true)
+    // ArrowLeft 镜像为 next：回到首项
+    topItems(el)[2]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    expect(topItems(el)[0]!.classList.contains('active')).toBe(true)
+  })
+
+  it('RTL：样式表含 data-rtl 镜像规则（sub-chevron / back chevron 翻转 + sub 面板动画反向）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host([data-rtl]) .sub-trigger .sub-chevron')
+    expect(css).toContain('scaleX(-1)')
+    expect(css).toContain(':host([data-rtl]) .panel[data-motion')
+  })
+})
