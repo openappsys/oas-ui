@@ -204,6 +204,14 @@ input:disabled:hover {
   top: auto !important;
   left: auto !important;
 }
+/* 选项行触控目标抬升：移动形态（抽屉内）选项行最小高度对齐触摸目标 token
+   （--oas-touch-target-min，theme 默认 44px；flex 垂直居中保持可读），
+   PC 基础行高不受影响；列表在抽屉内容区内滚动 */
+:host([data-mobile-sheet]) .option {
+  min-height: var(--oas-touch-target-min, 44px);
+  display: flex;
+  align-items: center;
+}
 .listbox {
   max-height: 240px;
   overflow-y: auto;

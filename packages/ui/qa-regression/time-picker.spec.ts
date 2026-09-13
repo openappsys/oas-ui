@@ -55,6 +55,11 @@ test('time-picker 移动端：底部抽屉贴视口底展开 + 时间列可交�
         // 面板可用：抽屉内能取到时间列选项
         columns: dropdown.querySelectorAll('.column').length,
         options: dropdown.querySelectorAll('.option').length,
+        // 触控目标抬升：首个时间列选项行几何
+        optionH: (() => {
+          const opt = dropdown.querySelector<HTMLElement>('.column .option')!
+          return opt.getBoundingClientRect().height
+        })(),
       }
     })
     expect(info.sheetOpen, '移动端展开时 sheet 应带 open').toBe(true)
@@ -67,6 +72,8 @@ test('time-picker 移动端：底部抽屉贴视口底展开 + 时间列可交�
     expect(info.handleVisible, 'drag handle 应可见').toBe(true)
     expect(info.columns, '抽屉内应渲染时间列').toBeGreaterThan(0)
     expect(info.options, '抽屉内时间列应有可点选项').toBeGreaterThan(0)
+    // 触控目标抬升：移动形态下时间列选项行高度 ≥44px（--oas-touch-target-min）
+    expect(info.optionH, `移动形态时间选项行高度 ${Math.round(info.optionH)}px 应 ≥44px`).toBeGreaterThanOrEqual(44)
     // 抽屉内点选交互：点第一列首个可选项 → 组件进入待提交态（选中态可见）
     await host.evaluate((el) => {
       const col = el.shadowRoot!.querySelector<HTMLElement>('.column')!

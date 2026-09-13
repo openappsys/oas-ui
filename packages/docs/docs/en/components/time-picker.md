@@ -122,7 +122,7 @@ Same positioning contract as date-picker: `fixed` + collision flipping + viewpor
 
 ## Mobile form (bottom sheet)
 
-On touch screens (coarse pointer) or narrow viewports (<768px), the panel is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the hour/minute/second columns (including the dual-column range layout) scroll inside the sheet; the desktop form keeps the original floating dropdown.
+On touch screens (coarse pointer) or narrow viewports (<768px), the panel is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the hour/minute/second columns (including the dual-column range layout) scroll inside the sheet; the desktop form keeps the original floating dropdown. Inside the sheet, time option rows are lifted to a 44px touch target (`--oas-touch-target-min`).
 
 ## API
 
