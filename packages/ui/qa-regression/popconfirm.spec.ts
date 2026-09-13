@@ -274,3 +274,76 @@ function hexToRgb(hex: string): string {
   const b = n & 255
   return `rgb(${r}, ${g}, ${b})`
 }
+
+test('popconfirm 窄视口 vw 保护：320px 屏宽时长标题面板不溢出视口', async ({ page }) => {
+  // 曾现缺口：面板固定 max-width 360px 无 vw 兜底，窄视口(<360px)溢出屏幕。
+  // 现要求 max-width 带 100vw 钳制（两侧各留 12px）。
+  await page.setViewportSize({ width: 320, height: 667 })
+  await page.goto('/components/popconfirm.html', { waitUntil: 'domcontentloaded' })
+  await mountReg(page, 'pc-narrow-reg')
+  await page.evaluate(() => {
+    const el = document.querySelector('#pc-narrow-reg')!
+    el.setAttribute('title', '窄视口回归：这是一条足够长的确认标题内容，用于验证面板不溢出屏幕边界。'.repeat(2))
+    el.setAttribute('open', '')
+  })
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#pc-narrow-reg')
+        ?.shadowRoot?.querySelector('[part="popover"]')
+        ?.getAttribute('aria-hidden') === 'false',
+    null,
+    { timeout: 5000 },
+  )
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#pc-narrow-reg')!
+    const pop = el.shadowRoot!.querySelector<HTMLElement>('[part="popover"]')!
+    const b = pop.getBoundingClientRect()
+    return { vw: window.innerWidth, left: b.left, right: b.right, maxWidth: getComputedStyle(pop).maxWidth }
+  })
+  expect(r.left).toBeGreaterThanOrEqual(0)
+  expect(r.right).toBeLessThanOrEqual(r.vw)
+  // computed max-width = min(360, 100vw - 24) = 296px @320 视口
+  expect(parseFloat(r.maxWidth), 'max-width 被 vw 兜底钳制').toBeLessThanOrEqual(296.5)
+})
+
+test('popconfirm coarse 降级：trigger=hover 触屏 tap 切换开合 + 外点关闭', async ({ browser, baseURL }) => {
+  // 曾现缺口：trigger=hover 在触屏上无 hover 语义，气泡永远打不开。
+  // 现要求 coarse pointer 下 hover 通道停用、点击通道接管 tap 切换（点开/再点关/外点关）。
+  const ctx = await browser.newContext({ hasTouch: true, viewport: { width: 375, height: 667 } })
+  const page = await ctx.newPage()
+  try {
+    await page.goto(`${baseURL ?? ''}/components/popconfirm.html`, { waitUntil: 'domcontentloaded' })
+    const coarse = await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches)
+    expect(coarse, 'touch 上下文应命中 pointer: coarse').toBe(true)
+    await mountReg(page, 'pc-coarse-reg', ['trigger=hover'])
+    // 点按开（tap 通道，无 150ms hover 防抖；:scope > 限定 light DOM 触发按钮，避开 shadow 内按钮）
+    const trig = page.locator('#pc-coarse-reg > button')
+    await trig.tap()
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('#pc-coarse-reg')
+          ?.shadowRoot?.querySelector('[part="popover"]')
+          ?.getAttribute('aria-hidden') === 'false',
+      null,
+      { timeout: 5000 },
+    )
+    // 外点关闭（触屏无 hover-out，复用 handleOutside）
+    await page.touchscreen.tap(10, 600)
+    await page.waitForFunction(() => document.querySelector('#pc-coarse-reg')?.hasAttribute('open') === false, null, {
+      timeout: 5000,
+    })
+    // 再点按开，再点按 trigger 关（tap 切换闭环）
+    await trig.tap()
+    await page.waitForFunction(() => document.querySelector('#pc-coarse-reg')?.hasAttribute('open') === true, null, {
+      timeout: 5000,
+    })
+    await trig.tap()
+    await page.waitForFunction(() => document.querySelector('#pc-coarse-reg')?.hasAttribute('open') === false, null, {
+      timeout: 5000,
+    })
+  } finally {
+    await ctx.close()
+  }
+})

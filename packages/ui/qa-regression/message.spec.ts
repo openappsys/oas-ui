@@ -181,3 +181,39 @@ test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性
     ),
   )
 })
+
+test('message 窄视口 vw 保护：320px 屏宽时长文本消息不溢出视口', async ({ page }) => {
+  // 曾现缺口：:host 固定 max-width 360px，窄视口(<360px)长文本两边溢出屏幕。
+  // 现要求 max-width 带 100vw 兜底钳制（两侧各留 12px）。
+  await page.setViewportSize({ width: 320, height: 667 })
+  await page.goto('/components/message.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, { timeout: 10000 })
+  const longText = '窄视口回归：这是一条足够长会触发换行的消息内容，用于验证消息框不溢出屏幕边界。'.repeat(2)
+  await page.evaluate((t) => (window as any).message.info(t, { duration: 0 }), longText)
+  await page.waitForFunction(
+    (t) =>
+      [...document.querySelectorAll('oas-message')].some((el) => (el.textContent ?? '').includes(t.slice(0, 12))),
+    longText,
+    { timeout: 5000 },
+  )
+  const r = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('oas-message')].pop()!
+    const box = el.shadowRoot!.querySelector<HTMLElement>('[part="box"]')!.getBoundingClientRect()
+    const host = el.getBoundingClientRect()
+    return {
+      vw: window.innerWidth,
+      hostLeft: host.left,
+      hostRight: host.right,
+      boxLeft: box.left,
+      boxRight: box.right,
+      maxWidth: getComputedStyle(el).maxWidth,
+    }
+  })
+  // 宿主与内容盒均不越出视口
+  expect(r.hostLeft).toBeGreaterThanOrEqual(0)
+  expect(r.hostRight).toBeLessThanOrEqual(r.vw)
+  expect(r.boxLeft).toBeGreaterThanOrEqual(0)
+  expect(r.boxRight).toBeLessThanOrEqual(r.vw)
+  // computed max-width = min(360, 100vw - 24) = 296px @320 视口
+  expect(parseFloat(r.maxWidth), 'max-width 被 vw 兜底钳制').toBeLessThanOrEqual(296.5)
+})

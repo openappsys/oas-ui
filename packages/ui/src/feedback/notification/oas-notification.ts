@@ -6,6 +6,8 @@ const STYLE = `
   font-family: inherit;
   pointer-events: auto;
   width: var(--oas-notification-width, 320px);
+  /* 窄视口保护：固定宽度在窄屏按视口宽度钳制（两侧各留 12px），不溢出视口 */
+  max-width: calc(100vw - var(--oas-space-6));
   margin-bottom: var(--oas-space-3);
 }
 .box {

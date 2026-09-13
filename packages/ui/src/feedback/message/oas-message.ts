@@ -6,7 +6,8 @@ const STYLE = `
   display: block;
   font-family: inherit;
   pointer-events: auto;
-  max-width: 360px;
+  /* 窄视口保护：小于 360px 的屏宽时按视口宽度钳制（两侧各留 12px），长文本不溢出 */
+  max-width: min(360px, calc(100vw - var(--oas-space-6)));
   margin-bottom: var(--oas-space-2);
   /* 进出场动画时长开口（用户可覆盖） */
   --oas-message-anim-in: 220ms;

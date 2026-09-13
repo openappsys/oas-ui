@@ -138,7 +138,9 @@ const STACK_STYLE = `
   opacity: 0.55;
   transition: max-height 0.25s ease, opacity 0.25s ease;
 }
-.oas-notification-stack.stack-peek:hover oas-notification:not(:last-of-type) {
+/* 展开：hover（桌面）与 stack-peek-expanded（触屏点按切换，tap 通道在 ensureStack 绑定）同声明 */
+.oas-notification-stack.stack-peek:hover oas-notification:not(:last-of-type),
+.oas-notification-stack.stack-peek.stack-peek-expanded oas-notification:not(:last-of-type) {
   max-height: 60vh;
   overflow: visible;
   opacity: 1;
@@ -170,6 +172,10 @@ function ensureStack(options: NotificationOptions): HTMLElement {
   const stack = document.createElement('div')
   stack.className = `oas-notification-stack${stackMode ? ` stack-${stackMode}` : ''}`
   stack.style.cssText = `position: fixed; display: flex; flex-direction: column; z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-toast, 1070)); ${positionCss(position, offset)}`
+  if (stackMode === 'peek') {
+    // 触屏无 hover 语义：点按栈容器切换展开/收起（peek 折叠态的 tap 通道，与 :hover 展开同规则）
+    stack.addEventListener('click', () => stack.classList.toggle('stack-peek-expanded'))
+  }
   byKey.set(key, stack)
   target.appendChild(stack)
   return stack
