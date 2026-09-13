@@ -295,3 +295,37 @@ test('image 预览：双指捏合缩放可用（pointer 双触点驱动 scale，
   })
   expect(t2).toContain('scale(1.5)')
 })
+
+// —— 移动端视觉复核缺陷：预览工具栏窄屏挤压，7 个工具钮标签竖排两行（「放/大」分行）——
+// 修复：工具钮 white-space:nowrap 不竖排分行；coarse 下工具栏限宽横向滚动收纳。
+test('image 预览工具栏窄屏（coarse 375/320）：工具钮单行等高不竖排，工具栏横向滚动收纳', async ({ browser }) => {
+  const ctx = await browser.newContext({ hasTouch: true, viewport: { width: 375, height: 667 } })
+  const p = await ctx.newPage()
+  await p.goto('/components/image.html', { waitUntil: 'domcontentloaded' })
+  await up(p, '#image-preview')
+  await p.locator('#image-preview').click()
+  await p.waitForSelector('[data-oas-image-preview-portal]', { timeout: 15000 })
+  const r = await p.evaluate(() => {
+    const portal = document.querySelector('[data-oas-image-preview-portal]')!
+    const bar = portal.shadowRoot!.querySelector<HTMLElement>('.preview-toolbar')!
+    const tools = [...bar.querySelectorAll<HTMLElement>('.tool')]
+    const coarse = window.matchMedia('(pointer: coarse)').matches
+    const heights = tools.map((t) => t.getBoundingClientRect().height)
+    return {
+      coarse,
+      count: tools.length,
+      maxH: Math.max(...heights),
+      minH: Math.min(...heights),
+      barOverflowX: getComputedStyle(bar).overflowX,
+      barClientW: bar.clientWidth,
+      barScrollW: bar.scrollWidth,
+    }
+  })
+  expect(r.coarse, 'touch context 应命中 pointer: coarse').toBe(true)
+  expect(r.count).toBeGreaterThanOrEqual(7)
+  // 竖排分行的直接特征：某个钮被压成两行高（>40px）或同排钮高不一致
+  expect(r.maxH, '工具钮应保持单行高度（≤40px）').toBeLessThanOrEqual(40)
+  expect(r.maxH - r.minH, '同排工具钮高度应一致').toBeLessThanOrEqual(1)
+  expect(r.barOverflowX, 'coarse 下工具栏应横向滚动收纳').toBe('auto')
+  await ctx.close()
+})

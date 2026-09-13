@@ -144,3 +144,29 @@ test('upload picture-card 触屏（coarse）：删除×常显且触控热区规�
   expect(r.pointerEvents).toBe('auto')
   await ctx.close()
 })
+
+// —— 移动端视觉复核缺陷：picture-card 删除× dark 对比度不足（深色徽标配深色 × 融为一团）——
+// 修复：徽标底色/字色成对取 text-primary+bg——dark 下反转为浅底深字。
+test('upload picture-card：dark 下删除×徽标反转为浅底深字（× 在深色缩略图上可读）', async ({ page }) => {
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-full')
+  await page.waitForFunction(
+    () => document.querySelector('#upload-full')?.shadowRoot?.querySelectorAll('.card').length === 3,
+    null,
+    { timeout: 10000 },
+  )
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await page.waitForTimeout(300)
+  const r = await page.evaluate(() => {
+    const remove = document.querySelector('#upload-full')!.shadowRoot!.querySelector('.card .remove') as HTMLElement
+    const cs = getComputedStyle(remove)
+    const lum = (rgb: string) => {
+      const [rr, gg, bb] = rgb.match(/\d+/g)!.map(Number)
+      return 0.2126 * rr! + 0.7152 * gg! + 0.0722 * bb!
+    }
+    return { bg: cs.backgroundColor, color: cs.color, bgL: lum(cs.backgroundColor), colorL: lum(cs.color) }
+  })
+  expect(r.bgL, `dark 下徽标底色应接近白（实际 ${r.bg}）`).toBeGreaterThan(200)
+  expect(r.colorL, `dark 下 × 应为深色（实际 ${r.color}）`).toBeLessThan(80)
+  expect(r.bgL - r.colorL, '徽标底/字亮度差应足够大').toBeGreaterThan(120)
+})
