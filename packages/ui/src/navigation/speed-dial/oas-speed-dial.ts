@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { isRtl } from '../../shared/direction.js'
 
 export interface SpeedDialAction {
   label: string
@@ -30,7 +31,8 @@ const STYLE = `
   font-family: inherit;
   position: fixed;
   bottom: var(--oas-space-6);
-  right: var(--oas-space-6);
+  /* 逻辑 inset：RTL 下悬浮主钮自动镜像到书写方向终点侧（左下角） */
+  inset-inline-end: var(--oas-space-6);
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-fixed, 1030));
 }
 :host([hidden]) {
@@ -290,7 +292,7 @@ const STYLE = `
  */
 export class OASSpeedDial extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['actions', 'direction', 'open', 'trigger', 'geometry', 'radius']
+    return ['actions', 'direction', 'open', 'trigger', 'geometry', 'radius', 'dir']
   }
 
   private actionsList: SpeedDialAction[] = []
@@ -359,6 +361,8 @@ export class OASSpeedDial extends OASElement {
   }
 
   protected override update(): void {
+    // RTL 逻辑方向化钩子：宿主 data-rtl 供样式钩子与测试；展开方向按书写方向镜像
+    this.toggleAttribute('data-rtl', isRtl(this))
     this.parseActions()
     this.syncDirection()
     this.syncGeometry()
@@ -440,13 +444,26 @@ export class OASSpeedDial extends OASElement {
   }
 
   private syncDirection(): void {
-    this.dial?.setAttribute('data-dir', this.validDirection())
+    this.dial?.setAttribute('data-dir', this.effectiveDirection())
   }
 
   /** direction 合法化：非法值回退 up */
   private validDirection(): string {
     const dir = this.getAttr('direction', 'up')
     return ['up', 'down', 'left', 'right'].includes(dir) ? dir : 'up'
+  }
+
+  /**
+   * 有效展开方向 = 合法化 direction + RTL 书写方向镜像。
+   * 横向展开（left/right）是「朝书写方向终点/起点」的逻辑语义：RTL 下 left↔right 互换，
+   * 使 direction="left"（朝书写起点）在两种方向下都朝视觉外侧展开；纵向 up/down 无方向性，不镜像。
+   */
+  private effectiveDirection(): string {
+    const dir = this.validDirection()
+    if (!isRtl(this)) return dir
+    if (dir === 'left') return 'right'
+    if (dir === 'right') return 'left'
+    return dir
   }
 
   // —— 圆弧几何展开 ——
@@ -491,7 +508,7 @@ export class OASSpeedDial extends OASElement {
   private arcOffset(index: number, count: number): [number, number] {
     if (this.geometry === 'linear' || count === 0) return [0, 0]
     const rad = (deg: number): number => (deg * Math.PI) / 180
-    const base = DIR_ANGLE[this.validDirection()] ?? 90
+    const base = DIR_ANGLE[this.effectiveDirection()] ?? 90
     let angle: number
     if (this.geometry === 'circle') {
       angle = 90 - (index * 360) / count
@@ -612,10 +629,13 @@ export class OASSpeedDial extends OASElement {
     if (!this.hasAttr('open')) return
     const btns = this.actionButtons()
     if (btns.length === 0) return
-    // 方向键轴与展开方向对齐：纵向用 ArrowUp/Down，横向用 ArrowLeft/Right
-    const vertical = this.validDirection() === 'up' || this.validDirection() === 'down'
-    const nextKey = vertical ? 'ArrowDown' : 'ArrowRight'
-    const prevKey = vertical ? 'ArrowUp' : 'ArrowLeft'
+    // 方向键轴与有效展开方向对齐：纵向用 ArrowUp/Down，横向用 ArrowLeft/Right
+    //（横向键随书写方向镜像：RTL 下 ArrowLeft = 朝书写终点 = next）
+    const eff = this.effectiveDirection()
+    const vertical = eff === 'up' || eff === 'down'
+    const rtl = isRtl(this)
+    const nextKey = vertical ? 'ArrowDown' : rtl ? 'ArrowLeft' : 'ArrowRight'
+    const prevKey = vertical ? 'ArrowUp' : rtl ? 'ArrowRight' : 'ArrowLeft'
     let idx = btns.indexOf(this.shadow.activeElement as HTMLButtonElement)
     if (e.key === nextKey) {
       e.preventDefault()
