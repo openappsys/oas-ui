@@ -191,8 +191,7 @@ test('message 窄视口 vw 保护：320px 屏宽时长文本消息不溢出视�
   const longText = '窄视口回归：这是一条足够长会触发换行的消息内容，用于验证消息框不溢出屏幕边界。'.repeat(2)
   await page.evaluate((t) => (window as any).message.info(t, { duration: 0 }), longText)
   await page.waitForFunction(
-    (t) =>
-      [...document.querySelectorAll('oas-message')].some((el) => (el.textContent ?? '').includes(t.slice(0, 12))),
+    (t) => [...document.querySelectorAll('oas-message')].some((el) => (el.textContent ?? '').includes(t.slice(0, 12))),
     longText,
     { timeout: 5000 },
   )

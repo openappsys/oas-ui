@@ -246,6 +246,19 @@ describe('OASImage preview 增强', () => {
     expect(link.getAttribute('href')).toBe('/photo.png')
   })
 
+  it('预览工具栏窄屏收纳：工具钮 nowrap 不竖排分行，coarse 下工具栏横向滚动', () => {
+    const el = mountPreview()
+    ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 工具钮标签（放大/缩小/水平翻转…）禁换行——窄屏挤压时曾逐字竖排成两行（「放/大」分行）
+    const toolBlock = css.match(/\.tool \{([^}]*)\}/)?.[1] ?? ''
+    expect(toolBlock).toMatch(/white-space:\s*nowrap/)
+    // coarse 下工具栏横向滚动收纳（7 个钮一排放不下时滚动，不折行不挤压钮体）
+    const coarseCss = css.slice(css.indexOf('@media (pointer: coarse)'))
+    expect(coarseCss).toContain('.preview-toolbar')
+    expect(coarseCss).toMatch(/overflow-x:\s*auto/)
+  })
+
   it('无 preview 属性时点击不打开浮层、不派发事件', () => {
     const el = new OASImage()
     el.setAttribute('src', '/a.png')

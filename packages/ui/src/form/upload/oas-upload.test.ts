@@ -252,6 +252,16 @@ describe('OASUpload list-type', () => {
     expect(actHoverBlock).toMatch(/pointer-events:\s*auto/)
   })
 
+  it('picture-card：删除×徽标底色/字色成对取 text-primary+bg（暗色下反转，× 在深色缩略图上可读）', () => {
+    const el = mount({ 'list-type': 'picture-card' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const removeBlock = css.match(/\.card \.remove \{([^}]*)\}/)?.[1] ?? ''
+    // 徽标底色与字色用同一对反转 token：light 深底白字、dark 浅底深字，
+    // 不再用 color-overlay（双主题均为深色半透明）配 bg 字色——dark 下 × 与底融为一体
+    expect(removeBlock).toMatch(/background:\s*var\(--oas-color-text-primary\)/)
+    expect(removeBlock).toMatch(/color:\s*var\(--oas-color-bg\)/)
+  })
+
   it('preview 浮层：Esc 关闭并还原焦点', () => {
     const el = mount({ 'list-type': 'picture-card' })
     el.files = [makeFile('a.png', 'image/png')]
