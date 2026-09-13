@@ -1368,3 +1368,40 @@ describe('OASTree 展开/收起过渡（motion 高度动画）', () => {
     expect(expandedOf(el)).toEqual([])
   })
 })
+
+describe('OASTree 触屏命中区（pointer: coarse）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('展开钮 20px：样式含 coarse 热区扩展（::before 透明热区到 44px，视觉尺寸不变）', () => {
+    const el = mount()
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain('@media (pointer: coarse)')
+    // 热区扩展：::before 外扩，toggle 自身宽高不变
+    expect(style).toMatch(/\.toggle::before\s*\{[^}]*inset:\s*-12px/)
+    expect(style).toMatch(/\.toggle\s*\{[^}]*width:\s*20px/)
+    expect(style).toMatch(/\.toggle\s*\{[^}]*height:\s*20px/)
+    // 行样式经 ROW_STYLE 双路注入：树自身 shadow 与 vlist shadow 样式块一致
+    const vlist = el.shadowRoot!.querySelector('oas-virtual-list')
+    if (vlist && vlist.shadowRoot) {
+      const vStyle = vlist.shadowRoot.querySelector('style[data-oas-tree-rows]')!.textContent!
+      expect(vStyle).toContain('@media (pointer: coarse)')
+      expect(vStyle).toMatch(/\.toggle::before\s*\{[^}]*inset:\s*-12px/)
+    }
+  })
+
+  it('expand-trigger 默认值保持 toggle（触屏改造不改默认语义）', () => {
+    const el = mount()
+    expect(el.getAttribute('expand-trigger')).toBeNull()
+    // 默认行为：点 toggle 展开
+    toggles(el)[0]!.click()
+    expect(expandedOf(el)).toEqual(['a'])
+  })
+})
