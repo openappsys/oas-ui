@@ -14,8 +14,12 @@ export type LocaleMessages = { [K in LocaleKey]: string }
 /** 插值参数，如 t('table.selectRow', { key: '1' }) 里的 {key} */
 export type LocaleParams = Record<string, string | number>
 
-/** 语言包：name 唯一标识 + 消息表 */
+/** 可按需加载（子路径 import / loadLocale()）的内置语言包名 */
+export type LocaleName = 'zh-CN' | 'en' | 'ja' | 'ko' | 'de' | 'fr' | 'es' | 'pt' | 'ru' | 'ar'
+
+/** 语言包：name 唯一标识 + 消息表 + 书写方向（RTL 语言包标注 dir: 'rtl'，缺省 ltr） */
 export interface Locale {
   name: string
   messages: LocaleMessages
+  dir?: 'ltr' | 'rtl'
 }

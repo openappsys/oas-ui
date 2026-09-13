@@ -12,7 +12,7 @@
  */
 import { setTranslator, registerLocaleTranslator } from '@oas-ui/core'
 import { zhCN } from './locales/zh-CN.js'
-import type { Locale, LocaleKey, LocaleMessages, LocaleParams } from './types.js'
+import type { Locale, LocaleKey, LocaleMessages, LocaleName, LocaleParams } from './types.js'
 
 const locales = new Map<string, Locale>()
 const listeners = new Set<(name: string) => void>()
@@ -67,6 +67,50 @@ export function getLocale(): Locale {
 /** 当前生效的 locale name */
 export function getLocaleName(): string {
   return current.name
+}
+
+/**
+ * 语言书写方向：传入 name / Locale 时取其标注方向；缺省取当前生效 locale。
+ * 语言包未标注 dir 时回落 ltr。
+ */
+export function getDirection(nameOrLocale?: string | Locale): 'ltr' | 'rtl' {
+  const locale = typeof nameOrLocale === 'string' ? locales.get(nameOrLocale) : (nameOrLocale ?? current)
+  return locale?.dir === 'rtl' ? 'rtl' : 'ltr'
+}
+
+/**
+ * 内置语言包的按需加载器（静态 import() 映射：bundler 可把每个语言包切成独立 chunk，
+ * 调用时才下载；不调用 loadLocale 时整张表可被 tree-shake）。
+ * 新增内置语言包时在此登记，并同步 package.json 的 exports 子路径。
+ */
+const loaders: Record<LocaleName, () => Promise<{ default: Locale }>> = {
+  'zh-CN': () => import('./zh-CN.js'),
+  en: () => import('./en.js'),
+  ja: () => import('./ja.js'),
+  ko: () => import('./ko.js'),
+  de: () => import('./de.js'),
+  fr: () => import('./fr.js'),
+  es: () => import('./es.js'),
+  pt: () => import('./pt.js'),
+  ru: () => import('./ru.js'),
+  ar: () => import('./ar.js'),
+}
+
+/**
+ * 按需加载并注册内置语言包（已注册则直接返回，不重复下载）。
+ * 纯异步：`await loadLocale('ja'); setLocale('ja')`。
+ */
+export async function loadLocale(name: LocaleName): Promise<Locale> {
+  const registered = locales.get(name)
+  if (registered) return registered
+  const loader = loaders[name]
+  if (!loader) {
+    throw new Error(`[oas-ui/i18n] 不支持按需加载的 locale「${name}」；内置：${Object.keys(loaders).join(', ')}`)
+  }
+  const mod = await loader()
+  const locale = mod.default
+  registerLocale(locale)
+  return locale
 }
 
 /** 翻译：key + 可选插值参数（{count} 等）；未知 key 回退返回 key 本身 */
