@@ -182,7 +182,6 @@ onMounted(async () => {
 | `append-to` | Teleport mount point: a CSS selector; on connect the component is moved under that container (kept in place when unset) | `string` | — |
 | `badge` | Badge content: text/number shown in a small badge at the button's top-right corner | `string` | — |
 | `bottom` | Distance from the viewport bottom | `string` | `32px` |
-| `dir` | — | — | — |
 | `draggable` | Drag positioning: press and drag to move the button freely (movement beyond 4px counts as a drag and does not trigger scroll-to-top; within 4px it counts as a click and still scrolls to the top). Position is persisted to localStorage (key `oas-back-top-pos`, clearable by the host to reset) | `boolean` | — |
 | `duration` | Smooth-scroll duration (ms), default 400; 0 or `prefers-reduced-motion` jumps directly | `string` | `400` |
 | `easing` | Scroll easing function: `linear` / `ease` / `ease-in` / `ease-out` / `ease-in-out` / `quad-*` / `cubic-*` / `quart-*` / `quint-*` / `expo-*` / `circ-*` / `back-*`, default `quart-out` | `string` | `quart-out` |

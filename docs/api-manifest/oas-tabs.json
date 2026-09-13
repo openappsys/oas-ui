@@ -125,10 +125,6 @@
       "name": "context-menu",
       "type": "boolean",
       "observed": true
-    },
-    {
-      "name": "dir",
-      "observed": true
     }
   ],
   "props": [],

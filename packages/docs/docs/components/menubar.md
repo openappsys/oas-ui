@@ -347,7 +347,6 @@ onMounted(() => {
 | `align` | 一级下拉对齐：`start`（缺省）/ `center` / `end`；`side` 为 top/bottom 时沿水平轴，为 left/right 时沿垂直轴 | `string` | — |
 | `breakpoint` | 移动端断点（px，如 `600`）：视口宽度 ≤ 断点时 bar 折叠为汉堡按钮 + 弹出菜单（窄宽收纳） | `string` | — |
 | `close-on-select` | 选中叶子项后是否收起展开的子菜单，缺省 `true`（桌面菜单栏共识）；`close-on-select="false"` 保持展开（连选场景）；`kind:"checkbox"` 项勾选切换永不收起 | `string` | — |
-| `dir` | — | — | — |
 | `disabled` | 整栏禁用：顶级项/子项点击、键盘导航、shortcut 快捷键、Alt 访问键全部拦截，视觉降饱和 | `boolean` | — |
 | `items` | 顶级菜单项 JSON（含子菜单 children） | `string` | `[]` |
 | `loop` | 方向键循环导航开关，缺省 `true`（边界循环）；显式 `loop="false"` 时边界停止 | `string` | — |

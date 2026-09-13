@@ -134,7 +134,6 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `aria-label` | Accessible name: overrides the built-in label when set explicitly (icon-only defaults to locale "Quick actions"; extended text lets the visible text win) | — | — |
 | `badge` | Badge number at the top-right corner | `string` | — |
-| `dir` | — | — | — |
 | `disabled` | Disabled: not clickable, `oas-click` not fired, weakened styles; in `href` mode it degrades to a non-clickable `span` | `boolean` | — |
 | `draggable` | Draggable: press and drag to move the button (free positioning under `fixed`, clamped inside the viewport); displacement > 4px counts as a drag, in which case releasing does not fire `oas-click` (within the threshold it fires normally) | `boolean` | — |
 | `href` | Link URL: when set, renders an `<a>` element (native link semantics and keyboard reachability) instead of a button; degrades to a `span` when disabled | `string` | — |

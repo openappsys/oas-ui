@@ -316,7 +316,6 @@ onMounted(() => {
 | `collapse-text` | 自定义折叠省略号的文本（默认 `…`） | `string` | `…` |
 | `collapsed` | 折叠模式：items 数量超过 `max-items` 时中间项折叠为 `…`，点击展开下拉 | `boolean` | — |
 | `color` | 视觉变体：当前项与链接 hover 使用指定语义色（`primary`/`success`/`warning`/`danger`/`info`） | `string` | — |
-| `dir` | — | — | — |
 | `ellipsis` | 单行省略：面包屑不换行，超宽时链接文本以省略号截断 | `boolean` | — |
 | `items` | 面包屑项 JSON：`label`/`href`/`icon`/`disabled`/`target`/`separator`/`dropdown`/`maxWidth`/`active` | `string` | `[]` |
 | `items-after-collapse` | 折叠省略号之后保留的项数（默认 `max-items - 2`） | `string` | — |
