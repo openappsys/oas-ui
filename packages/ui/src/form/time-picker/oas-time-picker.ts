@@ -171,6 +171,15 @@ const STYLE = `
   width: auto !important;
   max-height: none;
 }
+/* 时间列选项触控目标抬升：移动形态（抽屉内）选项行最小高度对齐触摸目标 token
+   （--oas-touch-target-min，theme 默认 44px；flex 垂直居中保持可读），
+   PC 基础行高不受影响；各列在抽屉内容区内独立滚动 */
+:host([data-mobile-sheet]) [part='dropdown'] .option {
+  min-height: var(--oas-touch-target-min, 44px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .presets {
   display: flex;
   flex-wrap: wrap;
