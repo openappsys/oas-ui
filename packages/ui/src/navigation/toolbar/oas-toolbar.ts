@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 import { OASToolbarToggle } from './oas-toolbar-toggle.js'
 
 const STYLE = `
@@ -119,7 +120,8 @@ const STYLE = `
 .more-panel {
   position: absolute;
   top: calc(100% + var(--oas-space-1));
-  right: 0;
+  /* 逻辑 inset：LTR 对齐收纳钮右缘、RTL 自动镜像对齐左缘 */
+  inset-inline-end: 0;
   z-index: calc(var(--oas-z-index-base, 0) + 10);
   min-width: 140px;
   max-height: 320px;
@@ -147,7 +149,7 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-md);
   font-family: inherit;
-  text-align: left;
+  text-align: start;
   padding: var(--oas-space-1_5) var(--oas-space-3);
   border-radius: var(--oas-radius-sm);
   cursor: pointer;
@@ -201,7 +203,7 @@ const INTERACTIVE_ROLES = new Set([
 
 export class OASToolbar extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['orientation', 'loop', 'disabled', 'focusable-when-disabled', 'size']
+    return ['orientation', 'loop', 'disabled', 'focusable-when-disabled', 'size', 'dir']
   }
 
   private moreBtn: HTMLButtonElement | null = null
@@ -278,6 +280,8 @@ export class OASToolbar extends OASElement {
   }
 
   protected override update(): void {
+    // RTL 逻辑方向化钩子：flex 行随 dir 自动反转，方向键映射随书写方向镜像
+    this.toggleAttribute('data-rtl', isRtl(this))
     this.setAttribute('aria-label', this.t('toolbar.label'))
     const orientation = this.getAttr('orientation', 'horizontal')
     this.setAttribute('aria-orientation', orientation)
@@ -469,7 +473,11 @@ export class OASToolbar extends OASElement {
       }
     }
     const loop = this.getAttr('loop', '') !== 'false'
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    // 横向形态方向键跟随书写方向：RTL 下 ArrowRight = 书写起点方向（prev）
+    const horizontalRtl = this.getAttr('orientation', 'horizontal') !== 'vertical' && isRtl(this)
+    const nextKey = horizontalRtl ? 'ArrowLeft' : 'ArrowRight'
+    const prevKey = horizontalRtl ? 'ArrowRight' : 'ArrowLeft'
+    if (e.key === nextKey || e.key === 'ArrowDown') {
       e.preventDefault()
       if (cur < 0) {
         this.focusTo(0)
@@ -478,7 +486,7 @@ export class OASToolbar extends OASElement {
       } else {
         this.focusTo(cur + 1)
       }
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    } else if (e.key === prevKey || e.key === 'ArrowUp') {
       e.preventDefault()
       if (cur < 0) {
         this.focusTo(list.length - 1)

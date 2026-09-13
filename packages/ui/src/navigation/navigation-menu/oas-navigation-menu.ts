@@ -5,6 +5,7 @@ import type { MenuItemKind } from '../menu/oas-menu.js'
 // 图标查表走 oas-icon 同一通道（customIcons 注册优先、内置 iconRegistry 兜底）：
 // 用户 `registerIcon()` 注册的自定义图标菜单家族可见；oas-icon.ts 不依赖 menu，无循环引用
 import { lookupIcon } from '../../basic/icon/oas-icon.js'
+import { isRtl } from '../../shared/direction.js'
 
 export interface NavItem extends MenuItem {
   /** 链接地址（可选）；带 href 的叶子项渲染为 <a> */
@@ -116,17 +117,18 @@ const STYLE = `
 .bar.vertical .indicator {
   top: 0;
   bottom: auto;
-  left: auto;
-  right: -2px;
+  inset-inline-start: auto;
+  inset-inline-end: -2px;
   width: 2px;
   height: var(--ind-h, 0);
   transform: translateY(var(--ind-y, 0));
 }
-/* 统一视口容器：所有顶级项的面板渲染进同一容器 */
+/* 统一视口容器：所有顶级项的面板渲染进同一容器。
+   inset 逻辑化：LTR 贴 bar 左缘、RTL 自动镜像贴右缘（书写方向起点对齐） */
 .viewport {
   position: absolute;
   top: calc(100% + var(--oas-space-1));
-  left: 0;
+  inset-inline-start: 0;
   min-width: 200px;
   width: var(--vp-w, auto);
   height: var(--vp-h, auto);
@@ -147,22 +149,23 @@ const STYLE = `
   visibility: visible;
   pointer-events: auto;
 }
-/* 视口边界碰撞翻转：右缘溢出右对齐（flip-right）、下缘溢出向上弹（flip-up）；竖排右缘不足向左弹 */
+/* 视口边界碰撞翻转：浮出侧缘溢出时对齐父项另一缘回折（flip-right，逻辑 inset RTL 自动镜像）、
+   下缘溢出时向上弹（flip-up）；竖排浮出侧不足回折（flip-left，逻辑 inset 自动镜像） */
 .viewport.flip-right {
-  left: auto;
-  right: 0;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
 }
 .viewport.flip-up {
   top: auto;
   bottom: calc(100% + var(--oas-space-1));
 }
 .viewport.vertical.flip-left {
-  left: auto;
-  right: calc(100% + var(--oas-space-1));
+  inset-inline-start: auto;
+  inset-inline-end: calc(100% + var(--oas-space-1));
 }
 .viewport.vertical {
   top: 0;
-  left: calc(100% + var(--oas-space-1));
+  inset-inline-start: calc(100% + var(--oas-space-1));
 }
 /* 超大面板滚动：max-height 由 CSS 变量兜底，宿主可覆盖 --oas-nav-panel-max-height */
 .panel {
@@ -237,7 +240,7 @@ const STYLE = `
   border-radius: var(--oas-radius-sm);
   cursor: pointer;
   width: 100%;
-  text-align: left;
+  text-align: start;
   display: flex;
   align-items: center;
   gap: var(--oas-space-1);
@@ -252,7 +255,8 @@ const STYLE = `
 .section-links {
   list-style: none;
   margin: 0;
-  padding: var(--oas-space-1) 0 0 var(--oas-space-2);
+  padding: var(--oas-space-1) 0 0;
+  padding-inline-start: var(--oas-space-2);
 }
 .section-links a {
   display: block;
@@ -331,12 +335,19 @@ const STYLE = `
   opacity: 1;
   visibility: visible;
 }
-/* data-motion 方向位移动画 */
+/* data-motion 方向位移动画：from-start = 从书写方向起点侧滑入（LTR 左 / RTL 右） */
 .panel[data-motion='from-start'] {
   animation: nav-motion-start 0.25s ease;
 }
 .panel[data-motion='from-end'] {
   animation: nav-motion-end 0.25s ease;
+}
+/* RTL：起点/终点互换，位移动画镜像 */
+:host([data-rtl]) .panel[data-motion='from-start'] {
+  animation-name: nav-motion-start-rtl;
+}
+:host([data-rtl]) .panel[data-motion='from-end'] {
+  animation-name: nav-motion-end-rtl;
 }
 @keyframes nav-motion-start {
   from {
@@ -358,6 +369,26 @@ const STYLE = `
     transform: none;
   }
 }
+@keyframes nav-motion-start-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes nav-motion-end-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 /* ===== Sub 二级级联：面板内覆盖式二级面板（见 openSubPanel 设计决策注释） ===== */
 .sub-trigger {
   appearance: none;
@@ -371,7 +402,7 @@ const STYLE = `
   border-radius: var(--oas-radius-sm);
   cursor: pointer;
   width: 100%;
-  text-align: left;
+  text-align: start;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -423,6 +454,29 @@ const STYLE = `
     opacity: 1;
     transform: none;
   }
+}
+/* RTL：二级面板从书写方向另一侧滑入（进场位移镜像）；返回 chevron / sub-chevron 指向同步镜像 */
+:host([data-rtl]) .sub-panel.open {
+  animation-name: nav-sub-in-rtl;
+}
+@keyframes nav-sub-in-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+:host([data-rtl]) .sub-trigger .sub-chevron svg {
+  transform: scaleX(-1);
+}
+:host([data-rtl]) .sub-trigger[aria-expanded='true'] .sub-chevron {
+  transform: rotate(-90deg);
+}
+:host([data-rtl]) .sub-back svg {
+  transform: scaleX(-1);
 }
 .sub-back {
   appearance: none;
@@ -542,7 +596,7 @@ const STYLE = `
 .overflow-panel {
   position: absolute;
   top: calc(100% + var(--oas-space-1));
-  right: 0;
+  inset-inline-end: 0;
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
   min-width: 160px;
   max-width: calc(100vw - 2 * var(--oas-space-2, 8px));
@@ -577,7 +631,7 @@ const STYLE = `
   cursor: pointer;
   width: 100%;
   box-sizing: border-box;
-  text-align: left;
+  text-align: start;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -613,6 +667,8 @@ export class OASNavigationMenu extends OASElement {
       'keep-mounted',
       'arrow',
       'loop',
+      // 书写方向：dir 变化触发重算 data-rtl 与翻转判定/方向键映射
+      'dir',
     ]
   }
 
@@ -758,6 +814,8 @@ export class OASNavigationMenu extends OASElement {
   }
 
   protected override update(): void {
+    // RTL 逻辑方向化钩子：CSS :host([data-rtl]) 写镜像规则（chevron 翻转、动画反向等）
+    this.toggleAttribute('data-rtl', isRtl(this))
     // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
     this.itemsList = this.hasAttribute('items') ? this.parseItems() : this.parseChildItems()
     this.pruneState()
@@ -1707,9 +1765,10 @@ export class OASNavigationMenu extends OASElement {
   }
 
   /**
-   * 碰撞/翻转检测：viewport 固定 top:100% left:0（竖排 left:100%），
-   * 右缘溢出时 right 对齐（flip-right），下缘溢出时向上弹（flip-up），竖排右缘不足向左弹（flip-left）。
-   * 水平右边界取「视口右缘 与 导航栏右缘」较小值——窄容器内面板也不越出容器。
+   * 碰撞/翻转检测：viewport 固定贴书写方向起点（LTR left / RTL right），
+   * 浮出侧缘溢出时回折（flip-right，逻辑 inset RTL 自动镜像），下缘溢出向上弹（flip-up），
+   * 竖排浮出侧不足回折（flip-left）。RTL 下溢出检测镜像到另一侧（左缘 ↔ 右缘）。
+   * 水平边界取「视口缘 与 导航栏缘」较小值——窄容器内面板也不越出容器。
    * 尺寸用 offsetWidth/scrollWidth（transform 免疫），位置用 getBoundingClientRect（面板/栏无 scale 动画）。
    */
   private syncViewportPosition(): void {
@@ -1725,25 +1784,40 @@ export class OASNavigationMenu extends OASElement {
     const vw = window.innerWidth
     const vh = window.innerHeight
     const size = this.viewportContentSize()
+    const rtl = isRtl(this)
     if (this.isVertical()) {
       const barRect = bar.getBoundingClientRect()
-      const rightEdge = barRect.left + bar.offsetWidth + size.w
-      vp.classList.toggle('flip-left', rightEdge > vw - margin)
+      // 竖排浮出侧：LTR 向右（检右缘）、RTL 向左（检左缘，面板右对齐 bar 左缘外）
+      const overflows = rtl ? barRect.left - size.w < margin : barRect.left + bar.offsetWidth + size.w > vw - margin
+      vp.classList.toggle('flip-left', overflows)
       vp.classList.remove('flip-right')
     } else {
       const barRect = bar.getBoundingClientRect()
       const navRect = this.navEl?.getBoundingClientRect()
-      const navRight = navRect?.right ?? 0
-      // 右边界 = min(视口, 导航栏右缘)；navRight 为 0（未布局/测试环境）回退视口
-      const boundRight = navRight > 0 ? Math.min(vw, navRight) : vw
-      const rightEdge = barRect.left + size.w
-      // 翻转后不越视口左缘；不翻转（贴 bar 左对齐）不越视口右缘
-      const flipKeepsLeft = barRect.right - size.w >= margin
-      const unflippedKeepsRight = rightEdge <= vw - margin
-      // 容器右缘溢出时优先 flip-right；但窄屏 bar 比面板还窄时 flip 会把面板顶出视口左缘——
-      // 此时只要不翻转能在视口内放得下，就保持左对齐（优先保证面板整体可见）
-      vp.classList.toggle('flip-right', rightEdge > boundRight - margin && (!unflippedKeepsRight || flipKeepsLeft))
-      vp.classList.remove('flip-left')
+      if (rtl) {
+        // RTL：面板缺省右对齐 bar 向左展开；左边界 = max(视口左缘 0, 导航栏左缘)
+        const boundLeft = navRect && navRect.left >= 0 ? Math.max(0, navRect.left) : 0
+        const leftEdge = barRect.right - size.w
+        // 翻转后不越视口右缘；不翻转（贴 bar 右对齐）不越视口左缘
+        const flipKeepsRight = barRect.left + size.w <= vw - margin
+        const unflippedKeepsLeft = leftEdge >= boundLeft + margin
+        // 容器左缘溢出时优先回折（flip-right 类在 RTL 下镜像为左→右对齐）；
+        // 窄 bar 比面板窄时回折会把面板顶出视口右缘——不翻转能放下就保持右对齐
+        vp.classList.toggle('flip-right', leftEdge < boundLeft + margin && (!unflippedKeepsLeft || flipKeepsRight))
+        vp.classList.remove('flip-left')
+      } else {
+        const navRight = navRect?.right ?? 0
+        // 右边界 = min(视口, 导航栏右缘)；navRight 为 0（未布局/测试环境）回退视口
+        const boundRight = navRight > 0 ? Math.min(vw, navRight) : vw
+        const rightEdge = barRect.left + size.w
+        // 翻转后不越视口左缘；不翻转（贴 bar 左对齐）不越视口右缘
+        const flipKeepsLeft = barRect.right - size.w >= margin
+        const unflippedKeepsRight = rightEdge <= vw - margin
+        // 容器右缘溢出时优先 flip-right；但窄屏 bar 比面板还窄时 flip 会把面板顶出视口左缘——
+        // 此时只要不翻转能在视口内放得下，就保持左对齐（优先保证面板整体可见）
+        vp.classList.toggle('flip-right', rightEdge > boundRight - margin && (!unflippedKeepsRight || flipKeepsLeft))
+        vp.classList.remove('flip-left')
+      }
     }
     const vpRect = vp.getBoundingClientRect()
     const bottom = vpRect.top + size.h
@@ -1909,8 +1983,10 @@ export class OASNavigationMenu extends OASElement {
     if (enabled.length === 0) return
     this.keyboardMode = true
     const vertical = this.isVertical()
-    const prevKey = vertical ? 'ArrowUp' : 'ArrowLeft'
-    const nextKey = vertical ? 'ArrowDown' : 'ArrowRight'
+    const rtl = isRtl(this)
+    // 横向形态方向键跟随书写方向：RTL 下 ArrowRight = 向书写起点回退（prev）
+    const prevKey = vertical ? 'ArrowUp' : rtl ? 'ArrowRight' : 'ArrowLeft'
+    const nextKey = vertical ? 'ArrowDown' : rtl ? 'ArrowLeft' : 'ArrowRight'
     const openKey = vertical ? 'ArrowRight' : 'ArrowDown'
     const active = items[this.activeIndex]
     if (e.key === prevKey) {
@@ -1985,11 +2061,15 @@ export class OASNavigationMenu extends OASElement {
       .filter((i) => i >= 0)
     if (enabled.length === 0) return
     this.keyboardMode = true
+    // 面板内横向键跟随书写方向（grid 列序 RTL 下视觉反转）：进/出 section 与二级面板互换
+    const rtl = isRtl(this)
+    const fwdKey = rtl ? 'ArrowLeft' : 'ArrowRight'
+    const backKey = rtl ? 'ArrowRight' : 'ArrowLeft'
     const cur = this.shadow.activeElement as HTMLElement | null
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       this.movePanel(enabled, e.key === 'ArrowDown' ? 1 : -1)
-    } else if (e.key === 'ArrowRight') {
+    } else if (e.key === fwdKey) {
       if (cur?.getAttribute('part') === 'section-title') {
         e.preventDefault()
         const val = cur.dataset.value ?? ''
@@ -2002,7 +2082,7 @@ export class OASNavigationMenu extends OASElement {
         e.preventDefault()
         this.openSubPanel(cur.dataset.value ?? '')
       }
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === backKey) {
       const inSection = cur?.closest('[part="section-links"]')
       if (inSection) {
         e.preventDefault()
@@ -2049,13 +2129,15 @@ export class OASNavigationMenu extends OASElement {
     const enabled = list.map((el, i) => (el.getAttribute('aria-disabled') === 'true' ? -1 : i)).filter((i) => i >= 0)
     if (enabled.length === 0) return
     this.keyboardMode = true
+    // RTL：回退方向键镜像（ArrowRight 回退）
+    const backKey = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       const cur = enabled.indexOf(this.panelIndex)
       const next = (cur + (e.key === 'ArrowDown' ? 1 : -1) + enabled.length) % enabled.length
       this.panelIndex = enabled[next]!
       this.focusSubPanel()
-    } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+    } else if (e.key === backKey || e.key === 'Escape') {
       e.preventDefault()
       this.closeSubPanel()
     } else if (e.key === 'Enter' || e.key === ' ') {

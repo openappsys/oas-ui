@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import { OASTabs } from './index.js'
 // 本文件含 editable 双击重命名 / context-menu 右键菜单 / sortable 拖拽排序用例。
@@ -1743,6 +1743,61 @@ describe('OASTabs', () => {
       const css = el.shadowRoot!.querySelector('style')!.textContent!
       expect(css).toContain('@media (pointer: coarse)')
       expect(css).toContain('var(--oas-touch-target-min, 44px)')
+    })
+  })
+
+  // ===== RTL（右到左）逻辑方向化 =====
+
+  describe('RTL 逻辑方向化', () => {
+    function tablistOf(el: OASTabs): HTMLElement {
+      return el.shadowRoot!.querySelector('.tablist') as HTMLElement
+    }
+
+    it('dir=rtl 时宿主打 data-rtl 钩子，移除 dir 后回退', () => {
+      const el = mount()
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+      el.setAttribute('dir', 'rtl')
+      expect(el.hasAttribute('data-rtl')).toBe(true)
+      el.removeAttribute('dir')
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+    })
+
+    it('RTL：next 箭头向书写终点滚动（scrollLeft 负值区间，delta 取反）', () => {
+      const el = mount({ dir: 'rtl' })
+      const tablist = tablistOf(el)
+      Object.defineProperty(tablist, 'clientWidth', { value: 500, configurable: true })
+      const spy = vi.spyOn(tablist, 'scrollBy')
+      ;(el.shadowRoot!.querySelector('.scroll-end') as HTMLButtonElement).click()
+      expect(spy).toHaveBeenCalled()
+      const arg = spy.mock.calls[0]![0] as ScrollToOptions
+      expect(arg.left).toBe(-300) // 500 * 0.6 * dir；RTL 下 dir=1 → -300
+      spy.mockRestore()
+    })
+
+    it('LTR：next 箭头向右（正方向）——镜像基准', () => {
+      const el = mount()
+      const tablist = tablistOf(el)
+      Object.defineProperty(tablist, 'clientWidth', { value: 500, configurable: true })
+      const spy = vi.spyOn(tablist, 'scrollBy')
+      ;(el.shadowRoot!.querySelector('.scroll-end') as HTMLButtonElement).click()
+      const arg = spy.mock.calls[0]![0] as ScrollToOptions
+      expect(arg.left).toBe(300)
+      spy.mockRestore()
+    })
+
+    it('RTL：横向方向键镜像（ArrowRight = prev，回绕到末项）', () => {
+      const el = mount({ dir: 'rtl' })
+      tablistOf(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+      expect(el.getAttribute('active')).toBe('b')
+      tablistOf(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+      expect(el.getAttribute('active')).toBe('a')
+    })
+
+    it('RTL：样式表含 scroll 箭头翻转规则（chevron 镜像为指向书写方向）', () => {
+      const el = mount()
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain(':host([data-rtl]) .scroll-btn svg')
+      expect(css).toContain('scaleX(-1)')
     })
   })
 })

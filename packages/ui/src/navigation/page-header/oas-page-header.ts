@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 /** responsive：组件宽窄于该断点（px）时自动紧凑布局 */
 const RESPONSIVE_BREAKPOINT = 768
@@ -93,6 +94,10 @@ const STYLE = `
 .breadcrumb[hidden] {
   display: none;
 }
+/* RTL：返回 chevron 镜像（指左翻为指向书写终点方向，返回语义随书写方向保持） */
+:host([data-rtl]) .back-icon {
+  transform: scaleX(-1);
+}
 .content[hidden] {
   display: none;
 }
@@ -129,7 +134,7 @@ const STYLE = `
  */
 export class OASPageHeader extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['title', 'back', 'subtitle', 'ghost', 'responsive']
+    return ['title', 'back', 'subtitle', 'ghost', 'responsive', 'dir']
   }
 
   /** responsive：宿主宽度监听（清理走 onCleanup，断连后 update 幂等重建） */
@@ -214,6 +219,8 @@ export class OASPageHeader extends OASElement {
   }
 
   protected override update(): void {
+    // RTL 逻辑方向化钩子：返回箭头镜像等 CSS 规则挂 :host([data-rtl])
+    this.toggleAttribute('data-rtl', isRtl(this))
     // ghost 透明背景变体：宿主类名作 CSS 钩子（背景置 none + footer 分隔线去除，颜色走 token）
     this.classList.toggle('oas-page-header--ghost', this.hasAttr('ghost'))
     // responsive：惰性建立 ResizeObserver（首次 update 时创建；断连清理后 update 幂等重建）

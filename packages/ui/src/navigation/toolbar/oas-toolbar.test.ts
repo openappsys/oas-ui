@@ -865,4 +865,61 @@ describe('OASToolbar 触摸目标（coarse pointer 抬升）', () => {
     expect(coarse).toContain('.mirror')
     expect(coarse).toContain('min-height')
   })
+
+  // ===== RTL（右到左）逻辑方向化 =====
+
+  describe('RTL 逻辑方向化', () => {
+    function mountRtl(innerHTML = ''): OASToolbar {
+      const el = mount(innerHTML)
+      el.setAttribute('dir', 'rtl')
+      return el
+    }
+
+    it('dir=rtl 时宿主打 data-rtl 钩子，移除 dir 后回退', () => {
+      const el = mount()
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+      el.setAttribute('dir', 'rtl')
+      expect(el.hasAttribute('data-rtl')).toBe(true)
+      el.removeAttribute('dir')
+      expect(el.hasAttribute('data-rtl')).toBe(false)
+    })
+
+    it('RTL：横向方向键镜像（ArrowRight = 书写起点方向 = prev）', () => {
+      const el = mountRtl(
+        '<button type="button">A</button><button type="button">B</button><button type="button">C</button>',
+      )
+      const btns = [...el.querySelectorAll<HTMLButtonElement>('button')]
+      btns[1]!.focus()
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+      expect(document.activeElement).toBe(btns[0]!)
+      // ArrowLeft 镜像为 next：从 A（起点）前进到 B
+      btns[0]!.focus()
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+      expect(document.activeElement).toBe(btns[1]!)
+    })
+
+    it('RTL：收纳顺序语义不变（镜像的是视觉方向，先收 DOM 尾部 = 视觉终点端）', () => {
+      const el = mountRtl(
+        '<button type="button">A</button><button type="button">B</button><button type="button">C</button>',
+      )
+      // happy-dom 无真实布局：mock 容器宽 250、按钮各 100、more 占 40 → 只收尾部 C
+      Object.defineProperty(el, 'clientWidth', { value: 250, configurable: true })
+      Object.defineProperty(el, 'scrollWidth', { value: 320, configurable: true })
+      for (const b of el.querySelectorAll<HTMLElement>('button')) {
+        Object.defineProperty(b, 'offsetWidth', { value: 100, configurable: true })
+      }
+      const moreBtn = el.shadowRoot!.querySelector('.more') as HTMLElement
+      Object.defineProperty(moreBtn, 'offsetWidth', { value: 40, configurable: true })
+      el.syncOverflow()
+      const collapsed = [...el.querySelectorAll<HTMLElement>('[data-collapsed]')]
+      expect(collapsed.map((b) => b.textContent)).toEqual(['C'])
+    })
+
+    it('RTL：样式表含弹层逻辑 inset 与镜像文本对齐（无物理 right: 0 / text-align: left）', () => {
+      const el = mount()
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.more-panel\s*\{[^}]*inset-inline-end:\s*0/)
+      expect(css).not.toMatch(/text-align:\s*left/)
+    })
+  })
 })
