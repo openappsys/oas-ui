@@ -535,3 +535,15 @@ describe('OASEditable trigger=dblclick 双击触发', () => {
     expect(display(el).hidden).toBe(false)
   })
 })
+
+describe('OASEditable RTL 逻辑方向化', () => {
+  it('展示/编辑布局走逻辑属性（flex + gap，图标位置随书写方向自动镜像，无物理方向间距）', () => {
+    const el = mount({ value: '文本', trigger: 'icon' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 图标/按钮位置由 inline-flex + gap 驱动（gap 为逻辑间距），物理方向属性清零
+    expect(css).toMatch(/\.display \{[^}]*gap:/)
+    expect(css).toMatch(/\.edit \{[^}]*gap:/)
+    expect(css).not.toMatch(/(padding|margin)-(left|right)/)
+    expect(css).not.toMatch(/(^|[^-a-z])(left|right):\s/)
+  })
+})

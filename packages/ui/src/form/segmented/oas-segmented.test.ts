@@ -345,3 +345,21 @@ describe('OASSegmented', () => {
     expect(indicator.style.width).not.toBe('')
   })
 })
+
+describe('OASSegmented RTL 键盘镜像', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('dir=rtl 时水平方向键视觉镜像：ArrowLeft 下一项、ArrowRight 上一项', () => {
+    const el = mount({ dir: 'rtl', value: 'week' })
+    key(el, 'ArrowLeft')
+    expect(el.getAttribute('value')).toBe('month')
+    key(el, 'ArrowRight')
+    expect(el.getAttribute('value')).toBe('week')
+  })
+})

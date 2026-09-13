@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 /** size 尺寸档（对齐 oas-input：small/medium/large，控高走 --oas-control-height-* token） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -659,9 +660,11 @@ export class OASDynamicTags extends OASElement {
       e.preventDefault()
       this.removeLastTag()
     } else if (this.hasAttr('sortable') && inputEl.value === '' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-      // 空输入时方向键进入标签导航（← 末尾 / → 首个）
+      // 空输入时方向键进入标签导航（← 末尾 / → 首个；RTL 视觉序镜像：→ 末尾 / ← 首个）
+      const rtl = isRtl(this)
+      const toLast = rtl ? e.key === 'ArrowRight' : e.key === 'ArrowLeft'
       const chips = [...(this.tagsEl?.querySelectorAll<HTMLElement>('.tag') ?? [])]
-      const target = e.key === 'ArrowLeft' ? chips[chips.length - 1] : chips[0]
+      const target = toLast ? chips[chips.length - 1] : chips[0]
       if (target) {
         e.preventDefault()
         target.focus()
@@ -825,7 +828,8 @@ export class OASDynamicTags extends OASElement {
     }
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
     e.preventDefault()
-    const delta = e.key === 'ArrowLeft' ? -1 : 1
+    // RTL：chip 视觉序镜像（值序沿书写方向反向），遍历与 Alt+重排的方向键语义同步翻转
+    const delta = (isRtl(this) ? e.key === 'ArrowRight' : e.key === 'ArrowLeft') ? -1 : 1
     if (e.altKey && sortable) {
       const to = idx + delta
       if (to < 0 || to >= this.tags.length) return

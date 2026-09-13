@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { isRtl } from '../../shared/direction.js'
 
 export type SwitchSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
@@ -117,6 +118,14 @@ button[aria-checked='true'] .thumb {
   /* 锚定右端而非固定位移：轨道带文案自动加宽时也能贴右端，不遮文案 */
   left: calc(100% - var(--thumb-size) - var(--thumb-offset));
 }
+/* RTL：书写方向镜像——滑块锚定侧反转（未开启贴视觉起点=右、开启贴视觉终点=左）。
+   transform 不随 dir 翻转，故用 data-rtl 反向覆盖 left（过渡仍作用于 left 本身） */
+:host([data-rtl]) button:not([aria-checked='true']) .thumb {
+  left: calc(100% - var(--thumb-size) - var(--thumb-offset));
+}
+:host([data-rtl]) button[aria-checked='true'] .thumb {
+  left: var(--thumb-offset);
+}
 /* 滑块图标：checked-icon / unchecked-icon 渲染 <oas-icon>，铺满滑块居中（尺寸跟随滑块） */
 .thumb-icon {
   position: absolute;
@@ -143,7 +152,8 @@ button[aria-checked='true'] .thumb {
 .label[hidden] {
   display: none;
 }
-/* 单 flex 项（滑块绝对定位不参与 flex）：未开启文案靠右、开启文案靠左 */
+/* 单 flex 项（滑块绝对定位不参与 flex）：未开启文案靠 flex 终点、开启文案靠 flex 起点
+   （justify-content 与 padding-inline-* 均为逻辑属性，RTL 下自动镜像） */
 button:not([aria-checked='true']) {
   justify-content: flex-end;
 }
@@ -151,13 +161,13 @@ button[aria-checked='true'] {
   justify-content: flex-start;
 }
 button:not([aria-checked='true']) .label {
-  padding-left: calc(var(--thumb-size) + var(--thumb-offset) * 2 + var(--oas-space-1));
-  padding-right: var(--oas-space-2);
+  padding-inline-start: calc(var(--thumb-size) + var(--thumb-offset) * 2 + var(--oas-space-1));
+  padding-inline-end: var(--oas-space-2);
   color: var(--oas-color-text-secondary);
 }
 button[aria-checked='true'] .label {
-  padding-right: calc(var(--thumb-size) + var(--thumb-offset) * 2 + var(--oas-space-1));
-  padding-left: var(--oas-space-2);
+  padding-inline-end: calc(var(--thumb-size) + var(--thumb-offset) * 2 + var(--oas-space-1));
+  padding-inline-start: var(--oas-space-2);
   color: var(--oas-color-bg);
 }
 /* 轨道外侧文案（size=xs/small 时展示） */
@@ -214,7 +224,8 @@ button[aria-checked='true'] .label {
 :host([aria-invalid='true']) button:focus-visible {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--oas-color-danger) 30%, transparent);
 }
-/* 加载指示：放在滑块对侧、垂直居中（loading 时轨道内文案隐藏，互不遮挡） */
+/* 加载指示：放在滑块对侧（inset-inline-* 逻辑属性，RTL 下随滑块锚定侧自动镜像）、垂直居中
+   （loading 时轨道内文案隐藏，互不遮挡） */
 .spinner {
   position: absolute;
   top: 50%;
@@ -227,11 +238,11 @@ button[aria-checked='true'] .label {
   animation: oas-spin 0.8s linear infinite;
 }
 button:not([aria-checked='true']) .spinner {
-  right: calc(var(--thumb-offset) + 2px);
+  inset-inline-end: calc(var(--thumb-offset) + 2px);
   color: var(--oas-color-text-secondary);
 }
 button[aria-checked='true'] .spinner {
-  left: calc(var(--thumb-offset) + 2px);
+  inset-inline-start: calc(var(--thumb-offset) + 2px);
   color: var(--oas-color-bg);
 }
 @keyframes oas-spin {
@@ -449,6 +460,9 @@ export class OASSwitch extends OASElement {
 
     // 注入禁用态镜像（:host([data-disabled]) 的 label 视觉联动钩子）
     this.toggleAttribute('data-disabled', disabled)
+
+    // 书写方向镜像（data-rtl 供 :host([data-rtl]) 滑块锚定侧反向覆盖消费）
+    this.toggleAttribute('data-rtl', isRtl(this))
 
     // 开启态自定义主色：以 --oas-color-primary 变量覆盖（焦点环等派生色一并生效）
     const color = this.getAttr('color')

@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 /**
  * 尺寸档位：对齐全局 control-height token（ui-spec §2.1）
@@ -415,15 +416,9 @@ export class OASPinInput extends OASElement {
     return this.injectDisabled() || this.hasAttr('readonly') || this.hasAttr('loading')
   }
 
-  /** RTL 判定：就近 [dir] 祖先（含 documentElement），方向键/视觉序随写作方向反转 */
+  /** RTL 判定：收敛到 shared isRtl（就近 [dir] 祖先 + 计算样式回退），方向键/视觉序随写作方向反转 */
   private isRTL(): boolean {
-    const host = this.closest('[dir]')
-    const dir = (
-      host?.getAttribute('dir') ??
-      this.ownerDocument?.documentElement.getAttribute('dir') ??
-      'ltr'
-    ).toLowerCase()
-    return dir === 'rtl'
+    return isRtl(this)
   }
 
   /**
