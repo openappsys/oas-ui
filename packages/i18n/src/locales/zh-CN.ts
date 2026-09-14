@@ -324,6 +324,11 @@ export const zhCN = {
   'toolbar.toggleGroup': '切换组',
   'toolbar.input': '工具栏输入框',
   'toolbar.item': '工具栏项',
+  // app-bar（应用栏）
+  'appBar.label': '应用栏',
+  'appBar.menu': '主菜单',
+  'appBar.more': '更多操作',
+  'appBar.item': '操作项',
   // log（日志流）
   'log.empty': '暂无日志',
   'log.no-match': '无匹配日志',

@@ -109,6 +109,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Menubar 应用菜单栏', link: '/components/menubar' },
       { text: 'NavigationMenu 多级导航', link: '/components/navigation-menu' },
       { text: 'Toolbar 工具栏', link: '/components/toolbar' },
+      { text: 'AppBar 应用栏', link: '/components/app-bar' },
       { text: 'Breadcrumb 面包屑', link: '/components/breadcrumb' },
       { text: 'Anchor 锚点', link: '/components/anchor' },
       { text: 'BackTop 回到顶部', link: '/components/back-top' },

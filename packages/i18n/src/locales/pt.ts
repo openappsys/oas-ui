@@ -324,6 +324,11 @@ export const pt: LocaleMessages = {
   'toolbar.toggleGroup': 'Grupo de alternância',
   'toolbar.input': 'Campo da barra de ferramentas',
   'toolbar.item': 'Item da barra de ferramentas',
+  // app-bar (barra de aplicativo)
+  'appBar.label': 'Barra de aplicativo',
+  'appBar.menu': 'Menu principal',
+  'appBar.more': 'Mais ações',
+  'appBar.item': 'Ação',
   // log (fluxo de logs)
   'log.empty': 'Sem logs',
   'log.no-match': 'Sem logs correspondentes',
