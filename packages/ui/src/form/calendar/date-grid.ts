@@ -271,11 +271,16 @@ export function formatYear(d: Date, locale: string): string {
  * - PageUp/PageDown：跳上一/下一月同日；Shift 时跳上一/下一年同日（月末钳制）
  * 未识别的键返回 null。
  */
-export function moveGridDate(d: Date, key: string, weekStart = 0, shift = false): Date | null {
+export function moveGridDate(d: Date, key: string, weekStart = 0, shift = false, rtl = false): Date | null {
   const ws = normalizeWeekStart(weekStart)
   const y = d.getFullYear()
   const m = d.getMonth()
   const day = d.getDate()
+  // RTL：网格视觉镜像，水平方向键语义随之翻转（左=次日、右=前日），垂直向不变
+  if (rtl) {
+    if (key === 'ArrowLeft') key = 'ArrowRight'
+    else if (key === 'ArrowRight') key = 'ArrowLeft'
+  }
   switch (key) {
     case 'ArrowLeft':
       return new Date(y, m, day - 1)

@@ -14,6 +14,7 @@ import {
   moveGridDate,
   getWeekStart,
 } from './date-grid.js'
+import { isRtl } from '../../shared/direction.js'
 
 const STYLE = `
 :host {
@@ -706,7 +707,7 @@ export class OASCalendar extends OASElement {
       findDayButton(grid, focus)?.click()
       return
     }
-    const next = moveGridDate(focus, e.key, this.effectiveWeekStart(), e.shiftKey)
+    const next = moveGridDate(focus, e.key, this.effectiveWeekStart(), e.shiftKey, isRtl(this))
     if (!next) return
     // 目标不可用（min/max/disabledDate）时不移动
     if (this.isDateUnavailable(next)) return

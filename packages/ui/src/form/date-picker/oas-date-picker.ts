@@ -22,7 +22,7 @@ import {
   isoWeekYear,
 } from './picker-grid.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
-import { resolveDirection } from '../../shared/direction.js'
+import { resolveDirection, isRtl } from '../../shared/direction.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
@@ -2338,7 +2338,7 @@ export class OASDatePicker extends OASElement {
       findDayButton(grid, focus)?.click()
       return
     }
-    const next = movePickerGridDate(focus, e.key, this.effectiveWeekStart(), e.shiftKey)
+    const next = movePickerGridDate(focus, e.key, this.effectiveWeekStart(), e.shiftKey, isRtl(this))
     if (!next) return
     if (!this.isAcceptableDate(next)) return
     e.preventDefault()
