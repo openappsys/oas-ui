@@ -43,7 +43,7 @@ The `menu-button` boolean attribute shows a leading menu (hamburger) button; cli
 When `slot="actions"` exceeds the bar width, the overflowing action items are automatically collected into a "···" popup (ResizeObserver driven, recalculated live while resizing); mirror items in the popup dispatch clicks back to the original buttons. A button's `aria-label` takes priority as its mirror label.
 
 <DemoBlock title="Narrow-container overflow collection (resize the window to watch it recalculate)">
-  <div style="max-width: 360px">
+  <div style="max-width: 100%">
     <oas-app-bar id="ab-overflow" heading="Reports">
       <oas-button size="small" slot="actions" onclick="message.info('Refreshed')">Refresh</oas-button>
       <oas-button size="small" slot="actions" onclick="message.info('Exported as CSV')">Export CSV</oas-button>
@@ -103,7 +103,7 @@ The `hide-on-scroll` boolean attribute (effective in the floating variants `fixe
 Inside a `dir="rtl"` container the component mirrors automatically: the `data-rtl` hook + fully logical layout properties (`inset-inline` / `padding-inline`); the "···" popup aligns to the far end of the actions area.
 
 <DemoBlock title="RTL mirroring">
-  <div dir="rtl" style="max-width: 420px">
+  <div dir="rtl" style="max-width: 100%">
     <oas-app-bar heading="لوحة التحكم" menu-button>
       <oas-button size="small" slot="actions" onclick="message.info('تحديث')">تحديث</oas-button>
       <oas-button size="small" slot="actions" onclick="message.info('تصدير')">تصدير</oas-button>
