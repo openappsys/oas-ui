@@ -80,7 +80,7 @@ type LabelAlign = (typeof LABEL_ALIGNS)[number]
 
 export class OASFormItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['label', 'name', 'span', 'required']
+    return ['label', 'name', 'span', 'required', 'dir']
   }
 
   private labelEl: HTMLElement | null = null

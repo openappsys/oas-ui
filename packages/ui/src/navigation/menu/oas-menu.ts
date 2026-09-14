@@ -361,7 +361,18 @@ ${TOUCH_TARGET_CSS}
 
 export class OASMenu extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['items', 'value', 'mode', 'collapsed', 'theme', 'max-height', 'expanded', 'accordion', 'close-on-select']
+    return [
+      'items',
+      'value',
+      'mode',
+      'collapsed',
+      'theme',
+      'max-height',
+      'expanded',
+      'accordion',
+      'close-on-select',
+      'dir',
+    ]
   }
 
   private itemsList: MenuItem[] = []
