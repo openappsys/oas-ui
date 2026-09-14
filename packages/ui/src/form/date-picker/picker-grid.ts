@@ -208,8 +208,13 @@ export function addYearsClamped(d: Date, n: number): Date {
  * PageUp/PageDown 换月，Shift 时换年（日期钳制到目标月/年的合法日）。
  * 未识别的键返回 null。
  */
-export function movePickerGridDate(d: Date, key: string, weekStart: number, shift = false): Date | null {
+export function movePickerGridDate(d: Date, key: string, weekStart: number, shift = false, rtl = false): Date | null {
   const ws = normalizeWeekStart(weekStart)
+  // RTL：网格视觉镜像，水平方向键语义随之翻转（左=次日、右=前日），垂直向不变
+  if (rtl) {
+    if (key === 'ArrowLeft') key = 'ArrowRight'
+    else if (key === 'ArrowRight') key = 'ArrowLeft'
+  }
   switch (key) {
     case 'ArrowLeft':
       return new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1)
