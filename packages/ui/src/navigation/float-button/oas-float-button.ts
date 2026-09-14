@@ -992,6 +992,8 @@ export class OASFloatButton extends OASElement {
 
   private handleDocClick = (e: MouseEvent): void => {
     if (!this.hasAttr('expanded')) return
+    // manual：完全受控——外点不自动收起，收起由宿主经 expanded 属性全权驱动
+    if (this.validTrigger() === 'manual') return
     if (e.composedPath().includes(this)) return
     this.closeExpand()
   }
@@ -999,6 +1001,8 @@ export class OASFloatButton extends OASElement {
   private handleDocKeydown = (e: KeyboardEvent): void => {
     if (e.key !== 'Escape') return
     if (!this.hasAttr('expanded')) return
+    // manual：收起由宿主驱动，Esc 不自动收起
+    if (this.validTrigger() === 'manual') return
     this.closeExpand()
     this.btn?.focus()
   }

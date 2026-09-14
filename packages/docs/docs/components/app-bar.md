@@ -43,7 +43,7 @@
 `slot="actions"` 超出栏宽时，超宽操作项自动收进「···」弹层（ResizeObserver 驱动，窗口缩放实时重算）；弹层内镜像项点击回派到原按钮。按钮的 `aria-label` 优先作为镜像项标签。
 
 <DemoBlock title="窄容器溢出收纳（缩放窗口观察重算）">
-  <div style="max-width: 360px">
+  <div style="max-width: 100%">
     <oas-app-bar id="ab-overflow" heading="报表">
       <oas-button size="small" slot="actions" onclick="message.info('刷新成功')">刷新</oas-button>
       <oas-button size="small" slot="actions" onclick="message.info('已导出 CSV')">导出 CSV</oas-button>
@@ -103,7 +103,7 @@
 容器 `dir="rtl"` 下组件自动镜像：`data-rtl` 钩子 + 全逻辑属性布局（`inset-inline` / `padding-inline`），「···」弹层对齐 actions 远端。
 
 <DemoBlock title="RTL 镜像">
-  <div dir="rtl" style="max-width: 420px">
+  <div dir="rtl" style="max-width: 100%">
     <oas-app-bar heading="لوحة التحكم" menu-button>
       <oas-button size="small" slot="actions" onclick="message.info('تحديث')">تحديث</oas-button>
       <oas-button size="small" slot="actions" onclick="message.info('تصدير')">تصدير</oas-button>

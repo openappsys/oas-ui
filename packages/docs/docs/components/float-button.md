@@ -7,19 +7,19 @@
 ## 基础用法
 
 <DemoBlock title="带角标">
-  <oas-float-button badge="3" style="position: static; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="3" style="position: relative; box-shadow: none"></oas-float-button>
 </DemoBlock>
 
 ## 无角标
 
 <DemoBlock title="无角标">
-  <oas-float-button style="position: static; box-shadow: none"></oas-float-button>
+  <oas-float-button style="position: relative; box-shadow: none"></oas-float-button>
 </DemoBlock>
 
 ## 自定义图标
 
 <DemoBlock title="自定义图标">
-  <oas-float-button style="position: static; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
 </DemoBlock>
 
 ## 形状
@@ -27,8 +27,8 @@
 `shape` 两种形状：`circle`（默认，正圆）/ `square`（胶囊圆角矩形）。
 
 <DemoBlock title="形状">
-  <oas-float-button style="position: static; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
-  <oas-float-button shape="square" style="position: static; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button shape="square" style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
 </DemoBlock>
 
 ## 类型
@@ -36,8 +36,8 @@
 `type` 两种视觉强度：`primary`（默认，主色实底白字）/ `default`（弱化：浅底深字）。
 
 <DemoBlock title="类型">
-  <oas-float-button type="default" style="position: static; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
-  <oas-float-button style="position: static; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button type="default" style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
 </DemoBlock>
 
 ## 扩展文字
@@ -45,8 +45,8 @@
 默认插槽写入文字后自动变为横向胶囊形态（图标 + 文字横排）。
 
 <DemoBlock title="扩展文字">
-  <oas-float-button style="position: static; box-shadow: none">新建</oas-float-button>
-  <oas-float-button type="default" style="position: static; box-shadow: none">反馈</oas-float-button>
+  <oas-float-button style="position: relative; box-shadow: none">新建</oas-float-button>
+  <oas-float-button type="default" style="position: relative; box-shadow: none">反馈</oas-float-button>
 </DemoBlock>
 
 ## 尺寸
@@ -54,11 +54,11 @@
 `size` 五档：`xs`（24px）/ `sm`（32px）/ `md`（40px）/ `lg`（默认 48px）/ `xl`（56px）。
 
 <DemoBlock title="尺寸">
-  <oas-float-button size="xs" style="position: static; box-shadow: none"></oas-float-button>
-  <oas-float-button size="sm" style="position: static; box-shadow: none"></oas-float-button>
-  <oas-float-button size="md" style="position: static; box-shadow: none"></oas-float-button>
-  <oas-float-button style="position: static; box-shadow: none"></oas-float-button>
-  <oas-float-button size="xl" style="position: static; box-shadow: none"></oas-float-button>
+  <oas-float-button size="xs" style="position: relative; box-shadow: none"></oas-float-button>
+  <oas-float-button size="sm" style="position: relative; box-shadow: none"></oas-float-button>
+  <oas-float-button size="md" style="position: relative; box-shadow: none"></oas-float-button>
+  <oas-float-button style="position: relative; box-shadow: none"></oas-float-button>
+  <oas-float-button size="xl" style="position: relative; box-shadow: none"></oas-float-button>
 </DemoBlock>
 
 ## 禁用
@@ -66,8 +66,8 @@
 `disabled` 禁用：不可点击、不派发 `oas-click`，样式弱化（半透明 + 禁用配色）。
 
 <DemoBlock title="禁用">
-  <oas-float-button disabled style="position: static; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
-  <oas-float-button disabled style="position: static; box-shadow: none">新建</oas-float-button>
+  <oas-float-button disabled style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button disabled style="position: relative; box-shadow: none">新建</oas-float-button>
 </DemoBlock>
 
 ## 拖拽与磁吸
@@ -93,8 +93,8 @@
 `href` 渲染为 `<a>` 元素（原生链接语义与键盘可达），可配 `target`；禁用时降级为不可点击的 `<span>`。
 
 <DemoBlock title="链接">
-  <oas-float-button href="https://example.com" target="_blank" style="position: static; box-shadow: none"><span slot="icon">✈</span></oas-float-button>
-  <oas-float-button href="https://example.com" target="_blank" type="default" style="position: static; box-shadow: none">打开示例</oas-float-button>
+  <oas-float-button href="https://example.com" target="_blank" style="position: relative; box-shadow: none"><span slot="icon">✈</span></oas-float-button>
+  <oas-float-button href="https://example.com" target="_blank" type="default" style="position: relative; box-shadow: none">打开示例</oas-float-button>
 </DemoBlock>
 
 ## 分组模式
@@ -173,9 +173,9 @@
 `badge` 支持三种取值：数字（右上角标）、`dot`（状态点，无数字）、任意文本；纯数字超 `99` 自动封顶为 `99+`。分组子钮（`badge` 属性）与菜单动作项（`badge` 字段）同规则。
 
 <DemoBlock title="徽标封顶与状态点">
-  <oas-float-button badge="8" style="position: static; box-shadow: none"></oas-float-button>
-  <oas-float-button badge="120" style="position: static; box-shadow: none"></oas-float-button>
-  <oas-float-button badge="dot" style="position: static; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="8" style="position: relative; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="120" style="position: relative; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="dot" style="position: relative; box-shadow: none"></oas-float-button>
 </DemoBlock>
 
 ## 事件反馈
@@ -183,7 +183,7 @@
 点击派发 `oas-click`（bubbles + composed），`detail.originalEvent` 为原生点击事件。
 
 <DemoBlock title="点击事件">
-  <oas-float-button badge="5" style="position: static; box-shadow: none" onoas-click="message.info('悬浮按钮被点击，detail.originalEvent 类型：' + event.detail.originalEvent.type)"></oas-float-button>
+  <oas-float-button badge="5" style="position: relative; box-shadow: none" onoas-click="message.info('悬浮按钮被点击，detail.originalEvent 类型：' + event.detail.originalEvent.type)"></oas-float-button>
 </DemoBlock>
 
 ## 悬浮提示
@@ -192,10 +192,10 @@
 
 <DemoBlock title="tooltip 组合">
   <oas-tooltip content="新建文档" placement="top">
-    <oas-float-button style="position: static; box-shadow: none"></oas-float-button>
+    <oas-float-button style="position: relative; box-shadow: none"></oas-float-button>
   </oas-tooltip>
   <oas-tooltip content="反馈问题" placement="left">
-    <oas-float-button type="default" style="position: static; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+    <oas-float-button type="default" style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
   </oas-tooltip>
 </DemoBlock>
 
