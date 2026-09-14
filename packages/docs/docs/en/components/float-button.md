@@ -97,6 +97,87 @@ Writing text into the default slot turns the button into a horizontal capsule (i
   <oas-float-button href="https://example.com" target="_blank" type="default" style="position: static; box-shadow: none">Open example</oas-float-button>
 </DemoBlock>
 
+## Group mode
+
+`mode="group"`: a main button with stacked child buttons. Child buttons are host-filled light DOM (`slot="action"`, both `button` and `a` work):
+
+- A child button may carry a `label` attribute — a bubble hint floats on hover / keyboard focus (the hint channel for icon-only children)
+- A child button may carry a `badge` attribute — `dot` status dot / number (capped at `99+` above 99)
+- `expand-direction` expanding direction: `up` (default) / `down` / `left` / `right`; horizontal directions mirror automatically in RTL
+- `trigger` activation: `click` (default) / `hover` (falls back to click on touch screens) / `manual` (controlled attribute only)
+- `expanded` controlled expanded state + `oas-expand-change` event (`detail: { expanded }`)
+- Clicking any child button collapses the group; Esc / outside click collapses and refocuses the main button
+
+<DemoBlock title="Group (click the main button to expand; children carry label bubbles and badges)">
+  <oas-float-button mode="group" expand-direction="down" style="position: static">
+    <span slot="icon">＋</span>
+    <button slot="action" type="button" label="Edit"><span>✎</span></button>
+    <a slot="action" href="https://example.com" target="_blank" label="Docs (link child)"><span>📄</span></a>
+    <button slot="action" type="button" label="Messages" badge="3"><span>✉</span></button>
+  </oas-float-button>
+</DemoBlock>
+
+<DemoBlock title="Expand event (click the main button to toggle; oas-expand-change message feedback)">
+  <oas-float-button mode="group" expand-direction="down" style="position: static" onoas-expand-change="message.info('Expanded: ' + event.detail.expanded)">
+    <span slot="icon">＋</span>
+    <button slot="action" type="button" label="Copy"><span>⧉</span></button>
+    <button slot="action" type="button" label="Delete"><span>🗑</span></button>
+  </oas-float-button>
+</DemoBlock>
+
+<DemoBlock title="Controlled expansion (trigger=manual: the component never toggles by itself; the host flips the expanded attribute, no event dispatched)">
+  <oas-float-button
+    id="fb-manual-demo-en"
+    mode="group"
+    expand-direction="down"
+    trigger="manual"
+    style="position: static"
+  >
+    <span slot="icon">＋</span>
+    <button slot="action" type="button" label="Copy"><span>⧉</span></button>
+    <button slot="action" type="button" label="Delete"><span>🗑</span></button>
+  </oas-float-button>
+  <button style="margin-inline-start: 8px; cursor: pointer" onclick="document.getElementById('fb-manual-demo-en').toggleAttribute('expanded')">Toggle expanded</button>
+</DemoBlock>
+
+## Menu mode
+
+`mode="menu"`: clicking the main button pops up an action menu (data-driven by the `actions` JSON; closed by `Esc` / outside click):
+
+- Action item: `{ label, icon?, href?, target?, badge? }` — items with `href` render as link menu items (mutually exclusive with clickable actions)
+- `badge`: `dot` status dot / number (capped at `99+` above 99)
+- Selecting an item dispatches `oas-select` (`detail: { index, label, href? }`) and collapses automatically
+- Only vertical directions are supported: `expand-direction="up"` (default) / `"down"`
+- Keyboard reachable: opening focuses the first item, arrow keys navigate cyclically, `Esc` closes and refocuses the main button
+
+<DemoBlock title="Menu (click the main button to pop up; see the message feedback on selection)">
+  <oas-float-button
+    mode="menu"
+    expand-direction="down"
+    style="position: static"
+    onoas-select="message.info('Selected: ' + event.detail.label + (event.detail.href ? ' (link ' + event.detail.href + ')' : ''))"
+    actions='[
+      { "label": "Edit", "icon": "edit" },
+      { "label": "Copy", "icon": "copy", "badge": "5" },
+      { "label": "Notifications", "icon": "alert-circle", "badge": "dot" },
+      { "label": "Help docs", "icon": "external-link", "href": "https://example.com", "target": "_blank" },
+      { "label": "Archive", "icon": "check-circle", "badge": "128" }
+    ]'
+  >
+    <span slot="icon">☰</span>
+  </oas-float-button>
+</DemoBlock>
+
+## Badges: status dot and number capping
+
+`badge` supports three values: a number (corner badge), `dot` (status dot, no number), or arbitrary text; pure numbers above `99` are capped to `99+` automatically. Group child buttons (`badge` attribute) and menu action items (`badge` field) follow the same rule.
+
+<DemoBlock title="Badge capping and status dot">
+  <oas-float-button badge="8" style="position: static; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="120" style="position: static; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="dot" style="position: static; box-shadow: none"></oas-float-button>
+</DemoBlock>
+
 ## Event feedback
 
 Clicking dispatches `oas-click` (bubbles + composed), and `detail.originalEvent` is the native click event.

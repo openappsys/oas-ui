@@ -97,6 +97,87 @@
   <oas-float-button href="https://example.com" target="_blank" type="default" style="position: static; box-shadow: none">打开示例</oas-float-button>
 </DemoBlock>
 
+## 分组模式
+
+`mode="group"`：主钮 + 子钮堆叠展开。子钮为宿主自填的 light DOM（`slot="action"`，`button` / `a` 均可）：
+
+- 子钮可带 `label` 属性——hover / 键盘聚焦时浮现气泡提示（icon-only 子钮的提示通路）
+- 子钮可带 `badge` 属性——角标，`dot` 状态点 / 数字（超 99 封顶 `99+`）
+- `expand-direction` 展开方向：`up`（默认）/ `down` / `left` / `right`，RTL 下横向方向自动镜像
+- `trigger` 触发方式：`click`（默认）/ `hover`（触屏自动回落 click）/ `manual`（仅受控属性驱动）
+- `expanded` 受控展开态 + `oas-expand-change` 事件（`detail: { expanded }`）
+- 点击任一子钮后组自动收起；Esc / 点击外部收起并回焦主钮
+
+<DemoBlock title="分组（点击主钮展开，子钮带 label 气泡与角标）">
+  <oas-float-button mode="group" expand-direction="down" style="position: static">
+    <span slot="icon">＋</span>
+    <button slot="action" type="button" label="编辑"><span>✎</span></button>
+    <a slot="action" href="https://example.com" target="_blank" label="文档（链接子钮）"><span>📄</span></a>
+    <button slot="action" type="button" label="消息" badge="3"><span>✉</span></button>
+  </oas-float-button>
+</DemoBlock>
+
+<DemoBlock title="展开事件（点击主钮切换，oas-expand-change 消息反馈）">
+  <oas-float-button mode="group" expand-direction="down" style="position: static" onoas-expand-change="message.info('展开态：' + event.detail.expanded)">
+    <span slot="icon">＋</span>
+    <button slot="action" type="button" label="复制"><span>⧉</span></button>
+    <button slot="action" type="button" label="删除"><span>🗑</span></button>
+  </oas-float-button>
+</DemoBlock>
+
+<DemoBlock title="受控展开（trigger=manual：组件不自切，宿主切换 expanded 属性，组件不派发事件）">
+  <oas-float-button
+    id="fb-manual-demo"
+    mode="group"
+    expand-direction="down"
+    trigger="manual"
+    style="position: static"
+  >
+    <span slot="icon">＋</span>
+    <button slot="action" type="button" label="复制"><span>⧉</span></button>
+    <button slot="action" type="button" label="删除"><span>🗑</span></button>
+  </oas-float-button>
+  <button style="margin-inline-start: 8px; cursor: pointer" onclick="document.getElementById('fb-manual-demo').toggleAttribute('expanded')">切换 expanded</button>
+</DemoBlock>
+
+## 菜单模式
+
+`mode="menu"`：主钮点击弹出动作菜单（`actions` JSON 数据驱动，`Esc` / 点击外部关闭）：
+
+- 动作项：`{ label, icon?, href?, target?, badge? }`——带 `href` 渲染为链接菜单项（与可点动作互斥）
+- `badge`：`dot` 状态点 / 数字（超 99 封顶 `99+`）
+- 选择动作项派发 `oas-select`（`detail: { index, label, href? }`）并自动收起
+- 展开方向只支持纵向：`expand-direction="up"`（默认）/ `"down"`
+- 键盘可达：展开自动聚焦首项，方向键循环导航，`Esc` 关闭并回焦主钮
+
+<DemoBlock title="菜单（点击主钮弹出，选择项看消息反馈）">
+  <oas-float-button
+    mode="menu"
+    expand-direction="down"
+    style="position: static"
+    onoas-select="message.info('选中：' + event.detail.label + (event.detail.href ? '（链接 ' + event.detail.href + '）' : ''))"
+    actions='[
+      { "label": "编辑", "icon": "edit" },
+      { "label": "复制", "icon": "copy", "badge": "5" },
+      { "label": "通知", "icon": "alert-circle", "badge": "dot" },
+      { "label": "帮助文档", "icon": "external-link", "href": "https://example.com", "target": "_blank" },
+      { "label": "归档", "icon": "check-circle", "badge": "128" }
+    ]'
+  >
+    <span slot="icon">☰</span>
+  </oas-float-button>
+</DemoBlock>
+
+## 徽标：状态点与数字封顶
+
+`badge` 支持三种取值：数字（右上角标）、`dot`（状态点，无数字）、任意文本；纯数字超 `99` 自动封顶为 `99+`。分组子钮（`badge` 属性）与菜单动作项（`badge` 字段）同规则。
+
+<DemoBlock title="徽标封顶与状态点">
+  <oas-float-button badge="8" style="position: static; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="120" style="position: static; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="dot" style="position: static; box-shadow: none"></oas-float-button>
+</DemoBlock>
+
 ## 事件反馈
 
 点击派发 `oas-click`（bubbles + composed），`detail.originalEvent` 为原生点击事件。
