@@ -45,7 +45,9 @@ const DYNAMIC_IMPORT_RE = /import\(\s*["']([^"']+)["']\s*\)/g
 
 function extractSpecs(code) {
   const out = new Set()
-  for (const re of [FROM_RE, SIDE_IMPORT_RE, DYNAMIC_IMPORT_RE]) {
+  // 只跟静态导入——动态 import() 是运行时按需下载的懒 chunk（如 i18n 语言包按需加载），
+  // 不属于「初始负载」，计入会虚增闭包体积（RTL 批实测：方向助手引 i18n 后每浮层组件虚增 ~40KB gzip）
+  for (const re of [FROM_RE, SIDE_IMPORT_RE]) {
     re.lastIndex = 0
     let m
     while ((m = re.exec(code))) out.add(m[1])
@@ -268,9 +270,9 @@ const BUDGETS = [
   {
     name: '@oas-ui/ui/data/table 链 gzip',
     get: () => componentMeasures.table.gzipBytes,
-    limit: 62 * 1024, // 62 KB（2026-09-09 重定档）
+    limit: 65 * 1024, // 65 KB（2026-09-13 重定档）
     basis:
-      '实测 gzip 54.1 KB（v2.5.0 后；table 编辑/列设置/多级表头/分页/过滤/合并/子元素通道/模板/编辑校验全量；链含 core+virtual-list+i18n+oas-pagination），上浮约 15%；前档 36 KB 定档于 v2.2.7（31,913 B）',
+      '实测 gzip 56.2 KB（v2.5.3 后；RTL/移动批新增——列重排触屏上移/下移按钮、过滤面板改走共享 floating 引擎、coarse 触控目标；链含 core+virtual-list+i18n+oas-pagination），上浮约 15%；前档 62 KB 定档于 2026-09-09（54,110 B）',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',
@@ -281,8 +283,9 @@ const BUDGETS = [
   {
     name: '@oas-ui/theme index.css gzip',
     get: () => theme.gzipBytes,
-    limit: 3 * 1024, // 3 KB。实测 gzip 2,642 B（dark 语义色达标修复 + -text/-on token 体系扩充），上浮约 13%
-    basis: '实测 gzip 2,642 B（v2.1 预设文字 -text token 22 个 + dark 语义色修复），上浮约 13%',
+    limit: 3.2 * 1024, // 3.2 KB（2026-09-13 重定档）。实测 gzip 2.7 KB（RTL/触控批新增 token + 触控目标变量），上浮约 19%
+    basis:
+      '实测 gzip 2.7 KB（v2.5.3 RTL/触控批：--oas-touch-target-min 等 token 扩充；前档 3 KB 定档于 v2.1），上浮约 19%',
   },
 ]
 
