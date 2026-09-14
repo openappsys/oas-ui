@@ -142,6 +142,7 @@ const STYLE = `
 export class OASRate extends OASElement {
   static override get observedAttributes(): string[] {
     return [
+      'dir',
       'value',
       'max',
       'disabled',

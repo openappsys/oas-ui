@@ -87,7 +87,7 @@ const STYLE = `
 
 export class OASLoadingBar extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['position', 'reverse', 'speed', 'status', 'local']
+    return ['position', 'reverse', 'speed', 'status', 'local', 'dir']
   }
 
   private track: HTMLElement | null = null

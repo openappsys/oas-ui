@@ -283,6 +283,7 @@ ${OPTION_STYLE}
 export class OASTransfer extends OASElement {
   static override get observedAttributes(): string[] {
     return [
+      'dir',
       'value',
       'data',
       'titles',

@@ -255,6 +255,7 @@ button[aria-checked='true'] .spinner {
 export class OASSwitch extends OASElement {
   static override get observedAttributes(): string[] {
     return [
+      'dir',
       'checked',
       'disabled',
       'loading',
