@@ -65,7 +65,7 @@
 1. 全绿：test / typecheck / build / e2e
 2. PRD 版本段更新（含测试数）+ ROADMAP 状态
 3. CHANGELOG 记录（conventional commits 生成）
-4. 版本号同步各包 `package.json`，打 tag，`git push --tags`（**CI 通道**：tag 触发自动 build + publish；**本地通道**：tag 仅作版本标记，发布走下方 `pnpm release`）
+4. 版本号同步各包 `package.json`，**打 tag 前必跑 `pnpm release:check <版本号>`**（版本一致性硬校验：6 发布包版本 == tag 版本 + CHANGELOG 段齐全 + tag 指向提交版本一致；pre-push 钩子对推 v* tag 重复校验拦截），打 tag，`git push --tags`（**CI 通道**：tag 触发自动 build + publish；**本地通道**：tag 仅作版本标记，发布走下方 `pnpm release`）
 
 ### 两种发布通道
 
