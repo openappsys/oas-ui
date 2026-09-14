@@ -397,3 +397,479 @@ describe('OASFloatButton draggable + magnetic', () => {
     })
   })
 })
+
+// ===== 家族扩展：mode（single/group/menu）+ 受控展开 + 链接化 + 徽标封顶 =====
+
+/** group 容器（shadow 内展开层根） */
+function groupEl(el: OASFloatButton): HTMLElement {
+  return el.shadowRoot!.querySelector<HTMLElement>('[part="group"]')!
+}
+
+/** group 子钮容器 */
+function actionsLayer(el: OASFloatButton): HTMLElement {
+  return el.shadowRoot!.querySelector<HTMLElement>('[part="actions"]')!
+}
+
+/** menu 面板 */
+function menuEl(el: OASFloatButton): HTMLElement {
+  return el.shadowRoot!.querySelector<HTMLElement>('[part="menu"]')!
+}
+
+/** mirror 层（气泡 + 徽标锚点层）各项 */
+function mirrors(el: OASFloatButton): HTMLElement[] {
+  return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.mirror')]
+}
+
+/** menu 菜单项 */
+function menuItems(el: OASFloatButton): HTMLElement[] {
+  return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.item')]
+}
+
+/** light DOM 子钮（slot="action"） */
+function slotted(el: OASFloatButton): HTMLElement[] {
+  return [...el.querySelectorAll<HTMLElement>('[slot="action"]')]
+}
+
+/** group 模式挂载：默认 3 个子钮（可覆盖） */
+function mountGroup(attrs: Record<string, string> = {}, count = 3): OASFloatButton {
+  const labels = ['编辑', '复制', '删除']
+  const inner =
+    `<span slot="icon">＋</span>` +
+    Array.from(
+      { length: count },
+      (_, i) => `<button slot="action" type="button" label="${labels[i] ?? `项${i}`}">✎</button>`,
+    ).join('')
+  return mount({ mode: 'group', ...attrs }, inner)
+}
+
+describe('OASFloatButton 家族扩展：mode 结构', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  it('mode 默认 single：data-mode="single"，无展开容器，主钮无 aria-expanded/haspopup', () => {
+    const el = mount()
+    expect(el.getAttribute('data-mode')).toBe('single')
+    expect(el.shadowRoot!.querySelector('[part="group"]')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="menu"]')).toBeNull()
+    expect(btn(el).hasAttribute('aria-expanded')).toBe(false)
+    expect(btn(el).hasAttribute('aria-haspopup')).toBe(false)
+  })
+
+  it('mode=group：渲染 group 容器 + actions 层 + mirror 层，主钮 aria-haspopup="true"', () => {
+    const el = mountGroup()
+    expect(groupEl(el)).not.toBeNull()
+    expect(actionsLayer(el)).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('slot[name="action"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="menu"]')).toBeNull()
+    expect(btn(el).getAttribute('aria-haspopup')).toBe('true')
+    expect(btn(el).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('mode=menu：渲染 role="menu" 面板，主钮 aria-haspopup="menu"', () => {
+    const el = mount({
+      mode: 'menu',
+      actions: JSON.stringify([{ label: '编辑' }]),
+    })
+    const menu = menuEl(el)
+    expect(menu).not.toBeNull()
+    expect(menu.getAttribute('role')).toBe('menu')
+    expect(btn(el).getAttribute('aria-haspopup')).toBe('menu')
+  })
+
+  it('mode 非法值回落 single 并 console.warn 告警一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ mode: 'stacked' })
+    expect(el.getAttribute('data-mode')).toBe('single')
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('非法 mode'))
+    el.setAttribute('mode', 'stacked')
+    expect(warn).toHaveBeenCalledTimes(1) // 同值去重
+  })
+
+  it('mode 运行时切换重建 shadow（single ↔ group）', () => {
+    const el = mount()
+    expect(el.shadowRoot!.querySelector('[part="group"]')).toBeNull()
+    el.setAttribute('mode', 'group')
+    expect(groupEl(el)).not.toBeNull()
+    el.setAttribute('mode', 'single')
+    expect(el.shadowRoot!.querySelector('[part="group"]')).toBeNull()
+    expect(btn(el)).not.toBeNull() // 主钮始终在
+  })
+
+  it('observedAttributes 声明 mode/expanded/trigger/expand-direction/actions', () => {
+    for (const name of ['mode', 'expanded', 'trigger', 'expand-direction', 'actions']) {
+      expect(OASFloatButton.observedAttributes).toContain(name)
+    }
+  })
+})
+
+describe('OASFloatButton group 展开/受控/触发', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  it('trigger 默认 click：点击主钮展开（expanded 属性 + open 类 + aria-expanded），再点收起', () => {
+    const el = mountGroup()
+    btn(el).click()
+    expect(el.hasAttribute('expanded')).toBe(true)
+    expect(groupEl(el).classList.contains('open')).toBe(true)
+    expect(btn(el).getAttribute('aria-expanded')).toBe('true')
+    btn(el).click()
+    expect(el.hasAttribute('expanded')).toBe(false)
+    expect(groupEl(el).classList.contains('open')).toBe(false)
+    expect(btn(el).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('展开/收起派发 oas-expand-change，detail 精确为 { expanded: true/false }', () => {
+    const el = mountGroup()
+    const events: unknown[] = []
+    el.addEventListener('oas-expand-change', (e) => events.push((e as CustomEvent).detail))
+    btn(el).click()
+    btn(el).click()
+    expect(events).toEqual([{ expanded: true }, { expanded: false }])
+  })
+
+  it('expanded 受控初值：挂载即展开；宿主移除属性即收起（宿主操作不派发事件）', () => {
+    const events: unknown[] = []
+    const el = mountGroup({ expanded: '' })
+    el.addEventListener('oas-expand-change', (e) => events.push((e as CustomEvent).detail))
+    expect(groupEl(el).classList.contains('open')).toBe(true)
+    el.removeAttribute('expanded')
+    expect(groupEl(el).classList.contains('open')).toBe(false)
+    expect(events).toEqual([])
+  })
+
+  it('trigger=manual：点击主钮不切换；宿主设置 expanded 属性即展开', () => {
+    const el = mountGroup({ trigger: 'manual' })
+    btn(el).click()
+    expect(el.hasAttribute('expanded')).toBe(false)
+    el.setAttribute('expanded', '')
+    expect(groupEl(el).classList.contains('open')).toBe(true)
+  })
+
+  it('trigger=hover：mouseenter 展开、mouseleave 120ms 宽限后收起；宽限期内移入面板不收起', () => {
+    vi.useFakeTimers()
+    const el = mountGroup({ trigger: 'hover' })
+    const events: unknown[] = []
+    el.addEventListener('oas-expand-change', (e) => events.push((e as CustomEvent).detail))
+    el.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(el.hasAttribute('expanded')).toBe(true)
+    el.dispatchEvent(new MouseEvent('mouseleave'))
+    expect(el.hasAttribute('expanded')).toBe(true) // 宽限期内
+    vi.advanceTimersByTime(119)
+    expect(el.hasAttribute('expanded')).toBe(true)
+    vi.advanceTimersByTime(2)
+    expect(el.hasAttribute('expanded')).toBe(false)
+    expect(events).toEqual([{ expanded: true }, { expanded: false }])
+    // 移入面板：不触发收起
+    el.dispatchEvent(new MouseEvent('mouseenter'))
+    el.dispatchEvent(new MouseEvent('mouseleave', { relatedTarget: actionsLayer(el) }))
+    vi.advanceTimersByTime(300)
+    expect(el.hasAttribute('expanded')).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('hover 触发在 coarse pointer 下回落 click（mouseenter 不展开）', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true }) as MediaQueryList)
+    const el = mountGroup({ trigger: 'hover' })
+    el.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(el.hasAttribute('expanded')).toBe(false)
+  })
+
+  it('外点收起：展开后点击组件外部元素收起', () => {
+    const el = mountGroup({ expanded: '' })
+    const outside = document.createElement('button')
+    outside.textContent = '外部'
+    document.body.appendChild(outside)
+    outside.click()
+    expect(el.hasAttribute('expanded')).toBe(false)
+  })
+
+  it('Esc 收起并回焦主钮（menu/group 通用）', () => {
+    const el = mountGroup({ expanded: '' })
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(el.hasAttribute('expanded')).toBe(false)
+    expect(el.shadowRoot!.activeElement).toBe(btn(el))
+  })
+
+  it('disabled：点击主钮不展开也不派发 expand-change', () => {
+    const el = mountGroup({ disabled: '' })
+    const events: unknown[] = []
+    el.addEventListener('oas-expand-change', (e) => events.push((e as CustomEvent).detail))
+    btn(el).click()
+    expect(el.hasAttribute('expanded')).toBe(false)
+    expect(events).toEqual([])
+  })
+
+  it('draggable 拖拽超阈值：合成 click 被抑制，不误切换展开', () => {
+    const el = mountGroup({ draggable: '' })
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({ left: 100, top: 80, width: 48, height: 48 } as DOMRect)
+    pointer(btn(el), 'pointerdown', 100, 80)
+    pointer(btn(el), 'pointermove', 200, 120) // dx=100 > 4
+    pointer(btn(el), 'pointerup', 200, 120)
+    btn(el).click() // 拖拽后合成 click
+    expect(el.hasAttribute('expanded')).toBe(false)
+  })
+})
+
+describe('OASFloatButton group 子钮（slot=action）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  it('mirror 层与子钮数量对齐（3 个子钮 → 3 个 mirror 锚点）', () => {
+    const el = mountGroup()
+    expect(slotted(el)).toHaveLength(3)
+    expect(mirrors(el)).toHaveLength(3)
+  })
+
+  it('子钮 label 属性 → mirror 气泡文本同步；无 label 属性的气泡为空', () => {
+    const el = mountGroup()
+    const texts = mirrors(el).map((m) => m.querySelector('.bubble')!.textContent)
+    expect(texts).toEqual(['编辑', '复制', '删除'])
+  })
+
+  it('hover 子钮 → 对应 mirror 气泡显示（bubble-on），移出清除', () => {
+    const el = mountGroup()
+    const kids = slotted(el)
+    kids[1]!.dispatchEvent(new MouseEvent('mouseenter'))
+    const states = mirrors(el).map((m) => m.classList.contains('bubble-on'))
+    expect(states).toEqual([false, true, false])
+    kids[1]!.dispatchEvent(new MouseEvent('mouseleave'))
+    expect(mirrors(el).every((m) => !m.classList.contains('bubble-on'))).toBe(true)
+  })
+
+  it('键盘 focusin 子钮同样点亮气泡（键盘可达）', () => {
+    const el = mountGroup()
+    slotted(el)[0]!.dispatchEvent(new FocusEvent('focusin', { bubbles: true, composed: true }))
+    expect(mirrors(el)[0]!.classList.contains('bubble-on')).toBe(true)
+    slotted(el)[0]!.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true }))
+    expect(mirrors(el)[0]!.classList.contains('bubble-on')).toBe(false)
+  })
+
+  it('子钮 badge 属性 → mirror 徽标：数字 / dot 状态点 / 99+ 封顶', () => {
+    const el = mount(
+      { mode: 'group' },
+      `<span slot="icon">＋</span>` +
+        `<button slot="action" type="button" badge="3">a</button>` +
+        `<button slot="action" type="button" badge="dot">b</button>` +
+        `<button slot="action" type="button" badge="120">c</button>`,
+    )
+    const badges = mirrors(el).map((m) => m.querySelector('.mini-badge')!)
+    expect(badges[0]!.textContent).toBe('3')
+    expect(badges[0]!.classList.contains('dot')).toBe(false)
+    expect(badges[1]!.classList.contains('dot')).toBe(true)
+    expect(badges[2]!.textContent).toBe('99+')
+  })
+
+  it('slotchange 动态增删子钮 → mirror 层同步', async () => {
+    const el = mountGroup({}, 2)
+    expect(mirrors(el)).toHaveLength(2)
+    const added = document.createElement('button')
+    added.setAttribute('slot', 'action')
+    added.setAttribute('label', '新项')
+    el.appendChild(added)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(mirrors(el)).toHaveLength(3)
+    el.removeChild(added)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(mirrors(el)).toHaveLength(2)
+  })
+
+  it('点击子钮 → 组收起并派发 expand-change（组语义：选择即收起）', () => {
+    const el = mountGroup({ expanded: '' })
+    const events: unknown[] = []
+    el.addEventListener('oas-expand-change', (e) => events.push((e as CustomEvent).detail))
+    slotted(el)[0]!.click()
+    expect(el.hasAttribute('expanded')).toBe(false)
+    expect(events).toEqual([{ expanded: false }])
+  })
+
+  it('expand-direction：data-dir 同步，非法值回落 up；RTL 下 left↔right 镜像', () => {
+    const el = mountGroup({ 'expand-direction': 'left' })
+    expect(groupEl(el).getAttribute('data-dir')).toBe('left')
+    el.setAttribute('expand-direction', 'bogus')
+    expect(groupEl(el).getAttribute('data-dir')).toBe('up')
+    el.setAttribute('expand-direction', 'left')
+    el.setAttribute('dir', 'rtl')
+    expect(groupEl(el).getAttribute('data-dir')).toBe('right') // 书写方向镜像
+    el.setAttribute('expand-direction', 'right')
+    expect(groupEl(el).getAttribute('data-dir')).toBe('left')
+  })
+
+  it('group 方向键导航：纵向 ArrowDown/ArrowUp 在子钮间循环，Home/End 跳首尾', () => {
+    const el = mountGroup({ expanded: '' })
+    const kids = slotted(el)
+    kids[0]!.focus()
+    const key = (target: Element, key: string) =>
+      target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+    key(kids[0]!, 'ArrowDown')
+    expect(document.activeElement).toBe(kids[1])
+    key(kids[1]!, 'ArrowDown')
+    expect(document.activeElement).toBe(kids[2])
+    key(kids[2]!, 'ArrowDown')
+    expect(document.activeElement).toBe(kids[0]) // 循环
+    key(kids[0]!, 'End')
+    expect(document.activeElement).toBe(kids[2])
+    key(kids[2]!, 'Home')
+    expect(document.activeElement).toBe(kids[0])
+  })
+})
+
+describe('OASFloatButton menu 模式', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  function mountMenu(actions: unknown, attrs: Record<string, string> = {}): OASFloatButton {
+    return mount({ mode: 'menu', actions: JSON.stringify(actions), ...attrs }, `<span slot="icon">＋</span>`)
+  }
+
+  it('actions JSON 渲染菜单项：无 href 为 button[role=menuitem]，含 icon 与 label', () => {
+    const el = mountMenu([
+      { label: '编辑', icon: 'edit' },
+      { label: '复制', icon: 'copy' },
+    ])
+    const items = menuItems(el)
+    expect(items).toHaveLength(2)
+    expect(items[0]!.tagName).toBe('BUTTON')
+    expect(items[0]!.getAttribute('role')).toBe('menuitem')
+    expect(items[0]!.textContent).toContain('编辑')
+    expect(items[0]!.querySelector('svg')).not.toBeNull() // icon 渲染
+  })
+
+  it('href action 渲染为链接菜单项 a[role=menuitem]，target 透传（与可点动作互斥）', () => {
+    const el = mountMenu([{ label: '文档', href: 'https://example.com', target: '_blank' }, { label: '普通' }])
+    const items = menuItems(el)
+    expect(items[0]!.tagName).toBe('A')
+    expect(items[0]!.getAttribute('href')).toBe('https://example.com')
+    expect(items[0]!.getAttribute('target')).toBe('_blank')
+    expect(items[0]!.getAttribute('role')).toBe('menuitem')
+    expect(items[1]!.tagName).toBe('BUTTON')
+  })
+
+  it('菜单项 badge：数字与 99+ 封顶与 dot', () => {
+    const el = mountMenu([
+      { label: 'a', badge: '5' },
+      { label: 'b', badge: 'dot' },
+      { label: 'c', badge: '100' },
+    ])
+    const badges = menuItems(el).map((i) => i.querySelector('.mini-badge')!)
+    expect(badges[0]!.textContent).toBe('5')
+    expect(badges[1]!.classList.contains('dot')).toBe(true)
+    expect(badges[2]!.textContent).toBe('99+')
+  })
+
+  it('点击菜单项 → 派发 oas-select { index, label }（链接项附 href）并收起', () => {
+    const el = mountMenu([{ label: '编辑' }, { label: '文档', href: 'https://example.com' }])
+    const selects: unknown[] = []
+    el.addEventListener('oas-select', (e) => selects.push((e as CustomEvent).detail))
+    el.setAttribute('expanded', '')
+    menuItems(el)[0]!.click()
+    expect(selects[0]).toEqual({ index: 0, label: '编辑' })
+    expect(el.hasAttribute('expanded')).toBe(false)
+    el.setAttribute('expanded', '')
+    menuItems(el)[1]!.click()
+    expect(selects[1]).toEqual({ index: 1, label: '文档', href: 'https://example.com' })
+  })
+
+  it('actions 非法 JSON → 空菜单不抛异常', () => {
+    const el = mount({ mode: 'menu', actions: '{oops' })
+    expect(menuItems(el)).toHaveLength(0)
+    expect(btn(el)).not.toBeNull()
+  })
+
+  it('menu 展开方向只支持纵向：down 生效，left/非法值回落 up', () => {
+    const el = mountMenu([{ label: 'a' }], { 'expand-direction': 'down' })
+    expect(menuEl(el).getAttribute('data-dir')).toBe('down')
+    el.setAttribute('expand-direction', 'left')
+    expect(menuEl(el).getAttribute('data-dir')).toBe('up')
+  })
+
+  it('键盘：展开自动聚焦首项，ArrowDown/Up 循环，Home/End 跳首尾', () => {
+    const el = mountMenu([{ label: 'a' }, { label: 'b' }, { label: 'c' }], { expanded: '' })
+    const items = menuItems(el)
+    expect(el.shadowRoot!.activeElement).toBe(items[0]) // 展开自动聚焦首项
+    const key = (target: Element, key: string) =>
+      target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+    key(menuEl(el), 'ArrowDown')
+    expect(el.shadowRoot!.activeElement).toBe(items[1])
+    key(menuEl(el), 'ArrowDown')
+    key(menuEl(el), 'ArrowDown')
+    expect(el.shadowRoot!.activeElement).toBe(items[0]) // 循环
+    key(menuEl(el), 'ArrowUp')
+    expect(el.shadowRoot!.activeElement).toBe(items[2])
+    key(menuEl(el), 'Home')
+    expect(el.shadowRoot!.activeElement).toBe(items[0])
+    key(menuEl(el), 'End')
+    expect(el.shadowRoot!.activeElement).toBe(items[2])
+  })
+})
+
+describe('OASFloatButton 徽标封顶 + 触控目标', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  it('主钮徽标数字封顶：badge="120" → 99+；普通数字原样；dot → 状态点（空文本 + dot 类）', () => {
+    const el = mount({ badge: '120' })
+    const badge = el.shadowRoot!.querySelector<HTMLElement>('[part="badge"]')!
+    expect(badge.textContent).toBe('99+')
+    el.setAttribute('badge', '7')
+    expect(badge.textContent).toBe('7')
+    el.setAttribute('badge', 'dot')
+    expect(badge.textContent).toBe('')
+    expect(badge.classList.contains('dot')).toBe(true)
+    el.setAttribute('badge', 'hot')
+    expect(badge.textContent).toBe('hot')
+    expect(badge.classList.contains('dot')).toBe(false)
+  })
+
+  it('coarse pointer 媒体查询进样式表：子钮与菜单项触控目标走 --oas-touch-target-min（默认 44px）', () => {
+    const el = mountGroup()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+  })
+
+  it('展开过渡进样式表，reduced-motion 下降级（transition none）', () => {
+    const el = mountGroup()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\.group\.open\s+\.actions|\.group\.open \.actions/)
+    expect(css).toContain('@media (prefers-reduced-motion: reduce)')
+  })
+
+  it('断开连接后重新连接仍可用且无孤儿监听', () => {
+    const el = mountGroup({ expanded: '' })
+    el.remove()
+    document.body.appendChild(el)
+    expect(groupEl(el).classList.contains('open')).toBe(true)
+    btn(el).click()
+    expect(el.hasAttribute('expanded')).toBe(false)
+  })
+})
