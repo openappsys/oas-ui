@@ -199,6 +199,7 @@ const STYLE = `
 export class OASButtonGroup extends OASElement {
   static override get observedAttributes(): string[] {
     return [
+      'dir',
       'type',
       'size',
       'variant',

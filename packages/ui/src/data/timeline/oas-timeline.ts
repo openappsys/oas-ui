@@ -32,7 +32,7 @@ const STYLE = `
 
 export class OASTimeline extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['direction', 'mode', 'reverse']
+    return ['direction', 'mode', 'reverse', 'dir']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
