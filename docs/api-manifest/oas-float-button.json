@@ -3,6 +3,35 @@
   "sourceFile": "packages/ui/src/navigation/float-button/oas-float-button.ts",
   "attrs": [
     {
+      "name": "mode",
+      "type": "string",
+      "default": "single",
+      "observed": true
+    },
+    {
+      "name": "expanded",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "trigger",
+      "type": "string",
+      "default": "click",
+      "observed": true
+    },
+    {
+      "name": "expand-direction",
+      "type": "string",
+      "default": "up",
+      "observed": true
+    },
+    {
+      "name": "actions",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
       "name": "badge",
       "type": "string",
       "default": "",
@@ -64,11 +93,21 @@
     {
       "name": "oas-click",
       "detail": "{ originalEvent: e }"
+    },
+    {
+      "name": "oas-select"
+    },
+    {
+      "name": "oas-expand-change",
+      "detail": "{ expanded: true } | { expanded: false }"
     }
   ],
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "action"
     },
     {
       "name": "icon"

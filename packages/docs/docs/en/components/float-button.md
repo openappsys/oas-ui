@@ -213,15 +213,20 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `actions` | — | `string` | `[]` |
 | `aria-label` | Accessible name: overrides the built-in label when set explicitly (icon-only defaults to locale "Quick actions"; extended text lets the visible text win) | — | — |
 | `badge` | Badge number at the top-right corner | `string` | — |
 | `disabled` | Disabled: not clickable, `oas-click` not fired, weakened styles; in `href` mode it degrades to a non-clickable `span` | `boolean` | — |
 | `draggable` | Draggable: press and drag to move the button (free positioning under `fixed`, clamped inside the viewport); displacement > 4px counts as a drag, in which case releasing does not fire `oas-click` (within the threshold it fires normally) | `boolean` | — |
+| `expand-direction` | — | `string` | `up` |
+| `expanded` | — | `boolean` | — |
 | `href` | Link URL: when set, renders an `<a>` element (native link semantics and keyboard reachability) instead of a button; degrades to a `span` when disabled | `string` | — |
 | `magnetic` | Magnetic: `x` snaps to the nearest left/right edge, `y` to the nearest top/bottom edge, with a transition on release; empty means no snapping (requires `draggable`) | `string` | — |
+| `mode` | — | `string` | `single` |
 | `shape` | Shape: `circle` (default, round) / `square` (capsule rounded rectangle) | `string` | `circle` |
 | `size` | Size tier: `xs` (24px) / `sm` (32px) / `md` (40px) / `lg` (default 48px) / `xl` (56px); invalid values fall back to `lg` with a warning | `string` | `lg` |
 | `target` | Link open mode (effective in `href` mode, e.g. `_blank`) | `string` | — |
+| `trigger` | — | `string` | `click` |
 | `type` | Visual intensity: `primary` (default, solid primary) / `default` (weakened: light background with dark text) | `string` | `primary` |
 
 ### Events
@@ -229,12 +234,15 @@ onMounted(async () => {
 | Event | Description |
 | --- | --- |
 | `oas-click` | Clicked, `detail: { originalEvent }` |
+| `oas-expand-change` | — |
+| `oas-select` | — |
 
 ### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Extended text: writing text into the default slot turns the button into a horizontal capsule (icon + text in a row) |
+| `action` | — |
 | `icon` | Icon (default ＋) |
 
 The default position is `position: fixed; bottom/right`, adjustable via the `--oas-float-button-bottom` / `--oas-float-button-right` CSS variables (default `var(--oas-space-6)`).

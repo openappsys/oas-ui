@@ -1,0 +1,70 @@
+{
+  "className": "OASAppBar",
+  "sourceFile": "packages/ui/src/navigation/app-bar/oas-app-bar.ts",
+  "attrs": [
+    {
+      "name": "heading",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "menu-button",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "menu-open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "menu-controls",
+      "observed": true
+    },
+    {
+      "name": "position",
+      "type": "string",
+      "default": "static",
+      "observed": true
+    },
+    {
+      "name": "hide-on-scroll",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "extended-collapse-on-scroll",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "elevated",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-menu-toggle"
+    }
+  ],
+  "slots": [
+    {
+      "name": "actions"
+    },
+    {
+      "name": "extended"
+    },
+    {
+      "name": "leading"
+    },
+    {
+      "name": "title"
+    },
+    {
+      "name": "trailing"
+    }
+  ],
+  "unresolved": []
+}
