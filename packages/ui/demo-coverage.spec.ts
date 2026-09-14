@@ -492,6 +492,18 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['#ab-overflow [part="more"]', 'click', '点「···」展开溢出弹层'],
     ['#ab-overflow [role="menuitem"]', 'click', '点镜像项回派原按钮 → oas-click'],
   ],
+  'float-button': [
+    // 选择器必须用 part="btn" 精确定位 shadow 主钮：`oas-float-button button` 会同时命中
+    // light DOM 的 group 子钮（slot="action"），且 Playwright 穿透匹配顺序非文档序，
+    // .first() 会拿到子钮（点击不派发 oas-click）；菜单项也是 <button> 会干扰主钮定位
+    ['oas-float-button:not([disabled]) [part="btn"]', 'domclick', '点主钮 → oas-click'],
+    ['oas-float-button[mode="menu"] [part="btn"]', 'domclick', '展开菜单 → oas-expand-change'],
+    [
+      'oas-float-button[mode="menu"] [role="menuitem"]',
+      'domclick',
+      '点菜单项 → oas-select（并收起再派 expand-change）',
+    ],
+  ],
   toolbar: [
     ['oas-toolbar-toggle[multiple] [part="item"]', 'click:n0', '点多选切换组（加粗）→ oas-change'],
     ['oas-toolbar-toggle:not([multiple]) [part="item"]', 'click:n1', '点单选对齐组第 2 项 → oas-change'],

@@ -2,7 +2,7 @@
 
 默认固定于页面右下角的圆形操作按钮，常用于「新建」「反馈」等快捷操作，支持角标、自定义图标、扩展文字与链接化。
 
-> 演示中已加 `style="position: static"` 避免固定定位影响页面布局；实际使用默认固定在右下角，位置可通过 `--oas-float-button-bottom` / `--oas-float-button-right` 两个 CSS 变量调整（默认 `var(--oas-space-6)`，即 32px）。
+> 演示中已加 `style="position: relative"` 保持文档流并建立定位上下文（分组/菜单展开层相对主钮锚定）；实际使用默认固定在右下角，位置可通过 `--oas-float-button-bottom` / `--oas-float-button-right` 两个 CSS 变量调整（默认 `var(--oas-space-6)`，即 32px）。
 
 ## 基础用法
 
@@ -109,7 +109,7 @@
 - 点击任一子钮后组自动收起；Esc / 点击外部收起并回焦主钮
 
 <DemoBlock title="分组（点击主钮展开，子钮带 label 气泡与角标）">
-  <oas-float-button mode="group" expand-direction="down" style="position: static">
+  <oas-float-button mode="group" expand-direction="down" style="position: relative">
     <span slot="icon">＋</span>
     <button slot="action" type="button" label="编辑"><span>✎</span></button>
     <a slot="action" href="https://example.com" target="_blank" label="文档（链接子钮）"><span>📄</span></a>
@@ -118,7 +118,7 @@
 </DemoBlock>
 
 <DemoBlock title="展开事件（点击主钮切换，oas-expand-change 消息反馈）">
-  <oas-float-button mode="group" expand-direction="down" style="position: static" onoas-expand-change="message.info('展开态：' + event.detail.expanded)">
+  <oas-float-button mode="group" expand-direction="down" style="position: relative" onoas-expand-change="message.info('展开态：' + event.detail.expanded)">
     <span slot="icon">＋</span>
     <button slot="action" type="button" label="复制"><span>⧉</span></button>
     <button slot="action" type="button" label="删除"><span>🗑</span></button>
@@ -131,7 +131,7 @@
     mode="group"
     expand-direction="down"
     trigger="manual"
-    style="position: static"
+    style="position: relative"
   >
     <span slot="icon">＋</span>
     <button slot="action" type="button" label="复制"><span>⧉</span></button>
@@ -154,7 +154,7 @@
   <oas-float-button
     mode="menu"
     expand-direction="down"
-    style="position: static"
+    style="position: relative"
     onoas-select="message.info('选中：' + event.detail.label + (event.detail.href ? '（链接 ' + event.detail.href + '）' : ''))"
     actions='[
       { "label": "编辑", "icon": "edit" },

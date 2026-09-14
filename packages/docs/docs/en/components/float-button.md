@@ -2,7 +2,7 @@
 
 A circular action button fixed to the bottom-right corner of the page by default, for quick actions like "New" and "Feedback"; supports a badge, a custom icon, extended text and link mode.
 
-> The demos add `style="position: static"` to avoid fixed positioning affecting the page layout; in real use it is fixed to the bottom-right by default, adjustable via the `--oas-float-button-bottom` / `--oas-float-button-right` CSS variables (default `var(--oas-space-6)`, i.e. 32px).
+> The demos add `style="position: relative"` to keep them in the document flow while establishing a positioning context (group/menu expansion layers anchor relative to the main button); in real use it is fixed to the bottom-right by default, adjustable via the `--oas-float-button-bottom` / `--oas-float-button-right` CSS variables (default `var(--oas-space-6)`, i.e. 32px).
 
 ## Basic usage
 
@@ -109,7 +109,7 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 - Clicking any child button collapses the group; Esc / outside click collapses and refocuses the main button
 
 <DemoBlock title="Group (click the main button to expand; children carry label bubbles and badges)">
-  <oas-float-button mode="group" expand-direction="down" style="position: static">
+  <oas-float-button mode="group" expand-direction="down" style="position: relative">
     <span slot="icon">＋</span>
     <button slot="action" type="button" label="Edit"><span>✎</span></button>
     <a slot="action" href="https://example.com" target="_blank" label="Docs (link child)"><span>📄</span></a>
@@ -118,7 +118,7 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 </DemoBlock>
 
 <DemoBlock title="Expand event (click the main button to toggle; oas-expand-change message feedback)">
-  <oas-float-button mode="group" expand-direction="down" style="position: static" onoas-expand-change="message.info('Expanded: ' + event.detail.expanded)">
+  <oas-float-button mode="group" expand-direction="down" style="position: relative" onoas-expand-change="message.info('Expanded: ' + event.detail.expanded)">
     <span slot="icon">＋</span>
     <button slot="action" type="button" label="Copy"><span>⧉</span></button>
     <button slot="action" type="button" label="Delete"><span>🗑</span></button>
@@ -131,7 +131,7 @@ Writing text into the default slot turns the button into a horizontal capsule (i
     mode="group"
     expand-direction="down"
     trigger="manual"
-    style="position: static"
+    style="position: relative"
   >
     <span slot="icon">＋</span>
     <button slot="action" type="button" label="Copy"><span>⧉</span></button>
@@ -154,7 +154,7 @@ Writing text into the default slot turns the button into a horizontal capsule (i
   <oas-float-button
     mode="menu"
     expand-direction="down"
-    style="position: static"
+    style="position: relative"
     onoas-select="message.info('Selected: ' + event.detail.label + (event.detail.href ? ' (link ' + event.detail.href + ')' : ''))"
     actions='[
       { "label": "Edit", "icon": "edit" },
