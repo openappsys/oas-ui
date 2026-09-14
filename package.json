@@ -23,6 +23,7 @@
     "stats:check": "node scripts/stats/gen.mjs && git diff --exit-code -- packages/docs/docs/.vitepress/generated/stats.json",
     "perf:size": "node scripts/perf/size.mjs",
     "perf:bench": "node scripts/perf/render-bench.mjs",
+    "release:check": "node scripts/release-check.mjs",
     "release": "pnpm test && pnpm typecheck && pnpm build && pnpm -r publish --access public",
     "lint:md": "markdownlint-cli2",
     "check": "biome check --formatter-enabled=true ."
