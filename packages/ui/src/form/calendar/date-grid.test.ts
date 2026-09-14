@@ -119,6 +119,14 @@ describe('date-grid 共享模块（纯函数）', () => {
     expect(moveGridDate(d, 'Enter')).toBeNull()
   })
 
+  it('moveGridDate RTL：水平方向键翻转（左=次日/右=前日），垂直向不变', () => {
+    const d = new Date(2026, 7, 9)
+    expect(toISODate(moveGridDate(d, 'ArrowLeft', 0, false, true)!)).toBe('2026-08-10')
+    expect(toISODate(moveGridDate(d, 'ArrowRight', 0, false, true)!)).toBe('2026-08-08')
+    expect(toISODate(moveGridDate(d, 'ArrowUp', 0, false, true)!)).toBe('2026-08-02')
+    expect(toISODate(moveGridDate(d, 'ArrowDown', 0, false, true)!)).toBe('2026-08-16')
+  })
+
   it('moveGridDate 扩展：Home/End 按生效周起始跳周首尾', () => {
     // 2026-08-11 为周二
     const d = new Date(2026, 7, 11)
