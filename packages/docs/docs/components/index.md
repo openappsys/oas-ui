@@ -92,6 +92,7 @@ OAS-UI 提供 115 个框架无关的 Web Components 组件，按用途划分为 
 - [Menubar 应用菜单栏](/components/menubar) —— 桌面应用式顶部菜单条（文件 / 编辑 / 视图），点击 / 悬停展开子菜单（级联浮出），支持方向键、`Alt` 访问键与焦点陷阱。
 - [NavigationMenu 多级导航](/components/navigation-menu) —— 网站式多级导航栏：悬停 / 键盘展开子菜单（级联浮出），带 `href` 的叶子项渲染为链接。
 - [Toolbar 工具栏](/components/toolbar) —— 工具按钮组容器：`role="toolbar"` + `aria-label`，`Tab` 进入后方向键在按钮间移动（roving tabindex，只聚焦当前项）。
+- [AppBar 应用栏](/components/app-bar) —— 页面顶部应用栏布局条：标题 + 操作区 + overflow 收纳 + 滚动折叠 + 扩展区，`role="banner"`，汉堡钮派发 `oas-menu-toggle` 并同步 `aria-expanded`。
 - [Breadcrumb 面包屑](/components/breadcrumb) —— 展示页面层级路径，末项为当前页（不可点击）。
 - [Anchor 锚点](/components/anchor) —— 滚动监听当前章节并自动高亮，点击锚点平滑滚动定位。
 - [BackTop 回到顶部](/components/back-top) —— 固定于视口角落的回到顶部按钮，点击平滑滚动到页面顶部。

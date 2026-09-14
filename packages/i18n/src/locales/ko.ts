@@ -324,6 +324,11 @@ export const ko: LocaleMessages = {
   'toolbar.toggleGroup': '토글 그룹',
   'toolbar.input': '도구 모음 입력창',
   'toolbar.item': '도구 모음 항목',
+  // app-bar（앱 바）
+  'appBar.label': '앱 바',
+  'appBar.menu': '기본 메뉴',
+  'appBar.more': '더 보기',
+  'appBar.item': '작업',
   // log（로그 스트림）
   'log.empty': '로그 없음',
   'log.no-match': '일치하는 로그 없음',
