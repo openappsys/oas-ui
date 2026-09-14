@@ -324,6 +324,11 @@ export const ar: LocaleMessages = {
   'toolbar.toggleGroup': 'مجموعة تبديل',
   'toolbar.input': 'حقل إدخال شريط الأدوات',
   'toolbar.item': 'عنصر شريط الأدوات',
+  // app-bar (شريط التطبيق)
+  'appBar.label': 'شريط التطبيق',
+  'appBar.menu': 'القائمة الرئيسية',
+  'appBar.more': 'المزيد من الإجراءات',
+  'appBar.item': 'إجراء',
   // log (تدفق السجلات)
   'log.empty': 'لا توجد سجلات',
   'log.no-match': 'لا توجد سجلات مطابقة',

@@ -256,6 +256,11 @@ export const en: LocaleMessages = {
   'toolbar.toggleGroup': 'Toggle group',
   'toolbar.input': 'Toolbar input',
   'toolbar.item': 'Toolbar item',
+  // app-bar
+  'appBar.label': 'App bar',
+  'appBar.menu': 'Main menu',
+  'appBar.more': 'More actions',
+  'appBar.item': 'Action',
   'log.empty': 'No logs',
   'log.no-match': 'No matching logs',
   'themeEditor.label': 'Theme editor',

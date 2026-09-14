@@ -487,6 +487,11 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-menubar [part="top-item"]', 'domclick', 'DOM click 避开 mouseenter 展开与 click 收起的抵消'],
     ['oas-menubar [part="item"]', 'click', '点子菜单项 → oas-select'],
   ],
+  'app-bar': [
+    ['oas-app-bar[menu-button] [part="menu-button"]', 'domclick', '点汉堡钮 → oas-menu-toggle'],
+    ['#ab-overflow [part="more"]', 'click', '点「···」展开溢出弹层'],
+    ['#ab-overflow [role="menuitem"]', 'click', '点镜像项回派原按钮 → oas-click'],
+  ],
   toolbar: [
     ['oas-toolbar-toggle[multiple] [part="item"]', 'click:n0', '点多选切换组（加粗）→ oas-change'],
     ['oas-toolbar-toggle:not([multiple]) [part="item"]', 'click:n1', '点单选对齐组第 2 项 → oas-change'],

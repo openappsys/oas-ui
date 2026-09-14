@@ -324,6 +324,11 @@ export const fr: LocaleMessages = {
   'toolbar.toggleGroup': 'Groupe à bascule',
   'toolbar.input': 'Champ de saisie de la barre d’outils',
   'toolbar.item': 'Élément de barre d’outils',
+  // app-bar (barre d’application)
+  'appBar.label': 'Barre d’application',
+  'appBar.menu': 'Menu principal',
+  'appBar.more': 'Plus d’actions',
+  'appBar.item': 'Action',
   // log (flux de journaux)
   'log.empty': 'Aucun journal',
   'log.no-match': 'Aucun journal correspondant',

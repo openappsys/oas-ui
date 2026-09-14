@@ -225,6 +225,7 @@ import './navigation/command/index.js'
 import './navigation/menubar/index.js'
 import './navigation/navigation-menu/index.js'
 import './navigation/toolbar/index.js'
+import './navigation/app-bar/index.js'
 import './navigation/speed-dial/index.js'
 import './navigation/breadcrumb/index.js'
 import './navigation/back-top/index.js'
@@ -269,6 +270,7 @@ export {
   OASToolbarInput,
   type ToolbarToggleItem,
 } from './navigation/toolbar/index.js'
+export { OASAppBar, type AppBarPosition } from './navigation/app-bar/index.js'
 export { OASSpeedDial, type SpeedDialAction } from './navigation/speed-dial/oas-speed-dial.js'
 export {
   OASBreadcrumb,

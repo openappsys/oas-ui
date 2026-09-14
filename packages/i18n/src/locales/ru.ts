@@ -324,6 +324,11 @@ export const ru: LocaleMessages = {
   'toolbar.toggleGroup': 'Группа переключателей',
   'toolbar.input': 'Поле на панели инструментов',
   'toolbar.item': 'Элемент панели инструментов',
+  // app-bar (панель приложения)
+  'appBar.label': 'Панель приложения',
+  'appBar.menu': 'Главное меню',
+  'appBar.more': 'Ещё действия',
+  'appBar.item': 'Действие',
   // log (поток журнала)
   'log.empty': 'Нет записей',
   'log.no-match': 'Нет подходящих записей',

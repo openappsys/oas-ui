@@ -324,6 +324,11 @@ export const ja: LocaleMessages = {
   'toolbar.toggleGroup': 'トグルグループ',
   'toolbar.input': 'ツールバー入力欄',
   'toolbar.item': 'ツールバー項目',
+  // app-bar（アプリバー）
+  'appBar.label': 'アプリバー',
+  'appBar.menu': 'メインメニュー',
+  'appBar.more': 'その他の操作',
+  'appBar.item': '操作',
   // log（ログストリーム）
   'log.empty': 'ログなし',
   'log.no-match': '一致するログなし',

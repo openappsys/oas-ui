@@ -324,6 +324,11 @@ export const de: LocaleMessages = {
   'toolbar.toggleGroup': 'Umschaltgruppe',
   'toolbar.input': 'Eingabefeld der Symbolleiste',
   'toolbar.item': 'Symbolleisten-Element',
+  // app-bar (App-Leiste)
+  'appBar.label': 'App-Leiste',
+  'appBar.menu': 'Hauptmenü',
+  'appBar.more': 'Weitere Aktionen',
+  'appBar.item': 'Aktion',
   // log (Protokollstream)
   'log.empty': 'Keine Protokolle',
   'log.no-match': 'Keine passenden Protokolle',
