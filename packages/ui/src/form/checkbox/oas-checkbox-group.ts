@@ -279,7 +279,7 @@ export class OASCheckboxGroup extends OASElement {
       .filter((v) => v !== '')
   }
 
-  /** 组数量限制：max 达上限未选项拦截 / min 达下限已选项拦截（双向，naive 对称语义） */
+  /** 组数量限制：max 达上限未选项拦截 / min 达下限已选项拦截（双向对称） */
   private limitBlockedFor(cb: OASCheckbox, values: string[]): boolean {
     if (cb.hasAttribute('check-all')) return false
     const value = cb.getAttribute('value') ?? ''

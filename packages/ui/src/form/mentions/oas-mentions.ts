@@ -494,7 +494,7 @@ export class OASMentions extends OASElement {
     return this.getAttr('type', 'textarea') === 'input'
   }
 
-  // ---- 触发扫描（naive/EP 模型：从光标倒走至分隔符/\n/\r 即停，命中 prefix 数组即开，不要求 prefix 前空白） ----
+  // ---- 触发扫描（从光标倒走至分隔符/\n/\r 即停，命中 prefix 数组即开，不要求 prefix 前空白） ----
 
   private scanMention(): void {
     if (this.composing) return
