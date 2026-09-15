@@ -150,6 +150,9 @@
       "name": "oas-opened"
     },
     {
+      "name": "oas-after-open"
+    },
+    {
       "name": "oas-close",
       "detail": "{ source }"
     },

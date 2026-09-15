@@ -882,7 +882,9 @@
       "oas-close": "Close: cancel button / ✕ / mask click / Esc",
       "oas-ok": "Clicked \"OK\"",
       "oas-after-close": "Close animation finished (canonical, aligned with the after-* family); no `detail`. Scroll unlock and focus restore happen after this",
-      "oas-closed": "[Compat alias] Close animation finished, same as oas-after-close; will be removed later"
+      "oas-closed": "[Compat alias] Close animation finished, same as oas-after-close; will be removed later",
+      "oas-after-open": "Open animation finished (canonical, aligned with the after-* family); no `detail`; same as oas-opened",
+      "oas-opened": "[Compat alias] Open animation finished, same as oas-after-open; will be removed later"
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present"
@@ -1703,7 +1705,9 @@
       "oas-cancel": "Cancel: cancel button / ✕ / mask click / Esc",
       "oas-ok": "Clicked \"OK\"",
       "oas-after-close": "Close animation finished (canonical, aligned with the after-* family); no `detail`. destroy-on-close content clearing happens after this",
-      "oas-closed": "[Compat alias] Close animation finished, same as oas-after-close; will be removed later"
+      "oas-closed": "[Compat alias] Close animation finished, same as oas-after-close; will be removed later",
+      "oas-after-open": "Open animation finished (canonical, aligned with the after-* family); no `detail`; same as oas-opened",
+      "oas-opened": "[Compat alias] Open animation finished, same as oas-after-open; will be removed later"
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present"

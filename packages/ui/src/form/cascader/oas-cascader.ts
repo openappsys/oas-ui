@@ -275,7 +275,7 @@ const STYLE = `
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent);
+  box-shadow: var(--oas-shadow-md);
   padding: var(--oas-space-1);
   display: none;
 }

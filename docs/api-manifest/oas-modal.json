@@ -167,6 +167,9 @@
       "name": "oas-opened"
     },
     {
+      "name": "oas-after-open"
+    },
+    {
       "name": "oas-close",
       "detail": "{ source, action: CLOSE_ACTION[source] }"
     },

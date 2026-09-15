@@ -33,7 +33,7 @@
 
 ## 动画与生命周期事件
 
-打开/关闭有过渡动画（transform/opacity，`prefers-reduced-motion` 下自动降级为直切）。生命周期事件：`oas-open` / `oas-opened` / `oas-close`（detail 含关闭来源）/ `oas-after-close`。
+打开/关闭有过渡动画（transform/opacity，`prefers-reduced-motion` 下自动降级为直切）。生命周期事件：`oas-open` / `oas-after-open` / `oas-close`（detail 含关闭来源）/ `oas-after-close`。
 
 <DemoBlock title="生命周期事件">
   <oas-button type="primary" onclick="document.querySelector('#drawer-life').setAttribute('visible','')">打开并观察事件</oas-button>
@@ -379,12 +379,13 @@ onMounted(async () => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-after-close` | 关闭动画完成（规范名，对齐 after-* 家族），`detail` 无；滚动解锁与焦点归还在此之后 |
+| `oas-after-open` | 打开动画完成（规范名，对齐 after-* 家族），`detail` 无；等价 oas-opened |
 | `oas-before-close` | — |
 | `oas-close` | 关闭：取消按钮 / ✕ / 遮罩点击 / Esc，`detail: { source }` |
 | `oas-closed` | 【兼容别名】关闭动画完成，等价 oas-after-close；后续版本移除 |
 | `oas-ok` | 点击「确定」 |
 | `oas-open` | — |
-| `oas-opened` | — |
+| `oas-opened` | 【兼容别名】打开动画完成，等价 oas-after-open；后续版本移除 |
 | `oas-resize` | — |
 
 ### 插槽

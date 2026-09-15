@@ -137,7 +137,7 @@ const STYLE = `
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent);
+  box-shadow: var(--oas-shadow-md);
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
   opacity: 0;
   visibility: hidden;
@@ -606,7 +606,7 @@ const STYLE = `
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent);
+  box-shadow: var(--oas-shadow-md);
   display: flex;
   flex-direction: column;
   gap: var(--oas-space-1);

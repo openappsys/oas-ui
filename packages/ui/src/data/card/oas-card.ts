@@ -41,12 +41,12 @@ const STYLE = `
   cursor: pointer;
 }
 .card.shadow-hover:hover {
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent);
+  box-shadow: var(--oas-shadow-md);
   transform: translateY(-2px);
 }
 /* shadow-always：常显阴影（比悬浮略浅，无位移） */
 .card.shadow-always {
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--oas-color-overlay) 16%, transparent);
+  box-shadow: var(--oas-shadow-sm);
 }
 /* clickable：整卡可点，指针 + focus-visible 焦点环（放在 hover 之后，聚焦时优先级更高） */
 :host([clickable]) .card {
