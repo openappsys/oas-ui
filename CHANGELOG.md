@@ -9,9 +9,12 @@
 - **oas-app-bar（新组件，应用栏）**：页面/工具区顶部的应用栏布局条——标题（属性/slot 富内容双通道）+ leading 汉堡钮（`oas-menu-toggle`）+ `slot="actions"` 操作区 + 超宽 overflow「···」收纳（RO 驱动、镜像回派）+ `hide-on-scroll` 滚动折叠 + `slot="extended"` 扩展区（滚动收起）+ `position="static|absolute|fixed|floating"` 四形态 + `elevated` 滚动投影；RTL 逻辑属性 + coarse 触控 44px；role=banner + aria 全同步；SSR/DSD 双路径。i18n 新增 `appBar.*` 4 键（10 语言包齐全）
 - **oas-float-button 家族扩展**：`mode="single|group|menu"` 三模式（分组 slot 子钮带 label 气泡与角标、菜单模式 actions JSON 弹出选择并派发 `oas-select`）；受控 `expanded` + `oas-expand-change`；`trigger="click|hover|manual"`；`expand-direction` 四向（RTL 横向镜像）；子钮/主钮链接化（href/target）；徽标状态点与数字 99+ 封顶；Esc/外点收起回焦、reduced-motion 降级
 - **RTL 第二批（方向键镜像 + 面板逻辑化收口）**：6 组件水平方向键 RTL 换向（carousel 双键盘域 / stepper / bottom-navigation / toolbar-toggle / image 图集翻页 / tree 展开收起键）+ carousel 轨道位移取反与 prev/next 箭头逻辑属性镜像 + tree 收起箭头 `data-rtl` 镜像 + scroll-area 方向判定收敛 `shared/direction` 单源（废弃私有实现）+ 浮层面板残留物理 CSS 逻辑属性改造（select / auto-complete / combobox / mentions / cascader / tree-select / date-picker / time-picker / tour / dropdown split 接缝与圆角 / menu 间距缩进 / table 表头与过滤面板 / slider / collapse-item / theme-editor）+ 约定守卫：全库物理方向 CSS 白名单化，白名单（placement 基向箭头绘制、物理命名 API、内容 LTR 锁定、成对对称）之外新增一律红灯
+- **API 规范统一**：**size 档位跨词表别名互认**（`shared/size` 单源——五档全称/缩写在任何组件等价接受，别名不告警，内部规范化输出不变；button/tag/badge/stepper/pagination/float-button 首批接入）+ **事件同名归一**（drawer/modal 关闭动画完成增派规范名 `oas-after-close` 对齐 after-* 家族、upload 超限增派 `oas-exceed-limit` 对齐 checkbox-group/select/toggle-group——旧名 `oas-closed`/`oas-exceed` 保留为兼容别名双发，API 表标注【兼容别名】；ok（对话框）/confirm（选择器）分工写入 ui-spec）+ **阴影三档 token**（`--oas-shadow-sm/md/lg`，light/dark 双变体；28 处裸海拔阴影迁移，方向性投影/inset/形状描边豁免并写入 ui-spec §1.1）
+- **qa-regression 补位 10 组件**（bottom-sheet/confirm/checkbox/radio/textarea/collapse/speed-dial/editable/dynamic-input/toggle-group，41 用例）+ helpers 新增 `defocus`/`realClick` 焦点滚动防抖工具（editable demo 挂载即聚焦引发的页面滚动拽走陷阱根治）
 
 ### 修复
 
+- **oas-speed-dial 展开自动聚焦失效（键盘可达性）**：`.actions` 的 visibility 在过渡列表中离散翻转（过渡期末端才生效），`syncOpen` 展开后立即 `focus()` 落在不可见元素上静默失败，真实浏览器中焦点留在主钮——展开向 visibility 改为立即翻转（无过渡），收起向保留延迟（淡出完成后再隐藏），两侧动画语义不变；回归断言收紧为「焦点必须落在首个子动作」
 - **oas-float-button `trigger="manual"` 完全受控语义**：外点与 Esc 不再自动收起（收起由宿主 `expanded` 属性全权驱动），修复受控 demo 切换钮与文档级捕获监听打架；demo 宿主补定位上下文（展开层锚定主钮）+ 回归固化「展开层相对主钮偏移」断言
 
 ## [2.5.3] - 2026-09-14
