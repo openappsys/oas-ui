@@ -53,7 +53,7 @@ test('upload 拖拽 drop：真实拖放文件到拖拽区即渲染', async ({ pa
   expect(r.hasName).toBe('drag.txt')
 })
 
-test('upload 超限 max：drop 超过 max 的文件触发 oas-exceed 并弹出 message 可见反馈', async ({ page }) => {
+test('upload 超限 max：drop 超过 max 的文件触发 oas-exceed-limit 并弹出 message 可见反馈', async ({ page }) => {
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#upload-wall-exceed')
   await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
