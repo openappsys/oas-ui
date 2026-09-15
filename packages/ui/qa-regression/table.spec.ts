@@ -511,12 +511,17 @@ test('table 逃生口：data-oas-row-click-ignore 容器内点击不连带 oas-r
     wrap.appendChild(inner)
     t.shadowRoot!.querySelector('td[data-col="op"]')!.appendChild(wrap)
   })
-  // 点逃生口容器内的 span：不连带 oas-row-click / 不触发选中重建
-  // （满载下文档页布局抖动会让 down/up 落点漂移——先滚入视并等布局稳定再点）
-  const opSpan = page.locator('#qa-row-ignore-escape td[data-col="op"] span')
-  await opSpan.scrollIntoViewIfNeeded()
+  // 点逃生口容器内的 span：不连带 oas-row-click / 不触发选中重建。
+  // 用 JS 派发冒泡 click（与真实点击走同一条委托/豁免判定路径），消除满载下
+  // 文档页布局抖动导致的指针落点漂移 flake——本用例验证的是组件豁免逻辑而非指针命中。
+  // 注意 wrap/span 注入在 shadow 树内，document.querySelector 不穿透，须经 shadowRoot 查询。
   await page.waitForTimeout(300)
-  await opSpan.click()
+  await page.evaluate(() => {
+    const span = document
+      .querySelector<HTMLElement>('#qa-row-ignore-escape')!
+      .shadowRoot!.querySelector('td[data-col="op"] span')!
+    span.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+  })
   await page.waitForTimeout(200)
   const r1 = await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-row-ignore-escape')!
@@ -528,7 +533,12 @@ test('table 逃生口：data-oas-row-click-ignore 容器内点击不连带 oas-r
   expect(r1.rowClick, '逃生口容器内点击不应连带 oas-row-click').toBe(0)
   expect(r1.hasSpan, '逃生口点击不应触发行选中重建（内容应仍在原格）').toBe(true)
   // 对照：逃生口外的普通文本单元格点击仍派发 oas-row-click（逃生口未误伤正常行点击）
-  await page.locator('#qa-row-ignore-escape td[data-col="name"]').click()
+  await page.evaluate(() => {
+    const td = document
+      .querySelector<HTMLElement>('#qa-row-ignore-escape')!
+      .shadowRoot!.querySelector('td[data-col="name"]')!
+    td.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+  })
   await page.waitForTimeout(200)
   const r2 = await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-row-ignore-escape')!

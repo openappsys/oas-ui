@@ -474,6 +474,7 @@ test.beforeAll(async () => {
     renderToString('oas-page-header', { title: '页面标题', back: '' }, '<span>副操作</span>', {
       locale: 'zh-CN',
     }),
+    renderToString('oas-app-bar', { heading: '控制台', 'menu-button': '' }, '', { locale: 'zh-CN' }),
     renderToString('oas-float-button', { badge: '3' }, '', { locale: 'zh-CN' }),
     renderToString('oas-speed-dial', { actions: '[{"label":"分享"}]' }, '', { locale: 'zh-CN' }),
     renderToString(
