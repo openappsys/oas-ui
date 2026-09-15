@@ -560,3 +560,60 @@ test('slider 拇指视觉统一：无自定义内容时 custom-thumb 与原生�
     expect(r.customBorder, '有自定义内容的拇指应空心环（彩边）').toBe('2px')
   }
 })
+
+// 拇指 hover 放大：纵向自定义拇指的选择器曾用链式 :host(...):not(...)（Chromium 下整条不匹配、
+// 规则从未生效）；修复为 :host(:hover:not([data-readonly])) 并加 (hover: hover) 守卫。
+test('slider 纵向拇指 hover 放大：桌面生效、readonly 不放大、触屏（无 hover 能力）不放大', async ({
+  page,
+  browser,
+}) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[vertical]')
+  const host = page.locator('oas-slider[vertical]').first()
+  await host.scrollIntoViewIfNeeded()
+  const scaleOf = () =>
+    host.evaluate((el) => getComputedStyle(el.shadowRoot!.querySelector<HTMLElement>('.custom-thumb')!).transform)
+  const hoverCapable = await page.evaluate(() => matchMedia('(hover: hover)').matches)
+  expect(hoverCapable, '桌面默认应具备 hover 能力').toBe(true)
+
+  // 未 readonly：hover 放大 1.15
+  await page.mouse.move(5, 5)
+  const base = await scaleOf()
+  expect(base, '静止态无缩放').not.toContain('1.15')
+  await host.hover()
+  await page.waitForTimeout(300)
+  expect(await scaleOf(), '非 readonly 纵向拇指 hover 应放大 1.15').toContain('1.15')
+
+  // readonly：不放大（:host(:hover:not([data-readonly])) 的排除分支）
+  await host.evaluate((el) => el.setAttribute('readonly', ''))
+  await page.waitForTimeout(200)
+  await page.mouse.move(5, 5)
+  await page.waitForTimeout(200)
+  const roBase = await scaleOf()
+  await host.hover()
+  await page.waitForTimeout(300)
+  expect(await scaleOf(), 'readonly 纵向拇指 hover 不应放大').toBe(roBase)
+
+  // 触屏仿真：无 hover 能力 → (hover: hover) 守卫使放大规则整体不生效
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
+  const p2 = await ctx.newPage()
+  try {
+    await p2.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+    await up(p2, 'oas-slider[vertical]')
+    const h2 = p2.locator('oas-slider[vertical]').first()
+    await h2.scrollIntoViewIfNeeded()
+    const capable = await p2.evaluate(() => matchMedia('(hover: hover)').matches)
+    expect(capable, '触屏仿真应无 hover 能力').toBe(false)
+    const before = await h2.evaluate(
+      (el) => getComputedStyle(el.shadowRoot!.querySelector<HTMLElement>('.custom-thumb')!).transform,
+    )
+    await h2.tap().catch(() => h2.click({ force: true }))
+    await p2.waitForTimeout(300)
+    const after = await h2.evaluate(
+      (el) => getComputedStyle(el.shadowRoot!.querySelector<HTMLElement>('.custom-thumb')!).transform,
+    )
+    expect(after, '触屏点按后拇指不应保持放大（:hover 粘滞防护）').toBe(before)
+  } finally {
+    await ctx.close()
+  }
+})
