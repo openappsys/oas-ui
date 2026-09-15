@@ -212,6 +212,8 @@ export const WHITELIST = [
   'oas-popover',
   'oas-config-provider',
   'oas-app',
+  // —— 未发布批次：导航组件（app-bar 应用栏，可见结构直出） ——
+  'oas-app-bar',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -379,6 +381,8 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-popover': '@oas-ui/ui/feedback/popover',
   'oas-config-provider': '@oas-ui/ui/framework/config-provider',
   'oas-app': '@oas-ui/ui/framework/app',
+  // —— 未发布批次：导航组件（app-bar 可见结构直出） ——
+  'oas-app-bar': '@oas-ui/ui/navigation/app-bar',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */
