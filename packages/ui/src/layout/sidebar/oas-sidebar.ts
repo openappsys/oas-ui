@@ -564,13 +564,26 @@ aside {
  *
  * 属性（kebab-case）：
  * - `collapsed`：受控折叠，收窄为图标条（无 icon 的菜单项隐藏）
- * - `items`：可选菜单 JSON `[{label, value, icon?}]`
+ * - `accordion`：手风琴互斥展开（同级只留一个展开的子菜单）
+ * - `items`：菜单 JSON `[{label, value, icon?, iconColor?, group?, badge?, children?, actions?}]`，支持分隔项
+ * - `active`：当前激活菜单项 value（受控，外部赋值/点击均可驱动高亮迁移与重绘）
  * - `width`：展开宽度，默认走 `--oas-sidebar-width` token
  * - `mobile-breakpoint`：移动端断点（px，默认 768），窄于此视口时变覆盖式抽屉
+ * - `drawer-open`：移动端抽屉态（受控，Esc/遮罩点击自动移除）
+ * - `hide-toggle`：隐藏底部折叠按钮
+ * - `loading`：骨架加载态，值为骨架行数（默认 4）
+ * - `expand-on-hover`：折叠图标条悬停时临时展开（视觉态，不改 collapsed 受控值）
+ * - `shortcut`：启用 Ctrl/Cmd+B 折叠切换快捷键
+ * - `side`：停靠侧 left（默认）/ right
+ * - `variant`：形态 sidebar（默认，通栏）/ floating（悬浮圆角投影）/ inset（内嵌圆角边框）
+ * - `resizable`：右/左边缘拖拽调宽（折叠态禁用）
+ * - `resize-min` / `resize-max`：拖拽宽度上下限（px，默认 160 / 480）
  *
  * 事件：
- * - `oas-collapse`：detail `{ collapsed }`，桌面折叠按钮切换时派发
- * - `oas-select`：detail `{ value, label }`，选中菜单项时派发
+ * - `oas-collapse`：detail `{ collapsed }`，折叠切换时派发（含快捷键）
+ * - `oas-select`：detail `{ value, label }`，选中菜单项时派发（受控迁移同时派发）
+ * - `oas-action`：detail `{ value, action, label }`，菜单项操作按钮点击时派发
+ * - `oas-resize`：detail `{ width }`，拖拽松手 / 复位微调结束时派发
  *
  * 移动端抽屉：遮罩 + 点击外部/关闭按钮/Esc 收起；断点回桌面自动关抽屉，无孤儿浮层。
  */

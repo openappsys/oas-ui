@@ -1,8 +1,8 @@
 import type { LocaleMessages } from '../types.js'
 
 /**
- * 한국어 언어 패키지 —— key 전체 집합은 zh-CN와 완전히 일치.
- * LocaleMessages 타입을 지정하면 key 누락 시 컴파일 타임에 감지됩니다.
+ * 韩语语言包—— key 全集与 zh-CN 完全一致。
+ * （LocaleMessages 类型保证缺 key 在编译期由 locale-completeness 测试拦截。）
  */
 export const ko: LocaleMessages = {
   // badge（배지）
