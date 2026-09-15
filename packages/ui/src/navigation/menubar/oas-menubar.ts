@@ -6,7 +6,7 @@ import { lookupIcon } from '../../basic/icon/oas-icon.js'
 import { isRtl } from '../../shared/direction.js'
 
 export interface MenubarItem extends MenuItem {
-  /** Alt 访问键（可选，单字符）；缺省时取 label 首个 ASCII 字母 */
+  /** Alt 访问键（可选，单字符）；缺省时取 label 首个 ASCII 字母或数字 */
   accessKey?: string
   /** 快捷键提示（如 "Ctrl+N"）；自动绑定 document 级 keydown，命中即触发该项 select */
   shortcut?: string
