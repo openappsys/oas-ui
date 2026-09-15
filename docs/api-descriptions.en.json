@@ -1111,14 +1111,22 @@
       "shape": "Shape: `circle` (default, round) / `square` (capsule rounded rectangle)",
       "size": "Size tier: `xs` (24px) / `sm` (32px) / `md` (40px) / `lg` (default 48px) / `xl` (56px); invalid values fall back to `lg` with a warning",
       "target": "Link open mode (effective in `href` mode, e.g. `_blank`)",
-      "type": "Visual intensity: `primary` (default, solid primary) / `default` (weakened: light background with dark text)"
+      "type": "Visual intensity: `primary` (default, solid primary) / `default` (weakened: light background with dark text)",
+      "mode": "Mode: single (default) / group (main button + slotted actions expand vertically) / menu (actions JSON popup menu)",
+      "expanded": "group/menu expanded state (controlled, single source of truth): gestures only emit oas-expand-change; the host closes by removing the attribute",
+      "trigger": "Expand trigger: click (default) / hover (debounced with grace period) / manual (fully controlled; outside click and Esc do not auto-collapse)",
+      "expand-direction": "Expand direction: up (default) / down / left / right; horizontal directions mirror automatically in RTL",
+      "actions": "menu-mode items JSON `[{label, value?, icon?, href?, target?, danger?, disabled?}]`; selecting emits oas-select and requests collapse"
     },
     "events": {
-      "oas-click": "Clicked, `detail: { originalEvent }`"
+      "oas-click": "Clicked, `detail: { originalEvent }`",
+      "oas-select": "A menu item was selected in menu mode, detail: { index, label, value? }; the component then requests a collapse (emitting oas-expand-change — the host closes by removing expanded)",
+      "oas-expand-change": "Emitted on expand/collapse, `detail: { open }`; controlled semantics — the component never mutates expanded, the host writes it back"
     },
     "slots": {
       "": "Extended text: writing text into the default slot turns the button into a horizontal capsule (icon + text in a row)",
-      "icon": "Icon (default ＋)"
+      "icon": "Icon (default ＋)",
+      "action": "group-mode child buttons (native button/a or oas-button); clicking collapses the group and restores focus to the main button; badges and custom icons supported"
     }
   },
   "oas-form": {

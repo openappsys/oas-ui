@@ -436,6 +436,26 @@ describe('OASCarousel', () => {
       viewport.dispatchEvent(pointer('pointerup', 300))
     })
 
+    it('RTL 跟手：delta 恒取物理原值（不取反，手指左移内容左移）', () => {
+      const el = mount({ dir: 'rtl' })
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 400))
+      viewport.dispatchEvent(pointer('pointermove', 300)) // delta = -100
+      const t = track(el).style.transform
+      expect(t).toContain('+ -100px')
+      expect(t).not.toContain('+ 100px')
+      viewport.dispatchEvent(pointer('pointerup', 300))
+    })
+
+    it('RTL 松手阈值换向：右拖（delta>0）切下一张', () => {
+      const el = mount({ dir: 'rtl' })
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 100))
+      viewport.dispatchEvent(pointer('pointermove', 280)) // delta = +180
+      viewport.dispatchEvent(pointer('pointerup', 280))
+      expect(el.getAttribute('index')).toBe('1')
+    })
+
     it('垂直模式按纵向位移判定', () => {
       const el = mount({ direction: 'vertical' })
       const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
@@ -512,6 +532,24 @@ describe('OASCarousel', () => {
       expect(track(el).style.transform).toContain('--oas-carousel-card-width')
       el.goTo(1)
       expect(track(el).style.transform).toContain('calc')
+    })
+
+    it('RTL card 模式：轨道位移为 LTR 精确取反（center 项同步取负，当前卡保持居中）', () => {
+      const el = mount({ type: 'card', dir: 'rtl' }, 3)
+      el.goTo(1)
+      const t = track(el).style.transform
+      // LTR 第 2 卡：-1*(w+gap) + (100%-w)/2；RTL 精确取反：+(w+gap) - (100%-w)/2
+      expect(t).toContain('- ((100% - (var(--oas-carousel-card-width, 60%))) / 2)')
+      expect(t).not.toContain('-1 * 1 *')
+      expect(t).toContain('calc(1 * ((var(--oas-carousel-card-width, 60%))')
+    })
+
+    it('RTL card 模式 loop=false：末卡 clamp 项同步取负（贴尾侧而非飞出）', () => {
+      const el = mount({ type: 'card', dir: 'rtl', loop: 'false' }, 3)
+      el.goTo(2)
+      const t = track(el).style.transform
+      // LTR 末卡 center=(100%-w)；RTL 取反应为 -(100%-w)
+      expect(t).toContain('- ((100% - (var(--oas-carousel-card-width, 60%))))')
     })
 
     it('当前卡不缩不放，邻卡 scale + 降透明', () => {
