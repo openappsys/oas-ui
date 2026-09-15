@@ -23,9 +23,11 @@
 ## passive 被动透传（结构占位）
 
 <DemoBlock title="passive 被动透传（结构占位）">
-  <oas-bottom-sheet passive open max-height="120px">
-    <p style="margin:0">passive 模式：无遮罩、无把手、无浮层定位与手势行为，仅静态渲染结构占位——供浮层组件 PC 形态复用同一承载结构（SSR/客户端结构严格一致）。</p>
-  </oas-bottom-sheet>
+  <div style="border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2)">
+    <oas-bottom-sheet passive open max-height="120px">
+      <p style="margin:0">passive 模式：无遮罩、无把手、无浮层定位与手势行为，仅静态渲染结构占位——虚线框示意承载结构边界（passive 下宿主为 display:contents，不留自身盒），供浮层组件 PC 形态复用同一结构（SSR/客户端结构严格一致）。</p>
+    </oas-bottom-sheet>
+  </div>
 </DemoBlock>
 
 <script setup>
@@ -42,11 +44,11 @@ onMounted(async () => {
     el.id = id
     if (maxHeight) el.setAttribute('max-height', maxHeight)
     el.innerHTML =
-      '<div style="padding:8px 4px">' +
+      '<div style="padding:4px 0">' +
       '<p style="margin:0 0 12px;font-weight:600">操作面板</p>' +
-      '<oas-button style="width:100%;margin-bottom:8px">收藏</oas-button>' +
-      '<oas-button style="width:100%;margin-bottom:8px">分享</oas-button>' +
-      '<oas-button style="width:100%" type="primary">完成</oas-button>' +
+      '<oas-button block style="margin-bottom:8px">收藏</oas-button>' +
+      '<oas-button block style="margin-bottom:8px">分享</oas-button>' +
+      '<oas-button block type="primary">完成</oas-button>' +
       '</div>'
     el.addEventListener('oas-close', (e) => {
       el.removeAttribute('open')

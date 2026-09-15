@@ -115,8 +115,15 @@ html.dark {
   margin-bottom: 0 !important;
 }
 
-/* ===== 窄屏移动端：demo 内容超宽兜底（右锚定浮层出屏修复） ===== */
-/* 缺陷：message/notification/toast/transfer 等页 demo 的一排 oas-button 走 oas-space，
+/* ===== API 表表头不竖排 ===== */
+/* 缺陷：说明列文案长时，表头「默认值」等短列被自动布局压到 3 字宽 → 逐字竖排换行
+   （bottom-sheet 页 58px 宽 / 表头行高 89px）。表头 nowrap 让列宽至少容纳表头文字，
+   长表在窄屏走既有横向滚动兜底，不影响桌面宽表。 */
+.vp-doc th {
+  white-space: nowrap;
+}
+
+/* ===== 窄屏移动端：demo 内容超宽兜底（右锚定浮层出屏修复） ===== *//* 缺陷：message/notification/toast/transfer 等页 demo 的一排 oas-button 走 oas-space，
    其默认 nowrap（组件写宿主内联样式），窄屏下撑宽布局视口（scrollWidth 达 536~920px），
    右锚定的 toast/notification 钉在扩张后布局视口右缘 → 375/320 视口下被裁出屏。
    ① 演示块内横向 oas-space 允许换行：PC 下行宽足够，wrap 无观感差异；

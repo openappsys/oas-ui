@@ -23,9 +23,11 @@ Mobile bottom sheet container: a bottom-risen panel with drag handle and backdro
 ## Passive passthrough (structural placeholder)
 
 <DemoBlock title="Passive passthrough (structural placeholder)">
-  <oas-bottom-sheet passive open max-height="120px">
-    <p style="margin:0">Passive mode: no backdrop, no handle, no overlay positioning or gestures — a static structural placeholder only, letting overlay components reuse the same carrier structure in their PC forms (SSR/client structure strictly identical).</p>
-  </oas-bottom-sheet>
+  <div style="border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2)">
+    <oas-bottom-sheet passive open max-height="120px">
+      <p style="margin:0">Passive mode: no backdrop, no handle, no overlay positioning or gestures — a static structural placeholder only (the dashed frame marks the carrier bounds; the host is display:contents in passive mode and leaves no box of its own), letting overlay components reuse the same carrier structure in their PC forms (SSR/client structure strictly identical).</p>
+    </oas-bottom-sheet>
+  </div>
 </DemoBlock>
 
 <script setup>
@@ -42,11 +44,11 @@ onMounted(async () => {
     el.id = id
     if (maxHeight) el.setAttribute('max-height', maxHeight)
     el.innerHTML =
-      '<div style="padding:8px 4px">' +
+      '<div style="padding:4px 0">' +
       '<p style="margin:0 0 12px;font-weight:600">Actions</p>' +
-      '<oas-button style="width:100%;margin-bottom:8px">Favorite</oas-button>' +
-      '<oas-button style="width:100%;margin-bottom:8px">Share</oas-button>' +
-      '<oas-button style="width:100%" type="primary">Done</oas-button>' +
+      '<oas-button block style="margin-bottom:8px">Favorite</oas-button>' +
+      '<oas-button block style="margin-bottom:8px">Share</oas-button>' +
+      '<oas-button block type="primary">Done</oas-button>' +
       '</div>'
     el.addEventListener('oas-close', (e) => {
       el.removeAttribute('open')
