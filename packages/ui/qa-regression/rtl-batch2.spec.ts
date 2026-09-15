@@ -29,17 +29,27 @@ test('menu：dir=rtl 下图标间距逻辑属性镜像（inline-end → 物理�
   await page.goto('/components/menu.html', { waitUntil: 'load' })
   await up(page, 'oas-menu')
   const margins = await page.evaluate(() => {
-    const el = document.querySelector('oas-menu') as HTMLElement
-    el.setAttribute('dir', 'rtl')
-    const icon = el.shadowRoot?.querySelector('.item .icon') as HTMLElement | null
-    if (!icon) return null
-    const cs = getComputedStyle(icon)
-    return { left: cs.marginLeft, right: cs.marginRight }
+    // 找一个 LTR 基线 margin-right: 8px 的图标项（同一元素翻转前后对比，排除无间距形态干扰）。
+    // 注意：menu 观察 dir，翻转后整树重渲染——必须重新查询元素再读计算样式（旧引用已 detach）
+    const hosts = Array.from(document.querySelectorAll<HTMLElement>('oas-menu'))
+    for (const el of hosts) {
+      const icon = el.shadowRoot?.querySelector('.item .icon') as HTMLElement | null
+      if (!icon) continue
+      if (getComputedStyle(icon).marginRight !== '8px') continue
+      const ltr = { right: getComputedStyle(icon).marginRight, left: getComputedStyle(icon).marginLeft }
+      el.setAttribute('dir', 'rtl')
+      const fresh = el.shadowRoot?.querySelector('.item .icon') as HTMLElement | null
+      if (!fresh) return null
+      const rtl = { right: getComputedStyle(fresh).marginRight, left: getComputedStyle(fresh).marginLeft }
+      el.removeAttribute('dir')
+      return { ltr, rtl }
+    }
+    return null
   })
-  // LTR 下 icon margin-right: 8px；RTL 下 margin-inline-end 翻到物理左
-  expect(margins, 'menu icon 未找到').not.toBeNull()
-  expect(margins!.right).toBe('0px')
-  expect(margins!.left).toBe('8px')
+  expect(margins, 'menu 页未找到带 8px 间距图标的菜单项').not.toBeNull()
+  // 逻辑属性 margin-inline-end：LTR 落物理右、RTL 翻到物理左
+  expect(margins!.ltr).toEqual({ right: '8px', left: '0px' })
+  expect(margins!.rtl).toEqual({ right: '0px', left: '8px' })
 })
 
 test('dropdown split：dir=rtl 下接缝/外侧圆角随方向翻转', async ({ page }) => {
