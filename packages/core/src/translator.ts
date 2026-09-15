@@ -22,7 +22,15 @@ const localeTranslators = new Map<string, Translator>()
 /** 注入/清除翻译函数（locale 切换时由 i18n 包调用），会通知所有监听者 */
 export function setTranslator(fn: Translator | null): void {
   translator = fn
-  for (const cb of listeners) cb()
+  for (const cb of listeners) {
+    // 广播隔离：单个监听者（组件刷新回调）抛错不阻断其余监听者收通知，
+    // 否则一个组件的文案刷新异常会让全库 locale 切换失效
+    try {
+      cb()
+    } catch (e) {
+      console.error('[oas-ui] translator 变更监听器抛错：', e)
+    }
+  }
 }
 
 export function getTranslator(): Translator | null {
