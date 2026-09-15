@@ -13,6 +13,81 @@ export async function up(p: import('@playwright/test').Page, sel: string) {
   })
 }
 
+// 等待 window.scrollY 静默 quietMs——页面初始自动滚动（如 default-editing demo 挂载即
+// 聚焦 input 的焦点滚动）结束后，页面才处于可交互的稳定位置。
+async function settleScroll(p: import('@playwright/test').Page, quietMs = 400): Promise<void> {
+  await p.waitForFunction(
+    (q) => {
+      const w = window as any
+      if (w.__sqY !== window.scrollY) {
+        w.__sqY = window.scrollY
+        w.__sqT = performance.now()
+        return false
+      }
+      return performance.now() - w.__sqT >= q
+    },
+    quietMs,
+    { timeout: 15000, polling: 60 },
+  )
+}
+
+// 清除页面初始焦点并等滚动静默。
+// 背景：demo 页的 default-editing 组件挂载即进编辑态并聚焦其 input；此后任何真实交互
+// （点击/聚焦远处元素）都会让它失焦 → submit-on-blur 提交 → focusTrigger 归还焦点
+// → 焦点滚动把页面拽回它那里，正在进行的点击/按键随之丢失（事件派发到错误坐标）。
+// 主动 blur 触发同一条提交链后等滚动静默，后续交互不再被焦点滚动干扰。
+export async function defocus(p: import('@playwright/test').Page): Promise<void> {
+  await p.evaluate(() => {
+    // shadow DOM 里的焦点元素会以 host 形式出现在 document.activeElement
+    const ae = document.activeElement as HTMLElement | null
+    const inner =
+      ae?.shadowRoot && (ae.shadowRoot.activeElement as HTMLElement | null) != null
+        ? (ae.shadowRoot.activeElement as HTMLElement)
+        : ae
+    inner?.blur()
+  })
+  await settleScroll(p)
+}
+
+// 把目标元素滚进视口中央（JS scrollIntoView，强制布局、位置精确），返回视口中心点坐标。
+// 不用 locator 的 boundingBox：页面加载初期 CDP 盒子模型可能滞后于焦点滚动后的真实布局。
+async function centerOf(
+  p: import('@playwright/test').Page,
+  hostSel: string,
+  innerSel: string | null,
+): Promise<{ x: number; y: number }> {
+  await p.evaluate(
+    ({ hostSel, innerSel }) => {
+      const host = document.querySelector(hostSel)
+      const target = innerSel ? host?.shadowRoot?.querySelector(innerSel) : host
+      target?.scrollIntoView({ block: 'center', behavior: 'instant' as ScrollBehavior })
+    },
+    { hostSel, innerSel },
+  )
+  return p.evaluate(
+    ({ hostSel, innerSel }) => {
+      const host = document.querySelector(hostSel)!
+      const target = innerSel ? host.shadowRoot!.querySelector(innerSel)! : host
+      const r = target.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    },
+    { hostSel, innerSel },
+  )
+}
+
+// 真实鼠标点击 shadow DOM 内目标：defocus → JS 滚动到位 → CDP Input 派发真实鼠标事件。
+// 相比 locator.click：绕开页面加载初期焦点滚动/CDF 盒子错位导致的「滚动到错误位置、
+// 事件落到错误坐标」静默丢失问题；仍走完整真实事件路径（hit-test + down/up/click 序列）。
+export async function realClick(
+  p: import('@playwright/test').Page,
+  hostSel: string,
+  innerSel: string | null,
+): Promise<void> {
+  await defocus(p)
+  const pt = await centerOf(p, hostSel, innerSel)
+  await p.mouse.click(pt.x, pt.y)
+}
+
 export interface PanelGeom {
   left: number
   anchorLeft: number
