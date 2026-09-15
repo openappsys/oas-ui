@@ -85,6 +85,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Toast 轻提示', link: '/components/toast' },
       { text: 'Snackbar 消息条', link: '/components/snackbar' },
       { text: 'Backdrop 遮罩', link: '/components/backdrop' },
+      { text: 'BottomSheet 底部抽屉', link: '/components/bottom-sheet' },
       { text: 'Modal 对话框', link: '/components/modal' },
       { text: 'Confirm 确认框', link: '/components/confirm' },
       { text: 'Drawer 抽屉', link: '/components/drawer' },
