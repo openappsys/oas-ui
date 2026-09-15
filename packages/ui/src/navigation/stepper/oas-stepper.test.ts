@@ -406,6 +406,14 @@ describe('OASStepper 样式契约', () => {
     expect(css).toContain('var(--oas-color-danger)')
   })
 
+  it('横向连接线用 inset-inline-start 锚点（RTL 自动镜像，防物理 left 画错侧/悬空）', () => {
+    const el = mount({ current: '1' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const rule = /\.tab:not\(:last-child\)::after\s*\{[^}]*\}/.exec(css)?.[0] ?? ''
+    expect(rule).toContain('inset-inline-start: 50%')
+    expect(rule).not.toMatch(/(^|\s)left:\s*50%/)
+  })
+
   it('vertical：tablist flex-direction column（CSS 变量开口、逻辑属性）', () => {
     const el = mount({ direction: 'vertical' })
     const css = el.shadowRoot!.querySelector('style')!.textContent!

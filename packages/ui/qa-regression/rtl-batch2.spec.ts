@@ -68,3 +68,32 @@ test('dropdown split：dir=rtl 下接缝/外侧圆角随方向翻转', async ({ 
   expect(radii!.topLeft).not.toBe('0px')
   expect(radii!.topRight).toBe('0px')
 })
+
+test('stepper：dir=rtl 下横向连接线锚点镜像（::after 计算 left→auto / right→50%）', async ({ page }) => {
+  await page.goto('/components/stepper.html', { waitUntil: 'load' })
+  await up(page, 'oas-stepper')
+  const probe = await page.evaluate(() => {
+    const el = document.querySelector('oas-stepper') as HTMLElement & { shadowRoot: ShadowRoot }
+    const read = () => {
+      const step = el.shadowRoot.querySelector('.tab')
+      if (!step) return null
+      const cs = getComputedStyle(step, '::after')
+      return { left: cs.left, right: cs.right, width: cs.width }
+    }
+    el.removeAttribute('dir')
+    const ltr = read()
+    el.setAttribute('dir', 'rtl')
+    const rtl = read()
+    el.removeAttribute('dir')
+    return { ltr, rtl }
+  })
+  expect(probe.ltr, 'stepper 步骤未找到').not.toBeNull()
+  // inset-inline-start: 50%（computed 已解析为 px）：LTR 线自中点向右延伸（left 正 / right 负），
+  // RTL 镜像为向左延伸（left 负 / right 正）——仍用物理 left 时 RTL 下会画到上一步并悬空到容器边缘
+  const n = (v: string) => Number.parseFloat(v)
+  expect(n(probe.ltr!.left)).toBeGreaterThan(0)
+  expect(n(probe.rtl!.left)).toBeLessThan(0)
+  expect(n(probe.rtl!.right)).toBeGreaterThan(0)
+  // 镜像对称：两方向锚点数值等大反号
+  expect(Math.abs(n(probe.rtl!.right))).toBeCloseTo(Math.abs(n(probe.ltr!.left)), 1)
+})

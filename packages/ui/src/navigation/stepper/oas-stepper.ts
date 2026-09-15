@@ -107,7 +107,9 @@ const STYLE = `
   content: '';
   position: absolute;
   top: calc(var(--oas-space-1) + var(--oas-control-height-sm) / 2 + 1px);
-  left: 50%;
+  /* 逻辑属性：线自指示器起始半程向 inline-end 延伸（LTR 向右 / RTL 向左），
+     连接「当前步 → 下一步」，随书写方向自动镜像（RTL 下不镜像会画到上一步并悬空到容器边缘） */
+  inset-inline-start: 50%;
   width: 100%;
   height: 2px;
   background: var(--oas-color-border);
