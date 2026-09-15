@@ -139,7 +139,7 @@ const STYLE = `
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--oas-shadow-md);
   font-family: inherit;
   padding: 0;
   visibility: hidden;
@@ -179,7 +179,7 @@ const STYLE = `
 }
 .btn:focus-visible {
   outline: none;
-  box-shadow: var(--oas-focus-ring), 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--oas-focus-ring), var(--oas-shadow-md);
 }
 .btn:hover {
   border-color: var(--oas-color-primary);

@@ -16,7 +16,7 @@ const STYLE = `
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-lg);
   background: var(--oas-color-bg);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--oas-shadow-md);
   padding: var(--oas-space-4);
 }
 /* onClick 场景的可点击暗示（命令式层有 onClick 时设 clickable 属性） */

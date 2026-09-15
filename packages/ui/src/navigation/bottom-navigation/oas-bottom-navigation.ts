@@ -175,7 +175,7 @@ const STYLE = `
 :host([pill]) .tablist {
   border-radius: var(--oas-radius-full, 999px);
   border: 1px solid var(--oas-color-border);
-  box-shadow: var(--oas-bottom-navigation-pill-shadow, 0 2px 8px rgb(0 0 0 / 0.12));
+  box-shadow: var(--oas-bottom-navigation-pill-shadow, var(--oas-shadow-sm));
 }
 :host([pill].oas-bottom-navigation--fixed) {
   bottom: var(--oas-bottom-navigation-pill-inset, 12px);
