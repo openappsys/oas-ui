@@ -143,7 +143,7 @@ const STYLE = `
   gap: var(--oas-space-1);
   min-width: 0;
   flex: 1;
-  text-align: left;
+  text-align: start;
   /* 多行标签时省略单行末级文本 */
   overflow: hidden;
   text-overflow: ellipsis;
@@ -334,7 +334,7 @@ const STYLE = `
   padding: var(--oas-space-1);
 }
 .panel + .panel {
-  border-left: 1px solid var(--oas-color-border);
+  border-inline-start: 1px solid var(--oas-color-border);
 }
 .search-results {
   min-width: 180px;
@@ -372,7 +372,7 @@ const STYLE = `
   white-space: nowrap;
 }
 .arrow {
-  margin-left: var(--oas-space-2);
+  margin-inline-start: var(--oas-space-2);
   font-size: var(--oas-font-size-xs);
   color: inherit;
   opacity: 0.7;

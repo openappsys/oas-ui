@@ -27,7 +27,9 @@ const STYLE = `
   box-sizing: border-box;
   width: 100%;
   min-height: var(--_ch);
-  padding: 0 var(--oas-space-8, 40px) 0 var(--oas-space-3);
+  padding-block: 0;
+  padding-inline-start: var(--oas-space-3);
+  padding-inline-end: var(--oas-space-8, 40px);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
   background: var(--oas-color-bg);
@@ -41,11 +43,11 @@ const STYLE = `
 /* ---- size 尺寸档：字号/padding 联动（默认 medium 走基础样式） ---- */
 :host([data-size='small']) .trigger {
   font-size: var(--oas-font-size-sm);
-  padding-left: var(--oas-space-2);
+  padding-inline-start: var(--oas-space-2);
 }
 :host([data-size='large']) .trigger {
   font-size: var(--oas-font-size-lg);
-  padding-left: var(--oas-space-4);
+  padding-inline-start: var(--oas-space-4);
 }
 .trigger:hover:not(:disabled) {
   border-color: var(--oas-color-primary);
@@ -99,7 +101,7 @@ const STYLE = `
 }
 .chevron {
   position: absolute;
-  right: var(--oas-space-3);
+  inset-inline-end: var(--oas-space-3);
   top: 50%;
   transform: translateY(-50%);
   color: var(--oas-color-text-secondary);
@@ -111,7 +113,7 @@ const STYLE = `
 }
 .clear-btn {
   position: absolute;
-  right: var(--oas-space-7, 30px);
+  inset-inline-end: var(--oas-space-7, 30px);
   top: 50%;
   transform: translateY(-50%);
   appearance: none;
@@ -226,16 +228,18 @@ const STYLE = `
   color: var(--oas-color-text-secondary);
   padding: 0 var(--oas-space-1);
 }
+/* 列间接缝线走逻辑属性：flex 在 RTL 自动反向，接缝随书写方向跟随；
+   原「每列尾侧有线、末列无线」等价转换为「每列起始侧有线、首列无线」 */
 .column {
   flex: 1;
   overflow-y: auto;
-  border-right: 1px solid var(--oas-color-border);
+  border-inline-start: 1px solid var(--oas-color-border);
 }
-.column-group .column:last-child {
-  border-right: none;
+.column-group .column:first-child {
+  border-inline-start: none;
 }
-.columns > .column:last-child {
-  border-right: none;
+.columns > .column:first-child {
+  border-inline-start: none;
 }
 .option {
   appearance: none;
