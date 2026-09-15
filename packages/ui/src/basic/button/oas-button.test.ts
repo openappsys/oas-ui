@@ -74,6 +74,22 @@ describe('OASButton', () => {
     }
   })
 
+  it('size 缩写别名互认：sm/md/lg 等价 small/medium/large 且不告警（shared/size）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const pairs = [
+      ['sm', 'small'],
+      ['md', 'medium'],
+      ['lg', 'large'],
+    ] as const
+    for (const [abbr, full] of pairs) {
+      const el = mount({ size: abbr })
+      expect(shadowBtn(el).classList.contains(full)).toBe(true)
+      el.remove()
+    }
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   it('size 非法值回落 medium 且 dev 下 console.warn 一次（同值去重）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount({ size: 'huge' })

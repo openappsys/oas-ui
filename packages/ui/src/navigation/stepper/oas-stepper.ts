@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '../../basic/icon/oas-icon.js'
 import { isRtl } from '../../shared/direction.js'
+import { aliasSize } from '../../shared/size.js'
 import type { OASStepperPanel } from './oas-stepper-panel.js'
 
 /** 步骤状态：wait 等待 / process 进行中 / finish 完成 / error 错误（语义对齐 oas-steps） */
@@ -25,6 +26,9 @@ const VALID_STEPPER_SIZES: readonly StepperSize[] = ['xs', 'small', 'medium', 'l
 /** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
 function normalizeStepperSize(raw: string): StepperSize {
   if ((VALID_STEPPER_SIZES as readonly string[]).includes(raw)) return raw as StepperSize
+  // 跨词表别名互认（shared/size）：sm/md/lg 等价 small/medium/large，不告警
+  const alias = aliasSize(raw, true)
+  if (alias) return alias as StepperSize
   if (!warnedSizes.has(raw)) {
     warnedSizes.add(raw)
     console.warn(`[oas-stepper] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)

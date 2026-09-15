@@ -1,6 +1,7 @@
 import { OASElement, escapeAttr } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import { isRtl } from '../../shared/direction.js'
+import { aliasSize } from '../../shared/size.js'
 
 /** 尺寸档位：xs/sm/md/lg/xl（默认 lg，对应 48px 常规 FAB 观感） */
 const VALID_SIZES = ['xs', 'sm', 'md', 'lg', 'xl'] as const
@@ -11,6 +12,9 @@ const warnedSizes = new Set<string>()
 /** 非法 size 归一化：回落 lg 并在 dev 下 console.warn 一次（同值去重） */
 function normalizeSize(raw: string): FloatButtonSize {
   if ((VALID_SIZES as readonly string[]).includes(raw)) return raw as FloatButtonSize
+  // 跨词表别名互认（shared/size）：small/medium/large 等价 sm/md/lg，不告警
+  const alias = aliasSize(raw, false)
+  if (alias) return alias as FloatButtonSize
   if (!warnedSizes.has(raw)) {
     warnedSizes.add(raw)
     console.warn(`[oas-float-button] 非法 size "${raw}"，已回落 lg；合法值：xs/sm/md/lg/xl`)

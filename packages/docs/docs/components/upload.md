@@ -409,7 +409,8 @@ onMounted(async () => {
 | `oas-cancel` | 取消上传，`detail: { file }`（行/卡片 cancel 按钮） |
 | `oas-change` | 文件列表变化，`detail: { files }` |
 | `oas-error` | 上传失败，`detail: { file, response?, status? }`（行/卡片出重试按钮） |
-| `oas-exceed` | 添加文件超限被拒绝，`detail: { files, max, total }` |
+| `oas-exceed` | 【兼容别名】等价 oas-exceed-limit；后续版本移除，`detail: { files: rejected, max, total: next.length } \| { files: sizeRejected, type: 'size', maxSize, total: next.length }` |
+| `oas-exceed-limit` | 添加文件超限被拒绝（规范名，对齐 checkbox-group/select/toggle-group），`detail: { files, max, total }`；数量/大小超限均派发（大小超限额外带 `type: 'size'` 与 `maxSize`） |
 | `oas-preview` | 打开预览浮层，`detail: { file, url }` |
 | `oas-remove` | 移除文件，`detail: { file, index }` |
 | `oas-retry` | 点击重试，`detail: { file }`（失败后重发） |
