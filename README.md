@@ -78,7 +78,7 @@ SSR / DSD 指南见文档站 [SSR 页](https://oas-ui.dev/guide/ssr)与 `@oas-ui
 | `packages/theme` | CSS 变量设计 token（light/dark），单源 index.css |
 | `packages/i18n` | 框架无关 locale registry，语言包 tree-shakable |
 | `packages/icons` | 内联 SVG 图标集（可 tree-shake，无图标字体） |
-| `packages/ui` | 117 个组件（basic / form / data / floating / navigation / nav-layout / layout / overlay / feedback） |
+| `packages/ui` | 117 个组件（basic / form / data / feedback / navigation / layout / framework / overlay） |
 | `packages/ssr` | DSD 快照渲染器 + Node-safe 入口 + 真水合 |
 | `packages/nuxt` | Nuxt 3 集成插件 |
 | `packages/next` | Next.js（RSC）集成插件 |

@@ -111,14 +111,15 @@ oas-ui/
 
 | 目录          | 组件                                                                                                                     |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `basic/`      | badge, button, divider, icon, link, space, tag, typography                                                               |
-| `form/`       | auto-complete, cascader, checkbox, form, input, input-number, radio, rate, select, slider, switch, textarea, tree-select |
-| `feedback/`   | alert, confirm, drawer, empty, loading-bar, message, modal, notification, popconfirm, progress, result, skeleton, spin   |
-| `floating/`   | app, config-provider, contextmenu, dropdown, hover-card, menu, popover, tooltip                                          |
-| `data/`       | avatar, avatar-group, card, carousel, collapse, descriptions, image, list, table, timeline, tree                         |
-| `layout/`     | affix, flex, float-button, grid, layout, page-header, pagination, segmented, splitter, steps, tabs                       |
-| `navigation/` | anchor, back-top, breadcrumb, tour                                                                                       |
-| `overlay/`    | floating（overlay 管理器 + 浮层定位引擎）                                                                                |
+| `basic/`      | badge, button, button-group, divider, icon, kbd, label, link, space, tag, typography, visually-hidden                     |
+| `form/`       | auto-complete, calendar, cascader, checkbox, color-picker, combobox, date-picker, dynamic-input, dynamic-tags, editable, form, form-item, input, input-number, mentions, pin-input, radio, rate, segmented, select, slider, switch, textarea, time-picker, toggle-button, toggle-group, transfer, tree-select, upload |
+| `data/`       | avatar, avatar-group, card, carousel, chart, code, collapse, comment, countdown, descriptions, ellipsis, equation, gradient-text, image, image-group, list, log, marquee, number-animation, qrcode, statistic, table, timeline, tree, virtual-list, watermark |
+| `feedback/`   | alert, backdrop, bottom-sheet, confirm, drawer, empty, hover-card, loading-bar, message, modal, notification, popconfirm, popover, progress, result, skeleton, snackbar, spin, toast, tooltip |
+| `navigation/` | affix, anchor, app-bar, back-top, bottom-navigation, breadcrumb, command, contextmenu, dropdown, float-button, menu, menubar, navigation-menu, page-header, pagination, speed-dial, stepper, steps, tabs, toolbar, tour |
+| `layout/`     | aspect-ratio, container, flex, grid, layout, masonry, scroll-area, sidebar, splitter                                      |
+| `framework/`  | app, config-provider, theme-editor                                                                                        |
+| `overlay/`    | floating（浮层定位引擎，非组件）                                                                                          |
+| `shared/` `families/` | 共享设施（direction / touch-target / mobile-sheet）与族包入口定义，非组件                                         |
 
 每个组件一个目录：`index.ts`（注册 + 导出）+ `oas-button.ts`（定义）+ `oas-button.test.ts`（单测）；组件 demo 页在 `packages/docs/docs/components/*.md`。
 

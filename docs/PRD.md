@@ -1192,10 +1192,6 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 其余组件纯 CSS 逻辑属性（硬编码 `left/right/padding-left/text-align/transform` 等）的 RTL 审计与迁移单列专项，本批不做。
 
-### 边界（不在本批）
-
-- 其余组件纯 CSS 逻辑属性（硬编码 `left/right/padding-left/text-align/transform` 等）的 RTL 审计与迁移单列专项，本批不做。
-
 ---
 
 ## v2.5.3 RTL 逻辑方向化：全组件铺开（承接 v2.5.2 边界）✅
@@ -1221,18 +1217,17 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ---
 
-## 后续 backlog：独立组件条目（按需立项）
+## 未发布：导航组件批次（app-bar 新组件 + float-button 家族扩展）🚧
 
-部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
+### 特性
 
-### oas-float-button 浮动按钮家族
+- **oas-app-bar（新组件，navigation 族，应用栏）**：页面/工具区顶部的应用栏布局条——标题（属性/slot 富内容双通道）+ leading 汉堡钮（`oas-menu-toggle`）+ `slot="actions"` 操作区 + 超宽 overflow「···」收纳（RO 驱动、镜像回派）+ `hide-on-scroll` 滚动折叠 + `slot="extended"` 扩展区（滚动收起）+ `position="static|absolute|fixed|floating"` 四形态 + `elevated` 滚动投影；RTL 逻辑属性 + coarse 触控 44px；role=banner + aria 全同步；SSR/DSD 双路径。i18n 新增 `appBar.*` 4 键（10 语言包齐全）
+- **oas-float-button 家族扩展**：`mode="single|group|menu"` 三模式（分组 slot 子钮带 label 气泡与角标、菜单模式 actions JSON 弹出选择并派发 `oas-select`）；受控 `expanded` + `oas-expand-change`；`trigger="click|hover|manual"`；`expand-direction` 四向（RTL 横向镜像）；子钮/主钮链接化（href/target）；徽标状态点与数字 99+ 封顶；Esc/外点收起回焦、reduced-motion 降级
 
-悬浮于页面或容器边缘的浮动动作按钮。关键能力：单个/分组/菜单三种模式（分组含展开方向、触发方式、受控展开）、链接化（href/target）、徽标集成（状态点/数字封顶）；back-top 为其「回到顶部」形态，现有 back-top 能力保持。
+### 修复
 
-### oas-app-bar 应用栏
+- oas-float-button `trigger="manual"` 完全受控语义：外点与 Esc 不再自动收起（收起由宿主 `expanded` 属性全权驱动）；demo 宿主补定位上下文（展开层锚定主钮）+ 回归固化「展开层相对主钮偏移」断言
 
-页面/工具区顶部的应用栏布局条。关键能力：可收起工具栏（collapse 汉堡收起/展开）、扩展区（extended 扩展内容插槽）、absolute/floating 背景与浮动形态等页头页框布局能力。
+> 注：原「后续 backlog」中的 oas-float-button（本批转正）、oas-app-bar（本批立项实现）、oas-sidebar（v2.2.4/v2.2.5 已发布）三条目均已落位，backlog 清空。
 
-### oas-sidebar 侧边导航栏
-
-可折叠成图标栏形态的侧边导航容器。关键能力：collapse 折叠/展开切换、折叠态图标栏（配 tooltip 提示）；menu 的 collapse 形态归属此条目。
+---
