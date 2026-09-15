@@ -356,9 +356,10 @@ onMounted(async () => {
 
 | Event | Description |
 | --- | --- |
+| `oas-after-close` | Close animation finished (canonical, aligned with the after-* family); no `detail`. Scroll unlock and focus restore happen after this |
 | `oas-before-close` | — |
 | `oas-close` | Close: cancel button / ✕ / mask click / Esc, `detail: { source }` |
-| `oas-closed` | — |
+| `oas-closed` | [Compat alias] Close animation finished, same as oas-after-close; will be removed later |
 | `oas-ok` | Clicked "OK" |
 | `oas-open` | — |
 | `oas-opened` | — |

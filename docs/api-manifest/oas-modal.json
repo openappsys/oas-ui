@@ -175,6 +175,9 @@
     },
     {
       "name": "oas-closed"
+    },
+    {
+      "name": "oas-after-close"
     }
   ],
   "slots": [

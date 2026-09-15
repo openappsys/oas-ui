@@ -687,10 +687,11 @@ onMounted(async () => {
 
 | Event | Description |
 | --- | --- |
+| `oas-after-close` | Close animation finished (canonical, aligned with the after-* family); no `detail`. destroy-on-close content clearing happens after this |
 | `oas-before-close` | — |
 | `oas-cancel` | Cancel: cancel button / ✕ / mask click / Esc |
 | `oas-close` | — |
-| `oas-closed` | — |
+| `oas-closed` | [Compat alias] Close animation finished, same as oas-after-close; will be removed later |
 | `oas-ok` | Clicked "OK" |
 | `oas-open` | — |
 | `oas-opened` | — |

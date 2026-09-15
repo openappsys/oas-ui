@@ -754,9 +754,10 @@ export class OASDrawer extends OASElement {
     )
   }
 
-  /** 关闭动画完成：closed 事件 + 滚动解锁 + 焦点归还 + destroy-on-close */
+  /** 关闭动画完成：closed（兼容别名）+ after-close（规范名，对齐 alert/backdrop 的 after-* 家族）+ 滚动解锁 + 焦点归还 + destroy-on-close */
   private onClosed(): void {
     this.emit('closed')
+    this.emit('after-close')
     if (!this.hasAttr('no-scroll-lock')) unlockBodyScroll()
     // 焦点归还：仅当自己是最后打开的浮层（栈空且无模态）——不抢下层抽屉焦点
     if (topDrawer() === null && !hasVisibleModal()) {

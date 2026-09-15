@@ -378,9 +378,10 @@ onMounted(async () => {
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-after-close` | 关闭动画完成（规范名，对齐 after-* 家族），`detail` 无；滚动解锁与焦点归还在此之后 |
 | `oas-before-close` | — |
 | `oas-close` | 关闭：取消按钮 / ✕ / 遮罩点击 / Esc，`detail: { source }` |
-| `oas-closed` | — |
+| `oas-closed` | 【兼容别名】关闭动画完成，等价 oas-after-close；后续版本移除 |
 | `oas-ok` | 点击「确定」 |
 | `oas-open` | — |
 | `oas-opened` | — |

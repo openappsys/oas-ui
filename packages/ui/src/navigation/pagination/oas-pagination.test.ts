@@ -101,6 +101,16 @@ describe('OASPagination', () => {
     expect(el2.shadowRoot!.querySelector('[part="size"]')).toBeNull()
   })
 
+  it('size 缩写别名互认：small/medium/large 等价 sm/md/lg 且 data-size 归一为缩写（shared/size）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const full = mount({ size: 'medium' })
+    expect(full.getAttribute('data-size')).toBe('md')
+    const short = mount({ size: 'md' })
+    expect(short.getAttribute('data-size')).toBe('md')
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   it('show-jumper：渲染「跳至 __ 页」输入框', () => {
     const el = mount({ 'show-jumper': '' })
     const input = jumperInput(el)

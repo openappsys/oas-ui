@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { aliasSize } from '../../shared/size.js'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type TagType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
@@ -46,6 +47,9 @@ const DEFAULT_CLOSE_SVG = `
 /** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
 function normalizeTagSize(raw: string): TagSize {
   if ((VALID_TAG_SIZES as readonly string[]).includes(raw)) return raw as TagSize
+  // 跨词表别名互认（shared/size）：sm/md/lg 等价 small/medium/large，不告警
+  const alias = aliasSize(raw, true)
+  if (alias) return alias as TagSize
   if (!warnedSizes.has(raw)) {
     warnedSizes.add(raw)
     console.warn(`[oas-tag] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)

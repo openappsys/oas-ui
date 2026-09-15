@@ -410,7 +410,8 @@ onMounted(async () => {
 | `oas-cancel` | Upload cancelled, `detail: { file }` (cancel button on the item) |
 | `oas-change` | File list change, `detail: { files }` |
 | `oas-error` | Upload failed, `detail: { file, response?, status? }` (retry button appears) |
-| `oas-exceed` | Files rejected by the max limit, `detail: { files, max, total }` |
+| `oas-exceed` | [Compat alias] Same as oas-exceed-limit; will be removed later, `detail: { files: rejected, max, total: next.length } \| { files: sizeRejected, type: 'size', maxSize, total: next.length }` |
+| `oas-exceed-limit` | Adding files rejected due to limit (canonical, aligned with checkbox-group/select/toggle-group), `detail: { files, max, total }`; emitted for both count and size rejections (size rejections also carry `type: 'size'` and `maxSize`) |
 | `oas-preview` | Preview overlay opened, `detail: { file, url }` |
 | `oas-remove` | File removed, `detail: { file, index }` |
 | `oas-retry` | Retry clicked, `detail: { file }` (re-upload after failure) |

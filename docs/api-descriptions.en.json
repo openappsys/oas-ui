@@ -880,7 +880,9 @@
     },
     "events": {
       "oas-close": "Close: cancel button / ✕ / mask click / Esc",
-      "oas-ok": "Clicked \"OK\""
+      "oas-ok": "Clicked \"OK\"",
+      "oas-after-close": "Close animation finished (canonical, aligned with the after-* family); no `detail`. Scroll unlock and focus restore happen after this",
+      "oas-closed": "[Compat alias] Close animation finished, same as oas-after-close; will be removed later"
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present"
@@ -1691,7 +1693,9 @@
     },
     "events": {
       "oas-cancel": "Cancel: cancel button / ✕ / mask click / Esc",
-      "oas-ok": "Clicked \"OK\""
+      "oas-ok": "Clicked \"OK\"",
+      "oas-after-close": "Close animation finished (canonical, aligned with the after-* family); no `detail`. destroy-on-close content clearing happens after this",
+      "oas-closed": "[Compat alias] Close animation finished, same as oas-after-close; will be removed later"
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present"
@@ -3107,14 +3111,15 @@
     },
     "events": {
       "oas-change": "File list change, `detail: { files }`",
-      "oas-exceed": "Files rejected by the max limit, `detail: { files, max, total }`",
+      "oas-exceed": "[Compat alias] Same as oas-exceed-limit; will be removed later",
       "oas-preview": "Preview overlay opened, `detail: { file, url }`",
       "oas-remove": "File removed, `detail: { file, index }`",
       "oas-upload": "Upload progress, `detail: { file, percent, status }`",
       "oas-success": "Upload succeeded, `detail: { file, response }`",
       "oas-error": "Upload failed, `detail: { file, response?, status? }` (retry button appears)",
       "oas-cancel": "Upload cancelled, `detail: { file }` (cancel button on the item)",
-      "oas-retry": "Retry clicked, `detail: { file }` (re-upload after failure)"
+      "oas-retry": "Retry clicked, `detail: { file }` (re-upload after failure)",
+      "oas-exceed-limit": "Adding files rejected due to limit (canonical, aligned with checkbox-group/select/toggle-group), `detail: { files, max, total }`; emitted for both count and size rejections (size rejections also carry `type: 'size'` and `maxSize`)"
     },
     "slots": {
       "trigger": "Replace the drop-zone content (zone semantics kept)",

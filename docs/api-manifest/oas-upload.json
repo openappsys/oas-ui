@@ -130,6 +130,10 @@
       "detail": "{ files: rejected, max, total: next.length } | { files: sizeRejected, type: 'size', maxSize, total: next.length }"
     },
     {
+      "name": "oas-exceed-limit",
+      "detail": "{ files: rejected, max, total: next.length } | { files: sizeRejected, type: 'size', maxSize, total: next.length }"
+    },
+    {
       "name": "oas-change",
       "detail": "{ files: this.files }"
     },

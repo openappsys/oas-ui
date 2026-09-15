@@ -120,7 +120,7 @@ const STYLE = `
      overflow hidden 裁切修复；fixed 后代浮层（select 下拉）不受祖先 overflow 裁切
      （dialog 静息态 transform:none 不构成包含块），P17 无回归 */
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--oas-shadow-lg);
   z-index: calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050)) + 1);
   font-family: inherit;
   color: var(--oas-color-text-primary);
@@ -955,9 +955,10 @@ export class OASModal extends OASElement {
     )
   }
 
-  /** 关闭动画完成：oas-closed + destroy-on-close 清空 light DOM 内容（P10） */
+  /** 关闭动画完成：oas-closed（兼容别名）+ oas-after-close（规范名，对齐 after-* 家族）+ destroy-on-close 清空 light DOM 内容 */
   private onClosed(): void {
     this.emit('closed')
+    this.emit('after-close')
     this.wasOpen = false
     if (this.hasAttr('destroy-on-close')) this.replaceChildren()
   }

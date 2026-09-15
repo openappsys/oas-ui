@@ -157,6 +157,9 @@
       "name": "oas-closed"
     },
     {
+      "name": "oas-after-close"
+    },
+    {
       "name": "oas-resize",
       "detail": "{ size: this.currentDimensionPx() } | { size: nearest }"
     }
