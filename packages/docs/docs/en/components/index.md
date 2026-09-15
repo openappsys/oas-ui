@@ -1,6 +1,6 @@
 # Component Overview
 
-OAS-UI provides 115 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 117 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -71,6 +71,7 @@ OAS-UI provides 115 framework-agnostic Web Components, organized into 7 groups b
 - [Toast](/en/components/toast) —— Imperative global toasts supporting success/error/warning/info/loading states, action buttons, and promise chains; auto-dismisses after 3 seconds by default.
 - [Snackbar](/en/components/snackbar) —— A lightweight feedback bar that slides in from the bottom (or top). The `open` attribute is controlled; it can include an action button and dispatches `oas-close` after 4 seconds by default, leaving dismissal to the host.
 - [Backdrop](/en/components/backdrop) —— A full-screen semi-transparent overlay with `transparent`/`blur` variants and body scroll locking; the node is automatically unmounted when `open=false`, leaving no orphan DOM.
+- [BottomSheet](/en/components/bottom-sheet) —— feedback Mobile bottom sheet container: close via drag handle / backdrop click / Esc, with safe-area and focus trap built in; `passive` mode serves as a structural placeholder for overlay PC forms.
 - [Modal](/en/components/modal) —— A modal dialog for interrupting flows that require user confirmation or input.
 - [Confirm](/en/components/confirm) —— Imperative confirmation dialog based on Promises, reusing `oas-modal` under the hood.
 - [Drawer](/en/components/drawer) —— A panel that slides in from the side, often used for filters, details, and similar scenarios.
@@ -102,6 +103,7 @@ OAS-UI provides 115 framework-agnostic Web Components, organized into 7 groups b
 - [Steps](/en/components/steps) —— A step indicator that guides users through a task, with four states (wait / process / finish / error), vertical layout and clickable navigation.
 - [Stepper](/en/components/stepper) —— A step-driven content panel: a clickable step header synced with content panels (only the current step is visible), for wizards / multi-step forms / checkout flows; `oas-stepper` + `oas-stepper-panel` work as a pair (tabs-style value association).
 - [Affix](/en/components/affix) —— Pins content to the top of the viewport; it becomes fixed once the page scrolls past a given offset. Commonly used for fixed table action bars, toolbars, etc.
+- [AppBar](/en/components/app-bar) —— An app bar at the top of the page or toolbar area: title + hamburger button + action area with overflow collapse, scroll hiding, and an extended section; `role="banner"` semantics, with the hamburger button dispatching `oas-menu-toggle` and keeping `aria-expanded` in sync.
 - [PageHeader](/en/components/page-header) —— A page header information area with title, subtitle, back button and a right-side action area. Commonly used at the top of detail and edit pages.
 - [FloatButton](/en/components/float-button) —— A circular action button fixed to the bottom-right corner of the page by default, for quick actions like "New" and "Feedback"; supports a badge and a custom icon.
 - [SpeedDial](/en/components/speed-dial) —— A floating main button that expands a list of sub-actions, commonly used for quick actions like "New/Share"; `aria-expanded` stays in sync, clicking outside / Esc collapses it, with no orphan popups.

@@ -504,6 +504,10 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       '点菜单项 → oas-select（并收起再派 expand-change）',
     ],
   ],
+  'bottom-sheet': [
+    ['#bs-open', 'click', '点按钮打开抽屉（open 受控）'],
+    ['oas-bottom-sheet [part="backdrop"]', 'domclick', '点遮罩请求关闭 → oas-close{reason:backdrop}'],
+  ],
   toolbar: [
     ['oas-toolbar-toggle[multiple] [part="item"]', 'click:n0', '点多选切换组（加粗）→ oas-change'],
     ['oas-toolbar-toggle:not([multiple]) [part="item"]', 'click:n1', '点单选对齐组第 2 项 → oas-change'],
