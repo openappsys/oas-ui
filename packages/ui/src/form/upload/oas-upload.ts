@@ -841,10 +841,13 @@ export class OASUpload extends OASElement {
       this.emit('remove', { file: out, index: 0, replaced: true })
     }
     if (rejected.length > 0) {
+      // exceed-limit 为规范名（对齐 checkbox-group/select/toggle-group），exceed 为兼容别名
       this.emit('exceed', { files: rejected, max, total: next.length })
+      this.emit('exceed-limit', { files: rejected, max, total: next.length })
     }
     if (sizeRejected.length > 0) {
       this.emit('exceed', { files: sizeRejected, type: 'size', maxSize, total: next.length })
+      this.emit('exceed-limit', { files: sizeRejected, type: 'size', maxSize, total: next.length })
     }
     this.emit('change', { files: this.files })
     if (this.hasAttr('auto-upload')) this.startUpload()

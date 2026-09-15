@@ -1,4 +1,5 @@
 import { OASElement, escapeText } from '@oas-ui/core'
+import { aliasSize } from '../../shared/size.js'
 
 export type PaginationSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 
@@ -8,6 +9,9 @@ const warnedSizes = new Set<string>()
 /** 非法 size 归一化：回落 md 并在 dev 下 console.warn 一次（同值去重，对齐 button 做法） */
 function normalizePaginationSize(raw: string): PaginationSize {
   if ((VALID_PAGINATION_SIZES as readonly string[]).includes(raw)) return raw as PaginationSize
+  // 跨词表别名互认（shared/size）：small/medium/large 等价 sm/md/lg，不告警
+  const alias = aliasSize(raw, false)
+  if (alias) return alias as PaginationSize
   if (!warnedSizes.has(raw)) {
     warnedSizes.add(raw)
     console.warn(`[oas-pagination] 非法 size "${raw}"，已回落 md；合法值：xs/sm/md/lg/xl`)

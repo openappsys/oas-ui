@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { aliasSize } from '../../shared/size.js'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type BadgeMode = 'count' | 'ribbon'
@@ -1511,11 +1512,14 @@ export class OASBadge extends OASElement {
         el.classList.toggle('standalone', standalone)
 
         // size 多尺寸档：small / medium（默认，基类即 medium）/ large；非法值静默回落 medium（不写 class）
+        // 缩写别名互认（shared/size）：sm/md/lg 等价 small/medium/large
         const size = this.getAttr('size', '') as BadgeSize
-        const sizeValid = (VALID_SIZES as readonly string[]).includes(size)
-        el.classList.toggle('small', sizeValid && size === 'small')
-        el.classList.toggle('medium', sizeValid && size === 'medium')
-        el.classList.toggle('large', sizeValid && size === 'large')
+        const sizeAlias = aliasSize(size, true)
+        const sizeResolved = (sizeAlias ?? size) as BadgeSize
+        const sizeValid = (VALID_SIZES as readonly string[]).includes(sizeResolved)
+        el.classList.toggle('small', sizeValid && sizeResolved === 'small')
+        el.classList.toggle('medium', sizeValid && sizeResolved === 'medium')
+        el.classList.toggle('large', sizeValid && sizeResolved === 'large')
         // variant 形态：outline 描边（背景透明、边框/文字走 color 语义）；solid 默认不加 class
         const variant = this.getAttr('variant', '') as BadgeVariant
         const variantValid = (VALID_VARIANTS as readonly string[]).includes(variant)
