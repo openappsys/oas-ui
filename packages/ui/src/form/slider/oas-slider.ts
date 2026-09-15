@@ -187,8 +187,12 @@ input::-webkit-slider-thumb {
   border: none;
   transition: transform var(--oas-transition-fast) var(--oas-ease-out);
 }
-input::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
+/* hover 放大只在支持 hover 的设备生效：触屏点按后 :hover 会粘滞，拇指会一直保持放大
+   （与纵向自定义拇指共用同一守卫，四种「横向/纵向 × 桌面/触屏」组合行为一致） */
+@media (hover: hover) {
+  input::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+  }
 }
 /* Firefox：moz 伪元素必须与 webkit 分开书写（浏览器遇到不认识的伪元素会使整条规则失效）；
    ::-moz-range-thumb 相对 track 自动居中，无需 webkit 的 margin-top 偏移 */
@@ -206,8 +210,10 @@ input::-moz-range-thumb {
   border: 2px solid var(--oas-color-bg);
   transition: transform var(--oas-transition-fast) var(--oas-ease-out);
 }
-input::-moz-range-thumb:hover {
-  transform: scale(1.15);
+@media (hover: hover) {
+  input::-moz-range-thumb:hover {
+    transform: scale(1.15);
+  }
 }
 /* 自定义滑块/气泡模式：隐藏原生 thumb（保留命中区，拖动与键盘仍走原生输入） */
 :host([data-custom-thumb]) input::-webkit-slider-thumb {
@@ -296,8 +302,13 @@ input:disabled {
 .custom-thumb[hidden] {
   display: none;
 }
-:host(:hover):not([data-readonly]) .custom-thumb {
-  transform: translate(-50%, -50%) scale(1.15);
+/* 纵向/自定义拇指的 hover 放大（与横向原生拇指同一守卫）。
+   ⚠️ 必须写成 :host(:hover:not([data-readonly]))——在 :host(...) 之后链 :not(...) 的写法在
+   Chromium 下整条规则不匹配（实测该规则从未生效，纵向拇指一直没有 hover 反馈）。 */
+@media (hover: hover) {
+  :host(:hover:not([data-readonly])) .custom-thumb {
+    transform: translate(-50%, -50%) scale(1.15);
+  }
 }
 :host([data-focused='value']) .custom-thumb[data-thumb='value'],
 :host([data-focused='min']) .custom-thumb[data-thumb='min'],

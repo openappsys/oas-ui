@@ -66,6 +66,20 @@ describe('OASSlider', () => {
     expect(css).not.toMatch(/::-webkit-slider-runnable-track\s*,\s*input::-moz-range-track/)
   })
 
+  it('拇指 hover 放大：纵向自定义拇指选择器有效 + hover 能力守卫 + 无链式 :host 写法', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent!
+    // 曾现 bug：`:host(:hover):not([data-readonly])` 在 Chromium 下整条不匹配（规则从未生效），
+    // 纵向/自定义拇指一直没有 hover 反馈。必须把 :not 写进 :host() 参数内。
+    expect(css).toContain(':host(:hover:not([data-readonly])) .custom-thumb')
+    expect(css).not.toMatch(/:host\([^)]*\):not\(/)
+    // hover 放大须在 hover 能力守卫内（触屏点按后 :hover 粘滞会让拇指恒放大）
+    expect(css).toMatch(
+      /@media \(hover: hover\)\s*{[^}]*:host\(:hover:not\(\[data-readonly\]\)\) \.custom-thumb\s*{[^}]*scale\(1\.15\)/,
+    )
+    expect(css).toMatch(/@media \(hover: hover\)\s*{[^}]*input::-webkit-slider-thumb:hover/)
+    expect(css).toMatch(/@media \(hover: hover\)\s*{[^}]*input::-moz-range-thumb:hover/)
+  })
+
   it('value 受控同步 + 外部变更增量更新', () => {
     const el = mount({ value: '40' })
     const input = range(el)
