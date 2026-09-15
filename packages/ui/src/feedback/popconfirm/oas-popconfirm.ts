@@ -45,7 +45,7 @@ const STYLE = `
   background: var(--pop-bg);
   border: 1px solid var(--pop-border);
   border-radius: var(--oas-radius-md);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent);
+  box-shadow: var(--oas-shadow-md);
   padding: var(--oas-space-3);
   min-width: ${MIN_WIDTH}px;
   /* 窄视口保护：小于 360px 的屏宽时按视口宽度钳制（两侧各留 12px），不溢出视口 */

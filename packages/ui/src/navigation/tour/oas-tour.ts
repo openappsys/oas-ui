@@ -137,7 +137,7 @@ const STYLE = `
   opacity: 1;
   background: var(--oas-tour-popup-bg, var(--oas-color-bg));
   border-radius: var(--oas-radius-md);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--oas-color-overlay) 32%, transparent);
+  box-shadow: var(--oas-shadow-lg);
   padding: var(--oas-space-4);
   min-width: 240px;
   max-width: min(360px, calc(100vw - 24px));
@@ -448,7 +448,7 @@ const STYLE = `
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050));
   background: var(--oas-tour-popup-bg, var(--oas-color-bg));
   border-radius: var(--oas-radius-md);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--oas-color-overlay) 32%, transparent);
+  box-shadow: var(--oas-shadow-lg);
   padding: var(--oas-space-3) var(--oas-space-4);
   min-width: 200px;
   max-width: 300px;

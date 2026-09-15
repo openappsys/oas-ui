@@ -906,3 +906,93 @@ describe('OASFloatButton 徽标封顶 + 触控目标', () => {
     expect(el.hasAttribute('expanded')).toBe(false)
   })
 })
+
+// ===== DSD 真水合（SSR 双路径） =====
+
+type AnyElement = OASFloatButton
+
+/** 渲染一个参照实例并返回其 shadow 快照（SSR 场景等价物） */
+function captureFbSnapshot(setup?: (el: AnyElement) => void): string {
+  const el = new OASFloatButton()
+  setup?.(el)
+  document.body.appendChild(el)
+  const html = el.shadowRoot!.innerHTML
+  el.remove()
+  return html
+}
+
+/** 注入快照 + 指纹后升级（模拟浏览器 DSD upgrade） */
+function upgradeFromFbSnapshot(
+  shadowHtml: string,
+  setup?: (el: AnyElement) => void,
+): { el: AnyElement; styleRef: Element | null } {
+  const el = new OASFloatButton()
+  const tag = el.tagName.toLowerCase()
+  el.shadowRoot!.innerHTML = `<meta data-oas-ssr="${tag}" data-oas-ssr-v="1">${shadowHtml}`
+  setup?.(el)
+  const styleRef = el.shadowRoot!.querySelector('style')
+  document.body.appendChild(el)
+  return { el, styleRef }
+}
+
+describe('OASFloatButton DSD 真水合', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('single 分支：hydrate 接管（style 引用保持、指纹移除、主钮/徽标结构保持）', () => {
+    const setup = (e: OASFloatButton): void => {
+      e.setAttribute('badge', '3')
+      e.innerHTML = '<span slot="icon">+</span>'
+    }
+    const snap = captureFbSnapshot(setup)
+    const { el, styleRef } = upgradeFromFbSnapshot(snap, setup)
+    expect(el.shadowRoot!.querySelector('style')).toBe(styleRef)
+    expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="btn"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="badge"]')).not.toBeNull()
+    expect(snap).toContain('<style>')
+  })
+
+  it('group 分支：水合后子钮点击收起组（交互可用、焦点归还主钮）', () => {
+    const setup = (e: OASFloatButton): void => {
+      e.setAttribute('mode', 'group')
+      e.setAttribute('expanded', '')
+      e.innerHTML = '<button slot="action">一</button>'
+    }
+    const snap = captureFbSnapshot(setup)
+    const { el } = upgradeFromFbSnapshot(snap, setup)
+    expect(el.shadowRoot!.querySelector('[part="group"]')).not.toBeNull()
+    ;(el.querySelector('[slot="action"]') as HTMLElement).click()
+    expect(el.hasAttribute('expanded'), '水合后子钮点击应收起组').toBe(false)
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('[part="btn"]'))
+  })
+
+  it('menu 分支：水合后 actions 重建菜单项、选择派发 oas-select', () => {
+    const setup = (e: OASFloatButton): void => {
+      e.setAttribute('mode', 'menu')
+      e.setAttribute('expanded', '')
+      e.setAttribute('actions', JSON.stringify([{ label: '编辑' }, { label: '删除' }]))
+    }
+    const snap = captureFbSnapshot(setup)
+    const { el } = upgradeFromFbSnapshot(snap, setup)
+    expect(el.shadowRoot!.querySelector('[part="menu"]')).not.toBeNull()
+    const items = el.shadowRoot!.querySelectorAll('[role="menuitem"]')
+    expect(items.length).toBe(2) // 水合后 update 重建菜单项（监听器随重建重挂）
+    let detail: unknown
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    ;(items[1] as HTMLElement).click()
+    expect(detail).toEqual({ index: 1, label: '删除' })
+  })
+
+  it('坏快照（缺 .btn）→ hydrate 返回 false → render 全量重建兜底', () => {
+    const el = new OASFloatButton()
+    el.shadowRoot!.innerHTML = '<div>残缺</div>'
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector('[part="btn"]')).not.toBeNull()
+  })
+})

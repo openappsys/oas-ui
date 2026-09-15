@@ -123,7 +123,7 @@ const STYLE = `
   line-height: 1;
   font-family: inherit;
   text-decoration: none;
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--oas-color-overlay) 40%, transparent);
+  box-shadow: var(--oas-shadow-md);
   transition: background var(--oas-transition-fast) var(--oas-ease-out),
     border-color var(--oas-transition-fast) var(--oas-ease-out),
     transform var(--oas-transition-fast) var(--oas-ease-out);
@@ -148,8 +148,7 @@ const STYLE = `
 }
 .btn:focus-visible {
   outline: none;
-  box-shadow: var(--oas-focus-ring),
-    0 4px 12px color-mix(in srgb, var(--oas-color-overlay) 40%, transparent);
+  box-shadow: var(--oas-focus-ring), var(--oas-shadow-md);
 }
 .btn:not(:disabled):not([aria-disabled='true']):active {
   transform: scale(0.96);
@@ -293,7 +292,7 @@ const STYLE = `
   cursor: pointer;
   text-decoration: none;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--oas-color-overlay) 30%, transparent);
+  box-shadow: var(--oas-shadow-sm);
   transition: background var(--oas-transition-fast) var(--oas-ease-out),
     border-color var(--oas-transition-fast) var(--oas-ease-out);
 }
@@ -422,7 +421,7 @@ const STYLE = `
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-lg);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent);
+  box-shadow: var(--oas-shadow-lg);
   opacity: 0;
   visibility: hidden;
   transition: opacity var(--oas-transition-base) var(--oas-ease-out),

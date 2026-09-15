@@ -1455,11 +1455,15 @@ export class OASBadge extends OASElement {
     // （其余裁剪形态由样式 :not 排除，见 STYLE 注释）
     ribbonEl.classList.toggle('rolled', this.hasAttr('rolled'))
     // ribbon-size 斜带档位：仅与 diagonal 组合；其他形态静默忽略（不写入 class，无视觉影响）。
-    // 档位只改 --oas-badge-diagonal-* 的 fallback 默认值，宿主 CSS 变量优先级更高
+    // 档位只改 --oas-badge-diagonal-* 的 fallback 默认值，宿主 CSS 变量优先级更高。
+    // 缩写词表 sm/md/lg，全称 small/medium/large 走 shared/size 别名互认
     const size = this.getAttr('ribbon-size', 'sm') as BadgeRibbonSize
-    const sizeValid = formValid && form === 'diagonal' && (VALID_RIBBON_SIZES as readonly string[]).includes(size)
-    ribbonEl.classList.toggle('ribbon-size-md', sizeValid && size === 'md')
-    ribbonEl.classList.toggle('ribbon-size-lg', sizeValid && size === 'lg')
+    const sizeAlias = aliasSize(size, false)
+    const sizeResolved = (sizeAlias ?? size) as BadgeRibbonSize
+    const sizeValid =
+      formValid && form === 'diagonal' && (VALID_RIBBON_SIZES as readonly string[]).includes(sizeResolved)
+    ribbonEl.classList.toggle('ribbon-size-md', sizeValid && sizeResolved === 'md')
+    ribbonEl.classList.toggle('ribbon-size-lg', sizeValid && sizeResolved === 'lg')
 
     // color 变量注入（语义色与 class 双保险；预设名/任意色值唯一生效路径）
     const resolved = resolveBadgeColor(color)

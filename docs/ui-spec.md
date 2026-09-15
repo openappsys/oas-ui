@@ -16,7 +16,7 @@
 
 规则：**组件样式只允许引用语义 token**，禁止硬编码色值/字号/间距；主题通过替换基础 token 实现换肤。
 
-**阴影三档**（`--oas-shadow-sm/md/lg`，light/dark 双变体）：海拔语义的 box-shadow 统一走 token——sm 控件悬浮（switch thumb/徽标）、md 下拉与气泡面板、lg 模态与预览层；dark 按同结构加深。**豁免**：X 轴方向性投影（drawer/sidebar 侧滑，投影侧=停靠侧属物理语义）、inset 内阴影（选中/按压指示）、形状描边技巧（badge 白描边）、focus-ring。既有 `color-mix(var(--oas-color-overlay))` 变体为认可的替代形态（主题自适应着色），新增海拔阴影优先用三档 token。
+**阴影三档**（`--oas-shadow-sm/md/lg`，light/dark 双变体）：海拔语义的 box-shadow 统一走 token——sm 控件悬浮（switch thumb/徽标）、md 下拉与气泡面板、lg 模态与预览层；dark 按同结构加深。**豁免**：方向性投影（drawer/sidebar/bottom-sheet 侧滑与滑出，投影方向=停靠/滑出语义，不限轴）、inset 内阴影（选中/按压指示）、形状描边技巧（badge 白描边）、focus-ring。
 
 ### 1.2 主色（light / dark）
 

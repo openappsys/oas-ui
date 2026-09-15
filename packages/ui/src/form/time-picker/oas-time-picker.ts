@@ -152,7 +152,7 @@ const STYLE = `
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--oas-color-overlay) 25%, transparent);
+  box-shadow: var(--oas-shadow-md);
   padding: var(--oas-space-2);
   display: none;
 }

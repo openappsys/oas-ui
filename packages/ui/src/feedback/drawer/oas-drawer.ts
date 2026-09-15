@@ -730,7 +730,10 @@ export class OASDrawer extends OASElement {
     this.panel?.style.removeProperty('transform')
     this.focusInitial()
     this.emitOnAnimEnd(
-      () => this.emit('opened'),
+      () => {
+        this.emit('opened')
+        this.emit('after-open')
+      },
       () => this.isOpen,
     )
   }
