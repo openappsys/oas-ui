@@ -49,7 +49,7 @@ const OPTION_STYLE = `
   color: var(--oas-color-text-on-primary);
 }
 .option.grouped {
-  padding-left: calc(var(--oas-space-3) + var(--oas-space-4));
+  padding-inline-start: calc(var(--oas-space-3) + var(--oas-space-4));
 }
 .option[aria-disabled='true'] {
   cursor: not-allowed;
@@ -201,7 +201,7 @@ const STYLE = `
   gap: var(--oas-space-1);
   min-width: 0;
   flex: 1;
-  text-align: left;
+  text-align: start;
   /* 默认换行：标签放不下时换行、触发器自适应增高；折叠仅在显式设置 max-tag-count 时启用 */
 }
 :host([max-tag-count]) .value {

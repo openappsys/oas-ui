@@ -120,7 +120,9 @@ const STYLE = `
   box-sizing: border-box;
   width: 100%;
   min-height: var(--_ch);
-  padding: 0 var(--oas-space-8, 40px) 0 var(--oas-space-3);
+  padding-block: 0;
+  padding-inline-start: var(--oas-space-3);
+  padding-inline-end: var(--oas-space-8, 40px);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
   background: var(--oas-color-bg);
@@ -134,11 +136,11 @@ const STYLE = `
 /* ---- size 尺寸档：字号/padding 联动（默认 medium 走基础样式） ---- */
 :host([data-size='small']) .trigger {
   font-size: var(--oas-font-size-sm);
-  padding-left: var(--oas-space-2);
+  padding-inline-start: var(--oas-space-2);
 }
 :host([data-size='large']) .trigger {
   font-size: var(--oas-font-size-lg);
-  padding-left: var(--oas-space-4);
+  padding-inline-start: var(--oas-space-4);
 }
 .trigger:hover:not(:disabled) {
   border-color: var(--oas-color-primary);
@@ -202,7 +204,7 @@ const STYLE = `
 }
 .chevron {
   position: absolute;
-  right: var(--oas-space-3);
+  inset-inline-end: var(--oas-space-3);
   top: 50%;
   transform: translateY(-50%);
   color: var(--oas-color-text-secondary);
@@ -215,7 +217,7 @@ const STYLE = `
 }
 .clear-btn {
   position: absolute;
-  right: var(--oas-space-7, 30px);
+  inset-inline-end: var(--oas-space-7, 30px);
   top: 50%;
   transform: translateY(-50%);
   appearance: none;
@@ -294,8 +296,8 @@ const STYLE = `
   width: 100%;
 }
 :host([data-mobile-sheet]) [part='panel'] .range-grid + .range-grid {
-  padding-left: 0;
-  border-left: none;
+  padding-inline-start: 0;
+  border-inline-start: none;
   border-top: 1px solid var(--oas-color-border);
   padding-top: var(--oas-space-3);
 }
@@ -514,8 +516,8 @@ const STYLE = `
   gap: var(--oas-space-4);
 }
 [part='panel'] .range-grid + .range-grid {
-  border-left: 1px solid var(--oas-color-border);
-  padding-left: var(--oas-space-4);
+  border-inline-start: 1px solid var(--oas-color-border);
+  padding-inline-start: var(--oas-space-4);
 }
 [part='panel'] .time-section {
   display: flex;
@@ -636,7 +638,8 @@ const STYLE = `
   flex-wrap: nowrap;
   min-width: 96px;
   margin: 0;
-  padding: 0 var(--oas-space-3) 0 0;
+  padding-block: 0;
+  padding-inline-end: var(--oas-space-3);
   border-bottom: none;
   border-inline-end: 1px solid var(--oas-color-border);
 }

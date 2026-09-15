@@ -62,11 +62,11 @@ const STYLE = `
   align-items: center;
   white-space: nowrap; /* 禁止中文菜单项逐字换行竖排 */
 }
-/* 标签占据中间剩余空间并左对齐，贴住左侧图标；右侧 arrow/check 靠右 */
+/* 标签占据中间剩余空间并起始侧对齐，贴住前导图标；尾侧 arrow/check 靠尾 */
 .item .label {
   flex: 1;
   min-width: 0;
-  text-align: left;
+  text-align: start;
 }
 .item:hover,
 .item.active {
@@ -95,7 +95,7 @@ const STYLE = `
   justify-content: center;
   width: 0.9em;
   height: 0.9em;
-  margin-right: var(--oas-space-2);
+  margin-inline-end: var(--oas-space-2);
   flex-shrink: 0;
   border: 2px solid var(--oas-color-text-secondary);
   border-top-color: transparent;
@@ -113,7 +113,7 @@ const STYLE = `
   justify-content: center;
   width: 1em;
   height: 1em;
-  margin-right: var(--oas-space-2);
+  margin-inline-end: var(--oas-space-2);
   flex-shrink: 0;
   color: inherit;
 }
@@ -138,7 +138,7 @@ const STYLE = `
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-right: var(--oas-space-2); /* 与 .icon/.spin 同档间距，避免方块紧贴标签 */
+  margin-inline-end: var(--oas-space-2); /* 与 .icon/.spin 同档间距，避免方块紧贴标签 */
   opacity: 1; /* checkbox 的框始终显示（区别于 radio 的 ✓ 仅勾选显示） */
 }
 .item[role='menuitemcheckbox'][aria-checked='true'] .check--box {
@@ -193,7 +193,7 @@ const STYLE = `
 }
 /* inline 子项缩进层级视觉 */
 .inline-sub .item {
-  padding-left: calc(var(--oas-space-4) + var(--oas-space-2));
+  padding-inline-start: calc(var(--oas-space-4) + var(--oas-space-2));
 }
 /* inline 模式展开箭头：chevron-down 指示（就地展开方向） */
 :host(.oas-menu--inline) .item[aria-haspopup] .arrow {
@@ -242,7 +242,7 @@ const STYLE = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: var(--oas-space-3);
+  margin-inline-start: var(--oas-space-3);
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
   flex-shrink: 0;
@@ -352,7 +352,7 @@ const STYLE = `
   display: none;
 }
 :host(:not([mode='horizontal'])[collapsed]) .item > .icon {
-  margin-right: 0;
+  margin-inline-end: 0;
 }
 /* 触摸目标抬升：coarse pointer 下菜单项行最小高度 ≥44px（token 开口可调）。
    dropdown item / menu-item 由本组件统一渲染，随此处一并生效 */

@@ -250,7 +250,7 @@ const STYLE = `
   gap: var(--oas-space-1);
   min-width: 0;
   flex: 1;
-  text-align: left;
+  text-align: start;
 }
 .placeholder {
   color: var(--oas-color-text-secondary);

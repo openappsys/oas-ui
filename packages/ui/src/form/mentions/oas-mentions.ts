@@ -133,12 +133,12 @@ textarea:disabled:hover {
 }
 /* clearable 时给右上角清空按钮让位 */
 :host([clearable]) textarea {
-  padding-right: var(--oas-space-8, 40px);
+  padding-inline-end: var(--oas-space-8, 40px);
 }
 .clear-btn {
   position: absolute;
   top: var(--oas-space-2);
-  right: var(--oas-space-2);
+  inset-inline-end: var(--oas-space-2);
   appearance: none;
   border: none;
   background: transparent;

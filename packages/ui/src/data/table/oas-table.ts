@@ -201,7 +201,7 @@ table {
   border-spacing: 0;
 }
 th {
-  text-align: left;
+  text-align: start;
   padding: var(--_cell-py) var(--_cell-px);
   background: var(--oas-color-bg-hover);
   font-weight: 500;
@@ -269,13 +269,13 @@ th.drop-after::after {
 }
 .sort-icon {
   display: inline-block;
-  margin-left: var(--oas-space-1);
+  margin-inline-start: var(--oas-space-1);
   font-size: var(--oas-font-size-xs);
   color: var(--oas-color-text-secondary);
 }
 .sort-index {
   display: inline-block;
-  margin-left: var(--oas-space-1);
+  margin-inline-start: var(--oas-space-1);
   font-size: var(--oas-font-size-2xs);
   color: var(--oas-color-primary);
   font-weight: var(--oas-font-weight-medium);
@@ -366,7 +366,7 @@ tr.spacer td {
   display: inline-block;
   width: var(--oas-control-height-sm);
   height: var(--oas-control-height-sm);
-  margin-right: var(--oas-space-2);
+  margin-inline-end: var(--oas-space-2);
   vertical-align: middle;
   border: 2px solid var(--oas-color-border);
   border-top-color: var(--oas-color-primary);
@@ -592,7 +592,7 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: 4px;
+  margin-inline-start: 4px;
   width: 18px;
   height: 18px;
   border: none;
@@ -633,7 +633,7 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
   margin-bottom: var(--oas-space-1);
 }
 .filter-option {
-  text-align: left;
+  text-align: start;
   border: none;
   background: transparent;
   padding: var(--oas-space-1) var(--oas-space-2);
@@ -648,7 +648,7 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
   color: var(--oas-color-primary);
 }
 .filter-clear {
-  text-align: left;
+  text-align: start;
   border: none;
   background: transparent;
   padding: var(--oas-space-1) var(--oas-space-2);
@@ -679,7 +679,7 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
   justify-content: center;
   width: 22px;
   height: 22px;
-  margin-left: 2px;
+  margin-inline-start: 2px;
   padding: 0;
   border: none;
   border-radius: var(--oas-radius-xs, 4px);

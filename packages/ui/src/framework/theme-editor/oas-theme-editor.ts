@@ -377,7 +377,7 @@ input[type='text'].color-text.is-invalid {
 .value {
   min-width: 56px;
   max-width: 180px;
-  text-align: right;
+  text-align: end;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

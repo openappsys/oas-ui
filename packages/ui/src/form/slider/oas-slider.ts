@@ -358,7 +358,7 @@ input:disabled {
   height: auto;
   align-self: stretch;
   margin-top: 0;
-  margin-left: var(--oas-space-2);
+  margin-inline-start: var(--oas-space-2);
 }
 .mark {
   position: absolute;
@@ -389,7 +389,7 @@ input:disabled {
 }
 :host([data-vertical]) .mark-label {
   margin-top: 0;
-  margin-left: var(--oas-space-1);
+  margin-inline-start: var(--oas-space-1);
 }
 .mark[data-passed='true'] .mark-label {
   color: var(--oas-color-text-primary);

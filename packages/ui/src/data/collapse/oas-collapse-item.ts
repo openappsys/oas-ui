@@ -30,7 +30,7 @@ const STYLE = `
   font: inherit;
   font-size: var(--oas-font-size-md);
   color: var(--oas-color-text-primary);
-  text-align: left;
+  text-align: start;
 }
 .head:hover {
   background: var(--oas-color-bg-hover);
