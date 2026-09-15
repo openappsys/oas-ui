@@ -126,3 +126,34 @@ onMounted(() => {
   })
 })
 </script>
+
+## API
+
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `elevated` | 滚动后显示投影（静态时无投影） | — | — |
+| `extended-collapse-on-scroll` | 页面下滚时收起 extended 扩展区（回滚到顶恢复展开） | `boolean` | — |
+| `heading` | 标题文本（属性通道；富内容改用 title 插槽，会被插槽覆盖） | `string` | — |
+| `hide-on-scroll` | 页面下滚隐藏、上滚重现（transform 过渡，不重排；仅非 static 定位生效） | `boolean` | — |
+| `menu-button` | 显示 leading 汉堡钮，点击派发 oas-menu-toggle（配合侧栏开合使用） | `boolean` | — |
+| `menu-controls` | 汉堡钮 aria-controls 指向的关联元素 id（缺省无） | — | — |
+| `menu-open` | 汉堡钮展开态（受控）：宿主开合侧栏后回写，按钮 aria-expanded 随之同步 | `boolean` | — |
+| `position` | 定位形态：static（默认，文档流）/ absolute / fixed / floating（悬浮圆角投影） | `string` | `static` |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-menu-toggle` | 汉堡钮点击时派发；宿主自行开合抽屉并回写 menu-open |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `actions` | 右侧操作区；超宽自动收纳进「···」弹层并镜像回派原按钮 |
+| `extended` | 第二行扩展区（hide-on-scroll 或 extended-collapse-on-scroll 时滚动收起） |
+| `leading` | 标题前置自定义区 |
+| `title` | 标题富内容通道（覆盖 heading 属性） |
+| `trailing` | 最右侧尾部自定义区 |

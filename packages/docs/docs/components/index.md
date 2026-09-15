@@ -1,6 +1,6 @@
 # 组件总览
 
-OAS-UI 提供 115 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 117 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -71,6 +71,7 @@ OAS-UI 提供 115 个框架无关的 Web Components 组件，按用途划分为 
 - [Toast 轻提示](/components/toast) —— 命令式全局轻提示，支持成功/错误/警告/信息/加载态、操作按钮与 promise 链，默认 3 秒自动关闭。
 - [Snackbar 消息条](/components/snackbar) —— 底部（或顶部）弹出的轻量反馈条，`open` 属性受控，可带操作按钮，默认 4 秒后派发 `oas-close` 由外部负责关闭。
 - [Backdrop 遮罩](/components/backdrop) —— 全屏半透明遮罩，支持 `transparent`/`blur` 变体与 body 滚动锁定；`open=false` 时自动卸载节点，不留孤儿 DOM。
+- [BottomSheet 底部抽屉](/components/bottom-sheet) —— feedback 移动端底部抽屉承载件：下滑把手/点遮罩/Esc 关闭、safe-area 与焦点陷阱内置，`passive` 模式作浮层 PC 形态结构占位。
 - [Modal 对话框](/components/modal) —— 模态对话框，用于需要用户确认或输入的中断场景。
 - [Confirm 确认框](/components/confirm) —— 命令式确认对话框，基于 Promise，底层复用 `oas-modal`。
 - [Drawer 抽屉](/components/drawer) —— 从侧边滑出的面板，常用于筛选条件、详情信息等场景。

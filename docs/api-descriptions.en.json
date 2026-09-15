@@ -89,6 +89,28 @@
       "": "The marked target content (e.g. multi-level headings)"
     }
   },
+  "oas-app-bar": {
+    "attrs": {
+      "heading": "Title text (attribute channel; use the title slot for rich content, which overrides this)",
+      "menu-button": "Show the leading hamburger button; clicking it emits oas-menu-toggle (pair with a collapsible sidebar)",
+      "menu-open": "Hamburger expanded state (controlled): the host writes back after toggling its drawer; the button aria-expanded stays in sync",
+      "menu-controls": "Element id for the hamburger button aria-controls (none by default)",
+      "position": "Positioning mode: static (default, in flow) / absolute / fixed / floating (floating rounded with shadow)",
+      "hide-on-scroll": "Hide on scroll down, reveal on scroll up (transform transition, no reflow; effective only when not static)",
+      "extended-collapse-on-scroll": "Collapse the extended section on scroll down (restored when scrolled back to top)",
+      "elevated": "Show a shadow once the page is scrolled (no shadow at rest)"
+    },
+    "events": {
+      "oas-menu-toggle": "Emitted when the hamburger button is clicked; the host toggles its drawer and writes back menu-open"
+    },
+    "slots": {
+      "actions": "Right-side action area; overflow items auto-collapse into the overflow panel and re-dispatch to the original buttons",
+      "extended": "Second-row extended section (collapses on scroll with hide-on-scroll or extended-collapse-on-scroll)",
+      "leading": "Custom content before the title",
+      "title": "Rich title channel (overrides the heading attribute)",
+      "trailing": "Rightmost trailing custom area"
+    }
+  },
   "oas-aspect-ratio": {
     "attrs": {
       "ratio": "Aspect ratio: preset name `square` (1/1) / `landscape` (4/3) / `portrait` (3/4) / `wide` (16/9) / `ultrawide` (21/9) / `golden` (1.618/1), or a fraction `16/9`, `4:3`, `16 / 9`, decimal `1.5`; also assignable as a number property (`el.ratio = 1.5`). Token names match first; missing/invalid values (including zero numerator or denominator) fall back to `1 / 1` with a dev warning once per invalid value (deduplicated)"
@@ -272,6 +294,17 @@
     "slots": {
       "": "Bottom-navigation item label content (default slot text)"
     }
+  },
+  "oas-bottom-sheet": {
+    "attrs": {
+      "open": "Controlled open state (single source of truth). Shows the bottom panel and backdrop when open; gestures (drag handle / backdrop click / Esc) only emit oas-close requests — the host removes open to actually close (the component never mutates the controlled value)",
+      "max-height": "Panel max height, default 85vh; overflowing content scrolls inside the panel",
+      "passive": "Passive passthrough mode — hides backdrop and drag handle, disables overlay positioning and gestures; renders a static structure placeholder only (for overlay components PC-form reuse; SSR/client structure strictly identical)"
+    },
+    "events": {
+      "oas-close": "Close request; detail.reason is drag (handle dragged past threshold) / backdrop (backdrop click) / esc (Escape key). The component only emits — the host decides to close by removing open"
+    },
+    "slots": {}
   },
   "oas-breadcrumb": {
     "attrs": {

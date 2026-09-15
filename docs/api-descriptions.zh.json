@@ -89,6 +89,28 @@
       "": "被标记的目标内容（如多级标题）"
     }
   },
+  "oas-app-bar": {
+    "attrs": {
+      "heading": "标题文本（属性通道；富内容改用 title 插槽，会被插槽覆盖）",
+      "menu-button": "显示 leading 汉堡钮，点击派发 oas-menu-toggle（配合侧栏开合使用）",
+      "menu-open": "汉堡钮展开态（受控）：宿主开合侧栏后回写，按钮 aria-expanded 随之同步",
+      "menu-controls": "汉堡钮 aria-controls 指向的关联元素 id（缺省无）",
+      "position": "定位形态：static（默认，文档流）/ absolute / fixed / floating（悬浮圆角投影）",
+      "hide-on-scroll": "页面下滚隐藏、上滚重现（transform 过渡，不重排；仅非 static 定位生效）",
+      "extended-collapse-on-scroll": "页面下滚时收起 extended 扩展区（回滚到顶恢复展开）",
+      "elevated": "滚动后显示投影（静态时无投影）"
+    },
+    "events": {
+      "oas-menu-toggle": "汉堡钮点击时派发；宿主自行开合抽屉并回写 menu-open"
+    },
+    "slots": {
+      "actions": "右侧操作区；超宽自动收纳进「···」弹层并镜像回派原按钮",
+      "extended": "第二行扩展区（hide-on-scroll 或 extended-collapse-on-scroll 时滚动收起）",
+      "leading": "标题前置自定义区",
+      "title": "标题富内容通道（覆盖 heading 属性）",
+      "trailing": "最右侧尾部自定义区"
+    }
+  },
   "oas-aspect-ratio": {
     "attrs": {
       "ratio": "宽高比：预定义名 `square`（1/1）/ `landscape`（4/3）/ `portrait`（3/4）/ `wide`（16/9）/ `ultrawide`（21/9）/ `golden`（1.618/1），或分式 `16/9`、`4:3`、`16 / 9`、小数 `1.5`；亦可用 property 赋 number（`el.ratio = 1.5`）。token 名优先匹配；缺失/非法（含 0 分子或分母）回退 `1 / 1`，非法值 dev 告警一次（同值去重）"
@@ -272,6 +294,17 @@
     "slots": {
       "": "底部导航项 label 内容（默认插槽文本）"
     }
+  },
+  "oas-bottom-sheet": {
+    "attrs": {
+      "open": "受控展开态（唯一状态源）。抽屉打开时显示底部面板与遮罩；下滑把手/点遮罩/Esc 手势只派发 oas-close 请求，由宿主移除 open 完成收起（组件不擅自改受控值）",
+      "max-height": "面板最大高度，默认 85vh；内容超出时在面板内部滚动",
+      "passive": "被动透传模式——隐藏遮罩与拖拽把手、取消浮层定位与手势行为，仅渲染静态结构占位（供浮层组件 PC 形态结构复用；SSR/客户端结构严格一致）"
+    },
+    "events": {
+      "oas-close": "请求关闭，detail.reason 为 drag（下滑把手超阈值）/ backdrop（点击遮罩）/ esc（Esc 键）；组件只派发事件不改 open，由宿主决定收起"
+    },
+    "slots": {}
   },
   "oas-breadcrumb": {
     "attrs": {

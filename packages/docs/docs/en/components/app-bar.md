@@ -126,3 +126,34 @@ onMounted(() => {
   })
 })
 </script>
+
+## API
+
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `elevated` | Show a shadow once the page is scrolled (no shadow at rest) | — | — |
+| `extended-collapse-on-scroll` | Collapse the extended section on scroll down (restored when scrolled back to top) | `boolean` | — |
+| `heading` | Title text (attribute channel; use the title slot for rich content, which overrides this) | `string` | — |
+| `hide-on-scroll` | Hide on scroll down, reveal on scroll up (transform transition, no reflow; effective only when not static) | `boolean` | — |
+| `menu-button` | Show the leading hamburger button; clicking it emits oas-menu-toggle (pair with a collapsible sidebar) | `boolean` | — |
+| `menu-controls` | Element id for the hamburger button aria-controls (none by default) | — | — |
+| `menu-open` | Hamburger expanded state (controlled): the host writes back after toggling its drawer; the button aria-expanded stays in sync | `boolean` | — |
+| `position` | Positioning mode: static (default, in flow) / absolute / fixed / floating (floating rounded with shadow) | `string` | `static` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-menu-toggle` | Emitted when the hamburger button is clicked; the host toggles its drawer and writes back menu-open |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `actions` | Right-side action area; overflow items auto-collapse into the overflow panel and re-dispatch to the original buttons |
+| `extended` | Second-row extended section (collapses on scroll with hide-on-scroll or extended-collapse-on-scroll) |
+| `leading` | Custom content before the title |
+| `title` | Rich title channel (overrides the heading attribute) |
+| `trailing` | Rightmost trailing custom area |
