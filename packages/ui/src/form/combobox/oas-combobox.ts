@@ -41,7 +41,7 @@ const OPTION_STYLE = `
   color: var(--oas-color-bg);
 }
 .option.grouped {
-  padding-left: calc(var(--oas-space-3) + var(--oas-space-4));
+  padding-inline-start: calc(var(--oas-space-3) + var(--oas-space-4));
 }
 .option[aria-disabled='true'] {
   cursor: not-allowed;
@@ -143,11 +143,11 @@ input:disabled:hover {
 }
 /* clearable 时给清空按钮让位 */
 :host([clearable]) input {
-  padding-right: var(--oas-space-8, 40px);
+  padding-inline-end: var(--oas-space-8, 40px);
 }
 .clear-btn {
   position: absolute;
-  right: var(--oas-space-2);
+  inset-inline-end: var(--oas-space-2);
   top: 50%;
   transform: translateY(-50%);
   appearance: none;

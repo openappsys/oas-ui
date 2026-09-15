@@ -784,7 +784,8 @@ describe('OASMenu loading 菜单项', () => {
       const el = mount({ items: CB_ITEMS, value: '["grid"]' })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
       const boxRule = /\.check--box\s*\{[^}]*\}/.exec(css)?.[0] ?? ''
-      expect(boxRule).toMatch(/margin-right:\s*var\(--oas-space-2\)/)
+      // 逻辑属性（margin-inline-end）自动跟随书写方向，间距语义与旧物理 margin-right 等价
+      expect(boxRule).toMatch(/margin-inline-end:\s*var\(--oas-space-2\)/)
     })
   })
 

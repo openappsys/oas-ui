@@ -170,7 +170,10 @@ const STYLE = `
 .hex-text {
   font-variant-numeric: tabular-nums;
   min-width: 52px;
+  /* hex 色值内容 LTR 锁定（对齐代码块惯例） */
+  direction: ltr;
   text-align: left;
+  unicode-bidi: isolate;
 }
 .hex-text.placeholder {
   color: var(--oas-color-text-secondary);

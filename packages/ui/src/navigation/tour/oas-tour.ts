@@ -467,7 +467,7 @@ const STYLE = `
 }
 .hint-actions {
   margin-top: var(--oas-space-3);
-  text-align: right;
+  text-align: end;
 }
 `
 

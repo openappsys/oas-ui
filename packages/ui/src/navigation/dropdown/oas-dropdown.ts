@@ -55,11 +55,14 @@ const STYLE = `
   align-items: center;
   justify-content: center;
   border: 1px solid var(--oas-color-border);
-  border-left: none;
-  border-radius: 0 var(--oas-radius-md) var(--oas-radius-md) 0;
+  border-inline-start: none; /* 接缝侧（与主按钮相邻侧）去边，外缘保持完整描边 */
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  border-start-end-radius: var(--oas-radius-md);
+  border-end-end-radius: var(--oas-radius-md);
   background: var(--oas-color-bg);
   color: var(--oas-color-text-primary);
-  margin-left: -1px; /* 覆盖主按钮右边框，接缝成一条线 */
+  margin-inline-start: -1px; /* 覆盖主按钮接缝侧边框，接缝成一条线 */
   padding: 0 var(--oas-space-2);
   cursor: pointer;
   transition: background var(--oas-transition-fast) var(--oas-ease-out),
