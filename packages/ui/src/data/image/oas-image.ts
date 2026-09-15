@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 const STYLE = `
 :host {
@@ -785,17 +786,20 @@ export class OASImage extends OASElement {
     if (!opts.fromAttr) this.emit('preview-change', { open })
   }
 
-  /** Esc 关闭 + ←→ 图集翻页 + Tab 焦点陷阱（不逃逸出浮层） */
+  /** Esc 关闭 + ←→ 图集翻页（RTL 镜像）+ Tab 焦点陷阱（不逃逸出浮层） */
   private onKey = (e: KeyboardEvent): void => {
+    // RTL 镜像：图集视觉序随书写方向反转，下一张/上一张键随之换向
+    const nextKey = isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
+    const prevKey = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
     if (e.key === 'Escape') {
       e.preventDefault()
       this.closePreview()
-    } else if (e.key === 'ArrowRight') {
+    } else if (e.key === nextKey) {
       if (this.gallery.length > 1) {
         e.preventDefault()
         this.stepImage(1)
       }
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === prevKey) {
       if (this.gallery.length > 1) {
         e.preventDefault()
         this.stepImage(-1)

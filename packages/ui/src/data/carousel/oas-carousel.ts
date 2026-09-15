@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 const STYLE = `
 :host {
@@ -290,12 +291,13 @@ const STYLE = `
   outline: 2px solid var(--oas-color-primary);
   outline-offset: 2px;
 }
-.arrow-prev { left: var(--oas-space-3); }
-.arrow-next { right: var(--oas-space-3); }
+/* 逻辑属性：prev 在起始侧、next 在尾侧，RTL 自动镜像（视觉上 prev 换到右侧） */
+.arrow-prev { inset-inline-start: var(--oas-space-3); }
+.arrow-next { inset-inline-end: var(--oas-space-3); }
 /* 垂直模式箭头：旋转 90°（‹ 朝上、› 朝下），改到顶部/底部居中 */
 :host([direction='vertical']) .arrow {
-  left: 50%;
-  right: auto;
+  inset-inline-start: 50%;
+  inset-inline-end: auto;
   transform: translateX(-50%) rotate(90deg);
 }
 :host([direction='vertical']) .arrow-prev {
@@ -363,14 +365,16 @@ export class OASCarousel extends OASElement {
       const dot = (e.target as HTMLElement).closest('[part="dot"]')
       if (dot) this.goTo(Number((dot as HTMLElement).getAttribute('data-index')) || 0)
     })
-    // 指示器键盘导航（WAI-ARIA carousel pattern：方向键 + Home/End）
+    // 指示器键盘导航（WAI-ARIA carousel pattern：方向键 + Home/End；水平轴 RTL 镜像）
     this.shadow.querySelector('.dots')?.addEventListener('keydown', (e) => {
       const key = (e as KeyboardEvent).key
       const pages = this.pageCount()
-      if (key === 'ArrowRight' || key === 'ArrowDown') {
+      const fwd = isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
+      const back = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
+      if (key === fwd || key === 'ArrowDown') {
         e.preventDefault()
         this.goTo(this.current() + 1)
-      } else if (key === 'ArrowLeft' || key === 'ArrowUp') {
+      } else if (key === back || key === 'ArrowUp') {
         e.preventDefault()
         this.goTo(this.current() - 1)
       } else if (key === 'Home') {
@@ -407,16 +411,18 @@ export class OASCarousel extends OASElement {
       const hit = kids.findIndex((k) => path.includes(k))
       if (hit >= 0 && hit !== this.current()) this.goTo(hit)
     })
-    // 卡片模式：宿主级方向键切换（焦点在轮播项内时可达；指示器区有独立导航，避免重复处理）
+    // 卡片模式：宿主级方向键切换（焦点在轮播项内时可达；指示器区有独立导航，避免重复处理；水平轴 RTL 镜像）
     this.addEventListener('keydown', (e) => {
       if (!this.isCard()) return
       const ev = e as KeyboardEvent
       const dots = this.shadow.querySelector('.dots')
       if (dots && ev.composedPath().includes(dots)) return
-      if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
+      const fwd = isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
+      const back = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
+      if (ev.key === fwd || ev.key === 'ArrowDown') {
         ev.preventDefault()
         this.next()
-      } else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') {
+      } else if (ev.key === back || ev.key === 'ArrowUp') {
         ev.preventDefault()
         this.prev()
       }
@@ -544,8 +550,11 @@ export class OASCarousel extends OASElement {
    * deltaPx 为拖拽跟手偏移（px），非拖拽时为 0。
    */
   private trackTransform(deltaPx = 0): string {
+    // RTL 镜像：水平轨道位移取反（flex 轨道在 RTL 反向排列，「下一页」视觉上向右移出；
+    // 拖拽跟手 delta 同步取反保持方向一致）。垂直轴不受书写方向影响。
+    const rtl = this.getAttr('direction', 'horizontal') !== 'vertical' && isRtl(this)
     // 卡片模式仅水平：第 i 卡中心对齐视口中心，左右邻卡自然露出。
-    // 非循环模式首尾屏贴边（首屏贴左露右邻卡、末屏贴右露左邻卡），边界不悬空。
+    // 非循环模式首尾屏贴边（首屏贴起始侧露邻卡、末屏贴尾侧露邻卡），边界不悬空。
     if (this.isCard()) {
       const w = 'var(--oas-carousel-card-width, 60%)'
       const gap = 'var(--oas-carousel-card-gap, var(--oas-space-3))'
@@ -555,19 +564,22 @@ export class OASCarousel extends OASElement {
         if (i === 0) center = '0px'
         else if (i === this.count - 1) center = `(100% - (${w}))`
       }
-      return `translateX(calc(-1 * ${i} * ((${w}) + ${gap}) + ${center} + ${deltaPx}px))`
+      const lead = rtl ? '' : '-1 * '
+      return `translateX(calc(${lead}${i} * ((${w}) + ${gap}) + ${center} + ${rtl ? -deltaPx : deltaPx}px))`
     }
     const axis = this.getAttr('direction', 'horizontal') === 'vertical' ? 'Y' : 'X'
     const per = this.perView()
     const offsetSlides = Math.min(this.current() * per, Math.max(0, this.count - per))
     // 常规形态（每屏 1 项、无间距）输出最简形式，SSR 快照体积与旧版一致
     if (per === 1 && this.gapPx() === 0) {
-      const base = `-${offsetSlides * 100}%`
-      return deltaPx ? `translate${axis}(calc(${base} + ${deltaPx}px))` : `translate${axis}(${base})`
+      const base = rtl ? `${offsetSlides * 100}%` : `-${offsetSlides * 100}%`
+      const d = rtl ? -deltaPx : deltaPx
+      return deltaPx ? `translate${axis}(calc(${base} + ${d}px))` : `translate${axis}(${base})`
     }
     const gap = `${this.gapPx()}px`
     const slideW = `((100% - ${per - 1} * ${gap}) / ${per})`
-    return `translate${axis}(calc(-1 * ${offsetSlides} * ((${slideW}) + ${gap}) + ${deltaPx}px))`
+    const lead = rtl ? '' : '-1 * '
+    return `translate${axis}(calc(${lead}${offsetSlides} * ((${slideW}) + ${gap}) + ${rtl ? -deltaPx : deltaPx}px))`
   }
 
   protected override update(): void {

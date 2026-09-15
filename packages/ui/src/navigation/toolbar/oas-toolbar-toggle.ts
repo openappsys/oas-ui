@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 export interface ToolbarToggleItem {
   label: string
@@ -401,11 +402,14 @@ export class OASToolbarToggle extends OASElement {
     if (enabled.length === 0) return
     const multiple = this.hasAttr('multiple')
 
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    // RTL 镜像：水平轴方向键换向（flex 视觉序随书写方向反转），竖向键不受影响
+    const fwd = isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
+    const back = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
+    if (e.key === fwd || e.key === 'ArrowDown') {
       e.preventDefault()
       e.stopPropagation()
       this.move(1, enabled, multiple)
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    } else if (e.key === back || e.key === 'ArrowUp') {
       e.preventDefault()
       e.stopPropagation()
       this.move(-1, enabled, multiple)

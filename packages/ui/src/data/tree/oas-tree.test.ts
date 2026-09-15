@@ -941,6 +941,14 @@ describe('OASTree 键盘 roving（↑↓ 移动 / → 展开 / ← 收起 / Home
     expect(expandedOf(el)).toEqual([])
   })
 
+  it('RTL 镜像：← 展开节点、→ 收起节点', () => {
+    const el = mount({ data: CASCADE_DATA, dir: 'rtl' })
+    press(el, 0, 'ArrowLeft')
+    expect(expandedOf(el)).toEqual(['a'])
+    press(el, 0, 'ArrowRight')
+    expect(expandedOf(el)).toEqual([])
+  })
+
   it('Home / End 跳到首尾行', () => {
     const el = mount({ expanded: '["a"]', data: CASCADE_DATA }) // a, a-1, a-2, b
     press(el, 0, 'End')
