@@ -1332,10 +1332,10 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-app-bar：应用栏可见结构直出（role=banner + 标题写入 + 汉堡钮展开）', async () => {
-    const html = await renderToString('oas-app-bar', { title: '控制台', 'menu-open': '' }, '')
+    const html = await renderToString('oas-app-bar', { heading: '控制台', 'menu-open': '' }, '')
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('<style>')
-    expect(html).toMatch(/<oas-app-bar [^>]*title="控制台"/)
+    expect(html).toMatch(/<oas-app-bar [^>]*heading="控制台"/)
     expect(html).toMatch(/<oas-app-bar [^>]*menu-open=""/)
     expect(html).toContain('role="banner"')
     // 标题双通道：属性通道文本写入 .title

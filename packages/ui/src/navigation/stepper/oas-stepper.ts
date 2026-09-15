@@ -129,7 +129,6 @@ const STYLE = `
 :host(.oas-stepper--vertical) .tab:not(:last-child)::after {
   top: calc(var(--oas-space-2) + var(--oas-control-height-sm) + 4px);
   inset-inline-start: calc(var(--oas-space-2) + var(--oas-control-height-sm) / 2 + 1px);
-  left: auto;
   width: 2px;
   height: 100%;
 }

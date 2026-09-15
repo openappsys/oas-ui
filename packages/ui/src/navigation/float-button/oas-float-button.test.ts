@@ -806,6 +806,39 @@ describe('OASFloatButton menu 模式', () => {
     expect(menuEl(el).getAttribute('data-dir')).toBe('up')
   })
 
+  it('manual 展开态：外点与 Esc 均不自动收起（完全受控，收起由宿主驱动）', () => {
+    const el = mountMenu([{ label: 'a' }], { mode: 'group', trigger: 'manual', expanded: '' })
+    expect(el.hasAttribute('expanded')).toBe(true)
+    document.body.click()
+    expect(el.hasAttribute('expanded'), 'manual 模式外点不收起').toBe(true)
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(el.hasAttribute('expanded'), 'manual 模式 Esc 不收起').toBe(true)
+    el.removeAttribute('expanded') // 宿主驱动收起
+    expect(el.hasAttribute('expanded')).toBe(false)
+  })
+
+  it('展开态下属性变化不重复抢焦（焦点保持不变）', () => {
+    const el = mountMenu([{ label: 'a' }, { label: 'b' }], { expanded: '' })
+    const items = menuItems(el)
+    expect(el.shadowRoot!.activeElement).toBe(items[0]) // 展开过渡聚焦首项
+    // 聚焦第 2 项后，宿主改无关属性（badge）→ update 重建菜单项 → 焦点应保持同位（第 2 项），
+    // 不得被拉回首项（旧实现每次 update 无条件聚焦首项）
+    menuItems(el)[1]!.focus()
+    el.setAttribute('badge', '5')
+    const after = menuItems(el)
+    expect(el.shadowRoot!.activeElement, '更新后焦点应保持同位（第 2 项）').toBe(after[1])
+  })
+
+  it('menu 选择后焦点归还主钮（APG menu 惯例）', () => {
+    const el = mountMenu([{ label: 'a' }, { label: 'b' }], { expanded: '' })
+    const items = menuItems(el)
+    el.shadowRoot!.activeElement === items[0]
+    items[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.hasAttribute('expanded')).toBe(false)
+    expect(el.shadowRoot!.activeElement, '选择后焦点应归还主钮').toBe(btn(el))
+  })
+
   it('键盘：展开自动聚焦首项，ArrowDown/Up 循环，Home/End 跳首尾', () => {
     const el = mountMenu([{ label: 'a' }, { label: 'b' }, { label: 'c' }], { expanded: '' })
     const items = menuItems(el)
