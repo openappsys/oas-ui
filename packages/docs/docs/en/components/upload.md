@@ -14,7 +14,7 @@ Click or drag to select files; displays the file list and upload progress. Suppo
   <oas-upload multiple max="3" accept="image/*"></oas-upload>
 </DemoBlock>
 
-`max` limits the maximum number of selectable files; `accept` filters file types. Files exceeding `max` are rejected and an `oas-exceed` event is emitted.
+`max` limits the maximum number of selectable files; `accept` filters file types. Files exceeding `max` are rejected and an `oas-exceed-limit` event is emitted.
 
 ## Auto Upload
 
@@ -52,7 +52,7 @@ On touch screens (pointer: coarse) there is no hover to rely on: the top-right r
   <oas-upload id="upload-wall-exceed" list-type="picture-card" multiple max="3" auto-upload accept="image/*"></oas-upload>
 </DemoBlock>
 
-A 4th file is rejected by `max="3"` and triggers `oas-exceed` with a warning; clicking a thumbnail triggers `oas-preview`.
+A 4th file is rejected by `max="3"` and triggers `oas-exceed-limit` with a warning; clicking a thumbnail triggers `oas-preview`.
 
 ### picture rows with thumbnails
 
@@ -68,7 +68,7 @@ In `list` / `picture` modes, clicking the **file name** also opens the preview o
   <oas-upload id="upload-full" list-type="picture-card" multiple max="3" accept="image/*"></oas-upload>
 </DemoBlock>
 
-Pre-filled to `max="3"`; further selections are rejected via `oas-exceed`.
+Pre-filled to `max="3"`; further selections are rejected via `oas-exceed-limit`.
 
 ## Disabled
 
@@ -122,7 +122,7 @@ The `before-upload` function property: return `false` to reject a file; return a
 
 ## File Size Limit (max-size)
 
-`max-size` accepts bytes or a unit form (`512KB` / `2MB` / `1GB`); oversized files are rejected with `oas-exceed` (`detail.type === 'size'`, including the `maxSize` in bytes).
+`max-size` accepts bytes or a unit form (`512KB` / `2MB` / `1GB`); oversized files are rejected with `oas-exceed-limit` (`detail.type === 'size'`, including the `maxSize` in bytes).
 
 <DemoBlock title="max-size (100KB)">
   <oas-upload id="upload-size" multiple max-size="100KB"></oas-upload>
@@ -204,7 +204,7 @@ Listen to `oas-change` / `oas-remove` / `oas-upload`:
 - `oas-upload`: progress, `detail: { file, percent, status }` (`status`: pending/uploading/done/error)
 - `oas-success` / `oas-error`: upload success/failure (real channel), `detail: { file, response, status? }`
 - `oas-retry` / `oas-cancel`: retry started / upload cancelled, `detail: { file }`
-- `oas-exceed`: rejection, `detail: { files, max, total }` (count) or `{ files, type: 'size', maxSize, total }` (size)
+- `oas-exceed-limit`: rejection, `detail: { files, max, total }` (count) or `{ files, type: 'size', maxSize, total }` (size)
 - `oas-remove`: file removed, `detail: { file, index, replaced? }` (`replaced: true` means removed by the `replace` semantics)
 
 Methods: `submit()` (manual upload), `startUpload()` (equivalent), `abort(file?)` (cancel one/all in-flight uploads).
@@ -250,7 +250,7 @@ onMounted(async () => {
 
   // Picture wall: max rejection + preview feedback
   const wall = document.getElementById('upload-wall-exceed')
-  wall?.addEventListener('oas-exceed', (e) => {
+  wall?.addEventListener('oas-exceed-limit', (e) => {
     message.warning(`Up to ${e.detail.max} files`)
   })
   wall?.addEventListener('oas-preview', (e) => {
@@ -321,7 +321,7 @@ onMounted(async () => {
 
   // max-size feedback
   const size = document.getElementById('upload-size')
-  size?.addEventListener('oas-exceed', (e) => {
+  size?.addEventListener('oas-exceed-limit', (e) => {
     if (e.detail.type === 'size') {
       message.warning(`${e.detail.files[0].name} exceeds ${Math.round(e.detail.maxSize / 1024)}KB, rejected`)
     } else {

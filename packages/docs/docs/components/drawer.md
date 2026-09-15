@@ -33,7 +33,7 @@
 
 ## 动画与生命周期事件
 
-打开/关闭有过渡动画（transform/opacity，`prefers-reduced-motion` 下自动降级为直切）。生命周期事件：`oas-open` / `oas-opened` / `oas-close`（detail 含关闭来源）/ `oas-closed`。
+打开/关闭有过渡动画（transform/opacity，`prefers-reduced-motion` 下自动降级为直切）。生命周期事件：`oas-open` / `oas-opened` / `oas-close`（detail 含关闭来源）/ `oas-after-close`。
 
 <DemoBlock title="生命周期事件">
   <oas-button type="primary" onclick="document.querySelector('#drawer-life').setAttribute('visible','')">打开并观察事件</oas-button>

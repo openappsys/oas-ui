@@ -33,7 +33,7 @@ A panel that slides in from the screen edge, often used for filters, details, an
 
 ## Animation and lifecycle events
 
-Open/close transitions are animated (transform/opacity) and fall back to instant switching under `prefers-reduced-motion`. Lifecycle events: `oas-open` / `oas-opened` / `oas-close` (detail carries the close source) / `oas-closed`.
+Open/close transitions are animated (transform/opacity) and fall back to instant switching under `prefers-reduced-motion`. Lifecycle events: `oas-open` / `oas-opened` / `oas-close` (detail carries the close source) / `oas-after-close`.
 
 <DemoBlock title="Lifecycle events">
   <oas-button type="primary" onclick="document.querySelector('#drawer-life').setAttribute('visible','')">Open and watch events</oas-button>
