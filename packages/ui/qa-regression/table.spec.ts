@@ -512,7 +512,11 @@ test('table 逃生口：data-oas-row-click-ignore 容器内点击不连带 oas-r
     t.shadowRoot!.querySelector('td[data-col="op"]')!.appendChild(wrap)
   })
   // 点逃生口容器内的 span：不连带 oas-row-click / 不触发选中重建
-  await page.locator('#qa-row-ignore-escape td[data-col="op"] span').click()
+  // （满载下文档页布局抖动会让 down/up 落点漂移——先滚入视并等布局稳定再点）
+  const opSpan = page.locator('#qa-row-ignore-escape td[data-col="op"] span')
+  await opSpan.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(300)
+  await opSpan.click()
   await page.waitForTimeout(200)
   const r1 = await page.evaluate(() => {
     const t = document.querySelector<HTMLElement>('#qa-row-ignore-escape')!
