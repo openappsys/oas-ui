@@ -1331,6 +1331,19 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('</template><span>app 内容</span></oas-app>')
   })
 
+  it('oas-app-bar：应用栏可见结构直出（role=banner + 标题写入 + 汉堡钮展开）', async () => {
+    const html = await renderToString('oas-app-bar', { title: '控制台', 'menu-open': '' }, '')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toMatch(/<oas-app-bar [^>]*title="控制台"/)
+    expect(html).toMatch(/<oas-app-bar [^>]*menu-open=""/)
+    expect(html).toContain('role="banner"')
+    // 标题双通道：属性通道文本写入 .title
+    expect(html).toContain('控制台')
+    // 汉堡钮随 menu-open 展开可见
+    expect(html).toContain('aria-label=')
+  })
+
   it('theme-editor 排除：开发工具组件 SSR 意义低，不在白名单', async () => {
     await expect(renderToString('oas-theme-editor')).rejects.toThrow(/非白名单 tag「oas-theme-editor」/)
   })
