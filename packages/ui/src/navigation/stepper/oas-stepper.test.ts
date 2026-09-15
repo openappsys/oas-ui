@@ -245,6 +245,16 @@ describe('OASStepper 键盘（roving tabindex）', () => {
     expect(tabs(el).map((t) => t.getAttribute('tabindex'))).toEqual(['-1', '0', '-1'])
   })
 
+  it('RTL 镜像：水平方向键换向（ArrowRight 移向视觉右 = 上一步）', () => {
+    // RTL 下 flex 视觉序反转：视觉右侧是 DOM 前项，ArrowRight（视觉右）应移向上一步
+    const el = mount({ current: '1', dir: 'rtl' })
+    focusTab(el, 1)
+    pressKey(el, 'ArrowRight')
+    expect(el.shadowRoot!.activeElement).toBe(tabs(el)[0])
+    pressKey(el, 'ArrowLeft')
+    expect(el.shadowRoot!.activeElement).toBe(tabs(el)[1])
+  })
+
   it('方向键循环回绕：末位 ArrowRight → 首位；首位 ArrowLeft → 末位', () => {
     const el = mount({ current: '2' })
     focusTab(el, 2)

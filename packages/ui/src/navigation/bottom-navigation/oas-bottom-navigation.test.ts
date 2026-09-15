@@ -96,6 +96,14 @@ describe('OASBottomNavigation', () => {
     expect(el.shadowRoot!.activeElement).toBe(tabs(el)[0])
   })
 
+  it('RTL 镜像：ArrowRight 移向视觉右（前一项）、ArrowLeft 移向后一项', () => {
+    const el = mount({ value: 'search', dir: 'rtl' })
+    key(el, 'ArrowRight')
+    expect(el.shadowRoot!.activeElement).toBe(tabs(el)[0])
+    key(el, 'ArrowLeft')
+    expect(el.shadowRoot!.activeElement).toBe(tabs(el)[1])
+  })
+
   it('方向键循环移动且跳过 disabled 项', () => {
     const el = mount({
       items: JSON.stringify([

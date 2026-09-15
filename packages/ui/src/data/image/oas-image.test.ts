@@ -546,6 +546,17 @@ describe('OASImage 图集预览', () => {
     expect(pq<HTMLImageElement>(el, '[part="preview-image"]').getAttribute('src')).toBe('/a.png')
   })
 
+  it('RTL 镜像：ArrowRight 翻向上一张（视觉序反转）', () => {
+    const el = mountGallery()
+    el.setAttribute('dir', 'rtl')
+    openIt(el)
+    // 先翻到 2/3，RTL 下 ArrowRight（视觉右 = 后退）应回到 1/3
+    pq<HTMLButtonElement>(el, '[part="preview-next"]').click()
+    expect(pq(el, '[part="preview-counter"]').textContent).toBe('2/3')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(pq(el, '[part="preview-counter"]').textContent).toBe('1/3')
+  })
+
   it('infinite 首尾循环：末页 next 回第一页，首页 prev 跳最后一页', () => {
     const el = mountGallery({ infinite: '' })
     openIt(el)

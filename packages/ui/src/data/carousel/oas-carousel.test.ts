@@ -361,6 +361,13 @@ describe('OASCarousel', () => {
       el.goTo(1)
       expect(track(el).style.transform).toContain('translateX')
     })
+
+    it('RTL 镜像：水平轨道位移取反（第二页 translateX(100%) 而非 -100%）', () => {
+      const el = mount({ dir: 'rtl' })
+      el.goTo(1)
+      expect(track(el).style.transform).toContain('translateX(100%)')
+      expect(track(el).style.transform).not.toContain('-100%')
+    })
   })
 
   describe('slides-per-view 多图一屏', () => {

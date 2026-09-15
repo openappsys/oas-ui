@@ -587,6 +587,15 @@ describe('OASToolbarToggle', () => {
     expect(el2.getAttribute('value')).toBe('["italic"]')
   })
 
+  it('RTL 镜像：水平方向键换向（ArrowRight 视觉右移 = 前一项，单选回绕选中末项）', () => {
+    const el = mountWidget(OASToolbarToggle, 'oas-toolbar-toggle', 'dir="rtl"', TOGGLE_ITEMS)
+    const group = el.shadowRoot!.querySelector('.group')!
+    group.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el.getAttribute('value')).toBe('underline')
+    group.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    expect(el.getAttribute('value')).toBe('bold')
+  })
+
   it('宿主聚焦转发到内部按钮（复合组件单 Tab 停靠）', () => {
     const el = mountWidget(OASToolbarToggle, 'oas-toolbar-toggle', '', TOGGLE_ITEMS)
     const btns = el.shadowRoot!.querySelectorAll<HTMLButtonElement>('button')
