@@ -1224,6 +1224,8 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **oas-app-bar（新组件，navigation 族，应用栏）**：页面/工具区顶部的应用栏布局条——标题（属性/slot 富内容双通道）+ leading 汉堡钮（`oas-menu-toggle`）+ `slot="actions"` 操作区 + 超宽 overflow「···」收纳（RO 驱动、镜像回派）+ `hide-on-scroll` 滚动折叠 + `slot="extended"` 扩展区（滚动收起）+ `position="static|absolute|fixed|floating"` 四形态 + `elevated` 滚动投影；RTL 逻辑属性 + coarse 触控 44px；role=banner + aria 全同步；SSR/DSD 双路径。i18n 新增 `appBar.*` 4 键（10 语言包齐全）
 - **oas-float-button 家族扩展**：`mode="single|group|menu"` 三模式（分组 slot 子钮带 label 气泡与角标、菜单模式 actions JSON 弹出选择并派发 `oas-select`）；受控 `expanded` + `oas-expand-change`；`trigger="click|hover|manual"`；`expand-direction` 四向（RTL 横向镜像）；子钮/主钮链接化（href/target）；徽标状态点与数字 99+ 封顶；Esc/外点收起回焦、reduced-motion 降级
 - **RTL 第二批（方向键镜像 + 面板逻辑化收口）**：6 组件水平方向键 RTL 换向（carousel / stepper / bottom-navigation / toolbar-toggle / image / tree）+ carousel 轨道位移取反与箭头逻辑属性镜像 + tree 收起箭头 `data-rtl` 镜像 + scroll-area 方向判定收敛 `shared/direction` 单源 + 浮层面板残留物理 CSS 逻辑属性改造（select / auto-complete / combobox / mentions / cascader / tree-select / date-picker / time-picker / tour / dropdown split / menu / table / slider / collapse-item / theme-editor）+ 约定守卫：全库物理方向 CSS 白名单化（placement 基向箭头绘制、物理命名 API、内容 LTR 锁定、成对对称豁免），白名单外新增一律红灯
+- **API 规范统一**：size 档位跨词表别名互认（`shared/size` 单源，五档全称/缩写全组件等价接受）+ 事件同名归一（drawer/modal 增派 `oas-after-close`、upload 增派 `oas-exceed-limit`，旧名兼容别名双发）+ 阴影三档 token（`--oas-shadow-sm/md/lg` light/dark，28 处裸阴影迁移，方向性/inset/形状描边豁免）
+- **qa-regression 补位 10 组件**（bottom-sheet/confirm/checkbox/radio/textarea/collapse/speed-dial/editable/dynamic-input/toggle-group，41 用例）；修复 speed-dial 展开自动聚焦失效（visibility 过渡离散翻转致 focus 静默失败，展开向改立即翻转）
 - **bottom-sheet 文档页补齐**：中英 demo 页（基础 / max-height / passive 被动透传）+ API 表 + 总览与侧边栏接线；app-bar 中英 API 章节补齐；ssr 白名单接入 app-bar 并入档 bottom-sheet 的 SSR 策略
 
 ### 修复

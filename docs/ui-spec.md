@@ -16,6 +16,8 @@
 
 规则：**组件样式只允许引用语义 token**，禁止硬编码色值/字号/间距；主题通过替换基础 token 实现换肤。
 
+**阴影三档**（`--oas-shadow-sm/md/lg`，light/dark 双变体）：海拔语义的 box-shadow 统一走 token——sm 控件悬浮（switch thumb/徽标）、md 下拉与气泡面板、lg 模态与预览层；dark 按同结构加深。**豁免**：X 轴方向性投影（drawer/sidebar 侧滑，投影侧=停靠侧属物理语义）、inset 内阴影（选中/按压指示）、形状描边技巧（badge 白描边）、focus-ring。
+
 ### 1.2 主色（light / dark）
 
 | 语义 token                   | light            | dark             | 用途               |
@@ -84,10 +86,15 @@
 
 按钮最小宽 `56px`（防过窄，xs 档放宽至 `44px`）；输入控件同一尺寸必须同高（`--oas-control-height-{xs,sm,md,lg,xl}`）。space 间距档位对应：xs=`4px`、small=`8px`、medium=`12px`、large=`24px`、xl=`32px`。
 
+**词表互认**：五档 `size` 的全称（`xs/small/medium/large/xl`）为规范词表，缩写（`xs/sm/md/lg/xl`）为全库通用别名——任何组件两者等价接受（`shared/size` 的 `aliasSize` 归一，别名不触发 dev 告警），组件内部规范化输出不变。三档 `size`（`small/medium/large`）同理接受 `sm/md/lg` 别名。
+
 ### 2.2 命名与 DOM 约定
 
 - 自定义元素标签：`<oas-*>`（如 `oas-button`）
 - 自定义事件：`oas-*` 前缀 + 动词（`oas-click` `oas-change` `oas-clear`），`detail` 携带数据，`bubbles: true, composed: true`
+- **语义家族优先**：同语义事件全库同名——关闭动画完成统一 `after-close`（`after-*` 家族；`closed` 为兼容别名）、数量超限统一 `exceed-limit`（`exceed` 为兼容别名）。历史双名按「规范名 + 兼容别名双发」过渡，别名在 API 表标注【兼容别名】
+- **ok 与 confirm 分工**：对话框类（modal/drawer/popconfirm）确定按钮用 `ok`；选择器类（date-picker/time-picker）确认选择用 `confirm`——按钮语义不同，不强行同名
+- **`loading` 语义约定**：布尔在场语义为主流（存在=加载中）；两处例外按组件语义读值——skeleton 的 `loading` 为值布尔默认真（`"false"` 渲染内容插槽）、sidebar 的 `loading` 值为骨架行数（默认 4）
 - 暴露样式点：组件根元素 `::part(host)`，交互元素 `::part(button)` / `::part(input)` 等；语义部件名全部小写连字符
 - 属性命名：kebab-case（HTML 属性 `type` `size` `disabled` `loading`），对齐主流组件库用户心智
 - **原生全局属性吸收**：`title` 等原生全局属性作组件 API 时，组件读取渲染进可见区域后**必须从宿主移除**（参照 `oas-card` 的吸收状态机：属性在场=宿主意图→更新缓存并移除；属性缺席=缓存驱动渲染幂等；SSR 白名单组件 hydrate 时从快照恢复缓存）——残留在宿主上会触发浏览器原生悬浮提示（与可见内容重复的视觉干扰，且原生 tooltip 不可控、可访问性无保证）。新组件 API 起名时优先避开原生全局属性名（`title` `label` `hidden` 等）
