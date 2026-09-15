@@ -57,7 +57,7 @@ const STYLE = `
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--oas-shadow-md);
   font-family: inherit;
   z-index: 2;
 }
@@ -100,6 +100,10 @@ const STYLE = `
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+  /* 展开向：visibility 立即翻转（无过渡），子动作 T0 即可聚焦——
+     syncOpen 的自动聚焦落在可见元素上（收起向保留 base 的 visibility 延迟过渡，淡出完成后再隐藏） */
+  transition: opacity var(--oas-transition-base) var(--oas-ease-out),
+    transform var(--oas-transition-base) var(--oas-ease-out);
 }
 .action {
   appearance: none;
@@ -117,7 +121,7 @@ const STYLE = `
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--oas-shadow-sm);
   /* 级联浮现：收起态 delay 0（同步消失）；展开态由 .dial.open .action 按 --cascade-i 递增 */
   opacity: 0;
   transition: opacity var(--oas-transition-base) var(--oas-ease-out),

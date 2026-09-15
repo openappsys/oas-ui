@@ -122,7 +122,7 @@ const STACK_STYLE = `
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-rounded);
   background: var(--oas-color-bg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--oas-shadow-sm);
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
   line-height: 1;

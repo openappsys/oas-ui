@@ -109,6 +109,12 @@
   --oas-ease-out: cubic-bezier(0.2, 0, 0.2, 1);
   --oas-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
+  /* 阴影三档（浮层/弹出层海拔）：sm 控件悬浮、md 下拉/气泡、lg 模态/抽屉。
+     dark 下黑影在暗底不可见，dark 主题块内按同结构加深 */
+  --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.12);
+  --oas-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --oas-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+
   --oas-z-dropdown: 1000;
   --oas-z-sticky: 1020;
   --oas-z-fixed: 1030;
@@ -148,6 +154,10 @@ html.dark {
   --oas-color-bg-hover: #27272a;
   --oas-color-bg-disabled: #27272a;
   --oas-color-overlay: rgba(0, 0, 0, 0.6);
+  /* dark 阴影：黑影在暗底不可见，加深透明度并提 offset 让海拔感可感知 */
+  --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.45);
+  --oas-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --oas-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
   /* 预设色板 dark 变体：整体调亮一档，保证在深底上对比度达标 */
   --oas-preset-magenta: #f759ab;
   --oas-preset-red: #ff4d4f;
