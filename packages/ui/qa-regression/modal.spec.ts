@@ -265,7 +265,7 @@ async function exposeMessageReader(page: import('@playwright/test').Page): Promi
   })
 }
 
-test('modal 开合动画：oas-opened / oas-closed 在动画结束后派发（右上角消息可见）', async ({ page }) => {
+test('modal 开合动画：oas-opened / oas-after-close 在动画结束后派发（右上角消息可见）', async ({ page }) => {
   await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-modal')
   await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
@@ -281,10 +281,11 @@ test('modal 开合动画：oas-opened / oas-closed 在动画结束后派发（�
     null,
     { timeout: 5000 },
   )
-  // Esc 关闭 → oas-closed（动画结束后派发）
+  // Esc 关闭 → oas-after-close（动画结束后派发）
   await page.keyboard.press('Escape')
   await page.waitForFunction(
-    () => document.querySelectorAll('oas-message').length > 0 && (window as any).lastMsgText().includes('oas-closed'),
+    () =>
+      document.querySelectorAll('oas-message').length > 0 && (window as any).lastMsgText().includes('oas-after-close'),
     null,
     { timeout: 5000 },
   )
