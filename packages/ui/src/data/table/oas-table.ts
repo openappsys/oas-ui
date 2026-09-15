@@ -304,7 +304,7 @@ tr.row[data-stripe='odd'] td[data-fixed='right'] {
 }
 tr.row[data-selected='true'] td[data-fixed='left'],
 tr.row[data-selected='true'] td[data-fixed='right'] {
-  background: var(--oas-color-primary-soft, rgba(24, 144, 255, 0.08));
+  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
 }
 td {
   padding: var(--_cell-py) var(--_cell-px);
@@ -341,7 +341,7 @@ tr.row:hover td[data-fixed='right'] {
   background: var(--oas-color-bg-hover);
 }
 tr.row[data-selected='true'] td {
-  background: var(--oas-color-primary-soft, rgba(24, 144, 255, 0.08));
+  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
 }
 /* 虚拟滚动：占位行与定高行 */
 .table-scroll[data-virtual='true'] td {
@@ -441,7 +441,7 @@ tr[data-sticky='true'][data-stripe='odd'] td {
   background: var(--oas-color-bg-hover);
 }
 tr[data-sticky='true'][data-selected='true'] td {
-  background: var(--oas-color-primary-soft, rgba(24, 144, 255, 0.08));
+  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
 }
 tr[data-sticky='true'] td[data-fixed] {
   z-index: 4;
@@ -451,7 +451,7 @@ tr[data-sticky='true'][data-stripe='odd'] td[data-fixed] {
   background: var(--oas-color-bg-hover);
 }
 tr[data-sticky='true'][data-selected='true'] td[data-fixed] {
-  background: var(--oas-color-primary-soft, rgba(24, 144, 255, 0.08));
+  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
 }
 tr[data-sticky='true']:hover td {
   background: var(--oas-color-bg-hover);
@@ -482,10 +482,10 @@ td.editing {
 }
 td[data-editing='true'],
 tr[data-sticky='true'] td[data-editing='true'] {
-  background: var(--oas-color-primary-soft, rgba(24, 144, 255, 0.08));
+  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
 }
 td[data-invalid='true'] {
-  background: var(--oas-color-danger-soft, rgba(220, 38, 38, 0.08));
+  background: var(--oas-color-danger-soft, color-mix(in srgb, var(--oas-color-danger) 8%, transparent));
 }
 td[data-invalid='true'] .cell-editor {
   border-color: var(--oas-color-danger);
@@ -619,7 +619,7 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
-  box-shadow: var(--oas-shadow-md, 0 6px 16px rgba(0, 0, 0, 0.12));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   gap: var(--oas-space-1);
