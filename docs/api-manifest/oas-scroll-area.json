@@ -29,12 +29,6 @@
       "type": "string",
       "default": "0",
       "observed": true
-    },
-    {
-      "name": "direction",
-      "type": "string",
-      "default": "",
-      "observed": false
     }
   ],
   "props": [],

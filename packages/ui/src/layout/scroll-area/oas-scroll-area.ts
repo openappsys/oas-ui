@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { resolveDirection } from '../../shared/direction.js'
 
 const MIN_THUMB = 24
 const HIDE_DELAY = 800
@@ -489,23 +490,10 @@ export class OASScrollArea extends OASElement {
 
   // ---------- RTL / stick-to-bottom / end-reached ----------
 
-  /** 宿主是否为 RTL（优先显式 dir 属性，逐级向祖先与 documentElement 回退；
-   *  祖先未显式设置时回落 config-provider 注入的 direction 值；最后兜底 computed style） */
+  /** 宿主是否为 RTL（收敛 shared/direction 单源：config-provider → 最近 [dir] → document.dir → locale；
+   *  此前私有实现与单源优先级不一致（祖先 dir 先于 config-provider），已废弃） */
   private isRtl(): boolean {
-    const dir = this.getAttribute('dir')
-    if (dir === 'rtl' || dir === 'ltr') return dir === 'rtl'
-    let cur: Element | null = this.parentElement
-    while (cur) {
-      const d = cur.getAttribute('dir')
-      if (d === 'rtl' || d === 'ltr') return d === 'rtl'
-      cur = cur.parentElement
-    }
-    // config-provider direction 注入：自身/祖先均未显式设置时回落注入值
-    // （provider 会把自己的 direction 写成 dir 属性，此路径为显式兜底消费）
-    const injected = this.injectValue('direction', '')
-    if (injected === 'rtl' || injected === 'ltr') return injected === 'rtl'
-    if (this.ownerDocument?.documentElement.getAttribute('dir') === 'rtl') return true
-    return getComputedStyle(this).direction === 'rtl'
+    return resolveDirection(this) === 'rtl'
   }
 
   /** 是否停靠在底部（剩余滚动距离 ≤ 贴底容差） */
