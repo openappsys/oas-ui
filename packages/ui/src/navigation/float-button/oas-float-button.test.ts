@@ -94,6 +94,14 @@ describe('OASFloatButton', () => {
     }
   })
 
+  it('size 全称别名互认：small/medium/large 等价 sm/md/lg 且 data-size 归一为缩写（shared/size）', () => {
+    const el = mount()
+    el.setAttribute('size', 'medium')
+    expect(el.getAttribute('data-size')).toBe('md')
+    el.setAttribute('size', 'small')
+    expect(el.getAttribute('data-size')).toBe('sm')
+  })
+
   it('size：非法值回落 lg 并 console.warn 告警', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount({ size: 'huge' })
