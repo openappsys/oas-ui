@@ -213,20 +213,20 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `actions` | — | `string` | `[]` |
+| `actions` | menu-mode items JSON `[{label, value?, icon?, href?, target?, danger?, disabled?}]`; selecting emits oas-select and requests collapse | `string` | `[]` |
 | `aria-label` | Accessible name: overrides the built-in label when set explicitly (icon-only defaults to locale "Quick actions"; extended text lets the visible text win) | — | — |
 | `badge` | Badge number at the top-right corner | `string` | — |
 | `disabled` | Disabled: not clickable, `oas-click` not fired, weakened styles; in `href` mode it degrades to a non-clickable `span` | `boolean` | — |
 | `draggable` | Draggable: press and drag to move the button (free positioning under `fixed`, clamped inside the viewport); displacement > 4px counts as a drag, in which case releasing does not fire `oas-click` (within the threshold it fires normally) | `boolean` | — |
-| `expand-direction` | — | `string` | `up` |
-| `expanded` | — | `boolean` | — |
+| `expand-direction` | Expand direction: up (default) / down / left / right; horizontal directions mirror automatically in RTL | `string` | `up` |
+| `expanded` | group/menu expanded state (controlled, single source of truth): gestures only emit oas-expand-change; the host closes by removing the attribute | `boolean` | — |
 | `href` | Link URL: when set, renders an `<a>` element (native link semantics and keyboard reachability) instead of a button; degrades to a `span` when disabled | `string` | — |
 | `magnetic` | Magnetic: `x` snaps to the nearest left/right edge, `y` to the nearest top/bottom edge, with a transition on release; empty means no snapping (requires `draggable`) | `string` | — |
-| `mode` | — | `string` | `single` |
+| `mode` | Mode: single (default) / group (main button + slotted actions expand vertically) / menu (actions JSON popup menu) | `string` | `single` |
 | `shape` | Shape: `circle` (default, round) / `square` (capsule rounded rectangle) | `string` | `circle` |
 | `size` | Size tier: `xs` (24px) / `sm` (32px) / `md` (40px) / `lg` (default 48px) / `xl` (56px); invalid values fall back to `lg` with a warning | `string` | `lg` |
 | `target` | Link open mode (effective in `href` mode, e.g. `_blank`) | `string` | — |
-| `trigger` | — | `string` | `click` |
+| `trigger` | Expand trigger: click (default) / hover (debounced with grace period) / manual (fully controlled; outside click and Esc do not auto-collapse) | `string` | `click` |
 | `type` | Visual intensity: `primary` (default, solid primary) / `default` (weakened: light background with dark text) | `string` | `primary` |
 
 ### Events
@@ -234,15 +234,15 @@ onMounted(async () => {
 | Event | Description |
 | --- | --- |
 | `oas-click` | Clicked, `detail: { originalEvent }` |
-| `oas-expand-change` | — |
-| `oas-select` | — |
+| `oas-expand-change` | Emitted on expand/collapse, `detail: { open }`; controlled semantics — the component never mutates expanded, the host writes it back |
+| `oas-select` | A menu item was selected in menu mode, detail: { index, label, value? }; the component then requests a collapse (emitting oas-expand-change — the host closes by removing expanded) |
 
 ### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Extended text: writing text into the default slot turns the button into a horizontal capsule (icon + text in a row) |
-| `action` | — |
+| `action` | group-mode child buttons (native button/a or oas-button); clicking collapses the group and restores focus to the main button; badges and custom icons supported |
 | `icon` | Icon (default ＋) |
 
 The default position is `position: fixed; bottom/right`, adjustable via the `--oas-float-button-bottom` / `--oas-float-button-right` CSS variables (default `var(--oas-space-6)`).
