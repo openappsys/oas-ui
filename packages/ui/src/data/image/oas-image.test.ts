@@ -284,12 +284,13 @@ describe('OASImage preview 增强', () => {
   })
 
   it('断开连接时清理 document keydown 监听', () => {
+    const spy = vi.spyOn(document, 'removeEventListener')
     const el = mountPreview()
     ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
     el.remove()
-    // 组件已移除，document 上不应再有本组件的 Esc 处理（无异常即视为清理）
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    expect(true).toBe(true)
+    // 断开连接时应显式移除本组件的 Esc keydown 处理（无孤儿监听）
+    expect(spy).toHaveBeenCalledWith('keydown', expect.any(Function))
+    spy.mockRestore()
   })
 
   it('预览图 src 与主图一致，alt 透传', () => {
