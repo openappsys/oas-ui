@@ -45,6 +45,16 @@ describe('OASTag', () => {
     expect(r.classList.contains('round')).toBe(true)
   })
 
+  it('size 缩写别名互认：md/lg 等价 medium/large 且不告警（shared/size）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ size: 'md' })
+    expect(root(el).classList.contains('medium')).toBe(true)
+    el.setAttribute('size', 'lg')
+    expect(root(el).classList.contains('large')).toBe(true)
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   it('size 五档：xs/small/medium/large/xl 均反映到 class', () => {
     for (const s of ['xs', 'small', 'medium', 'large', 'xl'] as const) {
       const el = mount({ size: s })

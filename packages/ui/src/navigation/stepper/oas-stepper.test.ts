@@ -136,6 +136,16 @@ describe('OASStepper 渲染与状态', () => {
     expect(el.classList.contains('oas-stepper--medium')).toBe(false)
   })
 
+  it('size 缩写别名互认：md/lg 等价 medium/large 且不告警（shared/size）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ size: 'md' })
+    expect(el.classList.contains('oas-stepper--medium')).toBe(true)
+    el.setAttribute('size', 'lg')
+    expect(el.classList.contains('oas-stepper--large')).toBe(true)
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   it('steps property 赋值（Vue/React property 通道）反射到 attribute 走统一解析链路', () => {
     const el = mount()
     el.steps = [{ title: 'X' }, { title: 'Y' }] as StepperStep[]
