@@ -79,6 +79,7 @@ Current progress:
   is a dev-tool component (a theme-editing panel for development) with little
   SSR value — it was evaluated and excluded from the whitelist, staying
   client-only.
+- `oas-bottom-sheet` (the mobile bottom-sheet carrier) is not whitelisted: it is a host-controlled overlay container (driven by the `open` attribute). In SSR scenarios the host template embeds the initial structure (an empty panel when closed), and the component uses the `passive` passthrough mode to keep the SSR/client structure strictly identical. Server-rendering an open state is meaningless, so it stays client-only.
 - Framework integration plugins: `@oas-ui/nuxt` (a Nuxt 3 module) and
   `@oas-ui/next` (a Next.js App Router integration) have landed — the Nuxt
   module auto-configures Vue `compilerOptions.isCustomElement` (recognizing
@@ -328,8 +329,8 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 - Whitelist (pure-presentation components, declarative-data components, the
   layout-measuring pilot, form components batch 1, feedback components
   batch 2, data-display components batch 3, navigation/layout components
-  batch 4, and whitelist-finalization batch 5 — 123 tags in total):
-  `oas-button`, `oas-tag`,
+  batch 4, and whitelist-finalization batch 5 — 127 tags in total):
+  `oas-button`, `oas-tag`, `oas-tag-group`,
   `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`,
   `oas-table`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`,
   `oas-select`, `oas-input`, `oas-textarea`, `oas-checkbox`,
@@ -340,7 +341,7 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   `oas-transfer`, `oas-color-picker`, `oas-toggle-button`, `oas-toggle-group`,
   `oas-pin-input`, `oas-dynamic-input`, `oas-dynamic-tags`, `oas-editable`,
   `oas-form`, `oas-form-item`, `oas-alert`, `oas-progress`, `oas-spin`,
-  `oas-skeleton`, `oas-result`, `oas-backdrop`, `oas-modal`, `oas-drawer`,
+  `oas-skeleton`, `oas-skeleton-item`, `oas-result`, `oas-backdrop`, `oas-modal`, `oas-drawer`,
   `oas-popconfirm`, `oas-card`, `oas-avatar`, `oas-avatar-group`,
   `oas-image`, `oas-qrcode`, `oas-watermark`, `oas-collapse`,
   `oas-collapse-item`, `oas-descriptions`, `oas-descriptions-item`,
@@ -357,8 +358,8 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   `oas-header`, `oas-sider`, `oas-content`, `oas-footer`, `oas-sidebar`,
   `oas-container`, `oas-grid`, `oas-grid-item`, `oas-badge`,
   `oas-button-group`, `oas-icon`, `oas-kbd`, `oas-label`, `oas-link`,
-  `oas-space`, `oas-visually-hidden`, `oas-tooltip`, `oas-popover`,
-  `oas-config-provider`, `oas-app`.
+  `oas-space`, `oas-compact`, `oas-visually-hidden`, `oas-tooltip`, `oas-popover`,
+  `oas-config-provider`, `oas-app`, `oas-app-bar`.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
 - The imperative components (message / notification / toast / snackbar /
