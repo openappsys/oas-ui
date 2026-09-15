@@ -172,7 +172,7 @@ slot[name="actions"]::slotted(*) {
   background: var(--oas-color-bg-elevated);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
-  box-shadow: var(--oas-app-bar-shadow, 0 4px 12px rgb(0 0 0 / 0.12));
+  box-shadow: var(--oas-app-bar-shadow, var(--oas-shadow-md));
   display: flex;
   flex-direction: column;
 }
@@ -238,12 +238,12 @@ slot[name="actions"]::slotted(*) {
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-fixed, 1030));
   border-radius: var(--oas-radius-lg);
   border: 1px solid var(--oas-color-border);
-  box-shadow: var(--oas-app-bar-shadow, 0 4px 12px rgb(0 0 0 / 0.12));
+  box-shadow: var(--oas-app-bar-shadow, var(--oas-shadow-md));
 }
 /* ===== 投影：elevated 常显 / 滚动后出现（内容滚动时栏底投影，通行行为）===== */
 :host([elevated]),
 :host([data-scrolled]) {
-  box-shadow: var(--oas-app-bar-shadow, 0 2px 8px rgb(0 0 0 / 0.12));
+  box-shadow: var(--oas-app-bar-shadow, var(--oas-shadow-sm));
 }
 /* ===== hide-on-scroll 滚动折叠：向下滚 translateY 滑出视口顶部，向上滚滑回 =====
    translateY 扣除 top 偏移（floating 自带留边、宿主可开 --oas-app-bar-top），完整移出视口 */

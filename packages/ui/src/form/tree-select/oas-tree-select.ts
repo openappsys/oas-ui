@@ -342,7 +342,7 @@ const STYLE = `
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--oas-shadow-md);
   padding: var(--oas-space-1);
   display: none;
 }

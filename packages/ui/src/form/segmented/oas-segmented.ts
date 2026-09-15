@@ -85,7 +85,7 @@ const STYLE = `
   z-index: 0;
   background: var(--oas-color-bg-elevated);
   border-radius: var(--oas-radius-sm);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--oas-shadow-sm);
 }
 :host(.animated) .indicator {
   transition: transform var(--oas-transition-base) var(--oas-ease-out),

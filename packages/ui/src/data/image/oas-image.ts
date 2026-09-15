@@ -80,7 +80,7 @@ img {
   object-fit: contain;
   border-radius: var(--oas-radius-md);
   background: var(--oas-color-bg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--oas-shadow-lg);
   transition: transform var(--oas-transition-base) var(--oas-ease-out);
 }
 .preview-stage.zoomed .preview-img {

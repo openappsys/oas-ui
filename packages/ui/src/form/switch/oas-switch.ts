@@ -111,7 +111,7 @@ button[disabled] {
   height: var(--thumb-size);
   border-radius: 50%;
   background: var(--oas-color-bg);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--oas-shadow-sm);
   transition: left var(--oas-transition-base) var(--oas-ease-out);
 }
 button[aria-checked='true'] .thumb {

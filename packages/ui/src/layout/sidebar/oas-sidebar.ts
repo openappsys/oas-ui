@@ -90,11 +90,11 @@ aside {
   width: min(var(--oas-sidebar-width, 220px), 80vw);
   max-width: 80vw;
   background: var(--oas-color-bg);
+  /* 方向性投影：投影侧随停靠侧（placement 物理语义） */
   box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040));
   visibility: hidden;
   transform: translateX(-100%);
-  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
   transition:
     transform var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
     visibility 0s var(--oas-transition-base, 180ms);
@@ -102,6 +102,7 @@ aside {
 /* RTL：抽屉贴视觉右缘（inset-inline-start 逻辑镜像），关闭态藏到右外（transform 物理向量手动镜像） */
 :host([data-rtl]) .panel {
   transform: translateX(100%);
+  /* 方向性投影：投影侧随停靠侧（placement 物理语义） */
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
 }
 :host([data-mobile]) .panel.drawer-open {
@@ -446,9 +447,11 @@ aside {
   width: var(--oas-sidebar-width, 220px);
   position: relative;
   z-index: calc(var(--oas-z-dropdown, 1000) + 1);
+  /* 方向性投影：投影侧随停靠侧（placement 物理语义） */
   box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
 }
 :host([data-rtl]:not([data-mobile])[collapsed][expand-on-hover]:hover) {
+  /* 方向性投影：投影侧随停靠侧（placement 物理语义） */
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
 }
 :host(:not([data-mobile])[collapsed][expand-on-hover]:hover) .item .label,
@@ -470,6 +473,7 @@ aside {
   inset-inline-start: auto;
   inset-inline-end: 0;
   transform: translateX(100%);
+  /* 方向性投影：投影侧随停靠侧（placement 物理语义） */
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
 }
 :host([data-mobile][side='right']) .panel.drawer-open {
@@ -482,6 +486,7 @@ aside {
 /* side=right + RTL：抽屉贴视觉左缘，关闭态藏到左外 */
 :host([data-mobile][side='right'][data-rtl]) .panel {
   transform: translateX(-100%);
+  /* 方向性投影：投影侧随停靠侧（placement 物理语义） */
   box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
 }
 :host([data-mobile][side='right'][data-rtl]) .panel.drawer-open {
@@ -493,7 +498,7 @@ aside {
   height: calc(100% - var(--oas-space-3, 12px) * 2);
   border-radius: var(--oas-radius-lg, 10px);
   background: var(--oas-sidebar-bg, var(--oas-color-bg));
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--oas-shadow-md);
   overflow: hidden;
 }
 /* variant=inset：内嵌形态（外边距 + 圆角 + 背景对比） */
@@ -538,7 +543,7 @@ aside {
   font-size: var(--oas-font-size-lg, 16px);
   font-family: inherit;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--oas-shadow-sm);
   z-index: calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040)) - 1);
 }
 [part='trigger']:hover {
