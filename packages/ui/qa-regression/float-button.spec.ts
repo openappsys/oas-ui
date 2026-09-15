@@ -17,6 +17,9 @@ test('group 模式：点击主钮展开，子钮在主钮下方纵向可见（ex
   const main = group.locator('[part="btn"]')
   await main.click()
   await expect(group).toHaveAttribute('expanded', '', { timeout: 5000 })
+  // 等滑入过渡（--oas-transition-base）结束再量几何：属性翻转瞬间 .actions 仍处于
+  // 收起态 -8px 变换起点，立即测量会得到「子钮 top == 主钮 bottom」的假阴性
+  await page.waitForTimeout(300)
   // 子钮真实渲染且在主钮正下方（down 方向：首个子钮最靠近主钮）
   const geom = await group.evaluate((el) => {
     const root = el.shadowRoot!
