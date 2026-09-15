@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../virtual-list/index.js'
 import type { OASVirtualList } from '../virtual-list/index.js'
@@ -138,6 +139,13 @@ const ROW_STYLE = `
 }
 .toggle.open {
   transform: rotate(90deg);
+}
+/* RTL 镜像：收起箭头指向随书写方向翻转；展开态旋转后向下，两侧视觉一致 */
+:host([data-rtl]) .toggle {
+  transform: scaleX(-1);
+}
+:host([data-rtl]) .toggle.open {
+  transform: scaleX(-1) rotate(90deg);
 }
 .toggle-spinner {
   display: inline-flex;
@@ -372,6 +380,8 @@ export class OASTree extends OASElement {
       'empty',
       'can-rename',
       'motion',
+      // dir：全局约定属性（不进 API 表），运行时切方向即时重判定
+      'dir',
     ]
   }
 
@@ -705,6 +715,8 @@ export class OASTree extends OASElement {
   // ---------- update / 渲染入口 ----------
 
   protected override update(): void {
+    // RTL 判定（data-rtl 供 CSS 镜像展开箭头；dir 属性变化经 observedAttributes 再入 update）
+    this.toggleAttribute('data-rtl', isRtl(this))
     this.parseFieldNames()
     this.parseData()
     this.model = flattenModel(this._data, this.acc)
@@ -1505,7 +1517,8 @@ export class OASTree extends OASElement {
     } else if (key === 'ArrowUp') {
       e.preventDefault()
       this.navTo(cur, -1, keys)
-    } else if (key === 'ArrowRight') {
+    } else if (key === (isRtl(this) ? 'ArrowLeft' : 'ArrowRight')) {
+      // 展开/深入键：RTL 镜像（展开箭头视觉朝向随书写方向翻转）
       e.preventDefault()
       const id = keys[cur]!
       const node = this.model.byId.get(id)
@@ -1515,7 +1528,8 @@ export class OASTree extends OASElement {
       } else {
         this.navTo(cur, 1, keys)
       }
-    } else if (key === 'ArrowLeft') {
+    } else if (key === (isRtl(this) ? 'ArrowRight' : 'ArrowLeft')) {
+      // 收起/回父键：RTL 镜像
       e.preventDefault()
       const id = keys[cur]!
       const node = this.model.byId.get(id)

@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '../../basic/icon/oas-icon.js'
+import { isRtl } from '../../shared/direction.js'
 import type { OASStepperPanel } from './oas-stepper-panel.js'
 
 /** 步骤状态：wait 等待 / process 进行中 / finish 完成 / error 错误（语义对齐 oas-steps） */
@@ -460,8 +461,9 @@ export class OASStepper extends OASElement {
     const tabs = [...tablist.querySelectorAll<HTMLElement>('[role="tab"]')]
     if (tabs.length === 0) return
     const vertical = this.getAttr('direction', 'horizontal') === 'vertical'
-    const prevKey = vertical ? 'ArrowUp' : 'ArrowLeft'
-    const nextKey = vertical ? 'ArrowDown' : 'ArrowRight'
+    // RTL 镜像：水平模式左右键换向（视觉序与 DOM 序相反），竖排上下键不受书写方向影响
+    const prevKey = vertical ? 'ArrowUp' : isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
+    const nextKey = vertical ? 'ArrowDown' : isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
     const focused = this.focusedTabIndex()
     // 无焦点时以 roving 基准步为起点（Tab 进入 tablist 即落在选中步）
     const base = focused >= 0 ? focused : this.findRovingBase(this.resolveCurrent())

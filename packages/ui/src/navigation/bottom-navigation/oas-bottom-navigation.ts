@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export interface BottomNavItem {
@@ -526,10 +527,13 @@ export class OASBottomNavigation extends OASElement {
     if (items.length === 0) return
     const enabled = items.map((it, i) => (it.disabled ? -1 : i)).filter((i) => i >= 0)
     if (enabled.length === 0) return
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    // RTL 镜像：水平轴方向键换向（flex 视觉序随书写方向反转），竖向键不受影响
+    const fwd = isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
+    const back = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
+    if (e.key === fwd || e.key === 'ArrowDown') {
       e.preventDefault()
       this.move(1, enabled)
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    } else if (e.key === back || e.key === 'ArrowUp') {
       e.preventDefault()
       this.move(-1, enabled)
     } else if (e.key === 'Enter' || e.key === ' ') {
