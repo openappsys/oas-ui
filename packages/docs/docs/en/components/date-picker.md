@@ -195,6 +195,10 @@ Range types emit `oas-calendar-change` (`detail.value` is `[start, end|null]`) o
   <oas-date-picker style="margin-left: auto; display: block; width: fit-content" value="2026-08-09" placeholder="Right-edge single picker"></oas-date-picker>
 </DemoBlock>
 
+<DemoBlock title="Right-edge wide panel (daterange, auto right-align flip)">
+  <oas-date-picker type="daterange" style="margin-left: auto; display: block; width: fit-content" placeholder="Right-edge range"></oas-date-picker>
+</DemoBlock>
+
 <DemoBlock title="Right-edge wide panel (range right-aligns)">
   <oas-date-picker type="daterange" style="margin-left: auto; display: block; width: fit-content" value='["2026-08-05","2026-08-15"]'></oas-date-picker>
 </DemoBlock>

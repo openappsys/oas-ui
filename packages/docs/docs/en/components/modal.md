@@ -430,6 +430,18 @@ When `oas-before-close` is blocked with `preventDefault()` (unsaved-data protect
   </oas-modal>
 </DemoBlock>
 
+## Focus trap & scroll lock switches
+
+`initial-focus` specifies which element receives focus on open (a CSS selector; the panel is searched first, then light DOM; falls back to the default focus when nothing matches); `no-focus-trap` turns off the Tab focus trap (for scenarios where the host manages focus itself); `no-scroll-lock` turns off the body scroll lock (the page keeps scrolling).
+
+<DemoBlock title="initial-focus / no-focus-trap / no-scroll-lock">
+  <oas-button type="primary" onclick="document.querySelector('#modal-focus').setAttribute('visible','')">Focus input on open</oas-button>
+  <oas-modal id="modal-focus" title="New task" initial-focus="#modal-task-name" no-focus-trap no-scroll-lock>
+    <oas-input id="modal-task-name" placeholder="Task name"></oas-input>
+    <p>On open, focus lands directly on the input (<code>initial-focus</code>); no Tab trapping, no page scroll lock.</p>
+  </oas-modal>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {

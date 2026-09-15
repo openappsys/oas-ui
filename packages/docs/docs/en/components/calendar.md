@@ -93,6 +93,22 @@ In year mode, selecting a month dispatches `yyyy-MM`.
 
 When the next page would fall entirely outside `[min, max]` (whole month in the day view, whole year in the month panel, whole decade page in the decade grid), the previous/next buttons grey out.
 
+## Custom header: compose with a card (equivalent example)
+
+The `oas-calendar` header is an internal navigation region and is not open for replacement (this is a selection-panel semantic — the header carries navigation, not a centered selected state). To place a brand/action bar above the calendar (such as "week switching" or a "today" shortcut), wrap `oas-calendar` in the host's own card and put the action bar on top:
+
+<DemoBlock title="Header composition: custom header action bar">
+  <div style="display: inline-flex; flex-direction: column; gap: var(--oas-space-2); padding: var(--oas-space-3); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg);">
+    <div style="display: inline-flex; justify-content: space-between; align-items: center; width: 100%; gap: var(--oas-space-2);">
+      <span style="font-weight: 600;">Project schedule</span>
+      <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">Click the title to drill into year/month; the built-in Today button returns to the current month</span>
+    </div>
+    <oas-calendar id="calendar-header-composite" value="2026-08-09"></oas-calendar>
+  </div>
+</DemoBlock>
+
+> Note: the `oas-calendar` header itself still provides `prev/next/title/today` navigation (`[part="header"]` is targetable and styleable via `::part`), so the host can use it as-is without replacement; the action bar above is **extra content** laid out through the outer card and does not intrude into the component. This is the form boundary between a "scheduling month calendar (a container with a rich content header)" and "our selection panel".
+
 ## Read-only Calendar
 
 <DemoBlock title="readonly: read-only detail view with event dots">

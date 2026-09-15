@@ -156,6 +156,47 @@ Content in `slot="actions"` replaces the built-in button row; combine with the `
   </oas-popconfirm>
 </DemoBlock>
 
+<DemoBlock title="Virtual coordinates (virtual-x / virtual-y)">
+  <oas-space size="small" align="center">
+    <oas-button size="small" onclick="pcVirtPointToggle(event)">Pop at (220, 140)</oas-button>
+    <oas-tag id="pc-virt-xy-status" type="info">closed</oas-tag>
+  </oas-space>
+  <oas-popconfirm id="pc-virt-xy" virtual virtual-x="220" virtual-y="140" title="Bubble positioned by coordinates" trigger="manual">
+  </oas-popconfirm>
+</DemoBlock>
+
+## Positioning details (arrow / auto-adjust-overflow / position / width)
+
+`arrow="false"` hides the arrow; `auto-adjust-overflow="false"` disables the auto-flip/shift when space runs short; the legacy `position` attribute (four cardinal directions) remains compatible; `width` fixes the panel width.
+
+<DemoBlock title="Positioning details">
+  <oas-space size="small" wrap>
+    <oas-popconfirm title="Delete this file?" description="arrow=false hides the arrow." placement="bottom" arrow="false">
+      <oas-button size="small">No arrow</oas-button>
+    </oas-popconfirm>
+    <oas-popconfirm title="Custom width" description="width=280: the panel is fixed at 280px wide." placement="bottom" width="280">
+      <oas-button size="small">width=280</oas-button>
+    </oas-popconfirm>
+    <oas-popconfirm title="Keep direction" description="auto-adjust-overflow=false: no flip when space runs short." placement="bottom" auto-adjust-overflow="false">
+      <oas-button size="small">No auto adjust</oas-button>
+    </oas-popconfirm>
+    <oas-popconfirm title="Legacy position" description="position=top is equivalent to placement=top." position="top">
+      <oas-button size="small">position=top</oas-button>
+    </oas-popconfirm>
+  </oas-space>
+</DemoBlock>
+
+## Event binding (onoas-*)
+
+Bubble events can be bound directly in the template via `onoas-*` attributes (`onoas-ok` / `onoas-cancel`), equivalent to an `@oas-ok` listener in the host framework.
+
+<DemoBlock title="Event feedback">
+  <oas-popconfirm id="pc-onoas" title="Delete this record?" description="This cannot be undone."
+    onoas-ok="message.success('Deleted')" onoas-cancel="message.info('Canceled')">
+    <oas-button type="danger">Delete</oas-button>
+  </oas-popconfirm>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -210,6 +251,18 @@ onMounted(async () => {
     if (virtual?.hasAttribute('open')) virtual.removeAttribute('open')
     else virtual?.setAttribute('open', '')
   }
+
+  // Virtual coordinates: host-controlled toggle + status echo
+  const virtXy = document.getElementById('pc-virt-xy')
+  const virtXyStatus = document.getElementById('pc-virt-xy-status')
+  window.pcVirtPointToggle = (e) => {
+    e.stopPropagation()
+    if (virtXy?.hasAttribute('open')) virtXy.removeAttribute('open')
+    else virtXy?.setAttribute('open', '')
+  }
+  virtXy?.addEventListener('oas-open-change', (e) => {
+    if (virtXyStatus) virtXyStatus.textContent = e.detail.open ? 'opened (virtual-x/y)' : 'closed'
+  })
 })
 </script>
 

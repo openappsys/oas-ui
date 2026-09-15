@@ -84,6 +84,23 @@ When the text is non-empty and the field is neither disabled nor readonly, a cle
 
 With `autosize`, the height adapts between `min-rows` (default 1) and `max-rows` (default 6; an explicit `"0"` means unlimited) and scrolls past the cap. `min-rows="2"` is typical for comment boxes to leave a comfortable first-line height.
 
+## Whole delete (whole)
+
+<DemoBlock title="Backspace removes a whole mention in one stroke (whole)">
+  <oas-mentions id="mention-whole" whole value="Hi @Alice finished QA" style="width: 320px" options='[{"label":"Alice","value":"alice"},{"label":"Bob (teammate)","value":"bob"},{"label":"Charlie","value":"charlie"}]'></oas-mentions>
+  <span style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Place the caret right after a mentioned member and press Backspace to remove the whole "@Alice" in one stroke</span>
+</DemoBlock>
+
+With `whole` on, pressing `Backspace` while the caret sits right after an inserted mention (e.g. "@Alice"; long names containing spaces like "@Bob (teammate)" are also removed in one stroke) removes the whole "trigger + member name" and fires `oas-whole-remove` (detail `{ value, option, prefix }`, where `option` is the full original option object). Caret positions that do not match still delete character by character; the separator between the mention and the following text (a space by default) is not removed along with it — delete it separately as needed. Without `whole`, `Backspace` deletes character by character (press several times for long names, or undo to restore).
+
+## Single-line mode (type)
+
+<DemoBlock title="Single-line @assign (type=input)">
+  <oas-mentions id="mention-single" type="input" placeholder="Type @ to assign a member (single line)" style="width: 320px" options='[{"label":"Alice","value":"alice"},{"label":"Bob","value":"bob"}]'></oas-mentions>
+</DemoBlock>
+
+`type` defaults to `textarea` (multi-line); set it to `input` to compress the field into a single-line input (height locked to one row, `Enter` does not break the line), suited for scenarios like "single-line @assign"; it still combines with `autosize` / `clearable` etc.
+
 ## Size / Variant / Status / Readonly
 
 <DemoBlock title="Size">
@@ -136,7 +153,7 @@ The `header` / `footer` slots render panel chrome (hint bar / summary), and the 
 
 ## Deleting a Mention
 
-A mention is written into the text as plain text, so `Backspace` deletes it character by character (a long member name containing spaces needs several presses — undo also helps). While the panel is open, `Home`/`End` jump to the first/last suggestion and `↑`/`↓` cycle (skipping disabled items).
+A mention is written into the text as plain text. With `whole` on, pressing `Backspace` with the caret right after a mention removes the whole segment at once; without `whole`, deletion is character by character (long names containing spaces need several presses — undo also helps). While the suggestion panel is open, `Home`/`End` jump to the first/last suggestion and `↑`/`↓` cycle (skipping disabled items); in `type=input` single-line mode, `Enter` with the panel closed is intercepted and does not break the line.
 
 ## Events
 
@@ -174,7 +191,7 @@ onMounted(() => {
     out.textContent = `${name}: ${JSON.stringify(e.detail)}`
   }
   if (el) {
-    for (const name of ['input', 'change', 'select', 'clear', 'search', 'focus', 'blur']) {
+    for (const name of ['input', 'change', 'select', 'clear', 'search', 'focus', 'blur', 'whole-remove']) {
       el.addEventListener(`oas-${name}`, (e) => set(`oas-${name}`, e))
     }
   }
