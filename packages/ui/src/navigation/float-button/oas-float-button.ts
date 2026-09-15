@@ -569,6 +569,13 @@ const STYLE = `
  * - coarse pointer：子钮与菜单项触控目标抬到 --oas-touch-target-min（默认 44px）
  */
 export class OASFloatButton extends OASElement {
+  /** 挂载即全新迁移：连接前 setAttribute 已触发过 syncExpanded（wasExpanded 置位），
+      重置后 connect 后的首帧「收起 → 展开」仍会按契约自动聚焦首项 */
+  override connectedCallback(): void {
+    this.wasExpanded = false
+    super.connectedCallback()
+  }
+
   static override get observedAttributes(): string[] {
     return [
       'mode',
@@ -606,6 +613,8 @@ export class OASFloatButton extends OASElement {
   private hoverHideTimer: ReturnType<typeof setTimeout> | null = null
   /** hover 触发展开时置位：syncExpanded 跳过「自动聚焦首项」，不抢焦点 */
   private skipFocusOnOpen = false
+  /** 上一次 syncExpanded 的展开态（状态迁移判定用：仅在收起 → 展开帧聚焦首项） */
+  private wasExpanded = false
 
   /** 进行中的拖拽会话（draggable）：pointer 捕获 + 起点 + 位移阈值标记 */
   private dragState: {
@@ -866,9 +875,13 @@ export class OASFloatButton extends OASElement {
     this.mirrorItems().forEach((m) => m.classList.remove('bubble-on'))
   }
 
-  /** 组语义：点击任一子钮即收起组（子钮自身行为归宿主，组件只负责收起） */
+  /** 组语义：点击任一子钮即收起组（子钮自身行为归宿主，组件只负责收起）；焦点归还主钮（APG 惯例） */
   private handleActionClick = (): void => {
-    if (this.validMode() === 'group' && this.hasAttr('expanded')) this.closeExpand()
+    if (this.validMode() === 'group' && this.hasAttr('expanded')) {
+      this.closeExpand()
+      // 子钮随面板隐藏会失焦落到 body——回焦主钮保持键盘流连续
+      this.btn?.focus()
+    }
   }
 
   // ---------- menu 动作项 ----------
@@ -888,6 +901,10 @@ export class OASFloatButton extends OASElement {
   private renderMenuItems(): void {
     const menu = this.menu
     if (!menu) return
+    // 焦点保持：menu.innerHTML='' 重建会销毁聚焦的旧菜单项（slotchange/actions 变更触发的
+    // 重建会把焦点跌落到 body，键盘流断裂）——重建前记录焦点项下标，重建后恢复到同位新项
+    const prevFocusables = this.actionFocusables()
+    const restoreIndex = prevFocusables.findIndex((x) => x === this.shadow.activeElement)
     menu.innerHTML = ''
     this.actionsList.forEach((action, index) => {
       const item: HTMLAnchorElement | HTMLButtonElement =
@@ -918,14 +935,18 @@ export class OASFloatButton extends OASElement {
       item.addEventListener('click', () => this.selectItem(index, action))
       menu.appendChild(item)
     })
+    // 重建后恢复焦点（同位新项；越界/无焦点时不动）
+    if (restoreIndex >= 0) this.actionFocusables()[restoreIndex]?.focus()
   }
 
-  /** 菜单项选择：派发 oas-select（链接项附 href）并收起 */
+  /** 菜单项选择：派发 oas-select（链接项附 href）并收起；焦点归还主钮（APG menu 惯例） */
   private selectItem(index: number, action: FloatButtonAction): void {
     const detail: { index: number; label: string; href?: string } = { index, label: action.label }
     if (action.href) detail.href = action.href
     this.emit('select', detail)
     this.closeExpand()
+    // 菜单项随面板隐藏会失焦落到 body——回焦主钮保持键盘流连续（链接项由浏览器接管导航，focus 无副作用）
+    if (!action.href) this.btn?.focus()
   }
 
   /** 用 iconRegistry 渲染图标（内联 SVG，跟随 currentColor） */
@@ -968,12 +989,15 @@ export class OASFloatButton extends OASElement {
       // 展开时挂载文档级监听（收起/断开连接时移除，无孤儿监听）
       document.addEventListener('click', this.handleDocClick, true)
       document.addEventListener('keydown', this.handleDocKeydown)
-      // 键盘可达：展开自动聚焦首个动作（hover 触发展开不抢焦点）
-      if (!this.skipFocusOnOpen) this.actionFocusables()[0]?.focus()
+      // 键盘可达：仅在「收起 → 展开」的状态迁移帧自动聚焦首个动作（hover 触发展开不抢焦点）。
+      // 用字段而非 classList 判定迁移：模板会按 expanded 预渲染 open 类，首次同步时类已在
+      // 展开态下的其他属性变化/子钮增减不重复抢焦（否则会把用户焦点强行拉回首项）
+      if (!this.wasExpanded && !this.skipFocusOnOpen) this.actionFocusables()[0]?.focus()
     } else {
       document.removeEventListener('click', this.handleDocClick, true)
       document.removeEventListener('keydown', this.handleDocKeydown)
     }
+    this.wasExpanded = open
     this.skipFocusOnOpen = false
   }
 

@@ -1111,14 +1111,22 @@
       "shape": "形状：`circle`（默认，正圆）/ `square`（胶囊圆角矩形）",
       "size": "尺寸档位：`xs`（24px）/ `sm`（32px）/ `md`（40px）/ `lg`（默认 48px）/ `xl`（56px）；非法值回落 `lg` 并告警",
       "target": "链接打开方式（`href` 模式下生效，如 `_blank`）",
-      "type": "视觉强度：`primary`（默认，主色实底）/ `default`（弱化：浅底深字）"
+      "type": "视觉强度：`primary`（默认，主色实底）/ `default`（弱化：浅底深字）",
+      "mode": "形态：single（默认，单钮）/ group（主钮 + slot 子钮纵向展开）/ menu（actions JSON 弹出菜单）",
+      "expanded": "group/menu 展开态（受控，唯一状态源）：手势只派发 oas-expand-change，收起由宿主移除属性完成",
+      "trigger": "展开触发方式：click（默认）/ hover（开合防抖 + 宽限期）/ manual（完全受控，外点与 Esc 不自动收起）",
+      "expand-direction": "展开方向：up（默认，向上）/ down / left / right；RTL 下横向方向自动镜像",
+      "actions": "menu 模式菜单项 JSON `[{label, value?, icon?, href?, target?, danger?, disabled?}]`；选择派发 oas-select 并请求收起"
     },
     "events": {
-      "oas-click": "点击，`detail: { originalEvent }`"
+      "oas-click": "点击，`detail: { originalEvent }`",
+      "oas-select": "menu 模式选择菜单项，detail: { index, label, value? }；选择后组件请求收起（派发 oas-expand-change，收起由宿主移除 expanded 完成）",
+      "oas-expand-change": "展开/收起时派发，`detail: { open }`；受控语义——组件不改 expanded，由宿主回写"
     },
     "slots": {
       "": "扩展文字：默认插槽写入文字后按钮自动变为横向胶囊形态（图标 + 文字横排）",
-      "icon": "图标（默认 ＋）"
+      "icon": "图标（默认 ＋）",
+      "action": "group 模式子钮（原生 button/a 或 oas-button），点击自动收起并回焦主钮；支持角标与自定义图标"
     }
   },
   "oas-form": {

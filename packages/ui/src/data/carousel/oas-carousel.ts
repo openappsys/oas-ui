@@ -492,7 +492,10 @@ export class OASCarousel extends OASElement {
       this.dragPaused = false
       const t = trackOf(this)
       t?.classList.remove('no-transition')
-      if (Math.abs(delta) > 50) this.goTo(this.current() + (delta < 0 ? 1 : -1))
+      // 松手阈值方向：LTR 左拖（delta<0）= 下一张；RTL 镜像为右拖（delta>0）= 下一张
+      const rtl = !vertical && isRtl(this)
+      const forward = rtl ? delta > 0 : delta < 0
+      if (Math.abs(delta) > 50) this.goTo(this.current() + (forward ? 1 : -1))
       // 回弹/边界归位：统一重算 transform（未达阈值或循环关闭触界时恢复原位）
       this.update()
       // 拖拽后重置自动播放计时
@@ -550,8 +553,9 @@ export class OASCarousel extends OASElement {
    * deltaPx 为拖拽跟手偏移（px），非拖拽时为 0。
    */
   private trackTransform(deltaPx = 0): string {
-    // RTL 镜像：水平轨道位移取反（flex 轨道在 RTL 反向排列，「下一页」视觉上向右移出；
-    // 拖拽跟手 delta 同步取反保持方向一致）。垂直轴不受书写方向影响。
+    // RTL 镜像：水平轨道基准位移取 LTR 的精确取反（镜像对称 T_rtl = -T_ltr，center/clamp 项一并取负）。
+    // 拖拽跟手 delta 恒取物理原值（手指右移内容必须右移，取反会逆手）；松手阈值方向在 finish 里换向。
+    // 垂直轴不受书写方向影响。
     const rtl = this.getAttr('direction', 'horizontal') !== 'vertical' && isRtl(this)
     // 卡片模式仅水平：第 i 卡中心对齐视口中心，左右邻卡自然露出。
     // 非循环模式首尾屏贴边（首屏贴起始侧露邻卡、末屏贴尾侧露邻卡），边界不悬空。
@@ -564,8 +568,8 @@ export class OASCarousel extends OASElement {
         if (i === 0) center = '0px'
         else if (i === this.count - 1) center = `(100% - (${w}))`
       }
-      const lead = rtl ? '' : '-1 * '
-      return `translateX(calc(${lead}${i} * ((${w}) + ${gap}) + ${center} + ${rtl ? -deltaPx : deltaPx}px))`
+      const base = rtl ? `${i} * ((${w}) + ${gap}) - (${center})` : `-1 * ${i} * ((${w}) + ${gap}) + (${center})`
+      return `translateX(calc(${base} + ${deltaPx}px))`
     }
     const axis = this.getAttr('direction', 'horizontal') === 'vertical' ? 'Y' : 'X'
     const per = this.perView()
@@ -573,13 +577,12 @@ export class OASCarousel extends OASElement {
     // 常规形态（每屏 1 项、无间距）输出最简形式，SSR 快照体积与旧版一致
     if (per === 1 && this.gapPx() === 0) {
       const base = rtl ? `${offsetSlides * 100}%` : `-${offsetSlides * 100}%`
-      const d = rtl ? -deltaPx : deltaPx
-      return deltaPx ? `translate${axis}(calc(${base} + ${d}px))` : `translate${axis}(${base})`
+      return deltaPx ? `translate${axis}(calc(${base} + ${deltaPx}px))` : `translate${axis}(${base})`
     }
     const gap = `${this.gapPx()}px`
     const slideW = `((100% - ${per - 1} * ${gap}) / ${per})`
-    const lead = rtl ? '' : '-1 * '
-    return `translate${axis}(calc(${lead}${offsetSlides} * ((${slideW}) + ${gap}) + ${rtl ? -deltaPx : deltaPx}px))`
+    const base = rtl ? `${offsetSlides} * ((${slideW}) + ${gap})` : `-1 * ${offsetSlides} * ((${slideW}) + ${gap})`
+    return `translate${axis}(calc(${base} + ${deltaPx}px))`
   }
 
   protected override update(): void {
