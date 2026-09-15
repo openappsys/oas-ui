@@ -882,7 +882,9 @@
       "oas-close": "关闭：取消按钮 / ✕ / 遮罩点击 / Esc",
       "oas-ok": "点击「确定」",
       "oas-after-close": "关闭动画完成（规范名，对齐 after-* 家族），`detail` 无；滚动解锁与焦点归还在此之后",
-      "oas-closed": "【兼容别名】关闭动画完成，等价 oas-after-close；后续版本移除"
+      "oas-closed": "【兼容别名】关闭动画完成，等价 oas-after-close；后续版本移除",
+      "oas-after-open": "打开动画完成（规范名，对齐 after-* 家族），`detail` 无；等价 oas-opened",
+      "oas-opened": "【兼容别名】打开动画完成，等价 oas-after-open；后续版本移除"
     },
     "slots": {
       "title": "标题富内容插槽，有内容时覆盖 title 属性文案"
@@ -1703,7 +1705,9 @@
       "oas-cancel": "取消：取消按钮 / ✕ / 遮罩点击 / Esc",
       "oas-ok": "点击「确定」",
       "oas-after-close": "关闭动画完成（规范名，对齐 after-* 家族），`detail` 无；destroy-on-close 清空内容在此之后",
-      "oas-closed": "【兼容别名】关闭动画完成，等价 oas-after-close；后续版本移除"
+      "oas-closed": "【兼容别名】关闭动画完成，等价 oas-after-close；后续版本移除",
+      "oas-after-open": "打开动画完成（规范名，对齐 after-* 家族），`detail` 无；等价 oas-opened",
+      "oas-opened": "【兼容别名】打开动画完成，等价 oas-after-open；后续版本移除"
     },
     "slots": {
       "title": "标题富内容插槽，有内容时覆盖 title 属性文案"

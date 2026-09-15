@@ -281,10 +281,10 @@ describe('OASCard', () => {
       expect(css).toMatch(/\.card\.shadow-hover\s*\{[^}]*cursor:\s*pointer/)
     })
 
-    it('shadow-always：常显阴影走 overlay token', () => {
+    it('shadow-always：常显阴影走阴影 token', () => {
       const el = mount({ shadow: 'always' })
       const css = styleText(el)
-      expect(css).toMatch(/\.card\.shadow-always\s*\{[^}]*box-shadow:[^}]*var\(--oas-color-overlay\)/)
+      expect(css).toMatch(/\.card\.shadow-always\s*\{[^}]*box-shadow:\s*var\(--oas-shadow-sm\)/)
     })
 
     it('clickable：focus-visible 焦点环（--oas-focus-ring）', () => {

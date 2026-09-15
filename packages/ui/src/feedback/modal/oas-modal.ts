@@ -921,7 +921,10 @@ export class OASModal extends OASElement {
     this.emit('open')
     this.applyClickOrigin()
     this.emitOnAnimEnd(
-      () => this.emit('opened'),
+      () => {
+        this.emit('opened')
+        this.emit('after-open')
+      },
       () => this.isOpen,
     )
   }

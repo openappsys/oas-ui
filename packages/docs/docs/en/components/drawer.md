@@ -33,7 +33,7 @@ A panel that slides in from the screen edge, often used for filters, details, an
 
 ## Animation and lifecycle events
 
-Open/close transitions are animated (transform/opacity) and fall back to instant switching under `prefers-reduced-motion`. Lifecycle events: `oas-open` / `oas-opened` / `oas-close` (detail carries the close source) / `oas-after-close`.
+Open/close transitions are animated (transform/opacity) and fall back to instant switching under `prefers-reduced-motion`. Lifecycle events: `oas-open` / `oas-after-open` / `oas-close` (detail carries the close source) / `oas-after-close`.
 
 <DemoBlock title="Lifecycle events">
   <oas-button type="primary" onclick="document.querySelector('#drawer-life').setAttribute('visible','')">Open and watch events</oas-button>
@@ -379,12 +379,13 @@ onMounted(async () => {
 | Event | Description |
 | --- | --- |
 | `oas-after-close` | Close animation finished (canonical, aligned with the after-* family); no `detail`. Scroll unlock and focus restore happen after this |
+| `oas-after-open` | Open animation finished (canonical, aligned with the after-* family); no `detail`; same as oas-opened |
 | `oas-before-close` | — |
 | `oas-close` | Close: cancel button / ✕ / mask click / Esc, `detail: { source }` |
 | `oas-closed` | [Compat alias] Close animation finished, same as oas-after-close; will be removed later |
 | `oas-ok` | Clicked "OK" |
 | `oas-open` | — |
-| `oas-opened` | — |
+| `oas-opened` | [Compat alias] Open animation finished, same as oas-after-open; will be removed later |
 | `oas-resize` | — |
 
 ### Slots

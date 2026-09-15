@@ -58,7 +58,7 @@ const STYLE = `
   background: var(--pop-bg);
   border: 1px solid var(--pop-border);
   border-radius: var(--oas-popover-radius, var(--oas-radius-md));
-  box-shadow: var(--oas-popover-shadow, 0 4px 16px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent));
+  box-shadow: var(--oas-popover-shadow, var(--oas-shadow-md));
   padding: var(--oas-popover-padding, var(--oas-space-4));
   min-width: var(--oas-popover-min-width, 200px);
   color: var(--oas-color-text-primary);
