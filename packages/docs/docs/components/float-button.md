@@ -213,20 +213,20 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `actions` | — | `string` | `[]` |
+| `actions` | menu 模式菜单项 JSON `[{label, value?, icon?, href?, target?, danger?, disabled?}]`；选择派发 oas-select 并请求收起 | `string` | `[]` |
 | `aria-label` | 无障碍可访问名称：显式设置时覆盖内置文案（纯图标默认走 locale「悬浮操作」；有扩展文字时让位给可见文本） | — | — |
 | `badge` | 右上角标数字 | `string` | — |
 | `disabled` | 禁用：不可点击、不派发 `oas-click`，样式弱化；`href` 模式下降级为不可点击的 `span` | `boolean` | — |
 | `draggable` | 拖拽：指针按住拖动移动按钮（fixed 自由定位，位置夹取在视口内）；位移 >4px 视为拖拽，此时松手不派发 `oas-click`（阈值内正常派发） | `boolean` | — |
-| `expand-direction` | — | `string` | `up` |
-| `expanded` | — | `boolean` | — |
+| `expand-direction` | 展开方向：up（默认，向上）/ down / left / right；RTL 下横向方向自动镜像 | `string` | `up` |
+| `expanded` | group/menu 展开态（受控，唯一状态源）：手势只派发 oas-expand-change，收起由宿主移除属性完成 | `boolean` | — |
 | `href` | 链接地址：设置后渲染 `<a>` 元素（原生链接语义与键盘可达）替代按钮；禁用时降级为 `span` | `string` | — |
 | `magnetic` | 磁吸：`x` 吸附到最近的左右边缘、`y` 吸附到最近的上下边缘，松手时带过渡动画；空值不吸附（需配 `draggable`） | `string` | — |
-| `mode` | — | `string` | `single` |
+| `mode` | 形态：single（默认，单钮）/ group（主钮 + slot 子钮纵向展开）/ menu（actions JSON 弹出菜单） | `string` | `single` |
 | `shape` | 形状：`circle`（默认，正圆）/ `square`（胶囊圆角矩形） | `string` | `circle` |
 | `size` | 尺寸档位：`xs`（24px）/ `sm`（32px）/ `md`（40px）/ `lg`（默认 48px）/ `xl`（56px）；非法值回落 `lg` 并告警 | `string` | `lg` |
 | `target` | 链接打开方式（`href` 模式下生效，如 `_blank`） | `string` | — |
-| `trigger` | — | `string` | `click` |
+| `trigger` | 展开触发方式：click（默认）/ hover（开合防抖 + 宽限期）/ manual（完全受控，外点与 Esc 不自动收起） | `string` | `click` |
 | `type` | 视觉强度：`primary`（默认，主色实底）/ `default`（弱化：浅底深字） | `string` | `primary` |
 
 ### 事件
@@ -234,15 +234,15 @@ onMounted(async () => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-click` | 点击，`detail: { originalEvent }` |
-| `oas-expand-change` | — |
-| `oas-select` | — |
+| `oas-expand-change` | 展开/收起时派发，`detail: { open }`；受控语义——组件不改 expanded，由宿主回写 |
+| `oas-select` | menu 模式选择菜单项，detail: { index, label, value? }；选择后组件请求收起（派发 oas-expand-change，收起由宿主移除 expanded 完成） |
 
 ### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 扩展文字：默认插槽写入文字后按钮自动变为横向胶囊形态（图标 + 文字横排） |
-| `action` | — |
+| `action` | group 模式子钮（原生 button/a 或 oas-button），点击自动收起并回焦主钮；支持角标与自定义图标 |
 | `icon` | 图标（默认 ＋） |
 
 默认定位 `position: fixed; bottom/right`，位置经 `--oas-float-button-bottom` / `--oas-float-button-right` CSS 变量调整（默认 `var(--oas-space-6)`）。

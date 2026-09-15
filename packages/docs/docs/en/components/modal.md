@@ -277,12 +277,12 @@ The mask background uses the `--oas-modal-mask-bg` variable (falls back to the o
 
 ## Open/close animation
 
-Opening / closing plays a **fade + scale** animation by default (transform/opacity only; disabled automatically under `prefers-reduced-motion`). `oas-open` fires when opening starts; `oas-opened` / `oas-closed` fire **after the animation ends** — imperative dialogs rely on that to unmount only after the animation. The `transition` attribute picks a preset: `zoom` (default, fade + scale) / `fade` (opacity only) / `none` (no transition, instant show/hide).
+Opening / closing plays a **fade + scale** animation by default (transform/opacity only; disabled automatically under `prefers-reduced-motion`). `oas-open` fires when opening starts; `oas-opened` / `oas-after-close` fire **after the animation ends** — imperative dialogs rely on that to unmount only after the animation. The `transition` attribute picks a preset: `zoom` (default, fade + scale) / `fade` (opacity only) / `none` (no transition, instant show/hide).
 
 <DemoBlock title="Open/close animation + lifecycle events">
   <oas-button type="primary" onclick="document.querySelector('#modal-anim').setAttribute('visible','')">Open (watch animation & events)</oas-button>
   <oas-modal id="modal-anim" title="Open/close animation">
-    <p>Default fade + scale animation; the messages show <code>oas-opened</code> / <code>oas-closed</code> (fired only after the animation ends).</p>
+    <p>Default fade + scale animation; the messages show <code>oas-opened</code> / <code>oas-after-close</code> (fired only after the animation ends).</p>
   </oas-modal>
 </DemoBlock>
 
@@ -584,7 +584,7 @@ onMounted(async () => {
   // —— Phase-2 demos: animation events / shake blocking / options ——
   const animModal = document.getElementById('modal-anim')
   animModal.addEventListener('oas-opened', () => message.success('Opened (oas-opened: animation done)'))
-  animModal.addEventListener('oas-closed', () => message.info('Closed (oas-closed: animation done)'))
+  animModal.addEventListener('oas-after-close', () => message.info('Closed (oas-after-close: animation done)'))
 
   // Shake: block cancel-type closes (the shake feedback plays automatically)
   const shakeModal = document.getElementById('modal-shake')
@@ -659,7 +659,7 @@ onMounted(async () => {
 
 - Options: `{ title?, content?, okText?, cancelText?, onOk?, onCancel? }`. `content` is plain text; when `onOk` returns a Promise the OK button enters loading (closes on resolve, stays open on reject for retry or cancel).
 - Returns a `{ close() }` handle: closes the current instance programmatically without firing `onOk` / `onCancel`.
-- Mounts to the nearest `oas-app` container (falls back to `body`); multiple instances stack; imperative instances unmount only after the close animation ends (`oas-closed`).
+- Mounts to the nearest `oas-app` container (falls back to `body`); multiple instances stack; imperative instances unmount only after the close animation ends (`oas-after-close`).
 
 ### Attributes
 

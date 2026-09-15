@@ -14,7 +14,7 @@
   <oas-upload multiple max="3" accept="image/*"></oas-upload>
 </DemoBlock>
 
-`max` 限制最多可选文件数，`accept` 过滤文件类型；超出 `max` 的文件被拒绝并派发 `oas-exceed`。
+`max` 限制最多可选文件数，`accept` 过滤文件类型；超出 `max` 的文件被拒绝并派发 `oas-exceed-limit`。
 
 ## 自动上传
 
@@ -52,7 +52,7 @@
   <oas-upload id="upload-wall-exceed" list-type="picture-card" multiple max="3" auto-upload accept="image/*"></oas-upload>
 </DemoBlock>
 
-选择/拖入第 4 张时被 `max="3"` 拦截，触发 `oas-exceed` 弹出警告；点击缩略图触发 `oas-preview`。
+选择/拖入第 4 张时被 `max="3"` 拦截，触发 `oas-exceed-limit` 弹出警告；点击缩略图触发 `oas-preview`。
 
 ### picture 列表带缩略图
 
@@ -68,7 +68,7 @@
   <oas-upload id="upload-full" list-type="picture-card" multiple max="3" accept="image/*"></oas-upload>
 </DemoBlock>
 
-预置满 `max="3"` 后继续选择会被 `oas-exceed` 拦截。
+预置满 `max="3"` 后继续选择会被 `oas-exceed-limit` 拦截。
 
 ## 禁用
 
@@ -122,7 +122,7 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
 
 ## 文件大小限制（max-size）
 
-`max-size` 支持字节数或带单位写法（`512KB` / `2MB` / `1GB`）；超限拒绝并派发 `oas-exceed`（`detail.type === 'size'`，含 `maxSize` 字节数）。
+`max-size` 支持字节数或带单位写法（`512KB` / `2MB` / `1GB`）；超限拒绝并派发 `oas-exceed-limit`（`detail.type === 'size'`，含 `maxSize` 字节数）。
 
 <DemoBlock title="max-size（100KB）">
   <oas-upload id="upload-size" multiple max-size="100KB"></oas-upload>
@@ -204,7 +204,7 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
 - `oas-upload`：进度，`detail: { file, percent, status }`（`status`: pending/uploading/done/error）
 - `oas-success` / `oas-error`：上传成功/失败（真实通道），`detail: { file, response, status? }`
 - `oas-retry` / `oas-cancel`：重试发起 / 上传取消，`detail: { file }`
-- `oas-exceed`：超限拒绝，`detail: { files, max, total }`（数量）或 `{ files, type: 'size', maxSize, total }`（大小）
+- `oas-exceed-limit`：超限拒绝，`detail: { files, max, total }`（数量）或 `{ files, type: 'size', maxSize, total }`（大小）
 - `oas-remove`：移除文件，`detail: { file, index, replaced? }`（`replaced: true` 表示被 `replace` 语义替换）
 
 方法：`submit()`（手动上传）、`startUpload()`（等价）、`abort(file?)`（取消单个/全部进行中的上传）。
@@ -249,7 +249,7 @@ onMounted(async () => {
 
   // 照片墙：超限拦截 + 预览反馈
   const wall = document.getElementById('upload-wall-exceed')
-  wall?.addEventListener('oas-exceed', (e) => {
+  wall?.addEventListener('oas-exceed-limit', (e) => {
     message.warning(`最多上传 ${e.detail.max} 个文件`)
   })
   wall?.addEventListener('oas-preview', (e) => {
@@ -320,7 +320,7 @@ onMounted(async () => {
 
   // max-size 超限反馈
   const size = document.getElementById('upload-size')
-  size?.addEventListener('oas-exceed', (e) => {
+  size?.addEventListener('oas-exceed-limit', (e) => {
     if (e.detail.type === 'size') {
       message.warning(`${e.detail.files[0].name} 超过 ${Math.round(e.detail.maxSize / 1024)}KB，已拒绝`)
     } else {

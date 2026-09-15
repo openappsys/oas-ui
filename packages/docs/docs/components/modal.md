@@ -277,12 +277,12 @@
 
 ## 开合动画
 
-打开 / 关闭默认播放 **fade + scale** 动画（只走 `transform`/`opacity`，`prefers-reduced-motion` 下自动停用）。`oas-open` 在打开开始派发，`oas-opened` / `oas-closed` 在动画结束后派发——命令式对话框据此「等动画结束再卸载」。`transition` 可选预设：`zoom`（默认，淡入 + 缩放）/ `fade`（仅淡入淡出）/ `none`（无过渡、即时显隐）。
+打开 / 关闭默认播放 **fade + scale** 动画（只走 `transform`/`opacity`，`prefers-reduced-motion` 下自动停用）。`oas-open` 在打开开始派发，`oas-opened` / `oas-after-close` 在动画结束后派发——命令式对话框据此「等动画结束再卸载」。`transition` 可选预设：`zoom`（默认，淡入 + 缩放）/ `fade`（仅淡入淡出）/ `none`（无过渡、即时显隐）。
 
 <DemoBlock title="开合动画 + 生命周期事件">
   <oas-button type="primary" onclick="document.querySelector('#modal-anim').setAttribute('visible','')">打开（观察动画与事件）</oas-button>
   <oas-modal id="modal-anim" title="开合动画">
-    <p>默认 fade + scale 动画；右上角消息展示 <code>oas-opened</code> / <code>oas-closed</code>（动画结束才派发）。</p>
+    <p>默认 fade + scale 动画；右上角消息展示 <code>oas-opened</code> / <code>oas-after-close</code>（动画结束才派发）。</p>
   </oas-modal>
 </DemoBlock>
 
@@ -584,7 +584,7 @@ onMounted(async () => {
   // —— 二期能力演示：动画事件 / shake 拦截 / options ——
   const animModal = document.getElementById('modal-anim')
   animModal.addEventListener('oas-opened', () => message.success('已打开（oas-opened：动画结束）'))
-  animModal.addEventListener('oas-closed', () => message.info('已关闭（oas-closed：动画结束）'))
+  animModal.addEventListener('oas-after-close', () => message.info('已关闭（oas-after-close：动画结束）'))
 
   // shake：拦截取消类关闭（可见抖动反馈由组件自动播放）
   const shakeModal = document.getElementById('modal-shake')
@@ -659,7 +659,7 @@ onMounted(async () => {
 
 - 选项：`{ title?, content?, okText?, cancelText?, onOk?, onCancel? }`。`content` 为纯文本；`onOk` 返回 Promise 时确定按钮进入 loading（resolve 关闭、reject 保持打开可重试或取消）。
 - 返回 `{ close() }` 句柄：编程关闭当前实例，不触发 `onOk` / `onCancel`。
-- 挂载到最近 `oas-app` 容器（无则 `body`）；多实例可叠放；命令式实例在关闭动画结束（`oas-closed`）后才卸载。
+- 挂载到最近 `oas-app` 容器（无则 `body`）；多实例可叠放；命令式实例在关闭动画结束（`oas-after-close`）后才卸载。
 
 ### 属性
 
