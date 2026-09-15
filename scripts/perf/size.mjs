@@ -277,15 +277,16 @@ const BUDGETS = [
   {
     name: '@oas-ui/ui/form/form 链 gzip',
     get: () => componentMeasures.form.gzipBytes,
-    limit: 19 * 1024, // 19 KB（2026-09-09 重定档）
-    basis: '实测 gzip 16.4 KB（v2.5.0 后；含 core + i18n），上浮约 16%；前档 14 KB 定档于 v2.1（11,873 B）',
+    limit: 20 * 1024, // 20 KB（2026-09-15 重定档）
+    basis:
+      '实测 gzip 17.2 KB（未发布批次：RTL 逻辑属性改造令 padding/margin 简写展开为长写、shared/size 词表互认；含 core + i18n），上浮约 16%；前档 19 KB 定档于 2026-09-09（16.4 KB 实测）',
   },
   {
     name: '@oas-ui/theme index.css gzip',
     get: () => theme.gzipBytes,
-    limit: 3.2 * 1024, // 3.2 KB（2026-09-13 重定档）。实测 gzip 2.7 KB（RTL/触控批新增 token + 触控目标变量），上浮约 19%
+    limit: 3.5 * 1024, // 3.5 KB（2026-09-15 重定档）。实测 gzip 3.0 KB（阴影三档 token light/dark），上浮约 15%
     basis:
-      '实测 gzip 2.7 KB（v2.5.3 RTL/触控批：--oas-touch-target-min 等 token 扩充；前档 3 KB 定档于 v2.1），上浮约 19%',
+      '实测 gzip 3.0 KB（未发布批次：--oas-shadow-sm/md/lg 三档阴影 token + light/dark 双变体），上浮约 15%；前档 3.2 KB 定档于 2026-09-13（2.7 KB 实测）',
   },
 ]
 
