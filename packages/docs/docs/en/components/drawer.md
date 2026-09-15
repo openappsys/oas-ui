@@ -230,6 +230,28 @@ Stacked drawers get automatic stack management: later openers sit on top (increm
   </oas-drawer>
 </DemoBlock>
 
+## Focus trap / scroll lock / z-index switches
+
+`no-focus-trap` turns off the Tab focus trap (for drawers embedded in a host dialog where focus is managed by the outer layer); `no-scroll-lock` turns off the body scroll lock (the page keeps scrolling); `z-index` explicitly sets the panel tier (defaults to the overlay tier + stack-depth offset).
+
+<DemoBlock title="no-focus-trap / no-scroll-lock / z-index">
+  <oas-button type="primary" onclick="document.querySelector('#drawer-switch').setAttribute('visible','')">Open switches demo drawer</oas-button>
+  <oas-drawer id="drawer-switch" title="Switch combo" width="380px" no-focus-trap no-scroll-lock z-index="10">
+    <p>This drawer does not trap Tab focus or lock page scrolling; the tier is explicitly set to <code>z-index="10"</code>; ✕ / Esc / mask close as usual.</p>
+  </oas-drawer>
+</DemoBlock>
+
+## Event binding (onoas-*)
+
+Drawer events can be bound directly in the template via `onoas-*` attributes (`onoas-ok` / `onoas-close` / `onoas-open` …), equivalent to an `@oas-ok` listener in the host framework.
+
+<DemoBlock title="Event feedback">
+  <oas-button type="primary" onclick="document.querySelector('#drawer-onoas').setAttribute('visible','')">Open drawer</oas-button>
+  <oas-drawer id="drawer-onoas" title="Delete confirmation" onoas-ok="message.success('Deleted')" onoas-close="message.info('Drawer closed')">
+    <p>Click OK or Cancel / ✕ and watch the messages in the top-right corner.</p>
+  </oas-drawer>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
