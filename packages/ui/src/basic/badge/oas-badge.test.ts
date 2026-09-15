@@ -1192,6 +1192,23 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
     )
   })
 
+  it('ribbon-size 全称别名互认：medium/large 等价 md/lg（shared/size）', () => {
+    const medium = mount({
+      ribbon: '',
+      text: '50% OFF',
+      'ribbon-form': 'diagonal',
+      'ribbon-size': 'medium',
+    })
+    expect(ribbon(medium)!.classList.contains('ribbon-size-md')).toBe(true)
+    const large = mount({
+      ribbon: '',
+      text: '50% OFF',
+      'ribbon-form': 'diagonal',
+      'ribbon-size': 'large',
+    })
+    expect(ribbon(large)!.classList.contains('ribbon-size-lg')).toBe(true)
+  })
+
   it('ribbon-size 非法值/非 diagonal 忽略：不写入 size class', () => {
     // 非 diagonal 形态忽略
     for (const f of ['fold', 'banner', 'flag', 'seal', 'triangle', 'bookmark', 'side']) {
