@@ -229,3 +229,77 @@ test('toggle-group max-count=2：达上限拦截越界选择 + oas-exceed-limit 
     '应派发 oas-exceed-limit { value: "underline", max: 2 }',
   ).toBe(true)
 })
+
+// ---- 圆角合并（attached）：横向只合并左右、纵向只合并上下 ----
+
+interface Corners {
+  tl: number
+  tr: number
+  bl: number
+  br: number
+}
+
+async function itemCorners(page: import('@playwright/test').Page, selector: string): Promise<Corners[]> {
+  return page.evaluate((sel) => {
+    const px = (v: string): number => Number.parseFloat(v) || 0
+    const el = document.querySelector(sel)!
+    return [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')].map((item) => {
+      const cs = getComputedStyle(item)
+      return {
+        tl: px(cs.borderTopLeftRadius),
+        tr: px(cs.borderTopRightRadius),
+        bl: px(cs.borderBottomLeftRadius),
+        br: px(cs.borderBottomRightRadius),
+      }
+    })
+  }, selector)
+}
+
+test('toggle-group 纵向贴合：首项右上角必须是圆角（横向零化不得误伤纵向外缘）', async ({ page }) => {
+  // 曾现 bug：横向贴合规则 `.item:not(:last-child) { border-start-end-radius: 0 }` 未限定横向组，
+  // 把 attached+vertical 首项的 start-end（右上）清零 → 纵向贴合组左上圆、右上直角，与左侧分离形态
+  // （#tg-view-v 四角全圆）并列时肉眼可见。修复：横向规则加 :not([vertical])，纵向由专项块自洽定义。
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '#tg-view-t')
+  const cs = await itemCorners(page, '#tg-view-t')
+  expect(cs.length, '纵向贴合 demo 应为 3 项').toBe(3)
+  expect(cs[0]!.tl, '首项左上圆角').toBeGreaterThan(0)
+  expect(cs[0]!.tr, '首项右上圆角（本次缺陷点）').toBeGreaterThan(0)
+  expect(cs[0]!.bl, '首项左下应为直角（与次项贴合）').toBe(0)
+  expect(cs[0]!.br, '首项右下应为直角').toBe(0)
+  expect(cs[1], '中项四角全直角').toEqual({ tl: 0, tr: 0, bl: 0, br: 0 })
+  expect(cs[2]!.tl, '末项左上应为直角').toBe(0)
+  expect(cs[2]!.tr, '末项右上应为直角').toBe(0)
+  expect(cs[2]!.bl, '末项左下圆角').toBeGreaterThan(0)
+  expect(cs[2]!.br, '末项右下圆角').toBeGreaterThan(0)
+})
+
+test('toggle-group 分离纵向：各项四角均为圆角（不参与贴合合并）', async ({ page }) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '#tg-view-v')
+  const cs = await itemCorners(page, '#tg-view-v')
+  expect(cs.length).toBe(3)
+  for (const [i, c] of cs.entries()) {
+    expect(c.tl, `第 ${i + 1} 项左上圆角`).toBeGreaterThan(0)
+    expect(c.tr, `第 ${i + 1} 项右上圆角`).toBeGreaterThan(0)
+    expect(c.bl, `第 ${i + 1} 项左下圆角`).toBeGreaterThan(0)
+    expect(c.br, `第 ${i + 1} 项右下圆角`).toBeGreaterThan(0)
+  }
+})
+
+test('toggle-group 横向贴合：首项右侧、末项左侧合并为直角（横向行为不回归）', async ({ page }) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '#tg-rt-align')
+  const cs = await itemCorners(page, '#tg-rt-align')
+  expect(cs.length).toBeGreaterThan(1)
+  const first = cs[0]!
+  const last = cs[cs.length - 1]!
+  expect(first.tl, '首项左上圆角').toBeGreaterThan(0)
+  expect(first.bl, '首项左下圆角').toBeGreaterThan(0)
+  expect(first.tr, '首项右上应为直角（横向贴合）').toBe(0)
+  expect(first.br, '首项右下应为直角').toBe(0)
+  expect(last.tl, '末项左上应为直角').toBe(0)
+  expect(last.bl, '末项左下应为直角').toBe(0)
+  expect(last.tr, '末项右上圆角').toBeGreaterThan(0)
+  expect(last.br, '末项右下圆角').toBeGreaterThan(0)
+})

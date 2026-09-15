@@ -312,13 +312,31 @@ describe('OASToggleGroup 尺寸与形态（size / vertical / attached / spread�
   it('attached：CSS 贴合规则（gap 归零 + 邻接负 margin 逻辑属性 + 圆角合并）', () => {
     const css = styleText(mount({ attached: '' }))
     expect(css).toMatch(/:host\(\[attached\]\) \.group\s*{[^}]*gap:\s*0/)
-    expect(css).toMatch(/:host\(\[attached\]\) \.item ~ \.item\s*{[^}]*margin-inline-start:\s*-1px/)
-    expect(css).toMatch(/border-start-start-radius:\s*0/)
+    // 横向合并规则须限定为横向组（否则纵向首项外缘上角被误清零，见下方纵向用例）。
+    // ⚠️ 写法必须是 :host([attached]:not([vertical]))——`:host(...)` 后链 `:not(...)` 在
+    // Chromium 下整条不匹配（实测），会造成横向贴合完全失效。
+    expect(css).toMatch(/:host\(\[attached\]:not\(\[vertical\]\)\) \.item ~ \.item\s*{[^}]*margin-inline-start:\s*-1px/)
+    expect(css).toMatch(
+      /:host\(\[attached\]:not\(\[vertical\]\)\) \.item ~ \.item\s*{[^}]*border-start-start-radius:\s*0[^}]*border-end-start-radius:\s*0/,
+    )
+    expect(css).toMatch(
+      /:host\(\[attached\]:not\(\[vertical\]\)\) \.item:not\(:last-child\)\s*{[^}]*border-start-end-radius:\s*0[^}]*border-end-end-radius:\s*0/,
+    )
+    // 反向断言：不得出现 :host(...) 后链 :not(...) 的写法（Chromium 不匹配）
+    expect(css).not.toMatch(/:host\(\[attached\]\):not\(/)
   })
 
-  it('attached 纵向：margin-block-start 负边距 + 上下圆角合并', () => {
+  it('attached 纵向：margin-block-start 负边距 + 上下圆角合并（横向零化不误伤首项右上角）', () => {
     const css = styleText(mount({ attached: '', vertical: '' }))
     expect(css).toMatch(/:host\(\[attached\]\[vertical\]\) \.item ~ \.item\s*{[^}]*margin-block-start:\s*-1px/)
+    expect(css).toMatch(
+      /:host\(\[attached\]\[vertical\]\) \.item ~ \.item\s*{[^}]*border-start-start-radius:\s*0[^}]*border-start-end-radius:\s*0/,
+    )
+    expect(css).toMatch(
+      /:host\(\[attached\]\[vertical\]\) \.item:not\(:last-child\)\s*{[^}]*border-end-start-radius:\s*0[^}]*border-end-end-radius:\s*0/,
+    )
+    // 回归：横向的「末项行末圆角清零」必须是横向组限定，纵向首项右上角才不会被清成直角
+    expect(css).toMatch(/:host\(\[attached\]:not\(\[vertical\]\)\) \.item:not\(:last-child\)/)
   })
 
   it('spread：CSS 满宽均分规则（host flex + item flex 1）', () => {

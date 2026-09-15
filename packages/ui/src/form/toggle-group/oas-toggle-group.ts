@@ -163,12 +163,16 @@ const STYLE = `
 :host([attached]) .item {
   position: relative;
 }
-:host([attached]) .item ~ .item {
+/* 横向贴合：只对横向组生效（纵向由下方专项块接管）。若不加 vertical 排除，横向的
+   「末项圆角清零」会误伤纵向首项的外缘上角（start-end = 右上），出现直角。
+   ⚠️ 必须写成 :host([attached]:not([vertical]))——在 :host(...) 之后链 :not(...) 的写法
+   在 Chromium 下整条规则不匹配（实测），只有把 :not 写进 :host() 参数内才生效。 */
+:host([attached]:not([vertical])) .item ~ .item {
   margin-inline-start: -1px;
   border-start-start-radius: 0;
   border-end-start-radius: 0;
 }
-:host([attached]) .item:not(:last-child) {
+:host([attached]:not([vertical])) .item:not(:last-child) {
   border-start-end-radius: 0;
   border-end-end-radius: 0;
 }
@@ -178,8 +182,8 @@ const STYLE = `
 :host([attached]) .item[aria-checked='true'] {
   z-index: 1;
 }
-/* 纵向贴合：上下圆角合并 + 负 margin 转纵向（复合条件权重更高，覆盖横向规则；
-   border-end-start 恢复圆角——横向规则曾清零，纵向末项底左角需要圆角收尾） */
+/* 纵向贴合：上下圆角合并 + 负 margin 转纵向（自洽定义，不依赖横向规则）
+   首项：上两角保留圆角、下两角清零；末项：上两角清零、下两角保留圆角 */
 :host([attached][vertical]) .group {
   flex-direction: column;
 }
@@ -188,7 +192,6 @@ const STYLE = `
   margin-block-start: -1px;
   border-start-start-radius: 0;
   border-start-end-radius: 0;
-  border-end-start-radius: var(--oas-radius-md);
 }
 :host([attached][vertical]) .item:not(:last-child) {
   border-end-start-radius: 0;
