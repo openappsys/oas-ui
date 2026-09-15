@@ -1226,6 +1226,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **RTL 第二批（方向键镜像 + 面板逻辑化收口）**：6 组件水平方向键 RTL 换向（carousel / stepper / bottom-navigation / toolbar-toggle / image / tree）+ carousel 轨道位移取反与箭头逻辑属性镜像 + tree 收起箭头 `data-rtl` 镜像 + scroll-area 方向判定收敛 `shared/direction` 单源 + 浮层面板残留物理 CSS 逻辑属性改造（select / auto-complete / combobox / mentions / cascader / tree-select / date-picker / time-picker / tour / dropdown split / menu / table / slider / collapse-item / theme-editor）+ 约定守卫：全库物理方向 CSS 白名单化（placement 基向箭头绘制、物理命名 API、内容 LTR 锁定、成对对称豁免），白名单外新增一律红灯
 - **API 规范统一**：size 档位跨词表别名互认（`shared/size` 单源，五档全称/缩写全组件等价接受）+ 事件同名归一（drawer/modal 增派 `oas-after-close`、upload 增派 `oas-exceed-limit`，旧名兼容别名双发）+ 阴影三档 token（`--oas-shadow-sm/md/lg` light/dark，28 处裸阴影迁移，方向性/inset/形状描边豁免）
 - **qa-regression 补位 10 组件**（bottom-sheet/confirm/checkbox/radio/textarea/collapse/speed-dial/editable/dynamic-input/toggle-group，41 用例）；修复 speed-dial 展开自动聚焦失效（visibility 过渡离散翻转致 focus 静默失败，展开向改立即翻转）
+- **长尾修复**：stepper 横向连接线 RTL 镜像缺失（物理 left 单向延伸改逻辑属性，与 steps 的 data-rtl 镜像对齐）；core translator 广播隔离（单个监听者抛错不再阻断全库 locale 切换通知）
 - **bottom-sheet 文档页补齐**：中英 demo 页（基础 / max-height / passive 被动透传）+ API 表 + 总览与侧边栏接线；app-bar 中英 API 章节补齐；ssr 白名单接入 app-bar 并入档 bottom-sheet 的 SSR 策略
 
 ### 修复
