@@ -322,3 +322,7 @@ onMounted(() => {
 | --- | --- |
 | `--oas-timeline-dot-size` | `10px` |
 | `--oas-timeline-font` | `inherit` |
+
+**CSS 变量**
+
+**CSS 变量**

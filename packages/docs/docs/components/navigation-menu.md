@@ -233,6 +233,8 @@ onMounted(() => {
 | --- | --- |
 | 默认 | 组内导航项（`oas-navigation-menu-item` 子元素，面板渲染时平铺进网格） |
 
+**CSS 变量**
+
 `NavItem` 字段（继承 `MenuItem`）：
 
 | 字段          | 说明                                                | 类型      |

@@ -344,4 +344,8 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 | --- | --- |
 | `--oas-grid-item-column` | `${baseColumn}` |
 
+**CSS 变量**
+
+**CSS 变量**
+
 `oas-grid` renders as CSS Grid where each child occupies a share of the 24 columns; `oas-grid-item` declares its footprint with `span`. Setting `columns` divides equally and ignores `span`, so plain elements can be placed directly.

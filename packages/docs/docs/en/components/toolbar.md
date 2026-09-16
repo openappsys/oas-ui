@@ -341,6 +341,8 @@ onMounted(() => {
 | --- | --- |
 | default | Button label (default slot text) |
 
+**CSS 变量**
+
 - The host has `role="toolbar"` + `aria-orientation`; `aria-label` comes from the locale key (`toolbar.label`)
 - Children that join roving: native controls (`button`/`input`/`select`/`textarea`/`a[href]`), interactive `role`s, custom elements (tag contains `-`); `oas-toolbar-separator`, `data-toolbar-ignore` and `aria-hidden` are excluded, `disabled`/`aria-disabled` are skipped automatically (aria-disabled items stay focusable in `focusable-when-disabled` mode)
 - Keyboard: `Tab` enters (only the current item is tab-reachable), `←`/`→` (or `↑`/`↓`) moves between controls, `Home`/`End` jumps to the first/last; while focus is inside the toggle group/input the arrow keys belong to the widget (`Tab` leaves and toolbar navigation continues)

@@ -268,3 +268,9 @@ Typography components for text, titles, and paragraphs.
 | --- | --- |
 | `--oas-line-clamp` | `2` |
 | `--oas-text-mark-bg` | `var(--oas-color-warning)` |
+
+**CSS 变量**
+
+**CSS 变量**
+
+**CSS 变量**

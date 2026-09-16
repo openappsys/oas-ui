@@ -338,4 +338,8 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 | `--oas-avatar-group-overlap` | `-8px` |
 | `--oas-avatar-group-ring` | `var(--oas-color-bg)` |
 
+**CSS 变量**
+
+**CSS 变量**
+
 > Note: `alt` is read on first render and is not in the observed attribute list; dynamic changes require a manual re-render.

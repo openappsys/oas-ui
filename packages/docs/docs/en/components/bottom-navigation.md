@@ -199,6 +199,8 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | --- | --- |
 | default | Bottom-navigation item label content (default slot text) |
 
+**CSS 变量**
+
 `BottomNavItem` fields:
 
 | Field      | Description                                             | Type     |
