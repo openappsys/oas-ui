@@ -1254,3 +1254,29 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 > 注：原「后续 backlog」中的 oas-float-button（本批转正）、oas-app-bar（本批立项实现）、oas-sidebar（v2.2.4/v2.2.5 已发布）三条目均已落位，backlog 清空。
 
 ---
+
+## v2.5.5 收尾批次（组件笔误修复 + 文档示例对齐 + 工程收口）✅
+
+### 特性
+
+- **oas-select chevron 图标笔误修复（自 v2.5.1 起带病发布）**：内联 V 形 path 多出一段回折线（几何长度 21.31 vs 规范 11.31），图标渲染成乱纹；除修复外**新增源码级守卫**——全组件 `class=chevron` 的 path 必须与 `@oas-ui/icons` 的 `chevron-down` 一致，补上「visual.spec 只截图不做基线比对」的漏检路径
+- **oas-button-group `pill` 端部整形**：端部改由组容器承担（`radius-full` + `overflow: clip`，端弧按容器较短边夹紧），横向 / 纵向宽钮 / 纵向窄高钮都得到真正的半圆胶囊端（原逐按钮圆角在「端边 == 短边」时只圆到 1/4，退化成圆角矩形 / 半椭圆）；纵向端钮外侧留白收口 `space-4`，消除「文字钻进弧端」
+
+### 修复
+
+- **文档站语言适配两处回环**：①首访适配脚本与 theme 的 lang watcher 互踢——zh 浏览器整页打开 `/en/` 深链会无限整页跳转（dev 实测 4s 内 40+ 次 load）；②`/en/` 前缀改为**显式语言指定**、整页打开一律保持英文，不再按浏览器语言回弹（优先级：显式路径 > 偏好 > 浏览器探测）
+
+### 文档
+
+- **radio / checkbox 自定义指示器示例重做**（修 dev 下选中态图标空白、跨引擎看不清选中态）：内联 `<template slot="checked-icon">` 的**内容**在 vitepress dev 下被 Vue 编译管线吞空（生产构建正常，故此前 preview 验证漏掉）→ 改用组件**直接元素**通道；写进 SVG 表现属性的 `var()`（跨引擎脆弱、回落黑色）→ 改 `currentColor` + `::part(indicator-checked)`；弃用 `mask` 剪影（重置在部分引擎不生效会整块空白）；radio 两态自定义示例改同形星标并补「自定义指示器是**项级开关**」说明
+- README（根中英 + `@oas-ui/ui` 中英）补官方示例模板站链接
+
+### 工程
+
+- **CI 门禁收口**：`stats:check` 前置到 `perf:size` 之前（后者会改写入库基线，先跑必致统计校验拿环境实测数字比提交版）；tooltip merge 直角三角几何用例改**静止态测量**（入场动画 `scale(0.9→1)` 期间量到缩放后的箭头盒 → CI 两引擎同用例必挂），用 reduced-motion 关动画、容差维持 0.5px 不放宽
+- **`perf:size` / `perf:bench` 默认只测不写**（更新基线需显式 `--update-baseline`），消除「本地跑一次 perf 就脏 tracked 文件」与 CI 误报源头；`release-check` 增适配层「有改动未 bump」警告；本地 pre-commit 增 stats 门禁
+
+### 验收
+
+- 全量单测 7103 / typecheck 0 / build 0 / api:check 0 / stats:check 0 / lint:md 0 / biome check 0 / perf:size 全 PASS / trace 0 命中
+- 全量 e2e 2111 passed（chromium 全量 + firefox 抽样 + docs-site）；select / button-group 修复项均带 e2e 与源码守卫固化回归；radio / checkbox 新示例 dev 与 prod 双环境实测（含暗色、console 零告警）

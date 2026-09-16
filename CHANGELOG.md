@@ -2,6 +2,25 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.5.5] - 2026-09-17
+
+### 修复
+
+- **oas-select 触发器 chevron 图标被写坏（自 v2.5.1 起带病发布）**：内联 chevron 的 path 存在写字笔误——标准 V 形（`M4 6 L8 10 L12 6`）后多出一段回折线 `L4 12`，图标渲染成乱纹（实测路径几何长度 21.31 vs 规范 V 形 11.31）。修复 path，并**新增源码级守卫**：`style-conventions.test.ts` 扫描全部组件内 `class=chevron` 的 path 必须与 `@oas-ui/icons` 的 `chevron-down` 一致（含检测器自检 + RED/GREEN 实证），堵住「visual.spec 只截图不做基线比对」导致的漏检路径
+- **oas-button-group `pill` 胶囊端整形**：端部改由组容器承担（`radius-full` + `overflow: clip`，端弧半径按容器较短边夹紧）——横向 / 纵向宽钮 / 纵向窄高钮都得到真正的半圆胶囊端（原逐按钮各自圆角在「端边 == 短边」时只圆到 1/4，退化成圆角矩形 / 半椭圆）；纵向胶囊端钮外侧内边距收口为 `space-4`（内侧与左右维持 `space-2`），消除「文字钻进弧形端」的观感
+- **文档站语言适配两处回环**：①首访适配脚本与 theme 的 lang watcher 互踢——zh 浏览器整页打开 `/en/` 深链会无限整页跳转（dev 实测 4s 内 40+ 次 load），改为只在用户「实际切换」时持久化偏好，首屏落地只同步 i18n、不写偏好槽；②`/en/` 前缀改为**显式语言指定**、整页打开一律保持英文，不再按浏览器语言回弹（优先级：显式路径 > 偏好 > 浏览器探测），`/en/` 页不再产生任何整页跳转
+
+### 文档
+
+- **radio / checkbox 自定义指示器示例重做**（修 dev 下选中态图标空白、跨引擎看不清选中态）：内联 `<template slot="checked-icon">` 的**内容**在 vitepress dev 下被 Vue 编译管线吞空（template 元素尚在、innerHTML 为空，生产构建正常——此前只在 preview 验证故漏掉），示例改用组件的**直接元素**通道 `<svg slot="checked-icon">`；把写进 SVG 表现属性的 `var()`（跨引擎脆弱，部分引擎回落黑色）改为 `currentColor` + `::part(indicator-checked)` 上色；弃用 `mask` 剪影方案（mask 重置在部分引擎不生效会整块空白）；radio 两态自定义示例改为同形星标（未选灰 → 选中主色）并补「自定义指示器是**项级开关**，组内统一样式需每项都带插槽」的说明
+- README（根中英 + `@oas-ui/ui` 中英）补官方示例模板站链接（多套可直接复用的中后台场景）
+
+### 优化
+
+- **CI 门禁收口**：`stats:check` 调到 `perf:size` **之前**——`perf:size` 会改写入库基线，先跑会让读基线的统计校验拿「环境实测数字」比「提交版数字」，长期必红（本地已复现：旧顺序退出码 1、新顺序 0）；tooltip merge 直角三角几何用例改为**静止态测量**（入场动画 `scale(0.9→1)` 期间 `getBoundingClientRect` 量到缩放后的箭头盒 → 断言随机器快慢抖动，CI 上两引擎同用例即挂），用页面级 reduced-motion 关动画，容差维持 0.5px 不放宽
+- **`perf:size` / `perf:bench` 默认只测不写**：两者原先每次运行都用当前环境实测值改写入库的 `docs/perf-baseline.json`（本地跑一次就脏一个 tracked 文件，gzip 字节跨 zlib / 平台存在差异），改为默认只测量并打印结果，更新基线需显式加 `--update-baseline`；engineering.md §4 同步
+- `release-check` 增适配层（next/nuxt）「有改动未 bump」警告（适配层独立发版节奏、不硬校验版本，但漏 bump 会导致改动永远发不出去）；本地 pre-commit 钩子增 stats 门禁，统计漂移不再留到 CI 才发现
+
 ## [2.5.4] - 2026-09-16
 
 ### 特性
