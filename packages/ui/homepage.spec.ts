@@ -163,6 +163,30 @@ test.describe('官网首页（重设计版）', () => {
     await ctx2.close()
   })
 
+  // 回环回归：head 适配脚本按 oas-lang/浏览器语言决定跳向，而 Layout 一度把「落地页 locale」无条件
+  // 写回 oas-lang——zh 浏览器整页打开 /en/ 深链时：脚本按浏览器语言跳中文、组件又把 en 写回偏好，
+  // 脚本下次读到 en 再跳 /en/，整页互踢（dev 下 hydration 快，实测 4s 内 40+ 次整页 load；构建产物
+  // 里同一根因表现为「落地即污染偏好槽」，之后访问被错误偏好劫持，且 SPA 下拉切换不触发 head 脚本，
+  // 平时不易撞见）。断言「稳定收敛 + 首屏不写偏好槽」——只在某一刻取样 URL 是抓不到的。
+  test('首访语言适配不回环：跨语言深链整页打开应稳定收敛（历史缺陷：/en/ ↔ 中文页互踢）', async ({ browser }) => {
+    const settle = async (locale: string, start: string, expectPath: string) => {
+      const ctx = await browser.newContext({ locale })
+      const p = await ctx.newPage()
+      let loads = 0
+      p.on('load', () => loads++)
+      await p.goto(start, { waitUntil: 'domcontentloaded' })
+      await p.waitForTimeout(2500)
+      const path = new URL(p.url()).pathname
+      const pref = await p.evaluate(() => localStorage.getItem('oas-lang'))
+      await ctx.close()
+      expect(path, `${locale} 整页打开 ${start} 应稳定落在 ${expectPath}`).toBe(expectPath)
+      expect(loads, `${locale} 整页打开 ${start} 不应反复整页重定向`).toBeLessThanOrEqual(3)
+      expect(pref, '落地首屏不应把当前 locale 当用户偏好写回 oas-lang').toBeNull()
+    }
+    await settle('zh-CN', '/en/components/button-group.html', '/components/button-group.html')
+    await settle('en-US', '/components/button-group.html', '/en/components/button-group.html')
+  })
+
   test('页脚：自定义四栏页脚 + 双许可与版权', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const footer = page.locator('.home-footer')

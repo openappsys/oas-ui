@@ -24,11 +24,15 @@ const route = useRoute()
 
 // 内置语言下拉只切路由；这里跟随页面 locale 同步组件内部文案（@oas-ui/i18n）。
 // immediate：直接落在 /en/ 深链的首屏也要对齐。
-// 同时把手动选择持久化（oas-lang）——首访适配脚本（head inline）下次按它兜底。
+// 持久化（oas-lang）只在用户「实际切换」时写：首屏落地（oldValue === undefined，即 immediate 的
+// 首次调用）不能写——落地页 locale 是 head 适配脚本跳过来的结果，把它当用户偏好写回会与脚本
+// 互相触发重定向回环（zh 浏览器整页打开 /en/ 页：脚本按浏览器语言跳 zh，本组件又把 en 写回，
+// 脚本下次读到 en 再跳 /en/，无限互踢）。
 watch(
   lang,
-  (value) => {
+  (value, oldValue) => {
     void applyI18n(value === 'en' ? 'en' : 'zh-CN')
+    if (oldValue === undefined) return
     try {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('oas-lang', value === 'en' ? 'en' : 'zh')
