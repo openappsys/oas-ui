@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 
 /** 预设色板名（映射 --oas-preset-*-text 达标 token，color 属性支持按名引用；统一协议见 ui-spec §4.1） */
 export type LabelPresetColor =
@@ -33,7 +34,6 @@ export type LabelSize = 'small' | 'medium' | 'large'
 /** 字重档位：regular 常规 / semibold 半粗强调 */
 export type LabelWeight = 'regular' | 'semibold'
 
-const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_WEIGHTS = ['regular', 'semibold'] as const
 
 const warnedValues = new Set<string>()
@@ -179,12 +179,13 @@ export class OASLabel extends OASElement {
     if (this.requiredEl) this.requiredEl.hidden = !required
     if (this.colonEl) this.colonEl.hidden = !this.hasAttr('colon')
 
-    // size 字号档：small/medium/large；非法值回落 medium + 告警（medium 默认不加 class）
+    // size 字号档：sm/md/lg 别名静默映射，非法值回落 medium + 告警（medium 默认不加 class）
     let size: LabelSize = 'medium'
     const rawSize = this.getAttr('size', '')
     if (rawSize) {
-      if ((VALID_SIZES as readonly string[]).includes(rawSize)) size = rawSize as LabelSize
-      else warnOnce('size', rawSize, 'medium', VALID_SIZES)
+      const { value, isValid } = normalizeSizeStrict(rawSize, THREE_SIZES, 'medium')
+      size = value
+      if (!isValid) warnOnce('size', rawSize, 'medium', THREE_SIZES)
     }
     this.labelEl.classList.toggle('small', size === 'small')
     this.labelEl.classList.toggle('large', size === 'large')

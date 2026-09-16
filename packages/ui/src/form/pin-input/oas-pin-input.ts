@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 
 /**
  * 尺寸档位：对齐全局 control-height token（ui-spec §2.1）
@@ -17,7 +18,6 @@ type PinVariant = 'outlined' | 'filled' | 'underlined'
  */
 type PinType = 'number' | 'text' | 'alphanumeric'
 
-const VALID_SIZES: readonly string[] = ['small', 'medium', 'large']
 const VALID_VARIANTS: readonly string[] = ['outlined', 'filled', 'underlined']
 const VALID_TYPES: readonly string[] = ['number', 'text', 'alphanumeric']
 
@@ -283,7 +283,11 @@ export class OASPinInput extends OASElement {
     const inputMode = masked ? '' : semanticType === 'number' ? 'numeric' : ''
     const otp = this.hasAttr('otp')
     const placeholder = this.getAttr('placeholder', '')
-    const size = normalizeEnum(this.getAttr('size', 'medium') || 'medium', VALID_SIZES, 'medium', 'size')
+    const sizeRaw = this.getAttr('size', 'medium') || 'medium'
+    const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, THREE_SIZES, 'medium')
+    if (!sizeValid) {
+      warnOnce(`[oas-pin-input] 非法 size "${sizeRaw}"，已回落 medium；合法值：small/medium/large`)
+    }
     const variant = normalizeEnum(
       this.getAttr('variant', 'outlined') || 'outlined',
       VALID_VARIANTS,

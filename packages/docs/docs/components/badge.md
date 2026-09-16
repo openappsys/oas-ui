@@ -612,11 +612,11 @@ oas-badge#badge-dyn.bump::part(badge) {
 | `ribbon-direction` | bookmark 燕尾尖头方向：`down`（默认，顶边垂挂，尖头朝下）/ `left`（贴右缘，尖头朝左）/ `right`（贴左缘，尖头朝右）；物理方向语义（RTL 下不翻转）；仅 `ribbon-form="bookmark"` 生效，非法值静默回落 `down` | `BadgeRibbonDirection` | `down` |
 | `ribbon-form` | 缎带形态：`fold`（默认，直条 + 折叠）/ `diagonal`（45° 对角斜带，条身探出卡外，宿主需 `overflow: hidden` 裁切）/ `triangle`（角落纯三角形，内容为小图标或 `slot="ribbon"`）/ `bookmark`（顶边垂挂 + 底部燕尾缺口）/ `side`（侧边竖挂）/ `seal`（圆形锯齿印章，文字居中）/ `banner`（顶部横贯横幅，两端折角）/ `flag`（侧燕尾横旗，横条 + 燕尾 V 缺口，缺口始终朝卡片内侧端：徽标在右缺口在左、在左缺口在右）/ `rounded`（圆头端）/ `zigzag`（锯齿端）/ `arrow`（箭头端）；`ribbon-position` 纵向三选仅作用于 `fold`，其余形态有各自纵向定位，非法值静默回落 `fold` | `BadgeRibbonForm` | `fold` |
 | `ribbon-position` | 缎带纵向位置：`hang`（默认，挂沿下）/ `edge`（贴顶边）/ `cross`（骑跨顶边，压住卡片顶边框，包裹感最强）；与 `placement`（start/end 横向）正交，仅作用于 `ribbon-form="fold"` 形态，非法值静默回落 `hang` | `BadgeRibbonPosition` | `hang` |
-| `ribbon-size` | diagonal 斜带尺寸档位：`sm`（默认，30px 带宽 / xs 字号）/ `md`（33px / sm 字号，钉点 35px）/ `lg`（36px / md 字号，钉点 45px，宽幅大字场景）；档位只改 `--oas-badge-diagonal-*` 的 fallback 默认值，宿主自定义属性优先级更高；仅 `ribbon-form="diagonal"` 生效，非法值静默回落 `sm` | `BadgeRibbonSize` | `sm` |
+| `ribbon-size` | diagonal 斜带尺寸档位：`small`（默认，30px 带宽 / xs 字号）/ `medium`（33px / sm 字号，钉点 35px）/ `large`（36px / md 字号，钉点 45px，宽幅大字场景）；`sm`/`md`/`lg` 为等价别名；档位只改 `--oas-badge-diagonal-*` 的 fallback 默认值，宿主自定义属性优先级更高；仅 `ribbon-form="diagonal"` 生效，非法值静默回落 `small` | `BadgeRibbonSize` | `small` |
 | `ribbon-vertical` | bookmark 侧挂（`ribbon-direction="left"` / `"right"`）的纵向位置：`center`（默认，垂直居中）/ `top`（贴顶边）/ `bottom`（贴底边）；仅侧挂生效，非法值静默回落 `center` | `BadgeRibbonVertical` | `center` |
 | `rolled` | 端部卷边：布尔修饰，给探出外端做卷边效果（端部大圆角 + 内侧渐暗渐变模拟卷起圆柱，纯 CSS）；可叠加 `fold` / `banner` / `flag`，其他形态静默忽略 | `boolean` | — |
 | `showZero` | value=0 时是否显示 | `boolean` | — |
-| `size` | 尺寸档位：small（小档，数字徽标高约 13px、dot 6px）/ medium（默认，约 16px）/ large（大档，约 20px、dot 10px）；非法值静默回落 medium | `BadgeSize` | — |
+| `size` | 尺寸档位：small（小档，数字徽标高约 13px、dot 6px）/ medium（默认，约 16px）/ large（大档，约 20px、dot 10px）；非法值静默回落 medium | `BadgeSize` | `medium` |
 | `status` | 状态点形态：`success` / `processing` / `default` / `error` / `warning`，渲染「状态点 + `text` 文字」的行内独立元素，与 ribbon / dot / count 模式互斥（设置时优先渲染）；`processing` 圆点带脉冲动画（`prefers-reduced-motion` 下停用） | `BadgeStatus` | — |
 | `text` | 缎带或状态点文字；`slot="ribbon"` 有内容时以插槽为准 | `string` | — |
 | `value` | 数字 | `string` | — |

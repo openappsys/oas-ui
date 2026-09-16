@@ -1184,8 +1184,8 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('<style>')
     expect(html).toContain('<oas-badge value="5">')
-    // update 增量同步：hidden 移除 + 文本写入
-    expect(html).toContain('class="badge" part="badge"')
+    // update 增量同步：hidden 移除 + 文本写入；size 恒输出全称档 class（默认 medium，与基类视觉等价）
+    expect(html).toContain('class="badge medium" part="badge"')
     expect(html).toContain('>5</sup>')
     expect(html).toContain('</template>消息</oas-badge>')
 
@@ -1193,8 +1193,8 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(capped).toContain('>99+</sup>')
 
     const dot = await renderToString('oas-badge', { value: '5', dot: '' }, '')
-    // 无 slot 内容 → 回落 standalone 独立徽标（静态行内定位）
-    expect(dot).toContain('class="badge standalone dot"')
+    // 无 slot 内容 → 回落 standalone 独立徽标（静态行内定位）；medium 为恒写默认档 class
+    expect(dot).toContain('class="badge standalone medium dot"')
   })
 
   it('oas-button-group：组骨架 + 嵌套 oas-button DSD + 选中态 aria-pressed 同步', async () => {

@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 
 export type LinkType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
 export type LinkUnderline = 'always' | 'hover' | 'never'
@@ -34,7 +35,6 @@ export const LINK_PRESET_COLORS: readonly LinkPresetColor[] = [
 ]
 
 const VALID_UNDERLINE = ['always', 'hover', 'never'] as const
-const VALID_SIZES = ['small', 'medium', 'large'] as const
 
 const warnedValues = new Set<string>()
 
@@ -231,12 +231,13 @@ export class OASLink extends OASElement {
     const target = this.getAttr('target', '')
     const external = this.hasAttr('external')
 
-    // size 字号档：small/medium/large；非法值回落 medium + 告警（medium 默认不加 class）
+    // size 字号档：sm/md/lg 别名静默映射，非法值回落 medium + 告警（medium 默认不加 class）
     let size: LinkSize = 'medium'
     const rawSize = this.getAttr('size', '')
     if (rawSize) {
-      if ((VALID_SIZES as readonly string[]).includes(rawSize)) size = rawSize as LinkSize
-      else warnOnce('size', rawSize, 'medium', VALID_SIZES)
+      const { value, isValid } = normalizeSizeStrict(rawSize, THREE_SIZES, 'medium')
+      size = value
+      if (!isValid) warnOnce('size', rawSize, 'medium', THREE_SIZES)
     }
 
     a.setAttribute('href', href)

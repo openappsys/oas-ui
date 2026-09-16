@@ -387,7 +387,7 @@ onMounted(() => {
 | `show-total` | Shows the total text 「共 X 条」 | `boolean` | — |
 | `siblings` | Number of page numbers shown on each side of the current page | `string` | `1` |
 | `simple` | Minimal form: only prev/next buttons and a "current / total pages" text; mutually exclusive with the page-number ellipsis algorithm (simple wins); show-jumper still applies | `boolean` | — |
-| `size` | Size tier: xs / sm / md / lg / xl (default md); invalid values fall back to md with a console warning | `string` | `md` |
+| `size` | Size tier: xs / small / medium (default) / large / xl; `sm`/`md`/`lg` are accepted aliases; invalid values fall back to medium with a console warning | `string` | `medium` |
 | `target` | Passthrough to `<a target>` (e.g. `_blank`) in link mode; only applies when `href-template` is set | `string` | — |
 | `total` | Total number of records | `string` | `0` |
 | `total-boundary` | Page-size switcher visibility threshold: when set, the page-size dropdown renders only when total exceeds the value (hidden when total ≤ threshold); unset keeps current behavior (dropdown shows whenever page-sizes is set) | `string` | — |

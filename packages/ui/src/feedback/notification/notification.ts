@@ -1,7 +1,9 @@
 import { resolveMessageHost, getAppNotificationConfig } from '../../framework/app/app-host.js'
+import type { OasSize } from '../../shared/size.js'
 import type { OASNotification, NotificationType } from './oas-notification.js'
 
-export type NotificationSize = 'small' | 'medium' | 'large'
+/** 卡片尺寸档词表与 shared/size 对齐（命令式 API 编译期约束；声明式走 oas-notification 属性透传） */
+export type NotificationSize = Extract<OasSize, 'small' | 'medium' | 'large'>
 export type NotificationPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 export type NotificationPriority = 'normal' | 'high'
 export type NotificationStackMode = 'collapsible' | 'peek'

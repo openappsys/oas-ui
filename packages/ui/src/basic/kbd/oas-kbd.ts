@@ -1,10 +1,10 @@
 import { OASElement } from '@oas-ui/core'
+import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 
 export type KbdVariant = 'raised' | 'outline' | 'subtle' | 'plain'
 export type KbdSize = 'small' | 'medium' | 'large'
 
 const VALID_VARIANTS = ['raised', 'outline', 'subtle', 'plain'] as const
-const VALID_SIZES = ['small', 'medium', 'large'] as const
 
 /** 预设色板名（映射 --oas-preset-* token，color 属性支持按名引用；统一协议见 ui-spec §4.1） */
 export type KbdPresetColor =
@@ -229,15 +229,13 @@ export class OASKbd extends OASElement {
       }
     }
 
-    // size 档位（非法值回落 medium + 告警）
+    // size 档位（sm/md/lg 别名静默映射，非法值回落 medium + 告警）
     let size: KbdSize = 'medium'
     const rawSize = this.getAttr('size', '')
     if (rawSize) {
-      if ((VALID_SIZES as readonly string[]).includes(rawSize)) {
-        size = rawSize as KbdSize
-      } else {
-        warnOnce('size', rawSize, 'medium', VALID_SIZES)
-      }
+      const { value, isValid } = normalizeSizeStrict(rawSize, THREE_SIZES, 'medium')
+      size = value
+      if (!isValid) warnOnce('size', rawSize, 'medium', THREE_SIZES)
     }
 
     // className 整体赋值（非 toggle 逐个）——toggle(false) 会留空 class 属性残留进 SSR 快照

@@ -2,24 +2,19 @@ import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { isRtl } from '../../shared/direction.js'
+import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import type { OASTabPanel } from './oas-tab-panel.js'
 import { registeredTabsCapabilities, onTabsCapabilityRegistered } from './oas-tabs-capability.js'
 
 export type TabsSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
-const VALID_TABS_SIZES: readonly TabsSize[] = ['xs', 'small', 'medium', 'large', 'xl']
-
-/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
-function normalizeTabsSize(raw: string): TabsSize {
-  if ((VALID_TABS_SIZES as readonly string[]).includes(raw)) return raw as TabsSize
-  if (!warnedSizes.has(raw)) {
-    warnedSizes.add(raw)
-    console.warn(`[oas-tabs] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
-  }
-  return 'medium'
-}
-
+/** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
 const warnedSizes = new Set<string>()
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-tabs] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+}
 
 export type TabsPanelMode = 'keep' | 'lazy' | 'destroy'
 export type TabsActivation = 'auto' | 'manual'
@@ -864,9 +859,11 @@ export class OASTabs extends OASElement {
     this.classList.toggle('oas-tabs--left', position === 'left')
     this.classList.toggle('oas-tabs--right', position === 'right')
     this.classList.toggle('oas-tabs--bottom', position === 'bottom')
-    // size 五档（非法值归一化回落 medium）；centered/justified 布局
-    const size = normalizeTabsSize(this.getAttr('size', 'medium'))
-    for (const s of VALID_TABS_SIZES) this.classList.toggle(`oas-tabs--${s}`, s === size)
+    // size 五档（非法值归一化回落一次 medium）；centered/justified 布局
+    const sizeRaw = this.getAttr('size', 'medium')
+    const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'medium')
+    if (!sizeValid) warnInvalidSize(sizeRaw)
+    for (const s of ALL_SIZES) this.classList.toggle(`oas-tabs--${s}`, s === size)
     this.classList.toggle('oas-tabs--centered', this.hasAttr('centered'))
     this.classList.toggle('oas-tabs--justified', this.hasAttr('justified'))
     this.classList.toggle('oas-tabs--animated', this.hasAttr('animated'))

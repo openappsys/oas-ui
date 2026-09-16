@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { aliasSize } from '../../shared/size.js'
+import { normalizeSize, THREE_SIZES } from '../../shared/size.js'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type BadgeMode = 'count' | 'ribbon'
@@ -11,9 +11,10 @@ export type BadgeRibbonPosition = 'hang' | 'edge' | 'cross'
 export type BadgeRibbonDirection = 'down' | 'left' | 'right'
 /** bookmark 侧挂（left/right）纵向位置：top 贴顶边 / center 垂直居中（默认）/ bottom 贴底边；非法值回落 center */
 export type BadgeRibbonVertical = 'top' | 'center' | 'bottom'
-/** diagonal 斜带档位：sm 紧凑（默认）/ md 中等 / lg 宽幅大字；档位只改带宽/字号/钉点的
-    fallback 默认值，宿主 CSS 变量（--oas-badge-diagonal-*）优先级更高；非法值回落 sm */
-export type BadgeRibbonSize = 'sm' | 'md' | 'lg'
+/** diagonal 斜带档位：small 紧凑（默认）/ medium 中等 / large 宽幅大字；档位只改带宽/字号/钉点的
+    fallback 默认值，宿主 CSS 变量（--oas-badge-diagonal-*）优先级更高；sm/md/lg 为等价别名；
+    非法值回落 small */
+export type BadgeRibbonSize = 'small' | 'medium' | 'large'
 /** 缎带锚点：8 位置预置（4 边中 + 4 角）。斜形态（diagonal/triangle）只认 4 角，
     非斜形态认全部 8 位置；非法值静默回落。用于替代并统一 placement/ribbon-position
     /ribbon-direction/ribbon-vertical 的定位职责（这些保留为兼容别名） */
@@ -80,11 +81,9 @@ export const BADGE_PRESET_COLORS: readonly BadgePresetColor[] = [
 const VALID_STATUS: readonly string[] = ['success', 'processing', 'default', 'error', 'warning']
 const VALID_ATTENTION: readonly string[] = ['pulse', 'bounce']
 const VALID_CORNER: readonly string[] = ['top-right', 'top-left', 'bottom-right', 'bottom-left']
-const VALID_SIZES: readonly string[] = ['small', 'medium', 'large']
 const VALID_VARIANTS: readonly string[] = ['solid', 'outline']
 const VALID_RIBBON_DIRECTIONS: readonly string[] = ['down', 'left', 'right']
 const VALID_RIBBON_VERTICALS: readonly string[] = ['top', 'center', 'bottom']
-const VALID_RIBBON_SIZES: readonly string[] = ['sm', 'md', 'lg']
 const VALID_RIBBON_ANCHORS: readonly string[] = [
   'top',
   'right',
@@ -562,16 +561,16 @@ const STYLE = `
   display: block;
 }
 
-/* diagonal 尺寸档位：md / lg 在 sm（基础）之上增大带宽与字号，并把带中心钉点加深
-   （文字越长钉点越深，两端才不贴裁切线；对 md 字号约 31px 半长，lg 钉点 45px 时
+/* diagonal 尺寸档位：medium / large 在 small（基础）之上增大带宽与字号，并把带中心钉点加深
+   （文字越长钉点越深，两端才不贴裁切线；对 medium 字号约 31px 半长，large 钉点 45px 时
    两端各留约 23px 余量）。档位只改 fallback 默认值，宿主 --oas-badge-diagonal-* 优先 */
-.ribbon.form-diagonal.ribbon-size-md {
+.ribbon.form-diagonal.ribbon-size-medium {
   --oas-diag-pin: var(--oas-badge-diagonal-pin, 35px);
   height: var(--oas-badge-diagonal-height, 33px);
   line-height: var(--oas-badge-diagonal-height, 33px);
   font-size: var(--oas-badge-diagonal-font, var(--oas-font-size-sm));
 }
-.ribbon.form-diagonal.ribbon-size-lg {
+.ribbon.form-diagonal.ribbon-size-large {
   --oas-diag-pin: var(--oas-badge-diagonal-pin, 45px);
   height: var(--oas-badge-diagonal-height, 36px);
   line-height: var(--oas-badge-diagonal-height, 36px);
@@ -1456,14 +1455,11 @@ export class OASBadge extends OASElement {
     ribbonEl.classList.toggle('rolled', this.hasAttr('rolled'))
     // ribbon-size 斜带档位：仅与 diagonal 组合；其他形态静默忽略（不写入 class，无视觉影响）。
     // 档位只改 --oas-badge-diagonal-* 的 fallback 默认值，宿主 CSS 变量优先级更高。
-    // 缩写词表 sm/md/lg，全称 small/medium/large 走 shared/size 别名互认
-    const size = this.getAttr('ribbon-size', 'sm') as BadgeRibbonSize
-    const sizeAlias = aliasSize(size, false)
-    const sizeResolved = (sizeAlias ?? size) as BadgeRibbonSize
-    const sizeValid =
-      formValid && form === 'diagonal' && (VALID_RIBBON_SIZES as readonly string[]).includes(sizeResolved)
-    ribbonEl.classList.toggle('ribbon-size-md', sizeValid && sizeResolved === 'md')
-    ribbonEl.classList.toggle('ribbon-size-lg', sizeValid && sizeResolved === 'lg')
+    // 词表三档全称（shared/size），sm/md/lg 为等价别名；非法值静默回落 small
+    const size = normalizeSize(this.getAttr('ribbon-size', 'small') as BadgeRibbonSize, THREE_SIZES, 'small')
+    const sizeValid = formValid && form === 'diagonal'
+    ribbonEl.classList.toggle('ribbon-size-medium', sizeValid && size === 'medium')
+    ribbonEl.classList.toggle('ribbon-size-large', sizeValid && size === 'large')
 
     // color 变量注入（语义色与 class 双保险；预设名/任意色值唯一生效路径）
     const resolved = resolveBadgeColor(color)
@@ -1515,15 +1511,12 @@ export class OASBadge extends OASElement {
         const standalone = !this.defaultSlotEl || this.defaultSlotEl.assignedNodes().length === 0
         el.classList.toggle('standalone', standalone)
 
-        // size 多尺寸档：small / medium（默认，基类即 medium）/ large；非法值静默回落 medium（不写 class）
-        // 缩写别名互认（shared/size）：sm/md/lg 等价 small/medium/large
-        const size = this.getAttr('size', '') as BadgeSize
-        const sizeAlias = aliasSize(size, true)
-        const sizeResolved = (sizeAlias ?? size) as BadgeSize
-        const sizeValid = (VALID_SIZES as readonly string[]).includes(sizeResolved)
-        el.classList.toggle('small', sizeValid && sizeResolved === 'small')
-        el.classList.toggle('medium', sizeValid && sizeResolved === 'medium')
-        el.classList.toggle('large', sizeValid && sizeResolved === 'large')
+        // size 多尺寸档：small / medium（默认，基类即 medium）/ large；sm/md/lg 为等价别名；
+        // 非法值静默回落 medium（shared/size 归一化，恒输出全称档位 class）
+        const size = normalizeSize(this.getAttr('size', 'medium') as BadgeSize, THREE_SIZES, 'medium')
+        el.classList.toggle('small', size === 'small')
+        el.classList.toggle('medium', size === 'medium')
+        el.classList.toggle('large', size === 'large')
         // variant 形态：outline 描边（背景透明、边框/文字走 color 语义）；solid 默认不加 class
         const variant = this.getAttr('variant', '') as BadgeVariant
         const variantValid = (VALID_VARIANTS as readonly string[]).includes(variant)

@@ -174,7 +174,7 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 | `inline` | 行内代码模式：渲染为等宽浅底小框，适合正文内嵌代码片段 | `boolean` | — |
 | `language` | 语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本 | `string` | — |
 | `show-line-number` | 显示行号栏 | `boolean` | — |
-| `size` | 行内字号档：`xs` / `small` / `medium`（默认）/ `large`；非法值回落 `medium` 并告警 | — | — |
+| `size` | 行内字号档：`xs` / `small` / `medium`（默认）/ `large`；非法值回落 `medium` 并告警 | `string` | — |
 | `trim` | 去首尾空白（默认 true，`trim="false"` 保留） | `string` | `true` |
 | `variant` | 行内形态：`subtle`（默认浅底）/ `outline`（描边）/ `plain`（纯文字）/ `solid`（实底）；非法值回落 `subtle` 并告警 | — | — |
 | `word-wrap` | 长代码换行显示，不横向滚动 | `boolean` | — |

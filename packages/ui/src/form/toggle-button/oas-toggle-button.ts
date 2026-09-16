@@ -1,10 +1,10 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { normalizeSize, THREE_SIZES } from '../../shared/size.js'
 
 export type ToggleButtonSize = 'small' | 'medium' | 'large'
 export type ToggleButtonStatus = 'success' | 'warning' | 'error'
 
-const VALID_SIZES: readonly ToggleButtonSize[] = ['small', 'medium', 'large']
 const VALID_STATUSES: readonly ToggleButtonStatus[] = ['success', 'warning', 'error']
 /** 预设色板名（ui-spec §4.1 color 协议，映射 --oas-preset-* token） */
 const PRESET_COLORS: readonly string[] = [
@@ -210,7 +210,7 @@ export class OASToggleButton extends OASElement {
 
   /** size/status 镜像到宿主 data-*（供 :host([data-*]) 样式消费）；error 联动 aria-invalid */
   private syncSizeStatus(): void {
-    const size = normalizeChoice(this.injectValue('size', 'medium'), 'medium', VALID_SIZES)
+    const size = normalizeSize(this.injectValue('size', 'medium'), THREE_SIZES, 'medium')
     this.setAttribute('data-size', size)
     const status = normalizeChoice(this.getAttr('status', ''), '', VALID_STATUSES)
     if (status) this.setAttribute('data-status', status)

@@ -2,6 +2,7 @@ import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import { isRtl } from '../../shared/direction.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
+import { normalizeSize, THREE_SIZES } from '../../shared/size.js'
 
 export interface ToggleItem {
   /** 按钮文案（icon-only 项可省略，可访问名兜底走图标名/ariaLabel） */
@@ -17,7 +18,6 @@ export interface ToggleItem {
 export type ToggleGroupSize = 'small' | 'medium' | 'large'
 export type ToggleGroupStatus = 'success' | 'warning' | 'error'
 
-const VALID_SIZES: readonly ToggleGroupSize[] = ['small', 'medium', 'large']
 const VALID_STATUSES: readonly ToggleGroupStatus[] = ['success', 'warning', 'error']
 /** 预设色板名（ui-spec §4.1 color 协议，映射 --oas-preset-* token） */
 const PRESET_COLORS: readonly string[] = [
@@ -370,7 +370,7 @@ export class OASToggleGroup extends OASElement {
 
   /** size/status/color/aria 等组级元数据镜像（每次 update 同步，供 CSS 与可访问性消费） */
   private syncMeta(): void {
-    const size = normalizeChoice(this.injectValue('size', 'medium'), 'medium', VALID_SIZES)
+    const size = normalizeSize(this.injectValue('size', 'medium'), THREE_SIZES, 'medium')
     this.setAttribute('data-size', size)
     const status = normalizeChoice(this.getAttr('status', ''), '', VALID_STATUSES)
     if (status) this.setAttribute('data-status', status)

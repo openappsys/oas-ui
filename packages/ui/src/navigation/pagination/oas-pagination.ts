@@ -1,22 +1,14 @@
 import { OASElement, escapeText } from '@oas-ui/core'
-import { aliasSize } from '../../shared/size.js'
+import { normalizeSizeStrict, ALL_SIZES, type OasSize } from '../../shared/size.js'
 
-export type PaginationSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+export type PaginationSize = OasSize
 
-const VALID_PAGINATION_SIZES: readonly PaginationSize[] = ['xs', 'sm', 'md', 'lg', 'xl']
+/** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
 const warnedSizes = new Set<string>()
-
-/** 非法 size 归一化：回落 md 并在 dev 下 console.warn 一次（同值去重，对齐 button 做法） */
-function normalizePaginationSize(raw: string): PaginationSize {
-  if ((VALID_PAGINATION_SIZES as readonly string[]).includes(raw)) return raw as PaginationSize
-  // 跨词表别名互认（shared/size）：small/medium/large 等价 sm/md/lg，不告警
-  const alias = aliasSize(raw, false)
-  if (alias) return alias as PaginationSize
-  if (!warnedSizes.has(raw)) {
-    warnedSizes.add(raw)
-    console.warn(`[oas-pagination] 非法 size "${raw}"，已回落 md；合法值：xs/sm/md/lg/xl`)
-  }
-  return 'md'
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-pagination] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
 
 /** pager-count 最小值：低于 5 的窗口无法同时容纳首尾各 2 页与当前页 */
@@ -75,7 +67,7 @@ const STYLE = `
 :host {
   display: inline-block;
   font-family: inherit;
-  /* size 档位：默认 md；data-size 由 update() 写入归一化结果（含非法回落与 config-provider 注入） */
+  /* size 档位：默认 medium；data-size 由 update() 写入归一化结果（含非法回落与 config-provider 注入） */
   --oas-pagination-height: var(--oas-control-height-md);
   --oas-pagination-font: var(--oas-font-size-md);
 }
@@ -86,11 +78,11 @@ const STYLE = `
   --oas-pagination-height: var(--oas-control-height-xs);
   --oas-pagination-font: var(--oas-font-size-xs);
 }
-:host([data-size='sm']) {
+:host([data-size='small']) {
   --oas-pagination-height: var(--oas-control-height-sm);
   --oas-pagination-font: var(--oas-font-size-sm);
 }
-:host([data-size='lg']) {
+:host([data-size='large']) {
   --oas-pagination-height: var(--oas-control-height-lg);
   --oas-pagination-font: var(--oas-font-size-lg);
 }
@@ -296,9 +288,11 @@ export class OASPagination extends OASElement {
     if (!group) return
     // 全局禁用（config-provider 注入：组件显式 disabled > 豁免 > provider 注入）
     const disabled = this.injectDisabled()
-    // size 就近读取注入值（自身属性 > config-provider > md），非法回落 md 并告警；
-    // 归一化结果写入 data-size，供 CSS 尺寸规则匹配（含 provider 注入场景）
-    const size = normalizePaginationSize(this.injectValue('size', 'md'))
+    // size 就近读取注入值（自身属性 > config-provider > medium），非法回落一次 medium；
+    // 归一化结果（恒为全称档位）写入 data-size，供 CSS 尺寸规则匹配（含 provider 注入场景）
+    const sizeRaw = this.injectValue('size', 'medium')
+    const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'medium')
+    if (!sizeValid) warnInvalidSize(sizeRaw)
     this.setAttribute('data-size', size)
     // rawTotal 保留原始值（≤0 表示总数未知，供 show-more / total-boundary 判定）；
     // total 夹取到 ≥1 维持既有分页计算语义（单页渲染不受影响）

@@ -1,10 +1,12 @@
 import { OASElement, escapeText } from '@oas-ui/core'
+import { normalizeSizeStrict, type OasSize } from '../../shared/size.js'
 
 export type CodeLanguage = 'js' | 'ts' | 'html' | 'css' | 'json' | string
 export type CodeSize = 'xs' | 'small' | 'medium' | 'large'
 export type CodeVariant = 'subtle' | 'outline' | 'plain' | 'solid'
 
-const VALID_SIZES = ['xs', 'small', 'medium', 'large'] as const
+/** 本组件支持的档位子集（无 xl）；sm/md/lg 别名由 shared/size 归一 */
+const CODE_SIZES: readonly OasSize[] = ['xs', 'small', 'medium', 'large']
 const VALID_VARIANTS = ['subtle', 'outline', 'plain', 'solid'] as const
 
 /** 预设色板名（映射 --oas-preset-*-text 达标 token，color 属性支持按名引用；统一协议见 ui-spec §4.1） */
@@ -448,9 +450,15 @@ export class OASCode extends OASElement {
         inlineEl.hidden = false
         const blockEl = this.shadow.querySelector<HTMLElement>('.block')
         if (blockEl) blockEl.hidden = true
-        // inline 的 variant / size / color 走 class + 变量
+        // inline 的 variant / size / color 走 class + 变量；size 走 shared/size 归一化
         const variant = this.normalizeAttr('variant', VALID_VARIANTS, 'subtle')
-        const size = this.normalizeAttr('size', VALID_SIZES, 'medium')
+        const sizeRaw = this.getAttr('size', '')
+        let size: OasSize = 'medium'
+        if (sizeRaw) {
+          const { value, isValid } = normalizeSizeStrict(sizeRaw, CODE_SIZES, 'medium')
+          size = value
+          if (!isValid) warnOnce('size', sizeRaw, 'medium', CODE_SIZES)
+        }
         const classes = ['inline', variant !== 'subtle' ? variant : '', size !== 'medium' ? size : '']
           .filter(Boolean)
           .join(' ')

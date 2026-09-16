@@ -85,7 +85,7 @@
     {
       "name": "size",
       "type": "BadgeSize",
-      "default": "",
+      "default": "medium",
       "observed": true
     },
     {
@@ -132,7 +132,7 @@
     {
       "name": "ribbon-size",
       "type": "BadgeRibbonSize",
-      "default": "sm",
+      "default": "small",
       "observed": true
     },
     {

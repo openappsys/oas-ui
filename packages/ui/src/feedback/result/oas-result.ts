@@ -1,28 +1,30 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { normalizeSizeStrict, normalizeSize, THREE_SIZES } from '../../shared/size.js'
 
 export type ResultStatus = 'success' | 'error' | 'warning' | 'info' | '403' | '404' | '500'
 export type ResultSize = 'small' | 'medium' | 'large'
 
 const VALID_STATUSES: readonly string[] = ['success', 'error', 'warning', 'info', '403', '404', '500']
-const VALID_SIZES: readonly string[] = ['small', 'medium', 'large']
 
 const warnedStatuses = new Set<string>()
 const warnedSizes = new Set<string>()
 
-/** 非法值单次 warn（同值去重，样式回落由 CSS 原始属性选择器自然实现） */
-function warnInvalid(raw: string, valid: readonly string[], label: string, warned: Set<string>): void {
-  if (valid.includes(raw)) return
-  if (!warned.has(raw)) {
-    warned.add(raw)
-    console.warn(`[oas-result] 非法 ${label} "${raw}"，已回落默认；合法值：${valid.join('/')}`)
-  }
+/** 非法 size 单次 warn：回落 medium 并在 dev 下 console.warn 一次（同值去重）；
+    sm/md/lg 别名由 shared/size 静默映射，不告警 */
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-result] 非法 size "${raw}"，已回落默认；合法值：small/medium/large`)
 }
 
 /** status 归一化：非法值回落 success（字形/色板/aria 使用归一化结果）并单次告警 */
 function normalizeStatus(raw: string): ResultStatus {
   if ((VALID_STATUSES as readonly string[]).includes(raw)) return raw as ResultStatus
-  warnInvalid(raw, VALID_STATUSES, 'status', warnedStatuses)
+  if (!warnedStatuses.has(raw)) {
+    warnedStatuses.add(raw)
+    console.warn(`[oas-result] 非法 status "${raw}"，已回落默认；合法值：${VALID_STATUSES.join('/')}`)
+  }
   return 'success'
 }
 
@@ -200,15 +202,16 @@ export class OASResult extends OASElement {
     return true
   }
 
-  /** 图标直径：small 56 / medium 72 / large 88 */
+  /** 图标直径：small 56 / medium 72 / large 88；sm/md/lg 别名经 shared/size 归一为全称后命中映射 */
   private iconSize(): number {
     const map: Record<string, number> = { small: 56, medium: 72, large: 88 }
-    return map[this.getAttr('size', 'medium')] ?? 72
+    return map[normalizeSize(this.getAttr('size', 'medium'), THREE_SIZES, 'medium')] ?? 72
   }
 
   protected override update(): void {
     // size 非法值单次告警（CSS 用原始属性选择器命中档位；非法值自然回落默认）
-    warnInvalid(this.getAttr('size', 'medium'), VALID_SIZES, 'size', warnedSizes)
+    const sizeRaw = this.getAttr('size', 'medium')
+    if (!normalizeSizeStrict(sizeRaw, THREE_SIZES, 'medium').isValid) warnInvalidSize(sizeRaw)
 
     // status 归一化同步：语义色 + 内联 SVG 字形 + role/aria（自定义图标插槽时进入中性态）
     const status = normalizeStatus(this.getAttr('status', 'success') || 'success')

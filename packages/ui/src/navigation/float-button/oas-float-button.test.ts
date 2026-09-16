@@ -85,27 +85,28 @@ describe('OASFloatButton', () => {
     expect(btn(el).classList.contains('extended')).toBe(false)
   })
 
-  it('size：五档 xs/sm/md/lg/xl，默认 lg（data-size 同步）', () => {
+  it('size：五档全称 xs/small/medium/large/xl，默认 large（data-size 同步；sm/md/lg 为等价别名）', () => {
     const el = mount()
-    expect(el.getAttribute('data-size')).toBe('lg')
-    for (const s of ['xs', 'sm', 'md', 'xl']) {
-      el.setAttribute('size', s)
-      expect(el.getAttribute('data-size')).toBe(s)
+    expect(el.getAttribute('data-size')).toBe('large')
+    const aliasToFull: Record<string, string> = { xs: 'xs', sm: 'small', md: 'medium', xl: 'xl' }
+    for (const [input, out] of Object.entries(aliasToFull)) {
+      el.setAttribute('size', input)
+      expect(el.getAttribute('data-size')).toBe(out)
     }
   })
 
-  it('size 全称别名互认：small/medium/large 等价 sm/md/lg 且 data-size 归一为缩写（shared/size）', () => {
+  it('size 全称归一：medium/small 输入恒输出全称 data-size（shared/size）', () => {
     const el = mount()
     el.setAttribute('size', 'medium')
-    expect(el.getAttribute('data-size')).toBe('md')
+    expect(el.getAttribute('data-size')).toBe('medium')
     el.setAttribute('size', 'small')
-    expect(el.getAttribute('data-size')).toBe('sm')
+    expect(el.getAttribute('data-size')).toBe('small')
   })
 
-  it('size：非法值回落 lg 并 console.warn 告警', () => {
+  it('size：非法值回落 large 并 console.warn 告警', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount({ size: 'huge' })
-    expect(el.getAttribute('data-size')).toBe('lg')
+    expect(el.getAttribute('data-size')).toBe('large')
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('非法 size'))
   })
 

@@ -1,11 +1,11 @@
 import { OASElement, escapeAttr } from '@oas-ui/core'
 import { iconRegistry, iconNames } from '@oas-ui/icons'
+import { normalizeSizeStrict, normalizeSize, THREE_SIZES } from '../../shared/size.js'
 
 export type EmptySize = 'small' | 'medium' | 'large'
 export type EmptyAlign = 'center' | 'start' | 'end'
 export type EmptyVariant = '' | 'outlined' | 'filled'
 
-const VALID_SIZES: readonly string[] = ['small', 'medium', 'large']
 const VALID_ALIGNS: readonly string[] = ['center', 'start', 'end']
 const VALID_VARIANTS: readonly string[] = ['', 'outlined', 'filled']
 
@@ -13,6 +13,14 @@ const warnedSizes = new Set<string>()
 const warnedAligns = new Set<string>()
 const warnedVariants = new Set<string>()
 const warnedIcons = new Set<string>()
+
+/** 非法 size 单次 warn：回落 medium 并在 dev 下 console.warn 一次（同值去重）；
+    sm/md/lg 别名由 shared/size 静默映射，不告警 */
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-empty] 非法 size "${raw}"，已回落默认；合法值：small/medium/large`)
+}
 
 /** 非法值单次 warn（同值去重，样式回落由 CSS 原始属性选择器自然实现） */
 function warnInvalid(raw: string, valid: readonly string[], label: string, warned: Set<string>): void {
@@ -261,17 +269,19 @@ export class OASEmpty extends OASElement {
     return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
-  /** 媒体区尺寸：image-size 数值精调优先，否则按 size 档联动（small 72 / medium 96 / large 120） */
+  /** 媒体区尺寸：image-size 数值精调优先，否则按 size 档联动（small 72 / medium 96 / large 120）；
+      sm/md/lg 别名经 shared/size 归一为全称后命中映射 */
   private mediaSize(): number {
     const n = Number(this.getAttr('image-size'))
     if (Number.isFinite(n) && n > 0) return Math.round(n)
     const map: Record<string, number> = { small: 72, medium: 96, large: 120 }
-    return map[this.getAttr('size', 'medium')] ?? 96
+    return map[normalizeSize(this.getAttr('size', 'medium'), THREE_SIZES, 'medium')] ?? 96
   }
 
   protected override update(): void {
     // 非法档位单次告警（CSS 用原始属性选择器命中档位样式；非法值自然回落默认）
-    warnInvalid(this.getAttr('size', 'medium'), VALID_SIZES, 'size', warnedSizes)
+    const sizeRaw = this.getAttr('size', 'medium')
+    if (!normalizeSizeStrict(sizeRaw, THREE_SIZES, 'medium').isValid) warnInvalidSize(sizeRaw)
     warnInvalid(this.getAttr('align', 'center'), VALID_ALIGNS, 'align', warnedAligns)
     warnInvalid(this.getAttr('variant', ''), VALID_VARIANTS, 'variant', warnedVariants)
 

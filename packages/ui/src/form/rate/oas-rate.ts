@@ -2,6 +2,7 @@ import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
 // 复用 oas-tooltip 作为逐星提示浮层（浅集成：virtual 点定位，确保其已注册）
 import '../../feedback/tooltip/index.js'
+import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 
 const STAR = `
 <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true" focusable="false">
@@ -9,17 +10,14 @@ const STAR = `
 </svg>`
 
 type RateSize = 'small' | 'medium' | 'large'
-const VALID_RATE_SIZES: readonly RateSize[] = ['small', 'medium', 'large']
 const warnedSizes = new Set<string>()
 
-/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重，同控件惯例） */
-function normalizeRateSize(raw: string): RateSize {
-  if ((VALID_RATE_SIZES as readonly string[]).includes(raw)) return raw as RateSize
-  if (!warnedSizes.has(raw)) {
-    warnedSizes.add(raw)
-    console.warn(`[oas-rate] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
-  }
-  return 'medium'
+/** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重，同控件惯例）；
+    sm/md/lg 别名由 shared/size 静默映射，不告警 */
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-rate] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
 }
 
 /** 预设色板名（映射 --oas-preset-* token，color/void-color/colors 支持按名引用；统一协议见 ui-spec §4.1） */
@@ -308,7 +306,13 @@ export class OASRate extends OASElement {
     // 书写方向镜像（data-rtl 供 :host([data-rtl]) 半星裁剪反向消费；键盘/指针取值同读 isRtl）
     this.toggleAttribute('data-rtl', isRtl(this))
     const sizeRaw = this.getAttr('size', '')
-    this.setAttribute('data-size', sizeRaw === '' ? 'medium' : normalizeRateSize(sizeRaw))
+    if (sizeRaw !== '') {
+      const { value, isValid } = normalizeSizeStrict(sizeRaw, THREE_SIZES, 'medium')
+      if (!isValid) warnInvalidSize(sizeRaw)
+      this.setAttribute('data-size', value)
+    } else {
+      this.setAttribute('data-size', 'medium')
+    }
     this.slider.setAttribute('aria-disabled', String(disabled))
     if (readonly) this.slider.setAttribute('aria-readonly', 'true')
     else this.slider.removeAttribute('aria-readonly')
