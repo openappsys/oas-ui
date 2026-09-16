@@ -175,6 +175,8 @@ onMounted(() => {
 | --- | --- |
 | `oas-change` | 切换激活项，`detail: { value }` |
 
+**CSS 变量**
+
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-badge-bg` | `var(--oas-color-danger)` |

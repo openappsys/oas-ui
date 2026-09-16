@@ -287,6 +287,8 @@ onMounted(() => {
 | --- | --- |
 | 默认 | — |
 
+**CSS 变量**
+
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-timeline-font` | `inherit` |
@@ -313,6 +315,8 @@ onMounted(() => {
 | `dot` | 自定义节点（任意内容替换圆点） |
 | `opposite` | 对侧内容（仅在 mode=alternate 时显示于轴对侧） |
 | `title` | 标题强调行（与正文分区） |
+
+**CSS 变量**
 
 | CSS 变量 | 默认值 |
 | --- | --- |

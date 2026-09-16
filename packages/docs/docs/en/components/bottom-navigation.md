@@ -175,6 +175,8 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | --- | --- |
 | `oas-change` | The active item changed, `detail: { value }` |
 
+**CSS 变量**
+
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-badge-bg` | `var(--oas-color-danger)` |

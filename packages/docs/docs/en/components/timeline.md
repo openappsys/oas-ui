@@ -287,6 +287,8 @@ onMounted(() => {
 | --- | --- |
 | default | — |
 
+**CSS 变量**
+
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-timeline-font` | `inherit` |
@@ -313,6 +315,8 @@ onMounted(() => {
 | `dot` | Custom node (any content replaces the dot) |
 | `opposite` | Opposite-side content (only shown in mode=alternate) |
 | `title` | Title emphasis line (separated from the body) |
+
+**CSS 变量**
 
 | CSS Variable | Default |
 | --- | --- |
