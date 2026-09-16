@@ -51,7 +51,7 @@
 1. **demo 实际可交互**：涉及交互的 demo 块要真点/真输入，确认有**可见反馈**（选中态、消息、浮层等），不能只看 console/状态；纯静态展示块核对视觉即可
 2. **交互态检查**：该组件支持的 hover / focus-visible / selected / disabled / loading / empty 等态逐一过——这些态只靠静态截图查不出来
 3. **console 零告警**：打开 devtools 确认无 error/warning（含 Vue isCustomElement 类告警）
-4. **视觉核对截图**：截图后逐块看图识图，颜色/圆角/间距/对齐是否符合预期
+4. **视觉核对截图**：截图后逐块核对颜色/圆角/间距/对齐是否符合预期
 5. **dark 主题**：暗色下同样过视觉与交互态（颜色类 bug 在 dark 下更易暴露）
 6. **宿主框架桥接**：demo 是在 Vue 里跑的，属性在 Vue 下可能被剥离（如 `prepend` 冲突）；新增属性时确认 demo 里属性存活
 
@@ -59,9 +59,9 @@
 
 ## 语言规则
 
-- 默认用简体中文交流与写注释；专有名词（Web Components、Custom Elements、Shadow DOM、React、Vue、Vitest、Playwright、Vite、Vitepress、pnpm）保留英文
+- 注释与文档默认简体中文；专有名词（Web Components、Custom Elements、Shadow DOM、React、Vue、Vitest、Playwright、Vite、Vitepress、pnpm）保留英文
 - 代码标识符、文件路径、命令行输出、报错原文保留英文
-- 仅当用户明确要求输出英文时才输出英文（如组件对外 API 文档、CHANGELOG）
+- 组件对外 API 文档、CHANGELOG 用英文
 
 ## 原创性与许可
 
