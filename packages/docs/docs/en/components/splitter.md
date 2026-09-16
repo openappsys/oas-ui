@@ -197,7 +197,6 @@ onMounted(() => {
 | --- | --- |
 | `handle` | Custom handle content inside the divider (icon/dots etc.); falls back to the default grip |
 | `left` | Left panel content (two-panel mode) |
-| `pane-${i}` | Internal slot: assigned automatically per panel index in multi-panel mode; not for host use |
 | `right` | Right panel content (two-panel mode) |
 
 The divider is `role="separator"` + `tabindex="0"`; once focused, `←` / `→` adjust by 1% each time.
