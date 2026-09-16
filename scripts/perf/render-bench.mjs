@@ -16,8 +16,10 @@
  * 留足机器抖动余量（happy-dom 耗时跨轮次波动明显，故不进 CI，见 .github/workflows/ci.yml 注释）。
  *
  * 产物：docs/perf-baseline.json 的 `render` section（与 size.mjs 各自 merge，互不覆盖）。
+ *   ⚠️ 该基线是**入库文件**，本工具默认「只测不写」（同 size.mjs）：机器抖动会让耗时数字每次不同，
+ *   写进去只会污染工作树，故更新需显式加 `--update-baseline`。
  *
- * 用法：先 `pnpm build`，再 `pnpm perf:bench`。
+ * 用法：先 `pnpm build`，再 `pnpm perf:bench`；确需更新入库基线时显式加 `--update-baseline`。
  */
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -270,20 +272,24 @@ const budgetResults = RENDER_BUDGETS.map((b) => {
   return { id: b.id, label: s.label, budgetMs: b.budgetMs, p95Ms: s.p95Ms, pass: ok }
 })
 
-// ---------- 写入基线（merge，保留 size section） ----------
-writeSection('render', {
-  generatedAt: today(),
-  env: {
-    runtime: `node ${process.version}`,
-    happyDom: 'happy-dom@20.x',
-    iterations: ITERATIONS,
-    note: 'happy-dom 合成环境，非真实浏览器渲染口径；耗时仅供相对对比与退化监测',
-  },
-  scenarios,
-  budgets: budgetResults,
-})
+// ---------- 写入基线（merge，保留 size section；默认只测不写，见头部说明） ----------
+if (process.argv.includes('--update-baseline')) {
+  writeSection('render', {
+    generatedAt: today(),
+    env: {
+      runtime: `node ${process.version}`,
+      happyDom: 'happy-dom@20.x',
+      iterations: ITERATIONS,
+      note: 'happy-dom 合成环境，非真实浏览器渲染口径；耗时仅供相对对比与退化监测',
+    },
+    scenarios,
+    budgets: budgetResults,
+  })
 
-console.log('\n基线已写入 docs/perf-baseline.json')
+  console.log('\n基线已写入 docs/perf-baseline.json')
+} else {
+  console.log('\n[perf:bench] 仅测量，未改写入库基线（确需更新请加 --update-baseline）')
+}
 if (fail) {
   console.error('[perf:bench] 存在超预算场景，渲染性能疑似退化。')
   process.exit(1)

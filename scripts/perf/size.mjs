@@ -18,8 +18,11 @@
  * 预算定档依据：2026-08-12 首测值上浮 ~15%（量纲取整），注释写明各条实测与余量。
  *
  * 产物：docs/perf-baseline.json 的 `size` section（与 render-bench.mjs 各自 merge，互不覆盖）。
+ *   ⚠️ 该基线是**入库文件**，本工具默认「只测不写」：gzip 字节跨 zlib 版本/平台存在差异，
+ *   若每次运行都写入，会污染工作树（本地跑一次就脏一个 tracked 文件），并让读这份基线的
+ *   `stats:check` 在 CI 里误报（perf:size 与 stats:check 同 job 时尤其明显）。
  *
- * 用法：先 `pnpm build`，再 `pnpm perf:size`。
+ * 用法：先 `pnpm build`，再 `pnpm perf:size`；确需更新入库基线时显式加 `--update-baseline`。
  */
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve, relative } from 'node:path'
@@ -315,29 +318,33 @@ for (const b of BUDGETS) {
   })
 }
 
-// ---------- 4. 写入基线 ----------
-writeSection('size', {
-  generatedAt: today(),
-  method:
-    'gzip = zlib gzipSync；brotli = zlib brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）',
-  packages: {
-    '@oas-ui/ui': {
-      distTotalBytes: uiDistTotal,
-      browserJs: uiJs,
-      fullEntry,
-      cdn,
+// ---------- 4. 写入基线（默认只测不写：基线是入库文件，见头部说明） ----------
+if (process.argv.includes('--update-baseline')) {
+  writeSection('size', {
+    generatedAt: today(),
+    method:
+      'gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）',
+    packages: {
+      '@oas-ui/ui': {
+        distTotalBytes: uiDistTotal,
+        browserJs: uiJs,
+        fullEntry,
+        cdn,
+      },
+      '@oas-ui/theme': { indexCss: theme },
+      '@oas-ui/core': core,
+      '@oas-ui/i18n': i18n,
+      '@oas-ui/icons': icons,
+      '@oas-ui/ssr': ssr,
     },
-    '@oas-ui/theme': { indexCss: theme },
-    '@oas-ui/core': core,
-    '@oas-ui/i18n': i18n,
-    '@oas-ui/icons': icons,
-    '@oas-ui/ssr': ssr,
-  },
-  components: componentMeasures,
-  budgets: budgetResults,
-})
+    components: componentMeasures,
+    budgets: budgetResults,
+  })
 
-console.log(`\n基线已写入 docs/perf-baseline.json`)
+  console.log(`\n基线已写入 docs/perf-baseline.json`)
+} else {
+  console.log(`\n[perf:size] 仅测量，未改写入库基线（确需更新请加 --update-baseline）`)
+}
 if (fail) {
   console.error('[perf:size] 存在超预算项，性能门槛未通过。')
   process.exit(1)
