@@ -321,6 +321,8 @@ Other style hooks (CSS variable piercing, dark-mode aware):
 | `extra` | Action area on the same row as the title (right side) |
 | `title` | Rich title content slot, overrides the title attribute text when present |
 
+**CSS 变量**
+
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-desc-columns` | `3` |
@@ -336,6 +338,8 @@ Other style hooks (CSS variable piercing, dark-mode aware):
 | --- | --- |
 | default | Field content |
 | `label` | Rich label content (icon + text etc.; mutually exclusive with the label attribute, slot wins) |
+
+**CSS 变量**
 
 | CSS Variable | Default |
 | --- | --- |

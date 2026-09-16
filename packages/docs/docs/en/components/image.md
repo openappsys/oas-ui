@@ -441,6 +441,8 @@ onMounted(async () => {
 | default | — |
 | `template[slot="toolbar"]` | Forwarded to the shared preview host: customizes the shared preview overlay toolbar (clone replaces the default button group + oas-toolbar-render command channel, same as oas-image) |
 
+**CSS 变量**
+
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-image-group-gap` | `var(--oas-space-3)` |

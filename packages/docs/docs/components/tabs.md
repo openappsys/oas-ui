@@ -636,6 +636,8 @@ onMounted(async () => {
 | --- | --- |
 | 默认 | — |
 
+**CSS 变量**
+
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-tabs-badge-bg` | `var(--oas-color-danger)` |
