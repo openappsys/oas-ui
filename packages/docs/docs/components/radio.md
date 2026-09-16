@@ -117,7 +117,36 @@
   </oas-space>
 </DemoBlock>
 
-插槽内容接管选中态图标（`template[slot]` 或直接放元素皆可）；未选态显示默认空心圆轮廓，宿主可用 `::part(box)` 覆写。
+插槽内容接管选中态图标（`template[slot]` 或直接放元素皆可）；未选态显示默认空心圆轮廓，宿主可用 `::part(box)` 覆写（见下例：两态全自定义）。
+
+<DemoBlock title="两态全自定义（checked-icon 插槽 + ::part(box)）">
+  <oas-space>
+    <oas-radio class="radio-two-state" name="radio-two-state" value="custom" checked>
+      已选（自定义勾 + 方框）
+      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></template>
+    </oas-radio>
+    <oas-radio class="radio-two-state" name="radio-two-state" value="plain">
+      未选（同一方框）
+      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></template>
+    </oas-radio>
+  </oas-space>
+</DemoBlock>
+
+<style>
+/* 未选态：::part(box) 覆写默认空心圆（形状 / 描边 / 圆角皆可改）；选中态换主色 */
+.radio-two-state::part(box) {
+  border: 1.5px solid var(--oas-color-text-secondary);
+  border-radius: 4px;
+}
+.radio-two-state[checked]::part(box) {
+  border-color: var(--oas-color-primary);
+}
+.radio-two-state::part(indicator-checked) {
+  color: var(--oas-color-primary);
+}
+</style>
+
+> **自定义指示器是「项级」开关**：只有带了 `checked-icon` 插槽的项才进入自定义模式（原生圆点隐藏、`.box` 成为未选态载体）——所以上例两项**都**带插槽；组内要统一外观，需每项都带。
 
 ## 组横排
 
