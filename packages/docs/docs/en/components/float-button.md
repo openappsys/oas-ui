@@ -224,7 +224,7 @@ onMounted(async () => {
 | `magnetic` | Magnetic: `x` snaps to the nearest left/right edge, `y` to the nearest top/bottom edge, with a transition on release; empty means no snapping (requires `draggable`) | `string` | — |
 | `mode` | Mode: single (default) / group (main button + slotted actions expand vertically) / menu (actions JSON popup menu) | `string` | `single` |
 | `shape` | Shape: `circle` (default, round) / `square` (capsule rounded rectangle) | `string` | `circle` |
-| `size` | Size tier: `xs` (24px) / `sm` (32px) / `md` (40px) / `lg` (default 48px) / `xl` (56px); invalid values fall back to `lg` with a warning | `string` | `lg` |
+| `size` | Size tier: `xs` (24px) / `small` (32px) / `medium` (40px) / `large` (default 48px) / `xl` (56px); `sm`/`md`/`lg` are accepted aliases; invalid values fall back to `large` with a warning | `string` | `large` |
 | `target` | Link open mode (effective in `href` mode, e.g. `_blank`) | `string` | — |
 | `trigger` | Expand trigger: click (default) / hover (debounced with grace period) / manual (fully controlled; outside click and Esc do not auto-collapse) | `string` | `click` |
 | `type` | Visual intensity: `primary` (default, solid primary) / `default` (weakened: light background with dark text) | `string` | `primary` |

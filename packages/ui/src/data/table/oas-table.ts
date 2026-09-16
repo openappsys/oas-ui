@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
+import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
 import { registeredTableCapabilities, onTableCapabilityRegistered } from './oas-table-capability.js'
@@ -117,18 +118,13 @@ export type TableSpanMethod = (
   columnIndex: number,
 ) => [number, number] | { rowspan: number; colspan: number } | void
 
-const VALID_TABLE_SIZES: readonly TableSize[] = ['small', 'medium', 'large']
-
+/** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重，同控件惯例）；
+    sm/md/lg 别名由 shared/size 静默映射，不告警 */
 const warnedSizes = new Set<string>()
-
-/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重，同控件惯例） */
-function normalizeTableSize(raw: string): TableSize {
-  if ((VALID_TABLE_SIZES as readonly string[]).includes(raw)) return raw as TableSize
-  if (!warnedSizes.has(raw)) {
-    warnedSizes.add(raw)
-    console.warn(`[oas-table] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
-  }
-  return 'medium'
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-table] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
 }
 
 /** 编辑能力未注入的告警文案（仅纯核入口 data/table/core 消费者会触发；主路径已默认内含能力） */
@@ -1046,7 +1042,8 @@ export class OASTableBase extends OASElement {
     this.parse()
     // 密度档位归一化：仅触发非法值告警副作用；档位视觉纯 CSS（:host([size]) 选择器），
     // 非法值不匹配任何档位选择器 → 自然回落 medium 默认
-    normalizeTableSize(this.getAttr('size', 'medium'))
+    const sizeRaw = this.getAttr('size', 'medium')
+    if (!normalizeSizeStrict(sizeRaw, THREE_SIZES, 'medium').isValid) warnInvalidSize(sizeRaw)
     // 编辑能力未 import 但检测到 editable/actions 配置 → dev 告警（同值去重）
     this.warnEditCapability()
     const head = this.shadow.querySelector('thead')

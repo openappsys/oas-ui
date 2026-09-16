@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 
 export type DividerDirection = 'horizontal' | 'vertical'
 /** 内容位置：水平布局 left/center/right，垂直布局 top/center/bottom（跨方向使用非法词会回落 center 并告警） */
@@ -35,7 +36,6 @@ export const DIVIDER_PRESET_COLORS: readonly DividerPresetColor[] = [
 ]
 
 const VALID_VARIANTS = ['solid', 'dashed', 'dotted', 'double'] as const
-const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_HORIZONTAL_POSITIONS = ['left', 'center', 'right'] as const
 const VALID_VERTICAL_POSITIONS = ['top', 'center', 'bottom'] as const
 const VALID_TEXT_ORIENTATIONS = ['horizontal', 'vertical'] as const
@@ -296,15 +296,13 @@ export class OASDivider extends OASElement {
       variant = 'dashed'
     }
 
-    // size 间距档（仅水平布局生效）
+    // size 间距档（仅水平布局生效）；sm/md/lg 别名静默映射，非法值告警（shared/size 归一化）
     let size: DividerSize = 'medium'
     const rawSize = this.getAttr('size', '')
     if (direction === 'horizontal' && rawSize) {
-      if ((VALID_SIZES as readonly string[]).includes(rawSize)) {
-        size = rawSize as DividerSize
-      } else {
-        warnOnce('size', rawSize, 'medium', VALID_SIZES)
-      }
+      const { value, isValid } = normalizeSizeStrict(rawSize, THREE_SIZES, 'medium')
+      size = value
+      if (!isValid) warnOnce('size', rawSize, 'medium', THREE_SIZES)
     }
 
     el.classList.toggle('dashed', variant === 'dashed')

@@ -314,7 +314,7 @@ onMounted(async () => {
 | `percent` | 进度模式：number 显式百分比或 auto（未知进度模拟推进） | `string` | — |
 | `rotate` | 自定义指示器是否自动旋转（默认 true；gif/静态 SVG 关闭） | `boolean` | — |
 | `show-overlay` | 包裹内容时是否显示遮罩 | `string` | `true` |
-| `size` | 指示器尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；旧缩写 `sm`/`md`/`lg` 保留兼容 | `string` | `md` |
+| `size` | 指示器尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；旧缩写 `sm`/`md`/`lg` 保留兼容 | `string` | `medium` |
 | `spinning` | 是否加载中；设置后包裹内容并叠加遮罩 | `boolean` | — |
 | `tip` | 加载文案（独立态显示于指示器下方，包裹态显示于遮罩中央）；富内容用 slot="tip" | `string` | — |
 | `tip-position` | 文案位置 | `string` | `below` |

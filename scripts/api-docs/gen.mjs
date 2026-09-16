@@ -47,6 +47,7 @@ const HEADER = {
   method: new Set(['方法', 'method', 'methods']),
   part: new Set(['部件', 'part', 'parts']),
   desc: new Set(['说明', 'description', 'desc', 'details']),
+  cssVar: new Set(['css 变量', 'css variable', 'css variables']),
 }
 // 会被生成内容取代的分组标题（### 属性 / ### Props 等，仅当其后紧跟可替换表时丢弃）
 const GROUP_HEADINGS = new Set([
@@ -94,6 +95,7 @@ function classifyTable(headerCells) {
   if (HEADER.event.has(first)) return { type: 'event' }
   if (HEADER.slot.has(first)) return { type: 'slot' }
   if (HEADER.attr.has(first)) return { type: 'attr', merged: false }
+  if (HEADER.cssVar.has(first)) return { type: 'cssVar' }
 
   if (HEADER.component.has(first)) {
     if (HEADER.attr.has(second)) return { type: 'attr', merged: true }

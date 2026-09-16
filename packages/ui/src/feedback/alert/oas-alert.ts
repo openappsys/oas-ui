@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 
 export type AlertType = 'info' | 'success' | 'warning' | 'error'
 export type AlertVariant = 'tint' | 'filled' | 'outlined'
@@ -16,7 +17,6 @@ const SEMANTIC_ICONS: Record<AlertType, IconName> = {
 const ROLES = { info: 'status', success: 'status', warning: 'status', error: 'alert' } as const
 
 const VALID_VARIANTS: readonly AlertVariant[] = ['tint', 'filled', 'outlined']
-const VALID_SIZES: readonly AlertSize[] = ['small', 'medium', 'large']
 const warnedVariants = new Set<string>()
 const warnedSizes = new Set<string>()
 
@@ -30,14 +30,11 @@ function normalizeVariant(raw: string): AlertVariant {
   return 'tint'
 }
 
-/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
-function normalizeSize(raw: string): AlertSize {
-  if ((VALID_SIZES as readonly string[]).includes(raw)) return raw as AlertSize
-  if (!warnedSizes.has(raw)) {
-    warnedSizes.add(raw)
-    console.warn(`[oas-alert] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
-  }
-  return 'medium'
+/** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-alert] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
 }
 
 /** prefers-reduced-motion 探测（happy-dom 等环境可能缺失 matchMedia） */
@@ -411,7 +408,10 @@ export class OASAlert extends OASElement {
     box.setAttribute('data-type', type)
     box.setAttribute('role', ROLES[type as keyof typeof ROLES] ?? 'status')
     box.setAttribute('data-variant', normalizeVariant(this.getAttr('variant', 'tint')))
-    box.setAttribute('data-size', normalizeSize(this.getAttr('size', 'medium')))
+    const sizeRaw = this.getAttr('size', 'medium')
+    const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, THREE_SIZES, 'medium')
+    if (!sizeValid) warnInvalidSize(sizeRaw)
+    box.setAttribute('data-size', size)
     box.setAttribute('data-accent', this.getAttr('border', ''))
     box.toggleAttribute('data-center', this.hasAttr('center'))
     box.toggleAttribute('data-prominent', this.hasAttr('prominent'))

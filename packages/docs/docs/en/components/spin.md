@@ -314,7 +314,7 @@ onMounted(async () => {
 | `percent` | Progress mode: number for explicit percent, or auto (simulated unknown-progress advance) | `string` | — |
 | `rotate` | Whether the custom indicator auto-rotates (default true; disable for gif/static SVG) | `boolean` | — |
 | `show-overlay` | Whether to show the mask when wrapping content | `string` | `true` |
-| `size` | Indicator size: `xs` / `small` / `medium` (default) / `large` / `xl`; legacy abbreviations `sm`/`md`/`lg` remain supported | `string` | `md` |
+| `size` | Indicator size: `xs` / `small` / `medium` (default) / `large` / `xl`; legacy abbreviations `sm`/`md`/`lg` remain supported | `string` | `medium` |
 | `spinning` | Whether loading; when set, wraps content with an overlaid mask | `boolean` | — |
 | `tip` | Loading text (below the indicator standalone; centered on the mask when wrapping); rich content via slot="tip" | `string` | — |
 | `tip-position` | Text position | `string` | `below` |

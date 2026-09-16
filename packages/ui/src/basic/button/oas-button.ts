@@ -1,5 +1,5 @@
 import { OASElement, readConfigValue } from '@oas-ui/core'
-import { aliasSize } from '../../shared/size.js'
+import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type ButtonType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'text'
@@ -7,23 +7,15 @@ export type ButtonSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 /** variant 形态维度（正交 type 语义色）：solid 实底 / outlined 描边 / dashed 虚线描边 / filled 浅底 / text 文字 / link 链接 */
 export type ButtonVariant = 'solid' | 'outlined' | 'dashed' | 'filled' | 'text' | 'link'
 
-const VALID_BUTTON_SIZES: readonly ButtonSize[] = ['xs', 'small', 'medium', 'large', 'xl']
 const VALID_BUTTON_VARIANTS: readonly ButtonVariant[] = ['solid', 'outlined', 'dashed', 'filled', 'text', 'link']
 
-/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
-function normalizeButtonSize(raw: string): ButtonSize {
-  if ((VALID_BUTTON_SIZES as readonly string[]).includes(raw)) return raw as ButtonSize
-  // 跨词表别名互认（shared/size）：sm/md/lg 等价 small/medium/large，不告警
-  const alias = aliasSize(raw, true)
-  if (alias) return alias as ButtonSize
-  if (!warnedSizes.has(raw)) {
-    warnedSizes.add(raw)
-    console.warn(`[oas-button] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
-  }
-  return 'medium'
-}
-
+/** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
 const warnedSizes = new Set<string>()
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-button] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+}
 
 /**
  * 自定义色实心底的文字色：按相对亮度取深/浅，保证对比可读。
@@ -859,7 +851,9 @@ export class OASButton extends OASElement {
     if (!this.btn) return
     const type = this.getAttr('type', 'default') as ButtonType
     // size 就近读取 config-provider 注入值（自身属性 > config-provider > medium）
-    const size = normalizeButtonSize(this.injectValue('size', 'medium') as ButtonSize)
+    const sizeRaw = this.injectValue('size', 'medium') as ButtonSize
+    const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'medium')
+    if (!sizeValid) warnInvalidSize(sizeRaw)
     // disabled 就近读取全局禁用注入：组件显式 disabled > disabled-skip/disabledExempt 豁免 > provider 注入
     const disabled = this.injectDisabled()
     const disabledFocusable = this.hasAttr('disabled-focusable')

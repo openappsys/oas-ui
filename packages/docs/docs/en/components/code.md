@@ -174,7 +174,7 @@ Font size defaults to 0.875× the outer context (`0.875em`); override with the C
 | `inline` | Inline code mode: renders as a monospace light-background box for code snippets inside prose | `boolean` | — |
 | `language` | Language: `js`/`ts`/`html`/`css`/`json`; unknown falls back to plain text | `string` | — |
 | `show-line-number` | Show the line number column | `boolean` | — |
-| `size` | Inline font-size tier: `xs` / `small` / `medium` (default) / `large`; invalid values fall back to `medium` with a warning | — | — |
+| `size` | Inline font-size tier: `xs` / `small` / `medium` (default) / `large`; invalid values fall back to `medium` with a warning | `string` | — |
 | `trim` | Strip leading/trailing whitespace (default true; `trim="false"` preserves it) | `string` | `true` |
 | `variant` | Inline style: `subtle` (default light background) / `outline` (bordered) / `plain` (text only) / `solid` (filled); invalid values fall back to `subtle` with a warning | — | — |
 | `word-wrap` | Wrap long code instead of horizontal scrolling | `boolean` | — |
