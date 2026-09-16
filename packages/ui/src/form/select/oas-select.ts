@@ -512,7 +512,7 @@ export class OASSelect extends OASElement {
             </svg>
           </span>
           <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path d="M4 6 L8 10 L12 6 L4 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
         <oas-bottom-sheet part="sheet" passive>

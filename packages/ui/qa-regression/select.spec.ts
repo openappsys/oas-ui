@@ -220,6 +220,22 @@ test('select 自定义选项渲染：demo 里图标 + 文本进入选项行与�
   expect(r.labelChildCount).toBeGreaterThanOrEqual(2)
 })
 
+test('select 触发器 chevron：路径为规范 V 形（曾写坏成乱纹，v2.5.1–v2.5.4 带病发布）', async ({ page }) => {
+  // 曾现 bug：内联 chevron 的 path 被写成 `M4 6 L8 10 L12 6 L4 12`（标准 V 形后多一段回折线），
+  // 触发器的下拉箭头渲染成乱纹。visual.spec 只截图不做基线比对，故此缺陷躲过全部自动门禁。
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-select')
+  const chevron = await page
+    .locator('oas-select')
+    .first()
+    .evaluate((el) => {
+      const svg = el.shadowRoot!.querySelector('.chevron')
+      return { exists: !!svg, d: svg?.querySelector('path')?.getAttribute('d') ?? null }
+    })
+  expect(chevron.exists, '触发器应含 .chevron 图标').toBe(true)
+  expect(chevron.d, 'chevron 应为规范 V 形路径').toBe('M4 6 L8 10 L12 6')
+})
+
 // 移动端专项：bottom-sheet 底部抽屉承载（data-mobile-sheet 标记 + sheet open + dropdown 静态化 + oas-close 同步收起）
 test('select 移动端：底部抽屉贴视口底展开 + dropdown 静态化 + 点遮罩同步收起', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
