@@ -51,6 +51,7 @@ export const de: LocaleMessages = {
   'treeSelect.andMore': 'und {count} weitere',
   // auto-complete (Autovervollständigung)
   'autoComplete.noMatch': 'Keine passenden Ergebnisse',
+  'autoComplete.defaultLabel': 'Auto-Vervollständigungseingabe',
   // combobox (Kombinationsfeld: Eingabefeld ist das Steuerelement, Eingabe filtert + Auswahl übernimmt den Wert)
   'combobox.empty': 'Keine Optionen',
   'combobox.noMatch': 'Keine passenden Optionen',

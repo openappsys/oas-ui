@@ -396,9 +396,9 @@ export class OASProgress extends OASElement {
     return Number(raw) || 0
   }
 
-  /** label 属性 → 无障碍名（写入当前 progressbar 容器） */
-  private applyAriaLabel(el: Element, name: string): void {
-    const label = this.getAttr(name, '')
+  /** label 属性 → 无障碍名（写入当前 progressbar 容器）。未显式设置时回退可见文本（百分比），保证 progressbar 恒有可访问名 */
+  private applyAriaLabel(el: Element, name: string, fallback = ''): void {
+    const label = this.getAttr(name, '') || fallback
     if (label) el.setAttribute('aria-label', label)
     else el.removeAttribute('aria-label')
   }
@@ -447,7 +447,7 @@ export class OASProgress extends OASElement {
       if (indeterminate) this.bar.removeAttribute('aria-valuenow')
       else this.bar.setAttribute('aria-valuenow', String(value))
       this.bar.setAttribute('aria-valuemax', String(max))
-      this.applyAriaLabel(this.bar, 'label')
+      this.applyAriaLabel(this.bar, 'label', indeterminate ? '' : `${Math.round(percent)}%`)
       this.bar.classList.toggle('done', percent >= 100 && !status)
       this.setStatusAttr(this.bar, status)
     }
@@ -605,7 +605,7 @@ export class OASProgress extends OASElement {
       this.circleValue!.hidden = slotHas || indeterminate || !!iconName
       this.circleValue!.textContent = `${Math.round(percent)}%`
     }
-    this.applyAriaLabel(this.circle, 'label')
+    this.applyAriaLabel(this.circle, 'label', indeterminate ? '' : `${Math.round(percent)}%`)
     if (indeterminate) this.circle.removeAttribute('aria-valuenow')
     else this.circle.setAttribute('aria-valuenow', String(value))
     this.circle.setAttribute('aria-valuemax', String(max))

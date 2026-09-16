@@ -685,6 +685,7 @@ export class OASSidebar extends OASElement {
     const rail = this.shadow.querySelector<HTMLElement>('[part="rail"]')
     rail?.addEventListener('pointerdown', (e) => this.startRailDrag(e))
     rail?.addEventListener('keydown', (e) => this.onRailKey(e))
+    this.syncRailAria()
 
     this.syncMq()
     this.onCleanup(() => this.mq?.removeEventListener('change', this.mqListener))
@@ -763,6 +764,17 @@ export class OASSidebar extends OASElement {
   private setWidthPx(px: number): void {
     const clamped = Math.round(Math.min(this.resizeMax(), Math.max(this.resizeMin(), px)))
     this.setAttribute('width', `${clamped}px`)
+    this.syncRailAria(clamped)
+  }
+
+  /** 可聚焦 separator 的 aria 值三件套（当前宽度 px），随拖拽/方向键同步 */
+  private syncRailAria(value?: number): void {
+    const rail = this.shadow.querySelector<HTMLElement>('[part="rail"]')
+    if (!rail) return
+    const v = value ?? Math.round(this.currentWidthPx())
+    rail.setAttribute('aria-valuemin', String(this.resizeMin()))
+    rail.setAttribute('aria-valuemax', String(this.resizeMax()))
+    rail.setAttribute('aria-valuenow', String(v))
   }
 
   protected override render(): void {

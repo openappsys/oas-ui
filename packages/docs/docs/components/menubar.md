@@ -217,8 +217,8 @@
 
 <DemoBlock title="start / end 插槽（logo / 头像）">
   <oas-menubar items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"新建","value":"new"},{"label":"打开","value":"open"}]},{"label":"编辑","value":"edit","accessKey":"e","children":[{"label":"撤销","value":"undo"}]}]'>
-    <oas-avatar slot="start" size="28">O</oas-avatar>
-    <oas-avatar slot="end" size="28" src="https://picsum.photos/seed/isui-mb-avatar/80">U</oas-avatar>
+    <oas-avatar slot="start" size="28" aria-hidden="true">O</oas-avatar>
+    <oas-avatar slot="end" size="28" src="https://picsum.photos/seed/isui-mb-avatar/80" aria-hidden="true">U</oas-avatar>
   </oas-menubar>
   <p class="demo-tip">start 位放 logo 文字/图形，end 位放头像；方向键在菜单项间移动，不会跳进插槽。</p>
 </DemoBlock>

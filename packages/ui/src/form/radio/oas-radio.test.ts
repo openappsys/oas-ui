@@ -88,10 +88,10 @@ describe('OASRadio 只读（readonly）', () => {
     document.body.innerHTML = ''
   })
 
-  it('readonly 点击不选中，aria-readonly 同步，可聚焦', () => {
+  it('readonly 点击不选中，aria-disabled 传达不可操作，可聚焦', () => {
     const el = mountRadio({ readonly: '' })
     const input = native(el)
-    expect(input.getAttribute('aria-readonly')).toBe('true')
+    expect(input.getAttribute('aria-disabled')).toBe('true')
     input.click()
     expect(input.checked).toBe(false)
     el.focus()

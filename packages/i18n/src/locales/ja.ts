@@ -51,6 +51,7 @@ export const ja: LocaleMessages = {
   'treeSelect.andMore': '他 {count} 件',
   // auto-complete（オートコンプリート）
   'autoComplete.noMatch': '一致する結果なし',
+  'autoComplete.defaultLabel': 'オートコンプリート入力',
   // combobox（コンボボックス：入力欄がコントロールを兼ねる、入力フィルター + 選択で値を取得）
   'combobox.empty': 'オプションなし',
   'combobox.noMatch': '一致するオプションなし',

@@ -505,14 +505,17 @@ export class OASEditable extends OASElement {
     if (trigger === 'icon') {
       displayEl.removeAttribute('role')
       displayEl.removeAttribute('tabindex')
+    } else if (readonly) {
+      // 只读展示态本质是只读文本域：role=textbox + aria-readonly 才是合法语义（role=button 不允许 aria-readonly）
+      displayEl.setAttribute('role', 'textbox')
+      displayEl.setAttribute('aria-readonly', 'true')
+      displayEl.tabIndex = 0
     } else {
       displayEl.setAttribute('role', 'button')
       displayEl.tabIndex = disabled ? -1 : 0
     }
     displayEl.setAttribute('aria-label', this.t('editable.edit'))
     displayEl.setAttribute('aria-disabled', String(disabled))
-    if (readonly) displayEl.setAttribute('aria-readonly', 'true')
-    else displayEl.removeAttribute('aria-readonly')
 
     if (this.pencilEl) {
       this.pencilEl.innerHTML = PENCIL_ICON

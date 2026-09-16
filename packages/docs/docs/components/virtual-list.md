@@ -43,7 +43,7 @@
   <div style="width: 100%">
     <div style="display: flex; gap: var(--oas-space-2); margin-bottom: var(--oas-space-3); align-items: center; flex-wrap: wrap">
       <oas-input id="vl-jump-index" type="number" value="500" style="width: 120px"></oas-input>
-      <select id="vl-jump-align" style="padding: 5px var(--oas-space-2); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg); color: var(--oas-color-text-primary); font-size: var(--oas-font-size-md)">
+      <select id="vl-jump-align" aria-label="跳转对齐" style="padding: 5px var(--oas-space-2); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg); color: var(--oas-color-text-primary); font-size: var(--oas-font-size-md)">
         <option value="auto">auto（最小滚动）</option>
         <option value="start">start（顶对齐）</option>
         <option value="center">center（居中）</option>
@@ -97,7 +97,7 @@
 
 <DemoBlock title="scroll-target 外部容器">
   <div style="width: 100%">
-    <div id="vl-outer" style="height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">
+    <div id="vl-outer" tabindex="0" style="height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">
       <oas-virtual-list id="vl-target" scroll-target="#vl-outer" height="240" item-height="36"></oas-virtual-list>
     </div>
   </div>

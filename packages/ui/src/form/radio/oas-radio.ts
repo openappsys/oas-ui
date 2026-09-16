@@ -319,8 +319,10 @@ export class OASRadio extends OASElement {
     input.disabled = disabled
     input.name = name
     input.setAttribute('aria-checked', String(checked))
-    if (readonly) input.setAttribute('aria-readonly', 'true')
-    else input.removeAttribute('aria-readonly')
+    // readonly（点击不选中、可聚焦）：input[type=radio] 不支持 aria-readonly（axe 判 aria-allowed-attr），
+    // 以 aria-disabled 传达不可操作语义（视觉常态不变，样式由 :host([readonly]) 负责）
+    if (readonly) input.setAttribute('aria-disabled', 'true')
+    else input.removeAttribute('aria-disabled')
 
     input.id = this.inputId
     if (this.labelEl) this.labelEl.setAttribute('for', this.inputId)

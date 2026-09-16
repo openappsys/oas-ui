@@ -427,15 +427,17 @@ describe('OASList', () => {
       expect(fired).toBe(2)
     })
 
-    it('selected：aria-selected 同步 + 视觉态 CSS 钩子', () => {
+    it('selected：clickable 行 aria-pressed 同步 + 视觉态 CSS 钩子', () => {
       const el = new OASListItem()
+      el.setAttribute('clickable', '')
       el.setAttribute('selected', '')
       document.body.appendChild(el)
-      expect(el.getAttribute('aria-selected')).toBe('true')
+      // role=button 的行用 aria-pressed 表达选中（aria-selected 不被 role=button 允许）
+      expect(el.getAttribute('aria-pressed')).toBe('true')
       const style = el.shadowRoot!.querySelector('style')!.textContent!
       expect(style).toMatch(/:host\(\[selected\]\)\s*\{[^}]*background/)
       el.removeAttribute('selected')
-      expect(el.getAttribute('aria-selected')).toBe('false')
+      expect(el.getAttribute('aria-pressed')).toBe('false')
     })
 
     it('hover 反馈 CSS 钩子：clickable 行 hover 背景', () => {

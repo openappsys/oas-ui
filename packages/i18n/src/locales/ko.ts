@@ -51,6 +51,7 @@ export const ko: LocaleMessages = {
   'treeSelect.andMore': '외 {count}건',
   // auto-complete（자동 완성）
   'autoComplete.noMatch': '일치하는 결과 없음',
+  'autoComplete.defaultLabel': '자동 완성 입력',
   // combobox（콤보박스: 입력창이 컨트롤을 겸함, 입력 필터 + 선택으로 값 가져오기）
   'combobox.empty': '옵션 없음',
   'combobox.noMatch': '일치하는 옵션 없음',

@@ -327,6 +327,8 @@ export class OASAutoComplete extends OASElement {
     else this.removeAttribute('data-status')
     if (this.input.value !== value && this.query === '') this.input.value = value
     this.input.placeholder = placeholder
+    // 无障碍名：placeholder 优先，缺省回退 locale 默认名（combobox 输入必须有名，axe: label）
+    this.input.setAttribute('aria-label', placeholder || this.t('autoComplete.defaultLabel'))
     this.input.disabled = disabled
     this.input.readOnly = this.hasAttr('readonly')
     if (status === 'error') this.input.setAttribute('aria-invalid', 'true')

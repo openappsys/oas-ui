@@ -145,10 +145,10 @@ describe('OASProgress', () => {
     expect(el.shadowRoot!.querySelector('[part="circle"]')!.getAttribute('aria-label')).toBe('文件上传进度')
   })
 
-  it('移除 label 后 aria-label 同步摘除', () => {
+  it('移除 label 后 aria-label 回退为可见百分比文本（progressbar 恒有可访问名）', () => {
     const el = mount({ percent: '40', label: 'x' })
     el.removeAttribute('label')
-    expect(el.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('aria-label')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('aria-label')).toBe('40%')
   })
 
   // ---- warning 状态 ----

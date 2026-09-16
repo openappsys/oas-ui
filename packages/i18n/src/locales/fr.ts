@@ -51,6 +51,7 @@ export const fr: LocaleMessages = {
   'treeSelect.andMore': 'et {count} autres',
   // auto-complete (complétion automatique)
   'autoComplete.noMatch': 'Aucun résultat correspondant',
+  'autoComplete.defaultLabel': 'Champ de saisie automatique',
   // combobox (zone combinée : le champ est le contrôle, filtrage à la saisie + sélection de valeur)
   'combobox.empty': 'Aucune option',
   'combobox.noMatch': 'Aucune option correspondante',

@@ -51,6 +51,7 @@ export const es: LocaleMessages = {
   'treeSelect.andMore': 'y {count} más',
   // auto-complete (autocompletado)
   'autoComplete.noMatch': 'Sin resultados coincidentes',
+  'autoComplete.defaultLabel': 'Campo de autocompletado',
   // combobox (el campo de entrada es el control: filtrado al escribir + selección de valor)
   'combobox.empty': 'Sin opciones',
   'combobox.noMatch': 'Sin opciones coincidentes',

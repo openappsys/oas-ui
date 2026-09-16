@@ -68,7 +68,7 @@
   </oas-space>
   <oas-space>
     <span>推进节拍：</span>
-    <select onchange="lbPickSpeed(this.value)">
+    <select onchange="lbPickSpeed(this.value)" aria-label="加载速度">
       <option value="100">快（100ms）</option>
       <option value="200" selected>默认（200ms）</option>
       <option value="500">慢（500ms）</option>

@@ -279,14 +279,16 @@ export class OASList extends OASElement {
     const emptyDefault = this.shadow.querySelector<HTMLElement>('[part="empty-default"]')
     if (emptyDefault) emptyDefault.hidden = emptySlotHas
 
-    // 滚动容器（reach-bottom 载体）
+    // 滚动容器（reach-bottom 载体）。可滚动时补 tabindex（键盘用户可达，axe: scrollable-region-focusable）
     const maxHeight = this.getAttr('max-height', '')
     if (maxHeight !== '') {
       body.style.maxHeight = /^\d+$/.test(maxHeight) ? `${maxHeight}px` : maxHeight
       body.style.overflowY = 'auto'
+      body.setAttribute('tabindex', '0')
     } else {
       body.style.maxHeight = ''
       body.style.overflowY = ''
+      body.removeAttribute('tabindex')
     }
 
     const loading = this.hasAttr('loading')
