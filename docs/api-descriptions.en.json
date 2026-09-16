@@ -9,7 +9,9 @@
     "events": {
       "oas-change": "Dispatched when the pin state flips; detail { fixed, top }: fixed indicates whether pinned; top is the reference pin position (offset for top pinning, the element's current rect.top for bottom pinning)"
     },
-    "slots": {}
+    "slots": {
+      "": "Affixed content"
+    }
   },
   "oas-alert": {
     "attrs": {
@@ -116,7 +118,9 @@
       "ratio": "Aspect ratio: preset name `square` (1/1) / `landscape` (4/3) / `portrait` (3/4) / `wide` (16/9) / `ultrawide` (21/9) / `golden` (1.618/1), or a fraction `16/9`, `4:3`, `16 / 9`, decimal `1.5`; also assignable as a number property (`el.ratio = 1.5`). Token names match first; missing/invalid values (including zero numerator or denominator) fall back to `1 / 1` with a dev warning once per invalid value (deduplicated)"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Content that keeps the aspect ratio"
+    }
   },
   "oas-app": {
     "attrs": {
@@ -187,7 +191,9 @@
       "spacing": "Member spacing in px (negative = overlapping; overrides the `--oas-avatar-group-overlap` variable)"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Avatar members (`oas-avatar`)"
+    }
   },
   "oas-back-top": {
     "attrs": {
@@ -229,7 +235,9 @@
     "events": {
       "oas-click": "Backdrop clicked, `detail.originalEvent` is the original click event"
     },
-    "slots": {}
+    "slots": {
+      "": "Backdrop content"
+    }
   },
   "oas-badge": {
     "attrs": {
@@ -304,7 +312,9 @@
     "events": {
       "oas-close": "Close request; detail.reason is drag (handle dragged past threshold) / backdrop (backdrop click) / esc (Escape key). The component only emits — the host decides to close by removing open"
     },
-    "slots": {}
+    "slots": {
+      "": "Sheet body content"
+    }
   },
   "oas-breadcrumb": {
     "attrs": {
@@ -326,7 +336,9 @@
       "oas-select": "A link item, a collapsed dropdown item, or an item dropdown item was clicked; `detail: { value: href }` (real links do not block default navigation; hosts may intercept for routing)",
       "oas-collapse-click": "Fired when the collapse ellipsis is clicked to expand the dropdown (not fired when collapsing), `detail: { collapsedItems }` (the original array of collapsed items, for hosts that want a custom collapse panel)"
     },
-    "slots": {}
+    "slots": {
+      "separator": "Custom separator content (text or icon; replaces the separator attribute)"
+    }
   },
   "oas-breadcrumb-item": {
     "attrs": {
@@ -381,7 +393,9 @@
     "events": {
       "oas-click": "Click, `detail: { originalEvent }`"
     },
-    "slots": {}
+    "slots": {
+      "": "Button content (text / icon)"
+    }
   },
   "oas-button-group": {
     "attrs": {
@@ -400,7 +414,9 @@
     "events": {
       "oas-change": "Selection changed. Single-select `detail: { value }`; multi-select `detail: { value: [] }`"
     },
-    "slots": {}
+    "slots": {
+      "": "Button group members (`oas-button`)"
+    }
   },
   "oas-calendar": {
     "attrs": {
@@ -479,7 +495,9 @@
     "events": {
       "oas-change": "Current screen changed, `detail: { index }`"
     },
-    "slots": {}
+    "slots": {
+      "": "Carousel slides"
+    }
   },
   "oas-cascader": {
     "attrs": {
@@ -578,7 +596,9 @@
       "oas-change": "Expansion state change, `detail: { active: string[] }`",
       "oas-before-collapse": "Fired before expand/collapse (cancelable), `detail: { name, next }`; `preventDefault()` blocks the toggle (not fired by expandAll/collapseAll)"
     },
-    "slots": {}
+    "slots": {
+      "": "Collapse panels (`oas-collapse-item`)"
+    }
   },
   "oas-collapse-item": {
     "attrs": {
@@ -596,7 +616,8 @@
     "slots": {
       "header": "Rich panel header (mutually exclusive with the header attribute, slot wins; interactive children should stopPropagation)",
       "extra": "Panel header right-side action area (clicks inside do not toggle)",
-      "template[slot=\"toggle\"]": "Custom expand icon template (built-in arrow by default)"
+      "template[slot=\"toggle\"]": "Custom expand icon template (built-in arrow by default)",
+      "": "Panel content"
     }
   },
   "oas-color-picker": {
@@ -609,7 +630,9 @@
     "events": {
       "oas-change": "Color change, `detail: { value }`"
     },
-    "slots": {}
+    "slots": {
+      "trigger": "Custom trigger (replaces the default swatch button)"
+    }
   },
   "oas-combobox": {
     "attrs": {
@@ -706,7 +729,9 @@
       "disabled": "Global disable: form-family controls inside the subtree that consume the injection are disabled unless they set `disabled` explicitly; escape a single component with the `disabled-skip` attribute, or escape a whole class with the `disabledExempt` top-level config JSON key"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Subtree content that receives the provided config"
+    }
   },
   "oas-container": {
     "attrs": {
@@ -716,7 +741,16 @@
       "size": "Fixed-width tier, mapped to `--oas-container-*` tokens"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Container content"
+    }
+  },
+  "oas-content": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Content area"
+    }
   },
   "oas-context-menu": {
     "attrs": {
@@ -729,7 +763,9 @@
       "oas-select": "An item was selected, `detail: { value }`",
       "oas-open-change": "Menu open state changed, `detail: { open: boolean }`"
     },
-    "slots": {}
+    "slots": {
+      "": "Context menu content (items / groups)"
+    }
   },
   "oas-context-menu-divider": {
     "attrs": {},
@@ -819,7 +855,7 @@
       "oas-open-change": "Open state change, `detail: { open }` (both controlled and uncontrolled)"
     },
     "slots": {
-      "cell": "`template[slot=\"cell\"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`)"
+      "template[slot=\"cell\"]": "`template[slot=\"cell\"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`)"
     },
     "props": {
       "shortcuts": "Shortcuts (object array, `{ label, value }` or `{ label, getValue() }`); built-in defaults per type when unset (labels via locale)",
@@ -838,7 +874,8 @@
     "events": {},
     "slots": {
       "title": "Rich title content slot, overrides the title attribute text when present",
-      "extra": "Action area on the same row as the title (right side)"
+      "extra": "Action area on the same row as the title (right side)",
+      "": "Description items (`oas-descriptions-item`)"
     }
   },
   "oas-descriptions-item": {
@@ -866,7 +903,9 @@
       "text-orientation": "Text orientation on a vertical divider: horizontal (default, reads normally) / \u000bertical (vertical, top-to-bottom along the line); only meaningful for vertical dividers"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Content in the middle of the divider"
+    }
   },
   "oas-drawer": {
     "attrs": {
@@ -887,7 +926,10 @@
       "oas-opened": "[Compat alias] Open animation finished, same as oas-after-open; will be removed later"
     },
     "slots": {
-      "title": "Rich title content slot; overrides the title attribute text when present"
+      "title": "Rich title content slot; overrides the title attribute text when present",
+      "": "Drawer body content",
+      "footer": "Footer action area",
+      "header-actions": "Action area on the right of the title bar"
     }
   },
   "oas-dropdown": {
@@ -913,7 +955,9 @@
       "oas-select": "An item was selected, `detail: { value }`",
       "oas-open-change": "Popover open state changed, `detail: { open: boolean }` (including external setAttribute; controlled loop)"
     },
-    "slots": {}
+    "slots": {
+      "": "Dropdown menu content (items / groups)"
+    }
   },
   "oas-dropdown-divider": {
     "attrs": {},
@@ -1100,7 +1144,9 @@
       "wrap": "Wrapping (boolean; present means `wrap`)"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Flex layout children"
+    }
   },
   "oas-float-button": {
     "attrs": {
@@ -1131,6 +1177,13 @@
       "action": "group-mode child buttons (native button/a or oas-button); clicking collapses the group and restores focus to the main button; badges and custom icons supported"
     }
   },
+  "oas-footer": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Footer content"
+    }
+  },
   "oas-form": {
     "attrs": {
       "gap": "Spacing (grid gap in `grid` mode; item spacing in `inline` mode), token value e.g. `var(--oas-space-4)`; `0` by default in grid, `var(--oas-space-4)` by default in inline",
@@ -1144,7 +1197,9 @@
       "oas-submit": "Validation passed, `detail: { values }`",
       "oas-validate-fail": "Validation failed, `detail: { errors, values }`"
     },
-    "slots": {}
+    "slots": {
+      "": "Form content (`oas-form-item` and friends)"
+    }
   },
   "oas-form-item": {
     "attrs": {
@@ -1168,7 +1223,9 @@
       "stroke-color": "Stroke color (falls back to the `--oas-color-text-primary` token, adapting to light/dark themes; whitelist-validated)"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Gradient text content"
+    }
   },
   "oas-grid": {
     "attrs": {
@@ -1180,7 +1237,9 @@
       "min-child-width": "Minimum child width (e.g. 180px; bare numbers read as px): auto-fit + minmax derives the column count from container width (breakpoint-free fluid reflow); `columns` wins when both are set, and child span/offset are inert in this mode"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Grid children (`oas-grid-item`)"
+    }
   },
   "oas-grid-item": {
     "attrs": {
@@ -1189,7 +1248,16 @@
       "span": "Number of columns spanned; supports `auto` (natural content width) and breakpoint shorthand (e.g. `24 md:12`: base value + space-separated `breakpoint:value`, breakpoints sm=640 / md=768 / lg=1024 / xl=1280)"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Grid cell content"
+    }
+  },
+  "oas-header": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Header content"
+    }
   },
   "oas-hover-card": {
     "attrs": {
@@ -1245,7 +1313,9 @@
       "variant": "Icon variant (passed to the library resolver, e.g. weight)"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Custom icon content (replaces the named registry icon)"
+    }
   },
   "oas-image": {
     "attrs": {
@@ -1285,7 +1355,8 @@
       "oas-change": "Gallery page changed, `detail: { current, prev }`"
     },
     "slots": {
-      "template[slot=\"toolbar\"]": "Forwarded to the shared preview host: customizes the shared preview overlay toolbar (clone replaces the default button group + oas-toolbar-render command channel, same as oas-image)"
+      "template[slot=\"toolbar\"]": "Forwarded to the shared preview host: customizes the shared preview overlay toolbar (clone replaces the default button group + oas-toolbar-render command channel, same as oas-image)",
+      "": "Gallery members (`oas-image`)"
     }
   },
   "oas-input": {
@@ -1372,7 +1443,9 @@
       "color": "Custom color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value; keycap background is tinted and the border follows"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Key text"
+    }
   },
   "oas-label": {
     "attrs": {
@@ -1387,14 +1460,21 @@
       "weight": "Label font weight: `regular` (default)/`semibold`"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Label text"
+    }
   },
   "oas-layout": {
     "attrs": {
       "viewport": "Viewport-locked mode: locks the layout to the viewport height (100dvh by default, cascading back to 100vh; overridable via `--oas-layout-height` to 100%/calc()), header/footer fixed while the sider and content scroll independently; default is the full-page scrolling model"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "content": "Main content area",
+      "footer": "Footer area",
+      "header": "Header area",
+      "sider": "Sider area"
+    }
   },
   "oas-link": {
     "attrs": {
@@ -1414,7 +1494,9 @@
     "events": {
       "oas-click": "Click, `detail: { originalEvent }`"
     },
-    "slots": {}
+    "slots": {
+      "": "Link text"
+    }
   },
   "oas-list": {
     "attrs": {
@@ -1492,7 +1574,9 @@
       "speed": "Scroll speed in pixels per second (default 48); the animation duration is derived from the measured content width (duration = distance / speed); invalid or non-positive values fall back to the default"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Scrolling content"
+    }
   },
   "oas-masonry": {
     "attrs": {
@@ -1524,7 +1608,7 @@
       "size": "Size preset `small` / `medium` (default) / `large`",
       "status": "Validation status: `error` / `warning` / `success`",
       "variant": "Variant: `outlined` (default) / `filled` / `borderless`",
-      "type": "Variant: \textarea (default) / input (single-line lock, Enter does not break line)",
+      "type": "Variant: textarea (default) / input (single-line lock, Enter does not break line)",
       "whole": "Whole delete: when cursor is right after a mention, Backspace removes the whole prefix + label and fires oas-whole-remove",
       "trigger": "Trigger: default @, accepts a single string or a JSON array like [\"@\",\"#\"] for multiple triggers"
     },
@@ -1542,7 +1626,8 @@
     "slots": {
       "header": "Panel header content",
       "footer": "Panel footer content",
-      "template[slot=\"option\"]": "Custom option template (`[data-option-label]` binding)"
+      "template[slot=\"option\"]": "Custom option template (`[data-option-label]` binding)",
+      "empty": "Empty-state content when nothing matches (replaces the default noMatch text)"
     }
   },
   "oas-menu": {
@@ -1710,7 +1795,11 @@
       "oas-opened": "[Compat alias] Open animation finished, same as oas-after-open; will be removed later"
     },
     "slots": {
-      "title": "Rich title content slot; overrides the title attribute text when present"
+      "title": "Rich title content slot; overrides the title attribute text when present",
+      "": "Dialog body content",
+      "close-icon": "Custom close icon (replaces the default ✕)",
+      "description": "Description text (shown below the title)",
+      "footer": "Footer action area"
     }
   },
   "oas-notification": {
@@ -1736,6 +1825,10 @@
       "content": "Rich body content slot",
       "footer": "Footer action slot (action buttons / meta row)",
       "icon": "Icon slot; overrides the default type icon"
+    },
+    "cssVars": {
+      "--oas-notification-progress-color": "Countdown progress bar color",
+      "--oas-notification-width": "Card width (referenced internally by size levels)"
     }
   },
   "oas-navigation-menu": {
@@ -1893,7 +1986,8 @@
       "oas-copy-error": "Copy failed, `detail: { text }`"
     },
     "slots": {
-      "actions": "Action slot (copy/edit buttons etc.); position determined by `actions-position`"
+      "actions": "Action slot (copy/edit buttons etc.); position determined by `actions-position`",
+      "": "Paragraph content"
     }
   },
   "oas-pin-input": {
@@ -1938,7 +2032,11 @@
       "oas-ok": "Clicked \"OK\"; the bubble then collapses automatically"
     },
     "slots": {
-      "title": "Rich title content slot; overrides the title attribute text when present"
+      "title": "Rich title content slot; overrides the title attribute text when present",
+      "": "Popconfirm body content",
+      "actions": "Action buttons area (replaces the default confirm / cancel buttons)",
+      "description": "Description text",
+      "icon": "Custom icon (replaces the default question icon)"
     }
   },
   "oas-popover": {
@@ -1994,7 +2092,9 @@
       "title": "Rich title content slot, overrides the title attribute text when present",
       "description": "Rich description slot (wired via aria-describedby)",
       "footer": "Structured footer slot",
-      "header": "Structured header slot"
+      "header": "Structured header slot",
+      "": "Panel body content",
+      "content": "Panel content (equivalent to the default slot; named for explicit use)"
     }
   },
   "oas-progress": {
@@ -2094,7 +2194,10 @@
       "oas-change": "Score change, `detail: { value }`",
       "oas-hover": "Fires on star hover, `detail: { value }`; `{ value: null }` on leave"
     },
-    "slots": {}
+    "slots": {
+      "icon": "Custom icon for the selected state (replaces the default star)",
+      "void-icon": "Custom icon for the unselected state (replaces the default star)"
+    }
   },
   "oas-result": {
     "attrs": {
@@ -2126,7 +2229,9 @@
       "oas-end-reached": "Fired when scrolling reaches the container bottom (or the horizontal right edge), `detail: { direction: 'bottom' | 'right' }`; re-arms only after leaving the edge",
       "oas-scroll": "Scroll event (rAF-throttled), `detail: { scrollTop, scrollLeft }`"
     },
-    "slots": {}
+    "slots": {
+      "": "Scrollable content"
+    }
   },
   "oas-segmented": {
     "attrs": {
@@ -2142,7 +2247,9 @@
     "events": {
       "oas-change": "Switched, `detail: { value }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"option\"]": "Custom option template (`<template slot=\"option\">`)"
+    }
   },
   "oas-select": {
     "attrs": {
@@ -2209,7 +2316,19 @@
       "oas-action": "`detail: { value: string, action: string, label: string }`; When fired: an item hover action button is clicked (does not fire oas-select)",
       "oas-resize": "`detail: { width: number }`; When fired: drag-resize ends / arrow keys adjust the width"
     },
-    "slots": {}
+    "slots": {
+      "": "Menu item content (default slot text; direct `<oas-sidebar-item>` children recursively become nested `children`)",
+      "footer": "Custom sidebar footer content",
+      "header": "Custom sidebar header content"
+    },
+    "cssVars": {
+      "--oas-sidebar-bg": "Sidebar background; defaults stay anchored to base tokens (theme / dark / brand flow through automatically), host override recolors the whole bar",
+      "--oas-sidebar-width": "Expanded width (the `width` attribute takes precedence)",
+      "--oas-sidebar-collapsed-width": "Collapsed icon-rail width",
+      "--oas-sidebar-item-hover-bg": "Item hover background (defaults to a text-primary 6% mix)",
+      "--oas-sidebar-badge-bg": "Badge background",
+      "--oas-sidebar-badge-color": "Badge text color"
+    }
   },
   "oas-sidebar-divider": {
     "attrs": {},
@@ -2228,6 +2347,13 @@
     "events": {},
     "slots": {
       "": "Sidebar item label content (default slot text); direct child `<oas-sidebar-item>` (and `<oas-sidebar-divider>`) elements recursively become the nested `children`"
+    }
+  },
+  "oas-sider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Sider content"
     }
   },
   "oas-skeleton": {
@@ -2293,7 +2419,9 @@
       "oas-close": "Dispatched when auto-dismissing after timeout (controlled mode does not clear `open` itself)",
       "oas-open": "Dispatched when opened"
     },
-    "slots": {}
+    "slots": {
+      "": "Notification content"
+    }
   },
   "oas-space": {
     "attrs": {
@@ -2353,6 +2481,14 @@
       "": "Wrapped content (mask overlays in wrapping mode)",
       "icon": "Custom indicator slot, replaces the default ring",
       "tip": "Rich loading text slot; overrides the tip attribute"
+    },
+    "cssVars": {
+      "--oas-spin-indicator-color": "Indicator color",
+      "--oas-spin-track-color": "Track color (ring base / progress track)",
+      "--oas-spin-border-width": "Stroke width (ring border / progress stroke); `2px` for xs and small",
+      "--oas-spin-duration": "Animation duration",
+      "--oas-spin-mask-bg": "Mask background (wrapping / fullscreen mode)",
+      "--oas-spin-z-index": "Fullscreen z-index"
     }
   },
   "oas-splitter": {
@@ -2422,7 +2558,13 @@
       "oas-change": "Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index, id? }` (0-based; `id` echoes the step `id` field, keeps `{ index }` when unset)",
       "oas-before-change": "Fired before a step change (cancelable, `detail: { index }`); the host can `preventDefault()` to veto the change (step clicks / keyboard / navigation buttons all apply)"
     },
-    "slots": {}
+    "slots": {},
+    "cssVars": {
+      "--oas-steps-arrow": "Convex tip horizontal depth of arrow segments (deeper = blunter tip); tied to the clip-path polygon",
+      "--oas-steps-arrow-gap": "Gap between arrow segments; `0` makes them interlock flush",
+      "--oas-steps-arrow-item-bg-{1..8}": "Per-segment background override (applies by DOM position, not data index); beyond 8 segments falls back to the status color",
+      "--oas-steps-item-bg": "Segment background for the current status (color-mix per status)"
+    }
   },
   "oas-switch": {
     "attrs": {
@@ -2447,7 +2589,9 @@
       "oas-focus": "Fires on focus",
       "oas-blur": "Fires on blur"
     },
-    "slots": {}
+    "slots": {
+      "": "Switch label"
+    }
   },
   "oas-tab-panel": {
     "attrs": {
@@ -2463,7 +2607,9 @@
       "icon-only": "Icon-only tab: renders only the icon without text (label provides the aria-label fallback for an accessible name)"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Panel content"
+    }
   },
   "oas-table": {
     "attrs": {
@@ -2511,6 +2657,13 @@
       "template[slot=\"empty\"]": "Rich empty-state content (takes precedence over empty-text and the default empty text)"
     }
   },
+  "oas-table-column": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Custom cell content (`<template>` with `{{row.field}}` interpolation)"
+    }
+  },
   "oas-tabs": {
     "attrs": {
       "active": "The `value` of the active tab",
@@ -2545,7 +2698,13 @@
       "oas-rename": "Editable tab rename confirmed via double-click + Enter, `detail: { value, label }`; the component writes the new label back to the panel, host may persist",
       "oas-reorder": "Fired after sortable drag reorder, `detail: { fromIndex, toIndex }`; host reorders `oas-tab-panel` accordingly (the component does not move DOM itself)"
     },
-    "slots": {}
+    "slots": {
+      "": "Tab panels (`oas-tab-panel`)",
+      "icon": "Icon content for a tab item (replaces the panel's icon attribute)",
+      "label": "Label content for a tab item (not projected through the panel's default slot)",
+      "close-icon": "Close button icon content (closable tabs)",
+      "add-icon": "Add button icon content (addable tabs)"
+    }
   },
   "oas-tag": {
     "attrs": {
@@ -2582,6 +2741,11 @@
     },
     "slots": {
       "": "Tag content"
+    },
+    "cssVars": {
+      "--oas-tag-color": "Text color: the `color` attribute feeds through this variable; `--tag-color` is the component's internal current color, falling back to text-primary when unset",
+      "--oas-tag-color-deep": "Deeper text color used by the `deep` variant, falling back to text-primary when unset",
+      "--oas-tag-avatar-size": "Avatar size for `avatar` mode, derived per size level and falling back to control-height-sm − 4px when no level matches"
     }
   },
   "oas-tag-group": {
@@ -2625,7 +2789,8 @@
       "oas-copy-error": "Copy failed, `detail: { text }`"
     },
     "slots": {
-      "actions": "Action slot (copy/edit buttons etc.); position determined by `actions-position`"
+      "actions": "Action slot (copy/edit buttons etc.); position determined by `actions-position`",
+      "": "Text content"
     }
   },
   "oas-textarea": {
@@ -2710,7 +2875,9 @@
       "reverse": "Visual reverse order (DOM order unchanged); pairs with pending for \"newest first\""
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Timeline nodes (`oas-timeline-item`)"
+    }
   },
   "oas-timeline-item": {
     "attrs": {
@@ -2756,7 +2923,8 @@
       "oas-copy-error": "Copy failed, `detail: { text }`"
     },
     "slots": {
-      "actions": "Action slot (copy/edit buttons etc.); position determined by `actions-position`"
+      "actions": "Action slot (copy/edit buttons etc.); position determined by `actions-position`",
+      "": "Title content"
     }
   },
   "oas-toast": {
@@ -2786,7 +2954,9 @@
     "events": {
       "oas-change": "Toggle, `detail: { value, pressed }`"
     },
-    "slots": {}
+    "slots": {
+      "": "Button label"
+    }
   },
   "oas-toggle-item": {
     "attrs": {
@@ -3191,7 +3361,9 @@
     "events": {
       "oas-remove": "Fired when tamper protection detects the layer being removed/modified, `detail: { type: \"removed\" | \"modified\" }`"
     },
-    "slots": {}
+    "slots": {
+      "": "Content covered by the watermark"
+    }
   },
   "oas-button-group-separator": {
     "attrs": {},

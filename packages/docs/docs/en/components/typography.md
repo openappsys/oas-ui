@@ -148,6 +148,8 @@ Typography components for text, titles, and paragraphs.
 
 ### oas-text
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `actions-position` | Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot="actions"` | `string` | `end` |
@@ -170,15 +172,21 @@ Typography components for text, titles, and paragraphs.
 | `underline` | Underline | — | — |
 | `weight` | Font weight: `regular`/`medium`/`semibold`/`bold` (compatible with the strong boolean) | `WeightType` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-copy` | Copy succeeded, `detail: { text }` |
 | `oas-copy-error` | Copy failed, `detail: { text }` |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Text content |
 | `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -187,6 +195,8 @@ Typography components for text, titles, and paragraphs.
 
 ### oas-title
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `actions-position` | Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot="actions"` | `string` | `end` |
@@ -209,15 +219,21 @@ Typography components for text, titles, and paragraphs.
 | `underline` | Underline | — | — |
 | `weight` | — | `WeightType` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-copy` | Copy succeeded, `detail: { text }` |
 | `oas-copy-error` | Copy failed, `detail: { text }` |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Title content |
 | `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -226,6 +242,8 @@ Typography components for text, titles, and paragraphs.
 
 ### oas-paragraph
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `actions-position` | Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot="actions"` | `string` | `end` |
@@ -248,19 +266,23 @@ Typography components for text, titles, and paragraphs.
 | `underline` | Underline | — | — |
 | `weight` | — | `WeightType` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-copy` | Copy succeeded, `detail: { text }` |
 | `oas-copy-error` | Copy failed, `detail: { text }` |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Paragraph content |
 | `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-line-clamp` | `2` |
 | `--oas-text-mark-bg` | `var(--oas-color-warning)` |
-
-**CSS 变量**

@@ -347,6 +347,8 @@
 
 ### oas-sidebar
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `accordion` | 手风琴同级互斥（存在即生效：展开一个父项自动收起其他同级父项；默认多父项可同时展开） | `boolean` | — |
@@ -366,6 +368,8 @@
 | `variant` | 形态：sidebar（默认贴边）/ floating（悬浮圆角阴影）/ inset（内嵌圆角背景） | — | — |
 | `width` | 展开宽度，默认走 `--oas-sidebar-width` token | `string` | `0` |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-action` | `detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select） |
@@ -373,19 +377,28 @@
 | `oas-resize` | `detail: { width: number }`；触发时机：拖拽调宽松手时 / 方向键微调宽度时 |
 | `oas-select` | `detail: { value: string, label: string }`；触发时机：选中菜单项时（移动端同时收起抽屉） |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
-| `footer` | — |
-| `header` | — |
+| 默认 | 菜单项内容（默认插槽文本；直接子元素 `<oas-sidebar-item>` 递归为嵌套 children） |
+| `footer` | 侧栏底部自定义内容 |
+| `header` | 侧栏顶部自定义内容 |
 
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-sidebar-badge-bg` | `var(--oas-color-primary)` |
-| `--oas-sidebar-badge-color` | `#fff` |
-| `--oas-sidebar-bg` | `var(--oas-color-bg-hover)` |
+#### CSS 变量
+
+| CSS 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--oas-sidebar-badge-bg` | 徽标背景色 | `var(--oas-color-primary)` |
+| `--oas-sidebar-badge-color` | 徽标文字色 | `#fff` |
+| `--oas-sidebar-bg` | 侧栏背景；默认锚定基础 token（主题 / 暗色 / 品牌自动跟随），宿主覆盖即整体换色 | `var(--oas-color-bg-hover)` |
+| `--oas-sidebar-collapsed-width` | 折叠图标条宽度 | `64px` |
+| `--oas-sidebar-item-hover-bg` | 项悬停背景（默认 text-primary 6% 混合） | `color-mix(in srgb, var(--oas-color-text-primary) 6%, transparent)` |
+| `--oas-sidebar-width` | 展开宽度（`width` 属性优先） | `220px` |
 
 ### oas-sidebar-item
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -395,11 +408,15 @@
 | `icon-color` | — | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 侧栏菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-sidebar-item>`（及 `<oas-sidebar-divider>`）递归为嵌套 children |
 
 ### oas-sidebar-divider
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

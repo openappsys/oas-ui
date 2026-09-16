@@ -84,7 +84,9 @@ Font size follows the outer context (inherited) by default; override with the CS
 
 ## API
 
-### Attributes
+### oas-gradient-text
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -95,23 +97,23 @@ Font size follows the outer context (inherited) by default; override with the CS
 | `stroke-color` | Stroke color (falls back to the `--oas-color-text-primary` token, adapting to light/dark themes; whitelist-validated) | `string` | — |
 | `type` | Semantic color gradient: `primary` / `success` / `warning` / `danger` / `info` (token-derived two stops; explicit `gradient` wins) | `string` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Gradient text content |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-gradient-text-dir` | `to right` |
 | `--oas-gradient-text-duration` | `3s` |
 | `--oas-gradient-text-font` | `inherit` |
-| `--oas-gradient-text-from` | — |
+| `--oas-gradient-text-from` | `var(--oas-color-primary)` |
 | `--oas-gradient-text-stroke-c` | — |
 | `--oas-gradient-text-stroke-w` | — |
-| `--oas-gradient-text-to` | — |
+| `--oas-gradient-text-to` | `var(--oas-color-primary-hover)` |
 
 - The default gradient uses theme tokens (`--oas-color-primary` → `--oas-color-primary-hover`), switching automatically with the light/dark theme — no hardcoded color values.
 - Color-stop entries are validated against a whitelist to prevent CSS injection.

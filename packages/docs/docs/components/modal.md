@@ -538,7 +538,7 @@ onMounted(async () => {
         title: '设置密码',
         inputType: 'password',
         placeholder: '8-16 位，含字母和数字',
-        inputPattern: '^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,16}$',
+        inputPattern: '^(?=.*[A-Za-z])[?=.*\\d](A-Za-z\\d){8,16}$',
         inputErrorMessage: '需 8-16 位且同时包含字母和数字',
       })
       .then((r) => {
@@ -661,7 +661,9 @@ onMounted(async () => {
 - 返回 `{ close() }` 句柄：编程关闭当前实例，不触发 `onOk` / `onCancel`。
 - 挂载到最近 `oas-app` 容器（无则 `body`）；多实例可叠放；命令式实例在关闭动画结束（`oas-after-close`）后才卸载。
 
-### 属性
+### oas-modal
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -695,7 +697,7 @@ onMounted(async () => {
 | `visible` | 是否显示 | `boolean` | — |
 | `width` | 对话框宽度（px 或百分比） | — | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -709,17 +711,17 @@ onMounted(async () => {
 | `oas-open` | — |
 | `oas-opened` | 【兼容别名】打开动画完成，等价 oas-after-open；后续版本移除 |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
-| `close-icon` | — |
-| `description` | — |
-| `footer` | — |
+| 默认 | 对话框主体内容 |
+| `close-icon` | 自定义关闭图标（替代默认 ✕） |
+| `description` | 描述文案（标题下方说明） |
+| `footer` | 底部操作区 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

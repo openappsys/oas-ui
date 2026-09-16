@@ -268,7 +268,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-popconfirm
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -293,7 +295,7 @@ onMounted(async () => {
 | `virtual-y` | — | — | — |
 | `width` | — | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -301,17 +303,17 @@ onMounted(async () => {
 | `oas-ok` | 点击「确定」，随后气泡自动收起，`detail: { source: this, event: e }` |
 | `oas-open-change` | — |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
-| `actions` | — |
-| `description` | — |
-| `icon` | — |
+| 默认 | 气泡确认框主体内容 |
+| `actions` | 操作按钮区（替代默认确认 / 取消按钮） |
+| `description` | 描述文案 |
+| `icon` | 自定义图标（替代默认疑问图标） |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

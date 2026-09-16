@@ -122,8 +122,16 @@
   ],
   "cssVars": [
     {
+      "name": "--oas-sidebar-width",
+      "default": "220px"
+    },
+    {
       "name": "--oas-sidebar-bg",
       "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-sidebar-collapsed-width",
+      "default": "64px"
     },
     {
       "name": "--oas-sidebar-badge-bg",
@@ -132,6 +140,10 @@
     {
       "name": "--oas-sidebar-badge-color",
       "default": "#fff"
+    },
+    {
+      "name": "--oas-sidebar-item-hover-bg",
+      "default": "color-mix(in srgb, var(--oas-color-text-primary) 6%, transparent)"
     }
   ],
   "unresolved": []

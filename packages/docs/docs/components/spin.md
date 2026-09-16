@@ -300,7 +300,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-spin
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -320,7 +322,7 @@ onMounted(async () => {
 | `tip-position` | 文案位置 | `string` | `below` |
 | `variant` | 形态变体 | `string` | `ring` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -328,15 +330,16 @@ onMounted(async () => {
 | `icon` | 自定义指示器插槽，替换默认圆环 |
 | `tip` | 加载文案富内容插槽，覆盖 tip 属性 |
 
-### CSS 变量
+#### CSS 变量
 
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-spin-border-width` | `3px` |
-| `--oas-spin-duration` | `0.8s` |
-| `--oas-spin-indicator-color` | `var(--oas-color-primary)` |
-| `--oas-spin-track-color` | `var(--oas-color-bg-hover)` |
-| `--oas-spin-z-index` | `3500` |
+| CSS 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--oas-spin-border-width` | 线宽（环形边框 / 进度条）；xs、small 档为 `2px` | `3px` |
+| `--oas-spin-duration` | 旋转周期 | `0.8s` |
+| `--oas-spin-indicator-color` | 指示器颜色 | `var(--oas-color-primary)` |
+| `--oas-spin-mask-bg` | 遮罩背景（包裹态 / 全屏态） | `color-mix(in srgb, var(--oas-color-bg) 70%, transparent)` |
+| `--oas-spin-track-color` | 轨道色（环形底轨 / 进度槽） | `var(--oas-color-bg-hover)` |
+| `--oas-spin-z-index` | 全屏层级 | `3500` |
 
 ### 静态方法
 

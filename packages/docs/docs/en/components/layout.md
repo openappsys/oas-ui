@@ -124,17 +124,23 @@ Child components must carry the matching `slot` attribute (`header` / `sider` / 
 
 ### oas-layout
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `side` | — | `string` | `left` |
 | `viewport` | Viewport-locked mode: locks the layout to the viewport height (100dvh by default, cascading back to 100vh; overridable via `--oas-layout-height` to 100%/calc()), header/footer fixed while the sider and content scroll independently; default is the full-page scrolling model | `boolean` | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| `content` | — |
-| `footer` | — |
-| `header` | — |
-| `sider` | — |
+| `content` | Main content area |
+| `footer` | Footer area |
+| `header` | Header area |
+| `sider` | Sider area |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -142,15 +148,21 @@ Child components must carry the matching `slot` attribute (`header` / `sider` / 
 
 ### oas-header
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Header content |
 
 ### oas-sider
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Sider content |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -159,14 +171,16 @@ Child components must carry the matching `slot` attribute (`header` / `sider` / 
 
 ### oas-content
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Content area |
 
 ### oas-footer
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
-
-**CSS 变量**
+| default | Footer content |

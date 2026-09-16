@@ -147,19 +147,19 @@
     },
     {
       "name": "--oas-slider-track-size",
-      "default": null
+      "default": "4px"
     },
     {
       "name": "--oas-slider-track",
-      "default": null
+      "default": "var(--oas-color-border)"
     },
     {
       "name": "--oas-slider-thumb-size",
-      "default": null
+      "default": "14px"
     },
     {
       "name": "--oas-slider-color",
-      "default": null
+      "default": "var(--oas-color-primary)"
     }
   ],
   "unresolved": []

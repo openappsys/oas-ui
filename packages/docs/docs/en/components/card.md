@@ -418,7 +418,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-card
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -438,14 +440,14 @@ onMounted(async () => {
 | `title` | Card title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 | `variant` | Variant: `outlined` (default, bordered) / `borderless` (embedded, no border) | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Selected state toggled (when `selectable`), detail is `{ selected }` (the new state after the toggle) |
 | `oas-click` | Whole-card click (when `clickable`), detail contains originalEvent |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -458,7 +460,7 @@ onMounted(async () => {
 | `footer` | Independent footer strip (separate from the actions area) |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

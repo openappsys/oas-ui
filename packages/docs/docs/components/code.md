@@ -164,7 +164,9 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 
 ## API
 
-### 属性
+### oas-code
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -179,14 +181,14 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 | `variant` | 行内形态：`subtle`（默认浅底）/ `outline`（描边）/ `plain`（纯文字）/ `solid`（实底）；非法值回落 `subtle` 并告警 | — | — |
 | `word-wrap` | 长代码换行显示，不横向滚动 | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-copy` | 复制成功，`detail: { text }` |
 | `oas-copy-error` | 复制失败，`detail: { text }` |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

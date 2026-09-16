@@ -448,6 +448,8 @@ Try it with DevTools device emulation (e.g. iPhone SE 375×667); desktop browser
 
 ### oas-tag
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `checkable` | Selectable: click / Enter / Space toggles `checked` and dispatches `oas-change`; mutually exclusive with `closable` | `boolean` | — |
@@ -476,17 +478,31 @@ Try it with DevTools device emulation (e.g. iPhone SE 375×667); desktop browser
 | `type` | Type | `TagType` | `default` |
 | `variant` | Shape (orthogonal to `type`): `outlined` / `filled` / `solid`; when unset, keeps the legacy type rendering | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-change` | Selection toggled when `checkable`, `detail: { checked }` |
 | `oas-click` | Whole-tag click (when `clickable`), detail contains originalEvent |
 | `oas-close` | Close, `cancelable`; `preventDefault` prevents removal |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | default | Tag content |
 
+#### CSS Variables
+
+| CSS Variable | Description | Default |
+| --- | --- | --- |
+| `--oas-tag-avatar-size` | Avatar size for `avatar` mode, derived per size level and falling back to control-height-sm − 4px when no level matches | `calc(var(--oas-control-height-sm) - 4px)` |
+| `--oas-tag-color` | Text color: the `color` attribute feeds through this variable; `--tag-color` is the component's internal current color, falling back to text-primary when unset | `var(--tag-color, var(--oas-color-text-primary))` |
+| `--oas-tag-color-deep` | Deeper text color used by the `deep` variant, falling back to text-primary when unset | `var(--tag-color, var(--oas-color-text-primary))` |
+
 ### oas-tag-group
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -495,9 +511,13 @@ Try it with DevTools device emulation (e.g. iPhone SE 375×667); desktop browser
 | `multiple` | Multi-select mode (`value` holds comma-separated selected values) | `boolean` | — |
 | `value` | Selected value: a single value for single-select, comma-separated for multi-select | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-change` | Selection change. Single: `detail: { value }`; multiple: `detail: { value: [] }` |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

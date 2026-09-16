@@ -267,7 +267,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-rate
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -291,26 +293,26 @@ onMounted(() => {
 | `void-color` | Unselected color | — | — |
 | `void-icon` | Unselected icon name (e.g. heart for a ♥/♡ dual state) | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Score change, `detail: { value }` |
 | `oas-hover` | Fires on star hover, `detail: { value }`; `{ value: null }` on leave |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| `icon` | — |
-| `void-icon` | — |
+| `icon` | Custom icon for the selected state (replaces the default star) |
+| `void-icon` | Custom icon for the unselected state (replaces the default star) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-rate-active` | `var(--oas-color-warning)` |
-| `--oas-rate-star-size` | — |
+| `--oas-rate-star-size` | `20px` |
 | `--oas-rate-void` | `var(--oas-color-border)` |
 
 Icon customization: `icon` property > `slot="icon"` (cloned to each star) > default star.

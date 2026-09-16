@@ -136,7 +136,9 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 
 ## API
 
-### Attributes
+### oas-calendar
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -151,7 +153,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | `show-week-number` | Show the ISO week number column | `boolean` | — |
 | `value` | Selected value (ISO) | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -160,7 +162,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | `oas-mode-change` | Dispatched when year mode auto-switches back to month view after picking a month, `detail: { mode }` |
 | `oas-panel-change` | Dispatched when the displayed panel month changes due to user paging/month picking/jumps, `detail: { date }` (date is the first day of the new page) |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

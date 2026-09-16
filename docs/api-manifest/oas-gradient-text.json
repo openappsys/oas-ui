@@ -64,11 +64,11 @@
     },
     {
       "name": "--oas-gradient-text-from",
-      "default": null
+      "default": "var(--oas-color-primary)"
     },
     {
       "name": "--oas-gradient-text-to",
-      "default": null
+      "default": "var(--oas-color-primary-hover)"
     },
     {
       "name": "--oas-gradient-text-duration",

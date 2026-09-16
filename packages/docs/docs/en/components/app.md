@@ -74,7 +74,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-app
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -82,7 +84,7 @@ onMounted(async () => {
 | `notification` | Global default config JSON for the notification imperative API (keys aligned with existing options: `duration`/`showProgress`/`progressPosition`/`scrollable`); imperative functions merge the nearest app's config with call options, call options win; invalid JSON is ignored with a dev warning | — | — |
 | `toast` | — | — | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

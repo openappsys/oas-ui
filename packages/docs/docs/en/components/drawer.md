@@ -344,7 +344,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-drawer
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -374,7 +376,7 @@ onMounted(async () => {
 | `width` | Drawer width (px or percentage), takes precedence over `size` | — | — |
 | `z-index` | — | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -388,13 +390,13 @@ onMounted(async () => {
 | `oas-opened` | [Compat alias] Open animation finished, same as oas-after-open; will be removed later |
 | `oas-resize` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
-| `footer` | — |
-| `header-actions` | — |
+| default | Drawer body content |
+| `footer` | Footer action area |
+| `header-actions` | Action area on the right of the title bar |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
 `role="dialog"` + `aria-modal="true"`; focus moves in on open (default ✕, overridable via `initial-focus`) and is restored on close.

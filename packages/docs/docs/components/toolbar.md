@@ -282,6 +282,8 @@ onMounted(() => {
 
 ### oas-toolbar
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `disabled` | 整栏禁用（`aria-disabled` + `inert`，子项不参与 roving） | `boolean` | — |
@@ -289,6 +291,8 @@ onMounted(() => {
 | `loop` | 方向键循环导航开关：缺省开启；`false` 时在首尾停止 | `string` | — |
 | `orientation` | 布局方向：`horizontal`（默认）/ `vertical`（纵向，方向键随向导航、分隔符自动变横线） | `string` | `horizontal` |
 | `size` | 尺寸档位：`small` / `medium`（默认）/ `large` | `string` | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -298,6 +302,8 @@ onMounted(() => {
 
 ### oas-toolbar-toggle
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `disabled` | 整组禁用 | `boolean` | — |
@@ -306,11 +312,15 @@ onMounted(() => {
 | `size` | 尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar | `string` | — |
 | `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 切换，`detail: { value: string \| string[] }` |
 
 ### oas-toolbar-input
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -319,10 +329,14 @@ onMounted(() => {
 | `size` | 尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar | `string` | — |
 | `value` | 预设值（受控入口；事件不带写回，宿主可监听更新） | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | Enter 或失焦提交，`detail: { value }` |
 | `oas-input` | 输入中，`detail: { value }` |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
@@ -330,10 +344,14 @@ onMounted(() => {
 
 ### oas-toolbar-toggle-item
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `disabled` | 禁用该项（点击不可选，方向键跳过） | — | — |
 | `value` | 选项值（子元素声明式通道的数据载体字段） | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

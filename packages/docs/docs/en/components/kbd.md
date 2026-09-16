@@ -92,7 +92,9 @@ Nest inside other components via slot projection:
 
 ## API
 
-### Attributes
+### oas-kbd
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -101,13 +103,13 @@ Nest inside other components via slot projection:
 | `size` | Size tier: `small` / `medium` (default) / `large`; invalid values fall back to `medium` with a warning | `string` | — |
 | `variant` | Style: `raised` (default, 3D keycap) / `outline` (bordered) / `subtle` (light background) / `plain` (text only); invalid values fall back to `raised` with a warning | `string` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Key text |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

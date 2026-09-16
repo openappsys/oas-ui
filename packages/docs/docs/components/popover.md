@@ -782,7 +782,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-popover
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -833,25 +835,25 @@ onMounted(() => {
 | `virtual-y` | 虚拟锚点 y（视口坐标，px） | — | — |
 | `width` | 面板宽度：数字（px）/ `"trigger"`（与触发元素同宽）/ 任意 CSS 值（如 `50%`、`240px`）；未设置保持默认 | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-before-close` | — |
 | `oas-open-change` | open 状态变化，`detail: { open }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
-| `content` | — |
+| 默认 | 面板主体内容 |
+| `content` | 面板内容（与默认插槽等价，具名便于显式指定） |
 | `description` | 描述富内容插槽（aria-describedby 关联） |
 | `footer` | 底部结构化插槽 |
 | `header` | 头部结构化插槽 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

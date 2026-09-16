@@ -194,7 +194,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-speed-dial
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -205,20 +207,20 @@ onMounted(() => {
 | `radius` | Arc radius in px (default 96; only effective when `geometry` is not `linear`; invalid values fall back to 96) | — | — |
 | `trigger` | Trigger mode: `click` (default) \| `hover` (open on hover, collapse on leave with a 120ms grace period; falls back to click on touch devices) | `string` | `click` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-open` | Expanded/collapsed, `detail: { open, reason }`; reason is `toggle` / `outside` / `escape` / `select` / `hover` (source marker, backward compatible with the open field) |
 | `oas-select` | A sub-action was selected, `detail: { index, label }`, then it collapses automatically |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Custom icon for the main button; when provided it replaces the default ＋ (45° rotation on expansion is preserved) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

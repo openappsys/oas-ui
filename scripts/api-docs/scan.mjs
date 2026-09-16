@@ -32,9 +32,9 @@ const OUT = join(ROOT, 'docs', 'api-manifest.json')
 const OUT_DIR = join(ROOT, 'docs', 'api-manifest')
 
 // ---------- cssVars：组件出口 var(--oas-*) 收割 ----------
-// 出口 = 组件暴露给宿主的自定义点（引用 + 字面 fallback），用户在应用 CSS 里覆盖即可定制。
-// 排除：theme 家族 token（全局语义，非组件出口）、自身声明（内部派生）、JS setProperty
-// 内部管线、动态前缀拼接。theme 定义集用于排除判定。
+// 出口 = 组件 CSS 里 var() 读取的自定义点。默认值取字面 fallback，无则取源码声明值。
+// 排除：全局家族 token（NON_OUTLET_FAMILY）、动态前缀拼接（尾部 `-` / `${}`）、
+// theme 定义的全局 token（组件自身作用域 `--<tag>-` 命名的除外）。theme 定义集用于排除判定。
 const THEME_TOKENS = (() => {
   try {
     return new Set(
@@ -49,21 +49,90 @@ const THEME_TOKENS = (() => {
 const NON_OUTLET_FAMILY =
   /^--oas-(space|radius|font|ease|color|shadow|z|control-height|transition|line-height|touch-target)-/
 
-/** 从组件源码收割 var(--oas-*) 出口：[{ name, default }]（default = 字面 fallback，无则 null） */
-function extractCssVars(source) {
-  const jsSet = new Set([...source.matchAll(/(?:set|remove)Property\(\s*'(--oas-[a-z0-9-]+)'/g)].map((m) => m[1]))
+/** 从组件源码收割 var(--oas-*) 出口：[{ name, default }]（default = 字面 fallback 或源码声明值，无则 null） */
+function extractCssVars(source, tag) {
+  // 源码内自声明（--oas-x: <value>）→ 用作无 fallback 出口的默认值（取首处，通常是基态）
+  const declared = new Map()
+  for (const m of source.matchAll(/(--oas-[a-z0-9-]+)\s*:\s*([^;{}]+)/g)) {
+    if (!declared.has(m[1])) declared.set(m[1], m[2].trim())
+  }
+  const selfPrefix = `--${tag}-`
+  // fallback / 声明值原样收录（仅规范化空白）；无 fallback 且无声明 → null（表里显示 —）
+  const normDefault = (v) => (v && v.trim() ? v.replace(/\s+/g, ' ').trim() : null)
+
   const out = []
   const seen = new Set()
-  const re = /var\(\s*(--oas-[a-z0-9-]+)\s*(?:,\s*((?:[^(),]|\([^()]*\))+?))?\s*\)/g
-  let m
-  while ((m = re.exec(source))) {
-    const name = m[1]
-    if (seen.has(name) || THEME_TOKENS.has(name) || NON_OUTLET_FAMILY.test(name)) continue
-    if (jsSet.has(`--${name.slice(1)}`) || name.endsWith('-')) continue
+  let i = source.indexOf('var(')
+  while (i !== -1) {
+    let j = i + 4
+    while (j < source.length && /\s/.test(source[j])) j++
+    const nm = /^(--oas-[a-z0-9-]+)/.exec(source.slice(j, j + 64))
+    if (!nm) {
+      i = source.indexOf('var(', i + 4)
+      continue
+    }
+    const name = nm[1]
+    j += name.length
+    while (j < source.length && /\s/.test(source[j])) j++
+    let fallback = null
+    if (source[j] === ',') {
+      // 平衡括号扫描：无论回退嵌套多深都能取全，不会因正则失配漏掉变量
+      let k = j + 1
+      let depth = 1
+      const start = k
+      while (k < source.length && depth > 0) {
+        const ch = source[k]
+        if (ch === '(') depth++
+        else if (ch === ')') depth--
+        if (depth === 0) break
+        k++
+      }
+      fallback = source.slice(start, k).trim()
+      j = k
+    }
+    i = source.indexOf('var(', j + 1)
+    if (
+      seen.has(name) ||
+      NON_OUTLET_FAMILY.test(name) ||
+      name.endsWith('-') ||
+      (THEME_TOKENS.has(name) && !name.startsWith(selfPrefix))
+    )
+      continue
     seen.add(name)
-    // fallback 仅接受无括号的简单字面量（嵌套 var()/函数式回退在表里显示 —，变量名才是发现重点）
-    const fb = m[2]?.trim()
-    out.push({ name, default: fb || null })
+    out.push({ name, default: normDefault(fallback) ?? normDefault(declared.get(name)) ?? null })
+  }
+  return collapseIndexRuns(out)
+}
+
+/** 同前缀数字出口（-1/-2/...）≥3 个折叠为 `--x-{1..N}`，避免逐条刷屏 */
+function collapseIndexRuns(rows) {
+  const groups = new Map()
+  const order = []
+  for (const r of rows) {
+    const m = /^(.*-)(\d+)$/.exec(r.name)
+    if (!m) {
+      order.push({ row: r })
+      continue
+    }
+    if (!groups.has(m[1])) {
+      groups.set(m[1], [])
+      order.push({ run: m[1] })
+    }
+    groups.get(m[1]).push({ ...r, idx: Number(m[2]) })
+  }
+  const out = []
+  for (const o of order) {
+    if (!o.run) {
+      out.push(o.row)
+      continue
+    }
+    const g = groups.get(o.run)
+    if (g.length < 3) {
+      out.push(...g.map((r) => ({ name: r.name, default: r.default })))
+      continue
+    }
+    const idx = g.map((r) => r.idx).sort((a, b) => a - b)
+    out.push({ name: `${o.run}{${idx[0]}..${idx[idx.length - 1]}}`, default: null })
   }
   return out
 }
@@ -681,18 +750,51 @@ function scanTemplateSlotRefs(text, names) {
   }
 }
 
+// light-DOM 标记式插槽：组件用 querySelector('[slot="x"]') 读取（或动态 createElement('slot') 建槽）的
+// 宿主子元素槽位，不走 shadow <slot>。同一槽已有归一形式 `template[slot="x"]` 时不再收裸名（避免重复行）。
+// 排除：动态插值名、内部保留标记。
+const MARKER_SLOT_DENY = new Set(['oas-popover-stash'])
+function scanMarkerSlots(text, names) {
+  if (!text) return
+  const re = /\[slot\s*=\s*['"]([^'"]+)['"]\]/g
+  let m
+  while ((m = re.exec(text))) {
+    const before = text.slice(0, m.index).match(/[A-Za-z_$]+$/)
+    if (before && before[0] === 'template') continue
+    const name = m[1]
+    if (!name || name.includes('${') || name === '...' || MARKER_SLOT_DENY.has(name)) continue
+    if (names.has(`template[slot="${name}"]`)) continue
+    names.add(name)
+  }
+}
+
+// `getAttribute('slot') === 'x'` / `.slot === 'x'`：组件按宿主子元素 slot 名识别槽位（写在代码而非模板里）
+function scanSlotAttrRefs(text, names) {
+  if (!text) return
+  const re = /getAttribute\(\s*['"]slot['"]\s*\)\s*===\s*['"]([^'"]+)['"]|\.slot\s*===\s*['"]([^'"]+)['"]/g
+  let m
+  while ((m = re.exec(text))) {
+    const name = m[1] ?? m[2]
+    if (name && !name.includes('${')) names.add(name)
+  }
+}
+
 function extractSlots(cls) {
   const names = new Set()
   // 类内所有模板字面量（render 的 innerHTML 模板）与普通字符串
+  const texts = []
   walk(cls, (n) => {
-    if (n.kind === K.TemplateExpression || n.kind === K.NoSubstitutionTemplateLiteral) {
-      scanSlotsInHtml(n.getText(), names)
-      scanTemplateSlotRefs(n.getText(), names)
-    } else if (n.kind === K.StringLiteral) {
-      scanSlotsInHtml(n.text, names)
-      scanTemplateSlotRefs(n.text, names)
-    }
+    if (n.kind === K.TemplateExpression || n.kind === K.NoSubstitutionTemplateLiteral) texts.push(n.getText())
+    else if (n.kind === K.StringLiteral) texts.push(n.text)
   })
+  for (const t of texts) {
+    scanSlotsInHtml(t, names)
+    scanTemplateSlotRefs(t, names)
+  }
+  // 归一扫描之后跑：已有 template[slot="x"] 的槽不再重复收裸名
+  for (const t of texts) scanMarkerSlots(t, names)
+  // 代码式判定（跨字符串，需整类源码）
+  scanSlotAttrRefs(cls.getText(), names)
   return [...names].sort((a, b) => (a === '' ? -1 : b === '' ? 1 : a < b ? -1 : 1)).map((name) => ({ name }))
 }
 
@@ -766,7 +868,7 @@ function scanDir(project, dir, unresolvedGlobal) {
     }
     const events = extractEvents(classNode, unresolved)
     const slots = extractSlots(classNode)
-    const cssVars = classFile ? extractCssVars(readFileSync(join(ROOT, classFile), 'utf8')) : []
+    const cssVars = classFile ? extractCssVars(readFileSync(join(ROOT, classFile), 'utf8'), tag) : []
 
     manifest[tagKey] = {
       className: cls,

@@ -223,7 +223,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-config-provider
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -235,11 +237,11 @@ onMounted(async () => {
 | `theme` | 包裹子树的主题，写入 `data-theme` | — | — |
 | `z-index` | 浮层全局起始值（正整数）；写入宿主 `--oas-z-index-base`，子树内浮层 z-index 统一抬升；非法值忽略 + dev 告警 | `string` | — |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 被提供配置的子树内容 |
 
 - 组件读取顺序：自身属性 > config-provider > 全局默认。
 - `locale` 需先 `registerLocale()` 注册语言包，未注册时回退全局 translator。

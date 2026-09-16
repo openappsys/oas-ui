@@ -282,6 +282,8 @@ Breakpoint table:
 
 ### oas-space
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `align` | Alignment | `string` | — |
@@ -294,6 +296,8 @@ Breakpoint table:
 | `size` | Spacing: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; a comma-separated pair (e.g. `8,16`) controls horizontal/vertical spacing separately; supports breakpoint shorthand (e.g. `small md:large`, breakpoints as in `direction`); invalid values fall back to `medium` with a warning | `string` | `medium` |
 | `wrap` | Whether to wrap | `boolean` | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | default | Items |
@@ -301,12 +305,16 @@ Breakpoint table:
 
 ### oas-compact
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | — | `boolean` | — |
 | `block` | Width 100% (stretch to fill the parent container) | — | — |
 | `disabled` | Disable the whole group | `boolean` | — |
 | `vertical` | Vertical grouping (adjacent items overlap -1px vertically, corner merging switches to top/bottom) | `boolean` | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

@@ -310,7 +310,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-carousel
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -330,19 +332,19 @@ onMounted(() => {
 | `slides-per-view` | 每屏展示屏数（默认 1；索引语义为页，末页对齐轨道末尾不露空白） | `string` | `1` |
 | `type` | 轮播形态：`"card"` 为卡片模式——当前卡居中为主体、左右邻卡露出缩小降透明，点击邻卡直接切换；与 `slides-per-view`/`effect`/`direction` 互斥（卡片模式优先），卡宽/卡间距/邻卡缩放走 `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale` | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 当前屏切换，`detail: { index }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 轮播项 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

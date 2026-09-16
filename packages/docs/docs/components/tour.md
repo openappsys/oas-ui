@@ -348,11 +348,11 @@ onMounted(async () => {
 })
 </script>
 
-
-
 ## API
 
-### 属性
+### oas-tour
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -401,7 +401,7 @@ onMounted(async () => {
 | `wait-for-element` | 等待目标出现（毫秒，异步步骤；全局默认，step 级 `waitForElement` 优先） | — | — |
 | `z-index` | 遮罩层级（默认 `--oas-z-modal`） | — | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -415,7 +415,7 @@ onMounted(async () => {
 | `oas-skip` | 点击「跳过」按钮，`detail: { index, total }` |
 | `oas-step` | 步骤切换，`detail: { index, current, total, next, prev }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -423,7 +423,7 @@ onMounted(async () => {
 | `cover` | 步骤封面富内容（插槽优先于 step.cover 图片） |
 | `indicators` | 自定义指示器区（宿主用 `oas-step` 的 current/total 渲染；有内容时隐藏内置圆点/数字指示器） |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

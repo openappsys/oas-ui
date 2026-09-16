@@ -305,6 +305,8 @@ onMounted(async () => {
 
 ### oas-descriptions
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `bordered` | 边框表格形态：网格线成表 + label 格淡底色 | `boolean` | — |
@@ -314,11 +316,15 @@ onMounted(async () => {
 | `size` | 尺寸档位：`small` / `medium`（默认）/ `large`（padding 与字号联动） | `string` | `medium` |
 | `title` | 标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 描述项（`oas-descriptions-item`） |
 | `extra` | 标题同排右侧操作区 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
@@ -326,15 +332,21 @@ onMounted(async () => {
 
 ### oas-descriptions-item
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `label` | 字段标签 | `string` | — |
 | `span` | 跨列数（正整数，默认 1；超出剩余列数时网格自动换行起占） | `string` | `1` |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 字段内容 |
 | `label` | label 富内容（图标+文字等；与 label 属性互斥，slot 优先） |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
@@ -347,5 +359,3 @@ onMounted(async () => {
 | `--oas-desc-label-color` | `var(--oas-color-text-secondary)` |
 | `--oas-desc-layout-dir` | `row` |
 | `--oas-descriptions-item-font` | `var(--oas-desc-font-size, inherit)` |
-
-**CSS 变量**

@@ -236,7 +236,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-cascader
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -258,7 +260,7 @@ onMounted(() => {
 | `value` | 路径数组（JSON），如 `["zj","hz"]` | `string` | `[]` |
 | `value-mode` | 多选值策略：`all`（默认，全路径）/ `parentFirst` / `onlyLeaf` | `string` | `all` |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |

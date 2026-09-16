@@ -159,6 +159,19 @@
       "name": ""
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-tag-color",
+      "default": "var(--tag-color, var(--oas-color-text-primary))"
+    },
+    {
+      "name": "--oas-tag-color-deep",
+      "default": "var(--tag-color, var(--oas-color-text-primary))"
+    },
+    {
+      "name": "--oas-tag-avatar-size",
+      "default": "calc(var(--oas-control-height-sm) - 4px)"
+    }
+  ],
   "unresolved": []
 }

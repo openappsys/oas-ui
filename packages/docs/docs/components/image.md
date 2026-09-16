@@ -393,6 +393,8 @@ onMounted(async () => {
 
 ### oas-image
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `alt` | 替代文本 | — | — |
@@ -407,6 +409,8 @@ onMounted(async () => {
 | `preview-src-list` | 图集预览：URL JSON 数组，点开后 prev/next 翻页 + 页码 + 键盘 ←→ | `string` | — |
 | `src` | 图片地址 | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-error` | 图片最终失败（回退链耗尽），`detail: { src }` |
@@ -416,6 +420,8 @@ onMounted(async () => {
 | `oas-preview-nav` | 图集翻页/跳转，`detail: { index, src }`；供 oas-image-group 容器接管索引 |
 | `oas-toolbar-render` | 自定义工具栏渲染通知（克隆完成与每次打开预览均派发，宿主重复绑定幂等），detail { element, actions }：element 为克隆后的工具栏容器，actions 为查看器命令集合 |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | `template[slot="error"]` | 自定义失败占位内容（主图与图集预览失败位复用） |
@@ -424,23 +430,29 @@ onMounted(async () => {
 
 ### oas-image-group
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `current` | 当前图集索引（可选受控）：属性在场时受控——点击按 current 起开、内部翻页反射回该属性、外部改属性驱动预览跳图；缺席时不造属性，仅派发 oas-change | — | — |
 | `infinite` | 翻页首尾循环（透传共享预览宿主） | `boolean` | — |
+
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 图集切换，`detail: { current, prev }` |
 | `oas-preview` | 打开共享预览浮层，`detail: { src }`（src 为当前张地址） |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 图集成员（`oas-image`） |
 | `template[slot="toolbar"]` | 透传共享预览宿主：自定义共享预览浮层的工具栏（克隆替换默认按钮组 + oas-toolbar-render 命令通道，同 oas-image） |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-image-group-gap` | `var(--oas-space-3)` |
-
-**CSS 变量**

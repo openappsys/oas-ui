@@ -358,6 +358,8 @@ onMounted(() => {
 
 ### oas-toggle-group
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `aria-label` | 组可访问名（宿主覆盖；缺省走 locale 兜底） | — | — |
@@ -374,10 +376,14 @@ onMounted(() => {
 | `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | `string` | `[]` |
 | `vertical` | 纵向排列（联动 aria-orientation 与轴向键） | `boolean` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 切换，`detail: { value: string \| string[] }` |
 | `oas-exceed-limit` | 达 max-count 上限后的越界选择尝试，`detail: { value, max }` |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
@@ -386,12 +392,16 @@ onMounted(() => {
 
 ### oas-toggle-item
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `aria-label` | 该项可访问名（纯图标项必填语义；缺省由图标名派生） | — | — |
 | `disabled` | 禁用该项（点击不可选，方向键跳过） | — | — |
 | `icon` | 图标（oas-icon 图标名）；label 可省（纯图标项） | — | — |
 | `value` | 选项值（子元素声明式通道的数据载体字段） | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

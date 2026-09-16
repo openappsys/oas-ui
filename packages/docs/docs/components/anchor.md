@@ -355,6 +355,8 @@ onMounted(() => {
 
 ### oas-anchor
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `active` | 当前高亮 href（受控：外部设置/清除立即生效；滚动联动接管后回写） | `string` | — |
@@ -376,6 +378,8 @@ onMounted(() => {
 | `target-offset` | 点击定位落点偏移（px），避让固定头；未设置时回退 `offset`；项级 `targetOffset` 优先 | `string` | — |
 | `variant` | 样式变体：`default`（轨道+墨水条）/ `underline`（滑动下划线）/ `lineless`（无轴线）/ `block`（块状背景） | `string` | `default` |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 高亮切换（点击或滚动联动均派发），`detail: { href, prevHref }` |
@@ -383,9 +387,13 @@ onMounted(() => {
 
 ### oas-anchor-target
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `id` | 目标标记 id：同步到内部 `part=target` 元素，锚点项以此为滚动定位目标 | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -393,11 +401,15 @@ onMounted(() => {
 
 ### oas-anchor-item
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `href` | 锚点目标：`#id`（或外链地址；外链建议搭配 `target`） | — | — |
 | `target` | 链接 target（如 `_blank`）：设置后不拦截默认行为，交由浏览器打开（自动补 `rel="noopener noreferrer"`） | — | — |
 | `target-offset` | 项级点击落点偏移（px），优先于全局 `target-offset`；非法值忽略 | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

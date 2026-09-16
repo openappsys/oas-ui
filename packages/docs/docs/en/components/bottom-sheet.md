@@ -70,7 +70,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-bottom-sheet
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -78,19 +80,19 @@ onMounted(async () => {
 | `open` | Controlled open state (single source of truth). Shows the bottom panel and backdrop when open; gestures (drag handle / backdrop click / Esc) only emit oas-close requests — the host removes open to actually close (the component never mutates the controlled value) | `boolean` | — |
 | `passive` | Passive passthrough mode — hides backdrop and drag handle, disables overlay positioning and gestures; renders a static structure placeholder only (for overlay components PC-form reuse; SSR/client structure strictly identical) | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-close` | Close request; detail.reason is drag (handle dragged past threshold) / backdrop (backdrop click) / esc (Escape key). The component only emits — the host decides to close by removing open |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Sheet body content |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

@@ -106,19 +106,19 @@
   "cssVars": [
     {
       "name": "--oas-icon-primary-color",
-      "default": null
+      "default": "currentColor"
     },
     {
       "name": "--oas-icon-primary-opacity",
-      "default": null
+      "default": "1"
     },
     {
       "name": "--oas-icon-secondary-color",
-      "default": null
+      "default": "currentColor"
     },
     {
       "name": "--oas-icon-secondary-opacity",
-      "default": null
+      "default": "0.4"
     }
   ],
   "unresolved": []

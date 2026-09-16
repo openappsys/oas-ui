@@ -597,6 +597,8 @@ onMounted(async () => {
 
 ### oas-tabs
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `activation` | Keyboard activation: `auto` (default, arrow keys switch immediately) / `manual` (arrows move focus only, Enter/Space switches — a11y manual activation) | `string` | `auto` |
@@ -623,6 +625,8 @@ onMounted(async () => {
 | `type` | Style variant: `line` (underline, default) / `card` | `string` | `line` |
 | `without-scroll-controls` | Disable the overflow scroll arrows (shown by default when tabs overflow) | `boolean` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-add` | The + button was clicked, `detail: { label }` (default new-tab label from locale; use it or customize it) |
@@ -632,9 +636,17 @@ onMounted(async () => {
 | `oas-rename` | Editable tab rename confirmed via double-click + Enter, `detail: { value, label }`; the component writes the new label back to the panel, host may persist |
 | `oas-reorder` | Fired after sortable drag reorder, `detail: { fromIndex, toIndex }`; host reorders `oas-tab-panel` accordingly (the component does not move DOM itself) |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Tab panels (`oas-tab-panel`) |
+| `add-icon` | Add button icon content (addable tabs) |
+| `close-icon` | Close button icon content (closable tabs) |
+| `icon` | Icon content for a tab item (replaces the panel's icon attribute) |
+| `label` | Label content for a tab item (not projected through the panel's default slot) |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -644,6 +656,8 @@ onMounted(async () => {
 | `--oas-tabs-indicator-size` | `2px` |
 
 ### oas-tab-panel
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -658,8 +672,10 @@ onMounted(async () => {
 | `target` | Link target (only with href, e.g. `_blank`) | — | — |
 | `value` | Tab value | — | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Panel content |
 
 Keyboard: after focusing the tab list, `←` / `→` / `↑` / `↓` cycle through tabs; with a close button focused, Enter / Space triggers close. `oas-tab-panel` declares the `hidden` attribute to hide inactive panels (content stays in the DOM).

@@ -113,14 +113,16 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-equation
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `code` | LaTeX 子集源文本 | `string` | — |
 | `display` | 显示模式：`inline`（默认，随文）/ `block`（独立居中块，margin-block 间距） | `string` | — |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

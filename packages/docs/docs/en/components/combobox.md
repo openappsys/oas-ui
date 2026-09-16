@@ -222,7 +222,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-combobox
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -241,7 +243,7 @@ onMounted(() => {
 | `value` | Current value (controlled, the selected option's `option.value`) | `string` | — |
 | `virtual` | Virtual scroll (reuses oas-virtual-list to render only the visible window; options with group fall back to full rendering) | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |

@@ -206,7 +206,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-skeleton
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -220,13 +222,13 @@ onMounted(() => {
 | `title` | Whether to show the title placeholder (title is a presence-only switch, its value is not rendered; absorbed from the host on read so no native hover tooltip remains) | `string` | — |
 | `widths` | Comma-separated per-row widths (e.g. `100%,80%,45%`), overriding the default text row widths inline | `string` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Real content outlet: rendered when loading="false" (skeleton and content both live in shadow DOM, toggled via hidden) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

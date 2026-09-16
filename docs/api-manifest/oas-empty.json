@@ -66,15 +66,15 @@
   "cssVars": [
     {
       "name": "--oas-empty-icon-color",
-      "default": null
+      "default": "var(--oas-color-text-secondary)"
     },
     {
       "name": "--oas-empty-title-size",
-      "default": null
+      "default": "var(--oas-font-size-lg)"
     },
     {
       "name": "--oas-empty-desc-size",
-      "default": null
+      "default": "var(--oas-font-size-md)"
     }
   ],
   "unresolved": []

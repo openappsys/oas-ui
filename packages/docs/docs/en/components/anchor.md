@@ -355,6 +355,8 @@ onMounted(() => {
 
 ### oas-anchor
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `active` | Currently highlighted href (controlled: external set/remove takes effect immediately; the scroll spy writes it back) | `string` | — |
@@ -376,6 +378,8 @@ onMounted(() => {
 | `target-offset` | Click landing offset in px (avoids fixed headers); falls back to `offset` when unset; per-item `targetOffset` wins | `string` | — |
 | `variant` | Style variant: `default` (rail + moving ink) / `underline` (sliding underline) / `lineless` (no axis) / `block` (filled background) | `string` | `default` |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-change` | Fired on highlight change (both click and scroll-driven), `detail: { href, prevHref }` |
@@ -383,9 +387,13 @@ onMounted(() => {
 
 ### oas-anchor-target
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `id` | Target marker id: synced to the inner `part=target` element, used by anchor items as the scroll landing target | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -393,11 +401,15 @@ onMounted(() => {
 
 ### oas-anchor-item
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `href` | Anchor target: `#id` (or an external URL; combine with `target` for external links) | — | — |
 | `target` | Link target (e.g. `_blank`): when set, the default browser behavior is not intercepted (`rel="noopener noreferrer"` is added automatically) | — | — |
 | `target-offset` | Per-item click landing offset (px), overriding the global `target-offset`; invalid values are ignored | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

@@ -310,6 +310,8 @@ onMounted(() => {
 
 ### oas-breadcrumb
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `active-last` | 末项保持可点击：当前页（末项）带 `href` 时渲染为链接（仍带 `aria-current="page"`） | `boolean` | — |
@@ -326,16 +328,28 @@ onMounted(() => {
 | `size` | 尺寸档位：`small`/`medium`（默认）/`large` | `string` | `medium` |
 | `variant` | 样式变体：`underline`（链接与当前项常驻下划线） | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-collapse-click` | 折叠省略号被点击展开下拉（收起不派发），`detail: { collapsedItems }`（被折叠的原始项数组，宿主可自定义折叠面板） |
 | `oas-select` | 点击链接项、折叠下拉项或项下拉菜单项；`detail: { value: href }`（真实链接不阻止默认跳转，宿主可拦截做路由） |
+
+#### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `separator` | 自定义分隔符内容（文本或图标，替代 separator 属性） |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-breadcrumb-font` | `inherit` |
 
 ### oas-breadcrumb-item
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -348,11 +362,15 @@ onMounted(() => {
 | `separator` | 项级分隔符：覆盖全局 `separator`（支持文本或图标名）；亦可用 `slot="separator"` 子元素传任意节点 | — | — |
 | `target` | 链接 target（`_blank` 时自动补 `noopener noreferrer`） | — | — |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 面包屑项 label 内容（默认插槽文本） |
 
 ### oas-breadcrumb-separator
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

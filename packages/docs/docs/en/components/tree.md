@@ -487,7 +487,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-tree
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -518,7 +520,7 @@ onMounted(() => {
 | `selected` | Key of the selected node | `string` | — |
 | `tree-lines` | Tree indentation guide lines | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -530,7 +532,7 @@ onMounted(() => {
 | `oas-node-render` | Dispatched for each rendered node row, `detail: { node, element }` (element is the node label container; the host can rewrite it into icon / rich text) |
 | `oas-select` | Node selected, `detail: { key, selected }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

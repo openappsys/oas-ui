@@ -395,6 +395,8 @@ onMounted(async () => {
 
 ### oas-image
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `alt` | Alternative text | — | — |
@@ -409,6 +411,8 @@ onMounted(async () => {
 | `preview-src-list` | Gallery preview: JSON array of URLs; prev/next paging + counter + keyboard ←→ after opening | `string` | — |
 | `src` | Image URL | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-error` | Image failed finally (fallback chain exhausted), `detail: { src }` |
@@ -418,6 +422,8 @@ onMounted(async () => {
 | `oas-preview-nav` | Gallery page change/jump, `detail: { index, src }`; lets the oas-image-group container take over the index |
 | `oas-toolbar-render` | Custom toolbar render notification (fired on clone and on every preview open; host re-binding is idempotent), detail { element, actions }: element is the cloned toolbar container, actions is the viewer command set |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | `template[slot="error"]` | Custom error placeholder content (shared by the main image and gallery preview failures) |
@@ -426,23 +432,29 @@ onMounted(async () => {
 
 ### oas-image-group
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `current` | Current gallery index (optional controlled): when present, clicks open at `current`, internal paging reflects back to the attribute, and external changes drive the preview jump; when absent the attribute is not created and only `oas-change` is emitted | — | — |
 | `infinite` | Loop paging around the first/last image (passed through to the shared preview host) | `boolean` | — |
+
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Gallery page changed, `detail: { current, prev }` |
 | `oas-preview` | Shared preview overlay opened, `detail: { src }` (src is the current image URL) |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Gallery members (`oas-image`) |
 | `template[slot="toolbar"]` | Forwarded to the shared preview host: customizes the shared preview overlay toolbar (clone replaces the default button group + oas-toolbar-render command channel, same as oas-image) |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-image-group-gap` | `var(--oas-space-3)` |
-
-**CSS 变量**

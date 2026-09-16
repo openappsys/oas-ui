@@ -520,6 +520,8 @@ onMounted(() => {
 
 ### oas-select
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `allow-create` | Allow creating new options from the input value when nothing matches | `boolean` | — |
@@ -543,6 +545,8 @@ onMounted(() => {
 | `value` | Current value (JSON array in multiple mode) | — | — |
 | `virtual` | Virtual scrolling for large datasets: renders only the visible window (reuses oas-virtual-list); options with a `group` field fall back to full rendering | `boolean` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-blur` | Fires when the component loses focus |
@@ -555,11 +559,15 @@ onMounted(() => {
 | `oas-option-render` | Dispatched for each rendered option row, `detail: { index, option, element }` (element is the option label container; host can rewrite it into icon/rich text) |
 | `oas-tag-render` | Dispatched when a multi-select tag renders, `detail: { value, label, element }` (element is the tag text container; host can rewrite it) |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | `template[slot="empty"]` | Custom empty state (overrides both "no data" and "no match" defaults) |
 | `template[slot="option"]` | Static option row template, cloned into each option label container; `[data-option-label]` nodes get bound to the option label |
 | `template[slot="tag"]` | Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -568,11 +576,15 @@ onMounted(() => {
 
 ### oas-option
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabled` | Disable this option (not selectable) | — | — |
 | `group` | Group title (optional): options in the same group render a consecutive group title (not selectable), items are indented | — | — |
 | `value` | Option value (data-carrier field of the declarative child-element channel) | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

@@ -302,7 +302,9 @@ When history lines are prepended, the reconcile aligns rows by content key: exis
 
 ## API
 
-### Attributes
+### oas-log
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -317,18 +319,20 @@ When history lines are prepended, the reconcile aligns rows by content key: exis
 | `offset-bottom` | Distance from the bottom that counts as reaching it (px, fires `oas-require-more` with from=bottom, default 0) | — | — |
 | `offset-top` | Distance from the top that counts as reaching it (px, fires `oas-require-more` with from=top, default 0) | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-require-more` | Fired once when scrolling enters the top/bottom threshold edge (not repeatedly while staying, re-arms after leaving), `detail: { from: "top" \| "bottom" }`; for loading history/new entries |
 | `oas-search` | Search filter report: fired when the keyword or the data changes (deduped for identical state), `detail: { keyword, matched, total }` (matched = matching line count, total = total lines; the filter window is the currently loaded lines) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-log-font` | `inherit` |
+| `--oas-log-loading-mask` | `color-mix(in srgb, var(--oas-color-bg) 65%, transparent)` |
+| `--oas-log-mark-bg` | `color-mix(in srgb, var(--oas-color-warning) 30%, transparent)` |
 | `--oas-log-mark-color` | `var(--oas-color-warning-text)` |
 
 Parts: `::part(viewport)` scroll viewport, `::part(log)` log content, `::part(row)` a single row, `::part(line-number)` line number, `::part(line)` line text, `::part(empty)` empty state.

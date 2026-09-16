@@ -111,7 +111,9 @@
 
 ## API
 
-### 属性
+### oas-masonry
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -120,13 +122,13 @@
 | `gap` | 间距（px，默认 8）。单值=列距；两值「行 列」（如 `8 16`）行距作用于子项 margin-bottom、列距作用于 column-gap；纯数字自动补 px；非法值回退默认 | — | — |
 | `items` | 瀑布流项 JSON `[{text, height?, column?}]`，也可 property 赋数组；items 显式非空时优先于 slot 子元素（子元素忽略），缺省/空数组/非法 JSON 回落 slot 通道（非法 JSON dev 告警，同值去重）。text 纯文本安全渲染；height 子项最小高度（px，写入渲染项 min-height）；column 指定列（1-based，与子元素 column 属性同一套重排逻辑） | `MasonryItem[] \| string` | `[]` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 瀑布流子项，子项自动 `break-inside: avoid`；带 `column` 属性（1-based）的子项会被重排到指定列；items 属性显式非空时子项被忽略（items 优先） |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

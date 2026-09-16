@@ -169,7 +169,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-splitter
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -182,14 +184,14 @@ onMounted(() => {
 | `sizes` | Multi-panel mode panel ratios (comma-separated percentages, e.g. `30,40,30`); falls back to equal split when count mismatches panel count | `string` | — |
 | `vertical` | Vertical direction: panels stack top-to-bottom, divider is horizontal, keyboard uses ArrowUp/Down | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-collapse` | Fired when the collapse button toggles, `detail: { collapsed, side }` (side=left means the panel before the divider) |
 | `oas-resize` | Fired after resizing. Two-panel mode `detail: { percent }`; multi-panel mode `detail: { percent, index, sizes }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
