@@ -107,7 +107,7 @@ Nest inside other components via slot projection:
 
 | Name | Description |
 | --- | --- |
-| default | Key text |
+| default | Key content (text / icons) |
 
 #### CSS Variables
 
