@@ -152,7 +152,7 @@
       <oas-button id="inplace-edit-btn" size="small">编辑</oas-button>
     </span>
     <span id="inplace-edit" hidden style="display:inline-flex;align-items:center;gap:8px">
-      <input id="inplace-input" value="展示态：头像 + 名称（任意内容）" style="height:var(--oas-control-height-sm);padding:0 8px;border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-sm)" />
+      <input id="inplace-input" aria-label="编辑昵称" value="展示态：头像 + 名称（任意内容）" style="height:var(--oas-control-height-sm);padding:0 8px;border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-sm)" />
       <oas-button id="inplace-save" size="small" variant="primary">保存</oas-button>
     </span>
   </div>

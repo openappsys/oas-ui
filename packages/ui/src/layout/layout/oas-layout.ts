@@ -127,5 +127,8 @@ export class OASLayout extends OASElement {
     const rawSide = this.getAttr('side', 'left')
     const side = rawSide === 'right' || rawSide === 'top' ? rawSide : 'left'
     struct.setAttribute('data-side', side)
+    // viewport 模式下内容区独立滚动 → 键盘用户需可达（axe: scrollable-region-focusable）
+    const content = this.shadow.querySelector<HTMLElement>('.content-part')
+    if (content) content.tabIndex = viewport ? 0 : -1
   }
 }

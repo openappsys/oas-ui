@@ -225,17 +225,19 @@ export class OASListItem extends OASElement {
       avatarEl.hidden = !hasSlot && avatarUrl === ''
     }
 
-    // 行交互：clickable → 可聚焦 + role + 高亮态钩子；selected → aria-selected
+    // 行交互：clickable → 可聚焦 + role + 高亮态钩子；selected → aria-pressed
+    // （role=button 不允许 aria-selected —— axe: aria-allowed-attr；pressed 表达可点行的选中/切换语义）
     const clickable = this.hasAttribute('clickable')
     this.toggleAttribute('data-clickable', clickable)
     if (clickable) {
       this.setAttribute('tabindex', '0')
       this.setAttribute('role', 'button')
+      this.setAttribute('aria-pressed', String(this.hasAttribute('selected')))
     } else {
       this.removeAttribute('tabindex')
       this.removeAttribute('role')
+      this.removeAttribute('aria-pressed')
     }
-    this.setAttribute('aria-selected', String(this.hasAttribute('selected')))
   }
 
   /** 键盘可达：Enter / Space 触发行点击（Space 阻止页面滚动） */

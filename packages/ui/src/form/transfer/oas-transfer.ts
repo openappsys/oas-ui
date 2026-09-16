@@ -604,11 +604,15 @@ export class OASTransfer extends OASElement {
     vlist.hidden = false
     vlist.setAttribute('items-role', 'listbox')
     vlist.setAttribute('item-role', 'presentation')
+    vlist.setAttribute('aria-label', this.titleFor(side))
     vlist.setAttribute('height', '220')
     vlist.setAttribute('item-height', String(this.virtualItemHeight()))
     this.injectVirtualStyle(vlist)
     vlist.items = visible
     this.syncPanelHead(side, visible)
+    // 虚拟列表 shadow 内的 .items 需要可访问名（transfer 标题穿透设名）
+    const items = vlist.shadowRoot?.querySelector<HTMLElement>('[part="items"]')
+    if (items && !items.getAttribute('aria-label')) items.setAttribute('aria-label', this.titleFor(side))
     return true
   }
 
@@ -639,6 +643,8 @@ export class OASTransfer extends OASElement {
   private renderStatic(side: 'left' | 'right', visible: TransferItem[], listbox: HTMLElement | null): void {
     if (!listbox) return
     listbox.innerHTML = ''
+    // 空态无 option 子节点，role=listbox 会违反 aria-required-children → 空态降级为 group
+    listbox.setAttribute('role', visible.length ? 'listbox' : 'group')
     const query = this.queryFor(side)
     if (visible.length === 0) {
       const empty = document.createElement('div')
@@ -711,6 +717,13 @@ export class OASTransfer extends OASElement {
     // 标题
     const title = this.shadow.querySelector<HTMLElement>(`.title.${side === 'left' ? 'source' : 'target'}`)
     if (title) title.textContent = this.titleFor(side)
+
+    // listbox 可访问名与面板标题一致（读屏用户可辨识左右列表）
+    const listbox = this.shadow.querySelector<HTMLElement>(`.listbox.${side}`)
+    if (listbox) listbox.setAttribute('aria-label', this.titleFor(side))
+    // 虚拟列表模式的 .items 容器也需要
+    const vlistItems = this.shadow.querySelector<HTMLElement>(`.vlist-${side === 'left' ? 'left' : 'right'} .items`)
+    if (vlistItems) vlistItems.setAttribute('aria-label', this.titleFor(side))
 
     // 计数（已选/可见 N/M，i18n 模板；只读面板隐藏）
     const count = this.shadow.querySelector<HTMLElement>(`.count-${side}`)

@@ -51,6 +51,7 @@ export const ru: LocaleMessages = {
   'treeSelect.andMore': 'и ещё {count}',
   // autoComplete (автодополнение)
   'autoComplete.noMatch': 'Ничего не найдено',
+  'autoComplete.defaultLabel': 'Поле автозаполнения',
   // combobox (поле со списком: поле ввода и есть контрол, фильтрация вводом + выбор значения)
   'combobox.empty': 'Нет вариантов',
   'combobox.noMatch': 'Нет подходящих вариантов',

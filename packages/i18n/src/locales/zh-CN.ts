@@ -51,6 +51,7 @@ export const zhCN = {
   'treeSelect.andMore': '等 {count} 项',
   // auto-complete（自动完成）
   'autoComplete.noMatch': '无匹配结果',
+  'autoComplete.defaultLabel': '自动完成输入框',
   // combobox（组合框：输入框即控件，输入过滤 + 选中取值）
   'combobox.empty': '暂无选项',
   'combobox.noMatch': '无匹配选项',

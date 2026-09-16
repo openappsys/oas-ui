@@ -92,10 +92,10 @@
 <DemoBlock title="Indeterminate 不确定加载">
   <oas-space direction="vertical" size="medium" style="width: 100%">
     <oas-progress indeterminate label="数据加载中"></oas-progress>
-    <oas-progress indeterminate status="error"></oas-progress>
+    <oas-progress indeterminate status="error" label="保存失败，正在重试"></oas-progress>
     <oas-space size="large" wrap>
-      <oas-progress type="circle" indeterminate></oas-progress>
-      <oas-progress type="dashboard" indeterminate></oas-progress>
+<oas-progress type="circle" indeterminate label="处理中"></oas-progress>
+<oas-progress type="dashboard" indeterminate label="后台任务"></oas-progress>
     </oas-space>
   </oas-space>
 </DemoBlock>

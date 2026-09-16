@@ -477,11 +477,14 @@ export class OASCalendar extends OASElement {
     if (this.panel !== 'days') {
       grid.classList.add('months-view')
       grid.classList.remove('has-week-number')
+      // 月/年面板无行/列子结构，role=grid 会违反 aria-required-children → 降级为 group（键盘导航仍由组件接管）
+      grid.setAttribute('role', 'group')
       if (this.panel === 'years') this.renderYearsPicker(grid)
       else this.renderMonthPicker(grid)
       return
     }
     grid.classList.remove('months-view')
+    grid.setAttribute('role', 'grid')
     grid.classList.toggle('has-week-number', this.hasAttr('show-week-number'))
 
     const hadFocus = focusNow || (this.shadow.activeElement != null && grid.contains(this.shadow.activeElement))

@@ -9,7 +9,7 @@
 <DemoBlock title="滚动监听（scroll-container）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
     <oas-anchor style="width: 128px; flex-shrink: 0" scroll-container="#anchor-sc-1" items='[{"href":"#anchor-sec-1","title":"第一章"},{"href":"#anchor-sec-2","title":"第二章"},{"href":"#anchor-sec-3","title":"第三章"}]'></oas-anchor>
-    <div id="anchor-sc-1" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-1" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-1" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">第一节内容：用于演示滚动监听与高亮跟随。</p>
       <h4 id="anchor-sec-2">第二章</h4>
@@ -27,7 +27,7 @@
 <DemoBlock title="高亮判定偏移（offset / bounds）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
     <oas-anchor style="width: 128px; flex-shrink: 0" offset="80" scroll-container="#anchor-sc-2" items='[{"href":"#anchor-sec-4","title":"第一章"},{"href":"#anchor-sec-5","title":"第二章"}]'></oas-anchor>
-    <div id="anchor-sc-2" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-2" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-4" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">offset 控制顶部高亮判定区的偏移量。</p>
       <h4 id="anchor-sec-5">第二章</h4>
@@ -39,7 +39,7 @@
 <DemoBlock title="触发边界（bounds）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
     <oas-anchor style="width: 128px; flex-shrink: 0" bounds="40" scroll-container="#anchor-sc-3" items='[{"href":"#anchor-sec-b1","title":"第一章"},{"href":"#anchor-sec-b2","title":"第二章"}]'></oas-anchor>
-    <div id="anchor-sc-3" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-3" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-b1" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">bounds 越大，章节顶越检测线的提前量越大。</p>
       <h4 id="anchor-sec-b2">第二章</h4>
@@ -55,7 +55,7 @@
 <DemoBlock title="点击事件（oas-click / oas-change 分离）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
     <oas-anchor style="width: 128px; flex-shrink: 0" onoas-click="anchorClickLog(event)" onoas-change="anchorLog(event)" scroll-container="#anchor-sc-4" items='[{"href":"#anchor-sec-6","title":"第一章"},{"href":"#anchor-sec-7","title":"第二章"}]'></oas-anchor>
-    <div id="anchor-sc-4" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-4" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-6" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">点击左侧锚点：仅派发 oas-click；滚动该容器切换高亮：仅派发 oas-change。</p>
       <h4 id="anchor-sec-7">第二章</h4>
@@ -79,7 +79,7 @@
   </oas-space>
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch; margin-top: 8px">
     <oas-anchor id="anchor-ctrl" style="width: 128px; flex-shrink: 0" scroll-container="#anchor-sc-ctrl" items='[{"href":"#anchor-sec-c1","title":"第一章"},{"href":"#anchor-sec-c2","title":"第二章"},{"href":"#anchor-sec-c3","title":"第三章"}]'></oas-anchor>
-    <div id="anchor-sc-ctrl" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-ctrl" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-c1" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">点击左侧按钮设置 <code>active</code>，锚点立即高亮对应项。</p>
       <h4 id="anchor-sec-c2">第二章</h4>
@@ -100,7 +100,7 @@
       <div style="position: absolute; top: 80px; left: 0; right: 0; border-top: 2px dashed var(--oas-color-primary); opacity: 0.5; pointer-events: none"></div>
       <oas-anchor style="width: 160px" target-offset="80" duration="500" scroll-container="#anchor-sc-5" items='[{"href":"#anchor-sec-l1","title":"第一章"},{"href":"#anchor-sec-l2","title":"第二章"}]'></oas-anchor>
     </div>
-    <div id="anchor-sc-5" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-5" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-l1" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">虚线标记 80px 落点线：点击后第一章顶对齐到虚线。</p>
       <h4 id="anchor-sec-l2">第二章</h4>
@@ -112,7 +112,7 @@
 <DemoBlock title="落点对齐（block）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
     <oas-anchor style="width: 128px; flex-shrink: 0" block="center" scroll-container="#anchor-sc-6" items='[{"href":"#anchor-sec-m1","title":"第一章"},{"href":"#anchor-sec-m2","title":"第二章"}]'></oas-anchor>
-    <div id="anchor-sc-6" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-6" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-m1" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">block="center"：目标章节垂直居中于容器。</p>
       <h4 id="anchor-sec-m2">第二章</h4>
@@ -124,7 +124,7 @@
 <DemoBlock title="最小滚动落点（block=nearest）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
     <oas-anchor style="width: 128px; flex-shrink: 0" block="nearest" scroll-container="#anchor-sc-12" items='[{"href":"#anchor-sec-n1","title":"第一章"},{"href":"#anchor-sec-n2","title":"第二章"},{"href":"#anchor-sec-n3","title":"第三章"}]'></oas-anchor>
-    <div id="anchor-sc-12" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-12" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-n1" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">block="nearest"：目标已完全可见则完全不滚动。</p>
       <p style="color: var(--oas-color-text-secondary)">先点「第三章」滚到底，再点「第一章」——若第一章已可见则不发生滚动（最小滚动量）。</p>
@@ -139,7 +139,7 @@
 <DemoBlock title="立即定位（animation）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
     <oas-anchor style="width: 128px; flex-shrink: 0" animation="false" scroll-container="#anchor-sc-7" items='[{"href":"#anchor-sec-i1","title":"第一章"},{"href":"#anchor-sec-i2","title":"第二章"}]'></oas-anchor>
-    <div id="anchor-sc-7" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-7" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-i1" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">animation="false"：点击后立即定位，无平滑过渡。</p>
       <h4 id="anchor-sec-i2">第二章</h4>
@@ -155,7 +155,7 @@
 <DemoBlock title="嵌套层级（children / oas-anchor-target / internal-scrollable）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
     <oas-anchor internal-scrollable style="width: 160px; flex-shrink: 0; height: 280px" scroll-container="#anchor-sc-8" items='[{"href":"#anchor-nest-1","title":"第一章","children":[{"href":"#anchor-nest-1-1","title":"1.1 小节"},{"href":"#anchor-nest-1-2","title":"1.2 小节"},{"href":"#anchor-nest-1-3","title":"1.3 小节"},{"href":"#anchor-nest-1-4","title":"1.4 小节"},{"href":"#anchor-nest-1-5","title":"1.5 小节"}]},{"href":"#anchor-nest-2","title":"第二章"}]'></oas-anchor>
-    <div id="anchor-sc-8" style="flex: 1; height: 280px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-8" tabindex="0" style="flex: 1; height: 280px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <oas-anchor-target id="anchor-nest-1"><h4 style="margin-top: 0">第一章</h4></oas-anchor-target>
       <p style="color: var(--oas-color-text-secondary)">oas-anchor-target 包裹的标题作为滚动定位目标。</p>
       <oas-anchor-target id="anchor-nest-1-1"><h5 style="margin-top: var(--oas-space-4)">1.1 小节</h5></oas-anchor-target>
@@ -179,7 +179,7 @@
 <DemoBlock title="横向模式（direction=horizontal）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
     <oas-anchor direction="horizontal" scroll-container="#anchor-sc-9" style="width: 200px; flex-shrink: 0" items='[{"href":"#anchor-sec-h1","title":"第一章"},{"href":"#anchor-sec-h2","title":"第二章"},{"href":"#anchor-sec-h3","title":"第三章"}]'></oas-anchor>
-    <div id="anchor-sc-9" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-9" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-h1" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">横向模式下锚点项水平排布，墨水条横向随动。</p>
       <h4 id="anchor-sec-h2">第二章</h4>
@@ -248,7 +248,7 @@
     <oas-anchor style="width: 128px; flex-shrink: 0" onoas-change="anchorLogHistory(event)" scroll-container="#anchor-sc-10" items='[{"href":"#anchor-sec-his1","title":"第一章"},{"href":"#anchor-sec-his2","title":"第二章"}]'></oas-anchor>
     <oas-anchor style="width: 128px; flex-shrink: 0" replace scroll-container="#anchor-sc-10" items='[{"href":"#anchor-sec-his1","title":"第一章"},{"href":"#anchor-sec-his2","title":"第二章"}]'></oas-anchor>
     <oas-anchor style="width: 128px; flex-shrink: 0" hash="false" scroll-container="#anchor-sc-10" items='[{"href":"#anchor-sec-his1","title":"第一章"},{"href":"#anchor-sec-his2","title":"第二章"}]'></oas-anchor>
-    <div id="anchor-sc-10" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-10" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-his1" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">三个锚点监听同一容器：默认 pushState、replace 替换历史、hash=false 不写。</p>
       <h4 id="anchor-sec-his2">第二章</h4>
@@ -265,7 +265,7 @@
 <DemoBlock title="自定义高亮（get-current-anchor）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
     <oas-anchor style="width: 128px; flex-shrink: 0" get-current-anchor="anchorForceThird" onoas-change="anchorLogCustom(event)" scroll-container="#anchor-sc-11" items='[{"href":"#anchor-sec-g1","title":"第一章"},{"href":"#anchor-sec-g2","title":"第二章"},{"href":"#anchor-sec-g3","title":"第三章"}]'></oas-anchor>
-    <div id="anchor-sc-11" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-11" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-g1" style="margin-top: 0">第一章</h4>
       <p style="color: var(--oas-color-text-secondary)">无论滚动到哪，自定义策略都强制高亮第三章。</p>
       <h4 id="anchor-sec-g2">第二章</h4>
@@ -295,7 +295,7 @@
       <oas-anchor-item href="#anchor-child-1">第一章</oas-anchor-item>
       <oas-anchor-item href="#anchor-child-2">第二章</oas-anchor-item>
     </oas-anchor>
-    <div id="anchor-sc-child" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-child" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <oas-anchor-target id="anchor-child-1"><h4 style="margin-top: 0">第一章</h4></oas-anchor-target>
       <p style="color: var(--oas-color-text-secondary)">用 oas-anchor-item 声明式书写锚点项；滚动联动高亮与 items 通道一致。</p>
       <oas-anchor-target id="anchor-child-2"><h4 style="margin-top: var(--oas-space-4)">第二章</h4></oas-anchor-target>
@@ -313,7 +313,7 @@
       </oas-anchor-item>
       <oas-anchor-item href="#anchor-child2-2" target-offset="40">第二章</oas-anchor-item>
     </oas-anchor>
-    <div id="anchor-sc-child2" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <div id="anchor-sc-child2" tabindex="0" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <oas-anchor-target id="anchor-child2-1"><h4 style="margin-top: 0">第一章</h4></oas-anchor-target>
       <oas-anchor-target id="anchor-child2-1-1"><h5 style="margin-top: var(--oas-space-4)">1.1 小节</h5></oas-anchor-target>
       <oas-anchor-target id="anchor-child2-1-2"><h5 style="margin-top: var(--oas-space-4)">1.2 小节</h5></oas-anchor-target>

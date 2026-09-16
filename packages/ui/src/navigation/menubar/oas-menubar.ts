@@ -597,7 +597,7 @@ export class OASMenubar extends OASElement {
       <style>${STYLE}</style>
       <div class="bar" part="bar" role="menubar">
         <div class="bar-start" part="bar-start" role="presentation" hidden><slot name="start"></slot></div>
-        <div class="bar-items" part="bar-items"></div>
+        <div class="bar-items" part="bar-items" role="presentation"></div>
         <div class="bar-end" part="bar-end" role="presentation" hidden><slot name="end"></slot></div>
       </div>
       <div class="hamburger-wrap">

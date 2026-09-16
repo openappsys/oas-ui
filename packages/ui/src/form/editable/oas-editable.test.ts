@@ -309,8 +309,9 @@ describe('OASEditable readonly / status / size', () => {
     document.body.innerHTML = ''
   })
 
-  it('readonly：可聚焦但不可进入编辑，aria-readonly', () => {
+  it('readonly：role=textbox + aria-readonly，可聚焦但不可进入编辑', () => {
     const el = mount({ value: 'a', readonly: '' })
+    expect(display(el).getAttribute('role')).toBe('textbox')
     expect(display(el).getAttribute('aria-readonly')).toBe('true')
     expect(display(el).tabIndex).toBe(0)
     display(el).click()
