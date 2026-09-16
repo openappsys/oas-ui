@@ -148,6 +148,8 @@
 
 ### oas-text
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `actions-position` | 操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot="actions"` | `string` | `end` |
@@ -170,15 +172,21 @@
 | `underline` | 下划线 | — | — |
 | `weight` | 字重：`regular`/`medium`/`semibold`/`bold`（与 strong 布尔兼容） | `WeightType` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-copy` | 复制成功，`detail: { text }` |
 | `oas-copy-error` | 复制失败，`detail: { text }` |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 文本内容 |
 | `actions` | 操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定 |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
@@ -187,6 +195,8 @@
 
 ### oas-title
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `actions-position` | 操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot="actions"` | `string` | `end` |
@@ -209,15 +219,21 @@
 | `underline` | 下划线 | — | — |
 | `weight` | — | `WeightType` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-copy` | 复制成功，`detail: { text }` |
 | `oas-copy-error` | 复制失败，`detail: { text }` |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 标题内容 |
 | `actions` | 操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定 |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
@@ -226,6 +242,8 @@
 
 ### oas-paragraph
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `actions-position` | 操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot="actions"` | `string` | `end` |
@@ -248,15 +266,21 @@
 | `underline` | 下划线 | — | — |
 | `weight` | — | `WeightType` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-copy` | 复制成功，`detail: { text }` |
 | `oas-copy-error` | 复制失败，`detail: { text }` |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 段落内容 |
 | `actions` | 操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定 |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

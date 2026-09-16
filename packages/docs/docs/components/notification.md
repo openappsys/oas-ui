@@ -328,7 +328,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-notification
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -343,14 +345,14 @@ onMounted(async () => {
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `type` | 通知类型：`info`/`success`/`warning`/`error` | `string` | `info` |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-click` | 通知体点击时派发（「点击查看详情」场景） |
 | `oas-close` | 通知关闭时派发，detail { source }：auto（时长到期）/ close（点击关闭钮）/ destroy（编程式销毁） |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -360,12 +362,12 @@ onMounted(async () => {
 | `icon` | 图标插槽，覆盖 type 默认图标 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
-### CSS 变量
+#### CSS 变量
 
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-notification-progress-color` | `var(--oas-color-primary)` |
-| `--oas-notification-width` | `320px` |
+| CSS 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--oas-notification-progress-color` | 倒计时进度条颜色 | `var(--oas-color-primary)` |
+| `--oas-notification-width` | 卡片宽度（尺寸档位内部引用） | `320px` |
 
 ### 方法
 

@@ -99,7 +99,9 @@ Required-mark forms (asterisk + position) are covered by `required` + `position`
 
 ## API
 
-### Attributes
+### oas-label
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -113,13 +115,13 @@ Required-mark forms (asterisk + position) are covered by `required` + `position`
 | `size` | Label font-size step: `small`/`medium` (default)/`large` | `string` | — |
 | `weight` | Label font weight: `regular` (default)/`semibold` | `string` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Label text |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

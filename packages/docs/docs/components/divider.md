@@ -145,7 +145,9 @@ vertical 模式下 `content-position` 支持 `top`（贴顶）/ `center`（默�
 
 ## API
 
-### 属性
+### oas-divider
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -160,13 +162,13 @@ vertical 模式下 `content-position` 支持 `top`（贴顶）/ `center`（默�
 | `text-orientation` | 垂直分割线的文字方向：horizontal（默认横排）/ ertical（竖排，跟随竖线方向从上到下）；仅 vertical 分割线有意义 | `string` | — |
 | `variant` | 线型：`solid` / `dashed` / `dotted` / `double`；显式设置优先于 `dashed` 布尔（兼容写法） | `string` | — |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 分隔线中间内容 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

@@ -538,7 +538,7 @@ onMounted(async () => {
         title: 'Set password',
         inputType: 'password',
         placeholder: '8-16 chars, letters and digits',
-        inputPattern: '^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,16}$',
+        inputPattern: '^(?=.*[A-Za-z])[?=.*\\d](A-Za-z\\d){8,16}$',
         inputErrorMessage: '8-16 chars including both letters and digits',
       })
       .then((r) => {
@@ -661,7 +661,9 @@ onMounted(async () => {
 - Returns a `{ close() }` handle: closes the current instance programmatically without firing `onOk` / `onCancel`.
 - Mounts to the nearest `oas-app` container (falls back to `body`); multiple instances stack; imperative instances unmount only after the close animation ends (`oas-after-close`).
 
-### Attributes
+### oas-modal
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -695,7 +697,7 @@ onMounted(async () => {
 | `visible` | Whether shown | `boolean` | — |
 | `width` | Dialog width (px or percentage) | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -709,17 +711,17 @@ onMounted(async () => {
 | `oas-open` | — |
 | `oas-opened` | [Compat alias] Open animation finished, same as oas-after-open; will be removed later |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
-| `close-icon` | — |
-| `description` | — |
-| `footer` | — |
+| default | Dialog body content |
+| `close-icon` | Custom close icon (replaces the default ✕) |
+| `description` | Description text (shown below the title) |
+| `footer` | Footer action area |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

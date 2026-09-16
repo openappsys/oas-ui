@@ -200,6 +200,8 @@ onMounted(() => {
 
 ### oas-radio
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `checked` | Whether checked | `boolean` | — |
@@ -213,11 +215,15 @@ onMounted(() => {
 | `value` | Option identifier | `string` | — |
 | `variant` | Variant: `default` / `card` (whole block clickable, selected border tint, hover feedback) | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-blur` | The radio lost focus |
 | `oas-change` | Selection change, `detail: { checked, value }` |
 | `oas-focus` | The radio gained focus |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -226,6 +232,8 @@ onMounted(() => {
 | `description` | Description distribution channel (takes priority over the description attribute) |
 
 ### oas-radio-group
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -237,11 +245,15 @@ onMounted(() => {
 | `status` | Validation status (cascades to items): `error` / `warning` / `success`; an explicit item status wins | `string` | — |
 | `value` | Group value (the selected item value) | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-blur` | Fired when focus leaves the group |
 | `oas-change` | Group value change, `detail: { value }` (fired by both clicks and arrow-key selection) |
 | `oas-focus` | Any item inside the group gained focus (moves between items do not misfire) |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

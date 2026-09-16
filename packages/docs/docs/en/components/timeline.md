@@ -277,21 +277,29 @@ onMounted(() => {
 
 ### oas-timeline
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `direction` | Axis direction: vertical (default) / horizontal (items laid out in a row) | `string` | — |
 | `mode` | Content position relative to the axis: left (default, axis on the left) / right (axis on the right) / alternate (axis centered, content alternates sides, first item on the left); in horizontal mode maps to below/above/alternating | `string` | — |
 | `reverse` | Visual reverse order (DOM order unchanged); pairs with pending for "newest first" | `boolean` | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Timeline nodes (`oas-timeline-item`) |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-timeline-font` | `inherit` |
 
 ### oas-timeline-item
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -303,9 +311,13 @@ onMounted(() => {
 | `type` | Semantic node color: primary (default) / success / warning / danger / info / neutral | `string` | — |
 | `variant` | Node variant: filled (default solid) / outlined (hollow stroke) | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-click` | Item click (content area); detail carries { index } |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -314,9 +326,10 @@ onMounted(() => {
 | `opposite` | Opposite-side content (only shown in mode=alternate) |
 | `title` | Title emphasis line (separated from the body) |
 
+#### CSS Variables
+
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-timeline-dot-color` | `var(--dot-color, var(--oas-color-primary))` |
 | `--oas-timeline-dot-size` | `10px` |
 | `--oas-timeline-font` | `inherit` |
-
-**CSS 变量**

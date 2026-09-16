@@ -344,6 +344,8 @@ onMounted(() => {
 
 ### oas-menu
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `accordion` | Accordion mutual exclusion (inline mode: only one sibling submenu open at a time) | `boolean` | — |
@@ -356,16 +358,22 @@ onMounted(() => {
 | `theme` | Local theme: `dark` uses dark tokens (independent of the global theme) | — | — |
 | `value` | Current selected value. Plain string means global single-select (no group, legacy-compatible); JSON object string (e.g. `{"sort":"name","view":"list"}`) scopes per group id — the `value` of a `type:"group"` item is the group id, picking inside a group only updates that group | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-expand-change` | Submenu expand state changed, `detail: { expanded: string[], value, isExpanded }` (fired both controlled and uncontrolled) |
 | `oas-select` | Select an item, `detail: { value, kind? }`. `kind` only appears for action items (`kind: "action"`) as "action"; radio items omit `detail.kind` |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-menu-max-height` | `none` |
 
 ### oas-menu-item
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -380,22 +388,30 @@ onMounted(() => {
 | `target` | Link target (with `href`) | — | — |
 | `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | default | Menu item label content (default slot text); direct child `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` elements recursively become the submenu `children` |
 
 ### oas-menu-group
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `label` | Group title (small secondary text, not clickable) | — | — |
 | `value` | Radio group id (picking inside the group only updates that group's selected value) | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Group items: child `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` elements flatten to the same level |
 
 ### oas-menu-divider
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

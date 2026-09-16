@@ -96,7 +96,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-affix
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -105,16 +107,16 @@ onMounted(() => {
 | `position` | Pin direction: top (default, pinned when the top edge reaches) / bottom (pinned when the bottom edge reaches); invalid values fall back to top | `AffixPosition` | `top` |
 | `target` | Scroll container selector (CSS selector); falls back to window scroll with a console warning when no element matches | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Dispatched when the pin state flips; detail { fixed, top }: fixed indicates whether pinned; top is the reference pin position (offset for top pinning, the element's current rect.top for bottom pinning) |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Affixed content |
 
 Listens to `window` (or the `target` container) scroll; the content is pinned once it leaves the pin area and is passed through the default slot.

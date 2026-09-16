@@ -484,7 +484,6 @@
   ></oas-tabs>
 </DemoBlock>
 
-
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -597,6 +596,8 @@ onMounted(async () => {
 
 ### oas-tabs
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `activation` | 键盘激活模式：`auto`（默认，方向键立即切换）/ `manual`（方向键只移焦点，Enter/Space 才切换，a11y 手动激活） | `string` | `auto` |
@@ -623,6 +624,8 @@ onMounted(async () => {
 | `type` | 样式变体：`line`（下划线，默认）/ `card`（卡片式） | `string` | `line` |
 | `without-scroll-controls` | 关闭溢出时的左右/上下滚动箭头（默认溢出自动显示箭头） | `boolean` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-add` | 点击 + 新增按钮，`detail: { label }`（默认新标签文案「新标签」走 locale，宿主自定义或直接使用） |
@@ -632,9 +635,17 @@ onMounted(async () => {
 | `oas-rename` | editable 标签双击重命名确认（Enter），`detail: { value, label }`；组件自动把新 label 写回面板，宿主可据此持久化 |
 | `oas-reorder` | sortable 拖拽换位后派发，`detail: { fromIndex, toIndex }`；宿主据此重排 `oas-tab-panel` 顺序（组件不自动移动 DOM） |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 标签页（`oas-tab-panel`） |
+| `add-icon` | 新增按钮图标内容（可新增标签页） |
+| `close-icon` | 关闭按钮图标内容（可关闭标签页） |
+| `icon` | 标签项图标内容（替代面板的 icon 属性） |
+| `label` | 标签项文本内容（不参与面板默认插槽投影） |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
@@ -644,6 +655,8 @@ onMounted(async () => {
 | `--oas-tabs-indicator-size` | `2px` |
 
 ### oas-tab-panel
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -658,8 +671,10 @@ onMounted(async () => {
 | `target` | 链接 target（仅 href 时生效，如 `_blank`） | — | — |
 | `value` | 标签值 | — | — |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 面板内容 |
 
 键盘：聚焦标签列表后 ← / → / ↑ / ↓ 循环切换；关闭按钮聚焦后 Enter / Space 触发关闭。`oas-tab-panel` 声明 `hidden` 属性隐藏未激活面板（内容保留在 DOM）。

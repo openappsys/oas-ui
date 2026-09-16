@@ -277,21 +277,29 @@ onMounted(() => {
 
 ### oas-timeline
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `direction` | 轴方向：vertical（默认）/ horizontal（横向排布） | `string` | — |
 | `mode` | 内容相对轴的位置：left（默认，轴在左）/ right（轴在右）/ alternate（轴居中、内容左右交替，首项在左）；横向时映射为轴下/轴上/上下交替 | `string` | — |
 | `reverse` | 视觉倒序（DOM 顺序不变），常与 pending 组合表达「最新在上」 | `boolean` | — |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 时间轴节点（`oas-timeline-item`） |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-timeline-font` | `inherit` |
 
 ### oas-timeline-item
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -303,9 +311,13 @@ onMounted(() => {
 | `type` | 节点语义色：primary（缺省）/ success / warning / danger / info / neutral | `string` | — |
 | `variant` | 节点变体：filled（默认实心）/ outlined（空心描边） | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-click` | 条目点击（内容区），detail 带 { index } |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -314,9 +326,10 @@ onMounted(() => {
 | `opposite` | 对侧内容（仅在 mode=alternate 时显示于轴对侧） |
 | `title` | 标题强调行（与正文分区） |
 
+#### CSS 变量
+
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-timeline-dot-color` | `var(--dot-color, var(--oas-color-primary))` |
 | `--oas-timeline-dot-size` | `10px` |
 | `--oas-timeline-font` | `inherit` |
-
-**CSS 变量**

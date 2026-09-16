@@ -346,7 +346,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-tour
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -395,7 +397,7 @@ onMounted(async () => {
 | `wait-for-element` | Wait for the target to appear (ms, async steps; global default, step-level `waitForElement` wins) | — | — |
 | `z-index` | Overlay z-index (default `--oas-z-modal`) | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -409,7 +411,7 @@ onMounted(async () => {
 | `oas-skip` | Skip button clicked, `detail: { index, total }` |
 | `oas-step` | Step changed, `detail: { index, current, total, next, prev }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -417,7 +419,7 @@ onMounted(async () => {
 | `cover` | Step cover rich content (slot takes precedence over the step.cover image) |
 | `indicators` | Custom indicator area (render with the `oas-step` current/total; hides the built-in dots/number indicator when present) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

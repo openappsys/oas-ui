@@ -356,7 +356,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-icon
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -377,19 +379,19 @@ onMounted(async () => {
 | `swap-opacity` | 交换双色图标的 primary / secondary 透明度 | `boolean` | — |
 | `variant` | 图标变体（传给库 resolver 的 variant 参数，如粗细） | `string` | — |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 自定义图标内容（替代 name 注册表图标） |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
-| `--oas-icon-primary-color` | — |
-| `--oas-icon-primary-opacity` | — |
-| `--oas-icon-secondary-color` | — |
-| `--oas-icon-secondary-opacity` | — |
+| `--oas-icon-primary-color` | `currentColor` |
+| `--oas-icon-primary-opacity` | `1` |
+| `--oas-icon-secondary-color` | `currentColor` |
+| `--oas-icon-secondary-opacity` | `0.4` |
 
 图标名一览：`alert-circle` `arrow-down` `arrow-left` `arrow-right` `arrow-up` `calendar` `check-circle` `check` `chevron-down` `chevron-left` `chevron-right` `chevron-up` `clock` `close-circle` `close` `copy` `download` `edit` `error` `external-link` `eye` `filter` `form` `gear` `heart` `info` `language` `loading` `lock` `mail` `menu` `minus` `more-vertical` `more` `plus` `refresh` `search` `sort` `star-filled` `star` `translate` `trash` `upload` `user` `warning`。

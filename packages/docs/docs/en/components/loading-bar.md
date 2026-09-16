@@ -199,7 +199,9 @@ onMounted(async () => {
 
 `target` is a container element / CSS selector / function returning an element; it defaults to the nearest `oas-app` host or `body`.
 
-### Attributes
+### oas-loading-bar
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -209,7 +211,7 @@ onMounted(async () => {
 | `speed` | Base advance speed (ms, default 200); start(speed) overrides | `string` | `200` |
 | `status` | Current status: loading/finish/error (activity query) | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -217,12 +219,13 @@ onMounted(async () => {
 | `oas-finish` | Dispatched when finish() finalizes, `detail: { count: this.sessionCount }` |
 | `oas-start` | Dispatched when start() begins, `detail: { count: this.sessionCount }` |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-loading-bar-color` | `var(--oas-color-primary)` |
 | `--oas-loading-bar-error-color` | `var(--oas-color-danger)` |
 | `--oas-loading-bar-height` | `3px` |
+| `--oas-loading-bar-z-index` | `calc(var(--oas-z-index-base, 0) + var(--oas-z-message, 1060))` |
 
 The bar uses `role="progressbar"` with progress synced via `aria-valuenow` and the active state via `aria-busy`.

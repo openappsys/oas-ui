@@ -77,8 +77,16 @@
       "default": "inherit"
     },
     {
+      "name": "--oas-log-mark-bg",
+      "default": "color-mix(in srgb, var(--oas-color-warning) 30%, transparent)"
+    },
+    {
       "name": "--oas-log-mark-color",
       "default": "var(--oas-color-warning-text)"
+    },
+    {
+      "name": "--oas-log-loading-mask",
+      "default": "color-mix(in srgb, var(--oas-color-bg) 65%, transparent)"
     }
   ],
   "unresolved": []

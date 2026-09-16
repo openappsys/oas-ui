@@ -130,7 +130,7 @@
   "cssVars": [
     {
       "name": "--oas-back-top-size",
-      "default": null
+      "default": "var(--oas-control-height-lg)"
     }
   ],
   "unresolved": []

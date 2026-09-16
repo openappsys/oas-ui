@@ -169,7 +169,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-splitter
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -182,14 +184,14 @@ onMounted(() => {
 | `sizes` | 多面板模式各面板占比（逗号分隔百分比，如 `30,40,30`）；数量与面板数不匹配回落均分 | `string` | — |
 | `vertical` | 垂直方向：面板上下堆叠，分隔条横向，键盘用 ArrowUp/Down | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-collapse` | 折叠按钮切换，`detail: { collapsed, side }`（side=left 指分隔条前一侧） |
 | `oas-resize` | 调整后触发。两面板 `detail: { percent }`；多面板 `detail: { percent, index, sizes }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

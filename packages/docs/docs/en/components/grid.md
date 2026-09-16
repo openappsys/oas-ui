@@ -307,6 +307,8 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 
 ### oas-grid
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `align` | Block-axis alignment (align-items): `start` / `center` / `end` / `stretch` / `baseline`; invalid values fall back to `stretch` with a dev warning (deduped) | `string` | — |
@@ -316,9 +318,13 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 | `justify` | Inline-axis alignment (justify-items): `start` / `center` / `end` / `stretch`; invalid values fall back to `stretch` with a dev warning (deduped) | `string` | — |
 | `min-child-width` | Minimum child width (e.g. 180px; bare numbers read as px): auto-fit + minmax derives the column count from container width (breakpoint-free fluid reflow); `columns` wins when both are set, and child span/offset are inert in this mode | `string` | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Grid children (`oas-grid-item`) |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -326,15 +332,21 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 
 ### oas-grid-item
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `offset` | Number of columns offset on the left; supports breakpoint shorthand (e.g. `0 lg:4`: base value + space-separated `breakpoint:value`, breakpoints sm=640 / md=768 / lg=1024 / xl=1280) | `string` | `0` |
 | `order` | Ordering weight (number, default 0); higher values appear later, for reordering columns (equivalent to offset-based push/pull scenarios) | `string` | `0` |
 | `span` | Number of columns spanned; supports `auto` (natural content width) and breakpoint shorthand (e.g. `24 md:12`: base value + space-separated `breakpoint:value`, breakpoints sm=640 / md=768 / lg=1024 / xl=1280) | `string` | `24` |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Grid cell content |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

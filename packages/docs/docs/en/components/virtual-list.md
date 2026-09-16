@@ -219,7 +219,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-virtual-list
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -231,14 +233,14 @@ onMounted(() => {
 | `items` | Data array (property channel, takes precedence over the `items` attribute); data JSON string (attribute channel) | `unknown[]` | `[]` |
 | `scroll-target` | CSS selector of the external scroll container; when set, the component has no scrollbar of its own and listens to the external scroll | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-item` | Emitted after each visible item renders, `detail: { index, item, element }` |
 | `oas-scroll` | Scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

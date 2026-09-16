@@ -138,7 +138,9 @@ Place action buttons in the `action` slot below the content.
 
 ## API
 
-### Attributes
+### oas-empty
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -152,7 +154,7 @@ Place action buttons in the `action` slot below the content.
 | `title` | Title shown above the description (absorbed from the host once rendered — native title absorption; use the title slot for rich content) | `string` | — |
 | `variant` | Container variant: `outlined` (border) / `filled` (tinted background); none by default | `string` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -161,10 +163,10 @@ Place action buttons in the `action` slot below the content.
 | `illustration` | Custom illustration content, takes precedence over the `illustration` attribute |
 | `title` | Rich title slot; overrides the title attribute when present |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-empty-desc-size` | — |
-| `--oas-empty-icon-color` | — |
-| `--oas-empty-title-size` | — |
+| `--oas-empty-desc-size` | `var(--oas-font-size-md)` |
+| `--oas-empty-icon-color` | `var(--oas-color-text-secondary)` |
+| `--oas-empty-title-size` | `var(--oas-font-size-lg)` |

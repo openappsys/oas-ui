@@ -173,6 +173,8 @@ onMounted(() => {
 
 ### oas-navigation-menu
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `arrow` | 弹出层指向箭头，默认显示；`arrow="false"` 隐藏 | `string` | `true` |
@@ -186,20 +188,28 @@ onMounted(() => {
 | `skip-delay-duration` | 跳过延迟窗口（毫秒），默认 300：关闭后窗口内再次 hover 其他项直接打开跳过延迟 | `string` | `300` |
 | `value` | 受控打开项（顶级触发器 value，空字符串 = 关闭；存在时打开态以属性为准，交互仅派发 `oas-change` 由宿主更新） | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 打开项变化（开合语义：点组展开/收起即派发，非叶子选择），`detail: { value }`（value 为打开的顶级项 value，空字符串 = 关闭）；叶子项选择监听 `oas-select`，勿以此事件做跳转/关闭容器 |
 | `oas-select` | 选择某项（顶级叶子链接、面板链接卡或二级子导航链接），`detail: { value }` |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | `panel-footer` | 面板底部营销位插槽：`<div slot="panel-footer">`（CTA 卡片等）有内容时面板底部渲染插槽容器 |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-nav-panel-max-height` | `60vh` |
 
 ### oas-navigation-menu-item
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -217,15 +227,21 @@ onMounted(() => {
 | `target` | 链接打开方式（如 `_blank`） | — | — |
 | `value` | 选中值（必须）：顶级触发器与面板项的 value，open/select/键盘都依赖 | — | — |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 导航项 label 内容（默认插槽文本；直接子项/分组载体不计入） |
 
 ### oas-navigation-menu-group
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `label` | 分组标题（可选；本组件面板渲染不展示分组标题，仅承载数据，与 JSON 通道 `type: "group"` 字段一致） | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

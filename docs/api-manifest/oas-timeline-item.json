@@ -72,6 +72,10 @@
     {
       "name": "--oas-timeline-dot-size",
       "default": "10px"
+    },
+    {
+      "name": "--oas-timeline-dot-color",
+      "default": "var(--dot-color, var(--oas-color-primary))"
     }
   ],
   "unresolved": []

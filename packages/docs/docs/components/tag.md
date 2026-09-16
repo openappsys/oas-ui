@@ -448,6 +448,8 @@ onMounted(async () => {
 
 ### oas-tag
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `checkable` | 可选中：点击 / Enter / Space 切换 `checked` 并派发 `oas-change`；与 `closable` 互斥 | `boolean` | — |
@@ -476,17 +478,31 @@ onMounted(async () => {
 | `type` | 类型 | `TagType` | `default` |
 | `variant` | 形态（与 `type` 正交）：`outlined`（描边）/ `filled`（浅底）/ `solid`（实心）；缺省保持类型默认渲染 | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | `checkable` 时选中态切换，`detail: { checked }` |
 | `oas-click` | 整签点击（`clickable` 时），detail 含 originalEvent |
 | `oas-close` | 关闭，`cancelable`，preventDefault 阻止移除 |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 标签内容 |
 
+#### CSS 变量
+
+| CSS 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--oas-tag-avatar-size` | 头像适配尺寸：`avatar` 模式随 size 档位派生，未匹配档位时沿用 control-height-sm − 4px | `calc(var(--oas-control-height-sm) - 4px)` |
+| `--oas-tag-color` | 文字色：`color` 属性经该变量参与派生；`--tag-color` 是组件内部当前色，未显式设置时回落 text-primary | `var(--tag-color, var(--oas-color-text-primary))` |
+| `--oas-tag-color-deep` | 深色文字（`deep` 档位）经该变量派生，未设置时回落 text-primary | `var(--tag-color, var(--oas-color-text-primary))` |
+
 ### oas-tag-group
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -495,9 +511,13 @@ onMounted(async () => {
 | `multiple` | 多选模式（`value` 逗号分隔多个选中值） | `boolean` | — |
 | `value` | 选中值：单选为单值，多选用逗号分隔 | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 选中变化。单选 `detail: { value }`；多选 `detail: { value: [] }` |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

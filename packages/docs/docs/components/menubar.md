@@ -342,6 +342,8 @@ onMounted(() => {
 
 ### oas-menubar
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `align` | 一级下拉对齐：`start`（缺省）/ `center` / `end`；`side` 为 top/bottom 时沿水平轴，为 left/right 时沿垂直轴 | `string` | — |
@@ -358,10 +360,14 @@ onMounted(() => {
 | `trigger` | 顶级菜单触发方式：`click`（默认，首开需点击、打开后 hover 切换——桌面应用共识）/ `hover`（hover 直开） | — | — |
 | `value` | 选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{"mode":"preview","theme":"dark"}`）时按组 id 作用域独立记录——`type:"group"` 项的 `value` 作组 id；JSON 数组字符串（如 `["grid","wrap"]`）时为 checkbox 勾选集（`kind:"checkbox"` 项多选） | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-open-change` | 顶级打开菜单变化，`detail: { value, open }`（`value` = 当前打开顶级菜单 value，`open` = 是否打开）。受控 `setAttribute('open')` 与内部点击/hover/键盘触发都会派发（首帧不派发） |
 | `oas-select` | 选择某项，`detail: { value, kind?, checked? }`。`kind` 仅动作项（`kind: "action"`）出现，值为 `"action"`；checkbox 项带 `checked`（切换后勾选态）；radio 项 `detail.kind` 不出现 |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -369,6 +375,8 @@ onMounted(() => {
 | `start` | 栏首装饰位（如 logo）：`<div slot="start">` 有内容时显示，键盘导航跳过 |
 
 ### oas-menubar-item
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -385,22 +393,30 @@ onMounted(() => {
 | `target` | 链接 target（配合 href） | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 菜单栏项 label 内容（默认插槽文本）；直接子元素 `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` 递归为子菜单 children |
 
 ### oas-menubar-group
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `label` | 分组标题（组标题小字、次要色、不可点） | — | — |
 | `value` | radio 组 id（组内点选只更新该组选中值） | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 组内菜单项：子元素 `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` 平铺同层 |
 
 ### oas-menubar-divider
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

@@ -522,9 +522,12 @@ onMounted(() => {
   })
 })
 </script>
+
 ## API
 
 ### oas-command
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -544,6 +547,8 @@ onMounted(() => {
 | `value` | 搜索词（受控；宿主监听 `oas-input` 回写实现双向） | `string` | — |
 | `virtual` | 虚拟滚动（大数据量窗口渲染，复用 oas-virtual-list） | `boolean` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-active` | 高亮项变化，`detail: { value }`（受控 selected 的回写依据） |
@@ -554,12 +559,16 @@ onMounted(() => {
 | `oas-select` | 执行某项，`detail: { value }`；多选确认 `detail: { values }` |
 | `oas-view-change` | 视图进出，`detail: { view, title }`（退出时 `view: ''`） |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | `empty` | 空结果自定义渲染（组件内用 `el.query` 读当前搜索词，如「创建 xyz」入口） |
 | `footer` | 底部自定义条（默认显示 `↑↓ 选择 / ↵ 执行 / esc 关闭` 提示） |
 
 ### oas-command-item
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -573,6 +582,8 @@ onMounted(() => {
 | `shortcut` | 快捷键标注（右对齐 kbd），如 `meta+p` / `ctrl+shift+s` | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
 | `view` | 视图插槽名：选中进入 `<slot name="view-{view}">`（面板内嵌视图） | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

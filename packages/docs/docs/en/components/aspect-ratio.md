@@ -103,17 +103,19 @@ The `ratio` can also be assigned as a number property (`el.ratio = 1.5`), fully 
 
 ## API
 
-### Attributes
+### oas-aspect-ratio
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `ratio` | Aspect ratio: preset name `square` (1/1) / `landscape` (4/3) / `portrait` (3/4) / `wide` (16/9) / `ultrawide` (21/9) / `golden` (1.618/1), or a fraction `16/9`, `4:3`, `16 / 9`, decimal `1.5`; also assignable as a number property (`el.ratio = 1.5`). Token names match first; missing/invalid values (including zero numerator or denominator) fall back to `1 / 1` with a dev warning once per invalid value (deduplicated) | `string \| number` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Content that keeps the aspect ratio |
 
 - The host is 100% wide, with height derived from `aspect-ratio`; content fills the area via absolute `inset: 0` and is cropped to the ratio.
 - Without children, the host still occupies space at the ratio.

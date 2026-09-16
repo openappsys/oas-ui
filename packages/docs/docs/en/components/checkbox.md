@@ -249,6 +249,8 @@ onMounted(() => {
 
 ### oas-checkbox
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `check-all` | In-group select-all marker: clicking toggles all items, item changes write back its checked/indeterminate state; the item never joins the group value (cross-component attribute read by oas-checkbox-group) | — | — |
@@ -263,12 +265,16 @@ onMounted(() => {
 | `value` | Option identifier | `string` | — |
 | `variant` | Variant: `default` / `card` (whole block clickable, selected border tint, hover feedback) | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-blur` | The checkbox lost focus |
 | `oas-change` | Checked change, `detail: { checked, value }` |
 | `oas-focus` | The checkbox gained focus |
 | `oas-limit-blocked` | Group count-limit block signal (the group re-dispatches it as oas-exceed-limit; no such block when used standalone) |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -278,6 +284,8 @@ onMounted(() => {
 | `indeterminate-icon` | Custom indeterminate indicator (pairs with check-all linkage) |
 
 ### oas-checkbox-group
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -291,12 +299,16 @@ onMounted(() => {
 | `status` | Validation status (cascades to items): `error` / `warning` / `success` | `string` | — |
 | `value` | Group value (JSON string array of checked item values) | `string` | `[]` |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-blur` | Fired when focus leaves the group |
 | `oas-change` | Group value change, `detail: { value: string[] }` (includes select-all linkage and in-limit changes) |
 | `oas-exceed-limit` | Out-of-cap check attempt after max is reached, `detail: { value, max }` |
 | `oas-focus` | Any item inside the group gained focus (moves between items do not misfire) |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

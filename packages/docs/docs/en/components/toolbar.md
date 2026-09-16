@@ -282,6 +282,8 @@ onMounted(() => {
 
 ### oas-toolbar
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabled` | Disable the whole toolbar (`aria-disabled` + `inert`; items skip roving) | `boolean` | — |
@@ -289,6 +291,8 @@ onMounted(() => {
 | `loop` | Wrap-around arrow navigation: on by default; `false` stops at the ends | `string` | — |
 | `orientation` | Layout direction: `horizontal` (default) / `vertical` (arrow navigation follows the axis; separator becomes a horizontal line) | `string` | `horizontal` |
 | `size` | Size step: `small` / `medium` (default) / `large` | `string` | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -298,6 +302,8 @@ onMounted(() => {
 
 ### oas-toolbar-toggle
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabled` | Disable the whole group | `boolean` | — |
@@ -306,11 +312,15 @@ onMounted(() => {
 | `size` | Size step (small/medium/large); defaults to the nearest oas-toolbar's size | `string` | — |
 | `value` | Current value: string for single-select; JSON array string for multiple-select | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-change` | Toggle, `detail: { value: string \| string[] }` |
 
 ### oas-toolbar-input
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -319,10 +329,14 @@ onMounted(() => {
 | `size` | Size step (small/medium/large); defaults to the nearest oas-toolbar's size | `string` | — |
 | `value` | Preset value (controlled entry; events do not write back, listen to update) | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-change` | Committed on Enter or blur, `detail: { value }` |
 | `oas-input` | While typing, `detail: { value }` |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -330,10 +344,14 @@ onMounted(() => {
 
 ### oas-toolbar-toggle-item
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabled` | Disable this item (not clickable; skipped by arrow keys) | — | — |
 | `value` | Item value (data-carrier field of the declarative child-element channel) | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

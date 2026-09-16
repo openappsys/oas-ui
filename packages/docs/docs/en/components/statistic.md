@@ -84,7 +84,9 @@ Use the `prefix-text` / `suffix-text` attributes for simple text; for complex co
 
 ## API
 
-### Attributes
+### oas-statistic
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -98,7 +100,7 @@ Use the `prefix-text` / `suffix-text` attributes for simple text; for complex co
 | `trend` | Trend indicator: `up` (rise, success semantic color) / `down` (drop, danger semantic color) with arrow | `string` | — |
 | `value` | Numeric value (number string) | `string` | `0` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -108,7 +110,7 @@ Use the `prefix-text` / `suffix-text` attributes for simple text; for complex co
 | `title` | Heading above the value (distributed content takes precedence over the `title` attribute text) |
 | `value` | Custom value rendering (e.g. compose `oas-number-animation` for an animated value); when distributed, the Intl-formatted text is not rendered |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

@@ -110,7 +110,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-segmented
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -123,16 +125,16 @@ onMounted(() => {
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
 | `value` | Selected value (defaults to the first option; controlled) | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Switched, `detail: { value }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| `template[slot="option"]` | — |
+| `template[slot="option"]` | Custom option template (`<template slot="option">`) |
 
 The container is `role="radiogroup"`; each item is `role="radio"` + `aria-checked` / `aria-disabled`.

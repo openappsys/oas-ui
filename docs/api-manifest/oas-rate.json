@@ -126,7 +126,7 @@
   "cssVars": [
     {
       "name": "--oas-rate-star-size",
-      "default": null
+      "default": "20px"
     },
     {
       "name": "--oas-rate-void",

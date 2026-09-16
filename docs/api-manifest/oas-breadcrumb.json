@@ -89,7 +89,11 @@
       "detail": "{ collapsedItems: hiddenItems }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "separator"
+    }
+  ],
   "cssVars": [
     {
       "name": "--oas-breadcrumb-font",

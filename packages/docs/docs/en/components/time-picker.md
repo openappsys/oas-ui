@@ -126,7 +126,9 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 
 ## API
 
-### Attributes
+### oas-time-picker
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -144,7 +146,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `use12-hours` | 12-hour mode: display and columns switch to 12-hour (with an AM/PM column following the locale); the value stays 24-hour | `boolean` | — |
 | `value` | Current value (`HH:mm:ss`; a JSON array when `is-range`) | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |

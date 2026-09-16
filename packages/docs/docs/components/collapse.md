@@ -261,6 +261,8 @@ onMounted(async () => {
 
 ### oas-collapse
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `accordion` | 手风琴模式，同时仅展开一项 | `boolean` | — |
@@ -270,16 +272,22 @@ onMounted(async () => {
 | `icon-placement` | 展开图标位置：`start`（标题左侧）/ `end`（默认，右侧）；item 可单独覆盖 | `string` | `end` |
 | `variant` | 形态：`outlined`（默认，带边框圆角容器）/ `borderless`（无边框幽灵形态） | — | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-before-collapse` | 展开/收起前派发（cancelable），`detail: { name, next }`；`preventDefault()` 阻止本次切换（expandAll/collapseAll 不触发） |
 | `oas-change` | 展开状态变化，`detail: { active: string[] }` |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 折叠面板（`oas-collapse-item`） |
 
 ### oas-collapse-item
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -293,9 +301,11 @@ onMounted(async () => {
 | `no-collapse` | 强锁展开态：展开后点击自身不收起（不影响其他面板开合） | — | — |
 | `open` | 是否展开（由容器托管） | `boolean` | — |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 面板内容 |
 | `extra` | 面板头右侧操作区（内部点击不触发展开收起） |
 | `header` | 面板头富内容（与 header 属性互斥，slot 优先；标题内交互元素请自行 stopPropagation） |
 | `template[slot="toggle"]` | 自定义展开图标模板（缺省为内建箭头） |

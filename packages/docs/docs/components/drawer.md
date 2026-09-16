@@ -344,7 +344,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-drawer
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -374,7 +376,7 @@ onMounted(async () => {
 | `width` | 抽屉宽度（px 或百分比），优先级高于 `size` | — | — |
 | `z-index` | — | — | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -388,13 +390,13 @@ onMounted(async () => {
 | `oas-opened` | 【兼容别名】打开动画完成，等价 oas-after-open；后续版本移除 |
 | `oas-resize` | — |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
-| `footer` | — |
-| `header-actions` | — |
+| 默认 | 抽屉主体内容 |
+| `footer` | 底部操作区 |
+| `header-actions` | 标题栏右侧操作区 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
 `role="dialog"` + `aria-modal="true"`；打开时移入焦点（默认 ✕，可 `initial-focus` 指定），关闭后归还来源焦点。

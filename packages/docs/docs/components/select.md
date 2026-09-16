@@ -516,6 +516,8 @@ onMounted(() => {
 
 ### oas-select
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `allow-create` | 无匹配时允许以输入值创建新选项 | `boolean` | — |
@@ -539,6 +541,8 @@ onMounted(() => {
 | `value` | 当前值（多选为 JSON 数组） | — | — |
 | `virtual` | 大数据量虚拟滚动：只渲染可视窗口，滚动流畅（复用 oas-virtual-list）；带 `group` 的选项自动回退全量渲染 | `boolean` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-blur` | 组件失去焦点时派发 |
@@ -551,11 +555,15 @@ onMounted(() => {
 | `oas-option-render` | 每个渲染的选项行派发，`detail: { index, option, element }`（element 为选项 label 容器，宿主可改写为图标/富文本） |
 | `oas-tag-render` | 多选标签渲染时派发，`detail: { value, label, element }`（element 为标签文本容器，宿主可改写） |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | `template[slot="empty"]` | 自定义空态（覆盖「暂无数据」与「无匹配选项」默认文案） |
 | `template[slot="option"]` | 选项行静态模板，克隆到每个选项 label 容器；`[data-option-label]` 节点自动绑定选项 label |
 | `template[slot="tag"]` | 多选标签静态模板，克隆到每个 chip 的文本容器；`[data-tag-label]` 节点自动绑定标签 label |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
@@ -564,11 +572,15 @@ onMounted(() => {
 
 ### oas-option
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `disabled` | 禁用该项（不可选） | — | — |
 | `group` | 分组标题（可选）：同组连续渲染组标题（不可选），组内选项缩进 | — | — |
 | `value` | 选项值（子元素声明式通道的数据载体字段） | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

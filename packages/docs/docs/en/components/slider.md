@@ -232,7 +232,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-slider
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -258,27 +260,27 @@ onMounted(() => {
 | `value` | Current value (controlled): numeric string for single mode; JSON array `[lo, hi]` or comma-separated string `"lo,hi"` in `range` mode, written back as a JSON array string after interaction (form collection can `JSON.parse` directly) | `string` | — |
 | `vertical` | Vertical mode: the track runs vertically (minimum at the bottom, mirrored to the top by `reverse`); mark labels move to the right of the track, the value bubble faces right by default, show-input inputs move below the track; height defaults to 200px, adjustable via the `--oas-slider-height` CSS variable | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Committed on release, `detail: { value }` (single number; `[lo, hi]` array in `range` mode) |
 | `oas-input` | While dragging / after debounced typing commit, `detail: { value }` (single number; `[lo, hi]` array in `range` mode) |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | `template[slot="custom-thumb"]` | Custom thumb content (icon/text): `template[slot="custom-thumb"]` (static template, cloned into every visible thumb — both thumbs in range mode) or a plain `[slot="custom-thumb"]` element |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-slider-color` | — |
+| `--oas-slider-color` | `var(--oas-color-primary)` |
 | `--oas-slider-height` | `200px` |
-| `--oas-slider-thumb-size` | — |
-| `--oas-slider-track` | — |
-| `--oas-slider-track-size` | — |
+| `--oas-slider-thumb-size` | `14px` |
+| `--oas-slider-track` | `var(--oas-color-border)` |
+| `--oas-slider-track-size` | `4px` |
 
 `marks` also accepts a JS property channel (assign objects/arrays directly, reflected as a JSON attribute); `el.formatTooltip = (value) => string | number` is the value formatter function property (the output feeds both the value bubble and `aria-valuetext`, takes precedence over the `format` attribute, clear with `null`) — attributes cannot express function semantics, so the function channel is JS-property-only.

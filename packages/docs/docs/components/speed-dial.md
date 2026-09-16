@@ -194,7 +194,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-speed-dial
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -205,20 +207,20 @@ onMounted(() => {
 | `radius` | 圆弧半径（px，默认 96；仅 `geometry` 非 linear 时生效，非法值回落 96） | — | — |
 | `trigger` | 触发方式：`click`（默认）\| `hover`（悬停开、移出收起，120ms 离开宽限期；触屏自动回落 click） | `string` | `click` |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-open` | 展开/收起，`detail: { open, reason }`；reason = `toggle` / `outside` / `escape` / `select` / `hover`（来源标记，向后兼容 open 字段） |
 | `oas-select` | 选择子动作，`detail: { index, label }`，随后自动收起 |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 主钮自定义图标，有内容时替代默认 ＋（展开旋转 45° 保持） |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

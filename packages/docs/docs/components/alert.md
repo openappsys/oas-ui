@@ -203,7 +203,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-alert
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -222,7 +224,7 @@ onMounted(async () => {
 | `type` | 提示类型 | `string` | `info` |
 | `variant` | 视觉形态：tint（默认，浅底+同色描边）/ filled（type 色实心+对底文字）/ outlined（透明底+type 色描边） | `string` | `tint` |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -230,7 +232,7 @@ onMounted(async () => {
 | `oas-close` | 点击关闭按钮后触发，随后组件隐藏 |
 | `oas-open-change` | 显隐状态变化时派发，detail { open } |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

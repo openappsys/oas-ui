@@ -358,6 +358,8 @@ onMounted(() => {
 
 ### oas-toggle-group
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Group accessible name (host override; falls back to locale default) | — | — |
@@ -374,10 +376,14 @@ onMounted(() => {
 | `value` | Current value: string for single; JSON array string for multiple | `string` | `[]` |
 | `vertical` | Vertical arrangement (mirrors aria-orientation and axis keys) | `boolean` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-change` | Toggle, `detail: { value: string \| string[] }` |
 | `oas-exceed-limit` | Selection attempt past max-count, `detail: { value, max }` |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -386,12 +392,16 @@ onMounted(() => {
 
 ### oas-toggle-item
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Item accessible name (required semantics for icon-only items; derived from the icon name by default) | — | — |
 | `disabled` | Disable this item (not clickable; skipped by arrow keys) | — | — |
 | `icon` | Icon (oas-icon name); label optional (icon-only items) | — | — |
 | `value` | Item value (data-carrier field of the declarative child-element channel) | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

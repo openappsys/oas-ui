@@ -273,7 +273,9 @@ button-group + `oas-dropdown split` 编排拆分按钮：主按钮触发 `oas-ac
 
 ## API
 
-### 属性
+### oas-button-group
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -289,16 +291,16 @@ button-group + `oas-dropdown split` 编排拆分按钮：主按钮触发 `oas-ac
 | `variant` | 组级 variant 形态透传子按钮（组设一次，子按钮统一应用） | `string` | — |
 | `vertical` | 纵向堆叠，圆角合并方向改为上下 | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 选中变化。单选 `detail: { value }`；多选 `detail: { value: [] }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 按钮组成员（`oas-button`） |
 
 > 说明：子按钮通过 `value` 属性声明其选值；不带 `value` 的子按钮是普通按钮，不参与选值、不派发 `oas-change`。选中态通过子按钮 `aria-pressed` 表达，可用 `oas-button[aria-pressed='true']` 自定义选中样式。

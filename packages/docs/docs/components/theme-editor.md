@@ -137,14 +137,16 @@ document.getElementById('te-preset-status').textContent = name
 
 ## API
 
-### 属性
+### oas-theme-editor
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `preset` | 内置预设主题：`compact`（紧凑，control-height -4px、space 按比例收缩）/ `comfortable`（宽松，+4px、space 按比例放大）/ `default`（等价 reset，清除已写入内联变量）；非法值忽略并 dev 告警 | — | — |
 | `token` | 自定义要编辑的 token 列表（CSS 变量名） | — | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |

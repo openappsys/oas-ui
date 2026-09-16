@@ -144,7 +144,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-snackbar
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -161,7 +163,7 @@ onMounted(async () => {
 | `queue` | — | `boolean` | — |
 | `swipe` | — | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -169,11 +171,11 @@ onMounted(async () => {
 | `oas-close` | 到期自动关闭时派发（受控模式不自改 `open`），`detail: { reason }` |
 | `oas-open` | 打开时派发 |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 通知内容 |
 
 - `open` 受控：到期只派发 `oas-close`，由外部负责移除 `open`；单实例复用时 `message` 变更不会重启计时，新消息请先关后开或新建元素。
 - 同方向最多堆叠 3 条（纵向排列不重叠，最新贴边），超出时最老的一条收到 `oas-close`（`reason: evict`）；`queue` 模式改为 FIFO 排队补位。

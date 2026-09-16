@@ -84,7 +84,9 @@
 
 ## API
 
-### 属性
+### oas-gradient-text
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -95,23 +97,23 @@
 | `stroke-color` | 描边颜色（缺省走 `--oas-color-text-primary` token，随主题亮暗自适应；经白名单校验） | `string` | — |
 | `type` | 语义色渐变：`primary` / `success` / `warning` / `danger` / `info`（token 派生双 stop；显式 `gradient` 优先） | `string` | — |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 渐变文字内容 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-gradient-text-dir` | `to right` |
 | `--oas-gradient-text-duration` | `3s` |
 | `--oas-gradient-text-font` | `inherit` |
-| `--oas-gradient-text-from` | — |
+| `--oas-gradient-text-from` | `var(--oas-color-primary)` |
 | `--oas-gradient-text-stroke-c` | — |
 | `--oas-gradient-text-stroke-w` | — |
-| `--oas-gradient-text-to` | — |
+| `--oas-gradient-text-to` | `var(--oas-color-primary-hover)` |
 
 - 默认渐变使用主题 token（`--oas-color-primary` → `--oas-color-primary-hover`），随亮暗主题自动切换，无硬编码色值。
 - 色标条目经白名单校验，防止 CSS 注入。

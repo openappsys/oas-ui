@@ -199,7 +199,9 @@ onMounted(async () => {
 
 `target` 为容器元素 / CSS 选择器 / 返回元素的函数，缺省为最近 `oas-app` 宿主或 `body`。
 
-### 属性
+### oas-loading-bar
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -209,7 +211,7 @@ onMounted(async () => {
 | `speed` | 推进速度基准（ms，默认 200），start(speed) 可覆盖 | `string` | `200` |
 | `status` | 当前状态：loading/finish/error（活动态查询） | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -217,12 +219,13 @@ onMounted(async () => {
 | `oas-finish` | finish() 完成收尾时派发，`detail: { count: this.sessionCount }` |
 | `oas-start` | start() 开始时派发，`detail: { count: this.sessionCount }` |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-loading-bar-color` | `var(--oas-color-primary)` |
 | `--oas-loading-bar-error-color` | `var(--oas-color-danger)` |
 | `--oas-loading-bar-height` | `3px` |
+| `--oas-loading-bar-z-index` | `calc(var(--oas-z-index-base, 0) + var(--oas-z-message, 1060))` |
 
 进度条 `role="progressbar"`，进度通过 `aria-valuenow` 同步，活动态同步 `aria-busy`。

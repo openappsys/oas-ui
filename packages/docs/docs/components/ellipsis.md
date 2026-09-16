@@ -174,7 +174,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-ellipsis
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -191,7 +193,7 @@ onMounted(() => {
 | `tooltip` | 溢出时悬停展示全文 tooltip | `string` | `true` |
 | `tooltip-placement` | 省略提示浮层位置（透传定位引擎，默认 `top`） | `string` | `top` |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |

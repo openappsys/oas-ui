@@ -144,7 +144,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-snackbar
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -161,7 +163,7 @@ onMounted(async () => {
 | `queue` | — | `boolean` | — |
 | `swipe` | — | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -169,11 +171,11 @@ onMounted(async () => {
 | `oas-close` | Dispatched when auto-dismissing after timeout (controlled mode does not clear `open` itself), `detail: { reason }` |
 | `oas-open` | Dispatched when opened |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Notification content |
 
 - `open` is controlled: only `oas-close` is dispatched on timeout and the host removes `open`; reusing one instance with a changed `message` does not restart the timer — close it first or create a new element.
 - At most 3 bars stack per direction (vertical, no overlap, newest at the edge); the oldest receives `oas-close` (`reason: evict`) when exceeded; `queue` switches to FIFO backfilling.

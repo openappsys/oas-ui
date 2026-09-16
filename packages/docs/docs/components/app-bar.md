@@ -129,7 +129,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-app-bar
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -142,13 +144,13 @@ onMounted(() => {
 | `menu-open` | 汉堡钮展开态（受控）：宿主开合侧栏后回写，按钮 aria-expanded 随之同步 | `boolean` | — |
 | `position` | 定位形态：static（默认，文档流）/ absolute / fixed / floating（悬浮圆角投影） | `string` | `static` |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-menu-toggle` | 汉堡钮点击时派发；宿主自行开合抽屉并回写 menu-open |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -158,7 +160,7 @@ onMounted(() => {
 | `title` | 标题富内容通道（覆盖 heading 属性） |
 | `trailing` | 最右侧尾部自定义区 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

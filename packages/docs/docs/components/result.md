@@ -104,7 +104,9 @@
 
 ## API
 
-### 属性
+### oas-result
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -113,7 +115,7 @@
 | `status` | 状态：`success` / `error` / `warning` / `info` / `403` / `404` / `500`（HTTP 错误页三态含专属图标）；非法值回落 info 并告警 | `string` | `success` |
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -123,9 +125,9 @@
 | `icon` | 自定义图标（覆盖内置状态图标；有内容时进中性态：去语义底色） |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
-| `--oas-result-desc-size` | — |
-| `--oas-result-title-size` | — |
+| `--oas-result-desc-size` | `var(--oas-font-size-md)` |
+| `--oas-result-title-size` | `var(--oas-font-size-xl)` |

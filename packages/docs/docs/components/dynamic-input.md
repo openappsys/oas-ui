@@ -132,7 +132,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-dynamic-input
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -150,7 +152,7 @@ onMounted(() => {
 | `status` | 校验态：`error` / `warning` / `success`（透传给行内输入框） | `string` | — |
 | `value-placeholder` | pair 形态值占位文本 | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -161,7 +163,7 @@ onMounted(() => {
 | `oas-remove` | 移除行，`detail: { index, value }` |
 | `oas-row-render` | 行渲染时派发（自定义行通道），`detail: { index, value, element }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

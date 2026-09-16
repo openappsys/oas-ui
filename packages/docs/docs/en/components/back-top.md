@@ -175,7 +175,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-back-top
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -199,23 +201,23 @@ onMounted(async () => {
 | `visibility-height` | Scroll threshold (px): the button auto-shows once scrolled beyond it, default 400 | `string` | `400` |
 | `visible` | Controlled visibility: when present the host fully controls show/hide (scroll does not interfere); when absent the button auto-toggles by the scroll threshold | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-click` | The button was clicked (then scrolls to the target container top/bottom) |
 | `oas-visibility-change` | Visibility state changed, `detail: { visible: boolean }` (dispatched on both controlled and uncontrolled switches; the initial sync on mount is not dispatched) |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Custom button content (replaces the built-in arrow icon when present) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-back-top-size` | — |
+| `--oas-back-top-size` | `var(--oas-control-height-lg)` |
 
 The button is fixed to the viewport (the `:host` is `position: fixed`, `z-index` via `--oas-z-fixed`); when hidden the button gets `aria-hidden="true"` and the host sets `pointer-events: none` so it never blocks clicks underneath.

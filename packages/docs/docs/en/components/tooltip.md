@@ -721,7 +721,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-tooltip
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -761,20 +763,20 @@ onMounted(() => {
 | `virtual-y` | Virtual anchor viewport Y coordinate (px, e.g. mouse `clientY`); position by coordinates when set together with `virtual-x` | — | — |
 | `width` | — | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-open-change` | Fired when the `open` state changes (show/hide), `detail: { open }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Trigger element (hover/focus trigger); optional in `virtual` mode |
 | `content` | Rich content (takes precedence over the `content` attribute text when present) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
