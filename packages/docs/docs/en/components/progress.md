@@ -92,10 +92,10 @@ The circle defaults to a 48px diameter and 6px stroke, showing the percentage in
 <DemoBlock title="Indeterminate loading">
   <oas-space direction="vertical" size="medium" style="width: 100%">
     <oas-progress indeterminate label="Loading data"></oas-progress>
-    <oas-progress indeterminate status="error"></oas-progress>
+    <oas-progress indeterminate status="error" label="Save failed, retrying"></oas-progress>
     <oas-space size="large" wrap>
-      <oas-progress type="circle" indeterminate></oas-progress>
-      <oas-progress type="dashboard" indeterminate></oas-progress>
+      <oas-progress type="circle" indeterminate label="Processing"></oas-progress>
+      <oas-progress type="dashboard" indeterminate label="Background task"></oas-progress>
     </oas-space>
   </oas-space>
 </DemoBlock>

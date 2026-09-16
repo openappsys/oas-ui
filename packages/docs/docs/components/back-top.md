@@ -49,7 +49,7 @@
 `visibility-height` 调整自动显隐阈值（默认 400）；`target` 指定滚动目标容器（CSS 选择器，默认 window）：容器内滚动超出阈值后按钮自动出现，点击滚动回该容器顶部。
 
 <DemoBlock title="阈值与目标容器">
-  <div id="bt-scroll-box" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
+  <div id="bt-scroll-box" tabindex="0" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
     <p style="color: var(--oas-color-text-secondary)">这是局部滚动容器：向下滚动超过 200px 后，右下角按钮自动出现，点击回到容器顶部。</p>
     <p style="margin-top: 600px; color: var(--oas-color-text-secondary)">容器底部——滚动回来试试。</p>
   </div>
@@ -61,7 +61,7 @@
 `target` 缺省时自动探测最近的滚动祖先容器（无需手写选择器）：把组件放进任意嵌套滚动容器内，它就会自动监听该容器滚动并滚动回其顶部。显式设置 `target` 时优先于自动探测。
 
 <DemoBlock title="嵌套滚动容器自动吸附">
-  <div id="bt-auto-box" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
+  <div id="bt-auto-box" tabindex="0" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
     <p style="color: var(--oas-color-text-secondary)">这是嵌套滚动容器：组件放在容器内部时自动吸附该容器（此处未设置 target），向下滚动超过 100px 后右下角按钮出现，点击回到容器顶部。</p>
     <p style="margin-top: 600px; color: var(--oas-color-text-secondary)">容器底部——滚动回来试试。</p>
     <oas-back-top visibility-height="100" bottom="48px" right="48px"></oas-back-top>
@@ -116,7 +116,7 @@
 `reverse` 切换为「滚到底部」按钮：靠近容器底部时自动隐藏，点击滚动到容器底部。
 
 <DemoBlock title="反向滚到底">
-  <div id="bt-rev-box" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
+  <div id="bt-rev-box" tabindex="0" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
     <p style="color: var(--oas-color-text-secondary)">这是局部滚动容器：`reverse` 模式下按钮在「不在底部」时出现，点击滚到容器底部。</p>
     <p style="margin-top: 600px; color: var(--oas-color-text-secondary)">容器底部。</p>
   </div>

@@ -51,6 +51,7 @@ export const ar: LocaleMessages = {
   'treeSelect.andMore': 'و{count} أخرى',
   // autoComplete (إكمال تلقائي)
   'autoComplete.noMatch': 'لا توجد نتائج مطابقة',
+  'autoComplete.defaultLabel': 'حقل الإكمال التلقائي',
   // combobox (مربع مركب: حقل الإدخال هو عنصر التحكم، تصفية بالإدخال + اختيار القيمة)
   'combobox.empty': 'لا توجد خيارات',
   'combobox.noMatch': 'لا توجد خيارات مطابقة',

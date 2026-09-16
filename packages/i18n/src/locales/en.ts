@@ -37,6 +37,7 @@ export const en: LocaleMessages = {
   'treeSelect.join': ', ',
   'treeSelect.andMore': 'and {count} more',
   'autoComplete.noMatch': 'No matching results',
+  'autoComplete.defaultLabel': 'Auto-complete input',
   'combobox.empty': 'No options',
   'combobox.noMatch': 'No matching options',
   'combobox.loading': 'Loading…',

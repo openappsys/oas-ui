@@ -22,7 +22,8 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   transition:
     transform var(--oas-transition-base) var(--oas-ease-out),
-    opacity var(--oas-transition-base) var(--oas-ease-out);
+    opacity var(--oas-transition-base) var(--oas-ease-out),
+    visibility var(--oas-transition-base) var(--oas-ease-out);
   pointer-events: auto;
   max-width: calc(100vw - var(--oas-space-6));
 }
@@ -34,8 +35,10 @@ const STYLE = `
   top: calc(var(--snackbar-offset, 24px) + var(--snackbar-stack-shift, 0px));
 }
 /* open 视觉态由内部类驱动（而非 open 属性）：排队/合并等「属性在而视觉未开」的场景可独立控制 */
+/* 关闭态 visibility:hidden：可聚焦内容（slot 关闭钮等）移出 Tab 序与可访问树——aria-hidden 的盒子不得含可聚焦元素（axe: aria-hidden-focus） */
 :host(:not(.oas-open)) .box {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 :host(:not([direction='top']):not(.oas-open)) .box {

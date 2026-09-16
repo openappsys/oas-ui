@@ -593,6 +593,10 @@ export class OASSpin extends OASElement {
       indicator.setAttribute('aria-valuemin', '0')
       indicator.setAttribute('aria-valuemax', '100')
       indicator.setAttribute('aria-valuenow', String(Math.round(value)))
+      // progressbar 恒有可访问名：宿主未提供 aria-label 时回退百分比文本（语言无关）
+      if (!indicator.getAttribute('aria-label')) {
+        indicator.setAttribute('aria-label', `${Math.round(value)}%`)
+      }
       if (bar) {
         bar.setAttribute('stroke-dasharray', String(SPIN_CIRCUMFERENCE))
         bar.setAttribute(
