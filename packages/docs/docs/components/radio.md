@@ -109,13 +109,26 @@
 
 <DemoBlock title="自定义指示器（checked-icon 插槽）">
   <oas-space>
-    <oas-radio name="radio-icon" value="like" checked>
+    <oas-radio class="radio-like" name="radio-icon" value="like" checked>
       点赞
-      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 7 L7 7 L7 2 L9 2 L9 7 L14 7 L14 9 L9 9 L9 14 L7 14 L7 9 L2 9 Z" fill="var(--oas-color-primary)"/></svg></template>
+      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 7 L7 7 L7 2 L9 2 L9 7 L14 7 L14 9 L9 9 L9 14 L7 14 L7 9 L2 9 Z" fill="currentColor"/></svg></template>
     </oas-radio>
     <oas-radio name="radio-icon" value="plain">未自定义（原生对照）</oas-radio>
   </oas-space>
 </DemoBlock>
+
+<style>
+/* 选中态 = 主色实心图标 + 主色圆环（圆环用 ::part(box) 上色，图标由插槽渲染） */
+.radio-like::part(box) {
+  border-color: var(--oas-color-text-secondary);
+}
+.radio-like[checked]::part(box) {
+  border-color: var(--oas-color-primary);
+}
+.radio-like::part(indicator-checked) {
+  color: var(--oas-color-primary);
+}
+</style>
 
 插槽内容接管选中态图标（`template[slot]` 或直接放元素皆可）；未选态显示默认空心圆轮廓，宿主可用 `::part(box)` 覆写（见下例：两态全自定义）。
 
@@ -126,30 +139,21 @@
       <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg></template>
     </oas-radio>
     <oas-radio class="radio-star" name="radio-star" value="off">
-      未点亮（同形灰星）
+      未点亮（灰色虚线环）
       <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg></template>
     </oas-radio>
   </oas-space>
 </DemoBlock>
 
 <style>
-/* 两态共用同一个自定义图标（星形），只换颜色：未选 = 次要文字色，选中 = 主色。
-   未选态用 ::part(box) + mask 画同形状剪影——mask 只取形状，颜色由 background-color 给，
-   所以亮/暗主题都跟随 token（避免在 data-URI 里硬编码颜色）；选中态改由插槽显示，故关掉 mask 层。 */
-.radio-star {
-  --radio-star-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z' fill='%23fff'/%3E%3C/svg%3E");
-}
+/* 未选态：::part(box) 定制圆环（虚线 + 次要色）；选中态：主色实线环 + 插槽的主色实心星。
+   只用 ::part() + currentColor 这类最稳的原语（不用 mask / var() 写进 SVG 属性），保证各引擎一致。 */
 .radio-star::part(box) {
-  border: none;
-  border-radius: 0;
-  background-color: var(--oas-color-text-secondary);
-  -webkit-mask: var(--radio-star-mask) center / 14px 14px no-repeat;
-  mask: var(--radio-star-mask) center / 14px 14px no-repeat;
+  border: 1.5px dashed var(--oas-color-text-secondary);
+  border-radius: 50%;
 }
 .radio-star[checked]::part(box) {
-  -webkit-mask: none;
-  mask: none;
-  background-color: transparent;
+  border: 1.5px solid var(--oas-color-primary);
 }
 .radio-star::part(indicator-checked) {
   color: var(--oas-color-primary);
