@@ -119,7 +119,7 @@ Required-mark forms (asterisk + position) are covered by `required` + `position`
 
 | Name | Description |
 | --- | --- |
-| default | Label text |
+| default | Label content (text / icons) |
 
 #### CSS Variables
 

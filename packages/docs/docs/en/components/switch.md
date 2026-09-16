@@ -210,7 +210,7 @@ onMounted(() => {
 
 | Name | Description |
 | --- | --- |
-| default | Switch label |
+| default | Switch content (label / rich content) |
 
 #### CSS Variables
 
