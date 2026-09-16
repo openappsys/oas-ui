@@ -23,13 +23,16 @@ jobs:
       # typecheck 依赖各 workspace 包的 d.ts（build 产物 dist/types）——必须 build 之后跑
       - run: pnpm build
       - run: pnpm typecheck
+      # 官网首页统计数字防漂移（与 api:check 同机制：重新生成 + git diff）。
+      # ⚠️ 必须排在 perf:size 之前：perf:size 会用当前环境实测的 gzip 字节改写
+      # docs/perf-baseline.json，而 stats:gen 的三个 perf 字段正是读这份基线 →
+      # 若先跑 perf:size，CI 会拿「环境实测数字」去比「提交版数字」，必然误报（本 job 曾长期必红）。
+      - run: pnpm stats:check
       # 体积预算（vision §5.8 性能领先）：依赖 dist，必须紧跟 build 之后。
       # 渲染基准（pnpm perf:bench）耗时波动大（happy-dom + 共享 runner 抖动），不进 CI，
       # 发布前本地跑一遍核对即可（见 docs/engineering.md §4 性能基准）。
       - run: pnpm perf:size
       - run: pnpm api:check
-      # 官网首页统计数字防漂移（与 api:check 同机制：重新生成 + git diff）
-      - run: pnpm stats:check
   e2e:
     runs-on: ubuntu-latest
     strategy:

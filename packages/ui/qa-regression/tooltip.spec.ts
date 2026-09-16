@@ -407,6 +407,11 @@ test('tooltip merge 直角三角贴角共边 8 向：直角点贴面板角点、
   page,
 }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  // 几何断言必须量「静止态」：入场动画 oas-tooltip-in 为 scale(0.9)→scale(1)（默认 150ms），
+  // 动画进行中 getBoundingClientRect 会拿到缩放后的盒子（≈0.9 倍）→ 三角/间距断言随机器快慢抖动
+  // （组件源码亦记录该陷阱，其内部改用 offset* 规避）。此处关动画：reduced-motion 是组件已实现的
+  // 标准分支（@media prefers-reduced-motion: reduce → animation: none），比「等动画播完」更确定。
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await up(page, '#tt-arrow-default')
   await page.evaluate(() => {
     // 锚点钉视口中央：排除 auto-adjust 翻转/避让对 8 向的干扰
