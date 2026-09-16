@@ -7,10 +7,12 @@
  *
  * 校验：
  * 1. 六个随主版本发布的包（core/icons/theme/i18n/ssr/ui）当前版本 == 目标
- *    （next/nuxt 独立节奏不随主版本，不校验）
+ *    （next/nuxt 独立节奏不随主版本，不校验版本；仅做「有改动未 bump」提醒，见 4）
  * 2. CHANGELOG.md 有 [目标] 段
  * 3. 若 tag 已存在（v<目标>），tag 指向提交的 packages/ui/package.json 版本 == 目标
  *    （核心防坑点：tag 指向未 bump 的旧提交）
+ * 4. 适配层（next/nuxt）提醒：自上个 release tag 以来源码有改动但版本未 bump →
+ *    本次发布会被 publish-skip-existing 跳过（版本已存在），改动永远发不出去。
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -60,6 +62,46 @@ if (fail) {
   console.error(`[release-check] ${fail} 项不满足，禁止打 tag/发布`)
   process.exit(1)
 }
+
+// 4) 适配层提醒（警告级，不拦截发布）：自上个 release tag 以来源码有改动、但版本未 bump →
+//    publish-skip-existing 见同名版本已存在会跳过，改动永远发不出去。
+//    （next/nuxt 采用「有改动才发版」的独立节奏，不随主版本 bump，故用提醒而非硬拦。）
+const ADAPTERS = ['next', 'nuxt']
+let baselineTag = ''
+try {
+  baselineTag = execSync('git describe --tags --abbrev=0', { encoding: 'utf8' }).trim()
+} catch {
+  // 无任何 tag（首次发布）→ 无法比较，跳过提醒
+}
+if (baselineTag) {
+  const changed = execSync(
+    `git diff --name-only "${baselineTag}"..HEAD -- ${ADAPTERS.map((p) => `packages/${p}`).join(' ')} ":(exclude)**/*.test.ts"`,
+    { encoding: 'utf8' },
+  ).trim()
+  if (changed) {
+    const bumped = []
+    for (const p of ADAPTERS) {
+      const now = JSON.parse(readFileSync(join('packages', p, 'package.json'), 'utf8')).version
+      let at = ''
+      try {
+        at = JSON.parse(execSync(`git show "${baselineTag}:packages/${p}/package.json"`, { encoding: 'utf8' })).version
+      } catch {
+        // 基线 tag 里没有该包（首次加入）→ 视为需发布
+      }
+      if (now !== at) bumped.push(`${p}(${at || '无'}→${now})`)
+    }
+    const stale = ADAPTERS.filter((p) => !bumped.some((b) => b.startsWith(`${p}(`)))
+    if (stale.length) {
+      console.warn(
+        `⚠ [release-check] 适配层自 ${baselineTag} 以来有改动但版本未 bump：${stale.join(', ')}` +
+          `——publish-skip-existing 会因同名版本已存在而跳过，本次发布不会更新它们；` +
+          `若确有需要发布的改动，请 bump 对应 packages/<name>/package.json 版本后重跑。` +
+          `${bumped.length ? `（已 bump：${bumped.join(', ')}）` : ''}`,
+      )
+    }
+  }
+}
+
 console.log(
   `[release-check] 通过：${MAIN_PACKAGES.length} 个发布包均为 ${version}，CHANGELOG 段齐全，tag（若存在）指向一致`,
 )
