@@ -156,12 +156,39 @@
     <oas-button value="prev">上一页</oas-button>
     <oas-button value="next">下一页</oas-button>
   </oas-button-group>
-  <oas-button-group pill vertical style="margin-top: 8px">
+  <oas-button-group pill vertical class="bg-eq-pill" style="margin-top: 8px">
+    <oas-button value="up">置顶</oas-button>
+    <oas-button value="mid">置中</oas-button>
+    <oas-button value="down">置底</oas-button>
+  </oas-button-group>
+  <oas-button-group pill vertical class="bg-eq-pill bg-vertical-text" style="margin-top: 8px">
     <oas-button value="up">置顶</oas-button>
     <oas-button value="mid">置中</oas-button>
     <oas-button value="down">置底</oas-button>
   </oas-button-group>
 </DemoBlock>
+
+<style>
+/* 纵向胶囊的匀称内边距：button 原生是「固定控件高 + 仅水平内边距」，纵向组里竖直留白会明显小于
+   水平留白（四周不相等）。放开固定高、给统一 padding，让文字四周留白一致。
+   两个示例共用：第 3 个文字横排 → 钮 44×36；第 4 个文字竖排（writing-mode）→ 钮 36×44（同款旋转）。 */
+.bg-eq-pill oas-button::part(button) {
+  height: auto;
+  min-height: 0;
+  padding: var(--oas-space-2);
+}
+/* 竖排文字变体：writing-mode 正立竖排（不旋转），尺寸由文字 + 同一份统一内边距决定。
+   组内 -1px 贴合叠边走逻辑 margin-block-start，竖向书写下会错到物理右边、把右边界线裁掉，
+   按物理上边补正。 */
+.bg-vertical-text oas-button {
+  writing-mode: vertical-rl;
+}
+.bg-vertical-text oas-button:not(:first-child) {
+  margin-block-start: 0;
+  margin-right: 0;
+  margin-top: -1px;
+}
+</style>
 
 ## 分隔符
 

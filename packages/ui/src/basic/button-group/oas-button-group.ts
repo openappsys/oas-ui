@@ -157,7 +157,7 @@ const STYLE = `
   --oas-button-group-start-radius: var(--oas-radius-md);
   --oas-button-group-end-radius: var(--oas-radius-md);
 }
-/* 纵向 pill：首上圆/尾下圆 */
+/* 纵向 pill：首上圆/尾下圆（按按钮兜底；组端部的最终形状由下面容器整形成胶囊） */
 :host([vertical][pill]) ::slotted(oas-button:first-child),
 :host([vertical][pill]) ::slotted(oas-button-group:first-child) {
   --oas-button-group-radius: var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0 0;
@@ -175,6 +175,13 @@ const STYLE = `
   --oas-button-group-radius: var(--oas-radius-full, 999px);
   --oas-button-group-start-radius: var(--oas-radius-full, 999px);
   --oas-button-group-end-radius: var(--oas-radius-full, 999px);
+}
+/* pill 胶囊端以「组」为单位成形：组容器全圆角 + 裁剪。radius 按容器较短边自动夹紧
+   （纵向宽组 62×96 → 31 半圆端；窄高组 32×186 → 16；横向组 224×32 → 16），四种情况都得到半圆端。
+   只按按钮做时，端边是"宽"的那种（纵向宽钮）会退化成半椭圆/圆角矩形，不成胶囊。 */
+:host([pill]) [part='group'] {
+  border-radius: var(--oas-radius-full, 999px);
+  overflow: clip;
 }
 /* spread 均分铺满：宿主占满父容器宽度，组内按钮 flex 等宽均分
    （移动端操作栏 / 表单底部按钮组形态）；均分覆盖横向与纵向，纵向本就拉伸铺满 */
