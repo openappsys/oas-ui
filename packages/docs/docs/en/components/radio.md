@@ -117,7 +117,36 @@ The `description` attribute renders as secondary text below the label (per-optio
   </oas-space>
 </DemoBlock>
 
-Slot content takes over the checked-state icon (`template[slot]` or a direct element both work); the unchecked state falls back to a default hollow circle, overridable via `::part(box)`.
+Slot content takes over the checked-state icon (`template[slot]` or a direct element both work); the unchecked state falls back to a default hollow circle, overridable via `::part(box)` (see the next example: both states customized).
+
+<DemoBlock title="Both states customized (checked-icon slot + ::part(box))">
+  <oas-space>
+    <oas-radio class="radio-two-state" name="radio-two-state" value="custom" checked>
+      Checked (custom tick + box)
+      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></template>
+    </oas-radio>
+    <oas-radio class="radio-two-state" name="radio-two-state" value="plain">
+      Unchecked (same box)
+      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></template>
+    </oas-radio>
+  </oas-space>
+</DemoBlock>
+
+<style>
+/* Unchecked: ::part(box) overrides the default hollow circle (shape / stroke / radius); checked switches to the primary color */
+.radio-two-state::part(box) {
+  border: 1.5px solid var(--oas-color-text-secondary);
+  border-radius: 4px;
+}
+.radio-two-state[checked]::part(box) {
+  border-color: var(--oas-color-primary);
+}
+.radio-two-state::part(indicator-checked) {
+  color: var(--oas-color-primary);
+}
+</style>
+
+> **The custom indicator is a per-item switch**: only items carrying the `checked-icon` slot enter custom mode (native dot hidden, `.box` becomes the unchecked carrier) — that is why **both** items above carry the slot. For a uniform look across a group, every item needs it.
 
 ## Horizontal Group
 
