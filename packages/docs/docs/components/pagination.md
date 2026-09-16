@@ -387,7 +387,7 @@ onMounted(() => {
 | `show-total` | 显示总条数文案「共 X 条」 | `boolean` | — |
 | `siblings` | 当前页前后各显示的页码数 | `string` | `1` |
 | `simple` | 极简形态：只渲染前后钮与「当前 / 总页数」文本，与页码省略算法互斥（simple 优先）；show-jumper 可叠加 | `boolean` | — |
-| `size` | 尺寸档位：xs / sm / md / lg / xl（默认 md）；非法值回落 md 并在控制台告警 | `string` | `md` |
+| `size` | 尺寸档位：xs / small / medium（默认）/ large / xl；`sm`/`md`/`lg` 为等价别名；非法值回落 medium 并在控制台告警 | `string` | `medium` |
 | `target` | 链接模式下透传给 `<a target>`（如 `_blank`）；仅在设置 `href-template` 时生效 | `string` | — |
 | `total` | 总条数 | `string` | `0` |
 | `total-boundary` | 条数切换器显隐阈值：设置后仅 total 大于该值才渲染每页条数下拉（total ≤ 阈值隐藏）；未设置时维持现状（有 page-sizes 即显示） | `string` | — |

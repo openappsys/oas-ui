@@ -101,12 +101,12 @@ describe('OASPagination', () => {
     expect(el2.shadowRoot!.querySelector('[part="size"]')).toBeNull()
   })
 
-  it('size 缩写别名互认：small/medium/large 等价 sm/md/lg 且 data-size 归一为缩写（shared/size）', () => {
+  it('size 全称归一：medium/md 输入恒输出全称 data-size（shared/size）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const full = mount({ size: 'medium' })
-    expect(full.getAttribute('data-size')).toBe('md')
+    expect(full.getAttribute('data-size')).toBe('medium')
     const short = mount({ size: 'md' })
-    expect(short.getAttribute('data-size')).toBe('md')
+    expect(short.getAttribute('data-size')).toBe('medium')
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
@@ -189,28 +189,29 @@ describe('OASPagination', () => {
     expect(el.getAttribute('current')).toBe('1')
   })
 
-  // ===== 批次 6：size 五档（xs/sm/md/lg/xl，默认 md）=====
+  // ===== 批次 6：size 五档（xs/small/medium/large/xl 全称，默认 medium；sm/md/lg 为等价别名）=====
 
-  it('size：默认 md（data-size 回落 md，基准 control-height-md）', () => {
+  it('size：默认 medium（data-size 回落 medium，基准 control-height-md）', () => {
     const el = mount({ total: '100' })
-    expect(el.getAttribute('data-size')).toBe('md')
+    expect(el.getAttribute('data-size')).toBe('medium')
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     expect(style).toMatch(/--oas-pagination-height: var\(--oas-control-height-md\)/)
     expect(style).toMatch(/:host\(\[data-size='xs'\]\)/)
   })
 
-  it('size：xs/sm/lg/xl 合法值映射到 data-size', () => {
-    for (const s of ['xs', 'sm', 'lg', 'xl']) {
-      const el = mount({ size: s, total: '100' })
-      expect(el.getAttribute('data-size')).toBe(s)
+  it('size：xs/sm/lg/xl 输入映射到全称 data-size（sm→small、lg→large）', () => {
+    const expected: Record<string, string> = { xs: 'xs', sm: 'small', lg: 'large', xl: 'xl', md: 'medium' }
+    for (const [input, out] of Object.entries(expected)) {
+      const el = mount({ size: input, total: '100' })
+      expect(el.getAttribute('data-size')).toBe(out)
     }
   })
 
-  it('size：非法值回落 md 并 console 告警（对齐 button 做法）', () => {
+  it('size：非法值回落 medium 并 console 告警（对齐 button 做法）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount({ size: 'big' })
-    expect(el.getAttribute('data-size')).toBe('md')
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('[oas-pagination] 非法 size "big"，已回落 md'))
+    expect(el.getAttribute('data-size')).toBe('medium')
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('[oas-pagination] 非法 size "big"，已回落 medium'))
     warn.mockRestore()
   })
 
@@ -452,6 +453,7 @@ describe('OASPagination', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     // siblings="2" 候选集 7 个，回落后的 5 仍触发截断
     const el = mount({ 'pager-count': '3', siblings: '2', total: '1000', current: '45' })
+    console.error('DEBUG-WARN-CALLS:', JSON.stringify(warn.mock.calls))
     expect(warn).toHaveBeenCalledTimes(1)
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('[oas-pagination] 非法 pager-count "3"'))
     expect(pages(el)).toEqual(['1', '2', '45', '99', '100'])

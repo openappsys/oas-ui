@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { aliasSize } from '../../shared/size.js'
+import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type TagType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
@@ -34,28 +34,20 @@ export const PRESET_COLORS: readonly TagPresetColor[] = [
   'purple',
 ]
 
-const VALID_TAG_SIZES: readonly TagSize[] = ['xs', 'small', 'medium', 'large', 'xl']
 const VALID_TAG_VARIANTS: readonly TagVariant[] = ['outlined', 'filled', 'solid']
+/** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
 const warnedSizes = new Set<string>()
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-tag] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+}
 
 /** 默认关闭按钮 × 图标：template() 与 close-icon 移除后还原共用同一份结构（SSR 快照一致） */
 const DEFAULT_CLOSE_SVG = `
           <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
             <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>`
-
-/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
-function normalizeTagSize(raw: string): TagSize {
-  if ((VALID_TAG_SIZES as readonly string[]).includes(raw)) return raw as TagSize
-  // 跨词表别名互认（shared/size）：sm/md/lg 等价 small/medium/large，不告警
-  const alias = aliasSize(raw, true)
-  if (alias) return alias as TagSize
-  if (!warnedSizes.has(raw)) {
-    warnedSizes.add(raw)
-    console.warn(`[oas-tag] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
-  }
-  return 'medium'
-}
 
 const STYLE = `
 :host {
@@ -609,7 +601,9 @@ export class OASTag extends OASElement {
     if (!this.tagRoot) return
     const type = this.getAttr('type', 'default') as TagType
     // size 就近读取 config-provider 注入值（自身属性 > config-provider > medium）
-    const size = normalizeTagSize(this.injectValue('size', 'medium') as TagSize)
+    const sizeRaw = this.injectValue('size', 'medium') as TagSize
+    const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'medium')
+    if (!sizeValid) warnInvalidSize(sizeRaw)
     const closable = this.hasAttr('closable')
     const round = this.hasAttr('round')
     const chip = this.hasAttr('chip')

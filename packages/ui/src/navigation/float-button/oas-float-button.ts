@@ -1,25 +1,17 @@
 import { OASElement, escapeAttr } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import { isRtl } from '../../shared/direction.js'
-import { aliasSize } from '../../shared/size.js'
+import { normalizeSizeStrict, ALL_SIZES, type OasSize } from '../../shared/size.js'
 
-/** 尺寸档位：xs/sm/md/lg/xl（默认 lg，对应 48px 常规 FAB 观感） */
-const VALID_SIZES = ['xs', 'sm', 'md', 'lg', 'xl'] as const
-type FloatButtonSize = (typeof VALID_SIZES)[number]
+/** 尺寸档位：xs/small/medium/large/xl 全称（默认 large，对应 48px 常规 FAB 观感）；sm/md/lg 为等价别名 */
+type FloatButtonSize = OasSize
 
+/** 非法 size 告警：回落 large 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
 const warnedSizes = new Set<string>()
-
-/** 非法 size 归一化：回落 lg 并在 dev 下 console.warn 一次（同值去重） */
-function normalizeSize(raw: string): FloatButtonSize {
-  if ((VALID_SIZES as readonly string[]).includes(raw)) return raw as FloatButtonSize
-  // 跨词表别名互认（shared/size）：small/medium/large 等价 sm/md/lg，不告警
-  const alias = aliasSize(raw, false)
-  if (alias) return alias as FloatButtonSize
-  if (!warnedSizes.has(raw)) {
-    warnedSizes.add(raw)
-    console.warn(`[oas-float-button] 非法 size "${raw}"，已回落 lg；合法值：xs/sm/md/lg/xl`)
-  }
-  return 'lg'
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-float-button] 非法 size "${raw}"，已回落 large；合法值：xs/small/medium/large/xl`)
 }
 
 /** 模式：single 单钮（默认）/ group 分组（主钮 + slot 子钮堆叠）/ menu 菜单（主钮弹出动作菜单） */
@@ -81,9 +73,9 @@ const STYLE = `
   bottom: var(--oas-float-button-bottom, var(--oas-space-6));
   right: var(--oas-float-button-right, var(--oas-space-6));
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-fixed, 1030));
-  /* 尺寸档位（默认 lg = control-height-xl = 48px） */
+  /* 尺寸档位（默认 large = control-height-xl = 48px） */
   --oas-float-button-size: var(--oas-control-height-xl);
-  /* 子钮尺寸：主钮档位 -8px（lg = 40px）；coarse pointer 下抬到触控目标下限 */
+  /* 子钮尺寸：主钮档位 -8px（large = 40px）；coarse pointer 下抬到触控目标下限 */
   --oas-float-button-action-size: calc(var(--oas-float-button-size) - var(--oas-space-2));
 }
 :host([hidden]) {
@@ -92,13 +84,13 @@ const STYLE = `
 :host([data-size='xs']) {
   --oas-float-button-size: var(--oas-control-height-sm);
 }
-:host([data-size='sm']) {
+:host([data-size='small']) {
   --oas-float-button-size: var(--oas-control-height-md);
 }
-:host([data-size='md']) {
+:host([data-size='medium']) {
   --oas-float-button-size: var(--oas-control-height-lg);
 }
-:host([data-size='lg']) {
+:host([data-size='large']) {
   --oas-float-button-size: var(--oas-control-height-xl);
 }
 :host([data-size='xl']) {
@@ -132,11 +124,11 @@ const STYLE = `
 :host([data-size='xs']) .btn {
   font-size: var(--oas-font-size-md);
 }
-:host([data-size='sm']) .btn,
-:host([data-size='md']) .btn {
+:host([data-size='small']) .btn,
+:host([data-size='medium']) .btn {
   font-size: var(--oas-font-size-lg);
 }
-:host([data-size='lg']) .btn {
+:host([data-size='large']) .btn {
   font-size: var(--oas-font-size-xl);
 }
 :host([data-size='xl']) .btn {
@@ -1274,7 +1266,9 @@ export class OASFloatButton extends OASElement {
     const mode = this.validMode()
     const shape = this.getAttr('shape', 'circle')
     const type = this.getAttr('type', 'primary')
-    const size = normalizeSize(this.getAttr('size', 'lg'))
+    const sizeRaw = this.getAttr('size', 'large')
+    const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'large')
+    if (!sizeValid) warnInvalidSize(sizeRaw)
     const disabled = this.injectDisabled()
     const hasText = this.hasText()
 

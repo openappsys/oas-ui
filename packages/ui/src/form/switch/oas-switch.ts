@@ -1,10 +1,10 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import { isRtl } from '../../shared/direction.js'
+import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 
 export type SwitchSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
-const VALID_SWITCH_SIZES: readonly SwitchSize[] = ['xs', 'small', 'medium', 'large', 'xl']
 /** status 校验态：success / warning / error（error 联动 aria-invalid） */
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
 const warnedSizes = new Set<string>()
@@ -12,14 +12,11 @@ const warnedSizes = new Set<string>()
 /** label for/button id 关联：确定性计数器（SSR 快照可重复，浏览器多实例不冲突） */
 let switchIdCounter = 0
 
-/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
-function normalizeSwitchSize(raw: string): SwitchSize {
-  if ((VALID_SWITCH_SIZES as readonly string[]).includes(raw)) return raw as SwitchSize
-  if (!warnedSizes.has(raw)) {
-    warnedSizes.add(raw)
-    console.warn(`[oas-switch] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
-  }
-  return 'medium'
+/** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-switch] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认（非法值不告警，保持输出干净） */
@@ -384,7 +381,9 @@ export class OASSwitch extends OASElement {
 
     // 尺寸：自身属性 > config-provider 注入 > medium（复用 button 的注入约定）；
     // 非法值回落 medium + dev warn（不再静默吞值）
-    const size = normalizeSwitchSize(this.injectValue('size', 'medium'))
+    const sizeRaw = this.injectValue('size', 'medium')
+    const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'medium')
+    if (!sizeValid) warnInvalidSize(sizeRaw)
     btn.className = size
 
     // 可访问名称便捷通道：宿主直设 aria-label 时镜像给内部 button（显式 aria 优先于 label 关联名）

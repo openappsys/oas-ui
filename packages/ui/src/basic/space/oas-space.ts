@@ -1,11 +1,13 @@
 import { OASElement } from '@oas-ui/core'
+import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 
 export type SpaceDirection = 'horizontal' | 'vertical'
 export type SpaceSize = 'xs' | 'small' | 'medium' | 'large' | 'xl' | number
 export type SpaceAlign = 'start' | 'center' | 'end' | 'baseline' | 'stretch'
 export type SpaceJustify = 'start' | 'center' | 'end' | 'space-between' | 'space-around' | 'space-evenly'
 
-const SIZE_MAP: Record<string, string> = {
+/** named 档位 → 间距 token（size 语义是间距 gap 而非控件高度）；sm/md/lg 别名经 shared/size 归一为全称 */
+const SIZE_TOKEN_MAP: Record<string, string> = {
   xs: 'var(--oas-space-1)',
   small: 'var(--oas-space-2)',
   medium: 'var(--oas-space-3)',
@@ -13,7 +15,6 @@ const SIZE_MAP: Record<string, string> = {
   xl: 'var(--oas-space-6)',
 }
 
-const VALID_SPACE_SIZES = new Set(['xs', 'small', 'medium', 'large', 'xl'])
 const warnedSizes = new Set<string>()
 
 /**
@@ -97,16 +98,21 @@ function resolveDirectionValue(value: string, base: string, reverse: boolean): s
   return reverse ? `${dir}-reverse` : dir
 }
 
-/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重；数字/数字字符串原样转 px） */
+/**
+ * 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重；数字/数字字符串原样转 px）。
+ * named 档位（xs/small/medium/large/xl，sm/md/lg 为等价别名）经 shared/size 归一后映射间距 token；
+ * 归一化不吞数字分支：数字字符串（如 "12"）不是合法档位（isValid=false）走 px 转换。
+ */
 function normalizeSpaceSize(raw: string): string {
-  if (SIZE_MAP[raw] != null) return SIZE_MAP[raw]!
+  const { value, isValid } = normalizeSizeStrict(raw, ALL_SIZES, 'medium')
+  if (isValid) return SIZE_TOKEN_MAP[value]!
   const num = Number(raw)
   if (!Number.isNaN(num)) return `${num}px`
   if (!warnedSizes.has(raw)) {
     warnedSizes.add(raw)
     console.warn(`[oas-space] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl 或数字 px`)
   }
-  return SIZE_MAP.medium!
+  return SIZE_TOKEN_MAP.medium!
 }
 
 /** size 数组归一化（逗号分隔）：返回 [横向, 纵向]；单值两轴同值 */

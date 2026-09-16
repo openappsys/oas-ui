@@ -52,7 +52,7 @@
     {
       "name": "size",
       "type": "string",
-      "default": "lg",
+      "default": "large",
       "observed": true
     },
     {

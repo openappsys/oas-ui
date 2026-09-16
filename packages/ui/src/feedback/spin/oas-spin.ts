@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 
 const STYLE = `
 :host {
@@ -96,11 +97,8 @@ const STYLE = `
 }
 /* 五档尺寸：xs/small/medium/large/xl；旧缩写 sm/md/lg 保留别名兼容（CSS 两组选择器并存） */
 .indicator[data-size='xs'] { width: var(--oas-control-height-xs); height: var(--oas-control-height-xs); border-width: var(--oas-spin-border-width, 2px); }
-.indicator[data-size='sm'],
 .indicator[data-size='small'] { width: var(--oas-control-height-sm); height: var(--oas-control-height-sm); border-width: var(--oas-spin-border-width, 2px); }
-.indicator[data-size='md'],
 .indicator[data-size='medium'] { width: var(--oas-control-height-md); height: var(--oas-control-height-md); }
-.indicator[data-size='lg'],
 .indicator[data-size='large'] { width: var(--oas-control-height-lg); height: var(--oas-control-height-lg); }
 .indicator[data-size='xl'] { width: var(--oas-control-height-xl); height: var(--oas-control-height-xl); }
 /* dot 点状形态：三点脉冲错峰（尺寸沿用 size 体系，容器填满 indicator） */
@@ -269,18 +267,6 @@ const STYLE = `
 }
 `
 
-/** 五档 + 旧缩写别名统一归一化为全拼（sm→small、md→medium、lg→large） */
-const SPIN_SIZE_ALIASES: Record<string, string> = {
-  xs: 'xs',
-  sm: 'small',
-  small: 'small',
-  md: 'medium',
-  medium: 'medium',
-  lg: 'large',
-  large: 'large',
-  xl: 'xl',
-}
-
 /** 纯数字尺寸（按 px 解释），不允许负值 */
 const SIZE_NUM_RE = /^\d+(?:\.\d+)?$/
 /** 常见 CSS 长度单位（不允许负值） */
@@ -322,11 +308,11 @@ type SpinSize =
   | { kind: 'custom'; value: string } // 任意 CSS 尺寸（走内联 width/height）
   | { kind: 'invalid'; raw: string } // 非法（回落 medium + console.warn 一次）
 
-/** size 解析：档位命名 → 任意 CSS 尺寸（纯数字按 px / 带单位直取 / calc()）→ 非法回落 */
+/** size 解析：档位命名（sm/md/lg 别名经 shared/size 归一为全称）→ 任意 CSS 尺寸（纯数字按 px / 带单位直取 / calc()）→ 非法回落 */
 function parseSpinSize(raw: string): SpinSize {
   if (raw === '') return { kind: 'tier', value: 'medium' }
-  const tier = SPIN_SIZE_ALIASES[raw]
-  if (tier) return { kind: 'tier', value: tier }
+  const { value, isValid } = normalizeSizeStrict(raw, ALL_SIZES, 'medium')
+  if (isValid) return { kind: 'tier', value }
   if (SIZE_NUM_RE.test(raw)) return { kind: 'custom', value: `${raw}px` }
   if (SIZE_UNIT_RE.test(raw)) return { kind: 'custom', value: raw }
   if (raw.trim().startsWith('calc(')) return { kind: 'custom', value: raw }
@@ -430,7 +416,7 @@ export class OASSpin extends OASElement {
 
   /** SSR 首帧 data-size：档位归一化名，任意值/非法为 custom/medium（客户端 update 修正内联尺寸） */
   private templateSize(): string {
-    const parsed = parseSpinSize(this.getAttr('size', 'md'))
+    const parsed = parseSpinSize(this.getAttr('size', 'medium'))
     if (parsed.kind === 'tier') return parsed.value
     if (parsed.kind === 'custom') return 'custom'
     return 'medium'
@@ -438,7 +424,7 @@ export class OASSpin extends OASElement {
 
   /** size 应用：档位走 data-size（CSS 档位选择器），任意值走内联宽高（data-size=custom） */
   private applySize(indicator: HTMLElement): void {
-    const parsed = parseSpinSize(this.getAttr('size', 'md'))
+    const parsed = parseSpinSize(this.getAttr('size', 'medium'))
     if (parsed.kind === 'invalid') {
       if (!warnedSpinSizes.has(parsed.raw)) {
         warnedSpinSizes.add(parsed.raw)

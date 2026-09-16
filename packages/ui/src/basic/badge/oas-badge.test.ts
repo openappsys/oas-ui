@@ -1158,7 +1158,7 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
     expect(style).toContain('.ribbon.rolled:where(:not(.form-banner)) .ribbon-corner')
   })
 
-  it('ribbon-size 档位：仅与 diagonal 组合（lg 带宽/字号覆盖 + 带中心深移到 45px 防长文字贴裁切线）', () => {
+  it('ribbon-size 档位：仅与 diagonal 组合（large 带宽/字号覆盖 + 带中心深移到 45px 防长文字贴裁切线）', () => {
     const el = mount({
       ribbon: '',
       text: '50% OFF',
@@ -1166,24 +1166,24 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
       'ribbon-size': 'lg',
     })
     const r = ribbon(el)!
-    expect(r.classList.contains('ribbon-size-lg')).toBe(true)
+    expect(r.classList.contains('ribbon-size-large')).toBe(true)
     expect(r.classList.contains('form-diagonal')).toBe(true)
     const style = el.shadowRoot!.querySelector('style')!.textContent!
-    const lg = cssRule(style, '.ribbon.form-diagonal.ribbon-size-lg')
+    const large = cssRule(style, '.ribbon.form-diagonal.ribbon-size-large')
     // 档位只改 fallback 默认值（宿主 --oas-badge-diagonal-* 优先）
-    expect(lg).toContain('--oas-diag-pin: var(--oas-badge-diagonal-pin, 45px)')
-    expect(lg).toContain('height: var(--oas-badge-diagonal-height, 36px)')
-    expect(lg).toContain('font-size: var(--oas-badge-diagonal-font, var(--oas-font-size-md))')
-    // lg 带中心深移：钉点 fallback 45px（锚点规则用派生变量驱动）
+    expect(large).toContain('--oas-diag-pin: var(--oas-badge-diagonal-pin, 45px)')
+    expect(large).toContain('height: var(--oas-badge-diagonal-height, 36px)')
+    expect(large).toContain('font-size: var(--oas-badge-diagonal-font, var(--oas-font-size-md))')
+    // large 带中心深移：钉点 fallback 45px（锚点规则用派生变量驱动）
     expect(cssRule(style, '.ribbon.form-diagonal.anchor-top-left')).toContain(
       'inset-inline-start: calc(var(--oas-diag-pin) - 70.5%)',
     )
-    // md 中间档：33px 带宽、sm 字号、35px 钉点
-    const md = cssRule(style, '.ribbon.form-diagonal.ribbon-size-md')
-    expect(md).toContain('--oas-diag-pin: var(--oas-badge-diagonal-pin, 35px)')
-    expect(md).toContain('height: var(--oas-badge-diagonal-height, 33px)')
-    expect(md).toContain('font-size: var(--oas-badge-diagonal-font, var(--oas-font-size-sm))')
-    // 基础版（sm）几何用变量 fallback，钉点保持 25px
+    // medium 中间档：33px 带宽、sm 字号、35px 钉点
+    const medium = cssRule(style, '.ribbon.form-diagonal.ribbon-size-medium')
+    expect(medium).toContain('--oas-diag-pin: var(--oas-badge-diagonal-pin, 35px)')
+    expect(medium).toContain('height: var(--oas-badge-diagonal-height, 33px)')
+    expect(medium).toContain('font-size: var(--oas-badge-diagonal-font, var(--oas-font-size-sm))')
+    // 基础版（small）几何用变量 fallback，钉点保持 25px
     const base = cssRule(style, '.ribbon.form-diagonal')
     expect(base).toContain('--oas-diag-pin: var(--oas-badge-diagonal-pin, 25px)')
     expect(base).toContain('height: var(--oas-badge-diagonal-height, 30px)')
@@ -1192,46 +1192,46 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
     )
   })
 
-  it('ribbon-size 全称别名互认：medium/large 等价 md/lg（shared/size）', () => {
+  it('ribbon-size 全称档位 class：medium/large 输入写全称 class；md/lg 别名等价（shared/size）', () => {
     const medium = mount({
       ribbon: '',
       text: '50% OFF',
       'ribbon-form': 'diagonal',
-      'ribbon-size': 'medium',
+      'ribbon-size': 'md',
     })
-    expect(ribbon(medium)!.classList.contains('ribbon-size-md')).toBe(true)
+    expect(ribbon(medium)!.classList.contains('ribbon-size-medium')).toBe(true)
     const large = mount({
       ribbon: '',
       text: '50% OFF',
       'ribbon-form': 'diagonal',
       'ribbon-size': 'large',
     })
-    expect(ribbon(large)!.classList.contains('ribbon-size-lg')).toBe(true)
+    expect(ribbon(large)!.classList.contains('ribbon-size-large')).toBe(true)
   })
 
   it('ribbon-size 非法值/非 diagonal 忽略：不写入 size class', () => {
     // 非 diagonal 形态忽略
     for (const f of ['fold', 'banner', 'flag', 'seal', 'triangle', 'bookmark', 'side']) {
-      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': f, 'ribbon-size': 'lg' })
-      expect(ribbon(el)!.classList.contains('ribbon-size-lg'), f).toBe(false)
+      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': f, 'ribbon-size': 'large' })
+      expect(ribbon(el)!.classList.contains('ribbon-size-large'), f).toBe(false)
     }
-    // 非法值回落 sm：不写 md/lg
+    // 非法值回落 small：不写 medium/large（基类即 small 档）
     const bad = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'diagonal', 'ribbon-size': 'xl' })
-    expect(ribbon(bad)!.classList.contains('ribbon-size-md')).toBe(false)
-    expect(ribbon(bad)!.classList.contains('ribbon-size-lg')).toBe(false)
+    expect(ribbon(bad)!.classList.contains('ribbon-size-medium')).toBe(false)
+    expect(ribbon(bad)!.classList.contains('ribbon-size-large')).toBe(false)
   })
 
   it('ribbon-size 增量更新：lg→md 替换、diagonal→seal 时移除（不重建引用）', () => {
     const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'diagonal', 'ribbon-size': 'lg' })
     const r = ribbon(el)!
-    expect(r.classList.contains('ribbon-size-lg')).toBe(true)
+    expect(r.classList.contains('ribbon-size-large')).toBe(true)
     el.setAttribute('ribbon-size', 'md')
-    expect(r.classList.contains('ribbon-size-md')).toBe(true)
-    expect(r.classList.contains('ribbon-size-lg')).toBe(false)
+    expect(r.classList.contains('ribbon-size-medium')).toBe(true)
+    expect(r.classList.contains('ribbon-size-large')).toBe(false)
     el.setAttribute('ribbon-form', 'seal')
     expect(ribbon(el)).toBe(r)
-    expect(r.classList.contains('ribbon-size-md')).toBe(false)
-    expect(r.classList.contains('ribbon-size-lg')).toBe(false)
+    expect(r.classList.contains('ribbon-size-medium')).toBe(false)
+    expect(r.classList.contains('ribbon-size-large')).toBe(false)
   })
 
   it('ribbon-anchor 统一锚点：非斜形态全 8 位置（fold/flag/side/banner/seal/bookmark），斜形态只 4 角', () => {
@@ -1574,10 +1574,10 @@ describe('OASBadge size 多尺寸档', () => {
     expect(badge(d)!.classList.contains('dot')).toBe(true)
   })
 
-  it('非法 size 值回落 medium：不写任何 size class（基类即默认档）', () => {
+  it('非法 size 值回落 medium：写 medium class（与基类视觉等价，shared/size 归一恒输出全称档）', () => {
     const el = mount({ value: '5', size: 'xl' })
     expect(badge(el)!.classList.contains('small')).toBe(false)
-    expect(badge(el)!.classList.contains('medium')).toBe(false)
+    expect(badge(el)!.classList.contains('medium')).toBe(true)
     expect(badge(el)!.classList.contains('large')).toBe(false)
   })
 

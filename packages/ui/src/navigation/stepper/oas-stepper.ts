@@ -1,7 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '../../basic/icon/oas-icon.js'
 import { isRtl } from '../../shared/direction.js'
-import { aliasSize } from '../../shared/size.js'
+import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import type { OASStepperPanel } from './oas-stepper-panel.js'
 
 /** 步骤状态：wait 等待 / process 进行中 / finish 完成 / error 错误（语义对齐 oas-steps） */
@@ -21,22 +21,13 @@ export interface StepperStep {
 
 export type StepperSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
-const VALID_STEPPER_SIZES: readonly StepperSize[] = ['xs', 'small', 'medium', 'large', 'xl']
-
-/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
-function normalizeStepperSize(raw: string): StepperSize {
-  if ((VALID_STEPPER_SIZES as readonly string[]).includes(raw)) return raw as StepperSize
-  // 跨词表别名互认（shared/size）：sm/md/lg 等价 small/medium/large，不告警
-  const alias = aliasSize(raw, true)
-  if (alias) return alias as StepperSize
-  if (!warnedSizes.has(raw)) {
-    warnedSizes.add(raw)
-    console.warn(`[oas-stepper] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
-  }
-  return 'medium'
-}
-
+/** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
 const warnedSizes = new Set<string>()
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-stepper] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+}
 
 /** 实例唯一 id 前缀（tab/panel 关联用；模块级计数器，确定性可复现） */
 let uidCounter = 0
@@ -316,9 +307,11 @@ export class OASStepper extends OASElement {
     const direction = this.getAttr('direction', 'horizontal') === 'vertical' ? 'vertical' : 'horizontal'
     tablist.setAttribute('aria-orientation', direction)
     this.classList.toggle('oas-stepper--vertical', direction === 'vertical')
-    // size 五档（非法值归一化回落 medium）
-    const size = normalizeStepperSize(this.getAttr('size', 'medium'))
-    for (const s of VALID_STEPPER_SIZES) this.classList.toggle(`oas-stepper--${s}`, s === size)
+    // size 五档归一；非法值回落一次 medium
+    const sizeRaw = this.getAttr('size', 'medium')
+    const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'medium')
+    if (!sizeValid) warnInvalidSize(sizeRaw)
+    for (const s of ALL_SIZES) this.classList.toggle(`oas-stepper--${s}`, s === size)
 
     const current = this.resolveCurrent()
     // 重建前捕获焦点归属（重建后恢复；方向键/点击跳步后焦点不丢）

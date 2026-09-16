@@ -1,40 +1,44 @@
 import { describe, it, expect } from 'vitest'
-import { aliasSize } from './size.js'
+import { normalizeSize, normalizeSizeStrict, ALL_SIZES, THREE_SIZES, type OasSize } from './size.js'
 
-describe('shared/size 词表别名互认（aliasSize）', () => {
-  it('toFull=true：缩写 → 全称（全称系组件消费）', () => {
-    expect(aliasSize('sm', true)).toBe('small')
-    expect(aliasSize('md', true)).toBe('medium')
-    expect(aliasSize('lg', true)).toBe('large')
+describe('shared/size normalizeSize：别名映射 + 档位校验 + 非法回落', () => {
+  it('别名 sm/md/lg 自动映射全称，不告警语义（isValid=true）', () => {
+    expect(normalizeSize('sm', ALL_SIZES, 'medium')).toBe('small')
+    expect(normalizeSize('md', ALL_SIZES, 'medium')).toBe('medium')
+    expect(normalizeSize('lg', ALL_SIZES, 'medium')).toBe('large')
+    expect(normalizeSizeStrict('sm', THREE_SIZES, 'medium').isValid).toBe(true)
   })
 
-  it('toFull=false：全称 → 缩写（缩写系组件消费）', () => {
-    expect(aliasSize('small', false)).toBe('sm')
-    expect(aliasSize('medium', false)).toBe('md')
-    expect(aliasSize('large', false)).toBe('lg')
+  it('全称直通；输出恒为全称', () => {
+    expect(normalizeSize('xs', ALL_SIZES, 'medium')).toBe('xs')
+    expect(normalizeSize('small', ALL_SIZES, 'medium')).toBe('small')
+    expect(normalizeSize('medium', ALL_SIZES, 'medium')).toBe('medium')
+    expect(normalizeSize('large', ALL_SIZES, 'medium')).toBe('large')
+    expect(normalizeSize('xl', ALL_SIZES, 'medium')).toBe('xl')
   })
 
-  it('xs/xl 无别名词（两词表同形），双向都返回 null 由组件词表直通', () => {
-    expect(aliasSize('xs', true)).toBeNull()
-    expect(aliasSize('xs', false)).toBeNull()
-    expect(aliasSize('xl', true)).toBeNull()
-    expect(aliasSize('xl', false)).toBeNull()
+  it('档位子集校验：allowed 之外的合法全称也回落', () => {
+    // 三档组件不接受 xs/xl
+    expect(normalizeSize('xs', THREE_SIZES, 'medium')).toBe('medium')
+    expect(normalizeSize('xl', THREE_SIZES, 'medium')).toBe('medium')
+    expect(normalizeSizeStrict('xs', THREE_SIZES, 'medium')).toEqual({ value: 'medium', isValid: false })
   })
 
-  it('非法值返回 null（组件按既定逻辑回落默认并 dev warn）', () => {
-    expect(aliasSize('huge', true)).toBeNull()
-    expect(aliasSize('huge', false)).toBeNull()
-    expect(aliasSize('', true)).toBeNull()
+  it('真非法值回落 fallback 且 isValid=false', () => {
+    expect(normalizeSize('huge', ALL_SIZES, 'medium')).toBe('medium')
+    expect(normalizeSize('', ALL_SIZES, 'medium')).toBe('medium')
+    expect(normalizeSizeStrict('huge', ALL_SIZES, 'medium')).toEqual({ value: 'medium', isValid: false })
   })
 
-  it('往返映射稳定：toFull 与 toShort 互为逆变换', () => {
-    for (const [abbr, full] of [
-      ['sm', 'small'],
-      ['md', 'medium'],
-      ['lg', 'large'],
-    ] as const) {
-      expect(aliasSize(aliasSize(abbr, true)!, false)).toBe(abbr)
-      expect(aliasSize(aliasSize(full, false)!, true)).toBe(full)
+  it('fallback 本身是合法输入（isValid=true，不告警）', () => {
+    expect(normalizeSizeStrict('medium', THREE_SIZES, 'medium')).toEqual({ value: 'medium', isValid: true })
+  })
+
+  it('返回值恒为 allowed 子集成员（类型层面 T 保持收窄）', () => {
+    const sizes: readonly OasSize[] = THREE_SIZES
+    for (const s of sizes) {
+      const v = normalizeSize(s, THREE_SIZES, 'medium')
+      expect(THREE_SIZES).toContain(v)
     }
   })
 })

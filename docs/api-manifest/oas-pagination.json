@@ -56,7 +56,7 @@
     {
       "name": "size",
       "type": "string",
-      "default": "md",
+      "default": "medium",
       "observed": true
     },
     {

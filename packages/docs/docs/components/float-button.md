@@ -224,7 +224,7 @@ onMounted(async () => {
 | `magnetic` | 磁吸：`x` 吸附到最近的左右边缘、`y` 吸附到最近的上下边缘，松手时带过渡动画；空值不吸附（需配 `draggable`） | `string` | — |
 | `mode` | 形态：single（默认，单钮）/ group（主钮 + slot 子钮纵向展开）/ menu（actions JSON 弹出菜单） | `string` | `single` |
 | `shape` | 形状：`circle`（默认，正圆）/ `square`（胶囊圆角矩形） | `string` | `circle` |
-| `size` | 尺寸档位：`xs`（24px）/ `sm`（32px）/ `md`（40px）/ `lg`（默认 48px）/ `xl`（56px）；非法值回落 `lg` 并告警 | `string` | `lg` |
+| `size` | 尺寸档位：`xs`（24px）/ `small`（32px）/ `medium`（40px）/ `large`（默认 48px）/ `xl`（56px）；`sm`/`md`/`lg` 为等价别名；非法值回落 `large` 并告警 | `string` | `large` |
 | `target` | 链接打开方式（`href` 模式下生效，如 `_blank`） | `string` | — |
 | `trigger` | 展开触发方式：click（默认）/ hover（开合防抖 + 宽限期）/ manual（完全受控，外点与 Esc 不自动收起） | `string` | `click` |
 | `type` | 视觉强度：`primary`（默认，主色实底）/ `default`（弱化：浅底深字） | `string` | `primary` |
