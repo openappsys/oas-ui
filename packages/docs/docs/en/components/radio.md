@@ -109,13 +109,26 @@ The `description` attribute renders as secondary text below the label (per-optio
 
 <DemoBlock title="Custom indicator (checked-icon slot)">
   <oas-space>
-    <oas-radio name="radio-icon" value="like" checked>
+    <oas-radio class="radio-like" name="radio-icon" value="like" checked>
       Like
-      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 7 L7 7 L7 2 L9 2 L9 7 L14 7 L14 9 L9 9 L9 14 L7 14 L7 9 L2 9 Z" fill="var(--oas-color-primary)"/></svg></template>
+      <svg slot="checked-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 7 L7 7 L7 2 L9 2 L9 7 L14 7 L14 9 L9 9 L9 14 L7 14 L7 9 L2 9 Z" fill="currentColor"/></svg>
     </oas-radio>
     <oas-radio name="radio-icon" value="plain">Native (comparison)</oas-radio>
   </oas-space>
 </DemoBlock>
+
+<style>
+/* Checked = primary filled icon + primary ring (the ring is colored via ::part(box), the icon comes from the slot) */
+.radio-like::part(box) {
+  border-color: var(--oas-color-text-secondary);
+}
+.radio-like[checked]::part(box) {
+  border-color: var(--oas-color-primary);
+}
+.radio-like::part(indicator-checked) {
+  color: var(--oas-color-primary);
+}
+</style>
 
 Slot content takes over the checked-state icon (`template[slot]` or a direct element both work); the unchecked state falls back to a default hollow circle, overridable via `::part(box)` (see the next example: both states customized).
 
@@ -123,11 +136,11 @@ Slot content takes over the checked-state icon (`template[slot]` or a direct ele
   <oas-space>
     <oas-radio class="radio-star" name="radio-star" value="on" checked>
       Starred (primary filled star)
-      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg></template>
+      <svg slot="checked-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg>
     </oas-radio>
     <oas-radio class="radio-star" name="radio-star" value="off">
       Not starred (muted dashed ring)
-      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg></template>
+      <svg slot="checked-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg>
     </oas-radio>
   </oas-space>
 </DemoBlock>
