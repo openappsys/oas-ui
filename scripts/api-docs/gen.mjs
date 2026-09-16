@@ -65,10 +65,13 @@ const GROUP_HEADINGS = new Set([
 const TAG_RE = /^oas-[a-z0-9-]+$/
 
 /**
- * 已人工复核的「仅语料」插槽（扫描器在源码找不到、但确属该组件 API 的条目）。
+ * 已人工复核的「仅语料」插槽（扫描器在源码找不到、但确属该组件公开 API 的条目）。
  * 这些组件的默认槽是「宿主子节点内容」——由组件/父组件直接读 light DOM
  * （textContent / children 遍历 / 动态建槽），不走 shadow <slot>，故不在 manifest。
  * 记录在此后盲区清单只剩「待人工核对」的新增项，避免长期噪音淹没真问题。
+ *
+ * 收录原则：**只收宿主可写的公开插槽**。组件内部管线用的插槽（组件自动分配、
+ * 宿主无需设置，如 splitter 按索引自动打 slot="pane-N"）一律不写进文档。
  */
 const SLOT_BLIND_OK = new Set([
   'oas-dropdown-item.slots: (默认)',
@@ -78,7 +81,6 @@ const SLOT_BLIND_OK = new Set([
   'oas-context-menu-group.slots: (默认)',
   'oas-context-menu-divider.slots: (默认)',
   'oas-list-item.slots: (默认)',
-  'oas-splitter.slots: pane-${i}',
   'oas-rate.slots: icon-${i}',
   'oas-command.slots: view-${view}',
 ])
