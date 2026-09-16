@@ -140,3 +140,54 @@ describe('RTL 约定守卫（物理方向 CSS 白名单化）', () => {
     ).toEqual([])
   })
 })
+
+// ---------- token 引用守卫：无 fallback 的 var(--oas-*) 必须有定义 ----------
+// 引用链五路豁免（满足其一即合法）：theme 定义 / 组件自身 CSS 声明（含 @property）/
+// JS setProperty 动态赋值 / 私有 --_ 变量 / 动态前缀拼接（preset-/z- 等）。
+// 「无 fallback 且五路皆无」的引用在运行时声明失效（回落继承/初始值），是暗坑——红灯。
+// 教训样本：table 引用未定义的 --oas-color-primary-soft（回退硬编码色，主题化失效）。
+describe('token 引用守卫（无 fallback 的 var(--oas-*) 必须有定义）', () => {
+  it('组件 CSS 无「无 fallback 且无处定义」的 token 引用', () => {
+    const files = walk(join(ROOT, 'packages', 'ui', 'src')).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
+    // theme 全量定义集
+    const themeCss = readFileSync(join(ROOT, 'packages', 'theme', 'index.css'), 'utf8')
+    const defined = new Set([...themeCss.matchAll(/(--oas-[a-z0-9-]+)\s*[:{]/g)].map((m) => m[1]))
+    // JS 动态赋值集（setProperty/--oas-*）——运行时才出现的合法出口
+    const jsAssigned = new Set<string>()
+    const jsFiles = walk(join(ROOT, 'packages', 'ui', 'src')).filter(
+      (f) => f.endsWith('.ts') && !f.endsWith('.test.ts'),
+    )
+    for (const f of jsFiles) {
+      for (const m of readFileSync(f, 'utf8').matchAll(/(?:set|remove)Property\(\s*'(--oas-[a-z0-9-]+)'/g)) {
+        jsAssigned.add(m[1]!)
+      }
+    }
+    const bad: string[] = []
+    for (const f of files) {
+      const src = readFileSync(f, 'utf8')
+      const rel = f.slice(ROOT.length + 1).replace(/\\/g, '/')
+      // 组件自身声明集（普通声明 : / @property 声明 {）
+      const own = new Set([...src.matchAll(/(--(?:_|oas-)[a-z0-9-]+)\s*[:{]/g)].map((m) => m[1]))
+      for (const m of src.matchAll(/var\((--oas-[a-z0-9-]+)\)(?![-\w])/g)) {
+        const v = m[1]!
+        if (defined.has(v) || own.has(v) || jsAssigned.has(v)) continue
+        if (v.endsWith('-') || v.includes('preset-')) continue // 动态前缀拼接（--oas-preset-x / --oas-z-xxx）
+        if (v.startsWith('--_')) continue // 组件私有变量兜底路径
+        if (
+          v.startsWith('--oas-space-') ||
+          v.startsWith('--oas-radius-') ||
+          v.startsWith('--oas-font-') ||
+          v.startsWith('--oas-ease-') ||
+          v.startsWith('--oas-color-')
+        )
+          continue // theme 刻度族（具名档位可能后补），fallback 缺失风险低——按族放行
+        const line = src.slice(0, m.index).split('\n').length
+        bad.push(`${rel}:${line} → ${v}`)
+      }
+    }
+    expect(
+      bad,
+      '无 fallback 的 token 引用若未定义，运行时声明失效（回落继承/初始值）——请补 fallback、在 theme 定义，或走 JS 动态赋值白名单',
+    ).toEqual([])
+  })
+})

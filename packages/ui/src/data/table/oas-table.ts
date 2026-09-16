@@ -276,9 +276,9 @@ th.drop-after::after {
 .sort-index {
   display: inline-block;
   margin-inline-start: var(--oas-space-1);
-  font-size: var(--oas-font-size-2xs);
+  font-size: var(--oas-font-size-2xs, var(--oas-font-size-xs));
   color: var(--oas-color-primary);
-  font-weight: var(--oas-font-weight-medium);
+  font-weight: var(--oas-font-weight-medium, 500);
 }
 th[data-order='asc'] .sort-icon { color: var(--oas-color-primary); }
 th[data-order='desc'] .sort-icon { color: var(--oas-color-primary); }

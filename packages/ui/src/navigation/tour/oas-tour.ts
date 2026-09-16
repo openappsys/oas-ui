@@ -203,13 +203,13 @@ const STYLE = `
   border: none;
   border-radius: var(--oas-radius-sm);
   background: transparent;
-  color: var(--oas-color-text-tertiary);
+  color: var(--oas-color-text-tertiary, var(--oas-color-text-secondary));
   cursor: pointer;
   font-family: inherit;
   line-height: 1;
 }
 .close:hover {
-  background: var(--oas-color-fill);
+  background: var(--oas-color-fill, var(--oas-color-bg-hover));
   color: var(--oas-color-text-primary);
 }
 .close svg {
@@ -457,7 +457,7 @@ const STYLE = `
 }
 .hint-title {
   font-weight: 600;
-  font-size: var(--oas-font-size-base);
+  font-size: var(--oas-font-size-base, var(--oas-font-size-md));
 }
 .hint-desc {
   margin-top: var(--oas-space-1);
