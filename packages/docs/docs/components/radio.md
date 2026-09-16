@@ -111,7 +111,7 @@
   <oas-space>
     <oas-radio class="radio-like" name="radio-icon" value="like" checked>
       点赞
-      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 7 L7 7 L7 2 L9 2 L9 7 L14 7 L14 9 L9 9 L9 14 L7 14 L7 9 L2 9 Z" fill="currentColor"/></svg></template>
+      <svg slot="checked-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 7 L7 7 L7 2 L9 2 L9 7 L14 7 L14 9 L9 9 L9 14 L7 14 L7 9 L2 9 Z" fill="currentColor"/></svg>
     </oas-radio>
     <oas-radio name="radio-icon" value="plain">未自定义（原生对照）</oas-radio>
   </oas-space>
@@ -136,11 +136,11 @@
   <oas-space>
     <oas-radio class="radio-star" name="radio-star" value="on" checked>
       已点亮（主色实心星）
-      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg></template>
+      <svg slot="checked-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg>
     </oas-radio>
     <oas-radio class="radio-star" name="radio-star" value="off">
       未点亮（灰色虚线环）
-      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg></template>
+      <svg slot="checked-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg>
     </oas-radio>
   </oas-space>
 </DemoBlock>
