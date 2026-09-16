@@ -121,27 +121,37 @@
 
 <DemoBlock title="两态全自定义（checked-icon 插槽 + ::part(box)）">
   <oas-space>
-    <oas-radio class="radio-two-state" name="radio-two-state" value="custom" checked>
-      已选（自定义勾 + 方框）
-      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></template>
+    <oas-radio class="radio-star" name="radio-star" value="on" checked>
+      已点亮（主色实心星）
+      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg></template>
     </oas-radio>
-    <oas-radio class="radio-two-state" name="radio-two-state" value="plain">
-      未选（同一方框）
-      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></template>
+    <oas-radio class="radio-star" name="radio-star" value="off">
+      未点亮（同形灰星）
+      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg></template>
     </oas-radio>
   </oas-space>
 </DemoBlock>
 
 <style>
-/* 未选态：::part(box) 覆写默认空心圆（形状 / 描边 / 圆角皆可改）；选中态换主色 */
-.radio-two-state::part(box) {
-  border: 1.5px solid var(--oas-color-text-secondary);
-  border-radius: 4px;
+/* 两态共用同一个自定义图标（星形），只换颜色：未选 = 次要文字色，选中 = 主色。
+   未选态用 ::part(box) + mask 画同形状剪影——mask 只取形状，颜色由 background-color 给，
+   所以亮/暗主题都跟随 token（避免在 data-URI 里硬编码颜色）；选中态改由插槽显示，故关掉 mask 层。 */
+.radio-star {
+  --radio-star-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z' fill='%23fff'/%3E%3C/svg%3E");
 }
-.radio-two-state[checked]::part(box) {
-  border-color: var(--oas-color-primary);
+.radio-star::part(box) {
+  border: none;
+  border-radius: 0;
+  background-color: var(--oas-color-text-secondary);
+  -webkit-mask: var(--radio-star-mask) center / 14px 14px no-repeat;
+  mask: var(--radio-star-mask) center / 14px 14px no-repeat;
 }
-.radio-two-state::part(indicator-checked) {
+.radio-star[checked]::part(box) {
+  -webkit-mask: none;
+  mask: none;
+  background-color: transparent;
+}
+.radio-star::part(indicator-checked) {
   color: var(--oas-color-primary);
 }
 </style>
