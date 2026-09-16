@@ -76,7 +76,9 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 
 ## API
 
-### Attributes
+### oas-countdown
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -89,14 +91,14 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 | `type` | Timing mode: `"countup"` counts up from `start` with no end point (no `oas-finish`); absent = countdown | `string` | — |
 | `value` | Total countdown duration (milliseconds); ignored in count-up mode | `string` | `0` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Emitted on a throttled basis when the remaining displayed value changes, detail `{ value: remaining milliseconds }`; in count-up mode `{ value: elapsed milliseconds }` |
 | `oas-finish` | Emitted once when the countdown reaches zero (not emitted in count-up mode, which has no end point) |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -104,7 +106,7 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 | `suffix` | Trailing content (distributed content takes precedence over the `suffix` attribute text) |
 | `title` | Heading above the value (distributed content takes precedence over the `title` attribute text) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

@@ -185,7 +185,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-textarea
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -213,7 +215,7 @@ onMounted(() => {
 | `variant` | 形态：`outlined`（默认）/ `filled` / `borderless` | `string` | `outlined` |
 | `wrap` | 换行策略（透传原生：soft/hard） | — | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |

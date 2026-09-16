@@ -471,6 +471,7 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
 </DemoBlock>
 
 `ribbon-anchor` unifies the ribbon anchor, with the anchor set adapted per shape semantics (industry practice: shape and position are bound together):
+
 - **fold**: left/right edge centers + four corners (a horizontal band hugs left/right, with vertical position adjustable)
 - **diagonal / triangle**: four corners
 - **side**: left/right edge centers + four corners
@@ -591,7 +592,9 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 
 ## API
 
-### Attributes
+### oas-badge
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -622,14 +625,14 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 | `value` | Number | `string` | — |
 | `variant` | Variant: solid (default, filled) or outline (transparent background, border and text follow the color semantics); invalid values silently fall back to solid | `BadgeVariant` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Wrapped content (card, button, etc.); with no content the badge falls back to a standalone inline element |
 | `ribbon` | Custom ribbon content |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -640,7 +643,8 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 | `--oas-badge-diagonal-text-inset` | `0px` |
 | `--oas-badge-on-color` | `var(--oas-color-text-on-danger)` |
 | `--oas-badge-pos` | `translate(50%, -50%)` |
-| `--oas-diag-pin` | — |
+| `--oas-badge-pulse-color` | `var(--oas-badge-bg, var(--oas-color-danger))` |
+| `--oas-diag-pin` | `var(--oas-badge-diagonal-pin, 25px)` |
 | `--oas-ribbon-anchor-x` | `0px` |
 | `--oas-ribbon-anchor-y` | `0px` |
 | `--oas-ribbon-offset-x` | `0px` |

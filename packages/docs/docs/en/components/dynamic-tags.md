@@ -178,7 +178,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-dynamic-tags
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -199,7 +201,7 @@ onMounted(() => {
 | `sortable` | Tag sorting: drag + keyboard Alt+←/→ adjacent swap | `boolean` | — |
 | `status` | Validation status: `error` / `warning` / `success` | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -212,7 +214,7 @@ onMounted(() => {
 | `oas-focus` | Fires when the input gains focus |
 | `oas-remove` | Tag removed, `detail: { value }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -220,7 +222,7 @@ onMounted(() => {
 | `template[slot="suffix"]` | Suffix content slot |
 | `template[slot="tag"]` | Custom tag (`[data-tag-label]` binding; remove button stays component-side) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

@@ -132,7 +132,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-dynamic-input
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -150,7 +152,7 @@ onMounted(() => {
 | `status` | Validation status: `error` / `warning` / `success` (passed to the row inputs) | `string` | — |
 | `value-placeholder` | Value placeholder in pair form | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -161,7 +163,7 @@ onMounted(() => {
 | `oas-remove` | Row removed, `detail: { index, value }` |
 | `oas-row-render` | Fires on row render (custom row channel), `detail: { index, value, element }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

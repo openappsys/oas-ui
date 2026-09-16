@@ -159,6 +159,8 @@ onMounted(() => {
 
 ### oas-bottom-navigation
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `fixed` | 固定到视口底部（`position: fixed; bottom: 0`） | `boolean` | — |
@@ -171,9 +173,13 @@ onMounted(() => {
 | `show-label` | label 展示模式：`true`（默认，全部项显示文字）/ `active`（icon-only 紧凑形态：仅选中项显示文字，未选中项只显示 icon；label 视觉隐藏后每项 aria-label 自动写入该项 label 文本，读屏不受 CSS 隐藏影响）；非法值回落 `true` 并告警（同值去重） | `string` | `true` |
 | `value` | 激活项 value，未指定默认激活第一个可用项 | — | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 切换激活项，`detail: { value }` |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
@@ -186,12 +192,16 @@ onMounted(() => {
 
 ### oas-bottom-navigation-item
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `badge` | 右上角标（数字/文本，叠在 icon 上；未设置不渲染） | — | — |
 | `disabled` | 禁用该项（不可选中、键盘跳过） | — | — |
 | `icon` | 前置图标（`@oas-ui/icons` 注册表图标名） | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

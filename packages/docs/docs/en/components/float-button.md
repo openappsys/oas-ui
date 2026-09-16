@@ -209,7 +209,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-float-button
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -229,7 +231,7 @@ onMounted(async () => {
 | `trigger` | Expand trigger: click (default) / hover (debounced with grace period) / manual (fully controlled; outside click and Esc do not auto-collapse) | `string` | `click` |
 | `type` | Visual intensity: `primary` (default, solid primary) / `default` (weakened: light background with dark text) | `string` | `primary` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -237,7 +239,7 @@ onMounted(async () => {
 | `oas-expand-change` | Emitted on expand/collapse, `detail: { open }`; controlled semantics — the component never mutates expanded, the host writes it back |
 | `oas-select` | A menu item was selected in menu mode, detail: { index, label, value? }; the component then requests a collapse (emitting oas-expand-change — the host closes by removing expanded) |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -245,14 +247,14 @@ onMounted(async () => {
 | `action` | group-mode child buttons (native button/a or oas-button); clicking collapses the group and restores focus to the main button; badges and custom icons supported |
 | `icon` | Icon (default ＋) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-float-button-action-size` | — |
+| `--oas-float-button-action-size` | `calc(var(--oas-float-button-size) - var(--oas-space-2))` |
 | `--oas-float-button-bottom` | `var(--oas-space-6)` |
 | `--oas-float-button-right` | `var(--oas-space-6)` |
-| `--oas-float-button-size` | — |
+| `--oas-float-button-size` | `var(--oas-control-height-xl)` |
 | `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
 | `--oas-tooltip-color` | `var(--oas-color-bg)` |
 

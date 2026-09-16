@@ -129,7 +129,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-app-bar
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -142,13 +144,13 @@ onMounted(() => {
 | `menu-open` | Hamburger expanded state (controlled): the host writes back after toggling its drawer; the button aria-expanded stays in sync | `boolean` | — |
 | `position` | Positioning mode: static (default, in flow) / absolute / fixed / floating (floating rounded with shadow) | `string` | `static` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-menu-toggle` | Emitted when the hamburger button is clicked; the host toggles its drawer and writes back menu-open |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -158,7 +160,7 @@ onMounted(() => {
 | `title` | Rich title channel (overrides the heading attribute) |
 | `trailing` | Rightmost trailing custom area |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

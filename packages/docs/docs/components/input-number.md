@@ -213,7 +213,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-input-number
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -238,25 +240,25 @@ onMounted(() => {
 | `value` | 当前值（受控） | `string` | — |
 | `wheel` | 聚焦时滚轮步进（上增下减；默认关防误触） | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 步进或失焦变化，`detail: { value }`（数字） |
 | `oas-clear` | 点击清除按钮时派发（值回空值态），`detail: {}` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | `prefix` | 前缀内容插槽（不参与数值解析） |
 | `suffix` | 后缀内容插槽（不参与数值解析） |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-button-group-radius` | `var(--oas-radius-md)` |
 | `--oas-input-number-controls-pad` | `28px` |
-| `--oas-input-number-font` | — |
-| `--oas-input-number-height` | — |
+| `--oas-input-number-font` | `var(--oas-font-size-md)` |
+| `--oas-input-number-height` | `var(--oas-control-height-md)` |

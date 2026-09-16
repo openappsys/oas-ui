@@ -292,7 +292,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-transfer
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -311,7 +313,7 @@ onMounted(() => {
 | `value` | Selected key array (JSON attribute) | `string` | `[]` |
 | `virtual` | Windowed rendering for large data (virtual scroll, default row height 36px) | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -319,7 +321,7 @@ onMounted(() => {
 | `oas-search` | Panel search input, `detail: { side, query }` |
 | `oas-select-change` | Selection set changed (row click/select-all/keyboard), `detail: { side, selected }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

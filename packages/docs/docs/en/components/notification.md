@@ -328,7 +328,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-notification
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -343,14 +345,14 @@ onMounted(async () => {
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 | `type` | Notification type: `info`/`success`/`warning`/`error` | `string` | `info` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-click` | Dispatched when the notification body is clicked ("click for details" scenario) |
 | `oas-close` | Dispatched on close, detail { source }: auto (duration elapsed) / close (close button) / destroy (programmatic) |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -360,16 +362,9 @@ onMounted(async () => {
 | `icon` | Icon slot; overrides the default type icon |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
-### CSS Variables
+#### CSS Variables
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-notification-progress-color` | `var(--oas-color-primary)` |
-| `--oas-notification-width` | `320px` |
-
-### CSS Variables
-
-| Variable | Description | Default |
+| CSS Variable | Description | Default |
 | --- | --- | --- |
 | `--oas-notification-progress-color` | Countdown progress bar color | `var(--oas-color-primary)` |
 | `--oas-notification-width` | Card width (referenced internally by size levels) | `320px` |

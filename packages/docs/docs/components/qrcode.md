@@ -127,7 +127,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-qrcode
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -142,19 +144,19 @@ onMounted(() => {
 | `status` | 状态机：`active`（默认）/ `expired`（过期遮罩，点击刷新派 `oas-refresh`）/ `loading` / `scanned` | `string` | `active` |
 | `value` | 二维码内容文本 | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-refresh` | 过期态点击刷新按钮时派发，宿主重新赋值内容后切回 `active` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | `template[slot="status"]` | 自定义状态覆盖层内容（缺省为各状态内建遮罩） |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

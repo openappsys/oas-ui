@@ -175,7 +175,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-switch
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -195,7 +197,7 @@ onMounted(() => {
 | `unchecked-icon` | 未选中态滑块图标 | `string` | — |
 | `unchecked-text` | 关闭时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | — | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -203,13 +205,13 @@ onMounted(() => {
 | `oas-change` | 切换，`detail: { checked }` |
 | `oas-focus` | 聚焦时派发 |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 开关文案 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

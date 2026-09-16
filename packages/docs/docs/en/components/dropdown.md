@@ -424,6 +424,8 @@ onMounted(() => {
 
 ### oas-dropdown
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `arrow` | Whether to show the arrow pointing at the trigger (`arrow="false"` hides it; the skeleton is kept) | `string` | `true` |
@@ -442,15 +444,21 @@ onMounted(() => {
 | `trigger` | Trigger: `click` (default) / `hover` / `focus`; space-separated for multiple (e.g. `"click hover"`). With `hover`, touch devices (coarse pointer) automatically degrade to tap toggling: tap to open, tap again or tap outside to close; desktop hover behavior unchanged | `string` | `click` |
 | `value` | Current selected value | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-action` | Main button clicked in split mode, `detail: { originalEvent }` |
 | `oas-open-change` | Popover open state changed, `detail: { open: boolean }` (including external setAttribute; controlled loop) |
 | `oas-select` | An item was selected, `detail: { value }` |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Dropdown menu content (items / groups) |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -458,6 +466,8 @@ onMounted(() => {
 | `--oas-origin-y` | `center` |
 
 ### oas-dropdown-item
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -471,22 +481,30 @@ onMounted(() => {
 | `target` | Link target (with href) | — | — |
 | `value` | Selected value (data-carrier field of the declarative child-element channel) | — | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | default | Dropdown item label content (default slot text); direct child `<oas-dropdown-item>` elements recursively become the submenu `children` |
 
 ### oas-dropdown-group
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `label` | Group title (small, secondary color, not clickable) | — | — |
 | `value` | Radio-group id (selecting inside the group only updates that group's value) | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Group items: child `<oas-dropdown-item>` elements flatten to the same level |
 
 ### oas-dropdown-divider
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

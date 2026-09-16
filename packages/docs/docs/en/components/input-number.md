@@ -212,7 +212,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-input-number
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -237,25 +239,25 @@ onMounted(() => {
 | `value` | Current value (controlled) | `string` | — |
 | `wheel` | Wheel stepping while focused (up increments, down decrements; off by default to prevent accidental changes) | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Change on step or blur, `detail: { value }` (number) |
 | `oas-clear` | Fires when the clear button is clicked (value returns to the empty state), `detail: {}` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | `prefix` | Prefix content slot (not part of value parsing) |
 | `suffix` | Suffix content slot (not part of value parsing) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-button-group-radius` | `var(--oas-radius-md)` |
 | `--oas-input-number-controls-pad` | `28px` |
-| `--oas-input-number-font` | — |
-| `--oas-input-number-height` | — |
+| `--oas-input-number-font` | `var(--oas-font-size-md)` |
+| `--oas-input-number-height` | `var(--oas-control-height-md)` |

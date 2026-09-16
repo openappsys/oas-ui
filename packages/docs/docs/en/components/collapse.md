@@ -261,6 +261,8 @@ The container provides the imperative methods `expandAll()` / `collapseAll()`. I
 
 ### oas-collapse
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `accordion` | Accordion mode; only one panel open at a time | `boolean` | — |
@@ -270,16 +272,22 @@ The container provides the imperative methods `expandAll()` / `collapseAll()`. I
 | `icon-placement` | Expand icon placement: `start` (left of title) / `end` (default, right); overridable per item | `string` | `end` |
 | `variant` | Variant: `outlined` (default, bordered rounded container) / `borderless` (ghost, no border) | — | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-before-collapse` | Fired before expand/collapse (cancelable), `detail: { name, next }`; `preventDefault()` blocks the toggle (not fired by expandAll/collapseAll) |
 | `oas-change` | Expansion state change, `detail: { active: string[] }` |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Collapse panels (`oas-collapse-item`) |
 
 ### oas-collapse-item
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -293,9 +301,11 @@ The container provides the imperative methods `expandAll()` / `collapseAll()`. I
 | `no-collapse` | Lock the expanded state: clicking itself does not collapse (other panels unaffected) | — | — |
 | `open` | Whether it is expanded (managed by the container) | `boolean` | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Panel content |
 | `extra` | Panel header right-side action area (clicks inside do not toggle) |
 | `header` | Rich panel header (mutually exclusive with the header attribute, slot wins; interactive children should stopPropagation) |
 | `template[slot="toggle"]` | Custom expand icon template (built-in arrow by default) |

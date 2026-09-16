@@ -59,6 +59,10 @@
       "default": "3px"
     },
     {
+      "name": "--oas-loading-bar-z-index",
+      "default": "calc(var(--oas-z-index-base, 0) + var(--oas-z-message, 1060))"
+    },
+    {
       "name": "--oas-loading-bar-color",
       "default": "var(--oas-color-primary)"
     },

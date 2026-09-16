@@ -259,7 +259,9 @@ On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`-
 
 ## API
 
-### Attributes
+### oas-button
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -288,19 +290,19 @@ On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`-
 | `wave` | Press feedback: slight sink + darken (on by default); `wave="false"` disables | `string` | `true` |
 | `wrap` | Long-text wrapping: single-line nowrap by default; when enabled, content wraps within constrained widths and the box grows with it | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-click` | Click, `detail: { originalEvent }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Button content (text / icon) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

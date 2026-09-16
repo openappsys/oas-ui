@@ -244,6 +244,8 @@ onMounted(() => {
 
 ### oas-form
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `gap` | 间距（grid 模式栅格间距；inline 模式项间距），token 值如 `var(--oas-space-4)`；grid 默认 `0`，inline 默认 `var(--oas-space-4)` | `string` | `0` |
@@ -253,16 +255,22 @@ onMounted(() => {
 | `layout` | 布局模式：`vertical`（默认，竖排）/ `grid`（24 列栅格）；非枚举值回退 `vertical`；存在 `inline` 属性时优先 | `string` | `vertical` |
 | `rules` | 校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | `{}` |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-submit` | 校验通过，`detail: { values }` |
 | `oas-validate-fail` | 校验失败，`detail: { errors, values }` |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 表单内容（`oas-form-item` 等） |
 
 ### oas-form-item
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -271,9 +279,13 @@ onMounted(() => {
 | `required` | 必填星号（仅视觉标记，校验规则仍由 form 的 `rules` 驱动） | `boolean` | — |
 | `span` | 24 栅格占列数（仅 form `layout="grid"` 生效；非 1-24 整数按 24） | `string` | `24` |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 字段控件 |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

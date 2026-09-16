@@ -127,7 +127,9 @@ When `value` is empty, a "No content" placeholder is shown; when the content exc
 
 ## API
 
-### Attributes
+### oas-qrcode
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -142,19 +144,19 @@ When `value` is empty, a "No content" placeholder is shown; when the content exc
 | `status` | State machine: `active` (default) / `expired` (overlay, refresh button fires `oas-refresh`) / `loading` / `scanned` | `string` | `active` |
 | `value` | QR code content text | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-refresh` | Fired when the refresh button is clicked in expired state; the host reassigns content and switches back to `active` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | `template[slot="status"]` | Custom status overlay content (built-in overlays per state by default) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

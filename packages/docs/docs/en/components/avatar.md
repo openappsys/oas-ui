@@ -285,6 +285,8 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 
 ### oas-avatar
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `alt` | Alternative text for the image | — | — |
@@ -300,16 +302,22 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 | `src` | Image URL; renders an image avatar when present | `string` | — |
 | `text` | Text content: single char renders the first character; multiple chars render in full with auto-shrinking font | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-error` | Fired when an image fails (once for the main src, once for the fallback), `detail: { src }` |
 | `oas-trigger` | Change-avatar entry (trigger overlay) clicked; upload interaction is up to the host, `detail: { source: this }` |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | `fallback` | Custom placeholder content when the image fails to load (or the avatar has no content) |
 | `icon` | Icon avatar (explicit icon content; no first-character truncation) |
 | `trigger` | Custom content for the change-avatar overlay (shown on hover/focus; built-in camera icon by default) |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -319,15 +327,21 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 
 ### oas-avatar-group
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `max` | Max number of avatars shown; overflow shows a `+N` count badge | `string` | — |
 | `size` | Unified avatar size (px); the count badge adapts | `string` | — |
 | `spacing` | Member spacing in px (negative = overlapping; overrides the `--oas-avatar-group-overlap` variable) | `string` | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Avatar members (`oas-avatar`) |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

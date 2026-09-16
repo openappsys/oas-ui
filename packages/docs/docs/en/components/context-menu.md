@@ -156,6 +156,8 @@ onMounted(() => {
 
 ### oas-context-menu
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `close-on-scroll` | Close the menu on page scroll (default true) | `string` | `true` |
@@ -163,16 +165,22 @@ onMounted(() => {
 | `long-press-delay` | Long-press duration in ms for touch trigger (default 500) | `string` | `500` |
 | `open` | Controlled open state (writable externally) | `boolean` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-open-change` | Menu open state changed, `detail: { open: boolean }` |
 | `oas-select` | An item was selected, `detail: { value }` |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Context menu content (items / groups) |
 
 ### oas-context-menu-item
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -186,22 +194,30 @@ onMounted(() => {
 | `target` | Link target (with href) | — | — |
 | `value` | Selected value (data-carrier field of the declarative child-element channel) | — | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | default | Context-menu item label content (default slot text); direct child `<oas-context-menu-item>` elements recursively become the submenu `children` |
 
 ### oas-context-menu-group
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `label` | Group title (small, secondary color, not clickable) | — | — |
 | `value` | Radio-group id (selecting inside the group only updates that group's value) | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Group items: child `<oas-context-menu-item>` elements flatten to the same level |
 
 ### oas-context-menu-divider
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

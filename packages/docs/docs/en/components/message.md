@@ -260,7 +260,9 @@ onMounted(async () => {
 | `message.registerType(name, { icon?, color?, closable? })` | Register a custom message type |
 | `destroyAllMessage()` | Clear all messages |
 
-### Attributes
+### oas-message
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -278,25 +280,25 @@ onMounted(async () => {
 | `show-progress` | Show a countdown progress bar synced with the duration | `boolean` | — |
 | `type` | Message type: `info`/`success`/`warning`/`error` | `string` | `info` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-close` | Emitted when the message closes (auto-close / close button / `destroy`), `detail: { key? }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | `avatar` | Avatar slot (before the message text) |
 | `content` | Rich body content slot |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-message-anim-in` | — |
-| `--oas-message-anim-out` | — |
+| `--oas-message-anim-in` | `220ms` |
+| `--oas-message-anim-out` | `180ms` |
 | `--oas-msg-type-color` | `var(--oas-color-border)` |
 
 ### options

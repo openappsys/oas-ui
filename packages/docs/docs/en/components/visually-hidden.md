@@ -22,13 +22,15 @@ With `focusable`, content stays visually hidden by default but appears when focu
 
 ## API
 
-### Attributes
+### oas-visually-hidden
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `focusable` | Visually hidden by default, revealed when content is focused (skip-link scenario) | — | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

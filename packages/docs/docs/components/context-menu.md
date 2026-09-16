@@ -156,6 +156,8 @@ onMounted(() => {
 
 ### oas-context-menu
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `close-on-scroll` | 页面滚动时关闭菜单（默认 true） | `string` | `true` |
@@ -163,16 +165,22 @@ onMounted(() => {
 | `long-press-delay` | 移动端长按触发时长毫秒数（默认 500） | `string` | `500` |
 | `open` | 受控展开态（外部可写） | `boolean` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-open-change` | 菜单开合变化，`detail: { open: boolean }` |
 | `oas-select` | 选择某项，`detail: { value }` |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 右键菜单内容（菜单项 / 分组） |
 
 ### oas-context-menu-item
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -186,22 +194,30 @@ onMounted(() => {
 | `target` | 链接 target（配合 href） | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 右键菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-context-menu-item>` 递归为子菜单 children |
 
 ### oas-context-menu-group
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `label` | 分组标题（组标题小字、次要色、不可点） | — | — |
 | `value` | radio 组 id（组内点选只更新该组选中值） | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 组内菜单项：子元素 `<oas-context-menu-item>` 平铺同层 |
 
 ### oas-context-menu-divider
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

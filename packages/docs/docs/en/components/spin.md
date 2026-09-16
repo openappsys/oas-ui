@@ -300,7 +300,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-spin
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -320,7 +322,7 @@ onMounted(async () => {
 | `tip-position` | Text position | `string` | `below` |
 | `variant` | Visual variant | `string` | `ring` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -328,25 +330,15 @@ onMounted(async () => {
 | `icon` | Custom indicator slot, replaces the default ring |
 | `tip` | Rich loading text slot; overrides the tip attribute |
 
-### CSS Variables
+#### CSS Variables
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-spin-border-width` | `3px` |
-| `--oas-spin-duration` | `0.8s` |
-| `--oas-spin-indicator-color` | `var(--oas-color-primary)` |
-| `--oas-spin-track-color` | `var(--oas-color-bg-hover)` |
-| `--oas-spin-z-index` | `3500` |
-
-### CSS variables
-
-| Variable | Description | Default |
+| CSS Variable | Description | Default |
 | --- | --- | --- |
-| `--oas-spin-indicator-color` | Indicator color | `var(--oas-color-primary)` |
-| `--oas-spin-track-color` | Track color (ring base / progress track) | `var(--oas-color-bg-hover)` |
-| `--oas-spin-border-width` | Stroke width (ring border / progress stroke) | `3px` (`2px` for xs/small) |
+| `--oas-spin-border-width` | Stroke width (ring border / progress stroke); `2px` for xs and small | `3px` |
 | `--oas-spin-duration` | Animation duration | `0.8s` |
-| `--oas-spin-mask-bg` | Mask background | `color-mix(in srgb, var(--oas-color-bg) 70%, transparent)` |
+| `--oas-spin-indicator-color` | Indicator color | `var(--oas-color-primary)` |
+| `--oas-spin-mask-bg` | Mask background (wrapping / fullscreen mode) | `color-mix(in srgb, var(--oas-color-bg) 70%, transparent)` |
+| `--oas-spin-track-color` | Track color (ring base / progress track) | `var(--oas-color-bg-hover)` |
 | `--oas-spin-z-index` | Fullscreen z-index | `3500` |
 
 ### Static methods

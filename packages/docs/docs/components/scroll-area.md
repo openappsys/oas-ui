@@ -242,7 +242,9 @@ onMounted(() => {
 | `scrollToTop(options?)` / `scrollToBottom(options?)` | 滚到顶/底，`options: { behavior? }` 默认平滑 |
 | `scrollIntoView(selectorOrEl, options?)` | 容器内元素滚进视口，`options` 的 `block` / `inline` 透传 |
 
-### 属性
+### oas-scroll-area
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -254,17 +256,17 @@ onMounted(() => {
 | `stick-to-bottom` | 贴底：新内容追加时若当前停靠在底部（距底 ≤8px）自动滚到底，上翻阅读时不打断 | `boolean` | — |
 | `width` | 视口宽度（px），不设置时铺满宿主宽度 | — | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-end-reached` | 滚动到达容器底部（横向到达右边缘）时派发，`detail: { direction: 'bottom' \| 'right' }`；离开边缘后再回到边缘才可再次触发 |
 | `oas-scroll` | 滚动事件（rAF 节流），`detail: { scrollTop, scrollLeft }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 可滚动内容 |
 
 部件：`::part(viewport)` 滚动视口、`::part(track-v)` / `::part(track-h)` 滚动轨道、`::part(thumb-v)` / `::part(thumb-h)` 滚动块。视口可聚焦（`tabindex="0"`），方向键滚动。

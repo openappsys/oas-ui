@@ -190,7 +190,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-auto-complete
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -206,7 +208,7 @@ onMounted(() => {
 | `trigger-on-focus` | 聚焦即展示建议（datalist 心智；默认关闭，维持「输入优先」现状） | `boolean` | — |
 | `value` | 预设值 | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -215,7 +217,7 @@ onMounted(() => {
 | `oas-input` | 输入中（防抖后），`detail: { value }` |
 | `oas-option-render` | 每个选项行渲染后派发，`detail: { index, option, element }`，宿主可改写 `element`（图标/富文本） |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

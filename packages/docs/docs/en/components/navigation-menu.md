@@ -173,6 +173,8 @@ onMounted(() => {
 
 ### oas-navigation-menu
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `arrow` | Pointer arrow on the popup, shown by default; `arrow="false"` hides it | `string` | `true` |
@@ -186,20 +188,28 @@ onMounted(() => {
 | `skip-delay-duration` | Skip-delay window in ms, default 300: hovering another trigger within this window after a close opens it immediately | `string` | `300` |
 | `value` | Controlled open item (top-level trigger value; empty string = closed; when present the open state follows the attribute and interactions only dispatch `oas-change` for the host to update) | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-change` | The open item changed (open/close semantics: dispatched when a group expands or collapses, NOT a leaf selection), `detail: { value }` (value is the open top-level item value; empty string = closed); listen to `oas-select` for leaf selection — do not use this event to navigate or close containers |
 | `oas-select` | An item was selected (top-level leaf link, panel link card or secondary sub-nav link), `detail: { value }` |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | `panel-footer` | Marketing slot at the bottom of the panel: `<div slot="panel-footer">` (CTA cards etc.) renders a footer container inside the panel when it has content |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-nav-panel-max-height` | `60vh` |
 
 ### oas-navigation-menu-item
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -217,15 +227,21 @@ onMounted(() => {
 | `target` | Link open target (e.g. `_blank`) | — | — |
 | `value` | Selection value (required): top-level triggers and panel items use it for open/select/keyboard | — | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | default | Navigation item label content (default slot text; direct child items/group carriers are excluded) |
 
 ### oas-navigation-menu-group
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `label` | Optional group title (not rendered by this component's panel — it only carries data, matching the `type: "group"` field of the JSON channel) | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

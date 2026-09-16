@@ -277,7 +277,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-mentions
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -296,12 +298,12 @@ onMounted(() => {
 | `split` | 提及项与后文的分隔符（默认空格；后文已分隔则不重复补） | `string` | ` ` |
 | `status` | 校验态：`error` / `warning` / `success` | `string` | — |
 | `trigger` | 触发符：默认 @，支持单字符串或 JSON 数组 ["@","#"] 多触发符并存 | `string \| string[]` | `@` |
-| `type` | 形态：	extarea（默认）/ input（单行锁高，Enter 不换行） | `string` | `textarea` |
+| `type` | 形态：textarea（默认）/ input（单行锁高，Enter 不换行） | `string` | `textarea` |
 | `value` | 值（受控，完整文本） | `string` | — |
 | `variant` | 形态：`outlined`（默认）/ `filled` / `borderless` | `string` | `outlined` |
 | `whole` | 整段删除：光标紧跟提及段按 Backspace 一次删除「prefix + 成员名」并派发 oas-whole-remove | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -315,10 +317,11 @@ onMounted(() => {
 | `oas-select` | 选中建议项，detail: { value, label, option, prefix }（option 为完整选项原对象） |
 | `oas-whole-remove` | 整段删除提及项时派发，detail: { value, option, prefix }（option 为完整选项原对象） |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
+| `empty` | 无匹配项时的空态内容（替代默认 noMatch 文案） |
 | `footer` | 建议面板底部内容 |
 | `header` | 建议面板顶部内容 |
 | `template[slot="option"]` | 自定义选项模板（`[data-option-label]` 绑定） |

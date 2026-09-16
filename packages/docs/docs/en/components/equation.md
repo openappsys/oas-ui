@@ -114,14 +114,16 @@ Font size follows the outer context (inherited) by default; override with the CS
 
 ## API
 
-### Attributes
+### oas-equation
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `code` | LaTeX subset source text | `string` | — |
 | `display` | Display mode: `inline` (default, in-flow) / `block` (standalone centered block with margin-block) | `string` | — |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

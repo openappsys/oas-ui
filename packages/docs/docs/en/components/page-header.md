@@ -165,7 +165,9 @@ The `responsive` boolean attribute switches to a compact layout automatically wh
 
 ## API
 
-### Attributes
+### oas-page-header
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -175,13 +177,13 @@ The `responsive` boolean attribute switches to a compact layout automatically wh
 | `subtitle` | Subtitle text | `string` | — |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-back` | The back button was clicked |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

@@ -416,7 +416,9 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 
 ## API
 
-### Attributes
+### oas-tree-select
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -452,7 +454,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `value` | Selected value (JSON array in multiple mode) | `string` | `[]` |
 | `virtual` | Enable virtual scroll: the dropdown renders only the visible window for large data (reuses oas-virtual-list), keeping keyboard/ARIA intact | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -463,7 +465,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `oas-open-change` | Open state flips, `detail: { open }` |
 | `oas-search` | Fires on search input, `detail: { value }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

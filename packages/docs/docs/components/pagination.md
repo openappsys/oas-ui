@@ -369,7 +369,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-pagination
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -392,14 +394,14 @@ onMounted(() => {
 | `total` | 总条数 | `string` | `0` |
 | `total-boundary` | 条数切换器显隐阈值：设置后仅 total 大于该值才渲染每页条数下拉（total ≤ 阈值隐藏）；未设置时维持现状（有 page-sizes 即显示） | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-before-change` | 翻页/跳转前派发，可 preventDefault 取消本次变更（切换每页条数不派发）；链接模式下同时阻止原生导航，`detail: { page }` |
 | `oas-change` | 翻页 `{ page }`；切换每页条数 `{ page: 1, pageSize }`；快速跳转 `{ page, pageSize }`，`detail: { page } \| { page: 1, pageSize } \| { page, pageSize }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -408,11 +410,11 @@ onMounted(() => {
 | `prev-icon` | 上一页按钮图标插槽，有内容时替换默认 ‹ |
 | `total` | 总条数文案插槽，有内容时替换内置「共 N 条」 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
-| `--oas-pagination-font` | — |
-| `--oas-pagination-height` | — |
+| `--oas-pagination-font` | `var(--oas-font-size-md)` |
+| `--oas-pagination-height` | `var(--oas-control-height-md)` |
 
 页码超出范围时自动省略，首尾翻页按钮在边界自动禁用。

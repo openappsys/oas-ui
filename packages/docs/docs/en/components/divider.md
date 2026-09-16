@@ -145,7 +145,9 @@ The `color` attribute accepts 11 preset names (auto-adapting to light/dark theme
 
 ## API
 
-### Attributes
+### oas-divider
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -160,13 +162,13 @@ The `color` attribute accepts 11 preset names (auto-adapting to light/dark theme
 | `text-orientation` | Text orientation on a vertical divider: horizontal (default, reads normally) / ertical (vertical, top-to-bottom along the line); only meaningful for vertical dividers | `string` | — |
 | `variant` | Line style: `solid` / `dashed` / `dotted` / `double`; an explicit value takes precedence over the `dashed` boolean (compat form) | `string` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Content in the middle of the divider |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

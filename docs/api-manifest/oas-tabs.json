@@ -155,6 +155,18 @@
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "add-icon"
+    },
+    {
+      "name": "close-icon"
+    },
+    {
+      "name": "icon"
+    },
+    {
+      "name": "label"
     }
   ],
   "cssVars": [

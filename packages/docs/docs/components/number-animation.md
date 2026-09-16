@@ -66,7 +66,9 @@
 
 ## API
 
-### 属性
+### oas-number-animation
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -78,13 +80,13 @@
 | `to-fixed` | 小数位（Number.prototype.toFixed）；缺省整数显示 | `string` | — |
 | `value` | 目标数值；非法按 0 | `string` | `0` |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-finish` | 动画抵达目标时派发一次，detail `{ value: 目标值 }` |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

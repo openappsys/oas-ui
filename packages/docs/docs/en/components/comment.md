@@ -184,13 +184,15 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-comment
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `align` | Time/actions alignment: `left` (default) / `right` (logical properties, flips in RTL) | — | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -203,7 +205,7 @@ onMounted(async () => {
 | `reply` | Reply target area (under the author line, for "reply to @someone") |
 | `time` | Time |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

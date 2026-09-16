@@ -306,6 +306,8 @@ Other style hooks (CSS variable piercing, dark-mode aware):
 
 ### oas-descriptions
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `bordered` | Bordered table form: full grid lines + tinted label cells | `boolean` | — |
@@ -315,11 +317,15 @@ Other style hooks (CSS variable piercing, dark-mode aware):
 | `size` | Size: `small` / `medium` (default) / `large` (padding and font size linked) | `string` | `medium` |
 | `title` | Title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot="title" for rich content | `string` | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Description items (`oas-descriptions-item`) |
 | `extra` | Action area on the same row as the title (right side) |
 | `title` | Rich title content slot, overrides the title attribute text when present |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -327,15 +333,21 @@ Other style hooks (CSS variable piercing, dark-mode aware):
 
 ### oas-descriptions-item
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `label` | Field label | `string` | — |
 | `span` | Column span (positive integer, default 1; grid wraps when exceeding remaining columns) | `string` | `1` |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | default | Field content |
 | `label` | Rich label content (icon + text etc.; mutually exclusive with the label attribute, slot wins) |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -348,5 +360,3 @@ Other style hooks (CSS variable piercing, dark-mode aware):
 | `--oas-desc-label-color` | `var(--oas-color-text-secondary)` |
 | `--oas-desc-layout-dir` | `row` |
 | `--oas-descriptions-item-font` | `var(--oas-desc-font-size, inherit)` |
-
-**CSS 变量**

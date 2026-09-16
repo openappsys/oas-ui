@@ -140,7 +140,7 @@
   "cssVars": [
     {
       "name": "--oas-input-number-height",
-      "default": null
+      "default": "var(--oas-control-height-md)"
     },
     {
       "name": "--oas-input-number-controls-pad",
@@ -152,7 +152,7 @@
     },
     {
       "name": "--oas-input-number-font",
-      "default": null
+      "default": "var(--oas-font-size-md)"
     }
   ],
   "unresolved": []

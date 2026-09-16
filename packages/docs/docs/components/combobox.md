@@ -223,7 +223,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-combobox
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -242,7 +244,7 @@ onMounted(() => {
 | `value` | 当前值（受控，选中项 `option.value`） | `string` | — |
 | `virtual` | 虚拟滚动（复用 oas-virtual-list 仅渲染可视窗口；带 group 的选项自动回退全量渲染） | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |

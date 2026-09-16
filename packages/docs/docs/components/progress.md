@@ -286,7 +286,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-progress
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -310,23 +312,24 @@ onMounted(async () => {
 | `type` | 形态：`line`（默认）/ `circle` / `dashboard`（仪表盘：底部开口 270° 弧） | `string` | `line` |
 | `value` | percent 的别名（当前进度值，与 percent 同值域 0–max 夹取）：两者同设时 percent 优先，仅 percent 缺失时读此值 | `string` | `0` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 自定义文本：line 右侧 / text-inside 条内 / 圆心；优先于状态图标与内置百分比 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-progress-buffer-color` | `color-mix(in srgb, var(--oas-progress-color, var(--oas-color-primary)) 35%, transparent)` |
 | `--oas-progress-color` | `var(--oas-color-primary)` |
 | `--oas-progress-duration` | `1.2s` |
 | `--oas-progress-height` | `var(--oas-space-2)` |
 | `--oas-progress-inside-color` | `var(--oas-color-bg)` |
 | `--oas-progress-step-gap` | `var(--oas-space-1)` |
 | `--oas-progress-stripe-color` | `var(--oas-color-bg)` |
-| `--oas-progress-stripe-size` | — |
+| `--oas-progress-stripe-size` | `calc(var(--oas-progress-height, var(--oas-space-2)) * 2.5)` |
 | `--oas-progress-track-color` | `var(--oas-color-bg-hover)` |
 
 `role="progressbar"` + `aria-valuenow` / `aria-valuemin` / `aria-valuemax`（line 与 circle 均同步）。

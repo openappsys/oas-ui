@@ -355,7 +355,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-icon
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -376,19 +378,19 @@ onMounted(async () => {
 | `swap-opacity` | Swap primary / secondary opacity of a duotone icon | `boolean` | — |
 | `variant` | Icon variant (passed to the library resolver, e.g. weight) | `string` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Custom icon content (replaces the named registry icon) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-icon-primary-color` | — |
-| `--oas-icon-primary-opacity` | — |
-| `--oas-icon-secondary-color` | — |
-| `--oas-icon-secondary-opacity` | — |
+| `--oas-icon-primary-color` | `currentColor` |
+| `--oas-icon-primary-opacity` | `1` |
+| `--oas-icon-secondary-color` | `currentColor` |
+| `--oas-icon-secondary-opacity` | `0.4` |
 
 Icon names: `alert-circle` `arrow-down` `arrow-left` `arrow-right` `arrow-up` `calendar` `check-circle` `check` `chevron-down` `chevron-left` `chevron-right` `chevron-up` `clock` `close-circle` `close` `copy` `download` `edit` `error` `external-link` `eye` `filter` `form` `gear` `heart` `info` `language` `loading` `lock` `mail` `menu` `minus` `more-vertical` `more` `plus` `refresh` `search` `sort` `star-filled` `star` `translate` `trash` `upload` `user` `warning`.

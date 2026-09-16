@@ -120,11 +120,15 @@
     },
     {
       "name": "--oas-steps-arrow",
-      "default": null
+      "default": "10px"
     },
     {
       "name": "--oas-steps-item-bg",
       "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-steps-arrow-item-bg-{1..8}",
+      "default": null
     }
   ],
   "unresolved": []

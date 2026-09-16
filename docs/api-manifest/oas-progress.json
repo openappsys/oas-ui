@@ -127,6 +127,10 @@
       "default": "var(--oas-color-bg-hover)"
     },
     {
+      "name": "--oas-progress-buffer-color",
+      "default": "color-mix(in srgb, var(--oas-progress-color, var(--oas-color-primary)) 35%, transparent)"
+    },
+    {
       "name": "--oas-progress-color",
       "default": "var(--oas-color-primary)"
     },
@@ -136,7 +140,7 @@
     },
     {
       "name": "--oas-progress-stripe-size",
-      "default": null
+      "default": "calc(var(--oas-progress-height, var(--oas-space-2)) * 2.5)"
     },
     {
       "name": "--oas-progress-duration",

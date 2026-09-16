@@ -326,7 +326,9 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 
 ## API
 
-### Attributes
+### oas-input
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -356,7 +358,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `value` | Value (controlled) | `string` | — |
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -368,7 +370,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `oas-input` | While typing, `detail: { value }` |
 | `oas-validate` | Fires when the over-limit state flips (allow-over-max), `detail: { error: "exceed-maximum" \| null }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -377,7 +379,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `prepend` | Prepend addon area (may contain select/button or any content) |
 | `suffix` | Inline trailing content (icons/buttons etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

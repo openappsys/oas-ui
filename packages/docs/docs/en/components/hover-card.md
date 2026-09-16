@@ -92,7 +92,7 @@ The arrow is shown by default; `arrow="false"` hides it; `arrow-point-at-center`
 
 ## Corner-merged arrow
 
-`arrow-merge`: for *-start / *-end placements the arrow fuses with the panel corner into a right-angle triangle.
+`arrow-merge`: for *-start /*-end placements the arrow fuses with the panel corner into a right-angle triangle.
 
 <DemoBlock title="Corner-merged arrow (arrow-merge)">
   <oas-hover-card title="Title" content="Merged arrow" placement="bottom-start" arrow-merge><oas-button>bottom-start</oas-button></oas-hover-card>
@@ -256,7 +256,9 @@ Hover is unreliable on touch devices (`pointer: coarse`): the hover card automat
 
 ## API
 
-### Attributes
+### oas-hover-card
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -283,13 +285,13 @@ Hover is unreliable on touch devices (`pointer: coarse`): the hover card automat
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot="title" for rich content | `string` | — |
 | `width` | Width customization: number (px) or `trigger`/`target` (same width as the trigger); falls back to CSS min-width | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-open-change` | Dispatched when the open state changes, `detail: { open }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

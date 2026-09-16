@@ -47,7 +47,7 @@ const HEADER = {
   method: new Set(['方法', 'method', 'methods']),
   part: new Set(['部件', 'part', 'parts']),
   desc: new Set(['说明', 'description', 'desc', 'details']),
-  cssVar: new Set(['css 变量', 'css variable', 'css variables', '变量']),
+  cssVar: new Set(['css 变量', 'css variable', 'css variables', '变量', 'variable']),
 }
 // 会被生成内容取代的分组标题（### 属性 / ### Props 等，仅当其后紧跟可替换表时丢弃）
 const GROUP_HEADINGS = new Set([
@@ -63,6 +63,22 @@ const GROUP_HEADINGS = new Set([
 ])
 
 const TAG_RE = /^oas-[a-z0-9-]+$/
+
+/**
+ * 已人工复核的「仅语料」插槽（扫描器在源码找不到、但确属该组件 API 的条目）。
+ * 这些组件的默认槽是「宿主子节点内容」——由组件/父组件直接读 light DOM
+ * （textContent / children 遍历 / 动态建槽），不走 shadow <slot>，故不在 manifest。
+ * 记录在此后盲区清单只剩「待人工核对」的新增项，避免长期噪音淹没真问题。
+ */
+const SLOT_BLIND_OK = new Set([
+  'oas-dropdown-item.slots: (默认)',
+  'oas-dropdown-group.slots: (默认)',
+  'oas-dropdown-divider.slots: (默认)',
+  'oas-context-menu-item.slots: (默认)',
+  'oas-context-menu-group.slots: (默认)',
+  'oas-context-menu-divider.slots: (默认)',
+  'oas-splitter.slots: pane-${i}',
+])
 
 // ---------- 基础工具 ----------
 function normHeader(cell) {
@@ -288,7 +304,10 @@ function tagRows(tag, lang) {
   // slots：manifest ∪ 语料；默认插槽 key 为 ''
   const slotNames = new Set(man.slots.map((s) => s.name))
   for (const k of Object.keys(desc.slots)) {
-    if (!slotNames.has(k)) blindSpots.add(`${tag}.slots: ${k || '(默认)'}`)
+    if (!slotNames.has(k)) {
+      const blindKey = `${tag}.slots: ${k || '(默认)'}`
+      if (!SLOT_BLIND_OK.has(blindKey)) blindSpots.add(blindKey)
+    }
     slotNames.add(k)
   }
   const slots = [...slotNames]
@@ -299,11 +318,11 @@ function tagRows(tag, lang) {
       return { name, desc: d }
     })
 
-  // cssVars：组件出口（manifest 单源，不走 descriptions——变量名自解释，默认值取自代码 fallback）
+  // cssVars：组件出口（manifest 单源；默认值取自代码 fallback/声明；说明可选，来自 descriptions）
   const cssVars = (man.cssVars ?? [])
     .slice()
     .sort((a, b) => (a.name < b.name ? -1 : 1))
-    .map((v) => ({ name: v.name, default: v.default ?? null }))
+    .map((v) => ({ name: v.name, default: v.default ?? null, desc: (desc.cssVars ?? {})[v.name] ?? null }))
 
   return { attrs, events, slots, cssVars }
 }
@@ -345,10 +364,23 @@ function renderSlotTable(rows, lang) {
   )
 }
 function renderCssVarTable(rows, lang) {
-  const header = lang === 'zh' ? ['CSS 变量', '默认值'] : ['CSS Variable', 'Default']
+  // 说明列按需出现：该表有任一描述才渲染（避免全库铺满 —）
+  const withDesc = rows.some((r) => r.desc)
+  const header =
+    lang === 'zh'
+      ? withDesc
+        ? ['CSS 变量', '说明', '默认值']
+        : ['CSS 变量', '默认值']
+      : withDesc
+        ? ['CSS Variable', 'Description', 'Default']
+        : ['CSS Variable', 'Default']
   return mdTable(
     header,
-    rows.map((r) => [`\`${esc(r.name)}\``, r.default ? `\`${esc(r.default)}\`` : '—']),
+    rows.map((r) =>
+      withDesc
+        ? [`\`${esc(r.name)}\``, esc(r.desc ?? '—'), r.default ? `\`${esc(r.default)}\`` : '—']
+        : [`\`${esc(r.name)}\``, r.default ? `\`${esc(r.default)}\`` : '—'],
+    ),
   )
 }
 
@@ -360,42 +392,25 @@ function buildGenerated(tags, lang) {
     slots: lang === 'zh' ? '插槽' : 'Slots',
     cssVars: lang === 'zh' ? 'CSS 变量' : 'CSS Variables',
   }
-  // 多 tag 页：### oas-xxx 小节，表直接跟在标题下（无内容的 tag 跳过不渲染）
-  if (tags.length > 1) {
-    const parts = []
-    for (const tag of tags) {
-      const g = tagRows(tag, lang)
-      if (!g.attrs.length && !g.events.length && !g.slots.length && !(g.cssVars ?? []).length) continue
-      const tables = []
-      if (g.attrs.length) tables.push(renderAttrTable(g.attrs, lang))
-      if (g.events.length) tables.push(renderEventTable(g.events, lang))
-      if (g.slots.length) tables.push(renderSlotTable(g.slots, lang))
-      if ((g.cssVars ?? []).length) tables.push(renderCssVarTable(g.cssVars, lang))
-      parts.push(`### ${tag}\n\n${tables.join('\n\n')}`)
-    }
-    return parts.join('\n\n')
-  }
-
-  // 单 tag 页：### 属性 / ### 事件 / ### 插槽 / ### CSS 变量 分组
-  const g = tagRows(tags[0], lang)
-  if (!g.attrs.length && !g.events.length && !g.slots.length && !(g.cssVars ?? []).length) return ''
-  const heading = {
-    attrs: lang === 'zh' ? '属性' : 'Attributes',
-    events: lang === 'zh' ? '事件' : 'Events',
-    slots: lang === 'zh' ? '插槽' : 'Slots',
-    cssVars: lang === 'zh' ? 'CSS 变量' : 'CSS Variables',
-  }
+  // 统一版式：每个 tag 一个 ### 小节，tag 下按 #### 属性 / #### 事件 / #### 插槽 / #### CSS 变量 分组
   const parts = []
-  if (g.attrs.length) parts.push(`### ${heading.attrs}\n\n${renderAttrTable(g.attrs, lang)}`)
-  if (g.events.length) parts.push(`### ${heading.events}\n\n${renderEventTable(g.events, lang)}`)
-  if (g.slots.length) parts.push(`### ${heading.slots}\n\n${renderSlotTable(g.slots, lang)}`)
-  if ((g.cssVars ?? []).length) parts.push(`### ${heading.cssVars}\n\n${renderCssVarTable(g.cssVars, lang)}`)
+  for (const tag of tags) {
+    const g = tagRows(tag, lang)
+    if (!g.attrs.length && !g.events.length && !g.slots.length && !(g.cssVars ?? []).length) continue
+    const tables = []
+    if (g.attrs.length) tables.push(`#### ${headings.attrs}\n\n${renderAttrTable(g.attrs, lang)}`)
+    if (g.events.length) tables.push(`#### ${headings.events}\n\n${renderEventTable(g.events, lang)}`)
+    if (g.slots.length) tables.push(`#### ${headings.slots}\n\n${renderSlotTable(g.slots, lang)}`)
+    if ((g.cssVars ?? []).length) tables.push(`#### ${headings.cssVars}\n\n${renderCssVarTable(g.cssVars, lang)}`)
+    parts.push(`### ${tag}\n\n${tables.join('\n\n')}`)
+  }
   return parts.join('\n\n')
 }
 
 // ---------- 单页处理 ----------
 function isGroupHeading(b) {
-  return b.kind === 'heading' && b.level === 3 && GROUP_HEADINGS.has(b.text.trim().toLowerCase())
+  // h3：单 tag 页的分组标题（### 属性）；h4：多 tag 页 tag 下的分组标题（#### 属性）
+  return b.kind === 'heading' && (b.level === 3 || b.level === 4) && GROUP_HEADINGS.has(b.text.trim().toLowerCase())
 }
 
 /** 块是否被"生成内容"取代 */

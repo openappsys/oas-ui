@@ -471,6 +471,7 @@ oas-badge#badge-dyn.bump::part(badge) {
 </DemoBlock>
 
 `ribbon-anchor` 统一缎带锚点，锚点集合按形态语义适配（形态与位置绑定）：
+
 - **fold**：左右边中 + 四角（横条贴左/右，纵向上下可调）
 - **diagonal / triangle**：四角
 - **side**：左右边中 + 四角
@@ -591,7 +592,9 @@ oas-badge#badge-dyn.bump::part(badge) {
 
 ## API
 
-### 属性
+### oas-badge
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -622,14 +625,14 @@ oas-badge#badge-dyn.bump::part(badge) {
 | `value` | 数字 | `string` | — |
 | `variant` | 形态：solid（默认，实心）或 outline（描边：背景透明、边框与文字走 color 语义色）；非法值静默回落 solid | `BadgeVariant` | — |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 被包裹内容（卡片、按钮等）；无内容时徽标回落为独立行内展示 |
 | `ribbon` | 缎带自定义内容 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
@@ -640,7 +643,8 @@ oas-badge#badge-dyn.bump::part(badge) {
 | `--oas-badge-diagonal-text-inset` | `0px` |
 | `--oas-badge-on-color` | `var(--oas-color-text-on-danger)` |
 | `--oas-badge-pos` | `translate(50%, -50%)` |
-| `--oas-diag-pin` | — |
+| `--oas-badge-pulse-color` | `var(--oas-badge-bg, var(--oas-color-danger))` |
+| `--oas-diag-pin` | `var(--oas-badge-diagonal-pin, 25px)` |
 | `--oas-ribbon-anchor-x` | `0px` |
 | `--oas-ribbon-anchor-y` | `0px` |
 | `--oas-ribbon-offset-x` | `0px` |

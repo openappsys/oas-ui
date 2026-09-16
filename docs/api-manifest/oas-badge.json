@@ -172,6 +172,10 @@
       "default": "var(--oas-color-text-on-danger)"
     },
     {
+      "name": "--oas-badge-pulse-color",
+      "default": "var(--oas-badge-bg, var(--oas-color-danger))"
+    },
+    {
       "name": "--oas-badge-pos",
       "default": "translate(50%, -50%)"
     },
@@ -209,7 +213,7 @@
     },
     {
       "name": "--oas-diag-pin",
-      "default": null
+      "default": "var(--oas-badge-diagonal-pin, 25px)"
     },
     {
       "name": "--oas-badge-diagonal-text-inset",

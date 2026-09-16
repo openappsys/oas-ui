@@ -162,6 +162,9 @@
   ],
   "slots": [
     {
+      "name": "empty"
+    },
+    {
       "name": "footer"
     },
     {

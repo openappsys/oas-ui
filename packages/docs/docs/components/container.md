@@ -99,7 +99,9 @@ slot 内任意子元素带 `breakout` 属性即突破定宽撑满视口宽（经
 
 ## API
 
-### 属性
+### oas-container
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -108,15 +110,21 @@ slot 内任意子元素带 `breakout` 属性即突破定宽撑满视口宽（经
 | `padding` | 内边距 token/值（作用于 `padding-inline`） | — | — |
 | `size` | 定宽档位，映射 `--oas-container-*` token | `string` | `lg` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 容器内容 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-container-full` | — |
+| `--oas-container-lg` | — |
 | `--oas-container-max` | `var(--oas-container-lg, 992px)` |
+| `--oas-container-md` | — |
 | `--oas-container-padding` | `0` |
+| `--oas-container-sm` | — |
+| `--oas-container-xl` | — |
+| `--oas-container-xs` | — |

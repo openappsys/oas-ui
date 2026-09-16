@@ -139,7 +139,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-backdrop
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -153,7 +155,7 @@ onMounted(async () => {
 | `stop-propagation` | — | `string` | `true` |
 | `transparent` | Transparent overlay (no background) | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -161,13 +163,13 @@ onMounted(async () => {
 | `oas-after-show` | — |
 | `oas-click` | Backdrop clicked, `detail.originalEvent` is the original click event |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Backdrop content |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

@@ -164,7 +164,9 @@ Font size defaults to 0.875× the outer context (`0.875em`); override with the C
 
 ## API
 
-### Attributes
+### oas-code
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -179,14 +181,14 @@ Font size defaults to 0.875× the outer context (`0.875em`); override with the C
 | `variant` | Inline style: `subtle` (default light background) / `outline` (bordered) / `plain` (text only) / `solid` (filled); invalid values fall back to `subtle` with a warning | — | — |
 | `word-wrap` | Wrap long code instead of horizontal scrolling | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-copy` | Copy succeeded, `detail: { text }` |
 | `oas-copy-error` | Copy failed, `detail: { text }` |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

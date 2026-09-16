@@ -158,7 +158,9 @@ Content is not limited to text — putting images or logos in the slot produces 
 
 ## API
 
-### Attributes
+### oas-marquee
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -168,19 +170,19 @@ Content is not limited to text — putting images or logos in the slot produces 
 | `reverse` | Boolean; when present, scrolls in the opposite direction | — | — |
 | `speed` | Scroll speed in pixels per second (default 48); the animation duration is derived from the measured content width (duration = distance / speed); invalid or non-positive values fall back to the default | `string` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Scrolling content |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-marquee-duration` | — |
+| `--oas-marquee-duration` | `20s` |
 | `--oas-marquee-fade-size` | `24px` |
-| `--oas-marquee-shift` | — |
+| `--oas-marquee-shift` | `50%` |
 
 - When the system enables "reduce motion" (`prefers-reduced-motion: reduce`), the animation is disabled and content is shown statically.
 - The duplicated content group carries `aria-hidden`, so screen readers do not read it twice.

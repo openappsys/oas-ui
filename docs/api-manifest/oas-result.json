@@ -49,11 +49,11 @@
   "cssVars": [
     {
       "name": "--oas-result-title-size",
-      "default": null
+      "default": "var(--oas-font-size-xl)"
     },
     {
       "name": "--oas-result-desc-size",
-      "default": null
+      "default": "var(--oas-font-size-md)"
     }
   ],
   "unresolved": []

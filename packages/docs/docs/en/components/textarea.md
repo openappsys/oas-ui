@@ -185,7 +185,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-textarea
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -213,7 +215,7 @@ onMounted(() => {
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | `outlined` |
 | `wrap` | Wrap strategy (native passthrough: soft/hard) | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |

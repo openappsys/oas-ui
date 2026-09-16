@@ -369,7 +369,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-pagination
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -392,14 +394,14 @@ onMounted(() => {
 | `total` | Total number of records | `string` | `0` |
 | `total-boundary` | Page-size switcher visibility threshold: when set, the page-size dropdown renders only when total exceeds the value (hidden when total ≤ threshold); unset keeps current behavior (dropdown shows whenever page-sizes is set) | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-before-change` | Fires before a page change/jump; preventDefault cancels the change (page-size switching is not intercepted); in link mode it also prevents native navigation |
 | `oas-change` | Flipping `{ page }`; page-size switch `{ page: 1, pageSize }`; quick jump `{ page, pageSize }`, `detail: { page } \| { page: 1, pageSize } \| { page, pageSize }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -408,11 +410,11 @@ onMounted(() => {
 | `prev-icon` | Icon slot for the previous button; replaces the default ‹ when present |
 | `total` | Total text slot; replaces the built-in "Total N" text when present |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-pagination-font` | — |
-| `--oas-pagination-height` | — |
+| `--oas-pagination-font` | `var(--oas-font-size-md)` |
+| `--oas-pagination-height` | `var(--oas-control-height-md)` |
 
 Page numbers are omitted automatically when out of range, and the first/last flip buttons are disabled at the boundaries.

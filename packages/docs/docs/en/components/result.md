@@ -104,7 +104,9 @@ The `title` slot accepts rich content (for example a large status code composed 
 
 ## API
 
-### Attributes
+### oas-result
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -113,7 +115,7 @@ The `title` slot accepts rich content (for example a large status code composed 
 | `status` | Status: `success` / `error` / `warning` / `info` / `403` / `404` / `500` (HTTP error pages with dedicated icons); invalid values fall back to info with a warning | `string` | `success` |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -123,9 +125,9 @@ The `title` slot accepts rich content (for example a large status code composed 
 | `icon` | Custom icon (overrides the built-in status icon; switches to neutral styling without the tinted backdrop) |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-result-desc-size` | — |
-| `--oas-result-title-size` | — |
+| `--oas-result-desc-size` | `var(--oas-font-size-md)` |
+| `--oas-result-title-size` | `var(--oas-font-size-xl)` |

@@ -97,7 +97,9 @@ An empty container causes no error and takes no placeholder.
 
 ## API
 
-### Attributes
+### oas-container
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -106,15 +108,21 @@ An empty container causes no error and takes no placeholder.
 | `padding` | Padding token/value (applies to `padding-inline`) | — | — |
 | `size` | Fixed-width tier, mapped to `--oas-container-*` tokens | `string` | `lg` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Container content |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-container-full` | — |
+| `--oas-container-lg` | — |
 | `--oas-container-max` | `var(--oas-container-lg, 992px)` |
+| `--oas-container-md` | — |
 | `--oas-container-padding` | `0` |
+| `--oas-container-sm` | — |
+| `--oas-container-xl` | — |
+| `--oas-container-xs` | — |

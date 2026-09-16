@@ -378,7 +378,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-upload
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -402,7 +404,7 @@ onMounted(async () => {
 | `tip` | 拖拽区提示文案（同 `template[slot="tip"]` 富内容） | `string` | — |
 | `with-credentials` | 跨域携带凭证 | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -417,7 +419,7 @@ onMounted(async () => {
 | `oas-success` | 上传成功，`detail: { file, response }` |
 | `oas-upload` | 上传进度，`detail: { file, percent, status }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -425,7 +427,7 @@ onMounted(async () => {
 | `template[slot="tip"]` | 拖拽区提示富内容（tip 属性优先） |
 | `trigger` | 替换拖拽区内容（zone 语义保留） |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

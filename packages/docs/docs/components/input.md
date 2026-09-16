@@ -326,7 +326,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-input
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -356,7 +358,7 @@ onMounted(() => {
 | `value` | 值（受控） | `string` | — |
 | `variant` | 形态：`outlined`（默认描边）/ `filled`（填充底色）/ `borderless`（无框） | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -368,7 +370,7 @@ onMounted(() => {
 | `oas-input` | 输入中，`detail: { value }` |
 | `oas-validate` | allow-over-max 越界状态翻转时派发，`detail: { error: "exceed-maximum" \| null }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -377,7 +379,7 @@ onMounted(() => {
 | `prepend` | 前置 addon 区（可嵌 select/按钮等任意内容） |
 | `suffix` | 内嵌后置内容（图标/按钮等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

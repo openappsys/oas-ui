@@ -339,6 +339,8 @@ onMounted(() => {
 
 ### oas-menubar
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `align` | First-level popup alignment: `start` (default) / `center` / `end`; with `side` top/bottom it aligns on the horizontal axis, with left/right on the vertical axis | `string` | — |
@@ -355,10 +357,14 @@ onMounted(() => {
 | `trigger` | Top-level menu trigger: `click` (default, click to open first, then hover switches — desktop convention) / `hover` (hover opens directly) | — | — |
 | `value` | Selected value. As a plain string it is a single global selection (no-group scenarios, backward compatible); as a JSON object string (e.g. `{"mode":"preview","theme":"dark"}`) selections are recorded per group id — the `value` of a `type:"group"` item acts as the group id; as a JSON array string (e.g. `["grid","wrap"]`) it is the checkbox checked-set (`kind:"checkbox"` items, multi-select) | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-open-change` | The open top-level menu changed, `detail: { value, open }` (`value` = currently open top-level menu value, `open` = whether anything is open). Fired both on controlled `setAttribute('open')` and internal click/hover/keyboard changes (not on the first frame) |
 | `oas-select` | An item was selected, `detail: { value, kind?, checked? }`. `kind` only appears for action items (`kind: "action"`); checkbox items carry `checked` (new checked state); radio items omit `detail.kind` |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -366,6 +372,8 @@ onMounted(() => {
 | `start` | Leading decorative slot (e.g. logo): `<div slot="start">` renders when it has content; keyboard navigation skips it |
 
 ### oas-menubar-item
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -382,22 +390,30 @@ onMounted(() => {
 | `target` | Link target (with `href`) | — | — |
 | `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | default | Menubar item label content (default slot text); direct child `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` elements recursively become the submenu `children` |
 
 ### oas-menubar-group
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `label` | Group title (small secondary text, not clickable) | — | — |
 | `value` | Radio group id (picking inside the group only updates that group's selected value) | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Group items: child `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` elements flatten to the same level |
 
 ### oas-menubar-divider
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

@@ -232,7 +232,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-slider
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -258,27 +260,27 @@ onMounted(() => {
 | `value` | 当前值（受控）：单值为数值字符串；`range` 模式为 JSON 数组 `[lo, hi]` 或逗号分隔字符串 `"lo,hi"`，交互后写回 JSON 数组字符串（表单收集可直接 `JSON.parse`） | `string` | — |
 | `vertical` | 垂直模式：轨道竖直（最小值在下，`reverse` 镜像到上）；刻度标签移到轨道右侧、值气泡默认朝右、show-input 输入框移到轨道下方；高度默认 200px，用 CSS 变量 `--oas-slider-height` 调整 | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 松手确定，`detail: { value }`（单值数字；`range` 模式为 `[lo, hi]` 数组） |
 | `oas-input` | 拖动中/输入防抖提交，`detail: { value }`（单值数字；`range` 模式为 `[lo, hi]` 数组） |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | `template[slot="custom-thumb"]` | 自定义滑块内容（图标/文字）：`template[slot="custom-thumb"]`（静态模板，克隆到每个可见滑块，范围模式两个滑块都会克隆）或普通 `[slot="custom-thumb"]` 元素 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
-| `--oas-slider-color` | — |
+| `--oas-slider-color` | `var(--oas-color-primary)` |
 | `--oas-slider-height` | `200px` |
-| `--oas-slider-thumb-size` | — |
-| `--oas-slider-track` | — |
-| `--oas-slider-track-size` | — |
+| `--oas-slider-thumb-size` | `14px` |
+| `--oas-slider-track` | `var(--oas-color-border)` |
+| `--oas-slider-track-size` | `4px` |
 
 `marks` 支持 JS property 通道（对象/数组直接赋值，反射为 JSON attribute）；`el.formatTooltip = (value) => string | number` 为值格式化函数 property（输出同时进值气泡与 `aria-valuetext`，优先级高于 `format` 属性，置 `null` 清除）——attribute 无法表达函数语义，函数通道只能走 JS property。

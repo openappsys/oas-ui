@@ -190,7 +190,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-auto-complete
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -206,7 +208,7 @@ onMounted(() => {
 | `trigger-on-focus` | Show suggestions on focus (datalist mental model; off by default — input-first) | `boolean` | — |
 | `value` | Preset value | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -215,7 +217,7 @@ onMounted(() => {
 | `oas-input` | While typing (after debounce), `detail: { value }` |
 | `oas-option-render` | Dispatched after each option row renders, `detail: { index, option, element }`; the host can rewrite `element` (icons/rich text) |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

@@ -137,14 +137,16 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-theme-editor
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `preset` | Built-in preset theme: `compact` (tight; control-height -4px, space scaled down proportionally) / `comfortable` (roomy; +4px, space scaled up proportionally) / `default` (equivalent to reset; clears written inline variables). Invalid values are ignored with a dev warning | — | — |
 | `token` | Custom list of tokens to edit (CSS variable names) | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |

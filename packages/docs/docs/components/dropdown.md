@@ -423,6 +423,8 @@ onMounted(() => {
 
 ### oas-dropdown
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `arrow` | 是否显示指向触发元素的箭头（`arrow="false"` 隐藏，骨架保留） | `string` | `true` |
@@ -441,15 +443,21 @@ onMounted(() => {
 | `trigger` | 触发方式：`click`（默认）/ `hover` / `focus`，空格分隔可多选（如 `"click hover"`）。含 `hover` 时触屏（coarse pointer）自动降级为点按切换：点按展开、再点按/外点关闭，桌面 hover 行为不变 | `string` | `click` |
 | `value` | 当前选中值 | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-action` | 拆分模式下点击主按钮，`detail: { originalEvent }` |
 | `oas-open-change` | 浮层开合变化，`detail: { open: boolean }`（含外部 setAttribute 触发，受控闭环） |
 | `oas-select` | 选择某项，`detail: { value }` |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 下拉菜单内容（菜单项 / 分组） |
+
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
@@ -457,6 +465,8 @@ onMounted(() => {
 | `--oas-origin-y` | `center` |
 
 ### oas-dropdown-item
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -470,22 +480,30 @@ onMounted(() => {
 | `target` | 链接 target（配合 href） | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
 
+#### 插槽
+
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 下拉菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-dropdown-item>` 递归为子菜单 children |
 
 ### oas-dropdown-group
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `label` | 分组标题（组标题小字、次要色、不可点） | — | — |
 | `value` | radio 组 id（组内点选只更新该组选中值） | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 组内菜单项：子元素 `<oas-dropdown-item>` 平铺同层 |
 
 ### oas-dropdown-divider
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

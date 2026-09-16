@@ -268,7 +268,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-popconfirm
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -293,7 +295,7 @@ onMounted(async () => {
 | `virtual-y` | — | — | — |
 | `width` | — | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -301,17 +303,17 @@ onMounted(async () => {
 | `oas-ok` | Clicked "OK"; the bubble then collapses automatically, `detail: { source: this, event: e }` |
 | `oas-open-change` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
-| `actions` | — |
-| `description` | — |
-| `icon` | — |
+| default | Popconfirm body content |
+| `actions` | Action buttons area (replaces the default confirm / cancel buttons) |
+| `description` | Description text |
+| `icon` | Custom icon (replaces the default question icon) |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

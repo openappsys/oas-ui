@@ -158,7 +158,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-marquee
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -168,19 +170,19 @@ onMounted(() => {
 | `reverse` | 布尔，存在时反向滚动 | — | — |
 | `speed` | 滚动速度（像素/秒，默认 48）；经测量内容宽推导动画时长（时长=距离/速度），非法/非正数回退默认 | `string` | — |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 滚动内容 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
-| `--oas-marquee-duration` | — |
+| `--oas-marquee-duration` | `20s` |
 | `--oas-marquee-fade-size` | `24px` |
-| `--oas-marquee-shift` | — |
+| `--oas-marquee-shift` | `50%` |
 
 - 系统开启「减少动态效果」（`prefers-reduced-motion: reduce`）时动画关闭、静态展示。
 - 复制内容组带 `aria-hidden`，屏幕阅读器不重复朗读。

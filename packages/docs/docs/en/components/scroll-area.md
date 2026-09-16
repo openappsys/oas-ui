@@ -242,7 +242,9 @@ onMounted(() => {
 | `scrollToTop(options?)` / `scrollToBottom(options?)` | Scrolls to the top/bottom, `options: { behavior? }`, smooth by default |
 | `scrollIntoView(selectorOrEl, options?)` | Scrolls an element inside the container into view; `block` / `inline` from `options` are passed through |
 
-### Attributes
+### oas-scroll-area
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -254,17 +256,17 @@ onMounted(() => {
 | `stick-to-bottom` | Stick to bottom: when new content is appended and the user is at the bottom (≤8px), auto-scroll to the new bottom; never interrupts reading history | `boolean` | — |
 | `width` | Viewport width (px); when unset, fills the host width | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-end-reached` | Fired when scrolling reaches the container bottom (or the horizontal right edge), `detail: { direction: 'bottom' \| 'right' }`; re-arms only after leaving the edge |
 | `oas-scroll` | Scroll event (rAF-throttled), `detail: { scrollTop, scrollLeft }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Scrollable content |
 
 Parts: `::part(viewport)` is the scrolling viewport, `::part(track-v)` / `::part(track-h)` are the scroll tracks, `::part(thumb-v)` / `::part(thumb-h)` are the scroll thumbs. The viewport is focusable (`tabindex="0"`) and scrolls with arrow keys.

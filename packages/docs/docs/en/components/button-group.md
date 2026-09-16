@@ -273,7 +273,9 @@ Compose button groups with existing components such as overlays and inputs.
 
 ## API
 
-### Attributes
+### oas-button-group
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -289,16 +291,16 @@ Compose button groups with existing components such as overlays and inputs.
 | `variant` | Group-level variant passthrough to child buttons (set once, applies to all) | `string` | — |
 | `vertical` | Stack vertically, merging corners top/bottom | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Selection changed. Single-select `detail: { value }`; multi-select `detail: { value: [] }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Button group members (`oas-button`) |
 
 > Note: child buttons declare their selectable value via the `value` attribute; children without `value` are regular buttons and don't participate in selection or dispatch `oas-change`. The selected state is expressed through the child button's `aria-pressed`; use `oas-button[aria-pressed='true']` to customize the selected style.

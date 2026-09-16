@@ -416,7 +416,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-tree-select
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -452,7 +454,7 @@ onMounted(() => {
 | `value` | 选中值（多选为 JSON 数组） | `string` | `[]` |
 | `virtual` | 开启虚拟滚动：大数据量下拉仅渲染可见窗口（复用 oas-virtual-list），键盘/ARIA 保持 | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -463,7 +465,7 @@ onMounted(() => {
 | `oas-open-change` | 开合状态翻转，`detail: { open }` |
 | `oas-search` | 搜索输入，`detail: { value }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

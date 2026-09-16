@@ -209,7 +209,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-float-button
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -229,7 +231,7 @@ onMounted(async () => {
 | `trigger` | 展开触发方式：click（默认）/ hover（开合防抖 + 宽限期）/ manual（完全受控，外点与 Esc 不自动收起） | `string` | `click` |
 | `type` | 视觉强度：`primary`（默认，主色实底）/ `default`（弱化：浅底深字） | `string` | `primary` |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -237,7 +239,7 @@ onMounted(async () => {
 | `oas-expand-change` | 展开/收起时派发，`detail: { open }`；受控语义——组件不改 expanded，由宿主回写 |
 | `oas-select` | menu 模式选择菜单项，detail: { index, label, value? }；选择后组件请求收起（派发 oas-expand-change，收起由宿主移除 expanded 完成） |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -245,14 +247,14 @@ onMounted(async () => {
 | `action` | group 模式子钮（原生 button/a 或 oas-button），点击自动收起并回焦主钮；支持角标与自定义图标 |
 | `icon` | 图标（默认 ＋） |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
-| `--oas-float-button-action-size` | — |
+| `--oas-float-button-action-size` | `calc(var(--oas-float-button-size) - var(--oas-space-2))` |
 | `--oas-float-button-bottom` | `var(--oas-space-6)` |
 | `--oas-float-button-right` | `var(--oas-space-6)` |
-| `--oas-float-button-size` | — |
+| `--oas-float-button-size` | `var(--oas-control-height-xl)` |
 | `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
 | `--oas-tooltip-color` | `var(--oas-color-bg)` |
 

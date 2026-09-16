@@ -174,7 +174,9 @@ The `tooltip-placement` attribute is passed through to the inner `oas-tooltip` (
 
 ## API
 
-### Attributes
+### oas-ellipsis
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -191,7 +193,7 @@ The `tooltip-placement` attribute is passed through to the inner `oas-tooltip` (
 | `tooltip` | Show a full-text tooltip on hover when overflowing | `string` | `true` |
 | `tooltip-placement` | Overflow tooltip placement (default `top`) | `string` | `top` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |

@@ -161,6 +161,8 @@
 
 ### oas-stepper
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `clickable` | 步骤可点击跳步（默认 true；`clickable="false"` 关闭：点击/键盘静默，键盘仍可移动焦点） | `string` | `true` |
@@ -170,9 +172,13 @@
 | `size` | 尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + dev 告警，同值去重） | `string` | `medium` |
 | `steps` | 步骤数据 JSON `[{ title, description?, icon?, disabled?, status? }]`（语义对齐 oas-steps 的 StepItem 减去面板无关项）；非法/空回落 `[]` | `StepperStep[] \| string` | `[]` |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 可点击跳步时触发（点击步骤 / 键盘 Enter/Space）；`detail: { index }`（0 起，bubbles + composed，写回 current） |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -180,9 +186,13 @@
 
 ### oas-stepper-panel
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `value` | 关联步骤序号字符串（如 `value="0"`）；仅 `current` 匹配的面板可见（hidden 由 oas-stepper 驱动） | — | — |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

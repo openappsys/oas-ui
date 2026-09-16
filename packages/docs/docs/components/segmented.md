@@ -110,7 +110,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-segmented
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -123,16 +125,16 @@ onMounted(() => {
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
 | `value` | 选中值（缺省选第一项，受控属性） | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 切换，`detail: { value }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| `template[slot="option"]` | — |
+| `template[slot="option"]` | 选项自定义模板（`<template slot="option">`） |
 
 容器 `role="radiogroup"`，每项 `role="radio"` + `aria-checked` / `aria-disabled`。

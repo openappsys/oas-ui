@@ -223,7 +223,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-config-provider
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -235,11 +237,11 @@ onMounted(async () => {
 | `theme` | Theme for the wrapped subtree, written to `data-theme` | — | — |
 | `z-index` | Global starting value for floating layers (positive integer); writes `--oas-z-index-base` on the host, lifting all floating layers in the subtree; invalid values are ignored with a dev warning | `string` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Subtree content that receives the provided config |
 
 - Component resolution order: own attribute > config-provider > global default.
 - `locale` requires the language pack to be registered via `registerLocale()`; falls back to the global translator when unregistered.

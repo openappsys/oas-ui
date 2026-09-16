@@ -96,7 +96,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-affix
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -105,16 +107,16 @@ onMounted(() => {
 | `position` | 吸附方向：top（默认，顶缘触达吸附）/ bottom（底缘触达吸附）；非法值回落 top | `AffixPosition` | `top` |
 | `target` | 滚动容器选择器（CSS 选择器）；选择器无匹配时告警并回落 window 滚动 | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 吸附状态翻转时派发，detail { fixed, top }：fixed 是否吸附；top 为吸附参考位置（top 吸附 = offset，bottom 吸附 = 元素当前 rect.top） |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 吸附内容 |
 
 监听 `window`（或 `target` 容器）滚动，元素滚出吸附区后固定，内容通过默认插槽传入。

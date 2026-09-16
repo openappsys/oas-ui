@@ -9,7 +9,9 @@
     "events": {
       "oas-change": "吸附状态翻转时派发，detail { fixed, top }：fixed 是否吸附；top 为吸附参考位置（top 吸附 = offset，bottom 吸附 = 元素当前 rect.top）"
     },
-    "slots": {}
+    "slots": {
+      "": "吸附内容"
+    }
   },
   "oas-alert": {
     "attrs": {
@@ -116,7 +118,9 @@
       "ratio": "宽高比：预定义名 `square`（1/1）/ `landscape`（4/3）/ `portrait`（3/4）/ `wide`（16/9）/ `ultrawide`（21/9）/ `golden`（1.618/1），或分式 `16/9`、`4:3`、`16 / 9`、小数 `1.5`；亦可用 property 赋 number（`el.ratio = 1.5`）。token 名优先匹配；缺失/非法（含 0 分子或分母）回退 `1 / 1`，非法值 dev 告警一次（同值去重）"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "保持宽高比的内容"
+    }
   },
   "oas-app": {
     "attrs": {
@@ -187,7 +191,9 @@
       "spacing": "成员间距（px，可为负 = 叠放；覆盖 `--oas-avatar-group-overlap` 变量）"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "头像成员（`oas-avatar`）"
+    }
   },
   "oas-back-top": {
     "attrs": {
@@ -229,7 +235,9 @@
     "events": {
       "oas-click": "点击遮罩，`detail.originalEvent` 为原始点击事件"
     },
-    "slots": {}
+    "slots": {
+      "": "遮罩内容"
+    }
   },
   "oas-badge": {
     "attrs": {
@@ -304,7 +312,9 @@
     "events": {
       "oas-close": "请求关闭，detail.reason 为 drag（下滑把手超阈值）/ backdrop（点击遮罩）/ esc（Esc 键）；组件只派发事件不改 open，由宿主决定收起"
     },
-    "slots": {}
+    "slots": {
+      "": "面板主体内容"
+    }
   },
   "oas-breadcrumb": {
     "attrs": {
@@ -326,7 +336,9 @@
       "oas-select": "点击链接项、折叠下拉项或项下拉菜单项；`detail: { value: href }`（真实链接不阻止默认跳转，宿主可拦截做路由）",
       "oas-collapse-click": "折叠省略号被点击展开下拉（收起不派发），`detail: { collapsedItems }`（被折叠的原始项数组，宿主可自定义折叠面板）"
     },
-    "slots": {}
+    "slots": {
+      "separator": "自定义分隔符内容（文本或图标，替代 separator 属性）"
+    }
   },
   "oas-breadcrumb-item": {
     "attrs": {
@@ -381,7 +393,9 @@
     "events": {
       "oas-click": "点击，`detail: { originalEvent }`"
     },
-    "slots": {}
+    "slots": {
+      "": "按钮内容（文本 / 图标）"
+    }
   },
   "oas-button-group": {
     "attrs": {
@@ -400,7 +414,9 @@
     "events": {
       "oas-change": "选中变化。单选 `detail: { value }`；多选 `detail: { value: [] }`"
     },
-    "slots": {}
+    "slots": {
+      "": "按钮组成员（`oas-button`）"
+    }
   },
   "oas-calendar": {
     "attrs": {
@@ -479,7 +495,9 @@
     "events": {
       "oas-change": "当前屏切换，`detail: { index }`"
     },
-    "slots": {}
+    "slots": {
+      "": "轮播项"
+    }
   },
   "oas-cascader": {
     "attrs": {
@@ -578,7 +596,9 @@
       "oas-change": "展开状态变化，`detail: { active: string[] }`",
       "oas-before-collapse": "展开/收起前派发（cancelable），`detail: { name, next }`；`preventDefault()` 阻止本次切换（expandAll/collapseAll 不触发）"
     },
-    "slots": {}
+    "slots": {
+      "": "折叠面板（`oas-collapse-item`）"
+    }
   },
   "oas-collapse-item": {
     "attrs": {
@@ -596,7 +616,8 @@
     "slots": {
       "header": "面板头富内容（与 header 属性互斥，slot 优先；标题内交互元素请自行 stopPropagation）",
       "extra": "面板头右侧操作区（内部点击不触发展开收起）",
-      "template[slot=\"toggle\"]": "自定义展开图标模板（缺省为内建箭头）"
+      "template[slot=\"toggle\"]": "自定义展开图标模板（缺省为内建箭头）",
+      "": "面板内容"
     }
   },
   "oas-color-picker": {
@@ -609,7 +630,9 @@
     "events": {
       "oas-change": "颜色变化，`detail: { value }`"
     },
-    "slots": {}
+    "slots": {
+      "trigger": "自定义触发器（替代默认色块按钮）"
+    }
   },
   "oas-combobox": {
     "attrs": {
@@ -706,7 +729,9 @@
       "disabled": "全局禁用：子树内已接入注入的表单族控件未显式设置 `disabled` 时统一禁用；组件级逃逸用 `disabled-skip` 属性、整类逃逸用 config JSON 顶层 `disabledExempt`"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "被提供配置的子树内容"
+    }
   },
   "oas-container": {
     "attrs": {
@@ -716,7 +741,16 @@
       "size": "定宽档位，映射 `--oas-container-*` token"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "容器内容"
+    }
+  },
+  "oas-content": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "内容区"
+    }
   },
   "oas-context-menu": {
     "attrs": {
@@ -729,7 +763,9 @@
       "oas-select": "选择某项，`detail: { value }`",
       "oas-open-change": "菜单开合变化，`detail: { open: boolean }`"
     },
-    "slots": {}
+    "slots": {
+      "": "右键菜单内容（菜单项 / 分组）"
+    }
   },
   "oas-context-menu-divider": {
     "attrs": {},
@@ -819,7 +855,7 @@
       "oas-open-change": "开合变化，`detail: { open }`（受控/非受控均派发）"
     },
     "slots": {
-      "cell": "`template[slot=\"cell\"]` 克隆进每个日格，`[data-cell-date]` 自动绑定日期数字（与 `oas-cell-render` 双通道）"
+      "template[slot=\"cell\"]": "`template[slot=\"cell\"]` 克隆进每个日格，`[data-cell-date]` 自动绑定日期数字（与 `oas-cell-render` 双通道）"
     },
     "props": {
       "shortcuts": "快捷预设（对象数组，`{ label, value }` 或 `{ label, getValue() }`）；未设置时各类型内置默认预设（标签走 locale）",
@@ -838,7 +874,8 @@
     "events": {},
     "slots": {
       "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
-      "extra": "标题同排右侧操作区"
+      "extra": "标题同排右侧操作区",
+      "": "描述项（`oas-descriptions-item`）"
     }
   },
   "oas-descriptions-item": {
@@ -866,7 +903,9 @@
       "text-orientation": "垂直分割线的文字方向：horizontal（默认横排）/ \u000bertical（竖排，跟随竖线方向从上到下）；仅 vertical 分割线有意义"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "分隔线中间内容"
+    }
   },
   "oas-drawer": {
     "attrs": {
@@ -887,7 +926,10 @@
       "oas-opened": "【兼容别名】打开动画完成，等价 oas-after-open；后续版本移除"
     },
     "slots": {
-      "title": "标题富内容插槽，有内容时覆盖 title 属性文案"
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "": "抽屉主体内容",
+      "footer": "底部操作区",
+      "header-actions": "标题栏右侧操作区"
     }
   },
   "oas-dropdown": {
@@ -913,7 +955,9 @@
       "oas-select": "选择某项，`detail: { value }`",
       "oas-open-change": "浮层开合变化，`detail: { open: boolean }`（含外部 setAttribute 触发，受控闭环）"
     },
-    "slots": {}
+    "slots": {
+      "": "下拉菜单内容（菜单项 / 分组）"
+    }
   },
   "oas-dropdown-divider": {
     "attrs": {},
@@ -1100,7 +1144,9 @@
       "wrap": "换行"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "弹性布局子项"
+    }
   },
   "oas-float-button": {
     "attrs": {
@@ -1131,6 +1177,13 @@
       "action": "group 模式子钮（原生 button/a 或 oas-button），点击自动收起并回焦主钮；支持角标与自定义图标"
     }
   },
+  "oas-footer": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "底部内容"
+    }
+  },
   "oas-form": {
     "attrs": {
       "gap": "间距（grid 模式栅格间距；inline 模式项间距），token 值如 `var(--oas-space-4)`；grid 默认 `0`，inline 默认 `var(--oas-space-4)`",
@@ -1144,7 +1197,9 @@
       "oas-submit": "校验通过，`detail: { values }`",
       "oas-validate-fail": "校验失败，`detail: { errors, values }`"
     },
-    "slots": {}
+    "slots": {
+      "": "表单内容（`oas-form-item` 等）"
+    }
   },
   "oas-form-item": {
     "attrs": {
@@ -1168,7 +1223,9 @@
       "stroke-color": "描边颜色（缺省走 `--oas-color-text-primary` token，随主题亮暗自适应；经白名单校验）"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "渐变文字内容"
+    }
   },
   "oas-grid": {
     "attrs": {
@@ -1180,7 +1237,9 @@
       "min-child-width": "子项最小宽度（如 180px，纯数字按 px）：auto-fit + minmax 依容器宽度自动计算列数（子项免断点流式重排）；与 columns 并存时 columns 优先，该模式下子项 span/offset 不生效"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "栅格子项（`oas-grid-item`）"
+    }
   },
   "oas-grid-item": {
     "attrs": {
@@ -1189,7 +1248,16 @@
       "span": "跨列数；支持 `auto`（内容自然宽）与断点简写（如 `24 md:12`：基础值 + 空格分隔 `断点:值`，断点 sm=640 / md=768 / lg=1024 / xl=1280）"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "栅格单元内容"
+    }
+  },
+  "oas-header": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "顶部内容"
+    }
   },
   "oas-hover-card": {
     "attrs": {
@@ -1245,7 +1313,9 @@
       "variant": "图标变体（传给库 resolver 的 variant 参数，如粗细）"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "自定义图标内容（替代 name 注册表图标）"
+    }
   },
   "oas-image": {
     "attrs": {
@@ -1285,7 +1355,8 @@
       "oas-change": "图集切换，`detail: { current, prev }`"
     },
     "slots": {
-      "template[slot=\"toolbar\"]": "透传共享预览宿主：自定义共享预览浮层的工具栏（克隆替换默认按钮组 + oas-toolbar-render 命令通道，同 oas-image）"
+      "template[slot=\"toolbar\"]": "透传共享预览宿主：自定义共享预览浮层的工具栏（克隆替换默认按钮组 + oas-toolbar-render 命令通道，同 oas-image）",
+      "": "图集成员（`oas-image`）"
     }
   },
   "oas-input": {
@@ -1372,7 +1443,9 @@
       "color": "自定义颜色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值，键帽底色染浅 + 描边跟随"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "按键文本"
+    }
   },
   "oas-label": {
     "attrs": {
@@ -1387,14 +1460,21 @@
       "weight": "label 文字字重：`regular`（默认）/`semibold` 半粗强调"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "标签文本"
+    }
   },
   "oas-layout": {
     "attrs": {
       "viewport": "视口锁定模式：布局锁定视口高（默认 100dvh，不支持级联回退 100vh；`--oas-layout-height` 可改 100%/calc()），顶栏/底栏固定，侧栏与内容各自独立滚动；默认为整页滚动模型"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "content": "主内容区",
+      "footer": "底部区",
+      "header": "顶部区",
+      "sider": "侧边区"
+    }
   },
   "oas-link": {
     "attrs": {
@@ -1414,7 +1494,9 @@
     "events": {
       "oas-click": "点击，`detail: { originalEvent }`"
     },
-    "slots": {}
+    "slots": {
+      "": "链接文本"
+    }
   },
   "oas-list": {
     "attrs": {
@@ -1492,7 +1574,9 @@
       "speed": "滚动速度（像素/秒，默认 48）；经测量内容宽推导动画时长（时长=距离/速度），非法/非正数回退默认"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "滚动内容"
+    }
   },
   "oas-masonry": {
     "attrs": {
@@ -1524,7 +1608,7 @@
       "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
       "status": "校验态：`error` / `warning` / `success`",
       "variant": "形态：`outlined`（默认）/ `filled` / `borderless`",
-      "type": "形态：\textarea（默认）/ input（单行锁高，Enter 不换行）",
+      "type": "形态：textarea（默认）/ input（单行锁高，Enter 不换行）",
       "whole": "整段删除：光标紧跟提及段按 Backspace 一次删除「prefix + 成员名」并派发 oas-whole-remove",
       "trigger": "触发符：默认 @，支持单字符串或 JSON 数组 [\"@\",\"#\"] 多触发符并存"
     },
@@ -1542,7 +1626,8 @@
     "slots": {
       "header": "建议面板顶部内容",
       "footer": "建议面板底部内容",
-      "template[slot=\"option\"]": "自定义选项模板（`[data-option-label]` 绑定）"
+      "template[slot=\"option\"]": "自定义选项模板（`[data-option-label]` 绑定）",
+      "empty": "无匹配项时的空态内容（替代默认 noMatch 文案）"
     }
   },
   "oas-menu": {
@@ -1710,7 +1795,11 @@
       "oas-opened": "【兼容别名】打开动画完成，等价 oas-after-open；后续版本移除"
     },
     "slots": {
-      "title": "标题富内容插槽，有内容时覆盖 title 属性文案"
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "": "对话框主体内容",
+      "close-icon": "自定义关闭图标（替代默认 ✕）",
+      "description": "描述文案（标题下方说明）",
+      "footer": "底部操作区"
     }
   },
   "oas-notification": {
@@ -1736,6 +1825,10 @@
       "content": "正文富内容插槽",
       "footer": "底部操作区插槽（操作按钮/辅助行）",
       "icon": "图标插槽，覆盖 type 默认图标"
+    },
+    "cssVars": {
+      "--oas-notification-progress-color": "倒计时进度条颜色",
+      "--oas-notification-width": "卡片宽度（尺寸档位内部引用）"
     }
   },
   "oas-navigation-menu": {
@@ -1893,7 +1986,8 @@
       "oas-copy-error": "复制失败，`detail: { text }`"
     },
     "slots": {
-      "actions": "操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定"
+      "actions": "操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定",
+      "": "段落内容"
     }
   },
   "oas-pin-input": {
@@ -1938,7 +2032,11 @@
       "oas-ok": "点击「确定」，随后气泡自动收起"
     },
     "slots": {
-      "title": "标题富内容插槽，有内容时覆盖 title 属性文案"
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "": "气泡确认框主体内容",
+      "actions": "操作按钮区（替代默认确认 / 取消按钮）",
+      "description": "描述文案",
+      "icon": "自定义图标（替代默认疑问图标）"
     }
   },
   "oas-popover": {
@@ -1994,7 +2092,9 @@
       "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
       "description": "描述富内容插槽（aria-describedby 关联）",
       "footer": "底部结构化插槽",
-      "header": "头部结构化插槽"
+      "header": "头部结构化插槽",
+      "": "面板主体内容",
+      "content": "面板内容（与默认插槽等价，具名便于显式指定）"
     }
   },
   "oas-progress": {
@@ -2094,7 +2194,10 @@
       "oas-change": "分值变化，`detail: { value }`",
       "oas-hover": "hover 星时派发，`detail: { value }`；移出为 `{ value: null }`"
     },
-    "slots": {}
+    "slots": {
+      "icon": "选中态自定义图标（替代默认星形）",
+      "void-icon": "未选中态自定义图标（替代默认星形）"
+    }
   },
   "oas-result": {
     "attrs": {
@@ -2126,7 +2229,9 @@
       "oas-end-reached": "滚动到达容器底部（横向到达右边缘）时派发，`detail: { direction: 'bottom' | 'right' }`；离开边缘后再回到边缘才可再次触发",
       "oas-scroll": "滚动事件（rAF 节流），`detail: { scrollTop, scrollLeft }`"
     },
-    "slots": {}
+    "slots": {
+      "": "可滚动内容"
+    }
   },
   "oas-segmented": {
     "attrs": {
@@ -2142,7 +2247,9 @@
     "events": {
       "oas-change": "切换，`detail: { value }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"option\"]": "选项自定义模板（`<template slot=\"option\">`）"
+    }
   },
   "oas-select": {
     "attrs": {
@@ -2209,7 +2316,19 @@
       "oas-action": "`detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select）",
       "oas-resize": "`detail: { width: number }`；触发时机：拖拽调宽松手时 / 方向键微调宽度时"
     },
-    "slots": {}
+    "slots": {
+      "": "菜单项内容（默认插槽文本；直接子元素 `<oas-sidebar-item>` 递归为嵌套 children）",
+      "footer": "侧栏底部自定义内容",
+      "header": "侧栏顶部自定义内容"
+    },
+    "cssVars": {
+      "--oas-sidebar-bg": "侧栏背景；默认锚定基础 token（主题 / 暗色 / 品牌自动跟随），宿主覆盖即整体换色",
+      "--oas-sidebar-width": "展开宽度（`width` 属性优先）",
+      "--oas-sidebar-collapsed-width": "折叠图标条宽度",
+      "--oas-sidebar-item-hover-bg": "项悬停背景（默认 text-primary 6% 混合）",
+      "--oas-sidebar-badge-bg": "徽标背景色",
+      "--oas-sidebar-badge-color": "徽标文字色"
+    }
   },
   "oas-sidebar-divider": {
     "attrs": {},
@@ -2228,6 +2347,13 @@
     "events": {},
     "slots": {
       "": "侧栏菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-sidebar-item>`（及 `<oas-sidebar-divider>`）递归为嵌套 children"
+    }
+  },
+  "oas-sider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "侧边内容"
     }
   },
   "oas-skeleton": {
@@ -2293,7 +2419,9 @@
       "oas-close": "到期自动关闭时派发（受控模式不自改 `open`）",
       "oas-open": "打开时派发"
     },
-    "slots": {}
+    "slots": {
+      "": "通知内容"
+    }
   },
   "oas-space": {
     "attrs": {
@@ -2353,6 +2481,14 @@
       "": "被包裹的内容（包裹态叠加遮罩）",
       "icon": "自定义指示器插槽，替换默认圆环",
       "tip": "加载文案富内容插槽，覆盖 tip 属性"
+    },
+    "cssVars": {
+      "--oas-spin-indicator-color": "指示器颜色",
+      "--oas-spin-track-color": "轨道色（环形底轨 / 进度槽）",
+      "--oas-spin-border-width": "线宽（环形边框 / 进度条）；xs、small 档为 `2px`",
+      "--oas-spin-duration": "旋转周期",
+      "--oas-spin-mask-bg": "遮罩背景（包裹态 / 全屏态）",
+      "--oas-spin-z-index": "全屏层级"
     }
   },
   "oas-splitter": {
@@ -2422,7 +2558,13 @@
       "oas-change": "点击可点击步骤或导航按钮时触发（含键盘触发）；`detail: { index, id? }`（0 起，`id` 为步骤 `id` 字段回传，未设置时保持 `{ index }`）",
       "oas-before-change": "跳步前派发（cancelable，`detail: { index }`）；宿主 `preventDefault()` 可取消本次跳转（步骤点击/键盘/导航按钮均生效）"
     },
-    "slots": {}
+    "slots": {},
+    "cssVars": {
+      "--oas-steps-arrow": "箭头段凸角水平深度（越大越钝），与 clip-path 多边形绑定",
+      "--oas-steps-arrow-gap": "箭头段间距；`0` 时首尾咬合",
+      "--oas-steps-arrow-item-bg-{1..8}": "按段覆盖背景色（按 DOM 位置生效，非数据索引）；超过 8 段回落状态色",
+      "--oas-steps-item-bg": "当前状态的段背景色（按状态 color-mix）"
+    }
   },
   "oas-switch": {
     "attrs": {
@@ -2447,7 +2589,9 @@
       "oas-focus": "聚焦时派发",
       "oas-blur": "失焦时派发"
     },
-    "slots": {}
+    "slots": {
+      "": "开关文案"
+    }
   },
   "oas-tab-panel": {
     "attrs": {
@@ -2463,7 +2607,9 @@
       "icon-only": "纯图标标签：只渲染图标无文字（需 label 提供 aria-label 兜底可访问名称）"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "面板内容"
+    }
   },
   "oas-table": {
     "attrs": {
@@ -2511,6 +2657,13 @@
       "template[slot=\"empty\"]": "空态富内容（优先于 empty-text 与默认空态文案）"
     }
   },
+  "oas-table-column": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "自定义单元格内容（`<template>` 内可用 `{{row.字段}}` 插值）"
+    }
+  },
   "oas-tabs": {
     "attrs": {
       "active": "激活标签的 `value`",
@@ -2545,7 +2698,13 @@
       "oas-rename": "editable 标签双击重命名确认（Enter），`detail: { value, label }`；组件自动把新 label 写回面板，宿主可据此持久化",
       "oas-reorder": "sortable 拖拽换位后派发，`detail: { fromIndex, toIndex }`；宿主据此重排 `oas-tab-panel` 顺序（组件不自动移动 DOM）"
     },
-    "slots": {}
+    "slots": {
+      "": "标签页（`oas-tab-panel`）",
+      "icon": "标签项图标内容（替代面板的 icon 属性）",
+      "label": "标签项文本内容（不参与面板默认插槽投影）",
+      "close-icon": "关闭按钮图标内容（可关闭标签页）",
+      "add-icon": "新增按钮图标内容（可新增标签页）"
+    }
   },
   "oas-tag": {
     "attrs": {
@@ -2582,6 +2741,11 @@
     },
     "slots": {
       "": "标签内容"
+    },
+    "cssVars": {
+      "--oas-tag-color": "文字色：`color` 属性经该变量参与派生；`--tag-color` 是组件内部当前色，未显式设置时回落 text-primary",
+      "--oas-tag-color-deep": "深色文字（`deep` 档位）经该变量派生，未设置时回落 text-primary",
+      "--oas-tag-avatar-size": "头像适配尺寸：`avatar` 模式随 size 档位派生，未匹配档位时沿用 control-height-sm − 4px"
     }
   },
   "oas-tag-group": {
@@ -2625,7 +2789,8 @@
       "oas-copy-error": "复制失败，`detail: { text }`"
     },
     "slots": {
-      "actions": "操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定"
+      "actions": "操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定",
+      "": "文本内容"
     }
   },
   "oas-textarea": {
@@ -2710,7 +2875,9 @@
       "reverse": "视觉倒序（DOM 顺序不变），常与 pending 组合表达「最新在上」"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "时间轴节点（`oas-timeline-item`）"
+    }
   },
   "oas-timeline-item": {
     "attrs": {
@@ -2756,7 +2923,8 @@
       "oas-copy-error": "复制失败，`detail: { text }`"
     },
     "slots": {
-      "actions": "操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定"
+      "actions": "操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定",
+      "": "标题内容"
     }
   },
   "oas-toast": {
@@ -2786,7 +2954,9 @@
     "events": {
       "oas-change": "切换，`detail: { value, pressed }`"
     },
-    "slots": {}
+    "slots": {
+      "": "按钮文案"
+    }
   },
   "oas-toggle-item": {
     "attrs": {
@@ -3191,7 +3361,9 @@
     "events": {
       "oas-remove": "防篡改监测到图层被移除/篡改时派发，`detail: { type: \"removed\" | \"modified\" }`"
     },
-    "slots": {}
+    "slots": {
+      "": "被水印覆盖的内容"
+    }
   },
   "oas-button-group-separator": {
     "attrs": {},

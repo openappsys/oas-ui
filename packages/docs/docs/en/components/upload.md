@@ -379,7 +379,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-upload
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -403,7 +405,7 @@ onMounted(async () => {
 | `tip` | Drop-zone tip text (same as `template[slot="tip"]` for rich content) | `string` | — |
 | `with-credentials` | Cross-origin credentials | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -418,7 +420,7 @@ onMounted(async () => {
 | `oas-success` | Upload succeeded, `detail: { file, response }` |
 | `oas-upload` | Upload progress, `detail: { file, percent, status }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -426,7 +428,7 @@ onMounted(async () => {
 | `template[slot="tip"]` | Drop-zone tip rich content (tip attribute wins) |
 | `trigger` | Replace the drop-zone content (zone semantics kept) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

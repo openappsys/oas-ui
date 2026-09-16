@@ -92,7 +92,7 @@ hover / 聚焦触发，浮层可悬停不闪关的富内容预览卡片。支持
 
 ## 箭头贴角融合
 
-`arrow-merge`：*-start / *-end 位置下箭头与面板圆角融合成直角三角。
+`arrow-merge`：*-start /*-end 位置下箭头与面板圆角融合成直角三角。
 
 <DemoBlock title="箭头贴角（arrow-merge）">
   <oas-hover-card title="标题" content="箭头贴角融合" placement="bottom-start" arrow-merge><oas-button>下-左</oas-button></oas-hover-card>
@@ -256,7 +256,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-hover-card
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -283,13 +285,13 @@ onMounted(() => {
 | `title` | 标题文本（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `width` | 宽度定制：数值（px）或 `trigger`/`target`（与触发器同宽）；未设置走 CSS min-width | — | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-open-change` | open 状态变化（显示/关闭）时派发，`detail: { open }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

@@ -161,6 +161,8 @@ The header is `role="tablist"` with each step `role="tab"` (`aria-selected` / `a
 
 ### oas-stepper
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `clickable` | Steps are clickable to jump (default true; `clickable="false"` disables: click/keyboard silent, arrow focus still works) | `string` | `true` |
@@ -170,9 +172,13 @@ The header is `role="tablist"` with each step `role="tab"` (`aria-selected` / `a
 | `size` | Size tier: `xs`/`small`/`medium`/`large`/`xl` (title font density; invalid values fall back to medium + dev warning, deduped) | `string` | `medium` |
 | `steps` | Steps data JSON `[{ title, description?, icon?, disabled?, status? }]` (semantics aligned with oas-steps StepItem minus panel-unrelated fields); invalid/empty fall back to `[]` | `StepperStep[] \| string` | `[]` |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-change` | Fired when jumping to a clickable step (step click / keyboard Enter/Space); `detail: { index }` (0-based, bubbles + composed, writes back current) |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -180,9 +186,13 @@ The header is `role="tablist"` with each step `role="tab"` (`aria-selected` / `a
 
 ### oas-stepper-panel
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `value` | Step index string the panel is associated with (e.g. `value="0"`); only the panel matching `current` is visible (`hidden` driven by oas-stepper) | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

@@ -106,7 +106,9 @@ No data / invalid JSON shows an empty state placeholder without errors.
 
 ## API
 
-### Attributes
+### oas-chart
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |

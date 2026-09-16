@@ -249,6 +249,8 @@ onMounted(() => {
 
 ### oas-checkbox
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `check-all` | 组内全选标记：勾选 ↔ 子项全选/清空联动，子项变化实时回写勾选/半选态；该项不参与组 value（跨组件属性，由 oas-checkbox-group 读取） | — | — |
@@ -263,12 +265,16 @@ onMounted(() => {
 | `value` | 选项标识 | `string` | — |
 | `variant` | 形态：`default`（默认）/ `card`（卡片：整块可点、选中描边着色、hover 反馈） | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-blur` | 勾选框失去焦点 |
 | `oas-change` | 勾选变化，`detail: { checked, value }` |
 | `oas-focus` | 勾选框获得焦点 |
 | `oas-limit-blocked` | 组数量限制拦截信号（组转发为 oas-exceed-limit；单项独立使用时无此拦截） |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -278,6 +284,8 @@ onMounted(() => {
 | `indeterminate-icon` | 自定义半选指示器（与 check-all 联动搭配） |
 
 ### oas-checkbox-group
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -291,12 +299,16 @@ onMounted(() => {
 | `status` | 校验态（下发子项）：`error` / `warning` / `success` | `string` | — |
 | `value` | 组值（JSON 字符串数组，选中项的 value 集合） | `string` | `[]` |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-blur` | 焦点离开组时派发 |
 | `oas-change` | 组值变化，`detail: { value: string[] }`（含全选联动与数量限制内的变化） |
 | `oas-exceed-limit` | 达 max 上限后的越界勾选尝试，`detail: { value, max }` |
 | `oas-focus` | 组内任一子项获得焦点（子项间转移不误报） |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

@@ -267,7 +267,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-rate
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -291,26 +293,26 @@ onMounted(() => {
 | `void-color` | 未选中色 | — | — |
 | `void-icon` | 未选中图标名（如 heart 配 ♥/♡ 双态） | — | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 分值变化，`detail: { value }` |
 | `oas-hover` | hover 星时派发，`detail: { value }`；移出为 `{ value: null }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| `icon` | — |
-| `void-icon` | — |
+| `icon` | 选中态自定义图标（替代默认星形） |
+| `void-icon` | 未选中态自定义图标（替代默认星形） |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-rate-active` | `var(--oas-color-warning)` |
-| `--oas-rate-star-size` | — |
+| `--oas-rate-star-size` | `20px` |
 | `--oas-rate-void` | `var(--oas-color-border)` |
 
 图标自定义：`icon` 属性 > `slot="icon"`（克隆到每颗星）> 默认星形。

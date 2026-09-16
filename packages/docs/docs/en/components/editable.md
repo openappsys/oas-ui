@@ -213,7 +213,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-editable
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -232,7 +234,7 @@ onMounted(() => {
 | `trigger` | Trigger: `text` (default, click text) / `icon` (pencil button, prevents misclicks) / `dblclick` (double-click to edit; single click doesn't trigger; Enter/Space while focused enters edit as keyboard fallback) | `string` | — |
 | `value` | Current value (controlled) | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -240,7 +242,7 @@ onMounted(() => {
 | `oas-change` | New value submitted, `detail: { value }` |
 | `oas-editing` | Fires on entering/exiting editing, `detail: { editing }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

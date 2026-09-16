@@ -591,6 +591,8 @@ onMounted(() => {
 
 ### oas-list
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `bordered` | 是否显示整体边框 | `boolean` | — |
@@ -606,11 +608,15 @@ onMounted(() => {
 | `split` | 是否显示条目分隔线 | `boolean` | — |
 | `stripe` | 斑马纹：视觉偶数行铺浅色底 | `boolean` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-click` | 条目点击（数据/虚拟行），detail 带 { index, item } |
 | `oas-item-render` | 数据通道每行渲染后派发，detail 带 { index, item, element } |
 | `oas-reach-bottom` | 滚动触底（进入触底区派发一次，滚离后重新武装），detail 带 { scrollTop } |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -623,6 +629,8 @@ onMounted(() => {
 
 ### oas-list-item
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `avatar` | 头像 URL 快捷通道（渲染首部圆形头像；slot="avatar" 优先） | `string` | — |
@@ -632,9 +640,13 @@ onMounted(() => {
 | `size` | 行密度：sm / md（默认）/ lg（oas-list 下发的 data-size 优先于本属性之外的默认） | — | — |
 | `title` | 条目标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-click` | 行点击，detail 带 { index, item }（数据行由 oas-list 注入上下文） |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

@@ -178,7 +178,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-dynamic-tags
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -199,7 +201,7 @@ onMounted(() => {
 | `sortable` | 标签排序：拖拽 + 键盘 Alt+←/→ 相邻交换 | `boolean` | — |
 | `status` | 校验态：`error` / `warning` / `success` | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -212,7 +214,7 @@ onMounted(() => {
 | `oas-focus` | 输入框聚焦时派发 |
 | `oas-remove` | 删除标签，`detail: { value }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -220,7 +222,7 @@ onMounted(() => {
 | `template[slot="suffix"]` | 后缀内容插槽 |
 | `template[slot="tag"]` | 自定义标签（`[data-tag-label]` 绑定；删除按钮组件侧） |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

@@ -200,6 +200,8 @@ onMounted(() => {
 
 ### oas-radio
 
+#### 属性
+
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `checked` | 是否选中 | `boolean` | — |
@@ -213,11 +215,15 @@ onMounted(() => {
 | `value` | 选项标识 | `string` | — |
 | `variant` | 形态：`default`（默认）/ `card`（卡片：整块可点、选中描边着色、hover 反馈） | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-blur` | 单选框失去焦点 |
 | `oas-change` | 选中变化，`detail: { checked, value }` |
 | `oas-focus` | 单选框获得焦点 |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -226,6 +232,8 @@ onMounted(() => {
 | `description` | 辅助文本分发通道（优先于 description 属性） |
 
 ### oas-radio-group
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -237,11 +245,15 @@ onMounted(() => {
 | `status` | 校验态（下发子项）：`error` / `warning` / `success`；单项显式 status 优先 | `string` | — |
 | `value` | 组值（选中项的 value） | `string` | — |
 
+#### 事件
+
 | 事件 | 说明 |
 | --- | --- |
 | `oas-blur` | 焦点离开组时派发 |
 | `oas-change` | 组值变化，`detail: { value }`（点击与方向键选中都触发） |
 | `oas-focus` | 组内任一子项获得焦点（子项间转移不误报） |
+
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

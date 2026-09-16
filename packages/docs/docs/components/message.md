@@ -260,7 +260,9 @@ onMounted(async () => {
 | `message.registerType(name, { icon?, color?, closable? })` | 注册自定义消息类型 |
 | `destroyAllMessage()` | 清空全部消息 |
 
-### 属性
+### oas-message
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -278,25 +280,25 @@ onMounted(async () => {
 | `show-progress` | 显示倒计时进度条（时长同步） | `boolean` | — |
 | `type` | 消息类型：`info`/`success`/`warning`/`error` | `string` | `info` |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-close` | 消息关闭时派发（自动关闭/关闭按钮/`destroy`），`detail: { key? }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | `avatar` | 头像插槽（消息前置） |
 | `content` | 正文富内容插槽 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
-| `--oas-message-anim-in` | — |
-| `--oas-message-anim-out` | — |
+| `--oas-message-anim-in` | `220ms` |
+| `--oas-message-anim-out` | `180ms` |
 | `--oas-msg-type-color` | `var(--oas-color-border)` |
 
 ### options

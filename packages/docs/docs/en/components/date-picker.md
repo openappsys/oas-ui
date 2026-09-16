@@ -16,7 +16,7 @@ Click the input to open the panel and click a date to select; or type `2026-08-1
   <oas-date-picker type="daterange" value='["2026-08-05","2026-08-15"]'></oas-date-picker>
 </DemoBlock>
 
-A double-month grid: pick the start first, then the end; submits a JSON array `["start","end"]`. Hovering previews the range. Every endpoint pick emits `oas-calendar-change` (see [Events](#controlled-open--events)). Range selection defaults to a **double-month grid** (left + right month linked); when space is tight (narrow screens / constrained containers) it naturally collapses to single-panel width via CSS responsive rules — no `single-panel`-style property switch needed.
+A double-month grid: pick the start first, then the end; submits a JSON array `["start","end"]`. Hovering previews the range. Every endpoint pick emits `oas-calendar-change` (see [Events](#controlled--events)). Range selection defaults to a **double-month grid** (left + right month linked); when space is tight (narrow screens / constrained containers) it naturally collapses to single-panel width via CSS responsive rules — no `single-panel`-style property switch needed.
 
 ## Month & Month Range
 
@@ -219,7 +219,9 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 
 ## API
 
-### Attributes
+### oas-date-picker
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -243,7 +245,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `unlink-panels` | Range months flip independently (linked by default) | `boolean` | — |
 | `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -256,12 +258,11 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `oas-focus` | The component as a whole gains focus |
 | `oas-open-change` | Open state change, `detail: { open }` (both controlled and uncontrolled) |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| `cell` | `template[slot="cell"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`) |
-| `template[slot="cell"]` | — |
+| `template[slot="cell"]` | `template[slot="cell"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`) |
 
 Keyboard: `Enter` / `↓` to open; arrows plus `Home`/`End`/`PageUp`/`PageDown` (`Shift` for years) to move; `Enter` to select; `Esc` to close.
 

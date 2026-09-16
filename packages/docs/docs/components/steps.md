@@ -279,7 +279,9 @@
 
 ## API
 
-### 属性
+### oas-steps
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -301,20 +303,21 @@
 | `status` | 容器级状态覆盖当前步（`wait` / `process` / `finish` / `error`）；每步显式 `status` 仍最高优先 | `StepStatus` | — |
 | `steps` | `[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent?, prefix? }]` JSON 字符串 | `StepItem[] \| string` | `[]` |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-before-change` | 跳步前派发（cancelable，`detail: { index }`）；宿主 `preventDefault()` 可取消本次跳转（步骤点击/键盘/导航按钮均生效） |
 | `oas-change` | 点击可点击步骤或导航按钮时触发（含键盘触发）；`detail: { index, id? }`（0 起，`id` 为步骤 `id` 字段回传，未设置时保持 `{ index }`） |
 
-### CSS 变量
+#### CSS 变量
 
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-steps-arrow` | — |
-| `--oas-steps-arrow-gap` | `0px` |
-| `--oas-steps-item-bg` | `var(--oas-color-bg-hover)` |
+| CSS 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--oas-steps-arrow` | 箭头段凸角水平深度（越大越钝），与 clip-path 多边形绑定 | `10px` |
+| `--oas-steps-arrow-gap` | 箭头段间距；`0` 时首尾咬合 | `0px` |
+| `--oas-steps-arrow-item-bg-{1..8}` | 按段覆盖背景色（按 DOM 位置生效，非数据索引）；超过 8 段回落状态色 | — |
+| `--oas-steps-item-bg` | 当前状态的段背景色（按状态 color-mix） | `var(--oas-color-bg-hover)` |
 
 状态规则：显式 `status`（`wait` / `process` / `finish` / `error`）优先；未指定时按 `current` 推导——索引 `< current` 为 `finish`（✓），`=== current` 为 `process`，其余为 `wait`。
 

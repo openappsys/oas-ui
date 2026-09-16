@@ -244,6 +244,8 @@ onMounted(() => {
 
 ### oas-form
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `gap` | Spacing (grid gap in `grid` mode; item spacing in `inline` mode), token value e.g. `var(--oas-space-4)`; `0` by default in grid, `var(--oas-space-4)` by default in inline | `string` | `0` |
@@ -253,16 +255,22 @@ onMounted(() => {
 | `layout` | Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical`; `inline` attribute takes precedence when present | `string` | `vertical` |
 | `rules` | Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | `{}` |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-submit` | Validation passed, `detail: { values }` |
 | `oas-validate-fail` | Validation failed, `detail: { errors, values }` |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Form content (`oas-form-item` and friends) |
 
 ### oas-form-item
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -271,9 +279,13 @@ onMounted(() => {
 | `required` | Required asterisk (visual only; validation is still driven by form `rules`) | `boolean` | — |
 | `span` | Columns spanned in the 24-column grid (only when form `layout="grid"`; non-integer in 1-24 → `24`) | `string` | `24` |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | default | Field control |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

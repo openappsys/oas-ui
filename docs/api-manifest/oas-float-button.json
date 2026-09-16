@@ -124,11 +124,11 @@
     },
     {
       "name": "--oas-float-button-size",
-      "default": null
+      "default": "var(--oas-control-height-xl)"
     },
     {
       "name": "--oas-float-button-action-size",
-      "default": null
+      "default": "calc(var(--oas-float-button-size) - var(--oas-space-2))"
     },
     {
       "name": "--oas-tooltip-bg",

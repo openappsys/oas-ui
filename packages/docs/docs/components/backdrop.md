@@ -139,7 +139,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-backdrop
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -153,7 +155,7 @@ onMounted(async () => {
 | `stop-propagation` | — | `string` | `true` |
 | `transparent` | 遮罩透明（无底色） | — | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -161,13 +163,13 @@ onMounted(async () => {
 | `oas-after-show` | — |
 | `oas-click` | 点击遮罩，`detail.originalEvent` 为原始点击事件 |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
+| 默认 | 遮罩内容 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

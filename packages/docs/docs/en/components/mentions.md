@@ -277,7 +277,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-mentions
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -296,12 +298,12 @@ onMounted(() => {
 | `split` | Separator between a mention and following text (default space; not doubled when already separated) | `string` | ` ` |
 | `status` | Validation status: `error` / `warning` / `success` | `string` | — |
 | `trigger` | Trigger: default @, accepts a single string or a JSON array like ["@","#"] for multiple triggers | `string \| string[]` | `@` |
-| `type` | Variant: 	extarea (default) / input (single-line lock, Enter does not break line) | `string` | `textarea` |
+| `type` | Variant: textarea (default) / input (single-line lock, Enter does not break line) | `string` | `textarea` |
 | `value` | Value (controlled, full text) | `string` | — |
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | `outlined` |
 | `whole` | Whole delete: when cursor is right after a mention, Backspace removes the whole prefix + label and fires oas-whole-remove | `boolean` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -315,10 +317,11 @@ onMounted(() => {
 | `oas-select` | Suggestion selected, detail: { value, label, option, prefix } (option is the full original option object) |
 | `oas-whole-remove` | Fires when a mention is whole-deleted, detail: { value, option, prefix } (option is the full original option object) |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
+| `empty` | Empty-state content when nothing matches (replaces the default noMatch text) |
 | `footer` | Panel footer content |
 | `header` | Panel header content |
 | `template[slot="option"]` | Custom option template (`[data-option-label]` binding) |

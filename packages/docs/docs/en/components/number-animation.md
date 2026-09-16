@@ -66,7 +66,9 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 
 ## API
 
-### Attributes
+### oas-number-animation
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -78,13 +80,13 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 | `to-fixed` | Decimal places (`Number.prototype.toFixed`); when omitted, integer display | `string` | — |
 | `value` | Target value; invalid values treated as 0 | `string` | `0` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-finish` | Emitted once when the animation reaches the target, detail `{ value: target value }` |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

@@ -176,7 +176,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-switch
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -196,7 +198,7 @@ onMounted(() => {
 | `unchecked-icon` | Unchecked-state thumb icon | `string` | — |
 | `unchecked-text` | Label shown when off; inside the track at medium/large/xl, outside at xs/small | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -204,13 +206,13 @@ onMounted(() => {
 | `oas-change` | Toggle, `detail: { checked }` |
 | `oas-focus` | Fires on focus |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Switch label |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

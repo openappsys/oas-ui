@@ -292,7 +292,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-transfer
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -311,7 +313,7 @@ onMounted(() => {
 | `value` | 已选 key 数组（JSON 属性） | `string` | `[]` |
 | `virtual` | 大数据量窗口化渲染（虚拟滚动，行高默认 36px） | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -319,7 +321,7 @@ onMounted(() => {
 | `oas-search` | 面板搜索输入，`detail: { side, query }` |
 | `oas-select-change` | 选中集合变化（点行/全选/键盘），`detail: { side, selected }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

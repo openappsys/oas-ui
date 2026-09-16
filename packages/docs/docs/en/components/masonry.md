@@ -111,7 +111,9 @@ A masonry layout container based on CSS columns; child items are automatically d
 
 ## API
 
-### Attributes
+### oas-masonry
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -120,13 +122,13 @@ A masonry layout container based on CSS columns; child items are automatically d
 | `gap` | Spacing (px, default 8). A single value sets the column gap; two values `row col` (e.g. `8 16`) set the row gap on children's margin-bottom and the column gap; plain numbers get `px` appended; invalid values fall back to the default | — | — |
 | `items` | Masonry items JSON `[{text, height?, column?}]`; also assignable as an array property. When explicitly set and non-empty it takes precedence over slotted children (ignored); absent / empty array / invalid JSON fall back to the slot channel (invalid JSON logs a deduplicated dev warning). text is rendered safely as plain text; height is the item's minimum height (px, written to the rendered item's min-height); column pins the item to a column (1-based, same reorder logic as the child `column` attribute) | `MasonryItem[] \| string` | `[]` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Masonry child items; children automatically get `break-inside: avoid`; children with a `column` attribute (1-based) are reordered into the target column; when the `items` attribute is explicitly set and non-empty, children are ignored (items take precedence) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

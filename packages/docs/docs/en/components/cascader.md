@@ -236,7 +236,9 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 
 ## API
 
-### Attributes
+### oas-cascader
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -258,7 +260,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | `value` | Path array (JSON), e.g. `["zj","hz"]` | `string` | `[]` |
 | `value-mode` | Multi-select value strategy: `all` (default, full paths) / `parentFirst` / `onlyLeaf` | `string` | `all` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |

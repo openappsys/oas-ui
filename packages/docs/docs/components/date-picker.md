@@ -16,7 +16,7 @@
   <oas-date-picker type="daterange" value='["2026-08-05","2026-08-15"]'></oas-date-picker>
 </DemoBlock>
 
-双月网格，先选起点再选终点，提交 JSON 数组 `["start","end"]`；悬停可预览区间。每次起止落选都会派发 `oas-calendar-change`（见[事件](#事件)）。范围选择默认**双月网格**（左月 + 右月联动）；空间不足（窄屏/容器受限）时由 CSS 响应式自然收缩为单面板宽度，无需 `single-panel` 之类的属性开关。
+双月网格，先选起点再选终点，提交 JSON 数组 `["start","end"]`；悬停可预览区间。每次起止落选都会派发 `oas-calendar-change`（见[事件](#受控与事件)）。范围选择默认**双月网格**（左月 + 右月联动）；空间不足（窄屏/容器受限）时由 CSS 响应式自然收缩为单面板宽度，无需 `single-panel` 之类的属性开关。
 
 ## 月份与月份区间
 
@@ -223,7 +223,9 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 
 ## API
 
-### 属性
+### oas-date-picker
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -247,7 +249,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `unlink-panels` | 范围双月各自独立翻页（默认联动） | `boolean` | — |
 | `value` | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -260,12 +262,11 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `oas-focus` | 组件整体获焦 |
 | `oas-open-change` | 开合变化，`detail: { open }`（受控/非受控均派发） |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| `cell` | `template[slot="cell"]` 克隆进每个日格，`[data-cell-date]` 自动绑定日期数字（与 `oas-cell-render` 双通道） |
-| `template[slot="cell"]` | — |
+| `template[slot="cell"]` | `template[slot="cell"]` 克隆进每个日格，`[data-cell-date]` 自动绑定日期数字（与 `oas-cell-render` 双通道） |
 
 ### Property
 

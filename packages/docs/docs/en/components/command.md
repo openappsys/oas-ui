@@ -529,6 +529,8 @@ onMounted(() => {
 
 ### oas-command
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `append-to` | Mount container selector (e.g. `#panel`): the whole panel (backdrop + palette) moves into a portal host inside the target container (isolated shadow + style injection + slot bridging — empty/footer/view-* slots travel with the panel), for nested transform/stacking-context scenarios; without it the panel is fixed-positioned inside the component's own shadow | `string` | — |
@@ -547,6 +549,8 @@ onMounted(() => {
 | `value` | Search query (controlled; two-way via `oas-input` echo-back) | `string` | — |
 | `virtual` | Virtual scrolling for large datasets (reuses oas-virtual-list) | `boolean` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-active` | Active item changed, `detail: { value }` (basis for controlled `selected` echo-back) |
@@ -557,12 +561,16 @@ onMounted(() => {
 | `oas-select` | A command was executed, `detail: { value }`; multi-select confirm `detail: { values }` |
 | `oas-view-change` | View entered/exited, `detail: { view, title }` (exiting sends `view: ''`) |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | `empty` | Custom empty state (read the current query via `el.query`, e.g. a "create xyz" entry) |
 | `footer` | Custom footer bar (defaults to `↑↓ navigate / ↵ select / esc close` hints) |
 
 ### oas-command-item
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -576,6 +584,8 @@ onMounted(() => {
 | `shortcut` | Shortcut label (right-aligned kbd), e.g. `meta+p` / `ctrl+shift+s` | — | — |
 | `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
 | `view` | View slot name: selecting enters `<slot name="view-{view}">` (in-panel view) | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

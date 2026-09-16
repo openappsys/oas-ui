@@ -193,7 +193,9 @@ With no children the height is 0 — no error, no placeholder.
 
 ## API
 
-### Attributes
+### oas-flex
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -206,13 +208,13 @@ With no children the height is 0 — no error, no placeholder.
 | `vertical` | Vertical shorthand (= direction:column; takes precedence over direction) | `boolean` | — |
 | `wrap` | Wrapping (boolean; present means `wrap`) | `boolean` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Flex layout children |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

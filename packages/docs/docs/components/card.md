@@ -144,8 +144,6 @@
   </div>
 </DemoBlock>
 
-
-
 `loading` 时内容区切换为骨架占位（微光动画），正文隐藏；宿主同步 `aria-busy`。
 
 <DemoBlock title="加载骨架">
@@ -419,7 +417,9 @@ const refreshSelectCount = () => {
 
 ## API
 
-### 属性
+### oas-card
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -439,14 +439,14 @@ const refreshSelectCount = () => {
 | `title` | 卡片标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `variant` | 形态：`outlined`（默认，带描边）/ `borderless`（无边框嵌入形态） | — | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 选中态切换（`selectable` 时），detail 为 `{ selected }`（切换后的新状态） |
 | `oas-click` | 整卡点击（`clickable` 时），detail 含 originalEvent |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -459,7 +459,7 @@ const refreshSelectCount = () => {
 | `footer` | 独立底条（与 actions 操作区分离） |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |

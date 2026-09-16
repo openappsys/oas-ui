@@ -273,7 +273,9 @@ onMounted(async () => {
 | `container` | Mount point (element or function), overrides the default host | `HTMLElement \| () => HTMLElement` | — |
 | `pauseOnHover` / `pauseOnFocus` / `pauseOnWindowBlur` | Pause timer toggles (all on by default) | `boolean` | `true` |
 
-### Attributes
+### oas-toast
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -295,7 +297,7 @@ onMounted(async () => {
 | `type` | Toast type: `info`/`success`/`warning`/`error`/`loading` | `string` | `info` |
 | `variant` | — | — | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -303,19 +305,19 @@ onMounted(async () => {
 | `oas-destroy` | — |
 | `oas-open` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-toast-ease` | — |
-| `--oas-toast-enter-duration` | — |
-| `--oas-toast-leave-duration` | — |
+| `--oas-toast-ease` | `ease` |
+| `--oas-toast-enter-duration` | `0.2s` |
+| `--oas-toast-leave-duration` | `0.2s` |
 
 - `error` defaults to `role="alert"` + `aria-live="assertive"`; others use `role="status"` + `aria-live="polite"`; override with `politeness`.
 - Multiple toasts share one stack container and stack by position; `duration` timers are cleaned up on close/unmount with no leaks.

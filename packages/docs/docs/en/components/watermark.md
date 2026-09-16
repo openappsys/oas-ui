@@ -196,7 +196,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-watermark
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -220,19 +222,19 @@ onMounted(async () => {
 | `width` | Text tile width (auto-fits content when unset: rotated bounding box + padding; image default 240) | `string` | — |
 | `z-index` | Watermark layer z-index (default 2); in fullscreen mode it is written to the host, overriding the default topmost level | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-remove` | Fired when tamper protection detects the layer being removed/modified, `detail: { type: "removed" \| "modified" }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Content covered by the watermark |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

@@ -121,11 +121,11 @@
     },
     {
       "name": "--oas-message-anim-in",
-      "default": null
+      "default": "220ms"
     },
     {
       "name": "--oas-message-anim-out",
-      "default": null
+      "default": "180ms"
     }
   ],
   "unresolved": []

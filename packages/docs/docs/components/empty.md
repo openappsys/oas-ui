@@ -138,7 +138,9 @@
 
 ## API
 
-### 属性
+### oas-empty
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -152,7 +154,7 @@
 | `title` | 标题（显示于描述上方；渲染进可见标题区后从宿主移除——原生 title 吸收约定；富内容用 title 插槽） | `string` | — |
 | `variant` | 容器变体：`outlined`（描边）/ `filled`（底色），缺省无容器 | `string` | — |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
@@ -161,10 +163,10 @@
 | `illustration` | 自定义插画内容，优先级高于 `illustration` 属性 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
-| `--oas-empty-desc-size` | — |
-| `--oas-empty-icon-color` | — |
-| `--oas-empty-title-size` | — |
+| `--oas-empty-desc-size` | `var(--oas-font-size-md)` |
+| `--oas-empty-icon-color` | `var(--oas-color-text-secondary)` |
+| `--oas-empty-title-size` | `var(--oas-font-size-lg)` |

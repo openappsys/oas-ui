@@ -159,6 +159,8 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 
 ### oas-bottom-navigation
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `fixed` | Pin to the viewport bottom (`position: fixed; bottom: 0`) | `boolean` | — |
@@ -171,9 +173,13 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | `show-label` | Label display mode: `true` (default, all items show text) / `active` (icon-only compact mode: only the selected item shows text, unselected items show only the icon — each tab's accessible name is backed by an auto-written `aria-label` from the item label, unaffected by the CSS hide); invalid values fall back to `true` with a warning (deduped) | `string` | `true` |
 | `value` | Value of the active item; defaults to the first available item | — | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-change` | The active item changed, `detail: { value }` |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
@@ -186,12 +192,16 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 
 ### oas-bottom-navigation-item
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `badge` | Top-right corner badge (number/text overlaid on the icon; not rendered when unset) | — | — |
 | `disabled` | Disable this item (not selectable, skipped by keyboard) | — | — |
 | `icon` | Leading icon (`@oas-ui/icons` registry icon name) | — | — |
 | `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

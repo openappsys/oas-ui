@@ -346,6 +346,8 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 ### oas-sidebar
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `accordion` | Accordion mode (when present: expanding one parent collapses the other parents at the same level; multiple parents can be open by default) | `boolean` | — |
@@ -365,6 +367,8 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `variant` | Variant: sidebar (default flush) / floating (radius + shadow) / inset (radius + background contrast) | — | — |
 | `width` | Expanded width; defaults to the `--oas-sidebar-width` token | `string` | `0` |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-action` | `detail: { value: string, action: string, label: string }`; When fired: an item hover action button is clicked (does not fire oas-select) |
@@ -372,19 +376,28 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `oas-resize` | `detail: { width: number }`; When fired: drag-resize ends / arrow keys adjust the width |
 | `oas-select` | `detail: { value: string, label: string }`; When fired: A menu item was selected (also collapses the drawer on mobile) |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
-| default | — |
-| `footer` | — |
-| `header` | — |
+| default | Menu item content (default slot text; direct `<oas-sidebar-item>` children recursively become nested `children`) |
+| `footer` | Custom sidebar footer content |
+| `header` | Custom sidebar header content |
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-sidebar-badge-bg` | `var(--oas-color-primary)` |
-| `--oas-sidebar-badge-color` | `#fff` |
-| `--oas-sidebar-bg` | `var(--oas-color-bg-hover)` |
+#### CSS Variables
+
+| CSS Variable | Description | Default |
+| --- | --- | --- |
+| `--oas-sidebar-badge-bg` | Badge background | `var(--oas-color-primary)` |
+| `--oas-sidebar-badge-color` | Badge text color | `#fff` |
+| `--oas-sidebar-bg` | Sidebar background; defaults stay anchored to base tokens (theme / dark / brand flow through automatically), host override recolors the whole bar | `var(--oas-color-bg-hover)` |
+| `--oas-sidebar-collapsed-width` | Collapsed icon-rail width | `64px` |
+| `--oas-sidebar-item-hover-bg` | Item hover background (defaults to a text-primary 6% mix) | `color-mix(in srgb, var(--oas-color-text-primary) 6%, transparent)` |
+| `--oas-sidebar-width` | Expanded width (the `width` attribute takes precedence) | `220px` |
 
 ### oas-sidebar-item
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -394,11 +407,15 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `icon-color` | — | — | — |
 | `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | default | Sidebar item label content (default slot text); direct child `<oas-sidebar-item>` (and `<oas-sidebar-divider>`) elements recursively become the nested `children` |
 
 ### oas-sidebar-divider
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -407,16 +424,6 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 ### Parts
 
 `root` / `panel` / `head` / `close` / `nav` / `body` / `foot` / `toggle` (desktop collapse) / `trigger` (mobile trigger) / `mask` / `item`; the header and footer content are injected via `slot="header"`, the default slot and `slot="footer"` respectively.
-
-### CSS variables
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `--oas-sidebar-bg` | falls back to `--oas-color-bg-hover` (`--oas-color-bg` for the floating variant) | Sidebar background; defaults stay anchored to base tokens (theme/dark/brand customization flows through automatically), host override recolors the whole bar |
-| `--oas-sidebar-width` | `220px` | Expanded width (the `width` attribute takes precedence) |
-| `--oas-sidebar-collapsed-width` | `64px` | Collapsed icon-rail width |
-| `--oas-sidebar-item-hover-bg` | `color-mix(text-primary 6%)` | Item hover background |
-| `--oas-sidebar-badge-bg` / `--oas-sidebar-badge-color` | primary 14% mix / primary | Badge background / badge text color |
 
 <script setup>
 import { onMounted } from 'vue'

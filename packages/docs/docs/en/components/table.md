@@ -657,7 +657,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-table
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -688,7 +690,7 @@ onMounted(() => {
 | `summary` | Summary config `[{ key, type: 'sum'\|'avg'\|'count', label? }]`, JSON string | `string` | — |
 | `summary-scope` | Summary aggregation scope: `all` (default, full dataset) / `page` (current page) | `string` | `all` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -704,13 +706,13 @@ onMounted(() => {
 | `oas-scroll` | Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
 | `oas-sort-change` | Sort change, `detail: { key, order: 'asc' \| 'desc' \| '' }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | `template[slot="empty"]` | Rich empty-state content (takes precedence over empty-text and the default empty text) |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

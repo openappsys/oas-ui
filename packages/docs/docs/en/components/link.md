@@ -111,7 +111,9 @@ Clicking dispatches the `oas-click` CustomEvent; `detail.originalEvent` is the n
 
 ## API
 
-### Attributes
+### oas-link
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -128,19 +130,19 @@ Clicking dispatches the `oas-click` CustomEvent; `detail.originalEvent` is the n
 | `type` | Type | `LinkType` | `default` |
 | `underline` | Underline | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-click` | Click, `detail: { originalEvent }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Link text |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

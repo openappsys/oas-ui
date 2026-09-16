@@ -33,6 +33,30 @@
   ],
   "cssVars": [
     {
+      "name": "--oas-container-xs",
+      "default": null
+    },
+    {
+      "name": "--oas-container-sm",
+      "default": null
+    },
+    {
+      "name": "--oas-container-md",
+      "default": null
+    },
+    {
+      "name": "--oas-container-lg",
+      "default": null
+    },
+    {
+      "name": "--oas-container-xl",
+      "default": null
+    },
+    {
+      "name": "--oas-container-full",
+      "default": null
+    },
+    {
       "name": "--oas-container-max",
       "default": "var(--oas-container-lg, 992px)"
     },

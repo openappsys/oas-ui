@@ -591,6 +591,8 @@ onMounted(() => {
 
 ### oas-list
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `bordered` | Whether to show the outer border | `boolean` | — |
@@ -606,11 +608,15 @@ onMounted(() => {
 | `split` | Whether to show item dividers | `boolean` | — |
 | `stripe` | Zebra stripes: fills visually even rows with a subtle background | `boolean` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-click` | Item click (data/virtual rows); detail carries { index, item } |
 | `oas-item-render` | Dispatched after each data-channel row renders; detail carries { index, item, element } |
 | `oas-reach-bottom` | Scroll reached the bottom (fired once per bottom entry, re-armed after scrolling away); detail carries { scrollTop } |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |
@@ -623,6 +629,8 @@ onMounted(() => {
 
 ### oas-list-item
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `avatar` | Avatar URL quick channel (renders a circular avatar at the row start; slot="avatar" wins) | `string` | — |
@@ -632,9 +640,13 @@ onMounted(() => {
 | `size` | Row density: sm / md (default) / lg | — | — |
 | `title` | Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot="title" for rich content | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-click` | Row click; detail carries { index, item } (data-row context injected by oas-list) |
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

@@ -310,6 +310,8 @@ Font size follows the outer context (inherited) by default; override with the CS
 
 ### oas-breadcrumb
 
+#### Attributes
+
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `active-last` | Keep the last item clickable: when the current (last) item has `href`, render it as a link (still carrying `aria-current="page"`) | `boolean` | — |
@@ -326,16 +328,28 @@ Font size follows the outer context (inherited) by default; override with the CS
 | `size` | Size preset: `small`/`medium` (default)/`large` | `string` | `medium` |
 | `variant` | Style variant: `underline` (links and the current item are permanently underlined) | `string` | — |
 
+#### Events
+
 | Event | Description |
 | --- | --- |
 | `oas-collapse-click` | Fired when the collapse ellipsis is clicked to expand the dropdown (not fired when collapsing), `detail: { collapsedItems }` (the original array of collapsed items, for hosts that want a custom collapse panel) |
 | `oas-select` | A link item, a collapsed dropdown item, or an item dropdown item was clicked; `detail: { value: href }` (real links do not block default navigation; hosts may intercept for routing) |
+
+#### Slots
+
+| Name | Description |
+| --- | --- |
+| `separator` | Custom separator content (text or icon; replaces the separator attribute) |
+
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-breadcrumb-font` | `inherit` |
 
 ### oas-breadcrumb-item
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -348,11 +362,15 @@ Font size follows the outer context (inherited) by default; override with the CS
 | `separator` | Per-item separator: overrides the global `separator` (text or icon name); a `slot="separator"` child element also accepts arbitrary nodes | — | — |
 | `target` | Link target (`_blank` automatically adds `noopener noreferrer`) | — | — |
 
+#### Slots
+
 | Name | Description |
 | --- | --- |
 | default | Breadcrumb item label content (default slot text) |
 
 ### oas-breadcrumb-separator
+
+#### Slots
 
 | Name | Description |
 | --- | --- |

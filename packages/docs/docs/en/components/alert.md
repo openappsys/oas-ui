@@ -203,7 +203,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-alert
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -222,7 +224,7 @@ onMounted(async () => {
 | `type` | Alert type | `string` | `info` |
 | `variant` | Visual variant: tint (default, light bg + matching border) / filled (solid type color + on-color text) / outlined (transparent bg + type color border) | `string` | `tint` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -230,7 +232,7 @@ onMounted(async () => {
 | `oas-close` | Dispatched after the close button is clicked; the component then hides |
 | `oas-open-change` | Dispatched when visibility changes, detail { open } |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |

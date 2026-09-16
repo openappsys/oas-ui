@@ -770,7 +770,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-popover
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -821,25 +823,25 @@ onMounted(() => {
 | `virtual-y` | Virtual anchor y (viewport coordinate, px) | — | — |
 | `width` | Panel width: a number (px) / `"trigger"` (same width as the trigger) / any CSS value (e.g. `50%`, `240px`); unset keeps the default | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-before-close` | — |
 | `oas-open-change` | open state changed, `detail: { open }` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
-| `content` | — |
+| default | Panel body content |
+| `content` | Panel content (equivalent to the default slot; named for explicit use) |
 | `description` | Rich description slot (wired via aria-describedby) |
 | `footer` | Structured footer slot |
 | `header` | Structured header slot |
 | `title` | Rich title content slot, overrides the title attribute text when present |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |

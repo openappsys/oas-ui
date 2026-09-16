@@ -279,7 +279,9 @@ Combination semantics: `simple` takes priority over `progress-dot` / `navigation
 
 ## API
 
-### Attributes
+### oas-steps
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -301,30 +303,23 @@ Combination semantics: `simple` takes priority over `progress-dot` / `navigation
 | `status` | Container-level status overriding the current step (`wait` / `process` / `finish` / `error`); an explicit per-step `status` still takes the highest priority | `StepStatus` | — |
 | `steps` | `[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent?, prefix? }]` JSON string | `StepItem[] \| string` | `[]` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-before-change` | Fired before a step change (cancelable, `detail: { index }`); the host can `preventDefault()` to veto the change (step clicks / keyboard / navigation buttons all apply) |
 | `oas-change` | Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index, id? }` (0-based; `id` echoes the step `id` field, keeps `{ index }` when unset) |
 
-### CSS Variables
+#### CSS Variables
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-steps-arrow` | — |
-| `--oas-steps-arrow-gap` | `0px` |
-| `--oas-steps-item-bg` | `var(--oas-color-bg-hover)` |
+| CSS Variable | Description | Default |
+| --- | --- | --- |
+| `--oas-steps-arrow` | Convex tip horizontal depth of arrow segments (deeper = blunter tip); tied to the clip-path polygon | `10px` |
+| `--oas-steps-arrow-gap` | Gap between arrow segments; `0` makes them interlock flush | `0px` |
+| `--oas-steps-arrow-item-bg-{1..8}` | Per-segment background override (applies by DOM position, not data index); beyond 8 segments falls back to the status color | — |
+| `--oas-steps-item-bg` | Segment background for the current status (color-mix per status) | `var(--oas-color-bg-hover)` |
 
 State rules: an explicit `status` (`wait` / `process` / `finish` / `error`) takes priority; otherwise it is derived from `current` — index `< current` is `finish` (✓), `=== current` is `process`, and the rest are `wait`.
-
-### CSS variables
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `--oas-steps-arrow` | `10px` | Convex tip horizontal depth of arrow segments (deeper = blunter tip / smaller angle), tied to the clip-path polygon |
-| `--oas-steps-arrow-gap` | `var(--oas-space-3)` | Gap between segments; `0` makes the arrows interlock flush (neighbors are distinguished by per-segment colors) |
-| `--oas-steps-arrow-item-bg-N` (N=1..8) | falls back to the status color (`--oas-steps-item-bg` → `--oas-color-bg-hover`) | Per-segment background override (applies by DOM position, not data index); beyond 8 segments it falls back to the status color |
 
 <script setup>
 import { onMounted } from 'vue'

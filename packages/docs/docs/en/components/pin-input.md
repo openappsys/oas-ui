@@ -290,7 +290,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-pin-input
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -314,7 +316,7 @@ onMounted(() => {
 | `value` | Current value (controlled) | `string` | — |
 | `variant` | Variant: `outlined` (default) / `filled` / `underlined` | `string` | `outlined` |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |

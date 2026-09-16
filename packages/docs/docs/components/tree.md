@@ -487,7 +487,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-tree
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -518,7 +520,7 @@ onMounted(() => {
 | `selected` | 选中节点 key | `string` | — |
 | `tree-lines` | 树线缩进引导线 | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
@@ -530,7 +532,7 @@ onMounted(() => {
 | `oas-node-render` | 每个渲染的节点行派发，`detail: { node, element }`（element 为节点 label 容器，宿主可改写为图标 / 富文本） |
 | `oas-select` | 选中节点，`detail: { key, selected }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

@@ -175,7 +175,9 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-back-top
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -199,23 +201,23 @@ onMounted(async () => {
 | `visibility-height` | 滚动阈值（px）：滚动超过该值自动显示按钮，默认 400 | `string` | `400` |
 | `visible` | 受控显隐：存在即受控模式（完全由宿主控制显隐，滚动不干预）；不存在则按滚动阈值自动显隐 | `boolean` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-click` | 点击按钮（随后滚动到目标容器顶部/底部） |
 | `oas-visibility-change` | 显隐状态变化，`detail: { visible: boolean }`（受控与非受控切换都会派发，挂载时的初始同步不派发） |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 自定义按钮内容（有内容时替换内置箭头图标） |
 
-### CSS 变量
+#### CSS 变量
 
 | CSS 变量 | 默认值 |
 | --- | --- |
-| `--oas-back-top-size` | — |
+| `--oas-back-top-size` | `var(--oas-control-height-lg)` |
 
 按钮固定于视口（`:host` 为 fixed 定位，`z-index` 走 `--oas-z-fixed`）；未显示时按钮 `aria-hidden="true"` 且宿主 `pointer-events: none` 不拦截底层点击。

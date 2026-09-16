@@ -219,7 +219,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-virtual-list
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -231,14 +233,14 @@ onMounted(() => {
 | `items` | 数据数组（property 通道，优先于 items 属性）；数据 JSON 字符串（属性通道） | `unknown[]` | `[]` |
 | `scroll-target` | 外部滚动容器 CSS 选择器；设置后组件不自带滚动条，监听外部滚动 | `string` | — |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-item` | 每个可见项渲染后派发，`detail: { index, item, element }` |
 | `oas-scroll` | 滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 
-### 插槽
+#### 插槽
 
 | 名称 | 说明 |
 | --- | --- |

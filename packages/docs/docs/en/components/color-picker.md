@@ -180,7 +180,9 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-color-picker
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -203,7 +205,7 @@ onMounted(() => {
 | `value` | Current color (hex) | `string` | — |
 | `value-on-clear` | — | `string` | — |
 
-### Events
+#### Events
 
 | Event | Description |
 | --- | --- |
@@ -211,10 +213,10 @@ onMounted(() => {
 | `oas-clear` | — |
 | `oas-open-change` | — |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
-| `trigger` | — |
+| `trigger` | Custom trigger (replaces the default swatch button) |
 
 Keyboard: with the trigger button focused, `Enter`/`Space` toggles the panel and `Esc` closes it; `Esc` also closes from a focused panel input, and clicking outside closes.

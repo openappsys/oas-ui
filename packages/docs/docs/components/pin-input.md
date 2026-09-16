@@ -290,7 +290,9 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-pin-input
+
+#### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -314,7 +316,7 @@ onMounted(() => {
 | `value` | 当前值（受控） | `string` | — |
 | `variant` | 形态：`outlined`（默认）/ `filled` / `underlined` | `string` | `outlined` |
 
-### 事件
+#### 事件
 
 | 事件 | 说明 |
 | --- | --- |

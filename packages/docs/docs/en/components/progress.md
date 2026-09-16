@@ -286,7 +286,9 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-progress
+
+#### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -310,23 +312,24 @@ onMounted(async () => {
 | `type` | Shape: `line` (default) / `circle` / `dashboard` (gauge: 270° arc open at the bottom) | `string` | `line` |
 | `value` | Alias of percent (current value, clamped to 0–max): when both are set percent wins; read only when percent is absent | `string` | `0` |
 
-### Slots
+#### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Custom text: right of the line / inside the bar (text-inside) / circle center; wins over status icons and the built-in percentage |
 
-### CSS Variables
+#### CSS Variables
 
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-progress-buffer-color` | `color-mix(in srgb, var(--oas-progress-color, var(--oas-color-primary)) 35%, transparent)` |
 | `--oas-progress-color` | `var(--oas-color-primary)` |
 | `--oas-progress-duration` | `1.2s` |
 | `--oas-progress-height` | `var(--oas-space-2)` |
 | `--oas-progress-inside-color` | `var(--oas-color-bg)` |
 | `--oas-progress-step-gap` | `var(--oas-space-1)` |
 | `--oas-progress-stripe-color` | `var(--oas-color-bg)` |
-| `--oas-progress-stripe-size` | — |
+| `--oas-progress-stripe-size` | `calc(var(--oas-progress-height, var(--oas-space-2)) * 2.5)` |
 | `--oas-progress-track-color` | `var(--oas-color-bg-hover)` |
 
 `role="progressbar"` + `aria-valuenow` / `aria-valuemin` / `aria-valuemax` (synced for both line and circle).
