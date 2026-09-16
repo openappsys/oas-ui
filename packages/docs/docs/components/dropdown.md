@@ -493,4 +493,6 @@ onMounted(() => {
 | --- | --- |
 | 默认 | 分隔线数据载体（无属性，宿主解析为 `type: "divider"`） |
 
+**CSS 变量**
+
 点击触发器切换显隐，点击外部 / 按 Esc / 选择后关闭；浮层为内层 `oas-menu`（`role="menu"`，叶子项 `menuitemradio`、带子菜单项 `menuitem`），支持多级级联子菜单与键盘导航。

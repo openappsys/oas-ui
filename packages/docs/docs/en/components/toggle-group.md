@@ -399,6 +399,8 @@ onMounted(() => {
 | --- | --- |
 | default | Button label (default slot text) |
 
+**CSS 变量**
+
 `ToggleItem` fields:
 
 | Field      | Description          | Type      |

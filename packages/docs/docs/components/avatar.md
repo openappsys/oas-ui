@@ -336,3 +336,7 @@ onMounted(() => {
 | --- | --- |
 | `--oas-avatar-group-overlap` | `-8px` |
 | `--oas-avatar-group-ring` | `var(--oas-color-bg)` |
+
+**CSS 变量**
+
+**CSS 变量**

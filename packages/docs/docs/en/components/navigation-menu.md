@@ -233,6 +233,8 @@ onMounted(() => {
 | --- | --- |
 | default | Grouped navigation items (`oas-navigation-menu-item` children, flattened into the grid when the panel renders) |
 
+**CSS 变量**
+
 `NavItem` fields (inherits `MenuItem`):
 
 | Field         | Description                                            | Type      |

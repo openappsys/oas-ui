@@ -494,4 +494,6 @@ onMounted(() => {
 | --- | --- |
 | default | Divider data carrier (no attributes; the host parses it as `type: "divider"`) |
 
+**CSS 变量**
+
 Clicking the trigger toggles visibility; clicking outside / pressing Esc / selecting an item closes it. The floating menu is an inner `oas-menu` (`role="menu"`, leaf items `menuitemradio`, items with submenus `menuitem`) supporting cascading submenus and keyboard navigation.

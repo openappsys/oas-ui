@@ -360,4 +360,6 @@ Font size follows the outer context (inherited) by default; override with the CS
 | --- | --- |
 | default | Separator content: arbitrary nodes (text / icon / inline elements) |
 
+**CSS 变量**
+
 `nav` + `aria-label="面包屑"`, the last item has `aria-current="page"` and is not clickable.

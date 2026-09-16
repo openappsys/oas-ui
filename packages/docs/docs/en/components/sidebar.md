@@ -406,6 +406,8 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | --- | --- |
 | default | Divider data carrier (no attributes; the host parses it as `{type:"divider"}`) |
 
+**CSS 变量**
+
 ### Parts
 
 `root` / `panel` / `head` / `close` / `nav` / `body` / `foot` / `toggle` (desktop collapse) / `trigger` (mobile trigger) / `mask` / `item`; the header and footer content are injected via `slot="header"`, the default slot and `slot="footer"` respectively.

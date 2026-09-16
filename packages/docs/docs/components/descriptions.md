@@ -351,3 +351,7 @@ onMounted(async () => {
 | `--oas-desc-label-color` | `var(--oas-color-text-secondary)` |
 | `--oas-desc-layout-dir` | `row` |
 | `--oas-descriptions-item-font` | `var(--oas-desc-font-size, inherit)` |
+
+**CSS 变量**
+
+**CSS 变量**

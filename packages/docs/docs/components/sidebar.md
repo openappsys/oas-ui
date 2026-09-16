@@ -407,6 +407,8 @@
 | --- | --- |
 | 默认 | 分隔线数据载体（无属性，宿主解析为 `{type:"divider"}`） |
 
+**CSS 变量**
+
 ### 部件（part）
 
 `root` / `panel` / `head` / `close` / `nav` / `body` / `foot` / `toggle`（桌面折叠）/ `trigger`（移动触发）/ `mask` / `item`；头尾与主体内容分别通过 `slot="header"`、默认 slot、`slot="footer"` 注入。
