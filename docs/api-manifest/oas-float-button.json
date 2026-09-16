@@ -123,6 +123,14 @@
       "default": "var(--oas-space-6)"
     },
     {
+      "name": "--oas-float-button-size",
+      "default": null
+    },
+    {
+      "name": "--oas-float-button-action-size",
+      "default": null
+    },
+    {
       "name": "--oas-tooltip-bg",
       "default": "var(--oas-color-text-primary)"
     },

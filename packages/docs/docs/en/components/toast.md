@@ -309,6 +309,14 @@ onMounted(async () => {
 | --- | --- |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-toast-ease` | — |
+| `--oas-toast-enter-duration` | — |
+| `--oas-toast-leave-duration` | — |
+
 - `error` defaults to `role="alert"` + `aria-live="assertive"`; others use `role="status"` + `aria-live="polite"`; override with `politeness`.
 - Multiple toasts share one stack container and stack by position; `duration` timers are cleaned up on close/unmount with no leaks.
 - Animation duration/easing are configured via CSS variables `--oas-toast-enter-duration` / `--oas-toast-leave-duration` / `--oas-toast-ease`.

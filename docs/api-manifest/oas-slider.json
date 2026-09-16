@@ -144,6 +144,22 @@
     {
       "name": "--oas-slider-height",
       "default": "200px"
+    },
+    {
+      "name": "--oas-slider-track-size",
+      "default": null
+    },
+    {
+      "name": "--oas-slider-track",
+      "default": null
+    },
+    {
+      "name": "--oas-slider-thumb-size",
+      "default": null
+    },
+    {
+      "name": "--oas-slider-color",
+      "default": null
     }
   ],
   "unresolved": []

@@ -257,3 +257,5 @@ onMounted(() => {
 | --- | --- |
 | `--oas-button-group-radius` | `var(--oas-radius-md)` |
 | `--oas-input-number-controls-pad` | `28px` |
+| `--oas-input-number-font` | — |
+| `--oas-input-number-height` | — |

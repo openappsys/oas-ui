@@ -310,6 +310,7 @@ onMounted(() => {
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-rate-active` | `var(--oas-color-warning)` |
+| `--oas-rate-star-size` | — |
 | `--oas-rate-void` | `var(--oas-color-border)` |
 
 Icon customization: `icon` property > `slot="icon"` (cloned to each star) > default star.

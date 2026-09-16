@@ -63,6 +63,19 @@
       "name": "title"
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-empty-icon-color",
+      "default": null
+    },
+    {
+      "name": "--oas-empty-title-size",
+      "default": null
+    },
+    {
+      "name": "--oas-empty-desc-size",
+      "default": null
+    }
+  ],
   "unresolved": []
 }

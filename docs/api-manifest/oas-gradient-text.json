@@ -63,6 +63,14 @@
       "default": "to right"
     },
     {
+      "name": "--oas-gradient-text-from",
+      "default": null
+    },
+    {
+      "name": "--oas-gradient-text-to",
+      "default": null
+    },
+    {
       "name": "--oas-gradient-text-duration",
       "default": "3s"
     }

@@ -126,6 +126,19 @@
       "name": "title"
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-toast-enter-duration",
+      "default": null
+    },
+    {
+      "name": "--oas-toast-ease",
+      "default": null
+    },
+    {
+      "name": "--oas-toast-leave-duration",
+      "default": null
+    }
+  ],
   "unresolved": []
 }

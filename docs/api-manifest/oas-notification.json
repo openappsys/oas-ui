@@ -110,6 +110,10 @@
   ],
   "cssVars": [
     {
+      "name": "--oas-notification-width",
+      "default": "320px"
+    },
+    {
       "name": "--oas-notification-progress-color",
       "default": "var(--oas-color-primary)"
     }

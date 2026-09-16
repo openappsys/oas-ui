@@ -169,6 +169,10 @@
     {
       "name": "--oas-button-group-radius",
       "default": "var(--oas-radius-md)"
+    },
+    {
+      "name": "--oas-select-dropdown-height",
+      "default": "240px"
     }
   ],
   "unresolved": []

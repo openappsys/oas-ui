@@ -365,6 +365,7 @@ onMounted(async () => {
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-notification-progress-color` | `var(--oas-color-primary)` |
+| `--oas-notification-width` | `320px` |
 
 ### CSS Variables
 

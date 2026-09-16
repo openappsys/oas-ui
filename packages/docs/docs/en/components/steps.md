@@ -308,6 +308,14 @@ Combination semantics: `simple` takes priority over `progress-dot` / `navigation
 | `oas-before-change` | Fired before a step change (cancelable, `detail: { index }`); the host can `preventDefault()` to veto the change (step clicks / keyboard / navigation buttons all apply) |
 | `oas-change` | Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index, id? }` (0-based; `id` echoes the step `id` field, keeps `{ index }` when unset) |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-steps-arrow` | — |
+| `--oas-steps-arrow-gap` | `0px` |
+| `--oas-steps-item-bg` | `var(--oas-color-bg-hover)` |
+
 State rules: an explicit `status` (`wait` / `process` / `finish` / `error`) takes priority; otherwise it is derived from `current` — index `< current` is `finish` (✓), `=== current` is `process`, and the rest are `wait`.
 
 ### CSS variables

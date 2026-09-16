@@ -173,6 +173,11 @@
       "name": "trigger"
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-upload-card-radius",
+      "default": "var(--oas-radius-md)"
+    }
+  ],
   "unresolved": []
 }

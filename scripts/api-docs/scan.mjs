@@ -51,7 +51,6 @@ const NON_OUTLET_FAMILY =
 
 /** 从组件源码收割 var(--oas-*) 出口：[{ name, default }]（default = 字面 fallback，无则 null） */
 function extractCssVars(source) {
-  const own = new Set([...source.matchAll(/(--(?:_|oas-)[a-z0-9-]+)\s*[:{]/g)].map((m) => m[1]))
   const jsSet = new Set([...source.matchAll(/(?:set|remove)Property\(\s*'(--oas-[a-z0-9-]+)'/g)].map((m) => m[1]))
   const out = []
   const seen = new Set()
@@ -60,7 +59,7 @@ function extractCssVars(source) {
   while ((m = re.exec(source))) {
     const name = m[1]
     if (seen.has(name) || THEME_TOKENS.has(name) || NON_OUTLET_FAMILY.test(name)) continue
-    if (own.has(name) || jsSet.has(`--${name.slice(1)}`) || name.endsWith('-')) continue
+    if (jsSet.has(`--${name.slice(1)}`) || name.endsWith('-')) continue
     seen.add(name)
     // fallback 仅接受无括号的简单字面量（嵌套 var()/函数式回退在表里显示 —，变量名才是发现重点）
     const fb = m[2]?.trim()

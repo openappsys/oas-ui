@@ -38,6 +38,10 @@
     {
       "name": "--oas-masonry-item-gap",
       "default": "var(--oas-space-2)"
+    },
+    {
+      "name": "--oas-masonry-columns",
+      "default": "${base}"
     }
   ],
   "unresolved": []

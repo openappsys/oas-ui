@@ -118,6 +118,14 @@
     {
       "name": "--oas-msg-type-color",
       "default": "var(--oas-color-border)"
+    },
+    {
+      "name": "--oas-message-anim-in",
+      "default": null
+    },
+    {
+      "name": "--oas-message-anim-out",
+      "default": null
     }
   ],
   "unresolved": []

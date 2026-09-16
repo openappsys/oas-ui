@@ -34,8 +34,16 @@
   ],
   "cssVars": [
     {
+      "name": "--oas-marquee-duration",
+      "default": null
+    },
+    {
       "name": "--oas-marquee-fade-size",
       "default": "24px"
+    },
+    {
+      "name": "--oas-marquee-shift",
+      "default": null
     }
   ],
   "unresolved": []

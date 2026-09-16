@@ -127,8 +127,16 @@
       "default": "var(--oas-color-bg-hover)"
     },
     {
+      "name": "--oas-progress-color",
+      "default": "var(--oas-color-primary)"
+    },
+    {
       "name": "--oas-progress-stripe-color",
       "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-progress-stripe-size",
+      "default": null
     },
     {
       "name": "--oas-progress-duration",

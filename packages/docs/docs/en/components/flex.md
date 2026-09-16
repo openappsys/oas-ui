@@ -211,3 +211,10 @@ With no children the height is 0 — no error, no placeholder.
 | Name | Description |
 | --- | --- |
 | default | — |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-flex-direction` | `${dirBase}` |
+| `--oas-flex-gap` | `${toLen(gapShorthand.base) \|\| 'normal'}` |

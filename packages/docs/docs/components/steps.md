@@ -308,15 +308,15 @@
 | `oas-before-change` | 跳步前派发（cancelable，`detail: { index }`）；宿主 `preventDefault()` 可取消本次跳转（步骤点击/键盘/导航按钮均生效） |
 | `oas-change` | 点击可点击步骤或导航按钮时触发（含键盘触发）；`detail: { index, id? }`（0 起，`id` 为步骤 `id` 字段回传，未设置时保持 `{ index }`） |
 
-状态规则：显式 `status`（`wait` / `process` / `finish` / `error`）优先；未指定时按 `current` 推导——索引 `< current` 为 `finish`（✓），`=== current` 为 `process`，其余为 `wait`。
-
 ### CSS 变量
 
-| 变量 | 默认 | 说明 |
-| --- | --- | --- |
-| `--oas-steps-arrow` | `10px` | 箭头分格凸尖水平深度（深度越大凸尖越钝、夹角越小），随 clip-path polygon 联动 |
-| `--oas-steps-arrow-gap` | `var(--oas-space-3)` | 分格块间距；设 `0` 时凹凸互嵌贴边（相邻块靠 per-index 颜色区分） |
-| `--oas-steps-arrow-item-bg-N`（N=1..8） | 回落状态色（`--oas-steps-item-bg` → `--oas-color-bg-hover`） | 逐格背景色覆盖（按 DOM 位置，非数据索引）；超过 8 步回落状态色 |
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-steps-arrow` | — |
+| `--oas-steps-arrow-gap` | `0px` |
+| `--oas-steps-item-bg` | `var(--oas-color-bg-hover)` |
+
+状态规则：显式 `status`（`wait` / `process` / `finish` / `error`）优先；未指定时按 `current` 推导——索引 `< current` 为 `finish`（✓），`=== current` 为 `process`，其余为 `wait`。
 
 <script setup>
 import { onMounted } from 'vue'

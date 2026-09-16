@@ -779,6 +779,7 @@ onMounted(() => {
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-tip-cross` | `999px` |
+| `--oas-tooltip-animation` | `oas-tooltip-in` |
 | `--oas-tooltip-arrow-size` | `12px` |
 | `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
 | `--oas-tooltip-color` | `var(--oas-color-bg)` |

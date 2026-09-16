@@ -125,6 +125,15 @@
       "name": "total"
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-pagination-height",
+      "default": null
+    },
+    {
+      "name": "--oas-pagination-font",
+      "default": null
+    }
+  ],
   "unresolved": []
 }

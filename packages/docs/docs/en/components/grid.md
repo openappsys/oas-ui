@@ -320,6 +320,10 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 | --- | --- |
 | default | — |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-grid-columns` | `repeat(${base ?? 1}, 1fr)` |
+
 ### oas-grid-item
 
 | Attribute | Description | Type | Default |
@@ -331,5 +335,9 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 | Name | Description |
 | --- | --- |
 | default | — |
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-grid-item-column` | `${baseColumn}` |
 
 `oas-grid` renders as CSS Grid where each child occupies a share of the 24 columns; `oas-grid-item` declares its footprint with `span`. Setting `columns` divides equally and ignores `span`, so plain elements can be placed directly.

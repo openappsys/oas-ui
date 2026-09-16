@@ -302,6 +302,18 @@
       "default": "var(--oas-shadow-md)"
     },
     {
+      "name": "--oas-popover-padding",
+      "default": "var(--oas-space-4)"
+    },
+    {
+      "name": "--oas-popover-min-width",
+      "default": "200px"
+    },
+    {
+      "name": "--oas-popover-font-size",
+      "default": "var(--oas-font-size-md)"
+    },
+    {
       "name": "--oas-origin-x",
       "default": "center"
     },

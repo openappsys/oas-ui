@@ -227,6 +227,10 @@
       "default": "ease"
     },
     {
+      "name": "--oas-tooltip-animation",
+      "default": "oas-tooltip-in"
+    },
+    {
       "name": "--oas-tooltip-arrow-size",
       "default": "12px"
     }
