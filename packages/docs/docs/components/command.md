@@ -565,6 +565,7 @@ onMounted(() => {
 | --- | --- |
 | `empty` | 空结果自定义渲染（组件内用 `el.query` 读当前搜索词，如「创建 xyz」入口） |
 | `footer` | 底部自定义条（默认显示 `↑↓ 选择 / ↵ 执行 / esc 关闭` 提示） |
+| `view-${view}` | 按视图名覆盖该视图的选中内容（宿主写 `<div slot="view-deploy">` …，`view` 为视图字段的值） |
 
 ### oas-command-item
 

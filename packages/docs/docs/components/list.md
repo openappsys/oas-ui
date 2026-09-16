@@ -650,6 +650,7 @@ onMounted(() => {
 
 | 名称 | 说明 |
 | --- | --- |
+| 默认 | 默认内容：渲染在描述区（未提供 `description` 插槽时作为其兜底） |
 | `avatar` | 头像富内容（oas-avatar 或任意内容），优先于 avatar 属性 |
 | `description` | 描述区（不提供时回退默认插槽） |
 | `extra` | 条目右侧扩展区 |
