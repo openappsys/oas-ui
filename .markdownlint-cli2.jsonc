@@ -23,12 +23,19 @@
     //   lax 保留"每行管道数一致"的结构检查、放弃强制对齐——markdownlint 官方支持的风格模式。
     "MD060": {
       "style": "lax"
-    }
+    },
+    // MD028 no-blanks-blockquote：文档站用连续 `>` 块承载多条并列提示（各自带 **粗体** 引题），
+    //   空行分隔即"多个并排 callout 盒"的刻意写法，非误用；合并为单块会丢掉分盒视觉。
+    "MD028": false,
+    // MD041 first-line-heading：README 首行是多语言切换栏（`**中文** | [English](...)`），
+    //   多语言仓库的通行写法（README.md / README.en.md 对称），项目标题 H1 紧随其后。
+    "MD041": false
   },
   "globs": [
     "packages/docs/docs/**/*.md",
     "docs/**/*.md",
     "README.md",
+    "README.en.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "AGENTS.md"
@@ -36,6 +43,7 @@
   "ignores": [
     "**/node_modules/**",
     "**/.vitepress/**",
-    "**/dist/**"
+    "**/dist/**",
+    "docs/superpowers/**"
   ]
 }

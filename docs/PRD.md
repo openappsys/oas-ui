@@ -569,7 +569,7 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 
 ### 详细需求
 
-- **tag-group**：属性 alue（单选单值 / 多选逗号分隔）、multiple（多选）、disabled（全组禁用）、ria-label（组容器可访问名称，默认走 i18n「标签组」）。事件：oas-change——单选 detail { value }、多选 detail { value: [] }。实现：slot 放 <oas-tag checkable value="x">，组在 capture 阶段拦截子签 oas-change 计算新 value 并同步所有子签 checked（子签事件不外泄，宿主只收到组级事件）；容器 
+- **tag-group**：属性 alue（单选单值 / 多选逗号分隔）、multiple（多选）、disabled（全组禁用）、ria-label（组容器可访问名称，默认走 i18n「标签组」）。事件：oas-change——单选 detail { value }、多选 detail { value: [] }。实现：slot 放 <oas-tag checkable value="x">，组在 capture 阶段拦截子签 oas-change 计算新 value 并同步所有子签 checked（子签事件不外泄，宿主只收到组级事件）；容器
 ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可取消（点已选中项保持选中）；disabled 透传全组不可切。
 
 ### 增强（space 第二轮 + compact）
@@ -583,13 +583,11 @@ ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可�
 - **space→行内嵌入**：demo 级能力——`<oas-space style="display: inline-flex">` 嵌在文字段落中间展示行内用法（inline 非组件属性，宿主一行 CSS 即可）。
 - **oas-compact**：紧凑容器，slot 内相邻表单控件（oas-button / oas-input / oas-input-number / oas-select）贴边合并边框（相邻 -1px 重叠）+ 首尾圆角、中间直角。圆角合并走 button-group 单一协议（`--oas-button-group-radius` 变量穿透，input/input-number/select 已补同名变量消费钩子）。属性：vertical（纵向贴合，圆角方向改上下）、disabled（透传全组禁用）、block（宽度 100%）。交互态：hover / 聚焦项 z-index 提升盖过相邻边框。边界：空组渲染不报错；slotchange 增减子项自动重算贴合/圆角。
 
-
-
 ### 增强（tag 第二轮）
 
 - **tag→预设色板**：color 支持 11 个预设名（magenta/red/volcano/orange/gold/lime/green/cyan/blue/geekblue/purple，映射 --oas-preset-* token，dark 自动调亮）或任意 CSS 色值（现状逻辑不变）
 - **tag→dot/processing**：dot 文字前状态小圆点；processing 脉冲动画（隐含 dot，prefers-reduced-motion 停用）
-- **tag→avatar 适配**：默认插槽放 oas-avatar/<img> 时尺寸随档位、圆形、负 margin 贴左缘
+- **tag→avatar 适配**：默认插槽放 oas-avatar/`<img>` 时尺寸随档位、圆形、负 margin 贴左缘
 - **tag→hit/strong/multiline**：hit 全不透明语义色描边；strong 加粗（600）；multiline 多行换行（与 max-width 省略互斥时 multiline 优先）
 
 ### 增强（badge 第二轮）
@@ -1139,12 +1137,14 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 ### 第二批：硬伤 + 高频缺口收口
 
 **真硬伤（触屏不可用/溢出）**：
+
 - **upload**：picture-card 删除×/操作钮仅 hover 显现 → coarse 下常显可达 + 44px 热区
 - **transfer**：固定 ~430px 刚性布局窄屏溢出 → ≤480px 纵向堆叠；HTML5 DnD 触屏不可用 → 按钮式 move-up/down 排序；行/钮 coarse ≥44px
 - **stepper**：无窄屏处理 → coarse 下步骤条横向溢出滚动 + tab ≥44px
 - **tag**：closable × 钮 ≈12px → coarse 下 44px 隐形热区 + checkable/clickable 整签 ≥44px
 
 **高频缺口**：
+
 - **触摸目标抬升**（`--oas-touch-target-min` + pointer:coarse）：date-picker 日格 / time-picker 列 / combobox 选项 / calendar 日格 / command 选项 / pagination / anchor / breadcrumb / toolbar / tour / tree 展开钮 / carousel 箭头圆点 / table 小钮 / button 本体
 - **横幅 vw 宽度保护**：message / notification / toast / popconfirm 面板加 `calc(100vw - …)` 兜底防窄屏溢出；notification peek 栈补触屏 tap 展开
 - **popconfirm trigger=hover 触屏降级**为 tap 切换（照 popover 范式）
