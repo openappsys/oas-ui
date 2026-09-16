@@ -379,8 +379,6 @@ onMounted(() => {
 | `oas-change` | 切换，`detail: { value: string \| string[] }` |
 | `oas-exceed-limit` | 达 max-count 上限后的越界选择尝试，`detail: { value, max }` |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-toggle-color` | `var(--oas-color-primary)` |
@@ -398,8 +396,6 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 按钮文案（默认插槽文本） |
-
-**CSS 变量**
 
 `ToggleItem` 字段：
 

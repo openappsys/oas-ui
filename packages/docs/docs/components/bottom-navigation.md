@@ -175,8 +175,6 @@ onMounted(() => {
 | --- | --- |
 | `oas-change` | 切换激活项，`detail: { value }` |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-badge-bg` | `var(--oas-color-danger)` |
@@ -198,8 +196,6 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 底部导航项 label 内容（默认插槽文本） |
-
-**CSS 变量**
 
 `BottomNavItem` 字段：
 

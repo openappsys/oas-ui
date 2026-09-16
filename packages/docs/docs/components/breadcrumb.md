@@ -331,8 +331,6 @@ onMounted(() => {
 | `oas-collapse-click` | 折叠省略号被点击展开下拉（收起不派发），`detail: { collapsedItems }`（被折叠的原始项数组，宿主可自定义折叠面板） |
 | `oas-select` | 点击链接项、折叠下拉项或项下拉菜单项；`detail: { value: href }`（真实链接不阻止默认跳转，宿主可拦截做路由） |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-breadcrumb-font` | `inherit` |
@@ -359,7 +357,5 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 分隔符内容：任意节点（文本 / 图标 / 内联元素） |
-
-**CSS 变量**
 
 `nav` + `aria-label="面包屑"`，末项 `aria-current="page"` 且不可点击。

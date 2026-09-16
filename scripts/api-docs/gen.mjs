@@ -370,7 +370,7 @@ function buildGenerated(tags, lang) {
       if (g.attrs.length) tables.push(renderAttrTable(g.attrs, lang))
       if (g.events.length) tables.push(renderEventTable(g.events, lang))
       if (g.slots.length) tables.push(renderSlotTable(g.slots, lang))
-      if ((g.cssVars ?? []).length) tables.push('**CSS 变量**\n\n' + renderCssVarTable(g.cssVars, lang))
+      if ((g.cssVars ?? []).length) tables.push(renderCssVarTable(g.cssVars, lang))
       parts.push(`### ${tag}\n\n${tables.join('\n\n')}`)
     }
     return parts.join('\n\n')

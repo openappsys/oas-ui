@@ -379,8 +379,6 @@ onMounted(() => {
 | `oas-change` | Toggle, `detail: { value: string \| string[] }` |
 | `oas-exceed-limit` | Selection attempt past max-count, `detail: { value, max }` |
 
-**CSS 变量**
-
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-toggle-color` | `var(--oas-color-primary)` |
@@ -398,8 +396,6 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Button label (default slot text) |
-
-**CSS 变量**
 
 `ToggleItem` fields:
 
