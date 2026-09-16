@@ -172,8 +172,8 @@ The `pill` attribute turns the whole group into a pill: the first/last buttons u
 /* Even padding for vertical pills: the inner button is a fixed control height with horizontal-only
    padding, so in a vertical group the top/bottom space ends up much smaller than the sides. Release
    the fixed height and apply one uniform padding so the text has equal margins on all sides.
-   Both examples share it: the 3rd (horizontal text) → 44×36 buttons; the 4th (vertical text via
-   writing-mode) → 36×44 buttons (the same shape, rotated). */
+   Both examples share it: the 3rd (horizontal text) → 46×37 buttons; the 4th (vertical text via
+   writing-mode) → 37×46 buttons. */
 .bg-eq-pill oas-button::part(button) {
   height: auto;
   min-height: 0;
@@ -190,6 +190,24 @@ The `pill` attribute turns the whole group into a pill: the first/last buttons u
   margin-block-start: 0;
   margin-right: 0;
   margin-top: -1px;
+}
+/* End buttons' OUTER padding = space-4: the label must not "sink into" the capsule's arc. The arc
+   depth equals half the capsule width (23 / 18.5 here), but there's no need to pad the full depth:
+   once the label's top row reaches "arc depth - 4", the curved boundary is inset by less than 0.5px
+   (visually a straight edge already) — padding the full depth only adds a blank cap.
+   Inner side and left/right keep space-2: Top's bottom = left/right, Bottom's top = left/right,
+   Middle all four equal.
+   Note: under vertical writing (writing-mode: vertical-rl) a percentage padding breaks the host's
+   intrinsic height (host doesn't follow the inner button, labels overlap); 50% (= half width) does
+   work for the horizontal-writing case, so a fixed value is used here. */
+.bg-eq-pill {
+  --end-pad: var(--oas-space-4);
+}
+.bg-eq-pill oas-button:first-child::part(button) {
+  padding-top: var(--end-pad);
+}
+.bg-eq-pill oas-button:last-child::part(button) {
+  padding-bottom: var(--end-pad);
 }
 </style>
 
