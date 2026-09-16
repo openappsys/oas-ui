@@ -156,11 +156,14 @@ describe('OASButtonGroup 扩展：pill / 嵌套组 / 分隔符', () => {
     expect(css).toContain('--oas-button-group-start-radius: var(--oas-radius-full, 999px)')
   })
 
-  it('pill + vertical：首上圆/尾下圆', () => {
+  it('pill + vertical：首上圆/尾下圆 + 端部由组容器整形成胶囊（全圆角 + 裁剪）', () => {
     const css = styleText(mountGroup({ pill: '', vertical: '' }))
     expect(css).toContain(':host([vertical][pill])')
     expect(css).toContain('--oas-button-group-radius: var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0 0')
     expect(css).toContain('--oas-button-group-radius: 0 0 var(--oas-radius-full, 999px) var(--oas-radius-full, 999px)')
+    // 端部按「组」成形：容器全圆角 + 裁剪（纵向宽组端边才得到半圆，而非半椭圆/圆角矩形）
+    expect(css).toContain(":host([pill]) [part='group']")
+    expect(css).toContain('overflow: clip')
   })
 
   it('嵌套组：CSS 与按钮同等处理（贴合/圆角合并），并经 start/end 变量穿透整体圆角', () => {

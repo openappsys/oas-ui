@@ -156,12 +156,42 @@ The `pill` attribute turns the whole group into a pill: the first/last buttons u
     <oas-button value="prev">Previous</oas-button>
     <oas-button value="next">Next</oas-button>
   </oas-button-group>
-  <oas-button-group pill vertical style="margin-top: 8px">
+  <oas-button-group pill vertical class="bg-eq-pill" style="margin-top: 8px">
+    <oas-button value="up">Top</oas-button>
+    <oas-button value="mid">Middle</oas-button>
+    <oas-button value="down">Bottom</oas-button>
+  </oas-button-group>
+  <oas-button-group pill vertical class="bg-eq-pill bg-vertical-text" style="margin-top: 8px">
     <oas-button value="up">Top</oas-button>
     <oas-button value="mid">Middle</oas-button>
     <oas-button value="down">Bottom</oas-button>
   </oas-button-group>
 </DemoBlock>
+
+<style>
+/* Even padding for vertical pills: the inner button is a fixed control height with horizontal-only
+   padding, so in a vertical group the top/bottom space ends up much smaller than the sides. Release
+   the fixed height and apply one uniform padding so the text has equal margins on all sides.
+   Both examples share it: the 3rd (horizontal text) → 44×36 buttons; the 4th (vertical text via
+   writing-mode) → 36×44 buttons (the same shape, rotated). */
+.bg-eq-pill oas-button::part(button) {
+  height: auto;
+  min-height: 0;
+  padding: var(--oas-space-2);
+}
+/* Vertical-text variant: upright vertical writing (not rotated), sized by the text plus the same
+   uniform padding. The -1px border-merge seam uses the logical margin-block-start; under vertical
+   writing its block axis becomes horizontal, so the seam lands on the right and its border gets
+   clipped by the group container — realign on the physical top instead. */
+.bg-vertical-text oas-button {
+  writing-mode: vertical-rl;
+}
+.bg-vertical-text oas-button:not(:first-child) {
+  margin-block-start: 0;
+  margin-right: 0;
+  margin-top: -1px;
+}
+</style>
 
 ## Separator
 
