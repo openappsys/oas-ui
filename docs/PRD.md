@@ -1217,7 +1217,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ---
 
-## 未发布：导航组件批次（app-bar 新组件 + float-button 家族扩展）🚧
+## v2.5.4 导航组件批次（app-bar 新组件 + float-button 家族扩展）✅
 
 ### 特性
 
@@ -1228,10 +1228,28 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **qa-regression 补位 10 组件**（bottom-sheet/confirm/checkbox/radio/textarea/collapse/speed-dial/editable/dynamic-input/toggle-group，41 用例）；修复 speed-dial 展开自动聚焦失效（visibility 过渡离散翻转致 focus 静默失败，展开向改立即翻转）
 - **长尾修复**：stepper 横向连接线 RTL 镜像缺失（物理 left 单向延伸改逻辑属性，与 steps 的 data-rtl 镜像对齐）；core translator 广播隔离（单个监听者抛错不再阻断全库 locale 切换通知）
 - **bottom-sheet 文档页补齐**：中英 demo 页（基础 / max-height / passive 被动透传）+ API 表 + 总览与侧边栏接线；app-bar 中英 API 章节补齐；ssr 白名单接入 app-bar 并入档 bottom-sheet 的 SSR 策略
+- **oas-editable 原地编辑**：展示态与编辑态同尺寸原地切换——无缝输入框（透明底、聚焦显形）+ 镜像宽度自适应；展示态富内容模板支持迟到填充；修复「展示态 `[hidden]` 规则缺失致编辑框并排」与「展示态自定义模板迟到填充不渲染」两处模型缺失
+- **API 规范统一（阴影收口）**：阴影三档 token 落地的收口批次——21 处浮层 `color-mix` overlay 阴影迁移到 `--oas-shadow-*`，双体系（裸阴影 / token）归一
 
 ### 修复
 
 - oas-float-button `trigger="manual"` 完全受控语义：外点与 Esc 不再自动收起（收起由宿主 `expanded` 属性全权驱动）；demo 宿主补定位上下文（展开层锚定主钮）+ 回归固化「展开层相对主钮偏移」断言
+- oas-carousel 卡片模式 RTL P0×2：卡宽取反符号错误致 RTL 下当前卡偏移、拖拽 delta 未随方向取反致拖拽反向（含松手阈值镜像）
+- oas-float-button 展开焦点管理：`syncExpanded` 抢占宿主焦点、选择后不回焦、节点重建丢焦三处修复；补 DSD/水合测试
+- oas-table 死 token：`--oas-color-primary-soft` / `--oas-color-danger-soft` / `--oas-shadow-md` 三处引用改主题化 `color-mix` 回退（原为未定义变量，被 token 守卫判红）
+- oas-slider 纵向拇指 hover 放大从未生效（死选择器）；oas-toggle-group 纵向贴合首项右上角为直角；oas-snackbar 阴影入 token；抽屉/对话框打开侧事件对称（补 `oas-after-open`）
+- 感知质量：CSS 变量引用守卫（无 fallback 且全库无定义 → 红灯）+ 7 处存量裸 token 补 fallback（table / message / notification / tour）
+- SSR/DSD 逃生口用例 flake 根治（JS 冒泡派发 + shadowRoot 查询）；白名单补 `oas-app-bar` 与 DSD 验收 fixture
+
+### 工程
+
+- **API 表工具链补全**：CSS 变量出口收割进 manifest → API 表新增「CSS 变量」组（平衡括号扫描不漏变量、源码声明值兜底、组件作用域 theme token 放行、同前缀数字出口折叠 `{1..N}`）；插槽收割补 light-DOM 标记式与代码式读取（去重归一形式、排除内部保留标记与内部管线插槽）；全库 API 段统一为 `### oas-xxx` + `#### 属性/事件/插槽/CSS 变量`，CSS 变量表按需增列「说明」，补齐 68+ 条插槽说明
+- perf 预算重定档（cdn/全量入口天花板、table/theme 分量；闭包测量只计静态导入）；`release:check` 版本一致性硬校验 + pre-push 拦截；markdownlint 收口与文档站统计重生成
+
+### 验收
+
+- 全量单测 7101 / typecheck 0 / build 0 / api:check（WIP 0）/ stats:check 0 / lint:md 0 / trace 0 命中
+- 全量 e2e（chromium 全量 + firefox 抽样）；新增能力 demo light/dark 截图复核 + 真实交互验证 + console 零告警
 
 > 注：原「后续 backlog」中的 oas-float-button（本批转正）、oas-app-bar（本批立项实现）、oas-sidebar（v2.2.4/v2.2.5 已发布）三条目均已落位，backlog 清空。
 

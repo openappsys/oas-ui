@@ -2,22 +2,44 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-## [未发布]
+## [2.5.4] - 2026-09-16
 
 ### 特性
 
 - **oas-app-bar（新组件，应用栏）**：页面/工具区顶部的应用栏布局条——标题（属性/slot 富内容双通道）+ leading 汉堡钮（`oas-menu-toggle`）+ `slot="actions"` 操作区 + 超宽 overflow「···」收纳（RO 驱动、镜像回派）+ `hide-on-scroll` 滚动折叠 + `slot="extended"` 扩展区（滚动收起）+ `position="static|absolute|fixed|floating"` 四形态 + `elevated` 滚动投影；RTL 逻辑属性 + coarse 触控 44px；role=banner + aria 全同步；SSR/DSD 双路径。i18n 新增 `appBar.*` 4 键（10 语言包齐全）
 - **oas-float-button 家族扩展**：`mode="single|group|menu"` 三模式（分组 slot 子钮带 label 气泡与角标、菜单模式 actions JSON 弹出选择并派发 `oas-select`）；受控 `expanded` + `oas-expand-change`；`trigger="click|hover|manual"`；`expand-direction` 四向（RTL 横向镜像）；子钮/主钮链接化（href/target）；徽标状态点与数字 99+ 封顶；Esc/外点收起回焦、reduced-motion 降级
+- **oas-editable 原地编辑**：展示态与编辑态同尺寸原地切换——无缝输入框（透明底、聚焦显形）+ 镜像宽度自适应（输入框随内容宽度，不跳版）；展示态富内容模板支持迟到填充（`content` 变更观察）
 - **RTL 第二批（方向键镜像 + 面板逻辑化收口）**：6 组件水平方向键 RTL 换向（carousel 双键盘域 / stepper / bottom-navigation / toolbar-toggle / image 图集翻页 / tree 展开收起键）+ carousel 轨道位移取反与 prev/next 箭头逻辑属性镜像 + tree 收起箭头 `data-rtl` 镜像 + scroll-area 方向判定收敛 `shared/direction` 单源（废弃私有实现；语义变化：config-provider 注入现优先于最近祖先显式 `dir`，与全库一致）+ 浮层面板残留物理 CSS 逻辑属性改造（select / auto-complete / combobox / mentions / cascader / tree-select / date-picker / time-picker / tour / dropdown split 接缝与圆角 / menu 间距缩进 / table 表头与过滤面板 / slider / collapse-item / theme-editor）+ 约定守卫：全库物理方向 CSS 白名单化，白名单（placement 基向箭头绘制、物理命名 API、内容 LTR 锁定、成对对称）之外新增一律红灯
-- **API 规范统一**：**size 档位跨词表别名互认**（`shared/size` 单源——五档全称/缩写在任何组件等价接受，别名不告警，内部规范化输出不变；button/tag/badge/stepper/pagination/float-button 首批接入）+ **事件同名归一**（drawer/modal 关闭动画完成增派规范名 `oas-after-close` 对齐 after-* 家族、upload 超限增派 `oas-exceed-limit` 对齐 checkbox-group/select/toggle-group——旧名 `oas-closed`/`oas-exceed` 保留为兼容别名双发，API 表标注【兼容别名】；ok（对话框）/confirm（选择器）分工写入 ui-spec）+ **阴影三档 token**（`--oas-shadow-sm/md/lg`，light/dark 双变体；28 处裸海拔阴影迁移，方向性投影/inset/形状描边豁免并写入 ui-spec §1.1）
+- **API 规范统一**：**size 档位跨词表别名互认**（`shared/size` 单源——五档全称/缩写在任何组件等价接受，别名不告警，内部规范化输出不变；button/tag/badge/stepper/pagination/float-button 首批接入）+ **事件同名归一**（drawer/modal 关闭动画完成增派规范名 `oas-after-close` 对齐 after-* 家族、upload 超限增派 `oas-exceed-limit` 对齐 checkbox-group/select/toggle-group——旧名 `oas-closed`/`oas-exceed` 保留为兼容别名双发，API 表标注【兼容别名】；ok（对话框）/confirm（选择器）分工写入 ui-spec）+ **阴影三档 token**（`--oas-shadow-sm/md/lg`，light/dark 双变体；28 处裸海拔阴影迁移 + 收口批次 21 处浮层 `color-mix` overlay 迁移，方向性投影/inset/形状描边豁免并写入 ui-spec §1.1）
+- **感知质量收口**：CSS 变量引用守卫（无 fallback 且全库无定义 → 红灯）+ 7 处存量裸 token 补 fallback（table 2xs/weight-medium、message ease-in、notification radius-rounded、tour text-tertiary/fill/base）；a11y 审计改为自动收集全部组件页（原手选 26 页），存量违规建台账
 - **qa-regression 补位 10 组件**（bottom-sheet/confirm/checkbox/radio/textarea/collapse/speed-dial/editable/dynamic-input/toggle-group，41 用例）+ helpers 新增 `defocus`/`realClick` 焦点滚动防抖工具（editable demo 挂载即聚焦引发的页面滚动拽走陷阱根治）
 
 ### 修复
 
+- **oas-carousel 卡片模式 RTL P0×2**：卡宽取反符号错误致 RTL 下当前卡偏移、拖拽 delta 未随方向取反致 RTL 拖拽方向相反（含松手阈值镜像）
+- **oas-float-button 展开焦点管理**：`syncExpanded` 抢占宿主焦点、选择后不回焦、节点重建丢焦三处修复；补 DSD/水合测试
+- **oas-editable 两处模型缺失**：展示态 `[hidden]` 规则缺失致编辑框与文本并排（非原地）；展示态自定义模板迟到填充不渲染（Vue 先渲染空模板）
 - **oas-stepper 横向连接线 RTL 镜像缺失**（视觉复核实抓）：连接线用物理 `left:50%; width:100%` 单向延伸且无镜像——RTL 下绿/蓝线段画到上一步、第一步骤多出悬空线到容器边缘、末步骤缺线；改 `inset-inline-start` 随书写方向自动镜像（`oas-steps` 同类线已有 data-rtl 镜像块，仅 stepper 漏网）
+- **oas-table 死 token**：`--oas-color-primary-soft`/`--oas-color-danger-soft`/`--oas-shadow-md` 三处引用改为主题化 `color-mix` 回退（原为未定义变量，被 token 守卫判红）
+- **oas-slider 纵向拇指 hover 放大从未生效**（死选择器）+ hover 能力守卫补位
+- **oas-toggle-group 纵向贴合首项右上角为直角**
+- **oas-snackbar 阴影入 token**；抽屉/对话框打开侧事件对称（补 `oas-after-open`）
 - **core translator 广播隔离**：locale 切换通知循环中单个监听者（组件文案刷新回调）抛错不再阻断其余监听者——修复前一个组件刷新异常会让全库 locale 切换失效
 - **oas-speed-dial 展开自动聚焦失效（键盘可达性）**：`.actions` 的 visibility 在过渡列表中离散翻转（过渡期末端才生效），`syncOpen` 展开后立即 `focus()` 落在不可见元素上静默失败，真实浏览器中焦点留在主钮——展开向 visibility 改为立即翻转（无过渡），收起向保留延迟（淡出完成后再隐藏），两侧动画语义不变；回归断言收紧为「焦点必须落在首个子动作」
 - **oas-float-button `trigger="manual"` 完全受控语义**：外点与 Esc 不再自动收起（收起由宿主 `expanded` 属性全权驱动），修复受控 demo 切换钮与文档级捕获监听打架；demo 宿主补定位上下文（展开层锚定主钮）+ 回归固化「展开层相对主钮偏移」断言
+- **SSR/DSD 逃生口用例 flake 根治**：JS 冒泡派发 + shadowRoot 查询；SSR 白名单补 `oas-app-bar` 与 DSD 验收 fixture，白名单文档对齐源码
+
+### 文档
+
+- **API 表工具链补全（面板出口自动化）**：CSS 变量出口收割进 `docs/api-manifest` → API 表新增「CSS 变量」组（平衡括号扫描不漏变量、源码声明值兜底、组件作用域 theme token 放行、同前缀数字出口折叠为 `{1..N}`）；插槽收割补 light-DOM 标记式（`[slot="x"]`）与代码式（`getAttribute('slot')`）读取，去重归一形式、排除内部保留标记与内部管线插槽
+- **全库 API 段统一版式**：所有组件页统一为 `### oas-xxx` + `#### 属性/事件/插槽/CSS 变量`（单/多标签同一生成路径）；CSS 变量表按需增列「说明」；补齐 68+ 条插槽说明与关键组件变量说明（spin/steps/sidebar/notification/tag 等），旧手写重复段由生成器认领消除
+- **英文 demo 页缺块补齐**（6 组件）中英块数全对齐；`ssr` 边界说明、bottom-sheet 文档页与侧边栏/总览接线
+
+### 优化
+
+- perf 预算重定档（cdn/全量入口天花板、table/theme 分量重定；闭包测量只计静态导入，动态 `import()` 不计初始负载）
+- `pnpm release:check` 版本一致性硬校验脚本 + pre-push 钩子（tag 指向版本不一致拒推）
+- markdownlint 收口（列表/标题空行等 76 处自动修复 + 规则带理由豁免）与文档站统计（`stats.json`）重生成
 
 ## [2.5.3] - 2026-09-14
 
