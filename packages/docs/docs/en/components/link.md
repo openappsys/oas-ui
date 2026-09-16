@@ -140,7 +140,7 @@ Clicking dispatches the `oas-click` CustomEvent; `detail.originalEvent` is the n
 
 | Name | Description |
 | --- | --- |
-| default | Link text |
+| default | Link content (text / icons) |
 
 #### CSS Variables
 

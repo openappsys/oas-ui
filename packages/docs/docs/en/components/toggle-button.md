@@ -120,7 +120,7 @@ onMounted(() => {
 
 | Name | Description |
 | --- | --- |
-| default | Button label |
+| default | Button content (label / icon) |
 
 #### CSS Variables
 

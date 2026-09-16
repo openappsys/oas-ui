@@ -1444,7 +1444,7 @@
     },
     "events": {},
     "slots": {
-      "": "Key text"
+      "": "Key content (text / icons)"
     }
   },
   "oas-label": {
@@ -1461,7 +1461,7 @@
     },
     "events": {},
     "slots": {
-      "": "Label text"
+      "": "Label content (text / icons)"
     }
   },
   "oas-layout": {
@@ -1495,7 +1495,7 @@
       "oas-click": "Click, `detail: { originalEvent }`"
     },
     "slots": {
-      "": "Link text"
+      "": "Link content (text / icons)"
     }
   },
   "oas-list": {
@@ -2590,7 +2590,7 @@
       "oas-blur": "Fires on blur"
     },
     "slots": {
-      "": "Switch label"
+      "": "Switch content (label / rich content)"
     }
   },
   "oas-tab-panel": {
@@ -2955,7 +2955,7 @@
       "oas-change": "Toggle, `detail: { value, pressed }`"
     },
     "slots": {
-      "": "Button label"
+      "": "Button content (label / icon)"
     }
   },
   "oas-toggle-item": {
