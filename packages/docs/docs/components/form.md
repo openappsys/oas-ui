@@ -281,4 +281,6 @@ onMounted(() => {
 | --- | --- |
 | `--oas-form-label-width` | `96px` |
 
+**CSS 变量**
+
 校验失败时失败字段被标记 `aria-invalid`；可通过 `form.getErrors()` 获取错误信息。被 `oas-form-item` 包裹的字段，错误文本写入 form-item 的错误位（`role="alert"`）。

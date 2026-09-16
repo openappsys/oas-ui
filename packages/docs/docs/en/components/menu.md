@@ -403,6 +403,8 @@ onMounted(() => {
 | --- | --- |
 | default | Divider data carrier (no attributes; the host parses it as `type: "divider"`) |
 
+**CSS 变量**
+
 `MenuItem` fields:
 
 | Field      | Description                                                        | Type         |

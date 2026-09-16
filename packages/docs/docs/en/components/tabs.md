@@ -664,4 +664,6 @@ onMounted(async () => {
 | --- | --- |
 | default | — |
 
+**CSS 变量**
+
 Keyboard: after focusing the tab list, `←` / `→` / `↑` / `↓` cycle through tabs; with a close button focused, Enter / Space triggers close. `oas-tab-panel` declares the `hidden` attribute to hide inactive panels (content stays in the DOM).

@@ -580,6 +580,8 @@ onMounted(() => {
 | --- | --- |
 | default | Option label content (default slot text) |
 
+**CSS 变量**
+
 > Options carrying a `group` field are rendered under a group title (not selectable), items are indented; keyboard navigation continues across groups.
 
 Keyboard: `Enter` / `↓` to open, `↑`/`↓` to move the highlight (works inside the search box too), `Enter` to select, `Esc` to close.

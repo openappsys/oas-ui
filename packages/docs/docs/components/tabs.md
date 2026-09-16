@@ -664,4 +664,6 @@ onMounted(async () => {
 | --- | --- |
 | 默认 | — |
 
+**CSS 变量**
+
 键盘：聚焦标签列表后 ← / → / ↑ / ↓ 循环切换；关闭按钮聚焦后 Enter / Space 触发关闭。`oas-tab-panel` 声明 `hidden` 属性隐藏未激活面板（内容保留在 DOM）。

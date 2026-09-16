@@ -172,3 +172,7 @@ Child components must carry the matching `slot` attribute (`header` / `sider` / 
 | Name | Description |
 | --- | --- |
 | default | — |
+
+**CSS 变量**
+
+**CSS 变量**

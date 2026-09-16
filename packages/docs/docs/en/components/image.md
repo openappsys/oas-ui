@@ -446,3 +446,5 @@ onMounted(async () => {
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-image-group-gap` | `var(--oas-space-3)` |
+
+**CSS 变量**
