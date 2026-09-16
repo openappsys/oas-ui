@@ -77,7 +77,10 @@ const SLOT_BLIND_OK = new Set([
   'oas-context-menu-item.slots: (默认)',
   'oas-context-menu-group.slots: (默认)',
   'oas-context-menu-divider.slots: (默认)',
+  'oas-list-item.slots: (默认)',
   'oas-splitter.slots: pane-${i}',
+  'oas-rate.slots: icon-${i}',
+  'oas-command.slots: view-${view}',
 ])
 
 // ---------- 基础工具 ----------

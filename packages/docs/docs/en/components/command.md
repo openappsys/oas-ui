@@ -567,6 +567,7 @@ onMounted(() => {
 | --- | --- |
 | `empty` | Custom empty state (read the current query via `el.query`, e.g. a "create xyz" entry) |
 | `footer` | Custom footer bar (defaults to `↑↓ navigate / ↵ select / esc close` hints) |
+| `view-${view}` | Per-view override of the selected content (host writes `<div slot="view-deploy">` …; `view` is the view field value) |
 
 ### oas-command-item
 

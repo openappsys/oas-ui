@@ -699,7 +699,8 @@
     },
     "slots": {
       "empty": "Custom empty state (read the current query via `el.query`, e.g. a \"create xyz\" entry)",
-      "footer": "Custom footer bar (defaults to `↑↓ navigate / ↵ select / esc close` hints)"
+      "footer": "Custom footer bar (defaults to `↑↓ navigate / ↵ select / esc close` hints)",
+      "view-${view}": "Per-view override of the selected content (host writes `<div slot=\"view-deploy\">` …; `view` is the view field value)"
     }
   },
   "oas-comment": {
@@ -1543,7 +1544,8 @@
       "avatar": "Rich avatar content (oas-avatar or anything), takes precedence over the avatar attribute",
       "description": "Description area (falls back to the default slot when not provided)",
       "extra": "Extra area on the right of the item",
-      "title": "Rich title content slot, overrides the title attribute text when present"
+      "title": "Rich title content slot, overrides the title attribute text when present",
+      "": "Default content: rendered in the description area (fallback for the `description` slot when not provided)"
     }
   },
   "oas-log": {
@@ -2196,7 +2198,8 @@
     },
     "slots": {
       "icon": "Custom icon for the selected state (replaces the default star)",
-      "void-icon": "Custom icon for the unselected state (replaces the default star)"
+      "void-icon": "Custom icon for the unselected state (replaces the default star)",
+      "icon-${i}": "Per-index icon override (host writes `<span slot=\"icon-1\">` …; i is the 1-based index); `icon` overrides all"
     }
   },
   "oas-result": {
