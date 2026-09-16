@@ -287,8 +287,6 @@ onMounted(() => {
 | --- | --- |
 | 默认 | — |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-timeline-font` | `inherit` |
@@ -316,13 +314,9 @@ onMounted(() => {
 | `opposite` | 对侧内容（仅在 mode=alternate 时显示于轴对侧） |
 | `title` | 标题强调行（与正文分区） |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-timeline-dot-size` | `10px` |
 | `--oas-timeline-font` | `inherit` |
-
-**CSS 变量**
 
 **CSS 变量**

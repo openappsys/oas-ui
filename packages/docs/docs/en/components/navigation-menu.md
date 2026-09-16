@@ -195,8 +195,6 @@ onMounted(() => {
 | --- | --- |
 | `panel-footer` | Marketing slot at the bottom of the panel: `<div slot="panel-footer">` (CTA cards etc.) renders a footer container inside the panel when it has content |
 
-**CSS 变量**
-
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-nav-panel-max-height` | `60vh` |
@@ -232,8 +230,6 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Grouped navigation items (`oas-navigation-menu-item` children, flattened into the grid when the panel renders) |
-
-**CSS 变量**
 
 `NavItem` fields (inherits `MenuItem`):
 

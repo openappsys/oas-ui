@@ -324,8 +324,6 @@ onMounted(() => {
 | `oas-change` | Committed on Enter or blur, `detail: { value }` |
 | `oas-input` | While typing, `detail: { value }` |
 
-**CSS 变量**
-
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-toolbar-input-width` | `120px` |
@@ -340,8 +338,6 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Button label (default slot text) |
-
-**CSS 变量**
 
 - The host has `role="toolbar"` + `aria-orientation`; `aria-label` comes from the locale key (`toolbar.label`)
 - Children that join roving: native controls (`button`/`input`/`select`/`textarea`/`a[href]`), interactive `role`s, custom elements (tag contains `-`); `oas-toolbar-separator`, `data-toolbar-ignore` and `aria-hidden` are excluded, `disabled`/`aria-disabled` are skipped automatically (aria-disabled items stay focusable in `focusable-when-disabled` mode)

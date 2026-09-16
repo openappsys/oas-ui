@@ -320,8 +320,6 @@
 | --- | --- |
 | 默认 | — |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-grid-columns` | `repeat(${base ?? 1}, 1fr)` |
@@ -338,14 +336,8 @@
 | --- | --- |
 | 默认 | — |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-grid-item-column` | `${baseColumn}` |
-
-**CSS 变量**
-
-**CSS 变量**
 
 `oas-grid` 渲染为 CSS Grid，子项为 24 份中的一份；`oas-grid-item` 通过 `span` 声明占位。设置 `columns` 后自动等分、忽略 span，普通元素子项也可直接放入。

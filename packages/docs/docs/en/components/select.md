@@ -561,8 +561,6 @@ onMounted(() => {
 | `template[slot="option"]` | Static option row template, cloned into each option label container; `[data-option-label]` nodes get bound to the option label |
 | `template[slot="tag"]` | Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label |
 
-**CSS 变量**
-
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-button-group-radius` | `var(--oas-radius-md)` |
@@ -579,8 +577,6 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Option label content (default slot text) |
-
-**CSS 变量**
 
 > Options carrying a `group` field are rendered under a group title (not selectable), items are indented; keyboard navigation continues across groups.
 

@@ -439,8 +439,6 @@ onMounted(async () => {
 | 默认 | — |
 | `template[slot="toolbar"]` | 透传共享预览宿主：自定义共享预览浮层的工具栏（克隆替换默认按钮组 + oas-toolbar-render 命令通道，同 oas-image） |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-image-group-gap` | `var(--oas-space-3)` |

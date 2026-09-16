@@ -311,8 +311,6 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 | `icon` | Icon avatar (explicit icon content; no first-character truncation) |
 | `trigger` | Custom content for the change-avatar overlay (shown on hover/focus; built-in camera icon by default) |
 
-**CSS 变量**
-
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-avatar-bg` | `var(--oas-color-primary)` |
@@ -331,15 +329,9 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 | --- | --- |
 | default | — |
 
-**CSS 变量**
-
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-avatar-group-overlap` | `-8px` |
 | `--oas-avatar-group-ring` | `var(--oas-color-bg)` |
-
-**CSS 变量**
-
-**CSS 变量**
 
 > Note: `alt` is read on first render and is not in the observed attribute list; dynamic changes require a manual re-render.

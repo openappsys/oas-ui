@@ -195,8 +195,6 @@ onMounted(() => {
 | --- | --- |
 | `panel-footer` | 面板底部营销位插槽：`<div slot="panel-footer">`（CTA 卡片等）有内容时面板底部渲染插槽容器 |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-nav-panel-max-height` | `60vh` |
@@ -232,8 +230,6 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 组内导航项（`oas-navigation-menu-item` 子元素，面板渲染时平铺进网格） |
-
-**CSS 变量**
 
 `NavItem` 字段（继承 `MenuItem`）：
 
