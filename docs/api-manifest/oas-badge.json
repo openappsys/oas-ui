@@ -162,5 +162,51 @@
       "name": "ribbon"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-badge-bg",
+      "default": "var(--oas-color-danger)"
+    },
+    {
+      "name": "--oas-badge-on-color",
+      "default": "var(--oas-color-text-on-danger)"
+    },
+    {
+      "name": "--oas-badge-pos",
+      "default": "translate(50%, -50%)"
+    },
+    {
+      "name": "--oas-status-color",
+      "default": "var(--oas-color-text-secondary)"
+    },
+    {
+      "name": "--oas-ribbon-anchor-x",
+      "default": "0px"
+    },
+    {
+      "name": "--oas-ribbon-offset-x",
+      "default": "0px"
+    },
+    {
+      "name": "--oas-ribbon-offset-y",
+      "default": "0px"
+    },
+    {
+      "name": "--oas-badge-diagonal-pin",
+      "default": "25px"
+    },
+    {
+      "name": "--oas-badge-diagonal-height",
+      "default": "30px"
+    },
+    {
+      "name": "--oas-badge-diagonal-font",
+      "default": "var(--oas-font-size-xs)"
+    },
+    {
+      "name": "--oas-badge-diagonal-text-inset",
+      "default": "0px"
+    }
+  ],
   "unresolved": []
 }

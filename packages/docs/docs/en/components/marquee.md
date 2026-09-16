@@ -174,6 +174,12 @@ Content is not limited to text — putting images or logos in the slot produces 
 | --- | --- |
 | default | — |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-marquee-fade-size` | `24px` |
+
 - When the system enables "reduce motion" (`prefers-reduced-motion: reduce`), the animation is disabled and content is shown statically.
 - The duplicated content group carries `aria-hidden`, so screen readers do not read it twice.
 - No events; purely presentational.

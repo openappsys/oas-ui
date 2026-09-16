@@ -839,4 +839,15 @@ onMounted(() => {
 | `header` | Structured header slot |
 | `title` | Rich title content slot, overrides the title attribute text when present |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-origin-x` | `center` |
+| `--oas-origin-y` | `center` |
+| `--oas-popover-bg` | `var(--oas-color-bg)` |
+| `--oas-popover-border` | `var(--oas-color-border)` |
+| `--oas-popover-radius` | `var(--oas-radius-md)` |
+| `--oas-popover-shadow` | `var(--oas-shadow-md)` |
+
 Clicking the trigger toggles visibility; clicking outside or pressing Esc closes it; `role="dialog"`. Nested popovers: closing the parent cascades to children; `Esc` closes one layer at a time and restores focus to the trigger.

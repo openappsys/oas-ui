@@ -140,5 +140,11 @@
       "name": "template[slot=\"custom-thumb\"]"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-slider-height",
+      "default": "200px"
+    }
+  ],
   "unresolved": []
 }

@@ -180,6 +180,11 @@
 | 默认 | — |
 | `actions` | 操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定 |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-line-clamp` | `2` |
+| `--oas-text-mark-bg` | `var(--oas-color-warning)` |
+
 ### oas-title
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -214,6 +219,11 @@
 | 默认 | — |
 | `actions` | 操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定 |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-line-clamp` | `2` |
+| `--oas-text-mark-bg` | `var(--oas-color-warning)` |
+
 ### oas-paragraph
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -247,6 +257,11 @@
 | --- | --- |
 | 默认 | — |
 | `actions` | 操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定 |
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-line-clamp` | `2` |
+| `--oas-text-mark-bg` | `var(--oas-color-warning)` |
 
 同 oas-text 属性（修饰布尔/depth/tag/line-clamp/copy-text/ellipsis-suffix/actions-position 同样生效），`level` 1–5 驱动标签。
 

@@ -109,5 +109,19 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-switch-width",
+      "default": "40px"
+    },
+    {
+      "name": "--oas-switch-height",
+      "default": "22px"
+    },
+    {
+      "name": "--oas-switch-thumb-size",
+      "default": "18px"
+    }
+  ],
   "unresolved": []
 }

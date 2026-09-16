@@ -165,3 +165,14 @@ The `color` attribute accepts 11 preset names (auto-adapting to light/dark theme
 | Name | Description |
 | --- | --- |
 | default | — |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-divider-color` | `var(--oas-color-border-strong)` |
+| `--oas-divider-double-gap` | `3px` |
+| `--oas-divider-middle-inset` | `16.67%` |
+| `--oas-divider-spacing` | `var(--oas-space-4)` |
+| `--oas-divider-title-inset` | `5%` |
+| `--oas-divider-width` | `1px` |

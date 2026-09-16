@@ -108,5 +108,11 @@
       "name": "title"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-notification-progress-color",
+      "default": "var(--oas-color-primary)"
+    }
+  ],
   "unresolved": []
 }

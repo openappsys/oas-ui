@@ -710,6 +710,14 @@ onMounted(() => {
 | --- | --- |
 | `template[slot="empty"]` | Rich empty-state content (takes precedence over empty-text and the default empty text) |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-table-cell-padding-block` | `var(--oas-space-3)` |
+| `--oas-table-cell-padding-inline` | `var(--oas-space-4)` |
+| `--oas-table-font-size` | `var(--oas-font-size-md)` |
+
 > Note: `columns.render` is a function type and can only be assigned via the property from JS — it cannot be expressed as a JSON string. For `fixed` columns it is recommended to declare `width` explicitly (sticky offsets fall back to 100px when omitted). Summary can also be written directly on a column as `summary: 'sum' | 'avg' | 'count'`; `children` (tree child rows) and `expand` (expandable row content) are both row data fields.
 
 The loading placeholder row is exposed as `::part(loading-row)`, the summary row as `::part(summary-row)`, and the expandable content row as `::part(expand-row)`; each can be styled independently.

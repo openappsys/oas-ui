@@ -66,5 +66,31 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-divider-width",
+      "default": "1px"
+    },
+    {
+      "name": "--oas-divider-color",
+      "default": "var(--oas-color-border-strong)"
+    },
+    {
+      "name": "--oas-divider-title-inset",
+      "default": "5%"
+    },
+    {
+      "name": "--oas-divider-middle-inset",
+      "default": "16.67%"
+    },
+    {
+      "name": "--oas-divider-spacing",
+      "default": "var(--oas-space-4)"
+    },
+    {
+      "name": "--oas-divider-double-gap",
+      "default": "3px"
+    }
+  ],
   "unresolved": []
 }

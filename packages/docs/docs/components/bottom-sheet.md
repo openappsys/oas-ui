@@ -84,6 +84,12 @@ onMounted(async () => {
 | --- | --- |
 | 默认 | — |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-bottom-sheet-max-height` | `85vh` |
+
 - `open` 为受控属性：组件手势（下滑/遮罩/Esc）只派发 `oas-close`，收起由宿主移除 `open` 完成。
 - 焦点陷阱内置：打开时焦点锁在面板内，关闭后归还；safe-area-inset-bottom 自动适配刘海屏手势区。
 - `passive` 模式面向浮层组件的 PC 形态结构复用（select/date-picker 等移动形态的承载底座），单独使用时即静态面板。

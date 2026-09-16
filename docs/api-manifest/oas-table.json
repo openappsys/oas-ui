@@ -221,5 +221,19 @@
       "name": "template[slot=\"empty\"]"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-table-font-size",
+      "default": "var(--oas-font-size-md)"
+    },
+    {
+      "name": "--oas-table-cell-padding-block",
+      "default": "var(--oas-space-3)"
+    },
+    {
+      "name": "--oas-table-cell-padding-inline",
+      "default": "var(--oas-space-4)"
+    }
+  ],
   "unresolved": []
 }

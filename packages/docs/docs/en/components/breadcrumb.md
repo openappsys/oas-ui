@@ -331,6 +331,10 @@ Font size follows the outer context (inherited) by default; override with the CS
 | `oas-collapse-click` | Fired when the collapse ellipsis is clicked to expand the dropdown (not fired when collapsing), `detail: { collapsedItems }` (the original array of collapsed items, for hosts that want a custom collapse panel) |
 | `oas-select` | A link item, a collapsed dropdown item, or an item dropdown item was clicked; `detail: { value: href }` (real links do not block default navigation; hosts may intercept for routing) |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-breadcrumb-font` | `inherit` |
+
 ### oas-breadcrumb-item
 
 | Attribute | Description | Type | Default |

@@ -62,5 +62,19 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-skeleton-color",
+      "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-skeleton-sheen",
+      "default": "var(--oas-color-border)"
+    },
+    {
+      "name": "--oas-skeleton-duration",
+      "default": "1.5s"
+    }
+  ],
   "unresolved": []
 }

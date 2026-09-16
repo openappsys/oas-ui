@@ -271,4 +271,10 @@ onMounted(() => {
 | --- | --- |
 | `template[slot="custom-thumb"]` | Custom thumb content (icon/text): `template[slot="custom-thumb"]` (static template, cloned into every visible thumb — both thumbs in range mode) or a plain `[slot="custom-thumb"]` element |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-slider-height` | `200px` |
+
 `marks` also accepts a JS property channel (assign objects/arrays directly, reflected as a JSON attribute); `el.formatTooltip = (value) => string | number` is the value formatter function property (the output feeds both the value bubble and `aria-valuetext`, takes precedence over the `format` attribute, clear with `null`) — attributes cannot express function semantics, so the function channel is JS-property-only.

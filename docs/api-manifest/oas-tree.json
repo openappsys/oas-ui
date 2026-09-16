@@ -205,5 +205,6 @@
       "name": "template[slot=\"toggle-loading\"]"
     }
   ],
+  "cssVars": [],
   "unresolved": []
 }

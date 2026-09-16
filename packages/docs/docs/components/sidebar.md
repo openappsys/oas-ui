@@ -379,6 +379,12 @@
 | `footer` | — |
 | `header` | — |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-sidebar-badge-bg` | `var(--oas-color-primary)` |
+| `--oas-sidebar-badge-color` | `#fff` |
+| `--oas-sidebar-bg` | `var(--oas-color-bg-hover)` |
+
 ### oas-sidebar-item
 
 | 属性 | 说明 | 类型 | 默认值 |

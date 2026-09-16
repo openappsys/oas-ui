@@ -104,6 +104,12 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 | `suffix` | Trailing content (distributed content takes precedence over the `suffix` attribute text) |
 | `title` | Heading above the value (distributed content takes precedence over the `title` attribute text) |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-countdown-font` | `var(--oas-font-size-lg)` |
+
 When the template contains `D`/`DD`, hours are counted within the day (0-23); without days, hours roll up into them (e.g. `25:01:01`).
 
 <script setup>

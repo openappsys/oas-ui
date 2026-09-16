@@ -305,6 +305,13 @@ onMounted(() => {
 | `icon` | — |
 | `void-icon` | — |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-rate-active` | `var(--oas-color-warning)` |
+| `--oas-rate-void` | `var(--oas-color-border)` |
+
 Icon customization: `icon` property > `slot="icon"` (cloned to each star) > default star.
 
 Keyboard: `←`/`→` (or `↑`/`↓`) to adjust, `Home` to reset to zero, `End` to fill.

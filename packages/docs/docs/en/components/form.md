@@ -275,4 +275,8 @@ onMounted(() => {
 | --- | --- |
 | default | Field control |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-form-label-width` | `96px` |
+
 On validation failure, failed fields are marked `aria-invalid`; error messages can be retrieved via `form.getErrors()`. For fields wrapped in `oas-form-item`, the error text is collected into the form-item's error slot (`role="alert"`).

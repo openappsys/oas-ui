@@ -167,6 +167,14 @@ onMounted(async () => {
 | --- | --- |
 | default | — |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-backdrop-bg` | `var(--oas-color-overlay)` |
+| `--oas-backdrop-blur` | `none` |
+| `--oas-backdrop-opacity` | `1` |
+
 - No focus trap of its own (handled by the overlying dialog); Esc does not auto-close (decided by the outer dialog).
 - The node is removed from the DOM after the exit animation when `open=false`, leaving no orphan DOM; when multiple backdrops coexist, scroll is restored only when the last one closes.
 - Click targeting: only clicks on the mask itself fire `oas-click` (content-area clicks do not); `stop-propagation` blocks mask clicks from reaching the host document by default.

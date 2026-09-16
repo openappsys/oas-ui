@@ -186,6 +186,14 @@ Font size defaults to 0.875× the outer context (`0.875em`); override with the C
 | `oas-copy` | Copy succeeded, `detail: { text }` |
 | `oas-copy-error` | Copy failed, `detail: { text }` |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-code-color` | `var(--oas-color-text-primary)` |
+| `--oas-code-font` | `0.875em` |
+| `--oas-code-on-color` | `var(--oas-color-bg)` |
+
 ### Engine Choice (Architecture Decision)
 
 **Self-developed regex token highlighting, no third-party highlighting library**:

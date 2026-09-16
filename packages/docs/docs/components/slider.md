@@ -271,4 +271,10 @@ onMounted(() => {
 | --- | --- |
 | `template[slot="custom-thumb"]` | 自定义滑块内容（图标/文字）：`template[slot="custom-thumb"]`（静态模板，克隆到每个可见滑块，范围模式两个滑块都会克隆）或普通 `[slot="custom-thumb"]` 元素 |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-slider-height` | `200px` |
+
 `marks` 支持 JS property 通道（对象/数组直接赋值，反射为 JSON attribute）；`el.formatTooltip = (value) => string | number` 为值格式化函数 property（输出同时进值气泡与 `aria-valuetext`，优先级高于 `format` 属性，置 `null` 清除）——attribute 无法表达函数语义，函数通道只能走 JS property。

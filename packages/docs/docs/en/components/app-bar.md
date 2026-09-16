@@ -157,3 +157,12 @@ onMounted(() => {
 | `leading` | Custom content before the title |
 | `title` | Rich title channel (overrides the heading attribute) |
 | `trailing` | Rightmost trailing custom area |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-app-bar-height` | `56px` |
+| `--oas-app-bar-inset` | `var(--oas-space-3)` |
+| `--oas-app-bar-shadow` | `var(--oas-shadow-md)` |
+| `--oas-app-bar-top` | `0px` |

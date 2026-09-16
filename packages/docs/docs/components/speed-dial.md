@@ -218,6 +218,13 @@ onMounted(() => {
 | --- | --- |
 | 默认 | 主钮自定义图标，有内容时替代默认 ＋（展开旋转 45° 保持） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
+| `--oas-tooltip-color` | `var(--oas-color-bg)` |
+
 `SpeedDialAction` 字段：
 
 | 字段   | 说明                                       | 类型     |

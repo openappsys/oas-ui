@@ -50,5 +50,11 @@
       "name": "title"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-desc-columns",
+      "default": "3"
+    }
+  ],
   "unresolved": []
 }

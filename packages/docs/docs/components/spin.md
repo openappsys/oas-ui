@@ -330,6 +330,16 @@ onMounted(async () => {
 
 ### CSS 变量
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-spin-border-width` | `3px` |
+| `--oas-spin-duration` | `0.8s` |
+| `--oas-spin-indicator-color` | `var(--oas-color-primary)` |
+| `--oas-spin-track-color` | `var(--oas-color-bg-hover)` |
+| `--oas-spin-z-index` | `3500` |
+
+### CSS 变量
+
 | 变量 | 说明 | 默认值 |
 | --- | --- | --- |
 | `--oas-spin-indicator-color` | 指示色 | `var(--oas-color-primary)` |

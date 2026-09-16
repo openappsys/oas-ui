@@ -174,6 +174,12 @@ onMounted(() => {
 | --- | --- |
 | 默认 | — |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-marquee-fade-size` | `24px` |
+
 - 系统开启「减少动态效果」（`prefers-reduced-motion: reduce`）时动画关闭、静态展示。
 - 复制内容组带 `aria-hidden`，屏幕阅读器不重复朗读。
 - 无事件，纯展示。

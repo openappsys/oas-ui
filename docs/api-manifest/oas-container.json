@@ -31,5 +31,15 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-container-max",
+      "default": "var(--oas-container-lg, 992px)"
+    },
+    {
+      "name": "--oas-container-padding",
+      "default": "0"
+    }
+  ],
   "unresolved": []
 }

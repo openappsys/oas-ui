@@ -245,4 +245,13 @@ onMounted(async () => {
 | `action` | group 模式子钮（原生 button/a 或 oas-button），点击自动收起并回焦主钮；支持角标与自定义图标 |
 | `icon` | 图标（默认 ＋） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-float-button-bottom` | `var(--oas-space-6)` |
+| `--oas-float-button-right` | `var(--oas-space-6)` |
+| `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
+| `--oas-tooltip-color` | `var(--oas-color-bg)` |
+
 默认定位 `position: fixed; bottom/right`，位置经 `--oas-float-button-bottom` / `--oas-float-button-right` CSS 变量调整（默认 `var(--oas-space-6)`）。

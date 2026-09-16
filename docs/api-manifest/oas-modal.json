@@ -200,5 +200,27 @@
       "name": "title"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-modal-mask-bg",
+      "default": "var(--oas-color-overlay)"
+    },
+    {
+      "name": "--oas-modal-mask-blur",
+      "default": "0px"
+    },
+    {
+      "name": "--oas-modal-max-height",
+      "default": "90vh"
+    },
+    {
+      "name": "--oas-modal-origin-x",
+      "default": "center"
+    },
+    {
+      "name": "--oas-modal-origin-y",
+      "default": "center"
+    }
+  ],
   "unresolved": []
 }

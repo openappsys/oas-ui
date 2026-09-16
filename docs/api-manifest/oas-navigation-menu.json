@@ -77,5 +77,11 @@
       "name": "panel-footer"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-nav-panel-max-height",
+      "default": "60vh"
+    }
+  ],
   "unresolved": []
 }

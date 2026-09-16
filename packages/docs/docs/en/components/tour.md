@@ -417,4 +417,11 @@ onMounted(async () => {
 | `cover` | Step cover rich content (slot takes precedence over the step.cover image) |
 | `indicators` | Custom indicator area (render with the `oas-step` current/total; hides the built-in dots/number indicator when present) |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-tour-mask-color` | `var(--oas-color-overlay)` |
+| `--oas-tour-popup-bg` | `var(--oas-color-bg)` |
+
 The overlay highlights the target, `role="dialog"` + `aria-modal="true"` (downgraded to `aria-modal="false"` in non-modal form when `mask="false"`); supports "Previous / Next / Skip", keyboard ←/→ and Esc.

@@ -719,4 +719,14 @@ onMounted(async () => {
 | `footer` | — |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-modal-mask-bg` | `var(--oas-color-overlay)` |
+| `--oas-modal-mask-blur` | `0px` |
+| `--oas-modal-max-height` | `90vh` |
+| `--oas-modal-origin-x` | `center` |
+| `--oas-modal-origin-y` | `center` |
+
 `role="dialog"` + `aria-modal="true"`，打开时焦点移入「取消」按钮（`focus-ok` 时移入「确定」按钮），关闭后还原。

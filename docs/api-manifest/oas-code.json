@@ -68,5 +68,19 @@
     }
   ],
   "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-code-font",
+      "default": "0.875em"
+    },
+    {
+      "name": "--oas-code-color",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-code-on-color",
+      "default": "var(--oas-color-bg)"
+    }
+  ],
   "unresolved": []
 }

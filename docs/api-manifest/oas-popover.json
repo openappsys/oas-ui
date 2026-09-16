@@ -284,5 +284,31 @@
       "name": "title"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-popover-bg",
+      "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-popover-border",
+      "default": "var(--oas-color-border)"
+    },
+    {
+      "name": "--oas-popover-radius",
+      "default": "var(--oas-radius-md)"
+    },
+    {
+      "name": "--oas-popover-shadow",
+      "default": "var(--oas-shadow-md)"
+    },
+    {
+      "name": "--oas-origin-x",
+      "default": "center"
+    },
+    {
+      "name": "--oas-origin-y",
+      "default": "center"
+    }
+  ],
   "unresolved": []
 }

@@ -59,5 +59,6 @@
       "name": "template[slot=\"toggle\"]"
     }
   ],
+  "cssVars": [],
   "unresolved": []
 }

@@ -203,4 +203,10 @@ onMounted(async () => {
 | `reply` | Reply target area (under the author line, for "reply to @someone") |
 | `time` | Time |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-comment-font` | `inherit` |
+
 Parts: `::part(comment)` root, `::part(main)` main body, `::part(avatar)` / `::part(author)` / `::part(time)` / `::part(content)` / `::part(actions)`, `::part(children)` child comment container.

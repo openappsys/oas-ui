@@ -157,5 +157,23 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-tabs-indicator-size",
+      "default": "2px"
+    },
+    {
+      "name": "--oas-tabs-indicator-color",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-tabs-badge-bg",
+      "default": "var(--oas-color-danger)"
+    },
+    {
+      "name": "--oas-tabs-badge-color",
+      "default": "var(--oas-color-text-on-danger)"
+    }
+  ],
   "unresolved": []
 }

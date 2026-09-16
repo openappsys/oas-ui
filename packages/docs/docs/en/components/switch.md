@@ -209,3 +209,11 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | — |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-switch-height` | `22px` |
+| `--oas-switch-thumb-size` | `18px` |
+| `--oas-switch-width` | `40px` |
