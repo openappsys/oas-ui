@@ -78,15 +78,26 @@ The `description` attribute renders as secondary text below the label; a `<span 
 
 <DemoBlock title="Custom indicator (checked-icon / indeterminate-icon slots)">
   <oas-space>
-    <oas-checkbox value="fav" checked>
+    <oas-checkbox class="checkbox-heart" value="fav" checked>
       Favorite
-      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14 C4 10.5 2 8.5 2 6 A3.2 3.2 0 0 1 8 4.4 A3.2 3.2 0 0 1 14 6 C14 8.5 12 10.5 8 14 Z" fill="var(--oas-color-danger)"/></svg></template>
+      <svg slot="checked-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14 C4 10.5 2 8.5 2 6 A3.2 3.2 0 0 1 8 4.4 A3.2 3.2 0 0 1 14 6 C14 8.5 12 10.5 8 14 Z" fill="currentColor"/></svg>
     </oas-checkbox>
     <oas-checkbox>
       Native (comparison)
     </oas-checkbox>
   </oas-space>
 </DemoBlock>
+
+<style>
+/* Checked: danger filled heart (slot) + colored ring. The icon uses currentColor and the color comes
+   from ::part, avoiding var() inside SVG attributes. */
+.checkbox-heart[checked]::part(box) {
+  border-color: var(--oas-color-danger);
+}
+.checkbox-heart::part(indicator-checked) {
+  color: var(--oas-color-danger);
+}
+</style>
 
 Slot content takes over the checked-state icon (`template[slot]` or a direct element both work); the unchecked state falls back to a default hollow outline, overridable via `::part(box)`. The `indeterminate-icon` slot customizes the half-checked icon, pairing well with `check-all` linkage.
 

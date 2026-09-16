@@ -78,15 +78,25 @@
 
 <DemoBlock title="自定义指示器（checked-icon / indeterminate-icon 插槽）">
   <oas-space>
-    <oas-checkbox value="fav" checked>
+    <oas-checkbox class="checkbox-heart" value="fav" checked>
       收藏
-      <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14 C4 10.5 2 8.5 2 6 A3.2 3.2 0 0 1 8 4.4 A3.2 3.2 0 0 1 14 6 C14 8.5 12 10.5 8 14 Z" fill="var(--oas-color-danger)"/></svg></template>
+      <svg slot="checked-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14 C4 10.5 2 8.5 2 6 A3.2 3.2 0 0 1 8 4.4 A3.2 3.2 0 0 1 14 6 C14 8.5 12 10.5 8 14 Z" fill="currentColor"/></svg>
     </oas-checkbox>
     <oas-checkbox>
       未自定义（原生对照）
     </oas-checkbox>
   </oas-space>
 </DemoBlock>
+
+<style>
+/* 选中态：danger 实心心形（插槽）+ 圆环着色。图标用 currentColor，颜色由 ::part 给，避免把 var() 写进 SVG 属性 */
+.checkbox-heart[checked]::part(box) {
+  border-color: var(--oas-color-danger);
+}
+.checkbox-heart::part(indicator-checked) {
+  color: var(--oas-color-danger);
+}
+</style>
 
 插槽内容接管选中态图标（`template[slot]` 或直接放元素皆可）；未选态显示默认空心轮廓，宿主可用 `::part(box)` 覆写。`indeterminate-icon` 插槽自定义半选图标，与 `check-all` 联动搭配使用。
 
