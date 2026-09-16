@@ -62,6 +62,49 @@ describe('OASEditable', () => {
     expect(field(el).value).toBe('hello')
   })
 
+  it('编辑框宽度自适应内容（镜像测量，输入时跟随；无布局环境退化为 ch 估算）', () => {
+    const el = mount({ value: 'hello' })
+    display(el).click()
+    const w0 = field(el).style.width
+    expect(w0, '进入编辑即同步宽度（非固定 140px 起跳）').not.toBe('')
+    // 输入更长文本 → 宽度跟随变化
+    field(el).value = 'hello world, this is a much longer value'
+    field(el).dispatchEvent(new Event('input', { bubbles: true }))
+    expect(field(el).style.width).not.toBe(w0)
+  })
+
+  it('展示态模板迟到填充：空模板先回落纯文本，内容到达后经 content 观察器升级自定义展示', async () => {
+    const el = mount({ value: '张三' })
+    // 模拟 dev 渲染时序：先挂空 template（组件克隆到空气 → 回落纯文本），内容后到
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'display')
+    el.appendChild(tpl)
+    el.dispatchEvent(new CustomEvent('force-update')) // 触发不了也无妨，childObserver 已因 append 触发 update
+    await new Promise((r) => setTimeout(r, 30))
+    expect(el.shadowRoot!.querySelector('.display-custom')).toBeNull() // 空克隆不占位
+    expect(display(el).textContent).toContain('张三') // 回落纯文本
+
+    // 内容迟到填充 → displayTplObserver 触发 update → 升级自定义展示并绑定当前值
+    const icon = document.createElement('span')
+    icon.textContent = '👤 '
+    tpl.content.appendChild(icon)
+    const bind = document.createElement('span')
+    bind.setAttribute('data-display-value', '')
+    tpl.content.appendChild(bind)
+    await new Promise((r) => setTimeout(r, 50))
+    expect(el.shadowRoot!.querySelector('.display-custom')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[data-display-value]')?.textContent).toBe('张三')
+  })
+
+  it('编辑态 CSS：display[hidden] 规则存在（hidden 属性须真实隐藏原文，防「原文残留 + 编辑框并排」）', () => {
+    const el = mount({ value: 'hello' })
+    display(el).click()
+    // 属性断言抓不住视觉失效（.display 的 inline-flex 特异性压过 UA 的 [hidden] 规则）——锁定 CSS 规则本身
+    expect(display(el).hidden).toBe(true)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\.display\[hidden\]\s*\{\s*display:\s*none/)
+  })
+
   it('展示态 Enter/空格进入编辑', () => {
     const el = mount({ value: 'x' })
     pressDisplay(el, 'Enter')
