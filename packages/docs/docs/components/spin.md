@@ -338,17 +338,6 @@ onMounted(async () => {
 | `--oas-spin-track-color` | `var(--oas-color-bg-hover)` |
 | `--oas-spin-z-index` | `3500` |
 
-### CSS 变量
-
-| 变量 | 说明 | 默认值 |
-| --- | --- | --- |
-| `--oas-spin-indicator-color` | 指示色 | `var(--oas-color-primary)` |
-| `--oas-spin-track-color` | 轨道色（环底色 / 进度环轨道） | `var(--oas-color-bg-hover)` |
-| `--oas-spin-border-width` | 线宽（环边框 / 进度环描边） | `3px`（xs/small 档 `2px`） |
-| `--oas-spin-duration` | 动画时长 | `0.8s` |
-| `--oas-spin-mask-bg` | 遮罩背景 | `color-mix(in srgb, var(--oas-color-bg) 70%, transparent)` |
-| `--oas-spin-z-index` | 全屏层级 | `3500` |
-
 ### 静态方法
 
 | 方法 | 说明 |

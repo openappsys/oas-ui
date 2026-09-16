@@ -125,6 +125,10 @@
   ],
   "cssVars": [
     {
+      "name": "--oas-rate-star-size",
+      "default": null
+    },
+    {
       "name": "--oas-rate-void",
       "default": "var(--oas-color-border)"
     },

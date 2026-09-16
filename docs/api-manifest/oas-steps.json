@@ -113,6 +113,19 @@
     }
   ],
   "slots": [],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-steps-arrow-gap",
+      "default": "0px"
+    },
+    {
+      "name": "--oas-steps-arrow",
+      "default": null
+    },
+    {
+      "name": "--oas-steps-item-bg",
+      "default": "var(--oas-color-bg-hover)"
+    }
+  ],
   "unresolved": []
 }

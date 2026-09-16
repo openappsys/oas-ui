@@ -122,3 +122,10 @@ The `title` slot accepts rich content (for example a large status code composed 
 | `extra` | Action area, placed below the description |
 | `icon` | Custom icon (overrides the built-in status icon; switches to neutral styling without the tinted backdrop) |
 | `title` | Rich title content slot; overrides the title attribute text when present |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-result-desc-size` | — |
+| `--oas-result-title-size` | — |

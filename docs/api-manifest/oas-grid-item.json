@@ -28,6 +28,11 @@
       "name": ""
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-grid-item-column",
+      "default": "${baseColumn}"
+    }
+  ],
   "unresolved": []
 }

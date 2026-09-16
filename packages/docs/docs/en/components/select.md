@@ -564,6 +564,7 @@ onMounted(() => {
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-button-group-radius` | `var(--oas-radius-md)` |
+| `--oas-select-dropdown-height` | `240px` |
 
 ### oas-option
 

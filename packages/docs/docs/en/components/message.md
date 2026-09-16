@@ -295,6 +295,8 @@ onMounted(async () => {
 
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-message-anim-in` | — |
+| `--oas-message-anim-out` | — |
 | `--oas-msg-type-color` | `var(--oas-color-border)` |
 
 ### options

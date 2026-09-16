@@ -127,6 +127,11 @@
       "name": ""
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-back-top-size",
+      "default": null
+    }
+  ],
   "unresolved": []
 }

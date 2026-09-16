@@ -46,6 +46,11 @@
       "name": ""
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-grid-columns",
+      "default": "repeat(${base ?? 1}, 1fr)"
+    }
+  ],
   "unresolved": []
 }

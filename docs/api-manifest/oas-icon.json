@@ -103,6 +103,23 @@
       "name": ""
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-icon-primary-color",
+      "default": null
+    },
+    {
+      "name": "--oas-icon-primary-opacity",
+      "default": null
+    },
+    {
+      "name": "--oas-icon-secondary-color",
+      "default": null
+    },
+    {
+      "name": "--oas-icon-secondary-opacity",
+      "default": null
+    }
+  ],
   "unresolved": []
 }

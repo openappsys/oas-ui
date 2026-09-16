@@ -640,7 +640,9 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 | `--oas-badge-diagonal-text-inset` | `0px` |
 | `--oas-badge-on-color` | `var(--oas-color-text-on-danger)` |
 | `--oas-badge-pos` | `translate(50%, -50%)` |
+| `--oas-diag-pin` | — |
 | `--oas-ribbon-anchor-x` | `0px` |
+| `--oas-ribbon-anchor-y` | `0px` |
 | `--oas-ribbon-offset-x` | `0px` |
 | `--oas-ribbon-offset-y` | `0px` |
 | `--oas-status-color` | `var(--oas-color-text-secondary)` |

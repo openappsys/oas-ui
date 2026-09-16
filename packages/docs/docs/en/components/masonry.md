@@ -130,6 +130,7 @@ A masonry layout container based on CSS columns; child items are automatically d
 
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-masonry-columns` | `${base}` |
 | `--oas-masonry-item-gap` | `var(--oas-space-2)` |
 
 ### Child Attributes

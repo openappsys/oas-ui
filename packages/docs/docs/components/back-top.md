@@ -212,4 +212,10 @@ onMounted(async () => {
 | --- | --- |
 | 默认 | 自定义按钮内容（有内容时替换内置箭头图标） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-back-top-size` | — |
+
 按钮固定于视口（`:host` 为 fixed 定位，`z-index` 走 `--oas-z-fixed`）；未显示时按钮 `aria-hidden="true"` 且宿主 `pointer-events: none` 不拦截底层点击。

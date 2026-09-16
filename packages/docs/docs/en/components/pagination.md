@@ -408,4 +408,11 @@ onMounted(() => {
 | `prev-icon` | Icon slot for the previous button; replaces the default ‹ when present |
 | `total` | Total text slot; replaces the built-in "Total N" text when present |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-pagination-font` | — |
+| `--oas-pagination-height` | — |
+
 Page numbers are omitted automatically when out of range, and the first/last flip buttons are disabled at the boundaries.

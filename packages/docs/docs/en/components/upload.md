@@ -426,4 +426,10 @@ onMounted(async () => {
 | `template[slot="tip"]` | Drop-zone tip rich content (tip attribute wins) |
 | `trigger` | Replace the drop-zone content (zone semantics kept) |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-upload-card-radius` | `var(--oas-radius-md)` |
+
 Keyboard: `Enter` / `Space` on the drop zone opens the file picker; remove buttons are focusable; the preview overlay closes with Esc.

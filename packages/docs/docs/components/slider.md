@@ -275,6 +275,10 @@ onMounted(() => {
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-slider-color` | — |
 | `--oas-slider-height` | `200px` |
+| `--oas-slider-thumb-size` | — |
+| `--oas-slider-track` | — |
+| `--oas-slider-track-size` | — |
 
 `marks` 支持 JS property 通道（对象/数组直接赋值，反射为 JSON attribute）；`el.formatTooltip = (value) => string | number` 为值格式化函数 property（输出同时进值气泡与 `aria-valuetext`，优先级高于 `format` 属性，置 `null` 清除）——attribute 无法表达函数语义，函数通道只能走 JS property。

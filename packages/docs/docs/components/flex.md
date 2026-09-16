@@ -211,3 +211,10 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-flex-direction` | `${dirBase}` |
+| `--oas-flex-gap` | `${toLen(gapShorthand.base) \|\| 'normal'}` |

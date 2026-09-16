@@ -425,4 +425,10 @@ onMounted(async () => {
 | `template[slot="tip"]` | 拖拽区提示富内容（tip 属性优先） |
 | `trigger` | 替换拖拽区内容（zone 语义保留） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-upload-card-radius` | `var(--oas-radius-md)` |
+
 键盘：拖拽区 `Enter` / `空格` 打开文件选择；删除按钮可聚焦；预览浮层 Esc 关闭。
