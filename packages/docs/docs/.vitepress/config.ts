@@ -194,8 +194,9 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' }],
     ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon-180.png' }],
-    // 首访语言适配：zh* 浏览器 → 中文（root），其余一律英文（/en/ 兜底）。
-    // 手动切换后写 localStorage（oas-lang）持久化；深链 zh 页面也按同一规则适配。
+    // 首访语言适配：只对「未带语言前缀」的默认路径（中文 root）生效——zh* 浏览器留中文，其余一律
+    // 英文（/en/ 兜底）；已带 /en/ 前缀的路径视为显式指定英文，不再按语言/偏好回弹（显式路径优先）。
+    // 手动切换后写 localStorage（oas-lang）持久化，优先于浏览器语言探测。
     // location.replace 不产生历史记录；脚本内联在 head 尽早执行（减少语言闪烁）。
     [
       'script',
@@ -204,11 +205,11 @@ export default defineConfig({
   try {
     var path = location.pathname
     var onEn = path === '/en' || path.indexOf('/en/') === 0
+    if (onEn) return
     var pref = localStorage.getItem('oas-lang')
     var isZhBrowser = (navigator.language || '').toLowerCase().indexOf('zh') === 0
     var want = pref || (isZhBrowser ? 'zh' : 'en')
-    if (want === 'en' && !onEn) location.replace('/en' + path)
-    else if (want === 'zh' && onEn) location.replace(path.replace(/^\\/en(?=\\/|$)/, '') || '/')
+    if (want === 'en') location.replace('/en' + path)
   } catch (e) {}
 })()`,
     ] as [string, Record<string, string>, string],

@@ -111,7 +111,7 @@ test.describe('官网首页（重设计版）', () => {
   })
 
   test('英文首页渲染 + 中英切换链路', async ({ browser, page }) => {
-    // 首访语言适配后：en 浏览器落 /en/（zh 浏览器无 pref 时访问 /en/ 会被弹回中文）
+    // 首访语言适配后：en 浏览器落 /en/（/en/ 是显式英文路径，zh 浏览器整页打开也保持英文）
     const ctxEn = await browser.newContext({ locale: 'en-US' })
     const pEn = await ctxEn.newPage()
     await pEn.goto('/', { waitUntil: 'domcontentloaded' })
@@ -124,9 +124,10 @@ test.describe('官网首页（重设计版）', () => {
     await expect(page.locator('.home-hero .hh-title')).toContainText('框架无关的')
   })
 
-  // 首访语言适配（head inline 脚本）：zh* → 中文（root），其余一律英文兜底（/en/）；
+  // 首访语言适配（head inline 脚本）：只对未带语言前缀的默认路径（中文 root）生效——zh* → 中文，
+  // 其余一律英文兜底（/en/）；已带 /en/ 前缀的路径是显式英文，不回弹。
   // 手动切换写 localStorage（oas-lang）持久化，优先于浏览器语言探测
-  test('首访语言适配：zh 浏览器留中文，en 浏览器跳 /en/，深链同规则', async ({ browser }) => {
+  test('首访语言适配：zh 浏览器留中文，en 浏览器跳 /en/，zh 深链同规则', async ({ browser }) => {
     // en 浏览器：根路径跳 /en/
     const ctxEn = await browser.newContext({ locale: 'en-US' })
     const pEn = await ctxEn.newPage()
@@ -163,12 +164,13 @@ test.describe('官网首页（重设计版）', () => {
     await ctx2.close()
   })
 
-  // 回环回归：head 适配脚本按 oas-lang/浏览器语言决定跳向，而 Layout 一度把「落地页 locale」无条件
-  // 写回 oas-lang——zh 浏览器整页打开 /en/ 深链时：脚本按浏览器语言跳中文、组件又把 en 写回偏好，
-  // 脚本下次读到 en 再跳 /en/，整页互踢（dev 下 hydration 快，实测 4s 内 40+ 次整页 load；构建产物
-  // 里同一根因表现为「落地即污染偏好槽」，之后访问被错误偏好劫持，且 SPA 下拉切换不触发 head 脚本，
-  // 平时不易撞见）。断言「稳定收敛 + 首屏不写偏好槽」——只在某一刻取样 URL 是抓不到的。
-  test('首访语言适配不回环：跨语言深链整页打开应稳定收敛（历史缺陷：/en/ ↔ 中文页互踢）', async ({ browser }) => {
+  // 回归（回环 + 显式路径优先）：head 适配脚本按 oas-lang/浏览器语言决定跳向，而 Layout 一度把
+  // 「落地页 locale」无条件写回 oas-lang——zh 浏览器整页打开 /en/ 深链时：脚本按浏览器语言跳中文、
+  // 组件又把 en 写回偏好，脚本下次读到 en 再跳 /en/，整页互踢（dev 下 hydration 快，实测 4s 内
+  // 40+ 次整页 load；构建产物里同一根因表现为「落地即污染偏好槽」，之后访问被错误偏好劫持，且
+  // SPA 下拉切换不触发 head 脚本，平时不易撞见）。现语义：/en/ 是显式语言路径，一律不回弹。
+  // 断言「稳定收敛 + 落点正确 + 首屏不写偏好槽」——只在某一刻取样 URL 是抓不到的。
+  test('首访语言适配：/en/ 显式路径优先且不回环（历史缺陷：/en/ ↔ 中文页互踢）', async ({ browser }) => {
     const settle = async (locale: string, start: string, expectPath: string) => {
       const ctx = await browser.newContext({ locale })
       const p = await ctx.newPage()
@@ -183,7 +185,9 @@ test.describe('官网首页（重设计版）', () => {
       expect(loads, `${locale} 整页打开 ${start} 不应反复整页重定向`).toBeLessThanOrEqual(3)
       expect(pref, '落地首屏不应把当前 locale 当用户偏好写回 oas-lang').toBeNull()
     }
-    await settle('zh-CN', '/en/components/button-group.html', '/components/button-group.html')
+    // zh 浏览器整页打开 /en/ 深链：显式英文路径优先，保持英文（不再被浏览器语言弹回中文）
+    await settle('zh-CN', '/en/components/button-group.html', '/en/components/button-group.html')
+    // en 浏览器整页打开中文深链：无显式语言前缀，按浏览器语言兜底跳对应英文页
     await settle('en-US', '/components/button-group.html', '/en/components/button-group.html')
   })
 
