@@ -560,6 +560,7 @@ onMounted(() => {
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-button-group-radius` | `var(--oas-radius-md)` |
+| `--oas-select-dropdown-height` | `240px` |
 
 ### oas-option
 

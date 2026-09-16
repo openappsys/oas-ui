@@ -46,6 +46,15 @@
       "name": "title"
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-result-title-size",
+      "default": null
+    },
+    {
+      "name": "--oas-result-desc-size",
+      "default": null
+    }
+  ],
   "unresolved": []
 }

@@ -47,7 +47,7 @@ const HEADER = {
   method: new Set(['方法', 'method', 'methods']),
   part: new Set(['部件', 'part', 'parts']),
   desc: new Set(['说明', 'description', 'desc', 'details']),
-  cssVar: new Set(['css 变量', 'css variable', 'css variables']),
+  cssVar: new Set(['css 变量', 'css variable', 'css variables', '变量']),
 }
 // 会被生成内容取代的分组标题（### 属性 / ### Props 等，仅当其后紧跟可替换表时丢弃）
 const GROUP_HEADINGS = new Set([

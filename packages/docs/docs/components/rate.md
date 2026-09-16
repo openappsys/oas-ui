@@ -310,6 +310,7 @@ onMounted(() => {
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-rate-active` | `var(--oas-color-warning)` |
+| `--oas-rate-star-size` | — |
 | `--oas-rate-void` | `var(--oas-color-border)` |
 
 图标自定义：`icon` 属性 > `slot="icon"`（克隆到每颗星）> 默认星形。

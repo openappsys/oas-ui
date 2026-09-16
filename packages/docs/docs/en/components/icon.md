@@ -382,4 +382,13 @@ onMounted(async () => {
 | --- | --- |
 | default | — |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-icon-primary-color` | — |
+| `--oas-icon-primary-opacity` | — |
+| `--oas-icon-secondary-color` | — |
+| `--oas-icon-secondary-opacity` | — |
+
 Icon names: `alert-circle` `arrow-down` `arrow-left` `arrow-right` `arrow-up` `calendar` `check-circle` `check` `chevron-down` `chevron-left` `chevron-right` `chevron-up` `clock` `close-circle` `close` `copy` `download` `edit` `error` `external-link` `eye` `filter` `form` `gear` `heart` `info` `language` `loading` `lock` `mail` `menu` `minus` `more-vertical` `more` `plus` `refresh` `search` `sort` `star-filled` `star` `translate` `trash` `upload` `user` `warning`.

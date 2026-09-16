@@ -408,4 +408,11 @@ onMounted(() => {
 | `prev-icon` | 上一页按钮图标插槽，有内容时替换默认 ‹ |
 | `total` | 总条数文案插槽，有内容时替换内置「共 N 条」 |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-pagination-font` | — |
+| `--oas-pagination-height` | — |
+
 页码超出范围时自动省略，首尾翻页按钮在边界自动禁用。

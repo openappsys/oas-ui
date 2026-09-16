@@ -55,6 +55,15 @@
       "name": ""
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-flex-direction",
+      "default": "${dirBase}"
+    },
+    {
+      "name": "--oas-flex-gap",
+      "default": "${toLen(gapShorthand.base) || 'normal'}"
+    }
+  ],
   "unresolved": []
 }

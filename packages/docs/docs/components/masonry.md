@@ -130,6 +130,7 @@
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-masonry-columns` | `${base}` |
 | `--oas-masonry-item-gap` | `var(--oas-space-2)` |
 
 ### 子元素属性

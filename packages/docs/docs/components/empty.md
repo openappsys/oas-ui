@@ -160,3 +160,11 @@
 | `action` | 操作区，置于描述下方 |
 | `illustration` | 自定义插画内容，优先级高于 `illustration` 属性 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-empty-desc-size` | — |
+| `--oas-empty-icon-color` | — |
+| `--oas-empty-title-size` | — |

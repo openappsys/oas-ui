@@ -249,8 +249,10 @@ onMounted(async () => {
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-float-button-action-size` | — |
 | `--oas-float-button-bottom` | `var(--oas-space-6)` |
 | `--oas-float-button-right` | `var(--oas-space-6)` |
+| `--oas-float-button-size` | — |
 | `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
 | `--oas-tooltip-color` | `var(--oas-color-bg)` |
 

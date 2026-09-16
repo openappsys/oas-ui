@@ -160,3 +160,11 @@ Place action buttons in the `action` slot below the content.
 | `action` | Action area, placed below the description |
 | `illustration` | Custom illustration content, takes precedence over the `illustration` attribute |
 | `title` | Rich title slot; overrides the title attribute when present |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-empty-desc-size` | — |
+| `--oas-empty-icon-color` | — |
+| `--oas-empty-title-size` | — |

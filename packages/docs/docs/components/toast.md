@@ -309,6 +309,14 @@ onMounted(async () => {
 | --- | --- |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-toast-ease` | — |
+| `--oas-toast-enter-duration` | — |
+| `--oas-toast-leave-duration` | — |
+
 - `error` 类型默认 `role="alert"` + `aria-live="assertive"`，其余 `role="status"` + `aria-live="polite"`；`politeness` 可覆盖。
 - 多个 toast 共用一个栈容器，同一方向按位置堆叠；`duration` 计时器在关闭/卸载时清理，无泄漏。
 - 动画时长/曲线经 CSS 变量 `--oas-toast-enter-duration` / `--oas-toast-leave-duration` / `--oas-toast-ease` 配置。

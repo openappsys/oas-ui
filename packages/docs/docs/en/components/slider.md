@@ -275,6 +275,10 @@ onMounted(() => {
 
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-slider-color` | — |
 | `--oas-slider-height` | `200px` |
+| `--oas-slider-thumb-size` | — |
+| `--oas-slider-track` | — |
+| `--oas-slider-track-size` | — |
 
 `marks` also accepts a JS property channel (assign objects/arrays directly, reflected as a JSON attribute); `el.formatTooltip = (value) => string | number` is the value formatter function property (the output feeds both the value bubble and `aria-valuetext`, takes precedence over the `format` attribute, clear with `null`) — attributes cannot express function semantics, so the function channel is JS-property-only.

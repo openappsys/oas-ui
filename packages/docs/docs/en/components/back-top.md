@@ -212,4 +212,10 @@ onMounted(async () => {
 | --- | --- |
 | default | Custom button content (replaces the built-in arrow icon when present) |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-back-top-size` | — |
+
 The button is fixed to the viewport (the `:host` is `position: fixed`, `z-index` via `--oas-z-fixed`); when hidden the button gets `aria-hidden="true"` and the host sets `pointer-events: none` so it never blocks clicks underneath.

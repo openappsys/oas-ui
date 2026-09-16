@@ -139,12 +139,20 @@
   ],
   "cssVars": [
     {
+      "name": "--oas-input-number-height",
+      "default": null
+    },
+    {
       "name": "--oas-input-number-controls-pad",
       "default": "28px"
     },
     {
       "name": "--oas-button-group-radius",
       "default": "var(--oas-radius-md)"
+    },
+    {
+      "name": "--oas-input-number-font",
+      "default": null
     }
   ],
   "unresolved": []

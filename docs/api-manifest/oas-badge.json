@@ -188,6 +188,10 @@
       "default": "0px"
     },
     {
+      "name": "--oas-ribbon-anchor-y",
+      "default": "0px"
+    },
+    {
       "name": "--oas-ribbon-offset-y",
       "default": "0px"
     },
@@ -202,6 +206,10 @@
     {
       "name": "--oas-badge-diagonal-font",
       "default": "var(--oas-font-size-xs)"
+    },
+    {
+      "name": "--oas-diag-pin",
+      "default": null
     },
     {
       "name": "--oas-badge-diagonal-text-inset",
