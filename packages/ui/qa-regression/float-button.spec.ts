@@ -167,3 +167,30 @@ test('group 子钮点击后组自动收起（选择即收起，浏览器级行�
   await group.locator('button[slot="action"]').first().click()
   await expect(group).not.toHaveAttribute('expanded', { timeout: 5000 })
 })
+
+test('group 展开自动聚焦首项：visibility 过渡不得吞焦点（speed-dial 同类缺陷回归）', async ({ page }) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-float-button[mode="group"]')
+  const group = page.locator('oas-float-button[mode="group"]').first()
+  // 真实点击主钮展开：open 态 visibility 立即翻转（无过渡延迟），syncExpanded 展开帧
+  // 聚焦首个子动作必须落在可见元素上——若回归为「过渡期末端才可见」，焦点会跌落 body
+  await group.locator('[part="btn"]').click()
+  await page.waitForTimeout(120) // 过渡中段即断言：焦点应已就位
+  const state = await page.evaluate(() => {
+    const el = document.querySelector('oas-float-button[mode="group"]')!
+    const root = el.shadowRoot!
+    const firstAction = el.querySelector('[slot="action"]') as HTMLElement | null
+    const fab = root.querySelector('[part="btn"]')
+    return {
+      activeTag: document.activeElement?.tagName ?? 'null',
+      isFirstAction: !!firstAction && document.activeElement === firstAction,
+      isFabHost: document.activeElement === el,
+      firstVisible: firstAction ? getComputedStyle(firstAction).visibility === 'visible' : false,
+    }
+  })
+  expect(state.firstVisible, '展开过渡中段首个子动作应已可见（visibility 立即翻转）').toBe(true)
+  expect(
+    state.isFirstAction || state.isFabHost,
+    `展开后焦点应落在面板内（首项子动作/宿主承接），实际 active=${state.activeTag}`,
+  ).toBe(true)
+})

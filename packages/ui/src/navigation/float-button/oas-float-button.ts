@@ -307,6 +307,10 @@ const STYLE = `
 .group.open .actions {
   opacity: 1;
   visibility: visible;
+  /* 展开向：visibility 立即翻转（无过渡），子动作 T0 即可聚焦——
+     syncExpanded 展开帧自动聚焦落在可见元素上（收起向保留 base 的 visibility 延迟过渡，淡出完成后再隐藏） */
+  transition: opacity var(--oas-transition-base) var(--oas-ease-out),
+    transform var(--oas-transition-base) var(--oas-ease-out);
 }
 /* 方向布局（data-dir 由 JS 写入，已含 RTL 镜像）：首个子钮最靠近主钮；
    收起态沿展开方向内收 8px，展开态归位（滑入过渡） */
@@ -432,6 +436,9 @@ const STYLE = `
 .menu.open {
   opacity: 1;
   visibility: visible;
+  /* 展开向：visibility 立即翻转（无过渡），菜单项 T0 即可聚焦（同 .group.open .actions 处理） */
+  transition: opacity var(--oas-transition-base) var(--oas-ease-out),
+    transform var(--oas-transition-base) var(--oas-ease-out);
 }
 /* 菜单只支持纵向展开（up 默认 / down），收起态沿方向内收 8px */
 .menu[data-dir='up'] {

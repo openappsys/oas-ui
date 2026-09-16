@@ -199,7 +199,7 @@ const STYLE = `
   animation-name: oas-msg-in-bottom;
 }
 .leaving .box {
-  animation: oas-msg-out var(--oas-message-anim-out) var(--oas-ease-in) both;
+  animation: oas-msg-out var(--oas-message-anim-out) var(--oas-ease-in, var(--oas-ease-in-out)) both;
 }
 :host([placement='bottom']) .leaving .box {
   animation-name: oas-msg-out-bottom;
