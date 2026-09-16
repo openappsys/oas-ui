@@ -361,8 +361,6 @@ onMounted(() => {
 | `oas-expand-change` | Submenu expand state changed, `detail: { expanded: string[], value, isExpanded }` (fired both controlled and uncontrolled) |
 | `oas-select` | Select an item, `detail: { value, kind? }`. `kind` only appears for action items (`kind: "action"`) as "action"; radio items omit `detail.kind` |
 
-**CSS 变量**
-
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-menu-max-height` | `none` |
@@ -402,8 +400,6 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Divider data carrier (no attributes; the host parses it as `type: "divider"`) |
-
-**CSS 变量**
 
 `MenuItem` fields:
 

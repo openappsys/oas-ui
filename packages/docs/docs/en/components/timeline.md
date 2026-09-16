@@ -287,8 +287,6 @@ onMounted(() => {
 | --- | --- |
 | default | — |
 
-**CSS 变量**
-
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-timeline-font` | `inherit` |
@@ -316,13 +314,9 @@ onMounted(() => {
 | `opposite` | Opposite-side content (only shown in mode=alternate) |
 | `title` | Title emphasis line (separated from the body) |
 
-**CSS 变量**
-
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-timeline-dot-size` | `10px` |
 | `--oas-timeline-font` | `inherit` |
-
-**CSS 变量**
 
 **CSS 变量**

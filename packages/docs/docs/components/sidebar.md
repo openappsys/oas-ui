@@ -379,8 +379,6 @@
 | `footer` | — |
 | `header` | — |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-sidebar-badge-bg` | `var(--oas-color-primary)` |
@@ -406,8 +404,6 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 分隔线数据载体（无属性，宿主解析为 `{type:"divider"}`） |
-
-**CSS 变量**
 
 ### 部件（part）
 

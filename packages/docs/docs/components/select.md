@@ -557,8 +557,6 @@ onMounted(() => {
 | `template[slot="option"]` | 选项行静态模板，克隆到每个选项 label 容器；`[data-option-label]` 节点自动绑定选项 label |
 | `template[slot="tag"]` | 多选标签静态模板，克隆到每个 chip 的文本容器；`[data-tag-label]` 节点自动绑定标签 label |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-button-group-radius` | `var(--oas-radius-md)` |
@@ -575,8 +573,6 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 选项 label 内容（默认插槽文本） |
-
-**CSS 变量**
 
 > `options` 中带 `group` 字段的选项按组渲染组标题（不可选），组内选项缩进；键盘导航跨组连续。
 

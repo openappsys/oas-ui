@@ -324,8 +324,6 @@ onMounted(() => {
 | `oas-change` | Enter 或失焦提交，`detail: { value }` |
 | `oas-input` | 输入中，`detail: { value }` |
 
-**CSS 变量**
-
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-toolbar-input-width` | `120px` |
@@ -340,8 +338,6 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 按钮文案（默认插槽文本） |
-
-**CSS 变量**
 
 - 宿主 `role="toolbar"` + `aria-orientation`，`aria-label` 走 locale key（`toolbar.label`，默认「工具栏」）
 - 参与 roving 的子元素：native 控件（`button`/`input`/`select`/`textarea`/`a[href]`）、交互 `role`、自定义元素（tag 含 `-`）；`oas-toolbar-separator`、`data-toolbar-ignore`、`aria-hidden` 排除，`disabled`/`aria-disabled` 自动跳过（`focusable-when-disabled` 模式下 aria-disabled 项保持可聚焦）
