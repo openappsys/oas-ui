@@ -305,6 +305,7 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | `icon` | Custom icon for the selected state (replaces the default star) |
+| `icon-${i}` | Per-index icon override (host writes `<span slot="icon-1">` …; i is the 1-based index); `icon` overrides all |
 | `void-icon` | Custom icon for the unselected state (replaces the default star) |
 
 #### CSS Variables

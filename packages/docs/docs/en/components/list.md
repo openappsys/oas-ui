@@ -650,6 +650,7 @@ onMounted(() => {
 
 | Name | Description |
 | --- | --- |
+| default | Default content: rendered in the description area (fallback for the `description` slot when not provided) |
 | `avatar` | Rich avatar content (oas-avatar or anything), takes precedence over the avatar attribute |
 | `description` | Description area (falls back to the default slot when not provided) |
 | `extra` | Extra area on the right of the item |
