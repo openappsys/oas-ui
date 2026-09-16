@@ -126,32 +126,22 @@ Slot content takes over the checked-state icon (`template[slot]` or a direct ele
       <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg></template>
     </oas-radio>
     <oas-radio class="radio-star" name="radio-star" value="off">
-      Not starred (same star, muted)
+      Not starred (muted dashed ring)
       <template slot="checked-icon"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z" fill="currentColor"/></svg></template>
     </oas-radio>
   </oas-space>
 </DemoBlock>
 
 <style>
-/* Both states share one custom icon (a star); only the color changes: unchecked = secondary text
-   color, checked = primary. The unchecked state is drawn with ::part(box) + mask — the mask
-   contributes only the shape while background-color supplies the color, so light/dark follow the
-   tokens (no hard-coded colors inside the data URI). The checked state uses the slot, so the mask
-   layer is turned off there. */
-.radio-star {
-  --radio-star-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2.4 L9.9 6.2 L14 6.8 L11 9.7 L11.6 13.8 L8 12 L4.4 13.8 L5 9.7 L2 6.8 L6.1 6.2 Z' fill='%23fff'/%3E%3C/svg%3E");
-}
+/* Unchecked: ::part(box) customizes the ring (dashed + secondary color); checked: primary solid
+   ring + the slot's primary filled star. Only rock-solid primitives are used (::part() +
+   currentColor — no mask, no var() inside SVG attributes) so every engine renders it the same. */
 .radio-star::part(box) {
-  border: none;
-  border-radius: 0;
-  background-color: var(--oas-color-text-secondary);
-  -webkit-mask: var(--radio-star-mask) center / 14px 14px no-repeat;
-  mask: var(--radio-star-mask) center / 14px 14px no-repeat;
+  border: 1.5px dashed var(--oas-color-text-secondary);
+  border-radius: 50%;
 }
 .radio-star[checked]::part(box) {
-  -webkit-mask: none;
-  mask: none;
-  background-color: transparent;
+  border: 1.5px solid var(--oas-color-primary);
 }
 .radio-star::part(indicator-checked) {
   color: var(--oas-color-primary);
