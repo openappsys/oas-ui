@@ -311,6 +311,8 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 | `icon` | Icon avatar (explicit icon content; no first-character truncation) |
 | `trigger` | Custom content for the change-avatar overlay (shown on hover/focus; built-in camera icon by default) |
 
+**CSS 变量**
+
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-avatar-bg` | `var(--oas-color-primary)` |
@@ -328,6 +330,8 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 | Name | Description |
 | --- | --- |
 | default | — |
+
+**CSS 变量**
 
 | CSS Variable | Default |
 | --- | --- |

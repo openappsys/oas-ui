@@ -180,6 +180,8 @@ Typography components for text, titles, and paragraphs.
 | default | — |
 | `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |
 
+**CSS 变量**
+
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-line-clamp` | `2` |
@@ -219,6 +221,8 @@ Typography components for text, titles, and paragraphs.
 | default | — |
 | `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |
 
+**CSS 变量**
+
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-line-clamp` | `2` |
@@ -257,6 +261,8 @@ Typography components for text, titles, and paragraphs.
 | --- | --- |
 | default | — |
 | `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |
+
+**CSS 变量**
 
 | CSS Variable | Default |
 | --- | --- |

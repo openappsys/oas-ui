@@ -324,6 +324,8 @@ onMounted(() => {
 | `oas-change` | Enter 或失焦提交，`detail: { value }` |
 | `oas-input` | 输入中，`detail: { value }` |
 
+**CSS 变量**
+
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-toolbar-input-width` | `120px` |

@@ -378,6 +378,8 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `footer` | — |
 | `header` | — |
 
+**CSS 变量**
+
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-sidebar-badge-bg` | `var(--oas-color-primary)` |

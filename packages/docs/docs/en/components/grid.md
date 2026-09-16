@@ -320,6 +320,8 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 | --- | --- |
 | default | — |
 
+**CSS 变量**
+
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-grid-columns` | `repeat(${base ?? 1}, 1fr)` |
@@ -335,6 +337,8 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 | Name | Description |
 | --- | --- |
 | default | — |
+
+**CSS 变量**
 
 | CSS Variable | Default |
 | --- | --- |

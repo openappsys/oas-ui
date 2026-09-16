@@ -452,6 +452,8 @@ onMounted(() => {
 | --- | --- |
 | default | — |
 
+**CSS 变量**
+
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-origin-x` | `center` |

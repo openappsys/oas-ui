@@ -379,6 +379,8 @@
 | `footer` | — |
 | `header` | — |
 
+**CSS 变量**
+
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-sidebar-badge-bg` | `var(--oas-color-primary)` |

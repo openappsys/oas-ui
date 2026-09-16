@@ -275,6 +275,8 @@ onMounted(() => {
 | --- | --- |
 | default | Field control |
 
+**CSS 变量**
+
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-form-label-width` | `96px` |
