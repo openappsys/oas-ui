@@ -251,3 +251,10 @@ onMounted(() => {
 | --- | --- |
 | `prefix` | 前缀内容插槽（不参与数值解析） |
 | `suffix` | 后缀内容插槽（不参与数值解析） |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-button-group-radius` | `var(--oas-radius-md)` |
+| `--oas-input-number-controls-pad` | `28px` |

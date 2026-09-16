@@ -28,5 +28,15 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-avatar-group-overlap",
+      "default": "-8px"
+    },
+    {
+      "name": "--oas-avatar-group-ring",
+      "default": "var(--oas-color-bg)"
+    }
+  ],
   "unresolved": []
 }

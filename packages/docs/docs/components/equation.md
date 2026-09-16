@@ -120,6 +120,13 @@ onMounted(() => {
 | `code` | LaTeX 子集源文本 | `string` | — |
 | `display` | 显示模式：`inline`（默认，随文）/ `block`（独立居中块，margin-block 间距） | `string` | — |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-equation-block-margin` | `var(--oas-space-4)` |
+| `--oas-equation-font` | `inherit` |
+
 ### ARIA
 
 容器 `aria-label` = 原始 LaTeX 源文本，屏幕阅读器直接朗读公式源。

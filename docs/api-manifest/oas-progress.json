@@ -117,5 +117,31 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-progress-height",
+      "default": "var(--oas-space-2)"
+    },
+    {
+      "name": "--oas-progress-track-color",
+      "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-progress-stripe-color",
+      "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-progress-duration",
+      "default": "1.2s"
+    },
+    {
+      "name": "--oas-progress-step-gap",
+      "default": "var(--oas-space-1)"
+    },
+    {
+      "name": "--oas-progress-inside-color",
+      "default": "var(--oas-color-bg)"
+    }
+  ],
   "unresolved": []
 }

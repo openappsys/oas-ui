@@ -101,6 +101,16 @@
 | --- | --- |
 | 默认 | — |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-gradient-text-dir` | `to right` |
+| `--oas-gradient-text-duration` | `3s` |
+| `--oas-gradient-text-font` | `inherit` |
+| `--oas-gradient-text-stroke-c` | — |
+| `--oas-gradient-text-stroke-w` | — |
+
 - 默认渐变使用主题 token（`--oas-color-primary` → `--oas-color-primary-hover`），随亮暗主题自动切换，无硬编码色值。
 - 色标条目经白名单校验，防止 CSS 注入。
 - 无事件，纯展示。

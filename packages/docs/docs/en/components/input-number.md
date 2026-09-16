@@ -250,3 +250,10 @@ onMounted(() => {
 | --- | --- |
 | `prefix` | Prefix content slot (not part of value parsing) |
 | `suffix` | Suffix content slot (not part of value parsing) |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-button-group-radius` | `var(--oas-radius-md)` |
+| `--oas-input-number-controls-pad` | `28px` |

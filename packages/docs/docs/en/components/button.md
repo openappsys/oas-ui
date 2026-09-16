@@ -299,3 +299,13 @@ On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`-
 | Name | Description |
 | --- | --- |
 | default | — |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-button-bg` | `var(--oas-color-primary)` |
+| `--oas-button-color` | `var(--oas-color-text-primary)` |
+| `--oas-button-group-radius` | `var(--oas-radius-md)` |
+| `--oas-button-group-width` | `auto` |
+| `--oas-button-on-color` | `var(--oas-color-text-on-primary)` |

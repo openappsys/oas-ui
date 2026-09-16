@@ -379,6 +379,11 @@ onMounted(() => {
 | `oas-change` | 切换，`detail: { value: string \| string[] }` |
 | `oas-exceed-limit` | 达 max-count 上限后的越界选择尝试，`detail: { value, max }` |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-toggle-color` | `var(--oas-color-primary)` |
+| `--oas-toggle-on-color` | `var(--oas-color-text-on-primary)` |
+
 ### oas-toggle-item
 
 | 属性 | 说明 | 类型 | 默认值 |

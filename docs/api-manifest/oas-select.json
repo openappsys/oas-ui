@@ -165,5 +165,11 @@
       "name": "template[slot=\"tag\"]"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-button-group-radius",
+      "default": "var(--oas-radius-md)"
+    }
+  ],
   "unresolved": []
 }

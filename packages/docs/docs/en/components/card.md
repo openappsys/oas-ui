@@ -457,3 +457,11 @@ onMounted(async () => {
 | `extra` | Extra area on the right of the title |
 | `footer` | Independent footer strip (separate from the actions area) |
 | `title` | Rich title content slot; overrides the title attribute text when present |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-skeleton-color` | `var(--oas-color-bg-hover)` |
+| `--oas-skeleton-duration` | `1.5s` |
+| `--oas-skeleton-sheen` | `var(--oas-color-border)` |

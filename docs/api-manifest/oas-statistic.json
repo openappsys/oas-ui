@@ -71,5 +71,19 @@
       "name": "value"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-statistic-font",
+      "default": "var(--oas-font-size-lg)"
+    },
+    {
+      "name": "--oas-statistic-trend-up-color",
+      "default": "var(--oas-color-success-text)"
+    },
+    {
+      "name": "--oas-statistic-trend-down-color",
+      "default": "var(--oas-color-danger-text)"
+    }
+  ],
   "unresolved": []
 }

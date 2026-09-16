@@ -557,6 +557,10 @@ onMounted(() => {
 | `template[slot="option"]` | 选项行静态模板，克隆到每个选项 label 容器；`[data-option-label]` 节点自动绑定选项 label |
 | `template[slot="tag"]` | 多选标签静态模板，克隆到每个 chip 的文本容器；`[data-tag-label]` 节点自动绑定标签 label |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-button-group-radius` | `var(--oas-radius-md)` |
+
 ### oas-option
 
 | 属性 | 说明 | 类型 | 默认值 |

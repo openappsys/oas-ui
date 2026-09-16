@@ -123,5 +123,15 @@
       "name": "void-icon"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-rate-void",
+      "default": "var(--oas-color-border)"
+    },
+    {
+      "name": "--oas-rate-active",
+      "default": "var(--oas-color-warning)"
+    }
+  ],
   "unresolved": []
 }

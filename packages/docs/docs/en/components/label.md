@@ -119,4 +119,10 @@ Required-mark forms (asterisk + position) are covered by `required` + `position`
 | --- | --- |
 | default | — |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-label-color` | `var(--oas-color-text-primary)` |
+
 > Note: `for` is also synced to the native `<label>` `for` attribute; the click behavior is manually forwarded and can focus the target control across Shadow DOM. Double-clicking doesn't select text (consistent with mainstream behavior).

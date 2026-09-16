@@ -103,5 +103,31 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-carousel-height",
+      "default": "200px"
+    },
+    {
+      "name": "--oas-carousel-card-gap",
+      "default": "var(--oas-space-3)"
+    },
+    {
+      "name": "--oas-carousel-card-width",
+      "default": "60%"
+    },
+    {
+      "name": "--oas-carousel-dot-bg",
+      "default": "rgba(255, 255, 255, 0.5)"
+    },
+    {
+      "name": "--oas-carousel-dot-active-bg",
+      "default": "#ffffff"
+    },
+    {
+      "name": "--oas-carousel-card-scale",
+      "default": "0.85"
+    }
+  ],
   "unresolved": []
 }

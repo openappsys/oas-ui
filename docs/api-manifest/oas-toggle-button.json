@@ -59,5 +59,15 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-toggle-color",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-toggle-on-color",
+      "default": "var(--oas-color-text-on-primary)"
+    }
+  ],
   "unresolved": []
 }

@@ -326,4 +326,11 @@ onMounted(() => {
 | `oas-require-more` | 滚动进入顶部/底部阈值区边缘派发一次（停留不连发、离开复位），`detail: { from: "top" \| "bottom" }`；宿主上翻拉历史/下拉拉新 |
 | `oas-search` | 搜索过滤结果上报：keyword 或数据变化时派发（同状态去重），`detail: { keyword, matched, total }`（matched=命中行数、total=总行数，过滤窗口为当前已加载行） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-log-font` | `inherit` |
+| `--oas-log-mark-color` | `var(--oas-color-warning-text)` |
+
 部件：`::part(viewport)` 滚动视口、`::part(log)` 日志内容、`::part(row)` 单行、`::part(line-number)` 行号、`::part(line)` 行文本、`::part(empty)` 空态。

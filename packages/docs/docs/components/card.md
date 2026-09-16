@@ -458,3 +458,11 @@ const refreshSelectCount = () => {
 | `extra` | 标题右侧扩展区 |
 | `footer` | 独立底条（与 actions 操作区分离） |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-skeleton-color` | `var(--oas-color-bg-hover)` |
+| `--oas-skeleton-duration` | `1.5s` |
+| `--oas-skeleton-sheen` | `var(--oas-color-border)` |

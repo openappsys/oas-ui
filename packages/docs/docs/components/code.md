@@ -186,6 +186,14 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 | `oas-copy` | 复制成功，`detail: { text }` |
 | `oas-copy-error` | 复制失败，`detail: { text }` |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-code-color` | `var(--oas-color-text-primary)` |
+| `--oas-code-font` | `0.875em` |
+| `--oas-code-on-color` | `var(--oas-color-bg)` |
+
 ### 引擎选型（架构决策）
 
 **自研正则 token 高亮，不引入第三方高亮库**：

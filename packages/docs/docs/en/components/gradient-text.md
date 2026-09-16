@@ -101,6 +101,16 @@ Font size follows the outer context (inherited) by default; override with the CS
 | --- | --- |
 | default | — |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-gradient-text-dir` | `to right` |
+| `--oas-gradient-text-duration` | `3s` |
+| `--oas-gradient-text-font` | `inherit` |
+| `--oas-gradient-text-stroke-c` | — |
+| `--oas-gradient-text-stroke-w` | — |
+
 - The default gradient uses theme tokens (`--oas-color-primary` → `--oas-color-primary-hover`), switching automatically with the light/dark theme — no hardcoded color values.
 - Color-stop entries are validated against a whitelist to prevent CSS injection.
 - No events; purely presentational.

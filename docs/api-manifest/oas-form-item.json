@@ -31,5 +31,11 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-form-label-width",
+      "default": "96px"
+    }
+  ],
   "unresolved": []
 }

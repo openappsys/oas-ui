@@ -114,5 +114,11 @@
       "name": "content"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-msg-type-color",
+      "default": "var(--oas-color-border)"
+    }
+  ],
   "unresolved": []
 }

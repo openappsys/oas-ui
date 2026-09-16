@@ -108,4 +108,12 @@
 | `title` | 数值上方标题（分发时优先于 `title` 属性文本） |
 | `value` | 自定义数值呈现（如组合 `oas-number-animation` 动画值；分发时不渲染 Intl 格式化文本） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-statistic-font` | `var(--oas-font-size-lg)` |
+| `--oas-statistic-trend-down-color` | `var(--oas-color-danger-text)` |
+| `--oas-statistic-trend-up-color` | `var(--oas-color-success-text)` |
+
 无事件（纯展示）。

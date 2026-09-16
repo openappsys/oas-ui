@@ -89,3 +89,9 @@ onMounted(async () => {
 | Name | Description |
 | --- | --- |
 | default | — |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-bottom-sheet-max-height` | `85vh` |

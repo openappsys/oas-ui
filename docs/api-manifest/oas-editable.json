@@ -101,5 +101,6 @@
       "name": "template[slot=\"display\"]"
     }
   ],
+  "cssVars": [],
   "unresolved": []
 }

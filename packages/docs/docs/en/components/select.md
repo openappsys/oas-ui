@@ -561,6 +561,10 @@ onMounted(() => {
 | `template[slot="option"]` | Static option row template, cloned into each option label container; `[data-option-label]` nodes get bound to the option label |
 | `template[slot="tag"]` | Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-button-group-radius` | `var(--oas-radius-md)` |
+
 ### oas-option
 
 | Attribute | Description | Type | Default |

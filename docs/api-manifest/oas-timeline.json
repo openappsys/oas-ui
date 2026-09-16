@@ -27,5 +27,11 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-timeline-font",
+      "default": "inherit"
+    }
+  ],
   "unresolved": []
 }

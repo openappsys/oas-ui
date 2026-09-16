@@ -90,5 +90,11 @@
     }
   ],
   "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-breadcrumb-font",
+      "default": "inherit"
+    }
+  ],
   "unresolved": []
 }

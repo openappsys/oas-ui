@@ -208,3 +208,11 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-switch-height` | `22px` |
+| `--oas-switch-thumb-size` | `18px` |
+| `--oas-switch-width` | `40px` |

@@ -56,5 +56,11 @@
     }
   ],
   "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-number-animation-font",
+      "default": "var(--oas-font-size-lg)"
+    }
+  ],
   "unresolved": []
 }

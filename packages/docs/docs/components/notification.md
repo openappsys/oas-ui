@@ -362,6 +362,12 @@ onMounted(async () => {
 
 ### CSS 变量
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-notification-progress-color` | `var(--oas-color-primary)` |
+
+### CSS 变量
+
 | 变量 | 说明 | 默认值 |
 | --- | --- | --- |
 | `--oas-notification-progress-color` | 倒计时进度条颜色 | `var(--oas-color-primary)` |

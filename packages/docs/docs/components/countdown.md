@@ -104,6 +104,12 @@
 | `suffix` | 后置内容（分发时优先于 `suffix` 属性文本） |
 | `title` | 数值上方标题（分发时优先于 `title` 属性文本） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-countdown-font` | `var(--oas-font-size-lg)` |
+
 模板含 `D`/`DD` 时小时按当天内计（0-23）；不含时天滚入小时（如 `25:01:01`）。
 
 <script setup>

@@ -311,6 +311,13 @@ onMounted(async () => {
 | `icon` | — |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-origin-x` | `center` |
+| `--oas-origin-y` | `center` |
+
 ### Methods
 
 | Method | Description |

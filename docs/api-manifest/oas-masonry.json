@@ -34,5 +34,11 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-masonry-item-gap",
+      "default": "var(--oas-space-2)"
+    }
+  ],
   "unresolved": []
 }

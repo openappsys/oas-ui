@@ -217,4 +217,12 @@ onMounted(async () => {
 | `oas-finish` | finish() 完成收尾时派发，`detail: { count: this.sessionCount }` |
 | `oas-start` | start() 开始时派发，`detail: { count: this.sessionCount }` |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-loading-bar-color` | `var(--oas-color-primary)` |
+| `--oas-loading-bar-error-color` | `var(--oas-color-danger)` |
+| `--oas-loading-bar-height` | `3px` |
+
 进度条 `role="progressbar"`，进度通过 `aria-valuenow` 同步，活动态同步 `aria-busy`。

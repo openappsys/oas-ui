@@ -32,5 +32,11 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-marquee-fade-size",
+      "default": "24px"
+    }
+  ],
   "unresolved": []
 }

@@ -154,6 +154,13 @@ When `value` is empty, a "No content" placeholder is shown; when the content exc
 | --- | --- |
 | `template[slot="status"]` | Custom status overlay content (built-in overlays per state by default) |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-qrcode-bg` | `#ffffff` |
+| `--oas-qrcode-color` | `#18181b` |
+
 ### Encoder Choice (Architecture Decision)
 
 - Under the **zero-dependency principle**, a full QR standard implementation (M/Q/H correction + masks + full version block tables) was judged too heavy, so a **custom simplified L-level version** was chosen;

@@ -111,3 +111,10 @@ An empty container causes no error and takes no placeholder.
 | Name | Description |
 | --- | --- |
 | default | — |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-container-max` | `var(--oas-container-lg, 992px)` |
+| `--oas-container-padding` | `0` |

@@ -225,3 +225,11 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Real content outlet: rendered when loading="false" (skeleton and content both live in shadow DOM, toggled via hidden) |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-skeleton-color` | `var(--oas-color-bg-hover)` |
+| `--oas-skeleton-duration` | `1.5s` |
+| `--oas-skeleton-sheen` | `var(--oas-color-border)` |

@@ -217,4 +217,12 @@ onMounted(async () => {
 | `oas-finish` | Dispatched when finish() finalizes, `detail: { count: this.sessionCount }` |
 | `oas-start` | Dispatched when start() begins, `detail: { count: this.sessionCount }` |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-loading-bar-color` | `var(--oas-color-primary)` |
+| `--oas-loading-bar-error-color` | `var(--oas-color-danger)` |
+| `--oas-loading-bar-height` | `3px` |
+
 The bar uses `role="progressbar"` with progress synced via `aria-valuenow` and the active state via `aria-busy`.

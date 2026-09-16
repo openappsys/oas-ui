@@ -124,5 +124,11 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-watermark-fullscreen-z-index",
+      "default": "2147483647"
+    }
+  ],
   "unresolved": []
 }

@@ -167,6 +167,14 @@ onMounted(async () => {
 | --- | --- |
 | 默认 | — |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-backdrop-bg` | `var(--oas-color-overlay)` |
+| `--oas-backdrop-blur` | `none` |
+| `--oas-backdrop-opacity` | `1` |
+
 - 自身无焦点陷阱（由上层弹窗负责）；Esc 不自动关闭（由外层弹窗决定）。
 - `open=false` 时播完退场动画后从 DOM 卸载，无孤儿 DOM；多遮罩共存时仅最后一个关闭才恢复滚动。
 - 点击判定：仅点击遮罩本体（内容区点击不触发 `oas-click`）；`stop-propagation` 默认阻断遮罩点击传播到宿主文档。

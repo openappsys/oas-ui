@@ -60,5 +60,11 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-label-color",
+      "default": "var(--oas-color-text-primary)"
+    }
+  ],
   "unresolved": []
 }

@@ -451,6 +451,11 @@ onMounted(() => {
 | --- | --- |
 | 默认 | — |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-origin-x` | `center` |
+| `--oas-origin-y` | `center` |
+
 ### oas-dropdown-item
 
 | 属性 | 说明 | 类型 | 默认值 |

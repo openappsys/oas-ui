@@ -82,5 +82,19 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-link-underline-offset",
+      "default": "2px"
+    },
+    {
+      "name": "--oas-link-underline-color",
+      "default": "currentColor"
+    },
+    {
+      "name": "--oas-link-color",
+      "default": "var(--oas-color-text-primary)"
+    }
+  ],
   "unresolved": []
 }

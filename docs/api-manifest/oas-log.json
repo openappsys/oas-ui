@@ -71,5 +71,15 @@
     }
   ],
   "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-log-font",
+      "default": "inherit"
+    },
+    {
+      "name": "--oas-log-mark-color",
+      "default": "var(--oas-color-warning-text)"
+    }
+  ],
   "unresolved": []
 }

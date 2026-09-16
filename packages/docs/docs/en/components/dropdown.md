@@ -452,6 +452,11 @@ onMounted(() => {
 | --- | --- |
 | default | — |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-origin-x` | `center` |
+| `--oas-origin-y` | `center` |
+
 ### oas-dropdown-item
 
 | Attribute | Description | Type | Default |

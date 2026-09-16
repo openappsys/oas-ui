@@ -70,5 +70,15 @@
       "name": "template[slot=\"status\"]"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-qrcode-color",
+      "default": "#18181b"
+    },
+    {
+      "name": "--oas-qrcode-bg",
+      "default": "#ffffff"
+    }
+  ],
   "unresolved": []
 }

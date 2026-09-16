@@ -35,5 +35,11 @@
       "name": "time"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-comment-font",
+      "default": "inherit"
+    }
+  ],
   "unresolved": []
 }

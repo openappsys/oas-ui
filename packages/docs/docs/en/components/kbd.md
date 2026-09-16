@@ -107,4 +107,13 @@ Nest inside other components via slot projection:
 | --- | --- |
 | default | — |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-kbd-bg` | `var(--oas-color-bg-hover)` |
+| `--oas-kbd-border` | `var(--oas-color-border-strong)` |
+| `--oas-kbd-color` | — |
+| `--oas-kbd-text` | `var(--oas-color-text-primary)` |
+
 > Note: empty `keys` renders a single empty keycap; slot content takes priority when provided. The component is purely presentational with `role="text"` and dispatches no events.

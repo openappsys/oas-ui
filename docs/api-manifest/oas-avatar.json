@@ -92,5 +92,19 @@
       "name": "trigger"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-avatar-bg",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-avatar-on-color",
+      "default": "var(--oas-color-text-on-primary)"
+    },
+    {
+      "name": "--oas-avatar-size",
+      "default": "32px"
+    }
+  ],
   "unresolved": []
 }

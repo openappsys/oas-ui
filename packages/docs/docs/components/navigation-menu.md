@@ -195,6 +195,10 @@ onMounted(() => {
 | --- | --- |
 | `panel-footer` | 面板底部营销位插槽：`<div slot="panel-footer">`（CTA 卡片等）有内容时面板底部渲染插槽容器 |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-nav-panel-max-height` | `60vh` |
+
 ### oas-navigation-menu-item
 
 | 属性 | 说明 | 类型 | 默认值 |

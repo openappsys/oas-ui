@@ -64,5 +64,15 @@
       "name": "title"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-timeline-font",
+      "default": "inherit"
+    },
+    {
+      "name": "--oas-timeline-dot-size",
+      "default": "10px"
+    }
+  ],
   "unresolved": []
 }

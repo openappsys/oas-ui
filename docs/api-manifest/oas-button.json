@@ -148,5 +148,27 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-button-color",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-button-group-radius",
+      "default": "var(--oas-radius-md)"
+    },
+    {
+      "name": "--oas-button-group-width",
+      "default": "auto"
+    },
+    {
+      "name": "--oas-button-bg",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-button-on-color",
+      "default": "var(--oas-color-text-on-primary)"
+    }
+  ],
   "unresolved": []
 }

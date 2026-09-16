@@ -121,6 +121,13 @@ Font size follows the outer context (inherited) by default; override with the CS
 | `code` | LaTeX subset source text | `string` | — |
 | `display` | Display mode: `inline` (default, in-flow) / `block` (standalone centered block with margin-block) | `string` | — |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-equation-block-margin` | `var(--oas-space-4)` |
+| `--oas-equation-font` | `inherit` |
+
 ### ARIA
 
 The container's `aria-label` equals the raw LaTeX source text, so screen readers read the formula source directly.

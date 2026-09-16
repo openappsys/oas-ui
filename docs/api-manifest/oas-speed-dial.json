@@ -52,5 +52,15 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-tooltip-bg",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-tooltip-color",
+      "default": "var(--oas-color-bg)"
+    }
+  ],
   "unresolved": []
 }

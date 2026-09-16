@@ -157,3 +157,12 @@ onMounted(() => {
 | `leading` | 标题前置自定义区 |
 | `title` | 标题富内容通道（覆盖 heading 属性） |
 | `trailing` | 最右侧尾部自定义区 |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-app-bar-height` | `56px` |
+| `--oas-app-bar-inset` | `var(--oas-space-3)` |
+| `--oas-app-bar-shadow` | `var(--oas-shadow-md)` |
+| `--oas-app-bar-top` | `0px` |

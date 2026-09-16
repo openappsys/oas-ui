@@ -66,5 +66,23 @@
       "name": "trailing"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-app-bar-height",
+      "default": "56px"
+    },
+    {
+      "name": "--oas-app-bar-shadow",
+      "default": "var(--oas-shadow-md)"
+    },
+    {
+      "name": "--oas-app-bar-top",
+      "default": "0px"
+    },
+    {
+      "name": "--oas-app-bar-inset",
+      "default": "var(--oas-space-3)"
+    }
+  ],
   "unresolved": []
 }

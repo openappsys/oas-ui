@@ -31,5 +31,11 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-bottom-sheet-max-height",
+      "default": "85vh"
+    }
+  ],
   "unresolved": []
 }

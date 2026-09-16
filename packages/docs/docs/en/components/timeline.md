@@ -287,6 +287,10 @@ onMounted(() => {
 | --- | --- |
 | default | — |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-timeline-font` | `inherit` |
+
 ### oas-timeline-item
 
 | Attribute | Description | Type | Default |
@@ -309,3 +313,8 @@ onMounted(() => {
 | `dot` | Custom node (any content replaces the dot) |
 | `opposite` | Opposite-side content (only shown in mode=alternate) |
 | `title` | Title emphasis line (separated from the body) |
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-timeline-dot-size` | `10px` |
+| `--oas-timeline-font` | `inherit` |

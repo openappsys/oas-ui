@@ -195,6 +195,10 @@ onMounted(() => {
 | --- | --- |
 | `panel-footer` | Marketing slot at the bottom of the panel: `<div slot="panel-footer">` (CTA cards etc.) renders a footer container inside the panel when it has content |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-nav-panel-max-height` | `60vh` |
+
 ### oas-navigation-menu-item
 
 | Attribute | Description | Type | Default |

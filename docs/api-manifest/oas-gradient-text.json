@@ -45,5 +45,27 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-gradient-text-font",
+      "default": "inherit"
+    },
+    {
+      "name": "--oas-gradient-text-stroke-w",
+      "default": null
+    },
+    {
+      "name": "--oas-gradient-text-stroke-c",
+      "default": null
+    },
+    {
+      "name": "--oas-gradient-text-dir",
+      "default": "to right"
+    },
+    {
+      "name": "--oas-gradient-text-duration",
+      "default": "3s"
+    }
+  ],
   "unresolved": []
 }

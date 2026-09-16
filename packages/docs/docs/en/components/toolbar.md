@@ -324,6 +324,10 @@ onMounted(() => {
 | `oas-change` | Committed on Enter or blur, `detail: { value }` |
 | `oas-input` | While typing, `detail: { value }` |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-toolbar-input-width` | `120px` |
+
 ### oas-toolbar-toggle-item
 
 | Attribute | Description | Type | Default |

@@ -34,5 +34,23 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-kbd-bg",
+      "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-kbd-border",
+      "default": "var(--oas-color-border-strong)"
+    },
+    {
+      "name": "--oas-kbd-text",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-kbd-color",
+      "default": null
+    }
+  ],
   "unresolved": []
 }

@@ -362,6 +362,12 @@ onMounted(async () => {
 
 ### CSS Variables
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-notification-progress-color` | `var(--oas-color-primary)` |
+
+### CSS Variables
+
 | Variable | Description | Default |
 | --- | --- | --- |
 | `--oas-notification-progress-color` | Countdown progress bar color | `var(--oas-color-primary)` |

@@ -38,5 +38,11 @@
     }
   ],
   "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-toolbar-input-width",
+      "default": "120px"
+    }
+  ],
   "unresolved": []
 }

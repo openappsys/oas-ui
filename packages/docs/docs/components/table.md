@@ -706,6 +706,14 @@ onMounted(() => {
 | --- | --- |
 | `template[slot="empty"]` | 空态富内容（优先于 empty-text 与默认空态文案） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-table-cell-padding-block` | `var(--oas-space-3)` |
+| `--oas-table-cell-padding-inline` | `var(--oas-space-4)` |
+| `--oas-table-font-size` | `var(--oas-font-size-md)` |
+
 > 说明：`columns.render` 为函数类型，仅支持在 JS 侧构造后通过属性整体赋值，无法用 JSON 字符串表达；`fixed` 列建议显式声明 `width`（未声明时按 100px 兜底计算 sticky 偏移）。合计也可在列上直接写 `summary: 'sum' | 'avg' | 'count'`；`children`（树形子行）与 `expand`（可展开行内容）均为行数据字段。
 
 加载占位行部件为 `::part(loading-row)`，合计行 `::part(summary-row)`、展开内容行 `::part(expand-row)`，均可单独定制样式。

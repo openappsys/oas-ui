@@ -231,4 +231,10 @@ onMounted(async () => {
 | --- | --- |
 | 默认 | — |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-watermark-fullscreen-z-index` | `2147483647` |
+
 水印为装饰层（`aria-hidden` + `pointer-events: none`），不参与可访问性树，不拦截交互。

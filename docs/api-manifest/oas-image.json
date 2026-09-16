@@ -100,5 +100,6 @@
       "name": "template[slot=\"toolbar\"]"
     }
   ],
+  "cssVars": [],
   "unresolved": []
 }

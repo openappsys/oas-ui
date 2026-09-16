@@ -423,4 +423,11 @@ onMounted(async () => {
 | `cover` | 步骤封面富内容（插槽优先于 step.cover 图片） |
 | `indicators` | 自定义指示器区（宿主用 `oas-step` 的 current/total 渲染；有内容时隐藏内置圆点/数字指示器） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-tour-mask-color` | `var(--oas-color-overlay)` |
+| `--oas-tour-popup-bg` | `var(--oas-color-bg)` |
+
 遮罩高亮目标，`role="dialog"` + `aria-modal="true"`（`mask="false"` 非模态时降级为 `aria-modal="false"`）；支持「上一步 / 下一步 / 跳过」、键盘 ←/→ 与 Esc。

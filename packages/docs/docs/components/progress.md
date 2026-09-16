@@ -316,4 +316,15 @@ onMounted(async () => {
 | --- | --- |
 | 默认 | 自定义文本：line 右侧 / text-inside 条内 / 圆心；优先于状态图标与内置百分比 |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-progress-duration` | `1.2s` |
+| `--oas-progress-height` | `var(--oas-space-2)` |
+| `--oas-progress-inside-color` | `var(--oas-color-bg)` |
+| `--oas-progress-step-gap` | `var(--oas-space-1)` |
+| `--oas-progress-stripe-color` | `var(--oas-color-bg)` |
+| `--oas-progress-track-color` | `var(--oas-color-bg-hover)` |
+
 `role="progressbar"` + `aria-valuenow` / `aria-valuemin` / `aria-valuemax`（line 与 circle 均同步）。

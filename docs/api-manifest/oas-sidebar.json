@@ -120,5 +120,19 @@
       "name": "header"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-sidebar-bg",
+      "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-sidebar-badge-bg",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-sidebar-badge-color",
+      "default": "#fff"
+    }
+  ],
   "unresolved": []
 }

@@ -774,4 +774,16 @@ onMounted(() => {
 | default | Trigger element (hover/focus trigger); optional in `virtual` mode |
 | `content` | Rich content (takes precedence over the `content` attribute text when present) |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-tip-cross` | `999px` |
+| `--oas-tooltip-arrow-size` | `12px` |
+| `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
+| `--oas-tooltip-color` | `var(--oas-color-bg)` |
+| `--oas-tooltip-duration` | `0.15s` |
+| `--oas-tooltip-easing` | `ease` |
+| `--oas-tooltip-max-width` | `240px` |
+
 `oas-open-change`: fired when the `open` state changes (show/hide), `detail: { open }`. Shown/hidden on hover or focus; `role="tooltip"`, the popup uses `pointer-events: none` so it never blocks interactions.

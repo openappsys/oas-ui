@@ -49,7 +49,17 @@ const HEADER = {
   desc: new Set(['说明', 'description', 'desc', 'details']),
 }
 // 会被生成内容取代的分组标题（### 属性 / ### Props 等，仅当其后紧跟可替换表时丢弃）
-const GROUP_HEADINGS = new Set(['属性', '事件', '插槽', 'props', 'attributes', 'events', 'slots'])
+const GROUP_HEADINGS = new Set([
+  '属性',
+  '事件',
+  '插槽',
+  'props',
+  'attributes',
+  'events',
+  'slots',
+  'css 变量',
+  'css variables',
+])
 
 const TAG_RE = /^oas-[a-z0-9-]+$/
 
@@ -287,7 +297,13 @@ function tagRows(tag, lang) {
       return { name, desc: d }
     })
 
-  return { attrs, events, slots }
+  // cssVars：组件出口（manifest 单源，不走 descriptions——变量名自解释，默认值取自代码 fallback）
+  const cssVars = (man.cssVars ?? [])
+    .slice()
+    .sort((a, b) => (a.name < b.name ? -1 : 1))
+    .map((v) => ({ name: v.name, default: v.default ?? null }))
+
+  return { attrs, events, slots, cssVars }
 }
 
 // ---------- markdown 渲染 ----------
@@ -326,36 +342,52 @@ function renderSlotTable(rows, lang) {
     }),
   )
 }
+function renderCssVarTable(rows, lang) {
+  const header = lang === 'zh' ? ['CSS 变量', '默认值'] : ['CSS Variable', 'Default']
+  return mdTable(
+    header,
+    rows.map((r) => [`\`${esc(r.name)}\``, r.default ? `\`${esc(r.default)}\`` : '—']),
+  )
+}
 
 /** 生成统一版式的 `## API` 章节内容（不含 `## API` 标题行） */
 function buildGenerated(tags, lang) {
+  const headings = {
+    attrs: lang === 'zh' ? '属性' : 'Attributes',
+    events: lang === 'zh' ? '事件' : 'Events',
+    slots: lang === 'zh' ? '插槽' : 'Slots',
+    cssVars: lang === 'zh' ? 'CSS 变量' : 'CSS Variables',
+  }
   // 多 tag 页：### oas-xxx 小节，表直接跟在标题下（无内容的 tag 跳过不渲染）
   if (tags.length > 1) {
     const parts = []
     for (const tag of tags) {
       const g = tagRows(tag, lang)
-      if (!g.attrs.length && !g.events.length && !g.slots.length) continue
+      if (!g.attrs.length && !g.events.length && !g.slots.length && !(g.cssVars ?? []).length) continue
       const tables = []
       if (g.attrs.length) tables.push(renderAttrTable(g.attrs, lang))
       if (g.events.length) tables.push(renderEventTable(g.events, lang))
       if (g.slots.length) tables.push(renderSlotTable(g.slots, lang))
+      if ((g.cssVars ?? []).length) tables.push(renderCssVarTable(g.cssVars, lang))
       parts.push(`### ${tag}\n\n${tables.join('\n\n')}`)
     }
     return parts.join('\n\n')
   }
 
-  // 单 tag 页：### 属性 / ### 事件 / ### 插槽 分组
+  // 单 tag 页：### 属性 / ### 事件 / ### 插槽 / ### CSS 变量 分组
   const g = tagRows(tags[0], lang)
-  if (!g.attrs.length && !g.events.length && !g.slots.length) return ''
+  if (!g.attrs.length && !g.events.length && !g.slots.length && !(g.cssVars ?? []).length) return ''
   const heading = {
     attrs: lang === 'zh' ? '属性' : 'Attributes',
     events: lang === 'zh' ? '事件' : 'Events',
     slots: lang === 'zh' ? '插槽' : 'Slots',
+    cssVars: lang === 'zh' ? 'CSS 变量' : 'CSS Variables',
   }
   const parts = []
   if (g.attrs.length) parts.push(`### ${heading.attrs}\n\n${renderAttrTable(g.attrs, lang)}`)
   if (g.events.length) parts.push(`### ${heading.events}\n\n${renderEventTable(g.events, lang)}`)
   if (g.slots.length) parts.push(`### ${heading.slots}\n\n${renderSlotTable(g.slots, lang)}`)
+  if ((g.cssVars ?? []).length) parts.push(`### ${heading.cssVars}\n\n${renderCssVarTable(g.cssVars, lang)}`)
   return parts.join('\n\n')
 }
 

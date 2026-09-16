@@ -220,6 +220,12 @@ onMounted(() => {
 | `template[slot="suffix"]` | 后缀内容插槽 |
 | `template[slot="tag"]` | 自定义标签（`[data-tag-label]` 绑定；删除按钮组件侧） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-entry-pad` | `0px` |
+
 键盘：`Enter` / `,` 提交；输入框为空时 `Backspace` 删除最后一个标签。
 
 ARIA：容器 `role="list"`、标签 `role="listitem"`，删除按钮可聚焦并带 `aria-label`；重复提交时输入框标记 `aria-invalid` 并给出提示。

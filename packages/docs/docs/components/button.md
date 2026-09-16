@@ -299,3 +299,13 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-button-bg` | `var(--oas-color-primary)` |
+| `--oas-button-color` | `var(--oas-color-text-primary)` |
+| `--oas-button-group-radius` | `var(--oas-radius-md)` |
+| `--oas-button-group-width` | `auto` |
+| `--oas-button-on-color` | `var(--oas-color-text-on-primary)` |

@@ -144,5 +144,15 @@
       "name": "title"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-origin-x",
+      "default": "center"
+    },
+    {
+      "name": "--oas-origin-y",
+      "default": "center"
+    }
+  ],
   "unresolved": []
 }

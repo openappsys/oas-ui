@@ -62,5 +62,11 @@
     }
   ],
   "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-menu-max-height",
+      "default": "none"
+    }
+  ],
   "unresolved": []
 }

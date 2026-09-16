@@ -103,5 +103,6 @@
       "name": "template[slot=\"item\"]"
     }
   ],
+  "cssVars": [],
   "unresolved": []
 }

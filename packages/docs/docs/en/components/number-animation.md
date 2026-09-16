@@ -84,6 +84,12 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 | --- | --- |
 | `oas-finish` | Emitted once when the animation reaches the target, detail `{ value: target value }` |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-number-animation-font` | `var(--oas-font-size-lg)` |
+
 - Changing `value` mid-animation continues from the currently displayed value to the new target.
 - When the system enables "reduce motion", the animation is skipped and the target value is shown directly (`oas-finish` is still emitted).
 - On disconnect, any unfinished rAF is cancelled — no leaks.

@@ -108,4 +108,12 @@ Use the `prefix-text` / `suffix-text` attributes for simple text; for complex co
 | `title` | Heading above the value (distributed content takes precedence over the `title` attribute text) |
 | `value` | Custom value rendering (e.g. compose `oas-number-animation` for an animated value); when distributed, the Intl-formatted text is not rendered |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-statistic-font` | `var(--oas-font-size-lg)` |
+| `--oas-statistic-trend-down-color` | `var(--oas-color-danger-text)` |
+| `--oas-statistic-trend-up-color` | `var(--oas-color-success-text)` |
+
 No events (purely presentational).

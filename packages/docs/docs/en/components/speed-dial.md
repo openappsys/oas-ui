@@ -218,6 +218,13 @@ onMounted(() => {
 | --- | --- |
 | default | Custom icon for the main button; when provided it replaces the default ＋ (45° rotation on expansion is preserved) |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
+| `--oas-tooltip-color` | `var(--oas-color-bg)` |
+
 `SpeedDialAction` fields:
 
 | Field   | Description                                          | Type     |

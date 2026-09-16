@@ -225,3 +225,11 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 真实内容出口：loading="false" 时渲染（骨架与内容常驻 shadow DOM，按 loading 切换 hidden） |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-skeleton-color` | `var(--oas-color-bg-hover)` |
+| `--oas-skeleton-duration` | `1.5s` |
+| `--oas-skeleton-sheen` | `var(--oas-color-border)` |

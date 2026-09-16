@@ -119,3 +119,10 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-toggle-color` | `var(--oas-color-primary)` |
+| `--oas-toggle-on-color` | `var(--oas-color-text-on-primary)` |

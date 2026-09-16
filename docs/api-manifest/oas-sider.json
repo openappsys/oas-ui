@@ -9,5 +9,15 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-sider-width",
+      "default": "200px"
+    },
+    {
+      "name": "--oas-sider-collapsed-width",
+      "default": "64px"
+    }
+  ],
   "unresolved": []
 }

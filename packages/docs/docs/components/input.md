@@ -376,3 +376,12 @@ onMounted(() => {
 | `prefix` | 内嵌前置内容（图标/按钮等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可 |
 | `prepend` | 前置 addon 区（可嵌 select/按钮等任意内容） |
 | `suffix` | 内嵌后置内容（图标/按钮等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可 |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-button-group-radius` | `var(--oas-radius-md)` |
+| `--oas-input-auto-max` | `100%` |
+| `--oas-input-auto-min` | `72px` |
+| `--oas-input-measured` | `100%` |

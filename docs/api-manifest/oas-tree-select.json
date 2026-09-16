@@ -223,5 +223,6 @@
       "name": "template[slot=\"node\"]"
     }
   ],
+  "cssVars": [],
   "unresolved": []
 }

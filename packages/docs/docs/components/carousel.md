@@ -342,6 +342,17 @@ onMounted(() => {
 | --- | --- |
 | 默认 | — |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-carousel-card-gap` | `var(--oas-space-3)` |
+| `--oas-carousel-card-scale` | `0.85` |
+| `--oas-carousel-card-width` | `60%` |
+| `--oas-carousel-dot-active-bg` | `#ffffff` |
+| `--oas-carousel-dot-bg` | `rgba(255, 255, 255, 0.5)` |
+| `--oas-carousel-height` | `200px` |
+
 ### 部件（::part()）
 
 | 部件                        | 说明                                                         |

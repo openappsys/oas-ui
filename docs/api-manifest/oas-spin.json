@@ -93,5 +93,27 @@
       "name": "tip"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-spin-z-index",
+      "default": "3500"
+    },
+    {
+      "name": "--oas-spin-border-width",
+      "default": "3px"
+    },
+    {
+      "name": "--oas-spin-track-color",
+      "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-spin-indicator-color",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-spin-duration",
+      "default": "0.8s"
+    }
+  ],
   "unresolved": []
 }

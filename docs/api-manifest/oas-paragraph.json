@@ -122,5 +122,15 @@
       "name": "actions"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-text-mark-bg",
+      "default": "var(--oas-color-warning)"
+    },
+    {
+      "name": "--oas-line-clamp",
+      "default": "2"
+    }
+  ],
   "unresolved": []
 }
