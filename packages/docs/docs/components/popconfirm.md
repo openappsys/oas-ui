@@ -311,6 +311,13 @@ onMounted(async () => {
 | `icon` | — |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-origin-x` | `center` |
+| `--oas-origin-y` | `center` |
+
 ### 方法
 
 | 方法 | 说明 |

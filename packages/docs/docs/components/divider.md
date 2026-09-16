@@ -165,3 +165,14 @@ vertical 模式下 `content-position` 支持 `top`（贴顶）/ `center`（默�
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-divider-color` | `var(--oas-color-border-strong)` |
+| `--oas-divider-double-gap` | `3px` |
+| `--oas-divider-middle-inset` | `16.67%` |
+| `--oas-divider-spacing` | `var(--oas-space-4)` |
+| `--oas-divider-title-inset` | `5%` |
+| `--oas-divider-width` | `1px` |

@@ -175,6 +175,15 @@ onMounted(() => {
 | --- | --- |
 | `oas-change` | 切换激活项，`detail: { value }` |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-badge-bg` | `var(--oas-color-danger)` |
+| `--oas-badge-on-color` | `var(--oas-color-text-on-danger)` |
+| `--oas-bottom-navigation-active-color` | `var(--oas-color-primary)` |
+| `--oas-bottom-navigation-height` | `56px` |
+| `--oas-bottom-navigation-pill-inset` | `12px` |
+| `--oas-bottom-navigation-pill-shadow` | `var(--oas-shadow-sm)` |
+
 ### oas-bottom-navigation-item
 
 | 属性 | 说明 | 类型 | 默认值 |

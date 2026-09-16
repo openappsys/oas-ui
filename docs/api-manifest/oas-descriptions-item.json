@@ -25,5 +25,43 @@
       "name": "label"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-desc-layout-dir",
+      "default": "row"
+    },
+    {
+      "name": "--oas-desc-item-gap",
+      "default": "var(--oas-space-2)"
+    },
+    {
+      "name": "--oas-descriptions-item-font",
+      "default": "var(--oas-desc-font-size, inherit)"
+    },
+    {
+      "name": "--oas-desc-cell-border",
+      "default": "0px"
+    },
+    {
+      "name": "--oas-desc-label-color",
+      "default": "var(--oas-color-text-secondary)"
+    },
+    {
+      "name": "--oas-desc-label-bg",
+      "default": "transparent"
+    },
+    {
+      "name": "--oas-desc-cell-py",
+      "default": "0"
+    },
+    {
+      "name": "--oas-desc-cell-px",
+      "default": "0"
+    },
+    {
+      "name": "--oas-desc-colon",
+      "default": "none"
+    }
+  ],
   "unresolved": []
 }

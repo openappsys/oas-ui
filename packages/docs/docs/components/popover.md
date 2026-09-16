@@ -851,4 +851,15 @@ onMounted(() => {
 | `header` | 头部结构化插槽 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-origin-x` | `center` |
+| `--oas-origin-y` | `center` |
+| `--oas-popover-bg` | `var(--oas-color-bg)` |
+| `--oas-popover-border` | `var(--oas-color-border)` |
+| `--oas-popover-radius` | `var(--oas-radius-md)` |
+| `--oas-popover-shadow` | `var(--oas-shadow-md)` |
+
 点击触发元素切换显隐，点击外部或按 Esc 关闭；`role="dialog"`。嵌套浮层：父关闭时级联关闭子层，`Esc` 逐层关闭并还原焦点到触发元素。

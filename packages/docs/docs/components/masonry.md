@@ -126,6 +126,12 @@
 | --- | --- |
 | 默认 | 瀑布流子项，子项自动 `break-inside: avoid`；带 `column` 属性（1-based）的子项会被重排到指定列；items 属性显式非空时子项被忽略（items 优先） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-masonry-item-gap` | `var(--oas-space-2)` |
+
 ### 子元素属性
 
 | 子项属性 | 说明 |

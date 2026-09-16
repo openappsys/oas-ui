@@ -232,4 +232,10 @@ onMounted(async () => {
 | --- | --- |
 | default | — |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-watermark-fullscreen-z-index` | `2147483647` |
+
 The watermark is a decorative layer (`aria-hidden` + `pointer-events: none`): it is excluded from the accessibility tree and does not intercept interaction.

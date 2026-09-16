@@ -107,4 +107,13 @@
 | --- | --- |
 | 默认 | — |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-kbd-bg` | `var(--oas-color-bg-hover)` |
+| `--oas-kbd-border` | `var(--oas-color-border-strong)` |
+| `--oas-kbd-color` | — |
+| `--oas-kbd-text` | `var(--oas-color-text-primary)` |
+
 > 说明：空 `keys` 渲染单个空块；提供 slot 内容时优先展示 slot。组件为纯展示，`role="text"`，不派发任何事件。

@@ -291,6 +291,12 @@ onMounted(async () => {
 | `avatar` | 头像插槽（消息前置） |
 | `content` | 正文富内容插槽 |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-msg-type-color` | `var(--oas-color-border)` |
+
 ### options
 
 - `{ duration?, group?, key?, onClose?, closable?, pauseOnHover?, placement?, offset?, max?, icon?, showIcon?, showProgress?, repeatNum?, mask?, onClick?, avatar?, spinner? }`

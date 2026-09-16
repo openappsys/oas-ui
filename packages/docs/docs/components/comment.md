@@ -202,4 +202,10 @@ onMounted(async () => {
 | `reply` | 回复目标区（作者行下，「回复 @某人」场景） |
 | `time` | 时间 |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-comment-font` | `inherit` |
+
 部件：`::part(comment)` 根、`::part(main)` 主体、`::part(avatar)` / `::part(author)` / `::part(time)` / `::part(content)` / `::part(actions)`、`::part(children)` 子评论容器。

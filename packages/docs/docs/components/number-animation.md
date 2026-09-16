@@ -84,6 +84,12 @@
 | --- | --- |
 | `oas-finish` | 动画抵达目标时派发一次，detail `{ value: 目标值 }` |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-number-animation-font` | `var(--oas-font-size-lg)` |
+
 - 动画中途修改 `value` 会从当前显示值续动到新目标。
 - 系统开启「减少动态效果」时跳过动画直接显示目标值（同样派发 `oas-finish`）。
 - 断开连接时取消未完成的 rAF，无泄漏。

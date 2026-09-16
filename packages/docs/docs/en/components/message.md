@@ -291,6 +291,12 @@ onMounted(async () => {
 | `avatar` | Avatar slot (before the message text) |
 | `content` | Rich body content slot |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-msg-type-color` | `var(--oas-color-border)` |
+
 ### options
 
 - `{ duration?, group?, key?, onClose?, closable?, pauseOnHover?, placement?, offset?, max?, icon?, showIcon?, showProgress?, repeatNum?, mask?, onClick?, avatar?, spinner? }`

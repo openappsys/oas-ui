@@ -190,5 +190,23 @@
       "name": "suffix"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-button-group-radius",
+      "default": "var(--oas-radius-md)"
+    },
+    {
+      "name": "--oas-input-measured",
+      "default": "100%"
+    },
+    {
+      "name": "--oas-input-auto-min",
+      "default": "72px"
+    },
+    {
+      "name": "--oas-input-auto-max",
+      "default": "100%"
+    }
+  ],
   "unresolved": []
 }

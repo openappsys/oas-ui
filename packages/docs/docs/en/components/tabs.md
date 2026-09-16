@@ -636,6 +636,13 @@ onMounted(async () => {
 | --- | --- |
 | default | — |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-tabs-badge-bg` | `var(--oas-color-danger)` |
+| `--oas-tabs-badge-color` | `var(--oas-color-text-on-danger)` |
+| `--oas-tabs-indicator-color` | `var(--oas-color-primary)` |
+| `--oas-tabs-indicator-size` | `2px` |
+
 ### oas-tab-panel
 
 | Attribute | Description | Type | Default |

@@ -63,5 +63,19 @@
       "name": ""
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-backdrop-bg",
+      "default": "var(--oas-color-overlay)"
+    },
+    {
+      "name": "--oas-backdrop-opacity",
+      "default": "1"
+    },
+    {
+      "name": "--oas-backdrop-blur",
+      "default": "none"
+    }
+  ],
   "unresolved": []
 }

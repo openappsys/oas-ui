@@ -376,3 +376,12 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `prefix` | Inline leading content (icons/buttons etc.; distributed content takes precedence over the `prefix` attribute text). For simple text use the `prefix` attribute |
 | `prepend` | Prepend addon area (may contain select/button or any content) |
 | `suffix` | Inline trailing content (icons/buttons etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-button-group-radius` | `var(--oas-radius-md)` |
+| `--oas-input-auto-max` | `100%` |
+| `--oas-input-auto-min` | `72px` |
+| `--oas-input-measured` | `100%` |

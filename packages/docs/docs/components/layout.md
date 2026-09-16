@@ -136,6 +136,10 @@
 | `header` | — |
 | `sider` | — |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-layout-height` | `100dvh` |
+
 ### oas-header
 
 | 名称 | 说明 |
@@ -147,6 +151,11 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-sider-collapsed-width` | `64px` |
+| `--oas-sider-width` | `200px` |
 
 ### oas-content
 

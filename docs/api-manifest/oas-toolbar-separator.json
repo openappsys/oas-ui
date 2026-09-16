@@ -5,5 +5,15 @@
   "props": [],
   "events": [],
   "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-toolbar-separator-length",
+      "default": "16px"
+    },
+    {
+      "name": "--oas-toolbar-separator-color",
+      "default": "var(--oas-color-border-strong)"
+    }
+  ],
   "unresolved": []
 }

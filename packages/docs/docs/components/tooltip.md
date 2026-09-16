@@ -774,4 +774,16 @@ onMounted(() => {
 | 默认 | 触发元素（hover/focus 触发）；`virtual` 虚拟模式下可省略 |
 | `content` | 富内容（存在时优先于 `content` 属性文本显示） |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-tip-cross` | `999px` |
+| `--oas-tooltip-arrow-size` | `12px` |
+| `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
+| `--oas-tooltip-color` | `var(--oas-color-bg)` |
+| `--oas-tooltip-duration` | `0.15s` |
+| `--oas-tooltip-easing` | `ease` |
+| `--oas-tooltip-max-width` | `240px` |
+
 `oas-open-change`：`open` 状态变化（显示/隐藏）时派发，`detail: { open }`。hover / focus 触发显隐；`role="tooltip"`，浮层 `pointer-events: none` 不拦截交互。

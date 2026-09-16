@@ -31,6 +31,44 @@ const OUT = join(ROOT, 'docs', 'api-manifest.json')
 // per-component 输出目录（每组件一份 manifest 文件，原子提交 + 按组件门禁）
 const OUT_DIR = join(ROOT, 'docs', 'api-manifest')
 
+// ---------- cssVars：组件出口 var(--oas-*) 收割 ----------
+// 出口 = 组件暴露给宿主的自定义点（引用 + 字面 fallback），用户在应用 CSS 里覆盖即可定制。
+// 排除：theme 家族 token（全局语义，非组件出口）、自身声明（内部派生）、JS setProperty
+// 内部管线、动态前缀拼接。theme 定义集用于排除判定。
+const THEME_TOKENS = (() => {
+  try {
+    return new Set(
+      [
+        ...readFileSync(join(ROOT, 'packages', 'theme', 'index.css'), 'utf8').matchAll(/(--oas-[a-z0-9-]+)\s*[:{]/g),
+      ].map((m) => m[1]),
+    )
+  } catch {
+    return new Set()
+  }
+})()
+const NON_OUTLET_FAMILY =
+  /^--oas-(space|radius|font|ease|color|shadow|z|control-height|transition|line-height|touch-target)-/
+
+/** 从组件源码收割 var(--oas-*) 出口：[{ name, default }]（default = 字面 fallback，无则 null） */
+function extractCssVars(source) {
+  const own = new Set([...source.matchAll(/(--(?:_|oas-)[a-z0-9-]+)\s*[:{]/g)].map((m) => m[1]))
+  const jsSet = new Set([...source.matchAll(/(?:set|remove)Property\(\s*'(--oas-[a-z0-9-]+)'/g)].map((m) => m[1]))
+  const out = []
+  const seen = new Set()
+  const re = /var\(\s*(--oas-[a-z0-9-]+)\s*(?:,\s*((?:[^(),]|\([^()]*\))+?))?\s*\)/g
+  let m
+  while ((m = re.exec(source))) {
+    const name = m[1]
+    if (seen.has(name) || THEME_TOKENS.has(name) || NON_OUTLET_FAMILY.test(name)) continue
+    if (own.has(name) || jsSet.has(`--${name.slice(1)}`) || name.endsWith('-')) continue
+    seen.add(name)
+    // fallback 仅接受无括号的简单字面量（嵌套 var()/函数式回退在表里显示 —，变量名才是发现重点）
+    const fb = m[2]?.trim()
+    out.push({ name, default: fb || null })
+  }
+  return out
+}
+
 // ---------- TS7 AST 常用节点 kind ----------
 const K = tsast.SyntaxKind
 
@@ -729,6 +767,7 @@ function scanDir(project, dir, unresolvedGlobal) {
     }
     const events = extractEvents(classNode, unresolved)
     const slots = extractSlots(classNode)
+    const cssVars = classFile ? extractCssVars(readFileSync(join(ROOT, classFile), 'utf8')) : []
 
     manifest[tagKey] = {
       className: cls,
@@ -737,6 +776,7 @@ function scanDir(project, dir, unresolvedGlobal) {
       props,
       events,
       slots,
+      cssVars,
       unresolved,
     }
   }

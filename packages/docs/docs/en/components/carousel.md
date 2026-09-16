@@ -342,6 +342,17 @@ Besides the automatic hover/focus pause, `pause-button` renders an explicit paus
 | --- | --- |
 | default | — |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-carousel-card-gap` | `var(--oas-space-3)` |
+| `--oas-carousel-card-scale` | `0.85` |
+| `--oas-carousel-card-width` | `60%` |
+| `--oas-carousel-dot-active-bg` | `#ffffff` |
+| `--oas-carousel-dot-bg` | `rgba(255, 255, 255, 0.5)` |
+| `--oas-carousel-height` | `200px` |
+
 ### Parts (::part())
 
 | Part                           | Description                                                    |

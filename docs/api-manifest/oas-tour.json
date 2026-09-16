@@ -290,5 +290,15 @@
       "name": "indicators"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-tour-mask-color",
+      "default": "var(--oas-color-overlay)"
+    },
+    {
+      "name": "--oas-tour-popup-bg",
+      "default": "var(--oas-color-bg)"
+    }
+  ],
   "unresolved": []
 }

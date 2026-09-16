@@ -53,5 +53,19 @@
     }
   ],
   "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-loading-bar-height",
+      "default": "3px"
+    },
+    {
+      "name": "--oas-loading-bar-color",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-loading-bar-error-color",
+      "default": "var(--oas-color-danger)"
+    }
+  ],
   "unresolved": []
 }

@@ -310,6 +310,12 @@ onMounted(() => {
 | `icon` | 图标头像（显式图标内容，不做首字符截取） |
 | `trigger` | 换头像入口遮罩自定义内容（hover/聚焦显形；缺省为内建相机图标） |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-avatar-bg` | `var(--oas-color-primary)` |
+| `--oas-avatar-on-color` | `var(--oas-color-text-on-primary)` |
+| `--oas-avatar-size` | `32px` |
+
 ### oas-avatar-group
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -321,3 +327,8 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-avatar-group-overlap` | `-8px` |
+| `--oas-avatar-group-ring` | `var(--oas-color-bg)` |

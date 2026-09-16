@@ -112,5 +112,6 @@
       "name": "template[slot=\"row\"]"
     }
   ],
+  "cssVars": [],
   "unresolved": []
 }

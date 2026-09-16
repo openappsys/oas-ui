@@ -139,3 +139,11 @@ Clicking dispatches the `oas-click` CustomEvent; `detail.originalEvent` is the n
 | Name | Description |
 | --- | --- |
 | default | — |
+
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-link-color` | `var(--oas-color-text-primary)` |
+| `--oas-link-underline-color` | `currentColor` |
+| `--oas-link-underline-offset` | `2px` |

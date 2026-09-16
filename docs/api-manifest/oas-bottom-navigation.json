@@ -57,5 +57,31 @@
     }
   ],
   "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-bottom-navigation-height",
+      "default": "56px"
+    },
+    {
+      "name": "--oas-bottom-navigation-active-color",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-badge-bg",
+      "default": "var(--oas-color-danger)"
+    },
+    {
+      "name": "--oas-badge-on-color",
+      "default": "var(--oas-color-text-on-danger)"
+    },
+    {
+      "name": "--oas-bottom-navigation-pill-inset",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-bottom-navigation-pill-shadow",
+      "default": "var(--oas-shadow-sm)"
+    }
+  ],
   "unresolved": []
 }

@@ -328,6 +328,16 @@ onMounted(async () => {
 | `icon` | Custom indicator slot, replaces the default ring |
 | `tip` | Rich loading text slot; overrides the tip attribute |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-spin-border-width` | `3px` |
+| `--oas-spin-duration` | `0.8s` |
+| `--oas-spin-indicator-color` | `var(--oas-color-primary)` |
+| `--oas-spin-track-color` | `var(--oas-color-bg-hover)` |
+| `--oas-spin-z-index` | `3500` |
+
 ### CSS variables
 
 | Variable | Description | Default |

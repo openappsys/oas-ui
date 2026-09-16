@@ -361,6 +361,10 @@ onMounted(() => {
 | `oas-expand-change` | 子菜单展开状态变化，`detail: { expanded: string[], value, isExpanded }`（受控/非受控都派发） |
 | `oas-select` | 选择某项，`detail: { value, kind? }`。`kind` 仅动作项（`kind: "action"`）出现，值为 "action"；radio 项 `detail.kind` 不出现 |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-menu-max-height` | `none` |
+
 ### oas-menu-item
 
 | 属性 | 说明 | 类型 | 默认值 |

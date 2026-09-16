@@ -180,6 +180,11 @@ Typography components for text, titles, and paragraphs.
 | default | — |
 | `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-line-clamp` | `2` |
+| `--oas-text-mark-bg` | `var(--oas-color-warning)` |
+
 ### oas-title
 
 | Attribute | Description | Type | Default |
@@ -214,6 +219,11 @@ Typography components for text, titles, and paragraphs.
 | default | — |
 | `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-line-clamp` | `2` |
+| `--oas-text-mark-bg` | `var(--oas-color-warning)` |
+
 ### oas-paragraph
 
 | Attribute | Description | Type | Default |
@@ -247,3 +257,8 @@ Typography components for text, titles, and paragraphs.
 | --- | --- |
 | default | — |
 | `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-line-clamp` | `2` |
+| `--oas-text-mark-bg` | `var(--oas-color-warning)` |

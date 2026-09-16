@@ -136,6 +136,10 @@ Child components must carry the matching `slot` attribute (`header` / `sider` / 
 | `header` | — |
 | `sider` | — |
 
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-layout-height` | `100dvh` |
+
 ### oas-header
 
 | Name | Description |
@@ -147,6 +151,11 @@ Child components must carry the matching `slot` attribute (`header` / `sider` / 
 | Name | Description |
 | --- | --- |
 | default | — |
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-sider-collapsed-width` | `64px` |
+| `--oas-sider-width` | `200px` |
 
 ### oas-content
 

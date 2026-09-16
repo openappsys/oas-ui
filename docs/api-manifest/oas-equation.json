@@ -23,5 +23,15 @@
   ],
   "events": [],
   "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-equation-font",
+      "default": "inherit"
+    },
+    {
+      "name": "--oas-equation-block-margin",
+      "default": "var(--oas-space-4)"
+    }
+  ],
   "unresolved": []
 }

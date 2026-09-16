@@ -113,3 +113,10 @@ slot 内任意子元素带 `breakout` 属性即突破定宽撑满视口宽（经
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-container-max` | `var(--oas-container-lg, 992px)` |
+| `--oas-container-padding` | `0` |

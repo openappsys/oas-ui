@@ -316,4 +316,15 @@ onMounted(async () => {
 | --- | --- |
 | default | Custom text: right of the line / inside the bar (text-inside) / circle center; wins over status icons and the built-in percentage |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-progress-duration` | `1.2s` |
+| `--oas-progress-height` | `var(--oas-space-2)` |
+| `--oas-progress-inside-color` | `var(--oas-color-bg)` |
+| `--oas-progress-step-gap` | `var(--oas-space-1)` |
+| `--oas-progress-stripe-color` | `var(--oas-color-bg)` |
+| `--oas-progress-track-color` | `var(--oas-color-bg-hover)` |
+
 `role="progressbar"` + `aria-valuenow` / `aria-valuemin` / `aria-valuemax` (synced for both line and circle).

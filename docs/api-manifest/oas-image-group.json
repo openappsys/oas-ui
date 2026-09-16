@@ -31,5 +31,11 @@
       "name": "template[slot=\"toolbar\"]"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-image-group-gap",
+      "default": "var(--oas-space-3)"
+    }
+  ],
   "unresolved": []
 }

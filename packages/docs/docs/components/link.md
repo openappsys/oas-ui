@@ -139,3 +139,11 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-link-color` | `var(--oas-color-text-primary)` |
+| `--oas-link-underline-color` | `currentColor` |
+| `--oas-link-underline-offset` | `2px` |

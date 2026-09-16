@@ -142,5 +142,11 @@
       "name": "template[slot=\"tag\"]"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-entry-pad",
+      "default": "0px"
+    }
+  ],
   "unresolved": []
 }

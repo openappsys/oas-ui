@@ -119,4 +119,10 @@ label 自身不加提示属性——提示能力通过**组合** `oas-tooltip` �
 | --- | --- |
 | 默认 | — |
 
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-label-color` | `var(--oas-color-text-primary)` |
+
 > 说明：`for` 同时同步到原生 `<label>` 的 `for` 属性；点击行为为手动代理，可跨 Shadow DOM 聚焦目标控件。双击不选中文本（与主流行为一致）。

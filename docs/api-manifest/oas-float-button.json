@@ -113,5 +113,23 @@
       "name": "icon"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-float-button-bottom",
+      "default": "var(--oas-space-6)"
+    },
+    {
+      "name": "--oas-float-button-right",
+      "default": "var(--oas-space-6)"
+    },
+    {
+      "name": "--oas-tooltip-bg",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-tooltip-color",
+      "default": "var(--oas-color-bg)"
+    }
+  ],
   "unresolved": []
 }

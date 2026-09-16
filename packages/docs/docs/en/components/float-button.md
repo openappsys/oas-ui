@@ -245,4 +245,13 @@ onMounted(async () => {
 | `action` | group-mode child buttons (native button/a or oas-button); clicking collapses the group and restores focus to the main button; badges and custom icons supported |
 | `icon` | Icon (default ＋) |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-float-button-bottom` | `var(--oas-space-6)` |
+| `--oas-float-button-right` | `var(--oas-space-6)` |
+| `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
+| `--oas-tooltip-color` | `var(--oas-color-bg)` |
+
 The default position is `position: fixed; bottom/right`, adjustable via the `--oas-float-button-bottom` / `--oas-float-button-right` CSS variables (default `var(--oas-space-6)`).

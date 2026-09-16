@@ -220,6 +220,12 @@ onMounted(() => {
 | `template[slot="suffix"]` | Suffix content slot |
 | `template[slot="tag"]` | Custom tag (`[data-tag-label]` binding; remove button stays component-side) |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-entry-pad` | `0px` |
+
 Keyboard: `Enter` / `,` to submit; with the input empty, `Backspace` deletes the last tag.
 
 ARIA: the container has `role="list"`, tags have `role="listitem"`, remove buttons are focusable with an `aria-label`; when submitting a duplicate, the input is marked `aria-invalid` with a hint shown.

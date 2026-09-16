@@ -628,3 +628,19 @@ oas-badge#badge-dyn.bump::part(badge) {
 | --- | --- |
 | 默认 | 被包裹内容（卡片、按钮等）；无内容时徽标回落为独立行内展示 |
 | `ribbon` | 缎带自定义内容 |
+
+### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-badge-bg` | `var(--oas-color-danger)` |
+| `--oas-badge-diagonal-font` | `var(--oas-font-size-xs)` |
+| `--oas-badge-diagonal-height` | `30px` |
+| `--oas-badge-diagonal-pin` | `25px` |
+| `--oas-badge-diagonal-text-inset` | `0px` |
+| `--oas-badge-on-color` | `var(--oas-color-text-on-danger)` |
+| `--oas-badge-pos` | `translate(50%, -50%)` |
+| `--oas-ribbon-anchor-x` | `0px` |
+| `--oas-ribbon-offset-x` | `0px` |
+| `--oas-ribbon-offset-y` | `0px` |
+| `--oas-status-color` | `var(--oas-color-text-secondary)` |

@@ -201,5 +201,35 @@
       "name": "content"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-tip-cross",
+      "default": "999px"
+    },
+    {
+      "name": "--oas-tooltip-bg",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-tooltip-color",
+      "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-tooltip-max-width",
+      "default": "240px"
+    },
+    {
+      "name": "--oas-tooltip-duration",
+      "default": "0.15s"
+    },
+    {
+      "name": "--oas-tooltip-easing",
+      "default": "ease"
+    },
+    {
+      "name": "--oas-tooltip-arrow-size",
+      "default": "12px"
+    }
+  ],
   "unresolved": []
 }

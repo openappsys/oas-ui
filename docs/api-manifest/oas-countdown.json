@@ -68,5 +68,11 @@
       "name": "title"
     }
   ],
+  "cssVars": [
+    {
+      "name": "--oas-countdown-font",
+      "default": "var(--oas-font-size-lg)"
+    }
+  ],
   "unresolved": []
 }

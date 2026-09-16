@@ -320,6 +320,10 @@ onMounted(async () => {
 | `extra` | 标题同排右侧操作区 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-desc-columns` | `3` |
+
 ### oas-descriptions-item
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -331,3 +335,15 @@ onMounted(async () => {
 | --- | --- |
 | 默认 | 字段内容 |
 | `label` | label 富内容（图标+文字等；与 label 属性互斥，slot 优先） |
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-desc-cell-border` | `0px` |
+| `--oas-desc-cell-px` | `0` |
+| `--oas-desc-cell-py` | `0` |
+| `--oas-desc-colon` | `none` |
+| `--oas-desc-item-gap` | `var(--oas-space-2)` |
+| `--oas-desc-label-bg` | `transparent` |
+| `--oas-desc-label-color` | `var(--oas-color-text-secondary)` |
+| `--oas-desc-layout-dir` | `row` |
+| `--oas-descriptions-item-font` | `var(--oas-desc-font-size, inherit)` |

@@ -719,4 +719,14 @@ onMounted(async () => {
 | `footer` | — |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
+### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-modal-mask-bg` | `var(--oas-color-overlay)` |
+| `--oas-modal-mask-blur` | `0px` |
+| `--oas-modal-max-height` | `90vh` |
+| `--oas-modal-origin-x` | `center` |
+| `--oas-modal-origin-y` | `center` |
+
 `role="dialog"` + `aria-modal="true"`; focus moves to the "Cancel" button on open (to the "OK" button with `focus-ok`) and is restored on close.
