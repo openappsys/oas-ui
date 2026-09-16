@@ -26,6 +26,7 @@ function isComposing(e: KeyboardEvent): boolean {
 const STYLE = `
  :host {
   display: inline-block;
+  position: relative;
   font-family: inherit;
   /* 尺寸档内部控高/字号变量（data-size 镜像切换；不占公开 API，外部请用 size 属性） */
   --_ch: var(--oas-control-height-md);
@@ -123,6 +124,9 @@ const STYLE = `
 .trigger-icon[hidden] {
   display: none;
 }
+.display[hidden] {
+  display: none;
+}
 .edit {
   display: inline-flex;
   align-items: flex-start;
@@ -131,20 +135,45 @@ const STYLE = `
 .edit[hidden] {
   display: none;
 }
+/* 宽度测量镜像：与 field 同字体度量（size 档字号），绝对定位不占布局；
+   happy-dom 无布局（测量为 0）时 syncFieldWidth 退化为 ch 估算 */
+.mirror {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  visibility: hidden;
+  white-space: pre;
+  pointer-events: none;
+  font-size: var(--_fs);
+  font-family: inherit;
+}
 :is(input, textarea) {
   appearance: none;
+  outline: none;
   box-sizing: border-box;
   height: var(--_ch);
-  padding: 0 var(--oas-space-3);
-  border: 1px solid var(--oas-color-border);
-  border-radius: var(--oas-radius-md);
-  background: var(--oas-color-bg);
+  padding: 0 var(--oas-space-1);
+  /* 原地无缝：与正文同底，默认透明边框/背景（占位 1px 防切换跳动），聚焦才显形——
+     对齐主流 Typography-editable 惯例（编辑框不是浮起的表单框） */
+  border: 1px solid transparent;
+  border-radius: var(--oas-radius-sm);
+  background: transparent;
   color: var(--oas-color-text-primary);
   font-size: var(--_fs);
   font-family: inherit;
-  min-width: 140px;
+  min-width: 2ch;
+  width: 8ch;
   transition: border-color var(--oas-transition-fast) var(--oas-ease-out),
+    background var(--oas-transition-fast) var(--oas-ease-out),
     box-shadow var(--oas-transition-fast) var(--oas-ease-out);
+}
+:is(input, textarea):hover {
+  background: var(--oas-color-bg-hover);
+}
+:is(input, textarea):focus {
+  border-color: var(--oas-color-primary);
+  background: var(--oas-color-bg);
+  box-shadow: var(--oas-focus-ring);
 }
 textarea {
   height: auto;
@@ -271,6 +300,10 @@ export class OASEditable extends OASElement {
   private defaultEditingApplied = false
   /** light DOM 观察器：template[slot="display"/"ok-icon"/"cancel-icon"] 增删 → 重刷展示态 */
   private childObserver: MutationObserver | null = null
+  /** template[slot=display] 的 content 观察器（fragment 不在宿主子树内，dev 渲染时序下内容迟到需单独观察） */
+  private displayTplObserver: MutationObserver | null = null
+  /** 当前已挂观察器的 display 模板元素（换模板时重挂） */
+  private displayTplEl: HTMLTemplateElement | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（快照为展示态） */
   private template(): string {
@@ -284,6 +317,7 @@ export class OASEditable extends OASElement {
         <button class="action ok" part="ok" type="button"></button>
         <button class="action cancel" part="cancel" type="button"></button>
       </span>
+      <span class="mirror" aria-hidden="true"></span>
     `
   }
 
@@ -355,6 +389,8 @@ export class OASEditable extends OASElement {
 
     this.syncDisplay()
     this.syncMirror()
+    // 编辑中外部改 value/size → 宽度跟随（内部输入走 field input 事件）
+    if (this.editing) this.syncFieldWidth()
   }
 
   /** 编辑字段确保：multiline 切 textarea、单行切 input（替换时重挂监听） */
@@ -385,6 +421,7 @@ export class OASEditable extends OASElement {
       field.rows = 1
       field.addEventListener('input', () => this.autoResize())
     }
+    field.addEventListener('input', () => this.syncFieldWidth())
     this.fieldEl = field
     if (this.editing) {
       field.value = this.getAttr('value', '')
@@ -412,6 +449,10 @@ export class OASEditable extends OASElement {
       if (child !== pencil) child.remove()
     }
     const tpl = this.querySelector<HTMLTemplateElement>('template[slot="display"]')
+    // 宿主 childObserver 观察不到 template.content（DocumentFragment 不在宿主子树内）——
+    // dev 下 Vue 客户端渲染「先建空 template 再填内容」的时序里，首帧克隆到空气后不会
+    // 自动补渲染，这里对 content 挂观察器补齐（同一模板只挂一次）
+    if (tpl) this.observeDisplayTpl(tpl)
     if (tpl instanceof HTMLTemplateElement) {
       const holder = document.createElement('span')
       holder.className = 'display-custom'
@@ -420,12 +461,29 @@ export class OASEditable extends OASElement {
       if (bindValue) bindValue.textContent = value
       const bindPlaceholder = holder.querySelector('[data-display-placeholder]')
       if (bindPlaceholder) bindPlaceholder.textContent = placeholder
-      displayEl.insertBefore(holder, pencil)
-      displayEl.classList.toggle('placeholder', false)
-      return
+      // 克隆仍为空（模板内容未到达）→ 回落纯文本，避免展示态空白；内容到达后经观察器补渲染
+      if (holder.childNodes.length) {
+        displayEl.insertBefore(holder, pencil)
+        displayEl.classList.toggle('placeholder', false)
+        return
+      }
     }
     displayEl.insertBefore(document.createTextNode(value !== '' ? value : placeholder), pencil)
     displayEl.classList.toggle('placeholder', value === '')
+  }
+
+  /** template.content 迟到填充观察（dev 渲染时序：空 template 先挂、内容后到） */
+  private observeDisplayTpl(tpl: HTMLTemplateElement): void {
+    if (this.displayTplEl === tpl) return
+    this.displayTplEl = tpl
+    this.displayTplObserver?.disconnect()
+    this.displayTplObserver = new MutationObserver(() => this.update())
+    this.displayTplObserver.observe(tpl.content, { childList: true })
+    this.onCleanup(() => {
+      this.displayTplObserver?.disconnect()
+      this.displayTplObserver = null
+      this.displayTplEl = null
+    })
   }
 
   /** 宿主态镜像（size/status/readonly/trigger）+ field/按钮属性同步 */
@@ -531,9 +589,26 @@ export class OASEditable extends OASElement {
     fieldEl.value = this.getAttr('value', '')
     this.setAttribute('editing', '')
     this.emit('editing', { editing: true })
+    this.syncFieldWidth()
     fieldEl.focus()
     fieldEl.select()
     if (isTextarea(fieldEl)) this.autoResize()
+  }
+
+  /** 编辑框宽度自适应：镜像 span 按同字体度量测文本宽（happy-dom 无布局退化为 ch 估算），
+   *  对齐主流 Typography-editable「输入框贴着内容长」的原地观感 */
+  private syncFieldWidth(): void {
+    const field = this.fieldEl
+    if (!field) return
+    const text = field.value || field.placeholder || ''
+    const mirror = this.shadow.querySelector<HTMLElement>('.mirror')
+    let widthPx = 0
+    if (mirror) {
+      mirror.textContent = text.replace(/ /g, '\u00a0') || '\u200b'
+      widthPx = mirror.getBoundingClientRect().width
+    }
+    // 内容宽 + 左右内边距（space-1×2）；测量不可用时按字符数估（ch 随字体）
+    field.style.width = widthPx > 0 ? `${Math.ceil(widthPx) + 10}px` : `${[...text].length + 2}ch`
   }
 
   private exitEdit(): void {
