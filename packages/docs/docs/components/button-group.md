@@ -169,9 +169,9 @@
 </DemoBlock>
 
 <style>
-/* 纵向胶囊的匀称内边距：button 原生是「固定控件高 + 仅水平内边距」，纵向组里竖直留白会明显小于
+/* 纵向胶囊的统一内边距：button 原生是「固定控件高 + 仅水平内边距」，纵向组里竖直留白明显小于
    水平留白（四周不相等）。放开固定高、给统一 padding，让文字四周留白一致。
-   两个示例共用：第 3 个文字横排 → 钮 44×36；第 4 个文字竖排（writing-mode）→ 钮 36×44（同款旋转）。 */
+   两个示例共用：第 3 个文字横排 → 钮 46×37；第 4 个文字竖排（writing-mode）→ 钮 37×46。 */
 .bg-eq-pill oas-button::part(button) {
   height: auto;
   min-height: 0;
@@ -187,6 +187,20 @@
   margin-block-start: 0;
   margin-right: 0;
   margin-top: -1px;
+}
+/* 端钮外侧内边距取 space-4：文字不能"钻进"胶囊的弧形端里。弧深等于胶囊半宽（本例 23 / 18.5），
+   但无需顶到弧深——文字顶行落到「弧深−4」处时，弧的边界内缩已 <0.5px（视觉上早就是直边），
+   顶满只会白多出一截空端。内侧与左右保持 space-2：置顶下边距=左右、置底上边距=左右、置中四面相等。
+   注：竖排（writing-mode: vertical-rl）下百分比内边距会让宿主固有高度算不出来（宿主不跟随内层
+   按钮 → 标签重叠），故此处用固定值（横排本可用 50% 取半宽）。 */
+.bg-eq-pill {
+  --end-pad: var(--oas-space-4);
+}
+.bg-eq-pill oas-button:first-child::part(button) {
+  padding-top: var(--end-pad);
+}
+.bg-eq-pill oas-button:last-child::part(button) {
+  padding-bottom: var(--end-pad);
 }
 </style>
 
