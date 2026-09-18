@@ -312,7 +312,7 @@ onMounted(() => {
 
 | CSS 变量 | 默认值 |
 | --- | --- |
-| `--oas-rate-active` | `var(--oas-color-warning)` |
+| `--oas-rate-active` | `var(--oas-color-warning-text)` |
 | `--oas-rate-star-size` | `20px` |
 | `--oas-rate-void` | `var(--oas-color-border)` |
 

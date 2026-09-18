@@ -83,7 +83,7 @@ label 自身不加提示属性——提示能力通过**组合** `oas-tooltip` �
 </DemoBlock>
 
 <DemoBlock title="自定义色值">
-  <oas-label color="#0e7490">青碧色标签</oas-label>
+  <oas-label color="var(--oas-color-info-text)">青碧色标签</oas-label>
 </DemoBlock>
 
 ## 布局对齐与换行（宿主 CSS 等价做法）

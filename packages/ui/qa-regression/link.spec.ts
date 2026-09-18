@@ -85,14 +85,20 @@ test('link 色板达标：预设名映射 -text 达标 token、自定义色原�
     const sem = [...document.querySelectorAll('.demo-block')].find((b) => b.textContent?.includes('主要链接'))
     const typeColor = (t: string) =>
       getComputedStyle(sem!.querySelector(`oas-link[type="${t}"]`)!.shadowRoot!.querySelector('a')!).color
-    const custom = document.querySelector('oas-link[color="#0e7490"]')
+    // 自定义色 demo：按 color 属性值精确定位（不依赖 DOM 顺序）；
+    // demo 用 token 表达自定义色值（写死 hex 无法两主题同时达标）
+    const customByAttr = (attr: string) => {
+      const host = document.querySelector(`oas-link[color="${attr}"]`)!
+      return getComputedStyle(host.shadowRoot!.querySelector('a')!).color
+    }
     return {
       gold: color('gold'),
       geekblue: color('geekblue'),
       purple: color('purple'),
       success: typeColor('success'),
       warning: typeColor('warning'),
-      custom: getComputedStyle(custom!.shadowRoot!.querySelector('a')!).color,
+      custom: customByAttr('var(--oas-color-info-text)'),
+      customOverride: customByAttr('var(--oas-preset-purple-text)'),
     }
   })
   // light 下预设亮色取 -text 深色变体（gold 本色 #faad14 白底 1.9:1，text 变体 #94660c 5.04:1）
@@ -103,6 +109,7 @@ test('link 色板达标：预设名映射 -text 达标 token、自定义色原�
   // type 语义色改 -text 变体
   expect(r.success).toBe('rgb(17, 129, 58)')
   expect(r.warning).toBe('rgb(167, 92, 5)')
-  // 自定义色值原值渲染（不做改写）
-  expect(r.custom).toBe('rgb(14, 116, 144)')
+  // 自定义色原值渲染：--oas-color-info-text（#0891b2）与 --oas-preset-purple-text（#722ed1）各自解析为本色
+  expect(r.custom).toBe('rgb(8, 145, 178)')
+  expect(r.customOverride).toBe('rgb(114, 46, 209)')
 })

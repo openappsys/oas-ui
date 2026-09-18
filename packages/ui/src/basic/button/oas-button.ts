@@ -125,7 +125,7 @@ a[part='button'].icon-end .icon:not([part='icon-end']) {
 button.plain.primary {
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
   border-color: transparent;
-  color: color-mix(in srgb, var(--oas-color-primary) 80%, black);
+  color: var(--oas-color-primary-active);
 }
 button.plain.primary:hover {
   background: color-mix(in srgb, var(--oas-color-primary) 20%, transparent);
@@ -136,7 +136,7 @@ button.plain.primary:active {
 button.plain.success {
   background: color-mix(in srgb, var(--oas-color-success) 12%, transparent);
   border-color: transparent;
-  color: color-mix(in srgb, var(--oas-color-success) 80%, black);
+  color: var(--oas-color-success-text);
 }
 button.plain.success:hover {
   background: color-mix(in srgb, var(--oas-color-success) 20%, transparent);
@@ -144,7 +144,7 @@ button.plain.success:hover {
 button.plain.warning {
   background: color-mix(in srgb, var(--oas-color-warning) 12%, transparent);
   border-color: transparent;
-  color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+  color: var(--oas-color-warning-text);
 }
 button.plain.warning:hover {
   background: color-mix(in srgb, var(--oas-color-warning) 20%, transparent);
@@ -152,7 +152,7 @@ button.plain.warning:hover {
 button.plain.danger {
   background: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
   border-color: transparent;
-  color: color-mix(in srgb, var(--oas-color-danger) 80%, black);
+  color: var(--oas-color-danger-text);
 }
 button.plain.danger:hover {
   background: color-mix(in srgb, var(--oas-color-danger) 20%, transparent);
@@ -182,7 +182,7 @@ button:focus-visible {
 /* 选中态（button-group 单/多选经 host aria-pressed 标记）；置于类型规则前，有色按钮由下方规则覆盖 */
 :host([aria-pressed='true']) button,
 :host([aria-pressed='true']) a[part='button'] {
-  color: var(--oas-color-primary);
+  color: var(--oas-color-primary-active);
   border-color: var(--oas-color-primary);
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
 }
@@ -212,13 +212,13 @@ button.primary:active {
   border-color: var(--oas-color-primary-active);
 }
 button.success {
-  background: color-mix(in srgb, var(--oas-color-success) 80%, black);
-  border-color: color-mix(in srgb, var(--oas-color-success) 80%, black);
+  background: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
+  border-color: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
   color: var(--oas-color-text-on-success);
 }
 a[part='button'].success {
-  background: color-mix(in srgb, var(--oas-color-success) 80%, black);
-  border-color: color-mix(in srgb, var(--oas-color-success) 80%, black);
+  background: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
+  border-color: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
   color: var(--oas-color-text-on-success);
 }
 button.success:hover {
@@ -226,26 +226,26 @@ button.success:hover {
   filter: brightness(0.94);
 }
 button.warning {
-  background: color-mix(in srgb, var(--oas-color-warning) 80%, black);
-  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+  background: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
+  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
   color: var(--oas-color-text-on-warning);
 }
 a[part='button'].warning {
-  background: color-mix(in srgb, var(--oas-color-warning) 80%, black);
-  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+  background: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
+  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
   color: var(--oas-color-text-on-warning);
 }
 button.warning:hover {
   filter: brightness(0.94);
 }
 button.danger {
-  background: color-mix(in srgb, var(--oas-color-danger) 80%, black);
-  border-color: color-mix(in srgb, var(--oas-color-danger) 80%, black);
+  background: color-mix(in srgb, var(--oas-color-danger) 80%, var(--oas-color-text-primary));
+  border-color: color-mix(in srgb, var(--oas-color-danger) 80%, var(--oas-color-text-primary));
   color: var(--oas-color-text-on-danger);
 }
 a[part='button'].danger {
-  background: color-mix(in srgb, var(--oas-color-danger) 80%, black);
-  border-color: color-mix(in srgb, var(--oas-color-danger) 80%, black);
+  background: color-mix(in srgb, var(--oas-color-danger) 80%, var(--oas-color-text-primary));
+  border-color: color-mix(in srgb, var(--oas-color-danger) 80%, var(--oas-color-text-primary));
   color: var(--oas-color-text-on-danger);
 }
 button.danger:hover {
@@ -387,37 +387,35 @@ button.ghost.primary:active {
 }
 button.ghost.success {
   background: transparent;
-  /* 文字/描边用更深色（token 80% + 20% 黑），白底对比度 ≥ 4.5:1（#16a34a 仅 3.3:1） */
-  border-color: color-mix(in srgb, var(--oas-color-success) 80%, black);
-  color: color-mix(in srgb, var(--oas-color-success) 80%, black);
+  /* 文字/描边用文字安全档（light 掺主文本色≈掺黑压深、dark 提亮），深浅底双达标；
+     主题感知掺向替代固定掺黑（掺黑在暗色下把文字拉回不可读） */
+  border-color: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
+  color: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
 }
 a[part='button'].ghost.success {
   background: transparent;
-  /* 文字/描边用更深色（token 80% + 20% 黑），白底对比度 ≥ 4.5:1（#16a34a 仅 3.3:1） */
-  border-color: color-mix(in srgb, var(--oas-color-success) 80%, black);
-  color: color-mix(in srgb, var(--oas-color-success) 80%, black);
+  border-color: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
+  color: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
 }
 button.ghost.success:hover {
   background: color-mix(in srgb, var(--oas-color-success) 10%, transparent);
-  border-color: color-mix(in srgb, var(--oas-color-success) 70%, black);
-  color: color-mix(in srgb, var(--oas-color-success) 70%, black);
+  border-color: color-mix(in srgb, var(--oas-color-success) 70%, var(--oas-color-text-primary));
+  color: color-mix(in srgb, var(--oas-color-success) 70%, var(--oas-color-text-primary));
 }
 button.ghost.warning {
   background: transparent;
-  /* 文字/描边用更深色（token 80% + 20% 黑），白底对比度 ≥ 4.5:1（#d97706 仅 3.18:1） */
-  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
-  color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
+  color: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
 }
 a[part='button'].ghost.warning {
   background: transparent;
-  /* 文字/描边用更深色（token 80% + 20% 黑），白底对比度 ≥ 4.5:1（#d97706 仅 3.18:1） */
-  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
-  color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
+  color: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
 }
 button.ghost.warning:hover {
   background: color-mix(in srgb, var(--oas-color-warning) 10%, transparent);
-  border-color: color-mix(in srgb, var(--oas-color-warning) 70%, black);
-  color: color-mix(in srgb, var(--oas-color-warning) 70%, black);
+  border-color: color-mix(in srgb, var(--oas-color-warning) 70%, var(--oas-color-text-primary));
+  color: color-mix(in srgb, var(--oas-color-warning) 70%, var(--oas-color-text-primary));
 }
 button.ghost.danger {
   background: transparent;
@@ -431,8 +429,8 @@ a[part='button'].ghost.danger {
 }
 button.ghost.danger:hover {
   background: color-mix(in srgb, var(--oas-color-danger) 10%, transparent);
-  border-color: color-mix(in srgb, var(--oas-color-danger) 70%, black);
-  color: color-mix(in srgb, var(--oas-color-danger) 70%, black);
+  border-color: color-mix(in srgb, var(--oas-color-danger) 70%, var(--oas-color-text-primary));
+  color: color-mix(in srgb, var(--oas-color-danger) 70%, var(--oas-color-text-primary));
 }
 /* 幽灵禁用：回落到禁用配色，防止 ghost/ghost:hover 覆盖 disabled 样式 */
 button.ghost[disabled],
@@ -455,44 +453,46 @@ a[part='button'].primary {
 }
 button.success,
 a[part='button'].success {
-  --btn-color: var(--oas-button-color, color-mix(in srgb, var(--oas-color-success) 80%, black));
+  --btn-color: var(--oas-button-color, color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary)));
 }
 button.warning,
 a[part='button'].warning {
-  --btn-color: var(--oas-button-color, color-mix(in srgb, var(--oas-color-warning) 80%, black));
+  --btn-color: var(--oas-button-color, color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary)));
 }
 button.danger,
 a[part='button'].danger {
   --btn-color: var(--oas-button-color, var(--oas-color-danger));
 }
-/* outlined：透明底 + 语义色描边与文字 */
+/* outlined：透明底 + 语义色描边与文字；文字走「文字安全档」deep（对齐 tag outlined 惯例：
+   描边本色 + 文字达标档）——自定义色（hex）在深浅主题下的可读性由 --oas-deep-mix/--oas-deep-sink
+   主题参数保证，语义色兜底（--btn-color 已主题感知掺向）同样适用 */
 button.outlined,
 a[part='button'].outlined {
   background: transparent;
   border-color: var(--btn-color, var(--oas-color-border));
-  color: var(--btn-color, var(--oas-color-text-primary));
+  color: var(--oas-button-color-deep, var(--btn-color, var(--oas-color-text-primary)));
 }
 button.outlined:hover,
 a[part='button'].outlined:hover {
   background: color-mix(in srgb, var(--btn-color, var(--oas-color-text-primary)) 8%, transparent);
 }
-/* dashed：虚线描边（outlined + 虚线样式） */
+/* dashed：虚线描边（outlined + 虚线样式），文字安全档同 outlined */
 button.dashed,
 a[part='button'].dashed {
   background: transparent;
   border: 1px dashed var(--btn-color, var(--oas-color-border));
-  color: var(--btn-color, var(--oas-color-text-primary));
+  color: var(--oas-button-color-deep, var(--btn-color, var(--oas-color-text-primary)));
 }
 button.dashed:hover,
 a[part='button'].dashed:hover {
   background: color-mix(in srgb, var(--btn-color, var(--oas-color-text-primary)) 8%, transparent);
 }
-/* filled：浅底 soft（语义色 12% 底 + 80% 深文字） */
+/* filled：浅底 soft（语义色 12% 底 + 文字安全档） */
 button.filled,
 a[part='button'].filled {
   background: color-mix(in srgb, var(--btn-color, var(--oas-color-text-primary)) 12%, transparent);
   border-color: transparent;
-  color: var(--btn-color, var(--oas-color-text-primary));
+  color: var(--oas-button-color-deep, var(--btn-color, var(--oas-color-text-primary)));
 }
 button.filled.primary,
 a[part='button'].filled.primary,
@@ -502,7 +502,9 @@ button.filled.warning,
 a[part='button'].filled.warning,
 button.filled.danger,
 a[part='button'].filled.danger {
-  color: color-mix(in srgb, var(--btn-color) 80%, black);
+  /* 文字安全档：主题感知混合（light 72% 掺黑压深 / dark 38% 掺主文本色提亮）；
+     原「80% 掺黑」固定掺向在暗色下把浅色 token 压回不可读 */
+  color: color-mix(in srgb, var(--btn-color) var(--oas-deep-mix, 72%), var(--oas-deep-sink, black));
 }
 button.filled:hover,
 a[part='button'].filled:hover {
@@ -548,11 +550,11 @@ a[part='button'].has-color:where(:not(.filled):not(.outlined):not(.dashed):not(.
   border-color: var(--oas-button-bg, var(--oas-button-color));
   color: var(--oas-button-on-color, var(--oas-color-text-on-primary));
 }
-/* 自定义色实心 hover 加深（与状态色体系统一方向） */
+/* 自定义色实心 hover（主题感知掺向：light 压深 / dark 提亮） */
 button.has-color:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link)):hover,
 a[part='button'].has-color:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link)):hover {
-  background: color-mix(in srgb, var(--oas-button-bg, var(--oas-button-color)) 85%, black);
-  border-color: color-mix(in srgb, var(--oas-button-bg, var(--oas-button-color)) 85%, black);
+  background: color-mix(in srgb, var(--oas-button-bg, var(--oas-button-color)) 85%, var(--oas-color-text-primary));
+  border-color: color-mix(in srgb, var(--oas-button-bg, var(--oas-button-color)) 85%, var(--oas-color-text-primary));
 }
 /* press 反馈（wave 默认开）：按下轻微下沉 + 加深，克制不抢眼 */
 button.wave,
@@ -917,10 +919,17 @@ export class OASButton extends OASElement {
     // color 自定义色：覆盖 type 语义色（经 --oas-button-color 变量，CSS 配色处兜底引用）
     if (color) {
       this.btn.style.setProperty('--oas-button-color', color)
+      // 文字安全档（outlined/dashed/filled 文字用）：主题感知混合派生——
+      // light fallback 72% 掺黑压深，dark 由主题 token（--oas-deep-mix/--oas-deep-sink）掺近白提亮
+      this.btn.style.setProperty(
+        '--oas-button-color-deep',
+        `color-mix(in srgb, ${color} var(--oas-deep-mix, 72%), var(--oas-deep-sink, black))`,
+      )
       // 实心底文字色按底色亮度取黑/白（on-primary 对中间调自定义色可能不可读）
       this.btn.style.setProperty('--oas-button-on-color', pickOnColor(color))
     } else {
       this.btn.style.removeProperty('--oas-button-color')
+      this.btn.style.removeProperty('--oas-button-color-deep')
       this.btn.style.removeProperty('--oas-button-on-color')
     }
     this.btn.setAttribute('aria-busy', loading ? 'true' : 'false')

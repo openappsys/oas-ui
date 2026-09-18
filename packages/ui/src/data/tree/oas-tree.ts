@@ -75,7 +75,8 @@ const ROW_STYLE = `
   opacity: 0.55;
 }
 .row[data-disabled='true'] .label {
-  color: var(--oas-color-text-secondary);
+  /* 禁用态文字走 token 档（对齐全局禁用豁免；硬编码/非 token 灰不达标） */
+  color: var(--oas-color-text-disabled);
 }
 .row.dragging {
   opacity: 0.5;

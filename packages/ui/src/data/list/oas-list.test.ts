@@ -394,17 +394,57 @@ describe('OASList', () => {
   })
 
   describe('OASListItem 行交互（clickable / selected）', () => {
-    it('clickable：可聚焦、有 role，点击派发 oas-click', () => {
+    it('clickable：可聚焦，不挂 role=button（避免与行内控件形成交互嵌套）', () => {
       const el = new OASListItem()
       el.setAttribute('clickable', '')
       el.textContent = '设置项'
       document.body.appendChild(el)
       expect(el.getAttribute('tabindex')).toBe('0')
-      expect(el.getAttribute('role')).toBe('button')
+      expect(el.hasAttribute('role'), '缺省 role=button 会与行内控件嵌套（axe: nested-interactive）').toBe(false)
       let fired = 0
       el.addEventListener('oas-click', () => fired++)
       el.click()
       expect(fired).toBe(1)
+    })
+
+    it('点击行内交互控件不派发行 oas-click（避免行与控件双触发）', () => {
+      const el = new OASListItem()
+      el.setAttribute('clickable', '')
+      const inner = document.createElement('button')
+      inner.textContent = '行内按钮'
+      el.appendChild(inner)
+      document.body.appendChild(el)
+      let fired = 0
+      el.addEventListener('oas-click', () => fired++)
+      inner.click()
+      expect(fired, '行内控件点击不应触发行点击').toBe(0)
+      // 行本体点击仍触发
+      el.click()
+      expect(fired).toBe(1)
+    })
+
+    it('行内 ARIA 控件角色（switch/checkbox/link/menuitem/contenteditable）点击同样不触发行点击', () => {
+      const cases: Array<[string, string, string]> = [
+        ['span', 'role', 'switch'],
+        ['span', 'role', 'checkbox'],
+        ['span', 'role', 'link'],
+        ['span', 'role', 'menuitem'],
+        ['div', 'contenteditable', 'true'],
+      ]
+      for (const [tag, attr, value] of cases) {
+        const el = new OASListItem()
+        el.setAttribute('clickable', '')
+        const inner = document.createElement(tag)
+        inner.setAttribute(attr, value)
+        inner.textContent = '行内控件'
+        el.appendChild(inner)
+        document.body.appendChild(el)
+        let fired = 0
+        el.addEventListener('oas-click', () => fired++)
+        inner.click()
+        expect(fired, `行内 [${attr}="${value}"] 点击不应触发行点击`).toBe(0)
+        el.remove()
+      }
     })
 
     it('非 clickable 不派发 oas-click', () => {
@@ -427,17 +467,16 @@ describe('OASList', () => {
       expect(fired).toBe(2)
     })
 
-    it('selected：clickable 行 aria-pressed 同步 + 视觉态 CSS 钩子', () => {
+    it('selected：视觉态 CSS 钩子（不挂 aria-pressed，行无 role 时该属性非法）', () => {
       const el = new OASListItem()
       el.setAttribute('clickable', '')
       el.setAttribute('selected', '')
       document.body.appendChild(el)
-      // role=button 的行用 aria-pressed 表达选中（aria-selected 不被 role=button 允许）
-      expect(el.getAttribute('aria-pressed')).toBe('true')
+      expect(el.hasAttribute('aria-pressed')).toBe(false)
       const style = el.shadowRoot!.querySelector('style')!.textContent!
       expect(style).toMatch(/:host\(\[selected\]\)\s*\{[^}]*background/)
       el.removeAttribute('selected')
-      expect(el.getAttribute('aria-pressed')).toBe('false')
+      expect(el.hasAttribute('aria-pressed')).toBe(false)
     })
 
     it('hover 反馈 CSS 钩子：clickable 行 hover 背景', () => {

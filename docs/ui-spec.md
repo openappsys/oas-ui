@@ -23,19 +23,21 @@
 | 语义 token                   | light            | dark             | 用途               |
 | ---------------------------- | ---------------- | ---------------- | ------------------ |
 | `--oas-color-primary`        | `#0b6cff`        | `#9ecdff`        | 主行动、选中、焦点 |
-| `--oas-color-primary-hover`  | `#1f7dff`        | `#aad3ff`        | primary hover      |
-| `--oas-color-primary-active` | `#0a5bd6`        | `#b3d8ff`        | primary active     |
+| `--oas-color-primary-hover`  | `color-mix(primary 85%, black)`  | `color-mix(primary 88%, white)`  | primary hover      |
+| `--oas-color-primary-active` | `color-mix(primary 75%, black)`  | `color-mix(primary 78%, white)`  | primary active     |
 | `--oas-color-success`        | `#16a34a`        | `#4ade80`        | 成功               |
 | `--oas-color-warning`        | `#d97706`        | `#fbbf24`        | 警告               |
 | `--oas-color-danger`         | `#dc2626`        | `#fbb2b2`        | 危险/删除          |
 | `--oas-color-text-primary`   | `#18181b`        | `#fafafa`        | 主文字             |
-| `--oas-color-text-secondary` | `#71717a`        | `#a1a1aa`        | 次级文字           |
-| `--oas-color-text-disabled`  | `#a1a1aa`        | `#71717a`        | 禁用文字           |
+| `--oas-color-text-secondary` | `#71717a`        | `#c6c6ce`        | 次级文字           |
+| `--oas-color-text-disabled`  | `#a1a1aa`        | `#8d8d95`        | 禁用文字           |
 | `--oas-color-border`         | `#e4e4e7`        | `#3f3f46`        | 描边/分割线        |
 | `--oas-color-bg`             | `#ffffff`        | `#18181b`        | 组件底             |
 | `--oas-color-bg-hover`       | `#f4f4f5`        | `#27272a`        | hover 底           |
 | `--oas-color-bg-disabled`    | `#f4f4f5`        | `#27272a`        | 禁用底             |
 | `--oas-color-overlay`        | `rgba(0,0,0,.5)` | `rgba(0,0,0,.6)` | 遮罩               |
+
+hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压深 / dark 掺白提亮），完整定义以 `packages/theme/index.css` 为准。
 
 ### 1.3 字号阶梯
 
@@ -160,6 +162,7 @@
 - 已覆盖组件：tag / badge（v2.0 起）、divider / link（v2.1 起）；后续组件按此协议补齐
 - 承载文字的色值（link/文字类）有 WCAG 责任：色值按原值渲染不自动改写，demo 示例色必须达标（AA 4.5:1），文档明示对比度由宿主负责
 - 与 CSS 变量开口并存：`color` 属性是语义化高频通道，`--oas-<组件>-color` 变量是主题级批量通道，两者都有效时属性注入的具体度更高
+- **「文字承载面」自动派生安全档**（本批确立）：语义/预设色的 `-text` 变体（`--oas-preset-*-text` / `--oas-color-*-text`）用于**文字与「实底底色」**——不再是「填充面一律用本色」（浅色本色作底时其上文字不达标）；任意自定义 hex 色经内部 token `--oas-deep-mix` / `--oas-deep-sink` 做 theme-aware 混合派生文字安全档（light 掺近黑压深、dark 掺近白提亮）。tag 的 `--oas-tag-color-deep` 即该安全档的组件出口，现同时承担 `solid` / `checked` 形态的底色
 
 - 所有颜色必须同时有 light/dark 值；新增组件必须验证双主题
 - 主题切换通过 `data-theme="dark"` 在根元素切换，组件无需感知（只读 CSS 变量）

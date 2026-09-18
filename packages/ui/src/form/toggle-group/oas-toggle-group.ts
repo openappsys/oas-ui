@@ -382,11 +382,12 @@ export class OASToggleGroup extends OASElement {
       this.invalidByStatus = false
       this.removeAttribute('aria-invalid')
     }
-    // color 选中色（ui-spec §4.1 三级协议）：预设名 → preset token；字面色直接注入并计算实底文字色
+    // color 选中色（ui-spec §4.1 三级协议）：预设名 → preset token；字面色直接注入并计算实底文字色。
+    // 感知对比度（≥60）：预设基色（如 cyan #13c2c2）对白字不达标，选中实底用更深的 -text 档
     const color = this.getAttr('color', '')
     if (color) {
       const isPreset = (PRESET_COLORS as readonly string[]).includes(color)
-      const base = isPreset ? `var(--oas-preset-${color})` : color
+      const base = isPreset ? `var(--oas-preset-${color}-text)` : color
       this.style.setProperty('--oas-toggle-color', base)
       const onColor = isPreset ? '' : pickOnColor(color)
       if (onColor) this.style.setProperty('--oas-toggle-on-color', onColor)

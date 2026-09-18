@@ -121,7 +121,7 @@ onMounted(() => {
 <DemoBlock title="aria-label">
   <oas-qrcode value="https://oas-ui.dev" aria-label="商品详情页链接二维码"></oas-qrcode>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    容器 `role="img"`；`aria-label` 属性优先，缺省走 locale 默认文案（中文「二维码」/ 英文「QR code」），可被屏幕阅读器读出。
+    图形元素 `role="img"`；`aria-label` 属性优先，缺省走 locale 默认文案（中文「二维码」/ 英文「QR code」），可被屏幕阅读器读出。
   </p>
 </DemoBlock>
 

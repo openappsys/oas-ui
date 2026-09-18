@@ -312,7 +312,7 @@ onMounted(() => {
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-rate-active` | `var(--oas-color-warning)` |
+| `--oas-rate-active` | `var(--oas-color-warning-text)` |
 | `--oas-rate-star-size` | `20px` |
 | `--oas-rate-void` | `var(--oas-color-border)` |
 

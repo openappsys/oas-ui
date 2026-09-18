@@ -304,10 +304,11 @@
 
 #### CSS 变量
 
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-button-bg` | `var(--oas-color-primary)` |
-| `--oas-button-color` | `var(--oas-color-text-primary)` |
-| `--oas-button-group-radius` | `var(--oas-radius-md)` |
-| `--oas-button-group-width` | `auto` |
-| `--oas-button-on-color` | `var(--oas-color-text-on-primary)` |
+| CSS 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--oas-button-bg` | — | `var(--oas-color-primary)` |
+| `--oas-button-color` | — | `var(--oas-color-text-primary)` |
+| `--oas-button-color-deep` | 自定义色（`color`）的文字安全档：hover/active 及 outlined/dashed/filled 文字的加深混合色（组件按 `--oas-deep-mix` / `--oas-deep-sink` 注入；无自定义色时不生效） | `var(--btn-color, var(--oas-color-text-primary))` |
+| `--oas-button-group-radius` | — | `var(--oas-radius-md)` |
+| `--oas-button-group-width` | — | `auto` |
+| `--oas-button-on-color` | — | `var(--oas-color-text-on-primary)` |

@@ -255,12 +255,13 @@ export class OASToggleButton extends OASElement {
     else btn.removeAttribute('aria-label')
   }
 
-  /** color 选中色（ui-spec §4.1 三级协议）：预设名 → preset token；字面色直接注入并计算实底文字色 */
+  /** color 选中色（ui-spec §4.1 三级协议）：预设名 → preset token；字面色直接注入并计算实底文字色。
+   *  感知对比度（≥60）：预设基色（如 green #52c41a）对白字不达标，选中实底用更深的 -text 档 */
   private syncColor(): void {
     const color = this.getAttr('color', '')
     if (color) {
       const isPreset = (PRESET_COLORS as readonly string[]).includes(color)
-      const base = isPreset ? `var(--oas-preset-${color})` : color
+      const base = isPreset ? `var(--oas-preset-${color}-text)` : color
       this.style.setProperty('--oas-toggle-color', base)
       // 预设名/变量写法无法在 JS 侧算亮度，交由 CSS 的 text-on-primary 兜底；字面量才算
       const onColor = isPreset ? '' : pickOnColor(color)

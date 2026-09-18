@@ -240,45 +240,50 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
     font-size: var(--oas-font-size-xs);
     color: var(--oas-color-text-secondary);
   }
-  /* 4 级主色梯度循环：便于区分相邻块（token 派生，dark 自适应） */
+  /* 4 级主色梯度循环：便于区分相邻块（token 派生，dark 自适应）。
+     渐变点选在「浅底深字」与「实底浅字」各自达标的两段，中段（浅底与白字都不够）不出现 */
   oas-grid > *:nth-child(4n+1) .demo-grid-box,
   oas-grid > .demo-grid-box:nth-child(4n+1) {
-    background: color-mix(in srgb, var(--oas-color-primary) 14%, var(--oas-color-bg));
-    color: var(--oas-color-primary);
+    background: color-mix(in srgb, var(--oas-color-primary) 10%, var(--oas-color-bg));
+    color: var(--oas-color-primary-active);
   }
   oas-grid > *:nth-child(4n+2) .demo-grid-box,
   oas-grid > .demo-grid-box:nth-child(4n+2) {
-    background: color-mix(in srgb, var(--oas-color-primary) 28%, var(--oas-color-bg));
-    color: var(--oas-color-primary);
+    background: color-mix(in srgb, var(--oas-color-primary) 22%, var(--oas-color-bg));
+    color: var(--oas-color-primary-active);
   }
   oas-grid > *:nth-child(4n+3) .demo-grid-box,
   oas-grid > .demo-grid-box:nth-child(4n+3) {
-    background: color-mix(in srgb, var(--oas-color-primary) 48%, var(--oas-color-bg));
-    color: #fff;
+    background: color-mix(in srgb, var(--oas-color-primary) 78%, var(--oas-color-bg));
+    color: var(--oas-color-text-on-primary);
   }
   oas-grid > *:nth-child(4n+4) .demo-grid-box,
   oas-grid > .demo-grid-box:nth-child(4n+4) {
-    background: color-mix(in srgb, var(--oas-color-primary) 72%, var(--oas-color-bg));
-    color: #fff;
+    background: var(--oas-color-primary);
+    color: var(--oas-color-text-on-primary);
   }
-  /* dark 下主色变浅（#9ecdff），拉大梯度间距保持可分辨 */
+  /* dark 下主色变浅（#9ecdff），拉大梯度间距保持可分辨。
+     档位对齐 light 的两段式：浅底两档（14%/22%）配主色浅字、实底两档（90%/100%）
+     配 on-primary 深字——中间混合段（底不够亮配深字、又不够暗配浅字）不出现 */
   .dark oas-grid > *:nth-child(4n+1) .demo-grid-box,
   .dark oas-grid > .demo-grid-box:nth-child(4n+1) {
-    background: color-mix(in srgb, var(--oas-color-primary) 18%, var(--oas-color-bg));
+    background: color-mix(in srgb, var(--oas-color-primary) 14%, var(--oas-color-bg));
+    color: var(--oas-color-primary);
   }
   .dark oas-grid > *:nth-child(4n+2) .demo-grid-box,
   .dark oas-grid > .demo-grid-box:nth-child(4n+2) {
-    background: color-mix(in srgb, var(--oas-color-primary) 36%, var(--oas-color-bg));
+    background: color-mix(in srgb, var(--oas-color-primary) 22%, var(--oas-color-bg));
+    color: var(--oas-color-primary);
   }
   .dark oas-grid > *:nth-child(4n+3) .demo-grid-box,
   .dark oas-grid > .demo-grid-box:nth-child(4n+3) {
-    background: color-mix(in srgb, var(--oas-color-primary) 58%, var(--oas-color-bg));
-    color: var(--oas-color-bg);
+    background: color-mix(in srgb, var(--oas-color-primary) 90%, var(--oas-color-bg));
+    color: var(--oas-color-text-on-primary);
   }
   .dark oas-grid > *:nth-child(4n+4) .demo-grid-box,
   .dark oas-grid > .demo-grid-box:nth-child(4n+4) {
-    background: color-mix(in srgb, var(--oas-color-primary) 84%, var(--oas-color-bg));
-    color: var(--oas-color-bg);
+    background: var(--oas-color-primary);
+    color: var(--oas-color-text-on-primary);
   }
   .demo-grid-box.short {
     height: 28px;

@@ -83,7 +83,7 @@ The label itself has no tooltip attribute — the hint capability is achieved by
 </DemoBlock>
 
 <DemoBlock title="Custom color value">
-  <oas-label color="#0e7490">Teal label</oas-label>
+  <oas-label color="var(--oas-color-info-text)">Teal label</oas-label>
 </DemoBlock>
 
 ## Alignment & wrapping (host CSS equivalents)

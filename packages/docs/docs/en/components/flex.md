@@ -185,7 +185,7 @@ With no children the height is 0 — no error, no placeholder.
     justify-content: center;
     height: 48px;
     background: var(--oas-color-primary);
-    color: var(--oas-color-primary-text);
+    color: var(--oas-color-text-on-primary);
     border-radius: var(--oas-radius-md);
     font-size: var(--oas-font-size-sm);
   }

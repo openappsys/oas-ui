@@ -359,11 +359,11 @@ describe('OASAvatar color（背景色统一协议）', () => {
     expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('var(--oas-color-success)')
   })
 
-  it('预设色板名：解析 --oas-preset-* token', () => {
+  it('预设色板名：解析 --oas-preset-* token（实底走 -text 文字安全档，对齐 badge）', () => {
     const el = new OASAvatar()
     el.setAttribute('color', 'blue')
     document.body.appendChild(el)
-    expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('var(--oas-preset-blue)')
+    expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('var(--oas-preset-blue-text)')
     expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('var(--oas-color-text-on-primary)')
   })
 

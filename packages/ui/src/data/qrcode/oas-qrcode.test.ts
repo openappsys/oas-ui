@@ -81,16 +81,17 @@ describe('OASQRCode', () => {
     expect(svgOf(el).getAttribute('viewBox')).toBe('0 0 33 33')
   })
 
-  it('aria-label 默认走 i18n，组件 aria-label 属性优先', () => {
+  it('aria-label 默认走 i18n，组件 aria-label 属性优先（挂在图形元素上）', () => {
     const el = mount({ value: 'hi' })
-    expect(wrapperOf(el).getAttribute('aria-label')).toBe('二维码')
+    expect(svgOf(el).getAttribute('aria-label')).toBe('二维码')
     el.setAttribute('aria-label', '商品链接二维码')
-    expect(wrapperOf(el).getAttribute('aria-label')).toBe('商品链接二维码')
+    expect(svgOf(el).getAttribute('aria-label')).toBe('商品链接二维码')
   })
 
-  it('role="img" 语义', () => {
+  it('role="img" 挂在图形元素上，容器保持普通容器（避免与内部刷新按钮嵌套交互）', () => {
     const el = mount({ value: 'hi' })
-    expect(wrapperOf(el).getAttribute('role')).toBe('img')
+    expect(svgOf(el).getAttribute('role')).toBe('img')
+    expect(wrapperOf(el).getAttribute('role')).toBeNull()
   })
 
   it('locale：空态文案随 setLocale 切换', () => {

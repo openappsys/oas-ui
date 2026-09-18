@@ -204,7 +204,7 @@ The default slot overrides the built-in percentage: line projects into the side 
   </oas-space>
 </DemoBlock>
 
-For the line form, `size` is a height tier (`small` 4px / `medium` 8px / `large` 12px) and `stroke-width` sets the track height directly (px, priority over tiers); `text-inside` moves text into the bar (track height auto-lifts when not explicitly set).
+For the line form, `size` is a height tier (`small` 4px / `medium` 8px / `large` 12px) and `stroke-width` sets the track height directly (px, priority over tiers); `text-inside` moves text into the bar (track height auto-lifts when not explicitly set); the label sits inside the **filled** segment only and hides when the fill is too narrow (under ~6ch), so no half-digit ever shows over the track.
 
 ## Linecap
 

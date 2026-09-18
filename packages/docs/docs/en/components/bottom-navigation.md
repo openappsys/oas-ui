@@ -152,7 +152,7 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 - `--oas-bottom-navigation-height`: bar height, defaults to `56px` (the fixed bar height in fixed mode)
 
 <DemoBlock title="Variable customization (active color + height)">
-  <oas-bottom-navigation id="bn-var" value="home" style="width: 100%; max-width: 480px; --oas-bottom-navigation-active-color: var(--oas-color-success); --oas-bottom-navigation-height: 64px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+  <oas-bottom-navigation id="bn-var" value="home" style="width: 100%; max-width: 480px; --oas-bottom-navigation-active-color: var(--oas-color-success-text); --oas-bottom-navigation-height: 64px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
 ## API

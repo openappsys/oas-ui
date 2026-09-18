@@ -106,7 +106,7 @@ The bottom `actions` slot holds a button group, with a divider automatically add
 
 `selectable` makes the whole card toggle its selected state on click — the multi-select form for large rich cards with cover, title, description and actions. The selected state shows a primary border + light primary background + a check badge in the top corner; clicking interactive elements inside the card (buttons/links) does not trigger selection; Space/Enter work the same way.
 
-A standalone card has `role="checkbox"` semantics with `aria-checked` synced. **For card groups**, the host can put `role="radio"` on the cards (the component never overrides an explicit host role) and manage exclusive selection itself.
+A standalone card carries no `role` by default: clickable/selectable cards often embed action buttons or links inside, and an interactive role would wrap those inner controls in an interactive element (screen readers would lose access to them); the component only keeps `tabindex` for keyboard reachability. **When a card group needs single-select / multi-select semantics**, the host explicitly puts `role="radio"` (or `role="checkbox"`) on the cards and manages exclusive selection itself — the component never overrides an explicit host role and only layers `aria-checked` syncing on top.
 
 If the host does not set `selected`, the card toggles internally and reflects the attribute (uncontrolled); once `selected` is set, the card becomes controlled — it only dispatches `oas-change` (detail `{ selected }`, the new state) and the host writes the state back. Not selectable while `loading`; with `href`, selecting takes precedence over navigation (explicit links/buttons inside still act on their own).
 

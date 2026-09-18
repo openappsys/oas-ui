@@ -21,9 +21,19 @@ const STYLE = `
   min-height: 0;
   overflow: auto;
 }
-.splitter {
+/* .sep：分隔条 + 折叠按钮的同级容器（按钮不嵌在 separator 内，避免交互元素嵌套） */
+.sep {
   flex-shrink: 0;
   width: 6px;
+  position: relative;
+}
+:host([vertical]) .sep {
+  width: 100%;
+  height: 6px;
+}
+.splitter {
+  width: 100%;
+  height: 100%;
   cursor: col-resize;
   background: var(--oas-color-border);
   border-radius: var(--oas-radius-sm);
@@ -34,8 +44,6 @@ const STYLE = `
   position: relative;
 }
 :host([vertical]) .splitter {
-  width: 100%;
-  height: 6px;
   cursor: row-resize;
   flex-direction: column;
 }
@@ -108,9 +116,12 @@ export class OASSplitter extends OASElement {
   /** 布局模式：legacy（slot=left/right 两面板）/ multi（直接子元素即面板） */
   private mode: SplitterMode = 'legacy'
 
-  /** 面板包装节点与分隔条（legacy 固定 2+1；multi 按子元素数动态维护） */
+  /** 面板包装节点与分隔条（legacy 固定 2+1；multi 按子元素数动态维护）。
+   *  `splitters` 存内层 separator（拖拽/键盘/aria 用），`seps` 存外层 .sep 容器（
+   *  重建时两者都要摘除，否则 .sep 会作为孤儿残留） */
   private panes: HTMLElement[] = []
   private splitters: HTMLElement[] = []
+  private seps: HTMLElement[] = []
   private observer: MutationObserver | null = null
 
   /** 拖拽状态 */
@@ -144,8 +155,10 @@ export class OASSplitter extends OASElement {
     return `
       <style>${STYLE}</style>
       <div class="pane" part="pane-left"><slot name="left"><slot></slot></slot></div>
-      <div class="splitter" part="splitter" tabindex="0" role="separator" aria-orientation="vertical">
-        <slot name="handle"><span class="grip"></span></slot>
+      <div class="sep" part="sep">
+        <div class="splitter" part="splitter" tabindex="0" role="separator" aria-orientation="vertical">
+          <slot name="handle"><span class="grip"></span></slot>
+        </div>
       </div>
       <div class="pane" part="pane-right"><slot name="right"></slot></div>
     `
@@ -241,6 +254,9 @@ export class OASSplitter extends OASElement {
     if (this.panes.length !== n) {
       this.rebuildStructure(n)
       this.pruneCollapsed(n)
+      // 重建出的新分隔条需要补折叠按钮与 aria：MutationObserver 路径只走 syncPanels()，不走 update()
+      this.syncCollapseButtons()
+      this.syncAria()
     }
     this.ensureSizes(n)
   }
@@ -248,9 +264,11 @@ export class OASSplitter extends OASElement {
   /** 按面板数重建 pane/splitter 骨架（不动 style，不重建 shadow 整棵） */
   private rebuildStructure(n: number): void {
     for (const el of this.panes) el.remove()
+    for (const el of this.seps) el.remove()
     for (const el of this.splitters) el.remove()
     this.panes = []
     this.splitters = []
+    this.seps = []
     if (n < 1) return
     const frag = this.ownerDocument.createDocumentFragment()
     for (let i = 0; i < n; i++) {
@@ -266,6 +284,10 @@ export class OASSplitter extends OASElement {
   }
 
   private makeSplitter(): HTMLElement {
+    // 外层 .sep 同时承载分隔条与折叠按钮（同级），按钮不嵌进 separator 交互元素内
+    const wrap = this.ownerDocument.createElement('div')
+    wrap.className = 'sep'
+    wrap.setAttribute('part', 'sep')
     const s = this.ownerDocument.createElement('div')
     s.className = 'splitter'
     s.setAttribute('part', 'splitter')
@@ -273,8 +295,10 @@ export class OASSplitter extends OASElement {
     s.setAttribute('role', 'separator')
     s.setAttribute('aria-orientation', 'vertical')
     s.innerHTML = `<slot name="handle"><span class="grip"></span></slot>`
+    wrap.appendChild(s)
     this.splitters.push(s)
-    return s
+    this.seps.push(wrap)
+    return wrap
   }
 
   /** 面板被移除时清掉越界折叠态 */
@@ -359,10 +383,9 @@ export class OASSplitter extends OASElement {
   private onClick(e: MouseEvent): void {
     const btn = (e.target as HTMLElement).closest('.collapse-btn')
     if (!btn) return
-    const splitter = btn.closest('[part="splitter"]') as HTMLElement | null
-    if (!splitter) return
-    const index = this.splitters.indexOf(splitter)
-    if (index < 0) return
+    // 按钮与 separator 同级（不嵌在内），索引由 data-splitter-index 携带，不再靠 DOM 祖先定位
+    const index = Number((btn as HTMLElement).dataset.splitterIndex)
+    if (!Number.isInteger(index) || index < 0 || index >= this.splitters.length) return
     this.setCollapsed(index, !this.collapsedPanels.has(index))
   }
 
@@ -533,10 +556,13 @@ export class OASSplitter extends OASElement {
     const right = this.panes[1]
     if (!left || !right) return
     if (this.collapsedPanels.has(0)) {
+      // 折叠面板 0 尺寸：禁用滚动（0 尺寸滚动区不可用，且触发 axe: scrollable-region-focusable）
+      left.style.overflow = 'hidden'
       left.style.flex = '0 0 0%'
       right.style.flex = '1 1 100%'
       return
     }
+    left.style.overflow = ''
     const percent = Number(this.getAttr('percent', '50')) || 50
     left.style.flex = `0 0 ${percent}%`
     right.style.flex = '1 1 0%'
@@ -546,7 +572,10 @@ export class OASSplitter extends OASElement {
     const n = this.panes.length
     if (!n) return
     this.panes.forEach((pane, i) => {
-      if (this.collapsedPanels.has(i)) {
+      const collapsed = this.collapsedPanels.has(i)
+      // 折叠面板 0 尺寸：禁用滚动（同上，scrollable-region-focusable）
+      pane.style.overflow = collapsed ? 'hidden' : ''
+      if (collapsed) {
         pane.style.flex = '0 0 0%'
       } else if (i === n - 1) {
         // 末面板吸收剩余空间（sizes 归一化 sum≈100，余量即末面板尺寸）
@@ -607,12 +636,14 @@ export class OASSplitter extends OASElement {
     }
   }
 
-  /** 分隔条内折叠按钮（collapsible 时）：aria-label 走 locale，箭头随折叠态翻转 */
+  /** 分隔条旁的折叠按钮（collapsible 时）：aria-label 走 locale，箭头随折叠态翻转。
+   *  按钮挂在 .sep 容器里与 separator 同级，锚点靠容器定位、索引靠 data 属性 */
   private syncCollapseButtons(): void {
     const collapsible = this.hasAttr('collapsible')
     this.splitters.forEach((splitter, i) => {
       splitter.classList.toggle('is-collapsible', collapsible)
-      let btn = splitter.querySelector<HTMLButtonElement>('.collapse-btn')
+      const wrap = splitter.parentElement ?? splitter
+      let btn = wrap.querySelector<HTMLButtonElement>(':scope > .collapse-btn')
       if (!collapsible) {
         btn?.remove()
         return
@@ -621,8 +652,9 @@ export class OASSplitter extends OASElement {
         btn = this.ownerDocument.createElement('button')
         btn.className = 'collapse-btn'
         btn.type = 'button'
-        splitter.appendChild(btn)
+        wrap.appendChild(btn)
       }
+      btn.dataset.splitterIndex = String(i)
       const collapsed = this.collapsedPanels.has(i)
       btn.setAttribute('aria-label', collapsed ? this.t('splitter.expand') : this.t('splitter.collapse'))
       btn.innerHTML = `<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">${this.collapseIcon(collapsed)}</svg>`

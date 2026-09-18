@@ -372,7 +372,7 @@ input[type='text'].color-text.is-invalid {
 }
 .unit {
   font-size: var(--oas-font-size-xs);
-  color: var(--oas-color-text-disabled);
+  color: var(--oas-color-text-secondary);
 }
 .value {
   min-width: 56px;
@@ -382,7 +382,7 @@ input[type='text'].color-text.is-invalid {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--oas-font-size-xs);
-  color: var(--oas-color-text-disabled);
+  color: var(--oas-color-text-secondary);
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
 `

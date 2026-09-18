@@ -43,8 +43,7 @@
   --oas-preset-geekblue: #2f54eb;
   --oas-preset-purple: #722ed1;
 
-  /* 预设色板文字变体（-text）：文字承载面的达标深色（WCAG AA 4.5:1，对白底与灰卡底 #f5f5f5 双验，
-     本色达标者与本色同值；link 等纯文字组件 color 预设名映射到这里。填充/描边/装饰面用上方本色） */
+  /* 预设色板 -text：文字/实底安全档（达标深色；本色达标者同值） */
   --oas-preset-magenta-text: #cc2983;
   --oas-preset-red-text: #da1e28;
   --oas-preset-volcano-text: #c64216;
@@ -57,11 +56,15 @@
   --oas-preset-geekblue-text: #2f54eb;
   --oas-preset-purple-text: #722ed1;
 
-  /* 语义色文字变体（-text）：文字承载面达标深色（感知对比度 Lc≥60 双底实测；填充面用上方本色） */
+  /* 语义色文字变体（-text）：文字承载面达标深色（感知对比度 ≥60 双底实测；填充面用上方本色） */
   --oas-color-success-text: #11813a;
   --oas-color-warning-text: #a75c05;
   --oas-color-danger-text: #d82525;
   --oas-color-info-text: #0891b2;
+
+  /* 自定义 hex 色文字安全档：light/HC 72% 掺黑，dark 见下 */
+  --oas-deep-mix: 72%;
+  --oas-deep-sink: black;
 
   --oas-font-size-xs: 12px;
   --oas-font-size-sm: 13px;
@@ -109,9 +112,7 @@
   --oas-ease-out: cubic-bezier(0.2, 0, 0.2, 1);
   --oas-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* 阴影三档（浮层/弹出层海拔）：sm 控件悬浮、md 下拉/气泡、lg 模态/预览层。
-     抽屉/侧栏/bottom-sheet 为方向性投影（投影方向=滑出语义），不走三档 token（见 ui-spec §1.1 豁免）。
-     dark 下黑影在暗底不可见，dark 主题块内按同结构加深 */
+  /* 阴影三档：sm 悬浮 / md 下拉 / lg 模态（方向性投影见 ui-spec 豁免） */
   --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.12);
   --oas-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
   --oas-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
@@ -130,7 +131,7 @@
 
 [data-theme="dark"],
 html.dark {
-  /* 中间调缺陷修复：原 #4d9fff/#f87171 是中间调，深字白字都不达 Lc60（50.2/49.8）；
+  /* 中间调缺陷修复：原 #4d9fff/#f87171 是中间调，深字白字都不达感知分 60（50.2/49.8）；
      亮化到粉彩档（与 success/warning 同路线），配深字 73/71 达标。
      面亮化后 hover/active 反转为提亮（dark 下激活变亮惯例），压暗会把对比度拉回不达标 */
   --oas-color-primary: #9ecdff;
@@ -146,7 +147,9 @@ html.dark {
   --oas-color-text-on-warning: #18181b;
   --oas-color-text-on-danger: #18181b;
   --oas-color-text-primary: #fafafa;
-  --oas-color-text-secondary: #b8b8c0;
+  /* 次要文字提亮到 #c6c6ce：压最高亮底 --oas-color-bg-elevated（#3f3f46）感知分 62.8 ≥ 60
+     （原 #b8b8c0 仅 54.7，avatar-group 溢出按钮 / descriptions 等不达标） */
+  --oas-color-text-secondary: #c6c6ce;
   --oas-color-text-disabled: #8d8d95;
   --oas-color-border: #52525b;
   --oas-color-border-strong: #71717a;
@@ -155,7 +158,7 @@ html.dark {
   --oas-color-bg-hover: #27272a;
   --oas-color-bg-disabled: #27272a;
   --oas-color-overlay: rgba(0, 0, 0, 0.6);
-  /* dark 阴影：黑影在暗底不可见，加深透明度并提 offset 让海拔感可感知 */
+  /* dark 阴影：暗底加深 */
   --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.45);
   --oas-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
   --oas-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
@@ -180,7 +183,9 @@ html.dark {
   --oas-preset-lime-text: #bae637;
   --oas-preset-green-text: #73d13d;
   --oas-preset-cyan-text: #36cfc9;
-  --oas-preset-blue-text: #9cc8ff;
+  /* blue-text 提亮到 #b8d6ff：压「elevated 底 + 12% 自身软底」合成底（约 #3f495c，
+     app-bar 标题插槽里的 tag 等场景）感知分 67.6 ≥ 60（原 #9cc8ff 仅 58.7 贴线不达标） */
+  --oas-preset-blue-text: #b8d6ff;
   --oas-preset-geekblue-text: #b3c4fb;
   --oas-preset-purple-text: #d3bbf2;
   /* 语义文字变体 dark：本色已达标，同值 */
@@ -188,6 +193,9 @@ html.dark {
   --oas-color-warning-text: #fbbf24;
   --oas-color-danger-text: #fbb2b2;
   --oas-color-info-text: #22d3ee;
+  /* 自定义 hex 色文字安全档混合参数：dark 掺近白提亮（掺黑在暗色下不可读） */
+  --oas-deep-mix: 38%;
+  --oas-deep-sink: var(--oas-color-text-primary);
 }
 
 [data-theme="high-contrast"] {
@@ -212,6 +220,8 @@ html.dark {
   --oas-color-bg-disabled: #d9d9d9;
   --oas-color-overlay: rgba(0, 0, 0, 0.8);
   --oas-focus-ring: 0 0 0 3px #ffd666;
+  --oas-deep-mix: 72%;
+  --oas-deep-sink: black;
 }
 
 @media (prefers-reduced-motion: reduce) {

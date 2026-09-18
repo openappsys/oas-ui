@@ -92,7 +92,7 @@ slot 内任意子元素带 `breakout` 属性即突破定宽撑满视口宽（经
     justify-content: center;
     height: 56px;
     background: var(--oas-color-primary);
-    color: var(--oas-color-primary-text);
+    color: var(--oas-color-text-on-primary);
     font-size: var(--oas-font-size-sm);
   }
 </style>

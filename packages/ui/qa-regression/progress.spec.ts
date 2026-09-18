@@ -46,3 +46,41 @@ test('progress 同设 value + percent 时 percent 优先；移除 percent 后回
   expect(r.both, '两者同设 percent 优先 → 30%').toBe('30%')
   expect(r.fallback, '移除 percent 后回退 value → 60%').toBe('60%')
 })
+
+test('progress 内嵌百分比文字：仅 text-inside 时渲染，且只压在已填充段内', async ({ page }) => {
+  // 曾现缺陷：①.inside 以整个轨道为容器居中，白字一半压在浅色轨道上（感知分 0）；
+  // ②.inside/.text 自带 display:flex 压过 [hidden]，未开 text-inside 也照画（含 no-text/show-text=false 失效）
+  await page.goto('/components/progress.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-progress[percent]')
+  const r = await page.evaluate(() => {
+    const host = document.createElement('oas-progress') as HTMLElement & { shadowRoot: ShadowRoot }
+    host.setAttribute('percent', '45')
+    document.body.appendChild(host)
+    const bar = host.shadowRoot.querySelector('[part="bar"]') as HTMLElement
+    const inside = host.shadowRoot.querySelector('[part="inside"]') as HTMLElement
+    const hiddenBefore = inside.hidden
+    const visibleBefore = inside.getBoundingClientRect().height > 0
+    // 显式开启 text-inside → 内嵌文字才出现
+    host.setAttribute('text-inside', '')
+    const ib = inside.querySelector<HTMLElement>('.inside-value')!.getBoundingClientRect()
+    const bb = bar.getBoundingClientRect()
+    const text = inside.querySelector<HTMLElement>('.inside-value')!.textContent ?? ''
+    const result = {
+      nestedInBar: bar.contains(inside),
+      hiddenBefore,
+      visibleBefore,
+      visibleAfter: inside.getBoundingClientRect().height > 0,
+      leftOk: ib.left >= bb.left - 1,
+      rightOk: ib.right <= bb.right + 1,
+      text,
+    }
+    host.remove()
+    return result
+  })
+  expect(r.hiddenBefore, '未开 text-inside 时 .inside 应为 hidden').toBe(true)
+  expect(r.visibleBefore, '未开 text-inside 时 .inside 不得绘制（[hidden] 必须生效）').toBe(false)
+  expect(r.visibleAfter, '开启 text-inside 后 .inside 应可见').toBe(true)
+  expect(r.nestedInBar, '内嵌文字应在填充段（[part=bar]）内').toBe(true)
+  expect(r.leftOk && r.rightOk, '内嵌文字左右边界不得越出填充段').toBe(true)
+  expect(r.text).toContain('45')
+})

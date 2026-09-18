@@ -88,7 +88,9 @@ function resolveAvatarColor(color: string): { bg: string; on: string } {
   const s = semantic[color]
   if (s) return { bg: s[0]!, on: s[1]! }
   if ((AVATAR_PRESET_COLORS as readonly string[]).includes(color)) {
-    return { bg: `var(--oas-preset-${color})`, on: 'var(--oas-color-text-on-primary)' }
+    // 预设实底用更深的 -text 档作底（对齐 oas-badge）：预设基色（dark 下是提亮档）压深字不达标，
+    // -text 档 light 深底白字 / dark 亮底深字双主题达标
+    return { bg: `var(--oas-preset-${color}-text)`, on: 'var(--oas-color-text-on-primary)' }
   }
   return { bg: color, on: pickOnColor(color) || 'var(--oas-color-text-on-primary)' }
 }
