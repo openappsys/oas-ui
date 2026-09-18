@@ -65,6 +65,27 @@ describe('OASAutoComplete', () => {
     expect(el.shadowRoot!.querySelector('.empty')).not.toBeNull()
   })
 
+  it('无障碍名优先级：宿主 aria-label > aria-labelledby > placeholder > i18n 兜底', () => {
+    // 宿主 aria-label 最高
+    const a = mount({ placeholder: '输入以搜索', 'aria-label': '宿主可访问名' })
+    expect(input(a).getAttribute('aria-label')).toBe('宿主可访问名')
+    // 仅 aria-labelledby：透传，且不写 aria-label 兜底
+    const b = document.createElement('oas-auto-complete') as OASAutoComplete
+    b.setAttribute('options', OPTIONS)
+    b.setAttribute('aria-labelledby', 'ext-label')
+    document.body.appendChild(b)
+    expect(input(b).getAttribute('aria-labelledby')).toBe('ext-label')
+    expect(input(b).hasAttribute('aria-label')).toBe(false)
+    // 移除宿主 aria-labelledby → 残留清理，回落 placeholder/i18n
+    b.removeAttribute('aria-labelledby')
+    b.setAttribute('placeholder', '输入以搜索')
+    expect(input(b).hasAttribute('aria-labelledby')).toBe(false)
+    expect(input(b).getAttribute('aria-label')).toBe('输入以搜索')
+    // 无 placeholder → i18n 兜底名（非空即可）
+    const c = mount()
+    expect(input(c).getAttribute('aria-label') ?? '').not.toBe('')
+  })
+
   it('输入派发 oas-input，选择派发 oas-change 并填入 input', () => {
     const el = mount()
     let inputDetail: unknown

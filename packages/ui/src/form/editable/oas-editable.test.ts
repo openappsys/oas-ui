@@ -318,6 +318,23 @@ describe('OASEditable readonly / status / size', () => {
     expect(display(el).hidden).toBe(false)
   })
 
+  it('动态移除 readonly：aria-readonly 残留清除，回落 role=button（role=button 不允许 aria-readonly）', () => {
+    const el = mount({ value: 'a', readonly: '' })
+    expect(display(el).getAttribute('aria-readonly')).toBe('true')
+    el.removeAttribute('readonly')
+    expect(display(el).hasAttribute('aria-readonly'), '非 readonly 态不得残留 aria-readonly').toBe(false)
+    expect(display(el).getAttribute('role')).toBe('button')
+    expect(display(el).tabIndex).toBe(0)
+  })
+
+  it('readonly 后切 trigger=icon：aria-readonly 同样清除（icon 分支优先，不得残留）', () => {
+    const el = mount({ value: 'a', readonly: '' })
+    expect(display(el).getAttribute('aria-readonly')).toBe('true')
+    el.setAttribute('trigger', 'icon')
+    expect(display(el).hasAttribute('aria-readonly'), 'icon 触发路径不得残留 aria-readonly').toBe(false)
+    expect(display(el).getAttribute('role')).toBeNull()
+  })
+
   it('status=error 镜像 data-status 且编辑框 aria-invalid', () => {
     const el = mount({ value: 'a', status: 'error' })
     expect(el.getAttribute('data-status')).toBe('error')

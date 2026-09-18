@@ -121,7 +121,7 @@ When `value` is empty, a "No content" placeholder is shown; when the content exc
 <DemoBlock title="aria-label">
   <oas-qrcode value="https://oas-ui.dev" aria-label="QR code linking to the product detail page"></oas-qrcode>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    The container has `role="img"`; the `aria-label` attribute takes precedence, otherwise it falls back to the locale default copy (Chinese "二维码" / English "QR code"), readable by screen readers.
+    The graphic element carries `role="img"`; the `aria-label` attribute takes precedence, otherwise it falls back to the locale default copy (Chinese "二维码" / English "QR code"), readable by screen readers.
   </p>
 </DemoBlock>
 

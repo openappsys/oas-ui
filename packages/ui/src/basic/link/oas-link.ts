@@ -113,11 +113,9 @@ a.has-color {
   color: var(--oas-link-color, var(--oas-color-text-primary));
 }
 a.has-color:hover {
-  color: color-mix(in srgb, var(--oas-link-color, var(--oas-color-text-primary)) 80%, black);
-}
-:host-context([data-theme='dark']) a.has-color:hover,
-:host-context(.dark) a.has-color:hover {
-  color: color-mix(in srgb, var(--oas-link-color, var(--oas-color-text-primary)) 85%, white);
+  /* hover 文字安全档：主题感知混合（light fallback 72% 掺黑压深、dark 由主题 token 掺近白提亮），
+     替代原「dark 固定掺白 85%」分支——85% 掺白对暗色自定义基色（如深紫）仍不达标 */
+  color: color-mix(in srgb, var(--oas-link-color, var(--oas-color-text-primary)) var(--oas-deep-mix, 72%), var(--oas-deep-sink, black));
 }
 /* 图标：与文字同行（gap 由 a 的 inline-flex 提供），外链图标在末尾 */
 .icon {

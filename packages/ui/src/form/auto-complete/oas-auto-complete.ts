@@ -327,8 +327,20 @@ export class OASAutoComplete extends OASElement {
     else this.removeAttribute('data-status')
     if (this.input.value !== value && this.query === '') this.input.value = value
     this.input.placeholder = placeholder
-    // 无障碍名：placeholder 优先，缺省回退 locale 默认名（combobox 输入必须有名，axe: label）
-    this.input.setAttribute('aria-label', placeholder || this.t('autoComplete.defaultLabel'))
+    // 无障碍名：宿主 aria-label > aria-labelledby > placeholder > locale 默认名（combobox 输入必须有名，axe: label）；
+    // 宿主显式设置被保留，aria-labelledby 移除后残留同步清理
+    const hostAriaLabel = this.getAttribute('aria-label')
+    const hostLabelledby = this.getAttribute('aria-labelledby')
+    if (hostAriaLabel != null && hostAriaLabel !== '') {
+      this.input.setAttribute('aria-label', hostAriaLabel)
+      this.input.removeAttribute('aria-labelledby')
+    } else if (hostLabelledby != null && hostLabelledby !== '') {
+      this.input.setAttribute('aria-labelledby', hostLabelledby)
+      this.input.removeAttribute('aria-label')
+    } else {
+      this.input.removeAttribute('aria-labelledby')
+      this.input.setAttribute('aria-label', placeholder || this.t('autoComplete.defaultLabel'))
+    }
     this.input.disabled = disabled
     this.input.readOnly = this.hasAttr('readonly')
     if (status === 'error') this.input.setAttribute('aria-invalid', 'true')

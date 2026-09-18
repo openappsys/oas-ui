@@ -78,6 +78,9 @@ const STYLE = `
   background-color: var(--oas-progress-color, var(--oas-color-primary));
   border-radius: inherit;
   transition: width var(--oas-transition-base) var(--oas-ease-out);
+  /* 内嵌文本以填充区为容器：文字只压在已填充段上，窄填充时整段隐藏（见下方容器查询） */
+  container-type: inline-size;
+  overflow: hidden;
 }
 /* color 传渐变串：渐变只能作 background-image，纯色层置空避免底色外露 */
 .bar.gradient {
@@ -142,7 +145,8 @@ const STYLE = `
 .step.active {
   background-color: var(--oas-progress-color, var(--oas-color-primary));
 }
-/* 内嵌文本（line 限定）：条内居中，色默认取底色 token（light 白 / dark 深底在亮条上均可读） */
+/* 内嵌文本（line 限定）：挂在填充段内居中——文字只压在已填充部分，底色对文字始终成立；
+   填充过窄（<6ch）时整段隐藏，避免半个数字露在轨道上 */
 .inside {
   position: absolute;
   inset: 0;
@@ -153,6 +157,19 @@ const STYLE = `
   color: var(--oas-progress-inside-color, var(--oas-color-bg));
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+@container (max-width: 6ch) {
+  .inside {
+    display: none;
+  }
+}
+/* hidden 兜底：上面 .inside/.text/.circle-text 自己声明了 display:flex，会压过 UA 的
+   [hidden]{display:none} —— 缺这三条时 no-text / show-text="false" / 未开 text-inside
+   的文字仍会照画（历史缺陷：文本节点有真实 rect 且参与绘制） */
+.inside[hidden],
+.text[hidden],
+.circle-text[hidden] {
+  display: none;
 }
 /* 外部文本（line 默认）：轨道下方右侧，slot 与内置值并排 */
 .text {
@@ -278,9 +295,10 @@ export class OASProgress extends OASElement {
       <style>${STYLE}</style>
       <div class="track" part="track">
         <div class="buffer" part="buffer" aria-hidden="true" hidden></div>
-        <div class="bar" part="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+        <div class="bar" part="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+          <div class="inside" part="inside" hidden><span class="inside-value"></span></div>
+        </div>
         <div class="steps" part="steps" aria-hidden="true" hidden></div>
-        <div class="inside" part="inside" hidden><span class="inside-value"></span></div>
       </div>
       <div class="text" part="text"><span class="text-value">0%</span><slot></slot></div>
       <div class="circle" part="circle" role="progressbar" aria-valuemin="0" aria-valuemax="100" hidden>
@@ -396,9 +414,14 @@ export class OASProgress extends OASElement {
     return Number(raw) || 0
   }
 
-  /** label 属性 → 无障碍名（写入当前 progressbar 容器）。未显式设置时回退可见文本（百分比），保证 progressbar 恒有可访问名 */
+  /**
+   * 无障碍名（写入当前 progressbar 容器），优先级：宿主 aria-label > label 属性 > 可见百分比兜底。
+   * 宿主在元素上显式设置的 aria-label 被组件保留（此前被 label 属性静默丢弃）；
+   * 未显式设置时回退可见文本（百分比），保证 progressbar 恒有可访问名
+   */
   private applyAriaLabel(el: Element, name: string, fallback = ''): void {
-    const label = this.getAttr(name, '') || fallback
+    const host = this.getAttribute('aria-label')
+    const label = (host != null && host !== '' ? host : this.getAttr(name, '')) || fallback
     if (label) el.setAttribute('aria-label', label)
     else el.removeAttribute('aria-label')
   }

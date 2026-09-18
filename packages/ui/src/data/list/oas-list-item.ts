@@ -49,7 +49,8 @@ const STYLE = `
   background: var(--oas-color-primary-hover, var(--oas-color-primary));
 }
 :host([selected]) .desc {
-  color: color-mix(in srgb, var(--oas-color-text-on-primary) 72%, transparent);
+  /* 选中主色底上的描述文字：跟随宿主对底文字色（72% 透明化的浅蓝字压主色底 感知分不达标） */
+  color: var(--oas-color-text-on-primary);
 }
 .avatar {
   flex-shrink: 0;
@@ -104,6 +105,10 @@ const STYLE = `
 }
 `
 
+/** 行内交互元素判定选择器（命中则不触发行点击；含原生控件、ARIA 控件角色与可编辑区） */
+const INTERACTIVE_SEL =
+  'button, a, input, select, textarea, [role="button"], [role="switch"], [role="link"], [role="checkbox"], [role="radio"], [role="menuitem"], [contenteditable="true"], oas-button, oas-link'
+
 export class OASListItem extends OASElement {
   static override get observedAttributes(): string[] {
     return ['title', 'description', 'avatar', 'clickable', 'selected', 'size']
@@ -145,8 +150,9 @@ export class OASListItem extends OASElement {
       })
     }
     this.addEventListener('keydown', (e) => this.handleKeydown(e as KeyboardEvent))
-    this.addEventListener('click', () => {
+    this.addEventListener('click', (e) => {
       if (!this.hasAttribute('clickable')) return
+      if (this.hitsInteractive(e)) return
       this.emit('click', { index: this.rowIndex(), item: this.itemData })
     })
   }
@@ -225,14 +231,14 @@ export class OASListItem extends OASElement {
       avatarEl.hidden = !hasSlot && avatarUrl === ''
     }
 
-    // 行交互：clickable → 可聚焦 + role + 高亮态钩子；selected → aria-pressed
-    // （role=button 不允许 aria-selected —— axe: aria-allowed-attr；pressed 表达可点行的选中/切换语义）
+    // 行交互：clickable → 可聚焦 + 高亮态钩子（可点行自身不挂 role=button：
+    // 行内常嵌控件（开关/按钮），role=button 会把控件裹进交互元素（axe: nested-interactive））
     const clickable = this.hasAttribute('clickable')
     this.toggleAttribute('data-clickable', clickable)
     if (clickable) {
       this.setAttribute('tabindex', '0')
-      this.setAttribute('role', 'button')
-      this.setAttribute('aria-pressed', String(this.hasAttribute('selected')))
+      this.removeAttribute('role')
+      this.removeAttribute('aria-pressed')
     } else {
       this.removeAttribute('tabindex')
       this.removeAttribute('role')
@@ -240,10 +246,16 @@ export class OASListItem extends OASElement {
     }
   }
 
-  /** 键盘可达：Enter / Space 触发行点击（Space 阻止页面滚动） */
+  /** 行内交互元素判定：命中则不触发行点击（防止点行内开关/按钮时行与控件双触发） */
+  private hitsInteractive(e: Event): boolean {
+    return e.composedPath().some((n) => n instanceof Element && n !== this && n.matches(INTERACTIVE_SEL))
+  }
+
+  /** 键盘可达：Enter / Space 触发行点击（Space 阻止页面滚动）；焦点在行内控件时不接管 */
   private handleKeydown(e: KeyboardEvent): void {
     if (!this.hasAttribute('clickable')) return
     if (e.key !== 'Enter' && e.key !== ' ') return
+    if (this.hitsInteractive(e)) return
     e.preventDefault()
     this.emit('click', { index: this.rowIndex(), item: this.itemData })
   }

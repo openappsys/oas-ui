@@ -25,6 +25,12 @@ function key(el: OASSplitter, keyName: string, splitterIdx = 0): void {
   )
 }
 
+/** 折叠按钮与分隔条同级挂在 .sep 容器内（不是 separator 后代，避免交互元素嵌套） */
+function collapseBtnOf(el: OASSplitter, splitterIdx = 0): HTMLButtonElement {
+  const splitter = el.shadowRoot!.querySelectorAll('[part="splitter"]')[splitterIdx]!
+  return splitter.parentElement!.querySelector(':scope > .collapse-btn') as HTMLButtonElement
+}
+
 describe('OASSplitter', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -140,8 +146,7 @@ describe('OASSplitter', () => {
     const el = mount()
     el.setAttribute('percent', '50')
     el.setAttribute('collapsible', '')
-    const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
-    const btn = splitter.querySelector('.collapse-btn') as HTMLButtonElement
+    const btn = collapseBtnOf(el)
     expect(btn).not.toBeNull()
     expect(btn.getAttribute('aria-label')).toBe('收起面板')
     const left = el.shadowRoot!.querySelector('.pane:first-of-type') as HTMLElement
@@ -330,10 +335,9 @@ describe('OASSplitter', () => {
     const el = mountMulti()
     el.setAttribute('sizes', '30,40,30')
     el.setAttribute('collapsible', '')
-    const splitters = el.shadowRoot!.querySelectorAll('[part="splitter"]')
     const panes = el.shadowRoot!.querySelectorAll('.pane')
-    const btn0 = splitters[0]!.querySelector('.collapse-btn') as HTMLButtonElement
-    const btn1 = splitters[1]!.querySelector('.collapse-btn') as HTMLButtonElement
+    const btn0 = collapseBtnOf(el, 0)
+    const btn1 = collapseBtnOf(el, 1)
     expect(btn0).not.toBeNull()
     expect(btn1).not.toBeNull()
     btn0.click()
@@ -355,12 +359,51 @@ describe('OASSplitter', () => {
     expect(el.children[0]!.getAttribute('slot')).toBe('pane-0')
   })
 
+  it('multiple：结构重建不残留孤儿 .sep（含陈旧折叠按钮），.sep 与 separator 数量一致', async () => {
+    const el = mountMulti(`<div>一</div><div>二</div><div>三</div>`)
+    el.setAttribute('collapsible', '')
+    expect(el.shadowRoot!.querySelectorAll('.sep').length).toBe(2)
+    // 删一个面板触发结构重建
+    el.innerHTML = `<div>一</div><div>二</div>`
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.shadowRoot!.querySelectorAll('.sep').length, '.sep 数量应随结构重建收敛').toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('[part="splitter"]').length).toBe(1)
+    const btns = el.shadowRoot!.querySelectorAll('.collapse-btn')
+    expect(btns.length, '不应残留陈旧折叠按钮').toBe(1)
+    expect(btns[0]!.getAttribute('data-splitter-index')).toBe('0')
+    const order = Array.from(el.shadowRoot!.children)
+      .filter((n) => n.tagName !== 'STYLE')
+      .map((n) => (n.classList.contains('sep') ? 'sep' : 'pane'))
+    expect(order, '.sep 应夹在面板之间，不跑到头部').toEqual(['pane', 'sep', 'pane'])
+  })
+
   it('legacy 零回归：slot=left/right 旧用法保持两面板 + 分隔条', () => {
     const el = mount()
     expect(el.shadowRoot!.querySelectorAll('.pane').length).toBe(2)
     expect(el.shadowRoot!.querySelectorAll('[part="splitter"]').length).toBe(1)
     expect(el.shadowRoot!.querySelector('[part="pane-left"]')).not.toBeNull()
     expect(el.shadowRoot!.querySelector('[part="pane-right"]')).not.toBeNull()
+  })
+
+  it('折叠按钮与分隔条同级：不是 separator 后代（axe nested-interactive 回归固化）', () => {
+    const el = mount()
+    el.setAttribute('collapsible', '')
+    const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
+    const btn = collapseBtnOf(el)
+    expect(splitter.contains(btn), '交互按钮不能是 separator 的后代').toBe(false)
+    expect(btn.parentElement!.contains(splitter)).toBe(true)
+    expect(btn.getAttribute('data-splitter-index')).toBe('0')
+  })
+
+  it('multi：各折叠按钮携带自己的索引，点击折叠对应一侧', () => {
+    const el = mountMulti()
+    el.setAttribute('sizes', '30,40,30')
+    el.setAttribute('collapsible', '')
+    const btn1 = collapseBtnOf(el, 1)
+    expect(btn1.getAttribute('data-splitter-index')).toBe('1')
+    btn1.click()
+    expect((el.shadowRoot!.querySelectorAll('.pane')[1] as HTMLElement).style.flex).toBe('0 0 0%')
+    expect(el.getAttribute('sizes')).toBe('30,0,70')
   })
 })
 

@@ -272,6 +272,9 @@
     "slots": {
       "": "Wrapped content (card, button, etc.); with no content the badge falls back to a standalone inline element",
       "ribbon": "Custom ribbon content"
+    },
+    "cssVars": {
+      "--oas-badge-outline": "Border and text color of the outline variant (the component injects the `-text` safe variant for semantic/preset `color`; falls back to the badge background color)"
     }
   },
   "oas-bottom-navigation": {
@@ -395,6 +398,9 @@
     },
     "slots": {
       "": "Button content (text / icon)"
+    },
+    "cssVars": {
+      "--oas-button-color-deep": "Text-safe deepened variant of the custom `color`: the color-mix used for hover/active and outlined/dashed/filled text (injected by the component via `--oas-deep-mix` / `--oas-deep-sink`; inert without a custom color)"
     }
   },
   "oas-button-group": {
@@ -1533,7 +1539,7 @@
       "avatar": "Avatar URL quick channel (renders a circular avatar at the row start; slot=\"avatar\" wins)",
       "clickable": "Whole row clickable: hover feedback, focusable (Enter/Space triggers), click dispatches oas-click",
       "description": "Description text quick channel (slot=\"description\" wins, rich content allowed)",
-      "selected": "Selected row highlight (aria-selected synced); selection is host-controlled",
+      "selected": "Selected row highlight (visual state; selection is host-controlled)",
       "size": "Row density: sm / md (default) / lg",
       "title": "Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content"
     },
@@ -2593,6 +2599,9 @@
     },
     "slots": {
       "": "Switch content (label / rich content)"
+    },
+    "cssVars": {
+      "--oas-switch-on-color": "Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by luminance; falls back to `var(--oas-color-bg)`)"
     }
   },
   "oas-tab-panel": {
@@ -2746,7 +2755,7 @@
     },
     "cssVars": {
       "--oas-tag-color": "Text color: the `color` attribute feeds through this variable; `--tag-color` is the component's internal current color, falling back to text-primary when unset",
-      "--oas-tag-color-deep": "Deeper text color used by the `deep` variant, falling back to text-primary when unset",
+      "--oas-tag-color-deep": "Text-safe color (`deep` level): drives both the text color of `filled`/`outlined` and the **solid background** of `solid`/`checked`, falling back to text-primary when unset",
       "--oas-tag-avatar-size": "Avatar size for `avatar` mode, derived per size level and falling back to control-height-sm − 4px when no level matches"
     }
   },

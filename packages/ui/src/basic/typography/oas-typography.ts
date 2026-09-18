@@ -99,8 +99,10 @@ const BASE_STYLE = `
 .text.depth-1 {
   color: var(--oas-color-text-secondary);
 }
+/* depth-2：75% secondary 掺 disabled——dark 下 50% 混合（约 #a9a9b2）对 #18181b 仅 57 分不达标，
+   75% 档 dark ~63 / light ~68 双达标 */
 .text.depth-2 {
-  color: color-mix(in srgb, var(--oas-color-text-secondary) 50%, var(--oas-color-text-disabled));
+  color: color-mix(in srgb, var(--oas-color-text-secondary) 75%, var(--oas-color-text-disabled));
 }
 .text.depth-3 {
   color: var(--oas-color-text-disabled);

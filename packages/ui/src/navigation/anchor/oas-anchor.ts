@@ -144,7 +144,7 @@ nav.variant-lineless [part='link'][aria-current='true'] {
 /* block：当前项块状背景 */
 nav.variant-block [part='link'][aria-current='true'] {
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
-  color: var(--oas-color-primary);
+  color: var(--oas-color-primary-active);
 }
 /* size 档位 */
 nav.size-small [part='link'] {

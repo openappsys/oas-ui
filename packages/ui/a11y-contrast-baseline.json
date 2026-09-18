@@ -1,0 +1,1111 @@
+{
+  "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
+  "totals": {
+    "sampled": 24598,
+    "below30": 0,
+    "below45": 0,
+    "below60": 0,
+    "ratio": 255,
+    "exempt": 284,
+    "skipped": 2348
+  },
+  "topPairs": [],
+  "pages": {
+    "affix.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "alert.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 26,
+      "exempt": 0,
+      "skipped": 10
+    },
+    "alert.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 10
+    },
+    "anchor.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 20
+    },
+    "anchor.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 20
+    },
+    "app-bar.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "app.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "aspect-ratio.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 15,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "back-top.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 6,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "back-top.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "badge.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 3,
+      "exempt": 0,
+      "skipped": 27
+    },
+    "badge.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 27
+    },
+    "breadcrumb.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "breadcrumb.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "button.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "calendar.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 126,
+      "skipped": 0
+    },
+    "calendar.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 126,
+      "skipped": 0
+    },
+    "card.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "card.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "carousel.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "carousel.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "cascader.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 26
+    },
+    "cascader.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 26
+    },
+    "chart.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 58
+    },
+    "chart.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 58
+    },
+    "checkbox.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 1,
+      "skipped": 0
+    },
+    "checkbox.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 1,
+      "skipped": 0
+    },
+    "code.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "color-picker.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 92
+    },
+    "color-picker.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 92
+    },
+    "command.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 3,
+      "exempt": 0,
+      "skipped": 20
+    },
+    "command.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 20
+    },
+    "comment.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "comment.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "config-provider.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "config-provider.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "container.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "container.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "descriptions.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 3,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "drawer.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "drawer.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "dynamic-tags.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "dynamic-tags.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "editable.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 19
+    },
+    "editable.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 19
+    },
+    "empty.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "equation.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 3
+    },
+    "equation.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 3
+    },
+    "flex.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 4,
+      "exempt": 0,
+      "skipped": 5
+    },
+    "flex.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 5
+    },
+    "float-button.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 7
+    },
+    "float-button.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 7
+    },
+    "form.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "form.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "gradient-text.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 20
+    },
+    "gradient-text.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 20
+    },
+    "grid.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 14,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "image.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 16,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "input.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 4,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "input.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "kbd.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 40
+    },
+    "kbd.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 40
+    },
+    "label.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 1,
+      "skipped": 0
+    },
+    "label.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 1,
+      "skipped": 0
+    },
+    "layout.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 16
+    },
+    "layout.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 16
+    },
+    "link.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "list.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 14,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "log.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 6,
+      "exempt": 0,
+      "skipped": 179
+    },
+    "log.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 179
+    },
+    "marquee.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 18
+    },
+    "marquee.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 18
+    },
+    "menu.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 8
+    },
+    "menu.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 8
+    },
+    "message.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "message.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "modal.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "modal.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "notification.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "page-header.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "pagination.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "pagination.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "pin-input.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 6,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "popconfirm.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "popover.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "popover.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "progress.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 20
+    },
+    "progress.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 20
+    },
+    "qrcode.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "radio.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "rate.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 12
+    },
+    "rate.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 12
+    },
+    "result.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "result.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "scroll-area.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 24
+    },
+    "scroll-area.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 24
+    },
+    "select.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 0,
+      "skipped": 43
+    },
+    "select.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 43
+    },
+    "sidebar.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 3,
+      "exempt": 0,
+      "skipped": 5
+    },
+    "sidebar.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 5
+    },
+    "slider.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 99
+    },
+    "slider.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 99
+    },
+    "space.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 0,
+      "skipped": 3
+    },
+    "space.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 3
+    },
+    "spin.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "spin.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 4
+    },
+    "stepper.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 78
+    },
+    "stepper.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 78
+    },
+    "steps.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 12,
+      "exempt": 5,
+      "skipped": 70
+    },
+    "steps.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 5,
+      "skipped": 70
+    },
+    "table.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 6,
+      "exempt": 0,
+      "skipped": 5
+    },
+    "table.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 5
+    },
+    "tabs.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 68
+    },
+    "tabs.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 68
+    },
+    "tag.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 31,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "tag.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "timeline.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "timeline.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "toast.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "toast.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 1
+    },
+    "toggle-button.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 0
+    },
+    "tooltip.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 3
+    },
+    "tooltip.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 3
+    },
+    "transfer.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 42,
+      "exempt": 4,
+      "skipped": 20
+    },
+    "transfer.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 4,
+      "skipped": 20
+    },
+    "tree-select.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 38
+    },
+    "tree-select.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 38
+    },
+    "tree.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 3,
+      "skipped": 7
+    },
+    "tree.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 3,
+      "skipped": 7
+    },
+    "typography.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 2,
+      "skipped": 2
+    },
+    "typography.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 2,
+      "skipped": 2
+    },
+    "upload.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 21
+    },
+    "upload.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 21
+    },
+    "virtual-list.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 40
+    },
+    "virtual-list.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 40
+    },
+    "watermark.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 6
+    },
+    "watermark.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 6
+    }
+  }
+}

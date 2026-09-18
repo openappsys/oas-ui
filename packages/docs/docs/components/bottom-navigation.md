@@ -152,7 +152,7 @@ onMounted(() => {
 - `--oas-bottom-navigation-height`：导航栏高度，默认 `56px`（fixed 模式下固定条高度即此值）
 
 <DemoBlock title="变量定制（激活色 + 高度）">
-  <oas-bottom-navigation id="bn-var" value="home" style="width: 100%; max-width: 480px; --oas-bottom-navigation-active-color: var(--oas-color-success); --oas-bottom-navigation-height: 64px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+  <oas-bottom-navigation id="bn-var" value="home" style="width: 100%; max-width: 480px; --oas-bottom-navigation-active-color: var(--oas-color-success-text); --oas-bottom-navigation-height: 64px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
 ## API

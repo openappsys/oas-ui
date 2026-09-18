@@ -51,3 +51,37 @@ test('oas-splitter + sidebar：拖拽分割条 sidebar 宽度实时跟随（不�
 // —— 缺陷回归：sidebar resizable 边缘拖拽调宽（内置 rail 形态） ——
 // 设计定夺：拖拽调宽内置（resizable rail）优于 splitter 组合（组合有 width="100%" 写法
 // 门槛 + 强制 split-pane 布局）。本断言真实拖拽 rail 边缘，验证宽度实时跟随并写回 width 属性。
+
+test('splitter：折叠按钮与 separator 同级（不构成交互嵌套）且点击仍能折叠面板', async ({ page }) => {
+  await page.goto('/components/splitter.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => document.querySelector('oas-splitter[collapsible]')?.shadowRoot != null, undefined, {
+    timeout: 15000,
+  })
+  const r = await page.evaluate(() => {
+    const sp = document.querySelector('oas-splitter[collapsible]') as HTMLElement & { shadowRoot: ShadowRoot }
+    const sep = sp.shadowRoot.querySelector('[part="splitter"]') as HTMLElement
+    const btn = sep.parentElement?.querySelector(':scope > .collapse-btn') as HTMLButtonElement | null
+    const pane = sp.shadowRoot.querySelector('.pane') as HTMLElement
+    const sb = sep.getBoundingClientRect()
+    const bb = btn?.getBoundingClientRect()
+    const flexBefore = pane.style.flex
+    btn?.click()
+    return {
+      hasBtn: btn != null,
+      nested: btn ? sep.contains(btn) : true,
+      centered:
+        bb != null &&
+        Math.abs(sb.x + sb.width / 2 - (bb.x + bb.width / 2)) <= 2 &&
+        Math.abs(sb.y + sb.height / 2 - (bb.y + bb.height / 2)) <= 2,
+      btnVisible: bb != null && bb.width > 0 && bb.height > 0,
+      flexBefore,
+      flexAfter: pane.style.flex,
+      collapsedAttr: sp.hasAttribute('collapsed'),
+    }
+  })
+  expect(r.hasBtn, 'collapsible 下应有折叠按钮').toBe(true)
+  expect(r.nested, '折叠按钮不能是 separator 的后代（axe: nested-interactive）').toBe(false)
+  expect(r.centered && r.btnVisible, '折叠按钮应可见且居中压在分隔条上（移出 separator 后仍靠 .sep 定位）').toBe(true)
+  expect(r.collapsedAttr, '点击折叠按钮应收起面板并回写 collapsed').toBe(true)
+  expect(r.flexAfter, '折叠后该面板尺寸归零').toBe('0 0 0%')
+})

@@ -269,7 +269,7 @@ describe('OASBadge 颜色全模式', () => {
     expect(b.style.getPropertyValue('--oas-badge-on-color')).toBe('var(--oas-color-text-on-warning)')
   })
 
-  it('color 预设名解析到 --oas-preset-* 变量（count 与 dot 均支持）', () => {
+  it('color 预设名解析到 --oas-preset-* 变量（实底走 -text 文字安全档；count 与 dot 均支持）', () => {
     const presets = [
       'magenta',
       'red',
@@ -285,12 +285,13 @@ describe('OASBadge 颜色全模式', () => {
     ]
     for (const name of presets) {
       const el = mount({ value: '3', color: name })
+      // 预设基色（如 cyan #13c2c2）对白字对比不达标，实底一律用更深的 -text 档
       expect(badge(el)!.style.getPropertyValue('--oas-badge-bg'), `count preset=${name}`).toBe(
-        `var(--oas-preset-${name})`,
+        `var(--oas-preset-${name}-text)`,
       )
     }
     const d = mount({ dot: '', color: 'purple' })
-    expect(badge(d)!.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-preset-purple)')
+    expect(badge(d)!.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-preset-purple-text)')
     expect(badge(d)!.style.getPropertyValue('--oas-badge-on-color')).toBe('var(--oas-color-text-on-primary)')
   })
 
@@ -313,7 +314,7 @@ describe('OASBadge 颜色全模式', () => {
   it('ribbon 支持预设名与任意色值（语义色 class 逻辑保留兼容）', () => {
     const el = mount({ ribbon: '', text: 'HOT', color: 'purple' })
     const r = ribbon(el)!
-    expect(r.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-preset-purple)')
+    expect(r.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-preset-purple-text)')
     expect(r.classList.contains('color-danger')).toBe(false)
     el.setAttribute('color', '#7c3aed')
     expect(r.style.getPropertyValue('--oas-badge-bg')).toBe('#7c3aed')
@@ -1530,14 +1531,23 @@ describe('OASBadge variant outline 描边形态', () => {
     expect(badge(el)!.classList.contains('variant-outline')).toBe(false)
   })
 
-  it('outline 样式：背景透明 + color 语义边框/文字（dot 空心圆）', () => {
+  it('outline 样式：背景透明 + color 语义边框/文字（文字优先 -text 安全档；dot 空心圆）', () => {
     const el = mount({ value: '5' })
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     const rule = cssRule(style, '.badge.variant-outline')
     expect(rule).toContain('background: transparent')
-    expect(rule).toContain('border: 1px solid var(--oas-badge-bg, var(--oas-color-danger))')
-    expect(rule).toContain('color: var(--oas-badge-bg, var(--oas-color-danger))')
+    expect(rule).toContain('border: 1px solid var(--oas-badge-outline, var(--oas-badge-bg, var(--oas-color-danger)))')
+    expect(rule).toContain('color: var(--oas-badge-outline, var(--oas-badge-bg, var(--oas-color-danger)))')
     expect(cssRule(style, '.badge.variant-outline.dot')).toContain('background: transparent')
+  })
+
+  it('outline + 语义色：文字注入 -text 安全档（success 基色当文字 感知分不达标），实底 bg 不变', () => {
+    const el = mount({ value: '5', variant: 'outline', color: 'success' })
+    const b = badge(el)!
+    expect(b.style.getPropertyValue('--oas-badge-outline')).toBe('var(--oas-color-success-text)')
+    expect(b.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-color-success)')
+    el.setAttribute('color', 'warning')
+    expect(b.style.getPropertyValue('--oas-badge-outline')).toBe('var(--oas-color-warning-text)')
   })
 
   it('outline 与 dot/color 并存：dot class + 颜色变量正常注入', () => {

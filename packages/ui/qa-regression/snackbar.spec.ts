@@ -116,23 +116,42 @@ test('同内容合并：group 同文案连发两次合并为一条且计数 ×2'
 })
 
 test('hover 暂停计时：悬停期间不到期，离开后按剩余时长关闭（reason=timeout）', async ({ page }) => {
-  await page.evaluate(() => (window as any).sbShow({ message: '悬停暂停', duration: '3000' }))
+  // 关动画：入场动画期间算出的 box 中心会漂移，鼠标可能落空（并发下偶发 flake）
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  // duration 给足 6s：并发负载下「出现→hover 命中」可能耗时更久，3s 会让自动关闭跑赢 hover 判定
+  await page.evaluate(() => (window as any).sbShow({ message: '悬停暂停', duration: '6000' }))
   await page.waitForFunction(() => document.querySelectorAll('oas-snackbar.oas-open').length === 1)
-  const center = await page.evaluate(() => {
-    const rect = document
-      .querySelector('oas-snackbar.oas-open')!
-      .shadowRoot!.querySelector<HTMLElement>('[part="box"]')!
-      .getBoundingClientRect()
-    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-  })
-  await page.mouse.move(center.x, center.y)
+  // 轮询「移动到当前 box 中心 → 是否命中 hover」：位置变化/布局未稳时每轮重算，替代一次性移动
+  await expect
+    .poll(
+      async () => {
+        const center = await page.evaluate(() => {
+          const rect = document
+            .querySelector('oas-snackbar.oas-open')
+            ?.shadowRoot?.querySelector<HTMLElement>('[part="box"]')
+            ?.getBoundingClientRect()
+          return rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : null
+        })
+        if (!center) return false
+        await page.mouse.move(center.x, center.y)
+        return page.evaluate(
+          () =>
+            document
+              .querySelector('oas-snackbar.oas-open')
+              ?.shadowRoot?.querySelector('[part="box"]')
+              ?.matches(':hover') ?? false,
+        )
+      },
+      { message: '悬停应命中 snackbar 主体', timeout: 10000 },
+    )
+    .toBe(true)
   // 悬停超过 duration 仍打开（计时被暂停）
-  await page.waitForTimeout(3600)
+  await page.waitForTimeout(6600)
   expect(await page.evaluate(() => document.querySelectorAll('oas-snackbar.oas-open').length)).toBe(1)
-  // 离开 → 剩余时长走完自动关闭
+  // 离开 → 剩余时长（≈6s，悬停暂停在接近满时长处）走完自动关闭
   await page.mouse.move(4, 4)
   await page.waitForFunction(() => (document.getElementById('sb-log')?.textContent ?? '').includes('timeout'), null, {
-    timeout: 5000,
+    timeout: 12000,
   })
 })
 

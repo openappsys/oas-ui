@@ -157,6 +157,8 @@ input:focus-visible {
 }
 :host([data-limit-blocked]) label {
   cursor: not-allowed;
+  /* 置灰语义走禁用文字 token（同禁用三来源）：text-primary 的 0.6 淡化合成档不进禁用豁免 */
+  color: var(--oas-color-text-disabled);
 }
 :host([data-limit-blocked]) input {
   cursor: not-allowed;

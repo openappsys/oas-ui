@@ -117,7 +117,7 @@
 
 ## 行交互（clickable / selected）
 
-给 `oas-list-item` 设置 `clickable` 后整行可点：有 hover 反馈、可聚焦（Enter / Space 触发），点击派发 `oas-click` 事件；`selected` 标记选中行高亮（`aria-selected` 同步）。选中态由宿主维护，常用于成员列表、设置项列表。
+给 `oas-list-item` 设置 `clickable` 后整行可点：有 hover 反馈、可聚焦（Enter / Space 触发），点击派发 `oas-click` 事件；行内嵌按钮/开关等交互控件时，点这些控件不触发行点击（行与控件不双触发），行本身不挂交互角色以免把它们裹进交互元素。`selected` 标记选中行高亮。选中态由宿主维护，常用于成员列表、设置项列表。
 
 <DemoBlock title="可点行与选中态">
   <div style="width: 100%">
@@ -636,7 +636,7 @@ onMounted(() => {
 | `avatar` | 头像 URL 快捷通道（渲染首部圆形头像；slot="avatar" 优先） | `string` | — |
 | `clickable` | 整行可点：hover 反馈、可聚焦（Enter/Space 触发）、点击派发 oas-click | — | — |
 | `description` | 描述文本快捷通道（slot="description" 优先，可放富内容） | `string` | — |
-| `selected` | 选中行高亮（aria-selected 同步），选中态由宿主维护 | — | — |
+| `selected` | 选中行高亮（视觉态，选中态由宿主维护） | — | — |
 | `size` | 行密度：sm / md（默认）/ lg（oas-list 下发的 data-size 优先于本属性之外的默认） | — | — |
 | `title` | 条目标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 

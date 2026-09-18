@@ -123,6 +123,23 @@ html.dark {
   white-space: nowrap;
 }
 
+/* ===== 暗色内联代码前景色（Vitepress 默认值不达标） ===== */
+/* 缺陷：Vitepress 默认 --vp-code-color = var(--vp-c-brand-1)，dark 下是 #a8b1ff——
+   压代码底 --vp-c-default-soft（#24272c）感知分恰好 59.95 不足 60，全站 demo 正文内联
+   <code> 大面积踩线。覆盖为 geekblue 文字安全档 token（dark=#b3c4fb，双底实测 ≥65；
+   light 侧 Vitepress 默认已达标，不动）。 */
+html.dark {
+  --vp-code-color: var(--oas-preset-geekblue-text);
+}
+
+/* ===== 暗色正文引用块（demo 里的原生 blockquote）===== */
+/* 缺陷：Vitepress 默认 blockquote 色走 --vp-c-text-2（dark 约 rgba(235,235,245,.6)，
+   合成后 ≈#98989f），压 #18181b 感知分 45.8 不达标（comment 页 demo 引述）。覆盖为
+   次要文字 token（dark=#c6c6ce 达标；light 侧 Vitepress 默认达标，不动）。 */
+html.dark .vp-doc blockquote {
+  color: var(--oas-color-text-secondary);
+}
+
 /* ===== 窄屏移动端：demo 内容超宽兜底（右锚定浮层出屏修复） ===== *//* 缺陷：message/notification/toast/transfer 等页 demo 的一排 oas-button 走 oas-space，
    其默认 nowrap（组件写宿主内联样式），窄屏下撑宽布局视口（scrollWidth 达 536~920px），
    右锚定的 toast/notification 钉在扩张后布局视口右缘 → 375/320 视口下被裁出屏。

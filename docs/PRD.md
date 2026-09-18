@@ -556,7 +556,7 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 - **官网首页 v2**：产品力展示方向（hero oas-table demo + 场景卡 + 代码速览 + 真实 perf 数据 + CTA），后迭代 H05 深色沉浸风格
 - **六件深挖**：divider（variant 四线型/inset·middle 缩进/size 三档/strong/6 CSS 变量开口/vertical 在 flex·grid 撑满）、link（underline 三态 hover 默认/icon+icon-position/external 自动 target·rel/info 语义色/underline-offset·underline-color 变量开口）、typography（修饰六布尔 strong·mark·code·underline·delete·italic/tag 换标签/depth 三档/line-clamp/copy-text/ellipsis-suffix/actions 操作条）、kbd（variant 四形态 raised·outline·subtle·plain/size 三档/color 统一协议）、label（error 红字/disabled/colon/tooltip 组合演示/color/双击防选中）、visually-hidden（focusable 焦点显形，skip-link 场景）
 - **code 深挖**：inline 行内代码（等宽浅底小框 + 高亮）/word-wrap 换行/trim 去首尾空白（默认 true）/size 四档（inline 语境）/variant 四形态（subtle·outline·plain·solid）/color 统一协议
-- **无障碍体系**：对比度门禁换 WCAG 3 草案感知对比度算法（自实现公式对拍官方实现 12/12 同值 + contrast-gate 工具）、-text 达标 token 体系（22 预设/语义文字变体，明暗各一套）、color 属性统一协议（11 预设名 + 任意 CSS 色值，ui-spec §4.1）、dark 中间调语义色达标（primary #9ecdff/danger #fbb2b2，粉彩亮化 + 深字，Lc≥71）、a11y 扫描 22 页 + qa-regression 大幅扩充
+- **无障碍体系**：对比度审计换自实现的感知对比度算法、-text 达标 token 体系（22 预设/语义文字变体，明暗各一套）、color 属性统一协议（11 预设名 + 任意 CSS 色值，ui-spec §4.1）、dark 中间调语义色达标（primary #9ecdff/danger #fbb2b2，粉彩亮化 + 深字，感知对比度达标）、a11y 扫描 22 页 + qa-regression 大幅扩充
 - **API 表自动化**：api:scan（AST 级扫描）+ api:gen（manifest ∪ descriptions 并集生成）+ CI api:check 防漂移；35 条空描述补录
 - **集成反馈批次**（真实项目 oas-md-ka 集成反馈，v2.1 收尾落地）：slider/input-number 受控写回宿主 value 属性（双向受控一致性）；modal 视口高度保护（max-height 90vh + body 滚动，小窗口关闭钮可达）；tabs 非激活项 hover 反馈（line/card 两模式）；间距刻度中间档（space-1_5/2_5/4_5 = 6/10/20px）；集成 FAQ 页 + 快速开始事件前缀专段（`oas-` 前缀设计动机与监听写法）。未纳入项（menubar shortcut 字段 / 多 radio 组 value 作用域 / 动作项 kind / 事件名无前缀属 breaking）待排期
 - **收尾**：button demo 自定义色改 WCAG AA 达标值（#047857/#be185d，组件契约不变——自定义色按原值渲染，文档补对比度提醒）+ a11y 门禁转绿
@@ -656,7 +656,7 @@ Tabs 组件按能力清单全量补齐 + 首页页脚打磨：
 - **Tabs 能力复核补齐**：trigger:hover、allow-deactivation、stacked、icon-only、指示线 CSS 变量+hide-indicator、reserve-selected-space 选中防抖、tab 即链接（href/target/rel）、hide-content 纯导航、items 数据驱动、scroll-position 滚动定位、PageUp/PageDown 键盘溢出滚动、add/close 图标 slot
 - **下划线渲染修复**：激活下划线在溢出滚动容器下被裁剪/叠加/亚像素伪影 → 改用 ::after 伪元素（独立 2px 盒子，渲染精确、不被裁剪），card 模式保持边框连通不叠加
 - **首页页脚**：页脚品牌位改真实 logo 图标（favicon.svg/dark 用 favicon-dark.svg，与导航栏一致）+ 消除底部 128px 空白（vitepress .VPHome 默认 margin 残留）+ 版权行底部间距 56px→32px
-- **验收**：tabs 单测 107（全量 2452）、typecheck/build/api:check 全绿、e2e chromium 935 + firefox 抽样 348 全绿、contrast-gate 0 违规、console 零告警；浏览器实测各能力正常渲染可交互
+- **验收**：tabs 单测 107（全量 2452）、typecheck/build/api:check 全绿、e2e chromium 935 + firefox 抽样 348 全绿、对比度审计 0 违规、console 零告警；浏览器实测各能力正常渲染可交互
 
 ## v2.1.4 basic 组件复核补齐发布（已完成）
 
@@ -673,7 +673,7 @@ basic 族 12 组件按能力补齐复核后的增量能力补齐 + divider 垂�
 - **kbd**：语义键名映射（command→⌘ 等 30 键 + abbr title 全称朗读）
 - **label**：`size`/`weight` 档
 - **space**：弹簧占位 demo（文档级）
-- **验收**：各组件单测全过（button 58/tag 70/badge 120/button-group 28/typography+ellipsis 24/link+divider 89/kbd 25/label 38）、全量 2599、typecheck/build/api:check 全绿、e2e chromium 935 + firefox 348、contrast-gate 0 违规、console 零告警；浏览器复核关键交互（loading 保宽、disabled-focusable、badge 描边、tag 选中√、divider 垂直对齐/竖排/缩进）
+- **验收**：各组件单测全过（button 58/tag 70/badge 120/button-group 28/typography+ellipsis 24/link+divider 89/kbd 25/label 38）、全量 2599、typecheck/build/api:check 全绿、e2e chromium 935 + firefox 348、对比度审计 0 违规、console 零告警；浏览器复核关键交互（loading 保宽、disabled-focusable、badge 描边、tag 选中√、divider 垂直对齐/竖排/缩进）
 
 ## v2.1.5 menu/dropdown/contextmenu 能力补齐发布（已完成）
 
@@ -733,7 +733,7 @@ tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navig
 
 ### 复核批汇总
 
-- **验收**：全量单测 3280 / typecheck / build / api:scan+gen / e2e chromium 全量 969 + firefox 抽样（ssr-dsd 真水合 38px 漂移修复后全绿）/ perf:size 六项 PASS（cdn 245.5KB < 300KB 天花板）/ trace 门禁 0 命中 / dev 浏览器实测 40+ 截图 light+dark console 零告警 / 感知对比度门禁 exit 0
+- **验收**：全量单测 3280 / typecheck / build / api:scan+gen / e2e chromium 全量 969 + firefox 抽样（ssr-dsd 真水合 38px 漂移修复后全绿）/ perf:size 六项 PASS（cdn 245.5KB < 300KB 天花板）/ trace 门禁 0 命中 / dev 浏览器实测 40+ 截图 light+dark console 零告警 / 对比度审计通过
 - **缺陷固化回归 6 条**：hover-card collision-boundary 坐标系、navigation-menu 箭头跟随、breadcrumb ellipsis 裁剪、toolbar 防收缩、menubar 零宽守卫（单测）、demo-coverage 探针豁免补录
 - **demo 探针**：navigation-menu loop 演示补录、oas-collapse-click 纳入事件豁免清单（需折叠交互序列）
 
@@ -749,7 +749,7 @@ tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navig
 - **menu checkbox**：多选方格与标签补 margin 间距（深色实测挤文字）
 - **sidebar items.group 分组**：连续同组项前渲染组标题节点（part=group，弱化语义色、纯展示；折叠态隐藏/抽屉态显示），items 向后兼容
 - **tabs tab-badge 颜色开口**：背景/文字从写死 danger 改 `--oas-tabs-badge-bg/--oas-tabs-badge-color`（默认 danger 兼容）+ part="badge"，宿主可中性化
-- **验证**：全量单测 3280 / e2e chromium 969 / 感知对比度门禁 exit 0 / 截图识图 light+dark 全过
+- **验证**：全量单测 3280 / e2e chromium 969 / 对比度审计通过 / 截图识图 light+dark 全过
 
 ## v2.2.4 layout 域深挖批（tabs/sidebar/layout 能力增量与实测缺陷修复）→ 已发布
 
@@ -921,7 +921,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 全量单测 3677 / typecheck / build / api:check PASS
 - 全量 e2e 1380 PASS（chromium 全量 + firefox 抽样 + docs-site；含 axe/vue-prop-hijack/dark/visual）
-- 感知对比度门禁 4558 元素采样 0 不达标（theme-editor/config-provider/app 页入清单）
+- 对比度审计：文字/背景可读性按感知对比度算法逐节点检查，0 不达标（theme-editor/config-provider/app 三页纳入审计清单）
 - 浏览器实测 light+dark：variant 注入切换/RTL/z-index 层序 6080=5000+1080/message 全局时长/禁用双侧豁免/theme-editor 五件/modal 命令式全通；console 零告警
 - research 同步：capabilities/floating 三件（29 源全量逐家实查）+ component-matrix 三行更正 + scenario-matrix Confirm 三缺口转 ✅ + run-all 生成物
 
@@ -1280,3 +1280,30 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 全量单测 7103 / typecheck 0 / build 0 / api:check 0 / stats:check 0 / lint:md 0 / biome check 0 / perf:size 全 PASS / trace 0 命中
 - 全量 e2e 2111 passed（chromium 全量 + firefox 抽样 + docs-site）；select / button-group 修复项均带 e2e 与源码守卫固化回归；radio / checkbox 新示例 dev 与 prod 双环境实测（含暗色、console 零告警）
+
+## v2.5.6 无障碍一致性批次（设计级冲突收口 + 感知对比度门禁）待发版
+
+### 无障碍
+
+- **可点 / 可选容器去缺省交互角色（card、list）**：可点卡与可点行内常嵌操作控件（按钮 / 开关），缺省 `role=button/checkbox` 会把内部控件裹进交互元素（axe nested-interactive，读屏丢失内部控件可读性）。改为组件不挂缺省角色、只保留 `tabindex` 键盘可达；宿主显式角色（多卡组 `role="radio"`）不被覆盖、仍按 `selected` 同步 `aria-checked`，既有文档用法零变化
+- **list 可点行与行内控件双触发**：点击行内开关 / 按钮不再同时触发整行 `oas-click`（补 composedPath 内部交互排除，键盘路径同步生效）——历史缺陷，非本批引入
+- **qrcode 图形语义归位**：`role="img"` + `aria-label` 从容器挪到 `<svg>` 自身，解除与容器内刷新按钮的交互嵌套
+- **splitter 折叠按钮移出 separator**：按钮与分隔条同级挂在新增 `.sep` 容器、索引由 `data-splitter-index` 携带，消除交互嵌套；折叠面板禁用滚动（0 尺寸滚动区既不可用又触发 scrollable-region-focusable）
+- **progress 内嵌百分比文字**：由横跨「填充 + 轨道」改为只压在已填充段（填充过窄时整段隐藏）——原实现白字压浅色轨道，实测感知分 0
+- **感知对比度门禁（新建，零容忍，light + dark 双主题）**：117 页 × light/dark 双主题，共 2.4 万+ 文本节点（单主题约 1.2 万），逐节点取 axe 解析出的文字 / 背景实测色，用自实现感知对比度公式打分；`<60` 一个节点都不允许（`<45` / `<30` 同为零），禁用态文字（含 opacity 淡化合成档）按 WCAG 豁免并单列计数；门禁自带「注入低对比文本必须被捕获」自检与「color-contrast 不得进页面级豁免」防绕过守卫
+- **暗色主题同规格清偿**（实测 `<60`：亮色 655 → 0、暗色 327 → 0）：暗色次级文字提亮、预设蓝 `-text` 提亮、docs 站内联 `<code>` 与引用块暗色配色、grid demo 暗色梯度重排、label / link / code 三个 demo 的写死 hex 改 token（写死 hex 数学上无法两主题同时达标）
+- **自定义色「文字安全档」theme-aware 化**：新增内部 token `--oas-deep-mix` / `--oas-deep-sink`（亮色掺近黑、暗色掺近白），tag / badge / avatar / button 的 hex 自定义色与 button、popconfirm 残留的 `color-mix(… %, black)` 实底派生全部改为掺 `--oas-color-text-primary`
+- **存量对比度债务全量清偿**（实测 `<60` 由 655 节点降到 0）：浅底文字统一改用主题 `-text` 文字安全档（亮 / 暗主题各自定义，替换「基色掺黑」启发式——后者在暗色下会反向压暗）；实底浅色（预设色 tag / badge / toggle 选中态、code inline solid）改用 `-text` 档作底；覆盖 tag / badge / toggle-group / toggle-button / breadcrumb / message / switch / list 选中行描述 / tree / transfer / steps / rate / log / code / theme-editor / alert / button 选中态 / anchor / sidebar 徽标，以及 grid、container、flex 三个 demo 的自绘配色（含 demo 引用不存在 token `--oas-color-primary-text` 的真 bug）
+- **axe 比值法（WCAG 2.x AA 合规参照）改走 ratchet 基线**：存量违规只许降不许升、逐批清偿，与感知门禁并行看守（合规线与体验线分开盯）
+
+### 测试
+
+- a11y 审计全站零排除页：仅 stepper 保留一条「跨 shadow ID 引用」页面级规则豁免，配套 qa-regression 的 `aria-controls` 目标存在性断言兜底
+- 债务：stepper 页 `aria-valid-attr-value` 规则豁免属临时兜底（整规则禁用有旁泄面，见 a11y.spec 顶部警示），需后续收窄到具体节点
+- 新增对比度门禁自检用例与基线生成模式（`CONTRAST_BASELINE=update`，light + dark 双主题逐页落基线）；qa-regression 补 splitter 折叠（含折叠钮居中几何）/ list 双触发 / card radio 组 / stepper aria-controls / qrcode 刷新 / progress 内嵌文字边界六处固化
+- tooltip 三个 hover 跟随用例改「关动画 + 等 DOM 静止 + 轮询断言」，消除并行下的时序抖动
+
+### 验收
+
+- 全量单测 182 文件 / 7117 用例 / typecheck 0 / build 0 / api:check 通过（含新增 CSS 变量表生成）/ stats:check 0 / lint:md 0 / format 0 / perf:size 全 PASS（theme index.css 3.1KB / 3.5KB）/ trace 0 命中
+- 全量 e2e 2146 passed（chromium 全量 + firefox 抽样，0 failed）；a11y 审计 118 passed（117 页 × light+dark 双主题 + 门禁自检，零严重违规）；对比度硬闸 `<60 = 0`（light 655→0、dark 327→0），axe 比值法 ratchet 基线入库（255 违规 + exempt/skipped 同步 ratchet）

@@ -121,6 +121,10 @@
     {
       "name": "--oas-switch-thumb-size",
       "default": "18px"
+    },
+    {
+      "name": "--oas-switch-on-color",
+      "default": "var(--oas-color-bg)"
     }
   ],
   "unresolved": []

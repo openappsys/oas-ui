@@ -498,7 +498,7 @@ Try it with DevTools device emulation (e.g. iPhone SE 375×667); desktop browser
 | --- | --- | --- |
 | `--oas-tag-avatar-size` | Avatar size for `avatar` mode, derived per size level and falling back to control-height-sm − 4px when no level matches | `calc(var(--oas-control-height-sm) - 4px)` |
 | `--oas-tag-color` | Text color: the `color` attribute feeds through this variable; `--tag-color` is the component's internal current color, falling back to text-primary when unset | `var(--tag-color, var(--oas-color-text-primary))` |
-| `--oas-tag-color-deep` | Deeper text color used by the `deep` variant, falling back to text-primary when unset | `var(--tag-color, var(--oas-color-text-primary))` |
+| `--oas-tag-color-deep` | Text-safe color (`deep` level): drives both the text color of `filled`/`outlined` and the **solid background** of `solid`/`checked`, falling back to text-primary when unset | `var(--tag-color-deep, var(--oas-color-text-primary))` |
 
 ### oas-tag-group
 

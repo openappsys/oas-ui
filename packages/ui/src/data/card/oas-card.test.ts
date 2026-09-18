@@ -179,9 +179,9 @@ describe('OASCard', () => {
   })
 
   describe('clickable', () => {
-    it('clickable → 宿主 role=button + tabindex=0，可聚焦', () => {
+    it('clickable → tabindex=0 可聚焦，不挂缺省 role（内嵌控件时不形成交互嵌套）', () => {
       const el = mount({ clickable: '' })
-      expect(el.getAttribute('role')).toBe('button')
+      expect(el.hasAttribute('role'), '缺省 role=button 会把内嵌按钮/链接裹进交互元素').toBe(false)
       expect(el.getAttribute('tabindex')).toBe('0')
     })
 
@@ -545,20 +545,20 @@ describe('OASCard', () => {
   })
 
   describe('selectable 可选中卡', () => {
-    it('selectable：role=checkbox + tabindex=0 + aria-checked 同步（默认未选中）', () => {
+    it('selectable：tabindex=0 可聚焦；无宿主角色时不挂缺省 role/aria-checked', () => {
       const el = mount({ selectable: '' })
-      expect(el.getAttribute('role')).toBe('checkbox')
+      expect(el.hasAttribute('role')).toBe(false)
       expect(el.getAttribute('tabindex')).toBe('0')
-      expect(el.getAttribute('aria-checked')).toBe('false')
+      expect(el.hasAttribute('aria-checked'), '无角色承载时 aria-checked 非法').toBe(false)
     })
 
-    it('selected 初始在场：aria-checked=true', () => {
-      const el = mount({ selectable: '', selected: '' })
+    it('selected 初始在场（宿主显式角色）：aria-checked=true', () => {
+      const el = mount({ selectable: '', selected: '', role: 'radio' })
       expect(el.getAttribute('aria-checked')).toBe('true')
     })
 
     it('点击整卡切换选中（非受控）：selected 属性反射 + 派发 oas-change（detail.selected 为新状态）', () => {
-      const el = mount({ selectable: '' })
+      const el = mount({ selectable: '', role: 'radio' })
       const events: boolean[] = []
       el.addEventListener('oas-change', (e: Event) => {
         events.push((e as CustomEvent).detail.selected)
@@ -606,8 +606,8 @@ describe('OASCard', () => {
       expect(el.hasAttribute('selected')).toBe(true)
     })
 
-    it('受控回写：宿主监听 oas-change 回写属性 → aria-checked 跟随', () => {
-      const el = mount({ selectable: '' })
+    it('受控回写：宿主监听 oas-change 回写属性 → aria-checked 跟随（宿主显式角色）', () => {
+      const el = mount({ selectable: '', role: 'radio' })
       el.addEventListener('oas-change', (e: Event) => {
         const { selected } = (e as CustomEvent).detail as { selected: boolean }
         if (selected) el.setAttribute('selected', '')
@@ -630,10 +630,12 @@ describe('OASCard', () => {
       expect(el.hasAttribute('role')).toBe(false)
     })
 
-    it('selectable + clickable：role=checkbox 优先承载（aria-checked 语义）', () => {
+    it('selectable + clickable：不挂缺省 role，焦点 + 选中行为不受影响', () => {
       const el = mount({ selectable: '', clickable: '' })
-      expect(el.getAttribute('role')).toBe('checkbox')
-      expect(el.getAttribute('aria-checked')).toBe('false')
+      expect(el.hasAttribute('role')).toBe(false)
+      expect(el.getAttribute('tabindex')).toBe('0')
+      el.click()
+      expect(el.hasAttribute('selected')).toBe(true)
     })
 
     it('href + selectable：点击正文选中并阻止锚点默认导航（选中优先，内部链接仍走各自）', () => {

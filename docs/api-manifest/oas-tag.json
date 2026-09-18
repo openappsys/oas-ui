@@ -166,7 +166,7 @@
     },
     {
       "name": "--oas-tag-color-deep",
-      "default": "var(--tag-color, var(--oas-color-text-primary))"
+      "default": "var(--tag-color-deep, var(--oas-color-text-primary))"
     },
     {
       "name": "--oas-tag-avatar-size",

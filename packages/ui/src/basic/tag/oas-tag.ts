@@ -76,35 +76,35 @@ const STYLE = `
 }
 /* ===== 类型语义色解析 =====
    --tag-color：类型本色（filled / 缺省浅底渲染用）
-   --tag-color-deep：深一档（solid / outlined / checked 用，白底对比度达标）
-   color 属性经 --oas-tag-color 覆盖类型色（优先级最高，见下方 variant/checked 规则） */
+   --tag-color-deep：文字安全档（solid / outlined / checked / 浅底文字用）——直接用主题的 -text token：
+   亮/暗主题各自定义（暗色是提亮变体），比「本色掺黑」的启发式在暗色下更可靠 */
 .tag.primary {
   --tag-color: var(--oas-color-primary);
-  --tag-color-deep: var(--oas-color-primary);
+  --tag-color-deep: var(--oas-color-primary-active);
   background: var(--oas-color-primary);
   border-color: var(--oas-color-primary);
   color: var(--oas-color-text-on-primary);
 }
 .tag.success {
   --tag-color: var(--oas-color-success);
-  --tag-color-deep: color-mix(in srgb, var(--oas-color-success) 80%, black);
+  --tag-color-deep: var(--oas-color-success-text);
   border-color: color-mix(in srgb, var(--oas-color-success) 40%, transparent);
   background: color-mix(in srgb, var(--oas-color-success) 12%, transparent);
-  color: var(--oas-color-success);
+  color: var(--oas-color-success-text);
 }
 .tag.warning {
   --tag-color: var(--oas-color-warning);
-  --tag-color-deep: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+  --tag-color-deep: var(--oas-color-warning-text);
   border-color: color-mix(in srgb, var(--oas-color-warning) 40%, transparent);
   background: color-mix(in srgb, var(--oas-color-warning) 12%, transparent);
-  color: var(--oas-color-warning);
+  color: var(--oas-color-warning-text);
 }
 .tag.danger {
   --tag-color: var(--oas-color-danger);
-  --tag-color-deep: color-mix(in srgb, var(--oas-color-danger) 80%, black);
+  --tag-color-deep: var(--oas-color-danger-text);
   border-color: color-mix(in srgb, var(--oas-color-danger) 40%, transparent);
   background: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
-  color: var(--oas-color-danger);
+  color: var(--oas-color-danger-text);
 }
 .tag.info {
   --tag-color: var(--oas-color-primary);
@@ -154,36 +154,39 @@ const STYLE = `
   border-color: var(--oas-color-primary-hover);
   color: var(--oas-color-text-on-primary);
 }
-/* ===== variant 形态（显式 variant 对所有 type 统一生效；color 经 --oas-tag-color 覆盖类型色） ===== */
+/* ===== variant 形态（显式 variant 对所有 type 统一生效；color 经 --oas-tag-color 覆盖类型色）
+   底色/文字统一优先「文字安全档」--oas-tag-color-deep（预设名 = -text token / hex = 72% 掺黑），
+   再回落类型档 --tag-color-deep（= -text token），保证 ≥60；
+   --oas-tag-color 本色只承担描边/圆点/浅底等非文字承载面 ===== */
 .tag.filled {
   background: color-mix(in srgb, var(--oas-tag-color, var(--tag-color, var(--oas-color-text-primary))) 12%, transparent);
   border-color: color-mix(in srgb, var(--oas-tag-color, var(--tag-color, var(--oas-color-text-primary))) 40%, transparent);
-  color: var(--oas-tag-color-deep, var(--tag-color, var(--oas-color-text-primary)));
+  color: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-text-primary)));
 }
 .tag.outlined {
   background: transparent;
   border-color: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-text-primary)));
-  color: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-text-primary)));
+  color: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-text-primary)));
 }
 .tag.solid {
-  background: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-text-primary)));
-  border-color: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-text-primary)));
+  background: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-text-primary)));
+  border-color: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-text-primary)));
   color: var(--oas-color-text-on-primary);
 }
 /* 形态标签 hover 保持自身语义色（覆盖 clickable 的 primary hover），实心/选中加深 */
 .tag.clickable.outlined:hover {
   background: color-mix(in srgb, var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-text-primary))) 8%, transparent);
   border-color: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-text-primary)));
-  color: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-text-primary)));
+  color: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-text-primary)));
 }
 .tag.clickable.filled:hover {
   background: color-mix(in srgb, var(--oas-tag-color, var(--tag-color, var(--oas-color-text-primary))) 18%, transparent);
   border-color: color-mix(in srgb, var(--oas-tag-color, var(--tag-color, var(--oas-color-text-primary))) 40%, transparent);
-  color: var(--oas-tag-color-deep, var(--tag-color, var(--oas-color-text-primary)));
+  color: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-text-primary)));
 }
 .tag.clickable.solid:hover {
-  background: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-text-primary)));
-  border-color: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-text-primary)));
+  background: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-text-primary)));
+  border-color: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-text-primary)));
   color: var(--oas-color-text-on-primary);
   filter: brightness(0.94);
 }
@@ -192,16 +195,16 @@ const STYLE = `
   cursor: pointer;
 }
 .tag.checked {
-  background: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-primary)));
-  border-color: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-primary)));
+  background: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-primary)));
+  border-color: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-primary)));
   color: var(--oas-color-text-on-primary);
 }
 .tag.checked:hover {
   filter: brightness(0.94);
 }
 .tag.clickable.checked:hover {
-  background: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-primary)));
-  border-color: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-primary)));
+  background: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-primary)));
+  border-color: var(--oas-tag-color-deep, var(--tag-color-deep, var(--oas-color-primary)));
   color: var(--oas-color-text-on-primary);
   filter: brightness(0.94);
 }
@@ -646,12 +649,18 @@ export class OASTag extends OASElement {
       .join(' ')
 
     // color 自定义色：预设名解析到 --oas-preset-* token；非法名按普通 CSS 色值注入。
-    // 注入到 .tag 内联 style（--oas-tag-color 本色；filled 文字用深色变体）
+    // 注入到 .tag 内联 style（--oas-tag-color 本色；deep 为文字安全档：
+    // 预设名 → 主题 -text token（亮/暗各自定义，基色当文字/实底白字 不达标）；
+    // hex 无法派生 token，走主题感知混合兜底——light fallback 72% 掺黑压深（白底达标），
+    // dark 由主题 token（--oas-deep-mix/--oas-deep-sink）掺近白提亮（掺黑在暗色下不可读）
     if (color) {
       const isPreset = (PRESET_COLORS as readonly string[]).includes(color)
       const base = isPreset ? `var(--oas-preset-${color})` : color
+      const deep = isPreset
+        ? `var(--oas-preset-${color}-text)`
+        : `color-mix(in srgb, ${base} var(--oas-deep-mix, 72%), var(--oas-deep-sink, black))`
       this.tagRoot.style.setProperty('--oas-tag-color', base)
-      this.tagRoot.style.setProperty('--oas-tag-color-deep', `color-mix(in srgb, ${base} 80%, black)`)
+      this.tagRoot.style.setProperty('--oas-tag-color-deep', deep)
     } else {
       this.tagRoot.style.removeProperty('--oas-tag-color')
       this.tagRoot.style.removeProperty('--oas-tag-color-deep')

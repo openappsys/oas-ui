@@ -851,6 +851,36 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
     expect(el.getAttribute('width')).toBe('300px')
   })
+
+  it('resizable：width/resize-min/max 属性变更同步 rail aria 三件套（update 路径，不得残留 0 或旧值）', () => {
+    stubMatchMedia(false)
+    const el = mount({ resizable: '', width: '240px' })
+    Object.defineProperty(el, 'getBoundingClientRect', {
+      value: () => ({
+        width: 240,
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 240,
+        bottom: 600,
+        height: 600,
+        toJSON: () => ({}),
+      }),
+      configurable: true,
+    })
+    const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
+    // 初始（bind 早期 rect 可能为 0，update 后必须落到 width 属性真值）
+    expect(rail.getAttribute('aria-valuenow')).toBe('240')
+    // 宿主直接改 width 属性 → aria-valuenow 跟随
+    el.setAttribute('width', '320px')
+    expect(rail.getAttribute('aria-valuenow')).toBe('320')
+    // resize-min/max 变更 → valuemin/valuemax 跟随
+    el.setAttribute('resize-min', '180')
+    el.setAttribute('resize-max', '400')
+    expect(rail.getAttribute('aria-valuemin')).toBe('180')
+    expect(rail.getAttribute('aria-valuemax')).toBe('400')
+  })
 })
 
 // ===== 子元素声明式通道（oas-sidebar-item / oas-sidebar-divider） =====

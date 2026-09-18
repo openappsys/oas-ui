@@ -187,8 +187,8 @@ const STYLE = `
   color: var(--oas-color-text-on-warning);
 }
 .btn[part='ok'][data-tone='warning']:hover:not([disabled]) {
-  border-color: color-mix(in srgb, var(--oas-color-warning) 85%, black);
-  background: color-mix(in srgb, var(--oas-color-warning) 85%, black);
+  border-color: color-mix(in srgb, var(--oas-color-warning) 85%, var(--oas-color-text-primary));
+  background: color-mix(in srgb, var(--oas-color-warning) 85%, var(--oas-color-text-primary));
 }
 .btn[part='ok'][data-tone='danger'] {
   border-color: var(--oas-color-danger);
@@ -196,8 +196,8 @@ const STYLE = `
   color: var(--oas-color-text-on-danger);
 }
 .btn[part='ok'][data-tone='danger']:hover:not([disabled]) {
-  border-color: color-mix(in srgb, var(--oas-color-danger) 85%, black);
-  background: color-mix(in srgb, var(--oas-color-danger) 85%, black);
+  border-color: color-mix(in srgb, var(--oas-color-danger) 85%, var(--oas-color-text-primary));
+  background: color-mix(in srgb, var(--oas-color-danger) 85%, var(--oas-color-text-primary));
 }
 /* ok-loading：spinner 居中不撑宽，原文字 visibility 隐藏保留占位（前后宽度不变） */
 .btn[part='ok'][data-loading] {

@@ -714,6 +714,35 @@ describe('OASSpin percent determinate 进度', () => {
     expect(restarted).toBeLessThan(90)
   })
 
+  it('percent 兜底可访问名：auto 推进时跟随重算，不冻结在首帧值', () => {
+    vi.useFakeTimers()
+    const el = new OASSpin()
+    el.setAttribute('percent', 'auto')
+    el.setAttribute('spinning', '')
+    document.body.appendChild(el)
+    const indicator = el.shadowRoot!.querySelector('[part="indicator"]')!
+    // 无宿主 aria-label → 兜底百分比名在场
+    expect(indicator.getAttribute('aria-label') ?? '').toMatch(/^\d+%$/)
+    vi.advanceTimersByTime(1200)
+    const label = Number((indicator.getAttribute('aria-label') ?? '').replace('%', ''))
+    const now = Number(indicator.getAttribute('aria-valuenow'))
+    // 兜底名与 valuenow 一致（不得冻结在首帧的 0%）
+    expect(Number.isNaN(label)).toBe(false)
+    expect(label).toBe(now)
+    expect(label).toBeGreaterThan(0)
+  })
+
+  it('percent 兜底可访问名：宿主 aria-label 在场时不写兜底；移除宿主名后兜底恢复', () => {
+    const el = new OASSpin()
+    el.setAttribute('percent', '40')
+    el.setAttribute('aria-label', '自定义加载名')
+    document.body.appendChild(el)
+    const indicator = el.shadowRoot!.querySelector('[part="indicator"]')!
+    expect(indicator.getAttribute('aria-label')).toBe('自定义加载名')
+    el.removeAttribute('aria-label')
+    expect(indicator.getAttribute('aria-label')).toBe('40%')
+  })
+
   it("percent='auto' 未 spinning 时不推进", () => {
     vi.useFakeTimers()
     const el = new OASSpin()

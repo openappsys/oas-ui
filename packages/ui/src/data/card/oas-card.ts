@@ -516,22 +516,22 @@ export class OASCard extends OASElement {
 
     // clickable / selectable 的角色与焦点语义：
     // href 在场时例外：焦点已交给内部锚点，宿主保持普通容器语义（避免嵌套交互语义）。
-    // selectable 优先于 clickable 的角色语义（aria-checked 需 checkbox 角色承载）；
-    // 宿主显式角色优先——多卡组可挂 role="radio" 做单选组合，组件不覆盖、仅同步 aria-checked；
+    // 组件不挂缺省 role=button/checkbox：可点/可选卡常内嵌操作控件（按钮/链接），缺省角色会把
+    // 它们裹进交互元素（axe: nested-interactive，屏幕阅读器也会丢失内部控件可读性）。
+    // 宿主显式角色（多卡组 role="radio" 等）不覆盖：仅同步 aria-checked（无角色承载时该属性非法）。
     // loading 骨架态不可选：不挂交互语义（点击/键盘拦截在事件层同样兜底）
     const clickableActive = this.hasAttr('clickable') && href === ''
     const selectableActive = this.hasAttr('selectable') && href === '' && !loading
     const authorRole = this.getAttribute('role')
     if (selectableActive) {
-      if (authorRole == null) this.setAttribute('role', 'checkbox')
       this.setAttribute('tabindex', '0')
-      this.setAttribute('aria-checked', this.hasAttr('selected') ? 'true' : 'false')
+      if (authorRole != null) this.setAttribute('aria-checked', this.hasAttr('selected') ? 'true' : 'false')
+      else this.removeAttribute('aria-checked')
     } else if (clickableActive) {
-      if (authorRole == null) this.setAttribute('role', 'button')
       this.setAttribute('tabindex', '0')
       this.removeAttribute('aria-checked')
     } else {
-      // 只清理组件自己挂的缺省角色；宿主显式角色（radio 等）不碰
+      // 只清理组件自己（含历史版本）挂的缺省角色；宿主显式角色（radio 等）不碰
       const role = this.getAttribute('role')
       if (role === 'checkbox' || role === 'button') this.removeAttribute('role')
       this.removeAttribute('tabindex')

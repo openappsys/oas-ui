@@ -230,7 +230,7 @@ aside {
 }
 .item.active {
   background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
-  color: var(--oas-color-primary);
+  color: var(--oas-color-primary-active);
   font-weight: 500;
 }
 /* active 项 hover 也有反馈：主色浅调加深一档（原与常态同色调，hover 无变化） */
@@ -238,7 +238,7 @@ aside {
   background: color-mix(in srgb, var(--oas-color-primary) 20%, transparent);
 }
 .item.active .icon {
-  color: var(--oas-color-primary);
+  color: var(--oas-color-primary-active);
 }
 /* child-selected：激活后代的父项指示（比 active 浅一档；折叠图标条下子项隐身，
    激活态经父项图标主色保留可见；父项非当前页，不加粗不设 aria-current） */
@@ -246,7 +246,7 @@ aside {
   background: color-mix(in srgb, var(--oas-color-primary) 10%, transparent);
 }
 .item.child-selected .icon {
-  color: var(--oas-color-primary);
+  color: var(--oas-color-primary-active);
 }
 .item[hidden] {
   display: none;
@@ -287,7 +287,7 @@ aside {
   padding: 0 var(--oas-space-1, 4px);
   border-radius: 9px;
   background: var(--oas-sidebar-badge-bg, color-mix(in srgb, var(--oas-color-primary) 14%, transparent));
-  color: var(--oas-sidebar-badge-color, var(--oas-color-primary));
+  color: var(--oas-sidebar-badge-color, var(--oas-color-primary-active));
   font-size: var(--oas-font-size-xs, 12px);
   line-height: 18px;
   white-space: nowrap;
@@ -879,6 +879,9 @@ export class OASSidebar extends OASElement {
 
     // 移动端抽屉始终展示完整项；桌面折叠态只保留图标项
     this.renderItems(this.hasAttr('collapsed') && !mobile)
+
+    // rail aria 三件套随 width/resize-min/max 属性变更同步（bind 早期 rect 可能为 0，也不得残留）
+    this.syncRailAria()
   }
 
   private renderItems(collapsed: boolean): void {

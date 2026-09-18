@@ -709,7 +709,7 @@ test('禁 JS 可视：DSD 快照解析即附加 shadow root 并渲染关键结�
     }
     return {
       primary: root.getPropertyValue('--oas-color-primary').trim(),
-      success: root.getPropertyValue('--oas-color-success').trim(),
+      successText: root.getPropertyValue('--oas-color-success-text').trim(),
       btnBg,
       tagColor,
       btnAlpha: btn ? alpha(btnBg) : 0,
@@ -718,12 +718,12 @@ test('禁 JS 可视：DSD 快照解析即附加 shadow root 并渲染关键结�
   })
   // theme CSS 已内联：:root 上 token 有解析值
   expect(colors.primary).not.toBe('')
-  expect(colors.success).not.toBe('')
+  expect(colors.successText).not.toBe('')
   // oas-button(type=primary) 底色 = --oas-color-primary 同页解析值，且非透明
   expect(colors.btnBg).toBe(hexToRgb(colors.primary))
   expect(colors.btnAlpha).toBeGreaterThan(0)
-  // oas-tag(type=success) 文字色 = --oas-color-success 同页解析值，且非透明
-  expect(colors.tagColor).toBe(hexToRgb(colors.success))
+  // oas-tag(type=success) 文字色 = --oas-color-success-text 同页解析值（浅底文字安全档），且非透明
+  expect(colors.tagColor).toBe(hexToRgb(colors.successText))
   expect(colors.tagAlpha).toBeGreaterThan(0)
 
   // 禁 JS 下无未捕获异常

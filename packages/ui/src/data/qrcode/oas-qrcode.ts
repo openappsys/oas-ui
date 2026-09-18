@@ -130,7 +130,7 @@ const DEFAULT_BG = '#ffffff'
  * 方法：`download()` 离屏 rasterize 当前码为 PNG 并触发下载（SVG-only 渲染，不引入常驻 canvas）。
  *
  * 渲染：纯 TS 编码器（零依赖）生成模块矩阵，输出内联 SVG（viewBox 缩放无损）。
- * ARIA：容器 role="img" + aria-label（组件属性优先，缺省走 i18n `qrcode.image`）。
+ * ARIA：图形元素挂 role="img" + aria-label（组件属性优先，缺省走 i18n `qrcode.image`）。
  * 空态：value 为空显示占位提示；内容超容量显示「内容过长」提示。
  */
 export class OASQRCode extends OASElement {
@@ -153,8 +153,8 @@ export class OASQRCode extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <div class="wrapper" part="wrapper" role="img" aria-label="">
-        <svg class="qr" part="qr" xmlns="http://www.w3.org/2000/svg" role="presentation" focusable="false"></svg>
+      <div class="wrapper" part="wrapper">
+        <svg class="qr" part="qr" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="" focusable="false"></svg>
         <div class="empty" part="empty" hidden></div>
         <div class="error" part="error" hidden></div>
         <div class="overlay" part="overlay" hidden>
@@ -199,9 +199,9 @@ export class OASQRCode extends OASElement {
     const value = this.getAttr('value', '')
     const size = this.normalizeSize()
 
-    // aria-label：组件属性优先，缺省走 i18n
+    // aria-label：组件属性优先，缺省走 i18n（挂在图形元素上；容器保持普通容器语义）
     const custom = this.getAttribute('aria-label')
-    wrapper.setAttribute('aria-label', custom ?? this.t('qrcode.image'))
+    svg.setAttribute('aria-label', custom ?? this.t('qrcode.image'))
 
     if (!value) {
       svg.setAttribute('hidden', '')

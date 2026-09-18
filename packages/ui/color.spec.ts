@@ -14,6 +14,30 @@ async function up(p: import('@playwright/test').Page, sel: string) {
   })
 }
 
+/** 计算色值归一化：rgb()/rgba()/color(srgb …)/hex → [r,g,b]（0-255）。色值经 color-mix 时浏览器返回 color(srgb …)，不能按字符串直比 */
+function parseColor(v: string): [number, number, number] {
+  const hex = v.match(/^#([0-9a-f]{6})$/i)
+  if (hex) {
+    const n = parseInt(hex[1]!, 16)
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+  }
+  const srgb = v.match(/^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/)
+  if (srgb) return [Number(srgb[1]) * 255, Number(srgb[2]) * 255, Number(srgb[3]) * 255]
+  const rgb = v.match(/rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/)
+  if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])]
+  throw new Error(`无法解析色值: ${v}`)
+}
+
+function expectColorClose(actual: string, expected: [number, number, number], msg?: string): void {
+  const a = parseColor(actual)
+  for (let i = 0; i < 3; i++) {
+    expect(
+      Math.abs(a[i]! - expected[i]!),
+      `${msg ?? ''} 通道${i}（实际 ${actual} vs 期望 ${expected.join(',')}）`,
+    ).toBeLessThanOrEqual(2)
+  }
+}
+
 test('tag color 自定义色值：缺省浅底/描边/实心/浅底都按色值渲染', async ({ page }) => {
   await page.goto('/components/tag.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tag[color]')
@@ -34,9 +58,9 @@ test('tag color 自定义色值：缺省浅底/描边/实心/浅底都按色值�
     }
   })
   expect(r.plain.bg, '缺省按浅底渲染（12% tint）').toContain('0.12')
-  expect(r.outlined.color, '描边文字 = 自定义色').toBe('rgb(14, 165, 233)')
+  expectColorClose(r.outlined.color, [10, 119, 168], '描边文字 = 自定义色文字安全档（72% 掺黑）')
   expect(r.outlined.border).toBe('rgb(14, 165, 233)')
-  expect(r.solid.bg, '实心底 = 自定义色').toBe('rgb(225, 29, 72)')
+  expectColorClose(r.solid.bg, [162, 21, 52], '实心底 = 自定义色文字安全档（72% 掺黑）')
   expect(r.solid.color, '实心白字').toBe('rgb(255, 255, 255)')
   expect(r.filled.bg, 'filled 浅底（12% tint）').toContain('0.12')
 })
@@ -59,9 +83,9 @@ test('tag 预设色：color 预设名解析到 --oas-preset-* token（filled/sol
       purpleSolid: pick('purple', 'solid'),
     }
   })
-  // 预设 token：magenta #eb2f96 / red #f5222d / purple #722ed1（light）
+  // 预设 token（light）：magenta #eb2f96 / red-text #da1e28 / purple-text #722ed1
   expect(r.magentaFilled.bg, 'magenta 浅底（12% tint）').toContain('0.12')
-  expect(r.redSolid.bg, 'red 实心 = 预设 token 值').toBe('rgb(245, 34, 45)')
+  expect(r.redSolid.bg, 'red 实心 = 预设文字安全档 token 值').toBe('rgb(218, 30, 40)')
   expect(r.purpleSolid.bg, 'purple 实心 = 预设 token 值').toBe('rgb(114, 46, 209)')
 })
 
@@ -103,7 +127,7 @@ test('自定义色在暗色主题仍生效（tag solid + switch 轨道）', asyn
     const el = document.querySelector('oas-tag[color="#e11d48"][variant="solid"]')!
     return getComputedStyle(el.shadowRoot!.querySelector('.tag')!).backgroundColor
   })
-  expect(tagBg, 'dark 下 tag 实心仍按自定义色').toBe('rgb(225, 29, 72)')
+  expectColorClose(tagBg, [240.5, 166, 182], 'dark 下 tag 实心走主题感知安全档（38% 掺近白）')
 
   await page.goto('/components/switch.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-switch[color]')

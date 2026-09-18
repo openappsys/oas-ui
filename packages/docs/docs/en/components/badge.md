@@ -634,19 +634,20 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 
 #### CSS Variables
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-badge-bg` | `var(--oas-color-danger)` |
-| `--oas-badge-diagonal-font` | `var(--oas-font-size-xs)` |
-| `--oas-badge-diagonal-height` | `30px` |
-| `--oas-badge-diagonal-pin` | `25px` |
-| `--oas-badge-diagonal-text-inset` | `0px` |
-| `--oas-badge-on-color` | `var(--oas-color-text-on-danger)` |
-| `--oas-badge-pos` | `translate(50%, -50%)` |
-| `--oas-badge-pulse-color` | `var(--oas-badge-bg, var(--oas-color-danger))` |
-| `--oas-diag-pin` | `var(--oas-badge-diagonal-pin, 25px)` |
-| `--oas-ribbon-anchor-x` | `0px` |
-| `--oas-ribbon-anchor-y` | `0px` |
-| `--oas-ribbon-offset-x` | `0px` |
-| `--oas-ribbon-offset-y` | `0px` |
-| `--oas-status-color` | `var(--oas-color-text-secondary)` |
+| CSS Variable | Description | Default |
+| --- | --- | --- |
+| `--oas-badge-bg` | — | `var(--oas-color-danger)` |
+| `--oas-badge-diagonal-font` | — | `var(--oas-font-size-xs)` |
+| `--oas-badge-diagonal-height` | — | `30px` |
+| `--oas-badge-diagonal-pin` | — | `25px` |
+| `--oas-badge-diagonal-text-inset` | — | `0px` |
+| `--oas-badge-on-color` | — | `var(--oas-color-text-on-danger)` |
+| `--oas-badge-outline` | Border and text color of the outline variant (the component injects the `-text` safe variant for semantic/preset `color`; falls back to the badge background color) | `var(--oas-badge-bg, var(--oas-color-danger))` |
+| `--oas-badge-pos` | — | `translate(50%, -50%)` |
+| `--oas-badge-pulse-color` | — | `var(--oas-badge-bg, var(--oas-color-danger))` |
+| `--oas-diag-pin` | — | `var(--oas-badge-diagonal-pin, 25px)` |
+| `--oas-ribbon-anchor-x` | — | `0px` |
+| `--oas-ribbon-anchor-y` | — | `0px` |
+| `--oas-ribbon-offset-x` | — | `0px` |
+| `--oas-ribbon-offset-y` | — | `0px` |
+| `--oas-status-color` | — | `var(--oas-color-text-secondary)` |

@@ -334,7 +334,7 @@ onMounted(() => {
 | --- | --- |
 | `--oas-log-font` | `inherit` |
 | `--oas-log-loading-mask` | `color-mix(in srgb, var(--oas-color-bg) 65%, transparent)` |
-| `--oas-log-mark-bg` | `color-mix(in srgb, var(--oas-color-warning) 30%, transparent)` |
+| `--oas-log-mark-bg` | `color-mix(in srgb, var(--oas-color-warning) 18%, transparent)` |
 | `--oas-log-mark-color` | `var(--oas-color-warning-text)` |
 
 部件：`::part(viewport)` 滚动视口、`::part(log)` 日志内容、`::part(row)` 单行、`::part(line-number)` 行号、`::part(line)` 行文本、`::part(empty)` 空态。

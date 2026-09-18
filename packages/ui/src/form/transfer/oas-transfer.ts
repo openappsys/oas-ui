@@ -152,6 +152,11 @@ const STYLE = `
   font-weight: 400;
   color: var(--oas-color-text-secondary);
 }
+/* 禁用态：整host opacity 压暗后计数/标题文字对底不达标，走禁用文字 token 档（全局禁用豁免覆盖） */
+:host([data-disabled]) .panel-head .count,
+:host([data-disabled]) .panel-head .title {
+  color: var(--oas-color-text-disabled);
+}
 .panel-head .select-all {
   display: inline-flex;
   align-items: center;
@@ -721,9 +726,8 @@ export class OASTransfer extends OASElement {
     // listbox 可访问名与面板标题一致（读屏用户可辨识左右列表）
     const listbox = this.shadow.querySelector<HTMLElement>(`.listbox.${side}`)
     if (listbox) listbox.setAttribute('aria-label', this.titleFor(side))
-    // 虚拟列表模式的 .items 容器也需要
-    const vlistItems = this.shadow.querySelector<HTMLElement>(`.vlist-${side === 'left' ? 'left' : 'right'} .items`)
-    if (vlistItems) vlistItems.setAttribute('aria-label', this.titleFor(side))
+    // 虚拟列表模式的 .items 容器在 oas-virtual-list 的 shadow 内（transfer shadow 查不到），
+    // 由 renderVirtual 里 vlist.shadowRoot.querySelector('[part="items"]') 穿透设名
 
     // 计数（已选/可见 N/M，i18n 模板；只读面板隐藏）
     const count = this.shadow.querySelector<HTMLElement>(`.count-${side}`)

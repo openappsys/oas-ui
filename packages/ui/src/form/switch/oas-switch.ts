@@ -30,6 +30,37 @@ function isValidIcon(name: string): boolean {
   return name !== '' && iconRegistry[name as IconName] !== undefined
 }
 
+/**
+ * 自定义色实心底的文字色：按相对亮度取深/浅，保证对比可读。
+ * 支持 #rgb/#rrggbb/rgb(a) 解析；其余写法（var()/色名）返回 ''（走 CSS 兜底 token）。
+ */
+function pickOnColor(color: string): string {
+  let r = 0
+  let g = 0
+  let b = 0
+  const hex = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
+  const rgb = color.trim().match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i)
+  if (hex) {
+    const h = hex[1]!.length === 3 ? hex[1]!.replace(/(.)/g, '$1$1') : hex[1]!
+    r = parseInt(h.slice(0, 2), 16)
+    g = parseInt(h.slice(2, 4), 16)
+    b = parseInt(h.slice(4, 6), 16)
+  } else if (rgb) {
+    r = Number(rgb[1])
+    g = Number(rgb[2])
+    b = Number(rgb[3])
+  } else {
+    return ''
+  }
+  // W3C 相对亮度；0.35 阈值：亮底取深字、暗底取白字
+  const f = (v: number) => {
+    v /= 255
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+  }
+  const lum = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+  return lum > 0.35 ? '#18181b' : '#ffffff'
+}
+
 const STYLE = `
 :host {
   display: inline-flex;
@@ -160,12 +191,15 @@ button[aria-checked='true'] {
 button:not([aria-checked='true']) .label {
   padding-inline-start: calc(var(--thumb-size) + var(--thumb-offset) * 2 + var(--oas-space-1));
   padding-inline-end: var(--oas-space-2);
-  color: var(--oas-color-text-secondary);
+  /* 轨道底为 --oas-color-border：text-secondary 压上感知分 58 不达标，用主文本色 */
+  color: var(--oas-color-text-primary);
 }
 button[aria-checked='true'] .label {
   padding-inline-end: calc(var(--thumb-size) + var(--thumb-offset) * 2 + var(--oas-space-1));
   padding-inline-start: var(--oas-space-2);
-  color: var(--oas-color-bg);
+  /* color 属性自定义轨道底时经 --oas-switch-on-color 按底色亮度取深/浅（JS 注入）；
+     无自定义色回落 --oas-color-bg（primary token 深浅主题各自配对达标） */
+  color: var(--oas-switch-on-color, var(--oas-color-bg));
 }
 /* 轨道外侧文案（size=xs/small 时展示） */
 .outside-label {
@@ -464,12 +498,17 @@ export class OASSwitch extends OASElement {
     // 书写方向镜像（data-rtl 供 :host([data-rtl]) 滑块锚定侧反向覆盖消费）
     this.toggleAttribute('data-rtl', isRtl(this))
 
-    // 开启态自定义主色：以 --oas-color-primary 变量覆盖（焦点环等派生色一并生效）
+    // 开启态自定义主色：以 --oas-color-primary 变量覆盖（焦点环等派生色一并生效）；
+    // 轨道内 checked 文字色随自定义底色按亮度取深/浅（on-primary/bg 兜底对任意自定义色不保证可读）
     const color = this.getAttr('color')
     if (color) {
       btn.style.setProperty('--oas-color-primary', color)
+      const on = pickOnColor(color)
+      if (on) btn.style.setProperty('--oas-switch-on-color', on)
+      else btn.style.removeProperty('--oas-switch-on-color')
     } else {
       btn.style.removeProperty('--oas-color-primary')
+      btn.style.removeProperty('--oas-switch-on-color')
     }
   }
 

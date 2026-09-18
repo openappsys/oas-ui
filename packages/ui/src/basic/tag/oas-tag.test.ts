@@ -374,7 +374,10 @@ describe('OASTag', () => {
       const el = mount({ color: '#7c3aed', type: 'primary' })
       const r = root(el)
       expect(r.style.getPropertyValue('--oas-tag-color')).toBe('#7c3aed')
-      expect(r.style.getPropertyValue('--oas-tag-color-deep')).toBe('color-mix(in srgb, #7c3aed 80%, black)')
+      // hex 自定义色 deep 档：主题感知混合（light fallback 72% 掺黑压深；dark 由主题 token 提亮）
+      expect(r.style.getPropertyValue('--oas-tag-color-deep')).toBe(
+        'color-mix(in srgb, #7c3aed var(--oas-deep-mix, 72%), var(--oas-deep-sink, black))',
+      )
       expect(r.classList.contains('filled')).toBe(true)
       expect(r.classList.contains('primary')).toBe(true)
     })
@@ -394,6 +397,21 @@ describe('OASTag', () => {
       el.removeAttribute('color')
       expect(r.style.getPropertyValue('--oas-tag-color')).toBe('')
       expect(r.classList.contains('filled')).toBe(false)
+    })
+
+    it('variant 底色/文字走文字安全档（感知对比度回归）：solid 底色、filled/outlined 文字优先 deep 档', () => {
+      const el = mount({})
+      const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+      // solid 实底：底色优先 --oas-tag-color-deep（预设名 = -text 档 / hex = 72% 掺黑），白字才达标
+      const solid = css.match(/\.tag\.solid\s*{[^}]*}/)![0]!
+      expect(solid).toContain('background: var(--oas-tag-color-deep, var(--tag-color-deep,')
+      expect(solid).toContain('color: var(--oas-color-text-on-primary)')
+      // filled 浅底：文字优先 deep 档（type 规则的 --tag-color-deep 即 -text token）
+      const filled = css.match(/\.tag\.filled\s*{[^}]*}/)![0]!
+      expect(filled).toContain('color: var(--oas-tag-color-deep, var(--tag-color-deep,')
+      // outlined 描边：文字（非边框）优先 deep 档
+      const outlined = css.match(/\.tag\.outlined\s*{[^}]*}/)![0]!
+      expect(outlined).toContain('color: var(--oas-tag-color-deep, var(--tag-color-deep,')
     })
   })
 
@@ -561,13 +579,11 @@ describe('OASTag', () => {
   })
 
   describe('color 预设名', () => {
-    it('color="magenta" 解析为 --oas-preset-magenta 变量（含 deep 变体），缺省按 filled 渲染', () => {
+    it('color="magenta" 解析为 --oas-preset-magenta 变量（deep 走 -text 文字安全档），缺省按 filled 渲染', () => {
       const el = mount({ color: 'magenta' })
       const r = root(el)
       expect(r.style.getPropertyValue('--oas-tag-color')).toBe('var(--oas-preset-magenta)')
-      expect(r.style.getPropertyValue('--oas-tag-color-deep')).toBe(
-        'color-mix(in srgb, var(--oas-preset-magenta) 80%, black)',
-      )
+      expect(r.style.getPropertyValue('--oas-tag-color-deep')).toBe('var(--oas-preset-magenta-text)')
       expect(r.classList.contains('filled')).toBe(true)
     })
 

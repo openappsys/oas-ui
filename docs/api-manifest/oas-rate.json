@@ -134,7 +134,7 @@
     },
     {
       "name": "--oas-rate-active",
-      "default": "var(--oas-color-warning)"
+      "default": "var(--oas-color-warning-text)"
     }
   ],
   "unresolved": []

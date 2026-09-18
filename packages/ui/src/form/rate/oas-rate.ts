@@ -96,7 +96,7 @@ const STYLE = `
   align-items: center;
   justify-content: center;
   clip-path: inset(0 50% 0 0);
-  color: var(--oas-rate-active, var(--oas-color-warning));
+  color: var(--oas-rate-active, var(--oas-color-warning-text));
   pointer-events: none;
 }
 /* RTL：值增长方向视觉镜像（首星在右），半星保留视觉前半（右半）——裁剪侧反向 */
@@ -107,7 +107,7 @@ const STYLE = `
   transform: scale(1.1);
 }
 .star.active {
-  color: var(--oas-rate-active, var(--oas-color-warning));
+  color: var(--oas-rate-active, var(--oas-color-warning-text));
 }
 .star:focus-visible {
   outline: none;

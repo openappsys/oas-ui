@@ -332,7 +332,7 @@ When history lines are prepended, the reconcile aligns rows by content key: exis
 | --- | --- |
 | `--oas-log-font` | `inherit` |
 | `--oas-log-loading-mask` | `color-mix(in srgb, var(--oas-color-bg) 65%, transparent)` |
-| `--oas-log-mark-bg` | `color-mix(in srgb, var(--oas-color-warning) 30%, transparent)` |
+| `--oas-log-mark-bg` | `color-mix(in srgb, var(--oas-color-warning) 18%, transparent)` |
 | `--oas-log-mark-color` | `var(--oas-color-warning-text)` |
 
 Parts: `::part(viewport)` scroll viewport, `::part(log)` log content, `::part(row)` a single row, `::part(line-number)` line number, `::part(line)` line text, `::part(empty)` empty state.

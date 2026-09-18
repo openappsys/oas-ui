@@ -2,6 +2,30 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [未发布]
+
+### 无障碍
+
+- **感知对比度门禁（零容忍，light + dark 双主题）**：117 页 × light/dark 双主题，共 2.4 万+ 文本节点（单主题约 1.2 万），逐节点取 axe 解析出的文字/背景实测色，用自实现的感知对比度公式打分——**`<60` 一个节点都不允许**（`<45`/`<30` 同为零）；禁用态文字（含 opacity 淡化合成档）按 WCAG 豁免并在门禁单列计数；门禁自带「注入低对比文本必须被捕获」自检与「color-contrast 不得进页面级豁免」防绕过守卫
+- **存量对比度债务全量清偿**（实测 `<60` 由 655 → 0，暗色另有 327 → 0）：浅底文字统一改用主题 `-text` 文字安全档（亮/暗主题各自定义，替换「基色掺黑」启发式——后者在暗色下会反向压暗）；实底浅色（预设色 tag / badge / avatar / toggle 选中态、code inline solid）改用 `-text` 档作底；自定义色（hex）的「文字安全档」改为 theme-aware 混合（新内部 token `--oas-deep-mix` / `--oas-deep-sink`：亮色掺近黑、暗色掺近白），并同步把 button/popconfirm 等残留的 `color-mix(… %, black)` 实底派生改为掺 `--oas-color-text-primary`
+- **暗色调色板与被测面修正**：暗色次级文字提亮（`#b8b8c0 → #c6c6ce`）、预设蓝 `-text` 提亮、docs 站内联 `<code>` 与引用块暗色配色（原 Vitepress 默认色在暗底上贴线/不达标）、grid demo 暗色梯度重排（对齐亮色「浅底深字 / 实底浅字」两段式）、label/link/code 三个 demo 的写死 hex 改用 token（写死 hex 数学上无法两主题同时达标）
+- 覆盖面：tag / badge / avatar / toggle-group / toggle-button / breadcrumb / message / switch / list 选中行描述 / tree / transfer / checkbox / steps / rate / log / code / typography / popconfirm / theme-editor / alert / button / anchor / sidebar / menu，以及 grid、container、flex 三个 demo 的自绘配色（含 demo 引用不存在 token `--oas-color-primary-text` 的真 bug）
+- **axe 比值法（WCAG 2.x AA 合规参照）改走 ratchet 基线**：存量违规只许降不许升、逐批清偿，与感知门禁并行看守（合规线与体验线分开盯）
+
+### 修复
+
+- **可点 / 可选容器不再挂缺省交互角色**（card、list）：可点卡与可点行内常嵌操作控件，缺省 `role=button/checkbox` 会把内部控件裹进交互元素（axe nested-interactive，读屏丢失内部控件可读性）；宿主显式角色（多卡组 `role="radio"`）仍同步 `aria-checked`，原有用法零变化。**此为有意的设计取舍而非回归**：组件缺省不再向读屏宣告 button/checkbox 角色，需要选择语义时由宿主显式挂 `role`（组件叠加 `aria-checked` 同步）
+- **list 可点行与行内控件双触发**：点行内开关、按钮不再同时触发整行 `oas-click`（补 composedPath 内部交互排除，键盘路径同步生效）
+- **qrcode 图形语义归位**：`role="img"` + `aria-label` 从容器挪到 `<svg>` 自身，解除与容器内刷新按钮的交互嵌套
+- **splitter 折叠按钮移出 separator**：按钮与分隔条同级挂在新增 `.sep` 容器、索引由 `data-splitter-index` 携带，消除交互嵌套；折叠面板禁用滚动（0 尺寸滚动区既不可用又触发 scrollable-region-focusable）
+- **progress 内嵌百分比文字**：由横跨「填充 + 轨道」改为只压在已填充段（填充过窄时整段隐藏）——原实现白字压浅色轨道，实测感知分 0
+
+### 测试
+
+- a11y 审计全站零排除页：仅 stepper 保留一条「跨 shadow ID 引用」页面级规则豁免，配套 qa-regression 的 `aria-controls` 目标存在性断言兜底
+- 新增对比度门禁自检用例与基线生成模式（`CONTRAST_BASELINE=update`）；qa-regression 补 splitter 折叠 / list 双触发 / card radio 组 / stepper aria-controls / qrcode 刷新五处固化
+- tooltip 三个 hover 跟随用例改「关动画 + 等 DOM 静止 + 轮询断言」，消除并行下的时序抖动
+
 ## [2.5.5] - 2026-09-17
 
 ### 修复
@@ -237,7 +261,7 @@
 ### 杂项
 
 - **单测**：新增约 85 条（框架级容器组 + 全局禁用 + modal 命令式）；全量 3677
-- **e2e 基建**：qa-regression 新增 theme-editor 颜色函数值回归；contrast-gate 清单补 theme-editor/config-provider/app 三页
+- **e2e 基建**：qa-regression 新增 theme-editor 颜色函数值回归；对比度审计清单补 theme-editor/config-provider/app 三页
 
 ## [2.2.9] - 2026-08-28
 
@@ -525,13 +549,13 @@
 - code：`inline` 行内代码（等宽浅底小框 + 高亮）、`word-wrap` 换行、`trim` 去首尾空白（默认 true）、`size` 四档（inline 语境）、`variant` 四形态（subtle/outline/plain/solid）、`color` 统一协议
 - table：`size` 密度档位（small/medium/large，CSS 变量开口）
 - 展示型组件字号继承：A 类跟随外层 / B 类组件级变量开口（11 组件）
-- 无障碍体系：对比度门禁换 WCAG 3 草案感知对比度算法（自实现公式 + contrast-gate 工具）、`-text` 达标 token 体系（22 预设/语义文字变体）、color 属性统一协议（11 预设名 + 任意 CSS 色值）
+- 无障碍体系：对比度审计换自实现的感知对比度算法（不再用比值法判文字可读性）、`-text` 达标 token 体系（22 预设/语义文字变体）、color 属性统一协议（11 预设名 + 任意 CSS 色值）
 - API 表自动化：`api:scan`（AST 扫描）+ `api:gen`（生成中英 API 章节）+ CI `api:check` 防漂移
 - 官网首页 v2：hero oas-table 标志性 demo + 场景卡 + HTML 代码速览 + 真实 perf 数据 + CTA，H05 深色沉浸风格
 
 ### 修复
 
-- dark 主题中间调语义色不达标：primary `#4d9fff`→`#9ecdff`、danger `#f87171`→`#fbb2b2`（粉彩亮化 + 深字，感知对比度 Lc 50→73/71），hover/active 反转为提亮
+- dark 主题中间调语义色不达标：primary `#4d9fff`→`#9ecdff`、danger `#f87171`→`#fbb2b2`（粉彩亮化 + 深字，感知对比度达标），hover/active 反转为提亮
 - typography 省略约束链（actions 引入 .wrap 层致 max-width 参照落空）、code 修饰内联框居中
 - link 下划线简写重置颜色（text-decoration 简写把 decoration-color 重置回 currentColor，改长写）
 - button：solid primary hover/active/选中背景被自定义底色规则压死、href anchor 静止态选中色、icon-only 等宽

@@ -1314,7 +1314,7 @@ describe('arrow（箭头分格形态）', () => {
     expect(css).toContain(".steps[data-arrow='true'] .item[data-status='process']")
     expect(css).toContain('--oas-steps-item-bg: var(--oas-color-primary)')
     expect(css).toContain(".steps[data-arrow='true'] .item[data-status='finish']")
-    expect(css).toContain('--oas-steps-item-bg: color-mix(in srgb, var(--oas-color-primary) 15%, transparent)')
+    expect(css).toContain('--oas-steps-item-bg: color-mix(in srgb, var(--oas-color-primary) 10%, transparent)')
     expect(css).toContain(".steps[data-arrow='true'] .item[data-status='error']")
     expect(css).toContain('--oas-steps-item-bg: var(--oas-color-danger)')
     expect(css).toContain(".steps[data-arrow='true'] .item[data-status='wait']")

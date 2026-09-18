@@ -46,7 +46,7 @@ const STYLE = `
   min-width: 2.5em;
   padding-inline-end: var(--oas-space-3);
   text-align: end;
-  color: var(--oas-color-text-disabled);
+  color: var(--oas-color-text-secondary);
   user-select: none;
 }
 .log[data-line-number='false'] .gutter {
@@ -59,7 +59,7 @@ const STYLE = `
 }
 /* 行级高亮命中片段（token 语义底色，暗色自动跟随） */
 .mark {
-  background: var(--oas-log-mark-bg, color-mix(in srgb, var(--oas-color-warning) 30%, transparent));
+  background: var(--oas-log-mark-bg, color-mix(in srgb, var(--oas-color-warning) 18%, transparent));
   color: var(--oas-log-mark-color, var(--oas-color-warning-text));
   border-radius: 2px;
   padding: 0 1px;

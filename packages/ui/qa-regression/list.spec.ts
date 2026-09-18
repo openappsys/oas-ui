@@ -103,3 +103,26 @@ test('list 分组组头不占用行索引（数据行 data-index 连续、组头
   for (const role of r.headerRoles) expect(role).toBe('separator')
   for (const t of r.headerTabindex) expect(t).toBe(false)
 })
+
+test('list：点击可点行内的开关不触发行点击，且行不挂缺省 role=button（无交互嵌套）', async ({ page }) => {
+  await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-list-item[clickable]')
+  const r = await page.evaluate(async () => {
+    const row = Array.from(document.querySelectorAll('oas-list-item[clickable]')).find((item) =>
+      item.querySelector('oas-switch'),
+    ) as (HTMLElement & { shadowRoot: ShadowRoot }) | undefined
+    if (!row) return null
+    const sw = row.querySelector('oas-switch') as HTMLElement & { shadowRoot: ShadowRoot }
+    let rowClicks = 0
+    row.addEventListener('oas-click', () => rowClicks++)
+    const inner = sw.shadowRoot.querySelector('[part="switch"]') as HTMLElement
+    const before = inner.getAttribute('aria-checked')
+    inner.click()
+    await new Promise((res) => setTimeout(res, 0))
+    return { rowClicks, role: row.getAttribute('role'), before, after: inner.getAttribute('aria-checked') }
+  })
+  expect(r, '页面应有嵌开关的可点行').not.toBeNull()
+  expect(r!.role, '可点行不挂缺省 role=button（否则行内开关构成交互嵌套）').toBe(null)
+  expect(r!.rowClicks, '点击行内开关不应触发整行 oas-click（行与控件不双触发）').toBe(0)
+  expect(r!.after, '开关自身应正常切换').not.toBe(r!.before)
+})

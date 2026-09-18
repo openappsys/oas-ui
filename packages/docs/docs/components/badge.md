@@ -634,19 +634,20 @@ oas-badge#badge-dyn.bump::part(badge) {
 
 #### CSS 变量
 
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-badge-bg` | `var(--oas-color-danger)` |
-| `--oas-badge-diagonal-font` | `var(--oas-font-size-xs)` |
-| `--oas-badge-diagonal-height` | `30px` |
-| `--oas-badge-diagonal-pin` | `25px` |
-| `--oas-badge-diagonal-text-inset` | `0px` |
-| `--oas-badge-on-color` | `var(--oas-color-text-on-danger)` |
-| `--oas-badge-pos` | `translate(50%, -50%)` |
-| `--oas-badge-pulse-color` | `var(--oas-badge-bg, var(--oas-color-danger))` |
-| `--oas-diag-pin` | `var(--oas-badge-diagonal-pin, 25px)` |
-| `--oas-ribbon-anchor-x` | `0px` |
-| `--oas-ribbon-anchor-y` | `0px` |
-| `--oas-ribbon-offset-x` | `0px` |
-| `--oas-ribbon-offset-y` | `0px` |
-| `--oas-status-color` | `var(--oas-color-text-secondary)` |
+| CSS 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--oas-badge-bg` | — | `var(--oas-color-danger)` |
+| `--oas-badge-diagonal-font` | — | `var(--oas-font-size-xs)` |
+| `--oas-badge-diagonal-height` | — | `30px` |
+| `--oas-badge-diagonal-pin` | — | `25px` |
+| `--oas-badge-diagonal-text-inset` | — | `0px` |
+| `--oas-badge-on-color` | — | `var(--oas-color-text-on-danger)` |
+| `--oas-badge-outline` | outline 描边形态的边框与文字色（`color` 为语义色/预设名时组件注入 `-text` 安全档；缺省回落徽标底色） | `var(--oas-badge-bg, var(--oas-color-danger))` |
+| `--oas-badge-pos` | — | `translate(50%, -50%)` |
+| `--oas-badge-pulse-color` | — | `var(--oas-badge-bg, var(--oas-color-danger))` |
+| `--oas-diag-pin` | — | `var(--oas-badge-diagonal-pin, 25px)` |
+| `--oas-ribbon-anchor-x` | — | `0px` |
+| `--oas-ribbon-anchor-y` | — | `0px` |
+| `--oas-ribbon-offset-x` | — | `0px` |
+| `--oas-ribbon-offset-y` | — | `0px` |
+| `--oas-status-color` | — | `var(--oas-color-text-secondary)` |

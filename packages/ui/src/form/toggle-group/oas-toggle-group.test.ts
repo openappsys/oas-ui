@@ -633,9 +633,10 @@ describe('OASToggleGroup 组可访问名与配色（aria-label / color / status�
     expect(group(el).getAttribute('aria-label')).not.toBe('视图切换')
   })
 
-  it('color：预设名/字面值注入 host 内联变量（含 on-color 亮度计算）', () => {
+  it('color：预设名/字面值注入 host 内联变量（预设走 -text 安全档；字面值含 on-color 亮度计算）', () => {
     const a = mount({ color: 'geekblue' })
-    expect(a.style.getPropertyValue('--oas-toggle-color')).toBe('var(--oas-preset-geekblue)')
+    // 预设基色（如 cyan #13c2c2）对白字对比不达标，选中实底用更深的 -text 档
+    expect(a.style.getPropertyValue('--oas-toggle-color')).toBe('var(--oas-preset-geekblue-text)')
     const b = mount({ color: '#7c3aed' })
     expect(b.style.getPropertyValue('--oas-toggle-color')).toBe('#7c3aed')
     expect(b.style.getPropertyValue('--oas-toggle-on-color')).toBe('#ffffff')

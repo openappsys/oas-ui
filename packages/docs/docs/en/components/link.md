@@ -32,8 +32,10 @@ The `color` attribute accepts 11 preset names (auto-adapting to light/dark theme
 </DemoBlock>
 
 <DemoBlock title="Custom color values (override type)">
-  <oas-link href="#" color="#0e7490">Teal link</oas-link>
-  <oas-link href="#" type="primary" color="#6d28d9">Purple overriding primary</oas-link>
+  <!-- Custom colors use theme tokens (var() is a valid CSS color, injected as-is): a fixed hex
+       cannot meet contrast in both themes, while semantic tokens ship compliant variants per theme -->
+  <oas-link href="#" color="var(--oas-color-info-text)">Teal link</oas-link>
+  <oas-link href="#" type="primary" color="var(--oas-preset-purple-text)">Purple overriding primary</oas-link>
 </DemoBlock>
 
 ## Underline

@@ -32,8 +32,10 @@
 </DemoBlock>
 
 <DemoBlock title="自定义色值（优先于 type）">
-  <oas-link href="#" color="#0e7490">青碧色链接</oas-link>
-  <oas-link href="#" type="primary" color="#6d28d9">覆盖 primary 为紫色</oas-link>
+  <!-- 自定义色用主题 token（var() 是合法 CSS 色值，颜色属性原样注入）：固定 hex 无法在深浅
+       两套主题下同时达标，语义 token 各主题自带达标变体 -->
+  <oas-link href="#" color="var(--oas-color-info-text)">青碧色链接</oas-link>
+  <oas-link href="#" type="primary" color="var(--oas-preset-purple-text)">覆盖 primary 为紫色</oas-link>
 </DemoBlock>
 
 ## 下划线

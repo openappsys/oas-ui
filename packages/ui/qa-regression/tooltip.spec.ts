@@ -7,6 +7,9 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
   page,
 }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  // 几何断言需静止态：入场动画（scale 0.9→1，150ms）期间 getBoundingClientRect 量到缩放盒 →
+  // 关动画后 rect/inViewport 类断言才与机器快慢无关（同 merge 用例的处理）
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   // oas-tooltip host 零尺寸（inline-block 无内容），waitForSelector 默认等可见会超时 → 等 attached + shadowRoot
   await page.waitForSelector('#tt-follow', { state: 'attached', timeout: 15000 })
   await page.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, '#tt-follow', {
@@ -84,6 +87,8 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
 
 test('tooltip virtual-anchor：hover 图表点位 tooltip 锚定该点显示、切换点位跟随', async ({ page }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  // 几何断言需静止态：入场动画（scale 0.9→1）期间 rect 量到缩放盒（同 merge 用例的处理）
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.waitForSelector('#tt-anchor', { state: 'attached', timeout: 15000 })
   await page.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, '#tt-anchor', {
     timeout: 15000,
@@ -774,12 +779,17 @@ test('tooltip 增强-follow-cursor：区域内移动 → 浮层跟随光标（�
     },
     { x: box.x + box.width / 2 - 120, y: box.y + box.height / 2 },
   )
-  await page.waitForTimeout(120)
-  const left2 = await page.evaluate(() => {
-    const t = document.querySelector('#tt-fc')!
-    return t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!.style.left
-  })
-  expect(parseFloat(left2), '浮层应随光标移动而改变位置').toBeLessThan(parseFloat(left1))
+  // follow-cursor 更新按帧节流：轮询到「向左移动 → left 减小」成立（替代固定 120ms，避免 CI 慢时漏更新）
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const t = document.querySelector('#tt-fc')!
+          return parseFloat(t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!.style.left)
+        }),
+      { message: '浮层应随光标移动而改变位置' },
+    )
+    .toBeLessThan(parseFloat(left1))
 })
 
 test('tooltip 增强-width="trigger"：浮层宽度与触发按钮同宽', async ({ page }) => {
