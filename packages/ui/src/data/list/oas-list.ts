@@ -279,15 +279,17 @@ export class OASList extends OASElement {
     const emptyDefault = this.shadow.querySelector<HTMLElement>('[part="empty-default"]')
     if (emptyDefault) emptyDefault.hidden = emptySlotHas
 
-    // 滚动容器（reach-bottom 载体）。可滚动时补 tabindex（键盘用户可达，axe: scrollable-region-focusable）
+    // 滚动容器（reach-bottom 载体）。滚动态样式在此就位；tabindex（键盘可达，axe:
+    // scrollable-region-focusable）延后到本 update 末尾按「真实溢出」判定——
+    // 内容不溢出时不加，避免多出一个空 Tab 停靠点
     const maxHeight = this.getAttr('max-height', '')
     if (maxHeight !== '') {
       body.style.maxHeight = /^\d+$/.test(maxHeight) ? `${maxHeight}px` : maxHeight
       body.style.overflowY = 'auto'
-      body.setAttribute('tabindex', '0')
     } else {
       body.style.maxHeight = ''
       body.style.overflowY = ''
+      // max-height 被移除：不再有滚动区，清掉此前按溢出补的 Tab 停靠点
       body.removeAttribute('tabindex')
     }
 
@@ -331,6 +333,14 @@ export class OASList extends OASElement {
 
     // 触底检测（挂载即查一次是否已触底）
     if (maxHeight !== '') this.checkReachBottom()
+
+    // 键盘可达（axe: scrollable-region-focusable）：内容真实溢出才补 tabindex——
+    // 判定须在行渲染之后（数据通道行在同一 update 内渲染，提前判定会拿到空容器尺寸）；
+    // happy-dom 无布局（scrollHeight/clientHeight 均 0），单测经 mock 溢出值覆盖
+    if (maxHeight !== '') {
+      if (body.scrollHeight > body.clientHeight + 1) body.setAttribute('tabindex', '0')
+      else body.removeAttribute('tabindex')
+    }
   }
 
   /** 数据通道是否激活（property 或 data 属性给出过数组） */

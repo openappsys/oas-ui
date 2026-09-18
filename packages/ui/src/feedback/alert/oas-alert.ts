@@ -75,7 +75,7 @@ const STYLE = `
     opacity var(--oas-transition-base) var(--oas-ease-out),
     transform var(--oas-transition-base) var(--oas-ease-out);
   --alert-type: var(--oas-color-primary);
-  --alert-text: var(--oas-color-primary-active);
+  --alert-text: var(--oas-color-primary-text);
   --alert-on: var(--oas-color-text-on-primary);
   --alert-accent: var(--alert-type);
   --alert-icon-size: var(--oas-font-size-lg);

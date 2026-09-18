@@ -117,7 +117,7 @@
 
 ## 行交互（clickable / selected）
 
-给 `oas-list-item` 设置 `clickable` 后整行可点：有 hover 反馈、可聚焦（Enter / Space 触发），点击派发 `oas-click` 事件；行内嵌按钮/开关等交互控件时，点这些控件不触发行点击（行与控件不双触发），行本身不挂交互角色以免把它们裹进交互元素。`selected` 标记选中行高亮。选中态由宿主维护，常用于成员列表、设置项列表。
+给 `oas-list-item` 设置 `clickable` 后整行可点：有 hover 反馈、可聚焦（Enter / Space 触发），点击派发 `oas-click` 事件；行内嵌按钮/开关等交互控件时，点这些控件不触发行点击（行与控件不双触发），行本身不挂交互角色以免把它们裹进交互元素。需要行级交互语义（如 `role="button"`）时由宿主显式挂 `role`（组件不覆盖宿主显式角色，与 card 口径一致）。`selected` 标记选中行高亮。选中态由宿主维护，常用于成员列表、设置项列表。
 
 <DemoBlock title="可点行与选中态">
   <div style="width: 100%">

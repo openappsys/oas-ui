@@ -25,6 +25,7 @@
 | `--oas-color-primary`        | `#0b6cff`        | `#9ecdff`        | 主行动、选中、焦点 |
 | `--oas-color-primary-hover`  | `color-mix(primary 85%, black)`  | `color-mix(primary 88%, white)`  | primary hover      |
 | `--oas-color-primary-active` | `color-mix(primary 75%, black)`  | `color-mix(primary 78%, white)`  | primary active     |
+| `--oas-color-primary-text`   | `color-mix(primary 75%, black)`  | `color-mix(primary 78%, white)`  | primary 文字安全档 |
 | `--oas-color-success`        | `#16a34a`        | `#4ade80`        | 成功               |
 | `--oas-color-warning`        | `#d97706`        | `#fbbf24`        | 警告               |
 | `--oas-color-danger`         | `#dc2626`        | `#fbb2b2`        | 危险/删除          |
@@ -37,7 +38,7 @@
 | `--oas-color-bg-disabled`    | `#f4f4f5`        | `#27272a`        | 禁用底             |
 | `--oas-color-overlay`        | `rgba(0,0,0,.5)` | `rgba(0,0,0,.6)` | 遮罩               |
 
-hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压深 / dark 掺白提亮），完整定义以 `packages/theme/index.css` 为准。
+hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压深 / dark 掺白提亮），完整定义以 `packages/theme/index.css` 为准。`--oas-color-primary-text` 是 primary 的**文字安全档**别名（当前三主题取值均与 `-active` 同值，high-contrast 为 `#002766`）：凡 primary 系**承载文字**的场景一律用 `-text`，**交互态（hover/active/按下背景）一律用 `-active`**——语义分离后，消费者只调交互态 token 不会连带改文字色（反之亦然）。
 
 ### 1.3 字号阶梯
 
@@ -163,6 +164,7 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 - 承载文字的色值（link/文字类）有 WCAG 责任：色值按原值渲染不自动改写，demo 示例色必须达标（AA 4.5:1），文档明示对比度由宿主负责
 - 与 CSS 变量开口并存：`color` 属性是语义化高频通道，`--oas-<组件>-color` 变量是主题级批量通道，两者都有效时属性注入的具体度更高
 - **「文字承载面」自动派生安全档**（本批确立）：语义/预设色的 `-text` 变体（`--oas-preset-*-text` / `--oas-color-*-text`）用于**文字与「实底底色」**——不再是「填充面一律用本色」（浅色本色作底时其上文字不达标）；任意自定义 hex 色经内部 token `--oas-deep-mix` / `--oas-deep-sink` 做 theme-aware 混合派生文字安全档（light 掺近黑压深、dark 掺近白提亮）。tag 的 `--oas-tag-color-deep` 即该安全档的组件出口，现同时承担 `solid` / `checked` 形态的底色
+- **`--oas-color-text-primary` 兼作混色颜料**（预期行为，非 bug）：除「主文字色」外，它还被组件当作 theme-aware 掺向颜料派生其它色——button 的 success/warning/danger 实底/描边 `color-mix(语义色 80%, var(--oas-color-text-primary))`、popconfirm、code inline solid 兜底等十余处。理由：这是 theme-aware 掺向（light 掺向近黑压深、dark 掺向近白提亮，自动随主题翻转），替代写死 `black`/`white` 的单向混合——写死 black 在暗色下会把颜色拉回不可读。宿主覆盖该 token 时会**连带影响这些派生色**（文字色与派生色共享一个颜料源），调色时需一并核对
 
 - 所有颜色必须同时有 light/dark 值；新增组件必须验证双主题
 - 主题切换通过 `data-theme="dark"` 在根元素切换，组件无需感知（只读 CSS 变量）

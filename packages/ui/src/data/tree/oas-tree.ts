@@ -60,7 +60,7 @@ const ROW_STYLE = `
 }
 .row[data-selected='true'] {
   background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 10%, transparent));
-  color: var(--oas-color-primary-active);
+  color: var(--oas-color-primary-text);
 }
 .row:focus-visible {
   outline: 2px solid var(--oas-color-primary);

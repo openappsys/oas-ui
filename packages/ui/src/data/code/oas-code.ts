@@ -342,20 +342,20 @@ pre.code {
   font-size: var(--oas-font-size-md);
 }
 /* 高亮 token 配色（只用 token） */
-.tok-keyword { color: var(--oas-color-primary-active); }
+.tok-keyword { color: var(--oas-color-primary-text); }
 .tok-string { color: var(--oas-color-success-text); }
 .tok-comment { color: var(--oas-color-text-secondary); font-style: italic; }
 .tok-number { color: var(--oas-color-warning-text); }
 .tok-tag { color: var(--oas-color-danger-text); }
 .tok-attr { color: var(--oas-color-warning-text); }
-.tok-function { color: var(--oas-color-primary-active); }
+.tok-function { color: var(--oas-color-primary-text); }
 .tok-operator { color: var(--oas-color-text-secondary); }
 /* inline solid 实底反转（light 深底 / dark 浅底）：上面的暗色语法档在深底上不达标，
    改为 30% accent 朝 on-color 方向混合——light 主题提亮压深底、dark 主题压暗压浅底，
    双向随主题翻转达标；自定义底色经 --oas-code-on-color 开口跟随 */
 .inline.solid .tok-keyword,
 .inline.solid .tok-function {
-  color: color-mix(in srgb, var(--oas-color-primary-active) 30%, var(--oas-code-on-color, var(--oas-color-bg)));
+  color: color-mix(in srgb, var(--oas-color-primary-text) 30%, var(--oas-code-on-color, var(--oas-color-bg)));
 }
 .inline.solid .tok-string {
   color: color-mix(in srgb, var(--oas-color-success-text) 30%, var(--oas-code-on-color, var(--oas-color-bg)));

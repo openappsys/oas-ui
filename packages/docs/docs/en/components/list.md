@@ -117,7 +117,7 @@ Displays a collection of related items, capable of carrying a title, description
 
 ## Row Interaction (clickable / selected)
 
-With `clickable` on `oas-list-item`, the whole row becomes clickable: hover feedback, focusable (Enter / Space triggers), and an `oas-click` event on click. When interactive controls such as buttons or switches are embedded in a row, clicking them does not trigger the row click (row and control never fire together), and the row itself carries no interactive role so those controls are not wrapped in an interactive element. `selected` marks the row with a highlight (visual state only). Selection is host-controlled — common in member lists and settings lists.
+With `clickable` on `oas-list-item`, the whole row becomes clickable: hover feedback, focusable (Enter / Space triggers), and an `oas-click` event on click. When interactive controls such as buttons or switches are embedded in a row, clicking them does not trigger the row click (row and control never fire together), and the row itself carries no interactive role so those controls are not wrapped in an interactive element. When row-level semantics are needed (e.g. `role="button"`), the host can set an explicit `role` (the component never overrides an explicit host role, consistent with card). `selected` marks the row with a highlight (visual state only). Selection is host-controlled — common in member lists and settings lists.
 
 <DemoBlock title="Clickable rows and selection">
   <div style="width: 100%">
