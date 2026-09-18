@@ -407,6 +407,40 @@ describe('OASList', () => {
       expect(fired).toBe(1)
     })
 
+    it('宿主显式 role="button" 不被剥除（clickable 行保留宿主语义，与 card 口径一致）', () => {
+      // 回归：曾无条件 removeAttribute('role')，宿主想恢复行级按钮语义也被剥掉
+      const el = new OASListItem()
+      el.setAttribute('clickable', '')
+      el.setAttribute('role', 'button')
+      el.textContent = '设置项'
+      document.body.appendChild(el)
+      expect(el.getAttribute('role'), '宿主显式 role 必须保留（组件不覆盖）').toBe('button')
+      expect(el.getAttribute('tabindex')).toBe('0')
+      expect(el.hasAttribute('data-clickable')).toBe(true)
+      // 行为不异常：行点击照常派发
+      let fired = 0
+      el.addEventListener('oas-click', () => fired++)
+      el.click()
+      expect(fired).toBe(1)
+    })
+
+    it('宿主显式 role + selected：role 保留、选中态钩子正常、不加 aria-pressed', () => {
+      const el = new OASListItem()
+      el.setAttribute('clickable', '')
+      el.setAttribute('selected', '')
+      el.setAttribute('role', 'button')
+      el.textContent = '设置项'
+      document.body.appendChild(el)
+      expect(el.getAttribute('role')).toBe('button')
+      // 组件不设 aria-pressed（selected 只驱动 CSS 高亮），也不删宿主自设值
+      expect(el.hasAttribute('aria-pressed')).toBe(false)
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(style, 'selected 视觉钩子保持').toMatch(/:host\(\[selected\]\)\s*\{[^}]*background/)
+      el.setAttribute('aria-pressed', 'true')
+      el.removeAttribute('selected')
+      expect(el.getAttribute('aria-pressed'), '宿主自设 aria-pressed 不被删').toBe('true')
+    })
+
     it('点击行内交互控件不派发行 oas-click（避免行与控件双触发）', () => {
       const el = new OASListItem()
       el.setAttribute('clickable', '')
@@ -810,6 +844,25 @@ describe('OASList', () => {
       const body = el.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!
       expect(body.style.maxHeight).toBe('160px')
       expect(body.style.overflowY).toBe('auto')
+    })
+
+    it('max-height 内容真实溢出才补 tabindex；不溢出时不加（无空 Tab 停靠点）', () => {
+      // 回归：曾设了 max-height 就无条件 tabindex=0，内容不溢出也多出一个空 Tab 停靠点
+      const el = new OASList()
+      el.setAttribute('max-height', '120')
+      document.body.appendChild(el)
+      const body = el.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!
+      // happy-dom 无真实布局（scrollHeight/clientHeight 均为 0）：mock 溢出判定输入（沿用文件内 defineProperty 做法）
+      const mockScroll = (scrollHeight: number, clientHeight: number) => {
+        Object.defineProperty(body, 'scrollHeight', { configurable: true, value: scrollHeight })
+        Object.defineProperty(body, 'clientHeight', { configurable: true, value: clientHeight })
+      }
+      mockScroll(500, 120)
+      el.setAttribute('size', 'lg') // 观察属性变化触发 update() → 真实溢出
+      expect(body.getAttribute('tabindex'), '溢出时补 tabindex（键盘可达，axe: scrollable-region-focusable）').toBe('0')
+      mockScroll(120, 120)
+      el.setAttribute('size', 'md') // 不溢出
+      expect(body.hasAttribute('tabindex'), '不溢出时不加 tabindex').toBe(false)
     })
   })
 })

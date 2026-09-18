@@ -125,7 +125,7 @@ a[part='button'].icon-end .icon:not([part='icon-end']) {
 button.plain.primary {
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
   border-color: transparent;
-  color: var(--oas-color-primary-active);
+  color: var(--oas-color-primary-text);
 }
 button.plain.primary:hover {
   background: color-mix(in srgb, var(--oas-color-primary) 20%, transparent);
@@ -182,7 +182,7 @@ button:focus-visible {
 /* 选中态（button-group 单/多选经 host aria-pressed 标记）；置于类型规则前，有色按钮由下方规则覆盖 */
 :host([aria-pressed='true']) button,
 :host([aria-pressed='true']) a[part='button'] {
-  color: var(--oas-color-primary-active);
+  color: var(--oas-color-primary-text);
   border-color: var(--oas-color-primary);
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
 }
