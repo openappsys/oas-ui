@@ -1,20 +1,18 @@
-/* ============================================================
-   OAS UI Theme tokens
-   规范依据：docs/ui-spec.md §1
-   组件样式只引用语义 token，禁止硬编码色值。
-   主题通过 data-theme="dark" 切换。
-   ============================================================ */
+/* OAS UI Theme tokens（规范：docs/ui-spec.md §1。组件只引用语义 token、禁止硬编码色值；
+   主题经 data-theme="dark" 切换。各注释的完整沿革见 git 历史） */
 
 :root,
 :host {
   --oas-color-primary: #0b6cff;
-  /* hover 加深 15%、active 加深 25%（亮蓝色混合 black 幅度需更大才有明显视觉差异） */
+  /* hover 85% / active 75% 掺黑（亮蓝需大幅混黑才有明显视觉差） */
   --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 85%, black);
   --oas-color-primary-active: color-mix(in srgb, var(--oas-color-primary) 75%, black);
+  /* primary 文字安全档（取值=active 同值；语义分离：调交互态不连带改文字色） */
+  --oas-color-primary-text: color-mix(in srgb, var(--oas-color-primary) 75%, black);
   --oas-color-success: #16a34a;
   --oas-color-warning: #d97706;
   --oas-color-danger: #dc2626;
-  /* 填充色背景上的文字色（实心 primary/success/warning/danger 按钮、激活选项、徽标等） */
+  /* 填充底上的文字色（实心语义按钮/激活选项/徽标） */
   --oas-color-text-on-primary: #ffffff;
   --oas-color-text-on-success: #ffffff;
   --oas-color-text-on-warning: #ffffff;
@@ -30,7 +28,7 @@
   --oas-color-bg-disabled: #f4f4f5;
   --oas-color-overlay: rgba(0, 0, 0, 0.5);
 
-  /* ===== 预设色板（tag 等组件 color 属性按名引用；dark 下走下方调亮变体） ===== */
+  /* 预设色板（color 属性按名引用；dark 走下方调亮变体） */
   --oas-preset-magenta: #eb2f96;
   --oas-preset-red: #f5222d;
   --oas-preset-volcano: #fa541c;
@@ -43,7 +41,7 @@
   --oas-preset-geekblue: #2f54eb;
   --oas-preset-purple: #722ed1;
 
-  /* 预设色板 -text：文字/实底安全档（达标深色；本色达标者同值） */
+  /* 预设 -text：文字/实底安全档（本色达标者同值） */
   --oas-preset-magenta-text: #cc2983;
   --oas-preset-red-text: #da1e28;
   --oas-preset-volcano-text: #c64216;
@@ -56,7 +54,7 @@
   --oas-preset-geekblue-text: #2f54eb;
   --oas-preset-purple-text: #722ed1;
 
-  /* 语义色文字变体（-text）：文字承载面达标深色（感知对比度 ≥60 双底实测；填充面用上方本色） */
+  /* 语义色 -text：文字承载面达标深色（≥60 双底实测；填充面用本色） */
   --oas-color-success-text: #11813a;
   --oas-color-warning-text: #a75c05;
   --oas-color-danger-text: #d82525;
@@ -82,7 +80,7 @@
   --oas-space-5: 24px;
   --oas-space-6: 32px;
 
-  /* 布局尺寸 token（尺寸不分主题，light/dark/high-contrast 共用） */
+  /* 布局尺寸（不分主题，三主题共用） */
   --oas-container-xs: 480px;
   --oas-container-sm: 576px;
   --oas-container-md: 768px;
@@ -103,8 +101,7 @@
   --oas-control-height-md: 32px;
   --oas-control-height-lg: 40px;
   --oas-control-height-xl: 48px;
-  /* 触摸目标最小尺寸（iOS HIG）：coarse pointer 下浮层交互行（option/item/tab 等）
-     以此为最小高度；尺寸 token 不分主题，light/dark/high-contrast 共用 */
+  /* 触摸目标最小高（iOS HIG；coarse 下浮层交互行用；不分主题） */
   --oas-touch-target-min: 44px;
 
   --oas-transition-fast: 120ms;
@@ -112,7 +109,7 @@
   --oas-ease-out: cubic-bezier(0.2, 0, 0.2, 1);
   --oas-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* 阴影三档：sm 悬浮 / md 下拉 / lg 模态（方向性投影见 ui-spec 豁免） */
+  /* 阴影三档：sm 悬浮 / md 下拉 / lg 模态（方向性投影豁免见 ui-spec） */
   --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.12);
   --oas-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
   --oas-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
@@ -131,24 +128,24 @@
 
 [data-theme="dark"],
 html.dark {
-  /* 中间调缺陷修复：原 #4d9fff/#f87171 是中间调，深字白字都不达感知分 60（50.2/49.8）；
-     亮化到粉彩档（与 success/warning 同路线），配深字 73/71 达标。
-     面亮化后 hover/active 反转为提亮（dark 下激活变亮惯例），压暗会把对比度拉回不达标 */
+  /* 主/危险色亮化为粉彩档（原 #4d9fff/#f87171 中间调双底均不达感知分 60）；
+     面亮化后 hover/active 反转提亮（dark 激活变亮惯例，压暗会拉回不达标） */
   --oas-color-primary: #9ecdff;
-  /* dark：hover 提亮 12%、active 提亮 22%（color-mix 自动跟随 primary） */
+  /* hover 88% / active 78% 掺白提亮（随 primary 联动） */
   --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 88%, white);
   --oas-color-primary-active: color-mix(in srgb, var(--oas-color-primary) 78%, white);
+  /* primary 文字安全档（=active 同值） */
+  --oas-color-primary-text: color-mix(in srgb, var(--oas-color-primary) 78%, white);
   --oas-color-success: #4ade80;
   --oas-color-warning: #fbbf24;
   --oas-color-danger: #fbb2b2;
-  /* 暗色下 primary/success/warning/danger 变亮，白色文字对比不足，改用深色文字保证 ≥4.5:1 */
+  /* 语义色变亮后白字对比不足：对底文字改深色（≥4.5:1） */
   --oas-color-text-on-primary: #18181b;
   --oas-color-text-on-success: #18181b;
   --oas-color-text-on-warning: #18181b;
   --oas-color-text-on-danger: #18181b;
   --oas-color-text-primary: #fafafa;
-  /* 次要文字提亮到 #c6c6ce：压最高亮底 --oas-color-bg-elevated（#3f3f46）感知分 62.8 ≥ 60
-     （原 #b8b8c0 仅 54.7，avatar-group 溢出按钮 / descriptions 等不达标） */
+  /* 次要文字 #c6c6ce：压 elevated 底 #3f3f46 感知分 62.8（原 #b8b8c0 仅 54.7） */
   --oas-color-text-secondary: #c6c6ce;
   --oas-color-text-disabled: #8d8d95;
   --oas-color-border: #52525b;
@@ -162,7 +159,7 @@ html.dark {
   --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.45);
   --oas-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
   --oas-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
-  /* 预设色板 dark 变体：整体调亮一档，保证在深底上对比度达标 */
+  /* 预设色板 dark 变体：整体调亮一档（深底对比达标） */
   --oas-preset-magenta: #f759ab;
   --oas-preset-red: #ff4d4f;
   --oas-preset-volcano: #ff7a45;
@@ -174,7 +171,7 @@ html.dark {
   --oas-preset-blue: #4096ff;
   --oas-preset-geekblue: #597ef7;
   --oas-preset-purple: #9254de;
-  /* 预设文字变体 dark：本色已对深底达标（purple 略提亮），与本色同值即达标 */
+  /* 预设 -text dark：本色已达标，同值 */
   --oas-preset-magenta-text: #fbaed6;
   --oas-preset-red-text: #ffb1b2;
   --oas-preset-volcano-text: #ffb395;
@@ -183,17 +180,16 @@ html.dark {
   --oas-preset-lime-text: #bae637;
   --oas-preset-green-text: #73d13d;
   --oas-preset-cyan-text: #36cfc9;
-  /* blue-text 提亮到 #b8d6ff：压「elevated 底 + 12% 自身软底」合成底（约 #3f495c，
-     app-bar 标题插槽里的 tag 等场景）感知分 67.6 ≥ 60（原 #9cc8ff 仅 58.7 贴线不达标） */
+  /* blue-text #b8d6ff：压「elevated+12% 软底」合成底感知分 67.6（原 #9cc8ff 仅 58.7） */
   --oas-preset-blue-text: #b8d6ff;
   --oas-preset-geekblue-text: #b3c4fb;
   --oas-preset-purple-text: #d3bbf2;
-  /* 语义文字变体 dark：本色已达标，同值 */
+  /* 语义 -text dark：本色已达标，同值 */
   --oas-color-success-text: #4ade80;
   --oas-color-warning-text: #fbbf24;
   --oas-color-danger-text: #fbb2b2;
   --oas-color-info-text: #22d3ee;
-  /* 自定义 hex 色文字安全档混合参数：dark 掺近白提亮（掺黑在暗色下不可读） */
+  /* hex 文字安全档混合参数：dark 掺近白（掺黑暗色不可读） */
   --oas-deep-mix: 38%;
   --oas-deep-sink: var(--oas-color-text-primary);
 }
@@ -202,10 +198,11 @@ html.dark {
   --oas-color-primary: #0050b3;
   --oas-color-primary-hover: #003a8c;
   --oas-color-primary-active: #002766;
+  --oas-color-primary-text: #002766;
   --oas-color-success: #006d1b;
   --oas-color-warning: #8c4a00;
   --oas-color-danger: #a8071a;
-  /* 高对比主题保持白字（primary #0050b3 等深色底上对比充足） */
+  /* 高对比主题保持白字（primary #0050b3 等深色底对比充足） */
   --oas-color-text-on-primary: #ffffff;
   --oas-color-text-on-success: #ffffff;
   --oas-color-text-on-warning: #ffffff;

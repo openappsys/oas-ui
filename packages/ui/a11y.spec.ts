@@ -12,11 +12,14 @@ const EXCLUDE_PAGES = new Set<string>([])
 
 // 页面级规则豁免：仅用于「工具静态分析够不到、且有等价断言兜底」的单页误报，逐条写明理由与兜底位置。
 // ⚠️ 爆炸半径：axe 的 disableRules 只能**整规则**禁用——如下面 stepper 那条 aria-valid-attr-value 豁免，
-//   会一并放行该页**其它**「ARIA 属性取值非法」的情形（兜底断言只覆盖 aria-controls 目标存在，
-//   不覆盖「值合法」）。新增豁免必须确认旁泄风险可接受且有等价兜底，禁止当过闸逃生舱用。
+//   会一并放行该页**其它**「ARIA 属性取值非法」的情形。等价强度兜底见 qa-regression/stepper.spec.ts：
+//   「全量 aria-* 取值合法性」断言（token 值集合 + 引用目标存在 + 未知名非空）覆盖「值合法」，
+//   「aria-controls 指向真实 panel」断言覆盖引用存在性。新增豁免必须确认旁泄风险可接受且有等价兜底，
+//   禁止当过闸逃生舱用。
 const PAGE_RULE_EXEMPTIONS: Record<string, string[]> = {
   // stepper：tab 的 aria-controls 指向的 panel 由组件跨 shadow 生成，axe 静态分析无法验证该 ID 引用
-  //   （getElementById 实测可查到 panel 节点）；兜底见 qa-regression/stepper.spec.ts 的存在性断言
+  //   （getElementById 实测可查到 panel 节点）；兜底见 qa-regression/stepper.spec.ts 的
+  //   aria-controls 存在性断言 + 全量 aria-* 取值合法性断言
   'stepper.html': ['aria-valid-attr-value'],
 }
 const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'))

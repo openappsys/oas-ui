@@ -205,7 +205,7 @@ const STYLE = `
 }
 .steps[data-navigation='true'] .item[data-status='finish'] {
   background: color-mix(in srgb, var(--oas-color-primary) 15%, transparent);
-  color: var(--oas-color-primary-active);
+  color: var(--oas-color-primary-text);
 }
 .steps[data-navigation='true'] .item[data-status='error'] {
   background: var(--oas-color-danger);
@@ -348,7 +348,7 @@ const STYLE = `
   justify-content: center;
   font-size: var(--oas-font-size-xs);
   font-weight: 600;
-  color: var(--oas-color-primary-active);
+  color: var(--oas-color-primary-text);
 }
 
 /* —— lineless：隐藏全部连接线（含 arrow 三角）—— */

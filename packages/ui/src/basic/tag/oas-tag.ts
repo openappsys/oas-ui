@@ -80,7 +80,7 @@ const STYLE = `
    亮/暗主题各自定义（暗色是提亮变体），比「本色掺黑」的启发式在暗色下更可靠 */
 .tag.primary {
   --tag-color: var(--oas-color-primary);
-  --tag-color-deep: var(--oas-color-primary-active);
+  --tag-color-deep: var(--oas-color-primary-text);
   background: var(--oas-color-primary);
   border-color: var(--oas-color-primary);
   color: var(--oas-color-text-on-primary);
@@ -108,10 +108,10 @@ const STYLE = `
 }
 .tag.info {
   --tag-color: var(--oas-color-primary);
-  --tag-color-deep: var(--oas-color-primary-active);
+  --tag-color-deep: var(--oas-color-primary-text);
   border-color: color-mix(in srgb, var(--oas-color-primary) 40%, transparent);
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
-  color: var(--oas-color-primary-active);
+  color: var(--oas-color-primary-text);
 }
 .tag.round {
   border-radius: var(--oas-control-height-sm);

@@ -245,12 +245,12 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
   oas-grid > *:nth-child(4n+1) .demo-grid-box,
   oas-grid > .demo-grid-box:nth-child(4n+1) {
     background: color-mix(in srgb, var(--oas-color-primary) 10%, var(--oas-color-bg));
-    color: var(--oas-color-primary-active);
+    color: var(--oas-color-primary-text);
   }
   oas-grid > *:nth-child(4n+2) .demo-grid-box,
   oas-grid > .demo-grid-box:nth-child(4n+2) {
     background: color-mix(in srgb, var(--oas-color-primary) 22%, var(--oas-color-bg));
-    color: var(--oas-color-primary-active);
+    color: var(--oas-color-primary-text);
   }
   oas-grid > *:nth-child(4n+3) .demo-grid-box,
   oas-grid > .demo-grid-box:nth-child(4n+3) {

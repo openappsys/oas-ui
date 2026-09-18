@@ -232,18 +232,13 @@ export class OASListItem extends OASElement {
     }
 
     // 行交互：clickable → 可聚焦 + 高亮态钩子（可点行自身不挂 role=button：
-    // 行内常嵌控件（开关/按钮），role=button 会把控件裹进交互元素（axe: nested-interactive））
+    // 行内常嵌控件（开关/按钮），role=button 会把控件裹进交互元素（axe: nested-interactive））。
+    // role / aria-pressed 组件一律不自设也不删——宿主显式挂的（如想恢复行级按钮语义的
+    // role="button" + aria-pressed）原样保留不覆盖（与 card「宿主显式角色不覆盖」口径一致）
     const clickable = this.hasAttribute('clickable')
     this.toggleAttribute('data-clickable', clickable)
-    if (clickable) {
-      this.setAttribute('tabindex', '0')
-      this.removeAttribute('role')
-      this.removeAttribute('aria-pressed')
-    } else {
-      this.removeAttribute('tabindex')
-      this.removeAttribute('role')
-      this.removeAttribute('aria-pressed')
-    }
+    if (clickable) this.setAttribute('tabindex', '0')
+    else this.removeAttribute('tabindex')
   }
 
   /** 行内交互元素判定：命中则不触发行点击（防止点行内开关/按钮时行与控件双触发） */
