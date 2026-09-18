@@ -78,7 +78,7 @@
     },
     {
       "name": "--oas-log-mark-bg",
-      "default": "color-mix(in srgb, var(--oas-color-warning) 30%, transparent)"
+      "default": "color-mix(in srgb, var(--oas-color-warning) 18%, transparent)"
     },
     {
       "name": "--oas-log-mark-color",

@@ -353,6 +353,8 @@ export class OASSpin extends OASElement {
   private autoTimer: ReturnType<typeof setInterval> | null = null
   /** percent 属性是否为 'auto'（模拟进度模式标记） */
   private isAutoPercent = false
+  /** 指示器 aria-label 是否为组件写的百分比兜底名（true=可随 sync/auto 推进重算；false=宿主自带名不可覆盖） */
+  private percentLabelFallback = false
 
   /**
    * 注册全局默认指示器：此后新建的 oas-spin 在未用 icon 插槽时渲染注册的 HTML
@@ -548,10 +550,16 @@ export class OASSpin extends OASElement {
       indicator.classList.toggle('global-icon', !hasIcon && globalIndicatorHtml != null)
       this.applySize(indicator)
       indicator.setAttribute('data-variant', parseSpinVariant(this.getAttr('variant', 'ring')))
-      // 读屏可访问名：宿主 aria-label 优先同步（覆盖内部兜底文本的播报）
+      // 读屏可访问名：宿主 aria-label 优先同步（覆盖内部兜底文本的播报）；
+      // 兜底名归组件所有（percentLabelFallback 标记），每次 sync/auto 推进重算，不冻结在首帧
       const hostLabel = this.getAttribute('aria-label')
-      if (hostLabel != null && hostLabel !== '') indicator.setAttribute('aria-label', hostLabel)
-      else indicator.removeAttribute('aria-label')
+      if (hostLabel != null && hostLabel !== '') {
+        indicator.setAttribute('aria-label', hostLabel)
+        this.percentLabelFallback = false
+      } else {
+        indicator.removeAttribute('aria-label')
+        this.percentLabelFallback = true
+      }
       this.syncPercent(indicator, hasIcon)
     }
     this.syncSrLabel()
@@ -593,8 +601,9 @@ export class OASSpin extends OASElement {
       indicator.setAttribute('aria-valuemin', '0')
       indicator.setAttribute('aria-valuemax', '100')
       indicator.setAttribute('aria-valuenow', String(Math.round(value)))
-      // progressbar 恒有可访问名：宿主未提供 aria-label 时回退百分比文本（语言无关）
-      if (!indicator.getAttribute('aria-label')) {
+      // progressbar 恒有可访问名：宿主未提供 aria-label 时回退百分比文本（语言无关）；
+      // 兜底名归组件所有，每次 sync 重算（auto 推进跟随 valuenow）；宿主自带名不覆盖
+      if (this.percentLabelFallback) {
         indicator.setAttribute('aria-label', `${Math.round(value)}%`)
       }
       if (bar) {
@@ -620,7 +629,11 @@ export class OASSpin extends OASElement {
         )
         const indicator = this.shadow.querySelector<HTMLElement>('[part="indicator"]')
         const bar = this.shadow.querySelector<SVGCircleElement>('[part="progress-bar"]')
-        if (indicator) indicator.setAttribute('aria-valuenow', String(Math.round(this.autoPercent)))
+        if (indicator) {
+          indicator.setAttribute('aria-valuenow', String(Math.round(this.autoPercent)))
+          // 兜底可访问名同步跟随（否则 auto 推进期间读屏听到的一直是首帧百分比）
+          if (this.percentLabelFallback) indicator.setAttribute('aria-label', `${Math.round(this.autoPercent)}%`)
+        }
         if (bar) {
           bar.setAttribute('stroke-dashoffset', String(SPIN_CIRCUMFERENCE * (1 - this.autoPercent / 100)))
         }

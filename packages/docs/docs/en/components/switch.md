@@ -214,8 +214,9 @@ onMounted(() => {
 
 #### CSS Variables
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-switch-height` | `22px` |
-| `--oas-switch-thumb-size` | `18px` |
-| `--oas-switch-width` | `40px` |
+| CSS Variable | Description | Default |
+| --- | --- | --- |
+| `--oas-switch-height` | — | `22px` |
+| `--oas-switch-on-color` | Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by luminance; falls back to `var(--oas-color-bg)`) | `var(--oas-color-bg)` |
+| `--oas-switch-thumb-size` | — | `18px` |
+| `--oas-switch-width` | — | `40px` |

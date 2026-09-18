@@ -155,9 +155,10 @@ describe('OASRate', () => {
     expect(fill!.getAttribute('aria-hidden')).toBe('true')
     expect(fill!.querySelector('svg')).not.toBeNull() // 覆盖层与基础星同图标
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
-    // 垂直分割保留左半 + 覆盖层用激活色（color/void-color/colors 通道经 --oas-rate-active 变量注入）
+    // 垂直分割保留左半 + 覆盖层用激活色（color/void-color/colors 通道经 --oas-rate-active 变量注入；
+    // 缺省激活色走 -text 文字安全档，warning 基色当文字压浅底 感知分不达标）
     expect(css).toMatch(/\.half-fill\s*\{[^}]*clip-path:\s*inset\(0\s+50%\s+0\s+0\)/)
-    expect(css).toMatch(/\.half-fill\s*\{[^}]*color:\s*var\(--oas-rate-active,\s*var\(--oas-color-warning\)\)/)
+    expect(css).toMatch(/\.half-fill\s*\{[^}]*color:\s*var\(--oas-rate-active,\s*var\(--oas-color-warning-text\)\)/)
     expect(css).toMatch(/\.star\s*\{[^}]*position:\s*relative/)
     // 未到半星的星没有覆盖层
     expect(s[3]!.querySelector('.half-fill')).toBeNull()

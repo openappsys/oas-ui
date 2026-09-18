@@ -502,6 +502,9 @@ export class OASEditable extends OASElement {
     const trigger = normalizeChoice(this.getAttr('trigger', ''), 'text', VALID_TRIGGERS)
     this.setAttribute('data-trigger', trigger)
 
+    // 非 readonly ⇒ 无 aria-readonly（先清后设：role=button / role 移除路径都不允许残留，
+    // 否则宿主动态移除 readonly 后 aria-allowed-attr 违规复发）
+    displayEl.removeAttribute('aria-readonly')
     if (trigger === 'icon') {
       displayEl.removeAttribute('role')
       displayEl.removeAttribute('tabindex')

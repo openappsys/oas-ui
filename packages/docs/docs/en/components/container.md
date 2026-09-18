@@ -90,7 +90,7 @@ An empty container causes no error and takes no placeholder.
     justify-content: center;
     height: 56px;
     background: var(--oas-color-primary);
-    color: var(--oas-color-primary-text);
+    color: var(--oas-color-text-on-primary);
     font-size: var(--oas-font-size-sm);
   }
 </style>

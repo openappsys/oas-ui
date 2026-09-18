@@ -155,7 +155,7 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
   <oas-code inline language="js" color="red" code='const a = 1'></oas-code>
   <oas-code inline language="js" color="green" code='const a = 1'></oas-code>
   <oas-code inline language="js" color="blue" code='const a = 1'></oas-code>
-  <oas-code inline language="js" color="#0e7490" code='const a = 1'></oas-code>
+  <oas-code inline language="js" color="cyan" code='const a = 1'></oas-code>
 </DemoBlock>
 
 ## 字号定制

@@ -204,7 +204,7 @@
   </oas-space>
 </DemoBlock>
 
-line 形态下 `size` 为高度档位（`small` 4px / `medium` 8px / `large` 12px），`stroke-width` 直接指定轨道高度（px，优先于档位）；`text-inside` 把文本移入条内（未显式指定粗度时轨道自动提升高度）。
+line 形态下 `size` 为高度档位（`small` 4px / `medium` 8px / `large` 12px），`stroke-width` 直接指定轨道高度（px，优先于档位）；`text-inside` 把文本移入条内（未显式指定粗度时轨道自动提升高度）；文本只压在**已填充段**内，填充过窄（不足约 6 字符）时自动隐藏，避免半个数字露在轨道上。
 
 ## 端帽
 

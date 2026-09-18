@@ -66,27 +66,33 @@ const STYLE = `
   border: 1px solid color-mix(in srgb, var(--alert-type) 40%, transparent);
   border-radius: var(--oas-radius-md);
   background: color-mix(in srgb, var(--alert-type) 10%, transparent);
-  color: var(--alert-type);
+  /* 浅底文字走 -text 档（亮/暗主题各自定义的可读色）；--alert-type 仍负责描边/实心底等底色用途。
+     末档回落到 --alert-type：宿主自定义类型只覆写 --alert-type 时文字仍有色可读 */
+  color: var(--alert-text, var(--alert-type));
   font-size: var(--oas-font-size-md);
   /* 关闭/重开过渡：淡出 + 轻微上移收缩（退场/入场共用，prefers-reduced-motion 停用） */
   transition:
     opacity var(--oas-transition-base) var(--oas-ease-out),
     transform var(--oas-transition-base) var(--oas-ease-out);
   --alert-type: var(--oas-color-primary);
+  --alert-text: var(--oas-color-primary-active);
   --alert-on: var(--oas-color-text-on-primary);
   --alert-accent: var(--alert-type);
   --alert-icon-size: var(--oas-font-size-lg);
 }
 .box[data-type='success'] {
   --alert-type: var(--oas-color-success);
+  --alert-text: var(--oas-color-success-text);
   --alert-on: var(--oas-color-text-on-success);
 }
 .box[data-type='warning'] {
   --alert-type: var(--oas-color-warning);
+  --alert-text: var(--oas-color-warning-text);
   --alert-on: var(--oas-color-text-on-warning);
 }
 .box[data-type='error'] {
   --alert-type: var(--oas-color-danger);
+  --alert-text: var(--oas-color-danger-text);
   --alert-on: var(--oas-color-text-on-danger);
 }
 /* P4 变体：tint（默认=现状，type 色浅底+描边）/ filled（type 色实心+对底文字）/ outlined（透明底+type 色描边） */
@@ -99,7 +105,7 @@ const STYLE = `
 .box[data-variant='outlined'] {
   background: transparent;
   border-color: var(--alert-type);
-  color: var(--alert-type);
+  color: var(--alert-text, var(--alert-type));
 }
 /* P5 横幅：去边框圆角、通栏；与 P1 联动默认显示图标 */
 :host([banner]) .box {
@@ -187,16 +193,14 @@ const STYLE = `
 .description {
   font-size: var(--oas-font-size-sm);
   line-height: 1.6;
-  opacity: 0.85;
+  /* 文字对齐 .box 的 --alert-text：不再用 opacity 压暗（85% 透明化后压 10% tint 底 感知分不达标），
+     层级区分交由字号承担 */
 }
 .description[data-present] {
   margin-top: var(--oas-space-1);
 }
 .description[hidden] {
   display: none;
-}
-.box[data-variant='filled'] .description {
-  opacity: 0.95;
 }
 .content[data-rich] .body {
   margin-top: var(--oas-space-1);

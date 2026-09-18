@@ -498,7 +498,7 @@ onMounted(async () => {
 | --- | --- | --- |
 | `--oas-tag-avatar-size` | 头像适配尺寸：`avatar` 模式随 size 档位派生，未匹配档位时沿用 control-height-sm − 4px | `calc(var(--oas-control-height-sm) - 4px)` |
 | `--oas-tag-color` | 文字色：`color` 属性经该变量参与派生；`--tag-color` 是组件内部当前色，未显式设置时回落 text-primary | `var(--tag-color, var(--oas-color-text-primary))` |
-| `--oas-tag-color-deep` | 深色文字（`deep` 档位）经该变量派生，未设置时回落 text-primary | `var(--tag-color, var(--oas-color-text-primary))` |
+| `--oas-tag-color-deep` | 文字安全档（`deep` 档位）：`filled`/`outlined` 的文字色与 `solid`/`checked` 的**实底色**都经该变量派生，未设置时回落 text-primary | `var(--tag-color-deep, var(--oas-color-text-primary))` |
 
 ### oas-tag-group
 

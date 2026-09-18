@@ -37,10 +37,12 @@ const STYLE = `
   cursor: pointer;
   animation: oas-msg-in var(--oas-message-anim-in) var(--oas-ease-out) both;
 }
-/* type 属性设在 host 上，颜色选择器从 host 属性命中；自定义注册类型走 --oas-msg-type-color */
+/* type 属性设在 host 上，颜色选择器从 host 属性命中；自定义注册类型走 --oas-msg-type-color。
+   浅底文字走 -text 档（感知对比度：success 基色压白 60 分边缘、warning 58 均不达标，
+   #a75c05/#11813a 对白 74/74 达标）；边框仍用基色保持色相辨识 */
 :host([type='success']) .box {
   border-color: var(--oas-color-success);
-  color: var(--oas-color-success);
+  color: var(--oas-color-success-text);
 }
 :host([type='error']) .box {
   border-color: var(--oas-color-danger);
@@ -48,7 +50,7 @@ const STYLE = `
 }
 :host([type='warning']) .box {
   border-color: var(--oas-color-warning);
-  color: var(--oas-color-warning);
+  color: var(--oas-color-warning-text);
 }
 :host([type='question']) .box {
   border-color: var(--oas-color-primary);

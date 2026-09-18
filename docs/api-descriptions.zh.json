@@ -272,6 +272,9 @@
     "slots": {
       "": "被包裹内容（卡片、按钮等）；无内容时徽标回落为独立行内展示",
       "ribbon": "缎带自定义内容"
+    },
+    "cssVars": {
+      "--oas-badge-outline": "outline 描边形态的边框与文字色（`color` 为语义色/预设名时组件注入 `-text` 安全档；缺省回落徽标底色）"
     }
   },
   "oas-bottom-navigation": {
@@ -395,6 +398,9 @@
     },
     "slots": {
       "": "按钮内容（文本 / 图标）"
+    },
+    "cssVars": {
+      "--oas-button-color-deep": "自定义色（`color`）的文字安全档：hover/active 及 outlined/dashed/filled 文字的加深混合色（组件按 `--oas-deep-mix` / `--oas-deep-sink` 注入；无自定义色时不生效）"
     }
   },
   "oas-button-group": {
@@ -1533,7 +1539,7 @@
       "avatar": "头像 URL 快捷通道（渲染首部圆形头像；slot=\"avatar\" 优先）",
       "clickable": "整行可点：hover 反馈、可聚焦（Enter/Space 触发）、点击派发 oas-click",
       "description": "描述文本快捷通道（slot=\"description\" 优先，可放富内容）",
-      "selected": "选中行高亮（aria-selected 同步），选中态由宿主维护",
+      "selected": "选中行高亮（视觉态，选中态由宿主维护）",
       "size": "行密度：sm / md（默认）/ lg（oas-list 下发的 data-size 优先于本属性之外的默认）",
       "title": "条目标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\""
     },
@@ -2593,6 +2599,9 @@
     },
     "slots": {
       "": "开关内容（文案 / 富内容）"
+    },
+    "cssVars": {
+      "--oas-switch-on-color": "开启态轨道内文字色（`color` 自定义轨道底色时组件按底色亮度注入深/浅文字；缺省回落 `var(--oas-color-bg)`）"
     }
   },
   "oas-tab-panel": {
@@ -2746,7 +2755,7 @@
     },
     "cssVars": {
       "--oas-tag-color": "文字色：`color` 属性经该变量参与派生；`--tag-color` 是组件内部当前色，未显式设置时回落 text-primary",
-      "--oas-tag-color-deep": "深色文字（`deep` 档位）经该变量派生，未设置时回落 text-primary",
+      "--oas-tag-color-deep": "文字安全档（`deep` 档位）：`filled`/`outlined` 的文字色与 `solid`/`checked` 的**实底色**都经该变量派生，未设置时回落 text-primary",
       "--oas-tag-avatar-size": "头像适配尺寸：`avatar` 模式随 size 档位派生，未匹配档位时沿用 control-height-sm − 4px"
     }
   },

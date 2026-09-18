@@ -304,10 +304,11 @@ On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`-
 
 #### CSS Variables
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-button-bg` | `var(--oas-color-primary)` |
-| `--oas-button-color` | `var(--oas-color-text-primary)` |
-| `--oas-button-group-radius` | `var(--oas-radius-md)` |
-| `--oas-button-group-width` | `auto` |
-| `--oas-button-on-color` | `var(--oas-color-text-on-primary)` |
+| CSS Variable | Description | Default |
+| --- | --- | --- |
+| `--oas-button-bg` | — | `var(--oas-color-primary)` |
+| `--oas-button-color` | — | `var(--oas-color-text-primary)` |
+| `--oas-button-color-deep` | Text-safe deepened variant of the custom `color`: the color-mix used for hover/active and outlined/dashed/filled text (injected by the component via `--oas-deep-mix` / `--oas-deep-sink`; inert without a custom color) | `var(--btn-color, var(--oas-color-text-primary))` |
+| `--oas-button-group-radius` | — | `var(--oas-radius-md)` |
+| `--oas-button-group-width` | — | `auto` |
+| `--oas-button-on-color` | — | `var(--oas-color-text-on-primary)` |

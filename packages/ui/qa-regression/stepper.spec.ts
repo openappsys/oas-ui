@@ -27,3 +27,25 @@ test('stepper 移动端：coarse 下步骤头横向可滚、tab 最小触控高 
     await ctx.close()
   }
 })
+
+test('stepper：每个 tab 的 aria-controls 指向真实存在的 panel id（跨 shadow 引用兜底断言）', async ({ page }) => {
+  await page.goto('/components/stepper.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-stepper')
+  const r = await page.evaluate(() => {
+    const missing: string[] = []
+    let checked = 0
+    for (const host of Array.from(document.querySelectorAll('oas-stepper'))) {
+      const root = (host as HTMLElement).shadowRoot!
+      for (const tab of Array.from(root.querySelectorAll<HTMLElement>('[role="tab"]'))) {
+        const id = tab.getAttribute('aria-controls')
+        if (!id) continue
+        checked++
+        const found = document.getElementById(id) ?? root.querySelector(`#${CSS.escape(id)}`)
+        if (!found) missing.push(id)
+      }
+    }
+    return { checked, missing }
+  })
+  expect(r.checked, '页面应有带 aria-controls 的 tab').toBeGreaterThan(0)
+  expect(r.missing, 'aria-controls 指向的 panel id 必须真实存在（axe 静态分析够不到，由此断言兜底）').toEqual([])
+})

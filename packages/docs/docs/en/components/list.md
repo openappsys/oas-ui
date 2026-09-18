@@ -117,7 +117,7 @@ Displays a collection of related items, capable of carrying a title, description
 
 ## Row Interaction (clickable / selected)
 
-With `clickable` on `oas-list-item`, the whole row becomes clickable: hover feedback, focusable (Enter / Space triggers), and an `oas-click` event on click; `selected` marks the row with highlight (`aria-selected` synced). Selection is host-controlled — common in member lists and settings lists.
+With `clickable` on `oas-list-item`, the whole row becomes clickable: hover feedback, focusable (Enter / Space triggers), and an `oas-click` event on click. When interactive controls such as buttons or switches are embedded in a row, clicking them does not trigger the row click (row and control never fire together), and the row itself carries no interactive role so those controls are not wrapped in an interactive element. `selected` marks the row with a highlight (visual state only). Selection is host-controlled — common in member lists and settings lists.
 
 <DemoBlock title="Clickable rows and selection">
   <div style="width: 100%">
@@ -636,7 +636,7 @@ onMounted(() => {
 | `avatar` | Avatar URL quick channel (renders a circular avatar at the row start; slot="avatar" wins) | `string` | — |
 | `clickable` | Whole row clickable: hover feedback, focusable (Enter/Space triggers), click dispatches oas-click | — | — |
 | `description` | Description text quick channel (slot="description" wins, rich content allowed) | `string` | — |
-| `selected` | Selected row highlight (aria-selected synced); selection is host-controlled | — | — |
+| `selected` | Selected row highlight (visual state; selection is host-controlled) | — | — |
 | `size` | Row density: sm / md (default) / lg | — | — |
 | `title` | Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot="title" for rich content | `string` | — |
 

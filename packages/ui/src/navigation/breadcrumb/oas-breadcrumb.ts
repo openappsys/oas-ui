@@ -83,7 +83,8 @@ nav.ellipsis .item-text {
 }
 .sep {
   margin: 0 var(--oas-space-2);
-  color: var(--oas-color-border);
+  /* 分隔符是可见字形：border 色当文字 感知分不达标，降为次级文本色 */
+  color: var(--oas-color-text-secondary);
   user-select: none;
   display: inline-flex;
   align-items: center;
@@ -303,16 +304,17 @@ nav.color-primary [part='link']:hover {
   color: var(--oas-color-primary);
 }
 nav.color-success [part='current'] {
-  color: var(--oas-color-success);
+  /* 当前项文字对白底：success/warning 基色感知分 60 边缘/58 不达标，走 -text 安全档（primary/danger 基色已达标保持不动） */
+  color: var(--oas-color-success-text);
 }
 nav.color-success [part='link']:hover {
-  color: var(--oas-color-success);
+  color: var(--oas-color-success-text);
 }
 nav.color-warning [part='current'] {
-  color: var(--oas-color-warning);
+  color: var(--oas-color-warning-text);
 }
 nav.color-warning [part='link']:hover {
-  color: var(--oas-color-warning);
+  color: var(--oas-color-warning-text);
 }
 nav.color-danger [part='current'] {
   color: var(--oas-color-danger);

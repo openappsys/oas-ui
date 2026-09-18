@@ -176,20 +176,32 @@ function pickOnColor(color: string): string {
  * color 属性解析：4 语义色 → token + on-color；11 预设名 → --oas-preset-* token
  * （on-color 走 text-on-primary，dark 自动切深字）；其余按任意 CSS 色值注入，
  * 实心文字色用 pickOnColor 按底色亮度取黑/白。
+ *
+ * 感知对比度（≥60）修正：
+ * - 预设基色（如 cyan #13c2c2）对白字不达标 → 实底 bg 直接用更深的 -text 档配白字；
+ * - outline 描边形态文字 = 填充基色当文字，success/warning 基色对白不达标 →
+ *   outline 档走 -text token（primary/danger 基色已达标，保持本色不追加视觉变化）。
  */
-function resolveBadgeColor(color: string): { bg: string; on: string } {
-  const semantic: Record<string, [string, string]> = {
+function resolveBadgeColor(color: string): { bg: string; on: string; outline: string } {
+  const semantic: Record<string, [string, string, string?]> = {
     primary: ['var(--oas-color-primary)', 'var(--oas-color-text-on-primary)'],
-    success: ['var(--oas-color-success)', 'var(--oas-color-text-on-success)'],
-    warning: ['var(--oas-color-warning)', 'var(--oas-color-text-on-warning)'],
+    success: ['var(--oas-color-success)', 'var(--oas-color-text-on-success)', 'var(--oas-color-success-text)'],
+    warning: ['var(--oas-color-warning)', 'var(--oas-color-text-on-warning)', 'var(--oas-color-warning-text)'],
     danger: ['var(--oas-color-danger)', 'var(--oas-color-text-on-danger)'],
   }
   const s = semantic[color]
-  if (s) return { bg: s[0], on: s[1] }
+  if (s) return { bg: s[0], on: s[1], outline: s[2] ?? s[0] }
   if ((BADGE_PRESET_COLORS as readonly string[]).includes(color)) {
-    return { bg: `var(--oas-preset-${color})`, on: 'var(--oas-color-text-on-primary)' }
+    const text = `var(--oas-preset-${color}-text)`
+    return { bg: text, on: 'var(--oas-color-text-on-primary)', outline: text }
   }
-  return { bg: color, on: pickOnColor(color) }
+  return {
+    bg: color,
+    on: pickOnColor(color),
+    // outline 描边/文字走「文字安全档」：主题感知混合（light fallback 72% 掺黑压深、
+    // dark 由主题 token 掺近白提亮）——基色当文字在 dark 深底不达标（如 #7c3aed 仅 23 分）
+    outline: `color-mix(in srgb, ${color} var(--oas-deep-mix, 72%), var(--oas-deep-sink, black))`,
+  }
 }
 
 /** offset 属性解析："x,y" px 数字；非法值返回 null（静默忽略） */
@@ -276,12 +288,13 @@ const STYLE = `
 .badge.bordered {
   box-shadow: 0 0 0 2px var(--oas-color-bg);
 }
-/* variant=outline 描边形态：背景透明、边框与文字走 color 语义色（--oas-badge-bg，
-   语义色/预设名/任意色值统一生效）；dot 为空心圆。solid（默认）不加 class */
+/* variant=outline 描边形态：背景透明、边框与文字走 color 语义色（文字优先 --oas-badge-outline
+   = -text 安全档；--oas-badge-bg 为实底色，语义色/预设名/任意色值统一生效）；
+   dot 为空心圆。solid（默认）不加 class */
 .badge.variant-outline {
   background: transparent;
-  border: 1px solid var(--oas-badge-bg, var(--oas-color-danger));
-  color: var(--oas-badge-bg, var(--oas-color-danger));
+  border: 1px solid var(--oas-badge-outline, var(--oas-badge-bg, var(--oas-color-danger)));
+  color: var(--oas-badge-outline, var(--oas-badge-bg, var(--oas-color-danger)));
 }
 .badge.variant-outline.dot {
   background: transparent;
@@ -1529,9 +1542,11 @@ export class OASBadge extends OASElement {
           const resolved = resolveBadgeColor(color)
           el.style.setProperty('--oas-badge-bg', resolved.bg)
           el.style.setProperty('--oas-badge-on-color', resolved.on)
+          el.style.setProperty('--oas-badge-outline', resolved.outline)
         } else {
           el.style.removeProperty('--oas-badge-bg')
           el.style.removeProperty('--oas-badge-on-color')
+          el.style.removeProperty('--oas-badge-outline')
         }
 
         // offset：叠加到角标 translate；standalone/非法值静默忽略

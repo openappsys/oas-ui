@@ -151,6 +151,17 @@ describe('OASProgress', () => {
     expect(el.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('aria-label')).toBe('40%')
   })
 
+  it('宿主 aria-label 优先于 label 属性与百分比兜底（line/circle 同步；移除后回落 label 属性）', () => {
+    const el = mount({ percent: '40', label: 'label 属性名', 'aria-label': '宿主可访问名' })
+    expect(el.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('aria-label')).toBe('宿主可访问名')
+    el.setAttribute('type', 'circle')
+    expect(el.shadowRoot!.querySelector('[part="circle"]')!.getAttribute('aria-label')).toBe('宿主可访问名')
+    // 移除宿主名 → 回落 label 属性（而非百分比）
+    el.removeAttribute('aria-label')
+    el.setAttribute('percent', '40')
+    expect(el.shadowRoot!.querySelector('[part="bar"]')!.getAttribute('aria-label')).toBe('label 属性名')
+  })
+
   // ---- warning 状态 ----
 
   it('status="warning" 橙色（data-status 同步，line 与 circle）', () => {

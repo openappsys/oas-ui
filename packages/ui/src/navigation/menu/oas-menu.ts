@@ -62,6 +62,14 @@ const STYLE = `
   align-items: center;
   white-space: nowrap; /* 禁止中文菜单项逐字换行竖排 */
 }
+/* href 链接项渲染 <a>：必须显式 color:inherit 压过 UA 链接色（Chrome dark UA 的
+   未访问/已访问链接默认色对深底不达标，继承色打不过 UA 指定色）；选中/danger 等
+   类规则特异性更高，仍正常覆盖 */
+a.item,
+a.item:visited {
+  color: inherit;
+  text-decoration: none;
+}
 /* 标签占据中间剩余空间并起始侧对齐，贴住前导图标；尾侧 arrow/check 靠尾 */
 .item .label {
   flex: 1;

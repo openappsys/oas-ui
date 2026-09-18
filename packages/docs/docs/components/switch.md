@@ -213,8 +213,9 @@ onMounted(() => {
 
 #### CSS 变量
 
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-switch-height` | `22px` |
-| `--oas-switch-thumb-size` | `18px` |
-| `--oas-switch-width` | `40px` |
+| CSS 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--oas-switch-height` | — | `22px` |
+| `--oas-switch-on-color` | 开启态轨道内文字色（`color` 自定义轨道底色时组件按底色亮度注入深/浅文字；缺省回落 `var(--oas-color-bg)`） | `var(--oas-color-bg)` |
+| `--oas-switch-thumb-size` | — | `18px` |
+| `--oas-switch-width` | — | `40px` |

@@ -176,9 +176,9 @@ describe('OASToggleButton 选中色（color，ui-spec 三级协议）', () => {
     document.body.innerHTML = ''
   })
 
-  it('预设名解析为 var(--oas-preset-*) 注入 --oas-toggle-color', () => {
+  it('预设名解析为 var(--oas-preset-*-text) 注入 --oas-toggle-color（选中实底走文字安全档）', () => {
     const el = mount({ color: 'purple' })
-    expect(el.style.getPropertyValue('--oas-toggle-color')).toBe('var(--oas-preset-purple)')
+    expect(el.style.getPropertyValue('--oas-toggle-color')).toBe('var(--oas-preset-purple-text)')
   })
 
   it('字面色原值注入 + 暗底 on-color 取白', () => {

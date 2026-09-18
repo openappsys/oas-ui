@@ -205,7 +205,7 @@ const STYLE = `
 }
 .steps[data-navigation='true'] .item[data-status='finish'] {
   background: color-mix(in srgb, var(--oas-color-primary) 15%, transparent);
-  color: var(--oas-color-primary);
+  color: var(--oas-color-primary-active);
 }
 .steps[data-navigation='true'] .item[data-status='error'] {
   background: var(--oas-color-danger);
@@ -348,7 +348,7 @@ const STYLE = `
   justify-content: center;
   font-size: var(--oas-font-size-xs);
   font-weight: 600;
-  color: var(--oas-color-primary);
+  color: var(--oas-color-primary-active);
 }
 
 /* —— lineless：隐藏全部连接线（含 arrow 三角）—— */
@@ -593,7 +593,7 @@ const STYLE = `
   --oas-steps-item-bg: var(--oas-color-primary);
 }
 .steps[data-arrow='true'] .item[data-status='finish'] {
-  --oas-steps-item-bg: color-mix(in srgb, var(--oas-color-primary) 15%, transparent);
+  --oas-steps-item-bg: color-mix(in srgb, var(--oas-color-primary) 10%, transparent);
 }
 .steps[data-arrow='true'] .item[data-status='error'] {
   --oas-steps-item-bg: var(--oas-color-danger);
@@ -644,11 +644,16 @@ const STYLE = `
 .steps[data-arrow='true'] .item[data-status='finish'] .desc {
   color: var(--oas-color-primary);
 }
-/* 指示器透明化：无圆形边框/底色，序号直读格子填充色 */
+/* 指示器透明化：无圆形边框/底色，序号直读格子填充色。
+   文字用主文本色：浅色 tint 底（含宿主 per-index 20% 开口）上 text-secondary 感知分不达标，
+   process/error 实底格由上方 on-primary/on-danger 规则（更高特异度）覆盖保持白字 */
 .steps[data-arrow='true'] .icon {
   border: none;
   background: transparent;
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-primary);
+}
+.steps[data-arrow='true'] .desc {
+  color: var(--oas-color-text-primary);
 }
 /* 连接线隐藏：分格自衔接（含 separator 三角） */
 .steps[data-arrow='true'] .item:not(:last-child)::after,

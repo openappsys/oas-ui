@@ -162,6 +162,10 @@
       "default": "auto"
     },
     {
+      "name": "--oas-button-color-deep",
+      "default": "var(--btn-color, var(--oas-color-text-primary))"
+    },
+    {
       "name": "--oas-button-bg",
       "default": "var(--oas-color-primary)"
     },
