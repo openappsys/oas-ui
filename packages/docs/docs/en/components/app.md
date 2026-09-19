@@ -82,7 +82,7 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `message` | Global default config JSON for the message imperative API (keys aligned with existing options: `duration`); imperative functions merge the nearest app's config with call options, call options win; invalid JSON is ignored with a dev warning | — | — |
 | `notification` | Global default config JSON for the notification imperative API (keys aligned with existing options: `duration`/`showProgress`/`progressPosition`/`scrollable`); imperative functions merge the nearest app's config with call options, call options win; invalid JSON is ignored with a dev warning | — | — |
-| `toast` | — | — | — |
+| `toast` | Global default config JSON for the imperative toast API (keys aligned with existing options keys: `duration`/`position`/`closable`/`priority`/`max`/`politeness`/`variant`/`showProgress`/`progressRing`/`swipeDirection`/`grouping`/`stacked`/`pauseOnHover`/`pauseOnFocus`/`pauseOnWindowBlur`); imperative calls merge the nearest app config with call arguments, call arguments win; invalid JSON is ignored with a dev warning | — | — |
 
 #### Slots
 

@@ -803,9 +803,9 @@ onMounted(() => {
 | `collision-padding` | 视口边缘夹取边距（px，默认 4），面板贴边避让时保留的间距 | `string` | — |
 | `color` | 颜色变体：`primary` / `success` / `warning` / `danger`（面板 tint 底 + 语义色描边，走 token 派生变量含 dark 变体）；未设置或非法值保持默认中性面板 | `string` | — |
 | `content` | 正文文本 | `string` | — |
-| `destroy-on-hide` | — | `boolean` | — |
+| `destroy-on-hide` | 关闭后销毁面板内容呈现（宿主 light DOM 节点保留：改写 slot 名脱离分配并 hidden，属性文本清空）；重新打开瞬间恢复挂载 | `boolean` | — |
 | `disabled` | 整体禁用：click / hover / focus / contextmenu / trigger-keys 触发均不响应，宿主降饱和并同步 aria-disabled | `boolean` | — |
-| `dismiss-on-select` | — | `boolean` | — |
+| `dismiss-on-select` | 面板内容点击（命名 slot 内容 / 面板内部含关闭按钮）视为完成选择即关闭（可被 before-close 拦截）；触发元素点击不触发（防点开即关） | `boolean` | — |
 | `fallback-placements` | 自定义回退序列（逗号或空格分隔，如 `"left, right"`）：请求 placement 放不下时按序列逐一尝试 fit，首个 fit 者胜出，全不 fit 取序列末位并夹取；未设置走默认主轴翻转 | `string` | — |
 | `final-focus` | 关闭后焦点归还目标（选择器） | `string` | — |
 | `focus-on-open` | 打开时焦点移入面板内首个可聚焦元素 | `boolean` | — |
@@ -821,7 +821,7 @@ onMounted(() => {
 | `open` | 受控显示（布尔属性，存在即显示） | `boolean` | — |
 | `open-delay` | 通用打开延迟（毫秒，默认 0；非 hover 触发路径生效，hover 路径优先 hover-delay） | `string` | — |
 | `placement` | 浮层位置（12 向：四基向 top/bottom/left/right 各配 -start/-end 交叉轴对齐） | `string` | `top` |
-| `render-panel` | — | `boolean` | — |
+| `render-panel` | 纯面板渲染模式：无触发语义（一律按 `manual` 处理），定位回落 `virtual` 坐标/锚点，宿主可用 `append-to` 自行摆放 | `boolean` | — |
 | `scrollable` | 面板内容超限滚动 | `boolean` | — |
 | `size` | 尺寸档 | `string` | `medium` |
 | `sticky` | 关闭位粘滞（partial/always） | `string` | `partial` |
@@ -839,7 +839,7 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-before-close` | — |
+| `oas-before-close` | 关闭请求前派发（各关闭入口汇聚：trigger/outside/escape/close-btn/declarative/backdrop/auto/dismiss/scroll），`cancelable`，`detail: { source }`，preventDefault 阻止关闭 |
 | `oas-open-change` | open 状态变化，`detail: { open }` |
 
 #### 插槽

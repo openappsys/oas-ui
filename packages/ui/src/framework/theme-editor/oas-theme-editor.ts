@@ -396,6 +396,7 @@ const DEFAULT_GROUPS: TokenGroup[] = [
       '--oas-color-primary',
       '--oas-color-primary-hover',
       '--oas-color-primary-active',
+      '--oas-color-primary-text',
       '--oas-color-success',
       '--oas-color-warning',
       '--oas-color-danger',

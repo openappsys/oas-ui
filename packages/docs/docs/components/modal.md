@@ -667,32 +667,32 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `append-to` | — | — | — |
+| `append-to` | portal 挂载点：把遮罩与对话框移入目标容器（`body` 或 CSS 选择器）内的独立 shadow（样式作用域保真），脱离宿主 overflow 裁剪；属性移除/无匹配时移回宿主 shadow | — | — |
 | `cancel-text` | 取消按钮文案；缺省走 locale `modal.cancel` | — | — |
 | `centered` | 对话框垂直居中显示 | `boolean` | — |
-| `confirm-on-enter` | — | `boolean` | — |
-| `destroy-on-close` | — | `boolean` | — |
+| `confirm-on-enter` | 显式开启后回车触发确定（仅最上层响应；弹窗内无文本输入控件且焦点不在按钮/链接等原生交互控件上才生效，防双触发；默认关闭） | `boolean` | — |
+| `destroy-on-close` | 关闭动画完成后清空宿主子内容（下次打开重新渲染） | `boolean` | — |
 | `draggable` | 可通过标题栏拖动对话框 | `boolean` | — |
 | `focus-ok` | 打开时焦点移入「确定」按钮（默认移入「取消」按钮） | `boolean` | — |
 | `fullscreen` | 全屏显示：对话框铺满视口、无圆角与边距（优先级高于 width / centered / draggable） | `boolean` | — |
-| `fullscreen-breakpoint` | — | — | — |
-| `initial-focus` | — | — | — |
+| `fullscreen-breakpoint` | 视口宽度低于该阈值（px）时自动全屏（打开期间随 resize 重算；与显式 `fullscreen` 取并集） | — | — |
+| `initial-focus` | 打开时聚焦指定选择器元素（对话框内优先，其次宿主 light DOM）；未设置回落 `focus-ok` / 取消按钮 / 确定 / ✕ | — | — |
 | `loading` | 确定按钮进入 loading 态（禁用 + 转圈），禁止重复触发确定 | `boolean` | — |
 | `no-cancel` | 隐藏取消按钮（底部仅剩「确定」；语义变体确认框内置） | `boolean` | — |
-| `no-close-btn` | — | `boolean` | — |
-| `no-esc-close` | — | `boolean` | — |
-| `no-focus-trap` | — | `boolean` | — |
+| `no-close-btn` | 隐藏标题栏 ✕ 关闭按钮 | `boolean` | — |
+| `no-esc-close` | 禁用 Esc 关闭（Esc 仅由最上层可见 modal 响应） | `boolean` | — |
+| `no-focus-trap` | 关闭焦点陷阱（Tab 不再圈定在对话框内） | `boolean` | — |
 | `no-footer` | 隐藏底部操作按钮 | `boolean` | — |
-| `no-mask` | — | `boolean` | — |
+| `no-mask` | 无遮罩非模态：遮罩不渲染、焦点陷阱关闭、打开时不抢焦点（对齐 HTML dialog.show()，可与页面其余部分交互） | `boolean` | — |
 | `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | — |
-| `no-scroll-lock` | — | `boolean` | — |
+| `no-scroll-lock` | 打开时不锁定 body 滚动（默认锁定时带滚动条宽度补偿，防布局跳动） | `boolean` | — |
 | `ok-text` | 确定按钮文案；缺省走 locale `modal.ok` | — | — |
-| `position` | — | — | — |
-| `role` | — | `string` | `dialog` |
-| `size` | — | `ModalSizePreset` | — |
+| `position` | 垂直定位：`top` 贴视口顶缘；缺省距顶 100px；与 `centered` 同设时 `top` 规则后置生效 | — | — |
+| `role` | 对话框 ARIA 角色（默认 `dialog`；语义变体确认场景可设 `alertdialog`） | `string` | `dialog` |
+| `size` | 尺寸预设：`sm`（400px）/ `lg`（720px）；`width` 显式值优先；非法值回落主题默认 520px | `ModalSizePreset` | — |
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
-| `transition` | — | — | — |
-| `trigger` | — | — | — |
+| `transition` | 开合动画预设：`zoom`（默认，淡入 + 缩放，缩放原点跟随打开前的点击位置）/ `fade`（仅透明度）/ `none`（无过渡即时显隐） | — | — |
+| `trigger` | 声明式触发元素 id：点击该元素设置 `visible` 打开弹窗（不动受控模型）；元素不存在时静默，后续 update 重试 | — | — |
 | `type` | 语义变体：`info`/`success`/`warning`/`error`，正文顶部渲染对应语义图标 | `ModalVariant` | — |
 | `visible` | 是否显示 | `boolean` | — |
 | `width` | 对话框宽度（px 或百分比） | — | — |
@@ -703,12 +703,12 @@ onMounted(async () => {
 | --- | --- |
 | `oas-after-close` | 关闭动画完成（规范名，对齐 after-* 家族），`detail` 无；destroy-on-close 清空内容在此之后 |
 | `oas-after-open` | 打开动画完成（规范名，对齐 after-* 家族），`detail` 无；等价 oas-opened |
-| `oas-before-close` | — |
+| `oas-before-close` | 关闭请求前派发（确定/取消/✕/遮罩/Esc），`cancelable`，`detail: { source }`；preventDefault 阻止关闭并触发对话框 shake 提示（programmatic 关闭绕过拦截） |
 | `oas-cancel` | 取消：取消按钮 / ✕ / 遮罩点击 / Esc |
-| `oas-close` | — |
+| `oas-close` | 开始关闭时派发，`detail: { source, action }`（source: `ok`/`cancel`/`close-btn`/`mask`/`esc`/`programmatic`；action: `confirm`/`cancel`/`close`） |
 | `oas-closed` | 【兼容别名】关闭动画完成，等价 oas-after-close；后续版本移除 |
 | `oas-ok` | 点击「确定」 |
-| `oas-open` | — |
+| `oas-open` | 开始打开时派发（锁滚动、焦点移入之后），`detail` 无 |
 | `oas-opened` | 【兼容别名】打开动画完成，等价 oas-after-open；后续版本移除 |
 
 #### 插槽

@@ -350,31 +350,31 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `append-to` | — | — | — |
-| `cancel-text` | — | — | — |
-| `destroy-on-close` | — | `boolean` | — |
-| `initial-focus` | — | — | — |
-| `loading` | — | `boolean` | — |
-| `no-close-btn` | — | `boolean` | — |
-| `no-esc-close` | — | `boolean` | — |
-| `no-focus-trap` | — | `boolean` | — |
+| `append-to` | portal 挂载点：把遮罩与面板移入目标容器（`body` 或 CSS 选择器）内的独立 shadow（样式作用域保真），脱离宿主 overflow 裁剪；属性移除/无匹配时移回宿主 shadow | — | — |
+| `cancel-text` | 取消按钮文案；缺省走 locale `drawer.cancel` | — | — |
+| `destroy-on-close` | 关闭动画完成后清空宿主子内容（下次打开重新渲染） | `boolean` | — |
+| `initial-focus` | 打开时聚焦指定选择器元素（面板内优先，其次宿主 light DOM）；未设置回落 ✕ 关闭按钮/首个可聚焦元素 | — | — |
+| `loading` | 内容加载态：主体隐藏并显示骨架占位，确定/取消按钮同时禁用 | `boolean` | — |
+| `no-close-btn` | 隐藏标题栏 ✕ 关闭按钮 | `boolean` | — |
+| `no-esc-close` | 禁用 Esc 关闭 | `boolean` | — |
+| `no-focus-trap` | 关闭焦点陷阱（Tab 不再圈定在抽屉内） | `boolean` | — |
 | `no-footer` | 隐藏底部操作按钮 | `boolean` | — |
-| `no-header` | — | `boolean` | — |
+| `no-header` | 隐藏整个标题区（同时移除 aria-labelledby 可访问名关联） | `boolean` | — |
 | `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | — |
-| `no-scroll-lock` | — | `boolean` | — |
-| `ok-loading` | — | `boolean` | — |
-| `ok-text` | — | — | — |
+| `no-scroll-lock` | 打开时不锁定 body 滚动 | `boolean` | — |
+| `ok-loading` | 确定按钮 loading 态：转 spinner + 禁用（aria-busy），阻止重复触发 | `boolean` | — |
+| `ok-text` | 确定按钮文案；缺省走 locale `drawer.ok` | — | — |
 | `placement` | 滑出方向 | `string` | `right` |
-| `resizable` | — | `boolean` | — |
-| `resize-max` | — | `string` | `1000` |
-| `resize-min` | — | `string` | `160` |
+| `resizable` | 显示边缘拖拽条：指针拖拽调整主轴尺寸（随 placement 取宽/高），方向键微调 ±8px，Home/End 跳 min/max | `boolean` | — |
+| `resize-max` | 拖拽调整上限（px，默认 1000） | `string` | `1000` |
+| `resize-min` | 拖拽调整下限（px，默认 160） | `string` | `160` |
 | `size` | 预设尺寸档位或具体值：`small`（256px）/ `medium`（378px）/ `large`（736px），或直接写如 `512px`、`40%` | — | — |
-| `snap-points` | — | — | — |
-| `swipeable` | — | `boolean` | — |
+| `snap-points` | 吸附点数组（逗号分隔；≤1 视为视口高度比例，>1 为像素，如 `0.35,0.6`）：bottom/top 抽屉拖拽释放后吸附最近点，打开初始吸附最高点；bottom + `snap-points` 隐含启用手势 | — | — |
+| `swipeable` | 启用手势：从拖拽把手/标题栏拖拽关闭（位移超面板尺寸 35% 或快速甩动判定关闭）；`snap-points`（bottom/top）隐含开启 | `boolean` | — |
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `visible` | 是否显示 | `boolean` | — |
 | `width` | 抽屉宽度（px 或百分比），优先级高于 `size` | — | — |
-| `z-index` | — | — | — |
+| `z-index` | 显式层级基准：叠加在 `--oas-z-index-base` 之上（面板比遮罩高 1）；缺省走 overlay 档位 `--oas-z-overlay`，嵌套打开时随栈深递增 | — | — |
 
 #### 事件
 
@@ -382,13 +382,13 @@ onMounted(async () => {
 | --- | --- |
 | `oas-after-close` | 关闭动画完成（规范名，对齐 after-* 家族），`detail` 无；滚动解锁与焦点归还在此之后 |
 | `oas-after-open` | 打开动画完成（规范名，对齐 after-* 家族），`detail` 无；等价 oas-opened |
-| `oas-before-close` | — |
+| `oas-before-close` | 关闭请求前派发（✕/取消/遮罩/Esc/确定/手势），`cancelable`，`detail: { source }`，preventDefault 阻止关闭 |
 | `oas-close` | 关闭：取消按钮 / ✕ / 遮罩点击 / Esc，`detail: { source }` |
 | `oas-closed` | 【兼容别名】关闭动画完成，等价 oas-after-close；后续版本移除 |
 | `oas-ok` | 点击「确定」 |
-| `oas-open` | — |
+| `oas-open` | 开始打开时派发（锁滚动后、初始聚焦前），`detail` 无 |
 | `oas-opened` | 【兼容别名】打开动画完成，等价 oas-after-open；后续版本移除 |
-| `oas-resize` | — |
+| `oas-resize` | 拖拽调整尺寸 / 方向键微调 / snap 吸附后派发，`detail: { size }`（当前主轴尺寸 px） |
 
 #### 插槽
 

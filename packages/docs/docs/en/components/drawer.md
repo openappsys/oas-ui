@@ -350,31 +350,31 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `append-to` | — | — | — |
-| `cancel-text` | — | — | — |
-| `destroy-on-close` | — | `boolean` | — |
-| `initial-focus` | — | — | — |
-| `loading` | — | `boolean` | — |
-| `no-close-btn` | — | `boolean` | — |
-| `no-esc-close` | — | `boolean` | — |
-| `no-focus-trap` | — | `boolean` | — |
+| `append-to` | Portal mount point: moves the mask and panel into an isolated shadow inside the target container (`body` or CSS selector, styles stay scoped), escaping host overflow clipping; moved back to the host shadow when the attribute is removed or unmatched | — | — |
+| `cancel-text` | Cancel button text; falls back to locale `drawer.cancel` | — | — |
+| `destroy-on-close` | Clear the host children after the close animation finishes (re-rendered on next open) | `boolean` | — |
+| `initial-focus` | Focus the element matching this selector on open (panel first, then host light DOM); falls back to the ✕ button / first focusable | — | — |
+| `loading` | Body loading state: content hidden with a skeleton placeholder; OK/Cancel buttons disabled too | `boolean` | — |
+| `no-close-btn` | Hide the ✕ close button in the title bar | `boolean` | — |
+| `no-esc-close` | Disable closing with Esc | `boolean` | — |
+| `no-focus-trap` | Disable the focus trap (Tab no longer cycles inside the drawer) | `boolean` | — |
 | `no-footer` | Hide footer action buttons | `boolean` | — |
-| `no-header` | — | `boolean` | — |
+| `no-header` | Hide the whole header (also removes the aria-labelledby association) | `boolean` | — |
 | `no-mask-close` | Disable closing on mask click | `boolean` | — |
-| `no-scroll-lock` | — | `boolean` | — |
-| `ok-loading` | — | `boolean` | — |
-| `ok-text` | — | — | — |
+| `no-scroll-lock` | Do not lock body scroll while open | `boolean` | — |
+| `ok-loading` | OK button loading state: spinner + disabled (aria-busy), blocking repeated triggers | `boolean` | — |
+| `ok-text` | OK button text; falls back to locale `drawer.ok` | — | — |
 | `placement` | Slide direction | `string` | `right` |
-| `resizable` | — | `boolean` | — |
-| `resize-max` | — | `string` | `1000` |
-| `resize-min` | — | `string` | `160` |
+| `resizable` | Show the edge resize rail: drag to resize along the main axis (width/height per placement), arrow keys step ±8px, Home/End jump to min/max | `boolean` | — |
+| `resize-max` | Resize upper bound (px, default 1000) | `string` | `1000` |
+| `resize-min` | Resize lower bound (px, default 160) | `string` | `160` |
 | `size` | Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%` | — | — |
-| `snap-points` | — | — | — |
-| `swipeable` | — | `boolean` | — |
+| `snap-points` | Snap points array (comma-separated; values ≤1 are viewport-height fractions, >1 are pixels, e.g. `0.35,0.6`): bottom/top drawers snap to the nearest point on release and start at the highest point; bottom + `snap-points` implies gestures | — | — |
+| `swipeable` | Enable gestures: drag from the handle/title bar to close (past 35% of the panel size or a fast fling); implied by `snap-points` (bottom/top) | `boolean` | — |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 | `visible` | Whether shown | `boolean` | — |
 | `width` | Drawer width (px or percentage), takes precedence over `size` | — | — |
-| `z-index` | — | — | — |
+| `z-index` | Explicit z-index base: stacked on `--oas-z-index-base` (the panel sits 1 above the mask); defaults to the overlay tier `--oas-z-overlay`, incrementing with stack depth when nested | — | — |
 
 #### Events
 
@@ -382,13 +382,13 @@ onMounted(async () => {
 | --- | --- |
 | `oas-after-close` | Close animation finished (canonical, aligned with the after-* family); no `detail`. Scroll unlock and focus restore happen after this |
 | `oas-after-open` | Open animation finished (canonical, aligned with the after-* family); no `detail`; same as oas-opened |
-| `oas-before-close` | — |
+| `oas-before-close` | Emitted before a close request (✕ / cancel / mask / Esc / OK / swipe), `cancelable`, `detail: { source }`; preventDefault blocks the close |
 | `oas-close` | Close: cancel button / ✕ / mask click / Esc, `detail: { source }` |
 | `oas-closed` | [Compat alias] Close animation finished, same as oas-after-close; will be removed later |
 | `oas-ok` | Clicked "OK" |
-| `oas-open` | — |
+| `oas-open` | Emitted when opening starts (after the scroll lock, before initial focus); no `detail` |
 | `oas-opened` | [Compat alias] Open animation finished, same as oas-after-open; will be removed later |
-| `oas-resize` | — |
+| `oas-resize` | Emitted after drag-resize / arrow-key adjust / snap; `detail: { size }` (current main-axis size in px) |
 
 #### Slots
 

@@ -274,26 +274,26 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `arrow` | — | `string` | `true` |
-| `auto-adjust-overflow` | — | `string` | `true` |
-| `cancel-text` | — | `string` | — |
-| `description` | — | `string` | — |
-| `disabled` | — | `boolean` | — |
-| `hide-icon` | — | `boolean` | — |
-| `ok-loading` | — | `boolean` | — |
-| `ok-text` | — | `string` | — |
+| `arrow` | 是否显示箭头（默认 true；`arrow="false"` 隐藏，箭头元素与 `::part(arrow)` 保留） | `string` | `true` |
+| `auto-adjust-overflow` | 视口边缘自动翻转与避让（默认 true；`"false"` 关闭，保持声明 placement，可能溢出视口） | `string` | `true` |
+| `cancel-text` | 取消按钮文案；缺省走 locale `popconfirm.cancel` | `string` | — |
+| `description` | 描述文案（标题下方次要说明，次要色小字号；slot="description" 富内容优先） | `string` | — |
+| `disabled` | 整体禁用：全部触发路径拦截、不弹气泡，宿主降饱和并同步 aria-disabled（自身 `disabled` 与 config-provider 注入均生效） | `boolean` | — |
+| `hide-icon` | 隐藏前置语义图标（默认显示，随 `theme` 联动换图标） | `boolean` | — |
+| `ok-loading` | 确定按钮 loading 态：原文字占位保留、居中转 spinner（aria-busy），点击被拦截防重复提交；宿主在 `oas-ok` 监听里同步置位可阻止本次自动关闭 | `boolean` | — |
+| `ok-text` | 确定按钮文案；缺省走 locale `popconfirm.ok` | `string` | — |
 | `open` | 是否显示气泡 | `boolean` | — |
-| `placement` | — | `string` | — |
+| `placement` | 气泡位置：12 向 `top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `top`）；缺席回落旧 `position`（4 基向子集） | `string` | — |
 | `position` | 气泡位置 | `string` | — |
-| `show-cancel` | — | `string` | `true` |
-| `theme` | — | `string` | `default` |
+| `show-cancel` | 是否显示取消按钮（默认 true；`show-cancel="false"` 单按钮确认） | `string` | `true` |
+| `theme` | 语义主题：`default` / `warning` / `danger`——面板 tint 底与描边、图标与确定按钮色阶联动（token 含 dark 变体） | `string` | `default` |
 | `title` | 确认文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
-| `trigger` | — | `string` | `click` |
-| `virtual` | — | `boolean` | — |
-| `virtual-anchor` | — | — | — |
-| `virtual-x` | — | — | — |
-| `virtual-y` | — | — | — |
-| `width` | — | `string` | — |
+| `trigger` | 触发方式：`click`（默认）/ `hover` / `focus` / `contextmenu` / `manual`，空格分隔可多选；含 `hover` 时触屏自动降级点按切换 | `string` | `click` |
+| `virtual` | 虚拟触发模式：不绑定触发元素，`open` 完全受外部控制，位置由 `virtual-anchor` 或 `virtual-x`/`virtual-y` 指定；不注册外部点击关闭 | `boolean` | — |
+| `virtual-anchor` | 虚拟锚点元素选择器（`virtual-x`/`virtual-y` 未设置时生效） | — | — |
+| `virtual-x` | 虚拟锚点 x（视口坐标，px） | — | — |
+| `virtual-y` | 虚拟锚点 y（视口坐标，px） | — | — |
+| `width` | 面板宽度：数字（px）/ `"trigger"`（与触发元素同宽）/ 任意 CSS 值；默认 min-width 200px | `string` | — |
 
 #### 事件
 
@@ -301,7 +301,7 @@ onMounted(async () => {
 | --- | --- |
 | `oas-cancel` | 取消：取消按钮 / Esc / 外部点击，`detail: { source: this, event: e }` |
 | `oas-ok` | 点击「确定」，随后气泡自动收起，`detail: { source: this, event: e }` |
-| `oas-open-change` | — |
+| `oas-open-change` | open 状态变化时派发，`detail: { open, reason }`（reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`） |
 
 #### 插槽
 

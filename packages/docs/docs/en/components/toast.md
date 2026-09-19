@@ -280,30 +280,30 @@ onMounted(async () => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `closable` | Whether to show the close button (always disabled while loading) | `boolean` | — |
-| `count` | — | `string` | `0` |
+| `count` | Same-content dedup count badge: with imperative grouping on, repeated dispatches of the same signature increment the count (`×N` next to the title, shown above 1) and reset the timer | `string` | `0` |
 | `description` | Description text | `string` | — |
 | `duration` | Auto-close duration in ms; pass `0` to keep it open | `string` | `3000` |
-| `id` | — | — | — |
-| `open` | — | `string` | `true` |
-| `pause-on-focus` | — | — | — |
-| `pause-on-hover` | — | — | — |
-| `pause-on-window-blur` | — | — | — |
-| `politeness` | — | `string` | — |
-| `progress-position` | — | `string` | `bottom` |
-| `progress-ring` | — | `boolean` | — |
-| `show-progress` | — | `boolean` | — |
-| `swipe-direction` | — | `string` | `both` |
+| `id` | Instance identity: imperative show/update/dismiss hit the existing instance by id to update/close in place instead of creating a new one; also used as the DOM id | — | — |
+| `open` | Controlled switch (declarative usage): `open="false"` hides the whole card and pauses the auto-close timer; absent/other values mean open | `string` | `true` |
+| `pause-on-focus` | Pause the auto-close timer while focus is inside (default on; `"false"` disables) | — | — |
+| `pause-on-hover` | Pause the auto-close timer while hovered (default on; `"false"` disables) | — | — |
+| `pause-on-window-blur` | Pause the auto-close timer when the window loses focus or the page is hidden (default on; `"false"` disables) | — | — |
+| `politeness` | Screen-reader politeness: `polite` (role=status) / `assertive` (role=alert, interrupts immediately); an explicit value wins, otherwise derived from `type` (`error` is assertive, others polite) | `string` | — |
+| `progress-position` | Progress bar position: `bottom` (default) / `top`, together with `show-progress` | `string` | `bottom` |
+| `progress-ring` | Progress-ring close button: an SVG ring around the ✕ tracks the remaining time (completes as `duration` elapses, when > 0) | `boolean` | — |
+| `show-progress` | Show the remaining-time progress bar for auto-close (duration follows `duration`, frozen while paused) | `boolean` | — |
+| `swipe-direction` | Swipe-to-dismiss direction: `both` (default) / `right` / `left` / `up` / `down`; the orthogonal axis follows with 0.2 damping | `string` | `both` |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 | `type` | Toast type: `info`/`success`/`warning`/`error`/`loading` | `string` | `info` |
-| `variant` | — | — | — |
+| `variant` | Visual variant: default card / `plain` (no border/background, text straight out) / `translucent` (translucent frosted glass) | — | — |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-close` | — |
-| `oas-destroy` | — |
-| `oas-open` | — |
+| `oas-close` | Emitted on close, `detail: { trigger }` (trigger: `auto`/`manual`/`action`/`close-button`/`esc`/`swipe`/`preempt`/`external`); the node is removed after the leave animation |
+| `oas-destroy` | Emitted after the node is removed from the DOM (also as a fallback for external removal), `detail: { trigger }`; used to settle the promise chain |
+| `oas-open` | Emitted when shown, `detail: { trigger }` |
 
 #### Slots
 

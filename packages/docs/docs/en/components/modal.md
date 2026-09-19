@@ -667,32 +667,32 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `append-to` | — | — | — |
+| `append-to` | Portal mount point: moves the mask and dialog into an isolated shadow inside the target container (`body` or CSS selector, styles stay scoped), escaping host overflow clipping; moved back to the host shadow when the attribute is removed or unmatched | — | — |
 | `cancel-text` | Cancel button label; defaults to locale `modal.cancel` | — | — |
 | `centered` | Vertically center the dialog | `boolean` | — |
-| `confirm-on-enter` | — | `boolean` | — |
-| `destroy-on-close` | — | `boolean` | — |
+| `confirm-on-enter` | When explicitly enabled, Enter triggers OK (topmost modal only; effective only when the dialog has no text input controls and focus is not on a button/link or other native interactive control, preventing double triggers; off by default) | `boolean` | — |
+| `destroy-on-close` | Clear the host children after the close animation finishes (re-rendered on next open) | `boolean` | — |
 | `draggable` | Drag the dialog via its header | `boolean` | — |
 | `focus-ok` | Move focus to the "OK" button on open (default: the "Cancel" button) | `boolean` | — |
 | `fullscreen` | Display fullscreen: the dialog fills the viewport without radius or margin (takes precedence over width / centered / draggable) | `boolean` | — |
-| `fullscreen-breakpoint` | — | — | — |
-| `initial-focus` | — | — | — |
+| `fullscreen-breakpoint` | Automatically go fullscreen when the viewport width drops below this threshold (px), recomputed on resize while open; unioned with the explicit `fullscreen` attribute | — | — |
+| `initial-focus` | Focus the element matching this selector on open (dialog first, then host light DOM); falls back to `focus-ok` / the Cancel button / OK / ✕ | — | — |
 | `loading` | Put the OK button into loading state (disabled + spinner), blocking repeated confirms | `boolean` | — |
 | `no-cancel` | Hide the cancel button (the footer keeps only "OK"; built into semantic variants) | `boolean` | — |
-| `no-close-btn` | — | `boolean` | — |
-| `no-esc-close` | — | `boolean` | — |
-| `no-focus-trap` | — | `boolean` | — |
+| `no-close-btn` | Hide the ✕ close button in the title bar | `boolean` | — |
+| `no-esc-close` | Disable closing with Esc (Esc is only handled by the topmost visible modal) | `boolean` | — |
+| `no-focus-trap` | Disable the focus trap (Tab no longer cycles inside the dialog) | `boolean` | — |
 | `no-footer` | Hide footer action buttons | `boolean` | — |
-| `no-mask` | — | `boolean` | — |
+| `no-mask` | Maskless non-modal: no backdrop rendered, focus trap off, no focus steal on open (like HTML dialog.show(); the rest of the page stays interactive) | `boolean` | — |
 | `no-mask-close` | Disable closing on mask click | `boolean` | — |
-| `no-scroll-lock` | — | `boolean` | — |
+| `no-scroll-lock` | Do not lock body scroll while open (the default lock compensates for scrollbar width to prevent layout shift) | `boolean` | — |
 | `ok-text` | OK button label; defaults to locale `modal.ok` | — | — |
-| `position` | — | — | — |
-| `role` | — | `string` | `dialog` |
-| `size` | — | `ModalSizePreset` | — |
+| `position` | Vertical positioning: `top` pins the dialog to the viewport top edge; default sits 100px from the top; when set together with `centered`, the `top` rule wins (later in the cascade) | — | — |
+| `role` | Dialog ARIA role (default `dialog`; set `alertdialog` for semantic confirmation scenarios) | `string` | `dialog` |
+| `size` | Size preset: `sm` (400px) / `lg` (720px); an explicit `width` wins; invalid values fall back to the theme default 520px | `ModalSizePreset` | — |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
-| `transition` | — | — | — |
-| `trigger` | — | — | — |
+| `transition` | Open/close animation preset: `zoom` (default, fade + scale, scale origin follows the click position before opening) / `fade` (opacity only) / `none` (no transition, instant) | — | — |
+| `trigger` | Declarative trigger element id: clicking the element sets `visible` to open the modal (does not touch the controlled model); silently retries on later updates when the element is missing | — | — |
 | `type` | Semantic variant: `info`/`success`/`warning`/`error`, renders the matching semantic icon above the content | `ModalVariant` | — |
 | `visible` | Whether shown | `boolean` | — |
 | `width` | Dialog width (px or percentage) | — | — |
@@ -703,12 +703,12 @@ onMounted(async () => {
 | --- | --- |
 | `oas-after-close` | Close animation finished (canonical, aligned with the after-* family); no `detail`. destroy-on-close content clearing happens after this |
 | `oas-after-open` | Open animation finished (canonical, aligned with the after-* family); no `detail`; same as oas-opened |
-| `oas-before-close` | — |
+| `oas-before-close` | Emitted before a close request (OK / cancel / ✕ / mask / Esc), `cancelable`, `detail: { source }`; preventDefault blocks the close and shakes the dialog as feedback (programmatic close bypasses the interception) |
 | `oas-cancel` | Cancel: cancel button / ✕ / mask click / Esc |
-| `oas-close` | — |
+| `oas-close` | Emitted when closing starts; `detail: { source, action }` (source: `ok`/`cancel`/`close-btn`/`mask`/`esc`/`programmatic`; action: `confirm`/`cancel`/`close`) |
 | `oas-closed` | [Compat alias] Close animation finished, same as oas-after-close; will be removed later |
 | `oas-ok` | Clicked "OK" |
-| `oas-open` | — |
+| `oas-open` | Emitted when opening starts (after the scroll lock and focus move); no `detail` |
 | `oas-opened` | [Compat alias] Open animation finished, same as oas-after-open; will be removed later |
 
 #### Slots

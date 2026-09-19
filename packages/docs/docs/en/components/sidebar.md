@@ -404,7 +404,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `badge` | Count badge (all-digit strings convert to `number`, otherwise stay `string`; matches `SidebarItem.badge`'s `string \| number`) | — | — |
 | `group` | Group name (consecutive items in the same group get a group title before the group's first item) | — | — |
 | `icon` | Leading icon (`@oas-ui/icons` registry icon name; shown in the collapsed icon strip) | — | — |
-| `icon-color` | — | — | — |
+| `icon-color` | Icon color: when set, fixes the icon color (replaces the built-in mono path's currentColor, taking precedence over disabled/active state colors); defaults to currentColor so the color follows states | — | — |
 | `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
 
 #### Slots

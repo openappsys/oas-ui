@@ -186,32 +186,32 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `clearable` | — | `boolean` | — |
-| `color-format` | — | `string` | `hex` |
+| `clearable` | 面板底部显示「清除」按钮（展开且有值时可见）：点击写回 `value-on-clear` 或清空 `value`，并派发 `oas-clear` + `oas-change` | `boolean` | — |
+| `color-format` | 输出格式：`hex`（默认）/ `rgb`；决定 value 写回与触发器文本格式 | `string` | `hex` |
 | `disabled` | 禁用 | `boolean` | — |
-| `disabled-alpha` | — | `boolean` | — |
-| `inline` | — | `boolean` | — |
-| `mode` | — | `string` | `single` |
-| `open` | — | `boolean` | — |
+| `disabled-alpha` | 禁用透明度滑杆（`show-alpha` 开启时生效） | `boolean` | — |
+| `inline` | 内联模式：面板就地常显、隐藏触发按钮，无 popup 定位契约，不派发 `oas-open-change` | `boolean` | — |
+| `mode` | 取色模式：`single`（默认）/ `gradient`（渐变编辑器，需 designer 能力注入；未注入静默失效 + dev 告警一次） | `string` | `single` |
+| `open` | 受控展开面板（布尔属性）；`readonly`/禁用下不生效；变化派发 `oas-open-change` | `boolean` | — |
 | `placement` | 面板位置，12 向 `top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `bottom`）；触发器贴近视口右缘时自动右对齐翻转，下方空间不足时向上弹，溢出部分夹取回视口内 | `string` | `bottom` |
 | `preset` | 预设色数组（JSON） | `string` | — |
-| `preset-columns` | — | `string` | — |
-| `preset-rows` | — | `string` | — |
-| `readonly` | — | `boolean` | — |
-| `show-alpha` | — | `boolean` | — |
-| `show-text` | — | `string` | `true` |
-| `size` | — | — | — |
-| `uppercase` | — | `boolean` | — |
+| `preset-columns` | 预设色板列数（正整数，默认 8） | `string` | — |
+| `preset-rows` | 预设色板行数上限（正整数；缺省不限制，显示全部预设） | `string` | — |
+| `readonly` | 只读：触发器不展开面板，编辑提交全部拦截 | `boolean` | — |
+| `show-alpha` | 启用透明度通道：面板显示 alpha 滑杆，半透明色的触发器/预设块棋盘格底，value 输出带 alpha | `boolean` | — |
+| `show-text` | 触发器显示色值文本（默认 true；`"false"` 只显示色块） | `string` | `true` |
+| `size` | 触发器尺寸：`small` / `medium`（默认）/ `large` | — | — |
+| `uppercase` | 输出色值大写（hex 字母 A–F） | `boolean` | — |
 | `value` | 当前颜色（hex） | `string` | — |
-| `value-on-clear` | — | `string` | — |
+| `value-on-clear` | 清除时的回落值：设置后点「清除」写回该值而非清空 `value` | `string` | — |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 颜色变化，`detail: { value }` |
-| `oas-clear` | — |
-| `oas-open-change` | — |
+| `oas-clear` | 点击「清除」后派发，`detail: { value }` 为清除前的旧值；随后派发 `oas-change`（detail.value 为新值/空串） |
+| `oas-open-change` | 面板展开状态变化时派发，`detail: { open }`（inline 模式不派发） |
 
 #### 插槽
 

@@ -4,6 +4,14 @@
 
 ## [未发布]
 
+### 契约变更（升级前必读）
+
+本批含三类**非 JS API** 的对外契约变更（属性/事件签名未变），升级前请核对：
+
+- **ARIA 语义**：`oas-card` / `oas-list-item` 不再挂缺省交互角色（`role=button/checkbox`）——可点/可选卡与可点行内常嵌操作控件，缺省角色会把它们裹进交互元素（`nested-interactive`，屏幕阅读器丢失内部控件可读性）。需要行级/卡级交互语义时，由宿主显式挂 `role`（组件不覆盖宿主显式角色）并按需自行同步 `aria-checked`；`oas-editable` 只读展示态由 `role=button` 改为 `role=textbox` + `aria-readonly`；`oas-radio` 只读由 `aria-readonly` 改为 `aria-disabled`（radio 不支持前者）。
+- **token 语义**：语义色/预设色的 `-text` 变体（如 `--oas-preset-red-text`）现在同时承担「文字色」与「实底底色」（tag、badge、avatar、toggle 的实心与选中态）——只覆写 `--oas-preset-*` / `--oas-color-*` 本色的换肤不再影响这些组件的实底与文字，请改为覆写对应 `-text` 变体。另新增 `--oas-color-primary-text`（primary 的文字安全档，值与 `-active` 相同，交互态仍用 `-active`）；自定义 hex 色的文字安全档改为随主题方向的混合（内部 token `--oas-deep-mix` / `--oas-deep-sink`）。
+- **Shadow DOM 结构**：`oas-splitter` 的分隔条外层新增 `.sep` 包裹层（折叠按钮与 separator 同级，消除交互嵌套），`[part="splitter"]` 的宽度语义由 `.sep` 承接；`oas-progress` 内嵌文本（`::part(inside)`）的父节点由 `.track` 变为 `.bar`（文本只压在已填充段内，填充过窄时自动隐藏）。依赖这些结构的宿主 CSS / `::part` 选择器需相应调整。
+
 ### 无障碍
 
 - **感知对比度门禁（零容忍，light + dark 双主题）**：117 页 × light/dark 双主题，共 2.4 万+ 文本节点（单主题约 1.2 万），逐节点取 axe 解析出的文字/背景实测色，用自实现的感知对比度公式打分——**`<60` 一个节点都不允许**（`<45`/`<30` 同为零）；禁用态文字（含 opacity 淡化合成档）按 WCAG 豁免并在门禁单列计数；门禁自带「注入低对比文本必须被捕获」自检与「color-contrast 不得进页面级豁免」防绕过守卫

@@ -309,7 +309,7 @@ Breakpoint table:
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `aria-label` | — | `boolean` | — |
+| `aria-label` | Override the group accessible name: the component sets role=group with an i18n default name (locale `compact.group`); setting this attribute overrides it | `boolean` | — |
 | `block` | Width 100% (stretch to fill the parent container) | — | — |
 | `disabled` | Disable the whole group | `boolean` | — |
 | `vertical` | Vertical grouping (adjacent items overlap -1px vertically, corner merging switches to top/bottom) | `boolean` | — |

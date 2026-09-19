@@ -274,26 +274,26 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `arrow` | — | `string` | `true` |
-| `auto-adjust-overflow` | — | `string` | `true` |
-| `cancel-text` | — | `string` | — |
-| `description` | — | `string` | — |
-| `disabled` | — | `boolean` | — |
-| `hide-icon` | — | `boolean` | — |
-| `ok-loading` | — | `boolean` | — |
-| `ok-text` | — | `string` | — |
+| `arrow` | Whether to show the arrow (default true; `arrow="false"` hides it, the element and `::part(arrow)` are kept) | `string` | `true` |
+| `auto-adjust-overflow` | Viewport-edge auto flip and avoidance (default true; `"false"` disables it, keeping the declared placement, which may overflow the viewport) | `string` | `true` |
+| `cancel-text` | Cancel button text; falls back to locale `popconfirm.cancel` | `string` | — |
+| `description` | Description text (secondary line under the title, smaller and dimmed; the "description" slot wins for rich content) | `string` | — |
+| `disabled` | Fully disabled: every trigger path is gated and no bubble shows, the host is dimmed with aria-disabled synced (both the `disabled` attribute and config-provider injection take effect) | `boolean` | — |
+| `hide-icon` | Hide the leading semantic icon (shown by default, switching with `theme`) | `boolean` | — |
+| `ok-loading` | OK button loading state: the original label keeps its space while a spinner centers over it (aria-busy); clicks are blocked to prevent duplicate submits; setting it synchronously inside the `oas-ok` listener prevents the auto-close | `boolean` | — |
+| `ok-text` | OK button text; falls back to locale `popconfirm.ok` | `string` | — |
 | `open` | Whether the bubble is shown | `boolean` | — |
-| `placement` | — | `string` | — |
+| `placement` | Bubble placement: 12 directions `top`/`bottom`/`left`/`right` with `-start`/`-end` (default `top`); falls back to the legacy `position` (4 base directions) when absent | `string` | — |
 | `position` | Bubble position | `string` | — |
-| `show-cancel` | — | `string` | `true` |
-| `theme` | — | `string` | `default` |
+| `show-cancel` | Whether to show the cancel button (default true; `show-cancel="false"` gives a single-button confirm) | `string` | `true` |
+| `theme` | Semantic theme: `default` / `warning` / `danger` — panel tint background and border, icon and OK button color ramp linked (tokens include dark variants) | `string` | `default` |
 | `title` | Confirmation text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
-| `trigger` | — | `string` | `click` |
-| `virtual` | — | `boolean` | — |
-| `virtual-anchor` | — | — | — |
-| `virtual-x` | — | — | — |
-| `virtual-y` | — | — | — |
-| `width` | — | `string` | — |
+| `trigger` | Trigger modes: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space-separated for multiple; with `hover`, touch devices degrade to tap-to-toggle automatically | `string` | `click` |
+| `virtual` | Virtual trigger mode: no anchor element, `open` fully controlled externally, positioned via `virtual-anchor` or `virtual-x`/`virtual-y`; no outside-click dismissal registered | `boolean` | — |
+| `virtual-anchor` | Virtual anchor element selector (effective when `virtual-x`/`virtual-y` are unset) | — | — |
+| `virtual-x` | Virtual anchor x (viewport coordinate, px) | — | — |
+| `virtual-y` | Virtual anchor y (viewport coordinate, px) | — | — |
+| `width` | Panel width: a number (px) / `"trigger"` (same width as the trigger) / any CSS value; default min-width 200px | `string` | — |
 
 #### Events
 
@@ -301,7 +301,7 @@ onMounted(async () => {
 | --- | --- |
 | `oas-cancel` | Cancel: cancel button / Esc / outside click, `detail: { source: this, event: e }` |
 | `oas-ok` | Clicked "OK"; the bubble then collapses automatically, `detail: { source: this, event: e }` |
-| `oas-open-change` | — |
+| `oas-open-change` | Emitted when the open state changes, `detail: { open, reason }` (reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`) |
 
 #### Slots
 

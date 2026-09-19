@@ -200,7 +200,7 @@ Typography components for text, titles, and paragraphs.
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `actions-position` | Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot="actions"` | `string` | `end` |
-| `align` | — | `AlignType` | — |
+| `align` | Text alignment: `start` (default) / `center` / `end` / `justify` (start/end are logical values, RTL-safe); invalid values fall back to default | `AlignType` | — |
 | `code` | Inline code style (monospace + light background) | `boolean` | — |
 | `copy-text` | Custom content to copy (defaults to the current text) | `string` | — |
 | `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
@@ -212,12 +212,12 @@ Typography components for text, titles, and paragraphs.
 | `level` | Heading level (1-5) | `string` | `3` |
 | `line-clamp` | Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix` | `string` | — |
 | `mark` | Highlighted mark (light yellow background, `<mark>` semantics) | — | — |
-| `numeric` | — | — | — |
+| `numeric` | Tabular numerals (`font-variant-numeric: tabular-nums`) so number columns line up in tables/stats | — | — |
 | `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
 | `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | Underline | — | — |
-| `weight` | — | `WeightType` | — |
+| `weight` | Font weight tier: `regular` (400) / `medium` (500) / `semibold` (600) / `bold` (700); an explicit tier wins over the `strong` boolean; invalid values fall back | `WeightType` | — |
 
 #### Events
 
@@ -247,7 +247,7 @@ Typography components for text, titles, and paragraphs.
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `actions-position` | Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot="actions"` | `string` | `end` |
-| `align` | — | `AlignType` | — |
+| `align` | Text alignment: `start` (default) / `center` / `end` / `justify` (start/end are logical values, RTL-safe); invalid values fall back to default | `AlignType` | — |
 | `code` | Inline code style (monospace + light background) | `boolean` | — |
 | `copy-text` | Custom content to copy (defaults to the current text) | `string` | — |
 | `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
@@ -259,12 +259,12 @@ Typography components for text, titles, and paragraphs.
 | `level` | Heading level (1-5) | `string` | `3` |
 | `line-clamp` | Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix` | `string` | — |
 | `mark` | Highlighted mark (light yellow background, `<mark>` semantics) | — | — |
-| `numeric` | — | — | — |
+| `numeric` | Tabular numerals (`font-variant-numeric: tabular-nums`) so number columns line up in tables/stats | — | — |
 | `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
 | `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | Underline | — | — |
-| `weight` | — | `WeightType` | — |
+| `weight` | Font weight tier: `regular` (400) / `medium` (500) / `semibold` (600) / `bold` (700); an explicit tier wins over the `strong` boolean; invalid values fall back | `WeightType` | — |
 
 #### Events
 

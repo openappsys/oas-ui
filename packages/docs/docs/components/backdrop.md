@@ -146,21 +146,21 @@ onMounted(async () => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `blur` | 背景模糊 | — | — |
-| `close-label` | — | — | — |
-| `color` | — | — | — |
+| `close-label` | 读屏关闭通道按钮的 aria-label（sr-only 按钮，Tab 聚焦时可见，键盘可关遮罩）；缺省走 locale `modal.close` | — | — |
+| `color` | 遮罩底色：任意 CSS 色值，或 11 预设名（`magenta`/`red`/`volcano`/`orange`/`gold`/`lime`/`green`/`cyan`/`blue`/`geekblue`/`purple`，映射 `--oas-preset-*` token）；未设置回落 `--oas-backdrop-bg` | — | — |
 | `lock-scroll` | 打开时锁定 body 滚动 | `string` | `true` |
-| `opacity` | — | — | — |
+| `opacity` | 遮罩浓度：档位 `thin`(0.35) / `default`(0.55) / `thick`(0.75) 或 0–1 数字；只作用于底色层（不压暗遮罩内容）；非法值回落 `--oas-backdrop-opacity` | — | — |
 | `open` | 是否显示 | `boolean` | — |
-| `persistent` | — | `boolean` | — |
-| `stop-propagation` | — | `string` | `true` |
+| `persistent` | 持久遮罩：点击遮罩不派发 `oas-click`（宿主事件驱动关闭失效），改为内容 shake 反馈提示不可关闭 | `boolean` | — |
+| `stop-propagation` | 点击遮罩阻断事件穿透到宿主文档（默认 true；`"false"` 允许冒泡） | `string` | `true` |
 | `transparent` | 遮罩透明（无底色） | — | — |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-after-close` | — |
-| `oas-after-show` | — |
+| `oas-after-close` | 关闭动画完成后派发（规范名，对齐 after-* 家族），`detail` 无；滚动解锁与节点卸载（元素自移除）在此之后 |
+| `oas-after-show` | 进入动画完成后派发（规范名，对齐 after-* 家族），`detail` 无；reduced-motion 下立即派发 |
 | `oas-click` | 点击遮罩，`detail.originalEvent` 为原始点击事件 |
 
 #### 插槽

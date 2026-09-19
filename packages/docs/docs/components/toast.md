@@ -280,30 +280,30 @@ onMounted(async () => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `closable` | 是否显示关闭按钮（loading 态强制不可关） | `boolean` | — |
-| `count` | — | `string` | `0` |
+| `count` | 同内容去重计数徽标：命令式 grouping 开启时同签名重复派发递增计数（标题行旁 `×N`，>1 才显示）并重置计时 | `string` | `0` |
 | `description` | 描述文案 | `string` | — |
 | `duration` | 自动关闭时长（ms），`0` 表示不自动关闭 | `string` | `3000` |
-| `id` | — | — | — |
-| `open` | — | `string` | `true` |
-| `pause-on-focus` | — | — | — |
-| `pause-on-hover` | — | — | — |
-| `pause-on-window-blur` | — | — | — |
-| `politeness` | — | `string` | — |
-| `progress-position` | — | `string` | `bottom` |
-| `progress-ring` | — | `boolean` | — |
-| `show-progress` | — | `boolean` | — |
-| `swipe-direction` | — | `string` | `both` |
+| `id` | 实例标识：命令式 show/update/dismiss 按 id 命中既有实例原位更新/关闭而非新建；同时作为 DOM id | — | — |
+| `open` | 受控开关（声明式用法）：`open="false"` 整卡隐藏且自动关闭计时暂停；缺省/其他值视为打开 | `string` | `true` |
+| `pause-on-focus` | 焦点进入时暂停自动关闭计时（默认开；`"false"` 关闭） | — | — |
+| `pause-on-hover` | 悬停时暂停自动关闭计时（默认开；`"false"` 关闭） | — | — |
+| `pause-on-window-blur` | 窗口失焦/页面隐藏时暂停自动关闭计时（默认开；`"false"` 关闭） | — | — |
+| `politeness` | 读屏敏感度：`polite`（role=status）/ `assertive`（role=alert 立即打断）；显式设置优先，缺省按 `type`（`error` 走 assertive，其余 polite） | `string` | — |
+| `progress-position` | 进度条位置：`bottom`（默认）/ `top`，配合 `show-progress` | `string` | `bottom` |
+| `progress-ring` | 关闭按钮进度环形态：✕ 外圈 SVG 圆环表示剩余时间（`duration` > 0 时随时长走完） | `boolean` | — |
+| `show-progress` | 显示自动关闭剩余时间进度条（时长随 `duration`，暂停时定格） | `boolean` | — |
+| `swipe-direction` | 滑动关闭方向：`both`（默认）/ `right` / `left` / `up` / `down`；非配置方向 0.2 阻尼跟随 | `string` | `both` |
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `type` | 提示类型：`info`/`success`/`warning`/`error`/`loading` | `string` | `info` |
-| `variant` | — | — | — |
+| `variant` | 视觉变体：默认卡片 / `plain`（无边框无底纹文本直出）/ `translucent`（半透明毛玻璃） | — | — |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-close` | — |
-| `oas-destroy` | — |
-| `oas-open` | — |
+| `oas-close` | 关闭时派发，`detail: { trigger }`（trigger: `auto`/`manual`/`action`/`close-button`/`esc`/`swipe`/`preempt`/`external`）；离场动画后移除节点 |
+| `oas-destroy` | 节点从 DOM 移除后派发（含外部 remove 兜底），`detail: { trigger }`；promise 链收尾用 |
+| `oas-open` | 展示时派发，`detail: { trigger }` |
 
 #### 插槽
 
