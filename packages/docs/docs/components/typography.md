@@ -200,7 +200,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `actions-position` | 操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot="actions"` | `string` | `end` |
-| `align` | — | `AlignType` | — |
+| `align` | 文本对齐：`start`（默认）/ `center` / `end` / `justify`（start/end 为逻辑值，RTL 安全）；非法值回落默认 | `AlignType` | — |
 | `code` | 行内代码样式（等宽字体 + 浅底） | `boolean` | — |
 | `copy-text` | 自定义复制内容（缺省复制当前文本） | `string` | — |
 | `copyable` | 显示复制按钮，点击复制文本内容 | `boolean` | — |
@@ -212,12 +212,12 @@
 | `level` | 标题级别（1–5） | `string` | `3` |
 | `line-clamp` | 多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合 | `string` | — |
 | `mark` | 高亮标记（浅黄底，`<mark>` 语义） | — | — |
-| `numeric` | — | — | — |
+| `numeric` | 数字等宽（`font-variant-numeric: tabular-nums`），表格/统计数字列对齐 | — | — |
 | `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
 | `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | 下划线 | — | — |
-| `weight` | — | `WeightType` | — |
+| `weight` | 字重档：`regular`(400) / `medium`(500) / `semibold`(600) / `bold`(700)；显式档优先于 `strong` 布尔；非法值回落 | `WeightType` | — |
 
 #### 事件
 
@@ -247,7 +247,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `actions-position` | 操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot="actions"` | `string` | `end` |
-| `align` | — | `AlignType` | — |
+| `align` | 文本对齐：`start`（默认）/ `center` / `end` / `justify`（start/end 为逻辑值，RTL 安全）；非法值回落默认 | `AlignType` | — |
 | `code` | 行内代码样式（等宽字体 + 浅底） | `boolean` | — |
 | `copy-text` | 自定义复制内容（缺省复制当前文本） | `string` | — |
 | `copyable` | 显示复制按钮，点击复制文本内容 | `boolean` | — |
@@ -259,12 +259,12 @@
 | `level` | 标题级别（1–5） | `string` | `3` |
 | `line-clamp` | 多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合 | `string` | — |
 | `mark` | 高亮标记（浅黄底，`<mark>` 语义） | — | — |
-| `numeric` | — | — | — |
+| `numeric` | 数字等宽（`font-variant-numeric: tabular-nums`），表格/统计数字列对齐 | — | — |
 | `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
 | `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | 下划线 | — | — |
-| `weight` | — | `WeightType` | — |
+| `weight` | 字重档：`regular`(400) / `medium`(500) / `semibold`(600) / `bold`(700)；显式档优先于 `strong` 布尔；非法值回落 | `WeightType` | — |
 
 #### 事件
 

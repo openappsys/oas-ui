@@ -151,17 +151,17 @@ onMounted(async () => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `action-text` | 操作按钮文案 | `string` | — |
-| `closable` | — | `boolean` | — |
+| `closable` | 右侧显示 ✕ 关闭按钮（点击关闭，`oas-close` detail.reason=`close`） | `boolean` | — |
 | `direction` | 位置方向 | — | — |
 | `duration` | 自动关闭时长（ms） | `string` | `4000` |
-| `group` | — | `string` | — |
+| `group` | 同内容合并分组键：同方向 + 同 `group` + 同 `message` 的新条目并入既有条目（计数徽标 ×N + 计时重置），自身派发 `oas-close`（reason=`group`）不展示；默认插槽内容不参与合并 | `string` | — |
 | `message` | 文案 | `string` | — |
-| `no-pause` | — | `boolean` | — |
+| `no-pause` | 禁用自动暂停：hover / 焦点 / 页面隐藏不再冻结计时（默认三者都会暂停） | `boolean` | — |
 | `offset` | 距屏幕边缘偏移（px） | `string` | `24` |
 | `open` | 是否显示（受控） | `boolean` | — |
-| `progress` | — | `boolean` | — |
-| `queue` | — | `boolean` | — |
-| `swipe` | — | `boolean` | — |
+| `progress` | 显示计时进度条（底部 2px，JS 记账驱动 scaleX，暂停即冻结） | `boolean` | — |
+| `queue` | 栈满排队：同方向在屏满 3 条时 FIFO 排队等空位补位展示（未设置则挤掉最老一条，reason=`evict`） | `boolean` | — |
+| `swipe` | 启用滑动关闭：纵向拖拽 ≥48px 关闭（顺势抛出离场） | `boolean` | — |
 
 #### 事件
 

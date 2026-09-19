@@ -125,7 +125,8 @@
   "oas-app": {
     "attrs": {
       "message": "Global default config JSON for the message imperative API (keys aligned with existing options: `duration`); imperative functions merge the nearest app's config with call options, call options win; invalid JSON is ignored with a dev warning",
-      "notification": "Global default config JSON for the notification imperative API (keys aligned with existing options: `duration`/`showProgress`/`progressPosition`/`scrollable`); imperative functions merge the nearest app's config with call options, call options win; invalid JSON is ignored with a dev warning"
+      "notification": "Global default config JSON for the notification imperative API (keys aligned with existing options: `duration`/`showProgress`/`progressPosition`/`scrollable`); imperative functions merge the nearest app's config with call options, call options win; invalid JSON is ignored with a dev warning",
+      "toast": "Global default config JSON for the imperative toast API (keys aligned with existing options keys: `duration`/`position`/`closable`/`priority`/`max`/`politeness`/`variant`/`showProgress`/`progressRing`/`swipeDirection`/`grouping`/`stacked`/`pauseOnHover`/`pauseOnFocus`/`pauseOnWindowBlur`); imperative calls merge the nearest app config with call arguments, call arguments win; invalid JSON is ignored with a dev warning"
     },
     "events": {},
     "slots": {
@@ -230,10 +231,17 @@
       "blur": "Blur the background",
       "lock-scroll": "Lock body scroll while open",
       "open": "Whether shown",
-      "transparent": "Transparent overlay (no background)"
+      "transparent": "Transparent overlay (no background)",
+      "close-label": "aria-label of the screen-reader close button (sr-only by default, revealed on Tab focus so keyboard users can close the overlay); falls back to the locale `modal.close`",
+      "color": "Overlay background color: any CSS color value, or one of the 11 preset names (`magenta`/`red`/`volcano`/`orange`/`gold`/`lime`/`green`/`cyan`/`blue`/`geekblue`/`purple`, mapped to `--oas-preset-*` tokens); falls back to `--oas-backdrop-bg` when unset",
+      "opacity": "Overlay opacity: levels `thin` (0.35) / `default` (0.55) / `thick` (0.75) or a 0–1 number; applies to the scrim layer only (does not dim overlay content); invalid values fall back to `--oas-backdrop-opacity`",
+      "persistent": "Persistent overlay: mask clicks do not emit `oas-click` (host-driven closing stops working); the content shakes instead as a not-closable hint",
+      "stop-propagation": "Stop mask clicks from propagating into the host document (default true; `\"false\"` allows bubbling)"
     },
     "events": {
-      "oas-click": "Backdrop clicked, `detail.originalEvent` is the original click event"
+      "oas-click": "Backdrop clicked, `detail.originalEvent` is the original click event",
+      "oas-after-close": "Emitted after the close animation finishes (canonical, aligned with the after-* family); no `detail`. Scroll unlock and node removal (the element removes itself) happen after this",
+      "oas-after-show": "Emitted after the enter animation finishes (canonical, aligned with the after-* family); no `detail`; emitted immediately under reduced motion"
     },
     "slots": {
       "": "Backdrop content"
@@ -631,10 +639,26 @@
       "disabled": "Disabled",
       "placement": "Panel placement, 12 directions: `top`/`bottom`/`left`/`right` with `-start`/`-end` (default `bottom`); auto right-aligns when the trigger nears the viewport right edge, flips upward when space below is insufficient, and clamps back inside the viewport",
       "preset": "Preset color array (JSON)",
-      "value": "Current color (hex)"
+      "value": "Current color (hex)",
+      "clearable": "Show a \"clear\" button in the panel footer (visible when open and a value is set): writes back `value-on-clear` or empties `value`, then emits `oas-clear` + `oas-change`",
+      "color-format": "Output format: `hex` (default) / `rgb`; determines the value written back and the trigger text format",
+      "disabled-alpha": "Disable the alpha slider (effective when `show-alpha` is on)",
+      "inline": "Inline mode: the panel renders in place always visible with the trigger hidden, no popup positioning contract, no `oas-open-change`",
+      "mode": "Picking mode: `single` (default) / `gradient` (gradient editor; requires the designer capability — silently inert with a one-time dev warning when missing)",
+      "open": "Controlled panel visibility (boolean attribute); ineffective while `readonly`/disabled; emits `oas-open-change` on change",
+      "preset-columns": "Preset swatch column count (positive integer, default 8)",
+      "preset-rows": "Preset swatch row cap (positive integer; unset shows all presets)",
+      "readonly": "Read-only: the trigger cannot open the panel and all edits are blocked",
+      "show-alpha": "Enable the alpha channel: alpha slider in the panel, checkerboard under translucent trigger/preset swatches, alpha included in the value output",
+      "show-text": "Show the color text on the trigger (default true; `\"false\"` shows the swatch only)",
+      "size": "Trigger size: `small` / `medium` (default) / `large`",
+      "uppercase": "Uppercase the output color value (hex letters A–F)",
+      "value-on-clear": "Fallback value on clear: clicking clear writes this back instead of emptying `value`"
     },
     "events": {
-      "oas-change": "Color change, `detail: { value }`"
+      "oas-change": "Color change, `detail: { value }`",
+      "oas-clear": "Emitted after \"clear\" is clicked; `detail: { value }` holds the previous value; `oas-change` follows (detail.value is the new value / empty string)",
+      "oas-open-change": "Emitted when panel visibility changes, `detail: { open }` (not emitted in inline mode)"
     },
     "slots": {
       "trigger": "Custom trigger (replaces the default swatch button)"
@@ -669,7 +693,8 @@
     "attrs": {
       "block": "Width 100% (stretch to fill the parent container)",
       "disabled": "Disable the whole group",
-      "vertical": "Vertical grouping (adjacent items overlap -1px vertically, corner merging switches to top/bottom)"
+      "vertical": "Vertical grouping (adjacent items overlap -1px vertically, corner merging switches to top/bottom)",
+      "aria-label": "Override the group accessible name: the component sets role=group with an i18n default name (locale `compact.group`); setting this attribute overrides it"
     },
     "events": {},
     "slots": {
@@ -922,7 +947,25 @@
       "size": "Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%`",
       "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
       "visible": "Whether shown",
-      "width": "Drawer width (px or percentage), takes precedence over `size`"
+      "width": "Drawer width (px or percentage), takes precedence over `size`",
+      "append-to": "Portal mount point: moves the mask and panel into an isolated shadow inside the target container (`body` or CSS selector, styles stay scoped), escaping host overflow clipping; moved back to the host shadow when the attribute is removed or unmatched",
+      "cancel-text": "Cancel button text; falls back to locale `drawer.cancel`",
+      "destroy-on-close": "Clear the host children after the close animation finishes (re-rendered on next open)",
+      "initial-focus": "Focus the element matching this selector on open (panel first, then host light DOM); falls back to the ✕ button / first focusable",
+      "loading": "Body loading state: content hidden with a skeleton placeholder; OK/Cancel buttons disabled too",
+      "no-close-btn": "Hide the ✕ close button in the title bar",
+      "no-esc-close": "Disable closing with Esc",
+      "no-focus-trap": "Disable the focus trap (Tab no longer cycles inside the drawer)",
+      "no-header": "Hide the whole header (also removes the aria-labelledby association)",
+      "no-scroll-lock": "Do not lock body scroll while open",
+      "ok-loading": "OK button loading state: spinner + disabled (aria-busy), blocking repeated triggers",
+      "ok-text": "OK button text; falls back to locale `drawer.ok`",
+      "resizable": "Show the edge resize rail: drag to resize along the main axis (width/height per placement), arrow keys step ±8px, Home/End jump to min/max",
+      "resize-max": "Resize upper bound (px, default 1000)",
+      "resize-min": "Resize lower bound (px, default 160)",
+      "snap-points": "Snap points array (comma-separated; values ≤1 are viewport-height fractions, >1 are pixels, e.g. `0.35,0.6`): bottom/top drawers snap to the nearest point on release and start at the highest point; bottom + `snap-points` implies gestures",
+      "swipeable": "Enable gestures: drag from the handle/title bar to close (past 35% of the panel size or a fast fling); implied by `snap-points` (bottom/top)",
+      "z-index": "Explicit z-index base: stacked on `--oas-z-index-base` (the panel sits 1 above the mask); defaults to the overlay tier `--oas-z-overlay`, incrementing with stack depth when nested"
     },
     "events": {
       "oas-close": "Close: cancel button / ✕ / mask click / Esc",
@@ -930,7 +973,10 @@
       "oas-after-close": "Close animation finished (canonical, aligned with the after-* family); no `detail`. Scroll unlock and focus restore happen after this",
       "oas-closed": "[Compat alias] Close animation finished, same as oas-after-close; will be removed later",
       "oas-after-open": "Open animation finished (canonical, aligned with the after-* family); no `detail`; same as oas-opened",
-      "oas-opened": "[Compat alias] Open animation finished, same as oas-after-open; will be removed later"
+      "oas-opened": "[Compat alias] Open animation finished, same as oas-after-open; will be removed later",
+      "oas-before-close": "Emitted before a close request (✕ / cancel / mask / Esc / OK / swipe), `cancelable`, `detail: { source }`; preventDefault blocks the close",
+      "oas-open": "Emitted when opening starts (after the scroll lock, before initial focus); no `detail`",
+      "oas-resize": "Emitted after drag-resize / arrow-key adjust / snap; `detail: { size }` (current main-axis size in px)"
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present",
@@ -1473,7 +1519,8 @@
   },
   "oas-layout": {
     "attrs": {
-      "viewport": "Viewport-locked mode: locks the layout to the viewport height (100dvh by default, cascading back to 100vh; overridable via `--oas-layout-height` to 100%/calc()), header/footer fixed while the sider and content scroll independently; default is the full-page scrolling model"
+      "viewport": "Viewport-locked mode: locks the layout to the viewport height (100dvh by default, cascading back to 100vh; overridable via `--oas-layout-height` to 100%/calc()), header/footer fixed while the sider and content scroll independently; default is the full-page scrolling model",
+      "side": "Sidebar position: `left` (default) / `right` / `top`; invalid values fall back to `left`; with `top` the sider slot spans the full row width (fits horizontal navigation components)"
     },
     "events": {},
     "slots": {
@@ -1792,7 +1839,22 @@
       "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
       "type": "Semantic variant: `info`/`success`/`warning`/`error`, renders the matching semantic icon above the content",
       "visible": "Whether shown",
-      "width": "Dialog width (px or percentage)"
+      "width": "Dialog width (px or percentage)",
+      "append-to": "Portal mount point: moves the mask and dialog into an isolated shadow inside the target container (`body` or CSS selector, styles stay scoped), escaping host overflow clipping; moved back to the host shadow when the attribute is removed or unmatched",
+      "confirm-on-enter": "When explicitly enabled, Enter triggers OK (topmost modal only; effective only when the dialog has no text input controls and focus is not on a button/link or other native interactive control, preventing double triggers; off by default)",
+      "destroy-on-close": "Clear the host children after the close animation finishes (re-rendered on next open)",
+      "fullscreen-breakpoint": "Automatically go fullscreen when the viewport width drops below this threshold (px), recomputed on resize while open; unioned with the explicit `fullscreen` attribute",
+      "initial-focus": "Focus the element matching this selector on open (dialog first, then host light DOM); falls back to `focus-ok` / the Cancel button / OK / ✕",
+      "no-close-btn": "Hide the ✕ close button in the title bar",
+      "no-esc-close": "Disable closing with Esc (Esc is only handled by the topmost visible modal)",
+      "no-focus-trap": "Disable the focus trap (Tab no longer cycles inside the dialog)",
+      "no-mask": "Maskless non-modal: no backdrop rendered, focus trap off, no focus steal on open (like HTML dialog.show(); the rest of the page stays interactive)",
+      "no-scroll-lock": "Do not lock body scroll while open (the default lock compensates for scrollbar width to prevent layout shift)",
+      "position": "Vertical positioning: `top` pins the dialog to the viewport top edge; default sits 100px from the top; when set together with `centered`, the `top` rule wins (later in the cascade)",
+      "role": "Dialog ARIA role (default `dialog`; set `alertdialog` for semantic confirmation scenarios)",
+      "size": "Size preset: `sm` (400px) / `lg` (720px); an explicit `width` wins; invalid values fall back to the theme default 520px",
+      "transition": "Open/close animation preset: `zoom` (default, fade + scale, scale origin follows the click position before opening) / `fade` (opacity only) / `none` (no transition, instant)",
+      "trigger": "Declarative trigger element id: clicking the element sets `visible` to open the modal (does not touch the controlled model); silently retries on later updates when the element is missing"
     },
     "events": {
       "oas-cancel": "Cancel: cancel button / ✕ / mask click / Esc",
@@ -1800,7 +1862,10 @@
       "oas-after-close": "Close animation finished (canonical, aligned with the after-* family); no `detail`. destroy-on-close content clearing happens after this",
       "oas-closed": "[Compat alias] Close animation finished, same as oas-after-close; will be removed later",
       "oas-after-open": "Open animation finished (canonical, aligned with the after-* family); no `detail`; same as oas-opened",
-      "oas-opened": "[Compat alias] Open animation finished, same as oas-after-open; will be removed later"
+      "oas-opened": "[Compat alias] Open animation finished, same as oas-after-open; will be removed later",
+      "oas-before-close": "Emitted before a close request (OK / cancel / ✕ / mask / Esc), `cancelable`, `detail: { source }`; preventDefault blocks the close and shakes the dialog as feedback (programmatic close bypasses the interception)",
+      "oas-close": "Emitted when closing starts; `detail: { source, action }` (source: `ok`/`cancel`/`close-btn`/`mask`/`esc`/`programmatic`; action: `confirm`/`cancel`/`close`)",
+      "oas-open": "Emitted when opening starts (after the scroll lock and focus move); no `detail`"
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present",
@@ -1987,7 +2052,10 @@
       "code": "Inline code style (monospace + light background)",
       "underline": "Underline",
       "delete": "Strikethrough (`<del>` semantics)",
-      "italic": "Italic (`<em>` semantics)"
+      "italic": "Italic (`<em>` semantics)",
+      "align": "Text alignment: `start` (default) / `center` / `end` / `justify` (start/end are logical values, RTL-safe); invalid values fall back to default",
+      "numeric": "Tabular numerals (`font-variant-numeric: tabular-nums`) so number columns line up in tables/stats",
+      "weight": "Font weight tier: `regular` (400) / `medium` (500) / `semibold` (600) / `bold` (700); an explicit tier wins over the `strong` boolean; invalid values fall back"
     },
     "events": {
       "oas-copy": "Copy succeeded, `detail: { text }`",
@@ -2033,11 +2101,29 @@
     "attrs": {
       "open": "Whether the bubble is shown",
       "position": "Bubble position",
-      "title": "Confirmation text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content"
+      "title": "Confirmation text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
+      "arrow": "Whether to show the arrow (default true; `arrow=\"false\"` hides it, the element and `::part(arrow)` are kept)",
+      "auto-adjust-overflow": "Viewport-edge auto flip and avoidance (default true; `\"false\"` disables it, keeping the declared placement, which may overflow the viewport)",
+      "cancel-text": "Cancel button text; falls back to locale `popconfirm.cancel`",
+      "description": "Description text (secondary line under the title, smaller and dimmed; the \"description\" slot wins for rich content)",
+      "disabled": "Fully disabled: every trigger path is gated and no bubble shows, the host is dimmed with aria-disabled synced (both the `disabled` attribute and config-provider injection take effect)",
+      "hide-icon": "Hide the leading semantic icon (shown by default, switching with `theme`)",
+      "ok-loading": "OK button loading state: the original label keeps its space while a spinner centers over it (aria-busy); clicks are blocked to prevent duplicate submits; setting it synchronously inside the `oas-ok` listener prevents the auto-close",
+      "ok-text": "OK button text; falls back to locale `popconfirm.ok`",
+      "placement": "Bubble placement: 12 directions `top`/`bottom`/`left`/`right` with `-start`/`-end` (default `top`); falls back to the legacy `position` (4 base directions) when absent",
+      "show-cancel": "Whether to show the cancel button (default true; `show-cancel=\"false\"` gives a single-button confirm)",
+      "theme": "Semantic theme: `default` / `warning` / `danger` — panel tint background and border, icon and OK button color ramp linked (tokens include dark variants)",
+      "trigger": "Trigger modes: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space-separated for multiple; with `hover`, touch devices degrade to tap-to-toggle automatically",
+      "virtual": "Virtual trigger mode: no anchor element, `open` fully controlled externally, positioned via `virtual-anchor` or `virtual-x`/`virtual-y`; no outside-click dismissal registered",
+      "virtual-anchor": "Virtual anchor element selector (effective when `virtual-x`/`virtual-y` are unset)",
+      "virtual-x": "Virtual anchor x (viewport coordinate, px)",
+      "virtual-y": "Virtual anchor y (viewport coordinate, px)",
+      "width": "Panel width: a number (px) / `\"trigger\"` (same width as the trigger) / any CSS value; default min-width 200px"
     },
     "events": {
       "oas-cancel": "Cancel: cancel button / Esc / outside click",
-      "oas-ok": "Clicked \"OK\"; the bubble then collapses automatically"
+      "oas-ok": "Clicked \"OK\"; the bubble then collapses automatically",
+      "oas-open-change": "Emitted when the open state changes, `detail: { open, reason }` (reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`)"
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present",
@@ -2091,10 +2177,14 @@
       "close-on-scroll": "Close on scroll",
       "final-focus": "Focus restore target after close (selector)",
       "hide-empty": "Hide the panel when it has no content",
-      "sticky": "Sticky against viewport edge (partial/always)"
+      "sticky": "Sticky against viewport edge (partial/always)",
+      "destroy-on-hide": "Destroy the panel content presentation on close (host light DOM nodes are kept: their slot names are rewritten to detach them and they are hidden; attribute text is cleared); remounted instantly on reopen",
+      "dismiss-on-select": "Clicks inside the panel (named slot content / panel internals including the close button) count as a completed selection and close it (interceptable via before-close); clicks on the trigger element do not dismiss (guards against open-then-close)",
+      "render-panel": "Pure panel rendering mode: no trigger semantics (always treated as `manual`), positioning falls back to `virtual` coordinates/anchor; position it yourself via `append-to`"
     },
     "events": {
-      "oas-open-change": "open state changed, `detail: { open }`"
+      "oas-open-change": "open state changed, `detail: { open }`",
+      "oas-before-close": "Emitted before a close request (all close entries converge here: trigger/outside/escape/close-btn/declarative/backdrop/auto/dismiss/scroll), `cancelable`, `detail: { source }`; preventDefault blocks the close"
     },
     "slots": {
       "title": "Rich title content slot, overrides the title attribute text when present",
@@ -2351,7 +2441,8 @@
       "value": "Selection value (data-carrier field of the declarative child channel)",
       "icon": "Leading icon (`@oas-ui/icons` registry icon name; shown in the collapsed icon strip)",
       "group": "Group name (consecutive items in the same group get a group title before the group's first item)",
-      "badge": "Count badge (all-digit strings convert to `number`, otherwise stay `string`; matches `SidebarItem.badge`'s `string | number`)"
+      "badge": "Count badge (all-digit strings convert to `number`, otherwise stay `string`; matches `SidebarItem.badge`'s `string | number`)",
+      "icon-color": "Icon color: when set, fixes the icon color (replaces the built-in mono path's currentColor, taking precedence over disabled/active state colors); defaults to currentColor so the color follows states"
     },
     "events": {},
     "slots": {
@@ -2421,7 +2512,13 @@
       "duration": "Auto-dismiss duration (ms)",
       "message": "Message text",
       "offset": "Offset from the screen edge (px)",
-      "open": "Whether shown (controlled)"
+      "open": "Whether shown (controlled)",
+      "closable": "Show a ✕ close button on the right (clicking dismisses with `oas-close` detail.reason=`close`)",
+      "group": "Grouping key for same-content merge: a new entry with the same direction + `group` + `message` merges into the existing one (×N count badge + timer reset) while it emits `oas-close` (reason=`group`) and never shows; default-slot content does not merge",
+      "no-pause": "Disable auto-pause: hover / focus / page hidden no longer freeze the timer (all three pause by default)",
+      "progress": "Show the countdown progress bar (2px at the bottom, JS-driven scaleX, freezes while paused)",
+      "queue": "Queue when full: with 3 visible entries in the direction, new ones wait FIFO for a free slot (unset: the oldest is evicted with reason=`evict`)",
+      "swipe": "Enable swipe-to-dismiss: a vertical drag of ≥48px dismisses (flinging out along the gesture)"
     },
     "events": {
       "oas-action": "Dispatched when the action button is clicked",
@@ -2927,7 +3024,10 @@
       "code": "Inline code style (monospace + light background)",
       "underline": "Underline",
       "delete": "Strikethrough (`<del>` semantics)",
-      "italic": "Italic (`<em>` semantics)"
+      "italic": "Italic (`<em>` semantics)",
+      "align": "Text alignment: `start` (default) / `center` / `end` / `justify` (start/end are logical values, RTL-safe); invalid values fall back to default",
+      "numeric": "Tabular numerals (`font-variant-numeric: tabular-nums`) so number columns line up in tables/stats",
+      "weight": "Font weight tier: `regular` (400) / `medium` (500) / `semibold` (600) / `bold` (700); an explicit tier wins over the `strong` boolean; invalid values fall back"
     },
     "events": {
       "oas-copy": "Copy succeeded, `detail: { text }`",
@@ -2944,9 +3044,25 @@
       "description": "Description text",
       "duration": "Auto-close duration in ms; pass `0` to keep it open",
       "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
-      "type": "Toast type: `info`/`success`/`warning`/`error`/`loading`"
+      "type": "Toast type: `info`/`success`/`warning`/`error`/`loading`",
+      "count": "Same-content dedup count badge: with imperative grouping on, repeated dispatches of the same signature increment the count (`×N` next to the title, shown above 1) and reset the timer",
+      "id": "Instance identity: imperative show/update/dismiss hit the existing instance by id to update/close in place instead of creating a new one; also used as the DOM id",
+      "open": "Controlled switch (declarative usage): `open=\"false\"` hides the whole card and pauses the auto-close timer; absent/other values mean open",
+      "pause-on-focus": "Pause the auto-close timer while focus is inside (default on; `\"false\"` disables)",
+      "pause-on-hover": "Pause the auto-close timer while hovered (default on; `\"false\"` disables)",
+      "pause-on-window-blur": "Pause the auto-close timer when the window loses focus or the page is hidden (default on; `\"false\"` disables)",
+      "politeness": "Screen-reader politeness: `polite` (role=status) / `assertive` (role=alert, interrupts immediately); an explicit value wins, otherwise derived from `type` (`error` is assertive, others polite)",
+      "progress-position": "Progress bar position: `bottom` (default) / `top`, together with `show-progress`",
+      "progress-ring": "Progress-ring close button: an SVG ring around the ✕ tracks the remaining time (completes as `duration` elapses, when > 0)",
+      "show-progress": "Show the remaining-time progress bar for auto-close (duration follows `duration`, frozen while paused)",
+      "swipe-direction": "Swipe-to-dismiss direction: `both` (default) / `right` / `left` / `up` / `down`; the orthogonal axis follows with 0.2 damping",
+      "variant": "Visual variant: default card / `plain` (no border/background, text straight out) / `translucent` (translucent frosted glass)"
     },
-    "events": {},
+    "events": {
+      "oas-close": "Emitted on close, `detail: { trigger }` (trigger: `auto`/`manual`/`action`/`close-button`/`esc`/`swipe`/`preempt`/`external`); the node is removed after the leave animation",
+      "oas-destroy": "Emitted after the node is removed from the DOM (also as a fallback for external removal), `detail: { trigger }`; used to settle the promise chain",
+      "oas-open": "Emitted when shown, `detail: { trigger }`"
+    },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present"
     }
@@ -3031,7 +3147,15 @@
       "virtual": "Virtual trigger mode: not bound to a host trigger element; `open` is fully controlled externally and the position is set by `virtual-anchor` or `virtual-x`/`virtual-y` (for chart points, floating hints during drag)",
       "virtual-anchor": "Anchor element selector (e.g. `#chart-point-1`); the tooltip is positioned by that element's rect. Mutually exclusive with `virtual-x`/`virtual-y` (coordinates take precedence)",
       "virtual-x": "Virtual anchor viewport X coordinate (px, e.g. mouse `clientX`); position by coordinates when set together with `virtual-y`",
-      "virtual-y": "Virtual anchor viewport Y coordinate (px, e.g. mouse `clientY`); position by coordinates when set together with `virtual-x`"
+      "virtual-y": "Virtual anchor viewport Y coordinate (px, e.g. mouse `clientY`); position by coordinates when set together with `virtual-x`",
+      "a11y": "A11y association mode: `description` (default, the trigger gets `aria-describedby` pointing at the popup) / `label` (gets `aria-labelledby` as its accessible name); the host's original value is restored on close",
+      "arrow-offset": "Arrow inset from the panel edge (px, default 4): only effective with `arrow-position=\"side\"` (ignored for center/merge)",
+      "close-on-scroll": "Close as soon as the page scrolls (listened while open, the first scroll hit closes; resize only repositions)",
+      "collision-boundary": "Collision boundary element selector: flips/clamps against this element rect instead of the viewport (the `collisionBoundaryEl` property channel takes precedence)",
+      "fallback-axis-side": "Cross-axis fallback when neither main-axis side fits: `start` (switch to the cross-axis start side, left/top) / `end` (right/bottom); `none` by default (keeps opposite-side flip + viewport clamping)",
+      "fallback-placements": "Custom fallback sequence (space/comma-separated 12-direction placements): when the requested placement does not fit, each entry is tried in order and the first fit wins; if none fit, the last entry is used with viewport clamping; unset uses the default main-axis flip",
+      "follow-cursor": "Follow the cursor: once open, positioned at the cursor coordinates (zero-size point); cursor movement is tracked with rAF throttling",
+      "width": "Popup width: a number (px) / `\"trigger\"` (same width as the trigger) / any CSS value; still capped by `--oas-tooltip-max-width` (default 240px)"
     },
     "events": {
       "oas-open-change": "Fired when the `open` state changes (show/hide), `detail: { open }`"

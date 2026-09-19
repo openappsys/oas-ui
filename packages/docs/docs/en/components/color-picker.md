@@ -186,32 +186,32 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `clearable` | — | `boolean` | — |
-| `color-format` | — | `string` | `hex` |
+| `clearable` | Show a "clear" button in the panel footer (visible when open and a value is set): writes back `value-on-clear` or empties `value`, then emits `oas-clear` + `oas-change` | `boolean` | — |
+| `color-format` | Output format: `hex` (default) / `rgb`; determines the value written back and the trigger text format | `string` | `hex` |
 | `disabled` | Disabled | `boolean` | — |
-| `disabled-alpha` | — | `boolean` | — |
-| `inline` | — | `boolean` | — |
-| `mode` | — | `string` | `single` |
-| `open` | — | `boolean` | — |
+| `disabled-alpha` | Disable the alpha slider (effective when `show-alpha` is on) | `boolean` | — |
+| `inline` | Inline mode: the panel renders in place always visible with the trigger hidden, no popup positioning contract, no `oas-open-change` | `boolean` | — |
+| `mode` | Picking mode: `single` (default) / `gradient` (gradient editor; requires the designer capability — silently inert with a one-time dev warning when missing) | `string` | `single` |
+| `open` | Controlled panel visibility (boolean attribute); ineffective while `readonly`/disabled; emits `oas-open-change` on change | `boolean` | — |
 | `placement` | Panel placement, 12 directions: `top`/`bottom`/`left`/`right` with `-start`/`-end` (default `bottom`); auto right-aligns when the trigger nears the viewport right edge, flips upward when space below is insufficient, and clamps back inside the viewport | `string` | `bottom` |
 | `preset` | Preset color array (JSON) | `string` | — |
-| `preset-columns` | — | `string` | — |
-| `preset-rows` | — | `string` | — |
-| `readonly` | — | `boolean` | — |
-| `show-alpha` | — | `boolean` | — |
-| `show-text` | — | `string` | `true` |
-| `size` | — | — | — |
-| `uppercase` | — | `boolean` | — |
+| `preset-columns` | Preset swatch column count (positive integer, default 8) | `string` | — |
+| `preset-rows` | Preset swatch row cap (positive integer; unset shows all presets) | `string` | — |
+| `readonly` | Read-only: the trigger cannot open the panel and all edits are blocked | `boolean` | — |
+| `show-alpha` | Enable the alpha channel: alpha slider in the panel, checkerboard under translucent trigger/preset swatches, alpha included in the value output | `boolean` | — |
+| `show-text` | Show the color text on the trigger (default true; `"false"` shows the swatch only) | `string` | `true` |
+| `size` | Trigger size: `small` / `medium` (default) / `large` | — | — |
+| `uppercase` | Uppercase the output color value (hex letters A–F) | `boolean` | — |
 | `value` | Current color (hex) | `string` | — |
-| `value-on-clear` | — | `string` | — |
+| `value-on-clear` | Fallback value on clear: clicking clear writes this back instead of emptying `value` | `string` | — |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Color change, `detail: { value }` |
-| `oas-clear` | — |
-| `oas-open-change` | — |
+| `oas-clear` | Emitted after "clear" is clicked; `detail: { value }` holds the previous value; `oas-change` follows (detail.value is the new value / empty string) |
+| `oas-open-change` | Emitted when panel visibility changes, `detail: { open }` (not emitted in inline mode) |
 
 #### Slots
 

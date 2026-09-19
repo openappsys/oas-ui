@@ -151,17 +151,17 @@ onMounted(async () => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `action-text` | Action button text | `string` | — |
-| `closable` | — | `boolean` | — |
+| `closable` | Show a ✕ close button on the right (clicking dismisses with `oas-close` detail.reason=`close`) | `boolean` | — |
 | `direction` | Position direction | — | — |
 | `duration` | Auto-dismiss duration (ms) | `string` | `4000` |
-| `group` | — | `string` | — |
+| `group` | Grouping key for same-content merge: a new entry with the same direction + `group` + `message` merges into the existing one (×N count badge + timer reset) while it emits `oas-close` (reason=`group`) and never shows; default-slot content does not merge | `string` | — |
 | `message` | Message text | `string` | — |
-| `no-pause` | — | `boolean` | — |
+| `no-pause` | Disable auto-pause: hover / focus / page hidden no longer freeze the timer (all three pause by default) | `boolean` | — |
 | `offset` | Offset from the screen edge (px) | `string` | `24` |
 | `open` | Whether shown (controlled) | `boolean` | — |
-| `progress` | — | `boolean` | — |
-| `queue` | — | `boolean` | — |
-| `swipe` | — | `boolean` | — |
+| `progress` | Show the countdown progress bar (2px at the bottom, JS-driven scaleX, freezes while paused) | `boolean` | — |
+| `queue` | Queue when full: with 3 visible entries in the direction, new ones wait FIFO for a free slot (unset: the oldest is evicted with reason=`evict`) | `boolean` | — |
+| `swipe` | Enable swipe-to-dismiss: a vertical drag of ≥48px dismisses (flinging out along the gesture) | `boolean` | — |
 
 #### Events
 

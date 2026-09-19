@@ -309,7 +309,7 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `aria-label` | — | `boolean` | — |
+| `aria-label` | 组可访问名称覆盖：组件默认 role=group + i18n 默认名称（locale `compact.group`），设置该属性覆盖 | `boolean` | — |
 | `block` | 宽度 100%（撑满父容器） | — | — |
 | `disabled` | 透传全组禁用 | `boolean` | — |
 | `vertical` | 纵向贴合（相邻处上下 -1px 重叠，圆角方向改上下） | `boolean` | — |

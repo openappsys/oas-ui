@@ -727,24 +727,24 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `a11y` | — | `string` | `description` |
+| `a11y` | A11y association mode: `description` (default, the trigger gets `aria-describedby` pointing at the popup) / `label` (gets `aria-labelledby` as its accessible name); the host's original value is restored on close | `string` | `description` |
 | `append-to` | Popup mount point: `body` or a CSS selector. Moves the popup into an isolated shadow inside the target container (styles stay scoped), escaping clipping contexts such as `overflow: hidden` / transform; while mounted, `::part(tip)` cannot pierce from the host — customize via CSS variables or class selectors | `string` | — |
 | `arrow` | Whether to show the arrow (default true; `arrow="false"` hides it, the element and `::part(arrow)` are kept) | `string` | `true` |
-| `arrow-offset` | — | — | — |
+| `arrow-offset` | Arrow inset from the panel edge (px, default 4): only effective with `arrow-position="side"` (ignored for center/merge) | — | — |
 | `arrow-point-at-center` | Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance) | `boolean` | — |
 | `arrow-position` | Arrow shape: `center` (default, arrow centered on the panel edge) / `merge` (only for `*-start`/`*-end` placements; a right triangle merges flush with the panel corner — legs collinear with the panel edges, tip pointing orthogonally toward the anchor) | `string` | `center` |
 | `auto-adjust-overflow` | Viewport-edge auto flip and avoidance (default true; `"false"` disables it, keeping the declared placement, which may overflow the viewport) | `string` | `true` |
 | `auto-close` | Auto-close after opening (ms); `0` or absent disables it | — | — |
 | `close-delay` | Hide delay (ms, default 0): close after mouseleave/focusout | — | — |
-| `close-on-scroll` | — | `boolean` | — |
-| `collision-boundary` | — | `Element \| null` | — |
+| `close-on-scroll` | Close as soon as the page scrolls (listened while open, the first scroll hit closes; resize only repositions) | `boolean` | — |
+| `collision-boundary` | Collision boundary element selector: flips/clamps against this element rect instead of the viewport (the `collisionBoundaryEl` property channel takes precedence) | `Element \| null` | — |
 | `collision-padding` | Viewport-edge avoidance margin (px, default 4): the distance kept from the edge when the popup is clamped | — | — |
 | `color` | Color variant: semantic `primary`/`success`/`warning`/`danger`, one of the 11 preset names (e.g. `magenta`, `blue`), or any CSS color. All go through tokens (with dark variants); the arrow background follows | `string` | — |
 | `content` | Tooltip content text (the `slot="content"` rich content takes precedence when present) | `string` | — |
 | `disabled` | Disabled: the tooltip never shows (neither hover nor a controlled `open`) | `boolean` | — |
-| `fallback-axis-side` | — | `string` | `none` |
-| `fallback-placements` | — | `string` | — |
-| `follow-cursor` | — | `boolean` | — |
+| `fallback-axis-side` | Cross-axis fallback when neither main-axis side fits: `start` (switch to the cross-axis start side, left/top) / `end` (right/bottom); `none` by default (keeps opposite-side flip + viewport clamping) | `string` | `none` |
+| `fallback-placements` | Custom fallback sequence (space/comma-separated 12-direction placements): when the requested placement does not fit, each entry is tried in order and the first fit wins; if none fit, the last entry is used with viewport clamping; unset uses the default main-axis flip | `string` | — |
+| `follow-cursor` | Follow the cursor: once open, positioned at the cursor coordinates (zero-size point); cursor movement is tracked with rAF throttling | `boolean` | — |
 | `fresh` | Content freshness (default true): content changes are synced immediately even while closed; `"false"` freezes the content while closed, updating on next open | `string` | `true` |
 | `interactive` | Hoverable popup: moving the mouse into the popup keeps it open (`pointer-events: auto`), links inside stay reachable | `boolean` | — |
 | `max-width` | Popup max width (number in px or CSS length; defaults to the `--oas-tooltip-max-width` token, 240px) | `string` | — |
@@ -761,7 +761,7 @@ onMounted(() => {
 | `virtual-anchor` | Anchor element selector (e.g. `#chart-point-1`); the tooltip is positioned by that element's rect. Mutually exclusive with `virtual-x`/`virtual-y` (coordinates take precedence) | — | — |
 | `virtual-x` | Virtual anchor viewport X coordinate (px, e.g. mouse `clientX`); position by coordinates when set together with `virtual-y` | — | — |
 | `virtual-y` | Virtual anchor viewport Y coordinate (px, e.g. mouse `clientY`); position by coordinates when set together with `virtual-x` | — | — |
-| `width` | — | `string` | — |
+| `width` | Popup width: a number (px) / `"trigger"` (same width as the trigger) / any CSS value; still capped by `--oas-tooltip-max-width` (default 240px) | `string` | — |
 
 #### Events
 
