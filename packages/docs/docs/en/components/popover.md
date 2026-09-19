@@ -791,9 +791,9 @@ onMounted(() => {
 | `collision-padding` | Viewport-edge clamping padding in px (default 4), the gap kept when the panel avoids viewport edges | `string` | — |
 | `color` | Color variant: `primary` / `success` / `warning` / `danger` (tinted panel background + semantic border, derived from tokens including dark variants); unset or invalid keeps the neutral panel | `string` | — |
 | `content` | Body text | `string` | — |
-| `destroy-on-hide` | — | `boolean` | — |
+| `destroy-on-hide` | Destroy the panel content presentation on close (host light DOM nodes are kept: their slot names are rewritten to detach them and they are hidden; attribute text is cleared); remounted instantly on reopen | `boolean` | — |
 | `disabled` | Disable the whole popover: click / hover / focus / contextmenu / trigger-keys triggers are all ignored; the host is desaturated and aria-disabled is synced | `boolean` | — |
-| `dismiss-on-select` | — | `boolean` | — |
+| `dismiss-on-select` | Clicks inside the panel (named slot content / panel internals including the close button) count as a completed selection and close it (interceptable via before-close); clicks on the trigger element do not dismiss (guards against open-then-close) | `boolean` | — |
 | `fallback-placements` | Custom fallback sequence (comma or space separated, e.g. `"left, right"`): when the requested placement does not fit, each candidate in the sequence is tried for fit; the first fit wins, if none fit the last one is clamped; unset uses the default main-axis flip | `string` | — |
 | `final-focus` | Focus restore target after close (selector) | `string` | — |
 | `focus-on-open` | Moves focus into the first focusable element of the panel when opened | `boolean` | — |
@@ -809,7 +809,7 @@ onMounted(() => {
 | `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
 | `open-delay` | Generic open delay in ms (default 0; used by non-hover trigger paths, hover paths prefer hover-delay) | `string` | — |
 | `placement` | Popup placement (12 directions: four bases top/bottom/left/right each with -start/-end cross-axis alignment) | `string` | `top` |
-| `render-panel` | — | `boolean` | — |
+| `render-panel` | Pure panel rendering mode: no trigger semantics (always treated as `manual`), positioning falls back to `virtual` coordinates/anchor; position it yourself via `append-to` | `boolean` | — |
 | `scrollable` | Scrollable panel when content overflows | `boolean` | — |
 | `size` | Size preset | `string` | `medium` |
 | `sticky` | Sticky against viewport edge (partial/always) | `string` | `partial` |
@@ -827,7 +827,7 @@ onMounted(() => {
 
 | Event | Description |
 | --- | --- |
-| `oas-before-close` | — |
+| `oas-before-close` | Emitted before a close request (all close entries converge here: trigger/outside/escape/close-btn/declarative/backdrop/auto/dismiss/scroll), `cancelable`, `detail: { source }`; preventDefault blocks the close |
 | `oas-open-change` | open state changed, `detail: { open }` |
 
 #### Slots

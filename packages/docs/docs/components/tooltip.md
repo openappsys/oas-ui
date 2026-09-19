@@ -727,24 +727,24 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `a11y` | — | `string` | `description` |
+| `a11y` | a11y 关联模式：`description`（默认，触发元素挂 `aria-describedby` 指向浮层）/ `label`（挂 `aria-labelledby` 作可访问名）；关闭时还原宿主原值 | `string` | `description` |
 | `append-to` | 浮层挂载点：`body` 或 CSS 选择器。把浮层移入目标容器的独立 shadow（样式作用域保真），脱离 `overflow: hidden` / transform 等裁剪上下文；挂载期间 `::part(tip)` 无法从宿主穿透，定制走 CSS 变量或类选择器 | `string` | — |
 | `arrow` | 是否显示箭头（默认 true；`arrow="false"` 隐藏，箭头元素与 `::part(arrow)` 保留） | `string` | `true` |
-| `arrow-offset` | — | — | — |
+| `arrow-offset` | 箭头贴边内缩量（px，默认 4）：仅 `arrow-position="side"` 生效（center/merge 忽略） | — | — |
 | `arrow-point-at-center` | 箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心） | `boolean` | — |
 | `arrow-position` | 箭头形态：`center`（默认，箭头在面板边缘居中）/ `merge`（仅 `*-start`/`*-end` placement 生效，直角三角与面板角共边融合：直角贴角点、直角边与面板两边共线，尖端正交指向锚点，通用形态） | `string` | `center` |
 | `auto-adjust-overflow` | 视口边缘自动翻转与避让（默认 true；`"false"` 关闭，保持声明 placement，可能溢出视口） | `string` | `true` |
 | `auto-close` | 打开后自动关闭时长（ms），`0` 或缺省不自动关闭 | — | — |
 | `close-delay` | 隐藏延迟（ms，默认 0）：mouseleave/focusout 后延迟关闭 | — | — |
-| `close-on-scroll` | — | `boolean` | — |
-| `collision-boundary` | — | `Element \| null` | — |
+| `close-on-scroll` | 页面滚动即关闭（打开期间监听，首个滚动命中直接关；resize 只重定位不关） | `boolean` | — |
+| `collision-boundary` | 碰撞边界元素选择器：翻转/夹取判定边界从视口换成该元素矩形（property 通道 `collisionBoundaryEl` 优先） | `Element \| null` | — |
 | `collision-padding` | 视口边缘避让边距（px，默认 4）：浮层被视口夹取时与边缘保留的距离 | — | — |
 | `color` | 颜色变体：语义色 `primary`/`success`/`warning`/`danger`、11 预设名（如 `magenta`、`blue`）或任意 CSS 色值；全部走 token（含 dark 变体），箭头底色同步 | `string` | — |
 | `content` | 提示内容文本（`slot="content"` 富内容存在时优先于属性文本） | `string` | — |
 | `disabled` | 禁用：tooltip 不显示（hover / 受控 open 均不生效） | `boolean` | — |
-| `fallback-axis-side` | — | `string` | `none` |
-| `fallback-placements` | — | `string` | — |
-| `follow-cursor` | — | `boolean` | — |
+| `fallback-axis-side` | 主轴两侧都放不下时的跨轴回退：`start`（转交叉轴起点侧 left/top）/ `end`（right/bottom）；默认 `none` 不跨轴（维持对侧翻转 + 视口夹取） | `string` | `none` |
+| `fallback-placements` | 自定义回退序列（空格/逗号分隔的 12 向 placement）：请求位放不下按序列逐项 fit，首个 fit 者胜出，全不 fit 取序列末位夹取兜底；未设置走默认主轴翻转 | `string` | — |
+| `follow-cursor` | 跟随光标：打开后以光标坐标（0 尺寸点位）定位，光标移动 rAF 节流跟随 | `boolean` | — |
 | `fresh` | 内容新鲜度（默认 true）：关闭期间内容变化也即时同步；`"false"` 时关闭期间冻结内容，再次打开才更新 | `string` | `true` |
 | `interactive` | 浮层可悬停：鼠标移入浮层不关闭（`pointer-events: auto`），浮层内链接可达 | `boolean` | — |
 | `max-width` | 浮层最大宽度（数字补 px 或 CSS 长度，默认走 `--oas-tooltip-max-width` token 240px） | `string` | — |
@@ -761,7 +761,7 @@ onMounted(() => {
 | `virtual-anchor` | 虚拟锚点元素选择器（如 `#chart-point-1`），tooltip 按该元素矩形定位；与 `virtual-x`/`virtual-y` 二选一，坐标优先 | — | — |
 | `virtual-x` | 虚拟锚点视口 X 坐标（px，如鼠标 `clientX`），与 `virtual-y` 同时设置时按坐标定位 | — | — |
 | `virtual-y` | 虚拟锚点视口 Y 坐标（px，如鼠标 `clientY`），与 `virtual-x` 同时设置时按坐标定位 | — | — |
-| `width` | — | `string` | — |
+| `width` | 浮层宽度：数字（px）/ `"trigger"`（与触发元素同宽）/ 任意 CSS 值；仍受 `--oas-tooltip-max-width`（默认 240px）封顶 | `string` | — |
 
 #### 事件
 

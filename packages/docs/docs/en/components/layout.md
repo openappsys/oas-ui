@@ -128,7 +128,7 @@ Child components must carry the matching `slot` attribute (`header` / `sider` / 
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `side` | — | `string` | `left` |
+| `side` | Sidebar position: `left` (default) / `right` / `top`; invalid values fall back to `left`; with `top` the sider slot spans the full row width (fits horizontal navigation components) | `string` | `left` |
 | `viewport` | Viewport-locked mode: locks the layout to the viewport height (100dvh by default, cascading back to 100vh; overridable via `--oas-layout-height` to 100%/calc()), header/footer fixed while the sider and content scroll independently; default is the full-page scrolling model | `boolean` | — |
 
 #### Slots

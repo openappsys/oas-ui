@@ -405,7 +405,7 @@
 | `badge` | 徽标计数（纯数字字符串转 number，其余保留 string；对齐 SidebarItem.badge 的 string\|number） | — | — |
 | `group` | 分组名（连续同组项在组首项前渲染组标题） | — | — |
 | `icon` | 前置图标（`@oas-ui/icons` 注册表图标名；折叠图标条态显示） | — | — |
-| `icon-color` | — | — | — |
+| `icon-color` | 前置图标颜色：显式时固定该色（替换内置单色 path 的 currentColor，优先于禁用/激活态默认色）；缺省 currentColor 随态着色 | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
 
 #### 插槽

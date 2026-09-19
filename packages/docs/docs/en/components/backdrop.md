@@ -146,21 +146,21 @@ onMounted(async () => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `blur` | Blur the background | — | — |
-| `close-label` | — | — | — |
-| `color` | — | — | — |
+| `close-label` | aria-label of the screen-reader close button (sr-only by default, revealed on Tab focus so keyboard users can close the overlay); falls back to the locale `modal.close` | — | — |
+| `color` | Overlay background color: any CSS color value, or one of the 11 preset names (`magenta`/`red`/`volcano`/`orange`/`gold`/`lime`/`green`/`cyan`/`blue`/`geekblue`/`purple`, mapped to `--oas-preset-*` tokens); falls back to `--oas-backdrop-bg` when unset | — | — |
 | `lock-scroll` | Lock body scroll while open | `string` | `true` |
-| `opacity` | — | — | — |
+| `opacity` | Overlay opacity: levels `thin` (0.35) / `default` (0.55) / `thick` (0.75) or a 0–1 number; applies to the scrim layer only (does not dim overlay content); invalid values fall back to `--oas-backdrop-opacity` | — | — |
 | `open` | Whether shown | `boolean` | — |
-| `persistent` | — | `boolean` | — |
-| `stop-propagation` | — | `string` | `true` |
+| `persistent` | Persistent overlay: mask clicks do not emit `oas-click` (host-driven closing stops working); the content shakes instead as a not-closable hint | `boolean` | — |
+| `stop-propagation` | Stop mask clicks from propagating into the host document (default true; `"false"` allows bubbling) | `string` | `true` |
 | `transparent` | Transparent overlay (no background) | — | — |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-after-close` | — |
-| `oas-after-show` | — |
+| `oas-after-close` | Emitted after the close animation finishes (canonical, aligned with the after-* family); no `detail`. Scroll unlock and node removal (the element removes itself) happen after this |
+| `oas-after-show` | Emitted after the enter animation finishes (canonical, aligned with the after-* family); no `detail`; emitted immediately under reduced motion |
 | `oas-click` | Backdrop clicked, `detail.originalEvent` is the original click event |
 
 #### Slots
