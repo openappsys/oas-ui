@@ -75,11 +75,13 @@
   "props": [
     {
       "name": "disabledTime",
-      "type": "| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } | null) | null"
+      "type": "| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } | null) | null",
+      "api": true
     },
     {
       "name": "presets",
-      "type": "PresetItem[] | null"
+      "type": "PresetItem[] | null",
+      "api": true
     }
   ],
   "events": [

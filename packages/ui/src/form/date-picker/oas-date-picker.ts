@@ -714,7 +714,7 @@ export class OASDatePicker extends OASElement {
   /** aria-invalid 由 status=error 设置的所有权标志（清理时只移除自己设置的） */
   private invalidByStatus = false
 
-  /** shortcuts 走 property（对象数组无法用 JSON 属性表达），设置后即时重渲面板 */
+  /** @apiProperty 快捷预设数组（对象数组无法用 attribute 表达，赋值即重渲面板） */
   get shortcuts(): ShortcutItem[] | null {
     return this._shortcuts
   }
@@ -724,7 +724,7 @@ export class OASDatePicker extends OASElement {
     if (this.isConnected) this.update()
   }
 
-  /** disabled-date 走 property（回调无法用 JSON 表达），设置后即时重渲面板 */
+  /** @apiProperty 禁用日期回调（回调无法用 attribute 表达；置 null 恢复全部可选） */
   get disabledDate(): ((d: Date) => boolean) | null {
     return this._disabledDate
   }

@@ -513,12 +513,17 @@ onMounted(() => {
 | `filter-highlight` | Highlight matched fragments (mark tag) | `boolean` | — |
 | `height` | Virtual scroll viewport height (px); setting it enables virtualized rendering for large data | `string` | — |
 | `lazy` | Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand | `boolean` | — |
-| `load` | Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute | `(payload: { key: string }) => void \| Promise<unknown>` | — |
 | `motion` | Expand/collapse height transition animation (off by default): non-virtual mode transitions row-container max-height on expand/collapse, virtual-scroll mode degrades to a fade-in on expand with instant collapse; duration/easing follow `--oas-transition-*`, disabled under `prefers-reduced-motion` | `boolean` | — |
 | `multiple` | Click multi-select (Ctrl/⌘-click; selected set is a JSON array) | `boolean` | — |
 | `row-height` | Fixed row height when virtualized (px) | `string` | `32` |
 | `selected` | Key of the selected node | `string` | — |
 | `tree-lines` | Tree indentation guide lines | `boolean` | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `load` | Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute | `(payload: { key: string }) => void \| Promise<unknown>` | — |
 
 #### Events
 

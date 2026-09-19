@@ -245,6 +245,13 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `unlink-panels` | Range months flip independently (linked by default) | `boolean` | — |
 | `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | `string` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabledDate` | Disabled-date callback; dates returning `true` are unselectable (clicks and keyboard skip them; stacks with min/max) | `((d: Date) => boolean) \| null` | — |
+| `shortcuts` | Shortcuts (object array, `{ label, value }` or `{ label, getValue() }`); built-in defaults per type when unset (labels via locale) | `ShortcutItem[] \| null` | — |
+
 #### Events
 
 | Event | Description |

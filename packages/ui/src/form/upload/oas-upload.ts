@@ -554,7 +554,7 @@ export class OASUpload extends OASElement {
     if (e.key === 'Escape') this.closePreview()
   }
 
-  /** files 走 property（File/回显记录无法用 JSON 属性表达），设置后立即重渲列表 */
+  /** @apiProperty 文件列表（受控；File/回显记录无法用 attribute 表达，赋值即刷新列表） */
   get files(): UploadEntry[] {
     return [...this._files]
   }

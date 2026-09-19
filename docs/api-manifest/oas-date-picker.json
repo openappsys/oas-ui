@@ -110,11 +110,13 @@
   "props": [
     {
       "name": "shortcuts",
-      "type": "ShortcutItem[] | null"
+      "type": "ShortcutItem[] | null",
+      "api": true
     },
     {
       "name": "disabledDate",
-      "type": "((d: Date) => boolean) | null"
+      "type": "((d: Date) => boolean) | null",
+      "api": true
     }
   ],
   "events": [

@@ -153,7 +153,6 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `disabled` | 整体禁用：置灰并停止全部交互（点选/翻页/键盘） | `boolean` | — |
-| `disabledDate` | 禁用回调（property） | `((d: Date) => boolean) \| null` | — |
 | `first-day-of-week` | 周起始覆写：`0`（周日）～`6`（周六）；缺省随 locale（欧陆/中文周一、日/韩/英/阿周日） | `string` | — |
 | `max` | 可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰 | `string` | — |
 | `min` | 可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰 | `string` | — |
@@ -162,6 +161,12 @@
 | `readonly` | 只读：可翻页浏览/钻取面板，点选与键盘 Enter 不提交 | `boolean` | — |
 | `show-week-number` | 显示 ISO 周号列 | `boolean` | — |
 | `value` | 选中值（ISO） | `string` | — |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabledDate` | 禁用回调（property） | `((d: Date) => boolean) \| null` | — |
 
 #### 事件
 
