@@ -1,10 +1,23 @@
 {
   "className": "OASDropdownGroup",
-  "sourceFile": "packages/ui/src/navigation/dropdown/oas-dropdown-group.ts",
-  "attrs": [],
+  "sourceFile": "packages/ui/src/navigation/menu/oas-menu-group.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "observed": true
+    }
+  ],
   "props": [],
   "events": [],
-  "slots": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
   "cssVars": [],
   "unresolved": []
 }

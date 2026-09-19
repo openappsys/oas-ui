@@ -230,7 +230,6 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `clearable` | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | `boolean` | — |
 | `disabled` | Disabled (no input, no dropdown) | `boolean` | — |
-| `filter` | Custom filter function (JS property channel `el.filter = fn`): takes over local filtering (pinyin initials/remote matching); set null to restore the default label-substring filter; not involved when `filterable="false"` | `((option: Option, query: string) => boolean) \| null` | — |
 | `filterable` | Filter labels in real time while typing (`filterable="false"` disables local filtering) | `string` | `true` |
 | `item-height` | Virtual-scroll fixed row height (px, with `virtual`, default 36) | `string` | `36` |
 | `loading` | Loading placeholder (dropdown shows "加载中…") | `boolean` | — |
@@ -242,6 +241,12 @@ onMounted(() => {
 | `status` | Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation) | `string` | — |
 | `value` | Current value (controlled, the selected option's `option.value`) | `string` | — |
 | `virtual` | Virtual scroll (reuses oas-virtual-list to render only the visible window; options with group fall back to full rendering) | `boolean` | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `filter` | Custom filter function (JS property channel `el.filter = fn`): takes over local filtering (pinyin initials/remote matching); set null to restore the default label-substring filter; not involved when `filterable="false"` | `((option: Option, query: string) => boolean) \| null` | — |
 
 #### Events
 

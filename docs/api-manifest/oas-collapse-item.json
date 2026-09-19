@@ -41,6 +41,10 @@
       "name": "force-render",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "no-collapse",
+      "observed": false
     }
   ],
   "props": [],

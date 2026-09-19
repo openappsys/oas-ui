@@ -400,7 +400,7 @@ export class OASTimePicker extends OASElement {
     | null = null
   private _presets: PresetItem[] | null = null
 
-  /** disabledTime 走 property（回调无法用 JSON 表达），设置后即时重渲列 */
+  /** @apiProperty 禁用时刻回调（回调无法用 attribute 表达；按当前时刻上下文求值） */
   get disabledTime():
     | ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } | null)
     | null {
@@ -414,7 +414,7 @@ export class OASTimePicker extends OASElement {
     if (this.isConnected && this.openState) this.renderColumns(false)
   }
 
-  /** presets 快捷时刻（property，与 date-picker shortcuts 心智成对） */
+  /** @apiProperty 快捷时刻预设数组（与 date-picker shortcuts 心智成对；赋值即重渲列） */
   get presets(): PresetItem[] | null {
     return this._presets
   }

@@ -390,7 +390,6 @@ onMounted(async () => {
 | `data` | 附加表单字段（JSON 字符串，随文件一起提交） | — | — |
 | `directory` | 目录上传（整目录递归入列） | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
-| `files` | 文件列表（property，`File[]`） | `Array<File \| UploadEchoFile>` | `[]` |
 | `headers` | 附加请求头（JSON 字符串） | — | — |
 | `list-type` | 列表样式：`list`（默认）/ `picture`（列表带小缩略图）/ `picture-card`（卡片缩略图墙） | `string` | `list` |
 | `max` | 最大文件数 | `string` | `0` |
@@ -403,6 +402,12 @@ onMounted(async () => {
 | `show-file-list` | 文件列表显隐（`"false"` 隐藏，仅保留拖拽区） | `string` | `true` |
 | `tip` | 拖拽区提示文案（同 `template[slot="tip"]` 富内容） | `string` | — |
 | `with-credentials` | 跨域携带凭证 | `boolean` | — |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `files` | 文件列表（property，`File[]`） | `Array<File \| UploadEchoFile>` | `[]` |
 
 #### 事件
 

@@ -80,7 +80,8 @@
     },
     {
       "name": "filter",
-      "type": "((option: Option, query: string) => boolean) | null"
+      "type": "((option: Option, query: string) => boolean) | null",
+      "api": true
     }
   ],
   "events": [

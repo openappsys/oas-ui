@@ -141,7 +141,8 @@
   "props": [
     {
       "name": "load",
-      "type": "(payload: { key: string }) => void | Promise<unknown>"
+      "type": "(payload: { key: string }) => void | Promise<unknown>",
+      "api": true
     },
     {
       "name": "filterNode",

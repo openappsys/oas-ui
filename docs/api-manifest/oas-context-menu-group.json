@@ -1,10 +1,23 @@
 {
   "className": "OASContextMenuGroup",
-  "sourceFile": "packages/ui/src/navigation/contextmenu/oas-context-menu-group.ts",
-  "attrs": [],
+  "sourceFile": "packages/ui/src/navigation/menu/oas-menu-group.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "observed": true
+    }
+  ],
   "props": [],
   "events": [],
-  "slots": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
   "cssVars": [],
   "unresolved": []
 }

@@ -36,6 +36,8 @@ const ZH_DIR = join(ROOT, 'packages', 'docs', 'docs', 'components')
 const EN_DIR = join(ROOT, 'packages', 'docs', 'docs', 'en', 'components')
 
 const MODE = process.argv.includes('--dry') ? 'dry' : process.argv.includes('--check') ? 'check' : 'write'
+// --write-missing：收集缺失键并以 TODO 占位补进语料（不写 md；作者只需替换占位文案）
+const WRITE_MISSING = process.argv.includes('--write-missing')
 
 // ---------- 表头词表（与 harvest.mjs 保持一致） ----------
 const HEADER = {
@@ -290,6 +292,22 @@ function tagRows(tag, lang) {
     }
   })
 
+  // props：manifest 中带 @apiProperty 标记的公开 property ∪ 语料 props（并集）。
+  // 语料键不在标记集合 → 盲区（提示源码补 @apiProperty 或核对键名）
+  const descProps = desc.props ?? {}
+  const apiProps = (man.props ?? []).filter((p) => p.api)
+  const propNames = new Set(apiProps.map((p) => p.name))
+  for (const k of Object.keys(descProps)) {
+    if (!propNames.has(k)) blindSpots.add(`${tag}.props: ${k}`)
+    propNames.add(k)
+  }
+  const props = [...propNames].sort().map((name) => {
+    const p = apiProps.find((x) => x.name === name)
+    const d = descProps[name] ?? null
+    if (d === null) missing('props', name)
+    return { name, desc: d, type: p?.type ?? null, default: p?.default ?? null }
+  })
+
   // events：manifest ∪ 语料；detail 若 manifest 有而说明没有，追加到说明末尾
   const eventNames = new Set(man.events.map((e) => e.name))
   for (const k of Object.keys(desc.events)) eventNames.add(k)
@@ -329,7 +347,7 @@ function tagRows(tag, lang) {
     .sort((a, b) => (a.name < b.name ? -1 : 1))
     .map((v) => ({ name: v.name, default: v.default ?? null, desc: (desc.cssVars ?? {})[v.name] ?? null }))
 
-  return { attrs, events, slots, cssVars }
+  return { attrs, props, events, slots, cssVars }
 }
 
 // ---------- markdown 渲染 ----------
@@ -341,6 +359,18 @@ function mdTable(header, rows) {
 
 function renderAttrTable(rows, lang) {
   const header = lang === 'zh' ? ['属性', '说明', '类型', '默认值'] : ['Attribute', 'Description', 'Type', 'Default']
+  return mdTable(
+    header,
+    rows.map((r) => [
+      `\`${esc(r.name)}\``,
+      esc(r.desc ?? '—'),
+      r.type ? `\`${esc(r.type)}\`` : '—',
+      r.default ? `\`${esc(r.default)}\`` : '—',
+    ]),
+  )
+}
+function renderPropTable(rows, lang) {
+  const header = lang === 'zh' ? ['Property', '说明', '类型', '默认值'] : ['Property', 'Description', 'Type', 'Default']
   return mdTable(
     header,
     rows.map((r) => [
@@ -393,17 +423,22 @@ function renderCssVarTable(rows, lang) {
 function buildGenerated(tags, lang) {
   const headings = {
     attrs: lang === 'zh' ? '属性' : 'Attributes',
+    props:
+      lang === 'zh'
+        ? 'Property（仅 JS property，不反射 attribute）'
+        : 'Property (JS property only, not reflected as attribute)',
     events: lang === 'zh' ? '事件' : 'Events',
     slots: lang === 'zh' ? '插槽' : 'Slots',
     cssVars: lang === 'zh' ? 'CSS 变量' : 'CSS Variables',
   }
-  // 统一版式：每个 tag 一个 ### 小节，tag 下按 #### 属性 / #### 事件 / #### 插槽 / #### CSS 变量 分组
+  // 统一版式：每个 tag 一个 ### 小节，tag 下按 #### 属性 / #### Property / #### 事件 / #### 插槽 / #### CSS 变量 分组
   const parts = []
   for (const tag of tags) {
     const g = tagRows(tag, lang)
-    if (!g.attrs.length && !g.events.length && !g.slots.length && !(g.cssVars ?? []).length) continue
+    if (!g.attrs.length && !g.props.length && !g.events.length && !g.slots.length && !(g.cssVars ?? []).length) continue
     const tables = []
     if (g.attrs.length) tables.push(`#### ${headings.attrs}\n\n${renderAttrTable(g.attrs, lang)}`)
+    if (g.props.length) tables.push(`#### ${headings.props}\n\n${renderPropTable(g.props, lang)}`)
     if (g.events.length) tables.push(`#### ${headings.events}\n\n${renderEventTable(g.events, lang)}`)
     if (g.slots.length) tables.push(`#### ${headings.slots}\n\n${renderSlotTable(g.slots, lang)}`)
     if ((g.cssVars ?? []).length) tables.push(`#### ${headings.cssVars}\n\n${renderCssVarTable(g.cssVars, lang)}`)
@@ -413,9 +448,14 @@ function buildGenerated(tags, lang) {
 }
 
 // ---------- 单页处理 ----------
+// 生成的 Property 分组标题带括号注记（zh/en 各一版），按前缀消费保证幂等
+const GROUP_HEADING_PREFIXES = ['property']
+
 function isGroupHeading(b) {
   // h3：单 tag 页的分组标题（### 属性）；h4：多 tag 页 tag 下的分组标题（#### 属性）
-  return b.kind === 'heading' && (b.level === 3 || b.level === 4) && GROUP_HEADINGS.has(b.text.trim().toLowerCase())
+  if (!(b.kind === 'heading' && (b.level === 3 || b.level === 4))) return false
+  const t = b.text.trim().toLowerCase()
+  return GROUP_HEADINGS.has(t) || GROUP_HEADING_PREFIXES.some((p) => t.startsWith(p))
 }
 
 /** 块是否被"生成内容"取代 */
@@ -619,6 +659,10 @@ function main() {
   }
 
   // ---------- 实写 / check 退出 ----------
+  if (WRITE_MISSING) {
+    writeMissingDescriptions()
+    return
+  }
   if (MODE === 'write') {
     for (const c of changedFiles) {
       const path = join(c.lang === 'zh' ? ZH_DIR : EN_DIR, c.file)
@@ -626,15 +670,66 @@ function main() {
     }
     console.log(`=> 已写入 ${stats.changed} 个文件（${relative(ROOT, ZH_DIR)} / ${relative(ROOT, EN_DIR)}）`)
   } else if (MODE === 'check') {
+    // WIP 跳过页显著汇总：这些页的双向缺口本次未检，不能以「全绿」推断它们也通过
+    const wipSkipped = stats.skip.filter((s) => s.includes('在途 WIP'))
+    if (wipSkipped.length) {
+      console.error(`\n⚠ ${wipSkipped.length} 页因组件源码在途 WIP 被跳过校验（这些页的双向缺口本次未检）：`)
+      for (const s of wipSkipped) console.error(`  - ${s}`)
+    }
+    const problems = []
     if (stats.changed > 0) {
-      console.error(
-        `\n[api:gen --check] 检测到 ${stats.changed} 个文件与生成内容不一致（上方 diff 列表），请重跑 gen.mjs 或修正语料`,
+      problems.push(
+        `- 漂移：${stats.changed} 个 md 与生成内容不一致（上方 diff 列表）→ 跑 \`node scripts/api-docs/gen.mjs\` 重写`,
       )
+    }
+    if (missingList.length) {
+      problems.push(
+        `- 正向缺口 ${missingList.length} 条：manifest 有条目而语料无说明（上方清单）→ 补 \`docs/api-descriptions.{zh,en}.json\` 对应键，或跑 \`--write-missing\` 生成 TODO 占位`,
+      )
+    }
+    if (blindList.length) {
+      problems.push(
+        `- 反向缺口 ${blindList.length} 条：语料有行而 manifest 无条目（上方清单）→ 核对键名/源码扫描边界；若是误留的失效行，删语料行并记 CHANGELOG`,
+      )
+    }
+    if (problems.length) {
+      console.error(`\n[api:gen --check] 双向 0 门禁未过（${problems.length} 类问题）：`)
+      for (const p of problems) console.error(p)
       process.exit(1)
-    } else {
-      console.log('[api:gen --check] 全部文件与生成内容一致 ✅')
+    }
+    console.log('[api:gen --check] 双向 0（说明缺失 0 / 语料未匹配 0），全部文件与生成内容一致 ✅')
+  }
+}
+
+// ---------- --write-missing：把缺失键以 TODO 占位写进语料 ----------
+// 只处理正向缺口（说明缺失）；反向盲区可能是误留键，不盲目固化，仍需人工核对。
+function writeMissingDescriptions() {
+  const langs = [
+    ['zh', DESC_ZH_PATH, DESC_ZH],
+    ['en', DESC_EN_PATH, DESC_EN],
+  ]
+  let total = 0
+  for (const entry of [...missingDesc].sort()) {
+    const dot = entry.indexOf('.')
+    const colon = entry.indexOf(': ')
+    const tag = entry.slice(0, dot)
+    const group = entry.slice(dot + 1, colon)
+    // slots 默认插槽的展示名还原为键 ''
+    const name = group === 'slots' && entry.slice(colon + 2) === '(默认)' ? '' : entry.slice(colon + 2)
+    for (const [, , data] of langs) {
+      if (!data[tag]) data[tag] = { attrs: {}, events: {}, slots: {} }
+      const t = data[tag]
+      if (!t[group]) t[group] = {}
+      if (!(name in t[group])) {
+        t[group][name] = 'TODO'
+        total++
+      }
     }
   }
+  for (const [, path, data] of langs) {
+    writeFileSync(path, JSON.stringify(data, null, 2) + '\n', 'utf8')
+  }
+  console.log(`[api:gen --write-missing] 已写入 ${total} 条 TODO 占位（zh + en，键已齐、文案待替换）`)
 }
 
 // ---------- 入口 ----------

@@ -387,7 +387,7 @@ export class OASTree extends OASElement {
   }
 
   /**
-   * 懒加载回调：展开未加载节点时触发 `{ key }`，宿主回填子节点后重设 data。
+   * @apiProperty 懒加载回调：展开未加载节点时收到 `{ key }`，宿主回填子节点后重设 data。
    * 返回 Promise 且 reject 时：自动清 loading、回滚 expanded、派发 oas-load-error，
    * 节点恢复可点击重试（低成本失败重试）。
    */

@@ -513,12 +513,17 @@ onMounted(() => {
 | `filter-highlight` | 搜索命中片段高亮（mark 标记） | `boolean` | — |
 | `height` | 虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染 | `string` | — |
 | `lazy` | 懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载 | `boolean` | — |
-| `load` | 懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性 | `(payload: { key: string }) => void \| Promise<unknown>` | — |
 | `motion` | 展开/收起高度过渡动画（默认关）：非虚拟模式行容器 max-height 过渡展开/收起，虚拟滚动模式入场降级为淡入、收起即时；时长/缓动走 `--oas-transition-*`，`prefers-reduced-motion` 下停用 | `boolean` | — |
 | `multiple` | 点选多选（Ctrl/⌘ 点击多选；勾选集 selected 为 JSON 数组） | `boolean` | — |
 | `row-height` | 虚拟化时每行固定高度（px） | `string` | `32` |
 | `selected` | 选中节点 key | `string` | — |
 | `tree-lines` | 树线缩进引导线 | `boolean` | — |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `load` | 懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性 | `(payload: { key: string }) => void \| Promise<unknown>` | — |
 
 #### 事件
 

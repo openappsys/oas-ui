@@ -11,6 +11,7 @@
 - **ARIA 语义**：`oas-card` / `oas-list-item` 不再挂缺省交互角色（`role=button/checkbox`）——可点/可选卡与可点行内常嵌操作控件，缺省角色会把它们裹进交互元素（`nested-interactive`，屏幕阅读器丢失内部控件可读性）。需要行级/卡级交互语义时，由宿主显式挂 `role`（组件不覆盖宿主显式角色）并按需自行同步 `aria-checked`；`oas-editable` 只读展示态由 `role=button` 改为 `role=textbox` + `aria-readonly`；`oas-radio` 只读由 `aria-readonly` 改为 `aria-disabled`（radio 不支持前者）。
 - **token 语义**：语义色/预设色的 `-text` 变体（如 `--oas-preset-red-text`）现在同时承担「文字色」与「实底底色」（tag、badge、avatar、toggle 的实心与选中态）——只覆写 `--oas-preset-*` / `--oas-color-*` 本色的换肤不再影响这些组件的实底与文字，请改为覆写对应 `-text` 变体。另新增 `--oas-color-primary-text`（primary 的文字安全档，值与 `-active` 相同，交互态仍用 `-active`）；自定义 hex 色的文字安全档改为随主题方向的混合（内部 token `--oas-deep-mix` / `--oas-deep-sink`）。
 - **Shadow DOM 结构**：`oas-splitter` 的分隔条外层新增 `.sep` 包裹层（折叠按钮与 separator 同级，消除交互嵌套），`[part="splitter"]` 的宽度语义由 `.sep` 承接；`oas-progress` 内嵌文本（`::part(inside)`）的父节点由 `.track` 变为 `.bar`（文本只压在已填充段内，填充过窄时自动隐藏）。依赖这些结构的宿主 CSS / `::part` 选择器需相应调整。
+- **API 语料失效行清理**：`oas-scroll-area` 文档 API 表中的 `direction` 行为失效残留——该组件从未提供 `direction` 属性/property，书写方向判定走全局机制（config-provider 的 `direction` 注入 / 最近 `[dir]` 祖先 / 根级 `dir`，由 RTL 说明统一覆盖），与该组件自身 API 无关。仅删文档语料行，组件代码行为零变化。
 
 ### 无障碍
 

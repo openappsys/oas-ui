@@ -275,6 +275,7 @@ export class OASCombobox extends OASElement {
   /** 自定义过滤函数（仅 property 通道：`el.filter = fn`，WC attribute 无法传函数）。
    *  签名 `(option, query) => boolean`；置 null 恢复默认 label 子串过滤；filterable="false" 时不参与（不做本地过滤）。 */
   private _filter: ((option: Option, query: string) => boolean) | null = null
+  /** @apiProperty 自定义过滤函数：`(option, query) => boolean`；置 null 恢复默认 label 子串过滤 */
   get filter(): ((option: Option, query: string) => boolean) | null {
     return this._filter
   }

@@ -104,7 +104,8 @@
     {
       "name": "files",
       "type": "Array<File | UploadEchoFile>",
-      "default": "[]"
+      "default": "[]",
+      "api": true
     },
     {
       "name": "defaultFiles",

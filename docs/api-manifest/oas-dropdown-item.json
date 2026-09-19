@@ -1,10 +1,55 @@
 {
   "className": "OASDropdownItem",
-  "sourceFile": "packages/ui/src/navigation/dropdown/oas-dropdown-item.ts",
-  "attrs": [],
+  "sourceFile": "packages/ui/src/navigation/menu/oas-menu-item.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "observed": true
+    },
+    {
+      "name": "icon-color",
+      "observed": true
+    },
+    {
+      "name": "kind",
+      "observed": true
+    },
+    {
+      "name": "danger",
+      "observed": true
+    },
+    {
+      "name": "href",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "observed": true
+    },
+    {
+      "name": "rel",
+      "observed": true
+    }
+  ],
   "props": [],
   "events": [],
-  "slots": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
   "cssVars": [],
   "unresolved": []
 }
