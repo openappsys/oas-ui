@@ -51,6 +51,14 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "check-all",
+      "observed": false
+    },
+    {
+      "name": "label-position",
+      "observed": false
     }
   ],
   "props": [],

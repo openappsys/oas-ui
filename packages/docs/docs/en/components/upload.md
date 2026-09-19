@@ -391,7 +391,6 @@ onMounted(async () => {
 | `data` | Extra form fields (JSON string, submitted with the file) | — | — |
 | `directory` | Directory upload (recursive folder intake) | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
-| `files` | File list (property, `File[]`) | `Array<File \| UploadEchoFile>` | `[]` |
 | `headers` | Extra request headers (JSON string) | — | — |
 | `list-type` | List style: `list` (default) / `picture` (rows with thumbnails) / `picture-card` (card thumbnail wall) | `string` | `list` |
 | `max` | Maximum number of files | `string` | `0` |
@@ -404,6 +403,12 @@ onMounted(async () => {
 | `show-file-list` | File list visibility (`"false"` hides it, keeping only the drop zone) | `string` | `true` |
 | `tip` | Drop-zone tip text (same as `template[slot="tip"]` for rich content) | `string` | — |
 | `with-credentials` | Cross-origin credentials | `boolean` | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `files` | File list (property, `File[]`) | `Array<File \| UploadEchoFile>` | `[]` |
 
 #### Events
 

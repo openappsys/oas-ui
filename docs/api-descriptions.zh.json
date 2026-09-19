@@ -16,7 +16,6 @@
   "oas-alert": {
     "attrs": {
       "closeable": "是否显示关闭按钮",
-      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
       "type": "提示类型",
       "icon": "显示 type 默认图标（信息/成功/警告/错误对应）；slot=\"icon\" 可覆盖",
       "description": "描述文案（标题下二级文字）；富内容用 slot=\"description\"",
@@ -28,12 +27,13 @@
       "max-line": "正文最大行数：超出用 CSS line-clamp 截断并显示展开/收起按钮；缺省不折叠",
       "prominent": "大图标：图标尺寸放大一档（与 icon 联动）",
       "border": "侧边色条：空格分隔多值 top/end/bottom/start（逻辑方向，RTL 自适应），对应侧渲染 type 色强调条",
-      "size": "尺寸档：small/medium/large（默认 medium），字号与内边距随之缩放"
+      "size": "尺寸档：small/medium/large（默认 medium），字号与内边距随之缩放",
+      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\""
     },
     "events": {
-      "oas-close": "点击关闭按钮后触发，随后组件隐藏",
       "oas-open-change": "显隐状态变化时派发，detail { open }",
-      "oas-after-close": "关闭退场过渡结束后派发（prefers-reduced-motion 下跳过过渡直接隐藏，仍派发）"
+      "oas-after-close": "关闭退场过渡结束后派发（prefers-reduced-motion 下跳过过渡直接隐藏，仍派发）",
+      "oas-close": "点击关闭按钮后触发，随后组件隐藏"
     },
     "slots": {
       "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
@@ -434,7 +434,6 @@
   },
   "oas-calendar": {
     "attrs": {
-      "disabledDate": "禁用回调（property）",
       "disabled": "整体禁用：置灰并停止全部交互（点选/翻页/键盘）",
       "first-day-of-week": "周起始覆写：`0`（周日）～`6`（周六）；缺省随 locale（欧陆/中文周一、日/韩/英/阿周日）",
       "max": "可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰",
@@ -453,6 +452,9 @@
     },
     "slots": {
       "template[slot=\"cell\"]": "日单元格静态模板，克隆到每个日按钮；`[data-cell-date]` 节点自动绑定日期数字"
+    },
+    "props": {
+      "disabledDate": "禁用回调（property）"
     }
   },
   "oas-card": {
@@ -668,7 +670,6 @@
     "attrs": {
       "clearable": "可清空（有值时显示清空按钮，清空派发 `oas-clear`）",
       "disabled": "禁用（不可输入、不展开）",
-      "filter": "自定义过滤函数（JS property 通道 `el.filter = fn`）：接管本地过滤（如拼音首字母/远程匹配），置 null 恢复默认 label 子串过滤；`filterable=\"false\"` 时不参与",
       "filterable": "输入实时过滤 label（`filterable=\"false\"` 关闭本地过滤）",
       "item-height": "虚拟滚动定高（px，配合 `virtual`，默认 36）",
       "loading": "加载占位（下拉显示「加载中…」）",
@@ -687,7 +688,10 @@
       "oas-input": "输入过滤词，`detail: { value }`",
       "oas-open-change": "展开状态迁移（受控 setAttribute 与内部开合都派发），`detail: { open }`"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "filter": "自定义过滤函数（JS property 通道 `el.filter = fn`）：接管本地过滤（如拼音首字母/远程匹配），置 null 恢复默认 label 子串过滤；`filterable=\"false\"` 时不参与"
+    }
   },
   "oas-compact": {
     "attrs": {
@@ -826,7 +830,8 @@
       "danger": "破坏性项：红色语义（删除/退出等危险操作）",
       "href": "链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`）",
       "target": "链接 target（配合 href）",
-      "rel": "链接 rel（配合 href）"
+      "rel": "链接 rel（配合 href）",
+      "icon-color": "图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色"
     },
     "events": {},
     "slots": {
@@ -1039,7 +1044,8 @@
       "danger": "破坏性项：红色语义（删除/退出等危险操作）",
       "href": "链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`）",
       "target": "链接 target（配合 href）",
-      "rel": "链接 rel（配合 href）"
+      "rel": "链接 rel（配合 href）",
+      "icon-color": "图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色"
     },
     "events": {},
     "slots": {
@@ -2317,7 +2323,6 @@
   "oas-scroll-area": {
     "attrs": {
       "auto-hide": "滚动条仅在滚动/悬停时显示，超时自动隐藏",
-      "direction": "RTL 判定来源之一：自身/祖先未显式设置 `dir` 时回落 config-provider 注入的 `direction`（`ltr`/`rtl`）",
       "end-distance": "`oas-end-reached` 触发距离（px，默认 `0`）：距底/右边缘 N px 内即算到底",
       "height": "视口高度（px），不设置时随内容自然撑开",
       "scroll-shadow": "滚动边缘阴影（CSS-only）：滚动到边缘时阴影渐隐提示还有内容",
@@ -3322,7 +3327,6 @@
       "expanded": "展开节点 key 集合（逗号分隔）",
       "height": "虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染",
       "lazy": "懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载",
-      "load": "懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性",
       "row-height": "虚拟化时每行固定高度（px）",
       "selected": "选中节点 key",
       "multiple": "点选多选（Ctrl/⌘ 点击多选；勾选集 selected 为 JSON 数组）",
@@ -3355,6 +3359,9 @@
       "template[slot=\"toggle\"]": "展开按钮静态模板，克隆到每个可展开节点的展开按钮内（替换默认 › 图标）",
       "template[slot=\"empty\"]": "自定义空态内容",
       "template[slot=\"toggle-loading\"]": "懒加载展开中的指示器（替换 spinner）"
+    },
+    "props": {
+      "load": "懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性"
     }
   },
   "oas-tree-select": {
@@ -3409,7 +3416,6 @@
       "accept": "接受的文件类型",
       "auto-upload": "添加后自动模拟上传",
       "disabled": "禁用",
-      "files": "文件列表（property，`File[]`）",
       "list-type": "列表样式：`list`（默认）/ `picture`（列表带小缩略图）/ `picture-card`（卡片缩略图墙）",
       "max": "最大文件数",
       "multiple": "多选",
@@ -3442,6 +3448,9 @@
       "trigger": "替换拖拽区内容（zone 语义保留）",
       "template[slot=\"item\"]": "自定义文件行/卡片（`[data-item-name]`/`[data-item-size]` 绑定）",
       "template[slot=\"tip\"]": "拖拽区提示富内容（tip 属性优先）"
+    },
+    "props": {
+      "files": "文件列表（property，`File[]`）"
     }
   },
   "oas-virtual-list": {

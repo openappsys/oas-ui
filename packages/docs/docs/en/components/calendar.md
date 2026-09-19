@@ -143,7 +143,6 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabled` | Globally disabled: greys out the calendar and stops all interaction (picking / paging / keyboard) | `boolean` | — |
-| `disabledDate` | Disabled callback (property) | `((d: Date) => boolean) \| null` | — |
 | `first-day-of-week` | Week start override: `0` (Sunday) to `6` (Saturday); defaults to the locale (Monday for European/Chinese, Sunday for Japanese/Korean/English/Arabic) | `string` | — |
 | `max` | Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range | `string` | — |
 | `min` | Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range | `string` | — |
@@ -152,6 +151,12 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | `readonly` | Read-only: page navigation and panel drill-down stay available, but picking dates / Enter does not commit | `boolean` | — |
 | `show-week-number` | Show the ISO week number column | `boolean` | — |
 | `value` | Selected value (ISO) | `string` | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabledDate` | Disabled callback (property) | `((d: Date) => boolean) \| null` | — |
 
 #### Events
 

@@ -146,6 +146,13 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `use12-hours` | 12-hour mode: display and columns switch to 12-hour (with an AM/PM column following the locale); the value stays 24-hour | `boolean` | — |
 | `value` | Current value (`HH:mm:ss`; a JSON array when `is-range`) | `string` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabledTime` | Disabled-time callback: `(parts) => { hours?, minutes?, seconds? }`, evaluated against the current time context; disabled options are grayed, not hidden | `\| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } \| null) \| null` | — |
+| `presets` | Quick times: an array of `{ label, value: "HH:mm:ss" }` rendered as a button row atop the panel | `PresetItem[] \| null` | — |
+
 #### Events
 
 | Event | Description |

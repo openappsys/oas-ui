@@ -249,6 +249,13 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `unlink-panels` | 范围双月各自独立翻页（默认联动） | `boolean` | — |
 | `value` | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | `string` | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabledDate` | 禁用日期回调，返回 `true` 的日期不可选（点击与键盘导航均跳过；与 min/max 叠加禁用） | `((d: Date) => boolean) \| null` | — |
+| `shortcuts` | 快捷预设（对象数组，`{ label, value }` 或 `{ label, getValue() }`）；未设置时各类型内置默认预设（标签走 locale） | `ShortcutItem[] \| null` | — |
+
 #### 事件
 
 | 事件 | 说明 |

@@ -25,6 +25,22 @@
     {
       "name": "icon",
       "observed": false
+    },
+    {
+      "name": "href",
+      "observed": false
+    },
+    {
+      "name": "target",
+      "observed": false
+    },
+    {
+      "name": "rel",
+      "observed": false
+    },
+    {
+      "name": "icon-only",
+      "observed": false
     }
   ],
   "props": [],

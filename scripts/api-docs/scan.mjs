@@ -149,13 +149,21 @@ const OBSERVED_GETTER = 'observedAttributes'
 const GLOBAL_CONVENTION_ATTRS = new Set(['disabled-skip', 'dir'])
 const ATTR_HELPERS = new Set(['getAttr', 'hasAttr', 'injectValue', 'injectDisabled'])
 
-// 跨组件属性补充：父组件通过 `getAttribute('x')` 读取子元素上的属性
-// （如 oas-tabs 读 oas-tab-panel 的 badge），子组件源码里没有 getAttr/hasAttr
-// 调用点，AST 无法推导，故显式登记（observed:false，不参与 attributeChanged 联动）。
+// 跨组件属性补充：AST 探不到的公开 attribute，显式登记（observed:false，不参与
+// attributeChanged 联动）。两类来源：
+//   1) 父组件读取子元素属性（如 oas-tabs 读 oas-tab-panel 的 badge/href）；
+//   2) 纯 CSS 消费属性（组件 JS 无任何读取点，仅 :host([...]) 选择器/子组件转发）。
 const SUPPLEMENT_ATTRS = {
-  'oas-tab-panel': ['badge', 'icon'],
+  // href/target/rel/icon-only 由 oas-tabs 解析子面板读取（渲染为链接 tab/纯图标 tab）
+  'oas-tab-panel': ['badge', 'icon', 'href', 'target', 'rel', 'icon-only'],
   // success 为纯 CSS 消费属性（无 getAttr/hasAttr），扫描正则探不到，人工补录
   'oas-pin-input': ['success'],
+  // check-all 由 oas-checkbox-group 读子项（全选联动标记）；label-position 为纯 CSS 消费
+  'oas-checkbox': ['check-all', 'label-position'],
+  // label-position 为纯 CSS 消费属性（:host([label-position='start']) 镜像布局）
+  'oas-radio': ['label-position'],
+  // no-collapse 由父组件 oas-collapse 读子项（强锁展开态）
+  'oas-collapse-item': ['no-collapse'],
 }
 
 // ---------- 组件目录清单：ui/src/index.ts 的副作用导入行 ----------
@@ -287,15 +295,43 @@ function hasObservedGetter(cls) {
 }
 
 /** 解析类声明中的 extends 基类（同目录类文件）；用于组装类（星骨架+index 组装）的 API 承载回退 */
-function resolveApiBase(cls, dirAbs, project) {
+function resolveApiBase(cls, dirAbs, project, fromFile, visited = new Set()) {
   const ext = (cls.heritageClauses || []).find((h) => h.token === K.ExtendsKeyword)
   const baseName = ext?.types?.[0]?.expression?.text
-  if (!baseName) return null
+  if (!baseName || visited.has(baseName)) return null
+  visited.add(baseName)
+  const rel = (f) => relative(ROOT, f).replace(/\\/g, '/')
+  // 1) import 声明来源（跨目录基类，如 dropdown-item ← menu-item）：比全仓扫描快且准
+  if (fromFile) {
+    let src = ''
+    try {
+      const sf = project.program.getSourceFile(fromFile)
+      src = sf?.getText ? sf.getText() : readFileSync(fromFile, 'utf8')
+    } catch {
+      src = ''
+    }
+    for (const m of src.matchAll(/import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]/g)) {
+      const names = m[1].split(',').map((s) => s.trim().split(/\s+as\s+/)[0])
+      if (!names.includes(baseName)) continue
+      const spec = m[2]
+      if (!spec.startsWith('.')) break // 外部包基类（如 OASElement），不在本仓，走同目录兜底
+      const abs = join(dirname(fromFile), spec.replace(/\.js$/, '.ts'))
+      if (!existsSync(abs)) break
+      const sf = project.program.getSourceFile(abs)
+      const hit = sf ? findClassNode(sf, baseName) : null
+      if (!hit) break
+      if (hasObservedGetter(hit.node)) return { node: hit.node, file: rel(abs) }
+      // 基类自身仍是空壳（extends 更上层基类）→ 递归上溯，失败则用该层基类兜底
+      const up = resolveApiBase(hit.node, dirAbs, project, abs, visited)
+      return up ?? { node: hit.node, file: rel(abs) }
+    }
+  }
+  // 2) 同目录类文件兜底（组装类基类，如 OASTableBase 定义于同目录）
   for (const fileAbs of listClassFiles(dirAbs)) {
     const sf = project.program.getSourceFile(fileAbs)
     if (!sf) continue
     const hit = findClassNode(sf, baseName)
-    if (hit) return { node: hit.node, file: relative(ROOT, fileAbs).replace(/\\/g, '/') }
+    if (hit) return { node: hit.node, file: rel(fileAbs) }
   }
   return null
 }
@@ -491,8 +527,17 @@ function extractAttrs(cls, observed, propNames) {
 //      `[...this._files]`）时，追踪该字段的字面量初始值（如 virtual-list 的
 //      `get items() { return this.data.slice() }` + `private data: unknown[] = []` → "[]"）
 // 宁可不抓不可错抓：非字面量初始值（标识符 DEFAULT_DURATION、对象 {}、null）保持省略。
+// 成员声明的前导 JSDoc 是否含 @apiProperty 标记（公开 property 通道的显式声明）。
+// getFullText 含前导 trivia（注释/空白），取最后一个 JSDoc 块判定，避免误配更早的注释。
+function hasApiPropFlag(member) {
+  const full = typeof member.getFullText === 'function' ? member.getFullText() : member.getText()
+  const start = full.lastIndexOf('/**')
+  if (start === -1) return false
+  return full.slice(start).includes('@apiProperty')
+}
+
 function extractProps(cls) {
-  const propMap = new Map() // name -> { name, setType?, getType?, default? }
+  const propMap = new Map() // name -> { name, setType?, getType?, default?, api? }
 
   // backing fields：类内字段声明 → 初始值节点（含 private，供 getter 默认值追踪）
   const fieldInit = new Map()
@@ -522,6 +567,8 @@ function extractProps(cls) {
       entry = { name }
       propMap.set(name, entry)
     }
+    // @apiProperty 标记：getter/setter 任一声明即视为该 property 公开
+    if (hasApiPropFlag(m)) entry.api = true
 
     if (isAccessor) {
       if (m.kind === K.SetAccessor) {
@@ -555,6 +602,7 @@ function extractProps(cls) {
     const type = p.setType ?? p.getType
     if (type) item.type = type
     if (p.default !== undefined) item.default = p.default
+    if (p.api) item.api = true
     props.push(item)
   }
   return props
@@ -835,10 +883,10 @@ function scanDir(project, dir, unresolvedGlobal) {
         break
       }
     }
-    // 组装类（如 OASTable extends OASTableBase）自身无 observedAttributes getter 时，
-    // 解析其同目录基类作为 API 承载体（属性/事件都在基类声明）
+    // 组装类（如 OASTable extends OASTableBase）或跨目录继承类（如 dropdown-item ← menu-item）
+    // 自身无 observedAttributes getter 时，回退解析其基类作为 API 承载体（属性/事件都在基类声明）
     if (classNode && !hasObservedGetter(classNode)) {
-      const base = resolveApiBase(classNode, dirAbs, project)
+      const base = resolveApiBase(classNode, dirAbs, project, classFile)
       if (base) {
         classNode = base.node
         classFile = base.file

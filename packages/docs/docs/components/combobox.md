@@ -231,7 +231,6 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | `boolean` | — |
 | `disabled` | 禁用（不可输入、不展开） | `boolean` | — |
-| `filter` | 自定义过滤函数（JS property 通道 `el.filter = fn`）：接管本地过滤（如拼音首字母/远程匹配），置 null 恢复默认 label 子串过滤；`filterable="false"` 时不参与 | `((option: Option, query: string) => boolean) \| null` | — |
 | `filterable` | 输入实时过滤 label（`filterable="false"` 关闭本地过滤） | `string` | `true` |
 | `item-height` | 虚拟滚动定高（px，配合 `virtual`，默认 36） | `string` | `36` |
 | `loading` | 加载占位（下拉显示「加载中…」） | `boolean` | — |
@@ -243,6 +242,12 @@ onMounted(() => {
 | `status` | 校验态：success / warning / error（error 同步 aria-invalid，可被 oas-form-item 校验驱动） | `string` | — |
 | `value` | 当前值（受控，选中项 `option.value`） | `string` | — |
 | `virtual` | 虚拟滚动（复用 oas-virtual-list 仅渲染可视窗口；带 group 的选项自动回退全量渲染） | `boolean` | — |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `filter` | 自定义过滤函数（JS property 通道 `el.filter = fn`）：接管本地过滤（如拼音首字母/远程匹配），置 null 恢复默认 label 子串过滤；`filterable="false"` 时不参与 | `((option: Option, query: string) => boolean) \| null` | — |
 
 #### 事件
 

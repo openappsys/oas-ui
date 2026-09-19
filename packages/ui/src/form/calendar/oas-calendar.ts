@@ -276,7 +276,7 @@ export class OASCalendar extends OASElement {
   private lastMode = 'month'
   private modeInit = false
 
-  /** disabled-date 走 property（回调无法用 JSON 表达），设置后即时重渲 */
+  /** @apiProperty 禁用日期回调（回调无法用 attribute 表达；置 null 恢复全部可选） */
   get disabledDate(): ((d: Date) => boolean) | null {
     return this._disabledDate
   }
