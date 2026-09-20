@@ -124,7 +124,13 @@
     <oas-list bordered id="list-select">
       <oas-list-item clickable selected title="通知设置">
         <span slot="description">邮件、站内信、桌面通知</span>
-        <oas-switch slot="extra" checked></oas-switch>
+        <!-- 选中行底为主色：行内开启态开关轨道经 --oas-color-primary 通道调一档（active 档），
+             避免轨道与行底同色致滑块悬空（light 调深 / dark 调浅，行 hover 档下仍可辨） -->
+        <oas-switch
+          slot="extra"
+          checked
+          style="--oas-color-primary: var(--oas-color-primary-active)"
+        ></oas-switch>
       </oas-list-item>
       <oas-list-item clickable title="隐私设置">
         <span slot="description">可见范围、数据授权</span>

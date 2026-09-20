@@ -318,6 +318,12 @@ pre.code {
   color: var(--oas-code-color, var(--oas-color-text-primary));
   white-space: nowrap;
 }
+/* hidden 兜底：作者层 display:inline-block 会压过 UA 的 [hidden]{display:none}，
+   块级形态下隐藏的 inline 载体（block variant 时 hidden 属性恒在）会渲染成
+   8×3px 灰药丸残片（同 progress 先例：作者级 display 必须显式补回 hidden） */
+.inline[hidden] {
+  display: none;
+}
 /* inline variant 形态：subtle 默认浅底/outline 描边/plain 纯文字/solid 实底 */
 .inline.outline {
   background: transparent;

@@ -113,3 +113,19 @@ test('marquee 克隆组 aria-hidden（读屏不重复播报）+ pause-on-hover �
     )
     .toBe('running')
 })
+
+test('marquee fade-edges：mask 挂内层 viewport 而非 :host（宿主 border/圆角不被淡出「开口」）', async ({ page }) => {
+  await page.goto('/components/marquee.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-marquee[fade-edges]')
+  const r = await page.evaluate(() => {
+    const host = document.querySelector('oas-marquee[fade-edges]')!
+    const viewport = host.shadowRoot!.querySelector('.viewport')!
+    return {
+      hostMask: getComputedStyle(host).maskImage,
+      viewportMask: getComputedStyle(viewport).maskImage,
+    }
+  })
+  // 回归：mask 曾挂 :host——带框 demo 宿主的 border/圆角在两端约一个渐隐宽度内被一起淡出（框呈「开口」）
+  expect(r.hostMask, ':host 不得有 mask（宿主自身边框/圆角必须保持完整）').toBe('none')
+  expect(r.viewportMask, '渐隐 mask 应在内层 viewport（尺寸=宿主内容区，渐隐贴可视边缘）').toContain('linear-gradient')
+})

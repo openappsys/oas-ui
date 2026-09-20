@@ -11,6 +11,14 @@ const STYLE = `
 :host([hidden]) {
   display: none;
 }
+/* 内层视口：尺寸跟随宿主内容区。fade-edges 的 mask 挂它而非 :host——
+   mask 挂宿主会连带把宿主自身 border/圆角一起淡出（带框容器两端约一个
+   渐隐宽度内呈「开口」）；也不直接挂 .track（track 是 max-content 宽，
+   内容超宽时 100% 参考系超出可视区，右端渐隐会跑出边缘） */
+.viewport {
+  width: 100%;
+  height: 100%;
+}
 .track {
   display: flex;
   width: max-content;
@@ -54,8 +62,9 @@ const STYLE = `
 :host([pause-on-hover]:focus-within) .track {
   animation-play-state: paused;
 }
-/* fade-edges：边缘渐隐（mask-image 方案，渐隐尺寸走变量；默认关） */
-:host([fade-edges]) {
+/* fade-edges：边缘渐隐（mask-image 方案，渐隐尺寸走变量；默认关）。
+   挂内层 .viewport（见上方说明）：渐隐贴可视边缘，宿主 border/圆角完整 */
+:host([fade-edges]) .viewport {
   mask-image: linear-gradient(
     to right,
     transparent,
@@ -64,7 +73,7 @@ const STYLE = `
     transparent
   );
 }
-:host([fade-edges][orientation='vertical']) {
+:host([fade-edges][orientation='vertical']) .viewport {
   mask-image: linear-gradient(
     to bottom,
     transparent,
@@ -167,9 +176,11 @@ export class OASMarquee extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <div class="track measuring" part="track">
-        <div class="group" part="group"><slot></slot></div>
-        <div class="group clone" part="group" aria-hidden="true"></div>
+      <div class="viewport">
+        <div class="track measuring" part="track">
+          <div class="group" part="group"><slot></slot></div>
+          <div class="group clone" part="group" aria-hidden="true"></div>
+        </div>
       </div>
     `
   }

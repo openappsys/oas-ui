@@ -275,7 +275,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | --- | --- |
 | `template[slot="cell"]` | `template[slot="cell"]` 克隆进每个日格，`[data-cell-date]` 自动绑定日期数字（与 `oas-cell-render` 双通道） |
 
-### Property
+#### Property（快捷预设）
 
 - `shortcuts`：快捷预设
 
