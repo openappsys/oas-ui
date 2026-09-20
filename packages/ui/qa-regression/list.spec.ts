@@ -126,3 +126,28 @@ test('list：点击可点行内的开关不触发行点击，且行不挂缺省 
   expect(r!.rowClicks, '点击行内开关不应触发整行 oas-click（行与控件不双触发）').toBe(0)
   expect(r!.after, '开关自身应正常切换').not.toBe(r!.before)
 })
+
+test('list 选中行内 checked 开关：轨道底与 primary 行底可辨（demo 经 --oas-color-primary 通道调一档）', async ({
+  page,
+}) => {
+  await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-list-item[selected]')
+  const r = await page.evaluate(() => {
+    const row = document.querySelector('oas-list-item[selected]')!
+    const sws = Array.from(row.querySelectorAll('oas-switch')) as Array<HTMLElement & { shadowRoot: ShadowRoot }>
+    for (const sw of sws) {
+      const btn = sw.shadowRoot?.querySelector('button')
+      if (btn && btn.getAttribute('aria-checked') === 'true') {
+        return {
+          trackBg: getComputedStyle(btn).backgroundColor,
+          rowBg: getComputedStyle(row).backgroundColor,
+        }
+      }
+    }
+    return null
+  })
+  expect(r, '选中行 demo 内应有开启态开关').not.toBeNull()
+  expect(r!.trackBg, '开启轨道底色不得与选中行底同色（曾同为 primary → 轨道消失只剩悬空滑块，可供性丢失）').not.toBe(
+    r!.rowBg,
+  )
+})

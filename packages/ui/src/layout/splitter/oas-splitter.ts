@@ -101,6 +101,11 @@ const STYLE = `
   border-color: var(--oas-color-primary);
   background: var(--oas-color-bg-hover);
 }
+/* 键盘聚焦环：对齐全库 focus-ring（无规则时落回 UA 默认黑环，与 --oas-focus-ring 不一致） */
+.collapse-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
 .collapse-btn svg {
   display: block;
 }

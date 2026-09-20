@@ -405,6 +405,18 @@ describe('OASSplitter', () => {
     expect((el.shadowRoot!.querySelectorAll('.pane')[1] as HTMLElement).style.flex).toBe('0 0 0%')
     expect(el.getAttribute('sizes')).toBe('30,0,70')
   })
+
+  it('折叠按钮键盘聚焦环走 --oas-focus-ring（无规则时落回 UA 默认黑环）', () => {
+    // 回归：.collapse-btn 无 :focus-visible 规则，键盘聚焦得到 UA 默认 outline: rgb(16,16,16) auto，
+    // 与全库 --oas-focus-ring（.splitter:focus-visible / .copy-btn:focus-visible 同款通道）不一致
+    const el = mount()
+    el.setAttribute('collapsible', '')
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style, '.collapse-btn 需要 :focus-visible 聚焦环规则').toMatch(
+      /\.collapse-btn:focus-visible\s*\{[^}]*box-shadow:\s*var\(--oas-focus-ring\)/,
+    )
+    expect(style).toMatch(/\.collapse-btn:focus-visible\s*\{[^}]*outline:\s*none/)
+  })
 })
 
 function pointer(type: string, clientX: number): Event {

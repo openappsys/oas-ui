@@ -79,13 +79,16 @@ const STYLE = `
 .menu-btn[hidden] {
   display: none;
 }
-/* 标题区：flex:1 布局支柱（把 actions/trailing 推到远端），heading 过长省略号 */
+/* 标题区：flex:1 布局支柱（把 actions/trailing 推到远端），heading 过长省略号。
+   container-type 只作极窄防御的查询基准（下方 @container），inline-size containment
+   不改变 flex 分配（min-width:0 已隔离内容约束，progress 的 container query 同款先例） */
 .title-wrap {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--oas-space-2);
+  container-type: inline-size;
 }
 .title {
   font-size: var(--oas-font-size-lg);
@@ -93,6 +96,14 @@ const STYLE = `
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* 极窄防御：可用宽度不足「一个完整字形 + 省略号」（约 2.5em）时，ellipsis 连省略号
+   都放不下会渲染出半个字形残片（实测 360px 视口 .title clientWidth=18 < scrollWidth=32）。
+   空间不足以完整省略时整体隐藏标题（heading 通道；富标题 slot 由宿主自控不在此列） */
+@container (max-width: 2.5em) {
+  .title {
+    display: none;
+  }
 }
 .title[hidden] {
   display: none;

@@ -46,7 +46,10 @@
   --oas-preset-red-text: #da1e28;
   --oas-preset-volcano-text: #c64216;
   --oas-preset-orange-text: #a55c0f;
-  --oas-preset-gold-text: #94660c;
+  /* gold 深金棕档：与 orange-text (#a55c0f) 的 RGB 距离 61（原 #94660c 仅 18，light 实底几乎
+     撞色不可辨）；白底感知分 87（原 74），色相 43° 保持金棕；与 lime-text (#5a7a0a) 距离 50
+     （原 61），仍在可辨范围——暖黄-橙区间的达标暗档空间拥挤，此值是拉对距离的最小让步 */
+  --oas-preset-gold-text: #6a4c00;
   --oas-preset-lime-text: #5a7a0a;
   --oas-preset-green-text: #357f11;
   --oas-preset-cyan-text: #0c7c7c;
