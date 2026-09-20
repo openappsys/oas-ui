@@ -203,16 +203,7 @@ describe('token 引用守卫（无 fallback 的 var(--oas-*) 必须有定义）'
 //    「每层级数量」才是漏同步/多章节的镜像信号（新增 demo 段没翻译、或多写一段都会破计数）
 // 存量差异走 MIRROR_ALLOW 白名单放行（每条注明文件+差异摘要）；白名单只减不增：修一条删一条，
 // 差异已修复后残留的陈旧条目会被断言点名，防止白名单腐化成永久后门。
-const MIRROR_ALLOW = new Set<string>([
-  // bottom-sheet.md：en 侧 `## API` 章节标题重复出现两次（zh 1 个）——存量，对齐后删除本条
-  'heading | bottom-sheet.md | H2 zh 4 vs en 5',
-  // calendar.md：en 缺「范围/多选与选周：请用 date-picker」对应章节（zh 17 个 H2，en 16 个）——存量，补译后删除本条
-  'heading | calendar.md | H2 zh 17 vs en 16',
-  // card.md：en 多「Loading State」章节（zh 无对应，en 21 个 H2，zh 20 个）——存量，对齐后删除本条
-  'heading | card.md | H2 zh 20 vs en 21',
-  // date-picker.md：en 的 API 章节缺 `### Property` 分组标题（zh 2 个 H3，en 1 个）——存量，对齐后删除本条
-  'heading | date-picker.md | H3 zh 2 vs en 1',
-])
+const MIRROR_ALLOW = new Set<string>([])
 
 /** 剥离 HTML 注释（<!-- -->）与 CSS 注释（/* *\/）——demo style 块里两种都出现，注释文本两国语言不做比对 */
 function stripMdComments(s: string): string {

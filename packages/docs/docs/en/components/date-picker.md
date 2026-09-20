@@ -271,6 +271,10 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | --- | --- |
 | `template[slot="cell"]` | `template[slot="cell"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`) |
 
+### Property
+
+- `shortcuts`: shortcut presets
+
 Keyboard: `Enter` / `↓` to open; arrows plus `Home`/`End`/`PageUp`/`PageDown` (`Shift` for years) to move; `Enter` to select; `Esc` to close.
 
 <script setup>

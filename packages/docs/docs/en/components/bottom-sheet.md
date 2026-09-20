@@ -64,12 +64,6 @@ onMounted(async () => {
 
 ## API
 
-- `open` is controlled: component gestures (drag / backdrop / Esc) only emit `oas-close`; the host completes closing by removing `open`.
-- Focus trap built in: focus is locked inside the panel while open and returned on close; `safe-area-inset-bottom` is honored for gesture-bar devices.
-- `passive` mode is meant for overlay components' PC-form structure reuse (the carrier behind select/date-picker mobile forms); standalone it is simply a static panel.
-
-## API
-
 ### oas-bottom-sheet
 
 #### Attributes
@@ -97,3 +91,7 @@ onMounted(async () => {
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-bottom-sheet-max-height` | `85vh` |
+
+- `open` is controlled: component gestures (drag / backdrop / Esc) only emit `oas-close`; the host completes closing by removing `open`.
+- Focus trap built in: focus is locked inside the panel while open and returned on close; `safe-area-inset-bottom` is honored for gesture-bar devices.
+- `passive` mode is meant for overlay components' PC-form structure reuse (the carrier behind select/date-picker mobile forms); standalone it is simply a static panel.

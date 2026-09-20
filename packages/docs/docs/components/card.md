@@ -144,6 +144,8 @@
   </div>
 </DemoBlock>
 
+## 加载骨架（loading）
+
 `loading` 时内容区切换为骨架占位（微光动画），正文隐藏；宿主同步 `aria-busy`。
 
 <DemoBlock title="加载骨架">
