@@ -3,7 +3,7 @@
 // 该目录本机恰好存在故本地侥幸通过，Linux/macOS CI 必 ENOENT 挂。
 // 正路：相对路径、`import.meta.dirname`、`os.tmpdir()`、playwright 的 `test.info().outputPath()`。
 import { describe, it, expect } from 'vitest'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 const ROOT = resolve(__dirname, '..', '..', '..')
@@ -188,6 +188,136 @@ describe('token 引用守卫（无 fallback 的 var(--oas-*) 必须有定义）'
     expect(
       bad,
       '无 fallback 的 token 引用若未定义，运行时声明失效（回落继承/初始值）——请补 fallback、在 theme 定义，或走 JS 动态赋值白名单',
+    ).toEqual([])
+  })
+})
+
+// ---------- zh/en 双语镜像守卫：demo <style> 块 + 章节标题计数 ----------
+// 背景：双语站 zh 与 en 两份 md 各写一份 demo <style>，构建后样式全局共存、后者覆盖前者
+// ——只改一份会被另一份静默盖住（grid demo 曾因此久卡）；章节段也曾漏同步。
+// 守卫三件事：
+// 1. zh 有组件页必有 en 对应页（反向同理）
+// 2. 所有 <style> 块剥离注释后按「选择器 → 声明集合」比对（顺序/缩进/注释无关），
+//    差异打印到声明级（哪个选择器少了/多了哪条声明）
+// 3. 章节标题（^##+ ）按层级计数一致——zh/en 标题文本本就是两种语言，逐字比集合必全量误报，
+//    「每层级数量」才是漏同步/多章节的镜像信号（新增 demo 段没翻译、或多写一段都会破计数）
+// 存量差异走 MIRROR_ALLOW 白名单放行（每条注明文件+差异摘要）；白名单只减不增：修一条删一条，
+// 差异已修复后残留的陈旧条目会被断言点名，防止白名单腐化成永久后门。
+const MIRROR_ALLOW = new Set<string>([
+  // bottom-sheet.md：en 侧 `## API` 章节标题重复出现两次（zh 1 个）——存量，对齐后删除本条
+  'heading | bottom-sheet.md | H2 zh 4 vs en 5',
+  // calendar.md：en 缺「范围/多选与选周：请用 date-picker」对应章节（zh 17 个 H2，en 16 个）——存量，补译后删除本条
+  'heading | calendar.md | H2 zh 17 vs en 16',
+  // card.md：en 多「Loading State」章节（zh 无对应，en 21 个 H2，zh 20 个）——存量，对齐后删除本条
+  'heading | card.md | H2 zh 20 vs en 21',
+  // date-picker.md：en 的 API 章节缺 `### Property` 分组标题（zh 2 个 H3，en 1 个）——存量，对齐后删除本条
+  'heading | date-picker.md | H3 zh 2 vs en 1',
+])
+
+/** 剥离 HTML 注释（<!-- -->）与 CSS 注释（/* *\/）——demo style 块里两种都出现，注释文本两国语言不做比对 */
+function stripMdComments(s: string): string {
+  return s.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
+/** 单个 <style> 块内容 → Map(选择器 → 声明集合)；声明排序、空白折叠：顺序/缩进无关 */
+function styleDeclMap(css: string): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>()
+  const blockRe = /([^{}]+)\{([^{}]*)\}/g
+  let m: RegExpExecArray | null
+  while ((m = blockRe.exec(css))) {
+    const sel = m[1]!.trim().replace(/\s+/g, ' ')
+    if (!sel) continue
+    if (!map.has(sel)) map.set(sel, new Set())
+    for (const d of m[2]!.split(';')) {
+      const norm = d.trim().replace(/\s+/g, ' ')
+      if (norm) map.get(sel)!.add(norm)
+    }
+  }
+  return map
+}
+
+/** 章节标题按层级计数（## = H2、### = H3……） */
+function headingLevelCounts(md: string): Map<number, number> {
+  const counts = new Map<number, number>()
+  for (const line of md.split('\n')) {
+    const m = line.match(/^(##+) /)
+    if (m) counts.set(m[1]!.length, (counts.get(m[1]!.length) ?? 0) + 1)
+  }
+  return counts
+}
+
+describe('zh/en 双语镜像守卫（demo style 块 + 章节标题计数）', () => {
+  it('每个 zh 组件页与 en 对应页镜像：en 页存在、style 块声明集合一致、章节标题按层级计数一致', () => {
+    const zhDir = join(ROOT, 'packages', 'docs', 'docs', 'components')
+    const enDir = join(ROOT, 'packages', 'docs', 'docs', 'en', 'components')
+    const problems: string[] = []
+    const staleAllow = new Set(MIRROR_ALLOW)
+    const zhFiles = readdirSync(zhDir)
+      .filter((f) => f.endsWith('.md') && f !== 'index.md')
+      .sort()
+
+    for (const f of zhFiles) {
+      const enPath = join(enDir, f)
+      if (!existsSync(enPath)) {
+        problems.push(`缺 en 页 | ${f}`)
+        continue
+      }
+      const zh = readFileSync(join(zhDir, f), 'utf8')
+      const en = readFileSync(enPath, 'utf8')
+
+      // 1) style 块：逐块按「选择器 → 声明集合」比对
+      const zhStyles = [...zh.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)].map((m) =>
+        styleDeclMap(stripMdComments(m[1]!)),
+      )
+      const enStyles = [...en.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)].map((m) =>
+        styleDeclMap(stripMdComments(m[1]!)),
+      )
+      if (zhStyles.length !== enStyles.length) {
+        problems.push(`style 块数 | ${f} | zh ${zhStyles.length} vs en ${enStyles.length}`)
+      }
+      for (let i = 0; i < Math.min(zhStyles.length, enStyles.length); i++) {
+        const selectors = new Set([...zhStyles[i]!.keys(), ...enStyles[i]!.keys()])
+        for (const sel of selectors) {
+          const z = zhStyles[i]!.get(sel) ?? new Set<string>()
+          const e = enStyles[i]!.get(sel) ?? new Set<string>()
+          for (const d of z) if (!e.has(d)) problems.push(`style | ${f} [style#${i}] | ${sel} | 仅 zh: ${d}`)
+          for (const d of e) if (!z.has(d)) problems.push(`style | ${f} [style#${i}] | ${sel} | 仅 en: ${d}`)
+        }
+      }
+
+      // 2) 章节标题按层级计数
+      const zc = headingLevelCounts(zh)
+      const ec = headingLevelCounts(en)
+      for (const [lv, n] of zc) {
+        const enN = ec.get(lv) ?? 0
+        if (enN !== n) problems.push(`heading | ${f} | H${lv} zh ${n} vs en ${enN}`)
+      }
+      for (const [lv, n] of ec) {
+        if (!zc.has(lv)) problems.push(`heading | ${f} | H${lv} zh 0 vs en ${n}`)
+      }
+    }
+
+    // 3) 反向：en 有组件页而 zh 缺
+    for (const f of readdirSync(enDir)
+      .filter((x) => x.endsWith('.md') && x !== 'index.md')
+      .sort()) {
+      if (!existsSync(join(zhDir, f))) problems.push(`缺 zh 页 | en/components/${f}`)
+    }
+
+    // 白名单放行（存量差异）；没命中的条目 = 差异已修复，点名要求删除
+    const remaining: string[] = []
+    for (const p of problems) {
+      if (staleAllow.delete(p)) continue
+      remaining.push(p)
+    }
+    expect(
+      remaining,
+      `双语镜像漂移（zh/en 两份 demo <style> 构建后全局共存、后者覆盖前者，只改一份会被另一份盖住）：\n\n${remaining.join('\n')}\n\n` +
+        '修法：两份 md 同步改齐；确属暂不修复的存量差异，在 conventions.test.ts MIRROR_ALLOW 加条目（注明文件+差异摘要），白名单只减不增',
+    ).toEqual([])
+    expect(
+      [...staleAllow],
+      `MIRROR_ALLOW 存在未命中任何实际差异的陈旧条目（差异已修复就删掉，白名单只减不增）：\n${[...staleAllow].join('\n')}`,
     ).toEqual([])
   })
 })
