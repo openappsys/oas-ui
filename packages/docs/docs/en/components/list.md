@@ -124,7 +124,15 @@ With `clickable` on `oas-list-item`, the whole row becomes clickable: hover feed
     <oas-list bordered id="list-select">
       <oas-list-item clickable selected title="Notifications">
         <span slot="description">Email, inbox, desktop notifications</span>
-        <oas-switch slot="extra" checked></oas-switch>
+        <!-- Selected row background is the primary color: the checked switch track inside the row
+             goes one step along the --oas-color-primary channel (active step) so the track stays
+             distinguishable from the row background (darker in light / lighter in dark, still
+             distinct under the row hover step) -->
+        <oas-switch
+          slot="extra"
+          checked
+          style="--oas-color-primary: var(--oas-color-primary-active)"
+        ></oas-switch>
       </oas-list-item>
       <oas-list-item clickable title="Privacy">
         <span slot="description">Visibility, data authorization</span>

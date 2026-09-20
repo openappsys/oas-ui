@@ -271,7 +271,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | --- | --- |
 | `template[slot="cell"]` | `template[slot="cell"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`) |
 
-### Property
+#### Property (shortcut presets)
 
 - `shortcuts`: shortcut presets
 

@@ -102,6 +102,19 @@ describe('OASCode', () => {
     expect(el.shadowRoot!.querySelector('[part="copy"]')!.hasAttribute('hidden')).toBe(true)
   })
 
+  it('hidden 兜底：块级形态 inline 载体恒 hidden，且作者层 display 有显式 [hidden] 补回', () => {
+    // 回归：载体 <code class="inline" hidden> 的 .inline{display:inline-block} 压过 UA 的
+    // [hidden]{display:none}，块级形态左上渲染出 8×3px 灰药丸残片（同 progress/card 先例：
+    // 作者级 display 必须显式补回 hidden 兜底）
+    const el = mount({ code: 'a\nb' })
+    const inline = el.shadowRoot!.querySelector('.inline')!
+    expect(inline.hasAttribute('hidden'), '块级形态下 inline 载体应带 hidden 属性').toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style, '作者层 display:inline-block 压过 UA hidden，必须有 .inline[hidden] 兜底').toMatch(
+      /\.inline\[hidden\]\s*\{[^}]*display:\s*none/,
+    )
+  })
+
   it('点击复制 emit oas-copy，含原始 code', async () => {
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: vi.fn().mockResolvedValue(undefined) },

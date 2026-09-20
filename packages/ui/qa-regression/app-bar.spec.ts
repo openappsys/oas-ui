@@ -114,3 +114,48 @@ test('app-bar hide-on-scroll：fixed 形态下滚 data-hidden 滑出、上滚恢
     .poll(() => page.evaluate(() => document.querySelector('#ab-hide')!.hasAttribute('data-hidden')))
     .toBe(false)
 })
+
+test('app-bar 标题极窄防御：可用宽不足省略号阈值时标题整体隐藏（无半字形残片）', async ({ page }) => {
+  await page.goto('/components/app-bar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-app-bar')
+  const r = await page.evaluate(async () => {
+    // 构造确定性极窄场景：host 限宽 + 宽 trailing（flex-shrink:0 不可收缩）把 title-wrap 挤到阈值以下
+    const mk = (heading: string, trailingW: string) => {
+      const host = document.createElement('oas-app-bar')
+      host.setAttribute('heading', heading)
+      host.style.cssText = 'width: 360px; position: fixed; top: -200px; left: 0;'
+      const t = document.createElement('div')
+      t.setAttribute('slot', 'trailing')
+      t.style.cssText = `width: ${trailingW}; height: 20px;`
+      host.appendChild(t)
+      document.body.appendChild(host)
+      return host
+    }
+    const narrow = mk('极窄标题防御回归', '300px')
+    const normal = mk('常规标题对照', '40px')
+    // 等 update + container query 生效（双 rAF 保证一帧布局完成）
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+    const read = (host: HTMLElement) => {
+      const wrap = host.shadowRoot!.querySelector<HTMLElement>('[part="title-wrap"]')!
+      const title = host.shadowRoot!.querySelector<HTMLElement>('[part="title"]')!
+      const fs = parseFloat(getComputedStyle(wrap).fontSize)
+      return {
+        wrapW: wrap.clientWidth,
+        threshold: fs * 2.5,
+        titleHidden: getComputedStyle(title).display === 'none',
+      }
+    }
+    const out = { narrow: read(narrow), normal: read(normal) }
+    narrow.remove()
+    normal.remove()
+    return out
+  })
+  // 回归：title 宽 18px 时 ellipsis 连省略号都放不下 → 渲染半个字形残片；
+  // 防御 = 可用宽 < 2.5em 时标题整体隐藏（@container max-width: 2.5em）
+  expect(r.narrow.wrapW, '构造场景应把 title-wrap 挤到阈值以下（否则场景失效测不到防御）').toBeLessThan(
+    r.narrow.threshold,
+  )
+  expect(r.narrow.titleHidden, '可用宽不足完整「字形+省略号」时标题应整体隐藏，而非渲染半字形').toBe(true)
+  expect(r.normal.wrapW, '对照场景 title-wrap 应在阈值以上').toBeGreaterThan(r.normal.threshold)
+  expect(r.normal.titleHidden, '常规宽度下标题不得被防御误隐藏').toBe(false)
+})
