@@ -384,6 +384,8 @@ export class OASMasonry extends OASElement {
   private syncItems(): Element[] {
     const raw = this.getAttr('items', '')
     const items = this.parseItems()
+    // 回写解析结果：property getter 契约（文档承诺可回读），attribute 与 property 两条赋值路径都覆盖
+    this._items = items ?? []
     const slot = this.shadow.querySelector('slot')
     const rendered = [...this.rootEl!.querySelectorAll('.masonry-item')]
     // items 未变（fresh RO 等触发的重复 update）：沿用现有渲染项，跳过重建

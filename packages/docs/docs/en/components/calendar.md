@@ -93,6 +93,16 @@ In year mode, selecting a month dispatches `yyyy-MM`.
 
 When the next page would fall entirely outside `[min, max]` (whole month in the day view, whole year in the month panel, whole decade page in the decade grid), the previous/next buttons grey out.
 
+## Range / Multiple / Week Selection: Use date-picker
+
+This component (a persistent selection panel) does **single-date selection only**. Range selection (start/end), multiple dates, and week picking are covered by [date-picker](./date-picker) — the two share the same date grid with consistent semantics, avoiding a duplicated implementation inside the panel:
+
+- **Date range**: `<oas-date-picker type="daterange">`
+- **Multiple dates**: `<oas-date-picker multiple>`
+- **Week picking**: `<oas-date-picker type="week">` (value `yyyy-Wnn`)
+
+If range/multiple selection is needed on a persistent page, the host can combine the inner-panel capabilities of `oas-date-picker` with `oas-calendar`, or use `oas-calendar` for single selection while maintaining start/end values itself.
+
 ## Custom header: compose with a card (equivalent example)
 
 The `oas-calendar` header is an internal navigation region and is not open for replacement (this is a selection-panel semantic — the header carries navigation, not a centered selected state). To place a brand/action bar above the calendar (such as "week switching" or a "today" shortcut), wrap `oas-calendar` in the host's own card and put the action bar on top:
