@@ -293,6 +293,21 @@ describe('OASProgress', () => {
     expect(steps.querySelectorAll('.step.active').length).toBe(5)
   })
 
+  it('hidden 兜底：.steps 声明 display:flex 压过 UA [hidden]，必须有显式 .steps[hidden] 补回', () => {
+    // 回归：作者级 .steps{display:flex} 覆盖 UA 的 [hidden]{display:none}，缺兜底时
+    // 非 steps 态的分段容器仍参与绘制（同 .track/.inside/.text/.circle-text/.circle 先例）
+    const el = mount({ percent: '50' })
+    const steps = el.shadowRoot!.querySelector<HTMLElement>('[part="steps"]')!
+    expect(steps.hasAttribute('hidden'), '默认（无 steps 属性）分段容器应带 hidden').toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style, '作者层 display:flex 压过 UA hidden，必须有 .steps[hidden] 兜底').toMatch(
+      /\.steps\[hidden\]\s*\{[^}]*display:\s*none/,
+    )
+    expect(style, '基础规则 display:flex 布局语义不变').toMatch(/\.steps\s*\{[^}]*display:\s*flex/)
+    el.setAttribute('steps', '4')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="steps"]')!.hasAttribute('hidden')).toBe(false)
+  })
+
   it('steps < 2 或非法值忽略（连续 bar 照常）', () => {
     const el = mount({ percent: '50', steps: '1' })
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="steps"]')!.hidden).toBe(true)

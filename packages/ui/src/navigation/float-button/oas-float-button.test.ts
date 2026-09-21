@@ -686,6 +686,23 @@ describe('OASFloatButton group 子钮（slot=action）', () => {
     expect(badges[2]!.textContent).toBe('99+')
   })
 
+  it('hidden 兜底：.mini-badge 声明 display:inline-flex 压过 UA [hidden]，必须有显式补回', () => {
+    // 回归：mirror 徽标无 badge 属性时 badgeEl.hidden=true，但 .mini-badge{display:inline-flex}
+    // 覆盖 UA 的 [hidden]{display:none}，空徽标仍画在每个子钮右上角（同 .label[hidden] 先例）
+    const el = mountGroup()
+    const badges = mirrors(el).map((m) => m.querySelector<HTMLElement>('.mini-badge')!)
+    expect(badges.length).toBeGreaterThan(0)
+    expect(
+      badges.every((b) => b.hasAttribute('hidden')),
+      '无 badge 属性的 mirror 徽标应带 hidden',
+    ).toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style, '作者层 display:inline-flex 压过 UA hidden，必须有 .mini-badge[hidden] 兜底').toMatch(
+      /\.mini-badge\[hidden\]\s*\{[^}]*display:\s*none/,
+    )
+    expect(style, '基础规则 display:inline-flex 布局语义不变').toMatch(/\.mini-badge\s*\{[^}]*display:\s*inline-flex/)
+  })
+
   it('slotchange 动态增删子钮 → mirror 层同步', async () => {
     const el = mountGroup({}, 2)
     expect(mirrors(el)).toHaveLength(2)
