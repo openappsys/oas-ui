@@ -40,6 +40,16 @@ const STYLE = `
   align-items: center;
   white-space: nowrap;
 }
+/* 每一「份」内容各自成块（源组 1 份 + 克隆组 repeat 份）：份与份的结构必须完全一致，
+   否则份宽 ≠ 位移距离 → wrap 时内容横跳 = 肉眼接缝顿挫。历史缺陷：克隆组内相邻两份的
+   文本连成同一行，份间空白折叠成 1 个空格被保留；而源组末尾空白是行尾空白被移除 →
+   克隆份宽 = 源组宽 + 1 空格宽（实测 4.7px），每轮 wrap 内容回跳一个空格宽。 */
+.copy {
+  flex: none;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
 /* 垂直滚动：轨道纵排、按高度平移（容器需固定高，见文档） */
 :host([orientation='vertical']) .track {
   flex-direction: column;
@@ -50,6 +60,10 @@ const STYLE = `
   animation-name: oas-marquee-y;
 }
 :host([orientation='vertical']) .group {
+  flex-direction: column;
+  white-space: normal;
+}
+:host([orientation='vertical']) .copy {
   flex-direction: column;
   white-space: normal;
 }
@@ -156,8 +170,9 @@ export function computeDuration(contentPx: number, speedPxS: number): number {
  * - `orientation`：`horizontal`（默认）| `vertical`（垂直滚动，容器需固定高）
  * - `reverse`：布尔，反向滚动
  *
- * 实现：shadow 内 track 横排两组相同内容（slot 原组 + aria-hidden 克隆组），
- * keyframes 平移「一组内容宽」形成无缝循环；内容不足一屏时克隆组按
+ * 实现：shadow 内 track 横排「源组（1 份）+ aria-hidden 克隆组（repeat 份）」，
+ * 每份内容各自套一层 `.copy` 成块——份宽必须严格等于动画位移距离，否则 wrap 时内容横跳；
+ * keyframes 平移「一份内容宽」形成无缝循环；内容不足一屏时克隆组按
  * computeRepeat 份自动填充（auto-fill）；ResizeObserver 监听容器与内容尺寸，
  * 重算位移/时长（时长 = 距离/速度）；slotchange 重建克隆组、resize/speed 变更
  * 重写时长时，以「位移距离连续」为不变量记录/恢复相位（按新旧时长等位移反解
@@ -188,7 +203,7 @@ export class OASMarquee extends OASElement {
       <style>${STYLE}</style>
       <div class="viewport">
         <div class="track measuring" part="track">
-          <div class="group" part="group"><slot></slot></div>
+          <div class="group" part="group"><div class="copy"><slot></slot></div></div>
           <div class="group clone" part="group" aria-hidden="true"></div>
         </div>
       </div>
@@ -326,17 +341,27 @@ export class OASMarquee extends OASElement {
   }
 
   /**
-   * 克隆 light DOM 内容到 aria-hidden 克隆组：repeat 份（auto-fill）。
-   * 组件只有默认 slot，直接读 this.childNodes（不依赖 slot 分配的异步时机，
-   * happy-dom/浏览器下行为一致）；相位保持由调用方的 preserveShift 统一负责。
+   * 克隆 light DOM 内容到 aria-hidden 克隆组：repeat 份，每份各自套一层 `.copy`。
+   *
+   * 每份必须独立成块（与源组那一份结构一致）：只有如此「份内行尾空白」的处理才与源组相同，
+   * 份宽才严格等于源组宽（= 动画位移距离）。若把 repeat 份内容平铺在一起，相邻两份的文本会
+   * 连成同一行，份间空白折叠成 1 个空格保留下来 → 克隆份比源组宽一个空格（实测 4.7px）→
+   * 每轮 wrap 内容横跳一次，肉眼「接缝顿一下」。
+   *
+   * 组件只有默认 slot，直接读 this.childNodes（不依赖 slot 分配的异步时机，happy-dom/浏览器下
+   * 行为一致）；相位保持由调用方的 preserveShift 统一负责。
    */
   private syncClone(repeat = 1): void {
     if (!this.cloneEl) return
     this.cloneEl.textContent = ''
     for (let i = 0; i < repeat; i++) {
+      // ownerDocument（非全局 document）建节点：SSR shim 下同样可用
+      const copy = this.ownerDocument.createElement('div')
+      copy.className = 'copy'
       for (const node of this.childNodes) {
-        this.cloneEl.appendChild(node.cloneNode(true))
+        copy.appendChild(node.cloneNode(true))
       }
+      this.cloneEl.appendChild(copy)
     }
   }
 }
