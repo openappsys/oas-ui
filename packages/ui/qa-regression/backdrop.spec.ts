@@ -132,7 +132,8 @@ test('backdrop 颜色/浓度/模糊属性注入 scrim（demo 属性存活）', a
   await page.waitForFunction(() => !document.querySelector('#backdrop-thick'), null, {
     timeout: 5000,
   })
-  // 强模糊 + 饱和：blur 全值
+  // 强模糊 + 饱和：blur 全值（值走内联自定义属性 --oas-backdrop-blur，由样式表规则同时
+  // 驱动标准与 -webkit 前缀两通道；断言变量写入 + 标准 computed 生效，语义不弱化）
   await page.locator('oas-button', { hasText: '强模糊 + 饱和' }).click()
   await waitHost(page, 'backdrop-blur-strong')
   await page.waitForFunction(
@@ -140,7 +141,12 @@ test('backdrop 颜色/浓度/模糊属性注入 scrim（demo 属性存活）', a
       const scrim = document
         .querySelector('#backdrop-blur-strong')
         ?.shadowRoot?.querySelector<HTMLElement>('[part="scrim"]')
-      return scrim?.style.backdropFilter === 'blur(8px) saturate(180%)'
+      if (!scrim) return false
+      // 变量写入精确断言（原值保留；Chromium 会把 saturate(180%) 归一化为 saturate(1.8)，
+      // 故 computed 只断言生效且带 blur(8px)，避免被归一化格式干扰）
+      const blur = 'blur(8px) saturate(180%)'
+      const computed = getComputedStyle(scrim).backdropFilter
+      return scrim.style.getPropertyValue('--oas-backdrop-blur') === blur && computed.includes('blur(8px)')
     },
     null,
     { timeout: 5000 },

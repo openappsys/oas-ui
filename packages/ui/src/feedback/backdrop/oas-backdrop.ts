@@ -35,7 +35,10 @@ const STYLE = `
   }
 }
 /* 底色层（scrim）：P2 颜色/浓度 + P3 模糊都落在这里，与内容层隔离——
-   浓度 opacity 不压暗内容（内容层在 scrim 之上不受其透明度影响） */
+   浓度 opacity 不压暗内容（内容层在 scrim 之上不受其透明度影响）。
+   模糊值走内联自定义属性 --oas-backdrop-blur，规则在此驱动标准 + -webkit 双通道：
+   相比内联标准/前缀属性，变量形态在 SSR（happy-dom 会丢弃内联 -webkit-* vendor 属性）
+   序列化中保留，DSD 快照禁 JS 首帧老版本 Safari 也能拿到模糊 */
 .scrim {
   position: absolute;
   inset: 0;
@@ -402,10 +405,12 @@ export class OASBackdrop extends OASElement {
     // P2/P3：样式增量同步（'' = 回落 CSS 变量通道）
     scrim.style.background = this.resolveColor()
     scrim.style.opacity = this.resolveOpacity()
+    // P3 模糊：值走内联自定义属性（--oas-backdrop-blur），由样式表规则同时驱动标准与
+    // -webkit 前缀两通道——内联 vendor 属性会被 happy-dom（SSR 运行时）丢弃，导致 DSD
+    // 快照禁 JS 首帧老版本 Safari 无模糊；变量形态序列化保留，双通道均生效
     const blur = this.resolveBlur()
-    scrim.style.backdropFilter = blur
-    // Safari 前缀（TS DOM lib 无该 vendor 属性，cast 声明）
-    ;(scrim.style as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter = blur
+    if (blur) scrim.style.setProperty('--oas-backdrop-blur', blur)
+    else scrim.style.removeProperty('--oas-backdrop-blur')
 
     // P8：读屏关闭通道文案（close-label 属性 > locale 兜底）
     this.shadow

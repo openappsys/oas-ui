@@ -24,18 +24,6 @@ function waitShake(): Promise<void> {
   return new Promise((r) => setTimeout(r, 420))
 }
 
-/**
- * 环境是否保留 Safari 前缀 `-webkit-backdrop-filter`。
- * happy-dom ≥20.14.5 起丢弃该 vendor 属性（真实浏览器写入正常），故前缀断言做能力探测：
- * 支持时断言它同样被写入；不支持时只断言标准属性——标准 `backdrop-filter` 才是驱动模糊
- * 效果的通道，happy-dom 亦保留，故断言强度不降。
- */
-const SUPPORTS_WEBKIT_BACKDROP_FILTER = (() => {
-  const probe = document.createElement('div')
-  ;(probe.style as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter = 'blur(1px)'
-  return probe.style.getPropertyValue('-webkit-backdrop-filter') === 'blur(1px)'
-})()
-
 function maskClick(el: OASBackdrop): MouseEvent {
   const ev = new MouseEvent('click', { bubbles: true, composed: true })
   el.shadowRoot!.querySelector<HTMLElement>('[part="mask"]')!.dispatchEvent(ev)
@@ -160,24 +148,34 @@ describe('OASBackdrop', () => {
     it('布尔 blur 回落默认 blur(4px)（兼容既有用法）', () => {
       const el = mount({ open: '', blur: '' })
       const scrim = el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!
-      expect(scrim.style.backdropFilter).toBe('blur(4px)')
-      if (SUPPORTS_WEBKIT_BACKDROP_FILTER) {
-        const webkit = (scrim.style as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter
-        expect(webkit).toBe('blur(4px)')
-      }
+      // 模糊值经内联自定义属性承载（序列化保留），由样式表规则驱动标准 + 前缀两通道
+      expect(scrim.style.getPropertyValue('--oas-backdrop-blur')).toBe('blur(4px)')
     })
 
     it('blur 支持任意 CSS 滤镜全值', () => {
       const el = mount({ open: '', blur: 'blur(6px) saturate(150%)' })
-      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!.style.backdropFilter).toBe(
-        'blur(6px) saturate(150%)',
-      )
+      expect(
+        el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!.style.getPropertyValue('--oas-backdrop-blur'),
+      ).toBe('blur(6px) saturate(150%)')
     })
 
-    it('未设置时回落 CSS 变量（--oas-backdrop-blur）', () => {
+    it('未设置时不写变量（规则回落 none）', () => {
       const el = mount({ open: '' })
-      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!.style.backdropFilter).toBe('')
-      expect(el.shadowRoot!.querySelector('style')!.textContent).toContain('var(--oas-backdrop-blur')
+      const scrim = el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!
+      expect(scrim.style.getPropertyValue('--oas-backdrop-blur')).toBe('')
+      expect(scrim.style.backdropFilter).toBe('')
+    })
+
+    it('样式表含标准 + -webkit 双规则（同走变量通道，SSR 快照禁 JS 首帧前缀也生效）', () => {
+      const css = mount({ open: '' }).shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain('backdrop-filter: var(--oas-backdrop-blur, none)')
+      expect(css).toContain('-webkit-backdrop-filter: var(--oas-backdrop-blur, none)')
+    })
+
+    it('不再写内联 -webkit-backdrop-filter（happy-dom 会丢弃 vendor 内联属性）', () => {
+      const el = mount({ open: '', blur: '' })
+      const scrim = el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!
+      expect(scrim.getAttribute('style')).not.toContain('-webkit-backdrop-filter')
     })
   })
 
@@ -387,7 +385,7 @@ describe('OASBackdrop', () => {
       el.setAttribute('blur', 'blur(8px)')
       const scrim = el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!
       expect(scrim.style.background).toBe('#222222')
-      expect(scrim.style.backdropFilter).toBe('blur(8px)')
+      expect(scrim.style.getPropertyValue('--oas-backdrop-blur')).toBe('blur(8px)')
       expect(el.shadowRoot!.querySelector('style')).toBe(styleRef)
     })
   })
