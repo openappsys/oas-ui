@@ -242,3 +242,9 @@ onMounted(async () => {
 | `description` | Rich description slot; overrides the description attribute when present |
 | `icon` | Icon slot; overrides the default type icon |
 | `title` | Rich title content slot; overrides the title attribute text when present |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-alert-max-line` | `2` |

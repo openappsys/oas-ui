@@ -24,6 +24,18 @@ function waitShake(): Promise<void> {
   return new Promise((r) => setTimeout(r, 420))
 }
 
+/**
+ * 环境是否保留 Safari 前缀 `-webkit-backdrop-filter`。
+ * happy-dom ≥20.14.5 起丢弃该 vendor 属性（真实浏览器写入正常），故前缀断言做能力探测：
+ * 支持时断言它同样被写入；不支持时只断言标准属性——标准 `backdrop-filter` 才是驱动模糊
+ * 效果的通道，happy-dom 亦保留，故断言强度不降。
+ */
+const SUPPORTS_WEBKIT_BACKDROP_FILTER = (() => {
+  const probe = document.createElement('div')
+  ;(probe.style as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter = 'blur(1px)'
+  return probe.style.getPropertyValue('-webkit-backdrop-filter') === 'blur(1px)'
+})()
+
 function maskClick(el: OASBackdrop): MouseEvent {
   const ev = new MouseEvent('click', { bubbles: true, composed: true })
   el.shadowRoot!.querySelector<HTMLElement>('[part="mask"]')!.dispatchEvent(ev)
@@ -149,8 +161,10 @@ describe('OASBackdrop', () => {
       const el = mount({ open: '', blur: '' })
       const scrim = el.shadowRoot!.querySelector<HTMLElement>('[part="scrim"]')!
       expect(scrim.style.backdropFilter).toBe('blur(4px)')
-      const webkit = (scrim.style as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter
-      expect(webkit).toBe('blur(4px)')
+      if (SUPPORTS_WEBKIT_BACKDROP_FILTER) {
+        const webkit = (scrim.style as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter
+        expect(webkit).toBe('blur(4px)')
+      }
     })
 
     it('blur 支持任意 CSS 滤镜全值', () => {

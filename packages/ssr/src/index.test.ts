@@ -214,9 +214,13 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain(`text="${text}"`)
     // 文本内容同步写入（快照可见骨架+文本）
     expect(html).toContain(`>${text}</div>`)
-    // 行数形态类（.multi + line-clamp）在 SSR 即写入（与 rows 决定，非测量依赖）
+    // 行数形态（.multi + line-clamp）在 SSR 即写入（由 rows 决定，非测量依赖）；
+    // clamp 效果由 shadow 样式表规则 `-webkit-line-clamp: var(--oas-ellipsis-lines, N)` 驱动、
+    // 行数值走内联自定义属性——两者都在快照里，故禁 JS 首帧即截断。
+    // （happy-dom ≥20.14.5 会丢弃内联 `-webkit-line-clamp` 属性；自定义属性与样式表文本原样保留。）
     expect(html).toContain('class="text multi"')
-    expect(html).toContain('-webkit-line-clamp: 2')
+    expect(html).toContain('--oas-ellipsis-lines: 2')
+    expect(html).toContain('-webkit-line-clamp: var(--oas-ellipsis-lines')
     // 测量态（溢出判定）happy-dom 全 0 → 无溢出 → toggle 保持 hidden、不挂 tooltip
     expect(html).toContain('class="toggle" part="toggle" hidden=""')
     expect(html).not.toContain('oas-tooltip')

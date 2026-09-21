@@ -201,4 +201,10 @@ The `tooltip-placement` attribute is passed through to the inner `oas-tooltip` (
 | `oas-expand` | Expanded, `detail: { expanded: true }` |
 | `oas-overflow` | Fired when the overflow state changes, `detail: { overflow }` (not re-fired for the same value) |
 
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-ellipsis-lines` | `2` |
+
 The tooltip / expand button is only mounted when the text **actually overflows**; with no overflow it is plain text, and on disconnect it is destroyed — no orphaned overlays.

@@ -242,3 +242,9 @@ onMounted(async () => {
 | `description` | 描述富内容插槽，有内容时覆盖 description 属性文案 |
 | `icon` | 图标插槽，覆盖 type 默认图标 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-alert-max-line` | `2` |

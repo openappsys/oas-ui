@@ -101,8 +101,8 @@ test('link 色板达标：预设名映射 -text 达标 token、自定义色原�
       customOverride: customByAttr('var(--oas-preset-purple-text)'),
     }
   })
-  // light 下预设亮色取 -text 深色变体（gold 本色 #faad14 白底 1.9:1，text 变体 #94660c 5.04:1）
-  expect(r.gold).toBe('rgb(148, 102, 12)')
+  // light 下预设亮色取 -text 深色变体（gold 本色 #faad14 白底 1.9:1，text 变体 #6a4c00）
+  expect(r.gold).toBe('rgb(106, 76, 0)')
   // 本色达标者保本色
   expect(r.geekblue).toBe('rgb(47, 84, 235)')
   expect(r.purple).toBe('rgb(114, 46, 209)')
