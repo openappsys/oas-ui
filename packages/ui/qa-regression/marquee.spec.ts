@@ -933,3 +933,405 @@ test('marquee reverse 运行时切换：切换帧位移不超常规帧阈值（�
     `切换帧位移 ${worstToggle.toFixed(2)}px 不得超过 max(8px, 3×常规帧 ${medianStep.toFixed(2)}px)（修前 = 0.3~0.7×shift）`,
   ).toBeLessThanOrEqual(limit)
 })
+
+// ===== orientation 运行时切换：轴变了，但循环相位（位移比例）必须连续 =====
+// 物理事实：横向/纵向用不同关键字帧（oas-marquee-x / oas-marquee-y），切轴必然换 animation-name
+// → 浏览器按「新动画」处理（时钟归零、animationstart 再触发一次），**无法**做到「动画不重启」；
+// 且新旧位移量纲不同（内容宽 vs 内容高）、轴向不同，**绝对像素位移也无法守恒**。
+// 可守恒的最强不变量是**循环相位比例**（位移比例）：组件在切轴瞬间按新轴重测位移距离，
+// 并把负 animation-delay 反解到「新动画 localTime=0 时相位 === 旧相位」（重启补偿的基准是 0 而非旧时钟），
+// 使内容不跳回循环起点。缺陷形态（旧实现）：切轴后动画从相位 0 起跑（p≈0.5 处实测跳半个循环，
+// 换算成纵向位移 ≈ 0.5×shift）。
+// 断言：① 切轴前后相位相等（不归零）；② 切轴帧位移（相位比例 × 位移距离）不超常规帧阈值；
+// ③ 切轴后无额外重启（animationstart 计数在切换事件落定后不再增长）。
+
+interface MqPhaseSample {
+  /** rAF 时间戳（相对采样起点，ms） */
+  t: number
+  /** 动画 currentTime（ms） */
+  ct: number | null
+  /** 生效负 delay（ms，0 = 未补偿） */
+  delay: number
+  /** 生效时长（ms） */
+  dur: number
+  /** 当前 --oas-marquee-shift（px，沿当前轴） */
+  shift: number
+  /** 生效 animation-name（切轴证明 + 强制样式落定，保证 getAnimations 读到新动画） */
+  name: string
+  /** 映射后的循环相位比例（mod(ct - delay, dur) / dur） */
+  u: number | null
+}
+
+test('marquee orientation 运行时切换：重启补偿到同一位移（相位不归零），切轴帧位移不超阈值', async ({ page }) => {
+  await page.goto('/components/marquee.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-marquee')
+  const out = await page.evaluate(async () => {
+    if (!customElements.get('oas-marquee')) await customElements.whenDefined('oas-marquee')
+    const host = document.createElement('oas-marquee')
+    host.setAttribute('speed', '100')
+    // 固定高容器（纵向滚动前提）+ 四行内容：横向按内容宽滚动、纵向按内容高滚动
+    host.style.cssText = 'display:block;width:600px;height:96px;position:fixed;top:-400px;left:0;'
+    for (const text of ['公告 A 号内容', '公告 B 号内容', '公告 C 号内容', '公告 D 号内容']) {
+      const line = document.createElement('div')
+      line.textContent = text
+      host.appendChild(line)
+    }
+    document.body.appendChild(host)
+    const trackEl = (): HTMLElement => host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+    let starts = 0
+    trackEl().addEventListener('animationstart', () => {
+      starts += 1
+    })
+    // 等首次测量完成（measuring 移除 + 时长写入）
+    await new Promise<void>((resolve) => {
+      const check = () => {
+        const t = trackEl()
+        if (!t.classList.contains('measuring') && t.style.getPropertyValue('--oas-marquee-duration')) resolve()
+        else requestAnimationFrame(check)
+      }
+      check()
+    })
+    /** 读当前动画状态：computed animation-name 先读（强制样式落定，切轴帧 getAnimations 才能拿到新动画） */
+    const readState = () => {
+      const name = getComputedStyle(trackEl()).animationName
+      const dur = (parseFloat(trackEl().style.getPropertyValue('--oas-marquee-duration')) || 0) * 1000
+      const delay = parseFloat(trackEl().style.animationDelay) || 0
+      const anim = (
+        trackEl() as HTMLElement & { getAnimations?: () => Array<{ currentTime: number | null }> }
+      ).getAnimations?.()[0]
+      const ct = anim && typeof anim.currentTime === 'number' ? anim.currentTime : null
+      return { name, dur, delay, ct }
+    }
+    const samples: MqPhaseSample[] = []
+    let mark = -1
+    let startsSettled = -1
+    const t0 = await new Promise<number>((r) => requestAnimationFrame(r))
+    await new Promise<void>((resolve) => {
+      const tick = (now: number) => {
+        const el = now - t0
+        if (mark < 0) {
+          const gate = readState()
+          if (gate.ct !== null && gate.dur > 0) {
+            const p = ((((gate.ct - gate.delay) % gate.dur) + gate.dur) % gate.dur) / gate.dur
+            // 门控在横向循环中段（p∈[0.4,0.6]）切轴：相位若归零 = 半个循环的跳变，最易检出
+            if (p >= 0.4 && p <= 0.6) {
+              host.setAttribute('orientation', 'vertical')
+              mark = el
+            }
+          }
+        }
+        // 门控之后再取样本：切轴那一帧的样本反映**切换后**状态（新动画名 + 新位移 + 补偿后的 delay）
+        const s = readState()
+        samples.push({
+          t: el,
+          ct: s.ct,
+          delay: s.delay,
+          dur: s.dur,
+          shift: parseFloat(trackEl().style.getPropertyValue('--oas-marquee-shift')) || 0,
+          name: s.name,
+          u: s.ct !== null && s.dur > 0 ? ((((s.ct - s.delay) % s.dur) + s.dur) % s.dur) / s.dur : null,
+        })
+        if (mark >= 0 && startsSettled < 0 && el > mark + 200) startsSettled = starts
+        if (mark >= 0 && el > mark + 1200) {
+          resolve()
+          return
+        }
+        if (el > 20000) {
+          resolve()
+          return
+        }
+        requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })
+    const startsEnd = starts
+    // 终态几何：纵向模式下位移距离必须 = 源内容高（按新轴重测的直接证据）
+    const groupH = host.shadowRoot!.querySelector<HTMLElement>('.group:not(.clone)')!.getBoundingClientRect().height
+    host.remove()
+    return { samples, mark, startsSettled, startsEnd, groupH }
+  })
+
+  expect(out.mark, 'orientation 切换已触发（相位门控命中）').toBeGreaterThan(0)
+  expect(out.startsSettled, '切轴后动画事件已落定（用于「无额外重启」对照）').toBeGreaterThanOrEqual(0)
+  const pts = out.samples.filter((s): s is MqPhaseSample & { u: number } => s.u !== null)
+  expect(pts.length, '采样帧数足够').toBeGreaterThan(30)
+  const before = pts.filter((s) => s.t < out.mark).pop()!
+  const after = pts.find((s) => s.t >= out.mark)!
+  const last = pts[pts.length - 1]!
+  // 轴确实换了（否则本用例是空断言）
+  expect(before.name, '切换前走横向关键帧').toBe('oas-marquee-x')
+  expect(after.name, '切换后走纵向关键帧').toBe('oas-marquee-y')
+  expect(out.groupH, '纵向内容高 > 0').toBeGreaterThan(0)
+  expect(out.groupH, '装置自检：纵向内容高 ≠ 横向内容宽（位移量纲不同 → 像素位移不可守恒）').not.toBeCloseTo(
+    before.shift,
+    0,
+  )
+  expect(last.shift, `终态位移距离 ${last.shift} 必须 = 纵向内容高 ${out.groupH}（按新轴重测）`).toBeCloseTo(
+    out.groupH,
+    0,
+  )
+
+  // 1) 缺陷回归断言：切轴前后相位必须相等（修前 after.u ≈ 0 = 跳回循环起点，≈ 半个循环的位移）。
+  //    相位是环量：用圆周距离（min(|Δ|, 1-|Δ|)）；本用例门控在 p∈[0.4,0.6]，自然回卷不会在其中发生。
+  const rawDelta = Math.abs(after.u - before.u)
+  const circularDelta = Math.min(rawDelta, 1 - rawDelta)
+  expect(
+    circularDelta,
+    `切轴前后相位 ${before.u.toFixed(3)} → ${after.u.toFixed(3)}（圆周距离 ${circularDelta.toFixed(3)}；≈0.5 = 内容跳回循环起点）`,
+  ).toBeLessThanOrEqual(0.1)
+
+  // 2) 帧间位移（相位比例 × 当前轴位移距离）不超阈值：常规帧 = 速度 × 帧时长
+  const steps: Array<{ t: number; px: number; near: boolean }> = []
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1]!
+    const b = pts[i]!
+    const dt = b.t - a.t
+    if (dt <= 0 || dt > 60) continue
+    let du = b.u - a.u
+    // 自然回卷：相位越过 1（前向展开）——仅当切换前相位接近 1 时成立（本用例门控在中段，不会命中）
+    if (du < -0.5 && a.u > 0.9) du += 1
+    steps.push({ t: b.t, px: Math.abs(du) * b.shift, near: Math.abs(b.t - out.mark) < 120 })
+  }
+  const far = steps.filter((s) => !s.near)
+  const near = steps.filter((s) => s.near)
+  expect(far.length, '切换点前后各有足够采样帧').toBeGreaterThan(30)
+  expect(near.length, '切换点附近有采样帧').toBeGreaterThan(0)
+  const medianPx = mqMedian(far.map((s) => s.px))
+  expect(medianPx, `常规帧位移中位 ${medianPx.toFixed(2)}px 应贴合 100px/s（装置有效性自检）`).toBeGreaterThan(0.3)
+  expect(medianPx).toBeLessThan(12)
+  const worst = near.reduce((m, s) => Math.max(m, s.px), 0)
+  const limit = Math.max(8, medianPx * 4)
+  expect(
+    worst,
+    `切轴帧位移 ${worst.toFixed(2)}px 不得超过 max(8px, 4×常规帧 ${medianPx.toFixed(2)}px)（修前 ≈ 0.5×shift）`,
+  ).toBeLessThanOrEqual(limit)
+
+  // 3) 重启已补偿：切轴后不再有额外重启（animationstart 计数在事件落定后不再增长）；
+  //    切轴自身必然触发一次 animationstart（animation-name 变 = 新动画），补偿使其在视觉上不可见
+  expect(out.startsEnd, '切轴后不得反复重启动画（计数不再增长）').toBe(out.startsSettled)
+})
+
+test('marquee 克隆份 inert：视觉副本不进 Tab 序（真机 Tab 不落进克隆内链接）', async ({ page }) => {
+  await page.goto('/components/marquee.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-marquee')
+  const r = await page.evaluate(async () => {
+    if (!customElements.get('oas-marquee')) await customElements.whenDefined('oas-marquee')
+    const host = document.createElement('oas-marquee')
+    host.id = 'inert-probe'
+    host.setAttribute('speed', '120')
+    host.style.cssText = 'display:block;width:600px;margin:8px 0;'
+    host.appendChild(document.createTextNode('无链接文本 · '))
+    for (let i = 0; i < 2; i++) {
+      const a = document.createElement('a')
+      a.href = `#inert-probe-${i}`
+      a.textContent = `源链接 ${i} `
+      host.appendChild(a)
+    }
+    // 插到 body 最前：Tab 序从「文档起点」起算时第一站就是本探测宿主——
+    // 「从页面起点 Tab 若干次」的扫掠因此真的经过克隆份所在位置（否则断言是空转）
+    document.body.prepend(host)
+    await new Promise<void>((resolve) => {
+      const check = () => {
+        const t = host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+        if (!t.classList.contains('measuring') && t.style.getPropertyValue('--oas-marquee-duration')) resolve()
+        else requestAnimationFrame(check)
+      }
+      check()
+    })
+    const copies = [...host.querySelectorAll<HTMLElement>(':scope > [data-oas-marquee-copy]')]
+    return {
+      copies: copies.length,
+      inertAll: copies.every((c) => c.hasAttribute('inert')),
+      inertMissing: copies.filter((c) => !c.hasAttribute('inert')).length,
+      ariaHiddenAll: copies.every((c) => c.getAttribute('aria-hidden') === 'true'),
+      copyLinkCount: copies.reduce((n, c) => n + c.querySelectorAll('a').length, 0),
+      shift: parseFloat(
+        host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!.style.getPropertyValue('--oas-marquee-shift'),
+      ),
+      srcGroupW: host.shadowRoot!.querySelector<HTMLElement>('.group:not(.clone)')!.getBoundingClientRect().width,
+    }
+  })
+  expect(r.copies, '克隆份存在').toBeGreaterThanOrEqual(1)
+  // 缺陷回归断言：克隆份此前只有 aria-hidden —— 读屏不重复播报，但内部链接/按钮仍在 Tab 序里
+  expect(r.inertMissing, '每个克隆份包裹节点都必须带 inert（修前 0 个）').toBe(0)
+  expect(r.inertAll, '克隆份 inert 全覆盖').toBe(true)
+  expect(r.ariaHiddenAll, 'aria-hidden 语义保持（读屏仍不重复播报）').toBe(true)
+  expect(r.copyLinkCount, '装置自检：克隆份内确实含可聚焦链接（否则本用例是空断言）').toBeGreaterThan(0)
+  // inert 不改变布局：位移距离仍等于源组渲染宽（几何不变量不被 inert 破坏）
+  expect(Math.abs(r.shift - r.srcGroupW), `位移距离 ${r.shift} 应仍等于源组宽 ${r.srcGroupW}`).toBeLessThanOrEqual(0.5)
+
+  // 真机 Tab 序（两段，均用真实按键驱动）：
+  // ① 从文档起点 Tab 若干次——探测宿主在 body 首位，扫掠会经过源链接与克隆份的位置；
+  // ② 从最后一个源链接继续 Tab——克隆份紧随源内容之后，修前下一次 Tab 必命中克隆内链接。
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+  const fromStart: Array<{ inClone: boolean; inProbe: boolean }> = []
+  for (let i = 0; i < 6; i++) {
+    await page.keyboard.press('Tab')
+    fromStart.push(
+      await page.evaluate(() => ({
+        inClone: document.activeElement?.closest('[data-oas-marquee-copy]') != null,
+        inProbe: document.activeElement?.closest('#inert-probe') != null,
+      })),
+    )
+  }
+  expect(
+    fromStart.map((s) => s.inClone),
+    '从文档起点 Tab 不得落进克隆份',
+  ).toEqual(new Array(6).fill(false))
+  expect(
+    fromStart.some((s) => s.inProbe),
+    '装置自检：起点扫掠确实经过了探测宿主（源链接）',
+  ).toBe(true)
+
+  await page.evaluate(() => {
+    const host = document.querySelector('#inert-probe')!
+    const srcLinks = [...host.childNodes]
+      .filter((n) => n.nodeType === 1 && !(n as Element).hasAttribute('data-oas-marquee-copy'))
+      .flatMap((n) => {
+        const el = n as HTMLElement
+        // 源内容本身就是 <a> 时 querySelectorAll('a') 不匹配自身，需分开处理
+        return el.matches('a') ? [el] : [...el.querySelectorAll<HTMLElement>('a')]
+      })
+    ;(srcLinks[srcLinks.length - 1] as HTMLElement).focus()
+  })
+  const landedInClone: boolean[] = []
+  for (let i = 0; i < 8; i++) {
+    await page.keyboard.press('Tab')
+    landedInClone.push(await page.evaluate(() => document.activeElement?.closest('[data-oas-marquee-copy]') != null))
+  }
+  expect(landedInClone, '源链接之后 Tab 若干次均不得落进克隆份（修前第一次 Tab 即命中克隆内链接）').toEqual(
+    new Array(8).fill(false),
+  )
+
+  // inert 不得破坏宿主的 :hover 命中链：指针落在克隆份（inert 子树被跳过命中测试）上时，
+  // 命中应回落到宿主自身 → pause-on-hover 照常暂停（inert 只该去掉副本的可交互性，不该影响宿主状态）
+  await page.evaluate(async () => {
+    const host = document.createElement('oas-marquee')
+    host.id = 'hover-probe'
+    host.setAttribute('pause-on-hover', '')
+    host.setAttribute('speed', '60')
+    host.style.cssText = 'display:block;width:600px;position:fixed;top:300px;left:0;z-index:9999;background:#fff;'
+    host.textContent = '悬停命中链回归内容 · '
+    document.body.appendChild(host)
+    await new Promise<void>((resolve) => {
+      const check = () => {
+        const t = host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+        if (!t.classList.contains('measuring') && t.style.getPropertyValue('--oas-marquee-duration')) resolve()
+        else requestAnimationFrame(check)
+      }
+      check()
+    })
+  })
+  const playState = () =>
+    page.evaluate(
+      () =>
+        getComputedStyle(
+          document.querySelector('#hover-probe')!.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!,
+        ).animationPlayState,
+    )
+  await page.mouse.move(4, 4)
+  await expect.poll(playState, { message: '前置：未悬停时动画在跑' }).toBe('running')
+  const pt = await page.evaluate(() => {
+    const host = document.querySelector('#hover-probe')!
+    const track = host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+    // 冻结几何：指针点可复现（不影响 CSS 的 animation-play-state 计算值）
+    ;(track as unknown as { getAnimations: () => Animation[] }).getAnimations()[0]!.pause()
+    const hr = host.getBoundingClientRect()
+    for (const c of host.querySelectorAll<HTMLElement>(':scope > [data-oas-marquee-copy]')) {
+      const r = c.getBoundingClientRect()
+      const x = (r.left + r.right) / 2
+      const y = (r.top + r.bottom) / 2
+      if (x > hr.left + 2 && x < hr.right - 2 && y > hr.top + 1 && y < hr.bottom - 1) return { x, y }
+    }
+    return null
+  })
+  expect(pt, '装置自检：找到一个确实落在克隆份上的指针点（否则本条是空断言）').not.toBeNull()
+  await page.mouse.move(pt!.x, pt!.y)
+  await expect
+    .poll(playState, { message: '指针落在 inert 克隆份上时宿主仍 :hover（pause-on-hover 照常暂停）' })
+    .toBe('paused')
+})
+
+test('marquee 宿主重渲染健壮性：清空并重建 light DOM 后克隆份恰好重建一次（无重复/无残留）', async ({ page }) => {
+  await page.goto('/components/marquee.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-marquee')
+  const r = await page.evaluate(async () => {
+    if (!customElements.get('oas-marquee')) await customElements.whenDefined('oas-marquee')
+    const host = document.createElement('oas-marquee')
+    host.id = 'rerender-probe'
+    host.setAttribute('speed', '120')
+    host.style.cssText = 'display:block;width:600px;margin:8px 0;'
+    const build = (label: string): DocumentFragment => {
+      const frag = document.createDocumentFragment()
+      for (let i = 0; i < 3; i++) {
+        const span = document.createElement('span')
+        span.textContent = `${label}-${i} · `
+        frag.appendChild(span)
+      }
+      return frag
+    }
+    host.appendChild(build('A'))
+    document.body.appendChild(host)
+    const trackEl = (): HTMLElement => host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+    const ready = (): Promise<void> =>
+      new Promise((resolve) => {
+        const check = () => {
+          const t = trackEl()
+          if (!t.classList.contains('measuring') && t.style.getPropertyValue('--oas-marquee-duration')) resolve()
+          else requestAnimationFrame(check)
+        }
+        check()
+      })
+    const snap = () => {
+      const root = host.shadowRoot!
+      const src = root.querySelector<HTMLElement>('.group:not(.clone)')!
+      const cln = root.querySelector<HTMLElement>('.group.clone')!
+      const copies = [...host.querySelectorAll<HTMLElement>(':scope > [data-oas-marquee-copy]')]
+      const srcNodes = [...host.childNodes].filter(
+        (n) => !(n.nodeType === 1 && (n as Element).hasAttribute('data-oas-marquee-copy')),
+      )
+      return {
+        copies: copies.length,
+        copyChildNodes: copies.map((c) => c.childNodes.length),
+        copyText: copies.map((c) => c.textContent ?? '').join(''),
+        emptyCopies: copies.filter((c) => c.childNodes.length === 0).length,
+        srcText: srcNodes.map((n) => n.textContent ?? '').join(''),
+        srcNodes: srcNodes.length,
+        totalHostNodes: host.childNodes.length,
+        repeatFromGeom: Math.round(cln.getBoundingClientRect().width / src.getBoundingClientRect().width),
+        animName: getComputedStyle(trackEl()).animationName,
+        shift: trackEl().style.getPropertyValue('--oas-marquee-shift'),
+      }
+    }
+    await ready()
+    const before = snap()
+    // 模拟宿主框架重渲染：清空 light DOM（克隆份一并被清掉）后重建源内容
+    host.textContent = ''
+    host.appendChild(build('B'))
+    await ready()
+    // 等 slotchange → syncClone 的重建稳定（两帧）
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    const after = snap()
+    host.remove()
+    return { before, after }
+  })
+
+  expect(r.before.copies, '前置：初始克隆份已生成').toBeGreaterThanOrEqual(1)
+  expect(r.after.copies, '重渲染后克隆份数 === 份数（无重复/无残留）').toBe(r.before.copies)
+  expect(r.after.copies, '重渲染后克隆份数 === 按几何反推的份数').toBe(r.after.repeatFromGeom)
+  expect(r.after.emptyCopies, '不得残留空克隆份').toBe(0)
+  expect(r.after.copyChildNodes, '每份克隆的节点数 === 源内容节点数').toEqual(
+    new Array(r.after.copies).fill(r.after.srcNodes),
+  )
+  expect(r.after.totalHostNodes, '宿主子节点数 = 源内容节点 + 克隆份包裹节点（无多余残留）').toBe(
+    r.after.srcNodes + r.after.copies,
+  )
+  // 源内容正常：新内容存在、旧内容与旧克隆文本无残留
+  expect(r.after.srcText, '重建后的源内容正确').toBe('B-0 · B-1 · B-2 · ')
+  expect(r.after.copyText, '克隆份文本 = 源文本 × 份数（无旧份残留）').toBe(r.after.srcText.repeat(r.after.copies))
+  expect(r.after.copyText.includes('A-'), '旧源内容不得残留在克隆份里').toBe(false)
+  // 动画仍在跑
+  expect(r.after.animName, '重渲染后动画仍在跑（animation-name 非 none）').not.toBe('none')
+  expect(r.after.animName).toBe('oas-marquee-x')
+  expect(parseFloat(r.after.shift), '位移距离重测有效').toBeGreaterThan(0)
+})

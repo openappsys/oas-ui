@@ -11,11 +11,17 @@ import { describe, it, expect, beforeAll } from 'vitest'
 describe('@oas-ui/next OasRegistry', () => {
   let OasRegistry: (props: { children?: unknown }) => unknown
 
-  beforeAll(async () => {
-    // 动态 import：先触发 @oas-ui/ui 副作用注册，再取组件
-    const mod = await import('./client.js')
-    OasRegistry = mod.OasRegistry as (props: { children?: unknown }) => unknown
-  })
+  beforeAll(
+    async () => {
+      // 动态 import：先触发 @oas-ui/ui 副作用注册，再取组件
+      const mod = await import('./client.js')
+      OasRegistry = mod.OasRegistry as (props: { children?: unknown }) => unknown
+    },
+    // 该 hook 要重导入整条 @oas-ui/ui 注册链（数百个组件模块），单跑实测 ≈3.9s；
+    // 默认 hookTimeout（10s）在全量 `pnpm test` 高负载并行时会被顶到（曾偶发把 suite 拖红）。
+    // 取单跑实测的 ~4 倍（15s）：负载敏感但只在真正卡死时才失败，不再拿临界值赌调度。
+    15_000,
+  )
 
   it('副作用注册：import @oas-ui/ui 后 oas-* 组件全局注册（customElements.define）', () => {
     expect(customElements.get('oas-button')).toBeDefined()

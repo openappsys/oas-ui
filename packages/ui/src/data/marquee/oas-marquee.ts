@@ -206,8 +206,10 @@ export function computeDuration(contentPx: number, speedPxS: number): number {
  * 份宽必须严格等于动画位移距离，否则 wrap 时内容横跳；keyframes 平移「一份内容宽」形成无缝循环；
  * 内容不足一屏时按 computeRepeat 份自动填充（auto-fill，容器口径 = 宿主 padding box：border 不
  * 参与判定）；ResizeObserver 监听容器与内容尺寸，重算位移/时长（时长 = 距离/速度）；
- * slotchange 重建克隆份、resize/speed/reverse 变更时，以「位移距离连续」为不变量记录/恢复相位
- * （按新旧时长与新旧方向等位移反解负 animation-delay；不支持 getAnimations 的浏览器归零重启）；
+ * slotchange 重建克隆份、resize/speed/reverse/orientation 变更时，以「位移距离连续」为不变量
+ * 记录/恢复相位（按新旧时长与新旧方向等位移反解负 animation-delay；orientation 变更换关键字帧
+ * 必然重启动画，此时按「循环相位比例」补偿，见 restoreShift 的 restart 分支；
+ * 不支持 getAnimations 的浏览器归零重启）；
  * `prefers-reduced-motion` 时关闭动画静态展示。
  */
 export class OASMarquee extends OASElement {
@@ -228,6 +230,16 @@ export class OASMarquee extends OASElement {
   private curDelayMs = 0
   /** 当前生效动画的方向（reverse 属性值）；capture 时据此换算「含方向」的位移比例 */
   private curReversed = false
+  /** 当前生效的滚动轴（vertical?）；null = 首帧尚未定档（首帧不当作「切轴」处理） */
+  private curVertical: boolean | null = null
+  /**
+   * 上一轮读到的动画对象（只读 currentTime，最小结构便于单测替身）。
+   * currentTime 存宽松类型：真机 `Animation.currentTime` 是 CSSNumberish（多为 number，
+   * 进度型时间线为 CSSNumericValue），用前一律做 number 判定。
+   * 存在的理由见 captureShift：读它的 currentTime **不触发样式落定**，因此宿主属性刚变更
+   * （orientation 切轴会换 animation-name）时仍能拿到「切换前」的真实时钟。
+   */
+  private cachedAnim: { currentTime: unknown } | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -284,6 +296,20 @@ export class OASMarquee extends OASElement {
   protected override update(): void {
     if (!this.trackEl) return
     this.trackEl.style.setProperty('--oas-marquee-speed', String(resolveSpeedPx(this.getAttr('speed', ''))))
+    const vertical = this.isVertical()
+    if (this.curVertical !== null && this.curVertical !== vertical) {
+      this.curVertical = vertical
+      // 滚动轴运行时切换：横向/纵向用不同关键字帧（oas-marquee-x / oas-marquee-y），换轴即换
+      // animation-name → 浏览器按「新动画」处理（时钟归零、animationstart 再触发一次），所以本路径
+      // **无法**做到「动画不重启」；且新旧位移量纲不同（内容宽 vs 内容高）、轴向不同，
+      // **绝对像素位移也不可守恒**。可守恒的最强不变量是**循环相位比例**（位移比例）：先按新轴
+      // 同步重测（位移距离/份数/时长——不重测的话纵向动画会拿横向位移距离跑，且要等 RO 回调才修），
+      // 再以「新动画 localTime = 0」为基准反解负 delay（restoreShift 的 restart 分支），
+      // 使内容不跳回循环起点（最接近无损的方案）。
+      this.preserveShift(() => this.applyMeasure(), true)
+      return
+    }
+    this.curVertical = vertical
     // 速度变化即时反映到已测量的时长；时长变化按位移连续补偿（否则进度重映射视觉跳变）
     if (this.measuredShift > 0) this.preserveShift(() => this.writeTiming())
   }
@@ -294,6 +320,14 @@ export class OASMarquee extends OASElement {
 
   /**
    * ResizeObserver 回调：测量容器/内容尺寸 → auto-fill 重建 + 时长写入（相位保持位移连续）。
+   */
+  private remeasure(): void {
+    this.preserveShift(() => this.applyMeasure())
+  }
+
+  /**
+   * 测量容器/内容尺寸并落盘（份数重建 + 位移/时长写入 + 解除 measuring 态），返回是否测到有效内容。
+   * 相位保持由调用方负责：RO 路径走 remeasure（非重启补偿），轴切换路径走 update（重启补偿）。
    *
    * 容器口径取宿主 **padding box**（`clientWidth`/`clientHeight`）而非 border box：border 属于
    * 宿主边框、不参与「内容要铺满多大范围」的判定——用 border box 时 1px 边框就足以让
@@ -301,22 +335,24 @@ export class OASMarquee extends OASElement {
    * 也不取内容盒：`overflow: hidden` 的裁切边是 padding 边，横向 padding 区域同样可见，
    * 只按内容盒判定会在循环过程中露出 padding 宽度的空档（正是 auto-fill 要消除的 seam）；
    * `clientWidth` 已含 padding、不含 border，与实际裁切区一致（无滚动条：宿主 overflow: hidden）。
+   *
+   * 轴切换路径要求「同步」测到新轴尺寸：属性已改 → 读 `getBoundingClientRect()`/`clientWidth`
+   * 会强制样式与布局落定，故拿到的是新轴（纵向 = 内容高）的真实值，无需等下一帧 RO。
    */
-  private remeasure(): void {
-    if (!this.trackEl || !this.sourceGroupEl) return
+  private applyMeasure(): boolean {
+    if (!this.trackEl || !this.sourceGroupEl) return false
     const vertical = this.isVertical()
     const groupBox = this.sourceGroupEl.getBoundingClientRect()
     const container = vertical ? this.clientHeight : this.clientWidth
     const content = vertical ? groupBox.height : groupBox.width
-    if (!(content > 0)) return
+    if (!(content > 0)) return false
     this.measuredShift = content
     this.lastRepeat = computeRepeat(container, content)
     // 克隆重建与时长重写在同一次相位保持内完成：时长突变若不补偿会整段重映射进度（视觉跳变）
-    this.preserveShift(() => {
-      this.syncClone(this.lastRepeat)
-      this.writeTiming()
-    })
+    this.syncClone(this.lastRepeat)
+    this.writeTiming()
     this.trackEl.classList.remove('measuring')
+    return true
   }
 
   /** 把测量结果写入轨道：平移距离（px）与动画时长（距离/速度），并登记换算基准 */
@@ -337,6 +373,12 @@ export class OASMarquee extends OASElement {
    * 也是相位的一部分——reverse 运行时切换时，旧动画的位移比例必须按**旧方向**解读，否则恢复
    * 会按新方向重算位移，切换瞬间内容整体跳 (1-2×进度) 个位移距离（历史缺陷）。
    *
+   * 读时钟的顺序是本方法的关键：**先读上一轮缓存下来的动画对象，再兜底 getAnimations()**。
+   * orientation 切轴会换 animation-name（横向 oas-marquee-x ↔ 纵向 oas-marquee-y），而宿主属性
+   * 在 attributeChangedCallback 触发时**已经**是新的了：此刻调用 getAnimations() 会强制样式落定，
+   * 旧动画随之被取消、返回的新动画 currentTime = 0（真机实测捕获到 t=0）→ 相位丢失、切轴后内容
+   * 跳回循环起点。读缓存对象（其 currentTime 是活值，且读取不触发样式落定）才能拿到切换前的时钟。
+   *
    * getAnimations 不可用/无动画/timing 未生效时返回 null（退化归零重启）。
    */
   private captureShift(): ShiftBaseline | null {
@@ -345,7 +387,13 @@ export class OASMarquee extends OASElement {
         | (HTMLElement & { getAnimations?: () => Array<{ currentTime: number | null }> })
         | null
       if (!track || typeof track.getAnimations !== 'function') return null
-      const t = track.getAnimations()[0]?.currentTime
+      let t: unknown = this.cachedAnim?.currentTime
+      if (typeof t !== 'number' || !Number.isFinite(t)) {
+        // 缓存缺失/失效（首次、旧动画已被上一次重启取消、reduced-motion 关动画）→ 刷新缓存；
+        // 上一次重启动画后缓存被清空，此处拿到的就是新动画对象
+        this.cachedAnim = track.getAnimations()[0] ?? null
+        t = this.cachedAnim?.currentTime
+      }
       if (typeof t !== 'number' || !Number.isFinite(t)) return null
       if (!(this.curDurS > 0) || !(this.curShiftPx > 0)) return null
       const durMs = this.curDurS * 1000
@@ -362,8 +410,13 @@ export class OASMarquee extends OASElement {
    * D = 含方向的位移比例 × 位移；变更后按新时长 + **新方向**反解负 animation-delay
    * （∈ [-duration, 0)）。旧实现直接 delay = -currentTime，只在 delay=0 且时长整除时碰巧
    * 无缝——duration 变化、reverse 切换或多次重建后必然跳变。
+   *
+   * `restart`（orientation 切换换 animation-name）：新动画是**另一个**动画对象，时钟从 0 起跑，
+   * 基准不能再用捕获到的旧时钟 cap.t，只能取 0——即「恢复后的生效相位 = mod(-delay, 新时长)/新时长
+   * 必须等于旧相位」。此时也不能按 shift 等比换算位移比例：新旧位移量纲不同（内容宽 vs 内容高），
+   * 相除没有物理意义，直接沿用捕获到的比例（轴切换最接近无损的方案，绝对位移不可守恒）。
    */
-  private restoreShift(cap: ShiftBaseline | null): void {
+  private restoreShift(cap: ShiftBaseline | null, restart = false): void {
     const reversed = this.hasAttr('reverse')
     // 登记本次变更后的生效方向（capture 用它解读「当前动画」的位移比例）
     this.curReversed = reversed
@@ -374,18 +427,25 @@ export class OASMarquee extends OASElement {
       this.curDelayMs = 0
       return
     }
-    const distRatio = (cap.distRatio * cap.shiftPx) / this.curShiftPx
+    const distRatio = restart ? cap.distRatio : (cap.distRatio * cap.shiftPx) / this.curShiftPx
     const newProgress = reversed ? 1 - distRatio : distRatio
-    const delayMs = mod(cap.t - newProgress * durMs, durMs) - durMs
+    const refT = restart ? 0 : cap.t
+    const delayMs = mod(refT - newProgress * durMs, durMs) - durMs
     this.trackEl.style.animationDelay = `${delayMs}ms`
     this.curDelayMs = delayMs
   }
 
-  /** 时序/DOM 变更包裹：捕获旧基准 → 执行变更（内部重写 timing）→ 按位移连续恢复 */
-  private preserveShift<T>(mutate: () => T): T {
+  /**
+   * 时序/DOM 变更包裹：捕获旧基准 → 执行变更（内部重写 timing）→ 按位移连续恢复。
+   * `restart` = 变更会重启动画（换 animation-name，如 orientation 切换），恢复基准取新动画时钟 0。
+   */
+  private preserveShift<T>(mutate: () => T, restart = false): T {
     const cap = this.captureShift()
     const out = mutate()
-    this.restoreShift(cap)
+    this.restoreShift(cap, restart)
+    // 重启已发生：旧动画对象此刻已被取消（currentTime 变 null），缓存作废——下次捕获重新取
+    // 新动画对象，否则会一直读到失效对象而退化成「无可用相位」
+    if (restart) this.cachedAnim = null
     return out
   }
 
@@ -425,6 +485,11 @@ export class OASMarquee extends OASElement {
       // 视觉副本：读屏不得重复播报。克隆组已有 aria-hidden，但份本体在 light DOM、
       // 不落在 shadow 的 aria-hidden 子树内，需自身标注（读屏与 aria-hidden 语义一致）
       copy.setAttribute('aria-hidden', 'true')
+      // 视觉副本也不得进入键盘/辅助技术导航：aria-hidden 只挡读屏，克隆份里的按钮/链接
+      // 仍是可聚焦的（Tab 会把用户带进副本——副本与源份状态可能不一致，聚焦/操作即是误操作）。
+      // inert 只影响交互与焦点（不改变布局盒模型、不影响动画），故「份宽 === 位移距离」不变量
+      // 与整条滚动链路不受影响（几何断言见 qa-regression/marquee.spec.ts）。
+      copy.setAttribute('inert', '')
       for (const node of this.sourceNodes()) {
         copy.appendChild(node.cloneNode(true))
       }
