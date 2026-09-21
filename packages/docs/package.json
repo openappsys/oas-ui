@@ -13,7 +13,7 @@
     "@oas-ui/icons": "workspace:*",
     "@oas-ui/theme": "workspace:*",
     "@oas-ui/ui": "workspace:*",
-    "shiki": "^2.5.0",
-    "vitepress": "^1.6.3"
+    "shiki": "^4.4.3",
+    "vitepress": "^1.6.4"
   }
 }

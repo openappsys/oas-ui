@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.20.0",
+  "packageManager": "pnpm@12.5.1",
   "scripts": {
     "predev": "pnpm -r --filter @oas-ui/ui... build",
     "dev": "pnpm --parallel --filter @oas-ui/core --filter @oas-ui/i18n --filter @oas-ui/icons --filter @oas-ui/ui --filter @oas-ui/docs dev",
@@ -30,16 +30,16 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
-    "@biomejs/biome": "^2.5.11",
+    "@biomejs/biome": "^2.5.14",
     "@oas-ui/theme": "workspace:*",
     "@oas-ui/ui": "workspace:*",
-    "@playwright/test": "^1.62.1",
-    "@types/node": "^26.4.0",
-    "happy-dom": "^20.11.15",
-    "markdownlint-cli2": "^0.23.2",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.2",
+    "happy-dom": "^20.14.5",
+    "markdownlint-cli2": "^0.23.3",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2",
-    "vite-plugin-dts": "^5.0.3",
-    "vitest": "^4.1.11"
+    "vite": "^8.3.0",
+    "vite-plugin-dts": "^5.1.1",
+    "vitest": "^5.0.1"
   }
 }

@@ -51,19 +51,19 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "peerDependencies": {
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0",
-    "next": ">=13.4.0",
     "@oas-ui/ssr": "^2.0.0",
-    "@oas-ui/ui": "^2.0.0"
+    "@oas-ui/ui": "^2.0.0",
+    "next": ">=13.4.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "@oas-ui/ssr": "workspace:*",
-    "@oas-ui/ui": "workspace:*"
+    "@oas-ui/ui": "workspace:*",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "repository": {
     "type": "git",

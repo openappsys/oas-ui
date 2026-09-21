@@ -167,7 +167,7 @@ Content is not limited to text — putting images or logos in the slot produces 
 | `fade-edges` | Boolean; when present, fades out both container edges with a mask-image (off by default); fade width via `--oas-marquee-fade-size` | — | — |
 | `orientation` | Scroll direction: `horizontal` (default) / `vertical` (vertical scrolling; the container needs a fixed height) | — | — |
 | `pause-on-hover` | Boolean; when present, pauses the animation on hover/focus (`animation-play-state: paused`) | — | — |
-| `reverse` | Boolean; when present, scrolls in the opposite direction | — | — |
+| `reverse` | Boolean; when present, scrolls in the opposite direction | `boolean` | — |
 | `speed` | Scroll speed in pixels per second (default 48); the animation duration is derived from the measured content width (duration = distance / speed); invalid or non-positive values fall back to the default | `string` | — |
 
 #### Slots
