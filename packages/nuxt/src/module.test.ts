@@ -8,11 +8,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
  * SSR helper 自动导入注册、纯函数合并语义。
  */
 
-// 先 mock @nuxt/kit（hoisted），再动态 import module.js，保证 defineNuxtModule/addImports 被拦截
-const { addImportsMock, defineNuxtModuleMock } = vi.hoisted(() => ({
-  addImportsMock: vi.fn(),
-  defineNuxtModuleMock: vi.fn((def: unknown) => def),
-}))
+// 先 mock @nuxt/kit（hoisted），再动态 import module.js，保证 defineNuxtModule/addImports 被拦截。
+// defineModuleCalls 用普通数组记录 defineNuxtModule 的调用实参：Vitest 5 在「模块求值（收集）」
+// 与「用例执行」之间会重置 vi.fn 的调用记录（实测模块求值时 calls=1、用例内读回 0），
+// 数组数据不受该重置影响，断言口径不变（module 恰经 defineNuxtModule 定义一次）。
+const { addImportsMock, defineNuxtModuleMock, defineModuleCalls } = vi.hoisted(() => {
+  const defineModuleCalls: unknown[] = []
+  return {
+    addImportsMock: vi.fn(),
+    defineModuleCalls,
+    defineNuxtModuleMock: vi.fn((def: unknown) => {
+      defineModuleCalls.push(def)
+      return def
+    }),
+  }
+})
 
 vi.mock('@nuxt/kit', () => ({
   defineNuxtModule: defineNuxtModuleMock,
@@ -53,13 +63,15 @@ function createFakeNuxt() {
 
 describe('@oas-ui/nuxt module 定义', () => {
   beforeEach(() => {
-    // 只清 addImportsMock（setup 内新增的调用），保留 defineNuxtModuleMock 在
-    // module.js 模块装载期的一次调用记录供「module 经 defineNuxtModule 定义」断言
+    // 只清 addImportsMock（setup 内新增的调用）；defineNuxtModule 的模块装载期调用记录
+    // 由 defineModuleCalls 数组保存（vi.fn 的 mock.calls 会被 Vitest 重置，见文件头注释）
     addImportsMock.mockClear()
   })
 
   it('module 经 defineNuxtModule 定义：meta.name / configKey / setup 就位', () => {
-    expect(defineNuxtModuleMock).toHaveBeenCalledTimes(1)
+    // 断言经 defineNuxtModule 定义（恰一次）
+    expect(defineModuleCalls).toHaveLength(1)
+    expect(defineModuleCalls[0]).toBe(nuxtModule)
     expect(nuxtModule.meta?.name).toBe('@oas-ui/nuxt')
     expect(nuxtModule.meta?.configKey).toBe('oasUi')
     expect(typeof nuxtModule.setup).toBe('function')

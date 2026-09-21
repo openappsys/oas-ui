@@ -79,6 +79,11 @@
     }
   ],
   "slots": [],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-ellipsis-lines",
+      "default": "2"
+    }
+  ],
   "unresolved": []
 }

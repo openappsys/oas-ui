@@ -14,6 +14,17 @@ function waitClose(): Promise<void> {
   return new Promise((r) => setTimeout(r, 260))
 }
 
+/**
+ * shadow 内联样式表文本。
+ * max-line 折叠由样式表规则 `-webkit-line-clamp: var(--oas-alert-max-line, N)` 驱动，
+ * 行数值走内联自定义属性——两者相加才是「驱动该效果的机制」。
+ * （happy-dom ≥20.14.5 起丢弃内联 `-webkit-line-clamp` 属性，真实浏览器正常；
+ * 自定义属性在 happy-dom 序列化中保留，故 SSR 快照同样带该机制。）
+ */
+function shadowStyleText(el: OASAlert): string {
+  return el.shadowRoot!.querySelector('style')!.textContent ?? ''
+}
+
 describe('OASAlert', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -431,7 +442,11 @@ describe('OASAlert', () => {
       const el = mount({ 'max-line': '2' }, '<p>很长很长很长的正文内容用于折叠演示</p>')
       const body = el.shadowRoot!.querySelector('.body') as HTMLElement
       expect(body.classList.contains('clamped')).toBe(true)
-      expect(body.style.getPropertyValue('-webkit-line-clamp')).toBe('2')
+      // 机制：样式表含驱动 clamp 的规则 + 行数写入内联变量
+      expect(shadowStyleText(el), '样式表含 .clamped 的 line-clamp 规则').toContain(
+        '-webkit-line-clamp: var(--oas-alert-max-line',
+      )
+      expect(body.style.getPropertyValue('--oas-alert-max-line')).toBe('2')
       const toggle = el.shadowRoot!.querySelector('[part="toggle"]') as HTMLButtonElement
       expect(toggle.hidden).toBe(false)
       expect(toggle.textContent).toBe('展开')

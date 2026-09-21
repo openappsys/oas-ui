@@ -411,11 +411,15 @@ describe('OASMarquee', () => {
     expect(distAfter, '时长变更前后位移比例相等（视觉位置不跳）').toBeCloseTo(distBefore, 3)
   })
 
-  it('相位保持退化：getAnimations 不可用/无动画时归零重启（不设负 delay）', () => {
+  it('相位保持退化：无可用动画相位（无 getAnimations 或无动画）时归零重启（不设负 delay）', () => {
     const el = mount()
     const t = track(el)
-    // happy-dom 无 getAnimations → 走退化路径
-    expect(typeof (t as unknown as { getAnimations?: unknown }).getAnimations).toBe('undefined')
+    // 能力探测覆盖两条路径：旧版 happy-dom 没有 getAnimations；happy-dom ≥20.14.5 提供该方法
+    // 但默认无动画（返回空数组）。两者对组件等价于「无可用相位」→ 同样走退化归零重启。
+    // （「有相位」路径由上方 mockAnimTime 用例覆盖：断言写入连续补偿的负 animation-delay。）
+    const getAnimations = (t as unknown as { getAnimations?: () => unknown[] }).getAnimations
+    const noUsableTiming = getAnimations === undefined || getAnimations.call(t).length === 0
+    expect(noUsableTiming, '当前环境应无可用动画相位（无方法或无动画）').toBe(true)
     const span = document.createElement('span')
     span.textContent = '动态追加'
     el.appendChild(span)
