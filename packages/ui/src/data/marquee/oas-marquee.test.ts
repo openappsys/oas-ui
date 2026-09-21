@@ -220,18 +220,94 @@ describe('OASMarquee', () => {
     expect(track(el).classList.contains('measuring')).toBe(false)
   })
 
-  it('内容更新相位保持：getAnimations 记录相位并以负 animation-delay 恢复', () => {
+  /** 注入 FakeResizeObserver——必须在 mount() 前调用（bind 时决定是否建立观察） */
+  function installRo(): { fire: () => void } {
+    let cb: (() => void) | null = null
+    class FakeResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      constructor(callback: () => void) {
+        cb = callback
+      }
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    return { fire: () => cb?.() }
+  }
+
+  /** happy-dom 布局全 0：注入容器/内容尺寸，配合 installRo().fire() 触发 remeasure */
+  function mockRects(el: OASMarquee, containerW = 300, contentW = 100): void {
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      width: containerW,
+      height: 40,
+      top: 0,
+      left: 0,
+      right: containerW,
+      bottom: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect)
+    const sourceGroup = el.shadowRoot!.querySelector<HTMLElement>('.group:not(.clone)')!
+    vi.spyOn(sourceGroup, 'getBoundingClientRect').mockReturnValue({
+      width: contentW,
+      height: 40,
+      top: 0,
+      left: 0,
+      right: contentW,
+      bottom: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect)
+  }
+
+  function mockAnimTime(el: OASMarquee, currentTime: number): void {
+    ;(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="track"]') as unknown as {
+        getAnimations: () => Array<{ currentTime: number | null }>
+      }
+    ).getAnimations = () => [{ currentTime }]
+  }
+
+  it('内容更新相位保持：按位移连续反解负 animation-delay（非简单 -currentTime）', () => {
+    const { fire } = installRo()
     const el = mount()
-    const t = track(el)
-    ;(t as unknown as { getAnimations: () => Array<{ currentTime: number | null }> }).getAnimations = () => [
-      { currentTime: 2500 },
-    ]
+    mockRects(el)
+    fire()
+    // shift=100px, speed=48 → duration = 100/48 s ≈ 2083.33ms
+    const durMs = (100 / 48) * 1000
+    mockAnimTime(el, 2500)
     const span = document.createElement('span')
     span.textContent = '动态追加'
     el.appendChild(span)
     el.shadowRoot!.querySelector('slot')!.dispatchEvent(new Event('slotchange'))
-    expect(t.style.animationDelay).toBe('-2500ms')
+    const delay = parseFloat(track(el).style.animationDelay)
+    expect(Number.isFinite(delay), '应写入负 animation-delay').toBe(true)
+    expect(delay).toBeLessThanOrEqual(0)
+    expect(delay, 'delay ∈ [-duration, 0)').toBeGreaterThanOrEqual(-durMs)
+    // 连续性不变量：恢复后相位 = 捕获时相位（timing 未变）——capture: (2500-0) mod dur
+    const phaseBefore = 2500 % durMs
+    const phaseAfter = (((2500 - delay) % durMs) + durMs) % durMs
+    expect(phaseAfter, '重建克隆前后动画相位相等（位移连续，不跳变）').toBeCloseTo(phaseBefore, 0)
     expect(clone(el).textContent).toContain('动态追加')
+  })
+
+  it('时长变化相位连续：speed 属性变更后等位移反解 delay（不整段重映射进度）', () => {
+    const { fire } = installRo()
+    const el = mount()
+    mockRects(el)
+    fire()
+    const durMs1 = (100 / 48) * 1000
+    mockAnimTime(el, 2500)
+    const delay1 = 0 // 尚未有任何恢复，生效 delay 为 0
+    const distBefore = ((((2500 - delay1) % durMs1) + durMs1) % durMs1) / durMs1 // 进度（位移比例）
+    el.setAttribute('speed', '96') // 时长变 100/96 s，位移比例不得跳变
+    const durMs2 = (100 / 96) * 1000
+    const delay2 = parseFloat(track(el).style.animationDelay)
+    expect(Number.isFinite(delay2), '时长变化后应写入补偿 delay').toBe(true)
+    const distAfter = ((((2500 - delay2) % durMs2) + durMs2) % durMs2) / durMs2
+    expect(distAfter, '时长变更前后位移比例相等（视觉位置不跳）').toBeCloseTo(distBefore, 3)
   })
 
   it('相位保持退化：getAnimations 不可用/无动画时归零重启（不设负 delay）', () => {
