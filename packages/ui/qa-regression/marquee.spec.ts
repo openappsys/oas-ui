@@ -75,14 +75,18 @@ test('marquee 克隆组 aria-hidden（读屏不重复播报）+ pause-on-hover �
   const clone = await page.evaluate(() => {
     const el = document.querySelector('oas-marquee[speed="96"]')!
     const cloneEl = el.shadowRoot!.querySelector<HTMLElement>('.group.clone')!
+    // 每份各自套一层 .copy（份与份结构必须一致，见文件末接缝回归）——份内子节点数应与 light DOM 相同
+    const copies = [...cloneEl.querySelectorAll('.copy')]
     return {
       ariaHidden: cloneEl.getAttribute('aria-hidden'),
-      cloneChildren: cloneEl.childElementCount,
-      sourceChildren: el.childElementCount,
+      copyCount: copies.length,
+      copyChildNodes: copies[0]?.childNodes.length ?? 0,
+      sourceChildNodes: el.childNodes.length,
     }
   })
   expect(clone.ariaHidden, '克隆组对读屏隐藏').toBe('true')
-  expect(clone.cloneChildren, '克隆组内容不少于源组（auto-fill 可多份）').toBeGreaterThanOrEqual(clone.sourceChildren)
+  expect(clone.copyCount, '克隆组至少 1 份 .copy').toBeGreaterThanOrEqual(1)
+  expect(clone.copyChildNodes, '每份克隆的子节点数 = 源内容子节点数').toBe(clone.sourceChildNodes)
 
   // 悬停暂停 / 移出恢复（play-state 计算值轮询）
   const hoverSel = 'oas-marquee[pause-on-hover]'
@@ -448,6 +452,7 @@ test('marquee auto-fill 路径回归：容器宽度变化触发份数重算，�
   // → delay 重映射让画面瞬移（实测 +1863px/s 单帧）；新实现同一次 preserveShift 内完成重建+重写
   await installMqProbe(page, { text: '自动填充重算回归内容 · ', speed: 300, width: 600 })
   // 克隆组里是 light DOM 节点的克隆（纯文本内容 → text node），计数用 childNodes 不用 childElementCount
+  // （现每个重复份外面还有一层 .copy 容器，childNodes 计数即「份数」）
   const cloneCountBefore = await page.evaluate((key) => {
     const probe = (window as typeof window & Record<string, MqPageProbe>)[key]!
     return probe.host.shadowRoot!.querySelector<HTMLElement>('.group.clone')!.childNodes.length
@@ -524,4 +529,209 @@ test('marquee 悬停暂停回归：进出循环不重启动画（animationstart 
   expect(states.has('running'), '移出期间出现 running').toBe(true)
   // 3) 全程位移连续（暂停帧经 ct 停走自然剔除；恢复帧速度 = 真实动画速度，跳变即现形）
   expectSegmentContinuous(samples, [], [{ expected: 400, label: '全程（暂停帧剔除）' }])
+})
+
+// ===== 接缝（wrap）无缝回归：几何不变量 + 渲染帧像素证据 =====
+// 教训（上一轮漏检的根因）：布局层采样（track 的 gBCR.x / currentTime 单调）只能证明 transform 连续，
+// 证明不了「内容本身以位移距离为周期」。历史缺陷：克隆组内相邻两份的文本连成同一行 → 份间空白
+// 折叠成 1 个空格被保留；而源组末尾空白是行尾空白被移除 → 克隆份宽 = 源组宽 + 一个空格宽
+// （实测 4.7px）≠ 动画位移距离 → 每轮 wrap 接缝右侧内容一次性前跳一个空格宽（实测单帧 -4.7px，
+// 每轮一次）。下面两条断言分别锁「几何不变量」与「跨 wrap 的渲染帧位移」。
+
+/** 接缝探针：独立实例（固定定位在视口左上、白底、600 宽）并等测量完成；用完 host.remove() */
+async function installSeamProbe(page: Page, text: string, speed: number): Promise<void> {
+  await page.evaluate(
+    ({ text, speed }) => {
+      return new Promise<void>(async (resolve) => {
+        if (!customElements.get('oas-marquee')) await customElements.whenDefined('oas-marquee')
+        const host = document.createElement('oas-marquee')
+        host.id = 'seam-probe'
+        host.setAttribute('speed', String(speed))
+        host.style.cssText =
+          'display:block;width:600px;height:40px;position:fixed;top:0;left:0;z-index:9999;background:#fff;'
+        host.textContent = text
+        document.body.appendChild(host)
+        const ready = () => {
+          const t = host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+          if (!t.classList.contains('measuring') && t.style.getPropertyValue('--oas-marquee-duration')) resolve()
+          else requestAnimationFrame(ready)
+        }
+        ready()
+      })
+    },
+    { text, speed },
+  )
+}
+
+test('marquee 接缝几何：每份渲染宽 === 动画位移距离（份间不得多出/少掉一个空白宽）', async ({ page }) => {
+  await page.goto('/components/marquee.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-marquee')
+  // 内容带结尾空白：历史缺陷的触发形态（源组末尾空白被移除、克隆份间空白被保留 ⇒ 份宽不等）
+  await installSeamProbe(page, '✦ 短公告 ', 240)
+  const r = await page.evaluate(() => {
+    const host = document.querySelector('#seam-probe')!
+    const track = host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+    const src = host.shadowRoot!.querySelector<HTMLElement>('.group:not(.clone)')!
+    const cln = host.shadowRoot!.querySelector<HTMLElement>('.group.clone')!
+    const rangeW = (node: Node): number => {
+      const rg = document.createRange()
+      rg.selectNodeContents(node)
+      return rg.getBoundingClientRect().width
+    }
+    // 克隆组内每个「非空白文本 run」的渲染宽：份的行尾空白若被保留，run 宽会多出一个空格宽
+    const runs: number[] = []
+    const walk = (n: Node): void => {
+      for (const k of n.childNodes) {
+        if (k.nodeType === 3) {
+          if ((k.textContent ?? '').trim() !== '') runs.push(rangeW(k))
+        } else if (k.nodeType === 1) walk(k)
+      }
+    }
+    walk(cln)
+    return {
+      shift: parseFloat(track.style.getPropertyValue('--oas-marquee-shift')),
+      sourceW: src.getBoundingClientRect().width,
+      cloneW: cln.getBoundingClientRect().width,
+      sourceContentW: rangeW(host),
+      runs,
+    }
+  })
+  await page.evaluate(() => document.querySelector('#seam-probe')!.remove())
+  // 前置：本用例必须落在 auto-fill 多份区间（否则不存在份间接缝）
+  const copies = Math.round(r.cloneW / r.sourceW)
+  expect(copies, 'auto-fill 生效（>= 2 份）').toBeGreaterThanOrEqual(2)
+  // 1) CSS 位移距离 === 源组（1 份）渲染宽（JS 测量与 CSS 动画同口径）
+  expect(Math.abs(r.shift - r.sourceW), `位移距离 ${r.shift} 应等于源组宽 ${r.sourceW}`).toBeLessThanOrEqual(0.5)
+  expect(
+    Math.abs(r.sourceContentW - r.sourceW),
+    `源内容渲染宽 ${r.sourceContentW} 应等于源组宽 ${r.sourceW}`,
+  ).toBeLessThanOrEqual(0.5)
+  // 2) 份宽不变量：克隆组内每个文本 run 宽 === 源组宽（±0.5px，覆盖次像素/取整误差）
+  expect(r.runs.length, '克隆组内存在可测文本 run').toBeGreaterThanOrEqual(2)
+  for (const w of r.runs) {
+    expect(
+      Math.abs(w - r.sourceW),
+      `克隆份文本 run 宽 ${w.toFixed(3)} 必须等于源组宽 ${r.sourceW.toFixed(3)}（差 1 个空格宽 = 接缝顿挫）`,
+    ).toBeLessThanOrEqual(0.5)
+  }
+  // 3) 克隆组宽必须是源组宽的整数倍（份宽 === 位移距离的直接推论）
+  expect(
+    Math.abs(r.cloneW - copies * r.sourceW),
+    `克隆组宽 ${r.cloneW} 应为 ${copies} × 源组宽 ${r.sourceW}`,
+  ).toBeLessThanOrEqual(0.5)
+})
+
+test('marquee 接缝像素：跨 wrap 的相邻渲染帧位移与常规帧一致（无一次性跳变/顿挫）', async ({ page }) => {
+  await page.goto('/components/marquee.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-marquee')
+  await installSeamProbe(page, '✦ 短公告 ', 240)
+  const geo = await page.evaluate(() => {
+    const host = document.querySelector('#seam-probe')!
+    const track = host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+    const anim = (track as HTMLElement & { getAnimations: () => Animation[] }).getAnimations()[0]!
+    anim.pause()
+    return {
+      shift: parseFloat(track.style.getPropertyValue('--oas-marquee-shift')),
+      dur: parseFloat(track.style.getPropertyValue('--oas-marquee-duration')) * 1000,
+    }
+  })
+  const clip = { x: 0, y: 0, width: 600, height: 40 }
+  /** 把动画位移（px）显式设到 dispPx 后截图：位移窗口可任意跨 wrap（进度取模） */
+  const seekShot = async (dispPx: number): Promise<string> => {
+    await page.evaluate(
+      ({ d, shift, dur }) => {
+        const host = document.querySelector('#seam-probe')!
+        const anim = (
+          host.shadowRoot!.querySelector('[part="track"]') as HTMLElement & {
+            getAnimations: () => Animation[]
+          }
+        ).getAnimations()[0]!
+        const p = d / shift
+        anim.currentTime = (p - Math.floor(p)) * dur
+        return new Promise<void>((res) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(res, 30))))
+      },
+      { d: dispPx, shift: geo.shift, dur: geo.dur },
+    )
+    // animations: 'allow' —— 默认的 'disabled' 会接管/改写 CSS 动画，破坏显式相位控制
+    const buf = await page.screenshot({ clip, animations: 'allow' })
+    return buf.toString('base64')
+  }
+  const STEP = 2
+  const pairs: Array<{ label: string; a: string; b: string }> = []
+  for (const [label, mid] of [
+    ['wrap', geo.shift],
+    ['mid-cycle', geo.shift / 2],
+  ] as const) {
+    const a = await seekShot(mid - STEP / 2)
+    const b = await seekShot(mid + STEP / 2)
+    pairs.push({ label, a, b })
+  }
+  const est = await page.evaluate(async (ps) => {
+    const bitmap = async (b64: string): Promise<ImageBitmap> => {
+      const bin = atob(b64)
+      const bytes = new Uint8Array(bin.length)
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+      return createImageBitmap(new Blob([bytes], { type: 'image/png' }))
+    }
+    const cv = document.createElement('canvas')
+    const ctx = cv.getContext('2d', { willReadFrequently: true })!
+    const gray = async (b64: string) => {
+      const img = await bitmap(b64)
+      cv.width = img.width
+      cv.height = img.height
+      ctx.clearRect(0, 0, cv.width, cv.height)
+      ctx.drawImage(img, 0, 0)
+      const d = ctx.getImageData(0, 0, cv.width, cv.height).data
+      const g = new Float32Array(cv.width * cv.height)
+      for (let i = 0; i < g.length; i++) g[i] = 0.299 * d[i * 4]! + 0.587 * d[i * 4 + 1]! + 0.114 * d[i * 4 + 2]!
+      return { g, w: cv.width, h: cv.height }
+    }
+    const out: Array<{ label: string; shiftCss: number }> = []
+    for (const p of ps) {
+      const A = await gray(p.a)
+      const B = await gray(p.b)
+      const R = 12
+      const sad: number[] = []
+      let bk = 0
+      for (let s = -R; s <= R; s++) {
+        let sum = 0
+        let n = 0
+        for (let y = 0; y < A.h; y += 2) {
+          const row = y * A.w
+          for (let x = R; x < A.w - R; x += 2) {
+            sum += Math.abs(A.g[row + x]! - B.g[row + x + s]!)
+            n++
+          }
+        }
+        sad.push(sum / n)
+        if (sad.length === 1 || sum / n < sad[bk]!) bk = sad.length - 1
+      }
+      let sub = -R + bk
+      if (bk > 0 && bk < sad.length - 1) {
+        const y0 = sad[bk - 1]!
+        const y1 = sad[bk]!
+        const y2 = sad[bk + 1]!
+        const den = y0 - 2 * y1 + y2
+        if (den !== 0) sub = -R + bk + (0.5 * (y0 - y2)) / den
+      }
+      const dpr = window.devicePixelRatio || 1
+      out.push({ label: p.label, shiftCss: sub / dpr })
+    }
+    return out
+  }, pairs)
+  await page.evaluate(() => document.querySelector('#seam-probe')!.remove())
+  const midCycle = est.find((e) => e.label === 'mid-cycle')
+  const wrap = est.find((e) => e.label === 'wrap')
+  expect(midCycle, '中段控制组已测').toBeDefined()
+  expect(wrap, 'wrap 组已测').toBeDefined()
+  // 装置自检：周期中段的帧位移 = -STEP（内容左移 STEP px）
+  expect(
+    Math.abs(midCycle!.shiftCss + STEP),
+    `中段帧位移应 ≈ -${STEP}px（实测 ${midCycle!.shiftCss.toFixed(2)}px，装置有效性自检）`,
+  ).toBeLessThanOrEqual(1.5)
+  // 缺陷回归：跨 wrap 帧位移同样是 -STEP；历史缺陷为 -STEP - 一个空格宽（实测 -6.7px）
+  expect(
+    Math.abs(wrap!.shiftCss + STEP),
+    `跨 wrap 帧位移应 ≈ -${STEP}px（实测 ${wrap!.shiftCss.toFixed(2)}px；缺陷形态 = 额外跳一个空格宽）`,
+  ).toBeLessThanOrEqual(1.5)
 })

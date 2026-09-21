@@ -103,6 +103,39 @@ describe('OASMarquee', () => {
     expect(groups[0]!.querySelector('slot')).not.toBeNull()
   })
 
+  it('份与份结构一致：源组 1 份、克隆组 repeat 份，每份各自成块（份宽的充要结构）', () => {
+    // 缺陷形态（旧实现）：repeat 份内容平铺在克隆组里 → 相邻两份文本连成同一行，
+    // 份间空白折叠成 1 个空格被保留，而源组末尾空白是行尾空白被移除 →
+    // 克隆份宽 = 源组宽 + 1 空格宽 ⇒ 份宽 ≠ 动画位移距离 ⇒ 每轮 wrap 内容横跳（接缝顿挫）
+    const el = mount({}, 'OAS-UI')
+    const srcGroup = el.shadowRoot!.querySelector('.group:not(.clone)')!
+    const srcCopies = srcGroup.querySelectorAll('.copy')
+    expect(srcCopies.length, '源组恰好 1 份 .copy').toBe(1)
+    expect(srcCopies[0]!.querySelector('slot'), '源份内是 slot').not.toBeNull()
+    const clnCopies = clone(el).querySelectorAll('.copy')
+    expect(clnCopies.length, '克隆组默认 1 份').toBe(1)
+    for (const c of clnCopies) expect(c.textContent).toBe('OAS-UI')
+  })
+
+  it('源份与克隆份的容器规则一致（多份时每份都是独立块）', () => {
+    const css = styleText(mount())
+    const base = css.match(/\.copy\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(base, '.copy 基础规则存在').not.toBe('')
+    expect(base).toContain('display: flex')
+    expect(base).toContain('flex: none')
+    expect(css).toContain(":host([orientation='vertical']) .copy")
+  })
+
+  it('auto-fill 多份：克隆组生成 repeat 个独立 .copy 份', () => {
+    const { fire } = installRo()
+    const el = mount({}, '短内容')
+    mockRects(el, 300, 100)
+    fire()
+    const copies = clone(el).querySelectorAll('.copy')
+    expect(copies.length, '容器 300 / 内容 100 → 3 份').toBe(3)
+    for (const c of copies) expect(c.textContent).toBe('短内容')
+  })
+
   it('slotchange 后克隆组与内容保持一致', () => {
     const el = mount()
     const span = document.createElement('span')
