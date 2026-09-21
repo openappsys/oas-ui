@@ -167,7 +167,7 @@ onMounted(() => {
 | `fade-edges` | 布尔，存在时容器两端 mask-image 渐隐（默认关）；渐隐宽度走 `--oas-marquee-fade-size` | — | — |
 | `orientation` | 滚动方向：`horizontal`（默认）/ `vertical`（垂直滚动，容器需固定高） | — | — |
 | `pause-on-hover` | 布尔，存在时悬停/聚焦暂停动画（animation-play-state: paused） | — | — |
-| `reverse` | 布尔，存在时反向滚动 | — | — |
+| `reverse` | 布尔，存在时反向滚动 | `boolean` | — |
 | `speed` | 滚动速度（像素/秒，默认 48）；经测量内容宽推导动画时长（时长=距离/速度），非法/非正数回退默认 | `string` | — |
 
 #### 插槽

@@ -5,8 +5,11 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { renderToString, WHITELIST } from '@oas-ui/ssr'
+import { renderToString, WHITELIST } from './src/index.js'
 
+// 本文件属 @oas-ui/ssr（依赖方向 ssr → ui），放在 ssr 包内——渲染器与被验组件库分属两侧，
+// 不放进 packages/ui 以免 ui 反向依赖 ssr 造成构建环。验收对象是 @oas-ui/ui 的发布产物。
+//
 // 本文件 beforeAll 构建一次 bundle + 生成静态页（模块级 dsdHtml 共享），且产物文件名固定——
 // 不能并行（fullyParallel 下 beforeAll 会在每个 worker 各跑一次并并发写同一文件），故强制串行。
 test.describe.configure({ mode: 'serial' })
@@ -21,7 +24,7 @@ test.describe.configure({ mode: 'serial' })
 //
 // 产物（bundle / 静态页 / 截图）放系统临时目录，不入仓库。
 
-// packages/ui -> 仓库根
+// packages/ssr -> 仓库根
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..')
 const ARTIFACT_DIR = join(tmpdir(), 'opencode', 'oas-ssr-dsd-e2e')
 const UI_BUNDLE = join(ARTIFACT_DIR, 'ui.js')

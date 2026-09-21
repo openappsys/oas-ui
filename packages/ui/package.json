@@ -63,8 +63,5 @@
     "@oas-ui/core": "workspace:*",
     "@oas-ui/i18n": "workspace:*",
     "@oas-ui/icons": "workspace:*"
-  },
-  "devDependencies": {
-    "@oas-ui/ssr": "workspace:*"
   }
 }

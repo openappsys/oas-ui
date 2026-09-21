@@ -16,12 +16,14 @@ const E2E_REUSE = process.env.E2E_REUSE != null ? process.env.E2E_REUSE === '1' 
 const E2E_WORKERS = Number(process.env.E2E_WORKERS) || 4
 
 export default defineConfig({
-  testDir: './packages/ui',
+  // 收集根：组件/文档站 e2e 在 packages/ui，dsd 验收 spec 在 packages/ssr（依赖方向 ssr → ui，
+  // 放 ui 会形成构建环）——故收到 packages 一级，`**/*.spec.ts` 两个目录都覆盖。
+  testDir: './packages',
   testMatch: '**/*.spec.ts',
   timeout: 30_000,
   // 所有 test 独立调度（同一文件内也并行），不再受「一个文件串行占一个 worker」的结构限制——
   // 结构上不设上限，并发只由 workers 控制。少数依赖共享 setup 的文件自行声明 serial
-  // （如 ssr-dsd 的 beforeAll 只应构建一次）。
+  // （如 ssr 的 dsd 验收 spec 的 beforeAll 只应构建一次）。
   fullyParallel: true,
   // 默认 4：serve-dist 去掉了 vitepress 的 brotli 逐响应压缩，页面加载不再有网络等待，
   // 浏览器瞬时 CPU 占用显著更高——workers=6 全量偶发抖动（smoke/ellipsis/vue-prop 等随机失败，
@@ -52,7 +54,8 @@ export default defineConfig({
   projects: [
     // 文档站相关（homepage.spec.ts）——只改 docs/index.md、theme/components/*、样式时跑
     { name: 'docs-site', use: {}, testMatch: /homepage\.spec\.ts/ },
-    // 组件全量（默认 project 跑除 homepage 外的所有 spec）——改 oas-* 组件源码时跑
+    // 组件全量（默认 project 跑除 homepage 外的所有 spec，含 packages/ssr 的 dsd 验收 spec）
+    // ——改 oas-* 组件源码时跑
     { name: 'chromium', use: {}, testIgnore: /homepage\.spec\.ts/ },
     // Firefox 抽样覆盖：全量 e2e 在 Firefox 上跑会翻倍耗时——不值。只挑能暴露
     // 浏览器专有渲染/兼容问题的 spec（视觉截图、全页冒烟、浏览器相关回归），

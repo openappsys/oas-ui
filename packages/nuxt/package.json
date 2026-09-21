@@ -44,8 +44,8 @@
     "@oas-ui/theme": "^2.0.0"
   },
   "devDependencies": {
-    "@nuxt/kit": "^3.21.11",
-    "@nuxt/schema": "^3.21.11",
+    "@nuxt/kit": "^4.5.2",
+    "@nuxt/schema": "^4.5.2",
     "@oas-ui/ssr": "workspace:*",
     "@oas-ui/theme": "workspace:*"
   },
