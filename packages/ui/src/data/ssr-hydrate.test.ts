@@ -293,12 +293,18 @@ describe('data 展示组件 DSD 真水合批次 3', () => {
     const log = upgradeFromSnapshot(OASLog, logSnap, (e) => e.setAttribute('lines', '["第一行","第二行"]')).el
     expect(log.shadowRoot!.querySelectorAll('.row').length).toBe(2)
 
-    // oas-marquee：快照含 1 组克隆，水合后 syncClone 清空重克隆仍为 1 组
+    // oas-marquee：克隆份本体在 light DOM（页面样式可达），快照已直出 1 份；
+    // 水合后 syncClone 先清后建仍为 1 份（幂等，不翻倍）
     const mqSnap = captureSnapshot(OASMarquee, (e) => (e.innerHTML = '<span>滚动内容</span>'))
+    expect(mqSnap, 'SSR 快照直出 light DOM 克隆份').toContain('data-oas-marquee-copy')
     const mq = upgradeFromSnapshot(OASMarquee, mqSnap, (e) => (e.innerHTML = '<span>滚动内容</span>')).el
-    const clones = mq.shadowRoot!.querySelectorAll('.clone .group > *, .group.clone > *')
-    expect(clones.length).toBe(1)
-    expect(mq.shadowRoot!.querySelector('.clone')!.textContent).toContain('滚动内容')
+    const copies = mq.querySelectorAll<HTMLElement>(':scope > [data-oas-marquee-copy]')
+    expect(copies.length, '水合后克隆份不翻倍（幂等重建）').toBe(1)
+    expect(copies[0]!.textContent).toContain('滚动内容')
+    expect(
+      mq.shadowRoot!.querySelector('.group.clone slot[name="oas-marquee-copy"]'),
+      '克隆组内是具名 slot',
+    ).not.toBeNull()
   })
 
   it('交互可触发：水合后 collapse 点击面板切换、carousel 点击箭头切换、image 点击打开预览', () => {
