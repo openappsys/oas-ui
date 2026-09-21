@@ -53,6 +53,35 @@
       "observed": true
     },
     {
+      "name": "icon-hide-dots",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "dot-shape",
+      "type": "string",
+      "default": "square",
+      "observed": true
+    },
+    {
+      "name": "corner-shape",
+      "type": "string",
+      "default": "square",
+      "observed": true
+    },
+    {
+      "name": "gradient",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "gradient-angle",
+      "type": "string",
+      "default": "45",
+      "observed": true
+    },
+    {
       "name": "status",
       "type": "string",
       "default": "active",

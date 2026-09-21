@@ -134,13 +134,20 @@ describe('OASQRCode', () => {
       expect(svgOf(dft).querySelector('path')!.getAttribute('fill')).toBe('var(--oas-qrcode-color, #18181b)')
     })
 
-    it('margin 静区：默认 4 模块，path 整体偏移；margin=0 贴边', () => {
+    it('margin 静区：默认 4 模块（定位图形与数据区整体偏移）；margin=0 贴边', () => {
       const el = mount({ value: 'hi' })
-      const d = el.shadowRoot!.querySelector('path')!.getAttribute('d')!
-      expect(d).toMatch(/^M4 /)
+      const paths = [...el.shadowRoot!.querySelectorAll('path')]
+      // 定位图形路径起点 = margin（默认 4）——静区不被码点侵占
+      expect(paths.some((p) => /^M4 4/.test(p.getAttribute('d') ?? ''))).toBe(true)
+      // 数据区（无 fill-rule 的那条）：所有起点 x ≥ margin（形状化后定位区已单独绘制）
+      const data = paths.find((p) => p.getAttribute('fill-rule') == null)!
+      const xs = [...(data.getAttribute('d') ?? '').matchAll(/M(\d+)/g)].map((m) => Number(m[1]))
+      expect(Math.min(...xs)).toBeGreaterThanOrEqual(4)
       el.remove()
       const noMargin = mount({ value: 'hi', margin: '0' })
-      expect(noMargin.shadowRoot!.querySelector('path')!.getAttribute('d')).toMatch(/^M[01] /)
+      // margin=0：定位图形从 (0,0) 起，贴边无静区
+      const finder0 = [...noMargin.shadowRoot!.querySelectorAll('path')].find((p) => p.getAttribute('fill-rule'))!
+      expect(finder0.getAttribute('d')).toMatch(/^M0 0/)
       expect(svgOf(noMargin).getAttribute('viewBox')).toBe('0 0 21 21')
     })
   })
@@ -261,5 +268,73 @@ describe('OASQRCode', () => {
       await expect(el.download()).resolves.toBeUndefined()
       vi.unstubAllGlobals()
     })
+  })
+})
+
+describe('OASQRCode 形状化 / 渐变 / 挖空（美化维度）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const VALUE = 'https://oas-ui.dev'
+
+  it('新属性进入 observedAttributes（属性变化可触发重渲染）', () => {
+    for (const a of ['dot-shape', 'corner-shape', 'gradient', 'gradient-angle', 'icon-hide-dots']) {
+      expect(OASQRCode.observedAttributes).toContain(a)
+    }
+  })
+
+  it('dot-shape=dots：defs 出圆点原型，数据区走 <use>，不再走合并路径', () => {
+    const svg = svgOf(mount({ value: VALUE, 'dot-shape': 'dots' }))
+    expect(svg.querySelector('defs #oas-qr-mod')?.tagName.toLowerCase()).toBe('circle')
+    expect(svg.querySelectorAll('use').length).toBeGreaterThan(0)
+    // 数据区改由 <use> 绘制 → 只剩定位图形那一条 path
+    expect(svg.querySelectorAll('path').length).toBe(1)
+  })
+
+  it('dot-shape=rounded：defs 出圆角方块原型', () => {
+    const rect = svgOf(mount({ value: VALUE, 'dot-shape': 'rounded' })).querySelector('defs rect#oas-qr-mod')
+    expect(rect).not.toBeNull()
+    expect(rect!.getAttribute('rx')).toBeTruthy()
+  })
+
+  it('dot-shape 非法值静默回落 square（无原型、走合并路径）', () => {
+    const svg = svgOf(mount({ value: VALUE, 'dot-shape': 'triangle' }))
+    expect(svg.querySelector('defs #oas-qr-mod')).toBeNull()
+    expect(svg.querySelector('path[shape-rendering="crispEdges"]')).not.toBeNull()
+  })
+
+  it('corner-shape=rounded：定位图形路径带弧线', () => {
+    const paths = [...svgOf(mount({ value: VALUE, 'corner-shape': 'rounded' })).querySelectorAll('path')]
+    expect(paths.some((p) => /a\d/.test(p.getAttribute('d') ?? ''))).toBe(true)
+  })
+
+  it('gradient 生效时覆盖 color：defs 出 linearGradient，模块填充引用它', () => {
+    const svg = svgOf(mount({ value: VALUE, gradient: '["#0b6cff","#7c3aed"]', color: '#ff0000' }))
+    expect(svg.querySelector('defs linearGradient#oas-qr-grad')).not.toBeNull()
+    expect(svg.querySelector('path[fill="url(#oas-qr-grad)"]')).not.toBeNull()
+    expect(svg.querySelector('path[fill="#ff0000"]')).toBeNull()
+  })
+
+  it('gradient 非法值（非 JSON / 单色 / 非数组）回落 color', () => {
+    for (const bad of ['not-json', '["#fff"]', '{"a":1}', '[]']) {
+      const svg = svgOf(mount({ value: VALUE, gradient: bad, color: '#ff0000' }))
+      expect(svg.querySelector('defs linearGradient')).toBeNull()
+      expect(svg.querySelector('path[fill="#ff0000"]')).not.toBeNull()
+    }
+  })
+
+  it('icon-hide-dots：中心覆盖区点阵被挖空（渲染模块数减少）', () => {
+    const withIcon = { value: VALUE, icon: 'https://example.com/logo.png', 'dot-shape': 'dots' }
+    const plain = mount({ ...withIcon })
+    const hidden = mount({ ...withIcon, 'icon-hide-dots': '' })
+    const modules = (el: OASQRCode): number => svgOf(el).querySelectorAll('use').length
+    expect(modules(hidden)).toBeLessThan(modules(plain))
   })
 })
