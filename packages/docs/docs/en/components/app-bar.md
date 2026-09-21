@@ -7,10 +7,14 @@ An application bar layout strip at the top of a page / tool area (`role="banner"
 The `heading` attribute sets the title text, and `slot="actions"` holds action buttons (`oas-button` etc.); the title area is the `flex: 1` strut pushing the actions to the far end.
 
 <DemoBlock title="Title and action area">
-  <oas-app-bar heading="Project workspace">
-    <oas-button size="small" slot="actions">Import</oas-button>
-    <oas-button size="small" type="primary" slot="actions">New project</oas-button>
-  </oas-app-bar>
+  <!-- app-bar is a page-level layout strip that fills its container as a block; the DemoBlock
+       demo area is a flex container, so wrap it in an explicit width:100% to avoid shrink-to-fit -->
+  <div style="width: 100%">
+    <oas-app-bar heading="Project workspace">
+      <oas-button size="small" slot="actions">Import</oas-button>
+      <oas-button size="small" type="primary" slot="actions">New project</oas-button>
+    </oas-app-bar>
+  </div>
 </DemoBlock>
 
 ## Menu button
@@ -18,7 +22,11 @@ The `heading` attribute sets the title text, and `slot="actions"` holds action b
 The `menu-button` boolean attribute shows a leading menu (hamburger) button; clicking it dispatches `oas-menu-toggle` (the host opens/closes its own drawer). After toggling the drawer, the host writes back the `menu-open` boolean attribute and the button's `aria-expanded` follows; `menu-controls` points to the host drawer element id (`aria-controls`).
 
 <DemoBlock title="Menu button and open state">
-  <oas-app-bar id="ab-menu" heading="Console" menu-button menu-controls="side-drawer"></oas-app-bar>
+  <!-- app-bar is a page-level layout strip that fills its container as a block; the DemoBlock
+       demo area is a flex container, so wrap it in an explicit width:100% to avoid shrink-to-fit -->
+  <div style="width: 100%">
+    <oas-app-bar id="ab-menu" heading="Console" menu-button menu-controls="side-drawer"></oas-app-bar>
+  </div>
   <p id="ab-menu-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Click the hamburger button on the left and watch aria-expanded and the event feedback.</p>
   <!-- aria-controls reference target placeholder: in real usage this is the host drawer element id -->
   <div id="side-drawer" hidden></div>
@@ -29,13 +37,17 @@ The `menu-button` boolean attribute shows a leading menu (hamburger) button; cli
 `slot="title"` renders a rich title (it overrides the `heading` attribute text when present); `slot="leading"` holds custom leading content after the menu button; `slot="trailing"` holds end-of-bar content such as an avatar (excluded from overflow collection).
 
 <DemoBlock title="Slot composition">
-  <oas-app-bar heading="Placeholder title">
-    <oas-avatar slot="leading">O</oas-avatar>
-    <span slot="title" style="display: inline-flex; align-items: center; gap: var(--oas-space-2)">
-      Release center <oas-tag color="blue">Beta</oas-tag>
-    </span>
-    <oas-button size="small" round icon="gear" aria-label="Settings" slot="trailing"></oas-button>
-  </oas-app-bar>
+  <!-- app-bar is a page-level layout strip that fills its container as a block; the DemoBlock
+       demo area is a flex container, so wrap it in an explicit width:100% to avoid shrink-to-fit -->
+  <div style="width: 100%">
+    <oas-app-bar heading="Placeholder title">
+      <oas-avatar slot="leading">O</oas-avatar>
+      <span slot="title" style="display: inline-flex; align-items: center; gap: var(--oas-space-2)">
+        Release center <oas-tag color="blue">Beta</oas-tag>
+      </span>
+      <oas-button size="small" round icon="gear" aria-label="Settings" slot="trailing"></oas-button>
+    </oas-app-bar>
+  </div>
 </DemoBlock>
 
 ## Overflow collection
@@ -43,7 +55,9 @@ The `menu-button` boolean attribute shows a leading menu (hamburger) button; cli
 When `slot="actions"` exceeds the bar width, the overflowing action items are automatically collected into a "···" popup (ResizeObserver driven, recalculated live while resizing); mirror items in the popup dispatch clicks back to the original buttons. A button's `aria-label` takes priority as its mirror label.
 
 <DemoBlock title="Narrow-container overflow collection (resize the window to watch it recalculate)">
-  <div style="max-width: 100%">
+  <!-- app-bar is a page-level layout strip that fills its container as a block; the DemoBlock
+       demo area is a flex container, so wrap it in an explicit width:100% to avoid shrink-to-fit -->
+  <div style="width: 100%">
     <oas-app-bar id="ab-overflow" heading="Reports">
       <oas-button size="small" slot="actions" onclick="message.info('Refreshed')">Refresh</oas-button>
       <oas-button size="small" slot="actions" onclick="message.info('Exported as CSV')">Export CSV</oas-button>
@@ -61,10 +75,14 @@ When `slot="actions"` exceeds the bar width, the overflowing action items are au
 `position` controls the placement variant: `static` (default, follows the document flow) / `absolute` / `fixed` (viewport top, offset via the `--oas-app-bar-top` variable) / `floating` (rounded floating capsule with shadow and inset margins). The demos keep static positioning via inline styles to avoid covering the page; use the variants directly in real scenarios.
 
 <DemoBlock title="Four variants (all kept static for the demo)">
-  <oas-app-bar heading="static default"></oas-app-bar>
-  <oas-app-bar heading="absolute" position="absolute" style="position: static; margin-block-start: var(--oas-space-3)"></oas-app-bar>
-  <oas-app-bar heading="fixed" position="fixed" style="position: static; margin-block-start: var(--oas-space-3)"></oas-app-bar>
-  <oas-app-bar heading="floating capsule" position="floating" style="position: static; margin-block-start: var(--oas-space-3)"></oas-app-bar>
+  <!-- app-bar is a page-level layout strip that fills its container as a block; the DemoBlock
+       demo area is a flex container, so wrap it in an explicit width:100% to avoid shrink-to-fit -->
+  <div style="width: 100%">
+    <oas-app-bar heading="static default"></oas-app-bar>
+    <oas-app-bar heading="absolute" position="absolute" style="position: static; margin-block-start: var(--oas-space-3)"></oas-app-bar>
+    <oas-app-bar heading="fixed" position="fixed" style="position: static; margin-block-start: var(--oas-space-3)"></oas-app-bar>
+    <oas-app-bar heading="floating capsule" position="floating" style="position: static; margin-block-start: var(--oas-space-3)"></oas-app-bar>
+  </div>
 </DemoBlock>
 
 ## Elevation (elevated / on-scroll shadow)
@@ -72,8 +90,12 @@ When `slot="actions"` exceeds the bar width, the overflowing action items are au
 The `elevated` boolean attribute shows the shadow permanently; when unset, the shadow appears automatically once the page is scrolled (scrollY &gt; 0) and is removed back at the top. The shadow is adjustable via the `--oas-app-bar-shadow` variable.
 
 <DemoBlock title="elevated permanent shadow (the right example shadows after scrolling)">
-  <oas-app-bar heading="elevated permanent" elevated style="margin-block-end: var(--oas-space-3)"></oas-app-bar>
-  <oas-app-bar heading="Shadow after scrolling"></oas-app-bar>
+  <!-- app-bar is a page-level layout strip that fills its container as a block; the DemoBlock
+       demo area is a flex container, so wrap it in an explicit width:100% to avoid shrink-to-fit -->
+  <div style="width: 100%">
+    <oas-app-bar heading="elevated permanent" elevated style="margin-block-end: var(--oas-space-3)"></oas-app-bar>
+    <oas-app-bar heading="Shadow after scrolling"></oas-app-bar>
+  </div>
 </DemoBlock>
 
 ## Scroll collapse (hide-on-scroll)
@@ -82,9 +104,13 @@ The `hide-on-scroll` boolean attribute (effective in the floating variants `fixe
 
 <DemoBlock title="fixed + hide-on-scroll (pinned below the navbar; scroll this page)">
   <div style="height: 420px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); color: var(--oas-color-text-tertiary); font-size: var(--oas-font-size-sm)">Long scroll placeholder (scroll down to hide, scroll up to restore)</div>
-  <oas-app-bar id="ab-hide" heading="Scroll collapse demo" position="fixed" hide-on-scroll style="--oas-app-bar-top: 64px">
-    <oas-button size="small" type="primary" slot="actions" onclick="message.info('Button inside the fixed bar works')">Action</oas-button>
-  </oas-app-bar>
+  <!-- app-bar is a page-level layout strip that fills its container as a block; the DemoBlock
+       demo area is a flex container, so wrap it in an explicit width:100% to avoid shrink-to-fit -->
+  <div style="width: 100%">
+    <oas-app-bar id="ab-hide" heading="Scroll collapse demo" position="fixed" hide-on-scroll style="--oas-app-bar-top: 64px">
+      <oas-button size="small" type="primary" slot="actions" onclick="message.info('Button inside the fixed bar works')">Action</oas-button>
+    </oas-app-bar>
+  </div>
 </DemoBlock>
 
 ## Extended row
@@ -92,9 +118,13 @@ The `hide-on-scroll` boolean attribute (effective in the floating variants `fixe
 `slot="extended"` renders a second row (large title / search box etc.); with the `extended-collapse-on-scroll` boolean attribute enabled, scrolling past 8px collapses the extended row leaving only the main row, expanding again below the threshold (grid row transition, disabled under `prefers-reduced-motion`).
 
 <DemoBlock title="Extended large title + collapse on scroll">
-  <oas-app-bar id="ab-extended" heading="Data analytics" extended-collapse-on-scroll>
-    <div slot="extended" style="padding: 0 var(--oas-space-4) var(--oas-space-3); font-size: var(--oas-font-size-xl); font-weight: 700">Data analytics</div>
-  </oas-app-bar>
+  <!-- app-bar is a page-level layout strip that fills its container as a block; the DemoBlock
+       demo area is a flex container, so wrap it in an explicit width:100% to avoid shrink-to-fit -->
+  <div style="width: 100%">
+    <oas-app-bar id="ab-extended" heading="Data analytics" extended-collapse-on-scroll>
+      <div slot="extended" style="padding: 0 var(--oas-space-4) var(--oas-space-3); font-size: var(--oas-font-size-xl); font-weight: 700">Data analytics</div>
+    </oas-app-bar>
+  </div>
   <p style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Scroll this page: the extended row collapses leaving the main row; it expands again at the top.</p>
 </DemoBlock>
 
@@ -103,7 +133,9 @@ The `hide-on-scroll` boolean attribute (effective in the floating variants `fixe
 Inside a `dir="rtl"` container the component mirrors automatically: the `data-rtl` hook + fully logical layout properties (`inset-inline` / `padding-inline`); the "···" popup aligns to the far end of the actions area.
 
 <DemoBlock title="RTL mirroring">
-  <div dir="rtl" style="max-width: 100%">
+  <!-- app-bar is a page-level layout strip that fills its container as a block; the DemoBlock
+       demo area is a flex container, so wrap it in an explicit width:100% to avoid shrink-to-fit -->
+  <div dir="rtl" style="width: 100%">
     <oas-app-bar heading="لوحة التحكم" menu-button>
       <oas-button size="small" slot="actions" onclick="message.info('تحديث')">تحديث</oas-button>
       <oas-button size="small" slot="actions" onclick="message.info('تصدير')">تصدير</oas-button>
