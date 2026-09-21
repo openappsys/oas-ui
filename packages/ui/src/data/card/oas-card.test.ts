@@ -41,6 +41,22 @@ describe('OASCard', () => {
     expect(css).toMatch(/\.header\[hidden\]\s*\{[^}]*display:\s*none/)
   })
 
+  it('cover-img[hidden] CSS 兜底：作者级 .cover-img{display:block} 不覆盖 hidden 属性（无 cover-src 不渲染空 src 破图占位）', () => {
+    const el = mount({ title: 'T' })
+    const img = el.shadowRoot!.querySelector('.cover-img')!
+    // 隐藏态：无 cover-src 时 hidden 属性在位（逻辑层既有行为）
+    expect(img.hasAttribute('hidden'), '无 cover-src 时 cover-img 应带 hidden 属性').toBe(true)
+    // CSS 层兜底：display:block 压过 UA [hidden]，必须显式补回（与 .header[hidden] 同款）
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css, '作者层 display:block 压过 UA hidden，必须有 .cover-img[hidden] 兜底').toMatch(
+      /\.cover-img\[hidden\]\s*\{[^}]*display:\s*none/,
+    )
+    // 非 hidden 态：基础 display 语义保持 block（有 cover-src 时正常渲染封面）
+    el.setAttribute('cover-src', 'https://example.com/a.png')
+    expect(img.hasAttribute('hidden')).toBe(false)
+    expect(css).toMatch(/\.cover-img\s*\{[^}]*display:\s*block/)
+  })
+
   describe('title 双通道（slot 富内容覆盖属性文本）', () => {
     it('slot 有内容时覆盖属性文本（slot 优先渲染）', () => {
       const el = mount({ title: '属性标题' }, '<span slot="title">插槽标题</span><p>正文</p>')

@@ -513,6 +513,24 @@ describe('B 步骤配置与内容', () => {
     expect(img.getAttribute('src')).toBe('https://example.com/a.png')
   })
 
+  it('cover-img[hidden] CSS 兜底：作者级 .cover-img{display:block} 不覆盖 hidden 属性（无 cover 步骤不渲染空 img 占位）', async () => {
+    // 隐藏态：步骤无 cover 时 hidden 属性在位（逻辑层既有行为）
+    const el = mount({}, JSON.stringify([{ selector: '#step1', title: 's1' }]))
+    el.setAttribute('open', '')
+    const img = el.shadowRoot!.querySelector('.cover-img')!
+    expect(img.hasAttribute('hidden'), '无 cover 步骤时 cover-img 应带 hidden 属性').toBe(true)
+    // CSS 层兜底：display:block 压过模板静态 hidden，必须显式补回（与 card .cover-img[hidden] 同款兜底）
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css, '作者层 display:block 压过 UA hidden，必须有 .cover-img[hidden] 兜底').toMatch(
+      /\.cover-img\[hidden\]\s*\{[^}]*display:\s*none/,
+    )
+    // 非 hidden 态：步骤有 cover 时 hidden 摘除，基础 display 语义保持 block
+    const el2 = mount({}, JSON.stringify([{ selector: '#step1', title: 's1', cover: 'https://example.com/a.png' }]))
+    el2.setAttribute('open', '')
+    expect(el2.shadowRoot!.querySelector('.cover-img')!.hasAttribute('hidden')).toBe(false)
+    expect(css).toMatch(/\.cover-img\s*\{[^}]*display:\s*block/)
+  })
+
   it('target 元素形态：steps property 传 HTMLElement', async () => {
     const el = mount()
     el.steps = [{ target: document.getElementById('step2')!, title: '元素目标' }]

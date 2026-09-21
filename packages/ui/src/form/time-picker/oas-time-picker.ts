@@ -191,6 +191,9 @@ const STYLE = `
   padding-bottom: var(--oas-space-2);
   border-bottom: 1px solid var(--oas-color-border);
 }
+.presets[hidden] {
+  display: none;
+}
 .preset {
   appearance: none;
   border: 1px solid var(--oas-color-border);
