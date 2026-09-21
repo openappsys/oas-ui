@@ -79,16 +79,13 @@ const STYLE = `
 .menu-btn[hidden] {
   display: none;
 }
-/* 标题区：flex:1 布局支柱（把 actions/trailing 推到远端），heading 过长省略号。
-   container-type 只作极窄防御的查询基准（下方 @container），inline-size containment
-   不改变 flex 分配（min-width:0 已隔离内容约束，progress 的 container query 同款先例） */
+/* 标题区：flex:1 布局支柱（把 actions/trailing 推到远端），heading 过长省略号 */
 .title-wrap {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--oas-space-2);
-  container-type: inline-size;
 }
 .title {
   font-size: var(--oas-font-size-lg);
@@ -97,13 +94,16 @@ const STYLE = `
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* 极窄防御：可用宽度不足「一个完整字形 + 省略号」（约 2.5em）时，ellipsis 连省略号
-   都放不下会渲染出半个字形残片（实测 360px 视口 .title clientWidth=18 < scrollWidth=32）。
-   空间不足以完整省略时整体隐藏标题（heading 通道；富标题 slot 由宿主自控不在此列） */
-@container (max-width: 2.5em) {
-  .title {
-    display: none;
-  }
+/* 极窄防御：仅当标题确实溢出（scrollWidth > clientWidth，ellipsis 截断会发生）且可用宽度
+   不足「一个完整字形 + 省略号」（约 2.5em）时，ellipsis 连省略号都放不下会渲染出半个字形
+   残片（实测 360px 视口 .title clientWidth=18 < scrollWidth=32）——此时整体隐藏标题；
+   放得下（如窄容器里的短标题）必须照常渲染。仅 heading 通道（富标题 slot 由宿主自控）。
+   阈值判定由 ResizeObserver 驱动（syncNarrowTitle 写 data-narrow）而非 container query——
+   container-type: inline-size 的 size containment 会切断 title-wrap 对宿主 shrink-to-fit
+   布局的宽度贡献（flex 容器/ grid 列里的 app-bar 内容不再撑宽，实测 title-wrap 分到 0 宽、
+   富标题 slot 文字被压成逐字竖排），故不引入 containment 语义 */
+.title[data-narrow] {
+  display: none;
 }
 .title[hidden] {
   display: none;
@@ -436,6 +436,7 @@ export class OASAppBar extends OASElement {
     this.syncBarAria()
     this.syncLeading()
     this.syncTitle()
+    this.syncNarrowTitle()
     this.syncBlocks()
     this.syncExtended()
     this.syncOverflow()
@@ -472,6 +473,30 @@ export class OASAppBar extends OASElement {
     const slot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
     this.titleEl.textContent = this.getAttr('heading', '')
     this.titleEl.hidden = !!slot && this.hasSlotContent(slot)
+  }
+
+  /**
+   * 标题极窄防御（heading 通道）：仅当「标题确实溢出（会被截断出省略号）」且「title-wrap
+   * 可用宽不足 2.5em（一个完整字形 + 省略号的下限）」时给 .title 写 data-narrow 整体隐藏
+   * （CSS 侧 display:none），避免渲染半个字形残片；放得下（如窄容器里的短标题）照常渲染。
+   * 溢出判据取 .title 自身 scrollWidth > clientWidth，可用宽取 title-wrap 的 clientWidth。
+   * 富标题 slot 通道不参与：slot 有内容时 .title 已 hidden 让位，防御只服务 heading 通道。
+   * clientWidth 为 0 视为未布局（SSR 快照/隐藏宿主），不判定。
+   */
+  private syncNarrowTitle(): void {
+    const wrap = this.shadow.querySelector<HTMLElement>('[part="title-wrap"]')
+    const title = this.titleEl
+    if (!wrap || !title) return
+    const w = wrap.clientWidth
+    if (w <= 0) return
+    if (title.hidden) return
+    // 先摘掉 data-narrow 再测量：display:none 会让 scrollWidth/clientWidth 双双归 0，
+    // 带着旧标记测量会把「仍放不下」误判成「无溢出」（update/RO 可能在隐藏态重入）。
+    // 摘除 → 测量 → 按需写回都在同一同步任务内完成，不产生可见闪烁。
+    title.removeAttribute('data-narrow')
+    const em = parseFloat(getComputedStyle(title).fontSize) || 16
+    const truncated = title.scrollWidth > title.clientWidth
+    title.toggleAttribute('data-narrow', truncated && w < em * 2.5)
   }
 
   /** actions/trailing 空态：无真实插槽内容时容器不渲染（无空占位、无多余间距） */
@@ -742,9 +767,12 @@ export class OASAppBar extends OASElement {
       this.boundExternals = false
       this.closeMore()
     })
-    // 溢出收纳：宿主宽度变化时重算收纳
+    // 溢出收纳：宿主宽度变化时重算收纳；标题极窄防御随宽度重判
     if (typeof ResizeObserver !== 'undefined') {
-      this.overflowObserver = new ResizeObserver(() => this.syncOverflow())
+      this.overflowObserver = new ResizeObserver(() => {
+        this.syncOverflow()
+        this.syncNarrowTitle()
+      })
       this.overflowObserver.observe(this)
       this.onCleanup(() => {
         this.overflowObserver?.disconnect()
