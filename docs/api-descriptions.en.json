@@ -2231,7 +2231,7 @@
   "oas-qrcode": {
     "attrs": {
       "aria-label": "Accessible name of the container; defaults to i18n",
-      "error-correction": "Error correction level l/m/q/h (currently L only; the rest are normalized to l)",
+      "error-correction": "Error correction level l/m/q/h (all four implemented; default l. Use q/h for a center logo or weak-light/damaged scenarios)",
       "size": "Rendered width/height (px)",
       "value": "QR code content text",
       "bg-color": "Background color (default white — scanners need a light quiet zone; stays white in dark theme for scannability; override via `--oas-qrcode-bg`)",

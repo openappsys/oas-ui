@@ -2231,7 +2231,7 @@
   "oas-qrcode": {
     "attrs": {
       "aria-label": "容器可访问名称，缺省走 i18n",
-      "error-correction": "纠错级别 l/m/q/h（当前仅 L 级，其余归一为 l）",
+      "error-correction": "纠错级别 l/m/q/h（四级均已实现，默认 l；中心 logo 遮挡或弱光/污损场景建议 q/h）",
       "size": "渲染宽高（px）",
       "value": "二维码内容文本",
       "bg-color": "背景色（默认白色——扫码器要求浅色静区，dark 主题下保持白底保证可扫；`--oas-qrcode-bg` 变量可覆盖）",
