@@ -41,10 +41,19 @@ const STYLE = `
   white-space: nowrap;
 }
 /* 每一「份」内容各自成块（源组 1 份 + 克隆组 repeat 份）：份与份的结构必须完全一致，
-   否则份宽 ≠ 位移距离 → wrap 时内容横跳 = 肉眼接缝顿挫。历史缺陷：克隆组内相邻两份的
-   文本连成同一行，份间空白折叠成 1 个空格被保留；而源组末尾空白是行尾空白被移除 →
-   克隆份宽 = 源组宽 + 1 空格宽（实测 4.7px），每轮 wrap 内容回跳一个空格宽。 */
+    否则份宽 ≠ 位移距离 → wrap 时内容横跳 = 肉眼接缝顿挫。历史缺陷：克隆组内相邻两份的
+    文本连成同一行，份间空白折叠成 1 个空格被保留；而源组末尾空白是行尾空白被移除 →
+    克隆份宽 = 源组宽 + 1 空格宽（实测 4.7px），每轮 wrap 内容回跳一个空格宽。 */
 .copy {
+  flex: none;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+/* 克隆份的盒模型：份本体在 light DOM（页面样式表只能作用于 light DOM，见 syncClone 注释），
+    这里用 ::slotted 给它与源份 .copy 完全等价的三条盒模型声明——份宽 === 位移距离的不变量
+    与克隆份落点无关。标记属性只由组件写在克隆份上，源内容里的同名元素不会被误选。 */
+::slotted([data-oas-marquee-copy]) {
   flex: none;
   display: flex;
   align-items: center;
@@ -64,6 +73,10 @@ const STYLE = `
   white-space: normal;
 }
 :host([orientation='vertical']) .copy {
+  flex-direction: column;
+  white-space: normal;
+}
+:host([orientation='vertical']) ::slotted([data-oas-marquee-copy]) {
   flex-direction: column;
   white-space: normal;
 }
@@ -124,6 +137,22 @@ const STYLE = `
 /** 默认滚动速度（像素/秒）；speed 非法/非正数时回退 */
 export const DEFAULT_SPEED_PX = 48
 
+/** 克隆份包裹节点的标记属性（light DOM 直系子节点；源内容枚举排除 + ::slotted 盒模型选择器） */
+const CLONE_ATTR = 'data-oas-marquee-copy'
+
+/** 克隆份投递到的具名 slot（组件内部 plumbing；取带前缀的名字避免与宿主内容 slot 撞名） */
+const CLONE_SLOT = 'oas-marquee-copy'
+
+/**
+ * 相位换算基准：捕获时刻的绝对动画时钟 + 生效位移距离 + **含方向**的位移比例。
+ * 位移比例而非裸进度：方向也是相位的一部分（reverse 切换需按旧方向解读，见 captureShift）。
+ */
+interface ShiftBaseline {
+  t: number
+  shiftPx: number
+  distRatio: number
+}
+
 /** 欧几里得 mod（结果非负）：相位/延迟换算统一入口 */
 function mod(a: number, n: number): number {
   return ((a % n) + n) % n
@@ -170,13 +199,15 @@ export function computeDuration(contentPx: number, speedPxS: number): number {
  * - `orientation`：`horizontal`（默认）| `vertical`（垂直滚动，容器需固定高）
  * - `reverse`：布尔，反向滚动
  *
- * 实现：shadow 内 track 横排「源组（1 份）+ aria-hidden 克隆组（repeat 份）」，
- * 每份内容各自套一层 `.copy` 成块——份宽必须严格等于动画位移距离，否则 wrap 时内容横跳；
- * keyframes 平移「一份内容宽」形成无缝循环；内容不足一屏时克隆组按
- * computeRepeat 份自动填充（auto-fill）；ResizeObserver 监听容器与内容尺寸，
- * 重算位移/时长（时长 = 距离/速度）；slotchange 重建克隆组、resize/speed 变更
- * 重写时长时，以「位移距离连续」为不变量记录/恢复相位（按新旧时长等位移反解
- * 负 animation-delay；不支持 getAnimations 的浏览器归零重启）；
+ * 实现：shadow 内 track 横排「源组（1 份）+ aria-hidden 克隆组（repeat 份）」。源组那份是
+ * 默认 slot 投递的宿主内容；**克隆份的包裹节点放宿主 light DOM**（具名 slot 投递）——页面样式表
+ * 只作用于 light DOM，份若落在 shadow 内，依赖页面 class 的内容在克隆份上尺寸归零（右侧整片空白）；
+ * 包裹节点的盒模型由 `::slotted([data-oas-marquee-copy])` 给（与源份 `.copy` 逐条等价）。
+ * 份宽必须严格等于动画位移距离，否则 wrap 时内容横跳；keyframes 平移「一份内容宽」形成无缝循环；
+ * 内容不足一屏时按 computeRepeat 份自动填充（auto-fill，容器口径 = 宿主 padding box：border 不
+ * 参与判定）；ResizeObserver 监听容器与内容尺寸，重算位移/时长（时长 = 距离/速度）；
+ * slotchange 重建克隆份、resize/speed/reverse 变更时，以「位移距离连续」为不变量记录/恢复相位
+ * （按新旧时长与新旧方向等位移反解负 animation-delay；不支持 getAnimations 的浏览器归零重启）；
  * `prefers-reduced-motion` 时关闭动画静态展示。
  */
 export class OASMarquee extends OASElement {
@@ -187,7 +218,6 @@ export class OASMarquee extends OASElement {
   private observer: ResizeObserver | null = null
   private trackEl: HTMLElement | null = null
   private sourceGroupEl: HTMLElement | null = null
-  private cloneEl: HTMLElement | null = null
   /** 已测量的一组内容尺寸（px，沿当前滚动轴）；0 = 未测量 */
   private measuredShift = 0
   /** 当前 auto-fill 克隆份数（slotchange 重建时保持） */
@@ -196,6 +226,8 @@ export class OASMarquee extends OASElement {
   private curDurS = 0
   private curShiftPx = 0
   private curDelayMs = 0
+  /** 当前生效动画的方向（reverse 属性值）；capture 时据此换算「含方向」的位移比例 */
+  private curReversed = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -204,7 +236,7 @@ export class OASMarquee extends OASElement {
       <div class="viewport">
         <div class="track measuring" part="track">
           <div class="group" part="group"><div class="copy"><slot></slot></div></div>
-          <div class="group clone" part="group" aria-hidden="true"></div>
+          <div class="group clone" part="group" aria-hidden="true"><slot name="${CLONE_SLOT}"></slot></div>
         </div>
       </div>
     `
@@ -214,9 +246,10 @@ export class OASMarquee extends OASElement {
   private bind(): void {
     this.trackEl = this.shadow.querySelector<HTMLElement>('[part="track"]')
     this.sourceGroupEl = this.shadow.querySelector<HTMLElement>('.group:not(.clone)')
-    this.cloneEl = this.shadow.querySelector<HTMLElement>('.clone')
+    // 只监听默认 slot：克隆份走具名 slot 投递，重建克隆份不改变默认 slot 的分配集合
+    // → 不会自激触发下一轮重建（组件自建的 light DOM 子节点不构成「内容变化」）
     this.shadow.querySelector('slot')?.addEventListener('slotchange', () => {
-      // 重建克隆组不改时序；相位保持由 preserveShift 统一负责（位移连续）
+      // 重建克隆份不改时序；相位保持由 preserveShift 统一负责（位移连续）
       this.preserveShift(() => this.syncClone(this.lastRepeat))
     })
 
@@ -259,13 +292,21 @@ export class OASMarquee extends OASElement {
     return this.getAttr('orientation') === 'vertical'
   }
 
-  /** ResizeObserver 回调：测量容器/内容尺寸 → auto-fill 重建 + 时长写入（相位保持位移连续） */
+  /**
+   * ResizeObserver 回调：测量容器/内容尺寸 → auto-fill 重建 + 时长写入（相位保持位移连续）。
+   *
+   * 容器口径取宿主 **padding box**（`clientWidth`/`clientHeight`）而非 border box：border 属于
+   * 宿主边框、不参与「内容要铺满多大范围」的判定——用 border box 时 1px 边框就足以让
+   * 「内容恰等于可见宽」被判成不足一屏，白多克隆一份（历史缺陷）。
+   * 也不取内容盒：`overflow: hidden` 的裁切边是 padding 边，横向 padding 区域同样可见，
+   * 只按内容盒判定会在循环过程中露出 padding 宽度的空档（正是 auto-fill 要消除的 seam）；
+   * `clientWidth` 已含 padding、不含 border，与实际裁切区一致（无滚动条：宿主 overflow: hidden）。
+   */
   private remeasure(): void {
     if (!this.trackEl || !this.sourceGroupEl) return
     const vertical = this.isVertical()
-    const box = this.getBoundingClientRect()
     const groupBox = this.sourceGroupEl.getBoundingClientRect()
-    const container = vertical ? box.height : box.width
+    const container = vertical ? this.clientHeight : this.clientWidth
     const content = vertical ? groupBox.height : groupBox.width
     if (!(content > 0)) return
     this.measuredShift = content
@@ -290,10 +331,15 @@ export class OASMarquee extends OASElement {
   }
 
   /**
-   * 捕获当前动画的换算基准（绝对 currentTime + 生效时长/位移/delay）。
+   * 捕获当前动画的换算基准（绝对时钟 + 生效位移 + **含方向**的位移比例）。
+   *
+   * `distRatio` 取「含方向」的位移比例（正向 = 进度，反向 = 1-进度）而不是裸进度：方向本身
+   * 也是相位的一部分——reverse 运行时切换时，旧动画的位移比例必须按**旧方向**解读，否则恢复
+   * 会按新方向重算位移，切换瞬间内容整体跳 (1-2×进度) 个位移距离（历史缺陷）。
+   *
    * getAnimations 不可用/无动画/timing 未生效时返回 null（退化归零重启）。
    */
-  private captureShift(): { t: number; durS: number; delayMs: number; shiftPx: number } | null {
+  private captureShift(): ShiftBaseline | null {
     try {
       const track = this.trackEl as
         | (HTMLElement & { getAnimations?: () => Array<{ currentTime: number | null }> })
@@ -302,7 +348,10 @@ export class OASMarquee extends OASElement {
       const t = track.getAnimations()[0]?.currentTime
       if (typeof t !== 'number' || !Number.isFinite(t)) return null
       if (!(this.curDurS > 0) || !(this.curShiftPx > 0)) return null
-      return { t, durS: this.curDurS, delayMs: this.curDelayMs, shiftPx: this.curShiftPx }
+      const durMs = this.curDurS * 1000
+      const progress = mod(t - this.curDelayMs, durMs) / durMs
+      const distRatio = this.curReversed ? 1 - progress : progress
+      return { t, shiftPx: this.curShiftPx, distRatio }
     } catch {
       return null
     }
@@ -310,11 +359,14 @@ export class OASMarquee extends OASElement {
 
   /**
    * 相位恢复（数学无缝的核心）：不变量是「变更前后同一时刻的位移 D 相等」。
-   * D = 进度 × 位移（linear 动画，reverse 时取镜像 1-进度）；变更后按新时长等位移
-   * 反解负 animation-delay（∈ [-duration, 0)）。旧实现直接 delay = -currentTime，
-   * 只在 delay=0 且时长整除时碰巧无缝——duration 变化或多次重建后必然跳变。
+   * D = 含方向的位移比例 × 位移；变更后按新时长 + **新方向**反解负 animation-delay
+   * （∈ [-duration, 0)）。旧实现直接 delay = -currentTime，只在 delay=0 且时长整除时碰巧
+   * 无缝——duration 变化、reverse 切换或多次重建后必然跳变。
    */
-  private restoreShift(cap: { t: number; durS: number; delayMs: number; shiftPx: number } | null): void {
+  private restoreShift(cap: ShiftBaseline | null): void {
+    const reversed = this.hasAttr('reverse')
+    // 登记本次变更后的生效方向（capture 用它解读「当前动画」的位移比例）
+    this.curReversed = reversed
     if (!this.trackEl) return
     const durMs = this.curDurS * 1000
     if (!cap || !(durMs > 0) || !(this.curShiftPx > 0)) {
@@ -322,11 +374,8 @@ export class OASMarquee extends OASElement {
       this.curDelayMs = 0
       return
     }
-    const oldDurMs = cap.durS * 1000
-    const reversed = this.hasAttr('reverse')
-    const oldProgress = mod(cap.t - cap.delayMs, oldDurMs) / oldDurMs
-    const distPx = (reversed ? 1 - oldProgress : oldProgress) * cap.shiftPx
-    const newProgress = reversed ? 1 - distPx / this.curShiftPx : distPx / this.curShiftPx
+    const distRatio = (cap.distRatio * cap.shiftPx) / this.curShiftPx
+    const newProgress = reversed ? 1 - distRatio : distRatio
     const delayMs = mod(cap.t - newProgress * durMs, durMs) - durMs
     this.trackEl.style.animationDelay = `${delayMs}ms`
     this.curDelayMs = delayMs
@@ -341,7 +390,17 @@ export class OASMarquee extends OASElement {
   }
 
   /**
-   * 克隆 light DOM 内容到 aria-hidden 克隆组：repeat 份，每份各自套一层 `.copy`。
+   * 克隆 light DOM 内容到克隆组：repeat 份，每份各自成一个**light DOM** 包裹节点。
+   *
+   * 为什么份本体必须在 light DOM：页面样式表（class 选择器）只能作用于 light DOM。份若落在
+   * shadow 内，依赖页面 class 定尺寸的内容（如 `.logo { width: 60px }`、工具类）在克隆份上
+   * 尺寸归零 → 循环里只有源份有内容、右侧整片空白（所见即缺陷）。份放 light DOM 后与源份共享
+   * 同一套页面样式与同一套选择器上下文（祖先/主题/相邻选择器都成立），克隆份与源份严格同貌。
+   * 包裹节点的盒模型由 shadow 内 `::slotted([data-oas-marquee-copy])` 给（与源份 `.copy` 逐条等价）。
+   *
+   * 代价（有意为之）：克隆份是宿主的 light DOM 子节点，故宿主 `childNodes`/`textContent` 会包含
+   * 克隆份（视觉副本）；克隆份带内部标记属性 `data-oas-marquee-copy` 与 `aria-hidden`，宿主若需
+   * 枚举「自己的内容」应排除带该标记的子节点（组件自身幂等重建即按此排除）。
    *
    * 每份必须独立成块（与源组那一份结构一致）：只有如此「份内行尾空白」的处理才与源组相同，
    * 份宽才严格等于源组宽（= 动画位移距离）。若把 repeat 份内容平铺在一起，相邻两份的文本会
@@ -349,19 +408,35 @@ export class OASMarquee extends OASElement {
    * 每轮 wrap 内容横跳一次，肉眼「接缝顿一下」。
    *
    * 组件只有默认 slot，直接读 this.childNodes（不依赖 slot 分配的异步时机，happy-dom/浏览器下
-   * 行为一致）；相位保持由调用方的 preserveShift 统一负责。
+   * 行为一致），枚举时排除上一轮的克隆份（幂等）；相位保持由调用方的 preserveShift 统一负责。
+   * 克隆份走具名 slot 投递：默认 slot 的分配集合不含它们 → 重建克隆份不会触发默认 slotchange
+   * （无自激循环），页面/水合侧看到的投影结构与源份一一对应。
    */
   private syncClone(repeat = 1): void {
-    if (!this.cloneEl) return
-    this.cloneEl.textContent = ''
+    // 上一轮克隆份先清掉（幂等：宿主内容变化与份数重算都走这里）
+    for (const node of Array.from(this.children)) {
+      if (node.hasAttribute(CLONE_ATTR)) node.remove()
+    }
     for (let i = 0; i < repeat; i++) {
       // ownerDocument（非全局 document）建节点：SSR shim 下同样可用
       const copy = this.ownerDocument.createElement('div')
-      copy.className = 'copy'
-      for (const node of this.childNodes) {
+      copy.setAttribute(CLONE_ATTR, '')
+      copy.setAttribute('slot', CLONE_SLOT)
+      // 视觉副本：读屏不得重复播报。克隆组已有 aria-hidden，但份本体在 light DOM、
+      // 不落在 shadow 的 aria-hidden 子树内，需自身标注（读屏与 aria-hidden 语义一致）
+      copy.setAttribute('aria-hidden', 'true')
+      for (const node of this.sourceNodes()) {
         copy.appendChild(node.cloneNode(true))
       }
-      this.cloneEl.appendChild(copy)
+      this.appendChild(copy)
     }
+  }
+
+  /** 宿主内容节点（light DOM 直系子节点，排除组件自建的克隆份包裹节点） */
+  private sourceNodes(): Node[] {
+    // nodeType 1 = ELEMENT_NODE：写字面量而非全局 Node，SSR shim 未必注入该全局
+    return Array.from(this.childNodes).filter(
+      (node) => !(node.nodeType === 1 && (node as Element).hasAttribute(CLONE_ATTR)),
+    )
   }
 }

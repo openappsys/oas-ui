@@ -14,8 +14,29 @@ function track(el: OASMarquee): HTMLElement {
   return el.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
 }
 
-function clone(el: OASMarquee): HTMLElement {
+/** 克隆组（shadow 内的具名 slot 容器；份本体在 light DOM，见 cloneCopies） */
+function cloneGroup(el: OASMarquee): HTMLElement {
   return el.shadowRoot!.querySelector<HTMLElement>('[part="group"].clone')!
+}
+
+/** 克隆份包裹节点（light DOM 直系子节点，带内部标记属性）：页面样式表可达的唯一位置 */
+function cloneCopies(el: OASMarquee): HTMLElement[] {
+  return [...el.querySelectorAll<HTMLElement>(':scope > [data-oas-marquee-copy]')]
+}
+
+/** 各克隆份文本拼接（应等于源内容文本 × 份数） */
+function cloneText(el: OASMarquee): string {
+  return cloneCopies(el)
+    .map((c) => c.textContent ?? '')
+    .join('')
+}
+
+/**
+ * 当前生效的克隆份数：克隆份历史上落在 shadow 克隆组内（`.copy`），现在落在 light DOM
+ * （页面样式可达，见 syncClone 注释）。两处都数——份数口径（容器测量）断言与克隆份落点无关。
+ */
+function copyCount(el: OASMarquee): number {
+  return cloneGroup(el).querySelectorAll('.copy').length + cloneCopies(el).length
 }
 
 function styleText(el: OASMarquee): string {
@@ -98,9 +119,33 @@ describe('OASMarquee', () => {
     const el = mount()
     const groups = el.shadowRoot!.querySelectorAll('[part="group"]')
     expect(groups.length).toBe(2)
-    expect(clone(el).getAttribute('aria-hidden')).toBe('true')
-    expect(clone(el).textContent).toBe('OAS-UI 滚动内容')
+    expect(cloneGroup(el).getAttribute('aria-hidden')).toBe('true')
+    expect(cloneText(el)).toBe('OAS-UI 滚动内容')
     expect(groups[0]!.querySelector('slot')).not.toBeNull()
+  })
+
+  it('克隆份在 light DOM（页面样式表可达）：宿主直系包裹节点 + 具名 slot 投递 + ::slotted 等价盒模型', () => {
+    // 缺陷形态（旧实现）：克隆份落在 shadow 内 —— 页面样式表（class 选择器）对 shadow 内容无效，
+    // 依赖页面 class 定尺寸的内容在克隆份上尺寸归零 → 右侧整片空白。
+    // 修法：克隆份包裹节点放 light DOM（页面 CSS 自然生效），盒模型由 shadow 的
+    // ::slotted([data-oas-marquee-copy]) 给（与源份 .copy 严格等价，份宽 == 位移距离不变量不变）。
+    const el = mount({}, 'OAS-UI')
+    const copies = cloneCopies(el)
+    expect(copies.length, '克隆份是宿主 light DOM 直系子节点').toBe(1)
+    expect(copies[0]!.getAttribute('slot'), '投递到克隆组的具名 slot').toBe('oas-marquee-copy')
+    expect(cloneGroup(el).querySelector('slot[name="oas-marquee-copy"]')).not.toBeNull()
+    expect(copies[0]!.getAttribute('aria-hidden'), '克隆份对读屏隐藏（自身标注，不依赖 shadow 祖先）').toBe('true')
+    expect(copies[0]!.textContent).toBe('OAS-UI')
+    // 幂等：重建时排除上一轮克隆份，份数不得滚雪球
+    el.shadowRoot!.querySelector('slot')!.dispatchEvent(new Event('slotchange'))
+    expect(cloneCopies(el).length, '重建幂等（克隆份不计入源内容）').toBe(1)
+    // 包裹节点盒模型走 ::slotted（与 .copy 同形：flex: none + nowrap，纵向另有分支）
+    const css = styleText(el)
+    const slotRule = css.split('}').find((rule) => rule.includes('::slotted([data-oas-marquee-copy])'))
+    expect(slotRule, '存在 ::slotted 包裹节点盒模型规则').toBeDefined()
+    expect(slotRule).toContain('flex: none')
+    expect(slotRule).toContain('white-space: nowrap')
+    expect(css).toContain(":host([orientation='vertical']) ::slotted([data-oas-marquee-copy])")
   })
 
   it('份与份结构一致：源组 1 份、克隆组 repeat 份，每份各自成块（份宽的充要结构）', () => {
@@ -112,7 +157,7 @@ describe('OASMarquee', () => {
     const srcCopies = srcGroup.querySelectorAll('.copy')
     expect(srcCopies.length, '源组恰好 1 份 .copy').toBe(1)
     expect(srcCopies[0]!.querySelector('slot'), '源份内是 slot').not.toBeNull()
-    const clnCopies = clone(el).querySelectorAll('.copy')
+    const clnCopies = cloneCopies(el)
     expect(clnCopies.length, '克隆组默认 1 份').toBe(1)
     for (const c of clnCopies) expect(c.textContent).toBe('OAS-UI')
   })
@@ -131,7 +176,7 @@ describe('OASMarquee', () => {
     const el = mount({}, '短内容')
     mockRects(el, 300, 100)
     fire()
-    const copies = clone(el).querySelectorAll('.copy')
+    const copies = cloneCopies(el)
     expect(copies.length, '容器 300 / 内容 100 → 3 份').toBe(3)
     for (const c of copies) expect(c.textContent).toBe('短内容')
   })
@@ -143,7 +188,7 @@ describe('OASMarquee', () => {
     el.appendChild(span)
     const slot = el.shadowRoot!.querySelector('slot')!
     slot.dispatchEvent(new Event('slotchange'))
-    expect(clone(el).textContent).toContain('新增条目')
+    expect(cloneText(el)).toContain('新增条目')
   })
 
   it('pause-on-hover 反射且样式含暂停规则', () => {
@@ -208,45 +253,13 @@ describe('OASMarquee', () => {
   })
 
   it('测量后：克隆组按份数填充、时长变量写入、measuring 态解除', () => {
-    let roCallback: (() => void) | null = null
-    class FakeResizeObserver {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-      constructor(cb: () => void) {
-        roCallback = cb
-      }
-    }
-    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    const { fire } = installRo()
     const el = mount({}, '短内容')
-    // happy-dom 布局全 0：用 getBoundingClientRect spy 注入尺寸
-    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
-      width: 300,
-      height: 40,
-      top: 0,
-      left: 0,
-      right: 300,
-      bottom: 40,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    } as DOMRect)
-    const sourceGroup = el.shadowRoot!.querySelector<HTMLElement>('.group:not(.clone)')!
-    vi.spyOn(sourceGroup, 'getBoundingClientRect').mockReturnValue({
-      width: 100,
-      height: 40,
-      top: 0,
-      left: 0,
-      right: 100,
-      bottom: 40,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    } as DOMRect)
+    mockRects(el, 300, 100)
     expect(track(el).classList.contains('measuring')).toBe(true)
-    ;(roCallback as unknown as () => void)()
+    fire()
     // 容器 300 / 内容 100 → 3 份克隆
-    expect(clone(el).textContent).toBe('短内容'.repeat(3))
+    expect(cloneText(el)).toBe('短内容'.repeat(3))
     expect(track(el).style.getPropertyValue('--oas-marquee-shift')).toBe('100px')
     // 时长 = 100px / 48px/s
     expect(track(el).style.getPropertyValue('--oas-marquee-duration')).toBe(`${100 / 48}s`)
@@ -268,14 +281,22 @@ describe('OASMarquee', () => {
     return { fire: () => cb?.() }
   }
 
-  /** happy-dom 布局全 0：注入容器/内容尺寸，配合 installRo().fire() 触发 remeasure */
-  function mockRects(el: OASMarquee, containerW = 300, contentW = 100): void {
+  /**
+   * happy-dom 布局全 0：注入「容器可见区 + 内容宽」尺寸，配合 installRo().fire() 触发 remeasure。
+   *
+   * 容器口径 = 宿主 padding box（`clientWidth`/`clientHeight`，即 overflow 裁切区）：
+   * border/padding 不参与份数判定。`borderBoxW` 一并 mock 成含边框的更大值作为对照——
+   * 若实现回退到 border box 口径，`repeat` 会多一份，断言必挂（防「mock 变成空断言」）。
+   */
+  function mockRects(el: OASMarquee, containerW = 300, contentW = 100, borderBoxW = containerW): void {
+    Object.defineProperty(el, 'clientWidth', { value: containerW, configurable: true })
+    Object.defineProperty(el, 'clientHeight', { value: 40, configurable: true })
     vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
-      width: containerW,
+      width: borderBoxW,
       height: 40,
       top: 0,
       left: 0,
-      right: containerW,
+      right: borderBoxW,
       bottom: 40,
       x: 0,
       y: 0,
@@ -303,6 +324,16 @@ describe('OASMarquee', () => {
     ).getAnimations = () => [{ currentTime }]
   }
 
+  it('容器口径取宿主 padding box（clientWidth/Height）：border 不得把份数抬高', () => {
+    const { fire } = installRo()
+    const el = mount({}, '短内容')
+    // 宿主 border box 598+2（1px 边框），可见/裁切区（padding box）598；内容恰为 598
+    mockRects(el, 598, 598, 600)
+    fire()
+    expect(copyCount(el), '内容恰等于可见宽 → 1 份（取 border box 会误判为 2 份）').toBe(1)
+    expect(track(el).style.getPropertyValue('--oas-marquee-shift')).toBe('598px')
+  })
+
   it('内容更新相位保持：按位移连续反解负 animation-delay（非简单 -currentTime）', () => {
     const { fire } = installRo()
     const el = mount()
@@ -323,7 +354,44 @@ describe('OASMarquee', () => {
     const phaseBefore = 2500 % durMs
     const phaseAfter = (((2500 - delay) % durMs) + durMs) % durMs
     expect(phaseAfter, '重建克隆前后动画相位相等（位移连续，不跳变）').toBeCloseTo(phaseBefore, 0)
-    expect(clone(el).textContent).toContain('动态追加')
+    expect(cloneText(el)).toContain('动态追加')
+  })
+
+  it('reverse 运行时切换：按位移连续反解 delay（用新方向解读旧进度会整段跳变）', () => {
+    const { fire } = installRo()
+    const el = mount()
+    mockRects(el)
+    fire()
+    const durMs = (100 / 48) * 1000
+    mockAnimTime(el, 800)
+    // 切换前：正向，位移比例 = 进度 = 800/durMs
+    const ratioBefore = 800 / durMs
+    el.setAttribute('reverse', '')
+    const delay = parseFloat(track(el).style.animationDelay)
+    expect(Number.isFinite(delay), '反向切换后应写入补偿 delay').toBe(true)
+    expect(delay).toBeLessThanOrEqual(0)
+    // 切换后：反向动画的位移比例 = 1 - 进度，必须等于切换前的位移比例（同一时刻视觉位置不变）
+    const progress2 = ((((800 - delay) % durMs) + durMs) % durMs) / durMs
+    const ratioAfterReverse = 1 - progress2
+    expect(
+      ratioAfterReverse,
+      `反向切换前后位移比例相等（before=${ratioBefore.toFixed(4)}, after=${ratioAfterReverse.toFixed(4)}）`,
+    ).toBeCloseTo(ratioBefore, 3)
+  })
+
+  it('reverse 关闭再开启同样保持位移连续（双向切换）', () => {
+    const { fire } = installRo()
+    const el = mount({ reverse: '' })
+    mockRects(el)
+    fire()
+    const durMs = (100 / 48) * 1000
+    mockAnimTime(el, 1200)
+    // 反向运行中：位移比例 = 1 - 进度
+    const ratioBefore = 1 - 1200 / durMs
+    el.removeAttribute('reverse')
+    const delay = parseFloat(track(el).style.animationDelay)
+    const progress2 = ((((1200 - delay) % durMs) + durMs) % durMs) / durMs
+    expect(progress2, '关反向前后位移比例相等').toBeCloseTo(ratioBefore, 3)
   })
 
   it('时长变化相位连续：speed 属性变更后等位移反解 delay（不整段重映射进度）', () => {
@@ -353,7 +421,7 @@ describe('OASMarquee', () => {
     el.appendChild(span)
     el.shadowRoot!.querySelector('slot')!.dispatchEvent(new Event('slotchange'))
     expect(t.style.animationDelay).toBe('')
-    expect(clone(el).textContent).toContain('动态追加')
+    expect(cloneText(el)).toContain('动态追加')
   })
 
   it('断开连接清理 ResizeObserver', () => {
