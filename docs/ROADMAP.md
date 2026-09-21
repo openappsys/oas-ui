@@ -91,3 +91,4 @@
 - 组件 API 表格自动化：✅ 已完成（随 v1.8 落地；scan/harvest/gen + api:check 进 CI）
 - 语言包扩展：v0.10.0 落地 zh-CN/en 后，按社区需求补 ja/ko/fr/de/es/ar 等
 - 全量 RTL 视觉审计（v0.10.0 只立逻辑属性规矩）
+- 形状化二维码大码体积压缩：`dot-shape`/`corner-shape` 目前逐模块 `<use>` 引用原型（125×125 码实测 ~305 KB，约为 square 合并路径的 5 倍）；候选方案「合并路径 + `clipPath`/`pattern` 填充」或「同形相邻模块合路径」，目标回落接近 square 量级（仅大码/长内容受影响，默认 square 不受影响）

@@ -4,9 +4,11 @@
  * 定位：`oas-qrcode` 的渲染参数化——数据区按 `dot-shape` 生成、三个定位图形（7×7）
  * 按 `corner-shape` 生成、中心 logo 区域可跳过模块（`icon-hide-dots`）。
  *
- * 体积策略：square 沿用 run-length 合并单 path（与旧实现同款，体积极小）；rounded / dots
- * 不逐模块输出完整路径，而是 `<use href="#oas-qr-mod">` 引用 defs 里的几何原型——避免
- * 大版本二维码（v40 = 177×177）产生数百 KB 的 SVG 字符串。
+ * 体积策略：square 沿用 run-length 合并单 path（同旧实现，体积极小）；rounded / dots 无法用
+ * run-length（圆点带间隙、圆角需弧线），改为逐模块 `<use href="#oas-qr-mod">` 引用 defs 里
+ * 的单份几何原型——省掉的是「每模块重复完整几何体」而非元素数量，实测 125×125 码约 305 KB
+ * （与逐模块内联几何相当，约为 square 合并路径的 5 倍）。进一步压缩（合并路径 + clipPath/pattern
+ * 填充、或同形相邻模块合路径）见 ROADMAP backlog。
  *
  * 坐标系：1 单位 = 1 模块；`offset` 为静区（margin）偏移，与组件 viewBox 一致。
  */

@@ -1322,7 +1322,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 ### 工程
 
 - **渲染拆纯函数层** `src/data/qrcode/shapes.ts`（定位图形识别 / 数据区 run-length 路径 / `<use>` 原型 / 定位图形 evenodd 路径 / 渐变 defs），组件与离屏下载共用同一渲染核心——顺带修掉「下载产物与屏幕不一致」的真故障（`download()` 仍调用已移除的旧渲染器，运行即抛 `matrixToPath is not defined`）
-- **体积策略**：square 沿用 run-length 合并单 path；rounded / dots 走 defs 几何原型 + `<use>`，避免 v40（177×177）逐模块输出数百 KB 的 SVG 字符串
+- **体积**：square 沿用 run-length 合并单 path；rounded / dots 用不了 run-length（圆点带间隙、圆角需弧线），改为逐模块 `<use>` 引用 defs 单份几何原型（省掉「每模块重复完整几何体」，不省元素数量）——实测 125×125 码约 305 KB（与逐模块内联几何 ~304–320 KB 基本相当，约为 square 合并路径 58 KB 的 5 倍）。**大码形状化偏重，压缩方案（合并路径 + clipPath/pattern 填充、或同形相邻模块合路径）已入 ROADMAP backlog，不在本批范围**
 - **可扫性不退化**：默认配置新增区域级等价断言——`dataPath + finderPath(square)` 的覆盖模块集合必须与旧 `matrixToPath` 完全相等（无重叠 / 无遗漏），保证默认外观与旧版本一致
 - **源码级守卫**：路径数据合法性检查（剥离合法字符后必须为空）——曾因 `roundRect` 模板串漏 `${}` 在路径里写出字面量 `v-(h - 2 * rr)`，浏览器解析到非法 token 后丢弃后续子路径，右上 / 左下定位图形整块消失、左上糊成实心（单测与既有断言全绿，靠视觉核验才发现）
 
