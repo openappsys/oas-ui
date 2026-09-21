@@ -75,17 +75,23 @@ test('marquee 克隆组 aria-hidden（读屏不重复播报）+ pause-on-hover �
   const clone = await page.evaluate(() => {
     const el = document.querySelector('oas-marquee[speed="96"]')!
     const cloneEl = el.shadowRoot!.querySelector<HTMLElement>('.group.clone')!
-    // 每份各自套一层 .copy（份与份结构必须一致，见文件末接缝回归）——份内子节点数应与 light DOM 相同
-    const copies = [...cloneEl.querySelectorAll('.copy')]
+    // 克隆份本体在 light DOM（页面样式可达，见下方「克隆份继承页面样式」回归），
+    // 每份一个宿主直系包裹节点；每份内的子节点数应与宿主内容子节点数（排除克隆份）相同
+    const copies = [...el.querySelectorAll<HTMLElement>(':scope > [data-oas-marquee-copy]')]
+    const sourceNodes = [...el.childNodes].filter(
+      (n) => !(n.nodeType === 1 && (n as Element).hasAttribute('data-oas-marquee-copy')),
+    )
     return {
       ariaHidden: cloneEl.getAttribute('aria-hidden'),
+      copyAriaHidden: copies[0]?.getAttribute('aria-hidden') ?? null,
       copyCount: copies.length,
       copyChildNodes: copies[0]?.childNodes.length ?? 0,
-      sourceChildNodes: el.childNodes.length,
+      sourceChildNodes: sourceNodes.length,
     }
   })
   expect(clone.ariaHidden, '克隆组对读屏隐藏').toBe('true')
-  expect(clone.copyCount, '克隆组至少 1 份 .copy').toBeGreaterThanOrEqual(1)
+  expect(clone.copyCount, '克隆份至少 1 份').toBeGreaterThanOrEqual(1)
+  expect(clone.copyAriaHidden, '克隆份本体在 light DOM，须自身标注 aria-hidden').toBe('true')
   expect(clone.copyChildNodes, '每份克隆的子节点数 = 源内容子节点数').toBe(clone.sourceChildNodes)
 
   // 悬停暂停 / 移出恢复（play-state 计算值轮询）
@@ -119,6 +125,82 @@ test('marquee 克隆组 aria-hidden（读屏不重复播报）+ pause-on-hover �
       ),
     )
     .toBe('running')
+})
+
+test('marquee 克隆份继承页面样式：页面 class 定尺寸的内容，克隆份与源份同尺寸（克隆体丢页面样式回归）', async ({
+  page,
+}) => {
+  await page.goto('/components/marquee.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-marquee')
+  // 页面级 class 样式（不在 shadow 内）：缺陷形态下只有源份吃得到，克隆份尺寸归零 → 右侧整片空白
+  await page.addStyleTag({
+    content:
+      '.mq-page-tile { width: 64px; height: 64px; background: #0b6cff; border-radius: 8px; display: inline-block; margin: 0 8px; }',
+  })
+  const r = await page.evaluate(async () => {
+    if (!customElements.get('oas-marquee')) await customElements.whenDefined('oas-marquee')
+    const host = document.createElement('oas-marquee')
+    host.id = 'page-style-probe'
+    host.setAttribute('speed', '120')
+    host.style.cssText = 'display:block;width:600px;height:80px;position:fixed;top:-200px;left:0;'
+    for (let i = 0; i < 6; i++) {
+      const tile = document.createElement('div')
+      tile.className = 'mq-page-tile'
+      host.appendChild(tile)
+    }
+    document.body.appendChild(host)
+    await new Promise<void>((resolve) => {
+      const check = () => {
+        const t = host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+        if (!t.classList.contains('measuring') && t.style.getPropertyValue('--oas-marquee-duration')) resolve()
+        else requestAnimationFrame(check)
+      }
+      check()
+    })
+    const rect = (el: Element): { w: number; h: number } => {
+      const b = el.getBoundingClientRect()
+      return { w: +b.width.toFixed(2), h: +b.height.toFixed(2) }
+    }
+    const root = host.shadowRoot!
+    const srcGroup = root.querySelector<HTMLElement>('.group:not(.clone)')!
+    const cloneGroup = root.querySelector<HTMLElement>('.group.clone')!
+    const srcTile = host.querySelector<HTMLElement>('.mq-page-tile')!
+    // 克隆份本体在 light DOM（修复后的位置）；历史位置是 shadow 克隆组内的 .copy —— 两处都找，
+    // 保证断言只依赖「用户看到的克隆份」而不绑定实现落点
+    const cloneTile =
+      cloneGroup.querySelector<HTMLElement>('.mq-page-tile') ??
+      host
+        .querySelector<HTMLElement>(':scope > [data-oas-marquee-copy]')
+        ?.querySelector<HTMLElement>('.mq-page-tile') ??
+      null
+    const out = {
+      srcTile: rect(srcTile),
+      srcTileBg: getComputedStyle(srcTile).backgroundColor,
+      cloneTile: cloneTile ? rect(cloneTile) : null,
+      cloneTileBg: cloneTile ? getComputedStyle(cloneTile).backgroundColor : null,
+      srcGroupW: rect(srcGroup).w,
+      cloneGroupW: rect(cloneGroup).w,
+      shift: parseFloat(
+        root.querySelector<HTMLElement>('[part="track"]')!.style.getPropertyValue('--oas-marquee-shift'),
+      ),
+    }
+    host.remove()
+    return out
+  })
+  expect(r.srcTile.w, '前置：源份由页面 class 定尺寸（64×64）').toBeCloseTo(64, 1)
+  expect(r.srcTile.h, '前置：源份高度由页面 class 定').toBeCloseTo(64, 1)
+  expect(r.cloneTile, '克隆份存在').not.toBeNull()
+  // 缺陷回归：修前克隆份 0×0（丢页面样式）→ 右侧整片空白
+  expect(r.cloneTile!.w, '克隆份宽必须同源份（修前 0 = 丢页面样式）').toBeCloseTo(r.srcTile.w, 1)
+  expect(r.cloneTile!.h, '克隆份高必须同源份').toBeCloseTo(r.srcTile.h, 1)
+  expect(r.cloneTileBg, '克隆份背景色（页面 class）必须同源份').toBe(r.srcTileBg)
+  // 克隆组宽度必须是源组宽的整数倍（repeat 份，份宽 === 位移距离）且足以覆盖视口（无右侧空白）
+  expect(r.cloneGroupW, 'cloneGroupW 必须 > 0（修前为 0）').toBeGreaterThan(0)
+  expect(
+    Math.abs(r.cloneGroupW / r.srcGroupW - Math.round(r.cloneGroupW / r.srcGroupW)),
+    `克隆组宽 ${r.cloneGroupW} 应为源组宽 ${r.srcGroupW} 的整数倍`,
+  ).toBeLessThanOrEqual(0.02)
+  expect(r.cloneGroupW, `克隆组宽 ${r.cloneGroupW} 必须覆盖视口（shift=${r.shift}）`).toBeGreaterThanOrEqual(r.shift)
 })
 
 test('marquee fade-edges：mask 挂内层 viewport 而非 :host（宿主 border/圆角不被淡出「开口」）', async ({ page }) => {
@@ -451,11 +533,10 @@ test('marquee auto-fill 路径回归：容器宽度变化触发份数重算，�
   // 缺陷形态（旧实现）：任意 RO 触发（含份数重算，即使时长不变）都执行 delay=-currentTime 旧式恢复
   // → delay 重映射让画面瞬移（实测 +1863px/s 单帧）；新实现同一次 preserveShift 内完成重建+重写
   await installMqProbe(page, { text: '自动填充重算回归内容 · ', speed: 300, width: 600 })
-  // 克隆组里是 light DOM 节点的克隆（纯文本内容 → text node），计数用 childNodes 不用 childElementCount
-  // （现每个重复份外面还有一层 .copy 容器，childNodes 计数即「份数」）
+  // 克隆份本体在 light DOM（页面样式可达）：每个份是一个带标记的宿主直系包裹节点，数量即份数
   const cloneCountBefore = await page.evaluate((key) => {
     const probe = (window as typeof window & Record<string, MqPageProbe>)[key]!
-    return probe.host.shadowRoot!.querySelector<HTMLElement>('.group.clone')!.childNodes.length
+    return probe.host.querySelectorAll(':scope > [data-oas-marquee-copy]').length
   }, PROBE_KEY)
   const { samples, starts, marks } = await runMqProbe(
     page,
@@ -469,7 +550,7 @@ test('marquee auto-fill 路径回归：容器宽度变化触发份数重算，�
   // auto-fill 份数确实随容器宽度重算（700px 比 600px 需要更多份），证明重算路径真的被走到
   const cloneCountAfter = await page.evaluate((key) => {
     const probe = (window as typeof window & Record<string, MqPageProbe>)[key]!
-    return probe.host.shadowRoot!.querySelector<HTMLElement>('.group.clone')!.childNodes.length
+    return probe.host.querySelectorAll(':scope > [data-oas-marquee-copy]').length
   }, PROBE_KEY)
   expect(
     cloneCountAfter,
@@ -578,7 +659,9 @@ test('marquee 接缝几何：每份渲染宽 === 动画位移距离（份间不�
       rg.selectNodeContents(node)
       return rg.getBoundingClientRect().width
     }
-    // 克隆组内每个「非空白文本 run」的渲染宽：份的行尾空白若被保留，run 宽会多出一个空格宽
+    // 克隆份本体在 light DOM（页面样式可达）：每个包裹节点是一个「份」
+    const copies = [...host.querySelectorAll<HTMLElement>(':scope > [data-oas-marquee-copy]')]
+    // 克隆份内每个「非空白文本 run」的渲染宽：份的行尾空白若被保留，run 宽会多出一个空格宽
     const runs: number[] = []
     const walk = (n: Node): void => {
       for (const k of n.childNodes) {
@@ -587,12 +670,23 @@ test('marquee 接缝几何：每份渲染宽 === 动画位移距离（份间不�
         } else if (k.nodeType === 1) walk(k)
       }
     }
-    walk(cln)
+    for (const c of copies) walk(c)
+    // 源内容渲染宽：宿主内容节点（排除克隆份）整体范围——克隆份在 light DOM，selectNodeContents(host)
+    // 会把它们一并算进去，故按首末源节点取范围
+    const sourceNodes = [...host.childNodes].filter(
+      (n) => !(n.nodeType === 1 && (n as Element).hasAttribute('data-oas-marquee-copy')),
+    )
+    const srcRange = document.createRange()
+    if (sourceNodes.length) {
+      srcRange.setStartBefore(sourceNodes[0]!)
+      srcRange.setEndAfter(sourceNodes[sourceNodes.length - 1]!)
+    }
     return {
       shift: parseFloat(track.style.getPropertyValue('--oas-marquee-shift')),
       sourceW: src.getBoundingClientRect().width,
       cloneW: cln.getBoundingClientRect().width,
-      sourceContentW: rangeW(host),
+      sourceContentW: sourceNodes.length ? srcRange.getBoundingClientRect().width : 0,
+      copies: copies.length,
       runs,
     }
   })
@@ -600,6 +694,7 @@ test('marquee 接缝几何：每份渲染宽 === 动画位移距离（份间不�
   // 前置：本用例必须落在 auto-fill 多份区间（否则不存在份间接缝）
   const copies = Math.round(r.cloneW / r.sourceW)
   expect(copies, 'auto-fill 生效（>= 2 份）').toBeGreaterThanOrEqual(2)
+  expect(r.copies, '克隆份包裹节点数 === 计算份数').toBe(copies)
   // 1) CSS 位移距离 === 源组（1 份）渲染宽（JS 测量与 CSS 动画同口径）
   expect(Math.abs(r.shift - r.sourceW), `位移距离 ${r.shift} 应等于源组宽 ${r.sourceW}`).toBeLessThanOrEqual(0.5)
   expect(
@@ -734,4 +829,107 @@ test('marquee 接缝像素：跨 wrap 的相邻渲染帧位移与常规帧一致
     Math.abs(wrap!.shiftCss + STEP),
     `跨 wrap 帧位移应 ≈ -${STEP}px（实测 ${wrap!.shiftCss.toFixed(2)}px；缺陷形态 = 额外跳一个空格宽）`,
   ).toBeLessThanOrEqual(1.5)
+})
+
+// ===== reverse 运行时切换：方向也是相位的一部分 =====
+// 不变量与 speed/width 路径同源（「同一时刻位移距离相等」），但切换帧的位移方向会**反向**，
+// 故不能直接套 expectSegmentContinuous 的恒速分段断言：这里断言「切换帧的帧位移不得超常规帧阈值」。
+// 切换时机按动画进度门控（progress ∈ [0.15,0.35]），保证可复现的小进度相位——缺陷形态下该处
+// 位移跳变 (2p-1)×shift ≈ -0.3~-0.7 shift（实测 -135.6px，常规帧 1.67px），负向大跳不会被
+// 「正向回卷」的 wrap 过滤误吞。
+
+/** 帧位移统计：wrap 判定双向（位移恰好回卷一整个 shift：正向 +shift、反向 -shift） */
+function mqFrameSteps(
+  samples: MqSample[],
+  shift: number,
+  mark: number,
+  nearMs = 60,
+): Array<{ t: number; dx: number; wrap: boolean; near: boolean }> {
+  const steps: Array<{ t: number; dx: number; wrap: boolean; near: boolean }> = []
+  for (let i = 1; i < samples.length; i++) {
+    const a = samples[i - 1]!
+    const b = samples[i]!
+    const dt = b.t - a.t
+    if (dt <= 0 || dt > 60) continue
+    const dx = b.x - a.x
+    const wrap = shift > 0 && Math.abs(Math.abs(dx) - shift) < shift * 0.25
+    steps.push({ t: b.t, dx, wrap, near: Math.abs(b.t - mark) < nearMs })
+  }
+  return steps
+}
+
+/** 中位数（空数组返回 0） */
+function mqMedian(xs: number[]): number {
+  if (!xs.length) return 0
+  const sorted = [...xs].sort((a, b) => a - b)
+  return sorted[Math.floor(sorted.length / 2)]!
+}
+
+test('marquee reverse 运行时切换：切换帧位移不超常规帧阈值（方向连续，无整段跳变）', async ({ page }) => {
+  await page.goto('/components/marquee.html', { waitUntil: 'domcontentloaded' })
+  // 缺陷形态（旧实现）：restore 用**新**方向解读捕获到的裸进度 → 切换瞬间内容整体跳
+  // (2p-1)×shift（p≈0.16 时实测 -135.6px = 81 倍常规帧）。新实现捕获「含方向」的位移比例。
+  await installMqProbe(page, { text: '反向切换相位回归采样内容 · ', speed: 100, width: 600 })
+  const marks = await page.evaluate((key) => {
+    const probe = (window as typeof window & Record<string, MqPageProbe>)[key]!
+    probe.begin()
+    // 进度门控：动画进度进入 [0.15, 0.35] 才切 reverse（相位可复现；小进度处跳变最大且符号为负）
+    return new Promise<number[]>((resolve) => {
+      const tick = () => {
+        const track = probe.trackEl()
+        const anim = (
+          track as HTMLElement & { getAnimations?: () => Array<{ currentTime: number | null }> }
+        ).getAnimations?.()[0]
+        // 时长走 CSS 变量（内联只写 --oas-marquee-duration），故不能读 style.animationDuration
+        const durMs = (parseFloat(track.style.getPropertyValue('--oas-marquee-duration')) || 0) * 1000
+        const delay = parseFloat(track.style.animationDelay) || 0
+        const ct = anim && typeof anim.currentTime === 'number' ? anim.currentTime : null
+        if (probe.t0 !== null && ct !== null && durMs > 0) {
+          const p = ((((ct - delay) % durMs) + durMs) % durMs) / durMs
+          if (p >= 0.15 && p <= 0.35) {
+            probe.host.setAttribute('reverse', '')
+            const mark = performance.now() - probe.t0
+            // 采样继续 800ms（足够覆盖切换后的一次反向 wrap），再由 probe.stop() 一次性取回样本
+            setTimeout(() => resolve([mark]), 800)
+            return
+          }
+        }
+        requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })
+  }, PROBE_KEY)
+  const { samples, starts } = await page.evaluate((key) => {
+    const probe = (window as typeof window & Record<string, MqPageProbe>)[key]!
+    return probe.stop()
+  }, PROBE_KEY)
+  expect(marks.length, 'reverse 切换已触发（进度门控命中）').toBe(1)
+  const mark = marks[0]!
+  const shift = samples.find((s) => s.shift > 0)?.shift ?? 0
+  expect(shift, '位移距离已测量').toBeGreaterThan(0)
+  // 1) 动画不重启：animationstart 只在初始发生 1 次；currentTime 无巨幅回退
+  expect(starts, 'reverse 切换不得重启动画（animationstart 计数不变）').toBe(1)
+  expect(mqRestartDrop(samples), 'currentTime 不得回退（重启特征）').toBeLessThanOrEqual(50)
+
+  const steps = mqFrameSteps(samples, shift, mark)
+  const far = steps.filter((s) => !s.wrap && !s.near)
+  const near = steps.filter((s) => !s.wrap && s.near)
+  expect(far.length, '切换点前后各有足够采样帧').toBeGreaterThan(15)
+  expect(near.length, '切换点附近有采样帧').toBeGreaterThan(0)
+  // 装置自检：常规帧位移 = 速度 100px/s × 帧时长（约 1.7px @60Hz），且切换前内容向左、切换后向右
+  const medianStep = mqMedian(far.map((s) => Math.abs(s.dx)))
+  expect(medianStep, `常规帧位移中位 ${medianStep.toFixed(2)}px 应贴合 100px/s（装置有效性自检）`).toBeGreaterThan(0.5)
+  expect(medianStep).toBeLessThan(8)
+  const before = steps.filter((s) => !s.wrap && s.t < mark - 60).map((s) => s.dx)
+  const after = steps.filter((s) => !s.wrap && s.t > mark + 60).map((s) => s.dx)
+  expect(mqMedian(before), '切换前内容左移（正向）').toBeLessThan(0)
+  expect(mqMedian(after), '切换后内容右移（反向，证明方向真的翻了）').toBeGreaterThan(0)
+
+  // 2) 缺陷回归断言：切换帧位移不得超常规帧阈值（修前实测 -135.6px vs 常规 1.67px）
+  const worstToggle = near.reduce((m, s) => Math.max(m, Math.abs(s.dx)), 0)
+  const limit = Math.max(8, medianStep * 3)
+  expect(
+    worstToggle,
+    `切换帧位移 ${worstToggle.toFixed(2)}px 不得超过 max(8px, 3×常规帧 ${medianStep.toFixed(2)}px)（修前 = 0.3~0.7×shift）`,
+  ).toBeLessThanOrEqual(limit)
 })
