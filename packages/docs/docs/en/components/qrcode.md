@@ -136,7 +136,7 @@ When `value` is empty, a "No content" placeholder is shown; when the content exc
 | `aria-label` | Accessible name of the container; defaults to i18n | — | — |
 | `bg-color` | Background color (default white — scanners need a light quiet zone; stays white in dark theme for scannability; override via `--oas-qrcode-bg`) | `string` | — |
 | `color` | Foreground (module) color, default fixed dark `#18181b` (paired with the white quiet zone for dark-theme scannability; override via `--oas-qrcode-color`, preset name, or any color value) | `string` | — |
-| `error-correction` | Error correction level l/m/q/h (currently L only; the rest are normalized to l) | `string` | `l` |
+| `error-correction` | Error correction level l/m/q/h (all four implemented; default l. Use q/h for a center logo or weak-light/damaged scenarios) | `string` | `l` |
 | `icon` | Center logo image URL (use with `error-correction="h"` to keep scannability) | `string` | — |
 | `icon-size` | Center logo size in px (default size/5, clamped to [16, size/2]) | — | — |
 | `margin` | Quiet-zone margin in modules (default 4) | `string` | `4` |

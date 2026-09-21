@@ -136,7 +136,7 @@ onMounted(() => {
 | `aria-label` | 容器可访问名称，缺省走 i18n | — | — |
 | `bg-color` | 背景色（默认白色——扫码器要求浅色静区，dark 主题下保持白底保证可扫；`--oas-qrcode-bg` 变量可覆盖） | `string` | — |
 | `color` | 前景色（码点颜色，默认固定深色 `#18181b`——与固定白静区配套保证 dark 可扫；`--oas-qrcode-color` 变量或预设名/任意色值覆盖） | `string` | — |
-| `error-correction` | 纠错级别 l/m/q/h（当前仅 L 级，其余归一为 l） | `string` | `l` |
+| `error-correction` | 纠错级别 l/m/q/h（四级均已实现，默认 l；中心 logo 遮挡或弱光/污损场景建议 q/h） | `string` | `l` |
 | `icon` | 中心 logo 图片 URL（建议配合 `error-correction="h"` 保可扫性） | `string` | — |
 | `icon-size` | 中心 logo 尺寸（px，默认 size/5， clamp 在 [16, size/2]） | — | — |
 | `margin` | 静区边距（模块单位，默认 4） | `string` | `4` |
