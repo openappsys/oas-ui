@@ -84,6 +84,11 @@ const STYLE = `
   aspect-ratio: 16 / 9;
   object-fit: cover;
 }
+/* hidden 属性会被本类 .cover-img{display:block} 作者级覆盖，需显式补回（与 .cover[hidden] 同款兜底：
+   无 cover-src 时 img.hidden=true，缺此规则会渲染空 src 破图占位） */
+.cover-img[hidden] {
+  display: none;
+}
 /* hidden 属性会被作者级 display 覆盖，需显式补回 */
 .cover[hidden],
 .cover slot[hidden] {

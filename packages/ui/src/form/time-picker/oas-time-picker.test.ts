@@ -310,6 +310,22 @@ describe('OASTimePicker', () => {
     expect(expanded(el)).toBe('false')
   })
 
+  it('presets[hidden] CSS 兜底：作者级 .presets{display:flex} 不覆盖 hidden 属性（无 presets 不渲染空条）', () => {
+    const el = mount({ value: '10:00:00' })
+    const wrap = el.shadowRoot!.querySelector('[part="presets"]')!
+    // 隐藏态：未设 presets 时 hidden 属性在位（逻辑层既有行为）
+    expect(wrap.hasAttribute('hidden'), '无 presets 时容器应带 hidden 属性').toBe(true)
+    // CSS 层兜底：display:flex 压过模板静态 hidden，必须显式补回（与 .clear-btn[hidden] 同款）
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css, '作者层 display:flex 压过 UA hidden，必须有 .presets[hidden] 兜底').toMatch(
+      /\.presets\[hidden\]\s*\{[^}]*display:\s*none/,
+    )
+    // 非 hidden 态：基础 display 语义保持 flex（设 presets 后正常渲染快捷按钮）
+    el.presets = [{ label: '整点', value: '12:00:00' }]
+    expect(wrap.hasAttribute('hidden')).toBe(false)
+    expect(css).toMatch(/\.presets\s*\{[^}]*display:\s*flex/)
+  })
+
   // ---- is-range 范围 ----
 
   it('is-range：双列组 + 分隔显示，起止独立选择，Enter 提交 JSON 数组', () => {

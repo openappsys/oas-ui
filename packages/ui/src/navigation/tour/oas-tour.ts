@@ -230,6 +230,11 @@ const STYLE = `
   max-width: none;
   object-fit: cover;
 }
+/* hidden 属性会被本类 .cover-img{display:block} 作者级覆盖，需显式补回（与 card .cover-img[hidden]
+   同款兜底：步骤无 cover 时 img.hidden=true，缺此规则弹层内渲染空 img 占位） */
+.cover-img[hidden] {
+  display: none;
+}
 .cover img {
   display: block;
   width: 100%;
