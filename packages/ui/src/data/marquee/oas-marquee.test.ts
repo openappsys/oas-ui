@@ -135,6 +135,8 @@ describe('OASMarquee', () => {
     expect(copies[0]!.getAttribute('slot'), '投递到克隆组的具名 slot').toBe('oas-marquee-copy')
     expect(cloneGroup(el).querySelector('slot[name="oas-marquee-copy"]')).not.toBeNull()
     expect(copies[0]!.getAttribute('aria-hidden'), '克隆份对读屏隐藏（自身标注，不依赖 shadow 祖先）').toBe('true')
+    // 缺陷回归：aria-hidden 只挡读屏，克隆份里的按钮/链接仍留在 Tab 序里（可误操作视觉副本）
+    expect(copies[0]!.hasAttribute('inert'), '克隆份带 inert（视觉副本不进键盘/AT 导航）').toBe(true)
     expect(copies[0]!.textContent).toBe('OAS-UI')
     // 幂等：重建时排除上一轮克隆份，份数不得滚雪球
     el.shadowRoot!.querySelector('slot')!.dispatchEvent(new Event('slotchange'))
@@ -316,12 +318,20 @@ describe('OASMarquee', () => {
     } as DOMRect)
   }
 
+  /**
+   * 注入动画替身并把时钟推进到 currentTime。真机上动画对象是**长期存活**的（读它的 currentTime
+   * 不需要样式落定，见 captureShift 的缓存通道），故同一元素上重复调用会复用同一个替身对象、
+   * 只改 currentTime——用「每次调用返回新对象」的替身会掩盖缓存通道与 getAnimations 通道的差异。
+   */
   function mockAnimTime(el: OASMarquee, currentTime: number): void {
-    ;(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="track"]') as unknown as {
-        getAnimations: () => Array<{ currentTime: number | null }>
-      }
-    ).getAnimations = () => [{ currentTime }]
+    const t = track(el) as unknown as {
+      getAnimations?: () => Array<{ currentTime: number | null }>
+      __mockAnim?: { currentTime: number | null }
+    }
+    const anim = t.__mockAnim ?? { currentTime }
+    anim.currentTime = currentTime
+    t.__mockAnim = anim
+    t.getAnimations = () => [anim]
   }
 
   it('容器口径取宿主 padding box（clientWidth/Height）：border 不得把份数抬高', () => {
@@ -392,6 +402,96 @@ describe('OASMarquee', () => {
     const delay = parseFloat(track(el).style.animationDelay)
     const progress2 = ((((1200 - delay) % durMs) + durMs) % durMs) / durMs
     expect(progress2, '关反向前后位移比例相等').toBeCloseTo(ratioBefore, 3)
+  })
+
+  it('orientation 运行时切换：同步按新轴重测 + 重启补偿（相位不归零，内容不跳回循环起点）', () => {
+    const { fire } = installRo()
+    const el = mount()
+    mockRects(el) // 容器 300×40、源组 100×40
+    const durOld = (100 / 48) * 1000
+    // 真机行为建模：动画对象长期存活；宿主属性一变（切轴）样式落定即取消旧动画，
+    // 之后 getAnimations() 只会返回**新**动画（currentTime 归零）。故相位只能从缓存对象读。
+    const oldAnim = { currentTime: durOld * 0.3 }
+    const newAnim = { currentTime: 0 }
+    let switched = false
+    ;(track(el) as unknown as { getAnimations: () => Array<{ currentTime: number | null }> }).getAnimations = () =>
+      switched ? [newAnim] : [oldAnim]
+    fire() // 首次测量：无 timing 可补偿，但会缓存当时的动画对象
+    expect(track(el).style.animationDelay, '首次测量无相位可补偿').toBe('')
+    switched = true
+    el.setAttribute('orientation', 'vertical')
+    // 切轴必须**同步**按新轴重测（否则纵向动画会拿横向位移距离跑，要等 RO 回调才修）
+    expect(track(el).style.getPropertyValue('--oas-marquee-shift'), '切轴后同步按内容高重写位移距离').toBe('40px')
+    // 物理事实：横向/纵向关键字帧不同名 → 切轴必然换 animation-name = 新动画（时钟归零），
+    // 无法做到「动画不重启」；且新旧位移量纲不同（内容宽 100 vs 内容高 40）→ 绝对位移不可守恒。
+    // 可守恒的最强不变量是相位（位移比例），故补偿基准取「新动画 localTime = 0」。
+    const durNew = (40 / 48) * 1000
+    const delay = parseFloat(track(el).style.animationDelay)
+    expect(Number.isFinite(delay), '切轴后应写入重启补偿 delay（读不到切换前相位时不会写）').toBe(true)
+    expect(delay, 'delay ∈ [-duration, 0]').toBeLessThanOrEqual(0)
+    expect(delay).toBeGreaterThanOrEqual(-durNew)
+    const phaseAfter = ((((0 - delay) % durNew) + durNew) % durNew) / durNew
+    expect(phaseAfter, `切轴前后相位相等（before=0.3, after=${phaseAfter.toFixed(4)}；归零 = 跳回起点）`).toBeCloseTo(
+      0.3,
+      2,
+    )
+  })
+
+  it('orientation 切轴用缓存动画对象读切换前相位（读 getAnimations 会拿到已归零的新动画）', () => {
+    const { fire } = installRo()
+    const el = mount()
+    mockRects(el)
+    const durOld = (100 / 48) * 1000
+    const oldAnim = { currentTime: durOld * 0.5 }
+    const newAnim = { currentTime: 0 }
+    let switched = false
+    ;(track(el) as unknown as { getAnimations: () => Array<{ currentTime: number | null }> }).getAnimations = () =>
+      switched ? [newAnim] : [oldAnim]
+    fire()
+    switched = true
+    el.setAttribute('orientation', 'vertical')
+    // 缺陷形态：captureShift 直接调 getAnimations() → 拿到的已是新动画 t=0 → 相位丢成 0（内容跳回起点）
+    const durNew = (40 / 48) * 1000
+    const delay = parseFloat(track(el).style.animationDelay)
+    const phaseAfter = ((((0 - delay) % durNew) + durNew) % durNew) / durNew
+    expect(phaseAfter, `缓存通道必须保住切换前相位 0.5（实际 ${phaseAfter.toFixed(4)}）`).toBeCloseTo(0.5, 2)
+  })
+
+  it('orientation 切轴后缓存作废：下一次捕获走 getAnimations 取新动画对象（不残留失效对象）', () => {
+    const { fire } = installRo()
+    const el = mount()
+    mockRects(el)
+    const durOld = (100 / 48) * 1000
+    const oldAnim: { currentTime: number | null } = { currentTime: durOld * 0.3 }
+    const newAnim: { currentTime: number | null } = { currentTime: 0 }
+    let switched = false
+    const t = track(el) as unknown as { getAnimations: () => Array<{ currentTime: number | null }> }
+    t.getAnimations = () => (switched ? [newAnim] : [oldAnim])
+    fire()
+    switched = true
+    el.setAttribute('orientation', 'vertical')
+    // 重启后新动画跑起来（新对象时钟推进）；旧对象此时在真机上已取消（currentTime = null）
+    oldAnim.currentTime = null
+    newAnim.currentTime = 120
+    const durNew = (40 / 48) * 1000
+    const delay1 = parseFloat(track(el).style.animationDelay)
+    el.setAttribute('speed', '96') // 再触发一次捕获：必须取新动画对象（120ms）而非失效的旧对象
+    const durNew2 = (40 / 96) * 1000
+    const delay2 = parseFloat(track(el).style.animationDelay)
+    expect(Number.isFinite(delay2), '缓存作废后仍能读到新动画相位').toBe(true)
+    const phaseBefore = ((((120 - delay1) % durNew) + durNew) % durNew) / durNew
+    const phaseAfter = ((((120 - delay2) % durNew2) + durNew2) % durNew2) / durNew2
+    expect(phaseAfter, `变速前后相位相等（before=${phaseBefore.toFixed(4)}）`).toBeCloseTo(phaseBefore, 3)
+  })
+
+  it('orientation 首帧不当作「切轴」处理（连接即 vertical 不触发重启补偿路径）', () => {
+    const { fire } = installRo()
+    const el = mount({ orientation: 'vertical' })
+    mockRects(el)
+    fire()
+    // 首帧无旧动画可捕获 → 归零重启（delay 清空），不得写入任何补偿
+    expect(track(el).style.animationDelay).toBe('')
+    expect(track(el).style.getPropertyValue('--oas-marquee-shift')).toBe('40px')
   })
 
   it('时长变化相位连续：speed 属性变更后等位移反解 delay（不整段重映射进度）', () => {

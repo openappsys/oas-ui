@@ -1300,6 +1300,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - a11y 审计全站零排除页：仅 stepper 保留一条「跨 shadow ID 引用」页面级规则豁免，配套 qa-regression 的 `aria-controls` 目标存在性断言兜底
 - 债务：stepper 页 `aria-valid-attr-value` 规则豁免属临时兜底（整规则禁用有旁泄面，见 a11y.spec 顶部警示），需后续收窄到具体节点
+- 债务：厂商前缀样式通道（backdrop 模糊的 `-webkit-backdrop-filter`）引擎层不在 CI 覆盖（Chromium 已移除该前缀、WebKit 在 Windows CI 不可靠），单测只锁「样式表双规则 + 内联变量」机制，手工核验方法见 `docs/engineering.md` §2
 - 新增对比度门禁自检用例与基线生成模式（`CONTRAST_BASELINE=update`，light + dark 双主题逐页落基线）；qa-regression 补 splitter 折叠（含折叠钮居中几何）/ list 双触发 / card radio 组 / stepper aria-controls / qrcode 刷新 / progress 内嵌文字边界六处固化
 - tooltip 三个 hover 跟随用例改「关动画 + 等 DOM 静止 + 轮询断言」，消除并行下的时序抖动
 
