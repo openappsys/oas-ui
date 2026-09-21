@@ -2238,6 +2238,11 @@
       "color": "Foreground (module) color, default fixed dark `#18181b` (paired with the white quiet zone for dark-theme scannability; override via `--oas-qrcode-color`, preset name, or any color value)",
       "icon": "Center logo image URL (use with `error-correction=\"h\"` to keep scannability)",
       "icon-size": "Center logo size in px (default size/5, clamped to [16, size/2])",
+      "icon-hide-dots": "Clears the modules under the center logo (boolean attribute, so the dot grid does not bleed through a semi-transparent logo)",
+      "dot-shape": "Module shape: `square` (default) / `rounded` / `dots` (invalid values silently fall back to `square`)",
+      "corner-shape": "Finder pattern shape: `square` (default, pixel-identical to the module grid) / `rounded` (rounds the three finder patterns)",
+      "gradient": "Gradient foreground: JSON array of 2–3 colors (e.g. `[\"#0b6cff\",\"#7c3aed\"]`); when set it overrides `color` (invalid values fall back to `color`)",
+      "gradient-angle": "Gradient angle (CSS convention: 0° bottom-to-top, 90° left-to-right, default 45)",
       "margin": "Quiet-zone margin in modules (default 4)",
       "status": "State machine: `active` (default) / `expired` (overlay, refresh button fires `oas-refresh`) / `loading` / `scanned`"
     },

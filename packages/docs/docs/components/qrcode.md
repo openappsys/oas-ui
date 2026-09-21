@@ -57,6 +57,40 @@
   </p>
 </DemoBlock>
 
+## 形状与渐变
+
+<DemoBlock title="dot-shape 码点形状 / corner-shape 定位图形">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-5); align-items: flex-start; flex-wrap: wrap">
+    <oas-qrcode value="https://oas-ui.dev" dot-shape="dots" aria-label="圆点码"></oas-qrcode>
+    <oas-qrcode value="https://oas-ui.dev" dot-shape="rounded" aria-label="圆角方块码"></oas-qrcode>
+    <oas-qrcode value="https://oas-ui.dev" dot-shape="dots" corner-shape="rounded" aria-label="圆点 + 圆角定位图形码"></oas-qrcode>
+  </div>
+  <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    <code>dot-shape</code>：<code>square</code>（默认）/ <code>rounded</code> / <code>dots</code>；<code>corner-shape</code>：<code>square</code>（默认）/ <code>rounded</code>（三处定位图形换圆角）。非法值静默回落 <code>square</code>。码点形状只改变渲染外观，不改模块矩阵与纠错编码。
+  </p>
+</DemoBlock>
+
+<DemoBlock title="gradient 渐变前景（覆盖 color）+ icon-hide-dots 挖空">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-5); align-items: flex-start; flex-wrap: wrap">
+    <oas-qrcode value="https://oas-ui.dev" gradient='["#1677ff","#722ed1"]' gradient-angle="45" aria-label="蓝紫渐变二维码"></oas-qrcode>
+    <oas-qrcode
+      value="https://oas-ui.dev"
+      error-correction="q"
+      dot-shape="dots"
+      corner-shape="rounded"
+      gradient='["#0b6cff","#7c3aed","#db2777"]'
+      gradient-angle="135"
+      icon="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' rx='12' fill='%23146ae3'/%3E%3Ctext x='32' y='42' font-size='22' text-anchor='middle' fill='white' font-family='sans-serif'%3EOAS%3C/text%3E%3C/svg%3E"
+      icon-size="28"
+      icon-hide-dots
+      aria-label="渐变圆点 + logo 挖空二维码"
+    ></oas-qrcode>
+  </div>
+  <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    <code>gradient</code> 传 JSON 数组（2–3 个色值，如 <code>'["#0b6cff","#7c3aed"]'</code>），按 <code>gradient-angle</code>（CSS 约定，0° 自下而上、90° 自左向右）线性渐变，生效时覆盖 <code>color</code>；非法值回落 <code>color</code>。<code>icon-hide-dots</code> 在中心 logo 覆盖区清空码点（避免点阵从半透明 logo 边缘透出）。<b>可扫性提示</b>：圆点/圆角与渐变会降低边缘对比度，弱光、低分辨率打印或长内容建议保持默认 <code>dot-shape="square"</code>，或提高 <code>error-correction</code> 到 <code>q</code>/<code>h</code>。
+  </p>
+</DemoBlock>
+
 ## 状态（过期 / 加载 / 已扫描）
 
 <DemoBlock title="status 状态机（expired 点击刷新）">
@@ -136,8 +170,13 @@ onMounted(() => {
 | `aria-label` | 容器可访问名称，缺省走 i18n | — | — |
 | `bg-color` | 背景色（默认白色——扫码器要求浅色静区，dark 主题下保持白底保证可扫；`--oas-qrcode-bg` 变量可覆盖） | `string` | — |
 | `color` | 前景色（码点颜色，默认固定深色 `#18181b`——与固定白静区配套保证 dark 可扫；`--oas-qrcode-color` 变量或预设名/任意色值覆盖） | `string` | — |
+| `corner-shape` | 定位图形形状：`square`（默认，与模块栅格逐像素等价）/ `rounded`（三处定位图形换圆角） | `string` | `square` |
+| `dot-shape` | 码点形状：`square`（默认）/ `rounded` / `dots`（非法值静默回落 `square`） | `string` | `square` |
 | `error-correction` | 纠错级别 l/m/q/h（四级均已实现，默认 l；中心 logo 遮挡或弱光/污损场景建议 q/h） | `string` | `l` |
+| `gradient` | 渐变前景：JSON 数组（2–3 个色值，如 `["#0b6cff","#7c3aed"]`），生效时覆盖 `color`（非法值回落 `color`） | `string` | — |
+| `gradient-angle` | 渐变角度（CSS 约定：0° 自下而上、90° 自左向右，默认 45） | `string` | `45` |
 | `icon` | 中心 logo 图片 URL（建议配合 `error-correction="h"` 保可扫性） | `string` | — |
+| `icon-hide-dots` | 中心 logo 覆盖区的码点挖空（布尔属性，避免点阵从半透明 logo 边缘透出） | `boolean` | — |
 | `icon-size` | 中心 logo 尺寸（px，默认 size/5， clamp 在 [16, size/2]） | — | — |
 | `margin` | 静区边距（模块单位，默认 4） | `string` | `4` |
 | `size` | 渲染宽高（px） | `string` | `128` |

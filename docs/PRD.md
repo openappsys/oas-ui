@@ -1307,3 +1307,27 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 全量单测 182 文件 / 7117 用例 / typecheck 0 / build 0 / api:check 通过（含新增 CSS 变量表生成）/ stats:check 0 / lint:md 0 / format 0 / perf:size 全 PASS（theme index.css 3.1KB / 3.5KB）/ trace 0 命中
 - 全量 e2e 2146 passed（chromium 全量 + firefox 抽样，0 failed）；a11y 审计 118 passed（117 页 × light+dark 双主题 + 门禁自检，零严重违规）；对比度硬闸 `<60 = 0`（light 655→0、dark 327→0），axe 比值法 ratchet 基线入库（255 违规 + exempt/skipped 同步 ratchet）
+
+## 未发布：qrcode 美化维度（码点 / 定位图形形状 + 渐变前景 + logo 挖空）
+
+> 版号由用户确定后再定版；本条只记内容与验收。
+
+### 特性
+
+- **`dot-shape` 码点形状**：`square`（默认，渲染与既有版本逐像素一致）/ `rounded`（圆角方块）/ `dots`（圆点，留 0.1 模块间隙防粘连）；非法值静默回落 `square`
+- **`corner-shape` 定位图形形状**：`square`（默认）/ `rounded`（三处定位图形圆角）——与码点形状可独立组合
+- **`gradient` + `gradient-angle` 渐变前景**：JSON 数组 2–3 色 + CSS 约定角度（0° 自下而上、90° 自左向右，默认 45°），渐变以整码为坐标系连续过渡；生效时覆盖 `color`，非法值回落 `color`
+- **`icon-hide-dots`**：中心 logo 覆盖区码点挖空（logo 半透明时点阵不再从边缘透出）
+
+### 工程
+
+- **渲染拆纯函数层** `src/data/qrcode/shapes.ts`（定位图形识别 / 数据区 run-length 路径 / `<use>` 原型 / 定位图形 evenodd 路径 / 渐变 defs），组件与离屏下载共用同一渲染核心——顺带修掉「下载产物与屏幕不一致」的真故障（`download()` 仍调用已移除的旧渲染器，运行即抛 `matrixToPath is not defined`）
+- **体积策略**：square 沿用 run-length 合并单 path；rounded / dots 走 defs 几何原型 + `<use>`，避免 v40（177×177）逐模块输出数百 KB 的 SVG 字符串
+- **可扫性不退化**：默认配置新增区域级等价断言——`dataPath + finderPath(square)` 的覆盖模块集合必须与旧 `matrixToPath` 完全相等（无重叠 / 无遗漏），保证默认外观与旧版本一致
+- **源码级守卫**：路径数据合法性检查（剥离合法字符后必须为空）——曾因 `roundRect` 模板串漏 `${}` 在路径里写出字面量 `v-(h - 2 * rr)`，浏览器解析到非法 token 后丢弃后续子路径，右上 / 左下定位图形整块消失、左上糊成实心（单测与既有断言全绿，靠视觉核验才发现）
+
+### 验收
+
+- 单测：qrcode 域 73 用例（含形状 / 渐变 / 挖空 / 路径合法性 / 默认等价）；typecheck 0；build 0
+- 浏览器回归（qa-regression，chromium + firefox 抽样）：像素级数三处定位图形暗模块（square 精确 33；rounded 因圆角弧线切到角格、采样点落在抗锯齿带，容 32–34，仍可抓「丢失 0 / 糊成实心 45+」）+ 默认渲染零 defs + 形状 / 渐变 / 挖空按属性生效 + `download()` 产物含形状与渐变且不走合并路径
+- 视觉核验：浅色 + 暗色两组截图逐块核对（三眼齐全、圆角「环 + 中心块」结构、整码连续渐变、logo 挖空留白、暗色仍白底深点），console 零告警；smoke / dark / visual / console-sweep 四支 spec 的 qrcode 页均过

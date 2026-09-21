@@ -2238,6 +2238,11 @@
       "color": "前景色（码点颜色，默认固定深色 `#18181b`——与固定白静区配套保证 dark 可扫；`--oas-qrcode-color` 变量或预设名/任意色值覆盖）",
       "icon": "中心 logo 图片 URL（建议配合 `error-correction=\"h\"` 保可扫性）",
       "icon-size": "中心 logo 尺寸（px，默认 size/5， clamp 在 [16, size/2]）",
+      "icon-hide-dots": "中心 logo 覆盖区的码点挖空（布尔属性，避免点阵从半透明 logo 边缘透出）",
+      "dot-shape": "码点形状：`square`（默认）/ `rounded` / `dots`（非法值静默回落 `square`）",
+      "corner-shape": "定位图形形状：`square`（默认，与模块栅格逐像素等价）/ `rounded`（三处定位图形换圆角）",
+      "gradient": "渐变前景：JSON 数组（2–3 个色值，如 `[\"#0b6cff\",\"#7c3aed\"]`），生效时覆盖 `color`（非法值回落 `color`）",
+      "gradient-angle": "渐变角度（CSS 约定：0° 自下而上、90° 自左向右，默认 45）",
       "margin": "静区边距（模块单位，默认 4）",
       "status": "状态机：`active`（默认）/ `expired`（过期遮罩，点击刷新派 `oas-refresh`）/ `loading` / `scanned`"
     },

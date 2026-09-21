@@ -1,5 +1,15 @@
 import { OASElement } from '@oas-ui/core'
-import { encodeQR, matrixToPath, QR_TOO_LONG_ERROR, type QrErrorCorrection } from './qr.js'
+import { encodeQR, QR_TOO_LONG_ERROR, type QrErrorCorrection } from './qr.js'
+import {
+  centeredBox,
+  dataPath,
+  dataUses,
+  finderPath,
+  linearGradientDef,
+  moduleDef,
+  type CornerShape,
+  type DotShape,
+} from './shapes.js'
 
 const STYLE = `
 :host {
@@ -123,9 +133,17 @@ const DEFAULT_BG = '#ffffff'
  *   可经 `--oas-qrcode-bg` 变量覆盖）
  * - `margin`：静区边距（模块倍数，默认 4，符合 QR 标准静区要求）
  * - `icon` / `icon-size`：中心 logo（图片 URL，建议搭配 q/h 纠错保住可扫性）
+ * - `icon-hide-dots`：中心 logo 覆盖区挖空点阵（布尔，默认关）——避免图与码点重叠导致灰度过乱
+ * - `dot-shape`：数据模块形状 `square`（默认）/ `rounded` / `dots`
+ * - `corner-shape`：三个定位图形形状 `square`（默认）/ `rounded`
+ * - `gradient`：前景渐变（JSON 颜色数组，≥2 停靠色，如 `["#0b6cff","#7c3aed"]`；生效时覆盖 `color`）
+ * - `gradient-angle`：渐变角度（deg，CSS 约定 0=自下而上、90=自左向右，默认 45）
  * - `status`：active（默认）/ expired / loading / scanned，非 active 时盖覆盖层；
  *   expired 覆盖层含「刷新」按钮，点击派发 `oas-refresh`；
  *   自定义覆盖层内容走 `template[slot="status"]` 克隆
+ *
+ * ⚠️ 可扫性约束（形状化/渐变属美化，会削弱模块边缘对比）：尺寸建议 ≥128；`dot-shape="dots"`
+ * 或大面积渐变时建议 `error-correction` 取 q/h，并实测手机扫码。
  *
  * 方法：`download()` 离屏 rasterize 当前码为 PNG 并触发下载（SVG-only 渲染，不引入常驻 canvas）。
  *
@@ -145,6 +163,11 @@ export class OASQRCode extends OASElement {
       'margin',
       'icon',
       'icon-size',
+      'icon-hide-dots',
+      'dot-shape',
+      'corner-shape',
+      'gradient',
+      'gradient-angle',
       'status',
     ]
   }
@@ -215,30 +238,11 @@ export class OASQRCode extends OASElement {
     try {
       const ec = this.normalizeEc()
       const qr = encodeQR(value, ec)
-      const margin = this.normalizeMargin()
-      const total = qr.size + margin * 2
-      const bg = this.bgColor()
-      const fg = this.fgColor()
+      const { inner, total } = this.renderInner(qr.modules, qr.size, size, this.fgColor(), this.bgColor())
 
       svg.setAttribute('viewBox', `0 0 ${total} ${total}`)
       svg.setAttribute('width', String(size))
       svg.setAttribute('height', String(size))
-
-      // 背景色矩形（静区一并铺底）+ 数据路径
-      let inner = `<rect width="${total}" height="${total}" fill="${bg}"/>`
-      inner += `<path d="${matrixToPath(qr.modules, qr.size, margin)}" fill="${fg}" shape-rendering="crispEdges"/>`
-
-      // 中心 logo：底色托 + 图片（高纠错级别兜底可扫性）
-      const icon = this.getAttr('icon', '')
-      if (icon) {
-        const iconModules = (this.normalizeIconSize(size) / size) * total
-        const pad = Math.max(1, iconModules * 0.08)
-        const x = total / 2 - iconModules / 2
-        const y = total / 2 - iconModules / 2
-        const radius = Math.max(1, iconModules * 0.12)
-        inner += `<rect x="${x - pad}" y="${y - pad}" width="${iconModules + pad * 2}" height="${iconModules + pad * 2}" rx="${radius}" fill="${bg}"/>`
-        inner += `<image href="${escapeAttr(icon)}" x="${x}" y="${y}" width="${iconModules}" height="${iconModules}" preserveAspectRatio="xMidYMid slice"/>`
-      }
 
       svg.innerHTML = inner
       if (!this.hasAttr('color')) {
@@ -333,6 +337,37 @@ export class OASQRCode extends OASElement {
   private normalizeEc(): QrErrorCorrection {
     const v = this.getAttr('error-correction', 'l').toLowerCase()
     return v === 'm' || v === 'q' || v === 'h' ? v : 'l'
+  }
+
+  /** 数据模块形状归一：square（默认）/ rounded / dots；非法值静默回落 square */
+  private normalizeDotShape(): DotShape {
+    const v = this.getAttr('dot-shape', 'square').toLowerCase()
+    return v === 'rounded' || v === 'dots' ? v : 'square'
+  }
+
+  /** 定位图形形状归一：square（默认）/ rounded；非法值回落 square */
+  private normalizeCornerShape(): CornerShape {
+    return this.getAttr('corner-shape', 'square').toLowerCase() === 'rounded' ? 'rounded' : 'square'
+  }
+
+  /** 前景渐变停靠色：JSON 颜色数组且有效色 ≥2 才生效；否则返回 null（回落 `color`/缺省前景） */
+  private gradientStops(): string[] | null {
+    const raw = this.getAttr('gradient', '').trim()
+    if (!raw) return null
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return null
+      const stops = parsed.filter((s): s is string => typeof s === 'string' && s.trim() !== '')
+      return stops.length >= 2 ? stops : null
+    } catch {
+      return null
+    }
+  }
+
+  /** 渐变角度（deg，CSS 约定 0=自下而上、90=自左向右）；默认 45，非法值回落默认 */
+  private gradientAngle(): number {
+    const n = Number(this.getAttr('gradient-angle', '45'))
+    return Number.isFinite(n) ? ((n % 360) + 360) % 360 : 45
   }
 
   /** 静区边距（模块倍数）：默认 4（QR 标准静区），非法值回退 */
@@ -440,27 +475,73 @@ export class OASQRCode extends OASElement {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000)
   }
 
-  /** 生成独立 SVG 数据 URL（显式色值，避免 currentColor/外部样式序列化丢失） */
-  private buildSvgDataUrl(size: number, modules: Uint8Array, scale: number): string {
+  /**
+   * 渲染核心（屏幕渲染与离屏下载共用）：返回「模块单位」的 SVG 内容与总尺寸（含静区）。
+   * 形状化 / 渐变 / icon 挖空都在这里统一处理，保证下载产物与屏幕一致。
+   */
+  private renderInner(
+    modules: Uint8Array,
+    moduleCount: number,
+    px: number,
+    fg: string,
+    bg: string,
+  ): { inner: string; total: number } {
     const margin = this.normalizeMargin()
-    const total = size + margin * 2
-    const px = total * scale
-    const fg = this.resolveFgForCanvas()
-    const bg = this.resolveBgForCanvas()
+    const total = moduleCount + margin * 2
+    const dotShape = this.normalizeDotShape()
+    const cornerShape = this.normalizeCornerShape()
     const icon = this.getAttr('icon', '')
-    let inner = `<rect width="${px}" height="${px}" fill="${bg}"/>`
-    const d = matrixToPath(modules, size, margin).replace(/(\d+(?:\.\d+)?)/g, (m) => String(Number(m) * scale))
-    inner += `<path d="${d}" fill="${fg}" shape-rendering="crispEdges"/>`
+    const iconModules = icon ? (this.normalizeIconSize(px) / px) * total : 0
+    const iconPad = icon ? Math.max(1, iconModules * 0.08) : 0
+    // 「挖空点阵」跳过区（模块坐标，中心对齐）
+    const skip = icon && this.hasAttr('icon-hide-dots') ? centeredBox(moduleCount, iconModules, iconPad) : null
+
+    // 前景：显式渐变优先于纯色；形状原型（rounded/dots）进 defs 供 <use> 引用
+    const stops = this.gradientStops()
+    let defs = ''
+    let fill = fg
+    if (stops) {
+      defs += linearGradientDef(stops, this.gradientAngle())
+      fill = 'url(#oas-qr-grad)'
+    }
+    if (dotShape !== 'square') defs += moduleDef(dotShape)
+
+    // 数据区：square 走合并单 path（crispEdges 保锐利）；rounded/dots 走 <use> 引用原型（体积友好）
+    const data =
+      dotShape === 'square'
+        ? `<path d="${dataPath(modules, moduleCount, margin, skip)}" fill="${fill}" shape-rendering="crispEdges"/>`
+        : `<g fill="${fill}">${dataUses(modules, moduleCount, margin, 'oas-qr-mod', skip)}</g>`
+    // 定位图形单独绘制（corner-shape=square 时与模块栅格逐像素等价；rounded 换圆角）
+    const crisp = cornerShape === 'square' ? ' shape-rendering="crispEdges"' : ''
+    const finder = `<path d="${finderPath(moduleCount, margin, cornerShape)}" fill="${fill}" fill-rule="evenodd"${crisp}/>`
+
+    let inner = `<rect width="${total}" height="${total}" fill="${bg}"/>`
+    if (defs) inner += `<defs>${defs}</defs>`
+    inner += data + finder
+
+    // 中心 logo：底色托 + 图片（高纠错级别兜底可扫性）
     if (icon) {
-      const iconModules = (this.normalizeIconSize(this.normalizeSize()) / this.normalizeSize()) * total
-      const pad = Math.max(1, iconModules * 0.08)
       const x = total / 2 - iconModules / 2
       const y = total / 2 - iconModules / 2
       const radius = Math.max(1, iconModules * 0.12)
-      inner += `<rect x="${(x - pad) * scale}" y="${(y - pad) * scale}" width="${(iconModules + pad * 2) * scale}" height="${(iconModules + pad * 2) * scale}" rx="${radius * scale}" fill="${bg}"/>`
-      inner += `<image href="${escapeAttr(icon)}" x="${x * scale}" y="${y * scale}" width="${iconModules * scale}" height="${iconModules * scale}" preserveAspectRatio="xMidYMid slice"/>`
+      inner += `<rect x="${x - iconPad}" y="${y - iconPad}" width="${iconModules + iconPad * 2}" height="${iconModules + iconPad * 2}" rx="${radius}" fill="${bg}"/>`
+      inner += `<image href="${escapeAttr(icon)}" x="${x}" y="${y}" width="${iconModules}" height="${iconModules}" preserveAspectRatio="xMidYMid slice"/>`
     }
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 ${px} ${px}">${inner}</svg>`
+    return { inner, total }
+  }
+
+  /** 生成独立 SVG 数据 URL（显式色值，避免 currentColor/外部样式序列化丢失；与屏幕渲染同一套形状/渐变） */
+  private buildSvgDataUrl(size: number, modules: Uint8Array, scale: number): string {
+    const { inner, total } = this.renderInner(
+      modules,
+      size,
+      this.normalizeSize(),
+      this.resolveFgForCanvas(),
+      this.resolveBgForCanvas(),
+    )
+    const px = total * scale
+    // 模块单位内容整体缩放（不改内部坐标，避免逐坐标缩放的精度与渐变坐标问题）
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 ${total} ${total}"><g transform="scale(${scale})">${inner}</g></svg>`
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
   }
 

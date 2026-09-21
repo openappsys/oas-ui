@@ -57,6 +57,40 @@ A QR code component based on a **pure TypeScript, zero-dependency encoder** (bui
   </p>
 </DemoBlock>
 
+## Shapes and Gradients
+
+<DemoBlock title="dot-shape module shape / corner-shape finder pattern">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-5); align-items: flex-start; flex-wrap: wrap">
+    <oas-qrcode value="https://oas-ui.dev" dot-shape="dots" aria-label="Dotted QR code"></oas-qrcode>
+    <oas-qrcode value="https://oas-ui.dev" dot-shape="rounded" aria-label="Rounded-square QR code"></oas-qrcode>
+    <oas-qrcode value="https://oas-ui.dev" dot-shape="dots" corner-shape="rounded" aria-label="Dotted QR code with rounded finder patterns"></oas-qrcode>
+  </div>
+  <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    <code>dot-shape</code>: <code>square</code> (default) / <code>rounded</code> / <code>dots</code>; <code>corner-shape</code>: <code>square</code> (default) / <code>rounded</code> (rounds the three finder patterns). Invalid values silently fall back to <code>square</code>. Module shapes change rendering only — the module matrix and error-correction encoding stay identical.
+  </p>
+</DemoBlock>
+
+<DemoBlock title="gradient foreground (overrides color) + icon-hide-dots">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-5); align-items: flex-start; flex-wrap: wrap">
+    <oas-qrcode value="https://oas-ui.dev" gradient='["#1677ff","#722ed1"]' gradient-angle="45" aria-label="Blue-purple gradient QR code"></oas-qrcode>
+    <oas-qrcode
+      value="https://oas-ui.dev"
+      error-correction="q"
+      dot-shape="dots"
+      corner-shape="rounded"
+      gradient='["#0b6cff","#7c3aed","#db2777"]'
+      gradient-angle="135"
+      icon="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' rx='12' fill='%23146ae3'/%3E%3Ctext x='32' y='42' font-size='22' text-anchor='middle' fill='white' font-family='sans-serif'%3EOAS%3C/text%3E%3C/svg%3E"
+      icon-size="28"
+      icon-hide-dots
+      aria-label="Gradient dotted QR code with logo knockout"
+    ></oas-qrcode>
+  </div>
+  <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    <code>gradient</code> takes a JSON array (2–3 colors, e.g. <code>'["#0b6cff","#7c3aed"]'</code>) and renders a linear gradient along <code>gradient-angle</code> (CSS convention: 0° bottom-to-top, 90° left-to-right); when set it overrides <code>color</code>, and invalid values fall back to <code>color</code>. <code>icon-hide-dots</code> clears the modules under the center logo (so the dot grid does not bleed through a semi-transparent logo). <b>Scannability note</b>: dots/rounded shapes and gradients reduce edge contrast — for low light, low-resolution printing or long content keep the default <code>dot-shape="square"</code>, or raise <code>error-correction</code> to <code>q</code>/<code>h</code>.
+  </p>
+</DemoBlock>
+
 ## Status (expired / loading / scanned)
 
 <DemoBlock title="status state machine (click refresh on expired)">
@@ -136,8 +170,13 @@ When `value` is empty, a "No content" placeholder is shown; when the content exc
 | `aria-label` | Accessible name of the container; defaults to i18n | — | — |
 | `bg-color` | Background color (default white — scanners need a light quiet zone; stays white in dark theme for scannability; override via `--oas-qrcode-bg`) | `string` | — |
 | `color` | Foreground (module) color, default fixed dark `#18181b` (paired with the white quiet zone for dark-theme scannability; override via `--oas-qrcode-color`, preset name, or any color value) | `string` | — |
+| `corner-shape` | Finder pattern shape: `square` (default, pixel-identical to the module grid) / `rounded` (rounds the three finder patterns) | `string` | `square` |
+| `dot-shape` | Module shape: `square` (default) / `rounded` / `dots` (invalid values silently fall back to `square`) | `string` | `square` |
 | `error-correction` | Error correction level l/m/q/h (all four implemented; default l. Use q/h for a center logo or weak-light/damaged scenarios) | `string` | `l` |
+| `gradient` | Gradient foreground: JSON array of 2–3 colors (e.g. `["#0b6cff","#7c3aed"]`); when set it overrides `color` (invalid values fall back to `color`) | `string` | — |
+| `gradient-angle` | Gradient angle (CSS convention: 0° bottom-to-top, 90° left-to-right, default 45) | `string` | `45` |
 | `icon` | Center logo image URL (use with `error-correction="h"` to keep scannability) | `string` | — |
+| `icon-hide-dots` | Clears the modules under the center logo (boolean attribute, so the dot grid does not bleed through a semi-transparent logo) | `boolean` | — |
 | `icon-size` | Center logo size in px (default size/5, clamped to [16, size/2]) | — | — |
 | `margin` | Quiet-zone margin in modules (default 4) | `string` | `4` |
 | `size` | Rendered width/height (px) | `string` | `128` |
