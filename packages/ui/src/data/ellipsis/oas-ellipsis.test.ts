@@ -17,6 +17,17 @@ function toggleEl(el: OASEllipsis): HTMLButtonElement {
 }
 
 /**
+ * shadow 内联样式表文本。
+ * 多行 clamp 的效果由样式表规则 `-webkit-line-clamp: var(--oas-ellipsis-lines, N)` 驱动，
+ * 行数值走内联自定义属性——两者相加才是「驱动该效果的机制」，缺一不可。
+ * （happy-dom ≥20.14.5 起丢弃内联 `-webkit-line-clamp` 属性，真实浏览器正常；
+ * 自定义属性在 happy-dom 序列化中保留，故 SSR 快照同样带该机制。）
+ */
+function shadowStyleText(el: OASEllipsis): string {
+  return el.shadowRoot!.querySelector('style')!.textContent ?? ''
+}
+
+/**
  * 桩掉文本尺寸并强制重跑 update()：
  * happy-dom 不参与布局，scrollWidth/clientWidth 恒为 0，需手动构造溢出条件。
  */
@@ -69,6 +80,11 @@ describe('OASEllipsis', () => {
     const t = textEl(el)
     expect(t.classList.contains('multi')).toBe(true)
     expect(t.classList.contains('single')).toBe(false)
+    // 机制：样式表含驱动 clamp 的规则 + 行数写入内联变量
+    expect(shadowStyleText(el), '样式表含 .multi 的 line-clamp 规则').toContain(
+      '-webkit-line-clamp: var(--oas-ellipsis-lines',
+    )
+    expect(t.style.getPropertyValue('--oas-ellipsis-lines')).toBe('2')
   })
 
   it('多行溢出时 tooltip 展示全文', () => {
@@ -264,14 +280,14 @@ describe('OASEllipsis', () => {
     Object.defineProperty(t, 'clientWidth', { value: 100, configurable: true })
     el.setAttribute('text', '变化')
     expect(t.classList.contains('multi')).toBe(false)
-    expect(t.style.getPropertyValue('-webkit-line-clamp')).toBe('')
+    expect(t.style.getPropertyValue('--oas-ellipsis-lines')).toBe('')
     await flushRaf()
     // 校正帧：rows=2 → multi 类 + line-clamp=2
     expect(t.classList.contains('multi')).toBe(true)
-    expect(t.style.getPropertyValue('-webkit-line-clamp')).toBe('2')
+    expect(t.style.getPropertyValue('--oas-ellipsis-lines')).toBe('2')
     // 校正后：属性变化同步写入
     el.setAttribute('rows', '3')
-    expect(t.style.getPropertyValue('-webkit-line-clamp')).toBe('3')
+    expect(t.style.getPropertyValue('--oas-ellipsis-lines')).toBe('3')
     el.remove()
   })
 
@@ -443,14 +459,14 @@ describe('OASEllipsis', () => {
       const t = textEl(el)
       expect(t.classList.contains('multi')).toBe(true)
       expect(t.classList.contains('single')).toBe(false)
-      expect(t.style.getPropertyValue('-webkit-line-clamp')).toBe('2')
+      expect(t.style.getPropertyValue('--oas-ellipsis-lines')).toBe('2')
     })
 
     it('lines 与 rows 同时存在时 lines 优先', () => {
       const el = mount({ text: '多行文本', rows: '3', lines: '2' })
-      expect(textEl(el).style.getPropertyValue('-webkit-line-clamp')).toBe('2')
+      expect(textEl(el).style.getPropertyValue('--oas-ellipsis-lines')).toBe('2')
       el.setAttribute('lines', '4')
-      expect(textEl(el).style.getPropertyValue('-webkit-line-clamp')).toBe('4')
+      expect(textEl(el).style.getPropertyValue('--oas-ellipsis-lines')).toBe('4')
     })
 
     it('缺省 lines 时 rows 语义不变（单行零回归）', () => {

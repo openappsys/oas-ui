@@ -114,6 +114,11 @@
       "name": "title"
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-alert-max-line",
+      "default": "2"
+    }
+  ],
   "unresolved": []
 }

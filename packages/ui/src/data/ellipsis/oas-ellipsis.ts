@@ -31,10 +31,14 @@ const STYLE = `
   direction: rtl;
   unicode-bidi: plaintext;
 }
-/* 多行省略（line-clamp） */
+/* 多行省略（line-clamp）：行数值走内联自定义属性 --oas-ellipsis-lines，
+   规则在此驱动 -webkit-line-clamp。相比内联 -webkit-line-clamp，变量形态在 SSR
+   （happy-dom，会丢弃内联 -webkit-line-clamp）序列化中保留，DSD 快照禁 JS 首帧即截断 */
 .text.multi {
   display: -webkit-box;
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--oas-ellipsis-lines, 2);
+  line-clamp: var(--oas-ellipsis-lines, 2);
   overflow: hidden;
   word-break: break-all;
 }
@@ -101,6 +105,8 @@ const STYLE = `
 .mirror.multi {
   display: -webkit-box;
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--oas-ellipsis-lines, 2);
+  line-clamp: var(--oas-ellipsis-lines, 2);
   overflow: hidden;
   word-break: break-all;
 }
@@ -243,9 +249,9 @@ export class OASEllipsis extends OASElement {
     this.textEl.classList.toggle('single', clamped && rows === 1)
     this.textEl.classList.toggle('multi', clamped && rows >= 2)
     if (clamped && rows >= 2) {
-      this.textEl.style.setProperty('-webkit-line-clamp', String(rows))
+      this.textEl.style.setProperty('--oas-ellipsis-lines', String(rows))
     } else {
-      this.textEl.style.removeProperty('-webkit-line-clamp')
+      this.textEl.style.removeProperty('--oas-ellipsis-lines')
     }
 
     // 溢出判定基于全文（此刻 textContent 仍为全文，JS 截断前测量）
@@ -309,8 +315,8 @@ export class OASEllipsis extends OASElement {
       this.textEl.classList.remove('manual', 'nowrap')
       this.textEl.classList.toggle('single', rows === 1)
       this.textEl.classList.toggle('multi', rows >= 2)
-      if (rows >= 2) this.textEl.style.setProperty('-webkit-line-clamp', String(rows))
-      else this.textEl.style.removeProperty('-webkit-line-clamp')
+      if (rows >= 2) this.textEl.style.setProperty('--oas-ellipsis-lines', String(rows))
+      else this.textEl.style.removeProperty('--oas-ellipsis-lines')
 
       const overflow = this.isOverflow()
       this.emitOverflow(overflow)
@@ -327,7 +333,7 @@ export class OASEllipsis extends OASElement {
       const width = this.rootEl.clientWidth
       if (width > 0) this.rootEl.style.width = `${width}px`
       this.textEl.classList.remove('single', 'multi')
-      this.textEl.style.removeProperty('-webkit-line-clamp')
+      this.textEl.style.removeProperty('--oas-ellipsis-lines')
       this.textEl.classList.add('manual')
       if (rows === 1) this.textEl.classList.add('nowrap')
 
@@ -353,7 +359,7 @@ export class OASEllipsis extends OASElement {
 
     // 展开态：全文 + 行内「收起」链接（click 模式无按钮，再点文本收起）
     this.textEl.classList.remove('single', 'multi')
-    this.textEl.style.removeProperty('-webkit-line-clamp')
+    this.textEl.style.removeProperty('--oas-ellipsis-lines')
     this.textEl.classList.add('manual')
     if (rows === 1) this.textEl.classList.add('nowrap')
     else this.textEl.classList.remove('nowrap')
@@ -394,8 +400,8 @@ export class OASEllipsis extends OASElement {
   private fitPrefixLength(full: string, width: number, rows: number, reserve: string): number {
     const mirror = this.mirror()
     mirror.className = rows >= 2 ? 'mirror multi' : 'mirror single'
-    if (rows >= 2) mirror.style.setProperty('-webkit-line-clamp', String(rows))
-    else mirror.style.removeProperty('-webkit-line-clamp')
+    if (rows >= 2) mirror.style.setProperty('--oas-ellipsis-lines', String(rows))
+    else mirror.style.removeProperty('--oas-ellipsis-lines')
     mirror.style.width = width > 0 ? `${width}px` : ''
 
     const fits = (n: number): boolean => {
@@ -472,8 +478,8 @@ export class OASEllipsis extends OASElement {
   ): number {
     const mirror = this.mirror()
     mirror.className = `mirror ${form}`
-    if (form === 'multi') mirror.style.setProperty('-webkit-line-clamp', String(rows))
-    else mirror.style.removeProperty('-webkit-line-clamp')
+    if (form === 'multi') mirror.style.setProperty('--oas-ellipsis-lines', String(rows))
+    else mirror.style.removeProperty('--oas-ellipsis-lines')
     mirror.style.width = width > 0 ? `${width}px` : ''
     const fits = (n: number): boolean => {
       mirror.textContent = content(n)
@@ -549,7 +555,7 @@ export class OASEllipsis extends OASElement {
     const fitsCombo = (t: number): boolean => {
       const mirror = this.mirror()
       mirror.className = 'mirror multi'
-      mirror.style.setProperty('-webkit-line-clamp', String(rows))
+      mirror.style.setProperty('--oas-ellipsis-lines', String(rows))
       mirror.style.width = `${width}px`
       mirror.textContent = `${full.slice(0, headCap)}…${full.slice(full.length - t)}`
       return mirror.scrollHeight - mirror.clientHeight <= 1

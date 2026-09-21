@@ -201,4 +201,10 @@ onMounted(() => {
 | `oas-expand` | 展开，`detail: { expanded: true }` |
 | `oas-overflow` | 省略状态变化时派发，`detail: { overflow }`（同值不重复派发） |
 
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-ellipsis-lines` | `2` |
+
 仅文本**实际溢出**时才会挂载 tooltip / 展开按钮；无溢出时纯文本，断开连接即销毁，零孤儿浮层。

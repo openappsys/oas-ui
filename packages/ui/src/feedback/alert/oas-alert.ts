@@ -209,10 +209,14 @@ const STYLE = `
   line-height: 1.6;
   min-width: 0;
 }
-/* P10 折叠：-webkit-line-clamp 截断，clamped 由 update() 增量同步 */
+/* P10 折叠：行数值走内联自定义属性 --oas-alert-max-line，规则在此驱动 -webkit-line-clamp
+   （展开/收起由 update() 增量同步）。变量形态在 SSR（happy-dom，会丢弃内联
+   -webkit-line-clamp）序列化中保留，DSD 快照禁 JS 首帧即截断 */
 .body.clamped {
   display: -webkit-box;
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--oas-alert-max-line, 2);
+  line-clamp: var(--oas-alert-max-line, 2);
   overflow: hidden;
 }
 .actions {
@@ -490,8 +494,8 @@ export class OASAlert extends OASElement {
       const valid = Number.isFinite(maxLine) && maxLine >= 1
       const clamped = valid && !this.expanded
       body.classList.toggle('clamped', clamped)
-      if (clamped) body.style.setProperty('-webkit-line-clamp', String(Math.round(maxLine)))
-      else body.style.removeProperty('-webkit-line-clamp')
+      if (clamped) body.style.setProperty('--oas-alert-max-line', String(Math.round(maxLine)))
+      else body.style.removeProperty('--oas-alert-max-line')
       toggle.hidden = !valid
       const label = this.expanded ? this.t('ellipsis.collapse') : this.t('ellipsis.expand')
       toggle.textContent = label
