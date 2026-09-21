@@ -510,6 +510,9 @@ const STYLE = `
   padding: 0 var(--oas-space-1);
   line-height: 1;
 }
+.mini-badge[hidden] {
+  display: none;
+}
 .mini-badge.dot {
   min-width: var(--oas-space-2);
   width: var(--oas-space-2);

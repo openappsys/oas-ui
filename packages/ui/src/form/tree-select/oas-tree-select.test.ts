@@ -644,6 +644,25 @@ describe('OASTreeSelect 回显增强（show-path / cache-data / prefix / suffix�
     document.body.appendChild(el)
     expect(trigger(el).querySelector('.prefix b')?.textContent).toBe('P')
   })
+
+  it('hidden 兜底：.prefix/.suffix 声明 display:inline-flex 压过 UA [hidden]，必须有显式补回', () => {
+    // 回归：无 prefix/suffix 时 fillAffix 置 hidden=true，但 .prefix,.suffix{display:inline-flex}
+    // 覆盖 UA 的 [hidden]{display:none}，空 span 仍按内联盒参与布局（同 chip/clear-btn 先例）
+    const el = mount({ options: OPTIONS })
+    const prefix = trigger(el).querySelector<HTMLElement>('.prefix')!
+    const suffix = trigger(el).querySelector<HTMLElement>('.suffix')!
+    expect(prefix.hasAttribute('hidden'), '默认（无 prefix）前缀应带 hidden').toBe(true)
+    expect(suffix.hasAttribute('hidden'), '默认（无 suffix）后缀应带 hidden').toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style, '作者层 display:inline-flex 压过 UA hidden，必须有 .prefix/.suffix[hidden] 兜底').toMatch(
+      /\.prefix\[hidden\]\s*,\s*\.suffix\[hidden\]\s*\{[^}]*display:\s*none/,
+    )
+    expect(style, '基础规则 display:inline-flex 布局语义不变').toMatch(
+      /\.prefix\s*,\s*\.suffix\s*\{[^}]*display:\s*inline-flex/,
+    )
+    el.setAttribute('prefix-text', '部门')
+    expect(trigger(el).querySelector<HTMLElement>('.prefix')!.hasAttribute('hidden')).toBe(false)
+  })
 })
 
 describe('OASTreeSelect 面板增强（loading / empty / header / footer / node 渲染）', () => {

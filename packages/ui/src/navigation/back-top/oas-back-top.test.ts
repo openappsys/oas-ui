@@ -498,6 +498,23 @@ describe('OASBackTop', () => {
     expect(el.shadowRoot!.querySelector('[part="badge"]')!.hasAttribute('hidden')).toBe(true)
   })
 
+  it('hidden 兜底：.badge 声明 display:flex 压过 UA [hidden]，必须有显式 .badge[hidden] 补回', () => {
+    // 回归：无 badge 时 badgeEl.hidden=true，但 .badge{display:flex} 覆盖 UA 的
+    // [hidden]{display:none}，空徽标药丸仍挂在角落（同 progress/steps 先例）
+    const el = new OASBackTop()
+    el.setAttribute('visible', '')
+    document.body.appendChild(el)
+    const badge = el.shadowRoot!.querySelector<HTMLElement>('[part="badge"]')!
+    expect(badge.hasAttribute('hidden'), '默认（无 badge 属性）徽标应带 hidden').toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style, '作者层 display:flex 压过 UA hidden，必须有 .badge[hidden] 兜底').toMatch(
+      /\.badge\[hidden\]\s*\{[^}]*display:\s*none/,
+    )
+    expect(style, '基础规则 display:flex 布局语义不变').toMatch(/\.badge\s*\{[^}]*display:\s*flex/)
+    el.setAttribute('badge', '3')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="badge"]')!.hasAttribute('hidden')).toBe(false)
+  })
+
   // ---------- target 缺省自动探测（嵌套滚动容器内自动吸附） ----------
   it('target 缺省：自动吸附最近可滚祖先容器（overflow auto/scroll 且内容溢出）', () => {
     const outer = document.createElement('div')

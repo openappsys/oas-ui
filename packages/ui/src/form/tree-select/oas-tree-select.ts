@@ -243,6 +243,10 @@ const STYLE = `
   color: var(--oas-color-text-secondary);
   flex: none;
 }
+.prefix[hidden],
+.suffix[hidden] {
+  display: none;
+}
 .value {
   display: flex;
   flex-wrap: wrap;

@@ -314,6 +314,9 @@ const STYLE = `
   padding: 0 var(--oas-space-1);
   line-height: 1;
 }
+.badge[hidden] {
+  display: none;
+}
 @media (prefers-reduced-motion: reduce) {
   .btn,
   .btn.show,

@@ -136,6 +136,9 @@ const STYLE = `
   display: flex;
   gap: var(--oas-progress-step-gap, var(--oas-space-1));
 }
+.steps[hidden] {
+  display: none;
+}
 .step {
   flex: 1;
   border-radius: var(--oas-radius-full, 999px);

@@ -638,6 +638,21 @@ describe('OASDrawer', () => {
     expect(panel(el).getAttribute('role')).toBe('dialog')
   })
 
+  it('hidden 兜底：.header 声明 display:flex 压过 UA [hidden]，必须有显式 .header[hidden] 补回', () => {
+    // 回归：no-header 时 header.hidden=true，但 .header{display:flex} 覆盖 UA 的
+    // [hidden]{display:none}，标题区（含分隔线）仍照画（同 header-actions/footer-actions 先例）
+    const el = mount({ visible: '' })
+    const header = el.shadowRoot!.querySelector<HTMLElement>('[part="header"]')!
+    expect(header.hasAttribute('hidden'), '默认（无 no-header）标题区不应隐藏').toBe(false)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style, '作者层 display:flex 压过 UA hidden，必须有 .header[hidden] 兜底').toMatch(
+      /\.header\[hidden\]\s*\{[^}]*display:\s*none/,
+    )
+    expect(style, '基础规则 display:flex 布局语义不变').toMatch(/\.header\s*\{[^}]*display:\s*flex/)
+    el.setAttribute('no-header', '')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="header"]')!.hasAttribute('hidden')).toBe(true)
+  })
+
   // ===== P14 嵌套抽屉层级 / 栈管理 =====
 
   it('后打开的抽屉 z-index 高于先打开者（栈深偏移）', () => {

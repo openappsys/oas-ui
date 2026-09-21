@@ -141,6 +141,9 @@ const STYLE = `
   padding: var(--oas-space-4, 16px);
   border-bottom: 1px solid var(--oas-color-border);
 }
+.header[hidden] {
+  display: none;
+}
 .title {
   font-weight: 600;
   font-size: var(--oas-font-size-lg, 16px);
