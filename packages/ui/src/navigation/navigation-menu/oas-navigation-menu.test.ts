@@ -714,6 +714,59 @@ describe('碰撞翻转', () => {
   })
 })
 
+// ============ 面板位置跟随激活触发器 ============
+// 曾现缺陷：统一 viewport 固定 `inset-inline-start: 0`（贴 nav 起点），hover 靠右的顶级项时
+// 面板仍停在最左项下方（内容已切换、位置没跟随）——激活项与面板位置脱节。
+describe('面板位置跟随激活触发器', () => {
+  it('横向：打开/切换顶级项时 --vp-x 跟随触发器偏移（不再固定贴 nav 起点）', () => {
+    const el = mount({ items: SWITCH_ITEMS, 'delay-duration': '0' })
+    const [first, second] = topItems(el)
+    Object.defineProperty(first!, 'offsetLeft', { value: 0, configurable: true })
+    Object.defineProperty(first!, 'offsetWidth', { value: 80, configurable: true })
+    Object.defineProperty(second!, 'offsetLeft', { value: 200, configurable: true })
+    Object.defineProperty(second!, 'offsetWidth', { value: 80, configurable: true })
+    first!.click()
+    expect(viewport(el).style.getPropertyValue('--vp-x')).toBe('0px')
+    second!.click()
+    expect(viewport(el).style.getPropertyValue('--vp-x')).toBe('200px')
+  })
+
+  it('横向：回折时 --vp-x-end 为触发器书写终点侧偏移（右对齐触发器）', () => {
+    const el = mount({ items: SWITCH_ITEMS, 'delay-duration': '0' })
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    const nav = el.shadowRoot!.querySelector<HTMLElement>('[part="nav"]')!
+    const panelEl = panel(el)
+    const second = topItems(el)[1]!
+    Object.defineProperty(second, 'offsetLeft', { value: 200, configurable: true })
+    Object.defineProperty(second, 'offsetWidth', { value: 80, configurable: true })
+    Object.defineProperty(bar, 'offsetLeft', { value: 0, configurable: true })
+    Object.defineProperty(nav, 'offsetWidth', { value: 400, configurable: true })
+    Object.defineProperty(panelEl, 'scrollWidth', { value: 300, configurable: true })
+    Object.defineProperty(window, 'innerWidth', { value: 500, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+    second.click()
+    // nav 宽 400 −（200+80）= 120
+    expect(viewport(el).style.getPropertyValue('--vp-x-end')).toBe('120px')
+  })
+
+  it('竖排：--vp-y 跟随触发器顶边偏移（面板顶对齐激活项）', () => {
+    const el = mount({ items: SWITCH_ITEMS, orientation: 'vertical', 'delay-duration': '0' })
+    const first = topItems(el)[0]!
+    Object.defineProperty(first, 'offsetTop', { value: 120, configurable: true })
+    first.click()
+    expect(viewport(el).style.getPropertyValue('--vp-y')).toBe('120px')
+  })
+
+  it('关闭后移除翻转类（位置偏移无需清空，下次打开重写）', () => {
+    const el = mount({ items: SWITCH_ITEMS, 'delay-duration': '0' })
+    topItems(el)[0]!.click()
+    expect(viewport(el).classList.contains('open')).toBe(true)
+    ;(el as unknown as { close(): void }).close()
+    expect(viewport(el).classList.contains('flip-right')).toBe(false)
+    expect(viewport(el).classList.contains('flip-up')).toBe(false)
+  })
+})
+
 // ============ loop 循环开关 ============
 
 describe('loop 循环开关', () => {
