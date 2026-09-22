@@ -652,6 +652,7 @@ export class OASInput extends OASFormElement {
       }
       this.emit('input', { value: this.rawValue() })
       this.syncFormValue()
+      this.syncValidity()
       this.syncClearVisibility()
       this.syncCount()
       this.measureAutoWidth()
@@ -678,6 +679,7 @@ export class OASInput extends OASFormElement {
       // 值已变，实时通道同步派发（只听 oas-input 的宿主不能漏掉清除）
       this.emit('input', { value: this.rawValue() })
       this.syncFormValue()
+      this.syncValidity()
       this.inputEl.focus()
       this.syncClearVisibility()
       this.syncCount()
@@ -755,6 +757,7 @@ export class OASInput extends OASFormElement {
     this.committedValue = value
     // 原生表单数据同步（form-associated；无 name 浏览器自动不提交）
     this.syncFormValue()
+    this.syncValidity()
 
     i.placeholder = placeholder
     // maxlength 透传原生 input（空值即无限制；allow-over-max 时不透传——超限可继续输入，仅计数标红）
@@ -809,6 +812,15 @@ export class OASInput extends OASFormElement {
     return this.inputEl ? this.rawValue() : this.getAttr('value', '')
   }
 
+  /** 原生校验链同步：required 且值为空 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === '') {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
   /** 表单 reset：恢复到 value 属性（初始值），不派发事件（与原生 reset 一致） */
   protected override resetFormValue(): void {
     const value = this.getAttr('value', '')
@@ -819,6 +831,7 @@ export class OASInput extends OASFormElement {
     this.syncClearVisibility()
     this.syncCount()
     this.measureAutoWidth()
+    this.syncValidity()
   }
 
   /** formatter/parser property 变化后重刷显示（不动受控基线） */

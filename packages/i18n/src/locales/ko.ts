@@ -57,6 +57,8 @@ export const ko: LocaleMessages = {
   'combobox.noMatch': '일치하는 옵션 없음',
   'combobox.loading': '불러오는 중…',
   // input（입력창）
+  // form（表单通用）
+  'form.valueMissing': '필수 입력 항목입니다',
   'input.clear': '지우기',
   'input.defaultLabel': '입력창',
   'textarea.defaultLabel': '여러 줄 입력창',

@@ -48,12 +48,13 @@ function mount(attrs: Record<string, string> = {}): FixtureInput {
 
 type FakeInternals = {
   setFormValue: ReturnType<typeof vi.fn>
+  setValidity: ReturnType<typeof vi.fn>
   labels: null
   form: null
 }
 
 function fakeInternals(el: FixtureInput): FakeInternals {
-  const fake: FakeInternals = { setFormValue: vi.fn(), labels: null, form: null }
+  const fake: FakeInternals = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
   ;(el as unknown as { internals_: unknown }).internals_ = fake
   return fake
 }
@@ -97,6 +98,44 @@ describe('OASFormElement（form-associated 公共机制）', () => {
     el.formResetCallback()
     expect(inner.value).toBe('init')
     expect(fake.setFormValue).toHaveBeenLastCalledWith('init')
+  })
+
+  it('校验代理：无 ElementInternals 环境静默降级（willValidate=false、checkValidity/reportValidity 视为通过）', () => {
+    const el = mount({})
+    expect(el.willValidate).toBe(false)
+    expect(el.validity).toBeNull()
+    expect(el.validationMessage).toBe('')
+    expect(el.checkValidity()).toBe(true)
+    expect(el.reportValidity()).toBe(true)
+  })
+
+  it('setValidity 透传：带 message 与不带 message 两个分支', () => {
+    const el = mount({})
+    const fake = {
+      setFormValue: vi.fn(),
+      setValidity: vi.fn(),
+      willValidate: true,
+      validity: { valid: false } as ValidityState,
+      validationMessage: 'msg',
+      checkValidity: vi.fn(() => false),
+      reportValidity: vi.fn(() => false),
+      labels: null,
+      form: null,
+    }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    const setValidity = (flags: ValidityStateFlags, message?: string): void =>
+      (el as unknown as { setValidity(f: ValidityStateFlags, m?: string): void }).setValidity(flags, message)
+
+    setValidity({ valueMissing: true })
+    expect(fake.setValidity).toHaveBeenLastCalledWith({ valueMissing: true })
+    setValidity({ valueMissing: true }, '')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({ valueMissing: true }, '', undefined)
+
+    expect(el.willValidate).toBe(true)
+    expect(el.validity).toEqual({ valid: false })
+    expect(el.validationMessage).toBe('msg')
+    expect(el.checkValidity()).toBe(false)
+    expect(el.reportValidity()).toBe(false)
   })
 
   it('formDisabledCallback：表单链路禁用经注入通道并入，不回写 disabled 属性（防自锁）', () => {

@@ -57,6 +57,8 @@ export const zhCN = {
   'combobox.noMatch': '无匹配选项',
   'combobox.loading': '加载中…',
   // input（输入框）
+  // form（表单通用）
+  'form.valueMissing': '该字段为必填项',
   'input.clear': '清除',
   'input.defaultLabel': '输入框',
   'textarea.defaultLabel': '多行文本框',

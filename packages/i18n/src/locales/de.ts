@@ -57,6 +57,8 @@ export const de: LocaleMessages = {
   'combobox.noMatch': 'Keine passenden Optionen',
   'combobox.loading': 'Wird geladen…',
   // input (Eingabefeld)
+  // form（表单通用）
+  'form.valueMissing': 'Dieses Feld ist erforderlich',
   'input.clear': 'Leeren',
   'input.defaultLabel': 'Eingabefeld',
   'textarea.defaultLabel': 'Mehrzeiliges Textfeld',

@@ -57,6 +57,8 @@ export const fr: LocaleMessages = {
   'combobox.noMatch': 'Aucune option correspondante',
   'combobox.loading': 'Chargement…',
   // input (champ de saisie)
+  // form（表单通用）
+  'form.valueMissing': 'Ce champ est obligatoire',
   'input.clear': 'Effacer',
   'input.defaultLabel': 'Champ de saisie',
   'textarea.defaultLabel': 'Zone de texte multiligne',
