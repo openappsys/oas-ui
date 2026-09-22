@@ -790,7 +790,7 @@ describe('OASTreeSelect 虚拟滚动（virtual）', () => {
 
   const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
-  // 非 virtual 分支同步渲染 10001 个节点，jsdom 全量并发下实测 >11s，远超默认 5s 超时
+  // 非 virtual 分支同步渲染 10001 个节点，happy-dom 全量并发下实测 >5s，远超默认 5s 超时
   it('virtual：万级节点仅渲染可见窗口；非 virtual 全量渲染可见行', () => {
     const el = mount({ multiple: '', virtual: '', expanded: '["root"]', options: BIG })
     trigger(el).click()
@@ -862,6 +862,10 @@ describe('OASTreeSelect 虚拟滚动（virtual）', () => {
     expect(virtualRows(el).length).toBe(12)
   })
 
+  // child 策略下勾选 root 要对 10000 个叶子做级联闭包/翻转/策略导出，再把 10000 项 JSON 写回
+  // value 触发重渲染：单跑实测 ≈0.8s，但全量 `pnpm test` 高负载并行时实测被顶到 ≈2.7s（≈3.3x），
+  // 曾一次越过默认 5s testTimeout 把用例拖红。取 15s（≈负载实测 5.5x）：负载敏感但只在真正卡死时才失败；
+  // 不降全局 testTimeout——那会同时掩盖其它文件的真实卡死。
   it('virtual + child 策略：勾选父级 value 只含叶子', () => {
     const el = mount({
       multiple: '',
@@ -876,7 +880,7 @@ describe('OASTreeSelect 虚拟滚动（virtual）', () => {
     expect(value.length).toBe(10000)
     expect(value[0]).toBe('n0')
     expect(value[9999]).toBe('n9999')
-  })
+  }, 15_000)
 
   it('virtual + filterable：过滤结果进虚拟列表渲染', () => {
     const el = mount({ filterable: '', virtual: '', expanded: '[]', options: BIG })
