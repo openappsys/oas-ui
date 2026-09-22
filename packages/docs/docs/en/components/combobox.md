@@ -237,6 +237,7 @@ onMounted(() => {
 | `options` | Options, JSON array `[{ label, value, disabled?, group? }]` (group is the group title, same contract as oas-select) | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
 | `readonly` | Readonly (focusable & copyable, no value change; focus and keyboard never open the dropdown) | `boolean` | — |
+| `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `size` | Size tier: small / medium / large (default medium, follows the nearest config-provider injection) | `string` | `medium` |
 | `status` | Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation) | `string` | — |
 | `value` | Current value (controlled, the selected option's `option.value`) | `string` | — |

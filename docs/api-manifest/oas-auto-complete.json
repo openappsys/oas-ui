@@ -61,6 +61,11 @@
       "name": "readonly",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "required",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [

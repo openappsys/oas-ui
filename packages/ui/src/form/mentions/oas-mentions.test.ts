@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASMentions } from './index.js'
 
 const OPTIONS = JSON.stringify([
@@ -729,5 +729,110 @@ describe('OASMentions', () => {
     t.dispatchEvent(new Event('input'))
     key(t, 'Backspace')
     expect(t.value).toBe('') // 最长 label "ab" 命中，整段删
+  })
+})
+
+describe('form-associated（原生表单集成）', () => {
+  /** 注入 fake ElementInternals：happy-dom 无 attachInternals，基类已静默降级为 null */
+  const fakeInternals = (el: OASMentions) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  it('静态声明 formAssociated = true；无 ElementInternals 环境下 labels/form 为 null（静默降级）', () => {
+    expect((OASMentions as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    const el = mount({ options: OPTIONS })
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('输入同步原生表单数据（含提及标记的完整文本）', () => {
+    const el = mount({ options: OPTIONS, name: 'content' })
+    const fake = fakeInternals(el)
+    type(el, '你好 @')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('你好 @')
+  })
+
+  it('@选择插入后同步插入后的完整文本', () => {
+    const el = mount({ options: OPTIONS, name: 'content' })
+    const fake = fakeInternals(el)
+    const t = type(el, '@a')
+    key(t, 'ArrowDown')
+    key(t, 'Enter')
+    expect(t.value).toBe('@Apricot ')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('@Apricot ')
+  })
+
+  it('受控 value 写入同步', () => {
+    const el = mount({ options: OPTIONS, name: 'content' })
+    const fake = fakeInternals(el)
+    el.setAttribute('value', '@Banana controlled')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('@Banana controlled')
+  })
+
+  it('clearable 清空后同步空值', () => {
+    const el = mount({ options: OPTIONS, value: '@Alice ', clearable: '' })
+    const fake = fakeInternals(el)
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.click()
+    expect(ta(el).value).toBe('')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('')
+  })
+
+  it('formResetCallback：恢复 value 属性初始文本并重同步，不派发事件', () => {
+    const el = mount({ value: '@Alice ', options: OPTIONS, name: 'content' })
+    const fake = fakeInternals(el)
+    type(el, 'user edited')
+    expect(ta(el).value).toBe('user edited')
+    const events: string[] = []
+    el.addEventListener('oas-input', () => events.push('input'))
+    el.addEventListener('oas-change', () => events.push('change'))
+    el.formResetCallback()
+    expect(ta(el).value).toBe('@Alice ')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('@Alice ')
+    expect(events).toEqual([])
+  })
+
+  it('required：空文本 valueMissing，输入后恢复；required 属性运行时增删即时生效', () => {
+    const el = mount({ required: '', options: OPTIONS, name: 'content' })
+    const fake = fakeInternals(el)
+
+    // 空文本 → valueMissing（message 走 translator，断言不限文案；基类三参调用）
+    el.setAttribute('size', 'small') // 触发 update 重同步校验链
+    expect(fake.setValidity).toHaveBeenLastCalledWith({ valueMissing: true }, expect.any(String), undefined)
+
+    // 输入文本 → 恢复合法（无 message，单参调用）
+    type(el, '@Alice')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+
+    // 移除 required → 仍合法
+    el.removeAttribute('required')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mount({ options: OPTIONS })
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(ta(el).disabled).toBe(true)
+    el.formDisabledCallback(false)
+    expect(ta(el).disabled).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦 shadow 内真实 textarea；点击内层不再重复聚焦', () => {
+    const el = mount({ options: OPTIONS })
+    const spy = vi.spyOn(ta(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    ta(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('focus() 转到 shadow 内真实 textarea', () => {
+    const el = mount({ options: OPTIONS })
+    const spy = vi.spyOn(ta(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 })

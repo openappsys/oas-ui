@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
 
@@ -252,7 +252,10 @@ textarea:disabled:hover {
 }
 `
 
-export class OASMentions extends OASElement {
+export class OASMentions extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'value',
@@ -275,6 +278,7 @@ export class OASMentions extends OASElement {
       'variant',
       'type',
       'whole',
+      'required',
     ]
   }
 
@@ -435,6 +439,9 @@ export class OASMentions extends OASElement {
       t.value = value
       if (this.autosizeEnabled()) this.autoResize()
     }
+    // 原生表单数据同步（form-associated；受控 value 写入点）
+    this.syncFormValue()
+    this.syncValidity()
     t.placeholder = placeholder
     t.disabled = disabled
     t.readOnly = readonly
@@ -595,6 +602,9 @@ export class OASMentions extends OASElement {
     this.draft = true
     if (this.autosizeEnabled()) this.autoResize()
     this.syncClear()
+    // 原生表单数据同步（form-associated；IME 组合期中间态同样同步，保持表单值与文本一致）
+    this.syncFormValue()
+    this.syncValidity()
     if (this.composing) return
     this.emit('input', { value: t.value })
     this.scanMention()
@@ -907,6 +917,9 @@ export class OASMentions extends OASElement {
     t.value = next
     this.draft = false
     this.setAttribute('value', next)
+    // 原生表单数据同步（form-associated；whole 整段删除点）
+    this.syncFormValue()
+    this.syncValidity()
     const caret = best.start
     t.setSelectionRange(caret, caret)
     this.emit('whole-remove', {
@@ -934,6 +947,9 @@ export class OASMentions extends OASElement {
     t.value = next
     this.draft = false
     this.setAttribute('value', next)
+    // 原生表单数据同步（form-associated；@选择插入点，显式调用兜底 attribute 未变化的边界）
+    this.syncFormValue()
+    this.syncValidity()
     const caret = start + prefix.length + String(option.label ?? '').length + spacer.length
     t.setSelectionRange(caret, caret)
     // detail 带完整 option 原对象（含扩展字段）与触发符 prefix，宿主免反查
@@ -957,6 +973,9 @@ export class OASMentions extends OASElement {
     this.draft = false
     t.value = ''
     this.removeAttribute('value')
+    // 原生表单数据同步（form-associated；清空点）
+    this.syncFormValue()
+    this.syncValidity()
     this.close()
     if (this.autosizeEnabled()) this.autoResize()
     this.syncClear()
@@ -975,6 +994,35 @@ export class OASMentions extends OASElement {
       !this.hasAttr('readonly') &&
       this.ta.value !== ''
     )
+  }
+
+  // ---- form-associated（原生表单集成） ----
+
+  /** 表单值快照：textarea 当前文本（含 @提及标记；对齐原生 textarea 语义：空文本提交空串） */
+  protected override getFormValue(): string | null {
+    return this.ta ? this.ta.value : this.getAttr('value', '')
+  }
+
+  /** 原生校验链同步：required 且文本为空 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === '') {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复 value 属性初始文本并清草稿/收起浮层；不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    const value = this.getAttr('value', '')
+    this.draft = false
+    const t = this.ta
+    if (!t) return
+    t.value = value
+    this.close()
+    if (this.autosizeEnabled()) this.autoResize()
+    this.syncClear()
+    this.syncValidity()
   }
 
   private parseOptions(): void {

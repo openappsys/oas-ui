@@ -172,6 +172,17 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "required",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
