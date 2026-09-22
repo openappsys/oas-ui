@@ -57,6 +57,8 @@ export const ar: LocaleMessages = {
   'combobox.noMatch': 'لا توجد خيارات مطابقة',
   'combobox.loading': 'جارٍ التحميل…',
   // input (حقل إدخال)
+  // form（表单通用）
+  'form.valueMissing': 'هذا الحقل مطلوب',
   'input.clear': 'مسح',
   'input.defaultLabel': 'حقل إدخال',
   'textarea.defaultLabel': 'حقل نص متعدد الأسطر',

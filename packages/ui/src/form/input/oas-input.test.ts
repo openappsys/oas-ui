@@ -1018,7 +1018,7 @@ describe('OASInput RTL 逻辑方向化', () => {
 
 describe('form-associated（原生表单集成）', () => {
   const fakeInternals = (el: OASInput) => {
-    const fake = { setFormValue: vi.fn(), labels: null, form: null }
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
     ;(el as unknown as { internals_: unknown }).internals_ = fake
     return fake
   }

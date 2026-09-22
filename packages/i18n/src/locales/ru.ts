@@ -57,6 +57,8 @@ export const ru: LocaleMessages = {
   'combobox.noMatch': 'Нет подходящих вариантов',
   'combobox.loading': 'Загрузка…',
   // input (поле ввода)
+  // form（表单通用）
+  'form.valueMissing': 'Это поле обязательно для заполнения',
   'input.clear': 'Очистить',
   'input.defaultLabel': 'Поле ввода',
   'textarea.defaultLabel': 'Текстовое поле',

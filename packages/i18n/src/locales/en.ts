@@ -41,6 +41,8 @@ export const en: LocaleMessages = {
   'combobox.empty': 'No options',
   'combobox.noMatch': 'No matching options',
   'combobox.loading': 'Loading…',
+  // form（表单通用）
+  'form.valueMissing': 'This field is required',
   'input.clear': 'Clear',
   'input.defaultLabel': 'Input',
   'textarea.defaultLabel': 'Text area',

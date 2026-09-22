@@ -46,6 +46,40 @@ export abstract class OASFormElement extends OASElement {
     return this.internals_?.form ?? null
   }
 
+  /** 是否参与表单校验（有 name 且未被禁用时为 true） */
+  get willValidate(): boolean {
+    return this.internals_?.willValidate ?? false
+  }
+
+  /** 当前校验状态（ValidityState 各标志位；不支持环境为 null） */
+  get validity(): ValidityState | null {
+    return this.internals_?.validity ?? null
+  }
+
+  /** 当前校验消息（Chrome 对自定义元素不展示消息，但 API 语义保留） */
+  get validationMessage(): string {
+    return this.internals_?.validationMessage ?? ''
+  }
+
+  /** 静默校验（不触发浏览器违规提示）；不支持环境视为通过 */
+  checkValidity(): boolean {
+    return this.internals_?.checkValidity() ?? true
+  }
+
+  /** 校验并触发浏览器违规提示链路（invalid 事件等）；不支持环境视为通过 */
+  reportValidity(): boolean {
+    return this.internals_?.reportValidity() ?? true
+  }
+
+  /**
+   * 组件规则变化点调用：把当前校验状态同步给原生校验链。
+   * 例：`required` 且值为空 → `setValidity({ valueMissing: true }, '')`；合法 → `setValidity({})`。
+   */
+  protected setValidity(flags: ValidityStateFlags, message?: string, anchor?: HTMLElement): void {
+    if (message !== undefined) this.internals_?.setValidity(flags, message, anchor)
+    else this.internals_?.setValidity(flags)
+  }
+
   /**
    * 值变化点由组件调用：把 getFormValue() 同步进原生表单数据。
    * 无 `name` 时浏览器自动不提交（无需组件判空）。
