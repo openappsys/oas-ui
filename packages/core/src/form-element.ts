@@ -142,6 +142,55 @@ export abstract class OASFormElement extends OASElement {
     else super.focus(options)
   }
 
+  /**
+   * 外部 label 命名转发：把关联 label 的文本复制为内层控件的 `aria-label`。
+   * 原生 `<label for>` 关联的是宿主（FACE 语义），但 axe/读屏检测的是 shadow 内真实控件；
+   * 不能用 aria-labelledby 跨 shadow 引用 light DOM 的 label id（跨根 IDREF 不解析，axe 判无名），
+   * 故复制文本（在 shadow 树内可解析）。优先级遵循原生：外部 label > 组件内建命名回退；
+   * 外部 label 移除后只清理自己设置的（组件下次 update 恢复其回退名）。
+   */
+  private syncInnerLabelledBy(): void {
+    const inner = this.innerControl
+    if (!inner) return
+    const labels = this.associatedLabels()
+    if (labels.length > 0) {
+      const text = labels
+        .map((l) => (l.textContent ?? '').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .join(' ')
+      if (text) {
+        inner.setAttribute('aria-label', text)
+        inner.setAttribute('data-fa-label', '')
+        return
+      }
+    }
+    if (inner.hasAttribute('data-fa-label')) {
+      inner.removeAttribute('aria-label')
+      inner.removeAttribute('data-fa-label')
+    }
+  }
+
+  /** 关联 label 解析：优先原生 internals.labels（for 指向 + 祖先包裹）；无 ElementInternals 环境手动解析（行为一致） */
+  private associatedLabels(): HTMLLabelElement[] {
+    const fromInternals = this.labels
+    if (fromInternals && fromInternals.length > 0) {
+      return [...fromInternals].filter((n): n is HTMLLabelElement => n instanceof HTMLLabelElement)
+    }
+    const out: HTMLLabelElement[] = []
+    if (this.id) {
+      out.push(...document.querySelectorAll<HTMLLabelElement>(`label[for="${CSS.escape(this.id)}"]`))
+    }
+    const wrapping = this.closest('label')
+    if (wrapping) out.push(wrapping)
+    return out
+  }
+
+  /** 基类触发的更新统一收尾：内层命名转发随属性/关联变化重同步（组件 update 之后执行，避免被组件命名逻辑覆盖） */
+  protected override runUpdateAndNotify(): void {
+    super.runUpdateAndNotify()
+    this.syncInnerLabelledBy()
+  }
+
   /** shadow 内真实表单控件（焦点目标）；复合控件（多输入）子类按需覆盖 */
   protected get innerControl(): HTMLElement | null {
     return this.shadow.querySelector('input, textarea, select, [tabindex]')

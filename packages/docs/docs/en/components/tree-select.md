@@ -414,6 +414,14 @@ onMounted(() => {
 
 On touch screens (coarse pointer) or narrow viewports (<768px), the panel is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the search box and tree scroll inside the sheet; the desktop form keeps the original floating dropdown.
 
+## required
+
+<DemoBlock title="required (native validation chain)">
+  <oas-tree-select required name="region" placeholder="Category" options='[{"label":"Frontend","value":"fe","children":[{"label":"React","value":"react"}]}]'></oas-tree-select>
+</DemoBlock>
+
+`required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
+
 ## API
 
 ### oas-tree-select

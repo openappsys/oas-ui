@@ -414,6 +414,14 @@ onMounted(() => {
 
 触屏（coarse pointer）或窄视口（<768px）下，面板自动改由 `oas-bottom-sheet` 底部抽屉承载：贴视口底升起 + 遮罩 + 拖拽把手下滑关闭（点遮罩 / Esc 同样收起），底部避让安全区；搜索框 + 树面板在抽屉内容区内滚动；PC 形态保持原有浮层下拉不变。
 
+## required 必填
+
+<DemoBlock title="required 必填（原生校验链）">
+  <oas-tree-select required name="region" placeholder="类目" options='[{"label":"前端","value":"fe","children":[{"label":"React","value":"react"}]}]'></oas-tree-select>
+</DemoBlock>
+
+`required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
+
 ## API
 
 ### oas-tree-select

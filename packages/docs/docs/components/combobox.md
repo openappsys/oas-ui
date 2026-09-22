@@ -221,6 +221,14 @@ onMounted(() => {
 
 触屏（coarse pointer）或窄视口（<768px）下，选项列表自动改由 `oas-bottom-sheet` 底部抽屉承载：贴视口底升起 + 遮罩 + 拖拽把手下滑关闭（点遮罩 / Esc 同样收起），底部避让安全区；输入框保持在原位，聚焦仍在抽屉内弹出列表并可点选；PC 形态保持原有浮层下拉不变。抽屉内选项行触控目标抬升至 44px（`--oas-touch-target-min`）。
 
+## required 必填
+
+<DemoBlock title="required 必填（原生校验链）">
+  <oas-combobox required name="fruit" placeholder="选择或输入" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-combobox>
+</DemoBlock>
+
+`required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
+
 ## API
 
 ### oas-combobox

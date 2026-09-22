@@ -39,6 +39,36 @@
   </oas-form>
 </DemoBlock>
 
+## 原生表单集成（form-associated）
+
+全部表单类组件均为 **form-associated** 自定义元素（`formAssociated: true`）：可直接放进原生 `<form>`——`<label for>` 关联生效（点击 label 聚焦/激活控件、读屏朗读 label 文本），值经标准 `FormData` 收集（有 `name` 才提交），`form.reset()` 回初始值，`fieldset[disabled]` 联动禁用，`required` 接入原生校验链（`checkValidity()` / `:invalid` 伪类）。
+
+<DemoBlock title="原生 form + label for + FormData + reset">
+  <form id="form-native" style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-3); align-items: flex-start">
+    <label for="fn-name" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">姓名（点击本行 → 聚焦输入框）</label>
+    <oas-input id="fn-name" name="username" value="初始值" style="width: 240px"></oas-input>
+    <label for="fn-role" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">角色（点击本行 → 聚焦下拉）</label>
+    <oas-select id="fn-role" name="role" options='[{"label":"管理员","value":"admin"},{"label":"访客","value":"guest"}]' style="width: 240px"></oas-select>
+    <label for="fn-date" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">入职日期</label>
+    <oas-date-picker id="fn-date" name="joined"></oas-date-picker>
+    <span style="display: inline-flex; align-items: center; gap: var(--oas-space-2)">
+      <oas-checkbox id="fn-agree" name="agree" value="yes"></oas-checkbox>
+      <label for="fn-agree" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">接受协议（点击本行 → 勾选）</label>
+    </span>
+    <span style="display: inline-flex; align-items: center; gap: var(--oas-space-2)">
+      <oas-switch id="fn-notify" name="notify"></oas-switch>
+      <label for="fn-notify" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">邮件通知（点击本行 → 切换）</label>
+    </span>
+    <div style="display: flex; gap: var(--oas-space-2)">
+      <oas-button id="fn-read" size="small" type="button">读取 FormData</oas-button>
+      <oas-button id="fn-reset" size="small" type="button">form.reset()</oas-button>
+    </div>
+    <span id="fn-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </form>
+</DemoBlock>
+
+**支持清单（15 组件）**：input / textarea / input-number / checkbox / radio / switch / select / combobox / auto-complete / tree-select / mentions / date-picker / time-picker / upload。值语义按原生对齐：多选（select / tree-select / date-picker multiple）提交**同名多条**；date / time 范围模式提交 **`name-start` / `name-end`** 两条；upload 提交 File；勾选族未勾不提交。与 `oas-form` 的 `collectFields` 机制并行可用。
+
 ## 表单校验
 
 校验区演示 `rules` 声明的校验规则与失败反馈。
@@ -194,6 +224,22 @@ onMounted(() => {
   const basicOut = document.getElementById('form-basic-output')
   document.getElementById('form-basic')?.addEventListener('oas-submit', (e) => {
     basicOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+
+  // 原生表单集成：FormData 读取 + reset
+  const nativeForm = document.getElementById('form-native')
+  const fnOut = document.getElementById('fn-output')
+  document.getElementById('fn-read')?.addEventListener('click', () => {
+    if (!nativeForm) return
+    const fd = new FormData(nativeForm)
+    const text = [...fd.entries()]
+      .map(([k, v]) => `${k}=${v instanceof File ? v.name : v}`)
+      .join('；')
+    fnOut.textContent = text ? `FormData: ${text}` : 'FormData:（当前无可提交项）'
+  })
+  document.getElementById('fn-reset')?.addEventListener('click', () => {
+    nativeForm?.reset()
+    if (fnOut) fnOut.textContent = 'form.reset() 已执行（回到各字段默认值）'
   })
 
   // 校验区：事件演示

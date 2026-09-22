@@ -217,6 +217,14 @@ Use `oas-date-picker` (this component) for popover selection; use `oas-calendar`
 
 On touch screens (coarse pointer) or narrow viewports (<768px), the panel is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the desktop form keeps the original floating dropdown. Dual-month range panels shrink on narrow screens to avoid horizontal overflow; inside the sheet, day cells are lifted to a 44px touch target (`--oas-touch-target-min`) so they are easy to hit on touch screens.
 
+## required
+
+<DemoBlock title="required (native validation chain)">
+  <oas-date-picker required name="day"></oas-date-picker>
+</DemoBlock>
+
+`required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
+
 ## API
 
 ### oas-date-picker
