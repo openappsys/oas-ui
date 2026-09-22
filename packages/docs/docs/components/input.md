@@ -286,7 +286,7 @@ onMounted(() => {
   <span id="input-search-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 100px"></span>
 </DemoBlock>
 
-`addon-before` / `addon-after` 属性只接文案；复杂内容用 `slot="prepend"` / `slot="append"` 分发。addon 槽适合**纯文本、图标、按钮**这类与灰底 addon 视觉同层的元素（圆角合并/边框去重与 addon 属性一致，文本双通道并存——slot 有内容时原生替换属性 fallback）。**选择器等自带边框/底色的复合控件不建议放进 addon 槽**：跨 Shadow 边界无法安全去除其内部样式（其下拉层与触发器共享颜色 token，透明化会连带下拉菜单），与输入框拼接复合控件请用 `oas-compact` 紧凑容器：
+`addon-before` / `addon-after` 属性只接文案；复杂内容用 `slot="prepend"` / `slot="append"` 分发。纯文本、图标渲染在灰底 addon 面上（圆角合并/边框去重与 addon 属性一致，文本双通道并存——slot 有内容时原生替换属性 fallback）。分发**自包含控件**（`oas-button` / `oas-button-group` / `oas-compact`）时，addon 会自动退化为**贴合容器**：去掉文本 addon 的灰底、描边与左右内边距，高度与输入框同档对齐，相邻边 -1px 压边合并为单线，并把圆角合并协议（`--oas-button-group-radius`）穿透给控件，使其外角与输入框外框拼成连续圆角。**选择器等自带边框/底色的复合控件仍不建议放进 addon 槽**：跨 Shadow 边界无法安全去除其内部样式（其下拉层与触发器共享颜色 token，透明化会连带下拉菜单），与输入框拼接复合控件请用 `oas-compact` 紧凑容器：
 
 <DemoBlock title="select + input 组合（oas-compact 紧凑拼接）">
   <oas-compact style="width: 420px">
