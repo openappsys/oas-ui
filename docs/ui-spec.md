@@ -40,6 +40,19 @@
 
 hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压深 / dark 掺白提亮），完整定义以 `packages/theme/index.css` 为准。`--oas-color-primary-text` 是 primary 的**文字安全档**别名（当前三主题取值均与 `-active` 同值，high-contrast 为 `#002766`）：凡 primary 系**承载文字**的场景一律用 `-text`，**交互态（hover/active/按下背景）一律用 `-active`**——语义分离后，消费者只调交互态 token 不会连带改文字色（反之亦然）。
 
+**预设色板 `-text` 安全档：规则推导（禁止手调）**
+
+承载文字与实底的色档不再逐个手调，按下列规则推导——真源 `packages/theme/oklab.ts`，复算与合规审计 `node scripts/theme/derive-presets.mjs`，守卫 `packages/ui/src/style-conventions.test.ts`（三者共用同一份阈值常量）：
+
+1. **锁色相**：在 OKLCH 空间只动亮度 L（出 sRGB 色域时按标准色域映射压彩度 C，不旋转色相），`-text` 相对本色的色相漂移 ≤ **12°**——magenta 恒为洋红、gold 恒为金，杜绝「调着调着变成红/橙」。
+2. **对比度**：light 取双底（白底 `#ffffff` + 灰卡底 `#f5f5f5`）感知分 **≥65** 的**最浅**档；dark 取页底 `#18181b` + `elevated 12% 软底` `#1d1d20`（`color-mix`）上的**最深**档（暗色下即"提亮一侧的极值"，极性不照抄 light）。65 = a11y 硬闸 60 + 5 分余量（吃反锯齿/渲染差异），"取极值档"= 对比度余量最小、视觉变化最小。
+   **附加约束 `bg-elevated`**：`-text` 在主题 `--oas-color-bg-elevated`（light `#ffffff` / dark `#3f3f46`）上的感知分不得低于 a11y 硬闸 **60**——该色是 snackbar / toolbar / app-bar / sidebar / segmented / descriptions 等在用的正式表面，属真实可达组合；它**不作求解目标**（仍按上文两底取极值档），只作约束：不达标即换解。
+3. **相邻可辨**：语义相近的相邻预设必须互相可分——`gold↔orange`、`lime↔green`、`cyan↔blue`、`geekblue↔blue` 四组在 OKLab 空间 ΔE_OK×100 ≥ **8**（≈4× 刚可辨阈值，小字号色块可靠区分，不会看错；对底达标 ≠ 互相可辨）。
+4. **冲突退让**：相邻对冲突时**只在对比度更高（更安全）的方向上调整**（light 压深 / dark 提亮，该方向单调提升各底对比度，不会把成员推进不达标区），且取**总感知位移最小解**——谁动得少谁承担，不锁定退让方（旧规则固定由后序成员退让，会把该成员压到 `bg-elevated` 硬闸以下）。
+5. **存量豁免**：对比度/色相/色距三条全过的存量值一律保留，不追平"最浅档"——无谓视觉变更不做（故实际值普遍高于 65，65 是下限而非目标值）。
+
+改任何 `--oas-preset-*-text` 前先跑一次审计；越界时守卫测试会直接报出违规项。规则当前覆盖**预设色板**；语义色 `--oas-color-*-text` 仍按既有 ≥60 双底口径（`info-text` 双底 57.9 属存量欠账，未并入本规则）。
+
 ### 1.3 字号阶梯
 
 | token                | 值     | 用途                           |
@@ -184,7 +197,7 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 - 已覆盖组件：tag / badge（v2.0 起）、divider / link（v2.1 起）；后续组件按此协议补齐
 - 承载文字的色值（link/文字类）有 WCAG 责任：色值按原值渲染不自动改写，demo 示例色必须达标（AA 4.5:1），文档明示对比度由宿主负责
 - 与 CSS 变量开口并存：`color` 属性是语义化高频通道，`--oas-<组件>-color` 变量是主题级批量通道，两者都有效时属性注入的具体度更高
-- **「文字承载面」自动派生安全档**（本批确立）：语义/预设色的 `-text` 变体（`--oas-preset-*-text` / `--oas-color-*-text`）用于**文字与「实底底色」**——不再是「填充面一律用本色」（浅色本色作底时其上文字不达标）；任意自定义 hex 色经内部 token `--oas-deep-mix` / `--oas-deep-sink` 做 theme-aware 混合派生文字安全档（light 掺近黑压深、dark 掺近白提亮）。tag 的 `--oas-tag-color-deep` 即该安全档的组件出口，现同时承担 `solid` / `checked` 形态的底色
+- **「文字承载面」自动派生安全档**（本批确立）：语义/预设色的 `-text` 变体（`--oas-preset-*-text` / `--oas-color-*-text`）用于**文字与「实底底色」**——不再是「填充面一律用本色」（浅色本色作底时其上文字不达标）；任意自定义 hex 色经内部 token `--oas-deep-mix` / `--oas-deep-sink` 做 theme-aware 混合派生文字安全档（light 掺近黑压深、dark 掺近白提亮）。tag 的 `--oas-tag-color-deep` 即该安全档的组件出口，现同时承担 `solid` / `checked` 形态的底色。预设 `-text` 的取值由 §1.2 的派生规则锁死（锁色相 + 双底对比度 + 相邻色距），不得手调
 - **`--oas-color-text-primary` 兼作混色颜料**（预期行为，非 bug）：除「主文字色」外，它还被组件当作 theme-aware 掺向颜料派生其它色——button 的 success/warning/danger 实底/描边 `color-mix(语义色 80%, var(--oas-color-text-primary))`、popconfirm、code inline solid 兜底等十余处。理由：这是 theme-aware 掺向（light 掺向近黑压深、dark 掺向近白提亮，自动随主题翻转），替代写死 `black`/`white` 的单向混合——写死 black 在暗色下会把颜色拉回不可读。宿主覆盖该 token 时会**连带影响这些派生色**（文字色与派生色共享一个颜料源），调色时需一并核对
 
 - 所有颜色必须同时有 light/dark 值；新增组件必须验证双主题

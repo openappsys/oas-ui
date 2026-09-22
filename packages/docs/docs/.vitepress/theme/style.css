@@ -126,8 +126,8 @@ html.dark {
 /* ===== 暗色内联代码前景色（Vitepress 默认值不达标） ===== */
 /* 缺陷：Vitepress 默认 --vp-code-color = var(--vp-c-brand-1)，dark 下是 #a8b1ff——
    压代码底 --vp-c-default-soft（#24272c）感知分恰好 59.95 不足 60，全站 demo 正文内联
-   <code> 大面积踩线。覆盖为 geekblue 文字安全档 token（dark=#b3c4fb，双底实测 ≥65；
-   light 侧 Vitepress 默认已达标，不动）。 */
+   <code> 大面积踩线。覆盖为 geekblue 文字安全档 token（dark 值随 §1.2 派生规则更新，
+   压 #24272c 感知分 64.3 ≥60；light 侧 Vitepress 默认已达标，不动）。 */
 html.dark {
   --vp-code-color: var(--oas-preset-geekblue-text);
 }
