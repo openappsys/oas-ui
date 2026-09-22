@@ -23,7 +23,8 @@
 
 - **感知对比度门禁（零容忍，light + dark 双主题）**：117 页 × light/dark 双主题，共 2.4 万+ 文本节点（单主题约 1.2 万），逐节点取 axe 解析出的文字/背景实测色，用自实现的感知对比度公式打分——**`<60` 一个节点都不允许**（`<45`/`<30` 同为零）；禁用态文字（含 opacity 淡化合成档）按 WCAG 豁免并在门禁单列计数；门禁自带「注入低对比文本必须被捕获」自检与「color-contrast 不得进页面级豁免」防绕过守卫
 - **存量对比度债务全量清偿**（实测 `<60` 由 655 → 0，暗色另有 327 → 0）：浅底文字统一改用主题 `-text` 文字安全档（亮/暗主题各自定义，替换「基色掺黑」启发式——后者在暗色下会反向压暗）；实底浅色（预设色 tag / badge / avatar / toggle 选中态、code inline solid）改用 `-text` 档作底；自定义色（hex）的「文字安全档」改为 theme-aware 混合（新内部 token `--oas-deep-mix` / `--oas-deep-sink`：亮色掺近黑、暗色掺近白），并同步把 button/popconfirm 等残留的 `color-mix(… %, black)` 实底派生改为掺 `--oas-color-text-primary`
-- **暗色调色板与被测面修正**：暗色次级文字提亮（`#b8b8c0 → #c6c6ce`）、预设蓝 `-text` 提亮、docs 站内联 `<code>` 与引用块暗色配色（原 Vitepress 默认色在暗底上贴线/不达标）、grid demo 暗色梯度重排（对齐亮色「浅底深字 / 实底浅字」两段式）、label/link/code 三个 demo 的写死 hex 改用 token（写死 hex 数学上无法两主题同时达标）
+- **暗色调色板与被测面修正**：暗色次级文字提亮（`#b8b8c0 → #c6c6ce`）、预设蓝 `-text` 提亮、docs 站内联 `<code>` 与引用块暗色配色（原 Vitepress 默认色在暗底上贴线/不达标）、grid demo 暗色梯度重排
+- **预设 `-text` 安全档改为规则推导（OKLCH 亮度阶梯 + 多约束 + 守卫锁死）**：替代逐值手调（手调曾拆东补西——gold 改值躲 gold↔orange 撞色却让 gold↔lime 从 61 缩到 49.7）。真源 `packages/theme/oklab.ts`（自写 sRGB↔OKLCH，零新依赖）：锁色相 ≤12° 只在 L 取档；双底对比度 ≥65；相邻组（gold↔orange 等四对）ΔE ≥8；任一 `-text` 在 elevated 底上 ≥60 硬闸；冲突退让只在更安全方向取样。light 改 2 值（green/geekblue 加深）、dark 改 7 值（orange/gold/lime/green/cyan/blue/geekblue 提亮）；style-conventions 守卫锁死 + 对比度公式收敛单一真源（a11y.spec 改从 theme/oklab 导入）（对齐亮色「浅底深字 / 实底浅字」两段式）、label/link/code 三个 demo 的写死 hex 改用 token（写死 hex 数学上无法两主题同时达标）
 - 覆盖面：tag / badge / avatar / toggle-group / toggle-button / breadcrumb / message / switch / list 选中行描述 / tree / transfer / checkbox / steps / rate / log / code / typography / popconfirm / theme-editor / alert / button / anchor / sidebar / menu，以及 grid、container、flex 三个 demo 的自绘配色（含 demo 引用不存在 token `--oas-color-primary-text` 的真 bug）
 - **axe 比值法（WCAG 2.x AA 合规参照）改走 ratchet 基线**：存量违规只许降不许升、逐批清偿，与感知门禁并行看守（合规线与体验线分开盯）
 
