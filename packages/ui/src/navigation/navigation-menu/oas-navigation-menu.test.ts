@@ -1235,6 +1235,73 @@ describe('OASNavigationMenu 顶级溢出收纳（移动端窄屏）', () => {
   })
 })
 
+// ============ 浮层 hidden→visible 尺寸自愈（零尺寸守卫 + 宿主尺寸变化复测） ============
+
+describe('OASNavigationMenu 浮层 hidden→visible 尺寸自愈', () => {
+  let roRef: FakeRO | null = null
+  class FakeRO {
+    cb: () => void
+    constructor(cb: () => void) {
+      this.cb = cb
+      roRef = this
+    }
+    observe(): void {}
+    disconnect(): void {}
+    unobserve(): void {}
+  }
+  beforeEach(() => {
+    roRef = null
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('零尺寸守卫：面板不可测（0×0）时不写入 --vp-w/--vp-h（不留 0 尺寸状态）', () => {
+    const el = mount()
+    const p = panel(el)
+    Object.defineProperty(p, 'scrollWidth', { value: 0, configurable: true })
+    Object.defineProperty(p, 'scrollHeight', { value: 0, configurable: true })
+    topItems(el)[0]!.click()
+    const vp = viewport(el)
+    expect(vp.style.getPropertyValue('--vp-w')).toBe('')
+    expect(vp.style.getPropertyValue('--vp-h')).toBe('')
+  })
+
+  it('浮层 hidden→visible：宿主尺寸 0→非 0 触发 ResizeObserver，视口尺寸按真实尺寸自愈写入', () => {
+    const el = mount()
+    const vp = viewport(el)
+    const p = panel(el)
+    // 浮层 hidden 中打开面板：此刻不可测（0×0），不得写入尺寸状态
+    Object.defineProperty(p, 'scrollWidth', { value: 0, configurable: true })
+    Object.defineProperty(p, 'scrollHeight', { value: 0, configurable: true })
+    topItems(el)[0]!.click()
+    expect(vp.style.getPropertyValue('--vp-w')).toBe('')
+    expect(vp.style.getPropertyValue('--vp-h')).toBe('')
+    // 浮层转为可见：面板拿到真实尺寸、宿主尺寸 0→非 0 → RO 回调按真实尺寸补写（自愈）
+    Object.defineProperty(p, 'scrollWidth', { value: 320, configurable: true })
+    Object.defineProperty(p, 'scrollHeight', { value: 180, configurable: true })
+    expect(roRef).not.toBeNull()
+    roRef!.cb()
+    expect(vp.style.getPropertyValue('--vp-w')).toBe('320px')
+    expect(vp.style.getPropertyValue('--vp-h')).toBe('180px')
+  })
+
+  it('尺寸自愈后不回落：面板再次量到 0（瞬时隐藏）不覆盖既有有效尺寸', () => {
+    const el = mount()
+    const vp = viewport(el)
+    const p = panel(el)
+    Object.defineProperty(p, 'scrollWidth', { value: 240, configurable: true })
+    Object.defineProperty(p, 'scrollHeight', { value: 120, configurable: true })
+    topItems(el)[0]!.click()
+    roRef!.cb()
+    expect(vp.style.getPropertyValue('--vp-w')).toBe('240px')
+    Object.defineProperty(p, 'scrollWidth', { value: 0, configurable: true })
+    Object.defineProperty(p, 'scrollHeight', { value: 0, configurable: true })
+    roRef!.cb()
+    expect(vp.style.getPropertyValue('--vp-w')).toBe('240px')
+    expect(vp.style.getPropertyValue('--vp-h')).toBe('120px')
+  })
+})
+
 // ============ RTL（右到左）逻辑方向化 ============
 
 describe('RTL 逻辑方向化', () => {

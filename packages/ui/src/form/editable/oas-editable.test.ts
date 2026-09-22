@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASEditable } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASEditable {
@@ -459,6 +459,84 @@ describe('OASEditable multiline 多行编辑', () => {
     )
     expect(el.getAttribute('value')).toBe('a')
     expect(display(el).hidden).toBe(true)
+  })
+})
+
+// ============ 多行字段 hidden 挂载的零尺寸守卫 + 尺寸自愈 ============
+// 缺陷背景：autoResize 直接写 `height = scrollHeight + 'px'`；容器 display:none 时
+// scrollHeight=0 → 字段内联高被写成 0（CSS min-height 只兜住 1 行，第二行起被
+// overflow:hidden 裁掉）。容器转可见后若无 input/update 触发便不复测 → 编辑框停在
+// 1 行高、内容被裁。修复：量到 0 不写入（保留自然高/上次有效值）并标记待测，
+// 由宿主尺寸 0→非 0 的 ResizeObserver 回调或连接后一次性 rAF 补测自愈（非轮询）。
+describe('OASEditable 多行 hidden 挂载尺寸守卫/自愈', () => {
+  let roRef: { cb: () => void } | null = null
+  class FakeRO {
+    cb: () => void
+    constructor(cb: () => void) {
+      this.cb = cb
+      roRef = this
+    }
+    observe(): void {}
+    disconnect(): void {}
+    unobserve(): void {}
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    roRef = null
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  function ta(el: OASEditable): HTMLTextAreaElement {
+    return el.shadowRoot!.querySelector<HTMLTextAreaElement>('textarea')!
+  }
+
+  it('零尺寸守卫：scrollHeight=0（未布局/容器 hidden）不写入 0px', () => {
+    const el = mount({ value: '第一行\n第二行', multiline: '', editing: '' })
+    const field = ta(el)
+    expect(field, '多行编辑态应渲染 textarea').not.toBeNull()
+    expect(field.style.height, '量到 0 不得写入 0px（保留 CSS 自然高）').not.toBe('0px')
+  })
+
+  it('零尺寸守卫：已有有效高时量到 0 不覆盖（保留上次有效值）', () => {
+    const el = mount({ value: 'a', multiline: '' })
+    display(el).click()
+    const field = ta(el)
+    Object.defineProperty(field, 'scrollHeight', { value: 52, configurable: true })
+    field.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(field.style.height).toBe('52px')
+    // 容器瞬时不显示 → 量到 0：不得覆盖有效高
+    Object.defineProperty(field, 'scrollHeight', { value: 0, configurable: true })
+    field.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(field.style.height, '量到 0 不覆盖既有有效高').toBe('52px')
+  })
+
+  it('容器 hidden→visible：宿主尺寸 0→非 0 触发 ResizeObserver，多行高按真实尺寸自愈', () => {
+    const el = mount({ value: '第一行\n第二行', multiline: '', editing: '' })
+    const field = ta(el)
+    expect(roRef, '应建立宿主尺寸观察器').not.toBeNull()
+    // 可见后拿到真实内容高 → 复测补写（此前量到 0 不写）
+    Object.defineProperty(field, 'scrollHeight', { value: 52, configurable: true })
+    roRef!.cb()
+    expect(field.style.height).toBe('52px')
+  })
+
+  it('连接后一次性 rAF 复测：首帧不可测时下一帧拿到尺寸即补写', async () => {
+    const el = mount({ value: '第一行\n第二行', multiline: '', editing: '' })
+    const field = ta(el)
+    Object.defineProperty(field, 'scrollHeight', { value: 52, configurable: true })
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
+    expect(field.style.height).toBe('52px')
+  })
+
+  it('单行 input 不参与高度自愈（不留内联高）', () => {
+    const el = mount({ value: 'a', editing: '' })
+    expect(field(el).style.height).toBe('')
   })
 })
 

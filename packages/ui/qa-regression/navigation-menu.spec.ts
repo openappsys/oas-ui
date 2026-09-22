@@ -252,6 +252,104 @@ test('navigation-menu 垂直方向指示条对准活动触发器（bottom 锚点
   expect(r.hDiff, '指示条高度应等于触发器高度').toBeLessThan(4)
 })
 
+// —— 缺陷回归：navigation-menu 在 hidden→visible 浮层容器里首帧测量坍缩 ——
+// 曾现缺陷：把组件动态挂载进 hidden→visible 的浮层容器（如 popover 面板）时，首帧面板不可测
+// （0×0），尺寸状态（--vp-w/--vp-h）被留空且不复测——面板尺寸/翻转判定停在不可测帧。
+// 修复：零尺寸不写入 + 宿主 ResizeObserver 在 0→非 0（浮层显示）时复测自愈 + 连接后一次性 rAF 复测。
+// 断言：隐藏容器挂载并打开面板（A）在转为可见后，面板/视口与可见挂载（B）得到相同真实尺寸且内容可交互。
+test('navigation-menu 浮层 hidden→visible：面板尺寸自愈，与可见挂载一致且可交互', async ({ page }) => {
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-navigation-menu')
+  const r = await page.evaluate(async () => {
+    const items = JSON.stringify([
+      { label: '总览', value: 'overview', children: [{ label: '仪表盘', value: 'dash', href: '#' }] },
+      {
+        label: '业务管理',
+        value: 'biz',
+        children: [
+          { label: '订单列表', value: 'orders', href: '#' },
+          { label: '客户管理', value: 'customers', href: '#' },
+        ],
+      },
+      { label: '系统设置', value: 'sys', children: [{ label: '基础设置', value: 'settings', href: '#' }] },
+    ])
+    const raf = () => new Promise((res) => requestAnimationFrame(res))
+    const tick = (n: number) => new Promise((res) => setTimeout(res, n))
+
+    const build = async (hidden: boolean) => {
+      const wrap = document.createElement('div')
+      wrap.style.cssText = 'width:640px;padding:8px;background:#eee'
+      if (hidden) wrap.style.display = 'none'
+      document.body.appendChild(wrap)
+      const nav = document.createElement('oas-navigation-menu') as HTMLElement
+      nav.setAttribute('orientation', 'vertical')
+      nav.setAttribute('items', items)
+      // 受控打开：面板在挂载首帧即渲染（hidden 时即为「不可测帧」路径）
+      nav.setAttribute('value', 'biz')
+      wrap.appendChild(nav)
+      await tick(60)
+      if (hidden) {
+        wrap.style.display = ''
+      }
+      await raf()
+      await raf()
+      // 等 width/height 过渡稳定（.viewport transition 0.2s），避免半途 rect 抖动
+      await tick(350)
+      const sr = nav.shadowRoot!
+      const vp = sr.querySelector('[part="viewport"]') as HTMLElement
+      const panel = sr.querySelector('[part="panel"]') as HTMLElement
+      const grid = panel.querySelector('[part="grid"]') as HTMLElement | null
+      const vr = vp.getBoundingClientRect()
+      const pr = panel.getBoundingClientRect()
+      // 先量测（不可被后续交互的重新渲染污染）
+      const out = {
+        vpW: vp.style.getPropertyValue('--vp-w'),
+        vpH: vp.style.getPropertyValue('--vp-h'),
+        viewportW: +vr.width.toFixed(2),
+        viewportH: +vr.height.toFixed(2),
+        panelW: +pr.width.toFixed(2),
+        panelH: +pr.height.toFixed(2),
+        gridVisible: !!grid && getComputedStyle(grid).visibility !== 'hidden' && grid.getBoundingClientRect().width > 0,
+        links: panel.querySelectorAll('[part="card-link"], [part="section-links"] a').length,
+        selected: '',
+        open: vp.classList.contains('open'),
+      }
+      // 再验证可交互：叶子项点击派发 oas-select（在量测之后，避免重渲染污染尺寸读数）
+      const onSelect = (e: Event) => {
+        out.selected = (e as CustomEvent<{ value: string }>).detail?.value ?? ''
+      }
+      nav.addEventListener('oas-select', onSelect)
+      ;(panel.querySelector('[part="card-link"]') as HTMLElement | null)?.click()
+      await raf()
+      nav.removeEventListener('oas-select', onSelect)
+      nav.remove()
+      wrap.remove()
+      return out
+    }
+
+    const a = await build(true) // 隐藏容器挂载 → 置为可见（复现路径）
+    const b = await build(false) // 可见容器挂载（对照）
+    return { a, b }
+  })
+
+  // A 必须拿到与 B 相同的真实尺寸（改前 A 的尺寸状态留空 → RED）
+  expect(r.a.vpW, 'A 视口宽度状态应写入真实值（非空）').toMatch(/^\d+(\.\d+)?px$/)
+  expect(r.a.vpH, 'A 视口高度状态应写入真实值（非空）').toMatch(/^\d+(\.\d+)?px$/)
+  expect(parseFloat(r.a.vpW), 'A 视口宽度状态 > 0').toBeGreaterThan(0)
+  expect(parseFloat(r.a.vpH), 'A 视口高度状态 > 0').toBeGreaterThan(0)
+  expect(r.a.viewportW, 'A 视口宽 > 0').toBeGreaterThan(0)
+  expect(r.a.viewportH, 'A 视口高 > 0').toBeGreaterThan(0)
+  expect(Math.abs(r.a.viewportW - r.b.viewportW), 'A 视口宽应与 B 一致（±1px）').toBeLessThanOrEqual(1)
+  expect(Math.abs(r.a.viewportH - r.b.viewportH), 'A 视口高应与 B 一致（±1px）').toBeLessThanOrEqual(1)
+  expect(r.a.panelW, 'A 面板宽 > 0').toBeGreaterThan(0)
+  expect(Math.abs(r.a.panelW - r.b.panelW), 'A 面板宽应与 B 一致（±1px）').toBeLessThanOrEqual(1)
+  // 内容可见可交互
+  expect(r.a.open, 'A 面板应处于打开态').toBe(true)
+  expect(r.a.gridVisible, 'A 面板内容应可见').toBe(true)
+  expect(r.a.links, 'A 面板应有可交互链接').toBeGreaterThan(0)
+  expect(r.a.selected, 'A 面板叶子项点击应派发 oas-select').not.toBe('')
+})
+
 // 移动端专项：窄屏顶级溢出收纳——尾部顶级项收进「···」弹层，弹层项可打开大面板/派发选择
 test('navigation-menu 移动端：窄屏顶级溢出收纳进「···」弹层，弹层项可交互', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
