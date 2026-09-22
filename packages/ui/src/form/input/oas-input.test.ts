@@ -798,6 +798,79 @@ describe('OASInput 能力补齐', () => {
     expect(css).toContain('[data-slot-append]')
   })
 
+  // ---- addon 槽内自包含控件（按钮族）：托盘退化为贴合容器 + 圆角协议穿透 ----
+
+  /** 造一个 tagName 匹配的自包含控件（不注册自定义元素也可参与 slot 分发与 tag 判定） */
+  function control(tag: string, slotName: string): HTMLElement {
+    const node = document.createElement(tag)
+    node.setAttribute('slot', slotName)
+    return node
+  }
+
+  it('slot=append 分发 oas-button：托盘打 data-addon-control 并注入圆角合并变量（外角在结束侧）', async () => {
+    const el = mount()
+    const btn = control('oas-button', 'append')
+    el.appendChild(btn)
+    await new Promise((r) => setTimeout(r, 0))
+    const tray = part(el, 'append')
+    expect(tray.hasAttribute('data-addon-control')).toBe(true)
+    // 圆角合并协议穿透到被分发控件；append 的外角在行内结束侧（LTR 右两角）
+    const radius = tray.style.getPropertyValue('--oas-button-group-radius')
+    expect(radius.startsWith('0 ')).toBe(true)
+    expect(radius).toContain('var(--oas-radius-md) var(--oas-radius-md) 0')
+  })
+
+  it('slot=prepend 分发 oas-button：托盘打标记且外角在起始侧（LTR 左两角）', async () => {
+    const el = mount()
+    const btn = control('oas-button', 'prepend')
+    el.appendChild(btn)
+    await new Promise((r) => setTimeout(r, 0))
+    const tray = part(el, 'prepend')
+    expect(tray.hasAttribute('data-addon-control')).toBe(true)
+    const radius = tray.style.getPropertyValue('--oas-button-group-radius')
+    expect(radius.startsWith('var(--oas-radius-md) 0 0 ')).toBe(true)
+  })
+
+  it('oas-button-group / oas-compact 同样识别为自包含控件', async () => {
+    for (const tag of ['oas-button-group', 'oas-compact']) {
+      const el = mount()
+      el.appendChild(control(tag, 'append'))
+      await new Promise((r) => setTimeout(r, 0))
+      expect(part(el, 'append').hasAttribute('data-addon-control'), tag).toBe(true)
+      el.remove()
+    }
+  })
+
+  it('文本 / 图标 slot 不视为自包含控件：不打 data-addon-control、不注入合并变量', async () => {
+    const el = mount()
+    const span = document.createElement('span')
+    span.textContent = '.com'
+    span.setAttribute('slot', 'append')
+    el.appendChild(span)
+    await new Promise((r) => setTimeout(r, 0))
+    const tray = part(el, 'append')
+    expect(tray.hasAttribute('data-addon-control')).toBe(false)
+    expect(tray.style.getPropertyValue('--oas-button-group-radius')).toBe('')
+  })
+
+  it('自包含控件移除后清除 data-addon-control 与合并变量', async () => {
+    const el = mount()
+    const btn = control('oas-button', 'append')
+    el.appendChild(btn)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(part(el, 'append').hasAttribute('data-addon-control')).toBe(true)
+    el.removeChild(btn)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(part(el, 'append').hasAttribute('data-addon-control')).toBe(false)
+    expect(part(el, 'append').style.getPropertyValue('--oas-button-group-radius')).toBe('')
+  })
+
+  it('自包含控件形态规则存在（data-addon-control 驱动 padding/边框/高度对齐）', () => {
+    const css = styleText(mount())
+    expect(css).toContain('[data-addon-control]')
+    expect(css).toContain('--oas-control-height-md')
+  })
+
   // ---- count-position + grapheme 计数 ----
 
   it('count-position 默认 outside，inside 时 count 标记 data-position', () => {

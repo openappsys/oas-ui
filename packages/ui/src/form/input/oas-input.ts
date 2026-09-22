@@ -1,5 +1,9 @@
 import { OASFormElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { isRtl } from '../../shared/direction.js'
+
+/** addon 槽内「自包含控件」tag 白名单：自带底色/描边/圆角，不应被放进文本托盘的灰底与内边距里 */
+const ADDON_CONTROL_TAGS = new Set(['OAS-BUTTON', 'OAS-BUTTON-GROUP', 'OAS-COMPACT'])
 
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_VARIANTS = ['outlined', 'filled', 'borderless'] as const
@@ -232,6 +236,29 @@ input:disabled:hover {
 :host([data-slot-append]) input  {
   border-start-end-radius: 0;
   border-end-end-radius: 0;
+}
+/* addon 槽分发自包含控件（按钮族）时，托盘退化为「贴合容器」：
+   去掉为文本 addon 预留的内边距与灰底/描边（消除灰尾巴与双层圆角/双线），
+   高度与输入框同档对齐（消除 1px 台阶），相邻边 -1px 重叠把输入框侧线与控件边框合并为单线。
+   圆角合并协议（--oas-button-group-radius）由 syncAddons 按 prepend/append + 书写方向注入被分发控件。 */
+.addon[data-addon-control] {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-sizing: border-box;
+  height: var(--oas-control-height-md);
+}
+:host([data-size='small']) .addon[data-addon-control] {
+  height: var(--oas-control-height-sm);
+}
+:host([data-size='large']) .addon[data-addon-control] {
+  height: var(--oas-control-height-lg);
+}
+[part='append'][data-addon-control] {
+  margin-inline-start: -1px;
+}
+[part='prepend'][data-addon-control] {
+  margin-inline-end: -1px;
 }
 /* hidden 属性需要显式覆盖 display（避免 class 的 display 优先级压过 UA 的 [hidden] 规则） */
 .addon[hidden] {
@@ -909,7 +936,8 @@ export class OASInput extends OASFormElement {
 
   /** addon 区：addon-before/after 文案（attribute 文本为 slot fallback）+ prepend/append slot 复杂内容分发。
    *  双通道与 prefix/suffix 同构：slot 有分发时原生替换 fallback，显隐 = 有 attribute 文本 || slot 有内容；
-   *  slot 分发时给 host 打 data-slot-prepend/append 驱动圆角合并选择器。 */
+   *  slot 分发时给 host 打 data-slot-prepend/append 驱动圆角合并选择器；
+   *  分发自包含控件（按钮族）时给托盘打 data-addon-control 退化为贴合容器，并把圆角合并协议注入控件。 */
   private syncAddons(): void {
     const setAddon = (partName: string, attrName: string, slotMark: string): void => {
       const el = this.shadow.querySelector<HTMLElement>(`[part="${partName}"]`)
@@ -924,6 +952,28 @@ export class OASInput extends OASFormElement {
       el.hidden = text === '' && !slotHasContent
       if (slotHasContent) this.setAttribute(slotMark, '')
       else this.removeAttribute(slotMark)
+
+      // 自包含控件（按钮族）：托盘退化为贴合容器（CSS [data-addon-control]），
+      // 并把圆角合并协议穿透给控件——外角在行内起始侧（prepend）/结束侧（append），RTL 下互换。
+      const control = slotHasContent
+        ? slotEl!
+            .assignedNodes()
+            .find((n): n is HTMLElement => n.nodeType === 1 && ADDON_CONTROL_TAGS.has((n as HTMLElement).tagName))
+        : undefined
+      if (control && control.tagName === 'OAS-BUTTON') {
+        el.setAttribute('data-addon-control', '')
+        const start = 'var(--oas-radius-md) 0 0 var(--oas-radius-md)'
+        const end = '0 var(--oas-radius-md) var(--oas-radius-md) 0'
+        const atEnd = (partName === 'append') !== isRtl(this)
+        el.style.setProperty('--oas-button-group-radius', atEnd ? end : start)
+      } else if (control) {
+        // oas-button-group / oas-compact 自行向子控件注入同一协议，仅标记托盘、不重复注入
+        el.setAttribute('data-addon-control', '')
+        el.style.removeProperty('--oas-button-group-radius')
+      } else {
+        el.removeAttribute('data-addon-control')
+        el.style.removeProperty('--oas-button-group-radius')
+      }
     }
     setAddon('prepend', 'addon-before', 'data-slot-prepend')
     setAddon('append', 'addon-after', 'data-slot-append')
