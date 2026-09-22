@@ -377,6 +377,14 @@ onMounted(async () => {
 })
 </script>
 
+## required
+
+<DemoBlock title="required (native validation chain)">
+  <oas-upload required name="attachment"></oas-upload>
+</DemoBlock>
+
+`required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
+
 ## API
 
 ### oas-upload

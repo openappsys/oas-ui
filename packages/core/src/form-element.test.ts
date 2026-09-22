@@ -176,4 +176,26 @@ describe('OASFormElement（form-associated 公共机制）', () => {
     el.focus()
     expect(focusSpy).toHaveBeenCalledTimes(1)
   })
+
+  it('外部 label 命名转发：内层控件 aria-label 复制 label 文本（跨 shadow IDREF 不解析，故复制文本）；解除关联后清理', () => {
+    const form = document.createElement('form')
+    document.body.appendChild(form)
+    const label = document.createElement('label')
+    label.textContent = '  姓名（必填）  '
+    form.appendChild(label)
+    const el = mount({ name: 'username' })
+    form.appendChild(el)
+    label.htmlFor = el.id = 'fixture-named'
+
+    // labels 是 live 解析：关联建立后触发一次 update 即同步
+    el.setAttribute('value', 'x')
+    const inner = el.shadowRoot!.querySelector('input')!
+    expect(inner.getAttribute('aria-label')).toBe('姓名（必填）')
+
+    // 解除关联（label 移除）→ 只清理自己设置的 aria-label
+    label.remove()
+    el.setAttribute('value', 'y')
+    expect(inner.hasAttribute('aria-label')).toBe(false)
+    form.remove()
+  })
 })

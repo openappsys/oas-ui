@@ -124,6 +124,14 @@ Same positioning contract as date-picker: `fixed` + collision flipping + viewpor
 
 On touch screens (coarse pointer) or narrow viewports (<768px), the panel is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the hour/minute/second columns (including the dual-column range layout) scroll inside the sheet; the desktop form keeps the original floating dropdown. Inside the sheet, time option rows are lifted to a 44px touch target (`--oas-touch-target-min`).
 
+## required
+
+<DemoBlock title="required (native validation chain)">
+  <oas-time-picker required name="at"></oas-time-picker>
+</DemoBlock>
+
+`required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
+
 ## API
 
 ### oas-time-picker
