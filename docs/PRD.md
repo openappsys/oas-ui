@@ -1281,7 +1281,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 全量单测 7103 / typecheck 0 / build 0 / api:check 0 / stats:check 0 / lint:md 0 / biome check 0 / perf:size 全 PASS / trace 0 命中
 - 全量 e2e 2111 passed（chromium 全量 + firefox 抽样 + docs-site）；select / button-group 修复项均带 e2e 与源码守卫固化回归；radio / checkbox 新示例 dev 与 prod 双环境实测（含暗色、console 零告警）
 
-## v2.5.6 无障碍一致性批次（设计级冲突收口 + 感知对比度门禁）待发版
+## v2.5.6 无障碍一致性批次（设计级冲突收口 + 感知对比度门禁）
 
 ### 无障碍
 
@@ -1309,9 +1309,9 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 全量单测 182 文件 / 7117 用例 / typecheck 0 / build 0 / api:check 通过（含新增 CSS 变量表生成）/ stats:check 0 / lint:md 0 / format 0 / perf:size 全 PASS（theme index.css 3.1KB / 3.5KB）/ trace 0 命中
 - 全量 e2e 2146 passed（chromium 全量 + firefox 抽样，0 failed）；a11y 审计 118 passed（117 页 × light+dark 双主题 + 门禁自检，零严重违规）；对比度硬闸 `<60 = 0`（light 655→0、dark 327→0），axe 比值法 ratchet 基线入库（255 违规 + exempt/skipped 同步 ratchet）
 
-## 未发布：form-associated 批次（原生表单集成）
+## v2.5.6 form-associated 批次（原生表单集成）
 
-> 版号由用户确定后再定版；本条随批次滚动更新（15 个表单组件已全部落地）。
+> 本条随批次滚动更新（15 个表单组件已全部落地）。
 
 ### 特性
 
@@ -1322,6 +1322,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **值语义按组件族对齐原生**：文本族（input/textarea/mentions/auto-complete）提交当前文本；勾选族「勾/开/选中才提交、未勾不提交」（`setFormValue(null)`）；选择族单选提交选中值、多选（select/tree-select/date-picker multiple）**同名多条 FormData**；combobox 选中优先 + 草稿文本兜底（datalist 语义，失焦丢弃）；date/time 范围模式 **`name-start`/`name-end` 两条 entry**；upload 提交 File（回显记录无文件体不提交）
 - **reset 基线全批次统一**（initialValue + valueDirty）：初始渲染/受控写入跟随属性刷新基线，用户交互置脏冻结（对齐原生 dirty 语义），reset 恢复基线并清脏；radio 互斥清除视同交互（目标置脏），保住默认选中项的恢复语义
 - 与 `oas-form` 自研 `collectFields` 机制并行可用（互不干扰）；`formStateRestore`（bfcache/autofill）明确不做；原生校验 UI（红框/气泡样式）不在本批
+- **已知限制**：外部 label 的**文本动态变化**不会即时刷新内层 `aria-label`——命名转发在组件 update 时同步，label 文本变化本身不触发组件 update（下次任意属性/update 触发时收敛）；label 关联关系（for 指向、增删）同理按 update 时机收敛
 
 ### 修复
 
@@ -1340,9 +1341,9 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **全量 e2e 2299 passed / 37 skipped（chromium 全量 + firefox 抽样，唯一失败为 flaky 重跑即绿）**；a11y 全量 118 页×双主题 axe 零严重违规（命名转发修复后）；demo-coverage 静态属性演示 113 过（12 组件补 required 演示块）
 - 视觉核验：form 页「原生表单集成」集中 demo（input/select/date-picker/checkbox/switch）浅/暗截图 + 识图复核（label 点击聚焦环、勾选/切换态、FormData 输出、reset 复位，暗色对比度）；reset 后 select/date 仍显示受控值属**受控写入刷新基线**的设计语义（demo 文案已注明）
 
-## 未发布：qrcode 美化维度（码点 / 定位图形形状 + 渐变前景 + logo 挖空）
+## v2.5.6 qrcode 美化维度（码点 / 定位图形形状 + 渐变前景 + logo 挖空）
 
-> 版号由用户确定后再定版；本条只记内容与验收。
+> 本条只记内容与验收。
 
 ### 特性
 
@@ -1363,3 +1364,28 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 单测：qrcode 域 73 用例（含形状 / 渐变 / 挖空 / 路径合法性 / 默认等价）；typecheck 0；build 0
 - 浏览器回归（qa-regression，chromium + firefox 抽样）：像素级数三处定位图形暗模块（square 精确 33；rounded 因圆角弧线切到角格、采样点落在抗锯齿带，容 32–34，仍可抓「丢失 0 / 糊成实心 45+」）+ 默认渲染零 defs + 形状 / 渐变 / 挖空按属性生效 + `download()` 产物含形状与渐变且不走合并路径
 - 视觉核验：浅色 + 暗色两组截图逐块核对（三眼齐全、圆角「环 + 中心块」结构、整码连续渐变、logo 挖空留白、暗色仍白底深点），console 零告警；smoke / dark / visual / console-sweep 四支 spec 的 qrcode 页均过
+
+## v2.5.6 生态修复与基建批次（marquee / SSR 断环 / 依赖升级 / sidebar / 零散修复）
+
+### 修复
+
+- **oas-marquee 循环接缝顿挫三连修**：克隆份与源份渲染宽不等（每轮 wrap 回跳一个空格宽，实测 4.7px）；相位跳变；克隆份改走 light DOM（页面样式表只能作用于 light DOM，继承宿主样式）+ 份数口径修正 + reverse 切换相位连续（相位按「含方向的位移比例」换算）
+- **`[hidden]` 兜底收口（8 处，两笔）**：作者级 `display` 声明压过 UA `[hidden]` 规则的同类缺陷，全库清查补齐
+- **真机视觉复核 7 处修复**（含 2 处存量缺陷）+ oas-masonry items getter 契约修复 + 白名单漂移清理
+- **SSR 测试基建**：DSD 快照匹配改前缀模糊通道（防 DOM 噪声属性误报）；关闭 happy-dom 帧导航（消除单测 fetch 噪声）
+
+### 特性
+
+- **oas-sidebar 抽屉开合方法公开**：`openDrawer()` / `closeDrawer()`（原 private）——编程控制移动端抽屉，等价于点击内置触发钮 / 遮罩 / Esc；幂等、桌面态自动回收不残留浮层、写入 `drawer-open` 受控属性（宿主可观察/回写）
+
+### 工程
+
+- **断开 ui↔ssr 构建环**：`packages/ui` 移除对 `@oas-ui/ssr` 的 devDependency——它使任务图成环（`ui#build → ssr#build → ui#build`，pnpm ERR_PNPM_TASK_CYCLE，dev/build 全挂）；唯一真实引用（e2e spec）`git mv` 到 ssr 包内（依赖方向 ssr → ui 归正）；playwright `testDir` 放宽到 `./packages`；`docs/engineering.md` 同步
+- **工具链与依赖升级**：pnpm 11.20.0 → 12.5.1（packageManager）+ biome / playwright / @types/node / happy-dom / markdownlint 等升级；连带回归 8 条修复（含 1 条 SSR 真回归）+ gold 期望同步
+- **API 工具链**：反向缺口治理（跨目录基类扫描 + `@apiProperty` 通道 + 双向 0 门禁）；API 语料进 pre-commit；docs 双语镜像守卫；qa-regression 覆盖回填 8 组件
+- **perf 预算重定档**（form-associated 批次增量）：cdn.js 575→600 KB、全量入口 870→905 KB（天花板制等比）、button 链 31→35 KB、table 链 65→70 KB、form 链 20→24 KB（绝对值制按实测上浮 ~15%）
+- **ui-spec 新增「命令式开合 API 约定」**（抽屉/浮层类公开方法的统一形状，sidebar 为首个落地件）
+
+### 验收
+
+- 全量 e2e 2299 passed（chromium 全量 + firefox 抽样，唯一失败为 flaky 重跑即绿）；全量单测、typecheck、build、api:check、stats:check、trace 全绿（随各笔提交门禁）
