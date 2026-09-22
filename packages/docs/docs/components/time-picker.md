@@ -126,6 +126,14 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 
 触屏（coarse pointer）或窄视口（<768px）下，面板自动改由 `oas-bottom-sheet` 底部抽屉承载：贴视口底升起 + 遮罩 + 拖拽把手下滑关闭（点遮罩 / Esc 同样收起），底部避让安全区；时分秒列（含范围双列组）在抽屉内容区内各自滚动；PC 形态保持原有浮层下拉不变。抽屉内时间选项行触控目标抬升至 44px（`--oas-touch-target-min`）。
 
+## required 必填
+
+<DemoBlock title="required 必填（原生校验链）">
+  <oas-time-picker required name="at"></oas-time-picker>
+</DemoBlock>
+
+`required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
+
 ## API
 
 ### oas-time-picker

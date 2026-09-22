@@ -275,6 +275,14 @@ onMounted(() => {
 })
 </script>
 
+## required
+
+<DemoBlock title="required (native validation chain)">
+  <oas-mentions required name="comment" placeholder="Comment"></oas-mentions>
+</DemoBlock>
+
+`required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
+
 ## API
 
 ### oas-mentions

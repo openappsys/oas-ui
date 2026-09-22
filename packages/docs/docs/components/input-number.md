@@ -211,6 +211,14 @@ onMounted(() => {
 })
 </script>
 
+## required 必填
+
+<DemoBlock title="required 必填（原生校验链）">
+  <oas-input-number required name="qty" placeholder="数量"></oas-input-number>
+</DemoBlock>
+
+`required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
+
 ## API
 
 ### oas-input-number

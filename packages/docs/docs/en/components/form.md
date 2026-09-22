@@ -39,6 +39,36 @@ Without `rules`, submission performs no validation and dispatches `oas-submit` d
   </oas-form>
 </DemoBlock>
 
+## Native Form Integration (form-associated)
+
+All form components are **form-associated** custom elements (`formAssociated: true`): they work directly inside a native `<form>` — `<label for>` association works (clicking the label focuses/activates the control, screen readers announce the label text), values are collected via standard `FormData` (submitted only when `name` is set), `form.reset()` restores initial values, `fieldset[disabled]` disables them, and `required` joins the native validation chain (`checkValidity()` / `:invalid` pseudo-class).
+
+<DemoBlock title="native form + label for + FormData + reset">
+  <form id="form-native" style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-3); align-items: flex-start">
+    <label for="fn-name" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Name (click this line &rarr; focuses the input)</label>
+    <oas-input id="fn-name" name="username" value="initial value" style="width: 240px"></oas-input>
+    <label for="fn-role" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Role (click this line &rarr; focuses the select)</label>
+    <oas-select id="fn-role" name="role" options='[{"label":"Admin","value":"admin"},{"label":"Guest","value":"guest"}]' style="width: 240px"></oas-select>
+    <label for="fn-date" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Join date</label>
+    <oas-date-picker id="fn-date" name="joined"></oas-date-picker>
+    <span style="display: inline-flex; align-items: center; gap: var(--oas-space-2)">
+      <oas-checkbox id="fn-agree" name="agree" value="yes"></oas-checkbox>
+      <label for="fn-agree" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Accept the terms (click this line &rarr; checks)</label>
+    </span>
+    <span style="display: inline-flex; align-items: center; gap: var(--oas-space-2)">
+      <oas-switch id="fn-notify" name="notify"></oas-switch>
+      <label for="fn-notify" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Email notifications (click this line &rarr; toggles)</label>
+    </span>
+    <div style="display: flex; gap: var(--oas-space-2)">
+      <oas-button id="fn-read" size="small" type="button">Read FormData</oas-button>
+      <oas-button id="fn-reset" size="small" type="button">form.reset()</oas-button>
+    </div>
+    <span id="fn-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </form>
+</DemoBlock>
+
+**Supported (15 components)**: input / textarea / input-number / checkbox / radio / switch / select / combobox / auto-complete / tree-select / mentions / date-picker / time-picker / upload. Value semantics follow the native ones: multiple mode (select / tree-select / date-picker multiple) submits **same-name entries**; date / time range mode submits **`name-start` / `name-end`**; upload submits File; unchecked checkables submit nothing. Works in parallel with `oas-form`'s `collectFields` mechanism.
+
 ## Validation
 
 The validation area demonstrates `rules`-declared validation rules and failure feedback.
@@ -194,6 +224,22 @@ onMounted(() => {
   const basicOut = document.getElementById('form-basic-output')
   document.getElementById('form-basic')?.addEventListener('oas-submit', (e) => {
     basicOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+
+  // Native form integration: FormData read + reset
+  const nativeForm = document.getElementById('form-native')
+  const fnOut = document.getElementById('fn-output')
+  document.getElementById('fn-read')?.addEventListener('click', () => {
+    if (!nativeForm) return
+    const fd = new FormData(nativeForm)
+    const text = [...fd.entries()]
+      .map(([k, v]) => `${k}=${v instanceof File ? v.name : v}`)
+      .join('; ')
+    fnOut.textContent = text ? `FormData: ${text}` : 'FormData: (nothing to submit yet)'
+  })
+  document.getElementById('fn-reset')?.addEventListener('click', () => {
+    nativeForm?.reset()
+    if (fnOut) fnOut.textContent = 'form.reset() executed (all fields back to their default values)'
   })
 
   // Validation area: event demo

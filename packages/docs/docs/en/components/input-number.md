@@ -210,6 +210,14 @@ onMounted(() => {
 })
 </script>
 
+## required
+
+<DemoBlock title="required (native validation chain)">
+  <oas-input-number required name="qty" placeholder="Quantity"></oas-input-number>
+</DemoBlock>
+
+`required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
+
 ## API
 
 ### oas-input-number
