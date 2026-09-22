@@ -1,4 +1,4 @@
-import { OASElement, escapeHtml } from '@oas-ui/core'
+import { OASFormElement, escapeHtml } from '@oas-ui/core'
 import { formatToken, resolveLocale } from '../calendar/date-grid.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
@@ -355,7 +355,10 @@ function partsToString(p: TimeParts): string {
   return `${pad(p.h)}:${pad(p.m)}:${pad(p.s)}`
 }
 
-export class OASTimePicker extends OASElement {
+export class OASTimePicker extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'value',
@@ -372,6 +375,9 @@ export class OASTimePicker extends OASElement {
       'is-range',
       'placement',
       'placeholder',
+      // 表单关联通道：required 驱动原生校验链（valueMissing）；name 变化需重同步范围 FormData 的 entry key
+      'name',
+      'required',
     ]
   }
 
@@ -388,6 +394,10 @@ export class OASTimePicker extends OASElement {
   private committedValue = ''
   /** 上次同步进 sides 的 value 原文（update 时识别外部改值） */
   private lastSyncedValue = ''
+  /** 初始值基线（form.reset 恢复目标）：初始渲染/受控写入跟随 value 属性刷新（form-associated） */
+  private initialValue: string | null = null
+  /** 用户交互脏标记（对齐原生 dirty 语义）：置位后基线冻结，reset 恢复基线并清脏 */
+  private valueDirty = false
   private activeColumn = 0
   private units: TimeUnit[] = ['h', 'm', 's']
   /** 手输中标记：update 不回写 input.value 打断输入 */
@@ -561,6 +571,12 @@ export class OASTimePicker extends OASElement {
     // 移动形态同步：coarse pointer（触屏）或窄视口（<768px）→ bottom-sheet 底部抽屉承载
     this.syncMobileMode()
     this.syncSizeStatus()
+    // form.reset 基线：初始渲染/受控写入（非用户交互的属性变化）跟随 value 属性刷新；
+    // 用户交互置脏后基线冻结（与原生 dirty checkedness 同思路）
+    if (!this.valueDirty) {
+      const raw = this.getAttr('value', '')
+      this.initialValue = raw === '' ? null : raw
+    }
     this.syncTrigger()
     this.renderPresets()
     if (this.hasAttribute('open') && !this.openState) this.bootPanel(false)
@@ -574,6 +590,9 @@ export class OASTimePicker extends OASElement {
       }
       this.renderColumns(false)
     }
+    // 原生表单数据 + 校验链同步（form-associated；无 name 时浏览器自动不提交）
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   // ---- 开合（受控 open / oas-open-change） ----
@@ -644,10 +663,15 @@ export class OASTimePicker extends OASElement {
     const nextRaw = this.isRange() ? JSON.stringify(next) : (next as string)
     const detail: string | string[] = this.isRange() ? (next as string[]) : next
     if (nextRaw !== this.committedValue) {
+      // 用户交互置脏：冻结 reset 基线（须先于 setAttribute——回调内 update 会读脏标记）
+      this.valueDirty = true
       this.setAttribute('value', nextRaw)
       this.emit('change', { value: detail })
       this.committedValue = nextRaw
     }
+    // 值变化点同步原生表单数据 + 校验链（属性同值时无回调、不触发 update，这里兜底）
+    this.syncFormValue()
+    this.syncValidity()
     return detail
   }
 
@@ -1026,6 +1050,8 @@ export class OASTimePicker extends OASElement {
         if (!item || this.hasAttr('readonly')) return
         const p = parseTime(item.value)
         if (!p) return
+        // 用户交互置脏：冻结 reset 基线（须先于 setAttribute——回调内 update 会读脏标记）
+        this.valueDirty = true
         if (this.isRange()) {
           const value = [item.value, item.value]
           this.setAttribute('value', JSON.stringify(value))
@@ -1183,6 +1209,8 @@ export class OASTimePicker extends OASElement {
     if (p) {
       const value = partsToString(p)
       if (value !== this.getAttr('value', '')) {
+        // 用户交互置脏：冻结 reset 基线（须先于 setAttribute——回调内 update 会读脏标记）
+        this.valueDirty = true
         this.setAttribute('value', value)
         this.emit('change', { value })
         return
@@ -1212,11 +1240,74 @@ export class OASTimePicker extends OASElement {
         /* 保持原串 */
       }
     }
+    // 用户交互置脏：清空后的值不回写 reset 基线（与原生「用户清空不改善通初始值」一致）
+    this.valueDirty = true
     this.removeAttribute('value')
     this.emit('clear', { value: prevDetail })
     this.emit('change', { value: '' })
     this.syncTrigger()
+    // 值变化点同步原生表单数据 + 校验链（属性移除路径经 update 已同步，这里兜底）
+    this.syncFormValue()
+    this.syncValidity()
     this.triggerEl?.focus()
+  }
+
+  // ---- 原生表单集成（form-associated） ----
+
+  /**
+   * 表单值快照（form-associated）：
+   * - 单值：value 属性字符串（组件现有 value 格式）；无选中 → null（FormData 不含此项）
+   * - 范围：原生「两条 entry」语义，key 为 `${name}-start` / `${name}-end`；两侧皆空 → null；
+   *   只选一半（JSON 缺侧或一侧非法）→ 两条都写（空侧空串）
+   */
+  protected override getFormValue(): string | FormData | null {
+    const raw = this.getAttr('value', '')
+    if (!this.isRange()) return raw === '' ? null : raw
+    let start = ''
+    let end = ''
+    try {
+      const arr = JSON.parse(raw)
+      if (Array.isArray(arr)) {
+        const s0 = arr.length > 0 ? String(arr[0]) : ''
+        const s1 = arr.length > 1 ? String(arr[1]) : ''
+        start = parseTime(s0) ? s0 : ''
+        end = parseTime(s1) ? s1 : ''
+      }
+    } catch {
+      /* 非法 JSON 走全空 */
+    }
+    if (start === '' && end === '') return null
+    const fd = new FormData()
+    const name = this.getAttr('name', '')
+    fd.append(`${name}-start`, start)
+    fd.append(`${name}-end`, end)
+    return fd
+  }
+
+  /** 原生校验链同步：required 且无选中（范围模式为两侧皆空）→ valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === null) {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复初始值基线并清脏（受控源为 value 属性），不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    this.valueDirty = false
+    this.typing = false
+    if (this.initialValue === null) this.removeAttribute('value')
+    else this.setAttribute('value', this.initialValue)
+    // 属性同值/缺席时无回调、不触发 update，UI 兜底刷新（触发器显示文本/清除钮显隐）
+    this.syncTrigger()
+    this.syncFormValue()
+    this.syncValidity()
+  }
+
+  /** shadow 内真实焦点目标：触发器 input。显式覆盖，避免默认选择器误中清除钮（tabindex=-1）等 */
+  protected override get innerControl(): HTMLElement | null {
+    return this.triggerEl
   }
 
   // ---- 浮层定位（fixed + computePosition，与 date-picker 同契约） ----

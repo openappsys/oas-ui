@@ -44,7 +44,7 @@
     {
       "name": "name",
       "type": "string",
-      "default": "file",
+      "default": "",
       "observed": true
     },
     {
@@ -97,6 +97,11 @@
       "name": "tip",
       "type": "string",
       "default": "",
+      "observed": true
+    },
+    {
+      "name": "required",
+      "type": "boolean",
       "observed": true
     }
   ],

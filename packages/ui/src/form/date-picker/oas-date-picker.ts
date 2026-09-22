@@ -1,4 +1,4 @@
-import { OASElement, escapeHtml } from '@oas-ui/core'
+import { OASFormElement, escapeHtml } from '@oas-ui/core'
 import {
   resolveLocale,
   startOfDay,
@@ -659,7 +659,10 @@ interface TimeParts {
   s: number
 }
 
-export class OASDatePicker extends OASElement {
+export class OASDatePicker extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'value',
@@ -682,6 +685,9 @@ export class OASDatePicker extends OASElement {
       'shortcuts-position',
       'show-week-number',
       'first-day-of-week',
+      // 表单关联通道：required 驱动原生校验链（valueMissing）；name 变化需重同步范围/多选 FormData 的 entry key
+      'name',
+      'required',
     ]
   }
 
@@ -713,6 +719,10 @@ export class OASDatePicker extends OASElement {
   private focusWithin = false
   /** aria-invalid 由 status=error 设置的所有权标志（清理时只移除自己设置的） */
   private invalidByStatus = false
+  /** 初始值基线（form.reset 恢复目标）：初始渲染/受控写入跟随 value 属性刷新（存原始串；范围/多选为 JSON 串，无值为 null） */
+  private initialValue: string | null = null
+  /** 用户交互脏标记（对齐原生 dirty 语义）：置位后基线冻结，reset 恢复基线并清脏 */
+  private valueDirty = false
 
   /** @apiProperty 快捷预设数组（对象数组无法用 attribute 表达，赋值即重渲面板） */
   get shortcuts(): ShortcutItem[] | null {
@@ -890,6 +900,12 @@ export class OASDatePicker extends OASElement {
     // 初始 open 属性（upgrade 前的属性通知被基类吞掉）：挂载即展开，不抢焦点
     if (this.hasAttribute('open') && !this.openState) this.bootPanel(false)
     if (this.openState) this.renderPanel(false)
+    // form.reset 基线：初始渲染/受控写入（非用户交互的属性变化）跟随 value 属性刷新；
+    // 用户交互置脏后基线冻结（与原生 dirty checkedness 同思路）
+    if (!this.valueDirty) this.initialValue = this.getAttribute('value')
+    // 原生表单数据 + 校验链同步（form-associated；无 name 浏览器自动不提交）
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   // ---- 开合（受控 open / oas-open-change） ----
@@ -1240,6 +1256,7 @@ export class OASDatePicker extends OASElement {
     if (d && this.isAcceptableDate(d)) {
       const value = this.formatCommitValue(d)
       if (value !== this.getAttr('value', '')) {
+        this.valueDirty = true // 用户交互置脏：冻结 reset 基线
         this.setAttribute('value', value)
         this.emit('change', { value })
         return
@@ -1277,6 +1294,8 @@ export class OASDatePicker extends OASElement {
         /* 保持原串 */
       }
     }
+    // 用户交互置脏：清空后的空值不回写 reset 基线（与原生「用户清空不改善通初始值」一致）
+    this.valueDirty = true
     this.removeAttribute('value')
     this.emit('clear', { value: prevDetail })
     this.emit('change', { value: '' })
@@ -1553,6 +1572,7 @@ export class OASDatePicker extends OASElement {
       onPick: (m) => {
         if (this.hasAttr('readonly')) return
         const value = `${year}-${pad(m + 1)}`
+        this.valueDirty = true // 用户交互置脏：冻结 reset 基线
         this.setAttribute('value', value)
         this.emit('change', { value })
         this.requestOpen(false)
@@ -1607,6 +1627,7 @@ export class OASDatePicker extends OASElement {
       btn.addEventListener('click', () => {
         if (disabled || this.hasAttr('readonly')) return
         const value = `${year}-Q${q + 1}`
+        this.valueDirty = true // 用户交互置脏：冻结 reset 基线
         this.setAttribute('value', value)
         this.emit('change', { value })
         this.requestOpen(false)
@@ -1649,6 +1670,7 @@ export class OASDatePicker extends OASElement {
       onPick: (y) => {
         if (this.hasAttr('readonly')) return
         const value = String(y)
+        this.valueDirty = true // 用户交互置脏：冻结 reset 基线
         this.setAttribute('value', value)
         this.emit('change', { value })
         this.requestOpen(false)
@@ -2101,6 +2123,7 @@ export class OASDatePicker extends OASElement {
     if (this.isRangeType()) {
       const r = this.resolveShortcutRange(item)
       if (!r) return
+      this.valueDirty = true // 用户交互置脏：冻结 reset 基线
       this.range = { start: r.start, end: r.end }
       let value: string | [string, string]
       if (t === 'datetimerange') {
@@ -2119,6 +2142,7 @@ export class OASDatePicker extends OASElement {
     const d = this.resolveShortcutDate(item)
     if (!d) return
     const value = this.formatAnchor(d)
+    this.valueDirty = true // 用户交互置脏：冻结 reset 基线
     this.setAttribute('value', value)
     this.emit('change', { value })
     this.requestOpen(false)
@@ -2224,12 +2248,14 @@ export class OASDatePicker extends OASElement {
       const list = before.filter((x) => toISODate(x) !== iso)
       if (list.length === before.length) list.push(startOfDay(d))
       const values = list.map(toISODate)
+      this.valueDirty = true // 用户交互置脏：冻结 reset 基线
       this.setAttribute('value', JSON.stringify(values))
       this.emit('change', { value: values })
       // 保持面板打开，支持连续点选（setAttribute 触发 update 重渲染高亮）
       return
     }
     const value = this.formatAnchor(d)
+    this.valueDirty = true // 用户交互置脏：冻结 reset 基线
     this.setAttribute('value', value)
     this.emit('change', { value })
     this.requestOpen(false)
@@ -2238,6 +2264,7 @@ export class OASDatePicker extends OASElement {
   private confirmDateTime(): void {
     if (this.hasAttr('readonly') || !this.pendingDate) return
     const value = `${toISODate(this.pendingDate)}T${this.partsToString(this.time)}`
+    this.valueDirty = true // 用户交互置脏：冻结 reset 基线
     this.setAttribute('value', value)
     this.emit('change', { value })
     this.emit('confirm', { value })
@@ -2249,6 +2276,7 @@ export class OASDatePicker extends OASElement {
     const s = `${toISODate(this.range.start)}T${this.partsToString(this.time)}`
     const e = `${toISODate(this.range.end)}T${this.partsToString(this.time2)}`
     const value = [s, e]
+    this.valueDirty = true // 用户交互置脏：冻结 reset 基线
     this.setAttribute('value', JSON.stringify(value))
     this.emit('change', { value })
     this.emit('confirm', { value })
@@ -2301,6 +2329,7 @@ export class OASDatePicker extends OASElement {
       this.formatWithType(this.range.start, this.pickerType),
       this.formatWithType(this.range.end, this.pickerType),
     ]
+    this.valueDirty = true // 用户交互置脏：冻结 reset 基线
     this.setAttribute('value', JSON.stringify(value))
     this.emit('change', { value })
     this.requestOpen(false)
@@ -2366,5 +2395,74 @@ export class OASDatePicker extends OASElement {
       this.invalidByStatus = false
       this.removeAttribute('aria-invalid')
     }
+  }
+
+  // ---- 原生表单集成（form-associated） ----
+
+  /**
+   * 表单值快照（form-associated）：
+   * - 单值：value 属性原串（组件提交值契约格式；空 / 解析不出 → null，FormData 不含此项）
+   * - multiple（date 多选）：原生「同名多条」语义——每条选中日期一条 entry（key 取 name 属性；无选中 → null）
+   * - 范围：双端点两条 entry，key 为 `name-start` / `name-end`；两侧皆空 → null；
+   *   只选一半 → 两侧都写（空的一侧写空串）
+   */
+  protected override getFormValue(): string | FormData | null {
+    const raw = this.getAttr('value', '')
+    if (raw === '') return null
+    if (this.isRangeType()) {
+      const r = this.parseRange()
+      if (!r.start && !r.end) return null
+      const name = this.getAttr('name', '')
+      const fd = new FormData()
+      fd.append(`${name}-start`, r.start ? this.formatRangeEndpoint(r.start) : '')
+      fd.append(`${name}-end`, r.end ? this.formatRangeEndpoint(r.end) : '')
+      return fd
+    }
+    if (this.isMultiple()) {
+      const dates = this.selectedAnchorArray()
+      if (!dates.length) return null
+      const name = this.getAttr('name', '')
+      const fd = new FormData()
+      for (const d of dates) fd.append(name, toISODate(d))
+      return fd
+    }
+    return this.parseValueAnchor(raw) ? raw : null
+  }
+
+  /** 范围端点表单值格式（照 value 契约：datetimerange 带时刻，其余端点无时间分量） */
+  private formatRangeEndpoint(d: Date): string {
+    if (this.pickerType === 'datetimerange') {
+      return `${toISODate(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+    }
+    return this.formatWithType(d, this.pickerType)
+  }
+
+  /** 原生校验链同步：required 且空值（单值无选中 / 范围两侧皆空）→ valueMissing（message 按 Chromium 契约非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === null) {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复初始值基线（清脏 + 按基线恢复 value 属性），不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    this.valueDirty = false
+    if (this.initialValue === null) this.removeAttribute('value')
+    else this.setAttribute('value', this.initialValue)
+    this.syncTrigger()
+    // 展开态下面板选中态/范围内部状态按恢复后的值重锚（bootPanel 会重解析 range/视图/时间）
+    if (this.openState) this.bootPanel(false)
+    this.syncFormValue()
+    this.syncValidity()
+  }
+
+  /**
+   * shadow 内真实焦点目标：trigger 输入框。当前模板里它是首个 input（基类默认选择器可命中），
+   * 显式覆盖防未来模板重排后误中 tabindex=-1 的清除钮（与 select/tree-select 同约定）
+   */
+  protected override get innerControl(): HTMLElement | null {
+    return this.triggerEl
   }
 }

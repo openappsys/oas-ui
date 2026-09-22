@@ -842,3 +842,145 @@ describe('OASUpload picture-card 触屏', () => {
     expect(card.classList.contains('is-uploading')).toBe(true)
   })
 })
+
+// ---- form-associated（原生表单集成）----
+describe('OASUpload form-associated（原生表单集成）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function zoneOf(el: OASUpload): HTMLElement {
+    return el.shadowRoot!.querySelector('.zone')!
+  }
+
+  /** happy-dom 不支持 attachInternals → 替身注入验证 plumbing；真实原生关联走浏览器 e2e */
+  function mountWithFake(attrs: Record<string, string> = {}): {
+    el: OASUpload
+    fake: { setFormValue: ReturnType<typeof vi.fn>; setValidity: ReturnType<typeof vi.fn> }
+  } {
+    const el = new OASUpload()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    document.body.appendChild(el)
+    return { el, fake }
+  }
+
+  it('静态声明 formAssociated = true；required/name 进入 observedAttributes；无 ElementInternals 环境降级', () => {
+    expect((OASUpload as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    expect(OASUpload.observedAttributes).toEqual(expect.arrayContaining(['required', 'name']))
+    const el = mount()
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('单文件：FormData 一条 File entry（key 取 name 属性）；无文件提交 null', () => {
+    const { el, fake } = mountWithFake({ name: 'attachment' })
+    pick(el, [makeFile('a.txt')])
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0]
+    expect(arg).toBeInstanceOf(FormData)
+    const entries = (arg as FormData).getAll('attachment')
+    expect(entries.length).toBe(1)
+    expect(entries[0]).toBeInstanceOf(File)
+    expect((entries[0] as File).name).toBe('a.txt')
+
+    const empty = mountWithFake({ name: 'attachment' })
+    empty.el.setAttribute('tip', 'x') // 触发 update → 同步 FormData
+    expect(empty.fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('多文件：同名多条 File entry（原生多文件提交语义）', () => {
+    const { el, fake } = mountWithFake({ name: 'files', multiple: '' })
+    pick(el, [makeFile('a.txt'), makeFile('b.txt')])
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0]
+    expect(arg).toBeInstanceOf(FormData)
+    const entries = (arg as FormData).getAll('files') as File[]
+    expect(entries.map((f) => f.name)).toEqual(['a.txt', 'b.txt'])
+  })
+
+  it('回显记录（{name,url}）不进 FormData（全部为回显时提交 null）', () => {
+    const { el, fake } = mountWithFake({ name: 'logo' })
+    el.files = [{ name: 'logo.png', url: 'https://cdn.example.com/logo.png' }]
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('移除文件后同步：FormData 跟随列表减少；清空后为 null', () => {
+    const { el, fake } = mountWithFake({ name: 'files', multiple: '' })
+    pick(el, [makeFile('a.txt'), makeFile('b.txt')])
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.remove')!.click()
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(arg).toBeInstanceOf(FormData)
+    expect((arg.getAll('files') as File[]).map((f) => f.name)).toEqual(['b.txt'])
+    // 受控清空（files = []）→ FormData 不含此项
+    el.files = []
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('formResetCallback：恢复初始 defaultFiles 基线，不派发事件，FormData 回基线', () => {
+    const { el, fake } = mountWithFake({ name: 'files', multiple: '' })
+    el.defaultFiles = [makeFile('base.txt')]
+    let changes = 0
+    el.addEventListener('oas-change', () => changes++)
+    pick(el, [makeFile('a.txt')])
+    expect(el.files.map((f) => f.name)).toEqual(['base.txt', 'a.txt'])
+    el.formResetCallback()
+    expect(el.files.map((f) => f.name)).toEqual(['base.txt'])
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect((arg.getAll('files') as File[]).map((f) => f.name)).toEqual(['base.txt'])
+    // 计数 = 1 全部来自 pick；reset 本身不再派发（与原生 reset 一致）
+    expect(changes, 'reset 不派发 oas-change').toBe(1)
+  })
+
+  it('required：无文件 valueMissing（message 非空），选文件后恢复合法', () => {
+    const { el, fake } = mountWithFake({ required: '', name: 'files' })
+    el.setAttribute('tip', 'x') // 触发 update → 校验链同步
+    // flag 为 true 时 message 按 Chromium 契约必须非空
+    const missing = fake.setValidity.mock.calls.at(-1)
+    expect(missing?.[0]).toEqual({ valueMissing: true })
+    expect(typeof missing?.[1]).toBe('string')
+    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    pick(el, [makeFile('a.txt')])
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mount()
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(zoneOf(el).getAttribute('aria-disabled')).toBe('true')
+    expect(inputOf(el).disabled).toBe(true)
+    el.formDisabledCallback(false)
+    expect(zoneOf(el).getAttribute('aria-disabled')).toBe('false')
+    expect(inputOf(el).disabled).toBe(false)
+  })
+
+  it('label 点击（派到宿主的合成 click）打开文件选择器；disabled 拦截', () => {
+    const el = mount()
+    const spy = vi.spyOn(inputOf(el), 'click')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+
+    const disabled = mount({ disabled: '' })
+    const spyDisabled = vi.spyOn(inputOf(disabled), 'click')
+    disabled.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spyDisabled).not.toHaveBeenCalled()
+  })
+
+  it('shadow 内 zone 点击不重复激活（composedPath 起点≠宿主时跳过，防双开文件对话框）', () => {
+    const el = mount()
+    const spy = vi.spyOn(inputOf(el), 'click')
+    zoneOf(el).click()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('focus() 转递到 shadow 内触发区（zone）', () => {
+    const el = mount()
+    const spy = vi.spyOn(zoneOf(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})

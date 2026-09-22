@@ -397,9 +397,10 @@ onMounted(async () => {
 | `max-size` | Per-file size limit (bytes or `2KB`/`1MB`/`1GB`; over limit fires oas-exceed size form) | `string` | — |
 | `method` | HTTP method (default POST) | `string` | `POST` |
 | `multiple` | Multiple selection | `boolean` | — |
-| `name` | Form field name for the file (default `file`) | `string` | `file` |
+| `name` | Form field name for the file (default `file`) | `string` | — |
 | `paste` | Paste upload (off by default; clipboard files enter the list when on) | `boolean` | — |
 | `replace` | Replace semantics at max-count=1 (new file replaces the old instead of being rejected) | `boolean` | — |
+| `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `show-file-list` | File list visibility (`"false"` hides it, keeping only the drop zone) | `string` | `true` |
 | `tip` | Drop-zone tip text (same as `template[slot="tip"]` for rich content) | `string` | — |
 | `with-credentials` | Cross-origin credentials | `boolean` | — |
