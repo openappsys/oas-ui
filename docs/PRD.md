@@ -1321,9 +1321,9 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **程序化 `focus()` 转到 shadow 内真实控件**（labels / SR / 脚本调用一致）
 - 与 `oas-form` 自研 `collectFields` 机制并行可用（互不干扰）；原生校验链（setValidity）不在本批
 
-### 修复背景
+### 修复
 
-- 下游（示例模板仓）`a11y/noLabelWithoutControl` 42 处告警的根因：自定义元素默认非 labelable，`<label for>` 对 oas-input 等完全不生效（静态检查可骗过，浏览器无关联）
+- **下游（示例模板仓）`a11y/noLabelWithoutControl` 42 处告警的根因**：自定义元素默认非 labelable，`<label for>` 对 oas-input 等完全不生效（静态检查可骗过，浏览器无关联）——form-associated 化后 label 关联、读屏朗读、表单提交全链路生效
 
 ### 验收
 
