@@ -204,7 +204,7 @@ onMounted(() => {
 | `name` | Form field name (native passthrough) | — | — |
 | `placeholder` | Placeholder text | `string` | — |
 | `readonly` | Readonly | `boolean` | — |
-| `required` | Required marker (native passthrough) | — | — |
+| `required` | Required marker (native passthrough) | `boolean` | — |
 | `resize` | Resize behavior | `string` | — |
 | `rows` | Number of rows | `string` | `3` |
 | `show-count` | Show character count (bottom-right n/max; turns red over limit; aria-live announced) | `boolean` | — |

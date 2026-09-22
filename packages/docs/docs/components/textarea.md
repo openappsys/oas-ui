@@ -204,7 +204,7 @@ onMounted(() => {
 | `name` | 表单字段名（透传原生） | — | — |
 | `placeholder` | 占位提示 | `string` | — |
 | `readonly` | 只读 | `boolean` | — |
-| `required` | 必填标记（透传原生） | — | — |
+| `required` | 必填标记（透传原生） | `boolean` | — |
 | `resize` | 尺寸调整 | `string` | — |
 | `rows` | 行数 | `string` | `3` |
 | `show-count` | 显示字数计数（框外右下 n/max；超限变红；aria-live 播报） | `boolean` | — |

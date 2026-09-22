@@ -1444,7 +1444,8 @@
       "auto-width-min": "Minimum width in px for auto-width (default 72)",
       "auto-width-max": "Maximum width for auto-width, px or percentage (default 100%)",
       "prefix-text": "Inline text before the input value (plain HTML may use the legacy alias prefix)",
-      "suffix-text": "Inline text after the input value (plain HTML may use the legacy alias suffix)"
+      "suffix-text": "Inline text after the input value (plain HTML may use the legacy alias suffix)",
+      "required": "Required marker (native passthrough to the inner input; drives the valueMissing validation chain)"
     },
     "events": {
       "oas-clear": "Cleared by click, `detail: { originalEvent }`",
@@ -1483,7 +1484,8 @@
       "step-strictly": "Strict stepping: committed value snaps to the nearest step multiple",
       "clearable": "Clear button when a value is present (returns to the empty-value state)",
       "prefix-text": "Inline prefix text (slot=\"prefix\" accepts any content; not part of value parsing)",
-      "suffix-text": "Inline suffix text (slot=\"suffix\" likewise)"
+      "suffix-text": "Inline suffix text (slot=\"suffix\" likewise)",
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner input)"
     },
     "events": {
       "oas-change": "Change on step or blur, `detail: { value }` (number)",

@@ -1444,7 +1444,8 @@
       "auto-width-min": "auto-width 最小宽度 px（默认 72）",
       "auto-width-max": "auto-width 最大宽度 px 或百分比（默认 100%）",
       "prefix-text": "内嵌前置文案（纯 HTML 可沿用遗留别名 prefix）",
-      "suffix-text": "内嵌后置文案（纯 HTML 可沿用遗留别名 suffix）"
+      "suffix-text": "内嵌后置文案（纯 HTML 可沿用遗留别名 suffix）",
+      "required": "必填标记（透传原生 input；驱动原生校验链 valueMissing）"
     },
     "events": {
       "oas-clear": "点击清除，`detail: { originalEvent }`",
@@ -1483,7 +1484,8 @@
       "step-strictly": "严格步进：提交值吸附最近 step 倍数",
       "clearable": "有值时显示清除按钮（一键回空值态）",
       "prefix-text": "内嵌前缀文案（slot=\"prefix\" 可分发任意内容，不参与数值解析）",
-      "suffix-text": "内嵌后缀文案（slot=\"suffix\" 同上）"
+      "suffix-text": "内嵌后缀文案（slot=\"suffix\" 同上）",
+      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层 input）"
     },
     "events": {
       "oas-change": "步进或失焦变化，`detail: { value }`（数字）",

@@ -376,6 +376,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `prefix-icon` | Icon name for the leading icon | `string` | — |
 | `prefix-text` | Inline text before the input value (plain HTML may use the legacy alias prefix) | `string` | — |
 | `readonly` | Readonly | `boolean` | — |
+| `required` | Required marker (native passthrough to the inner input; drives the valueMissing validation chain) | `boolean` | — |
 | `show-clear-on` | Clear button visibility: `always` (default) / `hover` / `focus` | `string` | — |
 | `show-count` | Show character count (bottom-right; danger when over limit) | `boolean` | — |
 | `show-password` | Password visibility toggle (renders an eye button when `type="password"`) | `boolean` | — |
