@@ -1104,3 +1104,224 @@ describe('OASDatePicker 移动端底部抽屉（bottom-sheet 接入）', () => {
     expect(css).toContain('height: var(--oas-control-height-md)')
   })
 })
+
+describe('OASDatePicker form-associated（原生表单集成）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** happy-dom 不支持 attachInternals → 替身注入验证 plumbing；真实原生关联走浏览器 e2e */
+  const fakeInternals = (el: OASDatePicker) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  it('静态声明 formAssociated = true；required/name 进入 observedAttributes；无 ElementInternals 环境降级', () => {
+    expect((OASDatePicker as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    expect(OASDatePicker.observedAttributes).toEqual(expect.arrayContaining(['required', 'name']))
+    const el = mount({})
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('单值提交：value 属性原串（组件提交值契约格式）；无选中提交 null（FormData 不含此项）', () => {
+    const named = mount({ value: '2026-08-09', name: 'date' })
+    const fakeNamed = fakeInternals(named)
+    named.setAttribute('size', 'small') // 触发 update → 同步 FormData
+    expect(fakeNamed.setFormValue).toHaveBeenLastCalledWith('2026-08-09')
+
+    const empty = mount({ name: 'date' })
+    const fakeEmpty = fakeInternals(empty)
+    empty.setAttribute('size', 'small')
+    expect(fakeEmpty.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('点击选中同步 FormData（单值 date）；datetime 类型照 value 契约原串提交（含时刻）', () => {
+    const el = mount({ value: '2026-08-09', name: 'date' })
+    const fake = fakeInternals(el)
+    open(el)
+    day(el, '2026-08-15').click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('2026-08-15')
+
+    const dt = mount({ type: 'datetime', value: '2026-08-09T10:30:00', name: 'dt' })
+    const fakeDt = fakeInternals(dt)
+    dt.setAttribute('size', 'small')
+    expect(fakeDt.setFormValue).toHaveBeenLastCalledWith('2026-08-09T10:30:00')
+  })
+
+  it('受控 value 写入同步 FormData（单值/范围）', () => {
+    const el = mount({ name: 'date' })
+    const fake = fakeInternals(el)
+    el.setAttribute('value', '2026-09-01')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('2026-09-01')
+
+    const range = mount({ type: 'daterange', name: 'range' })
+    const fakeRange = fakeInternals(range)
+    range.setAttribute('value', '["2026-08-05","2026-08-15"]')
+    const arg = fakeRange.setFormValue.mock.calls.at(-1)?.[0]
+    expect(arg).toBeInstanceOf(FormData)
+    expect((arg as FormData).get('range-start')).toBe('2026-08-05')
+    expect((arg as FormData).get('range-end')).toBe('2026-08-15')
+  })
+
+  it('范围提交 name-start/name-end 两条 entry；两侧皆空提交 null', () => {
+    const el = mount({ type: 'daterange', value: '["2026-08-05","2026-08-15"]', name: 'range' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(arg).toBeInstanceOf(FormData)
+    expect(arg.get('range-start')).toBe('2026-08-05')
+    expect(arg.get('range-end')).toBe('2026-08-15')
+
+    const empty = mount({ type: 'daterange', name: 'range' })
+    const fakeEmpty = fakeInternals(empty)
+    empty.setAttribute('size', 'small')
+    expect(fakeEmpty.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('范围半选：FormData 仍两条 entry，空侧写空串', () => {
+    const el = mount({ type: 'daterange', value: '["2026-08-05",""]', name: 'range' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(arg.get('range-start')).toBe('2026-08-05')
+    expect(arg.get('range-end')).toBe('')
+  })
+
+  it('范围逐端点确认同步：FormData 跟随选择更新', () => {
+    const el = mount({ type: 'daterange', value: '["2026-08-05","2026-08-15"]', name: 'range' })
+    const fake = fakeInternals(el)
+    open(el)
+    day(el, '2026-08-10').click() // 重选起点
+    day(el, '2026-08-20').click() // 选终点
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(arg.get('range-start')).toBe('2026-08-10')
+    expect(arg.get('range-end')).toBe('2026-08-20')
+  })
+
+  it('multiple（date 多选）提交同名多条 FormData（key=name 属性），无选中提交 null', () => {
+    const el = mount({ multiple: '', value: '["2026-08-05","2026-08-15"]', name: 'dates' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(arg).toBeInstanceOf(FormData)
+    expect(arg.getAll('dates')).toEqual(['2026-08-05', '2026-08-15'])
+
+    const empty = mount({ multiple: '', name: 'dates' })
+    const fakeEmpty = fakeInternals(empty)
+    empty.setAttribute('size', 'small')
+    expect(fakeEmpty.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('清空按钮同步 null（单值/范围）', () => {
+    const single = mount({ clearable: '', value: '2026-08-09', name: 'date' })
+    const fakeSingle = fakeInternals(single)
+    single.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.click()
+    expect(fakeSingle.setFormValue).toHaveBeenLastCalledWith(null)
+
+    const range = mount({ type: 'daterange', clearable: '', value: '["2026-08-05","2026-08-15"]', name: 'range' })
+    const fakeRange = fakeInternals(range)
+    range.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.click()
+    expect(fakeRange.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('formResetCallback：用户选过后恢复初始基线（空），不派发事件', () => {
+    const el = mount({ name: 'date', 'default-value': '2026-08-09' })
+    const fake = fakeInternals(el)
+    let changes = 0
+    el.addEventListener('oas-change', () => changes++)
+    open(el)
+    day(el, '2026-08-15').click()
+    expect(el.getAttribute('value')).toBe('2026-08-15')
+    el.formResetCallback()
+    expect(el.hasAttribute('value')).toBe(false)
+    expect(input(el).value).toBe('')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+    // 计数 = 1 全部来自上面的用户点击；reset 本身不再派发（与原生 reset 一致）
+    expect(changes, 'reset 不派发 oas-change').toBe(1)
+  })
+
+  it('受控写入刷新基线：reset 恢复受控写入后的值，不是挂载初值', () => {
+    const el = mount({ name: 'date', value: '2026-08-09', 'default-value': '2026-08-09' })
+    el.setAttribute('value', '2026-08-10') // 受控写入建立新基线
+    open(el)
+    day(el, '2026-08-15').click() // 用户选择（置脏）
+    expect(el.getAttribute('value')).toBe('2026-08-15')
+    el.formResetCallback()
+    expect(el.getAttribute('value')).toBe('2026-08-10')
+    expect(input(el).value).toBe('2026-08-10')
+  })
+
+  it('范围 reset：恢复初始范围（FormData 回到基线条目）', () => {
+    const el = mount({ type: 'daterange', value: '["2026-08-05","2026-08-15"]', name: 'range' })
+    const fake = fakeInternals(el)
+    open(el)
+    day(el, '2026-08-10').click() // 重选起点（置脏）
+    day(el, '2026-08-20').click() // 选终点
+    expect(el.getAttribute('value')).toBe('["2026-08-10","2026-08-20"]')
+    el.formResetCallback()
+    expect(el.getAttribute('value')).toBe('["2026-08-05","2026-08-15"]')
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(arg.get('range-start')).toBe('2026-08-05')
+    expect(arg.get('range-end')).toBe('2026-08-15')
+  })
+
+  it('required：单值无选中 valueMissing（message 非空），选中后恢复合法', () => {
+    const el = mount({ required: '', name: 'date', 'default-value': '2026-08-09' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small') // 触发 update → 校验链同步
+    // flag 为 true 时 message 按 Chromium 契约必须非空（基类 setValidity 会显式补 anchor 实参，只查前两个参数）
+    const missing = fake.setValidity.mock.calls.at(-1)
+    expect(missing?.[0]).toEqual({ valueMissing: true })
+    expect(typeof missing?.[1]).toBe('string')
+    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    open(el)
+    day(el, '2026-08-15').click()
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('required：范围两侧皆空 valueMissing；有值（含半选）后合法', () => {
+    const el = mount({ type: 'daterange', required: '', name: 'range' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    expect(fake.setValidity.mock.calls.at(-1)?.[0]).toEqual({ valueMissing: true })
+    el.setAttribute('value', '["2026-08-05","2026-08-15"]')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+    // 半选（一侧空）仍视为已填，不触发 valueMissing
+    el.setAttribute('value', '["2026-08-05",""]')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mount({})
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(input(el).disabled).toBe(true)
+    el.formDisabledCallback(false)
+    expect(input(el).disabled).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦 shadow 内 trigger；点击 trigger 本身不重复聚焦', () => {
+    const el = mount({})
+    const spy = vi.spyOn(input(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    input(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('focus() 转到 shadow 内 trigger 输入框', () => {
+    const el = mount({})
+    const spy = vi.spyOn(input(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})

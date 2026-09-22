@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 
 /**
  * 上传条目：本地新选文件（File），或已上传回显记录（{name, url}，初值语义、状态 done）。
@@ -508,7 +508,10 @@ function sizeOf(entry: UploadEntry): number {
   return entry instanceof File ? entry.size : (entry.size ?? 0)
 }
 
-export class OASUpload extends OASElement {
+export class OASUpload extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'accept',
@@ -530,6 +533,8 @@ export class OASUpload extends OASElement {
       'show-file-list',
       'replace',
       'tip',
+      // 表单关联通道：required 驱动原生校验链（valueMissing）
+      'required',
     ]
   }
 
@@ -547,6 +552,10 @@ export class OASUpload extends OASElement {
   private timer: ReturnType<typeof setInterval> | null = null
   /** 进行中的上传控制器（XHR / custom-request 返回的 abort 句柄） */
   private uploadControllers = new Map<File, { abort: () => void }>()
+  /** form.reset 基线：初始文件列表快照（受控写入跟随刷新；用户交互置脏后冻结） */
+  private initialFiles: UploadEntry[] = []
+  /** 用户交互脏标记（对齐原生 dirty 语义）：置位后基线冻结，reset 恢复基线并清脏 */
+  private filesDirty = false
   private _customRequest: UploadCustomRequest | null = null
   private _beforeUpload: UploadBeforeUpload | null = null
 
@@ -639,11 +648,21 @@ export class OASUpload extends OASElement {
       if (t instanceof Node && t !== this && this.contains(t)) return
       this.input?.click()
     })
-    // 宿主级：trigger 插槽内容点击经 light DOM 冒泡到达宿主，转发打开文件选择
+    // 宿主级：trigger 插槽内容点击经 light DOM 冒泡到达宿主，转发打开文件选择；
+    // label 点击（form-associated 后 <label for> 合成 click 落点 = 宿主本身）同样激活文件选择
     this.addEventListener('click', (e: Event) => {
-      if (this.injectDisabled()) return
+      if (this.injectDisabled() || e.defaultPrevented) return
       const t = e.target
-      if (!(t instanceof Node) || t === this || !this.contains(t)) return
+      if (!(t instanceof Node)) return
+      if (t !== this) {
+        if (!this.contains(t)) return
+        this.input?.click()
+        return
+      }
+      // target = 宿主：仅 composedPath 起点也是宿主（label 合成 click）才激活；
+      // shadow 内点击（zone 等）retarget 后 target 也是宿主，但起点是 shadow 内元素，
+      // zone 监听已处理过，这里再开会双开文件对话框
+      if (e.composedPath()[0] !== this) return
       this.input?.click()
     })
     this.zone?.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -732,6 +751,9 @@ export class OASUpload extends OASElement {
     dialog?.setAttribute('aria-label', this.t('upload.previewDialog'))
     if (this.previewCloseBtn) this.previewCloseBtn.textContent = this.t('upload.closePreview')
     this.renderList()
+    // 原生表单数据 + 校验链同步（form-associated；无 name 时浏览器自动不提交）
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   /** tip：属性文本优先，缺席时回落 template[slot="tip"] 克隆；两者皆无则隐藏 */
@@ -831,6 +853,8 @@ export class OASUpload extends OASElement {
     const unchanged =
       replaced.length === 0 && rejected.length === 0 && sizeRejected.length === 0 && next.length === this._files.length
     if (unchanged) return
+    // 用户交互置脏：冻结 reset 基线（选文件/替换属用户对值的人工修改）
+    this.filesDirty = true
     for (const e of next) {
       if (!this.statusMap.has(e)) this.statusMap.set(e, { percent: 0, status: 'pending' })
     }
@@ -850,6 +874,9 @@ export class OASUpload extends OASElement {
       this.emit('exceed-limit', { files: sizeRejected, type: 'size', maxSize, total: next.length })
     }
     this.emit('change', { files: this.files })
+    // 值变化点同步原生表单数据 + 校验链（文件选择/替换）
+    this.syncFormValue()
+    this.syncValidity()
     if (this.hasAttr('auto-upload')) this.startUpload()
   }
 
@@ -1088,12 +1115,17 @@ export class OASUpload extends OASElement {
         ctrl.abort()
       }
     }
+    // 用户交互置脏：移除后基线冻结（reset 不恢复被用户主动移除的文件）
+    this.filesDirty = true
     this._files.splice(index, 1)
     this.statusMap.delete(entry)
     this.revokeUrl(entry)
     this.renderList()
     this.emit('remove', { file: entry, index })
     this.emit('change', { files: this.files })
+    // 值变化点同步原生表单数据 + 校验链（文件移除）
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   /** 初值/受控重置：File → pending；{name,url} 回显记录 → done(100) */
@@ -1122,11 +1154,16 @@ export class OASUpload extends OASElement {
       }
     }
     this._files = ok
+    // form.reset 基线：初始渲染/受控写入（files/defaultFiles property）跟随刷新；用户交互置脏后冻结
+    if (!this.filesDirty) this.initialFiles = [...ok]
     this.statusMap.clear()
     for (const e of this._files) {
       this.statusMap.set(e, e instanceof File ? { percent: 0, status: 'pending' } : { percent: 100, status: 'done' })
     }
     this.renderList()
+    // 值变化点同步原生表单数据 + 校验链（初值/受控写入/清空，均不派发事件）
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   private urlFor(entry: UploadEntry): string {
@@ -1436,5 +1473,42 @@ export class OASUpload extends OASElement {
 
       list.appendChild(card)
     }
+  }
+
+  /**
+   * 表单值快照（form-associated）：
+   * - 仅 File 条目进 FormData（回显记录 {name,url} 无文件体，不参与提交）；
+   * - 原生「同名多条」语义——多条 File 以 name 属性为 key 逐条 append（多选与单选同构，单文件即一条）；
+   * - 无 File → null（FormData 不含此项）
+   */
+  protected override getFormValue(): string | FormData | null {
+    const files = this._files.filter((e): e is File => e instanceof File)
+    if (files.length === 0) return null
+    const fd = new FormData()
+    const name = this.getAttr('name', '')
+    for (const f of files) fd.append(name, f, f.name)
+    return fd
+  }
+
+  /** 原生校验链同步：required 且无 File → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === null) {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复初始文件基线（defaultFiles 初值/最近一次受控写入），清脏，不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    this.filesDirty = false
+    // adoptEntries 内部不派发事件，并完成 FormData 同步（基线因清脏而跟随刷新为相同内容）
+    this.adoptEntries(this.initialFiles)
+    this.syncValidity()
+  }
+
+  /** shadow 内焦点/激活落点：拖拽区（role=button tabindex=0）。基类默认选择器会误中隐藏 file input（聚焦无意义），必须覆盖 */
+  protected override get innerControl(): HTMLElement | null {
+    return this.zone
   }
 }

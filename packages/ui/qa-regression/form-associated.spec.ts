@@ -705,3 +705,146 @@ test('form-associated：tree-select 单选/多选提交与 label 聚焦触发器
   expect(r.fdSingle, '单选 FormData 提交节点值').toBe('react')
   expect(r.fdMulti, '多选同名多条 FormData').toEqual(['react', 'fe'])
 })
+
+test('form-associated：date-picker 单值/范围提交（范围 name-start+name-end）与 label 聚焦', async ({ page }) => {
+  await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-date-picker')
+
+  const r = await page.evaluate(async () => {
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <label for="fa-dp">日期</label>
+      <oas-date-picker id="fa-dp" name="day"></oas-date-picker>
+      <oas-date-picker id="fa-dp-range" name="vacation" type="daterange"></oas-date-picker>
+      <oas-date-picker id="fa-dp-req" name="req" required></oas-date-picker>
+    `
+    document.body.append(form)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaDp extends HTMLElement {
+      shadowRoot: ShadowRoot
+      labels: NodeList | null
+      checkValidity(): boolean
+    }
+    const el = document.getElementById('fa-dp') as unknown as FaDp
+    const range = document.getElementById('fa-dp-range') as unknown as FaDp
+    const req = document.getElementById('fa-dp-req') as unknown as FaDp
+    const label = document.querySelector('label[for="fa-dp"]') as HTMLLabelElement
+
+    label.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const innerFocused = el.shadowRoot.activeElement?.tagName === 'INPUT'
+
+    el.setAttribute('value', '2026-08-15')
+    await new Promise((res) => setTimeout(res, 0))
+    const fdSingle = new FormData(form).get('day')
+
+    range.setAttribute('value', '["2026-08-01","2026-08-10"]')
+    await new Promise((res) => setTimeout(res, 0))
+    const fdStart = new FormData(form).get('vacation-start')
+    const fdEnd = new FormData(form).get('vacation-end')
+
+    const reqInvalid = req.checkValidity()
+    const labelsLen = el.labels?.length ?? -1
+
+    form.remove()
+    return { innerFocused, fdSingle, fdStart, fdEnd, reqInvalid, labelsLen }
+  })
+
+  expect(r.labelsLen, 'label for 原生关联').toBe(1)
+  expect(r.innerFocused, 'label 点击聚焦内层输入框').toBe(true)
+  expect(r.fdSingle, '单值 FormData 提交日期字符串').toBe('2026-08-15')
+  expect(r.fdStart, '范围提交 name-start').toBe('2026-08-01')
+  expect(r.fdEnd, '范围提交 name-end').toBe('2026-08-10')
+  expect(r.reqInvalid, 'required 无选中 checkValidity 为 false').toBe(false)
+})
+
+test('form-associated：time-picker 单值/范围提交与 required', async ({ page }) => {
+  await page.goto('/components/time-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-time-picker')
+
+  const r = await page.evaluate(async () => {
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <oas-time-picker id="fa-tp" name="at"></oas-time-picker>
+      <oas-time-picker id="fa-tp-req" name="req" required></oas-time-picker>
+    `
+    document.body.append(form)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaTp extends HTMLElement {
+      shadowRoot: ShadowRoot
+      checkValidity(): boolean
+    }
+    const el = document.getElementById('fa-tp') as unknown as FaTp
+    el.setAttribute('value', '10:30:00')
+    await new Promise((res) => setTimeout(res, 0))
+    const fdSingle = new FormData(form).get('at')
+
+    const req = document.getElementById('fa-tp-req') as unknown as FaTp
+    const reqInvalid = req.checkValidity()
+
+    form.remove()
+    return { fdSingle, reqInvalid }
+  })
+
+  expect(r.fdSingle, '单值 FormData 提交时间字符串').toBe('10:30:00')
+  expect(r.reqInvalid, 'required 无选中 checkValidity 为 false').toBe(false)
+})
+
+test('form-associated：upload 文件 FormData 与 label 点击激活文件选择', async ({ page }) => {
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-upload')
+
+  const r = await page.evaluate(async () => {
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <label for="fa-up">附件</label>
+      <oas-upload id="fa-up" name="attachment" multiple></oas-upload>
+      <oas-upload id="fa-up-req" name="req" required></oas-upload>
+    `
+    document.body.append(form)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaUpload extends HTMLElement {
+      shadowRoot: ShadowRoot
+      labels: NodeList | null
+      checkValidity(): boolean
+      files: Array<File | { name: string; url?: string }>
+    }
+    const el = document.getElementById('fa-up') as unknown as FaUpload
+    const req = document.getElementById('fa-up-req') as unknown as FaUpload
+    const label = document.querySelector('label[for="fa-up"]') as HTMLLabelElement
+    const fileInput = el.shadowRoot.querySelector('input[type="file"]') as HTMLInputElement
+
+    // label 点击 → 激活内层 file input（打开文件选择器路径）
+    let activations = 0
+    const origClick = fileInput.click.bind(fileInput)
+    fileInput.click = () => {
+      activations++
+    }
+    label.click()
+    await new Promise((res) => setTimeout(res, 0))
+    fileInput.click = origClick
+
+    // 受控 files 写入 → FormData 含 File entry（同名多条）
+    el.files = [new File(['aaa'], 'a.txt', { type: 'text/plain' }), new File(['bbb'], 'b.txt', { type: 'text/plain' })]
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+    const entries = new FormData(form).getAll('attachment')
+    const allFiles = entries.every((e) => e instanceof File)
+    const names = entries.map((e) => (e as File).name)
+
+    const reqInvalid = req.checkValidity()
+    const labelsLen = el.labels?.length ?? -1
+
+    form.remove()
+    return { activations, entriesLen: entries.length, allFiles, names, reqInvalid, labelsLen }
+  })
+
+  expect(r.labelsLen, 'label for 原生关联').toBe(1)
+  expect(r.activations, 'label 点击激活内层 file input（打开文件选择器）').toBe(1)
+  expect(r.entriesLen, 'FormData 文件 entry 数').toBe(2)
+  expect(r.allFiles, 'entry 均为 File 实例').toBe(true)
+  expect(r.names, 'entry 文件名').toEqual(['a.txt', 'b.txt'])
+  expect(r.reqInvalid, 'required 无文件 checkValidity 为 false').toBe(false)
+})

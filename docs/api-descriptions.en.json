@@ -882,7 +882,9 @@
       "status": "Validation status: `success` / `warning` / `error` (`error` also sets `aria-invalid`)",
       "type": "Type: `date` / `daterange` / `month` / `monthrange` / `year` / `yearrange` / `datetime` / `datetimerange` / `week` / `quarter`",
       "unlink-panels": "Range months flip independently (linked by default)",
-      "value": "Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON range array"
+      "value": "Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON range array",
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
+      "name": "Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent)"
     },
     "events": {
       "oas-calendar-change": "Emitted on every range endpoint pick, `detail: { value: [start, end|null] }`",
@@ -2980,7 +2982,9 @@
       "status": "Validation status: `success` / `warning` / `error` (`error` also sets `aria-invalid`)",
       "step": "Stepping: a JSON triple `{\"h\":2,\"m\":5,\"s\":1}` per unit; a single number remains the minute step",
       "use12-hours": "12-hour mode: display and columns switch to 12-hour (with an AM/PM column following the locale); the value stays 24-hour",
-      "value": "Current value (`HH:mm:ss`; a JSON array when `is-range`)"
+      "value": "Current value (`HH:mm:ss`; a JSON array when `is-range`)",
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
+      "name": "Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent)"
     },
     "events": {
       "oas-change": "Confirmed value change, `detail: { value }` (string array for `is-range`)",
@@ -3447,7 +3451,8 @@
       "paste": "Paste upload (off by default; clipboard files enter the list when on)",
       "show-file-list": "File list visibility (`\"false\"` hides it, keeping only the drop zone)",
       "replace": "Replace semantics at max-count=1 (new file replaces the old instead of being rejected)",
-      "tip": "Drop-zone tip text (same as `template[slot=\"tip\"]` for rich content)"
+      "tip": "Drop-zone tip text (same as `template[slot=\"tip\"]` for rich content)",
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)"
     },
     "events": {
       "oas-change": "File list change, `detail: { files }`",
