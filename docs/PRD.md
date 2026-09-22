@@ -1309,6 +1309,28 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 全量单测 182 文件 / 7117 用例 / typecheck 0 / build 0 / api:check 通过（含新增 CSS 变量表生成）/ stats:check 0 / lint:md 0 / format 0 / perf:size 全 PASS（theme index.css 3.1KB / 3.5KB）/ trace 0 命中
 - 全量 e2e 2146 passed（chromium 全量 + firefox 抽样，0 failed）；a11y 审计 118 passed（117 页 × light+dark 双主题 + 门禁自检，零严重违规）；对比度硬闸 `<60 = 0`（light 655→0、dark 327→0），axe 比值法 ratchet 基线入库（255 违规 + exempt/skipped 同步 ratchet）
 
+## 未发布：form-associated 批次（原生表单集成）
+
+> 版号由用户确定后再定版；本条随批次滚动更新（pilot 已落地，其余组件批量中）。
+
+### 特性（pilot：oas-input）
+
+- **core 新增 `OASFormElement` 基类（form-associated custom element）**：`static formAssociated = true` + `attachInternals`（不支持环境静默降级）；子类义务 `getFormValue()` / `resetFormValue()` / 值变化点调 `syncFormValue()`
+- **`<label for>` 原生关联生效**：label 点击时浏览器向控件本体派发 click → 基类转焦点到 shadow 内真实控件（`innerControl` 钩子）；读屏朗读 label 文本；`labels` / `form` getter 直出
+- **原生表单集成**：FormData 收集（无 `name` 自动不提交）、`form.reset()` 回初始值（不派发事件，与原生一致）、`fieldset[disabled]` 联动——**不回写 `disabled` 属性**（回写后元素不再随 fieldset 变化 = 自锁，e2e 抓出），改经内部标志位 + `injectDisabled` 通道并入（组件显式 disabled > 表单链路 > provider 注入）
+- **程序化 `focus()` 转到 shadow 内真实控件**（labels / SR / 脚本调用一致）
+- 与 `oas-form` 自研 `collectFields` 机制并行可用（互不干扰）；原生校验链（setValidity）不在本批
+
+### 修复背景
+
+- 下游（示例模板仓）`a11y/noLabelWithoutControl` 42 处告警的根因：自定义元素默认非 labelable，`<label for>` 对 oas-input 等完全不生效（静态检查可骗过，浏览器无关联）
+
+### 验收
+
+- 单测 13 条新增（core 机制 6 + input 组件 7）；全量 7179 passed；typecheck 0 / build 0 / format 0 / api:check ✓ / perf:size PASS（ui 入口 gzip 771.4→775.1KB，+3.7KB 在预算内）
+- 浏览器 e2e（chromium + firefox 抽样）12 断言：labels.length=1 / el.form / label 点击聚焦到 shadow 内 input / FormData 输入同步 / reset 回初始 / 无 name 不提交 / fieldset 禁用联动（防自锁：不回写属性、解除后恢复）
+- 视觉核验：浅/暗色截图 + 识图复核（label 点击后聚焦环清晰、FormData 输出、reset 回初值）；smoke/dark/visual/console-sweep/a11y 的 input 页 20 条全过（console 零告警）
+
 ## 未发布：qrcode 美化维度（码点 / 定位图形形状 + 渐变前景 + logo 挖空）
 
 > 版号由用户确定后再定版；本条只记内容与验收。

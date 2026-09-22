@@ -1015,3 +1015,76 @@ describe('OASInput RTL 逻辑方向化', () => {
     expect(css).not.toMatch(/(^|[^-a-z])right:\s/)
   })
 })
+
+describe('form-associated（原生表单集成）', () => {
+  const fakeInternals = (el: OASInput) => {
+    const fake = { setFormValue: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  it('静态声明 formAssociated = true；无 ElementInternals 环境下 labels/form 为 null（静默降级）', () => {
+    expect((OASInput as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    const el = mount({})
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('输入 / 受控写入同步原生表单数据（原始值，formatter 场景走解析后值）', () => {
+    const el = mount({ value: 'init', name: 'username' })
+    const fake = fakeInternals(el)
+
+    input(el).value = 'typed'
+    input(el).dispatchEvent(new Event('input'))
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('typed')
+
+    el.setAttribute('value', 'controlled')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('controlled')
+  })
+
+  it('清空按钮清空后同步空值', () => {
+    const el = mount({ value: 'abc', clearable: '' })
+    const fake = fakeInternals(el)
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.clear-btn')!.click()
+    expect(input(el).value).toBe('')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('')
+  })
+
+  it('formResetCallback：恢复 value 属性初始值并重同步，不派发事件', () => {
+    const el = mount({ value: 'init', name: 'username' })
+    const fake = fakeInternals(el)
+    input(el).value = 'typed'
+    input(el).dispatchEvent(new Event('input'))
+    el.formResetCallback()
+    expect(input(el).value).toBe('init')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('init')
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mount({})
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(input(el).disabled).toBe(true)
+    expect(el.hasAttribute('data-disabled')).toBe(true)
+    el.formDisabledCallback(false)
+    expect(input(el).disabled).toBe(false)
+    expect(el.hasAttribute('data-disabled')).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦 shadow 内真实 input；点击内层不再重复聚焦', () => {
+    const el = mount({})
+    const spy = vi.spyOn(input(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    input(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('focus() 转到 shadow 内真实 input', () => {
+    const el = mount({})
+    const spy = vi.spyOn(input(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})

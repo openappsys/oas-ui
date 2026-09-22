@@ -18,6 +18,22 @@ An enhanced base input built on the native `<input>` element.
 
 `label` serves as the accessible name (`aria-label`) source for the input, announced by screen readers. When `label` is not set, it falls back to `placeholder` → built-in text "输入框"; once set (e.g. "Login email"), it overrides the fallback chain.
 
+## Native Form & Label Association
+
+<DemoBlock title="form-associated: label for / FormData / reset">
+  <form id="input-form-demo" style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-3); align-items: flex-start">
+    <label for="input-form-username" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Name (click this line &rarr; focuses the input)</label>
+    <oas-input id="input-form-username" name="username" value="initial value" style="width: 240px"></oas-input>
+    <div style="display: flex; gap: var(--oas-space-2)">
+      <oas-button id="input-form-submit" size="small" type="button">Read FormData</oas-button>
+      <oas-button id="input-form-reset" size="small" type="button">form.reset()</oas-button>
+    </div>
+    <span id="input-form-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </form>
+</DemoBlock>
+
+The component is a **form-associated** custom element (`formAssociated: true`): `<label for>` works natively (clicking the label focuses the real input inside the shadow root, and screen readers announce the label text); inside a native `<form>` the value is collected via standard `FormData` (submitted only when `name` is set), `form.reset()` restores the initial `value`, and a parent `fieldset[disabled]` disables it. Works in parallel with `oas-form`'s `collectFields` mechanism.
+
 ## Types
 
 <DemoBlock title="type">
@@ -174,6 +190,19 @@ onMounted(() => {
       fmtOut.textContent = `raw value: ${e.detail.value}`
     })
   }
+
+  // form-associated: native label association + FormData read + reset
+  const faForm = document.getElementById('input-form-demo')
+  const faOut = document.getElementById('input-form-output')
+  document.getElementById('input-form-submit')?.addEventListener('click', () => {
+    if (!faForm) return
+    const fd = new FormData(faForm)
+    faOut.textContent = `FormData: username=${JSON.stringify(fd.get('username'))}`
+  })
+  document.getElementById('input-form-reset')?.addEventListener('click', () => {
+    faForm?.reset()
+    if (faOut) faOut.textContent = 'form.reset() executed, value restored to initial'
+  })
 })
 </script>
 
