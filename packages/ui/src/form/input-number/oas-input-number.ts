@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 
 /**
  * OASInputNumber 数字输入框。
@@ -8,6 +8,8 @@ import { OASElement } from '@oas-ui/core'
  * - 值模型：`value` attribute 为数字串；空串/缺省 = 空值（null 语义，未填 ≠ 0）
  * - 提交制：键入过程不派发、不写回；失焦 / Enter / 步进 / 滚轮 / 清空 时提交
  *   （setAttribute('value', …) 写回宿主 + 派发 oas-change，detail.value 为 number | null）
+ * - form-associated：FormData 收集（键入期间走实时解析值，空值/非法 → 空串）、
+ *   form.reset()、fieldset disabled 联动、required 校验链（valueMissing）
  * - 键入越界不打断输入（临时 data-out-of-range 红显），失焦矫正（钳制 + 吸附）
  * - 格式化双层：声明式 format/grouping/precision（Intl 语义）+ formatter/parser 函数 property
  */
@@ -359,7 +361,10 @@ input[readonly] {
 }
 `
 
-export class OASInputNumber extends OASElement {
+export class OASInputNumber extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'value',
@@ -382,6 +387,8 @@ export class OASInputNumber extends OASElement {
       'wheel',
       'step-strictly',
       'clearable',
+      // required 仅驱动原生校验链（valueMissing），不透传内层 input（内层非 number 类型）
+      'required',
     ]
   }
 
@@ -554,6 +561,10 @@ export class OASInputNumber extends OASElement {
     this.syncAriaValue()
     this.syncControls()
     this.syncClear()
+    // 原生表单数据 + 校验链同步（form-associated；无 name 时浏览器自动不提交）。
+    // 步进/清空的提交经 setAttribute('value', …) 走到这里；键入走 onTyping 的直连同步。
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   // ---------- 值模型 ----------
@@ -564,6 +575,36 @@ export class OASInputNumber extends OASElement {
     if (raw === '' || raw === 'null' || raw === 'NaN') return null
     const v = Number(raw)
     return Number.isFinite(v) ? v : null
+  }
+
+  /**
+   * 表单值快照（form-associated）：数字的字符串形式；空值/非法键入 → ''
+   * （对齐原生 number 输入的 badInput 语义，绝不把 'NaN' 之类字面量写进 FormData）。
+   * 键入期间返回实时解析值（提交制只约束事件派发与写回，不约束 FormData）。
+   */
+  protected override getFormValue(): string | null {
+    if (!this.input) {
+      // render 前：从 value 属性取快照（'null'/'NaN'/非法串同按空值处理）
+      const v = this.committedValue()
+      return v === null ? '' : String(v)
+    }
+    const parsed = this.parseText(this.input.value)
+    if (parsed === null || Number.isNaN(parsed)) return ''
+    return String(parsed)
+  }
+
+  /** 原生校验链同步：required 且值为空 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === '') {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：经 writeDisplay 恢复 value 属性回显并复位脏标记（内含 FormData/校验链重同步），不派发事件 */
+  protected override resetFormValue(): void {
+    this.writeDisplay()
   }
 
   /**
@@ -678,6 +719,9 @@ export class OASInputNumber extends OASElement {
     this.syncAriaValue()
     this.syncControls()
     this.syncClear()
+    // 强制回显点同步 FormData：Esc 还原 / 同值提交等路径不改 value 属性（不触发 update），在此兜底防漏
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   // ---------- 交互 ----------
@@ -698,6 +742,9 @@ export class OASInputNumber extends OASElement {
       this.syncControls()
     }
     this.syncClear()
+    // 键入也是值变化点：FormData 走实时解析值（提交制只约束事件派发与写回，不约束 FormData）
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   /** 失焦 / Enter 提交：空 → null；非法 → 还原；有效 → 归一（吸附 + 钳制 + 定位） */

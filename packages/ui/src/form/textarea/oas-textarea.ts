@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 
 const STYLE = `
 :host {
@@ -153,7 +153,10 @@ textarea:disabled:hover {
  */
 const PADDING_V_BY_SIZE: Record<string, number> = { small: 8, medium: 16, large: 24 }
 
-export class OASTextarea extends OASElement {
+export class OASTextarea extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'value',
@@ -216,6 +219,8 @@ export class OASTextarea extends OASElement {
 
     this.ta?.addEventListener('input', () => {
       this.emit('input', { value: this.ta!.value })
+      this.syncFormValue()
+      this.syncValidity()
       this.syncClearVisibility()
       this.syncCount()
       this.autoResize()
@@ -230,6 +235,8 @@ export class OASTextarea extends OASElement {
       this.emit('clear', { originalEvent: new MouseEvent('click') })
       // 值已变，实时通道同步派发（与 input 清除行为同构，只听 oas-input 的宿主不能漏掉清除）
       this.emit('input', { value: this.ta.value })
+      this.syncFormValue()
+      this.syncValidity()
       this.ta.focus()
       this.syncClearVisibility()
       this.syncCount()
@@ -268,6 +275,9 @@ export class OASTextarea extends OASElement {
     t.placeholder = placeholder
     t.disabled = disabled
     t.readOnly = readonly
+    // 原生表单数据同步（form-associated；无 name 浏览器自动不提交）
+    this.syncFormValue()
+    this.syncValidity()
 
     // 原生属性透传白名单（缺省移除，交还原生默认）
     this.passThrough(t)
@@ -303,6 +313,31 @@ export class OASTextarea extends OASElement {
     }
 
     this.syncCount()
+  }
+
+  /** 表单值快照（textarea 当前值；render 前读 value 属性） */
+  protected override getFormValue(): string | null {
+    return this.ta ? this.ta.value : this.getAttr('value', '')
+  }
+
+  /** 原生校验链同步：required 且值为空 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === '') {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复到 value 属性（初始值），不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    if (!this.ta) return
+    const value = this.getAttr('value', '')
+    if (this.ta.value !== value) this.ta.value = value
+    this.syncClearVisibility()
+    this.syncCount()
+    this.autoResize()
+    this.syncValidity()
   }
 
   /** 原生属性透传：宿主属性 → 内部 textarea（字符串值原样，布尔属性存在即透传） */

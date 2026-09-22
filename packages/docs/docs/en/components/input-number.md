@@ -231,6 +231,7 @@ onMounted(() => {
 | `precision` | Number of decimal places | `string` | — |
 | `prefix-text` | Inline prefix text (slot="prefix" accepts any content; not part of value parsing) | `string` | — |
 | `readonly` | Read-only: focusable, copyable, submittable; buttons disabled + aria-readonly, keyboard/wheel cannot change the value | `boolean` | — |
+| `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner input) | `boolean` | — |
 | `size` | Size preset `sm` / `md` (default) / `lg`: control height and font scale | — | — |
 | `status` | Validation status: `error` / `warning` / `success` semantic border colors | — | — |
 | `step` | Step | `string` | `1` |

@@ -174,3 +174,119 @@ test('form-associated 校验链路：required 空值进入原生约束校验（c
   expect(r.validPseudo, '填入值后宿主匹配 :valid 伪类').toBe(true)
   expect(r.invalidAgain, '再次清空后回到 invalid').toBe(false)
 })
+
+test('form-associated：textarea 原生关联（label 聚焦 / FormData / reset / required 校验）', async ({ page }) => {
+  await page.goto('/components/textarea.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-textarea')
+
+  const r = await page.evaluate(async () => {
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <label for="fa-ta">备注</label>
+      <oas-textarea id="fa-ta" name="remark" value="初始备注"></oas-textarea>
+      <oas-textarea id="fa-ta-req" name="req" required></oas-textarea>
+    `
+    document.body.append(form)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaTa extends HTMLElement {
+      shadowRoot: ShadowRoot
+      labels: NodeList | null
+      checkValidity(): boolean
+    }
+    const el = document.getElementById('fa-ta') as unknown as FaTa
+    const inner = el.shadowRoot.querySelector('textarea')!
+    const label = document.querySelector('label[for="fa-ta"]') as HTMLLabelElement
+
+    const labelsLen = el.labels?.length ?? -1
+    label.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const innerFocused = el.shadowRoot.activeElement === inner
+
+    inner.value = 'typed-remark'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    const fdTyped = new FormData(form).get('remark')
+    form.reset()
+    await new Promise((res) => setTimeout(res, 0))
+    const resetValue = inner.value
+
+    const req = document.getElementById('fa-ta-req') as unknown as FaTa
+    const reqInvalid = req.checkValidity()
+    const reqPseudo = req.matches(':invalid')
+
+    form.remove()
+    return { labelsLen, innerFocused, fdTyped, resetValue, reqInvalid, reqPseudo }
+  })
+
+  expect(r.labelsLen, 'label for 原生关联').toBe(1)
+  expect(r.innerFocused, 'label 点击聚焦 shadow 内 textarea').toBe(true)
+  expect(r.fdTyped, 'FormData 收集当前值').toBe('typed-remark')
+  expect(r.resetValue, 'reset 回初始值').toBe('初始备注')
+  expect(r.reqInvalid, 'required 空值 checkValidity 为 false').toBe(false)
+  expect(r.reqPseudo, 'required 空值宿主匹配 :invalid').toBe(true)
+})
+
+test('form-associated：input-number 原生关联（label 聚焦 / 数字 FormData / 步进同步 / reset / required）', async ({
+  page,
+}) => {
+  await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-input-number')
+
+  const r = await page.evaluate(async () => {
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <label for="fa-num">数量</label>
+      <oas-input-number id="fa-num" name="qty" value="3"></oas-input-number>
+      <oas-input-number id="fa-num-req" name="req" required></oas-input-number>
+    `
+    document.body.append(form)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaNum extends HTMLElement {
+      shadowRoot: ShadowRoot
+      labels: NodeList | null
+      checkValidity(): boolean
+    }
+    const el = document.getElementById('fa-num') as unknown as FaNum
+    const inner = el.shadowRoot.querySelector('input')!
+    const label = document.querySelector('label[for="fa-num"]') as HTMLLabelElement
+
+    const labelsLen = el.labels?.length ?? -1
+    label.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const innerFocused = el.shadowRoot.activeElement === inner
+
+    // 键入 → FormData 实时解析值（数字字符串；键入不写 value 属性）
+    inner.value = '42'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    const fdTyped = new FormData(form).get('qty')
+
+    // reset（value 属性仍是 3）→ 回初始值
+    form.reset()
+    await new Promise((res) => setTimeout(res, 0))
+    const fdReset = new FormData(form).get('qty')
+
+    // 步进按钮（增加）→ 提交写回 value 属性 + FormData 同步
+    const stepUp = el.shadowRoot.querySelector<HTMLButtonElement>(
+      '[part="increase"], .increase, [data-step="up"], button[aria-label*="增"]',
+    )
+    stepUp?.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const fdAfterStep = new FormData(form).get('qty')
+
+    const req = document.getElementById('fa-num-req') as unknown as FaNum
+    const reqInvalid = req.checkValidity()
+
+    form.remove()
+    return { labelsLen, innerFocused, fdTyped, fdAfterStep, fdReset, reqInvalid, stepUpFound: Boolean(stepUp) }
+  })
+
+  expect(r.labelsLen, 'label for 原生关联').toBe(1)
+  expect(r.innerFocused, 'label 点击聚焦 shadow 内 input').toBe(true)
+  expect(r.fdTyped, '键入后 FormData 为数字字符串').toBe('42')
+  if (r.stepUpFound) {
+    expect(r.fdAfterStep, '步进后 FormData 同步为步进后的值（reset 回 3 后步进 → 4）').toBe('4')
+  }
+  expect(r.fdReset, 'reset 后 FormData 回初始值').toBe('3')
+  expect(r.reqInvalid, 'required 空值 checkValidity 为 false').toBe(false)
+})
