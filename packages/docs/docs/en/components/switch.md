@@ -192,6 +192,7 @@ onMounted(() => {
 | `label` | Label text (label channel; clicking the label toggles; same-named slot for rich content) | `string` | — |
 | `label-position` | Label position: `end` (default, right) / `start` (left) | `string` | — |
 | `loading` | Loading state, prevents toggling | `boolean` | — |
+| `required` | Required marker (drives the native valueMissing validation chain: off counts as unfilled) | `boolean` | — |
 | `size` | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid | `string` | — |
 | `true-value` | Mapped value when checked (read via the value getter) | `string` | — |

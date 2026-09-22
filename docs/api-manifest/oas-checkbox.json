@@ -20,7 +20,12 @@
     {
       "name": "value",
       "type": "string",
-      "default": "",
+      "default": "on",
+      "observed": true
+    },
+    {
+      "name": "required",
+      "type": "boolean",
       "observed": true
     },
     {

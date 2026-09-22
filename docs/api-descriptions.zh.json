@@ -565,7 +565,8 @@
       "variant": "形态：`default`（默认）/ `card`（卡片：整块可点、选中描边着色、hover 反馈）",
       "description": "辅助文本：渲染为标签下方次要说明；`slot=\"description\"` 分发富文本时优先",
       "label-position": "标签位置：`end`（默认，框左文右）/ `start`（文左框右；RTL 下自动镜像）",
-      "check-all": "组内全选标记：勾选 ↔ 子项全选/清空联动，子项变化实时回写勾选/半选态；该项不参与组 value（跨组件属性，由 oas-checkbox-group 读取）"
+      "check-all": "组内全选标记：勾选 ↔ 子项全选/清空联动，子项变化实时回写勾选/半选态；该项不参与组 value（跨组件属性，由 oas-checkbox-group 读取）",
+      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层 input）"
     },
     "events": {
       "oas-change": "勾选变化，`detail: { checked, value }`",
@@ -2266,7 +2267,8 @@
       "readonly": "只读：可聚焦可进 Tab 序、值照常提交，但点击（含 Space）与方向键均不切换",
       "variant": "形态：`default`（默认）/ `card`（卡片：整块可点、选中描边着色、hover 反馈）",
       "description": "辅助文本：渲染为标签下方次要说明；`slot=\"description\"` 分发富文本时优先",
-      "label-position": "标签位置：`end`（默认，框左文右）/ `start`（文左框右；RTL 下自动镜像）"
+      "label-position": "标签位置：`end`（默认，框左文右）/ `start`（文左框右；RTL 下自动镜像）",
+      "required": "必填标记（单元素语义：本项未选中即 valueMissing；组级任一选中语义为已知边界）"
     },
     "events": {
       "oas-change": "选中变化，`detail: { checked, value }`",
@@ -2699,7 +2701,8 @@
       "true-value": "选中时的映射值（读 value getter 取映射值）",
       "false-value": "未选中时的映射值",
       "status": "校验态：`error` / `warning` / `success`；error 联动 aria-invalid",
-      "aria-label": "可访问名（宿主覆盖通道，显式设置优先于 label 推导）"
+      "aria-label": "可访问名（宿主覆盖通道，显式设置优先于 label 推导）",
+      "required": "必填标记（驱动原生校验链 valueMissing：关 = 未填）"
     },
     "events": {
       "oas-change": "切换，`detail: { checked }`",

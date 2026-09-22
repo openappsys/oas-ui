@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
@@ -283,7 +283,10 @@ button[aria-checked='true'] .spinner {
 }
 `
 
-export class OASSwitch extends OASElement {
+export class OASSwitch extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'dir',
@@ -301,6 +304,7 @@ export class OASSwitch extends OASElement {
       'unchecked-icon',
       'true-value',
       'false-value',
+      'required',
       'status',
       'aria-label',
     ]
@@ -308,6 +312,10 @@ export class OASSwitch extends OASElement {
 
   private btn: HTMLButtonElement | null = null
   private btnId = ''
+  /** 初始 checked 基线（form.reset 恢复目标）：初始渲染/受控写入跟随 checked 属性刷新 */
+  private initialChecked = false
+  /** 用户切换脏标记（对齐原生 dirty checkedness 语义）：置位后基线冻结，reset 恢复基线 */
+  private checkedDirty = false
   /** before-change 异步在途：期间按钮禁用 + spinner（与 loading 同视觉），防重复触发 */
   private pending = false
   /** aria-invalid 由 status=error 设置的所有权标志（清理时只移除自己设置的，不动宿主自设值） */
@@ -406,12 +414,19 @@ export class OASSwitch extends OASElement {
     const btn = this.btn
     if (!btn) return
     const checked = this.hasAttr('checked')
-    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    // form.reset 恢复基线：初始渲染/受控写入（宿主 setAttribute / value 赋值）跟随 checked 属性刷新；
+    // 用户切换置脏后基线冻结（本组件切换会翻转 checked 属性，须与「宿主写入即新初始态」区分开）
+    if (!this.checkedDirty) this.initialChecked = checked
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入 > 表单链路 fieldset）
     const disabled = this.injectDisabled()
     const busy = this.hasAttr('loading') || this.pending
 
     btn.setAttribute('aria-checked', String(checked))
     btn.disabled = disabled || busy
+    // 原生表单数据 + 校验链同步（form-associated；无 name 浏览器自动不提交）。
+    // 点击切换经 applyToggle → checked 属性 → attributeChangedCallback 汇入本方法，与受控写入同路径
+    this.syncFormValue()
+    this.syncValidity()
 
     // 尺寸：自身属性 > config-provider 注入 > medium（复用 button 的注入约定）；
     // 非法值回落 medium + dev warn（不再静默吞值）
@@ -575,7 +590,38 @@ export class OASSwitch extends OASElement {
   }
 
   private applyToggle(next: boolean): void {
+    // 用户切换置脏：冻结 reset 基线（对齐原生「用户交互不改 defaultChecked」——本组件切换
+    // 会翻转 checked 属性本身，故以脏标记区分用户态与宿主受控态）；表单数据经 checked 属性
+    // → attributeChangedCallback → update() 自动重同步
+    this.checkedDirty = true
     this.toggleAttribute('checked', next)
     this.emit('change', { checked: next, value: this.mappedValue(next) })
+  }
+
+  /** 表单值快照（照原生 checkbox「开才提交」语义）：开 → true-value 属性在场取其值，缺省 'on'；关 → null（false-value 不进 FormData，与原生一致） */
+  protected override getFormValue(): string | null {
+    if (!this.hasAttr('checked')) return null
+    const tv = this.getAttr('true-value', '')
+    return tv !== '' ? tv : 'on'
+  }
+
+  /** 原生校验链同步：required 且关 → valueMissing（switch 语义：开 = 有值） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && !this.hasAttr('checked')) {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复 checked 初始基线（checked 属性初始态），不派发事件（与原生 reset 一致）；表单数据由基类回调统一重同步 */
+  protected override resetFormValue(): void {
+    this.checkedDirty = false
+    this.toggleAttribute('checked', this.initialChecked)
+  }
+
+  /** shadow 内真实表单控件：本组件内层是 role=switch 的 button（非 input，无 tabindex 属性），基类默认选择器匹配不到，必须覆盖 */
+  protected override get innerControl(): HTMLElement | null {
+    return this.btn
   }
 }

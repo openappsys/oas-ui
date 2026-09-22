@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { OASCheckbox, OASCheckboxGroup } from './index.js'
 import '../../framework/config-provider/index.js'
 
@@ -678,5 +678,143 @@ describe('OASCheckbox RTL 逻辑方向化', () => {
     expect(css).not.toMatch(/(^|[^-a-z])(left|right):\s/)
     // label-position=start 的镜像走 row-reverse（RTL 下 flex 自动再镜像）
     expect(css).toContain('flex-direction: row-reverse')
+  })
+})
+
+describe('form-associated（原生表单集成）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const fakeInternals = (el: OASCheckbox) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  it('静态声明 formAssociated = true；无 ElementInternals 环境下 labels/form 为 null（静默降级）', () => {
+    expect((OASCheckbox as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    const el = mountCheckbox()
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('勾选才提交：checked 时 setFormValue(value 属性值)；无 value 属性提交缺省 on', () => {
+    const named = mountCheckbox({ checked: '', value: 'agree' })
+    const fakeNamed = fakeInternals(named)
+    named.setAttribute('size', 'small') // 触发 update → 同步 FormData
+    expect(fakeNamed.setFormValue).toHaveBeenLastCalledWith('agree')
+
+    const plain = mountCheckbox({ checked: '' })
+    const fakePlain = fakeInternals(plain)
+    plain.setAttribute('size', 'small')
+    expect(fakePlain.setFormValue).toHaveBeenLastCalledWith('on')
+  })
+
+  it('未勾选提交 null（FormData 不含此项）', () => {
+    const el = mountCheckbox({ value: 'agree' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('点击切换同步 FormData：勾上提交 value、取消提交 null', () => {
+    const el = mountCheckbox({ value: 'agree' })
+    const fake = fakeInternals(el)
+    native(el).click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('agree')
+    native(el).click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('受控 checked 写入同步 FormData', () => {
+    const el = mountCheckbox({ value: 'agree' })
+    const fake = fakeInternals(el)
+    el.setAttribute('checked', '')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('agree')
+  })
+
+  it('checked 场景下改 value 属性同步新提交值；indeterminate 不影响提交（checked 管提交，与原生一致）', () => {
+    const el = mountCheckbox({ checked: '', value: 'a' })
+    const fake = fakeInternals(el)
+    el.setAttribute('value', 'b')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('b')
+    el.setAttribute('indeterminate', '')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('b')
+  })
+
+  it('formResetCallback：恢复 checked 属性态并重同步 FormData，不派发事件', () => {
+    const el = mountCheckbox({ checked: '', value: 'agree' })
+    const fake = fakeInternals(el)
+    let changes = 0
+    el.addEventListener('oas-change', () => changes++)
+    // 模拟未走属性同步的直接改写（属性态仍为勾选）
+    native(el).checked = false
+    el.formResetCallback()
+    expect(native(el).checked).toBe(true)
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('agree')
+    expect(changes, 'reset 不派发 oas-change').toBe(0)
+  })
+
+  it('required：未勾 valueMissing，勾选后恢复合法', () => {
+    const el = mountCheckbox({ required: '', value: 'agree' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small') // 触发 update → 校验链同步
+    // flag 为 true 时 message 按 Chromium 契约必须非空（基类 setValidity 会显式补 anchor 实参，只查前两个参数）
+    const missing = fake.setValidity.mock.calls.at(-1)
+    expect(missing?.[0]).toEqual({ valueMissing: true })
+    expect(typeof missing?.[1]).toBe('string')
+    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    native(el).click()
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mountCheckbox()
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(native(el).disabled).toBe(true)
+    expect(el.hasAttribute('data-disabled')).toBe(true)
+    el.formDisabledCallback(false)
+    expect(native(el).disabled).toBe(false)
+    expect(el.hasAttribute('data-disabled')).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦 shadow 内真实 input；点击内层不再重复聚焦', () => {
+    const el = mountCheckbox()
+    const spy = vi.spyOn(native(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    native(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('focus() 转到 shadow 内真实 input', () => {
+    const el = mountCheckbox()
+    const spy = vi.spyOn(native(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('宿主点击（外部 label 合成 click 同路径）切换勾选；用户交互后 reset 回初始基线（交互不污染基线）', () => {
+    const el = mountCheckbox({ name: 'agree' })
+    // 初始未勾；宿主 click → 转发内层原生 click → 勾选（与原生「label 点击勾选」对齐）
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('checked')).toBe(true)
+    expect(native(el).checked).toBe(true)
+
+    // 用户交互已置脏；reset 回初始挂载态（未勾），不是交互后的勾选态
+    el.formResetCallback()
+    expect(el.hasAttribute('checked')).toBe(false)
+    expect(native(el).checked).toBe(false)
+
+    // 再点宿主 → 再次勾选（reset 已清脏，行为可重复）
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('checked')).toBe(true)
   })
 })

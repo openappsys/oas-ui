@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { OASRadio, OASRadioGroup } from './index.js'
 
 function mountRadio(attrs: Record<string, string> = {}, slot = '选项'): OASRadio {
@@ -570,5 +570,139 @@ describe('OASRadioGroup RTL 键盘镜像', () => {
     // 上下键语义不变
     pressFrom(el, 'ArrowDown', 'a')
     expect(el.getAttribute('value')).toBe('b')
+  })
+})
+
+describe('form-associated（原生表单集成）', () => {
+  const fakeInternals = (el: OASRadio) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('静态声明 formAssociated = true；无 ElementInternals 环境下 labels/form 为 null（静默降级）', () => {
+    expect((OASRadio as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    const el = mountRadio()
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('选中才提交：未选中同步 null，选中后提交 value（缺省 on）', () => {
+    const el = mountRadio({ name: 'g' })
+    const fake = fakeInternals(el)
+    // 未选中：受控属性变化点同步 null（FormData 不含该项）
+    el.setAttribute('name', 'g')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+    // 点击选中：change 值变化点同步提交值（value 属性缺省提交 'on'，与原生一致）
+    native(el).click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('on')
+
+    const el2 = mountRadio({ name: 'g', value: 'a' })
+    const fake2 = fakeInternals(el2)
+    native(el2).click()
+    expect(fake2.setFormValue).toHaveBeenLastCalledWith('a')
+  })
+
+  it('同名互斥：被清除项同步 null，FormData 自然只含选中的那个', () => {
+    const a = mountRadio({ name: 'g', value: 'a', checked: '' }, 'A')
+    const b = mountRadio({ name: 'g', value: 'b' }, 'B')
+    const fakeA = fakeInternals(a)
+    const fakeB = fakeInternals(b)
+    native(b).click()
+    expect(fakeB.setFormValue).toHaveBeenLastCalledWith('b')
+    // a 的 checked 属性被互斥移除 → 其 update 值变化点同步 null
+    expect(fakeA.setFormValue).toHaveBeenLastCalledWith(null)
+    expect(native(a).checked).toBe(false)
+  })
+
+  it('受控 checked 属性写入/移除同步表单数据', () => {
+    const el = mountRadio({ name: 'g', value: 'a' })
+    const fake = fakeInternals(el)
+    el.setAttribute('checked', '')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('a')
+    el.removeAttribute('checked')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('formResetCallback：恢复 checked 属性声明态并重同步，不派发事件', () => {
+    const el = mountRadio({ name: 'g', value: 'a', checked: '' })
+    const fake = fakeInternals(el)
+    const events: string[] = []
+    el.addEventListener('oas-change', () => events.push('change'))
+    // 构造内部态与属性态漂移（编程赋值不派发 change、不动 checked 属性）
+    native(el).checked = false
+    expect(native(el).checked).toBe(false)
+    el.formResetCallback()
+    expect(native(el).checked).toBe(true)
+    expect(native(el).getAttribute('aria-checked')).toBe('true')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('a')
+    expect(events).toEqual([])
+  })
+
+  it('required：未选中 valueMissing，选中后恢复合法', () => {
+    const el = mountRadio({ name: 'g' })
+    const fake = fakeInternals(el)
+    el.setAttribute('required', '')
+    // flag 为 true 时 message 按 Chromium 契约必须非空（基类 setValidity 会显式补 anchor 实参，只查前两个参数）
+    const missing = fake.setValidity.mock.calls.at(-1)
+    expect(missing?.[0]).toEqual({ valueMissing: true })
+    expect(typeof missing?.[1]).toBe('string')
+    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    native(el).click()
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mountRadio({})
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(native(el).disabled).toBe(true)
+    expect(el.hasAttribute('data-disabled')).toBe(true)
+    el.formDisabledCallback(false)
+    expect(native(el).disabled).toBe(false)
+    expect(el.hasAttribute('data-disabled')).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦 shadow 内原生 radio；点击内层不再重复聚焦', () => {
+    const el = mountRadio()
+    const spy = vi.spyOn(native(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    native(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('focus() 转到 shadow 内原生 radio', () => {
+    const el = mountRadio()
+    const spy = vi.spyOn(native(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('宿主点击（label 合成 click 同路径）选中；互斥清除不冲刷被清项 reset 基线', () => {
+    const a = mountRadio({ name: 'g-base', value: 'a' })
+    const b = mountRadio({ name: 'g-base', value: 'b', checked: '' })
+    document.body.append(a, b)
+
+    // 用户点 a（宿主 click → 内层原生 click）→ a 选中、b 被互斥清除
+    a.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(a.hasAttribute('checked')).toBe(true)
+    expect(b.hasAttribute('checked')).toBe(false)
+
+    // b 的 reset 基线未被互斥清除冲刷：恢复初始书写态（选中）
+    b.formResetCallback()
+    expect(b.hasAttribute('checked')).toBe(true)
+    // a 的基线是初始未选中：reset 回未选中
+    a.formResetCallback()
+    expect(a.hasAttribute('checked')).toBe(false)
   })
 })
