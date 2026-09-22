@@ -83,3 +83,56 @@ test('input prefix-text 属性在 Vue demo 中存活并渲染（覆盖 DOM 内�
   expect(r.affixText).toBe('$')
   expect(r.affixHidden).toBe(false)
 })
+
+test('input addon 分发自包含控件（oas-button）：托盘退化为贴合容器 + 外角合并（真机量测回归）', async ({ page }) => {
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-input')
+  await up(page, '#input-search-btn')
+  const m = await page.evaluate(async () => {
+    const btn = document.querySelector('#input-search-btn') as HTMLElement & { shadowRoot: ShadowRoot }
+    const host = btn.closest('oas-input') as HTMLElement & { shadowRoot: ShadowRoot }
+    // 等 slot 分发 + slotchange 后的 syncAddons 打下标记
+    for (
+      let i = 0;
+      i < 60 && !host.shadowRoot.querySelector('[part="append"]')?.hasAttribute('data-addon-control');
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 50))
+    }
+    const root = host.shadowRoot
+    const tray = root.querySelector('[part="append"]') as HTMLElement
+    const inner = root.querySelector('input')!
+    const innerBtn = btn.shadowRoot.querySelector('button') as HTMLElement
+    const tcs = getComputedStyle(tray)
+    const bcs = getComputedStyle(innerBtn)
+    const tr = tray.getBoundingClientRect()
+    const ir = inner.getBoundingClientRect()
+    const br = innerBtn.getBoundingClientRect()
+    return {
+      control: tray.hasAttribute('data-addon-control'),
+      padding: `${tcs.paddingLeft}/${tcs.paddingRight}`,
+      bg: tcs.backgroundColor,
+      border: `${tcs.borderTopWidth}/${tcs.borderRightWidth}/${tcs.borderBottomWidth}/${tcs.borderLeftWidth}`,
+      trayW: +tr.width.toFixed(1),
+      trayH: +tr.height.toFixed(1),
+      btnW: +br.width.toFixed(1),
+      inputH: +ir.height.toFixed(1),
+      dy: +(tr.top - ir.top).toFixed(1),
+      seam: +(ir.right - tr.left).toFixed(1),
+      radius: `${bcs.borderTopLeftRadius} ${bcs.borderTopRightRadius} ${bcs.borderBottomRightRadius} ${bcs.borderBottomLeftRadius}`,
+    }
+  })
+  expect(m.control, '托盘应识别自包含控件').toBe(true)
+  expect(m.padding, '文本 addon 的内边距归零（消除 12px 灰带）').toBe('0px/0px')
+  expect(m.bg, '灰底去除').toBe('rgba(0, 0, 0, 0)')
+  expect(m.border, '托盘自身描边去除（避免灰框与双线）').toBe('0px/0px/0px/0px')
+  expect(m.trayW, '托盘宽度等于按钮宽度').toBe(m.btnW)
+  expect(m.trayH, '托盘高度与输入框同高').toBe(m.inputH)
+  expect(m.dy, '托盘与输入框上下对齐（无 1px 台阶）').toBe(0)
+  expect(m.seam, '相邻边 -1px 重叠合并为单线').toBe(1)
+  expect(m.radius, '按钮外角与托盘合并（0 6px 6px 0）').toBe('0px 6px 6px 0px')
+
+  // 贴合形态不改交互：真实点击 addon 内按钮，demo 输出区出现可见反馈
+  await page.locator('#input-search-btn').click()
+  await expect(page.locator('#input-search-output')).toHaveText('触发搜索')
+})
