@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { onMeasurable, type MeasureDisposer } from '../../shared/measure-when-visible.js'
 
 export interface AnchorItem {
   href: string
@@ -234,6 +235,8 @@ export class OASAnchor extends OASElement {
   private scrollRafId = 0
   /** 滚动/尺寸监听的计算 rAF 句柄（每帧最多计算一次） */
   private scrollComputeRafId = 0
+  /** 墨水条尺寸自愈链路（零尺寸守卫 + 宿主 0→非 0 / 连接后一次性 rAF 复测） */
+  private inkMeasurer: MeasureDisposer | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -583,14 +586,38 @@ export class OASAnchor extends OASElement {
     this.positionInk()
   }
 
-  /** 墨水条定位：default 竖条贴左（top/height 随动）；underline 与横向模式为底部/顶部横条（left/width 随动） */
-  private positionInk(): void {
+  /**
+   * 建立墨水条尺寸自愈链路（幂等；断连清理后由下次「不可测」判定重建）。
+   * 锚点栏挂在 hidden/0 尺寸容器时 offsetWidth/offsetHeight 量到 0，容器转可见且期间
+   * 无 resize/scroll/active 变更则没有复测触发点 → 指示永久留空；此处交共享助手在
+   * 宿主尺寸 0→非 0（或连接后一次性 rAF）时复测。收敛时复位句柄，便于再次武装。
+   */
+  private ensureInkMeasurer(): void {
+    if (this.inkMeasurer) return
+    let disposed = false
+    const dispose = onMeasurable(this, () => this.positionInk(), {
+      onSettle: () => {
+        if (!disposed && this.inkMeasurer === dispose) this.inkMeasurer = null
+      },
+    })
+    this.inkMeasurer = dispose
+    this.onCleanup(() => {
+      disposed = true
+      dispose()
+      if (this.inkMeasurer === dispose) this.inkMeasurer = null
+    })
+  }
+
+  /** 墨水条定位：default 竖条贴左（top/height 随动）；underline 与横向模式为底部/顶部横条（left/width 随动）。
+   *  零尺寸守卫：未布局（容器 hidden/0 尺寸）量到 0 不写入（保留上一次有效值），交自愈助手复测。
+   *  @returns 本次是否已写入有效尺寸（供自愈助手判定收敛） */
+  private positionInk(): boolean {
     const ink = this.shadow.querySelector<HTMLElement>('.ink')
-    if (!ink) return
+    if (!ink) return false
     const variant = this.getAttr('variant', 'default')
     if (variant === 'lineless' || variant === 'block') {
       ink.style.display = 'none'
-      return
+      return true
     }
     let active: HTMLElement | null = null
     for (const link of this.shadow.querySelectorAll<HTMLElement>('[part="link"]')) {
@@ -601,22 +628,30 @@ export class OASAnchor extends OASElement {
     }
     if (!active) {
       ink.style.display = 'none'
-      return
+      return true
     }
     ink.style.display = ''
     const horizontal = this.getAttr('direction', 'vertical') === 'horizontal'
     const underline = variant === 'underline'
+    const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = active
+    // 竖条只需高度；横条（underline/横向）需宽高皆可用
+    const measurable = horizontal || underline ? offsetWidth > 0 && offsetHeight > 0 : offsetHeight > 0
+    if (!measurable) {
+      this.ensureInkMeasurer()
+      return false
+    }
     if (horizontal || underline) {
-      ink.style.left = `${active.offsetLeft}px`
-      ink.style.width = `${active.offsetWidth}px`
-      ink.style.top = `${active.offsetTop + active.offsetHeight}px`
+      ink.style.left = `${offsetLeft}px`
+      ink.style.width = `${offsetWidth}px`
+      ink.style.top = `${offsetTop + offsetHeight}px`
       ink.style.height = '2px'
     } else {
       ink.style.left = '0'
       ink.style.width = '2px'
-      ink.style.top = `${active.offsetTop}px`
-      ink.style.height = `${active.offsetHeight}px`
+      ink.style.top = `${offsetTop}px`
+      ink.style.height = `${offsetHeight}px`
     }
+    return true
   }
 
   private parseItems(): void {

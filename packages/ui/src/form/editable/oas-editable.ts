@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { onMeasurable, type MeasureDisposer } from '../../shared/measure-when-visible.js'
 
 /** size 尺寸档（对齐 oas-input：small/medium/large，控高走 --oas-control-height-* token） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -304,14 +305,8 @@ export class OASEditable extends OASElement {
   private displayTplObserver: MutationObserver | null = null
   /** 当前已挂观察器的 display 模板元素（换模板时重挂） */
   private displayTplEl: HTMLTemplateElement | null = null
-  /** 宿主尺寸观察器：容器 hidden→visible 的 0→非 0 变化时补测多行高（清理走 onCleanup） */
-  private hostObserver: ResizeObserver | null = null
-  /** 多行高「尚不可测」标记：未布局（容器 hidden/首帧早于布局）时 scrollHeight 为 0，不写入尺寸状态 */
-  private heightMeasurePending = false
-  /** 连接后一次性尺寸复测 rAF（非轮询；首帧可能早于布局落定） */
-  private measureRepairRaf: number | null = null
-  /** 一次性复测是否已跑过（每次连接复位，保证「仅此一次」） */
-  private measureRepairDone = false
+  /** 多行高尺寸自愈链路（零尺寸守卫 + 宿主 0→非 0 复测；清理走 onCleanup） */
+  private measurer: MeasureDisposer | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（快照为展示态） */
   private template(): string {
@@ -367,14 +362,6 @@ export class OASEditable extends OASElement {
     }
   }
 
-  override connectedCallback(): void {
-    // 复位一次性复测标记（在 super 之前：super 的 update 可能已标记待测并排复测）
-    this.measureRepairDone = false
-    super.connectedCallback()
-    // 每次连接安排一次尺寸复测（非轮询）：首帧可能早于布局落定，或宿主挂载在 hidden 容器里
-    this.scheduleMeasureRepair()
-  }
-
   protected override render(): void {
     this.shadow.innerHTML = this.template()
     this.bind()
@@ -389,38 +376,24 @@ export class OASEditable extends OASElement {
     return true
   }
 
-  /** 建立宿主尺寸观察器（幂等；断连清理后由 autoResize 的待测标记重建，兼容重新挂载） */
-  private ensureHostObserver(): void {
-    if (typeof ResizeObserver === 'undefined' || this.hostObserver) return
-    this.hostObserver = new ResizeObserver(() => this.handleHostResize())
-    this.hostObserver.observe(this)
-    this.onCleanup(() => {
-      this.hostObserver?.disconnect()
-      this.hostObserver = null
-      if (this.measureRepairRaf != null) cancelAnimationFrame(this.measureRepairRaf)
-      this.measureRepairRaf = null
-    })
-  }
-
   /**
-   * 宿主尺寸变化（含容器 hidden→visible 的 0→非 0）：多行高此前不可测，拿到真实尺寸后补测。
-   * 仅在待测标记为真时动作——测到后即清标，避免与宽度自适应形成回环。
+   * 建立多行高尺寸自愈链路（幂等；断连清理后由下次「不可测」判定重建，兼容重新挂载）。
+   * 复用共享助手：宿主尺寸 0→非 0 触发复测 + 连接后一次性 rAF；测到有效高即收敛。
+   * 收敛时复位句柄，使元素再次进入不可测（再次隐藏后布局变化）时能重新武装。
    */
-  private handleHostResize(): void {
-    if (!this.heightMeasurePending) return
-    this.autoResize()
-  }
-
-  /** 连接后一次性尺寸复测（仅一帧，不做轮询/魔数等待）；断连时清理 rAF。
-   *  仅当首帧「尚不可测」（量到 0）时才安排——尺寸已可测则无需补测。 */
-  private scheduleMeasureRepair(): void {
-    if (!this.heightMeasurePending) return
-    if (this.measureRepairDone || this.measureRepairRaf != null || !this.isConnected) return
-    this.measureRepairRaf = requestAnimationFrame(() => {
-      this.measureRepairRaf = null
-      this.measureRepairDone = true
-      if (!this.isConnected) return
-      this.autoResize()
+  private ensureMeasurer(): void {
+    if (this.measurer) return
+    let disposed = false
+    const dispose = onMeasurable(this, () => this.autoResize(), {
+      onSettle: () => {
+        if (!disposed && this.measurer === dispose) this.measurer = null
+      },
+    })
+    this.measurer = dispose
+    this.onCleanup(() => {
+      disposed = true
+      dispose()
+      if (this.measurer === dispose) this.measurer = null
     })
   }
 
@@ -483,21 +456,21 @@ export class OASEditable extends OASElement {
   /** 多行自适应高：最小 1 行随内容长高。
    *  零尺寸守卫：未布局（容器 hidden/首帧早于布局）时 scrollHeight 为 0——不写入尺寸
    *  （还原上一次有效内联高，无则走 CSS 自然高），只标记待测并确保自愈链路就绪；
-   *  宿主拿到真实尺寸后由 ResizeObserver（0→非 0）或连接后一次性 rAF 补测。 */
-  private autoResize(): void {
+   *  宿主拿到真实尺寸后由共享助手的 ResizeObserver（0→非 0）或连接后一次性 rAF 补测。
+   *  @returns 本次是否测到有效高（供自愈助手判定收敛） */
+  private autoResize(): boolean {
     const field = this.fieldEl
-    if (!field || !isTextarea(field)) return
+    if (!field || !isTextarea(field)) return true // 非多行：无需测量，视为已收敛
     const prev = field.style.height
     field.style.height = 'auto'
     const h = field.scrollHeight
     if (!Number.isFinite(h) || h <= 0) {
       field.style.height = prev
-      this.heightMeasurePending = true
-      this.ensureHostObserver()
-      return
+      this.ensureMeasurer()
+      return false
     }
     field.style.height = `${h}px`
-    this.heightMeasurePending = false
+    return true
   }
 
   /** 展示态内容：template[slot=display] 克隆 + data-display-value/placeholder 绑定，缺省纯文本 */

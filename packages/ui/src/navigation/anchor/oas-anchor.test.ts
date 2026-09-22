@@ -1102,3 +1102,77 @@ describe('OASAnchor 触摸目标（coarse pointer 抬升）', () => {
     expect(coarse).toContain('min-height')
   })
 })
+
+// ===== 墨水条 hidden 容器零尺寸守卫 + 尺寸自愈（共享 measure-when-visible 助手） =====
+// 缺陷背景：锚点栏挂在 display:none / 0 尺寸祖先里时，位置测量（offsetWidth/offsetHeight）
+// 拿到 0 会被直接写进墨水条内联样式（width/height 0）→ 选中指示不可见；容器转可见后若期间
+// 无 resize/scroll/active 变更，则没有复测触发点 → 指示永久留空。修复：量到 0 不写入
+// （保留上一次有效值）并交由共享助手在宿主尺寸 0→非 0 或连接后一次性 rAF 时复测自愈。
+describe('OASAnchor 墨水条 hidden 容器尺寸守卫/自愈', () => {
+  let roRef: { cb: () => void } | null = null
+  class FakeRO {
+    cb: () => void
+    constructor(cb: () => void) {
+      this.cb = cb
+      roRef = this
+    }
+    observe(): void {}
+    disconnect(): void {}
+    unobserve(): void {}
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    roRef = null
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 0),
+    )
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  function inkOf(el: OASAnchor): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('.ink')!
+  }
+
+  it('零尺寸守卫：当前项不可测（offsetHeight=0）时不写入 0 尺寸（链路待测）', () => {
+    const el = mount({ active: '#section1' })
+    expect(roRef, '应建立宿主尺寸观察器以待复测').not.toBeNull()
+    const ink = inkOf(el)
+    expect(ink.style.height, '量到 0 不得写入 0px').not.toBe('0px')
+    expect(ink.style.top, '量到 0 不得写入 0px').not.toBe('0px')
+  })
+
+  it('hidden→visible：宿主尺寸 0→非 0 触发 ResizeObserver，竖条按真实高/位补写', () => {
+    const el = mount({ active: '#section2' })
+    const link = linksOf(el)[1]!
+    Object.defineProperty(link, 'offsetTop', { value: 40, configurable: true })
+    Object.defineProperty(link, 'offsetHeight', { value: 28, configurable: true })
+    roRef!.cb()
+    const ink = inkOf(el)
+    expect(ink.style.top).toBe('40px')
+    expect(ink.style.height).toBe('28px')
+  })
+
+  it('hidden→visible：underline 变体横条按真实宽/位补写（量到 0 不写入）', () => {
+    const el = mount({ active: '#section1', variant: 'underline' })
+    const link = linksOf(el)[0]!
+    expect(inkOf(el).style.width, '量到 0 不得写入 0px').not.toBe('0px')
+    Object.defineProperty(link, 'offsetLeft', { value: 8, configurable: true })
+    Object.defineProperty(link, 'offsetWidth', { value: 96, configurable: true })
+    Object.defineProperty(link, 'offsetTop', { value: 30, configurable: true })
+    Object.defineProperty(link, 'offsetHeight', { value: 20, configurable: true })
+    roRef!.cb()
+    const ink = inkOf(el)
+    expect(ink.style.left).toBe('8px')
+    expect(ink.style.width).toBe('96px')
+    expect(ink.style.top).toBe('50px')
+    expect(ink.style.height).toBe('2px')
+  })
+})
