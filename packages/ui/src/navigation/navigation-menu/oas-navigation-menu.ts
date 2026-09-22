@@ -125,11 +125,12 @@ const STYLE = `
   transform: translateY(var(--ind-y, 0));
 }
 /* 统一视口容器：所有顶级项的面板渲染进同一容器。
-   inset 逻辑化：LTR 贴 bar 左缘、RTL 自动镜像贴右缘（书写方向起点对齐） */
+   位置跟随激活触发器：--vp-x = 触发器书写起点侧相对 nav 的逻辑偏移（LTR 左缘 / RTL 右缘），
+   缺省 0 = 未定位（无触发器/被「···」收纳）时贴 nav 起点；回折时走 --vp-x-end（见 flip-right）。 */
 .viewport {
   position: absolute;
   top: calc(100% + var(--oas-space-1));
-  inset-inline-start: 0;
+  inset-inline-start: var(--vp-x, 0);
   min-width: 200px;
   width: var(--vp-w, auto);
   height: var(--vp-h, auto);
@@ -151,10 +152,11 @@ const STYLE = `
   pointer-events: auto;
 }
 /* 视口边界碰撞翻转：浮出侧缘溢出时对齐父项另一缘回折（flip-right，逻辑 inset RTL 自动镜像）、
-   下缘溢出时向上弹（flip-up）；竖排浮出侧不足回折（flip-left，逻辑 inset 自动镜像） */
+   下缘溢出时向上弹（flip-up）；竖排浮出侧不足回折（flip-left，逻辑 inset 自动镜像）。
+   回折后右对齐激活触发器：--vp-x-end = 触发器书写终点侧相对 nav 的逻辑偏移。 */
 .viewport.flip-right {
   inset-inline-start: auto;
-  inset-inline-end: 0;
+  inset-inline-end: var(--vp-x-end, 0);
 }
 .viewport.flip-up {
   top: auto;
@@ -165,7 +167,7 @@ const STYLE = `
   inset-inline-end: calc(100% + var(--oas-space-1));
 }
 .viewport.vertical {
-  top: 0;
+  top: var(--vp-y, 0);
   inset-inline-start: calc(100% + var(--oas-space-1));
 }
 /* 超大面板滚动：max-height 由 CSS 变量兜底，宿主可覆盖 --oas-nav-panel-max-height */
@@ -1812,8 +1814,13 @@ export class OASNavigationMenu extends OASElement {
   }
 
   /**
-   * 碰撞/翻转检测：viewport 固定贴书写方向起点（LTR left / RTL right），
-   * 浮出侧缘溢出时回折（flip-right，逻辑 inset RTL 自动镜像），下缘溢出向上弹（flip-up），
+   * 面板位置跟随激活触发器 + 碰撞/翻转检测。
+   *
+   * 位置：先把激活触发器相对 nav 的逻辑偏移写入 `--vp-x`（缺省贴触发器书写起点侧）/
+   * `--vp-x-end`（回折后贴触发器书写终点侧）/ `--vp-y`（竖排贴触发器顶边）；触发器缺失或
+   * 被收纳（display:none 量不到 offset）时偏移归 0，回退旧的「贴 nav 起点」行为。
+   *
+   * 翻转：缺省侧溢出时回折（flip-right，逻辑 inset RTL 自动镜像），下缘溢出向上弹（flip-up），
    * 竖排浮出侧不足回折（flip-left）。RTL 下溢出检测镜像到另一侧（左缘 ↔ 右缘）。
    * 水平边界取「视口缘 与 导航栏缘」较小值——窄容器内面板也不越出容器。
    * 尺寸用 offsetWidth/scrollWidth（transform 免疫），位置用 getBoundingClientRect（面板/栏无 scale 动画）。
@@ -1832,33 +1839,40 @@ export class OASNavigationMenu extends OASElement {
     const vh = window.innerHeight
     const size = this.viewportContentSize()
     const rtl = isRtl(this)
+    const geo = this.writeViewportOffset()
+    const barRect = bar.getBoundingClientRect()
     if (this.isVertical()) {
-      const barRect = bar.getBoundingClientRect()
       // 竖排浮出侧：LTR 向右（检右缘）、RTL 向左（检左缘，面板右对齐 bar 左缘外）
       const overflows = rtl ? barRect.left - size.w < margin : barRect.left + bar.offsetWidth + size.w > vw - margin
       vp.classList.toggle('flip-left', overflows)
       vp.classList.remove('flip-right')
     } else {
-      const barRect = bar.getBoundingClientRect()
       const navRect = this.navEl?.getBoundingClientRect()
+      // navRect.left 未布局（测试替身只给部分字段）时回退 bar 左缘
+      const navLeft = navRect && Number.isFinite(navRect.left) ? navRect.left : barRect.left
       if (rtl) {
-        // RTL：面板缺省右对齐 bar 向左展开；左边界 = max(视口左缘 0, 导航栏左缘)
-        const boundLeft = navRect && navRect.left >= 0 ? Math.max(0, navRect.left) : 0
-        const leftEdge = barRect.right - size.w
-        // 翻转后不越视口右缘；不翻转（贴 bar 右对齐）不越视口左缘
-        const flipKeepsRight = barRect.left + size.w <= vw - margin
+        // RTL：面板缺省右对齐触发器书写起点侧（右缘）；左边界 = max(视口左缘 0, 导航栏左缘)
+        const boundLeft = navLeft >= 0 ? Math.max(0, navLeft) : 0
+        const leftEdge = navLeft + geo.localRight - size.w
+        // 回折后（flip-right 类在 RTL 下镜像为左对齐）面板左缘贴触发器书写终点侧
+        const flippedLeft = navLeft + geo.localLeft
+        // 翻转后不越视口右缘；不翻转（贴触发器右对齐）不越视口左缘
+        const flipKeepsRight = flippedLeft + size.w <= vw - margin
         const unflippedKeepsLeft = leftEdge >= boundLeft + margin
         // 容器左缘溢出时优先回折（flip-right 类在 RTL 下镜像为左→右对齐）；
         // 窄 bar 比面板窄时回折会把面板顶出视口右缘——不翻转能放下就保持右对齐
         vp.classList.toggle('flip-right', leftEdge < boundLeft + margin && (!unflippedKeepsLeft || flipKeepsRight))
         vp.classList.remove('flip-left')
       } else {
-        const navRight = navRect?.right ?? 0
+        const navRight = navRect && Number.isFinite(navRect.right) ? navRect.right : 0
         // 右边界 = min(视口, 导航栏右缘)；navRight 为 0（未布局/测试环境）回退视口
         const boundRight = navRight > 0 ? Math.min(vw, navRight) : vw
-        const rightEdge = barRect.left + size.w
-        // 翻转后不越视口左缘；不翻转（贴 bar 左对齐）不越视口右缘
-        const flipKeepsLeft = barRect.right - size.w >= margin
+        // 缺省面板左缘贴触发器左缘；回折后右缘贴触发器右缘
+        const unflippedLeft = navLeft + geo.localLeft
+        const rightEdge = unflippedLeft + size.w
+        const flippedLeft = navLeft + geo.localRight - size.w
+        // 翻转后不越视口左缘；不翻转（贴触发器左对齐）不越视口右缘
+        const flipKeepsLeft = flippedLeft >= margin
         const unflippedKeepsRight = rightEdge <= vw - margin
         // 容器右缘溢出时优先 flip-right；但窄屏 bar 比面板还窄时 flip 会把面板顶出视口左缘——
         // 此时只要不翻转能在视口内放得下，就保持左对齐（优先保证面板整体可见）
@@ -1875,6 +1889,35 @@ export class OASNavigationMenu extends OASElement {
       this.arrowEl.classList.toggle('flip-up', vp.classList.contains('flip-up'))
       this.arrowEl.classList.toggle('flip-left', vp.classList.contains('flip-left'))
     }
+  }
+
+  /**
+   * 把激活触发器相对 nav 的逻辑偏移写入视口定位变量：
+   * - `--vp-x`：书写起点侧（LTR 左 / RTL 右）偏移——缺省面板起点对齐触发器起点；
+   * - `--vp-x-end`：书写终点侧（LTR 右 / RTL 左）偏移——回折后面板终点对齐触发器终点；
+   * - `--vp-y`：竖排顶边偏移（面板顶对齐激活项顶）。
+   * 触发器缺失/被收纳（display:none 量不到 offset）时全部归 0——回退「贴 nav 起点」。
+   * @returns nav 本地坐标系下触发器的物理左右缘（供碰撞翻转判定复用）
+   */
+  private writeViewportOffset(): { localLeft: number; localRight: number } {
+    const vp = this.viewportEl
+    const bar = this.barEl
+    const nav = this.navEl
+    if (!vp || !bar || !nav) return { localLeft: 0, localRight: 0 }
+    const value = this.effectiveOpen()
+    const trigger = value ? this.shadow.querySelector<HTMLElement>(`[part="top-item"][data-value="${value}"]`) : null
+    const usable = !!trigger && !trigger.hasAttribute('data-collapsed')
+    const localLeft = usable ? (bar.offsetLeft || 0) + (trigger.offsetLeft || 0) : 0
+    const localRight = usable ? localLeft + (trigger.offsetWidth || 0) : 0
+    const localTop = usable ? (bar.offsetTop || 0) + (trigger.offsetTop || 0) : 0
+    const navW = nav.offsetWidth || bar.offsetWidth || 0
+    // 逻辑书写方向：RTL 下书写起点侧在物理右缘、终点侧在物理左缘
+    const start = isRtl(this) ? Math.max(0, navW - localRight) : localLeft
+    const end = isRtl(this) ? localLeft : Math.max(0, navW - localRight)
+    vp.style.setProperty('--vp-x', `${start}px`)
+    vp.style.setProperty('--vp-x-end', `${end}px`)
+    vp.style.setProperty('--vp-y', `${localTop}px`)
+    return { localLeft, localRight }
   }
 
   /** 面板内容尺寸（主面板 + 营销位；二级面板打开时以二级内容为准）——翻转/尺寸过渡共用。
