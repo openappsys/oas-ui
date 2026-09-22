@@ -57,6 +57,8 @@ export const es: LocaleMessages = {
   'combobox.noMatch': 'Sin opciones coincidentes',
   'combobox.loading': 'Cargando…',
   // input (campo de entrada)
+  // form（表单通用）
+  'form.valueMissing': 'Este campo es obligatorio',
   'input.clear': 'Limpiar',
   'input.defaultLabel': 'Campo de entrada',
   'textarea.defaultLabel': 'Campo de texto multilínea',

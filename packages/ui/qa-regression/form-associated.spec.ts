@@ -102,3 +102,75 @@ test('form-associated：label for 关联 + 焦点转递 + FormData + reset + fie
   expect(r.enabledAgain, '解除 fieldset disabled 后恢复').toBe(true)
   expect(r.noNameExcluded, '无 name 控件不进入 FormData').toBe(true)
 })
+
+test('form-associated 校验链路：required 空值进入原生约束校验（checkValidity / :invalid / invalid 事件）', async ({
+  page,
+}) => {
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-input')
+
+  const r = await page.evaluate(async () => {
+    const form = document.createElement('form')
+    form.innerHTML = '<oas-input id="fa-req" name="req" required></oas-input>'
+    document.body.append(form)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaInput extends HTMLElement {
+      shadowRoot: ShadowRoot
+      validity: ValidityState | null
+      willValidate: boolean
+      checkValidity(): boolean
+      reportValidity(): boolean
+    }
+    const el = document.getElementById('fa-req') as unknown as FaInput
+    const inner = el.shadowRoot.querySelector('input')!
+
+    // required + 空值 → 原生约束校验
+    const willValidate = el.willValidate
+    const invalidEmpty = el.checkValidity()
+    const formInvalid = form.checkValidity()
+    const valueMissing = el.validity?.valueMissing ?? null
+    const invalidPseudo = el.matches(':invalid')
+
+    // reportValidity → false 且派发 invalid 事件
+    let invalidFired = 0
+    el.addEventListener('invalid', () => invalidFired++)
+    const reported = el.reportValidity()
+
+    // 填入值 → 恢复合法
+    inner.value = 'x'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    const validAfter = el.checkValidity()
+    const validPseudo = el.matches(':valid')
+
+    // 清空（reset 语义外）→ 重新 valueMissing
+    inner.value = ''
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    const invalidAgain = el.checkValidity()
+
+    form.remove()
+    return {
+      willValidate,
+      invalidEmpty,
+      formInvalid,
+      valueMissing,
+      invalidPseudo,
+      reported,
+      invalidFired,
+      validAfter,
+      validPseudo,
+      invalidAgain,
+    }
+  })
+
+  expect(r.willValidate, 'required 控件参与校验').toBe(true)
+  expect(r.invalidEmpty, 'required 空值 checkValidity 为 false').toBe(false)
+  expect(r.formInvalid, '所在表单 checkValidity 同步为 false').toBe(false)
+  expect(r.valueMissing, 'validity.valueMissing 为 true').toBe(true)
+  expect(r.invalidPseudo, '宿主匹配 :invalid 伪类').toBe(true)
+  expect(r.reported, 'reportValidity 为 false').toBe(false)
+  expect(r.invalidFired, 'reportValidity 派发 invalid 事件').toBeGreaterThan(0)
+  expect(r.validAfter, '填入值后 checkValidity 恢复 true').toBe(true)
+  expect(r.validPseudo, '填入值后宿主匹配 :valid 伪类').toBe(true)
+  expect(r.invalidAgain, '再次清空后回到 invalid').toBe(false)
+})

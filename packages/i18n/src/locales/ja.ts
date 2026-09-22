@@ -57,6 +57,8 @@ export const ja: LocaleMessages = {
   'combobox.noMatch': '一致するオプションなし',
   'combobox.loading': '読み込み中…',
   // input（入力欄）
+  // form（表单通用）
+  'form.valueMissing': 'この項目は必須です',
   'input.clear': 'クリア',
   'input.defaultLabel': '入力欄',
   'textarea.defaultLabel': 'テキストエリア',
