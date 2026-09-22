@@ -1,7 +1,7 @@
 // 复核回归：editable——浏览器级固化断言。
 // 覆盖：点击文本进入编辑态（display 隐藏、input 可见聚焦带值）→ Enter 提交派发 oas-change
 // + demo 反馈文本（#edit-output）、Esc 取消恢复原文派发 oas-cancel、失焦提交（默认
-// submit-on-blur）、disabled 不可进入编辑。
+// submit-on-blur）、disabled 不可进入编辑、多行 hidden 挂载的零尺寸守卫（变可见后不塌陷）。
 
 import { test, expect } from '@playwright/test'
 import { up, defocus, realClick } from './helpers'
@@ -145,6 +145,68 @@ test('editable 失焦提交（默认 submit-on-blur）：点击页面其他区�
     log.some((l) => l.type === 'oas-change' && (l.detail as { value: string }).value === '失焦提交的值'),
     '失焦提交应派发 oas-change',
   ).toBe(true)
+})
+
+test('editable 多行 hidden 挂载 → 可见：字段高与可见容器直接渲染一致且 >0（不塌陷裁切）', async ({ page }) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '#edit-event')
+  await defocus(page)
+
+  // 浏览器级量测：容器 display:none 时 scrollHeight=0，若据此写死字段高，变可见后
+  // 不触发 input/update 就不会复测 → 编辑框塌陷（CSS min-height 只兜 1 行，第二行被裁）。
+  const measured = await page.evaluate(async () => {
+    const nextFrames = async (n: number) => {
+      for (let i = 0; i < n; i++) await new Promise((res) => requestAnimationFrame(() => res(null)))
+    }
+    const make = async (id: string, hidden: boolean) => {
+      const box = document.createElement('div')
+      box.id = `${id}-box`
+      box.style.display = hidden ? 'none' : 'block'
+      box.style.width = '400px'
+      const el = document.createElement('oas-editable')
+      el.id = id
+      el.setAttribute('multiline', '')
+      el.setAttribute('value', '第一行\n第二行')
+      box.appendChild(el)
+      document.body.appendChild(box)
+      el.setAttribute('editing', '')
+      await nextFrames(3)
+      return el
+    }
+    // 对照组：可见容器中直接渲染编辑态
+    const control = await make('qa-ml-control', false)
+    const controlTa = control.shadowRoot!.querySelector('textarea') as HTMLTextAreaElement
+    const controlHeight = controlTa.getBoundingClientRect().height
+    document.getElementById('qa-ml-control-box')!.remove()
+    // 实验组：hidden 容器挂载编辑态 → 置为可见（全程无 input/update 触发）
+    const probe = await make('qa-ml-probe', true)
+    document.getElementById('qa-ml-probe-box')!.style.display = 'block'
+    await nextFrames(4)
+    const ta = probe.shadowRoot!.querySelector('textarea') as HTMLTextAreaElement
+    const rect = ta.getBoundingClientRect()
+    return { controlHeight, probeStyleHeight: ta.style.height, probeHeight: rect.height, probeWidth: rect.width }
+  })
+
+  expect(measured.probeWidth, 'hidden→visible 后编辑框应可见').toBeGreaterThan(0)
+  expect(measured.probeStyleHeight, '量到 0 不得写入 0px 内联高').not.toBe('0px')
+  expect(measured.probeHeight, '编辑框不应塌陷（高度 >0）').toBeGreaterThan(0)
+  expect(
+    Math.abs(measured.probeHeight - measured.controlHeight),
+    `hidden 挂载自愈后高度(${measured.probeHeight})应与可见容器直接渲染(${measured.controlHeight})一致`,
+  ).toBeLessThanOrEqual(1)
+
+  // 可见 + 可输入：录入第三行 → 高度随内容增长（自愈后编辑链路完好）
+  const ta = page.locator('#qa-ml-probe textarea')
+  await expect(ta).toBeVisible()
+  await ta.fill('第一行\n第二行\n第三行')
+  await page.waitForTimeout(100)
+  const grown = await page.evaluate(() => {
+    const field = document.querySelector('#qa-ml-probe')!.shadowRoot!.querySelector('textarea') as HTMLTextAreaElement
+    return { height: field.getBoundingClientRect().height, styleHeight: field.style.height, value: field.value }
+  })
+  expect(grown.value, '编辑框应接受输入').toBe('第一行\n第二行\n第三行')
+  expect(grown.styleHeight, '输入后内联高应为实测像素（非 0px）').not.toBe('0px')
+  expect(grown.height, '输入第三行后应随内容长高').toBeGreaterThan(measured.probeHeight)
 })
 
 test('editable disabled：点击文本不进入编辑态', async ({ page }) => {

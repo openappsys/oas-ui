@@ -709,8 +709,14 @@ export class OASNavigationMenu extends OASElement {
   /** 顶级溢出收纳：「···」按钮与弹层节点引用（render/水合路径共用） */
   private moreBtn: HTMLButtonElement | null = null
   private overflowPanelEl: HTMLElement | null = null
-  /** 顶级溢出收纳：容器宽度监听（清理走 onCleanup） */
+  /** 宿主尺寸监听：收纳重算 + 视口尺寸/翻转自愈（清理走 onCleanup） */
   private overflowObserver: ResizeObserver | null = null
+  /** 视口尺寸「尚不可测」标记：未布局（浮层 hidden/首帧早于布局）时测量为 0 不写入尺寸状态 */
+  private viewportMeasurePending = false
+  /** 连接后一次性尺寸复测 rAF（非轮询；首帧可能早于布局落定） */
+  private measureRepairRaf: number | null = null
+  /** 一次性复测是否已跑过（每次连接复位，保证「仅此一次」） */
+  private measureRepairDone = false
   /** 被收纳的顶级项 value 集合（键盘导航/roving 跳过、指示条不误定位） */
   private collapsedValues = new Set<string>()
   /** 「···」弹层开合 */
@@ -766,14 +772,11 @@ export class OASNavigationMenu extends OASElement {
       }
     })
     // 顶级溢出收纳：容器宽度变化重算（断连清理后 update 幂等重建）
-    if (typeof ResizeObserver !== 'undefined' && !this.overflowObserver) {
-      this.overflowObserver = new ResizeObserver(() => this.syncOverflowCollapse())
-      this.overflowObserver.observe(this)
-      this.onCleanup(() => {
-        this.overflowObserver?.disconnect()
-        this.overflowObserver = null
-      })
-    }
+    this.ensureOverflowObserver()
+    this.onCleanup(() => {
+      if (this.measureRepairRaf != null) cancelAnimationFrame(this.measureRepairRaf)
+      this.measureRepairRaf = null
+    })
     // 营销位插槽内容动态增减 → 重算容器显隐（宿主后插内容也能生效）
     const footerSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="panel-footer"]')
     footerSlot?.addEventListener('slotchange', () => this.syncPanelFooter())
@@ -797,6 +800,47 @@ export class OASNavigationMenu extends OASElement {
       document.removeEventListener('keydown', this.handleDocumentKey)
       if (this.openTimer) clearTimeout(this.openTimer)
       if (this.closeTimer) clearTimeout(this.closeTimer)
+    })
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback()
+    // 每次连接安排一次尺寸复测（非轮询）：首帧可能早于布局落定，或宿主挂载在 hidden 浮层里
+    this.measureRepairDone = false
+    this.scheduleMeasureRepair()
+  }
+
+  /** 建立宿主尺寸观察器（幂等；断连清理后由 update 重建，兼容重新挂载） */
+  private ensureOverflowObserver(): void {
+    if (typeof ResizeObserver === 'undefined' || this.overflowObserver) return
+    this.overflowObserver = new ResizeObserver(() => this.handleHostResize())
+    this.overflowObserver.observe(this)
+    this.onCleanup(() => {
+      this.overflowObserver?.disconnect()
+      this.overflowObserver = null
+    })
+  }
+
+  /**
+   * 宿主尺寸变化（含浮层 hidden→visible 的 0→非 0）：重算顶级收纳 + 视口尺寸/翻转自愈。
+   * 面板尺寸此前在不可测状态（宿主 0×0）下测不到，宿主拿到真实尺寸后须复测，否则尺寸状态留空、翻转判定用旧值。
+   */
+  private handleHostResize(): void {
+    this.syncOverflowCollapse()
+    this.syncViewportSize()
+    this.syncViewportPosition()
+  }
+
+  /** 连接后一次性尺寸复测（仅一帧，不做轮询/魔数等待）；断连清理 rAF。
+   *  仅在「尚不可测」标记为真（首帧量到 0）时安排——尺寸已可测则无需补测。 */
+  private scheduleMeasureRepair(): void {
+    if (!this.viewportMeasurePending) return
+    if (this.measureRepairDone || this.measureRepairRaf != null || !this.isConnected) return
+    this.measureRepairRaf = requestAnimationFrame(() => {
+      this.measureRepairRaf = null
+      this.measureRepairDone = true
+      if (!this.isConnected) return
+      this.handleHostResize()
     })
   }
 
@@ -833,6 +877,8 @@ export class OASNavigationMenu extends OASElement {
     this.syncActive()
     this.syncRoving()
     this.syncPanelFooter()
+    // 宿主尺寸监听幂等建立（断连清理后重新挂载时由 update 重建）
+    this.ensureOverflowObserver()
     // 顶级溢出收纳重算（renderBar 重建了触发器，data-collapsed 需重新判定；未布局/SSR 不误判）
     this.syncOverflowCollapse()
   }
@@ -848,7 +894,9 @@ export class OASNavigationMenu extends OASElement {
 
   /** viewport 尺寸变量（--vp-w/--vp-h）：面板内容 + 营销位 + 覆盖式二级面板（打开时）。
    *  营销位按真实布局计（offsetHeight 含自身 padding；外距与上边分隔线一并计入）——
-   *  手工拼「+4」与 .panel-footer 的 margin+padding+border 实际结构不符会裁切底部。 */
+   *  手工拼「+4」与 .panel-footer 的 margin+padding+border 实际结构不符会裁切底部。
+   *  零尺寸守卫：未布局/浮层 hidden 时 scrollWidth/scrollHeight 为 0——视为「尚不可测」，
+   *  不写入尺寸状态（保留自然尺寸/上一次有效值），标记待测由宿主 ResizeObserver/一次性 rAF 复测自愈。 */
   private syncViewportSize(): void {
     const vp = this.viewportEl
     const p = this.panelEl
@@ -856,24 +904,23 @@ export class OASNavigationMenu extends OASElement {
     const footer = this.panelFooterEl
     const sub = this.subPanelEl
     // 二级面板打开时以其内容为准（覆盖主面板）；否则主面板 + 营销位
-    if (sub && this.openSub && !sub.hidden) {
-      const w = sub.scrollWidth
-      const h = sub.scrollHeight
-      if (w > 0) vp.style.setProperty('--vp-w', `${w}px`)
-      if (h > 0) vp.style.setProperty('--vp-h', `${h}px`)
-      return
-    }
-    const w = p.scrollWidth
-    let h = p.scrollHeight
-    if (footer && !footer.hidden) {
+    const subOpen = !!sub && !!this.openSub && !sub.hidden
+    const target = subOpen ? (sub as HTMLElement) : p
+    const w = target.scrollWidth
+    let h = target.scrollHeight
+    if (!subOpen && footer && !footer.hidden) {
       const fh = footer.offsetHeight
       if (fh > 0) {
         const mt = parseFloat(getComputedStyle(footer).marginTop) || 0
         h += fh + mt + 1 // +1 分隔线上边框（viewport 为 content-box，height 即内容高）
       }
     }
-    if (w > 0) vp.style.setProperty('--vp-w', `${w}px`)
-    if (h > 0) vp.style.setProperty('--vp-h', `${h}px`)
+    const wUsable = Number.isFinite(w) && w > 0
+    const hUsable = Number.isFinite(h) && h > 0
+    if (wUsable) vp.style.setProperty('--vp-w', `${w}px`)
+    if (hUsable) vp.style.setProperty('--vp-h', `${h}px`)
+    // 任一维不可测 → 标记待测（不写入 0），由尺寸自愈链路在拿到真实尺寸后补写
+    this.viewportMeasurePending = !wUsable || !hUsable
   }
 
   private parseItems(): NavItem[] {
