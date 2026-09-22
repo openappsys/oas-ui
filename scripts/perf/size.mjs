@@ -252,37 +252,37 @@ const BUDGETS = [
     // 增长纪律由单组件链预算（绝对值制）与按需叙事守住。
     name: 'dist/cdn.js gzip',
     get: () => cdn.gzipBytes,
-    limit: 575 * 1024, // 575 KB 天花板（2026-09-13 重定档）
+    limit: 600 * 1024, // 600 KB 天花板（2026-09-22 重定档：form-associated + v2.5.6 无障碍批连续增长触前档预警线）
     basis:
-      '天花板制：实测 gzip 498.4 KB（v2.5.3 RTL/移动/触控批全量落地后），定档 575 KB 预留后续增长；前档 300 KB 定档于 v2.2.2（240,557 B）',
+      '天花板制：实测 gzip 519.1 KB（form-associated 批次 + v2.5.6 无障碍批次后），定档 600 KB 预留后续增长；前档 575 KB 定档于 v2.5.3（498.4 KB 实测），再前档 300 KB 定档于 v2.2.2（240,557 B）',
   },
   {
     name: '@oas-ui/ui 全量入口链 gzip',
     get: () => fullEntry.gzipBytes,
-    limit: 870 * 1024, // 870 KB 天花板（2026-09-13 重定档，575 × 实测比 1.51）
+    limit: 905 * 1024, // 905 KB 天花板（2026-09-22 随 cdn 天花板等比重定档，600 × 实测比 ≈1.51）
     basis:
-      '天花板制：830 KB = cdn 天花板 550 KB × 全量链/cdn 实测比 ≈1.51（逐文件求和上界口径）；实测 gzip 749.3 KB（v2.5.3 后）；前档 520 KB 定档于 v2.2.2（415,403 B）',
+      '天花板制：905 KB ≈ cdn 天花板 600 KB × 全量链/cdn 实测比 ≈1.51（逐文件求和上界口径）；实测 gzip 779.3 KB（form-associated 批次后）；前档 870 KB 定档于 2026-09-13，再前档 520 KB 定档于 v2.2.2（415,403 B）',
   },
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
     get: () => componentMeasures.button.gzipBytes,
-    limit: 31 * 1024, // 31 KB（2026-09-09 重定档）
+    limit: 35 * 1024, // 35 KB（2026-09-22 重定档：form-associated 批次 core 新增 OASFormElement 基类入全链）
     basis:
-      '实测 gzip 26.4 KB（v2.5.0 后；含 core + 全量 icon 注册表），上浮约 17%；前档 26 KB 定档于 v2.1.3（22,557 B）',
+      '实测 gzip 30.3 KB（form-associated 批次：core 新增 OASFormElement 基类进所有链；含 core + 全量 icon 注册表），上浮约 15%；前档 31 KB 定档于 2026-09-09（26.4 KB 实测）',
   },
   {
     name: '@oas-ui/ui/data/table 链 gzip',
     get: () => componentMeasures.table.gzipBytes,
-    limit: 65 * 1024, // 65 KB（2026-09-13 重定档）
+    limit: 70 * 1024, // 70 KB（2026-09-22 重定档：form-associated 批次 core 增量）
     basis:
-      '实测 gzip 56.2 KB（v2.5.3 后；RTL/移动批新增——列重排触屏上移/下移按钮、过滤面板改走共享 floating 引擎、coarse 触控目标；链含 core+virtual-list+i18n+oas-pagination），上浮约 15%；前档 62 KB 定档于 2026-09-09（54,110 B）',
+      '实测 gzip 60.6 KB（form-associated 批次 core 增量 + v2.5.3 后 RTL/移动批新增——列重排触屏上移/下移按钮、过滤面板改走共享 floating 引擎、coarse 触控目标；链含 core+virtual-list+i18n+oas-pagination），上浮约 15%；前档 65 KB 定档于 2026-09-13（56.2 KB 实测）',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',
     get: () => componentMeasures.form.gzipBytes,
-    limit: 20 * 1024, // 20 KB（2026-09-15 重定档）
+    limit: 24 * 1024, // 24 KB（2026-09-22 重定档：form-associated 批次顶到前档 100%）
     basis:
-      '实测 gzip 17.2 KB（未发布批次：RTL 逻辑属性改造令 padding/margin 简写展开为长写、shared/size 词表互认；含 core + i18n），上浮约 16%；前档 19 KB 定档于 2026-09-09（16.4 KB 实测）',
+      '实测 gzip 20.7 KB（form-associated 批次：15 表单组件接入 OASFormElement 公共机制 + 校验链路 + label 命名转发；含 core + i18n），上浮约 15%；前档 20 KB 定档于 2026-09-15（17.2 KB 实测）',
   },
   {
     name: '@oas-ui/theme index.css gzip',
