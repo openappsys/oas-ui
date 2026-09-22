@@ -1369,6 +1369,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **oas-marquee 循环接缝顿挫三连修**：克隆份与源份渲染宽不等（每轮 wrap 回跳一个空格宽，实测 4.7px）；相位跳变；克隆份改走 light DOM（页面样式表只能作用于 light DOM，继承宿主样式）+ 份数口径修正 + reverse 切换相位连续（相位按「含方向的位移比例」换算）
 - **`[hidden]` 兜底收口（8 处，两笔）**：作者级 `display` 声明压过 UA `[hidden]` 规则的同类缺陷，全库清查补齐
 - **真机视觉复核 7 处修复**（含 2 处存量缺陷）+ oas-masonry items getter 契约修复 + 白名单漂移清理
+- **oas-input addon 槽放自包含控件时改贴合形态**：修复 append 槽放 `oas-button` 时按钮四周灰带 / 四角双层圆角未与外框合并 / 托盘与输入框 1px 台阶（根因：`.addon` 无条件 padding + 未注入圆角合并协议）；识别自包含控件打内部标记，仅标记存在时归零 padding、对齐控件高度、压边成单线并注入 `--oas-button-group-radius`
 - **SSR 测试基建**：DSD 快照匹配改前缀模糊通道（防 DOM 噪声属性误报）；关闭 happy-dom 帧导航（消除单测 fetch 噪声）
 
 ### 特性
