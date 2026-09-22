@@ -191,6 +191,7 @@ onMounted(() => {
 | `label` | 标签文本（label 通道，点击标签切换；slot 同名插槽可传富内容） | `string` | — |
 | `label-position` | 标签位置：`end`（默认，右侧）/ `start`（左侧） | `string` | — |
 | `loading` | 加载态，阻止切换 | `boolean` | — |
+| `required` | 必填标记（驱动原生校验链 valueMissing：关 = 未填） | `boolean` | — |
 | `size` | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`；error 联动 aria-invalid | `string` | — |
 | `true-value` | 选中时的映射值（读 value getter 取映射值） | `string` | — |

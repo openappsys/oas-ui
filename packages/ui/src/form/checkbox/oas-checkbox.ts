@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 
 /** size 尺寸档（对齐全局三档：勾选框 14/16/18px + 字号联动） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -216,13 +216,18 @@ input:focus-visible {
 /** label for/input id 关联：确定性计数器（SSR 快照可重复，浏览器多实例不冲突） */
 let cbIdCounter = 0
 
-export class OASCheckbox extends OASElement {
+export class OASCheckbox extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'checked',
       'disabled',
       'indeterminate',
       'value',
+      // required 仅驱动原生校验链（valueMissing），不透传内层 input
+      'required',
       'disabled-skip',
       'size',
       'status',
@@ -241,6 +246,10 @@ export class OASCheckbox extends OASElement {
   private input: HTMLInputElement | null = null
   private labelEl: HTMLLabelElement | null = null
   private inputId = ''
+  /** 初始 checked 基线（form.reset 恢复目标）：初始渲染/受控写入跟随 checked 属性刷新 */
+  private initialChecked = false
+  /** 用户交互脏标记（对齐原生 dirty checkedness）：置位后基线冻结，reset 恢复基线并清脏 */
+  private checkedDirty = false
   /** aria-invalid 由 status=error 设置的所有权标志（清理时只移除自己设置的，不动宿主自设值） */
   private invalidByStatus = false
 
@@ -269,11 +278,26 @@ export class OASCheckbox extends OASElement {
     this.input = this.shadow.querySelector('input')
     this.labelEl = this.shadow.querySelector('label')
 
+    // 宿主点击 = 激活控件：外部 label 的合成 click（composedPath 起点 = 宿主）与宿主直接点击同路径，
+    // 转发为内层原生 click（切换 + change 走既有处理器）；与原生「label 点击勾选」行为对齐。
+    // shadow 内部点击（内层 input / 内层 label）path 起点非宿主，天然不重复。
+    this.addEventListener('click', (e) => {
+      if (e.defaultPrevented || this.injectDisabled() || this.isReadonly()) return
+      if (e.composedPath()[0] !== this) return
+      this.input?.click()
+    })
+
     this.inputId = `oas-cb-${++cbIdCounter}`
 
     this.input?.addEventListener('change', () => {
       const checked = this.input!.checked
+      // 用户交互置脏：冻结 reset 基线（对齐原生「用户交互不改 defaultChecked」；
+      // 本组件交互会写回 checked 属性，须与「宿主受控写入刷新基线」区分）
+      this.checkedDirty = true
       this.toggleAttribute('checked', checked)
+      // 勾选切换是值变化点：toggleAttribute 同值时无属性变更、不触发 update，这里兜底同步
+      this.syncFormValue()
+      this.syncValidity()
       this.emit('change', { checked, value: this.getAttr('value', '') })
     })
     // 只读与数量限制拦截：click 阻止默认行为即可阻止勾选切换（键盘 Space 同路径）
@@ -322,6 +346,9 @@ export class OASCheckbox extends OASElement {
     const input = this.input
     if (!input) return
     const checked = this.hasAttr('checked')
+    // form.reset 恢复基线：初始渲染/受控写入（非用户交互的属性变化）跟随 checked 属性刷新；
+    // 用户交互置脏后基线冻结
+    if (!this.checkedDirty) this.initialChecked = checked
     // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入 > 组下发）
     const disabled = this.injectDisabled() || this.hasAttr('data-group-disabled')
     const indeterminate = this.hasAttr('indeterminate')
@@ -359,15 +386,44 @@ export class OASCheckbox extends OASElement {
     if (readonly) input.setAttribute('aria-readonly', 'true')
     else input.removeAttribute('aria-readonly')
 
+    // 原生表单数据 + 校验链同步（form-associated；无 name 时浏览器自动不提交）。
+    // checked 管提交（indeterminate 不影响 FormData，与原生一致）；无 value 属性提交缺省 'on'
+    this.syncFormValue()
+    this.syncValidity()
+
     input.id = this.inputId
     if (this.labelEl) this.labelEl.setAttribute('for', this.inputId)
 
     this.syncNamedSlots()
   }
 
-  /** label 点击聚焦委托：把焦点交给 shadow 内原生 checkbox（配合 oas-form-item 的 label 点击代理） */
-  override focus(options?: FocusOptions): void {
-    this.shadow.querySelector<HTMLInputElement>('input')?.focus(options)
+  /**
+   * 表单值快照（form-associated）：照原生 checkbox 语义——勾选才提交（value 属性为提交值，
+   * 缺省 'on'），未勾返回 null（FormData 不含此项）；indeterminate 不影响提交。
+   * 读 checked 属性（受控源：点击/受控写入均同步到属性），render 前也可安全取值。
+   */
+  protected override getFormValue(): string | null {
+    if (!this.hasAttr('checked')) return null
+    return this.getAttr('value', 'on')
+  }
+
+  /** 原生校验链同步：required 且未勾 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === null) {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复 checked 属性态（受控源），不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    // 恢复初始基线并清脏（与原生 reset 同步清除 dirty checkedness 一致）
+    this.checkedDirty = false
+    this.toggleAttribute('checked', this.initialChecked)
+    if (!this.input) return
+    this.input.checked = this.initialChecked
+    this.syncValidity()
   }
 
   /** 只读判定：单项显式 readonly > 组下发（可聚焦、不切换，与 disabled 表单语义分立） */

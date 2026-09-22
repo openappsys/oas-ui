@@ -442,3 +442,117 @@ describe('OASSwitch RTL 逻辑方向化', () => {
     expect(css).not.toMatch(/\.spinner \{[^}]*[^-a-z](left|right):/)
   })
 })
+
+describe('form-associated（原生表单集成）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const fakeInternals = (el: OASSwitch) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  it('静态声明 formAssociated = true；无 ElementInternals 环境下 labels/form 为 null（静默降级）', () => {
+    expect((OASSwitch as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    const el = mount({})
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('开提交 true-value（缺省 on）；关提交 null（false-value 不进 FormData，照 checkbox「开才提交」语义）', () => {
+    const el = mount({})
+    const fake = fakeInternals(el)
+    sw(el).click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('on')
+    sw(el).click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+
+    const mapped = mount({ 'true-value': 'YES', 'false-value': 'NO' })
+    const fakeMapped = fakeInternals(mapped)
+    sw(mapped).click()
+    expect(fakeMapped.setFormValue).toHaveBeenLastCalledWith('YES')
+    sw(mapped).click()
+    expect(fakeMapped.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('受控 checked 写入同步原生表单数据', () => {
+    const el = mount({})
+    const fake = fakeInternals(el)
+    el.setAttribute('checked', '')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('on')
+    el.removeAttribute('checked')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('formResetCallback：恢复 checked 属性初始态并重同步，不派发事件', () => {
+    const el = mount({ checked: '' }) // 初始开
+    const fake = fakeInternals(el)
+    sw(el).click() // 用户切到关（翻转属性、置脏冻结基线在「开」）
+    expect(el.hasAttribute('checked')).toBe(false)
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.formResetCallback()
+    expect(el.hasAttribute('checked')).toBe(true)
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('on')
+    expect(fired).toBe(0)
+
+    const off = mount() // 初始关
+    const fakeOff = fakeInternals(off)
+    sw(off).click() // 用户切到开
+    off.formResetCallback()
+    expect(off.hasAttribute('checked')).toBe(false)
+    expect(fakeOff.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('required 校验链：关 → valueMissing、开 → 合法；required 属性变化即时重同步', () => {
+    const el = mount({ required: '' })
+    const fake = fakeInternals(el)
+    // 解构断言 flags/message，不编码基类 setValidity 的传参细节（anchor 是否显式传 undefined 属实现细节）
+    const lastFlags = (): unknown => fake.setValidity.mock.calls.at(-1)?.[0]
+    el.setAttribute('size', 'small') // 触发 update 重同步校验链（required+关 → valueMissing）
+    expect(lastFlags()).toEqual({ valueMissing: true })
+    expect(typeof fake.setValidity.mock.calls.at(-1)?.[1]).toBe('string')
+    sw(el).click()
+    expect(lastFlags()).toEqual({})
+    el.removeAttribute('required')
+    expect(lastFlags()).toEqual({})
+    sw(el).click() // 切回关（开态下重加 required 是合法的，先恢复关态再验证）
+    el.setAttribute('required', '')
+    expect(lastFlags()).toEqual({ valueMissing: true })
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mount({})
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(sw(el).disabled).toBe(true)
+    expect(el.hasAttribute('data-disabled')).toBe(true)
+    el.formDisabledCallback(false)
+    expect(sw(el).disabled).toBe(false)
+    expect(el.hasAttribute('data-disabled')).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦内层 button；点击内层不再重复聚焦', () => {
+    const el = mount({})
+    const spy = vi.spyOn(sw(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    sw(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('innerControl 覆盖为内层 button；focus() 转递', () => {
+    const el = mount({})
+    expect((el as unknown as { innerControl: HTMLElement | null }).innerControl).toBe(sw(el))
+    const spy = vi.spyOn(sw(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})

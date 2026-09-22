@@ -254,6 +254,7 @@ onMounted(() => {
 | `label-position` | Label position: `end` (default, dot left / text right) / `start` (text left; mirrors automatically in RTL) | — | — |
 | `name` | Native grouping name (same-name exclusivity across Shadow DOM; a group assigns a unique name automatically) | `string` | — |
 | `readonly` | Readonly: focusable and Tab-reachable, value still submits, but clicks (and Space) plus arrow keys never switch | `boolean` | — |
+| `required` | Required marker (per-element semantics: this item unchecked means valueMissing; group-level any-checked semantics are a known boundary) | `boolean` | — |
 | `size` | Size: `small` (14px) / `medium` (default 16px) / `large` (18px), dot and font scale together; a group-level value cascades to items while an explicit item value wins | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success` (tints the dot; error also sets host aria-invalid) | `string` | — |
 | `value` | Option identifier | `string` | — |

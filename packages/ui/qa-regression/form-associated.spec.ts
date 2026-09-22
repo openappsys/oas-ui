@@ -290,3 +290,163 @@ test('form-associated：input-number 原生关联（label 聚焦 / 数字 FormDa
   expect(r.fdReset, 'reset 后 FormData 回初始值').toBe('3')
   expect(r.reqInvalid, 'required 空值 checkValidity 为 false').toBe(false)
 })
+
+test('form-associated：checkbox 勾选语义（勾选提交 / 未勾不提交 / label 点击勾选 / reset 基线 / required）', async ({
+  page,
+}) => {
+  await page.goto('/components/checkbox.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-checkbox')
+
+  const r = await page.evaluate(async () => {
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <label for="fa-cb">接受协议</label>
+      <oas-checkbox id="fa-cb" name="agree" value="yes"></oas-checkbox>
+      <oas-checkbox id="fa-cb-req" name="must" required></oas-checkbox>
+    `
+    document.body.append(form)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaCb extends HTMLElement {
+      shadowRoot: ShadowRoot
+      labels: NodeList | null
+      checkValidity(): boolean
+    }
+    const el = document.getElementById('fa-cb') as unknown as FaCb
+    const label = document.querySelector('label[for="fa-cb"]') as HTMLLabelElement
+
+    // 未勾：不进 FormData
+    const fdUnchecked = new FormData(form).get('agree')
+
+    // label 点击 → 勾选 + 聚焦（原生行为对齐）
+    label.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const checkedAfterLabel = el.hasAttribute('checked')
+    const innerFocused = el.shadowRoot.activeElement === el.shadowRoot.querySelector('input')
+    const fdChecked = new FormData(form).get('agree')
+    const labelsLen = el.labels?.length ?? -1
+
+    // reset → 回初始未勾（label 交互不污染基线）
+    form.reset()
+    await new Promise((res) => setTimeout(res, 0))
+    const resetChecked = el.hasAttribute('checked')
+
+    const req = document.getElementById('fa-cb-req') as unknown as FaCb
+    const reqInvalid = req.checkValidity()
+
+    form.remove()
+    return { fdUnchecked, checkedAfterLabel, innerFocused, fdChecked, labelsLen, resetChecked, reqInvalid }
+  })
+
+  expect(r.fdUnchecked, '未勾不进 FormData').toBe(null)
+  expect(r.checkedAfterLabel, 'label 点击勾选（原生对齐）').toBe(true)
+  expect(r.innerFocused, 'label 点击同时聚焦内层 input').toBe(true)
+  expect(r.fdChecked, '勾选后 FormData 提交 value').toBe('yes')
+  expect(r.labelsLen, 'label for 原生关联').toBe(1)
+  expect(r.resetChecked, 'reset 回初始未勾（交互不污染基线）').toBe(false)
+  expect(r.reqInvalid, 'required 未勾 checkValidity 为 false').toBe(false)
+})
+
+test('form-associated：radio 组语义（选中提交 / 互斥只留选中项 / label 点击选中 / reset 恢复默认选中）', async ({
+  page,
+}) => {
+  await page.goto('/components/radio.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-radio')
+
+  const r = await page.evaluate(async () => {
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <label for="fa-ra">选项 A</label>
+      <oas-radio id="fa-ra" name="choice" value="a"></oas-radio>
+      <oas-radio id="fa-rb" name="choice" value="b" checked></oas-radio>
+    `
+    document.body.append(form)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaRadio extends HTMLElement {
+      shadowRoot: ShadowRoot
+      labels: NodeList | null
+    }
+    const a = document.getElementById('fa-ra') as unknown as FaRadio
+    const b = document.getElementById('fa-rb') as unknown as FaRadio
+    const labelA = document.querySelector('label[for="fa-ra"]') as HTMLLabelElement
+
+    // 初始：b 选中 → FormData 只含 b
+    const fdInitial = new FormData(form).get('choice')
+
+    // label 点击 a → a 选中、b 互斥清除；FormData 只剩 a
+    labelA.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const aChecked = a.hasAttribute('checked')
+    const bChecked = b.hasAttribute('checked')
+    const fdAfter = new FormData(form).get('choice')
+    const entriesAfter = [...new FormData(form).entries()].filter(([k]) => k === 'choice').length
+    const labelsLen = a.labels?.length ?? -1
+
+    // reset：b 恢复初始选中（基线未被互斥清除冲刷）
+    form.reset()
+    await new Promise((res) => setTimeout(res, 0))
+    const bReset = b.hasAttribute('checked')
+
+    form.remove()
+    return { fdInitial, aChecked, bChecked, fdAfter, entriesAfter, labelsLen, bReset }
+  })
+
+  expect(r.fdInitial, '初始 FormData 为默认选中项').toBe('b')
+  expect(r.aChecked, 'label 点击选中 a（原生对齐）').toBe(true)
+  expect(r.bChecked, 'b 被互斥清除').toBe(false)
+  expect(r.fdAfter, 'FormData 切换为选中项 a').toBe('a')
+  expect(r.entriesAfter, '同名只提交一条').toBe(1)
+  expect(r.labelsLen, 'label for 原生关联').toBe(1)
+  expect(r.bReset, 'reset 恢复默认选中项 b').toBe(true)
+})
+
+test('form-associated：switch 勾选语义（开提交 / 关不提交 / label 点击切换 / innerControl=button）', async ({
+  page,
+}) => {
+  await page.goto('/components/switch.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-switch')
+
+  const r = await page.evaluate(async () => {
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <label for="fa-sw">开启通知</label>
+      <oas-switch id="fa-sw" name="notify"></oas-switch>
+    `
+    document.body.append(form)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaSw extends HTMLElement {
+      shadowRoot: ShadowRoot
+      labels: NodeList | null
+    }
+    const el = document.getElementById('fa-sw') as unknown as FaSw
+    const label = document.querySelector('label[for="fa-sw"]') as HTMLLabelElement
+    const btn = el.shadowRoot.querySelector('button')!
+
+    const fdOff = new FormData(form).get('notify')
+
+    // label 点击 → 切换为开 + 聚焦内层 button
+    label.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const onAfterLabel = el.hasAttribute('checked')
+    const btnFocused = el.shadowRoot.activeElement === btn
+    const fdOn = new FormData(form).get('notify')
+    const labelsLen = el.labels?.length ?? -1
+
+    // 再点 label → 关（切换语义，非只开）
+    label.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const offAgain = !el.hasAttribute('checked')
+
+    form.remove()
+    return { fdOff, onAfterLabel, btnFocused, fdOn, labelsLen, offAgain }
+  })
+
+  expect(r.fdOff, '关不进 FormData').toBe(null)
+  expect(r.onAfterLabel, 'label 点击切换为开').toBe(true)
+  expect(r.btnFocused, 'label 点击聚焦内层 button（innerControl 覆盖生效）').toBe(true)
+  expect(r.fdOn, '开后 FormData 提交缺省 on').toBe('on')
+  expect(r.labelsLen, 'label for 原生关联').toBe(1)
+  expect(r.offAgain, '再次 label 点击切回关').toBe(true)
+})

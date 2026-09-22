@@ -271,9 +271,10 @@ onMounted(() => {
 | `indeterminate` | Indeterminate state (visual only; clicking still toggles the two-state value; aria-checked syncs to mixed) | `boolean` | — |
 | `label-position` | Label position: `end` (default, box left / text right) / `start` (text left; mirrors automatically in RTL) | — | — |
 | `readonly` | Readonly: focusable and Tab-reachable, value still submits, but clicks (and Space) never toggle (distinct form semantics from disabled) | `boolean` | — |
+| `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner input) | `boolean` | — |
 | `size` | Size: `small` (14px) / `medium` (default 16px) / `large` (18px), box and font scale together; a group-level value cascades to items while an explicit item value wins | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success` (tints the box; error also sets host aria-invalid) | `string` | — |
-| `value` | Option identifier | `string` | — |
+| `value` | Option identifier | `string` | `on` |
 | `variant` | Variant: `default` / `card` (whole block clickable, selected border tint, hover feedback) | `string` | — |
 
 #### Events

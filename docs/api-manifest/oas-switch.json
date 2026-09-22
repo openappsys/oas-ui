@@ -72,6 +72,11 @@
       "observed": true
     },
     {
+      "name": "required",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "status",
       "type": "string",
       "default": "",
