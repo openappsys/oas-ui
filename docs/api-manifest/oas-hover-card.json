@@ -134,6 +134,19 @@
       "name": "title"
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-hover-card-arrow-width",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-hover-card-arrow-height",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-hover-card-arrow-radius",
+      "default": "0"
+    }
+  ],
   "unresolved": []
 }

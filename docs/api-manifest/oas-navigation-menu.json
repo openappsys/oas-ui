@@ -81,6 +81,18 @@
     {
       "name": "--oas-nav-panel-max-height",
       "default": "60vh"
+    },
+    {
+      "name": "--oas-navigation-menu-arrow-width",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-navigation-menu-arrow-height",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-navigation-menu-arrow-radius",
+      "default": "0"
     }
   ],
   "unresolved": []

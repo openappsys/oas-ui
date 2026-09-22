@@ -298,3 +298,11 @@ onMounted(() => {
 | 默认 | 触发器（首个非 `slot="content"` 子元素），hover/focus 触发 |
 | `content` | 富内容插槽：卡片内的自由 HTML 预览（链接/按钮等，可交互） |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-hover-card-arrow-height` | `12px` |
+| `--oas-hover-card-arrow-radius` | `0` |
+| `--oas-hover-card-arrow-width` | `12px` |

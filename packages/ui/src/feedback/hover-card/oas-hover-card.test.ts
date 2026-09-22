@@ -292,15 +292,17 @@ describe('OASHoverCard', () => {
     await Promise.resolve()
     expect(card(el).getAttribute('data-placement')).toBe('bottom-start')
     const cs = window.getComputedStyle(card(el).querySelector<HTMLElement>('[data-popper-arrow]')!)
-    // bottom 系 → 箭头悬面板顶边
-    expect(cs.getPropertyValue('top')).toBe('-6px')
+    // bottom 系 → 箭头悬面板顶边（happy-dom 对 calc(var()/…) 不求最终数值，
+    // 锁「token 回退 12px 后半值外探」的表达式形态；真实浏览器得 -6px，由 e2e 验证）
+    expect(cs.getPropertyValue('top')).toBe('calc(12px / -2)')
     // -start 对齐：箭头内联偏移指向锚点中心投影（对准宿主）；
     // center 对齐（无 arrow-point-at-center）走 calc 居中兜底
     expect(cs.getPropertyValue('left')).toBe('56px') // 360 - 300 - 4
     el.setAttribute('placement', 'bottom')
     await Promise.resolve()
     const cs2 = window.getComputedStyle(card(el).querySelector<HTMLElement>('[data-popper-arrow]')!)
-    expect(cs2.getPropertyValue('left')).toBe('calc(50% - 6px)')
+    // center 对齐（无 arrow-point-at-center）走 calc 居中兜底（token 分量半值，happy-dom 不求最终数值）
+    expect(cs2.getPropertyValue('left')).toBe('calc(50% - 12px / 2)')
   })
 
   // —— oas-open-change ——

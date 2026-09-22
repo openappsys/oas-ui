@@ -423,6 +423,10 @@ onMounted(async () => {
 
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-tour-arrow-align-offset` | `16px` |
+| `--oas-tour-arrow-height` | `12px` |
+| `--oas-tour-arrow-radius` | `0` |
+| `--oas-tour-arrow-width` | `12px` |
 | `--oas-tour-mask-color` | `var(--oas-color-overlay)` |
 | `--oas-tour-popup-bg` | `var(--oas-color-bg)` |
 

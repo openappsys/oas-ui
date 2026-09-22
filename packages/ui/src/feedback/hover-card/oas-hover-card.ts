@@ -126,8 +126,9 @@ const STYLE = `
    取「汇于尖端」的两条外露边带边框色，与面板 1px 描边无缝衔接。 */
 .arrow {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: var(--oas-hover-card-arrow-width, 12px);
+  height: var(--oas-hover-card-arrow-height, 12px);
+  border-radius: var(--oas-hover-card-arrow-radius, 0);
   box-sizing: border-box;
   background: var(--oas-color-bg);
   transform: rotate(45deg);
@@ -137,32 +138,32 @@ const STYLE = `
 .card[data-placement='bottom'] .arrow,
 .card[data-placement='bottom-start'] .arrow,
 .card[data-placement='bottom-end'] .arrow {
-  top: -6px;
-  left: calc(50% - 6px);
+  top: calc(var(--oas-hover-card-arrow-height, 12px) / -2);
+  left: calc(50% - var(--oas-hover-card-arrow-width, 12px) / 2);
   border-top: 1px solid var(--oas-color-border);
   border-left: 1px solid var(--oas-color-border);
 }
 .card[data-placement='top'] .arrow,
 .card[data-placement='top-start'] .arrow,
 .card[data-placement='top-end'] .arrow {
-  bottom: -6px;
-  left: calc(50% - 6px);
+  bottom: calc(var(--oas-hover-card-arrow-height, 12px) / -2);
+  left: calc(50% - var(--oas-hover-card-arrow-width, 12px) / 2);
   border-right: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
 }
 .card[data-placement='left'] .arrow,
 .card[data-placement='left-start'] .arrow,
 .card[data-placement='left-end'] .arrow {
-  right: -6px;
-  top: calc(50% - 6px);
+  right: calc(var(--oas-hover-card-arrow-width, 12px) / -2);
+  top: calc(50% - var(--oas-hover-card-arrow-height, 12px) / 2);
   border-top: 1px solid var(--oas-color-border);
   border-right: 1px solid var(--oas-color-border);
 }
 .card[data-placement='right'] .arrow,
 .card[data-placement='right-start'] .arrow,
 .card[data-placement='right-end'] .arrow {
-  left: -6px;
-  top: calc(50% - 6px);
+  left: calc(var(--oas-hover-card-arrow-width, 12px) / -2);
+  top: calc(50% - var(--oas-hover-card-arrow-height, 12px) / 2);
   border-left: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
 }

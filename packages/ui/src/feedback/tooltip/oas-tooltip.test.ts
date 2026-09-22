@@ -1893,10 +1893,14 @@ describe('OAStooltip 增强能力（2026-09）', () => {
     expect(css).toContain('.tip.tip-enter { animation: none; }')
   })
 
-  it('P5 箭头尺寸走 CSS 变量 token --oas-tooltip-arrow-size', () => {
+  it('P5 箭头形状走 token（width/height 独立，回退链含既有 --oas-tooltip-arrow-size）', () => {
     const css = styleCss(mount())
-    expect(css).toContain('width: var(--oas-tooltip-arrow-size, 12px);')
-    expect(css).toContain('top: calc(var(--oas-tooltip-arrow-size, 12px) / -2);')
+    // 新 token 宽高独立（宽高比 = 三角高与角度）；既有 --oas-tooltip-arrow-size 保留为回退（向后兼容）
+    expect(css).toContain('width: var(--oas-tooltip-arrow-width, var(--oas-tooltip-arrow-size, 12px));')
+    expect(css).toContain('height: var(--oas-tooltip-arrow-height, var(--oas-tooltip-arrow-size, 12px));')
+    expect(css).toContain('top: calc(var(--oas-tooltip-arrow-height, var(--oas-tooltip-arrow-size, 12px)) / -2);')
+    expect(css).toContain('border-radius: var(--oas-tooltip-arrow-radius, 0);')
+    expect(css).toContain('left: var(--oas-tooltip-arrow-align-offset, 16px);')
   })
 
   // ---------- P6 定位引擎高级项透传 ----------

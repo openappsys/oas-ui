@@ -320,6 +320,18 @@
     {
       "name": "--oas-origin-y",
       "default": "center"
+    },
+    {
+      "name": "--oas-popover-arrow-width",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-popover-arrow-height",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-popover-arrow-radius",
+      "default": "0"
     }
   ],
   "unresolved": []
