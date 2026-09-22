@@ -376,6 +376,7 @@ onMounted(() => {
 | `prefix-icon` | 前置图标名 | `string` | — |
 | `prefix-text` | 内嵌前置文案（纯 HTML 可沿用遗留别名 prefix） | `string` | — |
 | `readonly` | 只读 | `boolean` | — |
+| `required` | 必填标记（透传原生 input；驱动原生校验链 valueMissing） | `boolean` | — |
 | `show-clear-on` | 清除按钮显隐：`always`（默认常显）/ `hover` / `focus` | `string` | — |
 | `show-count` | 显示字数统计（右下角，超限标 danger） | `boolean` | — |
 | `show-password` | 密码可见切换（`type="password"` 时渲染眼睛按钮） | `boolean` | — |

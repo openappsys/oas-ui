@@ -232,6 +232,7 @@ onMounted(() => {
 | `precision` | 小数位数 | `string` | — |
 | `prefix-text` | 内嵌前缀文案（slot="prefix" 可分发任意内容，不参与数值解析） | `string` | — |
 | `readonly` | 只读：可聚焦可复制可提交，按钮禁用 + aria-readonly，键盘/滚轮不改值 | `boolean` | — |
+| `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层 input） | `boolean` | — |
 | `size` | 尺寸档位 `sm` / `md`（默认）/ `lg`：控高与字号联动 | — | — |
 | `status` | 校验态：`error` / `warning` / `success` 边框语义色 | — | — |
 | `step` | 步长 | `string` | `1` |

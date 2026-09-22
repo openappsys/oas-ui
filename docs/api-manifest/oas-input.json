@@ -134,6 +134,11 @@
     {
       "name": "auto-width-max",
       "observed": true
+    },
+    {
+      "name": "required",
+      "type": "boolean",
+      "observed": false
     }
   ],
   "props": [

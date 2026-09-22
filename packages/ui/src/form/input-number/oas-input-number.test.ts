@@ -638,3 +638,125 @@ describe('OASInputNumber focus 委托与水合结构', () => {
     expect(el.shadowRoot!.querySelector('button[part="down"]')).not.toBeNull()
   })
 })
+
+describe('OASInputNumber form-associated（原生表单集成）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const fakeInternals = (el: OASInputNumber) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  it('静态声明 formAssociated = true；无 ElementInternals 环境下 labels/form 为 null（静默降级）', () => {
+    expect((OASInputNumber as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    const el = mount({})
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('键入 / 受控写入同步原生表单数据（提交制只约束事件派发，FormData 走实时解析值）', () => {
+    const el = mount({ value: '5', name: 'count' })
+    const fake = fakeInternals(el)
+
+    // 键入（不提交）：FormData 反映实时解析值
+    type(el, '9')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('9')
+
+    // 受控写入：value 属性变更 → update 增量同步
+    el.setAttribute('value', '7')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('7')
+  })
+
+  it('步进按钮改变值后同步原生表单数据（步进 = 值变化点）', () => {
+    const el = mount({ value: '5' })
+    const fake = fakeInternals(el)
+    upBtn(el).click()
+    expect(el.getAttribute('value')).toBe('6')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('6')
+  })
+
+  it('空值与非法键入同步空串（对齐原生 badInput 语义，不出现 "NaN" 字面量）', () => {
+    const el = mount({ value: '5', clearable: '' })
+    const fake = fakeInternals(el)
+
+    // 清除按钮 → 空值态 → FormData ''
+    clearBtn(el).click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('')
+
+    // 非法键入 → '' 而非 'NaN'
+    type(el, 'abc')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('')
+  })
+
+  it('required 校验链：空值 valueMissing、有值恢复；required 属性运行时增删即时生效', () => {
+    const el = mount({ name: 'count', required: '' })
+    const fake = fakeInternals(el)
+
+    // 有值 → 合法（mount 时的初始同步发生在注入 fake 之前，从键入开始观察）
+    type(el, '9')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+
+    // 键入清空 → 实时值为空 → valueMissing（message 走 translator，断言不限文案；基类三参调用）
+    type(el, '')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({ valueMissing: true }, expect.any(String), undefined)
+
+    // 受控写入有值 → 恢复合法
+    el.setAttribute('value', '3')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+
+    // 运行时移除 required（observedAttributes 已含）→ 空值也合法
+    el.removeAttribute('required')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('formResetCallback：恢复 value 属性初始值并重同步，不派发事件', () => {
+    const el = mount({ value: '5', name: 'count' })
+    const fake = fakeInternals(el)
+    let changeCount = 0
+    el.addEventListener('oas-change', () => changeCount++)
+
+    type(el, '9')
+    expect(input(el).value).toBe('9')
+    el.formResetCallback()
+    expect(input(el).value).toBe('5')
+    expect(el.getAttribute('value')).toBe('5')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('5')
+    expect(changeCount, 'reset 不派发 oas-change（与原生一致）').toBe(0)
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mount({})
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(input(el).disabled).toBe(true)
+    expect(el.hasAttribute('data-disabled')).toBe(true)
+    expect(upBtn(el).disabled).toBe(true)
+    el.formDisabledCallback(false)
+    expect(input(el).disabled).toBe(false)
+    expect(el.hasAttribute('data-disabled')).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦 shadow 内真实 input；点击内层不再重复聚焦', () => {
+    const el = mount({})
+    const spy = vi.spyOn(input(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    input(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('focus() 转到 shadow 内真实 input', () => {
+    const el = mount({})
+    const spy = vi.spyOn(input(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})

@@ -110,6 +110,7 @@
     },
     {
       "name": "required",
+      "type": "boolean",
       "observed": true
     },
     {
