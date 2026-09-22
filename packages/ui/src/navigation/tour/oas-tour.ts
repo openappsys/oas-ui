@@ -345,11 +345,13 @@ const STYLE = `
   accent-color: var(--oas-color-primary);
 }
 
-/* 箭头：8px 方块旋转 45°，底色随弹层（default 用弹层底、primary 用主色） */
+/* 箭头：形状走 token（--oas-tour-arrow-width/height 默认 12px；--oas-tour-arrow-radius 默认 0），
+   方块旋转 45°，底色随弹层（default 用弹层底、primary 用主色） */
 .arrow {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: var(--oas-tour-arrow-width, 12px);
+  height: var(--oas-tour-arrow-height, 12px);
+  border-radius: var(--oas-tour-arrow-radius, 0);
   background: var(--oas-tour-popup-bg, var(--oas-color-bg));
   transform: rotate(45deg);
   pointer-events: none;
@@ -358,40 +360,42 @@ const STYLE = `
   background: var(--oas-color-primary);
 }
 .popup[data-placement^='bottom'] .arrow {
-  top: -6px;
+  top: calc(var(--oas-tour-arrow-height, 12px) / -2);
 }
 .popup[data-placement^='top'] .arrow {
-  bottom: -6px;
+  bottom: calc(var(--oas-tour-arrow-height, 12px) / -2);
 }
 .popup[data-placement^='left'] .arrow {
-  right: -6px;
+  right: calc(var(--oas-tour-arrow-width, 12px) / -2);
 }
 .popup[data-placement^='right'] .arrow {
-  left: -6px;
+  left: calc(var(--oas-tour-arrow-width, 12px) / -2);
 }
+/* 交叉轴：center 居中（既有视觉为「中心 -2px」偏移，分量换算保持）；start/end 靠侧，
+   偏移走 --oas-tour-arrow-align-offset 默认 16px（命名取 align-offset 与 tooltip 统一） */
 .popup[data-placement='top'] .arrow,
 .popup[data-placement='bottom'] .arrow {
-  left: calc(50% - 4px);
+  left: calc(50% - var(--oas-tour-arrow-width, 12px) / 2 + 2px);
 }
 .popup[data-placement='top-start'] .arrow,
 .popup[data-placement='bottom-start'] .arrow {
-  left: 16px;
+  left: var(--oas-tour-arrow-align-offset, 16px);
 }
 .popup[data-placement='top-end'] .arrow,
 .popup[data-placement='bottom-end'] .arrow {
-  right: 16px;
+  right: var(--oas-tour-arrow-align-offset, 16px);
 }
 .popup[data-placement='left'] .arrow,
 .popup[data-placement='right'] .arrow {
-  top: calc(50% - 4px);
+  top: calc(50% - var(--oas-tour-arrow-height, 12px) / 2 + 2px);
 }
 .popup[data-placement='left-start'] .arrow,
 .popup[data-placement='right-start'] .arrow {
-  top: 16px;
+  top: var(--oas-tour-arrow-align-offset, 16px);
 }
 .popup[data-placement='left-end'] .arrow,
 .popup[data-placement='right-end'] .arrow {
-  bottom: 16px;
+  bottom: var(--oas-tour-arrow-align-offset, 16px);
 }
 .popup[data-placement='center'] .arrow {
   display: none;

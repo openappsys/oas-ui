@@ -206,6 +206,9 @@ onMounted(() => {
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-nav-panel-max-height` | `60vh` |
+| `--oas-navigation-menu-arrow-height` | `12px` |
+| `--oas-navigation-menu-arrow-radius` | `0` |
+| `--oas-navigation-menu-arrow-width` | `12px` |
 
 ### oas-navigation-menu-item
 

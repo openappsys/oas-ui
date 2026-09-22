@@ -461,6 +461,9 @@ onMounted(() => {
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-dropdown-arrow-height` | `12px` |
+| `--oas-dropdown-arrow-radius` | `0` |
+| `--oas-dropdown-arrow-width` | `12px` |
 | `--oas-origin-x` | `center` |
 | `--oas-origin-y` | `center` |
 

@@ -298,3 +298,11 @@ Hover is unreliable on touch devices (`pointer: coarse`): the hover card automat
 | default | Trigger (first non-`slot="content"` child), triggered on hover/focus |
 | `content` | Rich content slot: free-form HTML preview inside the card (links/buttons etc., interactive) |
 | `title` | Rich title content slot, overrides the title attribute text when present |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-hover-card-arrow-height` | `12px` |
+| `--oas-hover-card-arrow-radius` | `0` |
+| `--oas-hover-card-arrow-width` | `12px` |
