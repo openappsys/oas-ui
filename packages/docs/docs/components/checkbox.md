@@ -270,9 +270,10 @@ onMounted(() => {
 | `indeterminate` | 半选状态（仅视觉，点击仍按两态切换；aria-checked 同步 mixed） | `boolean` | — |
 | `label-position` | 标签位置：`end`（默认，框左文右）/ `start`（文左框右；RTL 下自动镜像） | — | — |
 | `readonly` | 只读：可聚焦可进 Tab 序、值照常提交，但点击（含 Space）不切换（与 disabled 表单语义分立） | `boolean` | — |
+| `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层 input） | `boolean` | — |
 | `size` | 尺寸档：`small`（14px）/ `medium`（默认 16px）/ `large`（18px），勾选框与字号联动；组级设置统一下发子项，单项显式优先 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`（勾选框着色；error 联动宿主 aria-invalid） | `string` | — |
-| `value` | 选项标识 | `string` | — |
+| `value` | 选项标识 | `string` | `on` |
 | `variant` | 形态：`default`（默认）/ `card`（卡片：整块可点、选中描边着色、hover 反馈） | `string` | — |
 
 #### 事件

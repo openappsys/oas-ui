@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 
 /** size 尺寸档（与 checkbox 同批对齐：圆点 14/16/18px + 字号联动） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -188,13 +188,17 @@ input:focus-visible {
 /** label for/input id 关联：确定性计数器（SSR 快照可重复，浏览器多实例不冲突） */
 let radioIdCounter = 0
 
-export class OASRadio extends OASElement {
+export class OASRadio extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'checked',
       'disabled',
       'value',
       'name',
+      'required',
       'disabled-skip',
       'size',
       'status',
@@ -212,6 +216,10 @@ export class OASRadio extends OASElement {
   private input: HTMLInputElement | null = null
   private labelEl: HTMLLabelElement | null = null
   private inputId = ''
+  /** 初始 checked 基线（form.reset 恢复目标）：初始渲染/受控写入跟随 checked 属性刷新 */
+  private initialChecked = false
+  /** 用户交互脏标记（对齐原生 dirty checkedness）：置位后基线冻结，reset 恢复基线并清脏 */
+  private checkedDirty = false
   /** aria-invalid 由 status=error 设置的所有权标志（清理时只移除自己设置的，不动宿主自设值） */
   private invalidByStatus = false
 
@@ -240,13 +248,26 @@ export class OASRadio extends OASElement {
     this.labelEl = this.shadow.querySelector('label')
     this.inputId = `oas-radio-${++radioIdCounter}`
 
+    // 宿主点击 = 激活控件：外部 label 的合成 click（composedPath 起点 = 宿主）与宿主直接点击同路径，
+    // 未选中时转发为内层原生 click（选中 + change 走既有处理器）；已选中不取消（原生 radio 行为）。
+    this.addEventListener('click', (e) => {
+      if (e.defaultPrevented || this.injectDisabled() || this.isReadonly()) return
+      if (e.composedPath()[0] !== this) return
+      if (!this.hasAttr('checked')) this.input?.click()
+    })
+
     this.input?.addEventListener('change', () => {
       const checked = this.input!.checked
+      // 用户交互置脏：冻结 reset 基线（对齐原生「用户交互不改 defaultChecked」）
+      this.checkedDirty = true
       this.toggleAttribute('checked', checked)
       // 原生 radio 的同名互斥只在同一 shadow root 内生效；每个 oas-radio 的 input 位于各自 shadow，
       // 需在 host 层（light DOM）按 name 全文档互斥，避免同名 radio 同时选中
       if (checked) this.excludeSameName()
       this.emit('change', { checked, value: this.getAttr('value', '') })
+      // 值变化点：同步原生表单数据与校验链（互斥清除的其他项经 checked 属性移除 → update() 各自同步）
+      this.syncFormValue()
+      this.syncValidity()
     })
     // 只读拦截：click 阻止默认行为即可阻止选中（键盘 Space 同路径）
     this.input?.addEventListener('click', (e) => {
@@ -285,6 +306,9 @@ export class OASRadio extends OASElement {
     const input = this.input
     if (!input) return
     const checked = this.hasAttr('checked')
+    // form.reset 恢复基线：初始渲染/受控写入（非用户交互的属性变化）跟随 checked 属性刷新；
+    // 用户交互置脏后基线冻结
+    if (!this.checkedDirty) this.initialChecked = checked
     // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入 > 组下发）
     const disabled = this.injectDisabled() || this.hasAttr('data-group-disabled')
     const name = this.getAttr('name', '')
@@ -327,12 +351,36 @@ export class OASRadio extends OASElement {
     input.id = this.inputId
     if (this.labelEl) this.labelEl.setAttribute('for', this.inputId)
 
+    // 原生表单数据与校验链同步（form-associated；无 name 浏览器自动不提交）
+    this.syncFormValue()
+    this.syncValidity()
+
     this.syncNamedSlots()
   }
 
-  /** label 点击聚焦委托：把焦点交给 shadow 内原生 radio（配合 oas-form-item 的 label 点击代理） */
-  override focus(options?: FocusOptions): void {
-    this.shadow.querySelector<HTMLInputElement>('input')?.focus(options)
+  /** 表单值快照：选中才提交（value 属性为提交值，缺省 'on' 与原生一致）；未选中提交 null */
+  protected override getFormValue(): string | null {
+    if (!this.hasAttr('checked')) return null
+    return this.getAttr('value', '') || 'on'
+  }
+
+  /** 表单 reset：恢复 checked 属性初始选中态，不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    // 恢复初始基线并清脏（与原生 reset 同步清除 dirty checkedness 一致）
+    this.checkedDirty = false
+    this.toggleAttribute('checked', this.initialChecked)
+    if (!this.input) return
+    this.input.checked = this.initialChecked
+    this.input.setAttribute('aria-checked', String(this.input.checked))
+  }
+
+  /** 原生校验链同步：required 且未选中 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && !this.hasAttr('checked')) {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
   }
 
   /** 只读判定：单项显式 readonly > 组下发（可聚焦、不切换，与 disabled 表单语义分立） */
@@ -411,6 +459,9 @@ export class OASRadio extends OASElement {
     for (const other of document.querySelectorAll('oas-radio')) {
       if (other === this) continue
       if (other.getAttribute('name') !== name) continue
+      // 互斥清除视同交互影响：目标置脏冻结其 reset 基线（保留初始书写态），
+      // 否则其基线会被本次清除刷新为「未选中」，reset 无法恢复默认选中项
+      ;(other as OASRadio).checkedDirty = true
       other.removeAttribute('checked')
       const input = other.shadowRoot?.querySelector('input')
       if (input) input.checked = false

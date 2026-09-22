@@ -565,7 +565,8 @@
       "variant": "Variant: `default` / `card` (whole block clickable, selected border tint, hover feedback)",
       "description": "Secondary text rendered below the label; a `slot=\"description\"` distribution takes priority",
       "label-position": "Label position: `end` (default, box left / text right) / `start` (text left; mirrors automatically in RTL)",
-      "check-all": "In-group select-all marker: clicking toggles all items, item changes write back its checked/indeterminate state; the item never joins the group value (cross-component attribute read by oas-checkbox-group)"
+      "check-all": "In-group select-all marker: clicking toggles all items, item changes write back its checked/indeterminate state; the item never joins the group value (cross-component attribute read by oas-checkbox-group)",
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner input)"
     },
     "events": {
       "oas-change": "Checked change, `detail: { checked, value }`",
@@ -2266,7 +2267,8 @@
       "readonly": "Readonly: focusable and Tab-reachable, value still submits, but clicks (and Space) plus arrow keys never switch",
       "variant": "Variant: `default` / `card` (whole block clickable, selected border tint, hover feedback)",
       "description": "Secondary text rendered below the label; a `slot=\"description\"` distribution takes priority",
-      "label-position": "Label position: `end` (default, dot left / text right) / `start` (text left; mirrors automatically in RTL)"
+      "label-position": "Label position: `end` (default, dot left / text right) / `start` (text left; mirrors automatically in RTL)",
+      "required": "Required marker (per-element semantics: this item unchecked means valueMissing; group-level any-checked semantics are a known boundary)"
     },
     "events": {
       "oas-change": "Selection change, `detail: { checked, value }`",
@@ -2699,7 +2701,8 @@
       "true-value": "Mapped value when checked (read via the value getter)",
       "false-value": "Mapped value when unchecked",
       "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid",
-      "aria-label": "Accessible name (host override channel; explicit value wins over label derivation)"
+      "aria-label": "Accessible name (host override channel; explicit value wins over label derivation)",
+      "required": "Required marker (drives the native valueMissing validation chain: off counts as unfilled)"
     },
     "events": {
       "oas-change": "Toggle, `detail: { checked }`",

@@ -253,6 +253,7 @@ onMounted(() => {
 | `label-position` | 标签位置：`end`（默认，框左文右）/ `start`（文左框右；RTL 下自动镜像） | — | — |
 | `name` | 原生分组名（跨 Shadow DOM 同名互斥；组内自动分配唯一 name） | `string` | — |
 | `readonly` | 只读：可聚焦可进 Tab 序、值照常提交，但点击（含 Space）与方向键均不切换 | `boolean` | — |
+| `required` | 必填标记（单元素语义：本项未选中即 valueMissing；组级任一选中语义为已知边界） | `boolean` | — |
 | `size` | 尺寸档：`small`（14px）/ `medium`（默认 16px）/ `large`（18px），圆点与字号联动；组级设置统向下发子项，单项显式优先 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`（圆点着色；error 联动宿主 aria-invalid） | `string` | — |
 | `value` | 选项标识 | `string` | — |
