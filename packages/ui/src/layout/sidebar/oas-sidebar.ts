@@ -1276,13 +1276,22 @@ export class OASSidebar extends OASElement {
     this.update()
   }
 
-  private openDrawer(): void {
+  /**
+   * 公开：编程打开移动抽屉，等价于点击内置触发按钮（`part="trigger"`）。
+   * 仅移动端生效：桌面态设置后由 update 立即回收，不残留浮层；已打开时幂等。
+   * 写入 `drawer-open` 受控属性，宿主可观察/回写；不额外派发事件（沿用既有语义）。
+   */
+  public openDrawer(): void {
     if (this.hasAttr('drawer-open')) return
     this.setAttribute('drawer-open', '')
     this.update()
   }
 
-  private closeDrawer(): void {
+  /**
+   * 公开：编程关闭移动抽屉，等价于点击遮罩 / 关闭按钮 / 按 Esc。
+   * 未打开时幂等；移除 `drawer-open` 受控属性，宿主可观察/回写。
+   */
+  public closeDrawer(): void {
     if (!this.hasAttr('drawer-open')) return
     this.removeAttribute('drawer-open')
     this.update()

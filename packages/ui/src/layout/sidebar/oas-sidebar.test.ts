@@ -193,6 +193,50 @@ describe('OASSidebar（可折叠侧栏）', () => {
     expect(el.shadowRoot!.querySelector('.panel')!.classList.contains('drawer-open')).toBe(false)
   })
 
+  it('公开 API：外部以 OASSidebar 类型直接调用 openDrawer/closeDrawer 开合移动抽屉', () => {
+    stubMatchMedia(true)
+    // 外部视角：变量声明为 OASSidebar（非 any），private 时类型层不可达（typecheck 红）
+    const el: OASSidebar = mount()
+    expect(typeof el.openDrawer, 'openDrawer 应对外可调用').toBe('function')
+    expect(typeof el.closeDrawer, 'closeDrawer 应对外可调用').toBe('function')
+    // 行为与内置 trigger 路径一致：开 → 属性 + 面板/遮罩/关闭按钮态
+    el.openDrawer()
+    expect(el.hasAttribute('drawer-open')).toBe(true)
+    expect(el.shadowRoot!.querySelector('.panel')!.classList.contains('drawer-open')).toBe(true)
+    expect(el.shadowRoot!.querySelector('.mask')!.classList.contains('open')).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.hidden).toBe(false)
+    // 关 → 全部回收
+    el.closeDrawer()
+    expect(el.hasAttribute('drawer-open')).toBe(false)
+    expect(el.shadowRoot!.querySelector('.panel')!.classList.contains('drawer-open')).toBe(false)
+    expect(el.shadowRoot!.querySelector('.mask')!.classList.contains('open')).toBe(false)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.hidden).toBe(true)
+  })
+
+  it('公开 API：openDrawer/closeDrawer 幂等（重复调用不产生额外状态切换）', () => {
+    stubMatchMedia(true)
+    const el: OASSidebar = mount()
+    el.openDrawer()
+    el.openDrawer()
+    expect(el.hasAttribute('drawer-open')).toBe(true)
+    expect(el.shadowRoot!.querySelector('.panel')!.classList.contains('drawer-open')).toBe(true)
+    el.closeDrawer()
+    el.closeDrawer()
+    expect(el.hasAttribute('drawer-open')).toBe(false)
+    expect(el.shadowRoot!.querySelector('.panel')!.classList.contains('drawer-open')).toBe(false)
+  })
+
+  it('公开 API：桌面态调用 openDrawer/closeDrawer 不残留抽屉浮层（与受控语义一致）', () => {
+    stubMatchMedia(false)
+    const el: OASSidebar = mount()
+    el.openDrawer()
+    expect(el.hasAttribute('drawer-open'), '桌面态不得残留 drawer-open').toBe(false)
+    expect(el.shadowRoot!.querySelector('.panel')!.classList.contains('drawer-open')).toBe(false)
+    expect(el.shadowRoot!.querySelector('.mask')!.classList.contains('open')).toBe(false)
+    el.closeDrawer()
+    expect(el.hasAttribute('drawer-open')).toBe(false)
+  })
+
   it('断开连接后清理 document 监听（重挂载不残留）', () => {
     stubMatchMedia(true)
     const el = mount()
