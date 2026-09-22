@@ -203,6 +203,7 @@ onMounted(() => {
 | `options` | Options, JSON array `[{ label, value, disabled?, group? }]` (group is the group title) | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | `string` | — |
 | `readonly` | Readonly (focusable & copyable, not editable; focus and keyboard never open suggestions) | `boolean` | — |
+| `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `size` | Size tier: small / medium / large (default medium, follows the nearest config-provider injection) | `string` | `medium` |
 | `status` | Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation) | `string` | — |
 | `trigger-on-focus` | Show suggestions on focus (datalist mental model; off by default — input-first) | `boolean` | — |

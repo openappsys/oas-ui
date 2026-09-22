@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASSelect } from './index.js'
 import '../../framework/config-provider/index.js'
 
@@ -1543,5 +1543,190 @@ describe('OASSelect 下拉高度 CSS 变量', () => {
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toContain('@media (pointer: coarse)')
     expect(css).toContain('var(--oas-touch-target-min, 44px)')
+  })
+})
+
+describe('OASSelect form-associated（原生表单集成）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** happy-dom 不支持 attachInternals → 替身注入验证 plumbing；真实原生关联走浏览器 e2e */
+  const fakeInternals = (el: OASSelect) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  it('静态声明 formAssociated = true；required/name 进入 observedAttributes；无 ElementInternals 环境降级', () => {
+    expect((OASSelect as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    expect(OASSelect.observedAttributes).toEqual(expect.arrayContaining(['required', 'name']))
+    const el = mount({})
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('单选提交：选中值字符串；无选中提交 null（FormData 不含此项）', () => {
+    const named = mount({ value: 'apple', name: 'fruit' })
+    const fakeNamed = fakeInternals(named)
+    named.setAttribute('size', 'small') // 触发 update → 同步 FormData
+    expect(fakeNamed.setFormValue).toHaveBeenLastCalledWith('apple')
+
+    const empty = mount({})
+    const fakeEmpty = fakeInternals(empty)
+    empty.setAttribute('size', 'small')
+    expect(fakeEmpty.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('点击选中同步 FormData（单选）', () => {
+    const el = mount()
+    const fake = fakeInternals(el)
+    open(el)
+    const rows = el.shadowRoot!.querySelectorAll('[role="option"]')
+    ;(rows[1] as HTMLElement).click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('banana')
+  })
+
+  it('受控 value 写入同步 FormData（单选/多选）', () => {
+    const el = mount({ name: 'fruit' })
+    const fake = fakeInternals(el)
+    el.setAttribute('value', 'orange')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('orange')
+
+    const multi = mount({ multiple: '', name: 'tags' })
+    const fakeMulti = fakeInternals(multi)
+    multi.setAttribute('value', JSON.stringify(['apple']))
+    const arg = fakeMulti.setFormValue.mock.calls.at(-1)?.[0]
+    expect(arg).toBeInstanceOf(FormData)
+    expect((arg as FormData).getAll('tags')).toEqual(['apple'])
+  })
+
+  it('多选提交同名多条 FormData（key=name 属性），无选中提交 null', () => {
+    const el = mount({ multiple: '', value: JSON.stringify(['apple', 'banana']), name: 'tags' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0]
+    expect(arg).toBeInstanceOf(FormData)
+    expect((arg as FormData).getAll('tags')).toEqual(['apple', 'banana'])
+
+    const empty = mount({ multiple: '', name: 'tags' })
+    const fakeEmpty = fakeInternals(empty)
+    empty.setAttribute('size', 'small')
+    expect(fakeEmpty.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('多选逐项点击同步：FormData 跟随选中集增减', () => {
+    const el = mount({ multiple: '', name: 'tags' })
+    const fake = fakeInternals(el)
+    open(el)
+    const rows = () => [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    ;(rows()[0] as HTMLElement).click()
+    let arg = fake.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(arg).toBeInstanceOf(FormData)
+    expect(arg.getAll('tags')).toEqual(['apple'])
+    ;(rows()[1] as HTMLElement).click()
+    arg = fake.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(arg.getAll('tags')).toEqual(['apple', 'banana'])
+  })
+
+  it('清空按钮同步 null（单选）/ 空集（多选）', () => {
+    const single = mount({ clearable: '', value: 'apple', name: 'fruit' })
+    const fakeSingle = fakeInternals(single)
+    single.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.click()
+    expect(fakeSingle.setFormValue).toHaveBeenLastCalledWith(null)
+
+    const multi = mount({ multiple: '', clearable: '', value: JSON.stringify(['apple']), name: 'tags' })
+    const fakeMulti = fakeInternals(multi)
+    multi.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.click()
+    expect(fakeMulti.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('formResetCallback：用户选过后恢复初始基线（空），不派发事件，reset 后可继续选择', () => {
+    const el = mount({ name: 'fruit' })
+    const fake = fakeInternals(el)
+    let changes = 0
+    el.addEventListener('oas-change', () => changes++)
+    open(el)
+    ;(el.shadowRoot!.querySelectorAll('[role="option"]')[0] as HTMLElement).click()
+    expect(el.getAttribute('value')).toBe('apple')
+    el.formResetCallback()
+    expect(el.hasAttribute('value')).toBe(false)
+    expect(trigger(el).textContent).toContain('请选择')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+    // 计数 = 1 全部来自上面的用户点击；reset 本身不再派发（与原生 reset 一致）
+    expect(changes, 'reset 不派发 oas-change').toBe(1)
+    // reset 已清脏：行为可重复（再选 → 再 reset 回空基线）
+    open(el)
+    ;(el.shadowRoot!.querySelectorAll('[role="option"]')[2] as HTMLElement).click()
+    expect(el.getAttribute('value')).toBe('orange')
+    el.formResetCallback()
+    expect(el.hasAttribute('value')).toBe(false)
+  })
+
+  it('受控写入刷新基线：reset 恢复受控写入后的值，不是挂载初值', () => {
+    const el = mount({ name: 'fruit' })
+    el.setAttribute('value', 'apple') // 受控写入建立新基线
+    open(el)
+    ;(el.shadowRoot!.querySelectorAll('[role="option"]')[1] as HTMLElement).click() // 用户选 banana（置脏）
+    expect(el.getAttribute('value')).toBe('banana')
+    el.formResetCallback()
+    expect(el.getAttribute('value')).toBe('apple')
+    expect(trigger(el).textContent).toContain('苹果')
+  })
+
+  it('多选 reset：恢复初始选中集（FormData 回到基线条目）', () => {
+    const el = mount({ multiple: '', value: JSON.stringify(['banana']), name: 'tags' })
+    const fake = fakeInternals(el)
+    open(el)
+    ;(el.shadowRoot!.querySelectorAll('[role="option"]')[0] as HTMLElement).click() // 用户加选 apple
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['banana', 'apple'])
+    el.formResetCallback()
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['banana'])
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(arg.getAll('tags')).toEqual(['banana'])
+  })
+
+  it('required：无选中 valueMissing（message 非空），选中后恢复合法', () => {
+    const el = mount({ required: '', name: 'fruit' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small') // 触发 update → 校验链同步
+    // flag 为 true 时 message 按 Chromium 契约必须非空（基类 setValidity 会显式补 anchor 实参，只查前两个参数）
+    const missing = fake.setValidity.mock.calls.at(-1)
+    expect(missing?.[0]).toEqual({ valueMissing: true })
+    expect(typeof missing?.[1]).toBe('string')
+    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    open(el)
+    ;(el.shadowRoot!.querySelectorAll('[role="option"]')[0] as HTMLElement).click()
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mount({})
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(trigger(el).disabled).toBe(true)
+    el.formDisabledCallback(false)
+    expect(trigger(el).disabled).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦 shadow 内 trigger；点击 trigger 本身不重复聚焦', () => {
+    const el = mount({})
+    const spy = vi.spyOn(trigger(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    trigger(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('focus() 转到 shadow 内 trigger', () => {
+    const el = mount({})
+    const spy = vi.spyOn(trigger(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 })

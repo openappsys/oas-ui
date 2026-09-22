@@ -294,6 +294,7 @@ onMounted(() => {
 | `placeholder` | Placeholder text | `string` | — |
 | `placement` | Panel direction: `auto` (default) / `top` / `bottom` | `string` | `auto` |
 | `readonly` | Read-only (focusable and readable, no suggestion panel) | `boolean` | — |
+| `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
 | `split` | Separator between a mention and following text (default space; not doubled when already separated) | `string` | ` ` |
 | `status` | Validation status: `error` / `warning` / `success` | `string` | — |

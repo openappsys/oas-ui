@@ -7,7 +7,7 @@ import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 
 interface Option {
   label: string
@@ -233,7 +233,10 @@ ${OPTION_STYLE}
 }
 `
 
-export class OASCombobox extends OASElement {
+export class OASCombobox extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'value',
@@ -250,6 +253,8 @@ export class OASCombobox extends OASElement {
       'item-height',
       'readonly',
       'disabled-skip',
+      // required 仅驱动原生校验链（valueMissing）
+      'required',
     ]
   }
 
@@ -263,6 +268,10 @@ export class OASCombobox extends OASElement {
   private _options: Option[] = []
   /** 上次 open 状态（null = 未初始化，首帧不派发 oas-open-change） */
   private prevOpen: boolean | null = null
+  /** 初始 value 基线（form.reset 恢复目标；null = 空基线）：初始渲染/受控写入跟随 value 属性刷新 */
+  private initialValue: string | null = null
+  /** 用户交互脏标记（对齐原生 dirty value 语义）：置位后基线冻结，reset 恢复基线并清脏 */
+  private valueDirty = false
 
   /** Vue/React 会把 options 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
   get options(): Option[] {
@@ -384,6 +393,9 @@ export class OASCombobox extends OASElement {
     this.prevOpen = open
 
     const value = this.getAttr('value', '')
+    // form.reset 恢复基线：初始渲染/受控写入（非用户交互的属性变化）跟随 value 属性刷新；
+    // 用户交互置脏后基线冻结（空值映射为 null 基线）
+    if (!this.valueDirty) this.initialValue = value === '' ? null : value
 
     // 尺寸/校验态镜像（size 就近读取 config-provider 注入，与全局密度联动）
     const size = normalizeChoice(this.injectValue('size', 'medium'), 'medium', VALID_SIZES)
@@ -430,6 +442,40 @@ export class OASCombobox extends OASElement {
       document.removeEventListener('click', this.handleOutsideClick, true)
       i.removeAttribute('aria-activedescendant')
     }
+
+    // 原生表单数据 + 校验链同步（form-associated；无 name 浏览器自动不提交）
+    this.syncFormValue()
+    this.syncValidity()
+  }
+
+  /**
+   * 表单值快照（form-associated）：选中值优先（value 属性）；无选中时草稿文本兜底
+   * （datalist 语义——草稿失焦经 revert() 丢弃、此处即回 null）；双空 → null（FormData 不含此项）
+   */
+  protected override getFormValue(): string | null {
+    const v = this.getAttr('value', '')
+    if (v !== '') return v
+    return this.query !== '' ? this.query : null
+  }
+
+  /** 原生校验链同步：required 且无选中且无草稿 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === null) {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复初始基线（清脏 + 按基线恢复 value 属性与显示文本），不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    this.valueDirty = false
+    this.query = ''
+    if (this.initialValue === null) this.removeAttribute('value')
+    else this.setAttribute('value', this.initialValue)
+    if (this.input) this.input.value = this.initialValue === null ? '' : this.labelOf(this.initialValue)
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   /** 移动形态判定：触屏（coarse pointer）或窄视口（<768px）→ 下拉由 bottom-sheet 底部抽屉承载 */
@@ -502,6 +548,9 @@ export class OASCombobox extends OASElement {
     if (!this.input) return
     this.query = ''
     this.input.value = this.labelOf(this.getAttr('value', ''))
+    // 草稿丢弃是值变化点（datalist 语义下草稿曾是表单值的一部分）
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   private handleInput(): void {
@@ -509,6 +558,9 @@ export class OASCombobox extends OASElement {
     if (this.injectDisabled() || this.hasAttr('readonly')) return
     this.query = this.input.value
     this.emit('input', { value: this.query })
+    // datalist 语义：无选中时草稿即表单值（有选中项时选中值优先，getFormValue 内判定）
+    this.syncFormValue()
+    this.syncValidity()
     // 输入视为展开交互（焦点必然在输入框）
     this.activeIndex = 0
     if (!this.hasAttr('open')) this.setAttribute('open', '')
@@ -549,16 +601,23 @@ export class OASCombobox extends OASElement {
 
   /** 选中：value 置 option.value（受控属性）、输入框显示 label、关闭下拉并派发 oas-change */
   private selectValue(option: Option): void {
+    // 用户选择置脏：冻结 reset 基线（须在 setAttribute 之前，防止 update 把基线刷成新值）
+    this.valueDirty = true
     this.query = ''
     this.setAttribute('value', option.value)
     this.closePanel()
     if (this.input) this.input.value = option.label
     this.emit('change', { value: option.value })
+    // setAttribute 已触发 update 同步；属性同值不触发时兜底
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   /** clearable：清空 value 并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值） */
   private clearValue(): void {
     if (this.injectDisabled()) return
+    // 用户清空置脏：reset 应恢复清空前的基线（对齐原生「用户交互不改默认值」）
+    this.valueDirty = true
     const prev = this.getAttr('value', '')
     this.query = ''
     this.closePanel()
@@ -569,6 +628,9 @@ export class OASCombobox extends OASElement {
     }
     this.emit('clear', { value: prev })
     this.emit('change', { value: '' })
+    // value 属性原本不在场时 removeAttribute 不触发 update，兜底同步
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {

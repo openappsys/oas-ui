@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
@@ -499,7 +499,10 @@ function defaultAccessors(fields: ResolvedFields): TreeAccessors<TreeOption> {
   }
 }
 
-export class OASTreeSelect extends OASElement {
+export class OASTreeSelect extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'value',
@@ -534,6 +537,9 @@ export class OASTreeSelect extends OASElement {
       'expand-trigger',
       'prefix-text',
       'suffix-text',
+      // 表单关联通道：required 驱动原生校验链（valueMissing）；name 变化需重同步多选 FormData 的 entry key
+      'required',
+      'name',
     ]
   }
 
@@ -547,6 +553,10 @@ export class OASTreeSelect extends OASElement {
   private dropdown: HTMLElement | null = null
   private treeWrap: HTMLElement | null = null
   private vlist: OASVirtualList | null = null
+  /** 初始选中基线（form.reset 恢复目标）：初始渲染/受控写入跟随 value 属性刷新 */
+  private initialValue: string[] = []
+  /** 用户交互脏标记（选择/移除/清空置位）：置位后基线冻结，reset 恢复基线并清脏 */
+  private valueDirty = false
   /** 移动端底部抽屉承载件（oas-bottom-sheet；PC 形态 passive 透传） */
   private sheetEl: OASBottomSheet | null = null
   private _options: TreeOption[] = []
@@ -709,6 +719,58 @@ export class OASTreeSelect extends OASElement {
     this.syncTrigger()
     // 下拉展开时同步刷新节点（勾选态/展开态/虚拟窗口）
     if (this.openState) this.renderTree()
+
+    // form.reset 恢复基线：初始渲染/受控写入（非用户交互的属性变化）跟随 value 属性刷新；
+    // 用户交互置脏后基线冻结
+    if (!this.valueDirty) this.initialValue = this.currentValues()
+    // 原生表单数据 + 校验链同步（form-associated；无 name 浏览器自动不提交）
+    this.syncFormValue()
+    this.syncValidity()
+  }
+
+  /**
+   * 表单值快照（form-associated）：
+   * - 单选：选中节点值字符串（无选中 → null，FormData 不含此项）
+   * - 多选：原生「同名多条」语义——含多条同名 entry 的 FormData（key 取 name 属性；无选中 → null）
+   */
+  protected override getFormValue(): string | FormData | null {
+    const values = this.currentValues()
+    if (values.length === 0) return null
+    if (!this.hasAttr('multiple')) return values[0]!
+    const fd = new FormData()
+    const key = this.getAttr('name', '')
+    for (const v of values) fd.append(key, v)
+    return fd
+  }
+
+  /** 原生校验链同步：required 且无选中 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.currentValues().length === 0) {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复初始选中基线（清脏 + 按基线恢复 value 属性），不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    this.valueDirty = false
+    if (this.hasAttr('multiple')) {
+      this.setAttribute('value', JSON.stringify(this.initialValue))
+    } else if (this.initialValue.length === 0) {
+      this.removeAttribute('value')
+    } else {
+      this.setAttribute('value', this.initialValue[0]!)
+    }
+    this.syncTrigger()
+    this.renderTree()
+    this.syncFormValue()
+    this.syncValidity()
+  }
+
+  /** shadow 内真实表单控件：触发器 button（无显式 tabindex 属性，基类默认选择器匹配不到，必须覆盖） */
+  protected override get innerControl(): HTMLElement | null {
+    return this.triggerEl
   }
 
   // ---------- 字段别名 / 数据解析 ----------
@@ -1207,6 +1269,8 @@ export class OASTreeSelect extends OASElement {
 
   /** 提交对外值：写 value 属性 + 派发 oas-change（detail 带 labels）+ 刷新回显与树 */
   private commitValues(values: string[]): void {
+    // 用户选择/移除置脏：冻结 reset 基线（须在 setAttribute 之前，防止 update 把基线刷成新值）
+    this.valueDirty = true
     const labels = values.map((v) => this.displayLabelOf(v))
     if (this.hasAttr('multiple')) {
       this.setAttribute('value', JSON.stringify(values))
@@ -1235,6 +1299,8 @@ export class OASTreeSelect extends OASElement {
   /** clearable：清空 value 并派发 oas-clear + oas-change */
   private clearValue(): void {
     if (this.injectDisabled()) return
+    // 用户清空置脏：reset 应恢复清空前的基线（对齐原生「用户交互不改默认值」）
+    this.valueDirty = true
     const prev = this.currentValues()
     if (this.hasAttr('multiple')) {
       this.setAttribute('value', '[]')

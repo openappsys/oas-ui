@@ -592,3 +592,172 @@ describe('OASCombobox 移动端底部抽屉（bottom-sheet 接入）', () => {
     expect(pcCss).not.toContain('min-height: var(--oas-touch-target-min, 44px)')
   })
 })
+
+describe('OASCombobox form-associated（原生表单集成）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** happy-dom 不支持 attachInternals → 替身注入验证 plumbing；真实原生关联走浏览器 e2e */
+  const fakeInternals = (el: OASCombobox) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  it('静态声明 formAssociated = true；required 进入 observedAttributes；无 ElementInternals 环境降级', () => {
+    expect((OASCombobox as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    expect(OASCombobox.observedAttributes).toEqual(expect.arrayContaining(['required']))
+    const el = mount({})
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('选中提交：点击选项后提交选中值', () => {
+    const el = mount({ name: 'fruit' })
+    const fake = fakeInternals(el)
+    open(el)
+    optionRows(el)[1]!.click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('banana')
+  })
+
+  it('未选中但有输入文本：提交输入文本（与原生 datalist 语义对齐）', () => {
+    const el = mount({ name: 'fruit' })
+    const fake = fakeInternals(el)
+    open(el)
+    input(el).value = '自定义项'
+    input(el).dispatchEvent(new Event('input', { bubbles: true }))
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('自定义项')
+  })
+
+  it('草稿失焦丢弃（非破坏回退）→ 表单值同步退场回 null', () => {
+    const el = mount({ name: 'fruit' })
+    const fake = fakeInternals(el)
+    open(el)
+    input(el).value = '自定义项'
+    input(el).dispatchEvent(new Event('input', { bubbles: true }))
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('自定义项')
+    input(el).dispatchEvent(new FocusEvent('blur'))
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('有选中项时输入草稿不影响提交值（选中值优先）', () => {
+    const el = mount({ value: 'banana', name: 'fruit' })
+    const fake = fakeInternals(el)
+    open(el)
+    input(el).value = '乱输'
+    input(el).dispatchEvent(new Event('input', { bubbles: true }))
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('banana')
+  })
+
+  it('双空提交 null（无选中且无输入，FormData 不含此项）', () => {
+    const el = mount({ name: 'fruit' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small') // 触发 update → 同步 FormData
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('清空按钮同步 null', () => {
+    const el = mount({ clearable: '', value: 'apple', name: 'fruit' })
+    const fake = fakeInternals(el)
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('受控 value 写入同步表单值', () => {
+    const el = mount({ name: 'fruit' })
+    const fake = fakeInternals(el)
+    el.setAttribute('value', 'orange')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('orange')
+  })
+
+  it('formResetCallback：用户选过后恢复初始基线（空），不派发事件，reset 后可继续选择', () => {
+    const el = mount({ name: 'fruit' })
+    const fake = fakeInternals(el)
+    let changes = 0
+    el.addEventListener('oas-change', () => changes++)
+    open(el)
+    optionRows(el)[0]!.click()
+    expect(el.getAttribute('value')).toBe('apple')
+    el.formResetCallback()
+    expect(el.hasAttribute('value')).toBe(false)
+    expect(input(el).value).toBe('')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+    // 计数 = 1 全部来自上面的用户点击；reset 本身不再派发（与原生 reset 一致）
+    expect(changes, 'reset 不派发 oas-change').toBe(1)
+    // reset 已清脏：行为可重复（再选 → 再 reset 回空基线）
+    open(el)
+    optionRows(el)[2]!.click()
+    expect(el.getAttribute('value')).toBe('orange')
+    el.formResetCallback()
+    expect(el.hasAttribute('value')).toBe(false)
+  })
+
+  it('受控写入刷新基线：reset 恢复受控写入后的值，不是挂载初值', () => {
+    const el = mount({ name: 'fruit' })
+    el.setAttribute('value', 'apple') // 受控写入建立新基线
+    open(el)
+    optionRows(el)[1]!.click() // 用户选 banana（置脏）
+    expect(el.getAttribute('value')).toBe('banana')
+    el.formResetCallback()
+    expect(el.getAttribute('value')).toBe('apple')
+    expect(input(el).value).toBe('苹果')
+  })
+
+  it('required：无选中且无输入 → valueMissing（message 非空），选中后恢复合法', () => {
+    const el = mount({ required: '', name: 'fruit' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small') // 触发 update → 校验链同步
+    // flag 为 true 时 message 按 Chromium 契约必须非空（基类 setValidity 会显式补 anchor 实参，只查前两个参数）
+    const missing = fake.setValidity.mock.calls.at(-1)
+    expect(missing?.[0]).toEqual({ valueMissing: true })
+    expect(typeof missing?.[1]).toBe('string')
+    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    open(el)
+    optionRows(el)[0]!.click()
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('required：输入文本兜底也算有值（datalist 语义），草稿丢弃后重回 valueMissing', () => {
+    const el = mount({ required: '', name: 'fruit' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    open(el)
+    input(el).value = '自定义'
+    input(el).dispatchEvent(new Event('input', { bubbles: true }))
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+    input(el).dispatchEvent(new FocusEvent('blur'))
+    const missing = fake.setValidity.mock.calls.at(-1)
+    expect(missing?.[0]).toEqual({ valueMissing: true })
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mount({})
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(input(el).disabled).toBe(true)
+    el.formDisabledCallback(false)
+    expect(input(el).disabled).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦 shadow 内 input；点击 input 本身不重复聚焦', () => {
+    const el = mount({})
+    const spy = vi.spyOn(input(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    input(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('focus() 转到 shadow 内 input', () => {
+    const el = mount({})
+    const spy = vi.spyOn(input(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})
