@@ -145,7 +145,8 @@
       "size": "尺寸档位：small / medium / large（默认 medium，就近跟随 config-provider 注入）",
       "status": "校验态：success / warning / error（error 同步 aria-invalid，可被 oas-form-item 校验驱动）",
       "trigger-on-focus": "聚焦即展示建议（datalist 心智；默认关闭，维持「输入优先」现状）",
-      "value": "预设值"
+      "value": "预设值",
+      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）"
     },
     "events": {
       "oas-change": "选中或清空，`detail: { value, label }`",
@@ -681,7 +682,8 @@
       "size": "尺寸档位：small / medium / large（默认 medium，就近跟随 config-provider 注入）",
       "status": "校验态：success / warning / error（error 同步 aria-invalid，可被 oas-form-item 校验驱动）",
       "value": "当前值（受控，选中项 `option.value`）",
-      "virtual": "虚拟滚动（复用 oas-virtual-list 仅渲染可视窗口；带 group 的选项自动回退全量渲染）"
+      "virtual": "虚拟滚动（复用 oas-virtual-list 仅渲染可视窗口；带 group 的选项自动回退全量渲染）",
+      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）"
     },
     "events": {
       "oas-change": "选中/清空变化，`detail: { value }`",
@@ -1674,7 +1676,8 @@
       "variant": "形态：`outlined`（默认）/ `filled` / `borderless`",
       "type": "形态：textarea（默认）/ input（单行锁高，Enter 不换行）",
       "whole": "整段删除：光标紧跟提及段按 Backspace 一次删除「prefix + 成员名」并派发 oas-whole-remove",
-      "trigger": "触发符：默认 @，支持单字符串或 JSON 数组 [\"@\",\"#\"] 多触发符并存"
+      "trigger": "触发符：默认 @，支持单字符串或 JSON 数组 [\"@\",\"#\"] 多触发符并存",
+      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）"
     },
     "events": {
       "oas-change": "插入后文本变化，`detail: { value }`（完整文本）",
@@ -2385,7 +2388,9 @@
       "max-count": "多选上限：达上限未选项禁用置灰并派 oas-exceed-limit，已选项仍可取消；单选行为不变",
       "placement": "下拉方向：`auto`（默认，下方优先自动翻转）/ `top` / `bottom`（强制不翻转）",
       "readonly": "只读：可聚焦可复制、不弹层、值不可改（隐藏清空与移除按钮）",
-      "debounce": "远程搜索输入防抖毫秒（默认 0 立即；仅 remote 模式 oas-input 防抖，本地过滤始终即时）"
+      "debounce": "远程搜索输入防抖毫秒（默认 0 立即；仅 remote 模式 oas-input 防抖，本地过滤始终即时）",
+      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）",
+      "name": "表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交）"
     },
     "events": {
       "oas-change": "选择/清空变化，`detail: { value }`",
@@ -3406,7 +3411,9 @@
       "separator": "路径分隔符（默认 ` / `，配 show-path）",
       "expand-trigger": "节点展开触发：`toggle`（默认，仅箭头）/ `node`（点节点行展开）",
       "prefix-text": "触发器前缀内容（slot=\"prefix\" 可分发任意内容）",
-      "suffix-text": "触发器后缀内容（slot=\"suffix\" 同上）"
+      "suffix-text": "触发器后缀内容（slot=\"suffix\" 同上）",
+      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）",
+      "name": "表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交）"
     },
     "events": {
       "oas-change": "选择变化，`detail: { value }`",

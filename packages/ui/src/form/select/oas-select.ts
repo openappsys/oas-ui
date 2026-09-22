@@ -8,7 +8,7 @@ import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 
 export interface Option {
   label: string
@@ -404,7 +404,10 @@ ${OPTION_STYLE}
 ${TOUCH_TARGET_CSS}
 `
 
-export class OASSelect extends OASElement {
+export class OASSelect extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'value',
@@ -428,6 +431,9 @@ export class OASSelect extends OASElement {
       'placement',
       'readonly',
       'debounce',
+      // 表单关联通道：required 驱动原生校验链（valueMissing）；name 变化需重同步多选 FormData 的 entry key
+      'name',
+      'required',
     ]
   }
 
@@ -486,6 +492,10 @@ export class OASSelect extends OASElement {
   private inputTimer: number | null = null
   /** aria-invalid 由 status=error 设置的所有权标志（清理时只移除自己设置的，不动宿主自设值） */
   private invalidByStatus = false
+  /** 初始选中基线（form.reset 恢复目标）：初始渲染/受控写入跟随 value 属性刷新（多选为数组快照） */
+  private initialValue: string[] = []
+  /** 用户交互脏标记（对齐原生 dirty 语义）：置位后基线冻结，reset 恢复基线并清脏 */
+  private valueDirty = false
 
   /**
    * 受控 open：属性即真相——在场=展开、移除=收起（宿主手势只派发
@@ -621,6 +631,9 @@ export class OASSelect extends OASElement {
     // 子元素通道观察器（重连后重建；options 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
     this.parseOptions()
+    // form.reset 基线：初始渲染/受控写入（非用户交互的属性变化）跟随 value 属性刷新；
+    // 用户交互置脏后基线冻结（与原生 dirty checkedness 同思路）
+    if (!this.valueDirty) this.initialValue = this.currentValues()
     // size/status 镜像（size 就近读取 config-provider 注入，与全局密度联动）
     this.syncSizeStatus()
     // 下拉头尾插槽（header/footer template 克隆）
@@ -629,6 +642,9 @@ export class OASSelect extends OASElement {
     this.shadow.querySelector<HTMLInputElement>('.search-input')?.setAttribute('aria-label', this.t('select.search'))
     this.renderListbox()
     this.syncTrigger()
+    // 原生表单数据 + 校验链同步（form-associated；无 name 时浏览器自动不提交）
+    this.syncFormValue()
+    this.syncValidity()
     // 展开态同步（初始 open 属性、展开中的属性变化重定位等）
     this.syncDropdown()
   }
@@ -1153,6 +1169,8 @@ export class OASSelect extends OASElement {
   }
 
   private selectValue(value: string): void {
+    // 用户交互置脏：冻结 reset 基线（本组件交互会写回 value 属性，须与「受控写入刷新基线」区分）
+    this.valueDirty = true
     if (this.hasAttr('multiple')) {
       const current = this.currentValues()
       const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value]
@@ -1165,11 +1183,16 @@ export class OASSelect extends OASElement {
     }
     this.syncTrigger()
     this.renderListbox()
+    // 值变化点同步原生表单数据 + 校验链（属性同值时无回调、不触发 update，这里兜底）
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   /** clearable：清空值并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值）；readonly 拦截（值只读不可改） */
   private clearValue(): void {
     if (this.injectDisabled() || this.hasAttr('readonly')) return
+    // 用户交互置脏：清空后的选中集不回写 reset 基线（与原生「用户清空不改善通初始值」一致）
+    this.valueDirty = true
     const prev = this.currentValues()
     if (this.hasAttr('multiple')) {
       this.setAttribute('value', '[]')
@@ -1182,6 +1205,9 @@ export class OASSelect extends OASElement {
     }
     this.syncTrigger()
     this.renderListbox()
+    // 值变化点同步原生表单数据 + 校验链（属性移除路径经 update 已同步，这里兜底）
+    this.syncFormValue()
+    this.syncValidity()
     this.triggerEl?.focus()
   }
 
@@ -1408,6 +1434,53 @@ export class OASSelect extends OASElement {
       labelEl.textContent = label
     }
     this.emit('tag-render', { value, label, element: labelEl })
+  }
+
+  /**
+   * 表单值快照（form-associated）：
+   * - 单选：选中值字符串（value 属性；无选中 → null，FormData 不含此项）
+   * - 多选：原生「同名多条」语义——返回含多条同名 entry 的 FormData（key 取 name 属性），
+   *   无选中 → null。读 value 属性（受控源），render 前也可安全取值
+   */
+  protected override getFormValue(): string | FormData | null {
+    const values = this.currentValues()
+    if (values.length === 0) return null
+    if (!this.hasAttr('multiple')) return values[0] ?? null
+    const fd = new FormData()
+    const name = this.getAttr('name', '')
+    for (const v of values) fd.append(name, v)
+    return fd
+  }
+
+  /** 原生校验链同步：required 且无选中 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === null) {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复初始选中基线并清脏（受控源为 value 属性），不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    this.valueDirty = false
+    const baseline = this.initialValue
+    if (baseline.length === 0) {
+      this.removeAttribute('value')
+    } else if (this.hasAttr('multiple')) {
+      this.setAttribute('value', JSON.stringify(baseline))
+    } else {
+      this.setAttribute('value', baseline[0] ?? '')
+    }
+    // 属性同值/缺席时无回调、不触发 update，UI 兜底刷新（触发器显隐与下拉选中态）
+    this.syncTrigger()
+    this.renderListbox()
+    this.syncValidity()
+  }
+
+  /** shadow 内真实焦点目标：触发器 button。基类默认选择器会误中隐藏搜索框/清除钮（tabindex=-1），必须覆盖 */
+  protected override get innerControl(): HTMLElement | null {
+    return this.triggerEl
   }
 
   /** label 点击聚焦委托：把焦点交给 shadow 内 trigger（配合 oas-form-item 的 label 点击代理） */

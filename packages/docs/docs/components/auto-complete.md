@@ -203,6 +203,7 @@ onMounted(() => {
 | `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]`（group 为分组标题） | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | `string` | — |
 | `readonly` | 只读（可聚焦可复制不可输入，聚焦与键盘不展开建议） | `boolean` | — |
+| `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `size` | 尺寸档位：small / medium / large（默认 medium，就近跟随 config-provider 注入） | `string` | `medium` |
 | `status` | 校验态：success / warning / error（error 同步 aria-invalid，可被 oas-form-item 校验驱动） | `string` | — |
 | `trigger-on-focus` | 聚焦即展示建议（datalist 心智；默认关闭，维持「输入优先」现状） | `boolean` | — |

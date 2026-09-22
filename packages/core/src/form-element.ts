@@ -12,7 +12,8 @@ import { OASElement } from './oas-element.js'
  * - 不支持 ElementInternals 的环境（老 Safari / happy-dom）静默降级为 null，组件行为与旧版一致
  *
  * 子类义务：
- * 1. `getFormValue()`：返回当前应进入 FormData 的「原始值」（非显示值；如 formatter 场景返回解析后的值）
+ * 1. `getFormValue()`：返回当前应进入 FormData 的「原始值」（非显示值；如 formatter 场景返回解析后的值）；
+ *    多值组件（如多选 select）可返回 FormData（原生「同名多条 entry」语义，key 由组件自定）
  * 2. `resetFormValue()`：把控件值恢复为初始值（通常为 value 属性值），**不派发事件**（与原生一致）
  * 3. 在每个值变化点调用 `syncFormValue()`（input 输入 / 受控 value 写入 / 清空等）
  *
@@ -146,8 +147,8 @@ export abstract class OASFormElement extends OASElement {
     return this.shadow.querySelector('input, textarea, select, [tabindex]')
   }
 
-  /** 当前应进入 FormData 的原始值；子类实现 */
-  protected abstract getFormValue(): string | null
+  /** 当前应进入 FormData 的原始值；子类实现。多值组件返回 FormData（同名多条 entry 语义） */
+  protected abstract getFormValue(): string | FormData | null
 
   /** 把控件值恢复为初始值（通常为 value 属性值）；不派发事件 */
   protected abstract resetFormValue(): void

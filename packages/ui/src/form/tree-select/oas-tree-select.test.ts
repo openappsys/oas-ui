@@ -996,3 +996,129 @@ describe('OASTreeSelect 移动端底部抽屉（bottom-sheet 接入）', () => {
     expect(sheet(el).hasAttribute('passive')).toBe(true)
   })
 })
+
+describe('OASTreeSelect form-associated（原生表单集成）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** happy-dom 不支持 attachInternals → 替身注入验证 plumbing；真实原生关联走浏览器 e2e */
+  const fakeInternals = (el: OASTreeSelect) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  const byLabelSafe = (el: OASTreeSelect, label: string): HTMLElement | undefined =>
+    [...el.shadowRoot!.querySelectorAll('.node')].find((n) => n.textContent?.includes(label)) as HTMLElement | undefined
+
+  /** 展开 前端→框架 并点击 React 叶子（幂等：已展开时不重复点击 toggle 防误折叠） */
+  const pickReact = (el: OASTreeSelect): void => {
+    trigger(el).click()
+    if (!byLabelSafe(el, 'React')) {
+      if (!byLabelSafe(el, '框架')) {
+        byLabel(el, '前端')
+          .querySelector('.toggle')!
+          .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      }
+      byLabel(el, '框架')
+        .querySelector('.toggle')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    }
+    byLabel(el, 'React').click()
+  }
+
+  it('静态声明 formAssociated = true；required/name 进入 observedAttributes；无 ElementInternals 环境降级', () => {
+    expect((OASTreeSelect as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    expect(OASTreeSelect.observedAttributes).toEqual(expect.arrayContaining(['required', 'name']))
+    const el = mount({})
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('单选提交选中节点值；无选中提交 null', () => {
+    const el = mount({ name: 'region' })
+    const fake = fakeInternals(el)
+    pickReact(el)
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('react')
+  })
+
+  it('多选提交同名多条 FormData（entries 与选中一致）；清空提交 null', () => {
+    const el = mount({ name: 'region', multiple: '', clearable: '' })
+    const fake = fakeInternals(el)
+    // 选不同子树的叶子，避免级联收敛把父节点并入（all 策略：子全选 → 父入值）
+    pickReact(el)
+    byLabel(el, '样式').click()
+    const last = fake.setFormValue.mock.calls.at(-1)?.[0]
+    expect(last).toBeInstanceOf(FormData)
+    expect((last as FormData).getAll('region')).toEqual(['react', 'css'])
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"], .clear-btn')!.click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('受控 value 写入同步（单/多）', () => {
+    const el = mount({ name: 'region' })
+    const fake = fakeInternals(el)
+    el.setAttribute('value', 'css')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('css')
+    el.setAttribute('multiple', '')
+    el.setAttribute('value', '["react","vue"]')
+    const last = fake.setFormValue.mock.calls.at(-1)?.[0]
+    expect((last as FormData).getAll('region')).toEqual(['react', 'vue'])
+  })
+
+  it('formResetCallback：用户选过后恢复初始基线（空），不派发事件；受控写入刷新基线', () => {
+    const el = mount({ name: 'region' })
+    const fake = fakeInternals(el)
+    let changes = 0
+    el.addEventListener('oas-change', () => changes++)
+    pickReact(el)
+    expect(el.getAttribute('value')).toBe('react')
+    el.formResetCallback()
+    expect(el.hasAttribute('value')).toBe(false)
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+    expect(changes, 'reset 不派发 oas-change').toBe(1)
+
+    // 受控写入建立新基线后：用户再选 → reset 回受控值
+    el.setAttribute('value', 'css')
+    pickReact(el)
+    expect(el.getAttribute('value')).toBe('react')
+    el.formResetCallback()
+    expect(el.getAttribute('value')).toBe('css')
+  })
+
+  it('required：无选中 valueMissing（message 非空），选中后恢复合法', () => {
+    const el = mount({ name: 'region', required: '' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small') // 触发 update → 校验链同步
+    const missing = fake.setValidity.mock.calls.at(-1)
+    expect(missing?.[0]).toEqual({ valueMissing: true })
+    expect(typeof missing?.[1]).toBe('string')
+    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    pickReact(el)
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mount({})
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(trigger(el).disabled).toBe(true)
+    el.formDisabledCallback(false)
+    expect(trigger(el).disabled).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦触发器 button；focus() 转递', () => {
+    const el = mount({})
+    const spy = vi.spyOn(trigger(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})

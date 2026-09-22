@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
 
@@ -196,7 +196,10 @@ input:disabled:hover {
 }
 `
 
-export class OASAutoComplete extends OASElement {
+export class OASAutoComplete extends OASFormElement {
+  /** 原生表单集成（label for / FormData / reset / fieldset disabled）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
     return [
       'value',
@@ -211,6 +214,8 @@ export class OASAutoComplete extends OASElement {
       'status',
       'readonly',
       'disabled-skip',
+      // required 仅驱动原生校验链（valueMissing）
+      'required',
     ]
   }
 
@@ -219,6 +224,10 @@ export class OASAutoComplete extends OASElement {
   private listbox: HTMLElement | null = null
   private clearBtn: HTMLButtonElement | null = null
   private _options: Option[] = []
+  /** 初始 value 基线（form.reset 恢复目标）：初始渲染/受控写入跟随 value 属性刷新 */
+  private initialValue = ''
+  /** 用户交互脏标记（选择建议/清空等会写回 value 属性的路径置位）：置位后基线冻结，reset 恢复基线并清脏 */
+  private valueDirty = false
 
   /** Vue/React 会把 options 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
   get options(): Option[] {
@@ -316,6 +325,9 @@ export class OASAutoComplete extends OASElement {
     this.parseOptions()
     if (!this.input) return
     const value = this.getAttr('value', '')
+    // form.reset 恢复基线：初始渲染/受控写入（非用户交互的属性变化）跟随 value 属性刷新；
+    // 用户交互（选择建议/清空）置脏后基线冻结
+    if (!this.valueDirty) this.initialValue = value
     const placeholder = this.getAttr('placeholder', '')
     // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
     const disabled = this.injectDisabled()
@@ -348,6 +360,37 @@ export class OASAutoComplete extends OASElement {
     this.syncClear()
     // 下拉展开时同步刷新：options / loading / locale 文案 / 面板插槽变化即时反映
     if (this.openState) this.renderDropdown(true)
+
+    // 原生表单数据 + 校验链同步（form-associated；无 name 浏览器自动不提交）
+    this.syncFormValue()
+    this.syncValidity()
+  }
+
+  /** 表单值快照（照原生 input 语义：当前输入文本；render 前读 value 属性） */
+  protected override getFormValue(): string | null {
+    return this.input ? this.input.value : this.getAttr('value', '')
+  }
+
+  /** 原生校验链同步：required 且文本为空 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === '') {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复初始基线文本（清脏 + 按基线恢复 value 属性与输入回显），不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    this.valueDirty = false
+    this.clearDebounce()
+    this.query = ''
+    if (this.initialValue === '') this.removeAttribute('value')
+    else this.setAttribute('value', this.initialValue)
+    if (this.input) this.input.value = this.initialValue
+    this.syncClear()
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   private parseOptions(): void {
@@ -378,6 +421,9 @@ export class OASAutoComplete extends OASElement {
     if (!this.input) return
     if (this.injectDisabled() || this.hasAttr('readonly')) return
     this.query = this.input.value
+    // 照原生 input 语义：FormData 提交当前输入文本（不随 debounce 延迟；debounce 只影响过滤与派发）
+    this.syncFormValue()
+    this.syncValidity()
     this.syncClear()
     this.scheduleFilter()
   }
@@ -640,17 +686,24 @@ export class OASAutoComplete extends OASElement {
 
   private choose(option: Option): void {
     this.clearDebounce()
+    // 用户选择置脏：冻结 reset 基线（须在 setAttribute 之前，防止 update 把基线刷成新值）
+    this.valueDirty = true
     this.query = option.label
     this.renderDropdown(false)
     if (this.input) this.input.value = option.label
     this.setAttribute('value', option.value)
     this.emit('change', { value: option.value, label: option.label })
     this.syncClear()
+    // setAttribute 已触发 update 同步；属性同值不触发时兜底
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   /** clearable：清空输入与 value 并派发 oas-clear（detail 为清空前的 value）+ oas-change（空值） */
   private clearValue(): void {
     if (this.injectDisabled()) return
+    // 用户清空置脏：reset 应恢复清空前的基线（对齐原生「用户交互不改默认值」）
+    this.valueDirty = true
     const prev = this.getAttr('value', '')
     this.clearDebounce()
     this.query = ''
@@ -663,10 +716,8 @@ export class OASAutoComplete extends OASElement {
     this.emit('clear', { value: prev })
     this.emit('change', { value: '', label: '' })
     this.syncClear()
-  }
-
-  /** label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理） */
-  override focus(options?: FocusOptions): void {
-    this.shadow.querySelector<HTMLInputElement>('input')?.focus(options)
+    // value 属性原本不在场时 removeAttribute 不触发 update，兜底同步
+    this.syncFormValue()
+    this.syncValidity()
   }
 }

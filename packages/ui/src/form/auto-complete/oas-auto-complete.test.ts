@@ -433,3 +433,109 @@ describe('OASAutoComplete focus 委托', () => {
     expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('input'))
   })
 })
+
+describe('form-associated（原生表单集成）', () => {
+  /** 注入 fake ElementInternals：happy-dom 无 attachInternals，基类已静默降级为 null */
+  const fakeInternals = (el: OASAutoComplete) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  it('静态声明 formAssociated = true；无 ElementInternals 环境下 labels/form 为 null（静默降级）', () => {
+    expect((OASAutoComplete as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    const el = mount()
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('输入同步原生表单数据（照原生 input 语义：提交当前输入文本，不随 debounce 延迟）', () => {
+    const el = mount({ name: 'q' })
+    const fake = fakeInternals(el)
+    type(el, '香')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('香')
+  })
+
+  it('选中建议项填入后同步填入的文本（与输入文本同源）', () => {
+    const el = mount({ name: 'q' })
+    const fake = fakeInternals(el)
+    type(el, '香')
+    ;(el.shadowRoot!.querySelector('[role="option"]') as HTMLElement).click()
+    expect(input(el).value).toBe('香蕉')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('香蕉')
+  })
+
+  it('受控 value 写入同步', () => {
+    const el = mount({ name: 'q' })
+    const fake = fakeInternals(el)
+    el.setAttribute('value', 'controlled')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('controlled')
+  })
+
+  it('clearable 清空后同步空值', () => {
+    const el = mount({ value: '苹果', clearable: '', name: 'q' })
+    const fake = fakeInternals(el)
+    const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!
+    expect(btn.hidden).toBe(false)
+    btn.click()
+    expect(input(el).value).toBe('')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('')
+  })
+
+  it('formResetCallback：恢复 value 属性初始文本并重同步，不派发事件', () => {
+    const el = mount({ value: 'init', name: 'q' })
+    const fake = fakeInternals(el)
+    type(el, 'user edited')
+    expect(input(el).value).toBe('user edited')
+    const events: string[] = []
+    el.addEventListener('oas-input', () => events.push('input'))
+    el.addEventListener('oas-change', () => events.push('change'))
+    el.formResetCallback()
+    expect(input(el).value).toBe('init')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('init')
+    expect(events).toEqual([])
+  })
+
+  it('required：空文本 valueMissing，输入后恢复；required 属性运行时增删即时生效', () => {
+    const el = mount({ required: '', name: 'q' })
+    const fake = fakeInternals(el)
+
+    // 空文本 → valueMissing（message 走 translator，断言不限文案；基类三参调用）
+    el.setAttribute('size', 'small') // 触发 update 重同步校验链
+    expect(fake.setValidity).toHaveBeenLastCalledWith({ valueMissing: true }, expect.any(String), undefined)
+
+    // 输入文本 → 恢复合法（无 message，单参调用）
+    type(el, '苹')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+
+    // 移除 required → 仍合法
+    el.removeAttribute('required')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mount({})
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(input(el).disabled).toBe(true)
+    el.formDisabledCallback(false)
+    expect(input(el).disabled).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦 shadow 内真实 input；点击内层不再重复聚焦', () => {
+    const el = mount({})
+    const spy = vi.spyOn(input(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    input(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('focus() 转到 shadow 内真实 input', () => {
+    const el = mount({})
+    const spy = vi.spyOn(input(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})

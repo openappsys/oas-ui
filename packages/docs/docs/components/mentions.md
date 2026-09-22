@@ -294,6 +294,7 @@ onMounted(() => {
 | `placeholder` | 占位提示 | `string` | — |
 | `placement` | 建议面板方向：`auto`（默认）/ `top` / `bottom` | `string` | `auto` |
 | `readonly` | 只读（可聚焦可读，不弹建议面板） | `boolean` | — |
+| `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
 | `split` | 提及项与后文的分隔符（默认空格；后文已分隔则不重复补） | `string` | ` ` |
 | `status` | 校验态：`error` / `warning` / `success` | `string` | — |

@@ -533,12 +533,14 @@ onMounted(() => {
 | `max-count` | Multi-select limit: at the limit unselected options are disabled-greyed and oas-exceed-limit fires; selected items stay removable; single-select unchanged | — | — |
 | `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing) | `boolean` | — |
 | `multiple` | Multiple select | `boolean` | — |
+| `name` | Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent) | `string` | — |
 | `open` | Controlled open: attribute present = open, removed = closed; host gestures only fire oas-open-change (no forced write-back) | `boolean` | `false` |
 | `options` | Options, JSON array `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
 | `placement` | Dropdown direction: `auto` (default, bottom-first with flip) / `top` / `bottom` (forced, no flip) | `string` | `auto` |
 | `readonly` | Read-only: focusable and copyable, no dropdown, value immutable (clear/remove buttons hidden) | `boolean` | — |
 | `remote` | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | `boolean` | — |
+| `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `searchable` | Searchable (type to filter after opening the dropdown) | `boolean` | — |
 | `size` | Size preset `small` / `medium` (default) / `large`: control height/font/chip height scale | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the host | `string` | — |

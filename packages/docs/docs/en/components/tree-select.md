@@ -440,10 +440,12 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `max` | Multi-select limit (by checked-set size) | `string` | — |
 | `max-tag-count` | Collapse multi-select tags beyond the count into +N (title lists hidden items) | `string` | — |
 | `multiple` | Multiple select + parent-child cascade | `boolean` | — |
+| `name` | Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent) | `string` | — |
 | `open` | Controlled open (presence = controlled; `"false"` = controlled-closed); flips fire oas-open-change; in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | `string` | — |
 | `options` | Tree options, JSON array, supports `children` / `disabled` | `TreeOption[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
 | `prefix-text` | Trigger prefix content (slot="prefix" accepts any content) | `string` | — |
+| `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `reserve-keyword` | Keep the search keyword after selecting a node (cleared by default) | `boolean` | — |
 | `separator` | Path separator (default ` / `, pair with show-path) | `string` | ` / ` |
 | `show-path` | Echo the full path (initial echo and multi-select labels use paths) | `boolean` | — |

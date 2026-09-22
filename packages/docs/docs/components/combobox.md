@@ -238,6 +238,7 @@ onMounted(() => {
 | `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]`（group 为分组标题，与 oas-select 同一契约） | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
 | `readonly` | 只读（可聚焦可复制不可改值，聚焦与键盘不展开下拉） | `boolean` | — |
+| `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `size` | 尺寸档位：small / medium / large（默认 medium，就近跟随 config-provider 注入） | `string` | `medium` |
 | `status` | 校验态：success / warning / error（error 同步 aria-invalid，可被 oas-form-item 校验驱动） | `string` | — |
 | `value` | 当前值（受控，选中项 `option.value`） | `string` | — |

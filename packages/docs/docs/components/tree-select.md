@@ -440,10 +440,12 @@ onMounted(() => {
 | `max` | 多选上限（按勾选集合计） | `string` | — |
 | `max-tag-count` | 多选标签按数量折叠 +N（带 title 列隐藏项） | `string` | — |
 | `multiple` | 多选 + 父子级联 | `boolean` | — |
+| `name` | 表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交） | `string` | — |
 | `open` | 受控开合（存在即受控；`"false"`=受控关），翻转派 oas-open-change；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | `string` | — |
 | `options` | 树形选项，JSON 数组，支持 `children` / `disabled` | `TreeOption[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
 | `prefix-text` | 触发器前缀内容（slot="prefix" 可分发任意内容） | `string` | — |
+| `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `reserve-keyword` | 选中节点后保留搜索关键词（默认清空） | `boolean` | — |
 | `separator` | 路径分隔符（默认 ` / `，配 show-path） | `string` | ` / ` |
 | `show-path` | 回显完整路径（初始回显与多选 labels 走路径） | `boolean` | — |

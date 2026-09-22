@@ -450,3 +450,258 @@ test('form-associated：switch 勾选语义（开提交 / 关不提交 / label �
   expect(r.labelsLen, 'label for 原生关联').toBe(1)
   expect(r.offAgain, '再次 label 点击切回关').toBe(true)
 })
+
+test('form-associated：select 单选/多选提交与 label 聚焦（多选同名多条 FormData）', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-select')
+
+  const r = await page.evaluate(async () => {
+    const OPTIONS = JSON.stringify([
+      { label: '苹果', value: 'apple' },
+      { label: '香蕉', value: 'banana' },
+      { label: '橙子', value: 'orange' },
+    ])
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <label for="fa-sel">水果</label>
+      <oas-select id="fa-sel" name="fruit"></oas-select>
+      <oas-select id="fa-sel-multi" name="tags" multiple></oas-select>
+      <oas-select id="fa-sel-req" name="req" required></oas-select>
+    `
+    document.body.append(form)
+    for (const id of ['fa-sel', 'fa-sel-multi', 'fa-sel-req']) {
+      document.getElementById(id)!.setAttribute('options', OPTIONS)
+    }
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaSelect extends HTMLElement {
+      shadowRoot: ShadowRoot
+      labels: NodeList | null
+      checkValidity(): boolean
+    }
+    const el = document.getElementById('fa-sel') as unknown as FaSelect
+    const multi = document.getElementById('fa-sel-multi') as unknown as FaSelect
+    const req = document.getElementById('fa-sel-req') as unknown as FaSelect
+    const label = document.querySelector('label[for="fa-sel"]') as HTMLLabelElement
+
+    // label 点击 → 聚焦触发器且不误开面板
+    label.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const triggerFocused = el.shadowRoot.activeElement?.tagName === 'BUTTON'
+    const panelClosed = !el.shadowRoot.querySelector('.dropdown.open, [part="dropdown"].open')
+
+    // 单选：受控写入 → FormData
+    el.setAttribute('value', 'banana')
+    await new Promise((res) => setTimeout(res, 0))
+    const fdSingle = new FormData(form).get('fruit')
+
+    // 多选：受控写入两个 → 同名多条
+    multi.setAttribute('value', '["apple","orange"]')
+    await new Promise((res) => setTimeout(res, 0))
+    const fdMulti = new FormData(form).getAll('tags')
+
+    const reqInvalid = req.checkValidity()
+    const labelsLen = el.labels?.length ?? -1
+
+    form.remove()
+    return { triggerFocused, panelClosed, fdSingle, fdMulti, reqInvalid, labelsLen }
+  })
+
+  expect(r.labelsLen, 'label for 原生关联').toBe(1)
+  expect(r.triggerFocused, 'label 点击聚焦触发器 button').toBe(true)
+  expect(r.panelClosed, 'label 点击不误开面板').toBe(true)
+  expect(r.fdSingle, '单选 FormData 提交选中值').toBe('banana')
+  expect(r.fdMulti, '多选同名多条 FormData').toEqual(['apple', 'orange'])
+  expect(r.reqInvalid, 'required 无选中 checkValidity 为 false').toBe(false)
+})
+
+test('form-associated：mentions 输入同步与 label 聚焦', async ({ page }) => {
+  await page.goto('/components/mentions.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-mentions')
+
+  const r = await page.evaluate(async () => {
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <label for="fa-men">评论</label>
+      <oas-mentions id="fa-men" name="comment" value="初始"></oas-mentions>
+      <oas-mentions id="fa-men-req" name="req" required></oas-mentions>
+    `
+    document.body.append(form)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaMen extends HTMLElement {
+      shadowRoot: ShadowRoot
+      labels: NodeList | null
+      checkValidity(): boolean
+    }
+    const el = document.getElementById('fa-men') as unknown as FaMen
+    const inner = el.shadowRoot.querySelector('textarea')!
+    const label = document.querySelector('label[for="fa-men"]') as HTMLLabelElement
+
+    label.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const innerFocused = el.shadowRoot.activeElement === inner
+
+    inner.value = '@alice 你好'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    const fdTyped = new FormData(form).get('comment')
+    form.reset()
+    await new Promise((res) => setTimeout(res, 0))
+    const resetValue = inner.value
+
+    const req = document.getElementById('fa-men-req') as unknown as FaMen
+    const reqInvalid = req.checkValidity()
+
+    form.remove()
+    return { innerFocused, fdTyped, resetValue, reqInvalid }
+  })
+
+  expect(r.innerFocused, 'label 点击聚焦内层 textarea').toBe(true)
+  expect(r.fdTyped, '输入同步 FormData（含 @标记文本）').toBe('@alice 你好')
+  expect(r.resetValue, 'reset 回初始文本').toBe('初始')
+  expect(r.reqInvalid, 'required 空文本 checkValidity 为 false').toBe(false)
+})
+
+test('form-associated：combobox 选中提交 / 草稿兜底与失焦丢弃 / label 聚焦', async ({ page }) => {
+  await page.goto('/components/combobox.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-combobox')
+
+  const r = await page.evaluate(async () => {
+    const OPTIONS = JSON.stringify([
+      { label: '苹果', value: 'apple' },
+      { label: '香蕉', value: 'banana' },
+    ])
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <label for="fa-cb2">水果</label>
+      <oas-combobox id="fa-cb2" name="fruit"></oas-combobox>
+    `
+    document.body.append(form)
+    const el = document.getElementById('fa-cb2')!
+    el.setAttribute('options', OPTIONS)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaCb extends HTMLElement {
+      shadowRoot: ShadowRoot
+      labels: NodeList | null
+    }
+    const box = el as unknown as FaCb
+    const inner = box.shadowRoot.querySelector('input')!
+    const label = document.querySelector('label[for="fa-cb2"]') as HTMLLabelElement
+
+    label.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const innerFocused = box.shadowRoot.activeElement === inner
+
+    // 草稿（未选中）→ datalist 语义提交输入文本
+    inner.value = '自定义'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    const fdDraft = new FormData(form).get('fruit')
+    // 失焦丢弃草稿 → 回 null
+    inner.dispatchEvent(new FocusEvent('blur'))
+    await new Promise((res) => setTimeout(res, 0))
+    const fdAfterBlur = new FormData(form).get('fruit')
+
+    // 受控选中 → 提交选中值
+    el.setAttribute('value', 'banana')
+    await new Promise((res) => setTimeout(res, 0))
+    const fdSelected = new FormData(form).get('fruit')
+
+    form.remove()
+    return { innerFocused, fdDraft, fdAfterBlur, fdSelected }
+  })
+
+  expect(r.innerFocused, 'label 点击聚焦内层 input').toBe(true)
+  expect(r.fdDraft, '草稿文本兜底提交（datalist 语义）').toBe('自定义')
+  expect(r.fdAfterBlur, '草稿失焦丢弃 → FormData 不含此项').toBe(null)
+  expect(r.fdSelected, '选中后提交选中值').toBe('banana')
+})
+
+test('form-associated：auto-complete 输入/建议选中同步与 required', async ({ page }) => {
+  await page.goto('/components/auto-complete.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-auto-complete')
+
+  const r = await page.evaluate(async () => {
+    const OPTIONS = JSON.stringify([
+      { label: '香蕉', value: 'banana' },
+      { label: '苹果', value: 'apple' },
+    ])
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <oas-auto-complete id="fa-ac" name="fruit"></oas-auto-complete>
+      <oas-auto-complete id="fa-ac-req" name="req" required></oas-auto-complete>
+    `
+    document.body.append(form)
+    for (const id of ['fa-ac', 'fa-ac-req']) document.getElementById(id)!.setAttribute('options', OPTIONS)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaAc extends HTMLElement {
+      shadowRoot: ShadowRoot
+      checkValidity(): boolean
+    }
+    const el = document.getElementById('fa-ac') as unknown as FaAc
+    const inner = el.shadowRoot.querySelector('input')!
+
+    inner.value = '香'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    const fdTyped = new FormData(form).get('fruit')
+
+    const req = document.getElementById('fa-ac-req') as unknown as FaAc
+    const reqInvalid = req.checkValidity()
+
+    form.remove()
+    return { fdTyped, reqInvalid }
+  })
+
+  expect(r.fdTyped, '输入即同步 FormData（不随 debounce）').toBe('香')
+  expect(r.reqInvalid, 'required 空文本 checkValidity 为 false').toBe(false)
+})
+
+test('form-associated：tree-select 单选/多选提交与 label 聚焦触发器', async ({ page }) => {
+  await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tree-select')
+
+  const r = await page.evaluate(async () => {
+    const OPTIONS = JSON.stringify([{ label: '前端', value: 'fe', children: [{ label: 'React', value: 'react' }] }])
+    const form = document.createElement('form')
+    form.innerHTML = `
+      <label for="fa-ts">技术</label>
+      <oas-tree-select id="fa-ts" name="tech"></oas-tree-select>
+      <oas-tree-select id="fa-ts-multi" name="techs" multiple></oas-tree-select>
+    `
+    document.body.append(form)
+    for (const id of ['fa-ts', 'fa-ts-multi']) document.getElementById(id)!.setAttribute('options', OPTIONS)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+
+    interface FaTs extends HTMLElement {
+      shadowRoot: ShadowRoot
+      labels: NodeList | null
+    }
+    const el = document.getElementById('fa-ts') as unknown as FaTs
+    const multi = document.getElementById('fa-ts-multi') as unknown as FaTs
+    const label = document.querySelector('label[for="fa-ts"]') as HTMLLabelElement
+
+    label.click()
+    await new Promise((res) => setTimeout(res, 0))
+    const triggerFocused = el.shadowRoot.activeElement?.tagName === 'BUTTON'
+    const panelClosed = !el.shadowRoot.querySelector('.dropdown.open, [part="dropdown"].open')
+
+    el.setAttribute('value', 'react')
+    await new Promise((res) => setTimeout(res, 0))
+    const fdSingle = new FormData(form).get('tech')
+
+    multi.setAttribute('value', '["react","fe"]')
+    await new Promise((res) => setTimeout(res, 0))
+    const fdMulti = new FormData(form).getAll('techs')
+
+    const labelsLen = el.labels?.length ?? -1
+    form.remove()
+    return { triggerFocused, panelClosed, fdSingle, fdMulti, labelsLen }
+  })
+
+  expect(r.labelsLen, 'label for 原生关联').toBe(1)
+  expect(r.triggerFocused, 'label 点击聚焦触发器 button（innerControl 覆盖生效）').toBe(true)
+  expect(r.panelClosed, 'label 点击不误开面板').toBe(true)
+  expect(r.fdSingle, '单选 FormData 提交节点值').toBe('react')
+  expect(r.fdMulti, '多选同名多条 FormData').toEqual(['react', 'fe'])
+})

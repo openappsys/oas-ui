@@ -145,7 +145,8 @@
       "size": "Size tier: small / medium / large (default medium, follows the nearest config-provider injection)",
       "status": "Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation)",
       "trigger-on-focus": "Show suggestions on focus (datalist mental model; off by default — input-first)",
-      "value": "Preset value"
+      "value": "Preset value",
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)"
     },
     "events": {
       "oas-change": "Selected or cleared, `detail: { value, label }`",
@@ -681,7 +682,8 @@
       "size": "Size tier: small / medium / large (default medium, follows the nearest config-provider injection)",
       "status": "Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation)",
       "value": "Current value (controlled, the selected option's `option.value`)",
-      "virtual": "Virtual scroll (reuses oas-virtual-list to render only the visible window; options with group fall back to full rendering)"
+      "virtual": "Virtual scroll (reuses oas-virtual-list to render only the visible window; options with group fall back to full rendering)",
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",
@@ -1674,7 +1676,8 @@
       "variant": "Variant: `outlined` (default) / `filled` / `borderless`",
       "type": "Variant: textarea (default) / input (single-line lock, Enter does not break line)",
       "whole": "Whole delete: when cursor is right after a mention, Backspace removes the whole prefix + label and fires oas-whole-remove",
-      "trigger": "Trigger: default @, accepts a single string or a JSON array like [\"@\",\"#\"] for multiple triggers"
+      "trigger": "Trigger: default @, accepts a single string or a JSON array like [\"@\",\"#\"] for multiple triggers",
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)"
     },
     "events": {
       "oas-change": "Text changed after insertion, `detail: { value }` (full text)",
@@ -2385,7 +2388,9 @@
       "max-count": "Multi-select limit: at the limit unselected options are disabled-greyed and oas-exceed-limit fires; selected items stay removable; single-select unchanged",
       "placement": "Dropdown direction: `auto` (default, bottom-first with flip) / `top` / `bottom` (forced, no flip)",
       "readonly": "Read-only: focusable and copyable, no dropdown, value immutable (clear/remove buttons hidden)",
-      "debounce": "Remote search input debounce in ms (default 0 = immediate; only debounces oas-input in remote mode, local filtering stays instant)"
+      "debounce": "Remote search input debounce in ms (default 0 = immediate; only debounces oas-input in remote mode, local filtering stays instant)",
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
+      "name": "Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent)"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",
@@ -3406,7 +3411,9 @@
       "separator": "Path separator (default ` / `, pair with show-path)",
       "expand-trigger": "Node expansion trigger: `toggle` (default, arrow only) / `node` (clicking the node row expands)",
       "prefix-text": "Trigger prefix content (slot=\"prefix\" accepts any content)",
-      "suffix-text": "Trigger suffix content (slot=\"suffix\" likewise)"
+      "suffix-text": "Trigger suffix content (slot=\"suffix\" likewise)",
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
+      "name": "Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent)"
     },
     "events": {
       "oas-change": "Selection change, `detail: { value }`",

@@ -529,12 +529,14 @@ onMounted(() => {
 | `max-count` | 多选上限：达上限未选项禁用置灰并派 oas-exceed-limit，已选项仍可取消；单选行为不变 | — | — |
 | `max-tag-count` | 多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠） | `boolean` | — |
 | `multiple` | 多选 | `boolean` | — |
+| `name` | 表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交） | `string` | — |
 | `open` | 受控展开：属性在场=展开、移除=收起；宿主手势只派 oas-open-change 通知（组件不强制写回） | `boolean` | `false` |
 | `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
 | `placement` | 下拉方向：`auto`（默认，下方优先自动翻转）/ `top` / `bottom`（强制不翻转） | `string` | `auto` |
 | `readonly` | 只读：可聚焦可复制、不弹层、值不可改（隐藏清空与移除按钮） | `boolean` | — |
 | `remote` | 远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求 | `boolean` | — |
+| `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `searchable` | 可搜索（打开下拉后输入过滤） | `boolean` | — |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large`：控高/字号/标签高联动 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`；error 联动宿主 aria-invalid | `string` | — |
