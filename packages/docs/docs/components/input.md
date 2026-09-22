@@ -18,6 +18,22 @@
 
 `label` 作为输入框的可访问名称（`aria-label`）来源，读屏朗读该名称。未设置 `label` 时依次回退 `placeholder` → 内置文案「输入框」；设置后（如「登录邮箱」）覆盖回退链。
 
+## 原生表单与 label 关联
+
+<DemoBlock title="form-associated：label for / FormData / reset">
+  <form id="input-form-demo" style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-3); align-items: flex-start">
+    <label for="input-form-username" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">姓名（点击本行文字 → 聚焦输入框）</label>
+    <oas-input id="input-form-username" name="username" value="初始值" style="width: 240px"></oas-input>
+    <div style="display: flex; gap: var(--oas-space-2)">
+      <oas-button id="input-form-submit" size="small" type="button">读取 FormData</oas-button>
+      <oas-button id="input-form-reset" size="small" type="button">form.reset()</oas-button>
+    </div>
+    <span id="input-form-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </form>
+</DemoBlock>
+
+组件是 **form-associated** 自定义元素（`formAssociated: true`）：`<label for>` 原生关联生效（点击 label 聚焦到 shadow 内真实 input，读屏朗读 label 文本）；放进原生 `<form>` 后经标准 `FormData` 收集（有 `name` 才提交）、`form.reset()` 回到 `value` 初始值、父级 `fieldset[disabled]` 联动禁用。与 `oas-form` 的 `collectFields` 机制并行可用。
+
 ## 类型
 
 <DemoBlock title="type">
@@ -174,6 +190,19 @@ onMounted(() => {
       fmtOut.textContent = `原始值: ${e.detail.value}`
     })
   }
+
+  // form-associated：原生 label 关联 + FormData 读取 + reset
+  const faForm = document.getElementById('input-form-demo')
+  const faOut = document.getElementById('input-form-output')
+  document.getElementById('input-form-submit')?.addEventListener('click', () => {
+    if (!faForm) return
+    const fd = new FormData(faForm)
+    faOut.textContent = `FormData: username=${JSON.stringify(fd.get('username'))}`
+  })
+  document.getElementById('input-form-reset')?.addEventListener('click', () => {
+    faForm?.reset()
+    if (faOut) faOut.textContent = 'form.reset() 已执行，值回到初始值'
+  })
 })
 </script>
 
