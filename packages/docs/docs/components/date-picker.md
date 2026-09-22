@@ -237,10 +237,12 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `max` | 可选范围（ISO 日期）；翻页到界时导航按钮置灰 | `string` | — |
 | `min` | 可选范围（ISO 日期）；翻页到界时导航按钮置灰 | `string` | — |
 | `multiple` | 多选（仅 `type=date`），值存 JSON 数组；该形态手输通道只读 | `boolean` | — |
+| `name` | 表单字段名（原生 FormData 提交的 key；范围模式派生 name-start / name-end 两条 entry；无 name 浏览器自动不提交） | `string` | — |
 | `open` | 受控开合：在场=展开、移除=收起；手势只派发 `oas-open-change` 由宿主回写；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | — | — |
 | `placeholder` | 占位提示 | — | — |
 | `placement` | 浮层位置，12 向：`top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `bottom-start`）；触发器贴近视口右缘时自动右对齐翻转、下方空间不足时上翻，并夹取到视口内 | `string` | `bottom-start` |
 | `readonly` | 只读：面板可展开浏览（单元格可键盘导航），点选/快捷/清除/手输均不提交 | `boolean` | — |
+| `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `shortcuts-position` | 快捷预设位置：`bottom`（默认，顶部横排）/ `left`（左侧纵栏） | `string` | `bottom` |
 | `show-week-number` | 显示 ISO 周号列（`type=week` 自带） | `boolean` | — |
 | `size` | 尺寸档：`small` / `medium` / `large`（就近读取 config-provider 注入） | `string` | `medium` |

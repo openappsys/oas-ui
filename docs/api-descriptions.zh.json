@@ -882,7 +882,9 @@
       "status": "校验态：`success` / `warning` / `error`（`error` 联动 `aria-invalid`）",
       "type": "类型：`date` / `daterange` / `month` / `monthrange` / `year` / `yearrange` / `datetime` / `datetimerange` / `week` / `quarter`",
       "unlink-panels": "范围双月各自独立翻页（默认联动）",
-      "value": "当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组"
+      "value": "当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组",
+      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）",
+      "name": "表单字段名（原生 FormData 提交的 key；范围模式派生 name-start / name-end 两条 entry；无 name 浏览器自动不提交）"
     },
     "events": {
       "oas-calendar-change": "范围类型起止落选即派发，`detail: { value: [start, end|null] }`（宿主可做已选起点提示）",
@@ -2980,7 +2982,9 @@
       "status": "校验态：`success` / `warning` / `error`（`error` 联动 `aria-invalid`）",
       "step": "步进：JSON 三元组 `{\"h\":2,\"m\":5,\"s\":1}` 分别控制时/分/秒列；单数字等价于分钟步进",
       "use12-hours": "12 小时制：显示与列走 12 小时制（附上午/下午列，文案随 locale）；value 恒为 24 小时制",
-      "value": "当前值（`HH:mm:ss`；`is-range` 为 JSON 数组）"
+      "value": "当前值（`HH:mm:ss`；`is-range` 为 JSON 数组）",
+      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）",
+      "name": "表单字段名（原生 FormData 提交的 key；范围模式派生 name-start / name-end 两条 entry；无 name 浏览器自动不提交）"
     },
     "events": {
       "oas-change": "确认值变化，`detail: { value }`（`is-range` 为字符串数组）",
@@ -3447,7 +3451,8 @@
       "paste": "粘贴上传（默认关；开启后粘贴剪贴板文件入列）",
       "show-file-list": "文件列表显隐（`\"false\"` 隐藏，仅保留拖拽区）",
       "replace": "max-count=1 时替换语义（新文件替换旧文件而非拒绝）",
-      "tip": "拖拽区提示文案（同 `template[slot=\"tip\"]` 富内容）"
+      "tip": "拖拽区提示文案（同 `template[slot=\"tip\"]` 富内容）",
+      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）"
     },
     "events": {
       "oas-change": "文件列表变化，`detail: { files }`",

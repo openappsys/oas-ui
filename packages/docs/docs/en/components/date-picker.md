@@ -233,10 +233,12 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `max` | Selectable range (ISO date); navigation buttons gray out at the boundary | `string` | — |
 | `min` | Selectable range (ISO date); navigation buttons gray out at the boundary | `string` | — |
 | `multiple` | Multiple selection (only `type=date`), value is a JSON array; the typing channel is read-only in this mode | `boolean` | — |
+| `name` | Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent) | `string` | — |
 | `open` | Controlled open: present = open, removed = closed; gestures only emit `oas-open-change` for the host to write back; in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | — | — |
 | `placeholder` | Placeholder text | — | — |
 | `placement` | Popup placement, 12 directions: `top`/`bottom`/`left`/`right` × `-start`/`-end` (default `bottom-start`); auto right-aligns near the viewport right edge, flips upward when space below is insufficient, and clamps into the viewport | `string` | `bottom-start` |
 | `readonly` | Readonly: the panel can be opened and browsed (cells keyboard-navigable), but no interaction commits | `boolean` | — |
+| `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `shortcuts-position` | Shortcut placement: `bottom` (default, horizontal on top) / `left` (vertical sidebar) | `string` | `bottom` |
 | `show-week-number` | Show an ISO week-number column (built-in for `type=week`) | `boolean` | — |
 | `size` | Size: `small` / `medium` / `large` (reads the nearest config-provider injection) | `string` | `medium` |

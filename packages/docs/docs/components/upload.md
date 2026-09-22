@@ -396,9 +396,10 @@ onMounted(async () => {
 | `max-size` | 单文件大小上限（字节或 `2KB`/`1MB`/`1GB`；超限派 oas-exceed size 形态） | `string` | — |
 | `method` | HTTP 方法（默认 POST） | `string` | `POST` |
 | `multiple` | 多选 | `boolean` | — |
-| `name` | 上传文件的表单字段名（默认 `file`） | `string` | `file` |
+| `name` | 上传文件的表单字段名（默认 `file`） | `string` | — |
 | `paste` | 粘贴上传（默认关；开启后粘贴剪贴板文件入列） | `boolean` | — |
 | `replace` | max-count=1 时替换语义（新文件替换旧文件而非拒绝） | `boolean` | — |
+| `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `show-file-list` | 文件列表显隐（`"false"` 隐藏，仅保留拖拽区） | `string` | `true` |
 | `tip` | 拖拽区提示文案（同 `template[slot="tip"]` 富内容） | `string` | — |
 | `with-credentials` | 跨域携带凭证 | `boolean` | — |

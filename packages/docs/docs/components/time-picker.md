@@ -138,10 +138,12 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 | `disabled` | 禁用 | `boolean` | — |
 | `format` | 展示格式 token；含 `HH`/`mm`/`ss` 时对应列出现 | `string` | `HH:mm:ss` |
 | `is-range` | 时间范围：值为 JSON 数组 `["HH:mm:ss","HH:mm:ss"]`，确认时起止自动排序；该形态手输通道只读 | `boolean` | — |
+| `name` | 表单字段名（原生 FormData 提交的 key；范围模式派生 name-start / name-end 两条 entry；无 name 浏览器自动不提交） | `string` | — |
 | `open` | 受控开合：在场=展开、移除=收起；手势只派发 `oas-open-change` 由宿主回写；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | — | — |
 | `placeholder` | 占位提示 | — | — |
 | `placement` | 浮层位置，12 向（默认 `bottom-start`），`fixed` + 碰撞翻转 + 视口夹取（与 date-picker 同契约） | `string` | `bottom-start` |
 | `readonly` | 只读：面板可展开浏览，点选/此刻/预设/清除/手输均不提交 | `boolean` | — |
+| `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `size` | 尺寸档：`small` / `medium` / `large`（就近读取 config-provider 注入） | `string` | `medium` |
 | `status` | 校验态：`success` / `warning` / `error`（`error` 联动 `aria-invalid`） | `string` | — |
 | `step` | 步进：JSON 三元组 `{"h":2,"m":5,"s":1}` 分别控制时/分/秒列；单数字等价于分钟步进 | `string` | — |

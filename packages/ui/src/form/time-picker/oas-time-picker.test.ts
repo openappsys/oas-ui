@@ -635,3 +635,194 @@ describe('OASTimePicker 移动端底部抽屉（bottom-sheet 接入）', () => {
     expect(pcCss).not.toContain('min-height: var(--oas-touch-target-min, 44px)')
   })
 })
+
+// ---- form-associated（原生表单集成） ----
+
+describe('OASTimePicker form-associated（原生表单集成）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** happy-dom 不支持 attachInternals → 替身注入验证 plumbing；真实原生关联走浏览器 e2e */
+  const fakeInternals = (el: OASTimePicker) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  /** 展开面板、点选指定列的指定文本并 Enter 确认（面板确认通道） */
+  function pick(el: OASTimePicker, colIndex: number, text: string): void {
+    open(el)
+    optionsIn(columns(el)[colIndex]!)
+      .find((o) => o.textContent === text)!
+      .click()
+    keydown(el, 'Enter')
+  }
+
+  it('静态声明 formAssociated = true；required/name 进入 observedAttributes；无 ElementInternals 环境降级', () => {
+    expect((OASTimePicker as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+    expect(OASTimePicker.observedAttributes).toEqual(expect.arrayContaining(['required', 'name']))
+    const el = mount({})
+    expect(el.labels).toBeNull()
+    expect(el.form).toBeNull()
+  })
+
+  it('单值提交：value 属性字符串；无选中提交 null（FormData 不含此项）', () => {
+    const named = mount({ value: '09:30:00', name: 'meeting' })
+    const fakeNamed = fakeInternals(named)
+    named.setAttribute('size', 'small') // 触发 update → 同步 FormData
+    expect(fakeNamed.setFormValue).toHaveBeenLastCalledWith('09:30:00')
+
+    const empty = mount({ name: 'meeting' })
+    const fakeEmpty = fakeInternals(empty)
+    empty.setAttribute('size', 'small')
+    expect(fakeEmpty.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('面板确认与手输提交均同步 FormData', () => {
+    const el = mount({ name: 'meeting' })
+    const fake = fakeInternals(el)
+    pick(el, 1, '15') // 分钟列选 15
+    expect(el.getAttribute('value')).toBe('00:15:00')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('00:15:00')
+
+    const typed = mount({ name: 'typed' })
+    const fakeTyped = fakeInternals(typed)
+    type(typed, '08:15')
+    blurInput(typed)
+    expect(typed.getAttribute('value')).toBe('08:15:00')
+    expect(fakeTyped.setFormValue).toHaveBeenLastCalledWith('08:15:00')
+  })
+
+  it('范围提交 name-start / name-end 两条 entry；两侧皆空提交 null；只选一半空侧空串', () => {
+    const el = mount({ 'is-range': '', value: '["09:00:00","11:30:00"]', name: 'window' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    const arg = fake.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(arg).toBeInstanceOf(FormData)
+    expect(arg.getAll('window-start')).toEqual(['09:00:00'])
+    expect(arg.getAll('window-end')).toEqual(['11:30:00'])
+
+    const empty = mount({ 'is-range': '', name: 'window' })
+    const fakeEmpty = fakeInternals(empty)
+    empty.setAttribute('size', 'small')
+    expect(fakeEmpty.setFormValue).toHaveBeenLastCalledWith(null)
+
+    const half = mount({ 'is-range': '', value: '["09:00:00"]', name: 'window' })
+    const fakeHalf = fakeInternals(half)
+    half.setAttribute('size', 'small')
+    const halfArg = fakeHalf.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(halfArg.getAll('window-start')).toEqual(['09:00:00'])
+    expect(halfArg.getAll('window-end')).toEqual([''])
+  })
+
+  it('受控 value 写入同步 FormData（单值/范围）', () => {
+    const el = mount({ name: 'meeting' })
+    const fake = fakeInternals(el)
+    el.setAttribute('value', '10:30:00')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('10:30:00')
+
+    const range = mount({ 'is-range': '', name: 'window' })
+    const fakeRange = fakeInternals(range)
+    range.setAttribute('value', '["09:00:00","11:00:00"]')
+    const arg = fakeRange.setFormValue.mock.calls.at(-1)?.[0] as FormData
+    expect(arg.getAll('window-start')).toEqual(['09:00:00'])
+    expect(arg.getAll('window-end')).toEqual(['11:00:00'])
+  })
+
+  it('清空按钮同步 null（单值/范围）', () => {
+    const single = mount({ clearable: '', value: '09:30:00', name: 'meeting' })
+    const fakeSingle = fakeInternals(single)
+    single.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!.click()
+    expect(fakeSingle.setFormValue).toHaveBeenLastCalledWith(null)
+
+    const range = mount({ 'is-range': '', clearable: '', value: '["09:00:00","11:00:00"]', name: 'window' })
+    const fakeRange = fakeInternals(range)
+    range.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!.click()
+    expect(fakeRange.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('formResetCallback：用户选过后恢复初始基线（空），不派发事件，reset 后可继续选择', () => {
+    const el = mount({ name: 'meeting' })
+    const fake = fakeInternals(el)
+    let changes = 0
+    el.addEventListener('oas-change', () => changes++)
+    pick(el, 1, '15')
+    expect(el.getAttribute('value')).toBe('00:15:00')
+    el.formResetCallback()
+    expect(el.hasAttribute('value')).toBe(false)
+    expect(trigger(el).value).toBe('')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+    // 计数 = 1 全部来自上面的用户确认；reset 本身不再派发（与原生 reset 一致）
+    expect(changes, 'reset 不派发 oas-change').toBe(1)
+    // reset 已清脏：行为可重复（再选 → 再 reset 回空基线）
+    pick(el, 0, '07')
+    expect(el.getAttribute('value')).toBe('07:00:00')
+    el.formResetCallback()
+    expect(el.hasAttribute('value')).toBe(false)
+  })
+
+  it('受控写入刷新基线：reset 恢复受控写入后的值，不是挂载初值', () => {
+    const el = mount({ value: '09:00:00', name: 'meeting' })
+    el.setAttribute('value', '10:30:00') // 受控写入建立新基线
+    pick(el, 1, '45') // 用户改分（置脏）
+    expect(el.getAttribute('value')).toBe('10:45:00')
+    el.formResetCallback()
+    expect(el.getAttribute('value')).toBe('10:30:00')
+    expect(trigger(el).value).toBe('10:30:00')
+  })
+
+  it('required：无选中 valueMissing（message 非空），选中后恢复合法', () => {
+    const el = mount({ required: '', name: 'meeting' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small') // 触发 update → 校验链同步
+    // flag 为 true 时 message 按 Chromium 契约必须非空（基类 setValidity 会显式补 anchor 实参，只查前两个参数）
+    const missing = fake.setValidity.mock.calls.at(-1)
+    expect(missing?.[0]).toEqual({ valueMissing: true })
+    expect(typeof missing?.[1]).toBe('string')
+    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+    pick(el, 1, '15')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('required：范围两侧皆空 valueMissing，写入范围后恢复合法', () => {
+    const el = mount({ 'is-range': '', required: '', name: 'window' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    expect(fake.setValidity.mock.calls.at(-1)?.[0]).toEqual({ valueMissing: true })
+    el.setAttribute('value', '["09:00:00","11:00:00"]')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('formDisabledCallback：表单链路禁用并入（不回写 disabled 属性防自锁），解除后恢复', () => {
+    const el = mount({})
+    el.formDisabledCallback(true)
+    expect(el.hasAttribute('disabled'), '不回写 disabled 属性（自锁防线）').toBe(false)
+    expect(trigger(el).disabled).toBe(true)
+    el.formDisabledCallback(false)
+    expect(trigger(el).disabled).toBe(false)
+  })
+
+  it('label 点击（派到宿主的 click）聚焦 shadow 内 trigger；点击 trigger 本身不重复聚焦', () => {
+    const el = mount({})
+    const spy = vi.spyOn(trigger(el), 'focus')
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockClear()
+    trigger(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('focus() 转到 shadow 内 trigger', () => {
+    const el = mount({})
+    const spy = vi.spyOn(trigger(el), 'focus')
+    el.focus()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})
