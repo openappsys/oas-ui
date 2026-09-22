@@ -14,6 +14,21 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import {
+  ADJACENT_PRESET_PAIRS,
+  PRESET_NAMES,
+  TEXT_ELEVATED_MIN_SCORE,
+  TEXT_MAX_HUE_DRIFT,
+  TEXT_MIN_DISTANCE,
+  TEXT_MIN_SCORE,
+  contrastScore,
+  hexToOklch,
+  hueDiff,
+  okDistance,
+  parseElevatedBg,
+  parsePresetTokens,
+  textBgs,
+} from '../../theme/oklab'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -108,42 +123,132 @@ describe('内联图标约定：class="chevron" 的 path 必须是规范 V 形', 
   })
 })
 
-// ---------- theme 预设 -text 档：gold↔orange 可辨性门禁（light） ----------
-// 背景：light 的 gold-text(#94660c) 与 orange-text(#a55c0f) 的 RGB 欧氏距离仅 18——
-// 两者对白底的感知对比度都达标（≈75）却几乎同色，tag/badge/label 实底 gold 与 orange 不可辨。
-// 对底达标 ≠ 互相可辨，门禁锁两点（dark 两值一深黄一橙、色相差大，不在本门禁内）：
-// 1. gold↔orange RGB 距离 ≥60
-// 2. gold-text 对白底感知分 ≥60（与 a11y 门禁同公式，防未来调值时亮度回升重蹈撞色）
+// ---------- theme 预设 -text 档：派生规则守卫（锁色相 + 对比度 + 相邻色距） ----------
+// 背景：light 的 gold-text 曾手调成 #6a4c00 只为拉开与 orange 的 RGB 距离，结果 lime↔green
+// 只剩 ΔE 3.9、geekblue↔blue 仅 5.1——没有可复算规则，下次再动又会重演。本组守卫把
+// docs/ui-spec.md §1.2 的派生规则锁死（阈值常量与离线复算工具同源：packages/theme/oklab.ts）：
+//   1. 目标底（light #ffffff/#f5f5f5、dark #18181b/#1d1d20）感知分 ≥ TEXT_MIN_SCORE；
+//   2. `-text` 在主题 `--oas-color-bg-elevated` 上感知分 ≥ TEXT_ELEVATED_MIN_SCORE（硬闸 60）——
+//      bg-elevated（dark #3f3f46）是 snackbar/toolbar/app-bar/sidebar/segmented/descriptions 等
+//      正式表面，真实可达；它不作求解目标，只作约束；
+//   3. `-text` 相对本色的色相漂移 ≤ TEXT_MAX_HUE_DRIFT（"gold 不许变成红"）；
+//   4. 相邻易混组 ΔE_OK ≥ TEXT_MIN_DISTANCE。
+// 复算：node scripts/theme/derive-presets.mjs（含违例清单与推导表）
 const THEME_CSS = readFileSync(join(here, '../../theme/index.css'), 'utf8')
+const TOKENS = parsePresetTokens(THEME_CSS)
+const ELEVATED = parseElevatedBg(THEME_CSS)
+const THEME_MODES = ['light', 'dark'] as const
 
-/** 解析 theme css 中 :root（light）区段 `--oas-preset-<name>-text: #hex;`（首个赋值 = light 段） */
-function lightPresetTextRgb(name: string): [number, number, number] {
-  const m = THEME_CSS.match(new RegExp(`--oas-preset-${name}-text:\\s*#([0-9a-fA-F]{6})`))
-  if (!m) throw new Error(`theme/index.css 缺少 --oas-preset-${name}-text 的 light 赋值`)
-  const n = parseInt(m[1]!, 16)
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+type ThemeMode = (typeof THEME_MODES)[number]
+
+/** 目标底感知分不达标的预设（返回违规明细，空数组 = 通过） */
+function contrastViolations(mode: ThemeMode, tokens = TOKENS[mode]): string[] {
+  const bgs = textBgs(mode)
+  return PRESET_NAMES.filter((name) => bgs.some((bg) => contrastScore(tokens.text[name], bg) < TEXT_MIN_SCORE)).map(
+    (name) =>
+      `${mode} ${name}-text ${tokens.text[name]}：目标底感知分 ${bgs
+        .map((bg) => `${bg}=${contrastScore(tokens.text[name], bg).toFixed(1)}`)
+        .join(' / ')} < ${TEXT_MIN_SCORE}`,
+  )
 }
 
-/** 感知对比度（与 a11y.spec.ts 门禁同公式，浅底深字分支）；输入 8bit sRGB */
-function perceptualScoreOnWhite(rgb: [number, number, number]): number {
-  const lin = (c: number) => Math.pow(c / 255, 2.4)
-  const y = 0.2126729 * lin(rgb[0]!) + 0.7151522 * lin(rgb[1]!) + 0.072175 * lin(rgb[2]!)
-  return ((Math.pow(1, 0.56) - Math.pow(y, 0.57)) * 1.14 - 0.027) * 100
+/** 在主题 bg-elevated 上低于硬闸的预设（空数组 = 通过；light 的 bg-elevated 即白底，被目标底覆盖） */
+function elevatedViolations(mode: ThemeMode, tokens = TOKENS[mode]): string[] {
+  const bg = ELEVATED[mode]
+  return PRESET_NAMES.filter((name) => contrastScore(tokens.text[name], bg) < TEXT_ELEVATED_MIN_SCORE).map(
+    (name) =>
+      `${mode} ${name}-text ${tokens.text[name]}：bg-elevated(${bg}) 感知分 ${contrastScore(tokens.text[name], bg).toFixed(1)} < ${TEXT_ELEVATED_MIN_SCORE}`,
+  )
 }
 
-describe('theme 预设 -text 档：gold↔orange 可辨性（light）', () => {
-  it('gold-text 与 orange-text 的 RGB 距离 ≥60（曾仅 18 → 实底撞色不可辨）', () => {
-    const gold = lightPresetTextRgb('gold')
-    const orange = lightPresetTextRgb('orange')
-    const dist = Math.sqrt(gold.reduce((acc, v, i) => acc + (v - orange[i]!) ** 2, 0))
-    expect(
-      dist,
-      `gold(${gold}) 与 orange(${orange}) 距离 ${dist.toFixed(1)}，<60 视为撞色不可辨`,
-    ).toBeGreaterThanOrEqual(60)
+/** 色相漂移超限的预设（空数组 = 通过） */
+function hueDriftViolations(mode: ThemeMode, tokens = TOKENS[mode]): string[] {
+  return PRESET_NAMES.filter(
+    (name) => hueDiff(hexToOklch(tokens.base[name]).h, hexToOklch(tokens.text[name]).h) > TEXT_MAX_HUE_DRIFT,
+  ).map((name) => {
+    const drift = hueDiff(hexToOklch(tokens.base[name]).h, hexToOklch(tokens.text[name]).h)
+    return `${mode} ${name}-text ${tokens.text[name]}：色相漂移 ${drift.toFixed(1)}° > ${TEXT_MAX_HUE_DRIFT}°（本色 ${tokens.base[name]}）`
   })
+}
 
-  it('gold-text 对白底感知分 ≥60（防调值时亮度回升撞回 orange）', () => {
-    const gold = lightPresetTextRgb('gold')
-    expect(perceptualScoreOnWhite(gold)).toBeGreaterThanOrEqual(60)
+/** 相邻易混组色距不足的预设对（空数组 = 通过） */
+function distanceViolations(mode: ThemeMode, tokens = TOKENS[mode]): string[] {
+  return ADJACENT_PRESET_PAIRS.filter(
+    ([a, b]) => okDistance(hexToOklch(tokens.text[a]), hexToOklch(tokens.text[b])) < TEXT_MIN_DISTANCE,
+  ).map(([a, b]) => {
+    const d = okDistance(hexToOklch(tokens.text[a]), hexToOklch(tokens.text[b]))
+    return `${mode} ${a}-text ${tokens.text[a]} ↔ ${b}-text ${tokens.text[b]}：ΔE ${d.toFixed(1)} < ${TEXT_MIN_DISTANCE}`
+  })
+}
+
+/** 覆盖若干 `-text` 值后的 token 副本（供守卫自检注入历史缺陷） */
+function withText(mode: ThemeMode, overrides: Partial<Record<string, string>>) {
+  return { base: TOKENS[mode].base, text: { ...TOKENS[mode].text, ...overrides } }
+}
+
+describe('theme 预设 -text 档：目标底感知分 ≥65（light 白底/灰卡底、dark 页底/软底）', () => {
+  for (const mode of THEME_MODES) {
+    it(`${mode}：全部预设 -text 目标底达标`, () => {
+      expect(contrastViolations(mode), '预设 -text 目标底感知分不达标，文字不可读').toEqual([])
+    })
+  }
+
+  it('守卫自身有效：能识别低对比注入、不误报当前值', () => {
+    const injected = withText('light', { gold: '#ffd666' })
+    expect(contrastViolations('light', injected)).toHaveLength(1)
+    expect(contrastViolations('light')).toEqual([])
+  })
+})
+
+describe('theme 预设 -text 档：bg-elevated 感知分 ≥60 硬闸（dark #3f3f46 为真实可达表面）', () => {
+  for (const mode of THEME_MODES) {
+    it(`${mode}：全部预设 -text 在 bg-elevated 上达标`, () => {
+      expect(
+        elevatedViolations(mode),
+        '预设 -text 落在 bg-elevated（snackbar/toolbar/app-bar/sidebar 等正式表面）上低于硬闸，文字不可读',
+      ).toEqual([])
+    })
+  }
+
+  it('守卫自身有效：能捕获「目标底达标、仅 bg-elevated 不达标」的注入、不误报当前值', () => {
+    // #ffaa43 在 dark 页底/软底上 65.6/65.0（目标底 ≥65 达标），却在 bg-elevated #3f3f46 上仅 57.1
+    // ——证明本断言独立于目标底断言，不是重复覆盖
+    const injected = withText('dark', { orange: '#ffaa43' })
+    expect(contrastViolations('dark', injected), '该注入值目标底仍达标（是断言独立性的前提）').toEqual([])
+    expect(elevatedViolations('dark', injected)).toHaveLength(1)
+    expect(elevatedViolations('dark')).toEqual([])
+    expect(elevatedViolations('light')).toEqual([])
+  })
+})
+
+describe('theme 预设 -text 档：锁色相（漂移 ≤ 12°）', () => {
+  for (const mode of THEME_MODES) {
+    it(`${mode}：全部预设 -text 保持本色相`, () => {
+      expect(hueDriftViolations(mode), '预设 -text 色相漂移超限（会把金字调成红字这类事故）').toEqual([])
+    })
+  }
+
+  it('守卫自身有效：gold 调成 red 能被捕获、当前值不误报', () => {
+    expect(hueDriftViolations('light', withText('light', { gold: '#da1e28' })).length).toBeGreaterThan(0)
+    // 本色相跨度远大于阈值：gold(76°) → red(26°) 这种"改色相"必被拦
+    expect(hueDiff(hexToOklch('#faad14').h, hexToOklch('#f5222d').h)).toBeGreaterThan(TEXT_MAX_HUE_DRIFT)
+    expect(hueDriftViolations('light')).toEqual([])
+  })
+})
+
+describe('theme 预设 -text 档：相邻易混组 ΔE_OK ≥ 8（gold↔orange / lime↔green / cyan↔blue / geekblue↔blue）', () => {
+  for (const mode of THEME_MODES) {
+    it(`${mode}：全部相邻组色距达标`, () => {
+      expect(distanceViolations(mode), '相邻预设 -text 撞色不可辨，请按 ui-spec §1.2 规则重跑派生工具').toEqual([])
+    })
+  }
+
+  it('守卫自身有效：能捕获历史撞色（lime/green 3.9、geekblue/blue 5.1）、不误报当前值', () => {
+    expect(distanceViolations('light', withText('light', { green: '#357f11' }))).not.toEqual([])
+    expect(distanceViolations('light', withText('light', { geekblue: '#2f54eb' }))).not.toEqual([])
+    expect(distanceViolations('dark', withText('dark', { geekblue: '#b3c4fb', blue: '#b8d6ff' }))).not.toEqual([])
+    // 历史缺陷的确低于下限（该组对若被"改回去"必然 RED）
+    expect(okDistance(hexToOklch('#357f11'), hexToOklch('#5a7a0a'))).toBeLessThan(TEXT_MIN_DISTANCE)
+    expect(okDistance(hexToOklch('#b3c4fb'), hexToOklch('#b8d6ff'))).toBeLessThan(TEXT_MIN_DISTANCE)
   })
 })

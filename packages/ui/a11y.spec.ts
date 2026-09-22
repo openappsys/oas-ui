@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { appendFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
+import { perceptualContrast, relativeLuminance } from '../theme/oklab'
 
 // 自动收集全部 demo 页（与 smoke/console-sweep 同机制）：新组件默认进 axe 审计。
 // EXCLUDE_PAGES = a11y 专项批次债务台账（页 → 违规类型 + 设计冲突说明），修复一页出一页；当前为空：
@@ -29,30 +30,10 @@ const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'
   .sort()
   .map((html) => `/components/${html}`)
 
-// ---------- 感知对比度：度量函数（公开数学定义的常数，原创实现；输入 8bit sRGB） ----------
+// ---------- 感知对比度：度量函数（公式真源 packages/theme/oklab.ts，与派生规则/守卫同源） ----------
 // 量级 0-100+，带符号：正值=深字浅底，负值=浅字深底；门禁按绝对值分档（30 / 45 / 60）。
-function srgbLuminance(rgb: [number, number, number]): number {
-  const lin = (c: number) => Math.pow(c / 255, 2.4)
-  return 0.2126729 * lin(rgb[0]) + 0.7151522 * lin(rgb[1]) + 0.072175 * lin(rgb[2])
-}
-function perceptualContrast(textY: number, bgY: number): number {
-  if (Number.isNaN(textY) || Number.isNaN(bgY) || Math.min(textY, bgY) < 0 || Math.max(textY, bgY) > 1.1) return 0
-  // 近黑软截断（低亮度段修正，避免深色区域数值跳变）
-  const clamp = (y: number) => (y > 0.022 ? y : y + Math.pow(0.022 - y, 1.414))
-  const tY = clamp(textY)
-  const bY = clamp(bgY)
-  if (Math.abs(bY - tY) < 0.0005) return 0
-  let raw: number
-  let out: number
-  if (bY > tY) {
-    raw = (Math.pow(bY, 0.56) - Math.pow(tY, 0.57)) * 1.14
-    out = raw < 0.1 ? 0 : raw - 0.027
-  } else {
-    raw = (Math.pow(bY, 0.65) - Math.pow(tY, 0.62)) * 1.14
-    out = raw > -0.1 ? 0 : raw + 0.027
-  }
-  return out * 100
-}
+// ⚠️ 公式（亮度系数 / 近黑软截断 / 幂次与系数）只在 theme/oklab.ts 维护一份，本 spec 直接 import；
+// 此处仅保留「非纯色（rgba/渐变）→ null 跳过」的本地容错解析，不再复制任何公式常数。
 function hexToRgb(hex: string): [number, number, number] | null {
   const m = hex.trim().match(/^#([0-9a-f]{6})$/i)
   if (!m) return null
@@ -64,7 +45,7 @@ function scoreOf(fg: string, bg: string): number | null {
   const f = hexToRgb(fg)
   const b = hexToRgb(bg)
   if (!f || !b) return null
-  return Math.abs(perceptualContrast(srgbLuminance(f), srgbLuminance(b)))
+  return Math.abs(perceptualContrast(relativeLuminance(f), relativeLuminance(b)))
 }
 
 // ---------- 感知对比度：ratchet 门禁（只许降不许升，修一处降一处） ----------
