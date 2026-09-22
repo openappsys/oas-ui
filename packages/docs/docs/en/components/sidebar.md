@@ -344,6 +344,18 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 ## API
 
+### Methods
+
+| Method | Description |
+| --- | --- |
+| `openDrawer()` | Opens the mobile drawer programmatically (same as clicking the built-in trigger `part="trigger"`) |
+| `closeDrawer()` | Closes the mobile drawer programmatically (same as mask click / close button / Esc) |
+
+- Usage: `const el = document.querySelector('oas-sidebar') as OASSidebar; el.openDrawer()`.
+- Equivalent to the controlled `drawer-open` attribute: the methods are sugar for setting/removing it (`openDrawer` sets, `closeDrawer` removes) and can be mixed; repeated calls are idempotent.
+- Mobile only (viewport narrower than `mobile-breakpoint`); on desktop the attribute is reclaimed by `update` immediately, leaving no floating layer.
+- Drawer open/close emits no event: observe the `drawer-open` attribute (MutationObserver) or keep host state; for a two-state toggle, call `openDrawer()` / `closeDrawer()` based on your own state.
+
 ### oas-sidebar
 
 #### Attributes

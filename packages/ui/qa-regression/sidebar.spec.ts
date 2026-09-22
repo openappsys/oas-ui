@@ -2,6 +2,63 @@
 
 import { test, expect } from '@playwright/test'
 
+// —— 缺陷回归：openDrawer/closeDrawer 曾为 private，外部无法以 OASSidebar 类型调用 ——
+// 现为公开方法：外部调用等价于点击内置触发按钮 / 遮罩，必须产生真实可见反馈（面板滑入滑出，
+// 非只改属性）。此处量 computed visibility 与面板实际 x 坐标（真实视觉），不是只查 drawer-open 属性。
+test('sidebar 公开方法：外部调用 openDrawer/closeDrawer 开合移动抽屉（真实视觉反馈）', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => document.querySelector('#sidebar-drawer')?.shadowRoot != null, undefined, {
+    timeout: 15000,
+  })
+  const r = await page.evaluate(async () => {
+    // 外部视角：不触碰 shadow 内部按钮，直接调公开方法（private 时类型层不可达）
+    const el = document.getElementById('sidebar-drawer') as HTMLElement & {
+      openDrawer: () => void
+      closeDrawer: () => void
+    }
+    const panel = () => el.shadowRoot!.querySelector('.panel') as HTMLElement
+    const mask = () => el.shadowRoot!.querySelector('.mask') as HTMLElement
+    const settle = async (pred: () => boolean, timeout = 5000) => {
+      const t0 = performance.now()
+      while (performance.now() - t0 < timeout) {
+        if (pred()) return
+        await new Promise((res) => requestAnimationFrame(res))
+      }
+    }
+    const snapshot = () => ({
+      attr: el.hasAttribute('drawer-open'),
+      panelVisibility: getComputedStyle(panel()).visibility,
+      panelLeft: Math.round(panel().getBoundingClientRect().left),
+      panelWidth: Math.round(panel().getBoundingClientRect().width),
+      maskVisibility: getComputedStyle(mask()).visibility,
+    })
+    await settle(() => getComputedStyle(panel()).visibility === 'hidden')
+    const before = snapshot()
+    el.openDrawer()
+    await settle(() => getComputedStyle(panel()).visibility === 'visible')
+    await settle(() => Math.round(panel().getBoundingClientRect().left) === 0)
+    const opened = snapshot()
+    el.closeDrawer()
+    await settle(() => getComputedStyle(panel()).visibility === 'hidden')
+    const closed = snapshot()
+    return { before, opened, closed }
+  })
+  // 关闭态：面板真实滑出视口左外（visibility:hidden，x 为负）
+  expect(r.before.attr, '初始不应带 drawer-open').toBe(false)
+  expect(r.before.panelVisibility, '初始面板应隐藏').toBe('hidden')
+  expect(r.before.panelLeft, '初始面板应滑出视口左外').toBeLessThan(0)
+  // openDrawer 后：属性置位 + 面板真实可见并停在 x=0（滑入）
+  expect(r.opened.attr, 'openDrawer 应置位 drawer-open').toBe(true)
+  expect(r.opened.panelVisibility, 'openDrawer 后面板应可见').toBe('visible')
+  expect(r.opened.panelWidth, '面板应有真实宽度').toBeGreaterThan(0)
+  expect(r.opened.panelLeft, 'openDrawer 后面板应滑入到 x=0').toBe(0)
+  expect(r.opened.maskVisibility, 'openDrawer 后遮罩应可见').toBe('visible')
+  // closeDrawer 后：属性移除 + 面板真实滑出（可见反馈可逆）
+  expect(r.closed.attr, 'closeDrawer 应移除 drawer-open').toBe(false)
+  expect(r.closed.panelVisibility, 'closeDrawer 后面板应隐藏').toBe('hidden')
+  expect(r.closed.panelLeft, 'closeDrawer 后面板应滑出视口左外').toBeLessThan(0)
+})
+
 test('sidebar resizable：拖拽 rail 边缘宽度实时跟随并写回 width 属性（内置 rail）', async ({ page }) => {
   await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
   await page.waitForFunction(() => document.querySelector('#sidebar-resizable')?.shadowRoot != null, undefined, {

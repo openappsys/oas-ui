@@ -345,6 +345,18 @@
 
 ## API
 
+### 方法
+
+| 方法 | 说明 |
+| --- | --- |
+| `openDrawer()` | 编程打开移动端抽屉（等价于点击内置触发按钮 `part="trigger"`） |
+| `closeDrawer()` | 编程关闭移动端抽屉（等价于点击遮罩 / 关闭按钮 / 按 Esc） |
+
+- 调用方式：`const el = document.querySelector('oas-sidebar') as OASSidebar; el.openDrawer()`。
+- 与受控属性 `drawer-open` 等价：方法即该属性的写入/移除语法糖（`openDrawer` 设置、`closeDrawer` 移除），两者可混用；重复调用幂等。
+- 仅移动端（视口窄于 `mobile-breakpoint`）生效；桌面态调用由 update 立即回收，不残留浮层。
+- 抽屉开合不派发事件：宿主可观察 `drawer-open` 属性（MutationObserver）或自行维护状态；需要开合双态时按自身状态调用 `openDrawer()` / `closeDrawer()`。
+
 ### oas-sidebar
 
 #### 属性
