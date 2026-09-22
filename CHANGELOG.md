@@ -2,7 +2,13 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-## [未发布]
+## [2.5.6] - 2026-09-22
+
+### 特性
+
+- **oas-qrcode 美化维度**：新增 `dot-shape`（square 默认 / rounded / dots）、`corner-shape`（square 默认 / rounded）、`gradient` + `gradient-angle`（2–3 色 JSON，CSS 约定角度，生效时覆盖 `color`）、`icon-hide-dots`（中心 logo 覆盖区码点挖空）。渲染拆纯函数层 `shapes.ts` 并与离屏下载共用同一核心（顺带修复 `download()` 调用已移除的旧渲染器，运行即抛 `matrixToPath is not defined`）；square 沿用 run-length 合并单 path，rounded/dots 走 defs 几何原型 + `<use>`；默认配置下 `dataPath + finderPath(square)` 覆盖集合与旧 `matrixToPath` 逐模块等价（可扫性不退化，区域级断言兜底）
+- **表单类组件 form-associated（原生表单集成，15 组件）**：core 新增 `OASFormElement` 基类（`static formAssociated = true` + `attachInternals`，不支持环境静默降级）——`<label for>` 原生关联（label 点击转焦点到 shadow 内真实控件；勾选族对齐原生「激活控件」切换+聚焦；upload 激活文件选择器）+ 原生 FormData 收集（文本族当前文本 / 勾选族勾才提交 / 多选同名多条 / date·time 范围 `name-start`+`name-end` / upload File）+ `form.reset()` 回初始值（不派发事件）+ `fieldset[disabled]` 联动（不回写 `disabled` 属性防自锁，经 `injectDisabled` 通道并入）+ `required` 原生校验链（valueMissing，i18n `form.valueMissing` ×10 语言包，`:valid`/`:invalid` 伪类）+ 外部 label 命名转发（label 文本复制为内层 `aria-label`）。落地：input / textarea / input-number / checkbox / radio / switch / select / combobox / auto-complete / tree-select / mentions / date-picker / time-picker / upload，与 `oas-form` 自研 `collectFields` 并行可用
+- **oas-sidebar 抽屉开合方法公开**：`openDrawer()` / `closeDrawer()`（原 private）——编程控制移动端抽屉，等价于点击内置触发钮/遮罩/Esc；幂等、桌面态自动回收、写入 `drawer-open` 受控属性
 
 ### 契约变更（升级前必读）
 
@@ -28,6 +34,23 @@
 - **qrcode 图形语义归位**：`role="img"` + `aria-label` 从容器挪到 `<svg>` 自身，解除与容器内刷新按钮的交互嵌套
 - **splitter 折叠按钮移出 separator**：按钮与分隔条同级挂在新增 `.sep` 容器、索引由 `data-splitter-index` 携带，消除交互嵌套；折叠面板禁用滚动（0 尺寸滚动区既不可用又触发 scrollable-region-focusable）
 - **progress 内嵌百分比文字**：由横跨「填充 + 轨道」改为只压在已填充段（填充过窄时整段隐藏）——原实现白字压浅色轨道，实测感知分 0
+- **oas-marquee 循环接缝顿挫三连修**：克隆份与源份渲染宽不等（每轮回跳一个空格宽）；相位跳变；克隆份改走 light DOM（继承页面样式）+ 份数口径修正 + reverse 切换相位连续
+- **`[hidden]` 兜底收口（8 处）**：作者级 `display` 声明压过 UA `[hidden]` 规则的同类缺陷，全库清查补齐
+- **真机视觉复核 7 处修复**（含 2 处存量缺陷）+ oas-masonry items getter 契约修复
+- **SSR 测试基建**：DSD 快照匹配改前缀模糊通道（防 DOM 噪声属性误报）；关闭 happy-dom 帧导航（消除单测 fetch 噪声）
+
+### 工程
+
+- **断开 ui↔ssr 构建环**：`packages/ui` 移除对 `@oas-ui/ssr` 的 devDependency（任务图成环致 pnpm dev/build 全挂），唯一真实引用（e2e spec）迁至 ssr 包内，playwright `testDir` 放宽到 `./packages`
+- **工具链与依赖升级**：pnpm 11.20.0 → 12.5.1（packageManager）+ biome/playwright/@types/node/happy-dom/markdownlint 等升级，连带回归 8 条修复（含 1 条 SSR 真回归）+ gold 期望同步
+- **API 工具链**：反向缺口治理（跨目录基类扫描 + `@apiProperty` 通道 + 双向 0 门禁）；API 语料进 pre-commit；docs 双语镜像守卫；qa-regression 覆盖回填 8 组件
+- **perf 预算重定档**（form-associated 批次增量）：cdn.js 575→600 KB、全量入口 870→905 KB（天花板制等比）、button 链 31→35 KB、table 链 65→70 KB、form 链 20→24 KB（绝对值制按实测上浮 ~15%）
+- **ui-spec 新增「命令式开合 API 约定」**（抽屉/浮层类公开方法的统一形状，sidebar 为首个落地件）
+
+### 文档
+
+- form 页新增「原生表单集成」集中 demo（label for + FormData + reset + 15 组件支持清单，中英双版）；12 组件补 required 演示块
+- qrcode 文档补形状/渐变两节 demo（中英双版）；`error-correction` 说明修正（四级均已实现，非仅 L 级）
 
 ### 测试
 
