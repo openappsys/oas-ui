@@ -407,3 +407,68 @@ test('navigation-menu 移动端：窄屏顶级溢出收纳进「···」弹层�
     await ctx.close()
   }
 })
+
+// —— 缺陷回归：统一 viewport 位置不跟随激活触发器 ——
+// 曾现缺陷：`.viewport` 固定 `inset-inline-start: 0`（贴 nav/最左项起点），hover 靠右的
+// 顶级项时面板内容已切换、位置仍停在最左项下方——面板与激活项左右脱节（用户实测报障）。
+// 修复：把激活触发器相对 nav 的逻辑偏移写入 `--vp-x`（回折写 `--vp-x-end`），面板与激活项对齐。
+test('navigation-menu 面板左缘跟随激活触发器（hover 第 1 项 vs 最后一项均对齐 ≤2px）', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-navigation-menu')
+  await page.evaluate(() => {
+    const host = document.createElement('oas-navigation-menu')
+    host.id = 'nav-follow'
+    host.setAttribute('delay-duration', '0')
+    host.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '产品', value: 'products', children: [{ label: '组件', value: 'c', href: '#c' }] },
+        { label: '资源', value: 'resources', children: [{ label: '主题', value: 't', href: '#t' }] },
+        { label: '定价', value: 'pricing', href: '#pricing' },
+        { label: '示例', value: 'examples', children: [{ label: '示例一', value: 'x', href: '#x' }] },
+      ]),
+    )
+    // 宽容器：避免进入回折分支，直接量「面板左缘 vs 激活项左缘」
+    host.style.cssText = 'position:fixed;top:0;left:0;display:block;width:1000px;z-index:99999'
+    document.body.appendChild(host)
+  })
+  const measure = async (idx: number) => {
+    const pt = await page.evaluate((i) => {
+      const host = document.querySelector('#nav-follow') as HTMLElement
+      const trig = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[part="top-item"]')][i]!
+      trig.scrollIntoView({ block: 'center' })
+      const r = trig.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    }, idx)
+    await page.mouse.move(pt.x, pt.y)
+    await page.waitForTimeout(450)
+    return page.evaluate((i) => {
+      const host = document.querySelector('#nav-follow') as HTMLElement
+      const root = host.shadowRoot!
+      const trig = [...root.querySelectorAll<HTMLElement>('[part="top-item"]')][i]!
+      const vp = root.querySelector<HTMLElement>('[part="viewport"]')!
+      const tr = trig.getBoundingClientRect()
+      const vr = vp.getBoundingClientRect()
+      return {
+        label: (trig.textContent ?? '').trim(),
+        triggerLeft: tr.left,
+        panelLeft: vr.left,
+        flip: vp.classList.contains('flip-right'),
+        open: vp.classList.contains('open'),
+      }
+    }, idx)
+  }
+  const first = await measure(0)
+  await page.mouse.move(5, 400)
+  await page.waitForTimeout(350)
+  const last = await measure(3)
+  expect(first.open, '第 1 项面板应打开').toBe(true)
+  expect(last.open, '最后一项面板应打开').toBe(true)
+  expect(first.flip, '宽容器下第 1 项不应回折').toBe(false)
+  expect(last.flip, '宽容器下最后一项不应回折').toBe(false)
+  expect(Math.abs(first.panelLeft - first.triggerLeft), `面板左缘应对齐「${first.label}」左缘`).toBeLessThanOrEqual(2)
+  expect(Math.abs(last.panelLeft - last.triggerLeft), `面板左缘应对齐「${last.label}」左缘`).toBeLessThanOrEqual(2)
+  // 面板位置确实随激活项移动（不是两边都停在容器起点）
+  expect(Math.abs(last.panelLeft - first.panelLeft), '面板左缘应随激活项右移').toBeGreaterThan(50)
+})
