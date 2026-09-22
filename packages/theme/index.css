@@ -41,20 +41,21 @@
   --oas-preset-geekblue: #2f54eb;
   --oas-preset-purple: #722ed1;
 
-  /* 预设 -text：文字/实底安全档（本色达标者同值） */
+  /* 预设 -text：文字/实底安全档。派生规则与阈值见 docs/ui-spec.md §1.2；
+     复算 / 合规审计：node scripts/theme/derive-presets.mjs（守卫见 ui/src/style-conventions.test.ts） */
   --oas-preset-magenta-text: #cc2983;
   --oas-preset-red-text: #da1e28;
   --oas-preset-volcano-text: #c64216;
   --oas-preset-orange-text: #a55c0f;
-  /* gold 深金棕档：与 orange-text (#a55c0f) 的 RGB 距离 61（原 #94660c 仅 18，light 实底几乎
-     撞色不可辨）；白底感知分 87（原 74），色相 43° 保持金棕；与 lime-text (#5a7a0a) 距离 50
-     （原 61），仍在可辨范围——暖黄-橙区间的达标暗档空间拥挤，此值是拉对距离的最小让步 */
+  /* gold 深金棕档：与 orange-text 色距 12.4（ΔE_OK），保持金棕色相（漂移 6.4°） */
   --oas-preset-gold-text: #6a4c00;
   --oas-preset-lime-text: #5a7a0a;
-  --oas-preset-green-text: #357f11;
+  /* green 深绿档：与 lime-text 同族，双底达标下沿 L 轴压深拉开色距（原 #357f11 仅 3.9） */
+  --oas-preset-green-text: #256800;
   --oas-preset-cyan-text: #0c7c7c;
   --oas-preset-blue-text: #146ae3;
-  --oas-preset-geekblue-text: #2f54eb;
+  /* geekblue 深蓝档：与 blue-text 拉开色距（原 #2f54eb 仅 5.1） */
+  --oas-preset-geekblue-text: #2544db;
   --oas-preset-purple-text: #722ed1;
 
   /* 语义色 -text：文字承载面达标深色（≥60 双底实测；填充面用本色） */
@@ -174,18 +175,17 @@ html.dark {
   --oas-preset-blue: #4096ff;
   --oas-preset-geekblue: #597ef7;
   --oas-preset-purple: #9254de;
-  /* 预设 -text dark：本色已达标，同值 */
+  /* 预设 -text dark：保色相提亮档（规则见 docs/ui-spec.md §1.2，含 bg-elevated ≥60 约束与安全方向退让） */
   --oas-preset-magenta-text: #fbaed6;
   --oas-preset-red-text: #ffb1b2;
   --oas-preset-volcano-text: #ffb395;
-  --oas-preset-orange-text: #ffa940;
-  --oas-preset-gold-text: #ffc53d;
-  --oas-preset-lime-text: #bae637;
-  --oas-preset-green-text: #73d13d;
-  --oas-preset-cyan-text: #36cfc9;
-  /* blue-text #b8d6ff：压「elevated+12% 软底」合成底感知分 67.6（原 #9cc8ff 仅 58.7） */
-  --oas-preset-blue-text: #b8d6ff;
-  --oas-preset-geekblue-text: #b3c4fb;
+  --oas-preset-orange-text: #ffb25b;
+  --oas-preset-gold-text: #ffd681;
+  --oas-preset-lime-text: #bae738;
+  --oas-preset-green-text: #7ad845;
+  --oas-preset-cyan-text: #40d6d0;
+  --oas-preset-blue-text: #c2ddff;
+  --oas-preset-geekblue-text: #a9c1ff;
   --oas-preset-purple-text: #d3bbf2;
   /* 语义 -text dark：本色已达标，同值 */
   --oas-color-success-text: #4ade80;
