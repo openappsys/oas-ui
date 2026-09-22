@@ -38,6 +38,7 @@
 - **oas-marquee 循环接缝顿挫三连修**：克隆份与源份渲染宽不等（每轮回跳一个空格宽）；相位跳变；克隆份改走 light DOM（继承页面样式）+ 份数口径修正 + reverse 切换相位连续
 - **`[hidden]` 兜底收口（8 处）**：作者级 `display` 声明压过 UA `[hidden]` 规则的同类缺陷，全库清查补齐
 - **真机视觉复核 7 处修复**（含 2 处存量缺陷）+ oas-masonry items getter 契约修复
+- **oas-input addon 槽放自包含控件时改贴合形态**：修复 append 槽放 `oas-button` 时按钮左右各 12px 灰带、四角 6px 未与外框合并（双层圆角嵌套）、托盘与输入框上下 1px 台阶——根因是 `.addon` 无条件 padding（本为文本 addon 留位）且未向被分发按钮注入圆角合并协议；识别自包含控件（oas-button / oas-button-group / oas-compact）打内部标记，仅标记存在时归零 padding、去自身底/边、按尺寸档对齐控件高度、-1px 压边成单线并注入 `--oas-button-group-radius`
 - **SSR 测试基建**：DSD 快照匹配改前缀模糊通道（防 DOM 噪声属性误报）；关闭 happy-dom 帧导航（消除单测 fetch 噪声）
 
 ### 工程
