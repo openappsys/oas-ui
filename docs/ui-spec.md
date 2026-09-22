@@ -136,6 +136,27 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 - **26 个组件独有**中，`plus` / `minus` / `check` / `close` / `edit` / `external-link` / `filter` 等**已有同名内置**（手绘副本），其余为通用缺口（`folder` / `folder-open` / `file` / `camera` / `eyedropper` / `move-up` / `move-down` 等）→ 按判据 1/2 补入内置；
 - 文档 demo 46 个独有 svg 多为示范美术（品牌/插画/自绘示例），不进内置。
 
+### 2.5 命令式开合 API 约定
+
+可开合组件（浮层/抽屉/弹层）对外暴露两半，**声明式管状态、命令式管动作**——与 web 平台自身形状一致（`<dialog>` 的 `open` 属性 + `show()/showModal()/close()`；Popover API 的 `showPopover()/hidePopover()/togglePopover()`）：
+
+1. **状态走属性/属性反射**：布尔属性反映开合态（如 `drawer-open` / `open` / `visible`），受控用法由宿主读写该属性；
+2. **动作走方法**：命令式给 `open()/close()`（无 `get opened` 时读属性即可）；
+3. **一个组件存在多个可开合面时，允许后缀消歧**——这是平台先例（`show()` 与 `showModal()` 并存），但**只对真正对外的那一面开放**；
+4. `toggle()` 仅在宿主无法读取状态时提供，否则不提供（可由宿主一行 `open/close` 组合，避免表面积膨胀）；
+5. 公开方法必须写进文档站对应页的「方法 / Methods」段（中英同步）——方法不进 manifest 生成物，属手工维护项。
+
+**现有形状映射（历史差异，按「统一即可、不破坏已发布 API」保留）**：
+
+| 组件 | 声明式状态 | 命令式 | 说明 |
+| --- | --- | --- | --- |
+| `oas-drawer` | `opened` 受控 | `close()`（+ `get opened` / `get closing`） | 单向浮层，只对外给关闭动作 |
+| `oas-modal` | `opened` 受控 | `close(source)` | 同上，`source` 标注关闭来源 |
+| `oas-popover` | `open` | `openAtPoint()` / `requestRefresh()` / `getTriggerAnchor()` | 定位型浮层，开合由触发器驱动，故只开放定位相关 |
+| `oas-sidebar` | `drawer-open` | `openDrawer()` / `closeDrawer()` | 双面组件：桌面「折叠 rail」是持久布局态（`collapsed` 属性，不配命令式），移动「抽屉」是临时浮层 → 按第 3 条加后缀消歧 |
+
+> 待消费方提出、或新增同类组件时再评估抽共享 mixin（一次覆盖新旧）；**不为可能性预先扩 API**。
+
 ## 3. 交互与无障碍基线
 
 - 键盘可达：Tab 进、方向键/Enter/Space 操作、Esc 关闭浮层（焦点返回触发元素）
