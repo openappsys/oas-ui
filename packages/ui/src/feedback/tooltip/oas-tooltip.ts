@@ -74,56 +74,58 @@ const STYLE = `
 .tip[data-interactive='true'] {
   pointer-events: auto;
 }
-/* 箭头：尺寸走 CSS 变量 token --oas-tooltip-arrow-size（默认 12px，宿主可穿透定制），
+/* 箭头：形状走 CSS 变量 token（--oas-tooltip-arrow-width/height，缺省回退既有 --oas-tooltip-arrow-size，
+   再缺省 12px——宽高独立可调即「三角高与角度（宽高比）」；--oas-tooltip-arrow-radius 圆角默认 0），
    正方形旋转 45°，底色与气泡同色，按 data-placement 落在面板对应边上，尖端指向锚点中心。
-   merge 直角三角形态是独立视觉（贴角共边几何按 8px 盒校准，不随 --oas-tooltip-arrow-size 走，
-   其契约见 merge 段注释）。 */
+   merge 直角三角形态是独立视觉（贴角共边几何按 8px 盒校准，不随箭头 token 走，其契约见 merge 段注释）。 */
 .arrow {
   position: absolute;
-  width: var(--oas-tooltip-arrow-size, 12px);
-  height: var(--oas-tooltip-arrow-size, 12px);
+  width: var(--oas-tooltip-arrow-width, var(--oas-tooltip-arrow-size, 12px));
+  height: var(--oas-tooltip-arrow-height, var(--oas-tooltip-arrow-size, 12px));
+  border-radius: var(--oas-tooltip-arrow-radius, 0);
   background: var(--oas-tooltip-bg, var(--oas-color-text-primary));
   transform: rotate(45deg);
   pointer-events: none;
 }
 /* ===== 主轴悬边（12 向通用：bottom 系悬顶边、top 系悬底边、left 系悬右边、right 系悬左边） =====
-   悬边量 = 箭头尺寸/2 的负值（盒跨面板边一半在外一半在内，旋转后菱心骑边、尖端外探） */
+   悬边量 = 对应轴分量/2 的负值（盒跨面板边一半在外一半在内，旋转后菱心骑边、尖端外探） */
 .tip[data-placement^='bottom'] .arrow {
-  top: calc(var(--oas-tooltip-arrow-size, 12px) / -2);
+  top: calc(var(--oas-tooltip-arrow-height, var(--oas-tooltip-arrow-size, 12px)) / -2);
 }
 .tip[data-placement^='top'] .arrow {
-  bottom: calc(var(--oas-tooltip-arrow-size, 12px) / -2);
+  bottom: calc(var(--oas-tooltip-arrow-height, var(--oas-tooltip-arrow-size, 12px)) / -2);
 }
 .tip[data-placement^='left'] .arrow {
-  right: calc(var(--oas-tooltip-arrow-size, 12px) / -2);
+  right: calc(var(--oas-tooltip-arrow-width, var(--oas-tooltip-arrow-size, 12px)) / -2);
 }
 .tip[data-placement^='right'] .arrow {
-  left: calc(var(--oas-tooltip-arrow-size, 12px) / -2);
+  left: calc(var(--oas-tooltip-arrow-width, var(--oas-tooltip-arrow-size, 12px)) / -2);
 }
-/* ===== 交叉轴（12 向：center 居中、start 靠起点侧 16px、end 靠终点侧 16px） ===== */
+/* ===== 交叉轴（12 向：center 居中、start 靠起点侧、end 靠终点侧，偏移走 --oas-tooltip-arrow-align-offset 默认 16px） =====
+   命名取 align-offset（对齐侧偏移）而非 offset——避开组件属性 arrow-offset（默认 4，arrow-position=side 的距端间距）的语义撞名 */
 .tip[data-placement='top'] .arrow,
 .tip[data-placement='bottom'] .arrow {
-  left: calc(50% - var(--oas-tooltip-arrow-size, 12px) / 2);
+  left: calc(50% - var(--oas-tooltip-arrow-width, var(--oas-tooltip-arrow-size, 12px)) / 2);
 }
 .tip[data-placement='top-start'] .arrow,
 .tip[data-placement='bottom-start'] .arrow {
-  left: 16px;
+  left: var(--oas-tooltip-arrow-align-offset, 16px);
 }
 .tip[data-placement='top-end'] .arrow,
 .tip[data-placement='bottom-end'] .arrow {
-  right: 16px;
+  right: var(--oas-tooltip-arrow-align-offset, 16px);
 }
 .tip[data-placement='left'] .arrow,
 .tip[data-placement='right'] .arrow {
-  top: calc(50% - var(--oas-tooltip-arrow-size, 12px) / 2);
+  top: calc(50% - var(--oas-tooltip-arrow-height, var(--oas-tooltip-arrow-size, 12px)) / 2);
 }
 .tip[data-placement='left-start'] .arrow,
 .tip[data-placement='right-start'] .arrow {
-  top: 16px;
+  top: var(--oas-tooltip-arrow-align-offset, 16px);
 }
 .tip[data-placement='left-end'] .arrow,
 .tip[data-placement='right-end'] .arrow {
-  bottom: 16px;
+  bottom: var(--oas-tooltip-arrow-align-offset, 16px);
 }
 /* ===== 箭头 merge 模式：直角三角与面板角共边融合（仅 *-start/*-end 生效） =====
    该角 radius 置零；箭头为不旋转的 8px 方块整悬面板外、贴齐角两边（主轴边外 -8px、
@@ -1212,9 +1214,13 @@ export class OAStooltip extends OASElement {
     // arrow-offset 控制箭头盒距面板端的间距（px，默认 4 防探出圆角的夹取安全量），
     // 仅 side 态生效（center/merge 忽略）。
     if (arrowPos === 'side') {
+      // 箭头尺寸读对应轴分量（与 .arrow 的 width/height token 同一真源；
+      // 回退链含既有 --oas-tooltip-arrow-size，再缺省 12）
+      const sizeVar = vertical ? '--oas-tooltip-arrow-width' : '--oas-tooltip-arrow-height'
       const rawSize = parseFloat(
         typeof getComputedStyle === 'function'
-          ? getComputedStyle(arrow).getPropertyValue('--oas-tooltip-arrow-size')
+          ? getComputedStyle(arrow).getPropertyValue(sizeVar) ||
+              getComputedStyle(arrow).getPropertyValue('--oas-tooltip-arrow-size')
           : '',
       )
       const arrowSize = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : 12

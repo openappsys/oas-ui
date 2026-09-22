@@ -55,6 +55,24 @@
   </oas-tooltip>
 </DemoBlock>
 
+箭头**形状**走 CSS 变量 token 定制（宽高独立——宽高比即三角的高与角度）：
+
+<DemoBlock title="箭头形状 token（宽 / 高 / 对齐偏移 / 圆角）">
+  <oas-space size="large" wrap>
+    <oas-tooltip content="宽扁箭头 22×8" placement="bottom" style="--oas-tooltip-arrow-width:22px;--oas-tooltip-arrow-height:8px">
+      <oas-button>宽扁 22×8</oas-button>
+    </oas-tooltip>
+    <oas-tooltip content="窄高箭头 8×20 + 圆角 3px" placement="bottom" style="--oas-tooltip-arrow-width:8px;--oas-tooltip-arrow-height:20px;--oas-tooltip-arrow-radius:3px">
+      <oas-button>窄高 8×20</oas-button>
+    </oas-tooltip>
+    <oas-tooltip content="对齐偏移 32px（bottom-start）" placement="bottom-start" style="--oas-tooltip-arrow-align-offset:32px">
+      <oas-button>align-offset 32</oas-button>
+    </oas-tooltip>
+  </oas-space>
+</DemoBlock>
+
+`--oas-tooltip-arrow-width` / `--oas-tooltip-arrow-height`（默认各 12px，缺省回退既有 `--oas-tooltip-arrow-size`）；`--oas-tooltip-arrow-align-offset`（`*-start` / `*-end` 对齐侧的偏移，默认 16px——与 `arrow-position="side"` 的 `arrow-offset` 属性语义不同，后者是 side 态的距端间距）；`--oas-tooltip-arrow-radius`（箭头圆角，默认 0）。merge 形态为独立 8px 几何，不受这些 token 影响。
+
 ## 视口边缘自动调整
 
 默认空间不足时自动沿主轴翻转并避让视口边缘；`auto-adjust-overflow="false"` 关闭自动调整，面板保持声明 placement（可能溢出视口）。
@@ -782,7 +800,10 @@ onMounted(() => {
 | --- | --- |
 | `--oas-tip-cross` | `999px` |
 | `--oas-tooltip-animation` | `oas-tooltip-in` |
-| `--oas-tooltip-arrow-size` | `12px` |
+| `--oas-tooltip-arrow-align-offset` | `16px` |
+| `--oas-tooltip-arrow-height` | `var(--oas-tooltip-arrow-size, 12px)` |
+| `--oas-tooltip-arrow-radius` | `0` |
+| `--oas-tooltip-arrow-width` | `var(--oas-tooltip-arrow-size, 12px)` |
 | `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
 | `--oas-tooltip-color` | `var(--oas-color-bg)` |
 | `--oas-tooltip-duration` | `0.15s` |

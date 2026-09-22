@@ -298,6 +298,22 @@
     {
       "name": "--oas-tour-popup-bg",
       "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-tour-arrow-width",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-tour-arrow-height",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-tour-arrow-radius",
+      "default": "0"
+    },
+    {
+      "name": "--oas-tour-arrow-align-offset",
+      "default": "16px"
     }
   ],
   "unresolved": []

@@ -152,6 +152,18 @@
     {
       "name": "--oas-origin-y",
       "default": "center"
+    },
+    {
+      "name": "--oas-popconfirm-arrow-width",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-popconfirm-arrow-height",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-popconfirm-arrow-radius",
+      "default": "0"
     }
   ],
   "unresolved": []

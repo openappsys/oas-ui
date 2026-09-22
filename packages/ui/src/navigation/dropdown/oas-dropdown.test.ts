@@ -295,8 +295,9 @@ describe('OASDropdown 箭头（arrow）', () => {
       expect(panel.getAttribute('data-placement')).toBe(p)
       const arrow = arrowOf(el)
       expect(arrow).not.toBeNull()
-      // 悬空边为 -4px（8px 方块半宽外探）：happy-dom 可解析 shadow <style> 的简单声明
-      expect(window.getComputedStyle(arrow).getPropertyValue(cases[p].edge)).toBe('-6px')
+      // 悬空边半值外探：happy-dom 对 calc(var()/…) 不求最终数值（真实浏览器得 -6px，e2e 验证），
+      // 锁「token 回退 12px 后按 /-2 求半值」的表达式形态
+      expect(window.getComputedStyle(arrow).getPropertyValue(cases[p].edge)).toBe('calc(12px / -2)')
       // 边框对：var 颜色 happy-dom 不解析，锁样式规则文本（left/right 曾把外露边框对写反）
       // 12 向 placement（bottom-start 等）使 data-placement 带对齐后缀，箭头落边规则用前缀匹配
       const styleText = el.shadowRoot!.querySelector('style')!.textContent!
@@ -327,13 +328,13 @@ describe('OASDropdown 箭头（arrow）', () => {
     expect(arrow.style.getPropertyValue('--arrow-y')).toBe('')
   })
 
-  it('arrow-point-at-center=true：不写内联偏移，箭头居中（CSS calc(50% - 6px) 兜底）', () => {
+  it('arrow-point-at-center=true：不写内联偏移，箭头居中（CSS calc 兜底走 token 分量）', () => {
     const el = mountOpen({ placement: 'bottom', 'arrow-point-at-center': '' })
     const arrow = arrowOf(el)
     expect(arrow.style.getPropertyValue('--arrow-x')).toBe('84px')
     expect(arrow.style.getPropertyValue('--arrow-y')).toBe('')
     const styleText = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(styleText).toContain('left: var(--arrow-x, calc(50% - 6px))')
+    expect(styleText).toContain('left: var(--arrow-x, calc(50% - var(--oas-dropdown-arrow-width, 12px) / 2))')
   })
 
   it('auto-adjust-overflow=false：视口不足不翻转（placement 严格保持请求值，可越出视口）', () => {
@@ -536,7 +537,7 @@ describe('OASDropdown 12 向 placement', () => {
   it('12 向 placement 箭头仍按基向落边（data-placement 前缀匹配 + arrow-point-at-center 投影）', async () => {
     const el = mountOpen({ placement: 'bottom-start', 'arrow-point-at-center': '' })
     const arrow = el.shadowRoot!.querySelector<HTMLElement>('[data-popper-arrow]')!
-    expect(window.getComputedStyle(arrow).getPropertyValue('top')).toBe('-6px')
+    expect(window.getComputedStyle(arrow).getPropertyValue('top')).toBe('calc(12px / -2)')
     // happy-dom 的 stub 矩形不随 style.left 更新：把面板矩形同步为对齐落位（left=400）后
     // 重新定位（滚动触发），验证 12 向对齐下箭头投影仍指向锚点中心：440 - 400 - 4 = 36
     stubRect(anchorEl(el), { left: 400, top: 340, width: 200, height: 100 })

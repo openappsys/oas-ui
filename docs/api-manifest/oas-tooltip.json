@@ -231,8 +231,20 @@
       "default": "oas-tooltip-in"
     },
     {
-      "name": "--oas-tooltip-arrow-size",
-      "default": "12px"
+      "name": "--oas-tooltip-arrow-width",
+      "default": "var(--oas-tooltip-arrow-size, 12px)"
+    },
+    {
+      "name": "--oas-tooltip-arrow-height",
+      "default": "var(--oas-tooltip-arrow-size, 12px)"
+    },
+    {
+      "name": "--oas-tooltip-arrow-radius",
+      "default": "0"
+    },
+    {
+      "name": "--oas-tooltip-arrow-align-offset",
+      "default": "16px"
     }
   ],
   "unresolved": []

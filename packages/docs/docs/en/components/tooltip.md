@@ -55,6 +55,24 @@ By default an arrow pointing at the trigger element's edge is shown; `arrow="fal
   </oas-tooltip>
 </DemoBlock>
 
+Arrow **shape** is customized via CSS variable tokens (width/height independent — the aspect ratio is the triangle's height and angle):
+
+<DemoBlock title="Arrow shape tokens (width / height / align offset / radius)">
+  <oas-space size="large" wrap>
+    <oas-tooltip content="Wide flat arrow 22×8" placement="bottom" style="--oas-tooltip-arrow-width:22px;--oas-tooltip-arrow-height:8px">
+      <oas-button>Wide 22×8</oas-button>
+    </oas-tooltip>
+    <oas-tooltip content="Narrow tall arrow 8×20 + radius 3px" placement="bottom" style="--oas-tooltip-arrow-width:8px;--oas-tooltip-arrow-height:20px;--oas-tooltip-arrow-radius:3px">
+      <oas-button>Narrow 8×20</oas-button>
+    </oas-tooltip>
+    <oas-tooltip content="Align offset 32px (bottom-start)" placement="bottom-start" style="--oas-tooltip-arrow-align-offset:32px">
+      <oas-button>align-offset 32</oas-button>
+    </oas-tooltip>
+  </oas-space>
+</DemoBlock>
+
+`--oas-tooltip-arrow-width` / `--oas-tooltip-arrow-height` (default 12px each, falling back to the existing `--oas-tooltip-arrow-size`); `--oas-tooltip-arrow-align-offset` (offset on the `*-start` / `*-end` aligned side, default 16px — semantically different from the `arrow-offset` **attribute** of `arrow-position="side"`, which is the side mode's edge inset); `--oas-tooltip-arrow-radius` (arrow border-radius, default 0). The merge form is an independent 8px geometry and is not affected by these tokens.
+
 ## Viewport auto adjust
 
 By default the tooltip automatically flips along the main axis and avoids the viewport edges when space is insufficient; `auto-adjust-overflow="false"` disables the auto adjust so the panel keeps the declared placement (it may overflow the viewport).
@@ -782,7 +800,10 @@ onMounted(() => {
 | --- | --- |
 | `--oas-tip-cross` | `999px` |
 | `--oas-tooltip-animation` | `oas-tooltip-in` |
-| `--oas-tooltip-arrow-size` | `12px` |
+| `--oas-tooltip-arrow-align-offset` | `16px` |
+| `--oas-tooltip-arrow-height` | `var(--oas-tooltip-arrow-size, 12px)` |
+| `--oas-tooltip-arrow-radius` | `0` |
+| `--oas-tooltip-arrow-width` | `var(--oas-tooltip-arrow-size, 12px)` |
 | `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
 | `--oas-tooltip-color` | `var(--oas-color-bg)` |
 | `--oas-tooltip-duration` | `0.15s` |

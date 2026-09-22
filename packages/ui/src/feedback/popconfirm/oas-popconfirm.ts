@@ -1,12 +1,12 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
+import { cssVarPx } from '../../shared/css-var.js'
 import { iconRegistry } from '@oas-ui/icons'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 /** 面板与触发元素的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
-/** 箭头尺寸（12px 菱形）与箭头中心到面板圆角边的最短距离 */
-const ARROW_SIZE = 12
+/** 箭头中心到面板圆角边的最短距离；箭头宽高改走 --oas-popconfirm-arrow-width/height token（运行时读取，缺省 12px） */
 const ARROW_PAD = 8
 /** hover 触发开/合防抖延时缺省值（ms）：无延时 hover 会闪开闪关 */
 const HOVER_DELAY = 150
@@ -236,8 +236,9 @@ const STYLE = `
    平移后箭头仍指向触发元素。 */
 .arrow {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: var(--oas-popconfirm-arrow-width, 12px);
+  height: var(--oas-popconfirm-arrow-height, 12px);
+  border-radius: var(--oas-popconfirm-arrow-radius, 0);
   box-sizing: border-box;
   background: var(--pop-bg);
   transform: rotate(45deg);
@@ -247,26 +248,26 @@ const STYLE = `
   display: none;
 }
 .popover[data-placement^='bottom'] .arrow {
-  top: -6px;
-  left: var(--arrow-x, calc(50% - 6px));
+  top: calc(var(--oas-popconfirm-arrow-height, 12px) / -2);
+  left: var(--arrow-x, calc(50% - var(--oas-popconfirm-arrow-width, 12px) / 2));
   border-top: 1px solid var(--pop-border);
   border-left: 1px solid var(--pop-border);
 }
 .popover[data-placement^='top'] .arrow {
-  bottom: -6px;
-  left: var(--arrow-x, calc(50% - 6px));
+  bottom: calc(var(--oas-popconfirm-arrow-height, 12px) / -2);
+  left: var(--arrow-x, calc(50% - var(--oas-popconfirm-arrow-width, 12px) / 2));
   border-right: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);
 }
 .popover[data-placement^='left'] .arrow {
-  right: -6px;
-  top: var(--arrow-y, calc(50% - 6px));
+  right: calc(var(--oas-popconfirm-arrow-width, 12px) / -2);
+  top: var(--arrow-y, calc(50% - var(--oas-popconfirm-arrow-height, 12px) / 2));
   border-top: 1px solid var(--pop-border);
   border-right: 1px solid var(--pop-border);
 }
 .popover[data-placement^='right'] .arrow {
-  left: -6px;
-  top: var(--arrow-y, calc(50% - 6px));
+  left: calc(var(--oas-popconfirm-arrow-width, 12px) / -2);
+  top: var(--arrow-y, calc(50% - var(--oas-popconfirm-arrow-height, 12px) / 2));
   border-left: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);
 }
@@ -739,13 +740,16 @@ export class OASPopconfirm extends OASElement {
     if (!this.showArrow()) return
     const panelRect = this.popoverEl.getBoundingClientRect()
     const clampV = (v: number, max: number): number => Math.max(ARROW_PAD, Math.min(v, max))
+    // 箭头宽高走 token（与 CSS 同一真源）：宿主改形状时 clamp 边界同步跟随
+    const arrowW = cssVarPx(this, '--oas-popconfirm-arrow-width', 12)
+    const arrowH = cssVarPx(this, '--oas-popconfirm-arrow-height', 12)
     if (placement.startsWith('top') || placement.startsWith('bottom')) {
       const center = anchorRect.left + anchorRect.width / 2
-      const x = clampV(center - panelRect.left - ARROW_SIZE / 2, panelRect.width - ARROW_PAD - ARROW_SIZE)
+      const x = clampV(center - panelRect.left - arrowW / 2, panelRect.width - ARROW_PAD - arrowW)
       arrow.style.setProperty('--arrow-x', `${x}px`)
     } else {
       const center = anchorRect.top + anchorRect.height / 2
-      const y = clampV(center - panelRect.top - ARROW_SIZE / 2, panelRect.height - ARROW_PAD - ARROW_SIZE)
+      const y = clampV(center - panelRect.top - arrowH / 2, panelRect.height - ARROW_PAD - arrowH)
       arrow.style.setProperty('--arrow-y', `${y}px`)
     }
   }

@@ -1,13 +1,13 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
+import { cssVarPx } from '../../shared/css-var.js'
 import { iconRegistry } from '@oas-ui/icons'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { registeredPopoverCapabilities, onPopoverCapabilityRegistered } from './oas-popover-capability.js'
 
 /** 面板与触发器的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
-/** 箭头尺寸（8px 菱形）与箭头中心到面板圆角边的最短距离 */
-const ARROW_SIZE = 12
+/** 箭头中心到面板圆角边的最短距离；箭头宽高改走 --oas-popover-arrow-width/height token（运行时读取，缺省 12px） */
 const ARROW_PAD = 8
 /** 开合动画时长（ms）：入场/退场 keyframes 与 JS 退场隐藏延时共用，改这里需同步下方 CSS 的 `animation` 时长 */
 const ANIM_MS = 150
@@ -242,8 +242,9 @@ const STYLE = `
    12 向 placement 使 data-placement 带 -start/-end 后缀，落边规则用属性前缀匹配（^=）。 */
 .arrow {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: var(--oas-popover-arrow-width, 12px);
+  height: var(--oas-popover-arrow-height, 12px);
+  border-radius: var(--oas-popover-arrow-radius, 0);
   box-sizing: border-box;
   background: var(--pop-bg);
   transform: rotate(45deg);
@@ -251,29 +252,29 @@ const STYLE = `
 }
 /* placement 基向=bottom：面板在触发元素下方 → 箭头悬面板顶边、尖朝上 → 外露边=右上(border-top)+左上(border-left) */
 .panel[data-placement^='bottom'] .arrow {
-  top: -6px;
-  left: var(--arrow-x, calc(50% - 6px));
+  top: calc(var(--oas-popover-arrow-height, 12px) / -2);
+  left: var(--arrow-x, calc(50% - var(--oas-popover-arrow-width, 12px) / 2));
   border-top: 1px solid var(--pop-border);
   border-left: 1px solid var(--pop-border);
 }
 /* placement 基向=top：面板在触发元素上方 → 箭头悬面板底边、尖朝下 → 外露边=右下(border-right)+左下(border-bottom) */
 .panel[data-placement^='top'] .arrow {
-  bottom: -6px;
-  left: var(--arrow-x, calc(50% - 6px));
+  bottom: calc(var(--oas-popover-arrow-height, 12px) / -2);
+  left: var(--arrow-x, calc(50% - var(--oas-popover-arrow-width, 12px) / 2));
   border-right: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);
 }
 /* placement 基向=left：面板在触发元素左侧 → 箭头悬面板右边、尖朝右 → 外露边=右上(border-top)+右下(border-right) */
 .panel[data-placement^='left'] .arrow {
-  right: -6px;
-  top: var(--arrow-y, calc(50% - 6px));
+  right: calc(var(--oas-popover-arrow-width, 12px) / -2);
+  top: var(--arrow-y, calc(50% - var(--oas-popover-arrow-height, 12px) / 2));
   border-top: 1px solid var(--pop-border);
   border-right: 1px solid var(--pop-border);
 }
 /* placement 基向=right：面板在触发元素右侧 → 箭头悬面板左边、尖朝左 → 外露边=左上(border-left)+左下(border-bottom) */
 .panel[data-placement^='right'] .arrow {
-  left: -6px;
-  top: var(--arrow-y, calc(50% - 6px));
+  left: calc(var(--oas-popover-arrow-width, 12px) / -2);
+  top: var(--arrow-y, calc(50% - var(--oas-popover-arrow-height, 12px) / 2));
   border-left: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);
 }
@@ -1397,13 +1398,16 @@ export class OASPopover extends OASElement {
     if (this.hasAttr('arrow-merge')) return
     const panelRect = this.panel.getBoundingClientRect()
     const clampV = (v: number, max: number): number => Math.max(ARROW_PAD, Math.min(v, max))
+    // 箭头宽高走 token（与 CSS 同一真源）：宿主改形状时 clamp 边界同步跟随
+    const arrowW = cssVarPx(this, '--oas-popover-arrow-width', 12)
+    const arrowH = cssVarPx(this, '--oas-popover-arrow-height', 12)
     if (placement.startsWith('top') || placement.startsWith('bottom')) {
       const center = anchorRect.left + anchorRect.width / 2
-      const x = clampV(center - panelRect.left - ARROW_SIZE / 2, panelRect.width - ARROW_PAD - ARROW_SIZE)
+      const x = clampV(center - panelRect.left - arrowW / 2, panelRect.width - ARROW_PAD - arrowW)
       arrow.style.setProperty('--arrow-x', `${x}px`)
     } else {
       const center = anchorRect.top + anchorRect.height / 2
-      const y = clampV(center - panelRect.top - ARROW_SIZE / 2, panelRect.height - ARROW_PAD - ARROW_SIZE)
+      const y = clampV(center - panelRect.top - arrowH / 2, panelRect.height - ARROW_PAD - arrowH)
       arrow.style.setProperty('--arrow-y', `${y}px`)
     }
   }

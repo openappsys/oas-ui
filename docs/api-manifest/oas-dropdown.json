@@ -110,6 +110,18 @@
     {
       "name": "--oas-origin-y",
       "default": "center"
+    },
+    {
+      "name": "--oas-dropdown-arrow-width",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-dropdown-arrow-height",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-dropdown-arrow-radius",
+      "default": "0"
     }
   ],
   "unresolved": []

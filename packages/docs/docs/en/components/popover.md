@@ -847,6 +847,9 @@ onMounted(() => {
 | --- | --- |
 | `--oas-origin-x` | `center` |
 | `--oas-origin-y` | `center` |
+| `--oas-popover-arrow-height` | `12px` |
+| `--oas-popover-arrow-radius` | `0` |
+| `--oas-popover-arrow-width` | `12px` |
 | `--oas-popover-bg` | `var(--oas-color-bg)` |
 | `--oas-popover-border` | `var(--oas-color-border)` |
 | `--oas-popover-font-size` | `var(--oas-font-size-md)` |
