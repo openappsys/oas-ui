@@ -228,3 +228,52 @@ test('speed-dial 键盘导航：展开自动聚焦首项，ArrowDown/ArrowUp 循
   })
   expect(wrapped, 'ArrowUp 越首应循环到末项').toBe(2)
 })
+
+test('speed-dial RTL：收起态不可见面板不制造横向可滚动溢出（幽灵滚动根治），展开态不受塌缩影响', async ({ page }) => {
+  // RTL 全量审计实抓：visibility:hidden 的收起面板按规范仍占布局，固定角标 FAB 在 RTL 下
+  // 面板向 inline-start 翻出视口外 → documentElement.scrollWidth 虚增（幽灵横向滚动）。
+  // 修法：收起态 transform 塌缩 scale(0) + origin 靠 FAB 侧 → 零面积盒不贡献溢出。
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '#sd-event')
+  // rtl + 文档站壳层中性化（壳层物理定位弹层与本断言无关，且会污染 scrollWidth 基线）
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('dir', 'rtl')
+    const s = document.createElement('style')
+    s.textContent =
+      '.VPNavBar .menu,.VPNavBarMenu{display:none!important}.VPNavBar,.VPSidebar,.VPLocalNav,.VPPageNav,.VPDocAside,.VPDocFooter,.VPFooter{direction:ltr!important}'
+    document.head.appendChild(s)
+  })
+  await page.waitForTimeout(200)
+  const r = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-speed-dial')
+    const el = document.createElement('oas-speed-dial')
+    el.setAttribute('direction', 'up')
+    // 带标签宽面板（最坏情形：面板远宽于 FAB，inline 方向翻出视口）
+    el.setAttribute(
+      'actions',
+      JSON.stringify([{ label: '复制链接地址' }, { label: '移动到项目' }, { label: '删除并归档' }]),
+    )
+    el.style.position = 'fixed'
+    el.style.insetInlineEnd = '16px'
+    el.style.bottom = '16px'
+    document.body.append(el)
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+    const de = document.documentElement
+    const swClosed = de.scrollWidth
+    el.shadowRoot!.querySelector<HTMLElement>('[part="fab"]')!.click()
+    await new Promise((res) => setTimeout(res, 500))
+    const actions = el.shadowRoot!.querySelector<HTMLElement>('.actions')!
+    const openState = {
+      visible: getComputedStyle(actions).visibility,
+      // 注意：边缘锚定 FAB 的展开面板夹取（collision）是独立特性缺口，不在本回归范围
+      panelWidth: Math.round(actions.getBoundingClientRect().width),
+    }
+    el.shadowRoot!.querySelector<HTMLElement>('[part="fab"]')!.click()
+    await new Promise((res) => setTimeout(res, 500))
+    return { swClosed, openState, swAfterClose: de.scrollWidth, cw: de.clientWidth }
+  })
+  expect(r.swClosed, '收起态（不可见面板）不应制造横向可滚动溢出').toBeLessThanOrEqual(r.cw + 2)
+  expect(r.openState.visible, '展开后面板可见').toBe('visible')
+  expect(r.openState.panelWidth, '展开面板有布局尺寸（塌缩不伤展开态）').toBeGreaterThan(0)
+  expect(r.swAfterClose, '收起后同样无横向溢出').toBeLessThanOrEqual(r.cw + 2)
+})

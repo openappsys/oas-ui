@@ -666,6 +666,21 @@ describe('OASSpeedDial 圆弧几何展开', () => {
     expect(mq).toContain('transition: none')
   })
 
+  it('CSS：收起态面板塌缩 scale(0) + origin 靠 FAB 侧（不可见面板不贡献可滚动溢出——RTL 实测幽灵横向滚动根治）', () => {
+    const stl = styleText(mount())
+    // 四向收起态：塌缩 + 位移入场偏移共存；origin 取靠 FAB 一侧（塌缩终点落在视口内）
+    expect(stl).toMatch(/\.dial\[data-dir='up'\] \.actions\s*\{[^}]*transform:\s*translateY\(8px\)\s*scale\(0\)/)
+    expect(stl).toMatch(/\.dial\[data-dir='up'\] \.actions\s*\{[^}]*transform-origin:\s*center bottom/)
+    expect(stl).toMatch(/\.dial\[data-dir='down'\] \.actions\s*\{[^}]*transform:\s*translateY\(-8px\)\s*scale\(0\)/)
+    expect(stl).toMatch(/\.dial\[data-dir='down'\] \.actions\s*\{[^}]*transform-origin:\s*center top/)
+    expect(stl).toMatch(/\.dial\[data-dir='left'\] \.actions\s*\{[^}]*transform:\s*translateX\(8px\)\s*scale\(0\)/)
+    expect(stl).toMatch(/\.dial\[data-dir='left'\] \.actions\s*\{[^}]*transform-origin:\s*right center/)
+    expect(stl).toMatch(/\.dial\[data-dir='right'\] \.actions\s*\{[^}]*transform:\s*translateX\(-8px\)\s*scale\(0\)/)
+    expect(stl).toMatch(/\.dial\[data-dir='right'\] \.actions\s*\{[^}]*transform-origin:\s*left center/)
+    // 展开态：scale(1) 显式回位（与收起态 transform 列表等长，保证列表级插值平滑）
+    expect(stl).toMatch(/\.dial\.open \.actions\s*\{[^}]*transform:\s*translate\(0,\s*0\)\s*scale\(1\)/)
+  })
+
   // ===== RTL（右到左）逻辑方向化 =====
 
   describe('RTL 逻辑方向化', () => {
