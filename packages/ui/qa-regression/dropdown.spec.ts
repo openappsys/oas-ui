@@ -55,6 +55,60 @@ test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口�
   await page.screenshot({ path: test.info().outputPath('fix8-dropdown-flip.png') })
 })
 
+// —— 回折边界普查（三缺陷之三）：dropdown RTL 未镜像 -start/-end 交叉轴对齐 ——
+// 曾现缺陷：direction 已传给定位引擎，但随后用**物理**边覆写交叉轴对齐，且 data-placement 用
+// **入参**而非引擎返回值 → placement="bottom-start" 在 RTL 仍左缘对齐、data-placement 也仍报
+// bottom-start（同流程的 date-picker/select 等 Δright=0 且报 bottom-end）。start/end 是逻辑语义。
+test('dropdown RTL：placement=bottom-start 镜像为右缘对齐（data-placement=bottom-end，引擎口径）', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-dropdown')
+
+  const measure = (rtl: boolean) =>
+    page.evaluate(async (isRtl) => {
+      document.documentElement.setAttribute('dir', isRtl ? 'rtl' : 'ltr')
+      const dd = document.createElement('oas-dropdown')
+      dd.id = 'zz-dd-rtl'
+      dd.setAttribute('placement', 'bottom-start')
+      dd.setAttribute(
+        'items',
+        JSON.stringify([
+          { label: '编辑', value: 'edit' },
+          { label: '删除', value: 'delete' },
+        ]),
+      )
+      dd.innerHTML = '<oas-button>操作</oas-button>'
+      dd.style.cssText = 'position: fixed; top: 300px; left: 1000px; z-index: 9999'
+      document.body.appendChild(dd)
+      dd.setAttribute('open', '')
+      await new Promise((r) => setTimeout(r, 300))
+      const anchor = dd.shadowRoot!.querySelector<HTMLElement>('.menu-anchor')!
+      const trig = dd.querySelector('oas-button')!
+      const tr = trig.getBoundingClientRect()
+      const pr = anchor.getBoundingClientRect()
+      const out = {
+        placement: anchor.getAttribute('data-placement'),
+        dLeft: Math.round(pr.left - tr.left),
+        dRight: Math.round(pr.right - tr.right),
+        panelLeft: Math.round(pr.left),
+        panelRight: Math.round(pr.right),
+        vw: window.innerWidth,
+      }
+      dd.remove()
+      return out
+    }, rtl)
+
+  const ltr = await measure(false)
+  expect(ltr.placement, 'LTR bottom-start 仍是 bottom-start').toBe('bottom-start')
+  expect(Math.abs(ltr.dLeft), `LTR 面板左缘应对齐触发器左缘（偏差 ${ltr.dLeft}px）`).toBeLessThanOrEqual(2)
+
+  const rtl = await measure(true)
+  expect(rtl.placement, 'RTL bottom-start 应镜像为 bottom-end（引擎返回值）').toBe('bottom-end')
+  expect(Math.abs(rtl.dRight), `RTL 面板右缘应对齐触发器右缘（偏差 ${rtl.dRight}px）`).toBeLessThanOrEqual(2)
+  expect(rtl.panelRight, '面板右缘应落在视口内').toBeLessThanOrEqual(rtl.vw)
+  await page.screenshot({ path: 'test-results/visual-review/dropdown-rtl-bottom-start.png' })
+})
+
 // —— 缺陷 9：rate 半选视觉 ——
 // 曾现 bug：半星整颗按 50% 透明度淡化，看起来是整颗黄描边星。
 // 修复：半星 = 左半激活色（warning）+ 右半未激活色（border），由 .half-fill 覆盖层 +

@@ -1495,6 +1495,9 @@ export class OASMenubar extends OASElement {
   /**
    * 子菜单视口边界翻转 + 一级下拉定位几何。翻转由样式表类表达，本方法只做测量与切类；
    * 多级嵌套逐级检测（DOM 序外层先于内层，内层 rect 反映外层翻转后的真实布局）。
+   * 回折/上弹边界一律取**视口**（含安全边距）：bar/bar-items/top-wrap 均无 overflow 裁剪，
+   * 面板本就允许越出 bar 盒（拿 bar 缘当边界会把未越视口的面板全部误回折）；
+   * 显式 `side`/`orientation` 走物理方位判定，不走此缺省分支。
    * 测量抗污染：宽度/高度一律用 offsetWidth/offsetHeight（transform 免疫）——
    * 进场动画 scale 0.96→1 会污染 getBoundingClientRect 的宽高（同帧测量取到动画起点），
    * 位置仍用 getBoundingClientRect（父项不受动画影响；子项原点即自身左上角，scale 不位移）。
@@ -1508,8 +1511,6 @@ export class OASMenubar extends OASElement {
     // 运行时切方向（根级/祖先 dir 变化不触发本组件 update）→ 面板同步时刷新镜像开关，
     // 保证 CSS 逻辑 inset 按 RTL/LTR 正确应用（否则沿用上次形态，顶级面板会溢出视口）
     this.toggleAttribute('data-rtl', rtl)
-    const barRight = this.barEl?.getBoundingClientRect().right ?? vw
-    const barLeft = this.barEl?.getBoundingClientRect().left ?? 0
     for (const sub of this.shadow.querySelectorAll<HTMLElement>('[part="submenu"].open')) {
       // 级联子菜单的父项是 li；一级下拉的容器是 div（wrap），closest('li') 为 null 时回退直接父元素
       const parentItem = (sub.closest('li') ?? sub.parentElement) as HTMLElement | null
@@ -1540,15 +1541,17 @@ export class OASMenubar extends OASElement {
           sub.classList.toggle('flip-right', parentLeft - subWidth < margin)
           sub.classList.remove('flip-left')
         } else if (rtl) {
-          // 缺省（bottom）RTL：面板贴父项右缘向左展开，检左缘溢出；边界取视口与 bar 左缘取大
-          // （bar 在窄容器内被约束时越过 bar 会被裁）
-          const leftBound = Math.max(margin, barLeft) + margin
-          sub.classList.toggle('flip-right', parentRight - subWidth < leftBound)
+          // 缺省（bottom）RTL：面板贴父项右缘向左展开，检左缘溢出——边界只取视口左缘。
+          // bar/bar-items/top-wrap 均无 overflow 裁剪（面板越出 bar 正常可见），bar 缘不是裁切
+          // 边界：拿它当边界会让 bar 落在面板必经路径上的项全部误回折（回折落到组件左缘甚至组件外）。
+          // 回折后（贴父项左缘向右展开）补视口右缘二次校验：回折会把面板顶出视口右缘时保持不回折，
+          // 确保面板右缘不越视口。
+          const flips = parentRight - subWidth < margin && parentLeft + subWidth <= vw - margin
+          sub.classList.toggle('flip-right', flips)
           sub.classList.remove('flip-left')
         } else {
-          // 缺省（bottom）LTR：面板贴父项左缘向右展开，检右缘溢出；边界取视口与 bar 右缘取小
-          const rightBound = Math.min(vw, barRight) - margin
-          sub.classList.toggle('flip-right', parentLeft + subWidth > rightBound)
+          // 缺省（bottom）LTR：面板贴父项左缘向右展开，检右缘溢出——边界只取视口右缘
+          sub.classList.toggle('flip-right', parentLeft + subWidth > vw - margin)
           sub.classList.remove('flip-left')
         }
         const subTop = sub.getBoundingClientRect().top

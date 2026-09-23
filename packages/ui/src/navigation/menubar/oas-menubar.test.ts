@@ -1396,3 +1396,85 @@ describe('子元素声明式通道', () => {
     expect(css).toContain('scaleX(-1)')
   })
 })
+
+// ===== 回折边界以视口为准（bar 不是裁切容器） =====
+// 曾现缺陷①（LTR）：回折右界取 min(视口, bar 右缘)——bar 落在面板必经路径上时，面板明明
+// 未越出视口也被判回折，三个顶级项面板全右对齐、落到组件左缘甚至组件外。
+// 曾现缺陷②（RTL）：回折左界取 max(margin, bar 左缘)+margin，且回折后不再校验视口 →
+// RTL 点 bar 最右项时面板左缘贴父项左缘向右展开，右缘越出视口。
+// bar/bar-items/top-wrap 均无 overflow 裁剪（面板越出 bar 正常可见）→ 边界应取视口。
+describe('子菜单回折边界以视口为准', () => {
+  const ORIG_W = Object.getOwnPropertyDescriptor(window, 'innerWidth')
+  const ORIG_H = Object.getOwnPropertyDescriptor(window, 'innerHeight')
+
+  afterEach(() => {
+    if (ORIG_W) Object.defineProperty(window, 'innerWidth', ORIG_W)
+    if (ORIG_H) Object.defineProperty(window, 'innerHeight', ORIG_H)
+    document.documentElement.removeAttribute('dir')
+  })
+
+  function stubBox(
+    el: Element,
+    r: { left: number; top: number; right: number; bottom: number; width: number; height: number },
+  ): void {
+    el.getBoundingClientRect = () => r as DOMRect
+  }
+
+  function openTop(el: OASMenubar, index: number, subWidth: number, subHeight = 200): HTMLElement {
+    const item = topItems(el)[index]!
+    item.click() // 首开
+    const sub = el.shadowRoot!.querySelector<HTMLElement>(`[part="submenu"][data-parent="${item.dataset.value}"]`)!
+    Object.defineProperty(sub, 'offsetWidth', { value: subWidth, configurable: true })
+    Object.defineProperty(sub, 'offsetHeight', { value: subHeight, configurable: true })
+    item.click() // 收起
+    item.click() // 重新展开 → 触发 syncSubmenuPositions
+    return sub
+  }
+
+  it('LTR：面板未越出视口时不回折（bar 右缘不是回折边界）', () => {
+    const el = mount()
+    stubBox(bar(el), { left: 100, top: 0, right: 200, bottom: 36, width: 100, height: 36 })
+    Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+    const sub = openTop(el, 0, 500)
+    expect(sub.classList.contains('flip-right'), '面板未越出视口右缘不应回折（bar 盒宽非回折边界）').toBe(false)
+  })
+
+  it('LTR：面板越出视口时仍回折（回折边界改为视口后仍生效）', () => {
+    const el = mount()
+    stubBox(bar(el), { left: 0, top: 0, right: 1200, bottom: 36, width: 1200, height: 36 })
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.top-wrap[data-value="file"]')!
+    stubBox(wrap, { left: 400, top: 0, right: 480, bottom: 32, width: 80, height: 32 })
+    Object.defineProperty(window, 'innerWidth', { value: 600, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+    // 未回折面板左缘 = 父项左缘 400，宽 700 → 右缘 1100 > 视口 600 - 8
+    const sub = openTop(el, 0, 700)
+    expect(sub.classList.contains('flip-right'), '面板右缘越出视口必须回折').toBe(true)
+  })
+
+  it('RTL：未回折左缘未越视口左缘 → 不回折（bar 左缘不是回折边界）', () => {
+    const el = mount()
+    el.setAttribute('dir', 'rtl')
+    stubBox(bar(el), { left: 1017, top: 0, right: 1191, bottom: 36, width: 174, height: 36 })
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.top-wrap[data-value="file"]')!
+    // RTL：file 在 bar 最右；未回折面板左缘 = 1186 - 170 = 1016，仍在视口内（≥ 8）
+    stubBox(wrap, { left: 1134, top: 0, right: 1186, bottom: 32, width: 52, height: 32 })
+    Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+    const sub = openTop(el, 0, 170)
+    expect(sub.classList.contains('flip-right'), '未回折左缘 1016 未越视口安全边距 → 不应回折').toBe(false)
+  })
+
+  it('RTL：回折后仍越视口右缘时不回折（超宽面板二次校验，确保不越视口）', () => {
+    const el = mount()
+    el.setAttribute('dir', 'rtl')
+    stubBox(bar(el), { left: 0, top: 0, right: 200, bottom: 36, width: 200, height: 36 })
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.top-wrap[data-value="file"]')!
+    stubBox(wrap, { left: 0, top: 0, right: 150, bottom: 32, width: 150, height: 32 })
+    Object.defineProperty(window, 'innerWidth', { value: 300, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 400, configurable: true })
+    // 未回折左缘 = 150 - 400 = -250 越视口左缘，但回折后右缘 = 0 + 400 = 400 越视口右缘（300 - 8）
+    const sub = openTop(el, 0, 400, 100)
+    expect(sub.classList.contains('flip-right'), '回折后仍越视口右缘 → 不回折（避免右越界）').toBe(false)
+  })
+})
