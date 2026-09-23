@@ -175,13 +175,21 @@ const STYLE = `
   padding: var(--oas-space-2);
   max-height: var(--oas-nav-panel-max-height, 60vh);
   overflow: auto;
+  /* 面板宽度下限 = 内容最小宽度：--vp-w 由 panel.scrollWidth 测得，而内容横向溢出内容盒时
+     该值只含书写起点侧内边距（不含尾侧），面板会比内容所需窄一个 padding，末列卡片贴住面板边缘。
+     用 min-content 兜底，让内容盒永远容得下内容（末列内边距与首列对称）。
+     极端窄视口下（内容最小宽度 > max-width 上限）min-width 优先于 max-width，面板可超出视口。 */
+  min-width: min-content;
 }
 .grid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(var(--nav-columns, 2), minmax(0, 1fr));
+  /* 列最小宽度下限 = 卡片内容最小宽度（不窄于最长单词）：minmax(0,1fr) 可把列压到内容最小宽度以下，
+     列内文字横向溢出列外、越过列间距压到相邻列文字上（en 长单词尤甚；CJK 可任意断行不触发）。
+     内容装不下时面板随内容加宽（列宽按各自 min-content 分配，非等宽），相邻列之间始终有可见间隔。 */
+  grid-template-columns: repeat(var(--nav-columns, 2), minmax(min-content, 1fr));
   gap: var(--oas-space-1);
 }
 .card {
