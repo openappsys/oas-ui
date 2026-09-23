@@ -49,6 +49,15 @@ const SHELL_NEUTRAL = `
 async function auditPage(browser, name) {
   const context = await browser.newContext({ viewport: { width: 860, height: 800 } })
   const page = await context.newPage()
+  // dir 必须在解析期生效：JS 方向判定组件（resolveDirection/isRtl）在 connect 时定型。
+  // 文档站 <html> 自带 dir="ltr"（首访语言适配），重复属性首个胜出——先剥旧 dir 再注入。
+  await page.route(`**/components/${name}.html`, async (route) => {
+    const res = await route.fetch()
+    const body = (await res.text())
+      .replace(/(<html[^>]*?)\sdir="[^"]*"/i, '$1')
+      .replace(/<html([^>]*)>/i, '<html$1 dir="rtl">')
+    await route.fulfill({ response: res, body })
+  })
   const run = async (dir) => {
     await page.goto(`${base}/components/${name}.html`, { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('.demo-block', { state: 'attached', timeout: 5000 }).catch(() => {})
