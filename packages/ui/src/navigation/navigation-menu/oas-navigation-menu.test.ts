@@ -767,6 +767,99 @@ describe('面板位置跟随激活触发器', () => {
   })
 })
 
+// ============ 回折边界以视口为准（导航栏盒宽不是裁切容器） ============
+// 曾现缺陷：回折判定把「导航栏右缘」当硬边界（boundRight = min(视口, 导航栏右缘)）。
+// 导航栏是 shrink-to-fit（inline-block）时栏宽只够装触发器，面板 min-width 200 几乎必然
+// 越过栏右缘——于是每个顶级项的面板都被判「回折」，全部右对齐贴触发器右缘（用户实测报障）。
+// 正确语义：面板默认左缘跟随激活触发器，只有「跟随后的面板」会越出视口时才回折。
+describe('回折边界以视口为准', () => {
+  it('窄导航（shrink-to-fit）触发器靠左：面板越出导航栏但不越视口 → 不回折（走 --vp-x 跟随）', () => {
+    const el = mount({ items: SWITCH_ITEMS, 'delay-duration': '0' })
+    const barEl = bar(el)
+    const navEl = nav(el)
+    const panelEl = panel(el)
+    const first = topItems(el)[0]!
+    Object.defineProperty(barEl, 'getBoundingClientRect', {
+      value: () => ({ left: 300, right: 400, top: 0 }) as DOMRect,
+      configurable: true,
+    })
+    Object.defineProperty(navEl, 'getBoundingClientRect', {
+      value: () => ({ left: 300, right: 400 }) as DOMRect,
+      configurable: true,
+    })
+    Object.defineProperty(first, 'offsetLeft', { value: 4, configurable: true })
+    Object.defineProperty(first, 'offsetWidth', { value: 70, configurable: true })
+    Object.defineProperty(panelEl, 'scrollWidth', { value: 202, configurable: true })
+    Object.defineProperty(panelEl, 'scrollHeight', { value: 82, configurable: true })
+    Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+    first.click()
+    const vp = viewport(el)
+    // 面板左缘跟随触发器（navLeft 300 + localLeft 4 = 304），右缘 304+202 = 506：
+    // 越出导航栏右缘（400），但远未越出视口右缘（1280−8）→ 必须保持跟随，不右对齐
+    expect(vp.style.getPropertyValue('--vp-x')).toBe('4px')
+    expect(vp.classList.contains('flip-right'), '面板未越出视口时不应回折（导航栏盒宽非回折边界）').toBe(false)
+  })
+
+  it('触发器靠近视口右缘、面板会越出视口 → 回折（走 --vp-x-end 右对齐触发器）', () => {
+    const el = mount({ items: SWITCH_ITEMS, 'delay-duration': '0' })
+    const barEl = bar(el)
+    const navEl = nav(el)
+    const panelEl = panel(el)
+    const first = topItems(el)[0]!
+    Object.defineProperty(barEl, 'getBoundingClientRect', {
+      value: () => ({ left: 8, right: 608, top: 0 }) as DOMRect,
+      configurable: true,
+    })
+    Object.defineProperty(navEl, 'getBoundingClientRect', {
+      value: () => ({ left: 8, right: 608 }) as DOMRect,
+      configurable: true,
+    })
+    Object.defineProperty(navEl, 'offsetWidth', { value: 600, configurable: true })
+    Object.defineProperty(first, 'offsetLeft', { value: 500, configurable: true })
+    Object.defineProperty(first, 'offsetWidth', { value: 70, configurable: true })
+    Object.defineProperty(panelEl, 'scrollWidth', { value: 202, configurable: true })
+    Object.defineProperty(panelEl, 'scrollHeight', { value: 82, configurable: true })
+    Object.defineProperty(window, 'innerWidth', { value: 640, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+    first.click()
+    const vp = viewport(el)
+    // 跟随后面板右缘 8+500+202 = 710 > 视口右缘 640−8 → 回折，右缘贴触发器右缘
+    expect(vp.classList.contains('flip-right'), '面板会越出视口右缘时必须回折').toBe(true)
+    // 回折后走 --vp-x-end（nav 宽 600 − 触发器右缘偏移 570 = 30）
+    expect(vp.style.getPropertyValue('--vp-x-end')).toBe('30px')
+  })
+
+  it('RTL 镜像：面板越出导航栏左缘但不越视口左缘 → 不回折', () => {
+    const el = mount({ items: SWITCH_ITEMS, 'delay-duration': '0', dir: 'rtl' })
+    const barEl = bar(el)
+    const navEl = nav(el)
+    const panelEl = panel(el)
+    const first = topItems(el)[0]!
+    // RTL 书写起点在右：导航栏整体靠视口右侧（900..1000）
+    Object.defineProperty(barEl, 'getBoundingClientRect', {
+      value: () => ({ left: 900, right: 1000, top: 0 }) as DOMRect,
+      configurable: true,
+    })
+    Object.defineProperty(navEl, 'getBoundingClientRect', {
+      value: () => ({ left: 900, right: 1000 }) as DOMRect,
+      configurable: true,
+    })
+    Object.defineProperty(navEl, 'offsetWidth', { value: 100, configurable: true })
+    Object.defineProperty(first, 'offsetLeft', { value: 4, configurable: true })
+    Object.defineProperty(first, 'offsetWidth', { value: 70, configurable: true })
+    Object.defineProperty(panelEl, 'scrollWidth', { value: 202, configurable: true })
+    Object.defineProperty(panelEl, 'scrollHeight', { value: 82, configurable: true })
+    Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+    first.click()
+    const vp = viewport(el)
+    // 缺省右缘贴触发器右缘（900+74 = 974）、左缘 772：越出导航栏左缘（900），
+    // 但远未越出视口左缘（8）→ 不回折（回折在 RTL 下镜像为左对齐贴触发器左缘）
+    expect(vp.classList.contains('flip-right'), 'RTL 下面板未越出视口左缘不应回折').toBe(false)
+  })
+})
+
 // ============ loop 循环开关 ============
 
 describe('loop 循环开关', () => {

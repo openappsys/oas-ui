@@ -472,3 +472,80 @@ test('navigation-menu 面板左缘跟随激活触发器（hover 第 1 项 vs 最
   // 面板位置确实随激活项移动（不是两边都停在容器起点）
   expect(Math.abs(last.panelLeft - first.panelLeft), '面板左缘应随激活项右移').toBeGreaterThan(50)
 })
+
+// —— 缺陷回归：回折边界取「导航栏右缘」导致子面板全部右对齐 ——
+// 曾现缺陷：碰撞判定把导航栏盒宽当硬边界（boundRight = min(视口, 导航栏右缘)）。文档站 demo 的
+// 导航栏是 shrink-to-fit（inline-block，宽仅 210px），面板 min-width 200 几乎必然越过栏右缘——
+// 于是每个顶级项的面板都被判回折、右对齐贴触发器右缘（用户实测报障：「全都右对齐」）。
+// 修复：回折边界只取视口（含 8px 安全边距）——导航栏盒宽不是裁切容器，面板本就允许越出栏外。
+test('navigation-menu 子面板左缘跟随触发器（窄导航栏不误判回折，仅越出视口才回折）', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#nav-arrow')
+
+  const measure = async (idx: number) => {
+    const pt = await page.evaluate((i) => {
+      const host = document.querySelector('#nav-arrow') as HTMLElement
+      const trig = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[part="top-item"]')][i]!
+      trig.scrollIntoView({ block: 'center' })
+      const r = trig.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    }, idx)
+    await page.mouse.move(pt.x, pt.y)
+    await page.waitForTimeout(450)
+    return page.evaluate((i) => {
+      const host = document.querySelector('#nav-arrow') as HTMLElement
+      const root = host.shadowRoot!
+      const trig = [...root.querySelectorAll<HTMLElement>('[part="top-item"]')][i]!
+      const vp = root.querySelector<HTMLElement>('[part="viewport"]')!
+      const navEl = root.querySelector<HTMLElement>('.nav')!
+      const tr = trig.getBoundingClientRect()
+      const vr = vp.getBoundingClientRect()
+      const nr = navEl.getBoundingClientRect()
+      return {
+        label: (trig.textContent ?? '').trim(),
+        triggerLeft: tr.left,
+        triggerRight: tr.right,
+        panelLeft: vr.left,
+        panelRight: vr.right,
+        panelWidth: vr.width,
+        navRight: nr.right,
+        vw: window.innerWidth,
+        flip: vp.classList.contains('flip-right'),
+        open: vp.classList.contains('open'),
+      }
+    }, idx)
+  }
+
+  const first = await measure(0)
+  expect(first.open, '第 1 项面板应打开').toBe(true)
+  expect(first.flip, '宽视口下第 1 项不应回折（导航栏盒宽不是回折边界）').toBe(false)
+  expect(Math.abs(first.panelLeft - first.triggerLeft), `面板左缘应对齐「${first.label}」左缘`).toBeLessThanOrEqual(2)
+  // 前提确认：该面板确实触发旧的「导航栏右缘 − 8px」判定（否则这条回归没覆盖到误判路径）
+  expect(first.panelRight, '前提：面板越过窄导航栏右缘（含 8px 安全边距）').toBeGreaterThan(first.navRight - 8)
+
+  await page.mouse.move(5, 5)
+  await page.waitForTimeout(350)
+  const second = await measure(1)
+  expect(second.open, '第 2 项面板应打开').toBe(true)
+  expect(second.flip, '宽视口下第 2 项不应回折').toBe(false)
+  expect(Math.abs(second.panelLeft - second.triggerLeft), `面板左缘应对齐「${second.label}」左缘`).toBeLessThanOrEqual(
+    2,
+  )
+  // 前提确认：靠右的项面板已真实越出导航栏右缘，仍应保持左缘跟随
+  expect(second.panelRight, '前提：面板真实越出窄导航栏右缘').toBeGreaterThan(second.navRight)
+
+  // 反例：把视口压窄到「跟随后的面板」会越出视口右缘 → 必须回折（右缘贴触发器右缘）
+  await page.mouse.move(5, 5)
+  await page.waitForTimeout(350)
+  await page.setViewportSize({ width: 300, height: 800 })
+  await page.waitForTimeout(300)
+  const narrow = await measure(1)
+  expect(narrow.open, '窄视口下第 2 项面板应打开').toBe(true)
+  expect(narrow.triggerLeft + narrow.panelWidth, '前提：窄视口下跟随后面板会越出视口右缘').toBeGreaterThan(
+    narrow.vw - 8,
+  )
+  expect(narrow.flip, '面板会越出视口右缘时必须回折').toBe(true)
+  expect(Math.abs(narrow.panelRight - narrow.triggerRight), '回折后面板右缘应贴触发器右缘').toBeLessThanOrEqual(2)
+  expect(narrow.panelRight, '回折后面板不应越出视口右缘').toBeLessThanOrEqual(narrow.vw - 6)
+})
