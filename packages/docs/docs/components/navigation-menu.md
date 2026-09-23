@@ -72,15 +72,15 @@
   <p class="demo-tip">依次悬停/点击「产品」「资源」：箭头跟随指向打开的触发器。</p>
 </DemoBlock>
 
-## 窄视口碰撞翻转
+## 碰撞回折（边界是视口）
 
-面板宽于剩余视口时自动处理碰撞：右缘溢出改为右对齐（不越出视口），下缘不足向上弹；空间充足时保持正常位置。
+面板缺省**书写起点侧缘跟随当前触发器**（LTR 左缘 / RTL 右缘）：导航栏与外部容器都不是裁切边界，面板允许越出它们（导航栏 shrink-to-fit 时更是必然越出）。只有「跟随后的面板」会**越出视口右缘**时才回折——改为右缘贴触发器右缘、仍不越出视口；面板下缘会越出视口时向上弹（`flip-up`）；空间充足时保持起点侧缘跟随的正常位置。把浏览器窗口压窄到面板放不下，即可看到回折。
 
-<DemoBlock title="窄容器碰撞翻转">
-  <div style="width: 260px">
+<DemoBlock title="窄容器不是裁切边界（左缘跟随触发器）">
+  <div style="width: 120px">
     <oas-navigation-menu id="nav-flip" delay-duration="0" loop="false" items='[{"label":"产品","value":"products","children":[{"label":"组件库","value":"components","href":"/components","description":"30+ 开箱即用组件"},{"label":"设计规范","value":"design","href":"/design","description":"视觉语言与令牌"},{"label":"主题定制","value":"theming","href":"/theming","description":"三层层级令牌"}]}]'></oas-navigation-menu>
   </div>
-  <p class="demo-tip">容器宽 260px：面板右侧放不下时 right 对齐，仍完整落在容器/视口内。</p>
+  <p class="demo-tip">容器只有 120px（比面板窄）、导航栏自身也只有触发器宽（约 80px），面板约 200px：面板越出容器与导航栏都不回折、不被裁切（两者都不是裁切边界），左缘始终跟随触发器。回折只由视口触发——把浏览器窗口压窄到面板放不下时才会右对齐。</p>
 </DemoBlock>
 
 ## Sub 二级级联

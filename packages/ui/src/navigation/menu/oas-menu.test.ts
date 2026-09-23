@@ -549,6 +549,88 @@ describe('OASMenu', () => {
   })
 })
 
+// ===== 水平模式：父项 → 面板 的 hover 衔接（面板与父项横向错开时） =====
+// 缺陷：回折 / 夹取后的面板与父项在行内轴错开（面板右缘 = 父项左缘或更靠起点侧），指针从父项
+// 斜向移向面板时会在菜单盒下缘处短暂落在「页面区域」上（既不在菜单盒、也不在面板盒）——
+// 旧的 mouseleave 只看菜单盒 → 面板在指针到达前瞬间收起，hover 断链（面板越高越明显）。
+// 修法：mouseleave 时若指针仍落在「父项 → 面板」桥区内则保留展开态，由桥区观察器（mousemove）
+// 判定真正离开；桥区 = 菜单盒 ∪ 打开项盒 ∪ 面板盒 ∪ 两者之间的下方连接矩形。
+describe('水平模式 hover 衔接（父项 → 横向错开的面板）', () => {
+  /** 桩几何（页面坐标）：菜单盒 [41,319]×[121,169]、父项 [198,303]×[125,165]、
+   *  面板 [42,221]×[169,299]（回折后被夹回盒内的形态，与 e2e 实测同形） */
+  function stubOffsetLayout(el: OASMenu): { parent: HTMLElement; menuEl: HTMLElement } {
+    const menuEl = el.shadowRoot!.querySelector<HTMLElement>('.menu')!
+    stubRect(menuEl, { left: 41, top: 121, right: 319, bottom: 169, width: 278, height: 48 })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 198, top: 125, right: 303, bottom: 165, width: 105, height: 40 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(sub, { left: 42, top: 169, right: 221, bottom: 299, width: 179, height: 130 })
+    return { parent, menuEl }
+  }
+
+  it('指针离开菜单盒但仍落在「父项 → 面板」桥区内 → 不收起', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const { parent, menuEl } = stubOffsetLayout(el)
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(parent.classList.contains('open')).toBe(true)
+    // (225,200)：已在菜单盒下缘（169）以下、面板右缘（221）右侧——落在两者之间的缺口上
+    menuEl.dispatchEvent(new MouseEvent('mouseleave', { clientX: 225, clientY: 200 }))
+    expect(
+      parent.classList.contains('open'),
+      '桥区内（父项斜向移向面板的路径）不应收起——否则面板在指针到达前消失',
+    ).toBe(true)
+  })
+
+  it('桥区内继续移到桥区外 → 收起（观察器接管，面板不悬挂）', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const { parent, menuEl } = stubOffsetLayout(el)
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    menuEl.dispatchEvent(new MouseEvent('mouseleave', { clientX: 225, clientY: 200 }))
+    expect(parent.classList.contains('open')).toBe(true)
+    // (225,400)：面板下缘（299）以下 → 已离开桥区
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 225, clientY: 400 }))
+    expect(parent.classList.contains('open'), '离开桥区后应收起').toBe(false)
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('指针移入面板盒（桥区内继续走）→ 保持展开', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const { parent, menuEl } = stubOffsetLayout(el)
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    menuEl.dispatchEvent(new MouseEvent('mouseleave', { clientX: 225, clientY: 200 }))
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 130, clientY: 234 }))
+    expect(parent.classList.contains('open'), '进入面板盒后应保持展开').toBe(true)
+  })
+
+  it('桥区内发生滚动（菜单随页面移动）→ 按最后指针位置重判并收起，不留悬挂面板', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const { parent, menuEl } = stubOffsetLayout(el)
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    menuEl.dispatchEvent(new MouseEvent('mouseleave', { clientX: 225, clientY: 200 }))
+    expect(parent.classList.contains('open')).toBe(true)
+    // 页面下滚 200px：菜单盒 / 父项 / 面板整体上移，指针坐标不变 → 已不在桥区内
+    stubRect(menuEl, { left: 41, top: -79, right: 319, bottom: -31, width: 278, height: 48 })
+    stubRect(parent, { left: 198, top: -75, right: 303, bottom: -35, width: 105, height: 40 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(sub, { left: 42, top: -31, right: 221, bottom: 99, width: 179, height: 130 })
+    window.dispatchEvent(new Event('scroll'))
+    expect(parent.classList.contains('open'), '滚动后指针已不在桥区 → 应收起（不留悬挂面板）').toBe(false)
+  })
+
+  it('未布局（rect 全 0）不做桥区判定：mouseleave 仍收起（保持既有语义，SSR/水合前不受影响）', () => {
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const parent = topItems(el)[0]!
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(parent.classList.contains('open')).toBe(true)
+    el.shadowRoot!.querySelector('.menu')!.dispatchEvent(new MouseEvent('mouseleave'))
+    expect(parent.classList.contains('open')).toBe(false)
+  })
+})
+
 // ===== 水平模式回折边界取容器盒（overflow-x: clip 是真实裁切边界） =====
 // 曾现缺陷：水平模式回折判定只看视口，而 .menu 有 overflow-x: clip —— 子菜单越出 .menu
 // 盒缘的那一段被真实裁掉（rect/display 正常但视觉不可见）。水平模式边界须取「视口 ∩ .menu 盒」；
