@@ -616,6 +616,294 @@ describe('水平模式回折边界取容器盒', () => {
   })
 })
 
+// ===== 回折后仍越界：最小平移夹回裁切边界（超宽面板残影） =====
+// 场景：面板宽于容器给它的任一侧空间——不回折越盒终点侧、回折又越盒起点侧，回折后沿裁切边
+// 仍被 .menu 的 overflow-x: clip 裁掉一段（rect/display 正常但视觉不可见，沿边留残影）。
+// 修法：回折/定位完成后量一次面板实际 rect，越界部分用 inline translateX 最小平移夹回；
+// 面板本身宽于边界时贴书写起点侧（LTR 左缘 / RTL 右缘）对齐，保证起点侧完整可见。
+// happy-dom 无真实布局：桩值代表「回折后实测到的几何」（真实浏览器里由 CSS 回折后的布局给出），
+// 桩值随元素当前 inline 位移一起平移，使「先复位再测量」可观测。
+describe('水平模式回折后夹回裁切边界（超宽面板残影）', () => {
+  /** 随 inline translateX 平移的 rect 桩（模拟真实布局：已夹取的面板 rect 随之移动） */
+  function stubRectShiftAware(
+    el: HTMLElement,
+    base: { top: number; left: number; right: number; bottom: number; width: number; height: number },
+  ): void {
+    el.getBoundingClientRect = () => {
+      const m = /translateX\((-?\d+(?:\.\d+)?)px\)/.exec(el.style.transform || '')
+      const dx = m ? Number(m[1]) : 0
+      return { ...base, left: base.left + dx, right: base.right + dx } as DOMRect
+    }
+  }
+
+  /** 复位后重新同步（resize → reposition），用于验证「条件消失时位移被清除」 */
+  function resync(): void {
+    window.dispatchEvent(new Event('resize'))
+  }
+
+  /**
+   * 嵌套子面板的 rect 桩：基值代表「父级未夹取」时的几何，实测 rect 叠加
+   * 父级当前 inline 位移 + 自身 inline 位移——模拟真实布局里祖先 transform 会平移后代。
+   * 这样可观测「父级先夹、子级基于父级夹后位置再夹」的依赖：若子级先于父级处理，
+   * 父级位移尚未写入，子级测到的 rect 会缺少父级平移量。
+   */
+  function stubNestedChild(
+    sub: HTMLElement,
+    parentSub: HTMLElement,
+    base: { top: number; left: number; right: number; bottom: number; width: number; height: number },
+  ): void {
+    const readDx = (el: HTMLElement): number => {
+      const m = /translateX\((-?\d+(?:\.\d+)?)px\)/.exec(el.style.transform || '')
+      return m ? Number(m[1]) : 0
+    }
+    sub.getBoundingClientRect = () => {
+      const dx = readDx(parentSub) + readDx(sub)
+      return { ...base, left: base.left + dx, right: base.right + dx } as DOMRect
+    }
+  }
+
+  it('LTR：回折后面板左缘越盒 → inline 最小平移夹回盒内（只补足越界的那一侧）', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    stubRect(el.shadowRoot!.querySelector<HTMLElement>('.menu')!, {
+      left: 0,
+      top: 0,
+      right: 300,
+      bottom: 40,
+      width: 300,
+      height: 40,
+    })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 160, top: 0, right: 260, bottom: 36, width: 100, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    expect(sub.classList.contains('submenu-1')).toBe(true)
+    // 回折后实测：面板右缘贴父项左缘 160、宽 220 → 左缘 −60，越盒左缘 60px（被 clip 裁掉）
+    stubRectShiftAware(sub, { left: -60, top: 40, right: 160, bottom: 180, width: 220, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.style.transform, '越盒 60px → 向右最小平移 60px（左缘贴盒缘，右缘仍贴父项）').toBe('translateX(60px)')
+  })
+
+  it('LTR：面板本身宽于边界 → 贴书写起点侧（左缘贴盒左缘，起点侧完整可见）', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    stubRect(el.shadowRoot!.querySelector<HTMLElement>('.menu')!, {
+      left: 0,
+      top: 0,
+      right: 300,
+      bottom: 40,
+      width: 300,
+      height: 40,
+    })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 160, top: 0, right: 260, bottom: 36, width: 100, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    // 回折后实测 [−220,160]，宽 380 > 盒宽 300（两侧都放不下）→ 贴左缘
+    stubRectShiftAware(sub, { left: -220, top: 40, right: 160, bottom: 180, width: 380, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.style.transform, '面板宽于边界 → 左缘贴盒左缘（起点侧完整可见）').toBe('translateX(220px)')
+  })
+
+  it('RTL：回折后面板右缘越盒 → inline 最小平移镜像（负位移，夹回盒右缘内）', () => {
+    document.documentElement.setAttribute('dir', 'rtl')
+    try {
+      stubViewport(1280, 800)
+      const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+      stubRect(el.shadowRoot!.querySelector<HTMLElement>('.menu')!, {
+        left: 200,
+        top: 0,
+        right: 600,
+        bottom: 40,
+        width: 400,
+        height: 40,
+      })
+      const parent = topItems(el)[0]!
+      stubRect(parent, { left: 240, top: 0, right: 340, bottom: 36, width: 100, height: 36 })
+      const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+      // RTL 回折后实测：面板左缘贴父项右缘 340、宽 300 → 右缘 640，越盒右缘 40px
+      stubRectShiftAware(sub, { left: 340, top: 40, right: 640, bottom: 180, width: 300, height: 140 })
+      parent.dispatchEvent(new MouseEvent('mouseenter'))
+      expect(sub.style.transform, 'RTL 越盒 40px → 向左最小平移 40px（右缘贴盒缘）').toBe('translateX(-40px)')
+    } finally {
+      document.documentElement.removeAttribute('dir')
+    }
+  })
+
+  it('RTL：面板本身宽于边界 → 贴书写起点侧（右缘贴盒右缘）', () => {
+    document.documentElement.setAttribute('dir', 'rtl')
+    try {
+      stubViewport(1280, 800)
+      const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+      stubRect(el.shadowRoot!.querySelector<HTMLElement>('.menu')!, {
+        left: 200,
+        top: 0,
+        right: 600,
+        bottom: 40,
+        width: 400,
+        height: 40,
+      })
+      const parent = topItems(el)[0]!
+      stubRect(parent, { left: 240, top: 0, right: 340, bottom: 36, width: 100, height: 36 })
+      const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+      // RTL 回折后实测 [340,840]，宽 500 > 盒宽 400 → 贴右缘（RTL 书写起点侧）
+      stubRectShiftAware(sub, { left: 340, top: 40, right: 840, bottom: 180, width: 500, height: 140 })
+      parent.dispatchEvent(new MouseEvent('mouseenter'))
+      expect(sub.style.transform, 'RTL 面板宽于边界 → 右缘贴盒右缘').toBe('translateX(-240px)')
+    } finally {
+      document.documentElement.removeAttribute('dir')
+    }
+  })
+
+  it('未越出裁切边界：不加任何 inline 位移（盒内富余空间不误夹）', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    stubRect(el.shadowRoot!.querySelector<HTMLElement>('.menu')!, {
+      left: 0,
+      top: 0,
+      right: 300,
+      bottom: 40,
+      width: 300,
+      height: 40,
+    })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 10, top: 0, right: 110, bottom: 36, width: 100, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRectShiftAware(sub, { left: 10, top: 40, right: 150, bottom: 180, width: 140, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.style.transform || '', '盒内不夹取（保持声明定位）').toBe('')
+  })
+
+  it('条件消失（容器变宽/项回到盒内）→ 位移被复位清除，不残留自我印证', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    stubRect(el.shadowRoot!.querySelector<HTMLElement>('.menu')!, {
+      left: 0,
+      top: 0,
+      right: 300,
+      bottom: 40,
+      width: 300,
+      height: 40,
+    })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 160, top: 0, right: 260, bottom: 36, width: 100, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRectShiftAware(sub, { left: -60, top: 40, right: 160, bottom: 180, width: 220, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.style.transform).toBe('translateX(60px)')
+    // 面板挪回盒内（如容器变宽）：先复位再测量 → 位移清除
+    stubRectShiftAware(sub, { left: 10, top: 40, right: 230, bottom: 180, width: 220, height: 140 })
+    resync()
+    expect(sub.style.transform || '', '越界条件消失后应清除位移').toBe('')
+  })
+
+  it('竖向模式不受夹取约束（无横轴裁剪，面板允许越出自身盒）', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS })
+    stubRect(el.shadowRoot!.querySelector<HTMLElement>('.menu')!, {
+      left: 0,
+      top: 0,
+      right: 100,
+      bottom: 40,
+      width: 100,
+      height: 40,
+    })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 10, top: 40, right: 170, bottom: 76, width: 160, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRectShiftAware(sub, { left: 170, top: 36, right: 400, bottom: 176, width: 230, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.style.transform || '', '竖向无横轴裁剪 → 不夹取').toBe('')
+  })
+
+  it('「···」收纳弹层不参与夹取（固定右对齐其收纳项，回折与夹取均排除）', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    stubRect(el.shadowRoot!.querySelector<HTMLElement>('.menu')!, {
+      left: 0,
+      top: 0,
+      right: 300,
+      bottom: 40,
+      width: 300,
+      height: 40,
+    })
+    const more = el.shadowRoot!.querySelector<HTMLElement>('.menu-more')!
+    const moreSub = more.querySelector<HTMLElement>('.menu-more-sub')!
+    stubRectShiftAware(moreSub, { left: -60, top: 40, right: 160, bottom: 180, width: 220, height: 140 })
+    more.click() // 展开收纳弹层（hover 不展开：'__more__' 不在 items 树里）
+    expect(more.classList.contains('open')).toBe(true)
+    expect(moreSub.style.transform || '', '收纳弹层不参与回折/夹取').toBe('')
+  })
+
+  // —— 延伸：夹取放宽到全部层级（一级面板宽 185 + 其子项带宽子面板，二级实测整体越盒被裁）——
+  // 缺陷：一级被夹回盒内后，二级子面板仍整体落在 .menu 盒外（被 overflow-x: clip 裁掉，
+  // elementFromPoint 在子面板中心为 null）。修法：夹取条件由「仅 submenu-1」放宽为「全部层级」，
+  // 逐级独立（父级先、子级后——DOM 序天然父先子后，子级 rect 已含父级夹后位移）。
+  it('LTR：二级子面板越盒 → 基于父级夹后位置独立夹回盒内（一级不被二次破坏）', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    stubRect(el.shadowRoot!.querySelector<HTMLElement>('.menu')!, {
+      left: 0,
+      top: 0,
+      right: 300,
+      bottom: 40,
+      width: 300,
+      height: 40,
+    })
+    const file = topItems(el)[1]!
+    expect(file.dataset.value).toBe('file')
+    const sub1 = file.querySelector<HTMLElement>(':scope > .submenu')!
+    // 一级回折后实测 [−60,160] 宽 220 → 越盒左缘 60 → 夹回 translateX(60)（上一轮已绿）
+    stubRectShiftAware(sub1, { left: -60, top: 40, right: 160, bottom: 180, width: 220, height: 140 })
+    const newItem = sub1.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
+    const sub2 = newItem.querySelector<HTMLElement>(':scope > .submenu')!
+    expect(sub2.classList.contains('submenu-1')).toBe(false)
+    // 二级基值取「父级未夹取」时几何：父级夹 +60 后实测 [−124,46] 宽 170（仍越盒左缘）
+    stubNestedChild(sub2, sub1, { left: -184, top: 180, right: -14, bottom: 320, width: 170, height: 140 })
+    // 展开整条链：file（一级）→ new（二级）
+    file.dispatchEvent(new MouseEvent('mouseenter'))
+    newItem.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub1.classList.contains('open') || file.classList.contains('open')).toBe(true)
+    expect(newItem.classList.contains('open')).toBe(true)
+    expect(sub1.style.transform, '一级仍被夹回（不被二级处理二次破坏）').toBe('translateX(60px)')
+    expect(sub2.style.transform, '二级宽 170 能放进边界 → 补足越界的一侧（左缘 124px 越界）').toBe('translateX(124px)')
+    const r2 = sub2.getBoundingClientRect()
+    expect(r2.left, '二级夹回后左缘落在盒内').toBeGreaterThanOrEqual(0)
+    expect(r2.right, '二级夹回后右缘落在盒内').toBeLessThanOrEqual(300)
+  })
+
+  it('RTL：二级子面板越盒 → 基于父级夹后位置独立镜像夹回（负位移）', () => {
+    document.documentElement.setAttribute('dir', 'rtl')
+    try {
+      stubViewport(1280, 800)
+      const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+      stubRect(el.shadowRoot!.querySelector<HTMLElement>('.menu')!, {
+        left: 200,
+        top: 0,
+        right: 600,
+        bottom: 40,
+        width: 400,
+        height: 40,
+      })
+      const file = topItems(el)[1]!
+      const sub1 = file.querySelector<HTMLElement>(':scope > .submenu')!
+      // 一级回折后实测 [340,640] 宽 300 → 越盒右缘 40 → 夹回 translateX(−40)
+      stubRectShiftAware(sub1, { left: 340, top: 40, right: 640, bottom: 180, width: 300, height: 140 })
+      const newItem = sub1.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
+      const sub2 = newItem.querySelector<HTMLElement>(':scope > .submenu')!
+      // 二级基值取「父级未夹取」时几何：父级夹 −40 后实测 [560,860]（越盒右缘 260）
+      stubNestedChild(sub2, sub1, { left: 600, top: 180, right: 900, bottom: 320, width: 300, height: 140 })
+      file.dispatchEvent(new MouseEvent('mouseenter'))
+      newItem.dispatchEvent(new MouseEvent('mouseenter'))
+      expect(sub1.style.transform, '一级仍被夹回（RTL 镜像负位移）').toBe('translateX(-40px)')
+      expect(sub2.style.transform, '二级越盒右缘 → 向左镜像夹回（RTL 负位移）').toBe('translateX(-260px)')
+      const r2 = sub2.getBoundingClientRect()
+      expect(r2.left, 'RTL 二级夹回后左缘落在盒内').toBeGreaterThanOrEqual(200)
+      expect(r2.right, 'RTL 二级夹回后右缘落在盒内').toBeLessThanOrEqual(600)
+    } finally {
+      document.documentElement.removeAttribute('dir')
+    }
+  })
+})
+
 // —— P1 补缺：loading 菜单项 ——
 // loading: true 的项渲染 spinner、禁点（点击/键盘/hover 子菜单均拦截），aria-busy 同步；
 // 恢复（items 更新移除 loading）后还原可点。视觉上 spinner 动画 + 弱化文字（token 驱动）。

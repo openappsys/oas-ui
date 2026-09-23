@@ -323,7 +323,9 @@ a.item:visited {
 /* 水平模式一级子菜单回折：.submenu-1 定位规则特异性 (0,3,0) 压过通用 .submenu.flip-left
    (0,2,0)——必须给同权规则，否则 flip-left 的逻辑 inset 被 inset-inline-start: 0 覆盖，
    类名切了面板不动（越过 .menu 右缘仍被 overflow-x: clip 裁掉）。逻辑 inset 使 RTL 自动镜像。
-   :not(.menu-more-sub) 排除「···」收纳弹层——它固定右对齐其收纳项右缘（见上方规则），不参与回折。 */
+   :not(.menu-more-sub) 排除「···」收纳弹层——它固定右对齐其收纳项右缘（见上方规则），不参与回折。
+   回折后仍越出裁切边界（面板宽于容器给任一侧的空间）时，由 syncSubmenuPositions 追加 inline
+   translateX 最小平移夹回（见该方法注释）——不在此声明，避免与行内位移叠加。 */
 :host([mode='horizontal']) .submenu-1.flip-left:not(.menu-more-sub) {
   inset-inline-start: auto;
   inset-inline-end: 100%;
@@ -950,8 +952,13 @@ export class OASMenu extends OASElement {
    * 竖向 / inline 无横轴裁剪（溢出可见，面板允许越出自身盒）→ 行内轴边界只取视口。
    * 垂直向一律按视口判定（两种模式都无纵轴裁剪）。
    * 零宽守卫：SSR/未布局环境 .menu rect 全 0，按盒缘判定会误回折 → 回退视口。
-   * 多级嵌套逐级检测：querySelectorAll 按 DOM 序遍历（外层先于内层），外层翻转先生效，
-   * 内层 rect 反映翻转后的真实布局，因此第三级及以上同样逐级判定。
+   * 多级嵌套逐级检测：querySelectorAll 按 DOM 序遍历（外层先于内层），外层翻转/夹取先生效，
+   * 内层 rect 反映外层处理后的真实布局，因此第三级及以上同样逐级判定。
+   *
+   * 回折后仍越界（面板宽于容器给任一侧的空间：不回折越盒右缘、回折又越盒左缘）时，
+   * 追加一步 inline 位移把它夹回裁切边界内（见 clampSubmenuInline）。夹取对**全部层级**生效：
+   * 每一级在自身 rect 上独立判定/夹取，边界同为 `.menu` 盒 ∩ 视口；父级先于子级处理，
+   * 子级 rect 已含父级夹取位移，故子级基于父级夹后位置再夹（DOM 序天然保证父先子后）。
    */
   private syncSubmenuPositions(): void {
     if (!this.menuEl) return
@@ -964,19 +971,55 @@ export class OASMenu extends OASElement {
     const inBox = menuRect != null && menuRect.width > 0
     const rightBound = Math.min(vw, inBox ? menuRect!.right : vw) - margin
     const leftBound = Math.max(0, inBox ? menuRect!.left : 0) + margin
+    // 真实裁切边界（无安全边距）：.menu 的 overflow-x: clip 裁到其 padding box（= 盒 rect）
+    const clipLeft = inBox ? Math.max(0, menuRect!.left) : 0
+    const clipRight = inBox ? Math.min(vw, menuRect!.right) : vw
     for (const item of this.menuEl.querySelectorAll<HTMLElement>('.item.open')) {
       const sub = item.querySelector<HTMLElement>(':scope > .submenu')
       if (!sub) continue
-      // 先复位回折类再测量：未回折形态的缘才是「前方空间不足」的正确判据
-      // （已回折的 rect 会自我印证，条件消失时回不去）
+      // 先复位回折类与夹取位移再测量：未回折形态的缘才是「前方空间不足」的正确判据，
+      // 残留的位移同样会自我印证（已回折/已夹回的 rect 让条件消失时回不去）。
+      // 只复位当前这一级：祖先级的位移必须保留，子级 rect 才能反映父级夹后的真实位置。
       sub.classList.remove('flip-left')
+      sub.style.removeProperty('transform')
       const subRect = sub.getBoundingClientRect()
       // 行内轴前方空间不足 → 翻到另一侧（LTR 检右缘溢出、RTL 检左缘溢出）
       sub.classList.toggle('flip-left', rtl ? subRect.left < leftBound : subRect.right > rightBound)
       // 重新测量（水平翻转已生效），垂直向同样按实际布局判定
       const subRectV = sub.getBoundingClientRect()
       sub.classList.toggle('flip-up', subRectV.bottom > vh - margin)
+      // 回折后仍越出真实裁切边界 → 最小平移夹回。全部层级独立生效（每级用自身 rect）；
+      // 「···」收纳弹层除外——它固定右对齐其收纳项，不参与回折/夹取。
+      // 竖向/inline 的 inBox 为 false（无横轴裁剪），自然跳过。
+      if (inBox && !sub.classList.contains('menu-more-sub')) {
+        this.clampSubmenuInline(sub, subRectV, clipLeft, clipRight, rtl)
+      }
     }
+  }
+
+  /**
+   * 把水平模式子菜单（任一层级）沿行内轴夹回真实裁切边界内（overflow-x: clip 的裁切矩形）。
+   *
+   * 触发场景：面板宽于容器给它的任一侧空间——不回折越盒终点侧、回折又越盒起点侧，
+   * 回折后沿裁切边仍留一段残影。做法是写 inline `transform: translateX()`（物理轴，
+   * 由实测 rect 推导，LTR/RTL 自动镜像；不新增/改写 CSS 结构，复位即回到声明定位）。
+   *
+   * 位移取「最小平移」：面板能放进边界时只补足越界的那一侧（此时至多一侧越界）；
+   * 面板本身宽于边界时贴书写起点侧（LTR 左缘 / RTL 右缘）对齐，保证起点侧完整可见
+   * ——与浮层引擎「宁可起点侧全可见」的夹取语义一致。舍入向外取整，不残留亚像素越界。
+   */
+  private clampSubmenuInline(sub: HTMLElement, rect: DOMRect, clipLeft: number, clipRight: number, rtl: boolean): void {
+    const span = clipRight - clipLeft
+    if (span <= 0) return
+    const overStart = clipLeft - rect.left // >0 → 越出起点侧（物理左缘）
+    const overEnd = rect.right - clipRight // >0 → 越出终点侧（物理右缘）
+    if (overStart <= 0 && overEnd <= 0) return
+    // 面板宽于边界 → 贴书写起点侧；否则补足越界的一侧（最小位移）
+    const dx =
+      rect.width > span ? (rtl ? clipRight - rect.right : clipLeft - rect.left) : overStart > 0 ? overStart : -overEnd
+    const px = dx > 0 ? Math.ceil(dx) : Math.floor(dx)
+    if (px === 0) return
+    sub.style.transform = `translateX(${px}px)`
   }
 
   /** 键盘激活态 → .active class（不重建 DOM） */
