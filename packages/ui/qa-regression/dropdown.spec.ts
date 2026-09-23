@@ -109,6 +109,74 @@ test('dropdown RTL：placement=bottom-start 镜像为右缘对齐（data-placeme
   await page.screenshot({ path: 'test-results/visual-review/dropdown-rtl-bottom-start.png' })
 })
 
+// ===== RTL + dark 实测（菜单族定位修复复测）=====
+// RTL 下 placement=bottom-start 是逻辑语义 → 物理右缘对齐（引擎返回 bottom-end）；dark 下同样过一遍
+// （对比度取内部 oas-menu 宿主——.menu-anchor 自身底色透明，量它得到的比值无意义）。
+for (const theme of ['light', 'dark'] as const) {
+  test(`dropdown RTL（${theme}）：bottom-start 镜像 bottom-end、右缘贴触发器 ≤2px、不越视口`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-dropdown')
+    await page.evaluate((dark) => {
+      document.documentElement.setAttribute('dir', 'rtl')
+      document.documentElement.classList.toggle('dark', dark)
+    }, theme === 'dark')
+    const r = await page.evaluate(async () => {
+      const dd = document.createElement('oas-dropdown')
+      dd.id = 'zz-dd-rtl-theme'
+      dd.setAttribute('placement', 'bottom-start')
+      dd.setAttribute(
+        'items',
+        JSON.stringify([
+          { label: '编辑', value: 'edit' },
+          { label: '删除', value: 'delete' },
+        ]),
+      )
+      // 触发器用带标识的普通 button：demo 页同位置另有自带触发器，无标识时截图无法分辨归属
+      dd.innerHTML =
+        '<button style="outline:2px solid #e5484d;background:var(--oas-color-bg);color:var(--oas-color-text-primary);border:1px solid var(--oas-color-border);border-radius:6px;padding:6px 10px">RTL 探针</button>'
+      dd.style.cssText = 'position: fixed; top: 320px; left: 1000px; z-index: 9999'
+      document.body.appendChild(dd)
+      dd.setAttribute('open', '')
+      await new Promise((r) => setTimeout(r, 350))
+      const anchor = dd.shadowRoot!.querySelector<HTMLElement>('.menu-anchor')!
+      const trig = dd.querySelector('button')!
+      const tr = trig.getBoundingClientRect()
+      const pr = anchor.getBoundingClientRect()
+      // 面板真实底色/文字色取内部 oas-menu 宿主（.menu-anchor 自身背景透明）
+      const menuEl = anchor.querySelector<HTMLElement>('oas-menu')!
+      const cs = getComputedStyle(menuEl)
+      const parse = (c: string) => c.match(/\d+/g)!.slice(0, 3).map(Number)
+      const lum = (rgb: number[]) => {
+        const f = (v: number) => {
+          v /= 255
+          return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+        }
+        return 0.2126 * f(rgb[0]!) + 0.7152 * f(rgb[1]!) + 0.0722 * f(rgb[2]!)
+      }
+      const a = lum(parse(cs.color))
+      const b = lum(parse(cs.backgroundColor))
+      const out = {
+        placement: anchor.getAttribute('data-placement'),
+        dRight: Math.round(pr.right - tr.right),
+        panelLeft: Math.round(pr.left),
+        panelRight: Math.round(pr.right),
+        vw: window.innerWidth,
+        color: cs.color,
+        bg: cs.backgroundColor,
+        ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+      }
+      return out
+    })
+    expect(r.placement, 'RTL bottom-start 应镜像为 bottom-end（引擎返回值）').toBe('bottom-end')
+    expect(Math.abs(r.dRight), `RTL 面板右缘应对齐触发器右缘（偏差 ${r.dRight}px）`).toBeLessThanOrEqual(2)
+    expect(r.panelLeft, '面板左缘应在视口内').toBeGreaterThanOrEqual(0)
+    expect(r.panelRight, `面板右缘 ${r.panelRight} 越出视口 ${r.vw}`).toBeLessThanOrEqual(r.vw)
+    expect(r.ratio, `${theme} 面板文字 ${r.color} 对底色 ${r.bg} 对比度`).toBeGreaterThanOrEqual(4.5)
+    await page.screenshot({ path: `test-results/visual-review/dropdown-rtl-bottom-start-${theme}.png` })
+  })
+}
+
 // —— 缺陷 9：rate 半选视觉 ——
 // 曾现 bug：半星整颗按 50% 透明度淡化，看起来是整颗黄描边星。
 // 修复：半星 = 左半激活色（warning）+ 右半未激活色（border），由 .half-fill 覆盖层 +

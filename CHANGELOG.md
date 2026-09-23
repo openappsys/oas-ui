@@ -1,8 +1,8 @@
 # Changelog
 
-所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
+所有显著变更记录于此。
 
-## [2.5.6] - 2026-09-22
+## [2.5.6] - 2026-09-23
 
 ### 特性
 
