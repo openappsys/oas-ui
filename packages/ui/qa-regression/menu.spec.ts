@@ -510,6 +510,106 @@ test('menu 水平模式 RTL：二级子面板镜像夹回 .menu 盒内（负位�
   expect(data.hitIsHost, `RTL 二级面板中心应命中菜单宿主（实际命中 ${data.hitTag}）`).toBe(true)
 })
 
+// ===== hover 衔接（真鼠标）：指针从父项移向「被回折 + 夹回」的面板时面板不中途收起 =====
+// 缺陷：回折 / 夹取后的面板与父项在行内轴错开（面板右缘落在父项左缘或更靠书写起点侧），指针从
+// 父项斜向移向面板的直线路径会在菜单盒下缘处短暂落在「页面区域」上（既不在菜单盒、也不在面板
+// 盒）——旧的 mouseleave 只看菜单盒，于是面板在指针到达前瞬间收起（hover 断链）。面板越高、
+// 错开越多越明显。修法：mouseleave 时指针仍在「父项 → 面板」桥区内则保留展开态，由桥区观察器
+// （mousemove）判定真正离开（无定时器）。
+// 实测（真鼠标 page.mouse 逐步移动）：修复前 4 项面板（高 170）直线 30 步采样丢 24 点（首丢第 7 步）；
+// 修复后 LTR / RTL 的 3 / 4 / 5 / 8 项面板全部 0 丢失。3 项为既有 e2e 场景（冻结不回归）。
+for (const sc of [
+  { children: 3, rtl: false },
+  { children: 4, rtl: false },
+  { children: 4, rtl: true },
+] as const) {
+  test(`menu 水平${sc.rtl ? ' RTL' : ''}：真鼠标从父项移向被夹回的面板（${sc.children} 项），全程保持展开`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-menu')
+    if (sc.rtl) await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'))
+    // 注入 280 宽水平菜单：末项带长标签子级 → 面板宽于容器一侧空间 → 回折 + inline 平移夹回
+    const item = await page.evaluate(async (n) => {
+      document.querySelector('#zz-menu-bridge')?.remove()
+      const h = document.createElement('oas-menu')
+      h.id = 'zz-menu-bridge'
+      h.setAttribute('mode', 'horizontal')
+      // fixed 定位：保证落在视口内（body 末尾追加会落到折叠线外）
+      h.style.cssText = 'position: fixed; top: 120px; left: 40px; width: 280px; z-index: 9999'
+      h.setAttribute(
+        'items',
+        JSON.stringify([
+          { label: '首页', value: 'home' },
+          { label: '产品中心', value: 'products' },
+          {
+            label: '帮助中心',
+            value: 'help',
+            children: Array.from({ length: n }, (_, i) => ({
+              label: `常见问题与使用指南${i + 1}`,
+              value: `leaf-${i + 1}`,
+            })),
+          },
+        ]),
+      )
+      document.body.appendChild(h)
+      await new Promise((r) => setTimeout(r, 400))
+      const li = h.shadowRoot!.querySelector<HTMLElement>('.menu > [part="item"][data-value="help"]')!
+      const ir = li.getBoundingClientRect()
+      return { cx: ir.left + ir.width / 2, cy: ir.top + ir.height / 2 }
+    }, sc.children)
+    const readState = () =>
+      page.evaluate(() => {
+        const h = document.querySelector('#zz-menu-bridge')!
+        const li = h.shadowRoot!.querySelector<HTMLElement>('.menu > [part="item"][data-value="help"]')!
+        const sub = li.querySelector<HTMLElement>(':scope > .submenu')!
+        const sr = sub.getBoundingClientRect()
+        return {
+          open: li.classList.contains('open'),
+          transform: sub.style.transform || '',
+          panelHover: sub.matches(':hover'),
+          panelLeft: sr.left,
+          panelRight: sr.right,
+          panelCx: sr.left + sr.width / 2,
+          panelCy: sr.top + sr.height / 2,
+        }
+      })
+    // 真鼠标 hover 展开（page.mouse 走完整 hit-test 事件路径）
+    await page.mouse.move(item.cx, item.cy)
+    await page.waitForTimeout(260)
+    const opened = await readState()
+    expect(opened.open, 'hover 父项应展开面板').toBe(true)
+    expect(opened.transform, '场景前提：面板被回折 + inline 平移夹回（与父项横向错开）').toMatch(
+      /^translateX\(-?\d+px\)$/,
+    )
+    // 场景前提：父项中心落在面板横向范围之外（LTR 面板在父项左侧 / RTL 镜像在右侧）——
+    // 指针从父项中心下移时会离开面板盒，正是缺口发生的位置
+    expect(
+      item.cx < opened.panelLeft || item.cx > opened.panelRight,
+      `场景前提：父项中心 ${Math.round(item.cx)} 应在面板 [${Math.round(opened.panelLeft)},${Math.round(opened.panelRight)}] 之外（错开）`,
+    ).toBe(true)
+    // 沿「父项中心 → 面板中心」直线逐步移动，逐点采样 .open
+    const steps = 30
+    let lost = 0
+    let firstLost = -1
+    let hoveredPanel = false
+    for (let i = 1; i <= steps; i++) {
+      const x = item.cx + ((opened.panelCx - item.cx) * i) / steps
+      const y = item.cy + ((opened.panelCy - item.cy) * i) / steps
+      await page.mouse.move(x, y)
+      const s = await readState()
+      if (s.panelHover) hoveredPanel = true
+      if (!s.open) {
+        lost++
+        if (firstLost === -1) firstLost = i
+      }
+    }
+    expect(lost, `面板中途收起 ${lost}/${steps} 点（首丢第 ${firstLost} 步）——hover 断链`).toBe(0)
+    expect(hoveredPanel, '指针应最终进入面板盒（桥接生效，而非面板从未展开）').toBe(true)
+  })
+}
+
 // ===== RTL + dark 实测（菜单族定位修复复测）=====
 // RTL 水平模式：一级面板书写起点侧 = 物理右缘 → 未回折时右缘贴父项右缘、向左展开；
 // 回折（flip-left 的逻辑 inset 镜像）时左缘贴父项右缘、向右展开。两端点父项都要覆盖，

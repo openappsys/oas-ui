@@ -410,6 +410,10 @@ export class OASMenu extends OASElement {
   private moreItemEl: HTMLElement | null = null
   /** 子元素通道观察器：light DOM 里 oas-menu-item/group/divider 增删或属性/文本变化 → 重解析渲染 */
   private childObserver: MutationObserver | null = null
+  /** 桥区观察器（仅「指针离开菜单盒但仍在父项 → 面板桥区内」时挂载，收起即卸载） */
+  private bridgeWatch: { move: (e: MouseEvent) => void; leave: () => void } | null = null
+  /** 桥区观察器最后已知指针位置（滚动 / 缩放后按它重判，见 recheckHoverBridge） */
+  private bridgePointer: { x: number; y: number } | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -427,20 +431,32 @@ export class OASMenu extends OASElement {
     // 鼠标移出整个菜单时收起所有浮层（仅浮出形态：vertical/horizontal 的 popup 子菜单是
     // 瞬态浮层，移出收起是通行惯例；inline 侧边导航的展开态是持续导航上下文——
     // 可能还受控于宿主 expanded 属性，鼠标移出菜单区域不得收起）
-    menuEl.addEventListener('mouseleave', () => {
-      if (this.getAttr('mode') !== 'inline' && this.expanded.size > 0) {
-        this.expanded.clear()
-        this.syncOpen()
+    menuEl.addEventListener('mouseleave', (e) => {
+      if (this.getAttr('mode') === 'inline' || this.expanded.size === 0) return
+      // 水平模式下回折/夹取后的面板与父项横向错开：指针从父项斜向移向面板的路径会短暂落在
+      // 菜单盒与面板盒之间的页面区域上（面板越高、错开越多越明显）。此处若直接收起，面板在
+      // 指针到达前消失（hover 断链）——落在桥区内时保留展开态，交给桥区观察器判定真正离开。
+      const me = e as MouseEvent
+      if (this.inHoverBridge(me.clientX, me.clientY)) {
+        this.watchHoverBridge(me.clientX, me.clientY)
+        return
       }
+      this.expanded.clear()
+      this.syncOpen()
     })
     // 视口尺寸/滚动变化时重算子菜单翻转（仅展开态下有意义，浮层是瞬时的）
     const reposition = (): void => {
       if (this.expanded.size > 0) this.syncSubmenuPositions()
+      // 桥区保持期间滚动 / 缩放：指针没动但菜单盒与面板整体位移 → 按最后已知指针位置重判，
+      // 避免留下「指针早已不在路径上、面板还开着」的悬挂态（滚动不保证补发 mousemove）
+      this.recheckHoverBridge()
     }
     window.addEventListener('resize', reposition)
     this.onCleanup(() => window.removeEventListener('resize', reposition))
     window.addEventListener('scroll', reposition, true)
     this.onCleanup(() => window.removeEventListener('scroll', reposition, true))
+    // 桥区观察器随实例断开清理（挂载/卸载由 watchHoverBridge / stopHoverBridgeWatch 管理）
+    this.onCleanup(() => this.stopHoverBridgeWatch())
     // 水平溢出收纳：horizontal 模式监听容器宽度变化，重算收纳
     if (typeof ResizeObserver !== 'undefined') {
       this.overflowObserver = new ResizeObserver(() => this.syncOverflowCollapse())
@@ -928,6 +944,8 @@ export class OASMenu extends OASElement {
 
   /** 展开状态 → .open class（不重建 DOM） */
   private syncOpen(): void {
+    // 全部收起 → 桥区观察器随之卸载（无常驻监听）
+    if (this.expanded.size === 0) this.stopHoverBridgeWatch()
     if (!this.menuEl) return
     for (const li of this.menuEl.querySelectorAll<HTMLElement>('[part="item"][data-value]')) {
       const open = this.expanded.has(li.dataset.value ?? '')
@@ -1020,6 +1038,98 @@ export class OASMenu extends OASElement {
     const px = dx > 0 ? Math.ceil(dx) : Math.floor(dx)
     if (px === 0) return
     sub.style.transform = `translateX(${px}px)`
+  }
+
+  /**
+   * 指针是否仍落在「父项 → 其面板」的 hover 桥区内（仅水平模式）。
+   *
+   * 桥区 = 菜单盒 ∪ 每个打开项的盒 ∪ 其面板盒 ∪ 两者之间的下方连接矩形
+   * （[min(父项左, 面板左), max(父项右, 面板右)] × [菜单下缘, 面板下缘]）。
+   *
+   * 为什么需要：回折 / 夹取后的面板与父项在行内轴错开（面板右缘落在父项左缘或更靠书写起点
+   * 侧），两者盒之间在菜单下缘以下留有一段页面区域。指针从父项斜向移向面板的直线路径会经过
+   * 它——这块区域不属于任何组件盒，但语义上仍是「父项 → 面板」的移动路径；只看菜单盒的
+   * mouseleave 会在此处误判为「移出菜单」而收起面板，面板在指针到达前消失（面板越高、
+   * 错开越多越明显）。据此保留展开态，再由 watchHoverBridge 判定真正离开。
+   *
+   * 竖排 / inline 不做判定：竖排面板与父项同轴（相邻贴边、无错开），inline 是就地展开
+   * （子项在父项流内），都不存在这块缺口。未布局（rect 全 0，SSR / 测试替身）同样不判定，
+   * 保持既有「移出菜单即收起」语义（与 syncSubmenuPositions 的零宽守卫同源）。
+   */
+  private inHoverBridge(x: number, y: number): boolean {
+    if (this.getAttr('mode') !== 'horizontal' || !this.menuEl) return false
+    const menuRect = this.menuEl.getBoundingClientRect()
+    if (menuRect.width <= 0) return false
+    const pad = 2 // 亚像素 / 命中测试容差
+    const inside = (r: DOMRect): boolean =>
+      x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad
+    if (inside(menuRect)) return true
+    for (const item of this.menuEl.querySelectorAll<HTMLElement>('.item.open')) {
+      const sub = item.querySelector<HTMLElement>(':scope > .submenu')
+      if (!sub) continue
+      const subRect = sub.getBoundingClientRect()
+      if (subRect.width <= 0) continue
+      const itemRect = item.getBoundingClientRect()
+      if (inside(itemRect) || inside(subRect)) return true
+      // 连接矩形：补齐父项盒与面板盒之间（菜单下缘以下）的缺口
+      const left = Math.min(itemRect.left, subRect.left)
+      const right = Math.max(itemRect.right, subRect.right)
+      const top = Math.min(itemRect.bottom, subRect.top)
+      const bottom = Math.max(itemRect.bottom, subRect.bottom)
+      if (x >= left - pad && x <= right + pad && y >= top - pad && y <= bottom + pad) return true
+    }
+    return false
+  }
+
+  /**
+   * 桥区观察器：指针落在桥区内（已离开菜单盒）时接管收起判定——mousemove 到桥区外即收起。
+   * 只在 mouseleave 判定「仍在桥区」时挂载、收起后立即卸载（无常驻全局监听）。
+   * 一并监听文档 mouseleave：指针直接移出窗口时不再产生 mousemove，同样收起（避免面板悬挂）。
+   * 入参为挂载时的指针位置（mouseleave 事件坐标），供滚动 / 缩放后重判（recheckHoverBridge）。
+   */
+  private watchHoverBridge(x: number, y: number): void {
+    if (this.bridgeWatch) return
+    this.bridgePointer = { x, y }
+    const move = (e: MouseEvent): void => {
+      this.bridgePointer = { x: e.clientX, y: e.clientY }
+      if (this.expanded.size === 0) {
+        this.stopHoverBridgeWatch()
+        return
+      }
+      if (this.inHoverBridge(e.clientX, e.clientY)) return
+      this.stopHoverBridgeWatch()
+      this.expanded.clear()
+      this.syncOpen()
+    }
+    const leave = (): void => {
+      this.stopHoverBridgeWatch()
+      if (this.expanded.size === 0) return
+      this.expanded.clear()
+      this.syncOpen()
+    }
+    this.bridgeWatch = { move, leave }
+    window.addEventListener('mousemove', move, true)
+    document.addEventListener('mouseleave', leave)
+  }
+
+  /** 桥区观察器挂载期间：按最后已知指针位置重判（滚动 / 缩放改变几何后调用，见 reposition） */
+  private recheckHoverBridge(): void {
+    const p = this.bridgePointer
+    if (!this.bridgeWatch || !p) return
+    if (this.inHoverBridge(p.x, p.y)) return
+    this.stopHoverBridgeWatch()
+    if (this.expanded.size === 0) return
+    this.expanded.clear()
+    this.syncOpen()
+  }
+
+  /** 卸载桥区观察器（幂等；收起、断开连接时调用） */
+  private stopHoverBridgeWatch(): void {
+    if (!this.bridgeWatch) return
+    window.removeEventListener('mousemove', this.bridgeWatch.move, true)
+    document.removeEventListener('mouseleave', this.bridgeWatch.leave)
+    this.bridgeWatch = null
+    this.bridgePointer = null
   }
 
   /** 键盘激活态 → .active class（不重建 DOM） */
