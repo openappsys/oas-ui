@@ -1307,8 +1307,8 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ### 验收
 
-- 全量单测 182 文件 / 7117 用例 / typecheck 0 / build 0 / api:check 通过（含新增 CSS 变量表生成）/ stats:check 0 / lint:md 0 / format 0 / perf:size 全 PASS（theme index.css 3.1KB / 3.5KB）/ trace 0 命中
-- 全量 e2e 2146 passed（chromium 全量 + firefox 抽样，0 failed）；a11y 审计 118 passed（117 页 × light+dark 双主题 + 门禁自检，零严重违规）；对比度硬闸 `<60 = 0`（light 655→0、dark 327→0），axe 比值法 ratchet 基线入库（255 违规 + exempt/skipped 同步 ratchet）
+- 全量单测 186 文件 / 7401 用例 / typecheck 0 / build 0 / api:check 通过（含新增 CSS 变量表生成）/ stats:check 0 / lint:md 0 / format 0 / perf:size 全 PASS（theme index.css 3.1KB / 3.5KB）/ trace 0 命中
+- 全量 e2e 2358 passed（chromium 全量 + firefox 抽样，0 failed）；a11y 审计 118 passed（117 页 × light+dark 双主题 + 门禁自检，零严重违规）；对比度硬闸 `<60 = 0`（light 655→0、dark 327→0），axe 比值法 ratchet 基线入库（255 违规 + exempt/skipped 同步 ratchet）
 
 ## form-associated 批次（原生表单集成，随 v2.5.6）
 
@@ -1335,9 +1335,9 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ### 验收
 
-- 单测批次新增约 150 条（core 8 + 15 组件各自 form-associated describe）；全量 7325+ passed；typecheck 0 / build 0 / format 0 / lint:md 0 / api:check ✓（15 组件 required/name 语料 + manifest 同步）/ perf:size PASS
+- 单测批次新增约 150 条（core 8 + 15 组件各自 form-associated describe）；全量 7401 passed；typecheck 0 / build 0 / format 0 / lint:md 0 / api:check ✓（15 组件 required/name 语料 + manifest 同步）/ perf:size PASS
 - 浏览器 e2e（qa-regression/form-associated.spec.ts，chromium + firefox 抽样）15 用例全绿：label 关联与聚焦/激活、FormData（单值/多选多条/范围 name-start/end/File）、reset 基线、required + :invalid + invalid 事件、fieldset 防自锁、label 点击不误开面板
-- 全量 e2e 2299 passed / 37 skipped（chromium 全量 + firefox 抽样，唯一失败为 flaky 重跑即绿）；a11y 全量 118 页×双主题 axe 零严重违规（命名转发修复后）；demo-coverage 静态属性演示 113 过（12 组件补 required 演示块）
+- 全量 e2e 2358 passed / 37 skipped（chromium 全量 + firefox 抽样，0 failed）；a11y 全量 118 页×双主题 axe 零严重违规（命名转发修复后）；demo-coverage 静态属性演示 113 过（12 组件补 required 演示块）
 - 视觉核验：form 页「原生表单集成」集中 demo（input/select/date-picker/checkbox/switch）浅/暗截图 + 识图复核（label 点击聚焦环、勾选/切换态、FormData 输出、reset 复位，暗色对比度）；reset 后 select/date 仍显示受控值属**受控写入刷新基线**的设计语义（demo 文案已注明）
 
 ## qrcode 美化维度（码点 / 定位图形形状 + 渐变前景 + logo 挖空，随 v2.5.6）
@@ -1386,4 +1386,4 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ### 验收
 
-- 全量 e2e 2299 passed（chromium 全量 + firefox 抽样，唯一失败为 flaky 重跑即绿）；全量单测、typecheck、build、api:check、stats:check、trace 全绿（随各笔提交门禁）
+- 全量 e2e 2358 passed / 37 skipped（chromium 全量 + firefox 抽样，0 failed）；全量单测 7401、typecheck、build、api:check、stats:check、trace 全绿（随各笔提交门禁）
