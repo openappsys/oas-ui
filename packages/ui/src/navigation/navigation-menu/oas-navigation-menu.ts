@@ -450,7 +450,13 @@ const STYLE = `
   background: var(--oas-color-bg);
   overflow: auto;
   box-sizing: border-box;
+  /* 内容宽度下限 = 内容最小宽度：--vp-w 由 sub.scrollWidth 测得，而内容横向溢出内容盒时
+     该值只含书写起点侧内边距（不含尾侧），子面板会比内容所需窄一个 padding，末列贴住右缘。
+     与 .panel 同因同解：用 min-content 兜底，让内容盒永远容得下内容（右内边距与左对称）。
+     极端窄视口下（内容最小宽度超过 .viewport 的 max-width 上限）min-width 优先，子面板可超出视口。 */
+  min-width: min-content;
 }
+
 .sub-panel[hidden] {
   display: none;
 }
@@ -523,7 +529,10 @@ const STYLE = `
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* 列最小宽度下限 = 链接内容最小宽度（不窄于最长单词）：与 .grid 同因——minmax(0,1fr) 可把列压到
+     内容最小宽度以下，列内文字横向溢出列外、越过列间距压到相邻列文字上（en 长单词尤甚；
+     CJK 可任意断行不触发）。内容装不下时子面板随内容加宽（列宽按各自 min-content 分配，非等宽）。 */
+  grid-template-columns: repeat(2, minmax(min-content, 1fr));
   gap: var(--oas-space-1);
 }
 .sub-links a {

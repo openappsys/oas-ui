@@ -80,7 +80,7 @@
   <div style="width: 120px">
     <oas-navigation-menu id="nav-flip" delay-duration="0" loop="false" items='[{"label":"产品","value":"products","children":[{"label":"组件库","value":"components","href":"/components","description":"30+ 开箱即用组件"},{"label":"设计规范","value":"design","href":"/design","description":"视觉语言与令牌"},{"label":"主题定制","value":"theming","href":"/theming","description":"三层层级令牌"}]}]'></oas-navigation-menu>
   </div>
-  <p class="demo-tip">容器只有 120px（比面板窄）、导航栏自身也只有触发器宽（约 80px），面板约 200px：面板越出容器与导航栏都不回折、不被裁切（两者都不是裁切边界），左缘始终跟随触发器。回折只由视口触发——把浏览器窗口压窄到面板放不下时才会右对齐。</p>
+  <p class="demo-tip">容器只有 120px（比面板窄）、导航栏自身也只比触发器略宽，而面板宽度随内容撑开（下限为内容最小宽度 min-content，不写死固定宽度）：面板越出容器与导航栏都不回折、不被裁切（两者都不是裁切边界），左缘始终跟随触发器。回折只由视口触发——把浏览器窗口压窄到面板放不下时才会右对齐。</p>
 </DemoBlock>
 
 ## Sub 二级级联
