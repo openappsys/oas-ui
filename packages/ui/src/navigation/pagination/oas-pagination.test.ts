@@ -419,6 +419,25 @@ describe('OASPagination', () => {
     expect(css).toContain(".btn:hover:not(:disabled):not([aria-disabled='true']):not([aria-current='true'])")
   })
 
+  // ===== RTL（右到左）方向镜像 =====
+
+  it('RTL：dir 进 observedAttributes，dir=rtl 写 data-rtl 钩子（翻回 ltr 摘除）', () => {
+    expect(OASPagination.observedAttributes).toContain('dir')
+    const el = mount({ dir: 'rtl' })
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    el.setAttribute('dir', 'ltr')
+    expect(el.hasAttribute('data-rtl')).toBe(false)
+  })
+
+  it('RTL：方向箭头钮（first/prev/next/last）镜像 scaleX(-1)——页码序由 flex 随 dir 自动镜像，箭头 glyph 不会自翻（RTL 审计实抓：‹« 指向背离目标页）', () => {
+    const el = mount({ dir: 'rtl', 'show-edges': '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    for (const part of ['first', 'prev', 'next', 'last']) {
+      expect(css).toContain(`:host([data-rtl]) [part='${part}']`)
+    }
+    expect(css).toMatch(/:host\(\[data-rtl\]\)\s*\[part='first'\][^{]*\{[^}]*transform:\s*scaleX\(-1\)/s)
+  })
+
   // ===== 批次 14：pager-count 页码按钮上限 =====
 
   it('pager-count：默认不设时行为不变（siblings 候选集未超上限，100 页仍 5 个页码钮）', () => {

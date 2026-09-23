@@ -181,12 +181,12 @@ describe('OAS typography', () => {
       expect(actions).not.toBeNull()
       expect(actions!.querySelector('slot[name="actions"]')).not.toBeNull()
     })
-    it('actions-position=start：actions 在文本前（order 换序）', () => {
+    it('actions-position=start：actions 在文本前（order -1 严格前置——order 0 与文本缺省值平局会被 DOM 序裁决，start 从未生效）', () => {
       const el = mount(OASText, { 'actions-position': 'start' }, '文本')
       const actions = el.shadowRoot!.querySelector('.actions') as HTMLElement
       expect(actions.classList.contains('start')).toBe(true)
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(css).toMatch(/\.actions\.start\s*{[^}]*order:\s*0/)
+      expect(css).toMatch(/\.actions\.start\s*{[^}]*order:\s*-1/)
       expect(css).toMatch(/\.wrap\s*{[^}]*display:\s*inline-flex/)
     })
     it('缺省 actions-position=end（在文本后，零回归）', () => {

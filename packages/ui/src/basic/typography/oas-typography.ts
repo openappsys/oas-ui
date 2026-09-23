@@ -147,7 +147,9 @@ const BASE_STYLE = `
   order: 2;
 }
 .actions.start {
-  order: 0;
+  /* order -1 严格前置：文本/suffix 缺省 order 0，写 0 会平局被 DOM 序裁决（actions 在模板中后置），
+     start 从未生效——RTL 全量审计对比 start/end 两组无差异时实抓 */
+  order: -1;
   margin-inline-start: 0;
   margin-inline-end: var(--oas-space-1);
 }

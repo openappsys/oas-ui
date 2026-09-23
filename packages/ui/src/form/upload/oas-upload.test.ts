@@ -684,6 +684,28 @@ describe('OASUpload 插槽（tip / trigger / item）', () => {
     expect(clickSpy).toHaveBeenCalled()
   })
 
+  it('template[slot="trigger"] 克隆渲染（native slot 对 template 元素不生效——会整块空白，需显式克隆通道）', async () => {
+    const el = mount()
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'trigger')
+    tpl.innerHTML = '<img class="my-avatar" alt="头像预览"><span class="my-hint">点击或拖拽上传头像</span>'
+    el.appendChild(tpl)
+    el.setAttribute('accept', 'image/*') // 触发 update 重渲（静态 demo 模板在 connect 前已存在，同一通道）
+    await new Promise((r) => setTimeout(r, 0))
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="trigger"]')!
+    // template 元素被分配到 slot 也渲染不出内容（inert）→ 克隆通道接管：slot 隐藏、克隆容器显示
+    expect(slot.hidden).toBe(true)
+    const cloneBox = el.shadowRoot!.querySelector<HTMLElement>('.trigger-tpl')!
+    expect(cloneBox.hidden).toBe(false)
+    expect(cloneBox.querySelector('.my-avatar')).not.toBeNull()
+    expect(cloneBox.querySelector('.my-hint')?.textContent).toBe('点击或拖拽上传头像')
+    // 克隆内容在 shadow 内 → zone 点击路径开文件选择（不依赖 light DOM 冒泡转发）
+    const input = inputOf(el)
+    const clickSpy = vi.spyOn(input, 'click')
+    cloneBox.querySelector('.my-hint')!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(clickSpy).toHaveBeenCalled()
+  })
+
   it('template[slot="item"] 克隆进每行，[data-item-name]/[data-item-size] 绑定', () => {
     const el = mount()
     const tpl = document.createElement('template')
