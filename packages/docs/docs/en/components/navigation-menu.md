@@ -80,7 +80,7 @@ By default the panel's **writing-start edge follows the active trigger** (left e
   <div style="width: 120px">
     <oas-navigation-menu id="nav-flip" delay-duration="0" loop="false" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","description":"30+ ready-to-use components"},{"label":"Design system","value":"design","href":"/design","description":"Visual language and tokens"},{"label":"Theming","value":"theming","href":"/theming","description":"Three-layer token architecture"}]}]'></oas-navigation-menu>
   </div>
-  <p class="demo-tip">The container is only 120px (narrower than the panel) and the nav bar is only as wide as the trigger (~80px), while the panel is ~200px: overflowing the container and the nav bar neither flips nor clips the panel (neither is a clipping boundary) — its left edge keeps following the trigger. The flip is viewport-driven only: narrow the browser window until the panel no longer fits and it right-aligns.</p>
+  <p class="demo-tip">The container is only 120px (narrower than the panel) and the nav bar itself is only slightly wider than its trigger, while the panel's width grows with its content (bottoming out at the content's min-content, not a fixed width): overflowing the container and the nav bar neither flips nor clips the panel (neither is a clipping boundary) — its left edge keeps following the trigger. The flip is viewport-driven only: narrow the browser window until the panel no longer fits and it right-aligns.</p>
 </DemoBlock>
 
 ## Sub second-level cascade

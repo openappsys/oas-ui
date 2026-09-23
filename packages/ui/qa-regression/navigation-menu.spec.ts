@@ -1,6 +1,6 @@
 // 复核回归：navigation-menu——历史缺陷固化断言。
 
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { up } from './helpers'
 
 test('navigation-menu 箭头跟随触发器：面板箭头 --arrow-x 随触发器切换而移动', async ({ page }) => {
@@ -679,4 +679,184 @@ test('navigation-menu en 面板卡片列：文字不越出列外、相邻列不�
     Math.abs((zhCols[0] ?? 0) - (zhCols[1] ?? 0)),
     'zh 两列应仍等宽（1fr 均分，min-content 下限在 CJK 下不生效）',
   ).toBeLessThanOrEqual(1)
+})
+
+// 回归 缺陷：en 页二级覆盖面板（.sub-links）与卡片列同根——列被 minmax(0,1fr) 压到内容最小宽度以下 2026-09-23
+// 量测（en 页 #nav-sub → 悬停第 1 个触发器 → 点二级触发器「Learn」）：子面板 229px、.sub-links 两列各 104.5px，
+// 最长二级标签「Community」墨迹 86.11px + 左右内边距 24px = 110.11px > 104.5px → 文字横向溢出所在列内容盒 5.61px
+// （吃进右内边距；靠 12px 内边距 + 4px 列间距缓冲才没与相邻列相碰，墨迹间隔 22.39px）。
+// 换成更长的真实英文标签（如「Internationalization」）即真相碰：墨迹越过相邻列左缘 45.77px、与相邻列墨迹重叠 33.77px。
+// zh 页因 CJK 可任意断行（min-content = 单字）不触发。
+// 修法（与卡片列同原则、方向中性）：.sub-links 列下限 = 内容 min-content（minmax(min-content,1fr)）+
+// .sub-panel min-width:min-content（--vp-w 由 sub.scrollWidth 测得，横向溢出内容盒时该值不含尾侧内边距，
+// 需子面板自身兜底容下内容；否则末列越出 .sub-links 盒 8.47px、右内边距与左不对称）。
+// 四条不变量（修复前 ① 必红）：
+//   ① 每个二级链接的文字墨迹不越出所在列的内容盒（列宽不窄于内容最小宽度；左右两侧都查 → 方向中性）
+//   ② 同一行相邻两列的文字墨迹之间至少留出列间距（不压到相邻列文字上）
+//   ③ 末列不越出 .sub-links 盒（轨道不溢出；锁定「子面板 min-width:min-content」修法）
+//   ④ 子面板不出现横向滚动条
+// 对照组：zh 页同结构子面板仍 200px、.sub-links 仍 184px、两列仍等宽 90/90（min-content 下限在 CJK 下不生效 → 零变化）。
+
+// 二级覆盖面板（.sub-links）共享量测助手：两个回归用例（真实 demo / 长标签）共用。
+// 真实指针：悬停第 1 个触发器打开主面板 → 真实点击二级触发器打开覆盖式二级面板。
+const openSubPanel = async (page: Page, sel: string): Promise<void> => {
+  const pt = await page.evaluate(async (s) => {
+    const host = document.querySelector(s) as HTMLElement
+    host.scrollIntoView({ block: 'center' })
+    await new Promise((res) => setTimeout(res, 250))
+    const trig = host.shadowRoot!.querySelector<HTMLElement>('[part="top-item"]')!
+    const r = trig.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  }, sel)
+  await page.mouse.move(pt.x, pt.y)
+  await page.waitForTimeout(600)
+  const sub = await page.evaluate((s) => {
+    const host = document.querySelector(s) as HTMLElement
+    const t = host.shadowRoot!.querySelector<HTMLElement>('[part="sub-trigger"]')!
+    const r = t.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  }, sel)
+  await page.mouse.click(sub.x, sub.y)
+  await page.waitForTimeout(600)
+}
+
+const subGeom = async (page: Page, sel: string) =>
+  page.evaluate((s) => {
+    const host = document.querySelector(s) as HTMLElement
+    const root = host.shadowRoot!
+    const sp = root.querySelector<HTMLElement>('[part="sub-panel"]')!
+    const ul = sp.querySelector<HTMLElement>('ul.sub-links')!
+    const round = (n: number) => Math.round(n * 100) / 100
+    // 文字墨迹范围（Range 覆盖换行后的全部行盒）：比盒宽更能反映真实字形位置
+    const ink = (el: Element) => {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      const b = range.getBoundingClientRect()
+      return { left: round(b.left), right: round(b.right) }
+    }
+    const ur = ul.getBoundingClientRect()
+    const ucs = getComputedStyle(ul)
+    return {
+      open: !sp.hidden,
+      subPanel: {
+        width: round(sp.getBoundingClientRect().width),
+        scrollWidth: sp.scrollWidth,
+        clientWidth: sp.clientWidth,
+      },
+      ul: {
+        left: round(ur.left),
+        right: round(ur.right),
+        width: round(ur.width),
+        cols: ucs.gridTemplateColumns,
+        gap: parseFloat(ucs.columnGap) || 0,
+      },
+      items: [...ul.children].map((li) => {
+        const a = li.querySelector<HTMLElement>('a')!
+        const b = a.getBoundingClientRect()
+        const cs = getComputedStyle(a)
+        const padL = parseFloat(cs.paddingLeft) || 0
+        const padR = parseFloat(cs.paddingRight) || 0
+        return {
+          text: (a.textContent ?? '').trim(),
+          row: Math.round(b.top),
+          box: { left: round(b.left), right: round(b.right), width: round(b.width) },
+          content: { left: round(b.left + padL), right: round(b.right - padR) },
+          ink: ink(a),
+        }
+      }),
+    }
+  }, sel)
+
+type SubGeom = Awaited<ReturnType<typeof subGeom>>
+
+const subRowsOf = (g: SubGeom) => {
+  const rows = new Map<number, SubGeom['items']>()
+  for (const it of g.items) rows.set(it.row, [...(rows.get(it.row) ?? []), it])
+  return [...rows.values()].map((row) => [...row].sort((a, b) => a.box.left - b.box.left))
+}
+
+const assertSubInvariants = (g: SubGeom, label: string): void => {
+  expect(g.open, `${label}：二级覆盖面板应已打开`).toBe(true)
+  expect(g.items.length, `${label}：二级面板应有链接项（否则断言空转）`).toBeGreaterThanOrEqual(2)
+  for (const it of g.items) {
+    expect(
+      it.ink.left,
+      `${label}：「${it.text}」不应越出所在列内容盒左缘（列宽不窄于内容最小宽度）`,
+    ).toBeGreaterThanOrEqual(it.content.left - 1)
+    expect(
+      it.ink.right,
+      `${label}：「${it.text}」不应横向溢出所在列内容盒（列宽不窄于内容最小宽度）`,
+    ).toBeLessThanOrEqual(it.content.right + 1)
+    expect(it.ink.left, `${label}：「${it.text}」不应越出所在列盒左缘`).toBeGreaterThanOrEqual(it.box.left - 1)
+    expect(it.ink.right, `${label}：「${it.text}」不应越出所在列盒右缘（压到相邻列文字上）`).toBeLessThanOrEqual(
+      it.box.right + 1,
+    )
+  }
+  const rows = subRowsOf(g)
+  let pairs = 0
+  for (const row of rows) {
+    for (let i = 0; i + 1 < row.length; i++) {
+      const a = row[i]!
+      const b = row[i + 1]!
+      expect(
+        b.ink.left,
+        `${label}：相邻两列（「${a.text}」/「${b.text}」）文字墨迹应至少留出 ${g.ul.gap}px 列间距`,
+      ).toBeGreaterThanOrEqual(a.ink.right + g.ul.gap)
+      pairs++
+    }
+  }
+  expect(pairs, `${label}：应有至少一行两列（否则断言空转）`).toBeGreaterThan(0)
+  for (const row of rows) {
+    const last = row[row.length - 1]!
+    expect(last.box.right, `${label}：末列不应越出 .sub-links 盒（右内边距与左对称）`).toBeLessThanOrEqual(
+      g.ul.right + 1,
+    )
+  }
+  expect(g.subPanel.scrollWidth, `${label}：子面板不应出现横向滚动条`).toBeLessThanOrEqual(g.subPanel.clientWidth + 1)
+}
+
+test('navigation-menu en 二级覆盖面板列：文字不越出列内容盒、相邻列不重叠（zh 对照组零变化）', async ({ page }) => {
+  await page.goto('/en/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#nav-sub')
+  await openSubPanel(page, '#nav-sub')
+  assertSubInvariants(await subGeom(page, '#nav-sub'), 'en #nav-sub')
+
+  // 对照组：zh 页（同一套样式，CJK min-content 远小于列宽 → 观感必须零变化）
+  await page.mouse.move(5, 5)
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#nav-sub')
+  await openSubPanel(page, '#nav-sub')
+  const zh = await subGeom(page, '#nav-sub')
+  assertSubInvariants(zh, 'zh #nav-sub（对照组）')
+  expect(Math.abs(zh.subPanel.width - 200), 'zh 子面板宽度应保持 200px（零变化）').toBeLessThanOrEqual(1)
+  expect(Math.abs(zh.ul.width - 184), 'zh .sub-links 宽度应保持 184px（零变化）').toBeLessThanOrEqual(1)
+  const zhCols = zh.ul.cols.split(' ').map((v) => Number.parseFloat(v))
+  expect(
+    Math.abs((zhCols[0] ?? 0) - (zhCols[1] ?? 0)),
+    'zh 两列应仍等宽（1fr 均分，min-content 下限在 CJK 下不生效）',
+  ).toBeLessThanOrEqual(1)
+})
+
+// 回归 缺陷（真实相碰场景）：同一根因下把二级标签换成更长的真实英文单词（列宽不变、内容更宽）——
+// 修复前「Internationalization」墨迹越过相邻列左缘 45.77px、与相邻列墨迹重叠 33.77px（压字）。
+test('navigation-menu 二级覆盖面板长标签：文字不越出列、不与相邻列相碰', async ({ page }) => {
+  await page.goto('/en/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#nav-sub')
+  await page.evaluate(() => {
+    const host = document.querySelector('#nav-sub') as HTMLElement
+    const items = JSON.parse(host.getAttribute('items') ?? '[]') as Array<{
+      children: Array<{ sub?: Array<{ label?: string }> }>
+    }>
+    const sub = items[0]?.children[1]?.sub
+    if (sub?.[2]) sub[2].label = 'Internationalization'
+    host.setAttribute('items', JSON.stringify(items))
+  })
+  await page.waitForTimeout(400)
+  await openSubPanel(page, '#nav-sub')
+  const long = await subGeom(page, '#nav-sub')
+  expect(
+    long.items.some((i) => i.text === 'Internationalization'),
+    '长标签应已渲染（否则断言空转）',
+  ).toBe(true)
+  assertSubInvariants(long, 'en #nav-sub（长标签）')
 })
