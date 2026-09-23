@@ -553,10 +553,11 @@ export class OASDropdown extends OASElement {
   /**
    * 面板定位：默认 computePosition（空间不足沿主轴翻转 + 视口边缘避让）；
    * auto-adjust-overflow=false 时严格按请求 placement 计算，不翻转不避让（面板可越出视口，
-   * autoAdjustOverflow 同语义）。12 向 placement 拆为「基向 + 交叉轴对齐后缀」：
-   * 基向（top/bottom/left/right）走定位引擎（含翻转），-start/-end 在交叉轴贴合锚点边
-   * （bottom-start 即面板左缘对齐触发器左缘），翻转后对齐后缀保留（bottom-start→top-start）。
-   * data-placement 写完整 12 向值，箭头/动画按基向消费（CSS 前缀匹配）。
+   * autoAdjustOverflow 同语义）。12 向 placement = 「基向 + 交叉轴对齐后缀」，`-start/-end`
+   * 是**逻辑**语义（书写方向起点/终点侧）：完整 placement 交给定位引擎，由引擎按 direction
+   * 镜像对齐与主轴并返回实际 placement（RTL 下 bottom-start 落成右缘对齐、报 bottom-end）。
+   * 翻转保留对齐后缀（bottom-start→top-start）。data-placement 写**引擎返回值**（与 date-picker
+   * 同口径）——曾用入参回写，RTL 下报 bottom-start 而实际落位不对齐，口径与引擎不符。
    */
   private position(): void {
     if (!this.anchorEl || !this.anchor) return
@@ -566,18 +567,17 @@ export class OASDropdown extends OASElement {
     const offset = this.parseOffset()
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
     const viewport = getViewport()
+    const direction = resolveDirection(this)
+    const requested = (align ? `${base}-${align}` : base) as Placement
 
     let top: number
     let left: number
-    let baseActual: PlacementBase
+    let actual: Placement
     if (autoAdjust) {
-      const r = computePosition(anchorRect, panelRect, base, viewport, offset, true, {
-        direction: resolveDirection(this),
-      })
+      const r = computePosition(anchorRect, panelRect, requested, viewport, offset, true, { direction })
       top = r.top
       left = r.left
-      // 入参为 4 向基向（center 对齐），引擎返回 placement 必为 4 向基向（含翻转），类型上收窄
-      baseActual = r.placement as PlacementBase
+      actual = r.placement
     } else {
       const anchorCenterX = anchorRect.left + anchorRect.width / 2
       const anchorCenterY = anchorRect.top + anchorRect.height / 2
@@ -596,23 +596,20 @@ export class OASDropdown extends OASElement {
       const p = raw[base]
       top = p.top
       left = p.left
-      baseActual = base
+      actual = requested
     }
 
-    // 交叉轴对齐：-start/-end 让面板边贴合锚点边；对齐后仍需视口夹取（与 computePosition 避让语义一致）
-    if (align === 'start' || align === 'end') {
-      if (baseActual === 'top' || baseActual === 'bottom') {
-        left = align === 'start' ? anchorRect.left : anchorRect.right - panelRect.width
+    // auto-adjust-overflow=false 分支不经过引擎，-start/-end 的交叉轴对齐在此按书写方向补上
+    // （start = 书写起点侧：LTR 左缘贴合、RTL 右缘贴合；竖直轴对齐与书写方向无关）
+    if (!autoAdjust && align) {
+      const startSide = direction === 'rtl' ? align === 'end' : align === 'start'
+      if (base === 'top' || base === 'bottom') {
+        left = startSide ? anchorRect.left : anchorRect.right - panelRect.width
       } else {
-        top = align === 'start' ? anchorRect.top : anchorRect.bottom - panelRect.height
-      }
-      if (autoAdjust) {
-        left = Math.max(4, Math.min(left, viewport.width - panelRect.width - 4))
-        top = Math.max(4, Math.min(top, viewport.height - panelRect.height - 4))
+        top = startSide ? anchorRect.top : anchorRect.bottom - panelRect.height
       }
     }
 
-    const actual = baseActual + (align ? `-${align}` : '')
     this.anchorEl.style.top = `${top}px`
     this.anchorEl.style.left = `${left}px`
     this.anchorEl.setAttribute('data-placement', actual)
