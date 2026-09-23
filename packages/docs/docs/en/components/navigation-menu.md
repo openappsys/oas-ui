@@ -72,15 +72,15 @@ By default the popup arrow doesn't point at any trigger; once the panel opens, J
   <p class="demo-tip">Hover/click "Products" then "Resources": the arrow follows the open trigger.</p>
 </DemoBlock>
 
-## Collision flip in narrow viewports
+## Collision flip (the boundary is the viewport)
 
-When the panel is wider than the remaining viewport, collisions are handled automatically: right-edge overflow switches to right-alignment (never leaves the viewport), bottom overflow flips up; with enough space it stays in its normal position.
+By default the panel's **writing-start edge follows the active trigger** (left edge in LTR / right edge in RTL): neither the nav bar nor any outer container is a clipping boundary, so the panel may overflow both (a shrink-to-fit nav bar is always overflowed). The panel flips only when the followed panel would **overflow the viewport's right edge** — then its right edge aligns to the trigger's right edge and still stays inside the viewport; when the panel's bottom would overflow the viewport it flips up (`flip-up`); with enough room it keeps the normal start-edge-following position. Narrow the browser window until the panel no longer fits to see the flip.
 
-<DemoBlock title="Narrow container collision flip">
-  <div style="width: 260px">
+<DemoBlock title="A narrow container is not a clipping boundary (left edge follows the trigger)">
+  <div style="width: 120px">
     <oas-navigation-menu id="nav-flip" delay-duration="0" loop="false" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","description":"30+ ready-to-use components"},{"label":"Design system","value":"design","href":"/design","description":"Visual language and tokens"},{"label":"Theming","value":"theming","href":"/theming","description":"Three-layer token architecture"}]}]'></oas-navigation-menu>
   </div>
-  <p class="demo-tip">Container is 260px: when there's no room on the right, the panel right-aligns and stays fully inside the container/viewport.</p>
+  <p class="demo-tip">The container is only 120px (narrower than the panel) and the nav bar is only as wide as the trigger (~80px), while the panel is ~200px: overflowing the container and the nav bar neither flips nor clips the panel (neither is a clipping boundary) — its left edge keeps following the trigger. The flip is viewport-driven only: narrow the browser window until the panel no longer fits and it right-aligns.</p>
 </DemoBlock>
 
 ## Sub second-level cascade
