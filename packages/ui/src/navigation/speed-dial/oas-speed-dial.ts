@@ -203,29 +203,36 @@ const STYLE = `
   left: 50%;
   transform: translateX(-50%);
 }
-/* 方向布局：首个子动作始终最靠近主按钮 */
+/* 方向布局：首个子动作始终最靠近主按钮。
+   收起态 transform 带 scale(0) + origin 靠 FAB 侧：不可见面板塌缩为零面积盒，
+   不贡献可滚动溢出（visibility:hidden 盒按规范仍占布局，RTL 下曾致幽灵横向滚动）；
+   展开态 translate(0,0) scale(1) 与收起态列表等长，保证平滑列表级插值 */
 .dial[data-dir='up'] .actions {
   bottom: calc(100% + var(--oas-space-2));
   flex-direction: column-reverse;
-  transform: translateY(8px);
+  transform: translateY(8px) scale(0);
+  transform-origin: center bottom;
 }
 .dial[data-dir='down'] .actions {
   top: calc(100% + var(--oas-space-2));
   flex-direction: column;
-  transform: translateY(-8px);
+  transform: translateY(-8px) scale(0);
+  transform-origin: center top;
 }
 .dial[data-dir='left'] .actions {
   right: calc(100% + var(--oas-space-2));
   flex-direction: row-reverse;
-  transform: translateX(8px);
+  transform: translateX(8px) scale(0);
+  transform-origin: right center;
 }
 .dial[data-dir='right'] .actions {
   left: calc(100% + var(--oas-space-2));
   flex-direction: row;
-  transform: translateX(-8px);
+  transform: translateX(-8px) scale(0);
+  transform-origin: left center;
 }
 .dial.open .actions {
-  transform: translate(0, 0);
+  transform: translate(0, 0) scale(1);
 }
 /* 圆弧几何展开（.arc 由 JS 按 geometry !== linear 挂在宿主）：
    容器铺满主按钮区域作圆心（覆盖线性 data-dir 的偏移定位），子动作绝对定位堆叠圆心，
