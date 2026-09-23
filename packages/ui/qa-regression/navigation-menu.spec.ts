@@ -549,3 +549,134 @@ test('navigation-menu 子面板左缘跟随触发器（窄导航栏不误判回�
   expect(Math.abs(narrow.panelRight - narrow.triggerRight), '回折后面板右缘应贴触发器右缘').toBeLessThanOrEqual(2)
   expect(narrow.panelRight, '回折后面板不应越出视口右缘').toBeLessThanOrEqual(narrow.vw - 6)
 })
+
+// 回归 缺陷：en 页导航面板卡片列文字相碰（长单词横向溢出列外、压到相邻列文字上）2026-09-23
+// 现象：#nav-flip 卡片列被 minmax(0,1fr) 压到 90px，而卡片最长单词「Components」墨迹 97px 放不下 →
+// 文字横向溢出列外 19px，越过 4px 列间距 + 12px 内边距，与相邻列文字重叠 3px（视觉贴死成 ComponentsDesign）；
+// 同一页未触碰的 #nav-basic 亦然（列 90px / 内容 109px，section 内 Community 同样溢出）。
+// zh 页因 CJK 可任意断行（min-content = 单字）不触发。
+// 修法：卡片列最小宽度下限 = 内容 min-content（minmax(min-content,1fr)）+ 面板 min-width:min-content
+// （--vp-w 由 panel.scrollWidth 测得，内容横向溢出内容盒时不含尾侧内边距，需面板自身兜底容下内容）。
+// 三条不变量（修复前 ①② 必红）：
+//   ① 每个卡片/分组内的文字墨迹不越出所在列（列内文字不横向溢出）
+//   ② 同一行相邻两列的文字墨迹之间至少留出列间距（第二列左缘 ≥ 第一列右缘 + 列间距）
+//   ③ 末列不越出面板内容盒（末列内边距与首列对称；锁定「面板 min-width:min-content」修法）
+// 对照组：zh 页同结构面板宽度仍为 200px、两列仍等宽（min-content 下限在 CJK 下不生效 → 观感零变化）。
+test('navigation-menu en 面板卡片列：文字不越出列外、相邻列不重叠（zh 对照组零变化）', async ({ page }) => {
+  // 真实指针 hover 第 1 个触发器打开面板（#nav-flip delay-duration=0，#nav-basic 默认 200ms）
+  const openFirst = async (sel: string): Promise<void> => {
+    const pt = await page.evaluate(async (s) => {
+      const host = document.querySelector(s) as HTMLElement
+      host.scrollIntoView({ block: 'center' })
+      await new Promise((res) => setTimeout(res, 250))
+      const trig = host.shadowRoot!.querySelector<HTMLElement>('[part="top-item"]')!
+      const r = trig.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    }, sel)
+    await page.mouse.move(pt.x, pt.y)
+    await page.waitForTimeout(600)
+  }
+
+  const geom = async (sel: string) =>
+    page.evaluate((s) => {
+      const host = document.querySelector(s) as HTMLElement
+      const root = host.shadowRoot!
+      const panel = root.querySelector<HTMLElement>('[part="panel"]')!
+      const grid = panel.querySelector<HTMLElement>('[part="grid"]')!
+      const round = (n: number) => Math.round(n * 100) / 100
+      const box = (el: Element) => {
+        const b = el.getBoundingClientRect()
+        return { top: round(b.top), left: round(b.left), right: round(b.right), width: round(b.width) }
+      }
+      // 文字墨迹范围（Range 覆盖换行后的全部行盒）：比盒宽更能反映真实字形位置
+      const ink = (el: Element) => {
+        const range = document.createRange()
+        range.selectNodeContents(el)
+        const b = range.getBoundingClientRect()
+        return { left: round(b.left), right: round(b.right) }
+      }
+      const pr = panel.getBoundingClientRect()
+      const cs = getComputedStyle(panel)
+      return {
+        open: root.querySelector<HTMLElement>('[part="viewport"]')!.classList.contains('open'),
+        panel: { left: round(pr.left), right: round(pr.right), width: round(pr.width) },
+        contentRight: round(pr.right - (parseFloat(cs.paddingRight) || 0)),
+        gap: parseFloat(getComputedStyle(grid).columnGap) || 0,
+        cols: getComputedStyle(grid).gridTemplateColumns,
+        cells: [...grid.children].map((li) => ({
+          box: box(li),
+          texts: [...li.querySelectorAll<HTMLElement>('.card-title, .card-desc, .section-title, .section-links a')].map(
+            (t) => ({ text: (t.textContent ?? '').trim().slice(0, 20), ink: ink(t) }),
+          ),
+        })),
+      }
+    }, sel)
+
+  type Geom = Awaited<ReturnType<typeof geom>>
+  const rowsOf = (g: Geom) => {
+    const rows = new Map<number, Geom['cells']>()
+    for (const cell of g.cells) {
+      const key = Math.round(cell.box.top)
+      rows.set(key, [...(rows.get(key) ?? []), cell])
+    }
+    return [...rows.values()].map((row) => [...row].sort((a, b) => a.box.left - b.box.left))
+  }
+
+  const assertInvariants = (g: Geom, label: string): void => {
+    expect(g.open, `${label}：第 1 个触发器面板应打开`).toBe(true)
+    for (const cell of g.cells) {
+      for (const t of cell.texts) {
+        expect(t.ink.left, `${label}：「${t.text}」不应越出所在列左缘`).toBeGreaterThanOrEqual(cell.box.left - 1)
+        expect(t.ink.right, `${label}：「${t.text}」不应横向溢出所在列（压到相邻列文字上）`).toBeLessThanOrEqual(
+          cell.box.right + 1,
+        )
+      }
+    }
+    const rows = rowsOf(g)
+    let pairs = 0
+    for (const row of rows) {
+      for (let i = 0; i + 1 < row.length; i++) {
+        const a = row[i]!
+        const b = row[i + 1]!
+        const aRight = a.texts.length ? Math.max(...a.texts.map((t) => t.ink.right)) : a.box.right
+        const bLeft = b.texts.length ? Math.min(...b.texts.map((t) => t.ink.left)) : b.box.left
+        expect(bLeft, `${label}：相邻两列文字墨迹应至少留出 ${g.gap}px 列间距`).toBeGreaterThanOrEqual(aRight + g.gap)
+        pairs++
+      }
+    }
+    expect(pairs, `${label}：面板应有至少一行两列（否则断言空转）`).toBeGreaterThan(0)
+    for (const row of rows) {
+      const last = row[row.length - 1]!
+      expect(last.box.right, `${label}：末列不应越出面板内容盒（内边距与首列对称）`).toBeLessThanOrEqual(
+        g.contentRight + 1,
+      )
+    }
+  }
+
+  await page.goto('/en/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#nav-flip')
+  await openFirst('#nav-flip')
+  const enFlip = await geom('#nav-flip')
+  assertInvariants(enFlip, 'en #nav-flip')
+  expect(enFlip.panel.width, 'en 面板应随内容最小宽度撑开（不再把列压到内容最小宽度以下）').toBeGreaterThan(200)
+
+  await page.mouse.move(5, 5)
+  await page.waitForTimeout(400)
+  await up(page, '#nav-basic')
+  await openFirst('#nav-basic')
+  assertInvariants(await geom('#nav-basic'), 'en #nav-basic')
+
+  // 对照组：zh 页（同一套样式，CJK min-content 远小于列宽 → 观感必须零变化）
+  await page.mouse.move(5, 5)
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#nav-flip')
+  await openFirst('#nav-flip')
+  const zhFlip = await geom('#nav-flip')
+  assertInvariants(zhFlip, 'zh #nav-flip（对照组）')
+  expect(Math.abs(zhFlip.panel.width - 200), 'zh 面板宽度应保持 200px（零变化）').toBeLessThanOrEqual(1)
+  const zhCols = zhFlip.cols.split(' ').map((v) => Number.parseFloat(v))
+  expect(
+    Math.abs((zhCols[0] ?? 0) - (zhCols[1] ?? 0)),
+    'zh 两列应仍等宽（1fr 均分，min-content 下限在 CJK 下不生效）',
+  ).toBeLessThanOrEqual(1)
+})
