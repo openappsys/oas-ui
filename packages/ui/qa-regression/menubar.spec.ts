@@ -263,3 +263,85 @@ test('menubar RTL：bar 最右项下拉不越视口右缘（回折边界取视�
   expect(info.trigRight, '面板右缘应贴触发器右缘（RTL 缺省右对齐）').toBeLessThanOrEqual(info.panelRight + 2)
   await page.screenshot({ path: 'test-results/visual-review/menubar-rtl-rightmost.png' })
 })
+
+// ===== RTL + dark 实测（菜单族定位修复复测）=====
+// RTL 缺省 align-start 是逻辑语义 → 物理右缘：面板右缘贴触发器右缘、向左展开。
+// 端点触发器都要过（第 1 个 / 最后 1 个，排除「···」收纳项——它的弹层固定右对齐、0×0 会污染量测）；
+// light/dark 各一遍（dark 另断言面板文字对底色对比度 ≥4.5，可见性不降级）。
+for (const theme of ['light', 'dark'] as const) {
+  test(`menubar RTL（${theme}）：第 1 个与最后 1 个触发器下拉右缘贴触发器 ≤2px、不越视口`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+    await up(page, '#menubar-basic')
+    await page.evaluate((dark) => {
+      document.documentElement.setAttribute('dir', 'rtl')
+      document.documentElement.classList.toggle('dark', dark)
+    }, theme === 'dark')
+    await page.waitForTimeout(200)
+    const rows = await page.evaluate(async () => {
+      const mb = document.querySelector('#menubar-basic')!
+      const trigs = [...mb.shadowRoot!.querySelectorAll<HTMLElement>('.bar [part="top-item"]')].filter(
+        (t) => t.dataset.value !== '__more__',
+      )
+      const picked = [trigs[0]!, trigs[trigs.length - 1]!]
+      const out: Array<Record<string, number | string | boolean>> = []
+      for (const trig of picked) {
+        trig.click()
+        await new Promise((r) => setTimeout(r, 300))
+        const sub = mb.shadowRoot!.querySelector<HTMLElement>(
+          `.bar [part="submenu"][data-parent="${trig.dataset.value}"]`,
+        )!
+        const tr = trig.getBoundingClientRect()
+        const sr = sub.getBoundingClientRect()
+        const cs = getComputedStyle(sub)
+        const parse = (c: string) => c.match(/\d+/g)!.slice(0, 3).map(Number)
+        const lum = (rgb: number[]) => {
+          const f = (v: number) => {
+            v /= 255
+            return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+          }
+          return 0.2126 * f(rgb[0]!) + 0.7152 * f(rgb[1]!) + 0.0722 * f(rgb[2]!)
+        }
+        const a = lum(parse(cs.color))
+        const b = lum(parse(cs.backgroundColor))
+        out.push({
+          v: trig.dataset.value!,
+          dRight: Math.round(sr.right - tr.right),
+          panelLeft: Math.round(sr.left),
+          panelRight: Math.round(sr.right),
+          flip: sub.classList.contains('flip-right'),
+          color: cs.color,
+          bg: cs.backgroundColor,
+          ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+          vw: window.innerWidth,
+        })
+        document.body.click()
+        await new Promise((r) => setTimeout(r, 160))
+      }
+      return out
+    })
+    expect(rows.length, '应量到第 1 个与最后 1 个顶级触发器').toBe(2)
+    for (const r of rows) {
+      expect(
+        Math.abs(r.dRight as number),
+        `RTL「${r.v}」面板右缘应对齐触发器右缘（偏差 ${r.dRight}px）`,
+      ).toBeLessThanOrEqual(2)
+      expect(r.flip, `RTL「${r.v}」视口 1280 足够宽 → 不应回折`).toBe(false)
+      expect(r.panelLeft as number, `RTL「${r.v}」面板左缘应在视口内`).toBeGreaterThanOrEqual(0)
+      expect(r.panelRight as number, `RTL「${r.v}」面板右缘 ${r.panelRight} 越出视口 ${r.vw}`).toBeLessThanOrEqual(
+        r.vw as number,
+      )
+      expect(r.ratio as number, `${theme} 面板文字 ${r.color} 对底色 ${r.bg} 对比度`).toBeGreaterThanOrEqual(4.5)
+    }
+    // 截图留档：RTL 最右项（= DOM 第 1 个「文件」）下拉展开态。
+    // 先把 demo 滚进视口中央——基础用法 demo 在折叠线以下，不滚会截到页面顶部（看不到面板）
+    await page.evaluate(async () => {
+      const mb = document.querySelector('#menubar-basic')!
+      mb.scrollIntoView({ block: 'center' })
+      await new Promise((r) => setTimeout(r, 250))
+      ;(mb.shadowRoot!.querySelector('.bar [part="top-item"][data-value="file"]') as HTMLElement).click()
+      await new Promise((r) => setTimeout(r, 300))
+    })
+    await page.screenshot({ path: `test-results/visual-review/menubar-rtl-rightmost-${theme}.png` })
+  })
+}
