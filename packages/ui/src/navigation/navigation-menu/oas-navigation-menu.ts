@@ -1822,7 +1822,9 @@ export class OASNavigationMenu extends OASElement {
    *
    * 翻转：缺省侧溢出时回折（flip-right，逻辑 inset RTL 自动镜像），下缘溢出向上弹（flip-up），
    * 竖排浮出侧不足回折（flip-left）。RTL 下溢出检测镜像到另一侧（左缘 ↔ 右缘）。
-   * 水平边界取「视口缘 与 导航栏缘」较小值——窄容器内面板也不越出容器。
+   * 水平边界只取「视口缘（含 margin 安全边距）」——导航栏是 shrink-to-fit（inline-block）时栏宽
+   * 只够装触发器，把栏缘当硬边界会让每个顶级项的面板都被判回折（全部右对齐）；导航栏也不是裁切
+   * 容器（overflow 可见），面板本就允许越出栏外。只有「跟随后的面板」会越出视口时才回折。
    * 尺寸用 offsetWidth/scrollWidth（transform 免疫），位置用 getBoundingClientRect（面板/栏无 scale 动画）。
    */
   private syncViewportPosition(): void {
@@ -1851,32 +1853,22 @@ export class OASNavigationMenu extends OASElement {
       // navRect.left 未布局（测试替身只给部分字段）时回退 bar 左缘
       const navLeft = navRect && Number.isFinite(navRect.left) ? navRect.left : barRect.left
       if (rtl) {
-        // RTL：面板缺省右对齐触发器书写起点侧（右缘）；左边界 = max(视口左缘 0, 导航栏左缘)
-        const boundLeft = navLeft >= 0 ? Math.max(0, navLeft) : 0
+        // RTL：面板缺省右对齐触发器书写起点侧（右缘）向左展开，碰撞发生在视口左缘。
+        // 左边界只取视口左缘（0）——导航栏缘不是裁切边界（见方法注释），拿它当边界会把
+        // 栏内每一项都误判成回折（与 LTR 同一根因，方向镜像）。
         const leftEdge = navLeft + geo.localRight - size.w
-        // 回折后（flip-right 类在 RTL 下镜像为左对齐）面板左缘贴触发器书写终点侧
-        const flippedLeft = navLeft + geo.localLeft
-        // 翻转后不越视口右缘；不翻转（贴触发器右对齐）不越视口左缘
-        const flipKeepsRight = flippedLeft + size.w <= vw - margin
-        const unflippedKeepsLeft = leftEdge >= boundLeft + margin
-        // 容器左缘溢出时优先回折（flip-right 类在 RTL 下镜像为左→右对齐）；
-        // 窄 bar 比面板窄时回折会把面板顶出视口右缘——不翻转能放下就保持右对齐
-        vp.classList.toggle('flip-right', leftEdge < boundLeft + margin && (!unflippedKeepsLeft || flipKeepsRight))
+        // 越出视口左缘即回折（回折后 flip-right 类在 RTL 下镜像为左对齐、贴触发器书写终点侧）。
+        // 回折后仍越出视口右缘时同样回折：面板整体宽于视口时贴触发器一侧比另一侧更合理，
+        // 且 .viewport 的 max-width 兜底会把实际宽度裁回视口内。
+        vp.classList.toggle('flip-right', leftEdge < margin)
         vp.classList.remove('flip-left')
       } else {
-        const navRight = navRect && Number.isFinite(navRect.right) ? navRect.right : 0
-        // 右边界 = min(视口, 导航栏右缘)；navRight 为 0（未布局/测试环境）回退视口
-        const boundRight = navRight > 0 ? Math.min(vw, navRight) : vw
         // 缺省面板左缘贴触发器左缘；回折后右缘贴触发器右缘
         const unflippedLeft = navLeft + geo.localLeft
         const rightEdge = unflippedLeft + size.w
-        const flippedLeft = navLeft + geo.localRight - size.w
-        // 翻转后不越视口左缘；不翻转（贴触发器左对齐）不越视口右缘
-        const flipKeepsLeft = flippedLeft >= margin
-        const unflippedKeepsRight = rightEdge <= vw - margin
-        // 容器右缘溢出时优先 flip-right；但窄屏 bar 比面板还窄时 flip 会把面板顶出视口左缘——
-        // 此时只要不翻转能在视口内放得下，就保持左对齐（优先保证面板整体可见）
-        vp.classList.toggle('flip-right', rightEdge > boundRight - margin && (!unflippedKeepsRight || flipKeepsLeft))
+        // 右边界只取视口右缘——导航栏盒宽不是硬边界（shrink-to-fit 栏宽只够装触发器，
+        // 面板 min-width 200 几乎必然越过栏缘，按栏缘判定会让所有面板都右对齐）。
+        vp.classList.toggle('flip-right', rightEdge > vw - margin)
         vp.classList.remove('flip-left')
       }
     }
