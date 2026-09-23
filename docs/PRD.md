@@ -1403,3 +1403,28 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 单测：qrcode 域 77 用例全绿（新增体积回归守卫「dots 总量 < square × 1.5」、userSpaceOnUse 映射坐标断言）；typecheck / build 全绿
 - e2e：qa-regression 像素级定位图形覆盖（栅格化数暗模块）+ download 产物结构 + pattern 内 `var()` 填充计算值实抓（防静默退黑）全过；visual 基线零漂移；console-sweep 零告警；SSR 真水合 13 用例全绿
+
+## RTL 全量视觉审计（未发布）
+
+### 范围与方法
+
+- **sweep 基建**（`scripts/e2e/rtl-audit.mjs`，进 git）：117 组件文档页 LTR/RTL 双跑——几何检查（`<html>` 横向溢出、demo 块越界，双跑取差集只报 RTL 独有）+ RTL 整页截图产出（供识图复核）。`dir=rtl` 于文档解析期经 route 拦截注入 `<html>`（加载后补设会让 JS 方向判定组件停留在 LTR，与真实 RTL 应用不符）；文档站壳层（Vitepress 主题 chrome 物理定位弹层/侧栏）中性化排除站点自身噪声。结果：几何层 117/117 全净。
+- **识图 triage**：10 批并行视觉审查产出候选清单；全部候选经 DOM/几何量测（route 注入真 RTL）逐项定责——识图在陈旧 dir 截图上产出的多数 P1（transfer 箭头/page-header 返回钮/message 图标/steps 序/dynamic-input 添加钮/result 居中/app 表格截断）均为伪影，组件实际正确。
+
+### 修复（确认缺陷 5 处）
+
+- **oas-pagination**：RTL 箭头未镜像（`‹«›»` 指向背离目标页）→ `data-rtl` 钩子 + 方向箭头钮 `scaleX(-1)`
+- **oas-scroll-area**：RTL 横向 thumb 映射反向（静止态贴左缘呈「已滚到底」观感、拖拽逆指针）→ 起点锚定翻正 + 拖拽同向
+- **oas-theme-editor**：色值/token 名 LTR token 被 bidi 重排 → 输入框/只读值/token 名固定 LTR
+- **oas-upload**：`template[slot="trigger"]` native slot 不渲染（inert），自绘触发双向空白 → 补克隆通道
+- **oas-typography**：`actions-position="start"` 因 order 平局从未生效（LTR/RTL 双坏）→ `order: -1`
+
+### 已知边界（记录不修）
+
+- 交互态盲区（静态截图覆盖不到，留待人工/后续批次）：popover 虚拟触发鼠标跟随、tour hints 信标定位（信标压目标钮角属设计形态）、snackbar/drawer/menu 等浮层打开态
+- 文档站生成的 API 表格中代码 token（`--x` 前缀、`fn()` 括号）在强制 RTL 下有 bidi 观感问题——文档站为 LTR 产品，组件库消费场景不受影响，不在组件库修复范围
+
+### 验收
+
+- 单测 7412 全绿（新增 pagination/scroll-area/theme-editor/upload/typography 行为与契约断言）；typecheck / build 全绿
+- e2e：speed-dial/qrcode qa-regression 回归全过；RTL sweep 修复后复跑 117/117 全净；修复组件真 RTL 截图逐一人工读图核验

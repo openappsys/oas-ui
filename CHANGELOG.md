@@ -6,6 +6,12 @@
 
 ### 变更
 
+- **RTL 全量视觉审计（117 组件页 sweep + 识图 triage）**：新增 `scripts/e2e/rtl-audit.mjs`——LTR/RTL 双跑几何检查取差集（横向溢出/demo 越界）、整页截图产出供识图复核；`dir=rtl` 于文档解析期注入（真实 RTL 应用形态），文档站壳层中性化排除站点自身噪声。几何层 117/117 全净；识图 triage 候选经 DOM/几何量测逐项定责后修复 5 处：
+  - **oas-pagination RTL 箭头镜像**：页码序由 flex 随 dir 自动右→左，但 `‹«›»` glyph 不自翻、指向背离目标页；新增 `data-rtl` 钩子 + 方向箭头钮 `scaleX(-1)`（`prev-icon`/`next-icon` 自定义图标一并镜像）
+  - **oas-scroll-area RTL 横向 thumb 锚定**：原 `|scrollLeft|/max` 映射静止态贴左缘（呈「已滚到底」观感）且拖拽逆指针；翻正为书写起点锚定（静止贴右缘）+ 拖拽与指针同向
+  - **oas-theme-editor 色值 LTR 隔离**：hex/颜色函数/token 名是 LTR token，RTL 宿主下被 bidi 重排（`#d97706` 显成 `d97706#`、`color-mix(...)` 逗号乱序）；色值输入框/只读值/token 名标签固定 LTR
+  - **oas-upload `template[slot="trigger"]` 克隆通道**：native slot 对 template 元素不生效（inert），自绘触发 demo 双向整块空白；补克隆通道（slot 隐藏 + `.trigger-tpl` 渲染，zone 点击仍打开文件选择）
+  - **oas-typography `actions-position="start"` 失效修复**：`order: 0` 与文本缺省 order 平局被 DOM 序裁决，start 从未生效（LTR/RTL 双坏，RTL 审计对比 start/end 两组无差异实抓）；改 `order: -1` 严格前置
 - **oas-qrcode 形状化渲染体积优化（rounded / dots）**：数据区由逐模块 `<use href="#oas-qr-mod">` 改为「合并路径 + 1×1 `userSpaceOnUse` pattern 网格平铺原型」——渲染几何与逐模块绘制逐像素等价（visual 基线零漂移），产物体积回落 square 量级（145×145 码实测约 88.3 KB，旧方案约 323.8 KB，约 1/3.7；与 square 合并路径仅差 +157 B）
 - **oas-qrcode 渐变 × 形状化修复**：`gradient` 与 `dot-shape=rounded/dots` 同用时，`objectBoundingBox` 渐变会在 pattern 内容里逐模块解析（每个码点各自套全渐变）→ 转为 `gradientUnits="userSpaceOnUse"` 映射进模块区域，渐变跨整码连续；square 缺省形状渲染零变化
 
