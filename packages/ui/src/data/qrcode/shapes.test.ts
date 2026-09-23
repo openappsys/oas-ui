@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { encodeQR, matrixToPath } from './qr.js'
-import { centeredBox, dataPath, dataUses, finderPath, isFinderModule, linearGradientDef, moduleDef } from './shapes.js'
+import { centeredBox, dataPath, finderPath, isFinderModule, linearGradientDef, modulePatternDef } from './shapes.js'
 
 /** 构造 size×size 矩阵（dark 由回调决定） */
 function matrix(size: number, dark: (x: number, y: number) => boolean): Uint8Array {
@@ -63,25 +63,22 @@ describe('shapes：数据区', () => {
     expect(covered(full) - covered(skipped)).toBe(7 * 7) // 盒 7×7（side 5 + pad 1 × 2）
   })
 
-  it('rounded/dots：dataUses 逐模块 <use>，数量 = 暗模块 − 定位区 − skip', () => {
-    const size = 21
-    const all = matrix(size, () => true)
-    const uses = dataUses(all, size, 4, 'oas-qr-mod')
-    expect(count(uses, /<use /g)).toBe(size * size - 3 * 49)
-    const skipped = dataUses(all, size, 4, 'oas-qr-mod', centeredBox(size, 5, 1))
-    expect(count(skipped, /<use /g)).toBeLessThan(count(uses, /<use /g))
+  it('modulePatternDef：1×1 userSpaceOnUse 平铺网格 + 原型几何直注 fill（形状化体积回落 square 量级）', () => {
+    const dots = modulePatternDef('dots', 'oas-qr-pat', '#123456')
+    expect(dots).toContain('<pattern id="oas-qr-pat"')
+    expect(dots).toContain('width="1" height="1"')
+    expect(dots).toContain('patternUnits="userSpaceOnUse"')
+    // 网格锚定原点（无 x/y 偏移）→ dataPath 的整数格坐标天然与平铺格一一对齐
+    expect(dots).not.toMatch(/<pattern [^>]*\sx=/)
+    // 圆点原型与旧逐模块几何一致（r=0.45 留间隙），fill 显式直注（pattern 内容不继承外部 fill）
+    expect(dots).toContain('<circle cx="0.5" cy="0.5" r="0.45" fill="#123456"/>')
+
+    const rounded = modulePatternDef('rounded', 'oas-qr-pat', 'currentColor')
+    expect(rounded).toContain('<rect width="1" height="1" rx="0.35" fill="currentColor"/>')
   })
 })
 
-describe('shapes：模块原型与定位图形', () => {
-  it('moduleDef：square 无原型；rounded 圆角方块；dots 圆点（留间隙）', () => {
-    expect(moduleDef('square')).toBe('')
-    expect(moduleDef('rounded')).toContain('<rect id="oas-qr-mod"')
-    expect(moduleDef('rounded')).toContain('rx=')
-    expect(moduleDef('dots')).toContain('<circle id="oas-qr-mod"')
-    expect(moduleDef('dots')).toContain('r="0.45"')
-  })
-
+describe('shapes：定位图形', () => {
   it('finderPath：三处 = 9 个子路径；square 无弧线、rounded 带弧线', () => {
     const square = finderPath(21, 0, 'square')
     expect(count(square, /M/g)).toBe(9)
@@ -137,6 +134,22 @@ describe('shapes：渐变 defs', () => {
     const g = linearGradientDef(['" onload="x', '#fff'], 0)
     expect(g).toContain('&quot;')
     expect(g).not.toMatch(/stop-color="[^"]*" onload=/)
+  })
+
+  it('area 模式：userSpaceOnUse 映射进模块区域（形状化下渐变跨整码连续，pattern 内逐元素 bbox 不可用）', () => {
+    // 90deg = 自左向右：x 从区域左缘 4 → 右缘 25，y 居中 14.5
+    const g90 = linearGradientDef(['#000', '#fff'], 90, 'oas-qr-grad', { x: 4, y: 4, size: 21 })
+    expect(g90).toContain('gradientUnits="userSpaceOnUse"')
+    expect(g90).toContain('x1="4"')
+    expect(g90).toContain('x2="25"')
+    expect(g90).toContain('y1="14.5"')
+    expect(g90).toContain('y2="14.5"')
+    // 0deg = 自下而上：y 从区域下缘 25 → 上缘 4
+    const g0 = linearGradientDef(['#000', '#fff'], 0, 'oas-qr-grad', { x: 4, y: 4, size: 21 })
+    expect(g0).toContain('y1="25"')
+    expect(g0).toContain('y2="4"')
+    // 缺省（无 area）保持 objectBoundingBox：square 缺省形状渲染零变化
+    expect(linearGradientDef(['#000', '#fff'], 90)).not.toContain('userSpaceOnUse')
   })
 })
 
