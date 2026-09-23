@@ -11,10 +11,13 @@
  * 2. CHANGELOG.md 有 [目标] 段
  * 3. 若 tag 已存在（v<目标>），tag 指向提交的 packages/ui/package.json 版本 == 目标
  *    （核心防坑点：tag 指向未 bump 的旧提交）
- * 4. 适配层（next/nuxt）提醒：自上个 release tag 以来源码有改动但版本未 bump →
+ * 4. 工作流 pnpm 版本一致：.github/workflows 中 pnpm/action-setup 若固定了 version，
+ *    必须与 package.json 的 packageManager 一致（v2.5.6 事故：packageManager 升 12.5.1
+ *    而 workflows 仍写 11.20.0 → pnpm/action-setup「Multiple versions」Release 首步即挂）
+ * 5. 适配层（next/nuxt）提醒：自上个 release tag 以来源码有改动但版本未 bump →
  *    本次发布会被 publish-skip-existing 跳过（版本已存在），改动永远发不出去。
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { execSync } from 'node:child_process'
 
@@ -56,6 +59,39 @@ try {
   }
 } catch {
   // tag 不存在（git show 抛错）→ 未打，仅校验当前磁盘即可
+}
+
+// 4) 工作流 pnpm 版本一致性：pnpm/action-setup 若固定 version，必须 == packageManager
+//    （不固定则 action 自动读 packageManager，天然不漂移——推荐写法）
+const packageManager = JSON.parse(readFileSync('package.json', 'utf8')).packageManager || ''
+const pmVersion = packageManager.startsWith('pnpm@') ? packageManager.slice('pnpm@'.length) : ''
+if (pmVersion) {
+  const WF_DIR = '.github/workflows'
+  try {
+    for (const file of readdirSync(WF_DIR).filter((n) => /\.ya?ml$/.test(n))) {
+      const lines = readFileSync(join(WF_DIR, file), 'utf8').split(/\r?\n/)
+      for (let i = 0; i < lines.length; i++) {
+        if (!lines[i].includes('pnpm/action-setup')) continue
+        const setupIndent = lines[i].match(/^\s*/)[0].length
+        for (let j = i + 1; j < lines.length; j++) {
+          if (lines[j].trim() && lines[j].match(/^\s*/)[0].length <= setupIndent) break
+          const m = lines[j].match(/^\s*version:\s*['"]?([^'"\s]+)['"]?/)
+          if (m) {
+            if (m[1] !== pmVersion) {
+              console.error(
+                `✗ .github/workflows/${file}:${j + 1} 的 pnpm/action-setup 固定 version: ${m[1]} ≠ packageManager ${packageManager}` +
+                  `——pnpm/action-setup 会因「Multiple versions of pnpm specified」直接失败`,
+              )
+              fail++
+            }
+            break
+          }
+        }
+      }
+    }
+  } catch {
+    // 无 workflows 目录（非常规环境）→ 跳过
+  }
 }
 
 if (fail) {
