@@ -703,6 +703,8 @@ export class OASThemeEditor extends OASElement {
 
     const label = document.createElement('span')
     label.className = 'row-label'
+    // token 名是 LTR token（`--` 前缀在 RTL 下会被 bidi 排到词尾）
+    label.dir = 'ltr'
     label.textContent = def.name
     rowEl.appendChild(label)
 
@@ -789,6 +791,9 @@ export class OASThemeEditor extends OASElement {
     const text = document.createElement('input')
     text.type = 'text'
     text.classList.add('control', 'color-text')
+    // hex/颜色函数是 LTR token：RTL 宿主下不隔离会被 bidi 重排（#d97706 显成 d97706#、
+    // color-mix(...) 逗号乱序），编辑/复制均错——固定 LTR 与取值语义一致
+    text.dir = 'ltr'
     text.value = value
     text.setAttribute('aria-label', def.name)
     text.spellcheck = false
@@ -798,6 +803,8 @@ export class OASThemeEditor extends OASElement {
       text.classList.toggle('is-invalid', !valid)
       if (valid) this.applyValue(def, raw)
     })
+    // 只读值显示与输入框同语义（LTR token），一并隔离
+    valueEl.dir = 'ltr'
     valueEl.textContent = value
     right.appendChild(swatch)
     right.appendChild(text)

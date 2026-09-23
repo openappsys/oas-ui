@@ -550,8 +550,36 @@ describe('OASScrollArea', () => {
       mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
       scrollTo(el, -150, 0)
       await flushRaf()
-      // maxScroll = 300，maxLeft = 75 → 75 * (150/300) = 37.5
+      // maxScroll = 300，maxLeft = 75 → 中点 75 * (1 - 150/300) = 37.5
       expect(thumb(el, 'thumb-h').style.transform).toBe('translateX(37.5px)')
+    })
+
+    it('RTL：静止态 thumb 贴轨道右缘（书写起点=右），滚到末态贴左缘（RTL 审计实抓：原映射反向，静止态停在左端呈「已滚到底」观感）', async () => {
+      const el = mount({ dir: 'rtl' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
+      scrollTo(el, 0, 0)
+      await flushRaf()
+      expect(thumb(el, 'thumb-h').style.transform).toBe('translateX(75px)')
+      scrollTo(el, -300, 0)
+      await flushRaf()
+      expect(thumb(el, 'thumb-h').style.transform).toBe('translateX(0px)')
+    })
+
+    it('RTL：拖拽 thumb 与指针同向（左拖 → scrollLeft 向 -max 前进）', () => {
+      const el = mount({ dir: 'rtl' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
+      const hTrack = track(el, 'track-h')
+      const hThumb = thumb(el, 'thumb-h')
+      Object.defineProperty(hTrack, 'clientWidth', { value: 96, configurable: true })
+      Object.defineProperty(hThumb, 'clientWidth', { value: 25, configurable: true })
+      scrollTo(el, -150, 0)
+      hThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 50 }))
+      window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 14.5 }))
+      // delta = -35.5 → -150 + (-35.5/71*300) = -300（末态）
+      expect(vp.scrollLeft).toBe(-300)
+      window.dispatchEvent(new PointerEvent('pointerup', {}))
     })
   })
 })

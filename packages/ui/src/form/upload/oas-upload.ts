@@ -76,6 +76,16 @@ const STYLE = `
   border-color: var(--oas-color-primary);
   background: color-mix(in srgb, var(--oas-color-primary) 8%, transparent);
 }
+/* template[slot="trigger"] 克隆容器：与 slot fallback 同构的纵向居中流（克隆内容原样接管触发区） */
+.trigger-tpl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--oas-space-1);
+}
+.trigger-tpl[hidden] {
+  display: none;
+}
 .zone[aria-disabled='true'] {
   cursor: not-allowed;
   border-color: var(--oas-color-border);
@@ -614,6 +624,7 @@ export class OASUpload extends OASFormElement {
           <oas-icon class="icon" name="upload" size="28"></oas-icon>
           <span class="hint"></span>
         </slot>
+        <div class="trigger-tpl" part="trigger-tpl" hidden></div>
       </div>
       <div class="tip" part="tip" hidden></div>
       <div class="list" part="list"></div>
@@ -747,6 +758,7 @@ export class OASUpload extends OASFormElement {
     const hint = zone.querySelector('.hint')
     if (hint) hint.textContent = disabled ? this.t('upload.select') : this.t('upload.drag')
     this.syncTip()
+    this.syncTriggerTpl()
     const dialog = this.shadow.querySelector('.preview-dialog')
     dialog?.setAttribute('aria-label', this.t('upload.previewDialog'))
     if (this.previewCloseBtn) this.previewCloseBtn.textContent = this.t('upload.closePreview')
@@ -773,6 +785,27 @@ export class OASUpload extends OASFormElement {
       tip.hidden = false
     } else {
       tip.hidden = true
+    }
+  }
+
+  /**
+   * trigger：native slot 分发 light-DOM 子元素；但 `<template slot="trigger">` 的 template
+   * 元素本身被分配进 slot 后内容永不渲染（inert）——触发区整块空白（头像自绘 demo 双向空白实抓）。
+   * 模板在场时走克隆通道：隐藏 slot，把模板内容克隆进 .trigger-tpl（shadow 内，点击走 zone 通路）
+   */
+  private syncTriggerTpl(): void {
+    const slot = this.shadow.querySelector<HTMLSlotElement>('slot[name="trigger"]')
+    const cloneBox = this.shadow.querySelector<HTMLElement>('.trigger-tpl')
+    if (!slot || !cloneBox) return
+    const tpl = this.querySelector('template[slot="trigger"]')
+    if (tpl instanceof HTMLTemplateElement) {
+      cloneBox.replaceChildren(tpl.content.cloneNode(true))
+      cloneBox.hidden = false
+      slot.hidden = true
+    } else {
+      cloneBox.replaceChildren()
+      cloneBox.hidden = true
+      slot.hidden = false
     }
   }
 

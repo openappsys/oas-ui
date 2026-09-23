@@ -301,8 +301,12 @@ export class OASScrollArea extends OASElement {
       const thumbW = Math.max(MIN_THUMB, clientWidth * (clientWidth / scrollWidth))
       const maxScroll = scrollWidth - clientWidth
       const maxLeft = clientWidth - thumbW
-      // RTL（Chromium/Firefox）：scrollLeft 为负值区间 [-maxScroll, 0]，按绝对值换算位置
-      const left = maxScroll > 0 ? maxLeft * (Math.abs(scrollLeft) / maxScroll) : 0
+      // RTL（Chromium/Firefox）：scrollLeft 为负值区间 [-maxScroll, 0]。
+      // thumb 位置按书写起点锚定：LTR 起点在左（ratio 0 → 左缘），RTL 起点在右
+      // （scrollLeft=0 应贴右缘）——原实现 RTL 用 |scrollLeft|/max 直乘，静止态停在左端，
+      // 呈「已滚到底」观感（RTL 全量审计实抓），需按 1-ratio 翻转
+      const ratio = maxScroll > 0 ? Math.abs(scrollLeft) / maxScroll : 0
+      const left = this.isRtl() ? maxLeft * (1 - ratio) : maxLeft * ratio
       this.hThumb.style.width = `${thumbW}px`
       this.hThumb.style.transform = `translateX(${left}px)`
     }
@@ -410,7 +414,9 @@ export class OASScrollArea extends OASElement {
     if (maxScroll <= 0) return
     const pointer = d.axis === 'v' ? e.clientY : e.clientX
     const delta = ((pointer - d.startPointer) / travel) * maxScroll
-    const target = d.startScroll + (d.axis === 'h' && this.isRtl() ? -delta : delta)
+    // 拖拽与指针同向：thumb 视觉位置与 scrollLeft 的映射（RTL 下左缘=末态）已由 syncThumb
+    // 的 (1 - |scrollLeft|/max) 换算翻正，这里不再取反——取反会让 thumb 逆着指针走
+    const target = d.startScroll + delta
     if (d.axis === 'v') {
       vp.scrollTop = Math.max(0, Math.min(maxScroll, target))
     } else {

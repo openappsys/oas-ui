@@ -1,5 +1,6 @@
 import { OASElement, escapeText } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES, type OasSize } from '../../shared/size.js'
+import { isRtl } from '../../shared/direction.js'
 
 export type PaginationSize = OasSize
 
@@ -132,6 +133,15 @@ const STYLE = `
   border-color: var(--oas-color-primary);
   color: var(--oas-color-text-on-primary);
 }
+/* RTL：方向箭头钮镜像——‹«›» glyph 不随书写方向自翻，不镜像则指向背离目标页
+   （页码序 1→N 由 flex 随 dir 自动右→左，prev/first 应指向右侧的更小页码）。
+   prev-icon/next-icon 插槽的自定义图标一并镜像：RTL 下请提供方向中性的图标 */
+:host([data-rtl]) [part='first'],
+:host([data-rtl]) [part='prev'],
+:host([data-rtl]) [part='next'],
+:host([data-rtl]) [part='last'] {
+  transform: scaleX(-1);
+}
 .ellipsis-btn {
   color: var(--oas-color-text-secondary);
   padding: 0 var(--oas-space-1);
@@ -240,6 +250,7 @@ export class OASPagination extends OASElement {
       'responsive',
       'show-more',
       'total-boundary',
+      'dir',
     ]
   }
 
@@ -294,6 +305,8 @@ export class OASPagination extends OASElement {
     const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'medium')
     if (!sizeValid) warnInvalidSize(sizeRaw)
     this.setAttribute('data-size', size)
+    // RTL：方向箭头镜像钩子（页码序由 flex 随 dir 自动镜像，glyph 不会自翻）
+    this.toggleAttribute('data-rtl', isRtl(this))
     // rawTotal 保留原始值（≤0 表示总数未知，供 show-more / total-boundary 判定）；
     // total 夹取到 ≥1 维持既有分页计算语义（单页渲染不受影响）
     const rawTotal = Number(this.getAttr('total', '0')) || 0

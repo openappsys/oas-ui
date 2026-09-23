@@ -122,6 +122,13 @@ describe('OASThemeEditor', () => {
     expect(colorInput(row).value).toBe('#0b6cff')
     expect(row.querySelector('.value')!.textContent).toBe('#0b6cff')
   })
+  it('色值文本 input 固定 LTR（hex/颜色函数是 LTR token，RTL 宿主下不隔离会被 bidi 重排成 d97706# / 乱序）', () => {
+    const el = mount({ dir: 'rtl' })
+    const row = rowFor(el, '--oas-color-primary')!
+    expect(colorTextInput(row).dir).toBe('ltr')
+    const fnRow = rows(el).find((r) => (r.textContent ?? '').includes('color-mix'))
+    if (fnRow) expect(colorTextInput(fnRow).dir).toBe('ltr')
+  })
 
   it('数字 token 行用 number input（去 px），值显示保留单位', () => {
     const el = mount()
