@@ -1387,3 +1387,19 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 ### 验收
 
 - 全量 e2e 2358 passed / 37 skipped（chromium 全量 + firefox 抽样，0 failed）；全量单测 7401、typecheck、build、api:check、stats:check、trace 全绿（随各笔提交门禁）
+
+## qrcode 形状化渲染体积优化（未发布）
+
+### 背景
+
+`dot-shape=rounded/dots`（v2.5.6）采用逐模块 `<use>` 引用 defs 原型——省掉的是「每模块重复完整几何体」而非元素数量，大码产物体积仍与逐模块内联相当（125×125 实测约 305 KB，约为 square 合并路径的 5 倍）。
+
+### 方案
+
+- **合并路径 + pattern 网格平铺**：square 同款 run-length 合并路径划定填充区域，defs 里 1×1 `userSpaceOnUse` pattern 平铺模块原型。原型完整落在各自模块格内，区域裁剪永不切割原型——与逐模块绘制逐像素等价（visual 基线零漂移实证），产物体积回落 square 量级（145×145 实测：dots ≈ 88.3 KB vs 旧方案 ≈ 323.8 KB，约 1/3.7；与 square 仅差 +157 B）
+- **渐变 × 形状化联动修复**：形状化模式下 `gradient` 转 `gradientUnits="userSpaceOnUse"` 映射进模块区域——pattern 内容是逐模块小几何，objectBoundingBox 会退化为「每模块各自套全渐变」；square 缺省形状不走 pattern，渐变渲染零变化
+
+### 验收
+
+- 单测：qrcode 域 77 用例全绿（新增体积回归守卫「dots 总量 < square × 1.5」、userSpaceOnUse 映射坐标断言）；typecheck / build 全绿
+- e2e：qa-regression 像素级定位图形覆盖（栅格化数暗模块）+ download 产物结构 + pattern 内 `var()` 填充计算值实抓（防静默退黑）全过；visual 基线零漂移；console-sweep 零告警；SSR 真水合 13 用例全绿

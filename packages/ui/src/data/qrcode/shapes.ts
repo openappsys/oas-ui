@@ -5,10 +5,10 @@
  * 按 `corner-shape` 生成、中心 logo 区域可跳过模块（`icon-hide-dots`）。
  *
  * 体积策略：square 沿用 run-length 合并单 path（同旧实现，体积极小）；rounded / dots 无法用
- * run-length（圆点带间隙、圆角需弧线），改为逐模块 `<use href="#oas-qr-mod">` 引用 defs 里
- * 的单份几何原型——省掉的是「每模块重复完整几何体」而非元素数量，实测 125×125 码约 305 KB
- * （与逐模块内联几何相当，约为 square 合并路径的 5 倍）。进一步压缩（合并路径 + clipPath/pattern
- * 填充、或同形相邻模块合路径）见 ROADMAP backlog。
+ * run-length 表达（圆点带间隙、圆角需弧线），采用「合并路径 + pattern 网格平铺」——
+ * 合并路径（square 同款 run-length）划定填充区域，defs 里 1×1 `userSpaceOnUse` pattern
+ * 平铺模块原型；原型完整落在各自模块格内，区域裁剪永不切割原型，与逐模块绘制逐几何等价，
+ * 总量回落 square 量级（旧逐模块 `<use>` 时代 125×125 实测约 305 KB，约为 square 合并路径的 5 倍）。
  *
  * 坐标系：1 单位 = 1 模块；`offset` 为静区（margin）偏移，与组件 viewBox 一致。
  */
@@ -75,35 +75,14 @@ export function dataPath(modules: Uint8Array, size: number, offset: number, skip
   return d
 }
 
-/** defs 中的模块原型（rounded = 圆角方块 / dots = 圆点）；square 不需要原型 */
-export function moduleDef(dotShape: DotShape, id = 'oas-qr-mod'): string {
-  if (dotShape === 'dots') {
-    return `<circle id="${id}" cx="0.5" cy="0.5" r="${DOT_RADIUS}"/>`
-  }
-  if (dotShape === 'rounded') {
-    return `<rect id="${id}" width="1" height="1" rx="${DATA_ROUNDED_RADIUS}"/>`
-  }
-  return ''
-}
-
-/** 数据区 markup（rounded / dots）：逐模块 `<use>` 引用原型，体积远小于完整路径 */
-export function dataUses(
-  modules: Uint8Array,
-  size: number,
-  offset: number,
-  dotRef = 'oas-qr-mod',
-  skip?: Box | null,
-): string {
-  let out = ''
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      if (modules[y * size + x] !== 1) continue
-      if (isFinderModule(size, x, y)) continue
-      if (skip ? overlaps(skip, x, y) : false) continue
-      out += `<use href="#${dotRef}" x="${x + offset}" y="${y + offset}"/>`
-    }
-  }
-  return out
+/** defs 中的模块 pattern（rounded = 圆角方块 / dots = 圆点）：1×1 网格平铺原型，fill 显式直注
+ *（pattern 内容不继承引用元素的 fill）；网格锚定原点（无 x/y 偏移），dataPath 的整数格坐标天然对齐 */
+export function modulePatternDef(dotShape: DotShape, id = 'oas-qr-pat', fill = 'currentColor'): string {
+  const geometry =
+    dotShape === 'dots'
+      ? `<circle cx="0.5" cy="0.5" r="${DOT_RADIUS}" fill="${fill}"/>`
+      : `<rect width="1" height="1" rx="${DATA_ROUNDED_RADIUS}" fill="${fill}"/>`
+  return `<pattern id="${id}" width="1" height="1" patternUnits="userSpaceOnUse">${geometry}</pattern>`
 }
 
 /** 圆角矩形子路径（r<=0 时等价于直角矩形；r 自动收敛到半宽/半高） */
@@ -147,25 +126,43 @@ export function finderPath(size: number, offset: number, cornerShape: CornerShap
   return d
 }
 
+/** userSpaceOnUse 映射的目标方区域（模块单位）：形状化模式下渐变跨整码连续 */
+export interface GradientArea {
+  x: number
+  y: number
+  size: number
+}
+
 /**
  * 线性渐变 defs（前景色渐变）：`stops` 为颜色数组（≥2，均匀分布）。
- * 角度采用 CSS 约定（0deg = 自下而上，90deg = 自左向右），映射到 objectBoundingBox 坐标系。
+ * 角度采用 CSS 约定（0deg = 自下而上，90deg = 自左向右）。
+ * 缺省 objectBoundingBox（相对填充元素 bbox，square 直填模式用）；
+ * 传 `area` 时转 gradientUnits="userSpaceOnUse" 并把坐标映射进该方区域——
+ * pattern 内容是逐模块小几何，objectBoundingBox 会退化为「每模块各自套全渐变」，
+ * 必须用 userSpace 才能得到跨整码连续的渐变。
  */
-export function linearGradientDef(stops: readonly string[], angleDeg: number, id = 'oas-qr-grad'): string {
+export function linearGradientDef(
+  stops: readonly string[],
+  angleDeg: number,
+  id = 'oas-qr-grad',
+  area?: GradientArea,
+): string {
   const rad = (angleDeg * Math.PI) / 180
   const dx = Math.sin(rad)
   const dy = -Math.cos(rad)
-  const x1 = (0.5 - dx / 2).toFixed(4)
-  const y1 = (0.5 - dy / 2).toFixed(4)
-  const x2 = (0.5 + dx / 2).toFixed(4)
-  const y2 = (0.5 + dy / 2).toFixed(4)
+  const compact = (v: number): number => Number(v.toFixed(4))
+  const x1 = area ? compact(area.x + (0.5 - dx / 2) * area.size) : (0.5 - dx / 2).toFixed(4)
+  const y1 = area ? compact(area.y + (0.5 - dy / 2) * area.size) : (0.5 - dy / 2).toFixed(4)
+  const x2 = area ? compact(area.x + (0.5 + dx / 2) * area.size) : (0.5 + dx / 2).toFixed(4)
+  const y2 = area ? compact(area.y + (0.5 + dy / 2) * area.size) : (0.5 + dy / 2).toFixed(4)
+  const units = area ? ' gradientUnits="userSpaceOnUse"' : ''
   const n = stops.length
   const stopsMarkup = stops
     .map(
       (color, i) => `<stop offset="${n > 1 ? (i / (n - 1)).toFixed(4) : '0'}" stop-color="${escapeAttrValue(color)}"/>`,
     )
     .join('')
-  return `<linearGradient id="${id}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stopsMarkup}</linearGradient>`
+  return `<linearGradient id="${id}"${units} x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stopsMarkup}</linearGradient>`
 }
 
 /** 转义双引号（颜色值理论上不含，但宿主输入不可信） */

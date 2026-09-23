@@ -2,6 +2,13 @@
 
 所有显著变更记录于此。
 
+## [未发布]
+
+### 变更
+
+- **oas-qrcode 形状化渲染体积优化（rounded / dots）**：数据区由逐模块 `<use href="#oas-qr-mod">` 改为「合并路径 + 1×1 `userSpaceOnUse` pattern 网格平铺原型」——渲染几何与逐模块绘制逐像素等价（visual 基线零漂移），产物体积回落 square 量级（145×145 码实测约 88.3 KB，旧方案约 323.8 KB，约 1/3.7；与 square 合并路径仅差 +157 B）
+- **oas-qrcode 渐变 × 形状化修复**：`gradient` 与 `dot-shape=rounded/dots` 同用时，`objectBoundingBox` 渐变会在 pattern 内容里逐模块解析（每个码点各自套全渐变）→ 转为 `gradientUnits="userSpaceOnUse"` 映射进模块区域，渐变跨整码连续；square 缺省形状渲染零变化
+
 ## [2.5.6] - 2026-09-23
 
 ### 特性

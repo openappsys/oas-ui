@@ -131,6 +131,12 @@ test('qrcode：形状化/渐变/挖空生效，且默认渲染零影响、downlo
     const cells = (d: string): number =>
       [...d.matchAll(/h(-?[\d.]+)/g)].reduce((n, m) => n + Math.max(0, Number(m[1])), 0)
 
+    // dots 模式的数据区 = fill="url(#oas-qr-pat)" 的那条合并路径
+    const dotsCells = (el: QrEl): number => {
+      const p = [...svgOf(el).querySelectorAll('path')].find((q) => q.getAttribute('fill') === 'url(#oas-qr-pat)')
+      return p ? cells(p.getAttribute('d') ?? '') : -1
+    }
+
     // 定位图形覆盖：把 SVG 栅格化到 canvas，按模块中心数三处 7×7 的暗模块（=环 24 + 内点 9 = 33）
     const finderCoverage = async (el: QrEl): Promise<{ tl: number; tr: number; bl: number }> => {
       const svg = svgOf(el)
@@ -185,16 +191,22 @@ test('qrcode：形状化/渐变/挖空生效，且默认渲染零影响、downlo
       plainPaths: svgOf(plain).querySelectorAll('path').length,
       plainDefs: svgOf(plain).querySelector('defs') !== null,
       plainUses: svgOf(plain).querySelectorAll('use').length,
-      dotsCircle: svgOf(dots).querySelector('defs circle#oas-qr-mod') !== null,
+      plainSvgLen: svgOf(plain).innerHTML.length,
+      dotsPattern: svgOf(dots).querySelector('defs pattern#oas-qr-pat circle') !== null,
       dotsUses: svgOf(dots).querySelectorAll('use').length,
+      dotsDataPathFill: svgOf(dots).querySelector('path[fill="url(#oas-qr-pat)"]') !== null,
+      dotsSvgLen: svgOf(dots).innerHTML.length,
       dotsArc: /a\d/.test([...svgOf(dots).querySelectorAll('path')].map((p) => p.getAttribute('d')).join('')),
       gradDef: svgOf(grad).querySelector('defs linearGradient#oas-qr-grad') !== null,
       gradFill: [...svgOf(grad).querySelectorAll('[fill]')].some((n) => n.getAttribute('fill') === 'url(#oas-qr-grad)'),
       badFallsBack: svgOf(bad).querySelector('defs linearGradient') === null,
       squareIconCells: cells(svgOf(withIcon).querySelector('path')!.getAttribute('d')!),
       squareHiddenCells: cells(svgOf(hidden).querySelector('path')!.getAttribute('d')!),
-      dotUses: svgOf(withIconDots).querySelectorAll('use').length,
-      dotHiddenUses: svgOf(hiddenDots).querySelectorAll('use').length,
+      dotCells: dotsCells(withIconDots),
+      dotHiddenCells: dotsCells(hiddenDots),
+      styledGradUnits:
+        svgOf(styled).querySelector('defs linearGradient#oas-qr-grad')?.getAttribute('gradientUnits') ?? '',
+      dotsComputedFill: getComputedStyle(svgOf(dots).querySelector('defs pattern circle')!).fill,
       downloadError,
       downloadUrl: svgUrls[0] ?? '',
     }
@@ -204,16 +216,22 @@ test('qrcode：形状化/渐变/挖空生效，且默认渲染零影响、downlo
   expect(r.plainPaths, '默认只有数据区 + 定位图形两条 path').toBe(2)
   expect(r.plainUses, '默认不走 <use>').toBe(0)
 
-  expect(r.dotsCircle, 'dot-shape=dots 生成圆点原型').toBe(true)
-  expect(r.dotsUses, 'dot-shape=dots 数据区走 <use>').toBeGreaterThan(0)
+  expect(r.dotsPattern, 'dot-shape=dots 生成 pattern 圆点原型').toBe(true)
+  expect(r.dotsDataPathFill, 'dot-shape=dots 数据区走合并路径 + pattern 填充').toBe(true)
+  expect(r.dotsUses, 'dot-shape=dots 不再逐模块 <use>（体积回落 square 量级）').toBe(0)
+  expect(r.dotsSvgLen, 'dots 总量 < square × 1.5（逐模块 <use> 时代约为 5 倍）').toBeLessThan(r.plainSvgLen * 1.5)
+  // pattern 内容的 var() fill 若不解析会静默退黑（与默认 #18181b 肉眼难辨）——用计算值实抓
+  expect(r.dotsComputedFill, 'pattern 内 var() 填充解析为缺省深色').toBe('rgb(24, 24, 27)')
   expect(r.dotsArc, 'corner-shape=rounded 定位图形带弧线').toBe(true)
 
   expect(r.gradDef, 'gradient 生成 linearGradient').toBe(true)
   expect(r.gradFill, '码点填充引用渐变').toBe(true)
   expect(r.badFallsBack, 'gradient 非法值回落纯色').toBe(true)
+  // 曾现缺陷：形状化 + 渐变时 objectBoundingBox 在 pattern 内逐元素解析 → 每模块各自套全渐变（彩虹点）
+  expect(r.styledGradUnits, '形状化 + 渐变转 userSpaceOnUse 跨整码连续').toBe('userSpaceOnUse')
 
   expect(r.squareHiddenCells, 'icon-hide-dots 减少中心区码点（square）').toBeLessThan(r.squareIconCells)
-  expect(r.dotHiddenUses, 'icon-hide-dots 减少中心区码点（dots）').toBeLessThan(r.dotUses)
+  expect(r.dotHiddenCells, 'icon-hide-dots 减少中心区码点（dots）').toBeLessThan(r.dotCells)
 
   // 曾现缺陷：roundRect 模板串漏 ${} → 路径数据 "v-(h - 2 * rr)" 非法，浏览器丢弃后续子路径
   // → 右上/左下定位图形整块消失（0）、左上糊成实心（45+）（视觉核验才发现）
@@ -236,7 +254,8 @@ test('qrcode：形状化/渐变/挖空生效，且默认渲染零影响、downlo
   expect(r.downloadError, 'download() 不应抛错').toBe('')
   expect(r.downloadUrl.startsWith('data:image/svg+xml'), 'download 已触发').toBe(true)
   const svg = decodeURIComponent(r.downloadUrl.replace('data:image/svg+xml;charset=utf-8,', ''))
-  expect(svg, 'download 产物含圆点原型').toContain('<circle id="oas-qr-mod"')
+  expect(svg, 'download 产物含 pattern 圆点原型').toContain('<pattern')
+  expect(svg, 'download 产物含圆点几何').toContain('<circle cx="0.5"')
   expect(svg, 'download 产物含渐变').toContain('<linearGradient id="oas-qr-grad"')
   expect(svg, 'download 产物未回退到合并路径').not.toContain('crispEdges')
 })

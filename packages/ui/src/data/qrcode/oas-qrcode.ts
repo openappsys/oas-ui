@@ -3,12 +3,12 @@ import { encodeQR, QR_TOO_LONG_ERROR, type QrErrorCorrection } from './qr.js'
 import {
   centeredBox,
   dataPath,
-  dataUses,
   finderPath,
   linearGradientDef,
-  moduleDef,
+  modulePatternDef,
   type CornerShape,
   type DotShape,
+  type GradientArea,
 } from './shapes.js'
 
 const STYLE = `
@@ -120,6 +120,9 @@ const PRESET_COLORS = new Set([
 ])
 
 const DEFAULT_BG = '#ffffff'
+
+/** 形状化数据区的 pattern id（合并路径 + pattern 平铺，几何与逐模块绘制等价） */
+const MODULE_PATTERN_ID = 'oas-qr-pat'
 
 /**
  * oas-qrcode —— 二维码组件。
@@ -496,21 +499,28 @@ export class OASQRCode extends OASElement {
     // 「挖空点阵」跳过区（模块坐标，中心对齐）
     const skip = icon && this.hasAttr('icon-hide-dots') ? centeredBox(moduleCount, iconModules, iconPad) : null
 
-    // 前景：显式渐变优先于纯色；形状原型（rounded/dots）进 defs 供 <use> 引用
+    // 前景：显式渐变优先于纯色。形状化模式下渐变转 userSpaceOnUse 映射进模块区域——
+    // pattern 内容是逐模块小几何，objectBoundingBox 会退化为「每模块各自套全渐变」
     const stops = this.gradientStops()
     let defs = ''
     let fill = fg
+    let gradientArea: GradientArea | undefined
     if (stops) {
-      defs += linearGradientDef(stops, this.gradientAngle())
+      if (dotShape !== 'square') gradientArea = { x: margin, y: margin, size: moduleCount }
+      defs += linearGradientDef(stops, this.gradientAngle(), 'oas-qr-grad', gradientArea)
       fill = 'url(#oas-qr-grad)'
     }
-    if (dotShape !== 'square') defs += moduleDef(dotShape)
 
-    // 数据区：square 走合并单 path（crispEdges 保锐利）；rounded/dots 走 <use> 引用原型（体积友好）
-    const data =
-      dotShape === 'square'
-        ? `<path d="${dataPath(modules, moduleCount, margin, skip)}" fill="${fill}" shape-rendering="crispEdges"/>`
-        : `<g fill="${fill}">${dataUses(modules, moduleCount, margin, 'oas-qr-mod', skip)}</g>`
+    // 数据区：square 走纯色/渐变直填合并单 path（crispEdges 保锐利）；
+    // rounded/dots 走「合并路径 + pattern 平铺原型」——路径体量与 square 同级（旧逐模块 <use> 约 5 倍体积）
+    const d = dataPath(modules, moduleCount, margin, skip)
+    let data: string
+    if (dotShape === 'square') {
+      data = `<path d="${d}" fill="${fill}" shape-rendering="crispEdges"/>`
+    } else {
+      defs += modulePatternDef(dotShape, MODULE_PATTERN_ID, fill)
+      data = `<path d="${d}" fill="url(#${MODULE_PATTERN_ID})"/>`
+    }
     // 定位图形单独绘制（corner-shape=square 时与模块栅格逐像素等价；rounded 换圆角）
     const crisp = cornerShape === 'square' ? ' shape-rendering="crispEdges"' : ''
     const finder = `<path d="${finderPath(moduleCount, margin, cornerShape)}" fill="${fill}" fill-rule="evenodd"${crisp}/>`
