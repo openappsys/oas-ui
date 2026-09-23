@@ -197,6 +197,440 @@ test('menu 水平模式 RTL：回折镜像为面板左缘贴父项右缘，不�
   expect(data.hitIsHost, `面板区域应命中菜单宿主（实际命中 ${data.hitTag}）`).toBe(true)
 })
 
+// —— 超宽面板残影（三缺陷之外的普查遗留）：回折后仍越界时最小平移夹回 ——
+// 曾现缺陷：面板宽于容器给它的任一侧空间（不回折越盒右缘、回折又越盒左缘）时，回折后面板左缘
+// 仍越出 .menu 盒左缘，沿裁切边被 overflow-x: clip 裁掉一段（rect/display 正常，但 elementFromPoint
+// 命中页面元素 = 残影）。修复：回折/定位完成后量一次实际 rect，越界部分用 inline translateX
+// 最小平移夹回裁切边界内（面板本身宽于边界时贴书写起点侧对齐）。
+// 场景：280 宽容器 + 末项带长标签子级（面板实测约 185px，宽于父项左侧 157px 与右侧 113px 空间）。
+test('menu 水平模式：面板宽于容器一侧空间时，回折后仍被最小平移夹回 .menu 盒内且真实可见', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  const data = await page.evaluate(async () => {
+    const h = document.createElement('oas-menu')
+    h.id = 'zz-menu-clamp'
+    h.setAttribute('mode', 'horizontal')
+    // fixed 定位：保证落在视口内，elementFromPoint 才能命中（body 末尾追加会落到折叠线外 → null）
+    h.style.cssText = 'position: fixed; top: 120px; left: 40px; width: 280px; z-index: 9999'
+    h.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '首页', value: 'home' },
+        { label: '产品中心', value: 'products' },
+        {
+          label: '帮助中心',
+          value: 'help',
+          children: [
+            { label: '常见问题与使用指南', value: 'faq' },
+            { label: '在线客服与工单提交', value: 'chat' },
+            { label: '开发者文档与接口说明', value: 'dev' },
+          ],
+        },
+      ]),
+    )
+    document.body.appendChild(h)
+    await new Promise((r) => setTimeout(r, 400))
+    const menu = h.shadowRoot!.querySelector<HTMLElement>('.menu')!
+    const li = menu.querySelector<HTMLElement>(':scope > [part="item"][data-value="help"]')!
+    li.dispatchEvent(new MouseEvent('mouseenter'))
+    await new Promise((r) => setTimeout(r, 250))
+    const sub = li.querySelector<HTMLElement>(':scope > .submenu')!
+    const mr = menu.getBoundingClientRect()
+    const ir = li.getBoundingClientRect()
+    const sr = sub.getBoundingClientRect()
+    // 探针取面板起点侧边缘内侧 6px：改前该处越出 .menu 盒左缘被裁（命中页面元素），改后应命中宿主
+    const hit = document.elementFromPoint(sr.x + 6, sr.y + Math.min(sr.height / 2, 30))
+    return {
+      menuLeft: Math.round(mr.left),
+      menuRight: Math.round(mr.right),
+      itemLeft: Math.round(ir.left),
+      panelLeft: Math.round(sr.left),
+      panelRight: Math.round(sr.right),
+      panelWidth: Math.round(sr.width),
+      flipLeft: sub.classList.contains('flip-left'),
+      inlineTransform: sub.style.transform || '',
+      hitIsHost: hit === h,
+      hitTag: hit?.tagName ?? null,
+    }
+  })
+  // 场景前置条件：面板确实宽于父项左侧可用空间（否则不构成「任一侧都放不下」）
+  expect(
+    data.panelWidth,
+    `面板宽 ${data.panelWidth} 应大于父项左侧空间 ${data.itemLeft - data.menuLeft}（场景前提）`,
+  ).toBeGreaterThan(data.itemLeft - data.menuLeft)
+  expect(data.flipLeft, '越出 .menu 右缘 → 回折（视口 1280 远未越界）').toBe(true)
+  expect(
+    data.panelLeft,
+    `面板左缘 ${data.panelLeft} 越出 .menu 左缘 ${data.menuLeft}（被裁成残影）`,
+  ).toBeGreaterThanOrEqual(data.menuLeft)
+  expect(data.panelRight, `面板右缘 ${data.panelRight} 越出 .menu 右缘 ${data.menuRight}`).toBeLessThanOrEqual(
+    data.menuRight,
+  )
+  expect(data.inlineTransform, '越界部分应由 inline 最小平移夹回').toMatch(/^translateX\(\d+px\)$/)
+  // 真实命中：起点侧（改前被裁的那段）必须命中菜单宿主
+  expect(data.hitIsHost, `面板起点侧应命中菜单宿主（实际命中 ${data.hitTag}）`).toBe(true)
+  await page.screenshot({ path: 'test-results/visual-review/menu-horizontal-clamp-after.png' })
+})
+
+// RTL 镜像：越盒右缘（RTL 面板向左回折后右缘越盒）同样被夹回，且起点侧（物理右缘）完整可见
+test('menu 水平模式 RTL：面板宽于容器一侧空间时，回折后夹回 .menu 盒内（右缘贴盒缘）且真实可见', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'))
+  const data = await page.evaluate(async () => {
+    const h = document.createElement('oas-menu')
+    h.id = 'zz-menu-clamp-rtl'
+    h.setAttribute('mode', 'horizontal')
+    h.style.cssText = 'position: fixed; top: 120px; left: 40px; width: 280px; z-index: 9999'
+    h.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '首页', value: 'home' },
+        { label: '产品中心', value: 'products' },
+        {
+          label: '帮助中心',
+          value: 'help',
+          children: [
+            { label: '常见问题与使用指南', value: 'faq' },
+            { label: '在线客服与工单提交', value: 'chat' },
+            { label: '开发者文档与接口说明', value: 'dev' },
+          ],
+        },
+      ]),
+    )
+    document.body.appendChild(h)
+    await new Promise((r) => setTimeout(r, 400))
+    const menu = h.shadowRoot!.querySelector<HTMLElement>('.menu')!
+    const li = menu.querySelector<HTMLElement>(':scope > [part="item"][data-value="help"]')!
+    li.dispatchEvent(new MouseEvent('mouseenter'))
+    await new Promise((r) => setTimeout(r, 250))
+    const sub = li.querySelector<HTMLElement>(':scope > .submenu')!
+    const mr = menu.getBoundingClientRect()
+    const ir = li.getBoundingClientRect()
+    const sr = sub.getBoundingClientRect()
+    // 探针取面板终点侧（RTL 书写起点侧 = 物理右缘）内侧 6px：改前越出 .menu 盒右缘被裁
+    const hit = document.elementFromPoint(sr.x + sr.width - 6, sr.y + Math.min(sr.height / 2, 30))
+    return {
+      menuLeft: Math.round(mr.left),
+      menuRight: Math.round(mr.right),
+      itemRight: Math.round(ir.right),
+      panelLeft: Math.round(sr.left),
+      panelRight: Math.round(sr.right),
+      panelWidth: Math.round(sr.width),
+      flipLeft: sub.classList.contains('flip-left'),
+      inlineTransform: sub.style.transform || '',
+      hitIsHost: hit === h,
+      hitTag: hit?.tagName ?? null,
+    }
+  })
+  expect(
+    data.panelWidth,
+    `面板宽 ${data.panelWidth} 应大于父项右侧空间 ${data.menuRight - data.itemRight}（场景前提）`,
+  ).toBeGreaterThan(data.menuRight - data.itemRight)
+  expect(data.flipLeft, 'RTL 未回折面板左缘越 .menu 左缘 → 回折（视口远未越界）').toBe(true)
+  expect(
+    data.panelRight,
+    `面板右缘 ${data.panelRight} 越出 .menu 右缘 ${data.menuRight}（被裁成残影）`,
+  ).toBeLessThanOrEqual(data.menuRight)
+  expect(data.panelLeft, `面板左缘 ${data.panelLeft} 越出 .menu 左缘 ${data.menuLeft}`).toBeGreaterThanOrEqual(
+    data.menuLeft,
+  )
+  expect(data.inlineTransform, 'RTL 越界部分应由 inline 负位移夹回').toMatch(/^translateX\(-\d+px\)$/)
+  expect(data.hitIsHost, `面板起点侧（物理右缘）应命中菜单宿主（实际命中 ${data.hitTag}）`).toBe(true)
+})
+
+// —— 夹取延伸到全部层级（上一轮未解项）：一级被夹回后，二级仍整体越盒被裁 ——
+// 曾现缺陷：夹取只做在一级子菜单。实测「一级面板宽 185 + 其子项带宽子面板」时，一级被夹回
+// [41,226] ✓，但二级 sub2 = [−124,46]（盒 [41,319]）→ 整体越出 .menu 盒被 overflow-x: clip
+// 裁掉，elementFromPoint 在子面板中心为 null（视觉不可见）。修法：夹取对全部层级生效，
+// 逐级独立（父级先、子级后，子级基于父级夹后位置再夹）。
+test('menu 水平模式：二级子面板被夹回 .menu 盒内（全部层级夹取，elementFromPoint 命中宿主）', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  const data = await page.evaluate(async () => {
+    const h = document.createElement('oas-menu')
+    h.id = 'zz-menu-clamp-l2'
+    h.setAttribute('mode', 'horizontal')
+    // fixed 定位：保证落在视口内，elementFromPoint 才能命中（body 末尾追加会落到折叠线外 → null）
+    h.style.cssText = 'position: fixed; top: 120px; left: 40px; width: 280px; z-index: 9999'
+    h.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '首页', value: 'home' },
+        { label: '产品中心', value: 'products' },
+        {
+          label: '帮助中心',
+          value: 'help',
+          children: [
+            {
+              label: '常见问题与使用指南',
+              value: 'faq',
+              children: [
+                { label: '账号与安全设置说明', value: 'faq-account' },
+                { label: '支付与退款流程说明', value: 'faq-pay' },
+              ],
+            },
+            { label: '在线客服与工单提交', value: 'chat' },
+            { label: '开发者文档与接口说明', value: 'dev' },
+          ],
+        },
+      ]),
+    )
+    document.body.appendChild(h)
+    await new Promise((r) => setTimeout(r, 400))
+    const menu = h.shadowRoot!.querySelector<HTMLElement>('.menu')!
+    const helpLi = menu.querySelector<HTMLElement>(':scope > [part="item"][data-value="help"]')!
+    // hover 最深叶子：级联展开整条链（help → faq）
+    const deep = menu.querySelector<HTMLElement>('[part="item"][data-value="faq-account"]')!
+    deep.dispatchEvent(new MouseEvent('mouseenter'))
+    await new Promise((r) => setTimeout(r, 250))
+    const sub1 = helpLi.querySelector<HTMLElement>(':scope > .submenu')!
+    const faqLi = sub1.querySelector<HTMLElement>('[part="item"][data-value="faq"]')!
+    const sub2 = faqLi.querySelector<HTMLElement>(':scope > .submenu')!
+    const mr = menu.getBoundingClientRect()
+    const r1 = sub1.getBoundingClientRect()
+    const r2 = sub2.getBoundingClientRect()
+    // 探针取二级面板中心（改前中心越出视口左缘/盒缘被裁，命中页面元素而非宿主）
+    const vw = window.innerWidth
+    const probeX = Math.max(2, Math.min(vw - 3, r2.x + r2.width / 2))
+    const probeY = r2.y + Math.min(r2.height / 2, 30)
+    const hit = document.elementFromPoint(probeX, probeY)
+    return {
+      menuLeft: Math.round(mr.left),
+      menuRight: Math.round(mr.right),
+      sub1Left: Math.round(r1.left),
+      sub1Right: Math.round(r1.right),
+      sub2Left: Math.round(r2.left),
+      sub2Right: Math.round(r2.right),
+      sub2Width: Math.round(r2.width),
+      sub1Transform: sub1.style.transform || '',
+      sub2Transform: sub2.style.transform || '',
+      helpCollapsed: helpLi.hasAttribute('data-collapsed'),
+      faqOpen: faqLi.classList.contains('open'),
+      hitIsHost: hit === h,
+      hitTag: hit?.tagName ?? null,
+    }
+  })
+  expect(data.helpCollapsed, '「帮助中心」应可见（未被收纳，否则场景不成立）').toBe(false)
+  expect(data.faqOpen, '二级父项 faq 应已展开').toBe(true)
+  // 一级：上一轮已绿的既有行为（回折后夹回盒内），本次零扰动
+  expect(data.sub1Transform, '一级由 inline 最小平移夹回盒内（既有行为不回归）').toMatch(/^translateX\(\d+px\)$/)
+  expect(data.sub1Left, `一级左缘 ${data.sub1Left} 越出 .menu 左缘 ${data.menuLeft}`).toBeGreaterThanOrEqual(
+    data.menuLeft,
+  )
+  expect(data.sub1Right, `一级右缘 ${data.sub1Right} 越出 .menu 右缘 ${data.menuRight}`).toBeLessThanOrEqual(
+    data.menuRight,
+  )
+  // 二级：本次新增——同样夹回盒内且真实可见
+  expect(data.sub2Transform, '二级应由 inline 最小平移夹回盒内（本次新增）').toMatch(/^translateX\(\d+px\)$/)
+  expect(
+    data.sub2Left,
+    `二级面板左缘 ${data.sub2Left} 越出 .menu 左缘 ${data.menuLeft}（改前为负值，整体被裁）`,
+  ).toBeGreaterThanOrEqual(data.menuLeft)
+  expect(data.sub2Right, `二级面板右缘 ${data.sub2Right} 越出 .menu 右缘 ${data.menuRight}`).toBeLessThanOrEqual(
+    data.menuRight,
+  )
+  expect(data.hitIsHost, `二级面板中心应命中菜单宿主（实际命中 ${data.hitTag}）`).toBe(true)
+  await page.screenshot({ path: 'test-results/visual-review/menu-horizontal-clamp-l2-after.png' })
+})
+
+// RTL 镜像：二级面板同样夹回盒内（平移轴是物理的，自动镜像为负位移）
+test('menu 水平模式 RTL：二级子面板镜像夹回 .menu 盒内（负位移）且真实可见', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'))
+  const data = await page.evaluate(async () => {
+    const h = document.createElement('oas-menu')
+    h.id = 'zz-menu-clamp-l2-rtl'
+    h.setAttribute('mode', 'horizontal')
+    h.style.cssText = 'position: fixed; top: 120px; left: 40px; width: 280px; z-index: 9999'
+    h.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '首页', value: 'home' },
+        { label: '产品中心', value: 'products' },
+        {
+          label: '帮助中心',
+          value: 'help',
+          children: [
+            {
+              label: '常见问题与使用指南',
+              value: 'faq',
+              children: [
+                { label: '账号与安全设置说明', value: 'faq-account' },
+                { label: '支付与退款流程说明', value: 'faq-pay' },
+              ],
+            },
+            { label: '在线客服与工单提交', value: 'chat' },
+            { label: '开发者文档与接口说明', value: 'dev' },
+          ],
+        },
+      ]),
+    )
+    document.body.appendChild(h)
+    await new Promise((r) => setTimeout(r, 400))
+    const menu = h.shadowRoot!.querySelector<HTMLElement>('.menu')!
+    const helpLi = menu.querySelector<HTMLElement>(':scope > [part="item"][data-value="help"]')!
+    const deep = menu.querySelector<HTMLElement>('[part="item"][data-value="faq-account"]')!
+    deep.dispatchEvent(new MouseEvent('mouseenter'))
+    await new Promise((r) => setTimeout(r, 250))
+    const sub1 = helpLi.querySelector<HTMLElement>(':scope > .submenu')!
+    const faqLi = sub1.querySelector<HTMLElement>('[part="item"][data-value="faq"]')!
+    const sub2 = faqLi.querySelector<HTMLElement>(':scope > .submenu')!
+    const mr = menu.getBoundingClientRect()
+    const r1 = sub1.getBoundingClientRect()
+    const r2 = sub2.getBoundingClientRect()
+    const vw = window.innerWidth
+    const probeX = Math.max(2, Math.min(vw - 3, r2.x + r2.width / 2))
+    const probeY = r2.y + Math.min(r2.height / 2, 30)
+    const hit = document.elementFromPoint(probeX, probeY)
+    return {
+      menuLeft: Math.round(mr.left),
+      menuRight: Math.round(mr.right),
+      sub1Transform: sub1.style.transform || '',
+      sub2Left: Math.round(r2.left),
+      sub2Right: Math.round(r2.right),
+      sub2Transform: sub2.style.transform || '',
+      hitIsHost: hit === h,
+      hitTag: hit?.tagName ?? null,
+    }
+  })
+  expect(data.sub1Transform, 'RTL 一级由 inline 负位移夹回（既有行为不回归）').toMatch(/^translateX\(-\d+px\)$/)
+  expect(data.sub2Transform, 'RTL 二级镜像夹回（负位移）').toMatch(/^translateX\(-\d+px\)$/)
+  expect(data.sub2Left, `RTL 二级左缘 ${data.sub2Left} 越出 .menu 左缘 ${data.menuLeft}`).toBeGreaterThanOrEqual(
+    data.menuLeft,
+  )
+  expect(data.sub2Right, `RTL 二级右缘 ${data.sub2Right} 越出 .menu 右缘 ${data.menuRight}`).toBeLessThanOrEqual(
+    data.menuRight,
+  )
+  expect(data.hitIsHost, `RTL 二级面板中心应命中菜单宿主（实际命中 ${data.hitTag}）`).toBe(true)
+})
+
+// ===== RTL + dark 实测（菜单族定位修复复测）=====
+// RTL 水平模式：一级面板书写起点侧 = 物理右缘 → 未回折时右缘贴父项右缘、向左展开；
+// 回折（flip-left 的逻辑 inset 镜像）时左缘贴父项右缘、向右展开。两端点父项都要覆盖，
+// 且两种情况都不越 .menu 的裁切盒（overflow-x: clip）。light/dark 各一遍（dark 另查对比度）。
+for (const theme of ['light', 'dark'] as const) {
+  test(`menu 水平 RTL（${theme}）：第 1 个与最后 1 个父项面板贴父项右缘 ≤2px、不越 .menu 盒`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-menu')
+    await page.evaluate((dark) => {
+      document.documentElement.setAttribute('dir', 'rtl')
+      document.documentElement.classList.toggle('dark', dark)
+    }, theme === 'dark')
+    const data = await page.evaluate(async () => {
+      const h = document.createElement('oas-menu')
+      h.id = 'zz-menu-rtl-ends'
+      h.setAttribute('mode', 'horizontal')
+      h.style.cssText = 'position: fixed; top: 140px; left: 40px; width: 280px; z-index: 9999'
+      h.setAttribute(
+        'items',
+        JSON.stringify([
+          {
+            label: '首页',
+            value: 'home',
+            children: [
+              { label: '常见问题', value: 'faq' },
+              { label: '在线客服', value: 'chat' },
+            ],
+          },
+          { label: '产品中心', value: 'products' },
+          {
+            label: '帮助中心',
+            value: 'help',
+            children: [
+              { label: '使用指南', value: 'guide' },
+              { label: '接口文档', value: 'api' },
+            ],
+          },
+        ]),
+      )
+      document.body.appendChild(h)
+      await new Promise((r) => setTimeout(r, 400))
+      const menuEl = h.shadowRoot!.querySelector<HTMLElement>('.menu')!
+      const measure = async (v: string) => {
+        const li = menuEl.querySelector<HTMLElement>(`:scope > [part="item"][data-value="${v}"]`)!
+        li.dispatchEvent(new MouseEvent('mouseenter'))
+        await new Promise((r) => setTimeout(r, 260))
+        const sub = li.querySelector<HTMLElement>(':scope > .submenu')!
+        const mr = menuEl.getBoundingClientRect()
+        const ir = li.getBoundingClientRect()
+        const sr = sub.getBoundingClientRect()
+        const cs = getComputedStyle(sub)
+        const parse = (c: string) => c.match(/\d+/g)!.slice(0, 3).map(Number)
+        const lum = (rgb: number[]) => {
+          const f = (n: number) => {
+            n /= 255
+            return n <= 0.03928 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4
+          }
+          return 0.2126 * f(rgb[0]!) + 0.7152 * f(rgb[1]!) + 0.0722 * f(rgb[2]!)
+        }
+        const a = lum(parse(cs.color))
+        const b = lum(parse(cs.backgroundColor))
+        return {
+          v,
+          boxLeft: Math.round(mr.left),
+          boxRight: Math.round(mr.right),
+          itemRight: Math.round(ir.right),
+          panelLeft: Math.round(sr.left),
+          panelRight: Math.round(sr.right),
+          flip: sub.classList.contains('flip-left'),
+          dStart: Math.round(sr.right - ir.right), // 未回折：面板右缘应贴父项右缘
+          dFlip: Math.round(sr.left - ir.right), // 回折：面板左缘应贴父项右缘
+          color: cs.color,
+          bg: cs.backgroundColor,
+          ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+        }
+      }
+      // 第 1 个父项（RTL 最右）；量完 hover 无子级的「产品中心」收起
+      const first = await measure('home')
+      menuEl
+        .querySelector<HTMLElement>(':scope > [part="item"][data-value="products"]')!
+        .dispatchEvent(new MouseEvent('mouseenter'))
+      await new Promise((r) => setTimeout(r, 140))
+      // 最后 1 个父项（RTL 最左）
+      const last = await measure('help')
+      return { first, last, dataRtl: h.hasAttribute('data-rtl') }
+    })
+    expect(data.dataRtl, 'RTL 镜像开关应同步').toBe(true)
+    // 第 1 个父项（RTL 最右）：向左展开空间充足 → 不回折，右缘贴父项右缘
+    expect(data.first.flip, 'RTL 最右父项向左展开不越盒 → 不应回折').toBe(false)
+    expect(
+      Math.abs(data.first.dStart),
+      `RTL 未回折：面板右缘应贴父项右缘（偏差 ${data.first.dStart}px）`,
+    ).toBeLessThanOrEqual(2)
+    // 最后 1 个父项（RTL 最左）：向左展开越盒 → 回折，左缘贴父项右缘
+    expect(data.last.flip, 'RTL 最左父项向左展开越 .menu 左缘 → 应回折').toBe(true)
+    expect(
+      Math.abs(data.last.dFlip),
+      `RTL 回折：面板左缘应贴父项右缘（偏差 ${data.last.dFlip}px）`,
+    ).toBeLessThanOrEqual(2)
+    for (const r of [data.first, data.last]) {
+      expect(r.panelLeft, `RTL「${r.v}」面板左缘 ${r.panelLeft} 越出 .menu 盒左缘 ${r.boxLeft}`).toBeGreaterThanOrEqual(
+        r.boxLeft,
+      )
+      expect(r.panelRight, `RTL「${r.v}」面板右缘 ${r.panelRight} 越出 .menu 盒右缘 ${r.boxRight}`).toBeLessThanOrEqual(
+        r.boxRight,
+      )
+      expect(r.ratio, `${theme} 面板文字 ${r.color} 对底色 ${r.bg} 对比度`).toBeGreaterThanOrEqual(4.5)
+    }
+    // 截图留档：RTL 回折态（最后 1 个父项「帮助中心」）
+    await page.evaluate(async () => {
+      const h = document.querySelector('#zz-menu-rtl-ends')!
+      const menuEl = h.shadowRoot!.querySelector<HTMLElement>('.menu')!
+      const li = menuEl.querySelector<HTMLElement>(':scope > [part="item"][data-value="help"]')!
+      li.dispatchEvent(new MouseEvent('mouseenter'))
+      await new Promise((r) => setTimeout(r, 300))
+    })
+    await page.screenshot({ path: `test-results/visual-review/menu-rtl-flip-${theme}.png` })
+  })
+}
+
 test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项被误纳入收纳计算致自身 data-collapsed 隐藏）', async ({
   page,
 }) => {
