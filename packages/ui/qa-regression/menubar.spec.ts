@@ -188,3 +188,78 @@ test('menubar RTL：根级 dir=rtl 顶级下拉不溢出视口（data-rtl 面板
   expect(info.dataRtl, '打开面板时应同步 data-rtl 镜像开关').toBe(true)
   expect(info.right, `面板右缘 ${Math.round(info.right)} 越出视口 ${info.vw}`).toBeLessThanOrEqual(info.vw + 1)
 })
+
+// —— 回折边界普查（三缺陷之一）：bar 不是裁切容器，回折边界必须是视口 ——
+// 曾现缺陷（LTR）：回折右界取 min(视口, bar 右缘)——bar 落在面板必经路径上时，面板明明未越出
+// 视口也被判回折，三个顶级项面板一律左缘 = 触发器左缘 −118（全右对齐、落到组件左缘甚至组件外）。
+// 该缺陷在原 spec 里被「把 menubar 平移为 position:fixed;right:0」（此时 bar 在视口右缘、误判消失）
+// 掩盖；故此处**在页面自然位置**逐个顶级项断言：面板左缘跟随触发器、无 flip-right、不越视口。
+test('menubar 自然位置：顶级下拉左缘跟随触发器，不因 bar 盒宽误回折', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#menubar-basic')
+  const rows = await page.evaluate(async () => {
+    const mb = document.querySelector('#menubar-basic')!
+    const out: Array<{ v: string; dLeft: number; flip: boolean; panelRight: number; vw: number }> = []
+    for (const v of ['file', 'edit', 'view']) {
+      const trig = mb.shadowRoot!.querySelector<HTMLElement>(`.bar [part="top-item"][data-value="${v}"]`)!
+      trig.click()
+      await new Promise((r) => setTimeout(r, 160))
+      const sub = mb.shadowRoot!.querySelector<HTMLElement>(`.bar [part="submenu"][data-parent="${v}"]`)!
+      const tr = trig.getBoundingClientRect()
+      const sr = sub.getBoundingClientRect()
+      out.push({
+        v,
+        dLeft: Math.round(sr.left - tr.left),
+        flip: sub.classList.contains('flip-right'),
+        panelRight: Math.round(sr.right),
+        vw: window.innerWidth,
+      })
+      // 关闭再测下一项（外点收起）
+      document.body.click()
+      await new Promise((r) => setTimeout(r, 120))
+    }
+    return out
+  })
+  expect(rows.length).toBe(3)
+  for (const r of rows) {
+    expect(Math.abs(r.dLeft), `顶级「${r.v}」面板左缘应跟随触发器（实测偏差 ${r.dLeft}px）`).toBeLessThanOrEqual(2)
+    expect(r.flip, `顶级「${r.v}」面板未越出视口不应回折（bar 盒宽非回折边界）`).toBe(false)
+    expect(r.panelRight, `顶级「${r.v}」面板右缘 ${r.panelRight} 越出视口 ${r.vw}`).toBeLessThanOrEqual(r.vw)
+  }
+  await page.screenshot({ path: 'test-results/visual-review/menubar-natural-position-after.png' })
+})
+
+// 曾现缺陷（RTL 镜像）：回折左界取 max(margin, bar 左缘)+margin，且回折后不再校验视口 →
+// RTL 点位于 bar 最右的「文件」时面板 [1134,1304]，右缘越出视口 24px。
+test('menubar RTL：bar 最右项下拉不越视口右缘（回折边界取视口 + 回折后二次校验）', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menubar')
+  await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'))
+  const info = await page.evaluate(async () => {
+    const mb = document.querySelector('#menubar-basic')!
+    // RTL 书写起点在右：bar 最右的顶级项 = rect.right 最大者
+    const triggers = [...mb.shadowRoot!.querySelectorAll<HTMLElement>('.bar [part="top-item"]')]
+    const trig = triggers.reduce((a, b) => (a.getBoundingClientRect().right >= b.getBoundingClientRect().right ? a : b))
+    const tr = trig.getBoundingClientRect()
+    trig.click()
+    await new Promise((r) => setTimeout(r, 250))
+    const sub = mb.shadowRoot!.querySelector<HTMLElement>('.bar [part="submenu"].open')!
+    const sr = sub.getBoundingClientRect()
+    return {
+      trigValue: trig.dataset.value,
+      trigRight: Math.round(tr.right),
+      panelLeft: Math.round(sr.left),
+      panelRight: Math.round(sr.right),
+      flip: sub.classList.contains('flip-right'),
+      vw: window.innerWidth,
+    }
+  })
+  // 未回折左缘 = 触发器右缘 − 面板宽，仍在视口内 → 不应回折（旧实现按 bar 左缘误判回折 → 右溢 24px）
+  expect(info.flip, `RTL「${info.trigValue}」未回折左缘未越视口左缘 → 不应回折`).toBe(false)
+  expect(info.panelLeft, '面板左缘应在视口内').toBeGreaterThanOrEqual(0)
+  expect(info.panelRight, `面板右缘 ${info.panelRight} 越出视口 ${info.vw}`).toBeLessThanOrEqual(info.vw)
+  expect(info.trigRight, '面板右缘应贴触发器右缘（RTL 缺省右对齐）').toBeLessThanOrEqual(info.panelRight + 2)
+  await page.screenshot({ path: 'test-results/visual-review/menubar-rtl-rightmost.png' })
+})

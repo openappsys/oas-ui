@@ -493,6 +493,31 @@ describe('OASDropdown 12 向 placement', () => {
     expect(anchorEl(end).style.left).toBe('280px') // 锚点右缘 480 - 面板宽 200
   })
 
+  // RTL 回归：start/end 是逻辑语义（引擎按 direction 镜像），面板 -start 在 RTL 下必须
+  // 右缘对齐触发器右缘；data-placement 取引擎返回值（与 date-picker 同口径）而非入参。
+  // 曾现缺陷：交叉轴对齐用物理边覆写（RTL 仍左对齐）+ data-placement 回写入参 → 两种口径都错。
+  it('RTL：bottom-start 镜像为右缘对齐（data-placement=bottom-end，与引擎返回一致）', () => {
+    document.documentElement.setAttribute('dir', 'rtl')
+    try {
+      const el = mountOpen({ placement: 'bottom-start' })
+      expect(anchorEl(el).getAttribute('data-placement')).toBe('bottom-end')
+      expect(anchorEl(el).style.left).toBe('280px') // 锚点右缘 480 - 面板宽 200
+    } finally {
+      document.documentElement.removeAttribute('dir')
+    }
+  })
+
+  it('RTL：bottom-end 镜像为左缘对齐（Logical start/end 双向）', () => {
+    document.documentElement.setAttribute('dir', 'rtl')
+    try {
+      const el = mountOpen({ placement: 'bottom-end' })
+      expect(anchorEl(el).getAttribute('data-placement')).toBe('bottom-start')
+      expect(anchorEl(el).style.left).toBe('400px') // 锚点左缘
+    } finally {
+      document.documentElement.removeAttribute('dir')
+    }
+  })
+
   it('right-start：面板上缘对齐锚点上缘；top-end：下缘对齐', () => {
     const rs = mountOpen({ placement: 'right-start' })
     expect(anchorEl(rs).getAttribute('data-placement')).toBe('right-start')

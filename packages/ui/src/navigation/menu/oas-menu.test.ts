@@ -294,7 +294,8 @@ describe('OASMenu', () => {
     expect(css).toMatch(/:host\(\[mode='horizontal'\]\)\s*\.menu\s*\{[^}]*flex-direction:\s*row/)
     // 一级子菜单向下浮出
     expect(css).toMatch(/\.submenu-1\s*\{[^}]*top:\s*100%/)
-    expect(css).toMatch(/\.submenu-1\s*\{[^}]*left:\s*0/)
+    // 逻辑 inset（LTR 等价 left:0；RTL 镜像为贴父项右缘）
+    expect(css).toMatch(/\.submenu-1\s*\{[^}]*inset-inline-start:\s*0/)
     // 展开一级子菜单：带 submenu-1 类，内容为完整菜单
     items(el)[0]!.click()
     const sub = submenuEl(el)!
@@ -545,6 +546,73 @@ describe('OASMenu', () => {
     file.dispatchEvent(new MouseEvent('mouseenter'))
     expect(fileSub.classList.contains('flip-left')).toBe(false)
     expect(fileSub.classList.contains('flip-up')).toBe(false)
+  })
+})
+
+// ===== 水平模式回折边界取容器盒（overflow-x: clip 是真实裁切边界） =====
+// 曾现缺陷：水平模式回折判定只看视口，而 .menu 有 overflow-x: clip —— 子菜单越出 .menu
+// 盒缘的那一段被真实裁掉（rect/display 正常但视觉不可见）。水平模式边界须取「视口 ∩ .menu 盒」；
+// 竖向 / inline 无横轴裁剪，边界仍只取视口（面板允许越出自身盒）。
+describe('水平模式回折边界取容器盒', () => {
+  it('LTR：面板越出 .menu 右缘即回折（视口远未越界也要回折）', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const menuEl = el.shadowRoot!.querySelector<HTMLElement>('.menu')!
+    stubRect(menuEl, { left: 0, top: 0, right: 300, bottom: 40, width: 300, height: 40 })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 160, top: 0, right: 260, bottom: 36, width: 100, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    // 未回折面板（水平一级贴父项左缘）：[160,300] → 右缘 300 越出 .menu 右缘 300 - 8 安全边距
+    stubRect(sub, { left: 160, top: 40, right: 300, bottom: 180, width: 140, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.classList.contains('submenu-1')).toBe(true)
+    expect(sub.classList.contains('flip-left'), '越出 .menu 右缘必须回折（视口 1280 远未越界）').toBe(true)
+  })
+
+  it('LTR：未越出 .menu 右缘不回折（容器内富余空间不误判）', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const menuEl = el.shadowRoot!.querySelector<HTMLElement>('.menu')!
+    stubRect(menuEl, { left: 0, top: 0, right: 300, bottom: 40, width: 300, height: 40 })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 10, top: 0, right: 110, bottom: 36, width: 100, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(sub, { left: 10, top: 40, right: 150, bottom: 180, width: 140, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.classList.contains('flip-left')).toBe(false)
+  })
+
+  it('竖向模式不受 .menu 盒约束（无横轴裁剪：越出容器但不越视口仍不回折）', () => {
+    stubViewport(1280, 800)
+    const el = mount({ items: NESTED_ITEMS })
+    const menuEl = el.shadowRoot!.querySelector<HTMLElement>('.menu')!
+    stubRect(menuEl, { left: 0, top: 0, right: 100, bottom: 40, width: 100, height: 40 })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 10, top: 40, right: 170, bottom: 76, width: 160, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(sub, { left: 170, top: 36, right: 400, bottom: 176, width: 230, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.classList.contains('flip-left'), '竖向面板越出 .menu 盒缘但不越视口 → 不应回折').toBe(false)
+  })
+
+  it('RTL：水平模式回折边界取 .menu 左缘（镜像）', () => {
+    document.documentElement.setAttribute('dir', 'rtl')
+    try {
+      stubViewport(1280, 800)
+      const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+      expect(el.hasAttribute('data-rtl')).toBe(true)
+      const menuEl = el.shadowRoot!.querySelector<HTMLElement>('.menu')!
+      stubRect(menuEl, { left: 200, top: 0, right: 600, bottom: 40, width: 400, height: 40 })
+      const parent = topItems(el)[0]!
+      stubRect(parent, { left: 240, top: 0, right: 340, bottom: 36, width: 100, height: 36 })
+      const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+      // RTL 未回折：面板右缘贴父项右缘、向左展开 → [200,340] 左缘 200 < .menu 左缘 200 + 8 安全边距
+      stubRect(sub, { left: 200, top: 40, right: 340, bottom: 180, width: 140, height: 140 })
+      parent.dispatchEvent(new MouseEvent('mouseenter'))
+      expect(sub.classList.contains('flip-left'), 'RTL 越出 .menu 左缘必须回折').toBe(true)
+    } finally {
+      document.documentElement.removeAttribute('dir')
+    }
   })
 })
 

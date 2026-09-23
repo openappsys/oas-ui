@@ -62,6 +62,141 @@ test('menu 水平模式子菜单浮层不被裁剪——.menu 容器 overflow-x:
   expect(result!.hitIsHost, `子菜单区域应命中菜单宿主（实际命中 ${result!.hitTag}）`).toBe(true)
 })
 
+// —— 回折边界普查（三缺陷之二）：水平模式 .menu 有 overflow-x: clip，是真实裁切边界 ——
+// 曾现缺陷：水平模式回折判定只看视口，末项子菜单越出 .menu 右缘的那一段被 clip 真实裁掉
+// （rect/display 正常但视觉不可见，elementFromPoint 命中页面元素）。边界须取「视口 ∩ .menu 盒」。
+// 场景：容器 380 宽收纳演示的同一类窄容器（改 280 宽 + 末项带子级，保证末项可见且面板越出盒缘）。
+test('menu 水平模式：末项子菜单右缘不越 .menu 盒右缘且真实可见（未被 overflow-x:clip 裁掉）', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  const data = await page.evaluate(async () => {
+    const h = document.createElement('oas-menu')
+    h.id = 'zz-menu-clip'
+    h.setAttribute('mode', 'horizontal')
+    // fixed 定位：保证落在视口内，elementFromPoint 才能命中（body 末尾追加会落到折叠线外 → null）
+    h.style.cssText = 'position: fixed; top: 120px; left: 40px; width: 280px; z-index: 9999'
+    h.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '首页', value: 'home' },
+        { label: '产品中心', value: 'products' },
+        {
+          label: '帮助中心',
+          value: 'help',
+          children: [
+            { label: '常见问题', value: 'faq' },
+            { label: '在线客服', value: 'chat' },
+          ],
+        },
+      ]),
+    )
+    document.body.appendChild(h)
+    await new Promise((r) => setTimeout(r, 400))
+    const menu = h.shadowRoot!.querySelector<HTMLElement>('.menu')!
+    const li = menu.querySelector<HTMLElement>(':scope > [part="item"][data-value="help"]')!
+    li.dispatchEvent(new MouseEvent('mouseenter'))
+    await new Promise((r) => setTimeout(r, 250))
+    const sub = li.querySelector<HTMLElement>(':scope > .submenu')!
+    const mr = menu.getBoundingClientRect()
+    const ir = li.getBoundingClientRect()
+    const sr = sub.getBoundingClientRect()
+    const hit = document.elementFromPoint(sr.x + sr.width - 6, sr.y + Math.min(sr.height / 2, 30))
+    return {
+      menuLeft: Math.round(mr.left),
+      menuRight: Math.round(mr.right),
+      itemLeft: Math.round(ir.left),
+      panelLeft: Math.round(sr.left),
+      panelRight: Math.round(sr.right),
+      flipLeft: sub.classList.contains('flip-left'),
+      overflowX: getComputedStyle(menu).overflowX,
+      hitIsHost: hit === h,
+      hitTag: hit?.tagName ?? null,
+      collapsed: li.hasAttribute('data-collapsed'),
+    }
+  })
+  expect(data.collapsed, '末项应可见（未被收纳）').toBe(false)
+  expect(data.overflowX, '容器应只裁横轴（clip）').toBe('clip')
+  expect(data.flipLeft, '面板越出 .menu 右缘 → 必须回折（视口 1280 远未越界）').toBe(true)
+  expect(
+    data.panelRight,
+    `面板右缘 ${data.panelRight} 越出 .menu 右缘 ${data.menuRight}（被 overflow-x:clip 裁掉）`,
+  ).toBeLessThanOrEqual(data.menuRight + 1)
+  expect(data.panelLeft, `面板左缘 ${data.panelLeft} 越出 .menu 左缘 ${data.menuLeft}`).toBeGreaterThanOrEqual(
+    data.menuLeft - 1,
+  )
+  // 回折 = 面板右缘贴父项左缘（LTR 逻辑镜像）
+  expect(Math.abs(data.panelRight - data.itemLeft), '回折后面板右缘应贴父项左缘').toBeLessThanOrEqual(2)
+  // 真实命中：面板区域必须命中菜单宿主（若被裁会命中页面元素）
+  expect(data.hitIsHost, `面板区域应命中菜单宿主（实际命中 ${data.hitTag}）`).toBe(true)
+  await page.screenshot({ path: 'test-results/visual-review/menu-horizontal-clip-after.png' })
+})
+
+// RTL 复测：水平模式 .submenu-1 的定位逻辑 inset 化后，RTL 回折镜像为「面板左缘贴父项右缘」，
+// 且同样不越 .menu 左缘、真实可见（普查未覆盖 RTL 分支）。
+test('menu 水平模式 RTL：回折镜像为面板左缘贴父项右缘，不越 .menu 盒左缘且真实可见', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'))
+  const data = await page.evaluate(async () => {
+    const h = document.createElement('oas-menu')
+    h.id = 'zz-menu-clip-rtl'
+    h.setAttribute('mode', 'horizontal')
+    // fixed 定位：保证落在视口内，elementFromPoint 才能命中（body 末尾追加会落到折叠线外 → null）
+    h.style.cssText = 'position: fixed; top: 120px; left: 40px; width: 280px; z-index: 9999'
+    h.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '首页', value: 'home' },
+        { label: '产品中心', value: 'products' },
+        {
+          label: '帮助中心',
+          value: 'help',
+          children: [
+            { label: '常见问题', value: 'faq' },
+            { label: '在线客服', value: 'chat' },
+          ],
+        },
+      ]),
+    )
+    document.body.appendChild(h)
+    await new Promise((r) => setTimeout(r, 400))
+    const menu = h.shadowRoot!.querySelector<HTMLElement>('.menu')!
+    // RTL 下末项（帮助中心）位于最左
+    const li = menu.querySelector<HTMLElement>(':scope > [part="item"][data-value="help"]')!
+    li.dispatchEvent(new MouseEvent('mouseenter'))
+    await new Promise((r) => setTimeout(r, 250))
+    const sub = li.querySelector<HTMLElement>(':scope > .submenu')!
+    const mr = menu.getBoundingClientRect()
+    const ir = li.getBoundingClientRect()
+    const sr = sub.getBoundingClientRect()
+    const hit = document.elementFromPoint(sr.x + 6, sr.y + Math.min(sr.height / 2, 30))
+    return {
+      dataRtl: h.hasAttribute('data-rtl'),
+      menuLeft: Math.round(mr.left),
+      menuRight: Math.round(mr.right),
+      itemRight: Math.round(ir.right),
+      panelLeft: Math.round(sr.left),
+      panelRight: Math.round(sr.right),
+      flipLeft: sub.classList.contains('flip-left'),
+      hitIsHost: hit === h,
+      hitTag: hit?.tagName ?? null,
+    }
+  })
+  expect(data.dataRtl, 'RTL 镜像开关应同步').toBe(true)
+  expect(data.flipLeft, 'RTL 面板未回折左缘越 .menu 左缘 → 必须回折').toBe(true)
+  expect(data.panelLeft, `面板左缘 ${data.panelLeft} 越出 .menu 左缘 ${data.menuLeft}`).toBeGreaterThanOrEqual(
+    data.menuLeft - 1,
+  )
+  expect(data.panelRight, `面板右缘 ${data.panelRight} 越出 .menu 右缘 ${data.menuRight}`).toBeLessThanOrEqual(
+    data.menuRight + 1,
+  )
+  // RTL 回折 = 面板左缘贴父项右缘
+  expect(Math.abs(data.panelLeft - data.itemRight), 'RTL 回折后面板左缘应贴父项右缘').toBeLessThanOrEqual(2)
+  expect(data.hitIsHost, `面板区域应命中菜单宿主（实际命中 ${data.hitTag}）`).toBe(true)
+})
+
 test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项被误纳入收纳计算致自身 data-collapsed 隐藏）', async ({
   page,
 }) => {

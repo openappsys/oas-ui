@@ -320,6 +320,14 @@ a.item:visited {
   bottom: calc(100% + var(--oas-space-1));
   margin-top: 0;
 }
+/* 水平模式一级子菜单回折：.submenu-1 定位规则特异性 (0,3,0) 压过通用 .submenu.flip-left
+   (0,2,0)——必须给同权规则，否则 flip-left 的逻辑 inset 被 inset-inline-start: 0 覆盖，
+   类名切了面板不动（越过 .menu 右缘仍被 overflow-x: clip 裁掉）。逻辑 inset 使 RTL 自动镜像。
+   :not(.menu-more-sub) 排除「···」收纳弹层——它固定右对齐其收纳项右缘（见上方规则），不参与回折。 */
+:host([mode='horizontal']) .submenu-1.flip-left:not(.menu-more-sub) {
+  inset-inline-start: auto;
+  inset-inline-end: 100%;
+}
 /* 水平模式：顶部导航条样式，菜单项横排 */
 :host([mode='horizontal']) {
   display: inline-block;
@@ -339,10 +347,11 @@ a.item:visited {
   overflow-x: clip;
   overflow-y: visible;
 }
-/* 水平模式一级子菜单向下浮出；二级及以上仍向右 */
+/* 水平模式一级子菜单向下浮出；二级及以上仍向右。逻辑 inset：LTR 贴父项左缘、RTL 贴父项
+   右缘（书写起点侧），与浮出子菜单的书写方向约定一致（物理 left:0 在 RTL 下不镜像） */
 :host([mode='horizontal']) .submenu-1 {
   top: 100%;
-  left: 0;
+  inset-inline-start: 0;
   margin-top: var(--oas-space-1);
 }
 /* 收起态（仅 vertical）：菜单收窄只显示图标 */
@@ -933,8 +942,14 @@ export class OASMenu extends OASElement {
   }
 
   /**
-   * 子菜单视口边界翻转：父项右侧剩余空间不足时向左展开（flip-left）、
+   * 子菜单回折/上弹边界翻转：行内轴前方空间不足时翻到另一侧（flip-left）、
    * 底部空间不足时向上展开（flip-up）。翻转由样式表类表达，本方法只做测量与切类。
+   *
+   * 边界按「组件是否裁切」区分：水平模式 `.menu` 有 `overflow-x: clip`（浮层越出盒缘的那段被
+   * 真实裁掉，rect/display 正常但视觉不可见）→ 行内轴边界取「视口 ∩ .menu 盒」；
+   * 竖向 / inline 无横轴裁剪（溢出可见，面板允许越出自身盒）→ 行内轴边界只取视口。
+   * 垂直向一律按视口判定（两种模式都无纵轴裁剪）。
+   * 零宽守卫：SSR/未布局环境 .menu rect 全 0，按盒缘判定会误回折 → 回退视口。
    * 多级嵌套逐级检测：querySelectorAll 按 DOM 序遍历（外层先于内层），外层翻转先生效，
    * 内层 rect 反映翻转后的真实布局，因此第三级及以上同样逐级判定。
    */
@@ -944,16 +959,20 @@ export class OASMenu extends OASElement {
     const vw = window.innerWidth
     const vh = window.innerHeight
     const rtl = isRtl(this)
+    const horizontal = this.getAttr('mode') === 'horizontal'
+    const menuRect = horizontal ? this.menuEl.getBoundingClientRect() : null
+    const inBox = menuRect != null && menuRect.width > 0
+    const rightBound = Math.min(vw, inBox ? menuRect!.right : vw) - margin
+    const leftBound = Math.max(0, inBox ? menuRect!.left : 0) + margin
     for (const item of this.menuEl.querySelectorAll<HTMLElement>('.item.open')) {
       const sub = item.querySelector<HTMLElement>(':scope > .submenu')
       if (!sub) continue
-      const itemRect = item.getBoundingClientRect()
+      // 先复位回折类再测量：未回折形态的缘才是「前方空间不足」的正确判据
+      // （已回折的 rect 会自我印证，条件消失时回不去）
+      sub.classList.remove('flip-left')
       const subRect = sub.getBoundingClientRect()
       // 行内轴前方空间不足 → 翻到另一侧（LTR 检右缘溢出、RTL 检左缘溢出）
-      sub.classList.toggle(
-        'flip-left',
-        rtl ? itemRect.left - subRect.width < margin : itemRect.right + subRect.width > vw - margin,
-      )
+      sub.classList.toggle('flip-left', rtl ? subRect.left < leftBound : subRect.right > rightBound)
       // 重新测量（水平翻转已生效），垂直向同样按实际布局判定
       const subRectV = sub.getBoundingClientRect()
       sub.classList.toggle('flip-up', subRectV.bottom > vh - margin)
