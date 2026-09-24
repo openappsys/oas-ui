@@ -96,6 +96,9 @@ const STYLE = `
   vertical-align: middle;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 kbd {
   display: inline-flex;
   align-items: center;

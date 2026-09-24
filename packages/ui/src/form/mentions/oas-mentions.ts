@@ -34,6 +34,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .wrapper {
   position: relative;
 }

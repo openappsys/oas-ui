@@ -60,6 +60,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 button {
   appearance: none;
   box-sizing: border-box;

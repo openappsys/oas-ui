@@ -6,6 +6,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 /* block 块级：宿主占满一行，wrap 撑满宿主 */
 :host([block]) {
   display: block;

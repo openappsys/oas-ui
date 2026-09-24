@@ -4,6 +4,9 @@ const STYLE = `
 :host {
   display: none;
 }
+:host([hidden]) {
+  display: none;
+}
 :host([open]) {
   display: block;
 }

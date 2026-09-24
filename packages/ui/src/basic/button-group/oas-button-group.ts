@@ -8,6 +8,9 @@ const STYLE = `
   vertical-align: middle;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 [part='group'] {
   display: inline-flex;
 }

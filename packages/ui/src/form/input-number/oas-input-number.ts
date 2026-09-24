@@ -26,6 +26,9 @@ const STYLE = `
   --oas-input-number-height: var(--oas-control-height-md);
   --oas-input-number-font: var(--oas-font-size-md);
 }
+:host([hidden]) {
+  display: none;
+}
 :host([size='sm']) {
   --oas-input-number-height: var(--oas-control-height-sm);
   --oas-input-number-font: var(--oas-font-size-sm);

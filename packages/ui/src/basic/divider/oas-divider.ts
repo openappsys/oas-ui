@@ -56,6 +56,9 @@ const STYLE = `
   width: 100%;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 :host([direction='vertical']) {
   display: inline-block;
   width: auto;

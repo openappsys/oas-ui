@@ -56,6 +56,9 @@ const STYLE = `
   /* 尺寸档位变量（宿主可直接覆盖做细调）：small=16 / medium=20（默认）/ large=28 */
   --oas-rate-star-size: 20px;
 }
+:host([hidden]) {
+  display: none;
+}
 :host([data-size='small']) {
   --oas-rate-star-size: 16px;
 }

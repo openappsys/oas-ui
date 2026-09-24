@@ -147,6 +147,9 @@ const SEPARATOR_STYLE = `
 :host {
   display: flex;
 }
+:host([hidden]) {
+  display: none;
+}
 ::slotted(.oas-space-separator) {
   display: inline-flex;
   align-items: center;

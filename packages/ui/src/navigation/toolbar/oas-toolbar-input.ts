@@ -5,6 +5,9 @@ const STYLE = `
   display: inline-flex;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .input {
   box-sizing: border-box;
   width: var(--oas-toolbar-input-width, 120px);

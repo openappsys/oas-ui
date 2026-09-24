@@ -52,6 +52,9 @@ const STYLE = `
   max-width: 100%;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 label {
   display: inline-flex;
   align-items: baseline;

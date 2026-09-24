@@ -109,6 +109,9 @@ const STYLE = `
   /* 非范围面板的收窄宽度（月/年/季面板与日网格统一 240；内部变量，不占公开 API） */
   --_dp-narrow-w: 240px;
 }
+:host([hidden]) {
+  display: none;
+}
 :host([data-size='small']) {
   --_ch: var(--oas-control-height-sm);
 }

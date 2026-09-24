@@ -231,6 +231,9 @@ const STYLE = `
   position: relative;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .badge {
   position: absolute;
   top: 0;

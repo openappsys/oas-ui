@@ -281,7 +281,8 @@ export class OASGrid extends OASElement {
     const columns = this.getAttr('columns', '')
     const minChildWidth = this.getAttr('min-child-width', '')
     const cols = Number(this.getAttr('cols', '24')) || 24
-    this.style.display = 'grid'
+    // :host 已设 display: grid；hidden 时不得写内联 display——内联压过 :host([hidden]) 兜底
+    if (!this.hasAttr('hidden')) this.style.display = 'grid'
     this.applyGap()
     this.applyAlignment()
 

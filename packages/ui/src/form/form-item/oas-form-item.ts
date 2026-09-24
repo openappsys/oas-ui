@@ -7,6 +7,9 @@ const STYLE = `
   font-family: inherit;
   min-width: 0;
 }
+:host([hidden]) {
+  display: none;
+}
 .field {
   display: flex;
   flex-direction: column;

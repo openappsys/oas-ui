@@ -9,6 +9,9 @@ const STYLE = `
   display: block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .placeholder {
   display: block;
 }

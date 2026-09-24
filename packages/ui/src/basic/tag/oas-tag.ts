@@ -54,6 +54,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 :host([clickable]:focus-visible) .tag,
 :host([checkable]:focus-visible) .tag {
   outline: none;

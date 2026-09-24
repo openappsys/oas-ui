@@ -21,6 +21,9 @@ const STYLE = `
   --oas-toast-leave-duration: 0.2s;
   --oas-toast-ease: ease;
 }
+:host([hidden]) {
+  display: none;
+}
 /* 受控关闭态：open="false" 整卡隐藏（声明式用法），计时随之暂停 */
 :host([open='false']) {
   display: none;

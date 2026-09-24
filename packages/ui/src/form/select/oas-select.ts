@@ -100,6 +100,9 @@ const STYLE = `
   /* 下拉高度 CSS 变量开口：宿主覆盖即可调高（默认 240px），不占属性 API */
   --oas-select-dropdown-height: 240px;
 }
+:host([hidden]) {
+  display: none;
+}
 :host([data-size='small']) {
   --_ch: var(--oas-control-height-sm);
 }

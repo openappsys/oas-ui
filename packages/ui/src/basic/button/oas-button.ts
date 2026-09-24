@@ -53,6 +53,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 :host([block]) {
   display: block;
   width: 100%;

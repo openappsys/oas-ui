@@ -4,6 +4,10 @@
 
 ## [未发布]
 
+### 修复
+
+- **`[hidden]` 兜底全量收口（79 文件/66 组件实证）**：`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden]` 规则——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。CDN 全量实测 163 组件中 66 个失效（含 button/icon/tag/input/select 等高频件；2.5.6 曾按报障收口 8 处，系症状驱动的局部收口）；本次全量补齐同款规则，另修 oas-grid 内联 `display` 压过兜底、oas-anchor-target（单文件多组件漏网）两处边角。新增 style-conventions 源码级守卫（逐样式字面量粒度，防新组件再漏）+ 实测 sweep 复验归零
+
 ### 变更
 
 - **RTL 全量视觉审计（117 组件页 sweep + 识图 triage）**：新增 `scripts/e2e/rtl-audit.mjs`——LTR/RTL 双跑几何检查取差集（横向溢出/demo 越界）、整页截图产出供识图复核；`dir=rtl` 于文档解析期注入（真实 RTL 应用形态），文档站壳层中性化排除站点自身噪声。几何层 117/117 全净；识图 triage 候选经 DOM/几何量测逐项定责后修复 5 处：

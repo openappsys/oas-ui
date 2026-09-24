@@ -51,6 +51,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 a {
   display: inline-flex;
   align-items: center;

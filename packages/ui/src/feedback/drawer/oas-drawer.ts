@@ -58,6 +58,9 @@ const STYLE = `
 :host {
   display: block;
 }
+:host([hidden]) {
+  display: none;
+}
 .mask {
   position: fixed;
   inset: 0;

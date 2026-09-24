@@ -36,6 +36,9 @@ const STYLE = `
   /* 条纹周期默认随轨道高度自适应（2.5 倍高度），可整体覆盖 */
   --oas-progress-stripe-size: calc(var(--oas-progress-height, var(--oas-space-2)) * 2.5);
 }
+:host([hidden]) {
+  display: none;
+}
 /* 状态色统一走 --oas-progress-color（host 层定义，bar/环/分段/缓冲/图标全继承）；
    color 属性注入 host 内联变量，具体度更高，优先于状态规则 */
 :host([data-status='success']),

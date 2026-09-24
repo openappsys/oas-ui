@@ -73,6 +73,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .group {
   display: inline-flex;
   flex-wrap: wrap;

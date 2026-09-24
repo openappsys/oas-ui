@@ -5,6 +5,9 @@ const DIVIDER_STYLE = `
   /* 数据载体：自身不渲染任何可视内容，由 <oas-menubar> 解析为 type:"divider" 后统一渲染 */
   display: none;
 }
+:host([hidden]) {
+  display: none;
+}
 `
 
 /**

@@ -1404,6 +1404,24 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 单测：qrcode 域 77 用例全绿（新增体积回归守卫「dots 总量 < square × 1.5」、userSpaceOnUse 映射坐标断言）；typecheck / build 全绿
 - e2e：qa-regression 像素级定位图形覆盖（栅格化数暗模块）+ download 产物结构 + pattern 内 `var()` 填充计算值实抓（防静默退黑）全过；visual 基线零漂移；console-sweep 零告警；SSR 真水合 13 用例全绿
 
+## `[hidden]` 兜底全量收口（未发布）
+
+### 背景与实证
+
+`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden] { display: none }`——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。2.5.6 曾按报障收口 8 处（症状驱动）；本次 CDN 全量包浏览器实证（163 组件逐个设 `hidden` 读计算 display）发现 **66 个组件失效**（button/icon/tag/space/divider/input/select/date-picker 等全部在列，含 templates 仓字段报告的 button 色块问题），静态扫描与文档站按组件 ESM 复测三路交叉验证一致。
+
+### 修复
+
+- **79 个组件源文件**全量补 `:host([hidden]) { display: none; }`（与既有 80 个组件同款，特异性压过 :host 即可，无需 !important）
+- **oas-grid 边角**：update() 内联写 `style.display = 'grid'` 压过 shadow 兜底 → 改为 hidden 时跳过内联写入
+- **oas-anchor-target 边角**：单文件多组件（AnchorTarget 独立 shadow root）漏网 → 补规则，守卫升级为逐样式字面量粒度
+- **守卫固化**：style-conventions 新增源码级断言（凡 :host display 样式字面量必须带 `:host([hidden])`），防新组件再漏
+- 已知非缺陷：oas-backdrop 无 `open` 时自卸载（无孤儿 DOM 设计），实证 sweep 中其「空 display」为断连伪影
+
+### 验收
+
+- 实测 sweep：163 组件 broken 66 → 1（仅剩 backdrop 伪影）；全量单测 7413 全绿；typecheck / build 全绿
+
 ## RTL 全量视觉审计（未发布）
 
 ### 范围与方法

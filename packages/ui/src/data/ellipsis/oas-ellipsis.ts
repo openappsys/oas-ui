@@ -8,6 +8,9 @@ const STYLE = `
   max-width: 100%;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .root {
   display: block;
   max-width: 100%;

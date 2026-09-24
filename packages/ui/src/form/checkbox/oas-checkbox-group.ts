@@ -28,6 +28,9 @@ const STYLE = `
   display: block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 fieldset {
   border: none;
   padding: 0;
