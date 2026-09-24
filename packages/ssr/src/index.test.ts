@@ -1142,6 +1142,32 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('事件一')
   })
 
+  it('嵌套序列化：stepper > stepper-panel（current 联动 hidden 同步 + 步骤头直出 + 嵌套 DSD）', async () => {
+    const html = await renderToString(
+      'oas-stepper',
+      {
+        steps: '[{"title":"填写信息"},{"title":"确认订单"},{"title":"完成支付"}]',
+        current: '1',
+      },
+      '<oas-stepper-panel value="0">第一步内容</oas-stepper-panel><oas-stepper-panel value="1">第二步内容</oas-stepper-panel>',
+    )
+    expect(html).toContain('<meta data-oas-ssr="oas-stepper" data-oas-ssr-v="1">')
+    // 两个面板都被序列化（含子组件指纹）
+    const count = (html.match(/data-oas-ssr="oas-stepper-panel"/g) ?? []).length
+    expect(count).toBe(2)
+    // 非激活面板（value=0 ≠ current=1）hidden 同步保留（同 tabs 契约）；激活面板不带 hidden
+    // （断言与属性顺序无关——不同 DOM 实现的序列化顺序不同）
+    const panel0 = html.match(/<oas-stepper-panel[^>]*value="0"[^>]*>/)![0]
+    const panel1 = html.match(/<oas-stepper-panel[^>]*value="1"[^>]*>/)![0]
+    expect(panel0).toContain('hidden')
+    expect(panel1).not.toContain('hidden')
+    // 面板内容与步骤头标题直出
+    expect(html).toContain('第一步内容')
+    expect(html).toContain('第二步内容')
+    expect(html).toContain('填写信息')
+    expect(html).toContain('确认订单')
+  })
+
   it('嵌套序列化：layout > sider/header/content/footer（layout 多 tag 组件，各子 tag 独立 DSD）', async () => {
     const html = await renderToString(
       'oas-layout',
