@@ -548,6 +548,15 @@ test.beforeAll(async () => {
       '<oas-grid-item span="12"><p>左</p></oas-grid-item><oas-grid-item span="12"><p>右</p></oas-grid-item>',
     ),
     renderToString('oas-tree', { data: NESTED_COMBO_ITEMS }, '', { locale: 'zh-CN' }),
+    renderToString(
+      'oas-stepper',
+      {
+        steps: '[{"title":"填写信息"},{"title":"确认订单"},{"title":"完成支付"}]',
+        current: '1',
+      },
+      '<oas-stepper-panel value="0">第一步内容</oas-stepper-panel><oas-stepper-panel value="1">第二步内容</oas-stepper-panel>',
+      { locale: 'zh-CN' },
+    ),
   ])
 
   dsdHtml = `<!doctype html>
@@ -1128,6 +1137,27 @@ test('数据展示组件事件可触发：upgrade 后 oas-carousel 切换 / oas-
   expect(initial).toMatch(/^\d{2}:\d{2}:\d{2}$/)
   await page.waitForTimeout(1300)
   await expect.poll(async () => page.locator('oas-countdown [part="display"]').first().textContent()).not.toBe(initial)
+})
+
+test('stepper 真水合：DSD 快照升级后面板显隐联动可交互（点击步骤头切换面板）', async ({ page }) => {
+  await openPage(page)
+  await upgradeUi(page)
+
+  const stepper = page.locator('oas-stepper').first()
+  // 快照态：current=1 → 面板 1 可见、面板 0 hidden（水合前快照即如此，升级后契约不变）
+  await expect(stepper.locator('oas-stepper-panel[value="0"]')).toBeHidden()
+  await expect(stepper.locator('oas-stepper-panel[value="1"]')).toBeVisible()
+
+  // 点击第 3 步头（linear 缺省 false 可跳）→ current 同步 + 面板切换（升级后事件链路存活）
+  await stepper.getByText('完成支付').click()
+  await expect(stepper).toHaveAttribute('current', '2')
+  await expect(stepper.locator('oas-stepper-panel[value="1"]')).toBeHidden()
+  await expect(stepper.locator('oas-stepper-panel').filter({ hasText: '第二步内容' })).toBeHidden()
+  // current=2 时无匹配面板 → 全部面板 hidden（快照只有 0/1 两面板）
+  const anyVisible = await stepper
+    .locator('oas-stepper-panel')
+    .evaluateAll((els) => els.some((el) => !(el as HTMLElement).hidden))
+  expect(anyVisible, 'current=2 无匹配面板，全部面板应收起').toBe(false)
 })
 
 test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义、快照含真水合指纹', async () => {

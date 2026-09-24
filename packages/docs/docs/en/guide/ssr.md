@@ -329,7 +329,7 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 - Whitelist (pure-presentation components, declarative-data components, the
   layout-measuring pilot, form components batch 1, feedback components
   batch 2, data-display components batch 3, navigation/layout components
-  batch 4, and whitelist-finalization batch 5 — 127 tags in total):
+  batch 4, and whitelist-finalization batch 5 — 129 tags in total):
   `oas-button`, `oas-tag`, `oas-tag-group`,
   `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`,
   `oas-table`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`,

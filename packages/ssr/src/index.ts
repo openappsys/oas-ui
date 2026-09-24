@@ -214,6 +214,9 @@ export const WHITELIST = [
   'oas-app',
   // —— 未发布批次：导航组件（app-bar 应用栏，可见结构直出） ——
   'oas-app-bar',
+  // —— 未发布批次：stepper 步骤面板（v2.3.2 遗留的「DSD 白名单后续批次」补位） ——
+  'oas-stepper',
+  'oas-stepper-panel',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -383,6 +386,9 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-app': '@oas-ui/ui/framework/app',
   // —— 未发布批次：导航组件（app-bar 可见结构直出） ——
   'oas-app-bar': '@oas-ui/ui/navigation/app-bar',
+  // stepper 与 stepper-panel 同目录，装载一次注册两个 tag
+  'oas-stepper': '@oas-ui/ui/navigation/stepper',
+  'oas-stepper-panel': '@oas-ui/ui/navigation/stepper',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */

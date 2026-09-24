@@ -4,6 +4,10 @@
 
 ## [未发布]
 
+### 变更
+
+- **oas-stepper / oas-stepper-panel 进 DSD 白名单**（v2.3.2 遗留「后续批次」补位）：whitelist 129 tag、快照直出（steps JSON 标题 + current 联动面板 hidden 同步）+ 真水合（upgrade 后 style 同对象、指纹清理）+ 升级后点击步骤头切面板 e2e 固化；docs ssr.md 白名单清单同步
+
 ### 修复
 
 - **`[hidden]` 兜底全量收口（79 文件/66 组件实证）**：`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden]` 规则——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。CDN 全量实测 163 组件中 66 个失效（含 button/icon/tag/input/select 等高频件；2.5.6 曾按报障收口 8 处，系症状驱动的局部收口）；本次全量补齐同款规则，另修 oas-grid 内联 `display` 压过兜底、oas-anchor-target（单文件多组件漏网）两处边角。新增 style-conventions 源码级守卫（逐样式字面量粒度，防新组件再漏）+ 实测 sweep 复验归零
