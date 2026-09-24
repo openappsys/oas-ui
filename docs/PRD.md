@@ -1437,6 +1437,12 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **oas-upload**：`template[slot="trigger"]` native slot 不渲染（inert），自绘触发双向空白 → 补克隆通道
 - **oas-typography**：`actions-position="start"` 因 order 平局从未生效（LTR/RTL 双坏）→ `order: -1`
 
+### 交互态轮（后续批次补测，2026-09-24）
+
+- 20 个浮层组件真 RTL 打开态 sweep（route 注入 + 逐组件交互 + 面板几何量测 + 截图识读）：面板全部在视口内、方向镜像正确（menubar 下拉向左下、select 选项右对齐、date-picker 周头右→左 + 碰撞上翻均实证）
+- **实抓修复 oas-time-picker**：打开瞬间 spinner 列未撑开，end 对齐按旧宽（60px）算 left，内容撑到 198px 后右溢 27px → RO + rAF 重定位固化（LTR 右缘场景同病同修）
+- 残余微项：popover 虚拟触发鼠标跟随、tour hints 信标定位（需鼠标轨迹模拟，click 型 sweep 覆盖不到）
+
 ### 已知边界（记录不修）
 
 - 交互态盲区（静态截图覆盖不到，留待人工/后续批次）：popover 虚拟触发鼠标跟随、tour hints 信标定位（信标压目标钮角属设计形态）、snackbar/drawer/menu 等浮层打开态
