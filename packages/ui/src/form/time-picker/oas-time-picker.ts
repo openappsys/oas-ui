@@ -409,6 +409,8 @@ export class OASTimePicker extends OASFormElement {
   private focusWithin = false
   /** 非法 placement 仅告警一次 */
   private placementWarned = false
+  /** 弹层内容尺寸观察器（bind 时创建，打开时挂到 dropdown——内容撑宽后重定位） */
+  private dropdownGrowObserver: ResizeObserver | null = null
   /** aria-invalid 由 status=error 设置的所有权标志 */
   private invalidByStatus = false
   private _disabledTime:
@@ -550,6 +552,14 @@ export class OASTimePicker extends OASFormElement {
     this.onCleanup(() => window.removeEventListener('resize', reposition))
     window.addEventListener('scroll', reposition, true)
     this.onCleanup(() => window.removeEventListener('scroll', reposition, true))
+    // 弹层内容撑宽（spinner 列渲染晚于首次定位）后 popupRect 过期：RO 跟随尺寸变化重定位。
+    // RTL 审计实抓：end 对齐曾按 60px 旧宽算 left，内容撑到 198px 后右溢 27px
+    if (typeof ResizeObserver === 'function') {
+      const ro = new ResizeObserver(reposition)
+      this.onCleanup(() => ro.disconnect())
+      // dropdown 在 render 后才存在：绑定推迟到首次打开（见 watchDropdownGrowth）
+      this.dropdownGrowObserver = ro
+    }
     // 视口/指针形态变化（缩放/横竖屏/设备仿真）时重判定移动/PC 形态（不强刷）
     this.onCleanup(watchMobileSheetMode(() => this.resyncMobileMode()))
   }
@@ -690,9 +700,15 @@ export class OASTimePicker extends OASFormElement {
       } else {
         this.sheetEl?.removeAttribute('open')
         this.positionDropdown()
+        // 首帧定位后内容仍会撑宽（spinner 列渲染）：RO 兜一次 + 一帧后复位
+        this.dropdownGrowObserver?.observe(this.dropdown)
+        requestAnimationFrame(() => {
+          if (this.openState) this.positionDropdown()
+        })
       }
     } else {
       this.sheetEl?.removeAttribute('open')
+      this.dropdownGrowObserver?.disconnect()
       document.removeEventListener('click', this.handleOutsideClick, true)
     }
   }
