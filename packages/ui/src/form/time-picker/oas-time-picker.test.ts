@@ -535,6 +535,23 @@ describe('浮层定位（fixed + computePosition 12 向）', () => {
     expect(dropdown(el).getAttribute('data-placement')).toBe('top-end')
   })
 
+  it('RTL 审计实抓：打开后内容撑宽（spinner 列渲染）需重定位——复位调用用长大后的 popupRect（end 对齐不越界）', async () => {
+    const el = mount({ value: '09:05:30', dir: 'rtl' })
+    // 弹层初测 60px 宽（spinner 列未撑开），下一帧长到 198px（真实场景）
+    let popupW = 60
+    dropdown(el).getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: popupW, height: 279, right: popupW, bottom: 279 }) as DOMRect
+    trigger(el).getBoundingClientRect = () =>
+      ({ left: 569, top: 505, width: 180, height: 32, right: 749, bottom: 537 }) as DOMRect
+    open(el)
+    const afterOpen = computePositionMock.mock.calls.length
+    expect(afterOpen).toBeGreaterThan(0)
+    popupW = 198
+    await new Promise((r) => setTimeout(r, 60)) // rAF 重定位帧
+    expect(computePositionMock.mock.calls.length, '内容撑宽后应有重定位调用').toBeGreaterThan(afterOpen)
+    expect(lastCall()[1].width, '复位调用应使用长大后的 popupRect（end 对齐据此回缩，否则右溢）').toBe(198)
+  })
+
   it('非法 placement：回落 bottom-start + console.warn（仅一次）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
