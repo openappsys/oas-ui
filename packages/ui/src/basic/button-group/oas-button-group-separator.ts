@@ -8,6 +8,9 @@ const STYLE = `
   overflow: hidden;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 /* 纵向组（button-group vertical）内渲染横向线 */
 :host([vertical]) {
   width: auto;

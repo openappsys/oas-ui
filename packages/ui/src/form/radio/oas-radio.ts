@@ -21,6 +21,9 @@ const STYLE = `
   --_box: 16px;
   --_font: var(--oas-font-size-md);
 }
+:host([hidden]) {
+  display: none;
+}
 :host([data-size='small']) {
   --_box: 14px;
   --_font: var(--oas-font-size-sm);

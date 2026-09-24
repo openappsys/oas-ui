@@ -10,6 +10,9 @@ const STYLE = `
   max-width: calc(100vw - var(--oas-space-6));
   margin-bottom: var(--oas-space-3);
 }
+:host([hidden]) {
+  display: none;
+}
 .box {
   display: flex;
   flex-direction: column;

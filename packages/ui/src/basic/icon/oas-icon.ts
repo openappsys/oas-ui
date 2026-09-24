@@ -60,6 +60,9 @@ const STYLE = `
   --oas-icon-primary-opacity: 1;
   --oas-icon-secondary-opacity: 0.4;
 }
+:host([hidden]) {
+  display: none;
+}
 /* fill 默认值只在没有显式 fill 属性时兜底：CSS 优先级高于表现属性，
    裸写 svg{fill} 会盖掉 slot/远程图标自带的 fill="none"（描边图标变实心块） */
 svg:not([fill]) {

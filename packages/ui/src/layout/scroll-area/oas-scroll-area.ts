@@ -13,6 +13,9 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-md);
 }
+:host([hidden]) {
+  display: none;
+}
 .scroll-area {
   position: relative;
   width: 100%;

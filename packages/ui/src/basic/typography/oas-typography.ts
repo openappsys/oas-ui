@@ -33,6 +33,9 @@ const BASE_STYLE = `
   font-family: inherit;
   color: var(--oas-color-text-primary);
 }
+:host([hidden]) {
+  display: none;
+}
 /* wrap：text + actions 的 flex 容器（actions 前置/后置靠 order 生效）；
    max-width 约束链：:host（父容器定宽）→ wrap（参照 host）→ text（参照 wrap），
    任一环缺失都会让省略约束落空外溢（本层曾因缺 max-width 导致 suffix 卡片文字跑出卡片） */

@@ -252,3 +252,24 @@ describe('theme 预设 -text 档：相邻易混组 ΔE_OK ≥ 8（gold↔orange 
     expect(okDistance(hexToOklch('#b3c4fb'), hexToOklch('#b8d6ff'))).toBeLessThan(TEXT_MIN_DISTANCE)
   })
 })
+
+/**
+ * 背景三：`:host { display: ... }` 是 shadow 作者样式，来源与特异性都压过 UA 的
+ * `[hidden] { display: none }`——凡 :host 设了 display 的组件，缺 `:host([hidden])` 兜底
+ * 就会「宿主写 hidden 仍可见」。2.5.6 曾按报障收口 8 处；2026-09-24 CDN 全量实测仍有
+ * 66 组件同病（含 button/icon/tag/input 等高频件，templates 仓字段报告吻合），全量补齐
+ * 后立此守卫防新组件再漏。
+ */
+describe('源码级守卫：:host 设 display 必须带 :host([hidden]) 兜底', () => {
+  it('凡含 :host display 规则的样式字面量，必须同时存在 :host([hidden]) 兜底（否则宿主写 hidden 失效）；按字面量粒度检查——单文件多组件（如 anchor.ts 的 AnchorTarget）不漏', () => {
+    const files = walk(here).filter((f) => /oas-[^/\\]+\.ts$/.test(f))
+    const missing = files.filter((f) => {
+      const s = readFileSync(f, 'utf8')
+      // 逐样式字面量检查：文件级检查会漏「单文件多 shadow root」的组件（各自独立的 :host 规则）
+      const literals = [...s.matchAll(/`[^`]*:host\s*\{[^`]*`/g)].map((m) => m[0])
+      return literals.some((lit) => /:host\s*\{[^}]*\bdisplay:\s/.test(lit) && !lit.includes(':host([hidden])'))
+    })
+    const rel = missing.map((f) => f.slice(here.length + 1))
+    expect(rel, `以下 ${rel.length} 个组件缺 :host([hidden]) 兜底（宿主写 hidden 失效）`).toEqual([])
+  })
+})

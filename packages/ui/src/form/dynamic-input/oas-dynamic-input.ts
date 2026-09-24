@@ -40,6 +40,9 @@ const STYLE = `
   /* 尺寸档内部控高变量（data-size 镜像切换；不占公开 API，外部请用 size 属性） */
   --_ch: var(--oas-control-height-md);
 }
+:host([hidden]) {
+  display: none;
+}
 :host([data-size='small']) {
   --_ch: var(--oas-control-height-sm);
 }

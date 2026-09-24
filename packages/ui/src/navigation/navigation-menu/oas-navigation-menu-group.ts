@@ -6,6 +6,9 @@ const GROUP_STYLE = `
      （type:"group" 语义），面板渲染时平铺进网格；不进无障碍树 */
   display: none;
 }
+:host([hidden]) {
+  display: none;
+}
 `
 
 /**

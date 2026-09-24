@@ -4,6 +4,9 @@ const STYLE = `
 :host {
   display: block;
 }
+:host([hidden]) {
+  display: none;
+}
 `
 
 const warnedDirection = new Set<string>()

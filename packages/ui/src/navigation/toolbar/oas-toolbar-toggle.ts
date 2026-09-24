@@ -13,6 +13,9 @@ const STYLE = `
   font-family: inherit;
   outline: none;
 }
+:host([hidden]) {
+  display: none;
+}
 .group {
   display: inline-flex;
   gap: var(--oas-space-1);

@@ -6,6 +6,9 @@ const STYLE = `
   display: block;
   position: relative;
 }
+:host([hidden]) {
+  display: none;
+}
 `
 
 /**

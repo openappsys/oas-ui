@@ -33,6 +33,9 @@ const STYLE = `
   --_ch: var(--oas-control-height-md);
   --_fs: var(--oas-font-size-md);
 }
+:host([hidden]) {
+  display: none;
+}
 :host([data-size='small']) {
   --_ch: var(--oas-control-height-sm);
   --_fs: var(--oas-font-size-sm);

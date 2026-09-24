@@ -816,6 +816,9 @@ const TARGET_STYLE = `
 :host {
   display: block;
 }
+:host([hidden]) {
+  display: none;
+}
 `
 
 export class OASAnchorTarget extends OASElement {

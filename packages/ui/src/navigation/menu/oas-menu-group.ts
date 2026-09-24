@@ -5,6 +5,9 @@ const GROUP_STYLE = `
   /* 数据载体：自身不渲染任何可视内容，由 <oas-menu> 解析 label/value 属性与子元素为内部 items 模型后统一渲染 */
   display: none;
 }
+:host([hidden]) {
+  display: none;
+}
 `
 
 /**

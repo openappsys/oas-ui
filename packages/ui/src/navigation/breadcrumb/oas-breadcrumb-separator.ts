@@ -5,6 +5,9 @@ const SEPARATOR_STYLE = `
   /* 分隔符载体：自身不渲染（内容由 <oas-breadcrumb> 克隆到分隔位置），不进无障碍树 */
   display: none;
 }
+:host([hidden]) {
+  display: none;
+}
 `
 
 /**

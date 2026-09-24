@@ -67,6 +67,9 @@ const STYLE = `
   --oas-slider-color: var(--oas-color-primary);
   --oas-slider-track: var(--oas-color-border);
 }
+:host([hidden]) {
+  display: none;
+}
 :host([data-size='sm']) {
   --oas-slider-track-size: 3px;
   --oas-slider-thumb-size: 10px;

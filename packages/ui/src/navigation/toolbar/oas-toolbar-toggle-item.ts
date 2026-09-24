@@ -6,6 +6,9 @@ const ITEM_STYLE = `
      display:none 保证不进无障碍树（也不参与工具栏 roving） */
   display: none;
 }
+:host([hidden]) {
+  display: none;
+}
 `
 
 /**

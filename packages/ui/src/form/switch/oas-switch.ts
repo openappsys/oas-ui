@@ -73,6 +73,9 @@ const STYLE = `
   width: fit-content;
   max-width: 100%;
 }
+:host([hidden]) {
+  display: none;
+}
 button {
   /* 尺寸变量：medium 为默认值，.xs/.small/.large/.xl 覆盖；
      宿主可用 --oas-switch-width / --oas-switch-height / --oas-switch-thumb-size

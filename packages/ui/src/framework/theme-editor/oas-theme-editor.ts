@@ -252,6 +252,9 @@ const STYLE = `
   font-size: var(--oas-font-size-md);
   color: var(--oas-color-text-primary);
 }
+:host([hidden]) {
+  display: none;
+}
 .wrap {
   display: flex;
   flex-direction: column;

@@ -27,6 +27,9 @@ const STYLE = `
   padding: var(--oas-space-3);
   box-sizing: border-box;
 }
+:host([hidden]) {
+  display: none;
+}
 /* 全局禁用：整体降透明 + 光标禁示意（数据态由 update 同步 data-disabled） */
 :host([data-disabled]) {
   opacity: 0.6;

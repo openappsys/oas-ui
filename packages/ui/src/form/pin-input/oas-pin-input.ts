@@ -41,6 +41,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .wrap {
   position: relative;
   display: inline-flex;

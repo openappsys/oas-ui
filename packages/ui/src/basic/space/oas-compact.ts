@@ -10,6 +10,9 @@ const STYLE = `
   vertical-align: middle;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 :host([vertical]) {
   flex-direction: column;
   align-items: stretch;

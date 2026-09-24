@@ -69,6 +69,9 @@ const STYLE = `
   font-family: inherit;
   width: 240px;
 }
+:host([hidden]) {
+  display: none;
+}
 .wrapper {
   position: relative;
 }

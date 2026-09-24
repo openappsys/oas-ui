@@ -6,6 +6,9 @@ const STYLE = `
      display:none 保证不进无障碍树 */
   display: none;
 }
+:host([hidden]) {
+  display: none;
+}
 `
 
 /**

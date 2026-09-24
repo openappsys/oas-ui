@@ -5,6 +5,9 @@ const STYLE = `
   display: block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .box {
   position: fixed;
   left: 50%;
