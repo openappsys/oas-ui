@@ -439,6 +439,7 @@ onMounted(async () => {
 | --- | --- |
 | `template[slot="item"]` | 自定义文件行/卡片（`[data-item-name]`/`[data-item-size]` 绑定） |
 | `template[slot="tip"]` | 拖拽区提示富内容（tip 属性优先） |
+| `template[slot="trigger"]` | 自绘触发区模板（native slot 对 template 元素不生效，走克隆通道；zone 点击仍打开文件选择） |
 | `trigger` | 替换拖拽区内容（zone 语义保留） |
 
 #### CSS 变量

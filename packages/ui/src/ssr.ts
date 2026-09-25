@@ -84,6 +84,8 @@ export { OASDynamicInput } from './form/dynamic-input/oas-dynamic-input.js'
 export { OASDynamicTags } from './form/dynamic-tags/oas-dynamic-tags.js'
 export { OASEditable } from './form/editable/oas-editable.js'
 export { OASSegmented } from './form/segmented/oas-segmented.js'
+export { OASSwatch } from './form/swatch/oas-swatch.js'
+export { OASSwatchGroup } from './form/swatch/oas-swatch-group.js'
 
 // ---------- feedback ----------
 export { OASMessage } from './feedback/message/oas-message.js'

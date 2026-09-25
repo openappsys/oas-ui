@@ -136,6 +136,10 @@ export const en: LocaleMessages = {
   'typography.copy': 'Copy',
   'tag.close': 'Close',
   'tagGroup.group': 'Tag group',
+  // swatch（色板）
+  'swatch.color': 'Color swatch',
+  // swatch-group（色板选择组）
+  'swatchGroup.group': 'Color swatch group',
   'tabs.close': 'Close',
   'tabs.ctxClose': 'Close',
   'tabs.ctxNew': 'New',

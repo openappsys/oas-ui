@@ -181,6 +181,10 @@ export const fr: LocaleMessages = {
   'tag.close': 'Fermer',
   // tag-group (groupe d’étiquettes)
   'tagGroup.group': 'Groupe d’étiquettes',
+  // swatch（色板）
+  'swatch.color': 'Nuancier',
+  // swatch-group（色板选择组）
+  'swatchGroup.group': 'Groupe de nuanciers',
   // tabs (onglets)
   'tabs.close': 'Fermer',
   'tabs.ctxClose': 'Fermer',

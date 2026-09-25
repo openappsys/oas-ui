@@ -181,6 +181,10 @@ export const ar: LocaleMessages = {
   'tag.close': 'إغلاق',
   // tagGroup (مجموعة وسوم)
   'tagGroup.group': 'مجموعة الوسوم',
+  // swatch（色板）
+  'swatch.color': 'عينة اللون',
+  // swatch-group（色板选择组）
+  'swatchGroup.group': 'مجموعة عينات اللون',
   // tabs (علامات تبويب)
   'tabs.close': 'إغلاق',
   'tabs.ctxClose': 'إغلاق',

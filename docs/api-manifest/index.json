@@ -65,6 +65,8 @@
   "oas-dynamic-tags",
   "oas-editable",
   "oas-segmented",
+  "oas-swatch",
+  "oas-swatch-group",
   "oas-message",
   "oas-notification",
   "oas-toast",

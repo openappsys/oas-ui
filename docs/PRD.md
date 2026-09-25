@@ -1404,6 +1404,40 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 单测：qrcode 域 77 用例全绿（新增体积回归守卫「dots 总量 < square × 1.5」、userSpaceOnUse 映射坐标断言）；typecheck / build 全绿
 - e2e：qa-regression 像素级定位图形覆盖（栅格化数暗模块）+ download 产物结构 + pattern 内 `var()` 填充计算值实抓（防静默退黑）全过；visual 基线零漂移；console-sweep 零告警；SSR 真水合 13 用例全绿
 
+## swatch 新组件 + button compound 变体 + input formatter（未发布）
+
+### 立项依据
+
+全量能力普查（2026-09-24）核验后立项三件候选：
+
+- **oas-swatch + oas-swatch-group（新组件，form 族）**：色板独立成件是跨库共识形态。场景：内联预设色快选（主题色/tag 色/收藏色）不该弹 color-picker 面板。
+- **oas-button compound 变体**：双行按钮（主标题行 + 副文本行），高频于卡片入口/设置项入口。
+- **oas-input / oas-input-number formatter**：格式化输入是跨库共识属性，场景普查 P1 唯一真缺项。
+
+### 功能定义
+
+**oas-swatch**（色块件）：
+- 属性：`color`（CSS 色值/11 预设名，color 统一协议 §4.1）、`size`（五档 xs~xl）、`shape`（square/rounded/circle）、`nothing`（无色/透明——棋盘格底）、`mixed`（混色态——多色拼贴指示）、`disabled`、`selected`（受控选中态：选中描边环）、`label`（可访问名）
+- 事件：`oas-click`（detail { color }）
+
+**oas-swatch-group**（选择组）：
+- 属性：`value`（单选值/多选逗号分隔，对齐 tag-group）、`multiple`、`disabled`（全组）
+- 事件：`oas-change`——单选 `{ value }`、多选 `{ value: string[] }`
+- ARIA：单选 radiogroup+radio、多选 group+checkbox（aria-checked）；roving tabindex + 方向键 + Enter/Space；空组零子件不报错
+
+**oas-button compound 变体**：`slot="secondary"` 副文本行存在时切纵向双行布局（主行在上、副文本在下，字号小号次要色）；既有契约（loading/icon/href/disabled）全兼容；副文本自然进入可访问名。
+
+**oas-input / oas-input-number formatter**：property-only 通道（函数不可走属性面）：
+- `formatter(raw) => display`：初始渲染与 blur 后应用（输入过程不打断）
+- `parser(inputString) => raw`：input 事件派发前应用；detail.value 恒为解析后原始值；form-associated 提交原始值
+- 边界：非函数静默忽略；SSR 快照显示原始值（升级后 formatter 应用，property-only 惯例）
+
+### 验收标准
+
+- 单测：swatch/组契约（value 同步、roving、ARIA、空组、禁用透传）+ button secondary 布局切换 + input formatter/parser 应用链（focus 还原原始串）全绿；typecheck / build / api:check 全绿
+- 用户视角：demo 页交互（点选变色、选中环、方向键漫游、formatter 实机格式化）在浏览器真点真看，dark 双主题过
+- qa-regression 固化：三件各加回归断言
+
 ## `[hidden]` 兜底全量收口（未发布）
 
 ### 背景与实证

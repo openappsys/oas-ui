@@ -1298,7 +1298,8 @@
       "columns": "Auto equal column count (simple-grid; child span ignored when set): supports breakpoint shorthand (e.g. 3 md:2 sm:1; breakpoints sm=640/md=768/lg=1024/xl=1280); takes precedence over min-child-width",
       "gap": "Gap; a single value applies to both axes, two space-separated values set `row column` (e.g. `8 16` = row 8, column 16); three or more values are invalid and silently fall back to `0`",
       "justify": "Inline-axis alignment (justify-items): `start` / `center` / `end` / `stretch`; invalid values fall back to `stretch` with a dev warning (deduped)",
-      "min-child-width": "Minimum child width (e.g. 180px; bare numbers read as px): auto-fit + minmax derives the column count from container width (breakpoint-free fluid reflow); `columns` wins when both are set, and child span/offset are inert in this mode"
+      "min-child-width": "Minimum child width (e.g. 180px; bare numbers read as px): auto-fit + minmax derives the column count from container width (breakpoint-free fluid reflow); `columns` wins when both are set, and child span/offset are inert in this mode",
+      "hidden": "Native global hidden semantics (host-written hidden hides the component; not intercepted)"
     },
     "events": {},
     "slots": {
@@ -3469,7 +3470,8 @@
     "slots": {
       "trigger": "Replace the drop-zone content (zone semantics kept)",
       "template[slot=\"item\"]": "Custom file row/card (`[data-item-name]`/`[data-item-size]` bindings)",
-      "template[slot=\"tip\"]": "Drop-zone tip rich content (tip attribute wins)"
+      "template[slot=\"tip\"]": "Drop-zone tip rich content (tip attribute wins)",
+      "template[slot=\"trigger\"]": "Self-drawn trigger-area template (native slot does not render template elements — cloned by the component; clicking the zone still opens the file picker)"
     },
     "props": {
       "files": "File list (property, `File[]`)"
@@ -3646,5 +3648,38 @@
       "": "Declarative item channel (`<oas-radio>` children; steps aside when options is explicit)",
       "label": "Group title (rendered into the legend)"
     }
+  },
+  "oas-swatch": {
+    "attrs": {
+      "color": "Fill color (any CSS color or one of 11 preset names, unified color protocol)",
+      "size": "Side-length step: `xs` / `small` / `medium` (default) / `large` / `xl`",
+      "shape": "Shape: `square` / `rounded` (default) / `circle`",
+      "nothing": "No-color/transparent indicator (checkerboard base, color-independent)",
+      "mixed": "Mixed-color indicator (mosaic, for merged multi-value scenarios)",
+      "disabled": "Disable the swatch (not clickable, not focusable)",
+      "selected": "Controlled selected state (outer ring; driven by oas-swatch-group inside a group)",
+      "label": "Accessible name (defaults to i18n swatch.color + the color value)",
+      "aria-label": "Accessible name override (host-written value takes top priority)"
+    },
+    "events": {
+      "oas-click": "Click, `detail: { color }` (intercepted by the group which emits the group-level oas-change)"
+    },
+    "slots": {},
+    "cssVars": {}
+  },
+  "oas-swatch-group": {
+    "attrs": {
+      "value": "Current value: child swatch's color in single select; comma-separated list in multiple select",
+      "multiple": "Multiple-select mode (checkbox semantics)",
+      "disabled": "Disable the whole group (propagated to children)",
+      "aria-label": "Group accessible name (locale fallback by default)"
+    },
+    "events": {
+      "oas-change": "Selection change, `detail: { value: string | string[] }`"
+    },
+    "slots": {
+      "": "Swatch children (`<oas-swatch>`)"
+    },
+    "cssVars": {}
   }
 }

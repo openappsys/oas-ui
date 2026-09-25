@@ -1,0 +1,67 @@
+{
+  "className": "OASSwatch",
+  "sourceFile": "packages/ui/src/form/swatch/oas-swatch.ts",
+  "attrs": [
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "shape",
+      "type": "string",
+      "default": "rounded",
+      "observed": true
+    },
+    {
+      "name": "nothing",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "mixed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "selected",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-click",
+      "detail": "{ color: this.getAttr('color', '') }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-opacity-disabled",
+      "default": null
+    }
+  ],
+  "unresolved": []
+}
