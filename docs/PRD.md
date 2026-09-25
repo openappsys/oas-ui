@@ -1404,15 +1404,16 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 单测：qrcode 域 77 用例全绿（新增体积回归守卫「dots 总量 < square × 1.5」、userSpaceOnUse 映射坐标断言）；typecheck / build 全绿
 - e2e：qa-regression 像素级定位图形覆盖（栅格化数暗模块）+ download 产物结构 + pattern 内 `var()` 填充计算值实抓（防静默退黑）全过；visual 基线零漂移；console-sweep 零告警；SSR 真水合 13 用例全绿
 
-## swatch 新组件 + button compound 变体 + input formatter（未发布）
+## swatch 新组件 + button compound 变体（未发布）
 
 ### 立项依据
 
-全量能力普查（2026-09-24）核验后立项三件候选：
+全量能力普查（2026-09-24）核验后立项两件候选：
 
 - **oas-swatch + oas-swatch-group（新组件，form 族）**：色板独立成件是跨库共识形态。场景：内联预设色快选（主题色/tag 色/收藏色）不该弹 color-picker 面板。
 - **oas-button compound 变体**：双行按钮（主标题行 + 副文本行），高频于卡片入口/设置项入口。
-- **oas-input / oas-input-number formatter**：格式化输入是跨库共识属性，场景普查 P1 唯一真缺项。
+
+（第三候选 input formatter 核实为早已落地（415874dc 表单组能力补齐批：input/input-number 的 formatter/parser property 通道 + 千分位 demo），普查档案记录陈旧所致误报，不立项。）
 
 ### 功能定义
 
@@ -1425,7 +1426,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 事件：`oas-change`——单选 `{ value }`、多选 `{ value: string[] }`
 - ARIA：单选 radiogroup+radio、多选 group+checkbox（aria-checked）；roving tabindex + 方向键 + Enter/Space；空组零子件不报错
 
-**oas-button compound 变体**：`slot="secondary"` 副文本行存在时切纵向双行布局（主行在上、副文本在下，字号小号次要色）；既有契约（loading/icon/href/disabled）全兼容；副文本自然进入可访问名。
+**oas-button compound 变体**：`slot="description"` 副文本行存在时切纵向双行布局（主行在上、副文本在下，字号小号次要色）；既有契约（loading/icon/href/disabled）全兼容；副文本自然进入可访问名。
 
 **oas-input / oas-input-number formatter**：property-only 通道（函数不可走属性面）：
 - `formatter(raw) => display`：初始渲染与 blur 后应用（输入过程不打断）

@@ -34,7 +34,8 @@ const STYLE = `
 }
 .swatch:disabled {
   cursor: not-allowed;
-  opacity: var(--oas-opacity-disabled);
+  /* 禁用透明度：全库统一 0.6（tag/button 同值），无独立 token */
+  opacity: 0.6;
 }
 /* 尺寸档位（边长走 ui-spec §2.1 控件高度） */
 :host([data-size='xs']) .swatch { width: var(--oas-control-height-xs); height: var(--oas-control-height-xs); }

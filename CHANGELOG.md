@@ -8,6 +8,11 @@
 
 - **oas-stepper / oas-stepper-panel 进 DSD 白名单**（v2.3.2 遗留「后续批次」补位）：whitelist 129 tag、快照直出（steps JSON 标题 + current 联动面板 hidden 同步）+ 真水合（upgrade 后 style 同对象、指纹清理）+ 升级后点击步骤头切面板 e2e 固化；docs ssr.md 白名单清单同步
 
+### 特性
+
+- **oas-swatch + oas-swatch-group（新组件，form 族）**：色板独立件——内联预设色快选/展示场景（不开 color-picker 面板）。色块件：color（预设名/任意色值）/size 五档/shape 三态（square/rounded/circle）/nothing（棋盘格底无色指示）/mixed（混色拼贴）/disabled/selected（选中环描边）/label（可访问名，i18n ×10）；选择组：单选 radiogroup / 多选 checkbox 语义（aria-checked 同步）+ value/multiple 受控 + oas-change + roving 键盘（方向键漫游 RTL 镜像 + Home/End + Enter/Space 选中）+ 空组/未命中值静默容错
+- **oas-button compound 双行变体**：description 具名插槽副文本行——有内容时按钮切纵向双行布局（主行在上、副文本小号次要色在下）；高度自适应不锁尺寸档（与 wrap 同机制，副文本不溢框）；slotchange 动态增删跟随；loading/icon/href/disabled 既有契约全兼容；副文本自然进入可访问名
+
 ### 修复
 
 - **`[hidden]` 兜底全量收口（79 文件/66 组件实证）**：`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden]` 规则——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。CDN 全量实测 163 组件中 66 个失效（含 button/icon/tag/input/select 等高频件；2.5.6 曾按报障收口 8 处，系症状驱动的局部收口）；本次全量补齐同款规则，另修 oas-grid 内联 `display` 压过兜底、oas-anchor-target（单文件多组件漏网）两处边角。新增 style-conventions 源码级守卫（逐样式字面量粒度，防新组件再漏）+ 实测 sweep 复验归零
