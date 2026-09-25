@@ -211,9 +211,12 @@ describe('OAStooltip', () => {
   })
 
   it('virtual-anchor：selector 解析到元素时按该元素锚点定位', async () => {
-    // happy-dom 无布局引擎，锚点 rect 全 0；断言定位被真正执行（top/left 有值、placement 翻转生效）
+    // 引擎零尺寸弹层保护后（2026-09-24），翻转需真实尺寸桩：锚点贴近视口顶缘 + 面板 100×40 → top 放不下翻转 bottom
     document.body.innerHTML =
       '<div id="vp-point" style="position:absolute;left:300px;top:100px;width:20px;height:20px"></div>'
+    const anchorEl = document.getElementById('vp-point') as HTMLElement
+    anchorEl.getBoundingClientRect = () =>
+      ({ left: 300, top: 30, right: 320, bottom: 50, width: 20, height: 20 }) as DOMRect
     const el = mountVirtual({
       virtual: '',
       'virtual-anchor': '#vp-point',
@@ -222,8 +225,12 @@ describe('OAStooltip', () => {
     })
     await Promise.resolve()
     const t = tip(el)
+    t.getBoundingClientRect = () => ({ left: 0, top: 0, right: 100, bottom: 40, width: 100, height: 40 }) as DOMRect
+    // 重触发定位（open 重挂载语义下首次定位已发生；属性重设触发重定位）
+    el.setAttribute('content', '锚点提示')
+    await Promise.resolve()
     expect(t.getAttribute('aria-hidden')).toBe('false')
-    expect(t.getAttribute('data-placement')).toBe('bottom') // 0 尺寸锚点贴视口顶 → 自动翻转到底部
+    expect(t.getAttribute('data-placement')).toBe('bottom') // 锚点贴顶缘 + 面板放不下 → 翻转到底部
     expect(t.style.top).not.toBe('')
     expect(t.style.left).not.toBe('')
   })

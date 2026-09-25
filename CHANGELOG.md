@@ -13,6 +13,9 @@
 - **oas-swatch + oas-swatch-group（新组件，form 族）**：色板独立件——内联预设色快选/展示场景（不开 color-picker 面板）。色块件：color（预设名/任意色值）/size 五档/shape 三态（square/rounded/circle）/nothing（棋盘格底无色指示）/mixed（混色拼贴）/disabled/selected（选中环描边）/label（可访问名，i18n ×10）；选择组：单选 radiogroup / 多选 checkbox 语义（aria-checked 同步）+ value/multiple 受控 + oas-change + roving 键盘（方向键漫游 RTL 镜像 + Home/End + Enter/Space 选中）+ 空组/未命中值静默容错
 - **oas-button compound 双行变体**：description 具名插槽副文本行——有内容时按钮切纵向双行布局（主行在上、副文本小号次要色在下）；高度自适应不锁尺寸档（与 wrap 同机制，副文本不溢框）；slotchange 动态增删跟随；loading/icon/href/disabled 既有契约全兼容；副文本自然进入可访问名
 
+- **oas-sidebar 折叠态 × 树形子菜单不可达根治**：collapsed 下图标条内的树形父项改走 flyout 子菜单（主流侧栏惯例）——点击/hover 延迟开合 + 定位引擎锚定 inline-end（RTL 镜像）+ 碰撞避让 + Esc 关闭回焦/外部点击关闭/单开互斥 + 嵌套子树面板内内联展开；父项挂 aria-haspopup + aria-expanded，面板 role=menu / 子项 role=menuitem；折叠态 label 隐藏规则不再误伤 flyout 子项；父项点击不再派发父项 select（父项不是可导航页面——契约变更，原「点击派发 select」是死交互的伪修复）
+- **浮层定位引擎零尺寸弹层不翻转**：popup 零尺寸（尚未布局/隐藏测量帧）时 fits 因 gap 恒 false 会误翻——RTL 下翻转把镜像抵消（sidebar flyout 实抓）；改为零尺寸跳过翻转；popconfirm/tooltip 两个依赖「零尺寸翻转」的既有测试桩扶正为真实尺寸
+
 ### 修复
 
 - **`[hidden]` 兜底全量收口（79 文件/66 组件实证）**：`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden]` 规则——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。CDN 全量实测 163 组件中 66 个失效（含 button/icon/tag/input/select 等高频件；2.5.6 曾按报障收口 8 处，系症状驱动的局部收口）；本次全量补齐同款规则，另修 oas-grid 内联 `display` 压过兜底、oas-anchor-target（单文件多组件漏网）两处边角。新增 style-conventions 源码级守卫（逐样式字面量粒度，防新组件再漏）+ 实测 sweep 复验归零

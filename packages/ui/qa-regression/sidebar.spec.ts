@@ -186,3 +186,64 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr
   expect(r.afterReclick.visibility).toBe('visible')
   expect(r.afterReclick.rectH, '再展开后子菜单高度应恢复').toBeGreaterThan(0)
 })
+
+// —— 缺陷回归：collapsed × 树形 children 折叠态子菜单完全不可达（下游 templates 被迫扁平化规避）——
+// 修复：折叠态父项点击/hover 开 flyout 子菜单（定位引擎锚定 inline-end），叶子项点击派发
+// oas-select 并关面板。真实浏览器断言：面板真实几何（rail 右侧 + 视口内）+ 子项标签可见。
+test('sidebar 折叠态树形父项点击开 flyout：面板在 rail 右侧视口内 + 子项文字可见 + 子项点击派发 select 关面板', async ({
+  page,
+}) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  // 找一个含嵌套的 sidebar demo，切到折叠态
+  await page.evaluate(async () => {
+    const blk = [...document.querySelectorAll('.demo-block')].find((b) => (b.textContent || '').includes('嵌套'))
+    blk!.scrollIntoView({ block: 'center' })
+    const sb = blk!.querySelector('oas-sidebar')!
+    sb.setAttribute('collapsed', '')
+    await customElements.whenDefined('oas-sidebar')
+  })
+  await page.waitForTimeout(300)
+  const r1 = await page.evaluate(async () => {
+    const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
+    const btn = sb.shadowRoot!.querySelector<HTMLElement>('[part="item"][aria-haspopup="true"]')!
+    const btnR = btn.getBoundingClientRect()
+    btn.click()
+    await new Promise((res) => setTimeout(res, 250))
+    const flyout = sb.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')!
+    const fR = flyout.getBoundingClientRect()
+    const firstChild = flyout.querySelector<HTMLElement>('[part="item"]')!
+    return {
+      open: !flyout.hidden,
+      placement: flyout.dataset.placement,
+      // 面板应锚定父项右侧（inline-end）且不越视口
+      rightOfRail: fR.left >= btnR.right - 2,
+      inViewport: fR.right <= innerWidth + 2 && fR.top >= -2,
+      // 子项文字标签必须可见（折叠态 label 隐藏规则不得误伤 flyout）
+      childTextVisible:
+        firstChild.textContent!.trim().length > 0 &&
+        getComputedStyle(firstChild.querySelector('.label')!).display !== 'none',
+      childCount: flyout.querySelectorAll('[part="item"]').length,
+    }
+  })
+  expect(r1.open, '点击父项应打开 flyout').toBe(true)
+  expect(r1.placement, 'LTR 下 right-start 锚定').toBe('right-start')
+  expect(r1.rightOfRail, '面板应在 rail 右侧').toBe(true)
+  expect(r1.inViewport, '面板不越视口').toBe(true)
+  expect(r1.childTextVisible, '子项文字标签可见（label 不被折叠态误隐藏）').toBe(true)
+  expect(r1.childCount, 'flyout 内渲染全部子项').toBeGreaterThan(0)
+
+  // 叶子子项点击 → oas-select + 关面板
+  const r2 = await page.evaluate(async () => {
+    const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
+    const flyout = sb.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')!
+    let detail: unknown = null
+    sb.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    const leaf = [...flyout.querySelectorAll<HTMLElement>('[part="item"]')].find((el) => !el.querySelector('.chevron'))!
+    const leafValue = leaf.dataset.value
+    leaf.click()
+    await new Promise((res) => setTimeout(res, 250))
+    return { detail: detail as { value?: string } | null, leafValue, closed: flyout.hidden }
+  })
+  expect(r2.detail?.value, '叶子点击派发 oas-select 且值为叶子 value').toBe(r2.leafValue)
+  expect(r2.closed, '选中后面板关闭').toBe(true)
+})

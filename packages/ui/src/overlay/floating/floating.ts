@@ -103,6 +103,10 @@ export function computePosition(
   const anchorCenterY = anchor.top + anchor.height / 2
 
   if (adjustOverflow) {
+    // 零尺寸浮层（display:none/尚未布局时 getBoundingClientRect 返回 0）不做翻转：
+    // 零尺寸无溢出可判，fits('left'/'right') 因 gap 恒 false，翻转会把 RTL 镜像抵消
+    // （sidebar 折叠态 flyout 实抓：RTL 下 right-start 镜像为 left-end，零尺寸翻转又翻回 right-end）
+    const zeroSize = popup.width === 0 && popup.height === 0
     const fits = (m: 'top' | 'bottom' | 'left' | 'right'): boolean => {
       switch (m) {
         case 'top':
@@ -116,7 +120,7 @@ export function computePosition(
       }
     }
 
-    if (!fits(actualMain)) {
+    if (!zeroSize && !fits(actualMain)) {
       const flipped: Record<'top' | 'bottom' | 'left' | 'right', 'top' | 'bottom' | 'left' | 'right'> = {
         top: 'bottom',
         bottom: 'top',

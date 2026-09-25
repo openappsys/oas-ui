@@ -550,26 +550,112 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(badge.classList.contains('item-badge')).toBe(true)
   })
 
-  it('折叠态嵌套父项渲染为纯图标项：无 chevron、无 aria-expanded、点击派发 select（修复死交互）', () => {
+  it('折叠态嵌套父项点击打开子菜单 flyout（父项不是页面，不再派发父项 select；子项可点击派发 select）', () => {
     stubMatchMedia(false)
     const el = mount({
       collapsed: '',
       items: '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
     })
     const parent = el.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
-    expect(parent.querySelector('.chevron'), '折叠态父项不应有展开箭头').toBeNull()
-    expect(parent.getAttribute('aria-expanded'), '折叠态父项不应有 aria-expanded').toBeNull()
-    // 点击按普通项处理（派发 oas-select），不再切换死展开
+    // 折叠态父项：无 chevron（flyout 不是内联展开）
+    expect(parent.querySelector('.chevron'), '折叠态父项不应有内联展开箭头').toBeNull()
     let detail: unknown
     el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
     parent.click()
-    expect(detail).toEqual({ value: 'admin', label: '管理' })
+    // 点击打开 flyout（不派发父项 select）
+    const flyout = el.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')
+    expect(flyout, '应渲染 flyout 面板').not.toBeNull()
+    expect(flyout!.hidden, '点击后 flyout 应打开').toBe(false)
+    expect(parent.getAttribute('aria-expanded'), '父项 aria-expanded 同步').toBe('true')
+    expect(detail, '父项（非页面）点击不派发 select').toBeUndefined()
+    // flyout 内子项可点
+    const child = flyout!.querySelector<HTMLElement>('[part="item"][data-value="users"]')!
+    expect(child, 'flyout 内渲染子项').not.toBeNull()
+    child.click()
+    expect(detail, '子项点击派发 select').toEqual({ value: 'users', label: '用户' })
+    expect(flyout!.hidden, '选中后 flyout 关闭').toBe(true)
     // 展开态对照不受影响：chevron 仍在、点击只展开不派发 select
     const el2 = mount({
       items: '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
     })
     const p2 = el2.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
     expect(p2.querySelector('.chevron'), '展开态父项应有展开箭头').not.toBeNull()
+  })
+
+  it('flyout：Esc 关闭并回焦父项；点击外部关闭；同一时刻只开一个', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      collapsed: '',
+      items:
+        '[{"label":"业务","value":"biz","icon":"star","children":[{"label":"订单","value":"orders"}]},{"label":"系统","value":"sys","icon":"gear","children":[{"label":"权限","value":"perm"}]}]',
+    })
+    // 顶层 flyout 父项（aria-haspopup 标记区分于 flyout 内子项）
+    const parents = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"][aria-haspopup="true"]')]
+    const flyouts = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="flyout"]')]
+    parents[0]!.click()
+    expect(flyouts[0]!.hidden).toBe(false)
+    // 开第二个 → 第一个关
+    parents[1]!.click()
+    expect(flyouts[0]!.hidden, '单开互斥：开第二个时第一个应关闭').toBe(true)
+    expect(flyouts[1]!.hidden).toBe(false)
+    // Esc 关闭 + 回焦父项
+    el.shadowRoot!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }))
+    expect(flyouts[1]!.hidden, 'Esc 应关闭 flyout').toBe(true)
+    expect(parents[1]!.getAttribute('aria-expanded')).toBe('false')
+    // 点击外部关闭
+    parents[0]!.click()
+    expect(flyouts[0]!.hidden).toBe(false)
+    document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }))
+    expect(flyouts[0]!.hidden, '外部点击应关闭').toBe(true)
+  })
+
+  it('flyout ARIA：面板 role=menu、子项 role=menuitem；父项 aria-expanded 随开合', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      collapsed: '',
+      items: '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+    })
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
+    parent.click()
+    const flyout = el.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')!
+    expect(flyout.getAttribute('role')).toBe('menu')
+    expect(flyout.querySelector<HTMLElement>('[part="item"][data-value="users"]')!.getAttribute('role')).toBe(
+      'menuitem',
+    )
+    expect(parent.getAttribute('aria-haspopup')).toBe('true')
+    parent.click()
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('flyout 内嵌套深层子项按内联展开渲染（递归子树可用）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      collapsed: '',
+      items:
+        '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"系统","value":"sys","children":[{"label":"权限","value":"perm"}]}]}]',
+    })
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
+    parent.click()
+    const flyout = el.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')!
+    const nested = flyout.querySelector<HTMLElement>('[part="item"][data-value="sys"]')!
+    expect(nested, 'flyout 内嵌套父项渲染').not.toBeNull()
+    // 嵌套父项在 flyout 内走内联展开（chevron 存在）
+    expect(nested.querySelector('.chevron'), '嵌套父项应可内联展开').not.toBeNull()
+  })
+
+  it('RTL：flyout 锚定父项 inline-end（dir=rtl 下 placement 镜像）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      collapsed: '',
+      dir: 'rtl',
+      items: '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+    })
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
+    parent.click()
+    const flyout = el.shadowRoot!.querySelector<HTMLElement>('[part="flyout"]')!
+    // RTL 下面板应在父项左侧（inline-end=左）；happy-dom 几何为零，断言 placement 数据标记
+    // （引擎镜像契约：right-start + rtl → left-end，见 floating.test.ts）
+    expect(flyout.dataset.placement, 'RTL 下 flyout 应镜像到左').toBe('left-end')
   })
 
   it('折叠态激活后代时父项带 child-selected 指示（激活态在图标条下不丢失）', () => {
@@ -1100,19 +1186,22 @@ describe('OASSidebar 子元素声明式通道', () => {
     parent.click()
     expect(parent.getAttribute('aria-expanded')).toBe('false')
     expect(sub.hidden).toBe(true)
-    // 折叠态：嵌套父项渲染为纯图标项（新设计——折叠态子树不渲染，展开箭头/aria-expanded 死交互移除；
-    // collapsed 触发重渲染，重新查询节点）
+    // 折叠态：嵌套父项渲染为图标项 + flyout 子菜单（collapsed 触发重渲染，重新查询节点）
     el.setAttribute('collapsed', '')
     const parent2 = root.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!
-    expect(root.querySelector('[part="submenu"]'), '折叠态嵌套子树不渲染').toBeNull()
-    expect(parent2.querySelector('.chevron'), '折叠态父项无展开箭头').toBeNull()
-    expect(parent2.getAttribute('aria-expanded'), '折叠态父项无 aria-expanded').toBeNull()
-    // 折叠态点击父项：按普通项派发 oas-select（与 items 通道同构行为一致）
+    expect(root.querySelector('[part="submenu"]'), '折叠态嵌套子树不渲染（改 flyout 承载）').toBeNull()
+    expect(parent2.querySelector('.chevron'), '折叠态父项无内联展开箭头').toBeNull()
+    // 新契约：flyout 模式父项挂 aria-haspopup + aria-expanded=false（开合面板语义）
+    expect(parent2.getAttribute('aria-haspopup'), '折叠态父项应挂 aria-haspopup').toBe('true')
+    expect(parent2.getAttribute('aria-expanded'), '初始收起').toBe('false')
+    // 折叠态点击父项：打开 flyout（不派发父项 select——父项不是可导航页面）
     let collapsedDetail: unknown
     el.addEventListener('oas-select', (e) => (collapsedDetail = (e as CustomEvent).detail))
     parent2.click()
-    expect(collapsedDetail).toEqual({ value: 'biz', label: '业务管理' })
-    // 同构 items 通道对照：折叠态同样无子树/无箭头
+    const flyout2 = root.querySelector<HTMLElement>('[part="flyout"]')!
+    expect(flyout2.hidden, '点击打开 flyout').toBe(false)
+    expect(collapsedDetail, '父项点击不派发 select').toBeUndefined()
+    // 同构 items 通道对照：折叠态同样无子树/无箭头、走 flyout
     const elItems = mount({
       collapsed: '',
       items: JSON.stringify([
@@ -1127,6 +1216,7 @@ describe('OASSidebar 子元素声明式通道', () => {
     const pItems = elItems.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!
     expect(elItems.shadowRoot!.querySelector('[part="submenu"]'), 'items 通道折叠态同样不渲染子树').toBeNull()
     expect(pItems.querySelector('.chevron'), 'items 通道折叠态同样无箭头').toBeNull()
+    expect(elItems.shadowRoot!.querySelector('[part="flyout"]'), 'items 通道折叠态同样渲染 flyout').not.toBeNull()
   })
 })
 

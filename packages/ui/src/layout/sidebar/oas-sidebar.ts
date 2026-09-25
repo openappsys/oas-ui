@@ -1,8 +1,9 @@
 import { OASElement } from '@oas-ui/core'
-// 图标渲染与 oas-icon 同一通道（customIcons 注册表读取，不经 iconRegistry 直查），
+// 图标渲染走 oas-icon 同一通道（customIcons 注册表读取，不经 iconRegistry 直查），
 // 用户 `registerIcon()` 注册的自定义图标 sidebar 可见（oas-icon.ts 契约，sidebar 不越界）
 import { lookupIcon } from '../../basic/icon/oas-icon.js'
 import { isRtl } from '../../shared/direction.js'
+import { computePosition, getViewport } from '../../overlay/floating/index.js'
 
 /** 菜单项操作按钮：悬停项时出现，点击派发 `oas-action` */
 export interface SidebarItemAction {
@@ -350,6 +351,42 @@ aside {
   flex-direction: column;
   gap: var(--oas-space-1, 4px);
 }
+/* ===== 折叠图标条态的子菜单 flyout（collapsed × 树形 children）=====
+   父项不是页面（点击开合面板），子项才是导航目标；面板 fixed 定位、定位引擎锚定父项
+   inline-end（RTL 镜像到左）、碰撞避让。hover 延迟开合 + Esc/外部点击关闭。 */
+.flyout {
+  position: fixed;
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040));
+  min-width: 180px;
+  max-width: 260px;
+  background: var(--oas-color-bg-elevated);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  box-shadow: var(--oas-shadow-lg);
+  padding: var(--oas-space-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-1, 4px);
+}
+.flyout[hidden] {
+  display: none;
+}
+/* flyout 内子项占满宽度（视觉对齐弹层惯例）；折叠态 label 隐藏规则（:host([collapsed]) .item .label）
+   会误伤 flyout 内子项（同在折叠宿主 shadow 树里）——同级特异性 + 更后位置覆盖回显 */
+.flyout .item {
+  width: 100%;
+  justify-content: flex-start;
+  height: var(--oas-control-height-md);
+  padding: 0 var(--oas-space-2);
+}
+:host(:not([data-mobile])[collapsed]) .flyout .item .label {
+  display: inline;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flyout {
+    transition: none;
+  }
+}
 .item.sub .icon {
   width: 18px;
 }
@@ -661,7 +698,14 @@ export class OASSidebar extends OASElement {
     this.shadow.querySelector('[part="toggle"]')?.addEventListener('click', () => this.toggleCollapsed())
 
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') this.closeDrawer()
+      if (e.key === 'Escape') {
+        // 折叠态 flyout 优先于抽屉关闭（Esc 逐层退出）
+        if (this.flyoutOpen !== null) {
+          this.closeAllFlyouts(true)
+          return
+        }
+        this.closeDrawer()
+      }
       // ctrl/cmd+b 折叠切换（仅 shortcut 属性开启时，避免默认劫持全局键）
       if (
         this.hasAttr('shortcut') &&
@@ -676,6 +720,16 @@ export class OASSidebar extends OASElement {
     }
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
+
+    // flyout 外部点击关闭（pointerdown 在 shadow 外落到别处即关）
+    const onOutside = (e: PointerEvent): void => {
+      if (this.flyoutOpen === null) return
+      const path = e.composedPath()
+      if (path.includes(this)) return
+      this.closeAllFlyouts(false)
+    }
+    document.addEventListener('pointerdown', onOutside, true)
+    this.onCleanup(() => document.removeEventListener('pointerdown', onOutside, true))
 
     // 菜单键盘导航：↑/↓ 在可见项间移动焦点（Home/End 跳首末；Enter/Space 走原生 button 激活）
     const nav = this.shadow.querySelector('.nav')
@@ -933,8 +987,10 @@ export class OASSidebar extends OASElement {
   /** 渲染单个菜单项（含徽标/操作/嵌套子项；collapsed=桌面图标条态） */
   private renderItem(item: SidebarItem, collapsed: boolean, active: string, depth: number): HTMLElement {
     const hasChildren = !!item.children?.length
-    // 折叠图标条态下嵌套父项按纯图标项处理：子树本就隐藏，展开箭头/aria-expanded/
-    // 展开点击属死交互（实测「点了没反应」）；点击按普通项派发 select
+    // 折叠图标条态 + 树形父项：走 flyout 子菜单（父项不是页面，点击开合面板——
+    // 此前曾把父项点击退化为派发 select 修「死交互」，但父项 value 不是可导航页面，
+    // 用户侧仍无任何可达子页的路径；flyout 才是主流侧栏惯例）
+    const flyoutMode = collapsed && hasChildren && !!item.icon
     const effectiveHasChildren = hasChildren && !collapsed
     const btn = document.createElement('button')
     btn.className = 'item'
@@ -1039,7 +1095,7 @@ export class OASSidebar extends OASElement {
         btn.setAttribute('aria-expanded', String(this.expanded.has(item.value)))
         subWrap!.hidden = !this.expanded.has(item.value)
       })
-    } else {
+    } else if (!flyoutMode) {
       btn.addEventListener('click', () => {
         this.emit('select', { value: item.value, label: item.label })
         if (this.hasAttr('drawer-open')) this.closeDrawer()
@@ -1068,6 +1124,21 @@ export class OASSidebar extends OASElement {
     }
     // 折叠态无图标项整体隐藏（仅保留图标）；嵌套子项在折叠态隐藏
     if (collapsed && !item.icon) btn.hidden = true
+    // 折叠态 + 树形父项：flyout 子菜单（父项不是页面——点击开合面板；子项才是导航目标）
+    if (collapsed && hasChildren && item.icon) {
+      const block = document.createElement('div')
+      block.className = 'item-block'
+      const flyout = this.buildFlyout(item, active)
+      block.append(btn, flyout)
+      btn.setAttribute('aria-haspopup', 'true')
+      btn.setAttribute('aria-expanded', 'false')
+      btn.addEventListener('click', () => this.toggleFlyout(item.value, btn, flyout))
+      // hover 延迟开合（宽限防掠过抖动）
+      btn.addEventListener('pointerenter', () => this.scheduleFlyoutOpen(item.value, btn, flyout))
+      block.addEventListener('pointerleave', () => this.scheduleFlyoutClose(flyout))
+      // 键盘：Enter/Space 经 button 原生 click 已覆盖；Esc 在组级 keydown（bind 时挂）
+      return block
+    }
     // 折叠态：图标项包 tooltip（label 提示，placement=right）
     let out: HTMLElement = btn
     if (collapsed && item.icon && !hasChildren) {
@@ -1091,12 +1162,118 @@ export class OASSidebar extends OASElement {
   /** 递归查找激活子项（用于父项自动展开） */
   private findActiveChild(children: SidebarEntry[], active: string): boolean {
     for (const c of children) {
-      if ('type' in c && (c as SidebarDivider).type === 'divider') continue
+      if ('type' in c && c.type === 'divider') continue
       const item = c as SidebarItem
       if (item.value === active) return true
       if (item.children && this.findActiveChild(item.children, active)) return true
     }
     return false
+  }
+
+  // ===== 折叠图标条态的子菜单 flyout（collapsed × 树形 children）=====
+
+  /** 当前打开的 flyout 父项 value（单开互斥） */
+  private flyoutOpen: string | null = null
+  private flyoutHoverTimer: ReturnType<typeof setTimeout> | null = null
+  private flyoutLeaveTimer: ReturnType<typeof setTimeout> | null = null
+  /** hover 延迟开合阈值（ms）：开 150 防掠过误开、关 300 留移向面板的宽限 */
+  private static readonly FLYOUT_OPEN_DELAY = 150
+  private static readonly FLYOUT_CLOSE_DELAY = 300
+
+  /** 构建 flyout 面板：子项按展开态渲染（嵌套子树内联可展开），叶子子项点击派发 select 后关面板 */
+  private buildFlyout(item: SidebarItem, active: string): HTMLElement {
+    const flyout = document.createElement('div')
+    flyout.className = 'flyout'
+    flyout.setAttribute('part', 'flyout')
+    flyout.setAttribute('role', 'menu')
+    flyout.dataset.parent = item.value
+    flyout.hidden = true
+    for (const child of item.children!) {
+      if ('type' in child && (child as SidebarDivider).type === 'divider') {
+        const d = document.createElement('div')
+        d.className = 'divider'
+        d.setAttribute('part', 'divider')
+        d.setAttribute('role', 'separator')
+        flyout.appendChild(d)
+      } else {
+        const node = this.renderItem(child as SidebarItem, false, active, 1)
+        // flyout 内所有菜单按钮挂 menuitem 语义（根节点 + 嵌套子树内按钮）
+        if (node.matches?.('[part="item"]')) node.setAttribute('role', 'menuitem')
+        for (const btn of node.querySelectorAll<HTMLElement>('[part="item"]')) btn.setAttribute('role', 'menuitem')
+        flyout.appendChild(node)
+      }
+    }
+    // 叶子子项点击后关闭面板（select 已由子项自身派发）；嵌套父项的内联展开不关面板
+    flyout.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest?.('[part="item"]') as HTMLElement | null
+      if (!btn) return
+      if (btn.querySelector('.chevron')) return // 嵌套父项：内联展开，不关面板
+      this.closeAllFlyouts(false)
+    })
+    return flyout
+  }
+
+  /** 开合 flyout：单开互斥 + 定位引擎锚定父项 inline-end（RTL 镜像）+ 碰撞避让 */
+  private toggleFlyout(value: string, btn: HTMLElement, flyout: HTMLElement): void {
+    if (this.flyoutOpen === value) {
+      this.closeAllFlyouts(true)
+      return
+    }
+    this.closeAllFlyouts(false)
+    flyout.hidden = false
+    btn.setAttribute('aria-expanded', 'true')
+    this.flyoutOpen = value
+    this.positionFlyout(btn, flyout)
+  }
+
+  private positionFlyout(btn: HTMLElement, flyout: HTMLElement): void {
+    const anchorRect = btn.getBoundingClientRect()
+    const popupRect = flyout.getBoundingClientRect()
+    const { top, left, placement } = computePosition(anchorRect, popupRect, 'right-start', getViewport(), 4, true, {
+      collisionPadding: 8,
+      direction: isRtl(this) ? 'rtl' : 'ltr',
+    })
+    flyout.style.top = `${top}px`
+    flyout.style.left = `${left}px`
+    flyout.dataset.placement = placement
+  }
+
+  /** 关闭全部 flyout；refocus=true 时焦点回到父项（Esc 路径） */
+  private closeAllFlyouts(refocus: boolean): void {
+    const openValue = this.flyoutOpen
+    this.flyoutOpen = null
+    this.clearFlyoutTimers()
+    for (const flyout of this.shadow.querySelectorAll<HTMLElement>('[part="flyout"]')) {
+      flyout.hidden = true
+    }
+    for (const btn of this.shadow.querySelectorAll<HTMLElement>('[part="item"][aria-haspopup="true"]')) {
+      btn.setAttribute('aria-expanded', 'false')
+      if (refocus && openValue !== null && btn.dataset.value === openValue) btn.focus()
+    }
+  }
+
+  private clearFlyoutTimers(): void {
+    if (this.flyoutHoverTimer) clearTimeout(this.flyoutHoverTimer)
+    if (this.flyoutLeaveTimer) clearTimeout(this.flyoutLeaveTimer)
+    this.flyoutHoverTimer = null
+    this.flyoutLeaveTimer = null
+  }
+
+  private scheduleFlyoutOpen(value: string, btn: HTMLElement, flyout: HTMLElement): void {
+    this.clearFlyoutTimers()
+    this.flyoutHoverTimer = setTimeout(() => {
+      if (this.flyoutOpen !== value) this.toggleFlyout(value, btn, flyout)
+    }, OASSidebar.FLYOUT_OPEN_DELAY)
+  }
+
+  private scheduleFlyoutClose(flyout: HTMLElement): void {
+    this.clearFlyoutTimers()
+    this.flyoutLeaveTimer = setTimeout(() => {
+      flyout.hidden = true
+      this.flyoutOpen = null
+      const parent = flyout.parentElement?.querySelector<HTMLElement>('[part="item"][aria-haspopup="true"]')
+      parent?.setAttribute('aria-expanded', 'false')
+    }, OASSidebar.FLYOUT_CLOSE_DELAY)
   }
 
   /** accordion 同级互斥：返回与 value 同级（同一父数组内）的其他可展开父项 value */
