@@ -177,3 +177,14 @@ html.dark .vp-doc blockquote {
     max-width: 1440px !important;
   }
 }
+
+/* ===== 内联代码 bidi 方向隔离（RTL 观感修复） =====
+   代码 token（CSS 变量名 `--x`、函数调用 `fn()` 等）是 LTR 内容：整页强制 RTL 时（RTL 审计
+   场景），bidi 规则会把前导中性字符（`--`、`(`）排到视觉右端，token 观感乱序（bottom-sheet 页
+   `oas-bottom-sheet-max-height--`、popconfirm 页 `(()show` 等，RTL 全量审计实抓）。
+   direction: ltr + unicode-bidi: isolate 让 code 内容自成 LTR 隔离区——LTR 页面下零观感变化，
+   RTL 语境下 token 保持从左到右可读。 */
+.vp-doc code {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
