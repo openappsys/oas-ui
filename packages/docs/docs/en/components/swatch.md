@@ -81,7 +81,9 @@ The group `value` is a controlled channel: setting the attribute externally upda
 
 Tab enters the group (single roving stop) → arrow keys move focus (horizontal keys mirror in RTL) → Enter/Space selects → Home/End jump to first/last. Disabled swatches are skipped in the roving order.
 
-<script>
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
   customElements.whenDefined('oas-swatch-group').then(() => {
     const single = document.getElementById('sw-single')
     const singleOut = document.getElementById('sw-single-out')
@@ -100,6 +102,7 @@ Tab enters the group (single roving stop) → arrow keys move focus (horizontal 
       document.getElementById('sw-controlled')?.setAttribute('value', 'blue')
     })
   })
+})
 </script>
 
 ## API

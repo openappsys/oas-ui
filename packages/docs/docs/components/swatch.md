@@ -81,7 +81,9 @@
 
 Tab 进入组（roving 单停）→ 方向键漫游焦点（RTL 下水平方向镜像）→ Enter/Space 选中 → Home/End 直达首/末。禁用项不参与漫游。
 
-<script>
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
   customElements.whenDefined('oas-swatch-group').then(() => {
     const single = document.getElementById('sw-single')
     const singleOut = document.getElementById('sw-single-out')
@@ -100,6 +102,7 @@ Tab 进入组（roving 单停）→ 方向键漫游焦点（RTL 下水平方向�
       document.getElementById('sw-controlled')?.setAttribute('value', 'blue')
     })
   })
+})
 </script>
 
 ## API
