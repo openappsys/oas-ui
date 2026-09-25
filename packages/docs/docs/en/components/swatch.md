@@ -129,12 +129,6 @@ onMounted(() => {
 | --- | --- |
 | `oas-click` | Click, `detail: { color }` (intercepted by the group which emits the group-level oas-change) |
 
-#### CSS Variables
-
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-opacity-disabled` | — |
-
 ### oas-swatch-group
 
 #### Attributes

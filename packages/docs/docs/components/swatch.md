@@ -129,12 +129,6 @@ onMounted(() => {
 | --- | --- |
 | `oas-click` | 点击，`detail: { color }`（组内由组拦截后派发组级 oas-change） |
 
-#### CSS 变量
-
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-opacity-disabled` | — |
-
 ### oas-swatch-group
 
 #### 属性
