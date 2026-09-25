@@ -161,6 +161,18 @@
   <oas-button type="success" icon="check-circle" icon-end="arrow-right">确认并提交</oas-button>
 </DemoBlock>
 
+## 副文本（compound 双行变体）
+
+`slot="description"` 副文本行存在时按钮切纵向双行布局：主行（图标+文字）在上、副文本在下（小号次要色）。适合卡片入口、设置项入口、上传入口等「主操作 + 一行说明」场景。与 loading / icon / disabled / href 等既有契约全兼容。
+
+<DemoBlock title="双行按钮">
+  <oas-space size="small">
+    <oas-button type="primary" icon="upload">上传文件<span slot="description">支持拖拽，单文件不超过 500KB</span></oas-button>
+    <oas-button icon="setting">偏好设置<span slot="description">快捷键 ⌘ + ,</span></oas-button>
+    <oas-button size="large" type="primary" loading loading-text="提交中">提交订单<span slot="description">预计 3 秒完成</span></oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## 链接按钮
 
 设置 `href` 后渲染为原生链接（`<a>`），支持 `target` 指定打开方式（`_blank` / `_self` 等）；同时透传 `download`（文件下载）与 `rel`（链接关系）属性。
@@ -301,6 +313,7 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 按钮内容（文本 / 图标） |
+| `description` | 副文本行（compound 双行变体）：有内容时按钮切纵向双行布局（主行在上、副文本在下，字号小号次要色） |
 
 #### CSS 变量
 

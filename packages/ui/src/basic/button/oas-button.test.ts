@@ -627,6 +627,69 @@ describe('新增能力：icon-end / loading 宽度稳定 / loading-text / loadin
   })
 })
 
+describe('compound 双行变体（slot="description"）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountCompound(): OASButton {
+    const el = new OASButton()
+    el.textContent = '主操作'
+    const sub = document.createElement('span')
+    sub.setAttribute('slot', 'description')
+    sub.textContent = '副文本说明'
+    el.appendChild(sub)
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('slot="description" 内容渲染进按钮第二行：data-compound 标记 + description 部件含插槽', () => {
+    const el = mountCompound()
+    expect(el.hasAttribute('data-compound')).toBe(true)
+    const btn = shadowBtn(el)
+    expect(btn.querySelector('[part="description"]')).not.toBeNull()
+    const slot = btn.querySelector<HTMLSlotElement>('slot[name="description"]')!
+    expect(slot.assignedNodes().length, '副文本节点分配进 description 插槽').toBe(1)
+    expect((slot.assignedNodes()[0] as HTMLElement).textContent).toBe('副文本说明')
+    el.remove()
+  })
+
+  it('无 description 内容：无 data-compound、description 部件隐藏（零回归）', () => {
+    const el = mount({}, '按钮')
+    expect(el.hasAttribute('data-compound')).toBe(false)
+    const desc = shadowBtn(el).querySelector<HTMLElement>('[part="description"]')!
+    expect(desc.hidden, 'description 部件应带 hidden（真实浏览器 UA 规则 display:none）').toBe(true)
+    el.remove()
+  })
+
+  it('loading 态兼容：loading + description 并存（双行布局保持，spinner 在主行）', () => {
+    const el = mountCompound()
+    el.setAttribute('loading', '')
+    const btn = shadowBtn(el)
+    expect(btn.querySelector<HTMLElement>('[part="spinner"]')!.hidden).toBe(false)
+    expect(btn.querySelector('[part="description"]')).not.toBeNull()
+    el.remove()
+  })
+
+  it('动态增删 description 子节点：data-compound 跟随切换（slotchange）', async () => {
+    const el = mount({}, '按钮')
+    expect(el.hasAttribute('data-compound')).toBe(false)
+    const sub = document.createElement('span')
+    sub.setAttribute('slot', 'description')
+    sub.textContent = '后来加的副文本'
+    el.appendChild(sub)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.hasAttribute('data-compound')).toBe(true)
+    sub.remove()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.hasAttribute('data-compound')).toBe(false)
+    el.remove()
+  })
+})
+
 describe('OASButton 全局禁用注入（config-provider disabled）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

@@ -641,6 +641,48 @@ button.loading-with-text .spinner {
     min-height: var(--oas-touch-target-min, 44px) !important;
   }
 }
+/* ===== compound 双行变体（slot="description" 副文本行）=====
+   不动既有子结构（flat flex 行）：description 部件 flex-basis:100% 强制换行成第二行。
+   无内容时 hidden（零回归：无 data-compound 的按钮结构与旧版完全一致）。
+   高度自适应与 wrap 同机制（height:auto + min-height 保档）——按钮高度不再锁死，
+   副文本行不溢出按钮框（浏览器截图实抓：固定 height 会裁掉第二行）。 */
+[part='description'] {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  line-height: 1.4;
+  text-align: center;
+  width: 100%;
+}
+:host([data-compound]) button,
+:host([data-compound]) a[part='button'] {
+  flex-wrap: wrap;
+  row-gap: var(--oas-space-1);
+  height: auto;
+  min-height: var(--oas-control-height-md);
+  padding-block: var(--oas-space-1);
+}
+:host([data-compound]) button.small,
+:host([data-compound]) a[part='button'].small {
+  min-height: var(--oas-control-height-sm);
+}
+:host([data-compound]) button.xs,
+:host([data-compound]) a[part='button'].xs {
+  min-height: var(--oas-control-height-xs);
+}
+:host([data-compound]) button.large,
+:host([data-compound]) a[part='button'].large {
+  min-height: var(--oas-control-height-lg);
+}
+:host([data-compound]) button.xl,
+:host([data-compound]) a[part='button'].xl {
+  min-height: var(--oas-control-height-xl);
+}
+:host([data-compound]) [part='description'] {
+  display: block;
+}
+:host([data-compound]) [part='description'][hidden] {
+  display: none;
+}
 `
 
 export class OASButton extends OASElement {
@@ -715,6 +757,7 @@ export class OASButton extends OASElement {
         <slot></slot>
         <span class="loading-text" hidden></span>
         <span class="icon" part="icon-end" aria-hidden="true" hidden></span>
+        <span class="description" part="description" hidden><slot name="description"></slot></span>
       </${tag}>
     `
   }
@@ -750,10 +793,25 @@ export class OASButton extends OASElement {
     // 文字经 slot 增删时重算「纯图标 / 有文字」布局
     this.shadow.querySelector('slot')?.addEventListener('slotchange', () => this.update())
 
+    // compound 双行变体：description 具名插槽内容增删 → 切换 data-compound（slotchange 感知动态增删）
+    this.shadow
+      .querySelector<HTMLSlotElement>('slot[name="description"]')
+      ?.addEventListener('slotchange', () => this.syncCompound())
+    this.syncCompound()
+
     // autofocus：转发到内部按钮（原生 autofocus 不穿透 shadow，挂载后手动聚焦一次）
     if (this.hasAttr('autofocus')) {
       queueMicrotask(() => this.btn?.focus())
     }
+  }
+
+  /** compound 双行变体同步：slot="description" 有内容 → data-compound 双行布局；无内容 → description 部件隐藏（零回归） */
+  private syncCompound(): void {
+    const desc = this.btn?.querySelector<HTMLElement>('[part="description"]')
+    if (!desc) return
+    const has = this.querySelector('[slot="description"]') !== null
+    this.toggleAttribute('data-compound', has)
+    desc.hidden = !has
   }
 
   /**

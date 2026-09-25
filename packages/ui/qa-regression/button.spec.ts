@@ -198,3 +198,32 @@ test('PC fine pointer 下 button 零抬升：默认档 32px、xs 档 20px', asyn
   expect(r.md, 'PC 下默认档仍 32px').toBe(32)
   expect(r.xs, 'PC 下 xs 档仍 20px').toBe(20)
 })
+
+test('button compound 双行变体：副文本行落在按钮框内（高度自适应不锁死尺寸档）', async ({ page }) => {
+  // 曾现缺陷（浏览器截图实抓）：按钮高度锁死尺寸档 32px，双行内容第二行溢出按钮框外。
+  // 修法：data-compound 态 height:auto + min-height 保档（与 wrap 同机制）。
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button')
+  const blk = page.locator('.demo-block').filter({ hasText: '双行按钮' }).first()
+  await blk.scrollIntoViewIfNeeded()
+  const r = await page.evaluate(() => {
+    const blk2 = [...document.querySelectorAll('.demo-block')].find((b) => (b.textContent || '').includes('双行按钮'))!
+    const btn = blk2.querySelector('oas-button')!
+    const sb = btn.shadowRoot!.querySelector('button')!
+    const desc = sb.querySelector<HTMLElement>('[part="description"]')!
+    const sbR = sb.getBoundingClientRect()
+    const dR = desc.getBoundingClientRect()
+    return {
+      compound: btn.hasAttribute('data-compound'),
+      btnH: Math.round(sbR.height),
+      descInBounds: dR.bottom <= sbR.bottom + 1 && dR.top > sbR.top,
+      wrap: getComputedStyle(sb).flexWrap,
+      descHidden: desc.hidden,
+    }
+  })
+  expect(r.compound).toBe(true)
+  expect(r.wrap, 'compound 态 flex-wrap 开启').toBe('wrap')
+  expect(r.descHidden, 'description 部件有内容不隐藏').toBe(false)
+  expect(r.btnH, '双行按钮高度应大于单行档（32px）').toBeGreaterThan(32)
+  expect(r.descInBounds, '副文本行完整落在按钮框内').toBe(true)
+})
