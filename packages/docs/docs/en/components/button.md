@@ -161,6 +161,18 @@ Without text, the button becomes an equal-width square and needs an `aria-label`
   <oas-button type="success" icon="check-circle" icon-end="arrow-right">Confirm & submit</oas-button>
 </DemoBlock>
 
+## Secondary text (compound two-row variant)
+
+When the `slot="description"` secondary line is present, the button switches to a vertical two-row layout: the main row (icon + text) on top, the secondary line below (smaller, muted). Good for card entries, settings entries, upload entries — "main action + one line of explanation". Fully compatible with loading / icon / disabled / href.
+
+<DemoBlock title="Two-row button">
+  <oas-space size="small">
+    <oas-button type="primary" icon="upload">Upload file<span slot="description">Drag & drop supported, ≤ 500KB per file</span></oas-button>
+    <oas-button icon="setting">Preferences<span slot="description">Shortcut ⌘ + ,</span></oas-button>
+    <oas-button size="large" type="primary" loading loading-text="Submitting">Submit order<span slot="description">~3 seconds to complete</span></oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## Link button
 
 Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_blank` / `_self` etc.); `download` (file download) and `rel` (link relationship) are passed through.
@@ -301,6 +313,7 @@ On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`-
 | Name | Description |
 | --- | --- |
 | default | Button content (text / icon) |
+| `description` | Secondary text line (compound two-row variant): when present, the button switches to a vertical two-row layout (main row on top, secondary below, smaller muted text) |
 
 #### CSS Variables
 

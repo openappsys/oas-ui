@@ -406,7 +406,8 @@
       "oas-click": "Click, `detail: { originalEvent }`"
     },
     "slots": {
-      "": "Button content (text / icon)"
+      "": "Button content (text / icon)",
+      "description": "Secondary text line (compound two-row variant): when present, the button switches to a vertical two-row layout (main row on top, secondary below, smaller muted text)"
     },
     "cssVars": {
       "--oas-button-color-deep": "Text-safe deepened variant of the custom `color`: the color-mix used for hover/active and outlined/dashed/filled text (injected by the component via `--oas-deep-mix` / `--oas-deep-sink`; inert without a custom color)"
