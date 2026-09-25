@@ -176,6 +176,9 @@
       "name": "template[slot=\"tip\"]"
     },
     {
+      "name": "template[slot=\"trigger\"]"
+    },
+    {
       "name": "trigger"
     }
   ],

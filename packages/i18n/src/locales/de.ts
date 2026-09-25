@@ -181,6 +181,10 @@ export const de: LocaleMessages = {
   'tag.close': 'Schließen',
   // tag-group (Tag-Gruppe)
   'tagGroup.group': 'Tag-Gruppe',
+  // swatch（色板）
+  'swatch.color': 'Farbfeld',
+  // swatch-group（色板选择组）
+  'swatchGroup.group': 'Farbfeldgruppe',
   // tabs (Registerkarten)
   'tabs.close': 'Schließen',
   'tabs.ctxClose': 'Schließen',

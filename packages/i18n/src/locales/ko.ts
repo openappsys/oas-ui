@@ -181,6 +181,10 @@ export const ko: LocaleMessages = {
   'tag.close': '닫기',
   // tag-group（태그 그룹）
   'tagGroup.group': '태그 그룹',
+  // swatch（色板）
+  'swatch.color': '컬러 스와치',
+  // swatch-group（色板选择组）
+  'swatchGroup.group': '컬러 스와치 그룹',
   // tabs（탭）
   'tabs.close': '닫기',
   'tabs.ctxClose': '닫기',

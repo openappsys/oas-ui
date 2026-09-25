@@ -64,6 +64,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Upload 上传', link: '/components/upload' },
       { text: 'Transfer 穿梭框', link: '/components/transfer' },
       { text: 'ColorPicker 颜色选择器', link: '/components/color-picker' },
+      { text: 'Swatch 色板', link: '/components/swatch' },
       { text: 'ToggleButton 切换按钮', link: '/components/toggle-button' },
       { text: 'ToggleGroup 切换组', link: '/components/toggle-group' },
       { text: 'PinInput 验证码', link: '/components/pin-input' },

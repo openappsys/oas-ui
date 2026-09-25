@@ -181,6 +181,10 @@ export const zhCN = {
   'tag.close': '关闭',
   // tag-group（标签组）
   'tagGroup.group': '标签组',
+  // swatch（色板）
+  'swatch.color': '色板',
+  // swatch-group（色板选择组）
+  'swatchGroup.group': '色板组',
   // tabs（标签页）
   'tabs.close': '关闭',
   'tabs.ctxClose': '关闭',

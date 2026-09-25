@@ -181,6 +181,10 @@ export const pt: LocaleMessages = {
   'tag.close': 'Fechar',
   // tag-group (grupo de tags)
   'tagGroup.group': 'Grupo de tags',
+  // swatch（色板）
+  'swatch.color': 'Amostra de cor',
+  // swatch-group（色板选择组）
+  'swatchGroup.group': 'Grupo de amostras de cor',
   // tabs (abas)
   'tabs.close': 'Fechar',
   'tabs.ctxClose': 'Fechar',

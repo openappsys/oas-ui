@@ -181,6 +181,10 @@ export const ru: LocaleMessages = {
   'tag.close': 'Закрыть',
   // tagGroup (группа меток)
   'tagGroup.group': 'Группа меток',
+  // swatch（色板）
+  'swatch.color': 'Образец цвета',
+  // swatch-group（色板选择组）
+  'swatchGroup.group': 'Группа образцов цвета',
   // tabs (вкладки)
   'tabs.close': 'Закрыть',
   'tabs.ctxClose': 'Закрыть',

@@ -181,6 +181,10 @@ export const ja: LocaleMessages = {
   'tag.close': '閉じる',
   // tag-group（タググループ）
   'tagGroup.group': 'タググループ',
+  // swatch（色板）
+  'swatch.color': 'カラースウォッチ',
+  // swatch-group（色板选择组）
+  'swatchGroup.group': 'カラースウォッチグループ',
   // tabs（タブ）
   'tabs.close': '閉じる',
   'tabs.ctxClose': '閉じる',

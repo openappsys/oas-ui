@@ -440,6 +440,7 @@ onMounted(async () => {
 | --- | --- |
 | `template[slot="item"]` | Custom file row/card (`[data-item-name]`/`[data-item-size]` bindings) |
 | `template[slot="tip"]` | Drop-zone tip rich content (tip attribute wins) |
+| `template[slot="trigger"]` | Self-drawn trigger-area template (native slot does not render template elements — cloned by the component; clicking the zone still opens the file picker) |
 | `trigger` | Replace the drop-zone content (zone semantics kept) |
 
 #### CSS Variables
