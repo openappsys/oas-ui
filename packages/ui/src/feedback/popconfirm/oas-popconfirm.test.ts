@@ -110,8 +110,14 @@ describe('OASPopconfirm', () => {
     })
 
     it('默认溢出自动调整：视口放不下时主轴翻转（保留对齐后缀）', async () => {
-      // happy-dom 默认视口 1024x768、锚点 rect 全 0：请求 top（0-0-8>=0 不成立）翻转 bottom
-      const el = mount({ open: '', placement: 'top-start' })
+      // 零尺寸弹层不翻转（引擎零尺寸保护，2026-09-24 引擎修复后契约）；
+      // 翻转用真实尺寸桩：锚点贴近视口顶缘（top 放不下 120 高弹层）→ 翻转 bottom
+      const el = mount({ placement: 'top-start' })
+      const rect = (x: number, y: number, w: number, h: number) =>
+        ({ left: x, top: y, right: x + w, bottom: y + h, width: w, height: h }) as DOMRect
+      el.querySelector('button')!.getBoundingClientRect = () => rect(100, 100, 120, 40)
+      pop(el).getBoundingClientRect = () => rect(0, 0, 200, 120)
+      el.setAttribute('open', '')
       await Promise.resolve()
       expect(pop(el).getAttribute('data-placement')).toBe('bottom-start')
     })

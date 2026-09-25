@@ -104,6 +104,15 @@ describe('computePosition 浮层定位', () => {
       expect(pos.top).toBeLessThanOrEqual(viewport.height)
       expect(pos.left).toBeLessThanOrEqual(viewport.width)
     })
+
+    it('0 尺寸浮层 + RTL：不翻转——零尺寸无溢出可判，翻转会把 RTL 镜像抵消（sidebar flyout 实抓）', () => {
+      // RTL 下 right-start 镜像为 left-end；零尺寸时 fits('left') 恒 false（-gap<0）→ 翻转回 right=镜像被抵消
+      const pos = computePosition(rect(0, 0, 0, 0), rect(0, 0, 0, 0), 'right-start', viewport, 4, true, {
+        collisionPadding: 8,
+        direction: 'rtl',
+      })
+      expect(pos.placement).toBe('left-end')
+    })
   })
 
   describe('12 向 placement（start/end 对齐）', () => {
