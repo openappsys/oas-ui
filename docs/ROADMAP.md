@@ -90,5 +90,5 @@
 - ~~表单布局（grid 栅格表单）~~ → 已并入 v1.9 第二阶段
 - 组件 API 表格自动化：✅ 已完成（随 v1.8 落地；scan/harvest/gen + api:check 进 CI）
 - 语言包扩展：v0.10.0 落地 zh-CN/en 后，按社区需求补 ja/ko/fr/de/es/ar 等
-- ~~全量 RTL 视觉审计（v0.10.0 只立逻辑属性规矩）~~ → 静态层已随未发布版本完成（117 页 LTR/RTL 双跑几何 sweep 117/117 全净 + 识图 triage 实抓修复 5 处）；交互态浮层打开态复核留待后续批次（popover 虚拟触发/tour 信标/snackbar 弹出等）
+- ~~全量 RTL 视觉审计（v0.10.0 只立逻辑属性规矩）~~ → 静态层已随未发布版本完成（117 页 LTR/RTL 双跑几何 sweep 117/117 全净 + 识图 triage 实抓修复 5 处）；交互态复核亦已完成（20 浮层打开态 sweep + popover/tour 定责，time-picker 右溢修复）
 - ~~形状化二维码大码体积压缩~~ → 已落地「合并路径 + `userSpaceOnUse` pattern 平铺」（随未发布版本；145×145 码 ~305 KB → ~88 KB，与 square 同级，几何逐像素等价）
