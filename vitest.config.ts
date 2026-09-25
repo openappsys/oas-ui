@@ -17,5 +17,10 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
     include: ['packages/**/*.test.ts'],
     globals: true,
+    poolOptions: {
+      forks: {
+        isolate: false,
+      },
+    },
   },
 })
