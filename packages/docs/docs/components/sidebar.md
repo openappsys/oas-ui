@@ -21,7 +21,7 @@
 
 点击底部「«」按钮切换 `collapsed`（受控属性，派发 `oas-collapse`）；折叠态只显示图标，无 icon 的菜单项自动隐藏。`hide-toggle` 可隐藏该按钮（宿主 opt-out，如静态侧栏场景）。
 
-**折叠态嵌套子菜单走 flyout 浮层**：树形父项在折叠态渲染为图标项，点击（或悬停延迟）弹出子菜单面板——面板锚定父项 inline-end（RTL 镜像到左）、碰撞避让、叶子项点击派发 `oas-select` 并关面板，嵌套子树在面板内内联展开；Esc 关闭并回焦父项、点击外部关闭、单开互斥。
+**折叠态嵌套子菜单走 flyout 浮层**：树形父项在折叠态渲染为图标项，点击（或悬停延迟）弹出子菜单面板——面板锚定父项 inline-end（RTL 镜像到左）、碰撞避让、叶子项点击派发 `oas-select` 并关面板，嵌套子树在面板内内联展开；Esc 关闭并回焦父项、点击外部关闭、单开互斥。注意（契约变更）：折叠态父项点击只开 flyout，**不再派发父项自身的 `oas-select`**（父项不是可导航页面）——若此前依赖折叠态父项的 `oas-select` 做导航，请改监听 flyout 内叶子项的 `oas-select`。
 
 <DemoBlock title="hide-toggle（隐藏折叠按钮，静态侧栏）">
   <div style="height: 240px; width: 100%; display: flex">

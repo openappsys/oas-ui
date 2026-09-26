@@ -4,39 +4,22 @@
 
 ## [未发布]
 
+### 契约变更（升级前必读）
+
+- **oas-sidebar 折叠态树形父项点击不再派发 `oas-select`**：折叠态嵌套父项点击（或悬停）现在打开 flyout 子菜单——此前点击会派发父项的 `oas-select`（父项不是可导航页面，属死交互的伪修复）。若你的宿主在折叠态依赖父项的 `oas-select` 做导航，请改为监听 flyout 内叶子项的 `oas-select`（事件契约不变，仅父项不再派发）。
+
 ### 特性
 
 - **oas-swatch + oas-swatch-group（新组件，form 族）**：色板独立件——内联预设色快选/展示场景（不开 color-picker 面板）。色块件：color（预设名/任意色值）/size 五档/shape 三态（square/rounded/circle）/nothing（棋盘格底无色指示）/mixed（混色拼贴）/disabled/selected（选中环描边）/label（可访问名，i18n ×10）；选择组：单选 radiogroup / 多选 checkbox 语义（aria-checked 同步）+ value/multiple 受控 + oas-change + roving 键盘（方向键漫游 RTL 镜像 + Home/End + Enter/Space 选中）+ 空组/未命中值静默容错
 - **oas-button compound 双行变体**：description 具名插槽副文本行——有内容时按钮切纵向双行布局（主行在上、副文本小号次要色在下）；高度自适应不锁尺寸档（与 wrap 同机制，副文本不溢框）；slotchange 动态增删跟随；loading/icon/href/disabled 既有契约全兼容；副文本自然进入可访问名
-
-- **oas-sidebar 折叠态 × 树形子菜单不可达根治**：collapsed 下图标条内的树形父项改走 flyout 子菜单（主流侧栏惯例）——点击/hover 延迟开合 + 定位引擎锚定 inline-end（RTL 镜像）+ 碰撞避让 + Esc 关闭回焦/外部点击关闭/单开互斥 + 嵌套子树面板内内联展开；父项挂 aria-haspopup + aria-expanded，面板 role=menu / 子项 role=menuitem；折叠态 label 隐藏规则不再误伤 flyout 子项；父项点击不再派发父项 select（父项不是可导航页面——契约变更，原「点击派发 select」是死交互的伪修复）
+- **oas-sidebar 折叠态 × 树形子菜单不可达根治**：collapsed 下图标条内的树形父项改走 flyout 子菜单（主流侧栏惯例）——点击/hover 延迟开合 + 定位引擎锚定 inline-end（RTL 镜像）+ 碰撞避让 + Esc 关闭回焦/外部点击关闭/单开互斥 + 嵌套子树面板内内联展开；父项挂 aria-haspopup + aria-expanded，面板 role=menu / 子项 role=menuitem；折叠态 label 隐藏规则不再误伤 flyout 子项；打开期间页面滚动/缩放自动关闭（对齐浮层惯例）
 - **浮层定位引擎零尺寸弹层不翻转**：popup 零尺寸（尚未布局/隐藏测量帧）时 fits 因 gap 恒 false 会误翻——RTL 下翻转把镜像抵消（sidebar flyout 实抓）；改为零尺寸跳过翻转；popconfirm/tooltip 两个依赖「零尺寸翻转」的既有测试桩扶正为真实尺寸
-
 - **oas-tabs 标签级右键原生事件 `oas-tab-contextmenu`**（下游自建右键菜单通道）：右键标签（或聚焦标签按 Menu 键 / Shift+F10）派发可取消事件，`detail: { value, index, clientX, clientY, originalEvent }`；宿主 preventDefault 时内建菜单与浏览器默认菜单全抑止（capture 阶段阻断 manager 委托）；空白处右键不派发；键盘坐标取按钮中心；RTL 透传原生坐标；与 context-menu 属性无关恒派发
-
-- **oas-tab-panel 新增 `title` 属性（悬停提示透传）**：透传 shadow tab 按钮为原生 hover tooltip——长标题截断时悬停看全文；ui-spec 原生全局属性吸收 pattern（tabs 读入缓存并从 panel 宿主移除，防 panel 内容区出现原生 tooltip）；宿主改写 title 按钮跟随更新并再次吸收；items JSON 通道 `title` 字段同效
+- **oas-tab-panel 新增 `title` 属性（悬停提示透传）**：透传 shadow tab 按钮为原生 hover tooltip——长标题截断时悬停看全文；ui-spec 原生全局属性吸收 pattern（tabs 读入缓存并从 panel 宿主移除，防 panel 内容区出现原生 tooltip）；宿主改写 title 按钮即时跟随更新并再次吸收；items JSON 通道 `title` 字段同效
 
 ### 变更
 
 - **oas-stepper / oas-stepper-panel 进 DSD 白名单**（v2.3.2 遗留「后续批次」补位）：whitelist 129 tag、快照直出（steps JSON 标题 + current 联动面板 hidden 同步）+ 真水合（upgrade 后 style 同对象、指纹清理）+ 升级后点击步骤头切面板 e2e 固化；docs ssr.md 白名单清单同步
-- **RTL 全量视觉审计（117 组件页 sweep + 识图 triage）**：新增 `scripts/e2e/rtl-audit.mjs`——LTR/RTL 双跑几何检查取差集（横向溢出/demo 越界）、整页截图产出供识图复核；`dir=rtl` 于文档解析期注入（真实 RTL 应用形态），文档站壳层中性化排除站点自身噪声。几何层 117/117 全净；识图 triage 候选经 DOM/几何量测逐项定责后修复 5 处：
-
-- **oas-swatch + oas-swatch-group（新组件，form 族）**：色板独立件——内联预设色快选/展示场景（不开 color-picker 面板）。色块件：color（预设名/任意色值）/size 五档/shape 三态（square/rounded/circle）/nothing（棋盘格底无色指示）/mixed（混色拼贴）/disabled/selected（选中环描边）/label（可访问名，i18n ×10）；选择组：单选 radiogroup / 多选 checkbox 语义（aria-checked 同步）+ value/multiple 受控 + oas-change + roving 键盘（方向键漫游 RTL 镜像 + Home/End + Enter/Space 选中）+ 空组/未命中值静默容错
-- **oas-button compound 双行变体**：description 具名插槽副文本行——有内容时按钮切纵向双行布局（主行在上、副文本小号次要色在下）；高度自适应不锁尺寸档（与 wrap 同机制，副文本不溢框）；slotchange 动态增删跟随；loading/icon/href/disabled 既有契约全兼容；副文本自然进入可访问名
-
-- **oas-sidebar 折叠态 × 树形子菜单不可达根治**：collapsed 下图标条内的树形父项改走 flyout 子菜单（主流侧栏惯例）——点击/hover 延迟开合 + 定位引擎锚定 inline-end（RTL 镜像）+ 碰撞避让 + Esc 关闭回焦/外部点击关闭/单开互斥 + 嵌套子树面板内内联展开；父项挂 aria-haspopup + aria-expanded，面板 role=menu / 子项 role=menuitem；折叠态 label 隐藏规则不再误伤 flyout 子项；父项点击不再派发父项 select（父项不是可导航页面——契约变更，原「点击派发 select」是死交互的伪修复）
-- **浮层定位引擎零尺寸弹层不翻转**：popup 零尺寸（尚未布局/隐藏测量帧）时 fits 因 gap 恒 false 会误翻——RTL 下翻转把镜像抵消（sidebar flyout 实抓）；改为零尺寸跳过翻转；popconfirm/tooltip 两个依赖「零尺寸翻转」的既有测试桩扶正为真实尺寸
-
-- **oas-tabs 标签级右键原生事件 `oas-tab-contextmenu`**（下游自建右键菜单通道）：右键标签（或聚焦标签按 Menu 键 / Shift+F10）派发可取消事件，`detail: { value, index, clientX, clientY, originalEvent }`；宿主 preventDefault 时内建菜单与浏览器默认菜单全抑止（capture 阶段阻断 manager 委托）；空白处右键不派发；键盘坐标取按钮中心；RTL 透传原生坐标；与 context-menu 属性无关恒派发
-
-- **oas-tab-panel 新增 `title` 属性（悬停提示透传）**：透传 shadow tab 按钮为原生 hover tooltip——长标题截断时悬停看全文；ui-spec 原生全局属性吸收 pattern（tabs 读入缓存并从 panel 宿主移除，防 panel 内容区出现原生 tooltip）；宿主改写 title 按钮跟随更新并再次吸收；items JSON 通道 `title` 字段同效
-
-### 修复
-
-- **`[hidden]` 兜底全量收口（79 文件/66 组件实证）**：`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden]` 规则——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。CDN 全量实测 163 组件中 66 个失效（含 button/icon/tag/input/select 等高频件；2.5.6 曾按报障收口 8 处，系症状驱动的局部收口）；本次全量补齐同款规则，另修 oas-grid 内联 `display` 压过兜底、oas-anchor-target（单文件多组件漏网）两处边角。新增 style-conventions 源码级守卫（逐样式字面量粒度，防新组件再漏）+ 实测 sweep 复验归零
-
-### 变更
-
 - **RTL 全量视觉审计（117 组件页 sweep + 识图 triage）**：新增 `scripts/e2e/rtl-audit.mjs`——LTR/RTL 双跑几何检查取差集（横向溢出/demo 越界）、整页截图产出供识图复核；`dir=rtl` 于文档解析期注入（真实 RTL 应用形态），文档站壳层中性化排除站点自身噪声。几何层 117/117 全净；识图 triage 候选经 DOM/几何量测逐项定责后修复 5 处：
   - **oas-pagination RTL 箭头镜像**：页码序由 flex 随 dir 自动右→左，但 `‹«›»` glyph 不自翻、指向背离目标页；新增 `data-rtl` 钩子 + 方向箭头钮 `scaleX(-1)`（`prev-icon`/`next-icon` 自定义图标一并镜像）
   - **oas-scroll-area RTL 横向 thumb 锚定**：原 `|scrollLeft|/max` 映射静止态贴左缘（呈「已滚到底」观感）且拖拽逆指针；翻正为书写起点锚定（静止贴右缘）+ 拖拽与指针同向
@@ -45,6 +28,13 @@
   - **oas-typography `actions-position="start"` 失效修复**：`order: 0` 与文本缺省 order 平局被 DOM 序裁决，start 从未生效（LTR/RTL 双坏，RTL 审计对比 start/end 两组无差异实抓）；改 `order: -1` 严格前置
 - **oas-qrcode 形状化渲染体积优化（rounded / dots）**：数据区由逐模块 `<use href="#oas-qr-mod">` 改为「合并路径 + 1×1 `userSpaceOnUse` pattern 网格平铺原型」——渲染几何与逐模块绘制逐像素等价（visual 基线零漂移），产物体积回落 square 量级（145×145 码实测约 88.3 KB，旧方案约 323.8 KB，约 1/3.7；与 square 合并路径仅差 +157 B）
 - **oas-qrcode 渐变 × 形状化修复**：`gradient` 与 `dot-shape=rounded/dots` 同用时，`objectBoundingBox` 渐变会在 pattern 内容里逐模块解析（每个码点各自套全渐变）→ 转为 `gradientUnits="userSpaceOnUse"` 映射进模块区域，渐变跨整码连续；square 缺省形状渲染零变化
+- **RTL 交互态轮（20 浮层组件真 RTL 打开态 sweep）**：面板全部在视口内、方向镜像正确；实抓修复 **oas-time-picker** 弹层内容撑宽后 end 对齐右溢 27px（打开瞬间 spinner 列未撑开按旧宽算 left——挂 ResizeObserver + 一帧后复位重定位，LTR 右缘场景同病）
+- **文档站 code 元素 bidi 方向隔离**：`.vp-doc code` 加 `direction: ltr; unicode-bidi: isolate`——code token 自成 LTR 隔离区（RTL 下 CSS 变量名/函数括号不再乱序，LTR 零观感变化）
+- **vitest 关闭隔离尝试回退**：`poolOptions` 在 Vitest 4 已移除（曾误设 `poolOptions.forks.isolate=false`——死配置）；改顶层 `isolate: false` 真关后跨文件模块状态共享击穿 18 条用例（capability 注册表 / vi.mock 泄漏 / 计时态），不值得为 ~15% wall 逐个扶正——已回退默认逐文件隔离，engineering.md 立档前提
+
+### 修复
+
+- **`[hidden]` 兜底全量收口（79 文件/66 组件实证）**：`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden]` 规则——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。CDN 全量实测 163 组件中 66 个失效（含 button/icon/tag/input/select 等高频件；2.5.6 曾按报障收口 8 处，系症状驱动的局部收口）；本次全量补齐同款规则，另修 oas-grid 内联 `display` 压过兜底、oas-anchor-target（单文件多组件漏网）两处边角。新增 style-conventions 源码级守卫（逐样式字面量粒度，防新组件再漏）+ 实测 sweep 复验归零
 
 ## [2.5.6] - 2026-09-23
 

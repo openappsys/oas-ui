@@ -255,4 +255,14 @@ describe('OASSwatchGroup 选择组', () => {
     const swatches = [...el.querySelectorAll<OASSwatch>('oas-swatch')]
     expect(swatches.every((s) => !s.hasAttribute('selected'))).toBe(true)
   })
+
+  it('组内非 swatch 后代的 oas-click 不被组吞掉（stopPropagation 只拦截命中 swatch 的事件）', () => {
+    const el = mountGroup()
+    const other = document.createElement('span')
+    el.appendChild(other)
+    let received = 0
+    el.addEventListener('oas-click', () => received++)
+    other.dispatchEvent(new CustomEvent('oas-click', { bubbles: true, composed: true }))
+    expect(received, '非 swatch 后代事件应照常冒泡到宿主').toBe(1)
+  })
 })

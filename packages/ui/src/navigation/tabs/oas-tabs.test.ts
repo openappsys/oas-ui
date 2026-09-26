@@ -410,6 +410,26 @@ describe('OASTabs', () => {
     expect(btnOrders.getAttribute('title')).toBeNull()
   })
 
+  it('面板删除后同名无 title 新面板：旧 title 缓存清理不复活', async () => {
+    const el = new OASTabs()
+    el.innerHTML = '<oas-tab-panel label="标题" value="a" title="旧提示"><p>内容</p></oas-tab-panel>'
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!.getAttribute('title')).toBe(
+      '旧提示',
+    )
+    // closable 场景：宿主删除带 title 的面板，再加同名 value 无 title 新面板
+    el.querySelector('oas-tab-panel')!.remove()
+    const fresh = document.createElement('oas-tab-panel')
+    fresh.setAttribute('label', '标题')
+    fresh.setAttribute('value', 'a')
+    fresh.innerHTML = '<p>新内容</p>'
+    el.appendChild(fresh)
+    await Promise.resolve() // MutationObserver childList → update（microtask）
+    await new Promise((r) => setTimeout(r, 0))
+    const btn = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+    expect(btn.getAttribute('title'), '已删除面板的 title 缓存应被清理').toBeNull()
+  })
+
   it('tab-position=left：host 与 tablist 带纵向布局类名', () => {
     const el = mount({ 'tab-position': 'left' })
     expect(el.classList.contains('oas-tabs--vertical')).toBe(true)

@@ -132,9 +132,10 @@ export class OASSwatchGroup extends OASElement {
 
   private handleSwatchClick = (e: Event): void => {
     if (e.target === this) return
-    e.stopPropagation()
     const sw = (e.target as HTMLElement).closest?.('oas-swatch') as OASSwatch | null
     if (!sw || !this.contains(sw)) return
+    // 命中组内 swatch 才拦截——组内混入的其他组件事件照常冒泡给宿主
+    e.stopPropagation()
     if (this.hasAttr('disabled') || sw.hasAttribute('disabled') || sw.hasAttribute('data-group-disabled')) return
     const color = sw.getAttribute('color')
     if (!color) return

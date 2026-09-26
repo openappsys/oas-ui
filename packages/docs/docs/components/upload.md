@@ -448,6 +448,6 @@ onMounted(async () => {
 | --- | --- |
 | `--oas-upload-card-radius` | `var(--oas-radius-md)` |
 
-> ⚠️ `template[slot="trigger"]` 的两个限制：① 模板内容**克隆进 shadow DOM**——宿主页面样式表对克隆内容**不生效**（样式用内联样式 / oas 组件 / CSS 变量解决）；② 克隆是组件 update() 时的**静态快照**——模板连接后再变更不会自动刷新（写完模板再挂组件，或之后改任意属性触发一次 update 重同步）。
+> ⚠️ `template[slot="trigger"]` 的三个限制：① 模板内容**克隆进 shadow DOM**——宿主页面样式表对克隆内容**不生效**（样式用内联样式 / oas 组件 / CSS 变量解决）；② 克隆是组件 update() 时的**静态快照**——模板连接后再变更不会自动刷新（写完模板再挂组件，或之后改任意属性触发一次 update 重同步）；③ `cloneNode` **不携带事件监听器**——宿主绑在模板节点上的 `@click` / `addEventListener` 在克隆里失效，交互请走组件事件（`oas-change` 等）或在克隆后的 zone 容器上委托绑定。
 
 键盘：拖拽区 `Enter` / `空格` 打开文件选择；删除按钮可聚焦；预览浮层 Esc 关闭。
