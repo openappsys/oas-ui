@@ -45,6 +45,7 @@
 
 ### 修复
 
+- **oas-context-menu `kind="checkbox"` 勾选项链路断裂**（新增 kind demo 时浏览器实抓）：宿主 `value` 从不下传给内层 menu（初始勾选态永不回显）、勾选切换不写回宿主（勾选态丢失）、勾选即关菜单（违反「勾选切换不收起」惯例）——补齐 value 下传 + 勾选写回 + checkbox 切换不收起，转发 detail 带 `checked`；存量「宿主不写回 value」测试锁的正是缺陷行为，已扶正
 - **oas-input 未提交输入被无关 update 抹掉**：typing（未提交）期间任何属性变化触发的 update() 都会从 value 属性回写内层 input——用户正在输入的文本被旧属性值覆盖（loading 远程校验主场景实抓：校验请求发出 loading 开、响应回来 loading 关，期间输入全丢；status/size 等切换同病）。改为「value 属性实际变化才回写」（未提交输入保护），受控写回路径不变；单测 + e2e 固化
 - **`[hidden]` 兜底全量收口（79 文件/66 组件实证）**：`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden]` 规则——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。CDN 全量实测 163 组件中 66 个失效（含 button/icon/tag/input/select 等高频件；2.5.6 曾按报障收口 8 处，系症状驱动的局部收口）；本次全量补齐同款规则，另修 oas-grid 内联 `display` 压过兜底、oas-anchor-target（单文件多组件漏网）两处边角。新增 style-conventions 源码级守卫（逐样式字面量粒度，防新组件再漏）+ 实测 sweep 复验归零
 

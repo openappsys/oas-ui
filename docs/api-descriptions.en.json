@@ -573,8 +573,8 @@
       "oas-blur": "Dispatched on trigger blur; `detail.value` shares the oas-change shape (inner focus moves do not false-fire)"
     },
     "slots": {
-      "suffix-icon": "Custom trailing trigger icon (replaces the default arrow; yields to the spinner while loading)",
-      "option": "Custom option row template; `[data-option-label]` nodes bind the option text"
+      "template[slot=\"option\"]": "Custom option row template; `[data-option-label]` nodes bind the option text",
+      "template[slot=\"suffix-icon\"]": "Custom trailing trigger icon (replaces the default arrow; yields to the spinner while loading)"
     }
   },
   "oas-chart": {
@@ -1359,7 +1359,8 @@
       "min-child-width": "Minimum child width (e.g. 180px; bare numbers read as px): auto-fit + minmax derives the column count from container width (breakpoint-free fluid reflow); `columns` wins when both are set, and child span/offset are inert in this mode",
       "row-gap": "Independent row gap overriding the matching axis of gap (numbers as px)",
       "column-gap": "Independent column gap (same rules)",
-      "collapsed-rows": "Rows visible when collapsed; overflow hidden with an expand/collapse tail cell (writes back collapsed, emits oas-collapse)"
+      "collapsed-rows": "Rows visible when collapsed; overflow hidden with an expand/collapse tail cell (writes back collapsed, emits oas-collapse)",
+      "collapsed": "Controlled collapsed attr for collapsed-rows (bootstrapped collapsed by default; host/tail can toggle)"
     },
     "events": {
       "oas-collapse": "Emitted on collapsed-rows tail toggle, `detail: { collapsed }`"
@@ -1521,7 +1522,11 @@
       "suffix-text": "Inline text after the input value (plain HTML may use the legacy alias suffix)",
       "required": "Required marker (native passthrough to the inner input; drives the valueMissing validation chain)",
       "autofocus": "Auto-focus the inner input after mount (native autofocus does not cross shadow DOM, so the component forwards it)",
-      "loading": "Loading state: trailing spinner with aria-busy (input stays editable); takes precedence over the clear button"
+      "loading": "Loading state: trailing spinner with aria-busy (input stays editable); takes precedence over the clear button",
+      "hint": "Persistent static hint below the input (aria-describedby, independent of validation errors)",
+      "min": "Native min mirrored to the inner input (number type)",
+      "max": "Native max mirrored to the inner input",
+      "step": "Native step mirrored to the inner input"
     },
     "events": {
       "oas-clear": "Cleared by click, `detail: { originalEvent }`",
@@ -1536,7 +1541,8 @@
       "prefix": "Inline leading content (icons/buttons etc.; distributed content takes precedence over the `prefix` attribute text). For simple text use the `prefix` attribute",
       "suffix": "Inline trailing content (icons/buttons etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute",
       "prepend": "Prepend addon area (may contain select/button or any content)",
-      "append": "Append addon area (may contain select/button or any content)"
+      "append": "Append addon area (may contain select/button or any content)",
+      "clear-icon": "Custom clear-button icon (replaces the built-in when present)"
     }
   },
   "oas-input-number": {
@@ -1561,7 +1567,11 @@
       "clearable": "Clear button when a value is present (returns to the empty-value state)",
       "prefix-text": "Inline prefix text (slot=\"prefix\" accepts any content; not part of value parsing)",
       "suffix-text": "Inline suffix text (slot=\"suffix\" likewise)",
-      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner input)"
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner input)",
+      "autofocus": "Focus the inner input after mount",
+      "decimal-separator": "Decimal point character for display and typed parsing (locale-aware default; submitted value stays canonical)",
+      "variant": "Visual variant outlined/filled/borderless (aligned with input)",
+      "align": "Number text alignment left/center/right (logical, RTL mirrored)"
     },
     "events": {
       "oas-change": "Change on step or blur, `detail: { value }` (number)",
@@ -2502,10 +2512,10 @@
       "template[slot=\"option\"]": "Static option row template, cloned into each option label container; `[data-option-label]` nodes get bound to the option label",
       "template[slot=\"tag\"]": "Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label",
       "template[slot=\"empty\"]": "Custom empty state (overrides both \"no data\" and \"no match\" defaults)",
-      "prefix": "Trigger prefix content",
-      "suffix": "Trigger suffix content",
-      "suffix-icon": "Custom trailing trigger icon (replaces the default arrow)",
-      "clear-icon": "Custom clear-button icon"
+      "template[slot=\"clear-icon\"]": "Custom clear-button icon",
+      "template[slot=\"suffix-icon\"]": "Custom trailing trigger icon (replaces the default arrow)",
+      "template[slot=\"prefix\"]": "Trigger prefix content template",
+      "template[slot=\"suffix\"]": "Trigger suffix content template"
     }
   },
   "oas-sidebar": {
@@ -2896,7 +2906,7 @@
     },
     "slots": {
       "template[slot=\"empty\"]": "Rich empty-state content (takes precedence over empty-text and the default empty text)",
-      "filter-icon": "Custom filter trigger icon in filterable column headers"
+      "template[slot=\"filter-icon\"]": "Custom filter trigger icon in filterable column headers"
     }
   },
   "oas-table-column": {
@@ -3564,7 +3574,7 @@
     "slots": {
       "template[slot=\"empty\"]": "Custom empty-state content",
       "template[slot=\"node\"]": "Custom node template (`[data-node-label]` binds the label)",
-      "suffix-icon": "Custom trailing trigger icon (replaces the default arrow)"
+      "template[slot=\"suffix-icon\"]": "Custom trailing trigger icon (replaces the default arrow)"
     }
   },
   "oas-upload": {

@@ -247,6 +247,12 @@
     },
     {
       "name": "template[slot=\"tag\"]"
+    },
+    {
+      "name": "template[slot=\"prefix\"]"
+    },
+    {
+      "name": "template[slot=\"suffix\"]"
     }
   ],
   "cssVars": [

@@ -36,3 +36,41 @@ test('context-menu 多级子菜单贴近视口右缘：翻转后全部落在视�
   }
   await page.screenshot({ path: test.info().outputPath('fix8-context-menu-flip.png') })
 })
+
+// —— 缺陷回归（demo 实抓）：kind=checkbox 勾选项 value 链路断裂 ——
+// 修复前：宿主 value 不下传内层 menu（初始勾选不回显）、勾选切换不写回宿主、勾选即关菜单
+test('context-menu kind=checkbox：初始勾选回显 + 勾选写回宿主 value + 切换不收起', async ({ page }) => {
+  await page.goto('/components/context-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cm-kind')
+  await page.evaluate(() => document.getElementById('cm-kind')!.scrollIntoView({ block: 'center' }))
+  await page.waitForTimeout(300)
+  const r = await page.evaluate(async () => {
+    const el = document.getElementById('cm-kind')!
+    const area = el.firstElementChild as HTMLElement
+    const rect = area.getBoundingClientRect()
+    area.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.left + 100,
+        clientY: rect.top + 50,
+      }),
+    )
+    await new Promise((r) => setTimeout(r, 500))
+    const menu = el.shadowRoot!.querySelector('oas-menu')!
+    const items = [...menu.shadowRoot!.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]')]
+    const gridChecked = items.find((i) => i.textContent?.includes('网格'))?.getAttribute('aria-checked')
+    items.find((i) => i.textContent?.includes('标尺'))!.click()
+    await new Promise((r) => setTimeout(r, 200))
+    return {
+      gridChecked,
+      afterValue: el.getAttribute('value'),
+      stillOpen: el.hasAttribute('open'),
+      out: document.getElementById('cm-kind-out')?.textContent ?? '',
+    }
+  })
+  expect(r.gridChecked, '初始 value=["grid"] 应回显勾选').toBe('true')
+  expect(r.afterValue, '勾选标尺写回宿主 value').toBe('["grid","ruler"]')
+  expect(r.stillOpen, 'checkbox 切换不收起菜单').toBe(true)
+  expect(r.out, 'demo 反馈可见').toContain('ruler')
+})

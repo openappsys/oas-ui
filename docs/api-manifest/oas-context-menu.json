@@ -24,13 +24,19 @@
       "type": "string",
       "default": "true",
       "observed": true
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": false
     }
   ],
   "props": [],
   "events": [
     {
       "name": "oas-select",
-      "detail": "{ value: detail.value }"
+      "detail": "{ value: detail.value, checked: detail.checked } | { value: detail.value }"
     },
     {
       "name": "oas-open-change",

@@ -88,7 +88,15 @@ export class OASContextMenu extends OASElement {
     this.onCleanup(() => document.removeEventListener('contextmenu', this.handleDocContext))
     this.onCleanup(() => window.removeEventListener('scroll', this.handleScroll, true))
     this.menuEl?.addEventListener('oas-select', (e: Event) => {
-      const detail = (e as CustomEvent).detail
+      const detail = (e as CustomEvent).detail as { value: string; checked?: boolean; kind?: string }
+      // checkbox 勾选项（detail 带 checked 字段）：勾选切换不收起（对齐 menu 惯例「连续勾选」），
+      // 内层 menu 已更新自身 value 勾选集——回写宿主 value 后再转发（宿主受控链不丢勾选态）
+      if ('checked' in detail) {
+        const menuValue = this.menuEl?.getAttribute('value')
+        if (menuValue !== null && menuValue !== undefined) this.setAttribute('value', menuValue)
+        this.emit('select', { value: detail.value, checked: detail.checked })
+        return
+      }
       this.emit('select', { value: detail.value })
       this.close()
     })
@@ -144,6 +152,8 @@ export class OASContextMenu extends OASElement {
       if (this.hasAttribute('items')) this.parseItems()
       else this.parseChildItems()
       this.menuEl.setAttribute('items', JSON.stringify(this.itemsList))
+      // value 下传：checkbox/radio 勾选项的初始勾选态由内层 menu 的 value 驱动（缺之勾选永不回显）
+      this.menuEl.setAttribute('value', this.getAttr('value', ''))
       if (!this.wasOpen) {
         // 打开瞬间：用缓存的触发坐标定位（无坐标则不定位，保持快照/上次位置）
         if (this.hasPending) this.positionAt(this.pendingX, this.pendingY)

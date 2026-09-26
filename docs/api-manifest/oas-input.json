@@ -155,6 +155,18 @@
       "name": "required",
       "type": "boolean",
       "observed": false
+    },
+    {
+      "name": "min",
+      "observed": false
+    },
+    {
+      "name": "max",
+      "observed": false
+    },
+    {
+      "name": "step",
+      "observed": false
     }
   ],
   "props": [
