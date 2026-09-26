@@ -777,10 +777,20 @@ export class OASTabs extends OASElement {
     tablist?.addEventListener('contextmenu', (e) => this.handleTabContextMenu(e as MouseEvent), { capture: true })
     // 宿主增删 oas-tab-panel（如 closable 场景外部移除面板）时增量刷新标签栏；
     // 同时观察 panel 的 title 属性变化（宿主改写 title 即时透传按钮，无需等无关 update）。
-    // 属性变化只认 oas-tab-panel 自身——panel 内容区后代元素改写 title 属内容自治，不触发整排重建
+    // childList 只认结构相关增删：直接子面板（target===this），或面板直接子级里带 slot 标记的
+    // 元素（slot=label/icon/close-icon 影响标签渲染）——面板内容区深处的流式增删属内容自治，
+    // 不触发整排标签栏重建；属性变化只认 oas-tab-panel 自身
     this.observer = new MutationObserver((mutations) => {
       for (const m of mutations) {
-        if (m.type === 'childList') return this.update()
+        if (m.type === 'childList') {
+          if (m.target === this) return this.update()
+          if ((m.target as HTMLElement).localName === 'oas-tab-panel') {
+            const nodes = [...m.addedNodes, ...m.removedNodes]
+            const structural = nodes.some((n) => n.nodeType === 1 && (n as HTMLElement).hasAttribute('slot'))
+            if (structural) return this.update()
+          }
+          continue
+        }
         if (m.type === 'attributes' && (m.target as HTMLElement).localName === 'oas-tab-panel') return this.update()
       }
     })
@@ -1067,8 +1077,9 @@ export class OASTabs extends OASElement {
         panel.removeAttribute('title')
       }
       let cachedTitle = this.titleCache.get(value)
-      // 缓存属已删除的旧面板（删后重建同名 value 的新面板元素不同）——判失效不复活旧 title
-      if (cachedTitle && cachedTitle.owner && cachedTitle.owner !== panel) {
+      // 缓存属已删除的旧面板（删后重建同名 value 的新面板元素不同，或 SSR hydrate 时未找到
+      // 对应面板留下 owner=null 的孤儿项）——判失效不复活旧 title
+      if (cachedTitle && cachedTitle.owner !== panel) {
         this.titleCache.delete(value)
         cachedTitle = undefined
       }

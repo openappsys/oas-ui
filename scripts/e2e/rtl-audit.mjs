@@ -4,8 +4,14 @@
  *
  * 用法：
  *   1. 起静态服务（dist 需为最新）：node scripts/e2e/serve-dist.mjs packages/docs/docs/.vitepress/dist 4201
- *   2. 跑审计：node scripts/e2e/rtl-audit.mjs http://localhost:4201 [输出目录]
+ *      （或直接用自举封装：pnpm rtl:audit —— 自动起/杀服务）
+ *   2. 跑审计：node scripts/e2e/rtl-audit.mjs http://localhost:4201 [输出目录] [--no-shots]
  *   3. 用完杀掉自己起的 4201 服务。
+ *
+ * 参数：
+ *   --no-shots   跳过整页截图（CI 门禁用：只跑几何检查，省时省磁盘）
+ *
+ * 退出码（门禁语义）：存在 RTL 独有问题或页面错误时 exit 1，全净 exit 0。
  *
  * 产出（默认 .opencode/rtl-audit/，git 排除区）：
  *   - rtl-<组件>.png          RTL 整页截图（供识图 triage）
@@ -21,8 +27,10 @@ import { readdirSync, mkdirSync, writeFileSync } from 'node:fs'
 import { resolve, basename, join } from 'node:path'
 import { chromium } from '@playwright/test'
 
-const base = process.argv[2] ?? 'http://localhost:4201'
-const outDir = resolve(process.argv[3] ?? '.opencode/rtl-audit')
+const NO_SHOTS = process.argv.includes('--no-shots')
+const posArgs = process.argv.slice(2).filter((a) => !a.startsWith('--'))
+const base = posArgs[0] ?? 'http://localhost:4201'
+const outDir = resolve(posArgs[1] ?? '.opencode/rtl-audit')
 mkdirSync(outDir, { recursive: true })
 
 const componentsDir = resolve(process.cwd(), 'packages/docs/docs/components')
@@ -121,8 +129,8 @@ async function auditPage(browser, name) {
   }
   const ltr = await run('ltr')
   const rtl = await run('rtl')
-  // 截图取 RTL 态（当前页面已是 rtl）
-  await page.screenshot({ path: join(outDir, `rtl-${name}.png`), fullPage: true })
+  // 截图取 RTL 态（当前页面已是 rtl）；--no-shots（CI 门禁）跳过
+  if (!NO_SHOTS) await page.screenshot({ path: join(outDir, `rtl-${name}.png`), fullPage: true })
   await context.close()
 
   const rtlOnly = rtl.filter((x) => !ltr.some((y) => y.type === x.type && y.detail === x.detail))
@@ -157,3 +165,5 @@ for (const r of bad) {
   }
   for (const i of r.issues) console.log(`  ${r.name}: ${i.type} :: ${i.detail}`)
 }
+// 门禁语义：有 RTL 独有问题/页面错误即非零退出（CI 与 pre-push 可接）
+process.exit(bad.length > 0 ? 1 : 0)
