@@ -32,7 +32,7 @@
   <oas-divider variant="double-dotted">double-dotted 双点线</oas-divider>
 </DemoBlock>
 
-`variant` 与 `dashed` 布尔等价（`dashed` 属性 = `variant="dashed"`，显式 `variant` 优先）。
+`variant` 与 `dashed` 布尔等价（`dashed` 属性 = `variant="dashed"`，显式 `variant` 优先）。线型仅水平布局生效——垂直方向（`direction="vertical"`）线段为纯色实线（含 dashed/dotted/double/double-* 全部线型的既有边界）。
 
 ## 缩进
 
