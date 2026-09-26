@@ -450,10 +450,12 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `clearable` | Clearable | `boolean` | — |
 | `count-position` | Character count position: `outside` (default) / `inside` (right side within the field) | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
-| `hint` | — | `string` | — |
+| `hint` | Persistent static hint below the input (aria-describedby, independent of validation errors) | `string` | — |
 | `label` | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "输入框" when unset) | — | — |
 | `loading` | Loading state: trailing spinner with aria-busy (input stays editable); takes precedence over the clear button | `boolean` | — |
+| `max` | Native max mirrored to the inner input | — | — |
 | `maxlength` | Maximum input length (passed through to native maxlength) | `string` | — |
+| `min` | Native min mirrored to the inner input (number type) | — | — |
 | `placeholder` | Placeholder text | `string` | — |
 | `prefix-icon` | Icon name for the leading icon | `string` | — |
 | `prefix-text` | Inline text before the input value (plain HTML may use the legacy alias prefix) | `string` | — |
@@ -464,6 +466,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `show-password` | Password visibility toggle (renders an eye button when `type="password"`) | `boolean` | — |
 | `size` | Size preset `small` / `medium` (default) / `large`: height and font scale | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the inner input | `string` | — |
+| `step` | Native step mirrored to the inner input | — | — |
 | `suffix-icon` | Icon name for the trailing icon | `string` | — |
 | `suffix-text` | Inline text after the input value (plain HTML may use the legacy alias suffix) | `string` | — |
 | `type` | Native input type | `string` | `text` |
@@ -487,7 +490,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | Name | Description |
 | --- | --- |
 | `append` | Append addon area (may contain select/button or any content) |
-| `clear-icon` | — |
+| `clear-icon` | Custom clear-button icon (replaces the built-in when present) |
 | `prefix` | Inline leading content (icons/buttons etc.; distributed content takes precedence over the `prefix` attribute text). For simple text use the `prefix` attribute |
 | `prepend` | Prepend addon area (may contain select/button or any content) |
 | `suffix` | Inline trailing content (icons/buttons etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute |

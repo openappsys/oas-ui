@@ -304,12 +304,12 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `align` | — | `string` | — |
-| `autofocus` | — | `boolean` | — |
+| `align` | 数字文本对齐 left/center/right（逻辑映射，RTL 镜像） | `string` | — |
+| `autofocus` | 挂载后聚焦内层输入（原生 autofocus 不穿透 shadow） | `boolean` | — |
 | `clearable` | 有值时显示清除按钮（一键回空值态） | `boolean` | — |
 | `controls` | 步进按钮显隐（缺省显示；`controls="false"` 隐藏，键盘 ↑↓ 仍可步进） | — | — |
 | `controls-position` | 按钮位置：`right`（默认，右侧上下箭头）/ `both`（两侧 −/+，触屏计数器形态） | — | — |
-| `decimal-separator` | — | `string` | — |
+| `decimal-separator` | 小数点字符（显示与键入解析用；缺省 locale 感知，提交值仍规范数字串） | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `format` | Intl 风格声明式格式：`percent`（0.15→15%）/ `currency:USD` / `unit:GB`，跟随宿主 locale | `string` | — |
 | `grouping` | 千分位分组显示（解析时自动剥离分组符） | `boolean` | — |
@@ -327,7 +327,7 @@ onMounted(() => {
 | `step-strictly` | 严格步进：提交值吸附最近 step 倍数 | `boolean` | — |
 | `suffix-text` | 内嵌后缀文案（slot="suffix" 同上） | `string` | — |
 | `value` | 当前值（受控） | `string` | — |
-| `variant` | — | `string` | — |
+| `variant` | 形态 outlined/filled/borderless（对齐 input） | `string` | — |
 | `wheel` | 聚焦时滚轮步进（上增下减；默认关防误触） | `boolean` | — |
 
 #### 事件

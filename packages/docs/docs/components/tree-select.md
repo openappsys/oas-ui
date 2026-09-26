@@ -531,7 +531,6 @@ onMounted(() => {
 
 | 名称 | 说明 |
 | --- | --- |
-| `suffix-icon` | 自定义触发器后缀图标（替换默认箭头） |
 | `template[slot="empty"]` | 自定义空态内容 |
 | `template[slot="node"]` | 自定义节点模板（`[data-node-label]` 绑定标签） |
-| `template[slot="suffix-icon"]` | — |
+| `template[slot="suffix-icon"]` | 自定义触发器后缀图标（替换默认箭头） |

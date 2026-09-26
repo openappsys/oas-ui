@@ -181,7 +181,7 @@ onMounted(() => {
 | `items` | Menu items JSON | `string` | `[]` |
 | `long-press-delay` | Long-press duration in ms for touch trigger (default 500) | `string` | `500` |
 | `open` | Controlled open state (writable externally) | `boolean` | — |
-| `value` | — | `string` | — |
+| `value` | Checked set for kind="checkbox" items (JSON array); toggles write back to the host and persist across opens | `string` | — |
 
 #### Events
 

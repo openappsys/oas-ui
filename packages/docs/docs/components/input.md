@@ -450,10 +450,12 @@ onMounted(() => {
 | `clearable` | 可清空 | `boolean` | — |
 | `count-position` | 字数计数位置：`outside`（默认，框外）/ `inside`（输入区内右侧） | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
-| `hint` | — | `string` | — |
+| `hint` | 输入框下方常驻静态提示文案（aria-describedby 关联，独立于校验错误） | `string` | — |
 | `label` | 可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」） | — | — |
 | `loading` | 加载态：行尾 spinner + aria-busy（不禁用输入）；与 clearable 共存时优先显示 | `boolean` | — |
+| `max` | 透传内层原生 input 的最大值 | — | — |
 | `maxlength` | 最大输入长度（透传原生 maxlength） | `string` | — |
+| `min` | 透传内层原生 input 的最小值（number 类型生效） | — | — |
 | `placeholder` | 占位提示 | `string` | — |
 | `prefix-icon` | 前置图标名 | `string` | — |
 | `prefix-text` | 内嵌前置文案（纯 HTML 可沿用遗留别名 prefix） | `string` | — |
@@ -464,6 +466,7 @@ onMounted(() => {
 | `show-password` | 密码可见切换（`type="password"` 时渲染眼睛按钮） | `boolean` | — |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large`：高度与字号联动 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`；error 同步内层 aria-invalid | `string` | — |
+| `step` | 透传内层原生 input 的步长 | — | — |
 | `suffix-icon` | 后置图标名 | `string` | — |
 | `suffix-text` | 内嵌后置文案（纯 HTML 可沿用遗留别名 suffix） | `string` | — |
 | `type` | 原生 input 类型 | `string` | `text` |
@@ -487,7 +490,7 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | `append` | 后置 addon 区（可嵌 select/按钮等任意内容） |
-| `clear-icon` | — |
+| `clear-icon` | 自定义清除按钮图标（插槽有内容即替换内置） |
 | `prefix` | 内嵌前置内容（图标/按钮等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可 |
 | `prepend` | 前置 addon 区（可嵌 select/按钮等任意内容） |
 | `suffix` | 内嵌后置内容（图标/按钮等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可 |

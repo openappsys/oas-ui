@@ -531,7 +531,6 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 
 | Name | Description |
 | --- | --- |
-| `suffix-icon` | Custom trailing trigger icon (replaces the default arrow) |
 | `template[slot="empty"]` | Custom empty-state content |
 | `template[slot="node"]` | Custom node template (`[data-node-label]` binds the label) |
-| `template[slot="suffix-icon"]` | — |
+| `template[slot="suffix-icon"]` | Custom trailing trigger icon (replaces the default arrow) |

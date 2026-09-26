@@ -363,7 +363,7 @@ The `oas-grid-item` `flex` attribute writes the CSS `flex` shorthand inline (not
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `align` | Block-axis alignment (align-items): `start` / `center` / `end` / `stretch` / `baseline`; invalid values fall back to `stretch` with a dev warning (deduped) | `string` | — |
-| `collapsed` | — | — | — |
+| `collapsed` | Controlled collapsed attr for collapsed-rows (bootstrapped collapsed by default; host/tail can toggle) | — | — |
 | `collapsed-rows` | Rows visible when collapsed; overflow hidden with an expand/collapse tail cell (writes back collapsed, emits oas-collapse) | `string` | `1` |
 | `cols` | Total column count | `string` | `24` |
 | `column-gap` | Independent column gap (same rules) | `string` | — |

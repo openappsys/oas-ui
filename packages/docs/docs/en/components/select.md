@@ -715,14 +715,12 @@ onMounted(() => {
 
 | Name | Description |
 | --- | --- |
-| `clear-icon` | Custom clear-button icon |
-| `prefix` | Trigger prefix content |
-| `suffix` | Trigger suffix content |
-| `suffix-icon` | Custom trailing trigger icon (replaces the default arrow) |
-| `template[slot="clear-icon"]` | — |
+| `template[slot="clear-icon"]` | Custom clear-button icon |
 | `template[slot="empty"]` | Custom empty state (overrides both "no data" and "no match" defaults) |
 | `template[slot="option"]` | Static option row template, cloned into each option label container; `[data-option-label]` nodes get bound to the option label |
-| `template[slot="suffix-icon"]` | — |
+| `template[slot="prefix"]` | Trigger prefix content template |
+| `template[slot="suffix"]` | Trigger suffix content template |
+| `template[slot="suffix-icon"]` | Custom trailing trigger icon (replaces the default arrow) |
 | `template[slot="tag"]` | Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label |
 
 #### CSS Variables

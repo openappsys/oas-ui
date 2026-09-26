@@ -855,9 +855,8 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 
 | Name | Description |
 | --- | --- |
-| `filter-icon` | Custom filter trigger icon in filterable column headers |
 | `template[slot="empty"]` | Rich empty-state content (takes precedence over empty-text and the default empty text) |
-| `template[slot="filter-icon"]` | — |
+| `template[slot="filter-icon"]` | Custom filter trigger icon in filterable column headers |
 
 #### CSS Variables
 

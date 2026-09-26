@@ -851,9 +851,8 @@ onMounted(() => {
 
 | 名称 | 说明 |
 | --- | --- |
-| `filter-icon` | 自定义可过滤列表头的触发图标 |
 | `template[slot="empty"]` | 空态富内容（优先于 empty-text 与默认空态文案） |
-| `template[slot="filter-icon"]` | — |
+| `template[slot="filter-icon"]` | 自定义可过滤列表头的触发图标 |
 
 #### CSS 变量
 

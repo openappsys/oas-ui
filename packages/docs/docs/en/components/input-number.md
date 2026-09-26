@@ -303,12 +303,12 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `align` | — | `string` | — |
-| `autofocus` | — | `boolean` | — |
+| `align` | Number text alignment left/center/right (logical, RTL mirrored) | `string` | — |
+| `autofocus` | Focus the inner input after mount | `boolean` | — |
 | `clearable` | Clear button when a value is present (returns to the empty-value state) | `boolean` | — |
 | `controls` | Stepper buttons visibility (shown by default; `controls="false"` hides them, keyboard ↑↓ still steps) | — | — |
 | `controls-position` | Button layout: `right` (default, stacked up/down on the right) / `both` (−/+ on both sides, stepper-counter form) | — | — |
-| `decimal-separator` | — | `string` | — |
+| `decimal-separator` | Decimal point character for display and typed parsing (locale-aware default; submitted value stays canonical) | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `format` | Intl-style declarative format: `percent` (0.15→15%) / `currency:USD` / `unit:GB`, following the host locale | `string` | — |
 | `grouping` | Thousands grouping display (group separators stripped on parse) | `boolean` | — |
@@ -326,7 +326,7 @@ onMounted(() => {
 | `step-strictly` | Strict stepping: committed value snaps to the nearest step multiple | `boolean` | — |
 | `suffix-text` | Inline suffix text (slot="suffix" likewise) | `string` | — |
 | `value` | Current value (controlled) | `string` | — |
-| `variant` | — | `string` | — |
+| `variant` | Visual variant outlined/filled/borderless (aligned with input) | `string` | — |
 | `wheel` | Wheel stepping while focused (up increments, down decrements; off by default to prevent accidental changes) | `boolean` | — |
 
 #### Events
