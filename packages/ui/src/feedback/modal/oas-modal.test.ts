@@ -1408,3 +1408,52 @@ function pointer(type: string, clientX: number, clientY = 0): Event {
   }
   return new MouseEvent(type, { bubbles: true, clientX, clientY })
 }
+
+describe('OASModal z-index（层级覆盖，PRD P1-15）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function maskOf(el: OASModal): HTMLElement {
+    return el.shadowRoot!.querySelector('.mask')!
+  }
+
+  function dialogOf(el: OASModal): HTMLElement {
+    return el.shadowRoot!.querySelector('.dialog')!
+  }
+
+  it('z-index 进 observedAttributes', () => {
+    expect(OASModal.observedAttributes).toContain('z-index')
+  })
+
+  it('z-index 缺省走 modal 档位 token（mask/dialog 内联镜像 CSS 规则，dialog 恒高 1）', () => {
+    const el = mount({ visible: '' })
+    expect(maskOf(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050))')
+    expect(dialogOf(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050) + 1)')
+  })
+
+  it('z-index 属性显式覆盖档位（叠加在 --oas-z-index-base 之上，与 config-provider 起始值共存）', () => {
+    const el = mount({ visible: '', 'z-index': '2000' })
+    expect(maskOf(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + 2000)')
+    expect(dialogOf(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + 2000 + 1)')
+  })
+
+  it('z-index 非法值回落 modal 档位 token', () => {
+    const el = mount({ visible: '', 'z-index': 'abc' })
+    expect(maskOf(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050))')
+    expect(dialogOf(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050) + 1)')
+  })
+
+  it('z-index 动态切换/移除：即时重算，移除后回退档位', () => {
+    const el = mount({ visible: '' })
+    el.setAttribute('z-index', '3000')
+    expect(maskOf(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + 3000)')
+    el.removeAttribute('z-index')
+    expect(maskOf(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050))')
+    expect(dialogOf(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050) + 1)')
+  })
+})

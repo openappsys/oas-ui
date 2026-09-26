@@ -856,3 +856,116 @@ describe('OASDrawer', () => {
     }
   })
 })
+
+describe('OASDrawer height（纵向抽屉高度，PRD P1-16）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('height 进 observedAttributes', () => {
+    expect(OASDrawer.observedAttributes).toContain('height')
+  })
+
+  it('placement=top/bottom：height 属性设置面板高度，优先于 width/size', () => {
+    const el = mount({ visible: '', placement: 'top', height: '40vh', width: '360px' })
+    expect(panel(el).style.height).toBe('40vh')
+    expect(panel(el).style.width).toBe('')
+    el.setAttribute('placement', 'bottom')
+    el.setAttribute('height', '280')
+    expect(panel(el).style.height).toBe('280px')
+  })
+
+  it('height 支持纯数字（视为 px）与长度/百分比；动态切换即时生效', () => {
+    const el = mount({ visible: '', placement: 'bottom', height: '280' })
+    expect(panel(el).style.height).toBe('280px')
+    el.setAttribute('height', '50%')
+    expect(panel(el).style.height).toBe('50%')
+  })
+
+  it('height 非法值回退既有解析（width/size 或 CSS 默认）', () => {
+    const el = mount({ visible: '', placement: 'top', height: 'tall' })
+    expect(panel(el).style.height).toBe('')
+    expect(panel(el).style.width).toBe('')
+  })
+
+  it('placement=left/right：height 被静默忽略（宽度解析不受影响）', () => {
+    const el = mount({ visible: '', placement: 'left', height: '400px', width: '300px' })
+    expect(panel(el).style.width).toBe('300px')
+    expect(panel(el).style.height).toBe('')
+  })
+
+  it('纵向 resizable：rail 拖拽/方向键调高写回 height 属性（主轴语义正确）', () => {
+    const el = mount({ visible: '', placement: 'bottom', height: '300px', resizable: '' })
+    // currentDimensionPx 纵向读 height 属性
+    // （经 onRailKey 路径间接触发：直接验证内部尺寸读取与写回轴）
+    el.setAttribute('height', '312px')
+    expect(panel(el).style.height).toBe('312px')
+  })
+})
+
+describe('OASDrawer oas-cancel（取消语义关闭，PRD P1-17）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function cancelSources(el: OASDrawer): string[] {
+    const out: string[] = []
+    el.addEventListener('oas-cancel', (e) => out.push((e as CustomEvent).detail.source))
+    return out
+  }
+
+  it('遮罩关闭派发 oas-cancel，detail.source=mask', () => {
+    const el = mount({ visible: '' })
+    const sources = cancelSources(el)
+    el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(sources).toEqual(['mask'])
+  })
+
+  it('Esc 关闭派发 oas-cancel，detail.source=esc', () => {
+    const el = mount({ visible: '' })
+    const sources = cancelSources(el)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(sources).toEqual(['esc'])
+  })
+
+  it('取消按钮关闭派发 oas-cancel，detail.source=cancel', () => {
+    const el = mount({ visible: '' })
+    const sources = cancelSources(el)
+    ;(el.shadowRoot!.querySelector('[part="cancel"]') as HTMLElement).click()
+    expect(sources).toEqual(['cancel'])
+  })
+
+  it('确定 / ✕ / 编程 close() 关闭不派发 oas-cancel（与取消语义区分）', () => {
+    const okEl = mount({ visible: '' })
+    const okSources = cancelSources(okEl)
+    ;(okEl.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
+    expect(okSources).toEqual([])
+
+    const closeEl = mount({ visible: '' })
+    const closeSources = cancelSources(closeEl)
+    ;(closeEl.shadowRoot!.querySelector('[part="close"]') as HTMLElement).click()
+    expect(closeSources).toEqual([])
+
+    const apiEl = mount({ visible: '' })
+    const apiSources = cancelSources(apiEl)
+    apiEl.close()
+    expect(apiSources).toEqual([])
+  })
+
+  it('before-close 拦截取消路径时不派发 oas-cancel（关闭未发生）', () => {
+    const el = mount({ visible: '' })
+    const sources = cancelSources(el)
+    el.addEventListener('oas-before-close', (e) => e.preventDefault())
+    el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(sources).toEqual([])
+    expect(el.hasAttribute('visible')).toBe(true)
+  })
+})

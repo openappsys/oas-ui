@@ -3,11 +3,16 @@ import { OASElement } from '@oas-ui/core'
 /** 表单控件读取器：返回该控件的表单值（字符串形态；复杂控件返回 JSON 字符串） */
 type FormControlReader = (el: Element) => string
 
+/** 表单控件写入器：把初始值/reset 值写回控件（与读取器同通道：value / model-value / checked） */
+type FormControlWriter = (el: Element, value: string) => void
+
 /**
  * 表单控件注册表：collectFields 收集这些 tag 下带 `name` 的元素，并用其读取器取值。
  * 内置常用控件 + 特殊通道（transfer 用 model-value、switch 用 checked 态），可 registerFormControl 扩展。
  */
 const FORM_CONTROLS = new Map<string, FormControlReader>()
+
+const FORM_CONTROL_WRITERS = new Map<string, FormControlWriter>()
 
 /** 值安全归一：`[`/`{` 前缀（数组/对象 JSON）重新 stringify，保持合法 JSON */
 function normalizeValue(raw: string): string {
@@ -24,8 +29,13 @@ function normalizeValue(raw: string): string {
 
 const defaultReader: FormControlReader = (el) => normalizeValue(el.getAttribute('value') ?? '')
 
-function register(tags: string[], reader?: FormControlReader): void {
-  for (const t of tags) FORM_CONTROLS.set(t, reader ?? defaultReader)
+const defaultWriter: FormControlWriter = (el, value) => el.setAttribute('value', value)
+
+function register(tags: string[], reader?: FormControlReader, writer?: FormControlWriter): void {
+  for (const t of tags) {
+    FORM_CONTROLS.set(t, reader ?? defaultReader)
+    if (writer) FORM_CONTROL_WRITERS.set(t, writer)
+  }
 }
 
 // 内置常用控件（默认读 value 属性）
@@ -47,26 +57,56 @@ register([
   'oas-combobox',
 ])
 // 特殊 value 通道
-register(['oas-transfer'], (el) => normalizeValue(el.getAttribute('model-value') ?? ''))
-register(['oas-dynamic-input'], (el) => normalizeValue(el.getAttribute('model-value') ?? ''))
-register(['oas-switch'], (el) => (el.hasAttribute('checked') ? 'true' : 'false'))
+register(
+  ['oas-transfer'],
+  (el) => normalizeValue(el.getAttribute('model-value') ?? ''),
+  (el, v) => el.setAttribute('model-value', v),
+)
+register(
+  ['oas-dynamic-input'],
+  (el) => normalizeValue(el.getAttribute('model-value') ?? ''),
+  (el, v) => el.setAttribute('model-value', v),
+)
+register(
+  ['oas-switch'],
+  (el) => (el.hasAttribute('checked') ? 'true' : 'false'),
+  (el, v) => el.toggleAttribute('checked', v === 'true'),
+)
 
 /** 注册额外的表单控件（供自定义/未内置控件被 collectFields 收集）；返回注销函数 */
-export function registerFormControl(tagName: string, reader?: (el: Element) => string | null): () => void {
+export function registerFormControl(
+  tagName: string,
+  reader?: (el: Element) => string | null,
+  writer?: FormControlWriter,
+): () => void {
   const tag = tagName.toLowerCase()
   FORM_CONTROLS.set(tag, reader ? (el) => reader(el) ?? '' : defaultReader)
-  return () => FORM_CONTROLS.delete(tag)
+  if (writer) FORM_CONTROL_WRITERS.set(tag, writer)
+  else FORM_CONTROL_WRITERS.delete(tag)
+  return () => {
+    FORM_CONTROLS.delete(tag)
+    FORM_CONTROL_WRITERS.delete(tag)
+  }
 }
 
-interface Rule {
+/** 校验触发时机 */
+export type ValidateTrigger = 'change' | 'blur' | 'input'
+
+const TRIGGERS: ValidateTrigger[] = ['change', 'blur', 'input']
+
+export interface Rule {
   required?: boolean
   message?: string
   minLength?: number
   maxLength?: number
   pattern?: string
+  /** 自定义校验函数（property 通道；返回 true 通过 / string 为错误消息 / Promise 异步），在既有规则之后执行 */
+  validator?: (value: string, values: Record<string, string>) => true | string | Promise<true | string>
+  /** 字段级校验触发时机，覆盖表级 validate-trigger */
+  validateTrigger?: ValidateTrigger
 }
 
-type Rules = Record<string, Rule[]>
+export type Rules = Record<string, Rule[]>
 
 const STYLE = `
 :host {
@@ -83,20 +123,64 @@ form {
 
 export class OASForm extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['rules', 'layout', 'gap', 'label-align', 'label-width', 'inline']
+    return [
+      'rules',
+      'layout',
+      'gap',
+      'label-align',
+      'label-width',
+      'inline',
+      'disabled',
+      'scroll-to-first-error',
+      'validate-trigger',
+      'initial-values',
+    ]
   }
 
   private form: HTMLFormElement | null = null
   private _rules: Rules = {}
+  /** rules property 通道（validator 等函数不可 JSON 序列化，仅存内存） */
+  private _rulesProp: Rules | null = null
+  private _rulesAttrRaw: string | null = null
+  private _initialValues: Record<string, unknown> = {}
+  private _initialProp: Record<string, unknown> | null = null
+  private _initialAttrRaw: string | null = null
+  /** 初始值写入标记：property 通道写入后强制下次 update 重放 */
+  private _initialDirty = false
+  /** 上次初始值写入的来源标记（attribute 原文；undefined 表示从未写入） */
+  private _initialSource: string | null | undefined = undefined
+  /** reset 基线：挂载时各字段初始值（initial-values 优先，否则取字段当前值） */
+  private _initialSnapshot: Record<string, string> = {}
+  private errors: Record<string, string> = {}
 
-  /** Vue/React 会把 rules 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
+  /** Vue/React 会把 rules 识别为实例属性走 property 赋值；对象走 property 通道（支持 validator），字符串反射到 attribute */
   get rules(): Rules {
     return this._rules
   }
   set rules(value: Rules | string) {
-    this.setAttribute('rules', typeof value === 'string' ? value : JSON.stringify(value))
+    if (typeof value === 'string') {
+      this.setAttribute('rules', value)
+      return
+    }
+    this._rulesProp = value
+    this._rulesAttrRaw = this.getAttribute('rules')
+    if (this.hasRendered) this.update()
   }
-  private errors: Record<string, string> = {}
+
+  /** 表单初始值：JSON attribute + property 双通道，property 优先 */
+  get initialValues(): Record<string, unknown> {
+    return this._initialValues
+  }
+  set initialValues(value: Record<string, unknown> | string) {
+    if (typeof value === 'string') {
+      this.setAttribute('initial-values', value)
+      return
+    }
+    this._initialProp = value
+    this._initialAttrRaw = this.getAttribute('initial-values')
+    this._initialDirty = true
+    if (this.hasRendered) this.update()
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -108,7 +192,7 @@ export class OASForm extends OASElement {
     `
   }
 
-  /** 缓存节点引用 + 绑定提交/字段值同步事件（render 与水合路径共用） */
+  /** 缓存节点引用 + 绑定提交/字段值同步/校验触发事件（render 与水合路径共用） */
   private bind(): void {
     this.form = this.shadow.querySelector('form')
     this.form?.addEventListener('submit', (e: SubmitEvent) => {
@@ -118,7 +202,9 @@ export class OASForm extends OASElement {
     this.addEventListener('oas-input', ((e: CustomEvent<{ value: string }>) => {
       const target = e.composedPath()[0]
       if (target instanceof Element && this.contains(target)) {
-        target.setAttribute('value', String(e.detail.value))
+        const written = String(e.detail.value)
+        target.setAttribute('value', written)
+        this.emitValuesChange(target.getAttribute('name'), written)
       }
     }) as EventListener)
     this.addEventListener('oas-change', ((e: CustomEvent<{ value: unknown }>) => {
@@ -126,9 +212,27 @@ export class OASForm extends OASElement {
       if (target instanceof Element && this.contains(target)) {
         const v = e.detail.value
         // null（空值语义，如 input-number 未填）写空串而非 'null' 字符串
-        target.setAttribute('value', v === null || v === undefined ? '' : typeof v === 'string' ? v : JSON.stringify(v))
+        const written = v === null || v === undefined ? '' : typeof v === 'string' ? v : JSON.stringify(v)
+        target.setAttribute('value', written)
+        this.emitValuesChange(target.getAttribute('name'), written)
       }
     }) as EventListener)
+    // 校验触发时机：事件与 effectiveTrigger 匹配的字段做单字段校验（注册在值同步之后，读到的是新值）
+    const triggerEvents: Array<[string, ValidateTrigger]> = [
+      ['oas-change', 'change'],
+      ['oas-blur', 'blur'],
+      ['oas-input', 'input'],
+    ]
+    for (const [event, trigger] of triggerEvents) {
+      this.addEventListener(event, ((e: CustomEvent) => {
+        const target = e.composedPath()[0]
+        if (!(target instanceof Element) || !this.contains(target)) return
+        const name = target.getAttribute('name')
+        if (!name) return
+        if (this.effectiveTrigger(name) !== trigger) return
+        this.validateFieldByTrigger(name, target)
+      }) as EventListener)
+    }
   }
 
   protected override render(): void {
@@ -146,7 +250,19 @@ export class OASForm extends OASElement {
 
   protected override update(): void {
     this.parseRules()
+    this.parseInitialValues()
     this.applyLayout()
+    this.maybeApplyInitialValues()
+    this.syncDisabledToFields()
+  }
+
+  override disconnectedCallback(): void {
+    // 对齐原生 fieldset 移除语义：离开表单即解除表单链路禁用（不自锁，重连后 update 重新同步）
+    for (const { element } of this.collectFields()) {
+      const field = element as { formDisabledCallback?: (d: boolean) => void }
+      if (typeof field.formDisabledCallback === 'function') field.formDisabledCallback(false)
+    }
+    super.disconnectedCallback()
   }
 
   /**
@@ -197,10 +313,41 @@ export class OASForm extends OASElement {
   }
 
   private parseRules(): void {
+    const raw = this.getAttribute('rules')
+    if (this._rulesProp !== null && raw === this._rulesAttrRaw) {
+      this._rules = this._rulesProp
+      return
+    }
+    if (raw !== this._rulesAttrRaw) {
+      this._rulesProp = null
+      this._rulesAttrRaw = raw
+    }
     try {
-      this._rules = JSON.parse(this.getAttr('rules', '{}'))
+      const parsed = JSON.parse(raw ?? '{}') as Rules
+      this._rules = parsed !== null && typeof parsed === 'object' ? parsed : {}
     } catch {
       this._rules = {}
+    }
+  }
+
+  private parseInitialValues(): void {
+    const raw = this.getAttribute('initial-values')
+    if (this._initialProp !== null && raw === this._initialAttrRaw) {
+      this._initialValues = this._initialProp
+      return
+    }
+    if (raw !== this._initialAttrRaw) {
+      this._initialProp = null
+      this._initialAttrRaw = raw
+    }
+    try {
+      const parsed = JSON.parse(raw ?? '{}') as unknown
+      this._initialValues =
+        parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+          ? (parsed as Record<string, unknown>)
+          : {}
+    } catch {
+      this._initialValues = {}
     }
   }
 
@@ -219,50 +366,174 @@ export class OASForm extends OASElement {
     return reader(element)
   }
 
-  private validateAndSubmit(): void {
-    const values: Record<string, string> = {}
-    this.errors = {}
-    const fields = this.collectFields()
-    const allInvalid: Array<{ name: string; element: Element; message: string }> = []
+  private writeValue(element: Element, value: string): void {
+    const writer = FORM_CONTROL_WRITERS.get(element.tagName.toLowerCase()) ?? defaultWriter
+    writer(element, value)
+  }
 
-    for (const { name, element } of fields) {
-      const value = this.readValue(element)
-      values[name] = value
-      const rules = this._rules[name] ?? []
-      if (element.hasAttribute('disabled')) continue
-      for (const rule of rules) {
-        let failed = false
-        if (rule.required && value === '') failed = true
-        if (rule.minLength !== undefined && value.length < rule.minLength) failed = true
-        if (rule.maxLength !== undefined && value.length > rule.maxLength) failed = true
-        if (rule.pattern && value !== '') {
-          try {
-            if (!new RegExp(rule.pattern).test(value)) failed = true
-          } catch {
-            failed = false
-          }
-        }
-        if (failed) {
-          // rule.message 优先，缺省走 locale registry 默认文案（setLocale 切换自动生效）
-          this.errors[name] = rule.message ?? this.t('form.validationFailed')
-          allInvalid.push({ name, element, message: this.errors[name]! })
-          break
-        }
+  private snapshotValues(): Record<string, string> {
+    const values: Record<string, string> = {}
+    for (const { name, element } of this.collectFields()) values[name] = this.readValue(element)
+    return values
+  }
+
+  private stringifyInitial(v: unknown): string {
+    if (v === null || v === undefined) return ''
+    return typeof v === 'string' ? v : JSON.stringify(v)
+  }
+
+  /** 挂载后写入初始值（来源变化或 property 通道写入时重放，平时不碰用户编辑值） */
+  private maybeApplyInitialValues(): void {
+    const raw = this.getAttribute('initial-values')
+    if (!this._initialDirty && raw === this._initialSource) return
+    const source = this._initialValues
+    this._initialSnapshot = {}
+    for (const { name, element } of this.collectFields()) {
+      const v = source[name]
+      const initial = v === undefined ? this.readValue(element) : this.stringifyInitial(v)
+      this._initialSnapshot[name] = initial
+      if (v !== undefined) this.writeValue(element, initial)
+    }
+    this._initialSource = raw
+    this._initialDirty = false
+  }
+
+  /** 表单级 disabled 同步到所有字段：经 OASFormElement.formDisabledCallback 通道（字段内部并入 injectDisabled 解析），不回写 disabled 属性防自锁 */
+  private syncDisabledToFields(): void {
+    const disabled = this.hasAttr('disabled')
+    for (const { element } of this.collectFields()) {
+      const field = element as { formDisabledCallback?: (d: boolean) => void }
+      if (typeof field.formDisabledCallback === 'function') field.formDisabledCallback(disabled)
+    }
+  }
+
+  /** 字段最终禁用态：form-associated 字段读其 injectDisabled 解析结果（自身 disabled > 表单链路 > provider 注入 > 豁免），未升级元素按属性回退 */
+  private isFieldDisabled(element: Element): boolean {
+    const field = element as { injectDisabled?: () => boolean }
+    if (typeof field.injectDisabled === 'function') return field.injectDisabled()
+    return element.hasAttribute('disabled') || this.hasAttr('disabled')
+  }
+
+  private effectiveTrigger(name: string): ValidateTrigger {
+    for (const rule of this._rules[name] ?? []) {
+      if (rule.validateTrigger !== undefined && TRIGGERS.includes(rule.validateTrigger)) return rule.validateTrigger
+    }
+    const level = this.getAttr('validate-trigger', 'change')
+    return TRIGGERS.includes(level as ValidateTrigger) ? (level as ValidateTrigger) : 'change'
+  }
+
+  /** 单字段校验（validate-trigger 触发）：只更新该字段错误态，不派发表级事件 */
+  private validateFieldByTrigger(name: string, element: Element): void {
+    if (this.isFieldDisabled(element)) return
+    const apply = (message: string | null): void => {
+      if (message === null) {
+        delete this.errors[name]
+        element.removeAttribute('aria-invalid')
+        this.syncErrorText(element, null)
+        return
+      }
+      this.errors[name] = message
+      element.setAttribute('aria-invalid', 'true')
+      this.syncErrorText(element, message)
+    }
+    const result = this.firstFieldError(name, this.snapshotValues())
+    if (typeof result === 'string') apply(result)
+    else if (result === null) apply(null)
+    else void result.then(apply)
+  }
+
+  /** 单字段首个错误：无 → null；同步 → string；含异步 validator → Promise */
+  private firstFieldError(name: string, values: Record<string, string>): string | null | Promise<string | null> {
+    const value = values[name] ?? ''
+    for (const rule of this._rules[name] ?? []) {
+      const result = this.evalRule(rule, value, values)
+      if (result !== null) return result
+    }
+    return null
+  }
+
+  /** 单条 rule 求值：required/minLength/maxLength/pattern 先行，validator 最后跑 */
+  private evalRule(rule: Rule, value: string, values: Record<string, string>): string | null | Promise<string | null> {
+    const failed = rule.message ?? this.t('form.validationFailed')
+    if (rule.required && value === '') return failed
+    if (rule.minLength !== undefined && value.length < rule.minLength) return failed
+    if (rule.maxLength !== undefined && value.length > rule.maxLength) return failed
+    if (rule.pattern && value !== '') {
+      try {
+        if (!new RegExp(rule.pattern).test(value)) return failed
+      } catch {
+        // 非法正则视为通过（既有行为）
       }
     }
+    if (rule.validator) {
+      const result = rule.validator(value, values)
+      const normalize = (r: true | string): string | null => (r === true ? null : typeof r === 'string' ? r : failed)
+      if (result instanceof Promise) return result.then(normalize)
+      return normalize(result)
+    }
+    return null
+  }
+
+  private validateAndSubmit(): void {
+    const values = this.snapshotValues()
+    this.errors = {}
+    const fields = this.collectFields()
+    const invalid: Array<{ name: string; element: Element; message: string }> = []
+    const asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }> = []
 
     for (const { name, element } of fields) {
-      const invalid = name in this.errors
-      if (invalid) element.setAttribute('aria-invalid', 'true')
-      else element.removeAttribute('aria-invalid')
-      this.syncErrorText(element, invalid ? this.errors[name]! : null)
+      if (this.isFieldDisabled(element)) continue
+      const result = this.firstFieldError(name, values)
+      if (result === null) continue
+      if (typeof result === 'string') invalid.push({ name, element, message: result })
+      else asyncJobs.push({ name, element, promise: result })
     }
 
-    if (allInvalid.length === 0) {
+    if (asyncJobs.length === 0) {
+      this.finalizeValidation(values, fields, invalid)
+      return
+    }
+    void Promise.all(asyncJobs.map((job) => job.promise.then((message) => ({ job, message })))).then((resolved) => {
+      for (const { job, message } of resolved) {
+        if (message !== null) invalid.push({ name: job.name, element: job.element, message })
+      }
+      this.finalizeValidation(values, fields, invalid)
+    })
+  }
+
+  /** 校验收尾：aria/错误文案同步 → 派发事件 → scroll-to-first-error 定位 */
+  private finalizeValidation(
+    values: Record<string, string>,
+    fields: Array<{ name: string; element: Element }>,
+    invalid: Array<{ name: string; element: Element; message: string }>,
+  ): void {
+    this.errors = {}
+    for (const { name, message } of invalid) this.errors[name] = message
+    for (const { name, element } of fields) {
+      const bad = name in this.errors
+      if (bad) element.setAttribute('aria-invalid', 'true')
+      else element.removeAttribute('aria-invalid')
+      this.syncErrorText(element, bad ? this.errors[name]! : null)
+    }
+    if (invalid.length === 0) {
       this.emit('submit', { values })
     } else {
       this.emit('validate-fail', { errors: this.errors, values })
+      if (this.hasAttr('scroll-to-first-error')) this.revealField(invalid[0]!.element)
     }
+  }
+
+  /** 聚焦首个错误字段控件并滚动进视口；prefers-reduced-motion 时瞬跳 */
+  private revealField(element: Element): void {
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+    ;(element as HTMLElement).focus?.({ preventScroll: true })
+    element.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
+  }
+
+  /** 值变化统一出口：派发 oas-values-change（values 为全表当前值快照） */
+  private emitValuesChange(name: string | null, value: string): void {
+    if (!name) return
+    this.emit('values-change', { name, value, values: this.snapshotValues() })
   }
 
   /**
@@ -307,5 +578,18 @@ export class OASForm extends OASElement {
    */
   submit(): void {
     this.form?.requestSubmit()
+  }
+
+  /** 重置回初始值（与 form-associated reset 基线语义一致：回初始值、清除校验错误态、不派发任何事件） */
+  reset(): void {
+    const fields = this.collectFields()
+    for (const { name, element } of fields) {
+      this.writeValue(element, this._initialSnapshot[name] ?? '')
+    }
+    this.errors = {}
+    for (const { element } of fields) {
+      element.removeAttribute('aria-invalid')
+      this.syncErrorText(element, null)
+    }
   }
 }

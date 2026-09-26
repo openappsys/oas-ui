@@ -105,6 +105,27 @@
 
 `size` 支持 `small / medium / large`（就近跟随 `oas-config-provider` 的 `size` 注入）；`status` 支持 `success / warning / error`（`error` 同步 `aria-invalid`，可被 `oas-form-item` 校验态驱动）。
 
+## 形态（variant）
+
+<DemoBlock title="形态（variant）">
+  <oas-space size="small" direction="vertical">
+    <oas-auto-complete variant="outlined" placeholder="outlined（默认，描边）" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-auto-complete>
+    <oas-auto-complete variant="filled" placeholder="filled（填充灰底）" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-auto-complete>
+    <oas-auto-complete variant="borderless" placeholder="borderless（无框）" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-auto-complete>
+  </oas-space>
+</DemoBlock>
+
+`variant` 对齐 `oas-input` 三值变体：`outlined`（默认，描边）/ `filled`（填充灰底，hover 显边）/ `borderless`（无框，聚焦无阴影）；非法值回落 `outlined`。
+
+## 焦点事件（oas-focus / oas-blur）
+
+<DemoBlock title="focus / blur 事件">
+  <oas-auto-complete id="ac-focus-blur" placeholder="聚焦 / 失焦看反馈" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-auto-complete>
+  <span id="ac-focus-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+聚焦/失焦派发 `oas-focus` / `oas-blur`，`detail: { value }` 携带当前输入文本，对齐 `oas-input` 同名事件契约。
+
 ## 只读
 
 <DemoBlock title="只读（readonly）">
@@ -149,6 +170,15 @@ onMounted(() => {
   el?.addEventListener('oas-input', (e) => set('oas-input', e))
   el?.addEventListener('oas-change', (e) => set('oas-change', e))
   el?.addEventListener('oas-clear', (e) => set('oas-clear', e))
+
+  // focus / blur 事件 demo：右侧文本实时显示最近一次焦点事件
+  const fb = document.getElementById('ac-focus-blur')
+  const fbOut = document.getElementById('ac-focus-output')
+  const setFb = (name, e) => {
+    fbOut.textContent = `${name}: ${JSON.stringify(e.detail)}`
+  }
+  fb?.addEventListener('oas-focus', (e) => setFb('oas-focus', e))
+  fb?.addEventListener('oas-blur', (e) => setFb('oas-blur', e))
 
   // 远程建议 demo：模拟宿主请求（300ms 防抖已由组件承担，宿主只管请求与回填）
   const remote = document.getElementById('ac-remote')
@@ -216,13 +246,16 @@ onMounted(() => {
 | `status` | 校验态：success / warning / error（error 同步 aria-invalid，可被 oas-form-item 校验驱动） | `string` | — |
 | `trigger-on-focus` | 聚焦即展示建议（datalist 心智；默认关闭，维持「输入优先」现状） | `boolean` | — |
 | `value` | 预设值 | `string` | — |
+| `variant` | 形态变体：`outlined`（默认）/ `filled` / `borderless`，非法值静默回落 | `string` | — |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-blur` | 失焦时派发，`detail: { value }` 携带当前输入文本 |
 | `oas-change` | 选中或清空，`detail: { value, label }` |
 | `oas-clear` | 点击清空按钮，`detail: { value }`（清空前的值） |
+| `oas-focus` | 聚焦时派发，`detail: { value }` 携带当前输入文本 |
 | `oas-input` | 输入中（防抖后），`detail: { value }` |
 | `oas-option-render` | 每个选项行渲染后派发，`detail: { index, option, element }`，宿主可改写 `element`（图标/富文本） |
 

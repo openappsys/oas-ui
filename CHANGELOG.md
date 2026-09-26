@@ -16,6 +16,11 @@
 - **浮层定位引擎零尺寸弹层不翻转**：popup 零尺寸（尚未布局/隐藏测量帧）时 fits 因 gap 恒 false 会误翻——RTL 下翻转把镜像抵消（sidebar flyout 实抓）；改为零尺寸跳过翻转；popconfirm/tooltip 两个依赖「零尺寸翻转」的既有测试桩扶正为真实尺寸
 - **oas-tabs 标签级右键原生事件 `oas-tab-contextmenu`**（下游自建右键菜单通道）：右键标签（或聚焦标签按 Menu 键 / Shift+F10）派发可取消事件，`detail: { value, index, clientX, clientY, originalEvent }`；宿主 preventDefault 时内建菜单与浏览器默认菜单全抑止（capture 阶段阻断 manager 委托）；空白处右键不派发；键盘坐标取按钮中心；RTL 透传原生坐标；与 context-menu 属性无关恒派发
 - **oas-tab-panel 新增 `title` 属性（悬停提示透传）**：透传 shadow tab 按钮为原生 hover tooltip——长标题截断时悬停看全文；ui-spec 原生全局属性吸收 pattern（tabs 读入缓存并从 panel 宿主移除，防 panel 内容区出现原生 tooltip）；宿主改写 title 按钮即时跟随更新并再次吸收；items JSON 通道 `title` 字段同效
+- **能力缺口 P1 立项批（29 项增强）**：
+  - **表单体系**：oas-form `disabled`（整表禁用，经 form-associated 通道并入不回写防自锁）/ `scroll-to-first-error`（校验失败聚焦首错字段并平滑滚动，reduced-motion 瞬跳）/ Rule.`validator`（自定义校验函数，property 通道，组合既有规则）/ `validate-trigger`（change 默认 / blur / input，规则级可覆盖）/ `initial-values`（初始值 JSON + property 双通道，reset 回初始值）/ 事件 `oas-values-change`（`detail: { name, value, values }` 全表快照）；oas-checkbox `true-value` / `false-value`（勾选映射值，对齐 switch；group 内不生效）；oas-select `label`（触发器 aria-label 命名）；oas-button 原生表单提交属性组（`html-type` submit/reset + `form`/`formaction`/`formmethod`/`formnovalidate`/`formtarget`——shadow 按钮经点击期临时代理 submitter 桥接原生激活行为，loading/disabled 不触发，href 模式静默无效）
+  - **输入一致性**：oas-input `autofocus`（转发内层聚焦）/ `autocomplete` / `inputmode`（透传）/ `loading`（行尾 spinner + aria-busy 不禁用输入，优先于 clear 钮）；oas-input-number 事件组 `oas-focus` / `oas-blur` / `oas-input`
+  - **弹层浮层**：oas-modal `z-index`（显式层级叠加 base，dialog 比 mask 高 1）；oas-drawer `height`（纵向抽屉高度，优先 width/size）+ 事件 `oas-cancel`（取消语义关闭 `detail: { source }`）；oas-auto-complete `variant` + `oas-focus`/`oas-blur`；oas-cascader `loading`（spinner + 面板加载占位）/ `field-names`（字段别名，对齐 tree-select）/ `oas-focus`/`oas-blur`
+  - **数据导航**：oas-select `variant`（outlined/filled/borderless，对齐 input）；oas-table `show-header`（false 不渲染表头行，列配置仍对齐数据行）；oas-tabs `actions` 插槽（标签栏右侧操作区，滚动区外固定）；oas-tree 事件 `oas-expand` + 拖拽生命周期事件组（`oas-node-dragstart/dragover/dragleave/dragend`，drop 契约不变）；oas-calendar `range`（两段式范围选取 + 悬停预览 + 区间高亮，`detail: { start, end }`）；oas-carousel `draggable`（拖拽跟手 + 25%/速度阈值翻页否则回弹）；oas-menu `open-on-hover`（vertical/inline 父项 hover 150ms 延迟开 / 300ms 延迟收，点击路径不变）
 
 ### 变更
 
@@ -31,9 +36,11 @@
 - **RTL 交互态轮（20 浮层组件真 RTL 打开态 sweep）**：面板全部在视口内、方向镜像正确；实抓修复 **oas-time-picker** 弹层内容撑宽后 end 对齐右溢 27px（打开瞬间 spinner 列未撑开按旧宽算 left——挂 ResizeObserver + 一帧后复位重定位，LTR 右缘场景同病）
 - **文档站 code 元素 bidi 方向隔离**：`.vp-doc code` 加 `direction: ltr; unicode-bidi: isolate`——code token 自成 LTR 隔离区（RTL 下 CSS 变量名/函数括号不再乱序，LTR 零观感变化）
 - **vitest 关闭隔离尝试回退**：`poolOptions` 在 Vitest 4 已移除（曾误设 `poolOptions.forks.isolate=false`——死配置）；改顶层 `isolate: false` 真关后跨文件模块状态共享击穿 18 条用例（capability 注册表 / vi.mock 泄漏 / 计时态），不值得为 ~15% wall 逐个扶正——已回退默认逐文件隔离，engineering.md 立档前提
+- **oas-carousel 拖拽默认行为调整**：PC（fine pointer）默认关闭拖拽切换（此前恒可拖），触摸设备（coarse）默认开；`draggable` 属性显式开 / `"false"` 显式关——PC 上依赖拖拽手感的宿主请显式加 `draggable`
 
 ### 修复
 
+- **oas-input 未提交输入被无关 update 抹掉**：typing（未提交）期间任何属性变化触发的 update() 都会从 value 属性回写内层 input——用户正在输入的文本被旧属性值覆盖（loading 远程校验主场景实抓：校验请求发出 loading 开、响应回来 loading 关，期间输入全丢；status/size 等切换同病）。改为「value 属性实际变化才回写」（未提交输入保护），受控写回路径不变；单测 + e2e 固化
 - **`[hidden]` 兜底全量收口（79 文件/66 组件实证）**：`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden]` 规则——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。CDN 全量实测 163 组件中 66 个失效（含 button/icon/tag/input/select 等高频件；2.5.6 曾按报障收口 8 处，系症状驱动的局部收口）；本次全量补齐同款规则，另修 oas-grid 内联 `display` 压过兜底、oas-anchor-target（单文件多组件漏网）两处边角。新增 style-conventions 源码级守卫（逐样式字面量粒度，防新组件再漏）+ 实测 sweep 复验归零
 
 ## [2.5.6] - 2026-09-23

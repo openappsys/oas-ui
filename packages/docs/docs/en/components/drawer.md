@@ -31,6 +31,23 @@ A panel that slides in from the screen edge, often used for filters, details, an
   </oas-drawer>
 </DemoBlock>
 
+## Vertical height (height)
+
+`height` directly sets the height of top/bottom drawers (overriding the vertical mapping of `width` / `size`; silently ignored by left/right drawers). Plain numbers are treated as px; lengths and percentages pass through.
+
+<DemoBlock title="Vertical height (height)">
+  <oas-space>
+    <oas-button type="primary" onclick="openDrawer('drawer-height')">Top drawer height=40vh</oas-button>
+    <oas-button type="primary" onclick="openDrawer('drawer-height-px')">Bottom drawer height=280</oas-button>
+  </oas-space>
+  <oas-drawer id="drawer-height" title="Height 40vh" placement="top" height="40vh">
+    <p><code>height="40vh"</code>: 40% of the viewport height — taller than the default 320px.</p>
+  </oas-drawer>
+  <oas-drawer id="drawer-height-px" title="Height 280px" placement="bottom" height="280">
+    <p><code>height="280"</code>: a plain number is treated as pixels.</p>
+  </oas-drawer>
+</DemoBlock>
+
 ## Animation and lifecycle events
 
 Open/close transitions are animated (transform/opacity) and fall back to instant switching under `prefers-reduced-motion`. Lifecycle events: `oas-open` / `oas-after-open` / `oas-close` (detail carries the close source) / `oas-after-close`.
@@ -39,6 +56,17 @@ Open/close transitions are animated (transform/opacity) and fall back to instant
   <oas-button type="primary" onclick="document.querySelector('#drawer-life').setAttribute('visible','')">Open and watch events</oas-button>
   <oas-drawer id="drawer-life" title="Event log">
     <p>Operate the footer buttons / mask / Esc and watch the messages (`oas-close` carries the close source).</p>
+  </oas-drawer>
+</DemoBlock>
+
+## Cancel-semantics event (oas-cancel)
+
+Cancel-semantic closes (**cancel button / mask click / Esc**) dispatch `oas-cancel` (`detail.source` tells the origin), distinct from confirm closing (`oas-ok`); ✕ / swipe / programmatic closes do not dispatch it. Use it to clean up temporary state or track cancellations.
+
+<DemoBlock title="Cancel-semantics event">
+  <oas-button type="primary" onclick="document.querySelector('#drawer-cancel').setAttribute('visible','')">Open and watch cancel events</oas-button>
+  <oas-drawer id="drawer-cancel" title="Cancel semantics" ok-text="Save">
+    <p>Close via "Cancel" / mask / Esc → a message shows <code>oas-cancel</code>; click "Save" → <code>oas-ok</code>; ✕ shows neither.</p>
   </oas-drawer>
 </DemoBlock>
 
@@ -283,6 +311,15 @@ onMounted(async () => {
     message.info(`Width adjusted to ${e.detail.size}px`)
   })
 
+  // Cancel-semantics event: cancel paths fire oas-cancel, confirm path fires oas-ok (✕ fires neither)
+  const cancel = document.getElementById('drawer-cancel')
+  cancel.addEventListener('oas-cancel', (e) => {
+    message.info(`Cancelled (oas-cancel, source=${e.detail.source})`)
+  })
+  cancel.addEventListener('oas-ok', () => {
+    message.success('Saved (oas-ok)')
+  })
+
   // Loading: simulate async detail loading
   const loading = document.getElementById('drawer-loading')
   window.openLoadingDrawer = () => {
@@ -353,6 +390,7 @@ onMounted(async () => {
 | `append-to` | Portal mount point: moves the mask and panel into an isolated shadow inside the target container (`body` or CSS selector, styles stay scoped), escaping host overflow clipping; moved back to the host shadow when the attribute is removed or unmatched | — | — |
 | `cancel-text` | Cancel button text; falls back to locale `drawer.cancel` | — | — |
 | `destroy-on-close` | Clear the host children after the close animation finishes (re-rendered on next open) | `boolean` | — |
+| `height` | Explicit height for vertical drawers (placement top/bottom), overriding width/size; ignored by left/right | — | — |
 | `initial-focus` | Focus the element matching this selector on open (panel first, then host light DOM); falls back to the ✕ button / first focusable | — | — |
 | `loading` | Body loading state: content hidden with a skeleton placeholder; OK/Cancel buttons disabled too | `boolean` | — |
 | `no-close-btn` | Hide the ✕ close button in the title bar | `boolean` | — |
@@ -383,6 +421,7 @@ onMounted(async () => {
 | `oas-after-close` | Close animation finished (canonical, aligned with the after-* family); no `detail`. Scroll unlock and focus restore happen after this |
 | `oas-after-open` | Open animation finished (canonical, aligned with the after-* family); no `detail`; same as oas-opened |
 | `oas-before-close` | Emitted before a close request (✕ / cancel / mask / Esc / OK / swipe), `cancelable`, `detail: { source }`; preventDefault blocks the close |
+| `oas-cancel` | Dispatched on cancel-semantic closes (cancel button / mask / Esc), `detail: { source }` |
 | `oas-close` | Close: cancel button / ✕ / mask click / Esc, `detail: { source }` |
 | `oas-closed` | [Compat alias] Close animation finished, same as oas-after-close; will be removed later |
 | `oas-ok` | Clicked "OK" |

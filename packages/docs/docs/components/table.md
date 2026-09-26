@@ -648,8 +648,35 @@ onMounted(() => {
     }, 800)
   })
   renderRemote()
+
+  // 表头显隐 demo：show-header 属性切换
+  const showHeaderTable = document.querySelector('#table-show-header')
+  const showHeaderBtn = document.querySelector('#table-show-header-toggle')
+  showHeaderBtn?.addEventListener('click', () => {
+    const hidden = showHeaderTable?.getAttribute('show-header') === 'false'
+    if (hidden) {
+      showHeaderTable?.setAttribute('show-header', 'true')
+      showHeaderBtn.textContent = '隐藏表头'
+    } else {
+      showHeaderTable?.setAttribute('show-header', 'false')
+      showHeaderBtn.textContent = '显示表头'
+    }
+  })
 })
 </script>
+
+## 表头显隐
+
+`show-header` 控制表头显隐（默认 `true` 保持现状）；设为 `"false"` 后表头不渲染，列配置仍作用于数据行对齐，适用于纯数据陈列、上方已有自绘标题行的场景。
+
+<DemoBlock title="show-header=false（可切换）">
+  <div style="width: 100%">
+    <oas-table id="table-show-header" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"}]' row-key="name"></oas-table>
+    <div style="margin-top: var(--oas-space-3)">
+      <oas-button size="small" id="table-show-header-toggle">隐藏表头</oas-button>
+    </div>
+  </div>
+</DemoBlock>
 
 ## API
 
@@ -678,6 +705,7 @@ onMounted(() => {
 | `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |
 | `row-key` | 行唯一键字段 | `string` | `key` |
 | `selected` | 选中行 key 集合（逗号分隔） | `string` | — |
+| `show-header` | 表头显隐（默认 true）；`false` 时不渲染表头行，列配置仍作用于数据行对齐 | `string` | `true` |
 | `size` | 密度档位：`small` / `medium`（默认）/ `large`——只改单元格 padding 与字号默认值（全走 CSS 变量，可用 `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size` 覆盖，优先级高于档位）；非法值回落 `medium` 并告警；与 `row-height` 正交 | `string` | `medium` |
 | `sort-key` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | `string` | — |
 | `sort-order` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | `SortOrder` | — |

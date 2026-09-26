@@ -160,12 +160,15 @@ el.parser = (s) => Number(s.replace(/[^0-9.\-]/g, ''))
 
 ## 事件
 
-<DemoBlock title="变化事件">
+<DemoBlock title="change / clear / focus / blur / input">
   <oas-input-number id="num-event" value="5" min="0" max="10" clearable style="width: 200px"></oas-input-number>
   <span id="num-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
 </DemoBlock>
 
-监听 `oas-change`（失焦 / Enter / 步进 / 滚轮 / 清空时触发，`detail: { value }`，`value` 为数字或 `null`）与 `oas-clear`（清除按钮点击）：
+- `oas-change`：失焦 / Enter / 步进 / 滚轮 / 清空时触发，`detail: { value }`，`value` 为数字或 `null`（空值）
+- `oas-clear`：清除按钮点击
+- `oas-focus` / `oas-blur`：内层输入聚焦/失焦时派发，`detail: { value }` 为当前已提交值（数字或 `null`；blur 在提交后派发，携带提交后的新值）
+- `oas-input`：键入过程实时派发，`detail: { value }` 为当前显示文本（string，未提交语义，格式化场景含装饰字符）
 
 <script setup>
 import { onMounted } from 'vue'
@@ -184,6 +187,15 @@ onMounted(() => {
   })
   el?.addEventListener('oas-clear', () => {
     out.textContent = 'oas-clear'
+  })
+  el?.addEventListener('oas-focus', (e) => {
+    out.textContent = e.detail.value === null ? 'oas-focus: null（空值）' : `oas-focus: ${e.detail.value}`
+  })
+  el?.addEventListener('oas-blur', (e) => {
+    out.textContent = e.detail.value === null ? 'oas-blur: null（空值）' : `oas-blur: ${e.detail.value}（提交后）`
+  })
+  el?.addEventListener('oas-input', (e) => {
+    out.textContent = `oas-input: "${e.detail.value}"（未提交）`
   })
 
   // 空值语义 demo：读回当前值语义
@@ -253,8 +265,11 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-blur` | 失焦时派发（提交后），`detail: { value }` 携带提交后的新值 |
 | `oas-change` | 步进或失焦变化，`detail: { value }`（数字） |
 | `oas-clear` | 点击清除按钮时派发（值回空值态），`detail: {}` |
+| `oas-focus` | 聚焦时派发，`detail: { value }`（当前已提交值） |
+| `oas-input` | 键入实时派发，`detail: { value }` 为当前显示文本（未提交） |
 
 #### 插槽
 

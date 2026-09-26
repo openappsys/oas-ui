@@ -386,6 +386,7 @@ export class OASModal extends OASElement {
       'initial-focus',
       'role',
       'width',
+      'z-index',
       'centered',
       'draggable',
       'fullscreen',
@@ -1067,6 +1068,23 @@ export class OASModal extends OASElement {
     return window.innerWidth < bp
   }
 
+  // ===== z-index（P1-15：显式层级覆盖，对齐 drawer applyZ 同构） =====
+
+  /**
+   * z-index 计算：显式 z-index 属性覆盖默认 modal 档位（--oas-z-modal）；
+   * 两种取值都叠加在 config-provider 的 --oas-z-index-base 起始值之上（层序共存），
+   * dialog 恒比 mask 高 1。缺省/非法值回落档位 token（与 CSS 规则同值，镜像内联便于动态切换无残留）。
+   */
+  applyZ(): void {
+    const explicit = this.getAttr('z-index')
+    const base =
+      explicit !== '' && Number.isFinite(Number(explicit))
+        ? `var(--oas-z-index-base, 0) + ${Number(explicit)}`
+        : `var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050)`
+    if (this.mask) this.mask.style.zIndex = `calc(${base})`
+    if (this.dialog) this.dialog.style.zIndex = `calc(${base} + 1)`
+  }
+
   /** 生效全屏态：显式 fullscreen 属性 ∪ 断点自动全屏（update 里统一写 data-fullscreen） */
   private effectiveFullscreen(): boolean {
     return this.hasAttr('fullscreen') || this.bpFullscreen()
@@ -1157,6 +1175,8 @@ export class OASModal extends OASElement {
     // 垂直居中：data-centered 驱动 CSS 布局，增删同步
     if (this.hasAttr('centered')) dialog.setAttribute('data-centered', '')
     else dialog.removeAttribute('data-centered')
+    // z-index：显式 z-index 覆盖默认 modal 档位（缺省/非法值镜像档位 token，dialog 恒高 1）
+    this.applyZ()
     // title 吸收：title 渲染进可见标题区后即从宿主移除——title 是原生全局属性，
     // 残留在宿主上会让整组件悬停弹出浏览器原生提示（与可见标题重复的视觉干扰）。
     // 状态机：属性在场（含空串）= 宿主意图（写入新值/空串清空）→ 更新缓存并移除；

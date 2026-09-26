@@ -399,7 +399,7 @@ describe('OASCarousel', () => {
 
   describe('拖拽切换', () => {
     it('水平拖动超过阈值后松手切到下一屏', () => {
-      const el = mount()
+      const el = mount({ draggable: '' })
       const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
       viewport.dispatchEvent(pointer('pointerdown', 400))
       viewport.dispatchEvent(pointer('pointermove', 280))
@@ -410,7 +410,7 @@ describe('OASCarousel', () => {
     })
 
     it('水平向左拖（回前一个方向）切到上一屏', () => {
-      const el = mount({ index: '1' })
+      const el = mount({ draggable: '', index: '1' })
       const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
       viewport.dispatchEvent(pointer('pointerdown', 100))
       viewport.dispatchEvent(pointer('pointermove', 220))
@@ -419,7 +419,7 @@ describe('OASCarousel', () => {
     })
 
     it('未达阈值松手回弹，index 不变', () => {
-      const el = mount()
+      const el = mount({ draggable: '' })
       const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
       viewport.dispatchEvent(pointer('pointerdown', 400))
       viewport.dispatchEvent(pointer('pointermove', 370))
@@ -428,7 +428,7 @@ describe('OASCarousel', () => {
     })
 
     it('拖拽跟手：拖动中轨道 transform 带像素偏移', () => {
-      const el = mount()
+      const el = mount({ draggable: '' })
       const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
       viewport.dispatchEvent(pointer('pointerdown', 400))
       viewport.dispatchEvent(pointer('pointermove', 300))
@@ -437,7 +437,7 @@ describe('OASCarousel', () => {
     })
 
     it('RTL 跟手：delta 恒取物理原值（不取反，手指左移内容左移）', () => {
-      const el = mount({ dir: 'rtl' })
+      const el = mount({ draggable: '', dir: 'rtl' })
       const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
       viewport.dispatchEvent(pointer('pointerdown', 400))
       viewport.dispatchEvent(pointer('pointermove', 300)) // delta = -100
@@ -448,7 +448,7 @@ describe('OASCarousel', () => {
     })
 
     it('RTL 松手阈值换向：右拖（delta>0）切下一张', () => {
-      const el = mount({ dir: 'rtl' })
+      const el = mount({ draggable: '', dir: 'rtl' })
       const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
       viewport.dispatchEvent(pointer('pointerdown', 100))
       viewport.dispatchEvent(pointer('pointermove', 280)) // delta = +180
@@ -457,7 +457,7 @@ describe('OASCarousel', () => {
     })
 
     it('垂直模式按纵向位移判定', () => {
-      const el = mount({ direction: 'vertical' })
+      const el = mount({ draggable: '', direction: 'vertical' })
       const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
       viewport.dispatchEvent(pointer('pointerdown', 0, 400))
       viewport.dispatchEvent(pointer('pointermove', 0, 280))
@@ -466,7 +466,7 @@ describe('OASCarousel', () => {
     })
 
     it('非主键（右键）不启动拖拽', () => {
-      const el = mount()
+      const el = mount({ draggable: '' })
       const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
       const right = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -481,7 +481,7 @@ describe('OASCarousel', () => {
 
     it('拖拽结束后重置 autoplay 计时', () => {
       vi.useFakeTimers()
-      const el = mount({ autoplay: '', interval: '1000' })
+      const el = mount({ draggable: '', autoplay: '', interval: '1000' })
       const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
       vi.advanceTimersByTime(900)
       viewport.dispatchEvent(pointer('pointerdown', 400))
@@ -493,6 +493,124 @@ describe('OASCarousel', () => {
       vi.advanceTimersByTime(1000)
       expect(el.getAttribute('index')).toBe('2')
       vi.useRealTimers()
+    })
+  })
+
+  describe('draggable 开关与阈值', () => {
+    /** 模拟触摸设备（pointer: coarse）媒体查询 */
+    function stubCoarse(coarse: boolean): void {
+      vi.spyOn(window, 'matchMedia').mockImplementation(((query: string) => ({
+        matches: coarse && query === '(pointer: coarse)',
+        media: query,
+        onchange: null,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        dispatchEvent: () => false,
+      })) as unknown as typeof window.matchMedia)
+    }
+
+    /** 视口量测桩：happy-dom 无布局（rect 全 0），桩出 400px 宽/300px 高驱动百分比阈值 */
+    function stubViewportRect(el: OASCarousel, width = 400, height = 300): void {
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.getBoundingClientRect = () =>
+        ({ top: 0, bottom: height, left: 0, right: width, x: 0, y: 0, width, height, toJSON: () => ({}) }) as DOMRect
+    }
+
+    it('PC 默认关：无 draggable 属性时 pointer 序列不切换、不跟手', () => {
+      const el = mount()
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 400))
+      viewport.dispatchEvent(pointer('pointermove', 200))
+      expect(track(el).classList.contains('no-transition')).toBe(false)
+      viewport.dispatchEvent(pointer('pointerup', 200))
+      expect(el.getAttribute('index')).toBe('0')
+    })
+
+    it('draggable 属性显式开启（PC）', () => {
+      const el = mount({ draggable: '' })
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 400))
+      viewport.dispatchEvent(pointer('pointermove', 280))
+      viewport.dispatchEvent(pointer('pointerup', 280))
+      expect(el.getAttribute('index')).toBe('1')
+    })
+
+    it('draggable="false" 显式关闭（优先于触摸默认开）', () => {
+      stubCoarse(true)
+      const el = mount({ draggable: 'false' })
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 400))
+      viewport.dispatchEvent(pointer('pointermove', 200))
+      viewport.dispatchEvent(pointer('pointerup', 200))
+      expect(el.getAttribute('index')).toBe('0')
+      vi.restoreAllMocks()
+    })
+
+    it('触摸设备（pointer: coarse）默认开启：无属性也可拖拽切换', () => {
+      stubCoarse(true)
+      const el = mount()
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 400))
+      viewport.dispatchEvent(pointer('pointermove', 280))
+      viewport.dispatchEvent(pointer('pointerup', 280))
+      expect(el.getAttribute('index')).toBe('1')
+      vi.restoreAllMocks()
+    })
+
+    it('距离阈值 = 视口 25%：400px 视口拖 120px（>100px）翻页', () => {
+      const el = mount({ draggable: '' })
+      stubViewportRect(el)
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 400))
+      viewport.dispatchEvent(pointer('pointermove', 280)) // delta = -120
+      viewport.dispatchEvent(pointer('pointerup', 280))
+      expect(el.getAttribute('index')).toBe('1')
+    })
+
+    it('距离阈值内 + 慢速（未达速度阈值）回弹：400px 视口拖 60px 不翻页', () => {
+      vi.useFakeTimers()
+      const el = mount({ draggable: '' })
+      stubViewportRect(el)
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 400))
+      vi.advanceTimersByTime(500) // 慢速拖拽：500ms 拖 60px → 0.12px/ms
+      viewport.dispatchEvent(pointer('pointermove', 340)) // delta = -60（<25% 阈值 100px）
+      viewport.dispatchEvent(pointer('pointerup', 340))
+      expect(el.getAttribute('index')).toBe('0')
+      vi.useRealTimers()
+    })
+
+    it('速度阈值：距离不足 25% 但快速轻扫（≥40px 且 >0.5px/ms）翻页', () => {
+      const el = mount({ draggable: '' })
+      stubViewportRect(el)
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 400))
+      // 同步派发 move→up（耗时 ~0ms）：delta 60 < 100px 距离阈值，速度 60/1 > 0.5px/ms → 翻页
+      viewport.dispatchEvent(pointer('pointermove', 340))
+      viewport.dispatchEvent(pointer('pointerup', 340))
+      expect(el.getAttribute('index')).toBe('1')
+    })
+
+    it('垂直模式 draggable：纵向 25% 阈值判定（300px 高拖 90px 翻页）', () => {
+      const el = mount({ draggable: '', direction: 'vertical' })
+      stubViewportRect(el, 300, 300)
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 0, 400))
+      viewport.dispatchEvent(pointer('pointermove', 0, 310)) // delta = -90（>300*0.25=75px）
+      viewport.dispatchEvent(pointer('pointerup', 0, 310))
+      expect(el.getAttribute('index')).toBe('1')
+    })
+
+    it('拖拽中禁用过渡动画、松手恢复（PC 默认关下同样成立）', () => {
+      const el = mount({ draggable: '' })
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 400))
+      viewport.dispatchEvent(pointer('pointermove', 300))
+      expect(track(el).classList.contains('no-transition')).toBe(true)
+      viewport.dispatchEvent(pointer('pointerup', 300))
+      expect(track(el).classList.contains('no-transition')).toBe(false)
     })
   })
 
@@ -613,7 +731,7 @@ describe('OASCarousel', () => {
     })
 
     it('卡片模式拖拽仍可切屏', () => {
-      const el = mount({ type: 'card' }, 3)
+      const el = mount({ type: 'card', draggable: '' }, 3)
       const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
       viewport.dispatchEvent(pointer('pointerdown', 400))
       viewport.dispatchEvent(pointer('pointermove', 280))

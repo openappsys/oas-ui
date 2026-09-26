@@ -3,6 +3,76 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
+test('drawer height + oas-cancel：纵向显式高度生效、取消语义与确认区分（PRD P1-16/17）', async ({ page }) => {
+  await page.goto('/components/drawer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#drawer-height')
+  // height=40vh：内联 style 生效 + 实际盒高度匹配视口比例
+  await page.evaluate(() => document.querySelector('#drawer-height')?.setAttribute('visible', ''))
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#drawer-height')?.shadowRoot?.querySelector('[part="panel"]')?.hasAttribute('data-open'),
+    null,
+    { timeout: 5000 },
+  )
+  const h = await page.evaluate(() => {
+    const panel = document.querySelector('#drawer-height')!.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+    return { style: panel.style.height, rect: panel.getBoundingClientRect().height, vh: window.innerHeight }
+  })
+  expect(h.style).toBe('40vh')
+  expect(h.rect).toBeGreaterThanOrEqual(h.vh * 0.4 - 1)
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(() => !document.querySelector('#drawer-height')?.hasAttribute('visible'), null, {
+    timeout: 5000,
+  })
+
+  // oas-cancel：Esc/取消按钮 → oas-cancel(source)；确定 → oas-ok；✕ → 两者都不
+  await page.evaluate(() => {
+    const el = document.querySelector('#drawer-cancel')!
+    const events: string[] = []
+    ;(window as any).__drawerCancelEvents = events
+    el.addEventListener('oas-cancel', (e: Event) => events.push(`cancel:${(e as CustomEvent).detail.source}`))
+    el.addEventListener('oas-ok', () => events.push('ok'))
+    el.setAttribute('visible', '')
+  })
+  await page.waitForFunction(() => document.querySelector('#drawer-cancel')?.hasAttribute('visible') === true, null, {
+    timeout: 5000,
+  })
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(() => !document.querySelector('#drawer-cancel')?.hasAttribute('visible'), null, {
+    timeout: 5000,
+  })
+  await page.evaluate(() => {
+    document.querySelector('#drawer-cancel')?.setAttribute('visible', '')
+    const el = document.querySelector('#drawer-cancel')!
+    ;(el.shadowRoot!.querySelector('[part="cancel"]') as HTMLElement).click()
+  })
+  await page.waitForFunction(() => !document.querySelector('#drawer-cancel')?.hasAttribute('visible'), null, {
+    timeout: 5000,
+  })
+  await page.evaluate(() => {
+    document.querySelector('#drawer-cancel')?.setAttribute('visible', '')
+    const el = document.querySelector('#drawer-cancel')!
+    ;(el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
+  })
+  await page.waitForFunction(() => !document.querySelector('#drawer-cancel')?.hasAttribute('visible'), null, {
+    timeout: 5000,
+  })
+  // ✕ 路径：两者都不派发
+  await page.evaluate(() => {
+    document.querySelector('#drawer-cancel')?.setAttribute('visible', '')
+    const el = document.querySelector('#drawer-cancel')!
+    ;(el.shadowRoot!.querySelector('[part="close"]') as HTMLElement).click()
+  })
+  await page.waitForFunction(() => !document.querySelector('#drawer-cancel')?.hasAttribute('visible'), null, {
+    timeout: 5000,
+  })
+  const events: string[] = await page.evaluate(() => (window as any).__drawerCancelEvents)
+  expect(events).toContain('cancel:esc')
+  expect(events).toContain('cancel:cancel')
+  expect(events).toContain('ok')
+  expect(events.filter((e) => e.startsWith('cancel:'))).toHaveLength(2) // ✕ 未追加第三条
+})
+
 test('drawer 四向 placement：top/bottom 抽屉贴视口边缘、size 纵向生效', async ({ page }) => {
   await page.goto('/components/drawer.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-drawer')

@@ -1993,3 +1993,86 @@ describe('OASTabs', () => {
     })
   })
 })
+
+describe('OASTabs actions 插槽', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 带 slot="actions" 操作区的 tabs */
+  function mountWithActions(attrs: Record<string, string> = {}, actionsHtml = ''): OASTabs {
+    const el = new OASTabs()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = `
+      <oas-tab-panel label="标签一" value="a"><p>内容一</p></oas-tab-panel>
+      <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
+      ${actionsHtml}
+    `
+    document.body.appendChild(el)
+    return el
+  }
+
+  function actionsOf(el: OASTabs): HTMLElement {
+    return el.shadowRoot!.querySelector('.tabs-actions')!
+  }
+
+  it('无 slot=actions 内容：操作区容器隐藏', () => {
+    const el = mount()
+    expect(actionsOf(el).hasAttribute('hidden')).toBe(true)
+  })
+
+  it('slot=actions 内容分配进操作区插槽，且容器在 tablist 滚动区之外（nav 直接子级）', () => {
+    const el = mountWithActions({}, '<button slot="actions" class="demo-refresh">刷新</button>')
+    const c = actionsOf(el)
+    expect(c.hasAttribute('hidden')).toBe(false)
+    // slot 分配的 light DOM 元素仍留在宿主 light DOM（保持文档位置），由插槽投影
+    const btn = el.querySelector('.demo-refresh')!
+    expect(btn.textContent).toBe('刷新')
+    const slot = c.querySelector('slot')!
+    expect(slot.assignedElements()).toContain(btn)
+    // 滚动区外：容器与 tablist 同为 nav 直接子级（溢出滚动时不随标签被遮挡）
+    expect(c.parentElement!.classList.contains('nav')).toBe(true)
+    expect(c.querySelector('.tablist')).toBeNull()
+  })
+
+  it('与 addable 共存：次序为 tablist → + 按钮 → 操作区（操作区在 + 之后）', () => {
+    const el = mountWithActions({ addable: '' }, '<button slot="actions">操作</button>')
+    const nav = el.shadowRoot!.querySelector('.nav')!
+    const kids = [...nav.children]
+    const addIdx = kids.findIndex((k) => k.classList.contains('tab-add'))
+    const actionsIdx = kids.findIndex((k) => k.classList.contains('tabs-actions'))
+    expect(addIdx).toBeGreaterThan(-1)
+    expect(actionsIdx).toBe(addIdx + 1)
+    expect((el.shadowRoot!.querySelector('.tab-add') as HTMLElement).hidden).toBe(false)
+    expect(actionsOf(el).hasAttribute('hidden')).toBe(false)
+  })
+
+  it('动态增删 slot=actions 子元素：容器显隐跟随（slotchange）', async () => {
+    const el = mount()
+    expect(actionsOf(el).hasAttribute('hidden')).toBe(true)
+    const btn = document.createElement('button')
+    btn.setAttribute('slot', 'actions')
+    btn.textContent = '新增'
+    el.appendChild(btn)
+    // slotchange 异步派发，等一个微任务+宏任务
+    await new Promise((r) => setTimeout(r, 0))
+    expect(actionsOf(el).hasAttribute('hidden')).toBe(false)
+    btn.remove()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(actionsOf(el).hasAttribute('hidden')).toBe(true)
+  })
+
+  it('操作区按钮点击反馈可用（light DOM 事件正常冒泡到宿主监听）', () => {
+    const el = mountWithActions({}, '<button slot="actions" class="demo-refresh">刷新</button>')
+    let clicks = 0
+    const btn = el.querySelector('.demo-refresh')!
+    btn.addEventListener('click', () => clicks++)
+    ;(btn as HTMLElement).click()
+    expect(clicks).toBe(1)
+  })
+})

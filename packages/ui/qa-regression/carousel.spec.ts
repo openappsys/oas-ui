@@ -123,3 +123,58 @@ test('carousel 触屏：箭头/暂停钮/圆点 coarse 命中区到 44px，圆�
   // 视觉圆点仍为 12px（getComputedStyle 不含 coarse padding，padding 不扩 content 宽）
   expect(r.dotWidth).toBe('12px')
 })
+
+test('carousel draggable：PC 显式开启后真实鼠标拖拽切屏、跟手位移、松手恢复过渡', async ({ page }) => {
+  await page.goto('/components/carousel.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-carousel#carousel-drag')
+  // demo 在页面中后段——先滚进视口再取坐标（否则 mouse 事件落在视口外不触发 pointerdown）
+  await page.evaluate(() => {
+    document.querySelector('oas-carousel#carousel-drag')!.scrollIntoView({ block: 'center' })
+  })
+  await page.waitForTimeout(300)
+  const geometry = await page.evaluate(() => {
+    const el = document.querySelector('oas-carousel#carousel-drag')!
+    const vp = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+    const r = vp.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width }
+  })
+  expect(geometry.w).toBeGreaterThan(100)
+  // 真实鼠标按住向左拖 >25% 视口宽 → 切到第 2 屏（index=1）
+  await page.mouse.move(geometry.x, geometry.y)
+  await page.mouse.down()
+  // 拖拽中：轨道带 no-transition（跟手、过渡禁用）
+  await page.mouse.move(geometry.x - geometry.w * 0.35, geometry.y, { steps: 6 })
+  const dragging = await page.evaluate(() => {
+    const el = document.querySelector('oas-carousel#carousel-drag')!
+    const track = el.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+    return {
+      noTransition: track.classList.contains('no-transition'),
+      follow: /px/.test(track.style.transform),
+      indexNow: el.getAttribute('index'),
+    }
+  })
+  expect(dragging.noTransition).toBe(true)
+  expect(dragging.follow).toBe(true)
+  expect(dragging.indexNow).toBe('0')
+  await page.mouse.up()
+  await page.waitForFunction(() => document.querySelector('oas-carousel#carousel-drag')!.getAttribute('index') === '1')
+  const after = await page.evaluate(() => {
+    const el = document.querySelector('oas-carousel#carousel-drag')!
+    const track = el.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+    return {
+      noTransition: track.classList.contains('no-transition'),
+      readout: document.querySelector('#carousel-drag-index')!.textContent,
+    }
+  })
+  expect(after.noTransition).toBe(false)
+  expect(after.readout).toBe('2')
+  // 小幅拖拽（<25%）回弹：index 不变
+  await page.mouse.move(geometry.x, geometry.y)
+  await page.mouse.down()
+  await page.mouse.move(geometry.x - 30, geometry.y, { steps: 4 })
+  await page.mouse.up()
+  await page.waitForTimeout(120)
+  expect(await page.evaluate(() => document.querySelector('oas-carousel#carousel-drag')!.getAttribute('index'))).toBe(
+    '1',
+  )
+})

@@ -269,6 +269,25 @@
 
 触屏设备（`pointer: coarse`）下按钮最小高度自动抬升至 44px（`--oas-touch-target-min`）：默认 32px、xs 20px 等小尺寸档在触屏上变为 44px 高，已 ≥44px 的档（如 xl）不变；`icon-only` / `circle` 经 `aspect-ratio` 同步变为 44×44 命中。只抬高度，padding、字号、圆角均不动；桌面（fine pointer）零影响。
 
+## 原生表单提交
+
+`html-type` 指定原生表单行为：`button`（默认，无表单行为）/ `submit`（提交）/ `reset`（重置）。Shadow DOM 内的按钮不参与原生表单提交，组件自动桥接：点击时对目标表单（所在 `<form>`，或 `form` 属性指向的表单 id）触发原生提交/重置；`formaction` / `formmethod` / `formnovalidate` / `formtarget` 经原生 submitter 机制生效（覆盖表单自身的 action / method / novalidate / target）。`disabled` / `loading` 态不触发提交；`href` 链接模式下这组属性静默无效。
+
+<DemoBlock title="原生表单提交（html-type / form 属性组）">
+  <form id="btn-native-form" style="display: flex; flex-wrap: wrap; gap: var(--oas-space-3); align-items: flex-end">
+    <oas-input name="username" label="用户名" value="OAS-UI"></oas-input>
+    <oas-input name="email" label="邮箱" value="hello@example.com"></oas-input>
+    <oas-space>
+      <oas-button html-type="submit" type="primary">提交</oas-button>
+      <oas-button html-type="reset">重置</oas-button>
+      <oas-button html-type="submit" formnovalidate formaction="/search" formmethod="post">免校验提交（formaction/formmethod）</oas-button>
+    </oas-space>
+  </form>
+  <div id="btn-form-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-top: var(--oas-space-2); min-height: 20px"></div>
+</DemoBlock>
+
+点击「提交」按钮：表单触发原生 `submit`（demo 中已 `preventDefault` 并显示将提交的字段）；「重置」恢复输入初始值并触发 `reset`；「免校验提交」演示 `formnovalidate` 跳过必填校验 + `formaction`/`formmethod` 覆盖提交目标。
+
 ## API
 
 ### oas-button
@@ -285,8 +304,14 @@
 | `disabled` | 禁用 | `boolean` | — |
 | `disabled-focusable` | 视觉禁用但保持可聚焦/可悬停（aria-disabled + 拦截点击），用于挂 tooltip 解释禁用原因 | `boolean` | — |
 | `download` | 链接模式（href）透传 `download` 属性（文件下载按钮） | `string` | — |
+| `form` | 关联表单 id：按钮在表单外时指向目标表单（原生 form 关联机制） | `string` | — |
+| `formaction` | 本次提交的目标 URL（覆盖表单 action） | `string` | — |
+| `formmethod` | 本次提交的 HTTP 方法（get/post/dialog，覆盖表单 method） | `string` | — |
+| `formnovalidate` | 本次提交跳过原生校验（仅本次，不等价表单 novalidate） | `boolean` | — |
+| `formtarget` | 本次提交响应的展示目标（_blank/_self 等，覆盖表单 target） | `string` | — |
 | `ghost` | 幽灵/描边形态，透明底 + 按 `type` 着色描边，hover 加深 | `boolean` | — |
 | `href` | 链接地址：设置后渲染为原生链接 `<a>` | `string` | — |
+| `html-type` | 原生表单行为：`button`（默认，无行为）/ `submit` 提交所在或 `form` 指向的表单 / `reset` 重置（shadow 内按钮经代理桥接原生激活行为） | `string` | `button` |
 | `icon` | 图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称 | `string` | — |
 | `icon-end` | 文字后的第二个图标（iconRegistry 图标名），与 `icon`/`icon-position` 并存——「左图标+右下拉箭头」等双侧内容形态 | `string` | — |
 | `icon-position` | 图标位置：`start`（默认，图标在左）/ `end`（图标在右） | `string` | `start` |
@@ -325,3 +350,19 @@
 | `--oas-button-group-radius` | — | `var(--oas-radius-md)` |
 | `--oas-button-group-width` | — | `auto` |
 | `--oas-button-on-color` | — | `var(--oas-color-text-on-primary)` |
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  const form = document.getElementById('btn-native-form')
+  const out = document.getElementById('btn-form-out')
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    const entries = [...new FormData(form).entries()].map(([k, v]) => `${k}=${v}`).join(' & ')
+    out.textContent = `submit（demo 已拦截，未导航）: ${entries || '（空表单）'}`
+  })
+  form?.addEventListener('reset', () => {
+    out.textContent = 'reset：输入已恢复初始值'
+  })
+})
+</script>

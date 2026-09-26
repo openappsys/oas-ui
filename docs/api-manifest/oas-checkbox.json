@@ -19,8 +19,19 @@
     },
     {
       "name": "value",
-      "type": "string",
       "default": "on",
+      "observed": true
+    },
+    {
+      "name": "true-value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "false-value",
+      "type": "string",
+      "default": "",
       "observed": true
     },
     {
@@ -66,11 +77,16 @@
       "observed": false
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "value",
+      "type": "string | boolean"
+    }
+  ],
   "events": [
     {
       "name": "oas-change",
-      "detail": "{ checked, value: this.getAttr('value', '') }"
+      "detail": "{ checked, value: this.mappedValue(checked) }"
     },
     {
       "name": "oas-focus"

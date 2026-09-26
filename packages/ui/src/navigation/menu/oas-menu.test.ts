@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASMenu } from './index.js'
 
 const ITEMS = JSON.stringify([
@@ -1734,5 +1734,120 @@ describe('OASMenu 触摸目标（coarse pointer 抬升，dropdown item 同路径
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toContain('@media (pointer: coarse)')
     expect(css).toContain('var(--oas-touch-target-min, 44px)')
+  })
+})
+
+describe('OASMenu open-on-hover（vertical/inline 子菜单 hover 延迟开合）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  function parentOf(el: OASMenu): HTMLElement {
+    return topItems(el)[0]!
+  }
+
+  it('vertical + open-on-hover：悬停 150ms 延迟展开（未到延迟不展开）', () => {
+    vi.useFakeTimers()
+    const el = mount({ items: NESTED_ITEMS, 'open-on-hover': '' })
+    const parent = parentOf(el)
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(parent.classList.contains('open')).toBe(false)
+    vi.advanceTimersByTime(149)
+    expect(parent.classList.contains('open')).toBe(false)
+    vi.advanceTimersByTime(1)
+    expect(parent.classList.contains('open')).toBe(true)
+    expect(parent.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('vertical + open-on-hover：移出 300ms 延迟收起；窗口期内移入取消收起', () => {
+    vi.useFakeTimers()
+    const el = mount({ items: NESTED_ITEMS, 'open-on-hover': '' })
+    const parent = parentOf(el)
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    vi.advanceTimersByTime(150)
+    expect(parent.classList.contains('open')).toBe(true)
+    // 移出：未到 300ms 仍展开
+    parent.dispatchEvent(new MouseEvent('mouseleave'))
+    vi.advanceTimersByTime(299)
+    expect(parent.classList.contains('open')).toBe(true)
+    // 移入取消收起计时
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    vi.advanceTimersByTime(300)
+    expect(parent.classList.contains('open')).toBe(true)
+    // 再次移出满 300ms → 收起
+    parent.dispatchEvent(new MouseEvent('mouseleave'))
+    vi.advanceTimersByTime(300)
+    expect(parent.classList.contains('open')).toBe(false)
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('inline + open-on-hover：悬停延迟展开（此前 inline 无 hover 展开）；点击路径不变', () => {
+    vi.useFakeTimers()
+    const el = mount({ items: NESTED_ITEMS, mode: 'inline', 'open-on-hover': '' })
+    const parent = parentOf(el)
+    // 点击路径：立即展开/收起，不受延迟影响
+    parent.click()
+    expect(parent.classList.contains('open')).toBe(true)
+    parent.click()
+    expect(parent.classList.contains('open')).toBe(false)
+    // hover 路径：延迟展开
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    vi.advanceTimersByTime(150)
+    expect(parent.classList.contains('open')).toBe(true)
+    // 移出延迟收起
+    parent.dispatchEvent(new MouseEvent('mouseleave'))
+    vi.advanceTimersByTime(300)
+    expect(parent.classList.contains('open')).toBe(false)
+  })
+
+  it('inline + open-on-hover：悬停展开并存（inline 多开集合语义），收起只收本分支', () => {
+    vi.useFakeTimers()
+    const el = mount({ items: NESTED_ITEMS, mode: 'inline', 'open-on-hover': '' })
+    const edit = parentOf(el) // 编辑
+    const file = topItems(el)[1]! // 文件
+    edit.dispatchEvent(new MouseEvent('mouseenter'))
+    vi.advanceTimersByTime(150)
+    expect(edit.classList.contains('open')).toBe(true)
+    // 移到另一父项：悬停展开 file，edit 不被 file 收起（多开并存）
+    edit.dispatchEvent(new MouseEvent('mouseleave'))
+    file.dispatchEvent(new MouseEvent('mouseenter'))
+    vi.advanceTimersByTime(150)
+    expect(file.classList.contains('open')).toBe(true)
+    expect(edit.classList.contains('open')).toBe(true)
+    // edit 移出满 300ms → 只收 edit 分支（file 保持）
+    vi.advanceTimersByTime(150)
+    expect(edit.classList.contains('open')).toBe(false)
+    expect(file.classList.contains('open')).toBe(true)
+  })
+
+  it('vertical 无属性（现状回归）：悬停仍即时展开；inline 无属性：悬停不展开（现状回归）', () => {
+    const elVertical = mount({ items: NESTED_ITEMS })
+    const vParent = parentOf(elVertical)
+    vParent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(vParent.classList.contains('open')).toBe(true)
+    document.body.innerHTML = ''
+    const elInline = mount({ items: NESTED_ITEMS, mode: 'inline' })
+    const iParent = parentOf(elInline)
+    iParent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(iParent.classList.contains('open')).toBe(false)
+  })
+
+  it('horizontal 不受 open-on-hover 影响：悬停仍即时展开（现状不变）', () => {
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal', 'open-on-hover': '' })
+    const parent = parentOf(el)
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(parent.classList.contains('open')).toBe(true)
+  })
+
+  it('collapsed（vertical 收起态 flyout）不受影响：悬停仍即时展开', () => {
+    const el = mount({ items: NESTED_ITEMS, collapsed: '', 'open-on-hover': '' })
+    const parent = parentOf(el)
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(parent.classList.contains('open')).toBe(true)
   })
 })

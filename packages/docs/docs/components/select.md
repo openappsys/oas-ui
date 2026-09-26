@@ -8,6 +8,16 @@
   <oas-select placeholder="请选择水果" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"}]'></oas-select>
 </DemoBlock>
 
+## 无障碍名称（label）
+
+<DemoBlock title="label（可访问名称）">
+  <oas-select id="select-label-set" label="所属城市" placeholder="请选择城市" options='[{"label":"北京","value":"bj"},{"label":"上海","value":"sh"}]'></oas-select>
+  <oas-select id="select-label-fallback" placeholder="无 label，回退占位文本" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-select>
+  <span id="select-label-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 280px"></span>
+</DemoBlock>
+
+`label` 作为触发器的可访问名称（`aria-label`）来源：设置后读屏朗读该名称并优先于占位文本；未设置时回退 `placeholder`。字段标签的可视渲染位由 `oas-form-item` 承担，`label for` 原生关联（点击聚焦）走 form-associated 通道。
+
 ## 预设值
 
 <DemoBlock title="预设值（value）">
@@ -39,6 +49,18 @@
 </DemoBlock>
 
 `size` 支持 `small` / `medium`（默认）/ `large`，控高与字号对齐全局尺寸 token；未显式设置时就近读取 `oas-config-provider` 的 `size` 注入（全局密度联动）。表格内用 `small`、筛选条用 `large` 等场景直接可用。
+
+## 形态
+
+<DemoBlock title="variant 形态">
+  <oas-space size="small">
+    <oas-select placeholder="outlined（默认）" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-select>
+    <oas-select variant="filled" placeholder="filled 填充" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-select>
+    <oas-select variant="borderless" placeholder="borderless 无框" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+`variant` 对齐 `oas-input` 三值形态：`outlined`（默认描边）/ `filled`（填充底色，聚焦/展开才出边框）/ `borderless`（无框无底色，用于纯文本嵌入或筛选条等低装饰场景）；非法值静默回落默认。`status` 校验态语义色优先于形态底色。
 
 ## 校验状态
 
@@ -509,6 +531,19 @@ onMounted(() => {
   focusEl?.addEventListener('oas-blur', () => {
     focusLog.textContent = 'oas-blur'
   })
+
+  // label（可访问名称）demo：读取触发器 aria-label（设置 label 与回退 placeholder 对照）
+  const readSelectLabel = () => {
+    const a = document.getElementById('select-label-set')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
+    const b = document.getElementById('select-label-fallback')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
+    const out = document.getElementById('select-label-output')
+    if (a !== undefined && b !== undefined && a !== null && b !== null && out) {
+      out.textContent = `aria-label：设置「${a}」 / 回退「${b}」`
+    } else {
+      setTimeout(readSelectLabel, 60)
+    }
+  }
+  readSelectLabel()
 })
 </script>
 
@@ -533,6 +568,7 @@ onMounted(() => {
 | `debounce` | 远程搜索输入防抖毫秒（默认 0 立即；仅 remote 模式 oas-input 防抖，本地过滤始终即时） | — | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `item-height` | 虚拟滚动时每项固定高度（px） | `string` | `36` |
+| `label` | 触发器可访问名称（aria-label），优先于 placeholder 回退 | `string` | — |
 | `loading` | 远程加载占位（与 `remote` 搭配使用） | `boolean` | — |
 | `max-count` | 多选上限：达上限未选项禁用置灰并派 oas-exceed-limit，已选项仍可取消；单选行为不变 | — | — |
 | `max-tag-count` | 多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠） | `boolean` | — |
@@ -549,6 +585,7 @@ onMounted(() => {
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large`：控高/字号/标签高联动 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`；error 联动宿主 aria-invalid | `string` | — |
 | `value` | 当前值（多选为 JSON 数组） | — | — |
+| `variant` | 形态变体：`outlined`（默认）/ `filled` / `borderless`，非法值静默回落；status 语义色优先 | `string` | — |
 | `virtual` | 大数据量虚拟滚动：只渲染可视窗口，滚动流畅（复用 oas-virtual-list）；带 `group` 的选项自动回退全量渲染 | `boolean` | — |
 
 #### 事件

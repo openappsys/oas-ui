@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "rules",
-      "default": "{}",
       "observed": true
     },
     {
@@ -33,12 +32,36 @@
       "name": "inline",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "scroll-to-first-error",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "validate-trigger",
+      "type": "string",
+      "default": "change",
+      "observed": true
+    },
+    {
+      "name": "initial-values",
+      "observed": true
     }
   ],
   "props": [
     {
       "name": "rules",
       "type": "Rules | string"
+    },
+    {
+      "name": "initialValues",
+      "type": "Record<string, unknown> | string"
     }
   ],
   "events": [
@@ -49,6 +72,10 @@
     {
       "name": "oas-validate-fail",
       "detail": "{ errors: this.errors, values }"
+    },
+    {
+      "name": "oas-values-change",
+      "detail": "{ name, value, values: this.snapshotValues() }"
     }
   ],
   "slots": [

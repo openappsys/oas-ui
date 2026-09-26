@@ -375,3 +375,29 @@ test('tabs title 透传：panel title 进按钮（原生 tooltip）+ panel 吸�
   expect(r.btnTitleNew, '改写后按钮 title 更新').toBe('改写后的提示')
   expect(r.panelAbsorbedAfter, '改写后的 title 再次被吸收').toBe(true)
 })
+
+test('tabs actions 插槽：操作区固定于滚动区外（nav 内、tablist 兄弟），点击有可见反馈', async ({ page }) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tabs#tabs-actions')
+  const r1 = await page.evaluate(() => {
+    const t = document.querySelector('oas-tabs#tabs-actions')!
+    const box = t.shadowRoot!.querySelector<HTMLElement>('.tabs-actions')!
+    const slot = box.querySelector('slot')!
+    return {
+      hidden: box.hasAttribute('hidden'),
+      inNav: box.parentElement!.classList.contains('nav'),
+      notInTablist: box.closest('.tablist') === null,
+      assigned: slot.assignedElements().length,
+      refreshed: t.getAttribute('data-refreshed'),
+    }
+  })
+  expect(r1.hidden).toBe(false)
+  expect(r1.inNav).toBe(true)
+  expect(r1.notInTablist).toBe(true)
+  expect(r1.assigned).toBeGreaterThan(0)
+  expect(r1.refreshed).toBeNull()
+  // 点击操作区按钮：可见反馈（宿主写回 data-refreshed）
+  await page.locator('#tabs-actions-refresh').click()
+  const r2 = await page.evaluate(() => document.querySelector('oas-tabs#tabs-actions')!.getAttribute('data-refreshed'))
+  expect(r2).toBe('1')
+})

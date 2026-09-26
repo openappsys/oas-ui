@@ -1730,3 +1730,71 @@ describe('OASSelect form-associated（原生表单集成）', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 })
+
+// ---- 能力缺口 P1：label 表单标签属性 / variant 三值变体 ----
+
+describe('OASSelect label / variant（能力缺口 P1）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function styleText(el: OASSelect): string {
+    return el.shadowRoot!.querySelector('style')?.textContent ?? ''
+  }
+
+  it('label/variant 进入 observedAttributes', () => {
+    const attrs = OASSelect.observedAttributes
+    expect(attrs).toContain('label')
+    expect(attrs).toContain('variant')
+  })
+
+  it('label 成为 trigger 的 aria-label（优先于 placeholder）', () => {
+    const el = mount({ label: '所属城市', placeholder: '请选择' })
+    expect(trigger(el).getAttribute('aria-label')).toBe('所属城市')
+  })
+
+  it('无 label 时 aria-label 回落 placeholder（现状不变）', () => {
+    const el = mount({ placeholder: '请选择' })
+    expect(trigger(el).getAttribute('aria-label')).toBe('请选择')
+  })
+
+  it('label 属性增量更新，不重建 trigger', () => {
+    const el = mount({ label: 'a' })
+    const t = trigger(el)
+    el.setAttribute('label', 'b')
+    expect(trigger(el)).toBe(t)
+    expect(t.getAttribute('aria-label')).toBe('b')
+  })
+
+  it('variant 默认 outlined（data-variant 镜像，对齐 input 枚举）', () => {
+    const el = mount()
+    expect(el.getAttribute('data-variant')).toBe('outlined')
+  })
+
+  it('variant=filled/borderless 镜像 data-variant，非法值静默回落 outlined', () => {
+    const el = mount({ variant: 'filled' })
+    expect(el.getAttribute('data-variant')).toBe('filled')
+    el.setAttribute('variant', 'borderless')
+    expect(el.getAttribute('data-variant')).toBe('borderless')
+    el.setAttribute('variant', 'fancy')
+    expect(el.getAttribute('data-variant')).toBe('outlined')
+  })
+
+  it('variant 形态样式规则存在（filled/borderless，颜色只走 token）', () => {
+    const el = mount({ variant: 'filled' })
+    const css = styleText(el)
+    expect(css).toContain("[data-variant='filled']")
+    expect(css).toContain("[data-variant='borderless']")
+    expect(css).toContain('var(--oas-color-bg-hover)')
+  })
+
+  it('variant 规则位于 status 规则之前（同特异性时 status 语义色胜出）', () => {
+    const el = mount({ variant: 'filled' })
+    const css = styleText(el)
+    expect(css.indexOf("[data-variant='filled']")).toBeLessThan(css.indexOf("[data-status='error']"))
+  })
+})

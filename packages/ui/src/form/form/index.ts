@@ -6,3 +6,4 @@ if (!customElements.get('oas-form')) {
 }
 
 export { OASForm, registerFormControl }
+export type { Rule, Rules, ValidateTrigger } from './oas-form.js'

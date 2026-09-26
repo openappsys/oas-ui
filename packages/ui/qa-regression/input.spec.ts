@@ -136,3 +136,47 @@ test('input addon 分发自包含控件（oas-button）：托盘退化为贴合�
   await page.locator('#input-search-btn').click()
   await expect(page.locator('#input-search-output')).toHaveText('触发搜索')
 })
+
+// ---- 能力缺口 P1：loading 加载态 ----
+
+test('input loading：spinner 显示 + 清除按钮让位 + 输入不禁用，退出后恢复', async ({ page }) => {
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#input-loading')
+  const read = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#input-loading') as HTMLElement
+      const root = el.shadowRoot!
+      const spinner = root.querySelector<HTMLElement>('.spinner')!
+      const clear = root.querySelector<HTMLButtonElement>('.clear-btn')!
+      const input = root.querySelector<HTMLInputElement>('input')!
+      return {
+        busy: el.getAttribute('aria-busy'),
+        spinnerHidden: spinner.hidden,
+        clearHidden: clear.hidden,
+        disabled: input.disabled,
+        value: input.value,
+      }
+    })
+  // 初始 loading：spinner 在、clear 让位、aria-busy、输入不禁用
+  const initial = await read()
+  expect(initial.busy).toBe('true')
+  expect(initial.spinnerHidden).toBe(false)
+  expect(initial.clearHidden).toBe(true)
+  expect(initial.disabled).toBe(false)
+  // loading 期间仍可输入（不禁用）
+  await page.evaluate(() => {
+    const el = document.querySelector('#input-loading') as HTMLElement
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('input')!
+    input.value = 'abc'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  // 切换按钮退出 loading：clear 恢复、spinner 隐藏、aria-busy 移除（宿主属性零残留）
+  await page.locator('#btn-input-loading').click()
+  await expect.poll(read).toStrictEqual({
+    busy: null,
+    spinnerHidden: true,
+    clearHidden: false,
+    disabled: false,
+    value: 'abc',
+  })
+})

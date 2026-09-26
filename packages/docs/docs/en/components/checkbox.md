@@ -253,6 +253,13 @@ onMounted(() => {
   maxGroup?.addEventListener('oas-change', () => {
     limitOut.textContent = ''
   })
+
+  const cbValue = document.getElementById('cb-value')
+  const cbValueInfo = document.getElementById('cb-value-info')
+  cbValue?.addEventListener('oas-change', (e) => {
+    const v = e.detail.value
+    cbValueInfo.textContent = `value: ${typeof v === 'string' ? `"${v}"` : v}`
+  })
 })
 </script>
 
@@ -263,6 +270,17 @@ onMounted(() => {
 </DemoBlock>
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
+
+## Value Mapping
+
+`true-value` / `false-value` customize the checked/unchecked value (strings); `detail.value` of `oas-change` returns the mapped value (falls back to the `value` attribute semantics when unset). Reading `el.value` also returns the current mapped value — useful for form submissions like `'YES'` / `'NO'`. **Not effective inside a checkbox-group**: within a group, `value` is fixed as the option identifier (groups collect checks by the `value` attribute and FormData submits the identifier); mapping attributes on group items are ignored.
+
+<DemoBlock title="true-value / false-value">
+  <oas-space direction="vertical" size="small">
+    <oas-checkbox id="cb-value" true-value="YES" false-value="NO">Subscribe to notifications</oas-checkbox>
+    <oas-tag id="cb-value-info" type="info">value: "NO"</oas-tag>
+  </oas-space>
+</DemoBlock>
 
 ## API
 
@@ -276,13 +294,15 @@ onMounted(() => {
 | `checked` | Whether checked | `boolean` | — |
 | `description` | Secondary text rendered below the label; a `slot="description"` distribution takes priority | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
+| `false-value` | Mapped value when unchecked (detail.value / value getter; not added to FormData per native unchecked semantics; not effective inside a checkbox-group) | `string` | — |
 | `indeterminate` | Indeterminate state (visual only; clicking still toggles the two-state value; aria-checked syncs to mixed) | `boolean` | — |
 | `label-position` | Label position: `end` (default, box left / text right) / `start` (text left; mirrors automatically in RTL) | — | — |
 | `readonly` | Readonly: focusable and Tab-reachable, value still submits, but clicks (and Space) never toggle (distinct form semantics from disabled) | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner input) | `boolean` | — |
 | `size` | Size: `small` (14px) / `medium` (default 16px) / `large` (18px), box and font scale together; a group-level value cascades to items while an explicit item value wins | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success` (tints the box; error also sets host aria-invalid) | `string` | — |
-| `value` | Option identifier | `string` | `on` |
+| `true-value` | Mapped value when checked: drives detail.value, the value getter and FormData submission (not effective inside a checkbox-group) | `string` | — |
+| `value` | Option identifier | `string \| boolean` | `on` |
 | `variant` | Variant: `default` / `card` (whole block clickable, selected border tint, hover feedback) | `string` | — |
 
 #### Events

@@ -390,6 +390,7 @@ export class OASMenu extends OASElement {
       'expanded',
       'accordion',
       'close-on-select',
+      'open-on-hover',
       'dir',
     ]
   }
@@ -414,6 +415,10 @@ export class OASMenu extends OASElement {
   private bridgeWatch: { move: (e: MouseEvent) => void; leave: () => void } | null = null
   /** 桥区观察器最后已知指针位置（滚动 / 缩放后按它重判，见 recheckHoverBridge） */
   private bridgePointer: { x: number; y: number } | null = null
+  /** open-on-hover 延迟开/关定时器（父项悬停 ~150ms 开 / ~300ms 关）；关闭计时按 value 归属 */
+  private hoverOpenTimer: ReturnType<typeof setTimeout> | null = null
+  private hoverCloseTimer: ReturnType<typeof setTimeout> | null = null
+  private hoverCloseValue: string | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -457,6 +462,11 @@ export class OASMenu extends OASElement {
     this.onCleanup(() => window.removeEventListener('scroll', reposition, true))
     // 桥区观察器随实例断开清理（挂载/卸载由 watchHoverBridge / stopHoverBridgeWatch 管理）
     this.onCleanup(() => this.stopHoverBridgeWatch())
+    // open-on-hover 延迟定时器随实例断开清理
+    this.onCleanup(() => {
+      this.clearHoverOpenTimer()
+      this.clearHoverCloseTimer()
+    })
     // 水平溢出收纳：horizontal 模式监听容器宽度变化，重算收纳
     if (typeof ResizeObserver !== 'undefined') {
       this.overflowObserver = new ResizeObserver(() => this.syncOverflowCollapse())
@@ -828,9 +838,14 @@ export class OASMenu extends OASElement {
           if (item.disabled || item.loading) return
           this.toggleExpand(item.value ?? '')
         })
+        // 父项 hover：open-on-hover 时延迟开/移出延迟关；否则即时 hoverExpand（现状）
         li.addEventListener('mouseenter', () => {
           if (item.disabled || item.loading) return
-          this.hoverExpand(item.value ?? '')
+          this.onParentHoverEnter(item.value ?? '')
+        })
+        li.addEventListener('mouseleave', () => {
+          if (item.disabled || item.loading) return
+          this.onParentHoverLeave(item.value ?? '')
         })
         // 子菜单：inline 模式就地展开（inline-sub 容器，在父项 li 之后缩进展开）；
         // 非 inline 浮出（ul.submenu，显隐由 .open class 控制，hover 不重建 DOM）
@@ -1246,6 +1261,95 @@ export class OASMenu extends OASElement {
     const open = item?.children?.length ? chain : chain.slice(0, -1)
     const next = new Set(open)
     if (next.size === this.expanded.size && [...next].every((v) => this.expanded.has(v))) return
+    this.expanded = next
+    this.syncOpen()
+  }
+
+  // ---------- open-on-hover：vertical/inline 父项 hover 延迟开合（horizontal / collapsed 不受影响） ----------
+
+  /** open-on-hover 生效判定：属性开启且非 horizontal（维持即时 hover）、非 collapsed（flyout 即时 hover） */
+  private hoverDelayMode(): boolean {
+    if (!this.hasAttr('open-on-hover')) return false
+    if (this.getAttr('mode') === 'horizontal') return false
+    if (this.hasAttr('collapsed')) return false
+    return true
+  }
+
+  private clearHoverOpenTimer(): void {
+    if (this.hoverOpenTimer) {
+      clearTimeout(this.hoverOpenTimer)
+      this.hoverOpenTimer = null
+    }
+  }
+
+  private clearHoverCloseTimer(): void {
+    if (this.hoverCloseTimer) {
+      clearTimeout(this.hoverCloseTimer)
+      this.hoverCloseTimer = null
+    }
+    this.hoverCloseValue = null
+  }
+
+  /** 父项悬停进入：延迟模式取消挂起关闭（仅同一父项的宽限——异项不清，前项移出满宽限仍收起）+ ~150ms 后展开；现状模式即时 hoverExpand */
+  private onParentHoverEnter(value: string): void {
+    if (!this.hoverDelayMode()) {
+      this.hoverExpand(value)
+      return
+    }
+    if (this.hoverCloseTimer && this.hoverCloseValue === value) this.clearHoverCloseTimer()
+    if (this.expanded.has(value)) return
+    this.clearHoverOpenTimer()
+    this.hoverOpenTimer = setTimeout(() => {
+      this.hoverOpenTimer = null
+      this.hoverExpandDelayed(value)
+    }, 150)
+  }
+
+  /** 父项悬停移出：延迟模式 ~300ms 后收起本分支；现状模式无逐项收起（随菜单 mouseleave 收） */
+  private onParentHoverLeave(value: string): void {
+    if (!this.hoverDelayMode()) return
+    this.clearHoverOpenTimer()
+    if (!this.expanded.has(value)) return
+    this.clearHoverCloseTimer()
+    this.hoverCloseValue = value
+    this.hoverCloseTimer = setTimeout(() => {
+      this.hoverCloseTimer = null
+      this.hoverCloseValue = null
+      this.collapseBranch(value)
+    }, 300)
+  }
+
+  /** hover 延迟展开：inline 并入展开集合（其他分支保留，多开语义）；浮出走单链路径（对齐 hoverExpand） */
+  private hoverExpandDelayed(value: string): void {
+    if (!value) return
+    const chain = this.chainOf(value)
+    if (chain.length === 0) return
+    const item = this.findItem(value)
+    const open = item?.children?.length ? chain : chain.slice(0, -1)
+    if (this.getAttr('mode') === 'inline') {
+      const next = new Set(this.expanded)
+      for (const v of open) next.add(v)
+      if (this.hasAttr('accordion')) {
+        for (const s of this.siblingValuesOf(value)) next.delete(s)
+      }
+      this.expanded = next
+    } else {
+      const next = new Set(open)
+      if (next.size === this.expanded.size && [...next].every((v) => this.expanded.has(v))) return
+      this.expanded = next
+    }
+    this.syncOpen()
+  }
+
+  /** 收起该分支：删除 value 及其全部后代（inline 多开集合与浮出单链语义都适用） */
+  private collapseBranch(value: string): void {
+    const next = new Set(this.expanded)
+    const drop = (v: string): void => {
+      next.delete(v)
+      const item = this.findItem(v)
+      for (const c of item?.children ?? []) drop(c.value ?? '')
+    }
+    drop(value)
     this.expanded = next
     this.syncOpen()
   }

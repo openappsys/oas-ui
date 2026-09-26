@@ -12,6 +12,8 @@ interface Option {
 
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
+/** variant 形态（对齐 input 三值变体：默认 outlined 走基础样式） */
+const VALID_VARIANTS = ['outlined', 'filled', 'borderless'] as const
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认 */
 function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
@@ -99,6 +101,35 @@ input:disabled {
 }
 input:disabled:hover {
   border-color: var(--oas-color-border);
+}
+/* ---- variant 形态：filled 填充 / borderless 无框（默认 outlined 走基础样式，对齐 input） ---- */
+:host([data-variant='filled']) input {
+  border-color: transparent;
+  background: var(--oas-color-bg-hover);
+}
+:host([data-variant='filled']) input:hover {
+  border-color: var(--oas-color-border);
+}
+:host([data-variant='filled']) input:focus {
+  border-color: var(--oas-color-primary);
+  box-shadow: var(--oas-focus-ring);
+}
+:host([data-variant='filled']) input:disabled {
+  background: var(--oas-color-bg-disabled);
+}
+:host([data-variant='borderless']) input {
+  border-color: transparent;
+  background: transparent;
+}
+:host([data-variant='borderless']) input:hover {
+  border-color: transparent;
+}
+:host([data-variant='borderless']) input:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
+:host([data-variant='borderless']) input:disabled {
+  background: transparent;
 }
 /* clearable 时给清空按钮让位 */
 :host([clearable]) input {
@@ -214,6 +245,7 @@ export class OASAutoComplete extends OASFormElement {
       'debounce',
       'trigger-on-focus',
       'size',
+      'variant',
       'status',
       'readonly',
       'disabled-skip',
@@ -284,8 +316,13 @@ export class OASAutoComplete extends OASFormElement {
     })
     this.input?.addEventListener('input', () => this.handleInput())
     this.input?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e))
-    this.input?.addEventListener('focus', () => this.handleFocus())
+    this.input?.addEventListener('focus', () => {
+      // 对齐 oas-input 契约：聚焦/失焦派发，detail 携带当前输入文本（不做禁用/只读守卫）
+      this.emit('focus', { value: this.input?.value ?? '' })
+      this.handleFocus()
+    })
     this.input?.addEventListener('blur', () => {
+      this.emit('blur', { value: this.input?.value ?? '' })
       // 自由文本组件：失焦只收起建议，不回退输入内容
       if (this.openState) this.renderDropdown(false)
     })
@@ -337,6 +374,9 @@ export class OASAutoComplete extends OASFormElement {
     // 尺寸/校验态镜像（size 就近读取 config-provider 注入，与全局密度联动）
     const size = normalizeChoice(this.injectValue('size', 'medium'), 'medium', VALID_SIZES)
     this.setAttribute('data-size', size)
+    // variant 形态镜像（对齐 input 三值变体：outlined/filled/borderless）
+    const variant = normalizeChoice(this.getAttr('variant', ''), 'outlined', VALID_VARIANTS)
+    this.setAttribute('data-variant', variant)
     const status = normalizeChoice(this.getAttr('status', ''), '', VALID_STATUSES)
     if (status) this.setAttribute('data-status', status)
     else this.removeAttribute('data-status')

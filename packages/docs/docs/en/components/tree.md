@@ -174,6 +174,8 @@ With `lazy`, nodes without `children` and not marked `isLeaf` / `loaded` are con
 
 With `draggable`, nodes can be dragged to reorder or reparent: dropping on the upper half of a target row inserts before it (`before`), the lower half inserts after it (`after`), and the middle (when the target is expandable) moves it inside (`inner`). An insertion line and highlight feedback are shown during the drag; on release, `oas-node-drop` is emitted (`detail: { dragKey, dropKey, position }`) and the host updates the data and resets the `data` attribute. Dropping on empty tree space moves the node to the root (`dropKey` empty string, `position: 'inner'`).
 
+The full drag lifecycle is also observable: `oas-node-dragstart` (`detail: { dragKey }`), `oas-node-dragover` / `oas-node-dragleave` (`detail: { dragKey, dropKey, position }`; `dropKey` is empty and `position` is `'inner'` over blank space), and `oas-node-dragend` (`detail: { dragKey }`) — useful for custom drag hints or cross-tree interactions.
+
 Guard the drop targets with the property callbacks (rejected during the drag — no insertion line feedback):
 
 ```js
@@ -262,6 +264,19 @@ Data stays host-controlled: on commit the component only **emits `oas-node-renam
 
 With `motion`, expand/collapse animates with a **height transition** (off by default): expanding grows the newly added child rows smoothly from zero height to their natural height; collapsing first shrinks the child rows away before removing them. Duration and easing follow the `--oas-transition-*` tokens. In virtual-scroll mode (a `height` is set) the expand entrance degrades to a fade and collapse switches instantly — virtual rows use a fixed height where height animation would cause jank and misalignment. The animation respects `prefers-reduced-motion` (auto-disabled when the user asks for reduced motion).
 
+## Expand / Collapse Event
+
+<DemoBlock title="oas-expand (node expand / collapse)">
+  <div style="width: 100%">
+    <oas-tree id="tree-expand-event" expanded='["a"]' data='[{"key":"a","label":"Node A","children":[{"key":"a-1","label":"Child 1","children":[{"key":"a-1-1","label":"Grandchild 1-1"}]}]},{"key":"b","label":"Node B"}]'></oas-tree>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      Last action: <span id="tree-expand-status">Click an expand arrow</span>
+    </p>
+  </div>
+</DemoBlock>
+
+Every expand/collapse interaction (toggle arrow, `expand-trigger="node"`, keyboard →/←) emits `oas-expand` with `detail: { key, expanded, node }` — `node` is a snapshot of the data node, so hosts can drive other views from it.
+
 ## Events
 
 <DemoBlock title="Selection and check events">
@@ -310,6 +325,29 @@ onMounted(() => {
   tree?.addEventListener('oas-check', (e) => {
     const span = document.querySelector('#tree-check')
     span.textContent = span.textContent === '—' ? e.detail.key : `${span.textContent}, ${e.detail.key}`
+  })
+
+  // Expand/collapse event demo: visible feedback for oas-expand (label + state)
+  const expandTree = document.querySelector('#tree-expand-event')
+  expandTree?.addEventListener('oas-expand', (e) => {
+    const { expanded, node } = e.detail
+    document.querySelector('#tree-expand-status').textContent = `${expanded ? 'Expanded' : 'Collapsed'} "${node.label}"`
+  })
+  // Drag lifecycle demo: visible feedback across dragstart/dragover/dragleave/dragend
+  const dndTree = document.querySelector('#tree-dnd')
+  const dndStatus = document.querySelector('#tree-dnd-status')
+  const dndDefault = 'Drag a node to the upper / lower / middle of a target row to insert before / after / inside it'
+  dndTree?.addEventListener('oas-node-dragstart', (e) => {
+    if (dndStatus) dndStatus.textContent = `Started dragging "${e.detail.dragKey}"`
+  })
+  dndTree?.addEventListener('oas-node-dragover', (e) => {
+    if (dndStatus) dndStatus.textContent = `Over "${e.detail.dropKey || 'root'}" — ${e.detail.position}`
+  })
+  dndTree?.addEventListener('oas-node-dragleave', () => {
+    if (dndStatus) dndStatus.textContent = 'Left the drop target'
+  })
+  dndTree?.addEventListener('oas-node-dragend', () => {
+    if (dndStatus) dndStatus.textContent = dndDefault
   })
 
   // Cascading-check demo: reflect the checked attribute after each oas-check
@@ -530,8 +568,13 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-check` | Check state change, `detail: { key, checked }` |
+| `oas-expand` | Dispatched on node expand/collapse, `detail: { key, expanded, node }` (node is a data snapshot) |
 | `oas-load` | Lazy loading triggered, `detail: { key }`; the host refills `children` and resets the `data` attribute |
 | `oas-load-error` | Lazy load failed, `detail: { key, error }` where `error` is the error message string (loading clears, clickable to retry) |
+| `oas-node-dragend` | Dispatched when a drag ends, `detail: { dragKey }` |
+| `oas-node-dragleave` | Dispatched when a drag leaves a target, `detail: { dragKey, dropKey, position }` |
+| `oas-node-dragover` | Dispatched while dragging over a target, `detail: { dragKey, dropKey, position }` (empty area: dropKey empty, position `inner`) |
+| `oas-node-dragstart` | Dispatched when a drag starts, `detail: { dragKey }` |
 | `oas-node-drop` | Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root |
 | `oas-node-rename` | Inline rename committed (Enter / blur), `detail: { key, label, oldLabel }`; data stays host-controlled — the component does not mutate the model, so the new label only shows once the host updates `data` (keeps the old value otherwise; Esc cancel does not emit) |
 | `oas-node-render` | Dispatched for each rendered node row, `detail: { node, element }` (element is the node label container; the host can rewrite it into icon / rich text) |

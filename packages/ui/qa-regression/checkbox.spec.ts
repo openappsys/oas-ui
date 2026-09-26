@@ -99,6 +99,32 @@ test('checkbox disabled 不可点、readonly 可聚焦但不切换', async ({ pa
   expect(r.readonlyFocused, 'readonly 可聚焦（表单语义分立）').toBe(true)
 })
 
+test('checkbox true-value/false-value 值映射：demo 输出实时显示当前映射值（用户可见反馈）', async ({ page }) => {
+  await page.goto('/components/checkbox.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cb-value')
+  // 初始未勾选 → false-value "NO"（demo 输出区可见）
+  let info = await page.evaluate(() => document.getElementById('cb-value-info')!.textContent)
+  expect(info, '初始未勾选应显示 false-value').toContain('NO')
+  // 点击勾选 → true-value "YES"
+  await page.evaluate(() => {
+    ;(document.querySelector('#cb-value')!.shadowRoot!.querySelector('input') as HTMLInputElement).click()
+  })
+  await page.waitForFunction(
+    () => (document.getElementById('cb-value-info')?.textContent ?? '').includes('YES'),
+    null,
+    { timeout: 5000 },
+  )
+  info = await page.evaluate(() => document.getElementById('cb-value-info')!.textContent)
+  expect(info).toContain('YES')
+  // 再点取消 → 回到 "NO"
+  await page.evaluate(() => {
+    ;(document.querySelector('#cb-value')!.shadowRoot!.querySelector('input') as HTMLInputElement).click()
+  })
+  await page.waitForFunction(() => (document.getElementById('cb-value-info')?.textContent ?? '').includes('NO'), null, {
+    timeout: 5000,
+  })
+})
+
 test('checkbox-group max 达上限：未选项拦截 + oas-exceed-limit + demo 提示 + 已选项可取消解锁', async ({ page }) => {
   await page.goto('/components/checkbox.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-checkbox')

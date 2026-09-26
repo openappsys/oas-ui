@@ -145,6 +145,12 @@
       "type": "string",
       "default": "all",
       "observed": true
+    },
+    {
+      "name": "show-header",
+      "type": "string",
+      "default": "true",
+      "observed": true
     }
   ],
   "props": [

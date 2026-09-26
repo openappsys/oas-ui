@@ -196,6 +196,24 @@ a.tab[aria-selected='true'] {
   box-shadow: var(--oas-focus-ring);
 }
 
+/* actions 操作区插槽：nav 内固定（滚动区外，溢出时不随标签滚动被遮挡，与 + 按钮同惯例）；
+   位于 + 按钮之后；slotchange 驱动显隐（无内容不占位） */
+.tabs-actions {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  flex-shrink: 0;
+  margin-inline-start: var(--oas-space-2);
+}
+.tabs-actions[hidden] {
+  display: none;
+}
+/* 纵向（left/right）：nav 列向，操作区随流排列在标签栏下方 */
+:host(.oas-tabs--vertical) .tabs-actions {
+  margin-inline-start: 0;
+  margin-top: var(--oas-space-1);
+}
+
 /* tab 徽标：数字/文本小圆角标签（颜色走 --oas-tabs-badge-bg/-color 开口，默认 danger） */
 .tab-badge {
   display: inline-flex;
@@ -757,6 +775,7 @@ export class OASTabs extends OASElement {
         <div class="tablist" part="tablist" role="tablist"></div>
         <button class="more-btn" part="more-button" type="button" hidden></button>
         <button class="tab-add" part="add-button" type="button" role="button" hidden></button>
+        <div class="tabs-actions" part="tabs-actions" hidden><slot name="actions"></slot></div>
         <button class="scroll-btn scroll-end" part="scroll-end" type="button" hidden aria-hidden="true" tabindex="-1"></button>
         <div class="more-dropdown" part="more-dropdown" role="menu" hidden>
           <input class="more-search" part="more-search" type="text" hidden />
@@ -800,8 +819,20 @@ export class OASTabs extends OASElement {
     this.shadow.querySelector('.tab-add')?.addEventListener('click', () => {
       this.emit('add', { label: this.t('tabs.newTab') })
     })
+    // actions 操作区：slot 内容变化驱动显隐（无内容不占位）；初始同步覆盖水合路径
+    const actionsSlot = this.shadow.querySelector('.tabs-actions slot')
+    actionsSlot?.addEventListener('slotchange', () => this.syncActionsVisibility())
+    this.syncActionsVisibility()
     this.bindScroll()
     this.bindMore()
+  }
+
+  /** actions 操作区显隐：slot 有分配元素即显示，无内容隐藏（不占位） */
+  private syncActionsVisibility(): void {
+    const box = this.shadow.querySelector<HTMLElement>('.tabs-actions')
+    const slot = box?.querySelector('slot')
+    if (!box || !slot) return
+    box.hidden = slot.assignedElements().length === 0
   }
 
   /**

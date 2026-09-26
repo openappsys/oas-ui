@@ -88,6 +88,11 @@
       "observed": true
     },
     {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "size",
       "type": "string",
       "default": "medium",
@@ -134,6 +139,11 @@
     {
       "name": "auto-width-max",
       "observed": true
+    },
+    {
+      "name": "autofocus",
+      "type": "boolean",
+      "observed": false
     },
     {
       "name": "required",

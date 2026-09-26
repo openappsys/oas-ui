@@ -593,8 +593,32 @@ onMounted(async () => {
     else sortableTabs.insertBefore(moved, rest[toIndex])
     message?.info(`标签从 ${fromIndex + 1} 移到 ${toIndex + 1}`)
   })
+
+  // actions 操作区：刷新按钮点击反馈（计数 + 提示）
+  const actionsTabs = document.getElementById('tabs-actions')
+  const actionsRefresh = document.getElementById('tabs-actions-refresh')
+  let refreshCount = 0
+  actionsRefresh?.addEventListener('click', () => {
+    refreshCount++
+    if (actionsTabs) actionsTabs.dataset.refreshed = String(refreshCount)
+    message?.success(`数据已刷新（第 ${refreshCount} 次）`)
+  })
 })
 </script>
+
+## 操作区插槽
+
+`slot="actions"` 在标签栏右侧渲染操作区：容器固定在 nav 内、滚动区之外，标签溢出滚动时操作区不随标签被遮挡（与新增按钮同一固定惯例）；开启 `addable` 时操作区位于 + 按钮之后。无内容时不占位。
+
+<DemoBlock title="actions 操作区（点击有反馈）">
+  <div style="width: 100%">
+    <oas-tabs id="tabs-actions" active="a">
+      <oas-tab-panel label="订单" value="a"><p>订单列表内容。</p></oas-tab-panel>
+      <oas-tab-panel label="物流" value="b"><p>物流跟踪内容。</p></oas-tab-panel>
+      <oas-button slot="actions" size="small" id="tabs-actions-refresh">刷新</oas-button>
+    </oas-tabs>
+  </div>
+</DemoBlock>
 
 ## API
 
@@ -645,6 +669,7 @@ onMounted(async () => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 标签页（`oas-tab-panel`） |
+| `actions` | 标签栏右侧操作区：nav 内固定于滚动区外（溢出不遮挡），addable 时位于 + 按钮后，无内容不占位 |
 | `add-icon` | 新增按钮图标内容（可新增标签页） |
 | `close-icon` | 关闭按钮图标内容（可关闭标签页） |
 | `icon` | 标签项图标内容（替代面板的 icon 属性） |

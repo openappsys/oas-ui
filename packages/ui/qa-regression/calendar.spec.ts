@@ -143,3 +143,64 @@ test('calendar 触屏窄视口（375/320）：7 列日格完整可见可点（�
     await ctx.close()
   }
 })
+
+test('calendar range：两段式选取（起点高亮 → 终点提交 oas-change { start, end } + 区间高亮 + 重开新一轮）', async ({
+  page,
+}) => {
+  await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-calendar#calendar-range')
+  // ① 起点：高亮 range-start，不派发 change
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-range')!
+    ;(el.shadowRoot!.querySelector<HTMLButtonElement>('.day[data-date="2026-08-05"]') as HTMLElement).click()
+  })
+  const s1 = await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-range')!
+    return {
+      start: el.shadowRoot!.querySelector('.day[data-date="2026-08-05"]')!.classList.contains('range-start'),
+      value: el.getAttribute('value'),
+      feedback: document.querySelector('#calendar-range-value')!.textContent ?? '',
+    }
+  })
+  expect(s1.start).toBe(true)
+  expect(s1.value).toBeNull()
+  expect(s1.feedback).toContain('点击起点')
+  // ② 终点：value 写 JSON 数组 + change 详情落到反馈行 + 区间高亮
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-range')!
+    ;(el.shadowRoot!.querySelector<HTMLButtonElement>('.day[data-date="2026-08-15"]') as HTMLElement).click()
+  })
+  const s2 = await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-range')!
+    const cls = (iso: string) => el.shadowRoot!.querySelector(`.day[data-date="${iso}"]`)!.classList
+    return {
+      value: el.getAttribute('value'),
+      feedback: document.querySelector('#calendar-range-value')!.textContent ?? '',
+      start: cls('2026-08-05').contains('range-start'),
+      inRange: cls('2026-08-10').contains('in-range'),
+      end: cls('2026-08-15').contains('range-end'),
+    }
+  })
+  expect(s2.value).toBe('["2026-08-05","2026-08-15"]')
+  expect(s2.feedback).toContain('2026-08-05')
+  expect(s2.feedback).toContain('2026-08-15')
+  expect(s2.start).toBe(true)
+  expect(s2.inRange).toBe(true)
+  expect(s2.end).toBe(true)
+  // ③ 再点重开新一轮：旧区间清除、新起点高亮
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-range')!
+    ;(el.shadowRoot!.querySelector<HTMLButtonElement>('.day[data-date="2026-08-20"]') as HTMLElement).click()
+  })
+  const s3 = await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-range')!
+    return {
+      value: el.getAttribute('value'),
+      newStart: el.shadowRoot!.querySelector('.day[data-date="2026-08-20"]')!.classList.contains('range-start'),
+      oldEnd: el.shadowRoot!.querySelector('.day[data-date="2026-08-15"]')!.classList.contains('range-end'),
+    }
+  })
+  expect(s3.value).toBeNull()
+  expect(s3.newStart).toBe(true)
+  expect(s3.oldEnd).toBe(false)
+})

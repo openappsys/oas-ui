@@ -229,6 +229,8 @@ export class OASCheckbox extends OASFormElement {
       'disabled',
       'indeterminate',
       'value',
+      'true-value',
+      'false-value',
       // required 仅驱动原生校验链（valueMissing），不透传内层 input
       'required',
       'disabled-skip',
@@ -255,6 +257,63 @@ export class OASCheckbox extends OASFormElement {
   private checkedDirty = false
   /** aria-invalid 由 status=error 设置的所有权标志（清理时只移除自己设置的，不动宿主自设值） */
   private invalidByStatus = false
+
+  /**
+   * 当前值：勾选映射（true-value/false-value）生效时为映射值（缺失侧回落布尔，对齐 switch 契约）；
+   * 未设置映射时为 value 属性（选项标识/提交值通道，现状语义零破坏）。
+   * 写入映射值驱动 checked（未匹配忽略）；未设置映射时布尔切换勾选、
+   * 字符串写回 value 属性——property 通道必须兜住宿主框架（Vue `key in el` 探测成立后
+   * 改走 property 赋值）的 `:value` 绑定，否则组内 value 静态绑定会被 setter 吞掉。
+   */
+  get value(): string | boolean {
+    return this.mappedValue(this.hasAttr('checked'))
+  }
+  set value(v: string | boolean) {
+    if (this.mappingActive()) {
+      const tv = this.getAttr('true-value', '')
+      const fv = this.getAttr('false-value', '')
+      if (v === tv) this.toggleAttribute('checked', true)
+      else if (v === fv) this.toggleAttribute('checked', false)
+      // 未匹配映射值：忽略（不猜测语义）
+      return
+    }
+    if (typeof v === 'boolean') this.toggleAttribute('checked', v)
+    else this.setAttribute('value', String(v))
+  }
+
+  /**
+   * 勾选映射是否生效：true-value/false-value 至少一项在场，且不在 checkbox-group 内。
+   * 组内 value 语义固定为「选项标识」（组按 value 属性收集勾选、FormData 按选项标识提交），
+   * 映射会破坏组值，故在组内一律不生效（单项独立使用才走映射，对齐 switch 契约）。
+   */
+  private mappingActive(): boolean {
+    if (this.getAttr('true-value', '') === '' && this.getAttr('false-value', '') === '') return false
+    return !this.inCheckboxGroup()
+  }
+
+  /** 是否处于 checkbox-group 内（遍历宿主链含 ShadowRoot 跳转：options 数据通道子项在组 shadow 内，closest 穿不过 ShadowRoot） */
+  private inCheckboxGroup(): boolean {
+    let node: Node | null = this.parentNode
+    while (node) {
+      if (node instanceof ShadowRoot) {
+        node = node.host
+        continue
+      }
+      if (!(node instanceof Element)) return false
+      if (node.tagName === 'OAS-CHECKBOX-GROUP') return true
+      node = node.parentNode
+    }
+    return false
+  }
+
+  /** 映射取值纯函数：映射未生效返回 value 属性（现状），生效时勾选取 true-value（缺失回落 true）、未勾取 false-value（缺失回落 false） */
+  private mappedValue(next: boolean): string | boolean {
+    if (!this.mappingActive()) return this.getAttr('value', '')
+    const tv = this.getAttr('true-value', '')
+    if (next) return tv !== '' ? tv : true
+    const fv = this.getAttr('false-value', '')
+    return fv !== '' ? fv : false
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -301,7 +360,8 @@ export class OASCheckbox extends OASFormElement {
       // 勾选切换是值变化点：toggleAttribute 同值时无属性变更、不触发 update，这里兜底同步
       this.syncFormValue()
       this.syncValidity()
-      this.emit('change', { checked, value: this.getAttr('value', '') })
+      // value 取映射值（true-value/false-value 生效时），未设置映射保持 value 属性语义
+      this.emit('change', { checked, value: this.mappedValue(checked) })
     })
     // 只读与数量限制拦截：click 阻止默认行为即可阻止勾选切换（键盘 Space 同路径）
     this.input?.addEventListener('click', (e) => {
@@ -403,10 +463,16 @@ export class OASCheckbox extends OASFormElement {
   /**
    * 表单值快照（form-associated）：照原生 checkbox 语义——勾选才提交（value 属性为提交值，
    * 缺省 'on'），未勾返回 null（FormData 不含此项）；indeterminate 不影响提交。
+   * 勾选映射（true-value）生效时提交映射值（对齐 switch；false-value 不进 FormData，
+   * 与原生「关不提交」一致）。组内 value 语义不变（映射不生效，提交选项标识）。
    * 读 checked 属性（受控源：点击/受控写入均同步到属性），render 前也可安全取值。
    */
   protected override getFormValue(): string | null {
     if (!this.hasAttr('checked')) return null
+    if (this.mappingActive()) {
+      const tv = this.getAttr('true-value', '')
+      if (tv !== '') return tv
+    }
     return this.getAttr('value', 'on')
   }
 

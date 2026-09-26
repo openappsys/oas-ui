@@ -492,8 +492,14 @@ export class OASTree extends OASElement {
         const dt = (e as DragEvent).dataTransfer
         if (dt) dt.dropEffect = 'move'
         wrap.classList.add('drop-inner')
+        this.emit('node-dragover', { dragKey: this.dragKey, dropKey: '', position: 'inner' })
       })
-      wrap.addEventListener('dragleave', () => wrap.classList.remove('drop-inner'))
+      wrap.addEventListener('dragleave', (e: Event) => {
+        // 行内 dragleave 冒泡上来时由行处理器派发（此处只管空白区），防重复事件
+        if ((e.target as HTMLElement).closest('[part="row"]')) return
+        wrap.classList.remove('drop-inner')
+        if (this.dragKey) this.emit('node-dragleave', { dragKey: this.dragKey, dropKey: '', position: 'inner' })
+      })
       wrap.addEventListener('drop', (e: Event) => {
         const target = e.target as HTMLElement
         if (target.closest('[part="row"]')) return
@@ -987,9 +993,13 @@ export class OASTree extends OASElement {
     if (!this.isExpandableNode(node)) return
     const exp = this.expandedSet()
     if (exp.has(id)) {
+      // oas-expand：展开/收起时派发（toggle 按钮、expand-trigger='node'、键盘共用入口）；
+      // node 为该数据节点快照（浅拷贝）
+      this.emit('expand', { key: id, expanded: false, node: { ...node } })
       // motion 开：先离场动画再落库（收起延迟 ~过渡时长，动画期间防重复触发）
       this.collapseWithMotion(exp, node)
     } else {
+      this.emit('expand', { key: id, expanded: true, node: { ...node } })
       this.expandNode(exp, node)
     }
   }
@@ -1746,6 +1756,7 @@ export class OASTree extends OASElement {
           e.dataTransfer.effectAllowed = 'move'
           e.dataTransfer.setData('text/plain', id)
         }
+        this.emit('node-dragstart', { dragKey: id })
       }) as EventListener)
     }
     row.addEventListener('dragend', (() => {
@@ -1753,6 +1764,7 @@ export class OASTree extends OASElement {
       this.dragKey = null
       row.classList.remove('dragging')
       this.clearDropMarkers()
+      this.emit('node-dragend', { dragKey: id })
     }) as EventListener)
     row.addEventListener('dragover', ((e: DragEvent) => {
       if (!this.dragKey || this.dragKey === id || this.nodeDisabled(node)) return
@@ -1766,9 +1778,13 @@ export class OASTree extends OASElement {
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
       this.clearDropMarkers()
       row.classList.add(pos === 'before' ? 'drop-before' : pos === 'after' ? 'drop-after' : 'drop-inner')
+      this.emit('node-dragover', { dragKey: this.dragKey, dropKey: id, position: pos })
     }) as EventListener)
-    row.addEventListener('dragleave', (() => {
+    row.addEventListener('dragleave', ((e: DragEvent) => {
       row.classList.remove('drop-before', 'drop-after', 'drop-inner')
+      if (this.dragKey) {
+        this.emit('node-dragleave', { dragKey: this.dragKey, dropKey: id, position: this.dropPosition(row, e, node) })
+      }
     }) as EventListener)
     row.addEventListener('drop', ((e: DragEvent) => {
       e.preventDefault()

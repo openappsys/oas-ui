@@ -73,7 +73,7 @@
 
 校验区演示 `rules` 声明的校验规则与失败反馈。
 
-> 校验规则：`{ required, message, minLength, maxLength, pattern }`。校验失败时字段被标记 `aria-invalid`（输入框红边），字段下方显示红字错误提示，并派发 `oas-validate-fail`。
+> 校验规则：`{ required, message, minLength, maxLength, pattern, validator, validateTrigger }`（`validator` 为自定义校验函数，函数不可 JSON 序列化，走 `rules` property 通道；`validateTrigger` 字段级覆盖表级触发时机）。校验失败时字段被标记 `aria-invalid`（输入框红边），字段下方显示红字错误提示，并派发 `oas-validate-fail`。
 
 ### 必填与格式校验
 
@@ -203,6 +203,110 @@
 
 受控同步与事件监听（一个 `<script>` 块统一挂接）：
 
+## 表单级能力
+
+### 整表禁用
+
+> `disabled` 属性对齐 config-provider 全局禁用语义：所有字段经字段自身的 form-associated 禁用通道并入生效（内层控件禁用、交互拦截），**不回写字段的 `disabled` 属性**（解除后字段完整恢复）；整表禁用时提交跳过全部校验。
+
+<DemoBlock title="整表禁用">
+  <oas-form id="form-disabled-all" rules='{"name":[{"required":true,"message":"请输入姓名"}]}' disabled style="width: 340px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-input name="name" value="张三" placeholder="姓名"></oas-input>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交（禁用时跳过校验）</oas-button>
+    </oas-space>
+  </oas-form>
+  <div style="display: inline-flex; align-items: center; gap: var(--oas-space-2); margin-left: var(--oas-space-4)">
+    <oas-switch id="form-disabled-all-switch" checked></oas-switch>
+    <span style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">禁用整表</span>
+  </div>
+  <span id="form-disabled-all-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+</DemoBlock>
+
+### 初始值与重置
+
+> `initial-values` 挂载后写入对应字段（input 走 `value`、switch 走 `checked`、transfer/dynamic-input 走 `model-value`）；`reset()` 回到初始值并清除校验错误态，全程不派发事件（与原生表单 reset 基线语义一致）。也支持 `initialValues` property 通道（property 优先于 attribute）。
+
+<DemoBlock title="initial-values 与 reset">
+  <oas-form id="form-initial" initial-values='{"name":"张三","notify":true}' rules='{"name":[{"required":true,"message":"请输入姓名"}]}' style="width: 340px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-input name="name" placeholder="姓名"></oas-input>
+      <oas-switch name="notify"></oas-switch>
+      <div style="display: flex; gap: var(--oas-space-2)">
+        <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
+        <oas-button onclick="this.closest('oas-form').reset()">重置</oas-button>
+      </div>
+    </oas-space>
+  </oas-form>
+  <span id="form-initial-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+### 自定义校验函数（validator）
+
+> `validator` 在每条规则的既有校验之后执行，返回 `true` 通过、返回字符串为错误消息、返回 Promise 走异步校验。函数不可 JSON 序列化，通过 `rules` **property** 通道设置（脚本赋值 `form.rules = {...}`）。
+
+<DemoBlock title="自定义校验函数">
+  <oas-form id="form-validator" style="width: 340px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-input name="username" placeholder="用户名（试试 admin 或少于 6 个字符）"></oas-input>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
+    </oas-space>
+  </oas-form>
+  <span id="form-validator-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+### 校验触发时机（validate-trigger）
+
+> `validate-trigger` 控制字段级即时校验时机：`change`（默认）/ `blur` / `input`；字段规则里的 `validateTrigger` 可覆盖表级。提交时始终全量校验。下方示例改为 `blur`：输入非法手机号后点击别处（失焦）即出现红字，改正后再失焦红字消失。
+
+<DemoBlock title="失焦触发校验">
+  <oas-form id="form-trigger" validate-trigger="blur" rules='{"phone":[{"pattern":"^1\\d{10}$","message":"手机号格式不正确"}]}' style="width: 340px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-input name="phone" placeholder="手机号（失焦时校验）"></oas-input>
+    </oas-space>
+  </oas-form>
+  <span id="form-trigger-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+</DemoBlock>
+
+### 滚动定位到首个错误（scroll-to-first-error）
+
+> 设置 `scroll-to-first-error` 后，提交校验失败时自动聚焦首个错误字段并平滑滚动进视口（系统开启「减少动态效果」时降级为瞬跳）。下方长表单可滚动，备注字段在最底部——点击提交观察容器自动滚下去。
+
+<DemoBlock title="滚动定位到首个错误">
+  <div style="max-height: 220px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-3); width: 360px">
+    <oas-form id="form-scroll" scroll-to-first-error rules='{"remark":[{"required":true,"message":"请填写备注（表单最底部）"}]}'>
+      <oas-space direction="vertical" style="width: 100%">
+        <oas-input name="f1" placeholder="字段 1"></oas-input>
+        <oas-input name="f2" placeholder="字段 2"></oas-input>
+        <oas-input name="f3" placeholder="字段 3"></oas-input>
+        <oas-input name="f4" placeholder="字段 4"></oas-input>
+        <oas-input name="f5" placeholder="字段 5"></oas-input>
+        <oas-input name="f6" placeholder="字段 6"></oas-input>
+        <oas-input name="remark" placeholder="备注（必填，在最底部）"></oas-input>
+      </oas-space>
+    </oas-form>
+  </div>
+  <div style="margin-top: var(--oas-space-3)">
+    <oas-button type="primary" onclick="document.getElementById('form-scroll').submit()">提交（滚动到首个错误）</oas-button>
+  </div>
+</DemoBlock>
+
+### 值变化事件（oas-values-change）
+
+> 任一字段值变化时派发 `oas-values-change`，`detail: { name, value, values }`（`values` 为全表当前值快照）。初始值写入与 `reset()` 属静默通道，不派发。
+
+<DemoBlock title="oas-values-change">
+  <oas-form id="form-values" style="width: 340px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-input name="a" placeholder="字段 A（输入试试）"></oas-input>
+      <oas-input name="b" placeholder="字段 B（输入试试）"></oas-input>
+    </oas-space>
+  </oas-form>
+  <span id="form-values-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
+</DemoBlock>
+
+脚本接线（受控同步 + 各 demo 事件反馈）：
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -277,6 +381,71 @@ onMounted(() => {
   document.getElementById('form-inline-search')?.addEventListener('oas-submit', (e) => {
     searchOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
   })
+
+  // 整表禁用：开关切换 disabled 属性（字段灰化/恢复、禁用时提交跳过校验）
+  const disabledForm = document.getElementById('form-disabled-all')
+  const disabledSwitch = document.getElementById('form-disabled-all-switch')
+  const disabledOut = document.getElementById('form-disabled-all-output')
+  disabledForm?.addEventListener('oas-submit', (e) => {
+    disabledOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+  disabledSwitch?.addEventListener('oas-change', () => {
+    const on = disabledSwitch.hasAttribute('checked')
+    disabledForm.toggleAttribute('disabled', on)
+    disabledOut.textContent = on ? '已禁用整表（字段灰化，提交跳过校验）' : '已恢复整表（字段恢复可用）'
+  })
+
+  // 初始值与重置：提交/失败/重置结果回显
+  const initialOut = document.getElementById('form-initial-output')
+  document.getElementById('form-initial')?.addEventListener('oas-submit', (e) => {
+    initialOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+  document.getElementById('form-initial')?.addEventListener('oas-validate-fail', (e) => {
+    initialOut.textContent = `oas-validate-fail: ${JSON.stringify(e.detail.errors)}（点重置恢复初始值并清错误）`
+  })
+  document.getElementById('form-initial')?.addEventListener('click', (e) => {
+    if (e.target?.textContent?.includes('重置')) initialOut.textContent = 'reset() 已执行（回初始值，不派发事件）'
+  })
+
+  // 自定义校验函数：validator 走 rules property 通道（函数不可 JSON 序列化）
+  const validatorForm = document.getElementById('form-validator')
+  if (validatorForm) {
+    validatorForm.rules = {
+      username: [
+        { required: true, message: '请输入用户名' },
+        {
+          validator: (v) => {
+            if (v === 'admin') return '用户名已被保留（自定义校验）'
+            if (v.length < 6) return '至少 6 个字符（自定义校验）'
+            return true
+          },
+        },
+      ],
+    }
+  }
+  const validatorOut = document.getElementById('form-validator-output')
+  validatorForm?.addEventListener('oas-submit', (e) => {
+    validatorOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+  validatorForm?.addEventListener('oas-validate-fail', (e) => {
+    validatorOut.textContent = `oas-validate-fail: ${JSON.stringify(e.detail.errors)}`
+  })
+
+  // 校验触发时机：blur 触发即时校验（反馈为错误红字显隐）
+  const triggerForm = document.getElementById('form-trigger')
+  const triggerOut = document.getElementById('form-trigger-output')
+  triggerForm?.addEventListener('oas-blur', () => {
+    const phone = triggerForm.querySelector('oas-input[name="phone"]')
+    const invalid = phone?.hasAttribute('aria-invalid')
+    triggerOut.textContent = invalid ? '失焦校验：格式不正确（见红字）' : '失焦校验：通过'
+  })
+
+  // 值变化事件：回显最近一次变化与全表快照
+  const valuesOut = document.getElementById('form-values-output')
+  document.getElementById('form-values')?.addEventListener('oas-values-change', (e) => {
+    const { name, value, values } = e.detail
+    valuesOut.textContent = `最近变化：${name} = ${value || '（空）'}；全表：${JSON.stringify(values)}`
+  })
 })
 </script>
 
@@ -294,12 +463,16 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `disabled` | 整表禁用：字段经 form-associated 禁用通道并入生效（不回写字段 disabled 属性，防自锁）；禁用时提交跳过全部校验 | `boolean` | — |
 | `gap` | 间距（grid 模式栅格间距；inline 模式项间距），token 值如 `var(--oas-space-4)`；grid 默认 `0`，inline 默认 `var(--oas-space-4)` | `string` | `0` |
+| `initial-values` | 表单初始值 JSON（property `initialValues` 优先）：挂载后写入对应字段；`reset()` 回到初始值 | `Record<string, unknown> \| string` | — |
 | `inline` | 行内布局：表单项水平排列（label 在控件左侧、控件自动宽度、可换行），项间距取 `gap`（默认 `var(--oas-space-4)`）；与 `layout` 并存且优先于 `layout`；此时 `label-align` 强制 `left`、`label-width` 自动 | `boolean` | — |
 | `label-align` | 标签对齐：`left` / `right` / `top`（grid 模式默认 `top`；inline 模式强制 `left`） | `string` | `top` |
 | `label-width` | `label-align` 为 left/right 时的标签列宽（inline 模式自动，不生效） | — | — |
 | `layout` | 布局模式：`vertical`（默认，竖排）/ `grid`（24 列栅格）；非枚举值回退 `vertical`；存在 `inline` 属性时优先 | `string` | `vertical` |
-| `rules` | 校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | `{}` |
+| `rules` | 校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | — |
+| `scroll-to-first-error` | 校验失败后聚焦首个错误字段并平滑滚动进视口（prefers-reduced-motion 时瞬跳） | `boolean` | — |
+| `validate-trigger` | 字段级即时校验触发时机：`change`（默认）/ `blur` / `input`；规则 `validateTrigger` 可逐字段覆盖；提交始终全量校验 | `string` | `change` |
 
 #### 事件
 
@@ -307,6 +480,7 @@ onMounted(() => {
 | --- | --- |
 | `oas-submit` | 校验通过，`detail: { values }` |
 | `oas-validate-fail` | 校验失败，`detail: { errors, values }` |
+| `oas-values-change` | 任一字段值变化时派发，`detail: { name, value, values }`（values 为全表快照；initial-values 写入与 reset() 静默） |
 
 #### 插槽
 

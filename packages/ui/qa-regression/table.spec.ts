@@ -924,3 +924,42 @@ test('table 过滤面板：打开后定位夹取在视口内（floating 引擎�
   expect(rect.right).toBeLessThanOrEqual(rect.vw)
   expect(rect.bottom).toBeLessThanOrEqual(rect.vh)
 })
+
+test('table show-header=false：表头不渲染、数据行保留；切回 true 恢复（demo 开关反馈）', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-table#table-show-header')
+  // 初始：表头渲染
+  const r0 = await page.evaluate(() => {
+    const el = document.querySelector('oas-table#table-show-header')!
+    return {
+      headers: el.shadowRoot!.querySelectorAll('thead th').length,
+      rows: el.shadowRoot!.querySelectorAll('[part="row"]').length,
+    }
+  })
+  expect(r0.headers).toBe(3)
+  expect(r0.rows).toBe(3)
+  // 点击「隐藏表头」：thead 空了，数据行不动
+  await page.locator('#table-show-header-toggle').click()
+  const r1 = await page.evaluate(() => {
+    const el = document.querySelector('oas-table#table-show-header')!
+    const firstRow = el.shadowRoot!.querySelector('[part="row"]')!
+    return {
+      attr: el.getAttribute('show-header'),
+      headers: el.shadowRoot!.querySelectorAll('thead th').length,
+      rows: el.shadowRoot!.querySelectorAll('[part="row"]').length,
+      firstCellOk: firstRow.querySelector('td[data-col="name"]')?.textContent,
+      btnText: document.querySelector('#table-show-header-toggle')!.textContent,
+    }
+  })
+  expect(r1.attr).toBe('false')
+  expect(r1.headers).toBe(0)
+  expect(r1.rows).toBe(3)
+  expect(r1.firstCellOk).toContain('张三')
+  expect(r1.btnText).toContain('显示表头')
+  // 切回：表头恢复
+  await page.locator('#table-show-header-toggle').click()
+  const r2 = await page.evaluate(
+    () => document.querySelector('oas-table#table-show-header')!.shadowRoot!.querySelectorAll('thead th').length,
+  )
+  expect(r2).toBe(3)
+})

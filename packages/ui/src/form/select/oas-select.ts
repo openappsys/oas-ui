@@ -20,6 +20,8 @@ export interface Option {
 
 /** size 尺寸档（对齐 oas-input：small/medium/large，控高走 --oas-control-height-* token） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
+/** variant 形态（对齐 oas-input 三值枚举：outlined 默认 / filled 填充 / borderless 无框） */
+const VALID_VARIANTS = ['outlined', 'filled', 'borderless'] as const
 /** status 校验态：success / warning / error（error 联动 aria-invalid） */
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
 
@@ -150,6 +152,38 @@ const STYLE = `
 }
 :host([data-size='large']) .search-input {
   font-size: var(--oas-font-size-lg);
+}
+/* ---- variant 形态：filled 填充 / borderless 无框（默认 outlined 走基础样式）。
+     置于 status 规则之前：同特异性时后定义的 status 语义色胜出（对齐 oas-input 排序） ---- */
+:host([data-variant='filled']) .trigger {
+  border-color: transparent;
+  background: var(--oas-color-bg-hover);
+}
+:host([data-variant='filled']) .trigger:hover {
+  border-color: var(--oas-color-border);
+}
+:host([data-variant='filled']) .trigger:focus-visible,
+:host([data-variant='filled']) .trigger[aria-expanded='true'] {
+  border-color: var(--oas-color-primary);
+  box-shadow: var(--oas-focus-ring);
+}
+:host([data-variant='filled']) .trigger[disabled] {
+  background: var(--oas-color-bg-disabled);
+}
+:host([data-variant='borderless']) .trigger {
+  border-color: transparent;
+  background: transparent;
+}
+:host([data-variant='borderless']) .trigger:hover {
+  border-color: transparent;
+}
+:host([data-variant='borderless']) .trigger:focus-visible,
+:host([data-variant='borderless']) .trigger[aria-expanded='true'] {
+  border-color: transparent;
+  box-shadow: none;
+}
+:host([data-variant='borderless']) .trigger[disabled] {
+  background: transparent;
 }
 .trigger:hover {
   border-color: var(--oas-color-primary);
@@ -429,6 +463,8 @@ export class OASSelect extends OASFormElement {
       'disabled-skip',
       'size',
       'status',
+      'variant',
+      'label',
       'open',
       'max-count',
       'placement',
@@ -1002,6 +1038,9 @@ export class OASSelect extends OASFormElement {
   private syncSizeStatus(): void {
     const size = normalizeChoice(this.injectValue('size', 'medium'), 'medium', VALID_SIZES)
     this.setAttribute('data-size', size)
+    // variant 形态镜像（非法值静默回落 outlined，对齐 oas-input）
+    const variant = normalizeChoice(this.getAttr('variant', ''), 'outlined', VALID_VARIANTS)
+    this.setAttribute('data-variant', variant)
     const status = normalizeChoice(this.getAttr('status', ''), '', VALID_STATUSES)
     if (status) this.setAttribute('data-status', status)
     else this.removeAttribute('data-status')
@@ -1361,7 +1400,9 @@ export class OASSelect extends OASFormElement {
     const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
 
     this.triggerEl.disabled = disabled
-    this.triggerEl.setAttribute('aria-label', placeholder)
+    // aria-label：label 属性（表单标签，对齐 oas-input 契约）> placeholder 回退；
+    // 外部 <label for> 关联命名由基类 syncInnerLabelledBy 在 update 后覆盖（外部 label 优先）
+    this.triggerEl.setAttribute('aria-label', this.getAttr('label', '') || placeholder)
     if (readonly) this.triggerEl.setAttribute('aria-readonly', 'true')
     else this.triggerEl.removeAttribute('aria-readonly')
 

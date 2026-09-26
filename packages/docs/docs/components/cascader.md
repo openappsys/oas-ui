@@ -140,6 +140,27 @@
 
 选项为空（且未设置 `el.load`）时面板显示「暂无数据」；搜索无匹配时显示「无匹配选项」。
 
+## 加载态（loading）
+
+<DemoBlock title="加载态（loading）">
+  <oas-space size="small">
+    <oas-button size="small" onclick="document.querySelector('#cs-loading').setAttribute('loading','')">进入 loading</oas-button>
+    <oas-button size="small" onclick="document.querySelector('#cs-loading').removeAttribute('loading')">结束 loading</oas-button>
+    <oas-cascader id="cs-loading" placeholder="选择地区" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"},{"label":"宁波","value":"nb"}]}]'></oas-cascader>
+  </oas-space>
+</DemoBlock>
+
+`loading` 期间触发器显示 spinner 并标 `aria-busy`（替代展开箭头）；面板展开时只显示「加载中…」占位，不渲染选项——适合宿主拉取远程级联数据的请求窗口期。
+
+## 字段映射（field-names）
+
+<DemoBlock title="字段映射（field-names）">
+  <oas-cascader id="cs-fields" placeholder="数据字段为 name/id/subs/off" options='[{"name":"前端","id":"fe","subs":[{"name":"Vue","id":"vue","off":false}]},{"name":"设计","id":"design","subs":[{"name":"UI","id":"ui","off":true}]}]' field-names='{"label":"name","value":"id","children":"subs","disabled":"off"}'></oas-cascader>
+  <span id="cs-fields-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
+</DemoBlock>
+
+`field-names` 为 JSON 字段别名（`{ label, value, children, disabled }`，对齐 `oas-tree-select` 契约），组件按别名读取原始数据（`isLeaf` 恒读原始键名）；懒加载 `el.load` 返回的数据同样按映射归一。上例中「设计 / UI」经 `off` 字段禁用。
+
 ## 禁用
 
 <DemoBlock title="禁用">
@@ -154,6 +175,15 @@
 </DemoBlock>
 
 监听 `oas-change`，`detail.value` 单选为路径数组、多选为路径数组的数组：
+
+## 焦点事件（oas-focus / oas-blur）
+
+<DemoBlock title="focus / blur 事件">
+  <oas-cascader id="cs-focus" placeholder="聚焦 / 失焦看反馈" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"}]}]'></oas-cascader>
+  <span id="cs-focus-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
+</DemoBlock>
+
+触发器获得/失去焦点派发 `oas-focus` / `oas-blur`（`detail.value` 与 `oas-change` 同形状：单选路径数组、多选路径二维数组）；触发器 ↔ 搜索框 ↔ 标签按钮之间的组件内焦点转移不会误报。
 
 <script setup>
 import { onMounted } from 'vue'
@@ -227,6 +257,23 @@ onMounted(() => {
   el?.addEventListener('oas-change', (e) => {
     out.textContent = `oas-change: ${pathText([e.detail.value])}`
   })
+
+  // 字段映射 demo：选择反馈映射后的 value
+  const fields = document.getElementById('cs-fields')
+  const fieldsOut = document.getElementById('cs-fields-output')
+  fields?.addEventListener('oas-change', (e) => {
+    fieldsOut.textContent = `oas-change: ${pathText([e.detail.value])}`
+  })
+
+  // 焦点事件 demo：触发器聚焦/失焦反馈
+  const focus = document.getElementById('cs-focus')
+  const focusOut = document.getElementById('cs-focus-output')
+  focus?.addEventListener('oas-focus', () => {
+    focusOut.textContent = 'oas-focus'
+  })
+  focus?.addEventListener('oas-blur', () => {
+    focusOut.textContent = 'oas-blur'
+  })
 })
 </script>
 
@@ -247,7 +294,9 @@ onMounted(() => {
 | `clearable` | 可清空（派发 oas-clear） | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `expand-trigger` | 子级展开触发方式：`click`（默认）/ `hover`（120ms 延时防误触） | `string` | `click` |
+| `field-names` | 字段别名 JSON（`{ label, value, children, disabled }`），对齐 tree-select 契约；懒加载结果同样映射 | `string` | — |
 | `filterable` | 可搜索（扁平路径结果） | `boolean` | — |
+| `loading` | 加载态：触发器 spinner + aria-busy，面板显示加载占位 | `boolean` | — |
 | `max-tag-count` | 多选标签按数量折叠 +N（带 title 列隐藏项） | `boolean` | — |
 | `multiple` | 多选（复选框级联勾选；子级全选父级自动进值） | `boolean` | — |
 | `open` | 受控展开状态（唯一状态源）；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | `boolean` | — |
@@ -264,7 +313,9 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-blur` | 触发器失焦时派发，`detail.value` 与 oas-change 同形状（组件内焦点转移不误报） |
 | `oas-change` | 选择变化，`detail: { value }`（路径数组） |
 | `oas-clear` | 点击清空按钮，`detail` 为清空前的值 |
+| `oas-focus` | 触发器聚焦时派发，`detail.value` 与 oas-change 同形状（组件内焦点转移不误报） |
 | `oas-open-change` | 展开状态翻转，`detail: { open }` |
 | `oas-search` | filterable 输入，`detail: { value }` |

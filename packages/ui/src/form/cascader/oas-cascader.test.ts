@@ -811,3 +811,161 @@ describe('OASCascader 移动端底部抽屉（bottom-sheet 接入）', () => {
     expect(sheet(el).hasAttribute('passive')).toBe(true)
   })
 })
+
+describe('OASCascader loading（加载态，PRD P1-20）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function spinner(el: OASCascader): HTMLElement {
+    return el.shadowRoot!.querySelector('[part="spinner"]')!
+  }
+
+  function chevron(el: OASCascader): HTMLElement {
+    return el.shadowRoot!.querySelector('.chevron')!
+  }
+
+  it('loading 进 observedAttributes', () => {
+    expect(OASCascader.observedAttributes).toContain('loading')
+    expect(OASCascader.observedAttributes).toContain('field-names')
+  })
+
+  it('loading：触发器 spinner 显示 + aria-busy，chevron 隐藏', () => {
+    const el = mount({ loading: '' })
+    expect(spinner(el).hidden).toBe(false)
+    expect(chevron(el).hidden).toBe(true)
+    expect(trigger(el).getAttribute('aria-busy')).toBe('true')
+  })
+
+  it('loading：面板打开显示加载占位（role=status 复用 loading 文案），不渲染选项行', () => {
+    const el = mount({ loading: '' })
+    trigger(el).click()
+    const status = el.shadowRoot!.querySelector('[role="status"]')!
+    expect(status.textContent).toContain('加载中')
+    expect(rows(el).length).toBe(0)
+  })
+
+  it('loading 移除后恢复常规渲染（spinner 隐藏、aria-busy 移除、面板出选项）', () => {
+    const el = mount({ loading: '' })
+    trigger(el).click()
+    el.removeAttribute('loading')
+    expect(spinner(el).hidden).toBe(true)
+    expect(chevron(el).hidden).toBe(false)
+    expect(trigger(el).hasAttribute('aria-busy')).toBe(false)
+    expect(rows(el, 0).length).toBe(2)
+  })
+
+  it('loading 样式与 spin keyframes 存在（shadow CSS）', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('.spinner')
+    expect(css).toContain('oas-cascader-spin')
+  })
+})
+
+describe('OASCascader field-names（字段映射，PRD P1-21）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const CUSTOM = JSON.stringify([
+    { name: '前端', id: 'fe', subs: [{ name: 'Vue', id: 'vue' }] },
+    { name: '禁用项', id: 'dis', off: true },
+  ])
+
+  const ALIAS = '{"label":"name","value":"id","children":"subs","disabled":"off"}'
+
+  it('field-names 别名读树（label/value/children/disabled），选择提交映射值，disabled 生效', () => {
+    const el = mount({ options: CUSTOM, 'field-names': ALIAS })
+    trigger(el).click()
+    expect(rows(el).length).toBe(2)
+    expect(rows(el)[0]!.textContent).toContain('前端')
+    // 别名 disabled 生效
+    expect(rows(el)[1]!.getAttribute('aria-disabled')).toBe('true')
+    // 下钻子级（children 别名）
+    ;(rows(el)[0] as HTMLElement).click()
+    expect(panels(el).length).toBe(2)
+    expect(rows(el, 1)[0]!.textContent).toContain('Vue')
+    // 叶子提交映射 value
+    ;(rows(el, 1)[0] as HTMLElement).click()
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual(['fe', 'vue'])
+  })
+
+  it('field-names 切换别名后同一 options 按新字段重新解析', () => {
+    const el = mount({ options: CUSTOM })
+    trigger(el).click()
+    // 默认字段下 label 为空（回退 value/id 显示）
+    el.setAttribute('field-names', ALIAS)
+    expect(rows(el)[0]!.textContent).toContain('前端')
+  })
+
+  it('field-names 非法 JSON 回落默认字段', () => {
+    const el = mount({ options: OPTIONS, 'field-names': '{oops' })
+    trigger(el).click()
+    expect(rows(el).length).toBe(2)
+    expect(rows(el)[0]!.textContent).toContain('浙江')
+  })
+
+  it('懒加载结果同样经字段映射归一（load 返回自定义字段形状）', async () => {
+    const el = mount({ options: '[]', 'field-names': ALIAS })
+    // 自定义字段形状（类型上伪装为 CascaderOption[]；运行时经 normalizeOptionList 别名映射归一）
+    el.load = (() => Promise.resolve([{ name: '子级', id: 'kid', isLeaf: true }])) as unknown as typeof el.load
+    trigger(el).click()
+    await tick()
+    expect(rows(el, 0).length).toBe(1)
+    expect(rows(el, 0)[0]!.textContent).toContain('子级')
+  })
+})
+
+describe('OASCascader oas-focus / oas-blur（PRD P1-22）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('触发器聚焦派发 oas-focus，detail.value 为当前路径', () => {
+    const el = mount({ value: '["zj","hz"]' })
+    const events: string[] = []
+    let detail: unknown
+    el.addEventListener('oas-focus', (e: Event) => {
+      events.push('focus')
+      detail = (e as CustomEvent).detail
+    })
+    trigger(el).dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    expect(events).toEqual(['focus'])
+    expect(detail).toEqual({ value: ['zj', 'hz'] })
+  })
+
+  it('组件内焦点转移不重复派发；离开组件派发 oas-blur', () => {
+    const el = mount({ filterable: '' })
+    const events: string[] = []
+    el.addEventListener('oas-focus', () => events.push('focus'))
+    el.addEventListener('oas-blur', () => events.push('blur'))
+    trigger(el).dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    // 组件内转移到搜索框（仍在 wrapper 内）：不重复派发 focus、不派发 blur
+    trigger(el).dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: searchInput(el) }))
+    searchInput(el).dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    expect(events).toEqual(['focus'])
+    // 离开组件（relatedTarget 为 null）
+    searchInput(el).dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    expect(events).toEqual(['focus', 'blur'])
+  })
+
+  it('detail.value：单选路径数组 / 多选路径二维数组', () => {
+    const multi = mount({ multiple: '', value: '[["zj","hz"]]' })
+    let detail: unknown
+    multi.addEventListener('oas-focus', (e: Event) => (detail = (e as CustomEvent).detail))
+    trigger(multi).dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    expect(detail).toEqual({ value: [['zj', 'hz']] })
+  })
+})

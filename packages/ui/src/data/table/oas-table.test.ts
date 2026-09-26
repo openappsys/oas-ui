@@ -2582,3 +2582,54 @@ describe('OASTable 触屏命中区与触屏列重排（pointer: coarse）', () =
     expect(th().getAttribute('draggable')).toBe('true')
   })
 })
+
+describe('OASTable show-header', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('缺省（true）：表头照常渲染（现状回归）', () => {
+    const el = mount()
+    expect(headers(el).length).toBe(2)
+    expect(el.shadowRoot!.querySelector('thead')!.children.length).toBe(1)
+  })
+
+  it('show-header=false：表头行不渲染，数据行与列对齐不受影响', () => {
+    const el = mount({ 'show-header': 'false' })
+    expect(headers(el).length).toBe(0)
+    expect(el.shadowRoot!.querySelector('thead')!.children.length).toBe(0)
+    expect(rows(el).length).toBe(3)
+    // 列配置仍生效于数据行对齐：每行单元格数 = 列数
+    for (const tr of rows(el)) {
+      expect(tr.querySelectorAll('td').length).toBe(2)
+    }
+    expect(rows(el)[0]!.querySelector('td[data-col="name"]')!.textContent).toContain('张三')
+  })
+
+  it('show-header=false：动态切换属性可恢复表头', () => {
+    const el = mount({ 'show-header': 'false' })
+    expect(headers(el).length).toBe(0)
+    el.setAttribute('show-header', 'true')
+    expect(headers(el).length).toBe(2)
+  })
+
+  it('show-header=false + 固定列 / 虚拟滚动形态同样生效', () => {
+    const fixedCols = JSON.stringify([
+      { key: 'name', title: '姓名', fixed: 'left', width: '120px' },
+      { key: 'age', title: '年龄' },
+    ])
+    const el = mount({ 'show-header': 'false', height: '160', rowHeight: '40', columns: fixedCols })
+    expect(headers(el).length).toBe(0)
+    expect(el.shadowRoot!.querySelector('thead')!.children.length).toBe(0)
+    expect(rows(el).length).toBeGreaterThan(0)
+    // 虚拟窗口行仍按固定列写入 sticky 偏移（数据行形态不受表头隐藏影响）
+    const firstTd = rows(el)[0]!.querySelector('td[data-col="name"]')!
+    expect(firstTd.getAttribute('data-fixed')).toBe('left')
+  })
+})

@@ -110,3 +110,53 @@ test('cascader 浮层定位：首开与再开一致（面板宽度取内容固�
   })
   expect(Math.abs(g.first.left - g.second.left)).toBeLessThanOrEqual(1)
 })
+
+test('cascader loading / field-names / focus 事件：用户视角反馈（PRD P1-20/21/22）', async ({ page }) => {
+  await page.goto('/components/cascader.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-cascader')
+
+  // loading：进入 loading → 触发器 spinner + aria-busy；展开面板只显示加载占位
+  const loading = page.locator('#cs-loading')
+  await page.locator('oas-button', { hasText: '进入 loading' }).click()
+  expect(await loading.evaluate((el) => (el.shadowRoot!.querySelector('[part="spinner"]') as HTMLElement).hidden)).toBe(
+    false,
+  )
+  expect(await loading.evaluate((el) => el.shadowRoot!.querySelector('.trigger')!.getAttribute('aria-busy'))).toBe(
+    'true',
+  )
+  await loading.evaluate((el) => (el.shadowRoot!.querySelector('.trigger') as HTMLElement).click())
+  const statusText = await loading.evaluate((el) => el.shadowRoot!.querySelector('[role="status"]')?.textContent)
+  expect(statusText).toContain('加载中')
+  expect(await loading.evaluate((el) => el.shadowRoot!.querySelectorAll('[role="option"]').length)).toBe(0)
+  // 结束 loading → 常规选项恢复（点「结束 loading」属外部点击，面板已按 outside-click 契约关闭，
+  // 需重新展开验证选项渲染；根级仅「浙江」1 项）
+  await page.locator('oas-button', { hasText: '结束 loading' }).click()
+  expect(await loading.evaluate((el) => (el.shadowRoot!.querySelector('[part="spinner"]') as HTMLElement).hidden)).toBe(
+    true,
+  )
+  await loading.evaluate((el) => (el.shadowRoot!.querySelector('.trigger') as HTMLElement).click())
+  expect(await loading.evaluate((el) => el.shadowRoot!.querySelectorAll('[role="option"]').length)).toBe(1)
+
+  // field-names：别名渲染 + 别名 disabled 生效（设计 分支展开后查子项 UI——off:true 映射 disabled）
+  const fields = page.locator('#cs-fields')
+  await fields.evaluate((el) => (el.shadowRoot!.querySelector('.trigger') as HTMLElement).click())
+  const firstLabel = await fields.evaluate((el) => el.shadowRoot!.querySelector('.option .label')?.textContent)
+  expect(firstLabel).toBe('前端')
+  await fields.evaluate((el) => {
+    const rows = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.option')]
+    rows.find((r) => r.textContent?.includes('设计'))?.click()
+  })
+  await page.waitForTimeout(150)
+  const disabledRow = await fields.evaluate((el) => {
+    const rows = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.option')]
+    return rows.find((r) => r.textContent?.trim() === 'UI')?.getAttribute('aria-disabled')
+  })
+  expect(disabledRow).toBe('true')
+
+  // focus/blur：聚焦/失焦后内联反馈更新
+  const focus = page.locator('#cs-focus')
+  await focus.evaluate((el) => (el.shadowRoot!.querySelector('.trigger') as HTMLElement).focus())
+  await expect(page.locator('#cs-focus-output')).toHaveText('oas-focus')
+  await page.locator('h1').first().click()
+  await expect(page.locator('#cs-focus-output')).toHaveText('oas-blur')
+})

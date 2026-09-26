@@ -702,6 +702,167 @@ describe('compound 双行变体（slot="description"）', () => {
   })
 })
 
+describe('OASButton 原生表单提交（html-type + form 属性组）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 挂一个含 name 输入框的原生 form，oas-button 置于 form 内 */
+  function mountInForm(buttonAttrs: Record<string, string> = {}): {
+    form: HTMLFormElement
+    btn: OASButton
+    input: HTMLInputElement
+  } {
+    const form = document.createElement('form')
+    const input = document.createElement('input')
+    input.name = 'username'
+    // defaultValue 走属性（reset 回落目标）；JS 直设 .value 是 dirty value，reset 不会回落
+    input.setAttribute('value', 'alice')
+    form.appendChild(input)
+    const btn = new OASButton()
+    for (const [k, v] of Object.entries(buttonAttrs)) btn.setAttribute(k, v)
+    btn.textContent = '提交'
+    form.appendChild(btn)
+    document.body.appendChild(form)
+    return { form, btn, input }
+  }
+
+  /** 收集表单 submit 事件（测试环境 preventDefault 阻止真实提交） */
+  function collectSubmit(form: HTMLFormElement): { events: SubmitEvent[] } {
+    const events: SubmitEvent[] = []
+    form.addEventListener('submit', (e) => {
+      e.preventDefault()
+      events.push(e as SubmitEvent)
+    })
+    return { events }
+  }
+
+  it('html-type 属性组进入 observedAttributes', () => {
+    for (const name of ['html-type', 'form', 'formaction', 'formmethod', 'formnovalidate', 'formtarget']) {
+      expect(OASButton.observedAttributes).toContain(name)
+    }
+  })
+
+  it('默认（无 html-type）点击不触发表单提交（零破坏）', () => {
+    const { form, btn } = mountInForm()
+    const { events } = collectSubmit(form)
+    shadowBtn(btn).click()
+    expect(events.length).toBe(0)
+  })
+
+  it('html-type=submit 点击触发原生 submit 事件，submitter 为代理按钮', () => {
+    const { form, btn } = mountInForm({ 'html-type': 'submit' })
+    const { events } = collectSubmit(form)
+    shadowBtn(btn).click()
+    expect(events.length).toBe(1)
+    const submitter = events[0]!.submitter as HTMLElement | null
+    expect(submitter?.hasAttribute('data-oas-form-proxy'), 'submitter 应为组件注入的代理按钮').toBe(true)
+  })
+
+  it('点击后 light DOM 无代理残留（代理为点击期临时节点，防宿主框架 textContent 补丁抹除）', () => {
+    const { btn } = mountInForm({ 'html-type': 'submit' })
+    shadowBtn(btn).click()
+    expect(btn.querySelector('button[data-oas-form-proxy]')).toBeNull()
+  })
+
+  it('html-type=reset 点击触发表单 reset（输入恢复初始值）', () => {
+    const { form, btn, input } = mountInForm({ 'html-type': 'reset' })
+    let resetFired = 0
+    form.addEventListener('reset', () => resetFired++)
+    input.value = 'changed'
+    shadowBtn(btn).click()
+    expect(resetFired).toBe(1)
+    expect(input.value).toBe('alice')
+  })
+
+  it('form 属性跨树关联：button 在 form 外，form="id" 指向目标表单也能提交', () => {
+    const form = document.createElement('form')
+    form.id = 'target-form'
+    document.body.appendChild(form)
+    const { events } = collectSubmit(form)
+    const btn = new OASButton()
+    btn.setAttribute('html-type', 'submit')
+    btn.setAttribute('form', 'target-form')
+    btn.textContent = '外部提交'
+    document.body.appendChild(btn)
+    shadowBtn(btn).click()
+    expect(events.length).toBe(1)
+  })
+
+  it('formaction/formmethod/formtarget 镜像到代理 submitter（原生 submitter 机制消费）', () => {
+    const { form, btn } = mountInForm({
+      'html-type': 'submit',
+      formaction: '/search',
+      formmethod: 'post',
+      formtarget: '_blank',
+    })
+    const { events } = collectSubmit(form)
+    shadowBtn(btn).click()
+    expect(events.length).toBe(1)
+    const submitter = events[0]!.submitter as HTMLElement
+    expect(submitter.getAttribute('formaction')).toBe('/search')
+    expect(submitter.getAttribute('formmethod')).toBe('post')
+    expect(submitter.getAttribute('formtarget')).toBe('_blank')
+  })
+
+  it('formnovalidate：必填输入为空仍触发提交（跳过原生校验）；未设置时校验失败不提交', () => {
+    const blocking = mountInForm({ 'html-type': 'submit' })
+    blocking.input.value = ''
+    blocking.input.required = true
+    const blocked = collectSubmit(blocking.form)
+    shadowBtn(blocking.btn).click()
+    expect(blocked.events.length, '无 formnovalidate 时必填为空阻止提交').toBe(0)
+
+    const skipping = mountInForm({ 'html-type': 'submit', formnovalidate: '' })
+    skipping.input.value = ''
+    skipping.input.required = true
+    const skipped = collectSubmit(skipping.form)
+    shadowBtn(skipping.btn).click()
+    expect(skipped.events.length, 'formnovalidate 跳过校验照常提交').toBe(1)
+  })
+
+  it('disabled / loading 态点击不触发提交', () => {
+    const disabled = mountInForm({ 'html-type': 'submit', disabled: '' })
+    const d = collectSubmit(disabled.form)
+    shadowBtn(disabled.btn).click()
+    expect(d.events.length).toBe(0)
+
+    const loading = mountInForm({ 'html-type': 'submit', loading: '' })
+    const l = collectSubmit(loading.form)
+    shadowBtn(loading.btn).click()
+    expect(l.events.length).toBe(0)
+  })
+
+  it('href 链接模式（a 元素）：html-type 属性组静默无效', () => {
+    const { form, btn } = mountInForm({ href: '/guide', 'html-type': 'submit', formaction: '/search' })
+    const { events } = collectSubmit(form)
+    const a = btn.shadowRoot!.querySelector('a[part="button"]')!
+    a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+    expect(events.length, '链接按钮不桥接表单提交').toBe(0)
+  })
+
+  it('html-type 非法值回落 button（不提交）', () => {
+    const { form, btn } = mountInForm({ 'html-type': 'danger' })
+    const { events } = collectSubmit(form)
+    shadowBtn(btn).click()
+    expect(events.length).toBe(0)
+  })
+
+  it('点击仍派发 oas-click（组件事件与原生提交并存）', () => {
+    const { form, btn } = mountInForm({ 'html-type': 'submit' })
+    const { events } = collectSubmit(form)
+    let fired = 0
+    btn.addEventListener('oas-click', () => fired++)
+    shadowBtn(btn).click()
+    expect(fired).toBe(1)
+    expect(events.length).toBe(1)
+  })
+})
+
 describe('OASButton 全局禁用注入（config-provider disabled）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

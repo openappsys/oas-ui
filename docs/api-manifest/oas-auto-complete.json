@@ -52,6 +52,12 @@
       "observed": true
     },
     {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "status",
       "type": "string",
       "default": "",
@@ -76,6 +82,14 @@
     }
   ],
   "events": [
+    {
+      "name": "oas-focus",
+      "detail": "{ value: this.input?.value ?? '' }"
+    },
+    {
+      "name": "oas-blur",
+      "detail": "{ value: this.input?.value ?? '' }"
+    },
     {
       "name": "oas-input",
       "detail": "{ value: this.query }"
