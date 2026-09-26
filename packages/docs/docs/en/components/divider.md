@@ -24,10 +24,12 @@ A horizontal/vertical divider that separates content.
 
 ## Line style
 
-<DemoBlock title="Four variants">
+<DemoBlock title="Six variants">
   <oas-divider variant="dashed">dashed</oas-divider>
   <oas-divider variant="dotted">dotted</oas-divider>
   <oas-divider variant="double">double</oas-divider>
+  <oas-divider variant="double-dashed">double-dashed</oas-divider>
+  <oas-divider variant="double-dotted">double-dotted</oas-divider>
 </DemoBlock>
 
 `variant` is equivalent to the `dashed` boolean (the `dashed` attribute = `variant="dashed"`; an explicit `variant` takes priority).
@@ -160,7 +162,7 @@ The `color` attribute accepts 11 preset names (auto-adapting to light/dark theme
 | `size` | Spacing tier: `small` / `medium` (default) / `large`; horizontal layout only | `string` | — |
 | `strong` | Bolder divider title (font-weight 600) | `boolean` | — |
 | `text-orientation` | Text orientation on a vertical divider: horizontal (default, reads normally) / ertical (vertical, top-to-bottom along the line); only meaningful for vertical dividers | `string` | — |
-| `variant` | Line style: `solid` / `dashed` / `dotted` / `double`; an explicit value takes precedence over the `dashed` boolean (compat form) | `string` | — |
+| `variant` | Line style: solid / dashed / dotted / double / double-dashed (double dashed) / double-dotted (double dotted); an explicit value takes precedence over the dashed boolean (compat form). Line styles apply to horizontal layout only | `string` | — |
 
 #### Slots
 
