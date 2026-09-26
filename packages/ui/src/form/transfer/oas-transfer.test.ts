@@ -1001,13 +1001,17 @@ describe('OASTransfer oas-scroll（列表滚动事件，PRD P2）', () => {
     expect(details[0]!.side).toBe('right')
   })
 
-  it('非列表目标的 scroll 不派发（搜索框等容器滚动无关）', () => {
+  it('scroll 事件边界：搜索框滚动不派发（组件只挂 listbox）+ listbox 位置未变不重复派发', () => {
     const el = mount()
     const details: ScrollDetail[] = []
     el.addEventListener('oas-scroll', (e) => details.push((e as CustomEvent).detail))
     const search = el.shadowRoot!.querySelector<HTMLElement>('.search-left')!
     Object.defineProperty(search, 'scrollTop', { value: 30, configurable: true })
     search.dispatchEvent(new Event('scroll'))
-    expect(details.length).toBe(0)
+    expect(details.length, '非列表目标（搜索框）无监听不派发').toBe(0)
+    // 位置未变不重复派发（同 scrollTop 二次滚动去重）
+    scrollListbox(el, 'left', 50)
+    scrollListbox(el, 'left', 50)
+    expect(details.length, '同位置二次滚动只派一次').toBe(1)
   })
 })

@@ -29,7 +29,7 @@
       "name": "value",
       "type": "string",
       "default": "",
-      "observed": false
+      "observed": true
     }
   ],
   "props": [],

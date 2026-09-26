@@ -473,6 +473,14 @@ describe('oas-context-menu kind=checkbox 勾选项链路（value 下传/写回/�
     expect(el.getAttribute('value'), '再次点击取消勾选').toBe('["grid"]')
   })
 
+  it('打开期间宿主受控改 value：内层 menu 勾选集即时跟随（value 入 observedAttributes）', async () => {
+    const el = mountKind('["grid"]')
+    el.show(10, 10)
+    el.setAttribute('value', '["ruler"]')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(innerMenu(el)!.getAttribute('value'), '受控改写即时下传').toBe('["ruler"]')
+  })
+
   it('action 项：不触碰 value，仅转发并关闭', () => {
     const el = mountKind('["grid"]')
     el.show(10, 10)

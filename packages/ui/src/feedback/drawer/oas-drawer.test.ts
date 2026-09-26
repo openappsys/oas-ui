@@ -979,6 +979,21 @@ describe('OASDrawer no-mask（无遮罩模式，PRD P2）', () => {
     document.body.innerHTML = ''
   })
 
+  it('no-mask 非模态语义：aria-modal=false + 不抢初始焦点 + Tab 不圈禁（对齐 modal no-mask 契约）', async () => {
+    const el = mount({ visible: '', 'no-mask': '' })
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('.panel')!
+    expect(panel.getAttribute('aria-modal'), '无遮罩时不得谎报模态').toBe('false')
+    el.removeAttribute('no-mask')
+    expect(panel.getAttribute('aria-modal'), '移除后恢复模态').toBe('true')
+    el.setAttribute('no-mask', '')
+    // 不抢焦点：打开后焦点不进入抽屉树
+    document.body.focus?.()
+    await new Promise((r) => setTimeout(r, 400))
+    const inDrawer = el.shadowRoot!.contains(document.activeElement) || el.contains(document.activeElement)
+    expect(inDrawer, 'no-mask 打开不抢焦点').toBe(false)
+    el.remove()
+  })
+
   it('no-mask：遮罩隐藏（不渲染视觉层），默认模式遮罩不受影响', () => {
     const el = mount({ visible: '', 'no-mask': '' })
     const mask = el.shadowRoot!.querySelector<HTMLElement>('.mask')!
