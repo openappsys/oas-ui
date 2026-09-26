@@ -281,8 +281,9 @@ export class OASGrid extends OASElement {
     const columns = this.getAttr('columns', '')
     const minChildWidth = this.getAttr('min-child-width', '')
     const cols = Number(this.getAttr('cols', '24')) || 24
-    // :host 已设 display: grid；hidden 时不得写内联 display——内联压过 :host([hidden]) 兜底
-    if (!this.hasAttr('hidden')) this.style.display = 'grid'
+    // 不写内联 display——:host{display:grid} 与 :host([hidden]) 兜底已由样式表覆盖；
+    // 内联 display 特异性压过 :host([hidden])，且 hidden 不在 observedAttributes 时
+    // 动态加 hidden 会依旧可见（review 实抓）
     this.applyGap()
     this.applyAlignment()
 

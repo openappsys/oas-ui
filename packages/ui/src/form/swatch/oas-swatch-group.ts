@@ -59,7 +59,6 @@ export class OASSwatchGroup extends OASElement {
     // capture 阶段拦截子件 oas-click：算新 value 并派发组级 oas-change 后 stopPropagation
     this.addEventListener('oas-click', this.handleSwatchClick, true)
     this.addEventListener('keydown', this.handleKeydown)
-    this.addEventListener('focusin', () => this.onFocusIn())
   }
 
   protected override render(): void {
@@ -87,7 +86,9 @@ export class OASSwatchGroup extends OASElement {
     const multiple = this.hasAttr('multiple')
     this.groupEl?.setAttribute('role', multiple ? 'group' : 'radiogroup')
     for (const sw of this.childrenSwatches) {
-      sw.toggleAttribute('disabled', disabled)
+      // 组禁用下发走 data-group-disabled（对齐 radio-group/checkbox-group 惯例）：
+      // 不写子件自有 disabled——否则组未禁用时 toggleAttribute(false) 会抹掉子件自身写的 disabled
+      sw.toggleAttribute('data-group-disabled', disabled)
       const color = sw.getAttribute('color')
       const sel = color ? selected.includes(color) : false
       sw.syncSelected(sel)
@@ -113,7 +114,8 @@ export class OASSwatchGroup extends OASElement {
   }
 
   private get enabledSwatches(): OASSwatch[] {
-    return this.childrenSwatches.filter((s) => !s.hasAttribute('disabled'))
+    // 自身 disabled 或组下发 data-group-disabled 均排除出 roving/交互链
+    return this.childrenSwatches.filter((s) => !s.hasAttribute('disabled') && !s.hasAttribute('data-group-disabled'))
   }
 
   /** roving tabindex：仅当前（选中或首个可用）子件可 Tab 停 */
@@ -133,7 +135,7 @@ export class OASSwatchGroup extends OASElement {
     e.stopPropagation()
     const sw = (e.target as HTMLElement).closest?.('oas-swatch') as OASSwatch | null
     if (!sw || !this.contains(sw)) return
-    if (this.hasAttr('disabled') || sw.hasAttribute('disabled')) return
+    if (this.hasAttr('disabled') || sw.hasAttribute('disabled') || sw.hasAttribute('data-group-disabled')) return
     const color = sw.getAttribute('color')
     if (!color) return
     const current = this.selectedValues
@@ -153,12 +155,6 @@ export class OASSwatchGroup extends OASElement {
       this.emit('change', { value: color })
     }
     sw.syncSelected(sw.hasAttribute('selected'))
-  }
-
-  /** 焦点进入组：无焦点目标时落到当前（选中或首个可用）子件 */
-  private onFocusIn(): void {
-    const active = document.activeElement
-    if (active && active !== this && this.contains(active)) return
   }
 
   private handleKeydown = (e: KeyboardEvent): void => {
