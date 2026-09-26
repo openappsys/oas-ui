@@ -430,6 +430,41 @@ describe('OASTabs', () => {
     expect(btn.getAttribute('title'), '已删除面板的 title 缓存应被清理').toBeNull()
   })
 
+  it('hydrate 孤儿缓存（owner=null）：后续同名无 title 面板不复活旧 title', () => {
+    const el = new OASTabs()
+    el.innerHTML = '<oas-tab-panel label="标题" value="a"><p>内容</p></oas-tab-panel>'
+    document.body.appendChild(el)
+    // 模拟 SSR hydrate 未找到对应面板留下的 owner=null 孤儿缓存项
+    ;(el as unknown as { titleCache: Map<string, { text: string; owner: Element | null }> }).titleCache.set('a', {
+      text: '旧提示',
+      owner: null,
+    })
+    el.setAttribute('size', 'small') // 触发 update
+    const btn = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+    expect(btn.getAttribute('title'), 'owner=null 孤儿缓存应判失效').toBeNull()
+  })
+
+  it('observer childList 收窄：面板内容区增删不重建标签栏；slot 标记子元素增删仍重建', async () => {
+    const el = new OASTabs()
+    el.innerHTML = '<oas-tab-panel label="标题" value="a"><div><p>内容</p></div></oas-tab-panel>'
+    document.body.appendChild(el)
+    const btnBefore = el.shadowRoot!.querySelector('[role="tab"][data-value="a"]')!
+    // 内容区流式增删 → 不触发整排重建
+    el.querySelector('oas-tab-panel div')!.appendChild(document.createElement('p'))
+    await Promise.resolve()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.shadowRoot!.querySelector('[role="tab"][data-value="a"]'), '内容区增删不重建').toBe(btnBefore)
+    // slot 标记子元素（slot=label）增删 → 重建（影响标签渲染）
+    const s = document.createElement('span')
+    s.setAttribute('slot', 'label')
+    s.textContent = '自定义标签'
+    el.querySelector('oas-tab-panel')!.appendChild(s)
+    await Promise.resolve()
+    await new Promise((r) => setTimeout(r, 0))
+    const btnAfter = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+    expect(btnAfter === btnBefore, 'slot 子元素增删触发重建').toBe(false)
+  })
+
   it('tab-position=left：host 与 tablist 带纵向布局类名', () => {
     const el = mount({ 'tab-position': 'left' })
     expect(el.classList.contains('oas-tabs--vertical')).toBe(true)

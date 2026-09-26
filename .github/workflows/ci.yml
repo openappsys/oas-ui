@@ -36,7 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -52,5 +52,9 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm exec playwright install --with-deps chromium firefox
-      # 全量 e2e 分 3 片并行（5 个遍历型 spec 各 7-10min，串行 15min+；shard 后 ≈ 6min）
-      - run: pnpm test:e2e -- --shard=${{ matrix.shard }}/3
+      # 全量 e2e 分 4 片并行（5 个遍历型 spec 各 7-10min，串行 15min+；3 片 ≈ 6min → 4 片 ≈ 4.5min）
+      - run: pnpm test:e2e -- --shard=${{ matrix.shard }}/4
+      # RTL 几何门禁（117 组件页 LTR/RTL 差集 sweep，exit 非零即红）——只跑 shard 1，免三片重复
+      - name: RTL 几何门禁（仅 shard 1）
+        if: matrix.shard == 1
+        run: pnpm rtl:audit --no-shots
