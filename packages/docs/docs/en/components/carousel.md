@@ -127,6 +127,10 @@ onMounted(() => {
   document.querySelector('#carousel-event')?.addEventListener('oas-change', (e) => {
     document.querySelector('#carousel-current').textContent = String(e.detail.index + 1)
   })
+  // draggable demo: keep the current-slide readout in sync
+  document.querySelector('#carousel-drag')?.addEventListener('oas-change', (e) => {
+    document.querySelector('#carousel-drag-index').textContent = String(e.detail.index + 1)
+  })
 })
 </script>
 
@@ -266,15 +270,20 @@ Set `direction="vertical"` to switch along the vertical axis. The vertical viewp
 
 ## Drag to Switch
 
-Press and drag horizontally (vertically in vertical mode) past the threshold to switch; release before the threshold and the track springs back. Touch and mouse are unified via Pointer Events; horizontal dragging leaves vertical page scrolling intact (`touch-action: pan-y`) so it never fights the page scroll gesture. The autoplay timer resets after a drag ends.
+Press and drag horizontally (vertically in vertical mode) — the track follows your pointer; release past the threshold (25% of the viewport, or a quick flick) to switch, release before it and the track springs back. Touch and mouse are unified via Pointer Events; horizontal dragging leaves vertical page scrolling intact (`touch-action: pan-y`) so it never fights the page scroll gesture. The transition animation pauses while dragging and resumes on release; the autoplay timer resets after a drag ends.
 
-<DemoBlock title="Drag to switch (press and drag)">
+Dragging is **enabled per device by default**: touch devices (`pointer: coarse`) allow dragging, PCs do not. Add the `draggable` attribute to enable it on PCs explicitly; `draggable="false"` disables it on touch devices explicitly.
+
+<DemoBlock title="Drag to switch (draggable, press and drag)">
   <div style="width: 100%">
-    <oas-carousel id="carousel-drag" arrows="never">
+    <oas-carousel id="carousel-drag" draggable arrows="never">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">Drag me left 1</div>
       <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">Drag me left 2</div>
       <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">Drag me left 3</div>
     </oas-carousel>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      Current slide: <span id="carousel-drag-index">1</span> (the track follows your drag; release to switch or spring back)
+    </p>
   </div>
 </DemoBlock>
 
@@ -319,6 +328,7 @@ Besides the automatic hover/focus pause, `pause-button` renders an explicit paus
 | `arrows` | Arrow display mode: `always` (always shown) / `hover` (shown on hover) / `never` (hidden) | `string` | `hover` |
 | `autoplay` | Whether to autoplay | `boolean` | — |
 | `direction` | Direction: `horizontal` (default) / `vertical` (fixed-height viewport via `--oas-carousel-height`) | `string` | `horizontal` |
+| `draggable` | Pointer/touch drag switching: flip past 25% of the viewport or on a quick flick, spring back otherwise; on by default on touch devices, off on PC; `"false"` disables explicitly | `string` | — |
 | `effect` | Transition effect: `slide` (default) / `fade` (stacked cross-fade, degrades to instant under reduced-motion) | `string` | `slide` |
 | `gap` | Gap between slides in px (with `slides-per-view`) | `string` | `0` |
 | `index` | Current screen index (starting from 0) | `string` | `0` |

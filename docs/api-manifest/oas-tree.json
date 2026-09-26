@@ -164,6 +164,14 @@
   ],
   "events": [
     {
+      "name": "oas-node-dragover",
+      "detail": "{ dragKey: this.dragKey, dropKey: '', position: 'inner' } | { dragKey: this.dragKey, dropKey: id, position: pos }"
+    },
+    {
+      "name": "oas-node-dragleave",
+      "detail": "{ dragKey: this.dragKey, dropKey: '', position: 'inner' } | { dragKey: this.dragKey, dropKey: id, position: this.dropPosition(row, e, node) }"
+    },
+    {
       "name": "oas-node-drop",
       "detail": "{ dragKey: this.dragKey, dropKey: '', position: 'inner', } | { dragKey, dropKey: id, position }"
     },
@@ -180,6 +188,10 @@
       "detail": "{ key: id, checked: checked.has(id) }"
     },
     {
+      "name": "oas-expand",
+      "detail": "{ key: id, expanded: false, node: { ...node } } | { key: id, expanded: true, node: { ...node } }"
+    },
+    {
       "name": "oas-load",
       "detail": "{ key: id }"
     },
@@ -190,6 +202,14 @@
     {
       "name": "oas-node-rename",
       "detail": "{ key, label, oldLabel }"
+    },
+    {
+      "name": "oas-node-dragstart",
+      "detail": "{ dragKey: id }"
+    },
+    {
+      "name": "oas-node-dragend",
+      "detail": "{ dragKey: id }"
     }
   ],
   "slots": [

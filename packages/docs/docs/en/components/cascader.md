@@ -140,6 +140,27 @@ The `open` attribute is the single source of truth for the expanded state (contr
 
 When options are empty (and `el.load` is not set) the panel shows the empty placeholder; a search with no matches shows the no-match placeholder.
 
+## Loading state (loading)
+
+<DemoBlock title="Loading state (loading)">
+  <oas-space size="small">
+    <oas-button size="small" onclick="document.querySelector('#cs-loading').setAttribute('loading','')">Enter loading</oas-button>
+    <oas-button size="small" onclick="document.querySelector('#cs-loading').removeAttribute('loading')">Leave loading</oas-button>
+    <oas-cascader id="cs-loading" placeholder="Pick a region" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"},{"label":"宁波","value":"nb"}]}]'></oas-cascader>
+  </oas-space>
+</DemoBlock>
+
+While `loading` is set the trigger shows a spinner with `aria-busy` (replacing the chevron); an open panel only shows the loading placeholder without rendering options — ideal while the host fetches remote cascading data.
+
+## Field mapping (field-names)
+
+<DemoBlock title="Field mapping (field-names)">
+  <oas-cascader id="cs-fields" placeholder="Data fields are name/id/subs/off" options='[{"name":"前端","id":"fe","subs":[{"name":"Vue","id":"vue","off":false}]},{"name":"设计","id":"design","subs":[{"name":"UI","id":"ui","off":true}]}]' field-names='{"label":"name","value":"id","children":"subs","disabled":"off"}'></oas-cascader>
+  <span id="cs-fields-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
+</DemoBlock>
+
+`field-names` is a JSON field alias (`{ label, value, children, disabled }`, matching the `oas-tree-select` contract); the component reads your raw data through the aliases (`isLeaf` always reads its original key). Data returned from lazy `el.load` goes through the same mapping. In the example above "设计 / UI" is disabled via the `off` field.
+
 ## Disabled
 
 <DemoBlock title="Disabled">
@@ -154,6 +175,15 @@ When options are empty (and `el.load` is not set) the panel shows the empty plac
 </DemoBlock>
 
 Listen to `oas-change`; `detail.value` is a path array in single mode, or an array of path arrays in multiple mode:
+
+## Focus Events (oas-focus / oas-blur)
+
+<DemoBlock title="focus / blur events">
+  <oas-cascader id="cs-focus" placeholder="Focus / blur to see feedback" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"}]}]'></oas-cascader>
+  <span id="cs-focus-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
+</DemoBlock>
+
+Trigger focus/blur dispatches `oas-focus` / `oas-blur` (`detail.value` shares the `oas-change` shape: a path array in single mode, an array of path arrays in multiple mode). Internal focus transfers between the trigger, search box, and chip buttons do not cause false reports.
 
 <script setup>
 import { onMounted } from 'vue'
@@ -227,6 +257,23 @@ onMounted(() => {
   el?.addEventListener('oas-change', (e) => {
     out.textContent = `oas-change: ${pathText([e.detail.value])}`
   })
+
+  // Field mapping demo: show the mapped value after selection
+  const fields = document.getElementById('cs-fields')
+  const fieldsOut = document.getElementById('cs-fields-output')
+  fields?.addEventListener('oas-change', (e) => {
+    fieldsOut.textContent = `oas-change: ${pathText([e.detail.value])}`
+  })
+
+  // Focus events demo: trigger focus/blur feedback
+  const focus = document.getElementById('cs-focus')
+  const focusOut = document.getElementById('cs-focus-output')
+  focus?.addEventListener('oas-focus', () => {
+    focusOut.textContent = 'oas-focus'
+  })
+  focus?.addEventListener('oas-blur', () => {
+    focusOut.textContent = 'oas-blur'
+  })
 })
 </script>
 
@@ -247,7 +294,9 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | `clearable` | Clearable (fires oas-clear) | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `expand-trigger` | Sub-level expansion trigger: `click` (default) / `hover` (120ms delay to prevent misfires) | `string` | `click` |
+| `field-names` | Field-alias JSON (`{ label, value, children, disabled }`) matching the tree-select contract; lazy-load results are mapped alike | `string` | — |
 | `filterable` | Searchable (flat path results) | `boolean` | — |
+| `loading` | Loading state: trigger spinner + aria-busy; the panel shows a loading placeholder | `boolean` | — |
 | `max-tag-count` | Collapse multi-select tags beyond the count into +N (with title listing hidden items) | `boolean` | — |
 | `multiple` | Multi-select (cascading checkboxes; fully-checked children roll the parent into the value) | `boolean` | — |
 | `open` | Controlled open state (single source of truth); in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | `boolean` | — |
@@ -264,7 +313,9 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 
 | Event | Description |
 | --- | --- |
+| `oas-blur` | Dispatched on trigger blur; `detail.value` shares the oas-change shape (inner focus moves do not false-fire) |
 | `oas-change` | Selection change, `detail: { value }` (path array) |
 | `oas-clear` | Fires on clear-button click; `detail` is the pre-clear value |
+| `oas-focus` | Dispatched on trigger focus; `detail.value` shares the oas-change shape (inner focus moves do not false-fire) |
 | `oas-open-change` | Open state flips, `detail: { open }` |
 | `oas-search` | Fires on filterable input, `detail: { value }` |

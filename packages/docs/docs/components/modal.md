@@ -264,6 +264,23 @@
   </oas-modal>
 </DemoBlock>
 
+## 层级（z-index）
+
+`z-index` 显式覆盖默认 modal 档位（`--oas-z-modal`）：数值叠加在 `--oas-z-index-base`（config-provider 浮层起始值）之上，对话框恒比遮罩高 1；缺省走默认档位。多实例叠开时可用它精确控制谁在上。
+
+<DemoBlock title="层级覆盖（z-index）">
+  <oas-space>
+    <oas-button onclick="document.querySelector('#modal-layer-base').setAttribute('visible','')">打开底层对话框（默认档位）</oas-button>
+    <oas-button type="primary" onclick="document.querySelector('#modal-layer-top').setAttribute('visible','')">再叠开一个 z-index=3000 的对话框</oas-button>
+  </oas-space>
+  <oas-modal id="modal-layer-base" title="底层对话框（默认档位）">
+    <p>这是默认层级的对话框。点上面的按钮再叠开一个显式 <code>z-index</code> 的对话框，观察覆盖关系。</p>
+  </oas-modal>
+  <oas-modal id="modal-layer-top" title="顶层对话框" z-index="3000">
+    <p><code>z-index="3000"</code>：遮罩与对话框层级显式抬升（对话框仍比遮罩高 1），盖在底层对话框之上；Esc 先关最上层。</p>
+  </oas-modal>
+</DemoBlock>
+
 ## 关闭来源事件
 
 `oas-close` 携带 `detail.source`（ok / cancel / close-btn / mask / esc / programmatic）与 `detail.action`（confirm / cancel / close）；非确定路径保留 `oas-cancel`（旧语义）。
@@ -696,6 +713,7 @@ onMounted(async () => {
 | `type` | 语义变体：`info`/`success`/`warning`/`error`，正文顶部渲染对应语义图标 | `ModalVariant` | — |
 | `visible` | 是否显示 | `boolean` | — |
 | `width` | 对话框宽度（px 或百分比） | — | — |
+| `z-index` | 显式层级基准（叠加在 `--oas-z-index-base` 之上，对话框比遮罩高 1；缺省走 `--oas-z-modal` 档位） | — | — |
 
 #### 事件
 

@@ -319,3 +319,51 @@ test('select 浮层定位：首开左缘对齐 trigger 且与再开一致', asyn
   expect(Math.abs(g.first.left - g.first.anchorLeft)).toBeLessThanOrEqual(1)
   expect(Math.abs(g.first.left - g.second.left)).toBeLessThanOrEqual(1)
 })
+
+// ---- 能力缺口 P1：label / variant ----
+
+test('select variant：三态 data-variant 镜像（默认 outlined；filled/borderless 生效）且底色有区分', async ({
+  page,
+}) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-select[variant="filled"]')
+  const r = await page.evaluate(() => {
+    const trigBg = (sel: string) => {
+      const el = document.querySelector(sel) as HTMLElement | null
+      if (!el) return null
+      return getComputedStyle(el.shadowRoot!.querySelector('[part="trigger"]')!).backgroundColor
+    }
+    return {
+      filled: document.querySelector('oas-select[variant="filled"]')!.getAttribute('data-variant'),
+      borderless: document.querySelector('oas-select[variant="borderless"]')!.getAttribute('data-variant'),
+      def: document.querySelector('oas-select')!.getAttribute('data-variant'),
+      filledBg: trigBg('oas-select[variant="filled"]'),
+      borderlessBg: trigBg('oas-select[variant="borderless"]'),
+    }
+  })
+  expect(r.filled).toBe('filled')
+  expect(r.borderless).toBe('borderless')
+  expect(r.def).toBe('outlined')
+  // filled 有填充底色、borderless 透明——视觉形态真实落到 computed style
+  expect(r.filledBg).not.toBe('rgba(0, 0, 0, 0)')
+  expect(r.borderlessBg).toBe('rgba(0, 0, 0, 0)')
+})
+
+test('select label：trigger aria-label 取 label 属性（优先于 placeholder），无 label 回落 placeholder', async ({
+  page,
+}) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#select-label-set')
+  const r = await page.evaluate(() => ({
+    set: document
+      .querySelector('#select-label-set')!
+      .shadowRoot!.querySelector('[part="trigger"]')!
+      .getAttribute('aria-label'),
+    fallback: document
+      .querySelector('#select-label-fallback')!
+      .shadowRoot!.querySelector('[part="trigger"]')!
+      .getAttribute('aria-label'),
+  }))
+  expect(r.set).toBe('所属城市')
+  expect(r.fallback).toBe('无 label，回退占位文本')
+})

@@ -269,6 +269,25 @@ Buttons are single-line by default (`white-space: nowrap`). With the explicit `w
 
 On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`--oas-touch-target-min`): small sizes such as the 32px default or the 20px xs become 44px tall on touch, while sizes already ≥44px (e.g. xl) are unchanged; `icon-only` / `circle` buttons become 44×44 hit areas via `aspect-ratio`. Only the height grows — padding, font size, and border radius stay untouched; desktop (fine pointer) is unaffected.
 
+## Native form submission
+
+`html-type` sets the native form behavior: `button` (default, no form behavior) / `submit` / `reset`. Buttons inside Shadow DOM do not participate in native form submission — the component bridges automatically: clicking triggers native submit/reset on the target form (the enclosing `<form>`, or the form id referenced by `form`); `formaction` / `formmethod` / `formnovalidate` / `formtarget` take effect through the native submitter mechanism (overriding the form's own action / method / novalidate / target). Submission is not triggered in `disabled` / `loading` state; in `href` link mode this attribute group is silently ignored.
+
+<DemoBlock title="Native form submission (html-type / form attributes)">
+  <form id="btn-native-form" style="display: flex; flex-wrap: wrap; gap: var(--oas-space-3); align-items: flex-end">
+    <oas-input name="username" label="Username" value="OAS-UI"></oas-input>
+    <oas-input name="email" label="Email" value="hello@example.com"></oas-input>
+    <oas-space>
+      <oas-button html-type="submit" type="primary">Submit</oas-button>
+      <oas-button html-type="reset">Reset</oas-button>
+      <oas-button html-type="submit" formnovalidate formaction="/search" formmethod="post">No-validate submit (formaction/formmethod)</oas-button>
+    </oas-space>
+  </form>
+  <div id="btn-form-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-top: var(--oas-space-2); min-height: 20px"></div>
+</DemoBlock>
+
+Clicking "Submit" fires the native `submit` event (the demo calls `preventDefault` and shows the fields about to be submitted); "Reset" restores the initial input values and fires `reset`; "No-validate submit" demonstrates `formnovalidate` skipping required validation plus `formaction`/`formmethod` overriding the submission target.
+
 ## API
 
 ### oas-button
@@ -285,8 +304,14 @@ On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`-
 | `disabled` | Disabled | `boolean` | — |
 | `disabled-focusable` | Visually disabled but stays focusable/hoverable (aria-disabled + click intercepted), for tooltips explaining why | `boolean` | — |
 | `download` | Passthrough `download` attribute in link mode (href) for file-download buttons | `string` | — |
+| `form` | Associated form id for buttons outside the target form (native form-attribute association) | `string` | — |
+| `formaction` | Target URL for this submission (overrides the form action) | `string` | — |
+| `formmethod` | HTTP method for this submission (get/post/dialog, overrides the form method) | `string` | — |
+| `formnovalidate` | Skip native validation for this submission only | `boolean` | — |
+| `formtarget` | Browsing target for the response (_blank/_self etc., overrides the form target) | `string` | — |
 | `ghost` | Ghost/outline style: transparent background + outline colored by `type`, darkens on hover | `boolean` | — |
 | `href` | Link address: renders a native `<a>` when set | `string` | — |
+| `html-type` | Native form behavior: `button` (default, none) / `submit` submits the containing or `form`-targeted form / `reset` resets it (bridged via a proxy submitter) | `string` | `button` |
 | `icon` | Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label | `string` | — |
 | `icon-end` | A second icon after the text (iconRegistry name), works with `icon`/`icon-position` — e.g. left icon + right dropdown arrow | `string` | — |
 | `icon-position` | Icon position: `start` (default, left) / `end` (right) | `string` | `start` |
@@ -325,3 +350,19 @@ On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`-
 | `--oas-button-group-radius` | — | `var(--oas-radius-md)` |
 | `--oas-button-group-width` | — | `auto` |
 | `--oas-button-on-color` | — | `var(--oas-color-text-on-primary)` |
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  const form = document.getElementById('btn-native-form')
+  const out = document.getElementById('btn-form-out')
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    const entries = [...new FormData(form).entries()].map(([k, v]) => `${k}=${v}`).join(' & ')
+    out.textContent = `submit (intercepted by the demo, no navigation): ${entries || '(empty form)'}`
+  })
+  form?.addEventListener('reset', () => {
+    out.textContent = 'reset: inputs restored to initial values'
+  })
+})
+</script>

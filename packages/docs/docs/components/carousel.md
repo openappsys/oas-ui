@@ -127,6 +127,10 @@ onMounted(() => {
   document.querySelector('#carousel-event')?.addEventListener('oas-change', (e) => {
     document.querySelector('#carousel-current').textContent = String(e.detail.index + 1)
   })
+  // draggable 拖拽 demo：当前屏随切换更新
+  document.querySelector('#carousel-drag')?.addEventListener('oas-change', (e) => {
+    document.querySelector('#carousel-drag-index').textContent = String(e.detail.index + 1)
+  })
 })
 </script>
 
@@ -266,15 +270,20 @@ onMounted(() => {
 
 ## 拖拽切换
 
-在轮播区域按下并左右（垂直模式下上下）拖动超过阈值即切换，未达阈值回弹。触摸与鼠标统一走 Pointer Events；水平拖拽放行页面纵向滚动（`touch-action: pan-y`），不与页面滚动手势冲突。拖拽结束后自动播放计时会重置。
+在轮播区域按下并左右（垂直模式下上下）拖动即跟手滑动，超过阈值（视口 25%，或快速轻扫）松手切换，未达阈值回弹。触摸与鼠标统一走 Pointer Events；水平拖拽放行页面纵向滚动（`touch-action: pan-y`），不与页面滚动手势冲突。拖拽中暂停过渡动画，松手恢复；拖拽结束后自动播放计时会重置。
 
-<DemoBlock title="拖拽切换（按住拖动）">
+拖拽默认**按设备开启**：触摸设备（`pointer: coarse`）默认可拖拽，PC 默认关闭。加 `draggable` 属性可在 PC 显式开启；`draggable="false"` 可在触摸设备显式关闭。
+
+<DemoBlock title="拖拽切换（draggable，按住拖动）">
   <div style="width: 100%">
-    <oas-carousel id="carousel-drag" arrows="never">
+    <oas-carousel id="carousel-drag" draggable arrows="never">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">拖我到左边 1</div>
       <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">拖我到左边 2</div>
       <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">拖我到左边 3</div>
     </oas-carousel>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      当前屏：<span id="carousel-drag-index">1</span>（拖动跟手，松手切屏或回弹）
+    </p>
   </div>
 </DemoBlock>
 
@@ -319,6 +328,7 @@ onMounted(() => {
 | `arrows` | 箭头显示形态：`always`（始终显示）/ `hover`（悬停显示）/ `never`（不显示） | `string` | `hover` |
 | `autoplay` | 是否自动播放 | `boolean` | — |
 | `direction` | 轮播方向：`horizontal`（默认）/ `vertical`（垂直模式视口定高，走 `--oas-carousel-height`） | `string` | `horizontal` |
+| `draggable` | 指针拖拽/触摸滑动切换：视口 25% 或速度阈值翻页否则回弹；触摸设备默认开、PC 默认关，`"false"` 显式关闭 | `string` | — |
 | `effect` | 切换效果：`slide`（默认滑动）/ `fade`（叠层淡入淡出，reduced-motion 退化为直切） | `string` | `slide` |
 | `gap` | 多图一屏时屏间间距（px，配合 `slides-per-view`） | `string` | `0` |
 | `index` | 当前屏索引（从 0 起） | `string` | `0` |

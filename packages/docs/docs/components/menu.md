@@ -255,6 +255,23 @@
   <oas-menu mode="horizontal" style="width: 380px" items='[{"label":"首页","value":"home"},{"label":"产品中心","value":"products","icon":"menu"},{"label":"解决方案","value":"solutions","icon":"search"},{"label":"开发者文档","value":"docs"},{"label":"下载中心","value":"download","icon":"download"},{"label":"关于我们","value":"about","icon":"user"},{"label":"联系合作","value":"contact"},{"label":"帮助中心","value":"help"}]'></oas-menu>
 </DemoBlock>
 
+## 悬停展开子菜单
+
+`open-on-hover` 让 vertical / inline 模式的父项支持 hover 展开：悬停约 150ms 后展开、移出约 300ms 后收起（宽限期内移回取消收起）；点击路径不变（仍可点击展开/收起）。`mode="horizontal"` 顶部导航与 `collapsed` 收起态的 flyout 本就是即时 hover 浮出，不受该属性影响。
+
+<DemoBlock title="open-on-hover（vertical 悬停延迟展开）">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-6); flex-wrap: wrap">
+    <div style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">vertical：悬停「编辑」~150ms 展开，移出~300ms 收起</p>
+      <oas-menu id="menu-hover-v" open-on-hover style="width: 200px" items='[{"label":"编辑","value":"edit","children":[{"label":"复制","value":"copy"},{"label":"剪切","value":"cut"}]},{"label":"文件","value":"file","children":[{"label":"打开","value":"open"},{"label":"保存","value":"save"}]},{"label":"视图","value":"view"}]'></oas-menu>
+    </div>
+    <div style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">inline：悬停同样延迟展开（多开并存），点击仍可切换</p>
+      <oas-menu id="menu-hover-i" mode="inline" open-on-hover style="width: 240px" items='[{"label":"工作台","value":"workspace","children":[{"label":"概览","value":"overview"},{"label":"统计","value":"stats"}]},{"label":"项目管理","value":"project","children":[{"label":"进行中","value":"active"},{"label":"已完成","value":"done"}]}]'></oas-menu>
+    </div>
+  </div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -337,6 +354,28 @@ onMounted(() => {
   // typeahead：聚焦菜单，使字符定位立即可用
   const ta = document.getElementById('menu-typeahead')
   ta?.shadowRoot?.querySelector('.menu')?.focus({ preventScroll: true })
+
+  // open-on-hover demo：叶子选中反馈（悬停展开后点叶子项可验证全链路）
+  const hoverV = document.getElementById('menu-hover-v')
+  if (hoverV) {
+    const tag = document.createElement('oas-tag')
+    tag.setAttribute('type', 'info')
+    tag.textContent = '尚未选择'
+    hoverV.parentElement?.appendChild(tag)
+    hoverV.addEventListener('oas-select', (e) => {
+      tag.textContent = `已选择：${e.detail.value}`
+    })
+  }
+  const hoverI = document.getElementById('menu-hover-i')
+  if (hoverI) {
+    const tag = document.createElement('oas-tag')
+    tag.setAttribute('type', 'info')
+    tag.textContent = '尚未选择'
+    hoverI.parentElement?.appendChild(tag)
+    hoverI.addEventListener('oas-select', (e) => {
+      tag.textContent = `已选择：${e.detail.value}`
+    })
+  }
 })
 </script>
 
@@ -350,11 +389,12 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accordion` | 手风琴互斥（inline 模式同级只展开一个子菜单） | `boolean` | — |
 | `close-on-select` | 选中叶子项后是否收起展开的子菜单。缺省分形态：inline 侧边导航不收、浮出形态收；checkbox 项勾选切换永不收起 | `string` | — |
-| `collapsed` | 收起态（仅 vertical）：只显示图标，子菜单向右浮出 | — | — |
+| `collapsed` | 收起态（仅 vertical）：只显示图标，子菜单向右浮出 | `boolean` | — |
 | `expanded` | 受控展开项集合（JSON 数组字符串，inline 模式哪些子菜单展开）；非受控时内部管理 | `string` | — |
 | `items` | 菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单） | `string` | `[]` |
 | `max-height` | 长菜单最大高度，超出内部滚动（数字补 px） | `string` | — |
 | `mode` | 布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条 | — | — |
+| `open-on-hover` | vertical/inline 父项 hover 延迟展开（约 150ms）/移出延迟收起（约 300ms），点击路径不变；horizontal 与 collapsed flyout 不受影响 | `boolean` | — |
 | `theme` | 局部主题：`dark` 使用暗色 token（独立于全局主题） | — | — |
 | `value` | 当前选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{"sort":"name","view":"list"}`）时按组 id 作用域独立记录——`type:"group"` 项的 `value` 作组 id，组内点选只更新该组 | `string` | — |
 

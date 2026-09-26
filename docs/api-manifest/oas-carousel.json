@@ -89,6 +89,12 @@
       "type": "string",
       "default": "0",
       "observed": true
+    },
+    {
+      "name": "draggable",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],

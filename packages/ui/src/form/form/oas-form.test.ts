@@ -1,6 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASForm, registerFormControl } from './index.js'
+import type { Rule } from './index.js'
 import { OASFormItem } from '../form-item/index.js'
+import { OASInput } from '../input/index.js'
+import '../switch/index.js'
+import '../transfer/index.js'
 function mount(): OASForm {
   const el = new OASForm()
   el.setAttribute(
@@ -389,5 +393,588 @@ describe('OASForm 栅格布局增强', () => {
     expect(a.nextElementSibling).toBeNull() // a 被 form-item 收编
     expect(b.nextElementSibling!.classList.contains('error-text')).toBe(true) // b 裸字段保持旧行为
     expect(item.shadowRoot!.querySelector('[part="error"]')!.textContent).toBe('A 必填')
+  })
+})
+
+describe('OASForm 表单级 disabled', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountForm(fields: string, attrs: Record<string, string> = {}): OASForm {
+    const el = new OASForm()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = fields
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('form disabled：字段经 formDisabled 通道并入 injectDisabled 禁用（镜像 data-disabled + 内层禁用），不回写字段 disabled 属性防自锁', () => {
+    const el = mountForm('<oas-input name="name" value="x"></oas-input>', { disabled: '' })
+    const field = el.querySelector('oas-input') as OASInput
+    expect(field instanceof OASInput).toBe(true)
+    expect(field.hasAttribute('disabled')).toBe(false)
+    expect(field.hasAttribute('data-disabled')).toBe(true)
+    const inner = field.shadowRoot!.querySelector('input') as HTMLInputElement
+    expect(inner.disabled).toBe(true)
+  })
+
+  it('移除 form disabled：字段恢复可用（镜像清除、内层解禁）', () => {
+    const el = mountForm('<oas-input name="name" value="x"></oas-input>', { disabled: '' })
+    const field = el.querySelector('oas-input') as OASInput
+    expect(field.hasAttribute('data-disabled')).toBe(true)
+    el.removeAttribute('disabled')
+    expect(field.hasAttribute('data-disabled')).toBe(false)
+    const inner = field.shadowRoot!.querySelector('input') as HTMLInputElement
+    expect(inner.disabled).toBe(false)
+  })
+
+  it('form disabled + 字段 disabled-skip：表单链路禁用优先于豁免（对齐 formDisabledCallback 原生语义，fieldset 场景一致）', () => {
+    const el = mountForm('<oas-input name="name" value="x" disabled-skip></oas-input>', { disabled: '' })
+    const field = el.querySelector('oas-input') as OASInput
+    expect(field.hasAttribute('data-disabled')).toBe(true)
+    el.removeAttribute('disabled')
+    expect(field.hasAttribute('data-disabled')).toBe(false)
+  })
+
+  it('form disabled 时提交跳过校验：空必填字段不拦截 oas-submit', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', {
+      disabled: '',
+      rules: JSON.stringify({ name: [{ required: true, message: '必填' }] }),
+    })
+    let fired = 0
+    let failed = 0
+    el.addEventListener('oas-submit', () => fired++)
+    el.addEventListener('oas-validate-fail', () => failed++)
+    el.submit()
+    expect(fired).toBe(1)
+    expect(failed).toBe(0)
+  })
+
+  it('form disabled + disabled-skip 字段同样跳过校验（表单链路优先于豁免）：空必填不拦截 oas-submit', () => {
+    const el = mountForm('<oas-input name="name" value="" disabled-skip></oas-input>', {
+      disabled: '',
+      rules: JSON.stringify({ name: [{ required: true, message: '必填' }] }),
+    })
+    let fired = 0
+    let failed = 0
+    el.addEventListener('oas-submit', () => fired++)
+    el.addEventListener('oas-validate-fail', () => failed++)
+    el.submit()
+    expect(fired).toBe(1)
+    expect(failed).toBe(0)
+  })
+
+  it('字段自身 disabled 恒禁：form 解除禁用后不连带解除字段自身禁用', () => {
+    const el = mountForm('<oas-input name="name" value="x" disabled></oas-input>', { disabled: '' })
+    const field = el.querySelector('oas-input') as OASInput
+    const inner = field.shadowRoot!.querySelector('input') as HTMLInputElement
+    expect(inner.disabled).toBe(true)
+    el.removeAttribute('disabled')
+    expect(inner.disabled).toBe(true)
+  })
+
+  it('非 form-associated 字段（未升级元素）按属性回退判定：form disabled 时同样跳过校验', () => {
+    const el = mountForm(
+      '<oas-textarea name="a" value="" disabled-skip></oas-textarea><oas-textarea name="b" value=""></oas-textarea>',
+      {
+        disabled: '',
+        rules: JSON.stringify({
+          a: [{ required: true, message: 'A 必填' }],
+          b: [{ required: true, message: 'B 必填' }],
+        }),
+      },
+    )
+    let fired = 0
+    let failed = 0
+    el.addEventListener('oas-submit', () => fired++)
+    el.addEventListener('oas-validate-fail', (e) => failed++)
+    el.submit()
+    expect(fired).toBe(1)
+    expect(failed).toBe(0)
+  })
+})
+
+describe('OASForm scroll-to-first-error', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  function mountForm(fields: string, attrs: Record<string, string> = {}): OASForm {
+    const el = new OASForm()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = fields
+    document.body.appendChild(el)
+    return el
+  }
+
+  function stubScrollIntoView(): { calls: ScrollIntoViewOptions[]; restore: () => void } {
+    const calls: ScrollIntoViewOptions[] = []
+    const orig = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (this: Element, opts?: ScrollIntoViewOptions) {
+      if (opts) calls.push(opts)
+    }
+    return {
+      calls,
+      restore: () => {
+        Element.prototype.scrollIntoView = orig
+      },
+    }
+  }
+
+  function rules(): string {
+    return JSON.stringify({
+      a: [{ required: true, message: 'A 必填' }],
+      b: [{ required: true, message: 'B 必填' }],
+    })
+  }
+
+  it('设置属性时校验失败平滑滚动到首个错误字段并聚焦其控件', () => {
+    const stub = stubScrollIntoView()
+    try {
+      const el = mountForm('<oas-input name="a" value="ok"></oas-input><oas-input name="b" value=""></oas-input>', {
+        'scroll-to-first-error': '',
+        rules: rules(),
+      })
+      let failed = 0
+      el.addEventListener('oas-validate-fail', () => failed++)
+      el.submit()
+      expect(failed).toBe(1)
+      expect(stub.calls).toEqual([{ behavior: 'smooth', block: 'center' }])
+      // activeElement 不穿 shadow 边界：聚焦内层 input 时报告宿主
+      const b = el.querySelector('oas-input[name="b"]') as OASInput
+      expect(document.activeElement).toBe(b)
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it('prefers-reduced-motion 时降级瞬跳（behavior auto）', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }))
+    const stub = stubScrollIntoView()
+    try {
+      const el = mountForm('<oas-input name="a" value="ok"></oas-input><oas-input name="b" value=""></oas-input>', {
+        'scroll-to-first-error': '',
+        rules: rules(),
+      })
+      el.submit()
+      expect(stub.calls).toEqual([{ behavior: 'auto', block: 'center' }])
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it('未设置属性时不滚动不聚焦（默认关闭）', () => {
+    const stub = stubScrollIntoView()
+    try {
+      const el = mountForm('<oas-input name="a" value=""></oas-input>', { rules: rules() })
+      el.submit()
+      expect(stub.calls).toEqual([])
+      const a = el.querySelector('oas-input[name="a"]') as OASInput
+      expect(document.activeElement === a).toBe(false)
+    } finally {
+      stub.restore()
+    }
+  })
+
+  it('校验全部通过时不滚动不聚焦', () => {
+    const stub = stubScrollIntoView()
+    try {
+      const el = mountForm('<oas-input name="a" value="ok"></oas-input>', {
+        'scroll-to-first-error': '',
+        rules: rules(),
+      })
+      let fired = 0
+      el.addEventListener('oas-submit', () => fired++)
+      el.submit()
+      expect(fired).toBe(1)
+      expect(stub.calls).toEqual([])
+    } finally {
+      stub.restore()
+    }
+  })
+})
+
+describe('OASForm Rule.validator', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountForm(fields: string, rules?: unknown): OASForm {
+    const el = new OASForm()
+    if (rules !== undefined) el.setAttribute('rules', JSON.stringify(rules))
+    el.innerHTML = fields
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('同步 validator 返回 string 为错误消息，返回 true 通过', () => {
+    const el = mountForm('<oas-input name="name" value="admin"></oas-input>')
+    el.rules = { name: [{ validator: (v) => (v === 'admin' ? '用户名被占用' : true) }] }
+    let errors: Record<string, string> = {}
+    el.addEventListener('oas-validate-fail', (e) => (errors = (e as CustomEvent).detail.errors))
+    el.submit()
+    expect(errors.name).toBe('用户名被占用')
+
+    const field = el.querySelector('oas-input')!
+    field.setAttribute('value', 'free')
+    let values: Record<string, string> = {}
+    el.addEventListener('oas-submit', (e) => (values = (e as CustomEvent).detail.values))
+    el.submit()
+    expect(values.name).toBe('free')
+  })
+
+  it('异步 validator（Promise）：resolve string 报错、resolve true 通过', async () => {
+    const el = mountForm('<oas-input name="name" value="bad"></oas-input>')
+    el.rules = {
+      name: [{ validator: (v) => Promise.resolve(v === 'bad' ? '异步校验失败' : true) }],
+    }
+    let errors: Record<string, string> = {}
+    el.addEventListener('oas-validate-fail', (e) => (errors = (e as CustomEvent).detail.errors))
+    el.submit()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(errors.name).toBe('异步校验失败')
+
+    el.querySelector('oas-input')!.setAttribute('value', 'good')
+    let fired = 0
+    el.addEventListener('oas-submit', () => fired++)
+    el.submit()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(fired).toBe(1)
+  })
+
+  it('validator 最后跑：同 rule 内 required 先失败时 validator 不执行', () => {
+    const validator = vi.fn(() => '校验器消息')
+    const el = mountForm('<oas-input name="name" value=""></oas-input>')
+    el.rules = { name: [{ required: true, message: '必填', validator }] }
+    let errors: Record<string, string> = {}
+    el.addEventListener('oas-validate-fail', (e) => (errors = (e as CustomEvent).detail.errors))
+    el.submit()
+    expect(errors.name).toBe('必填')
+    expect(validator).not.toHaveBeenCalled()
+  })
+
+  it('validator 收到 (value, values) 两参（values 为全表快照）', () => {
+    let seen: { value: string; values: Record<string, string> } | null = null
+    const el = mountForm('<oas-input name="a" value="x"></oas-input><oas-input name="b" value="y"></oas-input>')
+    el.rules = {
+      a: [
+        {
+          validator: (v, values) => {
+            seen = { value: v, values: { ...values } }
+            return true
+          },
+        },
+      ],
+    }
+    el.submit()
+    expect(seen).toEqual({ value: 'x', values: { a: 'x', b: 'y' } })
+  })
+
+  it('validator 返回非 true 非 string（false/undefined）按默认文案失败', () => {
+    const el = mountForm('<oas-input name="name" value="x"></oas-input>')
+    el.rules = { name: [{ validator: (() => false) as unknown as Rule['validator'] }] }
+    let errors: Record<string, string> = {}
+    el.addEventListener('oas-validate-fail', (e) => (errors = (e as CustomEvent).detail.errors))
+    el.submit()
+    expect(typeof errors.name).toBe('string')
+    expect(errors.name!.length).toBeGreaterThan(0)
+  })
+
+  it('validator 与既有规则组合：先到先报（pattern 失败则 validator 不再执行）', () => {
+    const validator = vi.fn((): true => true)
+    const el = mountForm('<oas-input name="name" value="abc"></oas-input>')
+    el.rules = {
+      name: [{ pattern: '^\\d+$', message: '仅数字', validator }],
+    }
+    let errors: Record<string, string> = {}
+    el.addEventListener('oas-validate-fail', (e) => (errors = (e as CustomEvent).detail.errors))
+    el.submit()
+    expect(errors.name).toBe('仅数字')
+    expect(validator).not.toHaveBeenCalled()
+  })
+})
+
+describe('OASForm validate-trigger', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountForm(fields: string, attrs: Record<string, string> = {}): OASForm {
+    const el = new OASForm()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = fields
+    document.body.appendChild(el)
+    return el
+  }
+
+  const RULES = JSON.stringify({ name: [{ pattern: '^\\d+$', message: '仅数字' }] })
+
+  function fireInput(el: OASForm, name: string, value: string): void {
+    const field = el.querySelector(`oas-input[name="${name}"]`)!
+    field.dispatchEvent(new CustomEvent('oas-input', { bubbles: true, composed: true, detail: { value } }))
+  }
+
+  function fireChange(el: OASForm, name: string, value: string): void {
+    const field = el.querySelector(`oas-input[name="${name}"]`)!
+    field.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value } }))
+  }
+
+  function fireBlur(el: OASForm, name: string, value: string): void {
+    const field = el.querySelector(`oas-input[name="${name}"]`)!
+    field.dispatchEvent(new CustomEvent('oas-blur', { bubbles: true, composed: true, detail: { value } }))
+  }
+
+  function invalid(el: OASForm, name: string): boolean {
+    return el.querySelector(`oas-input[name="${name}"]`)!.hasAttribute('aria-invalid')
+  }
+
+  it('默认 change：字段 oas-change 即校验该字段（失败标记 aria-invalid + 错误文案）', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', { rules: RULES })
+    fireChange(el, 'name', 'abc')
+    expect(invalid(el, 'name')).toBe(true)
+    const err = el.querySelector('.error-text')!
+    expect(err.textContent).toBe('仅数字')
+
+    fireChange(el, 'name', '123')
+    expect(invalid(el, 'name')).toBe(false)
+    expect(el.querySelector('.error-text')).toBeNull()
+  })
+
+  it('validate-trigger=blur：oas-change 不校验，oas-blur 校验（值以 oas-input 同步为准）', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', {
+      rules: RULES,
+      'validate-trigger': 'blur',
+    })
+    fireChange(el, 'name', 'abc')
+    expect(invalid(el, 'name')).toBe(false)
+
+    fireInput(el, 'name', 'abc')
+    fireBlur(el, 'name', 'abc')
+    expect(invalid(el, 'name')).toBe(true)
+  })
+
+  it('validate-trigger=input：oas-input 即校验', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', {
+      rules: RULES,
+      'validate-trigger': 'input',
+    })
+    fireInput(el, 'name', 'abc')
+    expect(invalid(el, 'name')).toBe(true)
+
+    fireInput(el, 'name', '1')
+    expect(invalid(el, 'name')).toBe(false)
+  })
+
+  it('Rule.validateTrigger 覆盖表级（表 change、字段 blur）', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', {
+      rules: JSON.stringify({ name: [{ pattern: '^\\d+$', message: '仅数字', validateTrigger: 'blur' }] }),
+    })
+    fireInput(el, 'name', 'abc')
+    fireChange(el, 'name', 'abc')
+    expect(invalid(el, 'name')).toBe(false)
+
+    fireBlur(el, 'name', 'abc')
+    expect(invalid(el, 'name')).toBe(true)
+  })
+
+  it('触发校验不派发 oas-submit / oas-validate-fail（仅字段级状态更新）', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', { rules: RULES })
+    let submitFired = 0
+    let failFired = 0
+    el.addEventListener('oas-submit', () => submitFired++)
+    el.addEventListener('oas-validate-fail', () => failFired++)
+    fireChange(el, 'name', 'abc')
+    expect(submitFired).toBe(0)
+    expect(failFired).toBe(0)
+    expect(invalid(el, 'name')).toBe(true)
+  })
+
+  it('非法 validate-trigger 值回退 change；禁用字段不触发校验', () => {
+    const el = mountForm('<oas-input name="name" value="" disabled></oas-input>', {
+      rules: RULES,
+      'validate-trigger': 'nonsense',
+    })
+    fireChange(el, 'name', 'abc')
+    expect(invalid(el, 'name')).toBe(false)
+  })
+})
+
+describe('OASForm initial-values 与 reset', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountForm(fields: string, attrs: Record<string, string> = {}): OASForm {
+    const el = new OASForm()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = fields
+    document.body.appendChild(el)
+    return el
+  }
+
+  const FIELDS =
+    '<oas-input name="name" value=""></oas-input><oas-switch name="enabled"></oas-switch><oas-transfer name="tags" model-value=""></oas-transfer>'
+
+  it('initial-values 属性挂载后写入对应字段（input value / switch checked / transfer model-value）', () => {
+    const el = mountForm(FIELDS, {
+      'initial-values': JSON.stringify({ name: '张三', enabled: true, tags: ['a', 'b'] }),
+    })
+    expect(el.querySelector('oas-input')!.getAttribute('value')).toBe('张三')
+    expect(el.querySelector('oas-switch')!.hasAttribute('checked')).toBe(true)
+    expect(el.querySelector('oas-transfer')!.getAttribute('model-value')).toBe('["a","b"]')
+  })
+
+  it('initialValues property 通道生效且优先于 attribute', () => {
+    const el = mountForm(FIELDS, { 'initial-values': JSON.stringify({ name: '王五' }) })
+    expect(el.querySelector('oas-input')!.getAttribute('value')).toBe('王五')
+    el.initialValues = { name: '李四' }
+    expect(el.querySelector('oas-input')!.getAttribute('value')).toBe('李四')
+    expect(el.querySelector('oas-switch')!.hasAttribute('checked')).toBe(false)
+  })
+
+  it('reset()：修改后回到初始值，且不派发 oas-input / oas-change / oas-values-change', () => {
+    const el = mountForm(FIELDS, {
+      'initial-values': JSON.stringify({ name: '初始', enabled: true }),
+    })
+    let events = 0
+    el.addEventListener('oas-input', () => events++)
+    el.addEventListener('oas-change', () => events++)
+    el.addEventListener('oas-values-change', () => events++)
+
+    el.querySelector('oas-input')!.setAttribute('value', '改了')
+    el.querySelector('oas-switch')!.removeAttribute('checked')
+    el.reset()
+    expect(el.querySelector('oas-input')!.getAttribute('value')).toBe('初始')
+    expect(el.querySelector('oas-switch')!.hasAttribute('checked')).toBe(true)
+    expect(events).toBe(0)
+  })
+
+  it('reset() 同时清除校验错误态（aria-invalid + 错误文案）', () => {
+    const el = mountForm('<oas-input name="name" value="初始"></oas-input>', {
+      'initial-values': JSON.stringify({ name: '初始' }),
+      rules: JSON.stringify({ name: [{ required: true, message: '必填' }] }),
+    })
+    el.querySelector('oas-input')!.setAttribute('value', '')
+    el.submit()
+    expect(el.querySelector('oas-input')!.hasAttribute('aria-invalid')).toBe(true)
+    el.reset()
+    expect(el.querySelector('oas-input')!.hasAttribute('aria-invalid')).toBe(false)
+    expect(el.querySelector('.error-text')).toBeNull()
+    expect(el.querySelector('oas-input')!.getAttribute('value')).toBe('初始')
+  })
+
+  it('未配置 initial-values 时 reset() 清空字段（回到挂载时值基线）', () => {
+    const el = mountForm(
+      '<oas-input name="name" value="出厂值"></oas-input><oas-switch name="on" checked></oas-switch>',
+    )
+    el.querySelector('oas-input')!.setAttribute('value', '改了')
+    el.reset()
+    expect(el.querySelector('oas-input')!.getAttribute('value')).toBe('出厂值')
+    expect(el.querySelector('oas-switch')!.hasAttribute('checked')).toBe(true)
+  })
+
+  it('initial-values 覆盖字段出厂值：reset 回 initial-values 而非出厂值', () => {
+    const el = mountForm('<oas-input name="name" value="出厂值"></oas-input>', {
+      'initial-values': JSON.stringify({ name: '初始值' }),
+    })
+    el.reset()
+    expect(el.querySelector('oas-input')!.getAttribute('value')).toBe('初始值')
+  })
+})
+
+describe('OASForm oas-values-change', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountForm(fields: string, attrs: Record<string, string> = {}): OASForm {
+    const el = new OASForm()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = fields
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('字段 oas-input 派发 oas-values-change，detail { name, value, values }（values 全表快照）', () => {
+    const el = mountForm('<oas-input name="a" value=""></oas-input><oas-input name="b" value="keep"></oas-input>')
+    let detail: { name: string; value: string; values: Record<string, string> } | null = null
+    let count = 0
+    el.addEventListener('oas-values-change', (e) => {
+      detail = (e as CustomEvent).detail
+      count++
+    })
+    const a = el.querySelector('oas-input[name="a"]')!
+    a.dispatchEvent(new CustomEvent('oas-input', { bubbles: true, composed: true, detail: { value: 'v1' } }))
+    expect(count).toBe(1)
+    expect(detail!.name).toBe('a')
+    expect(detail!.value).toBe('v1')
+    expect(detail!.values).toEqual({ a: 'v1', b: 'keep' })
+    expect(a.getAttribute('value')).toBe('v1')
+  })
+
+  it('字段 oas-change 同样派发（复合值 JSON 串形态）', () => {
+    const el = mountForm('<oas-input name="a" value=""></oas-input>')
+    let detail: { name: string; value: string; values: Record<string, string> } | null = null
+    el.addEventListener('oas-values-change', (e) => (detail = (e as CustomEvent).detail))
+    const a = el.querySelector('oas-input[name="a"]')!
+    a.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: ['x', 'y'] } }))
+    expect(detail!.name).toBe('a')
+    expect(detail!.value).toBe('["x","y"]')
+    expect(detail!.values).toEqual({ a: '["x","y"]' })
+  })
+
+  it('无名目标不派发', () => {
+    const el = mountForm('<oas-input value=""></oas-input>')
+    let count = 0
+    el.addEventListener('oas-values-change', () => count++)
+    el.querySelector('oas-input')!.dispatchEvent(
+      new CustomEvent('oas-input', { bubbles: true, composed: true, detail: { value: 'v' } }),
+    )
+    expect(count).toBe(0)
+  })
+
+  it('reset() / initial-values 写入不派发 oas-values-change（静默通道）', () => {
+    const el = mountForm('<oas-input name="a" value=""></oas-input>', {
+      'initial-values': JSON.stringify({ a: 'x' }),
+    })
+    let count = 0
+    el.addEventListener('oas-values-change', () => count++)
+    el.reset()
+    expect(count).toBe(0)
   })
 })

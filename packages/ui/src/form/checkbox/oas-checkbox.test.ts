@@ -669,6 +669,131 @@ describe('OASCheckbox 全局禁用注入（config-provider disabled）', () => {
   })
 })
 
+describe('OASCheckbox true-value / false-value（值映射）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const fakeInternals = (el: OASCheckbox) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  it('设置映射后 oas-change detail.value 返回映射值（对齐 switch）', () => {
+    const el = mountCheckbox({ 'true-value': 'YES', 'false-value': 'NO' })
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    native(el).click()
+    native(el).click()
+    expect(details).toEqual([
+      { checked: true, value: 'YES' },
+      { checked: false, value: 'NO' },
+    ])
+  })
+
+  it('未设置映射时 detail.value 保持 value 属性语义（零破坏）', () => {
+    const el = mountCheckbox({ value: 'agree' })
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    native(el).click()
+    native(el).click()
+    expect(details).toEqual([
+      { checked: true, value: 'agree' },
+      { checked: false, value: 'agree' },
+    ])
+  })
+
+  it('部分设置映射：缺失侧回落布尔（对齐 switch）', () => {
+    const el = mountCheckbox({ 'true-value': 'YES' })
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    native(el).click()
+    native(el).click()
+    expect(details).toEqual([
+      { checked: true, value: 'YES' },
+      { checked: false, value: false },
+    ])
+  })
+
+  it('value getter 返回当前映射值；未设置映射时为 value 属性（选项标识通道）', () => {
+    const mapped = mountCheckbox({ 'true-value': 'YES', 'false-value': 'NO' })
+    expect(mapped.value).toBe('NO')
+    native(mapped).click()
+    expect(mapped.value).toBe('YES')
+    const plain = mountCheckbox({ value: 'agree', checked: '' })
+    expect(plain.value).toBe('agree')
+  })
+
+  it('value setter：写映射值驱动 checked，未匹配的值忽略', () => {
+    const el = mountCheckbox({ 'true-value': 'YES', 'false-value': 'NO' })
+    expect(el.hasAttribute('checked')).toBe(false)
+    el.value = 'YES'
+    expect(el.hasAttribute('checked')).toBe(true)
+    el.value = 'NO'
+    expect(el.hasAttribute('checked')).toBe(false)
+    el.value = 'UNMATCHED'
+    expect(el.hasAttribute('checked')).toBe(false)
+  })
+
+  it('value setter 未设置映射：布尔切换勾选；字符串写回 value 属性（Vue property 通道兼容）', () => {
+    const el = mountCheckbox()
+    el.value = true
+    expect(el.hasAttribute('checked')).toBe(true)
+    el.value = false
+    expect(el.hasAttribute('checked')).toBe(false)
+    el.value = 'other-id'
+    expect(el.getAttribute('value')).toBe('other-id')
+  })
+
+  it('表单提交值：勾选提交 true-value，取消提交 null（照「开才提交」语义）', () => {
+    const el = mountCheckbox({ 'true-value': 'YES', 'false-value': 'NO' })
+    const fake = fakeInternals(el)
+    native(el).click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('YES')
+    native(el).click()
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+    // 未设置映射回落既有语义：value 属性 / 缺省 on
+    const plain = mountCheckbox({ value: 'agree', checked: '' })
+    const fakePlain = fakeInternals(plain)
+    plain.setAttribute('size', 'small') // 触发 update → 同步 FormData
+    expect(fakePlain.setFormValue).toHaveBeenLastCalledWith('agree')
+    const bare = mountCheckbox({ checked: '' })
+    const fakeBare = fakeInternals(bare)
+    bare.setAttribute('size', 'small')
+    expect(fakeBare.setFormValue).toHaveBeenLastCalledWith('on')
+  })
+
+  it('checkbox-group 内映射不生效：detail.value 与表单提交值保持选项标识（组内 value 语义不变）', () => {
+    const group = new OASCheckboxGroup()
+    group.setAttribute('value', '[]')
+    const child = new OASCheckbox()
+    child.setAttribute('value', 'a')
+    child.setAttribute('true-value', 'YES')
+    child.setAttribute('false-value', 'NO')
+    child.textContent = 'A'
+    group.appendChild(child)
+    document.body.appendChild(group)
+    const fake = fakeInternals(child)
+    const details: unknown[] = []
+    child.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    native(child).click()
+    expect(details).toEqual([{ checked: true, value: 'a' }])
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('a')
+    // 组值照常收集（不受映射干扰）
+    expect(JSON.parse(group.getAttribute('value')!)).toEqual(['a'])
+  })
+
+  it('true-value / false-value 进入 observedAttributes', () => {
+    expect(OASCheckbox.observedAttributes).toContain('true-value')
+    expect(OASCheckbox.observedAttributes).toContain('false-value')
+  })
+})
+
 describe('OASCheckbox RTL 逻辑方向化', () => {
   it('勾选框与文本间距走逻辑属性（flex gap），无物理方向 padding/margin', () => {
     const el = mountCheckbox({}, '记住我')

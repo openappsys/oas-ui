@@ -598,3 +598,45 @@ test('modal 对话框内点击不透传遮罩：document 根委托可达、dialo
     })
   }
 })
+
+test('modal z-index：显式层级覆盖默认档位、对话框比遮罩高 1、Esc 逐层关（PRD P1-15）', async ({ page }) => {
+  await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#modal-layer-base')
+  await page.evaluate(() => {
+    document.querySelector('#modal-layer-base')?.setAttribute('visible', '')
+  })
+  await page.waitForFunction(
+    () => document.querySelector('#modal-layer-base')?.shadowRoot?.querySelector('.dialog[data-open]') != null,
+    null,
+    { timeout: 5000 },
+  )
+  await page.evaluate(() => {
+    document.querySelector('#modal-layer-top')?.setAttribute('visible', '')
+  })
+  await page.waitForFunction(
+    () => document.querySelector('#modal-layer-top')?.shadowRoot?.querySelector('.dialog[data-open]') != null,
+    null,
+    { timeout: 5000 },
+  )
+  const zs = await page.evaluate(() => {
+    const z = (sel: string) => {
+      const el = document.querySelector(sel)
+      return {
+        mask: el?.shadowRoot?.querySelector<HTMLElement>('.mask')?.style.zIndex ?? '',
+        dialog: el?.shadowRoot?.querySelector<HTMLElement>('.dialog')?.style.zIndex ?? '',
+      }
+    }
+    return { base: z('#modal-layer-base'), top: z('#modal-layer-top') }
+  })
+  // base 走默认 modal 档位 token；top 显式 3000（两者都叠加 --oas-z-index-base，dialog 恒高 1）
+  expect(zs.base.mask).toContain('var(--oas-z-modal, 1050)')
+  expect(zs.base.dialog).toContain('+ var(--oas-z-modal, 1050) + 1')
+  expect(zs.top.mask).toContain('+ 3000)')
+  expect(zs.top.dialog).toContain('+ 3000 + 1')
+  // Esc 关最上层
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(() => !document.querySelector('#modal-layer-top')?.hasAttribute('visible'), null, {
+    timeout: 5000,
+  })
+  expect(await page.evaluate(() => document.querySelector('#modal-layer-base')?.hasAttribute('visible'))).toBe(true)
+})

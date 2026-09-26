@@ -1413,3 +1413,166 @@ describe('OASTree 触屏命中区（pointer: coarse）', () => {
     expect(expandedOf(el)).toEqual(['a'])
   })
 })
+
+describe('OASTree oas-expand 事件', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('展开/收起时派发 oas-expand，detail { key, expanded, node 快照 }', () => {
+    const el = mount()
+    const details: Array<{ key: string; expanded: boolean; node: Record<string, unknown> }> = []
+    el.addEventListener('oas-expand', (e: Event) => details.push((e as CustomEvent).detail))
+    toggles(el)[0]!.click()
+    expect(details.length).toBe(1)
+    expect(details[0]!.key).toBe('a')
+    expect(details[0]!.expanded).toBe(true)
+    // node 为该数据节点快照（含原字段，非 DOM 元素）
+    expect(details[0]!.node).toEqual({
+      key: 'a',
+      label: '节点 A',
+      children: [{ key: 'a-1', label: '子节点 1' }],
+    })
+    // 收起：expanded=false
+    toggles(el)[0]!.click()
+    expect(details.length).toBe(2)
+    expect(details[1]!.expanded).toBe(false)
+    expect(details[1]!.key).toBe('a')
+  })
+
+  it('expand-trigger=node 与键盘路径同样派发 oas-expand（共用切换入口）', () => {
+    const el = mount({ 'expand-trigger': 'node' })
+    const details: unknown[] = []
+    el.addEventListener('oas-expand', (e: Event) => details.push((e as CustomEvent).detail))
+    rows(el)[0]!.click()
+    expect(details.length).toBe(1)
+    expect((details[0] as { key: string }).key).toBe('a')
+  })
+
+  it('展开子节点（次级）：detail.key 为子节点 key', () => {
+    const el = mount({
+      data: JSON.stringify([
+        {
+          key: 'a',
+          label: '节点 A',
+          children: [{ key: 'a-1', label: '子节点 1', children: [{ key: 'a-1-1', label: '孙节点 1-1' }] }],
+        },
+        { key: 'b', label: '节点 B' },
+      ]),
+      expanded: '["a"]',
+    })
+    const details: unknown[] = []
+    el.addEventListener('oas-expand', (e: Event) => details.push((e as CustomEvent).detail))
+    toggles(el)[1]!.click() // a-1 的展开钮（toggles: a, a-1）
+    expect((details[0] as { key: string }).key).toBe('a-1')
+    expect((details[0] as { expanded: boolean }).expanded).toBe(true)
+  })
+})
+
+describe('OASTree 拖拽生命周期事件组', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  function rect100(): DOMRect {
+    return {
+      top: 0,
+      bottom: 100,
+      left: 0,
+      right: 100,
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      toJSON: () => ({}),
+    } as DOMRect
+  }
+
+  function dropEvent(type: string, clientY: number): MouseEvent {
+    return new MouseEvent(type, { bubbles: true, cancelable: true, clientY })
+  }
+
+  it('完整拖拽链路派发 dragstart/dragover/dragleave/dragend（detail 对齐 drop 形状）', () => {
+    const el = mount({ draggable: '', expanded: '["a"]', data: CASCADE_DATA })
+    const r = rows(el) // a, a-1, a-2, b
+    const kinds: string[] = []
+    const details: Record<string, unknown>[] = []
+    for (const kind of ['node-dragstart', 'node-dragover', 'node-dragleave', 'node-dragend']) {
+      el.addEventListener(`oas-${kind}`, (e: Event) => {
+        kinds.push(kind)
+        details.push((e as CustomEvent).detail)
+      })
+    }
+    // dragstart：detail { dragKey }
+    r[0]!.dispatchEvent(dropEvent('dragstart', 0))
+    expect(kinds).toEqual(['node-dragstart'])
+    expect(details[0]).toEqual({ dragKey: 'a' })
+    // dragover：detail { dragKey, dropKey, position }
+    r[1]!.getBoundingClientRect = () => rect100()
+    r[1]!.dispatchEvent(dropEvent('dragover', 10))
+    expect(kinds).toEqual(['node-dragstart', 'node-dragover'])
+    expect(details[1]).toEqual({ dragKey: 'a', dropKey: 'a-1', position: 'before' })
+    // dragleave：detail 含 dragKey 与离开行 dropKey
+    r[1]!.dispatchEvent(dropEvent('dragleave', 10))
+    expect(kinds[kinds.length - 1]).toBe('node-dragleave')
+    expect(details[2]!.dragKey).toBe('a')
+    expect(details[2]!.dropKey).toBe('a-1')
+    // dragend：detail { dragKey }
+    r[0]!.dispatchEvent(dropEvent('dragend', 0))
+    expect(kinds[kinds.length - 1]).toBe('node-dragend')
+    expect(details[3]).toEqual({ dragKey: 'a' })
+  })
+
+  it('dragover 守卫拒绝时不派发 dragover 事件（与 drop 同守卫）', () => {
+    const el = mount({ draggable: '', expanded: '["a"]', data: CASCADE_DATA })
+    el.allowDrop = ({ dropKey }) => dropKey !== 'a'
+    const overKeys: string[] = []
+    el.addEventListener('oas-node-dragover', (e: Event) => overKeys.push((e as CustomEvent).detail.dropKey))
+    const r = rows(el)
+    r[1]!.dispatchEvent(dropEvent('dragstart', 0))
+    r[0]!.getBoundingClientRect = () => rect100()
+    r[0]!.dispatchEvent(dropEvent('dragover', 50))
+    expect(overKeys).toEqual([])
+    // 换允许的落点 → 派发
+    r[3]!.dispatchEvent(dropEvent('dragover', 90))
+    expect(overKeys).toEqual(['b'])
+  })
+
+  it('根容器空白处 dragover/dragleave：dropKey 为空字符串、position inner', () => {
+    const el = mount({ draggable: '', data: CASCADE_DATA })
+    const tree = el.shadowRoot!.querySelector<HTMLElement>('.tree')!
+    const details: Record<string, unknown>[] = []
+    el.addEventListener('oas-node-dragover', (e: Event) => details.push((e as CustomEvent).detail))
+    el.addEventListener('oas-node-dragleave', (e: Event) => details.push((e as CustomEvent).detail))
+    rows(el)[0]!.dispatchEvent(dropEvent('dragstart', 0))
+    tree.dispatchEvent(dropEvent('dragover', 0))
+    tree.dispatchEvent(dropEvent('dragleave', 0))
+    expect(details.length).toBe(2)
+    expect(details[0]).toEqual({ dragKey: 'a', dropKey: '', position: 'inner' })
+    expect(details[1]!.dropKey).toBe('')
+  })
+
+  it('既有 drop 契约不变（oas-node-drop detail 形状回归）', () => {
+    const el = mount({ draggable: '', expanded: '["a"]', data: CASCADE_DATA })
+    const r = rows(el)
+    let detail: unknown
+    el.addEventListener('oas-node-drop', (e: Event) => (detail = (e as CustomEvent).detail))
+    r[0]!.dispatchEvent(dropEvent('dragstart', 0))
+    r[1]!.getBoundingClientRect = () => rect100()
+    r[1]!.dispatchEvent(dropEvent('dragover', 10))
+    r[1]!.dispatchEvent(dropEvent('drop', 10))
+    expect(detail).toEqual({ dragKey: 'a', dropKey: 'a-1', position: 'before' })
+  })
+})

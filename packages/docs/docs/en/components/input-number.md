@@ -160,12 +160,15 @@ With `wheel`, scrolling while the input is focused steps the value (up increases
 
 ## Events
 
-<DemoBlock title="Change events">
+<DemoBlock title="Change / clear / focus / blur / input events">
   <oas-input-number id="num-event" value="5" min="0" max="10" clearable style="width: 200px"></oas-input-number>
   <span id="num-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
 </DemoBlock>
 
-Listen to `oas-change` (fires on blur / Enter / step / wheel / clear, `detail: { value }` where `value` is a number or `null`) and `oas-clear` (clear button click):
+- `oas-change`: fires on blur / Enter / step / wheel / clear, `detail: { value }` where `value` is a number or `null` (empty)
+- `oas-clear`: clear button click
+- `oas-focus` / `oas-blur`: dispatched when the inner input gains/loses focus, `detail: { value }` is the current committed value (number or `null`; blur fires after the commit and carries the new value)
+- `oas-input`: dispatched on every keystroke, `detail: { value }` is the current display text (string, uncommitted semantics; includes format decorations in formatted scenarios)
 
 <script setup>
 import { onMounted } from 'vue'
@@ -184,6 +187,15 @@ onMounted(() => {
   })
   el?.addEventListener('oas-clear', () => {
     out.textContent = 'oas-clear'
+  })
+  el?.addEventListener('oas-focus', (e) => {
+    out.textContent = e.detail.value === null ? 'oas-focus: null (empty)' : `oas-focus: ${e.detail.value}`
+  })
+  el?.addEventListener('oas-blur', (e) => {
+    out.textContent = e.detail.value === null ? 'oas-blur: null (empty)' : `oas-blur: ${e.detail.value} (committed)`
+  })
+  el?.addEventListener('oas-input', (e) => {
+    out.textContent = `oas-input: "${e.detail.value}" (uncommitted)`
   })
 
   // empty value semantics demo
@@ -252,8 +264,11 @@ onMounted(() => {
 
 | Event | Description |
 | --- | --- |
+| `oas-blur` | Dispatched on blur after the commit, `detail: { value }` carries the committed value |
 | `oas-change` | Change on step or blur, `detail: { value }` (number) |
 | `oas-clear` | Fires when the clear button is clicked (value returns to the empty state), `detail: {}` |
+| `oas-focus` | Dispatched on focus, `detail: { value }` (current committed value) |
+| `oas-input` | Dispatched on every keystroke, `detail: { value }` is the current display text (uncommitted) |
 
 #### Slots
 

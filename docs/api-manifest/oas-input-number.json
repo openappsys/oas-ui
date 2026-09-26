@@ -126,6 +126,18 @@
   ],
   "events": [
     {
+      "name": "oas-input",
+      "detail": "{ value: this.input?.value ?? '' }"
+    },
+    {
+      "name": "oas-blur",
+      "detail": "{ value: this.committedValue() }"
+    },
+    {
+      "name": "oas-focus",
+      "detail": "{ value: this.committedValue() }"
+    },
+    {
       "name": "oas-clear",
       "detail": "{}"
     },

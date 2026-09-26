@@ -594,8 +594,32 @@ onMounted(async () => {
     else sortableTabs.insertBefore(moved, rest[toIndex])
     message?.info(`Tab moved from ${fromIndex + 1} to ${toIndex + 1}`)
   })
+
+  // actions area: click feedback for the refresh button (counter + message)
+  const actionsTabs = document.getElementById('tabs-actions')
+  const actionsRefresh = document.getElementById('tabs-actions-refresh')
+  let refreshCount = 0
+  actionsRefresh?.addEventListener('click', () => {
+    refreshCount++
+    if (actionsTabs) actionsTabs.dataset.refreshed = String(refreshCount)
+    message?.success(`Data refreshed (${refreshCount})`)
+  })
 })
 </script>
+
+## Actions slot
+
+`slot="actions"` renders an action area at the right side of the tab bar. The container is fixed inside the nav, outside the scrollable tablist — when tabs overflow and scroll, the actions stay visible (same convention as the add button). With `addable` enabled, the actions sit after the + button. Without slotted content the container takes no space.
+
+<DemoBlock title="Actions area (visible click feedback)">
+  <div style="width: 100%">
+    <oas-tabs id="tabs-actions" active="a">
+      <oas-tab-panel label="Orders" value="a"><p>Order list content.</p></oas-tab-panel>
+      <oas-tab-panel label="Shipping" value="b"><p>Shipping tracking content.</p></oas-tab-panel>
+      <oas-button slot="actions" size="small" id="tabs-actions-refresh">Refresh</oas-button>
+    </oas-tabs>
+  </div>
+</DemoBlock>
 
 ## API
 
@@ -646,6 +670,7 @@ onMounted(async () => {
 | Name | Description |
 | --- | --- |
 | default | Tab panels (`oas-tab-panel`) |
+| `actions` | Action area fixed at the right of the tab bar, outside the scrollable tablist (after the + button when addable; no space when empty) |
 | `add-icon` | Add button icon content (addable tabs) |
 | `close-icon` | Close button icon content (closable tabs) |
 | `icon` | Icon content for a tab item (replaces the panel's icon attribute) |

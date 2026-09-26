@@ -539,3 +539,73 @@ describe('form-associated（原生表单集成）', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('OASAutoComplete variant（对齐 input 三值变体，PRD P1-18）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('variant 进 observedAttributes', () => {
+    expect(OASAutoComplete.observedAttributes).toContain('variant')
+  })
+
+  it('variant 默认 outlined（data-variant 镜像）', () => {
+    expect(mount().getAttribute('data-variant')).toBe('outlined')
+  })
+
+  it('variant=filled/borderless 镜像，非法值回落 outlined', () => {
+    const el = mount({ variant: 'filled' })
+    expect(el.getAttribute('data-variant')).toBe('filled')
+    el.setAttribute('variant', 'borderless')
+    expect(el.getAttribute('data-variant')).toBe('borderless')
+    el.setAttribute('variant', 'fancy')
+    expect(el.getAttribute('data-variant')).toBe('outlined')
+  })
+
+  it('variant 形态样式规则存在（filled/borderless，走 data-variant 镜像选择器）', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain("[data-variant='filled']")
+    expect(css).toContain("[data-variant='borderless']")
+  })
+})
+
+describe('OASAutoComplete oas-focus / oas-blur（对齐 input detail 契约，PRD P1-18）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('内层 input 聚焦派发 oas-focus，detail 携带当前输入文本', () => {
+    const el = mount({ value: 'banana' })
+    let detail: unknown
+    el.addEventListener('oas-focus', (e: Event) => (detail = (e as CustomEvent).detail))
+    input(el).dispatchEvent(new FocusEvent('focus'))
+    expect(detail).toEqual({ value: 'banana' })
+  })
+
+  it('内层 input 失焦派发 oas-blur，detail 携带当前输入文本', () => {
+    const el = mount()
+    type(el, '香')
+    let detail: unknown
+    el.addEventListener('oas-blur', (e: Event) => (detail = (e as CustomEvent).detail))
+    input(el).dispatchEvent(new FocusEvent('blur'))
+    expect(detail).toEqual({ value: '香' })
+  })
+
+  it('readonly 下聚焦/失焦仍派发（对齐 input 契约，不做交互守卫）', () => {
+    const el = mount({ readonly: '' })
+    const events: string[] = []
+    el.addEventListener('oas-focus', () => events.push('focus'))
+    el.addEventListener('oas-blur', () => events.push('blur'))
+    input(el).dispatchEvent(new FocusEvent('focus'))
+    input(el).dispatchEvent(new FocusEvent('blur'))
+    expect(events).toEqual(['focus', 'blur'])
+  })
+})

@@ -199,6 +199,60 @@ test('PC fine pointer 下 button 零抬升：默认档 32px、xs 档 20px', asyn
   expect(r.xs, 'PC 下 xs 档仍 20px').toBe(20)
 })
 
+test('button html-type 原生表单提交：submit 输出 FormData、reset 恢复输入、免校验提交可用', async ({ page }) => {
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#btn-native-form oas-button')
+  const readOut = () => page.evaluate(() => document.getElementById('btn-form-out')!.textContent)
+  // submit：点击 → 原生 submit 桥接 → demo 输出 FormData 字段（用户可见反馈；preventDefault 未导航）
+  await page.evaluate(() => {
+    const btn = document.querySelector('#btn-native-form oas-button[html-type="submit"]')!
+    ;(btn.shadowRoot!.querySelector('button') as HTMLElement).click()
+  })
+  await page.waitForFunction(
+    () => (document.getElementById('btn-form-out')?.textContent ?? '').includes('submit'),
+    null,
+    { timeout: 5000 },
+  )
+  expect(await readOut(), '提交后应显示 FormData 字段').toContain('username=OAS-UI')
+  expect(await readOut()).toContain('email=')
+  // 页面未导航（url 不变）
+  expect(page.url()).not.toContain('username=')
+  // formnovalidate + formaction/formmethod 的免校验提交按钮同样可触发 submit
+  await page.evaluate(() => {
+    const btn = document.querySelector('#btn-native-form oas-button[formnovalidate]')!
+    ;(btn.shadowRoot!.querySelector('button') as HTMLElement).click()
+  })
+  await page.waitForFunction(
+    () => (document.getElementById('btn-form-out')?.textContent ?? '').split('submit').length > 1,
+    null,
+    { timeout: 5000 },
+  )
+  // reset：清空输入 → 点击 → reset 反馈 + 输入恢复初始值
+  await page.evaluate(() => {
+    const oasInput = document.querySelector('#btn-native-form oas-input[name="username"]')!
+    const native = oasInput.shadowRoot!.querySelector('input') as HTMLInputElement
+    native.value = ''
+    native.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
+    const btn = document.querySelector('#btn-native-form oas-button[html-type="reset"]')!
+    ;(btn.shadowRoot!.querySelector('button') as HTMLElement).click()
+  })
+  await page.waitForFunction(
+    () => (document.getElementById('btn-form-out')?.textContent ?? '').includes('reset'),
+    null,
+    { timeout: 5000 },
+  )
+  expect(await readOut(), '重置后应显示 reset 反馈').toContain('reset')
+  const restored = await page.evaluate(
+    () =>
+      (
+        document
+          .querySelector('#btn-native-form oas-input[name="username"]')!
+          .shadowRoot!.querySelector('input') as HTMLInputElement
+      ).value,
+  )
+  expect(restored, 'reset 后输入恢复初始值').toBe('OAS-UI')
+})
+
 test('button compound 双行变体：副文本行落在按钮框内（高度自适应不锁死尺寸档）', async ({ page }) => {
   // 曾现缺陷（浏览器截图实抓）：按钮高度锁死尺寸档 32px，双行内容第二行溢出按钮框外。
   // 修法：data-compound 态 height:auto + min-height 保档（与 wrap 同机制）。

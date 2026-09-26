@@ -93,15 +93,27 @@ In year mode, selecting a month dispatches `yyyy-MM`.
 
 When the next page would fall entirely outside `[min, max]` (whole month in the day view, whole year in the month panel, whole decade page in the decade grid), the previous/next buttons grey out.
 
-## Range / Multiple / Week Selection: Use date-picker
+## Range Selection
 
-This component (a persistent selection panel) does **single-date selection only**. Range selection (start/end), multiple dates, and week picking are covered by [date-picker](./date-picker) — the two share the same date grid with consistent semantics, avoiding a duplicated implementation inside the panel:
+<DemoBlock title="range: two-click range picking with highlight">
+  <div style="width: 100%">
+    <oas-calendar id="calendar-range" range page-show-date="2026-08-01"></oas-calendar>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      Selected range: <span id="calendar-range-value">Click the start date, then the end date (hover shows a preview)</span>
+    </p>
+  </div>
+</DemoBlock>
 
-- **Date range**: `<oas-date-picker type="daterange">`
+Set `range` to enter range selection mode: the first click sets the start date (highlighted), moving the pointer previews the range on hovered day cells in real time, and the second click sets the end date and emits `oas-change` (`detail: { start, end }`, both `YYYY-MM-DD` strings; swapped automatically when the end precedes the start). Range endpoints get a solid primary background with rounded corners, and the in-between days a light primary tint — all colors via tokens (same visual language as the date-picker daterange). Clicking again after a commit starts a new round (the old range clears immediately). The `value` attribute reflects/presets the range as a JSON array: `value='["2026-08-05","2026-08-15"]'`.
+
+## Multiple / Week Selection: Use date-picker
+
+This component (a persistent selection panel) covers single-date selection out of the box; range selection is now covered by the `range` attribute above. Multiple dates and week picking remain covered by [date-picker](./date-picker) — the two share the same date grid with consistent semantics:
+
 - **Multiple dates**: `<oas-date-picker multiple>`
 - **Week picking**: `<oas-date-picker type="week">` (value `yyyy-Wnn`)
 
-If range/multiple selection is needed on a persistent page, the host can combine the inner-panel capabilities of `oas-date-picker` with `oas-calendar`, or use `oas-calendar` for single selection while maintaining start/end values itself.
+If multiple selection is needed on a persistent page, the host can combine the inner-panel capabilities of `oas-date-picker` with `oas-calendar`, or use `oas-calendar` for single selection while maintaining the set itself.
 
 ## Custom header: compose with a card (equivalent example)
 
@@ -158,6 +170,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | `min` | Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range | `string` | — |
 | `mode` | `month` / `year` (in year mode, picking a month auto-switches back to month view) | `string` | `month` |
 | `page-show-date` | Panel month anchor (ISO `yyyy-MM` or `yyyy-MM-dd`): anchors the displayed month initially/on change, taking precedence over value; removing it falls back to the value month | `string` | — |
+| `range` | Range selection mode: two-click picking with hover preview and range highlighting; oas-change carries `{ start, end }`; value mirrors a JSON array | `boolean` | — |
 | `readonly` | Read-only: page navigation and panel drill-down stay available, but picking dates / Enter does not commit | `boolean` | — |
 | `show-week-number` | Show the ISO week number column | `boolean` | — |
 | `value` | Selected value (ISO) | `string` | — |
@@ -190,6 +203,12 @@ import { onMounted } from 'vue'
 onMounted(() => {
   const el = document.getElementById('calendar-disabled-date')
   el.disabledDate = (d) => d.getDay() === 0 || d.getDay() === 6
+
+  // Range selection demo: display the selected range
+  const rangeCal = document.getElementById('calendar-range')
+  rangeCal?.addEventListener('oas-change', (e) => {
+    document.getElementById('calendar-range-value').textContent = `${e.detail.start} ~ ${e.detail.end}`
+  })
   const ev = document.getElementById('calendar-event')
   const out = document.getElementById('calendar-output')
   ev?.addEventListener('oas-change', (e) => {

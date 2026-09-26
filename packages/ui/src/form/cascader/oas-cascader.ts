@@ -174,6 +174,40 @@ const STYLE = `
 .trigger[aria-expanded='true'] .chevron {
   transform: rotate(180deg);
 }
+/* ---- loading 加载态：触发器 spinner（替代 chevron 位）+ aria-busy；面板内显示加载占位 ---- */
+.spinner {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: oas-cascader-spin 0.8s linear infinite;
+  flex-shrink: 0;
+  /* 多行标签时 spinner 固定首行对齐（与 .chevron 一致） */
+  align-self: flex-start;
+  margin-top: calc((var(--oas-control-height-md) - 12px) / 2);
+}
+:host([data-size='small']) .spinner {
+  margin-top: calc((var(--oas-control-height-sm) - 12px) / 2);
+}
+:host([data-size='large']) .spinner {
+  margin-top: calc((var(--oas-control-height-lg) - 12px) / 2);
+}
+.spinner[hidden] {
+  display: none;
+}
+@keyframes oas-cascader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 0.01ms;
+  }
+}
 .clear-btn {
   appearance: none;
   border: none;
@@ -434,6 +468,8 @@ export class OASCascader extends OASElement {
       'expand-trigger',
       'size',
       'status',
+      'loading',
+      'field-names',
       'open',
       'max-tag-count',
     ]
@@ -443,6 +479,8 @@ export class OASCascader extends OASElement {
   private dropdown: HTMLElement | null = null
   private panelsEl: HTMLElement | null = null
   private searchInputEl: HTMLInputElement | null = null
+  private spinnerEl: HTMLElement | null = null
+  private chevronEl: HTMLElement | null = null
   /** 移动端底部抽屉承载件（oas-bottom-sheet；PC 形态 passive 透传） */
   private sheetEl: OASBottomSheet | null = null
   private _options: CascaderOption[] = []
@@ -496,6 +534,10 @@ export class OASCascader extends OASElement {
   private searchActive = 0
   /** 搜索词（filterable 时非空则渲染扁平路径结果） */
   private query = ''
+  /** 组件内焦点在持标记（focusin/focusout 去重，组件内转移不误报） */
+  private focusWithin = false
+  /** field-names 字段别名（JSON attribute 通道，对齐 tree-select 契约；isLeaf 恒读原始键名） */
+  private fields = { label: 'label', value: 'value', children: 'children', disabled: 'disabled' }
   /** 懒加载运行态：路径 → 已加载子级 / 加载中 / 根级加载中 */
   private loadedChildren = new Map<string, CascaderOption[]>()
   private loadingPaths = new Set<string>()
@@ -523,6 +565,7 @@ export class OASCascader extends OASElement {
               <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
           </span>
+          <span class="spinner" part="spinner" aria-hidden="true" hidden></span>
           <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -543,6 +586,8 @@ export class OASCascader extends OASElement {
     this.dropdown = this.shadow.querySelector('.dropdown')
     this.panelsEl = this.shadow.querySelector('.panels')
     this.searchInputEl = this.shadow.querySelector('.search-input')
+    this.spinnerEl = this.shadow.querySelector('.spinner')
+    this.chevronEl = this.shadow.querySelector('.chevron')
     // 移动端底部抽屉承载件：oas-close（下滑/backdrop/Esc）→ 同步收起
     this.sheetEl = this.shadow.querySelector<OASBottomSheet>('oas-bottom-sheet')
     this.sheetEl?.addEventListener('oas-close', () => this.setOpen(false))
@@ -556,6 +601,21 @@ export class OASCascader extends OASElement {
     })
     this.searchInputEl?.addEventListener('input', () => this.handleSearchInput())
     this.searchInputEl?.addEventListener('keydown', (e: KeyboardEvent) => this.handleSearchKey(e))
+    // 焦点事件：组件整体获得/失去焦点派发 oas-focus / oas-blur（P1-22）
+    //（trigger↔搜索框↔chip 按钮的组件内转移不误报，离开组件才 blur；对齐 select 同构）
+    const wrapper = this.shadow.querySelector<HTMLElement>('.wrapper')
+    wrapper?.addEventListener('focusin', () => {
+      if (this.focusWithin) return
+      this.focusWithin = true
+      this.emit('focus', { value: this.isMultiple() ? this.currentPaths() : this.currentPath() })
+    })
+    wrapper?.addEventListener('focusout', (e: FocusEvent) => {
+      if (!this.focusWithin) return
+      const related = e.relatedTarget
+      if (related instanceof Node && wrapper.contains(related)) return
+      this.focusWithin = false
+      this.emit('blur', { value: this.isMultiple() ? this.currentPaths() : this.currentPath() })
+    })
     this.onCleanup(() => {
       document.removeEventListener('click', this.handleOutsideClick, true)
       this.cancelHover()
@@ -583,6 +643,8 @@ export class OASCascader extends OASElement {
   protected override update(): void {
     // 移动形态同步：coarse pointer（触屏）或窄视口（<768px）→ bottom-sheet 底部抽屉承载
     this.syncMobileMode()
+    // 字段别名先行：options 解析依赖当前字段映射
+    this.parseFieldNames()
     this.parseOptions()
     this.mirrorSizeStatus()
     this.searchInputEl?.setAttribute('aria-label', this.t('select.search'))
@@ -627,6 +689,39 @@ export class OASCascader extends OASElement {
 
   // ---------- 数据解析 ----------
 
+  /**
+   * field-names 字段别名解析（JSON attribute 通道，对齐 tree-select 既有契约）：
+   * `{ label, value, children, disabled }` 四键可选，缺省/非法 JSON/非对象回落默认字段；
+   * isLeaf/loaded 不参与别名（恒读原始键名，与 tree-select 契约一致）。
+   */
+  private parseFieldNames(): void {
+    const def = { label: 'label', value: 'value', children: 'children', disabled: 'disabled' }
+    const raw = this.getAttr('field-names', '')
+    if (!raw) {
+      this.fields = def
+      return
+    }
+    try {
+      const parsed = JSON.parse(raw) as Record<string, unknown>
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        this.fields = def
+        return
+      }
+      const pick = (key: keyof typeof def): string => {
+        const v = parsed[key]
+        return typeof v === 'string' && v !== '' ? v : def[key]
+      }
+      this.fields = {
+        label: pick('label'),
+        value: pick('value'),
+        children: pick('children'),
+        disabled: pick('disabled'),
+      }
+    } catch {
+      this.fields = def
+    }
+  }
+
   private parseOptions(): void {
     try {
       const parsed = JSON.parse(this.getAttr('options', '[]'))
@@ -636,8 +731,26 @@ export class OASCascader extends OASElement {
     }
   }
 
+  /** 按当前 field-names 别名归一为组件内部 option 形状（懒加载结果同样经此通道） */
   private normalizeOptionList(input: unknown): CascaderOption[] {
-    return Array.isArray(input) ? input.filter((o): o is CascaderOption => !!o && typeof o.value === 'string') : []
+    if (!Array.isArray(input)) return []
+    const out: CascaderOption[] = []
+    for (const raw of input) {
+      if (!raw || typeof raw !== 'object') continue
+      const rec = raw as Record<string, unknown>
+      const value = rec[this.fields.value]
+      if (typeof value !== 'string') continue
+      const node: CascaderOption = {
+        label: typeof rec[this.fields.label] === 'string' ? (rec[this.fields.label] as string) : value,
+        value,
+      }
+      if (rec[this.fields.disabled]) node.disabled = true
+      if (rec['isLeaf'] === true) node.isLeaf = true
+      const kids = rec[this.fields.children]
+      if (Array.isArray(kids)) node.children = this.normalizeOptionList(kids)
+      out.push(node)
+    }
+    return out
   }
 
   private currentPath(): string[] {
@@ -984,6 +1097,13 @@ export class OASCascader extends OASElement {
     container.innerHTML = ''
     this.panelsData = []
     this.searchResults = []
+
+    // 显式 loading（P1-20）：宿主数据加载中，面板只显示加载占位（复用 loading.loading 文案）
+    if (this.hasAttr('loading')) {
+      container.appendChild(this.statusEl(this.t('loading.loading')))
+      if (this.isOpen()) this.positionDropdown()
+      return
+    }
 
     if (this.searchMode()) {
       this.renderSearchResults(container)
@@ -1438,6 +1558,13 @@ export class OASCascader extends OASElement {
     const disabled = this.injectDisabled()
     const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
     this.triggerEl.disabled = disabled
+
+    // loading 加载态（P1-20）：触发器 spinner 替代 chevron + aria-busy 播报忙态
+    const loading = this.hasAttr('loading')
+    if (this.spinnerEl) this.spinnerEl.hidden = !loading
+    if (this.chevronEl) this.chevronEl.hidden = loading
+    if (loading) this.triggerEl.setAttribute('aria-busy', 'true')
+    else this.triggerEl.removeAttribute('aria-busy')
 
     const hasValue = this.isMultiple() ? this.currentPaths().length > 0 : this.currentPath().length > 0
     const clearBtn = this.shadow.querySelector<HTMLElement>('.clear-btn')

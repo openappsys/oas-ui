@@ -252,6 +252,13 @@ onMounted(() => {
   maxGroup?.addEventListener('oas-change', () => {
     limitOut.textContent = ''
   })
+
+  const cbValue = document.getElementById('cb-value')
+  const cbValueInfo = document.getElementById('cb-value-info')
+  cbValue?.addEventListener('oas-change', (e) => {
+    const v = e.detail.value
+    cbValueInfo.textContent = `value: ${typeof v === 'string' ? `"${v}"` : v}`
+  })
 })
 </script>
 
@@ -262,6 +269,17 @@ onMounted(() => {
 </DemoBlock>
 
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
+
+## 值映射
+
+`true-value` / `false-value` 自定义勾选/取消时的取值（字符串），`oas-change` 的 `detail.value` 返回当前映射值（未设置时保持 `value` 属性语义）；读 `el.value` 也可直接获得当前映射值，适合表单提交 `'YES'` / `'NO'` 这类场景。**checkbox-group 内不生效**：组内 `value` 语义固定为选项标识（组按 `value` 属性收集勾选、FormData 按选项标识提交），映射属性在组内子项上无效。
+
+<DemoBlock title="true-value / false-value">
+  <oas-space direction="vertical" size="small">
+    <oas-checkbox id="cb-value" true-value="YES" false-value="NO">订阅通知</oas-checkbox>
+    <oas-tag id="cb-value-info" type="info">value: "NO"</oas-tag>
+  </oas-space>
+</DemoBlock>
 
 ## API
 
@@ -275,13 +293,15 @@ onMounted(() => {
 | `checked` | 是否选中 | `boolean` | — |
 | `description` | 辅助文本：渲染为标签下方次要说明；`slot="description"` 分发富文本时优先 | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
+| `false-value` | 取消勾选映射值（detail.value / value getter 通道；照原生「关不提交」不进 FormData；checkbox-group 内不生效） | `string` | — |
 | `indeterminate` | 半选状态（仅视觉，点击仍按两态切换；aria-checked 同步 mixed） | `boolean` | — |
 | `label-position` | 标签位置：`end`（默认，框左文右）/ `start`（文左框右；RTL 下自动镜像） | — | — |
 | `readonly` | 只读：可聚焦可进 Tab 序、值照常提交，但点击（含 Space）不切换（与 disabled 表单语义分立） | `boolean` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层 input） | `boolean` | — |
 | `size` | 尺寸档：`small`（14px）/ `medium`（默认 16px）/ `large`（18px），勾选框与字号联动；组级设置统一下发子项，单项显式优先 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`（勾选框着色；error 联动宿主 aria-invalid） | `string` | — |
-| `value` | 选项标识 | `string` | `on` |
+| `true-value` | 勾选映射值：oas-change 的 detail.value 与 value getter 返回该值，FormData 提交该值（checkbox-group 内不生效） | `string` | — |
+| `value` | 选项标识 | `string \| boolean` | `on` |
 | `variant` | 形态：`default`（默认）/ `card`（卡片：整块可点、选中描边着色、hover 反馈） | `string` | — |
 
 #### 事件

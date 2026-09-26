@@ -255,6 +255,23 @@ With `mode="horizontal"`, when the container is too narrow the overflowing items
   <oas-menu mode="horizontal" style="width: 380px" items='[{"label":"Home","value":"home"},{"label":"Products","value":"products","icon":"menu"},{"label":"Solutions","value":"solutions","icon":"search"},{"label":"Docs","value":"docs"},{"label":"Downloads","value":"download","icon":"download"},{"label":"About","value":"about","icon":"user"},{"label":"Contact","value":"contact"},{"label":"Help","value":"help"}]'></oas-menu>
 </DemoBlock>
 
+## Hover to Expand Submenus
+
+`open-on-hover` gives parent items in vertical / inline modes hover expansion: hovering for ~150ms opens the submenu, moving away closes it after ~300ms (moving back within the grace period cancels the close); the click path is unchanged (items still toggle on click). The `mode="horizontal"` top nav and the `collapsed` flyout already open instantly on hover and are unaffected by this attribute.
+
+<DemoBlock title="open-on-hover (vertical, delayed hover expansion)">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-6); flex-wrap: wrap">
+    <div style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">vertical: hover "Edit" for ~150ms to open; it closes ~300ms after the pointer leaves</p>
+      <oas-menu id="menu-hover-v" open-on-hover style="width: 200px" items='[{"label":"Edit","value":"edit","children":[{"label":"Copy","value":"copy"},{"label":"Cut","value":"cut"}]},{"label":"File","value":"file","children":[{"label":"Open","value":"open"},{"label":"Save","value":"save"}]},{"label":"View","value":"view"}]'></oas-menu>
+    </div>
+    <div style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">inline: hover also expands (multiple branches may stay open); clicking still toggles</p>
+      <oas-menu id="menu-hover-i" mode="inline" open-on-hover style="width: 240px" items='[{"label":"Workspace","value":"workspace","children":[{"label":"Overview","value":"overview"},{"label":"Stats","value":"stats"}]},{"label":"Projects","value":"project","children":[{"label":"Active","value":"active"},{"label":"Done","value":"done"}]}]'></oas-menu>
+    </div>
+  </div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -337,6 +354,28 @@ onMounted(() => {
   // Typeahead: focus the menu so character lookup works immediately
   const ta = document.getElementById('menu-typeahead')
   ta?.shadowRoot?.querySelector('.menu')?.focus({ preventScroll: true })
+
+  // open-on-hover demo: leaf-selection feedback (expand by hover, then click a leaf to verify the full path)
+  const hoverV = document.getElementById('menu-hover-v')
+  if (hoverV) {
+    const tag = document.createElement('oas-tag')
+    tag.setAttribute('type', 'info')
+    tag.textContent = 'Nothing selected yet'
+    hoverV.parentElement?.appendChild(tag)
+    hoverV.addEventListener('oas-select', (e) => {
+      tag.textContent = `Selected: ${e.detail.value}`
+    })
+  }
+  const hoverI = document.getElementById('menu-hover-i')
+  if (hoverI) {
+    const tag = document.createElement('oas-tag')
+    tag.setAttribute('type', 'info')
+    tag.textContent = 'Nothing selected yet'
+    hoverI.parentElement?.appendChild(tag)
+    hoverI.addEventListener('oas-select', (e) => {
+      tag.textContent = `Selected: ${e.detail.value}`
+    })
+  }
 })
 </script>
 
@@ -350,11 +389,12 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accordion` | Accordion mutual exclusion (inline mode: only one sibling submenu open at a time) | `boolean` | — |
 | `close-on-select` | Whether expanded submenus collapse after a leaf item is selected. Defaults by mode: inline side navigation keeps them open, flyout modes collapse; checkbox items never collapse on toggle | `string` | — |
-| `collapsed` | Collapsed state (vertical only): icons only, submenus pop to the right | — | — |
+| `collapsed` | Collapsed state (vertical only): icons only, submenus pop to the right | `boolean` | — |
 | `expanded` | Controlled expanded set (JSON array string; which submenus are open in inline mode); internally managed when uncontrolled | `string` | — |
 | `items` | Menu items JSON (supports disabled / loading, icon, children submenus) | `string` | `[]` |
 | `max-height` | Max height of a long menu; scrolls internally beyond it (number gets px appended) | `string` | — |
 | `mode` | Layout mode: `vertical` menu / `horizontal` top bar | — | — |
+| `open-on-hover` | Hover-opened submenus in vertical/inline modes (~150ms open / ~300ms close delay); clicks unchanged; horizontal and collapsed flyout unaffected | `boolean` | — |
 | `theme` | Local theme: `dark` uses dark tokens (independent of the global theme) | — | — |
 | `value` | Current selected value. Plain string means global single-select (no group, legacy-compatible); JSON object string (e.g. `{"sort":"name","view":"list"}`) scopes per group id — the `value` of a `type:"group"` item is the group id, picking inside a group only updates that group | `string` | — |
 

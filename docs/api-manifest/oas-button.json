@@ -131,6 +131,41 @@
       "observed": true
     },
     {
+      "name": "html-type",
+      "type": "string",
+      "default": "button",
+      "observed": true
+    },
+    {
+      "name": "form",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "formaction",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "formmethod",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "formnovalidate",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "formtarget",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "autofocus",
       "type": "boolean",
       "observed": false

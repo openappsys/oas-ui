@@ -1511,3 +1511,56 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 单测 7412 全绿（新增 pagination/scroll-area/theme-editor/upload/typography 行为与契约断言）；typecheck / build 全绿
 - e2e：speed-dial/qrcode qa-regression 回归全过；RTL sweep 修复后复跑 117/117 全净；修复组件真 RTL 截图逐一人工读图核验
+
+## 能力缺口 P1 立项批（未发布，29 项）
+
+> 立项来源：能力缺口甄别（≥3 源共识候选 533 条 → 真缺口 148 条 → P1 29 项，调研仓 `capability-gaps-triage.md`）。命名对照 ui-spec §2（kebab-case 属性 / `oas-*` 事件 / 吸收 pattern）。
+
+### 范围
+
+**表单体系（9 项）**
+
+1. **oas-form `disabled`**：整表禁用（对齐 config-provider 全局禁用语义，字段控件经既有 injectDisabled 通道并入，不回写宿主 disabled 属性防自锁）
+2. **oas-form `scroll-to-first-error`**：校验失败后滚动定位到首个错误字段（平滑滚动 + 聚焦，prefers-reduced-motion 降级瞬跳）
+3. **oas-form Rule.`validator`**：自定义校验函数（同步返回值或 Promise；与 required/pattern/minLength/maxLength 组合执行，函数不可序列化走 property 通道）
+4. **oas-form `validate-trigger`**：校验触发时机（`change`（默认，现状）/ `blur` / `input`，字段级可覆盖表级）
+5. **oas-form `initial-values`**：表单初始值（JSON attribute + property 双通道；reset 回到初始值而非空值——与 form-associated reset 基线一致语义）
+6. **oas-form 事件 `oas-values-change`**：任一字段值变化时派发，`detail: { name, value, values }`
+7. **oas-checkbox `true-value` / `false-value`**：勾选映射值（对齐 switch 既有契约；value 受控写回映射值，oas-change detail 同）
+8. **oas-select `label`**：表单标签属性（对齐 input `label` 既有契约，渲染字段标签位）
+9. **oas-button 原生表单提交属性组**：`html-type`（button/submit/reset，原生 type 透传）+ `form` / `formaction` / `formmethod` / `formnovalidate` / `formtarget`——shadow 内 button 不参与原生表单提交，经 form-associated 机制桥接（submit 触发表单 requestSubmit、reset 触发原生 reset）
+
+**输入控件一致性（5 项）**
+
+10. **oas-input `autofocus`**：挂载后自动聚焦内层 input（对齐 button 既有 autofocus 转发 pattern）
+11. **oas-input `autocomplete`**：透传内层 input（自动填充/密码管理器）
+12. **oas-input `loading`**：加载态（尾部 spinner 位 + aria-busy，不禁用输入）
+13. **oas-input `inputmode`**：透传内层 input（移动键盘类型）
+14. **oas-input-number 事件组**：`oas-focus` / `oas-blur` / `oas-input`（对齐 input 既有事件契约）
+
+**弹层/浮层（7 项）**
+
+15. **oas-modal `z-index`**：层级覆盖（默认走 token，属性显式覆盖写入宿主 style）
+16. **oas-drawer `height`**：上下抽屉（placement=top/bottom）高度（默认现状 auto/既有值，属性覆盖）
+17. **oas-drawer 事件 `oas-cancel`**：取消语义关闭时派发（Esc/遮罩/取消钮），与确认区分
+18. **oas-auto-complete `variant` + 事件 `oas-focus` / `oas-blur`**：对齐 input 三值变体（outline/filled/borderless）；focus/blur 对齐 input 既有事件契约
+20. **oas-cascader `loading`**：加载态（面板内加载占位）
+21. **oas-cascader `field-names`**：字段映射（对齐 tree-select 既有契约，`{ label, value, children, disabled }`）
+22. **oas-cascader 事件 `oas-focus` / `oas-blur`**
+
+**数据展示与导航（8 项）**
+
+23. **oas-select `variant`**：对齐 input 三值变体
+24. **oas-table `show-header`**：表头显隐（默认 true 现状；false 时 thead 不渲染）
+25. **oas-tabs `actions` 插槽**：标签栏右侧操作区（nav 内固定，不随标签滚动被遮挡，对齐 + 按钮固定惯例）
+26. **oas-tree 事件 `oas-expand`**：节点展开/收起时派发，`detail: { key, expanded, node }`
+27. **oas-tree 拖拽生命周期事件组**：`oas-node-dragstart` / `oas-node-dragover` / `oas-node-dragleave` / `oas-node-dragend`（既有 drop 契约不变）
+28. **oas-calendar `range`**：范围选择模式（起止两点选取 + 区间高亮 + oas-change detail `{ start, end }`；复用 date-grid 内部基础）
+29. **oas-carousel `draggable`**：指针拖拽/触摸滑动切换（阈值翻页 + 回弹，触摸设备默认开）
+30. **oas-menu `open-on-hover`**：子菜单 hover 展开（vertical/inline 模式，延迟开合防抖，点击路径不变）
+
+### 验收（每簇）
+
+- TDD：每项先 RED（行为/契约断言）后 GREEN；新事件/属性进 api:scan 清单（api:check 双向 0）
+- 用户视角：组件 md demo 实跑可见反馈；dark 主题过视觉；RTL 逻辑属性（方向相关项）
+- 缺陷/交互项固化 qa-regression；全量单测 + typecheck + build + api:check 全绿

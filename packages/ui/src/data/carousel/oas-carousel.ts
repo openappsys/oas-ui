@@ -327,6 +327,7 @@ export class OASCarousel extends OASElement {
       'pause-button',
       'slides-per-view',
       'gap',
+      'draggable',
     ]
   }
 
@@ -339,8 +340,8 @@ export class OASCarousel extends OASElement {
   private dragPaused = false
   /** 显式暂停（pause-button 触发）：优先级最高，悬停移出不会自动恢复 */
   private userPaused = false
-  /** 拖拽进行中的手势状态（null=未拖拽） */
-  private drag: { startX: number; startY: number; delta: number } | null = null
+  /** 拖拽进行中的手势状态（null=未拖拽）；startAt 供松手速度计算（轻扫翻页判定） */
+  private drag: { startX: number; startY: number; delta: number; startAt: number } | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -460,14 +461,27 @@ export class OASCarousel extends OASElement {
     })
   }
 
+  /**
+   * 拖拽开关：draggable 属性显式开启（"false" 显式关闭，优先级最高）；
+   * 未声明时触摸设备（pointer: coarse）默认开、PC 默认关。
+   */
+  private dragEnabled(): boolean {
+    if (this.hasAttr('draggable')) return this.getAttr('draggable', '') !== 'false'
+    try {
+      return window.matchMedia?.('(pointer: coarse)').matches ?? false
+    } catch {
+      return false
+    }
+  }
+
   /** pointer 拖拽跟手（触摸/鼠标统一）：按下暂停过渡，move 跟手，up 按阈值切屏或回弹 */
   private bindDrag(): void {
     const viewport = this.shadow.querySelector<HTMLElement>('[part="viewport"]')
     if (!viewport) return
     viewport.addEventListener('pointerdown', (e) => {
       const ev = e as PointerEvent
-      if (this.drag || ev.button !== 0 || this.count === 0) return
-      this.drag = { startX: ev.clientX, startY: ev.clientY, delta: 0 }
+      if (!this.dragEnabled() || this.drag || ev.button !== 0 || this.count === 0) return
+      this.drag = { startX: ev.clientX, startY: ev.clientY, delta: 0, startAt: performance.now() }
       this.dragPaused = true
       trackOf(this)?.classList.add('no-transition')
       try {
@@ -488,14 +502,22 @@ export class OASCarousel extends OASElement {
       const ev = e as PointerEvent
       const vertical = !this.isCard() && this.getAttr('direction', 'horizontal') === 'vertical'
       const delta = vertical ? this.drag.delta : ev.clientX - this.drag.startX || this.drag.delta
+      const elapsed = Math.max(performance.now() - this.drag.startAt, 1)
       this.drag = null
       this.dragPaused = false
       const t = trackOf(this)
       t?.classList.remove('no-transition')
-      // 松手阈值方向：LTR 左拖（delta<0）= 下一张；RTL 镜像为右拖（delta>0）= 下一张
+      // 松手阈值：距离 > 视口 25%（水平视宽/垂直视高；无布局量测时回落 50px）
+      // 或快速轻扫（≥40px 且速度 > 0.5px/ms）；否则回弹。
+      // 方向：LTR 左拖（delta<0）= 下一张；RTL 镜像为右拖（delta>0）= 下一张
+      const rect = viewport.getBoundingClientRect()
+      const span = Math.max(vertical ? rect.height : rect.width, 0)
+      const distance = Math.abs(delta)
+      const distanceThreshold = span > 0 ? span * 0.25 : 50
+      const flick = distance >= 40 && distance / elapsed > 0.5
       const rtl = !vertical && isRtl(this)
       const forward = rtl ? delta > 0 : delta < 0
-      if (Math.abs(delta) > 50) this.goTo(this.current() + (forward ? 1 : -1))
+      if (distance > distanceThreshold || flick) this.goTo(this.current() + (forward ? 1 : -1))
       // 回弹/边界归位：统一重算 transform（未达阈值或循环关闭触界时恢复原位）
       this.update()
       // 拖拽后重置自动播放计时

@@ -465,11 +465,23 @@ export class OASInputNumber extends OASFormElement {
     this.downBtn = this.shadow.querySelector('button[part="down"]')
     this.clearBtn = this.shadow.querySelector('button[part="clear"]')
 
-    // 键入过程：容忍中间态，不提交；仅同步 aria / 越界红显 / 按钮态 / 清除按钮显隐
-    this.input?.addEventListener('input', () => this.onTyping())
+    // 键入过程：容忍中间态，不提交；仅同步 aria / 越界红显 / 按钮态 / 清除按钮显隐。
+    // oas-input 对齐 oas-input 既有契约：detail { value } 携带当前显示文本（未提交语义，string）
+    this.input?.addEventListener('input', () => {
+      this.emit('input', { value: this.input?.value ?? '' })
+      this.onTyping()
+    })
     // 提交制：失焦（change 先于 blur 触发，二者共用幂等提交）与 Enter
     this.input?.addEventListener('change', () => this.commitFromInput())
-    this.input?.addEventListener('blur', () => this.commitFromInput())
+    this.input?.addEventListener('blur', () => {
+      this.commitFromInput()
+      // oas-blur 在提交后派发：detail { value } 为提交后的组件值（number | null，对齐 oas-change）
+      this.emit('blur', { value: this.committedValue() })
+    })
+    // oas-focus：detail { value } 为当前已提交值（number | null）
+    this.input?.addEventListener('focus', () => {
+      this.emit('focus', { value: this.committedValue() })
+    })
     this.input?.addEventListener('keydown', (e) => this.onKeydown(e))
     // 滚轮步进（wheel 属性显式开启 + 聚焦时；preventDefault 需非 passive）
     this.input?.addEventListener('wheel', (e) => this.onWheel(e), { passive: false })

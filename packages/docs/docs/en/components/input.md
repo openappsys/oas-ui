@@ -60,6 +60,16 @@ With `show-password` and `type="password"`, an eye button is rendered on the rig
 
 When there is content and `clearable` is set, a clear button is shown; clicking clears the value, refocuses, and dispatches `oas-clear`.
 
+## Loading
+
+<DemoBlock title="loading (input stays editable)">
+  <oas-input id="input-loading" loading clearable value="Validating remotely…" style="width: 240px"></oas-input>
+  <oas-button id="btn-input-loading" size="small">Toggle loading</oas-button>
+  <span id="input-loading-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
+</DemoBlock>
+
+With `loading` set, a spinner shows at the end of the field and `aria-busy="true"` is mirrored: **the input is not disabled** (users can keep typing — useful for remote validation / suggestion requests). Together with `clearable`, the spinner takes precedence and the clear button yields; exiting `loading` restores it.
+
 ## Disabled & Readonly
 
 <DemoBlock title="disabled / readonly">
@@ -171,6 +181,17 @@ onMounted(() => {
     const el = document.getElementById('input-search-output'); if (el) el.textContent = 'Search triggered'
   })
 
+  // loading demo: toggle the loading attribute and update the output
+  const loadingEl = document.getElementById('input-loading')
+  const loadingOut = document.getElementById('input-loading-output')
+  document.getElementById('btn-input-loading')?.addEventListener('click', () => {
+    if (!loadingEl) return
+    const next = loadingEl.hasAttribute('loading')
+    if (next) loadingEl.removeAttribute('loading')
+    else loadingEl.setAttribute('loading', '')
+    if (loadingOut) loadingOut.textContent = next ? 'loading exited (clear restored)' : 'loading (clear yields)'
+  })
+
   // allow-over-max validate feedback
   const over = document.getElementById('input-overmax')
   const overOut = document.getElementById('input-overmax-output')
@@ -258,7 +279,7 @@ Use the `prefix-text` / `suffix-text` attributes for simple text; for complex co
   <oas-input name="nick" minlength="2" spellcheck="false" enterkeyhint="done" placeholder="Nickname (min 2 chars)" style="width: 240px"></oas-input>
 </DemoBlock>
 
-The following native attributes are mirrored onto the inner native input (and removed in sync when the host attribute is removed): `name` / `autocomplete` / `autofocus` / `inputmode` / `minlength` / `required` / `spellcheck` / `enterkeyhint` / `pattern`. Useful for native form semantics, autofill, and mobile keyboard hints (`inputmode` / `enterkeyhint`).
+The following native attributes are mirrored onto the inner native input (and removed in sync when the host attribute is removed): `name` / `autocomplete` / `autofocus` / `inputmode` / `minlength` / `required` / `spellcheck` / `enterkeyhint` / `pattern`. Useful for native form semantics, autofill, and mobile keyboard hints (`inputmode` / `enterkeyhint`). `autofocus` is forwarded by the component as a one-time focus after mount (native autofocus does not pierce the shadow DOM).
 
 ## Focus & Commit Events
 
@@ -367,10 +388,12 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `auto-width` | Auto width following content (mirror measurement; empty value falls back to placeholder width), usually with auto-width-min/max | `boolean` | — |
 | `auto-width-max` | Maximum width for auto-width, px or percentage (default 100%) | — | — |
 | `auto-width-min` | Minimum width in px for auto-width (default 72) | — | — |
+| `autofocus` | Auto-focus the inner input after mount (native autofocus does not cross shadow DOM, so the component forwards it) | `boolean` | — |
 | `clearable` | Clearable | `boolean` | — |
 | `count-position` | Character count position: `outside` (default) / `inside` (right side within the field) | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `label` | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "输入框" when unset) | — | — |
+| `loading` | Loading state: trailing spinner with aria-busy (input stays editable); takes precedence over the clear button | `boolean` | — |
 | `maxlength` | Maximum input length (passed through to native maxlength) | `string` | — |
 | `placeholder` | Placeholder text | `string` | — |
 | `prefix-icon` | Icon name for the leading icon | `string` | — |

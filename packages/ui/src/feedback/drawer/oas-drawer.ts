@@ -434,6 +434,7 @@ export class OASDrawer extends OASElement {
       'no-footer',
       'no-mask-close',
       'width',
+      'height',
       'size',
       'no-scroll-lock',
       'no-focus-trap',
@@ -666,8 +667,17 @@ export class OASDrawer extends OASElement {
   /**
    * 宽度解析：显式 width 优先于 size；size 支持预设档位（small/medium/large）
    * 或具体值（纯数字视为 px，或直接是长度/百分比），无法解析时回退空串（用 CSS 默认）。
+   * 纵向抽屉（top/bottom）显式 height 优先——height 属性只作用于纵向（横向静默忽略），
+   * 非法值回退 width/size 既有解析。
    */
   private resolveDimension(): string {
+    if (!this.isHorizontal()) {
+      const h = this.getAttr('height')
+      if (h) {
+        if (/^\d+(\.\d+)?$/.test(h)) return `${h}px`
+        if (/^\d+(\.\d+)?(px|rem|em|vw|vh|%)$/.test(h)) return h
+      }
+    }
     const explicit = this.getAttr('width')
     if (explicit) return explicit
     const size = this.getAttr('size')
@@ -750,6 +760,9 @@ export class OASDrawer extends OASElement {
     const source = this.pendingCloseSource
     this.pendingCloseSource = 'external'
     this.emit('close', { source })
+    // 取消语义路径（取消按钮/遮罩/Esc）派发 oas-cancel，与确认关闭（oas-ok）区分；
+    // ✕/手势/编程关闭不走取消语义（P1-17：oas-cancel 只在取消语义关闭时派发）
+    if (source === 'cancel' || source === 'mask' || source === 'esc') this.emit('cancel', { source })
     // 关闭即出栈：Esc 逐层关与焦点陷阱立即让位下层抽屉（动画结束后不再重复出栈）
     popStack(this)
     syncStackZ()
@@ -929,13 +942,22 @@ export class OASDrawer extends OASElement {
     this.emit('resize', { size: this.currentDimensionPx() })
   }
 
-  /** 当前主轴尺寸（px）：横向取宽、纵向取高；width 属性优先，回落实际盒尺寸 */
+  /**
+   * 当前主轴尺寸（px）：横向取宽、纵向取高；主轴属性优先（横向 width / 纵向 height），
+   * 纵向回落 width（历史「width/size 纵向映射」通道，snap 吸附等存量场景依赖），
+   * 再回落实际盒尺寸。
+   */
   private currentDimensionPx(): number {
-    const fromAttr = parseInt(this.getAttr('width'), 10)
-    if (Number.isFinite(fromAttr) && fromAttr > 0) return fromAttr
+    const horizontal = this.isHorizontal()
+    const fromAxis = parseInt(this.getAttr(horizontal ? 'width' : 'height'), 10)
+    if (Number.isFinite(fromAxis) && fromAxis > 0) return fromAxis
+    if (!horizontal) {
+      const fromWidth = parseInt(this.getAttr('width'), 10)
+      if (Number.isFinite(fromWidth) && fromWidth > 0) return fromWidth
+    }
     const panel = this.panel
     if (!panel) return 320
-    return this.isHorizontal() ? panel.getBoundingClientRect().width : panel.getBoundingClientRect().height
+    return horizontal ? panel.getBoundingClientRect().width : panel.getBoundingClientRect().height
   }
 
   /** 方向键微调（±8px；Home/End 跳 min/max），每次派发 oas-resize */
@@ -962,7 +984,8 @@ export class OASDrawer extends OASElement {
 
   private setDimensionPx(px: number): void {
     const clamped = Math.round(Math.min(this.resizeMax(), Math.max(this.resizeMin(), px)))
-    this.setAttribute('width', `${clamped}px`)
+    // 写回主轴对应属性：横向 width、纵向 height（P1-16 起纵向抽屉有显式 height 通道）
+    this.setAttribute(this.isHorizontal() ? 'width' : 'height', `${clamped}px`)
   }
 
   // ===== mobile 手势（P7：swipe 关闭 + snap 吸附 + 拖拽把手） =====

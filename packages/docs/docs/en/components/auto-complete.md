@@ -105,6 +105,27 @@ The dual channel matches `oas-select`: listen to `oas-option-render` (`detail.el
 
 `size` supports `small / medium / large` (follows the nearest `oas-config-provider` `size` injection); `status` supports `success / warning / error` (`error` syncs `aria-invalid`, drivable by `oas-form-item` validation).
 
+## Variant
+
+<DemoBlock title="Variant (variant)">
+  <oas-space size="small" direction="vertical">
+    <oas-auto-complete variant="outlined" placeholder="outlined (default)" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-auto-complete>
+    <oas-auto-complete variant="filled" placeholder="filled (gray fill)" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-auto-complete>
+    <oas-auto-complete variant="borderless" placeholder="borderless (no border)" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-auto-complete>
+  </oas-space>
+</DemoBlock>
+
+`variant` aligns with the three `oas-input` variants: `outlined` (default) / `filled` (gray fill, border on hover) / `borderless` (no border, no focus shadow); invalid values fall back to `outlined`.
+
+## Focus Events (oas-focus / oas-blur)
+
+<DemoBlock title="focus / blur events">
+  <oas-auto-complete id="ac-focus-blur" placeholder="Focus / blur to see feedback" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-auto-complete>
+  <span id="ac-focus-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+Focus/blur dispatch `oas-focus` / `oas-blur` with `detail: { value }` carrying the current input text, matching the `oas-input` event contract.
+
 ## Readonly
 
 <DemoBlock title="Readonly">
@@ -149,6 +170,15 @@ onMounted(() => {
   el?.addEventListener('oas-input', (e) => set('oas-input', e))
   el?.addEventListener('oas-change', (e) => set('oas-change', e))
   el?.addEventListener('oas-clear', (e) => set('oas-clear', e))
+
+  // focus / blur demo: show the latest focus event inline
+  const fb = document.getElementById('ac-focus-blur')
+  const fbOut = document.getElementById('ac-focus-output')
+  const setFb = (name, e) => {
+    fbOut.textContent = `${name}: ${JSON.stringify(e.detail)}`
+  }
+  fb?.addEventListener('oas-focus', (e) => setFb('oas-focus', e))
+  fb?.addEventListener('oas-blur', (e) => setFb('oas-blur', e))
 
   // remote suggestions demo: simulate a host request (300ms debounce handled by the component)
   const remote = document.getElementById('ac-remote')
@@ -216,13 +246,16 @@ onMounted(() => {
 | `status` | Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation) | `string` | — |
 | `trigger-on-focus` | Show suggestions on focus (datalist mental model; off by default — input-first) | `boolean` | — |
 | `value` | Preset value | `string` | — |
+| `variant` | Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently | `string` | — |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
+| `oas-blur` | Dispatched on blur with the current input text, `detail: { value: this.input?.value ?? '' }` |
 | `oas-change` | Selected or cleared, `detail: { value, label }` |
 | `oas-clear` | Clear button clicked, `detail: { value }` (value before clearing) |
+| `oas-focus` | Dispatched on focus with the current input text, `detail: { value: this.input?.value ?? '' }` |
 | `oas-input` | While typing (after debounce), `detail: { value }` |
 | `oas-option-render` | Dispatched after each option row renders, `detail: { index, option, element }`; the host can rewrite `element` (icons/rich text) |
 

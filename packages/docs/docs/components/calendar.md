@@ -93,15 +93,27 @@
 
 翻页会跨出 `[min, max]` 的整月/整年（月面板为整年、十年面板为整十年页）时，「上一月/下一月」按钮自动置灰。
 
+## 范围选择
+
+<DemoBlock title="range：起止两点选取 + 区间高亮">
+  <div style="width: 100%">
+    <oas-calendar id="calendar-range" range page-show-date="2026-08-01"></oas-calendar>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      已选区间：<span id="calendar-range-value">点击起点，再点终点（悬停有预览）</span>
+    </p>
+  </div>
+</DemoBlock>
+
+设置 `range` 进入范围选择模式：第一次点击选定起点（起点高亮），移动指针时悬停日格实时预览区间，第二次点击选定终点并派发 `oas-change`（`detail: { start, end }`，均为 `YYYY-MM-DD` 字符串；终点早于起点时自动交换）。起止端点主色实底圆角、中间段主色浅底，颜色全部走 token（与 date-picker daterange 同一视觉语言）。提交后再次点击即重开新一轮（旧区间即时清除）。`value` 属性以 JSON 数组回显/预置范围：`value='["2026-08-05","2026-08-15"]'`。
+
 ## 范围 / 多选与选周：请用 date-picker
 
-本组件（常驻选择面板）只做**单选日期**。范围选择（start/end）、多选日期、按周选择由 [date-picker](./date-picker) 覆盖——二者共享同一日期网格，语义一致，避免在面板里重复实现一套：
+本组件（常驻选择面板）单选日期开箱即用；范围选择已由上方 `range` 属性覆盖。多选日期、按周选择仍由 [date-picker](./date-picker) 覆盖——二者共享同一日期网格，语义一致：
 
-- **日期范围**：`<oas-date-picker type="daterange">`
 - **多选日期**：`<oas-date-picker multiple>`
 - **按周选择**：`<oas-date-picker type="week">`（值 `yyyy-Wnn`）
 
-若需要常驻页面里做范围/多选，宿主可把 `oas-date-picker` 的内层面板相关能力与 `oas-calendar` 组合，或用 `oas-calendar` 单选 + 宿主自己维护起止值。
+若需要常驻页面里做多选，宿主可把 `oas-date-picker` 的内层面板相关能力与 `oas-calendar` 组合，或用 `oas-calendar` 单选 + 宿主自己维护集合。
 
 ## 自定义头部：用卡片组合（等价示例）
 
@@ -158,6 +170,7 @@
 | `min` | 可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰 | `string` | — |
 | `mode` | `month` / `year`（年模式选中月份后自动切回月视图） | `string` | `month` |
 | `page-show-date` | 面板月锚点（ISO `yyyy-MM` 或 `yyyy-MM-dd`）：初始/受控锚定显示的月份，优先级高于 value；移除后回到 value 所在月 | `string` | — |
+| `range` | 范围选择模式：两段式选取 + 悬停预览 + 区间高亮，oas-change `detail: { start, end }`，value 以 JSON 数组回显 | `boolean` | — |
 | `readonly` | 只读：可翻页浏览/钻取面板，点选与键盘 Enter 不提交 | `boolean` | — |
 | `show-week-number` | 显示 ISO 周号列 | `boolean` | — |
 | `value` | 选中值（ISO） | `string` | — |
@@ -190,6 +203,12 @@ import { onMounted } from 'vue'
 onMounted(() => {
   const el = document.getElementById('calendar-disabled-date')
   el.disabledDate = (d) => d.getDay() === 0 || d.getDay() === 6
+
+  // range 范围选择 demo：显示选中区间
+  const rangeCal = document.getElementById('calendar-range')
+  rangeCal?.addEventListener('oas-change', (e) => {
+    document.getElementById('calendar-range-value').textContent = `${e.detail.start} ~ ${e.detail.end}`
+  })
   const ev = document.getElementById('calendar-event')
   const out = document.getElementById('calendar-output')
   ev?.addEventListener('oas-change', (e) => {

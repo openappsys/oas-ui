@@ -13,6 +13,7 @@ import {
   renderMonthGrid,
   moveGridDate,
   getWeekStart,
+  isSameDay,
 } from './date-grid.js'
 import { isRtl } from '../../shared/direction.js'
 
@@ -162,6 +163,25 @@ const STYLE = `
 [part='grid'] .day.selected:hover {
   background: var(--oas-color-primary-hover);
 }
+/* range 范围选择：起止端点主色实底 + 圆角，中间段主色浅底直角（连续条带观感）；
+   色值一律走 token（对齐 date-picker daterange 的 range 视觉语言） */
+[part='grid'] .day.range-start,
+[part='grid'] .day.range-end {
+  background: var(--oas-color-primary);
+  color: var(--oas-color-bg);
+  border-radius: var(--oas-radius-sm);
+}
+[part='grid'] .day.range-start:hover,
+[part='grid'] .day.range-end:hover {
+  background: var(--oas-color-primary-hover);
+}
+[part='grid'] .day.in-range {
+  background: color-mix(in srgb, var(--oas-color-primary) 18%, transparent);
+  border-radius: 0;
+}
+[part='grid'] .day.in-range:hover {
+  background: color-mix(in srgb, var(--oas-color-primary) 26%, transparent);
+}
 [part='grid'] .day.disabled {
   color: var(--oas-color-text-disabled);
   cursor: not-allowed;
@@ -256,6 +276,7 @@ export class OASCalendar extends OASElement {
     return [
       'value',
       'mode',
+      'range',
       'min',
       'max',
       'show-week-number',
@@ -278,6 +299,9 @@ export class OASCalendar extends OASElement {
   /** mode 变化检测：首帧吸收初始值不派发，之后任何 mode 属性变化（宿主/内部）都派发 oas-mode-change */
   private lastMode = 'month'
   private modeInit = false
+  /** range 范围选择进行中状态：已点起点（null=非选择中）与悬停预览终点 */
+  private rangeStart: Date | null = null
+  private rangePreview: Date | null = null
 
   /** @apiProperty 禁用日期回调（回调无法用 attribute 表达；置 null 恢复全部可选） */
   get disabledDate(): ((d: Date) => boolean) | null {
@@ -474,6 +498,47 @@ export class OASCalendar extends OASElement {
     return startOfDay(d)
   }
 
+  /** 是否范围选择模式（range 属性在场） */
+  private isRange(): boolean {
+    return this.hasAttr('range')
+  }
+
+  /** range 模式的已提交范围：value 属性 JSON 数组 `["YYYY-MM-DD","YYYY-MM-DD"]`（对齐 date-picker range 值形态） */
+  private rangeValue(): { start: Date | null; end: Date | null } {
+    const raw = this.getAttr('value', '')
+    if (!raw) return { start: null, end: null }
+    try {
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed) || parsed.length !== 2) return { start: null, end: null }
+      const s = parseISODate(String(parsed[0] ?? ''))
+      const e = parseISODate(String(parsed[1] ?? ''))
+      return { start: s, end: e }
+    } catch {
+      return { start: null, end: null }
+    }
+  }
+
+  /** 悬停预览：已点起点后，预览终点随指针日格更新（悬停日 < 起点时预览交换区间） */
+  private onRangeHover(d: Date): void {
+    if (!this.isRange() || !this.rangeStart) return
+    const next = startOfDay(d)
+    if (this.rangePreview && isSameDay(next, this.rangePreview)) return
+    this.rangePreview = next
+    this.renderGrid(false)
+  }
+
+  /** 当前渲染应高亮的范围：选择中 = 起点 + 悬停预览（自动交换）；否则已提交 value */
+  private activeRange(): { start: Date | null; end: Date | null } | null {
+    if (!this.isRange()) return null
+    if (this.rangeStart) {
+      if (!this.rangePreview) return { start: this.rangeStart, end: null }
+      return this.rangeStart <= this.rangePreview
+        ? { start: this.rangeStart, end: this.rangePreview }
+        : { start: this.rangePreview, end: this.rangeStart }
+    }
+    return this.rangeValue()
+  }
+
   private renderGrid(focusNow: boolean): void {
     const grid = this.grid
     if (!grid) return
@@ -491,7 +556,7 @@ export class OASCalendar extends OASElement {
     grid.classList.toggle('has-week-number', this.hasAttr('show-week-number'))
 
     const hadFocus = focusNow || (this.shadow.activeElement != null && grid.contains(this.shadow.activeElement))
-    const selected = this.selectedDate()
+    const selected = this.isRange() ? null : this.selectedDate()
     const focus = this.focusDate ?? selected ?? startOfDay(new Date())
 
     renderMonthGrid(grid, {
@@ -504,7 +569,9 @@ export class OASCalendar extends OASElement {
       max: parseISODate(this.getAttr('max', '')),
       disabledDate: this._disabledDate ?? undefined,
       showWeekNumber: this.hasAttr('show-week-number'),
+      range: this.activeRange(),
       onSelect: (d) => this.selectDate(d),
+      onCellHover: this.isRange() ? (d) => this.onRangeHover(d) : undefined,
     })
     this.fillCells(grid)
     setRovingTab(grid, focus)
@@ -655,6 +722,39 @@ export class OASCalendar extends OASElement {
 
   private selectDate(d: Date): void {
     if (this.injectDisabled() || this.hasAttr('readonly')) return
+    // range 范围选择：两段式（起点点击 → 悬停预览 → 终点点击提交 oas-change { start, end }；
+    // 提交后再次点击重开新一轮，旧区间即时清除）
+    if (this.isRange()) {
+      const prev = this.pageAnchor()
+      if (!this.rangeStart) {
+        // 第一击：记录起点、清除已提交区间（重开新一轮），不派发 change
+        this.rangeStart = startOfDay(d)
+        this.rangePreview = null
+        this.focusDate = this.rangeStart
+        if (this.hasAttribute('value')) this.removeAttribute('value')
+        this.update()
+        if (!this.samePage(prev, this.pageAnchor())) {
+          this.emit('panel-change', { date: this.pageAnchor() })
+        }
+        return
+      }
+      // 第二击：提交区间（起点晚于终点时自动交换）
+      const a = this.rangeStart
+      const b = startOfDay(d)
+      const [s, e] = a <= b ? [a, b] : [b, a]
+      const startIso = toISODate(s)
+      const endIso = toISODate(e)
+      this.rangeStart = null
+      this.rangePreview = null
+      this.focusDate = b
+      this.setAttribute('value', JSON.stringify([startIso, endIso]))
+      this.emit('change', { start: startIso, end: endIso })
+      this.update()
+      if (!this.samePage(prev, this.pageAnchor())) {
+        this.emit('panel-change', { date: this.pageAnchor() })
+      }
+      return
+    }
     const iso = toISODate(d)
     const prev = this.pageAnchor()
     this.setAttribute('value', iso)

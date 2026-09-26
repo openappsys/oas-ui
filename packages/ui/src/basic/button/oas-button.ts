@@ -6,8 +6,11 @@ export type ButtonType = 'default' | 'primary' | 'success' | 'warning' | 'danger
 export type ButtonSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 /** variant 形态维度（正交 type 语义色）：solid 实底 / outlined 描边 / dashed 虚线描边 / filled 浅底 / text 文字 / link 链接 */
 export type ButtonVariant = 'solid' | 'outlined' | 'dashed' | 'filled' | 'text' | 'link'
+/** 原生表单行为（html-type）：button 默认无表单行为 / submit 提交 / reset 重置 */
+export type ButtonHtmlType = 'button' | 'submit' | 'reset'
 
 const VALID_BUTTON_VARIANTS: readonly ButtonVariant[] = ['solid', 'outlined', 'dashed', 'filled', 'text', 'link']
+const VALID_HTML_TYPES: readonly ButtonHtmlType[] = ['button', 'submit', 'reset']
 
 /** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
 const warnedSizes = new Set<string>()
@@ -712,6 +715,13 @@ export class OASButton extends OASElement {
       'auto-insert-space',
       'wrap',
       'disabled-skip',
+      // 原生表单提交属性组（shadow 内 button 不参与原生表单提交，经 light DOM 代理桥接）
+      'html-type',
+      'form',
+      'formaction',
+      'formmethod',
+      'formnovalidate',
+      'formtarget',
     ]
   }
 
@@ -733,6 +743,55 @@ export class OASButton extends OASElement {
   /** 是否为链接按钮（渲染 <a> 而非 <button>） */
   private isLink(): boolean {
     return this.getAttr('href', '') !== ''
+  }
+
+  /** 原生表单行为归一化：合法值原样返回，空/非法值回落 button（不提交不重置，静默不告警） */
+  private htmlType(): ButtonHtmlType {
+    const raw = this.getAttr('html-type', 'button')
+    return (VALID_HTML_TYPES as readonly string[]).includes(raw) ? (raw as ButtonHtmlType) : 'button'
+  }
+
+  /**
+   * 原生表单提交桥接（html-type=submit/reset 时把点击转发给目标表单）。
+   *
+   * 核心问题：shadow 内 button 不参与原生表单提交——form 控件收集与 form owner 解析
+   * 均走 DOM 树祖先链，shadow 树内的原生按钮与外部 form 无关联，点击不会触发表单行为。
+   *
+   * 桥接方案：点击期在 light DOM 临时注入一个 visually-hidden 原生 button 作代理 submitter，
+   * 镜像 form / formaction / formmethod / formnovalidate / formtarget 后转发 click——
+   * 代理是宿主 light DOM 子节点，宿主在 form 内时代理即 form 子树成员（form owner 天然成立），
+   * 宿主在 form 外时经 form 属性 id 关联（原生机制）；点击走原生激活行为
+   * （submit → form.requestSubmit(proxy)，reset → form.reset()），
+   * formaction/formmethod/formnovalidate/formtarget 由原生 submitter 机制承载，无需自行拼装。
+   *
+   * 代理为「用完即移除」的临时节点而非常驻 light DOM：宿主框架（Vue）对文本子节点补丁走
+   * textContent 整写，会静默抹掉常驻代理；临时注入在同一同步任务内完成注入→点击→移除，
+   * 不产生渲染帧、不进默认插槽（slot 指向不存在的具名插槽 + hidden 双保险）、无残留。
+   * href 链接模式（a 元素）与 html-type=button（默认）不桥接——这些属性静默无效。
+   * 无目标表单（无 form 祖先且 form 属性无匹配 id）时原生激活行为自然 no-op。
+   */
+  private forwardFormAction(): void {
+    const type = this.htmlType()
+    if (this.isLink() || type === 'button') return
+    const proxy = document.createElement('button')
+    proxy.setAttribute('data-oas-form-proxy', '')
+    // 指向不存在的具名插槽：不会被默认插槽投影进按钮内容（hidden 兜底）
+    proxy.setAttribute('slot', 'oas-form-proxy')
+    proxy.hidden = true
+    proxy.setAttribute('aria-hidden', 'true')
+    proxy.type = type
+    const formId = this.getAttr('form', '')
+    if (formId) proxy.setAttribute('form', formId)
+    const formaction = this.getAttr('formaction', '')
+    if (formaction) proxy.setAttribute('formaction', formaction)
+    const formmethod = this.getAttr('formmethod', '')
+    if (formmethod) proxy.setAttribute('formmethod', formmethod)
+    if (this.hasAttr('formnovalidate')) proxy.setAttribute('formnovalidate', '')
+    const formtarget = this.getAttr('formtarget', '')
+    if (formtarget) proxy.setAttribute('formtarget', formtarget)
+    this.appendChild(proxy)
+    proxy.click()
+    proxy.remove()
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -767,7 +826,10 @@ export class OASButton extends OASElement {
     this.btn = this.shadow.querySelector('button[part="button"], a[part="button"]')
 
     this.btn?.addEventListener('click', (e: MouseEvent) => {
-      if (this.injectDisabled() || this.hasAttr('disabled-focusable') || this.isLoading()) {
+      // 拦截判定在 emit 前快照：loading="auto" 会在 emit 期间同步进入 loading，
+      // 转发判定若放到 emit 后会把本次点击自身触发的 auto loading 误判为拦截
+      const blocked = this.injectDisabled() || this.hasAttr('disabled-focusable') || this.isLoading()
+      if (blocked) {
         e.preventDefault()
         return
       }
@@ -779,6 +841,8 @@ export class OASButton extends OASElement {
         this.update()
       }
       this.emit('click', { originalEvent: e })
+      // 原生表单提交桥接（html-type=submit/reset）：oas-click 派发后转发
+      if (!blocked) this.forwardFormAction()
       if (isAuto) {
         if (this.autoPromises.length > 0) {
           // allSettled：任一 reject 也不提前终止，全部 settle 后统一退出

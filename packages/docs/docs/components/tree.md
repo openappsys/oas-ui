@@ -175,6 +175,8 @@
 
 设置 `draggable` 后可拖拽节点换序或换父：拖到目标行上半区插入其前（before）、下半区插入其后（after）、中部且目标可展开时移入其下（inner），拖拽过程有插入线与高亮反馈；松手派发 `oas-node-drop`（`detail: { dragKey, dropKey, position }`），由宿主更新数据后重设 `data` 属性。拖到树空白处视为移入根（`dropKey` 为空字符串、`position: 'inner'`）。
 
+拖拽全程另有生命周期事件组：`oas-node-dragstart`（`detail: { dragKey }`）、`oas-node-dragover` / `oas-node-dragleave`（`detail: { dragKey, dropKey, position }`，拖到空白处 `dropKey` 为空、`position: 'inner'`）、`oas-node-dragend`（`detail: { dragKey }`），可用于自定义拖拽提示、跨树联动等场景。
+
 落点合法性可用属性回调守卫（拖拽中即拒绝，无插入线反馈）：
 
 ```js
@@ -262,6 +264,19 @@ tree.allowDrag = (node) => node.key !== 'item-1' // 该节点不可被拖动
 
 设置 `motion` 开启展开/收起的**高度过渡动画**（默认关）：展开时新增子行从 0 高平滑生长到自然行高，收起时子行先收缩离场再移除，时长/缓动走 `--oas-transition-*` token。虚拟滚动模式（设置 `height`）下展开入场降级为淡入、收起即时切换——虚拟列表行高定值不适合高度动画，避免错位与性能损耗；动画尊重 `prefers-reduced-motion`（系统减少动效时自动停用）。
 
+## 展开/收起事件
+
+<DemoBlock title="oas-expand（节点展开/收起）">
+  <div style="width: 100%">
+    <oas-tree id="tree-expand-event" expanded='["a"]' data='[{"key":"a","label":"节点 A","children":[{"key":"a-1","label":"子节点 1","children":[{"key":"a-1-1","label":"孙节点 1-1"}]}]},{"key":"b","label":"节点 B"}]'></oas-tree>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      最近动作：<span id="tree-expand-status">点击展开箭头试试</span>
+    </p>
+  </div>
+</DemoBlock>
+
+任意展开/收起交互（展开箭头、`expand-trigger="node"`、键盘 →/←）都会派发 `oas-expand`，`detail: { key, expanded, node }`——`node` 为该数据节点的快照，宿主可据此联动其他视图。
+
 ## 事件
 
 <DemoBlock title="选中与勾选事件">
@@ -283,6 +298,29 @@ onMounted(() => {
   tree?.addEventListener('oas-check', (e) => {
     const span = document.querySelector('#tree-check')
     span.textContent = span.textContent === '—' ? e.detail.key : `${span.textContent}、${e.detail.key}`
+  })
+
+  // 展开/收起事件 demo：oas-expand 可见反馈（label + 展开态）
+  const expandTree = document.querySelector('#tree-expand-event')
+  expandTree?.addEventListener('oas-expand', (e) => {
+    const { expanded, node } = e.detail
+    document.querySelector('#tree-expand-status').textContent = `${expanded ? '展开' : '收起'}「${node.label}」`
+  })
+  // 拖拽生命周期 demo：dragstart/dragover/dragleave/dragend 全程可见反馈
+  const dndTree = document.querySelector('#tree-dnd')
+  const dndStatus = document.querySelector('#tree-dnd-status')
+  const dndDefault = '拖拽节点到目标行上 / 下 / 中部，分别插入其前 / 后 / 子'
+  dndTree?.addEventListener('oas-node-dragstart', (e) => {
+    if (dndStatus) dndStatus.textContent = `开始拖拽「${e.detail.dragKey}」`
+  })
+  dndTree?.addEventListener('oas-node-dragover', (e) => {
+    if (dndStatus) dndStatus.textContent = `拖到「${e.detail.dropKey || '根'}」的 ${e.detail.position} 落点`
+  })
+  dndTree?.addEventListener('oas-node-dragleave', () => {
+    if (dndStatus) dndStatus.textContent = '离开落点'
+  })
+  dndTree?.addEventListener('oas-node-dragend', () => {
+    if (dndStatus) dndStatus.textContent = dndDefault
   })
   // 懒加载失败重试 demo：fail 节点首次 load 回调 reject → oas-load-error；重试成功
   // （whenDefined 防升级前 expando 遮蔽 load 属性）
@@ -530,8 +568,13 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-check` | 勾选变化，`detail: { key, checked }` |
+| `oas-expand` | 节点展开/收起时派发，`detail: { key, expanded, node }`（node 为数据节点快照） |
 | `oas-load` | 懒加载触发，`detail: { key }`；宿主回填 `children` 后重设 `data` 属性 |
 | `oas-load-error` | 懒加载失败时派发，`detail: { key, error }`，`error` 为错误消息字符串（loading 消失可再点重试） |
+| `oas-node-dragend` | 拖拽结束时派发，`detail: { dragKey }` |
+| `oas-node-dragleave` | 拖拽离开目标时派发，`detail: { dragKey, dropKey, position }` |
+| `oas-node-dragover` | 拖拽悬过目标时派发，`detail: { dragKey, dropKey, position }`（空白处 dropKey 为空、position 为 `inner`） |
+| `oas-node-dragstart` | 拖拽开始时派发，`detail: { dragKey }` |
 | `oas-node-drop` | 节点拖放，`detail: { dragKey, dropKey, position }`，`position` 为 `before` / `after` / `inner`；`dropKey` 为空字符串表示移入根 |
 | `oas-node-rename` | 内联重命名提交（Enter / 失焦），`detail: { key, label, oldLabel }`；数据由宿主受控——组件不改数据模型，宿主监听后更新 `data` 才生效（不更新则保持旧值；Esc 取消不派发） |
 | `oas-node-render` | 每个渲染的节点行派发，`detail: { node, element }`（element 为节点 label 容器，宿主可改写为图标 / 富文本） |

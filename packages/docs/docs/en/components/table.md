@@ -652,8 +652,35 @@ onMounted(() => {
     }, 800)
   })
   renderRemote()
+
+  // Header visibility demo: toggle the show-header attribute
+  const showHeaderTable = document.querySelector('#table-show-header')
+  const showHeaderBtn = document.querySelector('#table-show-header-toggle')
+  showHeaderBtn?.addEventListener('click', () => {
+    const hidden = showHeaderTable?.getAttribute('show-header') === 'false'
+    if (hidden) {
+      showHeaderTable?.setAttribute('show-header', 'true')
+      showHeaderBtn.textContent = 'Hide header'
+    } else {
+      showHeaderTable?.setAttribute('show-header', 'false')
+      showHeaderBtn.textContent = 'Show header'
+    }
+  })
 })
 </script>
+
+## Header visibility
+
+`show-header` toggles the table header (defaults to `true`, current behavior). Set it to `"false"` to render without the header row — column configuration still aligns the data cells. Useful for pure data listings or pages that already render their own title row above the table.
+
+<DemoBlock title="show-header=false (toggleable)">
+  <div style="width: 100%">
+    <oas-table id="table-show-header" columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"}]' data='[{"name":"Zhang San","age":30,"city":"Beijing"},{"name":"Li Si","age":25,"city":"Shanghai"},{"name":"Wang Wu","age":35,"city":"Shenzhen"}]' row-key="name"></oas-table>
+    <div style="margin-top: var(--oas-space-3)">
+      <oas-button size="small" id="table-show-header-toggle">Hide header</oas-button>
+    </div>
+  </div>
+</DemoBlock>
 
 ## API
 
@@ -682,6 +709,7 @@ onMounted(() => {
 | `row-height` | Fixed row height for virtual scrolling (px) | `string` | `40` |
 | `row-key` | Unique key field of a row | `string` | `key` |
 | `selected` | Set of selected row keys (comma-separated) | `string` | — |
+| `show-header` | Toggles the header (default true); with `false` no header row is rendered while column configuration still aligns data cells | `string` | `true` |
 | `size` | Density preset: `small` / `medium` (default) / `large` — only changes default cell padding and font size (all via CSS variables; override with `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size`, which take precedence); invalid values fall back to `medium` with a warning; orthogonal to `row-height` | `string` | `medium` |
 | `sort-key` | Controlled sort; `sort-order` is `asc` / `desc` / empty | `string` | — |
 | `sort-order` | Controlled sort; `sort-order` is `asc` / `desc` / empty | `SortOrder` | — |

@@ -872,3 +872,51 @@ test.describe('触摸目标（P2，iPhone 仿真）', () => {
     }
   })
 })
+
+test('menu open-on-hover：悬停延迟展开 → 移出延迟收起 → 点击路径可用（demo 双形态）', async ({ page }) => {
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu#menu-hover-v')
+  // demo 在页面尾部——先滚进视口再取坐标（否则 mouse.move 落在视口外不触发 mouseenter）
+  await page.evaluate(() => {
+    document.querySelector('oas-menu#menu-hover-v')!.scrollIntoView({ block: 'center' })
+  })
+  await page.waitForTimeout(300)
+  // 真实鼠标移入父项 → ~150ms 延迟展开
+  const box = await page.evaluate(() => {
+    const el = document.querySelector('oas-menu#menu-hover-v')!
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!
+    const r = parent.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  await page.mouse.move(box.x, box.y)
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('oas-menu#menu-hover-v')!
+        .shadowRoot!.querySelector('[data-value="edit"]')!
+        .classList.contains('open'),
+    { timeout: 3000 },
+  )
+  // 移出 → 300ms 后收起
+  await page.mouse.move(box.x, box.y - 200)
+  await page.waitForFunction(
+    () =>
+      !document
+        .querySelector('oas-menu#menu-hover-v')!
+        .shadowRoot!.querySelector('[data-value="edit"]')!
+        .classList.contains('open'),
+    { timeout: 3000 },
+  )
+  // 点击路径不受影响：点击父项立即展开
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-menu#menu-hover-v')!
+    ;(el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]') as HTMLElement).click()
+  })
+  const clicked = await page.evaluate(() =>
+    document
+      .querySelector('oas-menu#menu-hover-v')!
+      .shadowRoot!.querySelector('[data-value="edit"]')!
+      .classList.contains('open'),
+  )
+  expect(clicked).toBe(true)
+})

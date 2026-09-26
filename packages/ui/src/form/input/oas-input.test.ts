@@ -228,6 +228,29 @@ describe('OASInput', () => {
     expect(input(el).value).toBe('y')
   })
 
+  it('未提交输入保护：typing 中无关属性变化（status/loading 切换）不抹掉未提交文本', () => {
+    const el = mount({ value: '初始' })
+    const i = input(el)
+    i.value = 'abc'
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+    el.setAttribute('status', 'error')
+    expect(i.value, 'status 切换不抹文本').toBe('abc')
+    el.setAttribute('loading', '')
+    expect(i.value, 'loading 开启不抹文本').toBe('abc')
+    el.removeAttribute('loading')
+    expect(i.value, 'loading 退出不抹文本').toBe('abc')
+    el.removeAttribute('status')
+  })
+
+  it('受控写回仍生效：宿主写 value 属性 → 内层即时跟随（含 typing 后）', () => {
+    const el = mount({ value: '初始' })
+    const i = input(el)
+    i.value = 'abc'
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+    el.setAttribute('value', '宿主改写')
+    expect(i.value).toBe('宿主改写')
+  })
+
   it('show-password：从 password 切回 text 时重置 reveal 状态', () => {
     const el = mount({ type: 'password', 'show-password': '' })
     eye(el).click()
@@ -1159,5 +1182,77 @@ describe('form-associated（原生表单集成）', () => {
     const spy = vi.spyOn(input(el), 'focus')
     el.focus()
     expect(spy).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ---- 能力缺口 P1：autofocus 转发 / loading 加载态 / autocomplete+inputmode 透传 ----
+
+describe('OASInput autofocus / loading / 原生透传（能力缺口 P1）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('loading 进入 observedAttributes', () => {
+    expect(OASInput.observedAttributes).toContain('loading')
+  })
+
+  it('autofocus：挂载后聚焦内部 input（原生 autofocus 不穿透 shadow，queueMicrotask 转发）', async () => {
+    const el = mount({ autofocus: '' })
+    await new Promise<void>((r) => queueMicrotask(() => r()))
+    expect(el.shadowRoot!.activeElement).toBe(input(el))
+  })
+
+  it('loading：spinner 显示 + 宿主 aria-busy + data-loading 镜像，输入不禁用', () => {
+    const el = mount({ loading: '', value: 'abc' })
+    expect(el.getAttribute('aria-busy')).toBe('true')
+    expect(el.hasAttribute('data-loading')).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.spinner')!.hidden).toBe(false)
+    expect(input(el).disabled).toBe(false)
+  })
+
+  it('loading 移除后 spinner 隐藏、aria-busy 移除（宿主属性零残留）', () => {
+    const el = mount({ loading: '' })
+    el.removeAttribute('loading')
+    expect(el.hasAttribute('aria-busy')).toBe(false)
+    expect(el.hasAttribute('data-loading')).toBe(false)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.spinner')!.hidden).toBe(true)
+  })
+
+  it('loading 优先于清除按钮：loading + clearable + 有值时 clear 隐藏、spinner 显示', () => {
+    const el = mount({ loading: '', clearable: '', value: 'abc' })
+    expect(el.shadowRoot!.querySelector<HTMLButtonElement>('.clear-btn')!.hidden).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.spinner')!.hidden).toBe(false)
+  })
+
+  it('loading 期间输入不禁用且 oas-input 正常派发', () => {
+    const el = mount({ loading: '' })
+    let fired = false
+    el.addEventListener('oas-input', () => (fired = true))
+    input(el).value = 'x'
+    input(el).dispatchEvent(new Event('input'))
+    expect(fired).toBe(true)
+    expect(input(el).disabled).toBe(false)
+  })
+
+  it('loading 样式规则存在（spinner 动画 + data-loading 让位，prefers-reduced-motion 降级）', () => {
+    const css = styleText(mount({ loading: '' }))
+    expect(css).toContain('@keyframes oas-input-spin')
+    expect(css).toContain('.spinner')
+    expect(css).toContain('[data-loading]')
+    expect(css).toContain('prefers-reduced-motion')
+  })
+
+  it('autocomplete/inputmode 透传属性移除后原生 input 同步解除', () => {
+    const el = mount({ autocomplete: 'username', inputmode: 'numeric' })
+    expect(input(el).getAttribute('autocomplete')).toBe('username')
+    expect(input(el).getAttribute('inputmode')).toBe('numeric')
+    el.removeAttribute('autocomplete')
+    el.removeAttribute('inputmode')
+    expect(input(el).hasAttribute('autocomplete')).toBe(false)
+    expect(input(el).hasAttribute('inputmode')).toBe(false)
   })
 })

@@ -760,3 +760,61 @@ describe('OASInputNumber form-associated（原生表单集成）', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 })
+
+// ---- 能力缺口 P1：oas-focus / oas-blur / oas-input 事件组（对齐 input 既有契约） ----
+
+describe('OASInputNumber focus / blur / input 事件组（能力缺口 P1）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('内层 input 聚焦派发 oas-focus，detail 携带当前已提交值（number）', () => {
+    const el = mount({ value: '5' })
+    let detail: unknown
+    el.addEventListener('oas-focus', (e: Event) => (detail = (e as CustomEvent).detail))
+    input(el).dispatchEvent(new FocusEvent('focus'))
+    expect(detail).toEqual({ value: 5 })
+  })
+
+  it('空值聚焦派发 oas-focus，detail.value 为 null（未填 ≠ 0）', () => {
+    const el = mount({})
+    let detail: unknown
+    el.addEventListener('oas-focus', (e: Event) => (detail = (e as CustomEvent).detail))
+    input(el).dispatchEvent(new FocusEvent('focus'))
+    expect(detail).toEqual({ value: null })
+  })
+
+  it('键入派发 oas-input，detail 携带当前显示文本（string，未提交语义），不写回受控值', () => {
+    const el = mount({ value: '5' })
+    const details: unknown[] = []
+    el.addEventListener('oas-input', (e: Event) => details.push((e as CustomEvent).detail))
+    input(el).value = '57'
+    input(el).dispatchEvent(new Event('input', { bubbles: true }))
+    expect(details).toEqual([{ value: '57' }])
+    expect(el.getAttribute('value')).toBe('5')
+  })
+
+  it('失焦派发 oas-blur：change 先提交，blur detail 携带提交后的新值', () => {
+    const el = mount({ value: '5' })
+    const details: unknown[] = []
+    el.addEventListener('oas-blur', (e: Event) => details.push((e as CustomEvent).detail))
+    type(el, '9')
+    input(el).dispatchEvent(new FocusEvent('blur'))
+    expect(details).toEqual([{ value: 9 }])
+    expect(el.getAttribute('value')).toBe('9')
+  })
+
+  it('formatter 场景 oas-input 携带显示文本（含格式装饰字符）', () => {
+    const el = mount({ value: '1234' })
+    el.formatter = (v) => `≈ ${v}`
+    let detail: unknown
+    el.addEventListener('oas-input', (e: Event) => (detail = (e as CustomEvent).detail))
+    input(el).value = '≈ 1234'
+    input(el).dispatchEvent(new Event('input', { bubbles: true }))
+    expect(detail).toEqual({ value: '≈ 1234' })
+  })
+})

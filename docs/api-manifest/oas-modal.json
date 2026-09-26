@@ -76,6 +76,10 @@
       "observed": true
     },
     {
+      "name": "z-index",
+      "observed": true
+    },
+    {
       "name": "centered",
       "type": "boolean",
       "observed": true

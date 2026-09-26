@@ -482,6 +482,129 @@ describe('OASCalendar', () => {
   })
 })
 
+describe('OASCalendar range 范围选择模式', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('起点点击：起点高亮 range-start，不派发 oas-change、不写 value', () => {
+    const el = mount({ range: '', 'page-show-date': '2026-08-01' })
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    day(el, '2026-08-05').click()
+    expect(details).toEqual([])
+    expect(el.hasAttribute('value')).toBe(false)
+    expect(day(el, '2026-08-05').classList.contains('range-start')).toBe(true)
+    expect(day(el, '2026-08-05').classList.contains('range-end')).toBe(false)
+  })
+
+  it('悬停预览：起点后悬停终点，中间段 in-range + 终点 range-end 高亮', () => {
+    const el = mount({ range: '', 'page-show-date': '2026-08-01' })
+    day(el, '2026-08-05').click()
+    day(el, '2026-08-10').dispatchEvent(new MouseEvent('mouseenter'))
+    expect(day(el, '2026-08-07').classList.contains('in-range')).toBe(true)
+    expect(day(el, '2026-08-10').classList.contains('range-end')).toBe(true)
+    expect(day(el, '2026-08-10').classList.contains('range-start')).toBe(false)
+  })
+
+  it('终点点击：写 value ["start","end"] 并派发 oas-change { start, end }（YYYY-MM-DD）', () => {
+    const el = mount({ range: '', 'page-show-date': '2026-08-01' })
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    day(el, '2026-08-05').click()
+    day(el, '2026-08-10').click()
+    expect(details.length).toBe(1)
+    expect(details[0]).toEqual({ start: '2026-08-05', end: '2026-08-10' })
+    expect(el.getAttribute('value')).toBe('["2026-08-05","2026-08-10"]')
+    // 提交后区间高亮保持
+    expect(day(el, '2026-08-05').classList.contains('range-start')).toBe(true)
+    expect(day(el, '2026-08-07').classList.contains('in-range')).toBe(true)
+    expect(day(el, '2026-08-10').classList.contains('range-end')).toBe(true)
+  })
+
+  it('逆序点击自动交换（终点早于起点）', () => {
+    const el = mount({ range: '', 'page-show-date': '2026-08-01' })
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    day(el, '2026-08-15').click()
+    day(el, '2026-08-08').click()
+    expect(details[0]).toEqual({ start: '2026-08-08', end: '2026-08-15' })
+    expect(el.getAttribute('value')).toBe('["2026-08-08","2026-08-15"]')
+  })
+
+  it('再次点击重开新一轮：清除已提交区间，新起点高亮，不发 change', () => {
+    const el = mount({ range: '', 'page-show-date': '2026-08-01' })
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    day(el, '2026-08-05').click()
+    day(el, '2026-08-10').click()
+    expect(el.getAttribute('value')).toBe('["2026-08-05","2026-08-10"]')
+    // 新一轮：点新起点
+    day(el, '2026-08-20').click()
+    expect(details.length).toBe(1) // 未再发 change
+    expect(el.hasAttribute('value')).toBe(false) // 旧区间清除
+    expect(day(el, '2026-08-20').classList.contains('range-start')).toBe(true)
+    expect(day(el, '2026-08-07').classList.contains('in-range')).toBe(false)
+    // 补齐新一轮终点
+    day(el, '2026-08-25').click()
+    expect(details.length).toBe(2)
+    expect(details[1]).toEqual({ start: '2026-08-20', end: '2026-08-25' })
+    expect(el.getAttribute('value')).toBe('["2026-08-20","2026-08-25"]')
+  })
+
+  it('value 属性预置范围（JSON 数组）：回显区间高亮', () => {
+    const el = mount({ range: '', value: '["2026-08-05","2026-08-15"]', 'page-show-date': '2026-08-01' })
+    expect(day(el, '2026-08-05').classList.contains('range-start')).toBe(true)
+    expect(day(el, '2026-08-10').classList.contains('in-range')).toBe(true)
+    expect(day(el, '2026-08-15').classList.contains('range-end')).toBe(true)
+  })
+
+  it('同日点击：单日区间（start === end）', () => {
+    const el = mount({ range: '', 'page-show-date': '2026-08-01' })
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    day(el, '2026-08-09').click()
+    day(el, '2026-08-09').click()
+    expect(details[0]).toEqual({ start: '2026-08-09', end: '2026-08-09' })
+    expect(day(el, '2026-08-09').classList.contains('range-start')).toBe(true)
+    expect(day(el, '2026-08-09').classList.contains('range-end')).toBe(true)
+  })
+
+  it('min/disabledDate 禁用日不可作为起止点', () => {
+    const el = mount({ range: '', 'page-show-date': '2026-08-01', min: '2026-08-05' })
+    day(el, '2026-08-01').click() // 禁用：网格层拦截 click
+    expect(day(el, '2026-08-01').classList.contains('range-start')).toBe(false)
+    // 可选日照常作为起点
+    day(el, '2026-08-06').click()
+    expect(day(el, '2026-08-06').classList.contains('range-start')).toBe(true)
+  })
+
+  it('区间样式走 token：range-start/end 主色实底、in-range 主色浅底（CSS 规则存在性断言）', () => {
+    const el = mount({ range: '', 'page-show-date': '2026-08-01' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(
+      /\[part='grid'\] \.day\.range-start,\s*\[part='grid'\] \.day\.range-end\s*\{[^}]*var\(--oas-color-primary\)/,
+    )
+    expect(css).toMatch(/\[part='grid'\] \.day\.in-range\s*\{[^}]*var\(--oas-color-primary\)/)
+  })
+
+  it('无 range 属性：单选模式行为不回归', () => {
+    const el = mount({ value: '2026-08-09', 'page-show-date': '2026-08-01' })
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    day(el, '2026-08-15').click()
+    expect(details).toEqual([{ value: '2026-08-15' }])
+    expect(el.getAttribute('value')).toBe('2026-08-15')
+    expect(day(el, '2026-08-15').classList.contains('selected')).toBe(true)
+  })
+})
+
 function toISO(d: Date): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')

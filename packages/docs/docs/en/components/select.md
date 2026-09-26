@@ -8,6 +8,16 @@ A dropdown selector supporting single/multiple selection, groups, clearable, rem
   <oas-select placeholder="Select a fruit" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"}]'></oas-select>
 </DemoBlock>
 
+## Accessible Name (label)
+
+<DemoBlock title="label (accessible name)">
+  <oas-select id="select-label-set" label="City" placeholder="Select a city" options='[{"label":"Beijing","value":"bj"},{"label":"Shanghai","value":"sh"}]'></oas-select>
+  <oas-select id="select-label-fallback" placeholder="No label, falls back to placeholder" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-select>
+  <span id="select-label-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 280px"></span>
+</DemoBlock>
+
+The `label` attribute provides the trigger's accessible name (`aria-label`): when set, screen readers announce it and it takes priority over the placeholder; when unset, it falls back to `placeholder`. The visible field-label position is handled by `oas-form-item`, and native `label for` association (click-to-focus) goes through the form-associated channel.
+
 ## Preset Value
 
 <DemoBlock title="Preset value">
@@ -39,6 +49,18 @@ In multiple mode `value` is a JSON array; selected items are shown as tags that 
 </DemoBlock>
 
 `size` supports `small` / `medium` (default) / `large`; control height and font size follow the global size tokens. When not set explicitly, the nearest `oas-config-provider` `size` injection applies (global density sync). Use `small` inside tables or `large` on filter bars directly.
+
+## Variants
+
+<DemoBlock title="variant">
+  <oas-space size="small">
+    <oas-select placeholder="outlined (default)" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-select>
+    <oas-select variant="filled" placeholder="filled" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-select>
+    <oas-select variant="borderless" placeholder="borderless" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+`variant` mirrors the `oas-input` three-value variants: `outlined` (default border) / `filled` (tinted background, border appears on focus/open) / `borderless` (no border, no background — for plain-text embedding or low-chrome filter bars); invalid values silently fall back to the default. The `status` semantic color takes precedence over the variant background.
 
 ## Status
 
@@ -513,6 +535,19 @@ onMounted(() => {
   focusEl?.addEventListener('oas-blur', () => {
     focusLog.textContent = 'oas-blur'
   })
+
+  // Accessible name (label) demo: read the trigger aria-label (label set vs placeholder fallback)
+  const readSelectLabel = () => {
+    const a = document.getElementById('select-label-set')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
+    const b = document.getElementById('select-label-fallback')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
+    const out = document.getElementById('select-label-output')
+    if (a !== undefined && b !== undefined && a !== null && b !== null && out) {
+      out.textContent = `aria-label: set "${a}" / fallback "${b}"`
+    } else {
+      setTimeout(readSelectLabel, 60)
+    }
+  }
+  readSelectLabel()
 })
 </script>
 
@@ -537,6 +572,7 @@ onMounted(() => {
 | `debounce` | Remote search input debounce in ms (default 0 = immediate; only debounces oas-input in remote mode, local filtering stays instant) | — | — |
 | `disabled` | Disabled | `boolean` | — |
 | `item-height` | Fixed row height (px) when virtual scrolling | `string` | `36` |
+| `label` | The trigger's accessible name (aria-label), taking priority over the placeholder | `string` | — |
 | `loading` | Remote loading placeholder (use with `remote`) | `boolean` | — |
 | `max-count` | Multi-select limit: at the limit unselected options are disabled-greyed and oas-exceed-limit fires; selected items stay removable; single-select unchanged | — | — |
 | `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing) | `boolean` | — |
@@ -553,6 +589,7 @@ onMounted(() => {
 | `size` | Size preset `small` / `medium` (default) / `large`: control height/font/chip height scale | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the host | `string` | — |
 | `value` | Current value (JSON array in multiple mode) | — | — |
+| `variant` | Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently; status colors take precedence | `string` | — |
 | `virtual` | Virtual scrolling for large datasets: renders only the visible window (reuses oas-virtual-list); options with a `group` field fall back to full rendering | `boolean` | — |
 
 #### Events

@@ -15,6 +15,11 @@
       "observed": true
     },
     {
+      "name": "range",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "min",
       "type": "string",
       "default": "",
@@ -76,7 +81,7 @@
     },
     {
       "name": "oas-change",
-      "detail": "{ value: iso } | { value }"
+      "detail": "{ start: startIso, end: endIso } | { value: iso } | { value }"
     }
   ],
   "slots": [

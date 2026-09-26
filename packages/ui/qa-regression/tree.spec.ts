@@ -374,3 +374,70 @@ test('tree 触屏：展开钮 coarse 热区到 44px（::before 外扩），视�
   expect(r.toggleWidth).toBe('20px')
   expect(r.toggleHeight).toBe('20px')
 })
+
+test('tree oas-expand：展开/收起事件可见反馈（demo 状态行跟随）', async ({ page }) => {
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tree#tree-expand-event')
+  // 展开 a-1 → 状态行显示「展开 子节点 1」
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-tree#tree-expand-event')!
+    const rows = [...el.shadowRoot!.querySelectorAll('[part="row"]')]
+    const rowA1 = rows.find((r) => r.getAttribute('data-key') === 'a-1')!
+    const toggle = rowA1.querySelector('[part="toggle"]') as HTMLElement
+    toggle.click()
+  })
+  await page.waitForFunction(() =>
+    (document.querySelector('#tree-expand-status')?.textContent ?? '').includes('子节点 1'),
+  )
+  // 收起 → 状态行显示「收起」
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-tree#tree-expand-event')!
+    const rows = [...el.shadowRoot!.querySelectorAll('[part="row"]')]
+    const rowA1 = rows.find((r) => r.getAttribute('data-key') === 'a-1')!
+    const toggle = rowA1.querySelector('[part="toggle"]') as HTMLElement
+    toggle.click()
+  })
+  await page.waitForFunction(() => (document.querySelector('#tree-expand-status')?.textContent ?? '').includes('收起'))
+})
+
+test('tree 拖拽生命周期事件：dragstart/dragover/dragleave/dragend 驱动 demo 状态行（事件派发链路）', async ({
+  page,
+}) => {
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tree#tree-dnd')
+  const dispatch = (types: string[]) =>
+    page.evaluate((tys) => {
+      const el = document.querySelector('oas-tree#tree-dnd')!
+      const rows = [...el.shadowRoot!.querySelectorAll('[part="row"]')]
+      const src = rows.find((r) => r.getAttribute('data-key') === 'item-1')!
+      const dst = rows.find((r) => r.getAttribute('data-key') === 'item-2')!
+      const mk = (type: string, y: number) => new MouseEvent(type, { bubbles: true, cancelable: true, clientY: y })
+      dst.getBoundingClientRect = () =>
+        ({
+          top: 0,
+          bottom: 100,
+          left: 0,
+          right: 100,
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+          toJSON: () => ({}),
+        }) as DOMRect
+      for (const t of tys) {
+        if (t === 'dragstart' || t === 'dragend') src.dispatchEvent(mk(t, 0))
+        else dst.dispatchEvent(mk(t, 10))
+      }
+    }, types)
+  // dragstart + dragover：状态行显示目标落点
+  await dispatch(['dragstart', 'dragover'])
+  await page.waitForFunction(() => (document.querySelector('#tree-dnd-status')?.textContent ?? '').includes('item-2'))
+  // dragleave：离开落点反馈
+  await dispatch(['dragleave'])
+  await page.waitForFunction(() => (document.querySelector('#tree-dnd-status')?.textContent ?? '').includes('离开'))
+  // dragend：状态行复位默认提示
+  await dispatch(['dragend'])
+  await page.waitForFunction(() =>
+    (document.querySelector('#tree-dnd-status')?.textContent ?? '').includes('拖拽节点到目标行'),
+  )
+})

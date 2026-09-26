@@ -84,6 +84,17 @@
       "observed": true
     },
     {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "field-names",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "open",
       "type": "boolean",
       "observed": true
@@ -110,6 +121,14 @@
     }
   ],
   "events": [
+    {
+      "name": "oas-focus",
+      "detail": "{ value: this.isMultiple() ? this.currentPaths() : this.currentPath() }"
+    },
+    {
+      "name": "oas-blur",
+      "detail": "{ value: this.isMultiple() ? this.currentPaths() : this.currentPath() }"
+    },
     {
       "name": "oas-change",
       "detail": "{ value: paths } | { value: path } | { value: [] }"

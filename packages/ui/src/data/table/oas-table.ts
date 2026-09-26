@@ -761,6 +761,7 @@ export class OASTableBase extends OASElement {
       'current',
       'filter-values',
       'summary-scope',
+      'show-header',
     ]
   }
 
@@ -1122,7 +1123,10 @@ export class OASTableBase extends OASElement {
 
     const checkable = this.hasAttr('checkable')
     const single = this.selectionSingle()
-    if (this.headerDepth() > 1) {
+    // show-header：表头显隐开关（默认 true 现状；false 时 thead 不渲染表头行，
+    // 列配置仍作用于数据行对齐；固定列 / 多级表头 / 虚拟滚动各形态统一走此开关）
+    const showHeader = this.getAttr('show-header', 'true') !== 'false'
+    if (showHeader && this.headerDepth() > 1) {
       // 多级表头：按列树深渲染多行（组列 colspan 合并、叶子列 rowspan 盖到底部）
       const depth = this.headerDepth()
       for (let r = 0; r < depth; r++) {
@@ -1153,7 +1157,7 @@ export class OASTableBase extends OASElement {
         }
         head.appendChild(row)
       }
-    } else {
+    } else if (showHeader) {
       // 扁平表头（单行，向后兼容）
       const tr = document.createElement('tr')
       if (checkable) tr.appendChild(this.buildCheckAllTh(layout, flat, rowKey, selected, 1, single))

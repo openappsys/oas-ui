@@ -433,6 +433,55 @@ input:disabled:hover {
   display: none;
 }
 
+/* ---- loading 加载态：尾部 spinner（不禁用输入；与 clearable 共存时 loading 优先显示） ---- */
+.spinner {
+  position: absolute;
+  inset-inline-end: var(--oas-space-2);
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--oas-color-text-secondary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: oas-input-spin 0.8s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+.spinner[hidden] {
+  display: none;
+}
+@keyframes oas-input-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+/* loading 时 spinner 占据行尾槽位（同清除按钮位）：suffix 位置与 input 让位按「有行尾控件」协议对齐 */
+:host([data-loading]) :is(input, .measure) {
+  padding-inline-end: var(--oas-space-8, 40px);
+}
+:host([data-loading]) [part='suffix-icon'] {
+  inset-inline-end: var(--oas-space-8, 40px);
+}
+:host([data-loading]) [part='suffix'] {
+  inset-inline-end: calc(var(--oas-space-8, 40px) + 16px);
+}
+:host([data-loading]:not([suffix-icon])) [part='suffix'] {
+  inset-inline-end: var(--oas-space-8, 40px);
+}
+:host([data-loading][suffix-text]) :is(input, .measure),
+:host([data-loading][data-slot-suffix]) :is(input, .measure),
+:host([data-loading][suffix-icon]) :is(input, .measure) {
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+}
+/* show-password 眼睛在场时 spinner 移到眼睛左侧让位（镜像清除按钮的同款协议） */
+:host([show-password][type='password']) .spinner {
+  inset-inline-end: var(--oas-space-8, 40px);
+}
+
 /* ---- show-password 眼睛切换按钮 ---- */
 .eye-btn {
   position: absolute;
@@ -567,6 +616,7 @@ export class OASInput extends OASFormElement {
       'show-password',
       'maxlength',
       'show-count',
+      'loading',
       'disabled-skip',
       'size',
       'variant',
@@ -607,10 +657,14 @@ export class OASInput extends OASFormElement {
   private eyeBtn: HTMLButtonElement | null = null
   private countEl: HTMLElement | null = null
   private measureEl: HTMLElement | null = null
+  private spinnerEl: HTMLElement | null = null
   /** show-password 明文/密文状态（仅 type=password 时生效） */
   private revealed = false
   /** 上次提交值（oas-change 的变更基线：受控 value 写入 / blur / Enter 提交时刷新） */
   private committedValue = ''
+
+  /** 上次 update() 见到的 value 属性值（未提交输入保护：属性未变的 update 不回写内层） */
+  private lastAttrValue: string | null = null
   /** 最近一次已知的原始（未格式化）值：formatter 移除时恢复显示用 */
   private lastRawValue = ''
   /** 超限状态（oas-validate 只在翻转时派发；首帧建立基线不派发） */
@@ -641,6 +695,7 @@ export class OASInput extends OASFormElement {
                 ${iconRegistry['eye']}
               </svg>
             </button>
+            <span class="spinner" part="spinner" aria-hidden="true" hidden></span>
             <span class="count" part="count" hidden></span>
           </span>
           <span class="addon" part="append" hidden><slot name="append"><span class="addon-fallback" data-fallback></span></slot></span>
@@ -656,6 +711,7 @@ export class OASInput extends OASFormElement {
     this.eyeBtn = this.shadow.querySelector('.eye-btn')
     this.countEl = this.shadow.querySelector('.count')
     this.measureEl = this.shadow.querySelector('.measure')
+    this.spinnerEl = this.shadow.querySelector('.spinner')
 
     this.inputEl?.addEventListener('input', () => {
       const pos = this.inputEl!.selectionStart
@@ -736,6 +792,11 @@ export class OASInput extends OASFormElement {
     observeSlot('suffix', () => this.syncAffixes())
     observeSlot('prepend', () => this.syncAddons())
     observeSlot('append', () => this.syncAddons())
+
+    // autofocus：转发到内部 input（原生 autofocus 不穿透 shadow，挂载后手动聚焦一次）
+    if (this.hasAttr('autofocus')) {
+      queueMicrotask(() => this.inputEl?.focus())
+    }
   }
 
   protected override render(): void {
@@ -780,11 +841,17 @@ export class OASInput extends OASFormElement {
     if (status === 'error') i.setAttribute('aria-invalid', 'true')
     else i.removeAttribute('aria-invalid')
 
-    // 受控值 + formatter 显示通道：display = formatter(raw)，事件/提交基线走原始值
-    this.lastRawValue = value
-    const display = this._formatter ? this._formatter(value) : value
-    if (i.value !== display) i.value = display
-    this.committedValue = value
+    // 受控值 + formatter 显示通道：display = formatter(raw)，事件/提交基线走原始值。
+    // 未提交输入保护：value 属性未变时（typing 中的无关 update，如 loading/status 切换）不从属性
+    // 回写内层——否则用户正在输入的未提交文本被旧属性值抹掉（loading 远程校验主场景实抓）
+    const attrValueChanged = this.lastAttrValue !== value
+    this.lastAttrValue = value
+    if (attrValueChanged) {
+      this.lastRawValue = value
+      const display = this._formatter ? this._formatter(value) : value
+      if (i.value !== display) i.value = display
+      this.committedValue = value
+    }
     // 原生表单数据同步（form-associated；无 name 浏览器自动不提交）
     this.syncFormValue()
     this.syncValidity()
@@ -813,6 +880,7 @@ export class OASInput extends OASFormElement {
       this.clearBtn.hidden = !this.shouldShowClear()
     }
     this.syncPasswordReveal()
+    this.syncLoading()
     this.syncCount()
     this.syncAddons()
     this.syncAffixes()
@@ -883,9 +951,21 @@ export class OASInput extends OASFormElement {
       this.hasAttr('clearable') &&
       !this.injectDisabled() &&
       !this.hasAttr('readonly') &&
+      // loading 优先：加载中清除按钮让位给 spinner（值不变动，避免加载期误清）
+      !this.hasAttr('loading') &&
       this.inputEl !== null &&
       this.inputEl.value !== ''
     )
+  }
+
+  /** loading 加载态：尾部 spinner + aria-busy（不禁用输入）；镜像 data-loading 驱动让位 CSS。
+   *  aria-busy 用 set/remove（对齐 pin-input/tag pattern）：非 loading 不留宿主属性，SSR 快照零扰动 */
+  private syncLoading(): void {
+    const loading = this.hasAttr('loading')
+    this.toggleAttribute('data-loading', loading)
+    if (loading) this.setAttribute('aria-busy', 'true')
+    else this.removeAttribute('aria-busy')
+    if (this.spinnerEl) this.spinnerEl.hidden = !loading
   }
 
   private syncClearVisibility(): void {

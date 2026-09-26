@@ -60,6 +60,16 @@
 
 存在内容且设置 `clearable` 时显示清除按钮，点击后清空并聚焦，派发 `oas-clear`。
 
+## 加载态
+
+<DemoBlock title="loading 加载态（不禁用输入）">
+  <oas-input id="input-loading" loading clearable value="远程校验中…" style="width: 240px"></oas-input>
+  <oas-button id="btn-input-loading" size="small">切换 loading</oas-button>
+  <span id="input-loading-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
+</DemoBlock>
+
+设置 `loading` 后输入框行尾显示 spinner 并同步 `aria-busy="true"`：**输入不被禁用**（用户可继续编辑，适合远程校验/联想请求场景）；与 `clearable` 共存时 spinner 优先、清除按钮让位，退出 `loading` 后恢复。
+
 ## 禁用与只读
 
 <DemoBlock title="disabled / readonly">
@@ -171,6 +181,17 @@ onMounted(() => {
     const el = document.getElementById('input-search-output'); if (el) el.textContent = '触发搜索'
   })
 
+  // loading 加载态 demo：切换 loading 属性并同步输出
+  const loadingEl = document.getElementById('input-loading')
+  const loadingOut = document.getElementById('input-loading-output')
+  document.getElementById('btn-input-loading')?.addEventListener('click', () => {
+    if (!loadingEl) return
+    const next = loadingEl.hasAttribute('loading')
+    if (next) loadingEl.removeAttribute('loading')
+    else loadingEl.setAttribute('loading', '')
+    if (loadingOut) loadingOut.textContent = next ? 'loading 已退出（clear 恢复）' : 'loading 中（clear 让位）'
+  })
+
   // allow-over-max 超限 validate 反馈
   const over = document.getElementById('input-overmax')
   const overOut = document.getElementById('input-overmax-output')
@@ -258,7 +279,7 @@ onMounted(() => {
   <oas-input name="nick" minlength="2" spellcheck="false" enterkeyhint="done" placeholder="昵称（至少 2 字）" style="width: 240px"></oas-input>
 </DemoBlock>
 
-以下原生属性镜像到 shadow 内原生 input（宿主移除后同步解除）：`name` / `autocomplete` / `autofocus` / `inputmode` / `minlength` / `required` / `spellcheck` / `enterkeyhint` / `pattern`。可用于原生表单语义、自动填充与移动端键盘优化（`inputmode` / `enterkeyhint`）。
+以下原生属性镜像到 shadow 内原生 input（宿主移除后同步解除）：`name` / `autocomplete` / `autofocus` / `inputmode` / `minlength` / `required` / `spellcheck` / `enterkeyhint` / `pattern`。可用于原生表单语义、自动填充与移动端键盘优化（`inputmode` / `enterkeyhint`）。其中 `autofocus` 由组件在挂载后转发聚焦一次（原生 autofocus 不穿透 shadow DOM），页面加载即可聚焦输入框。
 
 ## 焦点与提交事件
 
@@ -367,10 +388,12 @@ onMounted(() => {
 | `auto-width` | 宽度随内容自适应（mirror 测宽；空值回落 placeholder 宽），常配 auto-width-min/max 钳制 | `boolean` | — |
 | `auto-width-max` | auto-width 最大宽度 px 或百分比（默认 100%） | — | — |
 | `auto-width-min` | auto-width 最小宽度 px（默认 72） | — | — |
+| `autofocus` | 挂载后自动聚焦内层输入框（原生 autofocus 不穿透 shadow，组件转发） | `boolean` | — |
 | `clearable` | 可清空 | `boolean` | — |
 | `count-position` | 字数计数位置：`outside`（默认，框外）/ `inside`（输入区内右侧） | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `label` | 可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」） | — | — |
+| `loading` | 加载态：行尾 spinner + aria-busy（不禁用输入）；与 clearable 共存时优先显示 | `boolean` | — |
 | `maxlength` | 最大输入长度（透传原生 maxlength） | `string` | — |
 | `placeholder` | 占位提示 | `string` | — |
 | `prefix-icon` | 前置图标名 | `string` | — |

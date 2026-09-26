@@ -81,3 +81,19 @@ test('input-number prefix：内嵌在输入框内（非框外贴边）', async (
   expect(r.prefix!.left, 'prefix 左缘应在 input 左缘之内').toBeGreaterThanOrEqual(0)
   expect(r.prefix!.right, 'prefix 右缘应在 input 内').toBeLessThanOrEqual(0)
 })
+
+// ---- 能力缺口 P1：oas-focus / oas-blur / oas-input 事件组 ----
+
+test('input-number 事件组：focus/blur/input 在 demo 输出区有可见反馈（提交制语义正确）', async ({ page }) => {
+  await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#num-event')
+  // 真实点击聚焦 → oas-focus（携带已提交值 5）
+  await page.locator('#num-event').click()
+  await expect(page.locator('#num-output')).toHaveText('oas-focus: 5')
+  // 键入 → oas-input 实时携带显示文本（未提交）
+  await page.keyboard.type('7')
+  await expect(page.locator('#num-output')).toHaveText('oas-input: "57"（未提交）')
+  // 点击输出区让输入框失焦 → change 先提交（57 → 钳制 max 10），oas-blur 携带提交后的值
+  await page.locator('#num-output').click()
+  await expect(page.locator('#num-output')).toHaveText('oas-blur: 10（提交后）')
+})

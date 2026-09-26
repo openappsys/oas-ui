@@ -146,13 +146,16 @@
       "status": "Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation)",
       "trigger-on-focus": "Show suggestions on focus (datalist mental model; off by default — input-first)",
       "value": "Preset value",
-      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)"
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
+      "variant": "Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently"
     },
     "events": {
       "oas-change": "Selected or cleared, `detail: { value, label }`",
       "oas-clear": "Clear button clicked, `detail: { value }` (value before clearing)",
       "oas-input": "While typing (after debounce), `detail: { value }`",
-      "oas-option-render": "Dispatched after each option row renders, `detail: { index, option, element }`; the host can rewrite `element` (icons/rich text)"
+      "oas-option-render": "Dispatched after each option row renders, `detail: { index, option, element }`; the host can rewrite `element` (icons/rich text)",
+      "oas-focus": "Dispatched on focus with the current input text",
+      "oas-blur": "Dispatched on blur with the current input text"
     },
     "slots": {
       "empty": "Custom no-match empty state (replaces the default text)",
@@ -400,7 +403,13 @@
       "loading-text": "Text shown while loading (e.g. \"Submitting…\"); replaces the label content when set",
       "disabled-focusable": "Visually disabled but stays focusable/hoverable (aria-disabled + click intercepted), for tooltips explaining why",
       "download": "Passthrough `download` attribute in link mode (href) for file-download buttons",
-      "rel": "Passthrough `rel` attribute in link mode (pair `noopener` with `target=\"_blank\"`)"
+      "rel": "Passthrough `rel` attribute in link mode (pair `noopener` with `target=\"_blank\"`)",
+      "html-type": "Native form behavior: `button` (default, none) / `submit` submits the containing or `form`-targeted form / `reset` resets it (bridged via a proxy submitter)",
+      "form": "Associated form id for buttons outside the target form (native form-attribute association)",
+      "formaction": "Target URL for this submission (overrides the form action)",
+      "formmethod": "HTTP method for this submission (get/post/dialog, overrides the form method)",
+      "formnovalidate": "Skip native validation for this submission only",
+      "formtarget": "Browsing target for the response (_blank/_self etc., overrides the form target)"
     },
     "events": {
       "oas-click": "Click, `detail: { originalEvent }`"
@@ -444,7 +453,8 @@
       "page-show-date": "Panel month anchor (ISO `yyyy-MM` or `yyyy-MM-dd`): anchors the displayed month initially/on change, taking precedence over value; removing it falls back to the value month",
       "readonly": "Read-only: page navigation and panel drill-down stay available, but picking dates / Enter does not commit",
       "show-week-number": "Show the ISO week number column",
-      "value": "Selected value (ISO)"
+      "value": "Selected value (ISO)",
+      "range": "Range selection mode: two-click picking with hover preview and range highlighting; oas-change carries `{ start, end }`; value mirrors a JSON array"
     },
     "events": {
       "oas-cell-render": "Dispatched when each day cell renders, `detail: { date, element }` (element is the day button; host can append markers/badges/rich content)",
@@ -508,7 +518,8 @@
       "pause-on-hover": "Pause autoplay on hover/focus (default true; `\"false\"` disables; always pauses when the page is hidden)",
       "pause-button": "Show an explicit pause/play button (default off; click toggles autoplay pause/resume and takes priority over hover pausing; clicking play while autoplay is off enables it)",
       "slides-per-view": "Slides per page (default 1; index is page-based, last page aligns to the track end)",
-      "type": "Carousel layout type: `\"card\"` enables card mode — the current card is centered as the main body with neighboring cards peeking on both sides (scaled down, dimmed); clicking a neighbor card switches to it directly; mutually exclusive with `slides-per-view`/`effect`/`direction` (card mode wins); card width/gap/neighbor scale via `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale`"
+      "type": "Carousel layout type: `\"card\"` enables card mode — the current card is centered as the main body with neighboring cards peeking on both sides (scaled down, dimmed); clicking a neighbor card switches to it directly; mutually exclusive with `slides-per-view`/`effect`/`direction` (card mode wins); card width/gap/neighbor scale via `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale`",
+      "draggable": "Pointer/touch drag switching: flip past 25% of the viewport or on a quick flick, spring back otherwise; on by default on touch devices, off on PC; `\"false\"` disables explicitly"
     },
     "events": {
       "oas-change": "Current screen changed, `detail: { index }`"
@@ -535,13 +546,17 @@
       "size": "Size preset `small` / `medium` (default) / `large`",
       "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid",
       "open": "Controlled open state (single source of truth); in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown",
-      "max-tag-count": "Collapse multi-select tags beyond the count into +N (with title listing hidden items)"
+      "max-tag-count": "Collapse multi-select tags beyond the count into +N (with title listing hidden items)",
+      "loading": "Loading state: trigger spinner + aria-busy; the panel shows a loading placeholder",
+      "field-names": "Field-alias JSON (`{ label, value, children, disabled }`) matching the tree-select contract; lazy-load results are mapped alike"
     },
     "events": {
       "oas-change": "Selection change, `detail: { value }` (path array)",
       "oas-open-change": "Open state flips, `detail: { open }`",
       "oas-search": "Fires on filterable input, `detail: { value }`",
-      "oas-clear": "Fires on clear-button click; `detail` is the pre-clear value"
+      "oas-clear": "Fires on clear-button click; `detail` is the pre-clear value",
+      "oas-focus": "Dispatched on trigger focus; `detail.value` shares the oas-change shape (inner focus moves do not false-fire)",
+      "oas-blur": "Dispatched on trigger blur; `detail.value` shares the oas-change shape (inner focus moves do not false-fire)"
     },
     "slots": {}
   },
@@ -568,7 +583,9 @@
       "description": "Secondary text rendered below the label; a `slot=\"description\"` distribution takes priority",
       "label-position": "Label position: `end` (default, box left / text right) / `start` (text left; mirrors automatically in RTL)",
       "check-all": "In-group select-all marker: clicking toggles all items, item changes write back its checked/indeterminate state; the item never joins the group value (cross-component attribute read by oas-checkbox-group)",
-      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner input)"
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner input)",
+      "true-value": "Mapped value when checked: drives detail.value, the value getter and FormData submission (not effective inside a checkbox-group)",
+      "false-value": "Mapped value when unchecked (detail.value / value getter; not added to FormData per native unchecked semantics; not effective inside a checkbox-group)"
     },
     "events": {
       "oas-change": "Checked change, `detail: { checked, value }`",
@@ -976,7 +993,8 @@
       "resize-min": "Resize lower bound (px, default 160)",
       "snap-points": "Snap points array (comma-separated; values ≤1 are viewport-height fractions, >1 are pixels, e.g. `0.35,0.6`): bottom/top drawers snap to the nearest point on release and start at the highest point; bottom + `snap-points` implies gestures",
       "swipeable": "Enable gestures: drag from the handle/title bar to close (past 35% of the panel size or a fast fling); implied by `snap-points` (bottom/top)",
-      "z-index": "Explicit z-index base: stacked on `--oas-z-index-base` (the panel sits 1 above the mask); defaults to the overlay tier `--oas-z-overlay`, incrementing with stack depth when nested"
+      "z-index": "Explicit z-index base: stacked on `--oas-z-index-base` (the panel sits 1 above the mask); defaults to the overlay tier `--oas-z-overlay`, incrementing with stack depth when nested",
+      "height": "Explicit height for vertical drawers (placement top/bottom), overriding width/size; ignored by left/right"
     },
     "events": {
       "oas-close": "Close: cancel button / ✕ / mask click / Esc",
@@ -987,7 +1005,8 @@
       "oas-opened": "[Compat alias] Open animation finished, same as oas-after-open; will be removed later",
       "oas-before-close": "Emitted before a close request (✕ / cancel / mask / Esc / OK / swipe), `cancelable`, `detail: { source }`; preventDefault blocks the close",
       "oas-open": "Emitted when opening starts (after the scroll lock, before initial focus); no `detail`",
-      "oas-resize": "Emitted after drag-resize / arrow-key adjust / snap; `detail: { size }` (current main-axis size in px)"
+      "oas-resize": "Emitted after drag-resize / arrow-key adjust / snap; `detail: { size }` (current main-axis size in px)",
+      "oas-cancel": "Dispatched on cancel-semantic closes (cancel button / mask / Esc), `detail: { source }`"
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present",
@@ -1256,11 +1275,16 @@
       "label-align": "Label alignment: `left` / `right` / `top` (default `top` in grid mode; forced to `left` in inline mode)",
       "label-width": "Label column width when `label-align` is `left`/`right` (ignored in inline mode, auto)",
       "layout": "Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical`; `inline` attribute takes precedence when present",
-      "rules": "Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`"
+      "rules": "Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`",
+      "disabled": "Whole-form disable: fields are disabled via their form-associated channel (no write-back of the disabled attribute); submission skips validation while disabled",
+      "scroll-to-first-error": "On validation failure, focus the first invalid field and smooth-scroll it into view (instant jump under prefers-reduced-motion)",
+      "validate-trigger": "When per-field live validation fires: `change` (default) / `blur` / `input`; a rule's `validateTrigger` overrides per field; submission always validates everything",
+      "initial-values": "Initial values JSON (the `initialValues` property takes precedence): written into fields after mount; `reset()` restores them"
     },
     "events": {
       "oas-submit": "Validation passed, `detail: { values }`",
-      "oas-validate-fail": "Validation failed, `detail: { errors, values }`"
+      "oas-validate-fail": "Validation failed, `detail: { errors, values }`",
+      "oas-values-change": "Dispatched when any field value changes, `detail: { name, value, values }` (values is a whole-form snapshot; initial-value writes and reset() are silent)"
     },
     "slots": {
       "": "Form content (`oas-form-item` and friends)"
@@ -1451,7 +1475,9 @@
       "auto-width-max": "Maximum width for auto-width, px or percentage (default 100%)",
       "prefix-text": "Inline text before the input value (plain HTML may use the legacy alias prefix)",
       "suffix-text": "Inline text after the input value (plain HTML may use the legacy alias suffix)",
-      "required": "Required marker (native passthrough to the inner input; drives the valueMissing validation chain)"
+      "required": "Required marker (native passthrough to the inner input; drives the valueMissing validation chain)",
+      "autofocus": "Auto-focus the inner input after mount (native autofocus does not cross shadow DOM, so the component forwards it)",
+      "loading": "Loading state: trailing spinner with aria-busy (input stays editable); takes precedence over the clear button"
     },
     "events": {
       "oas-clear": "Cleared by click, `detail: { originalEvent }`",
@@ -1495,7 +1521,10 @@
     },
     "events": {
       "oas-change": "Change on step or blur, `detail: { value }` (number)",
-      "oas-clear": "Fires when the clear button is clicked (value returns to the empty state)"
+      "oas-clear": "Fires when the clear button is clicked (value returns to the empty state)",
+      "oas-focus": "Dispatched on focus, `detail: { value }` (current committed value)",
+      "oas-blur": "Dispatched on blur after the commit, `detail: { value }` carries the committed value",
+      "oas-input": "Dispatched on every keystroke, `detail: { value }` is the current display text (uncommitted)"
     },
     "slots": {
       "prefix": "Prefix content slot (not part of value parsing)",
@@ -1710,7 +1739,8 @@
       "value": "Current selected value. Plain string means global single-select (no group, legacy-compatible); JSON object string (e.g. `{\"sort\":\"name\",\"view\":\"list\"}`) scopes per group id — the `value` of a `type:\"group\"` item is the group id, picking inside a group only updates that group",
       "max-height": "Max height of a long menu; scrolls internally beyond it (number gets px appended)",
       "expanded": "Controlled expanded set (JSON array string; which submenus are open in inline mode); internally managed when uncontrolled",
-      "accordion": "Accordion mutual exclusion (inline mode: only one sibling submenu open at a time)"
+      "accordion": "Accordion mutual exclusion (inline mode: only one sibling submenu open at a time)",
+      "open-on-hover": "Hover-opened submenus in vertical/inline modes (~150ms open / ~300ms close delay); clicks unchanged; horizontal and collapsed flyout unaffected"
     },
     "events": {
       "oas-select": "Select an item, `detail: { value, kind? }`. `kind` only appears for action items (`kind: \"action\"`) as \"action\"; radio items omit `detail.kind`",
@@ -1869,7 +1899,8 @@
       "role": "Dialog ARIA role (default `dialog`; set `alertdialog` for semantic confirmation scenarios)",
       "size": "Size preset: `sm` (400px) / `lg` (720px); an explicit `width` wins; invalid values fall back to the theme default 520px",
       "transition": "Open/close animation preset: `zoom` (default, fade + scale, scale origin follows the click position before opening) / `fade` (opacity only) / `none` (no transition, instant)",
-      "trigger": "Declarative trigger element id: clicking the element sets `visible` to open the modal (does not touch the controlled model); silently retries on later updates when the element is missing"
+      "trigger": "Declarative trigger element id: clicking the element sets `visible` to open the modal (does not touch the controlled model); silently retries on later updates when the element is missing",
+      "z-index": "Explicit z-index base stacked on `--oas-z-index-base` (dialog sits 1 above the mask; defaults to the `--oas-z-modal` tier)"
     },
     "events": {
       "oas-cancel": "Cancel: cancel button / ✕ / mask click / Esc",
@@ -2393,7 +2424,9 @@
       "readonly": "Read-only: focusable and copyable, no dropdown, value immutable (clear/remove buttons hidden)",
       "debounce": "Remote search input debounce in ms (default 0 = immediate; only debounces oas-input in remote mode, local filtering stays instant)",
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
-      "name": "Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent)"
+      "name": "Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent)",
+      "label": "The trigger's accessible name (aria-label), taking priority over the placeholder",
+      "variant": "Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently; status colors take precedence"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",
@@ -2770,7 +2803,8 @@
       "multi-sort": "Multi-column sort (JSON array: [{ key, order }], applied in array order)",
       "page-size": "Rows per page (built-in pagination, default 10)",
       "pagination": "Built-in pagination switch (footer pager; leave unset when the host paginates)",
-      "summary-scope": "Summary aggregation scope: `all` (default, full dataset) / `page` (current page)"
+      "summary-scope": "Summary aggregation scope: `all` (default, full dataset) / `page` (current page)",
+      "show-header": "Toggles the header (default true); with `false` no header row is rendered while column configuration still aligns data cells"
     },
     "events": {
       "oas-check": "Checkbox selection change, `detail: { keys: string[] }`",
@@ -2836,7 +2870,8 @@
       "icon": "Icon content for a tab item (replaces the panel's icon attribute)",
       "label": "Label content for a tab item (not projected through the panel's default slot)",
       "close-icon": "Close button icon content (closable tabs)",
-      "add-icon": "Add button icon content (addable tabs)"
+      "add-icon": "Add button icon content (addable tabs)",
+      "actions": "Action area fixed at the right of the tab bar, outside the scrollable tablist (after the + button when addable; no space when empty)"
     }
   },
   "oas-tag": {
@@ -3374,7 +3409,12 @@
       "oas-node-render": "Dispatched for each rendered node row, `detail: { node, element }` (element is the node label container; the host can rewrite it into icon / rich text)",
       "oas-node-rename": "Inline rename committed (Enter / blur), `detail: { key, label, oldLabel }`; data stays host-controlled — the component does not mutate the model, so the new label only shows once the host updates `data` (keeps the old value otherwise; Esc cancel does not emit)",
       "oas-select": "Node selected, `detail: { key, selected }`",
-      "oas-load-error": "Lazy load failed, `detail: { key, error }` where `error` is the error message string (loading clears, clickable to retry)"
+      "oas-load-error": "Lazy load failed, `detail: { key, error }` where `error` is the error message string (loading clears, clickable to retry)",
+      "oas-expand": "Dispatched on node expand/collapse, `detail: { key, expanded, node }` (node is a data snapshot)",
+      "oas-node-dragstart": "Dispatched when a drag starts, `detail: { dragKey }`",
+      "oas-node-dragover": "Dispatched while dragging over a target, `detail: { dragKey, dropKey, position }` (empty area: dropKey empty, position `inner`)",
+      "oas-node-dragleave": "Dispatched when a drag leaves a target, `detail: { dragKey, dropKey, position }`",
+      "oas-node-dragend": "Dispatched when a drag ends, `detail: { dragKey }`"
     },
     "slots": {
       "template[slot=\"node\"]": "Static row template cloned into each node label container; the `[data-node-label]` node is bound to the node label automatically",

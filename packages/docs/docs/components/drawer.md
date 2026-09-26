@@ -31,6 +31,23 @@
   </oas-drawer>
 </DemoBlock>
 
+## 纵向高度（height）
+
+`height` 直接指定 top/bottom 抽屉的高度（优先于 `width` / `size` 的纵向映射；左右抽屉静默忽略该属性）。支持纯数字（视为 px）与长度/百分比。
+
+<DemoBlock title="纵向高度（height）">
+  <oas-space>
+    <oas-button type="primary" onclick="openDrawer('drawer-height')">顶部抽屉 height=40vh</oas-button>
+    <oas-button type="primary" onclick="openDrawer('drawer-height-px')">底部抽屉 height=280</oas-button>
+  </oas-space>
+  <oas-drawer id="drawer-height" title="高度 40vh" placement="top" height="40vh">
+    <p><code>height="40vh"</code>：高度为视口的 40%，比默认 320px 更高。</p>
+  </oas-drawer>
+  <oas-drawer id="drawer-height-px" title="高度 280px" placement="bottom" height="280">
+    <p><code>height="280"</code>：纯数字视为像素。</p>
+  </oas-drawer>
+</DemoBlock>
+
 ## 动画与生命周期事件
 
 打开/关闭有过渡动画（transform/opacity，`prefers-reduced-motion` 下自动降级为直切）。生命周期事件：`oas-open` / `oas-after-open` / `oas-close`（detail 含关闭来源）/ `oas-after-close`。
@@ -39,6 +56,17 @@
   <oas-button type="primary" onclick="document.querySelector('#drawer-life').setAttribute('visible','')">打开并观察事件</oas-button>
   <oas-drawer id="drawer-life" title="事件日志">
     <p>操作下方按钮/遮罩/Esc，观察右上角事件消息（`oas-close` 会带上关闭来源）。</p>
+  </oas-drawer>
+</DemoBlock>
+
+## 取消语义事件（oas-cancel）
+
+取消语义关闭（**取消按钮 / 遮罩点击 / Esc**）派发 `oas-cancel`（`detail.source` 标明来源），与确认关闭（`oas-ok`）区分；✕ / 手势 / 编程关闭不派发。可在取消时清理临时状态或打点。
+
+<DemoBlock title="取消语义事件">
+  <oas-button type="primary" onclick="document.querySelector('#drawer-cancel').setAttribute('visible','')">打开并观察取消事件</oas-button>
+  <oas-drawer id="drawer-cancel" title="取消语义" ok-text="保存">
+    <p>点「取消」/ 遮罩 / Esc 关闭 → 右上角提示 <code>oas-cancel</code>；点「保存」→ 提示 <code>oas-ok</code>；✕ 两者都不提示。</p>
   </oas-drawer>
 </DemoBlock>
 
@@ -283,6 +311,15 @@ onMounted(async () => {
     message.info(`宽度调整为 ${e.detail.size}px`)
   })
 
+  // 取消语义事件：取消路径 oas-cancel / 确认路径 oas-ok（✕ 两者都不触发）
+  const cancel = document.getElementById('drawer-cancel')
+  cancel.addEventListener('oas-cancel', (e) => {
+    message.info(`已取消（oas-cancel，source=${e.detail.source}）`)
+  })
+  cancel.addEventListener('oas-ok', () => {
+    message.success('已保存（oas-ok）')
+  })
+
   // loading：模拟详情异步加载，2 秒后移除 loading
   const loading = document.getElementById('drawer-loading')
   window.openLoadingDrawer = () => {
@@ -353,6 +390,7 @@ onMounted(async () => {
 | `append-to` | portal 挂载点：把遮罩与面板移入目标容器（`body` 或 CSS 选择器）内的独立 shadow（样式作用域保真），脱离宿主 overflow 裁剪；属性移除/无匹配时移回宿主 shadow | — | — |
 | `cancel-text` | 取消按钮文案；缺省走 locale `drawer.cancel` | — | — |
 | `destroy-on-close` | 关闭动画完成后清空宿主子内容（下次打开重新渲染） | `boolean` | — |
+| `height` | 纵向抽屉（placement=top/bottom）显式高度，优先于 width/size；左右抽屉忽略 | — | — |
 | `initial-focus` | 打开时聚焦指定选择器元素（面板内优先，其次宿主 light DOM）；未设置回落 ✕ 关闭按钮/首个可聚焦元素 | — | — |
 | `loading` | 内容加载态：主体隐藏并显示骨架占位，确定/取消按钮同时禁用 | `boolean` | — |
 | `no-close-btn` | 隐藏标题栏 ✕ 关闭按钮 | `boolean` | — |
@@ -383,6 +421,7 @@ onMounted(async () => {
 | `oas-after-close` | 关闭动画完成（规范名，对齐 after-* 家族），`detail` 无；滚动解锁与焦点归还在此之后 |
 | `oas-after-open` | 打开动画完成（规范名，对齐 after-* 家族），`detail` 无；等价 oas-opened |
 | `oas-before-close` | 关闭请求前派发（✕/取消/遮罩/Esc/确定/手势），`cancelable`，`detail: { source }`，preventDefault 阻止关闭 |
+| `oas-cancel` | 取消语义关闭（取消钮/遮罩/Esc）时派发，`detail: { source }` |
 | `oas-close` | 关闭：取消按钮 / ✕ / 遮罩点击 / Esc，`detail: { source }` |
 | `oas-closed` | 【兼容别名】关闭动画完成，等价 oas-after-close；后续版本移除 |
 | `oas-ok` | 点击「确定」 |

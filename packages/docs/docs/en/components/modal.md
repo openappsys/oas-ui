@@ -264,6 +264,23 @@ The mask background uses the `--oas-modal-mask-bg` variable (falls back to the o
   </oas-modal>
 </DemoBlock>
 
+## Layering (z-index)
+
+`z-index` explicitly overrides the default modal tier (`--oas-z-modal`): the value stacks on top of `--oas-z-index-base` (the config-provider floating-layer base), with the dialog always 1 above its mask; unset means the default tier. Use it to precisely control stacking across multiple open instances.
+
+<DemoBlock title="Layer override (z-index)">
+  <oas-space>
+    <oas-button onclick="document.querySelector('#modal-layer-base').setAttribute('visible','')">Open base dialog (default tier)</oas-button>
+    <oas-button type="primary" onclick="document.querySelector('#modal-layer-top').setAttribute('visible','')">Stack a z-index=3000 dialog on top</oas-button>
+  </oas-space>
+  <oas-modal id="modal-layer-base" title="Base dialog (default tier)">
+    <p>This dialog uses the default tier. Click the button above to stack a dialog with an explicit <code>z-index</code> and observe the layering.</p>
+  </oas-modal>
+  <oas-modal id="modal-layer-top" title="Top dialog" z-index="3000">
+    <p><code>z-index="3000"</code>: mask and dialog are explicitly lifted (dialog still 1 above the mask), covering the base dialog; Esc closes the topmost first.</p>
+  </oas-modal>
+</DemoBlock>
+
 ## Close-source event
 
 `oas-close` carries `detail.source` (ok / cancel / close-btn / mask / esc / programmatic) and `detail.action` (confirm / cancel / close); non-OK paths keep emitting `oas-cancel` for backwards compatibility.
@@ -696,6 +713,7 @@ onMounted(async () => {
 | `type` | Semantic variant: `info`/`success`/`warning`/`error`, renders the matching semantic icon above the content | `ModalVariant` | — |
 | `visible` | Whether shown | `boolean` | — |
 | `width` | Dialog width (px or percentage) | — | — |
+| `z-index` | Explicit z-index base stacked on `--oas-z-index-base` (dialog sits 1 above the mask; defaults to the `--oas-z-modal` tier) | — | — |
 
 #### Events
 
