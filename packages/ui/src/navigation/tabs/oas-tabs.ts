@@ -684,6 +684,9 @@ export class OASTabs extends OASElement {
 
   private panels: OASTabPanel[] = []
   private observer: MutationObserver | null = null
+
+  /** title 悬停提示吸收缓存（value → title 文本）：panel title 被吸收后由缓存驱动渲染幂等 */
+  private titleCache = new Map<string, string>()
   /** 新增按钮引用（重建后更新；用于焦点归属捕获与恢复） */
   private addBtn: HTMLButtonElement | null = null
   /** 上次重建时的面板数（判断「点击 + 后宿主是否新增了面板」） */
@@ -837,6 +840,12 @@ export class OASTabs extends OASElement {
   /** 真水合：校验 SSR 快照结构（tablist 存在）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('.tablist')) return false
+    // title 吸收缓存从快照按钮恢复（SSR 侧已吸收 panel title 进按钮；客户端 titleCache 是空实例，
+    // 后续 update() 会按缓存重渲染——不恢复会把快照里的按钮 title 擦掉）
+    for (const btn of this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value][title]')) {
+      const value = btn.getAttribute('data-value')
+      if (value) this.titleCache.set(value, btn.getAttribute('title') ?? '')
+    }
     this.bind()
     return true
   }
@@ -871,6 +880,7 @@ export class OASTabs extends OASElement {
         const panel = document.createElement('oas-tab-panel')
         if (typeof item.label === 'string') panel.setAttribute('label', item.label)
         if (typeof item.value === 'string') panel.setAttribute('value', item.value)
+        if (typeof item.title === 'string') panel.setAttribute('title', item.title)
         if (typeof item.icon === 'string') panel.setAttribute('icon', item.icon)
         if (item.badge != null) panel.setAttribute('badge', String(item.badge))
         if (item.disabled) panel.setAttribute('disabled', '')
@@ -1033,6 +1043,17 @@ export class OASTabs extends OASElement {
         badgeEl.textContent = badge
         btn.appendChild(badgeEl)
       }
+
+      // title 悬停提示透传（吸收 pattern，下游 oas-md-ka 需求：长标题截断时 hover 看全文，
+      // 免宿主直写 shadow 内部约定）——panel title 读入缓存并写入按钮，同时从 panel 宿主移除
+      // （防 panel 内容区出现原生 tooltip，对齐 ui-spec 原生全局属性吸收约定）
+      if (panel.hasAttribute('title')) {
+        this.titleCache.set(value, panel.getAttribute('title') ?? '')
+        panel.removeAttribute('title')
+      }
+      const cachedTitle = this.titleCache.get(value)
+      if (cachedTitle) btn.setAttribute('title', cachedTitle)
+      else btn.removeAttribute('title')
 
       // 关闭按钮：span tabindex=-1（无 role，避免 axe nested-interactive 判为
       // 可交互控件嵌套 / tablist 不允许子元素）；读屏可经 aria-label 命名并激活，
