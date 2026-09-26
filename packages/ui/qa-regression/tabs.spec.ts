@@ -346,3 +346,32 @@ test('tabs oas-tab-contextmenu：右键标签派发 detail 正确 + preventDefau
   expect(r3.kb?.value, '键盘 ContextMenu 键派发（value=d）').toBe('d')
   expect(r3.kb?.index, '键盘 ContextMenu 键派发（index=3）').toBe(3)
 })
+
+// —— 需求回归：oas-tab-panel title 悬停提示透传（吸收 pattern，下游 oas-md-ka syncTabTitles 内部约定问题）——
+// panel 写 title → 透传 shadow tab 按钮（原生 hover tooltip）+ panel 宿主吸收移除（防 panel 内容区
+// 出现原生 tooltip）；改写 title 后按钮跟随更新并再次吸收。
+test('tabs title 透传：panel title 进按钮（原生 tooltip）+ panel 吸收 + 改写更新', async ({ page }) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => document.getElementById('tabs-contextmenu')?.shadowRoot != null, undefined, {
+    timeout: 15000,
+  })
+  const r = await page.evaluate(async () => {
+    const el = document.getElementById('tabs-contextmenu')!
+    const btnA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+    const panelA = el.querySelector<HTMLElement>('oas-tab-panel[value="a"]')!
+    const first = {
+      btnTitle: btnA.getAttribute('title'),
+      panelAbsorbed: !panelA.hasAttribute('title'),
+    }
+    // 宿主改写 title → 触发 update → 按钮跟随 + 再次吸收（重新查询：tablist 重建会替换旧节点）
+    panelA.setAttribute('title', '改写后的提示')
+    el.setAttribute('size', 'small')
+    await new Promise((res) => setTimeout(res, 50))
+    const btnNew = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+    return { ...first, btnTitleNew: btnNew.getAttribute('title'), panelAbsorbedAfter: !panelA.hasAttribute('title') }
+  })
+  expect(r.btnTitle, '按钮 title = panel title 文本（原生 hover tooltip）').toBeTruthy()
+  expect(r.panelAbsorbed, 'panel 宿主 title 被吸收移除').toBe(true)
+  expect(r.btnTitleNew, '改写后按钮 title 更新').toBe('改写后的提示')
+  expect(r.panelAbsorbedAfter, '改写后的 title 再次被吸收').toBe(true)
+})

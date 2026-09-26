@@ -87,7 +87,7 @@ Switch to the card style with `type="card"`: every tab has its own border, the a
 
 <DemoBlock title="Right-click bulk close (context-menu)">
   <oas-tabs id="tabs-contextmenu" closable context-menu active="b">
-    <oas-tab-panel label="Dashboard" value="a"><p>Dashboard content</p></oas-tab-panel>
+    <oas-tab-panel label="Dashboard" value="a" title="Dashboard — full monitoring overview"><p>Dashboard content</p></oas-tab-panel>
     <oas-tab-panel label="Orders" value="b"><p>Orders content</p></oas-tab-panel>
     <oas-tab-panel label="Products" value="c"><p>Products content</p></oas-tab-panel>
     <oas-tab-panel label="Users" value="d"><p>Users content</p></oas-tab-panel>
@@ -675,6 +675,7 @@ onMounted(async () => {
 | `label` | Tab text | — | — |
 | `rel` | Link rel (only with href, e.g. `noopener`) | — | — |
 | `target` | Link target (only with href, e.g. `_blank`) | — | — |
+| `title` | Hover hint text (full title / supplementary note) — passed through to the shadow tab button as a native hover tooltip; tabs absorb and remove it from the panel host (so the panel content area never shows a native tooltip); the items JSON `title` field works the same way | — | — |
 | `value` | Tab value | — | — |
 
 #### Slots

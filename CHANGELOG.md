@@ -18,6 +18,8 @@
 
 - **oas-tabs 标签级右键原生事件 `oas-tab-contextmenu`**（下游自建右键菜单通道）：右键标签（或聚焦标签按 Menu 键 / Shift+F10）派发可取消事件，`detail: { value, index, clientX, clientY, originalEvent }`；宿主 preventDefault 时内建菜单与浏览器默认菜单全抑止（capture 阶段阻断 manager 委托）；空白处右键不派发；键盘坐标取按钮中心；RTL 透传原生坐标；与 context-menu 属性无关恒派发
 
+- **oas-tab-panel 新增 `title` 属性（悬停提示透传）**：透传 shadow tab 按钮为原生 hover tooltip——长标题截断时悬停看全文；ui-spec 原生全局属性吸收 pattern（tabs 读入缓存并从 panel 宿主移除，防 panel 内容区出现原生 tooltip）；宿主改写 title 按钮跟随更新并再次吸收；items JSON 通道 `title` 字段同效
+
 ### 修复
 
 - **`[hidden]` 兜底全量收口（79 文件/66 组件实证）**：`:host { display }` 是 shadow 作者样式，来源压过 UA `[hidden]` 规则——凡 :host 设 display 而缺 `:host([hidden])` 兜底的组件，宿主写 `hidden` 仍可见。CDN 全量实测 163 组件中 66 个失效（含 button/icon/tag/input/select 等高频件；2.5.6 曾按报障收口 8 处，系症状驱动的局部收口）；本次全量补齐同款规则，另修 oas-grid 内联 `display` 压过兜底、oas-anchor-target（单文件多组件漏网）两处边角。新增 style-conventions 源码级守卫（逐样式字面量粒度，防新组件再漏）+ 实测 sweep 复验归零

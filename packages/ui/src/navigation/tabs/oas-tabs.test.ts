@@ -352,6 +352,63 @@ describe('OASTabs', () => {
     expect(css).toContain('var(--oas-tabs-badge-color, var(--oas-color-text-on-danger))')
   })
 
+  // ===== oas-tab-panel title 悬停提示透传（吸收 pattern：读→按钮 title→panel 移除）=====
+
+  it('panel title 属性透传 tab 按钮 title（原生 hover tooltip），并从 panel 宿主吸收移除', () => {
+    const el = new OASTabs()
+    el.innerHTML = `
+      <oas-tab-panel label="仪表盘总览（长标题截断示例）" value="a" title="仪表盘总览：全链路监控与告警"><p>内容一</p></oas-tab-panel>
+      <oas-tab-panel label="订单" value="b"><p>内容二</p></oas-tab-panel>
+    `
+    document.body.appendChild(el)
+    const btnA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+    const btnB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+    expect(btnA.getAttribute('title'), '按钮 title = panel title 文本').toBe('仪表盘总览：全链路监控与告警')
+    expect(btnB.getAttribute('title'), '无 title 的面板按钮不带 title').toBeNull()
+    // 吸收：panel 宿主的 title 属性已被移除（防 panel 内容区出现原生 tooltip）
+    const panelA = el.querySelector<HTMLElement>('oas-tab-panel[value="a"]')!
+    expect(panelA.hasAttribute('title'), 'panel 宿主 title 属性应被吸收移除').toBe(false)
+  })
+
+  it('title 吸收后幂等：再次 update() 按钮 title 不丢（缓存驱动渲染）', () => {
+    const el = new OASTabs()
+    el.innerHTML = '<oas-tab-panel label="长标题示例" value="a" title="完整标题文本"><p>内容</p></oas-tab-panel>'
+    document.body.appendChild(el)
+    // 首次吸收完成后再触发 update（改一个无关属性）
+    el.setAttribute('size', 'small')
+    const btn = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+    expect(btn.getAttribute('title'), '幂等渲染：按钮 title 缓存仍在').toBe('完整标题文本')
+  })
+
+  it('宿主后续改写 title 属性：按钮 title 跟随更新并再次吸收', () => {
+    const el = new OASTabs()
+    el.innerHTML = '<oas-tab-panel label="标题" value="a" title="旧提示"><p>内容</p></oas-tab-panel>'
+    document.body.appendChild(el)
+    const panel = el.querySelector<HTMLElement>('oas-tab-panel')!
+    panel.setAttribute('title', '新提示')
+    // 触发 update（MutationObserver 或属性变化）
+    el.setAttribute('size', 'small')
+    const btn = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+    expect(btn.getAttribute('title'), '改写后按钮 title 更新').toBe('新提示')
+    expect(panel.hasAttribute('title'), '改写后的 title 再次被吸收').toBe(false)
+  })
+
+  it('items JSON 通道的 title 字段同样透传按钮', () => {
+    const el = new OASTabs()
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '首页', value: 'home', title: '首页（全量统计）' },
+        { label: '订单', value: 'orders' },
+      ]),
+    )
+    document.body.appendChild(el)
+    const btnHome = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="home"]')!
+    const btnOrders = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="orders"]')!
+    expect(btnHome.getAttribute('title')).toBe('首页（全量统计）')
+    expect(btnOrders.getAttribute('title')).toBeNull()
+  })
+
   it('tab-position=left：host 与 tablist 带纵向布局类名', () => {
     const el = mount({ 'tab-position': 'left' })
     expect(el.classList.contains('oas-tabs--vertical')).toBe(true)

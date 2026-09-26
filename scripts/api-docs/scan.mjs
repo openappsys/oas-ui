@@ -154,8 +154,9 @@ const ATTR_HELPERS = new Set(['getAttr', 'hasAttr', 'injectValue', 'injectDisabl
 //   1) 父组件读取子元素属性（如 oas-tabs 读 oas-tab-panel 的 badge/href）；
 //   2) 纯 CSS 消费属性（组件 JS 无任何读取点，仅 :host([...]) 选择器/子组件转发）。
 const SUPPLEMENT_ATTRS = {
-  // href/target/rel/icon-only 由 oas-tabs 解析子面板读取（渲染为链接 tab/纯图标 tab）
-  'oas-tab-panel': ['badge', 'icon', 'href', 'target', 'rel', 'icon-only'],
+  // href/target/rel/icon-only 由 oas-tabs 解析子面板读取（渲染为链接 tab/纯图标 tab）；
+  // title 为悬停提示透传（tabs 读取后吸收到 tab 按钮，见 oas-tabs 的 titleCache 吸收通道）
+  'oas-tab-panel': ['badge', 'icon', 'href', 'target', 'rel', 'icon-only', 'title'],
   // success 为纯 CSS 消费属性（无 getAttr/hasAttr），扫描正则探不到，人工补录
   'oas-pin-input': ['success'],
   // check-all 由 oas-checkbox-group 读子项（全选联动标记）；label-position 为纯 CSS 消费

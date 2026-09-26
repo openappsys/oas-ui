@@ -2735,7 +2735,8 @@
       "href": "tab 渲染为链接：该标签渲染为 `<a>`（锚点语义：右键新窗口/中键打开/SEO 可爬），搭配 target/rel",
       "target": "链接 target（仅 href 时生效，如 `_blank`）",
       "rel": "链接 rel（仅 href 时生效，如 `noopener`）",
-      "icon-only": "纯图标标签：只渲染图标无文字（需 label 提供 aria-label 兜底可访问名称）"
+      "icon-only": "纯图标标签：只渲染图标无文字（需 label 提供 aria-label 兜底可访问名称）",
+      "title": "悬停提示文本（完整标题/补充说明）——透传到 shadow tab 按钮的原生 hover tooltip；tabs 读取后从 panel 宿主吸收移除（防 panel 内容区出现原生 tooltip）；items JSON 通道的 title 字段同效"
     },
     "events": {},
     "slots": {

@@ -91,7 +91,7 @@
 
 <DemoBlock title="右键批量关闭（context-menu）">
   <oas-tabs id="tabs-contextmenu" closable context-menu active="b">
-    <oas-tab-panel label="仪表盘" value="a"><p>仪表盘内容</p></oas-tab-panel>
+    <oas-tab-panel label="仪表盘" value="a" title="仪表盘：全链路监控与告警总览"><p>仪表盘内容</p></oas-tab-panel>
     <oas-tab-panel label="订单" value="b"><p>订单内容</p></oas-tab-panel>
     <oas-tab-panel label="商品" value="c"><p>商品内容</p></oas-tab-panel>
     <oas-tab-panel label="用户" value="d"><p>用户内容</p></oas-tab-panel>
@@ -674,6 +674,7 @@ onMounted(async () => {
 | `label` | 标签文本 | — | — |
 | `rel` | 链接 rel（仅 href 时生效，如 `noopener`） | — | — |
 | `target` | 链接 target（仅 href 时生效，如 `_blank`） | — | — |
+| `title` | 悬停提示文本（完整标题/补充说明）——透传到 shadow tab 按钮的原生 hover tooltip；tabs 读取后从 panel 宿主吸收移除（防 panel 内容区出现原生 tooltip）；items JSON 通道的 title 字段同效 | — | — |
 | `value` | 标签值 | — | — |
 
 #### 插槽
