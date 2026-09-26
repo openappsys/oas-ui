@@ -5,6 +5,7 @@ import { OASFormItem } from '../form-item/index.js'
 import { OASInput } from '../input/index.js'
 import '../switch/index.js'
 import '../transfer/index.js'
+import '../checkbox/index.js'
 function mount(): OASForm {
   const el = new OASForm()
   el.setAttribute(
@@ -976,5 +977,96 @@ describe('OASForm oas-values-change', () => {
     el.addEventListener('oas-values-change', () => count++)
     el.reset()
     expect(count).toBe(0)
+  })
+})
+
+describe('OASForm review 回归（真实路径，非合成事件造假绿）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('C1：form 内真实键击→blur，字段 oas-change 正常派发 + change 触发即时校验（值同步回声不得吞提交）', () => {
+    const el = ((): OASForm => {
+      const f = new OASForm()
+      f.setAttribute('rules', JSON.stringify({ n1: [{ pattern: '^\\d+$', message: '只收数字' }] }))
+      f.innerHTML = '<oas-input name="n1"></oas-input>'
+      document.body.appendChild(f)
+      return f
+    })()
+    const field = el.querySelector('oas-input') as OASInput
+    let changeFired = 0
+    field.addEventListener('oas-change', () => changeFired++)
+    const inner = field.shadowRoot!.querySelector('input')!
+    inner.value = 'abc'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    inner.dispatchEvent(new Event('blur'))
+    expect(changeFired, 'blur 提交应派发 oas-change（回声不得吞掉）').toBe(1)
+    expect(field.getAttribute('aria-invalid'), 'change 触发即时校验：非数字应判错').toBe('true')
+  })
+
+  it('C2：calendar range 在 form 内提交（detail 无 value 键）不抹字段 value', () => {
+    const el = ((): OASForm => {
+      const f = new OASForm()
+      f.innerHTML = '<oas-calendar name="dates" range></oas-calendar>'
+      document.body.appendChild(f)
+      return f
+    })()
+    const cal = el.querySelector('oas-calendar')!
+    cal.setAttribute('value', '["2026-08-05","2026-08-15"]')
+    cal.dispatchEvent(
+      new CustomEvent('oas-change', {
+        detail: { start: '2026-08-05', end: '2026-08-15' },
+        bubbles: true,
+        composed: true,
+      }),
+    )
+    expect(cal.getAttribute('value'), 'range 区间 JSON 不得被值同步抹掉').toBe('["2026-08-05","2026-08-15"]')
+  })
+
+  it('I3：validate-trigger=input + 异步 validator，慢旧结果不覆盖快新结果（竞态令牌）', async () => {
+    const el = ((): OASForm => {
+      const f = new OASForm()
+      f.setAttribute('validate-trigger', 'input')
+      f.innerHTML = '<oas-input name="n1"></oas-input>'
+      document.body.appendChild(f)
+      return f
+    })()
+    // 慢旧（'a' → 60ms 后判错）+ 快新（'ab' → 5ms 后通过）
+    el.rules = {
+      n1: [
+        {
+          validator: (v: string) =>
+            new Promise<true | string>((res) => setTimeout(() => res(v === 'a' ? '错A' : true), v === 'a' ? 60 : 5)),
+        },
+      ],
+    }
+    const field = el.querySelector('oas-input') as OASInput
+    const inner = field.shadowRoot!.querySelector('input')!
+    inner.value = 'a'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    inner.value = 'ab'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    await new Promise((r) => setTimeout(r, 90))
+    expect(field.getAttribute('aria-invalid'), '最新一次（快，通过）生效，慢旧结果不得覆盖').toBeNull()
+  })
+
+  it('I4：initial-values 经 checkbox property setter 驱动映射勾选 + reset 恢复 checked', async () => {
+    const el = ((): OASForm => {
+      const f = new OASForm()
+      f.setAttribute('initial-values', JSON.stringify({ agree: 'YES' }))
+      f.innerHTML = '<oas-checkbox name="agree" true-value="YES" false-value="NO"></oas-checkbox>'
+      document.body.appendChild(f)
+      return f
+    })()
+    const cb = el.querySelector('oas-checkbox')!
+    await new Promise((r) => setTimeout(r, 0))
+    expect(cb.hasAttribute('checked'), 'initial-values YES 应勾选（true-value 映射）').toBe(true)
+    cb.removeAttribute('checked')
+    el.reset()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(cb.hasAttribute('checked'), 'reset 应恢复 checked=true（初始值基线）').toBe(true)
   })
 })

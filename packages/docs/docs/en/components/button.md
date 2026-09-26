@@ -273,6 +273,8 @@ On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`-
 
 `html-type` sets the native form behavior: `button` (default, no form behavior) / `submit` / `reset`. Buttons inside Shadow DOM do not participate in native form submission — the component bridges automatically: clicking triggers native submit/reset on the target form (the enclosing `<form>`, or the form id referenced by `form`); `formaction` / `formmethod` / `formnovalidate` / `formtarget` take effect through the native submitter mechanism (overriding the form's own action / method / novalidate / target). Submission is not triggered in `disabled` / `loading` state; in `href` link mode this attribute group is silently ignored.
 
+> Bridging notes (two boundaries): ① the bridge works via a transient native proxy submitter injected at click time — the form's `submit` event sees this proxy as `submitter`, not the `oas-button` (the proxy carries `data-oas-form-proxy` for identification); hosts with click delegation on the form area will see both the host's synthetic click and the proxy's native click bubble. ② `html-type="submit"` does not work inside `oas-form`: its real `<form>` lives in shadow DOM, so a light-DOM proxy finds no ancestor form — use `oas-form`'s `submit()` method / `oas-submit` event instead.
+
 <DemoBlock title="Native form submission (html-type / form attributes)">
   <form id="btn-native-form" style="display: flex; flex-wrap: wrap; gap: var(--oas-space-3); align-items: flex-end">
     <oas-input name="username" label="Username" value="OAS-UI"></oas-input>

@@ -273,6 +273,8 @@
 
 `html-type` 指定原生表单行为：`button`（默认，无表单行为）/ `submit`（提交）/ `reset`（重置）。Shadow DOM 内的按钮不参与原生表单提交，组件自动桥接：点击时对目标表单（所在 `<form>`，或 `form` 属性指向的表单 id）触发原生提交/重置；`formaction` / `formmethod` / `formnovalidate` / `formtarget` 经原生 submitter 机制生效（覆盖表单自身的 action / method / novalidate / target）。`disabled` / `loading` 态不触发提交；`href` 链接模式下这组属性静默无效。
 
+> 桥接机制说明（边界两条）：① 桥接靠点击期临时注入的原生代理 submitter——表单 `submit` 事件的 `submitter` 是该代理而非 `oas-button`（代理带 `data-oas-form-proxy` 可辨识）；监听表单区域 click 委托的宿主会同时看到宿主的合成 click 与代理的原生 click 两次冒泡。② `html-type="submit"` 在 `oas-form` 内无效：`oas-form` 的真 `<form>` 在 shadow 内，light DOM 代理找不到祖先表单——`oas-form` 场景请用 `oas-form` 的 `submit()` 方法 / `oas-submit` 事件。
+
 <DemoBlock title="原生表单提交（html-type / form 属性组）">
   <form id="btn-native-form" style="display: flex; flex-wrap: wrap; gap: var(--oas-space-3); align-items: flex-end">
     <oas-input name="username" label="用户名" value="OAS-UI"></oas-input>
