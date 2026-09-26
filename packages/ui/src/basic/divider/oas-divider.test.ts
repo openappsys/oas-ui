@@ -59,6 +59,37 @@ describe('OASDivider', () => {
       expect(line(solid)!.classList.contains('solid')).toBe(false)
     })
 
+    it('双虚线/双点线：double-dashed / double-dotted 映射 class 且互斥', () => {
+      const dash2 = mount({ variant: 'double-dashed' }, '')
+      const line2 = line(dash2)!
+      expect(line2.classList.contains('double-dashed')).toBe(true)
+      expect(line2.classList.contains('dashed')).toBe(false)
+      expect(line2.classList.contains('double')).toBe(false)
+      const dot2 = mount({ variant: 'double-dotted' }, '')
+      const l3 = line(dot2)!
+      expect(l3.classList.contains('double-dotted')).toBe(true)
+      expect(l3.classList.contains('dotted')).toBe(false)
+    })
+
+    it('双虚线/双点线：双层渐变背景（上线+下线，段长与单线版一致）', () => {
+      const styleText = (variant: string): string => {
+        const el = mount({ variant }, '')
+        return el.shadowRoot!.querySelector('style')!.textContent ?? ''
+      }
+      // 提取该变体的样式块（::after { 到配对 }），避免全 style 文本里其他 variant 的渐变干扰计数
+      const block = (variant: string): string =>
+        styleText(variant).split(`.divider.${variant}::after {`)[1]!.split('}')[0]!
+      const dash2 = block('double-dashed')
+      // 两层渐变（上线贴顶 0 0、下线贴底 0 100%），层高取线宽；段长与单虚线一致（4px 实 4px 空）
+      expect(dash2.match(/repeating-linear-gradient/g)?.length).toBe(2)
+      expect(dash2).toContain('0 0 / 100% var(--oas-divider-width, 1px) no-repeat')
+      expect(dash2).toContain('0 100% / 100% var(--oas-divider-width, 1px) no-repeat')
+      const dot2 = block('double-dotted')
+      expect(dot2.match(/repeating-linear-gradient/g)?.length).toBe(2)
+      // 容器加高复用 double 的双层结构（线宽×2 + gap）
+      expect(dot2).toContain('calc(2 * var(--oas-divider-width, 1px) + var(--oas-divider-double-gap, 3px))')
+    })
+
     it('dashed 布尔兼容：dashed 属性等价 variant=dashed（布尔优先）', () => {
       const el = mount({ dashed: '' }, '')
       expect(line(el)!.classList.contains('dashed')).toBe(true)

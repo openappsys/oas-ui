@@ -77,3 +77,45 @@ test('divider 线型/缩进/间距档/strong：variant 驱动、dashed 布尔兼
   expect(r.doubleBorderTop).toBe('solid')
   expect(r.doubleBorderBottom).toBe('solid')
 })
+
+test('divider 双虚线 / 双点线（double-dashed / double-dotted）：类映射 + double 加高结构 × 双层渐变', async ({
+  page,
+}) => {
+  await page.goto('/components/divider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-divider')
+
+  const r = await page.evaluate(async () => {
+    const make = (variant: string): HTMLElement => {
+      const el = document.createElement('oas-divider')
+      el.setAttribute('variant', variant)
+      document.body.appendChild(el)
+      return el
+    }
+    const dash2 = make('double-dashed')
+    const dot2 = make('double-dotted')
+    await new Promise((res) => setTimeout(res, 50))
+    const dash2Line = dash2.shadowRoot!.querySelector<HTMLElement>('.divider')!
+    const dot2Line = dot2.shadowRoot!.querySelector<HTMLElement>('.divider')!
+    const out = {
+      dash2Cls: dash2Line.className,
+      dot2Cls: dot2Line.className,
+      dash2H: getComputedStyle(dash2Line).height,
+      dot2H: getComputedStyle(dot2Line).height,
+      dash2Bg: getComputedStyle(dash2Line, '::before').backgroundImage,
+      dot2Bg: getComputedStyle(dot2Line, '::before').backgroundImage,
+    }
+    dash2.remove()
+    dot2.remove()
+    return out
+  })
+
+  expect(r.dash2Cls, '双虚线类映射').toContain('double-dashed')
+  // 不含「独立的」单虚线类（double-dashed 含 dashed 子串，按空格分词精确匹配）
+  expect(r.dash2Cls.split(/\s+/), '双虚线不含单虚线类').not.toContain('dashed')
+  expect(r.dot2Cls, '双点线类映射').toContain('double-dotted')
+  expect(r.dash2H, '加高容器同 double（5px）').toBe('5px')
+  expect(r.dot2H, '加高容器同 double（5px）').toBe('5px')
+  // 双层渐变：background-image 含两条 repeating-linear-gradient（上线+下线）
+  expect(r.dash2Bg.match(/repeating-linear-gradient/g)?.length ?? 0, '双虚线两条渐变线').toBe(2)
+  expect(r.dot2Bg.match(/repeating-linear-gradient/g)?.length ?? 0, '双点线两条渐变线').toBe(2)
+})

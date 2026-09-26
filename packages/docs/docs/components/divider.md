@@ -24,10 +24,12 @@
 
 ## 线型
 
-<DemoBlock title="四种线型">
+<DemoBlock title="六种线型">
   <oas-divider variant="dashed">dashed 虚线</oas-divider>
   <oas-divider variant="dotted">dotted 点线</oas-divider>
   <oas-divider variant="double">double 双线</oas-divider>
+  <oas-divider variant="double-dashed">double-dashed 双虚线</oas-divider>
+  <oas-divider variant="double-dotted">double-dotted 双点线</oas-divider>
 </DemoBlock>
 
 `variant` 与 `dashed` 布尔等价（`dashed` 属性 = `variant="dashed"`，显式 `variant` 优先）。
@@ -160,7 +162,7 @@ vertical 模式下 `content-position` 支持 `top`（贴顶）/ `center`（默�
 | `size` | 间距档位：`small` / `medium`（默认）/ `large`；仅水平布局生效 | `string` | — |
 | `strong` | 分隔文字加重（font-weight 600） | `boolean` | — |
 | `text-orientation` | 垂直分割线的文字方向：horizontal（默认横排）/ ertical（竖排，跟随竖线方向从上到下）；仅 vertical 分割线有意义 | `string` | — |
-| `variant` | 线型：`solid` / `dashed` / `dotted` / `double`；显式设置优先于 `dashed` 布尔（兼容写法） | `string` | — |
+| `variant` | 线型：solid / dashed / dotted / double / double-dashed（双虚线）/ double-dotted（双点线）；显式设置优先于 dashed 布尔（兼容写法）。线型仅水平布局生效 | `string` | — |
 
 #### 插槽
 
