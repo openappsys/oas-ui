@@ -1613,3 +1613,30 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 ### 验收（同 P1 批口径）
 
 - TDD RED→GREEN；api:check 双向 0；组件 md 中英 demo 可见反馈；dark/RTL 过；交互项 qa-regression 固化；门禁全绿 + 收口 review
+
+## divider 线型扩展（双虚线 / 双点线，未发布）
+
+### 特性
+
+- **oas-divider `variant` 新增 `double-dashed`（双虚线）/ `double-dotted`（双点线）**：复用 double 的「加高容器 + 双层」结构（线宽×2 + `--oas-divider-double-gap` 间隙，token 一处调全局）× dashed/dotted 的 repeating-gradient 渐变线型（多重背景分层画上下两条线，段长与单线版完全一致：虚线 4px 实 4px 空、点线 2px 实 4px 空）。仅水平布局生效——垂直方向线型为既有隐式边界（含既有的 dashed/dotted/double），本次随 demo 文档显式注明
+
+### 验收
+
+- 单测：类映射互斥（不含单线类）、双层渐变分层（上线贴顶/下线贴底、层高取线宽）、加高容器与 double 同构；e2e（chromium + firefox）背景含两条 repeating-linear-gradient；浅/暗截图识图复核（双排形态可辨、与单线版可区分、暗底对比正常）
+
+## 浮层箭头形状 token 化（7 组件，未发布）
+
+### 特性
+
+- **7 个浮层组件箭头形状/位置/圆角 token 化**（tooltip / popover / popconfirm / dropdown / hover-card / tour / navigation-menu）：
+  - `--oas-<comp>-arrow-width` / `--oas-<comp>-arrow-height`（默认各 12px，宽高独立——宽高比即三角的高与角度；tooltip 既有 `--oas-tooltip-arrow-size` 保留为回退别名）
+  - `--oas-<comp>-arrow-radius`（箭头圆角，默认 0）
+  - `--oas-tooltip-arrow-align-offset` / `--oas-tour-arrow-align-offset`（`*-start/*-end` 对齐侧偏移，默认 16px——命名避开 tooltip 既有 `arrow-offset` 属性〔`arrow-position="side"` 的距端间距，默认 4〕的语义撞名）
+- **JS/CSS 同一真源**：popover / popconfirm / dropdown 的 point-at-center 定位 clamp 由写死常量改运行时读 token（共享 `cssVarPx()`，宿主改形状时定位边界同步跟随）；tooltip 的 `arrow-position="side"` JS 定位同步改读宽/高分量的对应轴
+- merge 直角三角为独立 8px 校准几何，不受形状 token 影响
+
+### 验收
+
+- 单测：happy-dom 对 `calc(var()/…)` 不求最终数值，悬边断言改锁「token 回退 12px 后半值外探」的表达式形态（真实浏览器数值由 e2e 验证）；全量 7373 passed
+- e2e（chromium + firefox）：宽高独立生效（20×8 宽扁）/ 悬边随 height 分量 / align-offset 生效 / radius 生效 / merge 不受影响 / popover clamp 读 width token
+- 视觉核验：默认 vs 宽扁(22×8) vs 窄高(8×20) 三对照浅/暗截图 + 识图复核（形状差异两色可辨、暗底对比正常）

@@ -32,7 +32,7 @@ A horizontal/vertical divider that separates content.
   <oas-divider variant="double-dotted">double-dotted</oas-divider>
 </DemoBlock>
 
-`variant` is equivalent to the `dashed` boolean (the `dashed` attribute = `variant="dashed"`; an explicit `variant` takes priority).
+`variant` is equivalent to the `dashed` boolean (the `dashed` attribute = `variant="dashed"`; an explicit `variant` takes priority). Line styles apply to the horizontal layout only — vertical dividers (`direction="vertical"`) render solid lines regardless of variant (an existing boundary covering dashed/dotted/double/double-*).
 
 ## Inset
 
