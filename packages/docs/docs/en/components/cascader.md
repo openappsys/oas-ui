@@ -381,7 +381,5 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 
 | Name | Description |
 | --- | --- |
-| `option` | Custom option row template; `[data-option-label]` nodes bind the option text |
-| `suffix-icon` | Custom trailing trigger icon (replaces the default arrow; yields to the spinner while loading) |
-| `template[slot="option"]` | — |
-| `template[slot="suffix-icon"]` | — |
+| `template[slot="option"]` | Custom option row template; `[data-option-label]` nodes bind the option text |
+| `template[slot="suffix-icon"]` | Custom trailing trigger icon (replaces the default arrow; yields to the spinner while loading) |

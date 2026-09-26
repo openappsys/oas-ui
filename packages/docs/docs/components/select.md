@@ -711,14 +711,12 @@ onMounted(() => {
 
 | 名称 | 说明 |
 | --- | --- |
-| `clear-icon` | 自定义清除按钮图标 |
-| `prefix` | 触发器前缀内容 |
-| `suffix` | 触发器后缀内容 |
-| `suffix-icon` | 自定义触发器后缀图标（替换默认箭头） |
-| `template[slot="clear-icon"]` | — |
+| `template[slot="clear-icon"]` | 自定义清除按钮图标 |
 | `template[slot="empty"]` | 自定义空态（覆盖「暂无数据」与「无匹配选项」默认文案） |
 | `template[slot="option"]` | 选项行静态模板，克隆到每个选项 label 容器；`[data-option-label]` 节点自动绑定选项 label |
-| `template[slot="suffix-icon"]` | — |
+| `template[slot="prefix"]` | 触发器前缀内容模板 |
+| `template[slot="suffix"]` | 触发器后缀内容模板 |
+| `template[slot="suffix-icon"]` | 自定义触发器后缀图标（替换默认箭头） |
 | `template[slot="tag"]` | 多选标签静态模板，克隆到每个 chip 的文本容器；`[data-tag-label]` 节点自动绑定标签 label |
 
 #### CSS 变量

@@ -833,7 +833,8 @@
       "items": "菜单项 JSON",
       "open": "受控展开态（外部可写）",
       "long-press-delay": "移动端长按触发时长毫秒数（默认 500）",
-      "close-on-scroll": "页面滚动时关闭菜单（默认 true）"
+      "close-on-scroll": "页面滚动时关闭菜单（默认 true）",
+      "value": "勾选项（kind=\"checkbox\"）的勾选集（JSON 数组）；勾选切换写回宿主，跨开合保留"
     },
     "events": {
       "oas-select": "选择某项，`detail: { value }`",

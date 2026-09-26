@@ -181,7 +181,7 @@ onMounted(() => {
 | `items` | 菜单项 JSON | `string` | `[]` |
 | `long-press-delay` | 移动端长按触发时长毫秒数（默认 500） | `string` | `500` |
 | `open` | 受控展开态（外部可写） | `boolean` | — |
-| `value` | — | `string` | — |
+| `value` | 勾选项（kind="checkbox"）的勾选集（JSON 数组）；勾选切换写回宿主，跨开合保留 | `string` | — |
 
 #### 事件
 

@@ -381,7 +381,5 @@ onMounted(() => {
 
 | 名称 | 说明 |
 | --- | --- |
-| `option` | 选项行自定义渲染模板，`[data-option-label]` 节点绑定选项文本 |
-| `suffix-icon` | 自定义触发器后缀图标（替换默认箭头；loading 时让位 spinner） |
-| `template[slot="option"]` | — |
-| `template[slot="suffix-icon"]` | — |
+| `template[slot="option"]` | 选项行自定义渲染模板，`[data-option-label]` 节点绑定选项文本 |
+| `template[slot="suffix-icon"]` | 自定义触发器后缀图标（替换默认箭头；loading 时让位 spinner） |

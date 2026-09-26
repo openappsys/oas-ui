@@ -833,7 +833,8 @@
       "items": "Menu items JSON",
       "open": "Controlled open state (writable externally)",
       "long-press-delay": "Long-press duration in ms for touch trigger (default 500)",
-      "close-on-scroll": "Close the menu on page scroll (default true)"
+      "close-on-scroll": "Close the menu on page scroll (default true)",
+      "value": "Checked set for kind=\"checkbox\" items (JSON array); toggles write back to the host and persist across opens"
     },
     "events": {
       "oas-select": "An item was selected, `detail: { value }`",

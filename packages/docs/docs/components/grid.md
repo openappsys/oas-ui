@@ -363,7 +363,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `align` | 块向轴对齐（align-items）：`start` / `center` / `end` / `stretch` / `baseline`；非法值回落 `stretch` + dev 告警（同值去重） | `string` | — |
-| `collapsed` | — | — | — |
+| `collapsed` | 折叠行受控属性（collapsed-rows 配套；首帧缺省组件写入折叠态，宿主/尾格可切换） | — | — |
 | `collapsed-rows` | 折叠态显示行数：超出隐藏 + 展开/收起尾格（写回 collapsed 并派发 oas-collapse） | `string` | `1` |
 | `cols` | 总列数 | `string` | `24` |
 | `column-gap` | 列间距独立设置（同上） | `string` | — |
