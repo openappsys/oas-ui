@@ -449,4 +449,6 @@ onMounted(async () => {
 | --- | --- |
 | `--oas-upload-card-radius` | `var(--oas-radius-md)` |
 
+> ⚠️ Two limitations of `template[slot="trigger"]`: ① the template content is **cloned into the shadow DOM** — host-page stylesheets **do not apply** to cloned content (use inline styles / oas components / CSS variables instead); ② the clone is a **static snapshot** taken at component update() — template changes after connect do not auto-refresh (write the template before mounting the component, or nudge any attribute afterwards to trigger a re-sync).
+
 Keyboard: `Enter` / `Space` on the drop zone opens the file picker; remove buttons are focusable; the preview overlay closes with Esc.

@@ -4,11 +4,22 @@
 
 ## [未发布]
 
+### 特性
+
+- **oas-swatch + oas-swatch-group（新组件，form 族）**：色板独立件——内联预设色快选/展示场景（不开 color-picker 面板）。色块件：color（预设名/任意色值）/size 五档/shape 三态（square/rounded/circle）/nothing（棋盘格底无色指示）/mixed（混色拼贴）/disabled/selected（选中环描边）/label（可访问名，i18n ×10）；选择组：单选 radiogroup / 多选 checkbox 语义（aria-checked 同步）+ value/multiple 受控 + oas-change + roving 键盘（方向键漫游 RTL 镜像 + Home/End + Enter/Space 选中）+ 空组/未命中值静默容错
+- **oas-button compound 双行变体**：description 具名插槽副文本行——有内容时按钮切纵向双行布局（主行在上、副文本小号次要色在下）；高度自适应不锁尺寸档（与 wrap 同机制，副文本不溢框）；slotchange 动态增删跟随；loading/icon/href/disabled 既有契约全兼容；副文本自然进入可访问名
+
+- **oas-sidebar 折叠态 × 树形子菜单不可达根治**：collapsed 下图标条内的树形父项改走 flyout 子菜单（主流侧栏惯例）——点击/hover 延迟开合 + 定位引擎锚定 inline-end（RTL 镜像）+ 碰撞避让 + Esc 关闭回焦/外部点击关闭/单开互斥 + 嵌套子树面板内内联展开；父项挂 aria-haspopup + aria-expanded，面板 role=menu / 子项 role=menuitem；折叠态 label 隐藏规则不再误伤 flyout 子项；父项点击不再派发父项 select（父项不是可导航页面——契约变更，原「点击派发 select」是死交互的伪修复）
+- **浮层定位引擎零尺寸弹层不翻转**：popup 零尺寸（尚未布局/隐藏测量帧）时 fits 因 gap 恒 false 会误翻——RTL 下翻转把镜像抵消（sidebar flyout 实抓）；改为零尺寸跳过翻转；popconfirm/tooltip 两个依赖「零尺寸翻转」的既有测试桩扶正为真实尺寸
+
+- **oas-tabs 标签级右键原生事件 `oas-tab-contextmenu`**（下游自建右键菜单通道）：右键标签（或聚焦标签按 Menu 键 / Shift+F10）派发可取消事件，`detail: { value, index, clientX, clientY, originalEvent }`；宿主 preventDefault 时内建菜单与浏览器默认菜单全抑止（capture 阶段阻断 manager 委托）；空白处右键不派发；键盘坐标取按钮中心；RTL 透传原生坐标；与 context-menu 属性无关恒派发
+
+- **oas-tab-panel 新增 `title` 属性（悬停提示透传）**：透传 shadow tab 按钮为原生 hover tooltip——长标题截断时悬停看全文；ui-spec 原生全局属性吸收 pattern（tabs 读入缓存并从 panel 宿主移除，防 panel 内容区出现原生 tooltip）；宿主改写 title 按钮跟随更新并再次吸收；items JSON 通道 `title` 字段同效
+
 ### 变更
 
 - **oas-stepper / oas-stepper-panel 进 DSD 白名单**（v2.3.2 遗留「后续批次」补位）：whitelist 129 tag、快照直出（steps JSON 标题 + current 联动面板 hidden 同步）+ 真水合（upgrade 后 style 同对象、指纹清理）+ 升级后点击步骤头切面板 e2e 固化；docs ssr.md 白名单清单同步
-
-### 特性
+- **RTL 全量视觉审计（117 组件页 sweep + 识图 triage）**：新增 `scripts/e2e/rtl-audit.mjs`——LTR/RTL 双跑几何检查取差集（横向溢出/demo 越界）、整页截图产出供识图复核；`dir=rtl` 于文档解析期注入（真实 RTL 应用形态），文档站壳层中性化排除站点自身噪声。几何层 117/117 全净；识图 triage 候选经 DOM/几何量测逐项定责后修复 5 处：
 
 - **oas-swatch + oas-swatch-group（新组件，form 族）**：色板独立件——内联预设色快选/展示场景（不开 color-picker 面板）。色块件：color（预设名/任意色值）/size 五档/shape 三态（square/rounded/circle）/nothing（棋盘格底无色指示）/mixed（混色拼贴）/disabled/selected（选中环描边）/label（可访问名，i18n ×10）；选择组：单选 radiogroup / 多选 checkbox 语义（aria-checked 同步）+ value/multiple 受控 + oas-change + roving 键盘（方向键漫游 RTL 镜像 + Home/End + Enter/Space 选中）+ 空组/未命中值静默容错
 - **oas-button compound 双行变体**：description 具名插槽副文本行——有内容时按钮切纵向双行布局（主行在上、副文本小号次要色在下）；高度自适应不锁尺寸档（与 wrap 同机制，副文本不溢框）；slotchange 动态增删跟随；loading/icon/href/disabled 既有契约全兼容；副文本自然进入可访问名

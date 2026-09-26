@@ -1428,16 +1428,40 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 **oas-button compound 变体**：`slot="description"` 副文本行存在时切纵向双行布局（主行在上、副文本在下，字号小号次要色）；既有契约（loading/icon/href/disabled）全兼容；副文本自然进入可访问名。
 
-**oas-input / oas-input-number formatter**：property-only 通道（函数不可走属性面）：
-- `formatter(raw) => display`：初始渲染与 blur 后应用（输入过程不打断）
-- `parser(inputString) => raw`：input 事件派发前应用；detail.value 恒为解析后原始值；form-associated 提交原始值
-- 边界：非函数静默忽略；SSR 快照显示原始值（升级后 formatter 应用，property-only 惯例）
+### 验收标准
+
+- 单测：swatch/组契约（value 同步、roving、ARIA、空组、禁用透传）+ button compound 双行布局切换（data-compound + 高度自适应）全绿；typecheck / build / api:check 全绿
+- 用户视角：demo 页交互（点选变色、选中环、方向键漫游）在浏览器真点真看，dark 双主题过
+- qa-regression 固化：两件各加回归断言
+
+## sidebar 折叠态 flyout + tabs 右键事件与 title 透传（未发布）
+
+### 立项依据
+
+- **oas-sidebar 折叠态 × 树形子菜单不可达**（demands 收件箱登记）：collapsed 下图标条内树形父项只渲染父节点，叶子项不渲染，hover 无子菜单弹层，点击父项派发父项 select（父项不是可导航页面——死交互的伪修复）。
+- **oas-tabs 标签级右键无原生事件**（下游 oas-md-ka 登记）：shadow DOM 下 contextmenu 的 e.target 重定向到 host，宿主无法得知右键了哪个 tab，只能对 shadow 内部约定做几何匹配（三段绕过，脆弱）。
+- **oas-tab-panel 悬停完整标题**（同下游登记）：tab 长标题截断时无全文提示通道，宿主直写 shadow `[role="tab"].title`（同族内部约定问题）。
+
+### 功能定义
+
+**oas-sidebar 折叠态树形子菜单 flyout**：
+- 折叠态嵌套父项渲染为图标项：点击（或 hover 延迟 150ms）打开子菜单面板（fixed 定位、定位引擎锚定父项 inline-end（RTL 镜像到左）+ 碰撞避让）；hover 宽限关闭 300ms（指针进入面板即取消关闭计时）；Esc 关闭并回焦父项、点击外部关闭、单开互斥
+- 面板 role=menu / 子项 role=menuitem；嵌套子树在面板内内联展开（chevron 内联展开语义）
+- 叶子子项点击派发 `oas-select` 并关面板；父项挂 aria-haspopup + aria-expanded 随开合
+- **契约变更**：父项点击不再派发父项 select（父项不是可导航页面）
+- flyout 内子项 label 不被折叠态 label 隐藏规则误伤（特异性覆盖）
+- 浮层定位引擎修复：零尺寸弹层不翻转（fits 因 gap 恒 false 会误翻，翻转把 RTL 镜像抵消）
+
+**oas-tab-contextmenu（标签级右键原生事件）**：
+- 可取消事件，detail `{ value, index, clientX, clientY, originalEvent }`；右键标签（或聚焦标签按 Menu 键 / Shift+F10）派发；宿主 preventDefault 时内建菜单（context-menu 属性）与浏览器默认菜单全抑止（capture 阶段先于 manager 委托阻断）；空白处右键不派发；键盘触发坐标取按钮中心；RTL 坐标透传；与 context-menu 属性无关恒派发
+
+**oas-tab-panel `title` 悬停提示透传**：透传 shadow tab 按钮为原生 hover tooltip；tabs 读入 titleCache 并从 panel 宿主移除（防 panel 内容区出现原生 tooltip，ui-spec 原生全局属性吸收 pattern）；宿主改写 title 按钮跟随更新并再次吸收；items JSON 通道 `title` 字段同效；SSR/hydrate 从快照按钮恢复 titleCache
 
 ### 验收标准
 
-- 单测：swatch/组契约（value 同步、roving、ARIA、空组、禁用透传）+ button secondary 布局切换 + input formatter/parser 应用链（focus 还原原始串）全绿；typecheck / build / api:check 全绿
-- 用户视角：demo 页交互（点选变色、选中环、方向键漫游、formatter 实机格式化）在浏览器真点真看，dark 双主题过
-- qa-regression 固化：三件各加回归断言
+- 单测：flyout 开合/单开互斥/Esc/外部点击/嵌套内联展开/RTL placement + tabs 事件（detail/preventDefault/空白不派发/键盘路径）+ title（透传/吸收/幂等/改写）全绿；floating 零尺寸不翻转引擎级断言；typecheck / build / api:check 全绿
+- 用户视角：真机真实几何（面板 rail 右侧视口内、子项文字可见、hover 打开移入面板驻留不自动关闭）+ tabs 右键三通道（鼠标/宿主拦截/键盘）验证
+- qa-regression 固化：flyout（含 hover 链路）与 tabs 两件各加浏览器断言
 
 ## `[hidden]` 兜底全量收口（未发布）
 

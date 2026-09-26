@@ -18,7 +18,7 @@
 
 ## 多选
 
-设 `multiple` 后为多选（checkbox 语义），`value` 逗号分隔多个选中值。
+设 `multiple` 后为多选（checkbox 语义），`value` 逗号分隔多个选中值（多选 value 通道建议用预设名或 hex 色值——含逗号的色值（如 `rgb(1,2,3)`）与逗号分隔符冲突，不建议在 multiple 组内使用）。
 
 <DemoBlock title="多选">
   <oas-swatch-group id="sw-multi" multiple>
