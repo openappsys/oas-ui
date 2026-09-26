@@ -4,7 +4,7 @@ import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 export type DividerDirection = 'horizontal' | 'vertical'
 /** 内容位置：水平布局 left/center/right，垂直布局 top/center/bottom（跨方向使用非法词会回落 center 并告警） */
 export type DividerPosition = 'left' | 'center' | 'right' | 'top' | 'bottom'
-export type DividerVariant = 'solid' | 'dashed' | 'dotted' | 'double'
+export type DividerVariant = 'solid' | 'dashed' | 'dotted' | 'double' | 'double-dashed' | 'double-dotted'
 export type DividerSize = 'small' | 'medium' | 'large'
 
 /** 预设色板名（映射 --oas-preset-* token，color 属性支持按名引用；统一协议见 ui-spec §4.1） */
@@ -35,7 +35,7 @@ export const DIVIDER_PRESET_COLORS: readonly DividerPresetColor[] = [
   'purple',
 ]
 
-const VALID_VARIANTS = ['solid', 'dashed', 'dotted', 'double'] as const
+const VALID_VARIANTS = ['solid', 'dashed', 'dotted', 'double', 'double-dashed', 'double-dotted'] as const
 const VALID_HORIZONTAL_POSITIONS = ['left', 'center', 'right'] as const
 const VALID_VERTICAL_POSITIONS = ['top', 'center', 'bottom'] as const
 const VALID_TEXT_ORIENTATIONS = ['horizontal', 'vertical'] as const
@@ -199,6 +199,51 @@ const STYLE = `
   border-bottom: var(--oas-divider-width, 1px) solid var(--oas-divider-color, var(--oas-color-border-strong));
   background: transparent;
 }
+/* 双虚线 / 双点线：double 的「加高容器 + 双层」结构 × dashed/dotted 的渐变线型——
+   多重背景分层画上下两条同段长虚/点线（段长与单虚线/单点线完全一致），层高取线宽。
+   仅水平布局生效（垂直线型为既有边界，文档已注明）。 */
+.divider.double-dashed::before,
+.divider.double-dashed::after {
+  height: calc(2 * var(--oas-divider-width, 1px) + var(--oas-divider-double-gap, 3px));
+  background:
+    repeating-linear-gradient(
+        to right,
+        var(--oas-divider-color, var(--oas-color-border-strong)) 0,
+        var(--oas-divider-color, var(--oas-color-border-strong)) 4px,
+        transparent 4px,
+        transparent 8px
+      )
+      0 0 / 100% var(--oas-divider-width, 1px) no-repeat,
+    repeating-linear-gradient(
+        to right,
+        var(--oas-divider-color, var(--oas-color-border-strong)) 0,
+        var(--oas-divider-color, var(--oas-color-border-strong)) 4px,
+        transparent 4px,
+        transparent 8px
+      )
+      0 100% / 100% var(--oas-divider-width, 1px) no-repeat;
+}
+.divider.double-dotted::before,
+.divider.double-dotted::after {
+  height: calc(2 * var(--oas-divider-width, 1px) + var(--oas-divider-double-gap, 3px));
+  background:
+    repeating-linear-gradient(
+        to right,
+        var(--oas-divider-color, var(--oas-color-border-strong)) 0,
+        var(--oas-divider-color, var(--oas-color-border-strong)) 2px,
+        transparent 2px,
+        transparent 6px
+      )
+      0 0 / 100% var(--oas-divider-width, 1px) no-repeat,
+    repeating-linear-gradient(
+        to right,
+        var(--oas-divider-color, var(--oas-color-border-strong)) 0,
+        var(--oas-divider-color, var(--oas-color-border-strong)) 2px,
+        transparent 2px,
+        transparent 6px
+      )
+      0 100% / 100% var(--oas-divider-width, 1px) no-repeat;
+}
 /* 缩进：inset 起始侧留空 / middle 两侧留空——线段外推留空（margin），线本身 flex:1 贯通。
    仅水平布局生效（同 size 惯例）；宽度走变量开口。垂直缩进不走 margin（margin % 相对宽度不适用），
    由上方 grid 行模板的空白行实现（行 % 相对容器高度） */
@@ -311,6 +356,8 @@ export class OASDivider extends OASElement {
     el.classList.toggle('dashed', variant === 'dashed')
     el.classList.toggle('dotted', variant === 'dotted')
     el.classList.toggle('double', variant === 'double')
+    el.classList.toggle('double-dashed', variant === 'double-dashed')
+    el.classList.toggle('double-dotted', variant === 'double-dotted')
     el.classList.toggle('left', position === 'left')
     el.classList.toggle('right', position === 'right')
     el.classList.toggle('top', position === 'top')
