@@ -685,8 +685,10 @@ export class OASTabs extends OASElement {
   private panels: OASTabPanel[] = []
   private observer: MutationObserver | null = null
 
-  /** title 悬停提示吸收缓存（value → title 文本）：panel title 被吸收后由缓存驱动渲染幂等 */
-  private titleCache = new Map<string, string>()
+  /** title 悬停提示吸收缓存（value → { 文本, 来源面板 }）：panel title 被吸收后由缓存驱动渲染幂等；
+   *  owner 记录吸收来源元素——宿主删除旧面板再建同名 value 新面板时（closable 场景），
+   *  缓存 owner 与新面板元素不同即判失效（防旧 title 复活） */
+  private titleCache = new Map<string, { text: string; owner: Element | null }>()
   /** 新增按钮引用（重建后更新；用于焦点归属捕获与恢复） */
   private addBtn: HTMLButtonElement | null = null
   /** 上次重建时的面板数（判断「点击 + 后宿主是否新增了面板」） */
@@ -774,8 +776,14 @@ export class OASTabs extends OASElement {
     // 触发——preventDefault 时 stopPropagation 能真正阻断内建菜单
     tablist?.addEventListener('contextmenu', (e) => this.handleTabContextMenu(e as MouseEvent), { capture: true })
     // 宿主增删 oas-tab-panel（如 closable 场景外部移除面板）时增量刷新标签栏；
-    // 同时观察 panel 的 title 属性变化（宿主改写 title 即时透传按钮，无需等无关 update）
-    this.observer = new MutationObserver(() => this.update())
+    // 同时观察 panel 的 title 属性变化（宿主改写 title 即时透传按钮，无需等无关 update）。
+    // 属性变化只认 oas-tab-panel 自身——panel 内容区后代元素改写 title 属内容自治，不触发整排重建
+    this.observer = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.type === 'childList') return this.update()
+        if (m.type === 'attributes' && (m.target as HTMLElement).localName === 'oas-tab-panel') return this.update()
+      }
+    })
     this.observer.observe(this, { childList: true, attributes: true, attributeFilter: ['title'], subtree: true })
     this.onCleanup(() => this.observer?.disconnect())
     // + 按钮（template 占位，update 按需显隐）：click → oas-add
@@ -845,7 +853,9 @@ export class OASTabs extends OASElement {
     // 后续 update() 会按缓存重渲染——不恢复会把快照里的按钮 title 擦掉）
     for (const btn of this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value][title]')) {
       const value = btn.getAttribute('data-value')
-      if (value) this.titleCache.set(value, btn.getAttribute('title') ?? '')
+      if (!value) continue
+      const owner = [...this.children].find((c) => c.localName === 'oas-tab-panel' && c.getAttribute('value') === value)
+      this.titleCache.set(value, { text: btn.getAttribute('title') ?? '', owner: owner ?? null })
     }
     this.bind()
     return true
@@ -947,8 +957,12 @@ export class OASTabs extends OASElement {
     const active = this.hasAttr('active') ? this.getAttr('active', '') : ''
     const hasActiveAttr = this.hasAttr('active')
     let firstValue = ''
+    // 存活面板 value 集合：循环后清理 titleCache 中已删除面板的缓存
+    // （防 closable 删面板后再加同名无 title 新面板时旧 title 复活）
+    const liveValues = new Set<string>()
     this.panels.forEach((panel, idx) => {
       const value = panel.getAttribute('value') ?? ''
+      liveValues.add(value)
       if (idx === 0) firstValue = value
       const resolvedActive = hasActiveAttr ? active : firstValue
       const isSelected = resolvedActive !== '' && value === resolvedActive
@@ -1049,11 +1063,16 @@ export class OASTabs extends OASElement {
       // 免宿主直写 shadow 内部约定）——panel title 读入缓存并写入按钮，同时从 panel 宿主移除
       // （防 panel 内容区出现原生 tooltip，对齐 ui-spec 原生全局属性吸收约定）
       if (panel.hasAttribute('title')) {
-        this.titleCache.set(value, panel.getAttribute('title') ?? '')
+        this.titleCache.set(value, { text: panel.getAttribute('title') ?? '', owner: panel })
         panel.removeAttribute('title')
       }
-      const cachedTitle = this.titleCache.get(value)
-      if (cachedTitle) btn.setAttribute('title', cachedTitle)
+      let cachedTitle = this.titleCache.get(value)
+      // 缓存属已删除的旧面板（删后重建同名 value 的新面板元素不同）——判失效不复活旧 title
+      if (cachedTitle && cachedTitle.owner && cachedTitle.owner !== panel) {
+        this.titleCache.delete(value)
+        cachedTitle = undefined
+      }
+      if (cachedTitle) btn.setAttribute('title', cachedTitle.text)
       else btn.removeAttribute('title')
 
       // 关闭按钮：span tabindex=-1（无 role，避免 axe nested-interactive 判为
@@ -1100,6 +1119,9 @@ export class OASTabs extends OASElement {
       this.managerCap?.decorateTab(btn, tablist, value, disabled)
       tablist.appendChild(btn)
     })
+    for (const cached of [...this.titleCache.keys()]) {
+      if (!liveValues.has(cached)) this.titleCache.delete(cached)
+    }
 
     // 新增按钮（addable）：nav 内固定（滚动区外），溢出时不随标签滚动被遮挡，始终可见。
     // role=button（不再是 tablist 占位 tab——tablist 只含真 tab，更符合 axe aria-required-children）；

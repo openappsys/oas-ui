@@ -222,6 +222,10 @@ test('sidebar 折叠态树形父项点击开 flyout：面板在 rail 右侧视�
       childTextVisible:
         firstChild.textContent!.trim().length > 0 &&
         getComputedStyle(firstChild.querySelector('.label')!).display !== 'none',
+      // flyout 子项布局不被折叠态 .item 规则压过（特异性 0,5,0 回归：
+      // justify-content 应为 flex-start、水平内边距不应为 0）
+      childJustify: getComputedStyle(firstChild).justifyContent,
+      childPaddingInline: getComputedStyle(firstChild).paddingInlineStart,
       childCount: flyout.querySelectorAll('[part="item"]').length,
     }
   })
@@ -230,6 +234,8 @@ test('sidebar 折叠态树形父项点击开 flyout：面板在 rail 右侧视�
   expect(r1.rightOfRail, '面板应在 rail 右侧').toBe(true)
   expect(r1.inViewport, '面板不越视口').toBe(true)
   expect(r1.childTextVisible, '子项文字标签可见（label 不被折叠态误隐藏）').toBe(true)
+  expect(r1.childJustify, 'flyout 子项左对齐（不被折叠态居中规则压过）').toBe('flex-start')
+  expect(r1.childPaddingInline, 'flyout 子项水平内边距非零（不被折叠态 padding-inline:0 压过）').not.toBe('0px')
   expect(r1.childCount, 'flyout 内渲染全部子项').toBeGreaterThan(0)
 
   // 叶子子项点击 → oas-select + 关面板

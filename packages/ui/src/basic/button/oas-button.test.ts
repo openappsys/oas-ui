@@ -674,6 +674,18 @@ describe('compound 双行变体（slot="description"）', () => {
     el.remove()
   })
 
+  it('空占位 description 元素（无文本无子元素）不触发 compound（无空白第二行）', async () => {
+    const el = mount({}, '按钮')
+    const empty = document.createElement('span')
+    empty.setAttribute('slot', 'description')
+    el.appendChild(empty)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.hasAttribute('data-compound'), '空白占位元素不算有内容').toBe(false)
+    const desc = shadowBtn(el).querySelector<HTMLElement>('[part="description"]')!
+    expect(desc.hidden).toBe(true)
+    el.remove()
+  })
+
   it('动态增删 description 子节点：data-compound 跟随切换（slotchange）', async () => {
     const el = mount({}, '按钮')
     expect(el.hasAttribute('data-compound')).toBe(false)

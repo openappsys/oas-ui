@@ -21,7 +21,7 @@ Pass menu JSON via the `items` attribute (`[{label, value, icon?}]`); the defaul
 
 Clicking the bottom「«」button toggles `collapsed` (a controlled attribute; fires `oas-collapse`). In the collapsed state only icons are shown, and menu items without an `icon` are hidden automatically. `hide-toggle` hides the button (host opt-out, e.g. for static sidebars).
 
-**Nested submenus use a flyout panel in the collapsed state**: a tree parent renders as an icon item; clicking (or hovering with a short delay) opens a submenu panel anchored to the item's inline-end (mirrored to the left in RTL) with collision avoidance. Clicking a leaf fires `oas-select` and closes the panel; nested subtrees expand inline inside the panel; Esc closes and refocuses the parent; clicking outside closes; only one flyout is open at a time.
+**Nested submenus use a flyout panel in the collapsed state**: a tree parent renders as an icon item; clicking (or hovering with a short delay) opens a submenu panel anchored to the item's inline-end (mirrored to the left in RTL) with collision avoidance. Clicking a leaf fires `oas-select` and closes the panel; nested subtrees expand inline inside the panel; Esc closes and refocuses the parent; clicking outside closes; only one flyout is open at a time. Note (contract change): clicking a collapsed-state parent only opens the flyout and **no longer fires `oas-select` for the parent itself** (a parent is not a navigable page) — if you previously relied on the parent's `oas-select` in the collapsed state, listen for `oas-select` from the flyout's leaf items instead.
 
 <DemoBlock title="hide-toggle (no collapse button, static sidebar)">
   <div style="height: 240px; width: 100%; display: flex">

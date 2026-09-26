@@ -805,11 +805,12 @@ export class OASButton extends OASElement {
     }
   }
 
-  /** compound 双行变体同步：slot="description" 有内容 → data-compound 双行布局；无内容 → description 部件隐藏（零回归） */
+  /** compound 双行变体同步：slot="description" 有实际内容 → data-compound 双行布局；无内容（含空白占位元素）→ description 部件隐藏（零回归） */
   private syncCompound(): void {
     const desc = this.btn?.querySelector<HTMLElement>('[part="description"]')
     if (!desc) return
-    const has = this.querySelector('[slot="description"]') !== null
+    const descEl = this.querySelector<HTMLElement>('[slot="description"]')
+    const has = descEl !== null && ((descEl.textContent ?? '').trim() !== '' || descEl.children.length > 0)
     this.toggleAttribute('data-compound', has)
     desc.hidden = !has
   }

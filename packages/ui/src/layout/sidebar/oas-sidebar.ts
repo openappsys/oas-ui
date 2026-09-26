@@ -367,13 +367,16 @@ aside {
   display: flex;
   flex-direction: column;
   gap: var(--oas-space-1, 4px);
+  max-height: 70vh;
+  overflow-y: auto;
 }
 .flyout[hidden] {
   display: none;
 }
-/* flyout 内子项占满宽度（视觉对齐弹层惯例）；折叠态 label 隐藏规则（:host([collapsed]) .item .label）
-   会误伤 flyout 内子项（同在折叠宿主 shadow 树里）——同级特异性 + 更后位置覆盖回显 */
-.flyout .item {
+/* flyout 内子项占满宽度（视觉对齐弹层惯例）；折叠态 .item 布局规则
+   （:host(:not([data-mobile])[collapsed]) .item，0,4,0）会误伤 flyout 内子项——
+   选择器带完整 :host 前缀（0,5,0）压过折叠态规则 */
+:host(:not([data-mobile])[collapsed]) .flyout .item {
   width: 100%;
   justify-content: flex-start;
   height: var(--oas-control-height-md);
@@ -731,9 +734,12 @@ export class OASSidebar extends OASElement {
     document.addEventListener('pointerdown', onOutside, true)
     this.onCleanup(() => document.removeEventListener('pointerdown', onOutside, true))
 
-    // flyout 打开期间页面滚动/缩放：关闭（fixed 定位脱锚，对齐浮层组件 close-on-scroll 惯例）
-    const onScrollResize = (): void => {
-      if (this.flyoutOpen !== null) this.closeAllFlyouts(false)
+    // flyout 打开期间页面滚动/缩放：关闭（fixed 定位脱锚，对齐浮层组件 close-on-scroll 惯例）；
+    // 组件内部滚动（.nav 滚动 / flyout 自身超长滚动）不关——锚点未位移，仅放行内部滚动源
+    const onScrollResize = (e?: Event): void => {
+      if (this.flyoutOpen === null) return
+      if (e && e.type === 'scroll' && e.composedPath().includes(this)) return
+      this.closeAllFlyouts(false)
     }
     window.addEventListener('scroll', onScrollResize, true)
     window.addEventListener('resize', onScrollResize)
