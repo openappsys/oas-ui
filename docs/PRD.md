@@ -1544,20 +1544,20 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 16. **oas-drawer `height`**：上下抽屉（placement=top/bottom）高度（默认现状 auto/既有值，属性覆盖）
 17. **oas-drawer 事件 `oas-cancel`**：取消语义关闭时派发（Esc/遮罩/取消钮），与确认区分
 18. **oas-auto-complete `variant` + 事件 `oas-focus` / `oas-blur`**：对齐 input 三值变体（outline/filled/borderless）；focus/blur 对齐 input 既有事件契约
-20. **oas-cascader `loading`**：加载态（面板内加载占位）
-21. **oas-cascader `field-names`**：字段映射（对齐 tree-select 既有契约，`{ label, value, children, disabled }`）
-22. **oas-cascader 事件 `oas-focus` / `oas-blur`**
+19. **oas-cascader `loading`**：加载态（面板内加载占位）
+20. **oas-cascader `field-names`**：字段映射（对齐 tree-select 既有契约，`{ label, value, children, disabled }`）
+21. **oas-cascader 事件 `oas-focus` / `oas-blur`**
 
 **数据展示与导航（8 项）**
 
-23. **oas-select `variant`**：对齐 input 三值变体
-24. **oas-table `show-header`**：表头显隐（默认 true 现状；false 时 thead 不渲染）
-25. **oas-tabs `actions` 插槽**：标签栏右侧操作区（nav 内固定，不随标签滚动被遮挡，对齐 + 按钮固定惯例）
-26. **oas-tree 事件 `oas-expand`**：节点展开/收起时派发，`detail: { key, expanded, node }`
-27. **oas-tree 拖拽生命周期事件组**：`oas-node-dragstart` / `oas-node-dragover` / `oas-node-dragleave` / `oas-node-dragend`（既有 drop 契约不变）
-28. **oas-calendar `range`**：范围选择模式（起止两点选取 + 区间高亮 + oas-change detail `{ start, end }`；复用 date-grid 内部基础）
-29. **oas-carousel `draggable`**：指针拖拽/触摸滑动切换（阈值翻页 + 回弹，触摸设备默认开）
-30. **oas-menu `open-on-hover`**：子菜单 hover 展开（vertical/inline 模式，延迟开合防抖，点击路径不变）
+22. **oas-select `variant`**：对齐 input 三值变体
+23. **oas-table `show-header`**：表头显隐（默认 true 现状；false 时 thead 不渲染）
+24. **oas-tabs `actions` 插槽**：标签栏右侧操作区（nav 内固定，不随标签滚动被遮挡，对齐 + 按钮固定惯例）
+25. **oas-tree 事件 `oas-expand`**：节点展开/收起时派发，`detail: { key, expanded, node }`
+26. **oas-tree 拖拽生命周期事件组**：`oas-node-dragstart` / `oas-node-dragover` / `oas-node-dragleave` / `oas-node-dragend`（既有 drop 契约不变）
+27. **oas-calendar `range`**：范围选择模式（起止两点选取 + 区间高亮 + oas-change detail `{ start, end }`；复用 date-grid 内部基础）
+28. **oas-carousel `draggable`**：指针拖拽/触摸滑动切换（阈值翻页 + 回弹，触摸设备默认开）
+29. **oas-menu `open-on-hover`**：子菜单 hover 展开（vertical/inline 模式，延迟开合防抖，点击路径不变）
 
 ### 验收（每簇）
 

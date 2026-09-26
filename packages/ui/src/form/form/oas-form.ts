@@ -47,7 +47,6 @@ register([
   'oas-cascader',
   'oas-tree-select',
   'oas-input-number',
-  'oas-checkbox',
   'oas-radio',
   'oas-date-picker',
   'oas-slider',
@@ -67,6 +66,11 @@ register(
   (el) => normalizeValue(el.getAttribute('model-value') ?? ''),
   (el, v) => el.setAttribute('model-value', v),
 )
+register(['oas-checkbox'], undefined, (el, v) => {
+  // 走 property setter：true-value/false-value 映射与布尔分发在 setter 内（setAttribute 会绕过，
+  // initial-values/reset 无法驱动 checked 态——review 实抓）
+  ;(el as unknown as { value: string }).value = v
+})
 register(
   ['oas-switch'],
   (el) => (el.hasAttribute('checked') ? 'true' : 'false'),
@@ -153,6 +157,9 @@ export class OASForm extends OASElement {
   private _initialSnapshot: Record<string, string> = {}
   private errors: Record<string, string> = {}
 
+  /** 单字段触发校验的序号令牌（异步 validator 竞态防护：只认最新一次结果） */
+  private fieldValidateSeq = new Map<string, number>()
+
   /** Vue/React 会把 rules 识别为实例属性走 property 赋值；对象走 property 通道（支持 validator），字符串反射到 attribute */
   get rules(): Rules {
     return this._rules
@@ -207,15 +214,18 @@ export class OASForm extends OASElement {
         this.emitValuesChange(target.getAttribute('name'), written)
       }
     }) as EventListener)
-    this.addEventListener('oas-change', ((e: CustomEvent<{ value: unknown }>) => {
+    this.addEventListener('oas-change', ((e: CustomEvent) => {
       const target = e.composedPath()[0]
-      if (target instanceof Element && this.contains(target)) {
-        const v = e.detail.value
-        // null（空值语义，如 input-number 未填）写空串而非 'null' 字符串
-        const written = v === null || v === undefined ? '' : typeof v === 'string' ? v : JSON.stringify(v)
-        target.setAttribute('value', written)
-        this.emitValuesChange(target.getAttribute('name'), written)
-      }
+      if (!(target instanceof Element) || !this.contains(target)) return
+      const detail = e.detail as Record<string, unknown> | null
+      // detail 无 value 键的事件（如 calendar range 的 { start, end }）不参与值同步——
+      // 读 undefined 会把字段刚写入的 value 抹成 ''（form × calendar range 交叉实抓）
+      if (!detail || !('value' in detail)) return
+      const v = detail.value
+      // null（空值语义，如 input-number 未填）写空串而非 'null' 字符串
+      const written = v === null || v === undefined ? '' : typeof v === 'string' ? v : JSON.stringify(v)
+      target.setAttribute('value', written)
+      this.emitValuesChange(target.getAttribute('name'), written)
     }) as EventListener)
     // 校验触发时机：事件与 effectiveTrigger 匹配的字段做单字段校验（注册在值同步之后，读到的是新值）
     const triggerEvents: Array<[string, ValidateTrigger]> = [
@@ -425,6 +435,9 @@ export class OASForm extends OASElement {
   /** 单字段校验（validate-trigger 触发）：只更新该字段错误态，不派发表级事件 */
   private validateFieldByTrigger(name: string, element: Element): void {
     if (this.isFieldDisabled(element)) return
+    // 异步竞态防护：连续触发时只认最新一次的结果（慢的旧 Promise 后落地不得覆盖新状态）
+    const seq = (this.fieldValidateSeq.get(name) ?? 0) + 1
+    this.fieldValidateSeq.set(name, seq)
     const apply = (message: string | null): void => {
       if (message === null) {
         delete this.errors[name]
@@ -439,7 +452,10 @@ export class OASForm extends OASElement {
     const result = this.firstFieldError(name, this.snapshotValues())
     if (typeof result === 'string') apply(result)
     else if (result === null) apply(null)
-    else void result.then(apply)
+    else
+      void result.then((r) => {
+        if (this.fieldValidateSeq.get(name) === seq) apply(r)
+      })
   }
 
   /** 单字段首个错误：无 → null；同步 → string；含异步 validator → Promise */

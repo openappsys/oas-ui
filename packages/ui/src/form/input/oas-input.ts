@@ -847,10 +847,15 @@ export class OASInput extends OASFormElement {
     const attrValueChanged = this.lastAttrValue !== value
     this.lastAttrValue = value
     if (attrValueChanged) {
+      // 回声判定必须先读当前显示值（写入前）：属性新值等于用户正在输入的未提交文本
+      // （宿主/表单监听 oas-input 的逐键写回）→ 同步显示但不推进提交基线，
+      // 否则 blur/Enter 的 commitChange 比对 raw === committedValue 会吞掉 oas-change
+      // （oas-form 的 oas-input 值同步链路实抓：form 内文本框 change 触发整体哑火）
+      const isEcho = value === this.rawValue()
       this.lastRawValue = value
       const display = this._formatter ? this._formatter(value) : value
       if (i.value !== display) i.value = display
-      this.committedValue = value
+      if (!isEcho) this.committedValue = value
     }
     // 原生表单数据同步（form-associated；无 name 浏览器自动不提交）
     this.syncFormValue()
