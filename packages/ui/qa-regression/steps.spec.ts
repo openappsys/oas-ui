@@ -189,3 +189,36 @@ test('steps 点状/普通模式连接线对准指示器中心（基线间隙 + �
     `普通模式圆心 ${normal.circle} 应与线中心 ${normal.line} 对齐（±0.5px）`,
   ).toBeLessThanOrEqual(0.5)
 })
+
+// ===== 能力缺口 P2：size 五档 =====
+
+test('steps size 五档（P2）：Vue 下属性存活、五档类标记互斥、指示器/连接线几何恒定', async ({ page }) => {
+  await page.goto('/components/steps.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-steps[size="xl"]')
+  await page.locator('oas-steps[size="xl"]').scrollIntoViewIfNeeded()
+  const SIZES = ['xs', 'small', 'medium', 'large', 'xl'] as const
+  const rows = await page.evaluate((sizes) => {
+    return sizes.map((s) => {
+      const el = document.querySelector(`oas-steps[size="${s}"]`)!
+      const icon = el.shadowRoot!.querySelector<HTMLElement>('.item .icon')!
+      return {
+        size: s,
+        attrSurvived: el.getAttribute('size'),
+        hasCls: el.classList.contains(`oas-steps--${s}`),
+        othersAbsent: sizes.filter((o) => o !== s).every((o) => !el.classList.contains(`oas-steps--${o}`)),
+        iconW: icon.getBoundingClientRect().width,
+      }
+    })
+  }, SIZES)
+  for (const row of rows) {
+    expect(row.attrSurvived, `size=${row.size} 被 Vue 剥离`).toBe(row.size)
+    expect(row.hasCls, `oas-steps--${row.size} 类标记缺失`).toBe(true)
+    expect(row.othersAbsent, '五档类标记应互斥').toBe(true)
+  }
+  // 几何恒定：五档指示器盒宽一致（约 24px，档位只动字阶）
+  const widths = rows.map((r) => r.iconW)
+  expect(
+    Math.max(...widths) - Math.min(...widths),
+    `五档指示器盒宽应一致，实测 ${widths.join('/')}`,
+  ).toBeLessThanOrEqual(0.5)
+})

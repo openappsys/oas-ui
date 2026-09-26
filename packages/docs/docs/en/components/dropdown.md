@@ -420,6 +420,37 @@ onMounted(() => {
 })
 </script>
 
+## Trigger size and type
+
+`size` (five tiers xs / small / medium / large / xl, `sm/md/lg` aliases accepted) and `type` (aligned with the oas-button type vocabulary) are **forwarded to the trigger `oas-button`** (a direct child). Dimensions not set on the dropdown keep the trigger button's own attributes; forwarding silently no-ops when the trigger is not an `oas-button`. Invalid `size` falls back to medium with a one-time warning.
+
+<DemoBlock title="size passthrough (five tiers)">
+  <oas-space size="small">
+    <oas-dropdown size="xs" items='[{"label":"Edit","value":"edit"}]'><oas-button>xs</oas-button></oas-dropdown>
+    <oas-dropdown size="small" items='[{"label":"Edit","value":"edit"}]'><oas-button>small</oas-button></oas-dropdown>
+    <oas-dropdown size="medium" items='[{"label":"Edit","value":"edit"}]'><oas-button>medium</oas-button></oas-dropdown>
+    <oas-dropdown size="large" items='[{"label":"Edit","value":"edit"}]'><oas-button>large</oas-button></oas-dropdown>
+    <oas-dropdown size="xl" items='[{"label":"Edit","value":"edit"}]'><oas-button>xl</oas-button></oas-dropdown>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="type passthrough (aligned with button type)">
+  <oas-space size="small">
+    <oas-dropdown type="primary" items='[{"label":"Edit","value":"edit"}]'><oas-button>primary trigger</oas-button></oas-dropdown>
+    <oas-dropdown type="danger" items='[{"label":"Edit","value":"edit"}]'><oas-button>danger trigger</oas-button></oas-dropdown>
+  </oas-space>
+</DemoBlock>
+
+## Panel max height
+
+`max-height` caps the menu panel height (numbers are px; forwarded to the inner `oas-menu` channel) — the panel scrolls internally, for long menus.
+
+<DemoBlock title="max-height=120 (panel scrolls internally)">
+  <oas-dropdown max-height="120" items='[{"label":"Home","value":"home"},{"label":"Products","value":"products"},{"label":"Solutions","value":"solutions"},{"label":"Docs","value":"docs"},{"label":"Blog","value":"blog"},{"label":"About us","value":"about"},{"label":"Join us","value":"jobs"},{"label":"Contact","value":"contact"}]'>
+    <oas-button>Long menu (120px cap)</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
 ## API
 
 ### oas-dropdown
@@ -437,11 +468,14 @@ onMounted(() => {
 | `hover-delay` | Open delay in ms on hover trigger (default 150) | — | — |
 | `hover-hide-delay` | Close delay in ms on hover trigger (default 100) | — | — |
 | `items` | Menu items JSON | `string` | `[]` |
+| `max-height` | Caps the menu panel height with internal scrolling (numbers get px) | `string` | — |
 | `offset` | Gap in px between popover and trigger (default 8) | — | — |
 | `open` | Controlled display (boolean attribute; expands when present) | `boolean` | — |
 | `placement` | Popup placement | `string` | `bottom` |
+| `size` | Forwarded to the trigger oas-button size tiers (aliases normalized, invalid falls back to medium) | `string` | — |
 | `split` | Split button mode (boolean attribute): main button + arrow button; arrow opens the menu, main button fires oas-action | `boolean` | — |
 | `trigger` | Trigger: `click` (default) / `hover` / `focus`; space-separated for multiple (e.g. `"click hover"`). With `hover`, touch devices (coarse pointer) automatically degrade to tap toggling: tap to open, tap again or tap outside to close; desktop hover behavior unchanged | `string` | `click` |
+| `type` | Forwarded to the trigger oas-button type vocabulary | `string` | — |
 | `value` | Current selected value | `string` | — |
 
 #### Events

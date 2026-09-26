@@ -1,9 +1,21 @@
 import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '../../basic/icon/oas-icon.js'
 import { isRtl } from '../../shared/direction.js'
+import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 
 /** 步骤状态：wait 等待 / process 进行中 / finish 完成 / error 错误 */
 export type StepStatus = 'wait' | 'process' | 'finish' | 'error'
+
+/** size 五档（全称规范词表，sm/md/lg 别名经 shared/size 静默归一） */
+export type StepsSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
+
+/** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重）；别名由 shared/size 静默映射 */
+const warnedSizes = new Set<string>()
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-steps] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+}
 
 export interface StepItem {
   title: string
@@ -124,7 +136,7 @@ const STYLE = `
 }
 .text {
   margin-top: var(--oas-space-1);
-  font-size: var(--oas-font-size-sm);
+  font-size: var(--oas-font-size-md);
   color: var(--oas-color-text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -349,6 +361,33 @@ const STYLE = `
   font-size: var(--oas-font-size-xs);
   font-weight: 600;
   color: var(--oas-color-primary-text);
+}
+
+/* ===== size 五档：字号密度（指示器盒/连接线几何恒定，仍以 --oas-control-height-sm 为盒基准，
+   只动字阶；对齐 stepper 的 size 惯例。medium 为缺省 = .text 基准 font-size-md） ===== */
+:host(.oas-steps--xs) .text {
+  font-size: var(--oas-font-size-xs);
+}
+:host(.oas-steps--small) .text {
+  font-size: var(--oas-font-size-sm);
+}
+:host(.oas-steps--large) .text {
+  font-size: var(--oas-font-size-lg);
+}
+:host(.oas-steps--large) .desc {
+  font-size: var(--oas-font-size-sm);
+}
+:host(.oas-steps--large) .icon {
+  font-size: var(--oas-font-size-sm);
+}
+:host(.oas-steps--xl) .text {
+  font-size: var(--oas-font-size-xl);
+}
+:host(.oas-steps--xl) .desc {
+  font-size: var(--oas-font-size-sm);
+}
+:host(.oas-steps--xl) .icon {
+  font-size: var(--oas-font-size-md);
 }
 
 /* —— lineless：隐藏全部连接线（含 arrow 三角）—— */
@@ -899,6 +938,8 @@ export class OASSteps extends OASElement {
       'reverse',
       'content-placement',
       'arrow',
+      // size 五档（字号密度档位，几何恒定）
+      'size',
       // 书写方向：dir 变化触发重算 data-rtl（连接线/箭头形态镜像随方向）
       'dir',
     ]
@@ -992,6 +1033,11 @@ export class OASSteps extends OASElement {
     if (!stepsEl) return
     // RTL 逻辑方向化钩子：flex 行随 dir 自动反转，data-rtl 供 CSS 镜像物理线位/箭头形状
     this.toggleAttribute('data-rtl', isRtl(this))
+    // size 五档（非法值归一化回落一次 medium）：字号密度档位（几何恒定，对齐 stepper 惯例）
+    const sizeRaw = this.getAttr('size', 'medium')
+    const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'medium')
+    if (!sizeValid) warnInvalidSize(sizeRaw)
+    for (const s of ALL_SIZES) this.classList.toggle(`oas-steps--${s}`, s === size)
     this.parseSteps()
     const clickable = this.hasAttr('clickable')
     const navigation = this.hasAttr('navigation')

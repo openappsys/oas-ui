@@ -5,7 +5,7 @@
     {
       "name": "value",
       "type": "string",
-      "default": "[]",
+      "default": "",
       "observed": true
     },
     {
@@ -174,6 +174,17 @@
       "observed": true
     },
     {
+      "name": "input-value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "label-in-value",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "required",
       "type": "boolean",
       "observed": true
@@ -206,6 +217,10 @@
       "detail": "{ value: this.searchQuery }"
     },
     {
+      "name": "oas-input-value-change",
+      "detail": "{ value: this.searchQuery }"
+    },
+    {
       "name": "oas-open-change",
       "detail": "{ open: next }"
     },
@@ -215,7 +230,7 @@
     },
     {
       "name": "oas-change",
-      "detail": "{ value: values, labels } | { value: values[0] ?? '', labels } | { value: [], labels: [] } | { value: '', labels: [] }"
+      "detail": "{ value: this.changeValueOf(values), labels } | { value: [], labels: [] } | { value: '', labels: [] }"
     },
     {
       "name": "oas-clear",
@@ -232,6 +247,9 @@
     },
     {
       "name": "template[slot=\"node\"]"
+    },
+    {
+      "name": "template[slot=\"suffix-icon\"]"
     }
   ],
   "cssVars": [],

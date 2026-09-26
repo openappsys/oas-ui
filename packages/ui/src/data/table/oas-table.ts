@@ -103,6 +103,13 @@ export type TableSize = 'small' | 'medium' | 'large'
 export type TableRowClass = (row: Record<string, unknown>, index: number) => string
 
 /**
+ * 行展开谓词（rowExpandable property）：(row, index) => boolean，返回 false 的行不渲染
+ * 行尾展开钮（行体/选中流不受影响）。仅 property 函数通道（函数不可序列化，
+ * 不进 observedAttributes / SSR 快照）
+ */
+export type TableRowExpandable = (row: Record<string, unknown>, index: number) => boolean
+
+/**
  * 受控合并函数（spanMethod property）：逐格返回 [rowspan, colspan] 或 {rowspan, colspan}。
  * - rowIndex 按当前渲染数据行序（0 起，不含 expand 内容行），columnIndex 按有效列顺序；
  * - rowspan/colspan 任一为 0：本格视为「被覆盖」不渲染（由函数声明覆盖关系）；
@@ -329,12 +336,17 @@ tr:last-child td {
 :host([bordered]) td:last-child {
   border-right: none;
 }
+/* 行 hover 底色：经 --_row-hover-bg 变量下发（默认回落 bg-hover=开，现状）；
+   hover="false" 时置透明——用变量而非改写规则，不触碰「条纹 < hover < 选中」的既有优先级序 */
+:host([hover='false']) {
+  --_row-hover-bg: transparent;
+}
 tr.row:hover td {
-  background: var(--oas-color-bg-hover);
+  background: var(--_row-hover-bg, var(--oas-color-bg-hover));
 }
 tr.row:hover td[data-fixed='left'],
 tr.row:hover td[data-fixed='right'] {
-  background: var(--oas-color-bg-hover);
+  background: var(--_row-hover-bg, var(--oas-color-bg-hover));
 }
 tr.row[data-selected='true'] td {
   background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
@@ -450,7 +462,7 @@ tr[data-sticky='true'][data-selected='true'] td[data-fixed] {
   background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
 }
 tr[data-sticky='true']:hover td {
-  background: var(--oas-color-bg-hover);
+  background: var(--_row-hover-bg, var(--oas-color-bg-hover));
 }
 /* 行内编辑：编辑态单元格与列高亮 */
 td.editing {
@@ -762,6 +774,10 @@ export class OASTableBase extends OASElement {
       'filter-values',
       'summary-scope',
       'show-header',
+      'table-layout',
+      'hover',
+      'indent-size',
+      'max-height',
     ]
   }
 
@@ -792,6 +808,8 @@ export class OASTableBase extends OASElement {
   private filterPanelKey: string | null = null
   /** 行 class 钩子（property 函数通道；不进 observedAttributes——函数不可序列化，SSR 快照安全，文档注明） */
   private _rowClass: TableRowClass | null = null
+  /** 行展开谓词（property 函数通道；不进 observedAttributes，同 rowClass 理由） */
+  private _rowExpandable: TableRowExpandable | null = null
   /** 受控合并函数（property 函数通道；虚拟滚动下忽略） */
   private _spanMethod: TableSpanMethod | null = null
   /** span-method 本轮渲染的占用表：「数据行序:列序」→ 被更早的显式 span 覆盖（本格不渲染 td） */
@@ -899,6 +917,15 @@ export class OASTableBase extends OASElement {
     this.runUpdateAndNotify()
   }
 
+  /** 行展开谓词（property 函数通道）：(row, index) => boolean，false 的行不渲染行尾展开钮 */
+  get rowExpandable(): TableRowExpandable | null {
+    return this._rowExpandable
+  }
+  set rowExpandable(fn: TableRowExpandable | null) {
+    this._rowExpandable = typeof fn === 'function' ? fn : null
+    this.runUpdateAndNotify()
+  }
+
   /** 受控合并函数（property 函数通道）：(row, column, rowIndex, columnIndex) =>
       [rowspan, colspan] | {rowspan, colspan} | void；语义见 TableSpanMethod 注释 */
   get spanMethod(): TableSpanMethod | null {
@@ -963,13 +990,29 @@ export class OASTableBase extends OASElement {
       btn.type = 'button'
       btn.className = 'filter-btn'
       btn.setAttribute('aria-label', this.t('table.filter'))
-      btn.innerHTML = FILTER_ICON
+      this.fillFilterIcon(btn)
       btn.addEventListener('click', (e) => {
         e.stopPropagation()
         this.openFilterPanel(col, btn)
       })
       th.appendChild(btn)
     }
+  }
+
+  /** 过滤触发按钮图标：template[slot="filter-icon"] / 元素 [slot="filter-icon"] 克隆优先，
+   *  缺省回落内置过滤 SVG（与 empty 插槽同思路的 light DOM 取用） */
+  private fillFilterIcon(btn: HTMLButtonElement): void {
+    const tpl = this.querySelector('template[slot="filter-icon"]')
+    if (tpl instanceof HTMLTemplateElement) {
+      btn.appendChild(tpl.content.cloneNode(true))
+      return
+    }
+    const custom = this.querySelector('[slot="filter-icon"]')
+    if (custom) {
+      btn.appendChild(custom.cloneNode(true))
+      return
+    }
+    btn.innerHTML = FILTER_ICON
   }
 
   /** 全选表头单元格（checkable 多选档）；rowSpan>1 用于多级表头首行盖到底部。
@@ -1108,12 +1151,26 @@ export class OASTableBase extends OASElement {
 
     const layout = this.computeLayout()
     const virtual = this.isVirtual()
+    // table-layout：fixed/auto 透传 table 元素（列宽定宽场景配 fixed；缺省/非法不写——浏览器 auto 基线）
+    const tableLayout = this.getAttr('table-layout', '')
+    const tableEl = this.shadow.querySelector('table')
+    if (tableEl) {
+      if (tableLayout === 'fixed' || tableLayout === 'auto') tableEl.style.tableLayout = tableLayout
+      else tableEl.style.removeProperty('table-layout')
+    }
     if (virtual) {
       this.wrap!.setAttribute('data-virtual', 'true')
       this.wrap!.style.maxHeight = `${this.tableHeight()}px`
     } else {
       this.wrap!.removeAttribute('data-virtual')
-      this.wrap!.style.maxHeight = ''
+      // max-height：表体限高滚动（数字落 px，CSS 值原样透传；表头吸顶由 th sticky top:0 常规规则承担）。
+      // 虚拟 height 优先——虚拟模式限高自管（height 即容器高），max-height 不参与
+      const maxHeight = this.getAttr('max-height', '')
+      if (maxHeight !== '') {
+        this.wrap!.style.maxHeight = /^\d+$/.test(maxHeight) ? `${maxHeight}px` : maxHeight
+      } else {
+        this.wrap!.style.maxHeight = ''
+      }
     }
 
     const st = this.wrap ? this.wrap.scrollTop : 0
@@ -1375,9 +1432,9 @@ export class OASTableBase extends OASElement {
       if (col.align) td.className = `align-${col.align}`
       td.setAttribute('data-col', col.key)
       if (i === 0) {
-        // 树形：按层级缩进
+        // 树形：按层级缩进（indent-size 属性控制每级 px，缺省 24=现状；非法/负值回落默认）
         if (hasChildren || flat.depth > 0) {
-          td.style.paddingLeft = `${16 + flat.depth * 24}px`
+          td.style.paddingLeft = `${16 + flat.depth * this.indentSize()}px`
         }
         // 树形：父行展开/收起按钮
         if (hasChildren) {
@@ -1415,10 +1472,12 @@ export class OASTableBase extends OASElement {
       tr.appendChild(td)
     }
     if (this._expandable) {
-      // 可展开行：行尾展开/收起按钮
+      // 可展开行：行尾展开/收起按钮。rowExpandable 谓词（property 函数通道）返回 false 的行
+      // 不渲染展开钮（占位单元格保留，与列对齐不破坏）
       const td = document.createElement('td')
       td.className = 'expand-toggle-cell'
-      if (typeof row.expand === 'string' && row.expand.length > 0) {
+      const expandable = this._rowExpandable === null || this._rowExpandable(row, dataIndex) !== false
+      if (expandable && typeof row.expand === 'string' && row.expand.length > 0) {
         const btn = document.createElement('button')
         btn.className = `toggle${expanded.has(key) ? ' open' : ''}`
         btn.setAttribute('aria-label', this.t('table.expand'))
@@ -1432,7 +1491,32 @@ export class OASTableBase extends OASElement {
       }
       tr.appendChild(td)
     }
+    // 单元格点击 / 行双击（行级手势沿用交互宿主排除清单——按钮/链接/表单控件内不派发，
+    // 与 oas-row-click / 双击编辑同一纪律来源）。委托到 tr：命中 td[data-col] 才算数据格
+    // （勾选列/行尾展开列无 data-col 不派发）；展开钮点击自带 stopPropagation 不误触。
+    tr.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement | null
+      if (!target) return
+      const td = target.closest('td[data-col]')
+      if (!td || !tr.contains(td)) return
+      if (target.closest(ROW_INTERACTIVE_EXCLUSION)) return
+      const column = td.getAttribute('data-col') ?? ''
+      const columnIndex = effCols.findIndex((c) => c.key === column)
+      if (columnIndex < 0) return
+      this.emit('cell-click', { row, column, value: row[column], rowIndex: dataIndex, columnIndex })
+    })
+    tr.addEventListener('dblclick', (e) => {
+      const target = e.target as HTMLElement | null
+      if (target && target.closest(ROW_INTERACTIVE_EXCLUSION)) return
+      this.emit('row-dblclick', { row, rowIndex: dataIndex })
+    })
     return tr
+  }
+
+  /** 树形缩进每级 px（indent-size 属性；缺省/非法/负值回落 24=历史现状） */
+  private indentSize(): number {
+    const n = Number(this.getAttr('indent-size', '24'))
+    return Number.isFinite(n) && n >= 0 ? n : 24
   }
 
   /** 渲染可展开行的内容行（整行 colspan 展示自定义内容） */

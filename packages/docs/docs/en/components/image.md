@@ -391,6 +391,19 @@ onMounted(async () => {
 })
 </script>
 
+## Explicit Dimensions and Referrer Policy
+
+`width` / `height` set explicit dimensions: numbers are treated as px, and any CSS size string (e.g. `50%`) passes through as-is onto the inner `img` (the `max-width: 100%` responsive constraint is preserved); empty values clear the sizing back to auto layout. `referrerpolicy` passes through to the inner `img` to control the privacy policy (e.g. `no-referrer`); an empty value falls back to the browser default.
+
+<DemoBlock title="Explicit width / height">
+  <oas-image src="https://picsum.photos/seed/isui-img-dim1/480/320" width="240" height="160" alt="Fixed size" style="margin-inline-end: var(--oas-space-4)"></oas-image>
+  <oas-image src="https://picsum.photos/seed/isui-img-dim2/480/320" width="240" alt="Width only"></oas-image>
+</DemoBlock>
+
+<DemoBlock title="referrerpolicy pass-through">
+  <oas-image src="https://picsum.photos/seed/isui-img-dim3/480/320" width="240" referrerpolicy="no-referrer" alt="no-referrer"></oas-image>
+</DemoBlock>
+
 ## API
 
 ### oas-image
@@ -402,6 +415,7 @@ onMounted(async () => {
 | `alt` | Alternative text | — | — |
 | `fallback` | Fallback image URL to switch to on load failure; when not set, shows the "图片加载失败" placeholder | `string` | — |
 | `fit` | `object-fit` value | `string` | — |
+| `height` | Explicit height (same rules as width) | `string` | — |
 | `infinite` | Loop around the first/last gallery image | `boolean` | — |
 | `lazy` | Lazy load: the image starts loading only when it enters the viewport (IntersectionObserver); loads immediately when already in the viewport; falls back to eager loading when unsupported | `boolean` | — |
 | `placeholder` | Show a light gray placeholder before the image finishes loading | `boolean` | — |
@@ -409,7 +423,9 @@ onMounted(async () => {
 | `preview-open` | Controlled preview open state (controlled when present, two-way with `oas-preview-change`; see also `openPreview()`) | `boolean` | — |
 | `preview-src` | Original image URL for preview (thumbnail/original separation; falls back to `src`) | `string` | — |
 | `preview-src-list` | Gallery preview: JSON array of URLs; prev/next paging + counter + keyboard ←→ after opening | `string` | — |
+| `referrerpolicy` | Referrer policy passed through to the inner img | `string` | — |
 | `src` | Image URL | `string` | — |
+| `width` | Explicit width (numbers become px; any CSS size string passes through; empty restores auto) | `string` | — |
 
 #### Events
 

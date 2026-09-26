@@ -500,6 +500,7 @@ export class OASSlider extends OASElement {
       'track-color',
       'readonly',
       'large-step',
+      'label',
     ]
   }
 
@@ -794,12 +795,18 @@ export class OASSlider extends OASElement {
       if (readonly) r.setAttribute('aria-readonly', 'true')
       else r.removeAttribute('aria-readonly')
     }
-    this.input.setAttribute('aria-label', this.t('slider.valueLabel'))
-    this.minInput.setAttribute('aria-label', this.t('slider.minLabel'))
-    this.maxInput.setAttribute('aria-label', this.t('slider.maxLabel'))
-    if (this.numInput) this.numInput.setAttribute('aria-label', this.t('slider.valueLabel'))
-    if (this.numMinInput) this.numMinInput.setAttribute('aria-label', this.t('slider.minLabel'))
-    if (this.numMaxInput) this.numMaxInput.setAttribute('aria-label', this.t('slider.maxLabel'))
+    // 可访问名（对齐 input label 契约）：label 属性优先，缺省回落 locale 默认；
+    // range 的 min/max 在 label 后组合语义后缀，保持可区分
+    const label = this.getAttr('label', '')
+    const valueLabel = label || this.t('slider.valueLabel')
+    const minLabel = label ? `${label} ${this.t('slider.minLabel')}` : this.t('slider.minLabel')
+    const maxLabel = label ? `${label} ${this.t('slider.maxLabel')}` : this.t('slider.maxLabel')
+    this.input.setAttribute('aria-label', valueLabel)
+    this.minInput.setAttribute('aria-label', minLabel)
+    this.maxInput.setAttribute('aria-label', maxLabel)
+    if (this.numInput) this.numInput.setAttribute('aria-label', valueLabel)
+    if (this.numMinInput) this.numMinInput.setAttribute('aria-label', minLabel)
+    if (this.numMaxInput) this.numMaxInput.setAttribute('aria-label', maxLabel)
     for (const n of [this.numInput, this.numMinInput, this.numMaxInput]) {
       if (!n) continue
       n.disabled = disabled

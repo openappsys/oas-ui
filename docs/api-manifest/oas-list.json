@@ -64,6 +64,11 @@
     {
       "name": "data",
       "observed": true
+    },
+    {
+      "name": "hoverable",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [

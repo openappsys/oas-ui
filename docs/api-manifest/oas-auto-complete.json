@@ -69,6 +69,17 @@
       "observed": true
     },
     {
+      "name": "placement",
+      "type": "string",
+      "default": "bottom-start",
+      "observed": true
+    },
+    {
+      "name": "autofocus",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "required",
       "type": "boolean",
       "observed": true

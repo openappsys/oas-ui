@@ -105,6 +105,17 @@
 
 `prefix-text` / `suffix-text` 为输入框内部文案，与 `clearable`、图标、addon 可并存不冲突。
 
+## 自定义清除图标（clear-icon 插槽）
+
+<DemoBlock title="clear-icon 插槽">
+  <oas-input id="input-clear-icon-default" clearable value="默认清除图标" style="width: 220px"></oas-input>
+  <oas-input id="input-clear-icon-custom" clearable value="自定义清除图标" style="width: 220px">
+    <oas-icon slot="clear-icon" name="close-circle"></oas-icon>
+  </oas-input>
+</DemoBlock>
+
+`clearable` 的清除按钮默认渲染内置关闭图标；需要个性化时用 `slot="clear-icon"` 分发自定义图标（slot 有内容时原生替换内置 fallback，图标尺寸由分发内容自定）。
+
 ## 字数统计
 
 <DemoBlock title="show-count + maxlength">
@@ -113,6 +124,17 @@
 </DemoBlock>
 
 `show-count` 在输入框右下角显示字数统计：设置 `maxlength` 时显示 `当前长度/maxlength`，未设置时仅显示当前长度；`maxlength` 同时透传原生 input 限制输入长度。超过限制时计数数字变 danger 色。
+
+## 提示文案（hint）
+
+<DemoBlock title="hint 静态提示（与校验错误独立）">
+  <oas-input hint="手机号仅用于登录验证，不会对外展示" placeholder="手机号" style="width: 260px"></oas-input>
+  <oas-input id="input-hint-error" hint="格式：YYYY-MM-DD" value="2024/01/15" style="width: 220px"></oas-input>
+  <oas-button id="btn-input-hint-error" size="small">切换校验错误</oas-button>
+  <span id="input-hint-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 240px"></span>
+</DemoBlock>
+
+`hint` 在输入框下方常驻一段静态提示文案（字号 `--oas-font-size-sm`、次要色），并通过 `aria-describedby` 关联到内层 input（读屏朗读提示内容）。它与校验错误（`status` / `aria-invalid`）**相互独立**：错误态出现时提示仍保留。点击按钮切换 `status="error"` 可看到错误边框与提示文案共存。
 
 ## 回车提交事件
 
@@ -224,6 +246,40 @@ onMounted(() => {
     faForm?.reset()
     if (faOut) faOut.textContent = 'form.reset() 已执行，值回到初始值'
   })
+
+  // hint 静态提示 demo：切换校验错误，提示文案与 aria-describedby 独立保留
+  const hintEl = document.getElementById('input-hint-error')
+  const hintOut = document.getElementById('input-hint-output')
+  const readHint = () => {
+    if (!hintEl) return
+    const inner = hintEl.shadowRoot?.querySelector('input')
+    const describedBy = inner?.getAttribute('aria-describedby') ?? null
+    if (hintOut) {
+      hintOut.textContent = `${hintEl.hasAttribute('status') ? '校验错误态' : '正常态'}；aria-describedby=${describedBy}`
+    }
+  }
+  document.getElementById('btn-input-hint-error')?.addEventListener('click', () => {
+    if (!hintEl) return
+    if (hintEl.hasAttribute('status')) hintEl.removeAttribute('status')
+    else hintEl.setAttribute('status', 'error')
+    readHint()
+  })
+  if (hintEl) setTimeout(readHint, 60)
+
+  // min / max / step（number 类型）透传 demo：读回内层原生属性
+  const rangeEl = document.getElementById('input-number-range')
+  const rangeOut = document.getElementById('input-number-range-output')
+  const readRange = () => {
+    const inner = rangeEl?.shadowRoot?.querySelector('input')
+    if (!inner) {
+      setTimeout(readRange, 60)
+      return
+    }
+    if (rangeOut) {
+      rangeOut.textContent = `原生透传：min=${inner.getAttribute('min')} max=${inner.getAttribute('max')} step=${inner.getAttribute('step')}`
+    }
+  }
+  if (rangeEl) readRange()
 })
 </script>
 
@@ -277,9 +333,11 @@ onMounted(() => {
   <oas-input name="username" autocomplete="username" required placeholder="用户名（必填）" style="width: 240px"></oas-input>
   <oas-input name="code" inputmode="numeric" maxlength="6" placeholder="验证码（数字键盘）" style="width: 240px"></oas-input>
   <oas-input name="nick" minlength="2" spellcheck="false" enterkeyhint="done" placeholder="昵称（至少 2 字）" style="width: 240px"></oas-input>
+  <oas-input id="input-number-range" type="number" min="0" max="10" step="2" placeholder="数字（0-10，步长 2）" style="width: 240px"></oas-input>
+  <span id="input-number-range-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
-以下原生属性镜像到 shadow 内原生 input（宿主移除后同步解除）：`name` / `autocomplete` / `autofocus` / `inputmode` / `minlength` / `required` / `spellcheck` / `enterkeyhint` / `pattern`。可用于原生表单语义、自动填充与移动端键盘优化（`inputmode` / `enterkeyhint`）。其中 `autofocus` 由组件在挂载后转发聚焦一次（原生 autofocus 不穿透 shadow DOM），页面加载即可聚焦输入框。
+以下原生属性镜像到 shadow 内原生 input（宿主移除后同步解除）：`name` / `autocomplete` / `autofocus` / `inputmode` / `minlength` / `min` / `max` / `step` / `required` / `spellcheck` / `enterkeyhint` / `pattern`。可用于原生表单语义、自动填充与移动端键盘优化（`inputmode` / `enterkeyhint`）；其中 `min` / `max` / `step` 供 `type="number"` 使用（其余类型浏览器原生忽略）。`autofocus` 由组件在挂载后转发聚焦一次（原生 autofocus 不穿透 shadow DOM），页面加载即可聚焦输入框。
 
 ## 焦点与提交事件
 
@@ -392,6 +450,7 @@ onMounted(() => {
 | `clearable` | 可清空 | `boolean` | — |
 | `count-position` | 字数计数位置：`outside`（默认，框外）/ `inside`（输入区内右侧） | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
+| `hint` | — | `string` | — |
 | `label` | 可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」） | — | — |
 | `loading` | 加载态：行尾 spinner + aria-busy（不禁用输入）；与 clearable 共存时优先显示 | `boolean` | — |
 | `maxlength` | 最大输入长度（透传原生 maxlength） | `string` | — |
@@ -428,6 +487,7 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | `append` | 后置 addon 区（可嵌 select/按钮等任意内容） |
+| `clear-icon` | — |
 | `prefix` | 内嵌前置内容（图标/按钮等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可 |
 | `prepend` | 前置 addon 区（可嵌 select/按钮等任意内容） |
 | `suffix` | 内嵌后置内容（图标/按钮等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可 |

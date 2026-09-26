@@ -1,4 +1,4 @@
-# Form 表单
+﻿# Form 表单
 
 原生 `<form>` 增强，支持按 `rules` 规则对内部字段做校验与提交。
 
@@ -307,11 +307,66 @@
 
 脚本接线（受控同步 + 各 demo 事件反馈）：
 
+### 表级尺寸与标签冒号（size / colon）
+
+> `size` 把表级尺寸档（`small` / `medium` / `large`）下发给表内字段控件，字段自身显式 `size` 优先；`colon` 为表内所有 `oas-form-item` 的标签渲染冒号。点击下方按钮观察字段尺寸与冒号即时变化。
+
+<DemoBlock title="表级 size + colon">
+  <oas-form id="form-size-colon" size="large" colon style="width: 360px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-form-item label="简介">
+        <oas-textarea name="sc-bio" rows="2" placeholder="textarea 跟随表级尺寸"></oas-textarea>
+      </oas-form-item>
+      <oas-form-item label="选项">
+        <oas-space direction="vertical" size="small">
+          <oas-checkbox name="sc-a">勾选框跟随表级尺寸</oas-checkbox>
+          <oas-checkbox name="sc-b" size="medium">自身 size=medium 优先（不随表级）</oas-checkbox>
+        </oas-space>
+      </oas-form-item>
+    </oas-space>
+  </oas-form>
+  <span style="display: inline-flex; gap: var(--oas-space-2); margin-top: var(--oas-space-3)">
+    <oas-button onclick="document.getElementById('form-size-colon').setAttribute('size','small')">切到 small</oas-button>
+    <oas-button onclick="document.getElementById('form-size-colon').setAttribute('size','large')">切到 large</oas-button>
+    <oas-button onclick="document.getElementById('form-size-colon').toggleAttribute('colon')">冒号开/关</oas-button>
+  </span>
+</DemoBlock>
+
+### 帮助文案与状态图标（help / status-icon）
+
+> `help` 在控件下方渲染常驻帮助文案，与校验错误独立并存；form-item 开启 `status-icon` 后，校验失败时在错误文本前显示 danger 状态图标（错误清除即隐藏）。
+
+<DemoBlock title="help + status-icon">
+  <oas-form id="form-help-icon" rules='{"mail":[{"required":true,"message":"请输入邮箱"},{"pattern":"^\\S+@\\S+$","message":"邮箱格式不正确"}]}' style="width: 360px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-form-item label="邮箱" help="用于接收登录验证码" status-icon>
+        <oas-input name="mail" placeholder="留空或乱填后提交"></oas-input>
+      </oas-form-item>
+      <oas-button type="primary" onclick="document.getElementById('form-help-icon').submit()">提交</oas-button>
+    </oas-space>
+  </oas-form>
+</DemoBlock>
+
+### 自定义校验文案（validate-messages）
+
+> `validateMessages`（property 通道，推荐）或 `validate-messages`（JSON 属性）按规则类型覆盖 locale 默认文案，模板支持 `${min}` / `${max}` / `${value}` 占位；`rule.message` 显式消息优先级最高。
+
+<DemoBlock title="validate-messages">
+  <oas-form id="form-vmessages" rules='{"user":[{"required":true},{"minLength":6}]}' validate-messages='{"required":"用户名不能为空","minLength":"至少 ${min} 字符"}' style="width: 360px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-form-item label="用户名" status-icon>
+        <oas-input name="user" placeholder="留空或少于 6 字提交"></oas-input>
+      </oas-form-item>
+      <oas-button type="primary" onclick="document.getElementById('form-vmessages').submit()">提交</oas-button>
+    </oas-space>
+  </oas-form>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
   // 受控同步：把文本类字段的输入写回 value 属性
-  for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event', 'form-grid', 'form-align', 'form-inline-login', 'form-inline-search']) {
+  for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event', 'form-grid', 'form-align', 'form-inline-login', 'form-inline-search', 'form-size-colon', 'form-help-icon', 'form-vmessages']) {
     const form = document.getElementById(id)
     if (!form) continue
     for (const el of form.querySelectorAll('oas-input, oas-textarea')) {
@@ -446,6 +501,14 @@ onMounted(() => {
     const { name, value, values } = e.detail
     valuesOut.textContent = `最近变化：${name} = ${value || '（空）'}；全表：${JSON.stringify(values)}`
   })
+  // 自定义校验文案（validate-messages property 通道，覆盖 locale 默认）
+  const vmForm = document.getElementById('form-vmessages')
+  if (vmForm) {
+    vmForm.validateMessages = {
+      required: '用户名不能为空',
+      minLength: '用户名至少 ${min} 个字符',
+    }
+  }
 })
 </script>
 
@@ -463,6 +526,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `colon` | 表内所有 form-item 标签渲染冒号（CSS ::after，不进 DOM 文本） | — | — |
 | `disabled` | 整表禁用：字段经 form-associated 禁用通道并入生效（不回写字段 disabled 属性，防自锁）；禁用时提交跳过全部校验 | `boolean` | — |
 | `gap` | 间距（grid 模式栅格间距；inline 模式项间距），token 值如 `var(--oas-space-4)`；grid 默认 `0`，inline 默认 `var(--oas-space-4)` | `string` | `0` |
 | `initial-values` | 表单初始值 JSON（property `initialValues` 优先）：挂载后写入对应字段；`reset()` 回到初始值 | `Record<string, unknown> \| string` | — |
@@ -472,6 +536,8 @@ onMounted(() => {
 | `layout` | 布局模式：`vertical`（默认，竖排）/ `grid`（24 列栅格）；非枚举值回退 `vertical`；存在 `inline` 属性时优先 | `string` | `vertical` |
 | `rules` | 校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | — |
 | `scroll-to-first-error` | 校验失败后聚焦首个错误字段并平滑滚动进视口（prefers-reduced-motion 时瞬跳） | `boolean` | — |
+| `size` | 表级尺寸档：经 data-form-size 通道下发表内全部字段（字段自身显式 size 优先，form-associated 字段动态跟随） | — | — |
+| `validate-messages` | 按规则类型覆盖 locale 默认校验文案（property/JSON 双通道，支持 ${min}/${max}/${value} 插值，default 兜底） | `ValidateMessages \| string` | — |
 | `validate-trigger` | 字段级即时校验触发时机：`change`（默认）/ `blur` / `input`；规则 `validateTrigger` 可逐字段覆盖；提交始终全量校验 | `string` | `change` |
 
 #### 事件
@@ -494,10 +560,12 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `help` | 控件下方常驻帮助文案，与校验错误独立并存 | `string` | — |
 | `label` | 标签文本（缺省不渲染标签行） | `string` | — |
 | `name` | 字段名（透传校验关联） | — | — |
 | `required` | 必填星号（仅视觉标记，校验规则仍由 form 的 `rules` 驱动） | `boolean` | — |
 | `span` | 24 栅格占列数（仅 form `layout="grid"` 生效；非 1-24 整数按 24） | `string` | `24` |
+| `status-icon` | 校验失败时在错误文本前显示 danger 状态图标（修正后隐藏） | `boolean` | — |
 
 #### 插槽
 

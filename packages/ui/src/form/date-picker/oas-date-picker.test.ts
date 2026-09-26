@@ -1325,3 +1325,183 @@ describe('OASDatePicker form-associated（原生表单集成）', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 })
+
+// ---- P2 能力缺口批：separator / prefix-icon·suffix-icon 插槽 / default-time ----
+
+describe('P2 批：separator 范围分隔符', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('缺省分隔符为 ~（既有显示契约不变）', () => {
+    const el = mount({ type: 'daterange', value: '["2026-08-05","2026-08-15"]' })
+    expect(input(el).value).toBe('2026-08-05 ~ 2026-08-15')
+  })
+
+  it('separator 自定义分隔符即时生效（显示层，value 契约不变）', () => {
+    const el = mount({ type: 'daterange', value: '["2026-08-05","2026-08-15"]', separator: ' 至 ' })
+    expect(input(el).value).toBe('2026-08-05 至 2026-08-15')
+    expect(el.getAttribute('value')).toBe('["2026-08-05","2026-08-15"]')
+    el.setAttribute('separator', '→')
+    expect(input(el).value).toBe('2026-08-05→2026-08-15')
+  })
+
+  it('separator 移除后回落 ~', () => {
+    const el = mount({ type: 'daterange', value: '["2026-08-05","2026-08-15"]', separator: ' 至 ' })
+    el.removeAttribute('separator')
+    expect(input(el).value).toBe('2026-08-05 ~ 2026-08-15')
+  })
+})
+
+describe('P2 批：prefix-icon / suffix-icon 插槽', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** 模拟宿主分发具名插槽内容（happy-dom 不自动派 slotchange，手动触发与 input-number 同套路） */
+  function assignSlot(el: OASDatePicker, name: string): void {
+    const span = document.createElement('span')
+    span.setAttribute('slot', name)
+    span.textContent = '★'
+    el.appendChild(span)
+    el.shadowRoot!.querySelector<HTMLSlotElement>(`slot[name="${name}"]`)!.dispatchEvent(new Event('slotchange'))
+  }
+
+  it('缺省隐藏；slot 分发后显示并给 trigger 文本让位（has-prefix / has-suffix）', () => {
+    const el = mount({ value: '2026-08-09' })
+    const prefix = el.shadowRoot!.querySelector<HTMLElement>('[part="prefix-icon"]')!
+    const suffix = el.shadowRoot!.querySelector<HTMLElement>('[part="suffix-icon"]')!
+    expect(prefix.hidden).toBe(true)
+    expect(suffix.hidden).toBe(true)
+    expect(input(el).classList.contains('has-prefix')).toBe(false)
+    expect(input(el).classList.contains('has-suffix')).toBe(false)
+    assignSlot(el, 'prefix-icon')
+    expect(prefix.hidden).toBe(false)
+    expect(input(el).classList.contains('has-prefix')).toBe(true)
+    assignSlot(el, 'suffix-icon')
+    expect(suffix.hidden).toBe(false)
+    expect(input(el).classList.contains('has-suffix')).toBe(true)
+  })
+
+  it('clearable 清除钮可见时后缀图标让位隐藏（同区动作钮优先），清空后恢复', () => {
+    const el = mount({ value: '2026-08-09', clearable: '' })
+    assignSlot(el, 'suffix-icon')
+    const suffix = el.shadowRoot!.querySelector<HTMLElement>('[part="suffix-icon"]')!
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!.hidden).toBe(false)
+    expect(suffix.hidden).toBe(true)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="clear"]')!.click()
+    expect(suffix.hidden).toBe(false)
+  })
+
+  it('CSS 契约：affix 定位走逻辑属性（inset-inline-*）且 [hidden] 兜底显示', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('.affix-icon.prefix-icon')
+    expect(css).toContain('.affix-icon.suffix-icon')
+    expect(css).toContain('inset-inline-start')
+    expect(css).toContain('inset-inline-end')
+    expect(css).toMatch(/\.affix-icon\[hidden\]\s*\{[^}]*display:\s*none/)
+  })
+})
+
+describe('P2 批：default-time 范围默认时刻', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  function hourSelected(el: OASDatePicker, side: 'start' | 'end'): string | null {
+    const sel = `.time-section[data-side="${side}"] .time-col[data-unit="h"] .time-option.selected`
+    return el.shadowRoot!.querySelector<HTMLElement>(sel)?.textContent ?? null
+  }
+
+  it('空值 + default-time：面板起止时间列默认选中，选日期确定后提交带默认时刻', () => {
+    const el = mount({ type: 'datetimerange', 'default-value': '2026-08-15', 'default-time': '["09:00","18:30"]' })
+    open(el)
+    expect(hourSelected(el, 'start')).toBe('09')
+    expect(hourSelected(el, 'end')).toBe('18')
+    day(el, '2026-08-10').click()
+    day(el, '2026-08-20').click()
+    let change: unknown
+    el.addEventListener('oas-change', (e: Event) => (change = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLElement>('[part="confirm"]')!.click()
+    expect(el.getAttribute('value')).toBe('["2026-08-10T09:00:00","2026-08-20T18:30:00"]')
+    expect(change).toEqual({ value: ['2026-08-10T09:00:00', '2026-08-20T18:30:00'] })
+  })
+
+  it('值端点已带时刻：面板跟随已有时刻，不被 default-time 覆盖', () => {
+    const el = mount({
+      type: 'datetimerange',
+      value: '["2026-08-10T09:00:00","2026-08-20T18:00:00"]',
+      'default-time': '["06:00:00","22:00:00"]',
+    })
+    open(el)
+    expect(hourSelected(el, 'start')).toBe('09')
+    expect(hourSelected(el, 'end')).toBe('18')
+  })
+
+  it('值缺时间部分：面板补 default-time；未设置时补内置惯例 00:00:00 / 23:59:59', () => {
+    const withAttr = mount({
+      type: 'datetimerange',
+      value: '["2026-08-10","2026-08-20"]',
+      'default-time': '["08:00:00","20:00:00"]',
+    })
+    open(withAttr)
+    expect(hourSelected(withAttr, 'start')).toBe('08')
+    expect(hourSelected(withAttr, 'end')).toBe('20')
+
+    const plain = mount({ type: 'datetimerange', value: '["2026-08-10","2026-08-20"]' })
+    open(plain)
+    expect(hourSelected(plain, 'start')).toBe('00')
+    expect(hourSelected(plain, 'end')).toBe('23')
+  })
+
+  it('快捷预设按 default-time 补时刻；未设置保持内置惯例', () => {
+    const plain = mount({ type: 'datetimerange', 'default-value': '2026-08-15' })
+    plain.shortcuts = [{ label: '固定范围', value: ['2026-08-10', '2026-08-20'] }]
+    open(plain)
+    plain.shadowRoot!.querySelector<HTMLElement>('.shortcut')!.click()
+    expect(plain.getAttribute('value')).toBe('["2026-08-10T00:00:00","2026-08-20T23:59:59"]')
+
+    const custom = mount({
+      type: 'datetimerange',
+      'default-value': '2026-08-15',
+      'default-time': '["08:30:00","17:30:00"]',
+    })
+    custom.shortcuts = [{ label: '固定范围', value: ['2026-08-10', '2026-08-20'] }]
+    open(custom)
+    custom.shadowRoot!.querySelector<HTMLElement>('.shortcut')!.click()
+    expect(custom.getAttribute('value')).toBe('["2026-08-10T08:30:00","2026-08-20T17:30:00"]')
+  })
+
+  it('default-time 单串形态：起止两端同值', () => {
+    const el = mount({ type: 'datetimerange', 'default-value': '2026-08-15', 'default-time': '12:00' })
+    open(el)
+    expect(hourSelected(el, 'start')).toBe('12')
+    expect(hourSelected(el, 'end')).toBe('12')
+  })
+
+  it('非法 default-time 回落内置惯例（00:00:00 / 23:59:59）', () => {
+    const el = mount({ type: 'datetimerange', 'default-value': '2026-08-15', 'default-time': '["bad","25:00:00"]' })
+    open(el)
+    expect(hourSelected(el, 'start')).toBe('00')
+    expect(hourSelected(el, 'end')).toBe('23')
+  })
+})

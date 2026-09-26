@@ -477,3 +477,46 @@ describe('OASElement ReactiveController 支持', () => {
     expect(c2.hostDisconnected).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('injectValue 表单级尺寸通道（data-form-size）', () => {
+  class SizeProbe extends OASElement {
+    protected override render(): void {
+      this.shadow.innerHTML = '<i></i>'
+    }
+    protected override update(): void {}
+    probe(key: string, def: string): string {
+      return this.injectValue(key, def)
+    }
+  }
+  if (!customElements.get('oas-size-probe')) customElements.define('oas-size-probe', SizeProbe)
+
+  it('data-form-size 在场时 injectValue("size") 读取它；自身 size 属性优先', () => {
+    const el = new SizeProbe()
+    document.body.appendChild(el)
+    el.setAttribute('data-form-size', 'small')
+    expect(el.probe('size', 'medium')).toBe('small')
+    el.setAttribute('size', 'large')
+    expect(el.probe('size', 'medium')).toBe('large')
+    el.remove()
+  })
+
+  it('data-form-size 优先于 config-provider 注入；空值/移除后回落', () => {
+    const el = new SizeProbe()
+    document.body.appendChild(el)
+    el.setAttribute('data-form-size', '')
+    expect(el.probe('size', 'medium')).toBe('medium')
+    el.setAttribute('data-form-size', 'small')
+    expect(el.probe('size', 'medium')).toBe('small')
+    el.removeAttribute('data-form-size')
+    expect(el.probe('size', 'medium')).toBe('medium')
+    el.remove()
+  })
+
+  it('key 非 size 时不读 data-form-size', () => {
+    const el = new SizeProbe()
+    document.body.appendChild(el)
+    el.setAttribute('data-form-size', 'small')
+    expect(el.probe('label', 'def')).toBe('def')
+    el.remove()
+  })
+})

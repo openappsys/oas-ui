@@ -609,3 +609,70 @@ describe('OASAutoComplete oas-focus / oas-blur（对齐 input detail 契约，PR
     expect(events).toEqual(['focus', 'blur'])
   })
 })
+
+// ===== 能力缺口 P2：placement 12 向 + autofocus 转发 =====
+
+describe('OASAutoComplete placement / autofocus（能力缺口 P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** stub 内层 input 的 rect（happy-dom 无布局引擎；面板 0 尺寸 fits 判定全宽松） */
+  function stubInputRect(el: OASAutoComplete, top: number, left: number, width = 120, height = 40): void {
+    input(el).getBoundingClientRect = () =>
+      ({
+        top,
+        left,
+        right: left + width,
+        bottom: top + height,
+        width,
+        height,
+        x: left,
+        y: top,
+        toJSON: () => ({}),
+      }) as DOMRect
+  }
+
+  function openPanel(el: OASAutoComplete): void {
+    type(el, 'a')
+  }
+
+  it('placement 进 observedAttributes', () => {
+    expect(OASAutoComplete.observedAttributes).toContain('placement')
+    expect(OASAutoComplete.observedAttributes).toContain('autofocus')
+  })
+
+  it('placement 默认 bottom-start（data-placement 反映引擎返回值，回归守护）', () => {
+    const el = mount()
+    stubInputRect(el, 200, 200)
+    openPanel(el)
+    expect(el.shadowRoot!.querySelector('.dropdown')!.getAttribute('data-placement')).toBe('bottom-start')
+  })
+
+  it('placement=top-start 请求方向传给定位引擎（空间充足不翻转）', () => {
+    const el = mount({ placement: 'top-start' })
+    stubInputRect(el, 200, 200)
+    openPanel(el)
+    expect(el.shadowRoot!.querySelector('.dropdown')!.getAttribute('data-placement')).toBe('top-start')
+  })
+
+  it('placement 运行时切换生效；非法值回落 bottom-start', () => {
+    const el = mount({ placement: 'top-start' })
+    stubInputRect(el, 200, 200)
+    openPanel(el)
+    expect(el.shadowRoot!.querySelector('.dropdown')!.getAttribute('data-placement')).toBe('top-start')
+    el.setAttribute('placement', 'fancy')
+    openPanel(el)
+    expect(el.shadowRoot!.querySelector('.dropdown')!.getAttribute('data-placement')).toBe('bottom-start')
+  })
+
+  it('autofocus：连接后聚焦内部 input（原生 autofocus 不穿透 shadow，queueMicrotask 转发）', async () => {
+    const el = mount({ autofocus: '' })
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.shadowRoot!.activeElement).toBe(input(el))
+  })
+})

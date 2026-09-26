@@ -520,8 +520,75 @@ onMounted(() => {
       cmd.scrollTo('g1-n8') // 展开祖先链后定位（g1-n8 即「子节点 58」）
     })
   }
+
+  // P2 批 demo：block-node / selectable 切换反馈
+  const blockBtn = document.querySelector('#tree-block-toggle')
+  const blockTree = document.querySelector('#tree-block')
+  blockBtn?.addEventListener('click', () => {
+    const on = !blockTree?.hasAttribute('block-node')
+    if (on) blockTree?.setAttribute('block-node', '')
+    else blockTree?.removeAttribute('block-node')
+    document.querySelector('#tree-block-status').textContent = on ? 'block-node 已开启：行块更高' : '已关闭：紧凑行'
+  })
+  const selTree = document.querySelector('#tree-selectable')
+  selTree?.addEventListener('oas-select', (e) => {
+    const el = document.querySelector('#tree-selectable-status')
+    if (el) el.textContent = `选中：${e.detail.key}`
+  })
+  document.querySelector('#tree-selectable-off')?.addEventListener('click', () => {
+    selTree?.setAttribute('selectable', 'false')
+    const el = document.querySelector('#tree-selectable-status')
+    if (el) el.textContent = '已关 selectable="false"：点行不再选中（展开/勾选不受影响）'
+  })
+  document.querySelector('#tree-selectable-on')?.addEventListener('click', () => {
+    selTree?.setAttribute('selectable', 'true')
+    const el = document.querySelector('#tree-selectable-status')
+    if (el) el.textContent = '已开 selectable="true"：点行恢复选中'
+  })
 })
 </script>
+
+## 尺寸五档（size）
+
+`size` 控制整树字号与行内边距，五档：`xs / small / medium / large / xl`（`sm / md / lg` 别名等价接受，非法值回落 `medium`）。medium 为默认档（与不设置一致）。
+
+<DemoBlock title="size 五档对比">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-4)">
+    <oas-tree size="xs" default-expand-all data='[{"key":"x1","label":"xs 超小","children":[{"key":"x1-1","label":"子节点"}]}]'></oas-tree>
+    <oas-tree size="small" default-expand-all data='[{"key":"s1","label":"small 小","children":[{"key":"s1-1","label":"子节点"}]}]'></oas-tree>
+    <oas-tree size="large" default-expand-all data='[{"key":"l1","label":"large 大","children":[{"key":"l1-1","label":"子节点"}]}]'></oas-tree>
+    <oas-tree size="xl" default-expand-all data='[{"key":"x2","label":"xl 超大","children":[{"key":"x2-1","label":"子节点"}]}]'></oas-tree>
+  </div>
+</DemoBlock>
+
+## 整行块级选中区（block-node）
+
+`block-node` 把行渲染为更高的块级命中区：选中/hover 色带本就整行覆盖，开启后行块再加高一档，适合触达密集（触屏、频繁点选）的场景。默认关闭（紧凑行）。
+
+<DemoBlock title="block-node 开关对比">
+  <div style="width: 100%">
+    <oas-tree id="tree-block" block-node default-expand-all data='[{"key":"b1","label":"设计规范","children":[{"key":"b1-1","label":"色彩"},{"key":"b1-2","label":"字体"}]},{"key":"b2","label":"工程规范"}]'></oas-tree>
+    <div style="margin-top: var(--oas-space-3); display: flex; gap: var(--oas-space-2); align-items: center">
+      <oas-button size="small" id="tree-block-toggle">切换 block-node</oas-button>
+      <span id="tree-block-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">block-node 已开启：行块更高</span>
+    </div>
+  </div>
+</DemoBlock>
+
+## 整树点选开关（selectable）
+
+`selectable` 控制整树行点选（默认开启保持现状）；设为 `"false"` 后点击/键盘不再选中、不派发 `oas-select`，展开与勾选不受影响。节点数据级的 `selectable: false` 字段仍可细粒度排除单节点。
+
+<DemoBlock title="selectable 开关">
+  <div style="width: 100%">
+    <oas-tree id="tree-selectable" default-expand-all data='[{"key":"c1","label":"可点选节点","children":[{"key":"c1-1","label":"子节点"}]},{"key":"c2","label":"另一个节点"}]'></oas-tree>
+    <div style="margin-top: var(--oas-space-3); display: flex; gap: var(--oas-space-2); align-items: center">
+      <oas-button size="small" id="tree-selectable-off">关 selectable</oas-button>
+      <oas-button size="small" id="tree-selectable-on">开 selectable</oas-button>
+      <span id="tree-selectable-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">点一行试试</span>
+    </div>
+  </div>
+</DemoBlock>
 
 ## API
 
@@ -533,6 +600,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accordion` | 手风琴（同级同时只展开一支） | `boolean` | — |
 | `auto-expand-parent` | 勾选子节点时自动展开其父级 | `boolean` | — |
+| `block-node` | 整行块级选中/hover 区（行块加高一档） | `boolean` | — |
 | `can-rename` | 节点重命名总开关：开启后双击节点 label 或按 F2 进入内联编辑，Enter 提交 / Esc 取消 / 失焦提交；提交派发 `oas-node-rename`（节点数据可加 `renamable: false` 细粒度禁单个节点） | `boolean` | — |
 | `check-strategy` | 勾选导出策略：`all`（默认）/ `parent` / `child`（checkable 级联时生效） | `string` | `all` |
 | `check-strictly` | 勾选父子解联（勾选父级不联动子级） | `boolean` | — |
@@ -554,7 +622,9 @@ onMounted(() => {
 | `motion` | 展开/收起高度过渡动画（默认关）：非虚拟模式行容器 max-height 过渡展开/收起，虚拟滚动模式入场降级为淡入、收起即时；时长/缓动走 `--oas-transition-*`，`prefers-reduced-motion` 下停用 | `boolean` | — |
 | `multiple` | 点选多选（Ctrl/⌘ 点击多选；勾选集 selected 为 JSON 数组） | `boolean` | — |
 | `row-height` | 虚拟化时每行固定高度（px） | `string` | `32` |
+| `selectable` | 整树点选开关，`"false"` 时点击/键盘不选中不派发 oas-select（展开/勾选不受影响） | `string` | `true` |
 | `selected` | 选中节点 key | `string` | — |
+| `size` | 整树字号与行距五档（xs~xl，别名等价，非法回落 medium） | `string` | `medium` |
 | `tree-lines` | 树线缩进引导线 | `boolean` | — |
 
 #### Property（仅 JS property，不反射 attribute）

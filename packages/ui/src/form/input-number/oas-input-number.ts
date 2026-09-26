@@ -18,6 +18,41 @@ import { OASFormElement } from '@oas-ui/core'
 const HOLD_DELAY_MS = 800
 const REPEAT_INTERVAL_MS = 100
 
+const VALID_VARIANTS = ['outlined', 'filled', 'borderless'] as const
+const VALID_ALIGNS = ['left', 'center', 'right'] as const
+
+const warnedValues = new Set<string>()
+
+/** 非法值告警：dev 下 console.warn 一次（同值去重），值本身走调用处的回落 */
+function warnOnce(kind: string, raw: string, fallback: string, valid: readonly string[]): void {
+  const key = `${kind}:${raw}`
+  if (warnedValues.has(key)) return
+  warnedValues.add(key)
+  console.warn(`[oas-input-number] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
+}
+
+/** 枚举归一化：合法值原样返回，空/非法值回落默认并告警（空值静默回落） */
+function normalizeChoice(kind: string, raw: string, fallback: string, valid: readonly string[]): string {
+  if (raw === '') return fallback
+  if ((valid as readonly string[]).includes(raw)) return raw
+  warnOnce(kind, raw, fallback, valid)
+  return fallback
+}
+
+/** 运行环境默认 locale 的小数分隔符（与组件 Intl 格式化同源）；进程内缓存一次 */
+let localeDecimalSeparatorCache: string | null = null
+function localeDecimalSeparator(): string {
+  if (localeDecimalSeparatorCache !== null) return localeDecimalSeparatorCache
+  let sep = '.'
+  try {
+    sep = new Intl.NumberFormat(undefined).formatToParts(1.1).find((p) => p.type === 'decimal')?.value ?? '.'
+  } catch {
+    sep = '.'
+  }
+  localeDecimalSeparatorCache = sep
+  return sep
+}
+
 const STYLE = `
 :host {
   display: inline-block;
@@ -92,6 +127,51 @@ input:disabled:hover {
 }
 input[readonly] {
   cursor: default;
+}
+
+/* ---- variant 形态：filled 填充 / borderless 无框（默认 outlined 走基础样式；对齐 oas-input 变体语义） ---- */
+:host([data-variant='filled']) input {
+  border-color: transparent;
+  background: var(--oas-color-bg-hover);
+}
+:host([data-variant='filled']) input:hover {
+  border-color: var(--oas-color-border);
+}
+:host([data-variant='filled']) input:focus {
+  border-color: var(--oas-color-primary);
+  box-shadow: var(--oas-focus-ring);
+}
+:host([data-variant='filled']) input:disabled {
+  background: var(--oas-color-bg-disabled);
+}
+:host([data-variant='borderless']) input {
+  border-color: transparent;
+  background: transparent;
+}
+:host([data-variant='borderless']) input:hover {
+  border-color: transparent;
+}
+:host([data-variant='borderless']) input:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
+:host([data-variant='borderless']) input:disabled {
+  background: transparent;
+}
+/* both 形态的 −/+ 按钮同档跟随形态（filled 填充底 / borderless 去框），选择器特异性高于基础 both 规则 */
+:host([data-variant='filled'][controls-position='both']) .controls button {
+  border-color: transparent;
+  background: var(--oas-color-bg-hover);
+}
+:host([data-variant='filled'][controls-position='both']) .controls button:hover {
+  border-color: var(--oas-color-border);
+}
+:host([data-variant='borderless'][controls-position='both']) .controls button {
+  border-color: transparent;
+  background: transparent;
+}
+:host([data-variant='borderless'][controls-position='both']) .controls button:hover {
+  border-color: transparent;
 }
 
 /* ---- 校验态（status 属性）与表单校验钩子（aria-invalid） ---- */
@@ -362,6 +442,17 @@ input[readonly] {
 :host([controls='false'][controls-position='both']:not([clearable])[data-slot-suffix]) input {
   padding-inline-end: calc(var(--oas-space-3) + 24px + var(--oas-space-1));
 }
+
+/* ---- align 数字对齐：left/center/right 映射逻辑 text-align（RTL 下自动镜像，RTL 安全） ---- */
+:host([data-align='left']) input {
+  text-align: start;
+}
+:host([data-align='center']) input {
+  text-align: center;
+}
+:host([data-align='right']) input {
+  text-align: end;
+}
 `
 
 export class OASInputNumber extends OASFormElement {
@@ -390,6 +481,10 @@ export class OASInputNumber extends OASFormElement {
       'wheel',
       'step-strictly',
       'clearable',
+      'variant',
+      'align',
+      'decimal-separator',
+      'autofocus',
       // required 仅驱动原生校验链（valueMissing），不透传内层 input（内层非 number 类型）
       'required',
     ]
@@ -512,6 +607,11 @@ export class OASInputNumber extends OASFormElement {
     const slotSuffix = this.shadow.querySelector<HTMLSlotElement>('slot[name="suffix"]')
     slotPrefix?.addEventListener('slotchange', () => this.syncAffixes())
     slotSuffix?.addEventListener('slotchange', () => this.syncAffixes())
+
+    // autofocus：转发到内部 input（原生 autofocus 不穿透 shadow，挂载后手动聚焦一次，对齐 oas-input/button pattern）
+    if (this.hasAttr('autofocus')) {
+      queueMicrotask(() => this.input?.focus())
+    }
   }
 
   protected override render(): void {
@@ -547,6 +647,15 @@ export class OASInputNumber extends OASFormElement {
 
     // 镜像最终禁用态到宿主 data-disabled（供 :host([data-disabled]) 样式消费，覆盖注入场景）
     this.toggleAttribute('data-disabled', disabled)
+
+    // 形态/对齐镜像（枚举归一，非法值告警）。未设置时不写 data-*（走基础样式/浏览器默认），
+    // 避免给宿主叠加属性改变 SSR 快照属性序列；显式设置时镜像供 CSS 消费。
+    const variantRaw = this.getAttr('variant', '')
+    if (variantRaw === '') this.removeAttribute('data-variant')
+    else this.setAttribute('data-variant', normalizeChoice('variant', variantRaw, 'outlined', VALID_VARIANTS))
+    const alignRaw = this.getAttr('align', '')
+    if (alignRaw === '') this.removeAttribute('data-align')
+    else this.setAttribute('data-align', normalizeChoice('align', alignRaw, 'left', VALID_ALIGNS))
 
     i.disabled = disabled
     i.readOnly = readonly
@@ -637,12 +746,33 @@ export class OASInputNumber extends OASFormElement {
         return Number.NaN
       }
     }
+    // 小数分隔符归一到 '.'（decimal-separator 属性优先，缺省 locale 感知）
+    const sep = this.decimalSeparator()
+    let normalized = sep === '.' ? raw : raw.split(sep).join('.')
+    // 多小数点收敛：分组符与小数符混用时（如 de 的 "1.234,5" → "1.234.5"）仅保留最后一个作小数点
+    const lastDot = normalized.lastIndexOf('.')
+    if (lastDot >= 0) {
+      const head = normalized.slice(0, lastDot)
+      if (head.includes('.')) normalized = head.split('.').join('') + normalized.slice(lastDot)
+    }
     // 声明式格式化配套解析：剥离分组符/货币符号等装饰字符后取数字
-    const cleaned = raw.replace(/[^0-9eE+.\-]/g, '')
+    const cleaned = normalized.replace(/[^0-9eE+.\-]/g, '')
     if (cleaned === '') return Number.NaN
     let v = Number(cleaned)
     if (this.getAttr('format', '') === 'percent') v = v / 100
     return Number.isFinite(v) ? v : Number.NaN
+  }
+
+  /** 小数分隔符：decimal-separator 属性优先，缺省运行环境 locale 的小数分隔符（与 Intl 格式化同源） */
+  private decimalSeparator(): string {
+    const explicit = this.getAttr('decimal-separator', '')
+    return explicit !== '' ? explicit : localeDecimalSeparator()
+  }
+
+  /** 把文本中的 from 分隔符替换为配置的小数分隔符（sep === from 时原样返回） */
+  private applyDecimalSeparator(text: string, from: string): string {
+    const sep = this.decimalSeparator()
+    return sep === from ? text : text.split(from).join(sep)
   }
 
   /** 显示格式化：null → ''；函数式 formatter 优先；否则按 Intl 语义的声明式选项 */
@@ -659,12 +789,14 @@ export class OASInputNumber extends OASFormElement {
     const opts = this.intlOptions()
     if (opts) {
       try {
-        return new Intl.NumberFormat(undefined, opts).format(v)
+        // Intl 输出按 locale 小数分隔符，再按配置（decimal-separator）替换
+        return this.applyDecimalSeparator(new Intl.NumberFormat(undefined, opts).format(v), localeDecimalSeparator())
       } catch {
         return String(v)
       }
     }
-    return String(v)
+    // 无声明式格式：JS 数字串固定用 '.'，按配置替换为小数分隔符（缺省 locale 分隔符）
+    return this.applyDecimalSeparator(String(v), '.')
   }
 
   /** 声明式格式化选项（format/grouping/precision → Intl.NumberFormatOptions）；无任何声明时返回 null */

@@ -389,6 +389,19 @@ onMounted(async () => {
 })
 </script>
 
+## 显式尺寸与 Referrer 策略
+
+`width` / `height` 显式尺寸：数字按 px，也接受任意 CSS 尺寸串（如 `50%`），写在内层 `img` 上（`max-width: 100%` 响应式约束保留）；空值清除恢复 auto 布局。`referrerpolicy` 透传内层 `img` 控制隐私策略（如 `no-referrer`），空值回落浏览器默认。
+
+<DemoBlock title="显式尺寸 width / height">
+  <oas-image src="https://picsum.photos/seed/isui-img-dim1/480/320" width="240" height="160" alt="固定尺寸" style="margin-inline-end: var(--oas-space-4)"></oas-image>
+  <oas-image src="https://picsum.photos/seed/isui-img-dim2/480/320" width="240" alt="仅定宽"></oas-image>
+</DemoBlock>
+
+<DemoBlock title="referrerpolicy 透传">
+  <oas-image src="https://picsum.photos/seed/isui-img-dim3/480/320" width="240" referrerpolicy="no-referrer" alt="no-referrer"></oas-image>
+</DemoBlock>
+
 ## API
 
 ### oas-image
@@ -400,6 +413,7 @@ onMounted(async () => {
 | `alt` | 替代文本 | — | — |
 | `fallback` | 加载失败时切换的兜底图地址；未设置则显示「图片加载失败」占位 | `string` | — |
 | `fit` | `object-fit` 值 | `string` | — |
+| `height` | 显式高度（同 width 规则） | `string` | — |
 | `infinite` | 图集首尾循环切换 | `boolean` | — |
 | `lazy` | 懒加载：图片进入视口才发起加载（IntersectionObserver）；已位于视口内立即加载；环境不支持时退化为立即加载 | `boolean` | — |
 | `placeholder` | 加载完成前显示浅灰占位 | `boolean` | — |
@@ -407,7 +421,9 @@ onMounted(async () => {
 | `preview-open` | 受控预览开合（属性在场受控，配合 `oas-preview-change` 双向；另见 `openPreview()` 方法） | `boolean` | — |
 | `preview-src` | 预览原图 URL（缩略图与原图分离；缺省用 `src`） | `string` | — |
 | `preview-src-list` | 图集预览：URL JSON 数组，点开后 prev/next 翻页 + 页码 + 键盘 ←→ | `string` | — |
+| `referrerpolicy` | 透传内层 img 的 Referrer 策略 | `string` | — |
 | `src` | 图片地址 | `string` | — |
+| `width` | 显式宽度（数字按 px，CSS 尺寸串原样透传，空值恢复 auto） | `string` | — |
 
 #### 事件
 

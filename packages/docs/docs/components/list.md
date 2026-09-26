@@ -593,6 +593,21 @@ onMounted(() => {
 })
 </script>
 
+## 行 hover 反馈（hoverable）
+
+`hoverable` 让不可点行也有 hover 底色反馈（默认关闭——现状仅 `clickable` 行自带 hover）。适合大量只读行的浏览定位；选中行保持 primary 底色不被压盖。数据通道行、声明式行与虚拟滚动行三通道一致生效。
+
+<DemoBlock title="hoverable 不可点行 hover">
+  <div style="width: 100%">
+    <oas-list hoverable bordered>
+      <oas-list-item title="发布审批" description="等待张三处理"></oas-list-item>
+      <oas-list-item title="资源申请" description="GPU 配额 x4"></oas-list-item>
+      <oas-list-item title="周报归档" description="第 38 周"></oas-list-item>
+    </oas-list>
+    <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">鼠标移入任意行：整行出现浅色底（行本身不可点）。</p>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-list
@@ -607,6 +622,7 @@ onMounted(() => {
 | `empty` | 强制空态；无子项时自动空态 | `boolean` | — |
 | `empty-text` | 空态文案 | — | — |
 | `height` | 虚拟滚动视口高度（px，设置即启用虚拟模式，要求 data 通道；数据带 `group` 时自动回退全量渲染、组头不吸顶） | `string` | `320` |
+| `hoverable` | 不可点行的 hover 底色反馈（选中行排除） | `boolean` | — |
 | `loading` | 加载态，显示骨架占位 | `boolean` | — |
 | `max-height` | 列表体最大高度（px 或 CSS 长度），设置后列表体成为滚动容器（配合 oas-reach-bottom 滚动加载；分组组头在此容器内吸顶） | `string` | — |
 | `row-height` | 虚拟滚动行高（px，默认 64，要求数据行定高） | `string` | `64` |

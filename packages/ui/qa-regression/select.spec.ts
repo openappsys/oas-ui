@@ -367,3 +367,70 @@ test('select label：trigger aria-label 取 label 属性（优先于 placeholder
   expect(r.set).toBe('所属城市')
   expect(r.fallback).toBe('无 label，回退占位文本')
 })
+
+// ---- 能力缺口 P2：长尾组 ----
+
+test('select show-arrow / suffix-icon / clear-icon：默认箭头可隐藏，模板图标替换 chevron 与清空图标', async ({
+  page,
+}) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#select-no-arrow')
+  const r = await page.evaluate(() => {
+    const read = (id: string) => {
+      const el = document.querySelector(id)!
+      const root = el.shadowRoot!
+      const trigger = root.querySelector('[part="trigger"]')!
+      const box = trigger.querySelector<HTMLElement>('.suffix-icon')!
+      const clearBox = root.querySelector<HTMLElement>('.clear-btn .clear-icon')!
+      return {
+        chevronHidden: trigger.querySelector('.chevron')!.hasAttribute('hidden'),
+        iconVisible: !box.hidden,
+        iconHtml: box.innerHTML,
+        clearHtml: clearBox.innerHTML,
+      }
+    }
+    return { noArrow: read('#select-no-arrow'), icons: read('#select-icons-demo') }
+  })
+  // show-arrow="false"：默认箭头隐藏（hidden attribute，svg 无 hidden IDL）
+  expect(r.noArrow.chevronHidden).toBe(true)
+  // suffix-icon 模板：chevron 隐藏、自定义图标克隆进容器；clear-icon 替换默认 ×
+  expect(r.icons.chevronHidden).toBe(true)
+  expect(r.icons.iconVisible).toBe(true)
+  expect(r.icons.iconHtml).toContain('⌄')
+  expect(r.icons.clearHtml).toContain('✕')
+})
+
+test('select input-value 写回 + allow-create 创建派发 oas-create，demo 反馈可见', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#select-input-value')
+  // input-value：输入写回属性 + demo 输出回显（真实链路：打开面板 → 输入 → 事件 → 输出）
+  await page.evaluate(() => {
+    const el = document.querySelector('#select-input-value')!
+    el.shadowRoot!.querySelector('[part="trigger"]')!.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, composed: true }),
+    )
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('.search-input')!
+    input.value = '苹'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#select-input-value')!
+    const out = document.getElementById('select-input-value-output')?.textContent ?? ''
+    return el.getAttribute('input-value') === '苹' && out.includes('苹')
+  })
+  // allow-create：创建行点击 → oas-create → 输出更新
+  await up(page, '#select-create')
+  await page.evaluate(() => {
+    const el = document.querySelector('#select-create')!
+    el.shadowRoot!.querySelector('[part="trigger"]')!.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, composed: true }),
+    )
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('.search-input')!
+    input.value = '榴莲'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    el.shadowRoot!.querySelector<HTMLElement>('.create-option')!.click()
+  })
+  await page.waitForFunction(() =>
+    (document.getElementById('select-create-output')?.textContent ?? '').includes('榴莲'),
+  )
+})

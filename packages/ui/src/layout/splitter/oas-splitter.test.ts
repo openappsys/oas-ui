@@ -419,6 +419,86 @@ describe('OASSplitter', () => {
   })
 })
 
+describe('OASSplitter disabled（禁用调整，PRD P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('disabled 进 observedAttributes；分隔条标记 aria-disabled（动态切换）', () => {
+    const el = mount()
+    expect(OASSplitter.observedAttributes).toContain('disabled')
+    const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
+    expect(splitter.getAttribute('aria-disabled')).toBe('false')
+    el.setAttribute('disabled', '')
+    expect(splitter.getAttribute('aria-disabled')).toBe('true')
+    el.removeAttribute('disabled')
+    expect(splitter.getAttribute('aria-disabled')).toBe('false')
+  })
+
+  it('disabled：键盘方向键不再调整、不派发 oas-resize', () => {
+    const el = mount()
+    el.setAttribute('percent', '50')
+    el.setAttribute('disabled', '')
+    let fired = 0
+    el.addEventListener('oas-resize', () => fired++)
+    key(el, 'ArrowRight')
+    expect(Number(el.getAttribute('percent'))).toBe(50)
+    expect(fired).toBe(0)
+  })
+
+  it('disabled：指针拖拽无效（percent 冻结、无 dragging 态）', () => {
+    const el = mount()
+    el.setAttribute('percent', '50')
+    el.setAttribute('disabled', '')
+    Object.defineProperty(el, 'clientWidth', { value: 1000, configurable: true })
+    const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
+    splitter.dispatchEvent(pointer('pointerdown', 500))
+    document.dispatchEvent(pointer('pointermove', 600))
+    document.dispatchEvent(pointer('pointerup', 600))
+    expect(el.getAttribute('percent')).toBe('50')
+    expect(el.hasAttribute('dragging'), '禁用下不得进入拖拽态').toBe(false)
+  })
+
+  it('disabled：双击复位无效', () => {
+    const el = mount()
+    el.setAttribute('percent', '30')
+    el.setAttribute('disabled', '')
+    const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
+    splitter.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(Number(el.getAttribute('percent'))).toBe(30)
+  })
+
+  it('disabled：分隔条光标恢复常态（CSS 规则）', () => {
+    const el = mount()
+    el.setAttribute('disabled', '')
+    // data-disabled 镜像（自身 disabled 与 config-provider 注入禁用共用消费点）
+    expect(el.hasAttribute('data-disabled'), '禁用态应镜像 data-disabled 供样式消费').toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style, 'data-disabled 下分隔条 cursor 应为常态').toMatch(
+      /:host\(\[data-disabled\]\)\s+\.splitter\s*\{[^}]*cursor:\s*default/,
+    )
+  })
+
+  it('multi 模式：所有分隔条同步 aria-disabled 且拖拽冻结', () => {
+    const el = mountMulti()
+    el.setAttribute('disabled', '')
+    const splitters = el.shadowRoot!.querySelectorAll('[part="splitter"]')
+    expect(splitters.length).toBe(2)
+    splitters.forEach((s) => expect(s.getAttribute('aria-disabled')).toBe('true'))
+    el.setAttribute('sizes', '30,40,30')
+    splitters[0]!.dispatchEvent(pointer('pointerdown', 300))
+    document.dispatchEvent(pointer('pointermove', 400))
+    document.dispatchEvent(pointer('pointerup', 400))
+    expect(el.getAttribute('sizes')).toBe('30,40,30')
+  })
+})
+
 function pointer(type: string, clientX: number): Event {
   const Ctor = (globalThis as Record<string, unknown>).PointerEvent as typeof PointerEvent | undefined
   if (typeof Ctor === 'function') {

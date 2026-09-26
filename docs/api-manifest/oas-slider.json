@@ -113,6 +113,12 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [

@@ -595,6 +595,21 @@ onMounted(() => {
 })
 </script>
 
+## Row hover feedback (hoverable)
+
+`hoverable` gives non-clickable rows the same hover background feedback (off by default — today only `clickable` rows hover). Useful for scanning long read-only lists; selected rows keep their primary background. Works across all three row channels: data rows, declarative children, and virtual scroll rows.
+
+<DemoBlock title="hoverable on non-clickable rows">
+  <div style="width: 100%">
+    <oas-list hoverable bordered>
+      <oas-list-item title="Release approval" description="Waiting for Zhang San"></oas-list-item>
+      <oas-list-item title="Resource request" description="GPU quota x4"></oas-list-item>
+      <oas-list-item title="Weekly report archive" description="Week 38"></oas-list-item>
+    </oas-list>
+    <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">Hover any row: a light background covers the whole row (rows themselves are not clickable).</p>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-list
@@ -609,6 +624,7 @@ onMounted(() => {
 | `empty` | Force empty state; auto empty when there are no children | `boolean` | — |
 | `empty-text` | Empty state text | — | — |
 | `height` | Virtual scroll viewport height (px; setting it enables virtual mode, requires the data channel; data with `group` falls back to full rendering without sticky headers) | `string` | `320` |
+| `hoverable` | Hover background for non-clickable rows (selected rows excluded) | `boolean` | — |
 | `loading` | Loading state, shows skeleton placeholders | `boolean` | — |
 | `max-height` | Max height of the list body (px or CSS length); turns the body into a scroll container (pairs with oas-reach-bottom for scroll loading; group headers stick inside this container) | `string` | — |
 | `row-height` | Virtual scroll row height (px, default 64; data rows must be fixed-height) | `string` | `64` |

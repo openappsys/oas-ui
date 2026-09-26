@@ -167,6 +167,48 @@ While `loading` is set the trigger shows a spinner with `aria-busy` (replacing t
   <oas-cascader disabled value='["zj","hz"]' placeholder="Disabled" options='[{"label":"Zhejiang","value":"zj","children":[{"label":"Hangzhou","value":"hz"}]}]'></oas-cascader>
 </DemoBlock>
 
+## Accessible Name (label)
+
+<DemoBlock title="label (accessible name)">
+  <oas-cascader id="cs-label-set" label="Region" placeholder="Pick a region" options='[{"label":"Zhejiang","value":"zj","children":[{"label":"Hangzhou","value":"hz"}]}]'></oas-cascader>
+  <oas-cascader id="cs-label-fallback" placeholder="No label, falls back to placeholder" options='[{"label":"Zhejiang","value":"zj","children":[{"label":"Hangzhou","value":"hz"}]}]'></oas-cascader>
+  <span id="cs-label-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 280px"></span>
+</DemoBlock>
+
+`label` is the accessible name (`aria-label`) of the trigger: screen readers announce it and it takes precedence over the selected value text and the placeholder; without it the component falls back to value text / placeholder (matching the `oas-select` contract).
+
+## Placement (placement)
+
+<DemoBlock title="placement (12 directions)">
+  <oas-space size="small">
+    <oas-cascader placement="top-start" placeholder="top-start" options='[{"label":"Zhejiang","value":"zj","children":[{"label":"Hangzhou","value":"hz"}]}]'></oas-cascader>
+    <oas-cascader placement="bottom" placeholder="bottom (default)" options='[{"label":"Zhejiang","value":"zj","children":[{"label":"Hangzhou","value":"hz"}]}]'></oas-cascader>
+    <oas-cascader id="cs-placement-right" placement="right-start" placeholder="right-start" options='[{"label":"Zhejiang","value":"zj","children":[{"label":"Hangzhou","value":"hz"}]}]'></oas-cascader>
+  </oas-space>
+</DemoBlock>
+
+`placement` supports 12 directions: `top` / `bottom` / `left` / `right` × `start` / `end` / centered (e.g. `top-start`, `right-end`), defaulting to `bottom` (opens below, auto-flips when space runs out); invalid values fall back silently. Declare the direction directly for edge-adjacent scenarios such as sidebars or inside tables.
+
+## Custom Suffix Icon (suffix-icon slot)
+
+<DemoBlock title="suffix-icon (replaces the default arrow)">
+  <oas-cascader id="cs-suffix-icon" placeholder="Custom suffix icon" options='[{"label":"Zhejiang","value":"zj","children":[{"label":"Hangzhou","value":"hz"}]}]'>
+    <template slot="suffix-icon"><span style="display:inline-flex">▤</span></template>
+  </oas-cascader>
+</DemoBlock>
+
+`template[slot="suffix-icon"]` replaces the default dropdown arrow on the trigger (rotating with the container when expanded; the spinner still takes over during `loading`).
+
+## Custom Option Rendering (option slot)
+
+<DemoBlock title="option (custom option rows)">
+  <oas-cascader id="cs-option-slot" placeholder="Option rows with icons" options='[{"label":"Zhejiang","value":"zj","children":[{"label":"Hangzhou","value":"hz"},{"label":"Ningbo","value":"nb"}]},{"label":"Jiangsu","value":"js","children":[{"label":"Nanjing","value":"nj"}]}]'>
+    <template slot="option"><span style="display:inline-flex">📍</span><span data-option-label></span></template>
+  </oas-cascader>
+</DemoBlock>
+
+`template[slot="option"]` is cloned into every option row (both panel rows and search-result rows); the `[data-option-label]` node is bound to the display text (the option label for panel rows, the full path text for search rows). Hosts can also rewrite row content via render events.
+
 ## Events
 
 <DemoBlock title="Selection events">
@@ -274,6 +316,19 @@ onMounted(() => {
   focus?.addEventListener('oas-blur', () => {
     focusOut.textContent = 'oas-blur'
   })
+
+  // Accessible name (label) demo: read the trigger aria-label (label set vs placeholder fallback)
+  const readLabel = () => {
+    const a = document.getElementById('cs-label-set')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
+    const b = document.getElementById('cs-label-fallback')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
+    const out = document.getElementById('cs-label-output')
+    if (a && b && out) {
+      out.textContent = `aria-label: set "${a}" / fallback "${b}"`
+    } else {
+      setTimeout(readLabel, 60)
+    }
+  }
+  readLabel()
 })
 </script>
 
@@ -296,12 +351,14 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | `expand-trigger` | Sub-level expansion trigger: `click` (default) / `hover` (120ms delay to prevent misfires) | `string` | `click` |
 | `field-names` | Field-alias JSON (`{ label, value, children, disabled }`) matching the tree-select contract; lazy-load results are mapped alike | `string` | — |
 | `filterable` | Searchable (flat path results) | `boolean` | — |
+| `label` | Accessible name of the trigger (aria-label), taking priority over value/placeholder | `string` | — |
 | `loading` | Loading state: trigger spinner + aria-busy; the panel shows a loading placeholder | `boolean` | — |
 | `max-tag-count` | Collapse multi-select tags beyond the count into +N (with title listing hidden items) | `boolean` | — |
 | `multiple` | Multi-select (cascading checkboxes; fully-checked children roll the parent into the value) | `boolean` | — |
 | `open` | Controlled open state (single source of truth); in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | `boolean` | — |
 | `options` | Cascade options, JSON array, supports `children` / `disabled` | `CascaderOption[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
+| `placement` | Panel placement in 12 directions (invalid falls back to bottom; auto-flip kept) | `string` | `bottom` |
 | `separator` | Path separator (default ` / `) | `string` | ` / ` |
 | `show-all-levels` | Show the full path (default true); `false` shows only the leaf | `string` | `true` |
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
@@ -319,3 +376,12 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | `oas-focus` | Dispatched on trigger focus; `detail.value` shares the oas-change shape (inner focus moves do not false-fire) |
 | `oas-open-change` | Open state flips, `detail: { open }` |
 | `oas-search` | Fires on filterable input, `detail: { value }` |
+
+#### Slots
+
+| Name | Description |
+| --- | --- |
+| `option` | Custom option row template; `[data-option-label]` nodes bind the option text |
+| `suffix-icon` | Custom trailing trigger icon (replaces the default arrow; yields to the spinner while loading) |
+| `template[slot="option"]` | — |
+| `template[slot="suffix-icon"]` | — |

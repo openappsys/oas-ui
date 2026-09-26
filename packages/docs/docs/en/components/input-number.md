@@ -158,6 +158,46 @@ With `wheel`, scrolling while the input is focused steps the value (up increases
 
 `label` serves as the accessible name (`aria-label`) for the input: once set, screen readers announce it; when unset, it falls back to `placeholder`, then to the built-in text "Number input". The stepper buttons "Increase / Decrease" also use built-in text for their accessible names.
 
+## Decimal Separator (decimal-separator)
+
+<DemoBlock title="decimal-separator (locale-aware by default)">
+  <oas-input-number id="num-sep-default" value="1.5" step="0.1" placeholder="locale default" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-sep-comma" value="1.5" step="0.1" decimal-separator="," placeholder="comma" style="width: 160px"></oas-input-number>
+  <span id="num-sep-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+`decimal-separator` sets the decimal point character (defaults to the runtime locale's decimal separator, same source as `Intl` formatting). The left one uses the locale default; the right one explicitly uses a comma: display, typed parsing, and committed value stay consistent — typing `2,5` commits `2.5` and re-renders as `2,5` on blur. Listen to `oas-change` to read the committed number.
+
+## Variants
+
+<DemoBlock title="variant (outlined / filled / borderless)">
+  <oas-input-number id="num-variant-outlined" value="5" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-variant-filled" value="5" variant="filled" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-variant-borderless" value="5" variant="borderless" style="width: 160px"></oas-input-number>
+</DemoBlock>
+
+`variant` supports `outlined` (default border) / `filled` (filled background, border only on focus) / `borderless` (no border, no background), with the same semantics as the `oas-input` variants; with `controls-position="both"` the −/+ buttons follow the variant too.
+
+## Alignment (align)
+
+<DemoBlock title="align (left / center / right)">
+  <oas-input-number id="num-align-left" value="1234" align="left" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-align-center" value="1234" align="center" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-align-right" value="1234" align="right" style="width: 160px"></oas-input-number>
+</DemoBlock>
+
+`align` controls the number text alignment (`left` / `center` / `right`). For RTL safety it maps to logical `text-align: start/end`: `left` / `right` mirror automatically to the line start/end under `dir="rtl"`. When unset, the browser default applies (`start`, i.e. left-aligned in LTR).
+
+## Autofocus
+
+<DemoBlock title="autofocus (focus the inner input after mount)">
+  <oas-button id="btn-num-autofocus" size="small">Create an autofocus input</oas-button>
+  <span id="num-autofocus-host" style="display: inline-flex; gap: var(--oas-space-2); vertical-align: middle"></span>
+  <span id="num-autofocus-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
+</DemoBlock>
+
+`autofocus` forwards focus to the inner input after mount (native autofocus does not pierce the shadow DOM), so a page/form can be typed into immediately. To avoid stealing focus on page load, this demo creates a component with `autofocus` via a button.
+
 ## Events
 
 <DemoBlock title="Change / clear / focus / blur / input events">
@@ -219,6 +259,31 @@ onMounted(() => {
     }
   }
   readNumLabel()
+
+  // decimal-separator demo: read back the committed number (display uses the configured separator)
+  const sepEl = document.getElementById('num-sep-comma')
+  const sepOut = document.getElementById('num-sep-output')
+  sepEl?.addEventListener('oas-change', (e) => {
+    const shown = sepEl.shadowRoot?.querySelector('input')?.value ?? ''
+    sepOut.textContent = `display "${shown}" → commit ${e.detail.value === null ? 'null' : e.detail.value}`
+  })
+
+  // autofocus demo: create a component with autofocus and verify the inner input is focused
+  const afHost = document.getElementById('num-autofocus-host')
+  const afOut = document.getElementById('num-autofocus-output')
+  document.getElementById('btn-num-autofocus')?.addEventListener('click', () => {
+    if (!afHost) return
+    const el = document.createElement('oas-input-number')
+    el.setAttribute('autofocus', '')
+    el.setAttribute('placeholder', 'Auto-focused')
+    el.style.width = '140px'
+    afHost.replaceChildren(el)
+    setTimeout(() => {
+      const inner = el.shadowRoot?.querySelector('input')
+      const focused = el.shadowRoot?.activeElement === inner
+      afOut.textContent = focused ? 'inner input focused' : 'not focused'
+    }, 60)
+  })
 })
 </script>
 
@@ -238,9 +303,12 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `align` | — | `string` | — |
+| `autofocus` | — | `boolean` | — |
 | `clearable` | Clear button when a value is present (returns to the empty-value state) | `boolean` | — |
 | `controls` | Stepper buttons visibility (shown by default; `controls="false"` hides them, keyboard ↑↓ still steps) | — | — |
 | `controls-position` | Button layout: `right` (default, stacked up/down on the right) / `both` (−/+ on both sides, stepper-counter form) | — | — |
+| `decimal-separator` | — | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `format` | Intl-style declarative format: `percent` (0.15→15%) / `currency:USD` / `unit:GB`, following the host locale | `string` | — |
 | `grouping` | Thousands grouping display (group separators stripped on parse) | `boolean` | — |
@@ -258,6 +326,7 @@ onMounted(() => {
 | `step-strictly` | Strict stepping: committed value snaps to the nearest step multiple | `boolean` | — |
 | `suffix-text` | Inline suffix text (slot="suffix" likewise) | `string` | — |
 | `value` | Current value (controlled) | `string` | — |
+| `variant` | — | `string` | — |
 | `wheel` | Wheel stepping while focused (up increments, down decrements; off by default to prevent accidental changes) | `boolean` | — |
 
 #### Events

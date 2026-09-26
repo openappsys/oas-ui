@@ -52,6 +52,18 @@
     {
       "name": "initial-values",
       "observed": true
+    },
+    {
+      "name": "size",
+      "observed": true
+    },
+    {
+      "name": "colon",
+      "observed": true
+    },
+    {
+      "name": "validate-messages",
+      "observed": true
     }
   ],
   "props": [
@@ -62,6 +74,10 @@
     {
       "name": "initialValues",
       "type": "Record<string, unknown> | string"
+    },
+    {
+      "name": "validateMessages",
+      "type": "ValidateMessages | string"
     }
   ],
   "events": [

@@ -75,6 +75,10 @@
       "name": "required",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "autocomplete",
+      "observed": true
     }
   ],
   "props": [

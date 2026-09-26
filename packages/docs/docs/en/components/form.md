@@ -1,4 +1,4 @@
-# Form
+﻿# Form
 
 An enhanced native `<form>` supporting validation and submission of inner fields according to `rules`.
 
@@ -307,11 +307,66 @@ Controlled syncing and event listeners (wired in one `<script>` block):
 
 Script wiring (controlled sync + event feedback for each demo):
 
+### Form-Level Size & Label Colon (size / colon)
+
+> `size` distributes the form-level size tier (`small` / `medium` / `large`) to field controls inside the form; a field's own explicit `size` wins. `colon` renders a colon after the label of every `oas-form-item` in the form. Click the buttons below to watch fields resize and the colon toggle live.
+
+<DemoBlock title="Form-level size + colon">
+  <oas-form id="form-size-colon" size="large" colon style="width: 360px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-form-item label="Bio">
+        <oas-textarea name="sc-bio" rows="2" placeholder="Textarea follows the form-level size"></oas-textarea>
+      </oas-form-item>
+      <oas-form-item label="Options">
+        <oas-space direction="vertical" size="small">
+          <oas-checkbox name="sc-a">Checkbox follows the form-level size</oas-checkbox>
+          <oas-checkbox name="sc-b" size="medium">Own size=medium wins (ignores form level)</oas-checkbox>
+        </oas-space>
+      </oas-form-item>
+    </oas-space>
+  </oas-form>
+  <span style="display: inline-flex; gap: var(--oas-space-2); margin-top: var(--oas-space-3)">
+    <oas-button onclick="document.getElementById('form-size-colon').setAttribute('size','small')">Switch to small</oas-button>
+    <oas-button onclick="document.getElementById('form-size-colon').setAttribute('size','large')">Switch to large</oas-button>
+    <oas-button onclick="document.getElementById('form-size-colon').toggleAttribute('colon')">Toggle colon</oas-button>
+  </span>
+</DemoBlock>
+
+### Help Text & Status Icon (help / status-icon)
+
+> `help` renders persistent helper text below the control, independent of validation errors. With `status-icon` on a form-item, a danger status icon appears before the error text when validation fails (hidden again once the error clears).
+
+<DemoBlock title="help + status-icon">
+  <oas-form id="form-help-icon" rules='{"mail":[{"required":true,"message":"Email is required"},{"pattern":"^\\S+@\\S+$","message":"Invalid email format"}]}' style="width: 360px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-form-item label="Email" help="Used for login verification codes" status-icon>
+        <oas-input name="mail" placeholder="Submit empty or invalid to try"></oas-input>
+      </oas-form-item>
+      <oas-button type="primary" onclick="document.getElementById('form-help-icon').submit()">Submit</oas-button>
+    </oas-space>
+  </oas-form>
+</DemoBlock>
+
+### Custom Validation Messages (validate-messages)
+
+> `validateMessages` (property channel, recommended) or `validate-messages` (JSON attribute) overrides locale-default messages per rule type. Templates support `${min}` / `${max}` / `${value}` placeholders; an explicit `rule.message` has the highest priority.
+
+<DemoBlock title="validate-messages">
+  <oas-form id="form-vmessages" rules='{"user":[{"required":true},{"minLength":6}]}' style="width: 360px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-form-item label="Username" status-icon>
+        <oas-input name="user" placeholder="Submit empty or shorter than 6 chars"></oas-input>
+      </oas-form-item>
+      <oas-button type="primary" onclick="document.getElementById('form-vmessages').submit()">Submit</oas-button>
+    </oas-space>
+  </oas-form>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
   // Controlled sync: write text-field input back to the value attribute
-  for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event', 'form-grid', 'form-align', 'form-inline-login', 'form-inline-search']) {
+  for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event', 'form-grid', 'form-align', 'form-inline-login', 'form-inline-search', 'form-size-colon', 'form-help-icon', 'form-vmessages']) {
     const form = document.getElementById(id)
     if (!form) continue
     for (const el of form.querySelectorAll('oas-input, oas-textarea')) {
@@ -446,6 +501,14 @@ onMounted(() => {
     const { name, value, values } = e.detail
     valuesOut.textContent = `Latest change: ${name} = ${value || '(empty)'}; all: ${JSON.stringify(values)}`
   })
+  // Custom validation messages (validate-messages property channel, overrides locale defaults)
+  const vmForm = document.getElementById('form-vmessages')
+  if (vmForm) {
+    vmForm.validateMessages = {
+      required: 'Username is required',
+      minLength: 'Username needs at least ${min} characters',
+    }
+  }
 })
 </script>
 
@@ -463,6 +526,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `colon` | Renders a colon after every form-item label in the form (CSS ::after, no DOM text) | — | — |
 | `disabled` | Whole-form disable: fields are disabled via their form-associated channel (no write-back of the disabled attribute); submission skips validation while disabled | `boolean` | — |
 | `gap` | Spacing (grid gap in `grid` mode; item spacing in `inline` mode), token value e.g. `var(--oas-space-4)`; `0` by default in grid, `var(--oas-space-4)` by default in inline | `string` | `0` |
 | `initial-values` | Initial values JSON (the `initialValues` property takes precedence): written into fields after mount; `reset()` restores them | `Record<string, unknown> \| string` | — |
@@ -472,6 +536,8 @@ onMounted(() => {
 | `layout` | Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical`; `inline` attribute takes precedence when present | `string` | `vertical` |
 | `rules` | Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | — |
 | `scroll-to-first-error` | On validation failure, focus the first invalid field and smooth-scroll it into view (instant jump under prefers-reduced-motion) | `boolean` | — |
+| `size` | Form-level size tier distributed to all fields via the data-form-size channel (a field's own explicit size wins; form-associated fields follow dynamically) | — | — |
+| `validate-messages` | Overrides locale-default validation messages per rule type (property/JSON channels, ${min}/${max}/${value} placeholders, default fallback) | `ValidateMessages \| string` | — |
 | `validate-trigger` | When per-field live validation fires: `change` (default) / `blur` / `input`; a rule's `validateTrigger` overrides per field; submission always validates everything | `string` | `change` |
 
 #### Events
@@ -494,10 +560,12 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `help` | Persistent helper text below the control, independent of validation errors | `string` | — |
 | `label` | Label text (no label row when omitted) | `string` | — |
 | `name` | Field name (validation association) | — | — |
 | `required` | Required asterisk (visual only; validation is still driven by form `rules`) | `boolean` | — |
 | `span` | Columns spanned in the 24-column grid (only when form `layout="grid"`; non-integer in 1-24 → `24`) | `string` | `24` |
+| `status-icon` | Shows a danger status icon before the error text while the error is present | `boolean` | — |
 
 #### Slots
 

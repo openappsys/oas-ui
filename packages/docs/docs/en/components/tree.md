@@ -520,8 +520,77 @@ onMounted(() => {
       cmd.scrollTo('g1-n8') // expands the ancestor chain then scrolls (g1-n8 is "Child 58")
     })
   }
+
+  // P2 batch demos: block-node / selectable toggle feedback
+  const blockBtn = document.querySelector('#tree-block-toggle')
+  const blockTree = document.querySelector('#tree-block')
+  blockBtn?.addEventListener('click', () => {
+    const on = !blockTree?.hasAttribute('block-node')
+    if (on) blockTree?.setAttribute('block-node', '')
+    else blockTree?.removeAttribute('block-node')
+    document.querySelector('#tree-block-status').textContent = on
+      ? 'block-node on: taller row blocks'
+      : 'off: compact rows'
+  })
+  const selTree = document.querySelector('#tree-selectable')
+  selTree?.addEventListener('oas-select', (e) => {
+    const el = document.querySelector('#tree-selectable-status')
+    if (el) el.textContent = `Selected: ${e.detail.key}`
+  })
+  document.querySelector('#tree-selectable-off')?.addEventListener('click', () => {
+    selTree?.setAttribute('selectable', 'false')
+    const el = document.querySelector('#tree-selectable-status')
+    if (el) el.textContent = 'selectable="false" set: clicking no longer selects (expand/check unaffected)'
+  })
+  document.querySelector('#tree-selectable-on')?.addEventListener('click', () => {
+    selTree?.setAttribute('selectable', 'true')
+    const el = document.querySelector('#tree-selectable-status')
+    if (el) el.textContent = 'selectable="true" set: clicking selects again'
+  })
 })
 </script>
+
+## Five Size Tiers (size)
+
+`size` scales the whole tree's font size and row padding across five tiers: `xs / small / medium / large / xl` (the `sm / md / lg` aliases are accepted as equivalents; invalid values fall back to `medium`). `medium` is the default tier (identical to not setting the attribute).
+
+<DemoBlock title="Size tiers compared">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-4)">
+    <oas-tree size="xs" default-expand-all data='[{"key":"x1","label":"xs extra small","children":[{"key":"x1-1","label":"Child"}]}]'></oas-tree>
+    <oas-tree size="small" default-expand-all data='[{"key":"s1","label":"small","children":[{"key":"s1-1","label":"Child"}]}]'></oas-tree>
+    <oas-tree size="large" default-expand-all data='[{"key":"l1","label":"large","children":[{"key":"l1-1","label":"Child"}]}]'></oas-tree>
+    <oas-tree size="xl" default-expand-all data='[{"key":"x2","label":"xl extra large","children":[{"key":"x2-1","label":"Child"}]}]'></oas-tree>
+  </div>
+</DemoBlock>
+
+## Full-row block selection area (block-node)
+
+`block-node` renders rows as taller block-level hit areas: the selection/hover band already covers the whole row, and enabling this adds one tier of row height — useful for dense pointing (touch screens, frequent selection). Off by default (compact rows).
+
+<DemoBlock title="block-node toggle">
+  <div style="width: 100%">
+    <oas-tree id="tree-block" block-node default-expand-all data='[{"key":"b1","label":"Design guidelines","children":[{"key":"b1-1","label":"Color"},{"key":"b1-2","label":"Typography"}]},{"key":"b2","label":"Engineering guidelines"}]'></oas-tree>
+    <div style="margin-top: var(--oas-space-3); display: flex; gap: var(--oas-space-2); align-items: center">
+      <oas-button size="small" id="tree-block-toggle">Toggle block-node</oas-button>
+      <span id="tree-block-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">block-node on: taller row blocks</span>
+    </div>
+  </div>
+</DemoBlock>
+
+## Whole-tree selection switch (selectable)
+
+`selectable` toggles row selection for the whole tree (default on, current behavior); setting `"false"` stops click/keyboard selection and no `oas-select` is dispatched — expanding and checking are unaffected. The node-level `selectable: false` data field still excludes individual nodes.
+
+<DemoBlock title="selectable switch">
+  <div style="width: 100%">
+    <oas-tree id="tree-selectable" default-expand-all data='[{"key":"c1","label":"Selectable node","children":[{"key":"c1-1","label":"Child"}]},{"key":"c2","label":"Another node"}]'></oas-tree>
+    <div style="margin-top: var(--oas-space-3); display: flex; gap: var(--oas-space-2); align-items: center">
+      <oas-button size="small" id="tree-selectable-off">Disable selectable</oas-button>
+      <oas-button size="small" id="tree-selectable-on">Enable selectable</oas-button>
+      <span id="tree-selectable-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Try clicking a row</span>
+    </div>
+  </div>
+</DemoBlock>
 
 ## API
 
@@ -533,6 +602,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accordion` | Accordion (only one sibling branch open at a time) | `boolean` | — |
 | `auto-expand-parent` | Auto-expand parents when a child is checked | `boolean` | — |
+| `block-node` | Full-row block selection/hover zone (rows one tier taller) | `boolean` | — |
 | `can-rename` | Master switch for node renaming: when on, double-click a node label or press F2 to enter inline editing; Enter commits / Esc cancels / blur commits; committing emits `oas-node-rename` (mark a node `renamable: false` in the data to exclude it individually) | `boolean` | — |
 | `check-strategy` | Check export strategy: `all` (default) / `parent` / `child` (with checkable cascading) | `string` | `all` |
 | `check-strictly` | Decouple parent/child checking | `boolean` | — |
@@ -554,7 +624,9 @@ onMounted(() => {
 | `motion` | Expand/collapse height transition animation (off by default): non-virtual mode transitions row-container max-height on expand/collapse, virtual-scroll mode degrades to a fade-in on expand with instant collapse; duration/easing follow `--oas-transition-*`, disabled under `prefers-reduced-motion` | `boolean` | — |
 | `multiple` | Click multi-select (Ctrl/⌘-click; selected set is a JSON array) | `boolean` | — |
 | `row-height` | Fixed row height when virtualized (px) | `string` | `32` |
+| `selectable` | Whole-tree selection switch; `"false"` stops click/keyboard selection while expand/check keep working | `string` | `true` |
 | `selected` | Key of the selected node | `string` | — |
+| `size` | Five-tier tree font/padding scale (xs~xl, aliases accepted, invalid falls back to medium) | `string` | `medium` |
 | `tree-lines` | Tree indentation guide lines | `boolean` | — |
 
 #### Property (JS property only, not reflected as attribute)

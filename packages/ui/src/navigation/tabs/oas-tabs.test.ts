@@ -2076,3 +2076,73 @@ describe('OASTabs actions 插槽', () => {
     expect(clicks).toBe(1)
   })
 })
+
+// ===== 能力缺口 P2：tabindex 透传（标签钮） =====
+
+describe('OASTabs tabindex 透传（能力缺口 P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountTabs(attrs: Record<string, string>, panels: string): OASTabs {
+    const el = new OASTabs()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = panels
+    document.body.appendChild(el)
+    return el
+  }
+
+  function tabsOf(el: OASTabs): HTMLElement[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')]
+  }
+
+  it('缺省保持 roving：选中钮 0、其余 -1（回归守护）', () => {
+    const el = mountTabs(
+      { active: 'a' },
+      '<oas-tab-panel value="a" label="A"></oas-tab-panel><oas-tab-panel value="b" label="B"></oas-tab-panel>',
+    )
+    expect(tabsOf(el).map((t) => t.getAttribute('tabindex'))).toEqual(['0', '-1'])
+  })
+
+  it('tabindex 透传：覆盖 roving，全部标签钮写同值（宿主属性保留在场，移除即恢复 roving）', () => {
+    const el = mountTabs(
+      { active: 'a', tabindex: '-1' },
+      '<oas-tab-panel value="a" label="A"></oas-tab-panel><oas-tab-panel value="b" label="B"></oas-tab-panel>',
+    )
+    expect(tabsOf(el).every((t) => t.getAttribute('tabindex') === '-1')).toBe(true)
+    // 非吸收透传：属性保留在宿主（tabindex=-1 宿主自身不进 Tab 序，宿主接管焦点管理时无副作用）
+    expect(el.hasAttribute('tabindex')).toBe(true)
+  })
+
+  it('tabindex 正值透传：disabled 标签恒 -1（不可聚焦）', () => {
+    const el = mountTabs(
+      { active: 'a', tabindex: '3' },
+      '<oas-tab-panel value="a" label="A"></oas-tab-panel><oas-tab-panel value="b" label="B" disabled></oas-tab-panel>',
+    )
+    expect(tabsOf(el).map((t) => t.getAttribute('tabindex'))).toEqual(['3', '-1'])
+  })
+
+  it('href 链接标签（<a>）同样透传', () => {
+    const el = mountTabs(
+      { active: 'a', tabindex: '2' },
+      '<oas-tab-panel value="a" label="A" href="#a"></oas-tab-panel><oas-tab-panel value="b" label="B" href="#b"></oas-tab-panel>',
+    )
+    expect(tabsOf(el).every((t) => t.getAttribute('tabindex') === '2')).toBe(true)
+  })
+
+  it('运行时移除 tabindex 恢复 roving 缺省', () => {
+    const el = mountTabs(
+      { active: 'a', tabindex: '7' },
+      '<oas-tab-panel value="a" label="A"></oas-tab-panel><oas-tab-panel value="b" label="B"></oas-tab-panel>',
+    )
+    expect(tabsOf(el).every((t) => t.getAttribute('tabindex') === '7')).toBe(true)
+    el.setAttribute('tabindex', '-1')
+    expect(tabsOf(el).every((t) => t.getAttribute('tabindex') === '-1')).toBe(true)
+    el.removeAttribute('tabindex')
+    expect(tabsOf(el).map((t) => t.getAttribute('tabindex'))).toEqual(['0', '-1'])
+  })
+})

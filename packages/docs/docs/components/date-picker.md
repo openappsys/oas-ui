@@ -66,6 +66,37 @@ week 类型点击任一天即选中该天所在的整周（整行高亮 + 周号
 
 datetime 选日期与时分秒后点「确定」提交；datetimerange 双月 + 起止两组时间列，确定后提交 JSON 数组 `["yyyy-MM-ddTHH:mm:ss","yyyy-MM-ddTHH:mm:ss"]`。
 
+## 范围分隔符
+
+<DemoBlock title="separator 自定义范围分隔符">
+  <oas-date-picker id="date-picker-separator" type="daterange" separator=" → " value='["2026-08-05","2026-08-15"]'></oas-date-picker>
+  <oas-date-picker type="daterange" separator=" 至 " value='["2026-08-05","2026-08-15"]'></oas-date-picker>
+</DemoBlock>
+
+`separator` 自定义范围类型触发器内起止值的分隔符（缺省 `~`）；仅影响显示，value 契约不变。
+
+## 范围默认时刻
+
+<DemoBlock title="default-time（datetimerange 起止默认时分秒）">
+  <oas-date-picker id="date-picker-default-time" type="datetimerange" default-time='["00:00:00","23:59:59"]' default-value="2026-08-15" placeholder="选起止日期后确定"></oas-date-picker>
+  <oas-date-picker type="datetimerange" default-time='["09:00:00","18:00:00"]' default-value="2026-08-15" placeholder="工作时段 09:00-18:00"></oas-date-picker>
+</DemoBlock>
+
+`default-time`（`["起始时刻","结束时刻"]`，也支持单个 `"HH:mm:ss"` 起止同值）为 datetimerange 的起止时间列提供默认时刻：值为空或端点缺时间部分时自动补齐——`["00:00:00","23:59:59"]` 为常见整天区间惯例，选完日期点「确定」即得整天范围；快捷预设同样按此补时刻。未设置属性时内置惯例即为 `00:00:00` / `23:59:59`；值端点已带时刻时面板跟随已有时刻，不被覆盖。
+
+## 触发器图标插槽
+
+<DemoBlock title="prefix-icon / suffix-icon 插槽">
+  <oas-date-picker id="date-picker-affix-icons" value="2026-08-09" style="margin-inline-end: var(--oas-space-4)">
+    <oas-icon slot="prefix-icon" name="search"></oas-icon>
+  </oas-date-picker>
+  <oas-date-picker type="daterange" value='["2026-08-05","2026-08-15"]'>
+    <oas-icon slot="suffix-icon" name="calendar"></oas-icon>
+  </oas-date-picker>
+</DemoBlock>
+
+`slot="prefix-icon"` / `slot="suffix-icon"` 在触发器内分发前/后缀图标（装饰位：点击穿透到触发器开面板）。触发器文本自动让位；`clearable` 的清除钮与后缀图标同区，清除钮可见时后缀图标让位隐藏、清空后恢复。
+
 ## 禁用范围与导航边界
 
 <DemoBlock title="min / max 限制">
@@ -238,6 +269,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `clearable` | 可清除：有值时显示清除钮，点击清空并派发 `oas-clear` + `oas-change`（空值） | `boolean` | — |
+| `default-time` | datetimerange 起止默认时刻（JSON 数组或单串同值；值缺时间部分时补齐） | `string` | — |
 | `default-value` | 空值时面板初始锚点（如回显生日月份；有值时以值为锚） | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `first-day-of-week` | 周起始覆写（0=周日 … 6=周六），默认跟随 locale | `string` | — |
@@ -251,6 +283,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `placement` | 浮层位置，12 向：`top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `bottom-start`）；触发器贴近视口右缘时自动右对齐翻转、下方空间不足时上翻，并夹取到视口内 | `string` | `bottom-start` |
 | `readonly` | 只读：面板可展开浏览（单元格可键盘导航），点选/快捷/清除/手输均不提交 | `boolean` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
+| `separator` | 范围类型触发器内起止值分隔符（仅显示层，value 契约不变） | `string` | — |
 | `shortcuts-position` | 快捷预设位置：`bottom`（默认，顶部横排）/ `left`（左侧纵栏） | `string` | `bottom` |
 | `show-week-number` | 显示 ISO 周号列（`type=week` 自带） | `boolean` | — |
 | `size` | 尺寸档：`small` / `medium` / `large`（就近读取 config-provider 注入） | `string` | `medium` |
@@ -283,6 +316,8 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 
 | 名称 | 说明 |
 | --- | --- |
+| `prefix-icon` | 触发器内前置图标（装饰位，点击穿透到触发器） |
+| `suffix-icon` | 触发器内后置图标（清除钮可见时让位，清空后恢复） |
 | `template[slot="cell"]` | `template[slot="cell"]` 克隆进每个日格，`[data-cell-date]` 自动绑定日期数字（与 `oas-cell-render` 双通道） |
 
 #### Property（快捷预设）

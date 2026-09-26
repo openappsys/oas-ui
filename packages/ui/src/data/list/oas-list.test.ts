@@ -865,4 +865,59 @@ describe('OASList', () => {
       expect(body.hasAttribute('tabindex'), '不溢出时不加 tabindex').toBe(false)
     })
   })
+
+  describe('hoverable（不可点行的 hover 底色反馈）', () => {
+    it('hoverable 进 observedAttributes；声明式与数据通道行都打 data-hoverable 钩子', () => {
+      expect(OASList.observedAttributes).toContain('hoverable')
+      // 声明式通道
+      const decl = new OASList()
+      decl.setAttribute('hoverable', '')
+      decl.innerHTML = '<oas-list-item title="一"></oas-list-item>'
+      document.body.appendChild(decl)
+      expect(decl.querySelector('oas-list-item')!.hasAttribute('data-hoverable'), '声明式行打 hover 钩子').toBe(true)
+      // 数据通道
+      const el = new OASList()
+      el.setAttribute('hoverable', '')
+      el.data = [{ title: '甲' }, { title: '乙' }]
+      document.body.appendChild(el)
+      const dataRows = [...el.shadowRoot!.querySelectorAll('[part="data-items"] oas-list-item')]
+      expect(dataRows.length).toBe(2)
+      expect(
+        dataRows.every((r) => r.hasAttribute('data-hoverable')),
+        '数据通道行打 hover 钩子',
+      ).toBe(true)
+    })
+
+    it('默认不开：未设 hoverable 时行不打钩子（现状不变，仅 clickable 行有 hover）', () => {
+      const el = new OASList()
+      el.innerHTML = '<oas-list-item title="一"></oas-list-item>'
+      el.data = [{ title: '甲' }]
+      document.body.appendChild(el)
+      expect(el.querySelector('oas-list-item')!.hasAttribute('data-hoverable')).toBe(false)
+      expect(el.shadowRoot!.querySelector('[part="data-items"] oas-list-item')!.hasAttribute('data-hoverable')).toBe(
+        false,
+      )
+    })
+
+    it('运行时移除 hoverable：行钩子同步摘除', () => {
+      const el = new OASList()
+      el.setAttribute('hoverable', '')
+      el.innerHTML = '<oas-list-item title="一"></oas-list-item>'
+      document.body.appendChild(el)
+      expect(el.querySelector('oas-list-item')!.hasAttribute('data-hoverable')).toBe(true)
+      el.removeAttribute('hoverable')
+      expect(el.querySelector('oas-list-item')!.hasAttribute('data-hoverable')).toBe(false)
+    })
+
+    it('样式表含行 hover 底色规则（走 token；选中行排除在 hover 规则外，保持 primary 底）', () => {
+      const el = new OASList()
+      el.setAttribute('hoverable', '')
+      el.data = [{ title: '甲' }]
+      document.body.appendChild(el)
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(style).toMatch(/data-hoverable='true'.*oas-list-item/)
+      expect(style).toContain('var(--oas-color-bg-hover)')
+      expect(style).toContain(':not([selected])')
+    })
+  })
 })

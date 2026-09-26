@@ -19,6 +19,24 @@
       "type": "string",
       "default": "0",
       "observed": true
+    },
+    {
+      "name": "flex",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "push",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "pull",
+      "type": "string",
+      "default": "0",
+      "observed": true
     }
   ],
   "props": [],

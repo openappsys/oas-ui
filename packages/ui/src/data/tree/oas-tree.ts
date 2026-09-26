@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../virtual-list/index.js'
 import type { OASVirtualList } from '../virtual-list/index.js'
@@ -54,6 +55,34 @@ const ROW_STYLE = `
   border-radius: var(--oas-radius-sm);
   cursor: default;
   box-sizing: border-box;
+}
+/* size 五档：字号 + 行内边距联动（host data-size 经归一化写入，medium=缺省档即上面基线，无覆盖规则；
+   别名 sm/md/lg 归一化为全称，选择器只认全称）。选择器用 :host() 形态——非虚拟路径 host 是
+   oas-tree 自身、虚拟路径 host 是注入了本样式的 oas-virtual-list，两处 data-size 同步 */
+:host([data-size='xs']) .row {
+  font-size: var(--oas-font-size-xs);
+  padding: var(--oas-space-1) var(--oas-space-1);
+}
+:host([data-size='small']) .row {
+  font-size: var(--oas-font-size-sm);
+  padding: var(--oas-space-1) var(--oas-space-1_5);
+}
+:host([data-size='large']) .row {
+  font-size: var(--oas-font-size-lg);
+  padding: var(--oas-space-1_5) var(--oas-space-2_5);
+}
+:host([data-size='xl']) .row {
+  font-size: var(--oas-font-size-xl);
+  padding: var(--oas-space-2) var(--oas-space-3);
+}
+/* block-node：整行块级选中/hover 区——行高加大一档（选中/hover 色带本就整行覆盖，
+   此档给触达密集场景更大的行块）。两条选择器同 tree-lines 惯例：.tree.block-node 命中
+   非虚拟路径（类挂 .tree 容器），:host(.block-node) 命中虚拟路径（类挂 vlist 宿主） */
+.tree.block-node .row {
+  padding-block: var(--oas-space-2);
+}
+:host(.block-node) .row {
+  padding-block: var(--oas-space-2);
 }
 .row:hover {
   background: var(--oas-color-bg-hover);
@@ -345,6 +374,14 @@ function parseIdList(raw: string): string[] {
 /** 非法 ID 列表的 dev 告警同值去重集合 */
 const invalidIdListWarned = new Set<string>()
 
+/** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重，同 table 惯例） */
+const warnedTreeSizes = new Set<string>()
+function warnInvalidTreeSize(raw: string): void {
+  if (warnedTreeSizes.has(raw)) return
+  warnedTreeSizes.add(raw)
+  console.warn(`[oas-tree] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl（sm/md/lg 别名等价）`)
+}
+
 /**
  * oas-tree —— 树形控件，支持大数据量虚拟化与键盘/勾选/过滤等完整交互。
  *
@@ -384,6 +421,9 @@ export class OASTree extends OASElement {
       'empty',
       'can-rename',
       'motion',
+      'size',
+      'block-node',
+      'selectable',
       // dir：全局约定属性（不进 API 表），运行时切方向即时重判定
       'dir',
     ]
@@ -722,6 +762,11 @@ export class OASTree extends OASElement {
     return raw.disableCheckbox !== true
   }
 
+  /** 整树点选开关（selectable 属性，默认开=现状；"false" 关闭行点选/键盘选中，展开与勾选不受影响） */
+  private treeSelectable(): boolean {
+    return this.getAttr('selectable', 'true') !== 'false'
+  }
+
   // ---------- update / 渲染入口 ----------
 
   protected override update(): void {
@@ -760,6 +805,15 @@ export class OASTree extends OASElement {
     const emptyEl = this.shadow.querySelector<HTMLElement>('.empty')
     if (!wrap || !emptyEl) return
 
+    // size 五档归一化（别名映射 + 非法回落告警）→ host data-size（:host() 选择器双路径消费）
+    const sizeRaw = this.getAttr('size', 'medium')
+    const normalized = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'medium')
+    if (!normalized.isValid) warnInvalidTreeSize(sizeRaw)
+    this.setAttribute('data-size', normalized.value)
+    // block-node：类挂 .tree 容器（非虚拟）与 vlist 宿主（虚拟），同 tree-lines 惯例
+    const blockNode = this.hasAttr('block-node')
+    wrap.classList.toggle('block-node', blockNode)
+
     wrap.hidden = virtual
     wrap.classList.toggle('tree-lines', this.hasAttr('tree-lines'))
     wrap.classList.toggle('disabled', this.isTreeDisabled())
@@ -772,6 +826,8 @@ export class OASTree extends OASElement {
       this.fillEmpty(emptyEl)
       this.vlist?.classList.toggle('disabled', this.isTreeDisabled())
       this.vlist?.classList.toggle('motion', this.hasAttr('motion'))
+      this.vlist?.classList.toggle('block-node', blockNode)
+      this.vlist?.setAttribute('data-size', normalized.value)
       return
     }
     emptyEl.hidden = true
@@ -782,6 +838,8 @@ export class OASTree extends OASElement {
       this.vlist.classList.toggle('tree-lines', this.hasAttr('tree-lines'))
       this.vlist.classList.toggle('disabled', this.isTreeDisabled())
       this.vlist.classList.toggle('motion', this.hasAttr('motion'))
+      this.vlist.classList.toggle('block-node', blockNode)
+      this.vlist.setAttribute('data-size', normalized.value)
       this.vlist.setAttribute('items-role', 'tree')
       this.vlist.setAttribute('item-role', 'presentation')
       this.vlist.setAttribute('aria-label', this.t('tree.select'))
@@ -942,8 +1000,8 @@ export class OASTree extends OASElement {
     }
     if (this.isTreeDisabled() || this.nodeDisabled(node)) return
     const id = this.acc.idOf(node)
-    // 点选（selectable 排除；勾选树同样可点选，与 oas-tree-select 语义一致）
-    if (this.nodeSelectable(node)) {
+    // 点选（节点级 selectable 排除 + 整树 selectable 开关；勾选树同样可点选，与 oas-tree-select 语义一致）
+    if (this.treeSelectable() && this.nodeSelectable(node)) {
       if (this.hasAttr('multiple')) {
         const selected = this.currentSelected()
         const idx = selected.indexOf(id)

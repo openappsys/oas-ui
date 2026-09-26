@@ -181,13 +181,19 @@ item 的 `slot="label"` 可放图标加文字等富内容，与 `label` 属性�
   </div>
 </DemoBlock>
 
-## 数据驱动（宿主循环生成）
+## 数据驱动（items 通道）
 
-子项由宿主数据循环生成——不内建 items 数据通道：Web Components 下宿主一行 `.map()` 拼 `oas-descriptions-item` 子元素即可，零 API 成本（与字段映射同一道理）：
+`items` 属性（JSON 数组）或同名的 property 直接驱动渲染，每项支持 `label / content / span` 三个字段（content 为纯文本，富内容走子元素声明式通道）。**子元素声明式通道始终优先**：`<oas-descriptions-item>` 子元素在场时 items 数据不渲染，子元素移除后自动接管——两种写法可以按场景取舍：
 
-<DemoBlock title="数据驱动（.map() 生成子项）">
+<DemoBlock title="items 属性（JSON）">
   <div style="width: 100%">
-    <oas-descriptions id="desc-data-driven" title="服务信息" column="2" bordered></oas-descriptions>
+    <oas-descriptions id="desc-items-attr" title="服务信息" column="2" bordered items='[{"label":"服务名","content":"oas-ui-docs"},{"label":"运行状态","content":"运行中"},{"label":"部署环境","content":"production / cn-east-1"},{"label":"负责人","content":"前端基础设施组","span":2}]'></oas-descriptions>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="宿主循环生成子项（声明式通道）">
+  <div style="width: 100%">
+    <oas-descriptions id="desc-data-driven" title="集群信息" column="2" bordered></oas-descriptions>
   </div>
 </DemoBlock>
 
@@ -268,12 +274,10 @@ onMounted(async () => {
 
     // 数据驱动 demo：宿主 .map() 生成 oas-descriptions-item 子项（whenDefined 防升级前 DOM 时序问题）
     const SERVICES = [
-      { label: '服务名', value: 'oas-ui-docs' },
-      { label: '运行状态', value: '运行中' },
-      { label: '部署环境', value: 'production / cn-east-1' },
-      { label: '最近发布', value: 'v2.4.1 · 2026-09-06' },
-      { label: '负责人', value: '前端基础设施组' },
-      { label: '健康度', value: '99.99%（近 30 天）' },
+      { label: '集群名', value: 'prod-east-1' },
+      { label: '节点规模', value: '24 节点' },
+      { label: 'K8s 版本', value: 'v1.30' },
+      { label: '最近巡检', value: '2026-09-25 · 全部通过' },
     ]
     const dd = document.getElementById('desc-data-driven')
     if (dd) {
@@ -312,6 +316,7 @@ onMounted(async () => {
 | `bordered` | 边框表格形态：网格线成表 + label 格淡底色 | `boolean` | — |
 | `colon` | label 后显示冒号（默认 false） | `boolean` | — |
 | `column` | 每行列数 | `string` | `3` |
+| `items` | 数据驱动渲染 JSON（label/content/span 字段；声明式子元素始终优先） | `Array<Record<string, unknown>> \| string` | `[]` |
 | `layout` | 布局方向：`horizontal`（默认，label 与内容同行）/ `vertical`（label 在上内容在下） | `string` | `horizontal` |
 | `size` | 尺寸档位：`small` / `medium`（默认）/ `large`（padding 与字号联动） | `string` | `medium` |
 | `title` | 标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |

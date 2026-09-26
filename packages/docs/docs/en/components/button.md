@@ -290,6 +290,24 @@ On touch devices (`pointer: coarse`) the button minimum height grows to 44px (`-
 
 Clicking "Submit" fires the native `submit` event (the demo calls `preventDefault` and shows the fields about to be submitted); "Reset" restores the initial input values and fires `reset`; "No-validate submit" demonstrates `formnovalidate` skipping required validation plus `formaction`/`formmethod` overriding the submission target.
 
+## Custom Loading Icon
+
+`slot="loading-icon"` replaces the built-in spinner ring with custom content while loading (the spinner positioning is reused, so stable loading width etc. are unchanged); when absent, the built-in spinner shows. Commonly paired with `oas-icon spin` for a themed loading icon.
+
+<DemoBlock title="loading-icon slot">
+  <oas-button loading type="primary" style="margin-inline-end: var(--oas-space-4)">
+    <oas-icon slot="loading-icon" name="loading" spin></oas-icon>
+    Icon loading
+  </oas-button>
+  <oas-button loading style="margin-inline-end: var(--oas-space-4)">
+    <span slot="loading-icon" style="font-size: 0.9em">⟳</span>
+    Glyph loading
+  </oas-button>
+  <oas-button loading type="danger">
+    Built-in spinner (default)
+  </oas-button>
+</DemoBlock>
+
 ## API
 
 ### oas-button
@@ -341,6 +359,7 @@ Clicking "Submit" fires the native `submit` event (the demo calls `preventDefaul
 | --- | --- |
 | default | Button content (text / icon) |
 | `description` | Secondary text line (compound two-row variant): when present, the button switches to a vertical two-row layout (main row on top, secondary below, smaller muted text) |
+| `loading-icon` | Custom loading icon replacing the built-in spinner ring when slot content is present |
 
 #### CSS Variables
 

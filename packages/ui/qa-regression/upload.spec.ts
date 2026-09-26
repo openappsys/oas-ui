@@ -170,3 +170,41 @@ test('upload picture-card：dark 下删除×徽标反转为浅底深字（× 在
   expect(r.colorL, `dark 下 × 应为深色（实际 ${r.color}）`).toBeLessThan(80)
   expect(r.bgL - r.colorL, '徽标底/字亮度差应足够大').toBeGreaterThan(120)
 })
+
+// —— PRD P2：oas-progress 对外进度事件通道 ——
+test('upload oas-progress：drop 后进度事件派发（percent 推进到 100，页面反馈可见）', async ({ page }) => {
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-progress')
+  await page.evaluate(() => {
+    const el = document.querySelector('#upload-progress')!
+    el.scrollIntoView({ block: 'center' })
+    ;(window as any).__prog = []
+    el.addEventListener('oas-progress', (e) => (window as any).__prog.push((e as CustomEvent).detail.percent))
+  })
+  await page.evaluate(() => {
+    const el = document.querySelector('#upload-progress')!
+    const zone = el.shadowRoot!.querySelector('.zone')!
+    const dt = new DataTransfer()
+    dt.items.add(new File(['progress'], 'progress.txt', { type: 'text/plain' }))
+    zone.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
+  })
+  await page.waitForFunction(
+    () => ((window as any).__prog ?? []).length > 0 && ((window as any).__prog as number[]).at(-1) === 100,
+    null,
+    { timeout: 10000 },
+  )
+  const r = await page.evaluate(() => {
+    const prog = (window as any).__prog as number[]
+    const mono = prog.every((p, i) => i === 0 || p >= prog[i - 1]!)
+    return {
+      count: prog.length,
+      last: prog.at(-1),
+      mono,
+      output: document.getElementById('upload-progress-output')?.textContent ?? '',
+    }
+  })
+  expect(r.last, '进度收尾应为 100').toBe(100)
+  expect(r.mono, '进度应单调不回退').toBe(true)
+  expect(r.count, '至少派发一次 oas-progress').toBeGreaterThan(0)
+  expect(r.output, 'demo 反馈区应显示进度').toContain('100%')
+})

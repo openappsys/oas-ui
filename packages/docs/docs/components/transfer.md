@@ -97,6 +97,23 @@
   <oas-transfer id="transfer-virtual" virtual searchable item-height="32"></oas-transfer>
 </DemoBlock>
 
+## 长列表分页（pagination）
+
+`pagination` 开启面板内分页（`page-size` 每页条数，默认 10）：左右面板各自独立翻页，面板底部出现简版页脚（上一页 / 页码 / 下一页，边界自动禁用）。分页作用于**搜索过滤之后**的可见项；过滤词变化页码重置回第 1 页；面板头计数仍按全量可见统计。虚拟模式自窗口化，两者并存时分页不生效。
+
+<DemoBlock title="pagination + page-size=2">
+  <oas-transfer id="transfer-page" pagination page-size="2"></oas-transfer>
+</DemoBlock>
+
+## 列表滚动事件（oas-scroll）
+
+面板列表滚动时派发 `oas-scroll`（静态列表与虚拟视口均生效），`detail: { side, direction, scrollTop, reachBottom }`——懒加载通道：宿主监听 `reachBottom` 追加数据到 `data` 即可。
+
+<DemoBlock title="滚动反馈（reachBottom 提示）">
+  <oas-transfer id="transfer-scroll"></oas-transfer>
+  <span id="transfer-scroll-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## 禁用
 
 `disabled` 禁用整组交互（行/全选/搜索/穿梭按钮/键盘），并镜像宿主 `data-disabled` 供样式消费；`disabled-skip` 豁免全局禁用注入。
@@ -120,6 +137,7 @@
 - `oas-change`：穿梭后值变化，`detail: { value }`
 - `oas-select-change`：面板选中集变化（点行 / 全选 / 键盘选中均派发），`detail: { side: 'left' | 'right', selected: string[] }`
 - `oas-search`：搜索输入，`detail: { side, query }`
+- `oas-scroll`：面板列表滚动，`detail: { side, direction: 'up' | 'down', scrollTop, reachBottom }`（懒加载通道）
 
 ## 键盘操作
 
@@ -183,6 +201,25 @@ onMounted(() => {
   ]
   const virtual = document.getElementById('transfer-virtual')
   if (virtual) virtual.data = Array.from({ length: 10000 }, (_, i) => ({ key: 'k' + i, label: '项目 ' + i }))
+
+  // 分页：12 项数据，page-size=2
+  const page = document.getElementById('transfer-page')
+  if (page)
+    page.data = Array.from({ length: 12 }, (_, i) => ({
+      key: 'p' + i,
+      label: `候选 ${i + 1}`,
+    }))
+
+  // 滚动事件：reachBottom 反馈
+  const sc = document.getElementById('transfer-scroll')
+  if (sc) {
+    sc.data = Array.from({ length: 40 }, (_, i) => ({ key: 's' + i, label: `条目 ${i + 1}` }))
+    const out = document.getElementById('transfer-scroll-output')
+    sc.addEventListener('oas-scroll', (e) => {
+      const d = e.detail
+      out.textContent = `oas-scroll: ${d.side} ${d.direction}（scrollTop=${Math.round(d.scrollTop)}${d.reachBottom ? '，已到底' : ''}）`
+    })
+  }
   const el = document.getElementById('transfer-event')
   if (el) {
     el.data = [
@@ -303,6 +340,8 @@ onMounted(() => {
 | `disabled` | 禁用（行点击/按钮/搜索全部失效；宿主镜像 data-disabled） | `boolean` | — |
 | `item-height` | 虚拟滚动每行固定高度（px），默认 36 | `string` | — |
 | `one-way` | 单向模式：只能左→右移动，右侧只读；左侧展示全部数据，已穿梭项禁用并显示为已选 | `boolean` | — |
+| `page-size` | 每页条数（非法/小于 1 回落 10） | `string` | `10` |
+| `pagination` | 长列表分页：双面板独立翻页 + 简版页脚（作用于过滤后可见项） | `boolean` | — |
 | `searchable` | 面板内搜索过滤（左右各自过滤） | `boolean` | — |
 | `simple` | 选中即移动（免点穿梭按钮，默认关） | `boolean` | — |
 | `source-title` | 左面板标题 | — | — |
@@ -318,6 +357,7 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 穿梭后值变化，`detail: { value }` |
+| `oas-scroll` | 列表滚动事件，`detail: { side, direction, scrollTop, reachBottom }`（懒加载通道） |
 | `oas-search` | 面板搜索输入，`detail: { side, query }` |
 | `oas-select-change` | 选中集合变化（点行/全选/键盘），`detail: { side, selected }` |
 

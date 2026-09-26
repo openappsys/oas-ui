@@ -390,7 +390,7 @@ onMounted(async () => {
 const refreshSelectCount = () => {
   if (!selectCount) return
   // 只统计多选 demo 的卡（排除下方受控单选卡组的 data-select-radio 卡——它初始带 selected）
-  const n = document.querySelectorAll('oas-card[selectable][selected]:not([data-select-radio])').length
+  const n = document.querySelectorAll('oas-card[selectable][selected]:not([data-select-radio]):not([disabled])').length
     selectCount.textContent = `已选 ${n} 项`
   }
   document.addEventListener('oas-change', (e) => {
@@ -417,6 +417,40 @@ const refreshSelectCount = () => {
 })
 </script>
 
+## 禁用卡（disabled）
+
+`disabled` 禁用整卡：灰化呈现（含 dark 自动适配）、宿主同步 `aria-disabled`、不派发交互事件——`clickable` 的 `oas-click`、`selectable` 的选中切换与 `oas-change` 全部停摆；`href` 链接卡同时摘除内部锚点地址（原生导航一并失效）。卡内自带的按钮/链接等控件的自身行为不受本属性影响（控件有自己的 disabled）。
+
+<DemoBlock title="禁用的可点卡 / 可选卡">
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-space-4); width: 100%;">
+    <oas-card clickable title="正常可点">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">点击弹出消息。</p>
+    </oas-card>
+    <oas-card clickable disabled title="禁用可点">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">点击无任何反馈（oas-click 停派）。</p>
+    </oas-card>
+    <oas-card selectable disabled selected title="禁用可选（已选）">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">保留选中视觉，但不可再切换。</p>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+## 横向布局（orientation）
+
+`orientation="horizontal"` 把封面移到左侧、标题/内容/操作区收进右侧内容列：封面列占 40% 宽并撑满卡片高度（图片不再锁 16:9），适合新闻条目、商品横条等横向空间充足的场景。默认 `vertical`（封面在顶部的纵向堆叠，现状）。
+
+<DemoBlock title="horizontal 封面左置">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--oas-space-4); width: 100%;">
+    <oas-card orientation="horizontal" hoverable title="横向新闻卡" cover-src="https://picsum.photos/seed/isui-card-horiz/640/640" cover-alt="横向卡片封面">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">封面在左，标题与内容在右，操作区仍在底部。</p>
+      <oas-button slot="actions" size="small" type="primary">阅读全文</oas-button>
+    </oas-card>
+    <oas-card hoverable title="默认纵向（对照）" cover-src="https://picsum.photos/seed/isui-card-horiz/640/360" cover-alt="纵向卡片封面">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">封面在顶部全宽铺开（现状默认）。</p>
+    </oas-card>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-card
@@ -429,10 +463,12 @@ const refreshSelectCount = () => {
 | `cover-alt` | 封面图 alt 文本（无障碍） | `string` | — |
 | `cover-src` | 封面图 URL，置于卡片顶部（object-fit: cover 自适应裁切） | `string` | — |
 | `description` | Meta 副文（title 下方弱化小字；与 description 插槽双通道，slot 优先） | `string` | — |
+| `disabled` | 禁用整卡：灰化 + aria-disabled + 停派交互事件 + href 摘链（已选视觉保留） | `boolean` | — |
 | `header-bordered` | 头部分割线（默认 true；`"false"` 关闭） | — | — |
 | `hoverable` | 是否开启悬浮阴影（阴影 + 上浮提升 + 指针） | `boolean` | — |
 | `href` | 链接卡：整卡语义为链接（内部锚点包装，键盘/中键原生可达） | `string` | — |
 | `loading` | 加载态：内容区切骨架占位（aria-busy 同步） | `boolean` | — |
+| `orientation` | `horizontal` 封面左置（40% 宽撑满高）+ 内容列右置 | `string` | — |
 | `selectable` | 可选中卡：点击整卡（或 Enter/Space）切换选中态，派发 `oas-change`；卡内按钮/链接等交互元素不触发选中；与 `href` 同设时点选优先、不跳转；loading 骨架态不可选 | `boolean` | — |
 | `selected` | 选中态（配合 `selectable`）：宿主设置即为受控——组件只派发 `oas-change` 不自改属性，宿主监听回写；未设置时组件内部切换并反射该属性（非受控） | `boolean` | — |
 | `shadow` | 阴影三态：`none` / `hover`（悬停浮起）/ `always`（常显）；`hoverable` 映射 `hover`，显式 shadow 优先 | `string` | — |

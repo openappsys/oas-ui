@@ -871,3 +871,45 @@ describe('OASCarousel', () => {
     })
   })
 })
+
+describe('OASCarousel trigger 指示器触发（click 默认 / hover）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('trigger 进入观察列表', () => {
+    expect(OASCarousel.observedAttributes).toContain('trigger')
+  })
+
+  it('默认 click 触发：hover 指示器不切页，click 切页', () => {
+    const el = mount({}, 3)
+    const dots = el.shadowRoot!.querySelectorAll<HTMLElement>('[part="dot"]')
+    dots[2]!.dispatchEvent(new Event('pointerover', { bubbles: true }))
+    expect(el.getAttribute('index')).toBe('0')
+    ;(dots[2] as HTMLElement).click()
+    expect(el.getAttribute('index')).toBe('2')
+  })
+
+  it('trigger=hover：pointerover 指示器切页；非法值回落 click', () => {
+    const el = mount({ trigger: 'hover' }, 3)
+    const dots = el.shadowRoot!.querySelectorAll<HTMLElement>('[part="dot"]')
+    dots[1]!.dispatchEvent(new Event('pointerover', { bubbles: true }))
+    expect(el.getAttribute('index')).toBe('1')
+    el.setAttribute('trigger', 'drag')
+    dots[2]!.dispatchEvent(new Event('pointerover', { bubbles: true }))
+    expect(el.getAttribute('index')).toBe('1')
+  })
+
+  it('trigger=hover 时 click 仍可切换', () => {
+    const el = mount({ trigger: 'hover' }, 3)
+    const dots = el.shadowRoot!.querySelectorAll<HTMLElement>('[part="dot"]')
+    ;(dots[2] as HTMLElement).click()
+    expect(el.getAttribute('index')).toBe('2')
+  })
+})

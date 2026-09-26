@@ -282,6 +282,20 @@ onMounted(() => {
   </oas-space>
 </DemoBlock>
 
+## tabindex Passthrough
+
+`tabindex` passes through to the inner native checkbox: `tabindex="-1"` removes the item from the tab order (useful when an outer container owns keyboard navigation); a positive integer customizes the tab order; unset by default (default tab order preserved).
+
+<DemoBlock title="tabindex passthrough">
+  <oas-space direction="vertical" size="small">
+    <oas-checkbox name="tab-a">Regular tab stop (default)</oas-checkbox>
+    <oas-checkbox name="tab-b" tabindex="-1">tabindex="-1" (skipped by Tab, still clickable)</oas-checkbox>
+    <oas-checkbox name="tab-c">Regular tab stop (default)</oas-checkbox>
+  </oas-space>
+</DemoBlock>
+
+Move focus with the Tab key: the middle item is skipped; clicking it with a mouse or touch still toggles normally.
+
 ## API
 
 ### oas-checkbox
@@ -301,6 +315,7 @@ onMounted(() => {
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner input) | `boolean` | — |
 | `size` | Size: `small` (14px) / `medium` (default 16px) / `large` (18px), box and font scale together; a group-level value cascades to items while an explicit item value wins | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success` (tints the box; error also sets host aria-invalid) | `string` | — |
+| `tabindex` | Forwarded to the inner native checkbox (`-1` removes it from the tab order) | — | — |
 | `true-value` | Mapped value when checked: drives detail.value, the value getter and FormData submission (not effective inside a checkbox-group) | `string` | — |
 | `value` | Option identifier | `string \| boolean` | `on` |
 | `variant` | Variant: `default` / `card` (whole block clickable, selected border tint, hover feedback) | `string` | — |

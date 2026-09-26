@@ -3,9 +3,11 @@ import { OASForm, registerFormControl } from './index.js'
 import type { Rule } from './index.js'
 import { OASFormItem } from '../form-item/index.js'
 import { OASInput } from '../input/index.js'
+import { setLocale } from '@oas-ui/i18n'
 import '../switch/index.js'
 import '../transfer/index.js'
 import '../checkbox/index.js'
+import '../cascader/index.js'
 function mount(): OASForm {
   const el = new OASForm()
   el.setAttribute(
@@ -1068,5 +1070,237 @@ describe('OASForm review 回归（真实路径，非合成事件造假绿）', (
     el.reset()
     await new Promise((r) => setTimeout(r, 0))
     expect(cb.hasAttribute('checked'), 'reset 应恢复 checked=true（初始值基线）').toBe(true)
+  })
+})
+
+describe('OASForm 表级 size 注入', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountForm(fields: string, attrs: Record<string, string> = {}): OASForm {
+    const el = new OASForm()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = fields
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('form size 覆盖无 name 控件 + 非 form-associated 控件（requestUpdate 兜底重渲染）', async () => {
+    const el = mountForm(
+      '<oas-input name="a" value=""></oas-input><oas-cascader placeholder="无 name 展示件"></oas-cascader>',
+      { size: 'small' },
+    )
+    const cascader = el.querySelector('oas-cascader')!
+    await new Promise((r) => setTimeout(r, 0))
+    expect(cascader.getAttribute('data-form-size'), '无 name 控件也收到下发').toBe('small')
+    expect(cascader.getAttribute('data-size'), '非 form-associated 控件经 requestUpdate 即时重渲染').toBe('small')
+    el.setAttribute('size', 'large')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(cascader.getAttribute('data-size'), '动态切换跟随').toBe('large')
+  })
+
+  it('form size 动态切换：form-associated 字段经 formSizeCallback 即时重渲染（input data-size 跟随）', async () => {
+    const el = mountForm('<oas-input name="a" value=""></oas-input>', { size: 'small' })
+    const field = el.querySelector('oas-input')!
+    await new Promise((r) => setTimeout(r, 0))
+    expect(field.getAttribute('data-size')).toBe('small')
+    el.setAttribute('size', 'large')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(field.getAttribute('data-size'), '动态切换应即时重渲染（回调通道）').toBe('large')
+    el.removeAttribute('size')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(field.getAttribute('data-size')).toBe('medium')
+  })
+
+  it('form size=large：字段注入 data-form-size=large（不回写自身 size 属性）', () => {
+    const el = mountForm('<oas-input name="a" value="x"></oas-input><oas-checkbox name="b"></oas-checkbox>', {
+      size: 'large',
+    })
+    const a = el.querySelector('oas-input[name="a"]')!
+    const b = el.querySelector('oas-checkbox[name="b"]')!
+    expect(a.getAttribute('data-form-size')).toBe('large')
+    expect(b.getAttribute('data-form-size')).toBe('large')
+    expect(a.hasAttribute('size'), '不得回写字段自身 size 属性（显式语义保留给用户）').toBe(false)
+  })
+
+  it('字段自身显式 size 优先：form size 不覆盖', () => {
+    const el = mountForm('<oas-input name="a" value="x" size="small"></oas-input>', { size: 'large' })
+    const a = el.querySelector('oas-input[name="a"]')!
+    expect(a.hasAttribute('data-form-size')).toBe(false)
+    expect(a.getAttribute('size')).toBe('small')
+  })
+
+  it('非法 size 值不下发', () => {
+    const el = mountForm('<oas-input name="a" value="x"></oas-input>', { size: 'huge' })
+    expect(el.querySelector('oas-input')!.hasAttribute('data-form-size')).toBe(false)
+  })
+
+  it('移除 form size：字段 data-form-size 同步清除', () => {
+    const el = mountForm('<oas-input name="a" value="x"></oas-input>', { size: 'small' })
+    expect(el.querySelector('oas-input')!.getAttribute('data-form-size')).toBe('small')
+    el.removeAttribute('size')
+    expect(el.querySelector('oas-input')!.hasAttribute('data-form-size')).toBe(false)
+  })
+
+  it('运行时切换 size：字段即时跟随', () => {
+    const el = mountForm('<oas-input name="a" value="x"></oas-input>', { size: 'small' })
+    el.setAttribute('size', 'medium')
+    expect(el.querySelector('oas-input')!.getAttribute('data-form-size')).toBe('medium')
+  })
+
+  it('字段消费 data-form-size：checkbox data-size 生效（form 下发 > provider 注入）', () => {
+    const el = mountForm('<oas-checkbox name="b"></oas-checkbox>', { size: 'large' })
+    const b = el.querySelector('oas-checkbox')!
+    expect(b.getAttribute('data-size')).toBe('large')
+  })
+})
+
+describe('OASForm colon 标签冒号', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('form colon：form-item 镜像 data-colon', () => {
+    const el = new OASForm()
+    el.setAttribute('colon', '')
+    const item = new OASFormItem()
+    item.setAttribute('label', '姓名')
+    item.innerHTML = '<oas-input name="name"></oas-input>'
+    el.appendChild(item)
+    document.body.appendChild(el)
+    expect(item.hasAttribute('data-colon')).toBe(true)
+  })
+
+  it('移除 form colon：data-colon 消失（refreshLayout 链路即时同步）', () => {
+    const el = new OASForm()
+    el.setAttribute('colon', '')
+    const item = new OASFormItem()
+    item.setAttribute('label', '姓名')
+    el.appendChild(item)
+    document.body.appendChild(el)
+    el.removeAttribute('colon')
+    expect(item.hasAttribute('data-colon')).toBe(false)
+  })
+
+  it('form-item 冒号走 CSS ::after（content 渲染不进 DOM 文本）', () => {
+    const el = new OASForm()
+    el.setAttribute('colon', '')
+    const item = new OASFormItem()
+    item.setAttribute('label', '姓名')
+    el.appendChild(item)
+    document.body.appendChild(el)
+    const css = item.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('data-colon')
+    expect(css).toContain("content: ':'")
+  })
+
+  it('独立 form-item（不在 form 内）不冒号', () => {
+    const item = new OASFormItem()
+    item.setAttribute('label', '姓名')
+    document.body.appendChild(item)
+    expect(item.hasAttribute('data-colon')).toBe(false)
+  })
+})
+
+describe('OASForm validate-messages 校验文案模板', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountForm(rules: unknown): OASForm {
+    const el = new OASForm()
+    el.setAttribute('rules', JSON.stringify(rules))
+    el.innerHTML = '<oas-input name="a" value=""></oas-input>'
+    document.body.appendChild(el)
+    return el
+  }
+
+  function failErrors(el: OASForm): Record<string, string> {
+    let errors: Record<string, string> = {}
+    el.addEventListener('oas-validate-fail', (e) => (errors = (e as CustomEvent).detail.errors))
+    el.submit()
+    return errors
+  }
+
+  it('property 通道：required 模板覆盖 locale 默认文案', () => {
+    const el = mountForm({ a: [{ required: true }] })
+    el.validateMessages = { required: '这一项不能空着' }
+    const errors = failErrors(el)
+    expect(errors.a).toBe('这一项不能空着')
+  })
+
+  it('minLength 模板支持 ${min} 插值', () => {
+    const el = mountForm({ a: [{ minLength: 6 }] })
+    el.querySelector('oas-input')!.setAttribute('value', 'abc')
+    el.validateMessages = { minLength: '至少 ${min} 个字符' }
+    const errors = failErrors(el)
+    expect(errors.a).toBe('至少 6 个字符')
+  })
+
+  it('maxLength 模板支持 ${max} 插值', () => {
+    const el = mountForm({ a: [{ maxLength: 2 }] })
+    el.querySelector('oas-input')!.setAttribute('value', 'abcd')
+    el.validateMessages = { maxLength: '不能超过 ${max} 个字' }
+    const errors = failErrors(el)
+    expect(errors.a).toBe('不能超过 2 个字')
+  })
+
+  it('pattern 模板覆盖', () => {
+    const el = mountForm({ a: [{ pattern: '^\\d+$' }] })
+    el.querySelector('oas-input')!.setAttribute('value', 'abc')
+    el.validateMessages = { pattern: '只能填数字' }
+    const errors = failErrors(el)
+    expect(errors.a).toBe('只能填数字')
+  })
+
+  it('default 兜底：未命中具体 key 的规则失败走 default', () => {
+    const el = mountForm({ a: [{ pattern: '^\\d+$' }] })
+    el.querySelector('oas-input')!.setAttribute('value', 'abc')
+    el.validateMessages = { default: '统一提示' }
+    const errors = failErrors(el)
+    expect(errors.a).toBe('统一提示')
+  })
+
+  it('rule.message 显式消息优先于 validate-messages', () => {
+    const el = mountForm({ a: [{ required: true, message: '显式消息' }] })
+    el.validateMessages = { required: '模板消息' }
+    const errors = failErrors(el)
+    expect(errors.a).toBe('显式消息')
+  })
+
+  it('attribute JSON 通道生效；property 赋值后优先于 attribute', () => {
+    const el = mountForm({ a: [{ required: true }] })
+    el.setAttribute('validate-messages', JSON.stringify({ required: '属性通道文案' }))
+    let errors = failErrors(el)
+    expect(errors.a).toBe('属性通道文案')
+
+    el.validateMessages = { required: 'property 通道文案' }
+    errors = failErrors(el)
+    expect(errors.a).toBe('property 通道文案')
+  })
+
+  it('validateMessages getter 回读当前生效模板（property 优先）', () => {
+    const el = mountForm({ a: [{ required: true }] })
+    el.setAttribute('validate-messages', JSON.stringify({ required: 'A' }))
+    expect(el.validateMessages).toEqual({ required: 'A' })
+    el.validateMessages = { required: 'B' }
+    expect(el.validateMessages).toEqual({ required: 'B' })
+  })
+
+  it('未配置模板时回落 locale 默认（form.validationFailed）', () => {
+    setLocale('zh-CN')
+    const el = mountForm({ a: [{ required: true }] })
+    const errors = failErrors(el)
+    expect(errors.a).toBe('校验未通过')
   })
 })

@@ -229,6 +229,14 @@ onMounted(() => {
 
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
 
+## autocomplete 透传
+
+<DemoBlock title="autocomplete 透传">
+  <oas-combobox autocomplete="off" placeholder="浏览器自动填充已关闭" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-combobox>
+</DemoBlock>
+
+`autocomplete` 透传内层原生 input（缺省恒为 `off`：combobox 自绘下拉，浏览器自动补全默认关闭）。浏览器在带 `name` 的原生表单场景据此决定是否回填历史输入。
+
 ## API
 
 ### oas-combobox
@@ -237,6 +245,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `autocomplete` | 透传内层原生 input（缺省回落 off） | — | — |
 | `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | `boolean` | — |
 | `disabled` | 禁用（不可输入、不展开） | `boolean` | — |
 | `filterable` | 输入实时过滤 label（`filterable="false"` 关闭本地过滤） | `string` | `true` |

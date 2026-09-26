@@ -174,6 +174,31 @@ const STYLE = `
 .trigger[aria-expanded='true'] .chevron {
   transform: rotate(180deg);
 }
+/* 自定义后缀图标（template[slot="suffix-icon"]）：对齐 .chevron 的首行对齐与展开旋转样式 */
+.suffix-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--oas-color-text-secondary);
+  flex-shrink: 0;
+  transition: transform var(--oas-transition-fast) var(--oas-ease-out);
+  align-self: flex-start;
+  margin-top: calc((var(--oas-control-height-md) - 12px) / 2);
+}
+:host([data-size='small']) .suffix-icon {
+  margin-top: calc((var(--oas-control-height-sm) - 12px) / 2);
+}
+:host([data-size='large']) .suffix-icon {
+  margin-top: calc((var(--oas-control-height-lg) - 12px) / 2);
+}
+.suffix-icon[hidden] {
+  display: none;
+}
+.chevron[hidden] {
+  display: none;
+}
+.trigger[aria-expanded='true'] .suffix-icon {
+  transform: rotate(180deg);
+}
 /* ---- loading 加载态：触发器 spinner（替代 chevron 位）+ aria-busy；面板内显示加载占位 ---- */
 .spinner {
   display: inline-block;
@@ -449,6 +474,22 @@ const STYLE = `
 ${TOUCH_TARGET_CSS}
 `
 
+/** 面板弹出方向合法值（12 向，对齐浮层引擎 Placement；非法值回落 bottom） */
+const VALID_PLACEMENTS = [
+  'top',
+  'top-start',
+  'top-end',
+  'bottom',
+  'bottom-start',
+  'bottom-end',
+  'left',
+  'left-start',
+  'left-end',
+  'right',
+  'right-start',
+  'right-end',
+] as const
+
 export class OASCascader extends OASElement {
   static override get observedAttributes(): string[] {
     return [
@@ -472,6 +513,9 @@ export class OASCascader extends OASElement {
       'field-names',
       'open',
       'max-tag-count',
+      // 能力缺口 P2：触发器可访问名称 / 面板 12 向弹出方向
+      'label',
+      'placement',
     ]
   }
 
@@ -481,6 +525,7 @@ export class OASCascader extends OASElement {
   private searchInputEl: HTMLInputElement | null = null
   private spinnerEl: HTMLElement | null = null
   private chevronEl: HTMLElement | null = null
+  private suffixIconEl: HTMLElement | null = null
   /** 移动端底部抽屉承载件（oas-bottom-sheet；PC 形态 passive 透传） */
   private sheetEl: OASBottomSheet | null = null
   private _options: CascaderOption[] = []
@@ -569,6 +614,7 @@ export class OASCascader extends OASElement {
           <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
+          <span class="suffix-icon" part="suffix-icon" hidden></span>
         </button>
         <oas-bottom-sheet part="sheet" passive>
           <div class="dropdown" part="dropdown" tabindex="-1">
@@ -588,6 +634,7 @@ export class OASCascader extends OASElement {
     this.searchInputEl = this.shadow.querySelector('.search-input')
     this.spinnerEl = this.shadow.querySelector('.spinner')
     this.chevronEl = this.shadow.querySelector('.chevron')
+    this.suffixIconEl = this.shadow.querySelector('.suffix-icon')
     // 移动端底部抽屉承载件：oas-close（下滑/backdrop/Esc）→ 同步收起
     this.sheetEl = this.shadow.querySelector<OASBottomSheet>('oas-bottom-sheet')
     this.sheetEl?.addEventListener('oas-close', () => this.setOpen(false))
@@ -649,6 +696,7 @@ export class OASCascader extends OASElement {
     this.mirrorSizeStatus()
     this.searchInputEl?.setAttribute('aria-label', this.t('select.search'))
     this.syncTrigger()
+    this.syncSuffixIcon()
     this.syncDropdown()
   }
 
@@ -1069,7 +1117,13 @@ export class OASCascader extends OASElement {
     }
   }
 
-  /** 复用浮层定位引擎：锚定 trigger 下方，空间不足自动翻转/避让；最小宽度对齐 trigger（面板可自然加宽） */
+  /** 面板弹出方向：placement 属性（12 向，对齐浮层引擎 Placement），非法值回落 bottom */
+  private placement(): Placement {
+    const raw = this.getAttr('placement', 'bottom')
+    return ((VALID_PLACEMENTS as readonly string[]).includes(raw) ? raw : 'bottom') as Placement
+  }
+
+  /** 复用浮层定位引擎：锚定 trigger，12 向 placement + 空间不足自动翻转/避让；最小宽度对齐 trigger（面板可自然加宽） */
   private positionDropdown(): void {
     if (this.isMobileSheet()) return // 移动形态由 bottom-sheet 承载，跳过 fixed 锚定
     if (!this.dropdown || !this.triggerEl) return
@@ -1078,7 +1132,7 @@ export class OASCascader extends OASElement {
     const { top, left } = computePosition(
       anchorRect,
       panelRect,
-      'bottom' as Placement,
+      this.placement(),
       getViewport(),
       undefined,
       undefined,
@@ -1152,6 +1206,21 @@ export class OASCascader extends OASElement {
     return status
   }
 
+  /**
+   * 选项行 label 渲染：template[slot="option"] 克隆 + [data-option-label] 绑定展示文本，
+   * 缺省回落纯文本（对齐 select/tree-select 的模板惯例；面板行与搜索结果行两路共用）。
+   */
+  private fillOptionLabel(labelEl: HTMLElement, text: string): void {
+    const tpl = this.querySelector('template[slot="option"]')
+    if (tpl instanceof HTMLTemplateElement) {
+      labelEl.appendChild(tpl.content.cloneNode(true))
+      const binder = labelEl.querySelector('[data-option-label]')
+      if (binder) binder.textContent = text
+    } else {
+      labelEl.textContent = text
+    }
+  }
+
   private renderColumn(container: HTMLElement, list: CascaderOption[], depth: number): void {
     const panel = document.createElement('div')
     panel.className = 'panel'
@@ -1202,7 +1271,7 @@ export class OASCascader extends OASElement {
 
     const label = document.createElement('span')
     label.className = 'label'
-    label.textContent = option.label
+    this.fillOptionLabel(label, option.label)
     row.appendChild(label)
 
     if (expandable) {
@@ -1256,7 +1325,7 @@ export class OASCascader extends OASElement {
       if (index === this.searchActive) row.classList.add('active')
       const label = document.createElement('span')
       label.className = 'label'
-      label.textContent = this.pathToText(path)
+      this.fillOptionLabel(label, this.pathToText(path))
       row.appendChild(label)
       row.addEventListener('click', () => {
         if (this.isMultiple()) this.toggleCheck(path)
@@ -1555,14 +1624,15 @@ export class OASCascader extends OASElement {
   private syncTrigger(): void {
     if (!this.triggerEl) return
     const placeholder = this.getAttr('placeholder', this.t('cascader.placeholder'))
+    // label：触发器可访问名称（对齐 oas-select 契约），优先于占位/值文本回退
+    const label = this.getAttr('label', '')
     const disabled = this.injectDisabled()
     const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
     this.triggerEl.disabled = disabled
 
-    // loading 加载态（P1-20）：触发器 spinner 替代 chevron + aria-busy 播报忙态
+    // loading 加载态（P1-20）：触发器 spinner 替代 chevron 位 + aria-busy 播报忙态
     const loading = this.hasAttr('loading')
     if (this.spinnerEl) this.spinnerEl.hidden = !loading
-    if (this.chevronEl) this.chevronEl.hidden = loading
     if (loading) this.triggerEl.setAttribute('aria-busy', 'true')
     else this.triggerEl.removeAttribute('aria-busy')
 
@@ -1579,7 +1649,7 @@ export class OASCascader extends OASElement {
       ph.className = 'placeholder'
       ph.textContent = placeholder
       valueEl.appendChild(ph)
-      this.triggerEl.setAttribute('aria-label', placeholder)
+      this.triggerEl.setAttribute('aria-label', label || placeholder)
       return
     }
 
@@ -1587,15 +1657,33 @@ export class OASCascader extends OASElement {
       this.renderChips(valueEl)
       this.triggerEl.setAttribute(
         'aria-label',
-        this.displayPaths()
-          .map((p) => this.pathToText(p))
-          .join('、'),
+        label ||
+          this.displayPaths()
+            .map((p) => this.pathToText(p))
+            .join('、'),
       )
     } else {
       const text = this.pathToText(this.currentPath())
       valueEl.textContent = text
-      this.triggerEl.setAttribute('aria-label', text)
+      this.triggerEl.setAttribute('aria-label', label || text)
     }
+  }
+
+  /**
+   * 后缀图标同步：template[slot="suffix-icon"] 替换默认 chevron（展开旋转样式同容器生效）；
+   * loading 时自定义图标与 chevron 一并让位 spinner。
+   * 注意 chevron 是 svg：SVGElement 无 hidden IDL 属性（属性赋值是 expando 假隐藏），显隐一律走 attribute。
+   */
+  private syncSuffixIcon(): void {
+    const tpl = this.querySelector('template[slot="suffix-icon"]')
+    const hasCustom = tpl instanceof HTMLTemplateElement
+    const loading = this.hasAttr('loading')
+    if (this.suffixIconEl) {
+      this.suffixIconEl.innerHTML = ''
+      if (hasCustom) this.suffixIconEl.appendChild((tpl as HTMLTemplateElement).content.cloneNode(true))
+      this.suffixIconEl.hidden = loading || !hasCustom
+    }
+    this.chevronEl?.toggleAttribute('hidden', loading || hasCustom)
   }
 
   /** 多选标签：路径文本 chip + 单独移除；max-tag-count 显式设置时按数量折叠为 +N */

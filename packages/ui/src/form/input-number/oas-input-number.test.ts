@@ -818,3 +818,110 @@ describe('OASInputNumber focus / blur / input 事件组（能力缺口 P1）', (
     expect(detail).toEqual({ value: '≈ 1234' })
   })
 })
+
+// ---- 能力缺口 P2：autofocus / decimal-separator / variant / align ----
+
+describe('OASInputNumber P2：autofocus / decimal-separator / variant / align', () => {
+  function styleText(el: OASInputNumber): string {
+    return el.shadowRoot!.querySelector('style')!.textContent ?? ''
+  }
+
+  /** 运行环境默认 locale 的小数分隔符（与组件 Intl 格式化同源） */
+  const localeSep = new Intl.NumberFormat(undefined).formatToParts(1.1).find((p) => p.type === 'decimal')?.value ?? '.'
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('autofocus / decimal-separator / variant / align 进入 observedAttributes', () => {
+    for (const name of ['autofocus', 'decimal-separator', 'variant', 'align']) {
+      expect(OASInputNumber.observedAttributes).toContain(name)
+    }
+  })
+
+  it('autofocus：挂载后聚焦内层 input（queueMicrotask 转发）', async () => {
+    const el = mount({ autofocus: '' })
+    await new Promise<void>((r) => queueMicrotask(() => r()))
+    expect(el.shadowRoot!.activeElement).toBe(input(el))
+  })
+
+  it('无 autofocus 时不抢焦点', async () => {
+    const el = mount()
+    await new Promise<void>((r) => queueMicrotask(() => r()))
+    expect(el.shadowRoot!.activeElement).not.toBe(input(el))
+  })
+
+  it('decimal-separator 显式设置为逗号：显示与键入均按该分隔符', () => {
+    const el = mount({ value: '1.5', 'decimal-separator': ',' })
+    expect(input(el).value).toBe('1,5')
+    expect(input(el).getAttribute('aria-valuetext')).toBe('1,5')
+    type(el, '2,5')
+    commit(el)
+    expect(el.getAttribute('value')).toBe('2.5')
+    expect(input(el).value).toBe('2,5')
+  })
+
+  it('decimal-separator 缺省为 locale 感知的小数分隔符', () => {
+    const el = mount({ value: '1.5' })
+    expect(input(el).value).toBe(String(1.5).split('.').join(localeSep))
+  })
+
+  it('decimal-separator 移除后回落 locale 默认', () => {
+    const el = mount({ value: '1.5', 'decimal-separator': ',' })
+    expect(input(el).value).toBe('1,5')
+    el.removeAttribute('decimal-separator')
+    expect(input(el).value).toBe(String(1.5).split('.').join(localeSep))
+  })
+
+  it('grouping + 自定义 decimal-separator：Intl 分组显示按配置替换小数点', () => {
+    const el = mount({ value: '1234.5', grouping: '', 'decimal-separator': ',' })
+    const intl = new Intl.NumberFormat(undefined, { useGrouping: true }).format(1234.5)
+    expect(input(el).value).toBe(intl.split(localeSep).join(','))
+  })
+
+  it('variant 未设置时不镜像 data-variant（默认 outlined 走基础样式，SSR 属性序列零扰动）', () => {
+    const el = mount({ value: '5' })
+    expect(el.hasAttribute('data-variant')).toBe(false)
+  })
+
+  it('variant=filled/borderless 镜像，非法值回落 outlined', () => {
+    const el = mount({ value: '5', variant: 'filled' })
+    expect(el.getAttribute('data-variant')).toBe('filled')
+    el.setAttribute('variant', 'borderless')
+    expect(el.getAttribute('data-variant')).toBe('borderless')
+    el.setAttribute('variant', 'fancy')
+    expect(el.getAttribute('data-variant')).toBe('outlined')
+    el.removeAttribute('variant')
+    expect(el.hasAttribute('data-variant')).toBe(false)
+  })
+
+  it('variant 形态样式规则存在（filled/borderless）', () => {
+    const css = styleText(mount())
+    expect(css).toContain("[data-variant='filled']")
+    expect(css).toContain("[data-variant='borderless']")
+  })
+
+  it('align 未设置时不镜像 data-align（浏览器默认 start）；center/right 切换，非法回落 left', () => {
+    const el = mount({ value: '5' })
+    expect(el.hasAttribute('data-align')).toBe(false)
+    el.setAttribute('align', 'center')
+    expect(el.getAttribute('data-align')).toBe('center')
+    el.setAttribute('align', 'right')
+    expect(el.getAttribute('data-align')).toBe('right')
+    el.setAttribute('align', 'middle')
+    expect(el.getAttribute('data-align')).toBe('left')
+    el.removeAttribute('align')
+    expect(el.hasAttribute('data-align')).toBe(false)
+  })
+
+  it('align 走逻辑 text-align（left→start / right→end，RTL 安全无物理 left/right）', () => {
+    const css = styleText(mount())
+    expect(css).toMatch(/\[data-align='left'\]\)\s*input\s*\{[^}]*text-align:\s*start/)
+    expect(css).toMatch(/\[data-align='right'\]\)\s*input\s*\{[^}]*text-align:\s*end/)
+    expect(css).not.toMatch(/text-align:\s*(left|right)\b/)
+  })
+})

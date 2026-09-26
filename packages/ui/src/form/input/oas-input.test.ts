@@ -1256,3 +1256,114 @@ describe('OASInput autofocus / loading / 原生透传（能力缺口 P1）', () 
     expect(input(el).hasAttribute('inputmode')).toBe(false)
   })
 })
+
+// ---- 能力缺口 P2：min/max/step 透传 / clear-icon 插槽 / hint 静态提示 ----
+
+describe('OASInput P2：min/max/step 透传 / clear-icon 插槽 / hint', () => {
+  function part(el: OASInput, name: string): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>(`[part="${name}"]`)!
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('min / max / step / hint 进入 observedAttributes', () => {
+    const attrs = OASInput.observedAttributes
+    for (const name of ['min', 'max', 'step', 'hint']) {
+      expect(attrs).toContain(name)
+    }
+  })
+
+  it('min / max / step 透传到内层原生 input（number 类型）', () => {
+    const el = mount({ type: 'number', min: '0', max: '10', step: '2' })
+    const i = input(el)
+    expect(i.getAttribute('min')).toBe('0')
+    expect(i.getAttribute('max')).toBe('10')
+    expect(i.getAttribute('step')).toBe('2')
+  })
+
+  it('移除 min / max / step 后原生 input 同步解除', () => {
+    const el = mount({ type: 'number', min: '0', max: '10', step: '2' })
+    el.removeAttribute('min')
+    el.removeAttribute('max')
+    el.removeAttribute('step')
+    const i = input(el)
+    expect(i.hasAttribute('min')).toBe(false)
+    expect(i.hasAttribute('max')).toBe(false)
+    expect(i.hasAttribute('step')).toBe(false)
+  })
+
+  it('clear-icon 插槽存在，缺省内置关闭图标作为 slot fallback', () => {
+    const el = mount({ clearable: '', value: 'x' })
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="clear-icon"]')
+    expect(slot).not.toBeNull()
+    // 未分发时渲染 slot fallback 内的内置图标
+    expect(slot!.querySelector('svg')).not.toBeNull()
+  })
+
+  it('clear-icon 分发自定义内容替换缺省图标', async () => {
+    const el = mount({ clearable: '', value: 'x' })
+    const icon = document.createElement('span')
+    icon.textContent = 'X-ICON'
+    icon.setAttribute('slot', 'clear-icon')
+    el.appendChild(icon)
+    await new Promise((r) => setTimeout(r, 0))
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="clear-icon"]')!
+    expect(slot.assignedNodes()).toContain(icon)
+  })
+
+  it('hint 默认隐藏、无文本', () => {
+    const el = mount()
+    expect(part(el, 'hint').hidden).toBe(true)
+    expect(part(el, 'hint').textContent).toBe('')
+  })
+
+  it('hint 设置后可见且文本同步，移除后隐藏', () => {
+    const el = mount({ hint: '最多 20 个字符' })
+    expect(part(el, 'hint').hidden).toBe(false)
+    expect(part(el, 'hint').textContent).toBe('最多 20 个字符')
+    el.setAttribute('hint', '已更新提示')
+    expect(part(el, 'hint').textContent).toBe('已更新提示')
+    el.removeAttribute('hint')
+    expect(part(el, 'hint').hidden).toBe(true)
+  })
+
+  it('hint 通过 aria-describedby 关联内层 input，移除后解除', () => {
+    const el = mount({ hint: '手机号仅用于登录' })
+    const hint = part(el, 'hint')
+    const i = input(el)
+    expect(hint.id).not.toBe('')
+    expect(i.getAttribute('aria-describedby')).toBe(hint.id)
+    el.removeAttribute('hint')
+    expect(i.hasAttribute('aria-describedby')).toBe(false)
+  })
+
+  it('hint 独立于校验错误：status=error 并存时 hint 保留、aria-describedby 仍在', () => {
+    const el = mount({ hint: '格式：YYYY-MM-DD', status: 'error' })
+    expect(part(el, 'hint').hidden).toBe(false)
+    expect(part(el, 'hint').textContent).toBe('格式：YYYY-MM-DD')
+    expect(input(el).getAttribute('aria-describedby')).toBe(part(el, 'hint').id)
+    expect(input(el).getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('hint 样式走 token（字号 sm + 次要色）', () => {
+    const css = styleText(mount())
+    expect(css).toContain('.hint')
+    expect(css).toContain('var(--oas-font-size-sm)')
+    expect(css).toContain('var(--oas-color-text-secondary)')
+  })
+
+  it('hint 变更不抹掉 typing 中未提交文本（lastAttrValue 未提交输入保护不破）', () => {
+    const el = mount({ value: '初始' })
+    const i = input(el)
+    i.value = 'abc'
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+    el.setAttribute('hint', '新提示')
+    expect(i.value).toBe('abc')
+  })
+})

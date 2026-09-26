@@ -94,6 +94,16 @@ onMounted(() => {
 })
 </script>
 
+## Pinned layer stacking (z-index)
+
+`z-index` overrides the stacking order of the `fixed` layer while pinned (non-negative integer); by default the token default applies (`--oas-z-index-base + --oas-z-sticky`). Use it to coordinate the pinned layer with other fixed elements on the page (sticky nav, overlays). Invalid values fall back to the token default with a one-time warning.
+
+<DemoBlock title="z-index=2000">
+  <oas-affix offset="88" z-index="2000">
+    <oas-button type="primary">z-index 2000 while pinned (default 1020 + base)</oas-button>
+  </oas-affix>
+</DemoBlock>
+
 ## API
 
 ### oas-affix
@@ -106,6 +116,7 @@ onMounted(() => {
 | `offset` | Pin trigger distance (px) | `string` | `0` |
 | `position` | Pin direction: top (default, pinned when the top edge reaches) / bottom (pinned when the bottom edge reaches); invalid values fall back to top | `AffixPosition` | `top` |
 | `target` | Scroll container selector (CSS selector); falls back to window scroll with a console warning when no element matches | `string` | — |
+| `z-index` | Overrides the fixed layer z-index while pinned (non-negative integer; invalid falls back to token with a warning) | `string` | — |
 
 #### Events
 

@@ -94,3 +94,38 @@ test('time-picker 移动端：底部抽屉贴视口底展开 + 时间列可交�
     await ctx.close()
   }
 })
+
+// —— 能力缺口 P2 批：hide-disabled-options（禁用选项隐藏而非灰显）——
+
+test('time-picker hide-disabled-options：打烊时段（14-16 点）直接隐藏，与置灰 demo 对照', async ({ page }) => {
+  await page.goto('/components/time-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-time-picker#time-picker-hide-disabled')
+  const host = page.locator('oas-time-picker#time-picker-hide-disabled')
+  await host.scrollIntoViewIfNeeded()
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('oas-time-picker#time-picker-hide-disabled')
+        ?.shadowRoot?.querySelector('[part="dropdown"]')
+        ?.classList.contains('open'),
+    null,
+    { timeout: 5000 },
+  )
+  const r = await host.evaluate((el) => {
+    const hourCol = el.shadowRoot!.querySelectorAll<HTMLElement>('.column')[0]!
+    const texts = [...hourCol.querySelectorAll<HTMLElement>('.option')].map((o) => o.textContent)
+    return {
+      count: texts.length,
+      missing: ['14', '15', '16'].filter((t) => !texts.includes(t)),
+    }
+  })
+  expect(r.count, '小时列应为 21 项（24 - 隐藏的 14/15/16）').toBe(21)
+  expect(r.missing, '14/15/16 应从列中消失（而非置灰）').toEqual(['14', '15', '16'])
+  // 收起面板（清理现场，避免影响后续截图类断言）
+  await host.evaluate((el) =>
+    (el.shadowRoot!.querySelector('[part="trigger"]') as HTMLElement).dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    ),
+  )
+})

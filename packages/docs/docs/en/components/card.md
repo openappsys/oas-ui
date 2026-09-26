@@ -390,7 +390,7 @@ onMounted(async () => {
   const refreshSelectCount = () => {
     if (!selectCount) return
     // Count only the multi-select demo's cards (exclude the radio-group demo's data-select-radio cards — one starts selected)
-  const n = document.querySelectorAll('oas-card[selectable][selected]:not([data-select-radio])').length
+  const n = document.querySelectorAll('oas-card[selectable][selected]:not([data-select-radio]):not([disabled])').length
     selectCount.textContent = `${n} selected`
   }
   document.addEventListener('oas-change', (e) => {
@@ -416,6 +416,40 @@ onMounted(async () => {
 })
 </script>
 
+## Disabled card (disabled)
+
+`disabled` disables the whole card: grayed-out presentation (dark-mode aware), `aria-disabled` synced on the host, and no interactive events dispatched — `oas-click` from `clickable`, selection toggling and `oas-change` from `selectable` all stop. On `href` cards the inner anchor's address is removed (native navigation disabled too). Controls the card itself carries (buttons/links) keep their own behavior — they have their own `disabled`.
+
+<DemoBlock title="Disabled clickable / selectable cards">
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-space-4); width: 100%;">
+    <oas-card clickable title="Enabled">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Clicking shows a message.</p>
+    </oas-card>
+    <oas-card clickable disabled title="Disabled">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Clicking gives no feedback (no oas-click).</p>
+    </oas-card>
+    <oas-card selectable disabled selected title="Disabled & selected">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Keeps the selected look but can no longer toggle.</p>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+## Horizontal layout (orientation)
+
+`orientation="horizontal"` moves the cover to the left and stacks title/content/actions in a right-hand content column: the cover column takes 40% width and stretches to the card height (the image is no longer locked to 16:9). Suitable for news items and horizontal product strips with ample horizontal space. Default `vertical` (cover on top, current behavior).
+
+<DemoBlock title="horizontal with left cover">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--oas-space-4); width: 100%;">
+    <oas-card orientation="horizontal" hoverable title="Horizontal news card" cover-src="https://picsum.photos/seed/isui-card-horiz/640/640" cover-alt="Horizontal card cover">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Cover on the left; title, body and actions on the right.</p>
+      <oas-button slot="actions" size="small" type="primary">Read more</oas-button>
+    </oas-card>
+    <oas-card hoverable title="Default vertical (comparison)" cover-src="https://picsum.photos/seed/isui-card-horiz/640/360" cover-alt="Vertical card cover">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Cover spreads full width on top (current default).</p>
+    </oas-card>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-card
@@ -428,10 +462,12 @@ onMounted(async () => {
 | `cover-alt` | Cover image alt text (accessibility) | `string` | — |
 | `cover-src` | Cover image URL placed at the top of the card (object-fit: cover) | `string` | — |
 | `description` | Meta secondary text (muted line under the title; dual channel with the description slot, slot wins) | `string` | — |
+| `disabled` | Disables the card: graying + aria-disabled + no interaction events + href stripped (selected look preserved) | `boolean` | — |
 | `header-bordered` | Header divider line (default true; `"false"` hides it) | — | — |
 | `hoverable` | Whether to enable the hover shadow (shadow + lift + pointer) | `boolean` | — |
 | `href` | Link card: whole card acts as a link (wrapped in an internal anchor; keyboard/middle-click native) | `string` | — |
 | `loading` | Loading state: content area swaps to skeleton rows (aria-busy synced) | `boolean` | — |
+| `orientation` | `horizontal` places the cover left (40% width, full height) with a right-hand content column | `string` | — |
 | `selectable` | Selectable card: click the card body (or press Enter/Space) to toggle the selected state and dispatch `oas-change`; interactive elements inside the card (buttons/links) do not trigger selection; with `href`, selecting takes precedence over navigation; not selectable while `loading` | `boolean` | — |
 | `selected` | Selected state (with `selectable`): setting it from the host makes the card controlled — the component only dispatches `oas-change` and never mutates the attribute itself (the host writes it back); when unset, the component toggles internally and reflects this attribute (uncontrolled) | `boolean` | — |
 | `shadow` | Shadow: `none` / `hover` (lift on hover) / `always`; `hoverable` maps to `hover`, explicit shadow wins | `string` | — |

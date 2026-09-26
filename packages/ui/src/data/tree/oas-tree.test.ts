@@ -1576,3 +1576,119 @@ describe('OASTree 拖拽生命周期事件组', () => {
     expect(detail).toEqual({ dragKey: 'a', dropKey: 'a-1', position: 'before' })
   })
 })
+
+describe('OASTree size 五档 / block-node / selectable 整树开关（P2 批）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('三个属性进 observedAttributes', () => {
+    const observed = OASTree.observedAttributes
+    expect(observed).toContain('size')
+    expect(observed).toContain('block-node')
+    expect(observed).toContain('selectable')
+  })
+
+  describe('size 五档', () => {
+    it('五档全称归一化到 host data-size（别名 sm/md/lg 等价接受）', () => {
+      expect(mount({ size: 'xs' }).getAttribute('data-size')).toBe('xs')
+      expect(mount({ size: 'sm' }).getAttribute('data-size')).toBe('small')
+      expect(mount({ size: 'md' }).getAttribute('data-size')).toBe('medium')
+      expect(mount({ size: 'lg' }).getAttribute('data-size')).toBe('large')
+      expect(mount({ size: 'xl' }).getAttribute('data-size')).toBe('xl')
+    })
+
+    it('缺省回落 medium；非法值回落 medium', () => {
+      expect(mount().getAttribute('data-size')).toBe('medium')
+      expect(mount({ size: 'weird' }).getAttribute('data-size')).toBe('medium')
+    })
+
+    it('样式表含五档行规则且全部走 token（字号/行距随档位联动）', () => {
+      const el = mount({ size: 'xl' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      for (const s of ['xs', 'small', 'large', 'xl'] as const) {
+        expect(css, `缺 ${s} 档规则`).toMatch(new RegExp(`\\[data-size='${s}'\\][^{]*\\.row\\s*\\{`))
+      }
+      expect(css).toContain('var(--oas-font-size-xs)')
+      expect(css).toContain('var(--oas-font-size-xl)')
+    })
+
+    it('虚拟模式：data-size 同步到内嵌 vlist（注入样式 :host() 路径生效）', () => {
+      const el = mount({ size: 'lg', height: '120' })
+      const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+      expect(vlist.getAttribute('data-size')).toBe('large')
+    })
+  })
+
+  describe('block-node（整行块级选中/hover 区）', () => {
+    it('开启时 .tree 与 vlist 均挂 block-node 类；样式表含块级行高规则', () => {
+      const el = mount({ 'block-node': '' })
+      expect(el.shadowRoot!.querySelector('.tree')!.classList.contains('block-node')).toBe(true)
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.block-node\s+\.row\s*\{/)
+      // 虚拟路径共用 ROW_STYLE（:host(.block-node) 选择器同在）
+      expect(css).toContain(':host(.block-node) .row')
+    })
+
+    it('默认不挂类（现状紧凑行不变）；移除属性即时回落', () => {
+      const el = mount()
+      expect(el.shadowRoot!.querySelector('.tree')!.classList.contains('block-node')).toBe(false)
+      el.setAttribute('block-node', '')
+      expect(el.shadowRoot!.querySelector('.tree')!.classList.contains('block-node')).toBe(true)
+      el.removeAttribute('block-node')
+      expect(el.shadowRoot!.querySelector('.tree')!.classList.contains('block-node')).toBe(false)
+    })
+
+    it('虚拟模式同步到 vlist', () => {
+      const el = mount({ 'block-node': '', height: '120' })
+      expect(el.shadowRoot!.querySelector('oas-virtual-list')!.classList.contains('block-node')).toBe(true)
+    })
+  })
+
+  describe('selectable 整树点选开关（默认现状可选）', () => {
+    it('缺省可选：点击行选中并派发 oas-select（现状回归）', () => {
+      const el = mount({ data: JSON.stringify([{ key: 'a', label: 'A' }]) })
+      const events: unknown[] = []
+      el.addEventListener('oas-select', (e: Event) => events.push((e as CustomEvent).detail))
+      rows(el)[0]!.click()
+      expect(el.getAttribute('selected')).toBe('a')
+      expect(events).toEqual([{ key: 'a', selected: true }])
+    })
+
+    it('selectable="false"：点击/键盘不选中、不派发 oas-select（selected 属性保持不动）', () => {
+      const el = mount({ selectable: 'false', selected: 'keep', data: JSON.stringify([{ key: 'a', label: 'A' }]) })
+      let fired = 0
+      el.addEventListener('oas-select', () => fired++)
+      rows(el)[0]!.click()
+      expect(el.getAttribute('selected')).toBe('keep')
+      expect(fired).toBe(0)
+      // 键盘 Enter 同样被拦
+      rows(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      expect(el.getAttribute('selected')).toBe('keep')
+      expect(fired).toBe(0)
+    })
+
+    it('selectable="false" 不影响展开与勾选：toggle 仍展开、checkbox 仍级联', () => {
+      const el = mount({
+        selectable: 'false',
+        checkable: '',
+        data: JSON.stringify([{ key: 'a', label: 'A', children: [{ key: 'a-1', label: 'A-1' }] }]),
+      })
+      rows(el)[0]!.querySelector<HTMLButtonElement>('[part="toggle"]')!.click()
+      expect(JSON.parse(el.getAttribute('expanded')!)).toContain('a')
+      const box = checkboxes(el)[0]!
+      checkBox(el, box, true)
+      expect(JSON.parse(el.getAttribute('checked')!)).toContain('a-1')
+    })
+
+    it('selectable="true" 显式开启：行为与缺省一致', () => {
+      const el = mount({ selectable: 'true', data: JSON.stringify([{ key: 'a', label: 'A' }]) })
+      rows(el)[0]!.click()
+      expect(el.getAttribute('selected')).toBe('a')
+    })
+  })
+})

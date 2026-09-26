@@ -188,6 +188,19 @@ With the thumb focused: arrows / Home / End keep the native browser stepping; Sh
 
 The slider has no built-in visible label (avoiding duplication with the form label system): use `oas-form-item`'s `label` for a visible label (clicking the label focuses the slider), or lay out a heading + slider yourself.
 
+## Accessible Name (label)
+
+<DemoBlock title="label accessible name">
+  <div style="display: flex; flex-direction: column; gap: 12px; width: 360px;">
+    <oas-slider id="slider-label-demo" label="Volume" value="40"></oas-slider>
+    <oas-slider label="Range" range value="[20, 80]"></oas-slider>
+    <oas-button onclick="document.getElementById('slider-label-out').textContent = 'aria-label = ' + document.getElementById('slider-label-demo').shadowRoot.querySelector('input').getAttribute('aria-label')">Inspect aria-label</oas-button>
+    <span id="slider-label-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </div>
+</DemoBlock>
+
+`label` becomes the accessible name of the inner slider (aligned with the input `label` contract): single sliders get `aria-label = label`; range mode composes localized semantic suffixes ("Volume 最小值" / "Volume 最大值"); when unset, the built-in fallback text is used. Screen readers and voice control rely on this name.
+
 ## Events
 
 <DemoBlock title="Live value & change events">
@@ -241,6 +254,7 @@ onMounted(() => {
 | `color` | Fill/thumb/passed-tick color: preset semantic names (primary / success / warning / danger, following dark theme) map to theme tokens; any other value is passed through as a CSS color | — | — |
 | `disabled` | Disabled | `boolean` | — |
 | `format` | Value bubble template string: `${value}` is replaced with the current value (e.g. `"${value}%"`); shown as-is without a placeholder; the output feeds both the bubble and `aria-valuetext`; lower priority than the `formatTooltip` function | `string` | — |
+| `label` | Accessible name for the inner slider (range mode appends localized min/max suffixes) | `string` | — |
 | `large-step` | Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change` | `string` | — |
 | `marks` | Ticks: JSON object `{"0":"0°C"}` (value→label) or JSON array `[0,26,60]` (also `{"value":26,"label":"26°C"}`); tick marks and labels are shown below the track, highlighted where the value passes; positions mirror under `reverse` | `string \| Record<string, string \| number> \| number[]` | — |
 | `max` | Range | `string` | `100` |

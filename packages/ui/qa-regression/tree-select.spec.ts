@@ -227,3 +227,63 @@ test('tree-select 浮层定位：首开左缘对齐 trigger 且与再开一致',
   expect(Math.abs(g.first.left - g.first.anchorLeft)).toBeLessThanOrEqual(1)
   expect(Math.abs(g.first.left - g.second.left)).toBeLessThanOrEqual(1)
 })
+
+// ---- 能力缺口 P2：input-value / label-in-value / suffix-icon ----
+
+test('tree-select suffix-icon 模板替换默认 chevron', async ({ page }) => {
+  await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ts-suffix-icon')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#ts-suffix-icon')!
+    const trigger = el.shadowRoot!.querySelector('[part="trigger"]')!
+    const box = trigger.querySelector<HTMLElement>('.suffix-icon')!
+    return {
+      chevronHidden: trigger.querySelector('.chevron')!.hasAttribute('hidden'),
+      iconVisible: !box.hidden,
+      iconHtml: box.innerHTML,
+    }
+  })
+  expect(r.chevronHidden, '默认箭头隐藏（hidden attribute）').toBe(true)
+  expect(r.iconVisible, '自定义图标容器可见').toBe(true)
+  expect(r.iconHtml).toContain('▾')
+})
+
+test('tree-select label-in-value：选中后 value 携 { value, label } 对象，demo 反馈回显', async ({ page }) => {
+  await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ts-liv-single')
+  const host = page.locator('#ts-liv-single')
+  // e2e 指针先 scrollIntoView
+  await host.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#ts-liv-single')!
+    return !!el.shadowRoot!.querySelector('.node')
+  })
+  // 子项「Vue」在折叠的父节点下——先展开「前端」（点 toggle 箭头，没有则点节点行）
+  await host.evaluate((el) => {
+    const parent = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.node')].find((n) =>
+      n.textContent?.includes('前端'),
+    )!
+    const toggle = parent.querySelector<HTMLElement>('.toggle, [class*="toggle"], .arrow, [class*="arrow"], .chevron')
+    ;(toggle ?? parent).click()
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#ts-liv-single')!
+    return [...el.shadowRoot!.querySelectorAll('.node')].some((n) => n.textContent?.includes('Vue'))
+  })
+  await host.evaluate((el) => {
+    const node = [...el.shadowRoot!.querySelectorAll('.node')].find((n) => n.textContent?.includes('Vue'))
+    ;(node as HTMLElement).click()
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#ts-liv-single')!
+    try {
+      const v = JSON.parse(el.getAttribute('value') || '')
+      return v && typeof v === 'object' && v.value === 'vue' && v.label === 'Vue'
+    } catch {
+      return false
+    }
+  })
+  const out = await page.evaluate(() => document.getElementById('ts-liv-out')?.textContent ?? '')
+  expect(out, 'demo 输出回显对象值').toContain('Vue(vue)')
+})

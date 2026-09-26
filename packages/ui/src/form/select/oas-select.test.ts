@@ -1798,3 +1798,252 @@ describe('OASSelect label / variant（能力缺口 P1）', () => {
     expect(css.indexOf("[data-variant='filled']")).toBeLessThan(css.indexOf("[data-status='error']"))
   })
 })
+
+// ---- 能力缺口 P2：select 长尾组 ----
+
+describe('OASSelect 长尾组（能力缺口 P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function styleText(el: OASSelect): string {
+    return el.shadowRoot!.querySelector('style')?.textContent ?? ''
+  }
+
+  function searchInput(el: OASSelect): HTMLInputElement {
+    return el.shadowRoot!.querySelector<HTMLInputElement>('.search-input')!
+  }
+
+  function setSearchQuery(el: OASSelect, v: string): void {
+    const input = searchInput(el)
+    input.value = v
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  /** 选项行 label 文本（排除行尾 ✓ 勾选符） */
+  function optionLabels(el: OASSelect): string[] {
+    return [...el.shadowRoot!.querySelectorAll('[role="option"]')].map(
+      (o) => o.querySelector('.option-label')?.textContent ?? '',
+    )
+  }
+
+  function appendSlot(el: OASSelect, slot: string, html: string): void {
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', slot)
+    tpl.innerHTML = html
+    el.appendChild(tpl)
+  }
+
+  it('长尾属性进入 observedAttributes', () => {
+    const attrs = OASSelect.observedAttributes
+    for (const a of [
+      'input-value',
+      'show-arrow',
+      'autofocus',
+      'default-active-first-option',
+      'loading-text',
+      'reserve-keyword',
+      'tabindex',
+      'auto-width',
+      'hint',
+    ]) {
+      expect(attrs, a).toContain(a)
+    }
+  })
+
+  // ---- show-arrow ----
+
+  it('show-arrow="false" 隐藏默认 chevron（svg 写 hidden 属性），缺省显示', () => {
+    const off = mount({ 'show-arrow': 'false' })
+    expect(trigger(off).querySelector('.chevron')!.hasAttribute('hidden')).toBe(true)
+    const on = mount()
+    expect(trigger(on).querySelector('.chevron')!.hasAttribute('hidden')).toBe(false)
+  })
+
+  // ---- suffix-icon / clear-icon / prefix / suffix 插槽 ----
+
+  it('template[slot="suffix-icon"] 替换默认 chevron，展开旋转样式作用于自定义图标容器', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    appendSlot(el, 'suffix-icon', '<i class="my-ic">▲</i>')
+    document.body.appendChild(el)
+    const box = trigger(el).querySelector<HTMLElement>('.suffix-icon')!
+    const chevron = trigger(el).querySelector('.chevron')!
+    expect(box.hidden).toBe(false)
+    expect(box.querySelector('.my-ic')).not.toBeNull()
+    expect(chevron.hasAttribute('hidden')).toBe(true)
+    // 旋转样式挂在容器上（跟随展开态翻转）
+    expect(styleText(el)).toContain(".trigger[aria-expanded='true'] .suffix-icon")
+  })
+
+  it('无 suffix-icon 模板时容器隐藏、chevron 恢复显示', () => {
+    const el = mount()
+    const box = trigger(el).querySelector<HTMLElement>('.suffix-icon')!
+    expect(box.hidden).toBe(true)
+    expect(trigger(el).querySelector('.chevron')!.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('template[slot="clear-icon"] 替换清空按钮默认 × 图标', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    el.setAttribute('clearable', '')
+    el.setAttribute('value', 'apple')
+    appendSlot(el, 'clear-icon', '<b class="my-clear">✕</b>')
+    document.body.appendChild(el)
+    const btn = el.shadowRoot!.querySelector<HTMLElement>('.clear-btn')!
+    expect(btn.hidden).toBe(false)
+    expect(btn.querySelector('.my-clear')).not.toBeNull()
+    expect(btn.querySelector('svg')!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('template[slot="prefix"] / template[slot="suffix"] 渲染进触发器前后缀，缺省隐藏', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    appendSlot(el, 'prefix', '<span class="my-prefix">¥</span>')
+    appendSlot(el, 'suffix', '<span class="my-suffix">元</span>')
+    document.body.appendChild(el)
+    const prefix = trigger(el).querySelector<HTMLElement>('.prefix')!
+    const suffix = trigger(el).querySelector<HTMLElement>('.suffix')!
+    expect(prefix.hidden).toBe(false)
+    expect(prefix.querySelector('.my-prefix')).not.toBeNull()
+    expect(suffix.hidden).toBe(false)
+    expect(suffix.querySelector('.my-suffix')).not.toBeNull()
+    // 前缀在值之前、后缀在清空按钮之后
+    const valueEl = trigger(el).querySelector('.value')!
+    expect(prefix.nextElementSibling).toBe(valueEl)
+    const bare = mount()
+    expect(trigger(bare).querySelector<HTMLElement>('.prefix')!.hidden).toBe(true)
+    expect(trigger(bare).querySelector<HTMLElement>('.suffix')!.hidden).toBe(true)
+  })
+
+  // ---- input-value（filterable 输入值受控） ----
+
+  it('input-value 预设：打开后搜索框带初始值并参与过滤', () => {
+    const el = mount({ searchable: '', 'input-value': '苹' })
+    open(el)
+    expect(searchInput(el).value).toBe('苹')
+    // 过滤生效：只留 label 含「苹」的选项
+    expect(optionLabels(el)).toEqual(['苹果'])
+  })
+
+  it('输入时写回 input-value 属性并派发 oas-input-value-change', () => {
+    const el = mount({ searchable: '' })
+    open(el)
+    const events: string[] = []
+    el.addEventListener('oas-input-value-change', (e: Event) => {
+      events.push((e as CustomEvent).detail.value)
+    })
+    setSearchQuery(el, '香')
+    expect(el.getAttribute('input-value')).toBe('香')
+    expect(events).toEqual(['香'])
+  })
+
+  it('展开中外部改 input-value：搜索框同步且列表重过滤', () => {
+    const el = mount({ searchable: '' })
+    open(el)
+    el.setAttribute('input-value', '橙')
+    expect(searchInput(el).value).toBe('橙')
+    expect(optionLabels(el)).toEqual(['橙子'])
+  })
+
+  // ---- reserve-keyword（多选选中后默认清空搜索词，设置后保留） ----
+
+  it('多选搜索选中后默认清空搜索词（列表恢复全量）', () => {
+    const el = mount({ multiple: '', searchable: '' })
+    open(el)
+    setSearchQuery(el, '苹')
+    ;(el.shadowRoot!.querySelector('[role="option"]') as HTMLElement).click()
+    expect(searchInput(el).value).toBe('')
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(3)
+  })
+
+  it('reserve-keyword：多选搜索选中后保留搜索词（列表保持过滤）', () => {
+    const el = mount({ multiple: '', searchable: '', 'reserve-keyword': '' })
+    open(el)
+    setSearchQuery(el, '苹')
+    ;(el.shadowRoot!.querySelector('[role="option"]') as HTMLElement).click()
+    expect(searchInput(el).value).toBe('苹')
+    expect(optionLabels(el)).toEqual(['苹果'])
+  })
+
+  // ---- default-active-first-option ----
+
+  it('default-active-first-option：展开高亮首项而非当前选中项', () => {
+    const el = mount({ value: 'orange', 'default-active-first-option': '' })
+    open(el)
+    const active = el.shadowRoot!.querySelector('[role="option"].active')
+    expect(active?.textContent).toContain('苹果')
+  })
+
+  it('缺省行为不变：展开高亮当前选中项', () => {
+    const el = mount({ value: 'orange' })
+    open(el)
+    const active = el.shadowRoot!.querySelector('[role="option"].active')
+    expect(active?.textContent).toContain('橙子')
+  })
+
+  // ---- loading-text ----
+
+  it('loading-text 覆盖默认加载文案', () => {
+    const el = mount({ remote: '', loading: '', 'loading-text': '数据加载中…' })
+    open(el)
+    expect(el.shadowRoot!.querySelector('.empty')!.textContent).toBe('数据加载中…')
+  })
+
+  // ---- autofocus ----
+
+  it('autofocus：挂载后自动聚焦 trigger', async () => {
+    const el = mount({ autofocus: '' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.activeElement).toBe(trigger(el))
+  })
+
+  // ---- tabindex 透传 ----
+
+  it('tabindex 委托到内部 trigger（宿主移除防双 Tab 停靠点）', () => {
+    const el = mount({ tabindex: '3' })
+    expect(el.hasAttribute('tabindex')).toBe(false)
+    expect(trigger(el).tabIndex).toBe(3)
+    // 宿主重新设置 → 再次委托
+    el.setAttribute('tabindex', '-1')
+    expect(el.hasAttribute('tabindex')).toBe(false)
+    expect(trigger(el).tabIndex).toBe(-1)
+  })
+
+  // ---- auto-width ----
+
+  it('auto-width：宿主宽度随内容收缩（width auto 样式生效）', () => {
+    const el = mount({ 'auto-width': '' })
+    expect(styleText(el)).toContain(':host([auto-width])')
+  })
+
+  // ---- hint ----
+
+  it('hint 渲染触发器下方提示文案，aria-describedby 关联可读', () => {
+    const el = mount({ hint: '选择常驻城市' })
+    const hint = el.shadowRoot!.querySelector<HTMLElement>('.hint')!
+    expect(hint.hidden).toBe(false)
+    expect(hint.textContent).toBe('选择常驻城市')
+    expect(trigger(el).getAttribute('aria-describedby')).toBe(hint.id)
+    el.removeAttribute('hint')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.hint')!.hidden).toBe(true)
+    expect(trigger(el).hasAttribute('aria-describedby')).toBe(false)
+  })
+
+  // ---- oas-create ----
+
+  it('allow-create 创建新选项时派发 oas-create（detail 携带创建文本）', () => {
+    const el = mount({ 'allow-create': '', searchable: '' })
+    open(el)
+    const events: unknown[] = []
+    el.addEventListener('oas-create', (e: Event) => events.push((e as CustomEvent).detail))
+    setSearchQuery(el, '榴莲')
+    ;(el.shadowRoot!.querySelector('.create-option') as HTMLElement).click()
+    expect(events).toEqual([{ value: '榴莲', label: '榴莲' }])
+    expect(el.getAttribute('value')).toBe('榴莲')
+  })
+})

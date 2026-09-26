@@ -89,6 +89,12 @@
       "observed": true
     },
     {
+      "name": "shape",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "attention",
       "type": "BadgeAttention",
       "default": "",

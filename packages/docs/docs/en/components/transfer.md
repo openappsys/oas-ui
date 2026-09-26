@@ -97,6 +97,23 @@ Windowed rendering for tens of thousands of items with smooth scrolling; selecti
   <oas-transfer id="transfer-virtual" virtual searchable item-height="32"></oas-transfer>
 </DemoBlock>
 
+## Long-list pagination (pagination)
+
+`pagination` enables in-panel paging (`page-size` items per page, default 10): both panels page independently and a simple footer appears (previous / page indicator / next, auto-disabled at the edges). Pagination applies to the visible items **after search filtering**; changing the filter resets the page to 1; the panel-head count still reflects all visible items. Virtual mode window-sizes on its own — when both are set, pagination does not apply.
+
+<DemoBlock title="pagination + page-size=2">
+  <oas-transfer id="transfer-page" pagination page-size="2"></oas-transfer>
+</DemoBlock>
+
+## List scroll event (oas-scroll)
+
+Scrolling a panel list emits `oas-scroll` (both static lists and virtual viewports), `detail: { side, direction, scrollTop, reachBottom }` — the lazy-loading channel: listen for `reachBottom` and append data to `data`.
+
+<DemoBlock title="Scroll feedback (reachBottom)">
+  <oas-transfer id="transfer-scroll"></oas-transfer>
+  <span id="transfer-scroll-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## Disabled
 
 `disabled` disables the whole group (rows / select-all / search / shuttle buttons / keyboard) and mirrors `data-disabled` on the host for styling; `disabled-skip` exempts it from global disabled injection.
@@ -120,6 +137,7 @@ Windowed rendering for tens of thousands of items with smooth scrolling; selecti
 - `oas-change`: value change after shuttling, `detail: { value }`
 - `oas-select-change`: panel selection change (row click / select-all / keyboard selection), `detail: { side: 'left' | 'right', selected: string[] }`
 - `oas-search`: search input, `detail: { side, query }`
+- `oas-scroll`: panel list scroll, `detail: { side, direction: 'up' | 'down', scrollTop, reachBottom }` (lazy-loading channel)
 
 ## Keyboard
 
@@ -183,6 +201,25 @@ onMounted(() => {
   ]
   const virtual = document.getElementById('transfer-virtual')
   if (virtual) virtual.data = Array.from({ length: 10000 }, (_, i) => ({ key: 'k' + i, label: 'Item ' + i }))
+
+  // pagination: 12 items, page-size=2
+  const page = document.getElementById('transfer-page')
+  if (page)
+    page.data = Array.from({ length: 12 }, (_, i) => ({
+      key: 'p' + i,
+      label: `Candidate ${i + 1}`,
+    }))
+
+  // scroll event: reachBottom feedback
+  const sc = document.getElementById('transfer-scroll')
+  if (sc) {
+    sc.data = Array.from({ length: 40 }, (_, i) => ({ key: 's' + i, label: `Entry ${i + 1}` }))
+    const out = document.getElementById('transfer-scroll-output')
+    sc.addEventListener('oas-scroll', (e) => {
+      const d = e.detail
+      out.textContent = `oas-scroll: ${d.side} ${d.direction} (scrollTop=${Math.round(d.scrollTop)}${d.reachBottom ? ', reached bottom' : ''})`
+    })
+  }
   const el = document.getElementById('transfer-event')
   if (el) {
     el.data = [
@@ -303,6 +340,8 @@ onMounted(() => {
 | `disabled` | Disabled (row clicks/buttons/search all inert; host mirrors data-disabled) | `boolean` | — |
 | `item-height` | Fixed row height for virtual scrolling (px), default 36 | `string` | — |
 | `one-way` | One-way mode: move left to right only, right panel is read-only; left panel shows all data, already transferred items are disabled and shown as selected | `boolean` | — |
+| `page-size` | Items per page (invalid/<1 falls back to 10) | `string` | `10` |
+| `pagination` | Long-list paging with a simple footer per panel (applied after filtering) | `boolean` | — |
 | `searchable` | Search filtering within panels (filtered independently per panel) | `boolean` | — |
 | `simple` | Move on selection (skip the shuttle buttons, off by default) | `boolean` | — |
 | `source-title` | Left panel title | — | — |
@@ -318,6 +357,7 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-change` | Value change after shuttling, `detail: { value }` |
+| `oas-scroll` | List scroll event `{ side, direction, scrollTop, reachBottom }` (lazy-load channel), `detail: { side, direction: cur > prev ? 'down' : 'up', scrollTop: cur, reachBottom }` |
 | `oas-search` | Panel search input, `detail: { side, query }` |
 | `oas-select-change` | Selection set changed (row click/select-all/keyboard), `detail: { side, selected }` |
 

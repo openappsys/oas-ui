@@ -114,6 +114,53 @@
       "observed": true
     },
     {
+      "name": "input-value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "show-arrow",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "autofocus",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "default-active-first-option",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading-text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "reserve-keyword",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "tabindex",
+      "observed": true
+    },
+    {
+      "name": "auto-width",
+      "observed": true
+    },
+    {
+      "name": "hint",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "name",
       "type": "string",
       "default": "",
@@ -147,6 +194,10 @@
       "detail": "{ value: v }"
     },
     {
+      "name": "oas-input-value-change",
+      "detail": "{ value: v }"
+    },
+    {
       "name": "oas-focus"
     },
     {
@@ -173,16 +224,26 @@
       "detail": "{ value: [...prev] } | { value: prev[0] ?? '' }"
     },
     {
+      "name": "oas-create",
+      "detail": "{ value: label, label }"
+    },
+    {
       "name": "oas-tag-render",
       "detail": "{ value, label, element: labelEl }"
     }
   ],
   "slots": [
     {
+      "name": "template[slot=\"clear-icon\"]"
+    },
+    {
       "name": "template[slot=\"empty\"]"
     },
     {
       "name": "template[slot=\"option\"]"
+    },
+    {
+      "name": "template[slot=\"suffix-icon\"]"
     },
     {
       "name": "template[slot=\"tag\"]"

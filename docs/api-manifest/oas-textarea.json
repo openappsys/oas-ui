@@ -77,8 +77,6 @@
     },
     {
       "name": "size",
-      "type": "string",
-      "default": "medium",
       "observed": true
     },
     {
@@ -115,6 +113,10 @@
     },
     {
       "name": "spellcheck",
+      "observed": true
+    },
+    {
+      "name": "autocomplete",
       "observed": true
     },
     {

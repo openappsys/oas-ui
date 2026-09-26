@@ -115,9 +115,37 @@
 
 若需要常驻页面里做多选，宿主可把 `oas-date-picker` 的内层面板相关能力与 `oas-calendar` 组合，或用 `oas-calendar` 单选 + 宿主自己维护集合。
 
-## 自定义头部：用卡片组合（等价示例）
+## 自定义头部
 
-`oas-calendar` 的头部是内部导航区，不开放替换（这是选择面板语义——头部承载导航而非居中所选态）。要在日历上方放品牌/操作条（如「周切换」「今日快捷」），把 `oas-calendar` 包进宿主自己的卡片，操作条放在顶部即可：
+<DemoBlock title="header 插槽（自定义头部，缺省内置导航）">
+  <oas-calendar id="calendar-header-slot" value="2026-08-09">
+    <div slot="header" style="display:flex;align-items:center;justify-content:space-between;gap:var(--oas-space-2);min-height:var(--oas-control-height-md)">
+      <strong>排期月历</strong>
+      <oas-button size="small" id="calendar-header-slot-btn">回到今天</oas-button>
+    </div>
+  </oas-calendar>
+  <span id="calendar-header-slot-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+`slot="header"` 分发自定义头部（整体替换内置导航区，宿主自行接管翻页交互——可配合 `page-show-date` 受控锚定面板月）；不分发时保持内置 `prev / title / next / today` 导航（`[part="header"]` 可定位、`::part` 改样式）。
+
+## 面板语言与头部格式
+
+<DemoBlock title="locale 面板语言覆盖">
+  <oas-calendar id="calendar-locale" value="2026-08-09" locale="en"></oas-calendar>
+</DemoBlock>
+
+`locale` 覆盖面板语言：标题/周头/单元格描述等 Intl 格式化、导航与「今天」文案、周起始推导一并跟随；缺省跟随 config-provider 注入或全局 locale。
+
+<DemoBlock title="format 头部日期格式串">
+  <oas-calendar id="calendar-format" value="2026-08-09" format="yyyy年MM月"></oas-calendar>
+</DemoBlock>
+
+`format` 自定义头部标题格式（token 同 date-picker：`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`，日面板与月面板标题均适用）；十年面板标题为区间形态（`2020-2031`），格式串不适用。
+
+## 自定义头部操作条：卡片组合（额外内容，不替换内置导航）
+
+要在日历上方放品牌/操作条且**保留内置导航**，把 `oas-calendar` 包进宿主自己的卡片，操作条放在顶部即可（需要整体替换头部请用上方 `header` 插槽）：
 
 <DemoBlock title="header 组合：自定义头部操作条">
   <div style="display: inline-flex; flex-direction: column; gap: var(--oas-space-2); padding: var(--oas-space-3); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg);">
@@ -128,8 +156,6 @@
     <oas-calendar id="calendar-header-composite" value="2026-08-09"></oas-calendar>
   </div>
 </DemoBlock>
-
-> 说明：`oas-calendar` 自身头部仍提供 `prev/next/title/today` 导航（`[part="header"]` 可定位、`::part` 改样式），宿主无需替换即可用；上述操作条属**额外内容**，通过外层卡片排版实现，不侵入组件内部。这就是「B 派日程月历（如带富内容头部的月历容器）」与「我们选择面板」的形态分界。
 
 ## 只读日历
 
@@ -166,6 +192,8 @@
 | --- | --- | --- | --- |
 | `disabled` | 整体禁用：置灰并停止全部交互（点选/翻页/键盘） | `boolean` | — |
 | `first-day-of-week` | 周起始覆写：`0`（周日）～`6`（周六）；缺省随 locale（欧陆/中文周一、日/韩/英/阿周日） | `string` | — |
+| `format` | 头部标题格式串（yyyy/MM/dd token，日/月面板适用） | `string` | — |
+| `locale` | 面板语言覆盖（标题/周头/单元格描述/导航文案/周起始），缺省走 config-provider > 全局 | `string` | — |
 | `max` | 可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰 | `string` | — |
 | `min` | 可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰 | `string` | — |
 | `mode` | `month` / `year`（年模式选中月份后自动切回月视图） | `string` | `month` |
@@ -194,13 +222,17 @@
 
 | 名称 | 说明 |
 | --- | --- |
+| `header` | 自定义头部，整体替换内置导航（不分发保持内置 prev/title/next/today） |
 | `template[slot="cell"]` | 日单元格静态模板，克隆到每个日按钮；`[data-cell-date]` 节点自动绑定日期数字 |
 
 键盘：`↑`/`↓`/`←`/`→` 在网格内移动（跨月自动翻页），`Home`/`End` 跳周首/周尾，`PageUp`/`PageDown` 翻上/下一月（`Shift` 翻年），`Enter`/`Space` 选中。
 
 <script setup>
 import { onMounted } from 'vue'
+import { loadLocale } from '@oas-ui/i18n'
 onMounted(() => {
+  // locale 覆盖 demo 需要目标语言包已注册（按需加载 en 包）
+  loadLocale('en')
   const el = document.getElementById('calendar-disabled-date')
   el.disabledDate = (d) => d.getDay() === 0 || d.getDay() === 6
 
@@ -273,6 +305,16 @@ onMounted(() => {
   })
   modeCal?.addEventListener('oas-change', (e) => {
     appendOut(`oas-change: ${e.detail.value}`)
+  })
+
+  // header 插槽 demo：宿主内容可交互（回到今天 = 设 page-show-date 为当月）
+  const hs = document.getElementById('calendar-header-slot')
+  const hsOut = document.getElementById('calendar-header-slot-output')
+  document.getElementById('calendar-header-slot-btn')?.addEventListener('click', () => {
+    const n = new Date()
+    const ym = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`
+    hs?.setAttribute('page-show-date', ym)
+    if (hsOut) hsOut.textContent = `已锚定回当月：${ym}`
   })
 })
 </script>

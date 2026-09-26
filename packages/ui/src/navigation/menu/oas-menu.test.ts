@@ -1851,3 +1851,134 @@ describe('OASMenu open-on-hover（vertical/inline 子菜单 hover 延迟开合�
     expect(parent.classList.contains('open')).toBe(true)
   })
 })
+
+// ===== 能力缺口 P2：disabled / selectable / persistent =====
+
+describe('OASMenu disabled 整单禁用（能力缺口 P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('disabled：点击叶子不派发 select、不写回 value，宿主 aria-disabled 同步', () => {
+    const el = mount({ disabled: '' })
+    let fired = 0
+    el.addEventListener('oas-select', () => fired++)
+    items(el)[0]!.click()
+    expect(fired).toBe(0)
+    expect(el.hasAttribute('value')).toBe(false)
+    expect(el.getAttribute('aria-disabled')).toBe('true')
+  })
+
+  it('disabled：键盘导航失效（ArrowDown/Enter 不派发 select）', () => {
+    const el = mount({ disabled: '' })
+    let fired = 0
+    el.addEventListener('oas-select', () => fired++)
+    const menu = el.shadowRoot!.querySelector('.menu')!
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(fired).toBe(0)
+  })
+
+  it('disabled：hover 不展开子菜单；移除 disabled 后交互与 aria-disabled 恢复', () => {
+    const el = mount({ items: NESTED_ITEMS, disabled: '' })
+    const parent = topItems(el)[0]!
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(parent.classList.contains('open')).toBe(false)
+    // 移除 disabled 触发重渲染：重新查询节点再派发 hover
+    el.removeAttribute('disabled')
+    const parentAfter = topItems(el)[0]!
+    parentAfter.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(parentAfter.classList.contains('open')).toBe(true)
+    expect(el.getAttribute('aria-disabled')).toBe('false')
+  })
+
+  it('disabled：样式表含降饱和与 hover 反馈抑制规则（机制面）', () => {
+    const el = mount({ disabled: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host([disabled])')
+    expect(css).toContain(':host([disabled]) .item:hover')
+  })
+})
+
+describe('OASMenu selectable=false 纯动作菜单（能力缺口 P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('selectable=false：叶子渲染 menuitem（无勾选态），点击派发 select 但不写回 value', () => {
+    const el = mount({ selectable: 'false' })
+    const leaves = topItems(el)
+    for (const li of leaves) {
+      // radio（缺省 kind）也按动作语义：role=menuitem、无 aria-checked、无勾选标记
+      expect(li.getAttribute('role')).toBe('menuitem')
+      expect(li.hasAttribute('aria-checked')).toBe(false)
+      expect(li.querySelector('.check')).toBeNull()
+    }
+    let detail: { value?: string; kind?: string } | undefined
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    leaves[0]!.click()
+    expect(detail?.value).toBe('home')
+    expect(el.hasAttribute('value')).toBe(false)
+  })
+
+  it('selectable=false：checkbox 项一并降为动作语义（不写勾选集）', () => {
+    const el = mount({
+      selectable: 'false',
+      items: JSON.stringify([{ label: '网格', value: 'grid', kind: 'checkbox' }]),
+    })
+    const li = topItems(el)[0]!
+    expect(li.getAttribute('role')).toBe('menuitem')
+    li.click()
+    expect(el.hasAttribute('value')).toBe(false)
+  })
+
+  it('缺省（无 selectable）保持选中语义：role=menuitemradio + 写回 value（回归守护）', () => {
+    const el = mount()
+    const li = topItems(el)[0]!
+    expect(li.getAttribute('role')).toBe('menuitemradio')
+    li.click()
+    expect(el.getAttribute('value')).toBe('home')
+  })
+})
+
+describe('OASMenu persistent 选中不收起（能力缺口 P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('persistent：浮出子菜单叶子选中后保持展开（value 照常写回）', () => {
+    const el = mount({ items: NESTED_ITEMS, persistent: '' })
+    const parent = topItems(el)[0]!
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(parent.classList.contains('open')).toBe(true)
+    const leaf = parent.querySelector<HTMLElement>('[data-value="copy"]')!
+    leaf.click()
+    expect(el.getAttribute('value')).toBe('copy')
+    // 写回 value 触发重渲染：重新查询节点断言展开态保持
+    const parentAfter = topItems(el)[0]!
+    expect(parentAfter.classList.contains('open')).toBe(true)
+  })
+
+  it('缺省（无 persistent）：浮出形态选中后收起（close-on-select 缺省回归守护）', () => {
+    const el = mount({ items: NESTED_ITEMS })
+    const parent = topItems(el)[0]!
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    const leaf = parent.querySelector<HTMLElement>('[data-value="copy"]')!
+    leaf.click()
+    // 写回 value 触发重渲染：重新查询节点断言收起
+    const parentAfter = topItems(el)[0]!
+    expect(parentAfter.classList.contains('open')).toBe(false)
+  })
+})

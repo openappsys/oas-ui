@@ -21,6 +21,7 @@
   - **输入一致性**：oas-input `autofocus`（转发内层聚焦）/ `autocomplete` / `inputmode`（透传）/ `loading`（行尾 spinner + aria-busy 不禁用输入，优先于 clear 钮）；oas-input-number 事件组 `oas-focus` / `oas-blur` / `oas-input`
   - **弹层浮层**：oas-modal `z-index`（显式层级叠加 base，dialog 比 mask 高 1）；oas-drawer `height`（纵向抽屉高度，优先 width/size）+ 事件 `oas-cancel`（取消语义关闭 `detail: { source }`）；oas-auto-complete `variant` + `oas-focus`/`oas-blur`；oas-cascader `loading`（spinner + 面板加载占位）/ `field-names`（字段别名，对齐 tree-select）/ `oas-focus`/`oas-blur`
   - **数据导航**：oas-select `variant`（outlined/filled/borderless，对齐 input）；oas-table `show-header`（false 不渲染表头行，列配置仍对齐数据行）；oas-tabs `actions` 插槽（标签栏右侧操作区，滚动区外固定）；oas-tree 事件 `oas-expand` + 拖拽生命周期事件组（`oas-node-dragstart/dragover/dragleave/dragend`，drop 契约不变）；oas-calendar `range`（两段式范围选取 + 悬停预览 + 区间高亮，`detail: { start, end }`）；oas-carousel `draggable`（拖拽跟手 + 25%/速度阈值翻页否则回弹）；oas-menu `open-on-hover`（vertical/inline 父项 hover 150ms 延迟开 / 300ms 延迟收，点击路径不变）
+- **能力缺口 P2 立项批（31 组长尾增强，约 70 个新 API）**：原生透传补齐（input `min`/`max`/`step`/`minlength`/`pattern`/`spellcheck`、textarea/combobox `autocomplete`、checkbox/tabs `tabindex`、avatar `srcset`、image `width`/`height`/`referrerpolicy`）+ 插槽开口（button `loading-icon`、calendar `header`、select `prefix`/`suffix`/`suffix-icon`/`clear-icon`、date-picker `prefix-icon`/`suffix-icon`、input `clear-icon`、cascader `option`/`suffix-icon`、tree-select `suffix-icon`、table `filter-icon`）+ 尺寸档位族（form 表级 `size` 全字段下发（core injectValue 通道 + formSizeCallback 动态重渲染）+ steps/timeline/tree/text/dropdown size）+ 表单长尾（form `colon`/`validate-messages`、form-item `help`/`status-icon`、radio-group `required`（升级为 form-associated）、slider `label`）+ 弹层长尾（drawer `no-mask`、affix `z-index`、auto-complete/cascader `placement`、date-picker `separator`/`default-time`、time-picker `hide-disabled-options`/`label`、dropdown `max-height`、tabs `actions` 之外补 `tabindex`）+ 数据组件增强（table `table-layout`/`hover`/`indent-size`/`row-expandable`/`max-height`/`oas-cell-click`/`oas-row-dblclick`、tree `block-node`/`selectable`、list `hoverable`、card `disabled`/`orientation`、descriptions `items` 数据通道、grid 双轴 gap/`collapsed-rows`/item `flex`/`push`/`pull`、transfer `pagination`/`oas-scroll`、splitter `disabled`、sider `width`、badge `shape`、carousel `trigger`、menu `disabled`/`selectable`/`persistent`、select `input-value`/`show-arrow`/`autofocus`/`default-active-first-option`/`loading-text`/`reserve-keyword`/`auto-width`/`hint`/`oas-create`、tree-select `input-value`/`label-in-value`、input-number `autofocus`/`decimal-separator`/`variant`/`align`、upload `oas-progress`）——语义覆盖为准，命名一律走本库 kebab-case / `oas-*` 惯例
 
 ### 变更
 
@@ -37,6 +38,10 @@
 - **文档站 code 元素 bidi 方向隔离**：`.vp-doc code` 加 `direction: ltr; unicode-bidi: isolate`——code token 自成 LTR 隔离区（RTL 下 CSS 变量名/函数括号不再乱序，LTR 零观感变化）
 - **vitest 关闭隔离尝试回退**：`poolOptions` 在 Vitest 4 已移除（曾误设 `poolOptions.forks.isolate=false`——死配置）；改顶层 `isolate: false` 真关后跨文件模块状态共享击穿 18 条用例（capability 注册表 / vi.mock 泄漏 / 计时态），不值得为 ~15% wall 逐个扶正——已回退默认逐文件隔离，engineering.md 立档前提
 - **oas-carousel 拖拽默认行为调整**：PC（fine pointer）默认关闭拖拽切换（此前恒可拖），触摸设备（coarse）默认开；`draggable` 属性显式开 / `"false"` 显式关——PC 上依赖拖拽手感的宿主请显式加 `draggable`
+- **oas-select searchable 选中后默认清空搜索词**（对齐 tree-select 既有契约；保留关键词请显式 `reserve-keyword`）
+- **oas-date-picker datetimerange 缺省端点时刻**：值缺时间部分/空值时终点默认补 `23:59:59`（原 `00:00:00`；`default-time` 属性可显式控制两端）
+- **oas-radio-group 升级为 form-associated**（P2 required 落地附带）：有 `name` 时组值参与原生 FormData 收集 / `form.reset()` / fieldset 禁用链——向后兼容（无 name 不提交），但依赖「组从不进 FormData」的宿主需留意
+- **oas-steps medium 档基准字号 13px→14px**（对齐 stepper 同构密度，其余档不变）
 
 ### 修复
 

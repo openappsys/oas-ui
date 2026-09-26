@@ -341,6 +341,31 @@ const STYLE = `
 .trigger[aria-expanded='true'] .chevron {
   transform: rotate(180deg);
 }
+/* 自定义后缀图标（template[slot="suffix-icon"]）：对齐 .chevron 的首行对齐与展开旋转样式（随尺寸档联动） */
+.suffix-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--oas-color-text-secondary);
+  flex: none;
+  transition: transform var(--oas-transition-fast) var(--oas-ease-out);
+  align-self: flex-start;
+  margin-top: calc((var(--oas-control-height-md) - 12px) / 2);
+}
+:host([data-size='small']) .suffix-icon {
+  margin-top: calc((var(--oas-control-height-sm) - 12px) / 2);
+}
+:host([data-size='large']) .suffix-icon {
+  margin-top: calc((var(--oas-control-height-lg) - 12px) / 2);
+}
+.suffix-icon[hidden] {
+  display: none;
+}
+.chevron[hidden] {
+  display: none;
+}
+.trigger[aria-expanded='true'] .suffix-icon {
+  transform: rotate(180deg);
+}
 .dropdown {
   /* fixed + computePosition 锚定 trigger 下方：逃出祖先 overflow 容器（模态滚动 body 等），
      不再为该容器贡献溢出逼出滚动条（与 select/combobox 同思路） */
@@ -540,6 +565,9 @@ export class OASTreeSelect extends OASFormElement {
       'expand-trigger',
       'prefix-text',
       'suffix-text',
+      // 能力缺口 P2：filterable 输入值受控 / value 携 { value, label } 对象
+      'input-value',
+      'label-in-value',
       // 表单关联通道：required 驱动原生校验链（valueMissing）；name 变化需重同步多选 FormData 的 entry key
       'required',
       'name',
@@ -621,6 +649,7 @@ export class OASTreeSelect extends OASFormElement {
           <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
+          <span class="suffix-icon" part="suffix-icon" hidden></span>
         </button>
         <oas-bottom-sheet part="sheet" passive>
           <div class="dropdown" part="dropdown">
@@ -657,8 +686,12 @@ export class OASTreeSelect extends OASFormElement {
       // 高亮定位到首个命中节点（祖先行只是过滤上下文，不应抢 Enter）
       const hit = this.visibleFlat().findIndex((item) => this.matchesQuery(item.option))
       if (hit >= 0) this.activeIndex = hit
+      // input-value 受控镜像：用户输入写回属性（DOM 为真相，宿主可监听/读取）；
+      // 属性变化经 update 重渲染，值未变化时这里兜底刷一次树
+      if (this.getAttribute('input-value') !== this.searchQuery) this.setAttribute('input-value', this.searchQuery)
+      else this.renderTree()
       this.emit('search', { value: this.searchQuery })
-      this.renderTree()
+      this.emit('input-value-change', { value: this.searchQuery })
     })
     this.shadow
       .querySelector<HTMLInputElement>('.search-input')
@@ -706,6 +739,10 @@ export class OASTreeSelect extends OASFormElement {
     this.parseFieldNames()
     this.parseOptions()
     this.parseCache()
+    // input-value 受控同步（先于渲染，预设过滤词参与过滤）
+    this.syncInputValue()
+    // label-in-value 预设对象 label 兜底（树外值回显）
+    this.parseValueLabels()
     this.model = flattenModel(this._options, this.acc)
     releaseLoading(this.model, this.acc, this.loadingSet)
     this.flat = this.model.rows.map(
@@ -755,15 +792,15 @@ export class OASTreeSelect extends OASFormElement {
     }
   }
 
-  /** 表单 reset：恢复初始选中基线（清脏 + 按基线恢复 value 属性），不派发事件（与原生 reset 一致） */
+  /** 表单 reset：恢复初始选中基线（清脏 + 按基线恢复 value 属性，label-in-value 同形序列化），不派发事件（与原生 reset 一致） */
   protected override resetFormValue(): void {
     this.valueDirty = false
     if (this.hasAttr('multiple')) {
-      this.setAttribute('value', JSON.stringify(this.initialValue))
+      this.setAttribute('value', this.serializeValues(this.initialValue))
     } else if (this.initialValue.length === 0) {
       this.removeAttribute('value')
     } else {
-      this.setAttribute('value', this.initialValue[0]!)
+      this.setAttribute('value', this.serializeValues(this.initialValue))
     }
     this.syncTrigger()
     this.renderTree()
@@ -1183,17 +1220,102 @@ export class OASTreeSelect extends OASFormElement {
 
   // ---------- 取值 ----------
 
+  /** label-in-value：value 携 { value, label } 对象（单选对象 / 多选对象数组），oas-change detail 同形 */
+  private labelInValue(): boolean {
+    return this.hasAttr('label-in-value')
+  }
+
+  /**
+   * 当前选中值（内部统一为字符串数组）：label-in-value 时兼容对象形态
+   * （{ value, label } → 提升 value），纯字符串形态照旧——两种形态混写均安全。
+   */
   private currentValues(): string[] {
+    const lift = (v: unknown): string | null => {
+      if (typeof v === 'string') return v
+      if (v && typeof v === 'object') {
+        const value = (v as Record<string, unknown>).value
+        if (typeof value === 'string') return value
+      }
+      return null
+    }
     if (!this.hasAttr('multiple')) {
       const raw = this.getAttr('value', '')
-      return raw === '' ? [] : [raw]
+      if (raw === '') return []
+      if (this.labelInValue()) {
+        try {
+          const lifted = lift(JSON.parse(raw))
+          if (lifted !== null) return [lifted]
+        } catch {
+          // 非 JSON 对象 → 按纯字符串值回落
+        }
+      }
+      return [raw]
     }
     try {
-      const parsed = JSON.parse(this.getAttr('value', '[]'))
-      return Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : []
+      const parsed: unknown = JSON.parse(this.getAttr('value', '[]'))
+      if (!Array.isArray(parsed)) return []
+      return parsed.map(lift).filter((v): v is string => v !== null)
     } catch {
       return []
     }
+  }
+
+  /**
+   * value 属性序列化：label-in-value 时携 { value, label }（label 由当前展示 label 反查），
+   * 否则字符串（单选）/ 字符串数组（多选）。
+   */
+  private serializeValues(values: string[]): string {
+    if (this.labelInValue()) {
+      const paired = values.map((v) => ({ value: v, label: this.displayLabelOf(v) }))
+      return this.hasAttr('multiple') ? JSON.stringify(paired) : JSON.stringify(paired[0] ?? '')
+    }
+    return this.hasAttr('multiple') ? JSON.stringify(values) : (values[0] ?? '')
+  }
+
+  /** oas-change detail 的 value：与 value 属性同形（label-in-value 携 { value, label } 对象） */
+  private changeValueOf(values: string[]): unknown {
+    if (!this.labelInValue()) {
+      return this.hasAttr('multiple') ? values : (values[0] ?? '')
+    }
+    const paired = values.map((v) => ({ value: v, label: this.displayLabelOf(v) }))
+    return this.hasAttr('multiple') ? paired : (paired[0] ?? '')
+  }
+
+  /** label-in-value 预设对象的 label 兜底表（树外值回显；displayLabelOf 消费） */
+  private valueLabels = new Map<string, string>()
+
+  private parseValueLabels(): void {
+    this.valueLabels.clear()
+    if (!this.labelInValue()) return
+    try {
+      const raw = this.getAttr('value', '')
+      if (raw === '') return
+      const parsed: unknown = JSON.parse(raw)
+      const items = this.hasAttr('multiple') ? (Array.isArray(parsed) ? parsed : []) : [parsed]
+      for (const it of items) {
+        if (it && typeof it === 'object') {
+          const rec = it as Record<string, unknown>
+          if (typeof rec.value === 'string' && typeof rec.label === 'string') {
+            this.valueLabels.set(rec.value, rec.label)
+          }
+        }
+      }
+    } catch {
+      // 非法 JSON 静默忽略（回显兜底是可选能力）
+    }
+  }
+
+  /**
+   * input-value 受控同步（filterable 搜索框）：属性在场即为真相源——预设/外部更新
+   * 同步进搜索框与过滤词并重过滤；属性缺席走非受控内部状态。
+   */
+  private syncInputValue(): void {
+    if (!this.hasAttribute('input-value')) return
+    const v = this.getAttr('input-value', '')
+    if (v === this.searchQuery) return
+    this.searchQuery = v
+    const search = this.shadow.querySelector<HTMLInputElement>('.search-input')
+    if (search && search.value !== v) search.value = v
   }
 
   private checkStrategy(): CheckStrategy {
@@ -1270,24 +1392,25 @@ export class OASTreeSelect extends OASFormElement {
     if (last !== undefined) this.removeValue(last)
   }
 
-  /** 提交对外值：写 value 属性 + 派发 oas-change（detail 带 labels）+ 刷新回显与树 */
+  /** 提交对外值：写 value 属性（label-in-value 携对象）+ 派发 oas-change（detail 同形，带 labels）+ 刷新回显与树 */
   private commitValues(values: string[]): void {
     // 用户选择/移除置脏：冻结 reset 基线（须在 setAttribute 之前，防止 update 把基线刷成新值）
     this.valueDirty = true
     const labels = values.map((v) => this.displayLabelOf(v))
     if (this.hasAttr('multiple')) {
-      this.setAttribute('value', JSON.stringify(values))
-      this.emit('change', { value: values, labels })
+      this.setAttribute('value', this.serializeValues(values))
+      this.emit('change', { value: this.changeValueOf(values), labels })
     } else {
-      this.setAttribute('value', values[0] ?? '')
-      this.emit('change', { value: values[0] ?? '', labels })
+      this.setAttribute('value', this.serializeValues(values))
+      this.emit('change', { value: this.changeValueOf(values), labels })
       this.setOpen(false)
     }
-    // filterable 默认选中后清空搜索词（reserve-keyword 保留）
+    // filterable 默认选中后清空搜索词（reserve-keyword 保留）；input-value 受控镜像一并清空
     if (this.hasAttr('filterable') && !this.hasAttr('reserve-keyword')) {
       this.searchQuery = ''
       const search = this.shadow.querySelector<HTMLInputElement>('.search-input')
       if (search) search.value = ''
+      if (this.getAttribute('input-value') !== '') this.setAttribute('input-value', '')
     }
     this.syncTrigger()
     this.renderTree()
@@ -1342,6 +1465,22 @@ export class OASTreeSelect extends OASFormElement {
     // 前后缀：模板插槽优先，缺省回落属性文本（prefix-text/suffix-text）；两者皆无则隐藏
     this.fillAffix('.prefix', 'prefix', this.getAttr('prefix-text', ''))
     this.fillAffix('.suffix', 'suffix', this.getAttr('suffix-text', ''))
+    // 自定义后缀图标：template[slot="suffix-icon"] 替换默认 chevron（svg 无 hidden IDL，走 attribute）
+    const iconBox = this.triggerEl?.querySelector<HTMLElement>('.suffix-icon')
+    const chevron = this.triggerEl?.querySelector('.chevron')
+    if (iconBox && chevron) {
+      const tpl = this.querySelector('template[slot="suffix-icon"]')
+      if (tpl instanceof HTMLTemplateElement) {
+        iconBox.innerHTML = ''
+        iconBox.appendChild(this.slotTemplateFragment(tpl))
+        iconBox.hidden = false
+        chevron.setAttribute('hidden', '')
+      } else {
+        iconBox.innerHTML = ''
+        iconBox.hidden = true
+        chevron.removeAttribute('hidden')
+      }
+    }
   }
 
   /** 面板头/尾插槽容器：有 template[slot] 则克隆填充并显示，否则隐藏 */
@@ -1613,10 +1752,10 @@ export class OASTreeSelect extends OASFormElement {
 
   // ---------- 回显（label / 路径 / cache-data / chip） ----------
 
-  /** 展示 label：树内节点 → show-path 拼路径或自身 label；树外值 → cache-data 兜底或原文 */
+  /** 展示 label：树内节点 → show-path 拼路径或自身 label；树外值 → cache-data / label-in-value 预设对象兜底或原文 */
   private displayLabelOf(value: string): string {
     const node = this.valueMap.get(value)
-    if (!node) return this.cacheLabels.get(value) ?? value
+    if (!node) return this.cacheLabels.get(value) ?? this.valueLabels.get(value) ?? value
     if (this.hasAttr('show-path')) return this.pathOf(node)
     return this.labelOf(node)
   }

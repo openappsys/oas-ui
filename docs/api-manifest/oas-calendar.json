@@ -57,6 +57,18 @@
       "name": "readonly",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "locale",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -85,6 +97,9 @@
     }
   ],
   "slots": [
+    {
+      "name": "header"
+    },
     {
       "name": "template[slot=\"cell\"]"
     }

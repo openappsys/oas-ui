@@ -456,3 +456,50 @@ describe('OASAffix append-to（teleport 传送）', () => {
     expect(dest.querySelector<HTMLElement>('.wrap')).not.toBeNull()
   })
 })
+
+// ===== 能力缺口 P2：z-index 吸附层级覆盖 =====
+
+describe('OASAffix z-index（能力缺口 P2）', () => {
+  it('缺省走 token：wrap 无内联 z-index（CSS calc 缺省生效）', () => {
+    const el = mount()
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.wrap')!
+    // happy-dom rect 全 0 → 吸顶态（fixed 类在），但 z-index 不内联
+    expect(wrap.classList.contains('fixed')).toBe(true)
+    expect(wrap.style.zIndex).toBe('')
+  })
+
+  it('z-index=66：吸附后内联覆盖 fixed 层级', () => {
+    const el = mount({ 'z-index': '66' })
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.wrap')!
+    expect(wrap.classList.contains('fixed')).toBe(true)
+    expect(wrap.style.zIndex).toBe('66')
+  })
+
+  it('z-index 运行时修改/移除同步生效（移除回退 token 缺省）', () => {
+    const el = mount({ 'z-index': '10' })
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.wrap')!
+    expect(wrap.style.zIndex).toBe('10')
+    el.setAttribute('z-index', '20')
+    expect(wrap.style.zIndex).toBe('20')
+    el.removeAttribute('z-index')
+    expect(wrap.style.zIndex).toBe('')
+  })
+
+  it('z-index 非法值回落 token 缺省并 console.warn 一次（同值去重）', () => {
+    const warns: unknown[][] = []
+    const orig = console.warn
+    console.warn = (...a: unknown[]) => warns.push(a)
+    try {
+      const el = mount({ 'z-index': 'top' })
+      const wrap = el.shadowRoot!.querySelector<HTMLElement>('.wrap')!
+      expect(wrap.style.zIndex).toBe('')
+      expect(warns.length).toBe(1)
+      expect(String(warns[0]?.[0])).toContain('[oas-affix]')
+      // 同值不重复告警
+      el.setAttribute('z-index', 'top')
+      expect(warns.length).toBe(1)
+    } finally {
+      console.warn = orig
+    }
+  })
+})

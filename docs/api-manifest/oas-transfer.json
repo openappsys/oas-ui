@@ -72,6 +72,17 @@
       "name": "target-draggable",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "pagination",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "page-size",
+      "type": "string",
+      "default": "10",
+      "observed": true
     }
   ],
   "props": [
@@ -85,6 +96,10 @@
     {
       "name": "oas-search",
       "detail": "{ side: 'left', query: (e.target as HTMLInputElement).value } | { side: 'right', query: (e.target as HTMLInputElement).value }"
+    },
+    {
+      "name": "oas-scroll",
+      "detail": "{ side, direction: cur > prev ? 'down' : 'up', scrollTop: cur, reachBottom }"
     },
     {
       "name": "oas-select-change",

@@ -108,10 +108,10 @@
 ## 原生属性透传
 
 <DemoBlock title="原生属性透传">
-  <oas-textarea name="bio" required minlength="2" wrap="hard" spellcheck="false" placeholder="必填、至少 2 字；spellcheck 关闭拼写检查" style="width: 320px"></oas-textarea>
+  <oas-textarea name="bio" required minlength="2" wrap="hard" spellcheck="false" autocomplete="off" placeholder="必填、至少 2 字；spellcheck 关闭拼写检查；autocomplete=off 关闭自动填充" style="width: 320px"></oas-textarea>
 </DemoBlock>
 
-白名单透传到内部原生 `<textarea>`：`name` / `autofocus` / `minlength` / `required` / `spellcheck` / `wrap`。`oas-form` 原生提交时 `name` 参与取值，`required` / `minlength` 参与原生约束校验；`wrap="hard"` 需同时设置 `cols` 才会按硬换行提交。
+白名单透传到内部原生 `<textarea>`：`name` / `autofocus` / `minlength` / `required` / `spellcheck` / `autocomplete` / `wrap`。`oas-form` 原生提交时 `name` 参与取值，`required` / `minlength` 参与原生约束校验；`wrap="hard"` 需同时设置 `cols` 才会按硬换行提交。
 
 ## 禁用与只读
 
@@ -192,6 +192,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `auto-height` | 旧属性名（兼容 `autosize`） | `boolean` | — |
+| `autocomplete` | 透传内层原生 textarea | — | — |
 | `autofocus` | 自动聚焦（透传原生） | — | — |
 | `autosize` | 高度自适应 | `boolean` | — |
 | `clearable` | 显示清除按钮（一键清空，派发 oas-clear + oas-input） | `boolean` | — |
@@ -208,7 +209,7 @@ onMounted(() => {
 | `resize` | 尺寸调整 | `string` | — |
 | `rows` | 行数 | `string` | `3` |
 | `show-count` | 显示字数计数（框外右下 n/max；超限变红；aria-live 播报） | `boolean` | — |
-| `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
+| `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | — | — |
 | `spellcheck` | 拼写检查（透传原生） | — | — |
 | `status` | 校验态：`error` / `warning` / `success`；error 同步内层 aria-invalid | `string` | — |
 | `value` | 值（受控） | `string` | — |

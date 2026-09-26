@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
 import { cssVarPx } from '../../shared/css-var.js'
+import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { iconRegistry } from '@oas-ui/icons'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
@@ -201,6 +202,14 @@ const STYLE = `
 }
 `
 
+/** 非法 size 告警：归一化回落 medium 后转发；dev 下 console.warn 一次（同值去重，同 tabs/button 惯例） */
+const warnedSizes = new Set<string>()
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-dropdown] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+}
+
 export class OASDropdown extends OASElement {
   static override get observedAttributes(): string[] {
     return [
@@ -219,6 +228,11 @@ export class OASDropdown extends OASElement {
       'hide-on-click',
       'close-on-scroll',
       'offset',
+      // 触发器透传：size（五档，归一化）/ type（button 类型词汇，原样转发）
+      'size',
+      'type',
+      // 面板限高滚动：转发内层 oas-menu 的 max-height 通道
+      'max-height',
     ]
   }
 
@@ -244,6 +258,9 @@ export class OASDropdown extends OASElement {
   private scrollRaf = 0
   /** 鼠标按下标记：click+focus 共存时区分「鼠标点击聚焦」与「键盘/程序化聚焦」 */
   private mouseDown = false
+  /** 触发器透传记账：size / type 是否由本组件当前转发（移除宿主属性时只清除自己写的） */
+  private appliedTriggerSize = false
+  private appliedTriggerType = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -348,6 +365,31 @@ export class OASDropdown extends OASElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback()
     this.scrollFollow = false
+  }
+
+  /**
+   * size / type 透传：触发器为直系子级 oas-button 时同步到其对应属性（视觉/语义由
+   * button 表达——size 五档归一化转发；type 用 button 的类型词汇原样转发）。
+   * 未设置的维度不改写触发器（保留 slotted 按钮自身属性）；已转发过的维度在宿主属性
+   * 移除后一并清除。触发器非 oas-button 时静默失效。
+   */
+  private syncTriggerProps(): void {
+    const trigger = this.querySelector<HTMLElement>(':scope > oas-button')
+    if (!trigger) return
+    const sizeRaw = this.getAttr('size', '')
+    if (sizeRaw) {
+      const { value, isValid } = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'medium')
+      if (!isValid) warnInvalidSize(sizeRaw)
+      trigger.setAttribute('size', value)
+    } else if (trigger.getAttribute('size') !== null && this.appliedTriggerSize) {
+      // 曾由本组件转发、宿主属性已移除 → 清除（不碰触发器自身原有属性）
+      trigger.removeAttribute('size')
+    }
+    this.appliedTriggerSize = sizeRaw !== ''
+    const type = this.getAttr('type', '')
+    if (type) trigger.setAttribute('type', type)
+    else if (trigger.getAttribute('type') !== null && this.appliedTriggerType) trigger.removeAttribute('type')
+    this.appliedTriggerType = type !== ''
   }
 
   private toggle(): void {
@@ -479,8 +521,14 @@ export class OASDropdown extends OASElement {
     // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
     if (this.hasAttribute('items')) this.parseItems()
     else this.parseChildItems()
+    // size / type 透传到触发器（oas-button）
+    this.syncTriggerProps()
     const open = this.hasAttr('open')
     if (!this.menuEl || !this.anchorEl) return
+    // max-height 面板限高：转发内层 oas-menu 既有通道（数字补 px → CSS 变量 → .menu 限高滚动）
+    const maxHeight = this.getAttr('max-height', '')
+    if (maxHeight) this.menuEl.setAttribute('max-height', maxHeight)
+    else this.menuEl.removeAttribute('max-height')
     // 拆分箭头按钮的可访问性：haspopup=menu + expanded 随 open 同步 + locale 可访问名称 + disabled 跟随
     if (this.arrowBtn) {
       this.arrowBtn.setAttribute('aria-expanded', String(open))

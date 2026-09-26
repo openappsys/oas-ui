@@ -215,6 +215,19 @@ onMounted(() => {
     mail.style.color = 'var(--oas-color-text-secondary)'
     element.append(name, mail)
   })
+
+  // autofocus demo: 挂载即聚焦（原生 autofocus 不穿透 Shadow DOM，转发内层 input）
+  const acFocusBtn = document.getElementById('ac-focus-btn')
+  const acFocusZone = document.getElementById('ac-focus-zone')
+  acFocusBtn?.addEventListener('click', () => {
+    if (!acFocusZone) return
+    acFocusZone.innerHTML = ''
+    const ac = document.createElement('oas-auto-complete')
+    ac.setAttribute('autofocus', '')
+    ac.setAttribute('placeholder', '挂载即聚焦（带光标）')
+    ac.setAttribute('options', '[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]')
+    acFocusZone.appendChild(ac)
+  })
 })
 </script>
 
@@ -226,6 +239,23 @@ onMounted(() => {
 
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
 
+## 面板放置方向
+
+`placement` 控制建议面板的 12 向放置（对齐浮层定位引擎，`-start` / `-end` 为书写方向逻辑语义，RTL 自动镜像）：空间不足沿主轴自动翻转、视口边缘避让。默认 `bottom-start`（面板左缘对齐输入框左缘、向下展开）；实际落位（含翻转结果）写入面板 `data-placement`。
+
+<DemoBlock title="placement=top-start（向上展开）">
+  <oas-auto-complete placement="top-start" placeholder="输入水果（面板向上）" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"葡萄","value":"grape"}]'></oas-auto-complete>
+</DemoBlock>
+
+## autofocus
+
+`autofocus` 转发到内部输入框（原生 autofocus 不穿透 Shadow DOM）：组件挂载后自动聚焦一次。点击下方按钮重新挂载一个带 `autofocus` 的实例，观察光标自动落入输入框。
+
+<DemoBlock title="挂载即聚焦">
+  <oas-button id="ac-focus-btn" size="small">挂载带 autofocus 的输入框</oas-button>
+  <div id="ac-focus-zone" style="margin-top: var(--oas-space-2)"></div>
+</DemoBlock>
+
 ## API
 
 ### oas-auto-complete
@@ -234,12 +264,14 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `autofocus` | 挂载后聚焦内部输入框 | `boolean` | — |
 | `clearable` | 可清空（输入有内容时显示清空按钮，清空派发 `oas-clear` 与空值 `oas-change`） | `boolean` | — |
 | `debounce` | 输入防抖（毫秒，默认 0 不防抖）：只防抖 `oas-input` 派发与过滤触发，不防抖输入回显 | `string` | `0` |
 | `disabled` | 禁用 | `boolean` | — |
 | `loading` | 加载占位（下拉显示「加载中…」，远程建议请求态） | `boolean` | — |
 | `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]`（group 为分组标题） | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | `string` | — |
+| `placement` | 面板 12 向放置（引擎翻转/RTL 镜像结果写 data-placement） | `string` | `bottom-start` |
 | `readonly` | 只读（可聚焦可复制不可输入，聚焦与键盘不展开建议） | `boolean` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `size` | 尺寸档位：small / medium / large（默认 medium，就近跟随 config-provider 注入） | `string` | `medium` |

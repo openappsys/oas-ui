@@ -29,6 +29,15 @@ In multiple mode, selecting a parent cascades the selection to all children; cli
 
 With `filterable`, a standalone search box appears at the top of the panel: matched nodes show together with their ancestors (path context) and all descendants (lenient match); an empty state shows when nothing matches. Inside the search box: `↑/↓` move the highlight (it lands on the first match), `Enter` selects, `Esc` closes the panel and returns focus to the trigger. The keyword is cleared after selecting by default; `reserve-keyword` keeps it. Typing emits `oas-search` (`detail.value` is the keyword — pair with `loading` for remote search). Custom matching: `el.filter = (label, option) => boolean`.
 
+## Controlled Search Input (input-value)
+
+<DemoBlock title="input-value (controlled search text)">
+  <oas-tree-select id="ts-input-value" filterable placeholder="Type a keyword, attribute mirrors live" options='[{"label":"Frontend","value":"fe","children":[{"label":"Framework","value":"framework","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]},{"label":"Styles","value":"css"}]},{"label":"Backend","value":"be","children":[{"label":"Node","value":"node"}]}]'></oas-tree-select>
+  <span id="ts-input-value-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+`input-value` makes the search text controllable: when the attribute is present it is the source of truth for the search box (presets/external updates sync into the box and re-filter); user typing writes the attribute back and dispatches `oas-input-value-change` (`detail: { value }`) — the host can listen or simply read the attribute.
+
 ## Parent-Child Decoupling (check-strictly)
 
 <DemoBlock title="check-strictly">
@@ -111,6 +120,28 @@ With `lazy`, nodes without `children` and not marked `isLeaf` / `loaded` are tre
 </DemoBlock>
 
 With `clearable`, a clear button shows when there is a value (clicking clears and emits `oas-clear`). `prefix-text` / `suffix-text` render affix texts inside the trigger; `template[slot="prefix"]` / `[slot="suffix"]` provide custom content. In plain HTML, the legacy `prefix` / `suffix` still work as aliases.
+
+## Custom Suffix Icon (suffix-icon slot)
+
+<DemoBlock title="suffix-icon (replaces the default arrow)">
+  <oas-tree-select id="ts-suffix-icon" value="vue" placeholder="Custom suffix icon" options='[{"label":"Frontend","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'>
+    <template slot="suffix-icon"><span style="display:inline-flex">▾</span></template>
+  </oas-tree-select>
+</DemoBlock>
+
+`template[slot="suffix-icon"]` replaces the default dropdown arrow on the trigger (rotating with the container when expanded).
+
+## Value Carries Label (label-in-value)
+
+<DemoBlock title="label-in-value (value carries { value, label } objects)">
+  <oas-space size="small" direction="vertical">
+    <oas-tree-select id="ts-liv-single" label-in-value placeholder="Single: value is an object" options='[{"label":"Frontend","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
+    <oas-tree-select id="ts-liv-multi" label-in-value multiple placeholder="Multiple: value is an object array" options='[{"label":"Frontend","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
+    <span id="ts-liv-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
+  </oas-space>
+</DemoBlock>
+
+With `label-in-value`, the `value` attribute and the `oas-change` `detail.value` carry `{ value, label }` objects (an object in single mode, an object array in multiple mode) — no more host-side reverse lookup when a form submit needs "value + label"; out-of-tree preset values can echo their `label` directly from the object. FormData submission stays plain strings.
 
 ## Size & Status (size / status)
 
@@ -347,6 +378,24 @@ onMounted(() => {
     }
   })
 
+  // input-value controlled demo: attribute write-back + event echo
+  const tsIv = document.getElementById('ts-input-value')
+  const tsIvOut = document.getElementById('ts-input-value-out')
+  tsIv?.addEventListener('oas-input-value-change', (e) => {
+    tsIvOut.textContent = `input-value: ${JSON.stringify(e.detail.value)}`
+  })
+
+  // label-in-value demo: echo the detail.value objects
+  const tsLivOut = document.getElementById('ts-liv-out')
+  const showLiv = (v) => {
+    const text = Array.isArray(v)
+      ? `[${v.map((o) => `${o.label}(${o.value})`).join(', ')}]`
+      : `${v?.label ?? ''}(${v?.value ?? ''})`
+    tsLivOut.textContent = `oas-change value: ${text}`
+  }
+  document.getElementById('ts-liv-single')?.addEventListener('oas-change', (e) => showLiv(e.detail.value))
+  document.getElementById('ts-liv-multi')?.addEventListener('oas-change', (e) => showLiv(e.detail.value))
+
   // flat data demo: flat {id, pId} → tree (host-side utility, equivalent to flat-data passthrough)
   const flatNodes = [
     { id: 'fe', pId: '', name: 'Frontend' },
@@ -442,7 +491,9 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `field-names` | Field-alias JSON (e.g. `{"label":"name","value":"id","children":"subs"}`; options are not copy-mapped — node-render receives your original objects) | `string` | — |
 | `filterable` | Searchable (dedicated search box at the top of the panel) | `boolean` | — |
 | `height` | Virtual-scroll viewport height (px); works with `virtual` | `string` | `288` |
+| `input-value` | Controlled search text (typing writes back and emits oas-input-value-change) | `string` | — |
 | `item-height` | Fixed row height for virtual scroll (px) | `string` | `36` |
+| `label-in-value` | value and oas-change detail carry `{ value, label }` objects (FormData still submits plain values) | `boolean` | — |
 | `lazy` | Lazy loading (pair with the `el.load` function property; nodes carry isLeaf) | `boolean` | — |
 | `loading` | Panel loading state (during lazy load / remote search) | `boolean` | — |
 | `max` | Multi-select limit (by checked-set size) | `string` | — |
@@ -461,7 +512,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `status` | Validation status: `error` / `warning` / `success` | `string` | — |
 | `suffix-text` | Trigger suffix content (slot="suffix" likewise) | `string` | — |
 | `tree-lines` | Tree indentation guide lines | `boolean` | — |
-| `value` | Selected value (JSON array in multiple mode) | `string` | `[]` |
+| `value` | Selected value (JSON array in multiple mode) | `string` | — |
 | `virtual` | Enable virtual scroll: the dropdown renders only the visible window for large data (reuses oas-virtual-list), keeping keyboard/ARIA intact | `boolean` | — |
 
 #### Events
@@ -470,6 +521,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | --- | --- |
 | `oas-change` | Selection change, `detail: { value }` |
 | `oas-clear` | Fires on clear; `detail` is the pre-clear value |
+| `oas-input-value-change` | Dispatched on search-text change, `detail: { value }` |
 | `oas-load` | Fires when a lazy node expands to load, `detail: { value }` |
 | `oas-node-render` | Fires on node render (custom node rendering channel), `detail: { node, element, level, expanded, selected, checked }` |
 | `oas-open-change` | Open state flips, `detail: { open }` |
@@ -479,5 +531,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 
 | Name | Description |
 | --- | --- |
+| `suffix-icon` | Custom trailing trigger icon (replaces the default arrow) |
 | `template[slot="empty"]` | Custom empty-state content |
 | `template[slot="node"]` | Custom node template (`[data-node-label]` binds the label) |
+| `template[slot="suffix-icon"]` | — |

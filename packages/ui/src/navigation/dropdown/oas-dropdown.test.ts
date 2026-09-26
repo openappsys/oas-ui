@@ -1053,3 +1053,68 @@ describe('触屏降级（P3）：coarse pointer 下 trigger 含 hover 回落 tap
     expect(el.hasAttribute('open')).toBe(true)
   })
 })
+
+// ===== 能力缺口 P2：size / type 透传触发器 + max-height 面板限高 =====
+
+describe('OASDropdown size / type / max-height（能力缺口 P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 挂载 oas-button 触发器（未注册也能验证属性透传——透传只写属性，不依赖升级） */
+  function mountWithButton(attrs: Record<string, string> = {}, buttonAttrs = ''): OASDropdown {
+    const el = new OASDropdown()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.setAttribute('items', ITEMS)
+    el.innerHTML = `<oas-button ${buttonAttrs}>操作</oas-button>`
+    document.body.appendChild(el)
+    return el
+  }
+
+  function triggerOf(el: OASDropdown): Element {
+    return el.querySelector('oas-button')!
+  }
+
+  it('size 五档透传到触发器 oas-button（别名归一化转发）', () => {
+    const el = mountWithButton({ size: 'large' })
+    expect(triggerOf(el).getAttribute('size')).toBe('large')
+    // sm/md/lg 别名等价归一化为全称（sm → small）
+    el.setAttribute('size', 'sm')
+    expect(triggerOf(el).getAttribute('size')).toBe('small')
+  })
+
+  it('size 非法值归一化回落 medium 并转发', () => {
+    const el = mountWithButton({ size: 'huge' })
+    expect(triggerOf(el).getAttribute('size')).toBe('medium')
+  })
+
+  it('type 透传到触发器；未设置的维度不改写触发器自身属性；移除后清除转发', () => {
+    const el = mountWithButton({ type: 'primary' }, 'size="small"')
+    const btn = triggerOf(el)
+    expect(btn.getAttribute('type')).toBe('primary')
+    // dropdown 未设置 size：触发器自身 size 保留不动
+    expect(btn.getAttribute('size')).toBe('small')
+    el.removeAttribute('type')
+    expect(btn.hasAttribute('type')).toBe(false)
+  })
+
+  it('触发器非 oas-button 时不透传（native button 保持原样）', () => {
+    const el = mount({ size: 'large', type: 'primary' })
+    expect(el.querySelector('button')!.hasAttribute('size')).toBe(false)
+    expect(el.querySelector('button')!.hasAttribute('type')).toBe(false)
+  })
+
+  it('max-height 转发内层 oas-menu（面板限高滚动，数字补 px 写 CSS 变量）', async () => {
+    const el = mount({ open: '', 'max-height': '120' })
+    await Promise.resolve()
+    const menu = el.shadowRoot!.querySelector('oas-menu') as HTMLElement
+    expect(menu.hasAttribute('max-height')).toBe(true)
+    expect(menu.style.getPropertyValue('--oas-menu-max-height')).toBe('120px')
+    el.removeAttribute('max-height')
+    expect(menu.hasAttribute('max-height')).toBe(false)
+  })
+})

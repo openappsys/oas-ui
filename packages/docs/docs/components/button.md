@@ -290,6 +290,24 @@
 
 点击「提交」按钮：表单触发原生 `submit`（demo 中已 `preventDefault` 并显示将提交的字段）；「重置」恢复输入初始值并触发 `reset`；「免校验提交」演示 `formnovalidate` 跳过必填校验 + `formaction`/`formmethod` 覆盖提交目标。
 
+## 自定义加载图标
+
+`slot="loading-icon"` 自定义加载态图标：插槽有内容时替换内置 spinner 环（定位沿用原 spinner，加载态宽度稳定等行为不变）；缺省回落内置 spinner。常配合 `oas-icon spin` 做主题化加载图标。
+
+<DemoBlock title="loading-icon 自定义加载图标">
+  <oas-button loading type="primary" style="margin-inline-end: var(--oas-space-4)">
+    <oas-icon slot="loading-icon" name="loading" spin></oas-icon>
+    图标加载中
+  </oas-button>
+  <oas-button loading style="margin-inline-end: var(--oas-space-4)">
+    <span slot="loading-icon" style="font-size: 0.9em">⟳</span>
+    字符加载中
+  </oas-button>
+  <oas-button loading type="danger">
+    内置 spinner（缺省）
+  </oas-button>
+</DemoBlock>
+
 ## API
 
 ### oas-button
@@ -341,6 +359,7 @@
 | --- | --- |
 | 默认 | 按钮内容（文本 / 图标） |
 | `description` | 副文本行（compound 双行变体）：有内容时按钮切纵向双行布局（主行在上、副文本在下，字号小号次要色） |
+| `loading-icon` | 自定义加载态图标（有内容时替换内置 spinner 环，缺省回落内置） |
 
 #### CSS 变量
 

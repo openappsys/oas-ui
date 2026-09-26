@@ -65,3 +65,29 @@ test('sider 内嵌 sidebar 宽度自动对齐：填满轨道而非自身默认�
   expect(Math.round(r2.sider), '折叠后轨道宽应联动为 64').toBe(64)
   expect(Math.round(r2.sb), '折叠时内嵌 sidebar 应跟随 64').toBe(64)
 })
+
+// —— PRD P2：oas-sider width 属性（轨道宽度显式覆盖，与 collapsed 窄条契约共存） ——
+test('sider width：显式宽度生效（纯数字按 px）、折叠窄条契约让位、解除恢复（PRD P2）', async ({ page }) => {
+  await page.goto('/components/layout.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => document.querySelector('oas-sider[width]')?.shadowRoot != null, null, {
+    timeout: 15000,
+  })
+  await page.evaluate(() => {
+    document.querySelector('oas-sider[width]')!.scrollIntoView({ block: 'center' })
+  })
+  const r = await page.evaluate(async () => {
+    const wide = document.querySelector('oas-sider[width]:not([collapsed])')! as HTMLElement
+    const folded = document.querySelector('oas-sider[width][collapsed]')! as HTMLElement
+    await new Promise((res) => setTimeout(res, 350)) // 等折叠宽度过渡结束
+    return {
+      wideInline: wide.style.width,
+      wideRect: Math.round(wide.getBoundingClientRect().width),
+      foldedInline: folded.style.width,
+      foldedRect: Math.round(folded.getBoundingClientRect().width),
+    }
+  })
+  expect(r.wideInline, 'width=280 应内联生效（纯数字补 px）').toBe('280px')
+  expect(r.wideRect, '轨道实际宽度应为 280').toBe(280)
+  expect(r.foldedInline, '折叠态应清内联（窄条契约优先）').toBe('')
+  expect(r.foldedRect, '折叠窄条应为 64px（--oas-sider-collapsed-width 默认）').toBe(64)
+})

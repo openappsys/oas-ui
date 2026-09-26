@@ -153,7 +153,79 @@ const ATTR_HELPERS = new Set(['getAttr', 'hasAttr', 'injectValue', 'injectDisabl
 // attributeChanged 联动）。两类来源：
 //   1) 父组件读取子元素属性（如 oas-tabs 读 oas-tab-panel 的 badge/href）；
 //   2) 纯 CSS 消费属性（组件 JS 无任何读取点，仅 :host([...]) 选择器/子组件转发）。
+// 排除表：扫描误归属的属性（详见下方使用点注释）
+const EXCLUDE_ATTRS = {
+  'oas-title': ['size'],
+  'oas-paragraph': ['size'],
+}
+
 const SUPPLEMENT_ATTRS = {
+  // typography 工厂模式（createTypography 动态 getter）AST 探不到——全量登记（含 P2 新增 oas-text size）
+  'oas-text': [
+    'level',
+    'type',
+    'ellipsis',
+    'copyable',
+    'copy-text',
+    'ellipsis-suffix',
+    'actions-position',
+    'line-clamp',
+    'tag',
+    'depth',
+    'strong',
+    'mark',
+    'code',
+    'underline',
+    'delete',
+    'italic',
+    'align',
+    'weight',
+    'numeric',
+    'size',
+  ],
+  'oas-title': [
+    'level',
+    'type',
+    'ellipsis',
+    'copyable',
+    'copy-text',
+    'ellipsis-suffix',
+    'actions-position',
+    'line-clamp',
+    'tag',
+    'depth',
+    'strong',
+    'mark',
+    'code',
+    'underline',
+    'delete',
+    'italic',
+    'align',
+    'weight',
+    'numeric',
+  ],
+  'oas-paragraph': [
+    'level',
+    'type',
+    'ellipsis',
+    'copyable',
+    'copy-text',
+    'ellipsis-suffix',
+    'actions-position',
+    'line-clamp',
+    'tag',
+    'depth',
+    'strong',
+    'mark',
+    'code',
+    'underline',
+    'delete',
+    'italic',
+    'align',
+    'weight',
+    'numeric',
+  ],
+
   // href/target/rel/icon-only 由 oas-tabs 解析子面板读取（渲染为链接 tab/纯图标 tab）；
   // title 为悬停提示透传（tabs 读取后吸收到 tab 按钮，见 oas-tabs 的 titleCache 吸收通道）
   'oas-tab-panel': ['badge', 'icon', 'href', 'target', 'rel', 'icon-only', 'title'],
@@ -915,6 +987,11 @@ function scanDir(project, dir, unresolvedGlobal) {
     for (const name of SUPPLEMENT_ATTRS[tag] ?? []) {
       if (!attrs.some((a) => a.name === name)) attrs.push({ name, observed: false })
     }
+    // 排除表（EXCLUDE_ATTRS）：工厂共享类导致的误归属——oas-typography.ts 单类工厂产出
+    // text/title/paragraph 三个 tag，getAttr('size') 调用点在共享类体内会被三个 tag 全收；
+    // size 仅 oas-text 开放消费（title 走 level、paragraph 无档），另两个显式排除
+    const exclude = new Set(EXCLUDE_ATTRS[tag] ?? [])
+    const finalAttrs = exclude.size ? attrs.filter((a) => !exclude.has(a.name)) : attrs
     const events = extractEvents(classNode, unresolved)
     const slots = extractSlots(classNode)
     const cssVars = classFile ? extractCssVars(readFileSync(join(ROOT, classFile), 'utf8'), tag) : []
@@ -922,7 +999,7 @@ function scanDir(project, dir, unresolvedGlobal) {
     manifest[tagKey] = {
       className: cls,
       sourceFile: classFile,
-      attrs,
+      attrs: finalAttrs,
       props,
       events,
       slots,

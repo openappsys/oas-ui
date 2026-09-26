@@ -27,6 +27,7 @@ const STYLE = `
 const warnedPositions = new Set<string>()
 const warnedTargets = new Set<string>()
 const warnedAppendTargets = new Set<string>()
+const warnedZIndex = new Set<string>()
 
 /** 非法 position 归一化：回落 top 并在 dev 下 console.warn 一次（同值去重） */
 function normalizePosition(raw: string): AffixPosition {
@@ -38,9 +39,26 @@ function normalizePosition(raw: string): AffixPosition {
   return 'top'
 }
 
+/**
+ * z-index 解析：非负整数返回数值；缺省/非法回落 null（走 CSS token 缺省
+ * `calc(var(--oas-z-index-base, 0) + var(--oas-z-sticky, 1020))`），非法值 dev 告警一次。
+ */
+function normalizeZIndex(raw: string): number | null {
+  if (raw === '') return null
+  const n = Number(raw)
+  if (!Number.isInteger(n) || n < 0) {
+    if (!warnedZIndex.has(raw)) {
+      warnedZIndex.add(raw)
+      console.warn(`[oas-affix] 非法 z-index "${raw}"，已回落 token 缺省（--oas-z-index-base + --oas-z-sticky）`)
+    }
+    return null
+  }
+  return n
+}
+
 export class OASAffix extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['offset', 'position', 'target', 'append-to']
+    return ['offset', 'position', 'target', 'append-to', 'z-index']
   }
 
   private wrap: HTMLElement | null = null
@@ -267,6 +285,10 @@ export class OASAffix extends OASElement {
       if (position === 'bottom') this.wrap.style.bottom = `${offset}px`
       else this.wrap.style.top = `${offset}px`
     }
+    // z-index：吸附后 fixed 层级覆盖（非负整数内联写入；缺省/非法移除内联走 token 缺省）
+    const z = normalizeZIndex(this.getAttr('z-index', ''))
+    if (z !== null) this.wrap.style.zIndex = String(z)
+    else this.wrap.style.removeProperty('z-index')
     if (stuck) {
       const h = this.wrap.offsetHeight
       this.placeholder.style.height = `${h}px`

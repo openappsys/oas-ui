@@ -40,6 +40,10 @@
       "observed": true
     },
     {
+      "name": "tabindex",
+      "observed": true
+    },
+    {
       "name": "size",
       "type": "string",
       "default": "medium",

@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement, getLocaleTranslator } from '@oas-ui/core'
 import {
   resolveLocale,
   startOfDay,
@@ -8,6 +8,7 @@ import {
   addYears,
   formatYearMonth,
   formatYear,
+  formatToken,
   findDayButton,
   setRovingTab,
   renderMonthGrid,
@@ -284,6 +285,8 @@ export class OASCalendar extends OASElement {
       'page-show-date',
       'disabled',
       'readonly',
+      'locale',
+      'format',
     ]
   }
 
@@ -313,11 +316,30 @@ export class OASCalendar extends OASElement {
     if (this.isConnected) this.update()
   }
 
-  /** 生效周起始：first-day-of-week 覆写（0-6）> locale 推导 */
+  /** 生效周起始：first-day-of-week 覆写（0-6）> 面板 locale 推导 */
   private effectiveWeekStart(): number {
     const raw = this.getAttr('first-day-of-week', '')
     if (/^[0-6]$/.test(raw)) return Number(raw)
-    return getWeekStart(resolveLocale(this))
+    return getWeekStart(this.effectiveLocale())
+  }
+
+  /**
+   * 生效面板 locale：`locale` 属性覆盖 > config-provider 注入 > 全局 locale（resolveLocale 链）。
+   * 覆盖面：标题/周头/单元格描述等 Intl 格式化 + 周起始推导。
+   */
+  private effectiveLocale(): string {
+    const own = this.getAttr('locale', '')
+    return own !== '' ? own : resolveLocale(this)
+  }
+
+  /** 内置文案：`locale` 属性覆盖且该语言包已注册时优先用之，否则回落 t()（config-provider 注入 > 全局） */
+  private tt(key: string, params?: Record<string, string | number>): string {
+    const own = this.getAttr('locale', '')
+    if (own !== '') {
+      const local = getLocaleTranslator(own)
+      if (local) return local(key, params)
+    }
+    return this.t(key, params)
   }
 
   /** 当前面板所在「月页」锚点（day 1），用于 oas-panel-change / 页面对比 */
@@ -381,10 +403,12 @@ export class OASCalendar extends OASElement {
       <style>${STYLE}</style>
       <div class="calendar" part="calendar">
         <div class="header" part="header">
-          <button type="button" class="nav prev" part="prev" aria-label=""></button>
-          <button type="button" class="title" part="title" aria-live="polite"></button>
-          <button type="button" class="nav next" part="next" aria-label=""></button>
-          <button type="button" class="today" part="today" hidden></button>
+          <slot name="header">
+            <button type="button" class="nav prev" part="prev" aria-label=""></button>
+            <button type="button" class="title" part="title" aria-live="polite"></button>
+            <button type="button" class="nav next" part="next" aria-label=""></button>
+            <button type="button" class="today" part="today" hidden></button>
+          </slot>
         </div>
         <div class="grid" part="grid" role="grid"></div>
       </div>
@@ -416,7 +440,7 @@ export class OASCalendar extends OASElement {
   }
 
   protected override update(): void {
-    const locale = resolveLocale(this)
+    const locale = this.effectiveLocale()
     const mode = this.getAttr('mode', 'month')
     // mode 属性变化统一派发 oas-mode-change（受控宿主可据此重新设置 mode 保持模式）
     if (!this.modeInit) {
@@ -465,25 +489,32 @@ export class OASCalendar extends OASElement {
 
     const title = this.shadow.querySelector<HTMLElement>('[part="title"]')
     if (title) {
+      // format 覆盖头部标题格式（token 同 date-picker：yyyy/MM/dd…）；十年面板为区间形态，格式串不适用
+      const fmt = this.getAttr('format', '')
+      const y = this.viewDate.getFullYear()
       title.textContent =
         this.panel === 'days'
-          ? formatYearMonth(this.viewDate, locale)
+          ? fmt
+            ? formatToken(this.viewDate, fmt, locale)
+            : formatYearMonth(this.viewDate, locale)
           : this.panel === 'months'
-            ? formatYear(this.viewDate, locale)
-            : `${this.viewDate.getFullYear()}-${this.viewDate.getFullYear() + 11}`
+            ? fmt
+              ? formatToken(this.viewDate, fmt, locale)
+              : formatYear(this.viewDate, locale)
+            : `${y}-${y + 11}`
     }
     const yearNav = this.panel !== 'days'
     const prev = this.shadow.querySelector<HTMLButtonElement>('[part="prev"]')
     const next = this.shadow.querySelector<HTMLButtonElement>('[part="next"]')
-    prev?.setAttribute('aria-label', yearNav ? this.t('calendar.prevYear') : this.t('calendar.prevMonth'))
-    next?.setAttribute('aria-label', yearNav ? this.t('calendar.nextYear') : this.t('calendar.nextMonth'))
+    prev?.setAttribute('aria-label', yearNav ? this.tt('calendar.prevYear') : this.tt('calendar.prevMonth'))
+    next?.setAttribute('aria-label', yearNav ? this.tt('calendar.nextYear') : this.tt('calendar.nextMonth'))
     // min/max 翻页边界置灰 + 全局禁用
     if (prev) prev.disabled = dis || !this.canStep(-1)
     if (next) next.disabled = dis || !this.canStep(1)
     const todayBtn = this.shadow.querySelector<HTMLButtonElement>('[part="today"]')
     if (todayBtn) {
       todayBtn.hidden = this.panel !== 'days' || mode !== 'month'
-      todayBtn.textContent = this.t('calendar.today')
+      todayBtn.textContent = this.tt('calendar.today')
       todayBtn.disabled = dis
     }
     this.renderGrid(false)
@@ -561,7 +592,7 @@ export class OASCalendar extends OASElement {
 
     renderMonthGrid(grid, {
       viewDate: this.viewDate,
-      locale: resolveLocale(this),
+      locale: this.effectiveLocale(),
       weekStart: this.effectiveWeekStart(),
       selected,
       today: new Date(),
@@ -604,7 +635,7 @@ export class OASCalendar extends OASElement {
 
   /** 12 月面板（mode=year 的常驻视图 / month 模式标题钻取的子面板共用） */
   private renderMonthPicker(grid: HTMLElement): void {
-    const locale = resolveLocale(this)
+    const locale = this.effectiveLocale()
     const year = this.viewDate.getFullYear()
     const selected = this.selectedDate()
     const min = parseISODate(this.getAttr('min', ''))
@@ -639,7 +670,7 @@ export class OASCalendar extends OASElement {
 
   /** decade 年网格：12 年页（起点对齐 10 年），选年回月网格快速跳远年 */
   private renderYearsPicker(grid: HTMLElement): void {
-    const locale = resolveLocale(this)
+    const locale = this.effectiveLocale()
     const start = this.viewDate.getFullYear()
     const selected = this.selectedDate()
     const min = parseISODate(this.getAttr('min', ''))

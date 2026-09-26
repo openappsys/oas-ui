@@ -464,3 +464,53 @@ test.describe('触屏降级（P3 扩展，iPhone 仿真）：dropdown hover 回�
     await page.screenshot({ path: test.info().outputPath('fix-dropdown-coarse-tap.png') })
   })
 })
+
+// ===== 能力缺口 P2：size / type 透传触发器 + max-height 面板限高 =====
+
+test('dropdown size/type/max-height（P2）：Vue 下属性存活、size/type 透传触发器按钮、max-height 转发内层菜单', async ({
+  page,
+}) => {
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-dropdown[size="xl"]')
+  await page.locator('oas-dropdown[size="xl"]').scrollIntoViewIfNeeded()
+  // size / type 透传：slotted oas-button 拿到对应属性
+  const r1 = await page.evaluate(() => {
+    const sizeEl = document.querySelector('oas-dropdown[size="xl"]')!
+    const typeEl = document.querySelector('oas-dropdown[type="primary"]')!
+    return {
+      sizeSurvived: sizeEl.getAttribute('size'),
+      btnSize: sizeEl.querySelector('oas-button')?.getAttribute('size'),
+      typeSurvived: typeEl.getAttribute('type'),
+      btnType: typeEl.querySelector('oas-button')?.getAttribute('type'),
+    }
+  })
+  expect(r1.sizeSurvived, 'size 被 Vue 剥离').toBe('xl')
+  expect(r1.btnSize, 'size 未透传到触发器 oas-button').toBe('xl')
+  expect(r1.typeSurvived, 'type 被 Vue 剥离').toBe('primary')
+  expect(r1.btnType, 'type 未透传到触发器 oas-button').toBe('primary')
+  // max-height：点击打开后内层 oas-menu 拿到属性 + CSS 变量（面板限高滚动）
+  await page.locator('oas-dropdown[max-height] oas-button').click()
+  await page.waitForFunction(
+    () => {
+      const anchor = document
+        .querySelector('oas-dropdown[max-height]')
+        ?.shadowRoot?.querySelector<HTMLElement>('.menu-anchor')
+      return anchor != null && anchor.hidden === false
+    },
+    { timeout: 5000 },
+  )
+  const r2 = await page.evaluate(() => {
+    const el = document.querySelector('oas-dropdown[max-height]')!
+    const menu = el.shadowRoot!.querySelector('oas-menu') as HTMLElement
+    return {
+      attrSurvived: el.getAttribute('max-height'),
+      menuAttr: menu.getAttribute('max-height'),
+      cssVar: menu.style.getPropertyValue('--oas-menu-max-height'),
+    }
+  })
+  expect(r2.attrSurvived, 'max-height 被 Vue 剥离').toBe('120')
+  expect(r2.menuAttr, 'max-height 未转发内层 oas-menu').toBe('120')
+  expect(r2.cssVar, 'max-height CSS 变量未写入（面板不会限高）').toBe('120px')
+  // 关闭面板（避免残留浮层影响后续 spec）
+  await page.keyboard.press('Escape')
+})

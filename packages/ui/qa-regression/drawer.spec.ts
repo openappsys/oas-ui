@@ -445,3 +445,54 @@ test('drawer title 动态更新：打开态 setAttribute title → 标题区文�
   expect(r.residue, '新 title 吸收后宿主不得残留原生 title').toBe(false)
   expect(r.visible, '动态改标题不影响打开态').toBe(true)
 })
+
+// —— PRD P2：no-mask 无遮罩模式（遮罩不渲染 + 点外部关闭，mask 取消语义沿用） ——
+test('drawer no-mask：遮罩不渲染、点击外部关闭（source=mask 取消语义）、no-mask-close 抑制点外部', async ({ page }) => {
+  await page.goto('/components/drawer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#drawer-nomask-mode')
+  await page.evaluate(() => {
+    const el = document.querySelector('#drawer-nomask-mode')!
+    ;(window as any).__nmSources = []
+    el.addEventListener('oas-close', (e) => (window as any).__nmSources.push((e as CustomEvent).detail.source))
+    el.addEventListener('oas-cancel', (e) => (window as any).__nmSources.push((e as CustomEvent).detail.source))
+    el.setAttribute('visible', '')
+  })
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#drawer-nomask-mode')
+        ?.shadowRoot?.querySelector('[part="panel"]')
+        ?.hasAttribute('data-open'),
+    null,
+    { timeout: 5000 },
+  )
+  const maskState = await page.evaluate(() => {
+    const mask = document.querySelector('#drawer-nomask-mode')!.shadowRoot!.querySelector<HTMLElement>('.mask')!
+    return { hidden: mask.hasAttribute('hidden'), display: getComputedStyle(mask).display }
+  })
+  expect(maskState.hidden, 'no-mask 下遮罩应带 hidden').toBe(true)
+  expect(maskState.display, 'no-mask 下遮罩不参与渲染').toBe('none')
+  // 面板内 pointerdown 不关闭
+  await page.evaluate(() => {
+    const el = document.querySelector('#drawer-nomask-mode')!
+    el.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, composed: true }),
+    )
+  })
+  await page.waitForTimeout(200)
+  expect(
+    await page.evaluate(() => document.querySelector('#drawer-nomask-mode')!.hasAttribute('visible')),
+    '面板内部点击不得关闭',
+  ).toBe(true)
+  // 点外部（body 空白处真实坐标，左侧远离右侧抽屉面板）→ 关闭，source=mask
+  const vh = await page.evaluate(() => {
+    document.querySelector('#drawer-nomask-mode')!.scrollIntoView({ block: 'center' })
+    return window.innerHeight
+  })
+  await page.mouse.click(20, vh / 2)
+  await page.waitForFunction(() => !document.querySelector('#drawer-nomask-mode')?.hasAttribute('visible'), null, {
+    timeout: 5000,
+  })
+  const got = await page.evaluate(() => (window as any).__nmSources)
+  expect(got, '外部点击沿用 mask 取消语义').toEqual(['mask', 'mask'])
+})

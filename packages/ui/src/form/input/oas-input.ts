@@ -10,18 +10,25 @@ const VALID_VARIANTS = ['outlined', 'filled', 'borderless'] as const
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
 const VALID_CLEAR_ON = ['always', 'hover', 'focus'] as const
 
-/** 原生属性透传白名单：镜像到 shadow 内 input（value/type/placeholder/disabled/readonly/maxlength 另有专门通道） */
+/** 原生属性透传白名单：镜像到 shadow 内 input（value/type/placeholder/disabled/readonly/maxlength 另有专门通道）。
+ *  min/max/step 供 number 类型使用（其余类型浏览器原生忽略，无副作用）。 */
 const PASSTHROUGH_ATTRS = [
   'name',
   'autocomplete',
   'autofocus',
   'inputmode',
   'minlength',
+  'min',
+  'max',
+  'step',
   'required',
   'spellcheck',
   'enterkeyhint',
   'pattern',
 ] as const
+
+/** hint 提示文案元素 id：内层 input 的 aria-describedby 指向它（同一 shadow root 内 IDREF 有效） */
+const HINT_ID = 'oas-input-hint'
 
 const warnedValues = new Set<string>()
 
@@ -416,6 +423,8 @@ input:disabled:hover {
   display: inline-flex;
   border-radius: 50%;
   z-index: 2;
+  /* 与内置 12px 图标对齐：clear-icon 插槽分发 1em 尺寸图标（如 oas-icon）时同档 */
+  font-size: 12px;
 }
 .clear-btn:hover {
   color: var(--oas-color-text-primary);
@@ -423,6 +432,12 @@ input:disabled:hover {
 .clear-btn:focus-visible {
   outline: none;
   box-shadow: var(--oas-focus-ring);
+}
+/* 内置清除图标的尺寸（clear-icon 插槽分发自定义图标时由宿主内容自定尺寸，slot fallback 仍走此规则） */
+.clear-btn svg {
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 .clear-btn[hidden] {
   display: none;
@@ -575,6 +590,18 @@ input:disabled:hover {
   margin-inline-end: calc(var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
 }
 
+/* ---- hint 静态提示文案（输入框下方，独立于校验错误；内层 input 经 aria-describedby 关联） ---- */
+.hint {
+  display: block;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  margin-top: var(--oas-space-1);
+  line-height: 1.5;
+}
+.hint[hidden] {
+  display: none;
+}
+
 /* ---- auto-width 宽度自适应（mirror 测宽） ---- */
 .measure {
   display: none;
@@ -627,6 +654,7 @@ export class OASInput extends OASFormElement {
       'auto-width',
       'auto-width-min',
       'auto-width-max',
+      'hint',
       ...PASSTHROUGH_ATTRS,
     ]
   }
@@ -658,6 +686,7 @@ export class OASInput extends OASFormElement {
   private countEl: HTMLElement | null = null
   private measureEl: HTMLElement | null = null
   private spinnerEl: HTMLElement | null = null
+  private hintEl: HTMLElement | null = null
   /** show-password 明文/密文状态（仅 type=password 时生效） */
   private revealed = false
   /** 上次提交值（oas-change 的变更基线：受控 value 写入 / blur / Enter 提交时刷新） */
@@ -686,9 +715,11 @@ export class OASInput extends OASFormElement {
             <span class="affix" part="suffix" hidden><slot name="suffix"><span class="affix-fallback" data-fallback></span></slot></span>
             <span class="affix-icon" part="suffix-icon" hidden></span>
             <button class="clear-btn" part="clear" hidden>
-              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
+              <slot name="clear-icon">
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                  <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </slot>
             </button>
             <button class="eye-btn" part="eye" type="button" hidden aria-pressed="false">
               <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
@@ -700,6 +731,7 @@ export class OASInput extends OASFormElement {
           </span>
           <span class="addon" part="append" hidden><slot name="append"><span class="addon-fallback" data-fallback></span></slot></span>
         </span>
+        <span class="hint" part="hint" id="${HINT_ID}" hidden></span>
       </div>
     `
   }
@@ -712,6 +744,7 @@ export class OASInput extends OASFormElement {
     this.countEl = this.shadow.querySelector('.count')
     this.measureEl = this.shadow.querySelector('.measure')
     this.spinnerEl = this.shadow.querySelector('.spinner')
+    this.hintEl = this.shadow.querySelector('.hint')
 
     this.inputEl?.addEventListener('input', () => {
       const pos = this.inputEl!.selectionStart
@@ -876,6 +909,8 @@ export class OASInput extends OASFormElement {
     }
     // 内置文案走 locale registry（label/placeholder 属性优先，setLocale 切换自动刷新）
     i.setAttribute('aria-label', this.getAttr('label', placeholder) || this.t('input.defaultLabel'))
+    // hint 静态提示（输入框下方，独立于校验错误）：有则显示并经 aria-describedby 关联，无则解除
+    this.syncHint()
     // 清除按钮显隐策略（默认 always 不写标记，CSS 无规则即常显）
     const clearOn = normalizeChoice('show-clear-on', this.getAttr('show-clear-on', ''), 'always', VALID_CLEAR_ON)
     if (clearOn === 'always') this.removeAttribute('data-clear-on')
@@ -971,6 +1006,20 @@ export class OASInput extends OASFormElement {
     if (loading) this.setAttribute('aria-busy', 'true')
     else this.removeAttribute('aria-busy')
     if (this.spinnerEl) this.spinnerEl.hidden = !loading
+  }
+
+  /** hint 静态提示文案：文字同步 + 显隐；有文案时内层 input 经 aria-describedby 关联提示元素。
+   *  与校验错误（status/aria-invalid）相互独立——提示常驻，不随校验态变化 */
+  private syncHint(): void {
+    const i = this.inputEl
+    if (!i) return
+    const hint = this.getAttr('hint', '')
+    if (this.hintEl) {
+      if (this.hintEl.textContent !== hint) this.hintEl.textContent = hint
+      this.hintEl.hidden = hint === ''
+    }
+    if (hint === '') i.removeAttribute('aria-describedby')
+    else i.setAttribute('aria-describedby', HINT_ID)
   }
 
   private syncClearVisibility(): void {

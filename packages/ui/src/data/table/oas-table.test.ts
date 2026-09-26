@@ -2633,3 +2633,285 @@ describe('OASTable show-header', () => {
     expect(firstTd.getAttribute('data-fixed')).toBe('left')
   })
 })
+
+describe('OASTable P2 批（table-layout / hover / filter-icon / indent-size / row-expandable / max-height / cell-click / row-dblclick）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  function tableElOf(el: OASTable): HTMLTableElement {
+    return el.shadowRoot!.querySelector('table') as unknown as HTMLTableElement
+  }
+
+  describe('table-layout（fixed/auto 透传 table）', () => {
+    it('进 observedAttributes；fixed/auto 写 table 元素内联样式，缺省/非法不写', () => {
+      expect(OASTable.observedAttributes).toContain('table-layout')
+      const a = mount({ 'table-layout': 'fixed' })
+      expect(tableElOf(a).style.tableLayout).toBe('fixed')
+      document.body.innerHTML = ''
+      const b = mount({ 'table-layout': 'auto' })
+      expect(tableElOf(b).style.tableLayout).toBe('auto')
+      document.body.innerHTML = ''
+      const c = mount()
+      expect(tableElOf(c).style.tableLayout).toBe('')
+      document.body.innerHTML = ''
+      const d = mount({ 'table-layout': 'weird' })
+      expect(tableElOf(d).style.tableLayout).toBe('')
+    })
+
+    it('运行时切换与移除', () => {
+      const el = mount({ 'table-layout': 'fixed' })
+      expect(tableElOf(el).style.tableLayout).toBe('fixed')
+      el.setAttribute('table-layout', 'auto')
+      expect(tableElOf(el).style.tableLayout).toBe('auto')
+      el.removeAttribute('table-layout')
+      expect(tableElOf(el).style.tableLayout).toBe('')
+    })
+  })
+
+  describe('hover（行 hover 底色开关，默认开）', () => {
+    it('进 observedAttributes；行 hover 底色规则经 --_row-hover-bg 变量下发（默认开=现状）', () => {
+      expect(OASTable.observedAttributes).toContain('hover')
+      const el = mount()
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      // 普通/固定列/吸顶行三处 hover 底色统一走变量
+      expect(css).toMatch(/tr\.row:hover td\s*\{[^}]*var\(--_row-hover-bg/)
+      expect(css).toMatch(/tr\.row:hover td\[data-fixed='right'\]\s*\{[^}]*var\(--_row-hover-bg/)
+      expect(css).toMatch(/tr\[data-sticky='true'\]:hover td\s*\{[^}]*var\(--_row-hover-bg/)
+      // 变量默认回落 bg-hover token（默认开），hover="false" 时置透明（关）
+      expect(css).toMatch(/var\(--_row-hover-bg,\s*var\(--oas-color-bg-hover\)\)/)
+      expect(css).toMatch(/:host\(\[hover='false'\]\)\s*\{[^}]*--_row-hover-bg:\s*transparent/)
+    })
+
+    it('hover="false" 只是视觉开关：行点击选中行为不受影响', () => {
+      const el = mount({ hover: 'false' })
+      let fired = 0
+      el.addEventListener('oas-row-click', () => fired++)
+      rows(el)[0]!.click()
+      expect(fired).toBe(1)
+    })
+  })
+
+  describe('filter-icon 插槽', () => {
+    const FILTER_COLS = JSON.stringify([
+      { key: 'name', title: '姓名', filterable: true },
+      { key: 'age', title: '年龄' },
+    ])
+
+    it('缺省内置图标（现状回归：.filter-btn 内是 svg）', () => {
+      const el = mount({ columns: FILTER_COLS })
+      const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('.filter-btn')!
+      expect(btn.querySelector('svg')).not.toBeNull()
+    })
+
+    it('template[slot="filter-icon"]：克隆进过滤触发按钮', async () => {
+      const el = mount({ columns: FILTER_COLS })
+      const tpl = document.createElement('template')
+      tpl.setAttribute('slot', 'filter-icon')
+      tpl.innerHTML = '<span class="my-filter">F</span>'
+      el.appendChild(tpl)
+      await new Promise((r) => setTimeout(r, 0))
+      const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('.filter-btn')!
+      expect(btn.querySelector('.my-filter')?.textContent).toBe('F')
+      expect(btn.querySelector('svg'), '内置图标让位').toBeNull()
+    })
+
+    it('元素 [slot="filter-icon"]：克隆进过滤触发按钮', async () => {
+      const el = mount({ columns: FILTER_COLS })
+      const icon = document.createElement('oas-icon')
+      icon.setAttribute('slot', 'filter-icon')
+      icon.setAttribute('name', 'filter')
+      el.appendChild(icon)
+      await new Promise((r) => setTimeout(r, 0))
+      const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('.filter-btn')!
+      expect(btn.querySelector('oas-icon')).not.toBeNull()
+    })
+  })
+
+  describe('indent-size（树形缩进 px）', () => {
+    const TREE_DATA = JSON.stringify([{ key: 'p1', name: '父', age: 1, children: [{ key: 'c1', name: '子', age: 2 }] }])
+
+    it('进 observedAttributes；缺省 24px（现状回归：depth1 → 16+24=40px）', () => {
+      expect(OASTable.observedAttributes).toContain('indent-size')
+      const el = mount({ data: TREE_DATA, expanded: 'p1' })
+      const childTd = rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement
+      expect(childTd.style.paddingLeft).toBe('40px')
+    })
+
+    it('indent-size=32：depth1 → 16+32=48px；非法值回落 24', () => {
+      const el = mount({ data: TREE_DATA, expanded: 'p1', 'indent-size': '32' })
+      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingLeft).toBe('48px')
+      // 重渲染重建 td：断言前重查询
+      el.setAttribute('indent-size', 'abc')
+      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingLeft).toBe('40px')
+      el.setAttribute('indent-size', '-5')
+      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingLeft).toBe('40px')
+    })
+  })
+
+  describe('row-expandable（行展开谓词 property）', () => {
+    const EXPAND_DATA = JSON.stringify([
+      { key: 'a', name: '甲', expand: '<p>甲的内容</p>' },
+      { key: 'b', name: '乙', expand: '<p>乙的内容</p>' },
+    ])
+
+    function expandMount(attrs: Record<string, string> = {}): OASTable {
+      return mount({ data: EXPAND_DATA, columns: JSON.stringify([{ key: 'name', title: '姓名' }]), ...attrs })
+    }
+
+    it('不进 observedAttributes（property 函数通道，SSR 快照安全）', () => {
+      expect(OASTable.observedAttributes).not.toContain('row-expandable')
+    })
+
+    it('缺省（未设谓词）：可展开行行尾展开钮照常渲染（现状回归）', () => {
+      const el = expandMount()
+      const toggles = rows(el).map((r) => r.querySelectorAll('td.expand-toggle-cell .toggle').length)
+      expect(toggles).toEqual([1, 1])
+    })
+
+    it('谓词返回 false 的行不渲染展开钮（其余行不受影响）', () => {
+      const el = expandMount()
+      el.rowExpandable = (row) => row.name !== '乙'
+      const toggles = rows(el).map((r) => r.querySelectorAll('td.expand-toggle-cell .toggle').length)
+      expect(toggles, '甲保留展开钮').toEqual([1, 0])
+    })
+
+    it('谓词按行序收 rowIndex（第二参）', () => {
+      const el = expandMount()
+      const seen: Array<[unknown, number]> = []
+      el.rowExpandable = (row, index) => {
+        seen.push([row.name, index])
+        return true
+      }
+      expect(rows(el).length).toBe(2)
+      expect(seen).toEqual([
+        ['甲', 0],
+        ['乙', 1],
+      ])
+    })
+
+    it('非函数赋值静默忽略（全部行保留展开钮）', () => {
+      const el = expandMount()
+      ;(el as unknown as { rowExpandable: unknown }).rowExpandable = 'not-a-function'
+      const toggles = rows(el).map((r) => r.querySelectorAll('td.expand-toggle-cell .toggle').length)
+      expect(toggles).toEqual([1, 1])
+    })
+  })
+
+  describe('max-height（表体限高滚动 + 表头吸顶）', () => {
+    it('进 observedAttributes；数字落 px、CSS 值原样透传到滚动容器', () => {
+      expect(OASTable.observedAttributes).toContain('max-height')
+      const el = mount({ 'max-height': '160' })
+      const scroll = el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!
+      expect(scroll.style.maxHeight).toBe('160px')
+      el.setAttribute('max-height', '50vh')
+      expect(scroll.style.maxHeight).toBe('50vh')
+    })
+
+    it('缺省不限高（现状回归）；移除属性恢复', () => {
+      const el = mount()
+      expect(el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!.style.maxHeight).toBe('')
+      el.setAttribute('max-height', '200')
+      el.removeAttribute('max-height')
+      expect(el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!.style.maxHeight).toBe('')
+    })
+
+    it('虚拟 height 优先：height 与 max-height 同设时限高取 height（虚拟机制自管）', () => {
+      const el = mount({ height: '200', rowHeight: '40', 'max-height': '100' })
+      const scroll = el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!
+      expect(scroll.style.maxHeight).toBe('200px')
+    })
+
+    it('表头吸顶：样式表 th sticky top:0 规则在位（限高滚动时表头钉在容器顶）', () => {
+      const el = mount({ 'max-height': '160' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/th\s*\{[^}]*position:\s*sticky[^}]*top:\s*0/)
+    })
+  })
+
+  describe('oas-cell-click / oas-row-dblclick', () => {
+    function cellMount(attrs: Record<string, string> = {}): OASTable {
+      return mount(attrs)
+    }
+
+    it('点击数据单元格派发 oas-cell-click，detail 含 row/column/value/rowIndex/columnIndex', () => {
+      const el = cellMount()
+      let detail: Record<string, unknown> | undefined
+      el.addEventListener('oas-cell-click', (e: Event) => (detail = (e as CustomEvent).detail))
+      const td = rows(el)[1]!.querySelector('td[data-col="age"]') as HTMLElement
+      td.click()
+      expect(detail).toBeDefined()
+      expect(detail!.column).toBe('age')
+      expect(detail!.value).toBe(25)
+      expect(detail!.rowIndex).toBe(1)
+      expect(detail!.columnIndex).toBe(1)
+      expect(detail!.row).toEqual({ name: '李四', age: 25 })
+    })
+
+    it('点击勾选列/行尾展开列不派发 cell-click；展开钮点击（stopPropagation）不误派', () => {
+      const EXPAND = JSON.stringify([{ key: 'a', name: '甲', expand: '<p>x</p>' }])
+      const el = cellMount({
+        checkable: '',
+        data: EXPAND,
+        columns: JSON.stringify([{ key: 'name', title: '姓名' }]),
+      })
+      let fired = 0
+      el.addEventListener('oas-cell-click', () => fired++)
+      ;(rows(el)[0]!.querySelector('td.check-cell') as HTMLElement).click()
+      ;(rows(el)[0]!.querySelector('td.expand-toggle-cell') as HTMLElement).click()
+      const toggle = rows(el)[0]!.querySelector('td.expand-toggle-cell .toggle') as HTMLElement
+      toggle.click()
+      expect(fired).toBe(0)
+    })
+
+    it('交互宿主（button 等）内点击不派发 cell-click；普通富内容（span）照常派发', () => {
+      const el = cellMount()
+      el.columns = [
+        {
+          key: 'name',
+          title: '姓名',
+          render: (row) => {
+            const b = document.createElement('button')
+            b.textContent = String(row.name)
+            return b
+          },
+        },
+        { key: 'age', title: '年龄' },
+      ]
+      let fired = 0
+      el.addEventListener('oas-cell-click', () => fired++)
+      ;(rows(el)[0]!.querySelector('td[data-col="name"] button') as HTMLElement).click()
+      expect(fired, 'button 命中交互排除清单').toBe(0)
+      const span = document.createElement('span')
+      span.textContent = '富内容'
+      ;(rows(el)[0]!.querySelector('td[data-col="age"]') as HTMLElement).appendChild(span)
+      span.click()
+      expect(fired, '纯展示元素照常派发').toBe(1)
+    })
+
+    it('双击数据行派发 oas-row-dblclick，detail 含 row/rowIndex', () => {
+      const el = cellMount()
+      let detail: Record<string, unknown> | undefined
+      el.addEventListener('oas-row-dblclick', (e: Event) => (detail = (e as CustomEvent).detail))
+      ;(rows(el)[2] as HTMLElement).dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      expect(detail).toBeDefined()
+      expect(detail!.row).toEqual({ name: '王五', age: 35 })
+      expect(detail!.rowIndex).toBe(2)
+    })
+
+    it('双击交互宿主不派发 row-dblclick；expand 内容行非数据行不派发', () => {
+      const el = cellMount({ checkable: '' })
+      let fired = 0
+      el.addEventListener('oas-row-dblclick', () => fired++)
+      const box = rows(el)[0]!.querySelector('input') as HTMLElement
+      box.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      expect(fired, 'checkbox 命中交互排除清单').toBe(0)
+    })
+  })
+})

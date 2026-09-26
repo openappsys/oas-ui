@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
 import { OASTransfer } from './index.js'
 
 const DATA = [
@@ -845,5 +846,168 @@ describe('OASTransfer RTL 逻辑方向化', () => {
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toContain(':host([data-rtl]) .actions oas-icon')
     expect(css).toContain('transform: scaleX(-1)')
+  })
+})
+
+describe('OASTransfer pagination（长列表分页，PRD P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** 5 项数据（左面板 5 项） */
+  function mountPaged(attrs: Record<string, string> = {}): OASTransfer {
+    const el = mount(attrs)
+    el.data = [
+      { key: 'a', label: '苹果' },
+      { key: 'b', label: '香蕉' },
+      { key: 'c', label: '橙子' },
+      { key: 'd', label: '草莓' },
+      { key: 'e', label: '西瓜' },
+    ]
+    return el
+  }
+
+  function foot(el: OASTransfer, side: 'left' | 'right'): HTMLElement {
+    return el.shadowRoot!.querySelectorAll<HTMLElement>('.panel-foot')[side === 'left' ? 0 : 1]!
+  }
+
+  function indicator(el: OASTransfer, side: 'left' | 'right'): string {
+    return foot(el, side).querySelector<HTMLElement>('.page-indicator')!.textContent ?? ''
+  }
+
+  it('未启用 pagination：页脚隐藏（默认渲染不切片）', () => {
+    const el = mountPaged()
+    expect(leftOptions(el).length).toBe(5)
+    expect(foot(el, 'left').hidden).toBe(true)
+    expect(foot(el, 'right').hidden).toBe(true)
+  })
+
+  it('pagination + page-size=2：左面板首页只渲染 2 项，指示 1/3，翻页钮边界禁用', () => {
+    const el = mountPaged({ pagination: '', 'page-size': '2' })
+    expect(leftOptions(el).length).toBe(2)
+    expect(leftOptions(el)[0]!.textContent).toContain('苹果')
+    expect(indicator(el, 'left')).toBe('1/3')
+    expect(foot(el, 'left').querySelector<HTMLButtonElement>('.page-prev')!.disabled).toBe(true)
+    expect(foot(el, 'left').querySelector<HTMLButtonElement>('.page-next')!.disabled).toBe(false)
+  })
+
+  it('翻页按钮：下一页渲染切片、指示推进；末页 next 禁用；上一页翻回', () => {
+    const el = mountPaged({ pagination: '', 'page-size': '2' })
+    const next = foot(el, 'left').querySelector<HTMLButtonElement>('.page-next')!
+    const prev = foot(el, 'left').querySelector<HTMLButtonElement>('.page-prev')!
+    next.click()
+    expect(indicator(el, 'left')).toBe('2/3')
+    expect(leftOptions(el).length).toBe(2)
+    expect(leftOptions(el)[0]!.textContent).toContain('橙子')
+    next.click()
+    expect(indicator(el, 'left')).toBe('3/3')
+    expect(leftOptions(el).length).toBe(1)
+    expect(leftOptions(el)[0]!.textContent).toContain('西瓜')
+    expect(foot(el, 'left').querySelector<HTMLButtonElement>('.page-next')!.disabled).toBe(true)
+    prev.click()
+    expect(indicator(el, 'left')).toBe('2/3')
+    expect(leftOptions(el)[0]!.textContent).toContain('橙子')
+  })
+
+  it('翻页按钮 aria-label 走 locale（pagination.prev / pagination.next）', () => {
+    const el = mountPaged({ pagination: '' })
+    expect(foot(el, 'left').querySelector('.page-prev')!.getAttribute('aria-label')).toBe('上一页')
+    expect(foot(el, 'left').querySelector('.page-next')!.getAttribute('aria-label')).toBe('下一页')
+  })
+
+  it('搜索过滤：过滤词变化重置页码到 1，计数仍按全量可见统计', () => {
+    const el = mountPaged({ pagination: '', 'page-size': '2', searchable: '' })
+    const next = foot(el, 'left').querySelector<HTMLButtonElement>('.page-next')!
+    next.click()
+    expect(indicator(el, 'left')).toBe('2/3')
+    const search = el.shadowRoot!.querySelector<HTMLInputElement>('.search-left')!
+    search.value = '果'
+    search.dispatchEvent(new Event('input'))
+    expect(indicator(el, 'left'), '过滤后页码重置').toBe('1/1')
+    expect(leftOptions(el).length).toBe(1)
+  })
+
+  it('右面板分页渲染与页码钳制：受控 value 收窄后越界页码回落', () => {
+    const el = mountPaged({ pagination: '', 'page-size': '2' })
+    // 受控预置 3 项：右面板按 page-size=2 切片渲染首页
+    el.setAttribute('value', '["a","b","c"]')
+    expect(rightOptions(el).length, '右面板首页 2 项').toBe(2)
+    expect(rightOptions(el)[0]!.textContent).toContain('苹果')
+    expect(indicator(el, 'right')).toBe('1/2')
+    // 翻到末页后收窄 value：页码越界钳制回 1
+    const next = foot(el, 'right').querySelector<HTMLButtonElement>('.page-next')!
+    next.click()
+    expect(indicator(el, 'right')).toBe('2/2')
+    el.setAttribute('value', '["a"]')
+    expect(indicator(el, 'right'), '越界页码钳制回首页').toBe('1/1')
+    expect(rightOptions(el).length).toBe(1)
+  })
+})
+
+describe('OASTransfer oas-scroll（列表滚动事件，PRD P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  type ScrollDetail = { side: string; direction: string; scrollTop: number; reachBottom: boolean }
+
+  function scrollListbox(el: OASTransfer, side: 'left' | 'right', scrollTop: number): void {
+    const box = el.shadowRoot!.querySelector<HTMLElement>(`.listbox.${side}`)!
+    Object.defineProperty(box, 'scrollTop', { value: scrollTop, configurable: true })
+    Object.defineProperty(box, 'clientHeight', { value: 100, configurable: true })
+    Object.defineProperty(box, 'scrollHeight', { value: 200, configurable: true })
+    box.dispatchEvent(new Event('scroll'))
+  }
+
+  it('列表向下滚动派发 oas-scroll：detail { side, direction, scrollTop, reachBottom }', () => {
+    const el = mount()
+    const details: ScrollDetail[] = []
+    el.addEventListener('oas-scroll', (e) => details.push((e as CustomEvent).detail))
+    scrollListbox(el, 'left', 50)
+    expect(details.length).toBe(1)
+    expect(details[0]).toEqual({ side: 'left', direction: 'down', scrollTop: 50, reachBottom: false })
+  })
+
+  it('向上滚动 direction=up；滚动位置未变不重复派发', () => {
+    const el = mount()
+    const details: ScrollDetail[] = []
+    el.addEventListener('oas-scroll', (e) => details.push((e as CustomEvent).detail))
+    scrollListbox(el, 'left', 50)
+    scrollListbox(el, 'left', 50)
+    expect(details.length, '位置未变不派发').toBe(1)
+    scrollListbox(el, 'left', 20)
+    expect(details.length).toBe(2)
+    expect(details[1]!.direction).toBe('up')
+  })
+
+  it('reachBottom 判定：scrollTop+clientHeight ≥ scrollHeight 时为 true', () => {
+    const el = mount()
+    const details: ScrollDetail[] = []
+    el.addEventListener('oas-scroll', (e) => details.push((e as CustomEvent).detail))
+    scrollListbox(el, 'right', 101)
+    expect(details[0]!.reachBottom, '101+100 ≥ 200').toBe(true)
+    expect(details[0]!.side).toBe('right')
+  })
+
+  it('非列表目标的 scroll 不派发（搜索框等容器滚动无关）', () => {
+    const el = mount()
+    const details: ScrollDetail[] = []
+    el.addEventListener('oas-scroll', (e) => details.push((e as CustomEvent).detail))
+    const search = el.shadowRoot!.querySelector<HTMLElement>('.search-left')!
+    Object.defineProperty(search, 'scrollTop', { value: 30, configurable: true })
+    search.dispatchEvent(new Event('scroll'))
+    expect(details.length).toBe(0)
   })
 })

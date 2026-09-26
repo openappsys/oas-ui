@@ -51,6 +51,15 @@ const STYLE = `
 .splitter.is-active {
   background: var(--oas-color-primary);
 }
+/* disabled：调整冻结——光标常态 + hover/拖拽高亮回落底色（data-disabled 镜像注入禁用，
+   宿主 disabled 与 config-provider 全局禁用共用同一消费点） */
+:host([data-disabled]) .splitter {
+  cursor: default;
+}
+:host([data-disabled]) .splitter:hover,
+:host([data-disabled]) .splitter.is-active {
+  background: var(--oas-color-border);
+}
 :host([dragging]) {
   user-select: none;
 }
@@ -115,7 +124,7 @@ type SplitterMode = 'legacy' | 'multi'
 
 export class OASSplitter extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['percent', 'min', 'max', 'vertical', 'collapsible', 'collapsed', 'lazy', 'sizes']
+    return ['percent', 'min', 'max', 'vertical', 'collapsible', 'collapsed', 'lazy', 'sizes', 'disabled']
   }
 
   /** 布局模式：legacy（slot=left/right 两面板）/ multi（直接子元素即面板） */
@@ -361,6 +370,7 @@ export class OASSplitter extends OASElement {
     if ((e.target as HTMLElement).closest('.collapse-btn')) return
     const index = this.splitters.indexOf(splitter as HTMLElement)
     if (index < 0) return
+    if (this.injectDisabled()) return
     this.startDrag(e, index)
   }
 
@@ -370,6 +380,7 @@ export class OASSplitter extends OASElement {
     if ((e.target as HTMLElement).closest('.collapse-btn')) return
     const index = this.splitters.indexOf(splitter as HTMLElement)
     if (index < 0) return
+    if (this.injectDisabled()) return
     let delta = 0
     if (this.hasAttr('vertical')) {
       // 垂直：ArrowUp 缩小上一面板（前侧），ArrowDown 放大
@@ -398,6 +409,7 @@ export class OASSplitter extends OASElement {
     const splitter = (e.target as HTMLElement).closest('[part="splitter"]')
     if (!splitter || !this.shadow.contains(splitter)) return
     if ((e.target as HTMLElement).closest('.collapse-btn')) return
+    if (this.injectDisabled()) return
     const index = this.splitters.indexOf(splitter as HTMLElement)
     if (index < 0) return
     this.resetPair(index)
@@ -689,9 +701,13 @@ export class OASSplitter extends OASElement {
     const orientation = this.hasAttr('vertical') ? 'horizontal' : 'vertical'
     const min = this.boundPercent(this.getAttr('min', '10'), 10)
     const max = this.boundPercent(this.getAttr('max', '90'), 90)
+    const disabled = this.injectDisabled()
+    // 禁用态镜像到宿主 data-disabled（覆盖注入场景，供 :host([data-disabled]) 样式消费）
+    this.toggleAttribute('data-disabled', disabled)
     this.splitters.forEach((splitter, i) => {
       splitter.setAttribute('aria-orientation', orientation)
       splitter.setAttribute('aria-label', this.t('splitter.adjust'))
+      splitter.setAttribute('aria-disabled', String(disabled))
       const p = this.mode === 'legacy' ? Number(this.getAttr('percent', '50')) || 50 : (this.sizes[i] ?? 50)
       splitter.setAttribute('aria-valuenow', String(Math.round(p * 100) / 100))
       splitter.setAttribute('aria-valuemin', String(min))

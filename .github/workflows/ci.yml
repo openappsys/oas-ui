@@ -58,3 +58,7 @@ jobs:
       - name: RTL 几何门禁（仅 shard 1）
         if: matrix.shard == 1
         run: pnpm rtl:audit --no-shots
+      # RTL 交互态门禁（20 浮层组件真 RTL 打开态 sweep + placement 镜像核对）
+      - name: RTL 交互态门禁（仅 shard 1）
+        if: matrix.shard == 1
+        run: pnpm rtl:audit:interactive --no-shots

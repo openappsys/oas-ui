@@ -176,3 +176,15 @@ test('textarea autosize 高度自适应：多行内容增高、清空回落最�
     { timeout: 5000 },
   )
 })
+
+// ---- P2 批次：autocomplete 透传 ----
+
+test('textarea autocomplete="off" 透传内层原生 textarea', async ({ page }) => {
+  await page.goto('/components/textarea.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-textarea[autocomplete]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-textarea[autocomplete]')!
+    return (el.shadowRoot!.querySelector('textarea') as HTMLTextAreaElement).getAttribute('autocomplete')
+  })
+  expect(r).toBe('off')
+})

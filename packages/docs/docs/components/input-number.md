@@ -158,6 +158,46 @@ el.parser = (s) => Number(s.replace(/[^0-9.\-]/g, ''))
 
 `label` 作为输入框的可访问名称（`aria-label`）：设置后读屏朗读该名称；未设置时依次回退 `placeholder` → 内置文案「数字输入框」。步进按钮「增加 / 减少」的可访问名称同样走内置文案。
 
+## 小数分隔符（decimal-separator）
+
+<DemoBlock title="decimal-separator（缺省 locale 感知）">
+  <oas-input-number id="num-sep-default" value="1.5" step="0.1" placeholder="locale 默认" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-sep-comma" value="1.5" step="0.1" decimal-separator="," placeholder="逗号分隔" style="width: 160px"></oas-input-number>
+  <span id="num-sep-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+`decimal-separator` 指定小数点字符（默认取运行环境 locale 的小数分隔符，与 `Intl` 格式化同源）。左侧为 locale 默认，右侧显式设为逗号：显示、键入解析与提交值三者一致——右侧键入 `2,5` 提交 `2.5`，失焦后回显 `2,5`。监听 `oas-change` 可读回提交的数字值。
+
+## 形态（variant）
+
+<DemoBlock title="variant 三态">
+  <oas-input-number id="num-variant-outlined" value="5" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-variant-filled" value="5" variant="filled" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-variant-borderless" value="5" variant="borderless" style="width: 160px"></oas-input-number>
+</DemoBlock>
+
+`variant` 支持 `outlined`（默认描边）/ `filled`（填充底色、聚焦才出边框）/ `borderless`（无框无底色），语义与 `oas-input` 变体一致；`controls-position="both"` 时两侧 −/+ 按钮同档跟随形态。
+
+## 对齐（align）
+
+<DemoBlock title="align 数字对齐">
+  <oas-input-number id="num-align-left" value="1234" align="left" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-align-center" value="1234" align="center" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-align-right" value="1234" align="right" style="width: 160px"></oas-input-number>
+</DemoBlock>
+
+`align` 控制数字文本对齐（`left` / `center` / `right`）。为 RTL 安全，映射为逻辑 `text-align: start/end`：`left` / `right` 在 `dir="rtl"` 下自动镜像为行首/行尾；未设置时使用浏览器默认（`start`，LTR 下即左对齐）。
+
+## 自动聚焦（autofocus）
+
+<DemoBlock title="autofocus（挂载后聚焦内层输入）">
+  <oas-button id="btn-num-autofocus" size="small">新增一个 autofocus 输入框</oas-button>
+  <span id="num-autofocus-host" style="display: inline-flex; gap: var(--oas-space-2); vertical-align: middle"></span>
+  <span id="num-autofocus-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
+</DemoBlock>
+
+`autofocus` 在挂载后把焦点转发给 shadow 内层输入（原生 autofocus 不穿透 shadow DOM），页面/表单打开即可直接键入。为避免文档页加载即抢焦点，这里由按钮动态创建带 `autofocus` 的组件演示。
+
 ## 事件
 
 <DemoBlock title="change / clear / focus / blur / input">
@@ -220,6 +260,31 @@ onMounted(() => {
     }
   }
   readNumLabel()
+
+  // decimal-separator demo：键入/提交读回提交的数字值（显示按配置的小数分隔符）
+  const sepEl = document.getElementById('num-sep-comma')
+  const sepOut = document.getElementById('num-sep-output')
+  sepEl?.addEventListener('oas-change', (e) => {
+    const shown = sepEl.shadowRoot?.querySelector('input')?.value ?? ''
+    sepOut.textContent = `显示「${shown}」→ 提交 ${e.detail.value === null ? 'null' : e.detail.value}`
+  })
+
+  // autofocus demo：动态创建带 autofocus 的组件，验证挂载后聚焦内层输入
+  const afHost = document.getElementById('num-autofocus-host')
+  const afOut = document.getElementById('num-autofocus-output')
+  document.getElementById('btn-num-autofocus')?.addEventListener('click', () => {
+    if (!afHost) return
+    const el = document.createElement('oas-input-number')
+    el.setAttribute('autofocus', '')
+    el.setAttribute('placeholder', '已自动聚焦')
+    el.style.width = '140px'
+    afHost.replaceChildren(el)
+    setTimeout(() => {
+      const inner = el.shadowRoot?.querySelector('input')
+      const focused = el.shadowRoot?.activeElement === inner
+      afOut.textContent = focused ? '已聚焦内层输入' : '未聚焦'
+    }, 60)
+  })
 })
 </script>
 
@@ -239,9 +304,12 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `align` | — | `string` | — |
+| `autofocus` | — | `boolean` | — |
 | `clearable` | 有值时显示清除按钮（一键回空值态） | `boolean` | — |
 | `controls` | 步进按钮显隐（缺省显示；`controls="false"` 隐藏，键盘 ↑↓ 仍可步进） | — | — |
 | `controls-position` | 按钮位置：`right`（默认，右侧上下箭头）/ `both`（两侧 −/+，触屏计数器形态） | — | — |
+| `decimal-separator` | — | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `format` | Intl 风格声明式格式：`percent`（0.15→15%）/ `currency:USD` / `unit:GB`，跟随宿主 locale | `string` | — |
 | `grouping` | 千分位分组显示（解析时自动剥离分组符） | `boolean` | — |
@@ -259,6 +327,7 @@ onMounted(() => {
 | `step-strictly` | 严格步进：提交值吸附最近 step 倍数 | `boolean` | — |
 | `suffix-text` | 内嵌后缀文案（slot="suffix" 同上） | `string` | — |
 | `value` | 当前值（受控） | `string` | — |
+| `variant` | — | `string` | — |
 | `wheel` | 聚焦时滚轮步进（上增下减；默认关防误触） | `boolean` | — |
 
 #### 事件

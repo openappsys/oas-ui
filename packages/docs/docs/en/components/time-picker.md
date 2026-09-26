@@ -53,6 +53,20 @@ Display and columns switch to 12-hour (AM/PM words follow the locale); the fourt
 
 `disabledTime` (property, `(parts) => { hours?, minutes?, seconds? }`) returns disabled lists per current-time context; disabled options are grayed out (clicks and keyboard skip them).
 
+<DemoBlock title="hide-disabled-options (hide disabled options instead of greying)">
+  <oas-time-picker id="time-picker-hide-disabled" value="15:30:00" hide-disabled-options></oas-time-picker>
+</DemoBlock>
+
+Used with `disabledTime`: `hide-disabled-options` removes disabled options from the columns entirely (default keeps them visible but grayed out) — in this example the current value sits in the closed hours (14–16), so those three entries are hidden from the hour column; keyboard `↑`/`↓` and nearest-snapping already skip disabled values at the value level, so behavior is unchanged.
+
+## Accessible Naming
+
+<DemoBlock title="label: trigger accessible name">
+  <oas-time-picker label="Meeting start time" value="09:00:00"></oas-time-picker>
+</DemoBlock>
+
+`label` gives the trigger input an accessible name (`aria-label`, announced by screen readers); it falls back to `placeholder` when unset. An external `<label for>` association takes precedence (native label semantics).
+
 ## Now & Presets
 
 <DemoBlock title="Now button (footer)">
@@ -143,7 +157,9 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `clearable` | Clearable: shows a clear button when a value exists; emits `oas-clear` + `oas-change` (empty value) | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `format` | Display format tokens; a column appears only when the corresponding token exists | `string` | `HH:mm:ss` |
+| `hide-disabled-options` | Hide disabled options instead of graying them out (keyboard navigation still skips them) | `boolean` | — |
 | `is-range` | Time range: value is a JSON array `["HH:mm:ss","HH:mm:ss"]`, auto-ordered on confirm; the typing channel is read-only in this mode | `boolean` | — |
+| `label` | Accessible name (aria-label) for the trigger; an external label-for association takes precedence | `string` | — |
 | `name` | Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent) | `string` | — |
 | `open` | Controlled open: present = open, removed = closed; gestures only emit `oas-open-change` for the host to write back; in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | — | — |
 | `placeholder` | Placeholder text | — | — |
@@ -196,6 +212,10 @@ onMounted(() => {
 
   const dt = document.getElementById('time-picker-disabled-time')
   dt.disabledTime = (p) => (p.h >= 14 && p.h < 17 ? { hours: [14, 15, 16] } : null)
+
+  // hide-disabled-options: same closure hours, but hidden instead of grayed
+  const hd = document.getElementById('time-picker-hide-disabled')
+  hd.disabledTime = (p) => (p.h >= 14 && p.h < 17 ? { hours: [14, 15, 16] } : null)
 
   const pr = document.getElementById('time-picker-presets')
   pr.presets = [

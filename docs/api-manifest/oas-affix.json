@@ -25,6 +25,12 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "z-index",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],

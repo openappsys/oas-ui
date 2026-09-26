@@ -236,6 +236,19 @@ onMounted(() => {
   group?.addEventListener('oas-blur', () => {
     out.textContent = 'oas-blur（组失去焦点）'
   })
+  // 组级 required：原生 form 提交拦截反馈（radio-group form-associated 校验链）
+  // 未选时原生约束校验在 submit 之前拦截（invalid 事件，不冒泡——直接挂组上）；
+  // 选中后 submit 正常到达
+  const rgForm = document.getElementById('radio-group-required')
+  const rgGroup = rgForm?.querySelector('oas-radio-group')
+  const rgOut = document.getElementById('radio-group-required-out')
+  rgGroup?.addEventListener('invalid', () => {
+    if (rgOut) rgOut.textContent = '校验未通过：请先选择方案'
+  })
+  rgForm?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    if (rgOut && rgGroup) rgOut.textContent = '提交成功：plan = ' + rgGroup.getAttribute('value')
+  })
 })
 </script>
 
@@ -246,6 +259,22 @@ onMounted(() => {
 </DemoBlock>
 
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
+
+`required` 同样支持**组级**：`oas-radio-group required` 走 form-associated 原生校验链，组内无选中项时 `valueMissing` 阻止原生表单提交（`FormData` 以组的 `name` 提交选中值，无选中不提交）。
+
+<DemoBlock title="组级 required（radio-group）">
+  <form id="radio-group-required" style="display: flex; flex-direction: column; gap: var(--oas-space-3); align-items: flex-start">
+    <oas-radio-group name="plan" required>
+      <oas-radio value="basic">基础版</oas-radio>
+      <oas-radio value="pro">专业版</oas-radio>
+      <oas-radio value="team">团队版</oas-radio>
+    </oas-radio-group>
+    <oas-button html-type="submit">提交（未选时被浏览器拦截）</oas-button>
+    <span id="radio-group-required-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </form>
+</DemoBlock>
+
+未选择就点击提交：浏览器弹出 valueMissing 校验气泡、表单不提交，页面提示「请先选择方案」；选中后再提交则显示提交值。
 
 ## API
 
@@ -293,6 +322,7 @@ onMounted(() => {
 | `disabled` | 禁用整组（下发子项，不覆盖子项自身显式 disabled） | `boolean` | — |
 | `options` | 数据通道：JSON `[{ label, value, disabled?, description? }]`，显式设置时数据驱动优先于子元素声明式 | `RadioOption[] \| string` | — |
 | `readonly` | 只读（下发子项）：可聚焦、方向键不切换 | `boolean` | — |
+| `required` | 组级必选校验（form-associated valueMissing，reset 恢复基线） | `boolean` | — |
 | `size` | 尺寸档（下发子项）：`small` / `medium`（默认）/ `large` | `string` | — |
 | `status` | 校验态（下发子项）：`error` / `warning` / `success`；单项显式 status 优先 | `string` | — |
 | `value` | 组值（选中项的 value） | `string` | — |

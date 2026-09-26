@@ -258,6 +258,8 @@ export class OASCombobox extends OASFormElement {
       'disabled-skip',
       // required 仅驱动原生校验链（valueMissing）
       'required',
+      // autocomplete 透传内层 input（缺省回落 off：combobox 自绘下拉，浏览器自动补全默认关闭）
+      'autocomplete',
     ]
   }
 
@@ -410,6 +412,9 @@ export class OASCombobox extends OASFormElement {
     i.placeholder = placeholder
     i.disabled = disabled
     i.readOnly = readonly
+    // autocomplete 透传：宿主显式值原样镜像；缺省回落 off（浏览器自动补全默认关闭）
+    const autocomplete = this.getAttribute('autocomplete')
+    i.setAttribute('autocomplete', autocomplete != null && autocomplete !== '' ? autocomplete : 'off')
     i.setAttribute('aria-label', placeholder)
     if (status === 'error') i.setAttribute('aria-invalid', 'true')
     else i.removeAttribute('aria-invalid')

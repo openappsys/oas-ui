@@ -62,6 +62,23 @@
 
 **职责边界**：sider 的折叠触发器（折叠按钮、菜单折叠操作）归 `oas-sidebar` 负责——`oas-sidebar` 自带 `collapsible` 折叠能力并派发折叠事件，`oas-sider` 监听后同步自身 `collapsed` 窄条；`oas-layout` 只负责骨架排布（槽位、主轴方向、视口锁定），**不重复实现折叠触发逻辑**。
 
+## 侧栏宽度（width）
+
+`oas-sider` 的 `width` 属性显式指定轨道宽度（纯数字按 px，支持长度/百分比），缺省走 `--oas-sider-width` token（默认 200px）；折叠时仍按窄条契约（`--oas-sider-collapsed-width`，默认 64px）收窄——显式宽度与折叠契约互斥共存，解除折叠后恢复显式宽度。
+
+<DemoBlock title="width 显式轨道宽度">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-layout style="height: 160px; width: 100%">
+      <oas-sider slot="sider" width="280">width=280 侧栏</oas-sider>
+      <oas-content slot="content">内容区：轨道宽度由 width 属性显式指定为 280px（缺省为 --oas-sider-width 的 200px）。</oas-content>
+    </oas-layout>
+    <oas-layout style="height: 160px; width: 100%">
+      <oas-sider slot="sider" width="280" collapsed>折叠中</oas-sider>
+      <oas-content slot="content">折叠时窄条契约优先（--oas-sider-collapsed-width，64px），width 让位；解除折叠恢复 280px。</oas-content>
+    </oas-layout>
+  </oas-space>
+</DemoBlock>
+
 ## 视口锁定布局
 
 `viewport`：admin 后台模式——布局锁定视口高，**顶栏/底栏固定，侧栏与内容各自独立滚动**（页面整体不出滚动条）。默认不带此属性时是整页滚动模型（内容多高页面多高）。
@@ -155,6 +172,13 @@
 | 默认 | 顶部内容 |
 
 ### oas-sider
+
+#### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `collapsed` | 折叠为窄条（存在即折叠） | `boolean` | — |
+| `width` | 轨道宽度显式覆盖（纯数字按 px；折叠时窄条契约优先，缺省走 --oas-sider-width） | `string` | — |
 
 #### 插槽
 

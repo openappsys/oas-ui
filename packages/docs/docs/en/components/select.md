@@ -122,6 +122,37 @@ Once opened, you can type directly to filter; when nothing matches, "无匹配�
 
 By default options are matched by `label` inclusion; assigning `el.filterMethod = (query, option) => boolean` (a JS property channel — attributes cannot carry functions) takes over local filtering, where `query` is the raw input and `option` the full option object. This example (see the page script at the bottom) matches both `value` and `label` (pinyin-initial matching and other custom rules work the same way); in `remote` mode the host owns data-side filtering and `filterMethod` does not apply.
 
+## Controlled Search Input (input-value)
+
+<DemoBlock title="input-value (controlled search text)">
+  <oas-select id="select-input-value" searchable placeholder="Type a keyword, attribute mirrors live" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-select>
+  <span id="select-input-value-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+`input-value` makes the search text controllable: when the attribute is present it is the source of truth for the search box (presets/external updates sync into the box and re-filter); user typing writes the attribute back and dispatches `oas-input-value-change` (`detail: { value }`) — the host can listen or simply read the attribute.
+
+## Reserve Keyword (reserve-keyword)
+
+<DemoBlock title="reserve-keyword (keep the keyword after selection)">
+  <oas-space size="small">
+    <oas-select multiple searchable placeholder="Default: clear keyword after selection" options='[{"label":"Apple","value":"apple"},{"label":"Apple juice","value":"juice"},{"label":"Banana","value":"banana"}]'></oas-select>
+    <oas-select multiple searchable reserve-keyword placeholder="reserve-keyword: keep keyword" options='[{"label":"Apple","value":"apple"},{"label":"Apple juice","value":"juice"},{"label":"Banana","value":"banana"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+In multiple + searchable mode, the keyword is cleared by default after selecting an option (the list resets so you can pick unrelated items); with `reserve-keyword` the keyword is kept, ideal for picking multiple items among similar results.
+
+## Highlight First Option (default-active-first-option)
+
+<DemoBlock title="default-active-first-option">
+  <oas-space size="small">
+    <oas-select value="orange" placeholder="Default: highlight selected option" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-select>
+    <oas-select value="orange" default-active-first-option placeholder="Set: highlight the first option" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+When set, opening the dropdown highlights the first visible option (Enter picks it); by default the currently selected option is highlighted.
+
 ## Groups
 
 <DemoBlock title="Grouped">
@@ -143,6 +174,24 @@ Options carrying a `group` field are rendered under a group title (not selectabl
 
 When a value is selected, a clear button appears; clicking clears the value and dispatches `oas-clear` and `oas-change`.
 
+## Trigger Affixes & Custom Icons
+
+<DemoBlock title="prefix / suffix / suffix-icon / clear-icon slots and show-arrow">
+  <oas-space size="small" direction="vertical">
+    <oas-select id="select-affix-demo" placeholder="Prefix icon + suffix text" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'>
+      <template slot="prefix"><span style="display:inline-flex">📍</span></template>
+      <template slot="suffix"><span style="display:inline-flex">City</span></template>
+    </oas-select>
+    <oas-select id="select-icons-demo" clearable value="apple" placeholder="Custom arrow and clear icons" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'>
+      <template slot="suffix-icon"><span style="display:inline-flex">⌄</span></template>
+      <template slot="clear-icon"><span style="display:inline-flex">✕</span></template>
+    </oas-select>
+    <oas-select id="select-no-arrow" show-arrow="false" placeholder="Hide the dropdown arrow (show-arrow)" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+`template[slot="prefix"]` / `template[slot="suffix"]` render into the trigger affixes (icons, unit text, etc.); `template[slot="suffix-icon"]` replaces the default dropdown arrow (rotating with the container when expanded); `template[slot="clear-icon"]` replaces the default × icon of the clear button. `show-arrow="false"` hides the default arrow (arrow-less search-trigger scenarios).
+
 ## Remote Search
 
 <DemoBlock title="Remote search (remote + loading)">
@@ -155,6 +204,14 @@ In `remote` mode the component does no local filtering: typing dispatches `oas-i
 <DemoBlock title="Remote loading placeholder">
   <oas-select remote searchable loading placeholder="Loading placeholder demo" options='[]'></oas-select>
 </DemoBlock>
+
+## Loading Text (loading-text)
+
+<DemoBlock title="loading-text (custom loading copy)">
+  <oas-select remote searchable loading loading-text="Loading data, please wait…" placeholder="Custom loading copy" options='[]'></oas-select>
+</DemoBlock>
+
+`loading-text` overrides the default loading placeholder copy (built-in locale copy by default); pair it with `remote` / `loading`.
 
 ## Remote Debounce
 
@@ -173,6 +230,17 @@ In `remote` mode the component does no local filtering: typing dispatches `oas-i
 
 Multiple-select tags wrap by default and do not collapse; only when `max-tag-count` is explicitly set do they collapse into `+N` (hover to see the remaining items).
 
+## Hint & Auto Width
+
+<DemoBlock title="hint copy / auto-width trigger">
+  <oas-space size="small" direction="vertical">
+    <oas-select hint="Pick your resident city; you can change it anytime" placeholder="Hint below the trigger (hint)" options='[{"label":"Beijing","value":"bj"},{"label":"Shanghai","value":"sh"}]'></oas-select>
+    <oas-select auto-width value="banana" placeholder="auto-width" options='[{"label":"Apple","value":"apple"},{"label":"Banana Banana","value":"banana"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+`hint` renders one line of hint copy below the trigger (wired via `aria-describedby`, screen-reader reachable); `auto-width` lets the trigger width shrink to fit the selected item/content (fixed `220px` by default).
+
 ## Max Count
 
 <DemoBlock title="Selection limit (max-count)">
@@ -187,10 +255,11 @@ With `multiple` and `max-count` set, once the selection reaches the limit, unsel
 ## Allow Create
 
 <DemoBlock title="Allow create">
-  <oas-select allow-create searchable placeholder="Type a non-existent option to create" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-select>
+  <oas-select id="select-create" allow-create searchable placeholder="Type a non-existent option to create" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-select>
+  <span id="select-create-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
-When search yields no match, a "创建 xxx" item is shown; clicking or pressing Enter creates a new option from the input value and selects it.
+When search yields no match, a "创建 xxx" item is shown; clicking or pressing Enter creates a new option from the input value and selects it. Creation dispatches `oas-create` (`detail: { value, label }` carrying the created text).
 
 ## Custom Option Rendering
 
@@ -282,6 +351,17 @@ The two channels are equivalent (see the page script at the bottom): `MEMBERS.ma
 </DemoBlock>
 
 Setting the `open` attribute takes control of the dropdown (present = open, removed = closed; the property channel `el.open = true` works too); user gestures (click / Esc / outside click / close-on-select) dispatch `oas-open-change` (`detail: { open }`) without forcing the state back — the host decides whether to add or remove the attribute (the controlled-component convention). In this example, picking ① auto-opens ②, and ②'s close event is arbitrated by the host removing the attribute.
+
+## Autofocus & Tab Order
+
+<DemoBlock title="autofocus / tabindex">
+  <oas-space size="small" direction="vertical">
+    <oas-select autofocus placeholder="Auto-focused after mount (autofocus)" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-select>
+    <oas-select id="select-tabindex" tabindex="2" placeholder="tabindex=2 forwarded to the trigger" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+`autofocus` focuses the trigger automatically after mount (the native autofocus does not pierce the Shadow DOM, so the component forwards it); `tabindex` is forwarded to the internal trigger to control the tab order (the host attribute is moved upon write, avoiding a double tab stop on host + trigger).
 
 ## Placement
 
@@ -536,6 +616,20 @@ onMounted(() => {
     focusLog.textContent = 'oas-blur'
   })
 
+  // input-value controlled demo: attribute write-back + event echo
+  const ivEl = document.getElementById('select-input-value')
+  const ivOut = document.getElementById('select-input-value-output')
+  ivEl?.addEventListener('oas-input-value-change', (e) => {
+    ivOut.textContent = `input-value: ${JSON.stringify(e.detail.value)}`
+  })
+
+  // oas-create demo: creation feedback
+  const createEl = document.getElementById('select-create')
+  const createOut = document.getElementById('select-create-output')
+  createEl?.addEventListener('oas-create', (e) => {
+    createOut.textContent = `oas-create: ${e.detail.label}`
+  })
+
   // Accessible name (label) demo: read the trigger aria-label (label set vs placeholder fallback)
   const readSelectLabel = () => {
     const a = document.getElementById('select-label-set')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
@@ -568,12 +662,18 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `allow-create` | Allow creating new options from the input value when nothing matches | `boolean` | — |
+| `auto-width` | Trigger width shrinks to fit the selection | — | — |
+| `autofocus` | Auto-focus the trigger after mount | `boolean` | — |
 | `clearable` | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | `boolean` | — |
 | `debounce` | Remote search input debounce in ms (default 0 = immediate; only debounces oas-input in remote mode, local filtering stays instant) | — | — |
+| `default-active-first-option` | Highlight the first visible option on open (defaults to the selected option) | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
+| `hint` | Hint line below the trigger, wired via aria-describedby | `string` | — |
+| `input-value` | Controlled search text: typing writes back and emits oas-input-value-change; external updates sync into the search box | `string` | — |
 | `item-height` | Fixed row height (px) when virtual scrolling | `string` | `36` |
 | `label` | The trigger's accessible name (aria-label), taking priority over the placeholder | `string` | — |
 | `loading` | Remote loading placeholder (use with `remote`) | `boolean` | — |
+| `loading-text` | Custom loading placeholder copy (defaults to locale) | `string` | — |
 | `max-count` | Multi-select limit: at the limit unselected options are disabled-greyed and oas-exceed-limit fires; selected items stay removable; single-select unchanged | — | — |
 | `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing) | `boolean` | — |
 | `multiple` | Multiple select | `boolean` | — |
@@ -585,9 +685,12 @@ onMounted(() => {
 | `readonly` | Read-only: focusable and copyable, no dropdown, value immutable (clear/remove buttons hidden) | `boolean` | — |
 | `remote` | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
+| `reserve-keyword` | Keep the keyword after selection in searchable mode (cleared by default, matching tree-select) | `boolean` | — |
 | `searchable` | Searchable (type to filter after opening the dropdown) | `boolean` | — |
+| `show-arrow` | Set `"false"` to hide the default dropdown arrow | `string` | `true` |
 | `size` | Size preset `small` / `medium` (default) / `large`: control height/font/chip height scale | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the host | `string` | — |
+| `tabindex` | Forwarded to the internal trigger (host attribute removed after delegation to avoid double tab stops) | — | — |
 | `value` | Current value (JSON array in multiple mode) | — | — |
 | `variant` | Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently; status colors take precedence | `string` | — |
 | `virtual` | Virtual scrolling for large datasets: renders only the visible window (reuses oas-virtual-list); options with a `group` field fall back to full rendering | `boolean` | — |
@@ -599,9 +702,11 @@ onMounted(() => {
 | `oas-blur` | Fires when the component loses focus |
 | `oas-change` | Selection/clear change, `detail: { value }` |
 | `oas-clear` | Clear button clicked, `detail: { value }` (value before clearing) |
+| `oas-create` | Dispatched when allow-create creates a new option, `detail: { value, label }` |
 | `oas-exceed-limit` | Selection attempt past max-count (click/keyboard/create), `detail: { value, max }` |
 | `oas-focus` | Fires when the component gains focus (trigger↔search inner moves are not reported) |
 | `oas-input` | Input in `remote` mode, `detail: { value }` (for host requests) |
+| `oas-input-value-change` | Dispatched on search-text change, `detail: { value }` |
 | `oas-open-change` | Open state flips, `detail: { open }` |
 | `oas-option-render` | Dispatched for each rendered option row, `detail: { index, option, element }` (element is the option label container; host can rewrite it into icon/rich text) |
 | `oas-tag-render` | Dispatched when a multi-select tag renders, `detail: { value, label, element }` (element is the tag text container; host can rewrite it) |
@@ -610,8 +715,14 @@ onMounted(() => {
 
 | Name | Description |
 | --- | --- |
+| `clear-icon` | Custom clear-button icon |
+| `prefix` | Trigger prefix content |
+| `suffix` | Trigger suffix content |
+| `suffix-icon` | Custom trailing trigger icon (replaces the default arrow) |
+| `template[slot="clear-icon"]` | — |
 | `template[slot="empty"]` | Custom empty state (overrides both "no data" and "no match" defaults) |
 | `template[slot="option"]` | Static option row template, cloned into each option label container; `[data-option-label]` nodes get bound to the option label |
+| `template[slot="suffix-icon"]` | — |
 | `template[slot="tag"]` | Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label |
 
 #### CSS Variables

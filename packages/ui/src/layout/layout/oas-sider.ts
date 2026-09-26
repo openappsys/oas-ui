@@ -39,6 +39,10 @@ aside {
 `
 
 export class OASSider extends OASElement {
+  static override get observedAttributes(): string[] {
+    return ['width', 'collapsed']
+  }
+
   private observer: MutationObserver | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -83,6 +87,22 @@ export class OASSider extends OASElement {
   protected override update(): void {
     // 侧边栏 aria-label locale 驱动（setLocale 切换自动重刷）
     this.shadow.querySelector<HTMLElement>('[part="sider"]')?.setAttribute('aria-label', this.t('layout.sider'))
+    this.applyWidth()
+  }
+
+  /**
+   * width 属性（PRD P2）：轨道宽度显式覆盖，缺省清内联走 --oas-sider-width token。
+   * 与 collapsed 窄条契约共存：折叠时清内联，让 :host([collapsed]) 的窄条宽度规则生效
+   * （否则宿主内联 width 特异性压过 :host 规则，64px 窄条被钉死为显式宽）；
+   * 解除折叠后恢复显式宽度。纯数字补 px（浏览器丢弃无单位 CSS 长度）。
+   */
+  private applyWidth(): void {
+    if (this.hasAttr('collapsed')) {
+      this.style.width = ''
+      return
+    }
+    const raw = this.getAttr('width', '').trim()
+    this.style.width = raw === '' ? '' : /^\d+(\.\d+)?$/.test(raw) ? `${raw}px` : raw
   }
 
   /** 内部侧栏折叠/展开时同步自身 collapsed（保持外轨宽度与内栏图标条匹配） */

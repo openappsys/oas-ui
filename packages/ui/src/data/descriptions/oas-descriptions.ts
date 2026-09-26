@@ -43,7 +43,30 @@ const SIZE_MAP: Record<string, { font: string; py: string; px: string }> = {
 
 export class OASDescriptions extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['column', 'title', 'layout', 'bordered', 'colon', 'size']
+    return ['column', 'title', 'layout', 'bordered', 'colon', 'size', 'items']
+  }
+
+  /** items 数据通道 property 真值（attribute JSON 或 property 赋值最后写入者生效） */
+  private _items: Array<Record<string, unknown>> = []
+  /** property 赋值标志：此后跳过 attribute 重解析（与 table columns 双通道同思路） */
+  private _itemsFromProperty = false
+
+  /** items 数据通道（property 侧）。声明式 <oas-descriptions-item> 子元素始终优先；
+   *  无子元素时按数组渲染（label/content/span 字段，content 为纯文本，富内容走声明式通道） */
+  get items(): Array<Record<string, unknown>> {
+    return this._items.slice()
+  }
+  set items(value: Array<Record<string, unknown>> | string) {
+    if (typeof value === 'string') {
+      this._itemsFromProperty = false
+      this.setAttribute('items', value)
+      return
+    }
+    this._items = Array.isArray(value)
+      ? value.filter((v): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v))
+      : []
+    this._itemsFromProperty = true
+    this.runUpdateAndNotify()
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -66,11 +89,13 @@ export class OASDescriptions extends OASElement {
     return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
-  /** 缓存节点引用（render 与水合路径共用；title 插槽内容增减时重刷标题区显隐） */
+  /** 缓存节点引用（render 与水合路径共用；title/默认插槽内容增减时重刷标题区与 items 通道） */
   private bind(): void {
     this.shadow
       .querySelector<HTMLSlotElement>('slot[name="title"]')
       ?.addEventListener('slotchange', () => this.update())
+    // 默认插槽（声明式 oas-descriptions-item 子元素）增减 → 重判 items 数据通道与声明式通道的优先关系
+    this.shadow.querySelector<HTMLSlotElement>('slot:not([name])')?.addEventListener('slotchange', () => this.update())
   }
 
   protected override render(): void {
@@ -116,6 +141,8 @@ export class OASDescriptions extends OASElement {
     const itemsEl = this.shadow.querySelector<HTMLElement>('[part="items"]')
     if (!itemsEl) return
 
+    this.syncItemsChannel(itemsEl)
+
     // column：未设置属性时不写内联变量——grid 回退默认 3 列且宿主可经
     // CSS 变量（含媒体查询）覆写；设置属性（含空串视为 3）则固定列数
     const column = this.getAttr('column', '3')
@@ -151,6 +178,47 @@ export class OASDescriptions extends OASElement {
     } else {
       this.style.removeProperty('--oas-desc-cell-py')
       this.style.removeProperty('--oas-desc-cell-px')
+    }
+  }
+
+  /**
+   * items 数据驱动通道同步：无声明式子元素时按 items（JSON attribute 或 property）生成
+   * oas-descriptions-item（打 data-generated 标记，直接挂进 .items 网格参与跨列）；
+   * 声明式子元素在场时清空生成项（声明式通道优先）。label/content/span 三字段，
+   * content 为纯文本——富内容请走声明式通道。
+   */
+  private syncItemsChannel(itemsEl: HTMLElement): void {
+    for (const prev of [...itemsEl.querySelectorAll('[data-generated]')]) prev.remove()
+    if (this._itemsFromProperty) {
+      // property 赋值后 attribute 通道不再参与（内存值为权威）
+    } else {
+      const raw = this.getAttr('items', '')
+      if (raw !== '') {
+        try {
+          const parsed: unknown = JSON.parse(raw)
+          this._items = Array.isArray(parsed)
+            ? parsed.filter((v): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v))
+            : []
+        } catch {
+          this._items = [] // 非法 JSON 静默忽略
+        }
+      } else {
+        this._items = []
+      }
+    }
+    // 声明式子元素在场 → 声明式通道优先，不渲染生成项
+    const hasDeclarative = this.querySelectorAll(':scope > oas-descriptions-item').length > 0
+    if (hasDeclarative) return
+    for (const item of this._items) {
+      const node = document.createElement('oas-descriptions-item')
+      node.setAttribute('data-generated', '')
+      const label = item.label
+      if (typeof label === 'string' && label !== '') node.setAttribute('label', label)
+      const span = Number(item.span)
+      if (Number.isFinite(span) && span > 1) node.setAttribute('span', String(Math.floor(span)))
+      node.textContent =
+        typeof item.content === 'string' ? item.content : item.content == null ? '' : String(item.content)
+      itemsEl.appendChild(node)
     }
   }
 }

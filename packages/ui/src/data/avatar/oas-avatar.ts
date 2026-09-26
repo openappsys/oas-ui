@@ -267,7 +267,8 @@ img {
  * 回退链：图片 `error` → 派发 `oas-error`（detail 含失败 URL）→ `fallback` 属性（回退图 URL）
  * 重试一次 → `fallback` 命名插槽 → 内容首字符 → `?`；
  * `failed` / `fallbackTried` 状态保持，仅 `src` 变化时重置重新加载。
- * `slot="icon"` 显式图标层（给出即不截首字）；`fit` 映射 img object-fit（默认 cover）。
+ * `slot="icon"` 显式图标层（给出即不截首字）；`fit` 映射 img object-fit（默认 cover）；
+ * `srcset` 透传内层 img（响应式图源，如 1x/2x 双倍图，空值移除回落单 src）。
  * `slot="trigger"` 换头像入口：hover / focus-visible 显形遮罩（空节点启用默认相机图标），
  * 点击派发 `oas-trigger`（上传宿主自理）。
  *
@@ -278,6 +279,7 @@ export class OASAvatar extends OASElement {
   static override get observedAttributes(): string[] {
     return [
       'src',
+      'srcset',
       'size',
       'alt',
       'badge',
@@ -489,6 +491,10 @@ export class OASAvatar extends OASElement {
       }
       img.setAttribute('src', src)
       img.setAttribute('alt', this.getAttr('alt', this.t('avatar.defaultAlt')))
+      // srcset 透传内层 img（响应式图源，如 1x/2x）；空值移除（回落单 src）
+      const srcset = this.getAttr('srcset', '')
+      if (srcset) img.setAttribute('srcset', srcset)
+      else img.removeAttribute('srcset')
       // fit 映射 object-fit（默认 cover 兼容现状；非法值由 CSS 基类兜底）
       img.style.objectFit = this.getAttr('fit', '') || 'cover'
     }

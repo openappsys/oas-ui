@@ -245,6 +245,17 @@ Stacked drawers get automatic stack management: later openers sit on top (increm
   </oas-drawer>
 </DemoBlock>
 
+## No mask mode (no-mask)
+
+`no-mask` renders no mask layer (the page stays visible and unblocked) while clicking **anywhere outside the drawer** still closes it (reusing the mask click `mask` cancel semantics, emitting `oas-close` / `oas-cancel`). Suited for lightweight scenarios that keep the page visible, such as side tool panels or persistent filter rails; combined with `no-mask-close`, outside clicks no longer close (only ✕ / Esc / buttons remain).
+
+<DemoBlock title="No mask mode">
+  <oas-button type="primary" onclick="document.querySelector('#drawer-nomask-mode').setAttribute('visible','')">Open no-mask drawer</oas-button>
+  <oas-drawer id="drawer-nomask-mode" title="No-mask drawer" no-mask>
+    <p>The page is not dimmed; clicking anywhere outside the drawer closes it (Esc and ✕ still work).</p>
+  </oas-drawer>
+</DemoBlock>
+
 ## Size presets
 
 <DemoBlock title="Size presets">
@@ -398,6 +409,7 @@ onMounted(async () => {
 | `no-focus-trap` | Disable the focus trap (Tab no longer cycles inside the drawer) | `boolean` | — |
 | `no-footer` | Hide footer action buttons | `boolean` | — |
 | `no-header` | Hide the whole header (also removes the aria-labelledby association) | `boolean` | — |
+| `no-mask` | No-mask mode: no mask rendered; clicking outside still closes with mask cancel semantics | `boolean` | — |
 | `no-mask-close` | Disable closing on mask click | `boolean` | — |
 | `no-scroll-lock` | Do not lock body scroll while open | `boolean` | — |
 | `ok-loading` | OK button loading state: spinner + disabled (aria-busy), blocking repeated triggers | `boolean` | — |

@@ -280,6 +280,15 @@ onMounted(() => {
   <oas-tooltip content="赵启铭" placement="top"><oas-avatar size="40" color="geekblue">赵</oas-avatar></oas-tooltip>
 </DemoBlock>
 
+## 响应式图源（srcset）
+
+`srcset` 透传内层 `img`，按设备像素比等条件挑选图源（如 1x/2x 双倍图，高分屏自动取高清版）；空值移除，回落单 `src`。
+
+<DemoBlock title="srcset 双倍图源">
+  <oas-avatar size="40" src="https://picsum.photos/seed/isui-avatar-ss1/80" srcset="https://picsum.photos/seed/isui-avatar-ss1/80 1x, https://picsum.photos/seed/isui-avatar-ss1/160 2x" alt="响应式头像"></oas-avatar>
+  <oas-avatar size="40" src="https://picsum.photos/seed/isui-avatar-ss2/80" srcset="https://picsum.photos/seed/isui-avatar-ss2/80 1x, https://picsum.photos/seed/isui-avatar-ss2/160 2x" alt="响应式头像"></oas-avatar>
+</DemoBlock>
+
 ## API
 
 ### oas-avatar
@@ -299,6 +308,7 @@ onMounted(() => {
 | `shape` | 形状：`circle`（默认圆形）/ `square`（直角）/ `round`（圆角） | — | — |
 | `size` | 尺寸：数字 px 或枚举别名 `small`(24) / `medium`(32) / `large`(40) | `string` | `32` |
 | `src` | 图片地址，存在时渲染图片头像 | `string` | — |
+| `srcset` | 响应式图源描述符透传内层 img（空值移除回落单 src） | `string` | — |
 | `text` | 文字内容：单字渲染首字符；多字渲染全量并自动收缩字号适配容器 | `string` | — |
 
 #### 事件

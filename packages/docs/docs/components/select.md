@@ -122,6 +122,37 @@
 
 默认按 `label` 包含匹配；设置 `el.filterMethod = (query, option) => boolean`（JS property 通道，attribute 传不了函数）可接管本地过滤，`query` 为原始输入、`option` 为完整选项对象。本例（见本页底部脚本）同时匹配 `value` 与 `label`（拼音首字母等自定义规则同理）；`remote` 模式下数据面过滤由宿主负责，`filterMethod` 不生效。
 
+## 搜索输入受控（input-value）
+
+<DemoBlock title="input-value（受控搜索词）">
+  <oas-select id="select-input-value" searchable placeholder="输入关键词，属性实时回显" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-select>
+  <span id="select-input-value-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+`input-value` 让搜索词可控：属性在场即搜索框的真相源（预设/外部更新会同步进搜索框并重过滤）；用户输入写回属性并派发 `oas-input-value-change`（`detail: { value }`），宿主可监听事件也可直接读属性。
+
+## 保留搜索词（reserve-keyword）
+
+<DemoBlock title="reserve-keyword（选中后保留搜索词）">
+  <oas-space size="small">
+    <oas-select multiple searchable placeholder="默认：选中后清空搜索词" options='[{"label":"苹果","value":"apple"},{"label":"苹果汁","value":"juice"},{"label":"香蕉","value":"banana"}]'></oas-select>
+    <oas-select multiple searchable reserve-keyword placeholder="reserve-keyword：保留搜索词" options='[{"label":"苹果","value":"apple"},{"label":"苹果汁","value":"juice"},{"label":"香蕉","value":"banana"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+多选 + 可搜索时，选中一项后默认清空搜索词（列表恢复全量，方便连续挑选不同项）；设置 `reserve-keyword` 后保留搜索词，适合在同类结果里连续多选。
+
+## 高亮首项（default-active-first-option）
+
+<DemoBlock title="default-active-first-option（展开高亮第一项）">
+  <oas-space size="small">
+    <oas-select value="orange" placeholder="缺省：高亮当前选中项" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-select>
+    <oas-select value="orange" default-active-first-option placeholder="设置后：高亮第一项" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+设置后展开下拉高亮第一个可见项（回车即选首项），缺省高亮当前选中项。
+
 ## 分组
 
 <DemoBlock title="分组（group）">
@@ -143,6 +174,24 @@
 
 有选中值时显示清空按钮，点击清空值并派发 `oas-clear` 与 `oas-change`。
 
+## 触发器前后缀与自定义图标
+
+<DemoBlock title="prefix / suffix / suffix-icon / clear-icon 插槽与 show-arrow">
+  <oas-space size="small" direction="vertical">
+    <oas-select id="select-affix-demo" placeholder="前缀图标 + 后缀文本" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'>
+      <template slot="prefix"><span style="display:inline-flex">📍</span></template>
+      <template slot="suffix"><span style="display:inline-flex">城市</span></template>
+    </oas-select>
+    <oas-select id="select-icons-demo" clearable value="apple" placeholder="自定义下拉箭头与清空图标" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'>
+      <template slot="suffix-icon"><span style="display:inline-flex">⌄</span></template>
+      <template slot="clear-icon"><span style="display:inline-flex">✕</span></template>
+    </oas-select>
+    <oas-select id="select-no-arrow" show-arrow="false" placeholder="隐藏下拉箭头（show-arrow）" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+`template[slot="prefix"]` / `template[slot="suffix"]` 渲染进触发器前后缀（图标、单位文本等）；`template[slot="suffix-icon"]` 替换默认下拉箭头（展开时随容器旋转）；`template[slot="clear-icon"]` 替换清空按钮默认 × 图标。`show-arrow="false"` 隐藏默认箭头（无箭头的搜索触发等场景）。
+
 ## 远程搜索
 
 <DemoBlock title="远程搜索（remote + loading）">
@@ -155,6 +204,14 @@
 <DemoBlock title="远程加载占位">
   <oas-select remote searchable loading placeholder="loading 占位演示" options='[]'></oas-select>
 </DemoBlock>
+
+## 加载文案（loading-text）
+
+<DemoBlock title="loading-text（自定义加载文案）">
+  <oas-select remote searchable loading loading-text="数据加载中，请稍候…" placeholder="加载占位自定义文案" options='[]'></oas-select>
+</DemoBlock>
+
+`loading-text` 覆盖加载占位的默认文案（缺省走 locale 内置文案），与 `remote` / `loading` 搭配使用。
 
 ## 远程搜索防抖
 
@@ -173,6 +230,17 @@
 
 多选标签默认换行展示、不折叠；仅显式设置 `max-tag-count` 时按数量折叠为 `+N`（悬浮显示剩余项）。
 
+## 提示文案与自适应宽度
+
+<DemoBlock title="hint 提示 / auto-width 自适应宽度">
+  <oas-space size="small" direction="vertical">
+    <oas-select hint="选择你的常驻城市，可随时修改" placeholder="触发器下方提示文案（hint）" options='[{"label":"北京","value":"bj"},{"label":"上海","value":"sh"}]'></oas-select>
+    <oas-select auto-width value="banana" placeholder="auto-width" options='[{"label":"苹果","value":"apple"},{"label":"香蕉 Banana","value":"banana"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+`hint` 在触发器下方渲染一行提示文案（`aria-describedby` 关联，读屏可达）；`auto-width` 让触发器宽度随选中项/内容自适应收缩（缺省固定 `220px`）。
+
 ## 多选上限
 
 <DemoBlock title="多选上限（max-count）">
@@ -187,10 +255,11 @@
 ## 允许创建
 
 <DemoBlock title="允许创建（allow-create）">
-  <oas-select allow-create searchable placeholder="输入不存在的选项创建" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-select>
+  <oas-select id="select-create" allow-create searchable placeholder="输入不存在的选项创建" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-select>
+  <span id="select-create-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
-搜索无匹配时显示「创建 xxx」项，点击或回车后以输入值创建新选项并纳入选中。
+搜索无匹配时显示「创建 xxx」项，点击或回车后以输入值创建新选项并纳入选中，创建时派发 `oas-create`（`detail: { value, label }` 为创建文本）。
 
 ## 自定义选项渲染
 
@@ -282,6 +351,17 @@
 </DemoBlock>
 
 设置 `open` 属性即受控展开（属性在场=展开、移除=收起，property 通道 `el.open = true` 同样可达）；用户手势（点击/Esc/点外部/选中收起）派发 `oas-open-change`（`detail: { open }`）但不强制写回——由宿主决定是否增删属性（对齐受控组件惯例）。本例：① 选完自动展开 ②，② 的关闭事件由宿主仲裁移除属性。
+
+## 自动聚焦与 Tab 序
+
+<DemoBlock title="autofocus / tabindex">
+  <oas-space size="small" direction="vertical">
+    <oas-select autofocus placeholder="挂载后自动聚焦（autofocus）" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-select>
+    <oas-select id="select-tabindex" tabindex="2" placeholder="tabindex=2 透传触发器" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-select>
+  </oas-space>
+</DemoBlock>
+
+`autofocus` 挂载后自动聚焦触发器（原生 autofocus 不穿透 Shadow DOM，组件转接）；`tabindex` 透传到内部触发器控制 Tab 序（宿主属性写完即转移，避免宿主与触发器双 Tab 停靠点）。
 
 ## 展开方向
 
@@ -532,6 +612,20 @@ onMounted(() => {
     focusLog.textContent = 'oas-blur'
   })
 
+  // input-value 受控 demo：属性写回 + 事件回显
+  const ivEl = document.getElementById('select-input-value')
+  const ivOut = document.getElementById('select-input-value-output')
+  ivEl?.addEventListener('oas-input-value-change', (e) => {
+    ivOut.textContent = `input-value: ${JSON.stringify(e.detail.value)}`
+  })
+
+  // oas-create demo：创建反馈
+  const createEl = document.getElementById('select-create')
+  const createOut = document.getElementById('select-create-output')
+  createEl?.addEventListener('oas-create', (e) => {
+    createOut.textContent = `oas-create: ${e.detail.label}`
+  })
+
   // label（可访问名称）demo：读取触发器 aria-label（设置 label 与回退 placeholder 对照）
   const readSelectLabel = () => {
     const a = document.getElementById('select-label-set')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
@@ -564,12 +658,18 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `allow-create` | 无匹配时允许以输入值创建新选项 | `boolean` | — |
+| `auto-width` | 触发器宽度随选中项收缩 | — | — |
+| `autofocus` | 挂载后自动聚焦触发器 | `boolean` | — |
 | `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | `boolean` | — |
 | `debounce` | 远程搜索输入防抖毫秒（默认 0 立即；仅 remote 模式 oas-input 防抖，本地过滤始终即时） | — | — |
+| `default-active-first-option` | 展开时高亮首个可见项（缺省高亮当前选中项） | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
+| `hint` | 触发器下方提示文案（aria-describedby 关联） | `string` | — |
+| `input-value` | 搜索词受控源：输入写回属性并派发 oas-input-value-change，外部更新同步进搜索框 | `string` | — |
 | `item-height` | 虚拟滚动时每项固定高度（px） | `string` | `36` |
 | `label` | 触发器可访问名称（aria-label），优先于 placeholder 回退 | `string` | — |
 | `loading` | 远程加载占位（与 `remote` 搭配使用） | `boolean` | — |
+| `loading-text` | 自定义加载占位文案（缺省 locale） | `string` | — |
 | `max-count` | 多选上限：达上限未选项禁用置灰并派 oas-exceed-limit，已选项仍可取消；单选行为不变 | — | — |
 | `max-tag-count` | 多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠） | `boolean` | — |
 | `multiple` | 多选 | `boolean` | — |
@@ -581,9 +681,12 @@ onMounted(() => {
 | `readonly` | 只读：可聚焦可复制、不弹层、值不可改（隐藏清空与移除按钮） | `boolean` | — |
 | `remote` | 远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求 | `boolean` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
+| `reserve-keyword` | searchable 选中后保留搜索词（缺省清空，对齐 tree-select） | `boolean` | — |
 | `searchable` | 可搜索（打开下拉后输入过滤） | `boolean` | — |
+| `show-arrow` | 显式 `"false"` 隐藏默认下拉箭头 | `string` | `true` |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large`：控高/字号/标签高联动 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`；error 联动宿主 aria-invalid | `string` | — |
+| `tabindex` | 透传内部触发器控制 Tab 序（宿主属性委托后移除，防双停靠点） | — | — |
 | `value` | 当前值（多选为 JSON 数组） | — | — |
 | `variant` | 形态变体：`outlined`（默认）/ `filled` / `borderless`，非法值静默回落；status 语义色优先 | `string` | — |
 | `virtual` | 大数据量虚拟滚动：只渲染可视窗口，滚动流畅（复用 oas-virtual-list）；带 `group` 的选项自动回退全量渲染 | `boolean` | — |
@@ -595,9 +698,11 @@ onMounted(() => {
 | `oas-blur` | 组件失去焦点时派发 |
 | `oas-change` | 选择/清空变化，`detail: { value }` |
 | `oas-clear` | 点击清空按钮，`detail: { value }`（清空前的值） |
+| `oas-create` | allow-create 创建新选项时派发，`detail: { value, label }` |
 | `oas-exceed-limit` | 达 max-count 上限后的越界选择尝试（点击/键盘/创建三路），`detail: { value, max }` |
 | `oas-focus` | 组件获得焦点时派发（trigger↔搜索框内部转移不误报） |
 | `oas-input` | `remote` 模式输入，`detail: { value }`（供宿主请求） |
+| `oas-input-value-change` | 搜索词变化时派发，`detail: { value }` |
 | `oas-open-change` | 展开状态翻转，`detail: { open }` |
 | `oas-option-render` | 每个渲染的选项行派发，`detail: { index, option, element }`（element 为选项 label 容器，宿主可改写为图标/富文本） |
 | `oas-tag-render` | 多选标签渲染时派发，`detail: { value, label, element }`（element 为标签文本容器，宿主可改写） |
@@ -606,8 +711,14 @@ onMounted(() => {
 
 | 名称 | 说明 |
 | --- | --- |
+| `clear-icon` | 自定义清除按钮图标 |
+| `prefix` | 触发器前缀内容 |
+| `suffix` | 触发器后缀内容 |
+| `suffix-icon` | 自定义触发器后缀图标（替换默认箭头） |
+| `template[slot="clear-icon"]` | — |
 | `template[slot="empty"]` | 自定义空态（覆盖「暂无数据」与「无匹配选项」默认文案） |
 | `template[slot="option"]` | 选项行静态模板，克隆到每个选项 label 容器；`[data-option-label]` 节点自动绑定选项 label |
+| `template[slot="suffix-icon"]` | — |
 | `template[slot="tag"]` | 多选标签静态模板，克隆到每个 chip 的文本容器；`[data-tag-label]` 节点自动绑定标签 label |
 
 #### CSS 变量

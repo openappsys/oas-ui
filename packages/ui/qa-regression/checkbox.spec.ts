@@ -186,3 +186,21 @@ test('checkbox-group max 达上限：未选项拦截 + oas-exceed-limit + demo �
   expect(r.bChecked, '达上限后已选项仍可取消').toBe(false)
   expect(r.groupValue).toEqual(['a'])
 })
+
+// ---- P2 批次：tabindex 透传内层 input ----
+
+test('checkbox tabindex="-1"：内层 input tabIndex 为 -1，其余项保持默认 0', async ({ page }) => {
+  await page.goto('/components/checkbox.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-checkbox[tabindex]')
+  const r = await page.evaluate(() => {
+    const items = [...document.querySelectorAll('oas-checkbox[name="tab-a"], oas-checkbox[name="tab-b"]')]
+    const get = (name: string) => {
+      const el = document.querySelector(`oas-checkbox[name="${name}"]`)!
+      return (el.shadowRoot!.querySelector('input') as HTMLInputElement).tabIndex
+    }
+    void items
+    return { a: get('tab-a'), b: get('tab-b') }
+  })
+  expect(r.b, 'tabindex=-1 透传内层').toBe(-1)
+  expect(r.a, '未设置 tabindex 的项保持默认 0').toBe(0)
+})

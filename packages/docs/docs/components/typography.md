@@ -117,6 +117,18 @@
   </oas-text>
 </DemoBlock>
 
+## 字号档位（size）
+
+`size` 提供三档字号：`small`（小字辅助）/ `medium`（基准，缺省回落继承字号）/ `large`（大字强调），映射 `--oas-font-size-*` token；`sm`/`lg` 别名等价，非法值回落 `medium`。仅 `oas-text` 开放（标题字号由 `level` 驱动，避免双轨打架）。
+
+<DemoBlock title="size 字号档">
+  <div style="display: flex; flex-direction: column; align-items: flex-start; gap: var(--oas-space-2)">
+    <oas-text size="small">small 小字辅助</oas-text>
+    <oas-text>medium 基准（缺省继承）</oas-text>
+    <oas-text size="large">large 大字强调</oas-text>
+  </div>
+</DemoBlock>
+
 ## Title 标题
 
 <DemoBlock title="标题级别">
@@ -166,6 +178,7 @@
 | `line-clamp` | 多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合 | `string` | — |
 | `mark` | 高亮标记（浅黄底，`<mark>` 语义） | — | — |
 | `numeric` | 数字等宽（font-variant-numeric: tabular-nums），表格/统计数字列对齐 | — | — |
+| `size` | 三档字号映射 font-size token（medium 缺省回落继承字号） | `string` | — |
 | `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
 | `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |

@@ -40,7 +40,10 @@ async function waitReady() {
 let code = 1
 try {
   await waitReady()
-  const audit = spawn(process.execPath, ['scripts/e2e/rtl-audit.mjs', base, ...process.argv.slice(2)], {
+  const interactive = process.argv.includes('--interactive')
+  const script = interactive ? 'scripts/e2e/rtl-audit-interactive.mjs' : 'scripts/e2e/rtl-audit.mjs'
+  const rest = process.argv.slice(2).filter((a) => a !== '--interactive')
+  const audit = spawn(process.execPath, [script, base, ...rest], {
     stdio: 'inherit',
   })
   code = await new Promise((res) => audit.on('exit', (c) => res(c ?? 1)))

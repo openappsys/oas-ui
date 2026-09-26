@@ -212,3 +212,154 @@ describe('OASFormItem RTL 逻辑方向化', () => {
     expect(css).toContain(":host([data-rtl][data-form-label-align='right']) .label")
   })
 })
+
+describe('OASFormItem help 帮助文案', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('help 属性渲染帮助文本（control 内、error 之前）', () => {
+    const el = new OASFormItem()
+    el.setAttribute('label', '密码')
+    el.setAttribute('help', '至少 8 位字符')
+    document.body.appendChild(el)
+    const help = el.shadowRoot!.querySelector('[part="help"]')!
+    expect(help.hasAttribute('hidden')).toBe(false)
+    expect(help.textContent).toBe('至少 8 位字符')
+    const control = el.shadowRoot!.querySelector('[part="control"]')!
+    const err = el.shadowRoot!.querySelector('[part="error"]')!
+    expect(control.contains(help)).toBe(true)
+    expect(control.contains(err)).toBe(true)
+    const children = [...control.children]
+    expect(children.indexOf(help!), 'help 应在 error 之前').toBeLessThan(children.indexOf(err!))
+  })
+
+  it('help 缺省时帮助位隐藏', () => {
+    const el = new OASFormItem()
+    el.setAttribute('label', '密码')
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector('[part="help"]')!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('help 与校验错误并存（独立通道，互不覆盖）', () => {
+    const el = new OASFormItem()
+    el.setAttribute('label', '密码')
+    el.setAttribute('help', '至少 8 位字符')
+    document.body.appendChild(el)
+    el.setError('密码太短')
+    const help = el.shadowRoot!.querySelector('[part="help"]')!
+    const err = el.shadowRoot!.querySelector('[part="error"]')!
+    expect(help.hasAttribute('hidden')).toBe(false)
+    expect(err.hasAttribute('hidden')).toBe(false)
+    el.setError(null)
+    expect(help.hasAttribute('hidden')).toBe(false)
+    expect(err.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('help 运行时切换：设置即显示，清空即隐藏', () => {
+    const el = new OASFormItem()
+    el.setAttribute('label', '密码')
+    document.body.appendChild(el)
+    el.setAttribute('help', '提示 A')
+    const help = el.shadowRoot!.querySelector('[part="help"]')!
+    expect(help.textContent).toBe('提示 A')
+    el.setAttribute('help', '')
+    expect(help.hasAttribute('hidden')).toBe(true)
+  })
+})
+
+describe('OASFormItem status-icon 校验状态图标', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('status-icon + setError(错误)：图标显示且 aria-hidden（文本已播报）', () => {
+    const el = new OASFormItem()
+    el.setAttribute('label', '用户名')
+    el.setAttribute('status-icon', '')
+    document.body.appendChild(el)
+    el.setError('用户名已存在')
+    const icon = el.shadowRoot!.querySelector('[part="status-icon"]')!
+    expect(icon.hasAttribute('hidden')).toBe(false)
+    expect(icon.getAttribute('aria-hidden')).toBe('true')
+    expect(icon.querySelector('svg'), '图标内联 svg 渲染').not.toBeNull()
+  })
+
+  it('setError(null)：图标随错误位一起隐藏', () => {
+    const el = new OASFormItem()
+    el.setAttribute('label', '用户名')
+    el.setAttribute('status-icon', '')
+    document.body.appendChild(el)
+    el.setError('错误')
+    el.setError(null)
+    expect(el.shadowRoot!.querySelector('[part="status-icon"]')!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('未设置 status-icon：错误时不渲染图标（默认关闭）', () => {
+    const el = new OASFormItem()
+    el.setAttribute('label', '用户名')
+    document.body.appendChild(el)
+    el.setError('错误')
+    expect(el.shadowRoot!.querySelector('[part="status-icon"]')!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('status-icon 运行时开启：已有错误在场时立即显示图标', () => {
+    const el = new OASFormItem()
+    el.setAttribute('label', '用户名')
+    document.body.appendChild(el)
+    el.setError('错误')
+    expect(el.shadowRoot!.querySelector('[part="status-icon"]')!.hasAttribute('hidden')).toBe(true)
+    el.setAttribute('status-icon', '')
+    expect(el.shadowRoot!.querySelector('[part="status-icon"]')!.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('form 校验链路联动：提交失败后 form-item 内图标可见，修正后隐藏', () => {
+    const form = new OASForm()
+    form.setAttribute('rules', JSON.stringify({ name: [{ required: true, message: '必填' }] }))
+    const item = new OASFormItem()
+    item.setAttribute('label', '姓名')
+    item.setAttribute('status-icon', '')
+    item.innerHTML = '<oas-input name="name"></oas-input>'
+    form.appendChild(item)
+    document.body.appendChild(form)
+    form.submit()
+    expect(item.shadowRoot!.querySelector('[part="status-icon"]')!.hasAttribute('hidden')).toBe(false)
+    item.querySelector('oas-input')!.setAttribute('value', '张三')
+    form.submit()
+    expect(item.shadowRoot!.querySelector('[part="status-icon"]')!.hasAttribute('hidden')).toBe(true)
+  })
+})
+
+describe('OASFormItem colon 感知（form 级开关）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('form colon 在场 → data-colon 镜像；label 行存在时 CSS ::after 生效', () => {
+    const form = new OASForm()
+    form.setAttribute('colon', '')
+    const item = new OASFormItem()
+    item.setAttribute('label', '姓名')
+    form.appendChild(item)
+    document.body.appendChild(form)
+    expect(item.hasAttribute('data-colon')).toBe(true)
+  })
+
+  it('form colon 缺省 → 无 data-colon', () => {
+    const form = new OASForm()
+    const item = new OASFormItem()
+    item.setAttribute('label', '姓名')
+    form.appendChild(item)
+    document.body.appendChild(form)
+    expect(item.hasAttribute('data-colon')).toBe(false)
+  })
+})

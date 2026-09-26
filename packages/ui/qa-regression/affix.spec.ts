@@ -59,3 +59,50 @@ test('affix 吸附-解除-占位：top 滚过吸附线吸附、回滚解除、fi
   expect(released.wrapTop).toBe('')
   expect(released.phHeight).toBe('')
 })
+
+// ===== 能力缺口 P2：z-index 吸附层级覆盖 =====
+
+test('affix z-index（P2）：吸附后内联覆盖层级、解除吸附/缺省回退 token 缺省（无内联）', async ({ page }) => {
+  await page.goto('/components/affix.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-affix') !== undefined)
+  // 构造独立场景：带 z-index=2000 的实例
+  await page.evaluate(() => {
+    document.body.innerHTML = ''
+    document.documentElement.style.height = '3000px'
+    const host = document.createElement('oas-affix')
+    host.setAttribute('offset', '100')
+    host.setAttribute('z-index', '2000')
+    host.innerHTML = '<div style="height:40px">stick</div>'
+    host.style.marginTop = '300px'
+    document.body.appendChild(host)
+  })
+  await page.waitForFunction(() => !!document.querySelector('oas-affix')!.shadowRoot!.querySelector('.wrap'))
+  // 吸附后 wrap 内联 z-index = 2000
+  await page.evaluate(() => window.scrollTo(0, 500))
+  await page.waitForFunction(() =>
+    document.querySelector('oas-affix')!.shadowRoot!.querySelector<HTMLElement>('.wrap')!.classList.contains('fixed'),
+  )
+  const stuck = await page.evaluate(() => {
+    const el = document.querySelector('oas-affix')!
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.wrap')!
+    return { attrSurvived: el.getAttribute('z-index'), fixed: wrap.classList.contains('fixed'), z: wrap.style.zIndex }
+  })
+  expect(stuck.attrSurvived, 'z-index 属性丢失').toBe('2000')
+  expect(stuck.fixed).toBe(true)
+  expect(stuck.z, '吸附后 wrap 未内联写入 z-index=2000').toBe('2000')
+  // 解除吸附：z-index 内联保留与否不影响布局（fixed 移除后 z-index 无效），
+  // 关键契约是「移除属性 → 内联清除回 token 缺省」
+  await page.evaluate(() => document.querySelector('oas-affix')!.removeAttribute('z-index'))
+  await page.waitForFunction(
+    () => document.querySelector('oas-affix')!.shadowRoot!.querySelector<HTMLElement>('.wrap')!.style.zIndex === '',
+  )
+  const cleared = await page.evaluate(() => {
+    const el = document.querySelector('oas-affix')!
+    return {
+      attrGone: el.hasAttribute('z-index'),
+      z: el.shadowRoot!.querySelector<HTMLElement>('.wrap')!.style.zIndex,
+    }
+  })
+  expect(cleared.attrGone).toBe(false)
+  expect(cleared.z, '移除 z-index 后未回退 token 缺省（内联残留）').toBe('')
+})

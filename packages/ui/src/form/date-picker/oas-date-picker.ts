@@ -649,6 +649,35 @@ const STYLE = `
 .panel.shortcuts-left .panel-body {
   flex: 1;
 }
+/* ---- prefix-icon / suffix-icon 插槽（触发器内绝对定位；装饰位 pointer-events:none，
+     点击穿透到 trigger 开面板）；定位一律逻辑属性（RTL 镜像自动跟随） ---- */
+.affix-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--oas-color-text-secondary);
+  pointer-events: none;
+  z-index: 1;
+}
+.affix-icon.prefix-icon {
+  inset-inline-start: var(--oas-space-3);
+}
+.affix-icon.suffix-icon {
+  inset-inline-end: var(--oas-space-8, 40px);
+}
+.affix-icon[hidden] {
+  display: none;
+}
+/* 分发图标后 trigger 文本让位（源序置于 size 档规则之后，同特异性下后者生效） */
+.picker .trigger.has-prefix {
+  padding-inline-start: var(--oas-space-8, 40px);
+}
+.picker .trigger.has-suffix {
+  padding-inline-end: calc(var(--oas-space-8, 40px) + var(--oas-space-4));
+}
 `
 
 interface RangeState {
@@ -679,6 +708,8 @@ export class OASDatePicker extends OASFormElement {
       'placement',
       'disabled-skip',
       'clearable',
+      'separator',
+      'default-time',
       'size',
       'status',
       'readonly',
@@ -799,6 +830,7 @@ export class OASDatePicker extends OASFormElement {
     return `
       <style>${STYLE}</style>
       <div class="picker" part="picker">
+        <span class="affix-icon prefix-icon" part="prefix-icon" hidden><slot name="prefix-icon"></slot></span>
         <input class="trigger" part="trigger" type="text" role="combobox"
           aria-haspopup="dialog" aria-expanded="false" autocomplete="off" spellcheck="false" />
         <button class="clear-btn" part="clear" type="button" tabindex="-1" hidden aria-label="">
@@ -809,6 +841,7 @@ export class OASDatePicker extends OASFormElement {
         <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
           <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
+        <span class="affix-icon suffix-icon" part="suffix-icon" hidden><slot name="suffix-icon"></slot></span>
         <oas-bottom-sheet part="sheet" passive>
           <div class="dropdown" part="dropdown">
             <div class="panel" part="panel"></div>
@@ -843,6 +876,12 @@ export class OASDatePicker extends OASFormElement {
     // 面板内点击永不触发「外部点击关闭」：面板交互会重渲 DOM，
     // happy-dom 中已分离节点 composedPath 不完整，需显式阻断冒泡
     this.dropdown?.addEventListener('click', (e) => e.stopPropagation())
+    // prefix-icon / suffix-icon 插槽：分发内容增删时同步 affix 显隐与 trigger 让位
+    for (const name of ['prefix-icon', 'suffix-icon'] as const) {
+      this.shadow
+        .querySelector<HTMLSlotElement>(`slot[name="${name}"]`)
+        ?.addEventListener('slotchange', () => this.syncAffixes())
+    }
     this.dropdown?.addEventListener('keydown', (e) => {
       if ((e as KeyboardEvent).key === 'Escape') {
         e.preventDefault()
@@ -900,6 +939,7 @@ export class OASDatePicker extends OASFormElement {
     this.syncMobileMode()
     this.syncSizeStatus()
     this.syncTrigger()
+    this.syncAffixes()
     // 初始 open 属性（upgrade 前的属性通知被基类吞掉）：挂载即展开，不抢焦点
     if (this.hasAttribute('open') && !this.openState) this.bootPanel(false)
     if (this.openState) this.renderPanel(false)
@@ -953,8 +993,16 @@ export class OASDatePicker extends OASFormElement {
       // 每次展开重置第二栏为第一栏的下一单元（unlink 模式下后续导航再独立）
       this.viewDate2 = this.nextUnit(this.viewDate)
       if (t === 'datetimerange') {
-        this.time = this.timeOf(r.start)
-        this.time2 = this.timeOf(r.end)
+        // 值端点已带时刻 → 面板跟随；缺时间部分/空值 → 补 default-time（缺省惯例 00:00:00/23:59:59）。
+        // 注意 parseRange 对端点做 startOfDay 归一，此处须用 parseISODate 直读端点时刻
+        const [dStart, dEnd] = this.defaultTimeRange()
+        const endpoints = this.rawRangeEndpoints()
+        const hasTime = (s: string | undefined): boolean => !!s && /[T ]\d{1,2}:\d{2}/.test(s)
+        const endpointOf = (idx: 0 | 1): Date | null => parseISODate(endpoints?.[idx] ?? '')
+        const startD = endpointOf(0)
+        const endD = endpointOf(1)
+        this.time = hasTime(endpoints?.[0]) && startD ? this.timeOf(startD) : dStart
+        this.time2 = hasTime(endpoints?.[1]) && endD ? this.timeOf(endD) : dEnd
       }
     } else {
       this.viewDate = this.monthAnchor(sel ?? def ?? today)
@@ -1029,6 +1077,54 @@ export class OASDatePicker extends OASFormElement {
 
   private timeOf(d: Date | null): TimeParts {
     return d ? { h: d.getHours(), m: d.getMinutes(), s: d.getSeconds() } : { h: 0, m: 0, s: 0 }
+  }
+
+  /**
+   * default-time 解析（datetimerange 范围起止默认时刻）：单个 "HH:mm[:ss]" 起止同值；
+   * JSON 数组 `["HH:mm[:ss]","HH:mm[:ss]"]` 分设起止。非法/缺省回落内置惯例
+   * `00:00:00` / `23:59:59`（整天区间惯例，与快捷预设一致）。
+   */
+  private defaultTimeRange(): [TimeParts, TimeParts] {
+    const fallback: [TimeParts, TimeParts] = [
+      { h: 0, m: 0, s: 0 },
+      { h: 23, m: 59, s: 59 },
+    ]
+    const raw = this.getAttr('default-time', '').trim()
+    if (!raw) return fallback
+    const one = (s: string): TimeParts | null => {
+      const m = /^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/.exec(s.trim())
+      if (!m) return null
+      const p = { h: Number(m[1]), m: Number(m[2]), s: Number(m[3] ?? 0) }
+      return p.h > 23 || p.m > 59 || p.s > 59 ? null : p
+    }
+    if (!raw.startsWith('[')) {
+      const p = one(raw)
+      return p ? [p, { ...p }] : fallback
+    }
+    try {
+      const arr = JSON.parse(raw) as unknown
+      if (Array.isArray(arr) && arr.length === 2) {
+        const s = one(String(arr[0] ?? ''))
+        const e = one(String(arr[1] ?? ''))
+        if (s && e) return [s, e]
+      }
+    } catch {
+      /* 非法 JSON 走惯例回落 */
+    }
+    return fallback
+  }
+
+  /** 范围端点原串（value JSON 数组两端）；空值/非数组返回 null（default-time 补齐判定用） */
+  private rawRangeEndpoints(): [string, string] | null {
+    const raw = this.getAttr('value', '')
+    if (!raw) return null
+    try {
+      const arr = JSON.parse(raw) as unknown
+      if (Array.isArray(arr) && arr.length === 2) return [String(arr[0] ?? ''), String(arr[1] ?? '')]
+    } catch {
+      /* 非法 JSON */
+    }
+    return null
   }
 
   private partsToString(p: TimeParts): string {
@@ -1199,6 +1295,16 @@ export class OASDatePicker extends OASFormElement {
 
   // ---- 触发器（输入框化 + 手输通道） ----
 
+  /** 清除钮可见性：clearable 在场 + 非 disabled/readonly + 有值（affix 同步与 syncTrigger 共用单一事实源） */
+  private clearButtonVisible(): boolean {
+    return (
+      this.hasAttr('clearable') &&
+      !this.injectDisabled() &&
+      !this.hasAttr('readonly') &&
+      this.getAttr('value', '') !== ''
+    )
+  }
+
   private syncTrigger(): void {
     const i = this.triggerEl
     if (!i) return
@@ -1213,8 +1319,28 @@ export class OASDatePicker extends OASFormElement {
     const clearBtn = this.shadow.querySelector<HTMLElement>('[part="clear"]')
     if (clearBtn) {
       clearBtn.setAttribute('aria-label', this.t('input.clear'))
-      clearBtn.hidden = !(this.hasAttr('clearable') && !disabled && !readonly && this.getAttr('value', '') !== '')
+      clearBtn.hidden = !this.clearButtonVisible()
     }
+  }
+
+  /**
+   * prefix-icon / suffix-icon 插槽同步：分发内容时显示 affix 并给 trigger 文本让位；
+   * clearable 清除钮可见时后缀图标让位隐藏（同一端位区，动作钮优先），清空后恢复。
+   */
+  private syncAffixes(): void {
+    const slotOf = (name: 'prefix-icon' | 'suffix-icon'): HTMLSlotElement | null =>
+      this.shadow.querySelector<HTMLSlotElement>(`slot[name="${name}"]`)
+    const assigned = (slot: HTMLSlotElement | null): boolean =>
+      !!slot &&
+      slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    const hasPrefix = assigned(slotOf('prefix-icon'))
+    const hasSuffix = assigned(slotOf('suffix-icon'))
+    const prefix = this.shadow.querySelector<HTMLElement>('.prefix-icon')
+    const suffix = this.shadow.querySelector<HTMLElement>('.suffix-icon')
+    if (prefix) prefix.hidden = !hasPrefix
+    if (suffix) suffix.hidden = !hasSuffix || this.clearButtonVisible()
+    this.triggerEl?.classList.toggle('has-prefix', hasPrefix)
+    this.triggerEl?.classList.toggle('has-suffix', hasSuffix)
   }
 
   /** trigger 显示文本（空值为空串，占位交给 placeholder） */
@@ -1224,7 +1350,8 @@ export class OASDatePicker extends OASFormElement {
     if (this.isRangeType()) {
       const r = this.parseRange()
       if (!r.start || !r.end) return ''
-      return `${this.formatAnchor(r.start)} ~ ${this.formatAnchor(r.end)}`
+      const sep = this.getAttr('separator', '') || ' ~ '
+      return `${this.formatAnchor(r.start)}${sep}${this.formatAnchor(r.end)}`
     }
     if (this.isMultiple()) {
       const dates = this.selectedAnchorArray()
@@ -2130,8 +2257,10 @@ export class OASDatePicker extends OASFormElement {
       this.range = { start: r.start, end: r.end }
       let value: string | [string, string]
       if (t === 'datetimerange') {
-        const s = `${toISODate(r.start)}T00:00:00`
-        const e = `${toISODate(r.end)}T23:59:59`
+        // 快捷预设不携带时刻：按 default-time 补齐（未设置时为内置惯例 00:00:00 / 23:59:59）
+        const [dStart, dEnd] = this.defaultTimeRange()
+        const s = `${toISODate(r.start)}T${this.partsToString(dStart)}`
+        const e = `${toISODate(r.end)}T${this.partsToString(dEnd)}`
         value = [s, e]
       } else {
         const prevType = this.pickerType

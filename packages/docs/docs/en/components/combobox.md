@@ -228,6 +228,14 @@ onMounted(() => {
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
 
+## autocomplete Passthrough
+
+<DemoBlock title="autocomplete passthrough">
+  <oas-combobox autocomplete="off" placeholder="Browser autofill disabled" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-combobox>
+</DemoBlock>
+
+`autocomplete` passes through to the inner native input (defaults to `off`: combobox draws its own dropdown, so browser autofill is disabled by default). Inside a native form with a `name`, the browser uses this to decide whether to offer historical entries.
+
 ## API
 
 ### oas-combobox
@@ -236,6 +244,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `autocomplete` | Passed through to the inner native input (falls back to off) | — | — |
 | `clearable` | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | `boolean` | — |
 | `disabled` | Disabled (no input, no dropdown) | `boolean` | — |
 | `filterable` | Filter labels in real time while typing (`filterable="false"` disables local filtering) | `string` | `true` |

@@ -617,3 +617,30 @@ test('slider 纵向拇指 hover 放大：桌面生效、readonly 不放大、触
     await ctx.close()
   }
 })
+
+// ---- P2 批次：label 可访问名 ----
+
+test('slider label：单值 aria-label=label、range 组合语义后缀；demo 按钮回显可见', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[label]')
+  const r = await page.evaluate(() => {
+    const single = document.querySelector('#slider-label-demo')!
+    const range = [...document.querySelectorAll('oas-slider[label]')].at(-1)!
+    return {
+      single: (single.shadowRoot!.querySelector('input') as HTMLInputElement).getAttribute('aria-label'),
+      rangeMin: (range.shadowRoot!.querySelector('[data-role="range-min"]') as HTMLInputElement).getAttribute(
+        'aria-label',
+      ),
+      rangeMax: (range.shadowRoot!.querySelector('[data-role="range-max"]') as HTMLInputElement).getAttribute(
+        'aria-label',
+      ),
+    }
+  })
+  expect(r.single).toBe('音量')
+  expect(r.rangeMin).toBe('范围 最小值')
+  expect(r.rangeMax).toBe('范围 最大值')
+  // demo 可见反馈：点「查看 aria-label」按钮回显
+  await page.locator('oas-button', { hasText: '查看 aria-label' }).click()
+  const out = await page.evaluate(() => document.getElementById('slider-label-out')?.textContent)
+  expect(out).toContain('aria-label = 音量')
+})

@@ -82,7 +82,9 @@ test('card selectable：点击切换选中 + aria-checked/角标同步 + 内部�
 
   // Vue 下 selectable/selected 属性存活 + checkbox 语义 + 角标初始隐藏
   const r = await page.evaluate(() => {
-    const multi = [...document.querySelectorAll<HTMLElement>('oas-card[selectable]')].filter(
+    // 只统计多选卡 demo 块内的卡（页面上另有 disabled/orientation 等新 demo 的卡，不能全页数）
+    const demo = [...document.querySelectorAll('.demo-block')].find((b) => b.textContent?.includes('方案 A'))!
+    const multi = [...demo.querySelectorAll<HTMLElement>('oas-card[selectable]')].filter(
       (c) => !c.hasAttribute('data-select-radio'),
     )
     const first = multi[0]!
@@ -102,12 +104,12 @@ test('card selectable：点击切换选中 + aria-checked/角标同步 + 内部�
   expect(r.badgeHidden).toBe(true)
 
   // 点击整卡 → 选中态全套钩子（属性反射 + aria-checked + 角标）+ 计数与消息可见反馈
-  await clickBody('oas-card[selectable]:not([data-select-radio])')
+  await clickBody('oas-card[selectable]:not([data-select-radio]):not([disabled])')
   await page.waitForFunction(() => document.querySelector('#card-select-count')?.textContent?.includes('1'), null, {
     timeout: 5000,
   })
   const after = await page.evaluate(() => {
-    const card = document.querySelector<HTMLElement>('oas-card[selectable]:not([data-select-radio])')!
+    const card = document.querySelector<HTMLElement>('oas-card[selectable]:not([data-select-radio]):not([disabled])')!
     return {
       selected: card.hasAttribute('selected'),
       ariaChecked: card.getAttribute('aria-checked'),
@@ -125,18 +127,18 @@ test('card selectable：点击切换选中 + aria-checked/角标同步 + 内部�
 
   // 点击卡内 actions 按钮 → 不触发选中切换（选中态保持、计数不变、无新增选中）
   const beforeSelected = await page.evaluate(() => document.querySelectorAll('oas-card[selectable][selected]').length)
-  await page.locator('oas-card[selectable]:not([data-select-radio]) oas-button').first().click()
+  await page.locator('oas-card[selectable]:not([data-select-radio]):not([disabled]) oas-button').first().click()
   await page.waitForTimeout(400)
   const afterSelected = await page.evaluate(() => document.querySelectorAll('oas-card[selectable][selected]').length)
   expect(afterSelected, '点内部按钮不应改变选中态').toBe(beforeSelected)
 
   // 键盘 Enter 切换（聚焦整卡后派发 keydown）
   await page.evaluate(() => {
-    const card = document.querySelector<HTMLElement>('oas-card[selectable]:not([data-select-radio])')!
+    const card = document.querySelector<HTMLElement>('oas-card[selectable]:not([data-select-radio]):not([disabled])')!
     card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
   })
   const kb = await page.evaluate(() => {
-    const card = document.querySelector<HTMLElement>('oas-card[selectable]:not([data-select-radio])')!
+    const card = document.querySelector<HTMLElement>('oas-card[selectable]:not([data-select-radio]):not([disabled])')!
     return {
       selected: card.hasAttribute('selected'),
       ariaChecked: card.getAttribute('aria-checked'),
@@ -214,4 +216,52 @@ test('card selectable：宿主显式 role="radio" 组仍同步 aria-checked（�
   })
   expect(after.firstSelected).toBe(false)
   expect(after.secondSelected).toBe(true)
+})
+
+test('card disabled：灰化态属性存活 + 点击无 oas-click 反馈 + aria-disabled 同步', async ({ page }) => {
+  await page.goto('/components/card.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-card[disabled]')
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
+    timeout: 10000,
+  })
+  const r = await page.evaluate(() => {
+    const disabled = document.querySelector('oas-card[clickable][disabled]')!
+    return {
+      ariaDisabled: disabled.getAttribute('aria-disabled'),
+      tabindex: disabled.getAttribute('tabindex'),
+    }
+  })
+  expect(r.ariaDisabled, '禁用卡 aria-disabled 同步').toBe('true')
+  expect(r.tabindex, '禁用卡不进 Tab 序列').toBe(null)
+
+  // 点击禁用卡：整卡 oas-click 停派 → demo 的 message 不弹出（对照：可点卡会弹）
+  const before = await page.locator('oas-message').count()
+  await page.evaluate(() => {
+    const card = document.querySelector('oas-card[clickable][disabled]')!
+    card
+      .shadowRoot!.querySelector('[part="body"]')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }))
+  })
+  await page.waitForTimeout(600)
+  expect(await page.locator('oas-message').count(), '禁用卡点击不弹消息').toBe(before)
+})
+
+test('card orientation=horizontal：属性存活 + 横向布局规则在位（封面列定宽）', async ({ page }) => {
+  await page.goto('/components/card.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-card[orientation="horizontal"]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-card[orientation="horizontal"]')!
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const main = el.shadowRoot!.querySelector('.card-main')!
+    return {
+      dataOrientation: el.getAttribute('data-orientation'),
+      hasMain: !!main,
+      cssRow: css.includes("[orientation='horizontal']") && css.includes('flex-direction: row'),
+      coverInMain: main.querySelector('[part="cover"]') == null,
+    }
+  })
+  expect(r.dataOrientation).toBe('horizontal')
+  expect(r.hasMain, '内容列包装容器存在').toBe(true)
+  expect(r.cssRow, '横向 flex 规则在样式表').toBe(true)
+  expect(r.coverInMain, '封面在内容列外（左置兄弟）').toBe(true)
 })

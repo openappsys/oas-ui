@@ -35,9 +35,20 @@
       "type": "string",
       "default": "medium",
       "observed": true
+    },
+    {
+      "name": "items",
+      "default": "",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "items",
+      "type": "Array<Record<string, unknown>> | string",
+      "default": "[]"
+    }
+  ],
   "events": [],
   "slots": [
     {

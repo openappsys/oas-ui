@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASSlider } from './index.js'
+import { setLocale } from '@oas-ui/i18n'
 import '../form/index.js'
 
 function mount(attrs: Record<string, string> = {}): OASSlider {
@@ -1214,5 +1215,49 @@ describe('OASSlider', () => {
       expect(values.price).toBe('[35,80]')
       expect(JSON.parse(values.price!)).toEqual([35, 80])
     })
+  })
+})
+
+describe('OASSlider label 可访问名', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('label 属性覆盖主滑块 aria-label（对齐 input label 契约）', () => {
+    const el = mount({ label: '音量' })
+    expect(byRole(el, 'range').getAttribute('aria-label')).toBe('音量')
+  })
+
+  it('label 缺省回落 locale 默认（slider.valueLabel）', () => {
+    const el = mount()
+    expect(byRole(el, 'range').getAttribute('aria-label')).toBe('滑块')
+  })
+
+  it('range 模式：label 组合 min/max 语义（「音量 最小值」/「音量 最大值」）', () => {
+    const el = mount({ label: '温度', range: '' })
+    expect(byRole(el, 'range-min').getAttribute('aria-label')).toBe('温度 最小值')
+    expect(byRole(el, 'range-max').getAttribute('aria-label')).toBe('温度 最大值')
+  })
+
+  it('range 模式缺省 label：回落 locale 默认（不叠加前缀）', () => {
+    const el = mount({ range: '' })
+    expect(byRole(el, 'range-min').getAttribute('aria-label')).toBe('最小值')
+    expect(byRole(el, 'range-max').getAttribute('aria-label')).toBe('最大值')
+  })
+
+  it('show-input 数值输入框同样使用 label 可访问名', () => {
+    const el = mount({ label: '音量', 'show-input': '' })
+    expect(byRole(el, 'num').getAttribute('aria-label')).toBe('音量')
+  })
+
+  it('运行时修改 label：aria-label 即时跟随', () => {
+    const el = mount({ label: '音量' })
+    el.setAttribute('label', '亮度')
+    expect(byRole(el, 'range').getAttribute('aria-label')).toBe('亮度')
   })
 })

@@ -302,3 +302,73 @@ test('date-picker 单元格渲染：template[slot=cell] 内容保留、每个日
   // 标记点只给固定几天（2026-08-10/20/28）：曾误把 .cell-dot 放进模板，导致每格都长红点
   expect(r.dotCount, '标记点应只出现在固定几天，不能每格都有').toBe(3)
 })
+
+// —— 能力缺口 P2 批：separator / prefix·suffix icon 插槽 / default-time ——
+
+test('date-picker separator：范围分隔符自定义显示', async ({ page }) => {
+  await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#date-picker-separator')
+  const host = page.locator('#date-picker-separator')
+  await host.scrollIntoViewIfNeeded()
+  const v = await host.evaluate((el) => (el.shadowRoot!.querySelector('[part="trigger"]') as HTMLInputElement).value)
+  expect(v, '触发器显示应使用自定义分隔符').toBe('2026-08-05 → 2026-08-15')
+})
+
+test('date-picker prefix-icon 插槽：图标显示 + 点击穿透开面板', async ({ page }) => {
+  await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#date-picker-affix-icons')
+  const host = page.locator('#date-picker-affix-icons')
+  await host.scrollIntoViewIfNeeded()
+  const r = await host.evaluate((el) => ({
+    prefixVisible: !el.shadowRoot!.querySelector<HTMLElement>('[part="prefix-icon"]')!.hidden,
+    assigned: el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="prefix-icon"]')!.assignedNodes().length,
+  }))
+  expect(r.prefixVisible, '分发图标后 affix 应显示').toBe(true)
+  expect(r.assigned, '插槽应收到宿主内容').toBe(1)
+  // 真实链路：affix 为装饰位（pointer-events:none），点击图标区应穿透到 trigger 开面板
+  const box = await host.boundingBox()
+  await page.mouse.click(box!.x + 15, box!.y + box!.height / 2)
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#date-picker-affix-icons')
+        ?.shadowRoot?.querySelector('[part="dropdown"]')
+        ?.classList.contains('open'),
+    null,
+    { timeout: 5000 },
+  )
+})
+
+test('date-picker default-time：打开面板起止时间列默认 00/23，选日期确定得整天区间', async ({ page }) => {
+  await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#date-picker-default-time')
+  const host = page.locator('#date-picker-default-time')
+  await host.scrollIntoViewIfNeeded()
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#date-picker-default-time')
+        ?.shadowRoot?.querySelector('[part="dropdown"]')
+        ?.classList.contains('open'),
+    null,
+    { timeout: 5000 },
+  )
+  const seeded = await host.evaluate((el) => {
+    const hourOf = (side: 'start' | 'end') =>
+      el.shadowRoot!.querySelector<HTMLElement>(
+        `.time-section[data-side="${side}"] .time-col[data-unit="h"] .time-option.selected`,
+      )?.textContent ?? null
+    return { start: hourOf('start'), end: hourOf('end') }
+  })
+  expect(seeded.start, '起点时刻列默认 00').toBe('00')
+  expect(seeded.end, '终点时刻列默认 23（default-time 惯例）').toBe('23')
+  // 真实链路：点起点 → 终点 → 确定 → value 端点带默认时刻
+  await host.evaluate((el) => {
+    const day = (iso: string) => el.shadowRoot!.querySelector<HTMLButtonElement>(`.day[data-date="${iso}"]`)!
+    day('2026-08-10').click()
+    day('2026-08-20').click()
+    ;(el.shadowRoot!.querySelector('[part="confirm"]') as HTMLElement).click()
+  })
+  await expect(host).toHaveAttribute('value', '["2026-08-10T00:00:00","2026-08-20T23:59:59"]')
+})

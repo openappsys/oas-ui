@@ -32,3 +32,50 @@ test('auto-complete variant 三形态镜像 + focus/blur 事件可见反馈（PR
   await page.locator('h1').first().click()
   await expect(page.locator('#ac-focus-output')).toContainText('oas-blur')
 })
+
+// ===== 能力缺口 P2：placement 12 向 + autofocus 转发 =====
+
+test('auto-complete placement（P2）：Vue 下属性存活、展开后 data-placement 反映引擎落位（top-start）', async ({
+  page,
+}) => {
+  await page.goto('/components/auto-complete.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-auto-complete[placement]')
+  const ac = page.locator('oas-auto-complete[placement]')
+  // 居中滚动：上下空间充足，top-start 不被翻转
+  await ac.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await ac.locator('input[part="input"]').click()
+  await ac.locator('input[part="input"]').fill('a')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-auto-complete[placement]')!
+    const drop = el.shadowRoot!.querySelector<HTMLElement>('.dropdown')!
+    return {
+      attrSurvived: el.getAttribute('placement'),
+      open: drop.classList.contains('open'),
+      dp: drop.getAttribute('data-placement'),
+    }
+  })
+  expect(r.attrSurvived, 'placement 被 Vue 剥离').toBe('top-start')
+  expect(r.open, '输入后面板应展开').toBe(true)
+  expect(r.dp, 'data-placement 应反映引擎落位 top-start').toBe('top-start')
+})
+
+test('auto-complete autofocus（P2）：demo 按钮重挂载后光标落入内部输入框', async ({ page }) => {
+  await page.goto('/components/auto-complete.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ac-focus-btn')
+  await page.locator('#ac-focus-btn').scrollIntoViewIfNeeded()
+  await page.locator('#ac-focus-btn').click()
+  await page.waitForFunction(
+    () => {
+      const ac = document.querySelector('#ac-focus-zone oas-auto-complete')
+      const input = ac?.shadowRoot?.querySelector('input')
+      return input != null && ac!.shadowRoot!.activeElement === input
+    },
+    undefined,
+    { timeout: 5000 },
+  )
+  const focused = await page.evaluate(() => {
+    const ac = document.querySelector('#ac-focus-zone oas-auto-complete')!
+    return ac.hasAttribute('autofocus') && ac.shadowRoot!.activeElement === ac.shadowRoot!.querySelector('input')
+  })
+  expect(focused, 'autofocus 未转发到内部输入框（挂载后未聚焦）').toBe(true)
+})

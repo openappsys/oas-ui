@@ -1564,3 +1564,52 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - TDD：每项先 RED（行为/契约断言）后 GREEN；新事件/属性进 api:scan 清单（api:check 双向 0）
 - 用户视角：组件 md demo 实跑可见反馈；dark 主题过视觉；RTL 逻辑属性（方向相关项）
 - 缺陷/交互项固化 qa-regression；全量单测 + typecheck + build + api:check 全绿
+
+## 能力缺口 P2 立项批（未发布，31 组长尾增强）
+
+> 立项来源：能力缺口甄别 P2 池（已逐条甄别定级）。口径：语义覆盖为准，命名对照 ui-spec §2。
+
+### 范围（按组件分组）
+
+- **oas-affix**：`z-index`（吸附后 fixed 层级覆盖，缺省走 token）
+- **oas-auto-complete**：`placement`（面板 12 向，对齐浮层引擎）+ `autofocus`（转发内层）
+- **oas-avatar**：`srcset`（透传内层 img，响应式图源）
+- **oas-badge**：`shape`（徽标形态：round 默认 / square 方角 / pill 胶囊——数值与 dot 通用）
+- **oas-button**：`loading-icon` 插槽（自定义加载图标，缺省内置 spinner）
+- **oas-calendar**：`header` 插槽（自定义头部，缺省内置导航）+ `locale`（面板语言覆盖，缺省全局 locale）+ `format`（头部/单元格日期格式串）
+- **oas-card**：`disabled`（禁用态：不派交互事件 + 灰化 + aria-disabled）+ `orientation`（horizontal 横向排布：封面左内容右）
+- **oas-carousel**：`trigger`（指示器触发方式：click 默认 / hover）
+- **oas-cascader**：`label`（触发器命名，对齐 select）+ `placement`（面板 12 向）+ `suffix-icon` 插槽（触发器后缀图标）+ `option` 插槽（选项行自定义渲染，data-option-label 绑定）
+- **oas-checkbox**：`tabindex`（透传内层控件）
+- **oas-combobox**：`autocomplete`（透传内层 input）
+- **oas-date-picker**：`separator`（范围分隔符）+ `suffix-icon` / `prefix-icon` 插槽 + `default-time`（范围起止默认时分秒，对齐时间通道惯例）
+- **oas-descriptions**：`items` 数据驱动通道（JSON attribute + property，子元素通道保留）
+- **oas-drawer**：`no-mask`（无遮罩模式，点击外部仍关；与 mask 既有契约一致）
+- **oas-dropdown**：`size`（触发器尺寸五档透传）+ `type`（触发器按钮类型透传）+ `max-height`（面板限高滚动）
+- **oas-form**：`size`（表级尺寸注入字段）+ `colon`（标签冒号开关，form 级）+ `help`（form-item 静态帮助文案，独立于校验错误）+ `status-icon`（校验状态图标反馈）+ `validate-messages`（校验文案模板，property 通道覆盖 locale 默认）
+- **oas-grid**：grid-item `flex` + `pull` / `push`（偏移，对齐 span/offset 语义）+ 折叠行（`collapsed-rows` + 展开收起尾格）+ 双轴 gap（`gap="x,y"` 或行列分离属性）
+- **oas-image**：`width` / `height`（显式尺寸）+ `referrerpolicy`（透传 img）
+- **oas-input**：`minlength` / `pattern` / `spellcheck`（透传）+ `min` / `max` / `step`（number 类型透传）+ `clear-icon` 插槽 + `hint`（输入框下方静态提示文案）
+- **oas-input-number**：`autofocus` + `decimal-separator`（小数点字符，缺省 locale）+ `variant`（三值对齐 input）+ `align`（数字文本对齐 left/center/right）
+- **oas-layout**：sider `width` 属性（轨道宽度，对齐 width 契约变量开口）
+- **oas-list**：`hoverable`（行 hover 底色反馈，默认可点行现状不动）
+- **oas-menu**：`disabled`（整单禁用）+ `selectable`（关选中态语义，纯动作菜单）+ `persistent`（选中后不自动收起浮出子菜单——对齐 close-on-select 族语义）
+- **oas-radio-group**：`required`（组级必校验，form-associated valueMissing）
+- **oas-select 长尾组**：`suffix-icon` / `clear-icon` 插槽、`input-value`（filterable 输入值受控）、`show-arrow`、`autofocus`、`suffix` / `prefix` 插槽、`default-active-first-option`、`loading-text`、`reserve-keyword`（多选选中后保留搜索词）、`tabindex`、`auto-width`（触发器宽度随选中项）、`hint`、事件 `oas-create`（allow-create 新选项创建）
+- **oas-slider**：`label`（滑块可访问名/值标签，对齐 input label 契约）
+- **oas-splitter**：`disabled`（禁用拖拽，面板尺寸冻结）
+- **oas-steps**：`size`（五档）
+- **oas-table**：`table-layout`（fixed/auto 透传）+ `hover`（行 hover 底色开关）+ `filter-icon` 插槽 + `indent-size`（树形缩进 px）+ `row-expandable`（行展开谓词，property）+ `max-height`（表体限高滚动 + 表头吸顶）+ 事件 `oas-cell-click` / `oas-row-dblclick`
+- **oas-tabs**：`tabindex`（标签钮透传）
+- **oas-text**：`size`（字号档位，对齐 typography 体系）
+- **oas-textarea**：`autocomplete`（透传）
+- **oas-time-picker**：`hide-disabled-options`（禁用选项隐藏而非灰显）+ `label`（触发器命名）
+- **oas-timeline**：`size`（五档）
+- **oas-transfer**：`pagination`（长列表分页，对齐 pagination 组件契约）+ 事件 `oas-scroll`（列表滚动到底/滚动事件，懒加载通道）
+- **oas-tree**：`size`（五档）+ `block-node`（整行块级选中态）+ `selectable`（整树选中开关）
+- **oas-tree-select**：`input-value`（filterable 输入受控）+ `label-in-value`（value 携 label 对象）+ `suffix-icon` 插槽
+- **oas-upload**：事件 `oas-progress`（上传进度回调，内部进度已驱动 UI，补对外事件通道）
+
+### 验收（同 P1 批口径）
+
+- TDD RED→GREEN；api:check 双向 0；组件 md 中英 demo 可见反馈；dark/RTL 过；交互项 qa-regression 固化；门禁全绿 + 收口 review

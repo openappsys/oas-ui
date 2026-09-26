@@ -172,3 +172,72 @@ test('transfer 触屏（coarse）：行触控高 44 + 按钮排序可点（DnD �
   expect(after).not.toBe(before2)
   await ctx.close()
 })
+
+// —— PRD P2：pagination 长列表分页 + oas-scroll 懒加载事件 ——
+test('transfer pagination：page-size 切片渲染、翻页与页码指示、边界禁用（PRD P2）', async ({ page }) => {
+  await page.goto('/components/transfer.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#transfer-page')
+      return el?.shadowRoot != null && (el as any).data?.length > 0
+    },
+    null,
+    { timeout: 15000 },
+  )
+  await page.evaluate(() => document.querySelector('#transfer-page')!.scrollIntoView({ block: 'center' }))
+  const read = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#transfer-page')!
+      const foot = el.shadowRoot!.querySelectorAll<HTMLElement>('.panel-foot')[0]!
+      return {
+        leftCount: el.shadowRoot!.querySelectorAll('.listbox.left .option').length,
+        indicator: foot.querySelector<HTMLElement>('.page-indicator')!.textContent ?? '',
+        prevDisabled: foot.querySelector<HTMLButtonElement>('.page-prev')!?.disabled,
+        nextDisabled: foot.querySelector<HTMLButtonElement>('.page-next')!?.disabled,
+        footHidden: foot.hidden,
+      }
+    })
+  const first = await read()
+  expect(first.footHidden, '分页开启时左面板页脚可见').toBe(false)
+  expect(first.leftCount, 'page-size=2 首页渲染 2 项').toBe(2)
+  expect(first.indicator).toBe('1/6')
+  expect(first.prevDisabled, '首页 prev 禁用').toBe(true)
+  // 真实点击下一页
+  const { realClick } = await import('./helpers')
+  await realClick(page, '#transfer-page', '.listbox.left ~ .panel-foot .page-next')
+  const second = await read()
+  expect(second.indicator).toBe('2/6')
+  const secondFirst = await page.evaluate(
+    () => document.querySelector('#transfer-page')!.shadowRoot!.querySelector('.listbox.left .option')!.textContent,
+  )
+  expect(secondFirst, '第 2 页首项应为候选 3').toContain('候选 3')
+  expect(second.prevDisabled, '第 2 页 prev 可用').toBe(false)
+})
+
+test('transfer oas-scroll：列表滚动派发事件（direction/reachBottom，懒加载通道）', async ({ page }) => {
+  await page.goto('/components/transfer.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#transfer-scroll')
+      return el?.shadowRoot != null && (el as any).data?.length > 0
+    },
+    null,
+    { timeout: 15000 },
+  )
+  await page.evaluate(() => document.querySelector('#transfer-scroll')!.scrollIntoView({ block: 'center' }))
+  const r = await page.evaluate(async () => {
+    const el = document.querySelector('#transfer-scroll')!
+    const box = el.shadowRoot!.querySelector<HTMLElement>('.listbox.left')!
+    const events: Array<{ side: string; direction: string; scrollTop: number; reachBottom: boolean }> = []
+    el.addEventListener('oas-scroll', (e) => events.push((e as CustomEvent).detail))
+    box.scrollTop = 60
+    await new Promise((res) => setTimeout(res, 100))
+    box.scrollTop = box.scrollHeight // 滚到底
+    await new Promise((res) => setTimeout(res, 100))
+    return events
+  })
+  expect(r.length, '两次滚动应派发两次').toBe(2)
+  expect(r[0]!.direction).toBe('down')
+  expect(r[0]!.side).toBe('left')
+  expect(r[1]!.reachBottom, '滚到底 reachBottom=true').toBe(true)
+})

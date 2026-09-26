@@ -762,4 +762,90 @@ describe('OASCard', () => {
     expect(el.shadowRoot!.querySelector('[part="card"]')).not.toBeNull()
     el.remove()
   })
+
+  describe('disabled 禁用态', () => {
+    it('disabled 进 observedAttributes；开启后同步 aria-disabled', () => {
+      expect(OASCard.observedAttributes).toContain('disabled')
+      const el = mount({ disabled: '' })
+      expect(el.getAttribute('aria-disabled')).toBe('true')
+      el.removeAttribute('disabled')
+      expect(el.hasAttribute('aria-disabled')).toBe(false)
+    })
+
+    it('clickable 卡禁用：不可聚焦（无 tabindex），点击/键盘不派发 oas-click', () => {
+      const el = mount({ clickable: '', disabled: '' })
+      let fired = 0
+      el.addEventListener('oas-click', () => fired++)
+      expect(el.getAttribute('tabindex'), '禁用态不进 Tab 序列').toBe(null)
+      part(el, 'body').click()
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true }))
+      expect(fired, '禁用态不派发交互事件').toBe(0)
+    })
+
+    it('selectable 卡禁用：点击/键盘不切换选中、不派发 oas-change', () => {
+      const el = mount({ selectable: '', disabled: '' })
+      let fired = 0
+      el.addEventListener('oas-change', () => fired++)
+      part(el, 'body').click()
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true }))
+      expect(fired).toBe(0)
+      expect(el.hasAttribute('selected'), '禁用态不反射选中').toBe(false)
+    })
+
+    it('href 链接卡禁用：内部锚点摘除 href/target（不可导航、不可聚焦）', () => {
+      const el = mount({ href: 'https://example.com', target: '_blank', disabled: '' })
+      const link = el.shadowRoot!.querySelector<HTMLAnchorElement>('[part="link"]')!
+      expect(link.hasAttribute('href'), '禁用态摘除 href（原生导航/锚点聚焦一并失效）').toBe(false)
+      expect(link.hasAttribute('target')).toBe(false)
+      el.removeAttribute('disabled')
+      expect(link.getAttribute('href')).toBe('https://example.com')
+      expect(link.getAttribute('target')).toBe('_blank')
+    })
+
+    it('样式契约：禁用灰化（opacity）+ 内部锚点 pointer-events 断链 + cursor 默认', () => {
+      const el = mount({ disabled: '' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/:host\(\[disabled\]\)\s*\{[^}]*opacity/)
+      expect(css).toMatch(/:host\(\[disabled\]\)\s*\{[^}]*cursor:\s*default/)
+      expect(css).toMatch(/:host\(\[disabled\]\)\s+\.card-link\s*\{[^}]*pointer-events:\s*none/)
+    })
+
+    it('selectable 选中卡禁用：选中视觉保留（已选态不丢），仅停止交互', () => {
+      const el = mount({ selectable: '', selected: '', disabled: '' })
+      expect(el.hasAttribute('selected')).toBe(true)
+      expect(part(el, 'check-badge').hidden, '勾选角标视觉保留').toBe(false)
+    })
+  })
+
+  describe('orientation="horizontal" 横向布局', () => {
+    it('orientation 进 observedAttributes；horizontal 时卡片切横向 flex、封面左置', () => {
+      expect(OASCard.observedAttributes).toContain('orientation')
+      const el = mount({ orientation: 'horizontal', 'cover-src': 'https://example.com/a.png' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/:host\(\[orientation='horizontal'\]\)\s+\.card\s*\{[^}]*flex-direction:\s*row/)
+      expect(css).toMatch(/:host\(\[orientation='horizontal'\]\)\s+\.cover\s*\{[^}]*width/)
+      // 封面图在横向下撑满列高（不锁 16:9）
+      expect(css).toMatch(/:host\(\[orientation='horizontal'\]\)[^{]*\.cover-img\s*\{[^}]*height:\s*100%/)
+    })
+
+    it('模板含内容列包装容器（header/body/actions/footer 收进 .card-main），默认纵向布局不受影响', () => {
+      const el = mount({ title: 'T' })
+      const card = part(el, 'card')!
+      const main = card.querySelector('.card-main')!
+      expect(main.querySelector('[part="header"]')).not.toBeNull()
+      expect(main.querySelector('[part="body"]')).not.toBeNull()
+      expect(main.querySelector('[part="actions"]')).not.toBeNull()
+      expect(main.querySelector('[part="footer"]')).not.toBeNull()
+      // 纵向（默认）：包装容器为普通块级（flex-direction: column 上下排布）
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.card-main\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/)
+    })
+
+    it('非法 orientation 回落纵向（data-orientation 摘除，默认卡片宿主属性面零漂移）', () => {
+      const el = mount({ orientation: 'horizontal' })
+      expect(el.getAttribute('data-orientation')).toBe('horizontal')
+      el.setAttribute('orientation', 'weird')
+      expect(el.hasAttribute('data-orientation'), '非横向不写 data-orientation').toBe(false)
+    })
+  })
 })

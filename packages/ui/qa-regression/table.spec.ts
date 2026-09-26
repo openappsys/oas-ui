@@ -963,3 +963,65 @@ test('table show-header=false：表头不渲染、数据行保留；切回 true 
   )
   expect(r2).toBe(3)
 })
+
+test('table P2 批：cell-click/row-dblclick 事件反馈可见 + row-expandable 谓词存活 + max-height 限高', async ({
+  page,
+}) => {
+  // 新批属性/事件经真实 demo 链路存活：Vue 下 property（rowExpandable）不被剥离、
+  // 单击/双击反馈行有可见文本变化、max-height 落成滚动容器内联样式
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-cell-events')
+  await page.waitForTimeout(600)
+
+  // rowExpandable（property 函数通道）：key=c 的行（王五）无展开钮，其余行有
+  const expand = await page.evaluate(() => {
+    const el = document.querySelector('oas-table#table-row-expandable')!
+    const trs = [...el.shadowRoot!.querySelectorAll('[part="row"]')]
+    return trs.map((tr) => tr.querySelectorAll('td.expand-toggle-cell .toggle').length)
+  })
+  expect(expand, '谓词返回 false 的行无展开钮').toEqual([1, 1, 0])
+
+  // max-height=200：滚动容器限高生效 + 表头吸顶规则在样式表
+  const mh = await page.evaluate(() => {
+    const el = document.querySelector('oas-table#table-max-height')!
+    return {
+      maxHeight: el.shadowRoot!.querySelector('.table-scroll')!.getAttribute('style'),
+      rowCount: el.shadowRoot!.querySelectorAll('[part="row"]').length,
+    }
+  })
+  expect(mh.maxHeight).toContain('200px')
+  expect(mh.rowCount, '12 条数据全部渲染（滚动而非截断）').toBe(12)
+
+  // 单击单元格：反馈行文本更新（demo 监听 oas-cell-click）
+  await page.locator('#table-cell-events').scrollIntoViewIfNeeded()
+  const cell = page.locator('oas-table#table-cell-events').locator('td[data-col="age"]').first()
+  await cell.click()
+  await page.waitForFunction(() => (document.querySelector('#table-cell-feedback')?.textContent ?? '') !== '—', null, {
+    timeout: 5000,
+  })
+  const feedback = await page.textContent('#table-cell-feedback')
+  expect(feedback).toContain('age')
+
+  // 双击行：双击反馈行文本更新（demo 监听 oas-row-dblclick）
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-table#table-cell-events')!
+    const tr = el.shadowRoot!.querySelector('[part="row"]')!
+    tr.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+  })
+  await page.waitForFunction(() => (document.querySelector('#table-dbl-feedback')?.textContent ?? '') !== '—', null, {
+    timeout: 5000,
+  })
+
+  // 交互宿主排除：button 内点击不派发 cell-click（反馈文本不变）
+  const before = await page.textContent('#table-cell-feedback')
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-table#table-cell-events')!
+    const td = el.shadowRoot!.querySelector('td[data-col="name"]')!
+    const btn = document.createElement('button')
+    btn.textContent = 'x'
+    td.appendChild(btn)
+    btn.click()
+  })
+  await page.waitForTimeout(300)
+  expect(await page.textContent('#table-cell-feedback')).toBe(before)
+})

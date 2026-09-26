@@ -184,6 +184,9 @@
     },
     {
       "name": "description"
+    },
+    {
+      "name": "loading-icon"
     }
   ],
   "cssVars": [

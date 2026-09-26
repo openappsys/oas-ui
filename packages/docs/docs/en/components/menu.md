@@ -376,8 +376,52 @@ onMounted(() => {
       tag.textContent = `Selected: ${e.detail.value}`
     })
   }
+
+  // Pure action menu (selectable=false): click feedback (value not written back)
+  const menuAction = document.getElementById('menu-action')
+  if (menuAction) {
+    menuAction.addEventListener('oas-select', (e) => {
+      const out = document.getElementById('menu-action-out')
+      if (out) out.textContent = `Clicked: ${e.detail.value} (value not written back, no check mark)`
+    })
+  }
+
+  // persistent: selecting a leaf writes value back while submenus stay open
+  const menuPersistent = document.getElementById('menu-persistent')
+  if (menuPersistent) {
+    menuPersistent.addEventListener('oas-select', (e) => {
+      const out = document.getElementById('menu-persistent-out')
+      if (out) out.textContent = `Selected: ${e.detail.value} (submenu stays open for more picks)`
+    })
+  }
 })
 </script>
+
+## Whole-menu disabled
+
+`disabled` disables the entire menu: click / hover / keyboard are all intercepted (href items also get their native navigation blocked), the host is dimmed (opacity .6) and synced with `aria-disabled`; removing the attribute restores interaction.
+
+<DemoBlock title="Whole-menu disabled">
+  <oas-menu disabled style="max-width: 220px" items='[{"label":"Home","value":"home"},{"label":"Settings","value":"settings"},{"label":"Delete","value":"delete","danger":true}]'></oas-menu>
+</DemoBlock>
+
+## Pure action menu (selectable=false)
+
+`selectable="false"` turns off selection semantics for the whole menu: every leaf item renders as an action item (`menuitem`, no check mark, no `aria-checked`), clicking only emits `oas-select` and **never writes back `value`** — for pure command menus ("click and go"; equivalent to writing every leaf as `kind: "action"`).
+
+<DemoBlock title="Pure action menu (no check marks, value not written back)">
+  <oas-menu id="menu-action" selectable="false" style="max-width: 220px" items='[{"label":"Share","value":"share"},{"label":"Favorite","value":"star"},{"label":"Report","value":"report","danger":true}]'></oas-menu>
+  <p id="menu-action-out" style="margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary)">Nothing clicked yet</p>
+</DemoBlock>
+
+## Keep submenus open on select (persistent)
+
+`persistent` keeps flyout submenus **open after a selection** (the positive switch of the `close-on-select` family; when explicit it wins over `close-on-select`): for continuous-pick scenarios where the menu should stay where it is; `value` is still written back.
+
+<DemoBlock title="persistent: submenu stays open after selecting">
+  <oas-menu id="menu-persistent" persistent style="max-width: 220px" items='[{"label":"File","value":"file","children":[{"label":"New","value":"new"},{"label":"Open","value":"open"}]},{"label":"Edit","value":"edit","children":[{"label":"Copy","value":"copy"},{"label":"Cut","value":"cut"}]}]'></oas-menu>
+  <p id="menu-persistent-out" style="margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary)">Hover a parent item to open its submenu, then click a leaf</p>
+</DemoBlock>
 
 ## API
 
@@ -390,11 +434,14 @@ onMounted(() => {
 | `accordion` | Accordion mutual exclusion (inline mode: only one sibling submenu open at a time) | `boolean` | — |
 | `close-on-select` | Whether expanded submenus collapse after a leaf item is selected. Defaults by mode: inline side navigation keeps them open, flyout modes collapse; checkbox items never collapse on toggle | `string` | — |
 | `collapsed` | Collapsed state (vertical only): icons only, submenus pop to the right | `boolean` | — |
+| `disabled` | Disables the whole menu: click/hover/keyboard intercepted, dimmed with aria-disabled | `boolean` | — |
 | `expanded` | Controlled expanded set (JSON array string; which submenus are open in inline mode); internally managed when uncontrolled | `string` | — |
 | `items` | Menu items JSON (supports disabled / loading, icon, children submenus) | `string` | `[]` |
 | `max-height` | Max height of a long menu; scrolls internally beyond it (number gets px appended) | `string` | — |
 | `mode` | Layout mode: `vertical` menu / `horizontal` top bar | — | — |
 | `open-on-hover` | Hover-opened submenus in vertical/inline modes (~150ms open / ~300ms close delay); clicks unchanged; horizontal and collapsed flyout unaffected | `boolean` | — |
+| `persistent` | Keep flyout submenus open after selection (wins over close-on-select) | `string` | — |
+| `selectable` | With `"false"`, pure action menu: no check marks, clicks never write back value (detail kind=action) | `string` | `true` |
 | `theme` | Local theme: `dark` uses dark tokens (independent of the global theme) | — | — |
 | `value` | Current selected value. Plain string means global single-select (no group, legacy-compatible); JSON object string (e.g. `{"sort":"name","view":"list"}`) scopes per group id — the `value` of a `type:"group"` item is the group id, picking inside a group only updates that group | `string` | — |
 

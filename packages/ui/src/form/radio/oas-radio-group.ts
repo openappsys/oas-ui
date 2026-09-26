@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASFormElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
 // options 数据通道渲染 oas-radio 需保证自定义元素已定义（运行时副作用导入）
 import './oas-radio.js'
@@ -66,9 +66,12 @@ legend {
 /** 组内互斥 name：确定性计数器（SSR 快照可重复，浏览器多实例不冲突） */
 let radioGroupCounter = 0
 
-export class OASRadioGroup extends OASElement {
+export class OASRadioGroup extends OASFormElement {
+  /** 原生表单集成（FormData / reset / fieldset disabled / required 校验链）；沿静态原型链已可继承，显式声明便于阅读与检索 */
+  static override formAssociated = true
+
   static override get observedAttributes(): string[] {
-    return ['value', 'disabled', 'options', 'direction', 'size', 'status', 'readonly']
+    return ['value', 'disabled', 'options', 'direction', 'size', 'status', 'readonly', 'required']
   }
 
   private items: OASRadio[] = []
@@ -79,6 +82,10 @@ export class OASRadioGroup extends OASElement {
   private lastOptionsRaw: string | null = null
   /** 焦点在组内（子项间转移不派发 oas-focus/oas-blur） */
   private focusWithin = false
+  /** 初始 value 基线（form.reset 恢复目标；null = 空基线）：初始渲染/受控写入跟随 value 属性刷新 */
+  private initialValue: string | null = null
+  /** 用户交互脏标记：置位后基线冻结，reset 恢复基线 */
+  private valueDirty = false
 
   get options(): RadioOption[] {
     return this.parseOptions(this.getAttr('options', ''))
@@ -137,11 +144,18 @@ export class OASRadioGroup extends OASElement {
   }
 
   protected override update(): void {
+    // form.reset 基线：初始渲染/受控写入（非用户交互的属性变化）跟随 value 属性刷新；
+    // 用户交互置脏后基线冻结（空值映射为 null 基线）
+    const value = this.getAttr('value', '')
+    if (!this.valueDirty) this.initialValue = value === '' ? null : value
     // direction 镜像（非法值回落 vertical）
     const direction = this.getAttr('direction', 'vertical')
     this.setAttribute('data-direction', direction === 'horizontal' ? 'horizontal' : 'vertical')
     this.syncOptionsMode()
     this.collect()
+    // 原生表单数据 + 校验链同步（form-associated；无 name 浏览器自动不提交）
+    this.syncFormValue()
+    this.syncValidity()
   }
 
   /** options 数据通道：属性在场时渲染 shadow 子项（原文未变跳过重建）；缺席时清空让位 light 声明式 */
@@ -182,7 +196,8 @@ export class OASRadioGroup extends OASElement {
 
   private collect(): void {
     const value = this.getAttr('value', '')
-    const groupDisabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 表单链路 > 豁免 > provider 注入）
+    const groupDisabled = this.injectDisabled()
     const groupReadonly = this.hasAttr('readonly')
     const groupSize = normalizeChoice(this.getAttr('size', ''), VALID_SIZES)
     const groupStatus = normalizeChoice(this.getAttr('status', ''), VALID_STATUSES)
@@ -264,8 +279,40 @@ export class OASRadioGroup extends OASElement {
     if (!this.items.includes(r)) return
     if (!r.hasAttribute('checked')) return
     const value = r.getAttribute('value') ?? ''
+    // 用户选中置脏：冻结 reset 基线（须在 setAttribute 之前，防止 update 把基线刷成新值）
+    this.valueDirty = true
     this.setAttribute('value', value)
     this.emit('change', { value })
+    // setAttribute 已触发 update 同步；属性同值不触发时兜底
+    this.syncFormValue()
+    this.syncValidity()
+  }
+
+  /**
+   * 表单值快照（form-associated）：组当前值（value 属性）；无选中（value 为空）提交 null
+   * —— FormData 不含此项（与「组内全部未选」的原生语义一致）
+   */
+  protected override getFormValue(): string | null {
+    const v = this.getAttr('value', '')
+    return v === '' ? null : v
+  }
+
+  /** 原生校验链同步：required 且无选中 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.getFormValue() === null) {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
+    }
+  }
+
+  /** 表单 reset：恢复初始 value 基线并重下发子项选中态，不派发事件（与原生 reset 一致） */
+  protected override resetFormValue(): void {
+    this.valueDirty = false
+    if (this.initialValue === null) this.removeAttribute('value')
+    else this.setAttribute('value', this.initialValue)
+    // 重新收集：把恢复后的 value 下发为子项 checked（与受控写入同链路）
+    this.collect()
   }
 
   /** 焦点转移目标是否仍在组内（light 子项 / shadow options 子项 / 其 shadow 内部） */

@@ -245,6 +245,17 @@
   </oas-drawer>
 </DemoBlock>
 
+## 无遮罩模式（no-mask）
+
+`no-mask` 无遮罩模式：不渲染遮罩层（页面不变暗、不被拦截），点击抽屉**外部任意区域**仍可关闭（沿用遮罩点击的 `mask` 取消语义，派发 `oas-close` / `oas-cancel`）。适合侧边工具面板、常驻筛选栏等需要看到页面内容的轻量场景；与 `no-mask-close` 同设时点外部不关（关闭入口只留 ✕ / Esc / 按钮）。
+
+<DemoBlock title="无遮罩模式">
+  <oas-button type="primary" onclick="document.querySelector('#drawer-nomask-mode').setAttribute('visible','')">打开无遮罩抽屉</oas-button>
+  <oas-drawer id="drawer-nomask-mode" title="无遮罩抽屉" no-mask>
+    <p>页面无遮罩变暗；点击抽屉外部任意区域即关闭（Esc 与 ✕ 照常可用）。</p>
+  </oas-drawer>
+</DemoBlock>
+
 ## 尺寸档位
 
 <DemoBlock title="尺寸档位">
@@ -398,6 +409,7 @@ onMounted(async () => {
 | `no-focus-trap` | 关闭焦点陷阱（Tab 不再圈定在抽屉内） | `boolean` | — |
 | `no-footer` | 隐藏底部操作按钮 | `boolean` | — |
 | `no-header` | 隐藏整个标题区（同时移除 aria-labelledby 可访问名关联） | `boolean` | — |
+| `no-mask` | 无遮罩模式：不渲染遮罩，点击外部仍关闭（沿用 mask 取消语义） | `boolean` | — |
 | `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | — |
 | `no-scroll-lock` | 打开时不锁定 body 滚动 | `boolean` | — |
 | `ok-loading` | 确定按钮 loading 态：转 spinner + 禁用（aria-busy），阻止重复触发 | `boolean` | — |

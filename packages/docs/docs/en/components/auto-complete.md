@@ -215,6 +215,19 @@ onMounted(() => {
     mail.style.color = 'var(--oas-color-text-secondary)'
     element.append(name, mail)
   })
+
+  // autofocus demo: focused on mount (native autofocus doesn't pierce Shadow DOM; forwarded to the inner input)
+  const acFocusBtn = document.getElementById('ac-focus-btn')
+  const acFocusZone = document.getElementById('ac-focus-zone')
+  acFocusBtn?.addEventListener('click', () => {
+    if (!acFocusZone) return
+    acFocusZone.innerHTML = ''
+    const ac = document.createElement('oas-auto-complete')
+    ac.setAttribute('autofocus', '')
+    ac.setAttribute('placeholder', 'Focused on mount (caret inside)')
+    ac.setAttribute('options', '[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]')
+    acFocusZone.appendChild(ac)
+  })
 })
 </script>
 
@@ -226,6 +239,23 @@ onMounted(() => {
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
 
+## Panel placement
+
+`placement` controls the suggestion panel placement in 12 directions (aligned with the floating-positioning engine; `-start` / `-end` are logical writing-direction semantics, mirrored automatically in RTL): flips along the main axis when space is short and avoids viewport edges. Default `bottom-start` (panel's start edge aligned with the input's start edge, opening downward); the actual placement (including flips) is written to the panel's `data-placement`.
+
+<DemoBlock title="placement=top-start (opens upward)">
+  <oas-auto-complete placement="top-start" placeholder="Type a fruit (panel opens upward)" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Grape","value":"grape"}]'></oas-auto-complete>
+</DemoBlock>
+
+## autofocus
+
+`autofocus` is forwarded to the inner input (native autofocus doesn't pierce Shadow DOM): the component focuses once after mounting. Click the button below to mount a fresh `autofocus` instance and watch the caret land inside the input.
+
+<DemoBlock title="Focused on mount">
+  <oas-button id="ac-focus-btn" size="small">Mount an autofocus input</oas-button>
+  <div id="ac-focus-zone" style="margin-top: var(--oas-space-2)"></div>
+</DemoBlock>
+
 ## API
 
 ### oas-auto-complete
@@ -234,12 +264,14 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `autofocus` | Focuses the inner input after mounting | `boolean` | — |
 | `clearable` | Clearable (shows a clear button when the input has content; clearing dispatches `oas-clear` and an empty `oas-change`) | `boolean` | — |
 | `debounce` | Input debounce (ms, default 0 = off): only debounces `oas-input` dispatch and filtering, never the input display | `string` | `0` |
 | `disabled` | Disabled | `boolean` | — |
 | `loading` | Loading placeholder (dropdown shows a loading state; remote-suggestion request state) | `boolean` | — |
 | `options` | Options, JSON array `[{ label, value, disabled?, group? }]` (group is the group title) | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | `string` | — |
+| `placement` | 12-direction panel placement (engine flip/RTL result written to data-placement) | `string` | `bottom-start` |
 | `readonly` | Readonly (focusable & copyable, not editable; focus and keyboard never open suggestions) | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `size` | Size tier: small / medium / large (default medium, follows the nearest config-provider injection) | `string` | `medium` |

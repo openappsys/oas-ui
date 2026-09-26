@@ -956,3 +956,61 @@ describe('OASButton 触控目标（coarse pointer 抬升）', () => {
     expect(css).toMatch(/button,\s*a\[part='button'\]\s*\{[^}]*height: var\(--oas-control-height-md\)/)
   })
 })
+
+describe('OASButton loading-icon 插槽（自定义加载图标，缺省内置 spinner）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function spinnerOf(el: OASButton): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('.spinner')!
+  }
+
+  it('spinner 内含 loading-icon 具名插槽（SSR 与客户端同构）', () => {
+    const el = mount({})
+    expect(spinnerOf(el).querySelector('slot[name="loading-icon"]')).not.toBeNull()
+  })
+
+  it('缺省（插槽无内容）：loading 时保持内置 spinner 环（无 custom-icon class）', () => {
+    const el = mount({ loading: '' })
+    expect(spinnerOf(el).hidden).toBe(false)
+    expect(spinnerOf(el).classList.contains('custom-icon')).toBe(false)
+  })
+
+  it('插槽有内容 + loading：spinner 切 custom-icon（内置环停用，插槽图标显示）', () => {
+    const el = mount({ loading: '' }, '提交')
+    const icon = document.createElement('span')
+    icon.setAttribute('slot', 'loading-icon')
+    icon.textContent = '⟳'
+    el.appendChild(icon)
+    expect(spinnerOf(el).hidden).toBe(false)
+    expect(spinnerOf(el).classList.contains('custom-icon')).toBe(true)
+    el.removeAttribute('loading')
+    expect(spinnerOf(el).hidden).toBe(true)
+    el.setAttribute('loading', '')
+    expect(spinnerOf(el).hidden).toBe(false)
+    expect(spinnerOf(el).classList.contains('custom-icon')).toBe(true)
+  })
+
+  it('移除插槽内容回落内置环（slotchange 刷新）', () => {
+    const el = mount({ loading: '' }, '提交')
+    const icon = document.createElement('span')
+    icon.setAttribute('slot', 'loading-icon')
+    el.appendChild(icon)
+    expect(spinnerOf(el).classList.contains('custom-icon')).toBe(true)
+    icon.remove()
+    expect(spinnerOf(el).classList.contains('custom-icon')).toBe(false)
+  })
+
+  it('CSS：loading 内容隐藏规则豁免 loading-icon 插槽（含 loading-with-text），custom-icon 形态停用内置环', () => {
+    const el = mount({ loading: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/button\.loading slot:not\(\[name='loading-icon'\]\)/)
+    expect(css).toMatch(/button\.loading-with-text slot:not\(\[name='loading-icon'\]\)/)
+    expect(css).toMatch(/\.spinner\.custom-icon\s*{[^}]*animation: none/)
+  })
+})
