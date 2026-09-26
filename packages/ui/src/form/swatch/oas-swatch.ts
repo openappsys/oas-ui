@@ -109,7 +109,20 @@ function warnInvalidSize(raw: string): void {
  */
 export class OASSwatch extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['color', 'size', 'shape', 'nothing', 'mixed', 'disabled', 'selected', 'label', 'aria-label', 'dir']
+    return [
+      'color',
+      'size',
+      'shape',
+      'nothing',
+      'mixed',
+      'disabled',
+      'selected',
+      'label',
+      'aria-label',
+      'dir',
+      // 组下发通道（data-group-disabled 由 oas-swatch-group 写入，对齐 radio-group 惯例）
+      'data-group-disabled',
+    ]
   }
 
   private btnEl: HTMLButtonElement | null = null
@@ -167,7 +180,8 @@ export class OASSwatch extends OASElement {
     this.setAttribute('data-shape', shape === 'square' || shape === 'circle' ? shape : 'rounded')
 
     // 禁用：内钮 disabled + 宿主 aria-disabled（roving 焦点链排除由组处理）
-    const disabled = this.hasAttr('disabled') || this.injectDisabled()
+    // 禁用：自身 disabled 或组下发 data-group-disabled（组禁用不抹子件自有属性，见 group 约定）
+    const disabled = this.hasAttr('disabled') || this.hasAttr('data-group-disabled') || this.injectDisabled()
     btn.disabled = disabled
     this.toggleAttribute('aria-disabled', disabled)
 
@@ -187,6 +201,8 @@ export class OASSwatch extends OASElement {
     if (!btn) return
     if (!role) {
       btn.setAttribute('role', 'button')
+      btn.setAttribute('aria-pressed', String(this.hasAttr('selected')))
+      btn.removeAttribute('aria-checked')
       return
     }
     btn.setAttribute('role', role)

@@ -19,6 +19,16 @@ describe('OASGrid', () => {
     expect(grid.shadowRoot!.querySelector('slot')).not.toBeNull()
   })
 
+  it('不写内联 display（:host{display:grid} 样式表兜底）——内联 display 会压过 :host([hidden]) 使动态 hidden 失效', () => {
+    const grid = new OASGrid()
+    grid.innerHTML = `<oas-grid-item>a</oas-grid-item>`
+    document.body.appendChild(grid)
+    expect(grid.style.display, 'update() 不应写内联 display').toBe('')
+    // 动态加 hidden（hidden 不在 observedAttributes，曾因内联 display 残留依旧可见）
+    grid.setAttribute('hidden', '')
+    expect(grid.style.display, '动态 hidden 场景同样无内联 display 残留').toBe('')
+  })
+
   it('gap 属性生效', () => {
     const grid = new OASGrid()
     grid.setAttribute('gap', '16px')

@@ -181,6 +181,27 @@ describe('OASSwatchGroup 选择组', () => {
     expect(btn(swatches[0]!).disabled).toBe(true)
   })
 
+  it('组级 disabled 不抹掉子件自身 disabled；组解除禁用后子件自身 disabled 仍在（data-group-disabled 通道）', () => {
+    const el = mountGroup({ disabled: '' }, ['red', 'blue'])
+    const swatches = [...el.querySelectorAll<OASSwatch>('oas-swatch')]
+    // 先给第二个子件自身 disabled
+    swatches[1]!.setAttribute('disabled', '')
+    el.setAttribute('disabled', '') // 组禁用
+    expect(swatches[0]!.hasAttribute('data-group-disabled'), '组禁用下发走 data-group-disabled').toBe(true)
+    expect(swatches[0]!.hasAttribute('disabled'), '子件自有 disabled 不被组下发覆写').toBe(false)
+    expect(swatches[1]!.hasAttribute('disabled'), '子件自身 disabled 保留').toBe(true)
+    // 组解除禁用：data-group-disabled 摘除，子件自身 disabled 不动
+    el.removeAttribute('disabled')
+    expect(swatches[0]!.hasAttribute('data-group-disabled')).toBe(false)
+    expect(swatches[0]!.hasAttribute('disabled'), '组解除后子件不因曾被组禁用而残留 disabled').toBe(false)
+    expect(swatches[1]!.hasAttribute('disabled'), '子件自身 disabled 全程不动').toBe(true)
+    // 子件自身 disabled 在 roving/交互链中仍排除
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    btn(swatches[1]!).click()
+    expect(fired, '子件自身 disabled 不可点').toBe(0)
+  })
+
   it('ARIA：单选 radiogroup+radio；多选 group+checkbox（aria-checked 同步）', () => {
     const single = mountGroup({ value: 'red' })
     expect(single.shadowRoot!.querySelector('[part="group"]')!.getAttribute('role')).toBe('radiogroup')

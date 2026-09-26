@@ -791,7 +791,9 @@ export class OASUpload extends OASFormElement {
   /**
    * trigger：native slot 分发 light-DOM 子元素；但 `<template slot="trigger">` 的 template
    * 元素本身被分配进 slot 后内容永不渲染（inert）——触发区整块空白（头像自绘 demo 双向空白实抓）。
-   * 模板在场时走克隆通道：隐藏 slot，把模板内容克隆进 .trigger-tpl（shadow 内，点击走 zone 通路）
+   * 模板在场时走克隆通道：隐藏 slot，把模板内容克隆进 .trigger-tpl（shadow 内，点击走 zone 通路）。
+   * ⚠️ 限制：克隆是 update() 时的静态快照——模板内容连接后再变更不会自动刷新（模板写完再挂组件，
+   * 或之后改任意属性触发一次 update 即可重同步）。
    */
   private syncTriggerTpl(): void {
     const slot = this.shadow.querySelector<HTMLSlotElement>('slot[name="trigger"]')
