@@ -471,7 +471,6 @@ export class OASGrid extends OASElement {
 
     // 可见行上限：折叠取 maxRows，展开取全部
     const limit = collapsed ? maxRows : totalRows
-    let changed = false
     let endPos = 0
     children.forEach((child, i) => {
       const visible = (rows[i] ?? 1) <= limit
@@ -480,7 +479,6 @@ export class OASGrid extends OASElement {
         // 写回带变更守卫：重复写同一状态不触发任何观察者（防 MutationObserver 回环）
         if (visible) child.removeAttribute('hidden')
         else child.setAttribute('hidden', '')
-        changed = true
       }
     })
 
@@ -498,7 +496,6 @@ export class OASGrid extends OASElement {
       btn.textContent = collapsed ? this.t('ellipsis.expand') : this.t('ellipsis.collapse')
       btn.setAttribute('aria-expanded', String(!collapsed))
     }
-    void changed
   }
 
   /** 用户经尾格展开过（期间需要「收起」折回入口的依据） */

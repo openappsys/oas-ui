@@ -765,7 +765,8 @@ export class OASDrawer extends OASElement {
     this.panel?.setAttribute('data-open', '')
     this.panel?.removeAttribute('data-swiping')
     this.panel?.style.removeProperty('transform')
-    this.focusInitial()
+    // no-mask（非模态）不抢焦点（对齐 modal no-mask 契约：交互留在页面其余部分）
+    if (!this.hasAttr('no-mask')) this.focusInitial()
     this.emitOnAnimEnd(
       () => {
         this.emit('opened')
@@ -897,6 +898,8 @@ export class OASDrawer extends OASElement {
     if (!this.isOpen) return
     if (topDrawer() !== this) return
     if (this.hasAttr('no-focus-trap')) return
+    // no-mask（非模态）：页面可点可见时不圈禁 Tab（对齐 modal no-mask 既有契约与 dialog.show() 语义）
+    if (this.hasAttr('no-mask')) return
     const focusables = this.getFocusables()
     if (focusables.length === 0) return
     const first = focusables[0]!
@@ -1153,6 +1156,8 @@ export class OASDrawer extends OASElement {
     else if (!visible && this.isOpen) this.onCloseStart()
 
     panel.setAttribute('aria-hidden', String(!visible))
+    // no-mask（非模态）：aria-modal=false（页面可交互时不向读屏谎报模态；对齐 dialog.show() 语义）
+    panel.setAttribute('aria-modal', this.hasAttr('no-mask') ? 'false' : 'true')
     this.applyZ()
     this.applyDimension()
     panel.setAttribute('data-placement', this.getAttr('placement', 'right'))

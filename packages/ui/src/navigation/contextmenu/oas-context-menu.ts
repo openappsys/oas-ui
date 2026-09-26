@@ -23,7 +23,8 @@ const STYLE = `
 
 export class OASContextMenu extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['items', 'open', 'long-press-delay', 'close-on-scroll']
+    // value 入观察：打开期间宿主受控改 value 时内层 menu 勾选集即时跟随（下传走 update 的 open 分支）
+    return ['items', 'open', 'long-press-delay', 'close-on-scroll', 'value']
   }
 
   private itemsList: MenuItem[] = []

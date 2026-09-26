@@ -223,13 +223,15 @@ describe('OASFormElement 表单级尺寸通道（formSizeCallback）', () => {
   it('同值重复回调不触发多余 update', () => {
     const el = new FixtureInput()
     document.body.appendChild(el)
-    const before = (el as unknown as { updateCount?: number }).updateCount
+    const spy = vi.spyOn(el as unknown as { update(): void }, 'update')
+    spy.mockClear()
+    el.formSizeCallback('small')
+    expect(spy.mock.calls.length, '首次变化触发一次 update').toBe(1)
     el.formSizeCallback('small')
     el.formSizeCallback('small')
-    el.formSizeCallback('small')
-    // 无法读私有计数时至少保证无异常且值幂等
-    expect((el as unknown as { p?: unknown }).p === undefined || true).toBe(true)
-    void before
+    expect(spy.mock.calls.length, '同值重复回调幂等（不重复 update）').toBe(1)
+    el.formSizeCallback('large')
+    expect(spy.mock.calls.length, '真变化再触发').toBe(2)
     el.remove()
   })
 })

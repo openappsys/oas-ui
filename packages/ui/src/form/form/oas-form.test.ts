@@ -8,6 +8,7 @@ import '../switch/index.js'
 import '../transfer/index.js'
 import '../checkbox/index.js'
 import '../cascader/index.js'
+import '../radio/index.js'
 function mount(): OASForm {
   const el = new OASForm()
   el.setAttribute(
@@ -1088,6 +1089,20 @@ describe('OASForm 表级 size 注入', () => {
     document.body.appendChild(el)
     return el
   }
+
+  it('radio-group options 通道消费表级 size（组 shadow 内子项经 injectValue 链下发）', async () => {
+    const el = mountForm(
+      '<oas-radio-group name="plan" options=\'[{"label":"A","value":"a"},{"label":"B","value":"b"}]\'></oas-radio-group>',
+      { size: 'large' },
+    )
+    const group = el.querySelector('oas-radio-group')!
+    await new Promise((r) => setTimeout(r, 0))
+    const firstItem = group.shadowRoot!.querySelector('oas-radio')
+    expect(firstItem?.getAttribute('data-group-size'), '组内 options 子项应收到表级尺寸').toBe('large')
+    el.setAttribute('size', 'small')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(group.shadowRoot!.querySelector('oas-radio')?.getAttribute('data-group-size'), '动态切换跟随').toBe('small')
+  })
 
   it('form size 覆盖无 name 控件 + 非 form-associated 控件（requestUpdate 兜底重渲染）', async () => {
     const el = mountForm(

@@ -199,7 +199,9 @@ export class OASRadioGroup extends OASFormElement {
     // disabled 就近读取全局禁用注入（组件显式 disabled > 表单链路 > 豁免 > provider 注入）
     const groupDisabled = this.injectDisabled()
     const groupReadonly = this.hasAttr('readonly')
-    const groupSize = normalizeChoice(this.getAttr('size', ''), VALID_SIZES)
+    // 组级尺寸：自身 size > 表级下发（data-form-size，injectValue 通道）> provider 注入 > 缺省
+    // （options 通道子项渲染在组 shadow 内，form 的 querySelectorAll 穿不透——必须组自身消费）
+    const groupSize = normalizeChoice(this.injectValue('size', ''), VALID_SIZES)
     const groupStatus = normalizeChoice(this.getAttr('status', ''), VALID_STATUSES)
     this.items = this.collectItems()
     for (const r of this.items) {

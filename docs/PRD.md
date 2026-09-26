@@ -1586,7 +1586,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **oas-descriptions**：`items` 数据驱动通道（JSON attribute + property，子元素通道保留）
 - **oas-drawer**：`no-mask`（无遮罩模式，点击外部仍关；与 mask 既有契约一致）
 - **oas-dropdown**：`size`（触发器尺寸五档透传）+ `type`（触发器按钮类型透传）+ `max-height`（面板限高滚动）
-- **oas-form**：`size`（表级尺寸注入字段）+ `colon`（标签冒号开关，form 级）+ `help`（form-item 静态帮助文案，独立于校验错误）+ `status-icon`（校验状态图标反馈）+ `validate-messages`（校验文案模板，property 通道覆盖 locale 默认）
+- **oas-form**：`size`（表级尺寸注入字段——全量注册控件含无 name 展示件；嵌套 form 场景外层下发会深入内层 form 字段（与 disabled 下发同款穿透），双层 size 语义由 update 次序决定，立档不阻塞）+ `colon`（标签冒号开关，form 级）+ `help`（form-item 静态帮助文案，独立于校验错误）+ `status-icon`（校验状态图标反馈）+ `validate-messages`（校验文案模板，property 通道覆盖 locale 默认）
 - **oas-grid**：grid-item `flex` + `pull` / `push`（偏移，对齐 span/offset 语义）+ 折叠行（`collapsed-rows` + 展开收起尾格）+ 双轴 gap（`gap="x,y"` 或行列分离属性）
 - **oas-image**：`width` / `height`（显式尺寸）+ `referrerpolicy`（透传 img）
 - **oas-input**：`minlength` / `pattern` / `spellcheck`（透传）+ `min` / `max` / `step`（number 类型透传）+ `clear-icon` 插槽 + `hint`（输入框下方静态提示文案）
