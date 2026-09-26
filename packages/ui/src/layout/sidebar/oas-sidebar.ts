@@ -731,6 +731,17 @@ export class OASSidebar extends OASElement {
     document.addEventListener('pointerdown', onOutside, true)
     this.onCleanup(() => document.removeEventListener('pointerdown', onOutside, true))
 
+    // flyout 打开期间页面滚动/缩放：关闭（fixed 定位脱锚，对齐浮层组件 close-on-scroll 惯例）
+    const onScrollResize = (): void => {
+      if (this.flyoutOpen !== null) this.closeAllFlyouts(false)
+    }
+    window.addEventListener('scroll', onScrollResize, true)
+    window.addEventListener('resize', onScrollResize)
+    this.onCleanup(() => {
+      window.removeEventListener('scroll', onScrollResize, true)
+      window.removeEventListener('resize', onScrollResize)
+    })
+
     // 菜单键盘导航：↑/↓ 在可见项间移动焦点（Home/End 跳首末；Enter/Space 走原生 button 激活）
     const nav = this.shadow.querySelector('.nav')
     nav?.addEventListener('keydown', (e) => this.onNavKey(e))
@@ -941,6 +952,10 @@ export class OASSidebar extends OASElement {
   private renderItems(collapsed: boolean): void {
     const nav = this.shadow.querySelector<HTMLElement>('.nav')
     if (!nav) return
+    // flyout 状态重置：nav 重建时 flyout DOM 同步销毁，flyoutOpen 不得残留旧值
+    // （否则宿主改 active/items 后，同一父项首次点击被判「再点关闭」空转一次）
+    this.flyoutOpen = null
+    this.clearFlyoutTimers()
     // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
     if (this.hasAttribute('items')) this.parseItems()
     else this.parseChildItems()
@@ -1210,6 +1225,10 @@ export class OASSidebar extends OASElement {
       if (btn.querySelector('.chevron')) return // 嵌套父项：内联展开，不关面板
       this.closeAllFlyouts(false)
     })
+    // hover 链路关键补丁：指针进入面板时取消一切开合计时——btn↔flyout 之间有定位 gap，
+    // 穿越 gap 会触发 block 的 pointerleave（关闭计时已启动），flyout 自身若无 pointerenter
+    // 处理器，面板会在指针已在面板内悬停时仍于 300ms 后被关闭（review 实抓 hover 链路断裂）
+    flyout.addEventListener('pointerenter', () => this.clearFlyoutTimers())
     return flyout
   }
 

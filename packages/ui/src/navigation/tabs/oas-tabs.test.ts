@@ -380,16 +380,17 @@ describe('OASTabs', () => {
     expect(btn.getAttribute('title'), '幂等渲染：按钮 title 缓存仍在').toBe('完整标题文本')
   })
 
-  it('宿主后续改写 title 属性：按钮 title 跟随更新并再次吸收', () => {
+  it('宿主后续改写 title 属性：按钮 title 即时跟随更新并再次吸收（observer 观察 title 属性，无需等无关 update）', async () => {
     const el = new OASTabs()
     el.innerHTML = '<oas-tab-panel label="标题" value="a" title="旧提示"><p>内容</p></oas-tab-panel>'
     document.body.appendChild(el)
     const panel = el.querySelector<HTMLElement>('oas-tab-panel')!
     panel.setAttribute('title', '新提示')
-    // 触发 update（MutationObserver 或属性变化）
-    el.setAttribute('size', 'small')
+    await Promise.resolve() // MutationObserver 回调（microtask）→ update 吸收
+    await new Promise((r) => setTimeout(r, 0))
+    // 不再 setAttribute 无关属性——observer 的 title 观察应即时触发 update
     const btn = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
-    expect(btn.getAttribute('title'), '改写后按钮 title 更新').toBe('新提示')
+    expect(btn.getAttribute('title'), '改写后按钮 title 即时更新').toBe('新提示')
     expect(panel.hasAttribute('title'), '改写后的 title 再次被吸收').toBe(false)
   })
 

@@ -773,9 +773,10 @@ export class OASTabs extends OASElement {
     // 免去对 shadow 内部结构的几何猜测）；capture 阶段挂载，先于 manager 的 bubble 委托
     // 触发——preventDefault 时 stopPropagation 能真正阻断内建菜单
     tablist?.addEventListener('contextmenu', (e) => this.handleTabContextMenu(e as MouseEvent), { capture: true })
-    // 宿主增删 oas-tab-panel（如 closable 场景外部移除面板）时增量刷新标签栏
+    // 宿主增删 oas-tab-panel（如 closable 场景外部移除面板）时增量刷新标签栏；
+    // 同时观察 panel 的 title 属性变化（宿主改写 title 即时透传按钮，无需等无关 update）
     this.observer = new MutationObserver(() => this.update())
-    this.observer.observe(this, { childList: true })
+    this.observer.observe(this, { childList: true, attributes: true, attributeFilter: ['title'], subtree: true })
     this.onCleanup(() => this.observer?.disconnect())
     // + 按钮（template 占位，update 按需显隐）：click → oas-add
     this.shadow.querySelector('.tab-add')?.addEventListener('click', () => {

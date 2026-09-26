@@ -359,7 +359,7 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   `oas-container`, `oas-grid`, `oas-grid-item`, `oas-badge`,
   `oas-button-group`, `oas-icon`, `oas-kbd`, `oas-label`, `oas-link`,
   `oas-space`, `oas-compact`, `oas-visually-hidden`, `oas-tooltip`, `oas-popover`,
-  `oas-config-provider`, `oas-app`, `oas-app-bar`.
+  `oas-config-provider`, `oas-app`, `oas-app-bar`, `oas-stepper`, `oas-stepper-panel`.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
 - The imperative components (message / notification / toast / snackbar /

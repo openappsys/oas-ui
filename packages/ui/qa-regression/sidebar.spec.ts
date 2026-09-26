@@ -247,3 +247,40 @@ test('sidebar 折叠态树形父项点击开 flyout：面板在 rail 右侧视�
   expect(r2.detail?.value, '叶子点击派发 oas-select 且值为叶子 value').toBe(r2.leafValue)
   expect(r2.closed, '选中后面板关闭').toBe(true)
 })
+
+// —— 缺陷回归（review 实抓）：hover 打开的 flyout 在指针进入面板后 300ms 被误关 ——
+// 根因：btn↔flyout 的定位 gap 穿越触发 block pointerleave（启动 300ms 关闭计时），flyout 自身
+// 无 pointerenter 处理器取消计时。真实鼠标轨迹：hover btn 打开 → 移入面板驻留 >400ms → 面板仍开。
+test('sidebar flyout hover 链路：hover 父项打开，移入面板驻留不自动关闭', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => {
+    const blk = [...document.querySelectorAll('.demo-block')].find((b) => (b.textContent || '').includes('嵌套'))!
+    blk.scrollIntoView({ block: 'center' })
+    blk.querySelector('oas-sidebar')!.setAttribute('collapsed', '')
+  })
+  await page.waitForTimeout(300)
+  // 真实鼠标轨迹：移到父项图标中心（hover 开）
+  const target = await page.evaluate(() => {
+    const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
+    const btn = sb.shadowRoot!.querySelector<HTMLElement>('[part="item"][aria-haspopup="true"]')!
+    const r = btn.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, value: btn.dataset.value }
+  })
+  await page.mouse.move(target.x, target.y)
+  await page.waitForTimeout(250) // > FLYOUT_OPEN_DELAY(150)，hover 开面板
+  const opened = await page.evaluate((v) => {
+    const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
+    const flyout = sb.shadowRoot!.querySelector<HTMLElement>(`[part="flyout"][data-parent="${v}"]`)!
+    const fR = flyout.getBoundingClientRect()
+    return { open: !flyout.hidden, x: fR.left + 20, y: fR.top + 20 }
+  }, target.value)
+  expect(opened.open, 'hover 父项应打开 flyout').toBe(true)
+  // 移入面板内驻留 400ms（> FLYOUT_CLOSE_DELAY(300)）：面板不应自动关闭
+  await page.mouse.move(opened.x, opened.y, { steps: 6 })
+  await page.waitForTimeout(420)
+  const stillOpen = await page.evaluate((v) => {
+    const sb = [...document.querySelectorAll('oas-sidebar')].find((s) => s.hasAttribute('collapsed'))!
+    return !sb.shadowRoot!.querySelector<HTMLElement>(`[part="flyout"][data-parent="${v}"]`)!.hidden
+  }, target.value)
+  expect(stillOpen, '指针已在面板内悬停时面板不应自动关闭（hover 链路不得断裂）').toBe(true)
+})

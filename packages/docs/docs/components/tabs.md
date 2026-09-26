@@ -87,7 +87,7 @@
 
 ## 标签级右键事件（宿主自建菜单）
 
-`oas-tab-contextmenu`：右键某个标签（或聚焦标签按 Menu 键 / Shift+F10）时派发——可取消事件，`detail: { value, index, clientX, clientY, originalEvent }`。宿主 `preventDefault()` 时内建菜单（`context-menu` 属性）与浏览器默认菜单全抑止，宿主可拿 `value` 回查自身数据、拿 `clientX/clientY` 弹 `oas-context-menu` 自建菜单（如文件类操作的「复制路径 / 在文件管理器中打开」）；不拦截时内建菜单照常。空白处右键不派发；键盘触发坐标取按钮中心。与 `context-menu` 属性无关——无论内建菜单是否开启，事件都派发。
+`oas-tab-contextmenu`：右键某个标签（或聚焦标签按 Menu 键 / Shift+F10）时派发——可取消事件，`detail: { value, index, clientX, clientY, originalEvent }`。宿主 `preventDefault()` 时内建菜单（`context-menu` 属性）与浏览器默认菜单全抑止，宿主可拿 `value` 回查自身数据、拿 `clientX/clientY` 弹 `oas-context-menu` 自建菜单（如文件类操作的「复制路径 / 在文件管理器中打开」）；不拦截时内建菜单照常。空白处右键不派发；键盘触发坐标取按钮中心。与 `context-menu` 属性无关——无论内建菜单是否开启，事件都派发。注：键盘路径只服务宿主自建菜单（内建菜单的唤出通道是鼠标右键）。
 
 <DemoBlock title="右键批量关闭（context-menu）">
   <oas-tabs id="tabs-contextmenu" closable context-menu active="b">
