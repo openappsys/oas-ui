@@ -662,6 +662,36 @@ onMounted(() => {
       showHeaderBtn.textContent = '显示表头'
     }
   })
+
+  // P2 批 demo：限高滚动数据（12 条）+ rowExpandable 谓词 + 过滤图标插槽 + 单元格/双击事件反馈
+  const maxHeightTable = document.querySelector('#table-max-height')
+  if (maxHeightTable) {
+    const mhRows = TABLE_ROWS.slice(0, 12).map((r) => ({ name: r.name, age: r.age, city: r.city }))
+    maxHeightTable.setAttribute('data', JSON.stringify(mhRows))
+  }
+  customElements.whenDefined('oas-table').then(() => {
+    const expandableTable = document.querySelector('#table-row-expandable')
+    if (expandableTable) {
+      expandableTable.rowExpandable = (row) => row.key !== 'c'
+    }
+  })
+  const filterIconTable = document.querySelector('#table-filter-icon')
+  if (filterIconTable) {
+    const tpl = document.createElement('template')
+    tpl.innerHTML = '<oas-icon name="search" style="font-size: 12px"></oas-icon>'
+    tpl.setAttribute('slot', 'filter-icon')
+    filterIconTable.appendChild(tpl)
+  }
+  const cellEventTable = document.querySelector('#table-cell-events')
+  cellEventTable?.addEventListener('oas-cell-click', (e) => {
+    const { column, value } = e.detail
+    const el = document.querySelector('#table-cell-feedback')
+    if (el) el.textContent = `${column} = ${value}`
+  })
+  cellEventTable?.addEventListener('oas-row-dblclick', (e) => {
+    const el = document.querySelector('#table-dbl-feedback')
+    if (el) el.textContent = e.detail.row.name ?? e.detail.rowIndex
+  })
 })
 </script>
 
@@ -675,6 +705,87 @@ onMounted(() => {
     <div style="margin-top: var(--oas-space-3)">
       <oas-button size="small" id="table-show-header-toggle">隐藏表头</oas-button>
     </div>
+  </div>
+</DemoBlock>
+
+## 表格布局（table-layout）
+
+`table-layout="fixed"` 把 `table-layout` 透传给内部 table：列宽严格按 `width` 声明分配（超长内容换行/截断不再撑宽列），适合列宽已定的报表场景；默认不透传（浏览器 auto 基线，列宽随内容自适应）。
+
+<DemoBlock title="table-layout=fixed（列宽严格生效）">
+  <div style="width: 100%">
+    <oas-table table-layout="fixed" columns='[{"key":"name","title":"姓名","width":"25%"},{"key":"position","title":"职位","width":"25%"},{"key":"duty","title":"职责说明"}]' data='[{"name":"张三","position":"前端工程师","duty":"负责组件库设计与渲染性能优化，参与设计系统建设。"},{"name":"李四","position":"产品经理","duty":"主导需求评审与版本规划，协调跨团队资源。"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+## 行 hover 开关（hover）
+
+`hover="false"` 关闭行 hover 底色（默认开启保持现状）；适合行内容自身带交互态（内嵌按钮高亮等）、不希望整行底色变化的场景。仅影响 hover 底色视觉，行点击/选中行为不受影响。
+
+<DemoBlock title="默认 hover 与 hover=false 对比">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-4)">
+    <div>
+      <p style="margin: 0 0 var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">默认（hover 开）</p>
+      <oas-table columns='[{"key":"name","title":"姓名"},{"key":"city","title":"城市"}]' data='[{"name":"张三","city":"北京"},{"name":"李四","city":"上海"}]' row-key="name"></oas-table>
+    </div>
+    <div>
+      <p style="margin: 0 0 var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">hover=&quot;false&quot;（关闭）</p>
+      <oas-table hover="false" columns='[{"key":"name","title":"姓名"},{"key":"city","title":"城市"}]' data='[{"name":"张三","city":"北京"},{"name":"李四","city":"上海"}]' row-key="name"></oas-table>
+    </div>
+  </div>
+</DemoBlock>
+
+## 树形缩进（indent-size）
+
+树形数据的每级缩进量由 `indent-size` 控制（px，默认 24）；配合更紧凑的层级展示或更深的层级结构使用。
+
+<DemoBlock title="indent-size=32（每级缩进加大）">
+  <div style="width: 100%">
+    <oas-table indent-size="32" columns='[{"key":"name","title":"部门 / 成员"},{"key":"city","title":"城市"}]' data='[{"key":"r1","name":"研发部","city":"—","children":[{"key":"r1-1","name":"前端组","city":"北京","children":[{"key":"r1-1-1","name":"张三","city":"北京"}]},{"key":"r1-2","name":"后端组","city":"深圳"}]}]' expanded="r1,r1-1" row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+## 展开行谓词（row-expandable）
+
+`rowExpandable`（property 函数通道）按行判定是否渲染行尾展开钮：返回 `false` 的行不渲染（占位格保留、列对齐不破坏）。适合部分行没有可展开内容的场景。
+
+<DemoBlock title="仅「完整资料」的行可展开">
+  <div style="width: 100%">
+    <oas-table id="table-row-expandable" columns='[{"key":"name","title":"姓名"},{"key":"city","title":"城市"}]' data='[{"key":"a","name":"张三","city":"北京","expand":"<div>工号 1001 · 2021 年入职</div>"},{"key":"b","name":"李四","city":"上海","expand":"<div>工号 1002 · 2022 年入职</div>"},{"key":"c","name":"王五","city":"深圳"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">王五的资料不完整（rowExpandable 返回 false），没有展开钮。</p>
+  </div>
+</DemoBlock>
+
+## 限高滚动（max-height）
+
+`max-height` 限制表体滚动容器高度（数字按 px，也可传 CSS 值如 `50vh`）：内容超高时容器内滚动，表头吸顶（sticky）钉在容器顶部。轻量限高用它；需要虚拟滚动（万级行）用 `height`。
+
+<DemoBlock title="max-height=200（表头吸顶）">
+  <div style="width: 100%">
+    <oas-table id="table-max-height" max-height="200" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+## 自定义过滤图标（filter-icon 插槽）
+
+可过滤列的表头触发图标可用 `slot="filter-icon"` 自定义（`<template>` 或普通元素均可），缺省为内置过滤图形。
+
+<DemoBlock title="template 自定义过滤图标">
+  <div style="width: 100%">
+    <oas-table id="table-filter-icon" columns='[{"key":"name","title":"姓名","filterable":true},{"key":"city","title":"城市"}]' data='[{"name":"张三","city":"北京"},{"name":"李四","city":"上海"},{"name":"王五","city":"深圳"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+## 单元格与双击事件（oas-cell-click / oas-row-dblclick）
+
+点击数据单元格派发 `oas-cell-click`（detail 含 `row / column / value / rowIndex / columnIndex`）；双击数据行派发 `oas-row-dblclick`（detail 含 `row / rowIndex`）。落在行内按钮、链接、表单控件等交互宿主上的点击/双击不派发（与行选中同一份排除清单）。
+
+<DemoBlock title="单元格点击 / 行双击反馈">
+  <div style="width: 100%">
+    <oas-table id="table-cell-events" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+      单击单元格：<span id="table-cell-feedback">—</span> · 双击行：<span id="table-dbl-feedback">—</span>
+    </p>
   </div>
 </DemoBlock>
 
@@ -698,7 +809,10 @@ onMounted(() => {
 | `expanded` | 已展开行 key 集合（逗号分隔；树形父行/可展开行共用） | `string` | — |
 | `filter-values` | 受控列过滤值（JSON 对象：列 key → 选中值数组） | `string` | — |
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
+| `hover` | 行 hover 底色开关（仅视觉，不影响选中行为），`"false"` 关闭 | — | — |
+| `indent-size` | 树形数据每级缩进量（px） | `string` | `24` |
 | `loading` | 加载态：数据区显示加载占位行（表头保留） | `boolean` | — |
+| `max-height` | 表体限高滚动 + 表头吸顶（虚拟 height 同设时优先） | `string` | — |
 | `multi-sort` | 多列排序（JSON 数组：[{ key, order }]，按数组序依次排序） | `string` | — |
 | `page-size` | 每页条数（内置分页，默认 10） | `string` | `10` |
 | `pagination` | 内置分页开关（页脚分页条；宿主自管分页时不设） | `boolean` | — |
@@ -713,11 +827,13 @@ onMounted(() => {
 | `stripe` | 斑马纹：奇数/偶数行交替浅底色 | `boolean` | — |
 | `summary` | 合计配置 `[{ key, type: 'sum'\|'avg'\|'count', label? }]`，JSON 字符串 | `string` | — |
 | `summary-scope` | 合计行聚合范围：`all`（默认，全量数据）/ `page`（当前页） | `string` | `all` |
+| `table-layout` | 透传表格布局算法（fixed 时列宽严格按 width 声明） | `string` | — |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-cell-click` | 点击数据单元格派发，`detail: { row, column, value, rowIndex, columnIndex }`（交互控件内不派发） |
 | `oas-check` | 复选框选中变化，`detail: { keys: string[] }` |
 | `oas-column-order` | 列拖拽重排后派发，`detail: { keys }`（新列序） |
 | `oas-column-resize` | 列宽拖拽调整后派发，`detail: { key, width }` |
@@ -727,6 +843,7 @@ onMounted(() => {
 | `oas-filter-change` | 列过滤值变化时派发，`detail: { key, values }` |
 | `oas-page-change` | 内置分页翻页时派发，`detail: { current, pageSize }` |
 | `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
+| `oas-row-dblclick` | 双击数据行派发，`detail: { row, rowIndex }` |
 | `oas-scroll` | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 | `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
 
@@ -734,7 +851,9 @@ onMounted(() => {
 
 | 名称 | 说明 |
 | --- | --- |
+| `filter-icon` | 自定义可过滤列表头的触发图标 |
 | `template[slot="empty"]` | 空态富内容（优先于 empty-text 与默认空态文案） |
+| `template[slot="filter-icon"]` | — |
 
 #### CSS 变量
 

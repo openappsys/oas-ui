@@ -378,6 +378,8 @@ export class OASTimePicker extends OASFormElement {
       'is-range',
       'placement',
       'placeholder',
+      'hide-disabled-options',
+      'label',
       // 表单关联通道：required 驱动原生校验链（valueMissing）；name 变化需重同步范围 FormData 的 entry key
       'name',
       'required',
@@ -997,6 +999,9 @@ export class OASTimePicker extends OASFormElement {
       } else {
         for (const v of values) {
           const isDisabled = disabled.has(v)
+          // hide-disabled-options：禁用选项直接不渲染（隐藏而非灰显）；
+          // 键盘跳禁与就近吸附基于值集合运算，不依赖选项 DOM，行为不受影响
+          if (isDisabled && this.hasAttr('hide-disabled-options')) continue
           const btn = this.createOption(String(v), pad(v), v === shown, isDisabled, () => {
             this.applyColumnValue(desc.unit, parts, v)
             this.activeColumn = i
@@ -1181,7 +1186,9 @@ export class OASTimePicker extends OASFormElement {
     i.readOnly = disabled || readonly || this.isRange()
     const placeholder = this.getAttr('placeholder', this.t('timePicker.placeholder'))
     i.placeholder = placeholder
-    i.setAttribute('aria-label', placeholder)
+    // 可访问命名：label 属性（表单标签，对齐 oas-select 契约）> placeholder 回退；
+    // 外部 <label for> 关联命名由基类 syncInnerLabelledBy 在 update 后覆盖（外部 label 优先）
+    i.setAttribute('aria-label', this.getAttr('label', '') || placeholder)
     if (!this.typing) i.value = this.displayText()
     const nowBtn = this.shadow.querySelector<HTMLElement>('[part="now"]')
     if (nowBtn) nowBtn.textContent = this.t('calendar.today')

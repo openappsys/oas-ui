@@ -21,6 +21,12 @@ function normalizeChoice(raw: string, fallback: string, valid: readonly string[]
   return (valid as readonly string[]).includes(raw) ? raw : fallback
 }
 
+/** 12 向 placement 词表校验（对齐 dropdown/浮层引擎：基向 + -start/-end 逻辑对齐后缀）；非法回落 bottom-start */
+function normalizePlacement(raw: string): Placement {
+  const m = /^(top|bottom|left|right)(?:-(start|end))?$/.exec(raw.trim())
+  return (m ? m[0] : 'bottom-start') as Placement
+}
+
 const STYLE = `
 :host {
   display: inline-block;
@@ -249,6 +255,10 @@ export class OASAutoComplete extends OASFormElement {
       'status',
       'readonly',
       'disabled-skip',
+      // 面板 12 向放置（对齐浮层定位引擎；非法值回落 bottom-start）
+      'placement',
+      // 转发内层 input（原生 autofocus 不穿透 shadow）
+      'autofocus',
       // required 仅驱动原生校验链（valueMissing）
       'required',
     ]
@@ -340,6 +350,10 @@ export class OASAutoComplete extends OASFormElement {
       e.stopPropagation()
       this.clearValue()
     })
+    // autofocus：转发到内部 input（原生 autofocus 不穿透 shadow，挂载后手动聚焦一次，同 input/button）
+    if (this.hasAttr('autofocus')) {
+      queueMicrotask(() => this.input?.focus())
+    }
     this.onCleanup(() => {
       document.removeEventListener('click', this.handleOutsideClick, true)
       this.clearDebounce()
@@ -704,18 +718,23 @@ export class OASAutoComplete extends OASFormElement {
     }
   }
 
-  /** 复用浮层定位引擎：锚定输入框下方，空间不足自动翻转/避让，宽度对齐输入框、左缘对齐（bottom-start） */
+  /** 复用浮层定位引擎：锚定输入框，空间不足自动翻转/避让，宽度对齐输入框。
+   *  placement 12 向（默认 bottom-start，逻辑 -start/-end 语义随书写方向镜像）：
+   *  完整 placement 交给引擎，由引擎按 direction 镜像对齐并返回实际落位，
+   *  data-placement 写引擎返回值（与 dropdown/date-picker 同口径，宿主可感知翻转结果）。 */
   private positionDropdown(): void {
     if (!this.dropdown || !this.input) return
     const anchorRect = this.input.getBoundingClientRect()
     // 先撑宽再测量/定位：dropdown 为 auto 宽度，撑宽前测会按固有宽度算 left → 首次展开偏右。
     this.dropdown.style.width = `${anchorRect.width}px`
     const panelRect = this.dropdown.getBoundingClientRect()
-    const { top, left } = computePosition(anchorRect, panelRect, 'bottom-start' as Placement, getViewport(), 8, true, {
+    const requested = normalizePlacement(this.getAttr('placement', 'bottom-start'))
+    const { top, left, placement } = computePosition(anchorRect, panelRect, requested, getViewport(), 8, true, {
       direction: resolveDirection(this),
     })
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
+    this.dropdown.setAttribute('data-placement', placement)
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {

@@ -78,6 +78,10 @@ const STYLE = `
     opacity var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
     visibility 0s;
 }
+/* no-mask 无遮罩模式：遮罩整体不渲染（display:none 兜底，防 UA 规则被后续 display 声明压过） */
+.mask[hidden] {
+  display: none;
+}
 .panel {
   position: fixed;
   display: flex;
@@ -433,6 +437,7 @@ export class OASDrawer extends OASElement {
       'placement',
       'no-footer',
       'no-mask-close',
+      'no-mask',
       'width',
       'height',
       'size',
@@ -591,6 +596,22 @@ export class OASDrawer extends OASElement {
     }
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
+
+    // no-mask 无遮罩模式的外部点击关闭（PRD P2）：无遮罩可点时「点外部」接替遮罩点击的
+    // 关闭职责。pointerdown 而非 click——打开抽屉的那次点击（先 pointerdown 后 click 的
+    // 时序）落点时抽屉尚未打开，天然不会自我关闭；capture 捕获防中间层 stopPropagation。
+    const onDocPointerDown = (e: PointerEvent): void => {
+      if (!this.isOpen || !this.hasAttr('no-mask')) return
+      // 嵌套抽屉只由栈顶响应（同 Esc 逐层关约定）；模态置顶时外部点击归模态层
+      if (topDrawer() !== this) return
+      if (hasVisibleModal()) return
+      // no-mask-close 禁止遮罩关闭的契约在此同样生效：点外部是遮罩点击在无遮罩下的接替通道
+      if (this.hasAttr('no-mask-close')) return
+      if (this.panel && e.composedPath().includes(this.panel)) return
+      this.requestClose('mask')
+    }
+    document.addEventListener('pointerdown', onDocPointerDown, true)
+    this.onCleanup(() => document.removeEventListener('pointerdown', onDocPointerDown, true))
 
     // 拖拽中的全局 move/up 兜底清理（start 时按需注册，断开时保险移除）
     this.onCleanup(() => {
@@ -1205,5 +1226,9 @@ export class OASDrawer extends OASElement {
     }
     // swipeable/snap：拖拽把手显隐
     if (this.handle) this.handle.hidden = !this.swipeEnabled() || !this.isOpen
+
+    // no-mask 无遮罩模式：遮罩不渲染（hidden 移出渲染树与命中测试；DOM 结构保持稳定，
+    // 水合/portal 移动路径不受影响）
+    if (this.mask) this.mask.hidden = this.hasAttr('no-mask')
   }
 }

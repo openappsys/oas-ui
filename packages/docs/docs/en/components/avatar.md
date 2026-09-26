@@ -281,6 +281,15 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
   <oas-tooltip content="Carol Zhao" placement="top"><oas-avatar size="40" color="geekblue">C</oas-avatar></oas-tooltip>
 </DemoBlock>
 
+## Responsive Image Sources (srcset)
+
+`srcset` passes through to the inner `img`, letting the browser pick a source by device pixel ratio (e.g. 1x/2x pairs — high-DPI screens get the sharper image automatically); an empty value removes it and falls back to the single `src`.
+
+<DemoBlock title="srcset 1x / 2x sources">
+  <oas-avatar size="40" src="https://picsum.photos/seed/isui-avatar-ss1/80" srcset="https://picsum.photos/seed/isui-avatar-ss1/80 1x, https://picsum.photos/seed/isui-avatar-ss1/160 2x" alt="Responsive avatar"></oas-avatar>
+  <oas-avatar size="40" src="https://picsum.photos/seed/isui-avatar-ss2/80" srcset="https://picsum.photos/seed/isui-avatar-ss2/80 1x, https://picsum.photos/seed/isui-avatar-ss2/160 2x" alt="Responsive avatar"></oas-avatar>
+</DemoBlock>
+
 ## API
 
 ### oas-avatar
@@ -300,6 +309,7 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 | `shape` | Shape: `circle` (default) / `square` / `round` (rounded corners) | — | — |
 | `size` | Size: number in px or enum alias `small`(24) / `medium`(32) / `large`(40) | `string` | `32` |
 | `src` | Image URL; renders an image avatar when present | `string` | — |
+| `srcset` | Responsive source descriptors passed through to the inner img (empty removes it) | `string` | — |
 | `text` | Text content: single char renders the first character; multiple chars render in full with auto-shrinking font | `string` | — |
 
 #### Events

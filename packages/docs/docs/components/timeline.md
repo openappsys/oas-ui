@@ -252,6 +252,35 @@
 
 字号默认跟随外层 `font-size`（继承），可用 CSS 变量 `--oas-timeline-font` 显式定制（如 `18px`）。节点与连接线尺寸开口：`--oas-timeline-dot-size` / 连接线宽随尺寸联动。
 
+## 尺寸档位
+
+`size` 提供五档：`xs` / `small` / `medium`（默认）/ `large` / `xl`（`sm`/`md`/`lg` 别名等价；非法值回落 `medium`）。档位联动圆点直径（6/8/10/12/16px，连接线起止随圆点尺寸自适应）与字号（`--oas-font-size-*` token；`medium` 跟随外层字号）。
+
+<DemoBlock title="size 五档">
+  <div style="display: flex; flex-direction: column; gap: var(--oas-space-4)">
+    <oas-timeline size="xs">
+      <oas-timeline-item time="xs">极小档（6px 圆点）</oas-timeline-item>
+      <oas-timeline-item time="done">完成</oas-timeline-item>
+    </oas-timeline>
+    <oas-timeline size="small">
+      <oas-timeline-item time="small">小档（8px 圆点）</oas-timeline-item>
+      <oas-timeline-item time="done">完成</oas-timeline-item>
+    </oas-timeline>
+    <oas-timeline>
+      <oas-timeline-item time="medium">默认档（10px 圆点，跟随外层字号）</oas-timeline-item>
+      <oas-timeline-item time="done">完成</oas-timeline-item>
+    </oas-timeline>
+    <oas-timeline size="large">
+      <oas-timeline-item time="large">大档（12px 圆点）</oas-timeline-item>
+      <oas-timeline-item time="done">完成</oas-timeline-item>
+    </oas-timeline>
+    <oas-timeline size="xl">
+      <oas-timeline-item time="xl">特大档（16px 圆点）</oas-timeline-item>
+      <oas-timeline-item time="done">完成</oas-timeline-item>
+    </oas-timeline>
+  </div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 
@@ -284,6 +313,7 @@ onMounted(() => {
 | `direction` | 轴方向：vertical（默认）/ horizontal（横向排布） | `string` | — |
 | `mode` | 内容相对轴的位置：left（默认，轴在左）/ right（轴在右）/ alternate（轴居中、内容左右交替，首项在左）；横向时映射为轴下/轴上/上下交替 | `string` | — |
 | `reverse` | 视觉倒序（DOM 顺序不变），常与 pending 组合表达「最新在上」 | `boolean` | — |
+| `size` | 五档尺寸：圆点直径 6/8/10/12/16px + 字号 token（连接线随动，medium 跟随外层） | `string` | `medium` |
 
 #### 插槽
 

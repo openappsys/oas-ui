@@ -761,3 +761,28 @@ describe('OASCombobox form-associated（原生表单集成）', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('OASCombobox autocomplete 透传', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('默认 autocomplete="off"（combobox 自绘下拉，浏览器自动补全关闭）', () => {
+    const el = mount()
+    expect(input(el).getAttribute('autocomplete')).toBe('off')
+  })
+
+  it('autocomplete="name" 覆盖透传内层 input', () => {
+    const el = mount({ autocomplete: 'name' })
+    expect(input(el).getAttribute('autocomplete')).toBe('name')
+  })
+
+  it('运行时移除：回落 off（宿主属性缺省即默认关闭）', () => {
+    const el = mount({ autocomplete: 'name' })
+    el.removeAttribute('autocomplete')
+    expect(input(el).getAttribute('autocomplete')).toBe('off')
+  })
+})

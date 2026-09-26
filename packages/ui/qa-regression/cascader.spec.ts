@@ -160,3 +160,64 @@ test('cascader loading / field-names / focus 事件：用户视角反馈（PRD P
   await page.locator('h1').first().click()
   await expect(page.locator('#cs-focus-output')).toHaveText('oas-blur')
 })
+
+// ---- 能力缺口 P2：label / placement / suffix-icon / option 插槽 ----
+
+test('cascader placement 12 向：right-start 声明后面板弹出在触发器侧方（几何不变量，翻转自适应断言）', async ({
+  page,
+}) => {
+  await page.goto('/components/cascader.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cs-placement-right')
+  const host = page.locator('#cs-placement-right')
+  // e2e 指针先 scrollIntoView
+  await host.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#cs-placement-right')!
+    return el.shadowRoot!.querySelector('[part="dropdown"]')!.classList.contains('open')
+  })
+  const g = await host.evaluate((el) => {
+    const trig = el.shadowRoot!.querySelector('[part="trigger"]')!.getBoundingClientRect()
+    const drop = el.shadowRoot!.querySelector('[part="dropdown"]')!.getBoundingClientRect()
+    return {
+      anchorLeft: trig.left,
+      anchorTop: trig.top,
+      anchorRight: trig.right,
+      panelLeft: drop.left,
+      panelTop: drop.top,
+      panelRight: drop.right,
+      panelWidth: drop.width,
+      vw: window.innerWidth,
+    }
+  })
+  const fitsRight = g.anchorRight + g.panelWidth + 8 <= g.vw
+  if (fitsRight) {
+    // right 主轴 + start 对齐：面板左缘在锚点右缘之后、顶缘对齐锚点顶缘
+    expect(g.panelLeft, 'right 主轴：面板在锚点右侧').toBeGreaterThanOrEqual(g.anchorRight + 4)
+    expect(g.panelTop, 'start 对齐：面板顶缘对齐锚点顶缘').toBeLessThanOrEqual(g.anchorTop + 1)
+  } else {
+    // 右侧空间不足自动翻转（浮层引擎既有机制）：面板右缘在锚点左缘之前
+    expect(g.panelRight, '翻转 left：面板在锚点左侧').toBeLessThanOrEqual(g.anchorLeft - 4)
+  }
+})
+
+test('cascader option 插槽：图标模板克隆进选项行，data-option-label 绑定选项文本', async ({ page }) => {
+  await page.goto('/components/cascader.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cs-option-slot')
+  const host = page.locator('#cs-option-slot')
+  await host.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#cs-option-slot')!
+    return !!el.shadowRoot!.querySelector('.panel [role="option"]')
+  })
+  const r = await host.evaluate((el) => {
+    const row = el.shadowRoot!.querySelector('.panel [role="option"]')!
+    return {
+      label: row.querySelector('[data-option-label]')?.textContent ?? '',
+      rowText: row.textContent ?? '',
+    }
+  })
+  expect(r.label, 'data-option-label 绑定选项 label').toBe('浙江')
+  expect(r.rowText, '模板图标进入选项行').toContain('📍')
+})

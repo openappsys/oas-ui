@@ -604,11 +604,11 @@ button.loading .spinner {
   left: 50%;
   transform: translate(-50%, -50%);
 }
-button.loading slot,
+button.loading slot:not([name='loading-icon']),
 button.loading .icon {
   visibility: hidden;
 }
-button.loading-with-text slot,
+button.loading-with-text slot:not([name='loading-icon']),
 button.loading-with-text .icon {
   display: none;
 }
@@ -625,6 +625,22 @@ button.loading-with-text .spinner {
   animation: oas-spin 0.8s linear infinite;
 }
 .spinner[hidden] {
+  display: none;
+}
+/* loading-icon 插槽自定义加载图标：slot 有内容时停用内置环（border/动画/固定尺寸），
+   插槽内容原样显示（如 oas-icon spin / 自定义 SVG），定位沿用 spinner 的绝对居中；
+   hidden 显式覆盖（[hidden] 与 .custom-icon 同特异性，靠后规则保证隐藏恒生效） */
+.spinner.custom-icon {
+  width: auto;
+  height: auto;
+  border: none;
+  border-radius: 0;
+  animation: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.spinner.custom-icon[hidden] {
   display: none;
 }
 @keyframes oas-spin {
@@ -811,7 +827,7 @@ export class OASButton extends OASElement {
     return `
       <style>${STYLE}</style>
       <${tag} part="button"${hrefAttr}>
-        <span class="spinner" part="spinner" hidden></span>
+        <span class="spinner" part="spinner" hidden><slot name="loading-icon"></slot></span>
         <span class="icon" part="icon" aria-hidden="true" hidden></span>
         <slot></slot>
         <span class="loading-text" hidden></span>
@@ -854,8 +870,14 @@ export class OASButton extends OASElement {
       }
     })
 
-    // 文字经 slot 增删时重算「纯图标 / 有文字」布局
-    this.shadow.querySelector('slot')?.addEventListener('slotchange', () => this.update())
+    // 文字经 slot 增删时重算「纯图标 / 有文字」布局（显式默认插槽选择器：
+    // loading-icon 具名插槽在模板序上更靠前，裸 'slot' 会绑错节点）
+    this.shadow.querySelector('slot:not([name])')?.addEventListener('slotchange', () => this.update())
+
+    // loading-icon 自定义加载图标：插槽内容增删时刷新 custom-icon 形态（slotchange 感知）
+    this.shadow
+      .querySelector<HTMLSlotElement>('slot[name="loading-icon"]')
+      ?.addEventListener('slotchange', () => this.update())
 
     // compound 双行变体：description 具名插槽内容增删 → 切换 data-compound（slotchange 感知动态增删）
     this.shadow
@@ -1078,7 +1100,15 @@ export class OASButton extends OASElement {
     }
 
     const spinner = this.btn.querySelector<HTMLElement>('.spinner')
-    if (spinner) spinner.hidden = !loading
+    if (spinner) {
+      // loading-icon 插槽有实质内容时切自定义图标形态（内置 spinner 环停用，CSS 侧 .custom-icon）
+      const slot = spinner.querySelector<HTMLSlotElement>('slot[name="loading-icon"]')
+      const hasCustomIcon =
+        !!slot &&
+        slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+      spinner.classList.toggle('custom-icon', hasCustomIcon)
+      spinner.hidden = !loading
+    }
 
     // loading-text：loading 时替换 label 显示（hidden 由 update 控制显隐）
     const loadingTextEl = this.btn.querySelector<HTMLElement>('.loading-text')

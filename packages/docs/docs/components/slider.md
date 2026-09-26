@@ -188,6 +188,19 @@
 
 滑块自身不内置可见标签（避免与表单标签体系重复）：用 `oas-form-item` 的 `label` 提供可见标签（点击标签可聚焦滑块），或用标题 + 滑块自行排版。
 
+## 可访问名（label）
+
+<DemoBlock title="label 可访问名">
+  <div style="display: flex; flex-direction: column; gap: 12px; width: 360px;">
+    <oas-slider id="slider-label-demo" label="音量" value="40"></oas-slider>
+    <oas-slider label="范围" range value="[20, 80]"></oas-slider>
+    <oas-button onclick="document.getElementById('slider-label-out').textContent = 'aria-label = ' + document.getElementById('slider-label-demo').shadowRoot.querySelector('input').getAttribute('aria-label')">查看 aria-label</oas-button>
+    <span id="slider-label-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </div>
+</DemoBlock>
+
+`label` 写入内部滑块的可访问名（对齐 input 的 label 契约）：单值滑块 `aria-label = label`；范围模式组合语义后缀（「音量 最小值」/「音量 最大值」）；缺省回落内置文案。读屏朗读与语音控制据此定位滑块。
+
 ## 事件
 
 <DemoBlock title="实时值与变化事件">
@@ -241,6 +254,7 @@ onMounted(() => {
 | `color` | 填充区/滑块/经过刻度颜色：预设语义色名（primary / success / warning / danger，随暗色主题）映射主题 token；其他值原样透传为 CSS 色值 | — | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `format` | 值气泡模板串：`${value}` 占位符替换为当前值（如 `"${value}%"`），不含占位符时原样显示；输出同时进气泡与 `aria-valuetext`；优先级低于 `formatTooltip` 函数 | `string` | — |
+| `label` | 内层滑块可访问名（range 模式自动加「最小值/最大值」后缀） | `string` | — |
 | `large-step` | 键盘大步步进量（Shift+方向键 / PageUp / PageDown 生效）；缺省为 10 × step；每次按键即派发 `oas-input` + `oas-change` | `string` | — |
 | `marks` | 刻度：JSON 对象 `{"0":"0°C"}`（值→标签）或 JSON 数组 `[0,26,60]`（也可为 `{"value":26,"label":"26°C"}`）；刻度点与标签显示在轨道下方，值经过处高亮；`reverse` 下位置镜像 | `string \| Record<string, string \| number> \| number[]` | — |
 | `max` | 范围 | `string` | `100` |

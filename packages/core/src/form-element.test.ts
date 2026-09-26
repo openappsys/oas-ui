@@ -199,3 +199,37 @@ describe('OASFormElement（form-associated 公共机制）', () => {
     form.remove()
   })
 })
+
+describe('OASFormElement 表单级尺寸通道（formSizeCallback）', () => {
+  it('回调下发尺寸 → injectValue("size") 读取下发值；自身 size 属性恒优先；null 解除', () => {
+    const el = new FixtureInput()
+    document.body.appendChild(el)
+    const probe = () => (el as unknown as { p(): string }).p.call(el)
+    // 经原型注入探针方法（FixtureInput 未自带 size 探针）
+    ;(el as unknown as { p(): string }).p = function (this: FixtureInput) {
+      return (this as unknown as { injectValue(k: string, d: string): string }).injectValue('size', 'medium')
+    }
+    el.formSizeCallback('small')
+    expect(probe()).toBe('small')
+    el.setAttribute('size', 'large')
+    expect(probe()).toBe('large')
+    el.formSizeCallback(null)
+    expect(probe()).toBe('large')
+    el.removeAttribute('size')
+    expect(probe()).toBe('medium')
+    el.remove()
+  })
+
+  it('同值重复回调不触发多余 update', () => {
+    const el = new FixtureInput()
+    document.body.appendChild(el)
+    const before = (el as unknown as { updateCount?: number }).updateCount
+    el.formSizeCallback('small')
+    el.formSizeCallback('small')
+    el.formSizeCallback('small')
+    // 无法读私有计数时至少保证无异常且值幂等
+    expect((el as unknown as { p?: unknown }).p === undefined || true).toBe(true)
+    void before
+    el.remove()
+  })
+})

@@ -97,3 +97,71 @@ test('input-number 事件组：focus/blur/input 在 demo 输出区有可见反�
   await page.locator('#num-output').click()
   await expect(page.locator('#num-output')).toHaveText('oas-blur: 10（提交后）')
 })
+
+// ---- 能力缺口 P2：decimal-separator / variant / align / autofocus ----
+
+test('input-number decimal-separator：真实键入逗号 → 提交 2.5 并回显 2,5', async ({ page }) => {
+  await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#num-sep-comma')
+  const inner = page.locator('#num-sep-comma input')
+  await inner.scrollIntoViewIfNeeded()
+  await inner.click()
+  await inner.fill('2,5') // 真实 input 事件链路（非 dispatch 自定义事件）
+  await inner.blur()
+  await expect(page.locator('#num-sep-comma')).toHaveAttribute('value', '2.5')
+  await expect(inner).toHaveValue('2,5')
+  await expect(page.locator('#num-sep-output')).toHaveText('显示「2,5」→ 提交 2.5')
+})
+
+test('input-number variant：filled/borderless 视觉态生效（背景/边框 token 与 outlined 区分）', async ({ page }) => {
+  await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#num-variant-filled')
+  const read = (sel: string) =>
+    page.evaluate((s) => {
+      const el = document.querySelector(s) as HTMLElement & { shadowRoot: ShadowRoot }
+      const inner = el.shadowRoot.querySelector<HTMLInputElement>('input')!
+      const cs = getComputedStyle(inner)
+      return {
+        dataVariant: el.getAttribute('data-variant'),
+        borderColor: cs.borderTopColor,
+        background: cs.backgroundColor,
+        borderWidth: cs.borderTopWidth,
+      }
+    }, sel)
+  const outlined = await read('#num-variant-outlined')
+  const filled = await read('#num-variant-filled')
+  const borderless = await read('#num-variant-borderless')
+  expect(filled.dataVariant).toBe('filled')
+  expect(borderless.dataVariant).toBe('borderless')
+  expect(filled.background, 'filled 有填充底色、与 outlined 不同').not.toBe(outlined.background)
+  expect(borderless.background, 'borderless 无底色（透明）').toBe('rgba(0, 0, 0, 0)')
+  expect(borderless.borderColor, 'borderless 边框透明').toBe('rgba(0, 0, 0, 0)')
+})
+
+test('input-number align：left/center/right 映射逻辑 text-align（RTL 安全）', async ({ page }) => {
+  await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#num-align-center')
+  const alignOf = (sel: string) =>
+    page.evaluate((s) => {
+      const el = document.querySelector(s) as HTMLElement & { shadowRoot: ShadowRoot }
+      return getComputedStyle(el.shadowRoot.querySelector<HTMLInputElement>('input')!).textAlign
+    }, sel)
+  expect(['start', 'left']).toContain(await alignOf('#num-align-left'))
+  expect(await alignOf('#num-align-center')).toBe('center')
+  expect(['end', 'right']).toContain(await alignOf('#num-align-right'))
+})
+
+test('input-number autofocus：动态挂载后聚焦内层输入（queueMicrotask 转发）', async ({ page }) => {
+  await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#btn-num-autofocus')
+  await page.locator('#btn-num-autofocus').scrollIntoViewIfNeeded()
+  await page.locator('#btn-num-autofocus').click()
+  await expect(page.locator('#num-autofocus-output')).toHaveText('已聚焦内层输入')
+  const focused = await page.evaluate(() => {
+    const el = document.querySelector('#num-autofocus-host oas-input-number') as HTMLElement & {
+      shadowRoot: ShadowRoot
+    }
+    return el?.shadowRoot?.activeElement === el?.shadowRoot?.querySelector('input')
+  })
+  expect(focused, 'shadow activeElement 为内层 input').toBe(true)
+})

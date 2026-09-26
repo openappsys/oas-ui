@@ -1006,3 +1006,70 @@ describe('OASUpload form-associated（原生表单集成）', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('OASUpload oas-progress（进度事件通道，PRD P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('模拟上传通道：oas-progress 随 percent 推进派发，detail { file, percent }，收尾 100', () => {
+    vi.useFakeTimers()
+    try {
+      const el = mount({ 'auto-upload': '' })
+      const progresses: Array<{ file: unknown; percent: number }> = []
+      el.addEventListener('oas-progress', (e: Event) => progresses.push((e as CustomEvent).detail))
+      pick(el, [makeFile('a.txt')])
+      vi.advanceTimersByTime(120 * 5 + 50)
+      expect(progresses.length).toBeGreaterThan(0)
+      expect(progresses[0]!.file).toBeInstanceOf(File)
+      expect(progresses[0]!.percent).toBeGreaterThan(0)
+      expect(progresses.at(-1)!.percent).toBe(100)
+      // 单调不回退
+      const mono = progresses.every((p, i) => i === 0 || p.percent >= progresses[i - 1]!.percent)
+      expect(mono).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('真实 XHR 通道：onProgress 派发 oas-progress；成功收尾派发 percent=100', () => {
+    vi.stubGlobal('XMLHttpRequest', FakeUploadXHR)
+    FakeUploadXHR.reset()
+    try {
+      const el = mount({ action: '/upload', 'auto-upload': '' })
+      const progresses: Array<{ file: unknown; percent: number }> = []
+      el.addEventListener('oas-progress', (e: Event) => progresses.push((e as CustomEvent).detail))
+      pick(el, [makeFile('a.txt')])
+      FakeUploadXHR.instances[0]!.progress(50, 100)
+      expect(progresses.length).toBe(1)
+      expect(progresses[0]).toEqual({ file: expect.any(File), percent: 50 })
+      FakeUploadXHR.instances[0]!.respond(200, '{"ok":true}')
+      expect(progresses.at(-1)!.percent).toBe(100)
+      expect(progresses.length).toBe(2)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('custom-request 通道：onProgress 回调派发 oas-progress', () => {
+    const el = mount({ 'auto-upload': '' })
+    const progresses: Array<{ file: unknown; percent: number }> = []
+    el.addEventListener('oas-progress', (e: Event) => progresses.push((e as CustomEvent).detail))
+    el.customRequest = ({ onProgress, onSuccess }) => {
+      onProgress({ percent: 40 })
+      onProgress({ percent: 80 })
+      onSuccess({ ok: true })
+      return { abort: () => {} }
+    }
+    pick(el, [makeFile('a.txt')])
+    expect(
+      progresses.map((p) => p.percent),
+      'onProgress 逐步派发，onSuccess 收尾 100',
+    ).toEqual([40, 80, 100])
+    expect(progresses[0]!.file).toBeInstanceOf(File)
+  })
+})

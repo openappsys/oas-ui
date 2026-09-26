@@ -621,6 +621,17 @@ onMounted(async () => {
   </div>
 </DemoBlock>
 
+## tabindex passthrough
+
+When present, `tabindex` is forwarded to every tab button (overriding the default roving strategy: selected button `0`, others `-1`). Use `tabindex="-1"` when the host manages focus itself so tab buttons leave the Tab order (click and arrow-key switching still work); removing the attribute restores roving. Disabled tabs stay `-1` and are never focusable.
+
+<DemoBlock title="tabindex=-1 (tab buttons leave Tab order)">
+  <oas-tabs active="a" tabindex="-1">
+    <oas-tab-panel label="First" value="a"><p>Tab skips the tab buttons (host-managed focus scenario).</p></oas-tab-panel>
+    <oas-tab-panel label="Second" value="b"><p>Content two.</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
 ## API
 
 ### oas-tabs
@@ -649,6 +660,7 @@ onMounted(async () => {
 | `sortable` | Tabs are drag-sortable (native HTML5 DnD); emits `oas-reorder` after drop (host reorders panel data accordingly, the component does not move DOM itself) | `boolean` | — |
 | `stacked` | Icon on top, text below (vertically stacked tabs) | `boolean` | — |
 | `tab-position` | Tab bar position: `top` (default) / `left` / `right` / `bottom` | `string` | `top` |
+| `tabindex` | Forwarded to every tab button, overriding roving (removing restores it; disabled stays -1) | — | — |
 | `trigger` | Switch trigger: `click` (default) / `hover` (switch on hover; disabled tabs not triggered) | `string` | `click` |
 | `type` | Style variant: `line` (underline, default) / `card` | `string` | `line` |
 | `without-scroll-controls` | Disable the overflow scroll arrows (shown by default when tabs overflow) | `boolean` | — |

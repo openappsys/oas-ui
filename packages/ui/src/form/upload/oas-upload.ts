@@ -1000,6 +1000,8 @@ export class OASUpload extends OASFormElement {
         if (!cur || cur.status !== 'uploading') return
         cur.percent = Math.max(0, Math.min(100, Math.round(e.percent)))
         this.emit('upload', { file, percent: cur.percent, status: 'uploading' })
+        // oas-progress（PRD P2）：对外进度事件通道（内部进度已驱动 UI，此处补事件出口）
+        this.emit('progress', { file, percent: cur.percent })
         this.renderList()
       },
       onSuccess: (response) => {
@@ -1010,6 +1012,7 @@ export class OASUpload extends OASFormElement {
         this.uploadControllers.delete(file)
         this.emit('success', { file, response })
         this.emit('upload', { file, percent: 100, status: 'done' })
+        this.emit('progress', { file, percent: 100 })
         this.renderList()
       },
       onError: (err) => {
@@ -1129,6 +1132,8 @@ export class OASUpload extends OASFormElement {
           percent: st.percent,
           status: st.percent >= 100 ? 'done' : 'uploading',
         })
+        // oas-progress（PRD P2）：模拟通道同享对外进度事件
+        this.emit('progress', { file: f, percent: st.percent })
         if (st.percent >= 100) st.status = 'done'
       }
       this.renderList()

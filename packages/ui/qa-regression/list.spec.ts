@@ -151,3 +151,23 @@ test('list 选中行内 checked 开关：轨道底与 primary 行底可辨（dem
     r!.rowBg,
   )
 })
+
+test('list hoverable：属性存活 + 行打 data-hoverable 钩子 + 样式表 hover 规则走 token', async ({ page }) => {
+  await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-list[hoverable]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-list[hoverable]')!
+    const items = el.querySelectorAll('oas-list-item')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    return {
+      hooked: [...items].every((i) => i.hasAttribute('data-hoverable')),
+      count: items.length,
+      cssOk: css.includes(".list[data-hoverable='true']") && css.includes('var(--oas-color-bg-hover)'),
+      selectedExcluded: css.includes(':not([selected])'),
+    }
+  })
+  expect(r.count, 'hoverable demo 有声明式行').toBeGreaterThan(0)
+  expect(r.hooked, '所有行打上 data-hoverable 钩子（Vue 下 hoverable 属性存活）').toBe(true)
+  expect(r.cssOk, '样式表含 hover 规则（token 色）').toBe(true)
+  expect(r.selectedExcluded, '选中行排除在 hover 规则外').toBe(true)
+})

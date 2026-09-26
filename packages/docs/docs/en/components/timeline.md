@@ -252,6 +252,35 @@ Node content is distributed in place from the host DOM, so buttons and links ins
 
 Font size follows the outer context (inherited) by default; override with the CSS variable `--oas-timeline-font` (e.g. `18px`). Node and connector sizing hooks: `--oas-timeline-dot-size` / connector width follows the size.
 
+## Size Presets
+
+`size` offers five presets: `xs` / `small` / `medium` (default) / `large` / `xl` (`sm`/`md`/`lg` aliases are equivalent; invalid values fall back to `medium`). Each preset scales the dot diameter (6/8/10/12/16px — the connector start/end follows the dot size) and the font size (`--oas-font-size-*` tokens; `medium` follows the outer font size).
+
+<DemoBlock title="size presets">
+  <div style="display: flex; flex-direction: column; gap: var(--oas-space-4)">
+    <oas-timeline size="xs">
+      <oas-timeline-item time="xs">Extra small (6px dot)</oas-timeline-item>
+      <oas-timeline-item time="done">Done</oas-timeline-item>
+    </oas-timeline>
+    <oas-timeline size="small">
+      <oas-timeline-item time="small">Small (8px dot)</oas-timeline-item>
+      <oas-timeline-item time="done">Done</oas-timeline-item>
+    </oas-timeline>
+    <oas-timeline>
+      <oas-timeline-item time="medium">Medium default (10px dot, outer font size)</oas-timeline-item>
+      <oas-timeline-item time="done">Done</oas-timeline-item>
+    </oas-timeline>
+    <oas-timeline size="large">
+      <oas-timeline-item time="large">Large (12px dot)</oas-timeline-item>
+      <oas-timeline-item time="done">Done</oas-timeline-item>
+    </oas-timeline>
+    <oas-timeline size="xl">
+      <oas-timeline-item time="xl">Extra large (16px dot)</oas-timeline-item>
+      <oas-timeline-item time="done">Done</oas-timeline-item>
+    </oas-timeline>
+  </div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 
@@ -284,6 +313,7 @@ onMounted(() => {
 | `direction` | Axis direction: vertical (default) / horizontal (items laid out in a row) | `string` | — |
 | `mode` | Content position relative to the axis: left (default, axis on the left) / right (axis on the right) / alternate (axis centered, content alternates sides, first item on the left); in horizontal mode maps to below/above/alternating | `string` | — |
 | `reverse` | Visual reverse order (DOM order unchanged); pairs with pending for "newest first" | `boolean` | — |
+| `size` | Five presets scaling the dot diameter (6/8/10/12/16px, connector follows) and font-size tokens | `string` | `medium` |
 
 #### Slots
 

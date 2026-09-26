@@ -158,3 +158,39 @@ describe('OASSider 内嵌 sidebar 宽度对齐（实测缺陷回归）', () => {
     expect(stl).toMatch(/::slotted\(oas-sidebar\)\s*\{[^}]*min-width:\s*0/)
   })
 })
+
+describe('OASSider width 属性（轨道宽度显式覆盖，PRD P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('width 进 observedAttributes', () => {
+    expect(OASSider.observedAttributes).toContain('width')
+  })
+
+  it('width 属性覆盖轨道宽度（px 值与纯数字补 px），移除后回退 token', () => {
+    const sider = new OASSider()
+    document.body.appendChild(sider)
+    sider.setAttribute('width', '280px')
+    expect(sider.style.width).toBe('280px')
+    sider.setAttribute('width', '320')
+    expect(sider.style.width, '纯数字视为 px').toBe('320px')
+    sider.removeAttribute('width')
+    expect(sider.style.width, '缺省应清内联，走 --oas-sider-width token').toBe('')
+  })
+
+  it('width 与 collapsed 窄条契约共存：折叠时 width 让位、展开恢复', () => {
+    const sider = new OASSider()
+    sider.setAttribute('width', '280px')
+    document.body.appendChild(sider)
+    expect(sider.style.width).toBe('280px')
+    sider.setAttribute('collapsed', '')
+    expect(sider.style.width, '折叠态应清内联 width，让位 collapsed 窄条（64px token）').toBe('')
+    sider.removeAttribute('collapsed')
+    expect(sider.style.width, '解除折叠后恢复显式宽度').toBe('280px')
+  })
+})

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
@@ -463,5 +463,63 @@ describe('OAS typography', () => {
       expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
       el.remove()
     })
+  })
+})
+
+describe('OASText size 字号档（typography 体系惯例：small/medium/large → font-size token）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('size 进入 oas-text 观察列表；title/paragraph 不开放（level 已驱动标题字号）', () => {
+    expect(OASText.observedAttributes).toContain('size')
+    expect(OASTitle.observedAttributes).not.toContain('size')
+    expect(OASParagraph.observedAttributes).not.toContain('size')
+  })
+
+  it('small/large 写尺寸 class；medium/缺省无 class（回落继承字号）', () => {
+    const sm = mount(OASText, { size: 'small' })
+    expect(sm.shadowRoot!.querySelector('.text')!.classList.contains('small')).toBe(true)
+    const lg = mount(OASText, { size: 'large' })
+    expect(lg.shadowRoot!.querySelector('.text')!.classList.contains('large')).toBe(true)
+    const md = mount(OASText, { size: 'medium' })
+    expect(md.shadowRoot!.querySelector('.text')!.classList.contains('small')).toBe(false)
+    expect(md.shadowRoot!.querySelector('.text')!.classList.contains('large')).toBe(false)
+    const def = mount(OASText)
+    expect(def.shadowRoot!.querySelector('.text')!.classList.contains('small')).toBe(false)
+    expect(def.shadowRoot!.querySelector('.text')!.classList.contains('large')).toBe(false)
+  })
+
+  it('sm/lg 别名等价；非法值回落 medium（无 class）+ dev 告警一次（同值去重）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount(OASText, { size: 'lg' })
+    expect(el.shadowRoot!.querySelector('.text')!.classList.contains('large')).toBe(true)
+    el.setAttribute('size', 'huge')
+    expect(el.shadowRoot!.querySelector('.text')!.classList.contains('large')).toBe(false)
+    expect(warn).toHaveBeenCalledTimes(1)
+    el.setAttribute('size', 'huge')
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+  })
+
+  it('动态切换与移除即时生效', () => {
+    const el = mount(OASText)
+    el.setAttribute('size', 'small')
+    expect(el.shadowRoot!.querySelector('.text')!.classList.contains('small')).toBe(true)
+    el.removeAttribute('size')
+    expect(el.shadowRoot!.querySelector('.text')!.classList.contains('small')).toBe(false)
+  })
+
+  it('CSS 走 --oas-font-size token（无硬编码 px 字号）', () => {
+    const el = mount(OASText, { size: 'large' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\.text\.small\s*{[^}]*--oas-font-size-sm/)
+    expect(css).toMatch(/\.text\.large\s*{[^}]*--oas-font-size-lg/)
   })
 })

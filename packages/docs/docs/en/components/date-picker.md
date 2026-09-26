@@ -66,6 +66,37 @@ week selects the whole ISO week of the clicked day (full-row highlight with week
 
 datetime submits after picking date + time and clicking "OK"; datetimerange shows dual month grids plus start/end time columns and submits a JSON array.
 
+## Range Separator
+
+<DemoBlock title="separator: custom range separator">
+  <oas-date-picker id="date-picker-separator" type="daterange" separator=" → " value='["2026-08-05","2026-08-15"]'></oas-date-picker>
+  <oas-date-picker type="daterange" separator=" to " value='["2026-08-05","2026-08-15"]'></oas-date-picker>
+</DemoBlock>
+
+`separator` customizes the separator between the start/end values inside the trigger for range types (default `~`); display only — the value contract is unchanged.
+
+## Range Default Time
+
+<DemoBlock title="default-time (datetimerange start/end default time)">
+  <oas-date-picker id="date-picker-default-time" type="datetimerange" default-time='["00:00:00","23:59:59"]' default-value="2026-08-15" placeholder="Pick both dates, then confirm"></oas-date-picker>
+  <oas-date-picker type="datetimerange" default-time='["09:00:00","18:00:00"]' default-value="2026-08-15" placeholder="Working hours 09:00-18:00"></oas-date-picker>
+</DemoBlock>
+
+`default-time` (`["start time","end time"]`, or a single `"HH:mm:ss"` applied to both ends) provides default times for the datetimerange start/end time columns: when the value is empty or an endpoint lacks a time part it is filled in automatically — `["00:00:00","23:59:59"]` is the common full-day convention, so picking both dates and clicking "OK" yields a whole-day range; shortcuts fill times the same way. Without the attribute the built-in convention is `00:00:00` / `23:59:59`; endpoints that already carry a time are followed, not overridden.
+
+## Trigger Icon Slots
+
+<DemoBlock title="prefix-icon / suffix-icon slots">
+  <oas-date-picker id="date-picker-affix-icons" value="2026-08-09" style="margin-inline-end: var(--oas-space-4)">
+    <oas-icon slot="prefix-icon" name="search"></oas-icon>
+  </oas-date-picker>
+  <oas-date-picker type="daterange" value='["2026-08-05","2026-08-15"]'>
+    <oas-icon slot="suffix-icon" name="calendar"></oas-icon>
+  </oas-date-picker>
+</DemoBlock>
+
+`slot="prefix-icon"` / `slot="suffix-icon"` distribute leading/trailing icons inside the trigger (decorative: clicks pass through to the trigger and open the panel). The trigger text makes room automatically; the `clearable` clear button shares the suffix zone — while it is visible the suffix icon yields (hidden) and restores after clearing.
+
 ## Disabled Range & Navigation Bounds
 
 <DemoBlock title="min / max limits">
@@ -234,6 +265,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `clearable` | Clearable: shows a clear button when a value exists; emits `oas-clear` + `oas-change` (empty value) | `boolean` | — |
+| `default-time` | Default start/end times for datetimerange (JSON array or single value); auto-filled when the value lacks a time part | `string` | — |
 | `default-value` | Panel anchor month when the value is empty (the value takes precedence when present) | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `first-day-of-week` | Week-start override (0=Sunday … 6=Saturday); defaults to the locale | `string` | — |
@@ -247,6 +279,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `placement` | Popup placement, 12 directions: `top`/`bottom`/`left`/`right` × `-start`/`-end` (default `bottom-start`); auto right-aligns near the viewport right edge, flips upward when space below is insufficient, and clamps into the viewport | `string` | `bottom-start` |
 | `readonly` | Readonly: the panel can be opened and browsed (cells keyboard-navigable), but no interaction commits | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
+| `separator` | Custom separator between start/end values in the trigger for range types (display only) | `string` | — |
 | `shortcuts-position` | Shortcut placement: `bottom` (default, horizontal on top) / `left` (vertical sidebar) | `string` | `bottom` |
 | `show-week-number` | Show an ISO week-number column (built-in for `type=week`) | `boolean` | — |
 | `size` | Size: `small` / `medium` / `large` (reads the nearest config-provider injection) | `string` | `medium` |
@@ -279,6 +312,8 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 
 | Name | Description |
 | --- | --- |
+| `prefix-icon` | Leading icon inside the trigger (decorative; clicks pass through) |
+| `suffix-icon` | Trailing icon inside the trigger (yields while the clear button is visible) |
 | `template[slot="cell"]` | `template[slot="cell"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`) |
 
 #### Property (shortcut presets)

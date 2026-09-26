@@ -113,7 +113,7 @@ Setting `columns` divides the width equally with `repeat(n, 1fr)`; child `span` 
 
 ## Separated row/column gutters
 
-`gap` supports a two-value syntax: space-separated `row column` controls row-gap and column-gap independently; a single value still applies to both axes (zero regression).
+`gap` supports a two-value syntax: space- or comma-separated `row column` (`8 16` / `8,16`) controls row-gap and column-gap independently; a single value still applies to both axes (zero regression). The `row-gap` / `column-gap` attributes can be set individually and override the matching axis of `gap`.
 
 <DemoBlock title="gap two values: row 8 / column 24">
   <oas-grid gap="8 24" style="width: 100%">
@@ -123,6 +123,22 @@ Setting `columns` divides the width equally with `repeat(n, 1fr)`; child `span` 
     <oas-grid-item span="8"><div class="demo-grid-box">row 8 / col 24</div></oas-grid-item>
     <oas-grid-item span="8"><div class="demo-grid-box">row 8 / col 24</div></oas-grid-item>
     <oas-grid-item span="8"><div class="demo-grid-box">row 8 / col 24</div></oas-grid-item>
+  </oas-grid>
+</DemoBlock>
+
+<DemoBlock title="gap comma pair + row-gap/column-gap attributes">
+  <oas-grid gap="4,32" style="width: 100%">
+    <oas-grid-item span="8"><div class="demo-grid-box">gap="4,32"</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">gap="4,32"</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">gap="4,32"</div></oas-grid-item>
+  </oas-grid>
+  <oas-grid gap="8" row-gap="24" style="width: 100%; margin-top: 16px">
+    <oas-grid-item span="8"><div class="demo-grid-box">gap 8 + row-gap 24</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">gap 8 + row-gap 24</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">gap 8 + row-gap 24</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">row 24 / col 8</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">row 24 / col 8</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">row 24 / col 8</div></oas-grid-item>
   </oas-grid>
 </DemoBlock>
 
@@ -207,15 +223,25 @@ Setting `columns` divides the width equally with `repeat(n, 1fr)`; child `span` 
   </div>
 </DemoBlock>
 
-## Reordering with order
+## Reordering (order / push / pull)
 
-Push/pull (offset-based left/right movement) is intentionally not provided — use `order` instead: the DOM/source order (and screen-reader semantics) stays unchanged, only the visual order changes.
+- `order` expresses reordering: the DOM/source order (and screen-reader semantics) stays unchanged, only the visual order changes.
+- `push` / `pull` shift the start line right / left by N columns on top of `offset` (net shift = push − pull combined with offset); a net shift ≤ 0 falls back to auto-placement.
 
-<DemoBlock title="Last column first">
+<DemoBlock title="Last column first (order)">
   <oas-grid gap="12px" style="width: 100%">
     <oas-grid-item span="8"><div class="demo-grid-box">source col 1 (order 0)</div></oas-grid-item>
     <oas-grid-item span="8"><div class="demo-grid-box">source col 2 (order 0)</div></oas-grid-item>
     <oas-grid-item span="8" order="-1"><div class="demo-grid-box">source col 3 (order -1 → first)</div></oas-grid-item>
+  </oas-grid>
+</DemoBlock>
+
+<DemoBlock title="push/pull shift">
+  <oas-grid gap="12px" style="width: 100%">
+    <oas-grid-item span="6"><div class="demo-grid-box">span 6</div></oas-grid-item>
+    <oas-grid-item span="6" push="6"><div class="demo-grid-box">span 6 push 6 (6 cols right)</div></oas-grid-item>
+    <oas-grid-item span="6" offset="6"><div class="demo-grid-box">span 6 offset 6</div></oas-grid-item>
+    <oas-grid-item span="6" offset="6" pull="6"><div class="demo-grid-box">span 6 offset 6 pull 6 (pulled back)</div></oas-grid-item>
   </oas-grid>
 </DemoBlock>
 
@@ -228,6 +254,26 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
   </oas-grid>
   <p class="demo-grid-note">Visual order: D (0) → B (1) → C (2) → A (3).</p>
 </DemoBlock>
+
+## Collapsed rows (collapsed-rows)
+
+`collapsed-rows` sets how many rows stay visible in the collapsed state (row model accumulates child span/offset): children beyond the limit are hidden and an Expand tail cell appears (spanning the remaining columns of its row); clicking expands, and the tail turns into Collapse to fold back. The collapsed state writes back to the controlled `collapsed` attribute and emits `oas-collapse`. Not enabled under `columns` / `min-child-width` auto layouts (the row model relies on span/offset semantics).
+
+<DemoBlock title="collapsed-rows=1 query filters">
+  <oas-grid collapsed-rows="1" gap="12px" style="width: 100%">
+    <oas-grid-item span="8"><div class="demo-grid-box">Filter 1</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">Filter 2</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">Filter 3</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">Filter 4 (row 2)</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">Filter 5 (row 2)</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">Filter 6 (row 2)</div></oas-grid-item>
+  </oas-grid>
+  <p class="demo-grid-note">Only the first row shows by default (filters 1–3); click the Expand tail to reveal all, Collapse to fold back.</p>
+</DemoBlock>
+
+## Child flex passthrough
+
+The `oas-grid-item` `flex` attribute writes the CSS `flex` shorthand inline (not consumed by grid layout per CSS spec, zero interference) — a passthrough for host scenarios that place the item into flex containers.
 
 <style>
   .demo-grid-box {
@@ -317,11 +363,21 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `align` | Block-axis alignment (align-items): `start` / `center` / `end` / `stretch` / `baseline`; invalid values fall back to `stretch` with a dev warning (deduped) | `string` | — |
+| `collapsed` | — | — | — |
+| `collapsed-rows` | Rows visible when collapsed; overflow hidden with an expand/collapse tail cell (writes back collapsed, emits oas-collapse) | `string` | `1` |
 | `cols` | Total column count | `string` | `24` |
+| `column-gap` | Independent column gap (same rules) | `string` | — |
 | `columns` | Auto equal column count (simple-grid; child span ignored when set): supports breakpoint shorthand (e.g. 3 md:2 sm:1; breakpoints sm=640/md=768/lg=1024/xl=1280); takes precedence over min-child-width | `string` | — |
 | `gap` | Gap; a single value applies to both axes, two space-separated values set `row column` (e.g. `8 16` = row 8, column 16); three or more values are invalid and silently fall back to `0` | `string` | `0` |
 | `justify` | Inline-axis alignment (justify-items): `start` / `center` / `end` / `stretch`; invalid values fall back to `stretch` with a dev warning (deduped) | `string` | — |
 | `min-child-width` | Minimum child width (e.g. 180px; bare numbers read as px): auto-fit + minmax derives the column count from container width (breakpoint-free fluid reflow); `columns` wins when both are set, and child span/offset are inert in this mode | `string` | — |
+| `row-gap` | Independent row gap overriding the matching axis of gap (numbers as px) | `string` | — |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-collapse` | Emitted on collapsed-rows tail toggle, `detail: { collapsed }` |
 
 #### Slots
 
@@ -341,8 +397,11 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `flex` | Writes the CSS flex shorthand inline (unused by grid; passthrough for flex contexts) | `string` | — |
 | `offset` | Number of columns offset on the left; supports breakpoint shorthand (e.g. `0 lg:4`: base value + space-separated `breakpoint:value`, breakpoints sm=640 / md=768 / lg=1024 / xl=1280) | `string` | `0` |
 | `order` | Ordering weight (number, default 0); higher values appear later, for reordering columns (equivalent to offset-based push/pull scenarios) | `string` | `0` |
+| `pull` | Shifts the start line left by N columns (same rules) | `string` | `0` |
+| `push` | Shifts the start line right by N columns (net = push−pull on top of offset) | `string` | `0` |
 | `span` | Number of columns spanned; supports `auto` (natural content width) and breakpoint shorthand (e.g. `24 md:12`: base value + space-separated `breakpoint:value`, breakpoints sm=640 / md=768 / lg=1024 / xl=1280) | `string` | `24` |
 
 #### Slots

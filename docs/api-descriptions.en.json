@@ -4,7 +4,8 @@
       "append-to": "Teleport target container selector (CSS selector); the content node is appended into the target container while pinned (fixed positioning stays viewport-relative, escaping overflow clipping by ancestors) and moved back on unpin; a non-matching selector warns once and falls back to no teleport",
       "offset": "Pin trigger distance (px)",
       "position": "Pin direction: top (default, pinned when the top edge reaches) / bottom (pinned when the bottom edge reaches); invalid values fall back to top",
-      "target": "Scroll container selector (CSS selector); falls back to window scroll with a console warning when no element matches"
+      "target": "Scroll container selector (CSS selector); falls back to window scroll with a console warning when no element matches",
+      "z-index": "Overrides the fixed layer z-index while pinned (non-negative integer; invalid falls back to token with a warning)"
     },
     "events": {
       "oas-change": "Dispatched when the pin state flips; detail { fixed, top }: fixed indicates whether pinned; top is the reference pin position (offset for top pinning, the element's current rect.top for bottom pinning)"
@@ -147,7 +148,9 @@
       "trigger-on-focus": "Show suggestions on focus (datalist mental model; off by default — input-first)",
       "value": "Preset value",
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
-      "variant": "Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently"
+      "variant": "Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently",
+      "placement": "12-direction panel placement (engine flip/RTL result written to data-placement)",
+      "autofocus": "Focuses the inner input after mounting"
     },
     "events": {
       "oas-change": "Selected or cleared, `detail: { value, label }`",
@@ -177,7 +180,8 @@
       "color": "Text avatar background: semantic color / preset name / any color value (contrast text color auto-picked)",
       "fallback": "Fallback image URL: used when the main image fails (text/slot chain after that)",
       "fit": "Image object-fit (default `cover`)",
-      "text": "Text content: single char renders the first character; multiple chars render in full with auto-shrinking font"
+      "text": "Text content: single char renders the first character; multiple chars render in full with auto-shrinking font",
+      "srcset": "Responsive source descriptors passed through to the inner img (empty removes it)"
     },
     "events": {
       "oas-error": "Fired when an image fails (once for the main src, once for the fallback), `detail: { src }`",
@@ -278,7 +282,8 @@
       "value": "Number",
       "bordered": "White outline: boolean, adds a 2px background-color ring around the badge (box-shadow: 0 0 0 2px var(--oas-color-bg)) to separate it from an avatar/image background; visual-only, never changes positioning (composes with corner/offset/overlap)",
       "icon": "In-badge icon: an iconRegistry icon name (e.g. check / warning), rendered as an inline SVG (1em following the badge font size, decorative and hidden from screen readers); mutually exclusive with value/dot (icon wins)",
-      "variant": "Variant: solid (default, filled) or outline (transparent background, border and text follow the color semantics); invalid values silently fall back to solid"
+      "variant": "Variant: solid (default, filled) or outline (transparent background, border and text follow the color semantics); invalid values silently fall back to solid",
+      "shape": "Badge shape `round` (default) / `square` / `pill`, applying to both counts and dots"
     },
     "events": {},
     "slots": {
@@ -416,7 +421,8 @@
     },
     "slots": {
       "": "Button content (text / icon)",
-      "description": "Secondary text line (compound two-row variant): when present, the button switches to a vertical two-row layout (main row on top, secondary below, smaller muted text)"
+      "description": "Secondary text line (compound two-row variant): when present, the button switches to a vertical two-row layout (main row on top, secondary below, smaller muted text)",
+      "loading-icon": "Custom loading icon replacing the built-in spinner ring when slot content is present"
     },
     "cssVars": {
       "--oas-button-color-deep": "Text-safe deepened variant of the custom `color`: the color-mix used for hover/active and outlined/dashed/filled text (injected by the component via `--oas-deep-mix` / `--oas-deep-sink`; inert without a custom color)"
@@ -454,7 +460,9 @@
       "readonly": "Read-only: page navigation and panel drill-down stay available, but picking dates / Enter does not commit",
       "show-week-number": "Show the ISO week number column",
       "value": "Selected value (ISO)",
-      "range": "Range selection mode: two-click picking with hover preview and range highlighting; oas-change carries `{ start, end }`; value mirrors a JSON array"
+      "range": "Range selection mode: two-click picking with hover preview and range highlighting; oas-change carries `{ start, end }`; value mirrors a JSON array",
+      "locale": "Panel language override (title/weekdays/cell descriptions/nav copy/week start); defaults to config-provider > global",
+      "format": "Header title format string (yyyy/MM/dd tokens; day/month panels)"
     },
     "events": {
       "oas-cell-render": "Dispatched when each day cell renders, `detail: { date, element }` (element is the day button; host can append markers/badges/rich content)",
@@ -463,7 +471,8 @@
       "oas-panel-change": "Dispatched when the displayed panel month changes due to user paging/month picking/jumps, `detail: { date }` (date is the first day of the new page)"
     },
     "slots": {
-      "template[slot=\"cell\"]": "Static template for day cells, cloned into each day button; the `[data-cell-date]` node is bound to the day number"
+      "template[slot=\"cell\"]": "Static template for day cells, cloned into each day button; the `[data-cell-date]` node is bound to the day number",
+      "header": "Custom header replacing the built-in navigation (built-in kept when not distributed)"
     },
     "props": {
       "disabledDate": "Disabled callback (property)"
@@ -485,7 +494,9 @@
       "href": "Link card: whole card acts as a link (wrapped in an internal anchor; keyboard/middle-click native)",
       "target": "Link target (with href, e.g. `_blank`)",
       "selectable": "Selectable card: click the card body (or press Enter/Space) to toggle the selected state and dispatch `oas-change`; interactive elements inside the card (buttons/links) do not trigger selection; with `href`, selecting takes precedence over navigation; not selectable while `loading`",
-      "selected": "Selected state (with `selectable`): setting it from the host makes the card controlled — the component only dispatches `oas-change` and never mutates the attribute itself (the host writes it back); when unset, the component toggles internally and reflects this attribute (uncontrolled)"
+      "selected": "Selected state (with `selectable`): setting it from the host makes the card controlled — the component only dispatches `oas-change` and never mutates the attribute itself (the host writes it back); when unset, the component toggles internally and reflects this attribute (uncontrolled)",
+      "disabled": "Disables the card: graying + aria-disabled + no interaction events + href stripped (selected look preserved)",
+      "orientation": "`horizontal` places the cover left (40% width, full height) with a right-hand content column"
     },
     "events": {
       "oas-click": "Whole-card click (when `clickable`), detail contains originalEvent",
@@ -519,7 +530,8 @@
       "pause-button": "Show an explicit pause/play button (default off; click toggles autoplay pause/resume and takes priority over hover pausing; clicking play while autoplay is off enables it)",
       "slides-per-view": "Slides per page (default 1; index is page-based, last page aligns to the track end)",
       "type": "Carousel layout type: `\"card\"` enables card mode — the current card is centered as the main body with neighboring cards peeking on both sides (scaled down, dimmed); clicking a neighbor card switches to it directly; mutually exclusive with `slides-per-view`/`effect`/`direction` (card mode wins); card width/gap/neighbor scale via `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale`",
-      "draggable": "Pointer/touch drag switching: flip past 25% of the viewport or on a quick flick, spring back otherwise; on by default on touch devices, off on PC; `\"false\"` disables explicitly"
+      "draggable": "Pointer/touch drag switching: flip past 25% of the viewport or on a quick flick, spring back otherwise; on by default on touch devices, off on PC; `\"false\"` disables explicitly",
+      "trigger": "Indicator activation: `click` (default) / `hover` (hover switches, click still works)"
     },
     "events": {
       "oas-change": "Current screen changed, `detail: { index }`"
@@ -548,7 +560,9 @@
       "open": "Controlled open state (single source of truth); in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown",
       "max-tag-count": "Collapse multi-select tags beyond the count into +N (with title listing hidden items)",
       "loading": "Loading state: trigger spinner + aria-busy; the panel shows a loading placeholder",
-      "field-names": "Field-alias JSON (`{ label, value, children, disabled }`) matching the tree-select contract; lazy-load results are mapped alike"
+      "field-names": "Field-alias JSON (`{ label, value, children, disabled }`) matching the tree-select contract; lazy-load results are mapped alike",
+      "label": "Accessible name of the trigger (aria-label), taking priority over value/placeholder",
+      "placement": "Panel placement in 12 directions (invalid falls back to bottom; auto-flip kept)"
     },
     "events": {
       "oas-change": "Selection change, `detail: { value }` (path array)",
@@ -558,7 +572,10 @@
       "oas-focus": "Dispatched on trigger focus; `detail.value` shares the oas-change shape (inner focus moves do not false-fire)",
       "oas-blur": "Dispatched on trigger blur; `detail.value` shares the oas-change shape (inner focus moves do not false-fire)"
     },
-    "slots": {}
+    "slots": {
+      "suffix-icon": "Custom trailing trigger icon (replaces the default arrow; yields to the spinner while loading)",
+      "option": "Custom option row template; `[data-option-label]` nodes bind the option text"
+    }
   },
   "oas-chart": {
     "attrs": {
@@ -585,7 +602,8 @@
       "check-all": "In-group select-all marker: clicking toggles all items, item changes write back its checked/indeterminate state; the item never joins the group value (cross-component attribute read by oas-checkbox-group)",
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner input)",
       "true-value": "Mapped value when checked: drives detail.value, the value getter and FormData submission (not effective inside a checkbox-group)",
-      "false-value": "Mapped value when unchecked (detail.value / value getter; not added to FormData per native unchecked semantics; not effective inside a checkbox-group)"
+      "false-value": "Mapped value when unchecked (detail.value / value getter; not added to FormData per native unchecked semantics; not effective inside a checkbox-group)",
+      "tabindex": "Forwarded to the inner native checkbox (`-1` removes it from the tab order)"
     },
     "events": {
       "oas-change": "Checked change, `detail: { checked, value }`",
@@ -701,7 +719,8 @@
       "status": "Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation)",
       "value": "Current value (controlled, the selected option's `option.value`)",
       "virtual": "Virtual scroll (reuses oas-virtual-list to render only the visible window; options with group fall back to full rendering)",
-      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)"
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
+      "autocomplete": "Passed through to the inner native input (falls back to off)"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",
@@ -902,7 +921,9 @@
       "unlink-panels": "Range months flip independently (linked by default)",
       "value": "Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON range array",
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
-      "name": "Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent)"
+      "name": "Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent)",
+      "separator": "Custom separator between start/end values in the trigger for range types (display only)",
+      "default-time": "Default start/end times for datetimerange (JSON array or single value); auto-filled when the value lacks a time part"
     },
     "events": {
       "oas-calendar-change": "Emitted on every range endpoint pick, `detail: { value: [start, end|null] }`",
@@ -915,7 +936,9 @@
       "oas-open-change": "Open state change, `detail: { open }` (both controlled and uncontrolled)"
     },
     "slots": {
-      "template[slot=\"cell\"]": "`template[slot=\"cell\"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`)"
+      "template[slot=\"cell\"]": "`template[slot=\"cell\"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`)",
+      "prefix-icon": "Leading icon inside the trigger (decorative; clicks pass through)",
+      "suffix-icon": "Trailing icon inside the trigger (yields while the clear button is visible)"
     },
     "props": {
       "shortcuts": "Shortcuts (object array, `{ label, value }` or `{ label, getValue() }`); built-in defaults per type when unset (labels via locale)",
@@ -929,7 +952,8 @@
       "layout": "Layout: `horizontal` (default, label and content on one row) / `vertical` (label above content)",
       "bordered": "Bordered table form: full grid lines + tinted label cells",
       "colon": "Show a colon after the label (default false)",
-      "size": "Size: `small` / `medium` (default) / `large` (padding and font size linked)"
+      "size": "Size: `small` / `medium` (default) / `large` (padding and font size linked)",
+      "items": "Data-driven rendering JSON (label/content/span fields); declarative children always win"
     },
     "events": {},
     "slots": {
@@ -954,7 +978,7 @@
       "content-position": "Content position",
       "dashed": "Dashed",
       "direction": "Direction",
-      "variant": "Line style: `solid` / `dashed` / `dotted` / `double`; an explicit value takes precedence over the `dashed` boolean (compat form)",
+      "variant": "Line style: solid / dashed / dotted / double / double-dashed (double dashed) / double-dotted (double dotted); an explicit value takes precedence over the dashed boolean (compat form). Line styles apply to horizontal layout only",
       "inset": "Indent: start-side inset of a horizontal line (default 5%, via `--oas-divider-title-inset`), aligned with the title inset",
       "middle": "Symmetric inset: equal insets on both sides of a horizontal line (default 16.67%, via `--oas-divider-middle-inset`)",
       "size": "Spacing tier: `small` / `medium` (default) / `large`; horizontal layout only",
@@ -994,7 +1018,8 @@
       "snap-points": "Snap points array (comma-separated; values ≤1 are viewport-height fractions, >1 are pixels, e.g. `0.35,0.6`): bottom/top drawers snap to the nearest point on release and start at the highest point; bottom + `snap-points` implies gestures",
       "swipeable": "Enable gestures: drag from the handle/title bar to close (past 35% of the panel size or a fast fling); implied by `snap-points` (bottom/top)",
       "z-index": "Explicit z-index base: stacked on `--oas-z-index-base` (the panel sits 1 above the mask); defaults to the overlay tier `--oas-z-overlay`, incrementing with stack depth when nested",
-      "height": "Explicit height for vertical drawers (placement top/bottom), overriding width/size; ignored by left/right"
+      "height": "Explicit height for vertical drawers (placement top/bottom), overriding width/size; ignored by left/right",
+      "no-mask": "No-mask mode: no mask rendered; clicking outside still closes with mask cancel semantics"
     },
     "events": {
       "oas-close": "Close: cancel button / ✕ / mask click / Esc",
@@ -1031,7 +1056,10 @@
       "disabled": "Disable entirely: no trigger response",
       "hide-on-click": "Close after selecting an item (default true; false keeps it open for multi-select)",
       "close-on-scroll": "Close the popover on page scroll (default repositions to follow; true closes on scroll)",
-      "offset": "Gap in px between popover and trigger (default 8)"
+      "offset": "Gap in px between popover and trigger (default 8)",
+      "size": "Forwarded to the trigger oas-button size tiers (aliases normalized, invalid falls back to medium)",
+      "type": "Forwarded to the trigger oas-button type vocabulary",
+      "max-height": "Caps the menu panel height with internal scrolling (numbers get px)"
     },
     "events": {
       "oas-action": "Main button clicked in split mode, `detail: { originalEvent }`",
@@ -1279,7 +1307,10 @@
       "disabled": "Whole-form disable: fields are disabled via their form-associated channel (no write-back of the disabled attribute); submission skips validation while disabled",
       "scroll-to-first-error": "On validation failure, focus the first invalid field and smooth-scroll it into view (instant jump under prefers-reduced-motion)",
       "validate-trigger": "When per-field live validation fires: `change` (default) / `blur` / `input`; a rule's `validateTrigger` overrides per field; submission always validates everything",
-      "initial-values": "Initial values JSON (the `initialValues` property takes precedence): written into fields after mount; `reset()` restores them"
+      "initial-values": "Initial values JSON (the `initialValues` property takes precedence): written into fields after mount; `reset()` restores them",
+      "size": "Form-level size tier distributed to all fields via the data-form-size channel (a field's own explicit size wins; form-associated fields follow dynamically)",
+      "colon": "Renders a colon after every form-item label in the form (CSS ::after, no DOM text)",
+      "validate-messages": "Overrides locale-default validation messages per rule type (property/JSON channels, ${min}/${max}/${value} placeholders, default fallback)"
     },
     "events": {
       "oas-submit": "Validation passed, `detail: { values }`",
@@ -1295,7 +1326,9 @@
       "label": "Label text (no label row when omitted)",
       "name": "Field name (validation association)",
       "required": "Required asterisk (visual only; validation is still driven by form `rules`)",
-      "span": "Columns spanned in the 24-column grid (only when form `layout=\"grid\"`; non-integer in 1-24 → `24`)"
+      "span": "Columns spanned in the 24-column grid (only when form `layout=\"grid\"`; non-integer in 1-24 → `24`)",
+      "help": "Persistent helper text below the control, independent of validation errors",
+      "status-icon": "Shows a danger status icon before the error text while the error is present"
     },
     "events": {},
     "slots": {
@@ -1323,9 +1356,14 @@
       "columns": "Auto equal column count (simple-grid; child span ignored when set): supports breakpoint shorthand (e.g. 3 md:2 sm:1; breakpoints sm=640/md=768/lg=1024/xl=1280); takes precedence over min-child-width",
       "gap": "Gap; a single value applies to both axes, two space-separated values set `row column` (e.g. `8 16` = row 8, column 16); three or more values are invalid and silently fall back to `0`",
       "justify": "Inline-axis alignment (justify-items): `start` / `center` / `end` / `stretch`; invalid values fall back to `stretch` with a dev warning (deduped)",
-      "min-child-width": "Minimum child width (e.g. 180px; bare numbers read as px): auto-fit + minmax derives the column count from container width (breakpoint-free fluid reflow); `columns` wins when both are set, and child span/offset are inert in this mode"
+      "min-child-width": "Minimum child width (e.g. 180px; bare numbers read as px): auto-fit + minmax derives the column count from container width (breakpoint-free fluid reflow); `columns` wins when both are set, and child span/offset are inert in this mode",
+      "row-gap": "Independent row gap overriding the matching axis of gap (numbers as px)",
+      "column-gap": "Independent column gap (same rules)",
+      "collapsed-rows": "Rows visible when collapsed; overflow hidden with an expand/collapse tail cell (writes back collapsed, emits oas-collapse)"
     },
-    "events": {},
+    "events": {
+      "oas-collapse": "Emitted on collapsed-rows tail toggle, `detail: { collapsed }`"
+    },
     "slots": {
       "": "Grid children (`oas-grid-item`)"
     }
@@ -1334,7 +1372,10 @@
     "attrs": {
       "offset": "Number of columns offset on the left; supports breakpoint shorthand (e.g. `0 lg:4`: base value + space-separated `breakpoint:value`, breakpoints sm=640 / md=768 / lg=1024 / xl=1280)",
       "order": "Ordering weight (number, default 0); higher values appear later, for reordering columns (equivalent to offset-based push/pull scenarios)",
-      "span": "Number of columns spanned; supports `auto` (natural content width) and breakpoint shorthand (e.g. `24 md:12`: base value + space-separated `breakpoint:value`, breakpoints sm=640 / md=768 / lg=1024 / xl=1280)"
+      "span": "Number of columns spanned; supports `auto` (natural content width) and breakpoint shorthand (e.g. `24 md:12`: base value + space-separated `breakpoint:value`, breakpoints sm=640 / md=768 / lg=1024 / xl=1280)",
+      "flex": "Writes the CSS flex shorthand inline (unused by grid; passthrough for flex contexts)",
+      "push": "Shifts the start line right by N columns (net = push−pull on top of offset)",
+      "pull": "Shifts the start line left by N columns (same rules)"
     },
     "events": {},
     "slots": {
@@ -1418,7 +1459,10 @@
       "preview-src-list": "Gallery preview: JSON array of URLs; prev/next paging + counter + keyboard ←→ after opening",
       "preview-src": "Original image URL for preview (thumbnail/original separation; falls back to `src`)",
       "preview-open": "Controlled preview open state (controlled when present, two-way with `oas-preview-change`; see also `openPreview()`)",
-      "infinite": "Loop around the first/last gallery image"
+      "infinite": "Loop around the first/last gallery image",
+      "width": "Explicit width (numbers become px; any CSS size string passes through; empty restores auto)",
+      "height": "Explicit height (same rules as width)",
+      "referrerpolicy": "Referrer policy passed through to the inner img"
     },
     "events": {
       "oas-preview": "Preview overlay opened, `detail: { src }`; closing the overlay does not emit an event",
@@ -1608,7 +1652,8 @@
       "row-height": "Virtual scroll row height (px, default 64; data rows must be fixed-height)",
       "size": "Row density: sm / md (default) / lg",
       "split": "Whether to show item dividers",
-      "stripe": "Zebra stripes: fills visually even rows with a subtle background"
+      "stripe": "Zebra stripes: fills visually even rows with a subtle background",
+      "hoverable": "Hover background for non-clickable rows (selected rows excluded)"
     },
     "events": {
       "oas-click": "Item click (data/virtual rows); detail carries { index, item }",
@@ -1740,7 +1785,10 @@
       "max-height": "Max height of a long menu; scrolls internally beyond it (number gets px appended)",
       "expanded": "Controlled expanded set (JSON array string; which submenus are open in inline mode); internally managed when uncontrolled",
       "accordion": "Accordion mutual exclusion (inline mode: only one sibling submenu open at a time)",
-      "open-on-hover": "Hover-opened submenus in vertical/inline modes (~150ms open / ~300ms close delay); clicks unchanged; horizontal and collapsed flyout unaffected"
+      "open-on-hover": "Hover-opened submenus in vertical/inline modes (~150ms open / ~300ms close delay); clicks unchanged; horizontal and collapsed flyout unaffected",
+      "disabled": "Disables the whole menu: click/hover/keyboard intercepted, dimmed with aria-disabled",
+      "selectable": "With `\"false\"`, pure action menu: no check marks, clicks never write back value (detail kind=action)",
+      "persistent": "Keep flyout submenus open after selection (wins over close-on-select)"
     },
     "events": {
       "oas-select": "Select an item, `detail: { value, kind? }`. `kind` only appears for action items (`kind: \"action\"`) as \"action\"; radio items omit `detail.kind`",
@@ -2426,7 +2474,16 @@
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
       "name": "Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent)",
       "label": "The trigger's accessible name (aria-label), taking priority over the placeholder",
-      "variant": "Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently; status colors take precedence"
+      "variant": "Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently; status colors take precedence",
+      "input-value": "Controlled search text: typing writes back and emits oas-input-value-change; external updates sync into the search box",
+      "show-arrow": "Set `\"false\"` to hide the default dropdown arrow",
+      "autofocus": "Auto-focus the trigger after mount",
+      "default-active-first-option": "Highlight the first visible option on open (defaults to the selected option)",
+      "loading-text": "Custom loading placeholder copy (defaults to locale)",
+      "reserve-keyword": "Keep the keyword after selection in searchable mode (cleared by default, matching tree-select)",
+      "tabindex": "Forwarded to the internal trigger (host attribute removed after delegation to avoid double tab stops)",
+      "auto-width": "Trigger width shrinks to fit the selection",
+      "hint": "Hint line below the trigger, wired via aria-describedby"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",
@@ -2437,12 +2494,18 @@
       "oas-focus": "Fires when the component gains focus (trigger↔search inner moves are not reported)",
       "oas-blur": "Fires when the component loses focus",
       "oas-open-change": "Open state flips, `detail: { open }`",
-      "oas-exceed-limit": "Selection attempt past max-count (click/keyboard/create), `detail: { value, max }`"
+      "oas-exceed-limit": "Selection attempt past max-count (click/keyboard/create), `detail: { value, max }`",
+      "oas-input-value-change": "Dispatched on search-text change, `detail: { value }`",
+      "oas-create": "Dispatched when allow-create creates a new option, `detail: { value, label }`"
     },
     "slots": {
       "template[slot=\"option\"]": "Static option row template, cloned into each option label container; `[data-option-label]` nodes get bound to the option label",
       "template[slot=\"tag\"]": "Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label",
-      "template[slot=\"empty\"]": "Custom empty state (overrides both \"no data\" and \"no match\" defaults)"
+      "template[slot=\"empty\"]": "Custom empty state (overrides both \"no data\" and \"no match\" defaults)",
+      "prefix": "Trigger prefix content",
+      "suffix": "Trigger suffix content",
+      "suffix-icon": "Custom trailing trigger icon (replaces the default arrow)",
+      "clear-icon": "Custom clear-button icon"
     }
   },
   "oas-sidebar": {
@@ -2505,7 +2568,10 @@
     }
   },
   "oas-sider": {
-    "attrs": {},
+    "attrs": {
+      "width": "Explicit track width (numbers as px); narrow-bar contract wins when collapsed; defaults to --oas-sider-width",
+      "collapsed": "Collapse into the narrow bar (presence means collapsed)"
+    },
     "events": {},
     "slots": {
       "": "Sider content"
@@ -2550,7 +2616,8 @@
       "color": "Fill/thumb/passed-tick color: preset semantic names (primary / success / warning / danger, following dark theme) map to theme tokens; any other value is passed through as a CSS color",
       "track-color": "Track base color: preset semantic names map to theme tokens; any other value is passed through as a CSS color",
       "readonly": "Readonly (independent of `disabled`): stays focusable and the value still participates in form collection; dragging and keyboard edits are intercepted; not visually dimmed",
-      "large-step": "Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change`"
+      "large-step": "Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change`",
+      "label": "Accessible name for the inner slider (range mode appends localized min/max suffixes)"
     },
     "events": {
       "oas-change": "Committed on release, `detail: { value }` (single number; `[lo, hi]` array in `range` mode)",
@@ -2661,7 +2728,8 @@
       "min": "Minimum ratio of the preceding panel: numbers as percentage, `200px` suffix clamps in pixels; invalid values fall back to 10",
       "percent": "Ratio of the preceding panel (%)",
       "sizes": "Multi-panel mode panel ratios (comma-separated percentages, e.g. `30,40,30`); falls back to equal split when count mismatches panel count",
-      "vertical": "Vertical direction: panels stack top-to-bottom, divider is horizontal, keyboard uses ArrowUp/Down"
+      "vertical": "Vertical direction: panels stack top-to-bottom, divider is horizontal, keyboard uses ArrowUp/Down",
+      "disabled": "Freezes resizing: drag/keyboard/dblclick disabled, normal cursor, aria-disabled"
     },
     "events": {
       "oas-collapse": "Fired when the collapse button toggles, `detail: { collapsed, side }` (side=left means the panel before the divider)",
@@ -2712,7 +2780,8 @@
       "separator": "Connector style: `line` (default) / `dashed` (dashed border) / `arrow` (trailing arrowhead); not applied under navigation / arrow",
       "simple": "Compact mode: single-row small size (smaller indicators, hidden descriptions, tighter connector lines) (boolean; enabled when present; takes priority over progress-dot/navigation)",
       "status": "Container-level status overriding the current step (`wait` / `process` / `finish` / `error`); an explicit per-step `status` still takes the highest priority",
-      "steps": "`[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent?, prefix? }]` JSON string"
+      "steps": "`[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent?, prefix? }]` JSON string",
+      "size": "Five type-density tiers (indicator/connector geometry constant; aliases accepted)"
     },
     "events": {
       "oas-change": "Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index, id? }` (0-based; `id` echoes the step `id` field, keeps `{ index }` when unset)",
@@ -2804,7 +2873,11 @@
       "page-size": "Rows per page (built-in pagination, default 10)",
       "pagination": "Built-in pagination switch (footer pager; leave unset when the host paginates)",
       "summary-scope": "Summary aggregation scope: `all` (default, full dataset) / `page` (current page)",
-      "show-header": "Toggles the header (default true); with `false` no header row is rendered while column configuration still aligns data cells"
+      "show-header": "Toggles the header (default true); with `false` no header row is rendered while column configuration still aligns data cells",
+      "table-layout": "Passes the table layout algorithm through (with `fixed`, column widths strictly follow `width`)",
+      "hover": "Row hover background switch (purely visual), `\"false\"` disables",
+      "indent-size": "Per-level indent of tree data in px",
+      "max-height": "Caps the body scroll area with a sticky header (virtual `height` wins when both set)"
     },
     "events": {
       "oas-check": "Checkbox selection change, `detail: { keys: string[] }`",
@@ -2817,10 +2890,13 @@
       "oas-column-order": "Fired after column drag reorder, `detail: { keys }` (new column order)",
       "oas-column-resize": "Fired after a column width drag, `detail: { key, width }`",
       "oas-filter-change": "Fired when a column filter value changes, `detail: { key, values }`",
-      "oas-page-change": "Fired when the built-in page changes, `detail: { current, pageSize }`"
+      "oas-page-change": "Fired when the built-in page changes, `detail: { current, pageSize }`",
+      "oas-cell-click": "Fired on data-cell click, `detail: { row, column, value, rowIndex, columnIndex }` (suppressed inside interactive controls)",
+      "oas-row-dblclick": "Fired on data-row double-click, `detail: { row, rowIndex }`"
     },
     "slots": {
-      "template[slot=\"empty\"]": "Rich empty-state content (takes precedence over empty-text and the default empty text)"
+      "template[slot=\"empty\"]": "Rich empty-state content (takes precedence over empty-text and the default empty text)",
+      "filter-icon": "Custom filter trigger icon in filterable column headers"
     }
   },
   "oas-table-column": {
@@ -2854,7 +2930,8 @@
       "reserve-selected-space": "Anti-jitter for bold selection: preload the selected-state text width so selected/unselected tabs keep the same width and do not shift on switch",
       "hide-content": "Pure navigation mode: render the tab bar without the panel area (tabs act as a nav strip; the host takes over content/routing)",
       "items": "Data-driven rendering: JSON array `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`; takes precedence over `oas-tab-panel` children when both present",
-      "context-menu": "Right-click action menu on tabs (New / Close / Close others / Close all to the left / Close all to the right / Close all; New fires oas-add, each close fires oas-close once per target tab)"
+      "context-menu": "Right-click action menu on tabs (New / Close / Close others / Close all to the left / Close all to the right / Close all; New fires oas-add, each close fires oas-close once per target tab)",
+      "tabindex": "Forwarded to every tab button, overriding roving (removing restores it; disabled stays -1)"
     },
     "events": {
       "oas-add": "The + button was clicked, `detail: { label }` (default new-tab label from locale; use it or customize it)",
@@ -2950,7 +3027,8 @@
       "italic": "Italic (`<em>` semantics)",
       "align": "Text alignment: `start`/`center`/`end`/`justify`",
       "weight": "Font weight: `regular`/`medium`/`semibold`/`bold` (compatible with the strong boolean)",
-      "numeric": "Tabular figures (font-variant-numeric: tabular-nums) for aligned numeric columns in tables/stats"
+      "numeric": "Tabular figures (font-variant-numeric: tabular-nums) for aligned numeric columns in tables/stats",
+      "size": "Three font-size presets mapped to font-size tokens (medium falls back to inherited size)"
     },
     "events": {
       "oas-copy": "Copy succeeded, `detail: { text }`",
@@ -2985,7 +3063,8 @@
       "minlength": "Minimum length (native passthrough)",
       "required": "Required marker (native passthrough)",
       "spellcheck": "Spellcheck (native passthrough)",
-      "wrap": "Wrap strategy (native passthrough: soft/hard)"
+      "wrap": "Wrap strategy (native passthrough: soft/hard)",
+      "autocomplete": "Passed through to the inner native textarea"
     },
     "events": {
       "oas-input": "While typing, `detail: { value }`",
@@ -3022,7 +3101,9 @@
       "use12-hours": "12-hour mode: display and columns switch to 12-hour (with an AM/PM column following the locale); the value stays 24-hour",
       "value": "Current value (`HH:mm:ss`; a JSON array when `is-range`)",
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
-      "name": "Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent)"
+      "name": "Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent)",
+      "hide-disabled-options": "Hide disabled options instead of graying them out (keyboard navigation still skips them)",
+      "label": "Accessible name (aria-label) for the trigger; an external label-for association takes precedence"
     },
     "events": {
       "oas-change": "Confirmed value change, `detail: { value }` (string array for `is-range`)",
@@ -3042,7 +3123,8 @@
     "attrs": {
       "direction": "Axis direction: vertical (default) / horizontal (items laid out in a row)",
       "mode": "Content position relative to the axis: left (default, axis on the left) / right (axis on the right) / alternate (axis centered, content alternates sides, first item on the left); in horizontal mode maps to below/above/alternating",
-      "reverse": "Visual reverse order (DOM order unchanged); pairs with pending for \"newest first\""
+      "reverse": "Visual reverse order (DOM order unchanged); pairs with pending for \"newest first\"",
+      "size": "Five presets scaling the dot diameter (6/8/10/12/16px, connector follows) and font-size tokens"
     },
     "events": {},
     "slots": {
@@ -3362,12 +3444,15 @@
       "disabled": "Disabled (row clicks/buttons/search all inert; host mirrors data-disabled)",
       "target-sort": "Target-side ordering: `original` (default, data-source order) / `push` (append) / `unshift` (prepend). Note the value-array ordering semantics: with original, a pre-set out-of-order value is normalized to data order",
       "simple": "Move on selection (skip the shuttle buttons, off by default)",
-      "target-draggable": "Target-side drag sorting (pair with target-sort=push/unshift; original ordering is data-driven and not draggable)"
+      "target-draggable": "Target-side drag sorting (pair with target-sort=push/unshift; original ordering is data-driven and not draggable)",
+      "pagination": "Long-list paging with a simple footer per panel (applied after filtering)",
+      "page-size": "Items per page (invalid/<1 falls back to 10)"
     },
     "events": {
       "oas-change": "Value change after shuttling, `detail: { value }`",
       "oas-search": "Panel search input, `detail: { side, query }`",
-      "oas-select-change": "Selection set changed (row click/select-all/keyboard), `detail: { side, selected }`"
+      "oas-select-change": "Selection set changed (row click/select-all/keyboard), `detail: { side, selected }`",
+      "oas-scroll": "List scroll event `{ side, direction, scrollTop, reachBottom }` (lazy-load channel)"
     },
     "slots": {
       "template[slot=\"empty\"]": "Custom content shared by empty and no-match states",
@@ -3400,7 +3485,10 @@
       "disabled": "Whole-tree disabled (select/check/expand/drag all inert, browsing kept)",
       "empty": "Empty-state text (when no data; no-match uses the locale no-match text)",
       "can-rename": "Master switch for node renaming: when on, double-click a node label or press F2 to enter inline editing; Enter commits / Esc cancels / blur commits; committing emits `oas-node-rename` (mark a node `renamable: false` in the data to exclude it individually)",
-      "motion": "Expand/collapse height transition animation (off by default): non-virtual mode transitions row-container max-height on expand/collapse, virtual-scroll mode degrades to a fade-in on expand with instant collapse; duration/easing follow `--oas-transition-*`, disabled under `prefers-reduced-motion`"
+      "motion": "Expand/collapse height transition animation (off by default): non-virtual mode transitions row-container max-height on expand/collapse, virtual-scroll mode degrades to a fade-in on expand with instant collapse; duration/easing follow `--oas-transition-*`, disabled under `prefers-reduced-motion`",
+      "size": "Five-tier tree font/padding scale (xs~xl, aliases accepted, invalid falls back to medium)",
+      "block-node": "Full-row block selection/hover zone (rows one tier taller)",
+      "selectable": "Whole-tree selection switch; `\"false\"` stops click/keyboard selection while expand/check keep working"
     },
     "events": {
       "oas-check": "Check state change, `detail: { key, checked }`",
@@ -3460,7 +3548,9 @@
       "prefix-text": "Trigger prefix content (slot=\"prefix\" accepts any content)",
       "suffix-text": "Trigger suffix content (slot=\"suffix\" likewise)",
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
-      "name": "Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent)"
+      "name": "Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent)",
+      "input-value": "Controlled search text (typing writes back and emits oas-input-value-change)",
+      "label-in-value": "value and oas-change detail carry `{ value, label }` objects (FormData still submits plain values)"
     },
     "events": {
       "oas-change": "Selection change, `detail: { value }`",
@@ -3468,11 +3558,13 @@
       "oas-open-change": "Open state flips, `detail: { open }`",
       "oas-load": "Fires when a lazy node expands to load, `detail: { value }`",
       "oas-clear": "Fires on clear; `detail` is the pre-clear value",
-      "oas-node-render": "Fires on node render (custom node rendering channel), `detail: { node, element, level, expanded, selected, checked }`"
+      "oas-node-render": "Fires on node render (custom node rendering channel), `detail: { node, element, level, expanded, selected, checked }`",
+      "oas-input-value-change": "Dispatched on search-text change, `detail: { value }`"
     },
     "slots": {
       "template[slot=\"empty\"]": "Custom empty-state content",
-      "template[slot=\"node\"]": "Custom node template (`[data-node-label]` binds the label)"
+      "template[slot=\"node\"]": "Custom node template (`[data-node-label]` binds the label)",
+      "suffix-icon": "Custom trailing trigger icon (replaces the default arrow)"
     }
   },
   "oas-upload": {
@@ -3507,7 +3599,8 @@
       "oas-error": "Upload failed, `detail: { file, response?, status? }` (retry button appears)",
       "oas-cancel": "Upload cancelled, `detail: { file }` (cancel button on the item)",
       "oas-retry": "Retry clicked, `detail: { file }` (re-upload after failure)",
-      "oas-exceed-limit": "Adding files rejected due to limit (canonical, aligned with checkbox-group/select/toggle-group), `detail: { files, max, total }`; emitted for both count and size rejections (size rejections also carry `type: 'size'` and `maxSize`)"
+      "oas-exceed-limit": "Adding files rejected due to limit (canonical, aligned with checkbox-group/select/toggle-group), `detail: { files, max, total }`; emitted for both count and size rejections (size rejections also carry `type: 'size'` and `maxSize`)",
+      "oas-progress": "Upload progress `{ file, percent }`, emitted across all channels with 100 on success"
     },
     "slots": {
       "trigger": "Replace the drop-zone content (zone semantics kept)",
@@ -3679,7 +3772,8 @@
       "direction": "Layout direction: `vertical` (default) / `horizontal` (row layout with wrapping)",
       "size": "Size (cascades to items): `small` / `medium` (default) / `large`",
       "status": "Validation status (cascades to items): `error` / `warning` / `success`; an explicit item status wins",
-      "readonly": "Readonly (cascades to items): focusable, arrow keys do not switch"
+      "readonly": "Readonly (cascades to items): focusable, arrow keys do not switch",
+      "required": "Group-level required validation via the form-associated chain (valueMissing); reset restores the baseline"
     },
     "events": {
       "oas-change": "Group value change, `detail: { value }` (fired by both clicks and arrow-key selection)",

@@ -1620,3 +1620,57 @@ describe('OASBadge size 多尺寸档', () => {
     expect(badge(el)).not.toBeNull()
   })
 })
+
+describe('OASBadge shape 形态（round 默认 / square / pill，数值与 dot 通用）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function styleOf(): string {
+    return document.querySelector('oas-badge')!.shadowRoot!.querySelector('style')!.textContent!
+  }
+
+  it('shape 进入观察列表', () => {
+    expect(OASBadge.observedAttributes).toContain('shape')
+  })
+
+  it('默认 round：不写 shape class（基类圆角即 round），count 与 dot 均不加', () => {
+    const count = mount({ value: '5' })
+    expect(badge(count)!.classList.contains('shape-square')).toBe(false)
+    expect(badge(count)!.classList.contains('shape-pill')).toBe(false)
+    const dot = mount({ dot: '' })
+    expect(badge(dot)!.classList.contains('shape-square')).toBe(false)
+    expect(badge(dot)!.classList.contains('shape-pill')).toBe(false)
+  })
+
+  it('square：count 与 dot 均写 shape-square class；CSS 直角（border-radius: 0）', () => {
+    const count = mount({ value: '5', shape: 'square' })
+    expect(badge(count)!.classList.contains('shape-square')).toBe(true)
+    expect(badge(count)!.classList.contains('shape-pill')).toBe(false)
+    const dot = mount({ dot: '', shape: 'square' })
+    expect(badge(dot)!.classList.contains('shape-square')).toBe(true)
+    const style = styleOf()
+    expect(cssRule(style, '.badge.shape-square')).toContain('border-radius: 0')
+    expect(cssRule(style, '.badge.shape-square.dot')).toContain('border-radius: 0')
+  })
+
+  it('pill：count 与 dot 均写 shape-pill class；CSS 胶囊（radius-full token）', () => {
+    const count = mount({ value: '5', shape: 'pill' })
+    expect(badge(count)!.classList.contains('shape-pill')).toBe(true)
+    const dot = mount({ dot: '', shape: 'pill' })
+    expect(badge(dot)!.classList.contains('shape-pill')).toBe(true)
+    const style = styleOf()
+    expect(cssRule(style, '.badge.shape-pill')).toContain('--oas-radius-full')
+    expect(cssRule(style, '.badge.shape-pill.dot')).toContain('border-radius: 50%')
+  })
+
+  it('非法值静默回落 round（无 shape class）', () => {
+    const el = mount({ value: '5', shape: 'hexagon' })
+    expect(badge(el)!.classList.contains('shape-square')).toBe(false)
+    expect(badge(el)!.classList.contains('shape-pill')).toBe(false)
+  })
+})

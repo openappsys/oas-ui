@@ -199,15 +199,21 @@ With `replace`, exceeding the count limit no longer rejects: the oldest file is 
   <span id="upload-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
 </DemoBlock>
 
-Listen to `oas-change` / `oas-remove` / `oas-upload`:
+Listen to `oas-change` / `oas-remove` / `oas-upload` / `oas-progress`:
 
 - `oas-upload`: progress, `detail: { file, percent, status }` (`status`: pending/uploading/done/error)
+- `oas-progress`: upload progress callback (PRD P2), `detail: { file, percent }` — internal progress already drives the UI; this event adds the outbound channel (emitted by real / mock / custom-request channels alike, with 100 on success)
 - `oas-success` / `oas-error`: upload success/failure (real channel), `detail: { file, response, status? }`
 - `oas-retry` / `oas-cancel`: retry started / upload cancelled, `detail: { file }`
 - `oas-exceed-limit`: rejection, `detail: { files, max, total }` (count) or `{ files, type: 'size', maxSize, total }` (size)
 - `oas-remove`: file removed, `detail: { file, index, replaced? }` (`replaced: true` means removed by the `replace` semantics)
 
 Methods: `submit()` (manual upload), `startUpload()` (equivalent), `abort(file?)` (cancel one/all in-flight uploads).
+
+<DemoBlock title="oas-progress feedback">
+  <oas-upload id="upload-progress" auto-upload multiple></oas-upload>
+  <span id="upload-progress-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
 
 ## Third-party Composition Scenarios
 
@@ -246,6 +252,13 @@ onMounted(async () => {
   })
   el?.addEventListener('oas-upload', (e) => {
     out.textContent = `oas-upload: ${e.detail.file.name} ${e.detail.percent}%`
+  })
+
+  // oas-progress: outbound progress channel feedback
+  const prog = document.getElementById('upload-progress')
+  const progOut = document.getElementById('upload-progress-output')
+  prog?.addEventListener('oas-progress', (e) => {
+    progOut.textContent = `oas-progress: ${e.detail.file.name} ${e.detail.percent}%`
   })
 
   // Picture wall: max rejection + preview feedback
@@ -429,6 +442,7 @@ onMounted(async () => {
 | `oas-exceed` | [Compat alias] Same as oas-exceed-limit; will be removed later, `detail: { files: rejected, max, total: next.length } \| { files: sizeRejected, type: 'size', maxSize, total: next.length }` |
 | `oas-exceed-limit` | Adding files rejected due to limit (canonical, aligned with checkbox-group/select/toggle-group), `detail: { files, max, total }`; emitted for both count and size rejections (size rejections also carry `type: 'size'` and `maxSize`) |
 | `oas-preview` | Preview overlay opened, `detail: { file, url }` |
+| `oas-progress` | Upload progress `{ file, percent }`, emitted across all channels with 100 on success, `detail: { file, percent: cur.percent } \| { file, percent: 100 } \| { file: f, percent: st.percent }` |
 | `oas-remove` | File removed, `detail: { file, index }` |
 | `oas-retry` | Retry clicked, `detail: { file }` (re-upload after failure) |
 | `oas-success` | Upload succeeded, `detail: { file, response }` |

@@ -80,6 +80,24 @@
     {
       "name": "offset",
       "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max-height",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],

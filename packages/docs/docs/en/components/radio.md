@@ -237,6 +237,20 @@ onMounted(() => {
   group?.addEventListener('oas-blur', () => {
     out.textContent = 'oas-blur (group lost focus)'
   })
+  // Group-level required: native form submission feedback (radio-group form-associated chain)
+  const rgForm = document.getElementById('radio-group-required')
+  rgForm?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    const g = rgForm.querySelector('oas-radio-group')
+    const out = document.getElementById('radio-group-required-out')
+    if (!g || !out) return
+    if (!g.checkValidity()) {
+      g.reportValidity()
+      out.textContent = 'Validation failed: pick a plan first'
+      return
+    }
+    out.textContent = 'Submitted: plan = ' + g.getAttribute('value')
+  })
 })
 </script>
 
@@ -247,6 +261,22 @@ onMounted(() => {
 </DemoBlock>
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
+
+`required` also works at the **group level**: `oas-radio-group required` uses the native form-associated validation chain — when no option is selected, `valueMissing` blocks native form submission (`FormData` submits the selected value under the group's `name`; nothing is submitted when empty).
+
+<DemoBlock title="Group-level required (radio-group)">
+  <form id="radio-group-required" style="display: flex; flex-direction: column; gap: var(--oas-space-3); align-items: flex-start">
+    <oas-radio-group name="plan" required>
+      <oas-radio value="basic">Basic</oas-radio>
+      <oas-radio value="pro">Pro</oas-radio>
+      <oas-radio value="team">Team</oas-radio>
+    </oas-radio-group>
+    <oas-button type="submit">Submit (blocked by the browser when nothing is selected)</oas-button>
+    <span id="radio-group-required-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </form>
+</DemoBlock>
+
+Click submit without selecting: the browser shows the valueMissing validation bubble, the form is not submitted, and the page asks you to pick a plan first; select an option and submit again to see the submitted value.
 
 ## API
 
@@ -294,6 +324,7 @@ onMounted(() => {
 | `disabled` | Disable the whole group (cascades to items without overriding their own explicit disabled) | `boolean` | — |
 | `options` | Data channel: JSON `[{ label, value, disabled?, description? }]`; when explicit, data-driven rendering wins over declarative children | `RadioOption[] \| string` | — |
 | `readonly` | Readonly (cascades to items): focusable, arrow keys do not switch | `boolean` | — |
+| `required` | Group-level required validation via the form-associated chain (valueMissing); reset restores the baseline | `boolean` | — |
 | `size` | Size (cascades to items): `small` / `medium` (default) / `large` | `string` | — |
 | `status` | Validation status (cascades to items): `error` / `warning` / `success`; an explicit item status wins | `string` | — |
 | `value` | Group value (the selected item value) | `string` | — |

@@ -85,3 +85,44 @@ test('splitter：折叠按钮与 separator 同级（不构成交互嵌套）且�
   expect(r.collapsedAttr, '点击折叠按钮应收起面板并回写 collapsed').toBe(true)
   expect(r.flexAfter, '折叠后该面板尺寸归零').toBe('0 0 0%')
 })
+
+// —— PRD P2：disabled 禁用调整（拖拽/键盘冻结 + 光标常态 + aria-disabled） ——
+test('splitter disabled：真实拖拽与键盘均冻结、aria-disabled、光标常态（PRD P2）', async ({ page }) => {
+  await page.goto('/components/splitter.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => document.querySelector('oas-splitter[disabled]')?.shadowRoot != null, null, {
+    timeout: 15000,
+  })
+  await page.evaluate(() => {
+    document.querySelector('oas-splitter[disabled]')!.scrollIntoView({ block: 'center' })
+  })
+  const r = await page.evaluate(async () => {
+    const sp = document.querySelector('oas-splitter[disabled]')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const sep = sp.shadowRoot.querySelector('[part="splitter"]') as HTMLElement
+    const rect = sep.getBoundingClientRect()
+    const cx = rect.x + rect.width / 2
+    const cy = rect.y + rect.height / 2
+    const before = sp.getAttribute('percent')
+    // 真实指针拖拽序列（pointerdown → move → up）
+    sep.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, button: 0 }))
+    for (let i = 1; i <= 3; i++) {
+      document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx + i * 30, clientY: cy }))
+      await new Promise((res) => setTimeout(res, 40))
+    }
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: cx + 90, clientY: cy }))
+    // 键盘调整
+    sep.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    return {
+      before,
+      after: sp.getAttribute('percent'),
+      ariaDisabled: sep.getAttribute('aria-disabled'),
+      cursor: getComputedStyle(sep).cursor,
+      dragging: sp.hasAttribute('dragging'),
+      dataDisabled: sp.hasAttribute('data-disabled'),
+    }
+  })
+  expect(r.after, '禁用下拖拽不得改写 percent').toBe(r.before)
+  expect(r.ariaDisabled, '分隔条应标记 aria-disabled=true').toBe('true')
+  expect(r.cursor, '禁用下光标应为常态').toBe('default')
+  expect(r.dragging, '禁用下不得进入拖拽态').toBe(false)
+  expect(r.dataDisabled, '禁用态应镜像 data-disabled 供样式消费').toBe(true)
+})

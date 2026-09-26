@@ -53,6 +53,20 @@ format 含 `HH`/`mm`/`ss` 时对应列才出现。
 
 `disabledTime`（property，`(parts) => { hours?, minutes?, seconds? }`）按当前时刻上下文返回禁用列表，禁用项置灰不可选（点击与键盘均跳过，不隐藏）。
 
+<DemoBlock title="hide-disabled-options（禁用选项隐藏而非灰显）">
+  <oas-time-picker id="time-picker-hide-disabled" value="15:30:00" hide-disabled-options></oas-time-picker>
+</DemoBlock>
+
+配合 `disabledTime` 使用：`hide-disabled-options` 让禁用选项直接不出现在列中（缺省置灰但可见）——上例当前值落在打烊时段（14–16 点），小时列中这三项被隐藏；键盘 `↑`/`↓` 与就近吸附本就基于值集合跳过禁用项，行为不变。
+
+## 无障碍命名
+
+<DemoBlock title="label 触发器命名">
+  <oas-time-picker label="会议开始时间" value="09:00:00"></oas-time-picker>
+</DemoBlock>
+
+`label` 为触发器输入框提供可访问名称（`aria-label`，屏幕阅读器朗读）；缺省回落 `placeholder`。外部 `<label for>` 关联命名优先（原生 label 语义）。
+
 ## 此刻与快捷预设
 
 <DemoBlock title="此刻按钮（footer）">
@@ -145,7 +159,9 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 | `clearable` | 可清除：有值时显示清除钮，点击清空并派发 `oas-clear` + `oas-change`（空值） | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `format` | 展示格式 token；含 `HH`/`mm`/`ss` 时对应列出现 | `string` | `HH:mm:ss` |
+| `hide-disabled-options` | 禁用选项隐藏而非灰显（键盘导航与吸附仍跳过禁用值） | `boolean` | — |
 | `is-range` | 时间范围：值为 JSON 数组 `["HH:mm:ss","HH:mm:ss"]`，确认时起止自动排序；该形态手输通道只读 | `boolean` | — |
+| `label` | 触发器可访问名（aria-label），外部 label for 关联优先 | `string` | — |
 | `name` | 表单字段名（原生 FormData 提交的 key；范围模式派生 name-start / name-end 两条 entry；无 name 浏览器自动不提交） | `string` | — |
 | `open` | 受控开合：在场=展开、移除=收起；手势只派发 `oas-open-change` 由宿主回写；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | — | — |
 | `placeholder` | 占位提示 | — | — |
@@ -197,17 +213,25 @@ onMounted(() => {
     else openEl?.setAttribute('open', '')
   })
 
-  // 禁用打烊时段（14:00-17:00 不可选）
-  const dt = document.getElementById('time-picker-disabled-time')
-  dt.disabledTime = (p) =>
-    p.h >= 14 && p.h < 17 ? { hours: [14, 15, 16] } : null
+  // 禁用打烊时段（14:00-17:00 不可选）——property 赋值必须等组件升级完（whenDefined 守卫，
+  // 否则 expando 遮蔽原型 setter，组件收不到；preview 构建下时序必现）
+  customElements.whenDefined('oas-time-picker').then(() => {
+    const dt = document.getElementById('time-picker-disabled-time')
+    dt.disabledTime = (p) =>
+      p.h >= 14 && p.h < 17 ? { hours: [14, 15, 16] } : null
 
-  // 快捷时刻预设
-  const pr = document.getElementById('time-picker-presets')
-  pr.presets = [
-    { label: '上午 9 点', value: '09:00:00' },
-    { label: '下午 2 点', value: '14:00:00' },
-    { label: '整点', value: '12:00:00' },
-  ]
+    // hide-disabled-options：同样禁用打烊时段，但选项直接隐藏
+    const hd = document.getElementById('time-picker-hide-disabled')
+    hd.disabledTime = (p) =>
+      p.h >= 14 && p.h < 17 ? { hours: [14, 15, 16] } : null
+
+    // 快捷时刻预设
+    const pr = document.getElementById('time-picker-presets')
+    pr.presets = [
+      { label: '上午 9 点', value: '09:00:00' },
+      { label: '下午 2 点', value: '14:00:00' },
+      { label: '整点', value: '12:00:00' },
+    ]
+  })
 })
 </script>

@@ -106,6 +106,18 @@ With the `lazy` attribute, dragging only moves the divider visually without re-r
   </div>
 </DemoBlock>
 
+## Disabled
+
+`disabled` freezes adjustments: the divider cannot be dragged, double-click reset and arrow-key nudging are disabled too, the cursor returns to normal and `aria-disabled="true"` is set (the host mirrors `data-disabled` for styling; config-provider global disabled injection works as well) — for display scenarios with locked layout ratios.
+
+<DemoBlock title="disabled">
+  <div style="height: 200px; width: 100%">
+    <oas-splitter percent="40" disabled>
+      <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">Left panel 40% (locked)</div>
+    </oas-splitter>
+  </div>
+</DemoBlock>
+
 ## Custom handle
 
 The `slot="handle"` lets you place custom handle content (icons/dots etc.) inside the divider; drag and keyboard still work.
@@ -177,6 +189,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `collapsed` | Controlled collapse: when present, collapses the panel before the first divider (written back automatically on collapse; external set/remove takes effect immediately) | `boolean` | — |
 | `collapsible` | Show a collapse button on the divider; click to collapse/expand the preceding panel | `boolean` | — |
+| `disabled` | Freezes resizing: drag/keyboard/dblclick disabled, normal cursor, aria-disabled | `boolean` | — |
 | `lazy` | Lazy rendering: while dragging, only the divider moves visually; sizes are written back and panels re-rendered on release (for heavy panels) | `boolean` | — |
 | `max` | Maximum ratio of the preceding panel: numbers as percentage, `200px` suffix clamps in pixels; invalid values fall back to 90 | `string` | `90` |
 | `min` | Minimum ratio of the preceding panel: numbers as percentage, `200px` suffix clamps in pixels; invalid values fall back to 10 | `string` | `10` |

@@ -277,6 +277,20 @@
   </div>
 </DemoBlock>
 
+## 尺寸档位
+
+`size` 五档字号密度（xs / small / medium / large / xl，`sm/md/lg` 别名等价，缺省 medium）：档位只动标题 / 描述 / 序号字阶，指示器与连接线几何恒定；非法值回落 medium 并告警一次。
+
+<DemoBlock title="五档 size">
+  <oas-space direction="vertical" size="large">
+    <oas-steps size="xs" current="1" steps='[{"title":"填写资料"},{"title":"确认信息"},{"title":"提交完成"}]'></oas-steps>
+    <oas-steps size="small" current="1" steps='[{"title":"填写资料"},{"title":"确认信息"},{"title":"提交完成"}]'></oas-steps>
+    <oas-steps size="medium" current="1" steps='[{"title":"填写资料"},{"title":"确认信息"},{"title":"提交完成"}]'></oas-steps>
+    <oas-steps size="large" current="1" steps='[{"title":"填写资料"},{"title":"确认信息"},{"title":"提交完成"}]'></oas-steps>
+    <oas-steps size="xl" current="1" steps='[{"title":"填写资料"},{"title":"确认信息"},{"title":"提交完成"}]'></oas-steps>
+  </oas-space>
+</DemoBlock>
+
 ## API
 
 ### oas-steps
@@ -300,6 +314,7 @@
 | `reverse` | 视觉倒序：横向 `row-reverse` / 纵向 `column-reverse`；编号显示 = 总数 - index（视觉流向递增），状态推导仍按 steps 数组序（布尔，存在即开启） | `boolean` | — |
 | `separator` | 连接线形态：`line`（默认）/ `dashed`（虚线）/ `arrow`（末端三角）；navigation / arrow 下不生效 | `string` | — |
 | `simple` | 紧凑模式：单行小尺寸（指示器缩小、描述隐藏、连接线贴紧）（布尔，存在即开启；优先于 progress-dot/navigation） | `boolean` | — |
+| `size` | 字号密度五档（指示器/连接线几何恒定；别名等价，非法回落告警） | `string` | `medium` |
 | `status` | 容器级状态覆盖当前步（`wait` / `process` / `finish` / `error`）；每步显式 `status` 仍最高优先 | `StepStatus` | — |
 | `steps` | `[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent?, prefix? }]` JSON 字符串 | `StepItem[] \| string` | `[]` |
 

@@ -94,6 +94,16 @@ onMounted(() => {
 })
 </script>
 
+## 吸附层级（z-index）
+
+`z-index` 覆盖吸附后 `fixed` 层的层级（非负整数）；缺省走 token 缺省（`--oas-z-index-base + --oas-z-sticky`）。用于吸附层与页面其他 fixed 元素（吸顶导航、浮层）的层叠协调；非法值回落 token 缺省并告警一次。
+
+<DemoBlock title="z-index=2000">
+  <oas-affix offset="88" z-index="2000">
+    <oas-button type="primary">吸附时层级 2000（缺省 1020 + base）</oas-button>
+  </oas-affix>
+</DemoBlock>
+
 ## API
 
 ### oas-affix
@@ -106,6 +116,7 @@ onMounted(() => {
 | `offset` | 吸附触发距离（px） | `string` | `0` |
 | `position` | 吸附方向：top（默认，顶缘触达吸附）/ bottom（底缘触达吸附）；非法值回落 top | `AffixPosition` | `top` |
 | `target` | 滚动容器选择器（CSS 选择器）；选择器无匹配时告警并回落 window 滚动 | `string` | — |
+| `z-index` | 吸附后 fixed 层级覆盖（非负整数；缺省/非法走 token 并告警） | `string` | — |
 
 #### 事件
 

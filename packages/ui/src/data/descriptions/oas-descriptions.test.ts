@@ -218,6 +218,76 @@ describe('OASDescriptions', () => {
       expect(slot.assignedNodes().length).toBeGreaterThan(0)
     })
   })
+
+  describe('items 数据驱动通道（JSON attribute + property 双通道，声明式子元素优先）', () => {
+    const ITEMS = JSON.stringify([
+      { label: '服务名', content: 'oas-ui-docs' },
+      { label: '状态', content: '运行中' },
+      { label: '负责人', content: '张三', span: 2 },
+    ])
+
+    it('items 进 observedAttributes；attribute JSON 渲染 oas-descriptions-item（label/content 双写）', () => {
+      expect(OASDescriptions.observedAttributes).toContain('items')
+      const el = new OASDescriptions()
+      el.setAttribute('items', ITEMS)
+      document.body.appendChild(el)
+      const generated = [...el.shadowRoot!.querySelectorAll('.items > oas-descriptions-item[data-generated]')]
+      expect(generated.length).toBe(3)
+      expect(generated[0]!.getAttribute('label')).toBe('服务名')
+      expect(generated[0]!.textContent).toBe('oas-ui-docs')
+    })
+
+    it('items 项 span 字段映射跨列', () => {
+      const el = new OASDescriptions()
+      el.setAttribute('items', ITEMS)
+      document.body.appendChild(el)
+      const generated = [...el.shadowRoot!.querySelectorAll('.items > oas-descriptions-item[data-generated]')]
+      expect(generated[2]!.getAttribute('span')).toBe('2')
+    })
+
+    it('property 通道：el.items 赋值生效，非数组/含非法项静默滤除', () => {
+      const el = new OASDescriptions()
+      document.body.appendChild(el)
+      el.items = [
+        { label: 'A', content: '1' },
+        { label: 'B', content: '2' },
+      ]
+      let generated = [...el.shadowRoot!.querySelectorAll('.items > oas-descriptions-item[data-generated]')]
+      expect(generated.length).toBe(2)
+      // 非对象项滤除
+      el.items = [{ label: 'A', content: '1' }, null, 'x', 42] as unknown as Array<Record<string, unknown>>
+      generated = [...el.shadowRoot!.querySelectorAll('.items > oas-descriptions-item[data-generated]')]
+      expect(generated.length).toBe(1)
+    })
+
+    it('声明式子元素优先：子元素在场时 items 通道不渲染（生成的项被清空）', async () => {
+      const el = new OASDescriptions()
+      el.setAttribute('items', ITEMS)
+      el.innerHTML = '<oas-descriptions-item label="姓名"><span>张三</span></oas-descriptions-item>'
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelectorAll('.items > oas-descriptions-item[data-generated]').length).toBe(0)
+      // 移除子元素后 items 通道自动接管（默认插槽 slotchange 触发 update）
+      el.innerHTML = ''
+      await new Promise((r) => setTimeout(r, 0))
+      expect(el.shadowRoot!.querySelectorAll('.items > oas-descriptions-item[data-generated]').length).toBe(3)
+    })
+
+    it('非法 JSON 静默忽略（不渲染、不抛错）', () => {
+      const el = new OASDescriptions()
+      el.setAttribute('items', '{oops')
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelectorAll('.items > oas-descriptions-item[data-generated]').length).toBe(0)
+    })
+
+    it('移除 items 属性：生成的项清空', () => {
+      const el = new OASDescriptions()
+      el.setAttribute('items', ITEMS)
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelectorAll('.items > oas-descriptions-item[data-generated]').length).toBe(3)
+      el.removeAttribute('items')
+      expect(el.shadowRoot!.querySelectorAll('.items > oas-descriptions-item[data-generated]').length).toBe(0)
+    })
+  })
 })
 
 describe('OASDescriptionsItem', () => {

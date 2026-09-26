@@ -257,6 +257,8 @@ const round2 = (v: number): number => Math.round(v * 100) / 100
  * 受控开合、自定义占位/失败插槽、翻转、拖拽平移、滚轮缩放、缩放参数 CSS 变量化）。
  *
  * 属性：`src`/`alt`/`fit`/`placeholder`/`fallback`/`lazy` 保持既有行为；
+ * `width`/`height` 显式尺寸（数字按 px，任意 CSS 尺寸串原样透传，空值恢复 auto 布局）、
+ * `referrerpolicy` 透传内层 img（隐私策略，空值回落浏览器默认）；
  * `preview` 存在时点击放大；`preview-src` 指定预览专用地址（缩略图/原图分离）；
  * `preview-src-list`（JSON URL 数组）开启图集模式：两侧箭头 + 键盘 ←→ 翻页 +
  * 页码指示（n/total），`infinite` 首尾循环；图集中某张加载失败显示失败占位
@@ -311,6 +313,9 @@ export class OASImage extends OASElement {
     return [
       'src',
       'alt',
+      'width',
+      'height',
+      'referrerpolicy',
       'preview',
       'fit',
       'placeholder',
@@ -1206,6 +1211,22 @@ export class OASImage extends OASElement {
     this.syncSlotContent(this.shadow.querySelector('[part="fallback"]'), 'error')
     const fit = this.getAttr('fit', '')
     if (fit) img.style.objectFit = fit
+    // 显式尺寸：数字视为 px，其余原样透传（任意 CSS 尺寸串如 50%/12vw）；空值清除恢复 auto 布局
+    const applyImgSize = (raw: string, prop: 'width' | 'height'): void => {
+      const v = raw.trim()
+      if (!v) {
+        img.style.removeProperty(prop)
+        return
+      }
+      const n = Number(v)
+      img.style.setProperty(prop, Number.isFinite(n) ? `${n}px` : v)
+    }
+    applyImgSize(this.getAttr('width', ''), 'width')
+    applyImgSize(this.getAttr('height', ''), 'height')
+    // referrerpolicy 透传内层 img（隐私策略；空值移除回落浏览器默认）
+    const referrer = this.getAttr('referrerpolicy', '').trim()
+    if (referrer) img.setAttribute('referrerpolicy', referrer)
+    else img.removeAttribute('referrerpolicy')
     this.sync()
 
     // 图集列表缓存（翻页/键盘/事件处理共用）；列表变短时收敛当前索引

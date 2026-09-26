@@ -317,6 +317,18 @@ Besides the automatic hover/focus pause, `pause-button` renders an explicit paus
   </div>
 </DemoBlock>
 
+## Indicator Trigger
+
+`trigger` controls when indicators switch slides: `click` (default, click to switch) / `hover` (hovering a dot switches immediately; click still works); invalid values fall back to `click`. Handy for fast browsing in image carousels.
+
+<DemoBlock title="trigger=hover">
+  <oas-carousel trigger="hover" style="max-width: 480px">
+    <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary)">Slide 1 (hover the dots)</div>
+    <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success)">Slide 2</div>
+    <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning)">Slide 3</div>
+  </oas-carousel>
+</DemoBlock>
+
 ## API
 
 ### oas-carousel
@@ -340,6 +352,7 @@ Besides the automatic hover/focus pause, `pause-button` renders an explicit paus
 | `pause-button` | Show an explicit pause/play button (default off; click toggles autoplay pause/resume and takes priority over hover pausing; clicking play while autoplay is off enables it) | `boolean` | — |
 | `pause-on-hover` | Pause autoplay on hover/focus (default true; `"false"` disables; always pauses when the page is hidden) | `string` | `true` |
 | `slides-per-view` | Slides per page (default 1; index is page-based, last page aligns to the track end) | `string` | `1` |
+| `trigger` | Indicator activation: `click` (default) / `hover` (hover switches, click still works) | `string` | `click` |
 | `type` | Carousel layout type: `"card"` enables card mode — the current card is centered as the main body with neighboring cards peeking on both sides (scaled down, dimmed); clicking a neighbor card switches to it directly; mutually exclusive with `slides-per-view`/`effect`/`direction` (card mode wins); card width/gap/neighbor scale via `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale` | `string` | — |
 
 #### Events

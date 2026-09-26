@@ -115,9 +115,37 @@ This component (a persistent selection panel) covers single-date selection out o
 
 If multiple selection is needed on a persistent page, the host can combine the inner-panel capabilities of `oas-date-picker` with `oas-calendar`, or use `oas-calendar` for single selection while maintaining the set itself.
 
-## Custom header: compose with a card (equivalent example)
+## Custom Header
 
-The `oas-calendar` header is an internal navigation region and is not open for replacement (this is a selection-panel semantic — the header carries navigation, not a centered selected state). To place a brand/action bar above the calendar (such as "week switching" or a "today" shortcut), wrap `oas-calendar` in the host's own card and put the action bar on top:
+<DemoBlock title="header slot (custom header, built-in nav by default)">
+  <oas-calendar id="calendar-header-slot" value="2026-08-09">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--oas-space-2);min-height:var(--oas-control-height-md)">
+      <strong>Schedule calendar</strong>
+      <oas-button size="small" id="calendar-header-slot-btn">Back to today</oas-button>
+    </div>
+  </oas-calendar>
+  <span id="calendar-header-slot-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+`slot="header"` distributes a custom header (replaces the built-in navigation region entirely — the host takes over paging interaction, e.g. via controlled `page-show-date` anchoring); without it the built-in `prev / title / next / today` navigation remains (`[part="header"]` is targetable and styleable via `::part`).
+
+## Panel Language & Header Format
+
+<DemoBlock title="locale: panel language override">
+  <oas-calendar id="calendar-locale" value="2026-08-09" locale="en"></oas-calendar>
+</DemoBlock>
+
+`locale` overrides the panel language: title/weekday/cell-description Intl formatting, navigation and "Today" labels, and week-start derivation all follow; it defaults to the config-provider injection or the global locale.
+
+<DemoBlock title="format: header date format string">
+  <oas-calendar id="calendar-format" value="2026-08-09" format="yyyy/MM"></oas-calendar>
+</DemoBlock>
+
+`format` customizes the header title format (same tokens as date-picker: `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`; applies to both the day and month panel titles); the decade panel title is a range form (`2020-2031`) and does not take the format string.
+
+## Custom Header Action Bar: Card Composition (extra content, keeps built-in nav)
+
+To place a brand/action bar above the calendar while **keeping the built-in navigation**, wrap `oas-calendar` in the host's own card with the action bar on top (to replace the header entirely, use the `header` slot above):
 
 <DemoBlock title="Header composition: custom header action bar">
   <div style="display: inline-flex; flex-direction: column; gap: var(--oas-space-2); padding: var(--oas-space-3); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg);">
@@ -128,8 +156,6 @@ The `oas-calendar` header is an internal navigation region and is not open for r
     <oas-calendar id="calendar-header-composite" value="2026-08-09"></oas-calendar>
   </div>
 </DemoBlock>
-
-> Note: the `oas-calendar` header itself still provides `prev/next/title/today` navigation (`[part="header"]` is targetable and styleable via `::part`), so the host can use it as-is without replacement; the action bar above is **extra content** laid out through the outer card and does not intrude into the component. This is the form boundary between a "scheduling month calendar (a container with a rich content header)" and "our selection panel".
 
 ## Read-only Calendar
 
@@ -166,6 +192,8 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | --- | --- | --- | --- |
 | `disabled` | Globally disabled: greys out the calendar and stops all interaction (picking / paging / keyboard) | `boolean` | — |
 | `first-day-of-week` | Week start override: `0` (Sunday) to `6` (Saturday); defaults to the locale (Monday for European/Chinese, Sunday for Japanese/Korean/English/Arabic) | `string` | — |
+| `format` | Header title format string (yyyy/MM/dd tokens; day/month panels) | `string` | — |
+| `locale` | Panel language override (title/weekdays/cell descriptions/nav copy/week start); defaults to config-provider > global | `string` | — |
 | `max` | Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range | `string` | — |
 | `min` | Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range | `string` | — |
 | `mode` | `month` / `year` (in year mode, picking a month auto-switches back to month view) | `string` | `month` |
@@ -194,6 +222,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 
 | Name | Description |
 | --- | --- |
+| `header` | Custom header replacing the built-in navigation (built-in kept when not distributed) |
 | `template[slot="cell"]` | Static template for day cells, cloned into each day button; the `[data-cell-date]` node is bound to the day number |
 
 Keyboard: `↑`/`↓`/`←`/`→` to move within the grid (auto-paging across months), `Home`/`End` to jump to the week start/end, `PageUp`/`PageDown` to move between months (`Shift` for years), `Enter`/`Space` to select.
@@ -273,6 +302,16 @@ onMounted(() => {
   })
   modeCal?.addEventListener('oas-change', (e) => {
     appendOut(`oas-change: ${e.detail.value}`)
+  })
+
+  // header slot demo: slotted content is interactive (back to today = anchor page-show-date to this month)
+  const hs = document.getElementById('calendar-header-slot')
+  const hsOut = document.getElementById('calendar-header-slot-output')
+  document.getElementById('calendar-header-slot-btn')?.addEventListener('click', () => {
+    const n = new Date()
+    const ym = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`
+    hs?.setAttribute('page-show-date', ym)
+    if (hsOut) hsOut.textContent = `Anchored back to this month: ${ym}`
   })
 })
 </script>

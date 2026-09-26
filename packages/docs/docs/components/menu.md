@@ -376,8 +376,52 @@ onMounted(() => {
       tag.textContent = `已选择：${e.detail.value}`
     })
   }
+
+  // 纯动作菜单（selectable=false）：点击反馈（value 不写回）
+  const menuAction = document.getElementById('menu-action')
+  if (menuAction) {
+    menuAction.addEventListener('oas-select', (e) => {
+      const out = document.getElementById('menu-action-out')
+      if (out) out.textContent = `已点击：${e.detail.value}（value 未写回，无勾选态）`
+    })
+  }
+
+  // persistent：点击子菜单叶子后 value 写回、子菜单保持展开
+  const menuPersistent = document.getElementById('menu-persistent')
+  if (menuPersistent) {
+    menuPersistent.addEventListener('oas-select', (e) => {
+      const out = document.getElementById('menu-persistent-out')
+      if (out) out.textContent = `已选择：${e.detail.value}（子菜单保持展开，可继续选择）`
+    })
+  }
 })
 </script>
+
+## 整单禁用
+
+`disabled` 禁用整个菜单：点击 / 悬停 / 键盘全部拦截（href 项同时阻断原生跳转），宿主降饱和（opacity .6）并同步 `aria-disabled`；移除属性即恢复交互。
+
+<DemoBlock title="整单禁用">
+  <oas-menu disabled style="max-width: 220px" items='[{"label":"首页","value":"home"},{"label":"设置","value":"settings"},{"label":"删除","value":"delete","danger":true}]'></oas-menu>
+</DemoBlock>
+
+## 纯动作菜单（selectable=false）
+
+`selectable="false"` 关闭整单选中态语义：全部叶子项按动作项渲染（`menuitem`、无勾选标记、无 `aria-checked`），点击只派发 `oas-select`、**不写回 `value`**——适合「点了就走」的纯命令菜单（等价于把每个叶子项写成 `kind: "action"`）。
+
+<DemoBlock title="纯动作菜单（无勾选态，不写回 value）">
+  <oas-menu id="menu-action" selectable="false" style="max-width: 220px" items='[{"label":"分享","value":"share"},{"label":"收藏","value":"star"},{"label":"举报","value":"report","danger":true}]'></oas-menu>
+  <p id="menu-action-out" style="margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary)">尚未点击</p>
+</DemoBlock>
+
+## 选中不收起（persistent）
+
+`persistent` 让选中后浮出子菜单**不自动收起**（`close-on-select` 族的正向开关，显式时优先于 `close-on-select`）：适合需要连续选择、选中后停留在当前位置的场景；`value` 照常写回。
+
+<DemoBlock title="persistent：选中后子菜单保持展开">
+  <oas-menu id="menu-persistent" persistent style="max-width: 220px" items='[{"label":"文件","value":"file","children":[{"label":"新建","value":"new"},{"label":"打开","value":"open"}]},{"label":"编辑","value":"edit","children":[{"label":"复制","value":"copy"},{"label":"剪切","value":"cut"}]}]'></oas-menu>
+  <p id="menu-persistent-out" style="margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary)">悬停父项展开子菜单后点击试试</p>
+</DemoBlock>
 
 ## API
 
@@ -390,11 +434,14 @@ onMounted(() => {
 | `accordion` | 手风琴互斥（inline 模式同级只展开一个子菜单） | `boolean` | — |
 | `close-on-select` | 选中叶子项后是否收起展开的子菜单。缺省分形态：inline 侧边导航不收、浮出形态收；checkbox 项勾选切换永不收起 | `string` | — |
 | `collapsed` | 收起态（仅 vertical）：只显示图标，子菜单向右浮出 | `boolean` | — |
+| `disabled` | 整单禁用：点击/悬停/键盘全拦截，降饱和 + aria-disabled | `boolean` | — |
 | `expanded` | 受控展开项集合（JSON 数组字符串，inline 模式哪些子菜单展开）；非受控时内部管理 | `string` | — |
 | `items` | 菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单） | `string` | `[]` |
 | `max-height` | 长菜单最大高度，超出内部滚动（数字补 px） | `string` | — |
 | `mode` | 布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条 | — | — |
 | `open-on-hover` | vertical/inline 父项 hover 延迟展开（约 150ms）/移出延迟收起（约 300ms），点击路径不变；horizontal 与 collapsed flyout 不受影响 | `boolean` | — |
+| `persistent` | 选中后不自动收起浮出子菜单（优先于 close-on-select） | `string` | — |
+| `selectable` | `"false"` 时纯动作菜单：叶子无勾选态、点击不写回 value（detail kind=action） | `string` | `true` |
 | `theme` | 局部主题：`dark` 使用暗色 token（独立于全局主题） | — | — |
 | `value` | 当前选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{"sort":"name","view":"list"}`）时按组 id 作用域独立记录——`type:"group"` 项的 `value` 作组 id，组内点选只更新该组 | `string` | — |
 

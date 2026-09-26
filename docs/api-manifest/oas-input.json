@@ -141,6 +141,12 @@
       "observed": true
     },
     {
+      "name": "hint",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "autofocus",
       "type": "boolean",
       "observed": false
@@ -194,6 +200,9 @@
   "slots": [
     {
       "name": "append"
+    },
+    {
+      "name": "clear-icon"
     },
     {
       "name": "prefix"

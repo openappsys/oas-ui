@@ -1,7 +1,19 @@
 {
   "className": "OASSider",
   "sourceFile": "packages/ui/src/layout/layout/oas-sider.ts",
-  "attrs": [],
+  "attrs": [
+    {
+      "name": "width",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "collapsed",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
   "props": [],
   "events": [],
   "slots": [

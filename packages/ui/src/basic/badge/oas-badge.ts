@@ -50,6 +50,8 @@ export type BadgeStatus = 'success' | 'processing' | 'default' | 'error' | 'warn
 export type BadgeSize = 'small' | 'medium' | 'large'
 /** 形态：solid 实心（默认，不加 class）/ outline 描边（背景透明、边框与文字走 color 语义）；非法值静默回落 solid */
 export type BadgeVariant = 'solid' | 'outline'
+/** 徽标形态：round 圆角（默认，基类即 round，不写 class）/ square 直角 / pill 胶囊（radius-full token）；非法值静默回落 round */
+export type BadgeShape = 'round' | 'square' | 'pill'
 /** 预设色板名（映射 --oas-preset-* token，color 属性支持按名引用；非法名按普通色值处理） */
 export type BadgePresetColor =
   | 'magenta'
@@ -285,6 +287,21 @@ const STYLE = `
   min-width: 10px;
   width: 10px;
   height: 10px;
+}
+/* shape 形态维度：round 默认（基类圆角即 round，不写 class）/ square 直角 / pill 胶囊
+   （radius-full token 兜底 999px）。count 与 dot 通用（square dot 为直角方点、
+   pill dot 保持正圆）；非法值静默回落 round */
+.badge.shape-square {
+  border-radius: 0;
+}
+.badge.shape-square.dot {
+  border-radius: 0;
+}
+.badge.shape-pill {
+  border-radius: var(--oas-radius-full, 999px);
+}
+.badge.shape-pill.dot {
+  border-radius: 50%;
 }
 /* bordered 白描边：2px 背景色外圈，从头像/图片背景分离。box-shadow 不参与布局，
    与 corner/offset/overlap 定位天然联动（仅视觉叠加） */
@@ -1329,6 +1346,7 @@ export class OASBadge extends OASElement {
       'offset',
       'status',
       'size',
+      'shape',
       'attention',
       'corner',
       'overlap',
@@ -1533,6 +1551,11 @@ export class OASBadge extends OASElement {
         el.classList.toggle('small', size === 'small')
         el.classList.toggle('medium', size === 'medium')
         el.classList.toggle('large', size === 'large')
+        // shape 形态维度：round 默认（基类圆角即 round，不写 class）/ square 直角 / pill 胶囊；
+        // count 与 dot 通用；非法值静默回落 round
+        const shape = this.getAttr('shape', '')
+        el.classList.toggle('shape-square', shape === 'square')
+        el.classList.toggle('shape-pill', shape === 'pill')
         // variant 形态：outline 描边（背景透明、边框/文字走 color 语义）；solid 默认不加 class
         const variant = this.getAttr('variant', '') as BadgeVariant
         const variantValid = (VALID_VARIANTS as readonly string[]).includes(variant)

@@ -419,6 +419,37 @@ onMounted(() => {
 })
 </script>
 
+## 触发器尺寸与类型
+
+`size`（xs / small / medium / large / xl 五档，`sm/md/lg` 别名等价）与 `type`（对齐 oas-button 类型词汇）**透传到触发器 `oas-button`**（直系子级）：未设置的维度以触发器按钮自身属性为准；触发器不是 `oas-button` 时透传静默失效。非法 `size` 归一化回落 medium 并告警一次。
+
+<DemoBlock title="size 五档透传">
+  <oas-space size="small">
+    <oas-dropdown size="xs" items='[{"label":"编辑","value":"edit"}]'><oas-button>xs</oas-button></oas-dropdown>
+    <oas-dropdown size="small" items='[{"label":"编辑","value":"edit"}]'><oas-button>small</oas-button></oas-dropdown>
+    <oas-dropdown size="medium" items='[{"label":"编辑","value":"edit"}]'><oas-button>medium</oas-button></oas-dropdown>
+    <oas-dropdown size="large" items='[{"label":"编辑","value":"edit"}]'><oas-button>large</oas-button></oas-dropdown>
+    <oas-dropdown size="xl" items='[{"label":"编辑","value":"edit"}]'><oas-button>xl</oas-button></oas-dropdown>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="type 透传（对齐 button type）">
+  <oas-space size="small">
+    <oas-dropdown type="primary" items='[{"label":"编辑","value":"edit"}]'><oas-button>primary 触发器</oas-button></oas-dropdown>
+    <oas-dropdown type="danger" items='[{"label":"编辑","value":"edit"}]'><oas-button>danger 触发器</oas-button></oas-dropdown>
+  </oas-space>
+</DemoBlock>
+
+## 面板限高滚动
+
+`max-height` 限制菜单面板最大高度（数字按 px，转发内层 `oas-menu` 同名通道），超出部分面板内部滚动，适合长菜单。
+
+<DemoBlock title="max-height=120（面板内部滚动）">
+  <oas-dropdown max-height="120" items='[{"label":"首页","value":"home"},{"label":"产品","value":"products"},{"label":"解决方案","value":"solutions"},{"label":"文档","value":"docs"},{"label":"博客","value":"blog"},{"label":"关于我们","value":"about"},{"label":"加入我们","value":"jobs"},{"label":"联系我们","value":"contact"}]'>
+    <oas-button>长菜单（限高 120px）</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
 ## API
 
 ### oas-dropdown
@@ -436,11 +467,14 @@ onMounted(() => {
 | `hover-delay` | hover 触发时展开延迟毫秒数（默认 150） | — | — |
 | `hover-hide-delay` | hover 触发时收起延迟毫秒数（默认 100） | — | — |
 | `items` | 菜单项 JSON | `string` | `[]` |
+| `max-height` | 菜单面板限高滚动（数字补 px） | `string` | — |
 | `offset` | 浮层与触发器的间距像素（默认 8） | — | — |
 | `open` | 受控显示（布尔属性，存在即展开） | `boolean` | — |
 | `placement` | 浮层位置 | `string` | `bottom` |
+| `size` | 透传触发器 oas-button 尺寸五档（别名归一，非法回落 medium） | `string` | — |
 | `split` | 拆分下拉按钮（布尔属性）：主按钮 + 箭头按钮，点箭头开菜单、主按钮派发 oas-action | `boolean` | — |
 | `trigger` | 触发方式：`click`（默认）/ `hover` / `focus`，空格分隔可多选（如 `"click hover"`）。含 `hover` 时触屏（coarse pointer）自动降级为点按切换：点按展开、再点按/外点关闭，桌面 hover 行为不变 | `string` | `click` |
+| `type` | 透传触发器 oas-button 类型词汇 | `string` | — |
 | `value` | 当前选中值 | `string` | — |
 
 #### 事件

@@ -80,6 +80,17 @@
       "name": "selected",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "orientation",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],

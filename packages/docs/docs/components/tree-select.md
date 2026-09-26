@@ -29,6 +29,15 @@
 
 设置 `filterable` 后面板顶部出现独立搜索框：命中节点与其祖先（路径上下文）、全部后代一并显示（宽松匹配）；无匹配时显示空态。搜索框内 `↑/↓` 移动高亮（落在首个命中节点）、`Enter` 选中、`Esc` 关闭面板并还焦触发器。选中后默认清空搜索词，`reserve-keyword` 可保留。输入时派发 `oas-search`（`detail.value` 为关键词，可配合 `loading` 做远程搜索）。自定义匹配逻辑：`el.filter = (label, option) => boolean`。
 
+## 搜索输入受控（input-value）
+
+<DemoBlock title="input-value（受控搜索词）">
+  <oas-tree-select id="ts-input-value" filterable placeholder="输入关键词，属性实时回显" options='[{"label":"前端","value":"fe","children":[{"label":"框架","value":"framework","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]},{"label":"样式","value":"css"}]},{"label":"后端","value":"be","children":[{"label":"Node","value":"node"}]}]'></oas-tree-select>
+  <span id="ts-input-value-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+`input-value` 让搜索词可控：属性在场即搜索框的真相源（预设/外部更新会同步进搜索框并重过滤）；用户输入写回属性并派发 `oas-input-value-change`（`detail: { value }`），宿主可监听事件也可直接读属性。
+
 ## 父子解联（check-strictly）
 
 <DemoBlock title="父子解联（check-strictly）">
@@ -111,6 +120,28 @@
 </DemoBlock>
 
 `clearable` 有值时触发器显示清空按钮（点击清空并派发 `oas-clear`）；`prefix-text` / `suffix-text` 为触发器内前后缀文本，也可用 `template[slot="prefix"]` / `[slot="suffix"]` 插槽自定义内容。纯 HTML 场景旧的 `prefix` / `suffix` 仍可作为遗留别名使用。
+
+## 自定义后缀图标（suffix-icon 插槽）
+
+<DemoBlock title="suffix-icon（替换默认箭头）">
+  <oas-tree-select id="ts-suffix-icon" value="vue" placeholder="自定义后缀图标" options='[{"label":"前端","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'>
+    <template slot="suffix-icon"><span style="display:inline-flex">▾</span></template>
+  </oas-tree-select>
+</DemoBlock>
+
+`template[slot="suffix-icon"]` 替换触发器默认下拉箭头（展开时随容器旋转）。
+
+## 值携带标签（label-in-value）
+
+<DemoBlock title="label-in-value（value 携 { value, label } 对象）">
+  <oas-space size="small" direction="vertical">
+    <oas-tree-select id="ts-liv-single" label-in-value placeholder="单选：值为对象" options='[{"label":"前端","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
+    <oas-tree-select id="ts-liv-multi" label-in-value multiple placeholder="多选：值为对象数组" options='[{"label":"前端","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
+    <span id="ts-liv-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
+  </oas-space>
+</DemoBlock>
+
+设置 `label-in-value` 后，`value` 属性与 `oas-change` 的 `detail.value` 携带 `{ value, label }` 对象（单选为对象、多选为对象数组），表单提交需要「值 + 标签」时宿主不再反查；树外预设值可用对象里的 `label` 直接回显。FormData 提交值保持纯字符串不受影响。
 
 ## 尺寸与校验态（size / status）
 
@@ -347,6 +378,24 @@ onMounted(() => {
     }
   })
 
+  // input-value 受控 demo：属性写回 + 事件回显
+  const tsIv = document.getElementById('ts-input-value')
+  const tsIvOut = document.getElementById('ts-input-value-out')
+  tsIv?.addEventListener('oas-input-value-change', (e) => {
+    tsIvOut.textContent = `input-value: ${JSON.stringify(e.detail.value)}`
+  })
+
+  // label-in-value demo：detail.value 对象回显
+  const tsLivOut = document.getElementById('ts-liv-out')
+  const showLiv = (v) => {
+    const text = Array.isArray(v)
+      ? `[${v.map((o) => `${o.label}(${o.value})`).join(', ')}]`
+      : `${v?.label ?? ''}(${v?.value ?? ''})`
+    tsLivOut.textContent = `oas-change value: ${text}`
+  }
+  document.getElementById('ts-liv-single')?.addEventListener('oas-change', (e) => showLiv(e.detail.value))
+  document.getElementById('ts-liv-multi')?.addEventListener('oas-change', (e) => showLiv(e.detail.value))
+
   // 扁平数据 demo：平表 {id, pId} → 树（宿主侧工具函数，扁平数据直吃的等价能力）
   const flatNodes = [
     { id: 'fe', pId: '', name: '前端' },
@@ -442,7 +491,9 @@ onMounted(() => {
 | `field-names` | 字段别名 JSON（如 `{"label":"name","value":"id","children":"subs"}`；原始 option 不拷贝映射，node-render 拿到宿主原对象） | `string` | — |
 | `filterable` | 可搜索（面板顶部独立搜索框） | `boolean` | — |
 | `height` | 虚拟滚动视口高度（px）；与 `virtual` 搭配生效 | `string` | `288` |
+| `input-value` | 搜索词受控源（输入写回并派发 oas-input-value-change） | `string` | — |
 | `item-height` | 虚拟滚动每行固定高度（px） | `string` | `36` |
+| `label-in-value` | value 与 oas-change detail 携 `{ value, label }` 对象（FormData 仍提交纯值） | `boolean` | — |
 | `lazy` | 懒加载（配 `el.load` 函数 property，节点含 isLeaf 标记） | `boolean` | — |
 | `loading` | 面板加载态（懒加载/远程搜索时） | `boolean` | — |
 | `max` | 多选上限（按勾选集合计） | `string` | — |
@@ -461,7 +512,7 @@ onMounted(() => {
 | `status` | 校验态：`error` / `warning` / `success` | `string` | — |
 | `suffix-text` | 触发器后缀内容（slot="suffix" 同上） | `string` | — |
 | `tree-lines` | 树线缩进引导线 | `boolean` | — |
-| `value` | 选中值（多选为 JSON 数组） | `string` | `[]` |
+| `value` | 选中值（多选为 JSON 数组） | `string` | — |
 | `virtual` | 开启虚拟滚动：大数据量下拉仅渲染可见窗口（复用 oas-virtual-list），键盘/ARIA 保持 | `boolean` | — |
 
 #### 事件
@@ -470,6 +521,7 @@ onMounted(() => {
 | --- | --- |
 | `oas-change` | 选择变化，`detail: { value }` |
 | `oas-clear` | 清空时派发，`detail` 为清空前的值 |
+| `oas-input-value-change` | 搜索词变化时派发，`detail: { value }` |
 | `oas-load` | 懒加载节点展开加载时派发，`detail: { value }` |
 | `oas-node-render` | 节点渲染时派发（自定义节点渲染通道），`detail: { node, element, level, expanded, selected, checked }` |
 | `oas-open-change` | 开合状态翻转，`detail: { open }` |
@@ -479,5 +531,7 @@ onMounted(() => {
 
 | 名称 | 说明 |
 | --- | --- |
+| `suffix-icon` | 自定义触发器后缀图标（替换默认箭头） |
 | `template[slot="empty"]` | 自定义空态内容 |
 | `template[slot="node"]` | 自定义节点模板（`[data-node-label]` 绑定标签） |
+| `template[slot="suffix-icon"]` | — |

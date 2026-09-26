@@ -650,3 +650,32 @@ describe('OASAvatar trigger（换头像入口）', () => {
     expect(fired).toBe(1)
   })
 })
+
+describe('OASAvatar srcset 透传（内层 img）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('srcset 进入观察列表', () => {
+    expect(OASAvatar.observedAttributes).toContain('srcset')
+  })
+
+  it('srcset 透传内层 img；动态修改即时生效；空值移除属性', () => {
+    const el = new OASAvatar()
+    el.setAttribute('src', '/avatar.png')
+    el.setAttribute('srcset', '/a.png 1x, /a2x.png 2x')
+    document.body.appendChild(el)
+    const img = el.shadowRoot!.querySelector('img')!
+    expect(img.getAttribute('srcset')).toBe('/a.png 1x, /a2x.png 2x')
+    el.setAttribute('srcset', '/b.png 1x')
+    expect(img.getAttribute('srcset')).toBe('/b.png 1x')
+    el.removeAttribute('srcset')
+    expect(img.hasAttribute('srcset')).toBe(false)
+  })
+})

@@ -920,3 +920,78 @@ test('menu open-on-hover：悬停延迟展开 → 移出延迟收起 → 点击�
   )
   expect(clicked).toBe(true)
 })
+
+// ===== 能力缺口 P2：disabled / selectable / persistent =====
+
+test('menu disabled（P2）：Vue 下属性存活、点击不写回 value、aria-disabled 同步', async ({ page }) => {
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu[disabled]')
+  await page.locator('oas-menu[disabled]').scrollIntoViewIfNeeded()
+  // 真实点击一个叶子项：整单禁用下不得写回 value
+  await page.locator('oas-menu[disabled] [part="item"][data-value="home"]').click()
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-menu[disabled]')!
+    return {
+      attrSurvived: el.hasAttribute('disabled'),
+      ariaDisabled: el.getAttribute('aria-disabled'),
+      value: el.getAttribute('value'),
+      dimmed: getComputedStyle(el).opacity,
+    }
+  })
+  expect(r.attrSurvived, 'disabled 被 Vue 剥离').toBe(true)
+  expect(r.ariaDisabled, 'aria-disabled 未同步').toBe('true')
+  expect(r.value, '整单禁用下点击不得写回 value').toBeNull()
+  expect(parseFloat(r.dimmed), 'disabled 视觉降饱和（opacity .6）未生效').toBeLessThan(1)
+})
+
+test('menu selectable=false（P2）：纯动作菜单——叶子无勾选态、点击派发事件但不写回 value', async ({ page }) => {
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#menu-action')
+  await page.locator('#menu-action').scrollIntoViewIfNeeded()
+  const r1 = await page.evaluate(() => {
+    const el = document.querySelector('#menu-action')!
+    const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
+    return {
+      attrSurvived: el.getAttribute('selectable'),
+      allMenuItem: items.length > 0 && items.every((li) => li.getAttribute('role') === 'menuitem'),
+      noChecked:
+        items.every((li) => !li.hasAttribute('aria-checked')) && items.every((li) => !li.querySelector('.check')),
+      valueBefore: el.getAttribute('value'),
+    }
+  })
+  expect(r1.attrSurvived, 'selectable 被 Vue 剥离').toBe('false')
+  expect(r1.allMenuItem, '叶子未降为 menuitem 语义').toBe(true)
+  expect(r1.noChecked, '纯动作菜单不得有勾选态').toBe(true)
+  expect(r1.valueBefore).toBeNull()
+  await page.locator('#menu-action [part="item"][data-value="share"]').click()
+  const r2 = await page.evaluate(() => ({
+    value: document.querySelector('#menu-action')!.getAttribute('value'),
+    out: document.getElementById('menu-action-out')!.textContent,
+  }))
+  expect(r2.value, 'selectable=false 点击不得写回 value').toBeNull()
+  expect(r2.out || '', 'demo 无可见点击反馈').toContain('share')
+})
+
+test('menu persistent（P2）：Vue 下属性存活、选中后子菜单保持展开、value 照常写回', async ({ page }) => {
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#menu-persistent')
+  await page.locator('#menu-persistent').scrollIntoViewIfNeeded()
+  // hover 展开父项 → 点击子菜单叶子
+  await page.locator('#menu-persistent [part="item"][data-value="file"]').hover()
+  await page.waitForTimeout(150)
+  await page.locator('#menu-persistent [part="item"][data-value="new"]').click()
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#menu-persistent')!
+    const file = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="file"]')!
+    return {
+      attrSurvived: el.hasAttribute('persistent'),
+      value: el.getAttribute('value'),
+      fileOpen: file.classList.contains('open'),
+      out: document.getElementById('menu-persistent-out')!.textContent,
+    }
+  })
+  expect(r.attrSurvived, 'persistent 被 Vue 剥离').toBe(true)
+  expect(r.value, 'persistent 下 value 应照常写回').toBe('new')
+  expect(r.fileOpen, 'persistent：选中后子菜单应保持展开').toBe(true)
+  expect(r.out || '', 'demo 无可见反馈').toContain('new')
+})

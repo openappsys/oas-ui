@@ -441,3 +441,67 @@ test('tree 拖拽生命周期事件：dragstart/dragover/dragleave/dragend 驱�
     (document.querySelector('#tree-dnd-status')?.textContent ?? '').includes('拖拽节点到目标行'),
   )
 })
+
+test('tree P2 批：size 五档归一化存活 + block-node 切换反馈 + selectable=false 关点选（展开/勾选不受影响）', async ({
+  page,
+}) => {
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-selectable')
+  await page.waitForTimeout(400)
+
+  // size 五档 demo 存在且归一化别名（sm→small）落成 data-size
+  const sizes = await page.evaluate(() =>
+    [...document.querySelectorAll('oas-tree[size]')].map((el) => ({
+      raw: el.getAttribute('size'),
+      normalized: el.getAttribute('data-size'),
+    })),
+  )
+  expect(sizes.length, '五档 demo 有 4 棵树（xs/small/large/xl）').toBe(4)
+  for (const s of sizes) {
+    expect(s.normalized, `raw=${s.raw} 归一化合法`).not.toBeNull()
+  }
+
+  // block-node：demo 初始开启（.tree 容器挂类），点击按钮回落紧凑行
+  const blockOn = await page.evaluate(() =>
+    document.querySelector('oas-tree#tree-block')!.shadowRoot!.querySelector('.tree')!.classList.contains('block-node'),
+  )
+  expect(blockOn).toBe(true)
+  await page.locator('#tree-block-toggle').scrollIntoViewIfNeeded()
+  await page.locator('#tree-block-toggle').click()
+  await page.waitForTimeout(200)
+  const blockOff = await page.evaluate(() =>
+    document.querySelector('oas-tree#tree-block')!.shadowRoot!.querySelector('.tree')!.classList.contains('block-node'),
+  )
+  expect(blockOff, '点击切换后 block-node 类摘除').toBe(false)
+
+  // selectable=false：点行不选中（selected 属性不动、反馈文本不更新）
+  await page.locator('#tree-selectable-off').scrollIntoViewIfNeeded()
+  await page.locator('#tree-selectable-off').click()
+  await page.waitForTimeout(200)
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-tree#tree-selectable')!
+    const row = el.shadowRoot!.querySelector('[part="row"]') as HTMLElement
+    row.click()
+  })
+  await page.waitForTimeout(200)
+  const selOff = await page.evaluate(() => ({
+    selected: document.querySelector('oas-tree#tree-selectable')!.getAttribute('selected'),
+    status: document.querySelector('#tree-selectable-status')!.textContent,
+  }))
+  expect(selOff.selected, '关 selectable 后点击不写 selected').toBe(null)
+  expect(selOff.status).toContain('false')
+
+  // selectable=true：恢复点选（点击选中并派发 oas-select，反馈行更新）
+  await page.locator('#tree-selectable-on').click()
+  await page.waitForTimeout(200)
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-tree#tree-selectable')!
+    const row = el.shadowRoot!.querySelector('[part="row"]') as HTMLElement
+    row.click()
+  })
+  await page.waitForFunction(
+    () => (document.querySelector('#tree-selectable-status')?.textContent ?? '').startsWith('选中'),
+    null,
+    { timeout: 5000 },
+  )
+})

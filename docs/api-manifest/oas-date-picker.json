@@ -58,6 +58,18 @@
       "observed": true
     },
     {
+      "name": "separator",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "default-time",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "size",
       "type": "string",
       "default": "medium",
@@ -163,6 +175,12 @@
     }
   ],
   "slots": [
+    {
+      "name": "prefix-icon"
+    },
+    {
+      "name": "suffix-icon"
+    },
     {
       "name": "template[slot=\"cell\"]"
     }

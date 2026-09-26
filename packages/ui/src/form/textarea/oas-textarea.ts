@@ -185,7 +185,10 @@ export class OASTextarea extends OASFormElement {
       'minlength',
       'required',
       'spellcheck',
+      'autocomplete',
       'wrap',
+      // 表级 size 下发通道（oas-form[size] 注入）
+      'data-form-size',
     ]
   }
 
@@ -345,7 +348,7 @@ export class OASTextarea extends OASFormElement {
 
   /** 原生属性透传：宿主属性 → 内部 textarea（字符串值原样，布尔属性存在即透传） */
   private passThrough(t: HTMLTextAreaElement): void {
-    for (const attr of ['maxlength', 'name', 'minlength', 'spellcheck', 'wrap'] as const) {
+    for (const attr of ['maxlength', 'name', 'minlength', 'spellcheck', 'autocomplete', 'wrap'] as const) {
       const v = this.getAttr(attr, '')
       if (v === '') t.removeAttribute(attr)
       else t.setAttribute(attr, v)
@@ -361,9 +364,15 @@ export class OASTextarea extends OASFormElement {
     return s === 'error' || s === 'warning' || s === 'success' ? s : ''
   }
 
+  /** 尺寸档解析链：单项显式 size > 表级下发（oas-form[size]）> medium（非法值静默回落 medium） */
   private normalizedSize(): string {
-    const s = this.getAttr('size', 'medium')
-    return s === 'small' || s === 'large' ? s : 'medium'
+    const own = this.getAttribute('size')
+    if (own != null && own !== '') {
+      return own === 'small' || own === 'large' ? own : 'medium'
+    }
+    const fromForm = this.getAttribute('data-form-size')
+    if (fromForm === 'small' || fromForm === 'large' || fromForm === 'medium') return fromForm
+    return 'medium'
   }
 
   private normalizedVariant(): string {

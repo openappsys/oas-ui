@@ -105,6 +105,17 @@ With `loading` set, a spinner shows at the end of the field and `aria-busy="true
 
 `prefix-text` / `suffix-text` are inline text inside the input and can coexist with `clearable`, icons, and addons without conflicts.
 
+## Custom Clear Icon (clear-icon slot)
+
+<DemoBlock title="clear-icon slot">
+  <oas-input id="input-clear-icon-default" clearable value="Default clear icon" style="width: 220px"></oas-input>
+  <oas-input id="input-clear-icon-custom" clearable value="Custom clear icon" style="width: 220px">
+    <oas-icon slot="clear-icon" name="close-circle"></oas-icon>
+  </oas-input>
+</DemoBlock>
+
+The clear button of `clearable` renders a built-in close icon by default; distribute a custom icon via `slot="clear-icon"` to personalize it (the slot natively replaces the built-in fallback when it has content; the icon size is defined by the distributed content).
+
 ## Character Count
 
 <DemoBlock title="show-count + maxlength">
@@ -113,6 +124,17 @@ With `loading` set, a spinner shows at the end of the field and `aria-busy="true
 </DemoBlock>
 
 `show-count` displays a character counter at the bottom-right of the input: with `maxlength` it shows `current/maxlength`, without it just the current length; `maxlength` is also passed through to the native input to limit input length. When the limit is exceeded, the counter number turns danger-colored.
+
+## Hint Text (hint)
+
+<DemoBlock title="hint static hint (independent of validation errors)">
+  <oas-input hint="Phone number is used only for login verification" placeholder="Phone number" style="width: 260px"></oas-input>
+  <oas-input id="input-hint-error" hint="Format: YYYY-MM-DD" value="2024/01/15" style="width: 220px"></oas-input>
+  <oas-button id="btn-input-hint-error" size="small">Toggle validation error</oas-button>
+  <span id="input-hint-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 240px"></span>
+</DemoBlock>
+
+`hint` renders a persistent static hint below the input (font size `--oas-font-size-sm`, secondary color) and is associated with the inner input via `aria-describedby` (screen readers announce it). It is **independent of validation errors** (`status` / `aria-invalid`): the hint stays visible when an error appears. Click the button to toggle `status="error"` and see the error border coexist with the hint text.
 
 ## Enter Submit Event
 
@@ -224,6 +246,40 @@ onMounted(() => {
     faForm?.reset()
     if (faOut) faOut.textContent = 'form.reset() executed, value restored to initial'
   })
+
+  // hint demo: toggle validation error; the hint text and aria-describedby stay independent
+  const hintEl = document.getElementById('input-hint-error')
+  const hintOut = document.getElementById('input-hint-output')
+  const readHint = () => {
+    if (!hintEl) return
+    const inner = hintEl.shadowRoot?.querySelector('input')
+    const describedBy = inner?.getAttribute('aria-describedby') ?? null
+    if (hintOut) {
+      hintOut.textContent = `${hintEl.hasAttribute('status') ? 'error state' : 'normal state'}; aria-describedby=${describedBy}`
+    }
+  }
+  document.getElementById('btn-input-hint-error')?.addEventListener('click', () => {
+    if (!hintEl) return
+    if (hintEl.hasAttribute('status')) hintEl.removeAttribute('status')
+    else hintEl.setAttribute('status', 'error')
+    readHint()
+  })
+  if (hintEl) setTimeout(readHint, 60)
+
+  // min / max / step (number type) passthrough demo: read back the inner native attributes
+  const rangeEl = document.getElementById('input-number-range')
+  const rangeOut = document.getElementById('input-number-range-output')
+  const readRange = () => {
+    const inner = rangeEl?.shadowRoot?.querySelector('input')
+    if (!inner) {
+      setTimeout(readRange, 60)
+      return
+    }
+    if (rangeOut) {
+      rangeOut.textContent = `mirrored: min=${inner.getAttribute('min')} max=${inner.getAttribute('max')} step=${inner.getAttribute('step')}`
+    }
+  }
+  if (rangeEl) readRange()
 })
 </script>
 
@@ -277,9 +333,11 @@ Use the `prefix-text` / `suffix-text` attributes for simple text; for complex co
   <oas-input name="username" autocomplete="username" required placeholder="Username (required)" style="width: 240px"></oas-input>
   <oas-input name="code" inputmode="numeric" maxlength="6" placeholder="Code (numeric keyboard)" style="width: 240px"></oas-input>
   <oas-input name="nick" minlength="2" spellcheck="false" enterkeyhint="done" placeholder="Nickname (min 2 chars)" style="width: 240px"></oas-input>
+  <oas-input id="input-number-range" type="number" min="0" max="10" step="2" placeholder="Number (0-10, step 2)" style="width: 240px"></oas-input>
+  <span id="input-number-range-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
-The following native attributes are mirrored onto the inner native input (and removed in sync when the host attribute is removed): `name` / `autocomplete` / `autofocus` / `inputmode` / `minlength` / `required` / `spellcheck` / `enterkeyhint` / `pattern`. Useful for native form semantics, autofill, and mobile keyboard hints (`inputmode` / `enterkeyhint`). `autofocus` is forwarded by the component as a one-time focus after mount (native autofocus does not pierce the shadow DOM).
+The following native attributes are mirrored onto the inner native input (and removed in sync when the host attribute is removed): `name` / `autocomplete` / `autofocus` / `inputmode` / `minlength` / `min` / `max` / `step` / `required` / `spellcheck` / `enterkeyhint` / `pattern`. Useful for native form semantics, autofill, and mobile keyboard hints (`inputmode` / `enterkeyhint`); `min` / `max` / `step` are for `type="number"` (natively ignored by other types). `autofocus` is forwarded by the component as a one-time focus after mount (native autofocus does not pierce the shadow DOM).
 
 ## Focus & Commit Events
 
@@ -392,6 +450,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `clearable` | Clearable | `boolean` | — |
 | `count-position` | Character count position: `outside` (default) / `inside` (right side within the field) | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
+| `hint` | — | `string` | — |
 | `label` | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "输入框" when unset) | — | — |
 | `loading` | Loading state: trailing spinner with aria-busy (input stays editable); takes precedence over the clear button | `boolean` | — |
 | `maxlength` | Maximum input length (passed through to native maxlength) | `string` | — |
@@ -428,6 +487,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | Name | Description |
 | --- | --- |
 | `append` | Append addon area (may contain select/button or any content) |
+| `clear-icon` | — |
 | `prefix` | Inline leading content (icons/buttons etc.; distributed content takes precedence over the `prefix` attribute text). For simple text use the `prefix` attribute |
 | `prepend` | Prepend addon area (may contain select/button or any content) |
 | `suffix` | Inline trailing content (icons/buttons etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute |

@@ -969,3 +969,62 @@ describe('OASDrawer oas-cancel（取消语义关闭，PRD P1-17）', () => {
     expect(el.hasAttribute('visible')).toBe(true)
   })
 })
+
+describe('OASDrawer no-mask（无遮罩模式，PRD P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('no-mask：遮罩隐藏（不渲染视觉层），默认模式遮罩不受影响', () => {
+    const el = mount({ visible: '', 'no-mask': '' })
+    const mask = el.shadowRoot!.querySelector<HTMLElement>('.mask')!
+    expect(mask.hasAttribute('hidden'), 'no-mask 下遮罩应带 hidden（不参与渲染与命中测试）').toBe(true)
+    el.removeAttribute('no-mask')
+    expect(mask.hasAttribute('hidden'), '移除 no-mask 后遮罩恢复').toBe(false)
+
+    const plain = mount({ visible: '' })
+    expect(plain.shadowRoot!.querySelector<HTMLElement>('.mask')!.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('no-mask：点击抽屉外部仍关闭（source=mask 的取消语义）', () => {
+    const el = mount({ visible: '', 'no-mask': '' })
+    const sources: string[] = []
+    el.addEventListener('oas-close', (e) => sources.push((e as CustomEvent).detail.source))
+    el.addEventListener('oas-cancel', (e) => sources.push((e as CustomEvent).detail.source))
+    const outside = document.createElement('div')
+    document.body.appendChild(outside)
+    outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('visible'), '外部 pointerdown 应关闭抽屉').toBe(false)
+    expect(sources, '无遮罩外部点击沿用 mask 取消语义').toEqual(['mask', 'mask'])
+  })
+
+  it('no-mask：点击面板内部不关闭', () => {
+    const el = mount({ visible: '', 'no-mask': '' })
+    panel(el).dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('visible')).toBe(true)
+  })
+
+  it('默认模式（有遮罩）：外部 pointerdown 不触发关闭（由遮罩自身 click 关）', () => {
+    const el = mount({ visible: '' })
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('visible')).toBe(true)
+  })
+
+  it('未打开时不响应外部点击；关闭后监听不重复触发', () => {
+    const el = mount({ 'no-mask': '' })
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('visible')).toBe(false)
+    el.setAttribute('visible', '')
+    const outside = document.createElement('div')
+    document.body.appendChild(outside)
+    outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('visible')).toBe(false)
+    // 已关闭后再次外部点击：无 visible 可移除，状态保持关闭（不报错即可）
+    outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('visible')).toBe(false)
+  })
+})

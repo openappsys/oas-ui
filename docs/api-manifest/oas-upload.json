@@ -148,6 +148,10 @@
       "detail": "{ file, percent: cur.percent, status: 'uploading' } | { file, percent: 100, status: 'done' } | { file: f, percent: st.percent, status: st.percent >= 100 ? 'done' : 'uploading', }"
     },
     {
+      "name": "oas-progress",
+      "detail": "{ file, percent: cur.percent } | { file, percent: 100 } | { file: f, percent: st.percent }"
+    },
+    {
       "name": "oas-success",
       "detail": "{ file, response }"
     },

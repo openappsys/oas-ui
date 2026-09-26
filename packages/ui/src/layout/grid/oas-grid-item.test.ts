@@ -197,6 +197,79 @@ describe('OASGridItem', () => {
 
   it('导出 OASGridItem 类（与 OASGrid 同 index 导出）', () => {
     expect(typeof OASGridItem).toBe('function')
-    expect(OASGridItem.observedAttributes).toEqual(['span', 'offset', 'order'])
+    expect(OASGridItem.observedAttributes).toEqual(['span', 'offset', 'order', 'flex', 'push', 'pull'])
+  })
+})
+
+describe('OASGridItem push/pull/flex（PRD P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mount(itemsHtml: string, gridAttrs: Record<string, string> = {}): OASGrid {
+    const grid = new OASGrid()
+    for (const [k, v] of Object.entries(gridAttrs)) grid.setAttribute(k, v)
+    grid.innerHTML = itemsHtml
+    document.body.appendChild(grid)
+    return grid
+  }
+
+  function items(grid: OASGrid): NodeListOf<HTMLElement> {
+    return grid.querySelectorAll<HTMLElement>('oas-grid-item')
+  }
+
+  it('push 右移起始线：span 8 + push 4 → `5 / span 8`（起始线 = 1 + push）', () => {
+    const grid = mount('<oas-grid-item span="8" push="4">a</oas-grid-item>')
+    expect(items(grid)[0]!.style.gridColumn).toBe('5 / span 8')
+  })
+
+  it('pull 左移起始线：span 12 + offset 4 + pull 2 → `3 / span 12`（在显式起始线上左移）', () => {
+    const grid = mount('<oas-grid-item span="12" offset="4" pull="2">a</oas-grid-item>')
+    expect(items(grid)[0]!.style.gridColumn).toBe('3 / span 12')
+  })
+
+  it('push 与 pull 同用：净偏移 = push - pull', () => {
+    const grid = mount('<oas-grid-item span="8" offset="2" push="3" pull="1">a</oas-grid-item>')
+    // start = offset(2) + push(3) - pull(1) = 4 → 第 5 列起
+    expect(items(grid)[0]!.style.gridColumn).toBe('5 / span 8')
+  })
+
+  it('净偏移 ≤ 0 时回落自动放置（span X 形式），span=auto 仍为 auto', () => {
+    const grid = mount(
+      '<oas-grid-item span="8" pull="2">a</oas-grid-item><oas-grid-item span="auto" pull="4">b</oas-grid-item>',
+    )
+    const els = items(grid)
+    expect(els[0]!.style.gridColumn).toBe('span 8')
+    expect(els[1]!.style.gridColumn).toBe('auto')
+  })
+
+  it('push/pull 缺省 0、非法值回落 0（保持既有 span/offset 行为零回归）', () => {
+    const grid = mount(
+      '<oas-grid-item span="8">a</oas-grid-item><oas-grid-item span="8" push="abc" pull="xyz">b</oas-grid-item>',
+    )
+    const els = items(grid)
+    expect(els[0]!.style.gridColumn).toBe('span 8')
+    expect(els[1]!.style.gridColumn).toBe('span 8')
+  })
+
+  it('flex 属性：内联直写 style.flex（flex 容器场景通道；CSSOM 序列化展开短Hand）', () => {
+    const grid = mount(
+      '<oas-grid-item flex="1">a</oas-grid-item><oas-grid-item flex="2 1 200px">b</oas-grid-item><oas-grid-item>c</oas-grid-item>',
+    )
+    const els = items(grid)
+    expect(els[0]!.style.flex, 'flex: 1 → CSSOM 展开 1 1 0%').toBe('1 1 0%')
+    expect(els[1]!.style.flex).toBe('2 1 200px')
+    expect(els[2]!.style.flex, '缺省不写内联 flex').toBe('')
+  })
+
+  it('columns 自动布局下 push/pull 同样忽略（与 span/offset 一致），flex 照常直写', () => {
+    const grid = mount('<oas-grid-item span="8" push="4" flex="1">a</oas-grid-item>', { columns: '3' })
+    const item = items(grid)[0]!
+    expect(item.style.gridColumn).toBe('')
+    expect(item.style.flex).toBe('1 1 0%')
   })
 })

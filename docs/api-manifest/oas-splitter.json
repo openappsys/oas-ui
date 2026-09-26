@@ -45,6 +45,11 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],

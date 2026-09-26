@@ -62,6 +62,23 @@ The `side` attribute (`left` default / `right` / `top`) controls where the sider
 
 **Responsibility boundary**: the sider's collapse trigger (collapse button, menu collapse actions) belongs to `oas-sidebar` — it ships its own `collapsible` folding ability and dispatches collapse events, which `oas-sider` listens to and mirrors onto its own `collapsed` narrow bar; `oas-layout` only arranges the skeleton (slots, main-axis direction, viewport lock) and does **not** re-implement any collapse-trigger logic.
 
+## Sider width (width)
+
+The `oas-sider` `width` attribute sets the track width explicitly (pure numbers are treated as px; lengths/percentages pass through), defaulting to the `--oas-sider-width` token (200px). When collapsed, the narrow-bar contract still wins (`--oas-sider-collapsed-width`, 64px) — the explicit width and the collapse contract coexist exclusively, and the explicit width is restored on expand.
+
+<DemoBlock title="Explicit track width">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-layout style="height: 160px; width: 100%">
+      <oas-sider slot="sider" width="280">width=280 sider</oas-sider>
+      <oas-content slot="content">Content: the track width is set explicitly to 280px via width (defaults to 200px from --oas-sider-width).</oas-content>
+    </oas-layout>
+    <oas-layout style="height: 160px; width: 100%">
+      <oas-sider slot="sider" width="280" collapsed>Collapsed</oas-sider>
+      <oas-content slot="content">When collapsed the narrow-bar contract wins (--oas-sider-collapsed-width, 64px); the explicit 280px returns on expand.</oas-content>
+    </oas-layout>
+  </oas-space>
+</DemoBlock>
+
 ## Viewport-locked layout
 
 `viewport`: the admin-console mode — the layout locks to the viewport height, **header/footer stay fixed while the sider and content scroll independently** (the page itself never scrolls). Without the attribute, the default is the full-page scrolling model (the page grows as tall as its content).
@@ -155,6 +172,13 @@ Child components must carry the matching `slot` attribute (`header` / `sider` / 
 | default | Header content |
 
 ### oas-sider
+
+#### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `collapsed` | Collapse into the narrow bar (presence means collapsed) | `boolean` | — |
+| `width` | Explicit track width (numbers as px); narrow-bar contract wins when collapsed; defaults to --oas-sider-width | `string` | — |
 
 #### Slots
 

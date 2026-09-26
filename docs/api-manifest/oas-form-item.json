@@ -22,6 +22,17 @@
       "name": "required",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "help",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "status-icon",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],

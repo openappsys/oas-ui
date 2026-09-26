@@ -113,7 +113,7 @@
 
 ## 行列间距分离
 
-`gap` 支持两值语法：空格分隔「行 列」，分别控制 row-gap 与 column-gap；单值仍为两轴同值（零回归）。
+`gap` 支持两值语法：空格或逗号分隔「行 列」（如 `8 16` / `8,16`），分别控制 row-gap 与 column-gap；单值仍为两轴同值（零回归）。`row-gap` / `column-gap` 属性可单独设置并覆盖 `gap` 对应轴。
 
 <DemoBlock title="gap 两值：行 8 列 24">
   <oas-grid gap="8 24" style="width: 100%">
@@ -123,6 +123,22 @@
     <oas-grid-item span="8"><div class="demo-grid-box">行距 8 / 列距 24</div></oas-grid-item>
     <oas-grid-item span="8"><div class="demo-grid-box">行距 8 / 列距 24</div></oas-grid-item>
     <oas-grid-item span="8"><div class="demo-grid-box">行距 8 / 列距 24</div></oas-grid-item>
+  </oas-grid>
+</DemoBlock>
+
+<DemoBlock title="gap 逗号双值 + row-gap/column-gap 分离属性">
+  <oas-grid gap="4,32" style="width: 100%">
+    <oas-grid-item span="8"><div class="demo-grid-box">gap="4,32"</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">gap="4,32"</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">gap="4,32"</div></oas-grid-item>
+  </oas-grid>
+  <oas-grid gap="8" row-gap="24" style="width: 100%; margin-top: 16px">
+    <oas-grid-item span="8"><div class="demo-grid-box">gap 8 + row-gap 24</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">gap 8 + row-gap 24</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">gap 8 + row-gap 24</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">行距 24 / 列距 8</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">行距 24 / 列距 8</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">行距 24 / 列距 8</div></oas-grid-item>
   </oas-grid>
 </DemoBlock>
 
@@ -207,11 +223,12 @@
   </div>
 </DemoBlock>
 
-## 重排（order）
+## 重排（order / push / pull）
 
-不提供 push/pull（偏移式前后移动）——用 `order` 表达重排：不改 DOM/源码顺序（语义与读屏顺序保持），仅视觉排序变化。
+- `order` 表达重排：不改 DOM/源码顺序（语义与读屏顺序保持），仅视觉排序变化
+- `push` / `pull`（PRD P2）偏移式平移：在 `offset` 基础上把起始线右移 / 左移 N 列（净偏移 = push − pull，叠加 offset）；净偏移 ≤ 0 时回落自动放置
 
-<DemoBlock title="末位列提到首位">
+<DemoBlock title="末位列提到首位（order）">
   <oas-grid gap="12px" style="width: 100%">
     <oas-grid-item span="8"><div class="demo-grid-box">源码第 1 列（order 0）</div></oas-grid-item>
     <oas-grid-item span="8"><div class="demo-grid-box">源码第 2 列（order 0）</div></oas-grid-item>
@@ -219,7 +236,16 @@
   </oas-grid>
 </DemoBlock>
 
-<DemoBlock title="自定义顺序">
+<DemoBlock title="push/pull 偏移平移">
+  <oas-grid gap="12px" style="width: 100%">
+    <oas-grid-item span="6"><div class="demo-grid-box">span 6</div></oas-grid-item>
+    <oas-grid-item span="6" push="6"><div class="demo-grid-box">span 6 push 6（右移 6 列）</div></oas-grid-item>
+    <oas-grid-item span="6" offset="6"><div class="demo-grid-box">span 6 offset 6</div></oas-grid-item>
+    <oas-grid-item span="6" offset="6" pull="6"><div class="demo-grid-box">span 6 offset 6 pull 6（拉回本行首）</div></oas-grid-item>
+  </oas-grid>
+</DemoBlock>
+
+<DemoBlock title="自定义顺序（order）">
   <oas-grid gap="12px" style="width: 100%">
     <oas-grid-item span="6" order="3"><div class="demo-grid-box">A（order 3）</div></oas-grid-item>
     <oas-grid-item span="6" order="1"><div class="demo-grid-box">B（order 1）</div></oas-grid-item>
@@ -228,6 +254,26 @@
   </oas-grid>
   <p class="demo-grid-note">视觉顺序：D（0）→ B（1）→ C（2）→ A（3）。</p>
 </DemoBlock>
+
+## 折叠行（collapsed-rows）
+
+`collapsed-rows` 指定折叠态显示的行数（按子项 span/offset 累计的行模型）：超出行数的子项隐藏，末尾出现「展开」尾格（占所在行剩余列）；点击展开后尾格转为「收起」可折回。折叠状态写回受控 `collapsed` 属性并派发 `oas-collapse`；`columns` / `min-child-width` 自动布局下不启用（行模型依赖 span/offset 语义）。
+
+<DemoBlock title="collapsed-rows=1 查询条件折叠">
+  <oas-grid collapsed-rows="1" gap="12px" style="width: 100%">
+    <oas-grid-item span="8"><div class="demo-grid-box">条件 1</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">条件 2</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">条件 3</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">条件 4（第 2 行）</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">条件 5（第 2 行）</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">条件 6（第 2 行）</div></oas-grid-item>
+  </oas-grid>
+  <p class="demo-grid-note">默认只显示首行（条件 1~3），点尾格「展开」查看全部，「收起」折回。</p>
+</DemoBlock>
+
+## 子项 flex 通道
+
+`oas-grid-item` 的 `flex` 属性内联直写 CSS `flex` 简写（grid 布局下按 CSS 规范不被消费、零干扰），供子项被用于 flex 容器等宿主场景透传。
 
 <style>
   .demo-grid-box {
@@ -317,11 +363,21 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `align` | 块向轴对齐（align-items）：`start` / `center` / `end` / `stretch` / `baseline`；非法值回落 `stretch` + dev 告警（同值去重） | `string` | — |
+| `collapsed` | — | — | — |
+| `collapsed-rows` | 折叠态显示行数：超出隐藏 + 展开/收起尾格（写回 collapsed 并派发 oas-collapse） | `string` | `1` |
 | `cols` | 总列数 | `string` | `24` |
+| `column-gap` | 列间距独立设置（同上） | `string` | — |
 | `columns` | 自动等分列数（simple-grid，有值时忽略子项 span）：支持断点简写（如 3 md:2 sm:1，断点 sm=640/md=768/lg=1024/xl=1280）；与 min-child-width 并存时优先 | `string` | — |
 | `gap` | 间距；单值两轴同值，两值空格分隔「行 列」（如 `8 16` 行 8 列 16）；三值以上非法静默回落 `0` | `string` | `0` |
 | `justify` | 行内轴对齐（justify-items）：`start` / `center` / `end` / `stretch`；非法值回落 `stretch` + dev 告警（同值去重） | `string` | — |
 | `min-child-width` | 子项最小宽度（如 180px，纯数字按 px）：auto-fit + minmax 依容器宽度自动计算列数（子项免断点流式重排）；与 columns 并存时 columns 优先，该模式下子项 span/offset 不生效 | `string` | — |
+| `row-gap` | 行间距独立设置（覆盖 gap 对应轴，纯数字按 px） | `string` | — |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-collapse` | 折叠行尾格切换时派发，`detail: { collapsed }` |
 
 #### 插槽
 
@@ -341,8 +397,11 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `flex` | 内联直写 CSS flex 简写（grid 下不参与布局，flex 容器场景透传） | `string` | — |
 | `offset` | 左侧偏移列数；支持断点简写（如 `0 lg:4`：基础值 + 空格分隔 `断点:值`，断点 sm=640 / md=768 / lg=1024 / xl=1280） | `string` | `0` |
 | `order` | 排序权重（数字，默认 0）；数值越大越靠后，用于列重排（偏移重排场景的等价表达） | `string` | `0` |
+| `pull` | 起始线左移 N 列（同上） | `string` | `0` |
+| `push` | 起始线右移 N 列（净偏移 push−pull 叠加 offset） | `string` | `0` |
 | `span` | 跨列数；支持 `auto`（内容自然宽）与断点简写（如 `24 md:12`：基础值 + 空格分隔 `断点:值`，断点 sm=640 / md=768 / lg=1024 / xl=1280） | `string` | `24` |
 
 #### 插槽

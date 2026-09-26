@@ -1437,3 +1437,56 @@ describe('responsive（窄屏自动纵向）', () => {
     })
   })
 })
+
+// ===== 能力缺口 P2：size 五档 =====
+
+describe('OASSteps size 五档（能力缺口 P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('缺省 medium：oas-steps--medium 类标记（对齐 tabs/stepper 惯例）', () => {
+    const el = mount()
+    expect(el.classList.contains('oas-steps--medium')).toBe(true)
+  })
+
+  it('五档类标记互斥（sm/lg 别名归一化为全称），运行时切换生效', () => {
+    const el = mount({ size: 'lg' })
+    expect(el.classList.contains('oas-steps--large')).toBe(true)
+    el.setAttribute('size', 'xs')
+    expect(el.classList.contains('oas-steps--large')).toBe(false)
+    expect(el.classList.contains('oas-steps--xs')).toBe(true)
+    el.setAttribute('size', 'sm')
+    expect(el.classList.contains('oas-steps--xs')).toBe(false)
+    expect(el.classList.contains('oas-steps--small')).toBe(true)
+  })
+
+  it('非法 size 回落 medium 且 console.warn 一次（同值去重）', () => {
+    const warns: unknown[][] = []
+    const orig = console.warn
+    console.warn = (...a: unknown[]) => warns.push(a)
+    try {
+      const el = mount({ size: 'huge' })
+      expect(el.classList.contains('oas-steps--medium')).toBe(true)
+      expect(warns.length).toBe(1)
+      expect(String(warns[0]?.[0])).toContain('[oas-steps]')
+      el.setAttribute('size', 'huge')
+      expect(warns.length).toBe(1)
+    } finally {
+      console.warn = orig
+    }
+  })
+
+  it('字号档位规则进样式表：指示器/连接线几何恒定（--oas-control-height-sm 基准不动）', () => {
+    const el = mount({ size: 'xl' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host(.oas-steps--xl) .text')
+    expect(css).toContain(':host(.oas-steps--xs) .text')
+    // 几何恒定守护：指示器仍以 --oas-control-height-sm 为盒基准
+    expect(css).toContain('width: var(--oas-control-height-sm)')
+  })
+})

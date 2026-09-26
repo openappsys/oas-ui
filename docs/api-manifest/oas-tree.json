@@ -136,6 +136,23 @@
       "name": "motion",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "block-node",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "selectable",
+      "type": "string",
+      "default": "true",
+      "observed": true
     }
   ],
   "props": [

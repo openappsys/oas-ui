@@ -111,6 +111,26 @@ export abstract class OASFormElement extends OASElement {
     if (this.hasRendered) this.update()
   }
 
+  private formSize: string | null = null
+
+  /** 表单级尺寸下发（oas-form size 通道；oas-form 同写 data-form-size 通道属性供检视/静态消费）。
+   *  内部标志位 + 并入 injectValue（自身显式 size 属性恒优先），变化时触发重渲染——
+   *  属性通道不触发 update（data-form-size 不在各组件 observedAttributes），动态下发靠本回调 */
+  formSizeCallback(size: string | null): void {
+    if (this.formSize === size) return
+    this.formSize = size
+    if (this.hasRendered) this.update()
+  }
+
+  /** 表单级尺寸并入注入解析（自身 size 属性 > form 下发 > provider 注入 > 默认） */
+  protected override injectValue(key: string, defaultValue: string): string {
+    if (key === 'size' && this.formSize) {
+      const own = this.getAttribute('size')
+      if (own == null || own === '') return this.formSize
+    }
+    return super.injectValue(key, defaultValue)
+  }
+
   /** 表单链路禁用并入注入解析（组件显式 disabled > 表单链路 > provider 注入 > 豁免） */
   protected override injectDisabled(): boolean {
     return super.injectDisabled() || this.formDisabled

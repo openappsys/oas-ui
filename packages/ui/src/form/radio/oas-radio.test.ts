@@ -706,3 +706,95 @@ describe('form-associated（原生表单集成）', () => {
     expect(a.hasAttribute('checked')).toBe(false)
   })
 })
+
+describe('OASRadioGroup required（form-associated 原生校验链）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const fakeInternals = (el: OASRadioGroup) => {
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    return fake
+  }
+
+  function mountGroup(attrs: Record<string, string> = {}): OASRadioGroup {
+    const el = new OASRadioGroup()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = `
+      <oas-radio value="a">A</oas-radio>
+      <oas-radio value="b">B</oas-radio>
+    `
+    document.body.appendChild(el)
+    return el
+  }
+
+  function itemInput(el: OASRadioGroup, value: string): HTMLInputElement {
+    return el.querySelector(`oas-radio[value="${value}"]`)!.shadowRoot!.querySelector('input')!
+  }
+
+  it('声明 formAssociated = true（走 form-associated 原生校验链）', () => {
+    expect((OASRadioGroup as unknown as { formAssociated: boolean }).formAssociated).toBe(true)
+  })
+
+  it('required 且无选中：setValidity valueMissing（message 按 Chromium 契约非空）', () => {
+    const el = mountGroup({ required: '' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small') // 驱动 update → 校验链同步
+    const missing = fake.setValidity.mock.calls.at(-1)
+    expect(missing?.[0]).toEqual({ valueMissing: true })
+    expect(typeof missing?.[1]).toBe('string')
+    expect((missing?.[1] as string).length).toBeGreaterThan(0)
+  })
+
+  it('required 且已有选中：校验通过 setValidity({})', () => {
+    const el = mountGroup({ required: '', value: 'a' })
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('用户选中子项：校验恢复通过 + FormData 收到选中值', () => {
+    const el = mountGroup({ required: '' })
+    const fake = fakeInternals(el)
+    itemInput(el, 'b').click()
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('b')
+    expect(el.getAttribute('value')).toBe('b')
+  })
+
+  it('无选中提交 null（FormData 不含此项）；未设 required 时恒通过', () => {
+    const el = mountGroup()
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+    expect(fake.setValidity).toHaveBeenLastCalledWith({})
+  })
+
+  it('formResetCallback：恢复初始 value 基线（用户选中后 reset 回初始选中项）', () => {
+    const el = mountGroup({ value: 'a' })
+    const fake = fakeInternals(el)
+    itemInput(el, 'b').click()
+    expect(el.getAttribute('value')).toBe('b')
+    el.formResetCallback()
+    expect(el.getAttribute('value'), 'reset 应恢复初始选中 a').toBe('a')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('a')
+    expect(itemInput(el, 'a').checked).toBe(true)
+    expect(itemInput(el, 'b').checked).toBe(false)
+  })
+
+  it('oas-form 收集组值：collectFields 纳入 radio-group（value 属性通道）', async () => {
+    const { OASForm } = await import('../form/index.js')
+    const form = new OASForm()
+    form.innerHTML =
+      '<oas-radio-group name="plan" value="b"><oas-radio value="a">A</oas-radio><oas-radio value="b">B</oas-radio></oas-radio-group>'
+    document.body.appendChild(form)
+    let detail: unknown
+    form.addEventListener('oas-submit', (e) => (detail = (e as CustomEvent).detail))
+    form.submit()
+    expect((detail as { values: Record<string, string> }).values.plan).toBe('b')
+  })
+})

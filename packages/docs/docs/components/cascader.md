@@ -167,6 +167,48 @@
   <oas-cascader disabled value='["zj","hz"]' placeholder="禁用" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"}]}]'></oas-cascader>
 </DemoBlock>
 
+## 无障碍名称（label）
+
+<DemoBlock title="label（可访问名称）">
+  <oas-cascader id="cs-label-set" label="所属地区" placeholder="请选择地区" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"}]}]'></oas-cascader>
+  <oas-cascader id="cs-label-fallback" placeholder="无 label，回退占位文本" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"}]}]'></oas-cascader>
+  <span id="cs-label-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 280px"></span>
+</DemoBlock>
+
+`label` 作为触发器的可访问名称（`aria-label`）来源：设置后读屏朗读该名称，优先于选中值文本与占位文本回退；未设置时按值文本 / 占位文本回退（对齐 `oas-select` 契约）。
+
+## 弹出方向（placement）
+
+<DemoBlock title="placement（面板 12 向）">
+  <oas-space size="small">
+    <oas-cascader placement="top-start" placeholder="top-start" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"}]}]'></oas-cascader>
+    <oas-cascader placement="bottom" placeholder="bottom（默认）" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"}]}]'></oas-cascader>
+    <oas-cascader id="cs-placement-right" placement="right-start" placeholder="right-start" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"}]}]'></oas-cascader>
+  </oas-space>
+</DemoBlock>
+
+`placement` 支持 12 向：`top` / `bottom` / `left` / `right` × `start` / `end` / 居中（如 `top-start`、`right-end`），缺省 `bottom`（下方弹出，空间不足自动翻转避让）；非法值静默回落。侧边栏、表格内等贴边场景可直接声明方向。
+
+## 自定义后缀图标（suffix-icon 插槽）
+
+<DemoBlock title="suffix-icon（替换默认箭头）">
+  <oas-cascader id="cs-suffix-icon" placeholder="自定义后缀图标" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"}]}]'>
+    <template slot="suffix-icon"><span style="display:inline-flex">▤</span></template>
+  </oas-cascader>
+</DemoBlock>
+
+`template[slot="suffix-icon"]` 替换触发器默认下拉箭头（展开时随容器旋转；`loading` 时仍由 spinner 接管）。
+
+## 自定义选项渲染（option 插槽）
+
+<DemoBlock title="option（选项行自定义渲染）">
+  <oas-cascader id="cs-option-slot" placeholder="带图标的选项行" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"},{"label":"宁波","value":"nb"}]},{"label":"江苏","value":"js","children":[{"label":"南京","value":"nj"}]}]'>
+    <template slot="option"><span style="display:inline-flex">📍</span><span data-option-label></span></template>
+  </oas-cascader>
+</DemoBlock>
+
+`template[slot="option"]` 克隆到每个选项行（面板行与搜索结果行两路生效），`[data-option-label]` 节点自动绑定展示文本（面板行为选项 label、搜索行为完整路径文本）；也可监听宿主事件改写行内容。
+
 ## 事件
 
 <DemoBlock title="选中事件">
@@ -274,6 +316,19 @@ onMounted(() => {
   focus?.addEventListener('oas-blur', () => {
     focusOut.textContent = 'oas-blur'
   })
+
+  // label（可访问名称）demo：读取触发器 aria-label（设置 label 与回退占位对照）
+  const readLabel = () => {
+    const a = document.getElementById('cs-label-set')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
+    const b = document.getElementById('cs-label-fallback')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
+    const out = document.getElementById('cs-label-output')
+    if (a && b && out) {
+      out.textContent = `aria-label：设置「${a}」 / 回退「${b}」`
+    } else {
+      setTimeout(readLabel, 60)
+    }
+  }
+  readLabel()
 })
 </script>
 
@@ -296,12 +351,14 @@ onMounted(() => {
 | `expand-trigger` | 子级展开触发方式：`click`（默认）/ `hover`（120ms 延时防误触） | `string` | `click` |
 | `field-names` | 字段别名 JSON（`{ label, value, children, disabled }`），对齐 tree-select 契约；懒加载结果同样映射 | `string` | — |
 | `filterable` | 可搜索（扁平路径结果） | `boolean` | — |
+| `label` | 触发器可访问名称（aria-label），优先于值/占位回退 | `string` | — |
 | `loading` | 加载态：触发器 spinner + aria-busy，面板显示加载占位 | `boolean` | — |
 | `max-tag-count` | 多选标签按数量折叠 +N（带 title 列隐藏项） | `boolean` | — |
 | `multiple` | 多选（复选框级联勾选；子级全选父级自动进值） | `boolean` | — |
 | `open` | 受控展开状态（唯一状态源）；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | `boolean` | — |
 | `options` | 级联选项，JSON 数组，支持 `children` / `disabled` | `CascaderOption[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
+| `placement` | 面板 12 向弹出方向（非法回落 bottom，保留自动翻转避让） | `string` | `bottom` |
 | `separator` | 路径分隔符（默认 ` / `） | `string` | ` / ` |
 | `show-all-levels` | 回显完整路径（默认 true）；`false` 仅末级 | `string` | `true` |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
@@ -319,3 +376,12 @@ onMounted(() => {
 | `oas-focus` | 触发器聚焦时派发，`detail.value` 与 oas-change 同形状（组件内焦点转移不误报） |
 | `oas-open-change` | 展开状态翻转，`detail: { open }` |
 | `oas-search` | filterable 输入，`detail: { value }` |
+
+#### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `option` | 选项行自定义渲染模板，`[data-option-label]` 节点绑定选项文本 |
+| `suffix-icon` | 自定义触发器后缀图标（替换默认箭头；loading 时让位 spinner） |
+| `template[slot="option"]` | — |
+| `template[slot="suffix-icon"]` | — |

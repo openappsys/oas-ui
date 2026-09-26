@@ -319,6 +319,7 @@ export class OASCarousel extends OASElement {
       'indicators',
       'indicator-position',
       'indicator-type',
+      'trigger',
       'effect',
       'direction',
       'type',
@@ -363,6 +364,13 @@ export class OASCarousel extends OASElement {
   /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
   private bind(): void {
     this.shadow.querySelector('.dots')?.addEventListener('click', (e) => {
+      const dot = (e.target as HTMLElement).closest('[part="dot"]')
+      if (dot) this.goTo(Number((dot as HTMLElement).getAttribute('data-index')) || 0)
+    })
+    // 指示器触发方式：trigger="hover" 时悬停指示器切页（click 为默认；hover 下 click 仍可用）；
+    // 非法值静默回落 click。委托到容器监听（指示器重建无需重绑）
+    this.shadow.querySelector('.dots')?.addEventListener('pointerover', (e) => {
+      if (this.getAttr('trigger', 'click') !== 'hover') return
       const dot = (e.target as HTMLElement).closest('[part="dot"]')
       if (dot) this.goTo(Number((dot as HTMLElement).getAttribute('data-index')) || 0)
     })

@@ -401,3 +401,23 @@ test('tabs actions 插槽：操作区固定于滚动区外（nav 内、tablist �
   const r2 = await page.evaluate(() => document.querySelector('oas-tabs#tabs-actions')!.getAttribute('data-refreshed'))
   expect(r2).toBe('1')
 })
+
+// ===== 能力缺口 P2：tabindex 透传（标签钮） =====
+
+test('tabs tabindex 透传：Vue demo 下属性存活、全部标签钮写同值、宿主保留在场', async ({ page }) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tabs[tabindex="-1"]')
+  await page.locator('oas-tabs[tabindex="-1"]').scrollIntoViewIfNeeded()
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-tabs[tabindex="-1"]')!
+    const tabs = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')]
+    return {
+      attrSurvived: el.getAttribute('tabindex'),
+      allMinus1: tabs.length > 0 && tabs.every((t) => t.getAttribute('tabindex') === '-1'),
+      hostKeepsAttr: el.hasAttribute('tabindex'),
+    }
+  })
+  expect(r.attrSurvived, 'tabindex 被 Vue 剥离').toBe('-1')
+  expect(r.allMinus1, '标签钮未全部透传 tabindex=-1').toBe(true)
+  expect(r.hostKeepsAttr, '透传为非吸收语义：宿主属性应保留在场（移除即恢复 roving）').toBe(true)
+})

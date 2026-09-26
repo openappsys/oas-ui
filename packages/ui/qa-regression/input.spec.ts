@@ -1,7 +1,7 @@
 // 复核回归：input——历史缺陷固化断言。
 
 import { test, expect } from '@playwright/test'
-import { up } from './helpers'
+import { realClick, up } from './helpers'
 
 test('input addon 属性在 Vue demo 中存活并渲染', async ({ page }) => {
   await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
@@ -179,4 +179,79 @@ test('input loading：spinner 显示 + 清除按钮让位 + 输入不禁用，�
     disabled: false,
     value: 'abc',
   })
+})
+
+// ---- 能力缺口 P2：hint 提示文案 / clear-icon 插槽 / min-max-step 透传 ----
+
+test('input hint：常驻提示 + aria-describedby 关联内层 input + 与校验错误独立', async ({ page }) => {
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#input-hint-error')
+  const read = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#input-hint-error') as HTMLElement
+      const root = el.shadowRoot!
+      const hint = root.querySelector<HTMLElement>('[part="hint"]')!
+      const inner = root.querySelector<HTMLInputElement>('input')!
+      return {
+        text: hint.textContent,
+        hidden: hint.hidden,
+        id: hint.id,
+        describedBy: inner.getAttribute('aria-describedby'),
+        invalid: inner.getAttribute('aria-invalid'),
+      }
+    })
+  const before = await read()
+  expect(before.text, 'hint 文案渲染').toBe('格式：YYYY-MM-DD')
+  expect(before.hidden, 'hint 可见').toBe(false)
+  expect(before.id, 'hint 元素有 id').not.toBe('')
+  expect(before.describedBy, 'aria-describedby 关联 hint').toBe(before.id)
+  expect(before.invalid, '正常态无 aria-invalid').toBeNull()
+
+  // 真实点击切换校验错误：错误边框出现（aria-invalid），hint 与其关联独立保留
+  await page.locator('#btn-input-hint-error').scrollIntoViewIfNeeded()
+  await page.locator('#btn-input-hint-error').click()
+  await expect.poll(read).toMatchObject({ hidden: false, invalid: 'true' })
+  const after = await read()
+  expect(after.text, '错误态下 hint 文案保留').toBe('格式：YYYY-MM-DD')
+  expect(after.describedBy, '错误态下 aria-describedby 仍指向 hint').toBe(after.id)
+  await expect(page.locator('#input-hint-output')).toHaveText('校验错误态；aria-describedby=oas-input-hint')
+})
+
+test('input clear-icon 插槽：自定义图标分发替换内置 fallback + 真实点击清空', async ({ page }) => {
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#input-clear-icon-custom')
+  const r = await page.evaluate(() => {
+    const custom = document.querySelector('#input-clear-icon-custom') as HTMLElement
+    const dflt = document.querySelector('#input-clear-icon-default') as HTMLElement
+    const cslot = custom.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="clear-icon"]')!
+    const dslot = dflt.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="clear-icon"]')!
+    return {
+      assigned: cslot.assignedElements().map((n) => n.tagName),
+      defaultHasFallbackSvg: dslot.querySelector('svg') !== null,
+    }
+  })
+  expect(r.assigned, '自定义图标经 slot 分发').toEqual(['OAS-ICON'])
+  expect(r.defaultHasFallbackSvg, '默认输入框保留内置 fallback 图标').toBe(true)
+
+  // 真实鼠标点击清除钮 → 值清空（自定义图标不影响清除链路）
+  await realClick(page, '#input-clear-icon-custom', '.clear-btn')
+  await expect(page.locator('#input-clear-icon-custom input')).toHaveValue('')
+})
+
+test('input min/max/step（number 类型）透传内层原生 input', async ({ page }) => {
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#input-number-range')
+  const r = await page.evaluate(() => {
+    const inner = (
+      document.querySelector('#input-number-range') as HTMLElement & { shadowRoot: ShadowRoot }
+    ).shadowRoot.querySelector<HTMLInputElement>('input')!
+    return {
+      type: inner.type,
+      min: inner.getAttribute('min'),
+      max: inner.getAttribute('max'),
+      step: inner.getAttribute('step'),
+    }
+  })
+  expect(r).toEqual({ type: 'number', min: '0', max: '10', step: '2' })
+  await expect(page.locator('#input-number-range-output')).toHaveText('原生透传：min=0 max=10 step=2')
 })

@@ -590,6 +590,31 @@ oas-badge#badge-dyn.bump::part(badge) {
   </oas-badge>
 </DemoBlock>
 
+## 徽标形态
+
+`shape` 控制徽标形态：`round`（默认，圆角，基类即默认不写 class）/ `square`（直角）/ `pill`（胶囊，完全圆端）。数值徽标与 `dot` 圆点通用：`square` 让圆点变直角方点，`pill` 圆点保持正圆；非法值静默回落 `round`。
+
+<DemoBlock title="shape 形态：round / square / pill">
+  <oas-badge value="5" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>round 默认</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" shape="square" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>square</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" shape="pill" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>pill</oas-tag>
+  </oas-badge>
+  <oas-badge dot style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>dot round</oas-tag>
+  </oas-badge>
+  <oas-badge dot shape="square" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>dot square</oas-tag>
+  </oas-badge>
+  <oas-badge dot shape="pill">
+    <oas-tag>dot pill</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
 ## API
 
 ### oas-badge
@@ -618,6 +643,7 @@ oas-badge#badge-dyn.bump::part(badge) {
 | `ribbon-size` | diagonal 斜带尺寸档位：`small`（默认，30px 带宽 / xs 字号）/ `medium`（33px / sm 字号，钉点 35px）/ `large`（36px / md 字号，钉点 45px，宽幅大字场景）；`sm`/`md`/`lg` 为等价别名；档位只改 `--oas-badge-diagonal-*` 的 fallback 默认值，宿主自定义属性优先级更高；仅 `ribbon-form="diagonal"` 生效，非法值静默回落 `small` | `BadgeRibbonSize` | `small` |
 | `ribbon-vertical` | bookmark 侧挂（`ribbon-direction="left"` / `"right"`）的纵向位置：`center`（默认，垂直居中）/ `top`（贴顶边）/ `bottom`（贴底边）；仅侧挂生效，非法值静默回落 `center` | `BadgeRibbonVertical` | `center` |
 | `rolled` | 端部卷边：布尔修饰，给探出外端做卷边效果（端部大圆角 + 内侧渐暗渐变模拟卷起圆柱，纯 CSS）；可叠加 `fold` / `banner` / `flag`，其他形态静默忽略 | `boolean` | — |
+| `shape` | 徽标形态 `round`（默认）/ `square` / `pill`，数值与 dot 通用 | `string` | — |
 | `showZero` | value=0 时是否显示 | `boolean` | — |
 | `size` | 尺寸档位：small（小档，数字徽标高约 13px、dot 6px）/ medium（默认，约 16px）/ large（大档，约 20px、dot 10px）；非法值静默回落 medium | `BadgeSize` | `medium` |
 | `status` | 状态点形态：`success` / `processing` / `default` / `error` / `warning`，渲染「状态点 + `text` 文字」的行内独立元素，与 ribbon / dot / count 模式互斥（设置时优先渲染）；`processing` 圆点带脉冲动画（`prefers-reduced-motion` 下停用） | `BadgeStatus` | — |

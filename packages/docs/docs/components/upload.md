@@ -199,15 +199,21 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
   <span id="upload-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
 </DemoBlock>
 
-监听 `oas-change` / `oas-remove` / `oas-upload`：
+监听 `oas-change` / `oas-remove` / `oas-upload` / `oas-progress`：
 
 - `oas-upload`：进度，`detail: { file, percent, status }`（`status`: pending/uploading/done/error）
+- `oas-progress`：上传进度回调（PRD P2），`detail: { file, percent }`——内部进度已驱动 UI，此事件补对外通道（真实 / 模拟 / custom-request 通道均派发，成功收尾派发 100）
 - `oas-success` / `oas-error`：上传成功/失败（真实通道），`detail: { file, response, status? }`
 - `oas-retry` / `oas-cancel`：重试发起 / 上传取消，`detail: { file }`
 - `oas-exceed-limit`：超限拒绝，`detail: { files, max, total }`（数量）或 `{ files, type: 'size', maxSize, total }`（大小）
 - `oas-remove`：移除文件，`detail: { file, index, replaced? }`（`replaced: true` 表示被 `replace` 语义替换）
 
 方法：`submit()`（手动上传）、`startUpload()`（等价）、`abort(file?)`（取消单个/全部进行中的上传）。
+
+<DemoBlock title="oas-progress 进度反馈">
+  <oas-upload id="upload-progress" auto-upload multiple></oas-upload>
+  <span id="upload-progress-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
 
 ## 第三方组合场景
 
@@ -245,6 +251,13 @@ onMounted(async () => {
   })
   el?.addEventListener('oas-upload', (e) => {
     out.textContent = `oas-upload: ${e.detail.file.name} ${e.detail.percent}%`
+  })
+
+  // oas-progress：对外进度通道反馈
+  const prog = document.getElementById('upload-progress')
+  const progOut = document.getElementById('upload-progress-output')
+  prog?.addEventListener('oas-progress', (e) => {
+    progOut.textContent = `oas-progress: ${e.detail.file.name} ${e.detail.percent}%`
   })
 
   // 照片墙：超限拦截 + 预览反馈
@@ -428,6 +441,7 @@ onMounted(async () => {
 | `oas-exceed` | 【兼容别名】等价 oas-exceed-limit；后续版本移除，`detail: { files: rejected, max, total: next.length } \| { files: sizeRejected, type: 'size', maxSize, total: next.length }` |
 | `oas-exceed-limit` | 添加文件超限被拒绝（规范名，对齐 checkbox-group/select/toggle-group），`detail: { files, max, total }`；数量/大小超限均派发（大小超限额外带 `type: 'size'` 与 `maxSize`） |
 | `oas-preview` | 打开预览浮层，`detail: { file, url }` |
+| `oas-progress` | 上传进度回调，`detail: { file, percent }`（真实/模拟/custom-request 均派发，成功收尾 100） |
 | `oas-remove` | 移除文件，`detail: { file, index }` |
 | `oas-retry` | 点击重试，`detail: { file }`（失败后重发） |
 | `oas-success` | 上传成功，`detail: { file, response }` |

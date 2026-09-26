@@ -373,6 +373,20 @@ a.item:visited {
 :host(:not([mode='horizontal'])[collapsed]) .item > .icon {
   margin-inline-end: 0;
 }
+/* ===== disabled 整单禁用：视觉降饱和（ui-spec §2.3）+ 子项交互反馈抑制；
+   点击/悬停/键盘由 JS 全拦截（href 链接项同时 preventDefault 阻断原生跳转）。
+   置于 TOUCH_TARGET 之前声明序后段：与 .item.danger:hover 同特异性时后写胜出 ===== */
+:host([disabled]) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+:host([disabled]) .item {
+  cursor: not-allowed;
+}
+:host([disabled]) .item:hover,
+:host([disabled]) .item.active {
+  background: none;
+}
 /* 触摸目标抬升：coarse pointer 下菜单项行最小高度 ≥44px（token 开口可调）。
    dropdown item / menu-item 由本组件统一渲染，随此处一并生效 */
 ${TOUCH_TARGET_CSS}
@@ -391,6 +405,12 @@ export class OASMenu extends OASElement {
       'accordion',
       'close-on-select',
       'open-on-hover',
+      // 整单禁用：交互全拦截 + 降饱和 + aria-disabled
+      'disabled',
+      // selectable=false：纯动作菜单（无选中态语义，不写回 value）
+      'selectable',
+      // 选中后不自动收起浮出子菜单（close-on-select 族正向开关）
+      'persistent',
       'dir',
     ]
   }
@@ -491,6 +511,8 @@ export class OASMenu extends OASElement {
   protected override update(): void {
     // RTL 镜像开关：子菜单展开侧/翻转判定与 CSS 镜像（chevron 等）消费
     this.toggleAttribute('data-rtl', isRtl(this))
+    // 整单禁用：宿主 aria-disabled 同步（视觉降饱和走 CSS :host([disabled])，同 dropdown 惯例）
+    this.setAttribute('aria-disabled', String(this.hasAttr('disabled')))
     // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
     // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
@@ -808,7 +830,7 @@ export class OASMenu extends OASElement {
       // 收起态（collapsed）下 label 隐藏，需以 aria-label 兜底可访问名称
       if (item.label) li.setAttribute('aria-label', item.label)
       const hasChildren = !!item.children && item.children.length > 0
-      const action = !hasChildren && item.kind === 'action'
+      const action = !hasChildren && this.isActionItem(item)
       // 组作用域标记：radio 叶子带所在组 id（无组为 ''）
       if (!hasChildren && !action) li.dataset.scope = scope
       if (loading) {
@@ -835,16 +857,20 @@ export class OASMenu extends OASElement {
         if (arrow) li.appendChild(arrow)
         li.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
+          if (this.isDisabled()) {
+            e.preventDefault()
+            return
+          }
           if (item.disabled || item.loading) return
           this.toggleExpand(item.value ?? '')
         })
         // 父项 hover：open-on-hover 时延迟开/移出延迟关；否则即时 hoverExpand（现状）
         li.addEventListener('mouseenter', () => {
-          if (item.disabled || item.loading) return
+          if (this.isDisabled() || item.disabled || item.loading) return
           this.onParentHoverEnter(item.value ?? '')
         })
         li.addEventListener('mouseleave', () => {
-          if (item.disabled || item.loading) return
+          if (this.isDisabled() || item.disabled || item.loading) return
           this.onParentHoverLeave(item.value ?? '')
         })
         // 子菜单：inline 模式就地展开（inline-sub 容器，在父项 li 之后缩进展开）；
@@ -869,8 +895,8 @@ export class OASMenu extends OASElement {
           li.appendChild(sub)
         }
       } else {
-        const action = item.kind === 'action'
-        const checkbox = item.kind === 'checkbox'
+        const action = this.isActionItem(item)
+        const checkbox = !action && item.kind === 'checkbox'
         // role：action=menuitem（无勾选态）/ checkbox=menuitemcheckbox / radio（默认）=menuitemradio
         li.setAttribute('role', action ? 'menuitem' : checkbox ? 'menuitemcheckbox' : 'menuitemradio')
         // danger 破坏性项：红色语义
@@ -888,11 +914,16 @@ export class OASMenu extends OASElement {
         li.append(label)
         li.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
+          // 整单禁用：拦截 + preventDefault（href 链接项阻断原生跳转）
+          if (this.isDisabled()) {
+            e.preventDefault()
+            return
+          }
           if (item.disabled || item.loading) return
           this.select(item, scope)
         })
         li.addEventListener('mouseenter', () => {
-          if (item.disabled || item.loading) return
+          if (this.isDisabled() || item.disabled || item.loading) return
           this.hoverExpand(item.value ?? '')
         })
       }
@@ -921,9 +952,13 @@ export class OASMenu extends OASElement {
       moreLi.appendChild(moreSub)
       moreLi.addEventListener('click', (e: MouseEvent) => {
         e.stopPropagation()
+        if (this.isDisabled()) return
         this.toggleExpand('__more__')
       })
-      moreLi.addEventListener('mouseenter', () => this.hoverExpand('__more__'))
+      moreLi.addEventListener('mouseenter', () => {
+        if (this.isDisabled()) return
+        this.hoverExpand('__more__')
+      })
       container.appendChild(moreLi)
       this.moreItemEl = moreLi
     }
@@ -1162,15 +1197,34 @@ export class OASMenu extends OASElement {
   /** 选中叶子项后是否收起展开的子菜单。缺省按形态：inline 侧边导航不收（一致）、
       浮出形态收（主流默认）；显式 close-on-select="true"/"false" 覆盖缺省。 */
   private closeOnSelect(): boolean {
+    // persistent：选中后不自动收起（close-on-select 族的正向开关，显式优先于 close-on-select）
+    if (this.hasAttr('persistent') && this.getAttr('persistent', '') !== 'false') return false
     // 布尔属性语义：存在即 true（含 close-on-select="" 空值），仅显式 "false" 关闭；
     // 未设置（hasAttr 为 false）时按形态缺省——inline 不收、浮出（vertical/horizontal）收
     if (!this.hasAttr('close-on-select')) return this.getAttr('mode') !== 'inline'
     return this.getAttr('close-on-select', '') !== 'false'
   }
 
+  /** 整单禁用：点击/悬停/键盘全拦截（href 链接项同时 preventDefault 阻断原生跳转） */
+  private isDisabled(): boolean {
+    return this.hasAttr('disabled')
+  }
+
+  /** selectable 语义开关：布尔属性族（存在=true 含空值；仅显式 "false" 关闭）。缺省开（现状选中语义） */
+  private selectableEnabled(): boolean {
+    return this.getAttr('selectable', 'true') !== 'false'
+  }
+
+  /** 叶子项是否按动作语义处理：kind=action，或 selectable=false 整单动作化（无勾选态、不写回 value） */
+  private isActionItem(item: MenuItem): boolean {
+    return item.kind === 'action' || !this.selectableEnabled()
+  }
+
   private select(item: MenuItem, scope = ''): void {
+    // 整单禁用：任何叶子激活（点击/键盘/镜像弹层）都拦截
+    if (this.isDisabled()) return
     // action 项：动作语义，不参与 value 选中态（不写回、不打勾），只通知宿主
-    if (item.kind === 'action') {
+    if (this.isActionItem(item)) {
       this.emit('select', { value: item.value, kind: 'action' })
     } else if (item.kind === 'checkbox') {
       // checkbox 项：多选勾选集，value 为 JSON 数组；点击切换存留
@@ -1354,8 +1408,9 @@ export class OASMenu extends OASElement {
     this.syncOpen()
   }
 
-  /** 点击：展开/收起子菜单 */
+  /** 点击：展开/收起子菜单（整单禁用时拦截） */
   private toggleExpand(value: string): void {
+    if (this.isDisabled()) return
     // 水平收纳项「···」：非数据项，直接切换其展开态（不走 chainOf——不在 items 树里）
     if (value === '__more__') {
       const next = new Set(this.expanded)
@@ -1465,6 +1520,7 @@ export class OASMenu extends OASElement {
     if (!moreItem) return
     moreItem.hidden = !hasOverflow
     const moreSub = moreItem.querySelector<HTMLElement>('.menu-more-sub')
+    const selectable = this.selectableEnabled()
     if (moreSub && hasOverflow) {
       moreSub.innerHTML = ''
       const collapsed = topItems.filter((t) => t.hasAttribute('data-collapsed'))
@@ -1475,22 +1531,27 @@ export class OASMenu extends OASElement {
         const li = document.createElement('li')
         li.className = 'item'
         li.setAttribute('part', 'item')
-        // 镜像项与主流一致的 radio 语义：role=menuitemradio + aria-checked + 前导 ✓
-        // （选中收纳项后弹层内可见选中态，否则用户在弹层里得不到任何反馈）
-        li.setAttribute('role', 'menuitemradio')
-        li.setAttribute('aria-checked', String(value === this.selectedValueOf('')))
+        if (selectable) {
+          // 镜像项与主流一致的 radio 语义：role=menuitemradio + aria-checked + 前导 ✓
+          // （选中收纳项后弹层内可见选中态，否则用户在弹层里得不到任何反馈）
+          li.setAttribute('role', 'menuitemradio')
+          li.setAttribute('aria-checked', String(value === this.selectedValueOf('')))
+          const check = document.createElement('span')
+          check.className = 'check'
+          check.textContent = '✓'
+          li.appendChild(check)
+        } else {
+          // selectable=false：镜像项同样降为动作语义（无勾选态）
+          li.setAttribute('role', 'menuitem')
+        }
         li.setAttribute('data-value', value)
-        const check = document.createElement('span')
-        check.className = 'check'
-        check.textContent = '✓'
-        li.appendChild(check)
         const label = document.createElement('span')
         label.className = 'label'
         label.textContent = item.label ?? value
         li.appendChild(label)
         li.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
-          if (item.disabled || item.loading) return
+          if (this.isDisabled() || item.disabled || item.loading) return
           this.select(item, '')
         })
         moreSub.appendChild(li)
@@ -1499,6 +1560,7 @@ export class OASMenu extends OASElement {
     // 「···」高亮：当前选中项被收纳时，收纳项显示选中态（选中项在溢出弹层里，
     // 条上看不到 ✓，由收纳指示器本身高亮表达"选中项在其中"）+ aria-current 供读屏
     const selectedInside =
+      selectable &&
       hasOverflow &&
       !!this.selectedValueOf('') &&
       topItems.some((t) => t.hasAttribute('data-collapsed') && t.dataset.value === this.selectedValueOf(''))
@@ -1547,6 +1609,8 @@ export class OASMenu extends OASElement {
   }
 
   private handleKey(e: KeyboardEvent): void {
+    // 整单禁用：键盘导航与激活全拦截
+    if (this.isDisabled()) return
     const items = this.currentItems()
     const enabled = items.map((i, idx) => (i.disabled || i.loading ? -1 : idx)).filter((i) => i >= 0)
     if (enabled.length === 0) return

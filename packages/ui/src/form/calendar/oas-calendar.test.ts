@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { setLocale } from '@oas-ui/i18n'
+import { setLocale, registerLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
 import { OASCalendar } from './index.js'
@@ -602,6 +602,85 @@ describe('OASCalendar range 范围选择模式', () => {
     expect(details).toEqual([{ value: '2026-08-15' }])
     expect(el.getAttribute('value')).toBe('2026-08-15')
     expect(day(el, '2026-08-15').classList.contains('selected')).toBe(true)
+  })
+})
+
+// ---- P2 能力缺口批：header 插槽 / locale / format ----
+
+describe('P2 批：header 插槽 / locale / format', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    // locale 属性覆盖依赖「按 locale 名」翻译器：确保 en 语言包已注册（幂等）
+    registerLocale(en)
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('缺省内置导航头（prev/title/next/today 在位，slot 容器存在）', () => {
+    const el = mount({ value: '2026-08-09' })
+    expect(el.shadowRoot!.querySelector('[part="prev"]')).toBeTruthy()
+    expect(el.shadowRoot!.querySelector('[part="title"]')).toBeTruthy()
+    expect(el.shadowRoot!.querySelector('[part="next"]')).toBeTruthy()
+    expect(el.shadowRoot!.querySelector('[part="today"]')).toBeTruthy()
+    expect(el.shadowRoot!.querySelector('slot[name="header"]')).toBeTruthy()
+  })
+
+  it('header 插槽：宿主内容分发进头部，宿主内容可交互', () => {
+    const el = mount({ value: '2026-08-09' })
+    const custom = document.createElement('button')
+    custom.setAttribute('slot', 'header')
+    custom.textContent = '回到今天'
+    let clicked = 0
+    custom.addEventListener('click', () => clicked++)
+    el.appendChild(custom)
+    // happy-dom 不自动派 slotchange，手动触发（与 input-number 插槽测试同套路）
+    el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="header"]')!.dispatchEvent(new Event('slotchange'))
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="header"]')!
+    expect(slot.assignedNodes().length).toBe(1)
+    ;(slot.assignedNodes()[0] as HTMLElement).click()
+    expect(clicked).toBe(1)
+  })
+
+  it('locale：面板语言覆盖（标题/单元格描述/导航 aria/今天钮/周起始推导）', () => {
+    const el = mount({ value: '2026-08-09', locale: 'en' })
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('August 2026')
+    expect(day(el, '2026-08-09').getAttribute('aria-label')).toBe('August 9, 2026')
+    expect(el.shadowRoot!.querySelector('[part="prev"]')!.getAttribute('aria-label')).toBe('Previous month')
+    expect(el.shadowRoot!.querySelector('[part="next"]')!.getAttribute('aria-label')).toBe('Next month')
+    expect(el.shadowRoot!.querySelector('[part="today"]')!.textContent).toBe('Today')
+    // en 周日起始：当月网格首格为 2026-07-26（周日）
+    expect(grid(el).querySelector<HTMLButtonElement>('.day')!.getAttribute('data-date')).toBe('2026-07-26')
+  })
+
+  it('locale 属性优先于全局 locale；移除后回落全局（zh-CN）', () => {
+    setLocale(en)
+    const el = mount({ value: '2026-08-09' })
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('August 2026') // 全局 en
+    el.setAttribute('locale', 'zh-CN')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年8月') // 属性覆盖
+    el.removeAttribute('locale')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('August 2026') // 回落全局
+    setLocale('zh-CN')
+  })
+
+  it('format：头部格式串（日面板/月面板标题），十年面板标题不适用', () => {
+    const el = mount({ value: '2026-08-09', format: 'yyyy年MM月' })
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年08月')
+    // 钻取月面板：标题同样走 format（视图锚仍在 8 月）
+    el.shadowRoot!.querySelector<HTMLElement>('[part="title"]')!.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年08月')
+    // 再钻取十年面板：区间形态标题，格式串不适用
+    el.shadowRoot!.querySelector<HTMLElement>('[part="title"]')!.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2020-2031')
+  })
+
+  it('format 未设置：标题维持 Intl 年月形态（既有契约不变）', () => {
+    const el = mount({ value: '2026-08-09' })
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年8月')
   })
 })
 

@@ -277,6 +277,20 @@ Combination semantics: `simple` takes priority over `progress-dot` / `navigation
   </div>
 </DemoBlock>
 
+## Size tiers
+
+`size` offers five type-density tiers (xs / small / medium / large / xl, `sm/md/lg` aliases accepted, default medium). Tiers only change the title / description / step-number type scale — the indicator and connector geometry stays constant. Invalid values fall back to medium with a one-time warning.
+
+<DemoBlock title="Five size tiers">
+  <oas-space direction="vertical" size="large">
+    <oas-steps size="xs" current="1" steps='[{"title":"Fill in details"},{"title":"Review information"},{"title":"Submit"}]'></oas-steps>
+    <oas-steps size="small" current="1" steps='[{"title":"Fill in details"},{"title":"Review information"},{"title":"Submit"}]'></oas-steps>
+    <oas-steps size="medium" current="1" steps='[{"title":"Fill in details"},{"title":"Review information"},{"title":"Submit"}]'></oas-steps>
+    <oas-steps size="large" current="1" steps='[{"title":"Fill in details"},{"title":"Review information"},{"title":"Submit"}]'></oas-steps>
+    <oas-steps size="xl" current="1" steps='[{"title":"Fill in details"},{"title":"Review information"},{"title":"Submit"}]'></oas-steps>
+  </oas-space>
+</DemoBlock>
+
 ## API
 
 ### oas-steps
@@ -300,6 +314,7 @@ Combination semantics: `simple` takes priority over `progress-dot` / `navigation
 | `reverse` | Visual reversal: horizontal `row-reverse` / vertical `column-reverse`; displayed number = total - index (increasing along the visual flow), status derivation still follows the steps array order (boolean; enabled when present) | `boolean` | — |
 | `separator` | Connector style: `line` (default) / `dashed` (dashed border) / `arrow` (trailing arrowhead); not applied under navigation / arrow | `string` | — |
 | `simple` | Compact mode: single-row small size (smaller indicators, hidden descriptions, tighter connector lines) (boolean; enabled when present; takes priority over progress-dot/navigation) | `boolean` | — |
+| `size` | Five type-density tiers (indicator/connector geometry constant; aliases accepted) | `string` | `medium` |
 | `status` | Container-level status overriding the current step (`wait` / `process` / `finish` / `error`); an explicit per-step `status` still takes the highest priority | `StepStatus` | — |
 | `steps` | `[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent?, prefix? }]` JSON string | `StepItem[] \| string` | `[]` |
 

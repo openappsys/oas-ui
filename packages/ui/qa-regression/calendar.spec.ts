@@ -81,6 +81,57 @@ test('calendar header 组合：外部操作条 + 组件卡片，内置导航仍�
   expect(r.titleText).toContain('2026')
 })
 
+// —— 能力缺口 P2 批：header 插槽 / locale / format ——
+
+test('calendar header 插槽：宿主头部内容分发 + 可交互（点宿主按钮锚定回当月）', async ({ page }) => {
+  await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-calendar#calendar-header-slot')
+  const host = page.locator('oas-calendar#calendar-header-slot')
+  await host.scrollIntoViewIfNeeded()
+  const r0 = await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-header-slot')!
+    return {
+      assigned: el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="header"]')!.assignedNodes().length,
+      fallbackNav: !!el.shadowRoot!.querySelector('[part="prev"]'),
+    }
+  })
+  expect(r0.assigned, '宿主内容应分发进 header 插槽').toBeGreaterThan(0)
+  // 真实链路：点宿主头部按钮 → page-show-date 锚定当月 → 标题落到当月 + 反馈行更新
+  await page.locator('#calendar-header-slot-btn').click()
+  const now = new Date()
+  const expected = `${now.getFullYear()}年${now.getMonth() + 1}月`
+  await page.waitForFunction(
+    (exp) =>
+      document.querySelector('oas-calendar#calendar-header-slot')?.shadowRoot?.querySelector('[part="title"]')
+        ?.textContent === exp,
+    expected,
+    { timeout: 5000 },
+  )
+  const feedback = await page.evaluate(() => document.querySelector('#calendar-header-slot-output')?.textContent ?? '')
+  expect(feedback, '宿主交互应有可见反馈').toContain('已锚定回当月')
+})
+
+test('calendar locale / format：面板语言覆盖（en）+ 头部格式串', async ({ page }) => {
+  await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-calendar#calendar-locale')
+  const r = await page.evaluate(() => {
+    const loc = document.querySelector('oas-calendar#calendar-locale')!
+    const fmt = document.querySelector('oas-calendar#calendar-format')!
+    return {
+      localeTitle: loc.shadowRoot!.querySelector('[part="title"]')?.textContent ?? '',
+      localePrev: loc.shadowRoot!.querySelector('[part="prev"]')?.getAttribute('aria-label') ?? '',
+      localeToday: loc.shadowRoot!.querySelector('[part="today"]')?.textContent ?? '',
+      firstDay: loc.shadowRoot!.querySelector('.day')?.getAttribute('data-date') ?? '',
+      formatTitle: fmt.shadowRoot!.querySelector('[part="title"]')?.textContent ?? '',
+    }
+  })
+  expect(r.localeTitle, 'locale=en 标题应为英文').toBe('August 2026')
+  expect(r.localePrev, '导航 aria 应为英文').toBe('Previous month')
+  expect(r.localeToday, '今天钮应为英文').toBe('Today')
+  expect(r.firstDay, 'en 周日起始，网格首格 2026-07-26').toBe('2026-07-26')
+  expect(r.formatTitle, 'format 头部格式串生效').toBe('2026年08月')
+})
+
 // —— 移动端硬伤修复回归：触屏日格触控目标 ≥44px ——
 test('calendar 触屏（coarse）：日格/月格/头部按钮触控目标 ≥44px', async ({ browser }) => {
   const ctx = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } })

@@ -231,6 +231,40 @@ const STYLE = `
 :host([selectable][loading]) {
   cursor: default;
 }
+/* disabled 禁用态：灰化 + 指针恢复默认 + 内部锚点断链（href 卡的原生导航一并失效）。
+   opacity 档位对齐 tree 整体禁用（0.55）；交互事件在监听层同样兜底拦截 */
+:host([disabled]) {
+  opacity: 0.55;
+  cursor: default;
+}
+:host([disabled]) .card-link {
+  pointer-events: none;
+}
+/* orientation="horizontal"：封面左置、内容列右置的横向排布。
+   内容区（header/body/actions/footer）收进 .card-main 纵向列；封面列定宽并
+   overflow:hidden 裁切（配合 .card 圆角），封面图撑满列高不锁 16:9 */
+.card-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+:host([orientation='horizontal']) .card {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  overflow: hidden;
+}
+:host([orientation='horizontal']) .cover {
+  width: 40%;
+  flex: none;
+  border-radius: 0;
+  align-self: stretch;
+}
+:host([orientation='horizontal']) .cover-img {
+  height: 100%;
+  aspect-ratio: auto;
+}
 /* 选中态：primary 描边 + 浅 primary 底（6% 混底，dark 下同样可读）；
    描边用 inset 环——与既有 1px 边框重合不增厚，borderless 形态也能呈现 */
 :host([selectable][selected]) {
@@ -295,6 +329,8 @@ export class OASCard extends OASElement {
       'description',
       'selectable',
       'selected',
+      'disabled',
+      'orientation',
     ]
   }
 
@@ -308,33 +344,35 @@ export class OASCard extends OASElement {
             <slot name="cover"></slot>
             <img class="cover-img" part="cover-img" alt="" hidden>
           </div>
-          <div class="header" part="header">
-            <span class="avatar" part="avatar" hidden><slot name="avatar"></slot></span>
-            <div class="head-main">
-              <div class="head-row">
-                <span class="title" part="title"><slot name="title"><span class="title-text"></span></slot></span>
-                <div class="extra"><slot name="extra"></slot></div>
-              </div>
-              <div class="description" part="description" hidden>
-                <span class="desc-text"></span>
-                <slot name="description"></slot>
+          <div class="card-main">
+            <div class="header" part="header">
+              <span class="avatar" part="avatar" hidden><slot name="avatar"></slot></span>
+              <div class="head-main">
+                <div class="head-row">
+                  <span class="title" part="title"><slot name="title"><span class="title-text"></span></slot></span>
+                  <div class="extra"><slot name="extra"></slot></div>
+                </div>
+                <div class="description" part="description" hidden>
+                  <span class="desc-text"></span>
+                  <slot name="description"></slot>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="body" part="body">
-            <slot></slot>
-            <div class="skeleton" part="skeleton" hidden aria-hidden="true">
-              <div class="sk-title"></div>
-              <div class="sk-line"></div>
-              <div class="sk-line"></div>
-              <div class="sk-line"></div>
+            <div class="body" part="body">
+              <slot></slot>
+              <div class="skeleton" part="skeleton" hidden aria-hidden="true">
+                <div class="sk-title"></div>
+                <div class="sk-line"></div>
+                <div class="sk-line"></div>
+                <div class="sk-line"></div>
+              </div>
             </div>
-          </div>
-          <div class="actions" part="actions" hidden>
-            <slot name="actions"></slot>
-          </div>
-          <div class="footer" part="footer" hidden>
-            <slot name="footer"></slot>
+            <div class="actions" part="actions" hidden>
+              <slot name="actions"></slot>
+            </div>
+            <div class="footer" part="footer" hidden>
+              <slot name="footer"></slot>
+            </div>
           </div>
           <span class="check-badge" part="check-badge" hidden>
             <span class="check-corner"></span>
@@ -357,7 +395,9 @@ export class OASCard extends OASElement {
     // selectable：点击/Enter/Space 切换选中（loading 骨架态不切换；命中内部交互元素时跳过）；
     // href 链接卡同设时命中卡本体优先选中并阻止默认导航（内部按钮/链接仍走各自操作）。
     // href 链接卡：命中内部交互元素时额外阻止锚点默认导航（同一批排除元素）
+    // disabled 禁用态：交互事件一律不派发（视觉/锚点断链由 CSS 与 update 层兜底）
     this.addEventListener('click', (e: Event) => {
+      if (this.hasAttr('disabled')) return
       const interactive = this.hitsInteractive(e)
       const href = this.getAttr('href', '')
       if (interactive && href !== '') e.preventDefault()
@@ -370,6 +410,7 @@ export class OASCard extends OASElement {
       this.emit('click', { originalEvent: e })
     })
     this.addEventListener('keydown', (e: Event) => {
+      if (this.hasAttr('disabled')) return
       const k = e as KeyboardEvent
       if (k.key !== 'Enter' && k.key !== ' ') return
       if (this.hitsInteractive(e)) return
@@ -398,6 +439,7 @@ export class OASCard extends OASElement {
   /** 切换选中态：派发 oas-change（detail 为切换后的新状态）；
    *  非受控时反射 selected 属性（aria-checked / 视觉由 update() 增量同步） */
   private toggleSelected(): void {
+    if (this.hasAttr('disabled')) return
     const next = !this.hasAttr('selected')
     this.emit('change', { selected: next })
     if (this.selectedControlled) return
@@ -504,11 +546,15 @@ export class OASCard extends OASElement {
     else this.removeAttribute('aria-busy')
 
     // href 链接卡：整卡语义为链接——内部锚点承载 href/target 与焦点，
-    // 宿主不再叠加 button 角色/焦点（避免嵌套交互语义；键盘 Enter 由锚点原生支持）
+    // 宿主不再叠加 button 角色/焦点（避免嵌套交互语义；键盘 Enter 由锚点原生支持）。
+    // disabled：摘除锚点 href/target——原生导航/锚点聚焦一并失效（灰化由 CSS 呈现）
+    const disabled = this.hasAttr('disabled')
+    if (disabled) this.setAttribute('aria-disabled', 'true')
+    else this.removeAttribute('aria-disabled')
     const href = this.getAttr('href', '')
     const link = this.shadow.querySelector<HTMLAnchorElement>('[part="link"]')
     if (link) {
-      if (href !== '') {
+      if (href !== '' && !disabled) {
         link.setAttribute('href', href)
         const target = this.getAttr('target', '')
         if (target !== '') link.setAttribute('target', target)
@@ -519,14 +565,21 @@ export class OASCard extends OASElement {
       }
     }
 
+    // orientation：horizontal 封面左置、内容列右置（默认 vertical 纵向堆叠；非法值回落 vertical）。
+    // data-orientation 仅在横向时写入——默认卡片的宿主属性面保持原样（SSR 快照零漂移），
+    // CSS 消费的是 orientation 属性本身（:host([orientation='horizontal'])）
+    if (this.getAttr('orientation', '') === 'horizontal') this.setAttribute('data-orientation', 'horizontal')
+    else this.removeAttribute('data-orientation')
+
     // clickable / selectable 的角色与焦点语义：
     // href 在场时例外：焦点已交给内部锚点，宿主保持普通容器语义（避免嵌套交互语义）。
     // 组件不挂缺省 role=button/checkbox：可点/可选卡常内嵌操作控件（按钮/链接），缺省角色会把
     // 它们裹进交互元素（axe: nested-interactive，屏幕阅读器也会丢失内部控件可读性）。
     // 宿主显式角色（多卡组 role="radio" 等）不覆盖：仅同步 aria-checked（无角色承载时该属性非法）。
-    // loading 骨架态不可选：不挂交互语义（点击/键盘拦截在事件层同样兜底）
-    const clickableActive = this.hasAttr('clickable') && href === ''
-    const selectableActive = this.hasAttr('selectable') && href === '' && !loading
+    // loading 骨架态不可选：不挂交互语义（点击/键盘拦截在事件层同样兜底）；
+    // disabled 禁用态：不进 Tab 序列、不挂交互语义（事件层拦截兜底）
+    const clickableActive = this.hasAttr('clickable') && href === '' && !disabled
+    const selectableActive = this.hasAttr('selectable') && href === '' && !loading && !disabled
     const authorRole = this.getAttribute('role')
     if (selectableActive) {
       this.setAttribute('tabindex', '0')

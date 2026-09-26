@@ -103,6 +103,18 @@
       "name": "max-tag-count",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placement",
+      "type": "string",
+      "default": "bottom",
+      "observed": true
     }
   ],
   "props": [
@@ -146,7 +158,14 @@
       "detail": "{ value: prev }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "template[slot=\"option\"]"
+    },
+    {
+      "name": "template[slot=\"suffix-icon\"]"
+    }
+  ],
   "cssVars": [],
   "unresolved": []
 }

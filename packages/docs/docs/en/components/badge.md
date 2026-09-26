@@ -590,6 +590,31 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
   </oas-badge>
 </DemoBlock>
 
+## Badge Shape
+
+`shape` controls the badge shape: `round` (default, rounded — the base class, no extra class written) / `square` (right angles) / `pill` (capsule, fully rounded ends). It applies to both numeric badges and `dot` points: `square` turns a dot into a square point, while `pill` keeps it circular; invalid values silently fall back to `round`.
+
+<DemoBlock title="shape: round / square / pill">
+  <oas-badge value="5" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>round default</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" shape="square" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>square</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" shape="pill" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>pill</oas-tag>
+  </oas-badge>
+  <oas-badge dot style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>dot round</oas-tag>
+  </oas-badge>
+  <oas-badge dot shape="square" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>dot square</oas-tag>
+  </oas-badge>
+  <oas-badge dot shape="pill">
+    <oas-tag>dot pill</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
 ## API
 
 ### oas-badge
@@ -618,6 +643,7 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 | `ribbon-size` | Diagonal band size tier: `small` (default, 30px tall / xs font) / `medium` (33px / sm font, 35px pin) / `large` (36px / md font, 45px pin, wide large-type scenes); `sm`/`md`/`lg` are accepted aliases; a tier only changes the fallback of `--oas-badge-diagonal-*`, host custom properties take precedence; only takes effect with `ribbon-form="diagonal"`, invalid values silently fall back to `small` | `BadgeRibbonSize` | `small` |
 | `ribbon-vertical` | Vertical position of the side-mount `bookmark` forms (`ribbon-direction="left"` / `"right"`): `center` (default, vertically centered) / `top` (flush with the top edge) / `bottom` (flush with the bottom edge); only affects the side-mount forms, invalid values silently fall back to `center` | `BadgeRibbonVertical` | `center` |
 | `rolled` | End roll: a boolean modifier that adds a rolled edge to the protruding end (a large end radius + an inner gradient darkening that reads as a rolled cylinder; pure CSS). Composes with `fold` / `banner` / `flag`; other shapes silently ignore it | `boolean` | — |
+| `shape` | Badge shape `round` (default) / `square` / `pill`, applying to both counts and dots | `string` | — |
 | `showZero` | Whether to show when value=0 | `boolean` | — |
 | `size` | Size tier: small (compact, numeric badge ~13px tall, dot 6px) / medium (default, ~16px) / large (~20px, dot 10px); invalid values silently fall back to medium | `BadgeSize` | `medium` |
 | `status` | Status point: `success` / `processing` / `default` / `error` / `warning`, renders an inline standalone element of "status dot + `text`", mutually exclusive with ribbon / dot / count modes (rendered first when set); the `processing` dot pulses (`prefers-reduced-motion` disables it) | `BadgeStatus` | — |

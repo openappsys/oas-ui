@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
 import { OASGrid, OASGridItem } from './index.js'
 
 describe('OASGrid', () => {
@@ -285,5 +286,183 @@ describe('OASGrid', () => {
   it('min-child-width / columns 进入 observedAttributes', () => {
     expect(OASGrid.observedAttributes).toContain('min-child-width')
     expect(OASGrid.observedAttributes).toContain('columns')
+  })
+})
+
+describe('OASGrid 双轴 gap（PRD P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountGrid(gap: string): OASGrid {
+    const grid = new OASGrid()
+    grid.setAttribute('gap', gap)
+    grid.innerHTML = '<oas-grid-item>a</oas-grid-item>'
+    document.body.appendChild(grid)
+    return grid
+  }
+
+  it('gap 逗号双值 "8,16"：row-gap 8 / column-gap 16（与空格双值同语义）', () => {
+    const grid = mountGrid('8,16')
+    expect(grid.style.rowGap).toBe('8px')
+    expect(grid.style.columnGap).toBe('16px')
+  })
+
+  it('gap 单值兼容零回归：简写直写 + 长hand清空', () => {
+    const grid = mountGrid('12')
+    expect(grid.style.gap).toBe('12px')
+    expect(grid.style.rowGap).toBe('')
+    expect(grid.style.columnGap).toBe('')
+  })
+
+  it('row-gap / column-gap 分离属性：独立生效并覆盖 gap 对应轴', () => {
+    const grid = new OASGrid()
+    grid.setAttribute('gap', '8,16')
+    grid.setAttribute('row-gap', '24')
+    grid.setAttribute('column-gap', '32px')
+    grid.innerHTML = '<oas-grid-item>a</oas-grid-item>'
+    document.body.appendChild(grid)
+    expect(grid.style.rowGap).toBe('24px')
+    expect(grid.style.columnGap).toBe('32px')
+  })
+
+  it('row-gap 单独设置时另一轴仍走 gap 解析结果', () => {
+    const grid = new OASGrid()
+    grid.setAttribute('gap', '10 20')
+    grid.setAttribute('row-gap', '40')
+    grid.innerHTML = '<oas-grid-item>a</oas-grid-item>'
+    document.body.appendChild(grid)
+    expect(grid.style.rowGap).toBe('40px')
+    expect(grid.style.columnGap).toBe('20px')
+  })
+})
+
+describe('OASGrid collapsed-rows 折叠行（PRD P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** 挂 6 个 span=8 的子项（每行 3 个，共 2 行） */
+  function mountGrid(attrs: Record<string, string> = {}): OASGrid {
+    const grid = new OASGrid()
+    for (const [k, v] of Object.entries(attrs)) grid.setAttribute(k, v)
+    grid.innerHTML = Array.from({ length: 6 }, (_, i) => `<oas-grid-item span="8">项 ${i + 1}</oas-grid-item>`).join('')
+    document.body.appendChild(grid)
+    return grid
+  }
+
+  function items(grid: OASGrid): NodeListOf<HTMLElement> {
+    return grid.querySelectorAll<HTMLElement>('oas-grid-item')
+  }
+
+  function tail(grid: OASGrid): HTMLElement {
+    return grid.shadowRoot!.querySelector<HTMLElement>('[part="collapse-tail"]')!
+  }
+
+  function tailBtn(grid: OASGrid): HTMLButtonElement {
+    return tail(grid).querySelector('button')!
+  }
+
+  it('未启用（无 collapsed-rows）：所有子项可见，尾格隐藏', () => {
+    const grid = mountGrid()
+    expect([...items(grid)].every((i) => !i.hasAttribute('hidden'))).toBe(true)
+    expect(tail(grid).hidden).toBe(true)
+  })
+
+  it('collapsed-rows=1：首行 3 项可见、其余隐藏；尾格显示「展开」', () => {
+    const grid = mountGrid({ 'collapsed-rows': '1' })
+    const els = [...items(grid)]
+    expect(
+      els.slice(0, 3).every((i) => !i.hasAttribute('hidden')),
+      '首行可见',
+    ).toBe(true)
+    expect(
+      els.slice(3).every((i) => i.hasAttribute('hidden')),
+      '超出行隐藏',
+    ).toBe(true)
+    expect(tail(grid).hidden).toBe(false)
+    expect(tailBtn(grid).textContent).toBe('展开')
+    expect(tailBtn(grid).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('点击尾格展开：全部可见、文案转「收起」、aria-expanded 翻转、写回 collapsed 属性并派发 oas-collapse', () => {
+    const grid = mountGrid({ 'collapsed-rows': '1' })
+    const events: boolean[] = []
+    grid.addEventListener('oas-collapse', (e) => events.push((e as CustomEvent).detail.collapsed))
+    tailBtn(grid).click()
+    expect(
+      [...items(grid)].every((i) => !i.hasAttribute('hidden')),
+      '展开后全部可见',
+    ).toBe(true)
+    expect(tailBtn(grid).textContent).toBe('收起')
+    expect(tailBtn(grid).getAttribute('aria-expanded')).toBe('true')
+    expect(grid.hasAttribute('collapsed'), '展开态写回 collapsed 属性移除').toBe(false)
+    expect(events).toEqual([false])
+    // 再点收起：回到首行可见
+    tailBtn(grid).click()
+    expect(items(grid)[4]!.hasAttribute('hidden')).toBe(true)
+    expect(events).toEqual([false, true])
+  })
+
+  it('collapsed-rows=2（行数≥总行数）：全部可见、尾格仍提供收起入口（初始即展开语义）', () => {
+    const grid = mountGrid({ 'collapsed-rows': '2' })
+    expect([...items(grid)].every((i) => !i.hasAttribute('hidden'))).toBe(true)
+    // 2 行全部可见 → 无可折叠内容，尾格隐藏
+    expect(tail(grid).hidden).toBe(true)
+  })
+
+  it('外部设 collapsed 属性可受控展开/收起（受控语义）', () => {
+    const grid = mountGrid({ 'collapsed-rows': '1', collapsed: '' })
+    expect(items(grid)[3]!.hasAttribute('hidden'), '初始 collapsed 收起').toBe(true)
+    grid.removeAttribute('collapsed')
+    expect(items(grid)[3]!.hasAttribute('hidden'), '移除 collapsed 展开').toBe(false)
+    grid.setAttribute('collapsed', '')
+    expect(items(grid)[3]!.hasAttribute('hidden'), '重新设 collapsed 收起').toBe(true)
+  })
+
+  it('子项增删后自动重算折叠布局（MutationObserver）', async () => {
+    const grid = mountGrid({ 'collapsed-rows': '1' })
+    expect(items(grid)[3]!.hasAttribute('hidden')).toBe(true)
+    items(grid)[3]!.remove()
+    await new Promise((r) => setTimeout(r))
+    // 移除一项后仍 5 项 > 3，第 4 项（原第 5 项）应隐藏
+    expect(items(grid)[3]!.hasAttribute('hidden')).toBe(true)
+    // 全部移除：无内容，尾格隐藏
+    while (grid.firstChild) grid.removeChild(grid.firstChild)
+    await new Promise((r) => setTimeout(r))
+    expect(tail(grid).hidden).toBe(true)
+  })
+
+  it('span=auto 子项在折叠行模型中按整行计（每项独占一行）', () => {
+    const grid = new OASGrid()
+    grid.setAttribute('collapsed-rows', '1')
+    grid.innerHTML =
+      '<oas-grid-item span="8">A</oas-grid-item><oas-grid-item span="8">B</oas-grid-item><oas-grid-item span="auto">C</oas-grid-item><oas-grid-item span="8">D</oas-grid-item>'
+    document.body.appendChild(grid)
+    const els = [...items(grid)]
+    // A、B 在第 1 行；C（auto 视作整行）独立第 2 行；D 第 3 行 → 折叠 1 行时 C、D 隐藏
+    expect(els[0]!.hasAttribute('hidden')).toBe(false)
+    expect(els[1]!.hasAttribute('hidden')).toBe(false)
+    expect(els[2]!.hasAttribute('hidden')).toBe(true)
+    expect(els[3]!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('columns/min-child-width 自动布局下折叠行不启用（行模型依赖 span/offset 语义）', () => {
+    const grid = mountGrid({ 'collapsed-rows': '1', columns: '3' })
+    expect(
+      [...items(grid)].every((i) => !i.hasAttribute('hidden')),
+      'auto 布局忽略折叠行',
+    ).toBe(true)
+    expect(tail(grid).hidden).toBe(true)
   })
 })

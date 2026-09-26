@@ -27,7 +27,9 @@
     "release": "pnpm test && pnpm typecheck && pnpm build && pnpm -r publish --access public",
     "lint:md": "markdownlint-cli2",
     "check": "biome check --formatter-enabled=true .",
-    "rtl:audit": "node scripts/e2e/rtl-audit-gate.mjs"
+    "rtl:audit": "node scripts/e2e/rtl-audit-gate.mjs",
+    "rtl:audit:interactive": "node scripts/e2e/rtl-audit-gate.mjs --interactive",
+    "visual:review": "node scripts/e2e/visual-review.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

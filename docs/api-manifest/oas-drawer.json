@@ -30,6 +30,11 @@
       "observed": true
     },
     {
+      "name": "no-mask",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "width",
       "observed": true
     },

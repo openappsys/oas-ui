@@ -104,20 +104,27 @@ function resolveOffsetValue(value: string): number | null {
 }
 
 /**
- * span + offset → grid-column 字符串：
- * - span=auto：`auto`（内容自然宽，不展 span）；与 offset 组合按 grid 规范为 `offset+1 / auto`；
- * - 其余：无 offset 为 `span X`；有 offset（>0）为 `offset+1 / span X`。
+ * span + offset + 偏移（push/pull）→ grid-column 字符串：
+ * - span=auto：`auto`（内容自然宽，不展 span）；与偏移组合按 grid 规范为 `start+1 / auto`；
+ * - 其余：净偏移（offset + push - pull）> 0 为 `start+1 / span X`；≤ 0 为 `span X`（自动放置）。
  */
-function columnFrom(span: string, offset: number): string {
+function columnFrom(span: string, offset: number, shift: number): string {
+  const start = offset + shift
   if (span === 'auto') {
-    return offset > 0 ? `${offset + 1} / auto` : 'auto'
+    return start > 0 ? `${start + 1} / auto` : 'auto'
   }
-  return offset > 0 ? `${offset + 1} / span ${span}` : `span ${span}`
+  return start > 0 ? `${start + 1} / span ${span}` : `span ${span}`
+}
+
+/** push/pull 偏移归一化：有限数字原样（含负数），非法回落 0 */
+function resolveShiftValue(value: string): number {
+  const n = Number(value.trim())
+  return Number.isFinite(n) ? n : 0
 }
 
 export class OASGridItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['span', 'offset', 'order']
+    return ['span', 'offset', 'order', 'flex', 'push', 'pull']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -156,6 +163,10 @@ export class OASGridItem extends OASElement {
   }
 
   protected override update(): void {
+    // flex 通道：内联直写 CSS flex 简写（grid 布局下该属性按 CSS 规范不被消费、零干扰；
+    // 供宿主把子项用于 flex 容器等场景透传，缺省不写内联）
+    this.style.flex = this.getAttr('flex', '').trim()
+
     // auto-layout（父级 oas-grid 为 simple-grid / 自适应宫格）时自动排布，忽略 span/offset/断点：
     // - columns（含断点简写如 `3 md:2`）：按列数等分；
     // - min-child-width：auto-fit 流式自算列数。
@@ -172,6 +183,10 @@ export class OASGridItem extends OASElement {
       this.syncBreakpointStyle('')
       return
     }
+
+    // push/pull 偏移（PRD P2，对齐 span/offset 语义）：净偏移 = push - pull，
+    // 叠加在 offset 之后平移起始线；断点简写不参与（push/pull 仅基础值通道）
+    const shift = resolveShiftValue(this.getAttr('push', '0')) - resolveShiftValue(this.getAttr('pull', '0'))
 
     const spanRaw = this.getAttr('span', '24')
     const offsetRaw = this.getAttr('offset', '0')
@@ -207,7 +222,7 @@ export class OASGridItem extends OASElement {
       }
     }
 
-    const baseColumn = columnFrom(baseSpan, baseOffset)
+    const baseColumn = columnFrom(baseSpan, baseOffset, shift)
     if (spanShorthand || offsetShorthand) {
       // 宿主 var() 兜底基础值 + shadow @media 规则覆盖（space 断点协议的同款实现路径）
       this.style.gridColumn = `var(--oas-grid-item-column, ${baseColumn})`
@@ -215,7 +230,7 @@ export class OASGridItem extends OASElement {
         .sort((a, b) => BREAKPOINT_ORDER.indexOf(a[0]) - BREAKPOINT_ORDER.indexOf(b[0]))
         .map(
           ([name, { span, offset }]) =>
-            `@media (min-width: ${BREAKPOINTS[name]}) { :host { --oas-grid-item-column: ${columnFrom(span, offset)} } }`,
+            `@media (min-width: ${BREAKPOINTS[name]}) { :host { --oas-grid-item-column: ${columnFrom(span, offset, shift)} } }`,
         )
         .join('\n')
       this.syncBreakpointStyle(css)

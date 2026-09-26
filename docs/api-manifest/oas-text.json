@@ -138,5 +138,7 @@
       "default": "2"
     }
   ],
-  "unresolved": ["observedAttributes 返回值不是数组字面量（attrs）"]
+  "unresolved": [
+    "observedAttributes 返回值不是数组字面量（attrs）"
+  ]
 }

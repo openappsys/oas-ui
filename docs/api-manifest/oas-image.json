@@ -13,6 +13,24 @@
       "observed": true
     },
     {
+      "name": "width",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "referrerpolicy",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "preview",
       "type": "boolean",
       "observed": true

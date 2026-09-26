@@ -44,6 +44,12 @@
       "observed": true
     },
     {
+      "name": "trigger",
+      "type": "string",
+      "default": "click",
+      "observed": true
+    },
+    {
       "name": "effect",
       "type": "string",
       "default": "slide",

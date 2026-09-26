@@ -843,3 +843,65 @@ describe('OASTimePicker form-associated（原生表单集成）', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 })
+
+// ---- P2 能力缺口批：hide-disabled-options / label ----
+
+describe('P2 批：hide-disabled-options 与 label', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('默认禁用项灰显（保留在 DOM，.disabled + aria-disabled）', () => {
+    const el = mount({ value: '12:00:00' })
+    el.disabledTime = () => ({ hours: [13, 14] })
+    open(el)
+    const h13 = optionsIn(columns(el)[0]!).find((o) => o.textContent === '13')!
+    expect(h13.classList.contains('disabled')).toBe(true)
+    expect(h13.getAttribute('aria-disabled')).toBe('true')
+  })
+
+  it('hide-disabled-options：禁用选项不渲染（隐藏而非灰显），键盘跳过行为不变', () => {
+    const el = mount({ value: '12:00:00', 'hide-disabled-options': '' })
+    el.disabledTime = () => ({ hours: [13, 14] })
+    open(el)
+    const hourOpts = optionsIn(columns(el)[0]!)
+    expect(hourOpts.length).toBe(22)
+    expect(hourOpts.some((o) => o.textContent === '13')).toBe(false)
+    expect(hourOpts.some((o) => o.textContent === '14')).toBe(false)
+    // 键盘 ↑：12 → 13/14 被禁 → 落 15（跳禁逻辑本就基于值集合，与渲染无关）
+    keydown(el, 'ArrowUp')
+    expect(selectedOption(el, 0)!.textContent).toBe('15')
+  })
+
+  it('hide-disabled-options 展开态增删即时重渲（observedAttributes 通道）', () => {
+    const el = mount({ value: '12:00:00' })
+    el.disabledTime = () => ({ hours: [13] })
+    open(el)
+    expect(optionsIn(columns(el)[0]!).some((o) => o.textContent === '13' && o.classList.contains('disabled'))).toBe(
+      true,
+    )
+    el.setAttribute('hide-disabled-options', '')
+    expect(optionsIn(columns(el)[0]!).some((o) => o.textContent === '13')).toBe(false)
+    el.removeAttribute('hide-disabled-options')
+    expect(
+      optionsIn(columns(el)[0]!)
+        .find((o) => o.textContent === '13')!
+        .classList.contains('disabled'),
+    ).toBe(true)
+  })
+
+  it('label：触发器 aria 命名，动态变更即时生效；缺省回落 placeholder', () => {
+    const named = mount({ label: '会议开始时间' })
+    expect(trigger(named).getAttribute('aria-label')).toBe('会议开始时间')
+    named.setAttribute('label', '结束时间')
+    expect(trigger(named).getAttribute('aria-label')).toBe('结束时间')
+    const fallback = mount({ placeholder: '选个时间' })
+    expect(trigger(fallback).getAttribute('aria-label')).toBe('选个时间')
+  })
+})

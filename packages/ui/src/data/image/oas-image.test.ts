@@ -1361,3 +1361,59 @@ describe('OASImage 预览挂载点（portal 到 body）', () => {
     expect(portal()).toBeNull()
   })
 })
+
+describe('OASImage 显式尺寸（width/height）与 referrerpolicy 透传', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('width/height/referrerpolicy 进入观察列表', () => {
+    expect(OASImage.observedAttributes).toContain('width')
+    expect(OASImage.observedAttributes).toContain('height')
+    expect(OASImage.observedAttributes).toContain('referrerpolicy')
+  })
+
+  it('width/height 数字转 px 写入内层 img 内联样式；空值清除恢复 auto', () => {
+    const el = new OASImage()
+    el.setAttribute('src', '/a.png')
+    el.setAttribute('width', '320')
+    el.setAttribute('height', '200')
+    document.body.appendChild(el)
+    const img = el.shadowRoot!.querySelector('img')!
+    expect(img.style.width).toBe('320px')
+    expect(img.style.height).toBe('200px')
+    el.removeAttribute('width')
+    expect(img.style.width).toBe('')
+    el.setAttribute('height', '120')
+    expect(img.style.height).toBe('120px')
+    el.removeAttribute('height')
+    expect(img.style.height).toBe('')
+  })
+
+  it('width 支持任意 CSS 尺寸串（如 50%）原样透传', () => {
+    const el = new OASImage()
+    el.setAttribute('src', '/a.png')
+    el.setAttribute('width', '50%')
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector('img')!.style.width).toBe('50%')
+  })
+
+  it('referrerpolicy 透传内层 img；空值移除属性', () => {
+    const el = new OASImage()
+    el.setAttribute('src', '/a.png')
+    el.setAttribute('referrerpolicy', 'no-referrer')
+    document.body.appendChild(el)
+    const img = el.shadowRoot!.querySelector('img')!
+    expect(img.getAttribute('referrerpolicy')).toBe('no-referrer')
+    el.setAttribute('referrerpolicy', 'origin')
+    expect(img.getAttribute('referrerpolicy')).toBe('origin')
+    el.removeAttribute('referrerpolicy')
+    expect(img.hasAttribute('referrerpolicy')).toBe(false)
+  })
+})

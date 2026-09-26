@@ -350,6 +350,63 @@ const STYLE = `
   height: 12px;
   display: block;
 }
+/* 自定义清空图标（template[slot="clear-icon"]）在场时隐藏默认 × svg（svg 无 hidden IDL，走 attribute） */
+.clear-btn svg[hidden] {
+  display: none;
+}
+.clear-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.clear-icon[hidden] {
+  display: none;
+}
+/* ---- 触发器前后缀与自定义后缀图标（template[slot=prefix/suffix/suffix-icon] 克隆目标） ---- */
+.prefix,
+.suffix {
+  display: inline-flex;
+  align-items: center;
+  color: var(--oas-color-text-secondary);
+  flex: none;
+}
+.prefix[hidden],
+.suffix[hidden] {
+  display: none;
+}
+.suffix-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--oas-color-text-secondary);
+  flex-shrink: 0;
+  transition: transform var(--oas-transition-fast) var(--oas-ease-out);
+  /* 多行标签时固定首行对齐（与 .chevron 一致，随尺寸档控高联动） */
+  align-self: flex-start;
+  margin-top: calc((var(--_ch) - 12px) / 2);
+}
+.suffix-icon[hidden] {
+  display: none;
+}
+.chevron[hidden] {
+  display: none;
+}
+/* 自定义后缀图标替换 chevron 后，展开旋转样式同容器生效 */
+.trigger[aria-expanded='true'] .suffix-icon {
+  transform: rotate(180deg);
+}
+/* ---- 触发器下方提示文案（hint 属性，aria-describedby 关联） ---- */
+.hint {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  margin-top: var(--oas-space-1);
+  line-height: 1.5;
+}
+.hint[hidden] {
+  display: none;
+}
+/* ---- auto-width：触发器宽度随选中项收缩（host 让出固定宽度，行内收缩适配内容） ---- */
+:host([auto-width]) {
+  width: auto;
+}
 .dropdown {
   /* fixed + computePosition 锚定 trigger 下方：逃出祖先 overflow 容器（模态滚动 body 等），
      不再为该容器贡献溢出逼出滚动条（与 combobox 同思路，见 oas-select 定位契约） */
@@ -470,6 +527,16 @@ export class OASSelect extends OASFormElement {
       'placement',
       'readonly',
       'debounce',
+      // 能力缺口 P2 长尾组：搜索输入受控/箭头开关/自动聚焦/首项高亮/加载文案/保留关键词/tabindex 透传/自适应宽/提示文案
+      'input-value',
+      'show-arrow',
+      'autofocus',
+      'default-active-first-option',
+      'loading-text',
+      'reserve-keyword',
+      'tabindex',
+      'auto-width',
+      'hint',
       // 表单关联通道：required 驱动原生校验链（valueMissing）；name 变化需重同步多选 FormData 的 entry key
       'name',
       'required',
@@ -554,16 +621,21 @@ export class OASSelect extends OASFormElement {
       <div class="wrapper" part="wrapper">
         <button class="trigger" part="trigger" type="button" role="combobox"
           aria-haspopup="listbox" aria-expanded="false">
+          <span class="prefix" part="prefix" hidden></span>
           <span class="value" part="value"></span>
           <span class="clear-btn" part="clear" role="button" tabindex="-1" hidden aria-label="">
-            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <svg class="clear-default" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
               <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
+            <span class="clear-icon" part="clear-icon" hidden></span>
           </span>
+          <span class="suffix" part="suffix" hidden></span>
+          <span class="suffix-icon" part="suffix-icon" hidden></span>
           <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
+        <div class="hint" part="hint" id="oas-select-hint" hidden></div>
         <oas-bottom-sheet part="sheet" passive>
           <div class="dropdown" part="dropdown">
             <input class="search-input" part="search-input" type="text" hidden />
@@ -605,7 +677,11 @@ export class OASSelect extends OASFormElement {
           this.emit('input', { value: v })
         }
       }
-      this.renderListbox()
+      // input-value 受控镜像：用户输入写回属性（DOM 为真相，宿主可监听/读取），
+      // 属性变化经 update 重渲染；值未变化时这里兜底刷一次列表
+      if (this.getAttribute('input-value') !== v) this.setAttribute('input-value', v)
+      else this.renderListbox()
+      this.emit('input-value-change', { value: v })
     })
     this.shadow
       .querySelector<HTMLInputElement>('.search-input')
@@ -617,6 +693,10 @@ export class OASSelect extends OASFormElement {
 
     this.triggerEl?.addEventListener('click', () => this.toggle())
     this.triggerEl?.addEventListener('keydown', (e: KeyboardEvent) => this.handleTriggerKey(e))
+    // autofocus：原生 autofocus 不穿透 shadow，挂载后手动聚焦 trigger 一次（对齐 oas-input 转接 pattern）
+    if (this.hasAttr('autofocus')) {
+      queueMicrotask(() => this.triggerEl?.focus())
+    }
     // 焦点事件：组件整体获得/失去焦点派发 oas-focus / oas-blur
     //（trigger↔搜索框↔chip 按钮的组件内转移不误报，离开组件才 blur）
     const wrapper = this.shadow.querySelector<HTMLElement>('.wrapper')
@@ -669,6 +749,8 @@ export class OASSelect extends OASFormElement {
     this.syncMobileMode()
     // 子元素通道观察器（重连后重建；options 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
+    // tabindex 委托（宿主属性转移到内部 trigger）
+    this.syncTabindex()
     this.parseOptions()
     // form.reset 基线：初始渲染/受控写入（非用户交互的属性变化）跟随 value 属性刷新；
     // 用户交互置脏后基线冻结（与原生 dirty checkedness 同思路）
@@ -677,15 +759,129 @@ export class OASSelect extends OASFormElement {
     this.syncSizeStatus()
     // 下拉头尾插槽（header/footer template 克隆）
     this.syncDropdownChrome()
+    // input-value 受控同步（先于列表渲染，预设查询词参与过滤）
+    this.syncInputValue()
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
     this.shadow.querySelector<HTMLInputElement>('.search-input')?.setAttribute('aria-label', this.t('select.search'))
     this.renderListbox()
     this.syncTrigger()
+    // 触发器前后缀/自定义图标 + 下方提示文案
+    this.syncTriggerAffixes()
+    this.syncHint()
     // 原生表单数据 + 校验链同步（form-associated；无 name 时浏览器自动不提交）
     this.syncFormValue()
     this.syncValidity()
     // 展开态同步（初始 open 属性、展开中的属性变化重定位等）
     this.syncDropdown()
+  }
+
+  /**
+   * tabindex 委托：宿主 tabindex 转移到内部 trigger（组合控件无原生 tabindex 通道）。
+   * 宿主属性写完即移除——避免宿主 + trigger 双 Tab 停靠点；宿主再设任意值（含同值）
+   * 会重新委托（幂等收敛）；非法整数值视为不参与 Tab 序（移除 trigger tabindex）。
+   */
+  private delegatedTabindex: string | null = null
+  private syncTabindex(): void {
+    const raw = this.getAttribute('tabindex')
+    if (raw !== null) {
+      this.delegatedTabindex = raw
+      this.removeAttribute('tabindex')
+      if (this.triggerEl) {
+        const n = Number.parseInt(raw, 10)
+        if (Number.isNaN(n)) this.triggerEl.removeAttribute('tabindex')
+        else this.triggerEl.tabIndex = n
+      }
+    }
+  }
+
+  /**
+   * input-value 受控同步（searchable 搜索框）：属性在场即为真相源——预设/外部更新
+   * 同步进搜索框（含 data-query 查询镜像）并参与过滤；属性缺席走非受控内部状态。
+   */
+  private syncInputValue(): void {
+    if (!this.hasAttribute('input-value')) return
+    const v = this.getAttr('input-value', '')
+    const input = this.shadow.querySelector<HTMLInputElement>('.search-input')
+    if (!input) return
+    if (input.value !== v) input.value = v
+    if (input.getAttribute('data-query') !== v) input.setAttribute('data-query', v)
+  }
+
+  /** show-arrow：默认显示下拉箭头；显式 "false" 关闭（suffix-icon 模板在场时优先替换） */
+  private showArrow(): boolean {
+    return this.getAttr('show-arrow', 'true') !== 'false'
+  }
+
+  /**
+   * 触发器前后缀插槽与图标替换：
+   * - template[slot="prefix"/"suffix"] 克隆进触发器前后缀容器（缺省隐藏）
+   * - template[slot="suffix-icon"] 替换默认 chevron（展开旋转样式同容器生效）
+   * - template[slot="clear-icon"] 替换清空按钮默认 × 图标
+   * 注意：svg 元素无 hidden IDL 属性（SVGElement 无该通道），显隐一律走 attribute。
+   */
+  private syncTriggerAffixes(): void {
+    const trigger = this.triggerEl
+    if (!trigger) return
+    this.fillAffix('.prefix', 'prefix')
+    this.fillAffix('.suffix', 'suffix')
+    const iconBox = trigger.querySelector<HTMLElement>('.suffix-icon')
+    const chevron = trigger.querySelector('.chevron')
+    if (iconBox && chevron) {
+      const tpl = this.querySelector('template[slot="suffix-icon"]')
+      if (tpl instanceof HTMLTemplateElement) {
+        iconBox.innerHTML = ''
+        iconBox.appendChild(tpl.content.cloneNode(true))
+        iconBox.hidden = false
+        chevron.setAttribute('hidden', '')
+      } else {
+        iconBox.innerHTML = ''
+        iconBox.hidden = true
+        chevron.toggleAttribute('hidden', !this.showArrow())
+      }
+    }
+    const clearBtn = this.shadow.querySelector<HTMLElement>('.clear-btn')
+    const clearSvg = clearBtn?.querySelector('svg')
+    const clearBox = clearBtn?.querySelector<HTMLElement>('.clear-icon')
+    if (clearBtn && clearSvg && clearBox) {
+      const tpl = this.querySelector('template[slot="clear-icon"]')
+      if (tpl instanceof HTMLTemplateElement) {
+        clearBox.innerHTML = ''
+        clearBox.appendChild(tpl.content.cloneNode(true))
+        clearBox.hidden = false
+        clearSvg.setAttribute('hidden', '')
+      } else {
+        clearBox.innerHTML = ''
+        clearBox.hidden = true
+        clearSvg.removeAttribute('hidden')
+      }
+    }
+  }
+
+  /** 前后缀插槽容器：有 template[slot] 则克隆填充并显示，否则清空隐藏 */
+  private fillAffix(selector: string, slot: string): void {
+    const el = this.triggerEl?.querySelector<HTMLElement>(selector)
+    if (!el) return
+    const tpl = this.querySelector(`template[slot="${slot}"]`)
+    if (tpl instanceof HTMLTemplateElement) {
+      el.innerHTML = ''
+      el.appendChild(tpl.content.cloneNode(true))
+      el.hidden = false
+    } else {
+      el.innerHTML = ''
+      el.hidden = true
+    }
+  }
+
+  /** hint：触发器下方提示文案（aria-describedby 关联，读屏可达），空值隐藏 */
+  private syncHint(): void {
+    const hint = this.shadow.querySelector<HTMLElement>('.hint')
+    if (!hint) return
+    const text = this.getAttr('hint', '')
+    hint.textContent = text
+    hint.hidden = text === ''
+    if (!this.triggerEl) return
+    if (text) this.triggerEl.setAttribute('aria-describedby', 'oas-select-hint')
+    else this.triggerEl.removeAttribute('aria-describedby')
   }
 
   /** 移动形态判定：触屏（coarse pointer）或窄视口（<768px）→ 下拉由 bottom-sheet 底部抽屉承载 */
@@ -754,9 +950,14 @@ export class OASSelect extends OASFormElement {
       // 展开时重读下拉高度变量（宿主改 --oas-select-dropdown-height 后无需触发属性变化，重开即生效）
       this.vlist?.setAttribute('height', String(this.dropdownHeight()))
       if (!wasOpen) {
-        const current = this.currentValues()
-        const idx = current.length > 0 ? this.visibleOptions().findIndex((o) => o.value === current[0]) : 0
-        this.activeIndex = Math.max(idx, 0)
+        // default-active-first-option：展开高亮首个可见项（缺省高亮当前选中项）
+        if (this.hasAttr('default-active-first-option')) {
+          this.activeIndex = 0
+        } else {
+          const current = this.currentValues()
+          const idx = current.length > 0 ? this.visibleOptions().findIndex((o) => o.value === current[0]) : 0
+          this.activeIndex = Math.max(idx, 0)
+        }
         this.scrollActiveIntoView()
         this.syncActive()
       }
@@ -911,12 +1112,12 @@ export class OASSelect extends OASFormElement {
     listbox.innerHTML = ''
     this.createVisible = false
 
-    // loading 占位态：remote 模式下宿主请求期间显示（文案走 locale）
+    // loading 占位态：remote 模式下宿主请求期间显示（文案 loading-text 优先，缺省走 locale）
     if (this.hasAttr('loading')) {
       this.setVirtualVisible(false)
       const loading = document.createElement('div')
       loading.className = 'empty'
-      loading.textContent = this.t('loading.loading')
+      loading.textContent = this.getAttr('loading-text', '') || this.t('loading.loading')
       listbox.appendChild(loading)
       this.syncActive()
       return
@@ -1224,10 +1425,23 @@ export class OASSelect extends OASFormElement {
       this.requestOpen(false)
     }
     this.syncTrigger()
+    // searchable 默认选中后清空搜索词（reserve-keyword 保留，对齐 tree-select 契约）；
+    // 先清词再重渲染，列表恢复/保持对应状态
+    if (this.hasAttr('searchable') && !this.hasAttr('reserve-keyword')) this.clearSearchQuery()
     this.renderListbox()
     // 值变化点同步原生表单数据 + 校验链（属性同值时无回调、不触发 update，这里兜底）
     this.syncFormValue()
     this.syncValidity()
+  }
+
+  /** 搜索词清空（选中后默认清空；reserve-keyword 保留）：搜索框值、查询镜像与 input-value 写回一并复位 */
+  private clearSearchQuery(): void {
+    const input = this.shadow.querySelector<HTMLInputElement>('.search-input')
+    if (input) {
+      input.value = ''
+      input.setAttribute('data-query', '')
+    }
+    if (this.getAttribute('input-value') !== '') this.setAttribute('input-value', '')
   }
 
   /** clearable：清空值并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值）；readonly 拦截（值只读不可改） */
@@ -1263,6 +1477,8 @@ export class OASSelect extends OASFormElement {
       this.createdOptions.push({ label, value: label })
     }
     this.createVisible = false
+    // 新选项创建即派发 oas-create（detail 携带创建文本；随后正常走选中/变更链路）
+    this.emit('create', { value: label, label })
     this.selectValue(label)
   }
 

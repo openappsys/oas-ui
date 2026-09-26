@@ -16,6 +16,7 @@
       "!packages/icons/src/icons/**",
       "!packages/icons/src/registry.ts",
       "!docs/api-manifest.json",
+      "!docs/api-manifest/**",
       "!docs/api-descriptions.*.json",
       "!*.vue",
       "!wrangler.jsonc",

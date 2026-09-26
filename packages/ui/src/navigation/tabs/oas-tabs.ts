@@ -695,6 +695,8 @@ export class OASTabs extends OASElement {
       'hide-content',
       'items',
       'context-menu',
+      // tabindex 透传（标签钮）：覆盖 roving 缺省，全部标签钮写同值
+      'tabindex',
       // 书写方向：dir 变化触发重算 data-rtl 与滚动/方向键镜像
       'dir',
     ]
@@ -952,6 +954,9 @@ export class OASTabs extends OASElement {
   protected override update(): void {
     // RTL 逻辑方向化钩子：CSS :host([data-rtl]) 写镜像规则（滚动箭头图标翻转等）
     this.toggleAttribute('data-rtl', isRtl(this))
+    // tabindex 透传（标签钮）：属性在场即覆盖 roving 缺省（全部标签钮写同值），
+    // 移除即恢复 roving；属性保留在宿主不吸收（-1 场景宿主自身不进 Tab 序，无副作用）
+    const tabindexPassthrough = this.getAttribute('tabindex')
     // items 数据驱动：items 属性存在时按其生成 oas-tab-panel（与子元素并存时 items 优先）
     this.syncItemsToPanels()
     // 只取直接子面板：嵌套 tabs（panel 内再放 oas-tabs）的面板归内层管理，不误抓
@@ -1024,8 +1029,10 @@ export class OASTabs extends OASElement {
         if (target) btn.setAttribute('target', target)
         if (rel) btn.setAttribute('rel', rel)
       }
-      // roving tabindex：仅选中标签进 Tab 顺序，其余 tabindex=-1；disabled 恒 -1 不可聚焦
-      btn.setAttribute('tabindex', isSelected && !disabled ? '0' : '-1')
+      // tabindex：缺省 roving（仅选中标签进 Tab 顺序，其余 -1；disabled 恒 -1 不可聚焦）；
+      // 宿主 tabindex 透传时覆盖 roving——全部标签钮写同值（disabled 恒 -1）
+      if (tabindexPassthrough !== null && !disabled) btn.setAttribute('tabindex', tabindexPassthrough)
+      else btn.setAttribute('tabindex', isSelected && !disabled ? '0' : '-1')
       if (disabled) {
         btn.setAttribute('aria-disabled', 'true')
         if (!href) (btn as HTMLButtonElement).disabled = true

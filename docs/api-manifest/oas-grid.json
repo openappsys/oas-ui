@@ -37,10 +37,37 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "row-gap",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "column-gap",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "collapsed-rows",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "collapsed",
+      "observed": true
     }
   ],
   "props": [],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-collapse",
+      "detail": "{ collapsed: !collapsed }"
+    }
+  ],
   "slots": [
     {
       "name": ""

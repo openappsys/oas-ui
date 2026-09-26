@@ -108,10 +108,10 @@ An enhanced native `<textarea>`: auto height (capped or unlimited), character co
 ## Native Attribute Passthrough
 
 <DemoBlock title="Native attribute passthrough">
-  <oas-textarea name="bio" required minlength="2" wrap="hard" spellcheck="false" placeholder="Required, at least 2 characters; spellcheck off" style="width: 320px"></oas-textarea>
+  <oas-textarea name="bio" required minlength="2" wrap="hard" spellcheck="false" autocomplete="off" placeholder="Required, at least 2 characters; spellcheck off; autocomplete=off disables autofill" style="width: 320px"></oas-textarea>
 </DemoBlock>
 
-Whitelisted attributes are passed through to the inner native `<textarea>`: `name` / `autofocus` / `minlength` / `required` / `spellcheck` / `wrap`. With native `oas-form` submission, `name` participates in form data and `required` / `minlength` in native constraint validation; `wrap="hard"` requires `cols` to submit hard line breaks.
+Whitelisted attributes are passed through to the inner native `<textarea>`: `name` / `autofocus` / `minlength` / `required` / `spellcheck` / `autocomplete` / `wrap`. With native `oas-form` submission, `name` participates in form data and `required` / `minlength` in native constraint validation; `wrap="hard"` requires `cols` to submit hard line breaks.
 
 ## Disabled & Readonly
 
@@ -192,6 +192,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `auto-height` | Legacy name (alias of `autosize`) | `boolean` | — |
+| `autocomplete` | Passed through to the inner native textarea | — | — |
 | `autofocus` | Autofocus (native passthrough) | — | — |
 | `autosize` | Auto height | `boolean` | — |
 | `clearable` | Show a clear button (one-click clear; fires oas-clear + oas-input) | `boolean` | — |
@@ -208,7 +209,7 @@ onMounted(() => {
 | `resize` | Resize behavior | `string` | — |
 | `rows` | Number of rows | `string` | `3` |
 | `show-count` | Show character count (bottom-right n/max; turns red over limit; aria-live announced) | `boolean` | — |
-| `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
+| `size` | Size preset `small` / `medium` (default) / `large` | — | — |
 | `spellcheck` | Spellcheck (native passthrough) | — | — |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the inner textarea | `string` | — |
 | `value` | Value (controlled) | `string` | — |

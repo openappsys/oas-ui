@@ -48,6 +48,7 @@ register([
   'oas-tree-select',
   'oas-input-number',
   'oas-radio',
+  'oas-radio-group',
   'oas-date-picker',
   'oas-slider',
   'oas-rate',
@@ -112,6 +113,28 @@ export interface Rule {
 
 export type Rules = Record<string, Rule[]>
 
+/**
+ * 校验文案模板（validate-messages）：按规则类型覆盖 locale 默认文案。
+ * 模板支持 `${min}` / `${max}` / `${value}` 占位插值；`default` 作为未命中具体 key 时的兜底。
+ * property 通道为主（对象），字符串反射到 attribute（JSON）统一解析。
+ */
+export interface ValidateMessages {
+  required?: string
+  minLength?: string
+  maxLength?: string
+  pattern?: string
+  /** 其余规则失败的兜底模板 */
+  default?: string
+}
+
+/** 表级 size 下发档位白名单（非法值不下发） */
+const VALID_FORM_SIZES = ['small', 'medium', 'large'] as const
+
+/** 模板插值：`${key}` 替换为 params[key]，未命中的占位原样保留 */
+function interpolate(tpl: string, params: Record<string, string | number>): string {
+  return tpl.replace(/\$\{(\w+)\}/g, (m, k) => (k in params ? String(params[k]) : m))
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -138,6 +161,9 @@ export class OASForm extends OASElement {
       'scroll-to-first-error',
       'validate-trigger',
       'initial-values',
+      'size',
+      'colon',
+      'validate-messages',
     ]
   }
 
@@ -156,6 +182,10 @@ export class OASForm extends OASElement {
   /** reset 基线：挂载时各字段初始值（initial-values 优先，否则取字段当前值） */
   private _initialSnapshot: Record<string, string> = {}
   private errors: Record<string, string> = {}
+  /** 当前生效的校验文案模板（attribute 解析或 property 通道，property 优先） */
+  private _validateMessages: ValidateMessages = {}
+  private _validateMessagesProp: ValidateMessages | null = null
+  private _validateMessagesAttrRaw: string | null = null
 
   /** 单字段触发校验的序号令牌（异步 validator 竞态防护：只认最新一次结果） */
   private fieldValidateSeq = new Map<string, number>()
@@ -186,6 +216,20 @@ export class OASForm extends OASElement {
     this._initialProp = value
     this._initialAttrRaw = this.getAttribute('initial-values')
     this._initialDirty = true
+    if (this.hasRendered) this.update()
+  }
+
+  /** 校验文案模板：property（对象，推荐）+ attribute（JSON 字符串）双通道，property 优先 */
+  get validateMessages(): ValidateMessages {
+    return this._validateMessages
+  }
+  set validateMessages(value: ValidateMessages | string) {
+    if (typeof value === 'string') {
+      this.setAttribute('validate-messages', value)
+      return
+    }
+    this._validateMessagesProp = value
+    this._validateMessagesAttrRaw = this.getAttribute('validate-messages')
     if (this.hasRendered) this.update()
   }
 
@@ -261,7 +305,9 @@ export class OASForm extends OASElement {
   protected override update(): void {
     this.parseRules()
     this.parseInitialValues()
+    this.parseValidateMessages()
     this.applyLayout()
+    this.syncSizeToFields()
     this.maybeApplyInitialValues()
     this.syncDisabledToFields()
   }
@@ -358,6 +404,50 @@ export class OASForm extends OASElement {
           : {}
     } catch {
       this._initialValues = {}
+    }
+  }
+
+  /** 解析校验文案模板（attribute JSON / property 双通道，property 优先，非法 JSON 静默清空） */
+  private parseValidateMessages(): void {
+    const raw = this.getAttribute('validate-messages')
+    if (this._validateMessagesProp !== null && raw === this._validateMessagesAttrRaw) {
+      this._validateMessages = this._validateMessagesProp
+      return
+    }
+    if (raw !== this._validateMessagesAttrRaw) {
+      this._validateMessagesProp = null
+      this._validateMessagesAttrRaw = raw
+    }
+    try {
+      const parsed = JSON.parse(raw ?? '{}') as unknown
+      this._validateMessages =
+        parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as ValidateMessages) : {}
+    } catch {
+      this._validateMessages = {}
+    }
+  }
+
+  /**
+   * 表级 size 下发：给收集到的字段控件注入 data-form-size（通道属性，不回写字段自身 size）。
+   * 字段自身显式 size 优先（跳过不下发）；form size 缺席/非法值时清除下发标记。
+   * 字段消费链：自身 size > data-form-size > config-provider 注入 > 默认档。
+   */
+  private syncSizeToFields(): void {
+    const raw = this.getAttribute('size')
+    const valid =
+      raw != null && raw !== '' && (VALID_FORM_SIZES as readonly string[]).includes(raw) ? (raw as string) : null
+    // 尺寸下发面向全部注册控件（含无 name 的展示性控件——不参与值收集但视觉应随表级尺寸）
+    const selector = [...FORM_CONTROLS.keys()].join(',')
+    for (const element of this.querySelectorAll(selector)) {
+      const own = element.getAttribute('size')
+      const effective = valid !== null && (own == null || own === '') ? valid : null
+      if (effective !== null) element.setAttribute('data-form-size', effective)
+      else element.removeAttribute('data-form-size')
+      // 动态下发通道：属性变化不触发字段重渲染（data-form-size 不在字段 observedAttributes），
+      // form-associated 字段经 formSizeCallback 立即重渲染；其余注册控件兜底 requestUpdate
+      const el = element as { formSizeCallback?: (s: string | null) => void; requestUpdate?: () => void }
+      if (typeof el.formSizeCallback === 'function') el.formSizeCallback(effective)
+      else if (typeof el.requestUpdate === 'function') el.requestUpdate()
     }
   }
 
@@ -470,24 +560,44 @@ export class OASForm extends OASElement {
 
   /** 单条 rule 求值：required/minLength/maxLength/pattern 先行，validator 最后跑 */
   private evalRule(rule: Rule, value: string, values: Record<string, string>): string | null | Promise<string | null> {
-    const failed = rule.message ?? this.t('form.validationFailed')
-    if (rule.required && value === '') return failed
-    if (rule.minLength !== undefined && value.length < rule.minLength) return failed
-    if (rule.maxLength !== undefined && value.length > rule.maxLength) return failed
+    if (rule.required && value === '') return this.ruleMessage('required', { value }, rule)
+    if (rule.minLength !== undefined && value.length < rule.minLength) {
+      return this.ruleMessage('minLength', { value, min: rule.minLength }, rule)
+    }
+    if (rule.maxLength !== undefined && value.length > rule.maxLength) {
+      return this.ruleMessage('maxLength', { value, max: rule.maxLength }, rule)
+    }
     if (rule.pattern && value !== '') {
       try {
-        if (!new RegExp(rule.pattern).test(value)) return failed
+        if (!new RegExp(rule.pattern).test(value)) return this.ruleMessage('pattern', { value }, rule)
       } catch {
         // 非法正则视为通过（既有行为）
       }
     }
     if (rule.validator) {
       const result = rule.validator(value, values)
+      const failed = this.validatorFallback(rule)
       const normalize = (r: true | string): string | null => (r === true ? null : typeof r === 'string' ? r : failed)
       if (result instanceof Promise) return result.then(normalize)
       return normalize(result)
     }
     return null
+  }
+
+  /** 规则失败文案优先级：rule.message 显式消息 > validate-messages 模板（${min}/${max}/${value} 插值）> locale 默认 */
+  private ruleMessage(key: keyof ValidateMessages, params: Record<string, string | number>, rule: Rule): string {
+    if (typeof rule.message === 'string' && rule.message !== '') return rule.message
+    const tpl = this._validateMessages[key] ?? this._validateMessages.default
+    if (typeof tpl === 'string' && tpl !== '') return interpolate(tpl, params)
+    return this.t('form.validationFailed')
+  }
+
+  /** validator 未返回 string 时的失败文案：rule.message > default 模板 > locale 默认 */
+  private validatorFallback(rule: Rule): string {
+    if (typeof rule.message === 'string' && rule.message !== '') return rule.message
+    const dflt = this._validateMessages.default
+    if (typeof dflt === 'string' && dflt !== '') return interpolate(dflt, { value: '' })
+    return this.t('form.validationFailed')
   }
 
   private validateAndSubmit(): void {

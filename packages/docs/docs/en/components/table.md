@@ -666,6 +666,36 @@ onMounted(() => {
       showHeaderBtn.textContent = 'Show header'
     }
   })
+
+  // P2 batch demos: capped-height data (12 rows) + rowExpandable predicate + filter icon slot + cell/dblclick feedback
+  const maxHeightTable = document.querySelector('#table-max-height')
+  if (maxHeightTable) {
+    const mhRows = TABLE_ROWS.slice(0, 12).map((r) => ({ name: r.name, age: r.age, city: r.city }))
+    maxHeightTable.setAttribute('data', JSON.stringify(mhRows))
+  }
+  customElements.whenDefined('oas-table').then(() => {
+    const expandableTable = document.querySelector('#table-row-expandable')
+    if (expandableTable) {
+      expandableTable.rowExpandable = (row) => row.key !== 'c'
+    }
+  })
+  const filterIconTable = document.querySelector('#table-filter-icon')
+  if (filterIconTable) {
+    const tpl = document.createElement('template')
+    tpl.innerHTML = '<oas-icon name="search" style="font-size: 12px"></oas-icon>'
+    tpl.setAttribute('slot', 'filter-icon')
+    filterIconTable.appendChild(tpl)
+  }
+  const cellEventTable = document.querySelector('#table-cell-events')
+  cellEventTable?.addEventListener('oas-cell-click', (e) => {
+    const { column, value } = e.detail
+    const el = document.querySelector('#table-cell-feedback')
+    if (el) el.textContent = `${column} = ${value}`
+  })
+  cellEventTable?.addEventListener('oas-row-dblclick', (e) => {
+    const el = document.querySelector('#table-dbl-feedback')
+    if (el) el.textContent = e.detail.row.name ?? e.detail.rowIndex
+  })
 })
 </script>
 
@@ -679,6 +709,87 @@ onMounted(() => {
     <div style="margin-top: var(--oas-space-3)">
       <oas-button size="small" id="table-show-header-toggle">Hide header</oas-button>
     </div>
+  </div>
+</DemoBlock>
+
+## Table layout (table-layout)
+
+`table-layout="fixed"` passes through to the inner table: column widths follow the declared `width` strictly (long content wraps/truncates instead of widening the column). By default nothing is passed through (the browser's `auto` baseline — columns adapt to content).
+
+<DemoBlock title="table-layout=fixed (strict column widths)">
+  <div style="width: 100%">
+    <oas-table table-layout="fixed" columns='[{"key":"name","title":"Name","width":"25%"},{"key":"position","title":"Position","width":"25%"},{"key":"duty","title":"Duties"}]' data='[{"name":"Zhang San","position":"Frontend Engineer","duty":"Owns component library design and rendering performance, contributes to the design system."},{"name":"Li Si","position":"Product Manager","duty":"Leads requirement reviews and release planning, coordinates cross-team resources."}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+## Row hover switch (hover)
+
+`hover="false"` turns off the row hover background (default on). Useful when the row content carries its own interactive states and the full-row background change is unwanted. Purely visual — row click / selection behavior is unaffected.
+
+<DemoBlock title="Default hover vs hover=false">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-4)">
+    <div>
+      <p style="margin: 0 0 var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Default (hover on)</p>
+      <oas-table columns='[{"key":"name","title":"Name"},{"key":"city","title":"City"}]' data='[{"name":"Zhang San","city":"Beijing"},{"name":"Li Si","city":"Shanghai"}]' row-key="name"></oas-table>
+    </div>
+    <div>
+      <p style="margin: 0 0 var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">hover=&quot;false&quot; (off)</p>
+      <oas-table hover="false" columns='[{"key":"name","title":"Name"},{"key":"city","title":"City"}]' data='[{"name":"Zhang San","city":"Beijing"},{"name":"Li Si","city":"Shanghai"}]' row-key="name"></oas-table>
+    </div>
+  </div>
+</DemoBlock>
+
+## Tree indent (indent-size)
+
+`indent-size` controls the per-level indent of tree data in px (default 24). Use it for compact hierarchies or deeper trees.
+
+<DemoBlock title="indent-size=32 (wider per-level indent)">
+  <div style="width: 100%">
+    <oas-table indent-size="32" columns='[{"key":"name","title":"Department / Member"},{"key":"city","title":"City"}]' data='[{"key":"r1","name":"R&D","city":"—","children":[{"key":"r1-1","name":"Frontend Team","city":"Beijing","children":[{"key":"r1-1-1","name":"Zhang San","city":"Beijing"}]},{"key":"r1-2","name":"Backend Team","city":"Shenzhen"}]}]' expanded="r1,r1-1" row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+## Row expand predicate (row-expandable)
+
+The `rowExpandable` property (function channel) decides per row whether the tail expand button renders: returning `false` omits the button while the placeholder cell is kept so column alignment stays intact.
+
+<DemoBlock title="Only rows with a full profile are expandable">
+  <div style="width: 100%">
+    <oas-table id="table-row-expandable" columns='[{"key":"name","title":"Name"},{"key":"city","title":"City"}]' data='[{"key":"a","name":"Zhang San","city":"Beijing","expand":"<div>Emp. 1001 · joined 2021</div>"},{"key":"b","name":"Li Si","city":"Shanghai","expand":"<div>Emp. 1002 · joined 2022</div>"},{"key":"c","name":"Wang Wu","city":"Shenzhen"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">Wang Wu's profile is incomplete (rowExpandable returns false), so no expand button.</p>
+  </div>
+</DemoBlock>
+
+## Capped height scrolling (max-height)
+
+`max-height` caps the table body scroll container (numbers are px; CSS values like `50vh` pass through): overflowing content scrolls inside while the sticky header pins to the top of the container. Use it for lightweight capping; use `height` for virtual scrolling (ten-thousand-row scale).
+
+<DemoBlock title="max-height=200 (sticky header)">
+  <div style="width: 100%">
+    <oas-table id="table-max-height" max-height="200" columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+## Custom filter icon (filter-icon slot)
+
+The filter trigger icon in a filterable column header can be customized via `slot="filter-icon"` (a `<template>` or a plain element); the default is the built-in filter glyph.
+
+<DemoBlock title="Custom filter icon via template">
+  <div style="width: 100%">
+    <oas-table id="table-filter-icon" columns='[{"key":"name","title":"Name","filterable":true},{"key":"city","title":"City"}]' data='[{"name":"Zhang San","city":"Beijing"},{"name":"Li Si","city":"Shanghai"},{"name":"Wang Wu","city":"Shenzhen"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+## Cell & double-click events (oas-cell-click / oas-row-dblclick)
+
+Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value / rowIndex / columnIndex`); double-clicking a data row dispatches `oas-row-dblclick` (detail: `row / rowIndex`). Clicks and double-clicks landing on interactive hosts inside the row (buttons, links, form controls) do not dispatch — the same exclusion list as row selection.
+
+<DemoBlock title="Cell click / row double-click feedback">
+  <div style="width: 100%">
+    <oas-table id="table-cell-events" columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"}]' data='[{"name":"Zhang San","age":30,"city":"Beijing"},{"name":"Li Si","age":25,"city":"Shanghai"},{"name":"Wang Wu","age":35,"city":"Shenzhen"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+      Cell click: <span id="table-cell-feedback">—</span> · Row double-click: <span id="table-dbl-feedback">—</span>
+    </p>
   </div>
 </DemoBlock>
 
@@ -702,7 +813,10 @@ onMounted(() => {
 | `expanded` | Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows) | `string` | — |
 | `filter-values` | Controlled column filter values (JSON object: column key → selected values) | `string` | — |
 | `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | `string` | `320` |
+| `hover` | Row hover background switch (purely visual), `"false"` disables | — | — |
+| `indent-size` | Per-level indent of tree data in px | `string` | `24` |
 | `loading` | Loading state: shows placeholder rows in the data area (header retained) | `boolean` | — |
+| `max-height` | Caps the body scroll area with a sticky header (virtual `height` wins when both set) | `string` | — |
 | `multi-sort` | Multi-column sort (JSON array: [{ key, order }], applied in array order) | `string` | — |
 | `page-size` | Rows per page (built-in pagination, default 10) | `string` | `10` |
 | `pagination` | Built-in pagination switch (footer pager; leave unset when the host paginates) | `boolean` | — |
@@ -717,11 +831,13 @@ onMounted(() => {
 | `stripe` | Zebra striping: alternating light background for odd/even rows | `boolean` | — |
 | `summary` | Summary config `[{ key, type: 'sum'\|'avg'\|'count', label? }]`, JSON string | `string` | — |
 | `summary-scope` | Summary aggregation scope: `all` (default, full dataset) / `page` (current page) | `string` | `all` |
+| `table-layout` | Passes the table layout algorithm through (with `fixed`, column widths strictly follow `width`) | `string` | — |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
+| `oas-cell-click` | Fired on data-cell click, `detail: { row, column, value, rowIndex, columnIndex }` (suppressed inside interactive controls) |
 | `oas-check` | Checkbox selection change, `detail: { keys: string[] }` |
 | `oas-column-order` | Fired after column drag reorder, `detail: { keys }` (new column order) |
 | `oas-column-resize` | Fired after a column width drag, `detail: { key, width }` |
@@ -731,6 +847,7 @@ onMounted(() => {
 | `oas-filter-change` | Fired when a column filter value changes, `detail: { key, values }` |
 | `oas-page-change` | Fired when the built-in page changes, `detail: { current, pageSize }` |
 | `oas-row-click` | Row click (also toggles selection when not checkable), `detail: { row, key }` |
+| `oas-row-dblclick` | Fired on data-row double-click, `detail: { row, rowIndex }` |
 | `oas-scroll` | Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
 | `oas-sort-change` | Sort change, `detail: { key, order: 'asc' \| 'desc' \| '' }` |
 
@@ -738,7 +855,9 @@ onMounted(() => {
 
 | Name | Description |
 | --- | --- |
+| `filter-icon` | Custom filter trigger icon in filterable column headers |
 | `template[slot="empty"]` | Rich empty-state content (takes precedence over empty-text and the default empty text) |
+| `template[slot="filter-icon"]` | — |
 
 #### CSS Variables
 

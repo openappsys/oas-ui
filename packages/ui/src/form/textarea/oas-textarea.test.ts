@@ -488,3 +488,67 @@ describe('form-associated（原生表单集成）', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('OASTextarea autocomplete 透传', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function ta(el: OASTextarea): HTMLTextAreaElement {
+    return el.shadowRoot!.querySelector('textarea')!
+  }
+
+  function mount(attrs: Record<string, string> = {}): OASTextarea {
+    const el = new OASTextarea()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('autocomplete="off" 透传内层 textarea', () => {
+    const el = mount({ autocomplete: 'off' })
+    expect(ta(el).getAttribute('autocomplete')).toBe('off')
+  })
+
+  it('autocomplete="username" 原样透传', () => {
+    const el = mount({ autocomplete: 'username' })
+    expect(ta(el).getAttribute('autocomplete')).toBe('username')
+  })
+
+  it('缺省不设置（内层无该属性，交还浏览器默认）', () => {
+    const el = mount()
+    expect(ta(el).hasAttribute('autocomplete')).toBe(false)
+  })
+
+  it('运行时移除：内层同步摘除', () => {
+    const el = mount({ autocomplete: 'off' })
+    el.removeAttribute('autocomplete')
+    expect(ta(el).hasAttribute('autocomplete')).toBe(false)
+  })
+})
+
+describe('OASTextarea 表级 size 下发（oas-form[size]）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('form 内 data-form-size 注入 → data-size 镜像（字段自身显式 size 优先）', async () => {
+    const { OASForm } = await import('../form/index.js')
+    const form = new OASForm()
+    form.setAttribute('size', 'small')
+    form.innerHTML = '<oas-textarea name="t"></oas-textarea>'
+    document.body.appendChild(form)
+    const field = form.querySelector('oas-textarea') as OASTextarea
+    expect(field.getAttribute('data-form-size')).toBe('small')
+    expect(field.getAttribute('data-size')).toBe('small')
+
+    field.setAttribute('size', 'large')
+    expect(field.getAttribute('data-size'), '自身显式 size 覆盖表级下发').toBe('large')
+  })
+})

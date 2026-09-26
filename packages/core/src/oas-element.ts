@@ -100,6 +100,13 @@ export abstract class OASElement extends HTMLElement {
     for (const c of this.controllers) c.hostUpdated?.()
   }
 
+  /** 公共重渲染请求：供外部协调通道触发（如 oas-form 表级尺寸下发——data-form-size 属性不在
+   *  各组件 observedAttributes，属性通道不触发重渲染，动态下发由 form 调本方法兜底） */
+  requestUpdate(): void {
+    if (!this.rendered) return
+    this.runUpdateAndNotify()
+  }
+
   /** 是否已完成首次 render（供子类在 attributeChangedCallback 等钩子中判断） */
   protected get hasRendered(): boolean {
     return this.rendered
@@ -242,13 +249,18 @@ export abstract class OASElement extends HTMLElement {
   /**
    * 就近读取注入值（config-provider 机制）。
    *
-   * 读取顺序：自身属性 > 最近 config-provider 属性 > 全局默认值。
+   * 读取顺序：自身属性 > 表单级尺寸通道（仅 key='size'：oas-form 的 size 下发为字段宿主
+   * `data-form-size`，P2 表级尺寸立项）> 最近 config-provider 属性 > 全局默认值。
    * 沿 DOM 祖先链找最近的 <oas-config-provider>，读取其同名属性；
    * 自身属性优先（自身显式设置了就不读注入值），无注入则回退 defaultValue。
    */
   protected injectValue(key: string, defaultValue: string): string {
     const own = this.getAttribute(key)
     if (own != null && own !== '') return own
+    if (key === 'size') {
+      const formSize = this.getAttribute('data-form-size')
+      if (formSize != null && formSize !== '') return formSize
+    }
     const provider = findConfigProvider(this)
     const injected = provider?.getAttribute(key)
     if (injected != null && injected !== '') return injected

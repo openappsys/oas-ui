@@ -117,6 +117,18 @@ Typography components for text, titles, and paragraphs.
   </oas-text>
 </DemoBlock>
 
+## Font Size (size)
+
+`size` offers three font-size presets: `small` (helper text) / `medium` (baseline — the default falls back to the inherited font size) / `large` (emphasis), mapped to the `--oas-font-size-*` tokens; `sm`/`lg` aliases are equivalent and invalid values fall back to `medium`. Only `oas-text` exposes it (heading sizes are driven by `level`, avoiding two competing mechanisms).
+
+<DemoBlock title="size presets">
+  <div style="display: flex; flex-direction: column; align-items: flex-start; gap: var(--oas-space-2)">
+    <oas-text size="small">small helper text</oas-text>
+    <oas-text>medium baseline (inherited by default)</oas-text>
+    <oas-text size="large">large emphasis</oas-text>
+  </div>
+</DemoBlock>
+
 ## Title
 
 <DemoBlock title="Heading levels">
@@ -166,6 +178,7 @@ Typography components for text, titles, and paragraphs.
 | `line-clamp` | Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix` | `string` | — |
 | `mark` | Highlighted mark (light yellow background, `<mark>` semantics) | — | — |
 | `numeric` | Tabular figures (font-variant-numeric: tabular-nums) for aligned numeric columns in tables/stats | — | — |
+| `size` | Three font-size presets mapped to font-size tokens (medium falls back to inherited size) | `string` | — |
 | `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
 | `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |

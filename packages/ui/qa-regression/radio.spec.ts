@@ -157,3 +157,36 @@ test('radio disabled 项不可点：点击不选中、其余项不受影响', as
   expect(r.disabledChecked, 'disabled 项点击不得选中').toBe(false)
   expect(r.optionalChecked, '已选中项不受 disabled 项点击影响').toBe(true)
 })
+
+// ---- P2 批次：radio-group 组级 required（form-associated 原生校验链） ----
+
+test('radio-group 组级 required：未选提交被拦截（页面反馈），选中后提交成功', async ({ page }) => {
+  await page.goto('/components/radio.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#radio-group-required oas-radio-group')
+  // 未选择直接提交：checkValidity 为 false、页面提示校验未通过
+  await page.locator('#radio-group-required oas-button[html-type="submit"]').click()
+  await page.waitForFunction(() =>
+    document.getElementById('radio-group-required-out')?.textContent?.includes('请先选择方案'),
+  )
+  const r1 = await page.evaluate(() => {
+    const g = document.querySelector<HTMLElement>('#radio-group-required oas-radio-group')!
+    return { valid: (g as unknown as { checkValidity(): boolean }).checkValidity(), formValue: g.getAttribute('value') }
+  })
+  expect(r1.valid).toBe(false)
+  expect(r1.formValue).toBeNull()
+  // 选中「专业版」后再提交：通过并显示提交值
+  await page.evaluate(() => {
+    const pro = document.querySelector('#radio-group-required oas-radio[value="pro"]')!
+    ;(pro.shadowRoot!.querySelector('input') as HTMLInputElement).click()
+  })
+  await page.locator('#radio-group-required oas-button[html-type="submit"]').click()
+  await page.waitForFunction(() =>
+    document.getElementById('radio-group-required-out')?.textContent?.includes('提交成功'),
+  )
+  const r2 = await page.evaluate(() => {
+    const g = document.querySelector<HTMLElement>('#radio-group-required oas-radio-group')!
+    return { valid: (g as unknown as { checkValidity(): boolean }).checkValidity(), value: g.getAttribute('value') }
+  })
+  expect(r2.valid).toBe(true)
+  expect(r2.value).toBe('pro')
+})

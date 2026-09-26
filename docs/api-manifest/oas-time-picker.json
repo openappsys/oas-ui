@@ -72,6 +72,17 @@
       "observed": true
     },
     {
+      "name": "hide-disabled-options",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "name",
       "type": "string",
       "default": "",

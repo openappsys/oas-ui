@@ -1126,3 +1126,132 @@ describe('OASTreeSelect form-associated（原生表单集成）', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 })
+
+// ---- 能力缺口 P2：tree-select input-value / label-in-value / suffix-icon ----
+
+describe('OASTreeSelect 长尾组（能力缺口 P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function appendSlot(el: OASTreeSelect, slot: string, html: string): void {
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', slot)
+    tpl.innerHTML = html
+    el.appendChild(tpl)
+  }
+
+  function typeQuery(el: OASTreeSelect, v: string): void {
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('input.search-input')!
+    input.value = v
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  it('input-value / label-in-value 进入 observedAttributes', () => {
+    const attrs = OASTreeSelect.observedAttributes
+    expect(attrs).toContain('input-value')
+    expect(attrs).toContain('label-in-value')
+  })
+
+  it('input-value 预设：展开后搜索框带初始值并参与过滤', () => {
+    const el = mount({ filterable: '', 'input-value': '框架' })
+    trigger(el).click()
+    expect(el.shadowRoot!.querySelector<HTMLInputElement>('input.search-input')!.value).toBe('框架')
+    // 宽松过滤：命中节点 + 祖先 + 全部后代可见
+    expect(rowLabels(el)).toBe('前端|框架|React|Vue')
+  })
+
+  it('输入写回 input-value 属性并派发 oas-input-value-change', () => {
+    const el = mount({ filterable: '' })
+    trigger(el).click()
+    const events: string[] = []
+    el.addEventListener('oas-input-value-change', (e: Event) => events.push((e as CustomEvent).detail.value))
+    typeQuery(el, 're')
+    expect(el.getAttribute('input-value')).toBe('re')
+    expect(events).toEqual(['re'])
+  })
+
+  it('展开中外部改 input-value：搜索框同步且树重过滤', () => {
+    const el = mount({ filterable: '' })
+    trigger(el).click()
+    el.setAttribute('input-value', '样式')
+    expect(el.shadowRoot!.querySelector<HTMLInputElement>('input.search-input')!.value).toBe('样式')
+    expect(rowLabels(el)).toBe('前端|样式')
+  })
+
+  it('filterable 默认选中后清空搜索词，input-value 属性同步清空；reserve-keyword 保留', () => {
+    const clear = mount({ filterable: '', multiple: '' })
+    trigger(clear).click()
+    typeQuery(clear, 're')
+    byLabel(clear, 'React').click()
+    expect(clear.shadowRoot!.querySelector<HTMLInputElement>('input.search-input')!.value).toBe('')
+    expect(clear.getAttribute('input-value')).toBe('')
+
+    const keep = mount({ filterable: '', multiple: '', 'reserve-keyword': '' })
+    trigger(keep).click()
+    typeQuery(keep, 're')
+    byLabel(keep, 'React').click()
+    expect(keep.shadowRoot!.querySelector<HTMLInputElement>('input.search-input')!.value).toBe('re')
+    expect(keep.getAttribute('input-value')).toBe('re')
+  })
+
+  it('label-in-value 单选：value 携 { value, label }，oas-change detail 同形', () => {
+    const el = mount({ 'label-in-value': '', value: '{"value":"react","label":"React"}' })
+    expect(trigger(el).textContent).toContain('React')
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    trigger(el).click()
+    // 展开 前端 后点击 样式 叶子
+    byLabel(el, '前端')
+      .querySelector('.toggle')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    byLabel(el, '样式').click()
+    expect(el.getAttribute('value')).toBe('{"value":"css","label":"样式"}')
+    expect(detail).toEqual({ value: { value: 'css', label: '样式' }, labels: ['样式'] })
+  })
+
+  it('label-in-value 多选：value 为对象数组，oas-change detail 同形', () => {
+    const el = mount({
+      'label-in-value': '',
+      multiple: '',
+      'default-expand-all': '',
+      value: '[{"value":"react","label":"React"}]',
+    })
+    expect(el.shadowRoot!.querySelector('.chip')!.textContent).toContain('React')
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    trigger(el).click()
+    byLabel(el, '样式').click()
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([
+      { value: 'react', label: 'React' },
+      { value: 'css', label: '样式' },
+    ])
+    expect(detail).toEqual({
+      value: [
+        { value: 'react', label: 'React' },
+        { value: 'css', label: '样式' },
+      ],
+      labels: ['React', '样式'],
+    })
+  })
+
+  it('label-in-value 树外值：预设对象 label 兜底回显', () => {
+    const el = mount({ 'label-in-value': '', value: '{"value":"zz","label":"外部节点"}' })
+    expect(trigger(el).textContent).toContain('外部节点')
+  })
+
+  it('template[slot="suffix-icon"] 替换默认 chevron', () => {
+    const el = new OASTreeSelect()
+    el.setAttribute('options', OPTIONS)
+    appendSlot(el, 'suffix-icon', '<i class="my-ic">◈</i>')
+    document.body.appendChild(el)
+    const box = trigger(el).querySelector<HTMLElement>('.suffix-icon')!
+    expect(box.hidden).toBe(false)
+    expect(box.querySelector('.my-ic')).not.toBeNull()
+    expect(trigger(el).querySelector('.chevron')!.hasAttribute('hidden')).toBe(true)
+  })
+})

@@ -151,6 +151,28 @@
       "type": "string",
       "default": "true",
       "observed": true
+    },
+    {
+      "name": "table-layout",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "hover",
+      "observed": true
+    },
+    {
+      "name": "indent-size",
+      "type": "string",
+      "default": "24",
+      "observed": true
+    },
+    {
+      "name": "max-height",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -174,6 +196,10 @@
       "type": "TableRowClass | null"
     },
     {
+      "name": "rowExpandable",
+      "type": "TableRowExpandable | null"
+    },
+    {
       "name": "spanMethod",
       "type": "TableSpanMethod | null"
     }
@@ -190,6 +216,14 @@
     {
       "name": "oas-row-click",
       "detail": "{ row, key }"
+    },
+    {
+      "name": "oas-cell-click",
+      "detail": "{ row, column, value: row[column], rowIndex: dataIndex, columnIndex }"
+    },
+    {
+      "name": "oas-row-dblclick",
+      "detail": "{ row, rowIndex: dataIndex }"
     },
     {
       "name": "oas-edit"
@@ -225,6 +259,9 @@
   "slots": [
     {
       "name": "template[slot=\"empty\"]"
+    },
+    {
+      "name": "template[slot=\"filter-icon\"]"
     }
   ],
   "cssVars": [

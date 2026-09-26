@@ -177,6 +177,62 @@ const STYLE = `
   accent-color: var(--oas-color-primary);
   margin: 0;
 }
+/* 分页页脚（pagination）：简版 翻页钮 + 页码指示，长列表免滚动全览 */
+.panel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-1) var(--oas-space-2);
+  border-top: 1px solid var(--oas-color-border);
+  background: var(--oas-color-bg);
+}
+.panel-foot[hidden] {
+  display: none;
+}
+.panel-foot .page-indicator {
+  min-width: 32px;
+  text-align: center;
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.panel-foot button {
+  appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-sm);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-secondary);
+  cursor: pointer;
+  transition:
+    border-color var(--oas-transition-fast) var(--oas-ease-out),
+    color var(--oas-transition-fast) var(--oas-ease-out);
+}
+.panel-foot button:hover:not(:disabled) {
+  border-color: var(--oas-color-primary);
+  color: var(--oas-color-primary);
+}
+.panel-foot button:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.panel-foot button:disabled {
+  cursor: not-allowed;
+  color: var(--oas-color-text-disabled);
+  background: var(--oas-color-bg-disabled);
+}
+/* RTL：面板顺序镜像后翻页方向视觉反转，翻页箭头同步镜像（oas-icon 需非 inline 才能承受 transform） */
+:host([data-rtl]) .panel-foot oas-icon {
+  display: inline-block;
+  transform: scaleX(-1);
+}
 .search-input {
   box-sizing: border-box;
   width: 100%;
@@ -307,6 +363,8 @@ export class OASTransfer extends OASElement {
       'target-sort',
       'simple',
       'target-draggable',
+      'pagination',
+      'page-size',
     ]
   }
 
@@ -326,6 +384,11 @@ export class OASTransfer extends OASElement {
   private lastActiveKey: Record<'left' | 'right', string> = { left: '', right: '' }
   /** 目标侧拖拽中的 key（HTML5 DnD；drop 时按 key 定位重排，不受虚拟窗口影响） */
   private dragKey: string | null = null
+  /** 分页状态（PRD P2）：左右面板各自独立页码（1 起） */
+  private leftPage = 1
+  private rightPage = 1
+  /** oas-scroll 基线：记录各滚动容器上次 scrollTop（判方向与去重） */
+  private lastScrollTop = new WeakMap<HTMLElement, number>()
 
   /**
    * data 同时支持 attribute 与 property 赋值（JSON attribute 声明式通道，参照 table/select 约定）：
@@ -369,6 +432,11 @@ export class OASTransfer extends OASElement {
         <input class="search-input search-left" type="text" hidden />
         <div class="listbox left" role="listbox" tabindex="0"></div>
         <oas-virtual-list class="vlist vlist-left" part="virtual-list" hidden></oas-virtual-list>
+        <div class="panel-foot" part="pagination" hidden>
+          <button type="button" class="page-prev" aria-label=""></button>
+          <span class="page-indicator"></span>
+          <button type="button" class="page-next" aria-label=""></button>
+        </div>
       </div>
       <div class="actions" part="actions">
         <button type="button" class="to-right" aria-label=""></button>
@@ -388,6 +456,11 @@ export class OASTransfer extends OASElement {
         <input class="search-input search-right" type="text" hidden />
         <div class="listbox right" role="listbox" tabindex="0"></div>
         <oas-virtual-list class="vlist vlist-right" part="virtual-list" hidden></oas-virtual-list>
+        <div class="panel-foot" part="pagination" hidden>
+          <button type="button" class="page-prev" aria-label=""></button>
+          <span class="page-indicator"></span>
+          <button type="button" class="page-next" aria-label=""></button>
+        </div>
       </div>
     `
   }
@@ -420,6 +493,19 @@ export class OASTransfer extends OASElement {
 
     this.leftListbox?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e, 'left'))
     this.rightListbox?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e, 'right'))
+
+    // 分页页脚（PRD P2）：左右各一组 prev/next（DOM 序 = 左、右）
+    const feet = this.shadow.querySelectorAll<HTMLElement>('.panel-foot')
+    feet.forEach((foot, i) => {
+      const side: 'left' | 'right' = i === 0 ? 'left' : 'right'
+      foot.querySelector('.page-prev')?.addEventListener('click', () => this.changePage(side, -1))
+      foot.querySelector('.page-next')?.addEventListener('click', () => this.changePage(side, 1))
+    })
+
+    // oas-scroll（PRD P2 懒加载通道）：scroll 不冒泡，直接绑两侧静态 listbox；
+    // 虚拟视口在 renderVirtual 时按需补绑（防重复）
+    this.leftListbox?.addEventListener('scroll', this.onListScroll)
+    this.rightListbox?.addEventListener('scroll', this.onListScroll)
 
     // 虚拟滚动：复用 oas-virtual-list 的窗口计算，把每个可见项渲染为选项行
     this.virtualLeft?.addEventListener('oas-item', ((
@@ -487,6 +573,9 @@ export class OASTransfer extends OASElement {
       this.lastDataKey = key
       this.leftSelected.clear()
       this.rightSelected.clear()
+      // 数据签名变化：两侧页码回到首页（旧页码在新数据上无意义）
+      this.leftPage = 1
+      this.rightPage = 1
     }
   }
 
@@ -572,24 +661,124 @@ export class OASTransfer extends OASElement {
     this.renderPanel('right')
   }
 
+  // ===== pagination（PRD P2：长列表分页，非虚拟通道） =====
+
+  private paginated(): boolean {
+    return this.hasAttr('pagination')
+  }
+
+  /** 每页条数：page-size 归一化（非法/小于 1 回落 10） */
+  private pageSize(): number {
+    const n = Math.trunc(Number(this.getAttr('page-size', '10')))
+    return Number.isFinite(n) && n >= 1 ? n : 10
+  }
+
+  private pageOf(side: 'left' | 'right'): number {
+    return side === 'left' ? this.leftPage : this.rightPage
+  }
+
+  private setPageOf(side: 'left' | 'right', page: number): void {
+    if (side === 'left') this.leftPage = page
+    else this.rightPage = page
+  }
+
+  /** 页码钳制到 [1, pages]（数据/过滤变化后旧页码越界回落） */
+  private clampPage(side: 'left' | 'right', pages: number): number {
+    const clamped = Math.min(pages, Math.max(1, this.pageOf(side)))
+    this.setPageOf(side, clamped)
+    return clamped
+  }
+
+  private changePage(side: 'left' | 'right', delta: -1 | 1): void {
+    if (this.injectDisabled()) return
+    const pages = Math.max(1, Math.ceil(this.visibleItems(side).length / this.pageSize()))
+    const next = this.pageOf(side) + delta
+    if (next < 1 || next > pages) return
+    this.setPageOf(side, next)
+    this.renderPanel(side)
+  }
+
+  /** 分页页脚同步：显隐 + 页码指示 + 边界禁用 + locale aria-label（pages=0 表示空面板，强制隐藏） */
+  private syncPanelFoot(side: 'left' | 'right', page: number, pages: number): void {
+    const foot = this.shadow.querySelectorAll<HTMLElement>('.panel-foot')[side === 'left' ? 0 : 1]
+    if (!foot) return
+    const show = this.paginated() && pages > 0
+    foot.hidden = !show
+    if (!show) return
+    const prev = foot.querySelector<HTMLButtonElement>('.page-prev')
+    const next = foot.querySelector<HTMLButtonElement>('.page-next')
+    const indicator = foot.querySelector<HTMLElement>('.page-indicator')
+    if (prev) {
+      prev.disabled = page <= 1
+      prev.setAttribute('aria-label', this.t('pagination.prev'))
+      prev.innerHTML = '<oas-icon name="arrow-left" size="12"></oas-icon>'
+    }
+    if (next) {
+      next.disabled = page >= pages
+      next.setAttribute('aria-label', this.t('pagination.next'))
+      next.innerHTML = '<oas-icon name="arrow-right" size="12"></oas-icon>'
+    }
+    if (indicator) indicator.textContent = `${page}/${pages}`
+  }
+
+  // ===== oas-scroll（PRD P2：列表滚动事件，懒加载通道） =====
+
+  /** 判定滚动容器归属面板：静态 listbox / 虚拟列表视口（含嵌套 shadow 内元素） */
+  private scrollSideOf(t: EventTarget | null): 'left' | 'right' | null {
+    if (!(t instanceof HTMLElement)) return null
+    if (t === this.leftListbox) return 'left'
+    if (t === this.rightListbox) return 'right'
+    if (this.virtualLeft && (t === this.virtualLeft || this.virtualLeft.shadowRoot?.contains(t))) return 'left'
+    if (this.virtualRight && (t === this.virtualRight || this.virtualRight.shadowRoot?.contains(t))) return 'right'
+    return null
+  }
+
+  private onListScroll = (e: Event): void => {
+    const t = e.target
+    const side = this.scrollSideOf(t)
+    if (!side || !(t instanceof HTMLElement)) return
+    const prev = this.lastScrollTop.get(t) ?? 0
+    const cur = t.scrollTop
+    this.lastScrollTop.set(t, cur)
+    // 位置未变（横向滚动 / 合成重放）不派发
+    if (cur === prev) return
+    const reachBottom = cur + t.clientHeight >= t.scrollHeight - 1
+    this.emit('scroll', { side, direction: cur > prev ? 'down' : 'up', scrollTop: cur, reachBottom })
+  }
+
   private renderPanel(side: 'left' | 'right'): void {
     const listbox = side === 'left' ? this.leftListbox : this.rightListbox
     const query = this.queryFor(side)
-    // 过滤词变化时虚拟滚动回到顶部，避免停留在旧列表的滚动位置
+    // 过滤词变化时虚拟滚动回到顶部 + 分页页码重置，避免停留在旧列表的状态
     if (query !== this.lastQuery[side]) {
       this.lastQuery[side] = query
+      this.setPageOf(side, 1)
       const vlist = side === 'left' ? this.virtualLeft : this.virtualRight
       const vp = vlist?.shadowRoot?.querySelector<HTMLElement>('.viewport')
       if (vp) vp.scrollTop = 0
     }
     const visible = this.visibleItems(side)
 
-    // 虚拟滚动：大数据窗口化渲染；空态（含搜索无匹配）回落静态 listbox 显示空态文案
+    // 虚拟滚动：大数据窗口化渲染（虚拟模式自窗口化，分页页脚不出现）；
+    // 空态（含搜索无匹配）回落静态 listbox 显示空态文案
     if (this.hasAttr('virtual') && visible.length > 0 && this.renderVirtual(side, visible)) {
+      this.syncPanelFoot(side, 1, 0)
       return
     }
     this.setVirtualHidden(side)
-    this.renderStatic(side, visible, listbox)
+
+    // 分页切片：渲染取当前页切片，面板头计数/全选仍按全量可见语义；空面板不出页脚
+    let pageItems = visible
+    if (this.paginated() && visible.length > 0) {
+      const size = this.pageSize()
+      const pages = Math.max(1, Math.ceil(visible.length / size))
+      const page = this.clampPage(side, pages)
+      pageItems = visible.slice((page - 1) * size, page * size)
+      this.syncPanelFoot(side, page, pages)
+    } else {
+      this.syncPanelFoot(side, 1, 0)
+    }
+    this.renderStatic(side, pageItems, visible, listbox)
   }
 
   /** 切回非虚拟渲染：隐藏 vlist、显示 listbox */
@@ -616,6 +805,12 @@ export class OASTransfer extends OASElement {
     vlist.setAttribute('height', '220')
     vlist.setAttribute('item-height', String(this.virtualItemHeight()))
     this.injectVirtualStyle(vlist)
+    // 虚拟视口滚动事件补绑（视口在 vlist 首次渲染后才存在；dataset 防重复挂监听）
+    const vp = vlist.shadowRoot?.querySelector<HTMLElement>('.viewport')
+    if (vp && !vp.dataset.oasTransferScroll) {
+      vp.dataset.oasTransferScroll = '1'
+      vp.addEventListener('scroll', this.onListScroll)
+    }
     vlist.items = visible
     this.syncPanelHead(side, visible)
     // 虚拟列表 shadow 内的 .items 需要可访问名（transfer 标题穿透设名）
@@ -647,14 +842,22 @@ export class OASTransfer extends OASElement {
     }
   }
 
-  /** 静态（非虚拟）面板渲染：选项行 + 空态 */
-  private renderStatic(side: 'left' | 'right', visible: TransferItem[], listbox: HTMLElement | null): void {
+  /**
+   * 静态（非虚拟）面板渲染：选项行 + 空态。
+   * `pageItems` 为当前渲染切片（未分页时与 fullVisible 相同）；面板头计数/全选按 fullVisible 全量语义。
+   */
+  private renderStatic(
+    side: 'left' | 'right',
+    pageItems: TransferItem[],
+    fullVisible: TransferItem[],
+    listbox: HTMLElement | null,
+  ): void {
     if (!listbox) return
     listbox.innerHTML = ''
     // 空态无 option 子节点，role=listbox 会违反 aria-required-children → 空态降级为 group
-    listbox.setAttribute('role', visible.length ? 'listbox' : 'group')
+    listbox.setAttribute('role', fullVisible.length ? 'listbox' : 'group')
     const query = this.queryFor(side)
-    if (visible.length === 0) {
+    if (fullVisible.length === 0) {
       const empty = document.createElement('div')
       empty.className = 'empty'
       const tpl = this.querySelector('template[slot="empty"]')
@@ -665,10 +868,10 @@ export class OASTransfer extends OASElement {
         empty.textContent = query ? this.t('transfer.noMatch') : this.t('transfer.empty')
       }
       listbox.appendChild(empty)
-      this.syncPanelHead(side, visible)
+      this.syncPanelHead(side, fullVisible)
       return
     }
-    for (const item of visible) {
+    for (const item of pageItems) {
       const row = document.createElement('div')
       row.className = 'option'
       row.setAttribute('part', 'option')
@@ -682,7 +885,7 @@ export class OASTransfer extends OASElement {
       this.attachSortButtons(row, side, item)
       listbox.appendChild(row)
     }
-    this.syncPanelHead(side, visible)
+    this.syncPanelHead(side, fullVisible)
   }
 
   /** 虚拟列表单行渲染：与静态模式同一套选中/禁用/点击语义 */

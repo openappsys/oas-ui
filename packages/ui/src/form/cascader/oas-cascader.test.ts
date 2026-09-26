@@ -834,10 +834,10 @@ describe('OASCascader loading（加载态，PRD P1-20）', () => {
     expect(OASCascader.observedAttributes).toContain('field-names')
   })
 
-  it('loading：触发器 spinner 显示 + aria-busy，chevron 隐藏', () => {
+  it('loading：触发器 spinner 显示 + aria-busy，chevron 隐藏（hidden attribute，svg 无 hidden IDL）', () => {
     const el = mount({ loading: '' })
     expect(spinner(el).hidden).toBe(false)
-    expect(chevron(el).hidden).toBe(true)
+    expect(chevron(el).hasAttribute('hidden')).toBe(true)
     expect(trigger(el).getAttribute('aria-busy')).toBe('true')
   })
 
@@ -854,7 +854,7 @@ describe('OASCascader loading（加载态，PRD P1-20）', () => {
     trigger(el).click()
     el.removeAttribute('loading')
     expect(spinner(el).hidden).toBe(true)
-    expect(chevron(el).hidden).toBe(false)
+    expect(chevron(el).hasAttribute('hidden')).toBe(false)
     expect(trigger(el).hasAttribute('aria-busy')).toBe(false)
     expect(rows(el, 0).length).toBe(2)
   })
@@ -967,5 +967,132 @@ describe('OASCascader oas-focus / oas-blur（PRD P1-22）', () => {
     multi.addEventListener('oas-focus', (e: Event) => (detail = (e as CustomEvent).detail))
     trigger(multi).dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
     expect(detail).toEqual({ value: [['zj', 'hz']] })
+  })
+})
+
+// ---- 能力缺口 P2：cascader label / placement / suffix-icon / option 插槽 ----
+
+describe('OASCascader 长尾组（能力缺口 P2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function appendSlot(el: OASCascader, slot: string, html: string): void {
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', slot)
+    tpl.innerHTML = html
+    el.appendChild(tpl)
+  }
+
+  function chevron(el: OASCascader): Element {
+    return el.shadowRoot!.querySelector('.chevron')!
+  }
+
+  function suffixIconBox(el: OASCascader): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('.suffix-icon')!
+  }
+
+  /** 模拟 trigger 几何（面板 0 尺寸），返回面板定位结果 */
+  function openAndMeasure(el: OASCascader): { top: number; left: number } {
+    const trig = trigger(el)
+    vi.spyOn(trig, 'getBoundingClientRect').mockReturnValue({
+      top: 100,
+      left: 50,
+      width: 200,
+      height: 32,
+      bottom: 132,
+      right: 250,
+      x: 50,
+      y: 100,
+      toJSON: () => ({}),
+    } as DOMRect)
+    el.setAttribute('open', '')
+    return { top: Number.parseFloat(dropdown(el).style.top), left: Number.parseFloat(dropdown(el).style.left) }
+  }
+
+  it('placement 进入 observedAttributes；label 进入 observedAttributes', () => {
+    const attrs = OASCascader.observedAttributes
+    expect(attrs).toContain('placement')
+    expect(attrs).toContain('label')
+  })
+
+  it('placement 支持 12 向（各向定位结果不同且符合几何）', () => {
+    // 锚点 rect：top 100 / left 50 / 200×32（bottom 132 / right 250），面板 0 尺寸，gap 8
+    const bottom = openAndMeasure(mount({ placement: 'bottom' }))
+    expect(bottom).toEqual({ top: 140, left: 150 }) // bottom：top=132+8，水平居中
+    const leftStart = openAndMeasure(mount({ placement: 'left-start' }))
+    expect(leftStart).toEqual({ top: 100, left: 42 }) // 面板右缘贴锚点左缘-gap，顶对齐
+    const rightEnd = openAndMeasure(mount({ placement: 'right-end' }))
+    expect(rightEnd).toEqual({ top: 132, left: 258 }) // 锚点右缘+gap，底对齐
+    const topEnd = openAndMeasure(mount({ placement: 'top-end' }))
+    expect(topEnd).toEqual({ top: 92, left: 250 }) // 锚点上方-gap，右缘对齐
+  })
+
+  it('placement 非法值回落 bottom，不抛错', () => {
+    const pos = openAndMeasure(mount({ placement: 'up-left' }))
+    expect(pos).toEqual({ top: 140, left: 150 })
+  })
+
+  it('label：触发器 aria-label 取 label 属性（优先于占位/值文本），移除后回落', () => {
+    const el = mount({ label: '所属地区', placeholder: '请选择地区', value: '["zj","hz"]' })
+    expect(trigger(el).getAttribute('aria-label')).toBe('所属地区')
+    el.removeAttribute('label')
+    expect(trigger(el).getAttribute('aria-label')).toBe('浙江 / 杭州')
+    const bare = mount({ placeholder: '请选择地区' })
+    expect(trigger(bare).getAttribute('aria-label')).toBe('请选择地区')
+  })
+
+  it('template[slot="suffix-icon"] 替换默认 chevron，loading 时让位 spinner', () => {
+    const el = new OASCascader()
+    el.setAttribute('options', OPTIONS)
+    appendSlot(el, 'suffix-icon', '<i class="my-ic">▣</i>')
+    document.body.appendChild(el)
+    const box = suffixIconBox(el)
+    expect(box.hidden).toBe(false)
+    expect(box.querySelector('.my-ic')).not.toBeNull()
+    expect(chevron(el).hasAttribute('hidden')).toBe(true)
+    // loading：spinner 显示，自定义图标与 chevron 一并让位
+    el.setAttribute('loading', '')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.spinner')!.hidden).toBe(false)
+    expect(suffixIconBox(el).hidden).toBe(true)
+    expect(chevron(el).hasAttribute('hidden')).toBe(true)
+    el.removeAttribute('loading')
+    expect(suffixIconBox(el).hidden).toBe(false)
+  })
+
+  it('回归：loading 隐藏 chevron 走 hidden attribute（SVGElement 无 hidden IDL，属性赋值是假隐藏）', () => {
+    const el = mount({ loading: '' })
+    expect(chevron(el).hasAttribute('hidden')).toBe(true)
+    el.removeAttribute('loading')
+    expect(chevron(el).hasAttribute('hidden')).toBe(false)
+  })
+
+  it('template[slot="option"] 克隆到选项行与搜索结果行，data-option-label 绑定文本', () => {
+    const el = new OASCascader()
+    el.setAttribute('options', OPTIONS)
+    el.setAttribute('filterable', '')
+    appendSlot(el, 'option', '<span class="opt-ic">📍</span><span data-option-label></span>')
+    document.body.appendChild(el)
+    el.setAttribute('open', '')
+    const first = rows(el)[0]!
+    expect(first.querySelector('.opt-ic')).not.toBeNull()
+    expect(first.querySelector('[data-option-label]')!.textContent).toBe('浙江')
+    // 搜索结果行同样走模板
+    searchInput(el).value = '杭'
+    searchInput(el).dispatchEvent(new Event('input', { bubbles: true }))
+    const result = el.shadowRoot!.querySelector('.search-results [role="option"]')!
+    expect(result.querySelector('.opt-ic')).not.toBeNull()
+    expect(result.querySelector('[data-option-label]')!.textContent).toBe('浙江 / 杭州')
+  })
+
+  it('无 option 模板时回落纯文本渲染', () => {
+    const el = mount()
+    el.setAttribute('open', '')
+    expect(rows(el)[0]!.querySelector('.label')!.textContent).toBe('浙江')
+    expect(rows(el)[0]!.querySelector('[data-option-label]')).toBeNull()
   })
 })

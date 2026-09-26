@@ -943,3 +943,45 @@ describe('form-associated（原生表单集成）', () => {
     expect(el.hasAttribute('checked')).toBe(true)
   })
 })
+
+describe('OASCheckbox tabindex 透传', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('tabindex="3" 透传内层 input（tabIndex=3）', () => {
+    const el = mountCheckbox({ tabindex: '3' })
+    expect(native(el).tabIndex).toBe(3)
+  })
+
+  it('tabindex="-1" 移出 Tab 序（tabIndex=-1）', () => {
+    const el = mountCheckbox({ tabindex: '-1' })
+    expect(native(el).tabIndex).toBe(-1)
+  })
+
+  it('缺省不设 tabindex 属性（回落内层默认 0）', () => {
+    const el = mountCheckbox()
+    expect(native(el).hasAttribute('tabindex')).toBe(false)
+    expect(native(el).tabIndex).toBe(0)
+  })
+
+  it('运行时移除 tabindex：内层同步摘除', () => {
+    const el = mountCheckbox({ tabindex: '3' })
+    el.removeAttribute('tabindex')
+    expect(native(el).hasAttribute('tabindex')).toBe(false)
+  })
+
+  it('运行时修改 tabindex：内层即时跟随', () => {
+    const el = mountCheckbox({ tabindex: '3' })
+    el.setAttribute('tabindex', '-1')
+    expect(native(el).tabIndex).toBe(-1)
+  })
+
+  it('非法值（非数字）不透传', () => {
+    const el = mountCheckbox({ tabindex: 'abc' })
+    expect(native(el).hasAttribute('tabindex')).toBe(false)
+  })
+})

@@ -348,3 +348,60 @@ describe('OASTimeline', () => {
     expect(items(el)[0]!.getAttribute('data-direction')).toBe('vertical')
   })
 })
+
+describe('OASTimeline size 五档', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('size 进入观察列表', () => {
+    expect(OASTimeline.observedAttributes).toContain('size')
+  })
+
+  it('五档映射 dot 尺寸变量；medium/缺省不写变量（回落现状 10px）', () => {
+    const map: Record<string, string> = {
+      xs: '6px',
+      small: '8px',
+      large: '12px',
+      xl: '16px',
+    }
+    for (const [size, dot] of Object.entries(map)) {
+      const el = mount()
+      el.setAttribute('size', size)
+      expect(el.style.getPropertyValue('--oas-timeline-dot-size'), `size=${size}`).toBe(dot)
+      el.remove()
+    }
+    const def = mount()
+    expect(def.style.getPropertyValue('--oas-timeline-dot-size')).toBe('')
+  })
+
+  it('sm/lg 别名等价；非法值回落 medium（清变量）', () => {
+    const el = mount()
+    el.setAttribute('size', 'lg')
+    expect(el.style.getPropertyValue('--oas-timeline-dot-size')).toBe('12px')
+    el.setAttribute('size', 'huge')
+    expect(el.style.getPropertyValue('--oas-timeline-dot-size')).toBe('')
+  })
+
+  it('字号变量随档位写入（--oas-timeline-font token），medium 缺省清空（跟随外层）', () => {
+    const el = mount()
+    el.setAttribute('size', 'large')
+    expect(el.style.getPropertyValue('--oas-timeline-font')).toBe('var(--oas-font-size-lg)')
+    el.setAttribute('size', 'medium')
+    expect(el.style.getPropertyValue('--oas-timeline-font')).toBe('')
+  })
+
+  it('档位消费既有变量开口（子项 dot/font 样式按 --oas-timeline-* 变量刻画），无新硬编码', () => {
+    const el = mount()
+    el.setAttribute('size', 'xl')
+    const itemCss = items(el)[0]!.shadowRoot!.querySelector('style')!.textContent!
+    expect(itemCss).toContain('--oas-timeline-dot-size')
+    expect(itemCss).toContain('--oas-timeline-font')
+  })
+})

@@ -30,6 +30,18 @@ const STYLE = `
 .list[data-split='true'] .data-items oas-list-item {
   border-bottom: 1px solid var(--oas-color-border);
 }
+/* hoverable：不可点行也有 hover 底色反馈（clickable 行自带 hover 同色；选中行排除在外，
+   保持 primary 选中底不被浅灰压盖；颜色走 token，暗色自动适配）。虚拟模式行是内嵌
+   oas-virtual-list 的 [part="item"] div，经 ::part():hover 命中 */
+.list[data-hoverable='true'] ::slotted(oas-list-item:not([selected]):hover) {
+  background: var(--oas-color-bg-hover);
+}
+.list[data-hoverable='true'] .data-items oas-list-item:not([selected]):hover {
+  background: var(--oas-color-bg-hover);
+}
+.list[data-hoverable='true'] oas-virtual-list::part(item):hover {
+  background: var(--oas-color-bg-hover);
+}
 /* 末行去分隔线：仅列表视觉末行——非组行（直挂 .data-items）末行，
    或最后一个分组容器 .group 内的末行（组内行分隔线保留到下一组头前） */
 .list[data-split='true'] .data-items > oas-list-item:last-child,
@@ -161,6 +173,7 @@ export class OASList extends OASElement {
       'height',
       'row-height',
       'data',
+      'hoverable',
     ]
   }
 
@@ -260,6 +273,8 @@ export class OASList extends OASElement {
     list.setAttribute('data-bordered', String(this.hasAttr('bordered')))
     list.setAttribute('data-split', String(this.hasAttr('split') || !this.hasAttr('bordered')))
     list.setAttribute('data-size', size)
+    // hoverable：整列表行 hover 底色开关（默认关——现状仅 clickable 行有 hover）
+    list.setAttribute('data-hoverable', String(this.hasAttr('hoverable')))
 
     this.parseData()
 
@@ -315,12 +330,14 @@ export class OASList extends OASElement {
     if (this.vlist) this.vlist.hidden = !virtual
 
     // 声明式子项：尺寸档与斑马纹下发（data-* 内部标记，条目 CSS 消费）
+    const hoverable = this.hasAttr('hoverable')
     if (!dataActive) {
       Array.from(this.children)
         .filter((c) => c.tagName.toLowerCase() === 'oas-list-item')
         .forEach((item, i) => {
           item.setAttribute('data-size', size)
           item.toggleAttribute('data-stripe', stripe && i % 2 === 1)
+          item.toggleAttribute('data-hoverable', hoverable)
         })
     }
 
@@ -405,6 +422,7 @@ export class OASList extends OASElement {
       row.setAttribute('data-index', String(i))
       row.setAttribute('data-size', size)
       if (stripe && i % 2 === 1) row.setAttribute('data-stripe', '')
+      if (this.hasAttr('hoverable')) row.setAttribute('data-hoverable', '')
       ;(row as { itemData?: unknown }).itemData = item
       if (tpl) row.appendChild(cloneSlotContent(tpl))
       this.emit('item-render', { index: i, item, element: row })

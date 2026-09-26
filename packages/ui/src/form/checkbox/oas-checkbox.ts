@@ -233,6 +233,8 @@ export class OASCheckbox extends OASFormElement {
       'false-value',
       // required 仅驱动原生校验链（valueMissing），不透传内层 input
       'required',
+      // tabindex 透传内层 input（缺省/非法不设，交还默认 Tab 序）
+      'tabindex',
       'disabled-skip',
       'size',
       'status',
@@ -245,6 +247,8 @@ export class OASCheckbox extends OASFormElement {
       'data-group-readonly',
       'data-group-status',
       'data-limit-blocked',
+      // 表级 size 下发通道（oas-form[size] 注入）
+      'data-form-size',
     ]
   }
 
@@ -449,6 +453,14 @@ export class OASCheckbox extends OASFormElement {
     if (readonly) input.setAttribute('aria-readonly', 'true')
     else input.removeAttribute('aria-readonly')
 
+    // tabindex 透传内层 input：合法整数值镜像，缺省/非法移除（交还默认 Tab 序）
+    const tabindexRaw = this.getAttribute('tabindex')
+    if (tabindexRaw != null && tabindexRaw !== '' && Number.isFinite(Number(tabindexRaw))) {
+      input.tabIndex = Number(tabindexRaw)
+    } else {
+      input.removeAttribute('tabindex')
+    }
+
     // 原生表单数据 + 校验链同步（form-associated；无 name 时浏览器自动不提交）。
     // checked 管提交（indeterminate 不影响 FormData，与原生一致）；无 value 属性提交缺省 'on'
     this.syncFormValue()
@@ -500,12 +512,14 @@ export class OASCheckbox extends OASFormElement {
     return this.hasAttr('readonly') || this.hasAttr('data-group-readonly')
   }
 
-  /** 尺寸档解析链：单项显式 > 组下发 > provider 注入 > medium（非法值静默回落 medium） */
+  /** 尺寸档解析链：单项显式 > 组下发 > 表级下发（oas-form[size]）> provider 注入 > medium（非法值静默回落 medium） */
   private resolveSize(): string {
     const own = this.getAttribute('size')
     if (own != null && own !== '') return normalizeChoice(own, 'medium', VALID_SIZES)
     const group = this.getAttribute('data-group-size')
     if (group != null && group !== '') return normalizeChoice(group, 'medium', VALID_SIZES)
+    const fromForm = this.getAttribute('data-form-size')
+    if (fromForm != null && fromForm !== '') return normalizeChoice(fromForm, 'medium', VALID_SIZES)
     return normalizeChoice(this.injectValue('size', 'medium'), 'medium', VALID_SIZES)
   }
 

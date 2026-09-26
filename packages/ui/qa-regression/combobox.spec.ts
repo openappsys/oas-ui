@@ -113,3 +113,15 @@ test('combobox 移动端：底部抽屉贴视口底展开 + 列表可交互 + �
     await ctx.close()
   }
 })
+
+// ---- P2 批次：autocomplete 透传 ----
+
+test('combobox autocomplete="off" 透传内层 input（默认即 off）', async ({ page }) => {
+  await page.goto('/components/combobox.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-combobox[autocomplete]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-combobox[autocomplete]')!
+    return (el.shadowRoot!.querySelector('input') as HTMLInputElement).getAttribute('autocomplete')
+  })
+  expect(r).toBe('off')
+})

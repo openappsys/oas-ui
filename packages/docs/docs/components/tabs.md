@@ -620,6 +620,17 @@ onMounted(async () => {
   </div>
 </DemoBlock>
 
+## tabindex 透传
+
+`tabindex` 在场时透传到全部标签钮（覆盖缺省 roving 策略：仅选中钮 `0`、其余 `-1`），宿主接管焦点管理时可用 `tabindex="-1"` 让标签钮退出 Tab 序（点击 / 方向键切换不受影响）；移除属性即恢复 roving。disabled 标签恒 `-1` 不可聚焦。
+
+<DemoBlock title="tabindex=-1（标签钮退出 Tab 序）">
+  <oas-tabs active="a" tabindex="-1">
+    <oas-tab-panel label="标签一" value="a"><p>按 Tab 不会停在标签上（宿主接管焦点管理场景）。</p></oas-tab-panel>
+    <oas-tab-panel label="标签二" value="b"><p>内容二。</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
 ## API
 
 ### oas-tabs
@@ -648,6 +659,7 @@ onMounted(async () => {
 | `sortable` | 标签可拖拽换位（原生 HTML5 DnD），落点后派发 `oas-reorder`（宿主据此重排面板数据，组件不自动移动 DOM） | `boolean` | — |
 | `stacked` | 图标在上、文字在下（纵向堆叠标签） | `boolean` | — |
 | `tab-position` | 标签栏位置：`top`（默认）/ `left` / `right` / `bottom` | `string` | `top` |
+| `tabindex` | 透传到全部标签钮覆盖 roving 缺省（移除恢复；disabled 恒 -1） | — | — |
 | `trigger` | 切换触发方式：`click`（默认）/ `hover`（悬停即切换，disabled 不触发） | `string` | `click` |
 | `type` | 样式变体：`line`（下划线，默认）/ `card`（卡片式） | `string` | `line` |
 | `without-scroll-controls` | 关闭溢出时的左右/上下滚动箭头（默认溢出自动显示箭头） | `boolean` | — |

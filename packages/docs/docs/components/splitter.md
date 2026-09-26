@@ -106,6 +106,18 @@ min / max 支持像素值：`200px` 后缀按像素夹取（相对容器宽度�
   </div>
 </DemoBlock>
 
+## 禁用（disabled）
+
+`disabled` 禁用调整：分隔条不可拖、双击复位与方向键微调同步失效，光标恢复常态并标记 `aria-disabled="true"`（宿主镜像 `data-disabled` 供样式消费，config-provider 全局禁用注入同样生效）——布局比例需要锁定的展示场景。
+
+<DemoBlock title="disabled 禁用调整">
+  <div style="height: 200px; width: 100%">
+    <oas-splitter percent="40" disabled>
+      <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">左面板 40%（已锁定）</div>
+    </oas-splitter>
+  </div>
+</DemoBlock>
+
 ## 手柄定制
 
 `slot="handle"` 可在分隔条内放自定义手柄内容（图标/圆点等），拖拽与键盘操作不受影响。
@@ -177,6 +189,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `collapsed` | 受控折叠：存在即收起分隔条前一侧面板（组件折叠时自动写回；外部设置/移除即时生效） | `boolean` | — |
 | `collapsible` | 分隔条上显示折叠按钮，点击收起/展开前一侧面板 | `boolean` | — |
+| `disabled` | 禁用拖拽/键盘/双击调整：光标常态 + aria-disabled，面板尺寸冻结 | `boolean` | — |
 | `lazy` | 延迟渲染：拖拽中只动分隔条视觉位置，松手才写回比例并重渲面板（适合重内容面板） | `boolean` | — |
 | `max` | 上一面板最大占比：数字按百分比，`200px` 后缀按像素夹取；非法回落默认 90 | `string` | `90` |
 | `min` | 上一面板最小占比：数字按百分比，`200px` 后缀按像素夹取；非法回落默认 10 | `string` | `10` |

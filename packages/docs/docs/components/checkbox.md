@@ -281,6 +281,20 @@ onMounted(() => {
   </oas-space>
 </DemoBlock>
 
+## tabindex 透传
+
+`tabindex` 透传内层原生 checkbox：`tabindex="-1"` 把单项移出 Tab 序（由外层容器统一接管键盘导航时使用），正整数自定义 Tab 顺序；缺省不设置（保留默认 Tab 序）。
+
+<DemoBlock title="tabindex 透传">
+  <oas-space direction="vertical" size="small">
+    <oas-checkbox name="tab-a">常规 Tab 停靠（默认）</oas-checkbox>
+    <oas-checkbox name="tab-b" tabindex="-1">tabindex="-1"（Tab 跳过，点击仍可勾选）</oas-checkbox>
+    <oas-checkbox name="tab-c">常规 Tab 停靠（默认）</oas-checkbox>
+  </oas-space>
+</DemoBlock>
+
+用 Tab 键在三个选项间移动：中间项会被跳过；用鼠标/触屏点击它仍可正常勾选。
+
 ## API
 
 ### oas-checkbox
@@ -300,6 +314,7 @@ onMounted(() => {
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层 input） | `boolean` | — |
 | `size` | 尺寸档：`small`（14px）/ `medium`（默认 16px）/ `large`（18px），勾选框与字号联动；组级设置统一下发子项，单项显式优先 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`（勾选框着色；error 联动宿主 aria-invalid） | `string` | — |
+| `tabindex` | 透传内层原生 checkbox（`-1` 移出 Tab 序） | — | — |
 | `true-value` | 勾选映射值：oas-change 的 detail.value 与 value getter 返回该值，FormData 提交该值（checkbox-group 内不生效） | `string` | — |
 | `value` | 选项标识 | `string \| boolean` | `on` |
 | `variant` | 形态：`default`（默认）/ `card`（卡片：整块可点、选中描边着色、hover 反馈） | `string` | — |

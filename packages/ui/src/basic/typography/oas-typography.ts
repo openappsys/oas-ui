@@ -1,10 +1,22 @@
 import { OASElement } from '@oas-ui/core'
+import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 
 export type TextType = 'default' | 'secondary' | 'success' | 'warning' | 'danger' | 'disabled'
 
 export type AlignType = 'start' | 'center' | 'end' | 'justify'
 
 export type WeightType = 'regular' | 'medium' | 'semibold' | 'bold'
+
+/** size 字号档（仅 oas-text）：small 小字辅助 / medium 基准 / large 大字强调（对齐 label/link 惯例） */
+export type TextSize = 'small' | 'medium' | 'large'
+
+/** 非法 size 告警：回落 medium 并 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射 */
+const warnedSizes = new Set<string>()
+function warnInvalidSize(raw: string): void {
+  if (warnedSizes.has(raw)) return
+  warnedSizes.add(raw)
+  console.warn(`[oas-text] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
+}
 
 /** align 合法档位（text-align 的 start/end 为逻辑值，RTL 安全；start 对应 left、end 对应 right） */
 const ALIGN_VALUES: readonly AlignType[] = ['start', 'center', 'end', 'justify']
@@ -98,6 +110,14 @@ const BASE_STYLE = `
 .text.italic {
   font-style: italic;
 }
+/* size 字号档（仅 oas-text 开放）：small 小字辅助 / large 大字强调（--oas-font-size token）；
+   medium/缺省不加 class，回落继承字号（基准，跟随外层） */
+.text.small {
+  font-size: var(--oas-font-size-sm);
+}
+.text.large {
+  font-size: var(--oas-font-size-lg);
+}
 /* depth 三档弱化（纯 token 组合，无自造色值） */
 .text.depth-1 {
   color: var(--oas-color-text-secondary);
@@ -184,18 +204,23 @@ interface TypoOptions {
   tag: string
   levels?: boolean
   part: string
+  /** size 字号档开关：仅 oas-text 开放（title/paragraph 不开放——level 已驱动标题字号，避免双轨打架） */
+  size?: boolean
 }
 
 type TypographyConstructor = CustomElementConstructor & {
   observedAttributes: string[]
 }
 
-function createTypography(tag: string, options: { levels?: boolean; part: string }): TypographyConstructor {
-  const { levels = false, part } = options
+function createTypography(
+  tag: string,
+  options: { levels?: boolean; part: string; size?: boolean },
+): TypographyConstructor {
+  const { levels = false, part, size: sizeEnabled = false } = options
 
   class OASTypography extends OASElement {
     static override get observedAttributes(): string[] {
-      return [
+      const attrs = [
         'level',
         'type',
         'ellipsis',
@@ -216,6 +241,7 @@ function createTypography(tag: string, options: { levels?: boolean; part: string
         'weight',
         'numeric',
       ]
+      return sizeEnabled ? [...attrs, 'size'] : attrs
     }
 
     private root: HTMLElement | null = null
@@ -362,6 +388,19 @@ function createTypography(tag: string, options: { levels?: boolean; part: string
       // 字重档（weight 四档；显式档经内联优先于 strong 布尔类的 600）
       const weight = this.getAttr('weight', '') as WeightType
       root.style.fontWeight = WEIGHT_MAP[weight] ? WEIGHT_MAP[weight] : ''
+      // size 字号档（仅 oas-text）：small/large 写尺寸 class，medium/缺省回落继承字号；
+      // sm/lg 别名等价，非法值回落 medium + dev 告警一次（同值去重）
+      if (sizeEnabled) {
+        const rawSize = this.getAttr('size', '')
+        if (rawSize) {
+          const { value: sizeName, isValid: sizeValid } = normalizeSizeStrict(rawSize, THREE_SIZES, 'medium')
+          if (!sizeValid) warnInvalidSize(rawSize)
+          root.classList.toggle('small', sizeName === 'small')
+          root.classList.toggle('large', sizeName === 'large')
+        } else {
+          root.classList.remove('small', 'large')
+        }
+      }
       // suffix：ellipsis 或 line-clamp 开启时展示
       const suffix = this.getAttr('ellipsis-suffix', '')
       if (this.suffixEl) {
@@ -414,6 +453,6 @@ function createTypography(tag: string, options: { levels?: boolean; part: string
   return OASTypography
 }
 
-export const OASText = createTypography('span', { part: 'text' })
+export const OASText = createTypography('span', { part: 'text', size: true })
 export const OASTitle = createTypography('div', { levels: true, part: 'title' })
 export const OASParagraph = createTypography('p', { part: 'paragraph' })

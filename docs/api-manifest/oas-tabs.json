@@ -125,6 +125,10 @@
       "name": "context-menu",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "tabindex",
+      "observed": true
     }
   ],
   "props": [],
