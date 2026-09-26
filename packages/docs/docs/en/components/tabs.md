@@ -97,6 +97,10 @@ Switch to the card style with `type="card"`: every tab has its own border, the a
 
 > Right-click “Products” and try “New” and “Close all to the left” / “Close others” — "New" fires `oas-add` and the host appends a panel; each close fires `oas-close` once per key, and the host removes the matching panels.
 
+## Per-tab context menu event (host-built menus)
+
+`oas-tab-contextmenu`: fired when a tab is right-clicked (or a focused tab gets Menu key / Shift+F10) — cancelable; `detail: { value, index, clientX, clientY, originalEvent }`. When the host calls `preventDefault()`, both the built-in menu (`context-menu` attribute) and the browser default menu are suppressed, so the host can look up its own data via `value` and open `oas-context-menu` at `clientX/clientY` (e.g. file-type actions like "Copy path / Open in file manager"). If not canceled, the built-in menu opens as usual. Not fired on empty nav area; keyboard-triggered coordinates use the button center. Independent of the `context-menu` attribute — the event fires whether or not the built-in menu is enabled.
+
 > This interaction is part of the manager capability package: the main entry `@oas-ui/ui/navigation/tabs` already ships it (as do the full entry and the CDN navigation bundle) — no explicit import needed. If you only want the lightweight switch/close/overflow baseline, import the pure-core entry `@oas-ui/ui/navigation/tabs/core` instead — it omits the manager capability, and using these options there logs a dev hint pointing to `import '@oas-ui/ui/navigation/tabs/manager'` (or back to the main entry).
 
 > Hosts can reword the menu per business domain (e.g. "New file"): override individual locale keys — `setLocale({ name: 'en', messages: { ...en, 'tabs.ctxNew': 'New file' } })` (import `setLocale`/`en` from `@oas-ui/i18n`; same-name registration overwrites, touch only the keys you need).
@@ -635,6 +639,7 @@ onMounted(async () => {
 | `oas-close` | A tab's close × was clicked, `detail: { key }` (`key` is that tab's `value`; the component does not remove the panel) |
 | `oas-rename` | Editable tab rename confirmed via double-click + Enter, `detail: { value, label }`; the component writes the new label back to the panel, host may persist |
 | `oas-reorder` | Fired after sortable drag reorder, `detail: { fromIndex, toIndex }`; host reorders `oas-tab-panel` accordingly (the component does not move DOM itself) |
+| `oas-tab-contextmenu` | Per-tab context menu signal (right-click, or Menu key / Shift+F10 on a focused tab) — cancelable; `detail: { value, index, clientX, clientY, originalEvent }`. Host preventDefault suppresses both the built-in menu (context-menu attribute) and the browser default menu; not fired on empty nav area. Native channel for host-built per-tab menus |
 
 #### Slots
 

@@ -766,6 +766,10 @@ export class OASTabs extends OASElement {
   private bind(): void {
     const tablist = this.shadow.querySelector('.tablist')
     tablist?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
+    // 标签级右键原生事件通道：宿主自建菜单拿 value/index/坐标（下游 oas-md-ka 需求，
+    // 免去对 shadow 内部结构的几何猜测）；capture 阶段挂载，先于 manager 的 bubble 委托
+    // 触发——preventDefault 时 stopPropagation 能真正阻断内建菜单
+    tablist?.addEventListener('contextmenu', (e) => this.handleTabContextMenu(e as MouseEvent), { capture: true })
     // 宿主增删 oas-tab-panel（如 closable 场景外部移除面板）时增量刷新标签栏
     this.observer = new MutationObserver(() => this.update())
     this.observer.observe(this, { childList: true })
@@ -776,6 +780,51 @@ export class OASTabs extends OASElement {
     })
     this.bindScroll()
     this.bindMore()
+  }
+
+  /**
+   * 标签级右键原生事件通道（2026-09-26 下游需求）：
+   * 右键某个标签 → 派发可取消的 `oas-tab-contextmenu`，detail = { value, index, clientX, clientY, originalEvent }。
+   * 宿主 preventDefault 时：内建菜单（context-menu 属性）与浏览器默认菜单全抑止（stopPropagation 阻断 manager 委托）；
+   * 不拦截时内建菜单照常（manager 委托走原有路径）。空白处（nav 背景）右键不派发。
+   */
+  private handleTabContextMenu(e: MouseEvent): void {
+    const btn = (e.target as HTMLElement).closest?.('[role="tab"][data-value]') as HTMLElement | null
+    if (!btn) return
+    const value = btn.getAttribute('data-value')
+    if (!value) return
+    const tablist = this.shadow.querySelector('.tablist')
+    const tabs = tablist ? [...tablist.querySelectorAll<HTMLElement>('[role="tab"][data-value]')] : []
+    const index = tabs.indexOf(btn)
+    const notCanceled = this.emit(
+      'tab-contextmenu',
+      { value, index, clientX: e.clientX, clientY: e.clientY, originalEvent: e },
+      { cancelable: true },
+    )
+    if (!notCanceled) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
+
+  /** 键盘触发路径（ContextMenu 键 / Shift+F10）：聚焦标签按按钮中心坐标派发同一事件 */
+  private handleTabContextKey(e: KeyboardEvent): void {
+    if (e.key !== 'ContextMenu' && !(e.shiftKey && e.key === 'F10')) return
+    const btn = (e.target as HTMLElement).closest?.('[role="tab"][data-value]') as HTMLElement | null
+    if (!btn) return
+    e.preventDefault()
+    const value = btn.getAttribute('data-value')
+    if (!value) return
+    const tablist = this.shadow.querySelector('.tablist')
+    const tabs = tablist ? [...tablist.querySelectorAll<HTMLElement>('[role="tab"][data-value]')] : []
+    const index = tabs.indexOf(btn)
+    const r = btn.getBoundingClientRect()
+    const notCanceled = this.emit(
+      'tab-contextmenu',
+      { value, index, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, originalEvent: e },
+      { cancelable: true },
+    )
+    if (!notCanceled) e.stopPropagation()
   }
 
   protected override render(): void {
@@ -1454,6 +1503,11 @@ export class OASTabs extends OASElement {
   }
 
   private handleKey(e: KeyboardEvent): void {
+    // 标签级右键键盘路径（ContextMenu 键 / Shift+F10）：与鼠标右键同一事件契约
+    if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+      this.handleTabContextKey(e)
+      return
+    }
     // 可聚焦值 = 非 disabled 面板（disabled 不参与键盘导航循环）
     const enabledValues = this.panels
       .filter((p) => !p.hasAttribute('disabled'))

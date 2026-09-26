@@ -85,6 +85,10 @@
 
 `context-menu`：右键任意标签弹出操作菜单——新建 / 关闭 / 关闭其他 / 关闭左侧所有 / 关闭右侧所有 / 关闭全部（新建与关闭族间有分隔线）。新建派发 `oas-add`（与 `addable` 的 + 按钮同一契约，`detail.label` 是 locale 默认产物名，宿主可忽略自行命名——实际场景多为「新建文件」等宿主语义，菜单项文案保持中性「新建」）；关闭类每项按目标集合逐个派发 `oas-close`（`detail: { key }`），宿主按 key 移除对应面板即可（与 `closable` 同一契约）。弹层支持外部点击 / Escape 关闭。
 
+## 标签级右键事件（宿主自建菜单）
+
+`oas-tab-contextmenu`：右键某个标签（或聚焦标签按 Menu 键 / Shift+F10）时派发——可取消事件，`detail: { value, index, clientX, clientY, originalEvent }`。宿主 `preventDefault()` 时内建菜单（`context-menu` 属性）与浏览器默认菜单全抑止，宿主可拿 `value` 回查自身数据、拿 `clientX/clientY` 弹 `oas-context-menu` 自建菜单（如文件类操作的「复制路径 / 在文件管理器中打开」）；不拦截时内建菜单照常。空白处右键不派发；键盘触发坐标取按钮中心。与 `context-menu` 属性无关——无论内建菜单是否开启，事件都派发。
+
 <DemoBlock title="右键批量关闭（context-menu）">
   <oas-tabs id="tabs-contextmenu" closable context-menu active="b">
     <oas-tab-panel label="仪表盘" value="a"><p>仪表盘内容</p></oas-tab-panel>
@@ -634,6 +638,7 @@ onMounted(async () => {
 | `oas-close` | 点击标签关闭 ×，`detail: { key }`（`key` 为该标签 `value`，组件不自动移除） |
 | `oas-rename` | editable 标签双击重命名确认（Enter），`detail: { value, label }`；组件自动把新 label 写回面板，宿主可据此持久化 |
 | `oas-reorder` | sortable 拖拽换位后派发，`detail: { fromIndex, toIndex }`；宿主据此重排 `oas-tab-panel` 顺序（组件不自动移动 DOM） |
+| `oas-tab-contextmenu` | 标签级右键（鼠标右键或聚焦标签按 Menu 键 / Shift+F10）——可取消事件，`detail: { value, index, clientX, clientY, originalEvent }`；宿主 preventDefault 时内建菜单（context-menu 属性）与浏览器默认菜单全抑止；空白处右键不派发。宿主自建右键菜单的原生通道 |
 
 #### 插槽
 

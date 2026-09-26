@@ -275,3 +275,74 @@ test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉�
   expect(result.active, '点选后应激活').toBeTruthy()
   expect(result.scrollLeft, '点选视口外项应滚动到可见区').toBeGreaterThan(scrollBefore)
 })
+
+// —— 需求回归：oas-tab-contextmenu（宿主自建右键菜单的原生通道，2026-09-26 下游登记）——
+// 右键标签派发可取消事件 { value, index, clientX, clientY, originalEvent }；宿主 preventDefault
+// 时内建菜单（context-menu 属性）与浏览器默认菜单全抑止；空白处右键不派发；键盘 Menu/Shift+F10 走按钮中心。
+test('tabs oas-tab-contextmenu：右键标签派发 detail 正确 + preventDefault 抑止内建菜单 + 空白不派发 + 键盘路径', async ({
+  page,
+}) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => document.getElementById('tabs-contextmenu')?.shadowRoot != null, undefined, {
+    timeout: 15000,
+  })
+  const r1 = await page.evaluate(() => {
+    const el = document.getElementById('tabs-contextmenu')!
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="c"]')!
+    let detail: Record<string, unknown> | null = null
+    el.addEventListener('oas-tab-contextmenu', (e) => (detail = (e as CustomEvent).detail))
+    const rect = tab.getBoundingClientRect()
+    tab.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: rect.left + 8, clientY: rect.top + 4 }),
+    )
+    const menu = el.shadowRoot!.querySelector<HTMLElement>('.ctx-menu')
+    return {
+      detail: detail as {
+        value?: string
+        index?: number
+        clientX?: number
+        clientY?: number
+        originalEvent?: unknown
+      } | null,
+      builtinOpened: menu ? !menu.hidden : null,
+    }
+  })
+  expect(r1.detail, '右键标签应派发 oas-tab-contextmenu').not.toBeNull()
+  expect(r1.detail!.value, 'detail.value = 被右键标签 value').toBe('c')
+  expect(r1.detail!.index, 'detail.index = 标签序号').toBe(2)
+  expect(typeof r1.detail!.clientX, '坐标透传').toBe('number')
+  expect(r1.detail!.originalEvent, 'detail 携带原生事件').toBeTruthy()
+  expect(r1.builtinOpened, '不拦截时内建菜单照常打开').toBe(true)
+
+  // 宿主 preventDefault → 内建菜单抑止
+  const r2 = await page.evaluate(() => {
+    document.body.click() // 先关掉可能打开的内建菜单
+    const el = document.getElementById('tabs-contextmenu')!
+    el.addEventListener('oas-tab-contextmenu', (e) => (e as CustomEvent).preventDefault(), { once: true })
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+    tab.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 300, clientY: 100 }))
+    const menu = el.shadowRoot!.querySelector<HTMLElement>('.ctx-menu')
+    return { builtinOpened: menu ? !menu.hidden : false }
+  })
+  expect(r2.builtinOpened, '宿主 preventDefault 后内建菜单不应打开').toBe(false)
+
+  // 空白处右键不派发 + 键盘路径
+  const r3 = await page.evaluate(() => {
+    const el = document.getElementById('tabs-contextmenu')!
+    let fired = 0
+    el.addEventListener('oas-tab-contextmenu', () => fired++)
+    el.shadowRoot!.querySelector('.tablist')!.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 }),
+    )
+    const empty = fired
+    let kbDetail: Record<string, unknown> | null = null
+    el.addEventListener('oas-tab-contextmenu', (e) => (kbDetail = (e as CustomEvent).detail))
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="d"]')!
+    tab.focus()
+    tab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true }))
+    return { empty, kb: kbDetail as { value?: string; index?: number } | null }
+  })
+  expect(r3.empty, '空白处右键不派发').toBe(0)
+  expect(r3.kb?.value, '键盘 ContextMenu 键派发（value=d）').toBe('d')
+  expect(r3.kb?.index, '键盘 ContextMenu 键派发（index=3）').toBe(3)
+})

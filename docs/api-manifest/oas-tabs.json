@@ -134,6 +134,10 @@
       "detail": "{ label: this.t('tabs.newTab') }"
     },
     {
+      "name": "oas-tab-contextmenu",
+      "detail": "{ value, index, clientX: e.clientX, clientY: e.clientY, originalEvent: e } | { value, index, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, originalEvent: e }"
+    },
+    {
       "name": "oas-close",
       "detail": "{ key: value }"
     },

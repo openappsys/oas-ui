@@ -2828,7 +2828,8 @@
       "oas-close": "点击标签关闭 ×，`detail: { key }`（`key` 为该标签 `value`，组件不自动移除）",
       "oas-before-change": "切换前派发（cancelable），`detail: { value }`；宿主 `preventDefault()` 可 veto 本次切换（点击/键盘均生效；宿主直接 setAttribute 不触发）",
       "oas-rename": "editable 标签双击重命名确认（Enter），`detail: { value, label }`；组件自动把新 label 写回面板，宿主可据此持久化",
-      "oas-reorder": "sortable 拖拽换位后派发，`detail: { fromIndex, toIndex }`；宿主据此重排 `oas-tab-panel` 顺序（组件不自动移动 DOM）"
+      "oas-reorder": "sortable 拖拽换位后派发，`detail: { fromIndex, toIndex }`；宿主据此重排 `oas-tab-panel` 顺序（组件不自动移动 DOM）",
+      "oas-tab-contextmenu": "标签级右键（鼠标右键或聚焦标签按 Menu 键 / Shift+F10）——可取消事件，`detail: { value, index, clientX, clientY, originalEvent }`；宿主 preventDefault 时内建菜单（context-menu 属性）与浏览器默认菜单全抑止；空白处右键不派发。宿主自建右键菜单的原生通道"
     },
     "slots": {
       "": "标签页（`oas-tab-panel`）",

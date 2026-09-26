@@ -159,6 +159,85 @@ describe('OASTabs', () => {
     expect(menu.hasAttribute('hidden')).toBe(true)
   })
 
+  // ===== oas-tab-contextmenu（宿主自建右键菜单的原生事件通道，2026-09-26 下游需求） =====
+
+  it('右键标签派发 oas-tab-contextmenu：detail { value, index, clientX, clientY, originalEvent }（无 context-menu 属性也派发）', () => {
+    const el = mountMany(['a', 'b', 'c'])
+    let detail: Record<string, unknown> | null = null
+    el.addEventListener('oas-tab-contextmenu', (e) => (detail = (e as CustomEvent).detail))
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+    tab.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 210, clientY: 110 }))
+    expect(detail, '应派发 oas-tab-contextmenu').not.toBeNull()
+    expect(detail!.value).toBe('b')
+    expect(detail!.index).toBe(1)
+    expect(detail!.clientX).toBe(210)
+    expect(detail!.clientY).toBe(110)
+    expect(detail!.originalEvent, 'detail 应携带原生事件引用').toBeTruthy()
+  })
+
+  it('宿主 preventDefault(oas-tab-contextmenu)：内建菜单与浏览器默认菜单全抑止', () => {
+    const el = mountMany(['a', 'b'], { 'context-menu': '' })
+    el.addEventListener('oas-tab-contextmenu', (e) => (e as CustomEvent).preventDefault())
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+    const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 200, clientY: 100 })
+    tab.dispatchEvent(ev)
+    expect(el.shadowRoot!.querySelector('.ctx-menu'), 'preventDefault 后内建菜单不应打开').toBeNull()
+    expect(ev.defaultPrevented, '原生默认行为（浏览器菜单）也应被抑止').toBe(true)
+  })
+
+  it('不 preventDefault：内建菜单照常打开（既有契约零回归）', () => {
+    const el = mountMany(['a', 'b'], { 'context-menu': '' })
+    rightClickTab(el, 'a')
+    expect(el.shadowRoot!.querySelector('.ctx-menu')).not.toBeNull()
+  })
+
+  it('空白处右键（nav 背景，非任何标签）不派发事件', () => {
+    const el = mountMany(['a', 'b'])
+    let fired = 0
+    el.addEventListener('oas-tab-contextmenu', () => fired++)
+    el.shadowRoot!.querySelector('.tablist')!.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 5 }),
+    )
+    expect(fired, 'nav 空白右键不派发').toBe(0)
+  })
+
+  it('键盘路径：聚焦标签按 Menu 键（ContextMenu）/ Shift+F10 → 派发事件（坐标=按钮中心）', () => {
+    const el = mountMany(['a', 'b'])
+    let detail: Record<string, unknown> | null = null
+    el.addEventListener('oas-tab-contextmenu', (e) => (detail = (e as CustomEvent).detail))
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+    tab.focus()
+    tab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true }))
+    expect(detail, 'Menu 键应派发').not.toBeNull()
+    expect(detail!.value).toBe('b')
+    expect(typeof detail!.clientX).toBe('number')
+    // Shift+F10 同通道
+    detail = null
+    tab.dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true }))
+    expect(detail, 'Shift+F10 应派发').not.toBeNull()
+  })
+
+  it('RTL：右键标签事件照常派发且 detail 值正确（坐标透传原生 clientX/Y）', () => {
+    const el = mountMany(['a', 'b'], { dir: 'rtl' })
+    let detail: Record<string, unknown> | null = null
+    el.addEventListener('oas-tab-contextmenu', (e) => (detail = (e as CustomEvent).detail))
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+    tab.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 640, clientY: 90 }))
+    expect(detail).not.toBeNull()
+    expect(detail!.value).toBe('a')
+    expect(detail!.clientX).toBe(640)
+  })
+
+  it('键盘 Menu 键在无聚焦标签时不派发', () => {
+    const el = mountMany(['a', 'b'])
+    let fired = 0
+    el.addEventListener('oas-tab-contextmenu', () => fired++)
+    el.shadowRoot!.querySelector('.tablist')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true }),
+    )
+    expect(fired).toBe(0)
+  })
+
   it('点击标签切换并派发 oas-change', async () => {
     const el = mount()
     let detail: unknown
