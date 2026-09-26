@@ -389,8 +389,9 @@ describe('OASContextMenu 子元素声明式通道', () => {
     expect(
       innerMenuRoot(el).querySelector<HTMLElement>('[part="item"][data-value="grid"]')!.getAttribute('aria-checked'),
     ).toBe('true')
-    // contextmenu 宿主不写回 value（既有语义，仅转发事件）
-    expect(el.getAttribute('value')).toBeNull()
+    // checkbox 勾选切换写回宿主 value（勾选态跨开合保留——修复前不写回致勾选态丢失，
+    // kind=checkbox 形同虚设）；普通项/action 项不写回（纯事件语义不变）
+    expect(el.getAttribute('value')).toBe('["grid"]')
   })
 
   it('MutationObserver：运行时 append oas-context-menu-item 后菜单刷新出现新项', async () => {
@@ -422,5 +423,68 @@ describe('OASContextMenu 子元素声明式通道', () => {
     expect(anchor(el).getAttribute('style')).toContain('80px')
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(anchor(el).hasAttribute('hidden')).toBe(true)
+  })
+})
+
+describe('oas-context-menu kind=checkbox 勾选项链路（value 下传/写回/不收起）', () => {
+  const KIND_ITEMS = JSON.stringify([
+    { label: '网格线', value: 'grid', kind: 'checkbox' },
+    { label: '标尺', value: 'ruler', kind: 'checkbox' },
+    { label: '删除', value: 'del', kind: 'action', danger: true },
+  ])
+  function mountKind(value?: string): OASContextMenu {
+    const el = new OASContextMenu()
+    el.setAttribute('items', KIND_ITEMS)
+    if (value) el.setAttribute('value', value)
+    el.innerHTML = '<div style="width:200px;height:100px">右键区域</div>'
+    document.body.appendChild(el)
+    return el
+  }
+  const innerMenu = (el: OASContextMenu): HTMLElement | null => el.shadowRoot!.querySelector('oas-menu')
+
+  it('宿主 value 下传内层 menu（初始勾选态回显）', () => {
+    const el = mountKind('["grid"]')
+    el.show(10, 10)
+    expect(innerMenu(el)!.getAttribute('value'), '内层 menu value 应随打开下传').toBe('["grid"]')
+  })
+
+  it('checkbox 勾选切换：写回宿主 value + 转发 detail 带 checked + 不收起菜单', async () => {
+    const el = mountKind('["grid"]')
+    el.show(10, 10)
+    let detail: unknown = null
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    // 经内层 menu 的真实选择链路（checkbox 项）
+    const menu = innerMenu(el)!
+    const ruler = [...menu.shadowRoot!.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]')].find((i) =>
+      i.textContent?.includes('标尺'),
+    )!
+    ruler.click()
+    expect(el.getAttribute('value'), '勾选标尺后宿主 value 写回双勾选').toBe('["grid","ruler"]')
+    expect((detail as { value: string; checked: boolean }).value).toBe('ruler')
+    expect((detail as { checked: boolean }).checked).toBe(true)
+    expect(el.hasAttribute('open'), 'checkbox 切换不收起').toBe(true)
+    // 再点取消勾选（写回触发宿主 update → 内层重建——等一拍再取新节点）
+    await new Promise((r) => setTimeout(r, 0))
+    const menu2 = innerMenu(el)!
+    const ruler2 = [...menu2.shadowRoot!.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]')].find((i) =>
+      i.textContent?.includes('标尺'),
+    )!
+    ruler2.click()
+    expect(el.getAttribute('value'), '再次点击取消勾选').toBe('["grid"]')
+  })
+
+  it('action 项：不触碰 value，仅转发并关闭', () => {
+    const el = mountKind('["grid"]')
+    el.show(10, 10)
+    let detail: unknown = null
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    const menu = innerMenu(el)!
+    const del = [...menu.shadowRoot!.querySelectorAll<HTMLElement>('[role="menuitem"]')].find((i) =>
+      i.textContent?.includes('删除'),
+    )!
+    del.click()
+    expect(el.getAttribute('value'), 'action 项不改宿主 value').toBe('["grid"]')
+    expect((detail as { value: string }).value).toBe('del')
+    expect(el.hasAttribute('open'), 'action 项点击后关闭').toBe(false)
   })
 })

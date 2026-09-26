@@ -149,8 +149,25 @@ onMounted(() => {
       declDyn.appendChild(item)
     }
   }
+  // kind demo：勾选态与动作项反馈
+  window.cmKindLog = (e) => {
+    const el = document.getElementById('cm-kind')
+    const out = document.getElementById('cm-kind-out')
+    if (out && el) out.textContent = '已勾：' + (el.getAttribute('value') || '（空）') + '｜最近点击：' + e.detail.value
+  }
 })
 </script>
+
+## 勾选项与动作项（kind）
+
+`kind="checkbox"` 渲染多选勾选项（menuitemcheckbox 语义，点击切换勾选、value 数组写回）；`kind="action"` 为纯动作项（无勾选态、不写回 value，点击仅派发事件）。
+
+<DemoBlock title="勾选项 + 动作项（kind）">
+  <oas-context-menu id="cm-kind" items='[{"label":"显示网格线","value":"grid","kind":"checkbox"},{"label":"显示标尺","value":"ruler","kind":"checkbox"},{"label":"复制","value":"copy","kind":"action"},{"label":"删除","value":"del","kind":"action","danger":true}]' value='["grid"]' onoas-select="cmKindLog(event)">
+    <div style="width: 260px; height: 100px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">右键查看勾选项</div>
+  </oas-context-menu>
+  <p id="cm-kind-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">已勾：grid</p>
+</DemoBlock>
 
 ## API
 
@@ -164,6 +181,7 @@ onMounted(() => {
 | `items` | 菜单项 JSON | `string` | `[]` |
 | `long-press-delay` | 移动端长按触发时长毫秒数（默认 500） | `string` | `500` |
 | `open` | 受控展开态（外部可写） | `boolean` | — |
+| `value` | — | `string` | — |
 
 #### 事件
 

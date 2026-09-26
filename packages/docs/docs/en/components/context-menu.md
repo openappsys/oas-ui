@@ -149,8 +149,25 @@ onMounted(() => {
       declDyn.appendChild(item)
     }
   }
+  // kind demo: check state and action feedback
+  window.cmKindLog = (e) => {
+    const el = document.getElementById('cm-kind')
+    const out = document.getElementById('cm-kind-out')
+    if (out && el) out.textContent = 'Checked: ' + (el.getAttribute('value') || '(none)') + ' | last: ' + e.detail.value
+  }
 })
 </script>
+
+## Checkbox and action items (kind)
+
+`kind="checkbox"` renders multi-select checkable items (menuitemcheckbox semantics; clicking toggles and writes back the value array); `kind="action"` is a pure action item (no check state, never writes back value, only emits the event).
+
+<DemoBlock title="Checkbox + action items (kind)">
+  <oas-context-menu id="cm-kind" items='[{"label":"Show grid lines","value":"grid","kind":"checkbox"},{"label":"Show rulers","value":"ruler","kind":"checkbox"},{"label":"Copy","value":"copy","kind":"action"},{"label":"Delete","value":"del","kind":"action","danger":true}]' value='["grid"]' onoas-select="cmKindLog(event)">
+    <div style="width: 260px; height: 100px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">Right-click to see checkable items</div>
+  </oas-context-menu>
+  <p id="cm-kind-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Checked: grid</p>
+</DemoBlock>
 
 ## API
 
@@ -164,6 +181,7 @@ onMounted(() => {
 | `items` | Menu items JSON | `string` | `[]` |
 | `long-press-delay` | Long-press duration in ms for touch trigger (default 500) | `string` | `500` |
 | `open` | Controlled open state (writable externally) | `boolean` | — |
+| `value` | — | `string` | — |
 
 #### Events
 

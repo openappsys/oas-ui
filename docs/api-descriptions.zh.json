@@ -573,8 +573,8 @@
       "oas-blur": "触发器失焦时派发，`detail.value` 与 oas-change 同形状（组件内焦点转移不误报）"
     },
     "slots": {
-      "suffix-icon": "自定义触发器后缀图标（替换默认箭头；loading 时让位 spinner）",
-      "option": "选项行自定义渲染模板，`[data-option-label]` 节点绑定选项文本"
+      "template[slot=\"option\"]": "选项行自定义渲染模板，`[data-option-label]` 节点绑定选项文本",
+      "template[slot=\"suffix-icon\"]": "自定义触发器后缀图标（替换默认箭头；loading 时让位 spinner）"
     }
   },
   "oas-chart": {
@@ -1359,7 +1359,8 @@
       "min-child-width": "子项最小宽度（如 180px，纯数字按 px）：auto-fit + minmax 依容器宽度自动计算列数（子项免断点流式重排）；与 columns 并存时 columns 优先，该模式下子项 span/offset 不生效",
       "row-gap": "行间距独立设置（覆盖 gap 对应轴，纯数字按 px）",
       "column-gap": "列间距独立设置（同上）",
-      "collapsed-rows": "折叠态显示行数：超出隐藏 + 展开/收起尾格（写回 collapsed 并派发 oas-collapse）"
+      "collapsed-rows": "折叠态显示行数：超出隐藏 + 展开/收起尾格（写回 collapsed 并派发 oas-collapse）",
+      "collapsed": "折叠行受控属性（collapsed-rows 配套；首帧缺省组件写入折叠态，宿主/尾格可切换）"
     },
     "events": {
       "oas-collapse": "折叠行尾格切换时派发，`detail: { collapsed }`"
@@ -1521,7 +1522,11 @@
       "suffix-text": "内嵌后置文案（纯 HTML 可沿用遗留别名 suffix）",
       "required": "必填标记（透传原生 input；驱动原生校验链 valueMissing）",
       "autofocus": "挂载后自动聚焦内层输入框（原生 autofocus 不穿透 shadow，组件转发）",
-      "loading": "加载态：行尾 spinner + aria-busy（不禁用输入）；与 clearable 共存时优先显示"
+      "loading": "加载态：行尾 spinner + aria-busy（不禁用输入）；与 clearable 共存时优先显示",
+      "hint": "输入框下方常驻静态提示文案（aria-describedby 关联，独立于校验错误）",
+      "min": "透传内层原生 input 的最小值（number 类型生效）",
+      "max": "透传内层原生 input 的最大值",
+      "step": "透传内层原生 input 的步长"
     },
     "events": {
       "oas-clear": "点击清除，`detail: { originalEvent }`",
@@ -1536,7 +1541,8 @@
       "prefix": "内嵌前置内容（图标/按钮等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可",
       "suffix": "内嵌后置内容（图标/按钮等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可",
       "prepend": "前置 addon 区（可嵌 select/按钮等任意内容）",
-      "append": "后置 addon 区（可嵌 select/按钮等任意内容）"
+      "append": "后置 addon 区（可嵌 select/按钮等任意内容）",
+      "clear-icon": "自定义清除按钮图标（插槽有内容即替换内置）"
     }
   },
   "oas-input-number": {
@@ -1561,7 +1567,11 @@
       "clearable": "有值时显示清除按钮（一键回空值态）",
       "prefix-text": "内嵌前缀文案（slot=\"prefix\" 可分发任意内容，不参与数值解析）",
       "suffix-text": "内嵌后缀文案（slot=\"suffix\" 同上）",
-      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层 input）"
+      "required": "必填标记（驱动原生校验链 valueMissing；不透传内层 input）",
+      "autofocus": "挂载后聚焦内层输入（原生 autofocus 不穿透 shadow）",
+      "decimal-separator": "小数点字符（显示与键入解析用；缺省 locale 感知，提交值仍规范数字串）",
+      "variant": "形态 outlined/filled/borderless（对齐 input）",
+      "align": "数字文本对齐 left/center/right（逻辑映射，RTL 镜像）"
     },
     "events": {
       "oas-change": "步进或失焦变化，`detail: { value }`（数字）",
@@ -2502,10 +2512,10 @@
       "template[slot=\"option\"]": "选项行静态模板，克隆到每个选项 label 容器；`[data-option-label]` 节点自动绑定选项 label",
       "template[slot=\"tag\"]": "多选标签静态模板，克隆到每个 chip 的文本容器；`[data-tag-label]` 节点自动绑定标签 label",
       "template[slot=\"empty\"]": "自定义空态（覆盖「暂无数据」与「无匹配选项」默认文案）",
-      "prefix": "触发器前缀内容",
-      "suffix": "触发器后缀内容",
-      "suffix-icon": "自定义触发器后缀图标（替换默认箭头）",
-      "clear-icon": "自定义清除按钮图标"
+      "template[slot=\"clear-icon\"]": "自定义清除按钮图标",
+      "template[slot=\"suffix-icon\"]": "自定义触发器后缀图标（替换默认箭头）",
+      "template[slot=\"prefix\"]": "触发器前缀内容模板",
+      "template[slot=\"suffix\"]": "触发器后缀内容模板"
     }
   },
   "oas-sidebar": {
@@ -2896,7 +2906,7 @@
     },
     "slots": {
       "template[slot=\"empty\"]": "空态富内容（优先于 empty-text 与默认空态文案）",
-      "filter-icon": "自定义可过滤列表头的触发图标"
+      "template[slot=\"filter-icon\"]": "自定义可过滤列表头的触发图标"
     }
   },
   "oas-table-column": {
@@ -3564,7 +3574,7 @@
     "slots": {
       "template[slot=\"empty\"]": "自定义空态内容",
       "template[slot=\"node\"]": "自定义节点模板（`[data-node-label]` 绑定标签）",
-      "suffix-icon": "自定义触发器后缀图标（替换默认箭头）"
+      "template[slot=\"suffix-icon\"]": "自定义触发器后缀图标（替换默认箭头）"
     }
   },
   "oas-upload": {

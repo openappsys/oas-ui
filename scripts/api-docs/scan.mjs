@@ -159,6 +159,11 @@ const EXCLUDE_ATTRS = {
   'oas-paragraph': ['size'],
 }
 
+// 插槽补录：模板字符串动态拼装/克隆通道导致 AST 探不到的 slot
+const SUPPLEMENT_SLOTS = {
+  'oas-select': ['template[slot="prefix"]', 'template[slot="suffix"]'],
+}
+
 const SUPPLEMENT_ATTRS = {
   // typography 工厂模式（createTypography 动态 getter）AST 探不到——全量登记（含 P2 新增 oas-text size）
   'oas-text': [
@@ -231,6 +236,8 @@ const SUPPLEMENT_ATTRS = {
   'oas-tab-panel': ['badge', 'icon', 'href', 'target', 'rel', 'icon-only', 'title'],
   // success 为纯 CSS 消费属性（无 getAttr/hasAttr），扫描正则探不到，人工补录
   'oas-pin-input': ['success'],
+  // min/max/step 走 PASSTHROUGH_ATTRS 动态循环透传（无字面量 getAttr 调用点，扫描盲区）
+  'oas-input': ['min', 'max', 'step'],
   // check-all 由 oas-checkbox-group 读子项（全选联动标记）；label-position 为纯 CSS 消费
   'oas-checkbox': ['check-all', 'label-position'],
   // label-position 为纯 CSS 消费属性（:host([label-position='start']) 镜像布局）
@@ -994,6 +1001,9 @@ function scanDir(project, dir, unresolvedGlobal) {
     const finalAttrs = exclude.size ? attrs.filter((a) => !exclude.has(a.name)) : attrs
     const events = extractEvents(classNode, unresolved)
     const slots = extractSlots(classNode)
+    for (const name of SUPPLEMENT_SLOTS[tag] ?? []) {
+      if (!slots.some((s) => s.name === name)) slots.push({ name })
+    }
     const cssVars = classFile ? extractCssVars(readFileSync(join(ROOT, classFile), 'utf8'), tag) : []
 
     manifest[tagKey] = {
