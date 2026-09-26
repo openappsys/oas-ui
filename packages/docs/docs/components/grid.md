@@ -320,7 +320,6 @@
 | `cols` | 总列数 | `string` | `24` |
 | `columns` | 自动等分列数（simple-grid，有值时忽略子项 span）：支持断点简写（如 3 md:2 sm:1，断点 sm=640/md=768/lg=1024/xl=1280）；与 min-child-width 并存时优先 | `string` | — |
 | `gap` | 间距；单值两轴同值，两值空格分隔「行 列」（如 `8 16` 行 8 列 16）；三值以上非法静默回落 `0` | `string` | `0` |
-| `hidden` | 原生全局 hidden 语义（宿主写 hidden 即隐藏，组件不拦截） | `boolean` | — |
 | `justify` | 行内轴对齐（justify-items）：`start` / `center` / `end` / `stretch`；非法值回落 `stretch` + dev 告警（同值去重） | `string` | — |
 | `min-child-width` | 子项最小宽度（如 180px，纯数字按 px）：auto-fit + minmax 依容器宽度自动计算列数（子项免断点流式重排）；与 columns 并存时 columns 优先，该模式下子项 span/offset 不生效 | `string` | — |
 

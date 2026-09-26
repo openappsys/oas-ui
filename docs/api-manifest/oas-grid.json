@@ -37,11 +37,6 @@
       "type": "string",
       "default": "",
       "observed": true
-    },
-    {
-      "name": "hidden",
-      "type": "boolean",
-      "observed": false
     }
   ],
   "props": [],

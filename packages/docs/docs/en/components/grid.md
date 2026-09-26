@@ -320,7 +320,6 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 | `cols` | Total column count | `string` | `24` |
 | `columns` | Auto equal column count (simple-grid; child span ignored when set): supports breakpoint shorthand (e.g. 3 md:2 sm:1; breakpoints sm=640/md=768/lg=1024/xl=1280); takes precedence over min-child-width | `string` | — |
 | `gap` | Gap; a single value applies to both axes, two space-separated values set `row column` (e.g. `8 16` = row 8, column 16); three or more values are invalid and silently fall back to `0` | `string` | `0` |
-| `hidden` | Native global hidden semantics (host-written hidden hides the component; not intercepted) | `boolean` | — |
 | `justify` | Inline-axis alignment (justify-items): `start` / `center` / `end` / `stretch`; invalid values fall back to `stretch` with a dev warning (deduped) | `string` | — |
 | `min-child-width` | Minimum child width (e.g. 180px; bare numbers read as px): auto-fit + minmax derives the column count from container width (breakpoint-free fluid reflow); `columns` wins when both are set, and child span/offset are inert in this mode | `string` | — |
 
