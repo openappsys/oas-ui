@@ -2828,7 +2828,8 @@
       "oas-close": "A tab's close × was clicked, `detail: { key }` (`key` is that tab's `value`; the component does not remove the panel)",
       "oas-before-change": "Fired before switching (cancelable), `detail: { value }`; host `preventDefault()` vetoes the switch (click/keyboard both; direct setAttribute by host does not trigger)",
       "oas-rename": "Editable tab rename confirmed via double-click + Enter, `detail: { value, label }`; the component writes the new label back to the panel, host may persist",
-      "oas-reorder": "Fired after sortable drag reorder, `detail: { fromIndex, toIndex }`; host reorders `oas-tab-panel` accordingly (the component does not move DOM itself)"
+      "oas-reorder": "Fired after sortable drag reorder, `detail: { fromIndex, toIndex }`; host reorders `oas-tab-panel` accordingly (the component does not move DOM itself)",
+      "oas-tab-contextmenu": "Per-tab context menu signal (right-click, or Menu key / Shift+F10 on a focused tab) — cancelable; `detail: { value, index, clientX, clientY, originalEvent }`. Host preventDefault suppresses both the built-in menu (context-menu attribute) and the browser default menu; not fired on empty nav area. Native channel for host-built per-tab menus"
     },
     "slots": {
       "": "Tab panels (`oas-tab-panel`)",
