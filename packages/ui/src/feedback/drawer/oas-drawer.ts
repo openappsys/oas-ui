@@ -758,7 +758,8 @@ export class OASDrawer extends OASElement {
     this.wasOpen = true
     pushStack(this)
     if (!this.hasAttr('no-scroll-lock')) lockBodyScroll()
-    this.previousFocus = document.activeElement as HTMLElement
+    // previousFocus 只在模态语义下记录——no-mask 不抢焦点，关闭时也不得把焦点拉回（对齐 modal:920-924 先例）
+    if (!this.hasAttr('no-mask')) this.previousFocus = document.activeElement as HTMLElement
     this.emit('open')
     syncStackZ()
     this.mask?.setAttribute('data-open', '')
@@ -803,7 +804,8 @@ export class OASDrawer extends OASElement {
     this.emit('closed')
     this.emit('after-close')
     if (!this.hasAttr('no-scroll-lock')) unlockBodyScroll()
-    // 焦点归还：仅当自己是最后打开的浮层（栈空且无模态）——不抢下层抽屉焦点
+    // 焦点归还：仅当自己是最后打开的浮层（栈空且无模态）——不抢下层抽屉焦点；
+    // no-mask 从未记录 previousFocus（不抢焦点语义对称），天然不归还
     if (topDrawer() === null && !hasVisibleModal()) {
       this.previousFocus?.focus()
     }
