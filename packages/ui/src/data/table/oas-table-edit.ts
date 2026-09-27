@@ -56,8 +56,10 @@ interface EditState {
   td: HTMLTableCellElement
   /** 编辑前原值（字符串形态） */
   oldValue: string
-  /** 编辑器类型 */
-  editor: 'input' | 'select'
+  /** 编辑器类型：input / select（原生通道）/ component（editComponent 组件通道） */
+  editor: 'input' | 'select' | 'component'
+  /** component 态的编辑器元素（value 属性语义的任意 WC） */
+  componentEl: HTMLElement | null
 }
 
 const EDIT_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${editPath}</svg>`
@@ -256,8 +258,11 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     const row = this.findDataRow(key) ?? {}
     const oldValue = String(row[colKey] ?? '')
     const displayIndex = this.displayIndexOf(tr)
-    const editor =
-      col.editor === 'select' ? this.buildSelectEditor(col, key, oldValue) : this.buildInputEditor(col, key, oldValue)
+    const editor: HTMLInputElement | HTMLSelectElement | HTMLElement = col.editComponent
+      ? this.buildFormComponentEditor(col, key, oldValue)
+      : col.editor === 'select'
+        ? this.buildSelectEditor(col, key, oldValue)
+        : this.buildInputEditor(col, key, oldValue)
     // 不可见占位：保留原单元格文本的布局贡献（auto 表格布局下列宽/行高与常态逐像素一致），
     // 编辑器绝对定位覆于其上零贡献——进/出编辑不撑列、不挤邻列、不跳行高
     const sizer = document.createElement('span')
@@ -276,7 +281,8 @@ export class TableEditController implements ReactiveController, TableEditCapabil
       row,
       td,
       oldValue,
-      editor: col.editor === 'select' ? 'select' : 'input',
+      editor: col.editComponent ? 'component' : col.editor === 'select' ? 'select' : 'input',
+      componentEl: col.editComponent ? (editor as HTMLElement) : null,
     }
     editor.focus()
     if (editor instanceof HTMLInputElement) editor.select()
@@ -352,6 +358,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     if (invalid) {
       // 校验失败：保持编辑态、不提交（编辑器仍可编辑重试）
       st.td.dataset.invalid = 'true'
+      ;(st.componentEl as HTMLElement | null)?.focus?.()
       st.td.querySelector<HTMLInputElement | HTMLSelectElement>('input, select')?.focus()
       return
     }
@@ -427,12 +434,46 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   }
 
   private readEditorValue(st: EditState): string {
+    if (st.editor === 'component') {
+      // 组件编辑器：value **attribute** 语义（WC 公共契约最稳——property 通道各组件不一）
+      const el = st.td.querySelector<HTMLElement>('.cell-editor-component')
+      return el?.getAttribute('value') ?? st.oldValue
+    }
     if (st.editor === 'select') {
       const sel = st.td.querySelector<HTMLSelectElement>('select.cell-editor')
       return sel ? sel.value : st.oldValue
     }
     const input = st.td.querySelector<HTMLInputElement>('input.cell-editor')
     return input ? input.value : st.oldValue
+  }
+
+  /**
+   * 组件编辑器（editComponent 通道）：创建对应 WC、注入初值与提交/取消语义。
+   * 契约（最小集）：组件支持 **value attribute** 读写当前值、派发 change 事件提交、Esc 键取消。
+   * 库内 form 组件天然满足（attribute 反射到内部控件）。注意：读值走 attribute（property 通道各组件不一）。
+   */
+  private buildFormComponentEditor(col: TableColumn, key: string, value: string): HTMLElement {
+    const el = document.createElement(col.editComponent!) as HTMLElement
+    el.className = 'cell-editor cell-editor-component'
+    el.setAttribute('part', 'cell-editor')
+    el.setAttribute('value', value)
+    el.setAttribute('aria-label', this.hostEl.translateText('table.editCell', { column: col.title, key }))
+    el.addEventListener('change', (e) => {
+      e.stopPropagation()
+      this.submitEdit()
+    })
+    el.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        this.cancelEdit()
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        this.submitEdit()
+      }
+    })
+    el.addEventListener('click', (e) => e.stopPropagation())
+    el.addEventListener('blur', (e: FocusEvent) => this.handleEditorBlur(e))
+    return el
   }
 
   /** 数字列编辑回写保持数值类型（非字符串化） */

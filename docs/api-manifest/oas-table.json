@@ -200,6 +200,11 @@
       "name": "row-draggable",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "column-virtual",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [

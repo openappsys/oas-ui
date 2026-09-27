@@ -2944,7 +2944,8 @@
       "export-format": "导出格式：`csv`（默认）/ `excel`，或逗号组合 `csv,excel`（两个按钮）；非法回落 csv",
       "export-file-name": "导出文件名（不含扩展名；路径分隔符与保留字符自动净化）",
       "grid-navigation": "键盘网格导航：role=grid，数据区单停靠点 + 方向键在单元格间漫游（Home/End/PageUp-Down，Enter/Space 激活格内控件）",
-      "row-draggable": "行拖拽排序：渲染拖拽手柄列，拖放派发 oas-row-reorder；虚拟滚动（height）下禁用并告警一次"
+      "row-draggable": "行拖拽排序：渲染拖拽手柄列，拖放派发 oas-row-reorder；虚拟滚动（height）下禁用并告警一次",
+      "edit-component": "组件编辑器（优先于 editor）：库内/宿主任意 value 语义的 WC tag 名（如 oas-input / oas-date-picker）。契约：value attribute 读写当前值、change 事件提交、Esc 取消。浮层类组件后续批次支持"
     },
     "events": {
       "oas-check": "复选框选中变化，`detail: { keys: string[] }`",

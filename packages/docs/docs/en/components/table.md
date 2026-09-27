@@ -175,6 +175,14 @@ Editable cells come with perceptible affordances: hovering or focusing (focus-vi
 
 Clicks / double-clicks landing inside an inline “interactive host” never cascade into row-level gestures: pointer events inside native controls (`button` / `a` / `input` / `select` / `textarea`), elements carrying a `role` attribute, or library interactive components (e.g. `oas-button`, `oas-link`, `oas-select`) only trigger the control itself — they neither toggle row selection nor get misread as a double-click-to-edit. Row clicks and double-click editing share the same exclusion list, kept in sync as new interactive components are added to the library. Business-specific interactive content inside a row (charts, mini widgets, etc.) needs no library release: add `data-oas-row-click-ignore` to its container to exempt that whole block from row clicks and row editing.
 
+### Component Editor (editComponent)
+
+<DemoBlock title="editComponent: any component as the cell editor">
+  <oas-table editable row-key="word" columns='[{"key":"word","title":"Term","editable":true,"editComponent":"oas-input"},{"key":"note","title":"Note","editable":true,"editComponent":"oas-textarea"}]' data='[{"word":"oas-ui","note":"Web Components library"},{"word":"divider","note":"Divider"}]'></oas-table>
+</DemoBlock>
+
+`edit-component` specifies a **component editor** (takes precedence over `editor`): double-clicking mounts the given component and injects the current value; `change` submits and Escape cancels. Component contract (minimal): **value attribute** read/write of the current value + `change` event — in-library form components (oas-input / oas-textarea / oas-switch etc.) satisfy it natively, and host-defined custom elements work the same way. First-phase scope covers non-overlay components (overlay editors like date-picker / select in a later batch).
+
 ## Controlled Editing
 
 <DemoBlock title="Controlled editing (edit-controlled)">
@@ -864,9 +872,11 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 | `bordered` | Full border: draws a grid outline around cells (the outer frame is built in) | — | — |
 | `checkable` | Row selection: present = multi-select (checkboxes + select-all header); `="radio"` = single-select (mutually exclusive, click again to deselect, no select-all), oas-check detail.keys ≤1 | `string` | — |
 | `column-keys` | Controlled column visibility and order (key array or comma list): header tree and data columns re-order to the effective leaf order (same-ancestor leaves grouped) | `string[] \| string` | `[]` |
+| `column-virtual` | — | `boolean` | — |
 | `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `TableColumn[] \| string` | `[]` |
 | `current` | Current page (built-in pagination, controlled) | `string` | `1` |
 | `data` | Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `Array<Record<string, unknown>> \| string` | `[]` |
+| `edit-component` | Component editor (takes precedence over editor): any value-semantic WC tag name (e.g. oas-input / oas-date-picker). Contract: value attribute read/write, change event submits, Escape cancels. Overlay components in a later batch | — | — |
 | `edit-controlled` | Controlled editing: does not write back `data` on submit, only fires `oas-edit`; the host listens and updates `data` itself | `boolean` | — |
 | `editable` | Inline editing switch (requires `editable: true` on columns; same for the `actions: true` operation column) | `boolean` | — |
 | `empty-text` | Empty state text | — | — |

@@ -175,6 +175,16 @@
 
 行内「交互宿主」上的点击/双击不连带行级手势：落在原生控件（`button`/`a`/`input`/`select`/`textarea`）、带 `role` 的 ARIA 元素或库内交互组件（如 `oas-button`、`oas-link`、`oas-select`）内部的点击只触发该控件自身行为——不切换行选中、也不会被双击判定误带入编辑；行点击与双击进编辑共用同一份排除清单，并随组件库新增交互型组件同步维护。业务侧行内自定义交互内容（图表、迷你挂件等）无需等库发版：在容器上标注 `data-oas-row-click-ignore` 即可让整块内容豁免行点击与行编辑。
 
+行内「交互宿主」上的点击/双击不连带行级手势：落在原生控件（`button`/`a`/`input`/`select`/`textarea`）、带 `role` 的 ARIA 元素或库内交互组件（如 `oas-button`、`oas-link`、`oas-switch`、`oas-checkbox`）上的点击/双击不派发行级手势（防误触），但**不阻止编辑态本身**。
+
+### 组件编辑器（editComponent）
+
+<DemoBlock title="editComponent：任意组件作为单元格编辑器">
+  <oas-table editable row-key="word" columns='[{"key":"word","title":"词条","editable":true,"editComponent":"oas-input"},{"key":"note","title":"备注","editable":true,"editComponent":"oas-textarea"}]' data='[{"word":"oas-ui","note":"Web Components 组件库"},{"word":"divider","note":"分隔线"}]'></oas-table>
+</DemoBlock>
+
+`edit-component` 指定**组件编辑器**（优先于 `editor`）：双击后挂载对应组件并注入当前值，`change` 提交、Esc 取消。组件契约（最小集）：**value attribute 读写当前值 + change 事件**——库内 form 组件（oas-input / oas-textarea / oas-switch 等）天然满足，宿主自定义 WC 同样可用。第一期约定为非浮层组件（date-picker / select 等浮层类后续批次支持）。
+
 ## 受控编辑
 
 <DemoBlock title="受控编辑（edit-controlled）">
@@ -860,9 +870,11 @@ onMounted(() => {
 | `bordered` | 完整边框：单元格网格描边（外框由组件自带） | — | — |
 | `checkable` | 行选择开关：存在即多选（复选框 + 全选头）；`="radio"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1 | `string` | — |
 | `column-keys` | 受控列显隐与顺序（key 数组或逗号串）：在场时按有效叶序重组表头与数据列（多级表头同祖先链叶子并组） | `string[] \| string` | `[]` |
+| `column-virtual` | — | `boolean` | — |
 | `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
 | `current` | 当前页码（内置分页，受控） | `string` | `1` |
 | `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `Array<Record<string, unknown>> \| string` | `[]` |
+| `edit-component` | 组件编辑器（优先于 editor）：库内/宿主任意 value 语义的 WC tag 名（如 oas-input / oas-date-picker）。契约：value attribute 读写当前值、change 事件提交、Esc 取消。浮层类组件后续批次支持 | — | — |
 | `edit-controlled` | 受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data` | `boolean` | — |
 | `editable` | 行内编辑开关（需配合列配置 `editable: true`；操作列 `actions: true` 同理） | `boolean` | — |
 | `empty-text` | 空态文案 | — | — |
