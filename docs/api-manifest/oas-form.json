@@ -87,7 +87,7 @@
     },
     {
       "name": "oas-validate-fail",
-      "detail": "{ errors: this.errors, values: this.nestValues(values) }"
+      "detail": "{ errors: { ...this.errors }, values: this.nestValues(values) }"
     },
     {
       "name": "oas-values-change",
