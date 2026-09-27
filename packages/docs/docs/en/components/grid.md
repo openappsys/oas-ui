@@ -257,7 +257,7 @@ Setting `columns` divides the width equally with `repeat(n, 1fr)`; child `span` 
 
 ## Collapsed rows (collapsed-rows)
 
-`collapsed-rows` sets how many rows stay visible in the collapsed state (row model accumulates child span/offset): children beyond the limit are hidden and an Expand tail cell appears (spanning the remaining columns of its row); clicking expands, and the tail turns into Collapse to fold back. The collapsed state writes back to the controlled `collapsed` attribute and emits `oas-collapse`. Not enabled under `columns` / `min-child-width` auto layouts (the row model relies on span/offset semantics).
+`collapsed-rows` sets how many rows stay visible in the collapsed state (row model accumulates child span/offset): children beyond the limit are hidden and an Expand tail cell appears (spanning the remaining columns of its row); clicking expands, and the tail turns into Collapse to fold back. The collapsed state writes back to the controlled `collapsed` attribute and emits `oas-collapse`. Not enabled under `columns` / `min-child-width` auto layout (the row model relies on span/offset semantics); the row model counts in 24 columns, so with a non-24 `cols` the row estimate deviates from the real layout (push/pull are not counted either) — avoid that combination. When the total row count does not exceed `collapsed-rows`, `collapsed` is never written (nothing to fold: everything stays visible with no tail cell).
 
 <DemoBlock title="collapsed-rows=1 query filters">
   <oas-grid collapsed-rows="1" gap="12px" style="width: 100%">

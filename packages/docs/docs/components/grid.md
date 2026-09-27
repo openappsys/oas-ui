@@ -257,7 +257,7 @@
 
 ## 折叠行（collapsed-rows）
 
-`collapsed-rows` 指定折叠态显示的行数（按子项 span/offset 累计的行模型）：超出行数的子项隐藏，末尾出现「展开」尾格（占所在行剩余列）；点击展开后尾格转为「收起」可折回。折叠状态写回受控 `collapsed` 属性并派发 `oas-collapse`；`columns` / `min-child-width` 自动布局下不启用（行模型依赖 span/offset 语义）。
+`collapsed-rows` 指定折叠态显示的行数（按子项 span/offset 累计的行模型）：超出行数的子项隐藏，末尾出现「展开」尾格（占所在行剩余列）；点击展开后尾格转为「收起」可折回。折叠状态写回受控 `collapsed` 属性并派发 `oas-collapse`；`columns` / `min-child-width` 自动布局下不启用（行模型依赖 span/offset 语义）；行模型按 24 列累计，`cols` 非 24 时行数判定与实际布局有偏差（push/pull 不参与行模型），此组合慎用；总行数不超过 `collapsed-rows` 时不写 `collapsed`（无可折叠内容，全量可见且无尾格）。
 
 <DemoBlock title="collapsed-rows=1 查询条件折叠">
   <oas-grid collapsed-rows="1" gap="12px" style="width: 100%">

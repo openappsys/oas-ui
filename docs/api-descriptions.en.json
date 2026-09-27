@@ -1527,7 +1527,13 @@
       "hint": "Persistent static hint below the input (aria-describedby, independent of validation errors)",
       "min": "Native min mirrored to the inner input (number type)",
       "max": "Native max mirrored to the inner input",
-      "step": "Native step mirrored to the inner input"
+      "step": "Native step mirrored to the inner input",
+      "autocomplete": "Passes the autocomplete hint through to the inner native input (password managers / autofill)",
+      "enterkeyhint": "Passes the mobile virtual keyboard enter-key appearance through (e.g. search/send/go)",
+      "inputmode": "Passes the mobile virtual keyboard type through to the inner input",
+      "minlength": "Passes the native minimum length constraint through",
+      "pattern": "Passes the native regex validation pattern through",
+      "spellcheck": "Passes the native spellcheck toggle through"
     },
     "events": {
       "oas-clear": "Cleared by click, `detail: { originalEvent }`",

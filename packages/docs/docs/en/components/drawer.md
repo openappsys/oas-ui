@@ -247,7 +247,7 @@ Stacked drawers get automatic stack management: later openers sit on top (increm
 
 ## No mask mode (no-mask)
 
-`no-mask` renders no mask layer (the page stays visible and unblocked) while clicking **anywhere outside the drawer** still closes it (reusing the mask click `mask` cancel semantics, emitting `oas-close` / `oas-cancel`). Suited for lightweight scenarios that keep the page visible, such as side tool panels or persistent filter rails; combined with `no-mask-close`, outside clicks no longer close (only ✕ / Esc / buttons remain).
+`no-mask` renders no mask layer (the page stays visible and unblocked) while clicking **anywhere outside the drawer** still closes it (reusing the mask click `mask` cancel semantics, emitting `oas-close` / `oas-cancel`). Suited for lightweight scenarios that keep the page visible, such as side tool panels or persistent filter rails; combined with `no-mask-close`, outside clicks no longer close (only ✕ / Esc / buttons remain). Non-modal semantics follow `dialog.show()`: `aria-modal="false"`, no focus steal on open, no Tab trapping, no focus restore on close; focus semantics are captured at **open time** (toggling `no-mask` at runtime updates aria and the focus trap but does not change the focus-restore behavior of an already-open drawer).
 
 <DemoBlock title="No mask mode">
   <oas-button type="primary" onclick="document.querySelector('#drawer-nomask-mode').setAttribute('visible','')">Open no-mask drawer</oas-button>

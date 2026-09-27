@@ -309,7 +309,7 @@ Script wiring (controlled sync + event feedback for each demo):
 
 ### Form-Level Size & Label Colon (size / colon)
 
-> `size` distributes the form-level size tier (`small` / `medium` / `large`) to field controls inside the form; a field's own explicit `size` wins. `colon` renders a colon after the label of every `oas-form-item` in the form. Click the buttons below to watch fields resize and the colon toggle live.
+> `size` distributes the form-level size tier (`small` / `medium` / `large`) to field controls inside the form. Priority: a field's own explicit `size` > the form-level `size` > config-provider global injection > the default tier (when both form-level and global injection are present, the form-level wins). `colon` renders a colon after the label of every `oas-form-item` in the form. Click the buttons below to watch fields resize and the colon toggle live.
 
 <DemoBlock title="Form-level size + colon">
   <oas-form id="form-size-colon" size="large" colon style="width: 360px">

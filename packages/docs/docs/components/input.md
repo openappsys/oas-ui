@@ -446,16 +446,21 @@ onMounted(() => {
 | `auto-width` | 宽度随内容自适应（mirror 测宽；空值回落 placeholder 宽），常配 auto-width-min/max 钳制 | `boolean` | — |
 | `auto-width-max` | auto-width 最大宽度 px 或百分比（默认 100%） | — | — |
 | `auto-width-min` | auto-width 最小宽度 px（默认 72） | — | — |
+| `autocomplete` | 透传内层原生 input 的自动填充提示（密码管理器/浏览器自动填充） | — | — |
 | `autofocus` | 挂载后自动聚焦内层输入框（原生 autofocus 不穿透 shadow，组件转发） | `boolean` | — |
 | `clearable` | 可清空 | `boolean` | — |
 | `count-position` | 字数计数位置：`outside`（默认，框外）/ `inside`（输入区内右侧） | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
+| `enterkeyhint` | 透传内层原生 input 的移动虚拟键盘回车键形态（如 search/send/go） | — | — |
 | `hint` | 输入框下方常驻静态提示文案（aria-describedby 关联，独立于校验错误） | `string` | — |
+| `inputmode` | 透传内层原生 input 的移动虚拟键盘类型 | — | — |
 | `label` | 可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」） | — | — |
 | `loading` | 加载态：行尾 spinner + aria-busy（不禁用输入）；与 clearable 共存时优先显示 | `boolean` | — |
 | `max` | 透传内层原生 input 的最大值 | — | — |
 | `maxlength` | 最大输入长度（透传原生 maxlength） | `string` | — |
 | `min` | 透传内层原生 input 的最小值（number 类型生效） | — | — |
+| `minlength` | 透传内层原生 input 的最小长度约束 | — | — |
+| `pattern` | 透传内层原生 input 的正则校验模式 | — | — |
 | `placeholder` | 占位提示 | `string` | — |
 | `prefix-icon` | 前置图标名 | `string` | — |
 | `prefix-text` | 内嵌前置文案（纯 HTML 可沿用遗留别名 prefix） | `string` | — |
@@ -465,6 +470,7 @@ onMounted(() => {
 | `show-count` | 显示字数统计（右下角，超限标 danger） | `boolean` | — |
 | `show-password` | 密码可见切换（`type="password"` 时渲染眼睛按钮） | `boolean` | — |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large`：高度与字号联动 | `string` | `medium` |
+| `spellcheck` | 透传内层原生 input 的拼写检查开关 | — | — |
 | `status` | 校验态：`error` / `warning` / `success`；error 同步内层 aria-invalid | `string` | — |
 | `step` | 透传内层原生 input 的步长 | — | — |
 | `suffix-icon` | 后置图标名 | `string` | — |

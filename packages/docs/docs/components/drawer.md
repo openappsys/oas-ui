@@ -247,7 +247,7 @@
 
 ## 无遮罩模式（no-mask）
 
-`no-mask` 无遮罩模式：不渲染遮罩层（页面不变暗、不被拦截），点击抽屉**外部任意区域**仍可关闭（沿用遮罩点击的 `mask` 取消语义，派发 `oas-close` / `oas-cancel`）。适合侧边工具面板、常驻筛选栏等需要看到页面内容的轻量场景；与 `no-mask-close` 同设时点外部不关（关闭入口只留 ✕ / Esc / 按钮）。
+`no-mask` 无遮罩模式：不渲染遮罩层（页面不变暗、不被拦截），点击抽屉**外部任意区域**仍可关闭（沿用遮罩点击的 `mask` 取消语义，派发 `oas-close` / `oas-cancel`）。适合侧边工具面板、常驻筛选栏等需要看到页面内容的轻量场景；与 `no-mask-close` 同设时点外部不关（关闭入口只留 ✕ / Esc / 按钮）。非模态语义对齐 `dialog.show()`：`aria-modal="false"`、打开不抢焦点、Tab 不圈禁、关闭不归还焦点；焦点语义以**打开瞬间**的 `no-mask` 状态为准（运行期增删该属性只影响 aria 与焦点陷阱，不改变已打开抽屉的焦点归还行为）。
 
 <DemoBlock title="无遮罩模式">
   <oas-button type="primary" onclick="document.querySelector('#drawer-nomask-mode').setAttribute('visible','')">打开无遮罩抽屉</oas-button>

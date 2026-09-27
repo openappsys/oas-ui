@@ -237,7 +237,17 @@ const SUPPLEMENT_ATTRS = {
   // success 为纯 CSS 消费属性（无 getAttr/hasAttr），扫描正则探不到，人工补录
   'oas-pin-input': ['success'],
   // min/max/step 走 PASSTHROUGH_ATTRS 动态循环透传（无字面量 getAttr 调用点，扫描盲区）
-  'oas-input': ['min', 'max', 'step'],
+  'oas-input': [
+    'min',
+    'max',
+    'step',
+    'autocomplete',
+    'inputmode',
+    'minlength',
+    'spellcheck',
+    'enterkeyhint',
+    'pattern',
+  ],
   // check-all 由 oas-checkbox-group 读子项（全选联动标记）；label-position 为纯 CSS 消费
   'oas-checkbox': ['check-all', 'label-position'],
   // label-position 为纯 CSS 消费属性（:host([label-position='start']) 镜像布局）
@@ -427,35 +437,33 @@ function evalCondBoolean(cond, factoryCall, factoryFn) {
   if (cond.kind === K.FalseKeyword) return false
   if (cond.kind !== K.Identifier) return undefined
   const name = cond.text
-  // 1) 工厂调用对象字面量中的属性
-  const opts = factoryCall?.arguments?.[1]
-  if (opts && opts.kind === K.ObjectLiteralExpression) {
-    const prop = (opts.properties || []).find((p) => p.name?.text === name)
-    if (prop?.initializer?.kind === K.TrueKeyword) return true
-    if (prop?.initializer?.kind === K.FalseKeyword) return false
-  }
-  // 2) 工厂函数解构默认值：const { levels = false, ... } = options
+  // 解构别名解析（const { size: sizeEnabled = false } = options）：条件变量 sizeEnabled
+  // 的真实来源键是 size——先按来源键查工厂实参，实参缺席才回落解构默认值
+  // （旧实现按本地名查不到实参键，直接取默认值 → 别名场景恒判默认，typography size 实抓）
+  let sourceKey = name
+  let destructureDefault = undefined
   if (factoryFn) {
-    let def = undefined
     walk(factoryFn, (n) => {
-      if (def !== undefined) return
       if (n.kind === K.VariableDeclaration && n.name?.kind === K.ObjectBindingPattern) {
         for (const el of n.name.elements || []) {
-          if (el.propertyName?.text === name || el.name?.text === name) {
-            if (el.initializer?.kind === K.TrueKeyword) {
-              def = true
-              return
-            }
-            if (el.initializer?.kind === K.FalseKeyword) {
-              def = false
-              return
-            }
+          if (el.name?.text === name) {
+            if (el.propertyName?.text) sourceKey = el.propertyName.text
+            if (el.initializer?.kind === K.TrueKeyword) destructureDefault = true
+            else if (el.initializer?.kind === K.FalseKeyword) destructureDefault = false
           }
         }
       }
     })
-    if (def !== undefined) return def
   }
+  // 1) 工厂调用对象字面量中的属性（按来源键）
+  const opts = factoryCall?.arguments?.[1]
+  if (opts && opts.kind === K.ObjectLiteralExpression) {
+    const prop = (opts.properties || []).find((p) => p.name?.text === sourceKey)
+    if (prop?.initializer?.kind === K.TrueKeyword) return true
+    if (prop?.initializer?.kind === K.FalseKeyword) return false
+  }
+  // 2) 工厂函数解构默认值（实参缺席时）
+  if (destructureDefault !== undefined) return destructureDefault
   return undefined
 }
 

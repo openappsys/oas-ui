@@ -798,3 +798,23 @@ describe('OASRadioGroup required（form-associated 原生校验链）', () => {
     expect((detail as { values: Record<string, string> }).values.plan).toBe('b')
   })
 })
+
+describe('oas-radio-group × config-provider size 注入（injectValue 改动回归）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('provider size=large：组内 options 子项跟随（与改动前逐字一致）', async () => {
+    const { OASConfigProvider } = await import('../../framework/config-provider/index.js')
+    const provider = new OASConfigProvider()
+    provider.setAttribute('size', 'large')
+    provider.innerHTML = '<oas-radio-group options=\'[{"label":"A","value":"a"}]\'></oas-radio-group>'
+    document.body.appendChild(provider)
+    const group = provider.querySelector('oas-radio-group')!
+    await new Promise((r) => setTimeout(r, 0))
+    expect(group.shadowRoot!.querySelector('oas-radio')?.getAttribute('data-size')).toBe('large')
+  })
+})

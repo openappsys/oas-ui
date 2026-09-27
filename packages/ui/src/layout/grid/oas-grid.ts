@@ -446,13 +446,8 @@ export class OASGrid extends OASElement {
       return
     }
 
-    // 首帧缺省折叠：写入 collapsed 属性（受控契约的初始落点，此后不再自动改写）
-    if (!this.collapseBootstrapped) {
-      this.collapseBootstrapped = true
-      if (!this.hasAttribute('collapsed')) this.setAttribute('collapsed', '')
-    }
-
-    // 行模型：逐项累计列位
+    // 行模型先行：判定是否真有可折叠内容——collapsed-rows >= 总行数时不写 collapsed
+    // （写了却全量可见且无收起入口，读 collapsed 的宿主会误判状态）
     const maxRows = this.collapsedRows()
     const rows: number[] = []
     let row = 1
@@ -467,6 +462,14 @@ export class OASGrid extends OASElement {
       pos += need
     }
     const totalRows = children.length > 0 ? row : 0
+
+    // 首帧缺省折叠：确有可折叠内容（totalRows > maxRows）才写入 collapsed 属性
+    // （受控契约的初始落点，此后不再自动改写）
+    if (!this.collapseBootstrapped) {
+      this.collapseBootstrapped = true
+      if (totalRows > maxRows && !this.hasAttribute('collapsed')) this.setAttribute('collapsed', '')
+    }
+
     const collapsed = this.hasAttribute('collapsed')
 
     // 可见行上限：折叠取 maxRows，展开取全部
