@@ -165,6 +165,20 @@ describe('OASHighlight', () => {
 
   // ---------- 重音（diacritic 折叠） ----------
 
+  it('组合符跨码点重排一致性（希伯来 niqqud）：oas-count 的 matches 与实际 mark 不分歧', () => {
+    const el = new OASHighlight()
+    el.setAttribute('text', '\u05e9\u05c1\u05bc')
+    el.setAttribute('highlight', '\u05e9\u05c1\u05bc')
+    document.body.appendChild(el)
+    let detail: { count: number; matches: string[] } | null = null
+    el.addEventListener('oas-count', (e) => (detail = (e as CustomEvent).detail))
+    el.setAttribute('text', '\u05e9\u05c1\u05bc x')
+    const marks = el.shadowRoot!.querySelectorAll('mark').length
+    expect(detail!.count, 'count == 实际 mark 数').toBe(marks)
+    expect(marks > 0 ? detail!.matches.length : 0, 'matches 非空当且仅当有命中').toBe(marks > 0 ? 1 : 0)
+    el.remove()
+  })
+
   it('分解型重音不切字素簇：cafe\u0301 命中 café 时 mark 含重音符（pe 吞并组合符）', () => {
     const el = new OASHighlight()
     el.setAttribute('text', 'cafe\u0301 x')

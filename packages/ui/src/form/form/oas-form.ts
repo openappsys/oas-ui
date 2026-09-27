@@ -431,7 +431,7 @@ export class OASForm extends OASElement {
   private parseRules(): void {
     const raw = this.getAttribute('rules')
     if (this._rulesProp !== null && raw === this._rulesAttrRaw) {
-      this._rules = this._rulesProp
+      this._rules = Object.assign(Object.create(null), this._rulesProp)
       return
     }
     if (raw !== this._rulesAttrRaw) {
@@ -440,7 +440,9 @@ export class OASForm extends OASElement {
     }
     try {
       const parsed = JSON.parse(raw ?? '{}') as Rules
-      this._rules = parsed !== null && typeof parsed === 'object' ? parsed : {}
+      // null-proto 归一：普通原型对象的继承成员（toString 等）会被 `?? []` 穿透成「已配规则」炸 for-of
+      this._rules =
+        parsed !== null && typeof parsed === 'object' ? Object.assign(Object.create(null), parsed) : Object.create(null)
     } catch {
       this._rules = Object.create(null)
     }
@@ -622,7 +624,7 @@ export class OASForm extends OASElement {
   }
 
   private effectiveTrigger(name: string): ValidateTrigger {
-    for (const rule of this._rules[name] ?? []) {
+    for (const rule of (Object.hasOwn(this._rules, name) ? this._rules[name] : undefined) ?? []) {
       if (rule.validateTrigger !== undefined && TRIGGERS.includes(rule.validateTrigger)) return rule.validateTrigger
     }
     const level = this.getAttr('validate-trigger', 'change')
@@ -658,7 +660,7 @@ export class OASForm extends OASElement {
   /** 单字段首个错误：无 → null；同步 → string；含异步 validator → Promise */
   private firstFieldError(name: string, values: Record<string, string>): string | null | Promise<string | null> {
     const value = values[name] ?? ''
-    for (const rule of this._rules[name] ?? []) {
+    for (const rule of (Object.hasOwn(this._rules, name) ? this._rules[name] : undefined) ?? []) {
       const result = this.evalRule(rule, value, values)
       if (result !== null) return result
     }
