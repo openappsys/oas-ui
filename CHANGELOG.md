@@ -2,6 +2,13 @@
 
 所有显著变更记录于此。
 
+## [未发布]
+
+### 特性
+
+- **oas-table `column-virtual` 横向虚拟滚动（双向虚拟补齐）**：非固定列窗口化——DOM 只渲染窗口列 th/td，窗口外列以占位格 colSpan 归并（宽度由 colgroup 对应列求和，`table-layout: fixed` 强制启用——auto 布局把 col 宽当建议忽略、总宽塌缩）。列宽模型复用 virtual-list 的 HeightCache（横向换轴），全列显式 width（未设宽按预估 120px 定宽截断，文档注明）；约束（告警降级）：多级表头 / span-method / 合计行；固定列须两端布局（left 段 → 非固定段 → right 段）且恒渲染
+- **oas-table-edit `editComponent` 组件编辑器通道**：列配置 `edit-component` 指定任意 value 语义的 WC（库内 form 组件 / 宿主自定义组件同通道，优先于原生 editor）——双击挂载组件并注入当前值、change 提交、Esc 取消。单元格编辑器标准化第一期（非浮层组件；浮层类编辑器后续批次）
+
 ## [2.5.7] - 2026-09-27
 
 ### 契约变更（升级前必读）

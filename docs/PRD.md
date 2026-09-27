@@ -1681,3 +1681,15 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 ### 验收（同 P1/P2 口径）
 
 - TDD RED→GREEN；api:check 双向 0 + unresolved 零；md 中英 demo 可见反馈；dark/RTL 过；交互项 qa-regression 固化；门禁全绿 + 收口 review
+
+## table 横向虚拟滚动 + editComponent 组件编辑器（未发布）
+
+### 特性
+
+- **oas-table `column-virtual` 横向虚拟滚动（双向虚拟补齐）**：非固定列窗口化——DOM 只渲染窗口列 th/td，窗口外列以占位格 colSpan 归并（宽度由 colgroup 对应列求和，`table-layout: fixed` 强制启用）。列宽模型复用 virtual-list 的 HeightCache（横向换轴），全列显式 width；未设宽列按预估 120px 定宽截断（文档注明）。约束（告警降级，对齐行虚拟先例）：多级表头 / span-method / 合计行与列窗口错位不兼容；固定列须两端布局（left 段 → 非固定段 → right 段）且恒渲染
+- **oas-table-edit `editComponent` 组件编辑器通道**：列配置 `edit-component` 指定任意 value 语义的 WC（库内 form 组件 / 宿主自定义组件同通道，优先于原生 editor）——双击挂载组件并注入当前值、change 提交、Esc 取消。单元格编辑器标准化第一期（非浮层组件；浮层类编辑器后续批次）
+
+### 验收
+
+- e2e（chromium）：60 列×40 行大宽表——th/td 窗口化（<30）、scrollWidth >7200（colgroup 撑总宽）、固定列恒渲染、行列双开滚动推移；全量 8293+ passed
+- table 域 230 单测全绿；typecheck 0；format 0；lint:md 0；api:check 通过（edit-component 语料 + API 表同步）
