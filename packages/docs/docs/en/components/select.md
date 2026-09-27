@@ -32,6 +32,15 @@ The `label` attribute provides the trigger's accessible name (`aria-label`): whe
 
 In multiple mode `value` is a JSON array; selected items are shown as tags that can be removed individually. Tags wrap to new lines by default and the trigger grows with the content (no collapsing unless `max-tag-count` is set).
 
+## Hide Selected (hide-selected)
+
+<DemoBlock title="hide-selected: selected options hidden from the dropdown">
+  <oas-select id="select-hide-selected" multiple hide-selected clearable placeholder="Selected items disappear" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"}]'></oas-select>
+  <span id="select-hide-selected-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+</DemoBlock>
+
+`hide-selected` (multiple mode only) removes selected options from the dropdown — the list only shows "what is still selectable", useful for multi-select over large option sets; clearing (clearable) or removing a tag puts the option back into the list automatically. Selecting everything shows the empty state.
+
 ## Disabled
 
 <DemoBlock title="Disabled">
@@ -413,6 +422,25 @@ onMounted(() => {
     out.textContent = `oas-change: [${e.detail.value.join(', ')}]`
   })
 
+  // hide-selected demo: echo remaining options and current value after open/select (visible feedback)
+  const hideSel = document.getElementById('select-hide-selected')
+  const hideSelOut = document.getElementById('select-hide-selected-output')
+  const syncHideSel = () => {
+    if (!hideSel || !hideSelOut) return
+    const root = hideSel.shadowRoot
+    const visible = root ? [...root.querySelectorAll('[role="option"] .option-label')].map((n) => n.textContent) : []
+    let current = []
+    try {
+      current = JSON.parse(hideSel.getAttribute('value') ?? '[]')
+    } catch {
+      current = []
+    }
+    hideSelOut.textContent = `Current: [${current.join(', ') || '—'}] · ${visible.length} options left in the dropdown`
+  }
+  hideSel?.addEventListener('oas-change', syncHideSel)
+  hideSel?.addEventListener('oas-open-change', () => setTimeout(syncHideSel, 60))
+  hideSel?.addEventListener('oas-clear', () => setTimeout(syncHideSel, 60))
+
   // remote search demo: simulate host requests, filter and refill options by label after an 800ms delay
   const remote = document.getElementById('select-remote')
   const remoteOut = document.getElementById('select-remote-output')
@@ -668,6 +696,7 @@ onMounted(() => {
 | `debounce` | Remote search input debounce in ms (default 0 = immediate; only debounces oas-input in remote mode, local filtering stays instant) | — | — |
 | `default-active-first-option` | Highlight the first visible option on open (defaults to the selected option) | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
+| `hide-selected` | Hide selected options from the dropdown in multiple mode; they return after clearing or deselecting | `boolean` | — |
 | `hint` | Hint line below the trigger, wired via aria-describedby | `string` | — |
 | `input-value` | Controlled search text: typing writes back and emits oas-input-value-change; external updates sync into the search box | `string` | — |
 | `item-height` | Fixed row height (px) when virtual scrolling | `string` | `36` |

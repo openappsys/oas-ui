@@ -31,6 +31,57 @@ const defaultReader: FormControlReader = (el) => normalizeValue(el.getAttribute(
 
 const defaultWriter: FormControlWriter = (el, value) => el.setAttribute('value', value)
 
+/** 数字路径段（数组下标） */
+const INDEX_SEGMENT = /^\d+$/
+
+/** 名称路径缓存：嵌套解析在提交/值同步高频路径上，避免重复解析 */
+const NAME_PATH_CACHE = new Map<string, string[]>()
+
+/**
+ * 字段 name 路径解析（嵌套 values 语义，D10）：
+ * `users.0.name` / `users[0].name` / `a[0][1].b` → 段数组；数字段即数组下标。
+ * 不含路径语法的普通名解析为单段——组装结果与扁平结构一致，既有用法天然向后兼容。
+ */
+export function parseNamePath(name: string): string[] {
+  const cached = NAME_PATH_CACHE.get(name)
+  if (cached) return cached
+  const segments = name
+    .replace(/\[(\d+)\]/g, '.$1')
+    .split('.')
+    .filter((s) => s !== '')
+  const result = segments.length > 0 ? segments : [name]
+  NAME_PATH_CACHE.set(name, result)
+  return result
+}
+
+/** 按路径段读取嵌套值（中途缺失返回 undefined） */
+function readPath(source: Record<string, unknown> | undefined, segments: string[]): unknown {
+  let current: unknown = source
+  for (const segment of segments) {
+    if (current === null || typeof current !== 'object') return undefined
+    current = (current as Record<string, unknown>)[segment]
+  }
+  return current
+}
+
+/** 按路径段写入嵌套值（中途结构缺失时按下一段类型自动创建数组/对象） */
+function writePath(target: Record<string, unknown>, segments: string[], value: string): void {
+  let cursor: unknown = target
+  for (let i = 0; i < segments.length - 1; i++) {
+    const segment = segments[i]!
+    const childIsIndex = INDEX_SEGMENT.test(segments[i + 1]!)
+    const container = cursor as Record<string, unknown>
+    let next: unknown = container[segment]
+    if (next === null || typeof next !== 'object') {
+      next = childIsIndex ? [] : {}
+      container[segment] = next
+    }
+    cursor = next
+  }
+  const last = segments[segments.length - 1]!
+  ;(cursor as Record<string, unknown>)[last] = value
+}
+
 function register(tags: string[], reader?: FormControlReader, writer?: FormControlWriter): void {
   for (const t of tags) {
     FORM_CONTROLS.set(t, reader ?? defaultReader)
@@ -477,6 +528,15 @@ export class OASForm extends OASElement {
     return values
   }
 
+  /** 扁平快照 → 嵌套结构（点路径语法组装；普通名保持原样）。叶子值维持字符串形态不变 */
+  private nestValues(flat: Record<string, string>): Record<string, unknown> {
+    const out: Record<string, unknown> = {}
+    for (const [name, value] of Object.entries(flat)) {
+      writePath(out, parseNamePath(name), value)
+    }
+    return out
+  }
+
   private stringifyInitial(v: unknown): string {
     if (v === null || v === undefined) return ''
     return typeof v === 'string' ? v : JSON.stringify(v)
@@ -486,16 +546,45 @@ export class OASForm extends OASElement {
   private maybeApplyInitialValues(): void {
     const raw = this.getAttribute('initial-values')
     if (!this._initialDirty && raw === this._initialSource) return
-    const source = this._initialValues
     this._initialSnapshot = {}
+    this.applyInitialToFields(true)
+    this._initialSource = raw
+    this._initialDirty = false
+  }
+
+  /**
+   * 按路径读取 initial-values 并写入字段（forceAll=true 全量重建基线；
+   * false 只处理基线中还没有的字段——供 oas-form-list 等动态字段容器在创建字段后补放）。
+   */
+  private applyInitialToFields(forceAll: boolean): void {
+    const source = this._initialValues
     for (const { name, element } of this.collectFields()) {
-      const v = source[name]
+      if (!forceAll && name in this._initialSnapshot) continue
+      const v = readPath(source, parseNamePath(name))
       const initial = v === undefined ? this.readValue(element) : this.stringifyInitial(v)
       this._initialSnapshot[name] = initial
       if (v !== undefined) this.writeValue(element, initial)
     }
-    this._initialSource = raw
-    this._initialDirty = false
+  }
+
+  /**
+   * 为「初始值基线建立后才出现的字段」补写 initial-values（oas-form-list 等动态字段容器
+   * 在首次创建行后调用）。已有基线的字段不重写（保护用户已编辑值）；表级 disabled 在场时
+   * 同步到新字段（行创建晚于表级 syncDisabled 的补位）。无新字段时为安全空操作。
+   */
+  reapplyInitialValues(): void {
+    const disabled = this.hasAttr('disabled')
+    for (const { name, element } of this.collectFields()) {
+      if (name in this._initialSnapshot) continue
+      const v = readPath(this._initialValues, parseNamePath(name))
+      const initial = v === undefined ? this.readValue(element) : this.stringifyInitial(v)
+      this._initialSnapshot[name] = initial
+      if (v !== undefined) this.writeValue(element, initial)
+      if (disabled) {
+        const field = element as { formDisabledCallback?: (d: boolean) => void }
+        if (typeof field.formDisabledCallback === 'function') field.formDisabledCallback(true)
+      }
+    }
   }
 
   /** 表单级 disabled 同步到所有字段：经 OASFormElement.formDisabledCallback 通道（字段内部并入 injectDisabled 解析），不回写 disabled 属性防自锁 */
@@ -646,9 +735,9 @@ export class OASForm extends OASElement {
       this.syncErrorText(element, bad ? this.errors[name]! : null)
     }
     if (invalid.length === 0) {
-      this.emit('submit', { values })
+      this.emit('submit', { values: this.nestValues(values) })
     } else {
-      this.emit('validate-fail', { errors: this.errors, values })
+      this.emit('validate-fail', { errors: this.errors, values: this.nestValues(values) })
       if (this.hasAttr('scroll-to-first-error')) this.revealField(invalid[0]!.element)
     }
   }
@@ -660,10 +749,11 @@ export class OASForm extends OASElement {
     element.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
   }
 
-  /** 值变化统一出口：派发 oas-values-change（values 为全表当前值快照） */
+  /** 值变化统一出口：派发 oas-values-change（values 为全表当前值快照，嵌套结构） */
   private emitValuesChange(name: string | null, value: string): void {
     if (!name) return
-    this.emit('values-change', { name, value, values: this.snapshotValues() })
+    const flat = this.snapshotValues()
+    this.emit('values-change', { name, value, values: this.nestValues(flat) })
   }
 
   /**

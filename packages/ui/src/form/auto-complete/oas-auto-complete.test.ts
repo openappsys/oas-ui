@@ -676,3 +676,159 @@ describe('OASAutoComplete placement / autofocus（能力缺口 P2）', () => {
     expect(el.shadowRoot!.activeElement).toBe(input(el))
   })
 })
+
+// ===== 能力缺口 D3：virtual 选项虚拟滚动（对齐 oas-select 既有契约） =====
+
+describe('OASAutoComplete 虚拟滚动（virtual）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function manyOptions(n: number): string {
+    return JSON.stringify(Array.from({ length: n }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })))
+  }
+
+  function vlistOf(el: OASAutoComplete): HTMLElement {
+    return el.shadowRoot!.querySelector('oas-virtual-list')!
+  }
+
+  function virtualRows(el: OASAutoComplete): HTMLElement[] {
+    return [...vlistOf(el).shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')]
+  }
+
+  const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+
+  it('virtual 进 observedAttributes', () => {
+    expect(OASAutoComplete.observedAttributes).toContain('virtual')
+    expect(OASAutoComplete.observedAttributes).toContain('item-height')
+  })
+
+  it('virtual：仅渲染可见窗口 + buffer，不渲染全量；非 virtual 全量渲染', () => {
+    const el = mount({ virtual: '', options: manyOptions(100) })
+    type(el, '')
+    const rows = virtualRows(el)
+    // 视口 240 / item-height 36 ≈ 7 项 + 上下 buffer 4 → start 0, end ceil(240/36)+4=11（对齐 select）
+    expect(rows.length).toBe(11)
+    expect(rows[0]!.getAttribute('data-index')).toBe('0')
+    // 视口不产生多余 Tab 停靠点（键盘可达性由 input 的 combobox 键盘流负责）
+    expect(vlistOf(el).shadowRoot!.querySelector('.viewport')!.hasAttribute('tabindex')).toBe(false)
+    // 非虚拟：全量渲染
+    const el2 = mount({ options: manyOptions(100) })
+    type(el2, '')
+    expect(el2.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(100)
+  })
+
+  it('virtual：1000 项滚动后窗口平移，padding 撑起滚动高度，面板高度恒定', async () => {
+    const el = mount({ virtual: '', options: manyOptions(1000) })
+    type(el, '')
+    const vl = vlistOf(el)
+    expect(vl.hidden).toBe(false)
+    // 面板高度恒定：vlist 视口高度固定 240（默认下拉高度），不随内容撑高
+    expect(vl.getAttribute('height')).toBe('240')
+    const vp = vl.shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    expect(vp.style.height).toBe('240px')
+    // 内层撑起全量滚动高度（1000 × 36）
+    const inner = vl.shadowRoot!.querySelector<HTMLElement>('.inner')!
+    expect(inner.style.height).toBe('36000px')
+    // 滚动后窗口平移
+    vp.scrollTop = 3600
+    vp.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const rows = virtualRows(el)
+    expect(rows.length).toBe(15) // 96..110
+    expect(rows[0]!.getAttribute('data-index')).toBe('96')
+    const pads = vl.shadowRoot!.querySelectorAll('.padding')
+    expect((pads[0] as HTMLElement).style.height).toBe('3456px') // 96 * 36
+  })
+
+  it('virtual：键盘导航不越界，窗口跟随高亮，aria-activedescendant 跟随', async () => {
+    const el = mount({ virtual: '', options: manyOptions(100) })
+    type(el, '')
+    const i = input(el)
+    for (let k = 0; k < 25; k++) {
+      i.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    }
+    // 高亮不越界（第 25 项），aria-activedescendant 跟随
+    expect(i.getAttribute('aria-activedescendant')).toBe('opt-25')
+    // happy-dom 不自动触发 scroll：手动派发后窗口重算，高亮项应在窗口内
+    const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    expect(vp.scrollTop).toBeGreaterThan(0)
+    vp.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const activeRow = virtualRows(el).find((r) => r.classList.contains('active'))
+    expect(activeRow?.getAttribute('data-index')).toBe('25')
+  })
+
+  it('virtual：点击窗口内选项回显正确（value 属性 + 输入框文本 + oas-change detail）', async () => {
+    const el = mount({ virtual: '', options: manyOptions(1000) })
+    type(el, '')
+    // 滚动到列表末尾窗口（scrollTop 夹取到 1000*36-240=35760）
+    const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    vp.scrollTop = 35760
+    vp.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const row999 = virtualRows(el).find((r) => r.getAttribute('data-index') === '999')!
+    expect(row999).toBeDefined()
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    row999.click()
+    expect(el.getAttribute('value')).toBe('v999')
+    expect(input(el).value).toBe('选项 999')
+    expect(detail).toEqual({ value: 'v999', label: '选项 999' })
+    // 选中后面板收起
+    expect(input(el).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('virtual：searchable 输入过滤后虚拟列表跟随过滤子集', () => {
+    const el = mount({ virtual: '', options: manyOptions(100) })
+    type(el, '选项 5')
+    const rows = virtualRows(el)
+    // 匹配：选项 5 + 选项 50~59，共 11 项，窗口全量渲染
+    expect(rows.length).toBe(11)
+    expect(rows.every((r) => r.textContent!.includes('选项 5'))).toBe(true)
+  })
+
+  it('virtual + 分组：带 group 的选项回退非虚拟全量渲染（组标题保留，对齐 select）', () => {
+    const grouped = JSON.stringify([
+      { group: '温带', label: '苹果', value: 'apple' },
+      { group: '温带', label: '梨', value: 'pear' },
+      { group: '热带', label: '香蕉', value: 'banana' },
+    ])
+    const el = mount({ virtual: '', options: grouped })
+    type(el, '')
+    expect(el.shadowRoot!.querySelectorAll('.option-group').length).toBe(2)
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(3)
+    expect(vlistOf(el).hidden).toBe(true)
+  })
+
+  it('virtual：loading / 空态回退 listbox 直接渲染（vlist 隐藏）', () => {
+    const loading = mount({ virtual: '', loading: '', options: manyOptions(100) })
+    type(loading, '')
+    expect(vlistOf(loading).hidden).toBe(true)
+    expect(loading.shadowRoot!.querySelector('.empty')).not.toBeNull()
+    document.body.innerHTML = ''
+    const noMatch = mount({ virtual: '', options: manyOptions(100) })
+    type(noMatch, '不存在的项')
+    expect(vlistOf(noMatch).hidden).toBe(true)
+    expect(noMatch.shadowRoot!.querySelector('.empty')).not.toBeNull()
+  })
+
+  it('CSS 变量开口：.listbox max-height 走 --oas-auto-complete-dropdown-height（默认 240px）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const rule = css.match(/\.listbox\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(rule).toContain('max-height: var(--oas-auto-complete-dropdown-height, 240px)')
+    expect(css).toContain('--oas-auto-complete-dropdown-height: 240px')
+  })
+
+  it('虚拟模式 vlist 高度跟随 CSS 变量（宿主覆盖生效）', () => {
+    const el = mount({ virtual: '', options: manyOptions(100) })
+    el.style.setProperty('--oas-auto-complete-dropdown-height', '300px')
+    type(el, '')
+    expect(vlistOf(el).getAttribute('height')).toBe('300')
+  })
+})

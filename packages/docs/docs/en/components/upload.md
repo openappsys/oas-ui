@@ -120,6 +120,23 @@ The `before-upload` function property: return `false` to reject a file; return a
   <oas-upload id="upload-before" multiple></oas-upload>
 </DemoBlock>
 
+## Image Crop (crop)
+
+`crop` enables pre-upload image cropping. Activation conditions: `list-type` is `picture` / `picture-card` **and** `accept` includes image types — selecting / dropping / pasting an image file then opens a **built-in lightweight crop dialog** (self-drawn overlay, zero dependencies) instead of queueing directly:
+
+- **Move**: drag the stage's empty area to pan the image; drag the crop frame to move it (arrow keys nudge when focused, Shift to speed up)
+- **Resize the frame**: drag the bottom-right handle; set a fixed aspect ratio with `crop-aspect` (e.g. `1:1`, `16:9`; invalid/missing = free ratio)
+- **Zoom the image**: mouse wheel on the stage, or the zoom in/out buttons (100% = cover baseline, up to 800%)
+- **Confirm**: an offscreen canvas exports the cropped region at the source's natural resolution; the result file is queued in place of the original and `oas-crop` is dispatched (`detail: { file, blob }`)
+- **Cancel / Esc**: closes without queueing; with multi-select, files are cropped one by one (cancel skips the current one and continues), non-image files queue directly
+
+<DemoBlock title="crop before upload (picture-card + 1:1)">
+  <oas-upload id="upload-crop" crop crop-aspect="1:1" list-type="picture-card" accept="image/*" max="3" multiple></oas-upload>
+  <span id="upload-crop-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+Combined with `before-upload`, the hook runs first (validation/transform) and the transformed result enters cropping; queuing still respects `max` / `max-size` / `replace` (a cropped result may be smaller than the original — size limits are judged at queue time).
+
 ## File Size Limit (max-size)
 
 `max-size` accepts bytes or a unit form (`512KB` / `2MB` / `1GB`); oversized files are rejected with `oas-exceed-limit` (`detail.type === 'size'`, including the `maxSize` in bytes).
@@ -207,6 +224,7 @@ Listen to `oas-change` / `oas-remove` / `oas-upload` / `oas-progress`:
 - `oas-retry` / `oas-cancel`: retry started / upload cancelled, `detail: { file }`
 - `oas-exceed-limit`: rejection, `detail: { files, max, total }` (count) or `{ files, type: 'size', maxSize, total }` (size)
 - `oas-remove`: file removed, `detail: { file, index, replaced? }` (`replaced: true` means removed by the `replace` semantics)
+- `oas-crop`: crop confirmed, `detail: { file, blob }` (`file` is the original file, `blob` the offscreen canvas crop result)
 
 Methods: `submit()` (manual upload), `startUpload()` (equivalent), `abort(file?)` (cancel one/all in-flight uploads).
 
@@ -232,7 +250,7 @@ el.customRequest = async ({ file, onProgress, onSuccess, onError }) => {
 }
 ```
 
-- **Avatar cropping**: `before-upload` returns the cropped new `File` (with a third-party cropper)
+- **Avatar cropping**: covered by the built-in `crop` channel (see "Image Crop"); to use a third-party cropper instead, return the cropped new `File` from `before-upload`
 - **List drag sorting**: customize rows via the `item` slot + reorder `files` with a third-party dnd library
 - **Circular avatar card**: CSS variable `--oas-upload-card-radius: 50%` (no separate enum)
 
@@ -348,6 +366,16 @@ onMounted(async () => {
     if (e.detail.replaced) message.info(`Old file "${e.detail.file.name}" was replaced`)
   })
 
+  // crop feedback: show the crop result after confirmation
+  const crop = document.getElementById('upload-crop')
+  const cropOut = document.getElementById('upload-crop-output')
+  crop?.addEventListener('oas-crop', (e) => {
+    const { file, blob } = e.detail
+    const kb = Math.max(1, Math.round(blob.size / 1024))
+    if (cropOut) cropOut.textContent = `oas-crop: ${file.name} → cropped result ${kb} KB`
+    message.success(`Cropped: ${file.name} (${kb} KB)`)
+  })
+
   // Echo back (defaultFiles: {name, url} records, status done)
   const echo = document.getElementById('upload-echo')
   if (echo) {
@@ -409,6 +437,8 @@ onMounted(async () => {
 | `accept` | Accepted file types | `string` | — |
 | `action` | Upload endpoint URL (real XHR channel; without it and customRequest, progress is simulated) | `string` | — |
 | `auto-upload` | Auto-simulate upload after adding | `boolean` | — |
+| `crop` | Pre-upload image cropping (picture/picture-card + image accept): picked images open the built-in crop dialog first; the canvas crop result is queued on confirm | `boolean` | — |
+| `crop-aspect` | Fixed crop aspect ratio (e.g. `1:1`, `16:9`); invalid/missing = free ratio | `string` | — |
 | `data` | Extra form fields (JSON string, submitted with the file) | — | — |
 | `directory` | Directory upload (recursive folder intake) | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
@@ -438,6 +468,7 @@ onMounted(async () => {
 | --- | --- |
 | `oas-cancel` | Upload cancelled, `detail: { file }` (cancel button on the item) |
 | `oas-change` | File list change, `detail: { files }` |
+| `oas-crop` | Crop confirmed, `detail: { file, blob }` (file = original file, blob = offscreen canvas result) |
 | `oas-error` | Upload failed, `detail: { file, response?, status? }` (retry button appears) |
 | `oas-exceed` | [Compat alias] Same as oas-exceed-limit; will be removed later, `detail: { files: rejected, max, total: next.length } \| { files: sizeRejected, type: 'size', maxSize, total: next.length }` |
 | `oas-exceed-limit` | Adding files rejected due to limit (canonical, aligned with checkbox-group/select/toggle-group), `detail: { files, max, total }`; emitted for both count and size rejections (size rejections also carry `type: 'size'` and `maxSize`) |

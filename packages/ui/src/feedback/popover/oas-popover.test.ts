@@ -791,6 +791,53 @@ describe('OASPopover 宽度（width）与偏移（offset 双轴）', () => {
     expect(panelOf(el).style.width).toBe('50%')
   })
 
+  // ---- 能力缺口 D21：same-width（面板宽度=触发器宽度） ----
+
+  it('same-width 进入 observedAttributes', () => {
+    expect(OASPopover.observedAttributes).toContain('same-width')
+  })
+
+  it('same-width：面板宽度=触发器宽度，并归零内联 min-width 保证严格等宽', () => {
+    const el = mount({ open: '', 'same-width': '' })
+    const btn = el.querySelector('button') as HTMLElement
+    stubRect(btn, { left: 100, top: 200, width: 180, height: 32 })
+    el.setAttribute('content', 'x') // 触发重定位应用宽度
+    const panel = panelOf(el)
+    expect(panel.style.width).toBe('180px')
+    expect(panel.style.minWidth).toBe('0px')
+  })
+
+  it('显式 width 属性优先于 same-width（width="300" 时面板 300px）', () => {
+    const el = mount({ open: '', 'same-width': '', width: '300' })
+    const btn = el.querySelector('button') as HTMLElement
+    stubRect(btn, { left: 100, top: 200, width: 180, height: 32 })
+    el.setAttribute('content', 'x')
+    const panel = panelOf(el)
+    expect(panel.style.width).toBe('300px')
+    expect(panel.style.minWidth).toBe('')
+  })
+
+  it('移除 same-width 后内联宽度与 min-width 兜底恢复（min-width 归还 CSS）', () => {
+    const el = mount({ open: '', 'same-width': '' })
+    const btn = el.querySelector('button') as HTMLElement
+    stubRect(btn, { left: 100, top: 200, width: 180, height: 32 })
+    el.setAttribute('content', 'x')
+    expect(panelOf(el).style.width).toBe('180px')
+    el.removeAttribute('same-width')
+    el.setAttribute('content', 'y') // 触发重同步
+    const panel = panelOf(el)
+    expect(panel.style.width).toBe('')
+    expect(panel.style.minWidth).toBe('')
+  })
+
+  it('same-width + 锚点宽度为 0（虚拟点位/无布局）：不写宽度，保留 min-width 兜底', () => {
+    const el = mount({ open: '', 'same-width': '', virtual: '' })
+    el.setAttribute('content', 'x')
+    const panel = panelOf(el)
+    expect(panel.style.width).toBe('')
+    expect(panel.style.minWidth).toBe('')
+  })
+
   it('offset="16"：主轴间距 16（默认 8）', () => {
     const el = mount({ placement: 'bottom', 'auto-adjust-overflow': 'false', offset: '16' })
     stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 80, height: 32 })

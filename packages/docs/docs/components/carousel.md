@@ -329,6 +329,28 @@ onMounted(() => {
   </oas-carousel>
 </DemoBlock>
 
+## 缩略图指示器（thumbs）
+
+`thumbs` 用缩略图条替代圆点：每个缩略图取子项内 `<img>` 的 `src`、子项 `data-thumb` 属性，或 `thumbs` 属性给出的 JSON 数组 URL（优先级：数组 > `data-thumb` > `<img>`）；均无时渲染序号占位。当前项以主色描边高亮，点击缩略图切页，键盘导航与 `trigger` 触发方式与圆点一致。
+
+<DemoBlock title="缩略图指示器（thumbs，取子项内 img）">
+  <div style="width: 100%">
+    <oas-carousel thumbs>
+      <img src="https://picsum.photos/seed/isui-th-1/800/260" alt="轮播图 1" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="https://picsum.photos/seed/isui-th-2/800/260" alt="轮播图 2" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="https://picsum.photos/seed/isui-th-3/800/260" alt="轮播图 3" style="width:100%; height:220px; object-fit: cover; display:block;">
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="缩略图数据源（thumbs JSON 数组）">
+  <oas-carousel thumbs='["https://picsum.photos/seed/isui-ts-1/200/120","https://picsum.photos/seed/isui-ts-2/200/120","https://picsum.photos/seed/isui-ts-3/200/120"]' style="max-width: 480px">
+    <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一屏</div>
+    <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二屏</div>
+    <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">第三屏</div>
+  </oas-carousel>
+</DemoBlock>
+
 ## API
 
 ### oas-carousel
@@ -352,6 +374,7 @@ onMounted(() => {
 | `pause-button` | 显示显式暂停/播放按钮（默认关；点击切换自动播放暂停/继续，优先级高于悬停暂停；未开启 autoplay 时点击播放即开启） | `boolean` | — |
 | `pause-on-hover` | 自动播放时悬停/聚焦暂停（默认 true；`"false"` 关闭；页面切后台恒停播） | `string` | `true` |
 | `slides-per-view` | 每屏展示屏数（默认 1；索引语义为页，末页对齐轨道末尾不露空白） | `string` | `1` |
+| `thumbs` | 缩略图指示器替代圆点（JSON 数组/data-thumb/子项 img 取源；当前项主色描边） | `string` | — |
 | `trigger` | 指示器切换时机：`click`（默认）/ `hover`（悬停即切，click 仍可用） | `string` | `click` |
 | `type` | 轮播形态：`"card"` 为卡片模式——当前卡居中为主体、左右邻卡露出缩小降透明，点击邻卡直接切换；与 `slides-per-view`/`effect`/`direction` 互斥（卡片模式优先），卡宽/卡间距/邻卡缩放走 `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale` | `string` | — |
 

@@ -255,3 +255,64 @@ test('calendar range：两段式选取（起点高亮 → 终点提交 oas-chang
   expect(s3.newStart).toBe(true)
   expect(s3.oldEnd).toBe(false)
 })
+
+// ---- D24：calendar-system 非公历历法 + months 多月份并排 ----
+
+test('calendar calendar-system：伊斯兰历标题与单元格跟随历法（公历内部模型不变）', async ({ page }) => {
+  await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#calendar-system-islamic')
+  const el = page.locator('#calendar-system-islamic')
+  await el.scrollIntoViewIfNeeded()
+  const r = await el.evaluate((node) => {
+    const target = new Date(2026, 7, 9)
+    const expectedTitle = new Intl.DateTimeFormat('zh-CN', {
+      calendar: 'islamic',
+      year: 'numeric',
+      month: 'long',
+    }).format(target)
+    const cell = node.shadowRoot!.querySelector('.day[data-date="2026-08-09"]')!
+    return {
+      title: node.shadowRoot!.querySelector('[part="title"]')!.textContent,
+      expectedTitle,
+      aria: cell.getAttribute('aria-label'),
+      dataDate: cell.getAttribute('data-date'),
+    }
+  })
+  expect(r.title).toBe(r.expectedTitle)
+  expect(r.title).toContain('1448')
+  expect(r.aria).toBeTruthy()
+  expect(r.dataDate).toBe('2026-08-09')
+})
+
+test('calendar months=2：并排双月面板 + 翻页联动两个月', async ({ page }) => {
+  await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#calendar-months')
+  const el = page.locator('#calendar-months')
+  await el.scrollIntoViewIfNeeded()
+  const before = await el.evaluate((node) => {
+    const root = node.shadowRoot!
+    return {
+      panels: root.querySelectorAll('.month-panel').length,
+      weekdays: root.querySelectorAll('.weekday').length,
+      title: root.querySelector('[part="title"]')!.textContent ?? '',
+      aug: !!root.querySelector('.day[data-date="2026-08-15"]'),
+      sep: !!root.querySelector('.day[data-date="2026-09-15"]'),
+    }
+  })
+  expect(before.panels).toBe(2)
+  expect(before.weekdays).toBe(14)
+  expect(before.title).toContain('2026年8月')
+  expect(before.title).toContain('2026年9月')
+  expect(before.aug).toBe(true)
+  expect(before.sep).toBe(true)
+  await el.evaluate((node) => (node.shadowRoot!.querySelector('[part="next"]') as HTMLElement).click())
+  const after = await el.evaluate((node) => {
+    const root = node.shadowRoot!
+    return {
+      oct: !!root.querySelector('.day[data-date="2026-10-15"]'),
+      nov: !!root.querySelector('.day[data-date="2026-11-15"]'),
+    }
+  })
+  expect(after.oct).toBe(true)
+  expect(after.nov).toBe(true)
+})

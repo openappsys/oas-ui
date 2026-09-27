@@ -522,3 +522,104 @@ describe('OASProgress', () => {
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!.style.width).toBe('60%')
   })
 })
+
+describe('OASProgress vertical（垂直线形，PRD D22）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('vertical / height 进 observedAttributes', () => {
+    expect(OASProgress.observedAttributes).toContain('vertical')
+    expect(OASProgress.observedAttributes).toContain('height')
+  })
+
+  it('vertical：bar 高度按 percent 填充、宽度清空（底部填充向上）', () => {
+    const el = mount({ percent: '40', vertical: '' })
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    expect(bar.style.height).toBe('40%')
+    expect(bar.style.width).toBe('')
+  })
+
+  it('移除 vertical 恢复横向（宽度恢复、高度清空）', () => {
+    const el = mount({ percent: '40', vertical: '' })
+    el.removeAttribute('vertical')
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    expect(bar.style.width).toBe('40%')
+    expect(bar.style.height).toBe('')
+  })
+
+  it('height 属性：纯数字补 px、带单位原样、非法回退 CSS 默认（无内联高度）', () => {
+    expect(mount({ percent: '40', vertical: '', height: '240' }).style.height).toBe('240px')
+    expect(mount({ percent: '40', vertical: '', height: '40vh' }).style.height).toBe('40vh')
+    expect(mount({ percent: '40', vertical: '', height: 'tall' }).style.height).toBe('')
+    expect(mount({ percent: '40', vertical: '' }).style.height).toBe('')
+  })
+
+  it('height 动态切换与移除', () => {
+    const el = mount({ percent: '40', vertical: '', height: '240' })
+    el.setAttribute('height', '120')
+    expect(el.style.height).toBe('120px')
+    el.removeAttribute('height')
+    expect(el.style.height).toBe('')
+  })
+
+  it('横向模式 height 静默忽略（bar 仍按宽度渲染）', () => {
+    const el = mount({ percent: '40', height: '240' })
+    expect(el.style.height).toBe('')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!.style.width).toBe('40%')
+  })
+
+  it('vertical 标记宿主 data-vertical（CSS 消费点）；circle 形态不受 vertical 影响', () => {
+    const el = mount({ percent: '40', vertical: '' })
+    expect(el.hasAttribute('data-vertical')).toBe(true)
+    el.setAttribute('type', 'circle')
+    expect(el.hasAttribute('data-vertical')).toBe(false)
+    const bar = el.shadowRoot!.querySelector('.circle .bar-circle')!
+    const c = 2 * Math.PI * 21
+    expect(bar.getAttribute('stroke-dashoffset')).toBe(String(c * 0.6))
+  })
+
+  it('vertical：buffer 同步为高度百分比、宽度清空', () => {
+    const el = mount({ percent: '40', buffer: '80', vertical: '' })
+    const buf = el.shadowRoot!.querySelector<HTMLElement>('[part="buffer"]')!
+    expect(buf.hidden).toBe(false)
+    expect(buf.style.height).toBe('80%')
+    expect(buf.style.width).toBe('')
+  })
+
+  it('vertical：steps 分段纵向排列（bar 高度归零让位）', () => {
+    const el = mount({ percent: '50', steps: '5', vertical: '' })
+    const steps = el.shadowRoot!.querySelector<HTMLElement>('[part="steps"]')!
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    expect(steps.hidden).toBe(false)
+    expect(steps.querySelectorAll('.step').length).toBe(5)
+    expect(bar.style.height).toBe('0%')
+    expect(bar.style.width).toBe('')
+  })
+
+  it('vertical：indeterminate 高度交由 CSS 动画类、aria-valuenow 摘除', () => {
+    const el = mount({ percent: '40', vertical: '', indeterminate: '' })
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    expect(bar.classList.contains('indeterminate')).toBe(true)
+    expect(bar.style.height).toBe('')
+    expect(bar.style.width).toBe('')
+    expect(bar.getAttribute('aria-valuenow')).toBeNull()
+  })
+
+  it('vertical CSS：宿主纵向 flex + 默认高度、track 纵向、bar 底部锚定（样式断言）', () => {
+    const el = mount({ percent: '40', vertical: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css, '宿主 data-vertical 纵向 flex + 默认高度').toMatch(
+      /:host\(\[data-vertical\]\)\s*\{[^}]*flex-direction:\s*column/,
+    )
+    expect(css, 'bar 底部锚定（填充向上）').toMatch(/:host\(\[data-vertical\]\)\s+\.bar\s*\{[^}]*inset-block-end:\s*0/)
+    expect(css, 'vertical 下 bar 过渡走 height').toMatch(
+      /:host\(\[data-vertical\]\)\s+\.bar\s*\{[^}]*transition:\s*height/,
+    )
+    expect(css, 'steps 分段纵向').toMatch(/:host\(\[data-vertical\]\)\s+\.steps\s*\{[^}]*flex-direction:\s*column/)
+  })
+})

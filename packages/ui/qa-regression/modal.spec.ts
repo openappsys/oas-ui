@@ -640,3 +640,48 @@ test('modal z-index：显式层级覆盖默认档位、对话框比遮罩高 1�
   })
   expect(await page.evaluate(() => document.querySelector('#modal-layer-base')?.hasAttribute('visible'))).toBe(true)
 })
+
+// —— PRD D28：maximizable（标题栏最大化/还原按钮，最大化等同 fullscreen 语义） ——
+test('modal maximizable：最大化/还原切换 data-fullscreen + oas-maximize 事件（PRD D28）', async ({ page }) => {
+  await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#modal-max')
+  await page.evaluate(() => {
+    document.querySelector('#modal-max')!.scrollIntoView({ block: 'center' })
+    document.querySelector('#modal-max')!.setAttribute('visible', '')
+  })
+  await page.waitForFunction(
+    () => document.querySelector('#modal-max')?.shadowRoot?.querySelector('.dialog[data-open]') != null,
+    null,
+    { timeout: 5000 },
+  )
+  const r = await page.evaluate(async () => {
+    const el = document.querySelector('#modal-max')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const dialog = el.shadowRoot.querySelector('.dialog')! as HTMLElement
+    const btn = el.shadowRoot.querySelector('[part="maximize"]')! as HTMLButtonElement
+    const events: boolean[] = []
+    el.addEventListener('oas-maximize', (e) => events.push((e as CustomEvent).detail.maximized))
+    const labelBefore = btn.getAttribute('aria-label')
+    btn.click()
+    await new Promise((res) => setTimeout(res, 120))
+    const afterMax = {
+      fullscreen: dialog.hasAttribute('data-fullscreen'),
+      width: dialog.style.width,
+      label: btn.getAttribute('aria-label'),
+    }
+    btn.click()
+    await new Promise((res) => setTimeout(res, 120))
+    const afterRestore = {
+      fullscreen: dialog.hasAttribute('data-fullscreen'),
+      label: btn.getAttribute('aria-label'),
+    }
+    return { hidden: btn.hidden, labelBefore, afterMax, afterRestore, events }
+  })
+  const isMaximizeLabel = (s: string | null) => s === 'Maximize' || s === '最大化'
+  expect(r.hidden, 'maximizable 下最大化按钮应可见').toBe(false)
+  expect(isMaximizeLabel(r.labelBefore), '初始无障碍名为最大化（i18n key 或组件兜底）').toBe(true)
+  expect(r.afterMax.fullscreen, '最大化后 data-fullscreen 置位（等同 fullscreen 语义）').toBe(true)
+  expect(r.afterMax.width, '最大化后内联宽度清除').toBe('')
+  expect(r.afterRestore.fullscreen, '还原后 data-fullscreen 移除').toBe(false)
+  expect(r.afterMax.label === r.labelBefore, '最大化后无障碍名应切换为还原').toBe(false)
+  expect(r.events, '两次切换各派发一次 oas-maximize（true/false）').toEqual([true, false])
+})

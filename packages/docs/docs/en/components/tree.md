@@ -547,6 +547,14 @@ onMounted(() => {
     const el = document.querySelector('#tree-selectable-status')
     if (el) el.textContent = 'selectable="true" set: clicking selects again'
   })
+
+  // check-all demo: visible feedback for oas-check-all
+  const checkAllTree = document.querySelector('#tree-check-all')
+  checkAllTree?.addEventListener('oas-check-all', (e) => {
+    const { checked, values } = e.detail
+    const el = document.querySelector('#tree-check-all-status')
+    if (el) el.textContent = checked ? `All selected: ${values.join(', ') || '(no checkable nodes)'}` : 'Selection cleared'
+  })
 })
 </script>
 
@@ -592,6 +600,17 @@ onMounted(() => {
   </div>
 </DemoBlock>
 
+## Select all (check-all)
+
+`check-all` (effective together with `checkable`) renders a select-all row above the tree: checking it selects every checkable node, a partial selection shows an indeterminate checkbox, and clicking again clears the selection. `disabled` / `disableCheckbox` nodes are excluded. The default label is "Select all"; override it with `check-all-label`. Each toggle emits `oas-check-all` (`detail: { checked, values }`).
+
+<DemoBlock title="check-all select all">
+  <div style="width: 100%">
+    <oas-tree id="tree-check-all" checkable check-all default-expand-all data='[{"key":"p1","label":"Frontend","children":[{"key":"p1-1","label":"vue"},{"key":"p1-2","label":"react"}]},{"key":"p2","label":"Backend","children":[{"key":"p2-1","label":"go"},{"key":"p2-2","label":"rust"}]}]'></oas-tree>
+    <p id="tree-check-all-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">Toggle the "Select all" row or check items one by one to see the tri-state; click again to clear.</p>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-tree
@@ -604,6 +623,8 @@ onMounted(() => {
 | `auto-expand-parent` | Auto-expand parents when a child is checked | `boolean` | — |
 | `block-node` | Full-row block selection/hover zone (rows one tier taller) | `boolean` | — |
 | `can-rename` | Master switch for node renaming: when on, double-click a node label or press F2 to enter inline editing; Enter commits / Esc cancels / blur commits; committing emits `oas-node-rename` (mark a node `renamable: false` in the data to exclude it individually) | `boolean` | — |
+| `check-all` | Renders a select-all row above the tree with a tri-state checkbox (requires checkable) | `boolean` | — |
+| `check-all-label` | Select-all row label (defaults to the i18n select-all copy) | `string` | — |
 | `check-strategy` | Check export strategy: `all` (default) / `parent` / `child` (with checkable cascading) | `string` | `all` |
 | `check-strictly` | Decouple parent/child checking | `boolean` | — |
 | `checkable` | Whether to show checkboxes | `boolean` | — |
@@ -640,6 +661,7 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-check` | Check state change, `detail: { key, checked }` |
+| `oas-check-all` | Fired when the select-all row toggles, `detail: { checked, values }` |
 | `oas-expand` | Dispatched on node expand/collapse, `detail: { key, expanded, node }` (node is a data snapshot) |
 | `oas-load` | Lazy loading triggered, `detail: { key }`; the host refills `children` and resets the `data` attribute |
 | `oas-load-error` | Lazy load failed, `detail: { key, error }` where `error` is the error message string (loading clears, clickable to retry) |

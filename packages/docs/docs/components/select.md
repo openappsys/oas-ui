@@ -32,6 +32,15 @@
 
 多选时 `value` 为 JSON 数组，选中项以标签展示，可单独移除；标签默认换行展示、触发器随内容增高（不设置 `max-tag-count` 时不会折叠）。
 
+## 隐藏已选项（hide-selected）
+
+<DemoBlock title="hide-selected：多选时已选选项从下拉隐藏">
+  <oas-select id="select-hide-selected" multiple hide-selected clearable placeholder="选中的不再出现" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"}]'></oas-select>
+  <span id="select-hide-selected-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+</DemoBlock>
+
+`hide-selected`（仅多选生效）让已选选项从下拉列表隐藏——列表只展示「还可以选什么」，适合选项较多的多选场景；清空（clearable）或移除标签后选项自动回到列表。全部选完时下拉显示空态。
+
 ## 禁用
 
 <DemoBlock title="禁用">
@@ -413,6 +422,25 @@ onMounted(() => {
     out.textContent = `oas-change: [${e.detail.value.join(', ')}]`
   })
 
+  // hide-selected demo：展开/选择后回显剩余可选与当前值（真实链路可见反馈）
+  const hideSel = document.getElementById('select-hide-selected')
+  const hideSelOut = document.getElementById('select-hide-selected-output')
+  const syncHideSel = () => {
+    if (!hideSel || !hideSelOut) return
+    const root = hideSel.shadowRoot
+    const visible = root ? [...root.querySelectorAll('[role="option"] .option-label')].map((n) => n.textContent) : []
+    let current = []
+    try {
+      current = JSON.parse(hideSel.getAttribute('value') ?? '[]')
+    } catch {
+      current = []
+    }
+    hideSelOut.textContent = `当前值: [${current.join(', ') || '—'}] · 下拉剩余 ${visible.length} 项`
+  }
+  hideSel?.addEventListener('oas-change', syncHideSel)
+  hideSel?.addEventListener('oas-open-change', () => setTimeout(syncHideSel, 60))
+  hideSel?.addEventListener('oas-clear', () => setTimeout(syncHideSel, 60))
+
   // 远程搜索 demo：模拟宿主请求，输入 800ms 后按 label 过滤回填 options
   const remote = document.getElementById('select-remote')
   const remoteOut = document.getElementById('select-remote-output')
@@ -664,6 +692,7 @@ onMounted(() => {
 | `debounce` | 远程搜索输入防抖毫秒（默认 0 立即；仅 remote 模式 oas-input 防抖，本地过滤始终即时） | — | — |
 | `default-active-first-option` | 展开时高亮首个可见项（缺省高亮当前选中项） | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
+| `hide-selected` | 多选时已选选项从下拉列表隐藏，清空/取消后回到列表（仅 multiple 生效） | `boolean` | — |
 | `hint` | 触发器下方提示文案（aria-describedby 关联） | `string` | — |
 | `input-value` | 搜索词受控源：输入写回属性并派发 oas-input-value-change，外部更新同步进搜索框 | `string` | — |
 | `item-height` | 虚拟滚动时每项固定高度（px） | `string` | `36` |

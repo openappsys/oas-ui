@@ -516,6 +516,8 @@ export class OASSelect extends OASFormElement {
       'max-tag-count',
       'allow-create',
       'virtual',
+      // 能力缺口 D20：多选时已选选项从下拉列表隐藏（清空/取消后回到列表）
+      'hide-selected',
       'item-height',
       'disabled-skip',
       'size',
@@ -1081,17 +1083,26 @@ export class OASSelect extends OASFormElement {
    * 当前下拉可见选项：
    * - remote 模式：不做本地过滤（过滤交给宿主，直接渲染 options）
    * - 本地模式：有查询词时按 label 过滤（filterMethod 设置时走自定义函数）
+   * - hide-selected（仅多选）：已选选项从下拉隐藏（值集变化 → 重渲染自动回到列表）
    */
   private visibleOptions(): Option[] {
     if (this.hasAttr('remote')) return this._options
     const q = this.currentQuery()
-    if (q === '') return this._options
-    // 自定义过滤函数（JS property 通道）：收到原始查询词与完整 option 对象
-    if (typeof this.filterMethod === 'function') {
-      return this._options.filter((o) => this.filterMethod?.(q, o) === true)
+    let list: Option[]
+    if (q === '') {
+      list = this._options
+    } else if (typeof this.filterMethod === 'function') {
+      // 自定义过滤函数（JS property 通道）：收到原始查询词与完整 option 对象
+      list = this._options.filter((o) => this.filterMethod?.(q, o) === true)
+    } else {
+      const lower = q.toLowerCase()
+      list = this._options.filter((o) => o.label.toLowerCase().includes(lower))
     }
-    const lower = q.toLowerCase()
-    return this._options.filter((o) => o.label.toLowerCase().includes(lower))
+    if (this.hasAttr('hide-selected') && this.hasAttr('multiple')) {
+      const selected = this.currentValues()
+      if (selected.length > 0) list = list.filter((o) => !selected.includes(o.value))
+    }
+    return list
   }
 
   /** 搜索框原始查询词（trim 后，保留原始大小写供「创建」用） */

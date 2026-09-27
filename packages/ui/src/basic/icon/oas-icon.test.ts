@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { OASIcon, registerIcon, registerIconLibrary } from './index.js'
+import { OASIcon, registerIcon, registerIconLibrary, registerIconAlias } from './index.js'
+import { lookupIcon } from './oas-icon.js'
 
 function mount(attrs: Record<string, string> = {}): OASIcon {
   const el = new OASIcon()
@@ -18,6 +19,19 @@ function makeSlotSvg(viewBox: string, inner: string): SVGSVGElement {
   s.setAttribute('viewBox', viewBox)
   s.innerHTML = inner
   return s
+}
+
+/** 模拟 iconfont 项目脚本注入的 symbol sprite（挂到 body，供组件按 id 内联克隆） */
+function makeSymbolSprite(defs: Array<[string, string]>): void {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  for (const [id, inner] of defs) {
+    const sym = document.createElementNS('http://www.w3.org/2000/svg', 'symbol')
+    sym.setAttribute('id', id)
+    sym.setAttribute('viewBox', '0 0 1024 1024')
+    sym.innerHTML = inner
+    svg.appendChild(sym)
+  }
+  document.body.appendChild(svg)
 }
 
 describe('OASIcon', () => {
@@ -479,6 +493,128 @@ describe('OASIcon', () => {
     it('非法 depth 忽略', () => {
       const el = mount({ name: 'check', depth: '9' })
       expect(svg(el)!.style.opacity).toBe('')
+    })
+  })
+
+  describe('registerIconAlias 别名（含前缀）', () => {
+    it('别名进入 index 公共导出', () => {
+      expect(typeof registerIconAlias).toBe('function')
+    })
+
+    it('精确别名：name 解析到目标注册图标', () => {
+      registerIcon('alias-target-exact', '<path d="M1 2 L3 4"/>')
+      registerIconAlias('alias-home', 'alias-target-exact')
+      const el = mount({ name: 'alias-home' })
+      expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('M1 2 L3 4')
+    })
+
+    it('前缀别名：别名前缀替换为目标前缀', () => {
+      registerIcon('pfx-icon-star', '<path d="M5 5 L6 6"/>')
+      registerIconAlias('pfx-', 'pfx-icon-')
+      const el = mount({ name: 'pfx-star' })
+      expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('M5 5 L6 6')
+    })
+
+    it('lookupIcon 走别名解析（全消费方共享）', () => {
+      registerIcon('alias-lookup-target', '<path d="M9 9"/>')
+      registerIconAlias('al-', 'alias-lookup-')
+      expect(lookupIcon('al-target')).toBe('<path d="M9 9"/>')
+    })
+
+    it('未注册别名时原样回退（不误伤内置图标）', () => {
+      expect(lookupIcon('check')).toContain('M3.5 8.5')
+    })
+  })
+
+  describe('iconfont-url 远程图标字体脚本', () => {
+    // happy-dom 沙箱禁用脚本文件加载：真实注入 <script src> 会向其虚拟控制台抛诊断。
+    // 这里拦截 document.head.appendChild 捕获节点（不连接），再手动派发 load/error
+    // 驱动被测的「加载 → 重渲染」路径，既避免环境噪声又精确覆盖状态机。
+    let appended: HTMLScriptElement[]
+    let appendSpy: ReturnType<typeof vi.spyOn>
+    beforeEach(() => {
+      document.head.innerHTML = ''
+      appended = []
+      const head = document.head
+      const orig = head.appendChild.bind(head)
+      appendSpy = vi.spyOn(head, 'appendChild').mockImplementation(((node: Node) => {
+        if (node instanceof HTMLScriptElement) {
+          appended.push(node)
+          return node
+        }
+        return orig(node)
+      }) as typeof head.appendChild)
+    })
+    afterEach(() => {
+      appendSpy.mockRestore()
+    })
+
+    it('进入 observedAttributes', () => {
+      expect(OASIcon.observedAttributes).toContain('iconfont-url')
+    })
+
+    it('注入 project 脚本并按 URL 去重（同一 URL 只注入一次）', () => {
+      const url = 'data:text/javascript,window.__oasIfA=1'
+      mount({ 'iconfont-url': url, name: 'icon-star' })
+      mount({ 'iconfont-url': url, name: 'icon-heart' })
+      expect(appended.length).toBe(1)
+      expect(appended[0]!.getAttribute('src')).toBe(url)
+      expect(appended[0]!.getAttribute('data-oas-iconfont')).toBe(url)
+    })
+
+    it('加载前空态，加载完成后内联渲染 symbol 内容（Shadow DOM 跨树 #fragment 引用不可用）', async () => {
+      const url = 'data:text/javascript,window.__oasIfB=1'
+      makeSymbolSprite([
+        ['icon-star', '<path d="M10 10" fill="currentColor"/>'],
+        ['icon-heart', '<path d="M20 20" fill="currentColor"/>'],
+      ])
+      const a = mount({ 'iconfont-url': url, name: 'icon-star' })
+      const b = mount({ 'iconfont-url': url, name: 'icon-heart' })
+      expect(svg(a)!.querySelector('path')).toBeNull()
+      appended[0]!.dispatchEvent(new Event('load'))
+      await vi.waitFor(() => {
+        expect(svg(a)!.querySelector('path')).not.toBeNull()
+      })
+      expect(svg(a)!.querySelector('path')!.getAttribute('d')).toBe('M10 10')
+      expect(svg(b)!.querySelector('path')!.getAttribute('d')).toBe('M20 20')
+      // symbol 的 viewBox 一并复制；外观控制仍生效
+      expect(svg(a)!.getAttribute('viewBox')).toBe('0 0 1024 1024')
+      expect(svg(a)!.getAttribute('width')).toBe('1em')
+    })
+
+    it('无 name 时保持空态（不注入无意义内容）', () => {
+      const el = mount({ 'iconfont-url': 'data:text/javascript,window.__oasIfC=1' })
+      expect(svg(el)!.childNodes.length).toBe(0)
+    })
+
+    it('脚本加载失败静默兜底（保持空态不抛错）', () => {
+      const url = 'data:text/javascript,window.__oasIfFail=1'
+      const el = mount({ 'iconfont-url': url, name: 'icon-x' })
+      appended[0]!.dispatchEvent(new Event('error'))
+      expect(svg(el)!.querySelector('path')).toBeNull()
+    })
+
+    it('脚本已加载但项目无该 symbol 时保持空态', () => {
+      const url = 'data:text/javascript,window.__oasIfMissing=1'
+      const el = mount({ 'iconfont-url': url, name: 'icon-nope' })
+      appended[0]!.dispatchEvent(new Event('load'))
+      expect(svg(el)!.childNodes.length).toBe(0)
+    })
+
+    it('别名参与 iconfont 符号名解析', () => {
+      const url = 'data:text/javascript,window.__oasIfAlias=1'
+      registerIconAlias('if-', 'icon-')
+      makeSymbolSprite([['icon-star', '<path d="M9 9"/>']])
+      const el = mount({ 'iconfont-url': url, name: 'if-star' })
+      appended[0]!.dispatchEvent(new Event('load'))
+      expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('M9 9')
+    })
+
+    it('显式移除 iconfont-url 后回退 name 注册表', () => {
+      const url = 'data:text/javascript,window.__oasIfD=1'
+      const el = mount({ 'iconfont-url': url, name: 'check' })
+      el.removeAttribute('iconfont-url')
+      expect(svg(el)!.querySelector('path')?.getAttribute('d')).toContain('M3.5 8.5')
     })
   })
 })

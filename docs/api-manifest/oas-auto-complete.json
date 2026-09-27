@@ -83,6 +83,17 @@
       "name": "required",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "virtual",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "item-height",
+      "type": "string",
+      "default": "36",
+      "observed": true
     }
   ],
   "props": [
@@ -132,6 +143,11 @@
       "name": "template[slot=\"option\"]"
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-auto-complete-dropdown-height",
+      "default": "240px"
+    }
+  ],
   "unresolved": []
 }

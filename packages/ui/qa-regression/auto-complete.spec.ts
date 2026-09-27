@@ -79,3 +79,68 @@ test('auto-complete autofocus（P2）：demo 按钮重挂载后光标落入内�
   })
   expect(focused, 'autofocus 未转发到内部输入框（挂载后未聚焦）').toBe(true)
 })
+
+// ===== 能力缺口 D3：virtual 虚拟滚动（长列表性能 + 键盘不越界 + 选中回显） =====
+
+test('auto-complete virtual（D3）：千级建议窗口渲染 + 键盘导航跟随 + 选中回显走真实链路', async ({ page }) => {
+  await page.goto('/components/auto-complete.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ac-virtual')
+  const ac = page.locator('#ac-virtual')
+  // e2e 指针先 scrollIntoView
+  await ac.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  // 真实链路：真输入触发过滤展开
+  await ac.locator('input[part="input"]').click()
+  await ac.locator('input[part="input"]').pressSequentially('选项')
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#ac-virtual')!
+    const vl = el.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
+    return !vl.hidden && vl.shadowRoot!.querySelectorAll('[role="option"]').length > 0
+  })
+  const opened = await ac.evaluate((el) => {
+    const vl = el.shadowRoot!.querySelector('oas-virtual-list')!
+    const rows = [...vl.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')]
+    return {
+      windowRows: rows.length,
+      total: JSON.parse(el.getAttribute('options') ?? '[]').length,
+      expanded: el.shadowRoot!.querySelector('input')!.getAttribute('aria-expanded'),
+    }
+  })
+  // 窗口渲染：可见行数远小于 1000（视口 240/36≈7 + buffer 4 → ~15 行），面板不撑爆
+  expect(opened.expanded, '输入后面板应展开').toBe('true')
+  expect(opened.total).toBe(1000)
+  expect(opened.windowRows, '虚拟窗口应远小于全量 1000').toBeLessThan(30)
+  // 键盘导航：连续 ↓ 不越界，aria-activedescendant 跟随可见项
+  for (let i = 0; i < 25; i++) await page.keyboard.press('ArrowDown')
+  const keyed = await ac.evaluate((el) => {
+    const input = el.shadowRoot!.querySelector('input')!
+    const vl = el.shadowRoot!.querySelector('oas-virtual-list')!
+    const active = [...vl.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')].find((r) =>
+      r.classList.contains('active'),
+    )
+    return {
+      descendant: input.getAttribute('aria-activedescendant'),
+      activeIndex: active?.getAttribute('data-index') ?? null,
+      scrollTop: vl.shadowRoot!.querySelector<HTMLElement>('.viewport')!.scrollTop,
+    }
+  })
+  expect(keyed.descendant, 'aria-activedescendant 应指向第 25 项').toBe('opt-25')
+  expect(keyed.scrollTop, '窗口应随键盘导航滚动').toBeGreaterThan(0)
+  // 窗口重算后高亮行可见（真实浏览器 scroll 事件驱动重渲染）
+  await page.waitForFunction(() => {
+    const vl = document.querySelector('#ac-virtual')!.shadowRoot!.querySelector('oas-virtual-list')!
+    const active = [...vl.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')].find((r) =>
+      r.classList.contains('active'),
+    )
+    return active?.getAttribute('data-index') === '25'
+  })
+  // 选中回显：Enter 选中高亮项 → 输入框文本 + value + 可见反馈（output span）
+  await page.keyboard.press('Enter')
+  await expect(ac.locator('input[part="input"]')).toHaveValue('选项 25')
+  const echoed = await ac.evaluate((el) => ({
+    value: el.getAttribute('value'),
+    expanded: el.shadowRoot!.querySelector('input')!.getAttribute('aria-expanded'),
+  }))
+  expect(echoed.value, 'value 属性应为选中项 value').toBe('v25')
+  expect(echoed.expanded, '选中后面板收起').toBe('false')
+  await expect(page.locator('#ac-virtual-output')).toContainText('"value":"v25"')
+})

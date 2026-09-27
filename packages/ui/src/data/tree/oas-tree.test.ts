@@ -50,7 +50,10 @@ function toggles(el: OASTree): HTMLElement[] {
 }
 
 function checkboxes(el: OASTree): HTMLInputElement[] {
-  return [...el.shadowRoot!.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')]
+  return [...el.shadowRoot!.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].filter(
+    // 排除 check-all 顶部全选框（非行勾选框）；行勾选框的索引断言不受其影响
+    (box) => !box.classList.contains('check-all-check'),
+  )
 }
 
 /** 模拟真实勾选流程：切 checked → 派发 change（触发组件的 toggleCheckByKey） */
@@ -129,17 +132,21 @@ describe('OASTree 展开（expanded JSON 数组）+ 选中', () => {
   it('locale：展开/选择 aria-label 随 setLocale 切换', () => {
     const el = mount({ checkable: '' })
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe('展开/收起')
-    expect(el.shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!.getAttribute('aria-label')).toBe(
-      '选择 节点 A',
-    )
+    expect(
+      el
+        .shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]:not(.check-all-check)')!
+        .getAttribute('aria-label'),
+    ).toBe('选择 节点 A')
 
     setLocale(en)
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe(
       'Expand/Collapse',
     )
-    expect(el.shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!.getAttribute('aria-label')).toBe(
-      'Select 节点 A',
-    )
+    expect(
+      el
+        .shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]:not(.check-all-check)')!
+        .getAttribute('aria-label'),
+    ).toBe('Select 节点 A')
 
     setLocale('zh-CN')
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe('展开/收起')
@@ -1689,6 +1696,110 @@ describe('OASTree size 五档 / block-node / selectable 整树开关（P2 批）
       const el = mount({ selectable: 'true', data: JSON.stringify([{ key: 'a', label: 'A' }]) })
       rows(el)[0]!.click()
       expect(el.getAttribute('selected')).toBe('a')
+    })
+  })
+
+  describe('check-all 整树全选/取消（能力缺口 D16）', () => {
+    const boxOf = (el: OASTree): HTMLInputElement => el.shadowRoot!.querySelector('.check-all-check')!
+    const rowOf = (el: OASTree): HTMLElement => el.shadowRoot!.querySelector('.check-all')!
+
+    it('check-all：渲染顶部全选项行（checkbox + label），缺省隐藏', () => {
+      const off = mount({ checkable: '' })
+      expect(rowOf(off).hasAttribute('hidden')).toBe(true)
+      const el = mount({ checkable: '', 'check-all': '', data: CASCADE_DATA })
+      expect(rowOf(el).hasAttribute('hidden')).toBe(false)
+      expect(rowOf(el).querySelector('.check-all-label')!.textContent).toBe('全选')
+      expect(boxOf(el).getAttribute('aria-label')).toBe('全选')
+      // 全选项行不是树行（不参与 roving）
+      expect(rowOf(el).getAttribute('part')).toBe('check-all')
+    })
+
+    it('check-all：未勾选任何项时三态为未选（checked=false / indeterminate=false）', () => {
+      const el = mount({ checkable: '', 'check-all': '', data: CASCADE_DATA })
+      expect(boxOf(el).checked).toBe(false)
+      expect(boxOf(el).indeterminate).toBe(false)
+    })
+
+    it('check-all：勾选全选项写入全部可勾选节点并派发 oas-check-all', () => {
+      const el = mount({ checkable: '', 'check-all': '', data: CASCADE_DATA })
+      const events: unknown[] = []
+      el.addEventListener('oas-check-all', (e: Event) => events.push((e as CustomEvent).detail))
+      const box = boxOf(el)
+      box.checked = true
+      box.dispatchEvent(new Event('change'))
+      expect(checkedOf(el)).toEqual(['a', 'a-1', 'a-2', 'b'])
+      expect(events).toEqual([{ checked: true, values: ['a', 'a-1', 'a-2', 'b'] }])
+      // 全选后三态为全选
+      expect(boxOf(el).checked).toBe(true)
+      expect(boxOf(el).indeterminate).toBe(false)
+    })
+
+    it('check-all：再次点选取消全选（清空 checked）', () => {
+      const el = mount({ checkable: '', 'check-all': '', data: CASCADE_DATA, checked: '["a","a-1","a-2","b"]' })
+      const box = boxOf(el)
+      expect(box.checked).toBe(true)
+      box.checked = false
+      box.dispatchEvent(new Event('change'))
+      expect(checkedOf(el)).toEqual([])
+      expect(boxOf(el).indeterminate).toBe(false)
+    })
+
+    it('check-all：部分勾选时半选（indeterminate=true）', () => {
+      const el = mount({ checkable: '', 'check-all': '', data: CASCADE_DATA, checked: '["a"]' })
+      expect(boxOf(el).checked).toBe(false)
+      expect(boxOf(el).indeterminate).toBe(true)
+    })
+
+    it('check-all：check-strictly 下全选为所有可勾选节点', () => {
+      const el = mount({ checkable: '', 'check-all': '', 'check-strictly': '', data: CASCADE_DATA })
+      const box = boxOf(el)
+      box.checked = true
+      box.dispatchEvent(new Event('change'))
+      expect(checkedOf(el)).toEqual(['a', 'a-1', 'a-2', 'b'])
+    })
+
+    it('check-all：disabled 子节点不进全选集合', () => {
+      const el = mount({
+        checkable: '',
+        'check-all': '',
+        data: JSON.stringify([
+          { key: 'a', label: 'A', children: [{ key: 'a-1', label: 'A-1', disabled: true }] },
+          { key: 'b', label: 'B' },
+        ]),
+      })
+      const box = boxOf(el)
+      box.checked = true
+      box.dispatchEvent(new Event('change'))
+      // a-1 自身禁用（不可勾选）不入集合；父 a 与兄弟 b 入选
+      expect(checkedOf(el)).toEqual(['a', 'b'])
+    })
+
+    it('check-all：check-all-label 覆盖缺省文案', () => {
+      const el = mount({ checkable: '', 'check-all': '', 'check-all-label': '选择全部节点', data: CASCADE_DATA })
+      expect(el.shadowRoot!.querySelector('.check-all-label')!.textContent).toBe('选择全部节点')
+    })
+
+    it('check-all：整树 disabled 时全选框禁用', () => {
+      const el = mount({ checkable: '', 'check-all': '', disabled: '', data: CASCADE_DATA })
+      expect(boxOf(el).disabled).toBe(true)
+    })
+
+    it('check-all：无 checkable 时不渲染（仅 check-all 无意义）', () => {
+      const el = mount({ 'check-all': '', data: CASCADE_DATA })
+      expect(rowOf(el).hasAttribute('hidden')).toBe(true)
+    })
+
+    it('check-all：虚拟模式（height）下全选项行仍渲染', () => {
+      const el = mount({ checkable: '', 'check-all': '', height: '120', data: CASCADE_DATA })
+      expect(rowOf(el).hasAttribute('hidden')).toBe(false)
+      expect(boxOf(el)).not.toBeNull()
+    })
+
+    it('check-all：样式表含全选项行规则（token 色）', () => {
+      const el = mount({ checkable: '', 'check-all': '', data: CASCADE_DATA })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain('.check-all')
+      expect(css).toContain('var(--oas-color-primary)')
     })
   })
 })

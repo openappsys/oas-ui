@@ -425,3 +425,91 @@ describe('OASMasonry', () => {
     vi.unstubAllGlobals()
   })
 })
+
+describe('OASMasonry sequential（顺序瀑布流，PRD D27）', () => {
+  /** light DOM 子元素类名序（slot 通道重排断言） */
+  function orderOf(el: OASMasonry): string[] {
+    return Array.from(el.children).map((c) => c.className)
+  }
+
+  /** items 渲染项文本序 */
+  function textsOf(el: OASMasonry): (string | null)[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.masonry-item')].map((i) => i.textContent)
+  }
+
+  function mountLight(attrs: Record<string, string>, classes: string[]): OASMasonry {
+    const el = new OASMasonry()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = classes.map((c) => `<div class="${c}">${c}</div>`).join('')
+    document.body.appendChild(el)
+    return el
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    window.innerWidth = 1024
+    vi.restoreAllMocks()
+  })
+
+  it('sequential 进 observedAttributes', () => {
+    expect(OASMasonry.observedAttributes).toContain('sequential')
+  })
+
+  it('sequential：按原始顺序逐列轮转填充（1→列1、2→列2、…循环）', () => {
+    // 6 项 / 3 列 → 列1: 1,4；列2: 2,5；列3: 3,6 → DOM 序 [1,4,2,5,3,6]（CSS columns 均衡 2/2/2）
+    const el = mountLight({ columns: '3' }, ['i1', 'i2', 'i3', 'i4', 'i5', 'i6'])
+    el.setAttribute('sequential', '')
+    expect(orderOf(el)).toEqual(['i1', 'i4', 'i2', 'i5', 'i3', 'i6'])
+  })
+
+  it('sequential：列数大于项数时逐列各占一项（多余列空置）', () => {
+    const el = mountLight({ columns: '4' }, ['a', 'b'])
+    el.setAttribute('sequential', '')
+    expect(orderOf(el)).toEqual(['a', 'b'])
+  })
+
+  it('sequential 优先：忽略子项 column 指定列（两模式互斥，sequential 生效）', () => {
+    const el = mountLight({ columns: '2' }, ['a', 'b', 'c', 'd'])
+    el.children[0]!.setAttribute('column', '2')
+    el.setAttribute('sequential', '')
+    // column=2 被忽略：全部按轮转 → DOM 序 [a,c,b,d]
+    expect(orderOf(el)).toEqual(['a', 'c', 'b', 'd'])
+  })
+
+  it('sequential：items 数据驱动通道同样轮转', () => {
+    const el = new OASMasonry()
+    el.setAttribute('columns', '4')
+    el.setAttribute('sequential', '')
+    el.items = [{ text: 'A' }, { text: 'B' }, { text: 'C' }, { text: 'D' }, { text: 'E' }]
+    document.body.appendChild(el)
+    // 5 项 / 4 列 → 列1: A,E；列2: B；列3: C；列4: D → DOM 序 [A,E,B,C,D]
+    expect(textsOf(el)).toEqual(['A', 'E', 'B', 'C', 'D'])
+  })
+
+  it('sequential 与断点共存：按当前生效列数重算', () => {
+    const el = mountLight({ columns: '2 lg:4' }, ['a', 'b', 'c', 'd', 'e'])
+    el.setAttribute('sequential', '')
+    // happy-dom 默认视口 1024 → lg 命中 → 4 列：列1: a,e；列2: b；列3: c；列4: d
+    expect(orderOf(el)).toEqual(['a', 'e', 'b', 'c', 'd'])
+    // 改纯 2 列 → 列1: a,c,e；列2: b,d
+    el.setAttribute('columns', '2')
+    expect(orderOf(el)).toEqual(['a', 'c', 'e', 'b', 'd'])
+  })
+
+  it('移除 sequential 后停止重排（DOM 保持既有重排结果，与 column 指定列行为一致）；重开按当前序重新捕获', () => {
+    const el = mountLight({ columns: '3' }, ['i1', 'i2', 'i3', 'i4', 'i5', 'i6'])
+    el.setAttribute('sequential', '')
+    expect(orderOf(el)).toEqual(['i1', 'i4', 'i2', 'i5', 'i3', 'i6'])
+    el.removeAttribute('sequential')
+    // 物理重排不回溯（既有 column 通道同款持久化语义）；后续 update 不再重排
+    el.setAttribute('columns', '2')
+    expect(orderOf(el)).toEqual(['i1', 'i4', 'i2', 'i5', 'i3', 'i6'])
+    // 重新开启：按当前 DOM 序重新捕获为原始序（2 列轮转作用于 3 列轮转序 → 恰还原原序）
+    el.setAttribute('sequential', '')
+    expect(orderOf(el)).toEqual(['i1', 'i2', 'i3', 'i4', 'i5', 'i6'])
+  })
+})

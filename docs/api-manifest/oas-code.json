@@ -56,6 +56,29 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "highlight-lines",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "focus-lines",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "diff",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "max-rows",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
@@ -74,6 +97,14 @@
     {
       "name": "--oas-code-font",
       "default": "0.875em"
+    },
+    {
+      "name": "--oas-code-highlight-bg",
+      "default": "color-mix(in srgb, var(--oas-color-primary) 12%, transparent)"
+    },
+    {
+      "name": "--oas-code-focus-dim-opacity",
+      "default": "0.35"
     },
     {
       "name": "--oas-code-color",

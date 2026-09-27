@@ -128,6 +128,7 @@ export const WHITELIST = [
   'oas-editable',
   'oas-form',
   'oas-form-item',
+  'oas-form-list',
   'oas-alert',
   'oas-progress',
   'oas-spin',
@@ -217,6 +218,8 @@ export const WHITELIST = [
   // —— 未发布批次：stepper 步骤面板（v2.3.2 遗留的「DSD 白名单后续批次」补位） ——
   'oas-stepper',
   'oas-stepper-panel',
+  // —— 未发布批次：highlight 文本命中高亮（同步确定性渲染，纯展示直出） ——
+  'oas-highlight',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -300,6 +303,7 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-editable': '@oas-ui/ui/form/editable',
   'oas-form': '@oas-ui/ui/form/form',
   'oas-form-item': '@oas-ui/ui/form/form-item',
+  'oas-form-list': '@oas-ui/ui/form/form-list',
   'oas-alert': '@oas-ui/ui/feedback/alert',
   'oas-progress': '@oas-ui/ui/feedback/progress',
   'oas-spin': '@oas-ui/ui/feedback/spin',
@@ -389,6 +393,8 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   // stepper 与 stepper-panel 同目录，装载一次注册两个 tag
   'oas-stepper': '@oas-ui/ui/navigation/stepper',
   'oas-stepper-panel': '@oas-ui/ui/navigation/stepper',
+  // —— 未发布批次：highlight 文本命中高亮 ——
+  'oas-highlight': '@oas-ui/ui/data/highlight',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */

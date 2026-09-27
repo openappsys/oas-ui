@@ -43,7 +43,7 @@
   <oas-modal id="modal-nomask" title="必须确认" no-mask-close>
     <p>点击遮罩不会关闭，需通过按钮或 Esc 关闭。</p>
   </oas-modal>
-</DemoBlock>
+</DemoBlock>。非模态语义对齐 `dialog.show()`：`aria-modal="false"`、不抢焦点、Tab 不圈禁
 
 ## 自定义宽度
 
@@ -80,6 +80,17 @@
   <oas-button type="primary" onclick="document.querySelector('#modal-fullscreen').setAttribute('visible','')">打开全屏对话框</oas-button>
   <oas-modal id="modal-fullscreen" title="全屏对话框" fullscreen width="640px" centered draggable>
     <p>全屏对话框铺满视口、无圆角与边距。<code>width</code> / <code>centered</code> 被忽略、拖拽被禁用，Esc / 遮罩关闭照常。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 可最大化（maximizable）
+
+`maximizable` 在标题栏 ✕ 左侧显示最大化/还原按钮：最大化**等同 `fullscreen` 语义**（铺满视口、无圆角、`width` 被忽略、拖拽失效），再点还原回原尺寸；切换派发 `oas-maximize`（`detail.maximized` 标明状态）。显式设置 `fullscreen` 属性时按钮隐藏（宿主已强制全屏，切换无意义）。
+
+<DemoBlock title="可最大化对话框">
+  <oas-button type="primary" onclick="document.querySelector('#modal-max').setAttribute('visible','')">打开可最大化对话框</oas-button>
+  <oas-modal id="modal-max" title="可最大化" maximizable centered>
+    <p>点标题栏的最大化按钮铺满视口，再点还原；每次切换派发 <code>oas-maximize</code>（右上角消息反馈）。</p>
   </oas-modal>
 </DemoBlock>
 
@@ -611,6 +622,11 @@ onMounted(async () => {
     message.warning('有未保存的修改：此路径不可关闭')
   })
 
+  // 可最大化：oas-maximize 事件反馈（detail.maximized 标明状态）
+  document.getElementById('modal-max')?.addEventListener('oas-maximize', (e) => {
+    message.info(e.detail.maximized ? '已最大化（等同 fullscreen）' : '已还原')
+  })
+
   window.openOptionsRadio = () => {
     modal
       .options({
@@ -695,6 +711,7 @@ onMounted(async () => {
 | `fullscreen-breakpoint` | 视口宽度低于该阈值（px）时自动全屏（打开期间随 resize 重算；与显式 `fullscreen` 取并集） | — | — |
 | `initial-focus` | 打开时聚焦指定选择器元素（对话框内优先，其次宿主 light DOM）；未设置回落 `focus-ok` / 取消按钮 / 确定 / ✕ | — | — |
 | `loading` | 确定按钮进入 loading 态（禁用 + 转圈），禁止重复触发确定 | `boolean` | — |
+| `maximizable` | 标题栏显示最大化/还原按钮：最大化等同 fullscreen 语义，再点还原；显式 fullscreen 下隐藏 | `boolean` | — |
 | `no-cancel` | 隐藏取消按钮（底部仅剩「确定」；语义变体确认框内置） | `boolean` | — |
 | `no-close-btn` | 隐藏标题栏 ✕ 关闭按钮 | `boolean` | — |
 | `no-esc-close` | 禁用 Esc 关闭（Esc 仅由最上层可见 modal 响应） | `boolean` | — |
@@ -725,6 +742,7 @@ onMounted(async () => {
 | `oas-cancel` | 取消：取消按钮 / ✕ / 遮罩点击 / Esc |
 | `oas-close` | 开始关闭时派发，`detail: { source, action }`（source: `ok`/`cancel`/`close-btn`/`mask`/`esc`/`programmatic`；action: `confirm`/`cancel`/`close`） |
 | `oas-closed` | 【兼容别名】关闭动画完成，等价 oas-after-close；后续版本移除 |
+| `oas-maximize` | 最大化/还原切换时派发，`detail: { maximized }` |
 | `oas-ok` | 点击「确定」 |
 | `oas-open` | 开始打开时派发（锁滚动、焦点移入之后），`detail` 无 |
 | `oas-opened` | 【兼容别名】打开动画完成，等价 oas-after-open；后续版本移除 |

@@ -120,6 +120,23 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
   <oas-upload id="upload-before" multiple></oas-upload>
 </DemoBlock>
 
+## 图片裁剪（crop）
+
+`crop` 开启图片上传前裁剪。生效条件：`list-type` 为 `picture` / `picture-card` 且 `accept` 包含图片类型——此时选择/拖入/粘贴图片文件不再直接入列，而是弹出**内建轻量裁剪对话框**（自绘浮层，零依赖）：
+
+- **移动**：拖拽舞台空白处平移图像；拖拽裁剪框整体移动（聚焦后方向键微调，Shift 加速）
+- **缩放框体**：拖拽右下角手柄；`crop-aspect` 设固定宽高比（如 `1:1`、`16:9`，非法/缺省为自由比例）
+- **缩放图像**：舞台上滚轮，或工具栏放大/缩小按钮（100% = 铺满基准，上限 800%）
+- **确定**：离屏 canvas 按源图自然分辨率导出裁剪区域，以结果文件入列代替原图，并派发 `oas-crop`（`detail: { file, blob }`）
+- **取消 / Esc**：不入列直接关闭；批量多选时逐张处理（取消跳过当前张、继续下一张），非图片文件不受影响直接入列
+
+<DemoBlock title="crop 裁剪后上传（picture-card + 1:1）">
+  <oas-upload id="upload-crop" crop crop-aspect="1:1" list-type="picture-card" accept="image/*" max="3" multiple></oas-upload>
+  <span id="upload-crop-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+`crop` 与 `before-upload` 组合时先走 `before-upload`（含校验/转换），转换结果再进裁剪；确认入列仍受 `max` / `max-size` / `replace` 语义约束（裁剪结果可能比原图小，大小限制在入列时裁决）。
+
 ## 文件大小限制（max-size）
 
 `max-size` 支持字节数或带单位写法（`512KB` / `2MB` / `1GB`）；超限拒绝并派发 `oas-exceed-limit`（`detail.type === 'size'`，含 `maxSize` 字节数）。
@@ -207,6 +224,7 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
 - `oas-retry` / `oas-cancel`：重试发起 / 上传取消，`detail: { file }`
 - `oas-exceed-limit`：超限拒绝，`detail: { files, max, total }`（数量）或 `{ files, type: 'size', maxSize, total }`（大小）
 - `oas-remove`：移除文件，`detail: { file, index, replaced? }`（`replaced: true` 表示被 `replace` 语义替换）
+- `oas-crop`：裁剪确认，`detail: { file, blob }`（`file` 为原文件，`blob` 为离屏 canvas 裁剪结果）
 
 方法：`submit()`（手动上传）、`startUpload()`（等价）、`abort(file?)`（取消单个/全部进行中的上传）。
 
@@ -231,7 +249,7 @@ el.customRequest = async ({ file, onProgress, onSuccess, onError }) => {
 }
 ```
 
-- **头像裁剪**：`before-upload` 返回裁剪后的新 `File`（接第三方裁剪库）
+- **头像裁剪**：内建 `crop` 通道覆盖（见「图片裁剪」节）；需接第三方裁剪库时可改用 `before-upload` 返回裁剪后的新 `File`
 - **上传列表拖拽排序**：`item` 插槽自定义行 + 宿主接第三方 dnd 库重排 `files`
 - **圆形头像卡**：CSS 变量 `--oas-upload-card-radius: 50%`（不占独立枚举）
 
@@ -347,6 +365,16 @@ onMounted(async () => {
     if (e.detail.replaced) message.info(`旧文件「${e.detail.file.name}」已被替换`)
   })
 
+  // crop 裁剪反馈：确认后展示裁剪结果信息
+  const crop = document.getElementById('upload-crop')
+  const cropOut = document.getElementById('upload-crop-output')
+  crop?.addEventListener('oas-crop', (e) => {
+    const { file, blob } = e.detail
+    const kb = Math.max(1, Math.round(blob.size / 1024))
+    if (cropOut) cropOut.textContent = `oas-crop：${file.name} → 裁剪结果 ${kb} KB`
+    message.success(`已裁剪：${file.name}（${kb} KB）`)
+  })
+
   // 已上传回显（defaultFiles：{name, url} 型初值，状态 done）
   const echo = document.getElementById('upload-echo')
   if (echo) {
@@ -408,6 +436,8 @@ onMounted(async () => {
 | `accept` | 接受的文件类型 | `string` | — |
 | `action` | 上传接口 URL（真实 XHR 通道；不配且无 customRequest 时为模拟进度） | `string` | — |
 | `auto-upload` | 添加后自动模拟上传 | `boolean` | — |
+| `crop` | 图片上传前裁剪（picture/picture-card + accept 含图片时生效）：选择后弹内建裁剪对话框，确认以 canvas 裁剪结果入列 | `boolean` | — |
+| `crop-aspect` | 裁剪固定宽高比（如 `1:1`、`16:9`）；非法/缺省为自由比例 | `string` | — |
 | `data` | 附加表单字段（JSON 字符串，随文件一起提交） | — | — |
 | `directory` | 目录上传（整目录递归入列） | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
@@ -437,6 +467,7 @@ onMounted(async () => {
 | --- | --- |
 | `oas-cancel` | 取消上传，`detail: { file }`（行/卡片 cancel 按钮） |
 | `oas-change` | 文件列表变化，`detail: { files }` |
+| `oas-crop` | 裁剪确认时派发，`detail: { file, blob }`（file 原文件，blob 裁剪结果） |
 | `oas-error` | 上传失败，`detail: { file, response?, status? }`（行/卡片出重试按钮） |
 | `oas-exceed` | 【兼容别名】等价 oas-exceed-limit；后续版本移除，`detail: { files: rejected, max, total: next.length } \| { files: sizeRejected, type: 'size', maxSize, total: next.length }` |
 | `oas-exceed-limit` | 添加文件超限被拒绝（规范名，对齐 checkbox-group/select/toggle-group），`detail: { files, max, total }`；数量/大小超限均派发（大小超限额外带 `type: 'size'` 与 `maxSize`） |

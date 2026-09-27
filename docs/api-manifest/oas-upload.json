@@ -100,6 +100,17 @@
       "observed": true
     },
     {
+      "name": "crop",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "crop-aspect",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "required",
       "type": "boolean",
       "observed": true
@@ -127,6 +138,10 @@
     }
   ],
   "events": [
+    {
+      "name": "oas-crop",
+      "detail": "{ file: orig, blob }"
+    },
     {
       "name": "oas-remove",
       "detail": "{ file: out, index: 0, replaced: true } | { file: entry, index }"

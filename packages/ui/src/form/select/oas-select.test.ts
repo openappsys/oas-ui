@@ -2047,3 +2047,87 @@ describe('OASSelect 长尾组（能力缺口 P2）', () => {
     expect(el.getAttribute('value')).toBe('榴莲')
   })
 })
+
+// ---- 能力缺口 D20：hide-selected（多选时已选选项从下拉列表隐藏） ----
+
+describe('OASSelect hide-selected（能力缺口 D20）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function optionLabels(el: OASSelect): string[] {
+    return [...el.shadowRoot!.querySelectorAll('[role="option"] .option-label')].map((n) => n.textContent)
+  }
+
+  function setSearchQuery(el: OASSelect, v: string): void {
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('.search-input')!
+    input.value = v
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  it('hide-selected 进入 observedAttributes', () => {
+    expect(OASSelect.observedAttributes).toContain('hide-selected')
+  })
+
+  it('多选 + hide-selected：已选选项从下拉列表隐藏', () => {
+    const el = mount({ multiple: '', 'hide-selected': '' })
+    open(el)
+    expect(optionLabels(el)).toEqual(['苹果', '香蕉', '橙子'])
+    const options = el.shadowRoot!.querySelectorAll('[role="option"]')
+    ;(options[0] as HTMLElement).click() // 选中苹果
+    expect(optionLabels(el)).toEqual(['香蕉', '橙子'])
+  })
+
+  it('取消选择（再点/值移除）后选项回到列表', () => {
+    const el = mount({ multiple: '', 'hide-selected': '', value: JSON.stringify(['apple']) })
+    open(el)
+    expect(optionLabels(el)).toEqual(['香蕉', '橙子'])
+    el.setAttribute('value', '[]')
+    expect(optionLabels(el)).toEqual(['苹果', '香蕉', '橙子'])
+  })
+
+  it('chip 移除按钮取消选择后选项回到列表', () => {
+    const el = mount({ multiple: '', 'hide-selected': '', value: JSON.stringify(['apple', 'banana']) })
+    open(el)
+    expect(optionLabels(el)).toEqual(['橙子'])
+    const chipRemove = el.shadowRoot!.querySelector<HTMLButtonElement>('.chip button')!
+    chipRemove.click() // 移除第一个 chip（苹果）→ 剩香蕉被隐藏，列表显示苹果 + 橙子
+    expect(optionLabels(el)).toEqual(['苹果', '橙子'])
+  })
+
+  it('clearable 清空后全部回到列表', () => {
+    const el = mount({ multiple: '', 'hide-selected': '', clearable: '', value: JSON.stringify(['apple', 'orange']) })
+    open(el)
+    expect(optionLabels(el)).toEqual(['香蕉'])
+    el.shadowRoot!.querySelector<HTMLElement>('.clear-btn')!.click()
+    expect(optionLabels(el)).toEqual(['苹果', '香蕉', '橙子'])
+  })
+
+  it('全部隐藏后显示空态，取消后恢复', () => {
+    const el = mount({ multiple: '', 'hide-selected': '', value: JSON.stringify(['apple', 'banana', 'orange']) })
+    open(el)
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(0)
+    expect(el.shadowRoot!.querySelector('.empty')).not.toBeNull()
+    el.setAttribute('value', '["banana"]')
+    expect(optionLabels(el)).toEqual(['苹果', '橙子'])
+  })
+
+  it('单选时 hide-selected 不生效（选中项保留在列表）', () => {
+    const el = mount({ 'hide-selected': '', value: 'apple' })
+    open(el)
+    expect(optionLabels(el)).toEqual(['苹果', '香蕉', '橙子'])
+  })
+
+  it('搜索过滤与 hide-selected 叠加：隐藏已选项后再按查询词过滤', () => {
+    const el = mount({ multiple: '', 'hide-selected': '', searchable: '', value: JSON.stringify(['apple']) })
+    open(el)
+    setSearchQuery(el, '果')
+    expect(optionLabels(el)).toEqual([])
+    setSearchQuery(el, '香')
+    expect(optionLabels(el)).toEqual(['香蕉'])
+  })
+})

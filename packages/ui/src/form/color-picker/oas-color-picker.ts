@@ -39,9 +39,11 @@ const DEFAULT_PRESETS = [
 /** 内部缺省色：value 为空/非法时面板通道的起始值（仅展示用，不写回 value） */
 const DEFAULT_COLOR: RGBA = { r: 0, g: 102, b: 255, a: 1 }
 
+/** 最近使用色条容量上限 */
+const RECENT_MAX = 8
+
 /** 视口夹取边距（与 date-picker 一致） */
-const VIEWPORT_PADDING = 8
-/** 面板与触发器的纵向间距（与一期前 top: calc(100% + 4px) 一致） */
+const VIEWPORT_PADDING = 8 /** 面板与触发器的纵向间距（与一期前 top: calc(100% + 4px) 一致） */
 const PANEL_GAP = 4
 
 /** 预设项：字符串任意 CSS 颜色，或 { color, label }（label 供可访问名） */
@@ -213,6 +215,49 @@ const STYLE = `
   font-size: var(--oas-font-size-xs);
   color: var(--oas-color-text-secondary);
   margin-bottom: var(--oas-space-2);
+}
+/* 最近使用色条（recent）：与预设区同视觉语言，置于面板最底部 */
+.recent {
+  margin-top: var(--oas-space-2);
+  padding-top: var(--oas-space-2);
+  border-top: 1px solid var(--oas-color-border);
+}
+.recent[hidden] {
+  display: none;
+}
+.recent-title {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  margin-bottom: var(--oas-space-2);
+}
+.recent-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--oas-space-1);
+}
+.recent-swatch {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--oas-radius-sm);
+  border: 1px solid var(--oas-color-border);
+  cursor: pointer;
+  padding: 0;
+  transition: transform var(--oas-transition-fast) var(--oas-ease-out);
+}
+.recent-swatch:hover {
+  transform: scale(1.12);
+}
+.recent-swatch:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.recent-swatch.alpha-checker {
+  background-image: repeating-conic-gradient(
+    var(--oas-color-bg-hover) 0% 25%,
+    var(--oas-color-bg) 0% 50%
+  );
+  background-size: 8px 8px;
 }
 .presets {
   display: grid;
@@ -506,6 +551,8 @@ export class OASColorPicker extends OASElement {
       'preset-rows',
       'mode',
       'inline',
+      'recent',
+      'recent-key',
     ]
   }
 
@@ -525,6 +572,13 @@ export class OASColorPicker extends OASElement {
   private attachedCaps = new Set<string>()
   /** 能力晚加入订阅的退订函数（connected 期订阅、disconnected 退订防泄漏） */
   private unsubCaps: (() => void) | undefined = undefined
+  /** 最近使用色（最新在前，去重、上限 RECENT_MAX；recent 属性启用时记录） */
+  private recentColors: string[] = []
+  /** 最近色区渲染签名（避免 value 同步时重建节点打断焦点） */
+  private recentSig = ''
+  /** 已完成的最近色载入标记 + 对应 key（key 变化时重新载入） */
+  private recentLoaded = false
+  private loadedRecentKey = ''
 
   // ---------- 构造：快照注入 + 生命周期订阅晚加入 ----------
 
@@ -639,6 +693,10 @@ export class OASColorPicker extends OASElement {
             <button type="button" class="eyedropper footer-button" part="eyedropper"
               aria-label="${this.t('colorPicker.eyedropper')}">${EYEDROPPER_SVG}</button>
             <button type="button" class="clear footer-button" part="clear"></button>
+          </div>
+          <div class="recent" part="recent" hidden>
+            <div class="recent-title">${this.t('command.recent')}</div>
+            <div class="recent-list" part="recent-list"></div>
           </div>
         </div>
       </div>
@@ -761,6 +819,9 @@ export class OASColorPicker extends OASElement {
     this.syncTrigger()
     // 预设网格
     this.renderPresets()
+    // 最近使用色条（recent）
+    this.ensureRecentLoaded()
+    this.renderRecent()
     // 渐变编辑区显隐 + stops 同步（designer）
     this.designerCap?.syncGradientControls()
     // 面板控件状态（RGB/hex/clear/吸管）
@@ -840,6 +901,85 @@ export class OASColorPicker extends OASElement {
         text.classList.toggle('placeholder', !this.hasValue)
         text.textContent = this.displayText()
       }
+    }
+  }
+
+  // ---------- 最近使用色（recent / recent-key） ----------
+
+  /** 最近色区是否启用（recent 属性在场） */
+  private recentEnabled(): boolean {
+    return this.hasAttr('recent')
+  }
+
+  /** 持久化键（recent-key 属性；缺省不持久化，仅内存） */
+  private recentStorageKey(): string {
+    return this.hasAttr('recent') ? this.getAttr('recent-key', '') : ''
+  }
+
+  /** 懒载入最近色：recent-key 变化时重新从 localStorage 读取（无 key 则内存空表） */
+  private ensureRecentLoaded(): void {
+    const key = this.recentStorageKey()
+    if (this.recentLoaded && key === this.loadedRecentKey) return
+    this.recentLoaded = true
+    this.loadedRecentKey = key
+    this.recentColors = []
+    if (!key) return
+    try {
+      const raw = localStorage.getItem(key)
+      if (!raw) return
+      const parsed: unknown = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return
+      this.recentColors = parsed
+        .filter((c): c is string => typeof c === 'string' && parseColor(c) != null)
+        .slice(0, RECENT_MAX)
+    } catch {
+      /* localStorage 不可用/内容损坏：仅内存 */
+    }
+  }
+
+  /** 入栈：规范化色值去重置顶，超上限淘汰最旧；recent-key 时写回流持久化 */
+  private pushRecent(rgba: RGBA): void {
+    if (!this.recentEnabled()) return
+    const canonical = formatColor(rgba, { format: 'hex', alpha: this.alphaEnabled() })
+    this.recentColors = [canonical, ...this.recentColors.filter((c) => c !== canonical)].slice(0, RECENT_MAX)
+    const key = this.recentStorageKey()
+    if (key) {
+      try {
+        localStorage.setItem(key, JSON.stringify(this.recentColors))
+      } catch {
+        /* 写入失败（隐私模式/配额）静默，内存态仍可用 */
+      }
+    }
+    this.renderRecent()
+  }
+
+  /** 渲染最近色块：recent 未启用或空列表时整区隐藏；按签名增量重建 */
+  private renderRecent(): void {
+    const box = this.shadow.querySelector<HTMLElement>('.recent')
+    if (!box) return
+    if (!this.recentEnabled() || this.recentColors.length === 0) {
+      box.hidden = true
+      return
+    }
+    box.hidden = false
+    const sig = this.recentColors.join(',')
+    const list = box.querySelector<HTMLElement>('.recent-list')
+    if (!list) return
+    if (sig === this.recentSig && list.childElementCount === this.recentColors.length) return
+    this.recentSig = sig
+    list.innerHTML = ''
+    for (const value of this.recentColors) {
+      const parsed = parseColor(value)
+      if (!parsed) continue
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'recent-swatch'
+      btn.setAttribute('part', 'recent-swatch')
+      btn.style.backgroundColor = formatSwatch(parsed)
+      if (parsed.a < 1) btn.classList.add('alpha-checker')
+      btn.setAttribute('aria-label', value)
+      btn.addEventListener('click', () => this.commit(parsed))
+      list.appendChild(btn)
     }
   }
 
@@ -1077,6 +1217,8 @@ export class OASColorPicker extends OASElement {
     const color = this.normalizeAlpha(rgba)
     this.color = color
     if (this.designerCap?.applyColor(color)) return
+    // 单色提交入栈最近使用色（渐变模式走 designer 分支已 return）
+    this.pushRecent(color)
     const out = formatColor(color, this.outputOpts())
     if (this.getAttr('value', '') === out) {
       this.syncTrigger()

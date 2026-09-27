@@ -178,6 +178,18 @@ onMounted(() => {
 })
 </script>
 
+## 最近使用色（recent / recent-key）
+
+<DemoBlock title="recent：选中色入栈，面板底部可回选">
+  <oas-color-picker id="cp-recent" recent value="#0b6cff"></oas-color-picker>
+</DemoBlock>
+
+<DemoBlock title="recent + recent-key：localStorage 持久化（刷新后仍在）">
+  <oas-color-picker id="cp-recent-store" recent recent-key="oas-demo-recent" value="#9333ea"></oas-color-picker>
+</DemoBlock>
+
+`recent` 开启最近使用色条：每次提交的颜色入栈（去重、上限 8、最新在前），面板底部展示可点选色块，点击即回填该色。`recent-key` 指定 `localStorage` 持久化键（跨会话保留）；缺省不持久化，仅当前实例内存。
+
 ## API
 
 ### oas-color-picker
@@ -198,6 +210,8 @@ onMounted(() => {
 | `preset-columns` | 预设色板列数（正整数，默认 8） | `string` | — |
 | `preset-rows` | 预设色板行数上限（正整数；缺省不限制，显示全部预设） | `string` | — |
 | `readonly` | 只读：触发器不展开面板，编辑提交全部拦截 | `boolean` | — |
+| `recent` | 最近使用色条：提交颜色入栈（去重、上限 8、最新在前），面板底部可点选 | `boolean` | — |
+| `recent-key` | localStorage 持久化键（配合 recent；缺省仅内存不持久化） | `string` | — |
 | `show-alpha` | 启用透明度通道：面板显示 alpha 滑杆，半透明色的触发器/预设块棋盘格底，value 输出带 alpha | `boolean` | — |
 | `show-text` | 触发器显示色值文本（默认 true；`"false"` 只显示色块） | `string` | `true` |
 | `size` | 触发器尺寸：`small` / `medium`（默认）/ `large` | — | — |

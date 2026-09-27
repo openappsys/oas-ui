@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASMarquee } from './index.js'
-import { resolveSpeedPx, computeRepeat, computeDuration } from './oas-marquee.js'
+import { resolveSpeedPx, computeRepeat, computeDuration, resolveMaxLoops } from './oas-marquee.js'
 
 function mount(attrs: Record<string, string> = {}, content = 'OAS-UI 滚动内容'): OASMarquee {
   const el = new OASMarquee()
@@ -86,6 +86,24 @@ describe('纯函数：速度/份数/时长推导（px/s 语义）', () => {
   it('computeDuration：速度非法回退默认速度计算', () => {
     expect(computeDuration(480, 0)).toBe(10)
     expect(computeDuration(480, -5)).toBe(10)
+  })
+})
+
+describe('纯函数：max-loops 解析', () => {
+  it('resolveMaxLoops：正整数生效', () => {
+    expect(resolveMaxLoops('3')).toBe(3)
+    expect(resolveMaxLoops('12')).toBe(12)
+    expect(resolveMaxLoops(' 3 ')).toBe(3)
+  })
+
+  it('resolveMaxLoops：缺失/非法/非正/非整数回退 0（= 无限循环）', () => {
+    expect(resolveMaxLoops('')).toBe(0)
+    expect(resolveMaxLoops(null)).toBe(0)
+    expect(resolveMaxLoops('abc')).toBe(0)
+    expect(resolveMaxLoops('0')).toBe(0)
+    expect(resolveMaxLoops('-1')).toBe(0)
+    expect(resolveMaxLoops('2.5')).toBe(0)
+    expect(resolveMaxLoops('NaN')).toBe(0)
   })
 })
 
@@ -540,5 +558,83 @@ describe('OASMarquee', () => {
     const el = mount()
     el.remove()
     expect(disconnectSpy).toHaveBeenCalled()
+  })
+
+  // ===== max-loops：限定循环次数（播完定格末帧 + oas-finish）=====
+
+  it('max-loops 写入 animation-iteration-count + fill-mode forwards（播完定格末帧的机制）', () => {
+    const el = mount({ 'max-loops': '3' })
+    expect(track(el).style.getPropertyValue('animation-iteration-count')).toBe('3')
+    expect(track(el).style.getPropertyValue('animation-fill-mode')).toBe('forwards')
+  })
+
+  it('max-loops 非法/移除回退无限循环（清除 inline 覆盖）', () => {
+    const el = mount({ 'max-loops': '3' })
+    el.setAttribute('max-loops', 'abc')
+    expect(track(el).style.getPropertyValue('animation-iteration-count')).toBe('')
+    expect(track(el).style.getPropertyValue('animation-fill-mode')).toBe('')
+    el.setAttribute('max-loops', '5')
+    expect(track(el).style.getPropertyValue('animation-iteration-count')).toBe('5')
+    el.removeAttribute('max-loops')
+    expect(track(el).style.getPropertyValue('animation-iteration-count')).toBe('')
+  })
+
+  it('播完（animationend）派发 oas-finish 一次，detail { loops }；不重复派发', () => {
+    const el = mount({ 'max-loops': '4' })
+    const events: unknown[] = []
+    el.addEventListener('oas-finish', (e) => events.push((e as CustomEvent).detail))
+    track(el).dispatchEvent(new Event('animationend'))
+    expect(events).toEqual([{ loops: 4 }])
+    // 已定格后重复的 animationend（浏览器特性：fill forwards 下样式抖动可能再触发）不得再派发
+    track(el).dispatchEvent(new Event('animationend'))
+    expect(events.length).toBe(1)
+  })
+
+  it('无 max-loops（无限循环）时 animationend 不派发 oas-finish', () => {
+    const el = mount()
+    const events: unknown[] = []
+    el.addEventListener('oas-finish', (e) => events.push((e as CustomEvent).detail))
+    track(el).dispatchEvent(new Event('animationend'))
+    expect(events.length).toBe(0)
+  })
+
+  it('max-loops 变更重置完成标记：重新播完可再次派发（新上限生效）', () => {
+    const el = mount({ 'max-loops': '2' })
+    const events: unknown[] = []
+    el.addEventListener('oas-finish', (e) => events.push((e as CustomEvent).detail))
+    track(el).dispatchEvent(new Event('animationend'))
+    expect(events).toEqual([{ loops: 2 }])
+    el.setAttribute('max-loops', '3')
+    track(el).dispatchEvent(new Event('animationend'))
+    expect(events).toEqual([{ loops: 2 }, { loops: 3 }])
+    expect(track(el).style.getPropertyValue('animation-iteration-count')).toBe('3')
+  })
+
+  // ===== RTL：平移方向镜像 =====
+
+  it('dir=rtl 时宿主打 data-rtl 钩子，移除 dir 后回退', () => {
+    const el = mount()
+    expect(el.hasAttribute('data-rtl')).toBe(false)
+    el.setAttribute('dir', 'rtl')
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    el.removeAttribute('dir')
+    expect(el.hasAttribute('data-rtl')).toBe(false)
+  })
+
+  it('RTL 镜像关键帧：水平滚动换 oas-marquee-x-rtl（平移取正 shift）；纵向不受书写方向影响', () => {
+    const css = styleText(mount())
+    // 镜像规则必须带 :not([orientation='vertical']) 守卫——纵向滚动与书写方向无关
+    expect(css).toContain(":host([data-rtl]:not([orientation='vertical'])) .track")
+    expect(css).toContain('animation-name: oas-marquee-x-rtl')
+    const kf = css.match(/@keyframes oas-marquee-x-rtl\s*\{[\s\S]*?\n\}/)
+    expect(kf, 'RTL 关键帧存在').toBeTruthy()
+    expect(kf![0]).toContain('translateX(var(--oas-marquee-shift))')
+    expect(kf![0]).not.toContain('-1 *')
+  })
+
+  it('observedAttributes 覆盖 max-loops 与 dir（运行时切换能再入 update）', () => {
+    expect(OASMarquee.observedAttributes).toEqual(
+      expect.arrayContaining(['speed', 'pause-on-hover', 'fade-edges', 'orientation', 'reverse', 'max-loops', 'dir']),
+    )
   })
 })

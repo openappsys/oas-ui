@@ -162,6 +162,66 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 
 字号默认为外层字号的 0.875 倍（`0.875em`），可用 CSS 变量 `--oas-code-font` 显式定制。
 
+## 行高亮（highlight-lines）
+
+`highlight-lines` 用 `"1,3-5"` 范围语法高亮指定行（1-based，逗号分隔单点或闭区间；空白忽略，非法片段跳过）：
+
+<DemoBlock title="行高亮">
+  <div style="width: 100%">
+    <oas-code language="js" show-line-number highlight-lines="2,5-6" code='import { ref } from "vue"
+const count = ref(0)
+function inc() {
+  count.value += 1
+}
+function reset() {
+  count.value = 0
+}'></oas-code>
+  </div>
+</DemoBlock>
+
+## 行聚焦（focus-lines）
+
+`focus-lines` 聚焦指定行，其余行淡化（透明度），适合讲解时突出关键代码：
+
+<DemoBlock title="行聚焦">
+  <div style="width: 100%">
+    <oas-code language="js" show-line-number focus-lines="3-4" code='function createUser(name) {
+  const id = nextId()
+  return { id, name }
+}
+const user = createUser("张三")'></oas-code>
+  </div>
+</DemoBlock>
+
+## diff 模式（diff）
+
+`diff` 开启后按行首字符着色：`+` 前缀行绿色（新增）、`-` 前缀行红色（删除）：
+
+<DemoBlock title="diff 差异着色">
+  <div style="width: 100%">
+    <oas-code language="js" show-line-number diff code='function sum(a, b) {
+-  return a - b
++  return a + b
+}
+const total = sum(1, 2)'></oas-code>
+  </div>
+</DemoBlock>
+
+## 内容折叠（max-rows）
+
+`max-rows` 限制显示行数，超出时折叠并显示展开/收起尾行（`0` 表示不封顶，非法值忽略）：
+
+<DemoBlock title="max-rows 折叠">
+  <div style="width: 100%">
+    <oas-code language="js" show-line-number max-rows="3" code='function fib(n) {
+  if (n <= 1) return n
+  return fib(n - 1) + fib(n - 2)
+}
+console.log(fib(10))
+export { fib }'></oas-code>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-code
@@ -173,8 +233,12 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 | `code` | 源代码原文 | `string` | — |
 | `color` | 行内文字色：支持 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*-text` token）或任意 CSS 色值 | `string` | — |
 | `copyable` | 显示复制按钮 | `string` | `true` |
+| `diff` | diff 模式：按行首 `+`/`-` 整行着色（增绿减红，语义色 token） | `boolean` | — |
+| `focus-lines` | 行聚焦：指定聚焦行，其余行淡化 | `string` | — |
+| `highlight-lines` | 行高亮：`"1,3-5"` 范围语法指定高亮行（1-based） | `string` | — |
 | `inline` | 行内代码模式：渲染为等宽浅底小框，适合正文内嵌代码片段 | `boolean` | — |
 | `language` | 语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本 | `string` | — |
+| `max-rows` | 最大显示行数，超出折叠 + 展开/收起尾行（`0` 不封顶） | `string` | — |
 | `show-line-number` | 显示行号栏 | `boolean` | — |
 | `size` | 行内字号档：`xs` / `small` / `medium`（默认）/ `large`；非法值回落 `medium` 并告警 | `string` | — |
 | `trim` | 去首尾空白（默认 true，`trim="false"` 保留） | `string` | `true` |
@@ -193,7 +257,9 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-code-color` | `var(--oas-color-text-primary)` |
+| `--oas-code-focus-dim-opacity` | `0.35` |
 | `--oas-code-font` | `0.875em` |
+| `--oas-code-highlight-bg` | `color-mix(in srgb, var(--oas-color-primary) 12%, transparent)` |
 | `--oas-code-on-color` | `var(--oas-color-bg)` |
 
 ### 引擎选型（架构决策）

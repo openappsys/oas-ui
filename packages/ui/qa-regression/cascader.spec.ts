@@ -221,3 +221,87 @@ test('cascader option 插槽：图标模板克隆进选项行，data-option-labe
   expect(r.label, 'data-option-label 绑定选项 label').toBe('浙江')
   expect(r.rowText, '模板图标进入选项行').toContain('📍')
 })
+
+// ===== 能力缺口 D4：virtual 面板列虚拟滚动（长列性能 + 键盘不越界 + 选中回显） =====
+
+test('cascader virtual（D4）：千级长列窗口渲染 + 面板高度恒定 + 键盘跟随 + 深层选中回显', async ({ page }) => {
+  await page.goto('/components/cascader.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cs-virtual')
+  const host = page.locator('#cs-virtual')
+  // e2e 指针先 scrollIntoView
+  await host.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#cs-virtual')!
+    const vl = el.shadowRoot!.querySelector('.panel oas-virtual-list')
+    return vl != null && !vl.hasAttribute('hidden') && (vl as any).shadowRoot?.querySelector('[role="option"]') != null
+  })
+  const opened = await host.evaluate((el) => {
+    const vl = el.shadowRoot!.querySelector('.panel oas-virtual-list')!
+    const rows = [...vl.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')]
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('.panel')!
+    const vp = vl.shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    return {
+      windowRows: rows.length,
+      total: JSON.parse(el.getAttribute('options') ?? '[]').length,
+      viewportHeight: vp.style.height,
+      panelMaxHeight: panel.style.maxHeight,
+      firstIndex: rows[0]?.getAttribute('data-index'),
+    }
+  })
+  // 窗口渲染：可见行数远小于 1000，视口高度恒定 240，面板不撑爆（max-height none = 滚动交给 vlist）
+  expect(opened.total).toBe(1000)
+  expect(opened.windowRows, '虚拟窗口应远小于全量 1000').toBeLessThan(30)
+  expect(opened.viewportHeight, 'vlist 视口高度恒定 240px').toBe('240px')
+  expect(opened.panelMaxHeight, '虚拟列解除面板自身 max-height（滚动交给 vlist）').toBe('none')
+  expect(opened.firstIndex).toBe('0')
+  // 键盘导航：展开后组件把焦点交给 dropdown（syncDropdown → dropdown.focus()），
+  // 真实按键 ↓ ×30 不越界，窗口跟随高亮行
+  for (let i = 0; i < 30; i++) await page.keyboard.press('ArrowDown')
+  await page.waitForFunction(() => {
+    const vl = document.querySelector('#cs-virtual')!.shadowRoot!.querySelector('.panel oas-virtual-list')!
+    const active = [...vl.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')].find((r) =>
+      r.classList.contains('active'),
+    )
+    return active?.getAttribute('data-index') === '30'
+  })
+  const keyed = await host.evaluate((el) => {
+    const vl = el.shadowRoot!.querySelector('.panel oas-virtual-list')!
+    return vl.shadowRoot!.querySelector<HTMLElement>('.viewport')!.scrollTop
+  })
+  expect(keyed, '窗口应随键盘导航滚动').toBeGreaterThan(0)
+  // 深层选中回显：滚动到长列末尾窗口，点第 999 项下钻 → 点叶子提交 → 触发器文本 + 可见反馈
+  await host.evaluate((el) => {
+    const vl = el.shadowRoot!.querySelector('.panel oas-virtual-list')!
+    const vp = vl.shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    vp.scrollTop = vp.scrollHeight // 滚到末尾（浏览器夹取到 max）
+    vp.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(() => {
+    const vl = document.querySelector('#cs-virtual')!.shadowRoot!.querySelector('.panel oas-virtual-list')!
+    return [...vl.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')].some(
+      (r) => r.getAttribute('data-index') === '999',
+    )
+  })
+  await host.evaluate((el) => {
+    const vl = el.shadowRoot!.querySelector('.panel oas-virtual-list')!
+    const row = [...vl.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')].find(
+      (r) => r.getAttribute('data-index') === '999',
+    )!
+    row.click()
+  })
+  // 下钻后第二列（短列）普通渲染，点击叶子提交
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#cs-virtual')!
+    const panels = el.shadowRoot!.querySelectorAll('.panel')
+    return panels.length === 2 && panels[1]!.querySelector('[role="option"]') != null
+  })
+  await host.evaluate((el) => {
+    const leaf = el
+      .shadowRoot!.querySelectorAll<HTMLElement>('.panel')[1]!
+      .querySelector<HTMLElement>('[role="option"]')!
+    leaf.click()
+  })
+  await expect(host.locator('[part="value"]')).toContainText('项目 999 / 999-子')
+  await expect(page.locator('#cs-virtual-output')).toContainText('v999 / c999')
+})

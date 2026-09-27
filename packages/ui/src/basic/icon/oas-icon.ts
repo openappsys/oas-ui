@@ -16,11 +16,39 @@ export function registerIcon(name: string, svg: string): void {
   customIcons.set(name, svg)
 }
 
-/** 查表：自定义注册优先，其次内置图标集。
+/**
+ * 图标别名注册表（alias → target）。查询时先做别名替换，再走注册表：
+ * - 精确别名：`registerIconAlias('home', 'house')` → `name="home"` 解析为 `house`
+ * - 前缀别名：`registerIconAlias('lf-', '')` → `name="lf-star"` 解析为 `star`
+ *
+ * 与 `registerIcon` / `registerIconLibrary` 同为纯函数、无 DOM 依赖，SSR/Node 可调用。
+ */
+const iconAliases = new Map<string, string>()
+
+/**
+ * 注册图标别名（含前缀别名）。别名解析发生在 `lookupIcon` 内，故 `<oas-icon>` 与
+ * sidebar/menu/message 等全部查表消费方统一生效；解析按最长别名优先，避免短前缀误吞长别名。
+ */
+export function registerIconAlias(alias: string, target: string): void {
+  iconAliases.set(alias, target)
+}
+
+/** 别名解析：按最长别名优先做前缀替换；无命中返回原名（无别名时零开销直通） */
+function resolveIconAlias(name: string): string {
+  if (iconAliases.size === 0) return name
+  let best: string | null = null
+  for (const alias of iconAliases.keys()) {
+    if (name.startsWith(alias) && (best === null || alias.length > best.length)) best = alias
+  }
+  return best === null ? name : (iconAliases.get(best) ?? '') + name.slice(best.length)
+}
+
+/** 查表：别名解析 → 自定义注册优先 → 内置图标集。
  *  单一注册点原则：`registerIcon()` 一处注册后，`<oas-icon>` 与本函数
  *  的所有消费方（如 sidebar 图标通道）全部可见。 */
 export function lookupIcon(name: string): string | undefined {
-  return customIcons.get(name) ?? iconRegistry[name as IconName]
+  const resolved = resolveIconAlias(name)
+  return customIcons.get(resolved) ?? iconRegistry[resolved as IconName]
 }
 
 /**
@@ -48,6 +76,56 @@ const iconLibraries = new Map<string, IconLibraryOptions>()
  */
 export function registerIconLibrary(name: string, options: IconLibraryOptions): void {
   iconLibraries.set(name, options)
+}
+
+/** iconfont 项目脚本：URL → 加载 Promise（去重，同一 URL 只注入一次） */
+const iconfontScripts = new Map<string, Promise<void>>()
+
+/** 已成功加载的 iconfont 脚本 URL 集合 */
+const loadedIconfonts = new Set<string>()
+
+/** 加载完成后刷新所有使用该脚本的 `<oas-icon>`（按 URL 匹配，避免全量重渲染） */
+function refreshIconfontConsumers(url: string): void {
+  if (typeof document === 'undefined') return
+  for (const el of Array.from(document.querySelectorAll('oas-icon'))) {
+    if (el instanceof OASIcon && el.getAttribute('iconfont-url') === url) el.requestUpdate()
+  }
+}
+
+/**
+ * 注入 iconfont 项目脚本（iconfont.cn 等生成的 symbol sprite JS）。
+ *
+ * - 去重：同一 URL 共享同一 Promise，只注入一个 `<script>`；
+ * - 加载成功后标记 URL 并刷新使用方（`refreshIconfontConsumers`）；
+ * - 加载失败静默兜底（resolve 但不标记，使用方保持空态、不抛错）。
+ */
+function loadIconfontScript(url: string): Promise<void> {
+  const cached = iconfontScripts.get(url)
+  if (cached) return cached
+  const promise = new Promise<void>((resolve) => {
+    if (typeof document === 'undefined' || loadedIconfonts.has(url)) {
+      resolve()
+      return
+    }
+    const script = document.createElement('script')
+    script.src = url
+    script.async = true
+    script.dataset.oasIconfont = url
+    script.addEventListener('load', () => {
+      loadedIconfonts.add(url)
+      resolve()
+      refreshIconfontConsumers(url)
+    })
+    script.addEventListener('error', () => resolve())
+    try {
+      document.head.appendChild(script)
+    } catch {
+      // 环境禁用脚本加载（如测试沙箱）时静默兜底，保持空态
+      resolve()
+    }
+  })
+  iconfontScripts.set(url, promise)
+  return promise
 }
 
 const STYLE = `
@@ -240,6 +318,7 @@ export class OASIcon extends OASElement {
       'library',
       'family',
       'variant',
+      'iconfont-url',
     ]
   }
 
@@ -356,6 +435,41 @@ export class OASIcon extends OASElement {
     })
   }
 
+  /**
+   * 渲染 iconfont 符号：脚本未就绪时保持空态并触发加载（完成后自动刷新）。
+   *
+   * 就绪后把项目脚本注入的 `<symbol id="name">` 内容克隆进内部 svg 内联渲染——
+   * Shadow DOM 内 `<use href="#id">` 无法跨树引用 light DOM 的 symbol（实测不渲染，
+   * 同为 `#fragment` 的 shadow 内引用被树作用域隔离；外部 URL 的 sprite 引用不受影响）。
+   * symbol 的 viewBox 与表现属性一并复制，保证缩放与描边/填充语义与源一致。
+   */
+  private renderIconfont(host: SVGSVGElement, url: string, name: string): void {
+    if (!loadedIconfonts.has(url)) {
+      host.innerHTML = ''
+      host.removeAttribute('viewBox')
+      void loadIconfontScript(url)
+      return
+    }
+    // 使在途 src/library 请求失效，防止旧响应覆盖
+    ++this.fetchId
+    host.innerHTML = ''
+    const symbol = Array.from(document.querySelectorAll('symbol')).find((s): s is SVGSymbolElement => s.id === name)
+    if (!symbol) {
+      host.removeAttribute('viewBox')
+      return
+    }
+    const viewBox = symbol.getAttribute('viewBox')
+    if (viewBox) host.setAttribute('viewBox', viewBox)
+    else host.removeAttribute('viewBox')
+    for (const attr of Array.from(symbol.attributes)) {
+      if (attr.name === 'id' || attr.name === 'viewBox') continue
+      host.setAttribute(attr.name, attr.value)
+    }
+    for (const child of Array.from(symbol.childNodes)) {
+      host.appendChild(child.cloneNode(true))
+    }
+  }
+
   /** 增量同步外观：尺寸/颜色/变换/动画/透明度/duotone/aria */
   private syncAppearance(host: SVGSVGElement): void {
     // canvas 占位框模式（size 显式时优先，canvas 缺省保持旧行为 1em×1em）
@@ -421,13 +535,16 @@ export class OASIcon extends OASElement {
   }
 
   protected override update(): void {
-    const name = this.getAttr('name', '') as IconName
+    const rawName = this.getAttr('name', '')
+    // 别名解析后统一用于库 resolver / iconfont 符号名查找（lookupIcon 内部同样先解析别名）
+    const name = resolveIconAlias(rawName) as IconName
     const src = this.getAttr('src', '')
     const library = this.getAttr('library', '')
+    const iconfontUrl = this.getAttr('iconfont-url', '')
     const family = this.getAttr('family', '')
     const variant = this.getAttr('variant', '')
     const slotSvg = this.slotSvg()
-    const content = slotSvg ? undefined : src ? undefined : lookupIcon(name)
+    const content = slotSvg ? undefined : src ? undefined : lookupIcon(rawName)
     const libOptions = library ? iconLibraries.get(library) : undefined
 
     if (!this.svgHost) {
@@ -437,7 +554,7 @@ export class OASIcon extends OASElement {
     const host = this.svgHost
     if (!host) return
 
-    // 内容源优先级：slot 内联 svg > src 异步加载 > library 注册库 > name 注册表
+    // 内容源优先级：slot 内联 svg > src 异步加载 > library 注册库 > iconfont-url > name 注册表
     if (slotSvg) {
       this.renderSlotSvg(host, slotSvg)
     } else if (src) {
@@ -448,6 +565,8 @@ export class OASIcon extends OASElement {
       host.innerHTML = ''
       host.removeAttribute('viewBox')
       this.loadLibrary(library, name, family, variant)
+    } else if (iconfontUrl && name) {
+      this.renderIconfont(host, iconfontUrl, name)
     } else if (content) {
       host.innerHTML = content
       host.setAttribute('viewBox', '0 0 16 16')
@@ -456,7 +575,8 @@ export class OASIcon extends OASElement {
       host.removeAttribute('viewBox')
     }
 
-    if (!slotSvg && !src && !content && !libOptions) {
+    const hasSource = !!slotSvg || !!src || !!libOptions || !!(iconfontUrl && name) || !!content
+    if (!hasSource) {
       // 空态兜底：保留骨架，清空内容与宿主样式
       host.removeAttribute('data-duotone')
       host.removeAttribute('data-swap')

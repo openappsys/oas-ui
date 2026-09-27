@@ -234,6 +234,17 @@ onMounted(() => {
     })
   }
 
+  // mask 输入掩码：默认提交显示值 vs mask-raw 提交原始序列（事件值实时回显）
+  const maskEl = document.getElementById('input-mask')
+  const maskRawEl = document.getElementById('input-mask-raw')
+  const maskOut = document.getElementById('input-mask-output')
+  maskEl?.addEventListener('oas-input', (e) => {
+    if (maskOut) maskOut.textContent = `默认（显示值提交）: ${e.detail.value || '—'}`
+  })
+  maskRawEl?.addEventListener('oas-input', (e) => {
+    if (maskOut) maskOut.textContent = `mask-raw（原始序列提交）: ${e.detail.value || '—'}`
+  })
+
   // form-associated：原生 label 关联 + FormData 读取 + reset
   const faForm = document.getElementById('input-form-demo')
   const faOut = document.getElementById('input-form-output')
@@ -402,6 +413,16 @@ onMounted(() => {
 
 `formatter` / `parser` **仅 JS property 通道**（`el.formatter = fn`）——Web Components 的 attribute 无法传函数，无对应 HTML 属性。显示值 = `formatter(原始值)`，`oas-input` / `oas-change` 等事件 `detail.value` 携带 `parser(显示值)` 解析后的原始值；移除（置 `null`）恢复原始显示。输入时光标按格式化前后长度差近似保持（卡号分段等场景够用）。
 
+## 输入掩码（mask）
+
+<DemoBlock title="mask 输入掩码（###-####）与 mask-raw 原始值">
+  <oas-input id="input-mask" mask="###-####" placeholder="编号（如 1234567）" style="width: 200px"></oas-input>
+  <oas-input id="input-mask-raw" mask="###-####" mask-raw placeholder="同掩码 + mask-raw" style="width: 200px"></oas-input>
+  <span id="input-mask-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 240px"></span>
+</DemoBlock>
+
+`mask` 定义输入掩码模板：`#` 数字、`A` 字母、`*` 字母数字，其余字符为字面量（如 `###-####` 的 `-`）。键入自动跳过字面量、非法字符被过滤、粘贴只收合法位、退格删到字面量即停（字面量由模板管理，不会被删穿），光标始终保持在正确位置。默认事件与表单提交值携带**显示值**（含字面量）；设置 `mask-raw` 后改为**去格式化的原始字符序列**（FormData 提交值同口径）。`mask` 与 `formatter`/`parser` 互斥，同设时 mask 优先并告警；`maxlength` 在 mask 模式下不透传（避免原生截断破坏掩码）。
+
 ## 清除按钮显隐
 
 <DemoBlock title="show-clear-on">
@@ -456,10 +477,13 @@ onMounted(() => {
 | `inputmode` | 透传内层原生 input 的移动虚拟键盘类型 | — | — |
 | `label` | 可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」） | — | — |
 | `loading` | 加载态：行尾 spinner + aria-busy（不禁用输入）；与 clearable 共存时优先显示 | `boolean` | — |
+| `mask` | 输入掩码模板：`#` 数字 / `A` 字母 / `*` 字母数字，其余字符为字面量（如 `###-####`）；键入自动跳字面量、粘贴只收合法位、退格删到字面量停；与 formatter/parser 互斥（mask 优先） | `string` | — |
+| `mask-raw` | 提交值/FormData 为去格式化的原始字符序列；缺省提交显示值 | `boolean` | — |
 | `max` | 透传内层原生 input 的最大值 | — | — |
 | `maxlength` | 最大输入长度（透传原生 maxlength） | `string` | — |
 | `min` | 透传内层原生 input 的最小值（number 类型生效） | — | — |
 | `minlength` | 透传内层原生 input 的最小长度约束 | — | — |
+| `name` | 原生表单字段名（form-associated：FormData 提交的键） | — | — |
 | `pattern` | 透传内层原生 input 的正则校验模式 | — | — |
 | `placeholder` | 占位提示 | `string` | — |
 | `prefix-icon` | 前置图标名 | `string` | — |

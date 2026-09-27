@@ -84,6 +84,24 @@ A masonry layout container based on CSS columns; child items are automatically d
   </p>
 </DemoBlock>
 
+## Sequential masonry
+
+By default items are distributed to balance column heights. With `sequential`, items instead **fill columns in round-robin by original order** — item i lands in column `i % columns + 1`, so the reading order advances across columns (1→col 1, 2→col 2, …, back to col 1). It is mutually exclusive with a child's `column` pin (sequential ignores `column`); when breakpoint columns change, the rotation recomputes against the currently effective column count.
+
+<DemoBlock title="sequential round-robin fill">
+  <oas-masonry columns="3" sequential style="width: 100%">
+    <oas-card class="seq-1"><p><strong>Card 1</strong> → top of column 1</p></oas-card>
+    <oas-card class="seq-2"><p><strong>Card 2</strong> → top of column 2</p></oas-card>
+    <oas-card class="seq-3"><p><strong>Card 3</strong> → top of column 3</p></oas-card>
+    <oas-card class="seq-4"><p><strong>Card 4</strong> → back to column 1</p></oas-card>
+    <oas-card class="seq-5"><p><strong>Card 5</strong> → column 2</p></oas-card>
+    <oas-card class="seq-6"><p><strong>Card 6</strong> → column 3</p></oas-card>
+  </oas-masonry>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    With equal-height cards each of the three columns holds exactly two items (1/4, 2/5, 3/6); when heights vary a lot, CSS columns still balances by height — the strict round-robin holds for equal-height items.
+  </p>
+</DemoBlock>
+
 ## No Children
 
 <DemoBlock title="Empty container">
@@ -121,6 +139,7 @@ A masonry layout container based on CSS columns; child items are automatically d
 | `fresh` | Keep listening for child size changes via ResizeObserver and trigger a recompute; under the CSS columns implementation the browser already reflows automatically, so `fresh` is a semantic hook aligned with a future JS-based layout | `boolean` | — |
 | `gap` | Spacing (px, default 8). A single value sets the column gap; two values `row col` (e.g. `8 16`) set the row gap on children's margin-bottom and the column gap; plain numbers get `px` appended; invalid values fall back to the default | — | — |
 | `items` | Masonry items JSON `[{text, height?, column?}]`; also assignable as an array property. When explicitly set and non-empty it takes precedence over slotted children (ignored); absent / empty array / invalid JSON fall back to the slot channel (invalid JSON logs a deduplicated dev warning). text is rendered safely as plain text; height is the item's minimum height (px, written to the rendered item's min-height); column pins the item to a column (1-based, same reorder logic as the child `column` attribute) | `MasonryItem[] \| string` | `[]` |
+| `sequential` | Sequential masonry: fill columns round-robin by original order instead of height balancing; mutually exclusive with a child column pin (sequential wins) | `boolean` | — |
 
 #### Slots
 

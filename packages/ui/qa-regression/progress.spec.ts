@@ -84,3 +84,34 @@ test('progress 内嵌百分比文字：仅 text-inside 时渲染，且只压在�
   expect(r.leftOk && r.rightOk, '内嵌文字左右边界不得越出填充段').toBe(true)
   expect(r.text).toContain('45')
 })
+
+// —— PRD D22：vertical 垂直线形（bar 高度自下而上填充 + data-vertical 标记 + height 属性） ——
+test('progress vertical：垂直线形按高度填充、host data-vertical、height 属性生效（PRD D22）', async ({ page }) => {
+  await page.goto('/components/progress.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-progress[vertical]')
+  await page.evaluate(() => {
+    document.querySelector('oas-progress[vertical]')!.scrollIntoView({ block: 'center' })
+  })
+  const r = await page.evaluate(() => {
+    const base = document.querySelector('oas-progress[vertical]')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const bar = base.shadowRoot.querySelector('[part="bar"]')! as HTMLElement
+    const track = base.shadowRoot.querySelector('.track')! as HTMLElement
+    const tall = document.querySelector('oas-progress[vertical][height]')! as HTMLElement & {
+      shadowRoot: ShadowRoot
+    }
+    const tr = track.getBoundingClientRect()
+    return {
+      barHeight: bar.style.height,
+      barWidth: bar.style.width,
+      dataVertical: base.hasAttribute('data-vertical'),
+      hostHeight: tall.style.height,
+      trackW: tr.width,
+      trackH: tr.height,
+    }
+  })
+  expect(r.barHeight, 'vertical 下 bar 应按高度百分比填充').toBe('25%')
+  expect(r.barWidth, 'vertical 下 bar 宽度应清空（主轴走高度）').toBe('')
+  expect(r.dataVertical, '宿主应带 data-vertical 标记（CSS 消费点）').toBe(true)
+  expect(r.hostHeight, 'height 属性 → 纵向内联高度（纯数字补 px）').toBe('240px')
+  expect(r.trackH, '轨道应纵向（高远大于粗细）').toBeGreaterThan(r.trackW * 5)
+})

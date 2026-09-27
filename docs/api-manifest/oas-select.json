@@ -61,6 +61,11 @@
       "observed": true
     },
     {
+      "name": "hide-selected",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "item-height",
       "type": "string",
       "default": "36",

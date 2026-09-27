@@ -1,5 +1,6 @@
 import { OASFormElement, escapeHtml } from '@oas-ui/core'
 import { formatToken, resolveLocale } from '../calendar/date-grid.js'
+import { resolveTimezone, wallClockIn } from './timezone.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
@@ -380,6 +381,8 @@ export class OASTimePicker extends OASFormElement {
       'placeholder',
       'hide-disabled-options',
       'label',
+      // 时区锚点：「此刻」按钮与默认时刻推导按指定 IANA 时区（缺省 local）
+      'timezone',
       // 表单关联通道：required 驱动原生校验链（valueMissing）；name 变化需重同步范围 FormData 的 entry key
       'name',
       'required',
@@ -411,6 +414,8 @@ export class OASTimePicker extends OASFormElement {
   private focusWithin = false
   /** 非法 placement 仅告警一次 */
   private placementWarned = false
+  /** 非法 timezone 仅告警一次 */
+  private timezoneWarned = false
   /** 弹层内容尺寸观察器（bind 时创建，打开时挂到 dropdown——内容撑宽后重定位） */
   private dropdownGrowObserver: ResizeObserver | null = null
   /** aria-invalid 由 status=error 设置的所有权标志 */
@@ -469,6 +474,23 @@ export class OASTimePicker extends OASFormElement {
     return this.hasAttr('use12-hours')
   }
 
+  /** 生效时区（IANA 名）；缺省返回 null（宿主本地），非法回落本地并仅告警一次 */
+  private effectiveTimezone(): string | null {
+    const raw = this.getAttr('timezone', '')
+    if (!raw.trim()) return null
+    const tz = resolveTimezone(raw)
+    if (!tz && !this.timezoneWarned) {
+      this.timezoneWarned = true
+      console.warn(`[oas-time-picker] 非法 timezone "${raw}"，已回落宿主本地时区`)
+    }
+    return tz
+  }
+
+  /** 生效时区下的「此刻」墙钟（本地 Date 装载目标时区分量），供「此刻」按钮/默认推导使用 */
+  private nowInZone(): Date {
+    return wallClockIn(this.effectiveTimezone())
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
@@ -523,7 +545,7 @@ export class OASTimePicker extends OASFormElement {
     // 此刻按钮：填入当前时刻并确认关闭
     this.shadow.querySelector<HTMLElement>('[part="now"]')?.addEventListener('click', () => {
       if (this.injectDisabled() || this.hasAttr('readonly')) return
-      const n = new Date()
+      const n = this.nowInZone()
       const p = { h: n.getHours(), m: n.getMinutes(), s: n.getSeconds() }
       this.sides = this.isRange() ? [p, p] : [p]
       const detail = this.commitValue()

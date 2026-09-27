@@ -41,6 +41,10 @@
     {
       "name": "rel",
       "observed": true
+    },
+    {
+      "name": "shortcut",
+      "observed": true
     }
   ],
   "props": [],

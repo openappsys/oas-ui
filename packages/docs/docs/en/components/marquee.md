@@ -109,14 +109,22 @@ onMounted(() => {
   // whenDefined guard: slotchange-driven clone rebuild and phase preservation require an upgraded element
   customElements.whenDefined('oas-marquee').then(() => {
     const mq = document.querySelector('#mq-live')
-    if (!mq) return
-    let n = 0
-    setInterval(() => {
-      n += 1
-      const span = document.createElement('span')
-      span.textContent = ` Live notice ${n} ·`
-      mq.appendChild(span)
-    }, 3000)
+    if (mq) {
+      let n = 0
+      setInterval(() => {
+        n += 1
+        const span = document.createElement('span')
+        span.textContent = ` Live notice ${n} ·`
+        mq.appendChild(span)
+      }, 3000)
+    }
+
+    // max-loops: finish feedback
+    const loops = document.querySelector('#mq-loops')
+    const status = document.querySelector('#mq-loops-status')
+    loops?.addEventListener('oas-finish', () => {
+      if (status) status.textContent = 'oas-finish dispatched (loops: 3) — animation frozen on the final frame'
+    })
   })
 })
 </script>
@@ -156,6 +164,29 @@ Content is not limited to text — putting images or logos in the slot produces 
   </oas-marquee>
 </DemoBlock>
 
+## Limited Loop Count (max-loops)
+
+`max-loops` limits the number of loop rounds (positive integer): after playing N rounds the animation freezes on the final frame (`animation-fill-mode: forwards`) and `oas-finish` is dispatched once (`detail: { loops }`). When unset or set to an invalid/non-integer value the marquee loops infinitely. A "round" equals the shift distance (one copy of the content), independent of content width.
+
+Under `prefers-reduced-motion` the animation is disabled and content is shown statically — nothing "finishes playing", so `oas-finish` is not dispatched.
+
+<DemoBlock title="max-loops=3: freezes after 3 rounds and dispatches oas-finish">
+  <oas-marquee id="mq-loops" max-loops="3" speed="160" style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
+    This notice plays 3 times and then stops ·
+  </oas-marquee>
+  <p id="mq-loops-status" style="margin-top: var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">Playing…</p>
+</DemoBlock>
+
+## RTL (Right-to-Left)
+
+When the container is in an RTL writing direction (host or ancestor `dir="rtl"`, or `oas-config-provider direction` injection), the translation direction mirrors automatically: content flows to the **right** and new content enters from the left edge (mirroring LTR's "flow left, enter from right"); seamless looping and auto-fill are unaffected. `reverse` composes orthogonally with the mirror — under RTL, `reverse` flows to the left. Vertical scrolling is independent of writing direction.
+
+<DemoBlock title="dir=rtl: mirrored translation (content flows rightward)">
+  <oas-marquee dir="rtl" style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
+    Flowing from left to right · RTL mirror · OAS-UI · Web Components ·
+  </oas-marquee>
+</DemoBlock>
+
 ## API
 
 ### oas-marquee
@@ -164,11 +195,19 @@ Content is not limited to text — putting images or logos in the slot produces 
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `dir` | Writing direction for RTL detection; horizontal translation mirrors under RTL | — | — |
 | `fade-edges` | Boolean; when present, fades out both container edges with a mask-image (off by default); fade width via `--oas-marquee-fade-size` | — | — |
+| `max-loops` | Limit loop rounds (positive integer): freezes on the final frame after N rounds and dispatches oas-finish once; missing/invalid = infinite | `string` | — |
 | `orientation` | Scroll direction: `horizontal` (default) / `vertical` (vertical scrolling; the container needs a fixed height) | — | — |
 | `pause-on-hover` | Boolean; when present, pauses the animation on hover/focus (`animation-play-state: paused`) | — | — |
 | `reverse` | Boolean; when present, scrolls in the opposite direction | `boolean` | — |
 | `speed` | Scroll speed in pixels per second (default 48); the animation duration is derived from the measured content width (duration = distance / speed); invalid or non-positive values fall back to the default | `string` | — |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-finish` | Dispatched once when the max-loops run finishes, `detail: { loops }` |
 
 #### Slots
 

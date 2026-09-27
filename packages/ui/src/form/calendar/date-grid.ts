@@ -22,6 +22,11 @@ export interface MonthGridRenderOptions {
   locale: string
   /** 周起始覆写（0-6，first-day-of-week）；缺省随 locale 推导 */
   weekStart?: number
+  /**
+   * 非公历历法（Intl.DateTimeFormat 的 calendar 选项，如 chinese/islamic/hebrew）。
+   * 只影响展示与 aria（周头/单元格数字/描述），日期计算仍走公历内部模型。
+   */
+  calendar?: string
   /** 选中日期（multiple 多选场景为数组，所有选中日同样高亮） */
   selected?: Date | Date[] | null
   today?: Date
@@ -195,11 +200,12 @@ export function isoWeek(d: Date): number {
 }
 
 /** 周头标签（narrow，locale 感知），按任意周起始（0-6）重排 */
-export function weekdayLabels(locale: string, weekStart: number): string[] {
+export function weekdayLabels(locale: string, weekStart: number, calendar?: string): string[] {
   const names: string[] = []
+  const fmt = new Intl.DateTimeFormat(locale, withCalendar({ weekday: 'narrow' }, calendar))
   for (let i = 0; i < 7; i++) {
     // 2026-01-04 为周日，作为基准行
-    names.push(new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(new Date(2026, 0, 4 + i)))
+    names.push(fmt.format(new Date(2026, 0, 4 + i)))
   }
   const ws = normalizeWeekStart(weekStart)
   return [...names.slice(ws), ...names.slice(0, ws)]
@@ -222,20 +228,27 @@ export function clampDate(d: Date, min: Date | null, max: Date | null): Date {
 /**
  * token 格式化（yyyy/MM/dd/HH/mm/ss）。数值全部来自 Intl.DateTimeFormat.formatToParts，
  * 不手写补零；HH 用 hourCycle: 'h23'（00-23），避免部分环境午夜=24 的方言差异。
+ * calendar 传入时采用非公历历法（chinese 等无 `year` 而用 `relatedYear`，做等价映射）。
  */
-export function formatToken(date: Date, token: string, locale: string): string {
-  const parts = new Intl.DateTimeFormat(locale, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(date)
+export function formatToken(date: Date, token: string, locale: string, calendar?: string): string {
+  const parts = new Intl.DateTimeFormat(
+    locale,
+    withCalendar(
+      {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23',
+      },
+      calendar,
+    ),
+  ).formatToParts(date)
   const map: Record<string, string> = {}
   for (const p of parts) {
-    if (p.type === 'year') map['yyyy'] = p.value
+    if (p.type === 'year' || (p.type as string) === 'relatedYear') map['yyyy'] = p.value
     else if (p.type === 'month') map['MM'] = p.value
     else if (p.type === 'day') map['dd'] = p.value
     else if (p.type === 'hour') map['HH'] = p.value
@@ -245,23 +258,37 @@ export function formatToken(date: Date, token: string, locale: string): string {
   return token.replace(/yyyy|MM|dd|HH|mm|ss/g, (m) => map[m] ?? m)
 }
 
-/** 完整日期描述（aria-label），如「2026年8月9日」/「August 9, 2026」 */
-export function formatLongDate(d: Date, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(d)
+/** 合并 calendar 选项：空/gregory 不加，保持既有公历输出逐字节一致 */
+function withCalendar(opts: Intl.DateTimeFormatOptions, calendar?: string): Intl.DateTimeFormatOptions {
+  return calendar && calendar !== 'gregory' ? { ...opts, calendar } : opts
 }
 
-/** 年月标题，如「2026年8月」 */
-export function formatYearMonth(d: Date, locale: string): string {
-  return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }).format(d)
+/** 完整日期描述（aria-label），如「2026年8月9日」/「August 9, 2026」；calendar 时走非公历历法 */
+export function formatLongDate(d: Date, locale: string, calendar?: string): string {
+  return new Intl.DateTimeFormat(
+    locale,
+    withCalendar({ year: 'numeric', month: 'long', day: 'numeric' }, calendar),
+  ).format(d)
 }
 
-/** 年标题 */
-export function formatYear(d: Date, locale: string): string {
-  return new Intl.DateTimeFormat(locale, { year: 'numeric' }).format(d)
+/** 年月标题，如「2026年8月」；calendar 时走非公历历法 */
+export function formatYearMonth(d: Date, locale: string, calendar?: string): string {
+  return new Intl.DateTimeFormat(locale, withCalendar({ year: 'numeric', month: 'long' }, calendar)).format(d)
+}
+
+/** 年标题；calendar 时走非公历历法 */
+export function formatYear(d: Date, locale: string, calendar?: string): string {
+  return new Intl.DateTimeFormat(locale, withCalendar({ year: 'numeric' }, calendar)).format(d)
+}
+
+/**
+ * 日单元格展示文本：calendar 缺省/gregory 时保持既有纯数字（零回归）；
+ * 非公历历法取 formatToParts 的 day 分量（如 chinese 的农历日数字，去掉「日」后缀）。
+ */
+export function formatDay(d: Date, locale: string, calendar?: string): string {
+  if (!calendar || calendar === 'gregory') return String(d.getDate())
+  const parts = new Intl.DateTimeFormat(locale, { calendar, day: 'numeric' }).formatToParts(d)
+  return parts.find((p) => p.type === 'day')?.value ?? String(d.getDate())
 }
 
 /**
@@ -307,9 +334,12 @@ export function moveGridDate(d: Date, key: string, weekStart = 0, shift = false,
   }
 }
 
-/** 在容器中按 ISO 日期找日单元格按钮 */
+/** 在容器中按 ISO 日期找日单元格按钮（多月份并排时同一天可能出现在相邻面板的补位格，
+ *  优先取本月（非 .outside）单元格，无则回落任意匹配） */
 export function findDayButton(container: HTMLElement, date: Date): HTMLButtonElement | null {
-  return container.querySelector<HTMLButtonElement>(`.day[data-date="${toISODate(date)}"]`)
+  const iso = toISODate(date)
+  const inMonth = container.querySelector<HTMLButtonElement>(`.day:not(.outside)[data-date="${iso}"]`)
+  return inMonth ?? container.querySelector<HTMLButtonElement>(`.day[data-date="${iso}"]`)
 }
 
 /** roving tabindex：只有目标日期所在的日按钮 tabindex=0，其余 -1 */
@@ -347,7 +377,7 @@ export function renderMonthGrid(container: HTMLElement, opts: MonthGridRenderOpt
     w.className = 'week-number'
     header.appendChild(w)
   }
-  for (const label of weekdayLabels(locale, ws)) {
+  for (const label of weekdayLabels(locale, ws, opts.calendar)) {
     const s = document.createElement('span')
     s.className = 'weekday'
     s.textContent = label
@@ -376,7 +406,7 @@ export function renderMonthGrid(container: HTMLElement, opts: MonthGridRenderOpt
       btn.className = 'day'
       btn.setAttribute('part', 'day')
       btn.setAttribute('role', 'gridcell')
-      btn.textContent = String(d.getDate())
+      btn.textContent = formatDay(d, locale, opts.calendar)
       btn.setAttribute('data-date', toISODate(d))
       btn.tabIndex = -1
       if (!cell.inMonth) btn.classList.add('outside')
@@ -390,7 +420,7 @@ export function renderMonthGrid(container: HTMLElement, opts: MonthGridRenderOpt
           btn.classList.add('in-range')
         }
       }
-      btn.setAttribute('aria-label', formatLongDate(cell.date, locale))
+      btn.setAttribute('aria-label', formatLongDate(cell.date, locale, opts.calendar))
       btn.setAttribute('aria-disabled', String(isDisabled))
       btn.addEventListener('click', () => {
         if (isDisabled) return

@@ -153,6 +153,17 @@
       "type": "string",
       "default": "true",
       "observed": true
+    },
+    {
+      "name": "check-all",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "check-all-label",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -203,6 +214,10 @@
     {
       "name": "oas-check",
       "detail": "{ key: id, checked: checked.has(id) }"
+    },
+    {
+      "name": "oas-check-all",
+      "detail": "{ checked: on, values }"
     },
     {
       "name": "oas-expand",

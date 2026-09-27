@@ -499,6 +499,143 @@ describe('OASSplitter disabled（禁用调整，PRD P2）', () => {
   })
 })
 
+describe('OASSplitter snap（拖拽吸附档位，PRD D18）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('snap 进 observedAttributes', () => {
+    expect(OASSplitter.observedAttributes).toContain('snap')
+  })
+
+  it('拖到档位 ±8px 阈值内吸附落盘；阈值外不吸附', () => {
+    const el = mount()
+    el.setAttribute('percent', '50')
+    el.setAttribute('snap', '25,50,75')
+    Object.defineProperty(el, 'clientWidth', { value: 1000, configurable: true })
+    const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
+    splitter.dispatchEvent(pointer('pointerdown', 500))
+    // 508 → 50.8%，距 50 档 0.8%（=8px）≤ 阈值 → 吸附 50
+    document.dispatchEvent(pointer('pointermove', 508))
+    expect(el.getAttribute('percent')).toBe('50')
+    // 510 → 51%，距档 1%（=10px）> 阈值 → 不吸附
+    document.dispatchEvent(pointer('pointermove', 510))
+    expect(el.getAttribute('percent')).toBe('51')
+    // 755 → 75.5% → 吸附 75
+    document.dispatchEvent(pointer('pointermove', 755))
+    expect(el.getAttribute('percent')).toBe('75')
+    document.dispatchEvent(pointer('pointerup', 755))
+    expect(el.getAttribute('percent')).toBe('75')
+  })
+
+  it('min 夹取优先：越界档位不吸附（min=30 时 25 档不可达）', () => {
+    const el = mount()
+    el.setAttribute('percent', '50')
+    el.setAttribute('snap', '25')
+    el.setAttribute('min', '30')
+    Object.defineProperty(el, 'clientWidth', { value: 1000, configurable: true })
+    const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
+    splitter.dispatchEvent(pointer('pointerdown', 500))
+    document.dispatchEvent(pointer('pointermove', 245)) // 24.5% → clamp 30；档位 25 < min → 不吸附
+    expect(Number(el.getAttribute('percent'))).toBe(30)
+    document.dispatchEvent(pointer('pointerup', 245))
+  })
+
+  it('键盘方向键在档位间落档；无档可落回落 ±1%', () => {
+    const el = mount()
+    el.setAttribute('percent', '50')
+    el.setAttribute('snap', '25,50,75')
+    key(el, 'ArrowRight')
+    expect(el.getAttribute('percent')).toBe('75')
+    key(el, 'ArrowRight')
+    expect(el.getAttribute('percent')).toBe('76') // 已在末档：回落 +1%
+    key(el, 'ArrowLeft')
+    expect(el.getAttribute('percent')).toBe('75')
+    key(el, 'ArrowLeft')
+    expect(el.getAttribute('percent')).toBe('50')
+    key(el, 'ArrowLeft')
+    expect(el.getAttribute('percent')).toBe('25')
+    key(el, 'ArrowLeft')
+    expect(el.getAttribute('percent')).toBe('24') // 已在首档：回落 -1%
+  })
+
+  it('multi 模式：键盘与拖拽吸附对应分隔条的相邻面板', () => {
+    // 键盘：sizes[0]=30 → 下一档 50
+    const kb = mountMulti()
+    kb.setAttribute('sizes', '30,40,30')
+    kb.setAttribute('snap', '25,50,75')
+    key(kb, 'ArrowRight', 0)
+    expect(kb.getAttribute('sizes')).toBe('50,20,30')
+    // 拖拽第二分隔条（独立实例，sizes[1]=40）：645 → 24.5% 吸附 25
+    const el = mountMulti()
+    el.setAttribute('sizes', '30,40,30')
+    el.setAttribute('snap', '25,50,75')
+    Object.defineProperty(el, 'clientWidth', { value: 1000, configurable: true })
+    const mid = el.shadowRoot!.querySelectorAll('[part="splitter"]')[1]!
+    mid.dispatchEvent(pointer('pointerdown', 800))
+    document.dispatchEvent(pointer('pointermove', 645))
+    document.dispatchEvent(pointer('pointerup', 645))
+    expect(el.getAttribute('sizes')).toBe('30,25,45')
+  })
+
+  it('px 档位：200px 按容器宽度换算后吸附', () => {
+    const el = mount()
+    el.setAttribute('percent', '50')
+    el.setAttribute('snap', '200px')
+    Object.defineProperty(el, 'clientWidth', { value: 1000, configurable: true })
+    const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
+    splitter.dispatchEvent(pointer('pointerdown', 500))
+    document.dispatchEvent(pointer('pointermove', 205)) // 20.5% → 200px 档（20%）在阈值内
+    expect(el.getAttribute('percent')).toBe('20')
+    document.dispatchEvent(pointer('pointerup', 205))
+  })
+
+  it('lazy：拖拽中不落盘，松手写吸附值', () => {
+    const el = mount()
+    el.setAttribute('percent', '50')
+    el.setAttribute('snap', '25,50,75')
+    el.setAttribute('lazy', '')
+    Object.defineProperty(el, 'clientWidth', { value: 1000, configurable: true })
+    const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
+    splitter.dispatchEvent(pointer('pointerdown', 500))
+    document.dispatchEvent(pointer('pointermove', 755))
+    expect(el.getAttribute('percent')).toBe('50')
+    document.dispatchEvent(pointer('pointerup', 755))
+    expect(el.getAttribute('percent')).toBe('75')
+  })
+
+  it('snap 非法值静默忽略（正常 ±1% 拖拽/键盘）', () => {
+    const el = mount()
+    el.setAttribute('percent', '50')
+    el.setAttribute('snap', 'abc, ,x')
+    Object.defineProperty(el, 'clientWidth', { value: 1000, configurable: true })
+    const splitter = el.shadowRoot!.querySelector('[part="splitter"]')!
+    splitter.dispatchEvent(pointer('pointerdown', 500))
+    document.dispatchEvent(pointer('pointermove', 600))
+    document.dispatchEvent(pointer('pointerup', 600))
+    expect(el.getAttribute('percent')).toBe('60')
+    key(el, 'ArrowRight')
+    expect(el.getAttribute('percent')).toBe('61')
+  })
+
+  it('vertical：方向键档位落档同样生效', () => {
+    const el = mount()
+    el.setAttribute('vertical', '')
+    el.setAttribute('percent', '50')
+    el.setAttribute('snap', '25,50,75')
+    key(el, 'ArrowDown')
+    expect(el.getAttribute('percent')).toBe('75')
+    key(el, 'ArrowUp')
+    expect(el.getAttribute('percent')).toBe('50')
+  })
+})
+
 function pointer(type: string, clientX: number): Event {
   const Ctor = (globalThis as Record<string, unknown>).PointerEvent as typeof PointerEvent | undefined
   if (typeof Ctor === 'function') {

@@ -372,3 +372,32 @@ test('date-picker default-time：打开面板起止时间列默认 00/23，选�
   })
   await expect(host).toHaveAttribute('value', '["2026-08-10T00:00:00","2026-08-20T23:59:59"]')
 })
+
+// —— 能力缺口 D 批：timezone（面板「今天」高亮与快捷预设按指定时区解析）——
+
+test('date-picker timezone：面板「今天」高亮与「今天」快捷预设按指定时区解析', async ({ page }) => {
+  await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#date-picker-timezone-ny')
+  const host = page.locator('#date-picker-timezone-ny')
+  await host.scrollIntoViewIfNeeded()
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(
+    () => !!document.querySelector('#date-picker-timezone-ny')?.shadowRoot?.querySelector('.day.today'),
+    null,
+    { timeout: 5000 },
+  )
+  const r = await host.evaluate((el) => {
+    const today = el.shadowRoot!.querySelector('.day.today')!.getAttribute('data-date')
+    const ny = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date())
+    // 真实链路：点内置「今天」快捷预设 → value 应为纽约时区当日墙钟
+    el.shadowRoot!.querySelector<HTMLElement>('.shortcut')!.click()
+    return { today, ny, value: el.getAttribute('value') }
+  })
+  expect(r.today, '面板「今天」高亮应落在纽约时区当日').toBe(r.ny)
+  expect(r.value, '「今天」快捷预设应按纽约时区当日解析').toBe(r.ny)
+})

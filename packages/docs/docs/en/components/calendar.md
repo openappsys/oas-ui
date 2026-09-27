@@ -182,6 +182,26 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 - Keyboard: `Home`/`End` jump to the start/end of the week; `PageUp`/`PageDown` move to the previous/next month (`Shift` moves by year); arrow keys move cell by cell, `Enter`/`Space` selects.
 - Fast year jump: click the title to open the month panel, click the year to open the decade grid (pages step by ±12 years), pick a year to return to that year's month panel, then pick a month to return to the day view — from 2026 to 1980 takes four clicks.
 
+## Non-Gregorian Calendars (calendar-system)
+
+<DemoBlock title="Chinese calendar (calendar-system=chinese)">
+  <oas-calendar id="calendar-system-cn" value="2026-08-09" calendar-system="chinese"></oas-calendar>
+</DemoBlock>
+
+<DemoBlock title="Islamic calendar (calendar-system=islamic)">
+  <oas-calendar id="calendar-system-islamic" value="2026-08-09" calendar-system="islamic"></oas-calendar>
+</DemoBlock>
+
+`calendar-system` passes through `Intl.DateTimeFormat`'s `calendar` option (`chinese` / `islamic` / `hebrew`, etc.): the title, weekday headers, cell numbers and aria descriptions follow that calendar, while date math and the `value` / `data-date` stay on the Gregorian internal model — the calendar only affects display and screen-reader output.
+
+## Multi-month Panels (months)
+
+<DemoBlock title="months=2: two months side by side + linked paging">
+  <oas-calendar id="calendar-months" value="2026-08-09" months="2"></oas-calendar>
+</DemoBlock>
+
+`months` sets the number of side-by-side month panels (default 1, positive integer, invalid/out-of-range falls back to 1): panels lay out horizontally at equal width, and prev/next page the whole strip (stepping `months` months at a time) with the title showing the month range. It combines with `first-day-of-week`, `show-week-number`, `range`, and the rest.
+
 ## API
 
 ### oas-calendar
@@ -190,6 +210,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `calendar-system` | Non-Gregorian calendar (Intl calendar option, e.g. chinese/islamic/hebrew): title, weekday headers, cell numbers and aria descriptions follow it; date math and value/data-date stay Gregorian | `string` | — |
 | `disabled` | Globally disabled: greys out the calendar and stops all interaction (picking / paging / keyboard) | `boolean` | — |
 | `first-day-of-week` | Week start override: `0` (Sunday) to `6` (Saturday); defaults to the locale (Monday for European/Chinese, Sunday for Japanese/Korean/English/Arabic) | `string` | — |
 | `format` | Header title format string (yyyy/MM/dd tokens; day/month panels) | `string` | — |
@@ -197,6 +218,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | `max` | Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range | `string` | — |
 | `min` | Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range | `string` | — |
 | `mode` | `month` / `year` (in year mode, picking a month auto-switches back to month view) | `string` | `month` |
+| `months` | Number of side-by-side month panels (1-12, default 1): panels lay out horizontally and paging steps the whole strip; the title shows the month range | `string` | — |
 | `page-show-date` | Panel month anchor (ISO `yyyy-MM` or `yyyy-MM-dd`): anchors the displayed month initially/on change, taking precedence over value; removing it falls back to the value month | `string` | — |
 | `range` | Range selection mode: two-click picking with hover preview and range highlighting; oas-change carries `{ start, end }`; value mirrors a JSON array | `boolean` | — |
 | `readonly` | Read-only: page navigation and panel drill-down stay available, but picking dates / Enter does not commit | `boolean` | — |

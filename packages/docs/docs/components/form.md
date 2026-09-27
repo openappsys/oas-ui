@@ -39,6 +39,41 @@
   </oas-form>
 </DemoBlock>
 
+### 嵌套 name 路径：嵌套 values
+
+> 字段 `name` 支持点路径语法：数字段是数组下标，其余段是对象键——`profile.city` 组装进 `{ profile: { city } }`，`users.0.name` 与 `users[0].name` 两种写法等价，组装进 `{ users: [{ name }] }`。提交时 `oas-submit` 的 `detail.values` 为嵌套结构；`rules` 的键用完整路径字符串（如 `"users.0.name"`）匹配；`initial-values` 按同样路径嵌套写入，`reset()` 回嵌套初始值。不含路径语法的普通名组装结果与既有行为完全一致。
+
+<DemoBlock title="嵌套 name 路径提交">
+  <oas-form id="form-nested" style="width: 340px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-input name="name" placeholder="姓名（扁平字段）"></oas-input>
+      <oas-input name="profile.city" placeholder="城市（name 写作 profile.city）"></oas-input>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
+    </oas-space>
+  </oas-form>
+  <span id="form-nested-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
+</DemoBlock>
+
+提交后 `values` 形如 `{"name":"张三","profile":{"city":"杭州"}}`——路径段即结构。
+
+### 动态字段组 form-list
+
+> `oas-form-list` 在表单内维护一组可增删的字段行：在组件内放一个 `<template>` 作为行模板，克隆出的行内字段 `name` 自动索引化，两种写法——模板里用 `{index}` 占位（`name="users.{index}.name"`），或给组件设 `name="users"` 并在模板里写裸 `name`（自动前缀为 `users.N.字段名`）。`min` / `max` 约束行数（不足 `min` 自动补行），每行带删除按钮，删除后剩余行自动重新编号、已填值随行保留。字段留在 light DOM，校验 / 提交 / `oas-values-change` 全部随主表；组件派发 `oas-add` / `oas-remove`（`detail: { index }`）。
+
+<DemoBlock title="动态字段组 form-list">
+  <oas-form id="form-list-demo" style="width: 420px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-form-item label="家庭成员" help="添加几行成员，提交后组装进 values.members 数组">
+        <oas-form-list id="form-list-demo-list" name="members" min="1" max="4"></oas-form-list>
+      </oas-form-item>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
+    </oas-space>
+  </oas-form>
+  <span id="form-list-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
+</DemoBlock>
+
+提交后 `values` 形如 `{"members":[{"name":"张三","role":"本人"},{"name":"李四","role":"家属"}]}`；行模板在原生 HTML 里直接写 `<template>` 即可，md/Vue 编译场景建议用 JS 构造 `HTMLTemplateElement` 注入（模板内容传透在模板编译下不稳）。
+
 ## 原生表单集成（form-associated）
 
 全部表单类组件均为 **form-associated** 自定义元素（`formAssociated: true`）：可直接放进原生 `<form>`——`<label for>` 关联生效（点击 label 聚焦/激活控件、读屏朗读 label 文本），值经标准 `FormData` 收集（有 `name` 才提交），`form.reset()` 回初始值，`fieldset[disabled]` 联动禁用，`required` 接入原生校验链（`checkValidity()` / `:invalid` 伪类）。
@@ -383,6 +418,32 @@ onMounted(() => {
   const basicOut = document.getElementById('form-basic-output')
   document.getElementById('form-basic')?.addEventListener('oas-submit', (e) => {
     basicOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+
+  // 嵌套 name 路径：提交结果回显（嵌套 JSON 结构）
+  const nestedOut = document.getElementById('form-nested-output')
+  document.getElementById('form-nested')?.addEventListener('oas-submit', (e) => {
+    nestedOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+
+  // 动态字段组（form-list）：行模板经 JS 注入（md/Vue 模板编译对 <template> 内容传透不稳，
+  // 原生 HTML 可直接写 <template>）；行内字段值同步由 oas-form 内建 oas-input 监听覆盖，
+  // 无需逐元素接线
+  const formListDemo = document.getElementById('form-list-demo-list')
+  if (formListDemo) {
+    const tpl = document.createElement('template')
+    tpl.innerHTML =
+      '<oas-input name="name" placeholder="姓名" style="width: 150px"></oas-input>' +
+      '<oas-input name="role" placeholder="关系" style="width: 110px"></oas-input>'
+    formListDemo.appendChild(tpl)
+  }
+  const listOut = document.getElementById('form-list-output')
+  const formListForm = document.getElementById('form-list-demo')
+  formListForm?.addEventListener('oas-submit', (e) => {
+    listOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+  formListForm?.addEventListener('oas-remove', (e) => {
+    listOut.textContent = `oas-remove：已删除第 ${e.detail.index + 1} 行（剩余行已重新编号）`
   })
 
   // 原生表单集成：FormData 读取 + reset

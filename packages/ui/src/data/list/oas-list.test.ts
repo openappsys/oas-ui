@@ -920,4 +920,116 @@ describe('OASList', () => {
       expect(style).toContain(':not([selected])')
     })
   })
+
+  describe('sortable 行拖拽排序（能力缺口 D14）', () => {
+    const transfer = (): DataTransfer =>
+      ({ setData: () => {}, getData: () => '', effectAllowed: '', dropEffect: '' }) as unknown as DataTransfer
+    const drag = (el: OASList, type: string, target: HTMLElement): void => {
+      target.dispatchEvent(new DragEvent(type, { bubbles: true, composed: true, dataTransfer: transfer() }))
+    }
+    const dataRows = (el: OASList): HTMLElement[] => [
+      ...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="data-items"] oas-list-item'),
+    ]
+
+    it('sortable 进 observedAttributes；数据通道与声明式行都置 draggable', () => {
+      expect(OASList.observedAttributes).toContain('sortable')
+      const dataEl = new OASList()
+      dataEl.setAttribute('sortable', '')
+      dataEl.data = [{ title: '甲' }, { title: '乙' }, { title: '丙' }]
+      document.body.appendChild(dataEl)
+      expect(dataRows(dataEl).every((r) => r.getAttribute('draggable') === 'true')).toBe(true)
+      expect(dataEl.shadowRoot!.querySelector('[part="list"]')!.getAttribute('data-sortable')).toBe('true')
+
+      const declEl = new OASList()
+      declEl.setAttribute('sortable', '')
+      declEl.innerHTML = '<oas-list-item title="一"></oas-list-item><oas-list-item title="二"></oas-list-item>'
+      document.body.appendChild(declEl)
+      expect([...declEl.querySelectorAll('oas-list-item')].every((r) => r.getAttribute('draggable') === 'true')).toBe(
+        true,
+      )
+    })
+
+    it('缺省不开启：行不置 draggable、data-sortable=false', () => {
+      const el = new OASList()
+      el.data = [{ title: '甲' }]
+      document.body.appendChild(el)
+      expect(dataRows(el)[0]!.getAttribute('draggable')).not.toBe('true')
+      expect(el.shadowRoot!.querySelector('[part="list"]')!.getAttribute('data-sortable')).toBe('false')
+      let fired = 0
+      el.addEventListener('oas-reorder', () => fired++)
+      drag(el, 'dragstart', dataRows(el)[0]!)
+      drag(el, 'drop', dataRows(el)[0]!)
+      expect(fired).toBe(0)
+    })
+
+    it('数据通道：拖拽落点换位派发 oas-reorder { from, to, item }', () => {
+      const el = new OASList()
+      el.setAttribute('sortable', '')
+      const items = [{ title: '甲' }, { title: '乙' }, { title: '丙' }]
+      el.data = items
+      document.body.appendChild(el)
+      let detail: { from?: number; to?: number; item?: unknown } | undefined
+      el.addEventListener('oas-reorder', (e: Event) => (detail = (e as CustomEvent).detail))
+      const rows = dataRows(el)
+      drag(el, 'dragstart', rows[0]!)
+      drag(el, 'dragover', rows[2]!)
+      drag(el, 'drop', rows[2]!)
+      expect(detail).toEqual({ from: 0, to: 2, item: items[0] })
+    })
+
+    it('声明式通道：拖拽换位 detail.item 为被拖行元素', () => {
+      const el = new OASList()
+      el.setAttribute('sortable', '')
+      el.innerHTML = '<oas-list-item title="一"></oas-list-item><oas-list-item title="二"></oas-list-item>'
+      document.body.appendChild(el)
+      let detail: { from?: number; to?: number; item?: unknown } | undefined
+      el.addEventListener('oas-reorder', (e: Event) => (detail = (e as CustomEvent).detail))
+      const rows = [...el.querySelectorAll<HTMLElement>('oas-list-item')]
+      drag(el, 'dragstart', rows[0]!)
+      drag(el, 'drop', rows[1]!)
+      expect(detail?.from).toBe(0)
+      expect(detail?.to).toBe(1)
+      expect(detail?.item).toBe(rows[0])
+    })
+
+    it('落点与源同行不派发 oas-reorder', () => {
+      const el = new OASList()
+      el.setAttribute('sortable', '')
+      el.data = [{ title: '甲' }, { title: '乙' }]
+      document.body.appendChild(el)
+      let fired = 0
+      el.addEventListener('oas-reorder', () => fired++)
+      const rows = dataRows(el)
+      drag(el, 'dragstart', rows[0]!)
+      drag(el, 'drop', rows[0]!)
+      expect(fired).toBe(0)
+    })
+
+    it('拖拽中的落点高亮类：dragover 加、drop/dragend 清', () => {
+      const el = new OASList()
+      el.setAttribute('sortable', '')
+      el.data = [{ title: '甲' }, { title: '乙' }]
+      document.body.appendChild(el)
+      const rows = dataRows(el)
+      drag(el, 'dragstart', rows[0]!)
+      drag(el, 'dragover', rows[1]!)
+      expect(rows[1]!.classList.contains('row--drag-over')).toBe(true)
+      expect(rows[0]!.classList.contains('row--dragging')).toBe(true)
+      drag(el, 'dragend', rows[0]!)
+      expect(rows[1]!.classList.contains('row--drag-over')).toBe(false)
+      expect(rows[0]!.classList.contains('row--dragging')).toBe(false)
+    })
+
+    it('样式表含拖拽规则（token 色 + RTL 镜像）', () => {
+      const el = new OASList()
+      el.setAttribute('sortable', '')
+      el.data = [{ title: '甲' }]
+      document.body.appendChild(el)
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain("data-sortable='true'")
+      expect(css).toContain('.row--drag-over')
+      expect(css).toContain('var(--oas-color-primary)')
+      expect(css).toContain(':host([data-rtl])')
+    })
+  })
 })

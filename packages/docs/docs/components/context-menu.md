@@ -210,6 +210,7 @@ onMounted(() => {
 | `kind` | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集） | — | — |
 | `loading` | 加载中：渲染 spinner、禁点，由数据驱动恢复 | — | — |
 | `rel` | 链接 rel（配合 href） | — | — |
+| `shortcut` | 行右端快捷键标注（kbd 视觉，对齐 menubar/menu shortcut 契约） | — | — |
 | `target` | 链接 target（配合 href） | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
 

@@ -143,7 +143,11 @@ test('slider 基础用法：自定义滑块/数值输入区 hidden 真实隐藏�
     page.evaluate(() => {
       const el = document.querySelector('oas-slider')!
       const sr = el.shadowRoot!
-      const disp = (sel: string) => getComputedStyle(sr.querySelector(sel)!).display
+      // N 把手泛化后自定义滑块按需懒创建（缺省不存在 = 无残留）；缺席与 none 同为「不可见」
+      const disp = (sel: string) => {
+        const n = sr.querySelector(sel)
+        return n ? getComputedStyle(n).display : 'absent'
+      }
       return {
         valueThumb: disp('.custom-thumb[data-thumb="value"]'),
         minThumb: disp('.custom-thumb[data-thumb="min"]'),
@@ -152,9 +156,9 @@ test('slider 基础用法：自定义滑块/数值输入区 hidden 真实隐藏�
       }
     })
   const before = await probe()
-  expect(before.valueThumb, '默认态 value 自定义滑块应隐藏').toBe('none')
-  expect(before.minThumb, '默认态 min 自定义滑块应隐藏').toBe('none')
-  expect(before.maxThumb, '默认态 max 自定义滑块应隐藏').toBe('none')
+  expect(before.valueThumb, '默认态 value 自定义滑块应隐藏').toMatch(/^(absent|none)$/)
+  expect(before.minThumb, '默认态 min 自定义滑块应隐藏').toMatch(/^(absent|none)$/)
+  expect(before.maxThumb, '默认态 max 自定义滑块应隐藏').toMatch(/^(absent|none)$/)
   expect(before.inputs, '无 show-input 时数值输入区应隐藏').toBe('none')
   // 模拟拖动（input→change 全程），松手后不得残留任何自定义滑块
   await page.evaluate(() => {
@@ -166,9 +170,9 @@ test('slider 基础用法：自定义滑块/数值输入区 hidden 真实隐藏�
     input.dispatchEvent(new Event('change', { bubbles: true }))
   })
   const after = await probe()
-  expect(after.valueThumb, '拖动后 value 自定义滑块不得残留').toBe('none')
-  expect(after.minThumb, '拖动后 min 自定义滑块不得残留').toBe('none')
-  expect(after.maxThumb, '拖动后 max 自定义滑块不得残留').toBe('none')
+  expect(after.valueThumb, '拖动后 value 自定义滑块不得残留').toMatch(/^(absent|none)$/)
+  expect(after.minThumb, '拖动后 min 自定义滑块不得残留').toMatch(/^(absent|none)$/)
+  expect(after.maxThumb, '拖动后 max 自定义滑块不得残留').toMatch(/^(absent|none)$/)
 })
 
 test('slider range：拖动中自定义滑块中心与原生 thumb 中心对齐（无半径跳变）', async ({ page }) => {
@@ -555,7 +559,7 @@ test('slider 拇指视觉统一：无自定义内容时 custom-thumb 与原生�
     }
   })
   expect(r.verticalBorder, '无自定义内容的拇指应无彩边（实心点）').toBe('0px')
-  expect(r.verticalShadow, '无自定义内容的拇指应带底色环').not.toBe('none')
+  expect(r.verticalShadow, '无自定义内容的拇指应带底色环').not.toMatch(/^(absent|none)$/)
   if (r.customBg !== null) {
     expect(r.customBorder, '有自定义内容的拇指应空心环（彩边）').toBe('2px')
   }
@@ -643,4 +647,57 @@ test('slider label：单值 aria-label=label、range 组合语义后缀；demo �
   await page.locator('oas-button', { hasText: '查看 aria-label' }).click()
   const out = await page.evaluate(() => document.getElementById('slider-label-out')?.textContent)
   expect(out).toContain('aria-label = 音量')
+})
+
+// ---- D26：多滑块泛化（value N 元数组 → N 把手） ----
+
+test('slider 多滑块：N 元 value → N 把手、逐把手 aria-label、拖动写回数组', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#slider-multi')
+  const el = page.locator('#slider-multi')
+  await el.scrollIntoViewIfNeeded()
+  const r = await el.evaluate((node) => {
+    const root = node.shadowRoot!
+    const thumbs = [...root.querySelectorAll<HTMLInputElement>('[data-role^="thumb-"]')]
+    return {
+      multi: node.hasAttribute('data-multi'),
+      count: thumbs.length,
+      values: thumbs.map((t) => Number(t.value)),
+      labels: thumbs.map((t) => t.getAttribute('aria-label')),
+    }
+  })
+  expect(r.multi).toBe(true)
+  expect(r.count).toBe(3)
+  expect(r.values).toEqual([10, 30, 70])
+  expect(r.labels).toEqual(['低', '中', '高'])
+  // 拖动中间把手 → value 写回数组（form/宿主可 JSON.parse）
+  await el.evaluate((node) => {
+    const t = node.shadowRoot!.querySelector<HTMLInputElement>('[data-role="thumb-1"]')!
+    t.value = '45'
+    t.dispatchEvent(new Event('input', { bubbles: true }))
+    t.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+  expect(await el.getAttribute('value')).toBe('[10,45,70]')
+})
+
+test('slider 多滑块 show-input：3 个数值输入框 + 分隔符，提交驱动对应把手', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#slider-multi-input')
+  const el = page.locator('#slider-multi-input')
+  await el.scrollIntoViewIfNeeded()
+  const r = await el.evaluate((node) => {
+    const root = node.shadowRoot!
+    return {
+      nums: root.querySelectorAll('[data-role^="num-"]').length,
+      seps: root.querySelectorAll('.input-sep').length,
+    }
+  })
+  expect(r.nums).toBe(3)
+  expect(r.seps).toBe(2)
+  await el.evaluate((node) => {
+    const n = node.shadowRoot!.querySelector<HTMLInputElement>('[data-role="num-1"]')!
+    n.value = '55'
+    n.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+  expect(await el.getAttribute('value')).toBe('[10,55,70]')
 })

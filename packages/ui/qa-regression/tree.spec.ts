@@ -505,3 +505,28 @@ test('tree P2 批：size 五档归一化存活 + block-node 切换反馈 + selec
     { timeout: 5000 },
   )
 })
+
+// ===== 能力缺口 D16：check-all 整树全选（三态 indeterminate） =====
+test('tree D16：check-all 顶部全选行三态、全选/取消派发 oas-check-all', async ({ page }) => {
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-check-all')
+  const tree = page.locator('#tree-check-all')
+  await tree.scrollIntoViewIfNeeded()
+  const box = tree.locator('.check-all-check')
+  await expect(box).toBeVisible()
+  expect(await box.evaluate((b) => (b as HTMLInputElement).indeterminate)).toBe(false)
+  // 全选：写入全部可勾选节点
+  await box.check()
+  await page.waitForFunction(() => {
+    const t = document.querySelector('#tree-check-all')!
+    return JSON.parse(t.getAttribute('checked') ?? '[]').length === 6
+  })
+  const checked = await tree.evaluate((h) => JSON.parse(h.getAttribute('checked') ?? '[]') as string[])
+  expect(checked).toEqual(['p1', 'p1-1', 'p1-2', 'p2', 'p2-1', 'p2-2'])
+  expect(await box.evaluate((b) => (b as HTMLInputElement).checked)).toBe(true)
+  const status = await page.locator('#tree-check-all-status').textContent()
+  expect(status).toContain('已全选')
+  // 取消全选：清空
+  await box.uncheck()
+  expect(await tree.evaluate((h) => h.getAttribute('checked'))).toBe('[]')
+})

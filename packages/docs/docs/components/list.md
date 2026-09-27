@@ -571,6 +571,34 @@ onMounted(() => {
     pagedNav.addEventListener('oas-change', (e) => render(e.detail.page ?? e.detail.current ?? 1))
   }
 
+  // 拖拽排序：宿主据 oas-reorder 重排数据（组件不自动移动行）
+  const sortable = document.querySelector('#list-sortable')
+  if (sortable) {
+    let sortableItems = [
+      { title: '需求评审', description: '周一 10:00' },
+      { title: '接口联调', description: '周二 14:00' },
+      { title: '回归测试', description: '周三 16:00' },
+      { title: '版本发布', description: '周五 18:00' },
+    ]
+    const renderSortable = () => {
+      sortable.data = sortableItems.slice()
+    }
+    sortable.addEventListener('oas-item-render', (e) => {
+      const { item, element } = e.detail
+      element.setAttribute('title', item.title)
+      element.setAttribute('description', item.description)
+    })
+    sortable.addEventListener('oas-reorder', (e) => {
+      const { from, to } = e.detail
+      const [moved] = sortableItems.splice(from, 1)
+      sortableItems.splice(to, 0, moved)
+      renderSortable()
+      const status = document.querySelector('#list-sortable-status')
+      if (status) status.textContent = `已把「${moved.title}」从第 ${from + 1} 位移到第 ${to + 1} 位。`
+    })
+    renderSortable()
+  }
+
   // 卡片墙：oas-grid + oas-card 组合
   const wall = document.querySelector('#list-card-wall')
   if (wall) {
@@ -608,6 +636,17 @@ onMounted(() => {
   </div>
 </DemoBlock>
 
+## 拖拽排序（sortable）
+
+`sortable` 开启行拖拽排序（HTML5 DnD）：把行拖到目标行上放置，列表派发 `oas-reorder`（`detail: { from, to, item }`——`from` / `to` 为行索引，`item` 为数据通道下的原数据项或声明式下的行元素），由宿主据事件重排数据（组件不自动移动行）。拖到自身不派发；虚拟滚动行不支持。支持数据通道与声明式两种行通道。
+
+<DemoBlock title="拖拽排序（sortable）">
+  <div style="width: 100%">
+    <oas-list id="list-sortable" sortable bordered></oas-list>
+    <p id="list-sortable-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">拖动任意行到另一行上松手试试。</p>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-list
@@ -627,6 +666,7 @@ onMounted(() => {
 | `max-height` | 列表体最大高度（px 或 CSS 长度），设置后列表体成为滚动容器（配合 oas-reach-bottom 滚动加载；分组组头在此容器内吸顶） | `string` | — |
 | `row-height` | 虚拟滚动行高（px，默认 64，要求数据行定高） | `string` | `64` |
 | `size` | 行密度：sm / md（默认）/ lg | `string` | — |
+| `sortable` | 行拖拽排序（数据通道 + 声明式） | `boolean` | — |
 | `split` | 是否显示条目分隔线 | `boolean` | — |
 | `stripe` | 斑马纹：视觉偶数行铺浅色底 | `boolean` | — |
 
@@ -637,6 +677,7 @@ onMounted(() => {
 | `oas-click` | 条目点击（数据/虚拟行），detail 带 { index, item } |
 | `oas-item-render` | 数据通道每行渲染后派发，detail 带 { index, item, element } |
 | `oas-reach-bottom` | 滚动触底（进入触底区派发一次，滚离后重新武装），detail 带 { scrollTop } |
+| `oas-reorder` | 行拖放重排时派发，`detail: { from, to, item }` |
 
 #### 插槽
 

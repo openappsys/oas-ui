@@ -565,3 +565,121 @@ describe('OASColorPicker 一期增强', () => {
 // 需 import 能力入口 '@oas-ui/ui/form/color-picker/designer'（import 即注册）后才具备设计器能力；
 // 本文件只保留 core-only 行为，不得 import designer 模块（与 table edit 能力包同测试纪律）。
 // mode=gradient 等 designer 配置在未 import 能力时的边界见 oas-color-picker-designer-capability.test.ts。
+
+// ---- D25：recent 最近使用色条 + recent-key 持久化 ----
+
+describe('OASColorPicker recent 最近使用色', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    localStorage.clear()
+  })
+
+  function recentBox(el: OASColorPicker): HTMLElement | null {
+    return el.shadowRoot!.querySelector<HTMLElement>('.recent')
+  }
+
+  function swatches(el: OASColorPicker): HTMLButtonElement[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.recent-swatch')]
+  }
+
+  function presetAt(el: OASColorPicker, i: number): HTMLButtonElement {
+    return el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.preset')[i]!
+  }
+
+  it('缺省未启用 recent：底部最近色区隐藏，提交不入栈', () => {
+    const el = mount({ value: '#0b6cff' })
+    open(el)
+    expect(recentBox(el)!.hidden).toBe(true)
+    presetAt(el, 1).click()
+    expect(recentBox(el)!.hidden).toBe(true)
+    expect(swatches(el)).toHaveLength(0)
+  })
+
+  it('recent：选中色入栈并在面板底部展示可点选色块（最新在前）', () => {
+    const el = mount({ value: '#0b6cff', recent: '' })
+    open(el)
+    presetAt(el, 1).click() // #16a34a
+    presetAt(el, 3).click() // #dc2626
+    const sw = swatches(el)
+    expect(sw).toHaveLength(2)
+    expect(recentBox(el)!.hidden).toBe(false)
+    expect(sw[0]!.getAttribute('aria-label')).toBe('#dc2626')
+    expect(sw[1]!.getAttribute('aria-label')).toBe('#16a34a')
+  })
+
+  it('recent 去重：重复选中同色只保留一项并置顶', () => {
+    const el = mount({ value: '#0b6cff', recent: '' })
+    open(el)
+    presetAt(el, 1).click() // #16a34a
+    presetAt(el, 3).click() // #dc2626
+    presetAt(el, 1).click() // 再选 #16a34a
+    const sw = swatches(el)
+    expect(sw).toHaveLength(2)
+    expect(sw[0]!.getAttribute('aria-label')).toBe('#16a34a')
+    expect(sw[1]!.getAttribute('aria-label')).toBe('#dc2626')
+  })
+
+  it('recent 上限 8：超出淘汰最旧', () => {
+    const el = mount({
+      value: '#0b6cff',
+      recent: '',
+      preset: JSON.stringify([
+        '#111111',
+        '#222222',
+        '#333333',
+        '#444444',
+        '#555555',
+        '#666666',
+        '#777777',
+        '#888888',
+        '#999999',
+      ]),
+    })
+    open(el)
+    for (let i = 0; i < 9; i++) presetAt(el, i).click()
+    const sw = swatches(el)
+    expect(sw).toHaveLength(8)
+    expect(sw[0]!.getAttribute('aria-label')).toBe('#999999')
+    // 最旧的 #111111 被淘汰
+    expect(sw.some((s) => s.getAttribute('aria-label') === '#111111')).toBe(false)
+  })
+
+  it('点击最近色块：提交该色并派发 oas-change', () => {
+    const el = mount({ value: '#0b6cff', recent: '' })
+    open(el)
+    presetAt(el, 3).click() // #dc2626
+    presetAt(el, 0).click() // #0b6cff 回当前
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    swatches(el)
+      .find((s) => s.getAttribute('aria-label') === '#dc2626')!
+      .click()
+    expect(el.getAttribute('value')).toBe('#dc2626')
+    expect(details).toEqual([{ value: '#dc2626' }])
+  })
+
+  it('recent-key：持久化到 localStorage 且跨实例恢复', () => {
+    const el = mount({ value: '#0b6cff', recent: '', 'recent-key': 'cp-test' })
+    open(el)
+    presetAt(el, 1).click() // #16a34a
+    const stored = JSON.parse(localStorage.getItem('cp-test')!)
+    expect(Array.isArray(stored)).toBe(true)
+    expect(stored).toContain('#16a34a')
+    el.remove()
+    const el2 = mount({ value: '#0b6cff', recent: '', 'recent-key': 'cp-test' })
+    expect(recentBox(el2)!.hidden).toBe(false)
+    expect(swatches(el2).map((s) => s.getAttribute('aria-label'))).toContain('#16a34a')
+  })
+
+  it('无 recent-key：不写 localStorage（仅内存）', () => {
+    const el = mount({ value: '#0b6cff', recent: '' })
+    open(el)
+    presetAt(el, 1).click()
+    expect(localStorage.length).toBe(0)
+  })
+})

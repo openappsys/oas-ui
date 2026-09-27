@@ -913,3 +913,109 @@ describe('OASCarousel trigger 指示器触发（click 默认 / hover）', () => 
     expect(el.getAttribute('index')).toBe('2')
   })
 })
+
+describe('OASCarousel thumbs 缩略图指示器（能力缺口 D17）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    document.documentElement.removeAttribute('dir')
+    setLocale('zh-CN')
+  })
+
+  const mountSlides = (html: string, attrs: Record<string, string> = {}): OASCarousel => {
+    const el = new OASCarousel()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = html
+    document.body.appendChild(el)
+    return el
+  }
+  const thumbs = (el: OASCarousel): HTMLElement[] => [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="thumb"]')]
+
+  it('thumbs 进 observedAttributes；开启后以缩略图替代圆点', () => {
+    expect(OASCarousel.observedAttributes).toContain('thumbs')
+    const plain = mount({}, 3)
+    expect(plain.shadowRoot!.querySelectorAll('[part="thumb"]').length).toBe(0)
+    const el = mount({ thumbs: '' }, 3)
+    expect(thumbs(el).length).toBe(3)
+    expect(el.shadowRoot!.querySelectorAll('[part="dot"]').length).toBe(0)
+    expect(el.shadowRoot!.querySelector('[part="dots"]')!.classList.contains('thumbs')).toBe(true)
+  })
+
+  it('缩略图取子项内的 img（src），当前项 aria-current=true', () => {
+    const el = mountSlides(
+      '<div><img src="a.jpg" alt=""></div><div><img src="b.jpg" alt=""></div><div><img src="c.jpg" alt=""></div>',
+      { thumbs: '' },
+    )
+    const ts = thumbs(el)
+    expect(ts.map((t) => t.querySelector('img')!.getAttribute('src'))).toEqual(['a.jpg', 'b.jpg', 'c.jpg'])
+    expect(ts[0]!.getAttribute('aria-current')).toBe('true')
+    expect(ts[1]!.getAttribute('aria-current')).toBe('false')
+    expect(ts[0]!.getAttribute('role')).toBe('tab')
+    expect(ts[0]!.getAttribute('aria-label')).toBe('第 1 张')
+  })
+
+  it('缩略图取子项自身为 <img> 的 src（图片轮播直接以 img 为轮播项）', () => {
+    const el = mountSlides('<img src="direct-1.jpg" alt=""><img src="direct-2.jpg" alt="">', { thumbs: '' })
+    expect(thumbs(el).map((t) => t.querySelector('img')!.getAttribute('src'))).toEqual(['direct-1.jpg', 'direct-2.jpg'])
+  })
+
+  it('slides-per-view>1：缩略图按每页首张子项取源', () => {
+    const el = mountSlides('<img src="s0.jpg"><img src="s1.jpg"><img src="s2.jpg"><img src="s3.jpg">', {
+      thumbs: '',
+      'slides-per-view': '2',
+    })
+    expect(thumbs(el).map((t) => t.querySelector('img')!.getAttribute('src'))).toEqual(['s0.jpg', 's2.jpg'])
+  })
+
+  it('data-thumb 优先于子项内 img；无图源回落占位', () => {
+    const el = mountSlides(
+      '<div data-thumb="t0.jpg"><img src="i0.jpg" alt=""></div><div><img src="i1.jpg" alt=""></div><div>无图</div>',
+      { thumbs: '' },
+    )
+    const ts = thumbs(el)
+    expect(ts[0]!.querySelector('img')!.getAttribute('src')).toBe('t0.jpg')
+    expect(ts[1]!.querySelector('img')!.getAttribute('src')).toBe('i1.jpg')
+    expect(ts[2]!.querySelector('img')).toBeNull()
+    expect(ts[2]!.querySelector('.thumb-placeholder')).not.toBeNull()
+  })
+
+  it('thumbs 属性值为 JSON 数组时作为缩略图数据源', () => {
+    const el = mountSlides('<div>1</div><div>2</div><div>3</div>', {
+      thumbs: '["x.jpg","y.jpg","z.jpg"]',
+    })
+    expect(thumbs(el).map((t) => t.querySelector('img')!.getAttribute('src'))).toEqual(['x.jpg', 'y.jpg', 'z.jpg'])
+  })
+
+  it('点击缩略图切页并派发 oas-change', () => {
+    const el = mount({ thumbs: '' }, 3)
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    thumbs(el)[2]!.click()
+    expect(el.getAttribute('index')).toBe('2')
+    expect(detail).toEqual({ index: 2, prevIndex: 0 })
+  })
+
+  it('当前缩略图高亮描边走 token；样式表含 thumbs 规则', () => {
+    const el = mount({ thumbs: '' }, 3)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('.thumb[aria-current')
+    expect(css).toContain('var(--oas-color-primary)')
+  })
+
+  it('RTL：方向镜像开关同步；样式表含镜像规则', () => {
+    document.documentElement.setAttribute('dir', 'rtl')
+    const el = mount({ thumbs: '' }, 3)
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host([data-rtl])')
+  })
+
+  it('indicators=false 时缩略图条隐藏', () => {
+    const el = mount({ thumbs: '', indicators: 'false' }, 3)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="dots"]')!.hasAttribute('hidden')).toBe(true)
+  })
+})

@@ -51,6 +51,7 @@
   "oas-mentions",
   "oas-form",
   "oas-form-item",
+  "oas-form-list",
   "oas-calendar",
   "oas-date-picker",
   "oas-time-picker",
@@ -165,6 +166,7 @@
   "oas-equation",
   "oas-log",
   "oas-comment",
+  "oas-highlight",
   "oas-config-provider",
   "oas-app",
   "oas-theme-editor"

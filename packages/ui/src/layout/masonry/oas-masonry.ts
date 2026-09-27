@@ -166,6 +166,9 @@ function resolveBaseColumns(shorthand: ReturnType<typeof parseBreakpointShorthan
  *   margin-bottom、列距走 column-gap；纯数字补 px；非法值回退默认
  * - `fresh`：持续监听子项尺寸变化（ResizeObserver），变化时触发一次 update 提供重算机会。
  *   CSS columns 下尺寸变化浏览器本就自动重排，fresh 是语义对齐 + 未来切换 JS 实现的钩子
+ * - `sequential`：顺序瀑布流——按原始顺序逐列轮转填充（第 i 项落第 `i % 列数 + 1` 列），
+ *   而非默认的高度均衡优先；与子项 `column` 指定列互斥（sequential 生效时忽略 column）；
+ *   断点列数变化时按当前生效列数重算（属性变更或 fresh 触发 update 时生效）
  * - `items`：数据驱动通道，JSON 数组 `[{text, height?, column?}]`（也可 property 赋数组）。
  *   显式非空时优先于 slot 子元素（slot 子元素忽略）；缺省/空数组/非法 JSON 回落 slot 通道
  *   （非法 JSON dev 告警，同值去重）。`text` 纯文本安全渲染；`height` 最小高度（px）写入
@@ -182,7 +185,7 @@ function resolveBaseColumns(shorthand: ReturnType<typeof parseBreakpointShorthan
  */
 export class OASMasonry extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['columns', 'gap', 'fresh', 'items']
+    return ['columns', 'gap', 'fresh', 'items', 'sequential']
   }
 
   private rootEl: HTMLElement | null = null
@@ -192,6 +195,8 @@ export class OASMasonry extends OASElement {
   private _items: MasonryItem[] = []
   /** 上次 items 原始串（渲染重建守卫：items 未变时跳过 DOM 重建，fresh RO 触发的 update 免无谓销毁） */
   private lastItemsRaw: string | null = null
+  /** sequential 原始序缓存（重排幂等基准；非 sequential 态清空，重新开启时重新捕获） */
+  private sequentialOrigin: Element[] | null = null
 
   /** property 通道：setter 反射到 attribute 统一解析链路（与 menu/sidebar/command 的 items 惯例一致） */
   get items(): MasonryItem[] {
@@ -234,10 +239,13 @@ export class OASMasonry extends OASElement {
     this.applyGap()
     // items 数据驱动：显式非空优先（slot 子元素忽略）；缺省/空/非法回落 slot 通道
     const itemEls = this.syncItems()
-    if (itemEls.length > 0) {
-      this.applyPinnedColumns(itemEls, this.rootEl)
+    const elements = itemEls.length > 0 ? itemEls : Array.from(this.children)
+    const container: ParentNode = itemEls.length > 0 ? this.rootEl! : this
+    if (this.hasAttr('sequential')) {
+      this.applySequentialOrder(elements, container)
     } else {
-      this.applyPinnedColumns(Array.from(this.children), this)
+      this.sequentialOrigin = null
+      this.applyPinnedColumns(elements, container)
     }
     this.syncFresh()
   }
@@ -486,6 +494,51 @@ export class OASMasonry extends OASElement {
     const fragment = document.createDocumentFragment()
     for (const el of slots) {
       if (el) fragment.appendChild(el)
+    }
+    container.appendChild(fragment)
+  }
+
+  /**
+   * sequential 顺序瀑布流（PRD D27）：按原始顺序逐列轮转填充（第 i 项落第 `i % 列数 + 1` 列），
+   * 而非默认的高度均衡优先——阅读顺序跨列推进（1→列1、2→列2、…、列满回到列1）。
+   *
+   * 实现：把每项按轮转目标列分组，列内保持原相对顺序，拼接成新 DOM 序再物理移动
+   * （CSS columns 按流序填列，等高项下均衡分配与新序一一对应；与 column 指定列同一套
+   * DOM 重排机制）。重排**幂等**：始终基于 `sequentialOrigin` 原始序缓存计算——
+   * 物理重排后 DOM 序已轮转，若按当前 DOM 序重算会二次旋转（挂载期 update 可能跑多次）。
+   *
+   * 与 `column` 指定列为互斥模式：sequential 生效时忽略子项/项数据的 column 指定
+   * （全量轮转语义更可预测，不叠加两套排序规则）。断点列数变化时按当前生效列数重算
+   * （同 column 指定列：属性变更或 fresh 触发 update 时生效）。
+   * items 通道与 slot 子元素通道共用（elements 同 applyPinnedColumns 入参约定）；
+   * 移除 sequential 后停止重排，DOM 保持既有重排结果（与 column 指定列行为一致）。
+   */
+  private applySequentialOrder(elements: Element[], container: ParentNode): void {
+    const total = elements.length
+    if (total === 0) return
+    // 原始序缓存：首次捕获当前序；此后剔除已移除项、末尾追加新增项（保持其余原始相对顺序）
+    if (!this.sequentialOrigin) {
+      this.sequentialOrigin = [...elements]
+    } else {
+      const known = new Set(this.sequentialOrigin)
+      const current = new Set(elements)
+      this.sequentialOrigin = this.sequentialOrigin.filter((el) => current.has(el))
+      for (const el of elements) {
+        if (!known.has(el)) this.sequentialOrigin.push(el)
+      }
+    }
+    const raw = this.getAttr('columns', String(DEFAULT_COLUMNS))
+    const shorthand = parseBreakpointShorthand(raw)
+    const base = resolveBaseColumns(shorthand, raw)
+    const cols = Math.max(1, this.effectiveColumns(raw, base))
+    // 按轮转目标列分组（列内保持原始相对顺序），再按列拼接为新 DOM 序
+    const byColumn: Element[][] = Array.from({ length: cols }, () => [])
+    this.sequentialOrigin.forEach((el, i) => {
+      byColumn[i % cols]!.push(el)
+    })
+    const fragment = document.createDocumentFragment()
+    for (const group of byColumn) {
+      for (const el of group) fragment.appendChild(el)
     }
     container.appendChild(fragment)
   }

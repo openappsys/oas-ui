@@ -69,6 +69,11 @@
       "name": "hoverable",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "sortable",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -90,6 +95,10 @@
     {
       "name": "oas-reach-bottom",
       "detail": "{ scrollTop: body.scrollTop }"
+    },
+    {
+      "name": "oas-reorder",
+      "detail": "{ from, to, item }"
     },
     {
       "name": "oas-click",

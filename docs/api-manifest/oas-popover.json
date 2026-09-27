@@ -109,6 +109,11 @@
       "observed": true
     },
     {
+      "name": "same-width",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "offset",
       "observed": true
     },

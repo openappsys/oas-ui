@@ -43,7 +43,7 @@ A modal dialog for interrupting flows that require user confirmation or input.
   <oas-modal id="modal-nomask" title="Confirmation required" no-mask-close>
     <p>Clicking the mask won't close it; use the buttons or Esc.</p>
   </oas-modal>
-</DemoBlock>
+</DemoBlock>. Non-modal semantics follow `dialog.show()`: `aria-modal="false"`, no focus steal, no Tab trapping
 
 ## Custom width
 
@@ -80,6 +80,17 @@ A modal dialog for interrupting flows that require user confirmation or input.
   <oas-button type="primary" onclick="document.querySelector('#modal-fullscreen').setAttribute('visible','')">Open fullscreen dialog</oas-button>
   <oas-modal id="modal-fullscreen" title="Fullscreen dialog" fullscreen width="640px" centered draggable>
     <p>The fullscreen dialog fills the viewport without radius or margin. <code>width</code> / <code>centered</code> are ignored and dragging is disabled; Esc / mask close still work.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Maximizable
+
+`maximizable` shows a maximize/restore button to the left of the ✕ in the header. Maximizing uses the **same semantics as `fullscreen`** (fills the viewport, no radius, `width` ignored, dragging disabled); clicking again restores the original size. Each toggle fires `oas-maximize` (`detail.maximized` carries the state). When the `fullscreen` attribute is explicitly set, the button is hidden (the host already forces fullscreen).
+
+<DemoBlock title="Maximizable dialog">
+  <oas-button type="primary" onclick="document.querySelector('#modal-max').setAttribute('visible','')">Open maximizable dialog</oas-button>
+  <oas-modal id="modal-max" title="Maximizable" maximizable centered>
+    <p>Click the maximize button in the header to fill the viewport, click again to restore. Each toggle fires <code>oas-maximize</code> (toast feedback at the top).</p>
   </oas-modal>
 </DemoBlock>
 
@@ -611,6 +622,11 @@ onMounted(async () => {
     message.warning('Unsaved changes: this path cannot close')
   })
 
+  // Maximizable: oas-maximize event feedback (detail.maximized carries the state)
+  document.getElementById('modal-max')?.addEventListener('oas-maximize', (e) => {
+    message.info(e.detail.maximized ? 'Maximized (same as fullscreen)' : 'Restored')
+  })
+
   window.openOptionsRadio = () => {
     modal
       .options({
@@ -695,6 +711,7 @@ onMounted(async () => {
 | `fullscreen-breakpoint` | Automatically go fullscreen when the viewport width drops below this threshold (px), recomputed on resize while open; unioned with the explicit `fullscreen` attribute | — | — |
 | `initial-focus` | Focus the element matching this selector on open (dialog first, then host light DOM); falls back to `focus-ok` / the Cancel button / OK / ✕ | — | — |
 | `loading` | Put the OK button into loading state (disabled + spinner), blocking repeated confirms | `boolean` | — |
+| `maximizable` | Show a maximize/restore button in the header: maximizing uses the same semantics as fullscreen; hidden when fullscreen is explicitly set | `boolean` | — |
 | `no-cancel` | Hide the cancel button (the footer keeps only "OK"; built into semantic variants) | `boolean` | — |
 | `no-close-btn` | Hide the ✕ close button in the title bar | `boolean` | — |
 | `no-esc-close` | Disable closing with Esc (Esc is only handled by the topmost visible modal) | `boolean` | — |
@@ -725,6 +742,7 @@ onMounted(async () => {
 | `oas-cancel` | Cancel: cancel button / ✕ / mask click / Esc |
 | `oas-close` | Emitted when closing starts; `detail: { source, action }` (source: `ok`/`cancel`/`close-btn`/`mask`/`esc`/`programmatic`; action: `confirm`/`cancel`/`close`) |
 | `oas-closed` | [Compat alias] Close animation finished, same as oas-after-close; will be removed later |
+| `oas-maximize` | Fired on maximize/restore toggle, `detail: { maximized }` |
 | `oas-ok` | Clicked "OK" |
 | `oas-open` | Emitted when opening starts (after the scroll lock and focus move); no `detail` |
 | `oas-opened` | [Compat alias] Open animation finished, same as oas-after-open; will be removed later |

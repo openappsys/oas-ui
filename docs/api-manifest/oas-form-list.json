@@ -1,0 +1,47 @@
+{
+  "className": "OASFormList",
+  "sourceFile": "packages/ui/src/form/form-list/oas-form-list.ts",
+  "attrs": [
+    {
+      "name": "name",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "min",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-add",
+      "detail": "{ index }"
+    },
+    {
+      "name": "oas-remove",
+      "detail": "{ index }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

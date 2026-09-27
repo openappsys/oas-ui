@@ -1,7 +1,7 @@
 // 复核回归：upload——历史缺陷固化断言。
 
 import { test, expect } from '@playwright/test'
-import { up } from './helpers'
+import { realClick, up } from './helpers'
 
 test('upload picture-card：list-type 属性在 Vue demo 存活，预置照片渲染缩略图卡片', async ({ page }) => {
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
@@ -207,4 +207,185 @@ test('upload oas-progress：drop 后进度事件派发（percent 推进到 100�
   expect(r.mono, '进度应单调不回退').toBe(true)
   expect(r.count, '至少派发一次 oas-progress').toBeGreaterThan(0)
   expect(r.output, 'demo 反馈区应显示进度').toContain('100%')
+})
+
+// ===== crop：图片上传前裁剪（D19）=====
+// 机制链路（真实 drop → 裁剪对话框 → canvas 导出入列）；视觉核对由主 agent 负责。
+
+test('upload crop：drop 图片弹裁剪框（固定比例 1:1），确认后 canvas 结果入列 + oas-crop', async ({ page }) => {
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-wall')
+  const opened = await page.evaluate(async () => {
+    if (!customElements.get('oas-upload')) await customElements.whenDefined('oas-upload')
+    // 真实 PNG（canvas 绘制 → toBlob → File）：裁剪对话框的图像解码与导出走真数据
+    const cv = document.createElement('canvas')
+    cv.width = 640
+    cv.height = 480
+    const ctx = cv.getContext('2d')!
+    const g = ctx.createLinearGradient(0, 0, 640, 480)
+    g.addColorStop(0, '#0b6cff')
+    g.addColorStop(1, '#16a34a')
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, 640, 480)
+    const blob = await new Promise<Blob>((res) => cv.toBlob((b) => res(b!), 'image/png'))
+    const file = new File([blob], 'crop-e2e.png', { type: 'image/png' })
+    const host = document.createElement('oas-upload')
+    host.id = 'crop-probe'
+    for (const [k, v] of [
+      ['crop', ''],
+      ['crop-aspect', '1:1'],
+      ['list-type', 'picture-card'],
+      ['accept', 'image/*'],
+    ] as const) {
+      host.setAttribute(k, v)
+    }
+    host.style.cssText = 'display:block;width:360px;position:fixed;top:80px;left:20px;z-index:9999;'
+    document.body.appendChild(host)
+    const zone = host.shadowRoot!.querySelector('.zone')!
+    const dt = new DataTransfer()
+    dt.items.add(file)
+    zone.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
+    return host.id
+  })
+  expect(opened).toBe('crop-probe')
+  // 图像解码 + 舞台绘制：canvas 中心像素非透明（未解码/未绘制 = 全透明）
+  await page.waitForFunction(
+    () => {
+      const host = document.querySelector('#crop-probe')
+      const canvas = host?.shadowRoot?.querySelector<HTMLCanvasElement>('.crop-canvas')
+      if (!canvas) return false
+      const d = canvas.getContext('2d')!.getImageData(160, 120, 1, 1).data
+      return d[3]! > 0
+    },
+    null,
+    { timeout: 8000 },
+  )
+  const frame = await page.evaluate(() => {
+    const host = document.querySelector('#crop-probe')!
+    const frame = host.shadowRoot!.querySelector<HTMLElement>('.crop-frame')!
+    const mask = host.shadowRoot!.querySelector<HTMLElement>('.crop-mask')!
+    return {
+      opened: !mask.hasAttribute('hidden'),
+      aspect: frame.getAttribute('data-crop-aspect'),
+      w: frame.offsetWidth,
+      h: frame.offsetHeight,
+      role: host.shadowRoot!.querySelector<HTMLElement>('.crop-dialog')!.getAttribute('role'),
+    }
+  })
+  expect(frame.opened, '裁剪对话框打开').toBe(true)
+  expect(frame.role, 'role=dialog').toBe('dialog')
+  expect(frame.aspect, '固定比例标记').toBe('1:1')
+  // 初始框 0.8×240 = 192×192（1:1），border 2px → offsetWidth 194；宽高必须相等
+  expect(Math.abs(frame.w - frame.h), `裁剪框宽高相等（1:1，实测 ${frame.w}×${frame.h}）`).toBeLessThanOrEqual(2)
+  // 确认：真实 canvas 导出 → oas-crop + 卡片入列
+  await realClick(page, '#crop-probe', '.crop-ok')
+  await page.waitForFunction(
+    () => document.querySelector('#crop-probe')?.shadowRoot?.querySelectorAll('.card').length === 1,
+    null,
+    { timeout: 8000 },
+  )
+  const after = await page.evaluate(() => {
+    const host = document.querySelector('#crop-probe') as HTMLElement & { files: Array<unknown> }
+    const mask = host.shadowRoot!.querySelector<HTMLElement>('.crop-mask')!
+    const img = host.shadowRoot!.querySelector<HTMLImageElement>('.card .thumb img')!
+    const first = host.files[0] as File | undefined
+    return {
+      maskHidden: mask.hasAttribute('hidden'),
+      cards: host.shadowRoot!.querySelectorAll('.card').length,
+      thumbSrc: img.getAttribute('src') ?? '',
+      name: first?.name ?? '',
+      type: first instanceof File ? first.type : '',
+    }
+  })
+  expect(after.maskHidden, '确认后对话框关闭').toBe(true)
+  expect(after.cards).toBe(1)
+  expect(after.thumbSrc, '裁剪结果缩略图（对象 URL）').toContain('blob:')
+  expect(after.name).toBe('crop-e2e.png')
+  expect(after.type).toBe('image/png')
+  await page.evaluate(() => document.querySelector('#crop-probe')!.remove())
+})
+
+test('upload crop：取消（cancel 按钮）不入列；Esc 同效', async ({ page }) => {
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-wall')
+  await page.evaluate(async () => {
+    if (!customElements.get('oas-upload')) await customElements.whenDefined('oas-upload')
+    const cv = document.createElement('canvas')
+    cv.width = 320
+    cv.height = 240
+    const ctx = cv.getContext('2d')!
+    ctx.fillStyle = '#d97706'
+    ctx.fillRect(0, 0, 320, 240)
+    const blob = await new Promise<Blob>((res) => cv.toBlob((b) => res(b!), 'image/png'))
+    const host = document.createElement('oas-upload')
+    host.id = 'crop-cancel-probe'
+    for (const [k, v] of [
+      ['crop', ''],
+      ['list-type', 'picture-card'],
+      ['accept', 'image/*'],
+    ] as const) {
+      host.setAttribute(k, v)
+    }
+    host.style.cssText = 'display:block;width:360px;position:fixed;top:80px;left:20px;z-index:9999;'
+    document.body.appendChild(host)
+    const dt = new DataTransfer()
+    dt.items.add(new File([blob], 'cancel-e2e.png', { type: 'image/png' }))
+    host
+      .shadowRoot!.querySelector('.zone')!
+      .dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
+  })
+  await page.waitForFunction(
+    () => {
+      const mask = document.querySelector('#crop-cancel-probe')?.shadowRoot?.querySelector<HTMLElement>('.crop-mask')
+      return !!mask && !mask.hasAttribute('hidden')
+    },
+    null,
+    { timeout: 8000 },
+  )
+  await realClick(page, '#crop-cancel-probe', '.crop-cancel')
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#crop-cancel-probe')
+        ?.shadowRoot?.querySelector<HTMLElement>('.crop-mask')
+        ?.hasAttribute('hidden') === true,
+    null,
+    { timeout: 8000 },
+  )
+  const cards = await page.evaluate(
+    () => document.querySelector('#crop-cancel-probe')!.shadowRoot!.querySelectorAll('.card').length,
+  )
+  expect(cards, '取消不入列').toBe(0)
+  // Esc 路径：再 drop 一张，Esc 关闭同样不入列
+  await page.evaluate(async () => {
+    const host = document.querySelector('#crop-cancel-probe')!
+    const dt = new DataTransfer()
+    dt.items.add(new File([new ArrayBuffer(8)], 'esc-e2e.png', { type: 'image/png' }))
+    host
+      .shadowRoot!.querySelector('.zone')!
+      .dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
+  })
+  await page.waitForFunction(
+    () => {
+      const mask = document.querySelector('#crop-cancel-probe')?.shadowRoot?.querySelector<HTMLElement>('.crop-mask')
+      return !!mask && !mask.hasAttribute('hidden')
+    },
+    null,
+    { timeout: 8000 },
+  )
+  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#crop-cancel-probe')
+        ?.shadowRoot?.querySelector<HTMLElement>('.crop-mask')
+        ?.hasAttribute('hidden') === true,
+    null,
+    { timeout: 8000 },
+  )
+  const cards2 = await page.evaluate(
+    () => document.querySelector('#crop-cancel-probe')!.shadowRoot!.querySelectorAll('.card').length,
+  )
+  expect(cards2, 'Esc 取消同样不入列').toBe(0)
+  await page.evaluate(() => document.querySelector('#crop-cancel-probe')!.remove())
 })

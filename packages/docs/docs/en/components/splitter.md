@@ -44,6 +44,22 @@ min / max also accept pixel values: a `200px` suffix clamps in pixels (relative 
   </div>
 </DemoBlock>
 
+## Snap points (snap)
+
+`snap` defines snap stops (comma-separated percentages such as `25,50,75`; `200px` pixel values are also supported and converted against the container): while dragging, values within **±8px of a stop snap to it**; the arrow keys then **jump between stops** (falling back to ±1% nudging when no stop remains in that direction). Stops outside min / max are unreachable (min/max wins).
+
+<DemoBlock title="snap snapping">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="primary" id="splitter-snap-info">Left ratio: 50%</oas-tag>
+    <div style="height: 200px; width: 100%">
+      <oas-splitter id="splitter-snap-demo" percent="50" snap="25,50,75">
+        <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">Left panel</div>
+      </oas-splitter>
+    </div>
+    <oas-tag type="info">Release near 25% / 50% / 75% to snap; focus the divider and ← / → jump between stops</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 ## Vertical direction
 
 The `vertical` attribute stacks panels top-to-bottom with a horizontal divider; use the ↑ / ↓ arrow keys.
@@ -176,6 +192,11 @@ onMounted(() => {
   collapseDemo?.addEventListener('oas-collapse', (e) => {
     collapseInfo.textContent = `Left panel: ${e.detail.collapsed ? 'collapsed' : 'expanded'}`
   })
+  const snapDemo = document.getElementById('splitter-snap-demo')
+  const snapInfo = document.getElementById('splitter-snap-info')
+  snapDemo?.addEventListener('oas-resize', (e) => {
+    snapInfo.textContent = `Left ratio: ${e.detail.percent}%`
+  })
 })
 </script>
 
@@ -195,6 +216,7 @@ onMounted(() => {
 | `min` | Minimum ratio of the preceding panel: numbers as percentage, `200px` suffix clamps in pixels; invalid values fall back to 10 | `string` | `10` |
 | `percent` | Ratio of the preceding panel (%) | `string` | `50` |
 | `sizes` | Multi-panel mode panel ratios (comma-separated percentages, e.g. `30,40,30`); falls back to equal split when count mismatches panel count | `string` | — |
+| `snap` | Drag snap stops: comma-separated percentages or pixel values; dragging within ±8px of a stop snaps to it, arrow keys jump between stops | `string` | — |
 | `vertical` | Vertical direction: panels stack top-to-bottom, divider is horizontal, keyboard uses ArrowUp/Down | `boolean` | — |
 
 #### Events

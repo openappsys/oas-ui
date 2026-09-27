@@ -692,6 +692,33 @@ onMounted(() => {
     const el = document.querySelector('#table-dbl-feedback')
     if (el) el.textContent = e.detail.row.name ?? e.detail.rowIndex
   })
+
+  // D 类能力 demo：导出（CSV / Excel）事件反馈
+  const exportTable = document.querySelector('#table-export')
+  exportTable?.addEventListener('oas-export', (e) => {
+    const { format, fileName, rowCount } = e.detail
+    const el = document.querySelector('#table-export-feedback')
+    if (el) el.textContent = `${fileName} · ${format.toUpperCase()} · ${rowCount} rows`
+  })
+
+  // 网格导航 demo：单元格点击反馈（键盘漫游看单元格焦点环）
+  const gridNavTable = document.querySelector('#table-grid-nav')
+  gridNavTable?.addEventListener('oas-cell-click', (e) => {
+    const el = document.querySelector('#table-grid-nav-feedback')
+    if (el) el.textContent = `${e.detail.row.name} · ${e.detail.column}`
+  })
+
+  // 行拖拽 demo：宿主受控重排（组件只派发 oas-row-reorder，不改 data）
+  const rowDragTable = document.querySelector('#table-row-drag')
+  rowDragTable?.addEventListener('oas-row-reorder', (e) => {
+    const { from, to } = e.detail
+    const rows = JSON.parse(rowDragTable.getAttribute('data') ?? '[]')
+    const [moved] = rows.splice(from, 1)
+    rows.splice(to, 0, moved)
+    rowDragTable.setAttribute('data', JSON.stringify(rows))
+    const el = document.querySelector('#table-row-drag-feedback')
+    if (el) el.textContent = `${from} → ${to}`
+  })
 })
 </script>
 
@@ -789,6 +816,39 @@ onMounted(() => {
   </div>
 </DemoBlock>
 
+## 导出 CSV / Excel（exportable）
+
+`exportable` 在表格顶部显示导出工具栏（默认 CSV；`export-format="excel"` 切 Excel，`"csv,excel"` 两个按钮都出）。导出范围 = 表头 + **当前可见数据行**（过滤 / 排序 / 分页切片后的当前页；虚拟滚动取完整展示集合）：`actions` 列不导出、`serialNumber` 列导出序号、select 编辑器导出选项 label。CSV 按 RFC 4180 转义并带 UTF-8 BOM；Excel 走 SpreadsheetML（`.xls`）。`export-file-name` 配文件名（默认 `export`）。也可编程式调用 `table.exportData('csv' | 'excel')`——按钮与方法都派发 `oas-export`（detail `{ format, fileName, rowCount }`）。
+
+<DemoBlock title="导出 CSV / Excel（点击真实下载）">
+  <div style="width: 100%">
+    <oas-table id="table-export" exportable export-format="csv,excel" export-file-name="员工表" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"note","title":"备注"}]' data='[{"name":"张三","age":30,"city":"北京","note":"前端，5 年"},{"name":"李四","age":25,"city":"上海","note":"说 \"你好\""},{"name":"王五","age":35,"city":"深圳","note":"后端"},{"name":"赵六","age":28,"city":"杭州","note":"设计"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">最近导出：<span id="table-export-feedback">—</span></p>
+  </div>
+</DemoBlock>
+
+## 网格导航（grid-navigation）
+
+`grid-navigation` 给表格 `role="grid"` 语义（表头 `columnheader`、行 `row`、单元格 `gridcell`），数据区为单停靠点 Tab 序：Tab 聚焦滚动容器，随后方向键在单元格间漫游——左右跨行换行、上下保持同列、Home/End 到行首末、Ctrl+Home/End 到网格首末格、PageUp/PageDown 按可视区（分页时为 `page-size`）翻屏。Enter/Space 激活聚焦格内的控件（行展开钮、行勾选框），可编辑单元格在编辑态把键盘让给输入框。表头控件（全选、列筛选）保留各自 Tab 停靠。
+
+<DemoBlock title="方向键漫游（点击表格后按方向键）">
+  <div style="width: 100%">
+    <oas-table id="table-grid-nav" grid-navigation columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":28,"city":"杭州"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">点击单元格后用方向键漫游 · 单元格点击：<span id="table-grid-nav-feedback">—</span></p>
+  </div>
+</DemoBlock>
+
+## 行拖拽排序（row-draggable）
+
+`row-draggable` 增加拖拽手柄列；把某行手柄拖到另一行上派发 `oas-row-reorder`，detail `{ from, to, row }`（`from`/`to` 为当前可见数据行序中的索引；`to` 为移除被拖行后的插入位，宿主可 `const [moved] = rows.splice(from, 1); rows.splice(to, 0, moved)` 直接复现）。组件自身不改 `data`（受控/事件驱动，与 sortable tabs、tree 拖拽同契约）。虚拟滚动（`height`）下禁用并 dev 告警一次。
+
+<DemoBlock title="拖手柄换位（宿主复现 oas-row-reorder）">
+  <div style="width: 100%">
+    <oas-table id="table-row-drag" row-draggable columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":28,"city":"杭州"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">最近重排：<span id="table-row-drag-feedback">—</span></p>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-table
@@ -807,7 +867,11 @@ onMounted(() => {
 | `editable` | 行内编辑开关（需配合列配置 `editable: true`；操作列 `actions: true` 同理） | `boolean` | — |
 | `empty-text` | 空态文案 | — | — |
 | `expanded` | 已展开行 key 集合（逗号分隔；树形父行/可展开行共用） | `string` | — |
+| `export-file-name` | 导出文件名（不含扩展名；路径分隔符与保留字符自动净化） | `string` | `export` |
+| `export-format` | 导出格式：`csv`（默认）/ `excel`，或逗号组合 `csv,excel`（两个按钮）；非法回落 csv | `string` | `csv` |
+| `exportable` | 导出开关：表格顶部渲染导出工具栏（默认 CSV，可配 CSV/Excel），并开放 exportData 方法 | `boolean` | — |
 | `filter-values` | 受控列过滤值（JSON 对象：列 key → 选中值数组） | `string` | — |
+| `grid-navigation` | 键盘网格导航：role=grid，数据区单停靠点 + 方向键在单元格间漫游（Home/End/PageUp-Down，Enter/Space 激活格内控件） | `boolean` | — |
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
 | `hover` | 行 hover 底色开关（仅视觉，不影响选中行为），`"false"` 关闭 | — | — |
 | `indent-size` | 树形数据每级缩进量（px） | `string` | `24` |
@@ -816,6 +880,7 @@ onMounted(() => {
 | `multi-sort` | 多列排序（JSON 数组：[{ key, order }]，按数组序依次排序） | `string` | — |
 | `page-size` | 每页条数（内置分页，默认 10） | `string` | `10` |
 | `pagination` | 内置分页开关（页脚分页条；宿主自管分页时不设） | `boolean` | — |
+| `row-draggable` | 行拖拽排序：渲染拖拽手柄列，拖放派发 oas-row-reorder；虚拟滚动（height）下禁用并告警一次 | `boolean` | — |
 | `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |
 | `row-key` | 行唯一键字段 | `string` | `key` |
 | `selected` | 选中行 key 集合（逗号分隔） | `string` | — |
@@ -840,10 +905,12 @@ onMounted(() => {
 | `oas-edit` | 行内编辑提交（Enter/失焦/操作列保存），`detail: { rowIndex, key, column, value }`；受控模式组件不回写 `data` |
 | `oas-edit-cancel` | 行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value }`（value 为原值） |
 | `oas-expand` | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }` |
+| `oas-export` | 导出触发（按钮或 exportData），`detail: { format, fileName, rowCount }` |
 | `oas-filter-change` | 列过滤值变化时派发，`detail: { key, values }` |
 | `oas-page-change` | 内置分页翻页时派发，`detail: { current, pageSize }` |
 | `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
 | `oas-row-dblclick` | 双击数据行派发，`detail: { row, rowIndex }` |
+| `oas-row-reorder` | 行拖拽/Alt+↑↓ 重排，`detail: { from, to, row }`（to 为移除被拖行后的插入位；组件不改 data） |
 | `oas-scroll` | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 | `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
 
@@ -861,6 +928,36 @@ onMounted(() => {
 | `--oas-table-cell-padding-block` | `var(--oas-space-3)` |
 | `--oas-table-cell-padding-inline` | `var(--oas-space-4)` |
 | `--oas-table-font-size` | `var(--oas-font-size-md)` |
+
+### oas-table-column
+
+#### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `actions` | — | — | — |
+| `align` | — | — | — |
+| `data-key` | 列标识（Vue 模板保留字 key 的规避通道；原生 HTML 下 key 直写亦可，组件双通道读取） | — | — |
+| `editable` | — | — | — |
+| `editor` | — | — | — |
+| `ellipsis` | — | — | — |
+| `filterable` | — | — | — |
+| `filters` | — | — | — |
+| `fixed` | — | — | — |
+| `hidden` | — | — | — |
+| `key` | — | — | — |
+| `merge` | — | — | — |
+| `serial-number` | — | — | — |
+| `sortable` | — | — | — |
+| `summary` | — | — | — |
+| `title` | — | — | — |
+| `width` | — | — | — |
+
+#### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 自定义单元格内容（template 内用 row.字段 占位插值，双花括号语法） |
 
 > 说明：`columns.render` 为函数类型，仅支持在 JS 侧构造后通过属性整体赋值，无法用 JSON 字符串表达；`fixed` 列建议显式声明 `width`（未声明时按 100px 兜底计算 sticky 偏移）。合计也可在列上直接写 `summary: 'sum' | 'avg' | 'count'`；`children`（树形子行）与 `expand`（可展开行内容）均为行数据字段。
 

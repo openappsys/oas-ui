@@ -696,6 +696,33 @@ onMounted(() => {
     const el = document.querySelector('#table-dbl-feedback')
     if (el) el.textContent = e.detail.row.name ?? e.detail.rowIndex
   })
+
+  // D-class demos: export (CSV / Excel) feedback
+  const exportTable = document.querySelector('#table-export')
+  exportTable?.addEventListener('oas-export', (e) => {
+    const { format, fileName, rowCount } = e.detail
+    const el = document.querySelector('#table-export-feedback')
+    if (el) el.textContent = `${fileName} · ${format.toUpperCase()} · ${rowCount} rows`
+  })
+
+  // Grid navigation demo: cell click feedback (keyboard roaming shows the cell focus ring)
+  const gridNavTable = document.querySelector('#table-grid-nav')
+  gridNavTable?.addEventListener('oas-cell-click', (e) => {
+    const el = document.querySelector('#table-grid-nav-feedback')
+    if (el) el.textContent = `${e.detail.row.name} · ${e.detail.column}`
+  })
+
+  // Row drag demo: host-controlled reorder (the component only emits oas-row-reorder)
+  const rowDragTable = document.querySelector('#table-row-drag')
+  rowDragTable?.addEventListener('oas-row-reorder', (e) => {
+    const { from, to } = e.detail
+    const rows = JSON.parse(rowDragTable.getAttribute('data') ?? '[]')
+    const [moved] = rows.splice(from, 1)
+    rows.splice(to, 0, moved)
+    rowDragTable.setAttribute('data', JSON.stringify(rows))
+    const el = document.querySelector('#table-row-drag-feedback')
+    if (el) el.textContent = `${from} → ${to}`
+  })
 })
 </script>
 
@@ -793,6 +820,39 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
   </div>
 </DemoBlock>
 
+## Export CSV / Excel (exportable)
+
+`exportable` renders export buttons in a toolbar above the table (default: CSV; `export-format="excel"` switches to Excel, `"csv,excel"` shows both). The exported range is the header plus the **currently visible data rows** (after filtering / sorting / pagination slicing; virtual scrolling exports the full rendered set): `actions` columns are skipped, `serialNumber` columns export the row index, and `select` editors export the option label. CSV follows RFC 4180 escaping with a UTF-8 BOM; Excel uses SpreadsheetML (`.xls`). `export-file-name` sets the file name (default `export`). You can also call `table.exportData('csv' | 'excel')` programmatically — both the button and the method dispatch `oas-export` (detail `{ format, fileName, rowCount }`).
+
+<DemoBlock title="Export CSV / Excel (click to really download)">
+  <div style="width: 100%">
+    <oas-table id="table-export" exportable export-format="csv,excel" export-file-name="employees" columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"note","title":"Note"}]' data='[{"name":"Alice","age":30,"city":"Beijing","note":"Frontend, 5 yrs"},{"name":"Bob","age":25,"city":"Shanghai","note":"Says \"hi\""},{"name":"Carol","age":35,"city":"Shenzhen","note":"Backend"},{"name":"David","age":28,"city":"Hangzhou","note":"Design"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">Last export: <span id="table-export-feedback">—</span></p>
+  </div>
+</DemoBlock>
+
+## Grid navigation (grid-navigation)
+
+`grid-navigation` gives the table `role="grid"` semantics (header cells `columnheader`, rows `row`, cells `gridcell`) and a single Tab stop for the data-cell region: Tab focuses the scroll container, then the arrow keys roam the cells — Left/Right wrap across rows, Up/Down keep the column, Home/End jump to the row edges, Ctrl+Home/End to the grid's first/last cell, PageUp/PageDown page by the viewport (or by `page-size` when pagination is on). Enter/Space activate a control inside the focused cell (expand toggle, row checkbox), and editable cells hand the keyboard over to the editor while editing. Header controls (select-all, column filter) keep their own Tab stops.
+
+<DemoBlock title="Arrow-key roaming (click the table, then use the arrow keys)">
+  <div style="width: 100%">
+    <oas-table id="table-grid-nav" grid-navigation columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"}]' data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"},{"name":"David","age":28,"city":"Hangzhou"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">Click a cell, then roam with the arrow keys · cell click: <span id="table-grid-nav-feedback">—</span></p>
+  </div>
+</DemoBlock>
+
+## Row drag sorting (row-draggable)
+
+`row-draggable` adds a drag-handle column; dropping a handle onto another row dispatches `oas-row-reorder` with `detail: { from, to, row }` (`from`/`to` are indices in the currently visible data-row order; `to` is the insertion index after removing the dragged row, so the host can replay it with `const [moved] = rows.splice(from, 1); rows.splice(to, 0, moved)`). The component never mutates `data` itself (host-controlled, the same contract as sortable tabs / tree drag). Dragging is disabled under virtual scrolling (`height`) with a one-time dev warning.
+
+<DemoBlock title="Drag a handle to reorder (host replays oas-row-reorder)">
+  <div style="width: 100%">
+    <oas-table id="table-row-drag" row-draggable columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"}]' data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"},{"name":"David","age":28,"city":"Hangzhou"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">Last reorder: <span id="table-row-drag-feedback">—</span></p>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-table
@@ -811,7 +871,11 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 | `editable` | Inline editing switch (requires `editable: true` on columns; same for the `actions: true` operation column) | `boolean` | — |
 | `empty-text` | Empty state text | — | — |
 | `expanded` | Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows) | `string` | — |
+| `export-file-name` | Export file name (without extension; path separators and reserved characters are sanitized) | `string` | `export` |
+| `export-format` | Export format: `csv` (default) / `excel`, or the comma list `csv,excel` (both buttons); invalid falls back to csv | `string` | `csv` |
+| `exportable` | Enables export: renders export buttons in a toolbar above the table (CSV by default, CSV/Excel configurable), and exposes the exportData method | `boolean` | — |
 | `filter-values` | Controlled column filter values (JSON object: column key → selected values) | `string` | — |
+| `grid-navigation` | Keyboard grid navigation: role=grid, single Tab stop for the data region, arrow keys roam cells (Home/End/PageUp-Down, Enter/Space activate in-cell controls) | `boolean` | — |
 | `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | `string` | `320` |
 | `hover` | Row hover background switch (purely visual), `"false"` disables | — | — |
 | `indent-size` | Per-level indent of tree data in px | `string` | `24` |
@@ -820,6 +884,7 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 | `multi-sort` | Multi-column sort (JSON array: [{ key, order }], applied in array order) | `string` | — |
 | `page-size` | Rows per page (built-in pagination, default 10) | `string` | `10` |
 | `pagination` | Built-in pagination switch (footer pager; leave unset when the host paginates) | `boolean` | — |
+| `row-draggable` | Row drag sorting: renders a drag-handle column and dispatches oas-row-reorder on drop; disabled with a warning under virtual scrolling | `boolean` | — |
 | `row-height` | Fixed row height for virtual scrolling (px) | `string` | `40` |
 | `row-key` | Unique key field of a row | `string` | `key` |
 | `selected` | Set of selected row keys (comma-separated) | `string` | — |
@@ -844,10 +909,12 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 | `oas-edit` | Inline edit submitted (Enter / blur / operation column save), `detail: { rowIndex, key, column, value }`; in controlled mode the component does not write back `data` |
 | `oas-edit-cancel` | Inline edit cancelled (Esc / operation column cancel / empty submit restores), `detail: { rowIndex, key, column, value }` (`value` is the original value) |
 | `oas-expand` | Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }` |
+| `oas-export` | Export triggered (button or exportData), `detail: { format, fileName, rowCount }` |
 | `oas-filter-change` | Fired when a column filter value changes, `detail: { key, values }` |
 | `oas-page-change` | Fired when the built-in page changes, `detail: { current, pageSize }` |
 | `oas-row-click` | Row click (also toggles selection when not checkable), `detail: { row, key }` |
 | `oas-row-dblclick` | Fired on data-row double-click, `detail: { row, rowIndex }` |
+| `oas-row-reorder` | Row reorder via drag or Alt+Arrow; `detail: { from, to, row }` (to is the insertion index after removing the dragged row; the component never mutates data) |
 | `oas-scroll` | Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
 | `oas-sort-change` | Sort change, `detail: { key, order: 'asc' \| 'desc' \| '' }` |
 
@@ -865,6 +932,36 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 | `--oas-table-cell-padding-block` | `var(--oas-space-3)` |
 | `--oas-table-cell-padding-inline` | `var(--oas-space-4)` |
 | `--oas-table-font-size` | `var(--oas-font-size-md)` |
+
+### oas-table-column
+
+#### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `actions` | — | — | — |
+| `align` | — | — | — |
+| `data-key` | Column key (escape channel for the Vue reserved word `key`; plain `key` also works in native HTML — the component reads both) | — | — |
+| `editable` | — | — | — |
+| `editor` | — | — | — |
+| `ellipsis` | — | — | — |
+| `filterable` | — | — | — |
+| `filters` | — | — | — |
+| `fixed` | — | — | — |
+| `hidden` | — | — | — |
+| `key` | — | — | — |
+| `merge` | — | — | — |
+| `serial-number` | — | — | — |
+| `sortable` | — | — | — |
+| `summary` | — | — | — |
+| `title` | — | — | — |
+| `width` | — | — | — |
+
+#### Slots
+
+| Name | Description |
+| --- | --- |
+| default | Custom cell content (row.field placeholder interpolation inside the template, double-curly syntax) |
 
 > Note: `columns.render` is a function type and can only be assigned via the property from JS — it cannot be expressed as a JSON string. For `fixed` columns it is recommended to declare `width` explicitly (sticky offsets fall back to 100px when omitted). Summary can also be written directly on a column as `summary: 'sum' | 'avg' | 'count'`; `children` (tree child rows) and `expand` (expandable row content) are both row data fields.
 

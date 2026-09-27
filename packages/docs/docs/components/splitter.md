@@ -44,6 +44,22 @@ min / max 支持像素值：`200px` 后缀按像素夹取（相对容器宽度�
   </div>
 </DemoBlock>
 
+## 吸附档位（snap）
+
+`snap` 指定吸附档位（逗号分隔的百分比，如 `25,50,75`；也支持 `200px` 像素值按容器换算）：拖拽到档位 **±8px 阈值内自动吸附**；键盘方向键改为**在档位间落档**（该方向已无档可落时回落 ±1% 微调）。档位超出 min / max 范围时不可达（min/max 优先）。
+
+<DemoBlock title="snap 拖拽吸附">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="primary" id="splitter-snap-info">左侧占比：50%</oas-tag>
+    <div style="height: 200px; width: 100%">
+      <oas-splitter id="splitter-snap-demo" percent="50" snap="25,50,75">
+        <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">左面板</div>
+      </oas-splitter>
+    </div>
+    <oas-tag type="info">拖到 25% / 50% / 75% 附近松手自动吸附；聚焦分隔条后 ← / → 在档位间跳动</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 ## 垂直方向
 
 `vertical` 属性让面板上下堆叠、分隔条横向，键盘用 ↑ / ↓ 调整。
@@ -176,6 +192,11 @@ onMounted(() => {
   collapseDemo?.addEventListener('oas-collapse', (e) => {
     collapseInfo.textContent = `左面板：${e.detail.collapsed ? '已收起' : '展开'}`
   })
+  const snapDemo = document.getElementById('splitter-snap-demo')
+  const snapInfo = document.getElementById('splitter-snap-info')
+  snapDemo?.addEventListener('oas-resize', (e) => {
+    snapInfo.textContent = `左侧占比：${e.detail.percent}%`
+  })
 })
 </script>
 
@@ -195,6 +216,7 @@ onMounted(() => {
 | `min` | 上一面板最小占比：数字按百分比，`200px` 后缀按像素夹取；非法回落默认 10 | `string` | `10` |
 | `percent` | 上一面板占比（%） | `string` | `50` |
 | `sizes` | 多面板模式各面板占比（逗号分隔百分比，如 `30,40,30`）；数量与面板数不匹配回落均分 | `string` | — |
+| `snap` | 拖拽吸附档位：逗号分隔百分比或像素值；拖到档位 ±8px 内吸附，键盘方向键在档位间落档 | `string` | — |
 | `vertical` | 垂直方向：面板上下堆叠，分隔条横向，键盘用 ArrowUp/Down | `boolean` | — |
 
 #### 事件

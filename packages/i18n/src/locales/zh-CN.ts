@@ -11,6 +11,8 @@ export const zhCN = {
   'modal.close': '关闭',
   'modal.ok': '确定',
   'modal.cancel': '取消',
+  'modal.maximize': '最大化',
+  'modal.restore': '还原',
   // confirm（命令式确认弹窗）
   'confirm.ok': '确定',
   'confirm.cancel': '取消',
@@ -139,6 +141,9 @@ export const zhCN = {
   'pagination.more': '更多',
   // table（表格）
   'table.selectAll': '全选',
+  'table.exportCsv': '导出 CSV',
+  'table.exportExcel': '导出 Excel',
+  'table.rowDragHandle': '拖拽排序',
   'table.loading': '加载中…',
   'table.empty': '暂无数据',
   'table.selectRow': '选择行 {key}',

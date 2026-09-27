@@ -78,6 +78,15 @@ After setting `el.load = ({ option, path, depth }) => Promise<options>`, expandi
 
 With `expand-trigger="hover"`, hovering a parent option (after a ~120ms anti-mistap delay) expands its child column; clicking a leaf submits. Default is `click`.
 
+## Large Datasets (virtual scrolling)
+
+<DemoBlock title="Virtual scrolling (1000-item column)">
+  <oas-cascader id="cs-virtual" virtual placeholder="1000-item column, smooth scrolling" options='[]'></oas-cascader>
+  <span id="cs-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+With `virtual`, columns above the threshold (50 items) render only the visible window (reusing `oas-virtual-list` window math with top/bottom padding holding the scroll height) — thousands of options scroll smoothly and the panel height stays constant; `item-height` tunes the fixed row height (default `36`). While navigating with `↑`/`↓` the window follows the highlighted row; short columns below the threshold, search results, and loading placeholders keep normal rendering.
+
 ## Last Level & Separator
 
 <DemoBlock title="Last level only (show-all-levels) and separator">
@@ -317,6 +326,25 @@ onMounted(() => {
     focusOut.textContent = 'oas-blur'
   })
 
+  // Virtual scrolling demo: 1000-item column (each with one leaf, injected via the options channel) + selection feedback
+  const virtualCs = document.getElementById('cs-virtual')
+  const virtualCsOut = document.getElementById('cs-virtual-output')
+  if (virtualCs) {
+    virtualCs.setAttribute(
+      'options',
+      JSON.stringify(
+        Array.from({ length: 1000 }, (_, i) => ({
+          label: `Item ${i}`,
+          value: `v${i}`,
+          children: [{ label: `${i}-child`, value: `c${i}` }],
+        })),
+      ),
+    )
+    virtualCs.addEventListener('oas-change', (e) => {
+      if (virtualCsOut) virtualCsOut.textContent = `oas-change: ${(e.detail.value || []).join(' / ')}`
+    })
+  }
+
   // Accessible name (label) demo: read the trigger aria-label (label set vs placeholder fallback)
   const readLabel = () => {
     const a = document.getElementById('cs-label-set')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
@@ -351,6 +379,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | `expand-trigger` | Sub-level expansion trigger: `click` (default) / `hover` (120ms delay to prevent misfires) | `string` | `click` |
 | `field-names` | Field-alias JSON (`{ label, value, children, disabled }`) matching the tree-select contract; lazy-load results are mapped alike | `string` | — |
 | `filterable` | Searchable (flat path results) | `boolean` | — |
+| `item-height` | Fixed virtual row height in px (with virtual, default 36) | `string` | `36` |
 | `label` | Accessible name of the trigger (aria-label), taking priority over value/placeholder | `string` | — |
 | `loading` | Loading state: trigger spinner + aria-busy; the panel shows a loading placeholder | `boolean` | — |
 | `max-tag-count` | Collapse multi-select tags beyond the count into +N (with title listing hidden items) | `boolean` | — |
@@ -365,6 +394,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid | `string` | — |
 | `value` | Path array (JSON), e.g. `["zj","hz"]` | `string` | `[]` |
 | `value-mode` | Multi-select value strategy: `all` (default, full paths) / `parentFirst` / `onlyLeaf` | `string` | `all` |
+| `virtual` | Per-column virtual scrolling (columns above 50 items render via oas-virtual-list; short columns/search/loading keep normal rendering) | `boolean` | — |
 
 #### Events
 
@@ -383,3 +413,9 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | --- | --- |
 | `template[slot="option"]` | Custom option row template; `[data-option-label]` nodes bind the option text |
 | `template[slot="suffix-icon"]` | Custom trailing trigger icon (replaces the default arrow; yields to the spinner while loading) |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-cascader-dropdown-height` | `240px` |

@@ -119,6 +119,12 @@
       "observed": true
     },
     {
+      "name": "timezone",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "name",
       "type": "string",
       "default": "",

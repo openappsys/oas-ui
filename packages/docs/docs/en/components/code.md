@@ -162,6 +162,66 @@ With `word-wrap`, long code wraps instead of scrolling horizontally:
 
 Font size defaults to 0.875× the outer context (`0.875em`); override with the CSS variable `--oas-code-font`.
 
+## Line Highlight (highlight-lines)
+
+`highlight-lines` highlights lines using the `"1,3-5"` range syntax (1-based, comma-separated points or inclusive ranges; whitespace ignored, invalid fragments skipped):
+
+<DemoBlock title="Line highlight">
+  <div style="width: 100%">
+    <oas-code language="js" show-line-number highlight-lines="2,5-6" code='import { ref } from "vue"
+const count = ref(0)
+function inc() {
+  count.value += 1
+}
+function reset() {
+  count.value = 0
+}'></oas-code>
+  </div>
+</DemoBlock>
+
+## Line Focus (focus-lines)
+
+`focus-lines` focuses the given lines and dims the rest (opacity) — handy for walking through key code:
+
+<DemoBlock title="Line focus">
+  <div style="width: 100%">
+    <oas-code language="js" show-line-number focus-lines="3-4" code='function createUser(name) {
+  const id = nextId()
+  return { id, name }
+}
+const user = createUser("Alice")'></oas-code>
+  </div>
+</DemoBlock>
+
+## Diff Mode (diff)
+
+With `diff`, lines are colored by their first character: `+` lines green (added), `-` lines red (removed):
+
+<DemoBlock title="Diff coloring">
+  <div style="width: 100%">
+    <oas-code language="js" show-line-number diff code='function sum(a, b) {
+-  return a - b
++  return a + b
+}
+const total = sum(1, 2)'></oas-code>
+  </div>
+</DemoBlock>
+
+## Content Folding (max-rows)
+
+`max-rows` caps the visible lines and shows an expand/collapse tail row when exceeded (`0` means unlimited, invalid values ignored):
+
+<DemoBlock title="max-rows folding">
+  <div style="width: 100%">
+    <oas-code language="js" show-line-number max-rows="3" code='function fib(n) {
+  if (n <= 1) return n
+  return fib(n - 1) + fib(n - 2)
+}
+console.log(fib(10))
+export { fib }'></oas-code>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-code
@@ -173,8 +233,12 @@ Font size defaults to 0.875× the outer context (`0.875em`); override with the C
 | `code` | Raw source code | `string` | — |
 | `color` | Inline text color: accepts 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*-text` tokens) or any CSS color value | `string` | — |
 | `copyable` | Show the copy button | `string` | `true` |
+| `diff` | Diff mode: colors lines by leading `+`/`-` (semantic color tokens) | `boolean` | — |
+| `focus-lines` | Line focus: focused lines stay, the rest dim | `string` | — |
+| `highlight-lines` | Line highlight: `"1,3-5"` range syntax for highlighted lines (1-based) | `string` | — |
 | `inline` | Inline code mode: renders as a monospace light-background box for code snippets inside prose | `boolean` | — |
 | `language` | Language: `js`/`ts`/`html`/`css`/`json`; unknown falls back to plain text | `string` | — |
+| `max-rows` | Max visible lines; overflow folds with an expand/collapse tail row (`0` = unlimited) | `string` | — |
 | `show-line-number` | Show the line number column | `boolean` | — |
 | `size` | Inline font-size tier: `xs` / `small` / `medium` (default) / `large`; invalid values fall back to `medium` with a warning | `string` | — |
 | `trim` | Strip leading/trailing whitespace (default true; `trim="false"` preserves it) | `string` | `true` |
@@ -193,7 +257,9 @@ Font size defaults to 0.875× the outer context (`0.875em`); override with the C
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-code-color` | `var(--oas-color-text-primary)` |
+| `--oas-code-focus-dim-opacity` | `0.35` |
 | `--oas-code-font` | `0.875em` |
+| `--oas-code-highlight-bg` | `color-mix(in srgb, var(--oas-color-primary) 12%, transparent)` |
 | `--oas-code-on-color` | `var(--oas-color-bg)` |
 
 ### Engine Choice (Architecture Decision)

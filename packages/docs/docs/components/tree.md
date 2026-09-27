@@ -545,6 +545,14 @@ onMounted(() => {
     const el = document.querySelector('#tree-selectable-status')
     if (el) el.textContent = '已开 selectable="true"：点行恢复选中'
   })
+
+  // check-all demo：oas-check-all 可见反馈
+  const checkAllTree = document.querySelector('#tree-check-all')
+  checkAllTree?.addEventListener('oas-check-all', (e) => {
+    const { checked, values } = e.detail
+    const el = document.querySelector('#tree-check-all-status')
+    if (el) el.textContent = checked ? `已全选：${values.join('、') || '（无可勾选节点）'}` : '已取消全选'
+  })
 })
 </script>
 
@@ -590,6 +598,17 @@ onMounted(() => {
   </div>
 </DemoBlock>
 
+## 整树全选（check-all）
+
+`check-all`（配 `checkable` 生效）在树顶部渲染整树全选项行：全选写入全部可勾选节点，部分勾选时复选框呈半选（`indeterminate`），再次点选取消全选；`disabled` / `disableCheckbox` 节点不参与。文案默认「全选」，可用 `check-all-label` 覆盖。每次切换派发 `oas-check-all`（`detail: { checked, values }`）。
+
+<DemoBlock title="check-all 整树全选">
+  <div style="width: 100%">
+    <oas-tree id="tree-check-all" checkable check-all default-expand-all data='[{"key":"p1","label":"前端","children":[{"key":"p1-1","label":"vue"},{"key":"p1-2","label":"react"}]},{"key":"p2","label":"后端","children":[{"key":"p2-1","label":"go"},{"key":"p2-2","label":"rust"}]}]'></oas-tree>
+    <p id="tree-check-all-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">勾选顶部「全选」或逐项勾选，观察三态；再点一次取消全选。</p>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-tree
@@ -602,6 +621,8 @@ onMounted(() => {
 | `auto-expand-parent` | 勾选子节点时自动展开其父级 | `boolean` | — |
 | `block-node` | 整行块级选中/hover 区（行块加高一档） | `boolean` | — |
 | `can-rename` | 节点重命名总开关：开启后双击节点 label 或按 F2 进入内联编辑，Enter 提交 / Esc 取消 / 失焦提交；提交派发 `oas-node-rename`（节点数据可加 `renamable: false` 细粒度禁单个节点） | `boolean` | — |
+| `check-all` | 顶部整树全选项行（三态 indeterminate；需 checkable） | `boolean` | — |
+| `check-all-label` | 全选项行文案（缺省复用 i18n 全选） | `string` | — |
 | `check-strategy` | 勾选导出策略：`all`（默认）/ `parent` / `child`（checkable 级联时生效） | `string` | `all` |
 | `check-strictly` | 勾选父子解联（勾选父级不联动子级） | `boolean` | — |
 | `checkable` | 是否显示复选框 | `boolean` | — |
@@ -638,6 +659,7 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-check` | 勾选变化，`detail: { key, checked }` |
+| `oas-check-all` | 全选行切换时派发，`detail: { checked, values }` |
 | `oas-expand` | 节点展开/收起时派发，`detail: { key, expanded, node }`（node 为数据节点快照） |
 | `oas-load` | 懒加载触发，`detail: { key }`；宿主回填 `children` 后重设 `data` 属性 |
 | `oas-load-error` | 懒加载失败时派发，`detail: { key, error }`，`error` 为错误消息字符串（loading 消失可再点重试） |

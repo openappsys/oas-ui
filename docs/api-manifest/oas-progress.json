@@ -108,6 +108,17 @@
       "type": "string",
       "default": "round",
       "observed": true
+    },
+    {
+      "name": "vertical",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],

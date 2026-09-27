@@ -31,6 +31,23 @@ export interface MenuItem {
   rel?: string
   /** 子菜单项，支持多级嵌套（任意层级）；group 的 children 平铺展示在同一层 */
   children?: MenuItem[]
+  /** 快捷键标注（如 Ctrl+N）：渲染为右端 kbd 提示，与 menubar 视觉契约一致 */
+  shortcut?: string
+}
+
+/** 过滤视图去重相邻 / 首尾分隔线（过滤后无项的区间不留悬空分隔线） */
+function trimDividers(list: MenuItem[]): MenuItem[] {
+  const out: MenuItem[] = []
+  for (const item of list) {
+    if (item.type === 'divider') {
+      if (out.length === 0 || out[out.length - 1]!.type === 'divider') continue
+      out.push(item)
+    } else {
+      out.push(item)
+    }
+  }
+  while (out.length > 0 && out[out.length - 1]!.type === 'divider') out.pop()
+  return out
 }
 
 const STYLE = `
@@ -172,6 +189,58 @@ a.item:visited {
 :host([max-height]) .menu {
   overflow-y: auto;
   max-height: var(--oas-menu-max-height, none);
+}
+/* ===== searchable：顶部过滤输入框 ===== */
+.menu-search {
+  padding: var(--oas-space-1) var(--oas-space-1) var(--oas-space-2);
+  border-bottom: 1px solid var(--oas-color-border);
+  margin-bottom: var(--oas-space-1);
+}
+.menu-search[hidden] {
+  display: none;
+}
+.menu-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: var(--oas-font-size-md);
+  color: var(--oas-color-text-primary);
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-sm);
+  padding: var(--oas-space-1) var(--oas-space-2);
+}
+.menu-search-input::placeholder {
+  color: var(--oas-color-text-secondary);
+}
+.menu-search-input:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: 1px;
+  border-color: var(--oas-color-primary);
+}
+/* 过滤无匹配空态（复用 i18n select.noMatch） */
+.menu-search-empty {
+  padding: var(--oas-space-3);
+  text-align: center;
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+  white-space: nowrap;
+}
+.menu-search-empty[hidden] {
+  display: none;
+}
+/* shortcut kbd：右端快捷键标注（对齐 menubar shortcut 视觉契约；颜色走 token） */
+.shortcut {
+  margin-inline-start: var(--oas-space-3);
+  padding: 0 var(--oas-space-1);
+  font-size: var(--oas-font-size-sm);
+  font-family: var(--oas-font-family-mono, monospace);
+  color: var(--oas-color-text-secondary);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-xs);
+  background: var(--oas-color-bg-hover);
+  line-height: 1.6;
+  flex-shrink: 0;
 }
 /* ===== inline 导航形态：子菜单就地展开（非浮出） ===== */
 /* inline 展开容器：默认收起（grid-template-rows 0fr 过渡），open 展开（1fr） */
@@ -367,6 +436,7 @@ a.item:visited {
 :host(:not([mode='horizontal'])[collapsed]) > .menu > .item > .label,
 :host(:not([mode='horizontal'])[collapsed]) > .menu > .item > .arrow,
 :host(:not([mode='horizontal'])[collapsed]) > .menu > .item > .check,
+:host(:not([mode='horizontal'])[collapsed]) > .menu > .item > .shortcut,
 :host(:not([mode='horizontal'])[collapsed]) .group-label {
   display: none;
 }
@@ -411,6 +481,8 @@ export class OASMenu extends OASElement {
       'selectable',
       // 选中后不自动收起浮出子菜单（close-on-select 族正向开关）
       'persistent',
+      // searchable：顶部过滤输入框，键入实时过滤可见项
+      'searchable',
       'dir',
     ]
   }
@@ -419,6 +491,10 @@ export class OASMenu extends OASElement {
   /** 当前键盘导航所在层级的祖先 value 链（空数组 = 顶层） */
   private activeStack: string[] = []
   private activeIndex = -1
+  /** searchable 过滤关键词（轻量非受控；关闭 searchable 时清空） */
+  private searchTerm = ''
+  /** 过滤态下需要自动展开的祖先 value 集合（命中项路径，不改动受控 expanded） */
+  private searchExpand = new Set<string>()
   /** 已展开的子菜单 value 集合（单条展开路径） */
   private expanded = new Set<string>()
   private menuEl: HTMLElement | null = null
@@ -444,7 +520,11 @@ export class OASMenu extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
+      <div class="menu-search" part="search" hidden>
+        <input class="menu-search-input" part="search-input" type="search" autocomplete="off" />
+      </div>
       <ul class="menu" part="menu" role="menu" tabindex="0"></ul>
+      <div class="menu-search-empty" part="search-empty" hidden></div>
     `
   }
 
@@ -453,6 +533,17 @@ export class OASMenu extends OASElement {
     const menuEl = this.shadow.querySelector<HTMLElement>('.menu')!
     this.menuEl = menuEl
     menuEl.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
+    // searchable：顶部过滤输入框（input 实时过滤，Escape 清空，ArrowDown 进入菜单）
+    const searchInput = this.shadow.querySelector<HTMLInputElement>('.menu-search-input')
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        this.searchTerm = searchInput.value
+        this.activeStack = []
+        this.activeIndex = -1
+        this.renderItems()
+      })
+      searchInput.addEventListener('keydown', (e) => this.handleSearchKey(e as KeyboardEvent))
+    }
     // 鼠标移出整个菜单时收起所有浮层（仅浮出形态：vertical/horizontal 的 popup 子菜单是
     // 瞬态浮层，移出收起是通行惯例；inline 侧边导航的展开态是持续导航上下文——
     // 可能还受控于宿主 expanded 属性，鼠标移出菜单区域不得收起）
@@ -520,6 +611,7 @@ export class OASMenu extends OASElement {
     else this.parseChildItems()
     this.syncTheme()
     this.syncMaxHeight()
+    this.syncSearch()
     this.syncInlineMode()
     this.syncExpandedAttr()
     this.renderItems()
@@ -558,6 +650,102 @@ export class OASMenu extends OASElement {
       this.style.setProperty('--oas-menu-max-height', v)
     } else {
       this.style.removeProperty('--oas-menu-max-height')
+    }
+  }
+
+  // ===== searchable：顶部过滤输入框 =====
+
+  /** searchable 属性 → 输入框显隐与 i18n 文案；关闭时清空残留过滤态 */
+  private syncSearch(): void {
+    const wrap = this.shadow.querySelector<HTMLElement>('.menu-search')
+    if (!wrap) return
+    const on = this.hasAttr('searchable')
+    wrap.hidden = !on
+    const input = wrap.querySelector<HTMLInputElement>('.menu-search-input')
+    if (input) {
+      const label = this.t('select.search')
+      input.setAttribute('placeholder', label)
+      input.setAttribute('aria-label', label)
+      if (input.value !== this.searchTerm) input.value = this.searchTerm
+    }
+    if (!on && this.searchTerm !== '') {
+      this.searchTerm = ''
+    }
+  }
+
+  /** 当前是否处于过滤态（searchable 开启且有非空关键词） */
+  private searchActive(): boolean {
+    return this.hasAttr('searchable') && this.searchTerm.trim() !== ''
+  }
+
+  /**
+   * 过滤视图：递归保留 label 命中项或有命中后代的项（祖先保留 + 命中子树整体可见）；
+   * group 有命中子项才保留；分隔线去首尾/相邻重复。同时记录命中祖先到 searchExpand
+   * （过滤态自动展开命中路径，不改动受控 expanded）。
+   */
+  private viewItems(): MenuItem[] {
+    if (!this.searchActive()) {
+      this.searchExpand = new Set()
+      return this.itemsList
+    }
+    const term = this.searchTerm.trim().toLowerCase()
+    const expand = new Set<string>()
+    const walk = (list: MenuItem[]): MenuItem[] => {
+      const out: MenuItem[] = []
+      for (const item of list) {
+        if (item.type === 'divider') {
+          out.push(item)
+          continue
+        }
+        if (item.type === 'group') {
+          const kids = item.children ? walk(item.children) : []
+          if (kids.some((k) => k.type !== 'divider')) out.push({ ...item, children: kids })
+          continue
+        }
+        const selfMatch = (item.label ?? '').toLowerCase().includes(term)
+        // 自身命中保留完整子树；否则递归过滤后代
+        const kids = item.children ? (selfMatch ? item.children : walk(item.children)) : undefined
+        const kidMatch = kids ? kids.some((k) => k.type !== 'divider') : false
+        if (selfMatch || kidMatch) {
+          if (!selfMatch && kidMatch && item.value != null) expand.add(item.value)
+          out.push(item.children ? { ...item, children: kids } : { ...item })
+        }
+      }
+      return trimDividers(out)
+    }
+    const view = walk(this.itemsList)
+    this.searchExpand = expand
+    return view
+  }
+
+  /** 过滤无匹配空态（复用 i18n select.noMatch） */
+  private syncSearchEmpty(items: MenuItem[]): void {
+    const emptyEl = this.shadow.querySelector<HTMLElement>('.menu-search-empty')
+    if (!emptyEl) return
+    const show = this.searchActive() && this.flattenLevel(items).length === 0
+    emptyEl.hidden = !show
+    if (show) emptyEl.textContent = this.t('select.noMatch')
+  }
+
+  /** 过滤输入框键盘：Escape 清空；ArrowDown 把焦点交给菜单并高亮首个可见项 */
+  private handleSearchKey(e: KeyboardEvent): void {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      const input = e.target as HTMLInputElement
+      input.value = ''
+      this.searchTerm = ''
+      this.activeStack = []
+      this.activeIndex = -1
+      this.renderItems()
+      return
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      this.menuEl?.focus({ preventScroll: true })
+      const list = this.currentItems()
+      const idx = list.findIndex((i) => !i.disabled && !i.loading)
+      this.activeIndex = idx
+      this.syncActive()
     }
   }
 
@@ -625,6 +813,8 @@ export class OASMenu extends OASElement {
     if (target) item.target = target
     const rel = el.getAttribute('rel')
     if (rel) item.rel = rel
+    const shortcut = el.getAttribute('shortcut')
+    if (shortcut) item.shortcut = shortcut
     const children = this.parseChildLevel(el.children)
     if (children.length > 0) item.children = children
     return item
@@ -680,6 +870,7 @@ export class OASMenu extends OASElement {
         'href',
         'target',
         'rel',
+        'shortcut',
         'label',
         'slot',
       ],
@@ -718,9 +909,9 @@ export class OASMenu extends OASElement {
     if (this.activeIndex >= items.length) this.activeIndex = items.length > 0 ? 0 : -1
   }
 
-  /** 当前键盘导航层级的可导航项：group 内联展开、divider/组标题跳过 */
+  /** 当前键盘导航层级的可导航项：group 内联展开、divider/组标题跳过（过滤态用过滤视图） */
   private currentItems(): MenuItem[] {
-    let items = this.itemsList
+    let items = this.viewItems()
     for (const v of this.activeStack) {
       const parent = items.find((i) => i.value === v)
       if (!parent || !parent.children) return []
@@ -771,9 +962,11 @@ export class OASMenu extends OASElement {
     const menuEl = this.menuEl
     if (!menuEl) return
     menuEl.innerHTML = ''
-    this.renderLevel(menuEl, this.itemsList, '', 0)
+    const items = this.viewItems()
+    this.renderLevel(menuEl, items, '', 0)
     this.syncOpen()
     this.syncActive()
+    this.syncSearchEmpty(items)
   }
 
   /**
@@ -854,6 +1047,7 @@ export class OASMenu extends OASElement {
         const arrowName = horizontal && depth === 0 ? 'chevron-down' : 'chevron-right'
         const arrow = this.createIcon(arrowName, 'arrow')
         li.appendChild(label)
+        if (item.shortcut) li.appendChild(this.createShortcut(item.shortcut))
         if (arrow) li.appendChild(arrow)
         li.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
@@ -912,6 +1106,7 @@ export class OASMenu extends OASElement {
           li.appendChild(check)
         }
         li.append(label)
+        if (item.shortcut) li.appendChild(this.createShortcut(item.shortcut))
         li.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
           // 整单禁用：拦截 + preventDefault（href 链接项阻断原生跳转）
@@ -992,20 +1187,32 @@ export class OASMenu extends OASElement {
     return span
   }
 
+  /** 快捷键 kbd 标注（右端；与 menubar shortcut 同视觉契约） */
+  private createShortcut(text: string): HTMLElement {
+    const kbd = document.createElement('kbd')
+    kbd.className = 'shortcut'
+    kbd.setAttribute('part', 'shortcut')
+    kbd.textContent = text
+    return kbd
+  }
+
   /** 展开状态 → .open class（不重建 DOM） */
   private syncOpen(): void {
     // 全部收起 → 桥区观察器随之卸载（无常驻监听）
     if (this.expanded.size === 0) this.stopHoverBridgeWatch()
     if (!this.menuEl) return
+    const searchOpen = this.searchActive() ? this.searchExpand : null
     for (const li of this.menuEl.querySelectorAll<HTMLElement>('[part="item"][data-value]')) {
-      const open = this.expanded.has(li.dataset.value ?? '')
+      const v = li.dataset.value ?? ''
+      const open = this.expanded.has(v) || (searchOpen?.has(v) ?? false)
       li.classList.toggle('open', open)
       if (open) li.setAttribute('aria-expanded', 'true')
       else if (li.hasAttribute('aria-haspopup')) li.setAttribute('aria-expanded', 'false')
     }
     // inline 模式：inline-sub 就地展开容器显隐（expanded 含父 value 时展开）
     for (const sub of this.menuEl.querySelectorAll<HTMLElement>('.inline-sub')) {
-      const open = this.expanded.has(sub.dataset.parent ?? '')
+      const v = sub.dataset.parent ?? ''
+      const open = this.expanded.has(v) || (searchOpen?.has(v) ?? false)
       sub.classList.toggle('open', open)
     }
     this.syncSubmenuPositions()

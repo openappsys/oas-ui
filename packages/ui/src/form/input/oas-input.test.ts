@@ -1367,3 +1367,218 @@ describe('OASInput P2：min/max/step 透传 / clear-icon 插槽 / hint', () => {
     expect(i.value).toBe('abc')
   })
 })
+
+// ---- 能力缺口 D7：mask 输入掩码 ----
+// 测试走真实键入序列：模拟浏览器逐字符插入 value + input 事件（粘贴/剪切同样是 value 突变 + input）。
+
+describe('OASInput mask 输入掩码（能力缺口 D7）', () => {
+  /** 模拟真实键入：逐字符在末尾插入 + input 事件 */
+  function typeText(el: OASInput, text: string): void {
+    const i = input(el)
+    for (const ch of Array.from(text)) {
+      i.value += ch
+      i.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+  }
+
+  /** 模拟末尾退格：删除最后一个字符 + input 事件 */
+  function backspace(el: OASInput): void {
+    const i = input(el)
+    i.value = i.value.slice(0, -1)
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  /** 模拟粘贴：value 突变（追加粘贴文本）+ input 事件 */
+  function paste(el: OASInput, text: string): void {
+    const i = input(el)
+    i.value += text
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('mask 进入 observedAttributes', () => {
+    expect(OASInput.observedAttributes).toContain('mask')
+    expect(OASInput.observedAttributes).toContain('mask-raw')
+  })
+
+  it('键入自动跳字面量：###-#### 逐键输入 1234 显示 123-4', () => {
+    const el = mount({ mask: '###-####' })
+    typeText(el, '1234')
+    expect(input(el).value).toBe('123-4')
+  })
+
+  it('# 位拒绝非法字符：字母被过滤', () => {
+    const el = mount({ mask: '###-####' })
+    typeText(el, '1a2b3c4')
+    expect(input(el).value).toBe('123-4')
+  })
+
+  it('A 位收字母：字母放行、数字拒绝', () => {
+    const el = mount({ mask: 'AAA' })
+    typeText(el, 'ab1')
+    expect(input(el).value).toBe('ab')
+  })
+
+  it('* 位收字母数字：两者都放行，字面量照常插入', () => {
+    const el = mount({ mask: '**-**' })
+    typeText(el, 'a1b2')
+    expect(input(el).value).toBe('a1-b2')
+  })
+
+  it('渐进显示：未填位与其后字面量不显示', () => {
+    const el = mount({ mask: '###-####' })
+    typeText(el, '123')
+    expect(input(el).value).toBe('123')
+    typeText(el, '4')
+    expect(input(el).value).toBe('123-4')
+  })
+
+  it('退格删可编辑位字符，字面量按渐进规则回退（删到字面量停）', () => {
+    const el = mount({ mask: '###-####' })
+    typeText(el, '1234')
+    expect(input(el).value).toBe('123-4')
+    backspace(el)
+    // '4' 被删，字面量 '-' 不被用户删掉（渲染控制），显示回 123
+    expect(input(el).value).toBe('123')
+    backspace(el)
+    expect(input(el).value).toBe('12')
+  })
+
+  it('退格遇字面量：删除被字面量挡住（显示还原，光标跳过字面量）', () => {
+    const el = mount({ mask: '###-####' })
+    typeText(el, '1234567')
+    expect(input(el).value).toBe('123-4567')
+    const i = input(el)
+    // 模拟光标在字面量后（123-|4567）按 Backspace：浏览器删掉 '-' → 值 1234567
+    i.value = '1234567'
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+    // 字面量被渲染还原、光标跳到字面量之前——删除被字面量挡住
+    expect(i.value).toBe('123-4567')
+    expect(i.selectionStart).toBe(3)
+  })
+
+  it('粘贴只收合法位：带格式文本与纯字符序列都能正确落位', () => {
+    const el = mount({ mask: '###-####' })
+    typeText(el, '123')
+    paste(el, '45-67')
+    expect(input(el).value).toBe('123-4567')
+  })
+
+  it('粘贴纯数字（不含字面量）同样落位', () => {
+    const el = mount({ mask: '###-####' })
+    paste(el, '1234567')
+    expect(input(el).value).toBe('123-4567')
+  })
+
+  it('粘贴非法文本被整体过滤，显示不变', () => {
+    const el = mount({ mask: '###-####' })
+    typeText(el, '123')
+    paste(el, 'abc')
+    expect(input(el).value).toBe('123')
+  })
+
+  it('光标保持：键入跳字面量后光标落在显示值末尾', () => {
+    const el = mount({ mask: '###-####' })
+    typeText(el, '1234')
+    const i = input(el)
+    expect(i.value).toBe('123-4')
+    expect(i.selectionStart).toBe(5)
+    expect(i.selectionEnd).toBe(5)
+  })
+
+  it('mask-raw：oas-input 事件携带去格式化原始序列', () => {
+    const el = mount({ mask: '###-####', 'mask-raw': '' })
+    let detail: unknown
+    el.addEventListener('oas-input', (e: Event) => (detail = (e as CustomEvent).detail))
+    typeText(el, '1234')
+    expect(detail).toEqual({ value: '1234' })
+    expect(input(el).value).toBe('123-4')
+  })
+
+  it('缺省（无 mask-raw）：事件携带显示值', () => {
+    const el = mount({ mask: '###-####' })
+    let detail: unknown
+    el.addEventListener('oas-input', (e: Event) => (detail = (e as CustomEvent).detail))
+    typeText(el, '1234')
+    expect(detail).toEqual({ value: '123-4' })
+  })
+
+  it('mask-raw：表单提交值（setFormValue）为去格式化原始序列；缺省提交显示值', () => {
+    // happy-dom 无 ElementInternals FormData 集成，按 form-associated 测试惯例 fake internals 断言提交值
+    const raw = mount({ mask: '###-####', 'mask-raw': '', name: 'raw' })
+    const rawFake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(raw as unknown as { internals_: unknown }).internals_ = rawFake
+    const display = mount({ mask: '###-####', name: 'display' })
+    const displayFake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(display as unknown as { internals_: unknown }).internals_ = displayFake
+    for (const el of [raw, display]) {
+      const i = el.shadowRoot!.querySelector('input')!
+      i.value = '1234'
+      i.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    expect(rawFake.setFormValue).toHaveBeenLastCalledWith('1234')
+    expect(displayFake.setFormValue).toHaveBeenLastCalledWith('123-4')
+  })
+
+  it('mask 与 formatter 互斥：同设告警且 mask 优先（formatter 不生效）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ mask: '###-####' })
+      el.formatter = (v) => `【${v}】`
+      typeText(el, '12')
+      expect(input(el).value).toBe('12')
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('mask'))
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('formatter'))
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('受控 value 回写按 mask 渲染（带字面量与纯序列都解释为原始序列）', () => {
+    const el = mount({ mask: '###-####' })
+    el.setAttribute('value', '123-45')
+    expect(input(el).value).toBe('123-45')
+    el.setAttribute('value', '98765')
+    expect(input(el).value).toBe('987-65')
+  })
+
+  it('mask 在场时 maxlength 不透传（显示值长度 ≠ 原始序列长度，避免原生截断破坏掩码）', () => {
+    const el = mount({ mask: '###-####', maxlength: '5' })
+    expect(input(el).hasAttribute('maxlength')).toBe(false)
+  })
+
+  it('mask 移除后 maxlength 恢复透传、显示回归原始序列', () => {
+    const el = mount({ mask: '###-####', maxlength: '7' })
+    typeText(el, '1234')
+    expect(input(el).value).toBe('123-4')
+    el.removeAttribute('mask')
+    expect(input(el).value).toBe('1234')
+    expect(input(el).getAttribute('maxlength')).toBe('7')
+  })
+
+  it('formResetCallback 恢复 value 属性并按 mask 渲染', () => {
+    const el = mount({ mask: '###-####', value: '1234' })
+    expect(input(el).value).toBe('123-4')
+    const i = input(el)
+    i.value = '999'
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+    el.formResetCallback()
+    expect(input(el).value).toBe('123-4')
+  })
+
+  it('oas-change 提交基线一致（mask-raw 下 blur 提交原始序列）', () => {
+    const el = mount({ mask: '###-####', 'mask-raw': '' })
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    typeText(el, '1234')
+    input(el).dispatchEvent(new Event('blur'))
+    expect(detail).toEqual({ value: '1234' })
+  })
+})

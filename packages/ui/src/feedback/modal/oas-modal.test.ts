@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASModal } from './index.js'
 import { iconRegistry } from '@oas-ui/icons'
+import { t } from '@oas-ui/i18n'
 
 function mount(attrs: Record<string, string> = {}): OASModal {
   const el = new OASModal()
@@ -17,6 +18,15 @@ describe('OASModal', () => {
 
   afterEach(() => {
     document.body.innerHTML = ''
+  })
+
+  it('no-mask 非模态：aria-modal=false（不谎报模态），移除 no-mask 恢复 true', () => {
+    const el = mount({ visible: '', 'no-mask': '' })
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('[role="dialog"]')!
+    expect(dialog.getAttribute('aria-modal'), 'no-mask 非模态').toBe('false')
+    el.removeAttribute('no-mask')
+    expect(dialog.getAttribute('aria-modal'), '恢复模态').toBe('true')
+    el.remove()
   })
 
   it('visible 为 true 时渲染对话框，含 role=dialog + aria-modal + slot', async () => {
@@ -1455,5 +1465,103 @@ describe('OASModal z-index（层级覆盖，PRD P1-15）', () => {
     el.removeAttribute('z-index')
     expect(maskOf(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050))')
     expect(dialogOf(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050) + 1)')
+  })
+})
+
+describe('OASModal maximizable（标题栏最大化/还原，PRD D28）', () => {
+  function maxBtnOf(el: OASModal): HTMLButtonElement {
+    return el.shadowRoot!.querySelector<HTMLButtonElement>('[part="maximize"]')!
+  }
+
+  /** i18n key 收录前的组件侧英文兜底（与实现同一判定），收录后跟随 locale */
+  function expectedLabel(maximized: boolean): string {
+    const key = maximized ? 'modal.restore' : 'modal.maximize'
+    // 新 key 尚未进 i18n 的 LocaleKey 词表：放宽签名调用（组件侧 this.t(key: string) 同样按串查）
+    const label = (t as (k: string) => string)(key)
+    return label === key ? (maximized ? 'Restore' : 'Maximize') : label
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('maximizable 进 observedAttributes；默认隐藏最大化按钮，开启后显示且位于 ✕ 之前', () => {
+    const el = mount({ visible: '' })
+    expect(OASModal.observedAttributes).toContain('maximizable')
+    expect(maxBtnOf(el).hidden).toBe(true)
+    el.setAttribute('maximizable', '')
+    const btn = maxBtnOf(el)
+    expect(btn.hidden).toBe(false)
+    const close = el.shadowRoot!.querySelector('[part="close"]')!
+    expect(btn.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING, '最大化按钮应在 ✕ 之前').toBeTruthy()
+  })
+
+  it('点击最大化：data-fullscreen 标记 + width 内联清除 + oas-maximize(maximized=true)；再点还原', () => {
+    const el = mount({ visible: '', maximizable: '', width: '640px' })
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    const btn = maxBtnOf(el)
+    let detail: unknown
+    el.addEventListener('oas-maximize', (e: Event) => (detail = (e as CustomEvent).detail))
+    btn.click()
+    expect(dialog.getAttribute('data-fullscreen'), '最大化等同 fullscreen 语义').not.toBeNull()
+    expect(dialog.style.width, '最大化下内联宽度清除').toBe('')
+    expect(detail).toEqual({ maximized: true })
+    expect(btn.getAttribute('aria-label')).toBe(expectedLabel(true))
+    btn.click()
+    expect(dialog.getAttribute('data-fullscreen')).toBeNull()
+    expect(dialog.style.width, '还原后宽度恢复').toBe('640px')
+    expect(detail).toEqual({ maximized: false })
+    expect(btn.getAttribute('aria-label')).toBe(expectedLabel(false))
+  })
+
+  it('最大化等同 fullscreen 语义：draggable 失效，还原后恢复', () => {
+    const el = mount({ visible: '', maximizable: '', draggable: '' })
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    maxBtnOf(el).click()
+    el.shadowRoot!.querySelector('.header')!.dispatchEvent(pointer('pointerdown', 0, 0))
+    document.dispatchEvent(pointer('pointermove', 100, 50))
+    expect(el.hasAttribute('dragging'), '最大化下拖拽失效').toBe(false)
+    expect(dialog.style.left).toBe('')
+    document.dispatchEvent(pointer('pointerup', 100, 50))
+    maxBtnOf(el).click()
+    el.shadowRoot!.querySelector('.header')!.dispatchEvent(pointer('pointerdown', 0, 0))
+    document.dispatchEvent(pointer('pointermove', 100, 50))
+    expect(el.hasAttribute('dragging'), '还原后拖拽恢复').toBe(true)
+    document.dispatchEvent(pointer('pointerup', 100, 50))
+  })
+
+  it('fullscreen 属性与 maximizable 同设：最大化按钮隐藏（宿主已强制全屏）；移除 fullscreen 后恢复', () => {
+    const el = mount({ visible: '', maximizable: '', fullscreen: '' })
+    expect(maxBtnOf(el).hidden).toBe(true)
+    el.removeAttribute('fullscreen')
+    expect(maxBtnOf(el).hidden).toBe(false)
+  })
+
+  it('从最大化按钮上按下不启动拖拽', () => {
+    const el = mount({ visible: '', maximizable: '', draggable: '' })
+    maxBtnOf(el).dispatchEvent(pointer('pointerdown', 0, 0))
+    document.dispatchEvent(pointer('pointermove', 100, 50))
+    expect(el.hasAttribute('dragging')).toBe(false)
+    document.dispatchEvent(pointer('pointerup', 100, 50))
+  })
+
+  it('maximizable 移除时若处于最大化：静默还原（不残留无按钮的全屏态）', () => {
+    const el = mount({ visible: '', maximizable: '' })
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    maxBtnOf(el).click()
+    expect(dialog.getAttribute('data-fullscreen')).not.toBeNull()
+    el.removeAttribute('maximizable')
+    expect(maxBtnOf(el).hidden).toBe(true)
+    expect(dialog.getAttribute('data-fullscreen'), '移除 maximizable 应退出最大化').toBeNull()
+  })
+
+  it('max-btn focus-visible 走 --oas-focus-ring（全库聚焦环一致）', () => {
+    const el = mount({ visible: '', maximizable: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\.max-btn:focus-visible\s*\{[^}]*box-shadow:\s*var\(--oas-focus-ring\)/)
   })
 })

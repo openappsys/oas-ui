@@ -60,6 +60,7 @@ OAS-UI provides 117 framework-agnostic Web Components, organized into 7 groups b
 - [Editable](/en/components/editable) —— Click/Enter/Space enters edit mode; Enter submits, Esc cancels, and empty-value submission is non-destructive by default.
 - [Form](/en/components/form) —— An enhanced native `<form>` supporting validation and submission of inner fields according to `rules`.
 - [FormItem](/en/components/form#grid-form-layout) —— `oas-form-item`: label + control container + error slot; spans grid columns via `span` inside a `layout="grid"` form.
+- [FormList](/en/components/form#dynamic-field-group-form-list) —— `oas-form-list`: an add/remove group of field rows inside a form; row templates are cloned with field `name` indexed automatically (nested values), validation/submit follow the host form.
 
 ## Feedback & Overlays
 
@@ -134,6 +135,7 @@ OAS-UI provides 117 framework-agnostic Web Components, organized into 7 groups b
 - [Marquee](/en/components/marquee) —— A purely presentational component that scrolls long content horizontally in a loop; content cycles seamlessly via a slot. Supports pause on hover and static fallback under `prefers-reduced-motion`. No events.
 - [NumberAnimation](/en/components/number-animation) —— An animation component that eases a number from its current value to the target value, stops at the target and emits `oas-finish`; under `prefers-reduced-motion` it jumps straight to the target, and disconnecting cancels the rAF without leaks.
 - [GradientText](/en/components/gradient-text) —— A purely presentational component that fills text with a gradient color, implemented with `background-clip: text`; it defaults to a two-color theme-token gradient and supports arbitrary color-stop arrays and directions. No events.
+- [Highlight](/en/components/highlight) —— Text match highlighting: matched segments from `text` + `highlight` (space-separated words or a JSON array) render as `<mark>` (token colors, dark-mode aware), with case / whole-word / accent toggles, dispatching `oas-count` after each recompute.
 
 ## Framework Containers
 

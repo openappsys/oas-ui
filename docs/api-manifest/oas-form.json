@@ -83,15 +83,15 @@
   "events": [
     {
       "name": "oas-submit",
-      "detail": "{ values }"
+      "detail": "{ values: this.nestValues(values) }"
     },
     {
       "name": "oas-validate-fail",
-      "detail": "{ errors: this.errors, values }"
+      "detail": "{ errors: this.errors, values: this.nestValues(values) }"
     },
     {
       "name": "oas-values-change",
-      "detail": "{ name, value, values: this.snapshotValues() }"
+      "detail": "{ name, value, values: this.nestValues(flat) }"
     }
   ],
   "slots": [

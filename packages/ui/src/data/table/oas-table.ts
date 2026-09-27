@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { downloadPath } from '@oas-ui/icons'
 import { resolveDirection } from '../../shared/direction.js'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
@@ -6,6 +7,16 @@ import { computePosition, getViewport } from '../../overlay/floating/index.js'
 import { registeredTableCapabilities, onTableCapabilityRegistered } from './oas-table-capability.js'
 // 行内交互宿主排除清单（行点击/双击编辑共用的单一事实来源，含维护纪律注释）
 import { ROW_INTERACTIVE_EXCLUSION } from './oas-table-interactive.js'
+// D8 导出：CSV / Excel 纯序列化 + 下载通道（与渲染解耦，见 oas-table-export.ts）
+import {
+  downloadText,
+  parseExportFormats,
+  sanitizeFileName,
+  toCSV,
+  toExcelXml,
+  EXPORT_EXT,
+  type ExportFormat,
+} from './oas-table-export.js'
 
 export interface TableColumn {
   key: string
@@ -137,6 +148,19 @@ function warnInvalidSize(raw: string): void {
 /** 编辑能力未注入的告警文案（仅纯核入口 data/table/core 消费者会触发；主路径已默认内含能力） */
 const EDIT_CAPABILITY_HINT =
   '[oas-table] 行内编辑能力未注入：检测到 editable/editor/actions 配置但能力缺失，相关配置已静默失效。主路径 @oas-ui/ui/data/table 已默认内含该能力；仅纯核路径 data/table/core 需要显式 import "@oas-ui/ui/data/table/edit"（import 即注册）或改从主路径引入。'
+
+/** 行拖拽 + 虚拟滚动不兼容的告警文案（虚拟模式仅渲染窗口行，拖拽重排的 from/to 语义不可靠） */
+const ROW_DRAG_VIRTUAL_HINT =
+  '[oas-table] row-draggable 与虚拟滚动（height）不兼容：虚拟模式仅渲染可见窗口行，拖拽重排索引无稳定语义，已忽略 row-draggable（拖拽手柄列不渲染）。请去掉 height（或改用分页/max-height）后重试。'
+
+/** 拖拽/虚拟告警去重（同控件「同值告警整页一次」惯例） */
+const warnedRowDragVirtual = new Set<string>()
+
+function warnRowDragVirtual(): void {
+  if (warnedRowDragVirtual.has(ROW_DRAG_VIRTUAL_HINT)) return
+  warnedRowDragVirtual.add(ROW_DRAG_VIRTUAL_HINT)
+  console.warn(ROW_DRAG_VIRTUAL_HINT)
+}
 
 /** 编辑能力告警去重（同值去重，同控件惯例） */
 const warnedEditCapability = new Set<string>()
@@ -596,6 +620,95 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
 .pagination:empty {
   display: none;
 }
+/* 工具栏（D8 导出）：默认空容器（:empty 隐藏），exportable 时由核心注入导出按钮 */
+.table-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+.table-toolbar:empty {
+  display: none;
+}
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  height: var(--oas-control-height-sm);
+  padding: 0 var(--oas-space-3);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-sm);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-sm);
+  cursor: pointer;
+}
+.export-btn:hover {
+  color: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+}
+.export-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.export-btn svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+/* 行拖拽（D15）：手柄列 + 抓握图标 + 拖拽落点指示 */
+.row-drag-cell {
+  width: 40px;
+  text-align: center;
+}
+.row-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--oas-radius-xs, 4px);
+  color: var(--oas-color-text-secondary);
+  cursor: grab;
+  vertical-align: middle;
+}
+.row-drag-handle:hover,
+.row-drag-handle:focus-visible {
+  color: var(--oas-color-primary);
+  background: var(--oas-color-bg-hover);
+}
+.row-drag-handle:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.row-drag-handle:active {
+  cursor: grabbing;
+}
+.row-drag-handle svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+tr.row.drag-source td {
+  opacity: 0.45;
+}
+tr.row.drop-before td {
+  box-shadow: inset 0 2px 0 var(--oas-color-primary);
+}
+tr.row.drop-after td {
+  box-shadow: inset 0 -2px 0 var(--oas-color-primary);
+}
+/* 网格导航（D9）：容器与单元格焦点环（单元格 tabindex=-1，由方向键聚焦） */
+:host([grid-navigation]) .table-scroll:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+:host([grid-navigation]) tbody tr.row td:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--oas-color-primary);
+}
 .filter-btn {
   display: inline-flex;
   align-items: center;
@@ -741,8 +854,31 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
 
 const CHECK_CELL_WIDTH = 40
 const EXPAND_CELL_WIDTH = 40
+/** 行拖拽手柄列宽度（px；固定列 sticky 偏移的占位，与手写 CSS 宽度同步） */
+const DRAG_CELL_WIDTH = 40
 const FILTER_ICON =
   '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M4.5 6.5h7M6.5 10h3"/></svg>'
+
+/** 导出按钮图标（内置 download 通路，保持组件 chrome 图标单一来源） */
+const EXPORT_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${downloadPath}</svg>`
+
+/** 行拖拽手柄图标（原创内联 SVG：2×3 圆点抓握纹，组件专属语义美术） */
+const DRAG_HANDLE_ICON =
+  '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><g fill="currentColor"><circle cx="6" cy="4" r="1.2"/><circle cx="10" cy="4" r="1.2"/><circle cx="6" cy="8" r="1.2"/><circle cx="10" cy="8" r="1.2"/><circle cx="6" cy="12" r="1.2"/><circle cx="10" cy="12" r="1.2"/></g></svg>'
+
+/**
+ * 新文案 key 的临时兜底（本批不改 i18n 包）：`t()` 未注册该 key 时回落英文。
+ * i18n 注册对应 key（table.exportCsv / table.exportExcel / table.rowDragHandle）后自动走翻译，
+ * 兜底分支即失效——不引入第二套文案体系。
+ */
+function tableText(
+  host: { translateText(key: string, params?: Record<string, string | number>): string },
+  key: string,
+  fallback: string,
+): string {
+  const v = host.translateText(key)
+  return !v || v === key ? fallback : v
+}
 
 export class OASTableBase extends OASElement {
   static override get observedAttributes(): string[] {
@@ -778,6 +914,11 @@ export class OASTableBase extends OASElement {
       'hover',
       'indent-size',
       'max-height',
+      'exportable',
+      'export-format',
+      'export-file-name',
+      'grid-navigation',
+      'row-draggable',
     ]
   }
 
@@ -814,6 +955,15 @@ export class OASTableBase extends OASElement {
   private _spanMethod: TableSpanMethod | null = null
   /** span-method 本轮渲染的占用表：「数据行序:列序」→ 被更早的显式 span 覆盖（本格不渲染 td） */
   private _spanCovered = new Set<string>()
+  /** 导出数据行（当前可见数据集：过滤 + 排序 + 分页切片后的数据行对象，按展示顺序）。
+      虚拟滚动取完整展示集合（窗口只是视口，不是数据集边界） */
+  private _exportRows: Array<Record<string, unknown>> = []
+  /** 网格导航：最近聚焦的单元格坐标（Tab 进容器后方向键从该处继续；无则从首格进入） */
+  private gridPos: { row: number; col: number } | null = null
+  /** 行拖拽：拖拽源行 key（不依赖 dataTransfer——部分环境 DragEvent 不带 dataTransfer） */
+  private dragRowKey = ''
+  /** 行拖拽：最近一次 dragover 计算的落点（目标行 key + 插前/插后） */
+  private dragDrop: { key: string; pos: 'before' | 'after' } | null = null
 
   /**
    * 能力注入：构造时快照已注册能力 + connected 期订阅晚加入（注册可能晚于元素构造——
@@ -945,6 +1095,7 @@ export class OASTableBase extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
+      <div class="table-toolbar" part="toolbar"></div>
       <div class="table-scroll" part="scroll" tabindex="0">
         <table part="table">
           <thead part="head"></thead>
@@ -1031,7 +1182,7 @@ export class OASTableBase extends OASElement {
     th.rowSpan = rowSpan
     if (layout.hasFixed) {
       th.setAttribute('data-fixed', 'left')
-      th.style.left = '0px'
+      th.style.left = `${this.rowDragEnabled() ? DRAG_CELL_WIDTH : 0}px`
     }
     if (single) return th
     const selectAll = document.createElement('input')
@@ -1057,8 +1208,23 @@ export class OASTableBase extends OASElement {
       if (th) this.sortBy((th as HTMLElement).getAttribute('data-key') ?? '', (e as MouseEvent).shiftKey)
     })
     this.wrap?.addEventListener('scroll', this.handleScroll, { passive: true })
+    // D9 网格导航：keydown 委托到滚动容器（方向键漫游 / Home-End / PageUp-Down / 空格·回车激活）
+    this.wrap?.addEventListener('keydown', this.handleGridKeydown)
+    // D15 行拖拽：drag 事件委托到 tbody（重渲染只换 tr，tbody 容器稳定）
+    const tbody = this.shadow.querySelector('tbody')
+    tbody?.addEventListener('dragstart', this.handleRowDragStart)
+    tbody?.addEventListener('dragover', this.handleRowDragOver)
+    tbody?.addEventListener('dragleave', this.handleRowDragLeave)
+    tbody?.addEventListener('drop', this.handleRowDrop)
+    tbody?.addEventListener('dragend', this.handleRowDragEnd)
     this.onCleanup(() => {
       this.wrap?.removeEventListener('scroll', this.handleScroll)
+      this.wrap?.removeEventListener('keydown', this.handleGridKeydown)
+      tbody?.removeEventListener('dragstart', this.handleRowDragStart)
+      tbody?.removeEventListener('dragover', this.handleRowDragOver)
+      tbody?.removeEventListener('dragleave', this.handleRowDragLeave)
+      tbody?.removeEventListener('drop', this.handleRowDrop)
+      tbody?.removeEventListener('dragend', this.handleRowDragEnd)
       if (this.scrollRaf) cancelAnimationFrame(this.scrollRaf)
       this.scrollRaf = 0
       this.closeFilterPanel()
@@ -1093,6 +1259,10 @@ export class OASTableBase extends OASElement {
     const head = this.shadow.querySelector('thead')
     const body = this.shadow.querySelector('tbody')
     if (!head || !body) return
+    // D8 导出工具栏（与行数据无关，loading/empty 也要在场）
+    this.renderToolbar()
+    // D15 行拖拽与虚拟滚动不兼容：虚拟模式仅渲染窗口行，静默降级并 dev 告警一次
+    if (this.hasAttr('row-draggable') && this.isVirtual()) warnRowDragVirtual()
 
     const rowKey = this.getAttr('row-key', 'key')
     const selected = this.getAttr('selected', '').split(',').filter(Boolean)
@@ -1128,6 +1298,8 @@ export class OASTableBase extends OASElement {
     const sorts = this.resolveSorts()
     const flat = this.buildFlat(sorts, rowKey, roots)
     const display = this.visibleFlat(flat, expanded, rowKey)
+    // D8：导出数据集 = 当前展示的数据行（过滤 + 排序 + 分页切片后；虚拟模式取完整展示集合）
+    this._exportRows = display.filter((f) => f.kind === 'data').map((f) => f.row)
     const summaryConfigs = this.buildSummaryConfigs()
     // 合计范围：all（默认）= 分页切片前的完整筛选结果总计；page = 当前页小计（原行为）。
     // 非法值回落默认 all（与表意一致）。
@@ -1188,6 +1360,7 @@ export class OASTableBase extends OASElement {
       const depth = this.headerDepth()
       for (let r = 0; r < depth; r++) {
         const row = document.createElement('tr')
+        if (r === 0 && this.rowDragEnabled()) row.appendChild(this.buildDragTh(layout, depth))
         if (r === 0 && checkable) row.appendChild(this.buildCheckAllTh(layout, flat, rowKey, selected, depth, single))
         for (const cell of this.buildHeaderGrid()) {
           if (cell.level !== r) continue
@@ -1217,6 +1390,7 @@ export class OASTableBase extends OASElement {
     } else if (showHeader) {
       // 扁平表头（单行，向后兼容）
       const tr = document.createElement('tr')
+      if (this.rowDragEnabled()) tr.appendChild(this.buildDragTh(layout, 1))
       if (checkable) tr.appendChild(this.buildCheckAllTh(layout, flat, rowKey, selected, 1, single))
       for (const col of this.effectiveColumns()) {
         const th = document.createElement('th')
@@ -1246,6 +1420,7 @@ export class OASTableBase extends OASElement {
       loadingTd.append(spin, document.createTextNode(this.t('table.loading')))
       loadingTr.appendChild(loadingTd)
       body.appendChild(loadingTr)
+      this.applyGridSemantics()
       return
     }
 
@@ -1260,6 +1435,7 @@ export class OASTableBase extends OASElement {
       else emptyTd.textContent = this.getAttr('empty-text', this.t('table.empty'))
       emptyTr.appendChild(emptyTd)
       body.appendChild(emptyTr)
+      this.applyGridSemantics()
       return
     }
 
@@ -1287,6 +1463,9 @@ export class OASTableBase extends OASElement {
     if (summaryConfigs.length > 0 && summaryFlat.length > 0) {
       body.appendChild(this.buildSummaryRow(summaryConfigs, summaryFlat, layout))
     }
+    // D9 网格导航语义与 tabindex（须在行渲染后应用：editable 单元格的 tabindex=0 在此收归 -1，
+    // 保证「表格单停靠点 + 方向键漫游」；重渲染后角色/tabindex 随新 DOM 重建）
+    this.applyGridSemantics()
     // 吸顶行：为前 N 行写入 data-sticky 与 top 偏移（依赖已铺好的表头/行测量高度）
     this.applyStickyRows()
     // innerHTML 清空曾触发浏览器把 scrollTop 钳回 0；内容（含占位）已铺满后恢复原滚动位置
@@ -1352,13 +1531,24 @@ export class OASTableBase extends OASElement {
         }
       }
     }
+    if (this.rowDragEnabled()) {
+      // 行拖拽手柄列（最左；固定列时 left 恒 0，勾选列顺延其宽度）
+      const td = document.createElement('td')
+      td.className = 'row-drag-cell'
+      if (layout.hasFixed) {
+        td.setAttribute('data-fixed', 'left')
+        td.style.left = '0px'
+      }
+      td.appendChild(this.buildDragHandle())
+      tr.appendChild(td)
+    }
     if (this.hasAttr('checkable')) {
       const single = this.selectionSingle()
       const td = document.createElement('td')
       td.className = 'check-cell'
       if (layout.hasFixed) {
         td.setAttribute('data-fixed', 'left')
-        td.style.left = '0px'
+        td.style.left = `${this.rowDragEnabled() ? DRAG_CELL_WIDTH : 0}px`
       }
       const box = document.createElement('input')
       box.type = single ? 'radio' : 'checkbox'
@@ -1733,7 +1923,10 @@ export class OASTableBase extends OASElement {
     const cols = this.effectiveColumns()
     const hasFixed = cols.some((c) => c.fixed)
     let leftAccum = 0
-    if (hasFixed && this.hasAttr('checkable')) leftAccum = CHECK_CELL_WIDTH
+    // 左侧前置列：行拖拽手柄列（最左）→ 勾选列（顺延）
+    if (hasFixed) {
+      leftAccum = (this.rowDragEnabled() ? DRAG_CELL_WIDTH : 0) + (this.hasAttr('checkable') ? CHECK_CELL_WIDTH : 0)
+    }
     for (const col of cols) {
       if (col.fixed === 'left') {
         offsets.set(col.key, { fixed: 'left', left: leftAccum })
@@ -2091,9 +2284,19 @@ export class OASTableBase extends OASElement {
     this.runUpdateAndNotify()
   }
 
-  /** 总列数（勾选列 + 数据列 + 可展开行尾列） */
+  /** 总列数（行拖拽手柄列 + 勾选列 + 数据列 + 可展开行尾列） */
   private columnCount(): number {
-    return this.effectiveColumns().length + (this.hasAttr('checkable') ? 1 : 0) + (this._expandable ? 1 : 0)
+    return (
+      this.effectiveColumns().length +
+      (this.rowDragEnabled() ? 1 : 0) +
+      (this.hasAttr('checkable') ? 1 : 0) +
+      (this._expandable ? 1 : 0)
+    )
+  }
+
+  /** 前置非数据列数（行拖拽手柄列 + 勾选列）：编辑能力据此把数据列索引换算为 td 索引 */
+  leadingColumnCount(): number {
+    return (this.rowDragEnabled() ? 1 : 0) + (this.hasAttr('checkable') ? 1 : 0)
   }
 
   /** 汇总合计配置：表格级 summary 属性（JSON 数组）+ 列级 summary 字段 */
@@ -2163,6 +2366,15 @@ export class OASTableBase extends OASElement {
     const values = this.computeSummary(configs, flat)
     const label = configs.find((c) => c.label)?.label ?? this.t('table.summary')
     let labelPlaced = false
+    if (this.rowDragEnabled()) {
+      const td = document.createElement('td')
+      td.className = 'row-drag-cell'
+      if (layout.hasFixed) {
+        td.setAttribute('data-fixed', 'left')
+        td.style.left = '0px'
+      }
+      tr.appendChild(td)
+    }
     if (this.hasAttr('checkable')) {
       const td = document.createElement('td')
       td.className = 'check-cell'
@@ -2189,6 +2401,428 @@ export class OASTableBase extends OASElement {
     }
     return tr
   }
+
+  // ==================== D8 导出（exportable：CSV / Excel 客户端生成） ====================
+
+  /** 当前导出格式集合（export-format 逗号串；缺省/全非法回落 ['csv']） */
+  private exportFormats(): ExportFormat[] {
+    return parseExportFormats(this.getAttr('export-format', 'csv'))
+  }
+
+  /** 导出文件名（去扩展名；净化路径分隔符与文件系统保留字符） */
+  exportFileName(): string {
+    return sanitizeFileName(this.getAttr('export-file-name', 'export'))
+  }
+
+  /**
+   * 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。
+   * - 数据范围 = 当前展示的数据行（过滤 + 排序 + 分页切片后；虚拟滚动取完整展示集合）；
+   * - 字段映射按列 key 取单元格展示文本（select 编辑器输出 label、serialNumber 输出行号；
+   *   render 返回字符串时优先，Node/模板富内容回退原文）；
+   * - `actions` 列（纯操作按钮）不导出。
+   */
+  exportMatrix(): { headers: string[]; rows: string[][] } {
+    const cols = this.effectiveColumns().filter((c) => !c.actions)
+    const headers = cols.map((c) => {
+      if (c.headerTemplate) {
+        const frag = c.headerTemplate.content.cloneNode(true) as DocumentFragment
+        const text = frag.textContent?.trim() ?? ''
+        return text !== '' ? text : c.title
+      }
+      return c.title ?? ''
+    })
+    const rows = this._exportRows.map((row, i) =>
+      cols.map((col) => (col.serialNumber ? String(i + 1) : this.cellText(col, row))),
+    )
+    return { headers, rows }
+  }
+
+  /**
+   * 导出并触发下载：生成内容 → Blob 下载 → 派发 `oas-export`
+   * （detail `{ format, fileName, rowCount }`）→ 返回生成文本（便于宿主自行落盘/断言）。
+   * 即使未开启 `exportable`（无工具栏）也可编程式调用。
+   */
+  exportData(format: ExportFormat = this.exportFormats()[0]!, options: { fileName?: string } = {}): string {
+    const { headers, rows } = this.exportMatrix()
+    const fileName = `${sanitizeFileName(options.fileName ?? this.exportFileName())}.${EXPORT_EXT[format]}`
+    const content = format === 'excel' ? toExcelXml(headers, rows) : toCSV(headers, rows, { bom: true })
+    downloadText(content, fileName, format)
+    this.emit('export', { format, fileName, rowCount: rows.length })
+    return content
+  }
+
+  /** 渲染导出工具栏（exportable 时按 export-format 出按钮；未开启清空工具栏）。
+   *  按「格式 + 可访问名称」签名幂等重建：集合/文案（locale 切换）未变时复用现有按钮，
+   *  不打断键盘焦点。 */
+  private renderToolbar(): void {
+    const holder = this.shadow.querySelector('.table-toolbar')
+    if (!holder) return
+    const entries = (this.hasAttr('exportable') ? this.exportFormats() : []).map((format) => ({
+      format,
+      label: tableText(
+        this,
+        format === 'excel' ? 'table.exportExcel' : 'table.exportCsv',
+        format === 'excel' ? 'Export Excel' : 'Export CSV',
+      ),
+    }))
+    const signature = entries.map((e) => `${e.format}:${e.label}`).join(',')
+    if (holder.getAttribute('data-formats') === signature) return
+    holder.replaceChildren()
+    holder.setAttribute('data-formats', signature)
+    for (const { format, label } of entries) {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = `export-btn export-${format}`
+      btn.setAttribute('part', `export-${format}`)
+      btn.setAttribute('data-format', format)
+      btn.setAttribute('aria-label', label)
+      btn.innerHTML = `${EXPORT_ICON}<span>${format === 'excel' ? 'Excel' : 'CSV'}</span>`
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.exportData(format)
+      })
+      holder.appendChild(btn)
+    }
+  }
+
+  // ==================== D15 行拖拽排序（row-draggable） ====================
+
+  /** 行拖拽是否生效（虚拟滚动下禁用：窗口行序无稳定 from/to 语义） */
+  private rowDragEnabled(): boolean {
+    return this.hasAttr('row-draggable') && !this.isVirtual()
+  }
+
+  /** 拖拽手柄：draggable 的抓手元素（仅手柄发起拖拽，避免与文本选择/行点击抢手势） */
+  private buildDragHandle(): HTMLElement {
+    const handle = document.createElement('span')
+    handle.className = 'row-drag-handle'
+    handle.setAttribute('part', 'drag-handle')
+    handle.setAttribute('role', 'button')
+    handle.setAttribute('tabindex', '-1')
+    handle.setAttribute('draggable', 'true')
+    handle.setAttribute('aria-label', tableText(this, 'table.rowDragHandle', 'Drag to reorder'))
+    handle.innerHTML = DRAG_HANDLE_ICON
+    return handle
+  }
+
+  /** 拖拽手柄列的表头单元格（占位，含固定列 sticky 偏移） */
+  private buildDragTh(layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean }, rowSpan: number): HTMLElement {
+    const th = document.createElement('th')
+    th.className = 'row-drag-cell'
+    th.setAttribute('part', 'drag-header')
+    th.style.width = `${DRAG_CELL_WIDTH}px`
+    th.rowSpan = rowSpan
+    if (layout.hasFixed) {
+      th.setAttribute('data-fixed', 'left')
+      th.style.left = '0px'
+    }
+    return th
+  }
+
+  /** 当前渲染的数据行（tr.row），按展示顺序 */
+  private dragRows(): HTMLTableRowElement[] {
+    const body = this.shadow.querySelector('tbody')
+    return body ? ([...body.querySelectorAll('tr.row')] as HTMLTableRowElement[]) : []
+  }
+
+  /** 找到行对象（按 row-key；与 buildRow 的 key 计算一致，含树形子行） */
+  private findDataRowByKey(key: string): Record<string, unknown> | null {
+    const rowKey = this.getAttr('row-key', 'key')
+    const walk = (nodes: Array<Record<string, unknown>>): Record<string, unknown> | null => {
+      for (const row of nodes) {
+        if (String(row[rowKey] ?? JSON.stringify(row)) === key) return row
+        const children = row.children
+        if (Array.isArray(children)) {
+          const hit = walk(children as Array<Record<string, unknown>>)
+          if (hit) return hit
+        }
+      }
+      return null
+    }
+    return walk(this._data)
+  }
+
+  private handleRowDragStart = (e: DragEvent): void => {
+    if (!this.rowDragEnabled()) return
+    const target = e.target as HTMLElement | null
+    const handle = target?.closest?.('.row-drag-handle') as HTMLElement | null
+    // 仅手柄发起拖拽：其它区域（文本选择/行点击）不进入拖拽
+    if (!handle) return
+    const tr = handle.closest('tr')
+    this.dragRowKey = tr?.getAttribute('data-key') ?? ''
+    this.dragDrop = null
+    tr?.classList.add('drag-source')
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', this.dragRowKey)
+    }
+  }
+
+  private handleRowDragOver = (e: DragEvent): void => {
+    if (!this.dragRowKey) return
+    e.preventDefault()
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+    const target = e.target as HTMLElement | null
+    const tr = target?.closest?.('tr.row') as HTMLTableRowElement | null
+    if (!tr || tr.getAttribute('data-key') === this.dragRowKey) {
+      this.clearDropMarks()
+      this.dragDrop = null
+      return
+    }
+    const rect = tr.getBoundingClientRect()
+    const pos: 'before' | 'after' = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+    this.setDropMark(tr, pos)
+  }
+
+  private handleRowDragLeave = (e: DragEvent): void => {
+    if (!this.dragRowKey) return
+    const tr = (e.target as HTMLElement | null)?.closest?.('tr.row')
+    if (tr) tr.classList.remove('drop-before', 'drop-after')
+  }
+
+  private handleRowDrop = (e: DragEvent): void => {
+    if (!this.dragRowKey) return
+    e.preventDefault()
+    const fromKey = this.dragRowKey
+    const drop = this.dragDrop
+    this.clearDropMarks()
+    this.dragRowKey = ''
+    this.dragDrop = null
+    if (!drop) return
+    const keys = this.dragRows().map((tr) => tr.getAttribute('data-key') ?? '')
+    const from = keys.indexOf(fromKey)
+    const target = keys.indexOf(drop.key)
+    if (from < 0 || target < 0 || from === target) return
+    // to = 拖拽行在「移除后数组」中的插入位：宿主 `const [m]=arr.splice(from,1); arr.splice(to,0,m)` 即可复现
+    const rest = keys.filter((_, i) => i !== from)
+    const restTarget = rest.indexOf(drop.key)
+    const to = drop.pos === 'before' ? restTarget : restTarget + 1
+    const row = this.findDataRowByKey(fromKey) ?? {}
+    this.emit('row-reorder', { from, to, row })
+  }
+
+  private handleRowDragEnd = (): void => {
+    this.clearDropMarks()
+    this.dragRowKey = ''
+    this.dragDrop = null
+  }
+
+  private setDropMark(tr: HTMLTableRowElement, pos: 'before' | 'after'): void {
+    this.clearDropMarks()
+    this.dragDrop = { key: tr.getAttribute('data-key') ?? '', pos }
+    tr.classList.add(pos === 'before' ? 'drop-before' : 'drop-after')
+  }
+
+  private clearDropMarks(): void {
+    const body = this.shadow.querySelector('tbody')
+    if (!body) return
+    for (const tr of body.querySelectorAll('tr')) tr.classList.remove('drop-before', 'drop-after', 'drag-source')
+  }
+
+  /** 键盘重排（网格导航内的 Alt+↑/↓，无鼠标路径的行排序）：派发同契约 oas-row-reorder */
+  private handleGridReorder(up: boolean): void {
+    const rows = this.dragRows()
+    const active = this.shadow.activeElement as HTMLElement | null
+    const tr = active?.closest?.('tr.row') as HTMLTableRowElement | null
+    const index = tr ? rows.indexOf(tr) : -1
+    if (tr === null || index < 0) return
+    const key = tr.getAttribute('data-key') ?? ''
+    const to = up ? index - 1 : index + 1
+    if (to < 0 || to >= rows.length) return
+    const row = this.findDataRowByKey(key) ?? {}
+    this.emit('row-reorder', { from: index, to, row })
+  }
+
+  // ==================== D9 网格导航（grid-navigation） ====================
+
+  /**
+   * 网格语义与 Tab 序管理：
+   * - table → role=grid、th → columnheader、行 → row、td → gridcell；
+   * - 单停靠点：滚动容器保持 tabindex=0，单元格与行内交互控件收归 tabindex=-1
+   *   （方向键漫游 + Enter/Space 激活；editable 单元格自身的 tabindex=0 在此收归）；
+   * - 关闭时清空角色/tabindex（重渲染重建 DOM，天然无残留）。
+   */
+  private applyGridSemantics(): void {
+    const table = this.shadow.querySelector('table') as HTMLTableElement | null
+    if (!table) return
+    if (!this.hasAttr('grid-navigation')) {
+      table.removeAttribute('role')
+      if (this.gridPos !== null) this.gridPos = null
+      return
+    }
+    table.setAttribute('role', 'grid')
+    for (const th of this.shadow.querySelectorAll('thead th')) th.setAttribute('role', 'columnheader')
+    for (const tr of this.shadow.querySelectorAll('tbody tr.row')) tr.setAttribute('role', 'row')
+    for (const td of this.shadow.querySelectorAll<HTMLTableCellElement>('tbody tr.row td')) {
+      td.setAttribute('role', 'gridcell')
+      td.tabIndex = -1
+      // 行内交互控件收归 -1（沿用网格单停靠点惯例）：方向键移动单元格焦点，Enter/Space 激活控件
+      for (const el of td.querySelectorAll<HTMLElement>('button, a, input, select, textarea, [tabindex]')) {
+        el.tabIndex = -1
+      }
+    }
+  }
+
+  /** 可导航单元格矩阵：当前渲染的数据行 × 该行 td 列表 */
+  private gridMatrix(): HTMLTableCellElement[][] {
+    return this.dragRows().map((tr) => [...tr.querySelectorAll<HTMLTableCellElement>('td')])
+  }
+
+  private gridCellAt(row: number, col: number): HTMLTableCellElement | null {
+    const matrix = this.gridMatrix()
+    if (row < 0 || row >= matrix.length) return null
+    const cells = matrix[row]!
+    if (cells.length === 0) return null
+    return cells[Math.max(0, Math.min(col, cells.length - 1))] ?? null
+  }
+
+  /** 网格键盘导航：方向键漫游 / Home-End / PageUp-Down / Enter·Space 激活 / Alt+↑↓ 行重排 */
+  private handleGridKeydown = (e: KeyboardEvent): void => {
+    if (!this.hasAttr('grid-navigation')) return
+    const target = e.target as HTMLElement | null
+    const key = e.key
+    const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown']
+    const activate = key === 'Enter' || key === ' ' || key === 'Spacebar'
+    if (!navKeys.includes(key) && !activate) return
+    // 编辑态/嵌入控件让位：方向键交给输入框、按钮、链接等自管
+    if (target && target.closest('input, select, textarea, button, a')) return
+    // 嵌入的自定义交互组件（oas-input 等）焦点会以宿主元素出现在 shadow.activeElement：
+    // 聚焦元素既非网格容器也非单元格时一律让位（td 的 role=gridcell 会命中 [role] 排除清单，
+    // 故此处用「实际聚焦元素」判定而非 selector 排除清单）
+    const focused = this.shadow.activeElement as HTMLElement | null
+    if (focused && focused !== this.wrap && focused.tagName !== 'TD') return
+    if (e.altKey && !e.ctrlKey && !e.metaKey && (key === 'ArrowUp' || key === 'ArrowDown')) {
+      if (this.rowDragEnabled()) {
+        e.preventDefault()
+        this.handleGridReorder(key === 'ArrowUp')
+      }
+      return
+    }
+    if (e.altKey || e.metaKey) return
+    const matrix = this.gridMatrix()
+    if (matrix.length === 0) return
+    // 当前单元格：焦点在行内 td 上用之；焦点在容器（Tab 进入）时从上次/首格进入
+    let cur: { row: number; col: number } | null = null
+    const active = this.shadow.activeElement as HTMLElement | null
+    const curTd = active?.closest?.('td') as HTMLTableCellElement | null
+    if (curTd) {
+      const tr = curTd.closest('tr')!
+      const rows = this.dragRows()
+      const row = rows.indexOf(tr as HTMLTableRowElement)
+      const col = [...tr.querySelectorAll('td')].indexOf(curTd)
+      if (row >= 0 && col >= 0) cur = { row, col }
+    }
+    const start = cur ?? {
+      row: this.gridPos ? Math.min(this.gridPos.row, matrix.length - 1) : 0,
+      col: this.gridPos?.col ?? 0,
+    }
+
+    if (activate) {
+      if (!cur) {
+        e.preventDefault()
+        this.focusGridCell(start.row, start.col)
+        return
+      }
+      const td = this.gridCellAt(cur.row, cur.col)
+      // 只激活非编辑器控件（编辑器的 Enter 由编辑能力接管，避免重复处理撑开编辑态）
+      const control = td?.querySelector<HTMLElement>(
+        'button, a[href], input:not(.cell-editor), select:not(.cell-editor)',
+      )
+      if (control) {
+        e.preventDefault()
+        control.click()
+        // 控件点击可能触发多次同步重渲染（setAttribute + 显式 runUpdateAndNotify）：点击后按坐标
+        // 重查活节点并归还单元格焦点，保证「激活后仍停在原格」（展开/勾选后键盘可继续漫游）
+        const fresh = this.gridCellAt(cur.row, cur.col)
+        if (fresh) {
+          fresh.focus()
+          this.gridPos = cur
+          this.scrollCellIntoView(fresh)
+        }
+      }
+      return
+    }
+
+    // 焦点在容器（Tab 进入）而非单元格：首击只把焦点落到入口单元格，不移动
+    if (!cur) {
+      e.preventDefault()
+      this.focusGridCell(start.row, start.col)
+      return
+    }
+
+    const next = this.resolveGridMove(key, cur, matrix, e.ctrlKey)
+    if (!next) return
+    e.preventDefault()
+    this.focusGridCell(next.row, next.col)
+  }
+
+  /** 计算方向键目标坐标（含行内/跨行换行、Home/End、PageUp/Down、Ctrl+Home/End） */
+  private resolveGridMove(
+    key: string,
+    cur: { row: number; col: number },
+    matrix: HTMLTableCellElement[][],
+    ctrl: boolean,
+  ): { row: number; col: number } | null {
+    const lastRow = matrix.length - 1
+    const rowLen = (r: number): number => matrix[r]?.length ?? 0
+    switch (key) {
+      case 'ArrowRight': {
+        if (cur.col < rowLen(cur.row) - 1) return { row: cur.row, col: cur.col + 1 }
+        if (cur.row < lastRow) return { row: cur.row + 1, col: 0 }
+        return null
+      }
+      case 'ArrowLeft': {
+        if (cur.col > 0) return { row: cur.row, col: cur.col - 1 }
+        if (cur.row > 0) return { row: cur.row - 1, col: Math.max(0, rowLen(cur.row - 1) - 1) }
+        return null
+      }
+      case 'ArrowDown':
+        return cur.row < lastRow ? { row: cur.row + 1, col: Math.min(cur.col, rowLen(cur.row + 1) - 1) } : null
+      case 'ArrowUp':
+        return cur.row > 0 ? { row: cur.row - 1, col: Math.min(cur.col, rowLen(cur.row - 1) - 1) } : null
+      case 'Home':
+        return ctrl ? { row: 0, col: 0 } : { row: cur.row, col: 0 }
+      case 'End':
+        return ctrl
+          ? { row: lastRow, col: Math.max(0, rowLen(lastRow) - 1) }
+          : { row: cur.row, col: Math.max(0, rowLen(cur.row) - 1) }
+      case 'PageDown':
+        return { row: Math.min(lastRow, cur.row + this.gridPageStep()), col: cur.col }
+      case 'PageUp':
+        return { row: Math.max(0, cur.row - this.gridPageStep()), col: cur.col }
+      default:
+        return null
+    }
+  }
+
+  /** PageUp/Down 步进：分页时为一页行数；否则为可视区行数（虚拟 height / 实时容器高） */
+  private gridPageStep(): number {
+    if (this.hasAttr('pagination')) return Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
+    const viewport = this.wrap?.clientHeight || (this.isVirtual() ? this.tableHeight() : 0)
+    if (viewport <= 0) return 1
+    return Math.max(1, Math.floor(viewport / this.rowHeight()))
+  }
+
+  /** 聚焦网格单元格：直接 focus + 滚入视口 + 记忆坐标（Tab 再次进入续用） */
+  private focusGridCell(row: number, col: number): void {
+    const td = this.gridCellAt(row, col)
+    if (!td) return
+    td.focus()
+    this.gridPos = { row, col }
+    this.scrollCellIntoView(td)
+  }
+
+  private scrollCellIntoView(td: HTMLTableCellElement): void {
+    if (typeof td.scrollIntoView === 'function') {
+      try {
+        td.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      } catch {
+        /* 老环境不支持参数对象：忽略（焦点仍已移动） */
+      }
+    }
+  }
+
+  // ==================== 工具栏等公共辅助 ====================
 
   private isVirtual(): boolean {
     return this.getAttr('height', '') !== ''
@@ -2267,6 +2901,7 @@ export class OASTableBase extends OASElement {
       this.editCap?.settleEdit()
       body.innerHTML = ''
       this.renderVirtualBody(body, display, rowKey, selected, expanded, this.computeLayout(), st)
+      this.applyGridSemantics()
       this.applyStickyRows()
       // 清空曾把 scrollTop 钳回 0，内容铺满后恢复（窗口按 st 算，视觉不跳）
       if (this.wrap!.scrollTop !== st) {

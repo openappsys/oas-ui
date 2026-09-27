@@ -84,6 +84,24 @@
   </p>
 </DemoBlock>
 
+## 顺序瀑布流（sequential）
+
+默认瀑布流按高度均衡分配到各列；`sequential` 改为**按原始顺序逐列轮转填充**——第 i 项落第 `i % 列数 + 1` 列，阅读顺序跨列推进（1→列1、2→列2、…、回到列1）。与子项 `column` 指定列互斥（sequential 生效时忽略 column）；断点列数变化时按当前生效列数重算。
+
+<DemoBlock title="sequential 按原始顺序逐列轮转">
+  <oas-masonry columns="3" sequential style="width: 100%">
+    <oas-card class="seq-1"><p><strong>卡片 1</strong> → 第 1 列顶部</p></oas-card>
+    <oas-card class="seq-2"><p><strong>卡片 2</strong> → 第 2 列顶部</p></oas-card>
+    <oas-card class="seq-3"><p><strong>卡片 3</strong> → 第 3 列顶部</p></oas-card>
+    <oas-card class="seq-4"><p><strong>卡片 4</strong> → 回到第 1 列</p></oas-card>
+    <oas-card class="seq-5"><p><strong>卡片 5</strong> → 第 2 列</p></oas-card>
+    <oas-card class="seq-6"><p><strong>卡片 6</strong> → 第 3 列</p></oas-card>
+  </oas-masonry>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    等高卡片下三列恰好各占 2 项（1/4、2/5、3/6）；子项高度悬殊时 CSS columns 仍按高度均衡填列，轮转只在等高项下严格成立。
+  </p>
+</DemoBlock>
+
 ## 无子项
 
 <DemoBlock title="空容器">
@@ -121,6 +139,7 @@
 | `fresh` | 持续监听子项尺寸变化（ResizeObserver），变化时触发一次重算机会；CSS columns 实现下浏览器本就自动重排，fresh 为语义对齐与未来切换 JS 实现的钩子 | `boolean` | — |
 | `gap` | 间距（px，默认 8）。单值=列距；两值「行 列」（如 `8 16`）行距作用于子项 margin-bottom、列距作用于 column-gap；纯数字自动补 px；非法值回退默认 | — | — |
 | `items` | 瀑布流项 JSON `[{text, height?, column?}]`，也可 property 赋数组；items 显式非空时优先于 slot 子元素（子元素忽略），缺省/空数组/非法 JSON 回落 slot 通道（非法 JSON dev 告警，同值去重）。text 纯文本安全渲染；height 子项最小高度（px，写入渲染项 min-height）；column 指定列（1-based，与子元素 column 属性同一套重排逻辑） | `MasonryItem[] \| string` | `[]` |
+| `sequential` | 顺序瀑布流：按原始顺序逐列轮转填充而非最短列优先；与子项 column 互斥（sequential 优先） | `boolean` | — |
 
 #### 插槽
 

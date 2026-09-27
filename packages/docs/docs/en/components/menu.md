@@ -394,6 +394,15 @@ onMounted(() => {
       if (out) out.textContent = `Selected: ${e.detail.value} (submenu stays open for more picks)`
     })
   }
+
+  // searchable: selection feedback for the filterable menu
+  const menuSearchable = document.getElementById('menu-searchable')
+  if (menuSearchable) {
+    menuSearchable.addEventListener('oas-select', (e) => {
+      const tag = document.getElementById('menu-searchable-result')
+      if (tag) tag.textContent = `Selected: ${e.detail.value}`
+    })
+  }
 })
 </script>
 
@@ -423,6 +432,39 @@ onMounted(() => {
   <p id="menu-persistent-out" style="margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary)">Hover a parent item to open its submenu, then click a leaf</p>
 </DemoBlock>
 
+## Searchable (searchable)
+
+`searchable` renders a filter input at the top of the menu and filters visible items live (works in both floating and inline modes): when a nested child matches, its ancestors are kept and the matching path is auto-expanded; when nothing matches, an i18n empty message is shown. `Escape` clears the search, `ArrowDown` moves focus into the menu.
+
+<DemoBlock title="Searchable (floating + inline)">
+  <oas-space direction="vertical" size="large">
+    <div>
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">Floating: type "Win" to filter down to "Window layout"</p>
+      <oas-menu id="menu-searchable" searchable style="width: 220px" onoas-select="menuSearchableLog(event)" items='[{"label":"New file","value":"new-file","icon":"edit"},{"label":"Open file","value":"open-file","icon":"search"},{"label":"Window layout","value":"window","icon":"menu"},{"label":"Settings","value":"settings","icon":"gear"}]'></oas-menu>
+      <oas-tag id="menu-searchable-result" type="info" style="margin-top: var(--oas-space-2)">Nothing selected</oas-tag>
+    </div>
+    <div>
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">Inline: type "Stats" to filter in place and expand the matching path</p>
+      <oas-menu id="menu-searchable-inline" mode="inline" searchable style="width: 240px" items='[{"label":"Workspace","value":"workspace","children":[{"label":"Overview","value":"overview"},{"label":"Statistics","value":"stats"}]},{"label":"Projects","value":"project","children":[{"label":"Active","value":"active"},{"label":"Done","value":"done"}]},{"label":"Settings","value":"settings"}]'></oas-menu>
+    </div>
+  </oas-space>
+</DemoBlock>
+
+## Shortcut hints (shortcut)
+
+The menu item `shortcut` field (items JSON) or the `<oas-menu-item shortcut="…">` attribute renders a `kbd` hint at the trailing edge, matching the menubar shortcut visual contract.
+
+<DemoBlock title="Shortcut hints (shortcut)">
+  <oas-space>
+    <oas-menu style="width: 220px" items='[{"label":"New","value":"new","shortcut":"Ctrl+N"},{"label":"Open","value":"open","shortcut":"Ctrl+O"},{"label":"Save","value":"save","shortcut":"Ctrl+S"},{"label":"Fullscreen","value":"full","shortcut":"F11"}]'></oas-menu>
+    <oas-menu style="width: 220px">
+      <oas-menu-item value="undo" shortcut="Ctrl+Z">Undo</oas-menu-item>
+      <oas-menu-item value="redo" shortcut="Ctrl+Shift+Z">Redo</oas-menu-item>
+      <oas-menu-item value="paste" shortcut="Ctrl+V">Paste</oas-menu-item>
+    </oas-menu>
+  </oas-space>
+</DemoBlock>
+
 ## API
 
 ### oas-menu
@@ -441,6 +483,7 @@ onMounted(() => {
 | `mode` | Layout mode: `vertical` menu / `horizontal` top bar | — | — |
 | `open-on-hover` | Hover-opened submenus in vertical/inline modes (~150ms open / ~300ms close delay); clicks unchanged; horizontal and collapsed flyout unaffected | `boolean` | — |
 | `persistent` | Keep flyout submenus open after selection (wins over close-on-select) | `string` | — |
+| `searchable` | Renders a filter input at the top of the menu and filters visible items live (matching ancestors are kept and auto-expanded; Esc clears) | `boolean` | — |
 | `selectable` | With `"false"`, pure action menu: no check marks, clicks never write back value (detail kind=action) | `string` | `true` |
 | `theme` | Local theme: `dark` uses dark tokens (independent of the global theme) | — | — |
 | `value` | Current selected value. Plain string means global single-select (no group, legacy-compatible); JSON object string (e.g. `{"sort":"name","view":"list"}`) scopes per group id — the `value` of a `type:"group"` item is the group id, picking inside a group only updates that group | `string` | — |
@@ -472,6 +515,7 @@ onMounted(() => {
 | `kind` | Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back `value`) / `checkbox` (multi-select, `value` is the checked-set array) | — | — |
 | `loading` | Loading state: renders a spinner and blocks clicks; restored by data updates | — | — |
 | `rel` | Link rel (with `href`) | — | — |
+| `shortcut` | Shortcut hint rendered as a trailing kbd (aligned with the menubar shortcut contract) | — | — |
 | `target` | Link target (with `href`) | — | — |
 | `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
 

@@ -118,6 +118,16 @@ Out-of-range dates are not selectable, and navigation buttons gray out at the `m
   <oas-date-picker type="daterange" shortcuts-position="left" placeholder="Shortcuts in the left sidebar"></oas-date-picker>
 </DemoBlock>
 
+## Timezone (timezone)
+
+<DemoBlock title="timezone anchor: New York vs local">
+  <oas-date-picker id="date-picker-timezone-ny" timezone="America/New_York" placeholder="New York: open to see Today" style="margin-inline-end: var(--oas-space-4)"></oas-date-picker>
+  <oas-date-picker id="date-picker-timezone-local" placeholder="Local: open to see Today"></oas-date-picker>
+  <span id="date-picker-timezone-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+`timezone` accepts an IANA zone name (e.g. `America/New_York`) or `UTC`; an omitted/invalid value falls back to the host local zone. It only changes what counts as "today" and the defaults derived from it — the "today" highlight, the built-in Today shortcut, and default-time derivation for `datetime` / `datetimerange` all read the wall clock of the configured zone; the `value` contract (`yyyy-MM-dd` / ISO wall-clock strings) is unchanged. Open the left panel to see the Today ring on New York's day and the right one on the local day; the reference line below shows both zones' current date.
+
 ## Disabled Dates
 
 <DemoBlock title="Disable past dates (disabled-date)">
@@ -284,6 +294,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `show-week-number` | Show an ISO week-number column (built-in for `type=week`) | `boolean` | — |
 | `size` | Size: `small` / `medium` / `large` (reads the nearest config-provider injection) | `string` | `medium` |
 | `status` | Validation status: `success` / `warning` / `error` (`error` also sets `aria-invalid`) | `string` | — |
+| `timezone` | Timezone anchor: an IANA zone name (e.g. America/New_York) or UTC; omitted/invalid falls back to the host local zone. Today highlight, shortcuts and default-time derivation read this zone's wall clock; the value contract is unchanged | `string` | — |
 | `type` | Type: `date` / `daterange` / `month` / `monthrange` / `year` / `yearrange` / `datetime` / `datetimerange` / `week` / `quarter` | `string` | `date` |
 | `unlink-panels` | Range months flip independently (linked by default) | `boolean` | — |
 | `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | `string` | — |
@@ -392,5 +403,16 @@ onMounted(() => {
       cell.appendChild(dot)
     }
   })
+
+  // Timezone reference line: current date per zone, computed the same way the panel's Today ring is
+  const tzOut = document.getElementById('date-picker-timezone-output')
+  if (tzOut) {
+    const dateOf = (tz) => {
+      const opts = { year: 'numeric', month: '2-digit', day: '2-digit' }
+      if (tz) opts.timeZone = tz
+      return new Intl.DateTimeFormat('en-CA', opts).format(new Date())
+    }
+    tzOut.textContent = `Today: New York ${dateOf('America/New_York')} / Local ${dateOf(null)}`
+  }
 })
 </script>

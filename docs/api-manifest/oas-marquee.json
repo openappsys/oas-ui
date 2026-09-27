@@ -24,10 +24,21 @@
       "name": "reverse",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "max-loops",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-finish",
+      "detail": "{ loops }"
+    }
+  ],
   "slots": [
     {
       "name": ""

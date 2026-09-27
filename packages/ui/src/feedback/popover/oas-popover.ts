@@ -540,6 +540,7 @@ export class OASPopover extends OASElement {
       'disabled',
       // —— 宽度 / 双轴偏移 ——
       'width',
+      'same-width',
       'offset',
       // —— 初始焦点 ——
       'initial-focus',
@@ -1414,11 +1415,26 @@ export class OASPopover extends OASElement {
 
   /**
    * 宽度定制：width 数字 → px；'trigger' → 与触发元素同宽；其余按 CSS 值（如 50%、240px）。
-   * 虚拟 0 尺寸点位（宽 0）视为未设置，保留 min-width 兜底。
+   * same-width（能力缺口 D21）：面板宽度=触发器宽度的布尔快捷通道（width 属性未显式设置时生效，
+   * 显式 width 优先），并内联归零 min-width 保证「严格等宽」不被面板默认 min-width 抬杠，
+   * 退出（移除属性/改走显式 width）时归还 CSS 兜底。虚拟 0 尺寸点位（宽 0）视为未设置，
+   * 保留 min-width 兜底。
    */
   private syncWidth(): void {
     if (!this.panel) return
     const raw = this.getAttr('width', '').trim()
+    if (this.hasAttr('same-width') && raw === '') {
+      const r = this.anchorRect()
+      if (r && r.width > 0) {
+        // 严格等宽按 border-box 写（面板 padding/border 含在内，否则渲染比触发器宽出 padding×2）
+        this.panel.style.boxSizing = 'border-box'
+        this.panel.style.width = `${r.width}px`
+        this.panel.style.minWidth = '0px'
+      }
+      return
+    }
+    this.panel.style.minWidth = ''
+    this.panel.style.boxSizing = ''
     if (!raw) {
       this.panel.style.width = ''
       return

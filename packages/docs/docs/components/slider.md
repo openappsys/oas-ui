@@ -243,6 +243,18 @@ onMounted(() => {
 })
 </script>
 
+## 多滑块（N 元数组）
+
+<DemoBlock title="三把手：value 为 N 元数组 + 逐把手可访问名">
+  <oas-slider id="slider-multi" min="0" max="100" value="[10,30,70]" show-tooltip labels='["低","中","高"]' style="width: 360px"></oas-slider>
+</DemoBlock>
+
+<DemoBlock title="多把手 + 数值输入联动">
+  <oas-slider id="slider-multi-input" min="0" max="100" value="[10,30,70]" show-input style="width: 440px"></oas-slider>
+</DemoBlock>
+
+`value` 支持 N 元数组（JSON 数组或逗号分隔字符串），渲染 N 个把手——`range` 是 N=2 的特例（仍保留 `range-min`/`range-max` 旧契约）；不设 `range` 但 `value` 为二元及以上数组时同样渲染多把手。每把手可独立拖拽与键盘操作，值自动保持升序（拖动越界夹到相邻把手），`oas-input`/`oas-change` 的 `detail.value` 为数组。逐把手可访问名可用 `labels` JSON 数组（`labels='["低","中","高"]'`）或 `label-1`/`label-2`… 属性，缺省回落 `label + 序号`（内置文案 + 序号）。
+
 ## API
 
 ### oas-slider
@@ -255,6 +267,15 @@ onMounted(() => {
 | `disabled` | 禁用 | `boolean` | — |
 | `format` | 值气泡模板串：`${value}` 占位符替换为当前值（如 `"${value}%"`），不含占位符时原样显示；输出同时进气泡与 `aria-valuetext`；优先级低于 `formatTooltip` 函数 | `string` | — |
 | `label` | 内层滑块可访问名（range 模式自动加「最小值/最大值」后缀） | `string` | — |
+| `label-1` | — | — | — |
+| `label-2` | — | — | — |
+| `label-3` | — | — | — |
+| `label-4` | — | — | — |
+| `label-5` | — | — | — |
+| `label-6` | — | — | — |
+| `label-7` | — | — | — |
+| `label-8` | — | — | — |
+| `labels` | 逐把手可访问名的 JSON 数组（如 `["低","中","高"]`；label-N 属性族优先） | `string` | — |
 | `large-step` | 键盘大步步进量（Shift+方向键 / PageUp / PageDown 生效）；缺省为 10 × step；每次按键即派发 `oas-input` + `oas-change` | `string` | — |
 | `marks` | 刻度：JSON 对象 `{"0":"0°C"}`（值→标签）或 JSON 数组 `[0,26,60]`（也可为 `{"value":26,"label":"26°C"}`）；刻度点与标签显示在轨道下方，值经过处高亮；`reverse` 下位置镜像 | `string \| Record<string, string \| number> \| number[]` | — |
 | `max` | 范围 | `string` | `100` |

@@ -184,6 +184,7 @@ export { OASCode } from './data/code/oas-code.js'
 export { OASEquation } from './data/equation/oas-equation.js'
 export { OASLog } from './data/log/oas-log.js'
 export { OASComment } from './data/comment/oas-comment.js'
+export { OASHighlight } from './data/highlight/oas-highlight.js'
 
 // ---------- framework ----------
 export { OASConfigProvider } from './framework/config-provider/oas-config-provider.js'

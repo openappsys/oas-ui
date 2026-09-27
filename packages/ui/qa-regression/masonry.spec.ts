@@ -105,3 +105,16 @@ test('masonry items 数据通道：shadow 渲染、slot 隐藏、property 赋值
   )
   expect(pin, 'column=2 重排到第 2 列头部槽位、column=4 到第 4 列').toEqual([null, null, '2', null, null, null, '4'])
 })
+
+// —— PRD D27：sequential 顺序瀑布流（按原始顺序逐列轮转，物理重排 DOM） ——
+test('masonry sequential：按原始顺序逐列轮转重排（DOM 序 1,4,2,5,3,6）（PRD D27）', async ({ page }) => {
+  await page.goto('/components/masonry.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-masonry[sequential]')
+  await page.locator('oas-masonry[sequential]').first().scrollIntoViewIfNeeded()
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-masonry[sequential]')!
+    return Array.from(el.children).map((c) => c.className)
+  })
+  // 6 项 / 3 列轮转：列1: 1,4；列2: 2,5；列3: 3,6 → CSS columns 均衡填充下 DOM 序即列拼接序
+  expect(r, 'sequential 应按列轮转重排 DOM').toEqual(['seq-1', 'seq-4', 'seq-2', 'seq-5', 'seq-3', 'seq-6'])
+})

@@ -171,3 +171,37 @@ test('list hoverable：属性存活 + 行打 data-hoverable 钩子 + 样式表 h
   expect(r.cssOk, '样式表含 hover 规则（token 色）').toBe(true)
   expect(r.selectedExcluded, '选中行排除在 hover 规则外').toBe(true)
 })
+
+// ===== 能力缺口 D14：sortable 行拖拽排序 =====
+test('list D14：sortable 拖拽派发 oas-reorder 并由宿主重排数据', async ({ page }) => {
+  await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#list-sortable')
+  const list = page.locator('#list-sortable')
+  await list.scrollIntoViewIfNeeded()
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#list-sortable')!.shadowRoot!.querySelectorAll('[part="data-items"] oas-list-item')
+        .length === 4,
+  )
+  const firstTitle = await list.evaluate((h) =>
+    h.shadowRoot!.querySelector('[part="data-items"] oas-list-item')!.getAttribute('title'),
+  )
+  // JS 派发拖拽事件（原生 DnD 在自动化里难以稳定做手势，走真实事件链路验证）
+  await list.evaluate((h) => {
+    const rows = [...h.shadowRoot!.querySelectorAll<HTMLElement>('[part="data-items"] oas-list-item')]
+    const dt = new DataTransfer()
+    const fire = (type: string, target: HTMLElement) =>
+      target.dispatchEvent(new DragEvent(type, { bubbles: true, composed: true, dataTransfer: dt }))
+    fire('dragstart', rows[0]!)
+    fire('dragover', rows[2]!)
+    fire('drop', rows[2]!)
+  })
+  await page.waitForFunction(() =>
+    (document.querySelector('#list-sortable-status')?.textContent ?? '').includes('需求评审'),
+  )
+  const titles = await list.evaluate((h) =>
+    [...h.shadowRoot!.querySelectorAll('[part="data-items"] oas-list-item')].map((r) => r.getAttribute('title')),
+  )
+  expect(titles.length).toBe(4)
+  expect(titles[2], '被拖行应移动到目标索引（宿主据 oas-reorder 重排）').toBe(firstTitle)
+})
