@@ -165,6 +165,32 @@ describe('OASHighlight', () => {
 
   // ---------- 重音（diacritic 折叠） ----------
 
+  it('分解型重音不切字素簇：cafe\u0301 命中 café 时 mark 含重音符（pe 吞并组合符）', () => {
+    const el = new OASHighlight()
+    el.setAttribute('text', 'cafe\u0301 x')
+    el.setAttribute('highlight', 'cafe')
+    document.body.appendChild(el)
+    const mark = el.shadowRoot!.querySelector('mark')!
+    expect(mark.textContent, 'mark 应含分解型重音符（不把重音切到 mark 外）').toBe('cafe\u0301')
+    expect(el.shadowRoot!.querySelector('[part=\"root\"]')!.textContent, '原文完整不丢字').toBe('cafe\u0301 x')
+    el.remove()
+  })
+
+  it('希腊语尾 sigma：关键词与文本同口径逐码点折叠（ΟΔΟΣ↔οδος 互配）', () => {
+    const el = new OASHighlight()
+    el.setAttribute('text', 'ΟΔΟΣ')
+    el.setAttribute('highlight', 'οδος')
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelectorAll('mark').length, '大写文本配小写关键词（含尾 sigma）').toBe(1)
+    el.remove()
+    const el2 = new OASHighlight()
+    el2.setAttribute('text', 'οδος')
+    el2.setAttribute('highlight', 'ΟΔΟΣ')
+    document.body.appendChild(el2)
+    expect(el2.shadowRoot!.querySelectorAll('mark').length, '反向同配').toBe(1)
+    el2.remove()
+  })
+
   it('重音默认不敏感：cafe 命中 café（NFD 折叠）', () => {
     const el = mount({ text: 'un café au lait', highlight: 'cafe' })
     expect(marks(el).length).toBe(1)

@@ -844,7 +844,7 @@ describe('D24 months 多月份并排面板', () => {
     expect(day(el, '2026-08-09').textContent).toBe(part)
   })
 
-  it('months=2 键盘移动：跨面板焦点落到正确的本月单元格（非前一月补位日）', () => {
+  it('months=2 跨面板同日消歧：同名日期格存在且本月格非 outside（findDayButton 优先非补位格）', () => {
     const el = mount({ value: '2026-08-09', months: '2' })
     // 9 月 1 日同时出现在 8 月面板的补位格与 9 月面板的本月格
     const all = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.day[data-date="2026-09-01"]')]

@@ -105,7 +105,11 @@ export class OASHighlight extends OASElement {
     const { text: foldedText, map } = OASHighlight.foldWithMap(points, fold)
     const ranges: Range[] = []
     for (const kw of this.parseKeywords()) {
-      const foldedKw = fold(kw)
+      // 关键词逐码点折叠（与 foldWithMap 同口径）——整串 fold 是上下文相关映射
+      // （希腊语尾 sigma 等），与文本逐码点折叠不一致会漏配（review 实测）
+      const foldedKw = Array.from(kw)
+        .map((c) => fold(c))
+        .join('')
       if (foldedKw === '') continue
       let from = 0
       for (;;) {
@@ -113,7 +117,10 @@ export class OASHighlight extends OASElement {
         if (fs < 0) break
         from = fs + 1
         const ps = map[fs]!
-        const pe = map[fs + foldedKw.length - 1]! + 1
+        let pe = map[fs + foldedKw.length - 1]! + 1
+        // 字素簇边界：向后吞并紧随的「折叠为空」的组合符（组合符依附前一个基础字符，
+        // 不吞会把重音切到 mark 外、原文被拆成两个渲染节点——coder review 实测）
+        while (pe < points.length && fold(points[pe]!) === '') pe++
         if (wholeWord) {
           if (ps > 0 && WORD_CHAR_RE.test(points[ps - 1]!)) continue
           if (pe < points.length && WORD_CHAR_RE.test(points[pe]!)) continue
@@ -164,7 +171,12 @@ export class OASHighlight extends OASElement {
     const accentSensitive = this.hasAttr('accent-sensitive')
     return (s: string): string => {
       let r = s
-      if (!caseSensitive) r = r.toLowerCase()
+      if (!caseSensitive) {
+        r = r.toLowerCase()
+        // 希腊语尾 sigma：ς（词尾形）与 σ（常规形）统一为 σ（Unicode 全尺寸折叠的已知特例，
+        // toLowerCase 对 ς 不变；两形语义等价，不统一会漏配——review 实测）
+        r = r.replace(/ς/g, 'σ')
+      }
       if (!accentSensitive) r = r.normalize('NFD').replace(COMBINING_RE, '')
       return r
     }

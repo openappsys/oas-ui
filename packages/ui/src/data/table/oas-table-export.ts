@@ -70,7 +70,7 @@ export function sanitizeFileName(raw: string, fallback = 'export'): string {
  * CSV 会按公式执行——导出内容常含用户输入，属 CSV injection 经典面）。
  */
 export function escapeCsvField(value: string, delimiter = ','): string {
-  const safe = /^[=+\-@]/.test(value) ? `'${value}` : value
+  const safe = /^[=+\-@\t\r\n]/.test(value) ? `'${value}` : value
   const needsQuote = safe.includes(delimiter) || safe.includes('"') || safe.includes('\n') || safe.includes('\r')
   return needsQuote ? `"${safe.replace(/"/g, '""')}"` : safe
 }

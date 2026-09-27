@@ -421,7 +421,7 @@ onMounted(() => {
   <span id="input-mask-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 240px"></span>
 </DemoBlock>
 
-`mask` 定义输入掩码模板：`#` 数字、`A` 字母、`*` 字母数字，其余字符为字面量（如 `###-####` 的 `-`）。键入自动跳过字面量、非法字符被过滤、粘贴只收合法位、退格删到字面量即停（字面量由模板管理，不会被删穿），光标始终保持在正确位置。默认事件与表单提交值携带**显示值**（含字面量）；设置 `mask-raw` 后改为**去格式化的原始字符序列**（FormData 提交值同口径）。`mask` 与 `formatter`/`parser` 互斥，同设时 mask 优先并告警；`maxlength` 在 mask 模式下不透传（避免原生截断破坏掩码）。
+`mask` 定义输入掩码模板：`#` 数字、`A` 字母、`*` 字母数字，其余字符为字面量（如 `###-####` 的 `-`）。键入自动跳过字面量、非法字符被过滤、粘贴只收合法位、退格删到字面量即停（字面量由模板管理，不会被删穿），光标始终保持在正确位置。默认事件与表单提交值携带**显示值**（含字面量）；设置 `mask-raw` 后改为**去格式化的原始字符序列**（FormData 提交值同口径）。`mask` 与 `formatter`/`parser` 互斥，同设时 mask 优先并告警；`maxlength` 在 mask 模式下不透传（避免原生截断破坏掩码）。（`show-count` 计数口径随提交通道：缺省按显示值（含字面量），`mask-raw` 时按原始序列）
 
 ## 清除按钮显隐
 

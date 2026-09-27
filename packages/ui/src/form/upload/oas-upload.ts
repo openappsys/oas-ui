@@ -511,10 +511,27 @@ const STYLE = `
   display: flex;
   flex-direction: column;
   gap: var(--oas-space-3);
-  max-width: 90vw;
+  /* 窄屏兜底：dialog 自身限宽限高 + 内部滚动（360/375px 手机不横向溢出页面） */
+  max-width: calc(100vw - var(--oas-space-4));
+  max-height: calc(100vh - var(--oas-space-4));
+  overflow: auto;
   padding: var(--oas-space-4);
   background: var(--oas-color-bg);
   border-radius: var(--oas-radius-lg);
+}
+/* 窄屏整体缩放舞台（zoom 等比缩放布局与指针增量，320×240 模型坐标不走样） */
+@media (max-width: 400px) {
+  .crop-dialog {
+    padding: var(--oas-space-2);
+  }
+  .crop-stage {
+    zoom: 0.85;
+  }
+}
+@media (max-width: 340px) {
+  .crop-stage {
+    zoom: 0.75;
+  }
 }
 /* 裁剪舞台：物理像素坐标系（320×240，与 canvas 绘制缓冲 1:1），锁定 LTR——
    裁剪几何映射不得随书写方向镜像（theme-editor 色值 LTR 隔离同款惯例） */
