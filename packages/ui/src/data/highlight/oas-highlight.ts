@@ -90,7 +90,11 @@ export class OASHighlight extends OASElement {
   protected override update(): void {
     if (!this.rootEl) return
     const segments = this.computeSegments()
-    const fingerprint = segments.map((s) => `${s.hit ? '\u0001' : '\u0000'}${s.text}`).join('\u0002')
+    // 指纹并入 highlight 原值：渲染片段相同但关键词改写（如大小写变化）时 matches 不陈旧
+    const fingerprint =
+      this.getAttr('highlight') +
+      '\u0003' +
+      segments.map((s) => `${s.hit ? '\u0001' : '\u0000'}${s.text}`).join('\u0002')
     if (fingerprint === this.lastFingerprint) return
     this.lastFingerprint = fingerprint
     this.renderSegments(segments)

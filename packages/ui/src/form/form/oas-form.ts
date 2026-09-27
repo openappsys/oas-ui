@@ -431,7 +431,8 @@ export class OASForm extends OASElement {
   private parseRules(): void {
     const raw = this.getAttribute('rules')
     if (this._rulesProp !== null && raw === this._rulesAttrRaw) {
-      this._rules = Object.assign(Object.create(null), this._rulesProp)
+      // property 通道保留引用语义（宿主原地改顶层键即时生效的既有契约；读点 Object.hasOwn 守卫已兜住原型链穿透）
+      this._rules = this._rulesProp
       return
     }
     if (raw !== this._rulesAttrRaw) {
@@ -534,7 +535,7 @@ export class OASForm extends OASElement {
   }
 
   private snapshotValues(): Record<string, string> {
-    const values: Record<string, string> = {}
+    const values: Record<string, string> = Object.create(null)
     for (const { name, element } of this.collectFields()) values[name] = this.readValue(element)
     return values
   }
