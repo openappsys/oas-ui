@@ -228,7 +228,7 @@ export class OASForm extends OASElement {
   }
 
   private form: HTMLFormElement | null = null
-  private _rules: Rules = Object.create(null)
+  private _rules: Rules = {}
   /** rules property 通道（validator 等函数不可 JSON 序列化，仅存内存） */
   private _rulesProp: Rules | null = null
   private _rulesAttrRaw: string | null = null
@@ -445,7 +445,7 @@ export class OASForm extends OASElement {
       // 继承成员穿透由两个读点的 Object.hasOwn 守卫兜底（null-proto 曾致 el.rules.hasOwnProperty 抛错）
       this._rules = parsed !== null && typeof parsed === 'object' ? Object.assign({}, parsed) : {}
     } catch {
-      this._rules = Object.create(null)
+      this._rules = {}
     }
   }
 

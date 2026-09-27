@@ -1029,6 +1029,21 @@ describe('OASForm review 回归（真实路径，非合成事件造假绿）', (
     expect(cal.getAttribute('value'), 'range 区间 JSON 不得被值同步抹掉').toBe('["2026-08-05","2026-08-15"]')
   })
 
+  it('rules getter 原型契约：初值/非法 JSON catch/合法 attribute/property 四路径均普通原型（hasOwnProperty 可用）', () => {
+    const el = new OASForm()
+    expect(typeof el.rules.hasOwnProperty, '升级前初值普通原型').toBe('function')
+    el.setAttribute('rules', '{bad json')
+    el.innerHTML = '<oas-input name="a"></oas-input>'
+    document.body.appendChild(el)
+    expect(typeof el.rules.hasOwnProperty, '非法 JSON catch 分支普通原型').toBe('function')
+    el.setAttribute('rules', '{"a":[{"required":true}]}')
+    expect(typeof el.rules.hasOwnProperty, '合法 attribute 普通原型').toBe('function')
+    const host = { b: [{ required: true }] }
+    el.rules = host
+    expect(el.rules, 'property 通道同引用（引用语义恢复）').toBe(host)
+    el.remove()
+  })
+
   it('errors 原型链穿透真靶点：无规则字段名 toString 提交后不得误标 aria-invalid', () => {
     const el = ((): OASForm => {
       const f = new OASForm()
