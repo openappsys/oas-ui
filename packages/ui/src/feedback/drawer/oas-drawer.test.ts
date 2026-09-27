@@ -979,6 +979,20 @@ describe('OASDrawer no-mask（无遮罩模式，PRD P2）', () => {
     document.body.innerHTML = ''
   })
 
+  it('no-mask 焦点对称：关闭后焦点不被拉回打开前元素（previousFocus 不记录不归还）', async () => {
+    const elsewhere = document.createElement('input')
+    document.body.appendChild(elsewhere)
+    const el = mount({ visible: '', 'no-mask': '' })
+    // 打开后用户把焦点移到页面其他输入框（no-mask 场景的真实交互）
+    elsewhere.focus()
+    // 同步关（transitionend 手动派发）——避免 wall-clock 等待窗口被同文件其他用例的
+    // 遗留动画计时器串扰（其 previousFocus 指向已清空 DOM，foucs 后 activeElement 归 body）
+    closeSync(el)
+    expect(document.activeElement, '关闭后焦点不得被抢回').toBe(elsewhere)
+    elsewhere.remove()
+    el.remove()
+  })
+
   it('no-mask 非模态语义：aria-modal=false + 不抢初始焦点 + Tab 不圈禁（对齐 modal no-mask 契约）', async () => {
     const el = mount({ visible: '', 'no-mask': '' })
     const panel = el.shadowRoot!.querySelector<HTMLElement>('.panel')!

@@ -152,7 +152,9 @@ export class OASContextMenu extends OASElement {
       // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
       if (this.hasAttribute('items')) this.parseItems()
       else this.parseChildItems()
-      this.menuEl.setAttribute('items', JSON.stringify(this.itemsList))
+      // items 未变时跳过重写（同值 setAttribute 会触发内层 menu 全量重建——value 高频受控场景的写放大）
+      const itemsJson = JSON.stringify(this.itemsList)
+      if (this.menuEl.getAttribute('items') !== itemsJson) this.menuEl.setAttribute('items', itemsJson)
       // value 下传：checkbox/radio 勾选项的初始勾选态由内层 menu 的 value 驱动（缺之勾选永不回显）
       this.menuEl.setAttribute('value', this.getAttr('value', ''))
       if (!this.wasOpen) {
