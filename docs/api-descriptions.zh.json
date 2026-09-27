@@ -479,7 +479,7 @@
       "header": "自定义头部，整体替换内置导航（不分发保持内置 prev/title/next/today）"
     },
     "props": {
-      "disabledDate": "禁用回调（property）"
+      "disabledDate": "禁用日期谓词（property 函数通道，`(date) => boolean`）"
     }
   },
   "oas-card": {
@@ -743,7 +743,7 @@
     },
     "slots": {},
     "props": {
-      "filter": "自定义过滤函数（JS property 通道 `el.filter = fn`）：接管本地过滤（如拼音首字母/远程匹配），置 null 恢复默认 label 子串过滤；`filterable=\"false\"` 时不参与"
+      "filter": "自定义过滤函数（property 通道，`(input, option) => boolean`）"
     }
   },
   "oas-compact": {
@@ -957,8 +957,8 @@
       "suffix-icon": "触发器内后置图标（清除钮可见时让位，清空后恢复）"
     },
     "props": {
-      "shortcuts": "快捷预设（对象数组，`{ label, value }` 或 `{ label, getValue() }`）；未设置时各类型内置默认预设（标签走 locale）",
-      "disabledDate": "禁用日期回调，返回 `true` 的日期不可选（点击与键盘导航均跳过；与 min/max 叠加禁用）"
+      "shortcuts": "快捷预设（property 通道，`[{ label, value/getValue }]`）",
+      "disabledDate": "禁用日期谓词（property 函数通道，`(date) => boolean`）"
     }
   },
   "oas-descriptions": {
@@ -2670,7 +2670,15 @@
       "readonly": "只读（与 `disabled` 分立）：仍可聚焦、值仍参与表单收集，拖动与键盘改值被拦截，视觉不降饱和",
       "large-step": "键盘大步步进量（Shift+方向键 / PageUp / PageDown 生效）；缺省为 10 × step；每次按键即派发 `oas-input` + `oas-change`",
       "label": "内层滑块可访问名（range 模式自动加「最小值/最大值」后缀）",
-      "labels": "逐把手可访问名的 JSON 数组（如 `[\"低\",\"中\",\"高\"]`；label-N 属性族优先）"
+      "labels": "逐把手可访问名的 JSON 数组（如 `[\"低\",\"中\",\"高\"]`；label-N 属性族优先）",
+      "label-1": "第 1 个把手的可访问名（多滑块模式；优先于 labels/label）",
+      "label-2": "第 2 个把手的可访问名（多滑块模式；优先于 labels/label）",
+      "label-3": "第 3 个把手的可访问名（多滑块模式；优先于 labels/label）",
+      "label-4": "第 4 个把手的可访问名（多滑块模式；优先于 labels/label）",
+      "label-5": "第 5 个把手的可访问名（多滑块模式；优先于 labels/label）",
+      "label-6": "第 6 个把手的可访问名（多滑块模式；优先于 labels/label）",
+      "label-7": "第 7 个把手的可访问名（多滑块模式；优先于 labels/label）",
+      "label-8": "第 8 个把手的可访问名（多滑块模式；优先于 labels/label）"
     },
     "events": {
       "oas-change": "松手确定，`detail: { value }`（单值数字；`range` 模式为 `[lo, hi]` 数组）",
@@ -2962,7 +2970,23 @@
   },
   "oas-table-column": {
     "attrs": {
-      "data-key": "列标识（Vue 模板保留字 key 的规避通道；原生 HTML 下 key 直写亦可，组件双通道读取）"
+      "data-key": "列标识（Vue 模板保留字 key 的规避通道；原生 HTML 下 key 直写亦可，组件双通道读取）",
+      "actions": "列操作（如行内编辑的保存/取消钮列）",
+      "align": "列内容对齐（left/center/right）",
+      "editable": "列可编辑（双击单元格进编辑态）",
+      "editor": "编辑器类型/配置（select/input 等）",
+      "ellipsis": "列内容超宽单行截断省略号（悬停 title 看全文）",
+      "filterable": "列可过滤（表头渲染筛选触发器）",
+      "filters": "列筛选项配置",
+      "fixed": "列固定（left/right 吸附）",
+      "hidden": "列隐藏（初始不参与渲染，列显隐面板可开）",
+      "key": "列标识字段名（原生 HTML 直写；Vue 模板请用 data-key）",
+      "merge": "列自动合并相邻同值单元格",
+      "serial-number": "行序号列（从 1 递增，不取数据字段）",
+      "sortable": "列可排序（表头点击切换升/降/取消）",
+      "summary": "列参与合计行（sum/avg/count）",
+      "title": "列表头标题（缺省取默认插槽文本）",
+      "width": "列宽（px 或 CSS 值；fixed 列建议显式声明）"
     },
     "events": {},
     "slots": {
@@ -3179,8 +3203,8 @@
     },
     "slots": {},
     "props": {
-      "disabledTime": "禁用时刻回调：`(parts) => { hours?, minutes?, seconds? }`，按当前时刻上下文求值，禁用项置灰不隐藏",
-      "presets": "快捷时刻：`{ label, value: \"HH:mm:ss\" }` 数组，面板顶部按钮列，点击即应用并关闭"
+      "disabledTime": "禁用时间谓词（property 函数通道，`(parts) => { hours?, minutes?, seconds? }`）",
+      "presets": "快捷时刻预设（property 通道，`[{ label, value }]`）"
     }
   },
   "oas-timeline": {
@@ -3578,7 +3602,7 @@
       "template[slot=\"toggle-loading\"]": "懒加载展开中的指示器（替换 spinner）"
     },
     "props": {
-      "load": "懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性"
+      "load": "懒加载函数（property 通道，`(node) => Promise<children>`）"
     }
   },
   "oas-tree-select": {
@@ -3679,7 +3703,7 @@
       "template[slot=\"trigger\"]": "自绘触发区模板（native slot 对 template 元素不生效，走克隆通道；zone 点击仍打开文件选择）"
     },
     "props": {
-      "files": "文件列表（property，`File[]`）"
+      "files": "受控文件列表（property 通道，写回即同步渲染）"
     }
   },
   "oas-virtual-list": {

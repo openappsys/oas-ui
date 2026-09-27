@@ -460,7 +460,7 @@ onMounted(async () => {
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `files` | File list (property, `File[]`) | `Array<File \| UploadEchoFile>` | `[]` |
+| `files` | Controlled file list (property channel; assigning re-renders) | `Array<File \| UploadEchoFile>` | `[]` |
 
 #### Events
 

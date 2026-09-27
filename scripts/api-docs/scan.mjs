@@ -236,6 +236,10 @@ const SUPPLEMENT_ATTRS = {
   'oas-tab-panel': ['badge', 'icon', 'href', 'target', 'rel', 'icon-only', 'title'],
   // success 为纯 CSS 消费属性（无 getAttr/hasAttr），扫描正则探不到，人工补录
   'oas-pin-input': ['success'],
+  // data-key 是 Vue 保留字 key 的规避通道（oas-table 读子列元素时双通道读取，扫描盲区）
+  'oas-table-column': ['data-key'],
+  // dir 为 RTL 判定消费（dir 观察在共享 direction 机制里，组件内无字面量调用点）
+  'oas-marquee': ['dir'],
   // min/max/step 走 PASSTHROUGH_ATTRS 动态循环透传（无字面量 getAttr 调用点，扫描盲区）
   'oas-input': [
     'min',
@@ -247,6 +251,8 @@ const SUPPLEMENT_ATTRS = {
     'spellcheck',
     'enterkeyhint',
     'pattern',
+    // name 走 form-associated 动态镜像（无字面量调用点）
+    'name',
   ],
   // check-all 由 oas-checkbox-group 读子项（全选联动标记）；label-position 为纯 CSS 消费
   'oas-checkbox': ['check-all', 'label-position'],

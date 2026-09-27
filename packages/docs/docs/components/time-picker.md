@@ -189,8 +189,8 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabledTime` | 禁用时刻回调：`(parts) => { hours?, minutes?, seconds? }`，按当前时刻上下文求值，禁用项置灰不隐藏 | `\| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } \| null) \| null` | — |
-| `presets` | 快捷时刻：`{ label, value: "HH:mm:ss" }` 数组，面板顶部按钮列，点击即应用并关闭 | `PresetItem[] \| null` | — |
+| `disabledTime` | 禁用时间谓词（property 函数通道，`(parts) => { hours?, minutes?, seconds? }`） | `\| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } \| null) \| null` | — |
+| `presets` | 快捷时刻预设（property 通道，`[{ label, value }]`） | `PresetItem[] \| null` | — |
 
 #### 事件
 

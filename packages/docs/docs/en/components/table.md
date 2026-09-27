@@ -939,23 +939,23 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `actions` | — | — | — |
-| `align` | — | — | — |
+| `actions` | Column actions (e.g. save/cancel buttons for row editing) | — | — |
+| `align` | Column content alignment (left/center/right) | — | — |
 | `data-key` | Column key (escape channel for the Vue reserved word `key`; plain `key` also works in native HTML — the component reads both) | — | — |
-| `editable` | — | — | — |
-| `editor` | — | — | — |
-| `ellipsis` | — | — | — |
-| `filterable` | — | — | — |
-| `filters` | — | — | — |
-| `fixed` | — | — | — |
-| `hidden` | — | — | — |
-| `key` | — | — | — |
-| `merge` | — | — | — |
-| `serial-number` | — | — | — |
-| `sortable` | — | — | — |
-| `summary` | — | — | — |
-| `title` | — | — | — |
-| `width` | — | — | — |
+| `editable` | Column editable (double-click a cell to edit) | — | — |
+| `editor` | Editor type/configuration (select/input etc.) | — | — |
+| `ellipsis` | Single-line truncation with ellipsis for overflowing content (full text on hover title) | — | — |
+| `filterable` | Column filterable (filter trigger rendered in the header) | — | — |
+| `filters` | Column filter options configuration | — | — |
+| `fixed` | Column fixed (left/right pinning) | — | — |
+| `hidden` | Column hidden initially (available in the column visibility panel) | — | — |
+| `key` | Column key field name (native HTML writes key directly; Vue templates use data-key) | — | — |
+| `merge` | Auto-merge adjacent same-value cells in the column | — | — |
+| `serial-number` | Row serial number column (1-based, not from data fields) | — | — |
+| `sortable` | Column sortable (header click cycles asc/desc/none) | — | — |
+| `summary` | Column participates in the summary row (sum/avg/count) | — | — |
+| `title` | Column header title (defaults to the default slot text) | — | — |
+| `width` | Column width (px or CSS value; fixed columns should declare it explicitly) | — | — |
 
 #### Slots
 

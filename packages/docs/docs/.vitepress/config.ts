@@ -155,6 +155,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Marquee 跑马灯', link: '/components/marquee' },
       { text: 'NumberAnimation 数字滚动', link: '/components/number-animation' },
       { text: 'GradientText 渐变文字', link: '/components/gradient-text' },
+      { text: 'Highlight 文本高亮', link: '/components/highlight' },
     ],
   },
   {

@@ -65,6 +65,10 @@
     {
       "name": "actions",
       "observed": true
+    },
+    {
+      "name": "data-key",
+      "observed": false
     }
   ],
   "props": [],

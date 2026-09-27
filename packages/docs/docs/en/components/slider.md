@@ -267,14 +267,14 @@ onMounted(() => {
 | `disabled` | Disabled | `boolean` | — |
 | `format` | Value bubble template string: `${value}` is replaced with the current value (e.g. `"${value}%"`); shown as-is without a placeholder; the output feeds both the bubble and `aria-valuetext`; lower priority than the `formatTooltip` function | `string` | — |
 | `label` | Accessible name for the inner slider (range mode appends localized min/max suffixes) | `string` | — |
-| `label-1` | — | — | — |
-| `label-2` | — | — | — |
-| `label-3` | — | — | — |
-| `label-4` | — | — | — |
-| `label-5` | — | — | — |
-| `label-6` | — | — | — |
-| `label-7` | — | — | — |
-| `label-8` | — | — | — |
+| `label-1` | Accessible name for thumb 1 (multi-thumb mode; takes precedence over labels/label) | — | — |
+| `label-2` | Accessible name for thumb 2 (multi-thumb mode; takes precedence over labels/label) | — | — |
+| `label-3` | Accessible name for thumb 3 (multi-thumb mode; takes precedence over labels/label) | — | — |
+| `label-4` | Accessible name for thumb 4 (multi-thumb mode; takes precedence over labels/label) | — | — |
+| `label-5` | Accessible name for thumb 5 (multi-thumb mode; takes precedence over labels/label) | — | — |
+| `label-6` | Accessible name for thumb 6 (multi-thumb mode; takes precedence over labels/label) | — | — |
+| `label-7` | Accessible name for thumb 7 (multi-thumb mode; takes precedence over labels/label) | — | — |
+| `label-8` | Accessible name for thumb 8 (multi-thumb mode; takes precedence over labels/label) | — | — |
 | `labels` | JSON string array of per-thumb accessible names (e.g. `["低","中","高"]`; the label-N attribute family takes precedence) | `string` | — |
 | `large-step` | Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change` | `string` | — |
 | `marks` | Ticks: JSON object `{"0":"0°C"}` (value→label) or JSON array `[0,26,60]` (also `{"value":26,"label":"26°C"}`); tick marks and labels are shown below the track, highlighted where the value passes; positions mirror under `reverse` | `string \| Record<string, string \| number> \| number[]` | — |

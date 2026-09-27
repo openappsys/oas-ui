@@ -479,7 +479,7 @@
       "header": "Custom header replacing the built-in navigation (built-in kept when not distributed)"
     },
     "props": {
-      "disabledDate": "Disabled callback (property)"
+      "disabledDate": "Disabled-date predicate (property function channel, `(date) => boolean`)"
     }
   },
   "oas-card": {
@@ -743,7 +743,7 @@
     },
     "slots": {},
     "props": {
-      "filter": "Custom filter function (JS property channel `el.filter = fn`): takes over local filtering (pinyin initials/remote matching); set null to restore the default label-substring filter; not involved when `filterable=\"false\"`"
+      "filter": "Custom filter function (property channel, `(input, option) => boolean`)"
     }
   },
   "oas-compact": {
@@ -957,8 +957,8 @@
       "suffix-icon": "Trailing icon inside the trigger (yields while the clear button is visible)"
     },
     "props": {
-      "shortcuts": "Shortcuts (object array, `{ label, value }` or `{ label, getValue() }`); built-in defaults per type when unset (labels via locale)",
-      "disabledDate": "Disabled-date callback; dates returning `true` are unselectable (clicks and keyboard skip them; stacks with min/max)"
+      "shortcuts": "Shortcut presets (property channel, `[{ label, value/getValue }]`)",
+      "disabledDate": "Disabled-date predicate (property function channel, `(date) => boolean`)"
     }
   },
   "oas-descriptions": {
@@ -2670,7 +2670,15 @@
       "readonly": "Readonly (independent of `disabled`): stays focusable and the value still participates in form collection; dragging and keyboard edits are intercepted; not visually dimmed",
       "large-step": "Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change`",
       "label": "Accessible name for the inner slider (range mode appends localized min/max suffixes)",
-      "labels": "JSON string array of per-thumb accessible names (e.g. `[\"低\",\"中\",\"高\"]`; the label-N attribute family takes precedence)"
+      "labels": "JSON string array of per-thumb accessible names (e.g. `[\"低\",\"中\",\"高\"]`; the label-N attribute family takes precedence)",
+      "label-1": "Accessible name for thumb 1 (multi-thumb mode; takes precedence over labels/label)",
+      "label-2": "Accessible name for thumb 2 (multi-thumb mode; takes precedence over labels/label)",
+      "label-3": "Accessible name for thumb 3 (multi-thumb mode; takes precedence over labels/label)",
+      "label-4": "Accessible name for thumb 4 (multi-thumb mode; takes precedence over labels/label)",
+      "label-5": "Accessible name for thumb 5 (multi-thumb mode; takes precedence over labels/label)",
+      "label-6": "Accessible name for thumb 6 (multi-thumb mode; takes precedence over labels/label)",
+      "label-7": "Accessible name for thumb 7 (multi-thumb mode; takes precedence over labels/label)",
+      "label-8": "Accessible name for thumb 8 (multi-thumb mode; takes precedence over labels/label)"
     },
     "events": {
       "oas-change": "Committed on release, `detail: { value }` (single number; `[lo, hi]` array in `range` mode)",
@@ -2962,7 +2970,23 @@
   },
   "oas-table-column": {
     "attrs": {
-      "data-key": "Column key (escape channel for the Vue reserved word `key`; plain `key` also works in native HTML — the component reads both)"
+      "data-key": "Column key (escape channel for the Vue reserved word `key`; plain `key` also works in native HTML — the component reads both)",
+      "actions": "Column actions (e.g. save/cancel buttons for row editing)",
+      "align": "Column content alignment (left/center/right)",
+      "editable": "Column editable (double-click a cell to edit)",
+      "editor": "Editor type/configuration (select/input etc.)",
+      "ellipsis": "Single-line truncation with ellipsis for overflowing content (full text on hover title)",
+      "filterable": "Column filterable (filter trigger rendered in the header)",
+      "filters": "Column filter options configuration",
+      "fixed": "Column fixed (left/right pinning)",
+      "hidden": "Column hidden initially (available in the column visibility panel)",
+      "key": "Column key field name (native HTML writes key directly; Vue templates use data-key)",
+      "merge": "Auto-merge adjacent same-value cells in the column",
+      "serial-number": "Row serial number column (1-based, not from data fields)",
+      "sortable": "Column sortable (header click cycles asc/desc/none)",
+      "summary": "Column participates in the summary row (sum/avg/count)",
+      "title": "Column header title (defaults to the default slot text)",
+      "width": "Column width (px or CSS value; fixed columns should declare it explicitly)"
     },
     "events": {},
     "slots": {
@@ -3179,8 +3203,8 @@
     },
     "slots": {},
     "props": {
-      "disabledTime": "Disabled-time callback: `(parts) => { hours?, minutes?, seconds? }`, evaluated against the current time context; disabled options are grayed, not hidden",
-      "presets": "Quick times: an array of `{ label, value: \"HH:mm:ss\" }` rendered as a button row atop the panel"
+      "disabledTime": "Disabled-time predicate (property function channel, `(parts) => { hours?, minutes?, seconds? }`)",
+      "presets": "Quick time presets (property channel, `[{ label, value }]`)"
     }
   },
   "oas-timeline": {
@@ -3578,7 +3602,7 @@
       "template[slot=\"toggle-loading\"]": "Lazy-expanding indicator (replaces the spinner)"
     },
     "props": {
-      "load": "Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute"
+      "load": "Lazy-load function (property channel, `(node) => Promise<children>`)"
     }
   },
   "oas-tree-select": {
@@ -3679,7 +3703,7 @@
       "template[slot=\"trigger\"]": "Self-drawn trigger-area template (native slot does not render template elements — cloned by the component; clicking the zone still opens the file picker)"
     },
     "props": {
-      "files": "File list (property, `File[]`)"
+      "files": "Controlled file list (property channel; assigning re-renders)"
     }
   },
   "oas-virtual-list": {

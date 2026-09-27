@@ -267,14 +267,14 @@ onMounted(() => {
 | `disabled` | 禁用 | `boolean` | — |
 | `format` | 值气泡模板串：`${value}` 占位符替换为当前值（如 `"${value}%"`），不含占位符时原样显示；输出同时进气泡与 `aria-valuetext`；优先级低于 `formatTooltip` 函数 | `string` | — |
 | `label` | 内层滑块可访问名（range 模式自动加「最小值/最大值」后缀） | `string` | — |
-| `label-1` | — | — | — |
-| `label-2` | — | — | — |
-| `label-3` | — | — | — |
-| `label-4` | — | — | — |
-| `label-5` | — | — | — |
-| `label-6` | — | — | — |
-| `label-7` | — | — | — |
-| `label-8` | — | — | — |
+| `label-1` | 第 1 个把手的可访问名（多滑块模式；优先于 labels/label） | — | — |
+| `label-2` | 第 2 个把手的可访问名（多滑块模式；优先于 labels/label） | — | — |
+| `label-3` | 第 3 个把手的可访问名（多滑块模式；优先于 labels/label） | — | — |
+| `label-4` | 第 4 个把手的可访问名（多滑块模式；优先于 labels/label） | — | — |
+| `label-5` | 第 5 个把手的可访问名（多滑块模式；优先于 labels/label） | — | — |
+| `label-6` | 第 6 个把手的可访问名（多滑块模式；优先于 labels/label） | — | — |
+| `label-7` | 第 7 个把手的可访问名（多滑块模式；优先于 labels/label） | — | — |
+| `label-8` | 第 8 个把手的可访问名（多滑块模式；优先于 labels/label） | — | — |
 | `labels` | 逐把手可访问名的 JSON 数组（如 `["低","中","高"]`；label-N 属性族优先） | `string` | — |
 | `large-step` | 键盘大步步进量（Shift+方向键 / PageUp / PageDown 生效）；缺省为 10 × step；每次按键即派发 `oas-input` + `oas-change` | `string` | — |
 | `marks` | 刻度：JSON 对象 `{"0":"0°C"}`（值→标签）或 JSON 数组 `[0,26,60]`（也可为 `{"value":26,"label":"26°C"}`）；刻度点与标签显示在轨道下方，值经过处高亮；`reverse` 下位置镜像 | `string \| Record<string, string \| number> \| number[]` | — |

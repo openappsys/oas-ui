@@ -229,7 +229,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabledDate` | Disabled callback (property) | `((d: Date) => boolean) \| null` | — |
+| `disabledDate` | Disabled-date predicate (property function channel, `(date) => boolean`) | `((d: Date) => boolean) \| null` | — |
 
 #### Events
 
