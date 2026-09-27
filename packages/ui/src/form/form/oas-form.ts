@@ -441,9 +441,9 @@ export class OASForm extends OASElement {
     }
     try {
       const parsed = JSON.parse(raw ?? '{}') as Rules
-      // null-proto 归一：普通原型对象的继承成员（toString 等）会被 `?? []` 穿透成「已配规则」炸 for-of
-      this._rules =
-        parsed !== null && typeof parsed === 'object' ? Object.assign(Object.create(null), parsed) : Object.create(null)
+      // 普通原型拷贝（getter 不暴露 null-proto 对象——宿主 hasOwnProperty/toString 可用）；
+      // 继承成员穿透由两个读点的 Object.hasOwn 守卫兜底（null-proto 曾致 el.rules.hasOwnProperty 抛错）
+      this._rules = parsed !== null && typeof parsed === 'object' ? Object.assign({}, parsed) : {}
     } catch {
       this._rules = Object.create(null)
     }
