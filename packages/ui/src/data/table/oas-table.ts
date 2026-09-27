@@ -3,6 +3,7 @@ import { downloadPath } from '@oas-ui/icons'
 import { resolveDirection } from '../../shared/direction.js'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
+import { HeightCache, computeDynamicWindow } from '../virtual-list/dynamic-height.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
 import { registeredTableCapabilities, onTableCapabilityRegistered } from './oas-table-capability.js'
 // 行内交互宿主排除清单（行点击/双击编辑共用的单一事实来源，含维护纪律注释）
@@ -379,6 +380,12 @@ tr.row[data-selected='true'] td {
 .table-scroll[data-virtual='true'] td {
   padding-top: 0;
   padding-bottom: 0;
+}
+/* 横向虚拟（column-virtual）：窗口外列归并为占位格（colSpan 跨列求和）——
+   透明无边框（bordered 全网格模式下也不画线，避免空格子线泄露） */
+.col-virtual-placeholder {
+  background: transparent;
+  border: none;
 }
 tr.spacer td {
   padding: 0;
@@ -856,6 +863,8 @@ const CHECK_CELL_WIDTH = 40
 const EXPAND_CELL_WIDTH = 40
 /** 行拖拽手柄列宽度（px；固定列 sticky 偏移的占位，与手写 CSS 宽度同步） */
 const DRAG_CELL_WIDTH = 40
+/** 展开切换列宽（column-virtual 的 colgroup 定宽用；非 col-virtual 模式该列 auto） */
+const EXPAND_TOGGLE_WIDTH = 48
 const FILTER_ICON =
   '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M4.5 6.5h7M6.5 10h3"/></svg>'
 
@@ -919,6 +928,8 @@ export class OASTableBase extends OASElement {
       'export-file-name',
       'grid-navigation',
       'row-draggable',
+      // 横向虚拟滚动（列窗口）：建议全列显式 width；多级表头 / span-method / 非两端固定列布局不兼容（告警降级）
+      'column-virtual',
     ]
   }
 
@@ -934,6 +945,18 @@ export class OASTableBase extends OASElement {
   /** 恢复 scrollTop 触发的下一次 scroll 事件需忽略，防止重入死循环 */
   private ignoreNextScroll = false
   private wrap: HTMLElement | null = null
+  /** column-virtual：非固定列（middle 段）的列宽前缀缓存（复用 virtual-list 的 HeightCache，横向换轴复用） */
+  private colWidthCache: HeightCache | null = null
+  /** column-virtual：当前列窗口（middle 段内的 [start, end)） */
+  private colWin: { start: number; end: number } = { start: 0, end: 0 }
+  /** column-virtual：叶子列三段分组缓存（update 时刷新；null = 未启用/已降级） */
+  private _colSegments: {
+    left: TableColumn[]
+    middle: TableColumn[]
+    right: TableColumn[]
+  } | null = null
+  /** column-virtual：列窗口变化的告警去重（多级表头 / spanMethod / 固定列布局不符） */
+  private colVirtualWarned = new Set<string>()
   /** 是否可展开行（任一数据行存在非空 expand 字段） */
   private _expandable = false
   /** 行内编辑能力 controller（经能力注册表注入；无则编辑相关渲染挂接跳过 + dev 告警） */
@@ -1323,12 +1346,63 @@ export class OASTableBase extends OASElement {
 
     const layout = this.computeLayout()
     const virtual = this.isVirtual()
+    // 横向虚拟（column-virtual）：列窗口同步 + 不兼容形态降级判定。
+    // 窗口在本轮渲染前刷新到最新（scroll 事件驱动 syncColumnWindow 后经此消费）。
+    // 暂不兼容：合计行（summary 的跨列合计格与列窗口错位）——降级为普通渲染。
+    let colVirtual = false
+    if (this.columnVirtualOn() && summaryConfigs.length === 0) {
+      const segs = this.splitColSegments(this.effectiveColumns())
+      if (segs) {
+        colVirtual = true
+        this._colSegments = segs
+        this.syncColumnWindow(segs)
+      } else {
+        this._colSegments = null
+        this.warnColVirtualOnce(
+          'fixed-layout',
+          'column-virtual 要求固定列仅出现在两端（left 段 → 非固定段 → right 段）：当前列序穿插，已降级为普通渲染',
+        )
+      }
+    } else {
+      this._colSegments = null
+      if (this.columnVirtualOn() && summaryConfigs.length > 0) {
+        this.warnColVirtualOnce('summary', '合计行（summary）与 column-virtual 暂不兼容：已降级为普通渲染')
+      }
+    }
     // table-layout：fixed/auto 透传 table 元素（列宽定宽场景配 fixed；缺省/非法不写——浏览器 auto 基线）
     const tableLayout = this.getAttr('table-layout', '')
     const tableEl = this.shadow.querySelector('table')
     if (tableEl) {
       if (tableLayout === 'fixed' || tableLayout === 'auto') tableEl.style.tableLayout = tableLayout
       else tableEl.style.removeProperty('table-layout')
+    }
+    // column-virtual：colgroup 逐列声明宽（前置列 + 全部叶子列 + 展开列）——
+    // 必须配 table-layout:fixed（auto 布局会把 col 宽当「建议」忽略，总宽塌缩无法横向滚动）
+    if (colVirtual && tableEl) {
+      tableEl.style.tableLayout = 'fixed'
+      tableEl.querySelector('colgroup')?.remove()
+      const cg = document.createElement('colgroup')
+      if (this.rowDragEnabled()) {
+        const c = document.createElement('col')
+        c.style.width = `${DRAG_CELL_WIDTH}px`
+        cg.appendChild(c)
+      }
+      if (this.hasAttr('checkable')) {
+        const c = document.createElement('col')
+        c.style.width = `${CHECK_CELL_WIDTH}px`
+        cg.appendChild(c)
+      }
+      for (const col of this.effectiveColumns()) {
+        const c = document.createElement('col')
+        c.style.width = `${this.colWidthPx(col)}px`
+        cg.appendChild(c)
+      }
+      if (this._expandable) {
+        const c = document.createElement('col')
+        c.style.width = `${EXPAND_TOGGLE_WIDTH}px`
+        cg.appendChild(c)
+      }
+      tableEl.insertBefore(cg, tableEl.firstChild)
     }
     if (virtual) {
       this.wrap!.setAttribute('data-virtual', 'true')
@@ -1388,11 +1462,19 @@ export class OASTableBase extends OASElement {
         head.appendChild(row)
       }
     } else if (showHeader) {
-      // 扁平表头（单行，向后兼容）
+      // 扁平表头（单行，向后兼容）；column-virtual 时走窗口序列（占位 colSpan 归并窗口外列）
       const tr = document.createElement('tr')
       if (this.rowDragEnabled()) tr.appendChild(this.buildDragTh(layout, 1))
       if (checkable) tr.appendChild(this.buildCheckAllTh(layout, flat, rowKey, selected, 1, single))
-      for (const col of this.effectiveColumns()) {
+      for (const item of this.columnWindowSequence()) {
+        if (!item.col) {
+          const ph = document.createElement('th')
+          ph.colSpan = item.span
+          ph.className = 'col-virtual-placeholder'
+          tr.appendChild(ph)
+          continue
+        }
+        const col = item.col
         const th = document.createElement('th')
         th.setAttribute('part', 'header')
         th.setAttribute('data-key', col.key)
@@ -1598,12 +1680,27 @@ export class OASTableBase extends OASElement {
     const effCols = this.effectiveColumns()
     // 受控合并（span-method）仅在非虚拟模式生效（与 merge 同级的定高限制）
     const useSpan = !this.isVirtual() && this._spanMethod !== null
-    for (let i = 0; i < effCols.length; i++) {
-      const col = effCols[i]!
-      if (useSpan && this._spanCovered.has(`${dataIndex}:${i}`)) continue
+    // 列序列：column-virtual 时 = [左占位 colSpan][窗口列…][右占位 colSpan]（占位项 col=null）；
+    // 非 column-virtual = 全列（span 1），行为与旧版完全一致
+    const colSeq = this.columnWindowSequence()
+    let dataColSeq = 0
+    for (let seqIdx = 0; seqIdx < colSeq.length; seqIdx++) {
+      const item = colSeq[seqIdx]!
+      const col = item.col
+      if (!col) {
+        // 横向虚拟：窗口外占位格（colSpan 归并，宽度由 colgroup 对应列求和）
+        const ph = document.createElement('td')
+        ph.colSpan = item.span
+        ph.className = 'col-virtual-placeholder'
+        tr.appendChild(ph)
+        continue
+      }
+      const colIdx = dataColSeq
+      dataColSeq++
+      if (useSpan && this._spanCovered.has(`${dataIndex}:${colIdx}`)) continue
       let span: { rowspan: number; colspan: number } | null = null
       if (useSpan) {
-        const n = normalizeSpan(this._spanMethod!(row, col, dataIndex, i))
+        const n = normalizeSpan(this._spanMethod!(row, col, dataIndex, colIdx))
         if (n.rowspan < 1 || n.colspan < 1) continue // 函数声明本格被覆盖 → 不渲染
         if (n.rowspan > 1 || n.colspan > 1) span = n
       }
@@ -1611,17 +1708,17 @@ export class OASTableBase extends OASElement {
       if (rowTokens.length > 0) td.setAttribute('part', `cell ${rowTokens.join(' ')}`)
       if (span) {
         td.rowSpan = span.rowspan
-        td.colSpan = Math.min(span.colspan, effCols.length - i)
+        td.colSpan = Math.min(span.colspan, effCols.length - colIdx)
         // 登记被本格覆盖的格：rowspan 向下延伸 + colspan 向右延伸（本行右邻先行跳过）
         for (let r = dataIndex + 1; r < dataIndex + span.rowspan; r++) {
-          for (let c = i; c < i + td.colSpan; c++) this._spanCovered.add(`${r}:${c}`)
+          for (let c = colIdx; c < colIdx + td.colSpan; c++) this._spanCovered.add(`${r}:${c}`)
         }
-        for (let c = i + 1; c < i + td.colSpan; c++) this._spanCovered.add(`${dataIndex}:${c}`)
+        for (let c = colIdx + 1; c < colIdx + td.colSpan; c++) this._spanCovered.add(`${dataIndex}:${c}`)
       }
       this.applyColumnOffset(td, col, layout)
       if (col.align) td.className = `align-${col.align}`
       td.setAttribute('data-col', col.key)
-      if (i === 0) {
+      if (colIdx === 0) {
         // 树形：按层级缩进（indent-size 属性控制每级 px，缺省 24=现状；非法/负值回落默认）
         if (hasChildren || flat.depth > 0) {
           td.style.paddingLeft = `${16 + flat.depth * this.indentSize()}px`
@@ -2828,6 +2925,130 @@ export class OASTableBase extends OASElement {
     return this.getAttr('height', '') !== ''
   }
 
+  /** column-virtual 声明生效判定：属性在场 + 无不兼容形态（多级表头 / span-method / 固定列布局不符 → 告警一次并降级为普通渲染） */
+  private columnVirtualOn(): boolean {
+    if (!this.hasAttr('column-virtual')) return false
+    if (this.headerDepth() > 1) {
+      this.warnColVirtualOnce(
+        'multi-header',
+        '多级表头与 column-virtual 不兼容：已降级为普通渲染（column-virtual 已忽略）',
+      )
+      return false
+    }
+    if (this._spanMethod) {
+      this.warnColVirtualOnce(
+        'span-method',
+        'span-method 与 column-virtual 不兼容（列窗口会破坏跨列合并）：已降级为普通渲染',
+      )
+      return false
+    }
+    return true
+  }
+
+  private warnColVirtualOnce(kind: string, message: string): void {
+    if (this.colVirtualWarned.has(kind)) return
+    this.colVirtualWarned.add(kind)
+    console.warn(`[oas-table] ${message}`)
+  }
+
+  /**
+   * 叶子列三段分组（column-virtual 的布局约定）：[fixed=left 段] [非固定段（列窗口作用域）] [fixed=right 段]。
+   * 顺序不符（left 出现在 middle/right 之后、right 出现在 left/middle 之前等穿插布局）返回 null → 告警降级。
+   */
+  private splitColSegments(
+    cols: TableColumn[],
+  ): { left: TableColumn[]; middle: TableColumn[]; right: TableColumn[] } | null {
+    const left: TableColumn[] = []
+    const middle: TableColumn[] = []
+    const right: TableColumn[] = []
+    let phase = 0 // 0=left 1=middle 2=right
+    for (const c of cols) {
+      if (c.fixed === 'left') {
+        if (phase >= 1) return null
+        left.push(c)
+      } else if (c.fixed === 'right') {
+        phase = 2
+        right.push(c)
+      } else {
+        if (phase === 2) return null
+        phase = Math.max(phase, 1)
+        middle.push(c)
+      }
+    }
+    return { left, middle, right }
+  }
+
+  /** 列宽像素解析：width 形如 "120" / "120px" → 数值；缺省/非法 → 预估 120（横向虚拟建议全列显式 width） */
+  private colWidthPx(col: TableColumn): number {
+    const raw = String(col.width ?? '').trim()
+    const n = Number.parseFloat(raw)
+    return Number.isFinite(n) && n > 0 ? n : 120
+  }
+
+  /**
+   * column-virtual 列窗口同步：scrollLeft / 视口宽 / 列宽变化时重算 middle 段窗口；
+   * 窗口变化时触发整表重渲染（行虚拟窗口在重渲染中保留）。rAF 由 scroll handler 节流。
+   */
+  private syncColumnWindow(segments: { left: TableColumn[]; middle: TableColumn[]; right: TableColumn[] }): boolean {
+    const w = this.wrap
+    if (!w) return false
+    const n = segments.middle.length
+    if (!this.colWidthCache || this.colWidthCache.length !== n) {
+      this.colWidthCache = new HeightCache()
+      this.colWidthCache.configure(n, 120)
+      for (let i = 0; i < n; i++) this.colWidthCache.measure(i, this.colWidthPx(segments.middle[i]!))
+    }
+    const prefix: number[] = [0]
+    for (let i = 0; i < n; i++) prefix.push((prefix[i] ?? 0) + this.colWidthCache.heightAt(i))
+    const win = computeDynamicWindow(prefix, n, w.scrollLeft, w.clientWidth, 2)
+    if (win.start === this.colWin.start && win.end === this.colWin.end) return false
+    this.colWin = win
+    return true
+  }
+
+  /**
+   * column-virtual 渲染序列：[前置列（drag/check，由 buildRow 既有逻辑处理）]
+   * [left 固定段] [左占位] [middle 窗口列] [右占位] [right 固定段] [后置列（expand）]。
+   * 占位以 colSpan 归并窗口外列（宽度由 colgroup 对应列求和，table fixed 布局原生支持）。
+   */
+  private columnWindowLayout(cols: TableColumn[]): {
+    leftPlaceholder: number
+    rendered: TableColumn[]
+    rightPlaceholder: number
+  } {
+    const segments = this.splitColSegments(cols)
+    if (!segments) return { leftPlaceholder: 0, rendered: cols, rightPlaceholder: 0 }
+    const { left, middle, right } = segments
+    const leftN = left.length
+    const win = this.colWin
+    const start = Math.min(Math.max(0, win.start), middle.length)
+    const end = Math.min(Math.max(start, win.end), middle.length)
+    return {
+      leftPlaceholder: start,
+      rendered: middle.slice(start, end),
+      rightPlaceholder: middle.length - end,
+    }
+  }
+
+  /**
+   * column-virtual 行/表头的单元格序列：[left 固定段] [左占位 colSpan] [middle 窗口列] [右占位 colSpan] [right 固定段]。
+   * 非 column-virtual（_colSegments 为 null）返回全列 span=1（与旧版渲染完全等价）。
+   * 占位项 col=null（渲染为无内容 td/th，colSpan 归并窗口外列；宽度由 colgroup 对应列求和）。
+   */
+  private columnWindowSequence(): Array<{ span: number; col: TableColumn | null }> {
+    const segs = this._colSegments
+    if (!segs) return this.effectiveColumns().map((col) => ({ span: 1, col }))
+    const seq: Array<{ span: number; col: TableColumn | null }> = segs.left.map((col) => ({ span: 1, col }))
+    const start = Math.min(Math.max(0, this.colWin.start), segs.middle.length)
+    const end = Math.min(Math.max(start, this.colWin.end), segs.middle.length)
+    if (start > 0) seq.push({ span: start, col: null })
+    for (const col of segs.middle.slice(start, end)) seq.push({ span: 1, col })
+    const rightN = segs.middle.length - end
+    if (rightN > 0) seq.push({ span: rightN, col: null })
+    seq.push(...segs.right.map((col) => ({ span: 1, col })))
+    return seq
+  }
+
   private tableHeight(): number {
     return Number(this.getAttr('height', '320')) || 320
   }
@@ -2884,6 +3105,18 @@ export class OASTableBase extends OASElement {
       this.ignoreNextScroll = false
       return
     }
+    // 横向虚拟（column-virtual）：非行虚拟时也要按 scrollLeft 重算列窗口
+    const colVirtualOnly = this.columnVirtualOn() && !this.isVirtual()
+    if (colVirtualOnly && this.wrap) {
+      if (this.scrollRaf) return
+      this.scrollRaf = requestAnimationFrame(() => {
+        this.scrollRaf = 0
+        const segs = this._colSegments
+        if (!segs) return
+        if (this.syncColumnWindow(segs)) this.update()
+      })
+      return
+    }
     if (!this.isVirtual() || !this.wrap) return
     if (this.scrollRaf) return
     this.scrollRaf = requestAnimationFrame(() => {
@@ -2891,6 +3124,8 @@ export class OASTableBase extends OASElement {
       const body = this.shadow.querySelector('tbody')
       const head = this.shadow.querySelector('thead')
       if (!body || !head) return
+      // 双开（行虚拟 × column-virtual）：横向滚动同步列窗口（纵向滚动不改变列窗口，重算幂等）
+      if (this._colSegments) this.syncColumnWindow(this._colSegments)
       const st = this.wrap!.scrollTop
       const rowKey = this.getAttr('row-key', 'key')
       const selected = this.getAttr('selected', '').split(',').filter(Boolean)

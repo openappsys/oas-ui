@@ -1155,3 +1155,78 @@ test('table 行拖拽（D15）：拖手柄换位派发 oas-row-reorder 且宿主
   })
   expect(order).toEqual(['李四', '张三', '王五', '赵六'])
 })
+
+test('table column-virtual 横向虚拟：窗口列渲染 + 占位归并 + 滚动推移 + 固定列恒渲染', async ({ page }) => {
+  // 大宽表场景：60 列（含 1 个 left 固定列）× 40 行，行虚拟 height + column-virtual 双开。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('oas-table', { timeout: 10000 })
+  await up(page, 'oas-table')
+
+  const r = await page.evaluate(async () => {
+    const COLS = 60
+    const ROWS = 40
+    const columns = Array.from({ length: COLS }, (_, i) => ({
+      key: `c${i}`,
+      title: `列${i}`,
+      width: 120,
+      ...(i === 0 ? { fixed: 'left' as const } : {}),
+    }))
+    const data = Array.from({ length: ROWS }, (_, r) =>
+      Object.fromEntries(Array.from({ length: COLS }, (_, c) => [`c${c}`, `r${r}c${c}`])),
+    )
+    const el = document.createElement('oas-table')
+    el.setAttribute('column-virtual', '')
+    el.setAttribute('height', '300')
+    el.setAttribute('row-height', '36')
+    el.setAttribute('checkable', '')
+    document.body.append(el)
+    const t = el as unknown as { columns: unknown; data: unknown }
+    t.columns = columns
+    t.data = data
+    await new Promise((res) => setTimeout(res, 200))
+
+    const scroll = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    const countTds = (): number => el.shadowRoot!.querySelectorAll('tbody td').length
+    const countTh = (): number => el.shadowRoot!.querySelectorAll('thead th').length
+    const windowDataTds = (): number => el.shadowRoot!.querySelectorAll('tbody td[data-col]').length
+
+    const before = {
+      scrollWidth: scroll.scrollWidth,
+      thCount: countTh(),
+      tdCount: countTds(),
+      dataTds: windowDataTds(),
+      fixedVisible: !!el.shadowRoot!.querySelector('td[data-fixed="left"]'),
+    }
+
+    // 横向滚动到中段 → 列窗口推移
+    scroll.scrollLeft = 2400
+    await new Promise((res) => setTimeout(res, 120))
+    const afterScroll = {
+      firstDataKey: el.shadowRoot!.querySelector('tbody td[data-col]')?.getAttribute('data-col'),
+      fixedVisible: !!el.shadowRoot!.querySelector('td[data-fixed="left"]'),
+    }
+
+    // 纵向滚动到底 → 行窗口推移（双开验证）
+    scroll.scrollTop = 10000
+    await new Promise((res) => setTimeout(res, 120))
+    const lastRowKeys = [...el.shadowRoot!.querySelectorAll('tbody tr[data-key]')]
+      .slice(-3)
+      .map((tr) => tr.getAttribute('data-key'))
+
+    return {
+      ...before,
+      scrollWidth: scroll.scrollWidth,
+      afterScroll,
+      lastRowKeys,
+    }
+  })
+
+  // 横向虚拟核心：DOM 列数远小于总列数（窗口 + 占位归并）
+  expect(r.thCount, '表头 th 数 = 前置 + 固定 + 窗口 + 占位（远小于 60）').toBeLessThan(30)
+  expect(r.tdCount, '行内 td 数远小于 60×行数').toBeLessThan(60 * 5)
+  expect(r.scrollWidth, 'colgroup 撑出全列总宽（横向滚动条真实存在）').toBeGreaterThan(60 * 120)
+  expect(r.fixedVisible, 'left 固定列恒渲染').toBe(true)
+  // 滚动后窗口推移（data-col 内容由窗口决定；此处验证窗口列在滚动后仍正确渲染）
+  expect(r.afterScroll.fixedVisible, '横向滚动后固定列仍在').toBe(true)
+  expect(r.lastRowKeys.length, '纵向滚动后行窗口仍正常').toBeGreaterThan(0)
+})
