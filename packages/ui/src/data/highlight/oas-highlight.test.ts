@@ -165,6 +165,19 @@ describe('OASHighlight', () => {
 
   // ---------- 重音（diacritic 折叠） ----------
 
+  it('指纹并入关键词原值：大小写改写（同片段）重发 oas-count 且 matches 更新', () => {
+    const el = new OASHighlight()
+    el.setAttribute('text', 'say HELLO world')
+    el.setAttribute('highlight', 'HELLO')
+    document.body.appendChild(el)
+    const details: Array<{ count: number; matches: string[] }> = []
+    el.addEventListener('oas-count', (e) => details.push((e as CustomEvent).detail))
+    el.setAttribute('highlight', 'hello')
+    expect(details.length, '关键词改写重发').toBe(1)
+    expect(details[0]!.matches, 'matches 更新为新关键词').toEqual(['hello'])
+    el.remove()
+  })
+
   it('组合符跨码点重排一致性（希伯来 niqqud）：oas-count 的 matches 与实际 mark 不分歧', () => {
     const el = new OASHighlight()
     el.setAttribute('text', '\u05e9\u05c1\u05bc')

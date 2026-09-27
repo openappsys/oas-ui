@@ -530,3 +530,52 @@ test('tree D16：check-all 顶部全选行三态、全选/取消派发 oas-check
   await box.uncheck()
   expect(await tree.evaluate((h) => h.getAttribute('checked'))).toBe('[]')
 })
+
+// —— 行为回归（四轮 review）：check-all 过滤态只选可见匹配节点 ——
+test('tree check-all 过滤态只选可见匹配（清过滤后全树）', async ({ page }) => {
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tree')
+  const r = await page.evaluate(async () => {
+    const host = document.createElement('oas-tree')
+    host.setAttribute('checkable', '')
+    host.setAttribute('check-all', '')
+    host.setAttribute('filter', '节点 A')
+    host.setAttribute(
+      'data',
+      JSON.stringify([
+        {
+          key: 'a',
+          label: '节点 A',
+          children: [
+            { key: 'a-1', label: '子节点 1' },
+            { key: 'a-2', label: '子节点 2' },
+          ],
+        },
+        { key: 'b', label: '节点 B' },
+      ]),
+    )
+    host.style.cssText = 'position:fixed;top:-400px;left:0;'
+    document.body.appendChild(host)
+    await customElements.whenDefined('oas-tree')
+    await new Promise((r) => setTimeout(r, 300))
+    const box = host.shadowRoot!.querySelector<HTMLInputElement>('.check-all-check')!
+    box.checked = true
+    box.dispatchEvent(new Event('change'))
+    await new Promise((r) => setTimeout(r, 100))
+    const filtered = host.getAttribute('checked')
+    host.removeAttribute('filter')
+    await new Promise((r) => setTimeout(r, 300))
+    const box2 = host.shadowRoot!.querySelector<HTMLInputElement>('.check-all-check')!
+    box2.checked = true
+    box2.dispatchEvent(new Event('change'))
+    await new Promise((r) => setTimeout(r, 100))
+    const all = host.getAttribute('checked')
+    host.remove()
+    return { filtered, all }
+  })
+  const f = JSON.parse(r.filtered ?? '[]') as string[]
+  const a = JSON.parse(r.all ?? '[]') as string[]
+  expect(f.length, '过滤态只选可见匹配子树').toBe(3)
+  expect(f.includes('b'), '未命中节点不入选').toBe(false)
+  expect(a.length, '清过滤全树 4 节点').toBe(4)
+})
