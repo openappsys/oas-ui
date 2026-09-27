@@ -1029,6 +1029,21 @@ describe('OASForm review 回归（真实路径，非合成事件造假绿）', (
     expect(cal.getAttribute('value'), 'range 区间 JSON 不得被值同步抹掉').toBe('["2026-08-05","2026-08-15"]')
   })
 
+  it('errors 原型链穿透真靶点：无规则字段名 toString 提交后不得误标 aria-invalid', () => {
+    const el = ((): OASForm => {
+      const f = new OASForm()
+      f.innerHTML = '<oas-input name="toString" value="x"></oas-input>'
+      document.body.appendChild(f)
+      return f
+    })()
+    el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    const field = el.querySelector('oas-input[name="toString"]')!
+    expect(
+      field.getAttribute('aria-invalid'),
+      "'toString' in errors 原型穿透会误标——Object.hasOwn 后必须为 null",
+    ).toBeNull()
+  })
+
   it('字段名撞 Object.prototype 成员（toString/valueOf）不再炸：输入与提交全链路安全', () => {
     const el = ((): OASForm => {
       const f = new OASForm()
@@ -1062,10 +1077,6 @@ describe('OASForm review 回归（真实路径，非合成事件造假绿）', (
     el.addEventListener('oas-submit', (e) => (detail = (e as CustomEvent).detail))
     el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
     expect(({} as Record<string, unknown>).oasPolluted, 'Object.prototype 不得被污染').toBeUndefined()
-    // errors 原型链穿透防护：无规则字段名撞继承成员（toString）不得被误标错误
-    // （旧 'toString' in {} === true 会把字段误判为已有错误——aria-invalid 误标 + 文案写成继承函数）
-    const plain = el.querySelector('oas-input[name="__proto__.oasPolluted"]')!
-    expect(plain.getAttribute('aria-invalid'), '拒绝路径字段不误标').toBeNull()
     const values = (detail as { values: Record<string, unknown> }).values
     expect(JSON.stringify(values).includes('pwned'), '拒绝路径的值不进 values').toBe(false)
     expect(parseNamePath('__proto__.x'), '保留键段整块拒绝').toBeNull()

@@ -1744,6 +1744,25 @@ describe('OASTree size 五档 / block-node / selectable 整树开关（P2 批）
       expect(boxOf(el).indeterminate).toBe(false)
     })
 
+    it('check-all 尊重过滤：过滤态只选可见匹配节点（隐藏节点不进勾选集）', async () => {
+      const el = mount({ checkable: '', 'check-all': '', filter: '节点 A', data: CASCADE_DATA })
+      await new Promise((r) => setTimeout(r, 0))
+      const box = boxOf(el)
+      box.checked = true
+      box.dispatchEvent(new Event('change'))
+      const value = checkedOf(el)
+      expect(value.length, '过滤态全选只含可见匹配（A 子树）').toBeGreaterThan(0)
+      expect(value.includes('b'), '未命中的节点 B 不得入选').toBe(false)
+      expect(value.includes('a'), '命中节点 A 入选').toBe(true)
+      // 清过滤后全选覆盖全树
+      el.removeAttribute('filter')
+      await new Promise((r) => setTimeout(r, 0))
+      const box2 = boxOf(el)
+      box2.checked = true
+      box2.dispatchEvent(new Event('change'))
+      expect(checkedOf(el).length, '清过滤后全树').toBe(4)
+    })
+
     it('check-all：部分勾选时半选（indeterminate=true）', () => {
       const el = mount({ checkable: '', 'check-all': '', data: CASCADE_DATA, checked: '["a"]' })
       expect(boxOf(el).checked).toBe(false)
