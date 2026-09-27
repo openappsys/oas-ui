@@ -1029,6 +1029,43 @@ describe('OASForm review 回归（真实路径，非合成事件造假绿）', (
     expect(cal.getAttribute('value'), 'range 区间 JSON 不得被值同步抹掉').toBe('["2026-08-05","2026-08-15"]')
   })
 
+  it('事件载荷原型契约：oas-validate-fail 的 detail.errors 与 validator 的 values 形参均为普通原型（宿主可调 hasOwnProperty）', () => {
+    const el = ((): OASForm => {
+      const f = new OASForm()
+      f.setAttribute('rules', JSON.stringify({ a: [{ required: true, message: '必填' }] }))
+      f.innerHTML = '<oas-input name="a"></oas-input>'
+      document.body.appendChild(f)
+      return f
+    })()
+    let detail: { errors: Record<string, string> } | null = null
+    el.addEventListener('oas-validate-fail', (e) => (detail = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    expect(typeof detail!.errors.hasOwnProperty, 'detail.errors 普通原型').toBe('function')
+    expect(detail!.errors.hasOwnProperty('a'), '错误键可读').toBe(true)
+    el.remove()
+    // validator 的 values 形参
+    const el2 = ((): OASForm => {
+      const f = new OASForm()
+      f.innerHTML = '<oas-input name="x" value="v"></oas-input>'
+      document.body.appendChild(f)
+      return f
+    })()
+    let protoOk = false
+    el2.rules = {
+      x: [
+        {
+          validator: (_v: string, values: Record<string, string>) => {
+            protoOk = typeof values.hasOwnProperty === 'function'
+            return true
+          },
+        },
+      ],
+    }
+    el2.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    expect(protoOk, 'validator values 形参普通原型').toBe(true)
+    el2.remove()
+  })
+
   it('rules getter 原型契约：初值/非法 JSON catch/合法 attribute/property 四路径均普通原型（hasOwnProperty 可用）', () => {
     const el = new OASForm()
     expect(typeof el.rules.hasOwnProperty, '升级前初值普通原型').toBe('function')
