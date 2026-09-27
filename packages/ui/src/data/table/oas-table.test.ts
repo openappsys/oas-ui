@@ -21,6 +21,8 @@ vi.mock('../../overlay/floating/index.js', async (importOriginal) => {
 // 本文件仍显式 import 编辑能力包（幂等冗余，与族包/全量入口同注册路径）。
 // 纯核 core 入口（不含编辑能力）的静默失效边界见 oas-table-edit-capability.test.ts。
 import './edit/index.js'
+// editComponent 组件编辑器用例：oas-input 作为 value 语义组件的库内代表（副作用注册）
+import '../../form/input/index.js'
 
 const COLUMNS = JSON.stringify([
   { key: 'name', title: '姓名', sortable: true },
@@ -2913,5 +2915,123 @@ describe('OASTable P2 批（table-layout / hover / filter-icon / indent-size / r
       box.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
       expect(fired, 'checkbox 命中交互排除清单').toBe(0)
     })
+  })
+})
+
+describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const compCols = JSON.stringify([
+    { key: 'name', title: '姓名', editable: true, editComponent: 'oas-input' },
+    { key: 'age', title: '年龄', editable: true },
+  ])
+  const compData = JSON.stringify([
+    { name: '张三', age: 30 },
+    { name: '李四', age: 25 },
+  ])
+
+  const compMount = (): OASTable => {
+    const el = new OASTable()
+    el.setAttribute('editable', '')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('columns', compCols)
+    el.setAttribute('data', compData)
+    document.body.appendChild(el)
+    return el
+  }
+
+  const cellOf = (el: OASTable, row: number, col: number): HTMLElement =>
+    ([...el.shadowRoot!.querySelectorAll('tr.row td')] as HTMLElement[])[row * 2 + col]!
+
+  it('editComponent 优先于 editor：双击挂载 oas-input（cell-editor-component）并注入初值', () => {
+    const el = compMount()
+    const td = cellOf(el, 0, 0)
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const comp = td.querySelector<HTMLElement>('oas-input.cell-editor-component')
+    expect(comp, '组件编辑器挂载（而非原生 input.cell-editor）').not.toBeNull()
+    expect(td.querySelector('input.cell-editor')).toBeNull()
+    expect(comp!.getAttribute('value')).toBe('张三')
+    expect(comp!.classList.contains('cell-editor')).toBe(true)
+  })
+
+  it('组件 value 变化 + change 事件 → 提交并回写 data、派发 oas-edit', () => {
+    const el = compMount()
+    type EditDetail = { value: string }
+    let detail: EditDetail | null = null
+    el.addEventListener('oas-edit', (e) => {
+      detail = (e as CustomEvent<EditDetail>).detail
+    })
+    const td = cellOf(el, 0, 0)
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const comp = td.querySelector<HTMLElement>('oas-input.cell-editor-component')!
+    // 组件内部 value 属性变化 + change 事件（oas-input 的 value 属性写后内部 input 同步——
+    // 此处直接驱动其 change 派发路径：先设属性再派发，编辑控制器读组件 value）
+    comp.setAttribute('value', '新名字')
+    comp.dispatchEvent(new Event('change', { bubbles: true }))
+    // TS 闭包窄化：回调内赋值对控制流不可见，读值前显式还原类型
+    const d = detail as EditDetail | null
+    expect(d?.value).toBe('新名字')
+    // 非受控回写：data 的 name 字段更新
+    expect(JSON.parse(el.getAttribute('data')!)[0].name).toBe('新名字')
+  })
+
+  it('Esc 取消：还原旧值并派发 oas-edit-cancel，不回写', () => {
+    const el = compMount()
+    let cancelled = 0
+    let edited = 0
+    el.addEventListener('oas-edit-cancel', () => cancelled++)
+    el.addEventListener('oas-edit', () => edited++)
+    const td = cellOf(el, 0, 0)
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    // Esc 派发到编辑器组件自身（buildFormComponentEditor 的 keydown 监听目标）
+    const comp = td.querySelector<HTMLElement>('oas-input.cell-editor-component')!
+    comp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(cancelled).toBe(1)
+    expect(edited).toBe(0)
+    expect(cellOf(el, 0, 0).textContent).toContain('张三')
+  })
+
+  it('宿主自定义 WC（最小 value 契约）同通道可用', () => {
+    class MiniEditor extends HTMLElement {
+      value = ''
+    }
+    if (!customElements.get('mini-editor-x')) customElements.define('mini-editor-x', MiniEditor)
+    const el = compMount()
+    // name 列改用宿主自定义组件编辑器
+    const cols = JSON.parse(el.getAttribute('columns')!)
+    cols[0].editComponent = 'mini-editor-x'
+    el.setAttribute('columns', JSON.stringify(cols))
+    const td = cellOf(el, 1, 0)
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const comp = td.querySelector<HTMLElement>('mini-editor-x.cell-editor-component')
+    expect(comp, '宿主自定义组件挂载').not.toBeNull()
+    expect(comp!.getAttribute('value')).toBe('李四')
+  })
+})
+
+describe('editComponent 诊断', () => {
+  it('诊断：setAttribute 后组件 value property 与 attribute 读取', async () => {
+    const el = document.createElement('oas-input')
+    document.body.appendChild(el)
+    el.setAttribute('value', 'abc')
+    const host = el as unknown as { value?: unknown; shadowRoot: ShadowRoot }
+    console.log('attr value =', el.getAttribute('value'))
+    console.log('property value =', JSON.stringify(host.value))
+    console.log('inner input value =', host.shadowRoot?.querySelector('input')?.value)
+    el.setAttribute('value', 'xyz')
+    console.log(
+      'after set: property =',
+      JSON.stringify(host.value),
+      'inner =',
+      host.shadowRoot?.querySelector('input')?.value,
+    )
   })
 })

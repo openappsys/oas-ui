@@ -2944,7 +2944,8 @@
       "export-format": "Export format: `csv` (default) / `excel`, or the comma list `csv,excel` (both buttons); invalid falls back to csv",
       "export-file-name": "Export file name (without extension; path separators and reserved characters are sanitized)",
       "grid-navigation": "Keyboard grid navigation: role=grid, single Tab stop for the data region, arrow keys roam cells (Home/End/PageUp-Down, Enter/Space activate in-cell controls)",
-      "row-draggable": "Row drag sorting: renders a drag-handle column and dispatches oas-row-reorder on drop; disabled with a warning under virtual scrolling"
+      "row-draggable": "Row drag sorting: renders a drag-handle column and dispatches oas-row-reorder on drop; disabled with a warning under virtual scrolling",
+      "edit-component": "Component editor (takes precedence over editor): any value-semantic WC tag name (e.g. oas-input / oas-date-picker). Contract: value attribute read/write, change event submits, Escape cancels. Overlay components in a later batch"
     },
     "events": {
       "oas-check": "Checkbox selection change, `detail: { keys: string[] }`",
