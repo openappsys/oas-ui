@@ -27,10 +27,16 @@ function main() {
   const files = readdirSync(MANIFEST_DIR).filter((f) => f.endsWith('.json') && f !== 'index.json')
   const stale = []
   const skipped = []
+  // unresolved 零容忍（DeepSeek 八轮 review 立）：manifest 里带 unresolved 标记 = 扫描器有
+  // 解析盲区（属性可能静默丢失），门禁绿但产物错——stale 检查抓不到，单列一类
+  const unresolvedHits = []
   for (const f of files) {
     const tag = f.slice(0, -5)
     const tagFile = join(MANIFEST_DIR, f)
     const entry = JSON.parse(readFileSync(tagFile, 'utf8'))
+    if (Array.isArray(entry?.unresolved) && entry.unresolved.length > 0) {
+      unresolvedHits.push(`${tag}（${entry.unresolved.length} 条）`)
+    }
     const sourceFile = entry?.sourceFile
     if (typeof sourceFile !== 'string') continue
     if (sourceHasWip(sourceFile)) {
@@ -44,12 +50,19 @@ function main() {
     }
   }
   for (const tag of skipped) console.log(`[api:check] 跳过在途 WIP 组件：${tag}`)
+  if (unresolvedHits.length) {
+    console.error(
+      `[api:check] manifest 带 unresolved 标记（扫描解析盲区，属性可能静默丢失）：${unresolvedHits.join(', ')}`,
+    )
+    console.error('  → 修扫描器解析或登记 SUPPLEMENT/EXCLUDE，重跑 pnpm api:scan 至 unresolved 清零')
+    process.exit(1)
+  }
   if (stale.length) {
     console.error(`[api:check] 已提交 manifest 与源码不一致（stale）：${stale.join(', ')}`)
     console.error('  → 对这些组件跑 `pnpm api:scan && pnpm api:gen` 并提交其 manifest 文件')
     process.exit(1)
   }
-  console.log(`[api:check] manifest 校验通过（跳过 WIP 组件 ${skipped.length} 个）`)
+  console.log(`[api:check] manifest 校验通过（跳过 WIP 组件 ${skipped.length} 个，unresolved 零）`)
 }
 
 main()
