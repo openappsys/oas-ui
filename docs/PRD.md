@@ -1418,10 +1418,12 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 ### 功能定义
 
 **oas-swatch**（色块件）：
+
 - 属性：`color`（CSS 色值/11 预设名，color 统一协议 §4.1）、`size`（五档 xs~xl）、`shape`（square/rounded/circle）、`nothing`（无色/透明——棋盘格底）、`mixed`（混色态——多色拼贴指示）、`disabled`、`selected`（受控选中态：选中描边环）、`label`（可访问名）
 - 事件：`oas-click`（detail { color }）
 
 **oas-swatch-group**（选择组）：
+
 - 属性：`value`（单选值/多选逗号分隔，对齐 tag-group）、`multiple`、`disabled`（全组）
 - 事件：`oas-change`——单选 `{ value }`、多选 `{ value: string[] }`
 - ARIA：单选 radiogroup+radio、多选 group+checkbox（aria-checked）；roving tabindex + 方向键 + Enter/Space；空组零子件不报错
@@ -1445,6 +1447,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 ### 功能定义
 
 **oas-sidebar 折叠态树形子菜单 flyout**：
+
 - 折叠态嵌套父项渲染为图标项：点击（或 hover 延迟 150ms）打开子菜单面板（fixed 定位、定位引擎锚定父项 inline-end（RTL 镜像到左）+ 碰撞避让）；hover 宽限关闭 300ms（指针进入面板即取消关闭计时）；Esc 关闭并回焦父项、点击外部关闭、单开互斥
 - 面板 role=menu / 子项 role=menuitem；嵌套子树在面板内内联展开（chevron 内联展开语义）
 - 叶子子项点击派发 `oas-select` 并关面板；父项挂 aria-haspopup + aria-expanded 随开合
@@ -1453,6 +1456,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 浮层定位引擎修复：零尺寸弹层不翻转（fits 因 gap 恒 false 会误翻，翻转把 RTL 镜像抵消）
 
 **oas-tab-contextmenu（标签级右键原生事件）**：
+
 - 可取消事件，detail `{ value, index, clientX, clientY, originalEvent }`；右键标签（或聚焦标签按 Menu 键 / Shift+F10）派发；宿主 preventDefault 时内建菜单（context-menu 属性）与浏览器默认菜单全抑止（capture 阶段先于 manager 委托阻断）；空白处右键不派发；键盘触发坐标取按钮中心；RTL 坐标透传；与 context-menu 属性无关恒派发
 
 **oas-tab-panel `title` 悬停提示透传**：透传 shadow tab 按钮为原生 hover tooltip；tabs 读入 titleCache 并从 panel 宿主移除（防 panel 内容区出现原生 tooltip，ui-spec 原生全局属性吸收 pattern）；宿主改写 title 按钮跟随更新并再次吸收；items JSON 通道 `title` 字段同效；SSR/hydrate 从快照按钮恢复 titleCache
@@ -1532,32 +1536,32 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 **输入控件一致性（5 项）**
 
-10. **oas-input `autofocus`**：挂载后自动聚焦内层 input（对齐 button 既有 autofocus 转发 pattern）
-11. **oas-input `autocomplete`**：透传内层 input（自动填充/密码管理器）
-12. **oas-input `loading`**：加载态（尾部 spinner 位 + aria-busy，不禁用输入）
-13. **oas-input `inputmode`**：透传内层 input（移动键盘类型）
-14. **oas-input-number 事件组**：`oas-focus` / `oas-blur` / `oas-input`（对齐 input 既有事件契约）
+1. **oas-input `autofocus`**：挂载后自动聚焦内层 input（对齐 button 既有 autofocus 转发 pattern）
+2. **oas-input `autocomplete`**：透传内层 input（自动填充/密码管理器）
+3. **oas-input `loading`**：加载态（尾部 spinner 位 + aria-busy，不禁用输入）
+4. **oas-input `inputmode`**：透传内层 input（移动键盘类型）
+5. **oas-input-number 事件组**：`oas-focus` / `oas-blur` / `oas-input`（对齐 input 既有事件契约）
 
 **弹层/浮层（7 项）**
 
-15. **oas-modal `z-index`**：层级覆盖（默认走 token，属性显式覆盖写入宿主 style）
-16. **oas-drawer `height`**：上下抽屉（placement=top/bottom）高度（默认现状 auto/既有值，属性覆盖）
-17. **oas-drawer 事件 `oas-cancel`**：取消语义关闭时派发（Esc/遮罩/取消钮），与确认区分
-18. **oas-auto-complete `variant` + 事件 `oas-focus` / `oas-blur`**：对齐 input 三值变体（outline/filled/borderless）；focus/blur 对齐 input 既有事件契约
-19. **oas-cascader `loading`**：加载态（面板内加载占位）
-20. **oas-cascader `field-names`**：字段映射（对齐 tree-select 既有契约，`{ label, value, children, disabled }`）
-21. **oas-cascader 事件 `oas-focus` / `oas-blur`**
+1. **oas-modal `z-index`**：层级覆盖（默认走 token，属性显式覆盖写入宿主 style）
+2. **oas-drawer `height`**：上下抽屉（placement=top/bottom）高度（默认现状 auto/既有值，属性覆盖）
+3. **oas-drawer 事件 `oas-cancel`**：取消语义关闭时派发（Esc/遮罩/取消钮），与确认区分
+4. **oas-auto-complete `variant` + 事件 `oas-focus` / `oas-blur`**：对齐 input 三值变体（outline/filled/borderless）；focus/blur 对齐 input 既有事件契约
+5. **oas-cascader `loading`**：加载态（面板内加载占位）
+6. **oas-cascader `field-names`**：字段映射（对齐 tree-select 既有契约，`{ label, value, children, disabled }`）
+7. **oas-cascader 事件 `oas-focus` / `oas-blur`**
 
 **数据展示与导航（8 项）**
 
-22. **oas-select `variant`**：对齐 input 三值变体
-23. **oas-table `show-header`**：表头显隐（默认 true 现状；false 时 thead 不渲染）
-24. **oas-tabs `actions` 插槽**：标签栏右侧操作区（nav 内固定，不随标签滚动被遮挡，对齐 + 按钮固定惯例）
-25. **oas-tree 事件 `oas-expand`**：节点展开/收起时派发，`detail: { key, expanded, node }`
-26. **oas-tree 拖拽生命周期事件组**：`oas-node-dragstart` / `oas-node-dragover` / `oas-node-dragleave` / `oas-node-dragend`（既有 drop 契约不变）
-27. **oas-calendar `range`**：范围选择模式（起止两点选取 + 区间高亮 + oas-change detail `{ start, end }`；复用 date-grid 内部基础）
-28. **oas-carousel `draggable`**：指针拖拽/触摸滑动切换（阈值翻页 + 回弹，触摸设备默认开）
-29. **oas-menu `open-on-hover`**：子菜单 hover 展开（vertical/inline 模式，延迟开合防抖，点击路径不变）
+1. **oas-select `variant`**：对齐 input 三值变体
+2. **oas-table `show-header`**：表头显隐（默认 true 现状；false 时 thead 不渲染）
+3. **oas-tabs `actions` 插槽**：标签栏右侧操作区（nav 内固定，不随标签滚动被遮挡，对齐 + 按钮固定惯例）
+4. **oas-tree 事件 `oas-expand`**：节点展开/收起时派发，`detail: { key, expanded, node }`
+5. **oas-tree 拖拽生命周期事件组**：`oas-node-dragstart` / `oas-node-dragover` / `oas-node-dragleave` / `oas-node-dragend`（既有 drop 契约不变）
+6. **oas-calendar `range`**：范围选择模式（起止两点选取 + 区间高亮 + oas-change detail `{ start, end }`；复用 date-grid 内部基础）
+7. **oas-carousel `draggable`**：指针拖拽/触摸滑动切换（阈值翻页 + 回弹，触摸设备默认开）
+8. **oas-menu `open-on-hover`**：子菜单 hover 展开（vertical/inline 模式，延迟开合防抖，点击路径不变）
 
 ### 验收（每簇）
 
@@ -1565,7 +1569,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 用户视角：组件 md demo 实跑可见反馈；dark 主题过视觉；RTL 逻辑属性（方向相关项）
 - 缺陷/交互项固化 qa-regression；全量单测 + typecheck + build + api:check 全绿
 
-## 能力缺口 P2 立项批（未发布，31 组长尾增强）
+## 能力缺口 P2 立项批（未发布，31 组/38 条长尾增强）
 
 > 立项来源：能力缺口甄别 P2 池（已逐条甄别定级）。口径：语义覆盖为准，命名对照 ui-spec §2。
 
