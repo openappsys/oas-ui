@@ -1029,6 +1029,28 @@ describe('OASForm review 回归（真实路径，非合成事件造假绿）', (
     expect(cal.getAttribute('value'), 'range 区间 JSON 不得被值同步抹掉').toBe('["2026-08-05","2026-08-15"]')
   })
 
+  it('字段名撞 Object.prototype 成员（toString/valueOf）不再炸：输入与提交全链路安全', () => {
+    const el = ((): OASForm => {
+      const f = new OASForm()
+      f.innerHTML =
+        '<oas-input name="toString" value="v1"></oas-input><oas-input name="valueOf" value="v2"></oas-input>'
+      document.body.appendChild(f)
+      return f
+    })()
+    let detail: unknown = null
+    el.addEventListener('oas-submit', (e) => (detail = (e as CustomEvent).detail))
+    // 输入路径（effectiveTrigger 读点）
+    const field = el.querySelector('oas-input[name="toString"]') as OASInput
+    const inner = field.shadowRoot!.querySelector('input')!
+    inner.value = 'typed'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    // 提交路径（firstFieldError 读点）
+    el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    const values = (detail as { values: Record<string, unknown> } | null)?.values
+    expect(values?.toString, '继承成员名字段的值正常进 values').toBe('typed')
+    expect(values?.valueOf).toBe('v2')
+  })
+
   it('C1 原型污染防护：name="__proto__.x" 的字段被拒绝进嵌套组装（Object.prototype 零污染）', () => {
     const el = ((): OASForm => {
       const f = new OASForm()

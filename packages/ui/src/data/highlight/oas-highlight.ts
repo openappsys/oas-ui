@@ -224,9 +224,13 @@ export class OASHighlight extends OASElement {
     const words: string[] = []
     for (const kw of this.parseKeywords()) {
       if (words.includes(kw)) continue
-      const foldedKw = fold(kw)
+      // 逐码点折叠（与 computeRanges 同口径）：整串 NFD 会按 canonical combining class 重排跨码点
+      // 组合符（希伯来 niqqud 等），与逐码点折叠的文本错位漏报（确认轮实测 count/matches 分歧）
+      const foldedKw = Array.from(kw)
+        .map((c) => fold(c))
+        .join('')
       if (foldedKw === '') continue
-      if (OASHighlight.hasHit(foldedText, map, points, foldedKw, wholeWord, this.foldFn())) words.push(kw)
+      if (OASHighlight.hasHit(foldedText, map, points, foldedKw, wholeWord, fold)) words.push(kw)
     }
     return words
   }
