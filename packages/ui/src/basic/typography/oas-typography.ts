@@ -220,28 +220,51 @@ function createTypography(
 
   class OASTypography extends OASElement {
     static override get observedAttributes(): string[] {
-      const attrs = [
-        'level',
-        'type',
-        'ellipsis',
-        'copyable',
-        'copy-text',
-        'ellipsis-suffix',
-        'actions-position',
-        'line-clamp',
-        'tag',
-        'depth',
-        'strong',
-        'mark',
-        'code',
-        'underline',
-        'delete',
-        'italic',
-        'align',
-        'weight',
-        'numeric',
-      ]
-      return sizeEnabled ? [...attrs, 'size'] : attrs
+      // 两分支全量字面量（api:scan 条件求值只认字面量分支——spread/标识符会留 unresolved 或丢属性）
+      return sizeEnabled
+        ? [
+            'level',
+            'type',
+            'ellipsis',
+            'copyable',
+            'copy-text',
+            'ellipsis-suffix',
+            'actions-position',
+            'line-clamp',
+            'tag',
+            'depth',
+            'strong',
+            'mark',
+            'code',
+            'underline',
+            'delete',
+            'italic',
+            'align',
+            'weight',
+            'numeric',
+            'size',
+          ]
+        : [
+            'level',
+            'type',
+            'ellipsis',
+            'copyable',
+            'copy-text',
+            'ellipsis-suffix',
+            'actions-position',
+            'line-clamp',
+            'tag',
+            'depth',
+            'strong',
+            'mark',
+            'code',
+            'underline',
+            'delete',
+            'italic',
+            'align',
+            'weight',
+            'numeric',
+          ]
     }
 
     private root: HTMLElement | null = null

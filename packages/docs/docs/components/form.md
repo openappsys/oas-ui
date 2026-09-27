@@ -309,7 +309,7 @@
 
 ### 表级尺寸与标签冒号（size / colon）
 
-> `size` 把表级尺寸档（`small` / `medium` / `large`）下发给表内字段控件，字段自身显式 `size` 优先；`colon` 为表内所有 `oas-form-item` 的标签渲染冒号。点击下方按钮观察字段尺寸与冒号即时变化。
+> `size` 把表级尺寸档（`small` / `medium` / `large`）下发给表内字段控件，优先级：字段自身显式 `size` > 表级 `size` > config-provider 全局注入 > 默认档（表级与全局注入同存时表级生效）；`colon` 为表内所有 `oas-form-item` 的标签渲染冒号。点击下方按钮观察字段尺寸与冒号即时变化。
 
 <DemoBlock title="表级 size + colon">
   <oas-form id="form-size-colon" size="large" colon style="width: 360px">

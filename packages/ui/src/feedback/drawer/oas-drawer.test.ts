@@ -979,6 +979,13 @@ describe('OASDrawer no-mask（无遮罩模式，PRD P2）', () => {
     document.body.innerHTML = ''
   })
 
+  it('no-mask 下 Esc 照常关闭（焦点不被抢回）', () => {
+    const el = mount({ visible: '', 'no-mask': '' })
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(el.hasAttribute('visible'), 'Esc 应关闭 no-mask 抽屉').toBe(false)
+    el.remove()
+  })
+
   it('no-mask 焦点对称：关闭后焦点不被拉回打开前元素（previousFocus 不记录不归还）', async () => {
     const elsewhere = document.createElement('input')
     document.body.appendChild(elsewhere)

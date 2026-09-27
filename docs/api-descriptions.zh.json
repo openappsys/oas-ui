@@ -1527,7 +1527,13 @@
       "hint": "输入框下方常驻静态提示文案（aria-describedby 关联，独立于校验错误）",
       "min": "透传内层原生 input 的最小值（number 类型生效）",
       "max": "透传内层原生 input 的最大值",
-      "step": "透传内层原生 input 的步长"
+      "step": "透传内层原生 input 的步长",
+      "autocomplete": "透传内层原生 input 的自动填充提示（密码管理器/浏览器自动填充）",
+      "enterkeyhint": "透传内层原生 input 的移动虚拟键盘回车键形态（如 search/send/go）",
+      "inputmode": "透传内层原生 input 的移动虚拟键盘类型",
+      "minlength": "透传内层原生 input 的最小长度约束",
+      "pattern": "透传内层原生 input 的正则校验模式",
+      "spellcheck": "透传内层原生 input 的拼写检查开关"
     },
     "events": {
       "oas-clear": "点击清除，`detail: { originalEvent }`",

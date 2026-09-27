@@ -414,7 +414,7 @@ describe('OASGrid collapsed-rows 折叠行（PRD P2）', () => {
     expect(events).toEqual([false, true])
   })
 
-  it('collapsed-rows=2（行数≥总行数）：全部可见、尾格仍提供收起入口（初始即展开语义）', () => {
+  it('collapsed-rows=2（行数≥总行数）：无可折叠内容——全部可见、尾格隐藏、不写 collapsed（不误导宿主读态）', () => {
     const grid = mountGrid({ 'collapsed-rows': '2' })
     expect([...items(grid)].every((i) => !i.hasAttribute('hidden'))).toBe(true)
     // 2 行全部可见 → 无可折叠内容，尾格隐藏

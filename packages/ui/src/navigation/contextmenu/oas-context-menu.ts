@@ -155,8 +155,10 @@ export class OASContextMenu extends OASElement {
       // items 未变时跳过重写（同值 setAttribute 会触发内层 menu 全量重建——value 高频受控场景的写放大）
       const itemsJson = JSON.stringify(this.itemsList)
       if (this.menuEl.getAttribute('items') !== itemsJson) this.menuEl.setAttribute('items', itemsJson)
-      // value 下传：checkbox/radio 勾选项的初始勾选态由内层 menu 的 value 驱动（缺之勾选永不回显）
-      this.menuEl.setAttribute('value', this.getAttr('value', ''))
+      // value 下传：checkbox/radio 勾选项的初始勾选态由内层 menu 的 value 驱动（缺之勾选永不回显）；
+      // 同值守卫：同值 setAttribute 也触发内层 attributeChangedCallback → 全量重建（与 items 同款写放大）
+      const hostValue = this.getAttr('value', '')
+      if (this.menuEl.getAttribute('value') !== hostValue) this.menuEl.setAttribute('value', hostValue)
       if (!this.wasOpen) {
         // 打开瞬间：用缓存的触发坐标定位（无坐标则不定位，保持快照/上次位置）
         if (this.hasPending) this.positionAt(this.pendingX, this.pendingY)

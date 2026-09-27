@@ -446,16 +446,21 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `auto-width` | Auto width following content (mirror measurement; empty value falls back to placeholder width), usually with auto-width-min/max | `boolean` | — |
 | `auto-width-max` | Maximum width for auto-width, px or percentage (default 100%) | — | — |
 | `auto-width-min` | Minimum width in px for auto-width (default 72) | — | — |
+| `autocomplete` | Passes the autocomplete hint through to the inner native input (password managers / autofill) | — | — |
 | `autofocus` | Auto-focus the inner input after mount (native autofocus does not cross shadow DOM, so the component forwards it) | `boolean` | — |
 | `clearable` | Clearable | `boolean` | — |
 | `count-position` | Character count position: `outside` (default) / `inside` (right side within the field) | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
+| `enterkeyhint` | Passes the mobile virtual keyboard enter-key appearance through (e.g. search/send/go) | — | — |
 | `hint` | Persistent static hint below the input (aria-describedby, independent of validation errors) | `string` | — |
+| `inputmode` | Passes the mobile virtual keyboard type through to the inner input | — | — |
 | `label` | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "输入框" when unset) | — | — |
 | `loading` | Loading state: trailing spinner with aria-busy (input stays editable); takes precedence over the clear button | `boolean` | — |
 | `max` | Native max mirrored to the inner input | — | — |
 | `maxlength` | Maximum input length (passed through to native maxlength) | `string` | — |
 | `min` | Native min mirrored to the inner input (number type) | — | — |
+| `minlength` | Passes the native minimum length constraint through | — | — |
+| `pattern` | Passes the native regex validation pattern through | — | — |
 | `placeholder` | Placeholder text | `string` | — |
 | `prefix-icon` | Icon name for the leading icon | `string` | — |
 | `prefix-text` | Inline text before the input value (plain HTML may use the legacy alias prefix) | `string` | — |
@@ -465,6 +470,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `show-count` | Show character count (bottom-right; danger when over limit) | `boolean` | — |
 | `show-password` | Password visibility toggle (renders an eye button when `type="password"`) | `boolean` | — |
 | `size` | Size preset `small` / `medium` (default) / `large`: height and font scale | `string` | `medium` |
+| `spellcheck` | Passes the native spellcheck toggle through | — | — |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the inner input | `string` | — |
 | `step` | Native step mirrored to the inner input | — | — |
 | `suffix-icon` | Icon name for the trailing icon | `string` | — |

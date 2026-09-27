@@ -6,101 +6,101 @@
       "name": "level",
       "type": "string",
       "default": "3",
-      "observed": false
+      "observed": true
     },
     {
       "name": "type",
       "type": "TextType",
       "default": "default",
-      "observed": false
-    },
-    {
-      "name": "code",
-      "type": "boolean",
-      "observed": false
-    },
-    {
-      "name": "delete",
-      "type": "boolean",
-      "observed": false
-    },
-    {
-      "name": "tag",
-      "type": "string",
-      "default": "",
-      "observed": false
+      "observed": true
     },
     {
       "name": "ellipsis",
       "type": "boolean",
-      "observed": false
-    },
-    {
-      "name": "line-clamp",
-      "type": "string",
-      "default": "",
-      "observed": false
-    },
-    {
-      "name": "depth",
-      "type": "string",
-      "default": "",
-      "observed": false
-    },
-    {
-      "name": "align",
-      "type": "AlignType",
-      "default": "",
-      "observed": false
-    },
-    {
-      "name": "weight",
-      "type": "WeightType",
-      "default": "",
-      "observed": false
-    },
-    {
-      "name": "ellipsis-suffix",
-      "type": "string",
-      "default": "",
-      "observed": false
+      "observed": true
     },
     {
       "name": "copyable",
       "type": "boolean",
-      "observed": false
-    },
-    {
-      "name": "actions-position",
-      "type": "string",
-      "default": "end",
-      "observed": false
+      "observed": true
     },
     {
       "name": "copy-text",
       "type": "string",
       "default": "",
-      "observed": false
+      "observed": true
+    },
+    {
+      "name": "ellipsis-suffix",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "actions-position",
+      "type": "string",
+      "default": "end",
+      "observed": true
+    },
+    {
+      "name": "line-clamp",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "tag",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "depth",
+      "type": "string",
+      "default": "",
+      "observed": true
     },
     {
       "name": "strong",
-      "observed": false
+      "observed": true
     },
     {
       "name": "mark",
-      "observed": false
+      "observed": true
+    },
+    {
+      "name": "code",
+      "type": "boolean",
+      "observed": true
     },
     {
       "name": "underline",
-      "observed": false
+      "observed": true
+    },
+    {
+      "name": "delete",
+      "type": "boolean",
+      "observed": true
     },
     {
       "name": "italic",
-      "observed": false
+      "observed": true
+    },
+    {
+      "name": "align",
+      "type": "AlignType",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "weight",
+      "type": "WeightType",
+      "default": "",
+      "observed": true
     },
     {
       "name": "numeric",
-      "observed": false
+      "observed": true
     }
   ],
   "props": [],
@@ -132,7 +132,5 @@
       "default": "2"
     }
   ],
-  "unresolved": [
-    "observedAttributes 返回值不是数组字面量（attrs）"
-  ]
+  "unresolved": []
 }

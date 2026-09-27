@@ -167,6 +167,30 @@
     {
       "name": "step",
       "observed": false
+    },
+    {
+      "name": "autocomplete",
+      "observed": false
+    },
+    {
+      "name": "inputmode",
+      "observed": false
+    },
+    {
+      "name": "minlength",
+      "observed": false
+    },
+    {
+      "name": "spellcheck",
+      "observed": false
+    },
+    {
+      "name": "enterkeyhint",
+      "observed": false
+    },
+    {
+      "name": "pattern",
+      "observed": false
     }
   ],
   "props": [
