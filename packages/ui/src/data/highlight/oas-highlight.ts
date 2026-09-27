@@ -226,7 +226,7 @@ export class OASHighlight extends OASElement {
       if (words.includes(kw)) continue
       const foldedKw = fold(kw)
       if (foldedKw === '') continue
-      if (OASHighlight.hasHit(foldedText, map, points, foldedKw, wholeWord)) words.push(kw)
+      if (OASHighlight.hasHit(foldedText, map, points, foldedKw, wholeWord, this.foldFn())) words.push(kw)
     }
     return words
   }
@@ -238,13 +238,16 @@ export class OASHighlight extends OASElement {
     points: string[],
     foldedKw: string,
     wholeWord: boolean,
+    fold: (s: string) => string,
   ): boolean {
     let from = 0
     for (;;) {
       const fs = foldedText.indexOf(foldedKw, from)
       if (fs < 0) return false
       const ps = map[fs]!
-      const pe = map[fs + foldedKw.length - 1]! + 1
+      // 与 computeRanges 同口径：pe 向后吞并折叠为空的组合符（否则 count/matches 与实际高亮分歧）
+      let pe = map[fs + foldedKw.length - 1]! + 1
+      while (pe < points.length && fold(points[pe]!) === '') pe++
       if (!wholeWord) return true
       const prevOk = ps === 0 || !WORD_CHAR_RE.test(points[ps - 1]!)
       const nextOk = pe >= points.length || !WORD_CHAR_RE.test(points[pe]!)
