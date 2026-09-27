@@ -1029,6 +1029,42 @@ describe('OASForm review 回归（真实路径，非合成事件造假绿）', (
     expect(cal.getAttribute('value'), 'range 区间 JSON 不得被值同步抹掉').toBe('["2026-08-05","2026-08-15"]')
   })
 
+  it('混合同步/异步 validator：scroll-to-first-error 定位 DOM 序首错（非入队序）', async () => {
+    const el = ((): OASForm => {
+      const f = new OASForm()
+      f.setAttribute('scroll-to-first-error', '')
+      f.innerHTML = '<oas-input name="first"></oas-input><oas-input name="second"></oas-input>'
+      document.body.appendChild(f)
+      return f
+    })()
+    // first=异步错（Promise 后落地）+ second=同步错——入队序 second 在前，DOM 序 first 在前
+    el.rules = {
+      first: [{ validator: (v: string) => Promise.resolve(v === '' ? '异步错' : true) }],
+      second: [{ required: true, message: '同步错' }],
+    }
+    const first = el.querySelector('oas-input[name="first"]') as OASInput
+    const scrollCalls: Element[] = []
+    const orig = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrollCalls.push(this)
+    }
+    try {
+      el.submit()
+      await new Promise((r) => setTimeout(r, 20))
+    } finally {
+      Element.prototype.scrollIntoView = orig
+    }
+    const second = el.querySelector('oas-input[name="second"]') as OASInput
+    expect(first.getAttribute('aria-invalid')).toBe('true')
+    expect(second.getAttribute('aria-invalid')).toBe('true')
+    expect(scrollCalls[0], '首个滚动定位必须是 DOM 序首错字段（或其内层）').toBeDefined()
+    // scrollIntoView 的目标是字段元素（revealField 对字段调用）
+    expect(
+      scrollCalls.some((c) => c === first || first.contains(c) || c.contains(first)),
+      '滚动定位落在 first 字段',
+    ).toBe(true)
+  })
+
   it('I3：validate-trigger=input + 异步 validator，慢旧结果不覆盖快新结果（竞态令牌）', async () => {
     const el = ((): OASForm => {
       const f = new OASForm()

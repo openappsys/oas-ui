@@ -971,7 +971,14 @@ test('table P2 批：cell-click/row-dblclick 事件反馈可见 + row-expandable
   // 单击/双击反馈行有可见文本变化、max-height 落成滚动容器内联样式
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-cell-events')
-  await page.waitForTimeout(600)
+  // 等 rowExpandable property 赋值生效（whenDefined 链）——条件等待替代盲等
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.querySelector('oas-table#table-cell-events')!.shadowRoot!.querySelectorAll('tbody tr').length,
+      ),
+    )
+    .toBeGreaterThan(0)
 
   // rowExpandable（property 函数通道）：key=c 的行（王五）无展开钮，其余行有
   const expand = await page.evaluate(() => {
