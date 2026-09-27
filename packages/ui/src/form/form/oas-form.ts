@@ -623,6 +623,10 @@ export class OASForm extends OASElement {
       for (const { job, message } of resolved) {
         if (message !== null) invalid.push({ name: job.name, element: job.element, message })
       }
+      // 混合同步/异步 validator 时按字段 DOM 序重排——scroll-to-first-error 的「首错」
+      // 必须是文档序第一个错误字段（同步项先入队、异步 append 在后会错位）
+      const order = new Map(fields.map((f, i) => [f.name, i]))
+      invalid.sort((a, b) => (order.get(a.name) ?? 0) - (order.get(b.name) ?? 0))
       this.finalizeValidation(values, fields, invalid)
     })
   }
