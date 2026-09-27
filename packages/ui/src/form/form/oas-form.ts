@@ -685,7 +685,8 @@ export class OASForm extends OASElement {
       }
     }
     if (rule.validator) {
-      const result = rule.validator(value, values)
+      // 传给宿主 validator 的 values 转普通原型（同 detail 判据）
+      const result = rule.validator(value, { ...values })
       const failed = this.validatorFallback(rule)
       const normalize = (r: true | string): string | null => (r === true ? null : typeof r === 'string' ? r : failed)
       if (result instanceof Promise) return result.then(normalize)
@@ -758,7 +759,8 @@ export class OASForm extends OASElement {
     if (invalid.length === 0) {
       this.emit('submit', { values: this.nestValues(values) })
     } else {
-      this.emit('validate-fail', { errors: this.errors, values: this.nestValues(values) })
+      // 载荷出包转普通原型（宿主对 detail.errors 调 hasOwnProperty/toString 不应炸——与 el.rules getter 同判据）
+      this.emit('validate-fail', { errors: { ...this.errors }, values: this.nestValues(values) })
       if (this.hasAttr('scroll-to-first-error')) this.revealField(invalid[0]!.element)
     }
   }
