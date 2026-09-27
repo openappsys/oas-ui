@@ -1046,6 +1046,17 @@ describe('OASForm review 回归（真实路径，非合成事件造假绿）', (
     expect(parseNamePath('constructor.x'), 'constructor 段拒绝').toBeNull()
     expect(parseNamePath('a.prototype.b'), 'prototype 段拒绝').toBeNull()
     expect(parseNamePath('users.0.name'), '正常路径不受影响')!.toEqual(['users', '0', 'name'])
+    // initial-values 通道同守门：保留键名字段不得被写入（readPath 空数组会返回整个对象）
+    const el2 = ((): OASForm => {
+      const f = new OASForm()
+      f.setAttribute('initial-values', JSON.stringify({ a: 'x' }))
+      f.innerHTML = '<oas-input name="__proto__.y"></oas-input><oas-input name="a"></oas-input>'
+      document.body.appendChild(f)
+      return f
+    })()
+    const bad = el2.querySelector('oas-input[name="__proto__.y"]')!
+    expect(bad.getAttribute('value'), '保留键字段不写值').toBeNull()
+    expect(el2.querySelector('oas-input[name="a"]')!.getAttribute('value'), '正常字段照写').toBe('x')
   })
 
   it('混合同步/异步 validator：scroll-to-first-error 定位 DOM 序首错（非入队序）', async () => {

@@ -570,7 +570,11 @@ export class OASForm extends OASElement {
     const source = this._initialValues
     for (const { name, element } of this.collectFields()) {
       if (!forceAll && name in this._initialSnapshot) continue
-      const v = readPath(source, parseNamePath(name) ?? [])
+      // 保留键段路径（__proto__ 等）parseNamePath 判 null——null 不得进 readPath
+      // （空数组会让 readPath 返回整个 initial-values 对象，写进字段）
+      const path = parseNamePath(name)
+      if (path === null) continue
+      const v = readPath(source, path)
       const initial = v === undefined ? this.readValue(element) : this.stringifyInitial(v)
       this._initialSnapshot[name] = initial
       if (v !== undefined) this.writeValue(element, initial)
@@ -586,7 +590,9 @@ export class OASForm extends OASElement {
     const disabled = this.hasAttr('disabled')
     for (const { name, element } of this.collectFields()) {
       if (name in this._initialSnapshot) continue
-      const v = readPath(this._initialValues, parseNamePath(name) ?? [])
+      const path = parseNamePath(name)
+      if (path === null) continue
+      const v = readPath(this._initialValues, path)
       const initial = v === undefined ? this.readValue(element) : this.stringifyInitial(v)
       this._initialSnapshot[name] = initial
       if (v !== undefined) this.writeValue(element, initial)
