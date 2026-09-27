@@ -429,6 +429,14 @@ describe('OASGrid collapsed-rows 折叠行（PRD P2）', () => {
     await new Promise((r) => setTimeout(r, 0))
     expect(el.hasAttribute('collapsed'), '增长超过 1 行后补写 collapsed').toBe(true)
     expect(tail(el).hidden, '尾格出现（折叠入口）').toBe(false)
+    // 回程：再减少到不足——全部可见 + 尾格隐藏 + collapsed 受控保留（不自动摘除）
+    item2.remove()
+    await Promise.resolve()
+    await new Promise((r) => setTimeout(r, 0))
+    const visibleCount = [...el.querySelectorAll('oas-grid-item')].filter((c) => !c.hasAttribute('hidden')).length
+    expect(visibleCount, '减少后全部可见').toBe(1)
+    expect(tail(el).hidden, '尾格隐藏').toBe(true)
+    expect(el.hasAttribute('collapsed'), 'collapsed 受控保留（宿主接管）').toBe(true)
   })
 
   it('collapsed-rows=2（行数≥总行数）：无可折叠内容——全部可见、尾格隐藏、不写 collapsed（不误导宿主读态）', () => {

@@ -153,7 +153,21 @@ async function runPass(browser, dir) {
           btn.click()
         }, comp.name)
       }
-      await page.waitForTimeout(600)
+      await page
+        .waitForFunction(
+          ({ n, panelSel }) => {
+            const el = document.querySelector(`oas-${n}`)
+            if (!el?.shadowRoot) return false
+            return [...el.shadowRoot.querySelectorAll(panelSel)].some((p) => {
+              const rect = p.getBoundingClientRect()
+              const cs = getComputedStyle(p)
+              return rect.width > 0 && rect.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden'
+            })
+          },
+          { n: comp.name, panelSel: comp.panel },
+          { timeout: 4000 },
+        )
+        .catch(() => {})
       const r = await page.evaluate(
         ({ n, panelSel }) => {
           const el = document.querySelector(`oas-${n}`)
