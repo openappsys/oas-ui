@@ -51,6 +51,51 @@ const STYLE = `
 :host([data-status='error']) {
   --oas-progress-color: var(--oas-color-danger);
 }
+/* vertical 垂直线形（仅 line 形态置位 data-vertical，circle/dashboard 不受影响）：
+   宿主纵向 flex + 默认高度（height 属性 / 宿主内联样式可覆盖），track 变纵向（粗细变量改走宽度）、
+   bar/buffer 底部锚定按高度百分比自下而上填充 */
+:host([data-vertical]) {
+  display: inline-flex;
+  flex-direction: column;
+  height: 200px;
+}
+:host([data-vertical]) .track {
+  width: var(--oas-progress-height, var(--oas-space-2));
+  height: auto;
+  flex: 1;
+  min-height: 0;
+}
+:host([data-vertical]) .bar {
+  inset-block: auto;
+  inset-block-end: 0;
+  inset-inline: 0;
+  width: 100%;
+  transition: height var(--oas-transition-base) var(--oas-ease-out);
+}
+:host([data-vertical]) .buffer {
+  inset-block: auto;
+  inset-block-end: 0;
+  inset-inline: 0;
+  width: 100%;
+  transition: height var(--oas-transition-base) var(--oas-ease-out);
+}
+:host([data-vertical]) .steps {
+  flex-direction: column;
+}
+/* vertical 不确定态：宽度铺满、高度交由类接管，滑块纵向循环扫过（translateY） */
+:host([data-vertical]) .bar.indeterminate {
+  width: 100%;
+  height: 40%;
+  animation-name: oas-progress-indeterminate-v;
+}
+@keyframes oas-progress-indeterminate-v {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(250%);
+  }
+}
 /* line 形态 */
 .track {
   position: relative;
@@ -278,6 +323,8 @@ export class OASProgress extends OASElement {
       'text-inside',
       'indeterminate',
       'stroke-linecap',
+      'vertical',
+      'height',
     ]
   }
 
@@ -367,9 +414,14 @@ export class OASProgress extends OASElement {
     // 默认 slot 归位：line 外部文本区 / line 条内（text-inside）/ 圆心
     this.placeSlot(type, textInside)
 
-    this.updateLine(type, value, percent, max, status, showText, textInside, slotHas, indeterminate)
+    // vertical 垂直线形（仅 line 生效）：宿主 data-vertical 标记驱动 CSS 纵向布局
+    const vertical = this.hasAttr('vertical') && type === 'line'
+    this.toggleAttribute('data-vertical', vertical)
+
+    this.updateLine(type, value, percent, max, status, showText, textInside, slotHas, indeterminate, vertical)
     this.updateCircle(type, value, percent, max, status, showText, slotHas, indeterminate)
     this.applyLineHeight(type)
+    this.applyVerticalLength(vertical)
     this.applyColorVars()
   }
 
@@ -459,6 +511,7 @@ export class OASProgress extends OASElement {
     textInside: boolean,
     slotHas: boolean,
     indeterminate: boolean,
+    vertical: boolean,
   ): void {
     const stepsCount = indeterminate ? 0 : this.parseSteps()
 
@@ -466,9 +519,17 @@ export class OASProgress extends OASElement {
 
     if (this.bar) {
       // steps 模式下连续 bar 让位（宽度归零）；不确定态宽度交由 CSS 类接管；
-      // 条纹/渐变类名同步（不确定态压制条纹）
+      // 条纹/渐变类名同步（不确定态压制条纹）。
+      // vertical：主轴改走高度（自下而上填充），宽度铺满交由 CSS，清空横向尺寸避免双轴冲突
       const striped = !indeterminate && (this.hasAttr('striped') || this.hasAttr('striped-flow'))
-      this.bar.style.width = indeterminate ? '' : stepsCount > 0 ? '0%' : `${percent}%`
+      const barMain = indeterminate ? '' : stepsCount > 0 ? '0%' : `${percent}%`
+      if (vertical) {
+        this.bar.style.height = barMain
+        this.bar.style.width = ''
+      } else {
+        this.bar.style.width = barMain
+        this.bar.style.height = ''
+      }
       this.bar.classList.toggle('indeterminate', indeterminate && type === 'line')
       this.bar.classList.toggle('striped', striped)
       this.bar.classList.toggle('striped-flow', striped && this.hasAttr('striped-flow'))
@@ -485,7 +546,14 @@ export class OASProgress extends OASElement {
       const raw = this.getAttr('buffer', '')
       const bufValue = raw === '' ? null : this.clampValue(Number(raw) || 0, max)
       this.bufferEl.hidden = bufValue === null || type !== 'line' || stepsCount > 0 || indeterminate
-      this.bufferEl.style.width = bufValue === null ? '' : `${(bufValue / max) * 100}%`
+      const bufMain = bufValue === null ? '' : `${(bufValue / max) * 100}%`
+      if (vertical) {
+        this.bufferEl.style.height = bufMain
+        this.bufferEl.style.width = ''
+      } else {
+        this.bufferEl.style.width = bufMain
+        this.bufferEl.style.height = ''
+      }
     }
 
     if (this.stepsEl) {
@@ -546,6 +614,30 @@ export class OASProgress extends OASElement {
     }
     if (height) this.style.setProperty('--oas-progress-height', height)
     else this.style.removeProperty('--oas-progress-height')
+  }
+
+  /**
+   * vertical 纵向长度：height 属性只作用于垂直线形（横向/circle 静默忽略，对齐 drawer
+   * 纵向 height 协议）——纯数字视为 px、`px/rem/em/vw/vh/%` 原样、非法值回落 CSS 默认高度
+   * （:host([data-vertical]) 的 200px，宿主内联样式亦可覆盖）。
+   */
+  private applyVerticalLength(vertical: boolean): void {
+    if (!vertical) {
+      this.style.removeProperty('height')
+      return
+    }
+    const raw = this.getAttr('height', '').trim()
+    if (raw === '') {
+      this.style.removeProperty('height')
+      return
+    }
+    if (/^\d+(\.\d+)?$/.test(raw)) {
+      this.style.height = `${raw}px`
+    } else if (/^\d+(\.\d+)?(px|rem|em|vw|vh|%)$/.test(raw)) {
+      this.style.height = raw
+    } else {
+      this.style.removeProperty('height')
+    }
   }
 
   /** color / track-color：预设名解析为 --oas-preset-* 变量，否则按 CSS 色串/渐变串原值注入 host 内联变量 */

@@ -170,6 +170,67 @@ const STYLE = `
 .dot[aria-current='true'] {
   background: var(--oas-carousel-dot-active-bg, #ffffff);
 }
+/* ===== thumbs：缩略图指示器（替代圆点） ===== */
+.dots.thumbs {
+  gap: var(--oas-space-2);
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0 var(--oas-space-2);
+  box-sizing: border-box;
+}
+.thumb {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--oas-radius-sm);
+  background: var(--oas-color-bg-hover);
+  overflow: hidden;
+  cursor: pointer;
+  box-sizing: border-box;
+  opacity: 0.6;
+  transition:
+    border-color var(--oas-transition-base) var(--oas-ease-out),
+    opacity var(--oas-transition-base) var(--oas-ease-out);
+}
+.thumb:hover {
+  opacity: 1;
+}
+.thumb:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: 2px;
+}
+/* 当前项高亮描边（主色 token） */
+.thumb[aria-current='true'] {
+  border-color: var(--oas-color-primary);
+  opacity: 1;
+}
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+/* 垂直模式：缩略图条竖排（列方向） */
+:host([direction='vertical']) .dots.thumbs {
+  flex-direction: column;
+}
+/* RTL 镜像：缩略图条与指示器镜像排列（row 方向随书写方向自动换起始侧），
+    暂停钮翻到另一角（物理定位显式镜像） */
+:host([data-rtl]) .pause-btn {
+  right: auto;
+  left: var(--oas-space-3);
+}
 /* 线性指示器 */
 .dots.line .dot {
   width: 20px;
@@ -329,6 +390,8 @@ export class OASCarousel extends OASElement {
       'slides-per-view',
       'gap',
       'draggable',
+      // thumbs：缩略图指示器（替代圆点，取子项 img / data-thumb / thumbs JSON 数组）
+      'thumbs',
     ]
   }
 
@@ -364,14 +427,14 @@ export class OASCarousel extends OASElement {
   /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
   private bind(): void {
     this.shadow.querySelector('.dots')?.addEventListener('click', (e) => {
-      const dot = (e.target as HTMLElement).closest('[part="dot"]')
+      const dot = (e.target as HTMLElement).closest('[part="dot"], [part="thumb"]')
       if (dot) this.goTo(Number((dot as HTMLElement).getAttribute('data-index')) || 0)
     })
     // 指示器触发方式：trigger="hover" 时悬停指示器切页（click 为默认；hover 下 click 仍可用）；
     // 非法值静默回落 click。委托到容器监听（指示器重建无需重绑）
     this.shadow.querySelector('.dots')?.addEventListener('pointerover', (e) => {
       if (this.getAttr('trigger', 'click') !== 'hover') return
-      const dot = (e.target as HTMLElement).closest('[part="dot"]')
+      const dot = (e.target as HTMLElement).closest('[part="dot"], [part="thumb"]')
       if (dot) this.goTo(Number((dot as HTMLElement).getAttribute('data-index')) || 0)
     })
     // 指示器键盘导航（WAI-ARIA carousel pattern：方向键 + Home/End；水平轴 RTL 镜像）
@@ -617,6 +680,8 @@ export class OASCarousel extends OASElement {
 
   protected override update(): void {
     this.count = this.children.length
+    // RTL 镜像开关（缩略图条/暂停钮等处 CSS 消费）
+    this.toggleAttribute('data-rtl', isRtl(this))
     const pages = this.pageCount()
     // index 恒反射：缺省归 0 并收敛到有效页范围（children 减少或外部越界设置时）
     if (pages > 0) {
@@ -679,15 +744,46 @@ export class OASCarousel extends OASElement {
       .querySelector('[part="viewport"]')
       ?.setAttribute('aria-live', this.hasAttr('autoplay') ? 'off' : 'polite')
 
-    // 指示器：indicators=false 隐藏；position=outside 流内占位；type=line 线性形态
+    // 指示器：indicators=false 隐藏；position=outside 流内占位；
+    // thumbs 开启时渲染缩略图条替代圆点；否则 type=line 线性形态
     const dots = this.shadow.querySelector<HTMLElement>('[part="dots"]')
     if (!dots) return
     const showDots = this.getAttr('indicators', 'true') !== 'false'
+    const thumbsOn = this.thumbsEnabled()
     dots.toggleAttribute('hidden', !showDots)
     dots.classList.toggle('outside', this.getAttr('indicator-position', 'inside') === 'outside')
-    dots.classList.toggle('line', this.getAttr('indicator-type', 'dot') === 'line')
+    dots.classList.toggle('thumbs', thumbsOn)
+    dots.classList.toggle('line', !thumbsOn && this.getAttr('indicator-type', 'dot') === 'line')
     dots.innerHTML = ''
     if (!showDots) return
+    if (thumbsOn) {
+      const sources = this.thumbSources(pages)
+      for (let i = 0; i < pages; i++) {
+        const thumb = document.createElement('button')
+        thumb.className = 'thumb'
+        thumb.setAttribute('part', 'thumb')
+        thumb.setAttribute('role', 'tab')
+        thumb.setAttribute('aria-current', String(i === index))
+        thumb.setAttribute('aria-label', this.t('carousel.dot', { index: i + 1 }))
+        thumb.setAttribute('data-index', String(i))
+        const src = sources[i]
+        if (src) {
+          const img = document.createElement('img')
+          img.setAttribute('src', src)
+          img.setAttribute('alt', '')
+          thumb.appendChild(img)
+        } else {
+          const ph = document.createElement('span')
+          ph.className = 'thumb-placeholder'
+          ph.setAttribute('aria-hidden', 'true')
+          ph.textContent = String(i + 1)
+          thumb.appendChild(ph)
+        }
+        dots.appendChild(thumb)
+      }
+      this.schedule()
+      return
+    }
     for (let i = 0; i < pages; i++) {
       const dot = document.createElement('button')
       dot.className = 'dot'
@@ -699,6 +795,50 @@ export class OASCarousel extends OASElement {
       dots.appendChild(dot)
     }
     this.schedule()
+  }
+
+  /** thumbs 是否开启（布尔属性族：存在即真，仅显式 "false" 关闭；JSON 数组值同样视为开启） */
+  private thumbsEnabled(): boolean {
+    if (!this.hasAttr('thumbs')) return false
+    return this.getAttr('thumbs', '') !== 'false'
+  }
+
+  /**
+   * 缩略图数据源（按页）：优先 thumbs 属性 JSON 数组，其次子项 data-thumb，
+   * 再次子项内 <img> 的 src，均无则 null（渲染序号占位）。
+   */
+  private thumbSources(pages: number): (string | null)[] {
+    const raw = this.getAttr('thumbs', '')
+    let arr: string[] | null = null
+    if (raw && raw !== 'true') {
+      try {
+        const parsed: unknown = JSON.parse(raw)
+        if (Array.isArray(parsed)) arr = parsed.map((v) => String(v))
+      } catch {
+        /* 非 JSON 数组：回落到子项取图 */
+      }
+    }
+    const kids = Array.from(this.children)
+    const per = this.perView()
+    const out: (string | null)[] = []
+    for (let i = 0; i < pages; i++) {
+      const fromArr = arr && arr[i] ? arr[i]! : ''
+      if (fromArr) {
+        out.push(fromArr)
+        continue
+      }
+      // 每屏多张时，取该页首张子项作为缩略图源
+      const child = kids[Math.min(i * per, kids.length - 1)] as HTMLElement | undefined
+      const dataThumb = child?.getAttribute?.('data-thumb')
+      if (dataThumb) {
+        out.push(dataThumb)
+        continue
+      }
+      // 子项自身是 <img> 时取其 src；否则取子项内首个 <img>
+      const img = child?.tagName === 'IMG' ? child : child?.querySelector?.('img')
+      out.push(img?.getAttribute?.('src') ?? null)
+    }
+    return out
   }
 
   /** 切换到目标页（循环取模 / 非循环收敛），同页 no-op；切换派发 oas-change（含 prevIndex） */

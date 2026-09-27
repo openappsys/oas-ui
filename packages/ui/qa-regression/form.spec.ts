@@ -6,11 +6,12 @@ import { up } from './helpers'
 test('form-item label 点击聚焦 oas-input 的 shadow 内 input（focus 委托链）', async ({ page }) => {
   await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-form-item[label] oas-input')
-  const item = page.locator('oas-form-item[label]').first()
+  // 限定到基础用法 demo 块（页面后续新增 demo 的 form-item 也在首位竞争）
+  const item = page.locator('#form-grid oas-form-item[label]').first()
   await item.locator('[part="label"]').click()
   await page.waitForTimeout(100)
   const r = await page.evaluate(() => {
-    const item = document.querySelector<HTMLElement>('oas-form-item[label]')!
+    const item = document.querySelector<HTMLElement>('#form-grid oas-form-item[label]')!
     const control = item.querySelector('oas-input')
     const inner = control?.shadowRoot?.activeElement
     return {
@@ -172,4 +173,57 @@ test('form validate-messages：property 模板覆盖 locale 默认错误文案�
     return item.shadowRoot!.querySelector('.error-msg')!.textContent
   })
   expect(msg, 'validate-messages.required 模板应覆盖 locale 默认').toBe('用户名不能为空')
+})
+
+// ---- D10 批次：嵌套 name 路径 + oas-form-list 动态字段组 ----
+
+test('form 嵌套 name 路径：输入后提交 values 组装嵌套对象（demo 可见回显）', async ({ page }) => {
+  await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#form-nested oas-input')
+  const city = page.locator('#form-nested oas-input[name="profile.city"] input')
+  await city.scrollIntoViewIfNeeded()
+  await city.fill('杭州')
+  const name = page.locator('#form-nested oas-input[name="name"] input')
+  await name.fill('张三')
+  await page.locator('#form-nested oas-button[type="primary"]').click()
+  await page.waitForFunction(() => (document.getElementById('form-nested-output')?.textContent?.length ?? 0) > 0)
+  const out = await page.evaluate(() => document.getElementById('form-nested-output')!.textContent)
+  expect(out, '提交回显应为嵌套 JSON').toContain('"profile":{"city":"杭州"}')
+  expect(out).toContain('"name":"张三"')
+})
+
+test('form-list 动态字段组：add/remove 真实点击，行值随行保留、删除后重新编号、提交嵌套数组', async ({ page }) => {
+  await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#form-list-demo-list')
+  const list = page.locator('#form-list-demo-list')
+  // min=1：初始 1 行；添加到 2 行
+  expect(await list.locator('[data-oas-form-list-item]').count()).toBe(1)
+  await list.locator('[part="add"]').click()
+  await page.waitForFunction(
+    () => document.querySelectorAll('#form-list-demo-list [data-oas-form-list-item]').length === 2,
+  )
+  // 两行分别填写（行内字段 name 已被索引化为 members.N.*）
+  await page.locator('#form-list-demo-list oas-input[name="members.0.name"] input').fill('张三')
+  await page.locator('#form-list-demo-list oas-input[name="members.0.role"] input').fill('本人')
+  await page.locator('#form-list-demo-list oas-input[name="members.1.name"] input').fill('李四')
+  // 提交 → 嵌套数组回显（可见反馈）
+  await page.locator('#form-list-demo oas-button[type="primary"]').click()
+  await page.waitForFunction(() => (document.getElementById('form-list-output')?.textContent ?? '').includes('members'))
+  let out = await page.evaluate(() => document.getElementById('form-list-output')!.textContent)
+  expect(out).toContain('"members":[{"name":"张三","role":"本人"},{"name":"李四","role":""}]')
+  // 删除第一行：剩余行重编号，值随行保留（李四从 members.1 变 members.0）
+  await list.locator('[part="remove"]').first().click()
+  await page.waitForFunction(() =>
+    (document.getElementById('form-list-output')?.textContent ?? '').includes('oas-remove'),
+  )
+  expect(await list.locator('[data-oas-form-list-item]').count()).toBe(1)
+  const remainingName = page.locator('#form-list-demo-list oas-input[name="members.0.name"] input')
+  expect(await remainingName.inputValue(), '删除后剩余行的值应保留且重新编号').toBe('李四')
+  // 再提交：members 数组只剩原第二行
+  await page.locator('#form-list-demo oas-button[type="primary"]').click()
+  await page.waitForFunction(() =>
+    (document.getElementById('form-list-output')?.textContent ?? '').startsWith('oas-submit'),
+  )
+  out = await page.evaluate(() => document.getElementById('form-list-output')!.textContent)
+  expect(out).toContain('"members":[{"name":"李四","role":""}]')
 })

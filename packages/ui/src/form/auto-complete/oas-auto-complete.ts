@@ -1,6 +1,9 @@
 import { OASFormElement } from '@oas-ui/core'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
+// 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
+import '../../data/virtual-list/index.js'
+import type { OASVirtualList } from '../../data/virtual-list/index.js'
 
 interface Option {
   label: string
@@ -27,11 +30,50 @@ function normalizePlacement(raw: string): Placement {
   return (m ? m[0] : 'bottom-start') as Placement
 }
 
+/** 选项行样式（非虚拟模式渲染在组件自身 shadow；虚拟模式需注入到 vlist shadow，两处共用） */
+const OPTION_STYLE = `
+.option {
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  font-size: var(--oas-font-size-md);
+  color: var(--oas-color-text-primary);
+}
+.option:hover,
+.option.active {
+  background: var(--oas-color-primary);
+  color: var(--oas-color-text-on-primary);
+}
+.option.grouped {
+  padding-inline-start: calc(var(--oas-space-3) + var(--oas-space-4));
+}
+.option[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+`
+
+/** 虚拟模式注入 oas-virtual-list 的 shadow：选项行占满 item、整行可高亮（对齐 select） */
+const VIRTUAL_ROW_STYLE = `
+[part="item"] {
+  display: flex;
+  align-items: center;
+}
+[part="item"] .option {
+  flex: 1;
+  height: 100%;
+  box-sizing: border-box;
+}
+${OPTION_STYLE}
+`
+
 const STYLE = `
 :host {
   display: inline-block;
   font-family: inherit;
   width: 240px;
+  /* 面板高度 CSS 变量开口：宿主覆盖即可调高（默认 240px），不占属性 API（对齐 select） */
+  --oas-auto-complete-dropdown-height: 240px;
 }
 :host([hidden]) {
   display: none;
@@ -199,7 +241,7 @@ input:disabled:hover {
   color: var(--oas-color-text-secondary);
 }
 .listbox {
-  max-height: 240px;
+  max-height: var(--oas-auto-complete-dropdown-height, 240px);
   overflow-y: auto;
 }
 .option-group {
@@ -209,25 +251,7 @@ input:disabled:hover {
   user-select: none;
   cursor: default;
 }
-.option {
-  padding: var(--oas-space-2) var(--oas-space-3);
-  border-radius: var(--oas-radius-sm);
-  cursor: pointer;
-  font-size: var(--oas-font-size-md);
-  color: var(--oas-color-text-primary);
-}
-.option:hover,
-.option.active {
-  background: var(--oas-color-primary);
-  color: var(--oas-color-text-on-primary);
-}
-.option.grouped {
-  padding-inline-start: calc(var(--oas-space-3) + var(--oas-space-4));
-}
-.option[aria-disabled='true'] {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
+${OPTION_STYLE}
 .empty {
   padding: var(--oas-space-3);
   text-align: center;
@@ -261,12 +285,16 @@ export class OASAutoComplete extends OASFormElement {
       'autofocus',
       // required 仅驱动原生校验链（valueMissing）
       'required',
+      // 能力缺口 D3：选项虚拟滚动（对齐 select 契约；virtual + item-height 定高）
+      'virtual',
+      'item-height',
     ]
   }
 
   private input: HTMLInputElement | null = null
   private dropdown: HTMLElement | null = null
   private listbox: HTMLElement | null = null
+  private vlist: OASVirtualList | null = null
   private clearBtn: HTMLButtonElement | null = null
   private _options: Option[] = []
   /** 初始 value 基线（form.reset 恢复目标）：初始渲染/受控写入跟随 value 属性刷新 */
@@ -303,6 +331,7 @@ export class OASAutoComplete extends OASFormElement {
         <div class="dropdown" part="dropdown">
           <div class="panel-header" part="header" hidden><slot name="header"></slot></div>
           <div class="listbox" part="listbox" role="listbox" id="ac-list"></div>
+          <oas-virtual-list class="vlist" part="virtual-list" hidden></oas-virtual-list>
           <div class="panel-footer" part="footer" hidden><slot name="footer"></slot></div>
         </div>
       </div>
@@ -314,6 +343,7 @@ export class OASAutoComplete extends OASFormElement {
     this.input = this.shadow.querySelector('input')
     this.dropdown = this.shadow.querySelector('.dropdown')
     this.listbox = this.shadow.querySelector('.listbox')
+    this.vlist = this.shadow.querySelector<OASVirtualList>('oas-virtual-list')
     this.clearBtn = this.shadow.querySelector('.clear-btn')
 
     this.input?.addEventListener('compositionstart', () => {
@@ -350,6 +380,15 @@ export class OASAutoComplete extends OASFormElement {
       e.stopPropagation()
       this.clearValue()
     })
+    // 虚拟滚动：复用 oas-virtual-list 的窗口计算，把每个可见项渲染为选项行（对齐 select）
+    this.vlist?.addEventListener('oas-item', ((
+      e: CustomEvent<{ index: number; item: Option; element: HTMLElement }>,
+    ) => {
+      const detail = e.detail
+      if (detail && detail.item && detail.element) {
+        this.createOptionRow(detail.item, detail.index, detail.element)
+      }
+    }) as EventListener)
     // autofocus：转发到内部 input（原生 autofocus 不穿透 shadow，挂载后手动聚焦一次，同 input/button）
     if (this.hasAttr('autofocus')) {
       queueMicrotask(() => this.input?.focus())
@@ -573,7 +612,44 @@ export class OASAutoComplete extends OASFormElement {
     this.scrollActiveIntoView()
   }
 
+  /** 虚拟滚动定高：默认 36（与 oas-virtual-list 默认一致，匹配选项行视觉高度；对齐 select） */
+  private virtualItemHeight(): number {
+    const raw = this.getAttr('item-height', '36')
+    const n = Number.parseInt(raw, 10)
+    return Number.isNaN(n) ? 36 : n
+  }
+
+  /** 面板高度：--oas-auto-complete-dropdown-height CSS 变量开口（默认 240px，对齐 select）。
+   *  computed 优先（覆盖继承/类样式等场景），inline style 兜底（宿主直设 host 内联的主通道） */
+  private dropdownHeight(): number {
+    const raw =
+      getComputedStyle(this).getPropertyValue('--oas-auto-complete-dropdown-height').trim() ||
+      this.style.getPropertyValue('--oas-auto-complete-dropdown-height').trim()
+    const n = Number.parseInt(raw, 10)
+    return Number.isNaN(n) || n <= 0 ? 240 : n
+  }
+
+  /** 虚拟/非虚拟显隐切换：虚拟时选项窗口在 vlist，非虚拟在 listbox */
+  private setVirtualVisible(visible: boolean): void {
+    if (this.listbox) this.listbox.hidden = visible
+    if (this.vlist) this.vlist.hidden = !visible
+  }
+
   private scrollActiveIntoView(): void {
+    // 虚拟滚动：让 activeIndex 所在项进入视口（设置 scrollTop，vlist 随 scroll 重算窗口）
+    const vlist = this.vlist
+    if (vlist && !vlist.hidden) {
+      const ih = this.virtualItemHeight()
+      const vp = vlist.shadowRoot?.querySelector<HTMLElement>('.viewport')
+      if (vp) {
+        const top = this.activeIndex * ih
+        const vh = vp.clientHeight || 240
+        const cur = vp.scrollTop
+        if (top < cur) vp.scrollTop = Math.max(0, top)
+        else if (top + ih > cur + vh) vp.scrollTop = Math.max(0, top + ih - vh)
+        return
+      }
+    }
     if (!this.listbox) return
     const row = this.listbox.querySelector<HTMLElement>(`#opt-${this.activeIndex}`)
     if (!row) return
@@ -607,6 +683,7 @@ export class OASAutoComplete extends OASFormElement {
     }
     this.syncPanelSlots()
     this.listbox.innerHTML = ''
+    this.setVirtualVisible(false)
 
     // loading 占位态：宿主请求远程建议期间显示加载文案（role=status 播报）
     if (this.hasAttr('loading')) {
@@ -639,6 +716,15 @@ export class OASAutoComplete extends OASFormElement {
       return
     }
 
+    // 虚拟滚动：大数据量时复用 oas-virtual-list 仅渲染可见窗口（对齐 select 契约）；
+    // 带 group 的选项回退非虚拟全量渲染（组标题是不同行高的流式分隔，虚拟定高模型不适配）；
+    // vlist 缺失（如手写 DSD 快照无此元素）时同样回退全量渲染，避免静默空下拉
+    if (this.hasAttr('virtual') && this.vlist && !list.some((o) => o.group !== undefined)) {
+      this.renderVirtualList(list)
+      this.finishOpen()
+      return
+    }
+
     let prevGroup: string | undefined
     let idx = 0
     for (const option of list) {
@@ -656,6 +742,29 @@ export class OASAutoComplete extends OASFormElement {
     this.finishOpen()
   }
 
+  /** 虚拟模式：切到 vlist 渲染（注入行样式/视口键盘可达性由 input 键盘流负责）并喂入可见选项 */
+  private renderVirtualList(visible: Option[]): void {
+    const vlist = this.vlist
+    if (!vlist) return
+    this.setVirtualVisible(true)
+    // 行样式注入 vlist shadow（虚拟行在 vlist shadow 内，组件自身样式够不到）
+    const vlistRoot = vlist.shadowRoot
+    if (vlistRoot && !vlistRoot.querySelector('style[data-oas-auto-complete-rows]')) {
+      const style = document.createElement('style')
+      style.setAttribute('data-oas-auto-complete-rows', '')
+      style.textContent = VIRTUAL_ROW_STYLE
+      vlistRoot.appendChild(style)
+    }
+    // 视口键盘可达性由 input 的 combobox 键盘流负责：走 viewportFocusable 公共通道关掉
+    // （直接 removeAttribute 会被 vlist 下次 update 的 syncViewportFocusable 加回）
+    vlist.viewportFocusable = false
+    vlist.setAttribute('items-role', 'listbox')
+    vlist.setAttribute('item-role', 'presentation')
+    vlist.setAttribute('height', String(this.dropdownHeight()))
+    vlist.setAttribute('item-height', String(this.virtualItemHeight()))
+    vlist.items = visible
+  }
+
   /** 展开收尾：面板显隐 / aria / 定位 / 全局点击监听（open 分支共用） */
   private finishOpen(): void {
     if (!this.dropdown || !this.input) return
@@ -666,8 +775,10 @@ export class OASAutoComplete extends OASFormElement {
     document.addEventListener('click', this.handleOutsideClick, true)
   }
 
-  /** 构建选项行：角色/aria/高亮/自定义渲染模板；点击走 dropdown 委托，mousemove 走增量同步 */
-  private createOptionRow(option: Option, idx: number): void {
+  /** 构建选项行：角色/aria/高亮/自定义渲染模板；非虚拟点击走 dropdown 委托，mousemove 走增量同步 */
+  private createOptionRow(option: Option, idx: number, container?: HTMLElement): void {
+    const parent = container ?? this.listbox
+    if (!parent) return
     const row = document.createElement('div')
     row.className = 'option'
     if (option.group !== undefined) row.classList.add('grouped')
@@ -686,7 +797,15 @@ export class OASAutoComplete extends OASFormElement {
       this.activeIndex = idx
       this.syncActive()
     })
-    this.listbox!.appendChild(row)
+    parent.appendChild(row)
+    // 虚拟模式：行在 vlist shadow 内，dropdown 上的点击委托收不到（shadow 边界重定向 target），
+    // 行上直挂点击；非虚拟仍走 dropdown 委托（避免双触发）
+    if (container != null) {
+      row.addEventListener('click', () => {
+        if (option.disabled) return
+        this.choose(option)
+      })
+    }
     // 自定义选项渲染：宿主可监听改写 element（图标/富文本），机制与 select 的 oas-option-render 一致
     this.emit('option-render', { index: idx, option, element: label })
   }
@@ -703,11 +822,9 @@ export class OASAutoComplete extends OASFormElement {
     }
   }
 
-  /** 高亮/aria 增量同步（不重建 DOM） */
+  /** 高亮/aria 增量同步（不重建 DOM）：虚拟滚动下窗口随 scroll 重算后行内 class 由 createOptionRow 落定 */
   private syncActive(): void {
-    const list = this.listbox
-    if (!list) return
-    for (const row of list.querySelectorAll<HTMLElement>('.option[data-index]')) {
+    for (const row of this.renderedOptionRows()) {
       row.classList.toggle('active', Number(row.getAttribute('data-index')) === this.activeIndex)
     }
     const n = this.filtered().length
@@ -716,6 +833,15 @@ export class OASAutoComplete extends OASFormElement {
     } else {
       this.input?.removeAttribute('aria-activedescendant')
     }
+  }
+
+  /** 已渲染的选项行：非虚拟在 listbox、虚拟在 vlist shadow（open shadow 可跨根查询） */
+  private renderedOptionRows(): HTMLElement[] {
+    const out: HTMLElement[] = []
+    if (this.listbox) out.push(...this.listbox.querySelectorAll<HTMLElement>('.option[data-index]'))
+    const vroot = this.vlist?.shadowRoot
+    if (vroot) out.push(...vroot.querySelectorAll<HTMLElement>('.option[data-index]'))
+    return out
   }
 
   /** 复用浮层定位引擎：锚定输入框，空间不足自动翻转/避让，宽度对齐输入框。

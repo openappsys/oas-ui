@@ -11,6 +11,8 @@ export const ko: LocaleMessages = {
   'modal.close': '닫기',
   'modal.ok': '확인',
   'modal.cancel': '취소',
+  'modal.maximize': '최대화',
+  'modal.restore': '복원',
   // confirm（명령형 확인 대화상자）
   'confirm.ok': '확인',
   'confirm.cancel': '취소',
@@ -139,6 +141,9 @@ export const ko: LocaleMessages = {
   'pagination.more': '더보기',
   // table（테이블）
   'table.selectAll': '전체 선택',
+  'table.exportCsv': 'CSV보내기',
+  'table.exportExcel': 'Excel보내기',
+  'table.rowDragHandle': '드래그하여 순서 변경',
   'table.loading': '불러오는 중…',
   'table.empty': '데이터 없음',
   'table.selectRow': '{key}행 선택',

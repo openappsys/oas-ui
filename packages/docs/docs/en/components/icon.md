@@ -127,6 +127,18 @@ Four channels (pick by scenario):
   <oas-icon library="demo-weight" name="demo-icon" variant="bold" size="28" color="var(--oas-color-primary)"></oas-icon>
 </DemoBlock>
 
+## Icon font (iconfont)
+
+`iconfont-url` injects an iconfont project script (symbol sprite JS): the component appends the `<script>` on demand, de-duplicates by URL, and re-renders all consumers once it loads, inlining the project's `<symbol>` content into the component (a `#fragment` cannot cross Shadow DOM boundaries, so `<use>` is not used).
+
+`registerIconAlias(alias, target)` registers aliases (including prefix aliases) mapping short names to project symbol names: after `registerIconAlias('i-', 'icon-')`, `name="i-star"` resolves to `icon-star`.
+
+<DemoBlock title="iconfont project script + alias prefix" :script="iconfontScript">
+  <oas-icon data-iconfont-demo name="i-star" size="28" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon data-iconfont-demo name="i-heart" size="28" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon data-iconfont-demo name="i-check" size="28" color="var(--oas-color-success)"></oas-icon>
+</DemoBlock>
+
 ## Animation presets
 
 The `animation` attribute provides ready-to-use animations (respecting `prefers-reduced-motion`).
@@ -279,10 +291,36 @@ registerIconLibrary('demo-weight', {
   resolver: (name, family, variant) =>
     variant === 'bold' ? '/demo-icon-bold.svg' : \`/\${name}.svg\`,
 })`
+const iconfontScript = `import { registerIconAlias } from '@oas-ui/ui/basic/icon'
+
+// The iconfont project script (symbol sprite JS) is injected on demand via iconfont-url
+// and de-duplicated by URL:
+// <oas-icon iconfont-url="https://at.alicdn.com/t/font_xxx.js" name="icon-star">
+
+// Prefix alias: name="i-star" → symbol #icon-star
+registerIconAlias('i-', 'icon-')`
+
+// Demo uses an inline data-URI "iconfont project script" to avoid external network
+const ICONFONT_PROJECT = `(function () {
+  if (window.__oasIconfontDemoLoaded) return
+  window.__oasIconfontDemoLoaded = true
+  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('aria-hidden', 'true')
+  svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden'
+  svg.innerHTML = [
+    '<symbol id="icon-star" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 64 L632 400 L990 400 L700 610 L810 950 L512 740 L214 950 L324 610 L34 400 L392 400 Z"/></symbol>',
+    '<symbol id="icon-heart" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 928 C448 864 96 600 96 368 C96 232 200 144 320 144 C400 144 464 192 512 256 C560 192 624 144 704 144 C824 144 928 232 928 368 C928 600 576 864 512 928 Z"/></symbol>',
+    '<symbol id="icon-check" viewBox="0 0 1024 1024"><path fill="currentColor" d="M416 736 L160 480 L224 416 L416 608 L800 224 L864 288 Z"/></symbol>',
+  ].join('')
+  document.body.appendChild(svg)
+})()`
+const iconfontUrl = `data:text/javascript;charset=utf-8,${encodeURIComponent(ICONFONT_PROJECT)}`
+
 onMounted(async () => {
-  const [{ iconNames }, ui] = await Promise.all([
+  const [{ iconNames }, ui, { registerIconAlias }] = await Promise.all([
     import('@oas-ui/icons'),
     import('@oas-ui/ui'),
+    import('@oas-ui/ui/basic/icon'),
   ])
   // registerIcon registers custom icons; re-set name afterwards to trigger a refresh
   ui.registerIcon(
@@ -315,6 +353,11 @@ onMounted(async () => {
     resolver: (name, family, variant) =>
       variant === 'bold' ? '/demo-icon-bold.svg' : `/${name}.svg`,
   })
+  // Icon font: register the prefix alias + attach the iconfont project script URL to demo icons
+  registerIconAlias('i-', 'icon-')
+  for (const el of document.querySelectorAll('oas-icon[data-iconfont-demo]')) {
+    el.setAttribute('iconfont-url', iconfontUrl)
+  }
   // Re-set name/library after registration to trigger an update
   for (const el of document.querySelectorAll('oas-icon[name="custom-star"], oas-icon[name="custom-heart"]')) {
     const name = el.getAttribute('name')
@@ -368,9 +411,10 @@ onMounted(async () => {
 | `duotone` | Duotone icon: layered coloring (`--oas-icon-primary-color` / `--oas-icon-secondary-color` + opacity), mainly for custom dual-layer SVG | `boolean` | — |
 | `family` | Icon family (passed to the library resolver, e.g. outline/filled) | `string` | — |
 | `flip` | Flip mirror (`x` / `y` / `both` axes), combinable with `rotate` | `string` | — |
+| `iconfont-url` | Remote iconfont project script URL: injected on demand, de-duplicated per URL, consumers re-render with the symbol inlined once loaded | `string` | — |
 | `label` | Accessible name; sets `role="img"` when provided | `string` | — |
 | `library` | Remote icon library name (registered via `registerIconLibrary`), takes precedence over the built-in `name` registry | `string` | — |
-| `name` | Icon name (kebab-case) | `IconName` | — |
+| `name` | Icon name (kebab-case) | `string` | — |
 | `rotate` | Rotate by any angle (`rotate="45"` degrees) | `string` | — |
 | `size` | Size (px or em) | `string` | — |
 | `spin` | Spin animation: continuous rotation (loading) | `boolean` | — |

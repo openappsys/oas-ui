@@ -60,6 +60,7 @@ OAS-UI 提供 117 个框架无关的 Web Components 组件，按用途划分为 
 - [Editable 就地编辑](/components/editable) —— 点击/回车/空格进入编辑态，Enter 提交、Esc 取消，空值提交默认非破坏。
 - [Form 表单](/components/form) —— 原生 `<form>` 增强，支持按 `rules` 规则对内部字段做校验与提交。
 - [FormItem 表单项](/components/form#栅格表单布局) —— `oas-form-item`：label + 控件容器 + 错误提示位，在 `layout="grid"` 的表单内按 `span` 栅格占列。
+- [FormList 动态字段组](/components/form#动态字段组-form-list) —— `oas-form-list`：表单内可增删的字段行组，行模板克隆 + 字段 `name` 自动索引化（嵌套 values），校验/提交随主表。
 
 ## 反馈与浮层组件
 
@@ -134,6 +135,7 @@ OAS-UI 提供 117 个框架无关的 Web Components 组件，按用途划分为 
 - [Marquee 跑马灯](/components/marquee) —— 循环水平滚动展示长内容的纯展示组件，内容经 slot 无缝循环；支持悬停暂停与 `prefers-reduced-motion` 静态降级。无事件。
 - [NumberAnimation 数字滚动](/components/number-animation) —— 数字从当前值缓动到目标值的动画组件，到目标值停止并派发 `oas-finish`；`prefers-reduced-motion` 时直接跳目标，断开连接自动取消 rAF 无泄漏。
 - [GradientText 渐变文字](/components/gradient-text) —— 以渐变色填充文字的纯展示组件，`background-clip: text` 实现；默认走主题 token 双色渐变，支持任意色标数组与方向。无事件。
+- [Highlight 文本高亮](/components/highlight) —— 文本命中高亮：`text` + `highlight`（空格多词或 JSON 数组）命中片段渲染为 `<mark>`（token 配色，dark 自适应），支持大小写/整词/重音三开关，内容重算后派发 `oas-count`。
 
 ## 框架级容器
 

@@ -59,6 +59,15 @@ Off by **default** (popping the full list on focusing an empty input disturbs co
 
 Options with a `group` field render group titles (not selectable) with indented options; `↑`/`↓` navigate continuously across groups.
 
+## Large Datasets (virtual scrolling)
+
+<DemoBlock title="Virtual scrolling (1000 suggestions)">
+  <oas-auto-complete id="ac-virtual" virtual clearable placeholder='Type "9" to try (1000 suggestions, smooth scrolling)' options='[]'></oas-auto-complete>
+  <span id="ac-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+With `virtual`, the suggestion panel renders only the visible window (reusing `oas-virtual-list` window math with top/bottom padding holding the scroll height) — thousands of suggestions scroll smoothly and the panel height stays constant; `item-height` tunes the fixed row height (default `36`). While navigating with `↑`/`↓` the window follows the highlighted item and `aria-activedescendant` keeps pointing at a visible row; options with `group` automatically fall back to full rendering (same contract as `oas-select`).
+
 ## Custom Option Rendering
 
 <DemoBlock title="Custom option (oas-option-render event)">
@@ -228,6 +237,17 @@ onMounted(() => {
     ac.setAttribute('options', '[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]')
     acFocusZone.appendChild(ac)
   })
+
+  // virtual scrolling demo: 1000 suggestions injected via the options channel + selection feedback
+  const virtualAc = document.getElementById('ac-virtual')
+  const virtualAcOut = document.getElementById('ac-virtual-output')
+  virtualAc?.setAttribute(
+    'options',
+    JSON.stringify(Array.from({ length: 1000 }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` }))),
+  )
+  virtualAc?.addEventListener('oas-change', (e) => {
+    if (virtualAcOut) virtualAcOut.textContent = `oas-change: ${JSON.stringify(e.detail)}`
+  })
 })
 </script>
 
@@ -268,6 +288,7 @@ onMounted(() => {
 | `clearable` | Clearable (shows a clear button when the input has content; clearing dispatches `oas-clear` and an empty `oas-change`) | `boolean` | — |
 | `debounce` | Input debounce (ms, default 0 = off): only debounces `oas-input` dispatch and filtering, never the input display | `string` | `0` |
 | `disabled` | Disabled | `boolean` | — |
+| `item-height` | Fixed virtual row height in px (with virtual, default 36) | `string` | `36` |
 | `loading` | Loading placeholder (dropdown shows a loading state; remote-suggestion request state) | `boolean` | — |
 | `options` | Options, JSON array `[{ label, value, disabled?, group? }]` (group is the group title) | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | `string` | — |
@@ -279,6 +300,7 @@ onMounted(() => {
 | `trigger-on-focus` | Show suggestions on focus (datalist mental model; off by default — input-first) | `boolean` | — |
 | `value` | Preset value | `string` | — |
 | `variant` | Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently | `string` | — |
+| `virtual` | Virtual scrolling (renders only the visible window via oas-virtual-list; grouped options fall back to full rendering) | `boolean` | — |
 
 #### Events
 
@@ -299,5 +321,11 @@ onMounted(() => {
 | `footer` | Suggestion panel footer content (e.g. a view-all link) |
 | `header` | Suggestion panel header content (e.g. a hint bar) |
 | `template[slot="option"]` | Custom option template skeleton; the `[data-option-label]` node auto-binds the option text |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-auto-complete-dropdown-height` | `240px` |
 
 Keyboard: `↑`/`↓` to move (looping), `Enter` to select the highlighted item (first item highlighted by default), `Esc` to close.

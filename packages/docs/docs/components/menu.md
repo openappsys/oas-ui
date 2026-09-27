@@ -394,6 +394,15 @@ onMounted(() => {
       if (out) out.textContent = `已选择：${e.detail.value}（子菜单保持展开，可继续选择）`
     })
   }
+
+  // searchable：过滤菜单的选中反馈
+  const menuSearchable = document.getElementById('menu-searchable')
+  if (menuSearchable) {
+    menuSearchable.addEventListener('oas-select', (e) => {
+      const tag = document.getElementById('menu-searchable-result')
+      if (tag) tag.textContent = `已选择：${e.detail.value}`
+    })
+  }
 })
 </script>
 
@@ -423,6 +432,39 @@ onMounted(() => {
   <p id="menu-persistent-out" style="margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary)">悬停父项展开子菜单后点击试试</p>
 </DemoBlock>
 
+## 可搜索（searchable）
+
+`searchable` 在菜单顶部渲染过滤输入框，键入实时过滤可见项（浮出与 inline 形态都生效）：命中嵌套子项时保留其祖先并自动展开命中路径，无匹配时显示空文案（复用 i18n 空态）；`Escape` 清空搜索，`ArrowDown` 把焦点移入菜单。
+
+<DemoBlock title="可搜索（浮出 + inline）">
+  <oas-space direction="vertical" size="large">
+    <div>
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">浮出形态：在输入框键入「窗」过滤出「窗口布局」</p>
+      <oas-menu id="menu-searchable" searchable style="width: 220px" onoas-select="menuSearchableLog(event)" items='[{"label":"新建文件","value":"new-file","icon":"edit"},{"label":"打开文件","value":"open-file","icon":"search"},{"label":"窗口布局","value":"window","icon":"menu"},{"label":"设置","value":"settings","icon":"gear"}]'></oas-menu>
+      <oas-tag id="menu-searchable-result" type="info" style="margin-top: var(--oas-space-2)">尚未选择</oas-tag>
+    </div>
+    <div>
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">inline 形态：键入「统计」就地过滤并展开命中路径</p>
+      <oas-menu id="menu-searchable-inline" mode="inline" searchable style="width: 240px" items='[{"label":"工作台","value":"workspace","children":[{"label":"概览","value":"overview"},{"label":"数据统计","value":"stats"}]},{"label":"项目管理","value":"project","children":[{"label":"进行中","value":"active"},{"label":"已完成","value":"done"}]},{"label":"设置","value":"settings"}]'></oas-menu>
+    </div>
+  </oas-space>
+</DemoBlock>
+
+## 快捷键标注（shortcut）
+
+菜单项 `shortcut` 字段（items JSON）或 `<oas-menu-item shortcut="…">` 属性在行右端渲染 `kbd` 快捷键标注，与 menubar 的 shortcut 视觉契约一致。
+
+<DemoBlock title="快捷键标注（shortcut）">
+  <oas-space>
+    <oas-menu style="width: 220px" items='[{"label":"新建","value":"new","shortcut":"Ctrl+N"},{"label":"打开","value":"open","shortcut":"Ctrl+O"},{"label":"保存","value":"save","shortcut":"Ctrl+S"},{"label":"全屏","value":"full","shortcut":"F11"}]'></oas-menu>
+    <oas-menu style="width: 220px">
+      <oas-menu-item value="undo" shortcut="Ctrl+Z">撤销</oas-menu-item>
+      <oas-menu-item value="redo" shortcut="Ctrl+Shift+Z">重做</oas-menu-item>
+      <oas-menu-item value="paste" shortcut="Ctrl+V">粘贴</oas-menu-item>
+    </oas-menu>
+  </oas-space>
+</DemoBlock>
+
 ## API
 
 ### oas-menu
@@ -441,6 +483,7 @@ onMounted(() => {
 | `mode` | 布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条 | — | — |
 | `open-on-hover` | vertical/inline 父项 hover 延迟展开（约 150ms）/移出延迟收起（约 300ms），点击路径不变；horizontal 与 collapsed flyout 不受影响 | `boolean` | — |
 | `persistent` | 选中后不自动收起浮出子菜单（优先于 close-on-select） | `string` | — |
+| `searchable` | 菜单顶部过滤输入框：键入实时过滤可见项（命中嵌套子项保留祖先并自动展开，Esc 清空） | `boolean` | — |
 | `selectable` | `"false"` 时纯动作菜单：叶子无勾选态、点击不写回 value（detail kind=action） | `string` | `true` |
 | `theme` | 局部主题：`dark` 使用暗色 token（独立于全局主题） | — | — |
 | `value` | 当前选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{"sort":"name","view":"list"}`）时按组 id 作用域独立记录——`type:"group"` 项的 `value` 作组 id，组内点选只更新该组 | `string` | — |
@@ -472,6 +515,7 @@ onMounted(() => {
 | `kind` | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集） | — | — |
 | `loading` | 加载中：渲染 spinner、禁点，由数据驱动恢复 | — | — |
 | `rel` | 链接 rel（配合 href） | — | — |
+| `shortcut` | 行右端快捷键标注（kbd 视觉，对齐 menubar shortcut 契约） | — | — |
 | `target` | 链接 target（配合 href） | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
 

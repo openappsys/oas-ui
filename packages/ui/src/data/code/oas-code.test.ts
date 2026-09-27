@@ -3,6 +3,7 @@ import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
 import { OASCode } from './index.js'
+import { parseLineRanges } from './oas-code.js'
 
 const JS_SRC = `const msg = 'hi'\nfunction add(a, b) {\n  return a + b // 求和\n}\n`
 
@@ -293,6 +294,155 @@ describe('OASCode', () => {
       expect(inlineEl.style.getPropertyValue('--oas-code-color')).toBe('#00b96b')
       el.removeAttribute('color')
       expect(inlineEl.style.getPropertyValue('--oas-code-color')).toBe('')
+    })
+  })
+
+  describe('highlight-lines 行高亮', () => {
+    it('进入 observedAttributes', () => {
+      expect(OASCode.observedAttributes).toContain('highlight-lines')
+    })
+
+    it('parseLineRanges 解析单点与区间（含空格/倒序归一/非法片段忽略）', () => {
+      const sorted = (s: string): number[] => [...parseLineRanges(s)].sort((a, b) => a - b)
+      expect(sorted('1,3-5')).toEqual([1, 3, 4, 5])
+      expect(sorted(' 2 , 5-3 ')).toEqual([2, 3, 4, 5])
+      expect(sorted('x, 0, -2, 100, 1-abc')).toEqual([100])
+      expect(sorted('')).toEqual([])
+    })
+
+    it('范围语法 "1,3-5" 命中行加 line-highlight', () => {
+      const el = mount({ code: 'a\nb\nc\nd\ne', 'highlight-lines': '1,3-5' })
+      const flags = [...el.shadowRoot!.querySelectorAll('[part="line"]')].map((l) =>
+        l.classList.contains('line-highlight'),
+      )
+      expect(flags).toEqual([true, false, true, true, true])
+    })
+
+    it('非法值/越界行号忽略，不抛错', () => {
+      const el = mount({ code: 'a\nb', 'highlight-lines': 'x, 0, -2, 100, 1-abc' })
+      const lines = [...el.shadowRoot!.querySelectorAll('[part="line"]')]
+      expect(lines.length).toBe(2)
+      expect(lines.every((l) => !l.classList.contains('line-highlight'))).toBe(true)
+    })
+
+    it('CSS：高亮底色走 token（可经 CSS 变量覆盖）', () => {
+      const el = mount({ code: 'a', 'highlight-lines': '1' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.line-highlight\s*\{[^}]*--oas-code-highlight-bg/)
+      expect(css).toMatch(/\.line-highlight\s*\{[^}]*var\(--oas-color-primary\)/)
+    })
+  })
+
+  describe('focus-lines 行聚焦', () => {
+    it('进入 observedAttributes', () => {
+      expect(OASCode.observedAttributes).toContain('focus-lines')
+    })
+
+    it('非聚焦行加 line-focus-dim，聚焦行不加', () => {
+      const el = mount({ code: 'a\nb\nc', 'focus-lines': '2' })
+      const flags = [...el.shadowRoot!.querySelectorAll('[part="line"]')].map((l) =>
+        l.classList.contains('line-focus-dim'),
+      )
+      expect(flags).toEqual([true, false, true])
+    })
+
+    it('未设置 focus-lines 时无任何行淡化', () => {
+      const el = mount({ code: 'a\nb' })
+      expect(el.shadowRoot!.querySelector('.line-focus-dim')).toBeNull()
+    })
+
+    it('CSS：淡化透明度走 CSS 变量 token', () => {
+      const el = mount({ code: 'a', 'focus-lines': '1' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.line-focus-dim\s*\{[^}]*--oas-code-focus-dim-opacity/)
+    })
+  })
+
+  describe('diff 模式', () => {
+    it('进入 observedAttributes', () => {
+      expect(OASCode.observedAttributes).toContain('diff')
+    })
+
+    it('+ 前缀行加 line-diff-add / - 前缀行加 line-diff-remove，其余不加', () => {
+      const el = mount({ code: '+added\n-removed\n unchanged', diff: '' })
+      const rows = [...el.shadowRoot!.querySelectorAll('[part="line"]')].map((l) => ({
+        add: l.classList.contains('line-diff-add'),
+        remove: l.classList.contains('line-diff-remove'),
+      }))
+      expect(rows).toEqual([
+        { add: true, remove: false },
+        { add: false, remove: true },
+        { add: false, remove: false },
+      ])
+    })
+
+    it('未设置 diff 时不加任何 diff class', () => {
+      const el = mount({ code: '+a\n-b' })
+      expect(el.shadowRoot!.querySelector('.line-diff-add')).toBeNull()
+      expect(el.shadowRoot!.querySelector('.line-diff-remove')).toBeNull()
+    })
+
+    it('CSS：diff 行用语义色 token（增绿减红）', () => {
+      const el = mount({ code: '+a\n-b', diff: '' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.line-diff-add[^{]*\{[^}]*--oas-color-success/)
+      expect(css).toMatch(/\.line-diff-remove[^{]*\{[^}]*--oas-color-danger/)
+    })
+  })
+
+  describe('max-rows 折叠', () => {
+    it('进入 observedAttributes', () => {
+      expect(OASCode.observedAttributes).toContain('max-rows')
+    })
+
+    it('超出 max-rows 时只渲染前 N 行并出现展开尾行', () => {
+      const el = mount({ code: 'a\nb\nc\nd\ne', 'max-rows': '2' })
+      expect(el.shadowRoot!.querySelectorAll('[part="line"]').length).toBe(2)
+      const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="more-btn"]')!
+      expect(btn).not.toBeNull()
+      expect(btn.textContent).toBe('展开')
+      expect(btn.getAttribute('aria-expanded')).toBe('false')
+    })
+
+    it('点击展开显示全部行、按钮变收起；再点折回', () => {
+      const el = mount({ code: 'a\nb\nc\nd', 'max-rows': '2' })
+      el.shadowRoot!.querySelector<HTMLButtonElement>('[part="more-btn"]')!.click()
+      expect(el.shadowRoot!.querySelectorAll('[part="line"]').length).toBe(4)
+      const collapse = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="more-btn"]')!
+      expect(collapse.textContent).toBe('收起')
+      expect(collapse.getAttribute('aria-expanded')).toBe('true')
+      collapse.click()
+      expect(el.shadowRoot!.querySelectorAll('[part="line"]').length).toBe(2)
+      expect(el.shadowRoot!.querySelector('[part="more-btn"]')!.textContent).toBe('展开')
+    })
+
+    it('行数不超过 max-rows 时不出现尾行', () => {
+      const el = mount({ code: 'a\nb', 'max-rows': '5' })
+      expect(el.shadowRoot!.querySelector('[part="more-btn"]')).toBeNull()
+    })
+
+    it('max-rows="0" 视为不封顶（无折叠）', () => {
+      const el = mount({ code: 'a\nb\nc', 'max-rows': '0' })
+      expect(el.shadowRoot!.querySelector('[part="more-btn"]')).toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="line"]').length).toBe(3)
+    })
+
+    it('非法 max-rows 忽略（不折叠）', () => {
+      const el = mount({ code: 'a\nb\nc', 'max-rows': 'abc' })
+      expect(el.shadowRoot!.querySelector('[part="more-btn"]')).toBeNull()
+    })
+
+    it('折叠 + show-line-number：行号连续且尾行无行号', () => {
+      const el = mount({ code: 'a\nb\nc\nd', 'max-rows': '2', 'show-line-number': '' })
+      const nums = [...el.shadowRoot!.querySelectorAll('[part="line-number"]')].map((n) => n.textContent)
+      expect(nums).toEqual(['1', '2'])
+      expect(el.shadowRoot!.querySelector('.more-line [part="line-number"]')).toBeNull()
+    })
+
+    it('i18n：尾行按钮文案随 locale 切换', () => {
+      const el = mount({ code: 'a\nb\nc', 'max-rows': '1' })
+      setLocale(en)
+      expect(el.shadowRoot!.querySelector('[part="more-btn"]')!.textContent).toBe('Expand')
     })
   })
 })

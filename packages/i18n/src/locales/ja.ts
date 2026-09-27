@@ -11,6 +11,8 @@ export const ja: LocaleMessages = {
   'modal.close': '閉じる',
   'modal.ok': 'OK',
   'modal.cancel': 'キャンセル',
+  'modal.maximize': '最大化',
+  'modal.restore': '元に戻す',
   // confirm（命令式確認ダイアログ）
   'confirm.ok': 'OK',
   'confirm.cancel': 'キャンセル',
@@ -139,6 +141,9 @@ export const ja: LocaleMessages = {
   'pagination.more': 'さらに',
   // table（テーブル）
   'table.selectAll': 'すべて選択',
+  'table.exportCsv': 'CSV をエクスポート',
+  'table.exportExcel': 'Excel をエクスポート',
+  'table.rowDragHandle': 'ドラッグで並べ替え',
   'table.loading': '読み込み中…',
   'table.empty': 'データなし',
   'table.selectRow': '行 {key} を選択',

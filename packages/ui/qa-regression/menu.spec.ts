@@ -995,3 +995,38 @@ test('menu persistent（P2）：Vue 下属性存活、选中后子菜单保持�
   expect(r.fileOpen, 'persistent：选中后子菜单应保持展开').toBe(true)
   expect(r.out || '', 'demo 无可见反馈').toContain('new')
 })
+
+// ===== 能力缺口 D13：searchable 过滤 + shortcut kbd 标注 =====
+test('menu D13：searchable 键入实时过滤、无匹配空态、shortcut kbd 标注（Vue 下属性存活）', async ({ page }) => {
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#menu-searchable')
+  const menu = page.locator('#menu-searchable')
+  await menu.scrollIntoViewIfNeeded()
+  const attrSurvived = await menu.evaluate((h) => h.getAttribute('searchable'))
+  expect(attrSurvived, 'searchable 被 Vue 剥离').not.toBeNull()
+  const input = menu.locator('.menu-search-input')
+  expect(await menu.evaluate((h) => h.shadowRoot!.querySelectorAll('[part="item"]').length)).toBe(4)
+  await input.fill('窗')
+  const filtered = await menu.evaluate((h) =>
+    [...h.shadowRoot!.querySelectorAll('[part="item"]')].map((el) => el.querySelector('.label')?.textContent ?? ''),
+  )
+  expect(filtered).toEqual(['窗口布局'])
+  // 无匹配空态（复用 i18n select.noMatch）
+  await input.fill('zzz')
+  const empty = await menu.evaluate((h) => {
+    const el = h.shadowRoot!.querySelector<HTMLElement>('[part="search-empty"]')!
+    return { hidden: el.hasAttribute('hidden'), text: el.textContent ?? '' }
+  })
+  expect(empty.hidden).toBe(false)
+  expect(empty.text).toContain('无匹配')
+  await input.fill('')
+  // shortcut：kbd 标注可见且带文本
+  await page.waitForFunction(() =>
+    [...document.querySelectorAll('oas-menu')].some((el) => el.shadowRoot?.querySelector('kbd.shortcut')),
+  )
+  const kbd = await page.evaluate(() => {
+    const m = [...document.querySelectorAll('oas-menu')].find((el) => el.shadowRoot?.querySelector('kbd.shortcut'))
+    return m?.shadowRoot?.querySelector<HTMLElement>('kbd.shortcut')?.textContent ?? ''
+  })
+  expect(kbd).toContain('Ctrl+')
+})

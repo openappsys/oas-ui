@@ -262,6 +262,9 @@ test.beforeAll(async () => {
     renderToString('oas-editable', { value: '可编辑文本' }),
     renderToString('oas-form-item', { label: '姓名' }),
     renderToString('oas-form', {}),
+    // form-list 动态字段组：空内容 fixture（无 template 无行，快照为 items 空容器 + 添加按钮，
+    // 升级前后布局稳定；行克隆与增删交互由单测覆盖）
+    renderToString('oas-form-list', { name: 'users' }),
   ])
 
   // —— DSD 批次 2：反馈组件快照（可见态直出 + 浮层宿主骨架） ——

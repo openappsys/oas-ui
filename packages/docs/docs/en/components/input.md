@@ -230,9 +230,20 @@ onMounted(() => {
     fmt.formatter = (v) => v.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
     fmt.parser = (v) => v.replace(/,/g, '')
     fmt.addEventListener('oas-input', (e) => {
-      fmtOut.textContent = `raw value: ${e.detail.value}`
+      fmtOut.textContent = `Raw value: ${e.detail.value}`
     })
   }
+
+  // mask input mask: default submits display value vs mask-raw submits raw sequence (live event echo)
+  const maskEl = document.getElementById('input-mask')
+  const maskRawEl = document.getElementById('input-mask-raw')
+  const maskOut = document.getElementById('input-mask-output')
+  maskEl?.addEventListener('oas-input', (e) => {
+    if (maskOut) maskOut.textContent = `Default (display value): ${e.detail.value || '—'}`
+  })
+  maskRawEl?.addEventListener('oas-input', (e) => {
+    if (maskOut) maskOut.textContent = `mask-raw (raw sequence): ${e.detail.value || '—'}`
+  })
 
   // form-associated: native label association + FormData read + reset
   const faForm = document.getElementById('input-form-demo')
@@ -402,6 +413,16 @@ By default `maxlength` is passed through to the native hard truncation; with `al
 
 `formatter` / `parser` are **JS property-channel only** (`el.formatter = fn`) — Web Components attributes cannot carry functions, so there is no corresponding HTML attribute. Display = `formatter(rawValue)`; `detail.value` of `oas-input` / `oas-change` carries the parsed raw value (`parser(display)`). Removing them (set to `null`) restores the raw display. While typing, the cursor is approximately preserved by shifting with the length delta of the format change (sufficient for card-number grouping and similar cases).
 
+## Input Mask (mask)
+
+<DemoBlock title="mask input mask (###-####) and mask-raw raw value">
+  <oas-input id="input-mask" mask="###-####" placeholder="Serial (e.g. 1234567)" style="width: 200px"></oas-input>
+  <oas-input id="input-mask-raw" mask="###-####" mask-raw placeholder="Same mask + mask-raw" style="width: 200px"></oas-input>
+  <span id="input-mask-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 240px"></span>
+</DemoBlock>
+
+`mask` defines an input mask template: `#` digit, `A` letter, `*` alphanumeric; any other character is a literal (like the `-` in `###-####`). Typing skips literals automatically, invalid characters are filtered, pasting accepts only the fitting positions, and backspace stops at literals (literals are managed by the template and can never be deleted through); the caret always stays at the correct position. By default events and the form submit value carry the **display value** (including literals); with `mask-raw` set they carry the **de-formatted raw character sequence** instead (FormData submits the same). `mask` is mutually exclusive with `formatter`/`parser` — when both are set, mask wins with a warning; `maxlength` is not passed through in mask mode (native truncation would break the mask).
+
 ## Clear Button Visibility
 
 <DemoBlock title="show-clear-on">
@@ -456,10 +477,13 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `inputmode` | Passes the mobile virtual keyboard type through to the inner input | — | — |
 | `label` | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "输入框" when unset) | — | — |
 | `loading` | Loading state: trailing spinner with aria-busy (input stays editable); takes precedence over the clear button | `boolean` | — |
+| `mask` | Input mask template: `#` digit, `A` letter, `*` alphanumeric; other characters are literals (e.g. `###-####`); typing skips literals, pasting accepts only fitting positions, backspace stops at literals; mutually exclusive with formatter/parser (mask wins) | `string` | — |
+| `mask-raw` | Events and form submit value carry the de-formatted raw character sequence; by default the display value is submitted | `boolean` | — |
 | `max` | Native max mirrored to the inner input | — | — |
 | `maxlength` | Maximum input length (passed through to native maxlength) | `string` | — |
 | `min` | Native min mirrored to the inner input (number type) | — | — |
 | `minlength` | Passes the native minimum length constraint through | — | — |
+| `name` | Native form field name (form-associated: the FormData submission key) | — | — |
 | `pattern` | Passes the native regex validation pattern through | — | — |
 | `placeholder` | Placeholder text | `string` | — |
 | `prefix-icon` | Icon name for the leading icon | `string` | — |

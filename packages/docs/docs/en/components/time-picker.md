@@ -81,6 +81,16 @@ The panel footer has a built-in Now button that fills the current time and confi
 
 `presets` (property, an array of `{ label, value: 'HH:mm:ss' }`) renders a button row atop the panel.
 
+## Timezone (timezone)
+
+<DemoBlock title="timezone anchor: UTC vs local">
+  <oas-time-picker id="time-picker-timezone-utc" timezone="UTC" placeholder="UTC: open and click Now" style="margin-inline-end: var(--oas-space-4)"></oas-time-picker>
+  <oas-time-picker id="time-picker-timezone-local" placeholder="Local: open and click Now"></oas-time-picker>
+  <span id="time-picker-timezone-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+`timezone` accepts an IANA zone name (e.g. `Asia/Tokyo`) or `UTC`; an omitted/invalid value falls back to the host local zone. The Now button and default-time derivation read the wall clock of the configured zone; the `value` contract (`HH:mm:ss`) is unchanged. Open the left panel and click Now for UTC, the right one for the local time; the reference line below shows both zones' current time.
+
 ## Time Range
 
 <DemoBlock title="is-range (dual column groups, auto order)">
@@ -169,6 +179,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `size` | Size: `small` / `medium` / `large` (reads the nearest config-provider injection) | `string` | `medium` |
 | `status` | Validation status: `success` / `warning` / `error` (`error` also sets `aria-invalid`) | `string` | — |
 | `step` | Stepping: a JSON triple `{"h":2,"m":5,"s":1}` per unit; a single number remains the minute step | `string` | — |
+| `timezone` | Timezone anchor: an IANA zone name or UTC; omitted/invalid falls back to local. The Now button and default-value derivation read this zone's wall clock; the value contract is unchanged | `string` | — |
 | `use12-hours` | 12-hour mode: display and columns switch to 12-hour (with an AM/PM column following the locale); the value stays 24-hour | `boolean` | — |
 | `value` | Current value (`HH:mm:ss`; a JSON array when `is-range`) | `string` | — |
 
@@ -223,5 +234,16 @@ onMounted(() => {
     { label: '2 PM', value: '14:00:00' },
     { label: 'Noon', value: '12:00:00' },
   ]
+
+  // Timezone reference line: current time per zone, computed the same way the Now button is
+  const tzOut = document.getElementById('time-picker-timezone-output')
+  if (tzOut) {
+    const timeOf = (tz) => {
+      const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }
+      if (tz) opts.timeZone = tz
+      return new Intl.DateTimeFormat('en-GB', opts).format(new Date())
+    }
+    tzOut.textContent = `Now: UTC ${timeOf('UTC')} / Local ${timeOf(null)}`
+  }
 })
 </script>

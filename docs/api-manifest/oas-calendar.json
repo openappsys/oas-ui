@@ -69,6 +69,18 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "calendar-system",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "months",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [

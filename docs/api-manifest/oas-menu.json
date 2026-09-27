@@ -71,6 +71,11 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "searchable",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],

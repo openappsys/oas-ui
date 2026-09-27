@@ -103,6 +103,15 @@ const STYLE = `
   display: grid;
   grid-template-columns: repeat(7, 1fr);
 }
+/* 多月份并排（months>1）：flex 主轴随书写方向自动镜像（RTL 逻辑方向），各面板等宽 */
+[part='grid'].multi-month {
+  display: flex;
+  gap: var(--oas-space-4);
+}
+[part='grid'].multi-month .month-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 [part='grid'].has-week-number .weekdays,
 [part='grid'].has-week-number .week {
   grid-template-columns: 1.4fr repeat(7, 1fr);
@@ -287,6 +296,8 @@ export class OASCalendar extends OASElement {
       'readonly',
       'locale',
       'format',
+      'calendar-system',
+      'months',
     ]
   }
 
@@ -342,6 +353,20 @@ export class OASCalendar extends OASElement {
     return this.t(key, params)
   }
 
+  /** 生效历法：`calendar-system` 属性（Intl calendar 标识，如 chinese/islamic/hebrew）；缺省公历 */
+  private calendarSystem(): string {
+    return this.getAttr('calendar-system', '').trim()
+  }
+
+  /** 生效并排月份数（`months` 属性，正整数，越界/非法回落 1，上限 12 防超宽） */
+  private monthCount(): number {
+    const raw = this.getAttr('months', '')
+    if (raw === '') return 1
+    const n = Number.parseInt(raw, 10)
+    if (!Number.isFinite(n) || n < 1) return 1
+    return Math.min(n, 12)
+  }
+
   /** 当前面板所在「月页」锚点（day 1），用于 oas-panel-change / 页面对比 */
   private pageAnchor(): Date {
     return new Date(this.viewDate.getFullYear(), this.viewDate.getMonth(), 1)
@@ -374,7 +399,8 @@ export class OASCalendar extends OASElement {
         return !(prevEnd < startOfDay(min))
       }
       if (!max) return true
-      const nextStart = new Date(this.viewDate.getFullYear(), this.viewDate.getMonth() + 1, 1)
+      // 多月份并排：下一段起点为当前面板末月再 +1 月
+      const nextStart = new Date(this.viewDate.getFullYear(), this.viewDate.getMonth() + this.monthCount(), 1)
       return !(nextStart > startOfDay(max))
     }
     const year = this.viewDate.getFullYear()
@@ -491,16 +517,21 @@ export class OASCalendar extends OASElement {
     if (title) {
       // format 覆盖头部标题格式（token 同 date-picker：yyyy/MM/dd…）；十年面板为区间形态，格式串不适用
       const fmt = this.getAttr('format', '')
+      const calendar = this.calendarSystem()
       const y = this.viewDate.getFullYear()
+      const count = this.monthCount()
       title.textContent =
         this.panel === 'days'
-          ? fmt
-            ? formatToken(this.viewDate, fmt, locale)
-            : formatYearMonth(this.viewDate, locale)
+          ? count > 1
+            ? // 多月份并排：标题为月份范围（format 串对区间不适用，忽略）
+              `${formatYearMonth(this.viewDate, locale, calendar)} – ${formatYearMonth(addMonths(this.viewDate, count - 1), locale, calendar)}`
+            : fmt
+              ? formatToken(this.viewDate, fmt, locale, calendar)
+              : formatYearMonth(this.viewDate, locale, calendar)
           : this.panel === 'months'
             ? fmt
-              ? formatToken(this.viewDate, fmt, locale)
-              : formatYear(this.viewDate, locale)
+              ? formatToken(this.viewDate, fmt, locale, calendar)
+              : formatYear(this.viewDate, locale, calendar)
             : `${y}-${y + 11}`
     }
     const yearNav = this.panel !== 'days'
@@ -586,24 +617,40 @@ export class OASCalendar extends OASElement {
     grid.setAttribute('role', 'grid')
     grid.classList.toggle('has-week-number', this.hasAttr('show-week-number'))
 
+    const count = this.monthCount()
+    grid.classList.toggle('multi-month', count > 1)
+
     const hadFocus = focusNow || (this.shadow.activeElement != null && grid.contains(this.shadow.activeElement))
     const selected = this.isRange() ? null : this.selectedDate()
     const focus = this.focusDate ?? selected ?? startOfDay(new Date())
+    const calendar = this.calendarSystem()
 
-    renderMonthGrid(grid, {
-      viewDate: this.viewDate,
-      locale: this.effectiveLocale(),
-      weekStart: this.effectiveWeekStart(),
-      selected,
-      today: new Date(),
-      min: parseISODate(this.getAttr('min', '')),
-      max: parseISODate(this.getAttr('max', '')),
-      disabledDate: this._disabledDate ?? undefined,
-      showWeekNumber: this.hasAttr('show-week-number'),
-      range: this.activeRange(),
-      onSelect: (d) => this.selectDate(d),
-      onCellHover: this.isRange() ? (d) => this.onRangeHover(d) : undefined,
-    })
+    // 多月份并排：清空后逐月渲染（每月一个 role=rowgroup 面板）；单月份保持既有直挂结构（零回归）
+    if (count > 1) grid.innerHTML = ''
+    for (let i = 0; i < count; i++) {
+      let host: HTMLElement = grid
+      if (count > 1) {
+        host = document.createElement('div')
+        host.className = 'month-panel'
+        host.setAttribute('role', 'rowgroup')
+        grid.appendChild(host)
+      }
+      renderMonthGrid(host, {
+        viewDate: addMonths(this.viewDate, i),
+        locale: this.effectiveLocale(),
+        calendar,
+        weekStart: this.effectiveWeekStart(),
+        selected,
+        today: new Date(),
+        min: parseISODate(this.getAttr('min', '')),
+        max: parseISODate(this.getAttr('max', '')),
+        disabledDate: this._disabledDate ?? undefined,
+        showWeekNumber: this.hasAttr('show-week-number'),
+        range: this.activeRange(),
+        onSelect: (d) => this.selectDate(d),
+        onCellHover: this.isRange() ? (d) => this.onRangeHover(d) : undefined,
+      })
+    }
     this.fillCells(grid)
     setRovingTab(grid, focus)
     if (hadFocus) {
@@ -652,6 +699,7 @@ export class OASCalendar extends OASElement {
       btn.type = 'button'
       btn.className = 'month-cell'
       btn.setAttribute('part', 'month-cell')
+      // 月/年选择面板恒为公历导航（选择目标就是公历月），不套用 calendar-system
       btn.textContent = new Intl.DateTimeFormat(locale, { month: 'short' }).format(mStart)
       btn.setAttribute('aria-label', formatYearMonth(mStart, locale))
       if (m === selectedMonth) btn.classList.add('selected')
@@ -690,6 +738,7 @@ export class OASCalendar extends OASElement {
       btn.setAttribute('part', 'year-cell')
       btn.setAttribute('data-year', String(y))
       btn.textContent = String(y)
+      // 十年/年网格为公历导航，不套用 calendar-system
       btn.setAttribute('aria-label', formatYear(yStart, locale))
       if (y === selYear) btn.classList.add('selected')
       if (disabled) {
@@ -710,7 +759,7 @@ export class OASCalendar extends OASElement {
     if (this.injectDisabled()) return
     const prev = this.pageAnchor()
     this.userNavigated = true
-    if (this.panel === 'days') this.viewDate = addMonths(this.viewDate, dir)
+    if (this.panel === 'days') this.viewDate = addMonths(this.viewDate, dir * this.monthCount())
     else if (this.panel === 'months') this.viewDate = addYears(this.viewDate, dir)
     else this.viewDate = addYears(this.viewDate, dir * 12)
     this.update()
@@ -853,7 +902,9 @@ export class OASCalendar extends OASElement {
     this.focusDate = next
     this.userNavigated = true
     // 跨月目标不在当前网格 → 面板翻页跟随（走 update 刷新标题/边界钮后聚焦目标格）
-    const inView = next.getFullYear() === this.viewDate.getFullYear() && next.getMonth() === this.viewDate.getMonth()
+    const firstMonth = new Date(this.viewDate.getFullYear(), this.viewDate.getMonth(), 1)
+    const lastMonthEnd = new Date(this.viewDate.getFullYear(), this.viewDate.getMonth() + this.monthCount(), 0)
+    const inView = next >= firstMonth && next <= lastMonthEnd
     if (inView) {
       this.renderGrid(true)
     } else {

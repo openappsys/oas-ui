@@ -516,6 +516,7 @@ onMounted(() => {
 | `kind` | Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back value) / `checkbox` (multi-select, value is the checked-set array) | — | — |
 | `loading` | Loading: renders a spinner and blocks clicks; recovers when data-driven | — | — |
 | `rel` | Link rel (with href) | — | — |
+| `shortcut` | Shortcut hint rendered as a trailing kbd (aligned with the menubar/menu shortcut contract) | — | — |
 | `target` | Link target (with href) | — | — |
 | `value` | Selected value (data-carrier field of the declarative child-element channel) | — | — |
 

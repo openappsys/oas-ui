@@ -124,7 +124,7 @@ type SplitterMode = 'legacy' | 'multi'
 
 export class OASSplitter extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['percent', 'min', 'max', 'vertical', 'collapsible', 'collapsed', 'lazy', 'sizes', 'disabled']
+    return ['percent', 'min', 'max', 'vertical', 'collapsible', 'collapsed', 'lazy', 'sizes', 'disabled', 'snap']
   }
 
   /** 布局模式：legacy（slot=left/right 两面板）/ multi（直接子元素即面板） */
@@ -441,10 +441,11 @@ export class OASSplitter extends OASElement {
       ? e.clientY - this.startPos
       : (e.clientX - this.startPos) * (isRtl(this) ? -1 : 1)
     const p = this.startPercent + (raw / size) * 100
-    // 统一按 min/max（multi 含配对和约束）夹取，ghost 与最终落盘一致
+    // 统一按 min/max（multi 含配对和约束）夹取，再吸附到 snap 档位（档位越界不吸附），
+    // ghost 与最终落盘一致（lazy 路径共用 dragPercent）
     const pairSum =
       this.mode === 'multi' ? (this.sizes[this.dragIndex] ?? 0) + (this.sizes[this.dragIndex + 1] ?? 0) : null
-    this.dragPercent = this.clampPercent(p, pairSum)
+    this.dragPercent = this.snapPercent(this.clampPercent(p, pairSum), pairSum)
     if (this.hasAttr('lazy')) {
       // lazy：拖拽中只动分隔条视觉位置，不写 percent/重渲面板
       this.moveGhost(this.dragPercent)
@@ -489,11 +490,72 @@ export class OASSplitter extends OASElement {
   private adjust(delta: number, index: number): void {
     if (this.mode === 'legacy') {
       const p = Number(this.getAttr('percent', '50')) || 50
-      this.setPercent(p + delta)
+      this.setPercent(this.snapStep(p, delta))
     } else {
-      const p = (this.sizes[index] ?? 50) + delta
-      this.setSizes(index, p)
+      const p = this.sizes[index] ?? 50
+      this.setSizes(index, this.snapStep(p, delta))
     }
+  }
+
+  // ---------- snap 吸附档位（PRD D18） ----------
+
+  /**
+   * snap 档位解析：逗号分隔的百分比（`25,50,75`）或像素值（`200px` 后缀按容器宽高换算，
+   * 与 min/max 同一协议）；非法 token 静默忽略（与 min/max 非法回落语义一致）。
+   * 返回升序去重后的档位数组（百分比 0–100）。
+   */
+  private snapGears(): number[] {
+    const raw = this.getAttr('snap', '')
+    if (raw.trim() === '') return []
+    const size = this.hasAttr('vertical') ? this.clientHeight : this.clientWidth
+    const gears: number[] = []
+    for (const token of raw.split(',')) {
+      const t = token.trim()
+      if (t === '') continue
+      const m = t.match(/^(-?\d+(?:\.\d+)?)px$/)
+      let v: number
+      if (m) {
+        if (!(size > 0)) continue
+        v = (parseFloat(m[1]!) / size) * 100
+      } else {
+        v = Number(t)
+        if (!Number.isFinite(v)) continue
+      }
+      if (v >= 0 && v <= 100) gears.push(v)
+    }
+    return [...new Set(gears)].sort((a, b) => a - b)
+  }
+
+  /**
+   * 拖拽吸附：候选值与某档位的距离在 ±8px 阈值内（按容器宽高换算为百分比阈值）时吸附到该档位；
+   * 档位自身超出 min/max（含 multi 配对约束）夹取范围时不吸附（min/max 优先于档位）。
+   */
+  private snapPercent(p: number, pairSum: number | null): number {
+    const gears = this.snapGears()
+    if (gears.length === 0) return p
+    const size = this.hasAttr('vertical') ? this.clientHeight : this.clientWidth
+    if (!(size > 0)) return p
+    const threshold = (8 / size) * 100
+    const lo = this.boundPercent(this.getAttr('min', '10'), 10)
+    let hi = this.boundPercent(this.getAttr('max', '90'), 90)
+    if (pairSum != null) hi = Math.min(hi, pairSum - lo)
+    for (const g of gears) {
+      if (g < lo || g > hi) continue
+      if (Math.abs(g - p) <= threshold) return g
+    }
+    return p
+  }
+
+  /**
+   * 键盘微调落档：snap 存在时方向键在相邻档位间移动（当前档位的上/下一档）；
+   * 该方向已无档可落时回落既有 ±1% 微调。setPercent/setSizes 内部仍按 min/max 夹取。
+   */
+  private snapStep(p: number, delta: number): number {
+    const gears = this.snapGears()
+    if (gears.length === 0) return p + delta
+    const eps = 1e-6
+    const next = delta > 0 ? gears.find((g) => g > p + eps) : [...gears].reverse().find((g) => g < p - eps)
+    return next ?? p + delta
   }
 
   /** legacy：写 percent 属性 + 派发 oas-resize（契约不变：detail { percent }） */

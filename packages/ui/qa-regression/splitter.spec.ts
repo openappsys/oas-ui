@@ -126,3 +126,43 @@ test('splitter disabled：真实拖拽与键盘均冻结、aria-disabled、光�
   expect(r.dragging, '禁用下不得进入拖拽态').toBe(false)
   expect(r.dataDisabled, '禁用态应镜像 data-disabled 供样式消费').toBe(true)
 })
+
+// —— PRD D18：snap 吸附档位（拖拽 ±8px 阈值内吸附 + 键盘在档位间落档） ——
+test('splitter snap：拖拽靠近档位吸附（snap="25,50,75"），键盘在档位间落档（PRD D18）', async ({ page }) => {
+  await page.goto('/components/splitter.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => document.querySelector('oas-splitter[snap]')?.shadowRoot != null, null, {
+    timeout: 15000,
+  })
+  await page.evaluate(() => {
+    document.querySelector('oas-splitter[snap]')!.scrollIntoView({ block: 'center' })
+  })
+  const r = await page.evaluate(async () => {
+    const sp = document.querySelector('oas-splitter[snap]')! as HTMLElement & { shadowRoot: ShadowRoot }
+    const sep = sp.shadowRoot.querySelector('[part="splitter"]') as HTMLElement
+    const rect = sep.getBoundingClientRect()
+    const cx = rect.x + rect.width / 2
+    const cy = rect.y + rect.height / 2
+    const read = () => Number(sp.getAttribute('percent'))
+    // 真实拖拽：+3px（远小于 ±8px 阈值）→ 应吸附回 50 档
+    sep.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, button: 0 }))
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx + 3, clientY: cy }))
+    await new Promise((res) => setTimeout(res, 60))
+    const snapped = read()
+    // +30px（超出阈值）→ 不吸附（介于 50 与 75 之间）
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: cx + 30, clientY: cy }))
+    await new Promise((res) => setTimeout(res, 60))
+    const free = read()
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: cx + 30, clientY: cy }))
+    // 键盘在档位间落档
+    sep.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    const nextStop = read()
+    sep.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    const prevStop = read()
+    return { snapped, free, nextStop, prevStop }
+  })
+  expect(r.snapped, '拖出 3px（阈值内）应吸附回 50 档').toBe(50)
+  expect(r.free, '拖出 30px（阈值外）不应吸附回档位').toBeGreaterThan(50)
+  expect(r.free, '阈值外也不应跳到 75 档').toBeLessThan(75)
+  expect(r.nextStop, 'ArrowRight 应落 75 档').toBe(75)
+  expect(r.prevStop, 'ArrowLeft 应落回 50 档').toBe(50)
+})

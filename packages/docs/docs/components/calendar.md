@@ -182,6 +182,26 @@
 - 键盘：`Home`/`End` 跳周首/周尾；`PageUp`/`PageDown` 翻上/下一月，`Shift` 同键翻年；方向键逐格移动，`Enter`/`Space` 选中。
 - 快速跳远年：点标题进入月面板，再点年份进入十年网格（按 ±12 年翻页），选年回到该年的月面板、选月回到日视图——从 2026 跳到 1980 只需点 4 次。
 
+## 非公历历法（calendar-system）
+
+<DemoBlock title="农历（calendar-system=chinese）">
+  <oas-calendar id="calendar-system-cn" value="2026-08-09" calendar-system="chinese"></oas-calendar>
+</DemoBlock>
+
+<DemoBlock title="伊斯兰历（calendar-system=islamic）">
+  <oas-calendar id="calendar-system-islamic" value="2026-08-09" calendar-system="islamic"></oas-calendar>
+</DemoBlock>
+
+`calendar-system` 透传 `Intl.DateTimeFormat` 的 `calendar` 选项（`chinese` / `islamic` / `hebrew` 等）：标题、周头、单元格数字与 aria 描述均跟随历法；日期计算与 `value` / `data-date` 仍走公历内部模型——历法只影响展示与读屏，选中/提交语义不变。
+
+## 多月份面板（months）
+
+<DemoBlock title="months=2：两个月并排 + 翻页联动">
+  <oas-calendar id="calendar-months" value="2026-08-09" months="2"></oas-calendar>
+</DemoBlock>
+
+`months` 设置并排月份面板数（默认 1，正整数，非法/越界回落 1）：面板内网格横向排开、各占等宽，翻页（上一月/下一月）按整段联动（一次步进 `months` 个月），标题展示月份范围。多面板与 `first-day-of-week`、`show-week-number`、`range` 等属性可组合使用。
+
 ## API
 
 ### oas-calendar
@@ -190,6 +210,7 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `calendar-system` | 非公历历法（Intl calendar 选项透传，如 chinese/islamic/hebrew）：标题/周头/日格数字/aria 跟随；日期计算与 value/data-date 仍为公历 | `string` | — |
 | `disabled` | 整体禁用：置灰并停止全部交互（点选/翻页/键盘） | `boolean` | — |
 | `first-day-of-week` | 周起始覆写：`0`（周日）～`6`（周六）；缺省随 locale（欧陆/中文周一、日/韩/英/阿周日） | `string` | — |
 | `format` | 头部标题格式串（yyyy/MM/dd token，日/月面板适用） | `string` | — |
@@ -197,6 +218,7 @@
 | `max` | 可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰 | `string` | — |
 | `min` | 可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰 | `string` | — |
 | `mode` | `month` / `year`（年模式选中月份后自动切回月视图） | `string` | `month` |
+| `months` | 并排月份面板数（1-12，默认 1）：面板横向排开、翻页按整段联动，标题为月份范围 | `string` | — |
 | `page-show-date` | 面板月锚点（ISO `yyyy-MM` 或 `yyyy-MM-dd`）：初始/受控锚定显示的月份，优先级高于 value；移除后回到 value 所在月 | `string` | — |
 | `range` | 范围选择模式：两段式选取 + 悬停预览 + 区间高亮，oas-change `detail: { start, end }`，value 以 JSON 数组回显 | `boolean` | — |
 | `readonly` | 只读：可翻页浏览/钻取面板，点选与键盘 Enter 不提交 | `boolean` | — |

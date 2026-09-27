@@ -243,6 +243,18 @@ onMounted(() => {
 })
 </script>
 
+## Multiple Thumbs (N-element array)
+
+<DemoBlock title="Three thumbs: N-element value + per-thumb accessible names">
+  <oas-slider id="slider-multi" min="0" max="100" value="[10,30,70]" show-tooltip labels='["Low","Mid","High"]' style="width: 360px"></oas-slider>
+</DemoBlock>
+
+<DemoBlock title="Multiple thumbs + numeric input linkage">
+  <oas-slider id="slider-multi-input" min="0" max="100" value="[10,30,70]" show-input style="width: 440px"></oas-slider>
+</DemoBlock>
+
+`value` accepts an N-element array (JSON array or comma-separated string) and renders N thumbs — `range` is the N=2 special case (keeping the legacy `range-min`/`range-max` contract); a two-plus element array also renders multiple thumbs without `range`. Each thumb drags and responds to the keyboard independently, values stay ascending (dragging past a neighbour clamps), and the `oas-input` / `oas-change` `detail.value` is an array. Per-thumb accessible names come from the `labels` JSON array (`labels='["Low","Mid","High"]'`) or `label-1`/`label-2`… attributes; the fallback is `label + index` (or the built-in text plus index).
+
 ## API
 
 ### oas-slider
@@ -255,6 +267,15 @@ onMounted(() => {
 | `disabled` | Disabled | `boolean` | — |
 | `format` | Value bubble template string: `${value}` is replaced with the current value (e.g. `"${value}%"`); shown as-is without a placeholder; the output feeds both the bubble and `aria-valuetext`; lower priority than the `formatTooltip` function | `string` | — |
 | `label` | Accessible name for the inner slider (range mode appends localized min/max suffixes) | `string` | — |
+| `label-1` | — | — | — |
+| `label-2` | — | — | — |
+| `label-3` | — | — | — |
+| `label-4` | — | — | — |
+| `label-5` | — | — | — |
+| `label-6` | — | — | — |
+| `label-7` | — | — | — |
+| `label-8` | — | — | — |
+| `labels` | JSON string array of per-thumb accessible names (e.g. `["低","中","高"]`; the label-N attribute family takes precedence) | `string` | — |
 | `large-step` | Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change` | `string` | — |
 | `marks` | Ticks: JSON object `{"0":"0°C"}` (value→label) or JSON array `[0,26,60]` (also `{"value":26,"label":"26°C"}`); tick marks and labels are shown below the track, highlighted where the value passes; positions mirror under `reverse` | `string \| Record<string, string \| number> \| number[]` | — |
 | `max` | Range | `string` | `100` |

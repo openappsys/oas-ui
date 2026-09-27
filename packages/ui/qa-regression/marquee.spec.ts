@@ -1335,3 +1335,131 @@ test('marquee 宿主重渲染健壮性：清空并重建 light DOM 后克隆份�
   expect(r.after.animName).toBe('oas-marquee-x')
   expect(parseFloat(r.after.shift), '位移距离重测有效').toBeGreaterThan(0)
 })
+
+// ===== max-loops：限定循环次数（播完定格末帧 + oas-finish）=====
+
+test('marquee max-loops：播完 3 轮定格末帧（fill forwards），oas-finish 恰派发一次', async ({ page }) => {
+  await page.goto('/components/marquee.html', { waitUntil: 'domcontentloaded' })
+  const r = await page.evaluate(async () => {
+    if (!customElements.get('oas-marquee')) await customElements.whenDefined('oas-marquee')
+    const host = document.createElement('oas-marquee')
+    host.setAttribute('speed', '400')
+    host.setAttribute('max-loops', '3')
+    host.style.cssText = 'display:block;width:600px;position:fixed;top:-200px;left:0;'
+    host.textContent = 'max-loops 定格回归采样内容 · '
+    document.body.appendChild(host)
+    const trackEl = () => host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+    // 等测量完成（时长写入后才推算播完时刻）
+    await new Promise<void>((resolve) => {
+      const check = () => {
+        const t = trackEl()
+        if (!t.classList.contains('measuring') && t.style.getPropertyValue('--oas-marquee-duration')) resolve()
+        else requestAnimationFrame(check)
+      }
+      check()
+    })
+    let finishes = 0
+    host.addEventListener('oas-finish', () => {
+      finishes += 1
+    })
+    // 等 3 轮播完（3×时长 + 余量）
+    const durS = parseFloat(trackEl().style.getPropertyValue('--oas-marquee-duration'))
+    await new Promise((r) => setTimeout(r, durS * 3000 + 800))
+    // 定格采样：300ms 内位移必须为 0（不再滚动）
+    const x1 = trackEl().getBoundingClientRect().x
+    await new Promise((r) => setTimeout(r, 300))
+    const x2 = trackEl().getBoundingClientRect().x
+    const cs = getComputedStyle(trackEl())
+    // getComputedStyle 返回活对象——host.remove() 后再读会随脱离文档重解析为空，必须先取值
+    const iterationCount = cs.animationIterationCount
+    const fillMode = cs.animationFillMode
+    host.remove()
+    return {
+      finishes,
+      frozenDelta: Math.abs(x2 - x1),
+      iterationCount,
+      fillMode,
+    }
+  })
+  expect(r.iterationCount, '生效迭代次数 = 3').toBe('3')
+  expect(r.fillMode, 'fill-mode forwards（定格在末帧关键帧）').toBe('forwards')
+  expect(r.finishes, 'oas-finish 恰派发一次').toBe(1)
+  expect(r.frozenDelta, '定格后 300ms 位移为 0（不再滚动）').toBeLessThan(0.5)
+})
+
+// ===== RTL：平移方向镜像 =====
+// 缺陷形态（旧实现）：RTL 下仍用负向平移关键帧——flex 行序已随书写方向镜像（track 右缘对齐
+// 视口、溢出向左），负向平移把 track 右缘拉出视口 → 右侧露出空档、wrap 时回跳（非无缝）。
+// 修法：`:host([data-rtl])` 换 oas-marquee-x-rtl 关键帧（平移取正 x，内容向右流动）。
+
+test('marquee RTL：dir=rtl 关键帧镜像（内容右移），LTR 对照左移；reverse 与镜像正交', async ({ page }) => {
+  await page.goto('/components/marquee.html', { waitUntil: 'domcontentloaded' })
+  const r = await page.evaluate(async () => {
+    if (!customElements.get('oas-marquee')) await customElements.whenDefined('oas-marquee')
+    const mk = (dir: string | null, top: string): HTMLElement => {
+      const host = document.createElement('oas-marquee')
+      host.setAttribute('speed', '300')
+      if (dir) host.setAttribute('dir', dir)
+      host.style.cssText = `display:block;width:500px;position:fixed;top:${top};left:0;`
+      host.textContent = 'RTL 镜像回归采样内容 · '
+      document.body.appendChild(host)
+      return host
+    }
+    const rtl = mk('rtl', '-300px')
+    const ltr = mk(null, '-400px')
+    const trackOf = (host: HTMLElement) => host.shadowRoot!.querySelector<HTMLElement>('[part="track"]')!
+    await Promise.all(
+      [rtl, ltr].map(
+        (host) =>
+          new Promise<void>((resolve) => {
+            const check = () => {
+              const t = trackOf(host)
+              if (!t.classList.contains('measuring') && t.style.getPropertyValue('--oas-marquee-duration')) resolve()
+              else requestAnimationFrame(check)
+            }
+            check()
+          }),
+      ),
+    )
+    // 采样 600ms：rAF 逐帧记录 track 布局 x
+    const sample = (host: HTMLElement): Promise<number[]> =>
+      new Promise((resolve) => {
+        const xs: number[] = []
+        const tick = () => {
+          xs.push(trackOf(host).getBoundingClientRect().x)
+          if (xs.length >= 30) {
+            resolve(xs)
+            return
+          }
+          requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      })
+    const [xsRtl, xsLtr] = await Promise.all([sample(rtl), sample(ltr)])
+    const animRtl = getComputedStyle(trackOf(rtl)).animationName
+    const animLtr = getComputedStyle(trackOf(ltr)).animationName
+    // reverse 正交：rtl + reverse 仍是镜像关键帧 + 方向反转
+    rtl.setAttribute('reverse', '')
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))))
+    const dirRev = getComputedStyle(trackOf(rtl)).animationDirection
+    const animRev = getComputedStyle(trackOf(rtl)).animationName
+    rtl.remove()
+    ltr.remove()
+    return { xsRtl, xsLtr, animRtl, animLtr, dirRev, animRev, dataRtl: rtl.hasAttribute('data-rtl') }
+  })
+  expect(r.dataRtl, 'dir=rtl → 宿主打 data-rtl 镜像钩子').toBe(true)
+  expect(r.animRtl, 'RTL 水平滚动换镜像关键帧').toBe('oas-marquee-x-rtl')
+  expect(r.animLtr, 'LTR 保持原关键帧').toBe('oas-marquee-x')
+  const vel = (xs: number[]): number => {
+    const vs: number[] = []
+    for (let i = 1; i < xs.length; i++) vs.push(xs[i]! - xs[i - 1]!)
+    vs.sort((a, b) => a - b)
+    return vs[Math.floor(vs.length / 2)]!
+  }
+  const vRtl = vel(r.xsRtl)
+  const vLtr = vel(r.xsLtr)
+  expect(vRtl, `RTL 内容右移（中位帧位移 ${vRtl.toFixed(2)}px > 0；缺陷形态 = 左移露出右空档）`).toBeGreaterThan(0.3)
+  expect(vLtr, `LTR 内容左移（中位帧位移 ${vLtr.toFixed(2)}px < 0，对照组）`).toBeLessThan(-0.3)
+  expect(r.animRev, 'rtl + reverse 仍为镜像关键帧（reverse 只反转方向，不换关键帧）').toBe('oas-marquee-x-rtl')
+  expect(r.dirRev, 'rtl + reverse 的 animation-direction: reverse（镜像正交）').toBe('reverse')
+})

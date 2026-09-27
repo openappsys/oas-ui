@@ -493,6 +493,145 @@ const STYLE = `
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
 }
+/* ---- 裁剪对话框（crop：picture/picture-card + accept 图片时选择后进入）----
+   自绘轻量浮层（与预览浮层同构：fixed mask + [hidden] 显式覆盖 display）。 */
+.crop-mask {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--oas-color-overlay);
+}
+.crop-mask[hidden] {
+  display: none;
+}
+.crop-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-3);
+  max-width: 90vw;
+  padding: var(--oas-space-4);
+  background: var(--oas-color-bg);
+  border-radius: var(--oas-radius-lg);
+}
+/* 裁剪舞台：物理像素坐标系（320×240，与 canvas 绘制缓冲 1:1），锁定 LTR——
+   裁剪几何映射不得随书写方向镜像（theme-editor 色值 LTR 隔离同款惯例） */
+.crop-stage {
+  position: relative;
+  width: 320px;
+  height: 240px;
+  overflow: hidden;
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg-hover);
+  direction: ltr;
+  touch-action: none;
+  cursor: grab;
+}
+.crop-stage:active {
+  cursor: grabbing;
+}
+.crop-stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 320px;
+  height: 240px;
+  display: block;
+}
+/* 裁剪框：边框 + 外侧压暗（大扩散 box-shadow 盖住框外区域）；整体拖动移动 */
+.crop-frame {
+  position: absolute;
+  border: 1px solid var(--oas-color-primary);
+  box-shadow: 0 0 0 9999px var(--oas-color-overlay);
+  cursor: move;
+  touch-action: none;
+}
+.crop-frame:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 9999px var(--oas-color-overlay),
+    var(--oas-focus-ring);
+}
+/* 右下角缩放手柄（拖拽改框体尺寸；固定比例模式下锁定宽高比） */
+.crop-handle {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--oas-color-primary);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+.crop-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
+.crop-zoom-btn {
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-sm);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-size: var(--oas-font-size-md);
+  line-height: 1;
+  cursor: pointer;
+}
+.crop-zoom-btn:hover {
+  border-color: var(--oas-color-primary);
+  color: var(--oas-color-primary);
+}
+.crop-zoom-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.crop-zoom-text {
+  min-width: 44px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.crop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--oas-space-2);
+}
+.crop-btn {
+  min-width: 64px;
+  height: var(--oas-control-height-md);
+  padding: 0 var(--oas-space-3);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-sm);
+  cursor: pointer;
+}
+.crop-btn:hover {
+  background: var(--oas-color-bg-hover);
+}
+.crop-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.crop-btn.is-primary {
+  background: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+  color: var(--oas-color-text-on-primary);
+}
+.crop-btn.is-primary:hover {
+  background: color-mix(in srgb, var(--oas-color-primary) 88%, var(--oas-color-bg));
+}
 `
 
 function formatSize(bytes: number): string {
@@ -516,6 +655,47 @@ function nameOf(entry: UploadEntry): string {
 
 function sizeOf(entry: UploadEntry): number {
   return entry instanceof File ? entry.size : (entry.size ?? 0)
+}
+
+/** 裁剪舞台物理尺寸（与 canvas 绘制缓冲 1:1；轻量内建对话框的固定基准） */
+const CROP_STAGE_W = 320
+const CROP_STAGE_H = 240
+/** 缩放界限：1 = cover 基准（图像铺满舞台），上限 8×；按钮/滚轮单步系数 */
+const CROP_ZOOM_MIN = 1
+const CROP_ZOOM_MAX = 8
+const CROP_ZOOM_STEP = 1.25
+/** 裁剪框最小边（px）：防止拖拽缩放把框缩没 */
+const CROP_FRAME_MIN = 40
+
+/**
+ * crop-aspect 解析：`"1:1"` / `"16:9"` → 宽高比（正数）；`free` / 缺失 / 非法（非 `w:h` 形态、
+ * 非正数值）→ null = 自由比例（框体可任意拉伸）。
+ */
+export function resolveCropAspect(raw: string | null): number | null {
+  const s = (raw ?? '').trim().toLowerCase()
+  if (!s || s === 'free') return null
+  const m = /^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/.exec(s)
+  if (!m) return null
+  const w = Number.parseFloat(m[1]!)
+  const h = Number.parseFloat(m[2]!)
+  if (!(w > 0) || !(h > 0)) return null
+  return w / h
+}
+
+/**
+ * 裁剪导出 MIME：jpeg/webp 原样保留（canvas 原生支持），其余（png/gif/svg/bmp…）统一导出
+ * png（canvas 会压平动画/矢量，png 无损通用）。
+ */
+function cropExportMime(srcType: string): string {
+  if (srcType === 'image/jpeg' || srcType === 'image/webp') return srcType
+  return 'image/png'
+}
+
+/** 裁剪结果文件名：基名保留，扩展名跟随导出 MIME（jpeg→.jpg / webp→.webp / 其余→.png） */
+export function cropFileName(name: string, mime: string): string {
+  const ext = mime === 'image/jpeg' ? '.jpg' : mime === 'image/webp' ? '.webp' : '.png'
+  const base = name.replace(/\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)$/i, '')
+  return `${base || 'image'}${ext}`
 }
 
 export class OASUpload extends OASFormElement {
@@ -543,6 +723,9 @@ export class OASUpload extends OASFormElement {
       'show-file-list',
       'replace',
       'tip',
+      // 图片上传前裁剪（crop 通道开关 + 固定宽高比）
+      'crop',
+      'crop-aspect',
       // 表单关联通道：required 驱动原生校验链（valueMissing）
       'required',
     ]
@@ -569,8 +752,38 @@ export class OASUpload extends OASFormElement {
   private _customRequest: UploadCustomRequest | null = null
   private _beforeUpload: UploadBeforeUpload | null = null
 
+  // ---- 裁剪（crop）通道状态 ----
+  private cropMask: HTMLElement | null = null
+  private cropDialogEl: HTMLElement | null = null
+  private cropStage: HTMLElement | null = null
+  private cropCanvas: HTMLCanvasElement | null = null
+  private cropFrame: HTMLElement | null = null
+  private cropHandle: HTMLElement | null = null
+  private cropZoomText: HTMLElement | null = null
+  private cropOkBtn: HTMLButtonElement | null = null
+  private cropCancelBtn: HTMLButtonElement | null = null
+  /** 待裁剪队列（多选批量：逐张处理，确认/取消后接续下一张） */
+  private cropQueue: File[] = []
+  /** 当前正在裁剪的文件（null = 对话框关闭） */
+  private cropping: File | null = null
+  /** 裁剪舞台图像（异步解码；happy-dom 下不解码——几何全走守卫，confirm 仍可用） */
+  private cropImg: HTMLImageElement | null = null
+  private cropImgUrl: string | null = null
+  private cropPrevFocus: HTMLElement | null = null
+  /**
+   * 裁剪几何（stage 物理像素坐标系）：
+   * - zoom：相对 cover 基准的缩放倍数（1 = 图像恰铺满舞台）
+   * - ix/iy：图像显示左上角在舞台内的偏移（恒负或 0，图像覆盖整舞台）
+   * - fx/fy/fw/fh：裁剪框左上角与尺寸（始终完整落在舞台内）
+   */
+  private cropState = { zoom: 1, ix: 0, iy: 0, fx: 0, fy: 0, fw: 0, fh: 0, imgLoaded: false }
+
   private handleKeydown = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') this.closePreview()
+  }
+
+  private handleCropEsc = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape' && this.cropping) this.cancelCrop()
   }
 
   /** @apiProperty 文件列表（受控；File/回显记录无法用 attribute 表达，赋值即刷新列表） */
@@ -632,6 +845,25 @@ export class OASUpload extends OASFormElement {
         <div class="preview-dialog" role="dialog" aria-modal="true">
           <div class="preview-body"></div>
           <button type="button" class="preview-close" part="preview-close"></button>
+        </div>
+      </div>
+      <div class="crop-mask" part="crop" hidden>
+        <div class="crop-dialog" role="dialog" aria-modal="true">
+          <div class="crop-stage">
+            <canvas class="crop-canvas" width="${CROP_STAGE_W}" height="${CROP_STAGE_H}"></canvas>
+            <div class="crop-frame" tabindex="0">
+              <div class="crop-handle"></div>
+            </div>
+          </div>
+          <div class="crop-toolbar">
+            <button type="button" class="crop-zoom-btn" data-zoom="out"></button>
+            <span class="crop-zoom-text">100%</span>
+            <button type="button" class="crop-zoom-btn" data-zoom="in"></button>
+          </div>
+          <div class="crop-actions">
+            <button type="button" class="crop-btn crop-cancel"></button>
+            <button type="button" class="crop-btn is-primary crop-ok" part="crop-ok"></button>
+          </div>
         </div>
       </div>
     `
@@ -721,12 +953,143 @@ export class OASUpload extends OASFormElement {
       if (e.target === e.currentTarget) this.closePreview()
     })
 
+    this.bindCrop()
+
     this.onCleanup(() => {
       if (this.timer) clearInterval(this.timer)
       this.abortAllQuiet()
       this.revokeAllUrls()
       document.removeEventListener('keydown', this.handleKeydown)
+      // 裁剪通道收尾：清队列 + 释放对象 URL + 摘全局监听（不还原焦点——断连时焦点语义已无意义）
+      this.cropQueue.length = 0
+      this.cropping = null
+      this.releaseCropImage()
+      document.removeEventListener('keydown', this.handleCropEsc)
+      this.cropMask?.setAttribute('hidden', '')
     })
+  }
+
+  /** 裁剪对话框：缓存引用 + 绑定指针/滚轮/键盘交互（render 与水合路径共用，只跑一次） */
+  private bindCrop(): void {
+    this.cropMask = this.shadow.querySelector('.crop-mask')
+    this.cropDialogEl = this.shadow.querySelector('.crop-dialog')
+    this.cropStage = this.shadow.querySelector('.crop-stage')
+    this.cropCanvas = this.shadow.querySelector('.crop-canvas')
+    this.cropFrame = this.shadow.querySelector('.crop-frame')
+    this.cropHandle = this.shadow.querySelector('.crop-handle')
+    this.cropZoomText = this.shadow.querySelector('.crop-zoom-text')
+    this.cropOkBtn = this.shadow.querySelector('.crop-ok')
+    this.cropCancelBtn = this.shadow.querySelector('.crop-cancel')
+    if (!this.cropStage || !this.cropFrame || !this.cropHandle) return
+
+    // 舞台空白处按下 → 拖动图像平移（框/手柄的监听先 stopPropagation，不落到这里）
+    this.cropStage.addEventListener('pointerdown', (e: Event) => {
+      const startIx = this.cropState.ix
+      const startIy = this.cropState.iy
+      this.startCropDrag(e as PointerEvent, (dx, dy) => {
+        this.cropState.ix = startIx + dx
+        this.cropState.iy = startIy + dy
+        this.clampCropImage()
+        this.renderCropStage()
+      })
+    })
+    // 滚轮缩放（图像不动框，框下图像点保持不动，见 setCropZoom）
+    this.cropStage.addEventListener(
+      'wheel',
+      (e: Event) => {
+        e.preventDefault()
+        const we = e as WheelEvent
+        this.setCropZoom(this.cropState.zoom * (we.deltaY < 0 ? CROP_ZOOM_STEP : 1 / CROP_ZOOM_STEP))
+      },
+      { passive: false },
+    )
+    // 裁剪框按下 → 整体拖动移动（钳在舞台内）
+    this.cropFrame.addEventListener('pointerdown', (e: Event) => {
+      e.stopPropagation()
+      const startFx = this.cropState.fx
+      const startFy = this.cropState.fy
+      this.startCropDrag(e as PointerEvent, (dx, dy) => {
+        this.cropState.fx = Math.min(Math.max(0, startFx + dx), CROP_STAGE_W - this.cropState.fw)
+        this.cropState.fy = Math.min(Math.max(0, startFy + dy), CROP_STAGE_H - this.cropState.fh)
+        this.syncCropFrame()
+      })
+    })
+    // 手柄按下 → 缩放框体（固定比例模式锁定宽高比；自由比例独立拉伸）
+    this.cropHandle.addEventListener('pointerdown', (e: Event) => {
+      e.stopPropagation()
+      const aspect = resolveCropAspect(this.getAttr('crop-aspect', ''))
+      const s = { ...this.cropState }
+      this.startCropDrag(e as PointerEvent, (dx, dy) => {
+        this.resizeCropFrame(s, aspect, dx, dy)
+      })
+    })
+    // 键盘微调：方向键移动裁剪框（Shift 加速 10px），移动后焦点保持在框上
+    this.cropFrame.addEventListener('keydown', (e: KeyboardEvent) => {
+      const step = e.shiftKey ? 10 : 1
+      let dx = 0
+      let dy = 0
+      if (e.key === 'ArrowLeft') dx = -step
+      else if (e.key === 'ArrowRight') dx = step
+      else if (e.key === 'ArrowUp') dy = -step
+      else if (e.key === 'ArrowDown') dy = step
+      else return
+      e.preventDefault()
+      this.cropState.fx = Math.min(Math.max(0, this.cropState.fx + dx), CROP_STAGE_W - this.cropState.fw)
+      this.cropState.fy = Math.min(Math.max(0, this.cropState.fy + dy), CROP_STAGE_H - this.cropState.fh)
+      this.syncCropFrame()
+    })
+    // 工具栏：放大/缩小按钮（滚轮的键盘可达通道）
+    for (const b of this.shadow.querySelectorAll<HTMLButtonElement>('.crop-zoom-btn')) {
+      b.addEventListener('click', () => {
+        const dir = b.getAttribute('data-zoom') === 'out' ? 1 / CROP_ZOOM_STEP : CROP_ZOOM_STEP
+        this.setCropZoom(this.cropState.zoom * dir)
+      })
+    }
+    this.cropOkBtn?.addEventListener('click', () => this.confirmCrop())
+    this.cropCancelBtn?.addEventListener('click', () => this.cancelCrop())
+  }
+
+  /** 通用拖拽：pointerdown 起手，window 级 move/up 跟踪增量（不依赖 setPointerCapture 兼容性） */
+  private startCropDrag(e: PointerEvent, onMove: (dx: number, dy: number) => void): void {
+    if (!this.cropping) return
+    e.preventDefault()
+    const startX = e.clientX
+    const startY = e.clientY
+    const move = (ev: PointerEvent): void => onMove(ev.clientX - startX, ev.clientY - startY)
+    const up = (): void => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+  }
+
+  /** 手柄拖拽的框体缩放：固定比例按主驱动轴换算；两轴独立钳在舞台内 + 最小边 */
+  private resizeCropFrame(
+    s: { fx: number; fy: number; fw: number; fh: number },
+    aspect: number | null,
+    dx: number,
+    dy: number,
+  ): void {
+    const maxW = CROP_STAGE_W - s.fx
+    const maxH = CROP_STAGE_H - s.fy
+    if (aspect !== null) {
+      // 固定比例：|dx| 为主驱动轴（框宽从手柄侧增减），高度随之换算，再被高度上限钳回
+      let fw = Math.min(Math.max(CROP_FRAME_MIN, s.fw + dx), maxW)
+      let fh = fw / aspect
+      if (fh > maxH) {
+        fh = maxH
+        fw = fh * aspect
+      }
+      this.cropState.fw = fw
+      this.cropState.fh = fh
+    } else {
+      this.cropState.fw = Math.min(Math.max(CROP_FRAME_MIN, s.fw + dx), maxW)
+      this.cropState.fh = Math.min(Math.max(CROP_FRAME_MIN, s.fh + dy), maxH)
+    }
+    this.syncCropFrame()
   }
 
   protected override render(): void {
@@ -762,6 +1125,7 @@ export class OASUpload extends OASFormElement {
     const dialog = this.shadow.querySelector('.preview-dialog')
     dialog?.setAttribute('aria-label', this.t('upload.previewDialog'))
     if (this.previewCloseBtn) this.previewCloseBtn.textContent = this.t('upload.closePreview')
+    this.syncCropChrome()
     this.renderList()
     // 原生表单数据 + 校验链同步（form-associated；无 name 时浏览器自动不提交）
     this.syncFormValue()
@@ -816,6 +1180,16 @@ export class OASUpload extends OASFormElement {
     return this.getAttr('show-file-list', 'true') !== 'false'
   }
 
+  /** 裁剪对话框静态 chrome 的 i18n 同步（locale 切换自动重刷；打开时 openCropDialog 会再写一次） */
+  private syncCropChrome(): void {
+    if (this.cropOkBtn) this.cropOkBtn.textContent = this.t('modal.ok')
+    if (this.cropCancelBtn) this.cropCancelBtn.textContent = this.t('modal.cancel')
+    const zoomOut = this.shadow.querySelector<HTMLButtonElement>('.crop-zoom-btn[data-zoom="out"]')
+    const zoomIn = this.shadow.querySelector<HTMLButtonElement>('.crop-zoom-btn[data-zoom="in"]')
+    zoomOut?.setAttribute('aria-label', this.t('image.preview.zoomOut'))
+    zoomIn?.setAttribute('aria-label', this.t('image.preview.zoomIn'))
+  }
+
   private addFiles(added: File[]): void {
     if (this.injectDisabled()) return
     const hook = this._beforeUpload
@@ -823,10 +1197,10 @@ export class OASUpload extends OASFormElement {
       void this.runBeforeUpload(hook, added)
       return
     }
-    this.commitFiles(added)
+    this.ingestFiles(added)
   }
 
-  /** before-upload：false/异常拒绝；返回 File 转换；异步结果统一回落 commitFiles */
+  /** before-upload：false/异常拒绝；返回 File 转换；异步结果统一回落 ingestFiles */
   private async runBeforeUpload(hook: UploadBeforeUpload, added: File[]): Promise<void> {
     const out: File[] = []
     for (const f of added) {
@@ -839,7 +1213,289 @@ export class OASUpload extends OASFormElement {
       if (result === false) continue
       out.push(result instanceof File ? result : f)
     }
-    if (out.length > 0) this.commitFiles(out)
+    if (out.length > 0) this.ingestFiles(out)
+  }
+
+  /**
+   * 入列分流：crop 激活时（crop + picture/picture-card + accept 含图片），图片文件改走
+   * 逐张裁剪对话框（确认后以裁剪结果入列、取消不入列）；其余文件（非图片 / accept 不匹配）
+   * 直通 commitFiles（数量/大小/max 校验与 auto-upload 语义不变）。
+   * 裁剪候选不再预检 size/max——裁剪本身可能把大图裁小，交由确认入列时的 commitFiles 统一裁决。
+   */
+  private ingestFiles(files: File[]): void {
+    if (!this.cropActive()) {
+      this.commitFiles(files)
+      return
+    }
+    const accept = this.getAttr('accept', '')
+    const images: File[] = []
+    const others: File[] = []
+    for (const f of files) {
+      if (f.type.startsWith('image/') && this.matchesAccept(f.name, f.type, accept)) images.push(f)
+      else others.push(f)
+    }
+    if (others.length > 0) this.commitFiles(others)
+    if (images.length > 0) {
+      this.cropQueue.push(...images)
+      this.dequeueCrop()
+    }
+  }
+
+  /** crop 是否激活：显式 crop 属性 + picture/picture-card 形态 + accept 包含图片类型 */
+  private cropActive(): boolean {
+    if (!this.hasAttr('crop')) return false
+    const t = this.listType
+    if (t !== 'picture' && t !== 'picture-card') return false
+    const accept = this.getAttr('accept', '')
+    if (!accept) return false
+    return accept
+      .split(',')
+      .map((p) => p.trim().toLowerCase())
+      .some((p) => p === 'image/*' || p.startsWith('image/') || /^\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)$/.test(p))
+  }
+
+  /** 取下一张待裁剪文件（对话框互斥：当前未关不接续） */
+  private dequeueCrop(): void {
+    if (this.cropping) return
+    const next = this.cropQueue.shift()
+    if (!next) return
+    this.openCropDialog(next)
+  }
+
+  /** 打开裁剪对话框：重置几何 → 定比例 → 装图像（异步解码）→ 聚焦确认钮 */
+  private openCropDialog(file: File): void {
+    this.cropping = file
+    if (!this.cropMask || !this.cropDialogEl || !this.cropFrame || !this.cropCanvas || !this.cropOkBtn) {
+      this.cropping = null
+      this.dequeueCrop()
+      return
+    }
+    this.cropPrevFocus = document.activeElement as HTMLElement | null
+    this.cropState = { zoom: 1, ix: 0, iy: 0, fx: 0, fy: 0, fw: 0, fh: 0, imgLoaded: false }
+    this.cropFrame.removeAttribute('data-crop-aspect')
+    this.initCropFrame(resolveCropAspect(this.getAttr('crop-aspect', '')))
+    this.cropDialogEl.setAttribute('aria-label', nameOf(file))
+    this.cropOkBtn.textContent = this.t('modal.ok')
+    if (this.cropCancelBtn) this.cropCancelBtn.textContent = this.t('modal.cancel')
+    this.cropMask.removeAttribute('hidden')
+    this.loadCropImage(file)
+    this.renderCropStage()
+    this.updateCropZoomText()
+    this.cropOkBtn.focus()
+    document.addEventListener('keydown', this.handleCropEsc)
+  }
+
+  /** 初始裁剪框：固定比例按 80% 舞台内接；自由比例给 60% 舞台（可任意拉伸）；均居中 */
+  private initCropFrame(aspect: number | null): void {
+    let fw: number
+    let fh: number
+    if (aspect === null) {
+      fw = CROP_STAGE_W * 0.6
+      fh = CROP_STAGE_H * 0.6
+    } else if (aspect >= CROP_STAGE_W / CROP_STAGE_H) {
+      fw = CROP_STAGE_W * 0.8
+      fh = fw / aspect
+    } else {
+      fh = CROP_STAGE_H * 0.8
+      fw = fh * aspect
+    }
+    this.cropState.fw = fw
+    this.cropState.fh = fh
+    this.cropState.fx = (CROP_STAGE_W - fw) / 2
+    this.cropState.fy = (CROP_STAGE_H - fh) / 2
+    this.syncCropFrame()
+    if (aspect !== null) {
+      this.cropFrame?.setAttribute('data-crop-aspect', this.getAttr('crop-aspect', '').trim())
+    }
+  }
+
+  /** 把几何里的框写到裁剪框元素（inline 定位，物理 px，stage 已锁 LTR） */
+  private syncCropFrame(): void {
+    if (!this.cropFrame) return
+    const { fx, fy, fw, fh } = this.cropState
+    this.cropFrame.style.left = `${fx}px`
+    this.cropFrame.style.top = `${fy}px`
+    this.cropFrame.style.width = `${fw}px`
+    this.cropFrame.style.height = `${fh}px`
+  }
+
+  /** 装载待裁剪图像（对象 URL 生命周期跟随对话框；解码完成后按 cover 居中） */
+  private loadCropImage(file: File): void {
+    this.releaseCropImage()
+    const url = URL.createObjectURL(file)
+    this.cropImgUrl = url
+    const img = new Image()
+    this.cropImg = img
+    img.onload = () => {
+      if (this.cropImg !== img) return
+      this.cropState.imgLoaded = true
+      this.fitCropImage()
+      this.renderCropStage()
+    }
+    // 加载失败：舞台空白但对话框仍可取消/确认（确认导出空白结果，由宿主侧质量把控）
+    img.onerror = () => {}
+    img.src = url
+  }
+
+  private releaseCropImage(): void {
+    if (this.cropImgUrl) {
+      URL.revokeObjectURL(this.cropImgUrl)
+      this.cropImgUrl = null
+    }
+    this.cropImg = null
+  }
+
+  /** cover 基准缩放（zoom=1 时图像恰铺满舞台）；图像未就绪时回退 1（几何全守卫） */
+  private cropBaseScale(): number {
+    const img = this.cropImg
+    if (!img || !(img.naturalWidth > 0) || !(img.naturalHeight > 0)) return 1
+    return Math.max(CROP_STAGE_W / img.naturalWidth, CROP_STAGE_H / img.naturalHeight)
+  }
+
+  private cropScale(): number {
+    return this.cropBaseScale() * this.cropState.zoom
+  }
+
+  /** 图像就绪后：zoom=1（cover）+ 居中 */
+  private fitCropImage(): void {
+    const img = this.cropImg
+    if (!img || !this.cropState.imgLoaded) return
+    const base = this.cropBaseScale()
+    this.cropState.ix = (CROP_STAGE_W - img.naturalWidth * base) / 2
+    this.cropState.iy = (CROP_STAGE_H - img.naturalHeight * base) / 2
+  }
+
+  /** 图像平移钳位：图像恒覆盖整舞台（zoom ≥ 1 = cover 基准），不允许露出空档 */
+  private clampCropImage(): void {
+    const img = this.cropImg
+    if (!img || !this.cropState.imgLoaded) return
+    const s = this.cropScale()
+    const dw = img.naturalWidth * s
+    const dh = img.naturalHeight * s
+    this.cropState.ix = Math.min(0, Math.max(CROP_STAGE_W - dw, this.cropState.ix))
+    this.cropState.iy = Math.min(0, Math.max(CROP_STAGE_H - dh, this.cropState.iy))
+  }
+
+  /** 缩放（按钮/滚轮）：以裁剪框中心为锚——缩放前后框正下方的图像点保持不动 */
+  private setCropZoom(zoom: number): void {
+    const next = Math.min(CROP_ZOOM_MAX, Math.max(CROP_ZOOM_MIN, zoom))
+    if (next === this.cropState.zoom) {
+      // 越界钳位后读数不变也刷一次显示（如重复点击已到上限）
+      this.updateCropZoomText()
+      return
+    }
+    if (this.cropImg && this.cropState.imgLoaded) {
+      const cx = this.cropState.fx + this.cropState.fw / 2
+      const cy = this.cropState.fy + this.cropState.fh / 2
+      const oldS = this.cropScale()
+      const px = (cx - this.cropState.ix) / oldS
+      const py = (cy - this.cropState.iy) / oldS
+      this.cropState.zoom = next
+      const newS = this.cropScale()
+      this.cropState.ix = cx - px * newS
+      this.cropState.iy = cy - py * newS
+      this.clampCropImage()
+    } else {
+      this.cropState.zoom = next
+    }
+    this.renderCropStage()
+    this.updateCropZoomText()
+  }
+
+  private updateCropZoomText(): void {
+    if (this.cropZoomText) this.cropZoomText.textContent = `${Math.round(this.cropState.zoom * 100)}%`
+  }
+
+  /** 舞台重绘：清底 → 按当前缩放/偏移画图像（canvas 缓冲与舞台物理尺寸 1:1） */
+  private renderCropStage(): void {
+    const canvas = this.cropCanvas
+    if (!canvas) return
+    canvas.width = CROP_STAGE_W
+    canvas.height = CROP_STAGE_H
+    const ctx = canvas.getContext('2d')
+    const img = this.cropImg
+    if (!ctx || !img || !this.cropState.imgLoaded) return
+    try {
+      ctx.clearRect(0, 0, CROP_STAGE_W, CROP_STAGE_H)
+      const s = this.cropScale()
+      ctx.drawImage(img, this.cropState.ix, this.cropState.iy, img.naturalWidth * s, img.naturalHeight * s)
+    } catch {
+      // 绘制失败不阻断交互（happy-dom 等 stub 环境）
+    }
+  }
+
+  /** 裁剪框 → 源图自然像素矩形（stage 物理坐标线性映射，越界夹紧；未解码回退 1×1） */
+  private cropSourceRect(): { sx: number; sy: number; sw: number; sh: number } {
+    const img = this.cropImg
+    const s = this.cropScale()
+    if (!img || !(img.naturalWidth > 0) || !(img.naturalHeight > 0) || !(s > 0)) {
+      return { sx: 0, sy: 0, sw: 1, sh: 1 }
+    }
+    const { fx, fy, fw, fh, ix, iy } = this.cropState
+    const sx = Math.max(0, (fx - ix) / s)
+    const sy = Math.max(0, (fy - iy) / s)
+    const sw = Math.max(1, Math.min(img.naturalWidth - sx, fw / s))
+    const sh = Math.max(1, Math.min(img.naturalHeight - sy, fh / s))
+    return { sx, sy, sw, sh }
+  }
+
+  /**
+   * 确认裁剪：离屏 canvas 按源图自然分辨率导出裁剪区域（`toBlob`）→ `oas-crop`
+   * （detail { file: 原文件, blob }）→ 结果转 File 入列（commitFiles 统一走数量/大小/max
+   * 校验与 auto-upload）。导出失败（blob 为空）视同取消。
+   */
+  private confirmCrop(): void {
+    const orig = this.cropping
+    if (!orig) return
+    const rect = this.cropSourceRect()
+    const mime = cropExportMime(orig.type)
+    const out = document.createElement('canvas')
+    out.width = Math.max(1, Math.round(rect.sw))
+    out.height = Math.max(1, Math.round(rect.sh))
+    const ctx = out.getContext('2d')
+    const img = this.cropImg
+    if (ctx && img && this.cropState.imgLoaded) {
+      try {
+        ctx.drawImage(img, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, out.width, out.height)
+      } catch {
+        // 绘制失败仍尝试导出（空白结果），不阻断流程
+      }
+    }
+    out.toBlob(
+      (blob) => {
+        // 导出是异步的：期间对话框可能已被 Esc/取消关闭——只认仍然在裁剪的原文件
+        if (this.cropping !== orig) return
+        if (!blob) {
+          this.cancelCrop()
+          return
+        }
+        const outMime = blob.type || mime
+        this.emit('crop', { file: orig, blob })
+        const cropped = new File([blob], cropFileName(nameOf(orig), outMime), { type: outMime })
+        this.cropping = null
+        this.closeCropDialog()
+        this.commitFiles([cropped])
+        this.dequeueCrop()
+      },
+      mime,
+      0.92,
+    )
+  }
+
+  /** 取消裁剪：当前文件不入列，队列中后续文件继续接续 */
+  private cancelCrop(): void {
+    this.cropping = null
+    this.closeCropDialog()
+    this.dequeueCrop()
+  }
+
+  /** 关闭对话框：隐藏 + 释放图像资源 + 摘全局 Esc 监听 + 还原焦点（不动队列） */
+  private closeCropDialog(): void {
+    this.cropMask?.setAttribute('hidden', '')
+    this.releaseCropImage()
+    document.removeEventListener('keydown', this.handleCropEsc)
+    this.cropPrevFocus?.focus()
+    this.cropPrevFocus = null
   }
 
   /** max-size 解析：纯数字按字节；支持 B/KB/MB/GB 单位（不区分大小写） */
@@ -1176,6 +1832,12 @@ export class OASUpload extends OASFormElement {
       this.timer = null
     }
     this.revokeAllUrls()
+    // 文件列表被整体重置（受控写入/表单 reset）：进行中的裁剪流程随之作废
+    this.cropQueue.length = 0
+    if (this.cropping) {
+      this.cropping = null
+      this.closeCropDialog()
+    }
     const ok: UploadEntry[] = []
     for (const e of Array.isArray(list) ? list : []) {
       if (e instanceof File) {

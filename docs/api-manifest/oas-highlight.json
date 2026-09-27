@@ -1,0 +1,48 @@
+{
+  "className": "OASHighlight",
+  "sourceFile": "packages/ui/src/data/highlight/oas-highlight.ts",
+  "attrs": [
+    {
+      "name": "text",
+      "observed": true
+    },
+    {
+      "name": "highlight",
+      "observed": true
+    },
+    {
+      "name": "case-sensitive",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "whole-word",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "accent-sensitive",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-count",
+      "detail": "{ count, matches }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-highlight-bg",
+      "default": "color-mix(in srgb, var(--oas-preset-gold) 22%, transparent)"
+    },
+    {
+      "name": "--oas-highlight-color",
+      "default": "var(--oas-color-text-primary)"
+    }
+  ],
+  "unresolved": []
+}

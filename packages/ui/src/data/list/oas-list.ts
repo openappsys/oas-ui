@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 import type { OASVirtualList } from '../virtual-list/oas-virtual-list.js'
 
 const STYLE = `
@@ -129,6 +130,24 @@ const STYLE = `
 oas-virtual-list::part(item) {
   box-sizing: border-box;
 }
+/* ===== sortable：行拖拽排序（对齐 tabs sortable 机制；拖过目标行高亮 → 派发 oas-reorder） ===== */
+.list[data-sortable='true'] ::slotted(oas-list-item[draggable='true']),
+.list[data-sortable='true'] .data-items oas-list-item[draggable='true'] {
+  cursor: grab;
+}
+.list[data-sortable='true'] ::slotted(oas-list-item.row--dragging),
+.list[data-sortable='true'] .data-items oas-list-item.row--dragging {
+  opacity: 0.5;
+}
+.list[data-sortable='true'] ::slotted(oas-list-item.row--drag-over),
+.list[data-sortable='true'] .data-items oas-list-item.row--drag-over {
+  box-shadow: inset 2px 0 0 var(--oas-color-primary);
+}
+/* RTL 镜像：拖拽落点高亮翻到行尾侧 */
+:host([data-rtl]) .list[data-sortable='true'] ::slotted(oas-list-item.row--drag-over),
+:host([data-rtl]) .list[data-sortable='true'] .data-items oas-list-item.row--drag-over {
+  box-shadow: inset -2px 0 0 var(--oas-color-primary);
+}
 `
 
 /**
@@ -174,6 +193,8 @@ export class OASList extends OASElement {
       'row-height',
       'data',
       'hoverable',
+      // sortable：行拖拽排序（HTML5 DnD，落点派发 oas-reorder）
+      'sortable',
     ]
   }
 
@@ -183,6 +204,9 @@ export class OASList extends OASElement {
   private raf = 0
   private body: HTMLElement | null = null
   private vlist: OASVirtualList | null = null
+  /** sortable 拖拽源行索引（-1 = 无进行中拖拽）与源元素 */
+  private dragFrom = -1
+  private dragFromEl: HTMLElement | null = null
 
   get dataItems(): unknown[] {
     return this.rows.slice()
@@ -243,10 +267,20 @@ export class OASList extends OASElement {
         .querySelector<HTMLSlotElement>(`slot[name="${name}"]`)
         ?.addEventListener('slotchange', () => this.update())
     }
+    // sortable：HTML5 DnD 事件委托（声明式 light DOM 行与 shadow 数据行的事件均冒泡到宿主；
+    // 不逐行绑监听，行重建无需重绑）
+    this.addEventListener('dragstart', this.handleDragStart)
+    this.addEventListener('dragover', this.handleDragOver)
+    this.addEventListener('drop', this.handleDrop)
+    this.addEventListener('dragend', this.handleDragEnd)
     this.onCleanup(() => {
       this.body?.removeEventListener('scroll', this.handleScroll)
       this.vlist?.removeEventListener('click', this.handleVirtualClick)
       this.vlist?.removeEventListener('oas-item', this.handleVirtualItem as EventListener)
+      this.removeEventListener('dragstart', this.handleDragStart)
+      this.removeEventListener('dragover', this.handleDragOver)
+      this.removeEventListener('drop', this.handleDrop)
+      this.removeEventListener('dragend', this.handleDragEnd)
       if (this.raf) cancelAnimationFrame(this.raf)
       this.raf = 0
     })
@@ -275,6 +309,10 @@ export class OASList extends OASElement {
     list.setAttribute('data-size', size)
     // hoverable：整列表行 hover 底色开关（默认关——现状仅 clickable 行有 hover）
     list.setAttribute('data-hoverable', String(this.hasAttr('hoverable')))
+    // sortable：行拖拽排序开关（CSS 消费 data-sortable 控制 grab 光标/落点高亮）
+    list.setAttribute('data-sortable', String(this.hasAttr('sortable')))
+    // RTL 镜像开关（落点高亮侧翻转）
+    this.toggleAttribute('data-rtl', isRtl(this))
 
     this.parseData()
 
@@ -338,6 +376,8 @@ export class OASList extends OASElement {
           item.setAttribute('data-size', size)
           item.toggleAttribute('data-stripe', stripe && i % 2 === 1)
           item.toggleAttribute('data-hoverable', hoverable)
+          if (this.hasAttr('sortable')) item.setAttribute('draggable', 'true')
+          else item.removeAttribute('draggable')
         })
     }
 
@@ -423,6 +463,7 @@ export class OASList extends OASElement {
       row.setAttribute('data-size', size)
       if (stripe && i % 2 === 1) row.setAttribute('data-stripe', '')
       if (this.hasAttr('hoverable')) row.setAttribute('data-hoverable', '')
+      if (this.hasAttr('sortable')) row.setAttribute('draggable', 'true')
       ;(row as { itemData?: unknown }).itemData = item
       if (tpl) row.appendChild(cloneSlotContent(tpl))
       this.emit('item-render', { index: i, item, element: row })
@@ -490,6 +531,84 @@ export class OASList extends OASElement {
     const atBottom = remaining <= offset
     if (atBottom && !this.atBottom) this.emit('reach-bottom', { scrollTop: body.scrollTop })
     this.atBottom = atBottom
+  }
+
+  // ---------- sortable：行拖拽排序 ----------
+
+  /** 当前列表行元素（数据通道优先；声明式回落 light DOM 子项）——拖拽只支持非虚拟路径 */
+  private rowElements(): HTMLElement[] {
+    if (this.dataChannelActive()) {
+      const box = this.shadow.querySelector<HTMLElement>('[part="data-items"]')
+      if (!box) return []
+      return [...box.querySelectorAll<HTMLElement>('oas-list-item')]
+    }
+    return Array.from(this.children).filter((c): c is HTMLElement => c.tagName.toLowerCase() === 'oas-list-item')
+  }
+
+  /** 从拖拽事件路径定位所在行（跨 shadow：声明式 light DOM / 数据行 shadow 均在 composedPath） */
+  private dragRowFromEvent(e: Event): HTMLElement | null {
+    for (const node of e.composedPath()) {
+      if (node instanceof Element && node.tagName === 'OAS-LIST-ITEM') return node as HTMLElement
+    }
+    return null
+  }
+
+  /** 清理全部落点高亮 */
+  private clearDropMarkers(): void {
+    for (const row of this.rowElements()) row.classList.remove('row--drag-over')
+  }
+
+  /** 复位拖拽源状态（高亮类 + 源索引） */
+  private resetDrag(): void {
+    this.dragFromEl?.classList.remove('row--dragging')
+    this.dragFromEl = null
+    this.dragFrom = -1
+  }
+
+  private handleDragStart = (e: Event): void => {
+    if (!this.hasAttr('sortable')) return
+    const row = this.dragRowFromEvent(e)
+    if (!row) return
+    const from = this.rowElements().indexOf(row)
+    if (from < 0) return
+    this.dragFrom = from
+    this.dragFromEl = row
+    row.classList.add('row--dragging')
+    const de = e as DragEvent
+    if (de.dataTransfer) {
+      de.dataTransfer.effectAllowed = 'move'
+      de.dataTransfer.setData('text/plain', String(from))
+    }
+  }
+
+  private handleDragOver = (e: Event): void => {
+    if (this.dragFrom < 0 || !this.hasAttr('sortable')) return
+    const row = this.dragRowFromEvent(e)
+    if (!row || row === this.dragFromEl) return
+    e.preventDefault()
+    const de = e as DragEvent
+    if (de.dataTransfer) de.dataTransfer.dropEffect = 'move'
+    this.clearDropMarkers()
+    row.classList.add('row--drag-over')
+  }
+
+  private handleDrop = (e: Event): void => {
+    if (this.dragFrom < 0 || !this.hasAttr('sortable')) return
+    const row = this.dragRowFromEvent(e)
+    if (!row) return
+    e.preventDefault()
+    const rows = this.rowElements()
+    const from = this.dragFrom
+    const to = rows.indexOf(row)
+    const item = this.dataChannelActive() ? this.rows[from] : (rows[from] ?? null)
+    this.clearDropMarkers()
+    this.resetDrag()
+    if (to >= 0 && to !== from) this.emit('reorder', { from, to, item })
+  }
+
+  private handleDragEnd = (): void => {
+    this.clearDropMarkers()
+    this.resetDrag()
   }
 
   /** 虚拟行点击代理：从内嵌虚拟列表行 div 的 data-index 还原 index/item */

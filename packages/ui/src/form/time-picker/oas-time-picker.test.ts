@@ -310,6 +310,73 @@ describe('OASTimePicker', () => {
     expect(expanded(el)).toBe('false')
   })
 
+  // ---- timezone 时区通道 ----
+  // 固定绝对时刻 2026-09-08T17:30:00Z：UTC 17:30（同日）、纽约 13:30（UTC-4）、上海次日 01:30（跨日）
+  it('timezone=UTC：此刻按钮取 UTC 墙钟', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 8, 17, 30, 0)))
+    const el = mount({ timezone: 'UTC' })
+    open(el)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="now"]')!.click()
+    expect(el.getAttribute('value')).toBe('17:30:00')
+    vi.useRealTimers()
+  })
+
+  it('timezone=America/New_York：此刻按目标时区墙钟（UTC-4）', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 8, 17, 30, 0)))
+    const el = mount({ timezone: 'America/New_York' })
+    open(el)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="now"]')!.click()
+    expect(el.getAttribute('value')).toBe('13:30:00')
+    vi.useRealTimers()
+  })
+
+  it('timezone=Asia/Shanghai：跨日仍取该时区时刻', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 8, 17, 30, 0)))
+    const el = mount({ timezone: 'Asia/Shanghai' })
+    open(el)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="now"]')!.click()
+    expect(el.getAttribute('value')).toBe('01:30:00')
+    vi.useRealTimers()
+  })
+
+  it('缺省 timezone：回落宿主本地时区（与无属性一致）', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 8, 17, 30, 0)))
+    const el = mount()
+    open(el)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="now"]')!.click()
+    const n = new Date()
+    const p = (v: number): string => String(v).padStart(2, '0')
+    expect(el.getAttribute('value')).toBe(`${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`)
+    vi.useRealTimers()
+  })
+
+  it('非法 timezone：回落本地 + 仅告警一次', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 8, 17, 30, 0)))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const bad = mount({ timezone: 'Mars/Olympus' })
+    open(bad)
+    bad.shadowRoot!.querySelector<HTMLElement>('[part="now"]')!.click()
+    const local = mount()
+    open(local)
+    local.shadowRoot!.querySelector<HTMLElement>('[part="now"]')!.click()
+    expect(bad.getAttribute('value')).toBe(local.getAttribute('value'))
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('timezone')
+    warn.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('timezone 不影响 value 契约：HH:mm:ss 墙钟回显原样', () => {
+    const el = mount({ timezone: 'America/New_York', value: '09:05:30' })
+    expect(trigger(el).value).toBe('09:05:30')
+    expect(el.getAttribute('value')).toBe('09:05:30')
+  })
+
   it('presets[hidden] CSS 兜底：作者级 .presets{display:flex} 不覆盖 hidden 属性（无 presets 不渲染空条）', () => {
     const el = mount({ value: '10:00:00' })
     const wrap = el.shadowRoot!.querySelector('[part="presets"]')!

@@ -434,3 +434,35 @@ test('select input-value 写回 + allow-create 创建派发 oas-create，demo �
     (document.getElementById('select-create-output')?.textContent ?? '').includes('榴莲'),
   )
 })
+
+// ---- 能力缺口 D20：hide-selected ----
+
+test('select hide-selected：多选已选项从下拉隐藏、取消后回到列表、demo 反馈可见', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#select-hide-selected')
+  const host = page.locator('#select-hide-selected')
+  await host.scrollIntoViewIfNeeded()
+  // hide-selected 属性在 Vue demo 中存活（不被剥离）
+  await expect(host).toHaveAttribute('hide-selected', '')
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const s = document.querySelector('#select-hide-selected')!
+    return s.shadowRoot!.querySelectorAll('[role="option"]').length === 4
+  })
+  // 选中苹果 → 从下拉隐藏（剩 3 项），demo 输出回显剩余数
+  await host.locator('[role="option"]').first().click()
+  await page.waitForFunction(() => {
+    const s = document.querySelector('#select-hide-selected')!
+    return s.shadowRoot!.querySelectorAll('[role="option"]').length === 3
+  })
+  const value = await host.getAttribute('value')
+  expect(JSON.parse(value!)).toEqual(['apple'])
+  await expect(page.locator('#select-hide-selected-output')).toContainText('3 项')
+  // clearable 清空 → 全部回到列表
+  await host.locator('[part="clear"]').click()
+  await page.waitForFunction(() => {
+    const s = document.querySelector('#select-hide-selected')!
+    return s.shadowRoot!.querySelectorAll('[role="option"]').length === 4
+  })
+  await expect(page.locator('#select-hide-selected-output')).toContainText('4 项')
+})

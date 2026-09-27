@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 const STYLE = `
 :host {
@@ -84,6 +85,15 @@ const STYLE = `
 :host([reverse]) .track {
   animation-direction: reverse;
 }
+/* RTL：水平滚动平移方向镜像。RTL 下 flex 行序自动镜像——track 右缘对齐视口、溢出向左延伸；
+   原关键帧的负向平移会把 track 右缘拉出视口，右侧露出空档、wrap 时回跳（非无缝）。
+   镜像后平移取正 x：内容向右流动、新内容从左缘进入，与 LTR 的「向左流、右缘进入」镜像对称，
+   几何覆盖论证对称成立（克隆总宽 ≥ 视口 + 位移距离）。reverse 与之正交
+   （animation-direction: reverse 反转镜像后的方向，即 RTL 下 reverse = 向左流）。
+   纵向滚动与书写方向无关，用 :not 守卫不镜像（特异性 0,4,0 > 纵向规则 0,3,0，互斥保证正确）。 */
+:host([data-rtl]:not([orientation='vertical'])) .track {
+  animation-name: oas-marquee-x-rtl;
+}
 /* pause-on-hover：悬停/聚焦时暂停动画 */
 :host([pause-on-hover]:hover) .track,
 :host([pause-on-hover]:focus-within) .track {
@@ -116,6 +126,15 @@ const STYLE = `
   }
   to {
     transform: translateX(calc(-1 * var(--oas-marquee-shift)));
+  }
+}
+/* RTL 镜像关键帧：平移取正 x（内容向右流动） */
+@keyframes oas-marquee-x-rtl {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(var(--oas-marquee-shift));
   }
 }
 @keyframes oas-marquee-y {
@@ -172,6 +191,16 @@ export function resolveSpeedPx(raw: string | null): number {
 }
 
 /**
+ * max-loops 解析：正整数生效（限定循环轮数）；缺失/非法/非正/非整数返回 0（= 无限循环）。
+ * 非整数（如 2.5）没有「播完 2.5 轮」的清晰语义，与非法值同退无限。
+ */
+export function resolveMaxLoops(raw: string | null): number {
+  const n = Number(raw ?? '')
+  if (!Number.isInteger(n) || n <= 0) return 0
+  return n
+}
+
+/**
  * auto-fill 份数推导：内容不足一屏（container > content）时克隆 repeat 份填满，
  * 使平移一个内容宽的过程中视口始终有内容（无缝不断 seam）。
  * 内容/容器尺寸未就绪（<= 0）时回退 1 份（原双组形态）。
@@ -189,7 +218,7 @@ export function computeDuration(contentPx: number, speedPxS: number): number {
 }
 
 /**
- * oas-marquee —— 循环无缝滚动跑马灯（纯展示，无事件）。
+ * oas-marquee —— 循环无缝滚动跑马灯。
  *
  * 属性（kebab-case）：
  * - `speed`：滚动速度（**像素/秒**，真实速度恒定；由 ResizeObserver 测量内容宽推导时长），
@@ -198,6 +227,16 @@ export function computeDuration(contentPx: number, speedPxS: number): number {
  * - `fade-edges`：布尔（默认关），边缘 mask-image 渐隐；尺寸走 `--oas-marquee-fade-size`
  * - `orientation`：`horizontal`（默认）| `vertical`（垂直滚动，容器需固定高）
  * - `reverse`：布尔，反向滚动
+ * - `max-loops`：正整数，限定循环轮数——播完 N 轮定格末帧（fill-mode: forwards）并派发
+ *   `oas-finish`（detail { loops }）；缺失/非法/非整数 = 无限循环。
+ *   `prefers-reduced-motion` 下动画关闭，没有「播完」，不派发 oas-finish
+ * - `dir`：书写方向（RTL 判定消费；祖先 [dir] / 根 dir / config-provider 注入同样生效）
+ *
+ * 事件：
+ * - `oas-finish`：max-loops 播完定格时派发一次，`detail: { loops }`
+ *
+ * RTL：水平滚动的平移方向随书写方向镜像（`:host([data-rtl])` 换 `oas-marquee-x-rtl`
+ * 关键帧，平移取正 x）；纵向滚动与书写方向无关。reverse 与镜像正交。
  *
  * 实现：shadow 内 track 横排「源组（1 份）+ aria-hidden 克隆组（repeat 份）」。源组那份是
  * 默认 slot 投递的宿主内容；**克隆份的包裹节点放宿主 light DOM**（具名 slot 投递）——页面样式表
@@ -214,7 +253,7 @@ export function computeDuration(contentPx: number, speedPxS: number): number {
  */
 export class OASMarquee extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['speed', 'pause-on-hover', 'fade-edges', 'orientation', 'reverse']
+    return ['speed', 'pause-on-hover', 'fade-edges', 'orientation', 'reverse', 'max-loops', 'dir']
   }
 
   private observer: ResizeObserver | null = null
@@ -241,6 +280,11 @@ export class OASMarquee extends OASElement {
    */
   private cachedAnim: { currentTime: unknown } | null = null
 
+  /** 上一轮生效的 max-loops（值变更时重置 oas-finish 完成标记，新上限重新可派发） */
+  private lastLoops = 0
+  /** oas-finish 是否已派发（每次上限变更/重启后复位；定格后重复的 animationend 不再派发） */
+  private finishFired = false
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
@@ -264,6 +308,9 @@ export class OASMarquee extends OASElement {
       // 重建克隆份不改时序；相位保持由 preserveShift 统一负责（位移连续）
       this.preserveShift(() => this.syncClone(this.lastRepeat))
     })
+
+    // 播完（最后一轮 iteration 结束）→ 派发 oas-finish（仅 max-loops 有限时；见 handleAnimationEnd）
+    this.trackEl?.addEventListener('animationend', () => this.handleAnimationEnd())
 
     if (typeof ResizeObserver !== 'undefined') {
       // 监听宿主（容器）与原组（内容，含字体/图片加载后宽度变化）
@@ -296,6 +343,9 @@ export class OASMarquee extends OASElement {
   protected override update(): void {
     if (!this.trackEl) return
     this.trackEl.style.setProperty('--oas-marquee-speed', String(resolveSpeedPx(this.getAttr('speed', ''))))
+    this.applyLoopLimit()
+    // 书写方向镜像钩子（data-rtl 供 :host([data-rtl]) 水平关键帧镜像消费；dir 变化经 observedAttributes 再入 update）
+    this.toggleAttribute('data-rtl', isRtl(this))
     const vertical = this.isVertical()
     if (this.curVertical !== null && this.curVertical !== vertical) {
       this.curVertical = vertical
@@ -316,6 +366,41 @@ export class OASMarquee extends OASElement {
 
   private isVertical(): boolean {
     return this.getAttr('orientation') === 'vertical'
+  }
+
+  /**
+   * max-loops（限定循环次数）：写入 inline `animation-iteration-count` + `animation-fill-mode:
+   * forwards`（播完定格在末帧关键帧）。不重启动画——改 iteration-count 只是延长/缩短既有动画的
+   * 总时长，运行中动画继续、相位不变。非法/移除清除 inline 覆盖回退无限循环（shorthand 的
+   * `infinite` + `none` 生效）。上限值变更时重置 oas-finish 完成标记。
+   */
+  private applyLoopLimit(): void {
+    if (!this.trackEl) return
+    const loops = resolveMaxLoops(this.getAttr('max-loops', ''))
+    if (loops !== this.lastLoops) {
+      this.lastLoops = loops
+      this.finishFired = false
+    }
+    if (loops > 0) {
+      this.trackEl.style.setProperty('animation-iteration-count', String(loops))
+      this.trackEl.style.setProperty('animation-fill-mode', 'forwards')
+    } else {
+      this.trackEl.style.removeProperty('animation-iteration-count')
+      this.trackEl.style.removeProperty('animation-fill-mode')
+    }
+  }
+
+  /**
+   * 播完收尾：定格由 CSS（fill-mode: forwards）完成，这里补派发 `oas-finish`（detail { loops }）。
+   * 只在 max-loops 有限且未派发过时派发（fill forwards 下浏览器可能因样式抖动再触发
+   * animationend，不设防会重复派发）；上限变更后由 applyLoopLimit 复位标记。
+   * `prefers-reduced-motion` 下动画整体关闭 → 没有 animationend，也就没有「播完」，不派发。
+   */
+  private handleAnimationEnd(): void {
+    const loops = resolveMaxLoops(this.getAttr('max-loops', ''))
+    if (loops <= 0 || this.finishFired) return
+    this.finishFired = true
+    this.emit('finish', { loops })
   }
 
   /**
@@ -346,6 +431,8 @@ export class OASMarquee extends OASElement {
     const container = vertical ? this.clientHeight : this.clientWidth
     const content = vertical ? groupBox.height : groupBox.width
     if (!(content > 0)) return false
+    // RO 路径同步刷新方向钩子（连接后才有 RO；覆盖 dir 在首帧 update 之后才加到祖先/宿主的时序）
+    this.toggleAttribute('data-rtl', isRtl(this))
     this.measuredShift = content
     this.lastRepeat = computeRepeat(container, content)
     // 克隆重建与时长重写在同一次相位保持内完成：时长突变若不补偿会整段重映射进度（视觉跳变）

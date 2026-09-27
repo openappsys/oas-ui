@@ -11,6 +11,8 @@ export const ru: LocaleMessages = {
   'modal.close': 'Закрыть',
   'modal.ok': 'ОК',
   'modal.cancel': 'Отмена',
+  'modal.maximize': 'Развернуть',
+  'modal.restore': 'Восстановить',
   // confirm (императивное окно подтверждения)
   'confirm.ok': 'ОК',
   'confirm.cancel': 'Отмена',
@@ -139,6 +141,9 @@ export const ru: LocaleMessages = {
   'pagination.more': 'Ещё',
   // table (таблица)
   'table.selectAll': 'Выбрать все',
+  'table.exportCsv': 'Экспорт CSV',
+  'table.exportExcel': 'Экспорт Excel',
+  'table.rowDragHandle': 'Перетащите для изменения порядка',
   'table.loading': 'Загрузка…',
   'table.empty': 'Нет данных',
   'table.selectRow': 'Выбрать строку {key}',

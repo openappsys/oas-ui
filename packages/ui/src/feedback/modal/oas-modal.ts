@@ -35,6 +35,13 @@ const SEMANTIC_ICONS: Record<ModalVariant, IconName> = {
 const SHAKE_MS = 360
 
 /**
+ * 最大化/还原按钮图标（原创手绘：窗口方框 / 双窗叠层，组件专属语义 chrome——
+ * 内置图标集暂无对应名，不为其单独扩注册表；后续如多处复用可评估升级为内置）。
+ */
+const MAXIMIZE_ICON = `<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false"><rect x="2.75" y="2.75" width="10.5" height="10.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`
+const RESTORE_ICON = `<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false"><rect x="2.75" y="5.75" width="7.5" height="7.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 5.5v-1a2 2 0 0 1 2-2h4.75a2 2 0 0 1 2 2v4.75a2 2 0 0 1-2 2h-1" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`
+
+/**
  * body 滚动锁（P1，跨实例深度计数，最后一个解锁才恢复原值）。
  * 锁定时 overflow hidden + padding-right 补偿滚动条宽度（防止内容水平跳动）。
  */
@@ -186,6 +193,12 @@ const STYLE = `
   padding: var(--oas-space-4);
   border-bottom: 1px solid var(--oas-color-border);
 }
+/* 标题栏右侧按钮组（最大化 / ✕）：flex 收拢，间距走 space-1 */
+.header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+}
 .title {
   font-weight: 600;
   font-size: var(--oas-font-size-lg);
@@ -203,6 +216,30 @@ const STYLE = `
 .close-btn:focus-visible {
   outline: none;
   box-shadow: var(--oas-focus-ring);
+}
+/* 最大化/还原按钮（maximizable 时显示）：与 ✕ 同视觉语言（描边图标 + 文本次要色） */
+.max-btn {
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--oas-color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.max-btn:hover {
+  color: var(--oas-color-text-primary);
+}
+.max-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.max-btn svg {
+  display: block;
+}
+.max-btn[hidden] {
+  display: none;
 }
 .body {
   padding: var(--oas-space-4);
@@ -390,6 +427,7 @@ export class OASModal extends OASElement {
       'centered',
       'draggable',
       'fullscreen',
+      'maximizable',
       'loading',
       'type',
       'ok-text',
@@ -491,6 +529,7 @@ export class OASModal extends OASElement {
   private titleSlot: HTMLSlotElement | null = null
   private titleFallback: HTMLElement | null = null
   private closeBtn: HTMLButtonElement | null = null
+  private maxBtn: HTMLButtonElement | null = null
   private okBtn: HTMLButtonElement | null = null
   private cancelBtn: HTMLElement | null = null
   private footerEl: HTMLElement | null = null
@@ -518,6 +557,11 @@ export class OASModal extends OASElement {
   private dragOriginLeft = 0
   private dragOriginTop = 0
 
+  // maximizable（D28）：内部最大化态（非受控属性）——最大化等同 fullscreen 语义
+  // （并入 effectiveFullscreen，data-fullscreen CSS/拖拽失效/宽度清除全部复用既有链路）；
+  // 显式 fullscreen 属性下按钮隐藏（宿主已强制全屏，切换无意义）
+  private maximized = false
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
@@ -526,8 +570,12 @@ export class OASModal extends OASElement {
       <div class="dialog" part="dialog" role="dialog" aria-modal="true" aria-labelledby="oas-modal-title">
         <div class="header" part="header">
           <span class="title" id="oas-modal-title" part="title"><slot name="title"><span class="title-text"></span></slot></span>
-          <!-- P27：close-icon 插槽覆盖默认 ✕（富内容自定义关闭图标） -->
-          <button class="close-btn" part="close" aria-label=""><slot name="close-icon">✕</slot></button>
+          <span class="header-actions">
+            <!-- maximizable：标题栏最大化/还原按钮（D28，update 增量同步显隐/图标/aria） -->
+            <button class="max-btn" part="maximize" type="button" aria-label="" hidden></button>
+            <!-- P27：close-icon 插槽覆盖默认 ✕（富内容自定义关闭图标） -->
+            <button class="close-btn" part="close" aria-label=""><slot name="close-icon">✕</slot></button>
+          </span>
         </div>
         <div class="body" part="body">
           <span class="semantic-icon" part="semantic-icon" aria-hidden="true" hidden></span>
@@ -563,6 +611,7 @@ export class OASModal extends OASElement {
     this.titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
     this.titleFallback = this.shadow.querySelector('.title-text')
     this.closeBtn = this.shadow.querySelector<HTMLButtonElement>('.close-btn')
+    this.maxBtn = this.shadow.querySelector<HTMLButtonElement>('.max-btn')
     this.okBtn = this.shadow.querySelector<HTMLButtonElement>('[part="ok"]')
     this.cancelBtn = this.shadow.querySelector<HTMLElement>('[part="cancel"]')
     this.footerEl = this.shadow.querySelector('.footer')
@@ -581,6 +630,7 @@ export class OASModal extends OASElement {
     })
     this.cancelBtn?.addEventListener('click', () => this.close('cancel'))
     this.closeBtn?.addEventListener('click', () => this.close('close-btn'))
+    this.maxBtn?.addEventListener('click', () => this.toggleMaximize())
     this.okBtn?.addEventListener('click', () => this.pressOk())
 
     // 可拖拽：标题栏 pointerdown 启动，move/up 监听在 document 保证指针移出仍跟随
@@ -711,11 +761,11 @@ export class OASModal extends OASElement {
 
   private startDrag(e: PointerEvent): void {
     if (!this.hasAttr('draggable')) return
-    // 全屏铺满视口，拖拽语义失效（优先级：fullscreen > draggable；断点自动全屏同判）
+    // 全屏铺满视口，拖拽语义失效（优先级：fullscreen > draggable；断点自动全屏/最大化同判）
     if (this.effectiveFullscreen()) return
     if (e.button !== 0 && e.pointerType !== 'touch') return
-    // 标题栏上的关闭按钮不触发拖动
-    if ((e.target as Element | null)?.closest('[part="close"]')) return
+    // 标题栏上的关闭/最大化按钮不触发拖动
+    if ((e.target as Element | null)?.closest('[part="close"], .max-btn')) return
     e.preventDefault()
     const dialog = this.dialog
     if (!dialog) return
@@ -1085,9 +1135,29 @@ export class OASModal extends OASElement {
     if (this.dialog) this.dialog.style.zIndex = `calc(${base} + 1)`
   }
 
-  /** 生效全屏态：显式 fullscreen 属性 ∪ 断点自动全屏（update 里统一写 data-fullscreen） */
+  /** 生效全屏态：显式 fullscreen 属性 ∪ 断点自动全屏 ∪ maximizable 最大化态
+   *  （D28：最大化等同 fullscreen 语义，update 里统一写 data-fullscreen） */
   private effectiveFullscreen(): boolean {
-    return this.hasAttr('fullscreen') || this.bpFullscreen()
+    return this.maximized || this.hasAttr('fullscreen') || this.bpFullscreen()
+  }
+
+  // ===== maximizable 最大化/还原（D28） =====
+
+  /** 最大化/还原切换：先同步 DOM（data-fullscreen 等），再派发 oas-maximize（detail.maximized） */
+  private toggleMaximize(): void {
+    this.maximized = !this.maximized
+    this.update()
+    this.emit('maximize', { maximized: this.maximized })
+  }
+
+  /**
+   * 最大化/还原按钮的无障碍名：走 locale（`modal.maximize` / `modal.restore`）；
+   * i18n 包收录该 key 前 t() 回退 key 本身——组件侧英文兜底（收录后自动跟随 locale）。
+   */
+  private maximizeLabel(): string {
+    const key = this.maximized ? 'modal.restore' : 'modal.maximize'
+    const label = this.t(key)
+    return label === key ? (this.maximized ? 'Restore' : 'Maximize') : label
   }
 
   // ===== P18 声明式 trigger（语法糖：仅 setAttribute('visible')，不动受控模型） =====
@@ -1150,6 +1220,9 @@ export class OASModal extends OASElement {
       // P8 no-mask：遮罩不渲染（非模态，通知/画布类浮层场景）
       mask.hidden = this.hasAttr('no-mask')
     }
+    // no-mask（非模态）aria-modal=false——页面可交互时不向读屏谎报模态
+    // （对齐 dialog.show() 语义与 drawer no-mask 同款修复）
+    dialog.setAttribute('aria-modal', this.hasAttr('no-mask') ? 'false' : 'true')
 
     // 显隐边沿：只在状态翻转时驱动（锁滚动 + 焦点管理 / 还原 + 关闭事件 + 解锁 + 动画）
     if (visible && !this.isOpen) this.startOpen()
@@ -1199,6 +1272,21 @@ export class OASModal extends OASElement {
     this.closeBtn?.setAttribute('aria-label', this.t('modal.close'))
     // ✕ 显隐（P4 三开关之一）
     if (this.closeBtn) this.closeBtn.hidden = this.hasAttr('no-close-btn')
+    // maximizable（D28）：最大化/还原按钮显隐 + aria/图标随内部最大化态切换；
+    // 显式 fullscreen 属性下宿主已强制全屏，切换无意义 → 按钮隐藏；
+    // maximizable 被移除时若处于最大化：静默还原（不残留无按钮可退出的全屏态）
+    if (this.maxBtn) {
+      const showMax = this.hasAttr('maximizable') && !this.hasAttr('fullscreen')
+      if (!showMax && this.maximized) {
+        this.maximized = false
+        // 最大化态翻转需重算 data-fullscreen/内联宽度（递归 update 一次，幂等）
+        this.update()
+        return
+      }
+      this.maxBtn.hidden = !showMax
+      this.maxBtn.setAttribute('aria-label', this.maximizeLabel())
+      this.maxBtn.innerHTML = this.maximized ? RESTORE_ICON : MAXIMIZE_ICON
+    }
     if (okBtn) {
       const okText = this.getAttr('ok-text') || this.t('modal.ok')
       okBtn.setAttribute('aria-label', okText)

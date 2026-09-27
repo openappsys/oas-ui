@@ -126,8 +126,13 @@ Touch devices (`pointer: coarse`, e.g. phones and tablets) have no stable hover 
     <oas-popover title="Percentage width" content="width=50%: 50% of the host width." placement="bottom" width="50%">
       <oas-button>width="50%"</oas-button>
     </oas-popover>
+    <oas-popover id="pop-same-width" title="same-width strict equality" content="same-width: panel width equals the trigger width, min-width never overrides it." placement="bottom" same-width>
+      <oas-button style="width: 180px">same-width (180px)</oas-button>
+    </oas-popover>
   </oas-space>
 </DemoBlock>
+
+The boolean attribute `same-width` is a shortcut for "panel exactly as wide as the trigger" (equivalent to `width="trigger"`, but it also inlines `min-width: 0` — strict equality holds even when the trigger is narrower than the panel default `min-width` of 200px). An explicit `width` attribute takes precedence; removing `same-width` hands the width back to CSS.
 
 ## Offset and collision tuning
 
@@ -810,6 +815,7 @@ onMounted(() => {
 | `open-delay` | Generic open delay in ms (default 0; used by non-hover trigger paths, hover paths prefer hover-delay) | `string` | — |
 | `placement` | Popup placement (12 directions: four bases top/bottom/left/right each with -start/-end cross-axis alignment) | `string` | `top` |
 | `render-panel` | Pure panel rendering mode: no trigger semantics (always treated as `manual`), positioning falls back to `virtual` coordinates/anchor; position it yourself via `append-to` | `boolean` | — |
+| `same-width` | Panel width equals the trigger width (strict equality; explicit width takes precedence) | `boolean` | — |
 | `scrollable` | Scrollable panel when content overflows | `boolean` | — |
 | `size` | Size preset | `string` | `medium` |
 | `sticky` | Sticky against viewport edge (partial/always) | `string` | `partial` |

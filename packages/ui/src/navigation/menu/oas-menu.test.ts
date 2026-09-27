@@ -1982,3 +1982,109 @@ describe('OASMenu persistent 选中不收起（能力缺口 P2）', () => {
     expect(parentAfter.classList.contains('open')).toBe(false)
   })
 })
+
+describe('OASMenu searchable + shortcut（能力缺口 D13）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const inputOf = (el: OASMenu): HTMLInputElement => el.shadowRoot!.querySelector('.menu-search-input')!
+  const typeSearch = (el: OASMenu, value: string): void => {
+    const input = inputOf(el)
+    input.value = value
+    input.dispatchEvent(new Event('input'))
+  }
+  const visibleLabels = (el: OASMenu): string[] => items(el).map((li) => li.querySelector('.label')?.textContent ?? '')
+
+  it('searchable：渲染顶部过滤输入框（缺省隐藏，开启后可见 + i18n 占位）', () => {
+    const off = mount()
+    expect(off.shadowRoot!.querySelector<HTMLElement>('[part="search"]')!.hasAttribute('hidden')).toBe(true)
+    const el = mount({ searchable: '' })
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="search"]')!.hasAttribute('hidden')).toBe(false)
+    expect(inputOf(el).getAttribute('placeholder')).toBe('搜索选项')
+    expect(inputOf(el).getAttribute('aria-label')).toBe('搜索选项')
+  })
+
+  it('searchable：键入实时过滤可见项；清空恢复', () => {
+    const el = mount({ searchable: '' })
+    typeSearch(el, '设')
+    expect(visibleLabels(el)).toEqual(['设置'])
+    typeSearch(el, '')
+    expect(items(el).length).toBe(3)
+  })
+
+  it('searchable：无匹配时显示 i18n 空文案', () => {
+    const el = mount({ searchable: '' })
+    typeSearch(el, 'zzz')
+    expect(items(el).length).toBe(0)
+    const empty = el.shadowRoot!.querySelector<HTMLElement>('[part="search-empty"]')!
+    expect(empty.hasAttribute('hidden')).toBe(false)
+    expect(empty.textContent).toBe('无匹配选项')
+    // 清空后空态隐藏
+    typeSearch(el, '')
+    expect(empty.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('searchable：命中嵌套子项时保留祖先并自动展开（浮出形态）', () => {
+    const el = mount({ items: NESTED_ITEMS, searchable: '' })
+    typeSearch(el, '窗口')
+    const top = topItems(el)
+    expect(top.map((i) => i.getAttribute('data-value'))).toEqual(['file'])
+    // 祖先链自动展开到命中叶子
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[data-value="file"]')!.classList.contains('open')).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[data-value="new"]')!.classList.contains('open')).toBe(true)
+    expect(el.shadowRoot!.querySelector('[data-value="new-window"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[data-value="new-file"]')).toBeNull()
+  })
+
+  it('searchable：inline 模式同样过滤（就地展开命中路径）', () => {
+    const el = mount({ mode: 'inline', items: NESTED_ITEMS, searchable: '' })
+    typeSearch(el, '打开')
+    expect(topItems(el).map((i) => i.getAttribute('data-value'))).toEqual(['file'])
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('.inline-sub[data-parent="file"]')!.classList.contains('open'),
+    ).toBe(true)
+  })
+
+  it('searchable：Escape 清空搜索并恢复全部项', () => {
+    const el = mount({ searchable: '' })
+    typeSearch(el, '设')
+    const input = inputOf(el)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(input.value).toBe('')
+    expect(items(el).length).toBe(3)
+  })
+
+  it('shortcut：items JSON 字段渲染 kbd 右端标注（对齐 menubar 视觉契约）', () => {
+    const el = mount({ items: JSON.stringify([{ label: '新建', value: 'new', shortcut: 'Ctrl+N' }]) })
+    const kbd = el.shadowRoot!.querySelector('kbd.shortcut')!
+    expect(kbd.textContent).toBe('Ctrl+N')
+    expect(kbd.getAttribute('part')).toBe('shortcut')
+    // 位于 label 之后（右端）
+    const li = topItems(el)[0]!
+    expect(li.lastElementChild).toBe(kbd)
+    // 样式走 token（机制面）
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('.shortcut')
+    expect(css).toContain('var(--oas-color-text-secondary)')
+  })
+
+  it('shortcut：子元素属性通道（oas-menu-item[shortcut]）参与解析', () => {
+    const el = new OASMenu()
+    el.innerHTML = '<oas-menu-item value="save" shortcut="Ctrl+S">保存</oas-menu-item>'
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector('kbd.shortcut')!.textContent).toBe('Ctrl+S')
+  })
+
+  it('searchable：关闭属性时清空残留过滤态', () => {
+    const el = mount({ searchable: '' })
+    typeSearch(el, '设')
+    expect(items(el).length).toBe(1)
+    el.removeAttribute('searchable')
+    expect(items(el).length).toBe(3)
+  })
+})

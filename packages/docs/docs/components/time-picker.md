@@ -81,6 +81,16 @@ format 含 `HH`/`mm`/`ss` 时对应列才出现。
 
 `presets`（property，`{ label, value: 'HH:mm:ss' }` 数组），面板顶部按钮列，点击即应用并关闭。
 
+## 时区（timezone）
+
+<DemoBlock title="timezone 时区锚点：UTC vs 本地">
+  <oas-time-picker id="time-picker-timezone-utc" timezone="UTC" placeholder="UTC：点开点「此刻」" style="margin-inline-end: var(--oas-space-4)"></oas-time-picker>
+  <oas-time-picker id="time-picker-timezone-local" placeholder="本地：点开点「此刻」"></oas-time-picker>
+  <span id="time-picker-timezone-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+`timezone` 接受 IANA 时区名（如 `Asia/Tokyo`）或 `UTC`，缺省 / 非法值回落宿主本地时区。面板底部「此刻」按钮与默认值推导按指定时区的墙钟取值；`value` 契约（`HH:mm:ss`）不变。打开左例面板点「此刻」取 UTC 时间，右例取本地时间；下方对照行给出两个时区当前的时刻。
+
 ## 时间范围
 
 <DemoBlock title="is-range（起止双列组，自动排序）">
@@ -171,6 +181,7 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 | `size` | 尺寸档：`small` / `medium` / `large`（就近读取 config-provider 注入） | `string` | `medium` |
 | `status` | 校验态：`success` / `warning` / `error`（`error` 联动 `aria-invalid`） | `string` | — |
 | `step` | 步进：JSON 三元组 `{"h":2,"m":5,"s":1}` 分别控制时/分/秒列；单数字等价于分钟步进 | `string` | — |
+| `timezone` | 时区锚点：IANA 时区名或 UTC；缺省/非法回落本地。「此刻」按钮与默认值推导按该时区墙钟取值，value 契约不变 | `string` | — |
 | `use12-hours` | 12 小时制：显示与列走 12 小时制（附上午/下午列，文案随 locale）；value 恒为 24 小时制 | `boolean` | — |
 | `value` | 当前值（`HH:mm:ss`；`is-range` 为 JSON 数组） | `string` | — |
 
@@ -233,5 +244,16 @@ onMounted(() => {
       { label: '整点', value: '12:00:00' },
     ]
   })
+
+  // 时区对照：把两个时区当前的时刻写进对照行（与「此刻」按钮同源，参照用）
+  const tzOut = document.getElementById('time-picker-timezone-output')
+  if (tzOut) {
+    const timeOf = (tz) => {
+      const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }
+      if (tz) opts.timeZone = tz
+      return new Intl.DateTimeFormat('en-GB', opts).format(new Date())
+    }
+    tzOut.textContent = `此刻：UTC ${timeOf('UTC')} ／ 本地 ${timeOf(null)}`
+  }
 })
 </script>

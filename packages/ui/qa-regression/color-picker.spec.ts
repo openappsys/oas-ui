@@ -461,3 +461,61 @@ test('color-picker 二期属性存活：mode / inline 未被 Vue 剥离', async 
   expect(attrs.grad).toContain('value')
   expect(attrs.inline).toContain('inline')
 })
+
+// ---- D25：recent 最近使用色条 + recent-key 持久化 ----
+
+test('color-picker recent：选中色入栈并在面板底部可回选', async ({ page }) => {
+  await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => localStorage.removeItem('oas-demo-recent'))
+  await up(page, '#cp-recent')
+  const el = page.locator('#cp-recent')
+  await el.scrollIntoViewIfNeeded()
+  await el.evaluate((node) => (node.shadowRoot!.querySelector('[part="trigger"]') as HTMLElement).click())
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#cp-recent')?.shadowRoot?.querySelector('[part="panel"]')?.classList.contains('open') ===
+      true,
+    null,
+    { timeout: 5000 },
+  )
+  await el.evaluate((node) => {
+    const preset = node.shadowRoot!.querySelectorAll<HTMLButtonElement>('.preset')
+    preset[1]!.click()
+  })
+  const r = await el.evaluate((node) => {
+    const root = node.shadowRoot!
+    const sw = [...root.querySelectorAll<HTMLButtonElement>('.recent-swatch')]
+    return {
+      hidden: root.querySelector<HTMLElement>('.recent')!.hidden,
+      count: sw.length,
+      first: sw[0]?.getAttribute('aria-label') ?? null,
+    }
+  })
+  expect(r.hidden).toBe(false)
+  expect(r.count).toBe(1)
+  expect(r.first).toBe('#16a34a')
+})
+
+test('color-picker recent-key：localStorage 持久化最近使用色', async ({ page }) => {
+  await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => localStorage.removeItem('oas-demo-recent'))
+  await up(page, '#cp-recent-store')
+  const el = page.locator('#cp-recent-store')
+  await el.scrollIntoViewIfNeeded()
+  await el.evaluate((node) => (node.shadowRoot!.querySelector('[part="trigger"]') as HTMLElement).click())
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#cp-recent-store')
+        ?.shadowRoot?.querySelector('[part="panel"]')
+        ?.classList.contains('open') === true,
+    null,
+    { timeout: 5000 },
+  )
+  await el.evaluate((node) => {
+    const preset = node.shadowRoot!.querySelectorAll<HTMLButtonElement>('.preset')
+    preset[0]!.click()
+  })
+  const stored = await page.evaluate(() => localStorage.getItem('oas-demo-recent'))
+  expect(stored ?? '').toContain('0b6cff')
+})

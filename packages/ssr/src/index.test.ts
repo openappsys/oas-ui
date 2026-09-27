@@ -403,7 +403,8 @@ describe('@oas-ui/ssr renderToString', () => {
     const html = await renderToString('oas-slider', { value: '60', min: '0', max: '100' }, '')
     // size/tooltip-position 恒反射 data-*（能力收尾批起）
     expect(html).toContain('<oas-slider value="60" min="0" max="100" data-size="md" data-tooltip-pos="top">')
-    expect(html).toContain('<input part="track" type="range"')
+    // N 把手泛化（D26）后模板属性序为 type 在前（part 在后）——按新序断言
+    expect(html).toContain('<input type="range" part="track"')
   })
 
   it('oas-input-number：数字输入骨架 + value 同步', async () => {
@@ -1041,6 +1042,23 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('linear-gradient(to right, #ff0000, #0000ff)')
     expect(html).toContain('</template>渐变文字</oas-gradient-text>')
+  })
+
+  it('oas-highlight：命中片段 mark 直出（禁 JS 首帧即高亮）+ 空态零 mark', async () => {
+    const html = await renderToString('oas-highlight', { text: 'The quick brown fox', highlight: 'quick fox' }, '')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('data-oas-ssr="oas-highlight"')
+    // 命中片段以 <mark part="highlight"> 直出，原文保持
+    expect(html).toContain('<mark part="highlight">quick</mark>')
+    expect(html).toContain('<mark part="highlight">fox</mark>')
+    expect(html).toContain('brown')
+    // token 配色进快照样式表
+    expect(html).toContain('--oas-preset-gold')
+
+    // 空态：无 highlight → 原样渲染零 mark
+    const plain = await renderToString('oas-highlight', { text: 'no keywords here' }, '')
+    expect(plain).not.toContain('<mark')
+    expect(plain).toContain('no keywords here')
   })
 
   it('oas-aspect-ratio：ratio 归一化写入宿主 aspect-ratio', async () => {

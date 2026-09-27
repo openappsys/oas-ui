@@ -173,6 +173,33 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "exportable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "export-format",
+      "type": "string",
+      "default": "csv",
+      "observed": true
+    },
+    {
+      "name": "export-file-name",
+      "type": "string",
+      "default": "export",
+      "observed": true
+    },
+    {
+      "name": "grid-navigation",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "row-draggable",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -246,6 +273,14 @@
     {
       "name": "oas-expand",
       "detail": "{ key, expanded }"
+    },
+    {
+      "name": "oas-export",
+      "detail": "{ format, fileName, rowCount: rows.length }"
+    },
+    {
+      "name": "oas-row-reorder",
+      "detail": "{ from, to, row } | { from: index, to, row }"
     },
     {
       "name": "oas-sort-change",

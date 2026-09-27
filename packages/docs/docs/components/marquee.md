@@ -109,14 +109,22 @@ onMounted(() => {
   // whenDefined 守卫：元素升级后 slotchange 才会驱动克隆组重建与相位保持
   customElements.whenDefined('oas-marquee').then(() => {
     const mq = document.querySelector('#mq-live')
-    if (!mq) return
-    let n = 0
-    setInterval(() => {
-      n += 1
-      const span = document.createElement('span')
-      span.textContent = ` 实时公告 ${n} 号 ·`
-      mq.appendChild(span)
-    }, 3000)
+    if (mq) {
+      let n = 0
+      setInterval(() => {
+        n += 1
+        const span = document.createElement('span')
+        span.textContent = ` 实时公告 ${n} 号 ·`
+        mq.appendChild(span)
+      }, 3000)
+    }
+
+    // max-loops：播完反馈
+    const loops = document.querySelector('#mq-loops')
+    const status = document.querySelector('#mq-loops-status')
+    loops?.addEventListener('oas-finish', () => {
+      if (status) status.textContent = 'oas-finish 已派发（loops: 3）——动画定格在末帧，不再滚动'
+    })
   })
 })
 </script>
@@ -156,6 +164,29 @@ onMounted(() => {
   </oas-marquee>
 </DemoBlock>
 
+## 限定循环次数（max-loops）
+
+`max-loops` 限定循环轮数（正整数）：播完 N 轮后动画定格在末帧（`animation-fill-mode: forwards`），并派发一次 `oas-finish`（`detail: { loops }`）。未设置或取值非法/非整数时无限循环。轮数 = 位移距离（一份内容宽）被滚过的次数，与内容宽度无关。
+
+`prefers-reduced-motion` 下动画整体关闭、静态展示——没有「播完」，也就不派发 `oas-finish`。
+
+<DemoBlock title="max-loops=3：播 3 轮后定格并派发 oas-finish">
+  <oas-marquee id="mq-loops" max-loops="3" speed="160" style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
+    本条公告循环播放 3 次后停止 ·
+  </oas-marquee>
+  <p id="mq-loops-status" style="margin-top: var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">播放中…</p>
+</DemoBlock>
+
+## RTL（右到左）
+
+容器处于 RTL 书写方向（宿主或祖先 `dir="rtl"`、`oas-config-provider direction` 注入均生效）时，平移方向自动镜像：内容**向右**流动、新内容从左缘进入（与 LTR 的「向左流、右缘进入」镜像对称），无缝循环与 auto-fill 填充不受影响。`reverse` 与镜像正交——RTL 下 `reverse` 即向左流动。纵向滚动与书写方向无关。
+
+<DemoBlock title="dir=rtl：平移方向镜像（内容向右流动）">
+  <oas-marquee dir="rtl" style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
+    从左向右流动 · RTL 镜像 · OAS-UI · Web Components ·
+  </oas-marquee>
+</DemoBlock>
+
 ## API
 
 ### oas-marquee
@@ -164,11 +195,19 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `dir` | 书写方向（RTL 判定消费）：RTL 下水平滚动平移方向镜像 | — | — |
 | `fade-edges` | 布尔，存在时容器两端 mask-image 渐隐（默认关）；渐隐宽度走 `--oas-marquee-fade-size` | — | — |
+| `max-loops` | 限定循环轮数（正整数）：播完定格末帧并派发一次 oas-finish；缺失/非法为无限循环 | `string` | — |
 | `orientation` | 滚动方向：`horizontal`（默认）/ `vertical`（垂直滚动，容器需固定高） | — | — |
 | `pause-on-hover` | 布尔，存在时悬停/聚焦暂停动画（animation-play-state: paused） | — | — |
 | `reverse` | 布尔，存在时反向滚动 | `boolean` | — |
 | `speed` | 滚动速度（像素/秒，默认 48）；经测量内容宽推导动画时长（时长=距离/速度），非法/非正数回退默认 | `string` | — |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-finish` | max-loops 播完定格时派发一次，`detail: { loops }` |
 
 #### 插槽
 

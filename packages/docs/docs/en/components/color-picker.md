@@ -178,6 +178,18 @@ onMounted(() => {
 })
 </script>
 
+## Recent Colors (recent / recent-key)
+
+<DemoBlock title="recent: committed colors gather at the panel bottom for re-selection">
+  <oas-color-picker id="cp-recent" recent value="#0b6cff"></oas-color-picker>
+</DemoBlock>
+
+<DemoBlock title="recent + recent-key: localStorage persistence (survives reload)">
+  <oas-color-picker id="cp-recent-store" recent recent-key="oas-demo-recent" value="#9333ea"></oas-color-picker>
+</DemoBlock>
+
+`recent` enables the recent-colors strip: each committed color is pushed onto a stack (deduped, capped at 8, newest first) and shown as clickable swatches at the bottom of the panel. `recent-key` names the `localStorage` key used to persist the list across sessions; without it the list only lives in memory for the current instance.
+
 ## API
 
 ### oas-color-picker
@@ -198,6 +210,8 @@ onMounted(() => {
 | `preset-columns` | Preset swatch column count (positive integer, default 8) | `string` | — |
 | `preset-rows` | Preset swatch row cap (positive integer; unset shows all presets) | `string` | — |
 | `readonly` | Read-only: the trigger cannot open the panel and all edits are blocked | `boolean` | — |
+| `recent` | Recent-colors strip: each committed color is pushed onto a deduped, 8-capped, newest-first stack shown as clickable swatches | `boolean` | — |
+| `recent-key` | localStorage key used to persist recent colors (with recent; memory-only when omitted) | `string` | — |
 | `show-alpha` | Enable the alpha channel: alpha slider in the panel, checkerboard under translucent trigger/preset swatches, alpha included in the value output | `boolean` | — |
 | `show-text` | Show the color text on the trigger (default true; `"false"` shows the swatch only) | `string` | `true` |
 | `size` | Trigger size: `small` / `medium` (default) / `large` | — | — |

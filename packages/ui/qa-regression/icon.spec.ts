@@ -88,6 +88,44 @@ test('icon duotone：显式 data-layer 分层的透明度不被元素序 fallbac
   expect(swapSecondary?.opacity, 'swap 后 secondary 层应为 1').toBe('1')
 })
 
+test('icon iconfont-url：项目脚本注入 + 别名前缀解析，内联渲染 symbol 内容（真实可见）', async ({ page }) => {
+  await page.goto('/components/icon.html', { waitUntil: 'domcontentloaded' })
+  // demo 在 onMounted 注册别名前缀并挂 iconfont-url，脚本加载完成后自动刷新使用方
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('oas-icon[data-iconfont-demo]')
+      return !!el?.shadowRoot?.querySelector('path')
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+  const r = await page.evaluate(() => {
+    const els = [...document.querySelectorAll('oas-icon[data-iconfont-demo]')] as HTMLElement[]
+    els[0]!.scrollIntoView({ block: 'center' })
+    return {
+      // name="i-star" 经别名前缀 i- → icon- 找到 symbol#icon-star 并内联克隆
+      paths: els.map((e) => e.shadowRoot!.querySelector('path')!.getAttribute('d') ?? ''),
+      viewBoxes: els.map((e) => e.shadowRoot!.querySelector('svg')!.getAttribute('viewBox')),
+      // shadow DOM 里 use#fragment 跨树不渲染，故断言内联路径的真实几何宽高 > 0
+      bboxW: els.map((e) => {
+        try {
+          return e.shadowRoot!.querySelector('svg')!.getBBox().width
+        } catch {
+          return -1
+        }
+      }),
+      // 脚本按 URL 去重：三个 demo 图标共享同一个 script
+      scriptCount: document.querySelectorAll('script[data-oas-iconfont]').length,
+    }
+  })
+  expect(r.paths[0]).toContain('M512 64')
+  expect(r.paths[1]).toContain('M512 928')
+  expect(r.paths[2]).toContain('M416 736')
+  expect(r.viewBoxes).toEqual(['0 0 1024 1024', '0 0 1024 1024', '0 0 1024 1024'])
+  expect(Math.min(...r.bboxW), '内联 symbol 应有真实几何（跨树 use 会渲染为 0 宽）').toBeGreaterThan(0)
+  expect(r.scriptCount).toBe(1)
+})
+
 // —— 缺陷回归：menubar show-arrow 的 side-top 缺 align 定位分支，箭头错位 ——
 // 曾现缺陷：show-arrow 只给 side-bottom 配了 align-start/center/end 的 left/right 定位，
 // side-top 缺三档（只有通用 bottom/rotate 规则）——position:absolute 无 left/right 时停在

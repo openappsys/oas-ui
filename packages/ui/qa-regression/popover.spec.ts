@@ -988,3 +988,36 @@ test.describe('触屏降级（P3 扩展，iPhone 仿真）：popover hover 回�
     await page.screenshot({ path: test.info().outputPath('fix-popover-coarse-tap.png') })
   })
 })
+
+// ---- 能力缺口 D21：same-width ----
+
+test('popover same-width：面板宽度=触发器宽度（Vue demo 属性存活、严格等宽）', async ({ page }) => {
+  await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#pop-same-width')
+  const host = page.locator('#pop-same-width')
+  await host.scrollIntoViewIfNeeded()
+  // same-width 属性在 Vue demo 中存活（不被剥离）
+  await expect(host).toHaveAttribute('same-width', '')
+  await host.locator(':scope > oas-button').click()
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#pop-same-width')
+        ?.shadowRoot?.querySelector('[part="panel"]')
+        ?.getAttribute('aria-hidden') === 'false',
+    { timeout: 5000 },
+  )
+  const r = await host.evaluate((el) => {
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+    const trigger = el.querySelector<HTMLElement>(':scope > oas-button')!
+    return {
+      width: panel.style.width,
+      minWidth: panel.style.minWidth,
+      triggerWidth: trigger.getBoundingClientRect().width,
+      panelRectWidth: panel.getBoundingClientRect().width,
+    }
+  })
+  expect(r.width, '内联宽度 = 触发器宽度').toBe(`${Math.round(r.triggerWidth)}px`)
+  expect(r.minWidth, 'min-width 内联归零（严格等宽不被默认 min-width 抬杠）').toBe('0px')
+  expect(Math.abs(r.panelRectWidth - r.triggerWidth), '渲染矩形严格等宽').toBeLessThanOrEqual(1)
+})

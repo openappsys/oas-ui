@@ -1096,3 +1096,170 @@ describe('OASCascader 长尾组（能力缺口 P2）', () => {
     expect(rows(el)[0]!.querySelector('[data-option-label]')).toBeNull()
   })
 })
+
+// ===== 能力缺口 D4：virtual 面板列虚拟滚动（对齐 select 既有虚拟滚动契约） =====
+
+describe('OASCascader 虚拟滚动（virtual）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 长列数据：n 个根节点，各带一个叶子子级 */
+  function wideOptions(n: number): string {
+    return JSON.stringify(
+      Array.from({ length: n }, (_, i) => ({
+        label: `项目 ${i}`,
+        value: `v${i}`,
+        children: [{ label: `${i}-子`, value: `c${i}` }],
+      })),
+    )
+  }
+
+  function vlists(el: OASCascader): HTMLElement[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLElement>('oas-virtual-list')]
+  }
+
+  function vlistOf(el: OASCascader, panelIdx = 0): HTMLElement {
+    return panels(el)[panelIdx]!.querySelector('oas-virtual-list')!
+  }
+
+  function virtualRows(el: OASCascader, panelIdx = 0): HTMLElement[] {
+    return [...vlistOf(el, panelIdx).shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')]
+  }
+
+  const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+
+  it('virtual 进 observedAttributes', () => {
+    expect(OASCascader.observedAttributes).toContain('virtual')
+    expect(OASCascader.observedAttributes).toContain('item-height')
+  })
+
+  it('virtual：长列仅渲染可见窗口 + buffer，不渲染全量；短列（低于阈值）保持普通渲染', () => {
+    const el = mount({ virtual: '', options: wideOptions(100) })
+    el.setAttribute('open', '')
+    // 第一列 100 项 → 虚拟窗口 11 行（240/36≈7 + buffer 4，对齐 select）
+    expect(vlists(el).length).toBe(1)
+    expect(virtualRows(el).length).toBe(11)
+    expect(virtualRows(el)[0]!.getAttribute('data-index')).toBe('0')
+    // 视口不产生多余 Tab 停靠点（键盘可达性由 dropdown 键盘流负责）
+    expect(vlistOf(el).shadowRoot!.querySelector('.viewport')!.hasAttribute('tabindex')).toBe(false)
+    // 非 virtual：同数据全量渲染
+    const el2 = mount({ options: wideOptions(100) })
+    el2.setAttribute('open', '')
+    expect(el2.shadowRoot!.querySelectorAll('oas-virtual-list').length).toBe(0)
+    expect(rows(el2, 0).length).toBe(100)
+  })
+
+  it('virtual：1000 项滚动后窗口平移，padding 撑起滚动高度，面板高度恒定', async () => {
+    const el = mount({ virtual: '', options: wideOptions(1000) })
+    el.setAttribute('open', '')
+    const vl = vlistOf(el)
+    // 面板高度恒定：vlist 视口高度固定 240（默认下拉高度），不随内容撑高
+    expect(vl.getAttribute('height')).toBe('240')
+    expect(vl.shadowRoot!.querySelector<HTMLElement>('.viewport')!.style.height).toBe('240px')
+    // 内层撑起全量滚动高度（1000 × 36）
+    expect(vl.shadowRoot!.querySelector<HTMLElement>('.inner')!.style.height).toBe('36000px')
+    // 虚拟列不叠加面板滚动（overflow 交回 vlist）
+    const panel = panels(el)[0]!
+    expect(panel.style.maxHeight).toBe('none')
+    expect(panel.style.overflow).toBe('visible')
+    // 滚动后窗口平移
+    const vp = vl.shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    vp.scrollTop = 3600
+    vp.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const window0 = virtualRows(el)
+    expect(window0.length).toBe(15) // 96..110
+    expect(window0[0]!.getAttribute('data-index')).toBe('96')
+    const pads = vl.shadowRoot!.querySelectorAll('.padding')
+    expect((pads[0] as HTMLElement).style.height).toBe('3456px') // 96 * 36
+  })
+
+  it('virtual：键盘导航不越界，窗口跟随高亮行', async () => {
+    const el = mount({ virtual: '', options: wideOptions(100) })
+    el.setAttribute('open', '')
+    const dd = dropdown(el)
+    for (let k = 0; k < 25; k++) {
+      dd.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    }
+    // happy-dom 不自动触发 scroll：手动派发后窗口重算，高亮项应在窗口内
+    const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    expect(vp.scrollTop).toBeGreaterThan(0)
+    vp.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const activeRow = virtualRows(el).find((r) => r.classList.contains('active'))
+    expect(activeRow?.getAttribute('data-index')).toBe('25')
+  })
+
+  it('virtual：逐级选中深层选项回显正确（value 路径 + oas-change + 触发器文本）', async () => {
+    const el = mount({ virtual: '', options: wideOptions(1000) })
+    el.setAttribute('open', '')
+    // 滚动第一列到末尾窗口（scrollTop 夹取到 1000*36-240=35760）
+    const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    vp.scrollTop = 35760
+    vp.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const row999 = virtualRows(el).find((r) => r.getAttribute('data-index') === '999')!
+    expect(row999).toBeDefined()
+    row999.click()
+    // 下钻后第二列只有 1 项 → 低于阈值保持普通渲染
+    expect(panels(el).length).toBe(2)
+    expect(panels(el)[1]!.querySelector('oas-virtual-list')).toBeNull()
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(rows(el, 1)[0] as HTMLElement).click()
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual(['v999', 'c999'])
+    expect(detail).toEqual({ value: ['v999', 'c999'] })
+    expect(trigger(el).textContent).toContain('项目 999 / 999-子')
+  })
+
+  it('virtual：多选勾选窗口内选项，级联 value 路径正确', () => {
+    const el = mount({ virtual: '', multiple: '', options: wideOptions(100) })
+    el.setAttribute('open', '')
+    const row5 = virtualRows(el).find((r) => r.getAttribute('data-index') === '5')!
+    // 多选勾选走行前复选框（点行本身是下钻语义：v5 带子级可展开）
+    ;(row5.querySelector('.check') as HTMLElement).click()
+    // 级联勾选：父级 + 全部子级进值（value-mode=all 默认）
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual([['v5'], ['v5', 'c5']])
+    // 面板保持展开，行 aria-selected 同步
+    expect(el.hasAttribute('open')).toBe(true)
+    const reloaded = virtualRows(el).find((r) => r.getAttribute('data-index') === '5')
+    expect(reloaded?.getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('virtual：搜索结果与加载占位回退普通渲染（vlist 不参与）', () => {
+    const el = mount({ virtual: '', filterable: '', options: wideOptions(1000) })
+    el.setAttribute('open', '')
+    searchInput(el).value = '项目 9'
+    searchInput(el).dispatchEvent(new Event('input', { bubbles: true }))
+    // 搜索模式渲染扁平路径结果列表，不虚拟化
+    expect(el.shadowRoot!.querySelector('.search-results')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.search-results [role="option"]').length).toBeGreaterThan(0)
+    // loading 态：面板只显示加载占位
+    document.body.innerHTML = ''
+    const loading = mount({ virtual: '', loading: '', options: wideOptions(100) })
+    loading.setAttribute('open', '')
+    expect(loading.shadowRoot!.querySelector('[role="status"]')).not.toBeNull()
+    expect(loading.shadowRoot!.querySelectorAll('oas-virtual-list').length).toBe(0)
+  })
+
+  it('CSS 变量开口：.panel max-height 走 --oas-cascader-dropdown-height（默认 240px）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 收集所有 .panel 规则（含 :host([data-mobile-sheet]) 前缀的），基础列规则应含 max-height 变量
+    const rules = [...css.matchAll(/\.panel\s*\{[^}]*\}/g)].map((m) => m[0])
+    expect(rules.some((r) => r.includes('max-height: var(--oas-cascader-dropdown-height, 240px)'))).toBe(true)
+    expect(css).toContain('--oas-cascader-dropdown-height: 240px')
+  })
+
+  it('虚拟列高度跟随 CSS 变量（宿主覆盖生效）', () => {
+    const el = mount({ virtual: '', options: wideOptions(100) })
+    el.style.setProperty('--oas-cascader-dropdown-height', '300px')
+    el.setAttribute('open', '')
+    expect(vlistOf(el).getAttribute('height')).toBe('300')
+  })
+})

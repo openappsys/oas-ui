@@ -206,6 +206,21 @@
 
 line 形态下 `size` 为高度档位（`small` 4px / `medium` 8px / `large` 12px），`stroke-width` 直接指定轨道高度（px，优先于档位）；`text-inside` 把文本移入条内（未显式指定粗度时轨道自动提升高度）；文本只压在**已填充段**内，填充过窄（不足约 6 字符）时自动隐藏，避免半个数字露在轨道上。
 
+## 垂直进度条
+
+`vertical` 让 line 形态垂直化：轨道变纵向，粗细沿用 `size` / `stroke-width` 档位，填充**自下而上**；`height` 指定纵向高度（纯数字视为 px，支持 `vh`/`%` 等单位，非法值回退默认 200px；横向形态下该属性被忽略）。`circle` / `dashboard` 形态不受 `vertical` 影响。
+
+<DemoBlock title="vertical 垂直进度">
+  <oas-space size="large" wrap align="end">
+    <oas-progress vertical percent="25" label="25%"></oas-progress>
+    <oas-progress vertical percent="50" label="50%"></oas-progress>
+    <oas-progress vertical percent="75" status="success" label="75%"></oas-progress>
+    <oas-progress vertical percent="40" height="240" striped label="40%"></oas-progress>
+    <oas-progress vertical percent="60" size="large" no-text label="60%"></oas-progress>
+    <oas-progress vertical percent="90" buffer="70" show-text="false" label="90%"></oas-progress>
+  </oas-space>
+</DemoBlock>
+
 ## 端帽
 
 <DemoBlock title="stroke-linecap 圆环端帽">
@@ -294,6 +309,7 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `buffer` | 缓冲值（line 限定，0–max 夹取）：主进度之后的静态缓冲段，用于流式加载/视频缓冲场景 | `string` | — |
 | `color` | 进度色：预设名（走 --oas-preset-* token）或任意 CSS 色串/渐变串（渐变建议 line）；优先于 status 语义色与满值绿 | `string` | — |
+| `height` | 纵向长度（仅 vertical 生效）：纯数字视为 px，支持 px/vh/%，非法回落默认 | `string` | — |
 | `indeterminate` | 不确定态（无确定值加载）：忽略 percent/steps/buffer/striped，摘除 aria-valuenow（APG）；line 滑块扫过 / circle·dashboard 分段弧旋转 | `boolean` | — |
 | `label` | 无障碍名（写入进度条的 aria-label） | — | — |
 | `max` | 值域上限（默认 100）：percent/buffer 语义为当前值，宽度与文本按 value/max 换算，aria 同步真实值 | `string` | `100` |
@@ -311,6 +327,7 @@ onMounted(async () => {
 | `track-color` | 轨道色：协议同 color | `string` | — |
 | `type` | 形态：`line`（默认）/ `circle` / `dashboard`（仪表盘：底部开口 270° 弧） | `string` | `line` |
 | `value` | percent 的别名（当前进度值，与 percent 同值域 0–max 夹取）：两者同设时 percent 优先，仅 percent 缺失时读此值 | `string` | `0` |
+| `vertical` | 垂直方向（仅 line 形态）：轨道纵向、填充自下而上；circle/dashboard 不受影响 | `boolean` | — |
 
 #### 插槽
 

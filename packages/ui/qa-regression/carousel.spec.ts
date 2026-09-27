@@ -178,3 +178,29 @@ test('carousel draggable：PC 显式开启后真实鼠标拖拽切屏、跟手�
     '1',
   )
 })
+
+// ===== 能力缺口 D17：thumbs 缩略图指示器 =====
+test('carousel D17：thumbs 缩略图替代圆点、当前项主色描边、点击切页', async ({ page }) => {
+  await page.goto('/components/carousel.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-carousel[thumbs]')
+  const car = page.locator('oas-carousel[thumbs]').first()
+  await car.scrollIntoViewIfNeeded()
+  const data = await car.evaluate((h) => {
+    const thumbs = [...h.shadowRoot!.querySelectorAll<HTMLElement>('[part="thumb"]')]
+    const cur = h.shadowRoot!.querySelector<HTMLElement>('[part="thumb"][aria-current="true"]')
+    return {
+      count: thumbs.length,
+      dots: h.shadowRoot!.querySelectorAll('[part="dot"]').length,
+      borderColor: cur ? getComputedStyle(cur).borderTopColor : '',
+      imgCount: h.shadowRoot!.querySelectorAll('[part="thumb"] img').length,
+    }
+  })
+  expect(data.count, 'thumbs demo 应渲染缩略图').toBeGreaterThan(1)
+  expect(data.dots, 'thumbs 下不应再有圆点').toBe(0)
+  expect(data.imgCount, '缩略图应取子项图片').toBeGreaterThan(0)
+  expect(data.borderColor, '当前项应有主色描边').not.toBe('rgba(0, 0, 0, 0)')
+  const before = await car.getAttribute('index')
+  await car.locator('[part="thumb"]').nth(1).click()
+  await expect(car).toHaveAttribute('index', '1')
+  expect(before).not.toBe('1')
+})

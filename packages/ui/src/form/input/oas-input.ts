@@ -61,6 +61,138 @@ function countGraphemes(value: string): number {
   return Array.from(value).length
 }
 
+// —— mask 输入掩码（能力缺口 D7）——
+
+/** 掩码 token：可编辑位（字符校验函数）或字面量（固定字符） */
+type MaskToken = { kind: 'editable'; test: (ch: string) => boolean } | { kind: 'literal'; ch: string }
+
+/** mask 模式字符表：`#` 数字 / `A` 字母 / `*` 字母数字；其余字符为字面量（如 `###-####` 的 `-`） */
+function parseMaskTokens(mask: string): MaskToken[] {
+  const tokens: MaskToken[] = []
+  for (const ch of Array.from(mask)) {
+    if (ch === '#') tokens.push({ kind: 'editable', test: (c) => c >= '0' && c <= '9' })
+    else if (ch === 'A')
+      tokens.push({ kind: 'editable', test: (c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') })
+    else if (ch === '*')
+      tokens.push({
+        kind: 'editable',
+        test: (c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'),
+      })
+    else tokens.push({ kind: 'literal', ch })
+  }
+  return tokens
+}
+
+/** 掩码可编辑位总数（raw 序列长度上限） */
+function maskEditableCount(tokens: MaskToken[]): number {
+  let n = 0
+  for (const t of tokens) if (t.kind === 'editable') n++
+  return n
+}
+
+/** 掩码渲染（渐进显示，无占位符）：可编辑位按序消费 raw 字符；字面量仅在「后面还有已填字符」时显示，raw 耗尽即停 */
+function renderMaskTokens(tokens: MaskToken[], raw: string): string {
+  let ri = 0
+  let out = ''
+  for (const t of tokens) {
+    if (ri >= raw.length) break
+    if (t.kind === 'literal') out += t.ch
+    else {
+      out += raw[ri]
+      ri++
+    }
+  }
+  return out
+}
+
+/**
+ * 按模板对齐从文本提取可编辑字符（从第 editPos 个可编辑位开始）：
+ * - 字面量位字符恰好匹配则消耗（用户手打格式字符）
+ * - 不匹配则跳过该字面量继续对齐（键入自动跳字面量 / 粘贴只收合法位的关键）
+ * - 可编辑位非法字符丢弃（token 不推进）
+ */
+function extractMaskFrom(tokens: MaskToken[], text: string, editPos: number): string {
+  let ti = 0
+  let seen = 0
+  while (ti < tokens.length && seen < editPos) {
+    if (tokens[ti]?.kind === 'editable') seen++
+    ti++
+  }
+  let out = ''
+  for (const ch of Array.from(text)) {
+    if (ti >= tokens.length) break
+    let t = tokens[ti]!
+    if (t.kind === 'literal') {
+      if (t.ch === ch) {
+        ti++
+        continue
+      }
+      ti++
+      while (ti < tokens.length && tokens[ti]?.kind === 'literal') ti++
+      if (ti >= tokens.length) break
+      t = tokens[ti]!
+    }
+    if (t.kind === 'editable' && t.test(ch)) {
+      out += ch
+      ti++
+    }
+  }
+  return out
+}
+
+/** 显示值前 index 个字符中可编辑字符的个数（按模板对齐扫描；渐进显示中缺失的字面量不消耗显示字符） */
+function maskEditableCountUpTo(tokens: MaskToken[], display: string, index: number): number {
+  let ti = 0
+  let di = 0
+  let edits = 0
+  while (di < index && ti < tokens.length) {
+    const t = tokens[ti]!
+    if (t.kind === 'literal') {
+      ti++
+      if (display[di] === t.ch) di++
+      continue
+    }
+    ti++
+    di++
+    edits++
+  }
+  return edits
+}
+
+/** 显示值中第 editPos 个可编辑字符之前的位置（光标落点映射；停在字面量之前，不越过字面量） */
+function maskDisplayIndexForEditPos(tokens: MaskToken[], display: string, editPos: number): number {
+  let ti = 0
+  let di = 0
+  let edits = 0
+  while (di < display.length && ti < tokens.length) {
+    const t = tokens[ti]!
+    if (t.kind === 'literal') {
+      // 预看下一个可编辑位：光标恰好在它之前（edits === editPos）时停在字面量前
+      let look = ti + 1
+      while (look < tokens.length && tokens[look]?.kind === 'literal') look++
+      if (look < tokens.length && edits === editPos) break
+      ti++
+      if (display[di] === t.ch) di++
+      continue
+    }
+    if (edits === editPos) break
+    ti++
+    di++
+    edits++
+  }
+  return di
+}
+
+/** mask 与 formatter/parser 互斥告警去重（模块级，同控件告警惯例） */
+const warnedMaskConflict = new Set<string>()
+
+function warnMaskFormatterConflict(): void {
+  const key = 'mask-formatter'
+  if (warnedMaskConflict.has(key)) return
+  warnedMaskConflict.add(key)
+  console.warn('[oas-input] mask 与 formatter/parser 互斥，已按 mask 优先处理：formatter/parser 在 mask 移除前不生效')
+}
+
 const STYLE = `
 :host {
   display: inline-block;
@@ -655,6 +787,9 @@ export class OASInput extends OASFormElement {
       'auto-width-min',
       'auto-width-max',
       'hint',
+      // mask 输入掩码（能力缺口 D7）：mask 定义掩码模板，mask-raw 让提交值/FormData 走去格式化原始序列
+      'mask',
+      'mask-raw',
       ...PASSTHROUGH_ATTRS,
     ]
   }
@@ -694,11 +829,83 @@ export class OASInput extends OASFormElement {
 
   /** 上次 update() 见到的 value 属性值（未提交输入保护：属性未变的 update 不回写内层） */
   private lastAttrValue: string | null = null
-  /** 最近一次已知的原始（未格式化）值：formatter 移除时恢复显示用 */
+  /** 最近一次已知的原始（未格式化）值：formatter 移除时恢复显示用；mask 模式下为掩码原始字符序列 */
   private lastRawValue = ''
   /** 超限状态（oas-validate 只在翻转时派发；首帧建立基线不派发） */
   private overLimit = false
   private overLimitInitialized = false
+  /** mask 模式镜像：上次应用后的显示值（input 事件 diff 基线）与上次 mask 模板（增/换/移检测） */
+  private lastMaskDisplay = ''
+  private lastMaskPattern: string | null = null
+  /** mask 模板解析缓存（同模板复用，update 高频调用不重复解析） */
+  private maskCache: { pattern: string; tokens: MaskToken[] } | null = null
+
+  /** 当前掩码 token（mask 属性缺席/空串 = 无 mask）；同模板走缓存 */
+  private maskTokens(): MaskToken[] | null {
+    const pattern = this.getAttr('mask', '')
+    if (pattern === '') return null
+    if (!this.maskCache || this.maskCache.pattern !== pattern) {
+      this.maskCache = { pattern, tokens: parseMaskTokens(pattern) }
+    }
+    return this.maskCache.tokens
+  }
+
+  /** 应用掩码原始序列：渲染显示 + 同步镜像（caretEditPos 为 null 时不动光标，受控回写场景） */
+  private applyMaskValue(tokens: MaskToken[], raw: string, caretEditPos: number | null): void {
+    const i = this.inputEl
+    if (!i) return
+    const max = maskEditableCount(tokens)
+    if (raw.length > max) raw = raw.slice(0, max)
+    const display = renderMaskTokens(tokens, raw)
+    if (i.value !== display) i.value = display
+    this.lastRawValue = raw
+    this.lastMaskDisplay = display
+    if (caretEditPos !== null) {
+      const caret = Math.min(maskDisplayIndexForEditPos(tokens, display, caretEditPos), display.length)
+      try {
+        i.setSelectionRange(caret, caret)
+      } catch {
+        /* number/email 等类型不支持选区，忽略光标保持 */
+      }
+    }
+  }
+
+  /**
+   * input 事件掩码接管：对上一次镜像显示值与当前值做 diff（公共前缀/后缀），把插入段按模板
+   * 对齐提取（键入自动跳字面量、粘贴只收合法位、非法字符过滤），删除段按等效可编辑位数回退
+   * 原始序列，再整体重渲染。字面量由渲染逻辑独占管理——用户删除字面量会被渲染还原且光标
+   * 跳过（「删到字面量停」），可编辑字符照常增删。
+   */
+  private applyMaskInput(tokens: MaskToken[]): void {
+    const i = this.inputEl!
+    const prevDisplay = this.lastMaskDisplay
+    const prevRaw = this.lastRawValue
+    const newDisplay = i.value
+    let start = 0
+    const minLen = Math.min(prevDisplay.length, newDisplay.length)
+    while (start < minLen && prevDisplay[start] === newDisplay[start]) start++
+    let endPrev = prevDisplay.length
+    let endNew = newDisplay.length
+    while (endPrev > start && endNew > start && prevDisplay[endPrev - 1] === newDisplay[endNew - 1]) {
+      endPrev--
+      endNew--
+    }
+    const removed = prevDisplay.slice(start, endPrev)
+    const inserted = newDisplay.slice(start, endNew)
+    const editBefore = maskEditableCountUpTo(tokens, prevDisplay, start)
+    let raw = prevRaw
+    let caretEdit = editBefore
+    if (removed.length > 0) {
+      const removedEdits = extractMaskFrom(tokens, removed, editBefore).length
+      raw = raw.slice(0, editBefore) + raw.slice(editBefore + removedEdits)
+    }
+    if (inserted.length > 0) {
+      const clean = extractMaskFrom(tokens, inserted, editBefore)
+      raw = raw.slice(0, editBefore) + clean + raw.slice(editBefore)
+      caretEdit = editBefore + clean.length
+    }
+    this.applyMaskValue(tokens, raw, caretEdit)
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -747,27 +954,33 @@ export class OASInput extends OASFormElement {
     this.hintEl = this.shadow.querySelector('.hint')
 
     this.inputEl?.addEventListener('input', () => {
-      const pos = this.inputEl!.selectionStart
-      const oldDisplay = this.inputEl!.value
-      // formatter 在场：先把用户敲入的显示值反解析为原始值，再重新格式化显示；
-      // 光标近似保持（按格式化前后长度差平移）
-      if (this._formatter) {
-        const typed = this._parser ? this._parser(oldDisplay) : oldDisplay
-        this.lastRawValue = typed
-        const display = this._formatter(typed)
-        if (display !== oldDisplay) {
-          this.inputEl!.value = display
-          if (pos !== null) {
-            const next = Math.max(0, Math.min(display.length, pos + (display.length - oldDisplay.length)))
-            try {
-              this.inputEl!.setSelectionRange(next, next)
-            } catch {
-              /* number/email 等类型不支持选区，忽略光标保持 */
+      // mask 在场：整段接管（diff 重渲染 + 光标管理），formatter 通道让位（mask 与 formatter 互斥）
+      const maskTokens = this.maskTokens()
+      if (maskTokens) {
+        this.applyMaskInput(maskTokens)
+      } else {
+        const pos = this.inputEl!.selectionStart
+        const oldDisplay = this.inputEl!.value
+        // formatter 在场：先把用户敲入的显示值反解析为原始值，再重新格式化显示；
+        // 光标近似保持（按格式化前后长度差平移）
+        if (this._formatter) {
+          const typed = this._parser ? this._parser(oldDisplay) : oldDisplay
+          this.lastRawValue = typed
+          const display = this._formatter(typed)
+          if (display !== oldDisplay) {
+            this.inputEl!.value = display
+            if (pos !== null) {
+              const next = Math.max(0, Math.min(display.length, pos + (display.length - oldDisplay.length)))
+              try {
+                this.inputEl!.setSelectionRange(next, next)
+              } catch {
+                /* number/email 等类型不支持选区，忽略光标保持 */
+              }
             }
           }
+        } else {
+          this.lastRawValue = oldDisplay
         }
-      } else {
-        this.lastRawValue = oldDisplay
       }
       this.emit('input', { value: this.rawValue() })
       this.syncFormValue()
@@ -874,7 +1087,8 @@ export class OASInput extends OASFormElement {
     if (status === 'error') i.setAttribute('aria-invalid', 'true')
     else i.removeAttribute('aria-invalid')
 
-    // 受控值 + formatter 显示通道：display = formatter(raw)，事件/提交基线走原始值。
+    // 受控值 + formatter/mask 显示通道：display = formatter(raw) / renderMask(extract(value))，
+    // 事件/提交基线走 rawValue()。mask 与 formatter 互斥（mask 优先，见互斥告警）。
     // 未提交输入保护：value 属性未变时（typing 中的无关 update，如 loading/status 切换）不从属性
     // 回写内层——否则用户正在输入的未提交文本被旧属性值抹掉（loading 远程校验主场景实抓）
     const attrValueChanged = this.lastAttrValue !== value
@@ -885,19 +1099,44 @@ export class OASInput extends OASFormElement {
       // 否则 blur/Enter 的 commitChange 比对 raw === committedValue 会吞掉 oas-change
       // （oas-form 的 oas-input 值同步链路实抓：form 内文本框 change 触发整体哑火）
       const isEcho = value === this.rawValue()
-      this.lastRawValue = value
-      const display = this._formatter ? this._formatter(value) : value
-      if (i.value !== display) i.value = display
-      if (!isEcho) this.committedValue = value
+      const ctrlMask = this.maskTokens()
+      if (ctrlMask) {
+        // mask 模式：value 属性解释为原始字符序列（带字面量的值也能按模板对齐提取）
+        this.applyMaskValue(ctrlMask, extractMaskFrom(ctrlMask, value, 0), null)
+      } else {
+        this.lastRawValue = value
+        const display = this._formatter ? this._formatter(value) : value
+        if (i.value !== display) i.value = display
+      }
+      // 提交基线取 rawValue() 语义值（mask-raw 模式为去格式化序列，与 oas-change 比对口径一致）
+      if (!isEcho) this.committedValue = this.rawValue()
+    }
+    // mask 模板增/换/移：从当前显示重提取重渲染（受控回写路径已在上面处理显示与镜像）；
+    // 移除后显示回归原始序列（mask 模式下 lastRawValue 即原始序列）
+    const maskPattern = this.getAttr('mask', '')
+    if (maskPattern === '') {
+      if (this.lastMaskPattern !== null) {
+        if (i.value !== this.lastRawValue) i.value = this.lastRawValue
+        this.lastMaskDisplay = ''
+      }
+      this.lastMaskPattern = null
+    } else {
+      if (this.lastMaskPattern !== maskPattern && !attrValueChanged) {
+        const tokens = this.maskTokens()
+        if (tokens) this.applyMaskValue(tokens, extractMaskFrom(tokens, i.value, 0), null)
+      }
+      this.lastMaskPattern = maskPattern
+      if (this._formatter || this._parser) warnMaskFormatterConflict()
     }
     // 原生表单数据同步（form-associated；无 name 浏览器自动不提交）
     this.syncFormValue()
     this.syncValidity()
 
     i.placeholder = placeholder
-    // maxlength 透传原生 input（空值即无限制；allow-over-max 时不透传——超限可继续输入，仅计数标红）
+    // maxlength 透传原生 input（空值即无限制；allow-over-max 时不透传——超限可继续输入，仅计数标红；
+    // mask 模式不透传——显示值长度 ≠ 原始序列长度，原生截断会破坏掩码）
     const maxlength = this.getAttr('maxlength', '')
-    if (maxlength === '' || this.hasAttr('allow-over-max')) i.removeAttribute('maxlength')
+    if (maxlength === '' || this.hasAttr('allow-over-max') || this.maskTokens() !== null) i.removeAttribute('maxlength')
     else i.setAttribute('maxlength', maxlength)
     i.disabled = disabled
     i.readOnly = readonly
@@ -929,10 +1168,17 @@ export class OASInput extends OASFormElement {
     this.measureAutoWidth()
   }
 
-  /** 当前原始值：parser 在场时从显示值反解析，否则显示值即原始值 */
+  /**
+   * 当前原始值（oas-input / oas-change / FormData 的统一值语义）：
+   * - parser 在场：显示值反解析
+   * - mask 模式：mask-raw 属性在场 → 去格式化原始字符序列；缺省 → 显示值
+   * - 其余：显示值即原始值
+   */
   private rawValue(): string {
     const display = this.inputEl?.value ?? ''
-    return this._parser ? this._parser(display) : display
+    if (this._parser) return this._parser(display)
+    if (this.maskTokens() !== null) return this.hasAttr('mask-raw') ? this.lastRawValue : display
+    return display
   }
 
   /** 值提交（change 语义）：与上次提交基线不同才派发 oas-change */
@@ -959,23 +1205,33 @@ export class OASInput extends OASFormElement {
     }
   }
 
-  /** 表单 reset：恢复到 value 属性（初始值），不派发事件（与原生 reset 一致） */
+  /** 表单 reset：恢复到 value 属性（初始值），不派发事件（与原生 reset 一致）；
+   *  mask 模式按掩码渲染显示，提交基线取 rawValue() 口径（mask-raw 下为原始序列） */
   protected override resetFormValue(): void {
     const value = this.getAttr('value', '')
-    this.lastRawValue = value
-    this.committedValue = value
+    const tokens = this.maskTokens()
+    this.lastRawValue = tokens ? extractMaskFrom(tokens, value, 0) : value
     if (!this.inputEl) return
-    this.inputEl.value = this._formatter ? this._formatter(value) : value
+    if (tokens) {
+      this.applyMaskValue(tokens, this.lastRawValue, null)
+    } else {
+      this.inputEl.value = this._formatter ? this._formatter(value) : value
+    }
+    this.committedValue = this.rawValue()
     this.syncClearVisibility()
     this.syncCount()
     this.measureAutoWidth()
     this.syncValidity()
   }
 
-  /** formatter/parser property 变化后重刷显示（不动受控基线） */
+  /** formatter/parser property 变化后重刷显示（不动受控基线）；mask 在场时按 mask 优先重渲染并告警互斥 */
   private refreshFormatter(): void {
     if (!this.inputEl) return
-    if (this._formatter) {
+    const tokens = this.maskTokens()
+    if (tokens) {
+      warnMaskFormatterConflict()
+      this.applyMaskValue(tokens, this.lastRawValue, null)
+    } else if (this._formatter) {
       const display = this._formatter(this.lastRawValue)
       if (this.inputEl.value !== display) this.inputEl.value = display
     } else if (this.inputEl.value !== this.lastRawValue) {

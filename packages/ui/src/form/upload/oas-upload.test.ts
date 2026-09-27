@@ -1073,3 +1073,215 @@ describe('OASUpload oas-progress（进度事件通道，PRD P2）', () => {
     expect(progresses[0]!.file).toBeInstanceOf(File)
   })
 })
+
+describe('crop 裁剪（picture/picture-card + accept 图片）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  function cropMask(el: OASUpload): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('.crop-mask')!
+  }
+
+  function cropDialog(el: OASUpload): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('.crop-dialog')!
+  }
+
+  function cropFrame(el: OASUpload): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('.crop-frame')!
+  }
+
+  function zoomText(el: OASUpload): string {
+    return el.shadowRoot!.querySelector<HTMLElement>('.crop-zoom-text')!.textContent ?? ''
+  }
+
+  /** 确认导出走 toBlob 桩：同步回调，产出可断言的 png Blob */
+  function stubToBlob(blob: Blob): void {
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(((cb: (b: Blob | null) => void) => {
+      cb(blob)
+    }) as HTMLCanvasElement['toBlob'])
+  }
+
+  async function flush(): Promise<void> {
+    await new Promise((r) => setTimeout(r, 0))
+  }
+
+  it('crop 激活条件：crop + picture 形态 + accept 图片——picture-card 下选择先弹裁剪、不入列', () => {
+    const el = mount({ crop: '', 'list-type': 'picture-card', accept: 'image/*' })
+    pick(el, [makeFile('a.png', 'image/png')])
+    expect(cropMask(el).hasAttribute('hidden'), '裁剪对话框打开').toBe(false)
+    expect(cropDialog(el).getAttribute('role')).toBe('dialog')
+    expect(cropDialog(el).getAttribute('aria-modal')).toBe('true')
+    expect(el.files.length, '确认前不入列').toBe(0)
+  })
+
+  it('list-type=list 时 crop 不激活（直通入列，无对话框）', () => {
+    const el = mount({ crop: '', accept: 'image/*' })
+    pick(el, [makeFile('a.png', 'image/png')])
+    expect(cropMask(el).hasAttribute('hidden')).toBe(true)
+    expect(el.files.length).toBe(1)
+  })
+
+  it('crop 开但 accept 无图片 / 未设 accept 时不激活（直通入列）', () => {
+    const elNoImage = mount({ crop: '', 'list-type': 'picture-card', accept: '.pdf' })
+    pick(elNoImage, [makeFile('b.pdf', 'application/pdf')])
+    expect(cropMask(elNoImage).hasAttribute('hidden')).toBe(true)
+    expect(elNoImage.files.length).toBe(1)
+
+    const elNoAccept = mount({ crop: '', 'list-type': 'picture-card' })
+    pick(elNoAccept, [makeFile('c.png', 'image/png')])
+    expect(cropMask(elNoAccept).hasAttribute('hidden')).toBe(true)
+    expect(elNoAccept.files.length).toBe(1)
+  })
+
+  it('accept 混合（图片 + 非图片）：图片走裁剪，非图片直通入列', () => {
+    const el = mount({ crop: '', 'list-type': 'picture-card', accept: 'image/*,.pdf' })
+    pick(el, [makeFile('d.pdf', 'application/pdf'), makeFile('e.png', 'image/png')])
+    expect(cropMask(el).hasAttribute('hidden'), '图片弹裁剪').toBe(false)
+    expect(
+      el.files.map((f) => f.name),
+      '非图片已直通入列',
+    ).toEqual(['d.pdf'])
+  })
+
+  it('confirm：canvas 离屏结果（Blob→File）入列代替原图 + oas-crop { file, blob } + oas-change', async () => {
+    stubToBlob(new Blob(['cropped-bytes'], { type: 'image/png' }))
+    const el = mount({ crop: '', 'list-type': 'picture-card', accept: 'image/*' })
+    const original = makeFile('photo.png', 'image/png', 2048)
+    const crops: Array<{ file: unknown; blob: unknown }> = []
+    const changes: unknown[] = []
+    el.addEventListener('oas-crop', (e) => crops.push((e as CustomEvent).detail))
+    el.addEventListener('oas-change', (e) => changes.push((e as CustomEvent).detail))
+    pick(el, [original])
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.crop-ok')!.click()
+    await flush()
+    expect(crops.length, 'oas-crop 派发').toBe(1)
+    expect(crops[0]!.file).toBe(original)
+    expect(crops[0]!.blob).toBeInstanceOf(Blob)
+    expect(el.files.length).toBe(1)
+    expect(el.files[0]!.name, '裁剪结果入列（扩展名跟随导出 MIME）').toBe('photo.png')
+    expect((el.files[0] as File).type).toBe('image/png')
+    expect(changes.length, '入列后派发 oas-change').toBe(1)
+    expect(cropMask(el).hasAttribute('hidden'), '确认后对话框关闭').toBe(true)
+  })
+
+  it('导出 MIME 与原名扩展不一致时改名跟随（gif→png）', async () => {
+    stubToBlob(new Blob(['x'], { type: 'image/png' }))
+    const el = mount({ crop: '', 'list-type': 'picture', accept: 'image/*' })
+    pick(el, [makeFile('anim.gif', 'image/gif')])
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.crop-ok')!.click()
+    await flush()
+    expect(el.files[0]!.name).toBe('anim.png')
+    expect((el.files[0] as File).type).toBe('image/png')
+  })
+
+  it('cancel：不入列、不派发 oas-change，对话框关闭（队列中后续文件继续）', () => {
+    const el = mount({ crop: '', 'list-type': 'picture-card', accept: 'image/*' })
+    const changes: unknown[] = []
+    el.addEventListener('oas-change', (e) => changes.push((e as CustomEvent).detail))
+    pick(el, [makeFile('a.png', 'image/png')])
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.crop-cancel')!.click()
+    expect(el.files.length, '取消不入列').toBe(0)
+    expect(changes.length).toBe(0)
+    expect(cropMask(el).hasAttribute('hidden')).toBe(true)
+  })
+
+  it('Esc 取消裁剪（不入列）', () => {
+    const el = mount({ crop: '', 'list-type': 'picture-card', accept: 'image/*' })
+    pick(el, [makeFile('a.png', 'image/png')])
+    expect(cropMask(el).hasAttribute('hidden')).toBe(false)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(cropMask(el).hasAttribute('hidden')).toBe(true)
+    expect(el.files.length).toBe(0)
+  })
+
+  it('批量多选：逐张裁剪（确认第一张后第二张对话框继续）', async () => {
+    stubToBlob(new Blob(['x'], { type: 'image/png' }))
+    const el = mount({ crop: '', 'list-type': 'picture-card', accept: 'image/*', multiple: '' })
+    pick(el, [makeFile('1.png', 'image/png'), makeFile('2.png', 'image/png')])
+    expect(cropMask(el).hasAttribute('hidden'), '第一张对话框').toBe(false)
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.crop-ok')!.click()
+    await flush()
+    expect(el.files.length, '第一张已入列').toBe(1)
+    expect(cropMask(el).hasAttribute('hidden'), '第二张对话框自动接续').toBe(false)
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.crop-ok')!.click()
+    await flush()
+    expect(el.files.length).toBe(2)
+    expect(cropMask(el).hasAttribute('hidden'), '全部处理完关闭').toBe(true)
+  })
+
+  it('crop-aspect 固定比例：裁剪框标记 data-crop-aspect；缺省（自由比例）无标记', () => {
+    const fixed = mount({ crop: '', 'crop-aspect': '1:1', 'list-type': 'picture-card', accept: 'image/*' })
+    pick(fixed, [makeFile('a.png', 'image/png')])
+    expect(cropFrame(fixed).getAttribute('data-crop-aspect')).toBe('1:1')
+
+    const free = mount({ crop: '', 'list-type': 'picture-card', accept: 'image/*' })
+    pick(free, [makeFile('b.png', 'image/png')])
+    expect(cropFrame(free).hasAttribute('data-crop-aspect')).toBe(false)
+  })
+
+  it('缩放：放大/缩小按钮与滚轮更新百分比读数（100% 基准，夹紧上下限）', () => {
+    const el = mount({ crop: '', 'list-type': 'picture-card', accept: 'image/*' })
+    pick(el, [makeFile('a.png', 'image/png')])
+    expect(zoomText(el)).toBe('100%')
+    const down = el.shadowRoot!.querySelector<HTMLButtonElement>('.crop-zoom-btn[data-zoom="out"]')!
+    const up = el.shadowRoot!.querySelector<HTMLButtonElement>('.crop-zoom-btn[data-zoom="in"]')!
+    // 下限夹紧：100% 再缩不下去
+    down.click()
+    expect(zoomText(el)).toBe('100%')
+    up.click()
+    expect(zoomText(el)).toBe('125%')
+    up.click()
+    expect(zoomText(el)).toBe('156%')
+    // 滚轮：向上滚放大
+    el.shadowRoot!.querySelector<HTMLElement>('.crop-stage')!.dispatchEvent(
+      new WheelEvent('wheel', { deltaY: -120, cancelable: true, bubbles: true }),
+    )
+    expect(zoomText(el)).toBe('195%')
+    // 大幅放大触发上限夹紧（8× = 800%）
+    for (let i = 0; i < 30; i++) up.click()
+    expect(zoomText(el)).toBe('800%')
+  })
+
+  it('图片加载完成前 confirm 仍可用（未解码图片按 1×1 兜底矩形导出，不阻塞流程）', async () => {
+    stubToBlob(new Blob(['x'], { type: 'image/png' }))
+    const el = mount({ crop: '', 'list-type': 'picture-card', accept: 'image/*' })
+    pick(el, [makeFile('a.png', 'image/png')])
+    // happy-dom 下 Image 不解码（img.onload 不触发）：confirm 必须依然走完导出入列
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.crop-ok')!.click()
+    await flush()
+    expect(el.files.length).toBe(1)
+  })
+})
+
+describe('crop 纯函数', () => {
+  it('resolveCropAspect："1:1"/"16:9" → 宽高比；free/缺失/非法 → null（自由比例）', async () => {
+    const { resolveCropAspect } = await import('./oas-upload.js')
+    expect(resolveCropAspect('1:1')).toBe(1)
+    expect(resolveCropAspect('16:9')).toBeCloseTo(16 / 9, 12)
+    expect(resolveCropAspect(' 4 : 3 ')).toBeCloseTo(4 / 3, 12)
+    expect(resolveCropAspect('free')).toBe(null)
+    expect(resolveCropAspect('')).toBe(null)
+    expect(resolveCropAspect(null)).toBe(null)
+    expect(resolveCropAspect('abc')).toBe(null)
+    expect(resolveCropAspect('1:0')).toBe(null)
+    expect(resolveCropAspect('0:1')).toBe(null)
+    expect(resolveCropAspect('-1:2')).toBe(null)
+    expect(resolveCropAspect('16')).toBe(null)
+  })
+
+  it('cropFileName：扩展名跟随导出 MIME，基名保留（含无扩展名兜底）', async () => {
+    const { cropFileName } = await import('./oas-upload.js')
+    expect(cropFileName('photo.png', 'image/png')).toBe('photo.png')
+    expect(cropFileName('photo.gif', 'image/png')).toBe('photo.png')
+    expect(cropFileName('photo.jpeg', 'image/jpeg')).toBe('photo.jpg')
+    expect(cropFileName('photo.webp', 'image/webp')).toBe('photo.webp')
+    expect(cropFileName('noext', 'image/jpeg')).toBe('noext.jpg')
+    expect(cropFileName('.png', 'image/png')).toBe('image.png')
+  })
+})

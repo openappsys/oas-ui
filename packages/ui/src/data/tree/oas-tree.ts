@@ -304,6 +304,31 @@ const STYLE = `
 .empty[hidden] {
   display: none;
 }
+/* ===== check-all：顶部整树全选项行（三态 indeterminate） ===== */
+.check-all {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-1) var(--oas-space-2);
+  border-bottom: 1px solid var(--oas-color-border);
+  margin-bottom: var(--oas-space-1);
+}
+.check-all[hidden] {
+  display: none;
+}
+.check-all.disabled {
+  opacity: 0.55;
+}
+.check-all-check {
+  accent-color: var(--oas-color-primary);
+  margin: 0;
+  flex-shrink: 0;
+}
+.check-all-label {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  user-select: none;
+}
 ${ROW_STYLE}
 `
 
@@ -424,6 +449,9 @@ export class OASTree extends OASElement {
       'size',
       'block-node',
       'selectable',
+      // check-all：顶部整树全选项行（三态 indeterminate）；check-all-label 覆盖缺省文案
+      'check-all',
+      'check-all-label',
       // dir：全局约定属性（不进 API 表），运行时切方向即时重判定
       'dir',
     ]
@@ -494,6 +522,10 @@ export class OASTree extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
+      <div class="check-all" part="check-all" hidden>
+        <input type="checkbox" class="check-all-check" part="check-all-check" />
+        <span class="check-all-label" part="check-all-label"></span>
+      </div>
       <div class="tree" part="tree" role="tree" tabindex="-1"></div>
       <oas-virtual-list part="virtual" hidden></oas-virtual-list>
       <div class="empty" part="empty" hidden></div>
@@ -559,6 +591,9 @@ export class OASTree extends OASElement {
     }
     this.addEventListener('focusin', this.onTreeFocusIn)
     this.addEventListener('focusout', this.onTreeFocusOut)
+    // check-all：顶部全选框切换整树勾选（checkbox 在模板内，重连后 bind 重绑）
+    const checkAllBox = this.shadow.querySelector<HTMLInputElement>('.check-all-check')
+    checkAllBox?.addEventListener('change', () => this.setAllChecked(checkAllBox.checked))
     // 双击进重命名：capture 相位先于行点击处理器判定（首击选中重建行 → 原生 dblclick 不可靠）
     this.addEventListener('click', this.onRenameClickCapture, true)
     this.onCleanup(() => {
@@ -795,6 +830,7 @@ export class OASTree extends OASElement {
       }
     }
     this.visible = this.visibleRows()
+    this.syncCheckAll()
     // 编辑行从可见集消失（数据/过滤变化）→ 静默退出编辑，防悬挂草稿态
     if (this.rename && !this.visible.some((r) => this.acc.idOf(r.node) === this.rename!.key)) {
       this.rename = null
@@ -1041,6 +1077,52 @@ export class OASTree extends OASElement {
     this.setAttribute('checked', JSON.stringify(values))
     // 翻转后该节点自身在闭包集合中的最终态（级联下勾选父/子均收敛，直接读集合成员）
     this.emit('check', { key: id, checked: checked.has(id) })
+  }
+
+  // ---------- check-all（整树全选/取消，三态 indeterminate） ----------
+
+  /** 可勾选节点 key 集合（排除 disabled / disableCheckbox 的 inert 节点） */
+  private checkableKeys(): string[] {
+    const out: string[] = []
+    for (const row of this.model.rows) {
+      if (this.nodeCheckable(row.node)) out.push(this.acc.idOf(row.node))
+    }
+    return out
+  }
+
+  /** 顶部全选项行状态同步：显隐 / 文案 / 三态（checked / indeterminate）/ 禁用 */
+  private syncCheckAll(): void {
+    const row = this.shadow.querySelector<HTMLElement>('.check-all')
+    if (!row) return
+    const on = this.hasAttr('check-all') && this.hasAttr('checkable')
+    row.hidden = !on
+    if (!on) return
+    const box = row.querySelector<HTMLInputElement>('.check-all-check')
+    const label = row.querySelector<HTMLElement>('.check-all-label')
+    if (!box || !label) return
+    const text = this.getAttr('check-all-label', '') || this.t('table.selectAll')
+    label.textContent = text
+    box.setAttribute('aria-label', text)
+    const keys = this.checkableKeys()
+    const checked = this.internalChecked()
+    const all = keys.length > 0 && keys.every((k) => checked.has(k))
+    const some = keys.some((k) => checked.has(k))
+    box.checked = all
+    box.indeterminate = some && !all
+    const disabled = this.isTreeDisabled() || keys.length === 0
+    box.disabled = disabled
+    row.classList.toggle('disabled', disabled)
+  }
+
+  /** 整树全选/取消：全选=全部可勾选节点进闭包；取消=清空（保留树外受控值） */
+  private setAllChecked(on: boolean): void {
+    if (this.isTreeDisabled()) return
+    const ctx = { model: this.model, acc: this.acc }
+    const checked = on ? closureFromValues(ctx, this.checkableKeys()) : new Set<string>()
+    const controlled = parseIdList(this.getAttr('checked', ''))
+    const values = applyCheckStrategy(ctx, checked, this.checkStrictly() ? 'all' : this.checkStrategy(), controlled)
+    this.setAttribute('checked', JSON.stringify(values))
+    this.emit('check-all', { checked: on, values })
   }
 
   /** 展开/收起切换（toggle 按钮、expand-trigger='node'、键盘 →/← 共用入口） */

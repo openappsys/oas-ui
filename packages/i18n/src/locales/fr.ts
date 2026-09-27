@@ -11,6 +11,8 @@ export const fr: LocaleMessages = {
   'modal.close': 'Fermer',
   'modal.ok': 'OK',
   'modal.cancel': 'Annuler',
+  'modal.maximize': 'Agrandir',
+  'modal.restore': 'Restaurer',
   // confirm (boîte de confirmation impérative)
   'confirm.ok': 'OK',
   'confirm.cancel': 'Annuler',
@@ -139,6 +141,9 @@ export const fr: LocaleMessages = {
   'pagination.more': 'Plus',
   // table (tableau)
   'table.selectAll': 'Tout sélectionner',
+  'table.exportCsv': 'Exporter en CSV',
+  'table.exportExcel': 'Exporter en Excel',
+  'table.rowDragHandle': 'Glisser pour réordonner',
   'table.loading': 'Chargement…',
   'table.empty': 'Aucune donnée',
   'table.selectRow': 'Sélectionner la ligne {key}',

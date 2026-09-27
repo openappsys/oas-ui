@@ -120,6 +120,16 @@ datetime 选日期与时分秒后点「确定」提交；datetimerange 双月 + 
 
 预设较多时可用 `shortcuts-position="left"` 将快捷栏改为面板左侧纵栏。
 
+## 时区（timezone）
+
+<DemoBlock title="timezone 时区锚点：纽约 vs 本地">
+  <oas-date-picker id="date-picker-timezone-ny" timezone="America/New_York" placeholder="纽约时区：点开看「今天」" style="margin-inline-end: var(--oas-space-4)"></oas-date-picker>
+  <oas-date-picker id="date-picker-timezone-local" placeholder="本地时区：点开看「今天」"></oas-date-picker>
+  <span id="date-picker-timezone-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+`timezone` 接受 IANA 时区名（如 `America/New_York`）或 `UTC`，缺省 / 非法值回落宿主本地时区。它只改变「何时算今天」与由此派生的默认值——面板中的「今天」高亮、「今天」快捷预设、`datetime` / `datetimerange` 的默认时刻推导都按指定时区的墙钟解释；`value` 契约（`yyyy-MM-dd` / ISO 时刻墙钟串）不变。打开左例面板可见「今天」外圈高亮落在纽约的当天，右例落在本地当天；下方对照行给出两个时区当前的日期。
+
 ## 禁用日期
 
 <DemoBlock title="禁用过去日期（disabled-date）">
@@ -288,6 +298,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `show-week-number` | 显示 ISO 周号列（`type=week` 自带） | `boolean` | — |
 | `size` | 尺寸档：`small` / `medium` / `large`（就近读取 config-provider 注入） | `string` | `medium` |
 | `status` | 校验态：`success` / `warning` / `error`（`error` 联动 `aria-invalid`） | `string` | — |
+| `timezone` | 时区锚点：IANA 时区名（如 America/New_York）或 UTC；缺省/非法回落宿主本地。「今天」高亮、快捷预设与默认时刻推导按该时区墙钟解析，value 契约不变 | `string` | — |
 | `type` | 类型：`date` / `daterange` / `month` / `monthrange` / `year` / `yearrange` / `datetime` / `datetimerange` / `week` / `quarter` | `string` | `date` |
 | `unlink-panels` | 范围双月各自独立翻页（默认联动） | `boolean` | — |
 | `value` | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | `string` | — |
@@ -399,5 +410,16 @@ onMounted(() => {
       cell.appendChild(dot)
     }
   })
+
+  // 时区对照：把两个时区当前的日期写进对照行（与组件面板「今天」高亮同源，参照用）
+  const tzOut = document.getElementById('date-picker-timezone-output')
+  if (tzOut) {
+    const dateOf = (tz) => {
+      const opts = { year: 'numeric', month: '2-digit', day: '2-digit' }
+      if (tz) opts.timeZone = tz
+      return new Intl.DateTimeFormat('en-CA', opts).format(new Date())
+    }
+    tzOut.textContent = `今日：纽约 ${dateOf('America/New_York')} ／ 本地 ${dateOf(null)}`
+  }
 })
 </script>

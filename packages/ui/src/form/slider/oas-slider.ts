@@ -37,21 +37,18 @@ function clampNum(v: number, min: number, max: number): number {
   return Math.min(Math.max(v, min), max)
 }
 
-/** 解析 range 模式 value：JSON 数组 `[lo, hi]` 或逗号分隔 `"lo,hi"`，非法返回 null */
-function parseRangeValue(raw: string): [number, number] | null {
+/** 解析多把手 value：JSON 数组 `[a, b, c]` 或逗号分隔 `"a,b,c"`（长度 ≥2），非法返回 null */
+function parseValueArray(raw: string): number[] | null {
+  if (!raw.trim()) return null
+  let parsed: unknown
   try {
-    const j = JSON.parse(raw)
-    if (Array.isArray(j) && j.length === 2 && j.every((n) => Number.isFinite(n))) {
-      return [Number(j[0]), Number(j[1])]
-    }
+    parsed = JSON.parse(raw)
   } catch {
-    /* 不是 JSON，走逗号分隔 */
+    parsed = raw.split(',').map((s) => Number(s.trim()))
   }
-  const parts = raw.split(',').map((s) => Number(s.trim()))
-  if (parts.length === 2 && parts.every((n) => Number.isFinite(n))) {
-    return [parts[0]!, parts[1]!]
-  }
-  return null
+  if (!Array.isArray(parsed) || parsed.length < 2) return null
+  if (!parsed.every((n) => typeof n === 'number' && Number.isFinite(n))) return null
+  return parsed as number[]
 }
 
 const STYLE = `
@@ -166,6 +163,15 @@ input[type="range"] {
 :host([data-range]) input[data-role='range-max'] {
   position: absolute;
   inset: 0;
+}
+/* 多滑块泛化（N≥2）：全部 input 叠层定位共享轨道盒；单值保持正常流 */
+:host([data-multi]) input[type='range'] {
+  position: absolute;
+  inset: 0;
+}
+.track-inputs,
+.thumb-overlays {
+  display: contents;
 }
 :host([data-readonly]) input[type="range"] {
   cursor: default;
@@ -316,6 +322,10 @@ input:disabled {
 :host([data-focused='value']) .custom-thumb[data-thumb='value'],
 :host([data-focused='min']) .custom-thumb[data-thumb='min'],
 :host([data-focused='max']) .custom-thumb[data-thumb='max'] {
+  box-shadow: var(--oas-focus-ring);
+}
+/* 多滑块（N>2）：焦点环标记在具体 overlay 上（data-focused 属性由 JS 逐把手同步） */
+.custom-thumb[data-focused='true'] {
   box-shadow: var(--oas-focus-ring);
 }
 .thumb-content {
@@ -501,15 +511,36 @@ export class OASSlider extends OASElement {
       'readonly',
       'large-step',
       'label',
+      'labels',
+      'label-1',
+      'label-2',
+      'label-3',
+      'label-4',
+      'label-5',
+      'label-6',
+      'label-7',
+      'label-8',
     ]
   }
 
-  private input: HTMLInputElement | null = null
-  private minInput: HTMLInputElement | null = null
-  private maxInput: HTMLInputElement | null = null
-  private numInput: HTMLInputElement | null = null
-  private numMinInput: HTMLInputElement | null = null
-  private numMaxInput: HTMLInputElement | null = null
+  /** 动态把手（原生 range input）：索引即把手序号，N 由 value 数组长度/range 决定 */
+  private thumbs: HTMLInputElement[] = []
+  /** 每个把手的自定义视觉层（.custom-thumb，含值气泡） */
+  private overlays: HTMLElement[] = []
+  /** show-input 数值输入框（与把手一一对应） */
+  private numInputs: HTMLInputElement[] = []
+  /** 数值输入框之间的分隔符（多值时显示） */
+  private numSeps: HTMLSpanElement[] = []
+  private wrap: HTMLElement | null = null
+  /** 本次渲染生效的把手数（事件回调里判定索引用） */
+  private thumbCountCache = 1
+  /**
+   * 兼容占位（隐藏、不可交互、非把手）：保持历史契约里「非当前模式的槽位以 hidden 存在于 DOM」——
+   * range 模式仍能查到隐藏的单值 `[data-role="range"]`/`[data-role="num"]`。位于真实把手之后，
+   * 因此单值模式下 `querySelector('[data-role="range"]')` 命中的仍是真实把手。
+   */
+  private legacyRangeSlot: HTMLInputElement | null = null
+  private legacyNumSlot: HTMLInputElement | null = null
   /** 上次渲染的刻度签名（min/max + step + reverse + vertical + 条目），用于增量重建判断 */
   private marksKey = ''
   private debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -548,110 +579,23 @@ export class OASSlider extends OASElement {
       <div class="wrap" part="wrap">
         <div class="slider-col" part="slider">
           <div class="track-wrap" part="track-wrap">
-            <input part="track" type="range" data-role="range" />
-            <input part="track" type="range" data-role="range-min" hidden />
-            <input part="track" type="range" data-role="range-max" hidden />
+            <div class="track-inputs" part="track-inputs"></div>
             <div class="fill" part="fill"></div>
-            <div class="custom-thumb" part="thumb" data-thumb="value" hidden>
-              <div class="thumb-content"></div>
-              <div class="thumb-tip" part="tip"></div>
-            </div>
-            <div class="custom-thumb" part="thumb" data-thumb="min" hidden>
-              <div class="thumb-content"></div>
-              <div class="thumb-tip" part="tip"></div>
-            </div>
-            <div class="custom-thumb" part="thumb" data-thumb="max" hidden>
-              <div class="thumb-content"></div>
-              <div class="thumb-tip" part="tip"></div>
-            </div>
+            <div class="thumb-overlays" part="thumb-overlays"></div>
           </div>
           <div class="marks" part="marks" hidden></div>
         </div>
-        <div class="inputs" part="inputs" hidden>
-          <input part="input" type="number" data-role="num" />
-          <input part="input" type="number" data-role="num-min" hidden />
-          <span class="input-sep" part="input-sep">–</span>
-          <input part="input" type="number" data-role="num-max" hidden />
-        </div>
+        <div class="inputs" part="inputs" hidden></div>
       </div>
     `
   }
 
-  /** 缓存节点引用 + 绑定拖动/输入事件（render 与水合路径共用） */
+  /** 缓存节点引用 + 绑定轨道级事件（render 与水合路径共用；把手级监听在创建时挂） */
   private bind(): void {
-    this.input = this.shadow.querySelector<HTMLInputElement>('[data-role="range"]')
-    this.minInput = this.shadow.querySelector<HTMLInputElement>('[data-role="range-min"]')
-    this.maxInput = this.shadow.querySelector<HTMLInputElement>('[data-role="range-max"]')
-    this.numInput = this.shadow.querySelector<HTMLInputElement>('[data-role="num"]')
-    this.numMinInput = this.shadow.querySelector<HTMLInputElement>('[data-role="num-min"]')
-    this.numMaxInput = this.shadow.querySelector<HTMLInputElement>('[data-role="num-max"]')
-    const wrap = this.shadow.querySelector<HTMLElement>('.track-wrap')
+    const wrap = this.shadow.querySelector<HTMLElement>('[part="track-wrap"]')
+    this.wrap = wrap
 
-    // 单值滑块
-    this.input?.addEventListener('input', () => {
-      this.dragging = true
-      this.maybeSnapInput(this.input)
-      this.syncValueAttr()
-      this.syncOverlay()
-      this.syncNumInputs()
-      this.syncMarkPassed()
-      this.emit('input', { value: Number(this.input!.value) })
-    })
-    this.input?.addEventListener('change', () => {
-      this.dragging = false
-      this.syncValueAttr()
-      this.syncOverlay()
-      this.syncNumInputs()
-      this.syncMarkPassed()
-      this.emit('change', { value: Number(this.input!.value) })
-    })
-
-    // 范围模式双滑块：拖动互相钳制（lo ≤ hi），事件 detail 为 [lo, hi]
-    for (const r of [this.minInput, this.maxInput]) {
-      if (!r) continue
-      r.addEventListener('input', () => {
-        this.dragging = true
-        this.maybeSnapInput(r)
-        this.clampRangeInputs()
-        this.syncValueAttr()
-        this.syncOverlay()
-        this.syncNumInputs()
-        this.syncMarkPassed()
-        this.emit('input', { value: this.currentRange() })
-      })
-      r.addEventListener('change', () => {
-        this.dragging = false
-        this.maybeSnapInput(r)
-        this.clampRangeInputs()
-        this.syncValueAttr()
-        this.syncOverlay()
-        this.syncNumInputs()
-        this.syncMarkPassed()
-        this.emit('change', { value: this.currentRange() })
-      })
-    }
-
-    // 键盘：只读拦截值键；大步进（Shift+方向 / PageUp / PageDown）与 step="mark" 刻度跳档统一接管
-    const onKeydown = (e: Event) => this.handleKeydown(e as KeyboardEvent)
-    for (const r of [this.input, this.minInput, this.maxInput]) {
-      r?.addEventListener('keydown', onKeydown)
-    }
-
-    // 数值输入框：输入防抖提交（oas-input），Enter/失焦立即提交（oas-change）
-    const bindNum = (input: HTMLInputElement | null, role: 'num' | 'num-min' | 'num-max'): void => {
-      if (!input) return
-      input.addEventListener('input', () => this.scheduleCommit(role))
-      input.addEventListener('change', () => {
-        this.cancelDebounce()
-        this.commitFromNumber(role, true)
-      })
-    }
-    bindNum(this.numInput, 'num')
-    bindNum(this.numMinInput, 'num-min')
-    bindNum(this.numMaxInput, 'num-max')
-
-    // 范围模式：指针按下时按「离哪个 thumb 近」提升哪个输入的 z-index（原生拖动接管）。
-    // 只读态拦截按下（不可拖动，但保持可聚焦）
+    // 轨道指针按下：只读拦截；垂直模式 pointer 接管；多把手按「离哪个拇指近」提升该 input 的 z-index
     wrap?.addEventListener('pointerdown', (e) => {
       if (this.hasAttr('readonly')) {
         e.preventDefault()
@@ -663,44 +607,36 @@ export class OASSlider extends OASElement {
         this.beginVerticalDrag(e as PointerEvent, wrap)
         return
       }
-      if (!this.hasAttr('range') || !this.minInput || !this.maxInput) return
-      const [lo, hi] = this.currentRange()
+      if (!this.isMulti() || !wrap) return
+      const rect = wrap.getBoundingClientRect()
+      if (!rect.width) return
       const min = Number(this.getAttr('min', '0'))
       const max = Number(this.getAttr('max', '100'))
-      const rect = wrap.getBoundingClientRect()
-      const vertical = this.hasAttr('vertical')
-      const pct = vertical
-        ? rect.height
-          ? ((rect.bottom - (e as PointerEvent).clientY) / rect.height) * 100
-          : 50
-        : rect.width
-          ? ((e.clientX - rect.left) / rect.width) * 100
-          : 50
+      const pct = ((e as PointerEvent).clientX - rect.left) / rect.width
       const reverse = this.horizontalReverse()
-      const span = max - min || 1
-      const valueAt = min + (reverse ? 100 - pct : pct) * (span / 100)
-      const mid = (lo + hi) / 2
-      const target = valueAt <= mid ? this.minInput : this.maxInput
-      this.minInput.style.zIndex = target === this.minInput ? '2' : '1'
-      this.maxInput.style.zIndex = target === this.maxInput ? '2' : '1'
+      const valueAt = min + (reverse ? 1 - pct : pct) * (max - min)
+      this.raiseThumb(this.nearestThumbIndex(valueAt))
     })
-    // 键盘/焦点：聚焦哪个滑块置顶 + 焦点环映射到自定义滑块（聚焦时显示值气泡）
+
+    // 键盘/焦点：聚焦哪个把手置顶 + 焦点环映射到自定义视觉层（聚焦时显示值气泡）
     wrap?.addEventListener('focusin', (e) => {
-      const role = (e.target as HTMLElement).dataset.role ?? ''
-      const map: Record<string, string> = { range: 'value', 'range-min': 'min', 'range-max': 'max' }
-      if (map[role]) this.setAttribute('data-focused', map[role]!)
-      else this.removeAttribute('data-focused')
-      if (role === 'range-min' && this.minInput) {
-        this.minInput.style.zIndex = '2'
-        if (this.maxInput) this.maxInput.style.zIndex = '1'
-      } else if (role === 'range-max' && this.maxInput) {
-        this.maxInput.style.zIndex = '2'
-        if (this.minInput) this.minInput.style.zIndex = '1'
+      const i = this.thumbs.indexOf(e.target as HTMLInputElement)
+      if (i < 0 || i >= this.thumbCountCache) {
+        this.removeAttribute('data-focused')
+        this.setOverlayFocus(-1)
+        this.syncOverlay()
+        return
       }
+      const n = this.thumbCountCache
+      const key = n === 1 ? 'value' : n === 2 ? (i === 0 ? 'min' : 'max') : String(i)
+      this.setAttribute('data-focused', key)
+      this.setOverlayFocus(i)
+      if (this.isMulti()) this.raiseThumb(i)
       this.syncOverlay()
     })
     wrap?.addEventListener('focusout', () => {
       this.removeAttribute('data-focused')
+      this.setOverlayFocus(-1)
       this.syncOverlay()
     })
 
@@ -718,6 +654,7 @@ export class OASSlider extends OASElement {
     }
     // 防抖计时器随断开清理（observer 随元素同生命周期，断开不失效）
     this.onCleanup(() => this.cancelDebounce())
+    this.ensureLegacySlots()
   }
 
   protected override render(): void {
@@ -726,16 +663,22 @@ export class OASSlider extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（range 输入存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（轨道容器存在）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('input[type="range"]')) return false
+    if (!this.shadow.querySelector('[part="track-wrap"]')) return false
     this.bind()
     return true
   }
 
   protected override update(): void {
-    if (!this.input || !this.minInput || !this.maxInput) return
-    const isRange = this.hasAttr('range')
+    const wrap = this.shadow.querySelector<HTMLElement>('[part="track-wrap"]')
+    this.wrap = wrap
+    if (!wrap) return
+    const n = this.thumbCount()
+    this.thumbCountCache = n
+    this.ensureThumbElements(n)
+    this.ensureNumElements(n)
+
     const showInput = this.hasAttr('show-input')
     const reverse = this.hasAttr('reverse')
     const vertical = this.hasAttr('vertical')
@@ -744,9 +687,10 @@ export class OASSlider extends OASElement {
     const disabled = this.injectDisabled()
     // 镜像最终禁用态到宿主 data-disabled（供 :host([data-disabled]) 样式消费，覆盖注入场景）
     this.toggleAttribute('data-disabled', disabled)
-    const min = this.getAttr('min', '0')
-    const max = this.getAttr('max', '100')
+    const min = Number(this.getAttr('min', '0'))
+    const max = Number(this.getAttr('max', '100'))
     const markMode = this.isMarkStep()
+    const multi = n >= 2
     // 原生 step：mark 模式给 any（吸附由组件接管），无 marks 时回退 1
     const step = this.getAttr('step', '1') === 'mark' ? (markMode ? 'any' : '1') : this.getAttr('step', '1')
     // 方向：horizontal 有效反转（reverse 属性 XOR RTL 书写方向）时 min 在右（dir=rtl 由原生 range 镜像）；
@@ -756,34 +700,29 @@ export class OASSlider extends OASElement {
     // 宿主状态镜像（data-* 非 observed 属性，写入不触发 attributeChangedCallback 循环）
     this.toggleAttribute('data-vertical', vertical)
     this.toggleAttribute('data-readonly', readonly)
-    this.toggleAttribute('data-range', isRange)
+    this.toggleAttribute('data-range', this.hasAttr('range'))
+    this.toggleAttribute('data-multi', multi)
     this.setAttribute('data-size', this.normalizeSize())
     this.setAttribute('data-tooltip-pos', this.tooltipPosition(vertical))
     this.applyHostVar('color', '--oas-slider-color')
     this.applyHostVar('track-color', '--oas-slider-track')
 
-    // 结构显隐矩阵（模板稳定，仅切 hidden）
-    this.input.hidden = isRange
-    this.minInput.hidden = !isRange
-    this.maxInput.hidden = !isRange
-    const inputsEl = this.shadow.querySelector<HTMLElement>('[part="inputs"]')
-    if (inputsEl) inputsEl.hidden = !showInput
-    if (this.numInput) this.numInput.hidden = !showInput || isRange
-    if (this.numMinInput) this.numMinInput.hidden = !showInput || !isRange
-    if (this.numMaxInput) this.numMaxInput.hidden = !showInput || !isRange
-    const sep = this.shadow.querySelector<HTMLElement>('.input-sep')
-    if (sep) sep.hidden = !showInput || !isRange
+    // 受控值：多把手为数组（排序/夹取/刻度吸附），单把手沿用 value 字符串
+    const values = multi ? this.orderedValues(n, min, max, markMode) : null
 
-    // 原生属性透传 + 方向 + 只读 + ARIA
-    for (const r of [this.input, this.minInput, this.maxInput]) {
-      r.min = min
-      r.max = max
+    for (let i = 0; i < this.thumbs.length; i++) {
+      const r = this.thumbs[i]!
+      const active = i < n
+      r.hidden = !active
+      if (!active) continue
+      r.dataset.role = this.roleFor(i, n)
+      r.min = String(min)
+      r.max = String(max)
       r.step = step
       r.disabled = disabled
       r.readOnly = readonly
       r.setAttribute('dir', dir)
       r.setAttribute('role', 'slider')
-      r.setAttribute('aria-valuenow', r.value)
       if (vertical) {
         // orient 属性兼容 Firefox 竖直渲染；writing-mode 走 CSS（现代方案）
         r.setAttribute('orient', 'vertical')
@@ -794,52 +733,289 @@ export class OASSlider extends OASElement {
       }
       if (readonly) r.setAttribute('aria-readonly', 'true')
       else r.removeAttribute('aria-readonly')
-    }
-    // 可访问名（对齐 input label 契约）：label 属性优先，缺省回落 locale 默认；
-    // range 的 min/max 在 label 后组合语义后缀，保持可区分
-    const label = this.getAttr('label', '')
-    const valueLabel = label || this.t('slider.valueLabel')
-    const minLabel = label ? `${label} ${this.t('slider.minLabel')}` : this.t('slider.minLabel')
-    const maxLabel = label ? `${label} ${this.t('slider.maxLabel')}` : this.t('slider.maxLabel')
-    this.input.setAttribute('aria-label', valueLabel)
-    this.minInput.setAttribute('aria-label', minLabel)
-    this.maxInput.setAttribute('aria-label', maxLabel)
-    if (this.numInput) this.numInput.setAttribute('aria-label', valueLabel)
-    if (this.numMinInput) this.numMinInput.setAttribute('aria-label', minLabel)
-    if (this.numMaxInput) this.numMaxInput.setAttribute('aria-label', maxLabel)
-    for (const n of [this.numInput, this.numMinInput, this.numMaxInput]) {
-      if (!n) continue
-      n.disabled = disabled
-      n.readOnly = readonly
+      r.setAttribute('aria-label', this.labelFor(i, n))
+      if (values) {
+        r.value = String(values[i]!)
+      } else {
+        const raw = this.getAttr('value', '')
+        const shown = raw === '' ? '' : markMode ? String(this.snapToMark(Number(raw))) : raw
+        if (r.value !== shown) r.value = shown
+      }
+      r.setAttribute('aria-valuenow', r.value)
     }
 
-    // 受控值同步（attribute 为唯一权威源，内部交互不改 attribute 保持受控语义）
-    if (isRange) {
-      let [lo, hi] = this.rangeValue()
-      if (markMode) {
-        lo = this.snapToMark(lo)
-        hi = this.snapToMark(hi)
-      }
-      this.minInput.value = String(lo)
-      this.maxInput.value = String(hi)
-      if (this.numMinInput) this.numMinInput.value = String(lo)
-      if (this.numMaxInput) this.numMaxInput.value = String(hi)
-    } else {
-      const value = this.getAttr('value', '')
-      const shown = value === '' ? '' : markMode ? String(this.snapToMark(Number(value))) : value
-      if (this.input.value !== shown) this.input.value = shown
-      if (this.numInput) this.numInput.value = String(Number(this.input.value))
+    // show-input 数值输入框（一一对应把手）
+    const numValues = multi ? this.currentValues() : null
+    for (let i = 0; i < this.numInputs.length; i++) {
+      const input = this.numInputs[i]!
+      const active = i < n
+      input.hidden = !showInput || !active
+      if (!active) continue
+      input.dataset.role = this.numRoleFor(i, n)
+      input.disabled = disabled
+      input.readOnly = readonly
+      input.setAttribute('aria-label', this.labelFor(i, n))
+      if (numValues) input.value = String(numValues[i]!)
+      else input.value = String(Number(this.thumbs[0]?.value ?? 0))
+    }
+    const inputsEl = this.shadow.querySelector<HTMLElement>('[part="inputs"]')
+    if (inputsEl) inputsEl.hidden = !showInput
+    for (let i = 0; i < this.numSeps.length; i++) {
+      this.numSeps[i]!.hidden = !showInput || !multi || i >= n - 1
     }
 
     this.syncThumbContent()
     this.syncOverlay()
     this.syncMarks()
+    this.ensureLegacySlots()
   }
 
   /** label 点击聚焦委托：把焦点交给 shadow 内主滑块（配合 oas-form-item 的 label 点击代理） */
   override focus(options?: FocusOptions): void {
-    const target = this.hasAttr('range') ? (this.minInput ?? this.input) : this.input
-    target?.focus(options)
+    this.thumbs[0]?.focus(options)
+  }
+
+  /** 兼容占位：在真实把手/输入框之后追加隐藏、不可聚焦的旧契约槽位（range 模式的单值槽位） */
+  private ensureLegacySlots(): void {
+    const inputs = this.shadow.querySelector<HTMLElement>('[part="track-inputs"]')
+    if (inputs) {
+      if (!this.legacyRangeSlot) {
+        const s = document.createElement('input')
+        s.type = 'range'
+        s.setAttribute('data-role', 'range')
+        s.setAttribute('aria-hidden', 'true')
+        s.tabIndex = -1
+        this.legacyRangeSlot = s
+      }
+      this.legacyRangeSlot.hidden = true
+      inputs.appendChild(this.legacyRangeSlot)
+    }
+    const nums = this.shadow.querySelector<HTMLElement>('[part="inputs"]')
+    if (nums) {
+      if (!this.legacyNumSlot) {
+        const s = document.createElement('input')
+        s.type = 'number'
+        s.setAttribute('data-role', 'num')
+        s.setAttribute('aria-hidden', 'true')
+        s.tabIndex = -1
+        this.legacyNumSlot = s
+      }
+      this.legacyNumSlot.hidden = true
+      nums.appendChild(this.legacyNumSlot)
+    }
+  }
+
+  // ---------- 把手结构（动态 N） ----------
+
+  /** 生效把手数：value 数组长度（≥2）优先；否则 range 属性 → 2；其余 1 */
+  private thumbCount(): number {
+    const arr = parseValueArray(this.getAttr('value', ''))
+    if (arr) return arr.length
+    return this.hasAttr('range') ? 2 : 1
+  }
+
+  private isMulti(): boolean {
+    return this.thumbCountCache >= 2
+  }
+
+  private activeThumbCount(): number {
+    return this.thumbCountCache
+  }
+
+  /** 把手 data-role：单值 range；range 双值 range-min/range-max（既有契约）；N≥3 thumb-<i> */
+  private roleFor(i: number, n: number): string {
+    if (n === 1) return 'range'
+    if (n === 2 && this.hasAttr('range')) return i === 0 ? 'range-min' : 'range-max'
+    return `thumb-${i}`
+  }
+
+  /** 数值输入框 data-role：单值 num；range 双值 num-min/num-max（既有契约）；N≥3 num-<i> */
+  private numRoleFor(i: number, n: number): string {
+    if (n === 1) return 'num'
+    if (n === 2 && this.hasAttr('range')) return i === 0 ? 'num-min' : 'num-max'
+    return `num-${i}`
+  }
+
+  /** 逐把手可访问名：label-<i+1> 属性 > labels JSON 数组 > label 基准（range 双值加最小值/最大值后缀；N≥3 加序号） */
+  private labelFor(i: number, n: number): string {
+    const per = this.getAttr(`label-${i + 1}`, '')
+    if (per !== '') return per
+    const labels = this.parseLabels()
+    if (labels && labels[i] != null && labels[i] !== '') return labels[i]!
+    const base = this.getAttr('label', '')
+    if (n === 1) return base || this.t('slider.valueLabel')
+    if (n === 2) {
+      if (base) return i === 0 ? `${base} ${this.t('slider.minLabel')}` : `${base} ${this.t('slider.maxLabel')}`
+      return i === 0 ? this.t('slider.minLabel') : this.t('slider.maxLabel')
+    }
+    return base ? `${base} ${i + 1}` : `${this.t('slider.valueLabel')} ${i + 1}`
+  }
+
+  /** labels JSON 数组（多把手可访问名），非法/非数组返回 null */
+  private parseLabels(): string[] | null {
+    const raw = this.getAttr('labels', '')
+    if (!raw) return null
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) return parsed as string[]
+    } catch {
+      /* 非法 JSON 视为未配置 */
+    }
+    return null
+  }
+
+  /** 懒创建把手 input + 自定义视觉层（复用已有节点，只增不减；多余把手由 update 隐藏） */
+  private ensureThumbElements(n: number): void {
+    const inputs = this.shadow.querySelector<HTMLElement>('[part="track-inputs"]')
+    const overlays = this.shadow.querySelector<HTMLElement>('[part="thumb-overlays"]')
+    if (!inputs || !overlays) return
+    while (this.thumbs.length < n) {
+      const i = this.thumbs.length
+      const r = document.createElement('input')
+      r.type = 'range'
+      r.setAttribute('part', 'track')
+      r.dataset.role = 'range'
+      r.addEventListener('input', () => this.onThumbInput(i, false))
+      r.addEventListener('change', () => this.onThumbInput(i, true))
+      r.addEventListener('keydown', (e) => this.handleKeydown(e as KeyboardEvent))
+      inputs.appendChild(r)
+      this.thumbs.push(r)
+
+      const ov = document.createElement('div')
+      ov.className = 'custom-thumb'
+      ov.setAttribute('part', 'thumb')
+      ov.setAttribute('data-thumb', 'value')
+      ov.hidden = true
+      const content = document.createElement('div')
+      content.className = 'thumb-content'
+      const tip = document.createElement('div')
+      tip.className = 'thumb-tip'
+      tip.setAttribute('part', 'tip')
+      ov.append(content, tip)
+      overlays.appendChild(ov)
+      this.overlays.push(ov)
+    }
+  }
+
+  /** 懒创建数值输入框 + 分隔符（一一对应把手） */
+  private ensureNumElements(n: number): void {
+    const box = this.shadow.querySelector<HTMLElement>('[part="inputs"]')
+    if (!box) return
+    while (this.numInputs.length < n) {
+      const i = this.numInputs.length
+      if (i > 0) {
+        const sep = document.createElement('span')
+        sep.className = 'input-sep'
+        sep.setAttribute('part', 'input-sep')
+        sep.textContent = '–'
+        box.appendChild(sep)
+        this.numSeps.push(sep)
+      }
+      const input = document.createElement('input')
+      input.type = 'number'
+      input.setAttribute('part', 'input')
+      input.dataset.role = 'num'
+      input.addEventListener('input', () => this.scheduleCommit(i))
+      input.addEventListener('change', () => {
+        this.cancelDebounce()
+        this.commitFromNumber(i, true)
+      })
+      box.appendChild(input)
+      this.numInputs.push(input)
+    }
+  }
+
+  /** 受控值解析（多把手）：数组 → 逐个刻度吸附/夹取 → 升序 */
+  private orderedValues(n: number, min: number, max: number, markMode: boolean): number[] {
+    const raw = parseValueArray(this.getAttr('value', ''))
+    const base = raw && raw.length > 0 ? raw : this.hasAttr('range') ? [min, max] : [min, max]
+    const out: number[] = []
+    for (let i = 0; i < n; i++) {
+      let v = base[i] ?? (i === 0 ? min : max)
+      if (!Number.isFinite(v)) v = i === 0 ? min : max
+      if (markMode) v = this.snapToMark(v)
+      out.push(clampNum(v, min, max))
+    }
+    out.sort((a, b) => a - b)
+    return out
+  }
+
+  /** 读取各把手实时值（拖动态，不读属性），夹取到 [min,max] */
+  private currentValues(): number[] {
+    const n = this.activeThumbCount()
+    const min = Number(this.getAttr('min', '0'))
+    const max = Number(this.getAttr('max', '100'))
+    const out: number[] = []
+    for (let i = 0; i < n; i++) {
+      out.push(clampNum(Number(this.thumbs[i]?.value ?? min), min, max))
+    }
+    return out
+  }
+
+  /** 事件 detail 值：单把手为数值，多把手为数组 */
+  private emitValue(): number | number[] {
+    if (!this.isMulti()) return Number(this.thumbs[0]?.value ?? 0)
+    return this.currentValues()
+  }
+
+  /** 把手 input/change 统一链路（拖动吸附 → 排序约束 → 全量同步 → 派发） */
+  private onThumbInput(i: number, commit: boolean): void {
+    if (i >= this.thumbCountCache) return
+    this.dragging = !commit
+    this.maybeSnapInput(this.thumbs[i] ?? null)
+    this.enforceOrder(i)
+    this.syncValueAttr()
+    this.syncOverlay()
+    this.syncNumInputs()
+    this.syncMarkPassed()
+    this.emit(commit ? 'change' : 'input', { value: this.emitValue() })
+  }
+
+  /** 拖动排序约束：单把手无约束；range 双值交换保持 lo ≤ hi（既有契约）；N≥3 夹到相邻把手之间防穿越 */
+  private enforceOrder(i: number): void {
+    const n = this.activeThumbCount()
+    if (n < 2) return
+    if (n === 2) {
+      this.clampRangeInputs()
+      return
+    }
+    const min = Number(this.getAttr('min', '0'))
+    const max = Number(this.getAttr('max', '100'))
+    const target = this.thumbs[i]
+    if (!target) return
+    const lo = i > 0 ? clampNum(Number(this.thumbs[i - 1]?.value ?? min), min, max) : min
+    const hi = i < n - 1 ? clampNum(Number(this.thumbs[i + 1]?.value ?? max), min, max) : max
+    target.value = String(clampNum(Number(target.value) || 0, lo, hi))
+  }
+
+  /** 提升指定把手 input 的 z-index（多把手叠层时抢拖动/命中） */
+  private raiseThumb(idx: number): void {
+    for (let i = 0; i < this.thumbs.length; i++) {
+      this.thumbs[i]!.style.zIndex = i === idx ? '2' : '1'
+    }
+  }
+
+  /** 距给定值最近的把手索引 */
+  private nearestThumbIndex(v: number): number {
+    const vals = this.currentValues()
+    let best = 0
+    let bestD = Infinity
+    for (let i = 0; i < vals.length; i++) {
+      const d = Math.abs(vals[i]! - v)
+      if (d < bestD) {
+        bestD = d
+        best = i
+      }
+    }
+    return best
+  }
+
+  /** 焦点环标记到指定自定义视觉层（-1 清除） */
+  private setOverlayFocus(idx: number): void {
+    for (let i = 0; i < this.overlays.length; i++) {
+      if (i === idx) this.overlays[i]!.setAttribute('data-focused', 'true')
+      else this.overlays[i]!.removeAttribute('data-focused')
+    }
   }
 
   // ---------- 属性归一 / 格式化 ----------
@@ -1004,19 +1180,16 @@ export class OASSlider extends OASElement {
   private applyKeyboardValue(input: HTMLInputElement, next: number): void {
     const min = Number(this.getAttr('min', '0'))
     const max = Number(this.getAttr('max', '100'))
+    const i = this.thumbs.indexOf(input)
     input.value = String(clampNum(next, min, max))
-    if (this.hasAttr('range')) this.clampRangeInputs()
+    if (i >= 0) this.enforceOrder(i)
     this.syncValueAttr()
     this.syncOverlay()
     this.syncNumInputs()
     this.syncMarkPassed()
-    if (this.hasAttr('range')) {
-      this.emit('input', { value: this.currentRange() })
-      this.emit('change', { value: this.currentRange() })
-    } else {
-      this.emit('input', { value: Number(this.input?.value ?? 0) })
-      this.emit('change', { value: Number(this.input?.value ?? 0) })
-    }
+    const detail = { value: this.emitValue() }
+    this.emit('input', detail)
+    this.emit('change', detail)
   }
 
   // ---------- 垂直拖动（pointer 接管） ----------
@@ -1031,7 +1204,7 @@ export class OASSlider extends OASElement {
     e.preventDefault()
     this.verticalDragId = e.pointerId
     this.dragging = true
-    const startValue = this.hasAttr('range') ? JSON.stringify(this.currentRange()) : String(this.input?.value ?? '')
+    const startValue = this.isMulti() ? JSON.stringify(this.currentValues()) : String(this.thumbs[0]?.value ?? '')
     try {
       wrap.setPointerCapture(e.pointerId)
     } catch {
@@ -1056,14 +1229,13 @@ export class OASSlider extends OASElement {
         /* 已释放 */
       }
       // 松手提交：与原生 change 同语义（写回受控 value + 派发 oas-change，值未变不派发）
-      const endValue = this.hasAttr('range') ? JSON.stringify(this.currentRange()) : String(this.input?.value ?? '')
+      const endValue = this.isMulti() ? JSON.stringify(this.currentValues()) : String(this.thumbs[0]?.value ?? '')
       this.syncValueAttr()
       this.syncOverlay()
       this.syncNumInputs()
       this.syncMarkPassed()
       if (endValue !== startValue) {
-        if (this.hasAttr('range')) this.emit('change', { value: this.currentRange() })
-        else this.emit('change', { value: Number(this.input?.value ?? 0) })
+        this.emit('change', { value: this.emitValue() })
       }
     }
     wrap.addEventListener('pointermove', move)
@@ -1071,7 +1243,7 @@ export class OASSlider extends OASElement {
     wrap.addEventListener('pointercancel', finish)
   }
 
-  /** 指针位置 → 值（垂直：默认 min 在下、reverse 镜像；范围模式取更近的 thumb 推） */
+  /** 指针位置 → 值（垂直：默认 min 在下、reverse 镜像；多把手取更近的把手推） */
   private applyVerticalPointer(e: PointerEvent, wrap: HTMLElement): void {
     if (!Number.isFinite(e.clientY)) return
     const min = Number(this.getAttr('min', '0'))
@@ -1098,65 +1270,44 @@ export class OASSlider extends OASElement {
     }
   }
 
-  /** 范围垂直拖动目标 thumb：值更接近 lo 推 min、更接近 hi 推 max */
+  /** 多把手垂直拖动目标：值更接近哪个把手推哪个 */
   private verticalDragTarget(raw: number): HTMLInputElement | null {
-    if (this.hasAttr('range')) {
-      if (!this.minInput || !this.maxInput) return null
-      const [lo, hi] = this.currentRange()
-      return Math.abs(raw - lo) <= Math.abs(raw - hi) ? this.minInput : this.maxInput
-    }
-    return this.input
+    const n = this.activeThumbCount()
+    if (n === 0) return null
+    return this.thumbs[this.nearestThumbIndex(raw)] ?? null
   }
 
-  // ---------- range 模式 ----------
+  // ---------- range / 多把手模式 ----------
 
-  /** 解析 range value 属性（JSON 数组或逗号分隔），夹取到 [min, max] 并保证 lo ≤ hi */
-  private rangeValue(): [number, number] {
-    const min = Number(this.getAttr('min', '0'))
-    const max = Number(this.getAttr('max', '100'))
-    let lo = min
-    let hi = max
-    const raw = this.getAttr('value', '')
-    if (raw) {
-      const parsed = parseRangeValue(raw)
-      if (parsed) {
-        lo = parsed[0]
-        hi = parsed[1]
-      }
-    }
-    lo = clampNum(lo, min, max)
-    hi = clampNum(hi, min, max)
-    return lo > hi ? [hi, lo] : [lo, hi]
-  }
-
-  /** 读取当前两个 range 输入的实时值（拖动态，不读属性） */
+  /** 读取当前各把手实时值，保证升序（range 双值交换保持 lo ≤ hi） */
   private currentRange(): [number, number] {
-    const min = Number(this.getAttr('min', '0'))
-    const max = Number(this.getAttr('max', '100'))
-    const lo = this.minInput ? clampNum(Number(this.minInput.value), min, max) : min
-    const hi = this.maxInput ? clampNum(Number(this.maxInput.value), min, max) : max
+    const vals = this.currentValues()
+    const lo = vals[0] ?? Number(this.getAttr('min', '0'))
+    const hi = vals[1] ?? Number(this.getAttr('max', '100'))
     return lo > hi ? [hi, lo] : [lo, hi]
   }
 
   /** 拖动中钳制 lo ≤ hi（避免跨过另一个 thumb） */
   private clampRangeInputs(): void {
-    if (!this.minInput || !this.maxInput) return
+    const minInput = this.thumbs[0]
+    const maxInput = this.thumbs[1]
+    if (!minInput || !maxInput) return
     const min = Number(this.getAttr('min', '0'))
     const max = Number(this.getAttr('max', '100'))
-    let lo = clampNum(Number(this.minInput.value), min, max)
-    let hi = clampNum(Number(this.maxInput.value), min, max)
+    let lo = clampNum(Number(minInput.value), min, max)
+    let hi = clampNum(Number(maxInput.value), min, max)
     if (lo > hi) [lo, hi] = [hi, lo]
-    this.minInput.value = String(lo)
-    this.maxInput.value = String(hi)
+    minInput.value = String(lo)
+    maxInput.value = String(hi)
   }
 
   // ---------- show-input 联动 ----------
 
-  private scheduleCommit(role: 'num' | 'num-min' | 'num-max'): void {
+  private scheduleCommit(i: number): void {
     this.cancelDebounce()
     this.debounceTimer = setTimeout(() => {
       this.debounceTimer = null
-      this.commitFromNumber(role, false)
+      this.commitFromNumber(i, false)
     }, DEBOUNCE_MS)
   }
 
@@ -1167,94 +1318,74 @@ export class OASSlider extends OASElement {
     }
   }
 
-  /** 数值输入提交：夹取范围 → 驱动滑块 → 输入框归一化 → 派发事件 */
-  private commitFromNumber(role: 'num' | 'num-min' | 'num-max', emitChange: boolean): void {
-    const input = role === 'num' ? this.numInput : role === 'num-min' ? this.numMinInput : this.numMaxInput
+  /** 数值输入提交：夹取范围 → 驱动把手 → 输入框归一化 → 派发事件 */
+  private commitFromNumber(i: number, emitChange: boolean): void {
+    const input = this.numInputs[i]
     if (!input) return
     const raw = input.value.trim()
     const v = Number(raw)
     if (raw === '' || !Number.isFinite(v)) {
-      // 非法/空值：还原为当前滑块值（非破坏）
-      const cur =
-        role === 'num-min'
-          ? this.currentRange()[0]
-          : role === 'num-max'
-            ? this.currentRange()[1]
-            : Number(this.input?.value ?? 0)
-      input.value = String(cur)
+      // 非法/空值：还原为当前把手值（非破坏）
+      const cur = this.isMulti() ? this.currentValues()[i] : Number(this.thumbs[0]?.value ?? 0)
+      input.value = String(cur ?? 0)
       return
     }
-    this.applyNumber(role, v)
+    this.applyNumber(i, v)
     this.syncValueAttr()
     this.syncOverlay()
     this.syncMarkPassed()
-    this.emitRangeEvents(emitChange)
+    if (emitChange) this.emit('change', { value: this.emitValue() })
+    else this.emit('input', { value: this.emitValue() })
   }
 
-  /** 把数值写到滑块（范围模式按「推着走」约束：min 越界推 max，反之亦然） */
-  private applyNumber(role: 'num' | 'num-min' | 'num-max', v: number): void {
+  /** 把数值写到对应把手（多把手按「推着走」约束：越界推相邻把手保持升序） */
+  private applyNumber(i: number, v: number): void {
     const min = Number(this.getAttr('min', '0'))
     const max = Number(this.getAttr('max', '100'))
-    if (this.hasAttr('range') && this.minInput && this.maxInput) {
-      const [lo, hi] = this.currentRange()
-      if (role === 'num-min') {
-        const nlo = clampNum(v, min, max)
-        const nhi = nlo > hi ? nlo : hi
-        this.minInput.value = String(nlo)
-        this.maxInput.value = String(nhi)
-      } else {
-        const nhi = clampNum(v, min, max)
-        const nlo = nhi < lo ? nhi : lo
-        this.minInput.value = String(nlo)
-        this.maxInput.value = String(nhi)
-      }
-    } else if (this.input) {
-      this.input.value = String(clampNum(v, min, max))
+    const n = this.activeThumbCount()
+    if (n <= 1) {
+      if (this.thumbs[0]) this.thumbs[0].value = String(clampNum(v, min, max))
+      this.syncNumInputs()
+      return
+    }
+    const vals = this.currentValues()
+    vals[i] = clampNum(v, min, max)
+    for (let j = i + 1; j < vals.length; j++) {
+      if (vals[j]! < vals[j - 1]!) vals[j] = vals[j - 1]!
+    }
+    for (let j = i - 1; j >= 0; j--) {
+      if (vals[j]! > vals[j + 1]!) vals[j] = vals[j + 1]!
+    }
+    for (let j = 0; j < n; j++) {
+      if (this.thumbs[j]) this.thumbs[j]!.value = String(vals[j])
     }
     this.syncNumInputs()
   }
 
-  private emitRangeEvents(emitChange: boolean): void {
-    // 显式两次 emit：让 api:scan 能回溯事件名（变量名会进 unresolved）
-    if (emitChange) {
-      if (this.hasAttr('range')) {
-        this.emit('change', { value: this.currentRange() })
-      } else {
-        this.emit('change', { value: Number(this.input?.value ?? 0) })
-      }
-    } else {
-      if (this.hasAttr('range')) {
-        this.emit('input', { value: this.currentRange() })
-      } else {
-        this.emit('input', { value: Number(this.input?.value ?? 0) })
-      }
-    }
-  }
-
   /**
    * 受控状态写回宿主 value 属性（与 switch/radio-group 一致的双向受控语义）：
-   * 单值写数字字符串，range 写 JSON 数组字符串（表单序列化/宿主 JSON.parse 友好）。
+   * 单值写数字字符串，多把手写 JSON 数组字符串（表单序列化/宿主 JSON.parse 友好）。
    * 宿主 getAttribute / 表单收集 / 外部读状态可直接取最新值，不必缓存 oas-change detail。
    * 写回触发的 attributeChangedCallback → update() 为幂等同步（值相同无循环、不再 emit）。
    */
   private syncValueAttr(): void {
-    if (this.hasAttr('range')) {
-      const [lo, hi] = this.currentRange()
-      this.setAttribute('value', JSON.stringify([lo, hi]))
-    } else if (this.input) {
-      this.setAttribute('value', String(this.input.value))
+    if (this.isMulti()) {
+      this.setAttribute('value', JSON.stringify(this.currentValues()))
+    } else if (this.thumbs[0]) {
+      this.setAttribute('value', String(this.thumbs[0].value))
     }
   }
 
-  /** 滑块 → 输入框单向同步（拖动/提交后） */
+  /** 把手 → 输入框单向同步（拖动/提交后） */
   private syncNumInputs(): void {
     if (!this.hasAttr('show-input')) return
-    if (this.hasAttr('range')) {
-      const [lo, hi] = this.currentRange()
-      if (this.numMinInput) this.numMinInput.value = String(lo)
-      if (this.numMaxInput) this.numMaxInput.value = String(hi)
-    } else if (this.numInput && this.input) {
-      this.numInput.value = String(Number(this.input.value))
+    if (this.isMulti()) {
+      const vals = this.currentValues()
+      for (let i = 0; i < vals.length; i++) {
+        if (this.numInputs[i]) this.numInputs[i]!.value = String(vals[i])
+      }
+    } else if (this.numInputs[0] && this.thumbs[0]) {
+      this.numInputs[0].value = String(Number(this.thumbs[0].value))
     }
   }
 
@@ -1290,7 +1421,7 @@ export class OASSlider extends OASElement {
     }
   }
 
-  /** 统一同步填充区、自定义滑块、值气泡的位置与显隐 */
+  /** 统一同步填充区、自定义视觉层、值气泡的位置与显隐 */
   private syncOverlay(): void {
     const fill = this.shadow.querySelector<HTMLElement>('.fill')
     if (!fill) return
@@ -1300,12 +1431,12 @@ export class OASSlider extends OASElement {
     // 视觉反转取轴相关值：horizontal = 有效反转（reverse XOR RTL）；vertical = reverse 属性本身
     const reverse = this.hasAttr('vertical') ? this.hasAttr('reverse') : this.horizontalReverse()
     const vertical = this.hasAttr('vertical')
-    const isRange = this.hasAttr('range')
+    const multi = this.isMulti()
     const focused = this.hasAttribute('data-focused')
     // 气泡可见：常显 > 拖动 > 聚焦（focus 语义，不依赖 show-tooltip）
     const tipsVisible = this.hasAttr('show-tooltip') || this.hasAttr('tooltip-always') || this.dragging || focused
 
-    // 拖动/聚焦/常显中启用自定义滑块（拖动时临时显示值气泡，无需 show-tooltip）；
+    // 拖动/聚焦/常显中启用自定义视觉层（拖动时临时显示值气泡，无需 show-tooltip）；
     // 垂直模式恒启用：原生 thumb 隐藏，.custom-thumb 承担默认拇指视觉与拖动反馈
     const useOverlay =
       vertical ||
@@ -1315,9 +1446,11 @@ export class OASSlider extends OASElement {
       this.dragging ||
       focused
 
-    // 填充区间：单值 [start-point, value]（起点缺省 min），范围 [lo, hi]
+    const vals = multi ? this.currentValues() : null
+    // 填充区间：单值 [start-point, value]（起点缺省 min），多把手 [首把手, 末把手]
     const sp = this.startPointValue(min, max)
-    const [lo, hi] = isRange ? this.currentRange() : [sp, Number(this.input?.value ?? 0)]
+    const lo = vals ? vals[0]! : sp
+    const hi = vals ? vals[vals.length - 1]! : Number(this.thumbs[0]?.value ?? 0)
     const pctOf = (v: number): number => ((v - min) / span) * 100
     // 视觉轴归一（水平从左起算 / 垂直从上起算）：水平默认 min 在左、垂直默认 min 在下，
     // reverse 各自镜像（horizontal 的 reverse 已并入 RTL 书写方向的有效反转）
@@ -1334,7 +1467,7 @@ export class OASSlider extends OASElement {
     // （中心 = pct×(长-直径)+半径，实测测定，见 qa-regression 拇指对齐断言），
     // 填充继续用 % 会在两端偏差最多半个直径（7px）。有布局尺寸时按像素对齐
     // （thumb 同公式）；无尺寸（SSR/hidden/测试环境）回落 % 保持旧行为。
-    const trackInput = isRange ? (this.maxInput ?? this.input) : this.input
+    const trackInput = this.thumbs[Math.max(0, this.thumbs.length - 1)] ?? this.thumbs[0]
     const trackLen = vertical ? (trackInput?.clientHeight ?? 0) : (trackInput?.clientWidth ?? 0)
     if (trackLen) {
       const size = this.thumbSize()
@@ -1344,34 +1477,38 @@ export class OASSlider extends OASElement {
         return visual * Math.max(trackLen - size, 0) + size / 2
       }
       // 单值且无显式 start-point：填充从轨道视觉起点边（水平左/垂直底）开始贴边——
-      // 用 posPx(min) 会在起点留出拇指半径（size/2）的灰缝（用户实测）；range/显式起点仍从 lo thumb 中心起
+      // 用 posPx(min) 会在起点留出拇指半径（size/2）的灰缝（用户实测）；多把手/显式起点仍从 lo thumb 中心起
       const hasStartPoint = this.hasAttr('start-point')
       const edgeStart = vertical ? (reverse ? 0 : trackLen) : reverse ? trackLen : 0
-      const a = isRange || hasStartPoint ? posPx(lo) : edgeStart
+      const a = multi || hasStartPoint ? posPx(lo) : edgeStart
       const b = posPx(hi)
       fill.style.setProperty(axis, `${Math.min(a, b)}px`)
       fill.style.setProperty(sizeProp, `${Math.abs(b - a)}px`)
     } else {
       const hasStartPoint = this.hasAttr('start-point')
       const edgeStart = vertical ? (reverse ? 0 : 100) : reverse ? 100 : 0
-      const a = isRange || hasStartPoint ? vis(pctOf(lo)) : edgeStart
+      const a = multi || hasStartPoint ? vis(pctOf(lo)) : edgeStart
       const b = vis(pctOf(hi))
       fill.style.setProperty(axis, `${Math.min(a, b)}%`)
       fill.style.setProperty(sizeProp, `${Math.abs(b - a)}%`)
     }
 
-    for (const th of this.shadow.querySelectorAll<HTMLElement>('.custom-thumb')) {
-      const which = th.dataset.thumb
-      const visible =
-        which === 'value' ? useOverlay && !isRange : (which === 'min' || which === 'max') && useOverlay && isRange
+    // 逐把手视觉层：位置/气泡/显隐
+    for (let i = 0; i < this.overlays.length; i++) {
+      const th = this.overlays[i]!
+      const active = i < this.thumbs.length && i < this.thumbCountCache
+      th.hidden = true
+      if (!active) continue
+      const n = this.thumbCountCache
+      th.dataset.thumb = n === 1 ? 'value' : n === 2 ? (i === 0 ? 'min' : 'max') : String(i)
+      const v = vals ? (vals[i] ?? min) : Number(this.thumbs[0]?.value ?? 0)
       const tip = th.querySelector<HTMLElement>('.thumb-tip')
       if (tip) {
-        tip.textContent = this.formatValue(which === 'min' ? lo : hi)
+        tip.textContent = this.formatValue(v)
         tip.hidden = !tipsVisible
       }
-      th.hidden = !visible
-      if (!visible) continue
-      const v = which === 'min' ? lo : hi
+      if (!useOverlay) continue
+      th.hidden = false
       const norm = vis(pctOf(v))
       th.dataset.pct = String(norm)
       const pos = this.thumbPos(norm)
@@ -1393,17 +1530,16 @@ export class OASSlider extends OASElement {
 
   /** aria-valuetext 同步：有格式化通道时写格式化文本（读屏与气泡同源），否则移除回落 valuenow */
   private syncAriaValueText(): void {
-    if (!this.input || !this.minInput || !this.maxInput) return
-    const apply = (r: HTMLInputElement, v: number): void => {
+    const apply = (r: HTMLInputElement | undefined, v: number): void => {
+      if (!r) return
       if (this.hasFormatter()) r.setAttribute('aria-valuetext', this.formatValue(v))
       else r.removeAttribute('aria-valuetext')
     }
-    if (this.hasAttr('range')) {
-      const [lo, hi] = this.currentRange()
-      apply(this.minInput, lo)
-      apply(this.maxInput, hi)
+    if (this.isMulti()) {
+      const vals = this.currentValues()
+      for (let i = 0; i < vals.length; i++) apply(this.thumbs[i], vals[i]!)
     } else {
-      apply(this.input, Number(this.input.value))
+      apply(this.thumbs[0], Number(this.thumbs[0]?.value ?? 0))
     }
   }
 
@@ -1411,7 +1547,7 @@ export class OASSlider extends OASElement {
       中心再 + 半径；custom-thumb 以 translate(-50%,-50%) 按中心定位，少了半径会偏 7px。
       vertical 时沿 Y 轴换算 */
   private thumbPos(normPct: number): string {
-    const input = this.hasAttr('range') ? (this.maxInput ?? this.input) : this.input
+    const input = this.thumbs[0]
     const vertical = this.hasAttr('vertical')
     const track = vertical ? (input?.clientHeight ?? 0) : (input?.clientWidth ?? 0)
     if (!track) return `${normPct}%`
@@ -1473,8 +1609,7 @@ export class OASSlider extends OASElement {
   /** 增量同步刻度区：签名变化才重建节点，否则只更新经过状态 */
   private syncMarks(): void {
     const marksEl = this.shadow.querySelector<HTMLElement>('.marks')
-    const input = this.input
-    if (!marksEl || !input) return
+    if (!marksEl || this.thumbs.length === 0) return
     const ticks = this.computeTicks()
     if (ticks.length === 0) {
       marksEl.hidden = true
@@ -1497,12 +1632,15 @@ export class OASSlider extends OASElement {
     this.updateMarkPassed(marksEl, lo, hi)
   }
 
-  /** 当前选区覆盖的值区间（刻度经过判定）：范围 [lo, hi]；单值 [start-point, value] */
+  /** 当前选区覆盖的值区间（刻度经过判定）：多把手 [首, 末]；单值 [start-point, value] */
   private coveredRange(): [number, number] {
-    if (this.hasAttr('range')) return this.currentRange()
+    if (this.isMulti()) {
+      const vals = this.currentValues()
+      return [vals[0] ?? 0, vals[vals.length - 1] ?? 0]
+    }
     const min = Number(this.getAttr('min', '0'))
     const max = Number(this.getAttr('max', '100'))
-    const v = Number(this.input?.value ?? 0)
+    const v = Number(this.thumbs[0]?.value ?? 0)
     const sp = this.startPointValue(min, max)
     return [Math.min(sp, v), Math.max(sp, v)]
   }

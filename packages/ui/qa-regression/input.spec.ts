@@ -255,3 +255,32 @@ test('input min/max/step（number 类型）透传内层原生 input', async ({ p
   expect(r).toEqual({ type: 'number', min: '0', max: '10', step: '2' })
   await expect(page.locator('#input-number-range-output')).toHaveText('原生透传：min=0 max=10 step=2')
 })
+
+// ---- 能力缺口 D7：mask 输入掩码 ----
+
+test('input mask：真实键入序列自动跳字面量、非法字符过滤、光标保持；mask-raw 输出回显可见', async ({ page }) => {
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#input-mask')
+  const maskHost = page.locator('#input-mask')
+  await maskHost.scrollIntoViewIfNeeded()
+  // 真实键盘键入：数字 + 非法字母混排 → 只收数字、字面量自动插入
+  await maskHost.locator('input').click()
+  await page.keyboard.type('12a34')
+  await expect(maskHost.locator('input')).toHaveValue('123-4')
+  // 光标保持在显示值末尾（跳过字面量后落位正确）
+  const caret = await maskHost.locator('input').evaluate((el: HTMLInputElement) => el.selectionStart)
+  expect(caret).toBe(5)
+  // mask-raw 输入框：同一键入序列提交原始序列（无格式）
+  const rawHost = page.locator('#input-mask-raw')
+  await rawHost.locator('input').click()
+  await page.keyboard.type('1234')
+  await expect(rawHost.locator('input')).toHaveValue('123-4')
+  // 事件反馈输出可见：mask-raw 提交的是去格式化原始序列
+  await expect(page.locator('#input-mask-output')).toContainText('mask-raw')
+  await expect(page.locator('#input-mask-output')).toContainText('1234')
+  // 真实退格：删可编辑位字符、字面量按渐进规则回退（不会被删穿）
+  await page.keyboard.press('Backspace')
+  await expect(rawHost.locator('input')).toHaveValue('123')
+  await page.keyboard.press('Backspace')
+  await expect(rawHost.locator('input')).toHaveValue('12')
+})

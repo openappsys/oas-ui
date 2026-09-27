@@ -573,6 +573,34 @@ onMounted(() => {
     pagedNav.addEventListener('oas-change', (e) => render(e.detail.page ?? e.detail.current ?? 1))
   }
 
+  // Sortable: the host reorders its data from oas-reorder (the component never moves rows itself)
+  const sortable = document.querySelector('#list-sortable')
+  if (sortable) {
+    let sortableItems = [
+      { title: 'Requirements review', description: 'Mon 10:00' },
+      { title: 'API integration', description: 'Tue 14:00' },
+      { title: 'Regression testing', description: 'Wed 16:00' },
+      { title: 'Release', description: 'Fri 18:00' },
+    ]
+    const renderSortable = () => {
+      sortable.data = sortableItems.slice()
+    }
+    sortable.addEventListener('oas-item-render', (e) => {
+      const { item, element } = e.detail
+      element.setAttribute('title', item.title)
+      element.setAttribute('description', item.description)
+    })
+    sortable.addEventListener('oas-reorder', (e) => {
+      const { from, to } = e.detail
+      const [moved] = sortableItems.splice(from, 1)
+      sortableItems.splice(to, 0, moved)
+      renderSortable()
+      const status = document.querySelector('#list-sortable-status')
+      if (status) status.textContent = `Moved "${moved.title}" from position ${from + 1} to ${to + 1}.`
+    })
+    renderSortable()
+  }
+
   // Card wall: oas-grid + oas-card composition
   const wall = document.querySelector('#list-card-wall')
   if (wall) {
@@ -610,6 +638,17 @@ onMounted(() => {
   </div>
 </DemoBlock>
 
+## Sortable (sortable)
+
+`sortable` enables row drag-and-drop reordering (HTML5 DnD): drop a row onto a target row and the list emits `oas-reorder` (`detail: { from, to, item }` — `from` / `to` are row indexes; `item` is the original data item for the data channel or the row element for declarative rows), letting the host reorder its data (the component never moves rows itself). Dropping onto the same row emits nothing; virtual-scroll rows are not supported. Works for both the data channel and declarative rows.
+
+<DemoBlock title="Sortable rows (sortable)">
+  <div style="width: 100%">
+    <oas-list id="list-sortable" sortable bordered></oas-list>
+    <p id="list-sortable-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">Drag any row onto another and drop.</p>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-list
@@ -629,6 +668,7 @@ onMounted(() => {
 | `max-height` | Max height of the list body (px or CSS length); turns the body into a scroll container (pairs with oas-reach-bottom for scroll loading; group headers stick inside this container) | `string` | — |
 | `row-height` | Virtual scroll row height (px, default 64; data rows must be fixed-height) | `string` | `64` |
 | `size` | Row density: sm / md (default) / lg | `string` | — |
+| `sortable` | Enables row drag-and-drop reordering (data channel + declarative) | `boolean` | — |
 | `split` | Whether to show item dividers | `boolean` | — |
 | `stripe` | Zebra stripes: fills visually even rows with a subtle background | `boolean` | — |
 
@@ -639,6 +679,7 @@ onMounted(() => {
 | `oas-click` | Item click (data/virtual rows); detail carries { index, item } |
 | `oas-item-render` | Dispatched after each data-channel row renders; detail carries { index, item, element } |
 | `oas-reach-bottom` | Scroll reached the bottom (fired once per bottom entry, re-armed after scrolling away); detail carries { scrollTop } |
+| `oas-reorder` | Fired on drop with the reordered row indexes and payload, `detail: { from, to, item }` |
 
 #### Slots
 

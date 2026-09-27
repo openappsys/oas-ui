@@ -150,7 +150,9 @@
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
       "variant": "Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently",
       "placement": "12-direction panel placement (engine flip/RTL result written to data-placement)",
-      "autofocus": "Focuses the inner input after mounting"
+      "autofocus": "Focuses the inner input after mounting",
+      "virtual": "Virtual scrolling (renders only the visible window via oas-virtual-list; grouped options fall back to full rendering)",
+      "item-height": "Fixed virtual row height in px (with virtual, default 36)"
     },
     "events": {
       "oas-change": "Selected or cleared, `detail: { value, label }`",
@@ -462,7 +464,9 @@
       "value": "Selected value (ISO)",
       "range": "Range selection mode: two-click picking with hover preview and range highlighting; oas-change carries `{ start, end }`; value mirrors a JSON array",
       "locale": "Panel language override (title/weekdays/cell descriptions/nav copy/week start); defaults to config-provider > global",
-      "format": "Header title format string (yyyy/MM/dd tokens; day/month panels)"
+      "format": "Header title format string (yyyy/MM/dd tokens; day/month panels)",
+      "calendar-system": "Non-Gregorian calendar (Intl calendar option, e.g. chinese/islamic/hebrew): title, weekday headers, cell numbers and aria descriptions follow it; date math and value/data-date stay Gregorian",
+      "months": "Number of side-by-side month panels (1-12, default 1): panels lay out horizontally and paging steps the whole strip; the title shows the month range"
     },
     "events": {
       "oas-cell-render": "Dispatched when each day cell renders, `detail: { date, element }` (element is the day button; host can append markers/badges/rich content)",
@@ -531,7 +535,8 @@
       "slides-per-view": "Slides per page (default 1; index is page-based, last page aligns to the track end)",
       "type": "Carousel layout type: `\"card\"` enables card mode — the current card is centered as the main body with neighboring cards peeking on both sides (scaled down, dimmed); clicking a neighbor card switches to it directly; mutually exclusive with `slides-per-view`/`effect`/`direction` (card mode wins); card width/gap/neighbor scale via `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale`",
       "draggable": "Pointer/touch drag switching: flip past 25% of the viewport or on a quick flick, spring back otherwise; on by default on touch devices, off on PC; `\"false\"` disables explicitly",
-      "trigger": "Indicator activation: `click` (default) / `hover` (hover switches, click still works)"
+      "trigger": "Indicator activation: `click` (default) / `hover` (hover switches, click still works)",
+      "thumbs": "Replaces dots with a thumbnail strip (sources from a JSON array / data-thumb / child img); the current thumbnail gets a primary-color border"
     },
     "events": {
       "oas-change": "Current screen changed, `detail: { index }`"
@@ -562,7 +567,9 @@
       "loading": "Loading state: trigger spinner + aria-busy; the panel shows a loading placeholder",
       "field-names": "Field-alias JSON (`{ label, value, children, disabled }`) matching the tree-select contract; lazy-load results are mapped alike",
       "label": "Accessible name of the trigger (aria-label), taking priority over value/placeholder",
-      "placement": "Panel placement in 12 directions (invalid falls back to bottom; auto-flip kept)"
+      "placement": "Panel placement in 12 directions (invalid falls back to bottom; auto-flip kept)",
+      "virtual": "Per-column virtual scrolling (columns above 50 items render via oas-virtual-list; short columns/search/loading keep normal rendering)",
+      "item-height": "Fixed virtual row height in px (with virtual, default 36)"
     },
     "events": {
       "oas-change": "Selection change, `detail: { value }` (path array)",
@@ -629,7 +636,11 @@
       "trim": "Strip leading/trailing whitespace (default true; `trim=\"false\"` preserves it)",
       "size": "Inline font-size tier: `xs` / `small` / `medium` (default) / `large`; invalid values fall back to `medium` with a warning",
       "variant": "Inline style: `subtle` (default light background) / `outline` (bordered) / `plain` (text only) / `solid` (filled); invalid values fall back to `subtle` with a warning",
-      "color": "Inline text color: accepts 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*-text` tokens) or any CSS color value"
+      "color": "Inline text color: accepts 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*-text` tokens) or any CSS color value",
+      "highlight-lines": "Line highlight: `\"1,3-5\"` range syntax for highlighted lines (1-based)",
+      "focus-lines": "Line focus: focused lines stay, the rest dim",
+      "diff": "Diff mode: colors lines by leading `+`/`-` (semantic color tokens)",
+      "max-rows": "Max visible lines; overflow folds with an expand/collapse tail row (`0` = unlimited)"
     },
     "events": {
       "oas-copy": "Copy succeeded, `detail: { text }`",
@@ -693,7 +704,9 @@
       "show-text": "Show the color text on the trigger (default true; `\"false\"` shows the swatch only)",
       "size": "Trigger size: `small` / `medium` (default) / `large`",
       "uppercase": "Uppercase the output color value (hex letters A–F)",
-      "value-on-clear": "Fallback value on clear: clicking clear writes this back instead of emptying `value`"
+      "value-on-clear": "Fallback value on clear: clicking clear writes this back instead of emptying `value`",
+      "recent": "Recent-colors strip: each committed color is pushed onto a deduped, 8-capped, newest-first stack shown as clickable swatches",
+      "recent-key": "localStorage key used to persist recent colors (with recent; memory-only when omitted)"
     },
     "events": {
       "oas-change": "Color change, `detail: { value }`",
@@ -872,7 +885,8 @@
       "href": "Link address: with href the item renders as a native `<a>` (real navigation + still emits `oas-select`)",
       "target": "Link target (with href)",
       "rel": "Link rel (with href)",
-      "icon-color": "Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to currentColor following the text color"
+      "icon-color": "Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to currentColor following the text color",
+      "shortcut": "Shortcut hint rendered as a trailing kbd (aligned with the menubar/menu shortcut contract)"
     },
     "events": {},
     "slots": {
@@ -924,7 +938,8 @@
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
       "name": "Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent)",
       "separator": "Custom separator between start/end values in the trigger for range types (display only)",
-      "default-time": "Default start/end times for datetimerange (JSON array or single value); auto-filled when the value lacks a time part"
+      "default-time": "Default start/end times for datetimerange (JSON array or single value); auto-filled when the value lacks a time part",
+      "timezone": "Timezone anchor: an IANA zone name (e.g. America/New_York) or UTC; omitted/invalid falls back to the host local zone. Today highlight, shortcuts and default-time derivation read this zone's wall clock; the value contract is unchanged"
     },
     "events": {
       "oas-calendar-change": "Emitted on every range endpoint pick, `detail: { value: [start, end|null] }`",
@@ -1099,7 +1114,8 @@
       "href": "Link address: with href the item renders as a native `<a>` (real navigation + still emits `oas-select`)",
       "target": "Link target (with href)",
       "rel": "Link rel (with href)",
-      "icon-color": "Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to currentColor following the text color"
+      "icon-color": "Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to currentColor following the text color",
+      "shortcut": "Shortcut hint rendered as a trailing kbd (aligned with the menubar/menu shortcut contract)"
     },
     "events": {},
     "slots": {
@@ -1442,7 +1458,8 @@
       "depth": "Opacity depth level: `1` (100%) ~ `5` (20%), for layered icon hierarchy",
       "library": "Remote icon library name (registered via `registerIconLibrary`), takes precedence over the built-in `name` registry",
       "family": "Icon family (passed to the library resolver, e.g. outline/filled)",
-      "variant": "Icon variant (passed to the library resolver, e.g. weight)"
+      "variant": "Icon variant (passed to the library resolver, e.g. weight)",
+      "iconfont-url": "Remote iconfont project script URL: injected on demand, de-duplicated per URL, consumers re-render with the symbol inlined once loaded"
     },
     "events": {},
     "slots": {
@@ -1533,7 +1550,10 @@
       "inputmode": "Passes the mobile virtual keyboard type through to the inner input",
       "minlength": "Passes the native minimum length constraint through",
       "pattern": "Passes the native regex validation pattern through",
-      "spellcheck": "Passes the native spellcheck toggle through"
+      "spellcheck": "Passes the native spellcheck toggle through",
+      "name": "Native form field name (form-associated: the FormData submission key)",
+      "mask": "Input mask template: `#` digit, `A` letter, `*` alphanumeric; other characters are literals (e.g. `###-####`); typing skips literals, pasting accepts only fitting positions, backspace stops at literals; mutually exclusive with formatter/parser (mask wins)",
+      "mask-raw": "Events and form submit value carry the de-formatted raw character sequence; by default the display value is submitted"
     },
     "events": {
       "oas-clear": "Cleared by click, `detail: { originalEvent }`",
@@ -1670,12 +1690,14 @@
       "size": "Row density: sm / md (default) / lg",
       "split": "Whether to show item dividers",
       "stripe": "Zebra stripes: fills visually even rows with a subtle background",
-      "hoverable": "Hover background for non-clickable rows (selected rows excluded)"
+      "hoverable": "Hover background for non-clickable rows (selected rows excluded)",
+      "sortable": "Enables row drag-and-drop reordering (data channel + declarative)"
     },
     "events": {
       "oas-click": "Item click (data/virtual rows); detail carries { index, item }",
       "oas-item-render": "Dispatched after each data-channel row renders; detail carries { index, item, element }",
-      "oas-reach-bottom": "Scroll reached the bottom (fired once per bottom entry, re-armed after scrolling away); detail carries { scrollTop }"
+      "oas-reach-bottom": "Scroll reached the bottom (fired once per bottom entry, re-armed after scrolling away); detail carries { scrollTop }",
+      "oas-reorder": "Fired on drop with the reordered row indexes and payload, `detail: { from, to, item }`"
     },
     "slots": {
       "": "Default (declarative oas-list-item children)",
@@ -1731,9 +1753,13 @@
       "orientation": "Scroll direction: `horizontal` (default) / `vertical` (vertical scrolling; the container needs a fixed height)",
       "pause-on-hover": "Boolean; when present, pauses the animation on hover/focus (`animation-play-state: paused`)",
       "reverse": "Boolean; when present, scrolls in the opposite direction",
-      "speed": "Scroll speed in pixels per second (default 48); the animation duration is derived from the measured content width (duration = distance / speed); invalid or non-positive values fall back to the default"
+      "speed": "Scroll speed in pixels per second (default 48); the animation duration is derived from the measured content width (duration = distance / speed); invalid or non-positive values fall back to the default",
+      "max-loops": "Limit loop rounds (positive integer): freezes on the final frame after N rounds and dispatches oas-finish once; missing/invalid = infinite",
+      "dir": "Writing direction for RTL detection; horizontal translation mirrors under RTL"
     },
-    "events": {},
+    "events": {
+      "oas-finish": "Dispatched once when the max-loops run finishes, `detail: { loops }`"
+    },
     "slots": {
       "": "Scrolling content"
     }
@@ -1743,7 +1769,8 @@
       "columns": "Number of columns (default 4); supports breakpoint shorthand: a base value plus space-separated `breakpoint:value` pairs (e.g. `1 md:2 lg:4`; breakpoints `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px, mobile-first min-width, base below breakpoints); invalid values (non-positive integers / decimals / 0 / negatives) fall back to 1",
       "gap": "Spacing (px, default 8). A single value sets the column gap; two values `row col` (e.g. `8 16`) set the row gap on children's margin-bottom and the column gap; plain numbers get `px` appended; invalid values fall back to the default",
       "fresh": "Keep listening for child size changes via ResizeObserver and trigger a recompute; under the CSS columns implementation the browser already reflows automatically, so `fresh` is a semantic hook aligned with a future JS-based layout",
-      "items": "Masonry items JSON `[{text, height?, column?}]`; also assignable as an array property. When explicitly set and non-empty it takes precedence over slotted children (ignored); absent / empty array / invalid JSON fall back to the slot channel (invalid JSON logs a deduplicated dev warning). text is rendered safely as plain text; height is the item's minimum height (px, written to the rendered item's min-height); column pins the item to a column (1-based, same reorder logic as the child `column` attribute)"
+      "items": "Masonry items JSON `[{text, height?, column?}]`; also assignable as an array property. When explicitly set and non-empty it takes precedence over slotted children (ignored); absent / empty array / invalid JSON fall back to the slot channel (invalid JSON logs a deduplicated dev warning). text is rendered safely as plain text; height is the item's minimum height (px, written to the rendered item's min-height); column pins the item to a column (1-based, same reorder logic as the child `column` attribute)",
+      "sequential": "Sequential masonry: fill columns round-robin by original order instead of height balancing; mutually exclusive with a child column pin (sequential wins)"
     },
     "events": {},
     "slots": {
@@ -1805,7 +1832,8 @@
       "open-on-hover": "Hover-opened submenus in vertical/inline modes (~150ms open / ~300ms close delay); clicks unchanged; horizontal and collapsed flyout unaffected",
       "disabled": "Disables the whole menu: click/hover/keyboard intercepted, dimmed with aria-disabled",
       "selectable": "With `\"false\"`, pure action menu: no check marks, clicks never write back value (detail kind=action)",
-      "persistent": "Keep flyout submenus open after selection (wins over close-on-select)"
+      "persistent": "Keep flyout submenus open after selection (wins over close-on-select)",
+      "searchable": "Renders a filter input at the top of the menu and filters visible items live (matching ancestors are kept and auto-expanded; Esc clears)"
     },
     "events": {
       "oas-select": "Select an item, `detail: { value, kind? }`. `kind` only appears for action items (`kind: \"action\"`) as \"action\"; radio items omit `detail.kind`",
@@ -1824,7 +1852,8 @@
       "danger": "Destructive item: danger color semantics (delete/logout operations)",
       "href": "Link URL: with `href` the item renders as a native `<a>` (real navigation + still fires `oas-select`)",
       "target": "Link target (with `href`)",
-      "rel": "Link rel (with `href`)"
+      "rel": "Link rel (with `href`)",
+      "shortcut": "Shortcut hint rendered as a trailing kbd (aligned with the menubar shortcut contract)"
     },
     "events": {},
     "slots": {
@@ -1965,7 +1994,8 @@
       "size": "Size preset: `sm` (400px) / `lg` (720px); an explicit `width` wins; invalid values fall back to the theme default 520px",
       "transition": "Open/close animation preset: `zoom` (default, fade + scale, scale origin follows the click position before opening) / `fade` (opacity only) / `none` (no transition, instant)",
       "trigger": "Declarative trigger element id: clicking the element sets `visible` to open the modal (does not touch the controlled model); silently retries on later updates when the element is missing",
-      "z-index": "Explicit z-index base stacked on `--oas-z-index-base` (dialog sits 1 above the mask; defaults to the `--oas-z-modal` tier)"
+      "z-index": "Explicit z-index base stacked on `--oas-z-index-base` (dialog sits 1 above the mask; defaults to the `--oas-z-modal` tier)",
+      "maximizable": "Show a maximize/restore button in the header: maximizing uses the same semantics as fullscreen; hidden when fullscreen is explicitly set"
     },
     "events": {
       "oas-cancel": "Cancel: cancel button / ✕ / mask click / Esc",
@@ -1976,7 +2006,8 @@
       "oas-opened": "[Compat alias] Open animation finished, same as oas-after-open; will be removed later",
       "oas-before-close": "Emitted before a close request (OK / cancel / ✕ / mask / Esc), `cancelable`, `detail: { source }`; preventDefault blocks the close and shakes the dialog as feedback (programmatic close bypasses the interception)",
       "oas-close": "Emitted when closing starts; `detail: { source, action }` (source: `ok`/`cancel`/`close-btn`/`mask`/`esc`/`programmatic`; action: `confirm`/`cancel`/`close`)",
-      "oas-open": "Emitted when opening starts (after the scroll lock and focus move); no `detail`"
+      "oas-open": "Emitted when opening starts (after the scroll lock and focus move); no `detail`",
+      "oas-maximize": "Fired on maximize/restore toggle, `detail: { maximized }`"
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present",
@@ -2291,7 +2322,8 @@
       "sticky": "Sticky against viewport edge (partial/always)",
       "destroy-on-hide": "Destroy the panel content presentation on close (host light DOM nodes are kept: their slot names are rewritten to detach them and they are hidden; attribute text is cleared); remounted instantly on reopen",
       "dismiss-on-select": "Clicks inside the panel (named slot content / panel internals including the close button) count as a completed selection and close it (interceptable via before-close); clicks on the trigger element do not dismiss (guards against open-then-close)",
-      "render-panel": "Pure panel rendering mode: no trigger semantics (always treated as `manual`), positioning falls back to `virtual` coordinates/anchor; position it yourself via `append-to`"
+      "render-panel": "Pure panel rendering mode: no trigger semantics (always treated as `manual`), positioning falls back to `virtual` coordinates/anchor; position it yourself via `append-to`",
+      "same-width": "Panel width equals the trigger width (strict equality; explicit width takes precedence)"
     },
     "events": {
       "oas-open-change": "open state changed, `detail: { open }`",
@@ -2326,7 +2358,9 @@
       "max": "Value range upper bound (default 100): percent/buffer read as current values; width and text are computed as value/max and aria reflects real values",
       "label": "Accessible name (written to the progress bar aria-label)",
       "stroke-linecap": "Arc line cap `round` (default) / `butt` (circle/dashboard)",
-      "value": "Alias of percent (current value, clamped to 0–max): when both are set percent wins; read only when percent is absent"
+      "value": "Alias of percent (current value, clamped to 0–max): when both are set percent wins; read only when percent is absent",
+      "vertical": "Vertical orientation (line form only): vertical track filling bottom-up; circle/dashboard unaffected",
+      "height": "Vertical length (vertical only): plain numbers are px; px/vh/% accepted; invalid falls back to the default"
     },
     "events": {},
     "slots": {
@@ -2500,7 +2534,8 @@
       "reserve-keyword": "Keep the keyword after selection in searchable mode (cleared by default, matching tree-select)",
       "tabindex": "Forwarded to the internal trigger (host attribute removed after delegation to avoid double tab stops)",
       "auto-width": "Trigger width shrinks to fit the selection",
-      "hint": "Hint line below the trigger, wired via aria-describedby"
+      "hint": "Hint line below the trigger, wired via aria-describedby",
+      "hide-selected": "Hide selected options from the dropdown in multiple mode; they return after clearing or deselecting"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",
@@ -2634,7 +2669,8 @@
       "track-color": "Track base color: preset semantic names map to theme tokens; any other value is passed through as a CSS color",
       "readonly": "Readonly (independent of `disabled`): stays focusable and the value still participates in form collection; dragging and keyboard edits are intercepted; not visually dimmed",
       "large-step": "Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change`",
-      "label": "Accessible name for the inner slider (range mode appends localized min/max suffixes)"
+      "label": "Accessible name for the inner slider (range mode appends localized min/max suffixes)",
+      "labels": "JSON string array of per-thumb accessible names (e.g. `[\"低\",\"中\",\"高\"]`; the label-N attribute family takes precedence)"
     },
     "events": {
       "oas-change": "Committed on release, `detail: { value }` (single number; `[lo, hi]` array in `range` mode)",
@@ -2746,7 +2782,8 @@
       "percent": "Ratio of the preceding panel (%)",
       "sizes": "Multi-panel mode panel ratios (comma-separated percentages, e.g. `30,40,30`); falls back to equal split when count mismatches panel count",
       "vertical": "Vertical direction: panels stack top-to-bottom, divider is horizontal, keyboard uses ArrowUp/Down",
-      "disabled": "Freezes resizing: drag/keyboard/dblclick disabled, normal cursor, aria-disabled"
+      "disabled": "Freezes resizing: drag/keyboard/dblclick disabled, normal cursor, aria-disabled",
+      "snap": "Drag snap stops: comma-separated percentages or pixel values; dragging within ±8px of a stop snaps to it, arrow keys jump between stops"
     },
     "events": {
       "oas-collapse": "Fired when the collapse button toggles, `detail: { collapsed, side }` (side=left means the panel before the divider)",
@@ -2894,7 +2931,12 @@
       "table-layout": "Passes the table layout algorithm through (with `fixed`, column widths strictly follow `width`)",
       "hover": "Row hover background switch (purely visual), `\"false\"` disables",
       "indent-size": "Per-level indent of tree data in px",
-      "max-height": "Caps the body scroll area with a sticky header (virtual `height` wins when both set)"
+      "max-height": "Caps the body scroll area with a sticky header (virtual `height` wins when both set)",
+      "exportable": "Enables export: renders export buttons in a toolbar above the table (CSV by default, CSV/Excel configurable), and exposes the exportData method",
+      "export-format": "Export format: `csv` (default) / `excel`, or the comma list `csv,excel` (both buttons); invalid falls back to csv",
+      "export-file-name": "Export file name (without extension; path separators and reserved characters are sanitized)",
+      "grid-navigation": "Keyboard grid navigation: role=grid, single Tab stop for the data region, arrow keys roam cells (Home/End/PageUp-Down, Enter/Space activate in-cell controls)",
+      "row-draggable": "Row drag sorting: renders a drag-handle column and dispatches oas-row-reorder on drop; disabled with a warning under virtual scrolling"
     },
     "events": {
       "oas-check": "Checkbox selection change, `detail: { keys: string[] }`",
@@ -2909,7 +2951,9 @@
       "oas-filter-change": "Fired when a column filter value changes, `detail: { key, values }`",
       "oas-page-change": "Fired when the built-in page changes, `detail: { current, pageSize }`",
       "oas-cell-click": "Fired on data-cell click, `detail: { row, column, value, rowIndex, columnIndex }` (suppressed inside interactive controls)",
-      "oas-row-dblclick": "Fired on data-row double-click, `detail: { row, rowIndex }`"
+      "oas-row-dblclick": "Fired on data-row double-click, `detail: { row, rowIndex }`",
+      "oas-export": "Export triggered (button or exportData), `detail: { format, fileName, rowCount }`",
+      "oas-row-reorder": "Row reorder via drag or Alt+Arrow; `detail: { from, to, row }` (to is the insertion index after removing the dragged row; the component never mutates data)"
     },
     "slots": {
       "template[slot=\"empty\"]": "Rich empty-state content (takes precedence over empty-text and the default empty text)",
@@ -2917,10 +2961,12 @@
     }
   },
   "oas-table-column": {
-    "attrs": {},
+    "attrs": {
+      "data-key": "Column key (escape channel for the Vue reserved word `key`; plain `key` also works in native HTML — the component reads both)"
+    },
     "events": {},
     "slots": {
-      "": "Custom cell content (`<template>` with `{{row.field}}` interpolation)"
+      "": "Custom cell content (row.field placeholder interpolation inside the template, double-curly syntax)"
     }
   },
   "oas-tabs": {
@@ -3120,7 +3166,8 @@
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
       "name": "Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent)",
       "hide-disabled-options": "Hide disabled options instead of graying them out (keyboard navigation still skips them)",
-      "label": "Accessible name (aria-label) for the trigger; an external label-for association takes precedence"
+      "label": "Accessible name (aria-label) for the trigger; an external label-for association takes precedence",
+      "timezone": "Timezone anchor: an IANA zone name or UTC; omitted/invalid falls back to local. The Now button and default-value derivation read this zone's wall clock; the value contract is unchanged"
     },
     "events": {
       "oas-change": "Confirmed value change, `detail: { value }` (string array for `is-range`)",
@@ -3505,7 +3552,9 @@
       "motion": "Expand/collapse height transition animation (off by default): non-virtual mode transitions row-container max-height on expand/collapse, virtual-scroll mode degrades to a fade-in on expand with instant collapse; duration/easing follow `--oas-transition-*`, disabled under `prefers-reduced-motion`",
       "size": "Five-tier tree font/padding scale (xs~xl, aliases accepted, invalid falls back to medium)",
       "block-node": "Full-row block selection/hover zone (rows one tier taller)",
-      "selectable": "Whole-tree selection switch; `\"false\"` stops click/keyboard selection while expand/check keep working"
+      "selectable": "Whole-tree selection switch; `\"false\"` stops click/keyboard selection while expand/check keep working",
+      "check-all": "Renders a select-all row above the tree with a tri-state checkbox (requires checkable)",
+      "check-all-label": "Select-all row label (defaults to the i18n select-all copy)"
     },
     "events": {
       "oas-check": "Check state change, `detail: { key, checked }`",
@@ -3519,7 +3568,8 @@
       "oas-node-dragstart": "Dispatched when a drag starts, `detail: { dragKey }`",
       "oas-node-dragover": "Dispatched while dragging over a target, `detail: { dragKey, dropKey, position }` (empty area: dropKey empty, position `inner`)",
       "oas-node-dragleave": "Dispatched when a drag leaves a target, `detail: { dragKey, dropKey, position }`",
-      "oas-node-dragend": "Dispatched when a drag ends, `detail: { dragKey }`"
+      "oas-node-dragend": "Dispatched when a drag ends, `detail: { dragKey }`",
+      "oas-check-all": "Fired when the select-all row toggles, `detail: { checked, values }`"
     },
     "slots": {
       "template[slot=\"node\"]": "Static row template cloned into each node label container; the `[data-node-label]` node is bound to the node label automatically",
@@ -3604,7 +3654,9 @@
       "show-file-list": "File list visibility (`\"false\"` hides it, keeping only the drop zone)",
       "replace": "Replace semantics at max-count=1 (new file replaces the old instead of being rejected)",
       "tip": "Drop-zone tip text (same as `template[slot=\"tip\"]` for rich content)",
-      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)"
+      "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
+      "crop": "Pre-upload image cropping (picture/picture-card + image accept): picked images open the built-in crop dialog first; the canvas crop result is queued on confirm",
+      "crop-aspect": "Fixed crop aspect ratio (e.g. `1:1`, `16:9`); invalid/missing = free ratio"
     },
     "events": {
       "oas-change": "File list change, `detail: { files }`",
@@ -3617,7 +3669,8 @@
       "oas-cancel": "Upload cancelled, `detail: { file }` (cancel button on the item)",
       "oas-retry": "Retry clicked, `detail: { file }` (re-upload after failure)",
       "oas-exceed-limit": "Adding files rejected due to limit (canonical, aligned with checkbox-group/select/toggle-group), `detail: { files, max, total }`; emitted for both count and size rejections (size rejections also carry `type: 'size'` and `maxSize`)",
-      "oas-progress": "Upload progress `{ file, percent }`, emitted across all channels with 100 on success"
+      "oas-progress": "Upload progress `{ file, percent }`, emitted across all channels with 100 on success",
+      "oas-crop": "Crop confirmed, `detail: { file, blob }` (file = original file, blob = offscreen canvas result)"
     },
     "slots": {
       "trigger": "Replace the drop-zone content (zone semantics kept)",
@@ -3834,5 +3887,32 @@
       "": "Swatch children (`<oas-swatch>`)"
     },
     "cssVars": {}
+  },
+  "oas-highlight": {
+    "attrs": {
+      "text": "Source text",
+      "highlight": "Keywords: space-separated words or JSON array; whitespace fallback on parse failure",
+      "case-sensitive": "Case sensitive (insensitive by default)",
+      "whole-word": "Whole-word matching (off by default; Unicode letter/digit boundaries)",
+      "accent-sensitive": "Accent sensitive (accents NFD-folded by default)"
+    },
+    "events": {
+      "oas-count": "Dispatched after each recompute, `detail: { count, matches }`"
+    }
+  },
+  "oas-form-list": {
+    "attrs": {
+      "name": "List root path (bare field names are auto-prefixed as `name.N.field`)",
+      "min": "Minimum rows (auto-padded)",
+      "max": "Row cap (adding is disabled at the cap)",
+      "disabled": "Freezes add/remove"
+    },
+    "events": {
+      "oas-add": "Dispatched when a row is added, `detail: { index }`",
+      "oas-remove": "Dispatched when a row is removed, `detail: { index }` (remaining rows renumber, values stay with their rows)"
+    },
+    "slots": {
+      "": "Row template (the first template element without a slot attribute; field names use `{index}` or are auto-indexed)"
+    }
   }
 }

@@ -1644,3 +1644,40 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 单测：happy-dom 对 `calc(var()/…)` 不求最终数值，悬边断言改锁「token 回退 12px 后半值外探」的表达式形态（真实浏览器数值由 e2e 验证）；全量 7373 passed
 - e2e（chromium + firefox）：宽高独立生效（20×8 宽扁）/ 悬边随 height 分量 / align-offset 生效 / radius 生效 / merge 不受影响 / popover clamp 读 width token
 - 视觉核验：默认 vs 宽扁(22×8) vs 窄高(8×20) 三对照浅/暗截图 + 识图复核（形状差异两色可辨、暗底对比正常）
+
+## 能力缺口 D 类立项批（未发布，27 条）
+
+> 立项来源：场景缺口甄别 D 类池（28 条中 D11 chart 雷达/极坐标/组合图按「chart 不深挖（2026-09-24 用户定）」既定决定排除，实际 27 条）。口径：语义覆盖为准，命名对照 ui-spec §2。
+
+### 新组件（1 条）
+
+- **oas-highlight**（D1，data 族）：文本命中高亮——`text`（原文）+ `highlight`（关键词，多词空格分隔或 JSON 数组）+ 大小写/整词/重音不敏感开关 + 命中片段 mark 渲染（样式走 token，::part(highlight) 开口）+ 命中计数事件；SSR 快照直出
+
+### 既有组件增强（26 条）
+
+- **oas-code**（D2）：行高亮（`highlight-lines`）+ 行聚焦（`focus-lines` 其余淡化）+ diff 模式（`diff` 属性 + `+`/`-` 前缀行红绿着色）+ 最大行数折叠（`max-rows` + 展开尾行）
+- **oas-icon**（D12）：`iconfont-url` 脚本加载通道（远程 iconfont 项目集成：加载 + 注册别名前缀）
+- **oas-auto-complete**（D3）/ **oas-cascader**（D4）：选项虚拟滚动（`virtual`，长列表性能档，对齐 select 既有虚拟滚动契约）
+- **oas-date-picker**（D5）/ **oas-time-picker**（D6）：`timezone`（IANA 名 / UTC / local 默认）——「今天/此刻」锚点与时刻解析按指定时区（Intl 通道）
+- **oas-input**（D7）：`mask` 输入掩码（`#` 数字 / `A` 字母 / `*` 任意，如 `###-####`；`mask-raw` 控制提交值为去格式化的原始值）
+- **oas-select**（D20）：`hide-selected`（多选时已选选项从下拉隐藏）
+- **oas-popover**（D21）：`same-width`（面板与触发器同宽，对齐 select 既有同宽惯例）
+- **oas-table**（D8/D9/D15）：`exportable`（导出 CSV/Excel——客户端生成，表头/当前数据）+ 键盘网格导航（`grid-navigation`：方向键在单元格间移动焦点，role=grid 语义）+ 行拖拽排序（`row-draggable` + `oas-row-reorder`）
+- **oas-form**（D10）：嵌套 name 路径语义（`users.0.name` 点路径解析进 values 嵌套对象/数组）+ `oas-form-list` 动态字段组（add/remove 项、嵌套 name 自动索引、校验/提交随主表）
+- **oas-menu**（D13）：`searchable`（菜单顶部过滤输入框，实时过滤项）+ 菜单项 `shortcut` 字段（kbd 标注，对齐 menubar shortcut 视觉契约）
+- **oas-tree**（D16）：整树全选/取消全选（`check-all` 顶部全选项或 selectAll/clearAll 方法，含 indeterminate 态）
+- **oas-list**（D14）：`sortable` 行拖拽排序（对齐 tabs sortable 机制惯例 + `oas-reorder`）
+- **oas-carousel**（D17）：`thumbs` 缩略图指示器（缩略图条替代圆点，当前项高亮描边）
+- **oas-splitter**（D18）：`snap` 拖拽吸附档位（如 `snap="25,50,75"` 百分比，拖到附近吸附）
+- **oas-progress**（D22）：`vertical` 垂直方向（circle 之外的第三条形态轴）
+- **oas-masonry**（D27）：`sequential` 顺序瀑布流（按原始顺序逐列填充而非最短列优先）
+- **oas-modal**（D28）：`maximizable`（标题栏最大化/还原按钮，与 fullscreen 属性同语义联动）
+- **oas-calendar**（D24）：`calendar-system`（非公历历法，Intl calendar 选项透传：chinese/islamic/hebrew 等）+ `months`（多月份并排面板数，默认 1）
+- **oas-color-picker**（D25）：`recent`（最近使用色条——选中色入栈，面板底部展示；`recent-key` 可配 localStorage 持久化键）
+- **oas-slider**（D26）：多滑块泛化（`value` 支持 N 元数组 → N 把手，range 为 N=2 特例；每把手独立 aria-label）
+- **oas-marquee**（D23）：`max-loops` 限定循环次数（播完定格末帧 + `oas-finish`）+ RTL 方向复核
+- **oas-upload**（D19）：`crop` 图片上传前裁剪（picture/picture-card 形态：选择后弹裁剪对话框——自由/固定比例 + 缩放，确认后入列；canvas 离屏裁剪）
+
+### 验收（同 P1/P2 口径）
+
+- TDD RED→GREEN；api:check 双向 0 + unresolved 零；md 中英 demo 可见反馈；dark/RTL 过；交互项 qa-regression 固化；门禁全绿 + 收口 review

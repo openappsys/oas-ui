@@ -1032,3 +1032,126 @@ test('table P2 批：cell-click/row-dblclick 事件反馈可见 + row-expandable
   await page.waitForTimeout(300)
   expect(await page.textContent('#table-cell-feedback')).toBe(before)
 })
+
+// ---- D 类能力：exportable / grid-navigation / row-draggable（用户视角回归） ----
+
+test('table 导出（D8）：点击导出按钮派发 oas-export 且走 Blob 下载链路', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-export')
+  // 真交互前把目标滚进视口（页面加载初期的焦点滚动会移动位置，先锚定）
+  await page.evaluate(() => document.querySelector('#table-export')?.scrollIntoView({ block: 'center' }))
+  await page.evaluate(() => {
+    const w = window as unknown as Record<string, unknown>
+    w.__exportBlobs = []
+    const orig = URL.createObjectURL.bind(URL)
+    URL.createObjectURL = (obj: Blob) => {
+      ;(w.__exportBlobs as Array<{ type: string; size: number }>).push({ type: obj.type, size: obj.size })
+      return orig(obj)
+    }
+    document.querySelector('#table-export')!.addEventListener('oas-export', (e: Event) => {
+      w.__exportDetail = (e as CustomEvent).detail
+    })
+  })
+  // 工具栏按钮真实存在且可点（event 反馈 + blob 生成都断言）
+  await page.evaluate(() => {
+    const t = document.querySelector('oas-table#table-export')!
+    t.shadowRoot!.querySelector<HTMLButtonElement>('.export-btn[data-format="csv"]')!.click()
+  })
+  const res = await page.evaluate(() => {
+    const w = window as unknown as Record<string, unknown>
+    return {
+      detail: w.__exportDetail as { format: string; fileName: string; rowCount: number },
+      blobs: w.__exportBlobs as Array<{ type: string; size: number }>,
+    }
+  })
+  expect(res.detail.format).toBe('csv')
+  expect(res.detail.rowCount).toBe(4)
+  expect(res.detail.fileName).toBe('员工表.csv')
+  expect(res.blobs.some((b) => b.type.startsWith('text/csv') && b.size > 0)).toBe(true)
+
+  // Excel 按钮同样可用（SpreadsheetML + ms-excel MIME）
+  await page.evaluate(() => {
+    const t = document.querySelector('oas-table#table-export')!
+    t.shadowRoot!.querySelector<HTMLButtonElement>('.export-btn[data-format="excel"]')!.click()
+  })
+  const excel = await page.evaluate(() => {
+    const w = window as unknown as Record<string, unknown>
+    return {
+      detail: w.__exportDetail as { format: string; fileName: string },
+      blobs: w.__exportBlobs as Array<{ type: string; size: number }>,
+    }
+  })
+  expect(excel.detail.format).toBe('excel')
+  expect(excel.detail.fileName).toBe('员工表.xls')
+  expect(excel.blobs.some((b) => b.type.startsWith('application/vnd.ms-excel'))).toBe(true)
+})
+
+test('table 网格导航（D9）：单停靠点 + 方向键漫游单元格（role=grid）', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-grid-nav')
+  await page.evaluate(() => document.querySelector('#table-grid-nav')?.scrollIntoView({ block: 'center' }))
+  const role = await page.evaluate(() =>
+    document.querySelector('oas-table#table-grid-nav')!.shadowRoot!.querySelector('table')!.getAttribute('role'),
+  )
+  expect(role, 'grid-navigation 下表格应为 role=grid').toBe('grid')
+  // Tab 进容器后方向键漫游：焦点落到单元格
+  await page.evaluate(() => {
+    const t = document.querySelector('oas-table#table-grid-nav')!
+    t.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!.focus()
+  })
+  await page.keyboard.press('ArrowRight')
+  const first = await page.evaluate(() => {
+    const t = document.querySelector('oas-table#table-grid-nav')!
+    const ae = t.shadowRoot!.activeElement as HTMLElement | null
+    return { tag: ae?.tagName ?? null, role: ae?.getAttribute('role') ?? null }
+  })
+  expect(first.tag).toBe('TD')
+  expect(first.role).toBe('gridcell')
+  await page.keyboard.press('ArrowDown')
+  const moved = await page.evaluate(() => {
+    const t = document.querySelector('oas-table#table-grid-nav')!
+    const ae = t.shadowRoot!.activeElement as HTMLElement | null
+    const tr = ae?.closest('tr') ?? null
+    const rows = [...t.shadowRoot!.querySelectorAll('tr.row')]
+    return { row: tr ? rows.indexOf(tr) : -1, tag: ae?.tagName ?? null }
+  })
+  expect(moved.tag, 'ArrowDown 后仍聚焦单元格（未丢焦点）').toBe('TD')
+  expect(moved.row, 'ArrowDown 移动到下一行').toBe(1)
+})
+
+test('table 行拖拽（D15）：拖手柄换位派发 oas-row-reorder 且宿主复现顺序', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-row-drag')
+  await page.evaluate(() => document.querySelector('#table-row-drag')?.scrollIntoView({ block: 'center' }))
+  const detail = await page.evaluate(() => {
+    const t = document.querySelector('oas-table#table-row-drag')!
+    let captured: unknown = null
+    t.addEventListener('oas-row-reorder', (e: Event) => (captured = (e as CustomEvent).detail))
+    const handles = t.shadowRoot!.querySelectorAll<HTMLElement>('.row-drag-handle')
+    const rows = t.shadowRoot!.querySelectorAll<HTMLElement>('tr.row')
+    const dt = new DataTransfer()
+    handles[0]!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }))
+    const target = rows[1]!
+    target.dispatchEvent(
+      new DragEvent('dragover', {
+        bubbles: true,
+        clientY: target.getBoundingClientRect().bottom - 1,
+        dataTransfer: dt,
+      }),
+    )
+    target.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: dt }))
+    return captured as { from: number; to: number; row: { name: string } }
+  })
+  expect(detail.from).toBe(0)
+  expect(detail.to).toBe(1)
+  expect(detail.row.name).toBe('张三')
+  // 宿主受控复现：demo 监听后重排 data → 行顺序可见变化 + 反馈文本更新
+  await page.waitForFunction(() => document.querySelector('#table-row-drag-feedback')?.textContent === '0 → 1', null, {
+    timeout: 5000,
+  })
+  const order = await page.evaluate(() => {
+    const t = document.querySelector('oas-table#table-row-drag')!
+    return [...t.shadowRoot!.querySelectorAll('tr.row td[data-col="name"]')].map((td) => td.textContent)
+  })
+  expect(order).toEqual(['李四', '张三', '王五', '赵六'])
+})

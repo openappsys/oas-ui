@@ -95,6 +95,11 @@
       "observed": true
     },
     {
+      "name": "maximizable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "loading",
       "type": "boolean",
       "observed": true
@@ -185,6 +190,10 @@
     },
     {
       "name": "oas-after-close"
+    },
+    {
+      "name": "oas-maximize",
+      "detail": "{ maximized: this.maximized }"
     }
   ],
   "slots": [

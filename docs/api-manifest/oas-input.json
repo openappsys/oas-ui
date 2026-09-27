@@ -147,6 +147,17 @@
       "observed": true
     },
     {
+      "name": "mask",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "mask-raw",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "autofocus",
       "type": "boolean",
       "observed": false

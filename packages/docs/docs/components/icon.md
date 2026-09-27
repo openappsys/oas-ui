@@ -127,6 +127,18 @@
   <oas-icon library="demo-weight" name="demo-icon" variant="bold" size="28" color="var(--oas-color-primary)"></oas-icon>
 </DemoBlock>
 
+## 图标字体（iconfont）
+
+`iconfont-url` 注入 iconfont 项目脚本（symbol sprite JS）：组件按需插入 `<script>`、同一 URL 去重，加载完成后自动刷新所有使用方，并把项目脚本注入的 `<symbol>` 内容内联渲染到组件（Shadow DOM 内 `#fragment` 无法跨树引用，故不使用 `<use>`）。
+
+`registerIconAlias(alias, target)` 注册别名（含前缀别名）把短名映射到项目符号名：`registerIconAlias('i-', 'icon-')` 后 `name="i-star"` 解析为 `icon-star`。
+
+<DemoBlock title="iconfont 项目脚本 + 别名前缀" :script="iconfontScript">
+  <oas-icon data-iconfont-demo name="i-star" size="28" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon data-iconfont-demo name="i-heart" size="28" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon data-iconfont-demo name="i-check" size="28" color="var(--oas-color-success)"></oas-icon>
+</DemoBlock>
+
 ## 动画预设
 
 `animation` 属性提供一组开箱即用的动画（尊重 `prefers-reduced-motion`，系统减弱动态时自动停用）。
@@ -279,11 +291,35 @@ registerIconLibrary('demo-weight', {
   resolver: (name, family, variant) =>
     variant === 'bold' ? '/demo-icon-bold.svg' : \`/\${name}.svg\`,
 })`
+const iconfontScript = `import { registerIconAlias } from '@oas-ui/ui/basic/icon'
+
+// iconfont 项目脚本（symbol sprite JS）由 iconfont-url 按需注入、同一 URL 去重：
+// <oas-icon iconfont-url="https://at.alicdn.com/t/font_xxx.js" name="icon-star">
+
+// 前缀别名：name="i-star" → 符号 #icon-star
+registerIconAlias('i-', 'icon-')`
+
+// demo 用 data URI 内联一份「iconfont 项目脚本」，避免依赖外部网络
+const ICONFONT_PROJECT = `(function () {
+  if (window.__oasIconfontDemoLoaded) return
+  window.__oasIconfontDemoLoaded = true
+  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('aria-hidden', 'true')
+  svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden'
+  svg.innerHTML = [
+    '<symbol id="icon-star" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 64 L632 400 L990 400 L700 610 L810 950 L512 740 L214 950 L324 610 L34 400 L392 400 Z"/></symbol>',
+    '<symbol id="icon-heart" viewBox="0 0 1024 1024"><path fill="currentColor" d="M512 928 C448 864 96 600 96 368 C96 232 200 144 320 144 C400 144 464 192 512 256 C560 192 624 144 704 144 C824 144 928 232 928 368 C928 600 576 864 512 928 Z"/></symbol>',
+    '<symbol id="icon-check" viewBox="0 0 1024 1024"><path fill="currentColor" d="M416 736 L160 480 L224 416 L416 608 L800 224 L864 288 Z"/></symbol>',
+  ].join('')
+  document.body.appendChild(svg)
+})()`
+const iconfontUrl = `data:text/javascript;charset=utf-8,${encodeURIComponent(ICONFONT_PROJECT)}`
 
 onMounted(async () => {
-  const [{ iconNames }, ui] = await Promise.all([
+  const [{ iconNames }, ui, { registerIconAlias }] = await Promise.all([
     import('@oas-ui/icons'),
     import('@oas-ui/ui'),
+    import('@oas-ui/ui/basic/icon'),
   ])
   // registerIcon 注册自定义图标；注册后重设 name 触发刷新
   ui.registerIcon(
@@ -316,6 +352,11 @@ onMounted(async () => {
     resolver: (name, family, variant) =>
       variant === 'bold' ? '/demo-icon-bold.svg' : `/${name}.svg`,
   })
+  // 图标字体：注册前缀别名 + 给 demo 图标挂上 iconfont 项目脚本 URL
+  registerIconAlias('i-', 'icon-')
+  for (const el of document.querySelectorAll('oas-icon[data-iconfont-demo]')) {
+    el.setAttribute('iconfont-url', iconfontUrl)
+  }
   for (const el of document.querySelectorAll('oas-icon[name="custom-star"], oas-icon[name="custom-heart"]')) {
     const name = el.getAttribute('name')
     if (!name) continue
@@ -369,9 +410,10 @@ onMounted(async () => {
 | `duotone` | 双色图标：分层着色（`--oas-icon-primary-color` / `--oas-icon-secondary-color` + 透明度），主要配合自定义双层 SVG | `boolean` | — |
 | `family` | 图标族（传给库 resolver 的 family 参数，如描边/实心） | `string` | — |
 | `flip` | 翻转：镜像（`x` / `y` / `both` 轴），可与 `rotate` 组合 | `string` | — |
+| `iconfont-url` | 远程 iconfont 项目脚本地址：按需注入、同 URL 去重，加载后刷新使用方并内联 symbol 内容 | `string` | — |
 | `label` | 可读名称；设置后 `role="img"` | `string` | — |
 | `library` | 远程图标库名（`registerIconLibrary` 注册的库），优先于 `name` 内置注册表 | `string` | — |
-| `name` | 图标名（kebab-case） | `IconName` | — |
+| `name` | 图标名（kebab-case） | `string` | — |
 | `rotate` | 角度旋转：任意角度（`rotate="45"` 度数） | `string` | — |
 | `size` | 尺寸（px 或 em） | `string` | — |
 | `spin` | 旋转动画：无限旋转（loading 场景） | `boolean` | — |

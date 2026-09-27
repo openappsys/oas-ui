@@ -1355,3 +1355,150 @@ describe('OASForm validate-messages 校验文案模板', () => {
     expect(errors.a).toBe('校验未通过')
   })
 })
+
+describe('OASForm 嵌套 name 路径（D10）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountForm(fields: string, attrs: Record<string, string> = {}): OASForm {
+    const el = new OASForm()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = fields
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('点路径：提交 values 组装嵌套对象/数组（users.0.name → { users: [{ name }] }）', () => {
+    const el = mountForm(
+      '<oas-input name="name" value="外层"></oas-input>' +
+        '<oas-input name="users.0.name" value="张三"></oas-input>' +
+        '<oas-input name="users.1.name" value="李四"></oas-input>' +
+        '<oas-input name="profile.city" value="杭州"></oas-input>',
+    )
+    let detail: unknown
+    el.addEventListener('oas-submit', (e) => (detail = (e as CustomEvent).detail))
+    el.submit()
+    expect((detail as { values: unknown }).values).toEqual({
+      name: '外层',
+      users: [{ name: '张三' }, { name: '李四' }],
+      profile: { city: '杭州' },
+    })
+  })
+
+  it('方括号语法与点路径等价（users[0].name / a[0][0]）', () => {
+    const el = mountForm(
+      '<oas-input name="users[0].name" value="张三"></oas-input>' +
+        '<oas-input name="matrix[0][0]" value="m00"></oas-input>',
+    )
+    let detail: unknown
+    el.addEventListener('oas-submit', (e) => (detail = (e as CustomEvent).detail))
+    el.submit()
+    expect((detail as { values: unknown }).values).toEqual({
+      users: [{ name: '张三' }],
+      matrix: [['m00']],
+    })
+  })
+
+  it('扁平名与嵌套名混用：扁平字段组装结果与既有行为一致', () => {
+    const el = mountForm('<oas-input name="plain" value="v"></oas-input><oas-input name="a.b" value="w"></oas-input>')
+    let detail: unknown
+    el.addEventListener('oas-submit', (e) => (detail = (e as CustomEvent).detail))
+    el.submit()
+    expect((detail as { values: unknown }).values).toEqual({ plain: 'v', a: { b: 'w' } })
+  })
+
+  it('rules 按完整路径键匹配：users.0.name required 失败标记该字段', () => {
+    const el = mountForm('<oas-input name="users.0.name" value=""></oas-input>', {
+      rules: JSON.stringify({ 'users.0.name': [{ required: true, message: '姓名必填' }] }),
+    })
+    let errors: Record<string, string> = {}
+    el.addEventListener('oas-validate-fail', (e) => (errors = (e as CustomEvent).detail.errors))
+    el.submit()
+    expect(errors['users.0.name']).toBe('姓名必填')
+    expect(el.querySelector('oas-input')!.hasAttribute('aria-invalid')).toBe(true)
+  })
+
+  it('initial-values 嵌套写入：{ users: [{ name }] } 写进 users.0.name；reset 回初始值', () => {
+    const el = mountForm('<oas-input name="users.0.name" value=""></oas-input>', {
+      'initial-values': JSON.stringify({ users: [{ name: '张三' }] }),
+    })
+    const field = el.querySelector('oas-input')!
+    expect(field.getAttribute('value')).toBe('张三')
+    field.setAttribute('value', '改了')
+    el.reset()
+    expect(field.getAttribute('value')).toBe('张三')
+  })
+
+  it('initial-values 嵌套方括号等价读取：users[0].name 命中 users 数组', () => {
+    const el = mountForm('<oas-input name="users[0].name" value=""></oas-input>', {
+      'initial-values': JSON.stringify({ users: [{ name: '李四' }] }),
+    })
+    expect(el.querySelector('oas-input')!.getAttribute('value')).toBe('李四')
+  })
+
+  it('oas-values-change 的 values 为嵌套快照（name/value 保持原始路径与字符串）', () => {
+    const el = mountForm('<oas-input name="users.0.name" value=""></oas-input>')
+    let detail: unknown
+    el.addEventListener('oas-values-change', (e) => (detail = (e as CustomEvent).detail))
+    el.querySelector('oas-input')!.dispatchEvent(
+      new CustomEvent('oas-input', { bubbles: true, composed: true, detail: { value: 'v1' } }),
+    )
+    const d = detail as { name: string; value: string; values: unknown }
+    expect(d.name).toBe('users.0.name')
+    expect(d.value).toBe('v1')
+    expect(d.values).toEqual({ users: [{ name: 'v1' }] })
+  })
+
+  it('oas-validate-fail 的 values 同样嵌套', () => {
+    const el = mountForm('<oas-input name="users.0.name" value=""></oas-input>', {
+      rules: JSON.stringify({ 'users.0.name': [{ required: true }] }),
+    })
+    let detail: unknown
+    el.addEventListener('oas-validate-fail', (e) => (detail = (e as CustomEvent).detail))
+    el.submit()
+    expect((detail as { values: unknown }).values).toEqual({ users: [{ name: '' }] })
+  })
+
+  it('validator 的 values 参数保持扁平（键为原始路径字符串，向后兼容）', () => {
+    let seen: Record<string, string> | null = null
+    const el = mountForm('<oas-input name="users.0.name" value="x"></oas-input>')
+    el.rules = {
+      'users.0.name': [
+        {
+          validator: (_v, values) => {
+            seen = { ...values }
+            return true
+          },
+        },
+      ],
+    }
+    el.submit()
+    expect(seen).toEqual({ 'users.0.name': 'x' })
+  })
+
+  it('reapplyInitialValues：只为快照建立后新增的字段补写初始值，不动已有字段', () => {
+    const el = mountForm('<oas-input name="users.0.name" value=""></oas-input>', {
+      'initial-values': JSON.stringify({ users: [{ name: '张三' }], title: '标题' }),
+    })
+    // 用户编辑已有字段（初始值写入后）
+    el.querySelector('oas-input')!.setAttribute('value', '用户改过')
+    // 模拟动态字段容器（如 oas-form-list）后创建字段
+    const late = document.createElement('oas-input')
+    late.setAttribute('name', 'title')
+    late.setAttribute('value', '')
+    el.appendChild(late)
+    ;(el as unknown as { reapplyInitialValues: () => void }).reapplyInitialValues()
+    // 已有字段不被覆盖（用户已编辑值受保护）
+    expect(el.querySelector('oas-input[name="users.0.name"]')!.getAttribute('value')).toBe('用户改过')
+    // 新字段补到初始值
+    expect(late.getAttribute('value')).toBe('标题')
+    // 新字段进基线：reset 回初始值
+    late.setAttribute('value', '改了')
+    el.reset()
+    expect(late.getAttribute('value')).toBe('标题')
+  })
+})

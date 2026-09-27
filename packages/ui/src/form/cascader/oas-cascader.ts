@@ -6,6 +6,9 @@ import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
+// 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
+import '../../data/virtual-list/index.js'
+import type { OASVirtualList } from '../../data/virtual-list/index.js'
 
 export interface CascaderOption {
   label: string
@@ -35,16 +38,98 @@ const VALID_VALUE_MODES = ['all', 'parentFirst', 'onlyLeaf'] as const
 /** 悬停展开延时：跨行扫过时避免误展开（近似悬停安全区） */
 const HOVER_EXPAND_DELAY = 120
 
+/** 列虚拟滚动阈值：列项数超过它才启用虚拟（短列全量渲染，避免 1~2 项的子级列也撑满固定高度） */
+const VIRTUAL_COLUMN_THRESHOLD = 50
+
 /** 枚举归一化：合法值原样返回，空/非法回落默认（静默，不告警） */
 function pickValid(raw: string, fallback: string, valid: readonly string[]): string {
   return (valid as readonly string[]).includes(raw) ? raw : fallback
 }
+
+/** 选项行样式（非虚拟列渲染在组件自身 shadow；虚拟列需注入到 vlist shadow，两处共用） */
+const OPTION_STYLE = `
+.option {
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  font-size: var(--oas-font-size-md);
+  color: var(--oas-color-text-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--oas-space-1);
+}
+.option:hover {
+  background: var(--oas-color-bg-hover);
+}
+.option.active {
+  background: var(--oas-color-primary);
+  color: var(--oas-color-text-on-primary);
+}
+.option[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.option .label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.arrow {
+  margin-inline-start: var(--oas-space-2);
+  font-size: var(--oas-font-size-xs);
+  color: inherit;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+/* 多选复选框（视觉态由行 aria-selected 驱动，样式与 tree-select 一致） */
+.check {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--oas-color-border);
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: var(--oas-color-text-on-primary);
+  font-size: var(--oas-font-size-xs);
+  box-sizing: border-box;
+}
+.option[aria-selected='true'] .check {
+  background: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+}
+.check.half {
+  background: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+  opacity: 0.6;
+}
+`
+
+/** 虚拟列注入 oas-virtual-list 的 shadow：选项行占满 item、整行可高亮（对齐 select） */
+const VIRTUAL_ROW_STYLE = `
+[part="item"] {
+  display: flex;
+  align-items: center;
+}
+[part="item"] .option {
+  flex: 1;
+  height: 100%;
+  box-sizing: border-box;
+}
+${OPTION_STYLE}
+`
 
 const STYLE = `
 :host {
   display: inline-block;
   font-family: inherit;
   width: 240px;
+  /* 面板高度 CSS 变量开口：宿主覆盖即可调高（默认 240px），不占属性 API（对齐 select） */
+  --oas-cascader-dropdown-height: 240px;
 }
 :host([hidden]) {
   display: none;
@@ -391,7 +476,7 @@ const STYLE = `
 }
 .panel {
   min-width: 120px;
-  max-height: 240px;
+  max-height: var(--oas-cascader-dropdown-height, 240px);
   overflow-y: auto;
   padding: var(--oas-space-1);
 }
@@ -404,65 +489,7 @@ const STYLE = `
   overflow-y: auto;
   padding: var(--oas-space-1);
 }
-.option {
-  padding: var(--oas-space-2) var(--oas-space-3);
-  border-radius: var(--oas-radius-sm);
-  cursor: pointer;
-  font-size: var(--oas-font-size-md);
-  color: var(--oas-color-text-primary);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--oas-space-1);
-}
-.option:hover {
-  background: var(--oas-color-bg-hover);
-}
-.option.active {
-  background: var(--oas-color-primary);
-  color: var(--oas-color-text-on-primary);
-}
-.option[aria-disabled='true'] {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-.option .label {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.arrow {
-  margin-inline-start: var(--oas-space-2);
-  font-size: var(--oas-font-size-xs);
-  color: inherit;
-  opacity: 0.7;
-  flex-shrink: 0;
-}
-/* 多选复选框（视觉态由行 aria-selected 驱动，样式与 tree-select 一致） */
-.check {
-  width: 16px;
-  height: 16px;
-  border: 1px solid var(--oas-color-border);
-  border-radius: 3px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  color: var(--oas-color-text-on-primary);
-  font-size: var(--oas-font-size-xs);
-  box-sizing: border-box;
-}
-.option[aria-selected='true'] .check {
-  background: var(--oas-color-primary);
-  border-color: var(--oas-color-primary);
-}
-.check.half {
-  background: var(--oas-color-primary);
-  border-color: var(--oas-color-primary);
-  opacity: 0.6;
-}
+${OPTION_STYLE}
 .empty {
   padding: var(--oas-space-3);
   text-align: center;
@@ -516,6 +543,9 @@ export class OASCascader extends OASElement {
       // 能力缺口 P2：触发器可访问名称 / 面板 12 向弹出方向
       'label',
       'placement',
+      // 能力缺口 D4：面板列虚拟滚动（对齐 select 契约；长列窗口渲染 + item-height 定高）
+      'virtual',
+      'item-height',
     ]
   }
 
@@ -1221,6 +1251,23 @@ export class OASCascader extends OASElement {
     }
   }
 
+  /** 虚拟滚动定高：默认 36（与 oas-virtual-list 默认一致，匹配选项行视觉高度；对齐 select） */
+  private virtualItemHeight(): number {
+    const raw = this.getAttr('item-height', '36')
+    const n = Number.parseInt(raw, 10)
+    return Number.isNaN(n) ? 36 : n
+  }
+
+  /** 面板高度：--oas-cascader-dropdown-height CSS 变量开口（默认 240px，对齐 select）。
+   *  computed 优先（覆盖继承/类样式等场景），inline style 兜底（宿主直设 host 内联的主通道） */
+  private dropdownHeight(): number {
+    const raw =
+      getComputedStyle(this).getPropertyValue('--oas-cascader-dropdown-height').trim() ||
+      this.style.getPropertyValue('--oas-cascader-dropdown-height').trim()
+    const n = Number.parseInt(raw, 10)
+    return Number.isNaN(n) || n <= 0 ? 240 : n
+  }
+
   private renderColumn(container: HTMLElement, list: CascaderOption[], depth: number): void {
     const panel = document.createElement('div')
     panel.className = 'panel'
@@ -1229,11 +1276,88 @@ export class OASCascader extends OASElement {
     if (this.isMultiple()) panel.setAttribute('aria-multiselectable', 'true')
     const checked = this.checkedKeySet()
     const selected = this.activePath[depth]
+    // 列虚拟滚动（D4，对齐 select 契约）：长列复用 oas-virtual-list 仅渲染可见窗口；
+    // 短列（≤阈值）全量渲染，避免 1~2 项的子级列也撑满固定高度
+    const useVirtual = this.hasAttr('virtual') && list.length > VIRTUAL_COLUMN_THRESHOLD
+    const vlist = useVirtual ? this.buildVirtualColumn(panel, list, depth, checked, selected) : null
+    container.appendChild(panel)
+    if (vlist) {
+      // panel 入文档后 vlist 才连接并同步渲染窗口：此刻注入行样式并喂入数据
+      const ok = this.connectVirtualColumn(vlist, list)
+      if (!ok) {
+        // vlist 不可用（未升级/无 shadow，防御性回退）：清半建态，回退全量渲染
+        panel.innerHTML = ''
+        panel.style.maxHeight = ''
+        panel.style.overflow = ''
+        this.renderRowsInto(panel, list, depth, checked, selected)
+      }
+      return
+    }
+    this.renderRowsInto(panel, list, depth, checked, selected)
+  }
+
+  /** 非虚拟列：全量逐行渲染（也在虚拟回退路径复用） */
+  private renderRowsInto(
+    panel: HTMLElement,
+    list: CascaderOption[],
+    depth: number,
+    checked: Set<string>,
+    selected: string | undefined,
+  ): void {
     list.forEach((option, index) => {
       const path = [...this.activePath.slice(0, depth), option.value]
       panel.appendChild(this.createRow(option, path, depth, index, checked, selected))
     })
-    container.appendChild(panel)
+  }
+
+  /**
+   * 虚拟列准备（panel 尚未入文档）：解除面板自身 max-height/overflow（滚动交给 vlist 视口，
+   * 避免嵌套滚动条）+ 建 vlist 元素 + 挂 oas-item 监听（连接即同步渲染，监听必须先于连接）。
+   */
+  private buildVirtualColumn(
+    panel: HTMLElement,
+    list: CascaderOption[],
+    depth: number,
+    checked: Set<string>,
+    selected: string | undefined,
+  ): OASVirtualList {
+    panel.style.maxHeight = 'none'
+    panel.style.overflow = 'visible'
+    const vlist = document.createElement('oas-virtual-list') as OASVirtualList
+    vlist.className = 'vlist'
+    vlist.setAttribute('part', 'virtual-list')
+    vlist.setAttribute('height', String(this.dropdownHeight()))
+    vlist.setAttribute('item-height', String(this.virtualItemHeight()))
+    vlist.addEventListener('oas-item', ((
+      e: CustomEvent<{ index: number; item: CascaderOption; element: HTMLElement }>,
+    ) => {
+      const detail = e.detail
+      if (!detail || !detail.item || !detail.element) return
+      const path = [...this.activePath.slice(0, depth), detail.item.value]
+      const row = this.createRow(detail.item, path, depth, detail.index, checked, selected)
+      detail.element.appendChild(row)
+      // 窗口重渲染后高亮态由本处落定（滚动/下钻后 active 行回到窗口时保持高亮）
+      if (depth === this.activePanel && detail.index === this.activeRow) row.classList.add('active')
+    }) as EventListener)
+    panel.appendChild(vlist)
+    return vlist
+  }
+
+  /** vlist 连接后收尾：注入行样式 + 视口键盘可达性交给 dropdown 键盘流 + 喂数据。不可用时返回 false */
+  private connectVirtualColumn(vlist: OASVirtualList, list: CascaderOption[]): boolean {
+    const vroot = vlist.shadowRoot
+    if (!vroot) return false
+    if (!vroot.querySelector('style[data-oas-cascader-rows]')) {
+      const style = document.createElement('style')
+      style.setAttribute('data-oas-cascader-rows', '')
+      style.textContent = VIRTUAL_ROW_STYLE
+      vroot.appendChild(style)
+    }
+    // 视口键盘可达性由 dropdown 的键盘流负责：走 viewportFocusable 公共通道关掉
+    // （直接 removeAttribute 会被 vlist 下次 update 的 syncViewportFocusable 加回）
+    vlist.viewportFocusable = false
+    vlist.items = list
+    return true
   }
 
   /** 构建一个选项行（多选含复选框；展开式节点带箭头），click/mouseenter 行为按模式分派 */
@@ -1550,7 +1674,12 @@ export class OASCascader extends OASElement {
     this.renderPanels()
   }
 
-  /** 键盘高亮增量同步：面板行（列内 active 行）或搜索结果行 */
+  /**
+   * 键盘高亮增量同步：面板行（列内 active 行）或搜索结果行。
+   * 虚拟列（D4）下行在 vlist shadow 内（open shadow 可跨根查询），按 data-index 精确匹配——
+   * 旧实现的「按渲染行位置夹取 activeRow」在窗口渲染下会错位（窗口只是全集子序列），已改精确匹配；
+   * 高亮行不在窗口时由 scroll 跟随把窗口带过来（oas-item 重渲染时按 activeRow 落 active class）。
+   */
   private syncActiveHighlight(): void {
     if (this.searchMode()) {
       this.syncSearchActive()
@@ -1558,14 +1687,34 @@ export class OASCascader extends OASElement {
     }
     const panel = this.dropdown?.querySelectorAll<HTMLElement>('.panel')[this.activePanel]
     if (!panel) return
-    const rowsEl = [...panel.querySelectorAll<HTMLElement>('.option')]
-    const enabledRows = rowsEl.filter((r) => r.getAttribute('aria-disabled') !== 'true')
-    const target = enabledRows[Math.min(this.activeRow, enabledRows.length - 1)] ?? enabledRows[0]
-    for (const r of rowsEl) r.classList.remove('active')
-    if (target) {
-      target.classList.add('active')
-      target.scrollIntoView?.({ block: 'nearest' })
+    const rowsEl = [...panel.querySelectorAll<HTMLElement>('.option[data-index]')]
+    for (const vl of panel.querySelectorAll('oas-virtual-list')) {
+      const vroot = (vl as OASVirtualList).shadowRoot
+      if (vroot) rowsEl.push(...vroot.querySelectorAll<HTMLElement>('.option[data-index]'))
     }
+    for (const r of rowsEl) {
+      r.classList.toggle('active', Number(r.getAttribute('data-index')) === this.activeRow)
+    }
+    // 滚动跟随无条件执行（对齐 select 机制）：activeRow 不在窗口时先把视口带过去，
+    // vlist 随 scroll 重算窗口，oas-item 重渲染时按 activeRow 落 active class
+    this.scrollActiveRowIntoView(panel, this.activeRow)
+  }
+
+  /** 高亮行滚动跟随：虚拟列写 vlist 视口 scrollTop（对齐 select 机制），普通列走 scrollIntoView */
+  private scrollActiveRowIntoView(panel: HTMLElement, index: number): void {
+    const vlist = panel.querySelector('oas-virtual-list') as OASVirtualList | null
+    if (vlist) {
+      const ih = this.virtualItemHeight()
+      const vp = vlist.shadowRoot?.querySelector<HTMLElement>('.viewport')
+      if (!vp) return
+      const top = index * ih
+      const vh = vp.clientHeight || 240
+      const cur = vp.scrollTop
+      if (top < cur) vp.scrollTop = Math.max(0, top)
+      else if (top + ih > cur + vh) vp.scrollTop = Math.max(0, top + ih - vh)
+      return
+    }
+    panel.querySelector<HTMLElement>(`.option[data-index="${index}"]`)?.scrollIntoView?.({ block: 'nearest' })
   }
 
   private syncSearchActive(): void {

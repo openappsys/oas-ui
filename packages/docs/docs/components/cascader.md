@@ -78,6 +78,15 @@
 
 `expand-trigger="hover"` 时悬停父级选项（约 120ms 防误触延时）即展开子级列，点击叶子提交；默认为 `click`。
 
+## 大数据量（虚拟滚动）
+
+<DemoBlock title="虚拟滚动（1000 项长列）">
+  <oas-cascader id="cs-virtual" virtual placeholder="1000 项长列，滚动流畅" options='[]'></oas-cascader>
+  <span id="cs-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+设置 `virtual` 后超过阈值（50 项）的长列只渲染可视窗口（复用 `oas-virtual-list` 的窗口计算，首尾 padding 撑起滚动高度），千级选项滚动流畅、面板高度恒定；`item-height` 可调定高（默认 `36`）。键盘 `↑`/`↓` 导航时窗口自动跟随高亮行；低于阈值的短列与搜索结果、加载占位保持普通渲染。
+
 ## 仅末级与自定义分隔符
 
 <DemoBlock title="仅末级（show-all-levels）与分隔符（separator）">
@@ -317,6 +326,25 @@ onMounted(() => {
     focusOut.textContent = 'oas-blur'
   })
 
+  // 虚拟滚动 demo：1000 项长列（各带一个叶子子级，数据由脚本注入 options 通道）+ 选中反馈
+  const virtualCs = document.getElementById('cs-virtual')
+  const virtualCsOut = document.getElementById('cs-virtual-output')
+  if (virtualCs) {
+    virtualCs.setAttribute(
+      'options',
+      JSON.stringify(
+        Array.from({ length: 1000 }, (_, i) => ({
+          label: `项目 ${i}`,
+          value: `v${i}`,
+          children: [{ label: `${i}-子`, value: `c${i}` }],
+        })),
+      ),
+    )
+    virtualCs.addEventListener('oas-change', (e) => {
+      if (virtualCsOut) virtualCsOut.textContent = `oas-change: ${(e.detail.value || []).join(' / ')}`
+    })
+  }
+
   // label（可访问名称）demo：读取触发器 aria-label（设置 label 与回退占位对照）
   const readLabel = () => {
     const a = document.getElementById('cs-label-set')?.shadowRoot?.querySelector('[part="trigger"]')?.getAttribute('aria-label')
@@ -351,6 +379,7 @@ onMounted(() => {
 | `expand-trigger` | 子级展开触发方式：`click`（默认）/ `hover`（120ms 延时防误触） | `string` | `click` |
 | `field-names` | 字段别名 JSON（`{ label, value, children, disabled }`），对齐 tree-select 契约；懒加载结果同样映射 | `string` | — |
 | `filterable` | 可搜索（扁平路径结果） | `boolean` | — |
+| `item-height` | 虚拟列定高（px，配合 virtual，默认 36） | `string` | `36` |
 | `label` | 触发器可访问名称（aria-label），优先于值/占位回退 | `string` | — |
 | `loading` | 加载态：触发器 spinner + aria-busy，面板显示加载占位 | `boolean` | — |
 | `max-tag-count` | 多选标签按数量折叠 +N（带 title 列隐藏项） | `boolean` | — |
@@ -365,6 +394,7 @@ onMounted(() => {
 | `status` | 校验态：`error` / `warning` / `success`；error 联动 aria-invalid | `string` | — |
 | `value` | 路径数组（JSON），如 `["zj","hz"]` | `string` | `[]` |
 | `value-mode` | 多选值策略：`all`（默认，全路径）/ `parentFirst` / `onlyLeaf` | `string` | `all` |
+| `virtual` | 面板列虚拟滚动（超过 50 项的长列复用 oas-virtual-list 窗口渲染；短列/搜索/加载占位保持普通渲染） | `boolean` | — |
 
 #### 事件
 
@@ -383,3 +413,9 @@ onMounted(() => {
 | --- | --- |
 | `template[slot="option"]` | 选项行自定义渲染模板，`[data-option-label]` 节点绑定选项文本 |
 | `template[slot="suffix-icon"]` | 自定义触发器后缀图标（替换默认箭头；loading 时让位 spinner） |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-cascader-dropdown-height` | `240px` |

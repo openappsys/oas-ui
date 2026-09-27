@@ -129,3 +129,35 @@ test('time-picker hide-disabled-options：打烊时段（14-16 点）直接隐�
     ),
   )
 })
+
+// —— 能力缺口 D 批：timezone（「此刻」按钮按指定时区墙钟取值）——
+
+test('time-picker timezone：此刻按钮按指定时区墙钟取值', async ({ page }) => {
+  await page.goto('/components/time-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#time-picker-timezone-utc')
+  const host = page.locator('#time-picker-timezone-utc')
+  await host.scrollIntoViewIfNeeded()
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(
+    () => !!document.querySelector('#time-picker-timezone-utc')?.shadowRoot?.querySelector('[part="now"]'),
+    null,
+    { timeout: 5000 },
+  )
+  const r = await host.evaluate((el) => {
+    const utc = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'UTC',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).format(new Date())
+    el.shadowRoot!.querySelector<HTMLElement>('[part="now"]')!.click()
+    return { value: el.getAttribute('value'), utc }
+  })
+  const toSec = (v: string): number => {
+    const [h, m, s] = v.split(':').map(Number)
+    return h! * 3600 + m! * 60 + s!
+  }
+  const diff = Math.abs(toSec(r.value!) - toSec(r.utc))
+  expect(Math.min(diff, 86400 - diff), '此刻应取 UTC 墙钟（允许跨秒 ±1）').toBeLessThanOrEqual(1)
+})

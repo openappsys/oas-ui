@@ -119,6 +119,44 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "labels",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "label-1",
+      "observed": true
+    },
+    {
+      "name": "label-2",
+      "observed": true
+    },
+    {
+      "name": "label-3",
+      "observed": true
+    },
+    {
+      "name": "label-4",
+      "observed": true
+    },
+    {
+      "name": "label-5",
+      "observed": true
+    },
+    {
+      "name": "label-6",
+      "observed": true
+    },
+    {
+      "name": "label-7",
+      "observed": true
+    },
+    {
+      "name": "label-8",
+      "observed": true
     }
   ],
   "props": [
@@ -133,12 +171,12 @@
   ],
   "events": [
     {
-      "name": "oas-input",
-      "detail": "{ value: Number(this.input!.value) } | { value: this.currentRange() } | { value: Number(this.input?.value ?? 0) }"
+      "name": "oas-change",
+      "detail": "{ value: this.emitValue() }"
     },
     {
-      "name": "oas-change",
-      "detail": "{ value: Number(this.input!.value) } | { value: this.currentRange() } | { value: Number(this.input?.value ?? 0) }"
+      "name": "oas-input",
+      "detail": "{ value: this.emitValue() }"
     }
   ],
   "slots": [

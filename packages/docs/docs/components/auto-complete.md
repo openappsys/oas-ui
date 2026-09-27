@@ -59,6 +59,15 @@
 
 选项带 `group` 字段时按组渲染组标题（不可选），组内选项缩进；键盘 `↑`/`↓` 跨组连续导航。
 
+## 大数据量（虚拟滚动）
+
+<DemoBlock title="虚拟滚动（1000 项建议）">
+  <oas-auto-complete id="ac-virtual" virtual clearable placeholder="输入「9」试试（千级建议滚动流畅）" options='[]'></oas-auto-complete>
+  <span id="ac-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+设置 `virtual` 后建议面板只渲染可视窗口（复用 `oas-virtual-list` 的窗口计算，首尾 padding 撑起滚动高度），千级建议滚动流畅、面板高度恒定；`item-height` 可调定高（默认 `36`）。键盘 `↑`/`↓` 导航时窗口自动跟随高亮项，`aria-activedescendant` 保持指向可见项；带 `group` 的选项自动回退全量渲染（同 `oas-select` 契约）。
+
 ## 自定义选项渲染
 
 <DemoBlock title="自定义选项（oas-option-render 事件）">
@@ -228,6 +237,17 @@ onMounted(() => {
     ac.setAttribute('options', '[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]')
     acFocusZone.appendChild(ac)
   })
+
+  // 虚拟滚动 demo：1000 条建议（数据由脚本注入 options 通道）+ 选中反馈
+  const virtualAc = document.getElementById('ac-virtual')
+  const virtualAcOut = document.getElementById('ac-virtual-output')
+  virtualAc?.setAttribute(
+    'options',
+    JSON.stringify(Array.from({ length: 1000 }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` }))),
+  )
+  virtualAc?.addEventListener('oas-change', (e) => {
+    if (virtualAcOut) virtualAcOut.textContent = `oas-change: ${JSON.stringify(e.detail)}`
+  })
 })
 </script>
 
@@ -268,6 +288,7 @@ onMounted(() => {
 | `clearable` | 可清空（输入有内容时显示清空按钮，清空派发 `oas-clear` 与空值 `oas-change`） | `boolean` | — |
 | `debounce` | 输入防抖（毫秒，默认 0 不防抖）：只防抖 `oas-input` 派发与过滤触发，不防抖输入回显 | `string` | `0` |
 | `disabled` | 禁用 | `boolean` | — |
+| `item-height` | 虚拟滚动定高（px，配合 virtual，默认 36） | `string` | `36` |
 | `loading` | 加载占位（下拉显示「加载中…」，远程建议请求态） | `boolean` | — |
 | `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]`（group 为分组标题） | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | `string` | — |
@@ -279,6 +300,7 @@ onMounted(() => {
 | `trigger-on-focus` | 聚焦即展示建议（datalist 心智；默认关闭，维持「输入优先」现状） | `boolean` | — |
 | `value` | 预设值 | `string` | — |
 | `variant` | 形态变体：`outlined`（默认）/ `filled` / `borderless`，非法值静默回落 | `string` | — |
+| `virtual` | 虚拟滚动（复用 oas-virtual-list 仅渲染可视窗口；带 group 的选项自动回退全量渲染） | `boolean` | — |
 
 #### 事件
 
@@ -299,5 +321,11 @@ onMounted(() => {
 | `footer` | 建议面板底部内容（如「查看全部」链接） |
 | `header` | 建议面板头部内容（如「输入试试 xx」提示条） |
 | `template[slot="option"]` | 自定义选项模板骨架，`[data-option-label]` 节点自动绑定选项文本 |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-auto-complete-dropdown-height` | `240px` |
 
 键盘：`↑`/`↓` 移动（循环），`Enter` 选中高亮项（首项默认高亮），`Esc` 关闭。

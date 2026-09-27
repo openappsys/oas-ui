@@ -206,6 +206,21 @@ The default slot overrides the built-in percentage: line projects into the side 
 
 For the line form, `size` is a height tier (`small` 4px / `medium` 8px / `large` 12px) and `stroke-width` sets the track height directly (px, priority over tiers); `text-inside` moves text into the bar (track height auto-lifts when not explicitly set); the label sits inside the **filled** segment only and hides when the fill is too narrow (under ~6ch), so no half-digit ever shows over the track.
 
+## Vertical progress
+
+`vertical` turns the line form vertical: the track becomes a column, thickness still comes from the `size` / `stroke-width` tiers, and the fill grows **bottom-up**. `height` sets the vertical length (plain numbers are px; `vh`/`%` units are accepted; invalid values fall back to the default 200px; the attribute is ignored in horizontal mode). `circle` / `dashboard` are unaffected by `vertical`.
+
+<DemoBlock title="vertical progress">
+  <oas-space size="large" wrap align="end">
+    <oas-progress vertical percent="25" label="25%"></oas-progress>
+    <oas-progress vertical percent="50" label="50%"></oas-progress>
+    <oas-progress vertical percent="75" status="success" label="75%"></oas-progress>
+    <oas-progress vertical percent="40" height="240" striped label="40%"></oas-progress>
+    <oas-progress vertical percent="60" size="large" no-text label="60%"></oas-progress>
+    <oas-progress vertical percent="90" buffer="70" show-text="false" label="90%"></oas-progress>
+  </oas-space>
+</DemoBlock>
+
 ## Linecap
 
 <DemoBlock title="stroke-linecap">
@@ -294,6 +309,7 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `buffer` | Buffer value (line only, clamped to 0–max): static buffered segment behind the main bar for streaming/loading scenarios | `string` | — |
 | `color` | Progress color: preset name (via --oas-preset-* tokens) or any CSS color/gradient string (gradients recommended for line); wins over status colors and the full-value green | `string` | — |
+| `height` | Vertical length (vertical only): plain numbers are px; px/vh/% accepted; invalid falls back to the default | `string` | — |
 | `indeterminate` | Indeterminate loading: ignores percent/steps/buffer/striped and drops aria-valuenow (APG); sweeping bar (line) or rotating segmented arc (circle/dashboard) | `boolean` | — |
 | `label` | Accessible name (written to the progress bar aria-label) | — | — |
 | `max` | Value range upper bound (default 100): percent/buffer read as current values; width and text are computed as value/max and aria reflects real values | `string` | `100` |
@@ -311,6 +327,7 @@ onMounted(async () => {
 | `track-color` | Track color: same protocol as color | `string` | — |
 | `type` | Shape: `line` (default) / `circle` / `dashboard` (gauge: 270° arc open at the bottom) | `string` | `line` |
 | `value` | Alias of percent (current value, clamped to 0–max): when both are set percent wins; read only when percent is absent | `string` | `0` |
+| `vertical` | Vertical orientation (line form only): vertical track filling bottom-up; circle/dashboard unaffected | `boolean` | — |
 
 #### Slots
 

@@ -39,6 +39,41 @@ Without `rules`, submission performs no validation and dispatches `oas-submit` d
   </oas-form>
 </DemoBlock>
 
+### Nested name paths: nested values
+
+> Field `name` supports dot-path syntax: numeric segments are array indices, other segments are object keys — `profile.city` assembles into `{ profile: { city } }`; `users.0.name` and `users[0].name` are equivalent spellings that assemble into `{ users: [{ name }] }`. On submit, `oas-submit`'s `detail.values` is the nested structure; `rules` keys match by the full path string (e.g. `"users.0.name"`); `initial-values` writes in through the same nested paths and `reset()` restores them. Plain names without path syntax assemble exactly as before.
+
+<DemoBlock title="Nested name path submit">
+  <oas-form id="form-nested" style="width: 340px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-input name="name" placeholder="Name (flat field)"></oas-input>
+      <oas-input name="profile.city" placeholder="City (name is profile.city)"></oas-input>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">Submit</oas-button>
+    </oas-space>
+  </oas-form>
+  <span id="form-nested-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
+</DemoBlock>
+
+After submitting, `values` looks like `{"name":"Alex","profile":{"city":"Hangzhou"}}` — the path segments define the structure.
+
+### Dynamic field group form-list
+
+> `oas-form-list` maintains an add/remove group of field rows inside the form: put a `<template>` inside the component as the row template; cloned row fields get their `name` indexed automatically — either use the `{index}` placeholder in the template (`name="users.{index}.name"`), or set `name="users"` on the component and write bare names in the template (auto-prefixed to `users.N.field`). `min` / `max` constrain the row count (rows are padded up to `min`), each row has a remove button, and after removal the remaining rows are renumbered with their filled values kept. Fields stay in the light DOM, so validation / submit / `oas-values-change` all follow the host form; the component dispatches `oas-add` / `oas-remove` (`detail: { index }`).
+
+<DemoBlock title="Dynamic field group form-list">
+  <oas-form id="form-list-demo" style="width: 420px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-form-item label="Family members" help="Add a few rows; on submit they assemble into the values.members array">
+        <oas-form-list id="form-list-demo-list" name="members" min="1" max="4"></oas-form-list>
+      </oas-form-item>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">Submit</oas-button>
+    </oas-space>
+  </oas-form>
+  <span id="form-list-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
+</DemoBlock>
+
+After submitting, `values` looks like `{"members":[{"name":"Alex","role":"self"},{"name":"Sam","role":"relative"}]}`; in plain HTML write the row template as a literal `<template>`, while in md/Vue compiled contexts prefer injecting an `HTMLTemplateElement` built in JS (template content pass-through is unreliable under template compilation).
+
 ## Native Form Integration (form-associated)
 
 All form components are **form-associated** custom elements (`formAssociated: true`): they work directly inside a native `<form>` — `<label for>` association works (clicking the label focuses/activates the control, screen readers announce the label text), values are collected via standard `FormData` (submitted only when `name` is set), `form.reset()` restores initial values, `fieldset[disabled]` disables them, and `required` joins the native validation chain (`checkValidity()` / `:invalid` pseudo-class).
@@ -383,6 +418,33 @@ onMounted(() => {
   const basicOut = document.getElementById('form-basic-output')
   document.getElementById('form-basic')?.addEventListener('oas-submit', (e) => {
     basicOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+
+  // Nested name path: submit result echo (nested JSON structure)
+  const nestedOut = document.getElementById('form-nested-output')
+  document.getElementById('form-nested')?.addEventListener('oas-submit', (e) => {
+    nestedOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+
+  // Dynamic field group (form-list): the row template is injected via JS (template content
+  // pass-through is unreliable under md/Vue compilation — plain HTML can use a literal
+  // <template>); in-row value sync is covered by oas-form's built-in oas-input listener,
+  // so no per-element wiring is needed
+  const formListDemo = document.getElementById('form-list-demo-list')
+  if (formListDemo) {
+    const tpl = document.createElement('template')
+    tpl.innerHTML =
+      '<oas-input name="name" placeholder="Name" style="width: 150px"></oas-input>' +
+      '<oas-input name="role" placeholder="Relation" style="width: 110px"></oas-input>'
+    formListDemo.appendChild(tpl)
+  }
+  const listOut = document.getElementById('form-list-output')
+  const formListForm = document.getElementById('form-list-demo')
+  formListForm?.addEventListener('oas-submit', (e) => {
+    listOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+  formListForm?.addEventListener('oas-remove', (e) => {
+    listOut.textContent = `oas-remove: removed row ${e.detail.index + 1} (remaining rows renumbered)`
   })
 
   // Native form integration: FormData read + reset

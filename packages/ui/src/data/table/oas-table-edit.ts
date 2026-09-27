@@ -38,6 +38,8 @@ export interface TableEditHost {
   ): void
   /** 行数据（提交回写时经此取当前全量） */
   readonly data: Array<Record<string, unknown>>
+  /** 前置非数据列数（行拖拽手柄列 + 勾选列）：数据列索引 → tr 内 td 索引的换算基准 */
+  leadingColumnCount(): number
 }
 
 /** 行内编辑进行中的单元格状态（同一时刻至多一格在编辑） */
@@ -516,9 +518,9 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     return [...body.querySelectorAll('tr.row')].indexOf(tr)
   }
 
-  /** 数据列 td 在 tr 内的索引（勾选列占一列时偏移） */
+  /** 数据列 td 在 tr 内的索引（前置列 = 行拖拽手柄列 + 勾选列，由宿主统一给出） */
   private tdOffset(colIndex: number): number {
-    return colIndex + (this.hostEl.hasAttribute('checkable') ? 1 : 0)
+    return colIndex + this.hostEl.leadingColumnCount()
   }
 
   /** 按行键在数据树中找行对象（提交时回写用） */

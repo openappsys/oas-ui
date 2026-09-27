@@ -4,7 +4,7 @@
   "attrs": [
     {
       "name": "name",
-      "type": "IconName",
+      "type": "string",
       "default": "",
       "observed": true
     },
@@ -91,6 +91,12 @@
     },
     {
       "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "iconfont-url",
       "type": "string",
       "default": "",
       "observed": true

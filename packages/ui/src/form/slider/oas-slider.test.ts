@@ -1261,3 +1261,191 @@ describe('OASSlider label 可访问名', () => {
     expect(byRole(el, 'range').getAttribute('aria-label')).toBe('亮度')
   })
 })
+
+// ---- D26：多滑块泛化（value N 元数组 → N 把手；range 为 N=2 特例） ----
+
+describe('OASSlider 多滑块泛化（D26）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  function thumbValues(el: OASSlider): number[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLInputElement>('[data-role^="thumb-"]')].map((n) => Number(n.value))
+  }
+
+  it('value="[10,30,70]" → 3 把手（thumb-0/1/2），data-multi 镜像，单值槽位隐藏', () => {
+    const el = mount({ value: '[10,30,70]', min: '0', max: '100' })
+    expect(el.hasAttribute('data-multi')).toBe(true)
+    const exact = el.shadowRoot!.querySelectorAll('[data-role="thumb-0"]')
+    expect(exact).toHaveLength(1)
+    expect(thumbValues(el)).toEqual([10, 30, 70])
+    expect((el.shadowRoot!.querySelector('[data-role="range"]') as HTMLInputElement).hidden).toBe(true)
+    // 3 个自定义视觉层
+    expect(el.shadowRoot!.querySelectorAll('.custom-thumb')).toHaveLength(3)
+  })
+
+  it('N 元数组泛化：4 个值 → 4 把手', () => {
+    const el = mount({ value: '[5,25,50,90]' })
+    expect(thumbValues(el)).toEqual([5, 25, 50, 90])
+    expect(el.shadowRoot!.querySelectorAll('[data-role^="thumb-"]')).toHaveLength(4)
+  })
+
+  it('range 为 N=2 特例：保留 range-min/range-max 旧契约，并镜像 data-multi', () => {
+    const el = mount({ range: '', value: '[20,80]' })
+    expect(el.hasAttribute('data-multi')).toBe(true)
+    expect(Number(byRole(el, 'range-min').value)).toBe(20)
+    expect(Number(byRole(el, 'range-max').value)).toBe(80)
+    expect(el.shadowRoot!.querySelectorAll('[data-role^="thumb-"]')).toHaveLength(0)
+  })
+
+  it('二元数组（无 range 属性）同样渲染 2 把手', () => {
+    const el = mount({ value: '[20,80]' })
+    expect(thumbValues(el)).toEqual([20, 80])
+    expect(el.hasAttribute('data-multi')).toBe(true)
+  })
+
+  it('非数组 / 非法数组值回落单把手（既有契约不回归）', () => {
+    const single = mount({ value: '40' })
+    expect(single.hasAttribute('data-multi')).toBe(false)
+    expect(byRole(single, 'range')).toBeTruthy()
+    single.remove()
+    const bad = mount({ value: '["a","b"]' })
+    expect(bad.hasAttribute('data-multi')).toBe(false)
+    expect(Number(byRole(bad, 'range').value)).toBe(50)
+  })
+
+  it('每把手独立拖拽：拖动 thumb-1 只改该把手，value 属性写回 JSON 数组', () => {
+    const el = mount({ value: '[10,30,70]' })
+    const details: unknown[] = []
+    el.addEventListener('oas-input', (e: Event) => details.push((e as CustomEvent).detail))
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    const t1 = byRole(el, 'thumb-1')
+    t1.value = '45'
+    t1.dispatchEvent(new Event('input'))
+    expect(thumbValues(el)).toEqual([10, 45, 70])
+    expect(el.getAttribute('value')).toBe('[10,45,70]')
+    expect(details[0]).toEqual({ value: [10, 45, 70] })
+    t1.dispatchEvent(new Event('change'))
+    expect(details[1]).toEqual({ value: [10, 45, 70] })
+  })
+
+  it('相邻把手约束：拖动 thumb-1 越过 thumb-2 时夹到 thumb-2 值（不被穿越）', () => {
+    const el = mount({ value: '[10,50,90]' })
+    const t1 = byRole(el, 'thumb-1')
+    t1.value = '100'
+    t1.dispatchEvent(new Event('input'))
+    expect(thumbValues(el)).toEqual([10, 90, 90])
+    // 反向：thumb-1 拖到低于 thumb-0 → 夹到 thumb-0
+    t1.value = '0'
+    t1.dispatchEvent(new Event('input'))
+    expect(thumbValues(el)).toEqual([10, 10, 90])
+  })
+
+  it('键盘作用于聚焦把手（PageUp 大步只改该把手并派发数组 detail）', () => {
+    const el = mount({ value: '[10,50,90]', 'large-step': '10', min: '0', max: '100' })
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    byRole(el, 'thumb-1').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true, cancelable: true }),
+    )
+    expect(thumbValues(el)).toEqual([10, 60, 90])
+    expect(details[0]).toEqual({ value: [10, 60, 90] })
+  })
+
+  it('show-input 多值：num-0/1/2 输入框 + 分隔符，提交驱动对应把手', () => {
+    vi.useFakeTimers()
+    try {
+      const el = mount({ value: '[10,30,70]', 'show-input': '', min: '0', max: '100' })
+      expect(el.shadowRoot!.querySelectorAll('[data-role^="num-"]')).toHaveLength(3)
+      expect(byRole(el, 'num-1').value).toBe('30')
+      expect(el.shadowRoot!.querySelectorAll('.input-sep')).toHaveLength(2)
+      byRole(el, 'num-1').value = '55'
+      byRole(el, 'num-1').dispatchEvent(new Event('input'))
+      vi.advanceTimersByTime(400)
+      expect(thumbValues(el)).toEqual([10, 55, 70])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('数值输入越界推着相邻把手走（保持升序）', () => {
+    const el = mount({ value: '[10,30,70]', 'show-input': '', min: '0', max: '100' })
+    const num0 = byRole(el, 'num-0')
+    num0.value = '80'
+    num0.dispatchEvent(new Event('change'))
+    // thumb-0=80 推着 thumb-1/2 至少不小于 80
+    expect(thumbValues(el)).toEqual([80, 80, 80])
+  })
+
+  it('逐把手 aria-label：label-1/label-2/label-3 属性优先', () => {
+    const el = mount({ value: '[10,30,70]', 'label-1': '低', 'label-2': '中', 'label-3': '高' })
+    expect(byRole(el, 'thumb-0').getAttribute('aria-label')).toBe('低')
+    expect(byRole(el, 'thumb-1').getAttribute('aria-label')).toBe('中')
+    expect(byRole(el, 'thumb-2').getAttribute('aria-label')).toBe('高')
+  })
+
+  it('逐把手 aria-label：labels JSON 数组通道', () => {
+    const el = mount({ value: '[10,30,70]', labels: '["low","mid","high"]' })
+    expect(byRole(el, 'thumb-0').getAttribute('aria-label')).toBe('low')
+    expect(byRole(el, 'thumb-2').getAttribute('aria-label')).toBe('high')
+  })
+
+  it('逐把手 aria-label：缺省回落 label + 序号 / 内置文案 + 序号', () => {
+    const el = mount({ value: '[10,30,70]', label: '通道' })
+    expect(byRole(el, 'thumb-0').getAttribute('aria-label')).toBe('通道 1')
+    expect(byRole(el, 'thumb-2').getAttribute('aria-label')).toBe('通道 3')
+    el.removeAttribute('label')
+    expect(byRole(el, 'thumb-1').getAttribute('aria-label')).toBe('滑块 2')
+  })
+
+  it('多把手 + marks：经过区间按首末把手覆盖高亮', () => {
+    const el = mount({
+      value: '[10,30,70]',
+      min: '0',
+      max: '100',
+      marks: JSON.stringify([0, 20, 50, 80, 100]),
+    })
+    expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual(['false', 'true', 'true', 'false', 'false'])
+    // 拖动末把手扩大覆盖区间
+    const t2 = byRole(el, 'thumb-2')
+    t2.value = '95'
+    t2.dispatchEvent(new Event('input'))
+    expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual(['false', 'true', 'true', 'true', 'false'])
+  })
+
+  it('多把手填充区覆盖首末把手之间', () => {
+    const el = mount({ value: '[20,50,80]', min: '0', max: '100' })
+    const fill = fillEl(el)
+    expect(fill.style.left).toBe('20%')
+    expect(fill.style.width).toBe('60%')
+  })
+
+  it('表单序列化：多把手拖动提交后字段为合法 JSON 数组', () => {
+    const form = document.createElement('oas-form') as Element & { shadowRoot: ShadowRoot }
+    form.innerHTML = '<oas-slider name="levels" min="0" max="100" value="[10,30,70]"></oas-slider>'
+    document.body.appendChild(form)
+    const slider = form.querySelector('oas-slider')!
+    const t = slider.shadowRoot!.querySelector<HTMLInputElement>('[data-role="thumb-1"]')!
+    t.value = '45'
+    t.dispatchEvent(new Event('input'))
+    t.dispatchEvent(new Event('change'))
+    let detail: unknown
+    form.addEventListener('oas-submit', (e: Event) => (detail = (e as CustomEvent).detail))
+    form.shadowRoot.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    const values = (detail as { values: Record<string, string> }).values
+    expect(values.levels).toBe('[10,45,70]')
+    expect(JSON.parse(values.levels!)).toEqual([10, 45, 70])
+  })
+
+  it('CSS：多把手叠层定位规则存在（data-multi），range 旧规则保留', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(":host([data-multi]) input[type='range']")
+    expect(css).toContain(":host([data-range]) input[data-role='range-min']")
+  })
+})

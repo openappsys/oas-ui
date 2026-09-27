@@ -690,3 +690,165 @@ function toISO(d: Date): string {
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
+
+// ---- D24：calendar-system 非公历历法 + months 多月份并排 ----
+
+describe('D24 calendar-system 非公历历法', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const TARGET = new Date(2026, 7, 9)
+
+  it('calendar-system=islamic：标题/单元格 aria/日数字跟随历法（Intl 透传）', () => {
+    const el = mount({ value: '2026-08-09', 'calendar-system': 'islamic' })
+    const titleFmt = new Intl.DateTimeFormat('zh-CN', {
+      calendar: 'islamic',
+      year: 'numeric',
+      month: 'long',
+    }).format(TARGET)
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe(titleFmt)
+    const longFmt = new Intl.DateTimeFormat('zh-CN', {
+      calendar: 'islamic',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(TARGET)
+    const cell = day(el, '2026-08-09')
+    expect(cell.getAttribute('aria-label')).toBe(longFmt)
+    const dayPart = new Intl.DateTimeFormat('zh-CN', { calendar: 'islamic', day: 'numeric' })
+      .formatToParts(TARGET)
+      .find((p) => p.type === 'day')!.value
+    expect(cell.textContent).toBe(dayPart)
+    // 内部模型仍为公历：data-date / value 不回写历法
+    expect(cell.getAttribute('data-date')).toBe('2026-08-09')
+  })
+
+  it('calendar-system=chinese：标题走 Intl 历法输出（含年名）', () => {
+    const el = mount({ value: '2026-08-09', 'calendar-system': 'chinese' })
+    const expected = new Intl.DateTimeFormat('zh-CN', {
+      calendar: 'chinese',
+      year: 'numeric',
+      month: 'long',
+    }).format(TARGET)
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe(expected)
+  })
+
+  it('calendar-system + format="yyyy"：token 走历法 parts（chinese relatedYear 亦映射）', () => {
+    const el = mount({ value: '2026-08-09', 'calendar-system': 'islamic', format: 'yyyy' })
+    const expected = new Intl.DateTimeFormat('zh-CN', { calendar: 'islamic', year: 'numeric' })
+      .formatToParts(TARGET)
+      .find((p) => p.type === 'year')!.value
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe(expected)
+    // chinese：formatToParts 无 year，仅 relatedYear/yearName → 映射 relatedYear
+    const cn = mount({ value: '2026-08-09', 'calendar-system': 'chinese', format: 'yyyy' })
+    const related = new Intl.DateTimeFormat('zh-CN', { calendar: 'chinese', year: 'numeric' })
+      .formatToParts(TARGET)
+      .find((p) => p.type === 'year' || (p.type as string) === 'relatedYear')!.value
+    expect(cn.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe(related)
+  })
+
+  it('缺省/移除 calendar-system：回落公历展示（既有契约不变）', () => {
+    const el = mount({ value: '2026-08-09' })
+    expect(day(el, '2026-08-09').textContent).toBe('9')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年8月')
+    el.setAttribute('calendar-system', 'islamic')
+    expect(day(el, '2026-08-09').textContent).not.toBe('9')
+    el.removeAttribute('calendar-system')
+    expect(day(el, '2026-08-09').textContent).toBe('9')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年8月')
+  })
+})
+
+describe('D24 months 多月份并排面板', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('months=2：并排两个月网格（两个 rowgroup / 14 周头），标题为月份范围', () => {
+    const el = mount({ value: '2026-08-09', months: '2' })
+    const panels = el.shadowRoot!.querySelectorAll('[part="grid"] .month-panel')
+    expect(panels).toHaveLength(2)
+    expect(panels[0]!.getAttribute('role')).toBe('rowgroup')
+    expect(el.shadowRoot!.querySelectorAll('.weekday')).toHaveLength(14)
+    const title = el.shadowRoot!.querySelector('[part="title"]')!.textContent ?? ''
+    expect(title).toContain('2026年8月')
+    expect(title).toContain('2026年9月')
+    // 两个月的日期都在网格中
+    expect(day(el, '2026-08-15')).toBeTruthy()
+    expect(day(el, '2026-09-15')).toBeTruthy()
+  })
+
+  it('months=2 翻页联动：下一月/上一月整体前进/后退两个月', () => {
+    const el = mount({ value: '2026-08-09', months: '2' })
+    const pages: string[] = []
+    el.addEventListener('oas-panel-change', (e: Event) => {
+      pages.push(toISO(((e as CustomEvent).detail as { date: Date }).date))
+    })
+    el.shadowRoot!.querySelector<HTMLElement>('[part="next"]')!.click()
+    expect(day(el, '2026-10-15')).toBeTruthy()
+    expect(day(el, '2026-11-15')).toBeTruthy()
+    expect(pages).toEqual(['2026-10-01'])
+    el.shadowRoot!.querySelector<HTMLElement>('[part="prev"]')!.click()
+    expect(day(el, '2026-08-15')).toBeTruthy()
+    expect(pages).toEqual(['2026-10-01', '2026-08-01'])
+  })
+
+  it('months 非法/越界值回落 1：结构不回归（无 month-panel 容器，7 周头）', () => {
+    for (const bad of ['abc', '0', '-3']) {
+      const el = mount({ value: '2026-08-09', months: bad })
+      expect(el.shadowRoot!.querySelectorAll('.month-panel')).toHaveLength(0)
+      expect(el.shadowRoot!.querySelectorAll('.weekday')).toHaveLength(7)
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年8月')
+      el.remove()
+    }
+  })
+
+  it('months 缺省与 months=1 一致：单网格结构 + 标题沿用 format', () => {
+    const a = mount({ value: '2026-08-09' })
+    expect(a.shadowRoot!.querySelectorAll('.weekday')).toHaveLength(7)
+    const b = mount({ value: '2026-08-09', months: '1', format: 'yyyy年MM月' })
+    expect(b.shadowRoot!.querySelectorAll('.weekday')).toHaveLength(7)
+    expect(b.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年08月')
+  })
+
+  it('months + min/max：翻页边界按整段多月份面板判定', () => {
+    const el = mount({ value: '2026-08-09', months: '2', min: '2026-08-01', max: '2026-09-30' })
+    const prev = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="prev"]')!
+    const next = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!
+    // 显示 8-9 月已覆盖 [min,max]：前后均无可前进的整月段
+    expect(prev.disabled).toBe(true)
+    expect(next.disabled).toBe(true)
+    const ok = mount({ value: '2026-08-09', months: '2', min: '2026-01-01', max: '2026-12-31' })
+    expect(ok.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!.disabled).toBe(false)
+  })
+
+  it('months 与 calendar-system 并存：各面板日数字均跟随历法', () => {
+    const el = mount({ value: '2026-08-09', months: '2', 'calendar-system': 'islamic' })
+    const target = new Date(2026, 7, 9)
+    const part = new Intl.DateTimeFormat('zh-CN', { calendar: 'islamic', day: 'numeric' })
+      .formatToParts(target)
+      .find((p) => p.type === 'day')!.value
+    expect(day(el, '2026-08-09').textContent).toBe(part)
+  })
+
+  it('months=2 键盘移动：跨面板焦点落到正确的本月单元格（非前一月补位日）', () => {
+    const el = mount({ value: '2026-08-09', months: '2' })
+    // 9 月 1 日同时出现在 8 月面板的补位格与 9 月面板的本月格
+    const all = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.day[data-date="2026-09-01"]')]
+    expect(all.length).toBeGreaterThanOrEqual(1)
+    expect(all.some((b) => !b.classList.contains('outside'))).toBe(true)
+  })
+})

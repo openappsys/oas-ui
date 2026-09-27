@@ -1505,3 +1505,104 @@ describe('P2 批：default-time 范围默认时刻', () => {
     expect(hourSelected(el, 'end')).toBe('23')
   })
 })
+
+// timezone 时区通道：固定绝对时刻 2026-09-08T17:30:00Z —— UTC/纽约为 09-08，上海为 09-09（跨日）
+describe('OASDatePicker timezone（时区锚点）', () => {
+  const FIXED = new Date(Date.UTC(2026, 8, 8, 17, 30, 0))
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    vi.useFakeTimers()
+    vi.setSystemTime(FIXED)
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  function todayCell(el: OASDatePicker, gridIndex = 0): string | null {
+    return grids(el)[gridIndex]!.querySelector('.day.today')?.getAttribute('data-date') ?? null
+  }
+
+  function localISO(): string {
+    const d = new Date()
+    const p = (v: number): string => String(v).padStart(2, '0')
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+  }
+
+  it('面板「今天」高亮按 timezone=UTC', () => {
+    const el = mount({ timezone: 'UTC' })
+    open(el)
+    expect(todayCell(el)).toBe('2026-09-08')
+  })
+
+  it('面板「今天」高亮按 timezone=Asia/Shanghai（跨日）', () => {
+    const el = mount({ timezone: 'Asia/Shanghai' })
+    open(el)
+    expect(todayCell(el)).toBe('2026-09-09')
+  })
+
+  it('缺省 timezone：面板「今天」高亮回落宿主本地时区', () => {
+    const el = mount()
+    open(el)
+    expect(todayCell(el)).toBe(localISO())
+  })
+
+  it('运行时切换 timezone：已展开面板「今天」高亮即时跟随', () => {
+    const el = mount({ timezone: 'UTC' })
+    open(el)
+    expect(todayCell(el)).toBe('2026-09-08')
+    el.setAttribute('timezone', 'Asia/Shanghai')
+    expect(todayCell(el)).toBe('2026-09-09')
+  })
+
+  it('快捷预设「今天」按目标时区解析（Asia/Shanghai → 次日）', () => {
+    const el = mount({ timezone: 'Asia/Shanghai' })
+    open(el)
+    el.shadowRoot!.querySelector<HTMLElement>('.shortcut')!.click()
+    expect(el.getAttribute('value')).toBe('2026-09-09')
+  })
+
+  it('daterange 快捷预设「今天」两端同为目标时区当日', () => {
+    const el = mount({ type: 'daterange', timezone: 'UTC' })
+    open(el)
+    el.shadowRoot!.querySelector<HTMLElement>('.shortcut')!.click()
+    expect(el.getAttribute('value')).toBe('["2026-09-08","2026-09-08"]')
+  })
+
+  it('datetimerange 快捷预设：日期与默认时刻按目标时区推导', () => {
+    const el = mount({ type: 'datetimerange', timezone: 'Asia/Shanghai' })
+    open(el)
+    el.shadowRoot!.querySelector<HTMLElement>('.shortcut')!.click()
+    expect(el.getAttribute('value')).toBe('["2026-09-09T00:00:00","2026-09-09T23:59:59"]')
+  })
+
+  it('datetime「今天」按钮锚定目标时区当日', () => {
+    const el = mount({ type: 'datetime', timezone: 'Asia/Shanghai' })
+    open(el)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="today"]')!.click()
+    el.shadowRoot!.querySelector<HTMLElement>('[part="confirm"]')!.click()
+    expect(el.getAttribute('value')).toBe('2026-09-09T00:00:00')
+  })
+
+  it('非法 timezone：回落本地 + 仅告警一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const bad = mount({ timezone: 'Nowhere/Land' })
+    open(bad)
+    const local = mount()
+    open(local)
+    expect(todayCell(bad)).toBe(todayCell(local))
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('timezone')
+  })
+
+  it('timezone 不影响 value 契约回显', () => {
+    const el = mount({ timezone: 'America/New_York', value: '2026-08-09' })
+    expect(input(el).value).toBe('2026-08-09')
+    expect(el.getAttribute('value')).toBe('2026-08-09')
+  })
+})

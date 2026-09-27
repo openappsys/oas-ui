@@ -210,6 +210,43 @@ function span(cls: TokenClass, text: string): string {
   return `<span class="tok-${cls}">${text}</span>`
 }
 
+/**
+ * 解析行号集合表达式（1-based），供 `highlight-lines` / `focus-lines` 共用。
+ *
+ * 语法：逗号分隔的单点或闭区间，如 `"1,3-5"`。宽松容错——空白忽略、
+ * 倒序区间归一（`5-3` 等价 `3-5`）、非法片段（非数字/0/负号开头）静默跳过，
+ * 不抛错也不整体失效（文档站点手写行号常态）。
+ */
+export function parseLineRanges(input: string): Set<number> {
+  const result = new Set<number>()
+  for (const part of input.split(',')) {
+    const seg = part.trim()
+    if (!seg) continue
+    const m = /^(\d+)\s*(?:-\s*(\d+))?$/.exec(seg)
+    if (!m) continue
+    const start = Number(m[1])
+    const end = m[2] === undefined ? start : Number(m[2])
+    if (start < 1 || end < 1) continue
+    const lo = Math.min(start, end)
+    const hi = Math.max(start, end)
+    for (let i = lo; i <= hi; i++) result.add(i)
+  }
+  return result
+}
+
+/** 解析 `max-rows`：空/非法/0 均视为不折叠（0 = 不封顶，对齐 textarea 批语义） */
+function parseMaxRows(raw: string): number | null {
+  const trimmed = raw.trim()
+  if (trimmed === '') return null
+  const n = Number(trimmed)
+  if (!Number.isFinite(n) || n < 0) {
+    warnOnce('max-rows', raw, '不折叠', ['正整数', '0'])
+    return null
+  }
+  if (n === 0) return null
+  return Math.floor(n)
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -299,6 +336,51 @@ pre.code {
 .block.word-wrap .line-code {
   white-space: pre-wrap;
   word-break: break-all;
+}
+/* highlight-lines：整行高亮底（token 派生，可经 CSS 变量覆盖） */
+.line-highlight {
+  background: var(--oas-code-highlight-bg, color-mix(in srgb, var(--oas-color-primary) 12%, transparent));
+}
+/* focus-lines：非聚焦行淡化（token 透明度可覆盖） */
+.line-focus-dim {
+  opacity: var(--oas-code-focus-dim-opacity, 0.35);
+}
+/* diff：+ 增绿 / - 减红（语义 token；行级着色压过行内 token 高亮） */
+.line-diff-add {
+  background: color-mix(in srgb, var(--oas-color-success) 12%, transparent);
+}
+.line-diff-remove {
+  background: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
+}
+.line-diff-add .line-code,
+.line-diff-add .line-code * {
+  color: var(--oas-color-success-text);
+}
+.line-diff-remove .line-code,
+.line-diff-remove .line-code * {
+  color: var(--oas-color-danger-text);
+}
+/* max-rows 折叠尾行：展开/收起入口 */
+.more-line {
+  display: block;
+}
+.more-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--oas-color-primary);
+  cursor: pointer;
+}
+.more-btn:hover {
+  color: var(--oas-color-primary-hover);
+}
+.more-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+  border-radius: var(--oas-radius-sm);
 }
 /* inline 行内代码：等宽+浅底小框，不块级不换行。
    注意 display 用 inline-block 而非 inline-flex：flex 容器会把内容拆成 flex item，
@@ -407,10 +489,16 @@ export class OASCode extends OASElement {
       'size',
       'variant',
       'color',
+      'highlight-lines',
+      'focus-lines',
+      'diff',
+      'max-rows',
     ]
   }
 
   private copyTimer: ReturnType<typeof setTimeout> | null = null
+  /** max-rows 折叠是否已展开（非受控内部态；max-rows 未启用/无可折叠内容时无意义） */
+  private expanded = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -431,6 +519,14 @@ export class OASCode extends OASElement {
   private bind(): void {
     this.shadow.querySelector<HTMLButtonElement>('.copy-btn')?.addEventListener('click', () => {
       void this.handleCopy()
+    })
+    // 折叠尾行按钮每次 update 重建，走事件委托（绑定在常驻的 pre 上）
+    this.shadow.querySelector<HTMLElement>('[part="code"]')?.addEventListener('click', (e) => {
+      const target = e.target as Element | null
+      if (target?.closest('.more-btn')) {
+        this.expanded = !this.expanded
+        this.update()
+      }
     })
     this.onCleanup(() => {
       if (this.copyTimer) clearTimeout(this.copyTimer)
@@ -512,19 +608,46 @@ export class OASCode extends OASElement {
       blockEl.classList.toggle('word-wrap', this.hasAttr('word-wrap'))
     }
 
-    // 按行渲染：可选行号 + 每行高亮
+    // 按行渲染：可选行号 + 每行高亮 / 行聚焦 / diff 着色 / max-rows 折叠
     const showLineNumber = this.hasAttr('show-line-number')
     const lines = trimmed.split('\n')
     // 末行空串（源码常以 \n 结尾）不产生多余空行
     if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop()
-    // .line 是块级（行号对齐），行间不再 join('\n')——pre 的 white-space:pre 会把
-    // 行间换行文本节点渲染成真换行，每行后多一条空行（实测 4 行代码块高度翻倍）
-    inner.innerHTML = lines
-      .map(
-        (line, i) =>
-          `<span class="line" part="line">${showLineNumber ? `<span class="line-number" part="line-number" aria-hidden="true">${i + 1}</span>` : ''}<code class="line-code">${highlightLine(line, language)}</code></span>`,
+
+    // 行装饰集合（1-based）；非法片段由 parseLineRanges 静默忽略
+    const highlightSet = parseLineRanges(this.getAttr('highlight-lines', ''))
+    const focusSet = parseLineRanges(this.getAttr('focus-lines', ''))
+    const diff = this.hasAttr('diff')
+
+    // max-rows 折叠：仅当确有可折叠内容（行数 > 上限）时出现尾行（含展开后折回入口）
+    const maxRows = parseMaxRows(this.getAttr('max-rows', ''))
+    const limit = maxRows ?? lines.length
+    const collapsible = maxRows !== null && lines.length > limit
+    const visible = collapsible && !this.expanded ? limit : lines.length
+
+    const rows: string[] = []
+    for (let i = 0; i < visible; i++) {
+      const line = lines[i] ?? ''
+      const classes = ['line']
+      if (highlightSet.has(i + 1)) classes.push('line-highlight')
+      if (focusSet.size > 0 && !focusSet.has(i + 1)) classes.push('line-focus-dim')
+      if (diff) {
+        // diff 语义：`+` 增加行（绿）/ `-` 删除行（红）；`+++`/`---` 文件头同样按行首字符判定
+        if (line.startsWith('+')) classes.push('line-diff-add')
+        else if (line.startsWith('-')) classes.push('line-diff-remove')
+      }
+      rows.push(
+        `<span class="${classes.join(' ')}" part="line">${showLineNumber ? `<span class="line-number" part="line-number" aria-hidden="true">${i + 1}</span>` : ''}<code class="line-code">${highlightLine(line, language)}</code></span>`,
       )
-      .join('')
+    }
+    if (collapsible) {
+      rows.push(
+        `<span class="line more-line" part="more"><button type="button" class="more-btn" part="more-btn" aria-expanded="${this.expanded}">${this.t(this.expanded ? 'ellipsis.collapse' : 'ellipsis.expand')}</button></span>`,
+      )
+    }
+    // .line 是块级（行号对齐），行间不 join('\n')——pre 的 white-space:pre 会把
+    // 行间换行文本节点渲染成真换行，每行后多一条空行（实测 4 行代码块高度翻倍）
+    inner.innerHTML = rows.join('')
   }
 
   /** 归一化枚举属性：非法值回落 + 告警 */

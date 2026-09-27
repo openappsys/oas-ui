@@ -126,8 +126,13 @@
     <oas-popover title="百分比宽度" content="width=50%：相对宿主宽度的 50%。" placement="bottom" width="50%">
       <oas-button>width="50%"</oas-button>
     </oas-popover>
+    <oas-popover id="pop-same-width" title="same-width 严格等宽" content="same-width：面板宽度 = 触发器宽度，min-width 不抬杠。" placement="bottom" same-width>
+      <oas-button style="width: 180px">same-width（180px）</oas-button>
+    </oas-popover>
   </oas-space>
 </DemoBlock>
+
+布尔属性 `same-width` 是「面板与触发器严格等宽」的快捷通道（等效 `width="trigger"`，但会同时内联归零 `min-width`——触发器比面板默认 `min-width`（200px）窄时也能严格等宽）。显式设置 `width` 属性时以 `width` 为准；移除 `same-width` 后宽度交还 CSS 兜底。
 
 ## 偏移与碰撞细调
 
@@ -822,6 +827,7 @@ onMounted(() => {
 | `open-delay` | 通用打开延迟（毫秒，默认 0；非 hover 触发路径生效，hover 路径优先 hover-delay） | `string` | — |
 | `placement` | 浮层位置（12 向：四基向 top/bottom/left/right 各配 -start/-end 交叉轴对齐） | `string` | `top` |
 | `render-panel` | 纯面板渲染模式：无触发语义（一律按 `manual` 处理），定位回落 `virtual` 坐标/锚点，宿主可用 `append-to` 自行摆放 | `boolean` | — |
+| `same-width` | 面板宽度 = 触发器宽度（严格等宽；显式 width 优先） | `boolean` | — |
 | `scrollable` | 面板内容超限滚动 | `boolean` | — |
 | `size` | 尺寸档 | `string` | `medium` |
 | `sticky` | 关闭位粘滞（partial/always） | `string` | `partial` |

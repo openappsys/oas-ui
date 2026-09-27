@@ -21,6 +21,7 @@ import {
   renderPickerMonthGrid,
   isoWeekYear,
 } from './picker-grid.js'
+import { resolveTimezone, wallClockIn } from './timezone.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection, isRtl } from '../../shared/direction.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
@@ -719,6 +720,8 @@ export class OASDatePicker extends OASFormElement {
       'shortcuts-position',
       'show-week-number',
       'first-day-of-week',
+      // 时区锚点：「今天」锚点、面板当天高亮、快捷预设时刻解析按指定 IANA 时区（缺省 local）
+      'timezone',
       // 表单关联通道：required 驱动原生校验链（valueMissing）；name 变化需重同步范围/多选 FormData 的 entry key
       'name',
       'required',
@@ -747,6 +750,8 @@ export class OASDatePicker extends OASFormElement {
   private _disabledDate: ((d: Date) => boolean) | null = null
   /** 非法 placement 仅告警一次（滚动/resize 重定位不重复刷屏） */
   private placementWarned = false
+  /** 非法 timezone 仅告警一次 */
+  private timezoneWarned = false
   /** 手输中标记：update 不回写 input.value 打断输入 */
   private typing = false
   /** 焦点在组件内（trigger/面板网格任一）：内部转移不派发 oas-focus/oas-blur */
@@ -823,6 +828,23 @@ export class OASDatePicker extends OASFormElement {
     const raw = this.getAttr('first-day-of-week', '')
     if (/^[0-6]$/.test(raw)) return Number(raw)
     return getWeekStart(resolveLocale(this))
+  }
+
+  /** 生效时区（IANA 名）；缺省返回 null（宿主本地），非法回落本地并仅告警一次 */
+  private effectiveTimezone(): string | null {
+    const raw = this.getAttr('timezone', '')
+    if (!raw.trim()) return null
+    const tz = resolveTimezone(raw)
+    if (!tz && !this.timezoneWarned) {
+      this.timezoneWarned = true
+      console.warn(`[oas-date-picker] 非法 timezone "${raw}"，已回落宿主本地时区`)
+    }
+    return tz
+  }
+
+  /** 生效时区下的「今天」墙钟（本地 Date 装载目标时区分量），供锚点/当天高亮/快捷预设使用 */
+  private nowInZone(): Date {
+    return wallClockIn(this.effectiveTimezone())
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（快照不含弹出面板内容） */
@@ -978,7 +1000,7 @@ export class OASDatePicker extends OASFormElement {
   /** 展开态初始化：按类型锚定视图/范围/时间，渲染面板（焦点进网格仅手势展开时） */
   private bootPanel(focusNow: boolean): void {
     const t = this.pickerType
-    const today = startOfDay(new Date())
+    const today = startOfDay(this.nowInZone())
     const multi = this.isMultiple()
     const sel = multi ? (this.selectedAnchorArray().at(-1) ?? null) : this.parseValueAnchor(this.getAttr('value', ''))
     this.subPanel = 'days'
@@ -1619,7 +1641,7 @@ export class OASDatePicker extends OASFormElement {
     if (this.focusDate) focus = this.focusDate
     else if (multi && selectedList.length) focus = selectedList[selectedList.length - 1]!
     else if (selected instanceof Date) focus = selected
-    else focus = startOfDay(new Date())
+    else focus = startOfDay(this.nowInZone())
     const showWeekNumber = this.hasAttr('show-week-number') || t === 'week'
     grid.classList.toggle('has-week-number', showWeekNumber)
     renderPickerMonthGrid(grid, {
@@ -1627,7 +1649,7 @@ export class OASDatePicker extends OASFormElement {
       locale: resolveLocale(this),
       weekStart: this.effectiveWeekStart(),
       selected,
-      today: new Date(),
+      today: this.nowInZone(),
       min: parseISODate(this.getAttr('min', '')),
       max: parseISODate(this.getAttr('max', '')),
       disabledDate: this._disabledDate ?? undefined,
@@ -1870,7 +1892,7 @@ export class OASDatePicker extends OASFormElement {
           viewDate: view,
           locale,
           weekStart: this.effectiveWeekStart(),
-          today: new Date(),
+          today: this.nowInZone(),
           min: parseISODate(this.getAttr('min', '')),
           max: parseISODate(this.getAttr('max', '')),
           disabledDate: this._disabledDate ?? undefined,
@@ -1910,7 +1932,7 @@ export class OASDatePicker extends OASFormElement {
       if (sections[1]) this.buildTimeColumns(sections[1], this.time2)
     }
 
-    const focus = this.focusDate ?? this.range.start ?? startOfDay(new Date())
+    const focus = this.focusDate ?? this.range.start ?? startOfDay(this.nowInZone())
     if (unit === 'day') {
       const targetGrid = findDayButton(gridsEls[0]!, focus) ? gridsEls[0]! : gridsEls[1]!
       setRovingTab(targetGrid, focus)
@@ -2175,16 +2197,19 @@ export class OASDatePicker extends OASFormElement {
       ]
     }
     if (t === 'date') {
-      return [{ label: this.t('datePicker.shortcutToday'), getValue: () => new Date() }]
+      return [{ label: this.t('datePicker.shortcutToday'), getValue: () => this.nowInZone() }]
     }
     if (t === 'datetime') {
-      return [{ label: this.t('datePicker.shortcutToday'), getValue: () => new Date() }]
+      return [{ label: this.t('datePicker.shortcutToday'), getValue: () => this.nowInZone() }]
     }
     if (t === 'month') {
       return [
         {
           label: this.t('datePicker.shortcutThisMonth'),
-          getValue: () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+          getValue: () => {
+            const n = this.nowInZone()
+            return new Date(n.getFullYear(), n.getMonth(), 1)
+          },
         },
       ]
     }
@@ -2193,7 +2218,8 @@ export class OASDatePicker extends OASFormElement {
         {
           label: this.t('datePicker.shortcutThisMonth'),
           getValue: () => {
-            const m = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+            const n = this.nowInZone()
+            const m = new Date(n.getFullYear(), n.getMonth(), 1)
             return [m, m] as [Date, Date]
           },
         },
@@ -2203,7 +2229,10 @@ export class OASDatePicker extends OASFormElement {
       return [
         {
           label: this.t('datePicker.shortcutThisYear'),
-          getValue: () => new Date(new Date().getFullYear(), 0, 1),
+          getValue: () => {
+            const n = this.nowInZone()
+            return new Date(n.getFullYear(), 0, 1)
+          },
         },
       ]
     }
@@ -2212,7 +2241,8 @@ export class OASDatePicker extends OASFormElement {
         {
           label: this.t('datePicker.shortcutThisYear'),
           getValue: () => {
-            const y = new Date(new Date().getFullYear(), 0, 1)
+            const n = this.nowInZone()
+            const y = new Date(n.getFullYear(), 0, 1)
             return [y, y] as [Date, Date]
           },
         },
@@ -2327,13 +2357,13 @@ export class OASDatePicker extends OASFormElement {
   }
 
   private todayRange(): [Date, Date] {
-    const t = startOfDay(new Date())
+    const t = startOfDay(this.nowInZone())
     return [t, t]
   }
 
   private weekRange(): [Date, Date] {
     const ws = getWeekStart(resolveLocale(this))
-    const today = new Date()
+    const today = this.nowInZone()
     const diff = (today.getDay() + 7 - ws) % 7
     const start = new Date(today)
     start.setDate(today.getDate() - diff)
@@ -2343,19 +2373,19 @@ export class OASDatePicker extends OASFormElement {
   }
 
   private monthRange(): [Date, Date] {
-    const today = new Date()
+    const today = this.nowInZone()
     return [new Date(today.getFullYear(), today.getMonth(), 1), startOfDay(today)]
   }
 
   private yearRange(): [Date, Date] {
-    const today = new Date()
+    const today = this.nowInZone()
     return [new Date(today.getFullYear(), 0, 1), startOfDay(today)]
   }
 
   private pickToday(): void {
     if (this.hasAttr('readonly')) return
     const t = this.pickerType
-    const today = startOfDay(new Date())
+    const today = startOfDay(this.nowInZone())
     if (t === 'datetime') {
       this.pendingDate = today
       this.viewDate = today
@@ -2496,7 +2526,7 @@ export class OASDatePicker extends OASFormElement {
     const t = this.pickerType
     const anchor =
       t === 'datetime' ? this.pendingDate : (this.focusDate ?? this.parseValueAnchor(this.getAttr('value', '')))
-    const focus = anchor ?? startOfDay(new Date())
+    const focus = anchor ?? startOfDay(this.nowInZone())
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       findDayButton(grid, focus)?.click()
