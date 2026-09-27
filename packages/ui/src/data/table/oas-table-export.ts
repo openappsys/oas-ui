@@ -66,10 +66,13 @@ export function sanitizeFileName(raw: string, fallback = 'export'): string {
 /**
  * CSV 单元格转义（RFC 4180）：含分隔符 / 双引号 / 换行（LF/CR）时整体加引号，
  * 内部双引号翻倍。其余原样返回（不无谓加引号，保证可读性）。
+ * 公式注入防护：以 `=` `+` `-` `@` 开头的值前置单引号（Excel/Sheets 打开导出
+ * CSV 会按公式执行——导出内容常含用户输入，属 CSV injection 经典面）。
  */
 export function escapeCsvField(value: string, delimiter = ','): string {
-  const needsQuote = value.includes(delimiter) || value.includes('"') || value.includes('\n') || value.includes('\r')
-  return needsQuote ? `"${value.replace(/"/g, '""')}"` : value
+  const safe = /^[=+\-@]/.test(value) ? `'${value}` : value
+  const needsQuote = safe.includes(delimiter) || safe.includes('"') || safe.includes('\n') || safe.includes('\r')
+  return needsQuote ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 
 /** CSV 序列化；`bom` 为 true 时前置 UTF-8 BOM（Excel 双击打开中文不乱码） */

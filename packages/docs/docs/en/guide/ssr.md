@@ -330,7 +330,7 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 - Whitelist (pure-presentation components, declarative-data components, the
   layout-measuring pilot, form components batch 1, feedback components
   batch 2, data-display components batch 3, navigation/layout components
-  batch 4, and whitelist-finalization batch 5 — 130 tags in total):
+  batch 4, and whitelist-finalization batch 5 — 共 131 tag in total):
   `oas-button`, `oas-tag`, `oas-tag-group`,
   `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`,
   `oas-table`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`,
@@ -341,7 +341,7 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   `oas-date-picker`, `oas-time-picker`, `oas-calendar`, `oas-upload`,
   `oas-transfer`, `oas-color-picker`, `oas-toggle-button`, `oas-toggle-group`,
   `oas-pin-input`, `oas-dynamic-input`, `oas-dynamic-tags`, `oas-editable`,
-  `oas-form`, `oas-form-item`, `oas-form-list`, `oas-alert`, `oas-progress`, `oas-spin`,
+  `oas-form`, `oas-form-item`, `oas-form-list`, `oas-highlight`, `oas-alert`, `oas-progress`, `oas-spin`,
   `oas-skeleton`, `oas-skeleton-item`, `oas-result`, `oas-backdrop`, `oas-modal`, `oas-drawer`,
   `oas-popconfirm`, `oas-card`, `oas-avatar`, `oas-avatar-group`,
   `oas-image`, `oas-qrcode`, `oas-watermark`, `oas-collapse`,
