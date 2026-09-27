@@ -546,7 +546,7 @@ onMounted(() => {
     if (el) el.textContent = '已开 selectable="true"：点行恢复选中'
   })
 
-  // check-all demo：oas-check-all 可见反馈
+  // check-all check-all-label="全选所有节点" demo：oas-check-all 可见反馈
   const checkAllTree = document.querySelector('#tree-check-all')
   checkAllTree?.addEventListener('oas-check-all', (e) => {
     const { checked, values } = e.detail

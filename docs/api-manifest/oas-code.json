@@ -100,11 +100,11 @@
     },
     {
       "name": "--oas-code-highlight-bg",
-      "default": "color-mix(in srgb, var(--oas-color-primary) 12%, transparent)"
+      "default": "color-mix(in srgb, var(--oas-color-primary) 8%, transparent)"
     },
     {
-      "name": "--oas-code-focus-dim-opacity",
-      "default": "0.35"
+      "name": "--oas-code-focus-dim-strength",
+      "default": "58%"
     },
     {
       "name": "--oas-code-color",

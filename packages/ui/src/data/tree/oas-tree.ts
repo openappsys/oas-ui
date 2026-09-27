@@ -483,6 +483,8 @@ export class OASTree extends OASElement {
   private loading = new Set<string>()
   /** 当前正在拖拽的节点 key */
   private dragKey: string | null = null
+  /** 最近一次成功 drop 的源 key（drop 先于 dragend，dragend 靠它放行派发 node-dragend） */
+  private lastDropKey: string | null = null
   /** roving tabindex：当前键盘焦点的可见行 key */
   private rovingKey: string | null = null
   /** 焦点是否在树内（重渲染后恢复焦点用） */
@@ -585,6 +587,7 @@ export class OASTree extends OASElement {
               position: 'inner',
             })
           }
+          this.lastDropKey = this.dragKey
           this.dragKey = null
         }
       })
@@ -1903,8 +1906,10 @@ export class OASTree extends OASElement {
       }) as EventListener)
     }
     row.addEventListener('dragend', (() => {
-      if (this.dragKey !== id) return
+      // drop 先于 dragend（HTML5 顺序）：drop 已清 dragKey——用 lastDropKey 放行「拖放完成后的 dragend」
+      if (this.dragKey !== id && this.lastDropKey !== id) return
       this.dragKey = null
+      this.lastDropKey = null
       row.classList.remove('dragging')
       this.clearDropMarkers()
       this.emit('node-dragend', { dragKey: id })
@@ -1939,6 +1944,7 @@ export class OASTree extends OASElement {
       if (this.guardDrop({ dragKey, dropKey: id, position })) {
         this.emit('node-drop', { dragKey, dropKey: id, position })
       }
+      this.lastDropKey = dragKey
       this.dragKey = null
     }) as EventListener)
   }

@@ -81,7 +81,7 @@ With `expand-trigger="hover"`, hovering a parent option (after a ~120ms anti-mis
 ## Large Datasets (virtual scrolling)
 
 <DemoBlock title="Virtual scrolling (1000-item column)">
-  <oas-cascader id="cs-virtual" virtual placeholder="1000-item column, smooth scrolling" options='[]'></oas-cascader>
+  <oas-cascader id="cs-virtual" item-height="36" virtual placeholder="1000-item column, smooth scrolling" options='[]'></oas-cascader>
   <span id="cs-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 

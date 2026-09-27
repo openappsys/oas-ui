@@ -6,6 +6,11 @@
 
 单选组：点选色块，选中态为外环描边；`oas-change` 携带选中值。
 
+<DemoBlock title="选中态（selected）">
+  <oas-swatch color="geekblue" selected label="极客蓝（选中态）"></oas-swatch>
+  <oas-swatch color="blue" label="蓝（未选）"></oas-swatch>
+</DemoBlock>
+
 <DemoBlock title="单选">
   <oas-swatch-group id="sw-single">
     <oas-swatch color="blue" label="蓝"></oas-swatch>

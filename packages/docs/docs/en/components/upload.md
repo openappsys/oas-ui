@@ -167,14 +167,14 @@ With `replace`, exceeding the count limit no longer rejects: the oldest file is 
 
 ## Trigger, Tip & Item Customization
 
-- `slot="trigger"`: replaces the drop zone content (click/drag semantics stay on the zone container; the content should be focusable itself, e.g. an `oas-button`)
+- `slot="trigger"`: replaces the drop zone content (click/drag semantics stay on the zone container — the zone itself is the focusable `role="button"` control, so **do not nest interactive elements (buttons/links) inside the trigger content** (nested-interactive is an axe violation); presentational content only)
 - `tip` attribute or `template[slot="tip"]`: secondary hint text below the zone (attribute wins)
 - `template[slot="item"]`: cloned into every `list` / `picture` row; `[data-item-name]` / `[data-item-size]` bind the file name and size automatically
 
 <DemoBlock title="trigger / tip slots">
   <oas-upload id="upload-trigger" multiple tip="Any file type, up to 20MB each">
     <template slot="trigger">
-      <oas-button>Select files</oas-button>
+      <span style="display:inline-flex;align-items:center;gap:var(--oas-space-1);padding:0 var(--oas-space-3);min-height:var(--oas-control-height-md);border:1px solid var(--oas-color-primary);border-radius:var(--oas-radius-md);color:var(--oas-color-primary);font-size:var(--oas-font-size-sm)"><oas-icon name="upload" size="14"></oas-icon>Select files</span>
       <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">or drop files here</span>
     </template>
   </oas-upload>

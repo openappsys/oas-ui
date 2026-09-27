@@ -1,13 +1,13 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 24598,
+    "sampled": 27376,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 255,
-    "exempt": 284,
-    "skipped": 2348
+    "ratio": 273,
+    "exempt": 454,
+    "skipped": 2616
   },
   "topPairs": [],
   "pages": {
@@ -113,7 +113,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": 2
     },
     "breadcrumb.html::dark": {
       "below30": 0,
@@ -121,13 +121,29 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 1
+      "skipped": 2
+    },
+    "button-group.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 3
+    },
+    "button-group.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 3
     },
     "button.html": {
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 2,
+      "ratio": 3,
       "exempt": 0,
       "skipped": 0
     },
@@ -136,7 +152,7 @@
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 126,
+      "exempt": 208,
       "skipped": 0
     },
     "calendar.html::dark": {
@@ -144,7 +160,7 @@
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 126,
+      "exempt": 208,
       "skipped": 0
     },
     "card.html": {
@@ -167,7 +183,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 1,
+      "ratio": 5,
       "exempt": 0,
       "skipped": 2
     },
@@ -185,7 +201,7 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 26
+      "skipped": 38
     },
     "cascader.html::dark": {
       "below30": 0,
@@ -193,7 +209,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 26
+      "skipped": 38
     },
     "chart.html": {
       "below30": 0,
@@ -231,7 +247,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 2,
+      "ratio": 3,
       "exempt": 0,
       "skipped": 0
     },
@@ -241,7 +257,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 92
+      "skipped": 100
     },
     "color-picker.html::dark": {
       "below30": 0,
@@ -249,7 +265,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 92
+      "skipped": 100
     },
     "command.html": {
       "below30": 0,
@@ -315,6 +331,22 @@
       "exempt": 0,
       "skipped": 1
     },
+    "context-menu.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 11
+    },
+    "context-menu.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 11
+    },
     "descriptions.html": {
       "below30": 0,
       "below45": 0,
@@ -338,6 +370,22 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": 4
+    },
+    "dropdown.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 46
+    },
+    "dropdown.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 46
     },
     "dynamic-tags.html": {
       "below30": 0,
@@ -433,7 +481,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": 3
     },
     "form.html::dark": {
       "below30": 0,
@@ -441,7 +489,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 2
+      "skipped": 3
     },
     "gradient-text.html": {
       "below30": 0,
@@ -463,7 +511,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 14,
+      "ratio": 18,
       "exempt": 0,
       "skipped": 0
     },
@@ -577,7 +625,7 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 18
+      "skipped": 12
     },
     "marquee.html::dark": {
       "below30": 0,
@@ -585,23 +633,23 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 18
+      "skipped": 12
     },
     "menu.html": {
       "below30": 0,
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 0,
-      "skipped": 8
+      "exempt": 3,
+      "skipped": 40
     },
     "menu.html::dark": {
       "below30": 0,
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 0,
-      "skipped": 8
+      "exempt": 3,
+      "skipped": 40
     },
     "message.html": {
       "below30": 0,
@@ -703,9 +751,9 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 0,
+      "ratio": 1,
       "exempt": 0,
-      "skipped": 20
+      "skipped": 18
     },
     "progress.html::dark": {
       "below30": 0,
@@ -713,7 +761,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 20
+      "skipped": 18
     },
     "qrcode.html": {
       "below30": 0,
@@ -783,9 +831,9 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 2,
+      "ratio": 3,
       "exempt": 0,
-      "skipped": 43
+      "skipped": 65
     },
     "select.html::dark": {
       "below30": 0,
@@ -793,7 +841,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 43
+      "skipped": 65
     },
     "sidebar.html": {
       "below30": 0,
@@ -817,7 +865,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 99
+      "skipped": 85
     },
     "slider.html::dark": {
       "below30": 0,
@@ -825,7 +873,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 99
+      "skipped": 85
     },
     "space.html": {
       "below30": 0,
@@ -881,7 +929,7 @@
       "below60": 0,
       "ratio": 12,
       "exempt": 5,
-      "skipped": 70
+      "skipped": 75
     },
     "steps.html::dark": {
       "below30": 0,
@@ -889,7 +937,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 5,
-      "skipped": 70
+      "skipped": 75
     },
     "table.html": {
       "below30": 0,
@@ -913,7 +961,7 @@
       "below60": 0,
       "ratio": 1,
       "exempt": 0,
-      "skipped": 68
+      "skipped": 70
     },
     "tabs.html::dark": {
       "below30": 0,
@@ -921,7 +969,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 68
+      "skipped": 70
     },
     "tag.html": {
       "below30": 0,
@@ -999,9 +1047,9 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 42,
+      "ratio": 48,
       "exempt": 4,
-      "skipped": 20
+      "skipped": 24
     },
     "transfer.html::dark": {
       "below30": 0,
@@ -1009,7 +1057,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 4,
-      "skipped": 20
+      "skipped": 24
     },
     "tree-select.html": {
       "below30": 0,
@@ -1017,7 +1065,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 38
+      "skipped": 44
     },
     "tree-select.html::dark": {
       "below30": 0,
@@ -1025,7 +1073,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 38
+      "skipped": 44
     },
     "tree.html": {
       "below30": 0,
@@ -1065,7 +1113,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 21
+      "skipped": 24
     },
     "upload.html::dark": {
       "below30": 0,
@@ -1073,7 +1121,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 21
+      "skipped": 24
     },
     "virtual-list.html": {
       "below30": 0,

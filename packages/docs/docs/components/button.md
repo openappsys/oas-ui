@@ -281,6 +281,7 @@
     <oas-input name="email" label="邮箱" value="hello@example.com"></oas-input>
     <oas-space>
       <oas-button html-type="submit" type="primary">提交</oas-button>
+      <oas-button html-type="submit" formtarget="_blank">新窗提交（formtarget）</oas-button>
       <oas-button html-type="reset">重置</oas-button>
       <oas-button html-type="submit" formnovalidate formaction="/search" formmethod="post">免校验提交（formaction/formmethod）</oas-button>
     </oas-space>

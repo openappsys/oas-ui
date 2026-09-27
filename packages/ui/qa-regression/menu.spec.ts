@@ -936,12 +936,16 @@ test('menu disabled（P2）：Vue 下属性存活、点击不写回 value、aria
       ariaDisabled: el.getAttribute('aria-disabled'),
       value: el.getAttribute('value'),
       dimmed: getComputedStyle(el).opacity,
+      itemColor: getComputedStyle(el.shadowRoot!.querySelector('.item')!).color,
+      itemCursor: getComputedStyle(el.shadowRoot!.querySelector('.item')!).cursor,
     }
   })
   expect(r.attrSurvived, 'disabled 被 Vue 剥离').toBe(true)
   expect(r.ariaDisabled, 'aria-disabled 未同步').toBe('true')
   expect(r.value, '整单禁用下点击不得写回 value').toBeNull()
-  expect(parseFloat(r.dimmed), 'disabled 视觉降饱和（opacity .6）未生效').toBeLessThan(1)
+  // 禁用观感：文字走禁用色 + not-allowed 光标（opacity 叠加已废——双层淡化会把文字洗出门禁线）
+  expect(r.itemCursor, '禁用项光标 not-allowed').toBe('not-allowed')
+  expect(r.itemColor, '禁用项文字走禁用色').toBe('rgb(161, 161, 170)')
 })
 
 test('menu selectable=false（P2）：纯动作菜单——叶子无勾选态、点击派发事件但不写回 value', async ({ page }) => {

@@ -551,6 +551,7 @@ test.beforeAll(async () => {
       '<oas-grid-item span="12"><p>左</p></oas-grid-item><oas-grid-item span="12"><p>右</p></oas-grid-item>',
     ),
     renderToString('oas-tree', { data: NESTED_COMBO_ITEMS }, '', { locale: 'zh-CN' }),
+    renderToString('oas-highlight', { text: '高亮示例文本', highlight: '示例' }, ''),
     renderToString(
       'oas-stepper',
       {

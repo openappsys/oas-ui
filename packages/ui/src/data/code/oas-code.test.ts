@@ -351,10 +351,10 @@ describe('OASCode', () => {
       expect(el.shadowRoot!.querySelector('.line-focus-dim')).toBeNull()
     })
 
-    it('CSS：淡化透明度走 CSS 变量 token', () => {
+    it('CSS：淡化掺色比例走 CSS 变量 token（--oas-code-focus-dim-strength）', () => {
       const el = mount({ code: 'a', 'focus-lines': '1' })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(css).toMatch(/\.line-focus-dim\s*\{[^}]*--oas-code-focus-dim-opacity/)
+      expect(css).toMatch(/\.line-focus-dim[\s\S]*?--oas-code-focus-dim-strength/)
     })
   })
 
