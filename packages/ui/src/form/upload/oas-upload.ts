@@ -1066,13 +1066,17 @@ export class OASUpload extends OASFormElement {
     this.cropCancelBtn?.addEventListener('click', () => this.cancelCrop())
   }
 
-  /** 通用拖拽：pointerdown 起手，window 级 move/up 跟踪增量（不依赖 setPointerCapture 兼容性） */
+  /** 通用拖拽：pointerdown 起手，window 级 move/up 跟踪增量（不依赖 setPointerCapture 兼容性）。
+   *  窄屏 zoom 缩放舞台时把视口增量换算回模型坐标（增量 ÷ 当前缩放比），否则拖拽不跟手 */
   private startCropDrag(e: PointerEvent, onMove: (dx: number, dy: number) => void): void {
     if (!this.cropping) return
     e.preventDefault()
     const startX = e.clientX
     const startY = e.clientY
-    const move = (ev: PointerEvent): void => onMove(ev.clientX - startX, ev.clientY - startY)
+    // 缩放比 = 实际渲染宽 / 模型宽（zoom 媒体查询命中时 <1；每次起手重取，窗口随动安全）
+    const stageW = this.cropStage?.getBoundingClientRect().width
+    const scale = stageW && stageW > 0 ? stageW / CROP_STAGE_W : 1
+    const move = (ev: PointerEvent): void => onMove((ev.clientX - startX) / scale, (ev.clientY - startY) / scale)
     const up = (): void => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)

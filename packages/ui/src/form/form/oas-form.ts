@@ -66,6 +66,8 @@ function readPath(source: Record<string, unknown> | undefined, segments: string[
   let current: unknown = source
   for (const segment of segments) {
     if (current === null || typeof current !== 'object') return undefined
+    // 只读自有属性（原型链上的 toString 等继承成员不是数据——否则继承函数会被当字段值）
+    if (!Object.hasOwn(current, segment)) return undefined
     current = (current as Record<string, unknown>)[segment]
   }
   return current
@@ -226,7 +228,7 @@ export class OASForm extends OASElement {
   }
 
   private form: HTMLFormElement | null = null
-  private _rules: Rules = {}
+  private _rules: Rules = Object.create(null)
   /** rules property 通道（validator 等函数不可 JSON 序列化，仅存内存） */
   private _rulesProp: Rules | null = null
   private _rulesAttrRaw: string | null = null
@@ -239,7 +241,7 @@ export class OASForm extends OASElement {
   private _initialSource: string | null | undefined = undefined
   /** reset 基线：挂载时各字段初始值（initial-values 优先，否则取字段当前值） */
   private _initialSnapshot: Record<string, string> = {}
-  private errors: Record<string, string> = {}
+  private errors: Record<string, string> = Object.create(null)
   /** 当前生效的校验文案模板（attribute 解析或 property 通道，property 优先） */
   private _validateMessages: ValidateMessages = {}
   private _validateMessagesProp: ValidateMessages | null = null
@@ -440,7 +442,7 @@ export class OASForm extends OASElement {
       const parsed = JSON.parse(raw ?? '{}') as Rules
       this._rules = parsed !== null && typeof parsed === 'object' ? parsed : {}
     } catch {
-      this._rules = {}
+      this._rules = Object.create(null)
     }
   }
 
@@ -556,7 +558,7 @@ export class OASForm extends OASElement {
   private maybeApplyInitialValues(): void {
     const raw = this.getAttribute('initial-values')
     if (!this._initialDirty && raw === this._initialSource) return
-    this._initialSnapshot = {}
+    this._initialSnapshot = Object.create(null)
     this.applyInitialToFields(true)
     this._initialSource = raw
     this._initialDirty = false
@@ -569,7 +571,7 @@ export class OASForm extends OASElement {
   private applyInitialToFields(forceAll: boolean): void {
     const source = this._initialValues
     for (const { name, element } of this.collectFields()) {
-      if (!forceAll && name in this._initialSnapshot) continue
+      if (!forceAll && Object.hasOwn(this._initialSnapshot, name)) continue
       // 保留键段路径（__proto__ 等）parseNamePath 判 null——null 不得进 readPath
       // （空数组会让 readPath 返回整个 initial-values 对象，写进字段）
       const path = parseNamePath(name)
@@ -589,7 +591,7 @@ export class OASForm extends OASElement {
   reapplyInitialValues(): void {
     const disabled = this.hasAttr('disabled')
     for (const { name, element } of this.collectFields()) {
-      if (name in this._initialSnapshot) continue
+      if (Object.hasOwn(this._initialSnapshot, name)) continue
       const path = parseNamePath(name)
       if (path === null) continue
       const v = readPath(this._initialValues, path)
@@ -707,7 +709,7 @@ export class OASForm extends OASElement {
 
   private validateAndSubmit(): void {
     const values = this.snapshotValues()
-    this.errors = {}
+    this.errors = Object.create(null)
     const fields = this.collectFields()
     const invalid: Array<{ name: string; element: Element; message: string }> = []
     const asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }> = []
@@ -742,10 +744,10 @@ export class OASForm extends OASElement {
     fields: Array<{ name: string; element: Element }>,
     invalid: Array<{ name: string; element: Element; message: string }>,
   ): void {
-    this.errors = {}
+    this.errors = Object.create(null)
     for (const { name, message } of invalid) this.errors[name] = message
     for (const { name, element } of fields) {
-      const bad = name in this.errors
+      const bad = Object.hasOwn(this.errors, name)
       if (bad) element.setAttribute('aria-invalid', 'true')
       else element.removeAttribute('aria-invalid')
       this.syncErrorText(element, bad ? this.errors[name]! : null)
@@ -822,7 +824,7 @@ export class OASForm extends OASElement {
     for (const { name, element } of fields) {
       this.writeValue(element, this._initialSnapshot[name] ?? '')
     }
-    this.errors = {}
+    this.errors = Object.create(null)
     for (const { element } of fields) {
       element.removeAttribute('aria-invalid')
       this.syncErrorText(element, null)
