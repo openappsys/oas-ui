@@ -464,10 +464,15 @@ export class OASGrid extends OASElement {
     const totalRows = children.length > 0 ? row : 0
 
     // 首帧缺省折叠：确有可折叠内容（totalRows > maxRows）才写入 collapsed 属性
-    // （受控契约的初始落点，此后不再自动改写）
+    // （受控契约的初始落点，此后不再自动改写）。
+    // 门闩只在「确有可折叠内容或宿主已控」时落位——行数不足时提前落闩会把后续动态增项
+    // （MutationObserver 增长到超过 collapsed-rows）挡在 bootstrap 外：永不补写 collapsed、
+    // 尾格永不出现（九轮 review 实证的八轮修复回归）
     if (!this.collapseBootstrapped) {
-      this.collapseBootstrapped = true
-      if (totalRows > maxRows && !this.hasAttribute('collapsed')) this.setAttribute('collapsed', '')
+      if (totalRows > maxRows || this.hasAttribute('collapsed')) {
+        this.collapseBootstrapped = true
+        if (totalRows > maxRows && !this.hasAttribute('collapsed')) this.setAttribute('collapsed', '')
+      }
     }
 
     const collapsed = this.hasAttribute('collapsed')

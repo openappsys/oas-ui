@@ -427,7 +427,7 @@ function resolveApiBase(cls, dirAbs, project, fromFile, visited = new Set()) {
 }
 
 // ---------- observedAttributes 提取 ----------
-// 支持返回数组字面量；条件表达式（如 typography levels ? A : B）尝试求值：
+// 支持返回数组字面量；条件表达式（如 typography sizeEnabled（经解构别名回溯来源键 size）
 //   - 条件为标识符，工厂调用第 2 实参对象字面量含该属性（布尔字面量）
 //   - 否则查工厂函数体内解构默认值（const { levels = false } = options）
 // 仍无法求值则并集 + unresolved
