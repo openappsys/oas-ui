@@ -190,9 +190,9 @@ export interface ValidateMessages {
 /** 表级 size 下发档位白名单（非法值不下发） */
 const VALID_FORM_SIZES = ['small', 'medium', 'large'] as const
 
-/** 模板插值：`${key}` 替换为 params[key]，未命中的占位原样保留 */
+/** 模板插值：`${key}` 替换为 params[key]，未命中的占位原样保留（自有键判定，原型链成员不命中） */
 function interpolate(tpl: string, params: Record<string, string | number>): string {
-  return tpl.replace(/\$\{(\w+)\}/g, (m, k) => (k in params ? String(params[k]) : m))
+  return tpl.replace(/\$\{(\w+)\}/g, (m, k) => (Object.hasOwn(params, k) ? String(params[k]) : m))
 }
 
 const STYLE = `
