@@ -110,6 +110,7 @@ const EXEMPT_EVENTS = new Set([
   'oas-whole-remove', // mentions：光标紧跟提及段按 Backspace 整段删（demo 有专门块）
   'oas-preview-nav', // image：预览内 prev/next 翻页（image-group 共享预览转发）
   'oas-node-rename', // tree：双击节点 label/F2 进内联编辑后 Enter 提交（demo 有专门块）
+  'oas-crop', // upload：裁剪需完整对话框流程（选图→拖拽→确认），通用探针不可达（qa-regression/upload.spec.ts 已固化真实链路）
 ])
 
 // 容器托管的反射属性（由父组件按 active/受控集合写回，非宿主直驱 API）：豁免静态演示要求
@@ -187,6 +188,12 @@ const INTERACTIONS: Array<[string, string]> = [
 //   resizecol     DOM 列宽拖拽：在匹配 th 右缘热区派发 pointerdown/move/up 合成事件序列
 //                 （真实指针会被原生 draggable 拖拽启动/视口外遮挡干扰）
 const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
+  grid: [['oas-grid[collapsed-rows] [part="collapse-tail-btn"]', 'click', '点折叠尾格展开 → oas-collapse']],
+  swatch: [['oas-swatch-group:not([disabled]) oas-swatch:not([disabled])', 'click', '点色板 → 组 oas-change']],
+  list: [
+    ['oas-list[sortable] [part="data-items"] oas-list-item', 'dragmock', '拖拽数据通道行（shadow 内）→ oas-reorder'],
+    ['oas-list[sortable] > oas-list-item', 'dragmock', '拖拽声明式行（light DOM）→ oas-reorder'],
+  ],
   stepper: [['oas-stepper[clickable] [role="tab"]', 'click', '点步骤头 → oas-change']],
   carousel: [['oas-carousel [part="arrow-next"]', 'click', '点下一张箭头 → oas-change']],
   'color-picker': [
@@ -222,6 +229,9 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-input-number [part="up"]', 'click', '步进提交 → oas-change'],
   ],
   select: [
+    ['oas-select[allow-create] [part="trigger"]', 'click', '展开允许创建 demo'],
+    ['oas-select[allow-create] [part="search-input"]', 'fill:新词', '输入不存在词 → 出现创建行'],
+    ['oas-select[allow-create] [role="option"]', 'click', '点创建行 → oas-create'],
     ['oas-select[clearable] [part="clear"]', 'click', '有选中值时清空钮可见 → oas-clear'],
     ['oas-select[remote] [part="trigger"]', 'click', '展开远程下拉（搜索框常驻仅受 searchable 控制）'],
     ['oas-select[remote] [part="search-input"]', 'fill:x', 'remote 模式输入 → oas-input（过滤交给宿主）'],
@@ -419,6 +429,14 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       'rmattr:visible',
       '复位基础对话框：通用探针可能已留开（open 幂等 → 再开不产生新开合周期，opened 永不触发）',
     ],
+    [
+      'oas-button:has-text("打开可最大化对话框")',
+      'domclick',
+      '打开可最大化对话框（modal 受控属性是 visible，open 动作不适用）',
+    ],
+    ['wait:420', 'wait', '等开合动画结束'],
+    ['oas-modal[maximizable] [part="maximize"]', 'click', '点最大化钮 → oas-maximize'],
+    ['oas-modal[maximizable] [part="close"]', 'click', '关掉（避免遮挡后续）'],
     ['wait:350', 'wait', '等可能的关闭动画播完'],
     [
       'oas-button:has-text("打开对话框") button',
@@ -546,6 +564,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   watermark: [['#wm-tamper-simulate', 'click', '模拟篡改删层 → oas-remove']],
   steps: [['oas-steps[clickable] [part="item"]', 'click', '点步骤项（整项可点）→ oas-change']],
   tabs: [
+    ['oas-tabs [role="tab"]', 'rightclick', '右键标签 → oas-tab-contextmenu'],
     [
       'oas-tabs[closable] .tab-close',
       'domclick',
@@ -564,7 +583,14 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['#tabs-rename', 'renamecommit:重命名X', '输入框赋值 + Enter 确认 → oas-rename'],
   ],
   tree: [
-    ['oas-tree[checkable] input[type="checkbox"]', 'click', '勾选 → oas-check'],
+    ['oas-tree[checkable] [role="treeitem"] input[type="checkbox"]', 'click', '勾选节点（非全选行）→ oas-check'],
+    ['oas-tree[check-all] .check-all-check', 'click', '点全选行 → oas-check-all'],
+    [
+      'oas-tree[draggable] [role="treeitem"]',
+      'dragfull',
+      '拖拽节点完整生命周期 → dragstart/dragover/dragleave/drop/dragend',
+    ],
+
     ['oas-tree[lazy] [part="toggle"]', 'click', '展开未加载节点（dir-a）→ oas-load'],
     ['oas-tree[draggable] [part="row"]', 'dragto', '拖第 1 行到第 2 行 → oas-node-drop'],
     [
@@ -576,6 +602,9 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-timeline-item', 'click', 'timeline 节点点击 → oas-click'],
   ],
   table: [
+    ['oas-table[exportable] .export-btn', 'click', '点导出钮 → oas-export'],
+    ['oas-table tbody tr', 'dblclick', '双击数据行 → oas-row-dblclick'],
+    ['oas-table[row-draggable] .row-drag-handle', 'dragmock', '拖拽手柄换位 → oas-row-reorder'],
     ['oas-table .expand-toggle-cell .toggle', 'click', '点行尾展开钮 → oas-expand'],
     ['oas-table .action-btn', 'click', '操作列点编辑 → 进入编辑'],
     ['oas-table input.cell-editor', 'fill:演示', '填充单元格 → 待提交'],
@@ -652,7 +681,13 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
         await page.keyboard.press(act.slice(6))
       } else if (act === 'rightclick') {
         const el = page.locator(sel).first()
-        if (await el.count()) await el.click({ button: 'right', timeout: 400, force: true })
+        if (await el.count()) {
+          // contextmenu 是手势事件：真实右键在浮层/遮挡下会命中错误顶层元素且不抛错（force 点穿）——
+          // DOM 派发确定性优先（组件 capture 监听照常收到，合成 composed 事件跨 shadow 到达）
+          await el.evaluate((e) =>
+            e.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, composed: true })),
+          )
+        }
       } else if (act === 'open') {
         await page.locator(sel).evaluateAll((els) => els.forEach((e) => e.setAttribute('open', '')))
       } else if (act === 'grant') {
@@ -704,6 +739,31 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
         if ((await els.count()) >= 2) {
           await els.nth(0).dragTo(els.nth(1), { timeout: 400, force: true })
         }
+      } else if (act === 'dragfull') {
+        // 完整 HTML5 DnD 生命周期（dragstart/dragover/dragleave/drop/dragend）——
+        // dragmock 只到 drop，缺 dragleave/dragend（tree 拖拽生命周期事件需要）；
+        // 元素引用固定（drop 触发宿主重排重建后，dragend 必须落在「被拖的那一行」上——
+        // 重取 nth(0) 会命中重排后的新首行，key 对不上导致 dragend 守卫拦截）
+        const els = page.locator(sel)
+        if ((await els.count()) >= 2) {
+          const src = (await els.nth(0).elementHandle())!
+          const tgt = (await els.nth(1).elementHandle())!
+          await src.evaluate((s) => {
+            const dt = new DataTransfer()
+            s.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: dt }))
+          })
+          await tgt.evaluate((t) => {
+            const dt = new DataTransfer()
+            t.dispatchEvent(new DragEvent('dragover', { bubbles: true, composed: true, dataTransfer: dt }))
+            t.dispatchEvent(new DragEvent('dragleave', { bubbles: true, composed: true, dataTransfer: dt }))
+            t.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
+          })
+          await src.evaluate((s) => {
+            s.dispatchEvent(
+              new DragEvent('dragend', { bubbles: true, composed: true, dataTransfer: new DataTransfer() }),
+            )
+          })
+        }
       } else if (act === 'dblclick') {
         // 双击（DOM dispatchEvent，规避真实双击的浮层 backdrop 拦截）
         const el = page.locator(sel).first()
@@ -713,15 +773,17 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
         // HTML5 DnD 模拟（dragstart/dragover/drop 序列，mock dataTransfer）：真实 dragTo 在
         // 部分环境（button draggable / CI 高负载）drop 不命中，用 DOM 事件序列确定性触发
         const els = page.locator(sel)
-        if ((await els.count()) >= 2) {
+        const n = await els.count()
+        if (process.env.DC_DEBUG) console.log('[dragmock]', sel, 'count', n)
+        if (n >= 2) {
           await els.nth(0).evaluate((src) => {
             const dt = new DataTransfer()
-            src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }))
+            src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: dt }))
           })
           await els.nth(1).evaluate((tgt) => {
             const dt = new DataTransfer()
-            tgt.dispatchEvent(new DragEvent('dragover', { bubbles: true, dataTransfer: dt }))
-            tgt.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: dt }))
+            tgt.dispatchEvent(new DragEvent('dragover', { bubbles: true, composed: true, dataTransfer: dt }))
+            tgt.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
           })
         }
       } else if (act.startsWith('wait:')) {

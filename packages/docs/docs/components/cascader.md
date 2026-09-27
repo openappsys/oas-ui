@@ -81,7 +81,7 @@
 ## 大数据量（虚拟滚动）
 
 <DemoBlock title="虚拟滚动（1000 项长列）">
-  <oas-cascader id="cs-virtual" virtual placeholder="1000 项长列，滚动流畅" options='[]'></oas-cascader>
+  <oas-cascader id="cs-virtual" item-height="36" virtual placeholder="1000 项长列，滚动流畅" options='[]'></oas-cascader>
   <span id="cs-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 

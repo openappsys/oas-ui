@@ -699,6 +699,28 @@ button.loading-with-text .spinner {
 :host([data-compound]) [part='description'] {
   display: block;
 }
+/* 实底形态副文本：次要色在实底上对比度不达标（a11y 门禁实抓 #71717a on #0b6cff）——
+   改用各形态 on 色的淡化档（82% 混合，保持「副文本弱一级」的视觉层级且对比达标） */
+button.primary [part='description'],
+a[part='button'].primary [part='description'] {
+  color: color-mix(in srgb, var(--oas-color-text-on-primary) 92%, transparent);
+}
+button.success [part='description'],
+a[part='button'].success [part='description'] {
+  color: color-mix(in srgb, var(--oas-color-text-on-success) 92%, transparent);
+}
+button.warning [part='description'],
+a[part='button'].warning [part='description'] {
+  color: color-mix(in srgb, var(--oas-color-text-on-warning) 92%, transparent);
+}
+button.danger [part='description'],
+a[part='button'].danger [part='description'] {
+  color: color-mix(in srgb, var(--oas-color-text-on-danger) 92%, transparent);
+}
+button.has-color:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link)) [part='description'],
+a[part='button'].has-color:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link)) [part='description'] {
+  color: color-mix(in srgb, var(--oas-button-on-color, var(--oas-color-text-on-primary)) 92%, transparent);
+}
 :host([data-compound]) [part='description'][hidden] {
   display: none;
 }

@@ -548,7 +548,7 @@ onMounted(() => {
     if (el) el.textContent = 'selectable="true" set: clicking selects again'
   })
 
-  // check-all demo: visible feedback for oas-check-all
+  // check-all check-all-label="Select all nodes" demo: visible feedback for oas-check-all
   const checkAllTree = document.querySelector('#tree-check-all')
   checkAllTree?.addEventListener('oas-check-all', (e) => {
     const { checked, values } = e.detail
