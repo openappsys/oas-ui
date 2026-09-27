@@ -1084,7 +1084,10 @@ export class OASTree extends OASElement {
   /** 可勾选节点 key 集合（排除 disabled / disableCheckbox 的 inert 节点） */
   private checkableKeys(): string[] {
     const out: string[] = []
-    for (const row of this.model.rows) {
+    // 过滤态下全选只覆盖可见（匹配 + 祖先 + 命中子树）节点——把被过滤隐藏的节点选上是反直觉的
+    // （复用 filterVisibleRows 的渲染同口径判定）；非过滤态全选 = 全部可勾选节点（含折叠未展开，标准语义）
+    const rows = this.filtering() ? this.filterVisibleRows() : this.model.rows
+    for (const row of rows) {
       if (this.nodeCheckable(row.node)) out.push(this.acc.idOf(row.node))
     }
     return out
