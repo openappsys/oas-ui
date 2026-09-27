@@ -55,7 +55,7 @@
 - **单一数据源纪律**：API 结构元数据（属性/property/事件/插槽/类型/默认值）的权威来源是组件源码；说明文案的权威来源是 `docs/api-descriptions.{zh,en}.json`；md 的 `## API` 章节是生成物，**禁止手改**
 - **工作流**：改组件 API → `pnpm api:scan && pnpm api:gen`；改说明文案 → 改 descriptions JSON → `pnpm api:gen`；新组件 → 跑 scan+gen 后说明缺失处渲染 `—`，需补录语料再 gen
 - **Property 通道（`@apiProperty`）**：只能走 JS property 的公开 API（回调/数组/对象，无法用 attribute 表达），在源码成员的前导 JSDoc 里加 `@apiProperty` 标记 + 一句话自述（详细文案仍以语料 `props` 分组为准，注释只留标记 + 一句话，例：`/** @apiProperty 已选文件列表（受控；赋值即刷新，不反射 attribute） */`）。scan 只把带标记的 property 写进 manifest（`props` 条目带 `api: true`），gen 渲染成 Property 小节（表头标注「仅 JS property，不反射 attribute」）；语料侧新增 `props` 分组（键与 attrs 同构）。未标记的 property 一律不进文档（`filterNode`、`customRequest` 这类内部实现通道不外宣）
-- **双向 0 门禁（CI 强制）**：`pnpm api:check` 的 gen `--check` 段对两个方向零容忍、违者非零退出——正向（manifest 有条目而语料无说明，渲染为 `—`）与反向（语料有行而 manifest 无条目，扫描盲区/失效残留）均打印可操作的键清单。WIP 豁免如实反映：组件源码有在途改动的页跳过校验，但会显著列出跳过页清单与数量——这些页的双向缺口本次未检，不能以全绿推断
+- **双向 0 门禁（CI 强制）**：`pnpm api:check` 的 gen `--check` 段对两个方向零容忍、违者非零退出。另有一道兜底闸：manifest 的 `unresolved` 字段零容忍（扫描解析盲区会静默丢属性）——**WIP 组件不豁免此项**（与 stale 检查不同）：本地在途改动重扫出 unresolved 同样拦 api:check，提醒先修扫描解析或补登记再提交——正向（manifest 有条目而语料无说明，渲染为 `—`）与反向（语料有行而 manifest 无条目，扫描盲区/失效残留）均打印可操作的键清单。WIP 豁免如实反映：组件源码有在途改动的页跳过校验，但会显著列出跳过页清单与数量——这些页的双向缺口本次未检，不能以全绿推断
 - **补文案摩擦消除**：`node scripts/api-docs/gen.mjs --write-missing` 把正向缺失键以 `TODO` 占位补进 zh/en 语料（键齐全、文案待替换）；反向盲区不盲目固化（可能是误留键），仍需人工核对后删行并记 CHANGELOG
 - **扫描边界补充**（scan.mjs）：跨目录继承类（如 dropdown-item ← menu-item）从 import 来源解析基类承载 API，逐层上溯（防环）；父组件读取子元素属性 / 纯 CSS 消费属性（AST 探不到）登记在 `SUPPLEMENT_ATTRS`；全局约定属性（`dir`、`disabled-skip`）不进 manifest，由 config-provider 文档统一说明
 - **防漂移**：`pnpm api:check` 已在 CI 强制，md 与生成物不一致会红

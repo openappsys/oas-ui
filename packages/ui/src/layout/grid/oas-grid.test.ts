@@ -414,6 +414,23 @@ describe('OASGrid collapsed-rows 折叠行（PRD P2）', () => {
     expect(events).toEqual([false, true])
   })
 
+  it('先少后多：首帧行数不足不落闩——动态增项超过 collapsed-rows 时补写 collapsed 并出现尾格', async () => {
+    const el = new OASGrid()
+    el.setAttribute('collapsed-rows', '1')
+    el.innerHTML = '<oas-grid-item span="24"><div>条件 1</div></oas-grid-item>'
+    document.body.appendChild(el)
+    expect(el.hasAttribute('collapsed'), '首帧 1 行不超限时无 collapsed').toBe(false)
+    // 动态增到 2 行（MutationObserver 重算）
+    const item2 = document.createElement('oas-grid-item')
+    item2.setAttribute('span', '24')
+    item2.innerHTML = '<div>条件 2</div>'
+    el.appendChild(item2)
+    await Promise.resolve()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.hasAttribute('collapsed'), '增长超过 1 行后补写 collapsed').toBe(true)
+    expect(tail(el).hidden, '尾格出现（折叠入口）').toBe(false)
+  })
+
   it('collapsed-rows=2（行数≥总行数）：无可折叠内容——全部可见、尾格隐藏、不写 collapsed（不误导宿主读态）', () => {
     const grid = mountGrid({ 'collapsed-rows': '2' })
     expect([...items(grid)].every((i) => !i.hasAttribute('hidden'))).toBe(true)
