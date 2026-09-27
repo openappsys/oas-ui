@@ -1062,6 +1062,10 @@ describe('OASForm review 回归（真实路径，非合成事件造假绿）', (
     el.addEventListener('oas-submit', (e) => (detail = (e as CustomEvent).detail))
     el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
     expect(({} as Record<string, unknown>).oasPolluted, 'Object.prototype 不得被污染').toBeUndefined()
+    // errors 原型链穿透防护：无规则字段名撞继承成员（toString）不得被误标错误
+    // （旧 'toString' in {} === true 会把字段误判为已有错误——aria-invalid 误标 + 文案写成继承函数）
+    const plain = el.querySelector('oas-input[name="__proto__.oasPolluted"]')!
+    expect(plain.getAttribute('aria-invalid'), '拒绝路径字段不误标').toBeNull()
     const values = (detail as { values: Record<string, unknown> }).values
     expect(JSON.stringify(values).includes('pwned'), '拒绝路径的值不进 values').toBe(false)
     expect(parseNamePath('__proto__.x'), '保留键段整块拒绝').toBeNull()
