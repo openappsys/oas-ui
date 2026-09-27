@@ -19,6 +19,11 @@ export class HeightCache {
   private estimated = 36
   private count = 0
 
+  /** 当前条目数（外部复用本类做窗口缓存时判断重建用） */
+  get length(): number {
+    return this.count
+  }
+
   /** 设定行数与预估行高（行数变 → 重置高度表与前缀和；预估值变 → 前缀和整体失效） */
   configure(count: number, estimated: number): void {
     const n = Math.max(0, Math.trunc(count) || 0)
