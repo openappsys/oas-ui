@@ -1176,8 +1176,10 @@ export class OASInput extends OASFormElement {
    */
   private rawValue(): string {
     const display = this.inputEl?.value ?? ''
-    if (this._parser) return this._parser(display)
+    // mask 在场时优先于 parser（互斥告警声明「mask 优先」——rawValue 先判 parser 会让
+    // parser 在 mask 期间仍作用于提交值，与告警自相矛盾：review 实抓）
     if (this.maskTokens() !== null) return this.hasAttr('mask-raw') ? this.lastRawValue : display
+    if (this._parser) return this._parser(display)
     return display
   }
 

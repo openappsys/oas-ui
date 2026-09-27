@@ -58,7 +58,7 @@
 
 ### 动态字段组 form-list
 
-> `oas-form-list` 在表单内维护一组可增删的字段行：在组件内放一个 `<template>` 作为行模板，克隆出的行内字段 `name` 自动索引化，两种写法——模板里用 `{index}` 占位（`name="users.{index}.name"`），或给组件设 `name="users"` 并在模板里写裸 `name`（自动前缀为 `users.N.字段名`）。`min` / `max` 约束行数（不足 `min` 自动补行），每行带删除按钮，删除后剩余行自动重新编号、已填值随行保留。字段留在 light DOM，校验 / 提交 / `oas-values-change` 全部随主表；组件派发 `oas-add` / `oas-remove`（`detail: { index }`）。
+> `oas-form-list` 在表单内维护一组可增删的字段行：在组件内放一个 `<template>` 作为行模板，克隆出的行内字段 `name` 自动索引化，两种写法——模板里用 `{index}` 占位（`name="users.{index}.name"`），或给组件设 `name="users"` 并在模板里写裸 `name`（自动前缀为 `users.N.字段名`）。`min` / `max` 约束行数（不足 `min` 自动补行；调小 `min` 不会删已有行，非法 `max` 按无上限处理），每行带删除按钮，删除后剩余行自动重新编号、已填值随行保留。字段留在 light DOM，校验 / 提交 / `oas-values-change` 全部随主表；组件派发 `oas-add` / `oas-remove`（`detail: { index }`）。
 
 <DemoBlock title="动态字段组 form-list">
   <oas-form id="form-list-demo" style="width: 420px">

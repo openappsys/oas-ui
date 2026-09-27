@@ -818,7 +818,7 @@ onMounted(() => {
 
 ## 导出 CSV / Excel（exportable）
 
-`exportable` 在表格顶部显示导出工具栏（默认 CSV；`export-format="excel"` 切 Excel，`"csv,excel"` 两个按钮都出）。导出范围 = 表头 + **当前可见数据行**（过滤 / 排序 / 分页切片后的当前页；虚拟滚动取完整展示集合）：`actions` 列不导出、`serialNumber` 列导出序号、select 编辑器导出选项 label。CSV 按 RFC 4180 转义并带 UTF-8 BOM；Excel 走 SpreadsheetML（`.xls`）。`export-file-name` 配文件名（默认 `export`）。也可编程式调用 `table.exportData('csv' | 'excel')`——按钮与方法都派发 `oas-export`（detail `{ format, fileName, rowCount }`）。
+`exportable` 在表格顶部显示导出工具栏（默认 CSV；`export-format="excel"` 切 Excel，`"csv,excel"` 两个按钮都出）。导出范围 = 表头 + **当前可见数据行**（过滤 / 排序 / 分页切片后的当前页；虚拟滚动取完整展示集合）：`actions` 列不导出（勾选列/行展开列/拖拽手柄列也不在导出矩阵内——它们不是数据列）、`serialNumber` 列导出序号、select 编辑器导出选项 label。CSV 按 RFC 4180 转义并带 UTF-8 BOM；Excel 走 SpreadsheetML（`.xls`）。`export-file-name` 配文件名（默认 `export`）。也可编程式调用 `table.exportData('csv' | 'excel')`——按钮与方法都派发 `oas-export`（detail `{ format, fileName, rowCount }`）。
 
 <DemoBlock title="导出 CSV / Excel（点击真实下载）">
   <div style="width: 100%">

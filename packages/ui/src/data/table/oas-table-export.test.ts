@@ -44,6 +44,7 @@ describe('oas-table-export 纯序列化', () => {
     expect(escapeCsvField('+SUM(A1)')).toBe("'+SUM(A1)")
     expect(escapeCsvField('-5')).toBe("'-5")
     expect(escapeCsvField('@x')).toBe("'@x")
+    expect(escapeCsvField('\t=1')).toBe("'\t=1")
     expect(escapeCsvField('普通值')).toBe('普通值')
     expect(escapeCsvField('=带,逗号')).toBe(`"'=带,逗号"`)
   })

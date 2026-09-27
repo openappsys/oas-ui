@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { OASForm, registerFormControl } from './index.js'
+import { OASForm, registerFormControl, parseNamePath } from './index.js'
 import type { Rule } from './index.js'
 import { OASFormItem } from '../form-item/index.js'
 import { OASInput } from '../input/index.js'
@@ -1027,6 +1027,25 @@ describe('OASForm review 回归（真实路径，非合成事件造假绿）', (
       }),
     )
     expect(cal.getAttribute('value'), 'range 区间 JSON 不得被值同步抹掉').toBe('["2026-08-05","2026-08-15"]')
+  })
+
+  it('C1 原型污染防护：name="__proto__.x" 的字段被拒绝进嵌套组装（Object.prototype 零污染）', () => {
+    const el = ((): OASForm => {
+      const f = new OASForm()
+      f.innerHTML = '<oas-input name="__proto__.oasPolluted" value="pwned"></oas-input>'
+      document.body.appendChild(f)
+      return f
+    })()
+    let detail: unknown
+    el.addEventListener('oas-submit', (e) => (detail = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    expect(({} as Record<string, unknown>).oasPolluted, 'Object.prototype 不得被污染').toBeUndefined()
+    const values = (detail as { values: Record<string, unknown> }).values
+    expect(JSON.stringify(values).includes('pwned'), '拒绝路径的值不进 values').toBe(false)
+    expect(parseNamePath('__proto__.x'), '保留键段整块拒绝').toBeNull()
+    expect(parseNamePath('constructor.x'), 'constructor 段拒绝').toBeNull()
+    expect(parseNamePath('a.prototype.b'), 'prototype 段拒绝').toBeNull()
+    expect(parseNamePath('users.0.name'), '正常路径不受影响')!.toEqual(['users', '0', 'name'])
   })
 
   it('混合同步/异步 validator：scroll-to-first-error 定位 DOM 序首错（非入队序）', async () => {

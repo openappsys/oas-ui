@@ -41,14 +41,21 @@ const NAME_PATH_CACHE = new Map<string, string[]>()
  * 字段 name 路径解析（嵌套 values 语义，D10）：
  * `users.0.name` / `users[0].name` / `a[0][1].b` → 段数组；数字段即数组下标。
  * 不含路径语法的普通名解析为单段——组装结果与扁平结构一致，既有用法天然向后兼容。
+ * 安全：保留键段（`__proto__`/`prototype`/`constructor`）整块拒绝（返回 null）——
+ * 否则 `__proto__.x` 路径会把值写到 Object.prototype 上（原型污染，coder review 实测复现）。
  */
-export function parseNamePath(name: string): string[] {
+const FORBIDDEN_SEGMENT = new Set(['__proto__', 'prototype', 'constructor'])
+export function parseNamePath(name: string): string[] | null {
   const cached = NAME_PATH_CACHE.get(name)
-  if (cached) return cached
+  if (cached) return cached.length > 0 ? cached : null
   const segments = name
     .replace(/\[(\d+)\]/g, '.$1')
     .split('.')
     .filter((s) => s !== '')
+  if (segments.some((s) => FORBIDDEN_SEGMENT.has(s))) {
+    NAME_PATH_CACHE.set(name, [])
+    return null
+  }
   const result = segments.length > 0 ? segments : [name]
   NAME_PATH_CACHE.set(name, result)
   return result
@@ -528,11 +535,14 @@ export class OASForm extends OASElement {
     return values
   }
 
-  /** 扁平快照 → 嵌套结构（点路径语法组装；普通名保持原样）。叶子值维持字符串形态不变 */
+  /** 扁平快照 → 嵌套结构（点路径语法组装；普通名保持原样）。叶子值维持字符串形态不变；
+   *  含保留键段（__proto__ 等）的路径被 parseNamePath 拒绝（null）——跳过该字段（不污染原型） */
   private nestValues(flat: Record<string, string>): Record<string, unknown> {
     const out: Record<string, unknown> = {}
     for (const [name, value] of Object.entries(flat)) {
-      writePath(out, parseNamePath(name), value)
+      const path = parseNamePath(name)
+      if (path === null) continue
+      writePath(out, path, value)
     }
     return out
   }
@@ -560,7 +570,7 @@ export class OASForm extends OASElement {
     const source = this._initialValues
     for (const { name, element } of this.collectFields()) {
       if (!forceAll && name in this._initialSnapshot) continue
-      const v = readPath(source, parseNamePath(name))
+      const v = readPath(source, parseNamePath(name) ?? [])
       const initial = v === undefined ? this.readValue(element) : this.stringifyInitial(v)
       this._initialSnapshot[name] = initial
       if (v !== undefined) this.writeValue(element, initial)
@@ -576,7 +586,7 @@ export class OASForm extends OASElement {
     const disabled = this.hasAttr('disabled')
     for (const { name, element } of this.collectFields()) {
       if (name in this._initialSnapshot) continue
-      const v = readPath(this._initialValues, parseNamePath(name))
+      const v = readPath(this._initialValues, parseNamePath(name) ?? [])
       const initial = v === undefined ? this.readValue(element) : this.stringifyInitial(v)
       this._initialSnapshot[name] = initial
       if (v !== undefined) this.writeValue(element, initial)

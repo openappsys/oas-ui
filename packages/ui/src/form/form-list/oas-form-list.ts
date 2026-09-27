@@ -204,7 +204,9 @@ export class OASFormList extends OASElement {
   private maxValue(): number {
     const raw = this.getAttr('max', '')
     if (raw === '') return Number.POSITIVE_INFINITY
-    return Math.max(0, Number(raw) || 0)
+    // 非法值回落无上限（「无法解析」≠「上限为零」——Number(raw)||0 会把 'abc' 当 0 误锁添加）
+    const n = Number(raw)
+    return Number.isFinite(n) ? Math.max(0, n) : Number.POSITIVE_INFINITY
   }
 
   /** 模板引用变化：清空全部行（light wrapper + 阴影帧），由 update 后续步骤按 min 重建 */

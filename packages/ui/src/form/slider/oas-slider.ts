@@ -971,11 +971,12 @@ export class OASSlider extends OASElement {
     this.emit(commit ? 'change' : 'input', { value: this.emitValue() })
   }
 
-  /** 拖动排序约束：单把手无约束；range 双值交换保持 lo ≤ hi（既有契约）；N≥3 夹到相邻把手之间防穿越 */
+  /** 拖动排序约束：单把手无约束；range 属性双值交换保持 lo ≤ hi（既有契约）；value 数组模式（含 N=2 非 range）与 N≥3 统一夹取相邻把手之间防穿越 */
   private enforceOrder(i: number): void {
     const n = this.activeThumbCount()
     if (n < 2) return
-    if (n === 2) {
+    // range 属性保留交换旧契约（lo/hi 超界交换）；value 数组模式（含 N=2）统一夹取相邻把手之间
+    if (n === 2 && this.hasAttr('range')) {
       this.clampRangeInputs()
       return
     }
