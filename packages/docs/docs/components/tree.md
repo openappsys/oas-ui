@@ -652,7 +652,7 @@ onMounted(() => {
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `load` | 懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性 | `(payload: { key: string }) => void \| Promise<unknown>` | — |
+| `load` | 懒加载函数（property 通道，`(node) => Promise<children>`） | `(payload: { key: string }) => void \| Promise<unknown>` | — |
 
 #### 事件
 

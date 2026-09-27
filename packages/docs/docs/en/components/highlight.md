@@ -95,3 +95,33 @@ onMounted(() => {
 ## API
 
 ### oas-highlight
+
+#### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `accent-sensitive` | Accent sensitive (accents NFD-folded by default) | `boolean` | — |
+| `case-sensitive` | Case sensitive (insensitive by default) | `boolean` | — |
+| `highlight` | Keywords: space-separated words or JSON array; whitespace fallback on parse failure | — | — |
+| `text` | Source text | — | — |
+| `whole-word` | Whole-word matching (off by default; Unicode letter/digit boundaries) | `boolean` | — |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-count` | Dispatched after each recompute, `detail: { count, matches }` |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-highlight-bg` | `color-mix(in srgb, var(--oas-preset-gold) 22%, transparent)` |
+| `--oas-highlight-color` | `var(--oas-color-text-primary)` |
+
+#### Parts
+
+| Part | Description |
+| --- | --- |
+| `highlight` | Hit segment (mark) |
+| `root` | Content container |

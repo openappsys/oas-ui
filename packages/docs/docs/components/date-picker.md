@@ -307,8 +307,8 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabledDate` | 禁用日期回调，返回 `true` 的日期不可选（点击与键盘导航均跳过；与 min/max 叠加禁用） | `((d: Date) => boolean) \| null` | — |
-| `shortcuts` | 快捷预设（对象数组，`{ label, value }` 或 `{ label, getValue() }`）；未设置时各类型内置默认预设（标签走 locale） | `ShortcutItem[] \| null` | — |
+| `disabledDate` | 禁用日期谓词（property 函数通道，`(date) => boolean`） | `((d: Date) => boolean) \| null` | — |
+| `shortcuts` | 快捷预设（property 通道，`[{ label, value/getValue }]`） | `ShortcutItem[] \| null` | — |
 
 #### 事件
 

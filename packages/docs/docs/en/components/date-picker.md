@@ -303,8 +303,8 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabledDate` | Disabled-date callback; dates returning `true` are unselectable (clicks and keyboard skip them; stacks with min/max) | `((d: Date) => boolean) \| null` | — |
-| `shortcuts` | Shortcuts (object array, `{ label, value }` or `{ label, getValue() }`); built-in defaults per type when unset (labels via locale) | `ShortcutItem[] \| null` | — |
+| `disabledDate` | Disabled-date predicate (property function channel, `(date) => boolean`) | `((d: Date) => boolean) \| null` | — |
+| `shortcuts` | Shortcut presets (property channel, `[{ label, value/getValue }]`) | `ShortcutItem[] \| null` | — |
 
 #### Events
 

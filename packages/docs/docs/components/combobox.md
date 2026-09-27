@@ -265,7 +265,7 @@ onMounted(() => {
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `filter` | 自定义过滤函数（JS property 通道 `el.filter = fn`）：接管本地过滤（如拼音首字母/远程匹配），置 null 恢复默认 label 子串过滤；`filterable="false"` 时不参与 | `((option: Option, query: string) => boolean) \| null` | — |
+| `filter` | 自定义过滤函数（property 通道，`(input, option) => boolean`） | `((option: Option, query: string) => boolean) \| null` | — |
 
 #### 事件
 

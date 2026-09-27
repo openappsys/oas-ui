@@ -95,3 +95,33 @@ onMounted(() => {
 ## API
 
 ### oas-highlight
+
+#### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `accent-sensitive` | 重音敏感（缺省 NFD 折叠重音） | `boolean` | — |
+| `case-sensitive` | 大小写敏感（缺省不敏感） | `boolean` | — |
+| `highlight` | 关键词：空格多词或 JSON 数组；解析失败回退空白分隔 | — | — |
+| `text` | 原文文本 | — | — |
+| `whole-word` | 整词匹配（缺省否；Unicode 字母/数字词边界） | `boolean` | — |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-count` | 内容重算后派发，`detail: { count, matches }` |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-highlight-bg` | `color-mix(in srgb, var(--oas-preset-gold) 22%, transparent)` |
+| `--oas-highlight-color` | `var(--oas-color-text-primary)` |
+
+#### Parts
+
+| Part | 说明 |
+| --- | --- |
+| `highlight` | 命中片段（mark） |
+| `root` | 内容容器 |

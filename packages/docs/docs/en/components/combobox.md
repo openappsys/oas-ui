@@ -264,7 +264,7 @@ onMounted(() => {
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `filter` | Custom filter function (JS property channel `el.filter = fn`): takes over local filtering (pinyin initials/remote matching); set null to restore the default label-substring filter; not involved when `filterable="false"` | `((option: Option, query: string) => boolean) \| null` | — |
+| `filter` | Custom filter function (property channel, `(input, option) => boolean`) | `((option: Option, query: string) => boolean) \| null` | — |
 
 #### Events
 

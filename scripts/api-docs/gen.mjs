@@ -262,7 +262,15 @@ const blindSpots = new Set() // tag:name —— 语料有但 manifest 无（扫�
 
 function tagRows(tag, lang) {
   const man = MANIFEST[tag] ?? { attrs: [], events: [], slots: [], props: [] }
-  const desc = (lang === 'zh' ? DESC_ZH : DESC_EN)[tag] ?? { attrs: {}, events: {}, slots: {} }
+  const descRaw = (lang === 'zh' ? DESC_ZH : DESC_EN)[tag] ?? { attrs: {}, events: {}, slots: {} }
+  // 空安全：语料可能只有部分分组（如 oas-highlight 无插槽语料）——缺省组按空表处理
+  const desc = {
+    props: {},
+    ...descRaw,
+    attrs: descRaw.attrs ?? {},
+    events: descRaw.events ?? {},
+    slots: descRaw.slots ?? {},
+  }
   const missing = (group, name) => missingDesc.add(`${tag}.${group}: ${name}`)
 
   // attrs：manifest attrs ∪ 语料 attrs；type 优先 manifest attr，其次同名的 prop 类型

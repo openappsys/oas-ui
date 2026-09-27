@@ -459,7 +459,7 @@ onMounted(async () => {
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `files` | 文件列表（property，`File[]`） | `Array<File \| UploadEchoFile>` | `[]` |
+| `files` | 受控文件列表（property 通道，写回即同步渲染） | `Array<File \| UploadEchoFile>` | `[]` |
 
 #### 事件
 

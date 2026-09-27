@@ -187,8 +187,8 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabledTime` | Disabled-time callback: `(parts) => { hours?, minutes?, seconds? }`, evaluated against the current time context; disabled options are grayed, not hidden | `\| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } \| null) \| null` | — |
-| `presets` | Quick times: an array of `{ label, value: "HH:mm:ss" }` rendered as a button row atop the panel | `PresetItem[] \| null` | — |
+| `disabledTime` | Disabled-time predicate (property function channel, `(parts) => { hours?, minutes?, seconds? }`) | `\| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } \| null) \| null` | — |
+| `presets` | Quick time presets (property channel, `[{ label, value }]`) | `PresetItem[] \| null` | — |
 
 #### Events
 

@@ -935,23 +935,23 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `actions` | — | — | — |
-| `align` | — | — | — |
+| `actions` | 列操作（如行内编辑的保存/取消钮列） | — | — |
+| `align` | 列内容对齐（left/center/right） | — | — |
 | `data-key` | 列标识（Vue 模板保留字 key 的规避通道；原生 HTML 下 key 直写亦可，组件双通道读取） | — | — |
-| `editable` | — | — | — |
-| `editor` | — | — | — |
-| `ellipsis` | — | — | — |
-| `filterable` | — | — | — |
-| `filters` | — | — | — |
-| `fixed` | — | — | — |
-| `hidden` | — | — | — |
-| `key` | — | — | — |
-| `merge` | — | — | — |
-| `serial-number` | — | — | — |
-| `sortable` | — | — | — |
-| `summary` | — | — | — |
-| `title` | — | — | — |
-| `width` | — | — | — |
+| `editable` | 列可编辑（双击单元格进编辑态） | — | — |
+| `editor` | 编辑器类型/配置（select/input 等） | — | — |
+| `ellipsis` | 列内容超宽单行截断省略号（悬停 title 看全文） | — | — |
+| `filterable` | 列可过滤（表头渲染筛选触发器） | — | — |
+| `filters` | 列筛选项配置 | — | — |
+| `fixed` | 列固定（left/right 吸附） | — | — |
+| `hidden` | 列隐藏（初始不参与渲染，列显隐面板可开） | — | — |
+| `key` | 列标识字段名（原生 HTML 直写；Vue 模板请用 data-key） | — | — |
+| `merge` | 列自动合并相邻同值单元格 | — | — |
+| `serial-number` | 行序号列（从 1 递增，不取数据字段） | — | — |
+| `sortable` | 列可排序（表头点击切换升/降/取消） | — | — |
+| `summary` | 列参与合计行（sum/avg/count） | — | — |
+| `title` | 列表头标题（缺省取默认插槽文本） | — | — |
+| `width` | 列宽（px 或 CSS 值；fixed 列建议显式声明） | — | — |
 
 #### 插槽
 

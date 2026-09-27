@@ -229,7 +229,7 @@
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabledDate` | 禁用回调（property） | `((d: Date) => boolean) \| null` | — |
+| `disabledDate` | 禁用日期谓词（property 函数通道，`(date) => boolean`） | `((d: Date) => boolean) \| null` | — |
 
 #### 事件
 

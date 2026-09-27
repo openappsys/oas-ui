@@ -654,7 +654,7 @@ onMounted(() => {
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `load` | Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute | `(payload: { key: string }) => void \| Promise<unknown>` | — |
+| `load` | Lazy-load function (property channel, `(node) => Promise<children>`) | `(payload: { key: string }) => void \| Promise<unknown>` | — |
 
 #### Events
 
