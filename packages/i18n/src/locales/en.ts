@@ -123,6 +123,11 @@ export const en: LocaleMessages = {
   'table.clear': 'Clear',
   'table.groupEmpty': '(empty)',
   'list.empty': 'No data',
+  // kanban（看板）
+  'kanban.emptyColumn': 'Drag cards here',
+  'kanban.moveCard': 'Move card',
+  'kanban.moveUp': 'Move up',
+  'kanban.moveDown': 'Move down',
   'tree.expand': 'Expand/Collapse',
   'tree.select': 'Select {label}',
   'tree.loading': 'Loading…',

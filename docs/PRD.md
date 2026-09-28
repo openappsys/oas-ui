@@ -1717,11 +1717,11 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ### 特性
 
-- **oas-kanban 看板**：`columns`（列定义 key/title）+ `cards`（{id, column, title, ...}）声明式数据；卡片拖拽换列（HTML5 DnD，落点高亮）→ 改 card.column 并派发 `oas-change`（detail：card id + from/to 列 key + 落点索引）；列头标题 + 计数；列体独立纵向滚动；空列态文案；卡片内容默认渲染 title，自定义走 `renderCard`（property 函数通道，与 table render 先例同构）或命名 slot；触屏降级：卡片内移动按钮（上移/下移/移到列，对齐 table 行拖拽触屏先例）。第一期不做：列拖拽重排、泳道、WIP 限制
+- **oas-kanban 看板**：`columns`（JSON [{ key, title }] 列定义）+ `cards`（JSON [{ id, column, title, ...任意字段 }]，column 为所属列 key）声明式数据，attribute JSON + property 数组双通道（setter 反射 attribute）；卡片拖拽换列 + 列内排序（HTML5 DnD，落点主色插入指示线——悬停卡上半/下半区分插前/插后、空列/列尾尾部标记）→ 落定回写 cards attribute 并派发 `oas-change`（detail：{ id, from, to, index }，index 为移除卡片自身后的目标列插入位；拖回原位零操作不派发）；列头标题 + 计数；列体独立纵向滚动；空列占位文案走 i18n（10 语言包），`empty-column-text` 属性覆盖；卡片默认渲染 title，自定义走 `renderCard`（property 函数通道，(card) => Node | string——Node 直挂、字符串纯文本防注入；函数在场时数据不反射）；触屏降级：卡片移动按钮（pointer:coarse 显示）上移/下移/移到指定列（边界项 aria-disabled）；键盘可达：卡片 tabindex=0（listitem）、列体 role=list。第一期不做：列拖拽重排、泳道、WIP 限制、卡片多选
 
 ### 验收
 
-- 拖拽换列事件与数据回写、触屏按钮移动、空列态、自定义卡片渲染单测 + e2e（chromium 真实拖拽序列 + 触屏按钮）；键盘可达（卡片可聚焦，方向键移动候选为后续批次，第一期至少 Tab 可达 + 按钮操作）；全量单测绿；api:check 通过（新组件 manifest + 语料 + demo 中英）
+- 拖拽换列事件与数据回写、同列排序口径、原位零操作、取消路径指示线清除、触屏按钮移动、空列态、renderCard 契约单测 + e2e（chromium 真实拖拽序列 + 触屏按钮）；键盘可达；全量单测绿；api:check 通过（新组件 manifest + 语料 + demo 中英）
 
 ## table 单元格性能专项（单例化 + 内存基线，未发布）
 

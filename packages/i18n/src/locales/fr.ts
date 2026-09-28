@@ -159,6 +159,11 @@ export const fr: LocaleMessages = {
   'table.groupEmpty': '(vide)',
   // list (liste)
   'list.empty': 'Aucune donnée',
+  // kanban (tableau kanban)
+  'kanban.emptyColumn': 'Déposez les cartes ici',
+  'kanban.moveCard': 'Déplacer la carte',
+  'kanban.moveUp': 'Monter',
+  'kanban.moveDown': 'Descendre',
   // tree (arborescence)
   'tree.expand': 'Déplier/Replier',
   'tree.select': 'Sélectionner {label}',
