@@ -127,6 +127,10 @@ Setting `columns` divides the width equally with `repeat(n, 1fr)`; child `span` 
 </DemoBlock>
 
 <DemoBlock title="gap comma pair + row-gap/column-gap attributes">
+  <oas-grid gap="8" column-gap="32" style="width: 100%">
+    <oas-grid-item span="12"><div class="demo-grid-box">column-gap="32"</div></oas-grid-item>
+    <oas-grid-item span="12"><div class="demo-grid-box">column-gap="32"</div></oas-grid-item>
+  </oas-grid>
   <oas-grid gap="4,32" style="width: 100%">
     <oas-grid-item span="8"><div class="demo-grid-box">gap="4,32"</div></oas-grid-item>
     <oas-grid-item span="8"><div class="demo-grid-box">gap="4,32"</div></oas-grid-item>

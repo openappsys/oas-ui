@@ -167,14 +167,14 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
 
 ## 触发器、提示与列表项自定义
 
-- `slot="trigger"`：替换拖拽区内容（点击/拖拽语义保留在拖拽区容器上，内容应自带可聚焦性，如 `oas-button`）
+- `slot="trigger"`：替换拖拽区内容（点击/拖拽语义保留在拖拽区容器上——zone 本身就是 `role="button"` 的可聚焦控件，**内嵌内容不要再放按钮/链接等可交互元素**（嵌套交互 axe 违规）；展示性内容即可）
 - `tip` 属性或 `template[slot="tip"]`：拖拽区下方次要说明文案（属性优先）
 - `template[slot="item"]`：克隆进 `list` / `picture` 每行，`[data-item-name]` / `[data-item-size]` 自动绑定文件名与大小
 
 <DemoBlock title="trigger / tip 插槽">
   <oas-upload id="upload-trigger" multiple tip="支持任意文件，单个不超过 20MB">
     <template slot="trigger">
-      <oas-button>选择文件</oas-button>
+      <span style="display:inline-flex;align-items:center;gap:var(--oas-space-1);padding:0 var(--oas-space-3);min-height:var(--oas-control-height-md);border:1px solid var(--oas-color-primary);border-radius:var(--oas-radius-md);color:var(--oas-color-primary);font-size:var(--oas-font-size-sm)"><oas-icon name="upload" size="14"></oas-icon>选择文件</span>
       <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">或将文件拖到此处</span>
     </template>
   </oas-upload>

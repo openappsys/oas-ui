@@ -62,7 +62,7 @@
 ## 大数据量（虚拟滚动）
 
 <DemoBlock title="虚拟滚动（1000 项建议）">
-  <oas-auto-complete id="ac-virtual" virtual clearable placeholder="输入「9」试试（千级建议滚动流畅）" options='[]'></oas-auto-complete>
+  <oas-auto-complete id="ac-virtual" item-height="36" virtual clearable placeholder="输入「9」试试（千级建议滚动流畅）" options='[]'></oas-auto-complete>
   <span id="ac-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 

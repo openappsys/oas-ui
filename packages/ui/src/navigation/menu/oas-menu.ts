@@ -235,7 +235,7 @@ a.item:visited {
   padding: 0 var(--oas-space-1);
   font-size: var(--oas-font-size-sm);
   font-family: var(--oas-font-family-mono, monospace);
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-primary);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-xs);
   background: var(--oas-color-bg-hover);
@@ -446,8 +446,15 @@ a.item:visited {
 /* ===== disabled 整单禁用：视觉降饱和（ui-spec §2.3）+ 子项交互反馈抑制；
    点击/悬停/键盘由 JS 全拦截（href 链接项同时 preventDefault 阻断原生跳转）。
    置于 TOUCH_TARGET 之前声明序后段：与 .item.danger:hover 同特异性时后写胜出 ===== */
+:host([disabled]) .item,
+:host([disabled]) .item.danger {
+  /* 整单禁用时 danger 红不再保留色相——降饱和后红色在感知对比度门禁下不达标（a11y 实抓）；
+     统一走禁用文字色（与全库 disabled 观感一致），faded-disabled 豁免可识别 */
+  color: var(--oas-color-text-disabled);
+}
 :host([disabled]) {
-  opacity: 0.6;
+  /* 不再叠 opacity——禁用色 × 透明度双层淡化会把文字洗出门禁线（实测 1.68）；
+     禁用观感由「文字走禁用色 + not-allowed 光标 + 无 hover」承载（与全库 disabled 一致且豁免可识别） */
   cursor: not-allowed;
 }
 :host([disabled]) .item {

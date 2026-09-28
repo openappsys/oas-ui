@@ -75,26 +75,28 @@ test('code 行高亮 / 行聚焦 / diff 着色真实生效（token 派生色）'
     const focusFlags = [...focus.shadowRoot!.querySelectorAll('[part="line"]')].map((l) =>
       l.classList.contains('line-focus-dim'),
     )
-    const focusOpacity = [...focus.shadowRoot!.querySelectorAll('[part="line"]')].map((l) =>
-      parseFloat(getComputedStyle(l).opacity),
-    )
+    // 淡化机制：掺色（currentColor × --oas-code-focus-dim-strength + 文字安全档），opacity 恒 1
+    //（opacity 淡化在感知对比度门禁下永不达标，已改掺色）——断言淡化行与聚焦行文字色不同
+    const focusColors = [...focus.shadowRoot!.querySelectorAll('[part="line"]')].map((l) => {
+      const code = l.querySelector('.line-code') ?? l
+      return getComputedStyle(code).color
+    })
     const diff = probe('oas-code[diff]')
     const diffRows = [...diff.shadowRoot!.querySelectorAll('[part="line"]')].map((l) => ({
       add: l.classList.contains('line-diff-add'),
       remove: l.classList.contains('line-diff-remove'),
       color: getComputedStyle(l.querySelector('.line-code')!).color,
     }))
-    return { hlFlags, hlBgs, focusFlags, focusOpacity, diffRows }
+    return { hlFlags, hlBgs, focusFlags, focusColors, diffRows }
   })
   // 行高亮：命中行有底色，未命中行透明
   const hlOn = r.hlFlags.map((on, i) => (on ? i : -1)).filter((i) => i >= 0)
   expect(hlOn.length).toBeGreaterThan(0)
   expect(r.hlBgs[hlOn[0]!]).not.toBe('rgba(0, 0, 0, 0)')
   expect(r.hlBgs[r.hlFlags.findIndex((on) => !on)]).toBe('rgba(0, 0, 0, 0)')
-  // 行聚焦：存在淡化行（opacity < 1）与聚焦行（opacity = 1）
+  // 行聚焦：淡化行与聚焦行文字色有区分（掺色机制；opacity 恒 1——opacity 淡化在感知对比度门禁下不达标）
   expect(r.focusFlags.some(Boolean)).toBe(true)
-  expect(Math.min(...r.focusOpacity)).toBeLessThan(1)
-  expect(Math.max(...r.focusOpacity)).toBe(1)
+  expect(new Set(r.focusColors).size, '淡化行与聚焦行文字色应有区分').toBeGreaterThan(1)
   // diff：增行绿、减行红（语义色非默认文本色）
   const adds = r.diffRows.filter((x) => x.add)
   const removes = r.diffRows.filter((x) => x.remove)
