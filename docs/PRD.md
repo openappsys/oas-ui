@@ -1693,3 +1693,47 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - e2e（chromium）：60 列×40 行大宽表——th/td 窗口化（<30）、scrollWidth >7200（colgroup 撑总宽）、固定列恒渲染、行列双开滚动推移 + thead/tbody 窗口一致性、编辑×列窗口定位回归；全量 8306 passed
 - table 域全量单测绿（全仓 8306 passed，含列窗口/编辑协议回归 8 条）；format 0；lint:md 0；api:check 通过（editComponent 语料同步——attribute 收割外字段，说明在正文）
+
+## table 字段类型系统 + 分组视图（未发布）
+
+### 背景
+
+多维表格类场景评估（2026-09-28）的组件库边界内立项：字段类型系统是 editComponent 通道的自然下半篇——用户不再自己拼编辑器组件，columns 声明 `type` 即得「展示渲染器 + 编辑器」成套行为。分组视图是表格展示的基础形态之一。
+
+### 特性
+
+- **oas-table 列 `type` 字段类型系统**：columns JSON 加 `type` 字段——`text`（默认，现状）/ `number`（右对齐 + 千分位）/ `currency`（货币符号 + 千分位 + 右对齐，`currency` 列字段配符号，默认 ¥）/ `select`（badge 渲染，`options` 列字段配 value/label/color）/ `multi-select`（badge 组）/ `date`（YYYY-MM-DD 格式化）/ `checkbox`（只读勾选态）/ `link`（主色下划线，新标签页）/ `progress`（0-100 进度条）/ `rate`（0-5 星级）。编辑器复用既有通道：input 系（text/number/currency/link/progress/rate/date 输入校验）→ 原生 input；select → 既有 `editor: 'select'` + editOptions；checkbox → oas-switch（非浮层）。列级 `type` 与 `render`/`cellTemplate` 并存时自定义渲染优先。浮层类编辑器（oas-select / oas-date-picker 挂载编辑）为后续批次
+- **oas-table `group-by` 分组视图**：按指定字段值分节——分节头行（字段值 + 组内计数 + 折叠箭头）+ 组内数据行；折叠状态默认全展开，点击分节头切换；排序作用于组内行；分节头作为 flat 行的一种 kind 参与行虚拟滚动（与 expand 行先例同构）；与 column-virtual 正交（分节头 colSpan 全宽行走 columnCount 先例）；group-by 与 merge / span-method 互斥（告警降级）
+
+### 验收
+
+- 10 种字段类型的展示渲染 + 编辑器挂载 + 提交回写全单测；select/badge 颜色 token 化（暗色可读）；分组视图分节/折叠/计数/排序组内/行虚拟双开单测 + e2e（chromium）；全量单测绿；format 0；lint:md 0；api:check 通过（语料同步）
+
+## oas-kanban 看板组件（未发布）
+
+### 背景
+
+多维表格类场景评估（2026-09-28）立项：看板是六种视图之一，纯前端可做、组件库边界内。新组件，data 族。
+
+### 特性
+
+- **oas-kanban 看板**：`columns`（列定义 key/title）+ `cards`（{id, column, title, ...}）声明式数据；卡片拖拽换列（HTML5 DnD，落点高亮）→ 改 card.column 并派发 `oas-change`（detail：card id + from/to 列 key + 落点索引）；列头标题 + 计数；列体独立纵向滚动；空列态文案；卡片内容默认渲染 title，自定义走 `renderCard`（property 函数通道，与 table render 先例同构）或命名 slot；触屏降级：卡片内移动按钮（上移/下移/移到列，对齐 table 行拖拽触屏先例）。第一期不做：列拖拽重排、泳道、WIP 限制
+
+### 验收
+
+- 拖拽换列事件与数据回写、触屏按钮移动、空列态、自定义卡片渲染单测 + e2e（chromium 真实拖拽序列 + 触屏按钮）；键盘可达（卡片可聚焦，方向键移动候选为后续批次，第一期至少 Tab 可达 + 按钮操作）；全量单测绿；api:check 通过（新组件 manifest + 语料 + demo 中英）
+
+## table 单元格性能专项（单例化 + 内存基线，未发布）
+
+### 背景
+
+大数据表格场景的已知性能模式（2026-09-28 工程调研）：单元格内每格一份交互组件实例（tooltip 等）在大宽表下是数百个 WC 实例；频繁创建销毁带来内存压力。立项两件：高频场景单例化 + 内存回归门禁。
+
+### 特性
+
+- **oas-table `cell-tooltip` 单元格溢出提示（单例浮层）**：单元格文本溢出省略号时 hover 显示全文——表格级单一浮层实例（事件委托 + 定位复用 floating 引擎），不为每格创建组件实例；仅对纯文本单元格生效（自定义渲染单元格自管）；`cell-tooltip` 属性开关（默认开）
+- **table 内存回归基线（qa-regression）**：大宽表（60 列 × 40 行窗口化渲染）+ 滚动若干帧后 Chromium JS heap 采样——增长阈值断言（heapUsed 滚动后增幅 < 基线 20%）；渲染实例数断言（表格节点数 / WC 实例数上限）
+
+### 验收
+
+- cell-tooltip 溢出显示/非溢出不显示/单例实例数=1/暗色可读单测 + e2e；内存基线用例稳定通过（chromium）；全量单测绿
