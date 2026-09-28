@@ -132,9 +132,9 @@ describe('OASTable 列字段类型系统（column type）', () => {
       data: JSON.stringify([{ s: 'ok' }, { s: 'no' }]),
     })
     const colored = cellOf(el, 's', 0).querySelector<HTMLElement>('.type-badge')!
-    expect(colored.style.getPropertyValue('--_badge-color')).toBe('var(--oas-color-success)')
+    expect(colored.style.getPropertyValue('--_badge-fg')).toContain('var(--oas-color-success)')
     const plain = cellOf(el, 's', 1).querySelector<HTMLElement>('.type-badge')!
-    expect(plain.style.getPropertyValue('--_badge-color')).toBe('')
+    expect(plain.style.getPropertyValue('--_badge-fg')).toBe('')
   })
 
   it('type=select：找不到对应 option → 显示原值文本', () => {
@@ -204,6 +204,28 @@ describe('OASTable 列字段类型系统（column type）', () => {
     expect(a.getAttribute('target')).toBe('_blank')
     expect(a.getAttribute('rel')).toBe('noopener')
     expect(a.textContent).toBe('https://example.com')
+  })
+
+  it('type=link：协议白名单——javascript:/data: 等回落纯文本（防数据驱动 XSS，review I3 回归）', () => {
+    const el = mount({
+      columns: JSON.stringify([{ key: 'url', title: '链接', type: 'link' }]),
+      data: JSON.stringify([
+        { url: 'javascript:alert(1)' },
+        { url: 'data:text/html,<script>alert(1)</script>' },
+        { url: 'vbscript:msgbox(1)' },
+        { url: 'mailto:a@b.com' },
+        { url: '/relative/path' },
+        { url: '#anchor' },
+      ]),
+    })
+    for (const r of [0, 1, 2]) {
+      const td = cellOf(el, 'url', r)
+      expect(td.querySelector('a.type-link'), `行 ${r} 危险协议不得渲染为链接`).toBeNull()
+      expect(td.textContent, '回落纯文本展示原值').not.toBe('')
+    }
+    expect(cellOf(el, 'url', 3).querySelector('a.type-link'), 'mailto: 放行').not.toBeNull()
+    expect(cellOf(el, 'url', 4).querySelector('a.type-link'), '相对路径放行').not.toBeNull()
+    expect(cellOf(el, 'url', 5).querySelector('a.type-link'), '锚点放行').not.toBeNull()
   })
 
   it('type=progress：track + fill 宽度百分比，出界夹取 0-100', () => {
@@ -543,6 +565,25 @@ describe('OASTable 分组视图（group-by）', () => {
     }
   })
 
+  it('group-by 与 row-draggable 同用：告警一次并降级为普通渲染——review I4 回归（分组后展示序≠原始数组序，行重排索引会错位）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        columns: GROUP_COLUMNS,
+        data: GROUP_DATA,
+        'group-by': 'dept',
+        'row-key': 'name',
+        'row-draggable': '',
+      })
+      expect(groupRows(el).length).toBe(0)
+      expect(rows(el).length).toBe(5)
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn.mock.calls[0]![0]).toContain('row-draggable')
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
   it('与 column-virtual 正交：分节头 colSpan 全宽 + 数据行走列窗口', () => {
     const el = groupMount({
       'column-virtual': '',
@@ -687,6 +728,25 @@ describe('OASTable 单元格溢出提示（cell-tooltip 单例浮层）', () => 
     expect(tooltip(el)!.getAttribute('data-visible')).toBe('true')
     el.setAttribute('data', JSON.stringify([{ txt: '重渲染后的新文本' }]))
     // 整体重渲染（update）后浮层隐藏
+    expect(tooltip(el)!.getAttribute('data-visible')).toBe('false')
+  })
+
+  it('wrap 真实 scroll 事件隐藏浮层（M8 回归：覆盖 wrap 滚动路径而非仅重渲染路径）', async () => {
+    const { el, td } = tipMount({ height: '80' })
+    td.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    expect(tooltip(el)!.getAttribute('data-visible')).toBe('true')
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 10
+    wrap.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(tooltip(el)!.getAttribute('data-visible')).toBe('false')
+  })
+
+  it('页面级滚动（document capture）隐藏浮层（review M5 回归）', () => {
+    const { el, td } = tipMount()
+    td.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    expect(tooltip(el)!.getAttribute('data-visible')).toBe('true')
+    document.dispatchEvent(new Event('scroll'))
     expect(tooltip(el)!.getAttribute('data-visible')).toBe('false')
   })
 

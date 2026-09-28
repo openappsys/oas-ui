@@ -895,7 +895,7 @@ onMounted(() => {
 
 ## 分组视图（group-by）
 
-`group-by="字段key"` 按该字段值分节渲染：分节头行 = 折叠箭头 + 字段值 + 组内计数，点击箭头折叠 / 展开该组（默认全展开，`aria-expanded` 同步）。组间顺序按字段值首次出现序、排序作用于组内行；分组字段值缺失 / 为空的行归入「（空）」组（文案走 i18n）。分节头作为扁平行的一种参与行虚拟滚动，整行 `colSpan` 全宽（与 `column-virtual` / 固定列正交）；折叠状态在数据 / 属性变化时保留。与 merge 列 / `span-method` 同用时不兼容（告警一次并降级为普通渲染）。
+`group-by="字段key"` 按该字段值分节渲染：分节头行 = 折叠箭头 + 字段值 + 组内计数，点击箭头折叠 / 展开该组（默认全展开，`aria-expanded` 同步）。组间顺序按字段值首次出现序、排序作用于组内行；分组字段值缺失 / 为空的行归入「（空）」组（文案走 i18n）。分节头作为扁平行的一种参与行虚拟滚动，整行 `colSpan` 全宽（与 `column-virtual` / 固定列正交）；折叠状态在数据 / 属性变化时保留。与 merge 列 / `span-method` / `row-draggable` 同用时不兼容（告警一次并降级为普通渲染）。与 `pagination` 同用时为**页内分组**口径（组内计数 = 当前页计数，跨页组在每页各自成组）。
 
 <DemoBlock title="按部门分组（组内可排序，点击箭头折叠/展开）">
   <div style="width: 100%">
@@ -909,7 +909,7 @@ onMounted(() => {
 
 <DemoBlock title="悬停溢出格查看全文">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"env","title":"环境","width":"90px"},{"key":"url","title":"访问地址","width":"220px"},{"key":"owner","title":"负责人","width":"80px"}]' data='[{"env":"生产","url":"https://prod-cluster.example-assets-platform.com/dashboard/overview/health","owner":"张三"},{"env":"预发","url":"https://staging.example-assets-platform.com/monitor/health-check/status","owner":"李四"},{"env":"灰度","url":"https://canary.example-assets-platform.com/release/notes/latest","owner":"王五"}]'></oas-table>
+    <oas-table cell-tooltip columns='[{"key":"env","title":"环境","width":"90px"},{"key":"url","title":"访问地址","width":"220px"},{"key":"owner","title":"负责人","width":"80px"}]' data='[{"env":"生产","url":"https://prod-cluster.example-assets-platform.com/dashboard/overview/health","owner":"张三"},{"env":"预发","url":"https://staging.example-assets-platform.com/monitor/health-check/status","owner":"李四"},{"env":"灰度","url":"https://canary.example-assets-platform.com/release/notes/latest","owner":"王五"}]'></oas-table>
   </div>
 </DemoBlock>
 
