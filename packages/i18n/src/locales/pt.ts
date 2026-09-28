@@ -156,6 +156,7 @@ export const pt: LocaleMessages = {
   'table.editHint': 'Clique duplo para editar',
   'table.filter': 'Filtrar',
   'table.clear': 'Limpar',
+  'table.groupEmpty': '(vazio)',
   // list (lista)
   'list.empty': 'Sem dados',
   // tree (árvore)
