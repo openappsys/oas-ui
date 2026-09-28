@@ -62,7 +62,7 @@ Options with a `group` field render group titles (not selectable) with indented 
 ## Large Datasets (virtual scrolling)
 
 <DemoBlock title="Virtual scrolling (1000 suggestions)">
-  <oas-auto-complete id="ac-virtual" virtual clearable placeholder='Type "9" to try (1000 suggestions, smooth scrolling)' options='[]'></oas-auto-complete>
+  <oas-auto-complete id="ac-virtual" item-height="36" virtual clearable placeholder='Type "9" to try (1000 suggestions, smooth scrolling)' options='[]'></oas-auto-complete>
   <span id="ac-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 

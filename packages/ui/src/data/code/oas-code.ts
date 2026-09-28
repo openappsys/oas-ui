@@ -339,11 +339,20 @@ pre.code {
 }
 /* highlight-lines：整行高亮底（token 派生，可经 CSS 变量覆盖） */
 .line-highlight {
-  background: var(--oas-code-highlight-bg, color-mix(in srgb, var(--oas-color-primary) 12%, transparent));
+  background: var(--oas-code-highlight-bg, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
 }
-/* focus-lines：非聚焦行淡化（token 透明度可覆盖） */
-.line-focus-dim {
-  opacity: var(--oas-code-focus-dim-opacity, 0.35);
+/* focus-lines：非聚焦行淡化——opacity 向底色淡化在感知对比度门禁下永不达标（实测 0.78 仍 53），
+   改「向主题文字色掺色」（58% 保留色相 + 42% 文字安全档压明度，暗色主题向亮掺） */
+/* 行号在染色行（高亮/diff 浅底）上：次要色实测不达标（55-57）——掺文字安全档压明度 */
+.line-highlight .line-number,
+.line-diff-add .line-number,
+.line-diff-remove .line-number {
+  color: color-mix(in srgb, var(--oas-color-text-secondary) 52%, var(--oas-deep-sink, black));
+}
+.line-focus-dim,
+.line-focus-dim .line-code,
+.line-focus-dim .line-code * {
+  color: color-mix(in srgb, currentColor var(--oas-code-focus-dim-strength, 58%), var(--oas-color-text-primary));
 }
 /* diff：+ 增绿 / - 减红（语义 token；行级着色压过行内 token 高亮） */
 .line-diff-add {
@@ -354,11 +363,11 @@ pre.code {
 }
 .line-diff-add .line-code,
 .line-diff-add .line-code * {
-  color: var(--oas-color-success-text);
+  color: color-mix(in srgb, var(--oas-color-success-text) 88%, var(--oas-deep-sink, black));
 }
 .line-diff-remove .line-code,
 .line-diff-remove .line-code * {
-  color: var(--oas-color-danger-text);
+  color: color-mix(in srgb, var(--oas-color-danger-text) 88%, var(--oas-deep-sink, black));
 }
 /* max-rows 折叠尾行：展开/收起入口 */
 .more-line {

@@ -257,9 +257,9 @@ export { fib }'></oas-code>
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-code-color` | `var(--oas-color-text-primary)` |
-| `--oas-code-focus-dim-opacity` | `0.35` |
+| `--oas-code-focus-dim-strength` | `58%` |
 | `--oas-code-font` | `0.875em` |
-| `--oas-code-highlight-bg` | `color-mix(in srgb, var(--oas-color-primary) 12%, transparent)` |
+| `--oas-code-highlight-bg` | `color-mix(in srgb, var(--oas-color-primary) 8%, transparent)` |
 | `--oas-code-on-color` | `var(--oas-color-bg)` |
 
 ### Engine Choice (Architecture Decision)

@@ -433,7 +433,7 @@ const STYLE = `
   padding: 0 var(--oas-space-1);
   font-size: var(--oas-font-size-sm);
   font-family: var(--oas-font-family-mono, monospace);
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-primary);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-xs);
   background: var(--oas-color-bg-hover);
