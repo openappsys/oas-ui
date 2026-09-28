@@ -47,7 +47,9 @@ if (!changelog.includes(`[${version}]`)) {
 }
 
 // 3) tag 已存在时，其指向提交的 ui 包版本必须 == 目标
+let tagExists = false
 try {
+  tagExists = true
   const uiPkgAtTag = execSync(`git show "v${version}^{commit}:packages/ui/package.json"`, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -59,6 +61,20 @@ try {
   }
 } catch {
   // tag 不存在（git show 抛错）→ 未打，仅校验当前磁盘即可
+}
+
+// 3b) tag 已存在时必须指向 HEAD——否则发布内容落后于最后修复
+//     （曾发生：tag 打完后又提交了门禁修复，版本校验照过、发布漏带修复）
+if (tagExists) {
+  const tagSha = execSync(`git rev-list -n 1 "v${version}"`, { encoding: 'utf8' }).trim()
+  const head = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim()
+  if (tagSha !== head) {
+    console.error(
+      `✗ tag v${version} 指向 ${tagSha.slice(0, 9)}，落后 HEAD ${head.slice(0, 9)}——` +
+        `发布将漏带其后的提交。请删 tag 重打：git tag -d v${version} && git tag -a v${version} -m "v${version}"`,
+    )
+    fail++
+  }
 }
 
 // 4) 工作流 pnpm 版本一致性：pnpm/action-setup 若固定 version，必须 == packageManager
@@ -105,36 +121,44 @@ if (fail) {
 const ADAPTERS = ['next', 'nuxt']
 let baselineTag = ''
 try {
-  baselineTag = execSync('git describe --tags --abbrev=0', { encoding: 'utf8' }).trim()
+  // 基线必须是「上一个 release tag」：目标 tag 已存在时取其前一个（否则基线就是
+  // 目标 tag 本身，diff 恒空，提醒永远不触发）
+  if (tagExists) {
+    baselineTag = execSync(`git describe --tags --abbrev=0 "v${version}^"`, { encoding: 'utf8' }).trim()
+  } else {
+    baselineTag = execSync('git describe --tags --abbrev=0', { encoding: 'utf8' }).trim()
+  }
 } catch {
-  // 无任何 tag（首次发布）→ 无法比较，跳过提醒
+  // 无任何更早的 tag（首次发布）→ 无法比较，跳过提醒
 }
 if (baselineTag) {
-  const changed = execSync(
-    `git diff --name-only "${baselineTag}"..HEAD -- ${ADAPTERS.map((p) => `packages/${p}`).join(' ')} ":(exclude)**/*.test.ts"`,
-    { encoding: 'utf8' },
-  ).trim()
-  if (changed) {
-    const bumped = []
-    for (const p of ADAPTERS) {
-      const now = JSON.parse(readFileSync(join('packages', p, 'package.json'), 'utf8')).version
-      let at = ''
-      try {
-        at = JSON.parse(execSync(`git show "${baselineTag}:packages/${p}/package.json"`, { encoding: 'utf8' })).version
-      } catch {
-        // 基线 tag 里没有该包（首次加入）→ 视为需发布
-      }
-      if (now !== at) bumped.push(`${p}(${at || '无'}→${now})`)
+  const stale = []
+  const bumped = []
+  for (const p of ADAPTERS) {
+    // 逐适配层判改动（原实现按整个 adapters 集合判「有改动」，
+    // 会把未改动的那个也误报为 stale）
+    const changed = execSync(
+      `git diff --name-only "${baselineTag}"..HEAD -- "packages/${p}" ":(exclude)**/*.test.ts"`,
+      { encoding: 'utf8' },
+    ).trim()
+    if (!changed) continue
+    const now = JSON.parse(readFileSync(join('packages', p, 'package.json'), 'utf8')).version
+    let at = ''
+    try {
+      at = JSON.parse(execSync(`git show "${baselineTag}:packages/${p}/package.json"`, { encoding: 'utf8' })).version
+    } catch {
+      // 基线 tag 里没有该包（首次加入）→ 视为需发布
     }
-    const stale = ADAPTERS.filter((p) => !bumped.some((b) => b.startsWith(`${p}(`)))
-    if (stale.length) {
-      console.warn(
-        `⚠ [release-check] 适配层自 ${baselineTag} 以来有改动但版本未 bump：${stale.join(', ')}` +
-          `——publish-skip-existing 会因同名版本已存在而跳过，本次发布不会更新它们；` +
-          `若确有需要发布的改动，请 bump 对应 packages/<name>/package.json 版本后重跑。` +
-          `${bumped.length ? `（已 bump：${bumped.join(', ')}）` : ''}`,
-      )
-    }
+    if (now !== at) bumped.push(`${p}(${at || '无'}→${now})`)
+    else stale.push(p)
+  }
+  if (stale.length) {
+    console.warn(
+      `⚠ [release-check] 适配层自 ${baselineTag} 以来有改动但版本未 bump：${stale.join(', ')}` +
+        `——publish-skip-existing 会因同名版本已存在而跳过，本次发布不会更新它们；` +
+        `若确有需要发布的改动，请 bump 对应 packages/<name>/package.json 版本后重跑。` +
+        `${bumped.length ? `（已 bump：${bumped.join(', ')}）` : ''}`,
+    )
   }
 }
 
