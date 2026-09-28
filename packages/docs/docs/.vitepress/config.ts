@@ -156,6 +156,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'NumberAnimation 数字滚动', link: '/components/number-animation' },
       { text: 'GradientText 渐变文字', link: '/components/gradient-text' },
       { text: 'Highlight 文本高亮', link: '/components/highlight' },
+      { text: 'Kanban 看板', link: '/components/kanban' },
     ],
   },
   {

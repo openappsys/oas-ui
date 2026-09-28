@@ -1676,6 +1676,19 @@
       "": "链接内容（文本 / 图标等）"
     }
   },
+  "oas-kanban": {
+    "attrs": {
+      "columns": "列定义（JSON 数组 [{ key, title }]；property 同名数组通道同效，setter 反射回 attribute）",
+      "cards": "卡片数据（JSON 数组 [{ id, column, title, ...任意字段 }]，column 为所属列 key）。拖拽落定后组件把新分组/顺序回写本属性（非受控回写 + attribute 反射）；renderCard 函数在场时不回写（数据由宿主持有）",
+      "empty-column-text": "空列占位文案覆盖（默认走 i18n kanban.emptyColumn，随 locale 翻译）"
+    },
+    "events": {
+      "oas-change": "拖拽换列/列内排序/触屏菜单移动落定后派发（拖回原位不派发）。detail { id, from, to, index }——from/to 为列 key，index 为落点在目标列的插入位（移除卡片自身后的口径，宿主对目标列数组 splice(index, 0, card) 即可复现）"
+    },
+    "props": {
+      "renderCard": "自定义卡片渲染函数 (card) => Node | string（property 通道，函数不可序列化不进 attribute/SSR）。返回 Node 直接挂载；返回字符串按纯文本渲染（防注入）。在场时卡片数据不反射回 cards 属性（宿主持有数据），拖拽与移动菜单照常派发 oas-change。置 null 恢复默认 title 渲染"
+    }
+  },
   "oas-list": {
     "attrs": {
       "bordered": "是否显示整体边框",
