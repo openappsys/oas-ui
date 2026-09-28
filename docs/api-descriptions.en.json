@@ -2945,7 +2945,7 @@
       "export-file-name": "Export file name (without extension; path separators and reserved characters are sanitized)",
       "grid-navigation": "Keyboard grid navigation: role=grid, single Tab stop for the data region, arrow keys roam cells (Home/End/PageUp-Down, Enter/Space activate in-cell controls)",
       "row-draggable": "Row drag sorting: renders a drag-handle column and dispatches oas-row-reorder on drop; disabled with a warning under virtual scrolling",
-      "edit-component": "Component editor (takes precedence over editor): any value-semantic WC tag name (e.g. oas-input / oas-date-picker). Contract: value attribute read/write, change event submits, Escape cancels. Overlay components in a later batch"
+      "column-virtual": "Column virtualization (column windowing): only visible-window columns render; off-window columns collapse into placeholder cells (colSpan-summed via colgroup). Constraints: explicit width on all columns recommended; grouped header / span-method / summary rows incompatible (warns and degrades)"
     },
     "events": {
       "oas-check": "Checkbox selection change, `detail: { keys: string[] }`",
