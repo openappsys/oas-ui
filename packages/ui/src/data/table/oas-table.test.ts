@@ -2951,7 +2951,7 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
   const cellOf = (el: OASTable, row: number, col: number): HTMLElement =>
     ([...el.shadowRoot!.querySelectorAll('tr.row td')] as HTMLElement[])[row * 2 + col]!
 
-  it('editComponent 优先于 editor：双击挂载 oas-input（cell-editor-component）并双通道注入初值', () => {
+  it('editComponent 优先于 editor：双击挂载 oas-input（cell-editor-component）并注入初值', () => {
     const el = compMount()
     const td = cellOf(el, 0, 0)
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
@@ -2959,7 +2959,8 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     expect(comp, '组件编辑器挂载（而非原生 input.cell-editor）').not.toBeNull()
     expect(td.querySelector('input.cell-editor')).toBeNull()
     expect(comp!.getAttribute('value')).toBe('张三')
-    expect((comp as unknown as { value: string }).value).toBe('张三')
+    // oas-input 无真 value property（读值走 getFormValue 钩子）：注入条件化后不得建 expando
+    expect('value' in comp!).toBe(false)
     expect(comp!.classList.contains('cell-editor')).toBe(true)
   })
 
@@ -3045,6 +3046,27 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     comp!.dispatchEvent(new Event('change', { bubbles: true }))
     expect(JSON.parse(el.getAttribute('data')!)[1].name).toBe('王五')
   })
+
+  it('attribute-only 宿主 WC（无 value property）：用户经 attribute 改值提交读新值（review I-1 回归）', () => {
+    class AttrEditor extends HTMLElement {
+      // 无 value property——按「value attribute 读写 + change 事件」契约实现的宿主组件形态
+    }
+    if (!customElements.get('attr-editor-x')) customElements.define('attr-editor-x', AttrEditor)
+    const el = compMount()
+    const cols = JSON.parse(el.getAttribute('columns')!)
+    cols[0].editComponent = 'attr-editor-x'
+    el.setAttribute('columns', JSON.stringify(cols))
+    const td = cellOf(el, 0, 0)
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const comp = td.querySelector<HTMLElement>('attr-editor-x.cell-editor-component')
+    expect(comp, 'attribute-only 组件挂载').not.toBeNull()
+    expect(comp!.getAttribute('value')).toBe('张三')
+    // 无真 property 时注入不建 expando——否则读取第二级命中 expando 初值，attribute 新值被吞
+    expect('value' in comp!).toBe(false)
+    comp!.setAttribute('value', '属性新值')
+    comp!.dispatchEvent(new Event('change', { bubbles: true }))
+    expect(JSON.parse(el.getAttribute('data')!)[0].name).toBe('属性新值')
+  })
 })
 
 describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 / RTL 标准化）', () => {
@@ -3118,13 +3140,17 @@ describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 
     expect(headKeys(el), '表头窗口列与表体窗口列一一对应').toEqual(dataKeys(el))
   })
 
-  it('前缀扣除：left 固定段宽 > scrollLeft 时窗口不得跳过首列（review I1 回归）', async () => {
+  it('前缀扣除：窗口起点须扣 left 固定段宽（review I1 回归：旧算法窗口偏右、固定列右侧露空洞）', async () => {
+    // c0 设 fixed:left（恒渲染）后断言 middle 段首列 c1：正确算法 start=360-200=160 → 窗口含 c1；
+    // 不扣前缀的旧算法 start=360 → 窗口首列跳到 c3、c1 缺席（c0 恒渲染故 toContain('c0') 不构成判别）
     const el = wideMount({}, [{ fixed: 'left', width: '200px' }])
-    await scrollX(el, 100)
-    expect(dataKeys(el), 'scrollLeft(100) < 前缀宽(200)，窗口仍应从 c0 起').toContain('c0')
+    await scrollX(el, 360)
+    expect(dataKeys(el), 'middle 段窗口首列未被跳过（前缀已扣除）').toContain('c1')
   })
 
   it('RTL 标准化：负 scrollLeft 与对应正值窗口一致（review I5 回归）', async () => {
+    // 注：本条验证的是 abs() 标准化的数学等价（LTR 表设负 scrollLeft 模拟规范 RTL 实现的
+    // 负值语义），非真 RTL 布局端到端；真 RTL 布局走 qa-regression 浏览器通道
     const el = wideMount()
     await scrollX(el, 2000)
     const forward = dataKeys(el)
@@ -3157,5 +3183,15 @@ describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 
     expect(ph, '初始窗口下存在占位格').toBeTruthy()
     expect(ph!.getAttribute('role')).toBe('gridcell')
     expect(ph!.getAttribute('aria-colspan')).toBe(String(ph!.colSpan))
+    // 矩阵行为断言：从窗口首列连续 ArrowRight，焦点永不落占位格、到窗口末列自然停住
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    const firstTd = el.shadowRoot!.querySelector('tbody tr.row td[data-col]') as HTMLElement
+    firstTd.focus()
+    for (let i = 0; i < 10; i++) {
+      wrap.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    }
+    const active = el.shadowRoot!.activeElement as HTMLElement
+    expect(active.classList.contains('col-virtual-placeholder'), '焦点不得落在占位格').toBe(false)
+    expect(active.hasAttribute('data-col'), '焦点停在窗口末列数据格').toBe(true)
   })
 })

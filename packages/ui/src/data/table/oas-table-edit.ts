@@ -446,8 +446,13 @@ export class TableEditController implements ReactiveController, TableEditCapabil
         const v = withHook.getFormValue()
         if (v !== null && v !== undefined) return String(v)
       }
-      const prop = (el as unknown as { value?: unknown }).value
-      if (prop !== undefined && prop !== null) return String(prop)
+      // 'value' in el 判定真 property（含原型链与 class field）：注入对无 property 元素不建
+      // expando（见 buildFormComponentEditor），故此处 in 命中即真 property；无条件读
+      // el.value 会把注入期 expando 当初值返回，attribute-only 组件的新值被静默吞掉
+      if ('value' in el) {
+        const prop = (el as unknown as { value?: unknown }).value
+        if (prop !== undefined && prop !== null) return String(prop)
+      }
       return el.getAttribute('value') ?? st.oldValue
     }
     if (st.editor === 'select') {
@@ -469,10 +474,11 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     const el = document.createElement(col.editComponent!) as HTMLElement
     el.className = 'cell-editor cell-editor-component'
     el.setAttribute('part', 'cell-editor')
-    // 初值双注入：attribute（attribute-only 契约组件）+ property（宿主自定义 WC 多为 property 型，
-    // 无 attribute→property 同步，只写 attribute 会让 property 停在类型默认值）
+    // 初值双注入：attribute（attribute-only 契约组件）+ property（仅当元素真拥有 value
+    // property——含原型链与 class field；无条件赋值会给无 property 元素建 expando，读值时
+    // expando 先于 attribute 命中，attribute-only 组件的用户新值被静默吞掉——review 实抓）
     el.setAttribute('value', value)
-    ;(el as unknown as { value?: unknown }).value = value
+    if ('value' in el) (el as unknown as { value?: unknown }).value = value
     el.setAttribute('aria-label', this.hostEl.translateText('table.editCell', { column: col.title, key }))
     // 并听 oas-change（库内组件经 core emit 统一 oas- 前缀）与原生 change（宿主自定义 WC 常用）：
     // submitEdit 的 editState 空守卫保证同名双派发时第二次调用幂等
@@ -521,16 +527,21 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     td?.focus()
   }
 
-  /** 操作列按钮：编辑 → 进入该行首个可编辑列编辑模式 */
+  /** 操作列按钮：编辑 → 进入该行首个可编辑列编辑模式（column-virtual 下目标列滚出
+      列窗口时回退到窗口内首个可编辑列——窗口外 td 不存在，静默无反应对用户是死交互） */
   private editRow(key: string): void {
     // 另一行正在编辑时先提交（非受控可能触发重渲染，随后重查 tr）
     if (this.editState) this.submitEdit()
     const tr = this.findRow(key)
     if (!tr) return
-    const colIndex = this.hostEl.effectiveColumns().findIndex((c) => c.editable)
-    if (colIndex < 0) return
-    const td = this.cellOf(tr, this.hostEl.effectiveColumns()[colIndex]!.key)
-    if (td) this.enterEdit(td)
+    for (const col of this.hostEl.effectiveColumns()) {
+      if (!col.editable) continue
+      const td = this.cellOf(tr, col.key)
+      if (td) {
+        this.enterEdit(td)
+        return
+      }
+    }
   }
 
   /** 编辑状态变化后重渲染可见行的操作列（避免整表重建） */

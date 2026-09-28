@@ -181,7 +181,7 @@
   <oas-table id="table-edit-component" editable row-key="word" columns='[{"key":"word","title":"词条","editable":true,"editComponent":"oas-input"},{"key":"note","title":"备注","editable":true,"editComponent":"oas-textarea"}]' data='[{"word":"oas-ui","note":"Web Components 组件库"},{"word":"divider","note":"分隔线"}]'></oas-table>
 </DemoBlock>
 
-`editComponent`（columns JSON 字段）指定**组件编辑器**（优先于 `editor`）：双击后挂载对应组件并注入当前值。组件契约（最小集）：值可读（`getFormValue()` → value property → value attribute 三级兜底）、提交事件（`oas-change` 或原生 `change` 其一）、Esc 取消；多行编辑器（textarea 内核）Enter 让路换行，提交走失焦。库内 form 组件（oas-input / oas-textarea / oas-switch 等）天然满足，宿主自定义 WC 同样可用。第一期约定为非浮层组件（date-picker / select 等浮层类后续批次支持）。注意：横向滚动触发列窗口变化时整表重渲染，进行中的编辑会被静默取消（不派 `oas-edit-cancel`）。
+`editComponent`（columns JSON 字段）指定**组件编辑器**（优先于 `editor`）：双击后挂载对应组件并注入当前值。组件契约（最小集）：值可读（`getFormValue()` → value property → value attribute 三级兜底——`getFormValue` 为库内组件的 form-associated 内部通道，宿主自定义组件实现 value property 或 value attribute 其一即可）、提交事件（`oas-change` 或原生 `change` 其一）、Esc 取消；多行编辑器（textarea 内核）Enter 让路换行，提交走失焦。库内 form 组件（oas-input / oas-textarea / oas-switch 等）天然满足，宿主自定义 WC 同样可用。第一期约定为非浮层组件（date-picker / select 等浮层类后续批次支持）。注意：横向滚动触发列窗口变化时整表重渲染，进行中的编辑会被静默取消（不派 `oas-edit-cancel`）。
 
 ## 受控编辑
 
@@ -891,7 +891,7 @@ onMounted(() => {
 | `checkable` | 行选择开关：存在即多选（复选框 + 全选头）；`="radio"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1 | `string` | — |
 | `column-keys` | 受控列显隐与顺序（key 数组或逗号串）：在场时按有效叶序重组表头与数据列（多级表头同祖先链叶子并组） | `string[] \| string` | `[]` |
 | `column-virtual` | 横向虚拟滚动（列窗口化）：非固定列只渲染可视窗口列，窗口外列以占位格 colSpan 归并（宽度由 colgroup 求和）。约束：建议全列显式 width；多级表头 / span-method / 合计行不兼容（告警降级）；固定列须两端布局 | `boolean` | — |
-| `columns` | 列配置 [{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions? }]，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
+| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
 | `current` | 当前页码（内置分页，受控） | `string` | `1` |
 | `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `Array<Record<string, unknown>> \| string` | `[]` |
 | `edit-controlled` | 受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data` | `boolean` | — |
