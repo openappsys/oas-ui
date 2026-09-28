@@ -46,6 +46,12 @@ export interface TableColumn {
   editable?: boolean
   /** 编辑器类型：input（默认）/ select（配 editOptions） */
   editor?: 'input' | 'select'
+  /**
+   * 组件编辑器：库内/宿主任意 value 语义的 Web Components tag 名（如 `oas-input` / `oas-date-picker`）。
+   * 设置后优先于 `editor`（原生 input/select 通道）。第一期约定：组件须满足「value 属性读写 + change 事件提交 +
+   * Esc 取消」的最小契约，且为非浮层组件（浮层类 date-picker/select 等的 blur 判定后续批次支持）
+   */
+  editComponent?: string
   /** select 编辑器的选项 */
   editOptions?: EditOption[]
   /** 操作列：渲染 编辑/保存/取消 按钮（依赖表格级 `editable` 属性） */
