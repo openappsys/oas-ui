@@ -44,7 +44,7 @@ const STYLE = `
   min-width: var(--oas-kanban-column-min-width, 220px);
   display: flex;
   flex-direction: column;
-  background: var(--oas-color-bg);
+  background: var(--oas-color-bg-hover);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
   overflow: hidden;
@@ -87,7 +87,7 @@ const STYLE = `
 }
 .card {
   position: relative;
-  background: var(--oas-color-bg);
+  background: var(--oas-color-bg-elevated);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-sm);
   padding: var(--oas-space-2) var(--oas-space-3);
@@ -98,7 +98,6 @@ const STYLE = `
   cursor: grabbing;
 }
 .card:hover {
-  background: var(--oas-color-bg-hover);
   border-color: var(--oas-color-border-strong);
 }
 .card:focus-visible {
