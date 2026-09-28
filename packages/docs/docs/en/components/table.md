@@ -872,11 +872,10 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 | `bordered` | Full border: draws a grid outline around cells (the outer frame is built in) | — | — |
 | `checkable` | Row selection: present = multi-select (checkboxes + select-all header); `="radio"` = single-select (mutually exclusive, click again to deselect, no select-all), oas-check detail.keys ≤1 | `string` | — |
 | `column-keys` | Controlled column visibility and order (key array or comma list): header tree and data columns re-order to the effective leaf order (same-ancestor leaves grouped) | `string[] \| string` | `[]` |
-| `column-virtual` | — | `boolean` | — |
+| `column-virtual` | Column virtualization (column windowing): only visible-window columns render; off-window columns collapse into placeholder cells (colSpan-summed via colgroup). Constraints: explicit width on all columns recommended; grouped header / span-method / summary rows incompatible (warns and degrades) | `boolean` | — |
 | `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `TableColumn[] \| string` | `[]` |
 | `current` | Current page (built-in pagination, controlled) | `string` | `1` |
 | `data` | Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `Array<Record<string, unknown>> \| string` | `[]` |
-| `edit-component` | Component editor (takes precedence over editor): any value-semantic WC tag name (e.g. oas-input / oas-date-picker). Contract: value attribute read/write, change event submits, Escape cancels. Overlay components in a later batch | — | — |
 | `edit-controlled` | Controlled editing: does not write back `data` on submit, only fires `oas-edit`; the host listens and updates `data` itself | `boolean` | — |
 | `editable` | Inline editing switch (requires `editable: true` on columns; same for the `actions: true` operation column) | `boolean` | — |
 | `empty-text` | Empty state text | — | — |
