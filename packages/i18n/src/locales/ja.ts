@@ -156,6 +156,7 @@ export const ja: LocaleMessages = {
   'table.editHint': 'ダブルクリックで編集',
   'table.filter': '絞り込み',
   'table.clear': 'クリア',
+  'table.groupEmpty': '（空）',
   // list（リスト）
   'list.empty': 'データなし',
   // tree（ツリーコントロール）

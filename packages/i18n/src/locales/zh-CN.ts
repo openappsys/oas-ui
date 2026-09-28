@@ -156,6 +156,7 @@ export const zhCN = {
   'table.editHint': '双击编辑',
   'table.filter': '筛选',
   'table.clear': '清除',
+  'table.groupEmpty': '（空）',
   // list（列表）
   'list.empty': '暂无数据',
   // tree（树形控件）
