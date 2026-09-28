@@ -158,6 +158,11 @@ export const pt: LocaleMessages = {
   'table.clear': 'Limpar',
   // list (lista)
   'list.empty': 'Sem dados',
+  // kanban (quadro kanban)
+  'kanban.emptyColumn': 'Arraste cartões para cá',
+  'kanban.moveCard': 'Mover cartão',
+  'kanban.moveUp': 'Mover para cima',
+  'kanban.moveDown': 'Mover para baixo',
   // tree (árvore)
   'tree.expand': 'Expandir/Recolher',
   'tree.select': 'Selecionar {label}',

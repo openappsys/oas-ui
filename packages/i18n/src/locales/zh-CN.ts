@@ -158,6 +158,11 @@ export const zhCN = {
   'table.clear': '清除',
   // list（列表）
   'list.empty': '暂无数据',
+  // kanban（看板）
+  'kanban.emptyColumn': '拖拽卡片到此处',
+  'kanban.moveCard': '移动卡片',
+  'kanban.moveUp': '上移',
+  'kanban.moveDown': '下移',
   // tree（树形控件）
   'tree.expand': '展开/收起',
   'tree.select': '选择 {label}',

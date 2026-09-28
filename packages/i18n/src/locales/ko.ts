@@ -158,6 +158,11 @@ export const ko: LocaleMessages = {
   'table.clear': '지우기',
   // list（리스트）
   'list.empty': '데이터 없음',
+  // kanban（칸반）
+  'kanban.emptyColumn': '카드를 여기로 끌어다 놓으세요',
+  'kanban.moveCard': '카드 이동',
+  'kanban.moveUp': '위로 이동',
+  'kanban.moveDown': '아래로 이동',
   // tree（트리 컨트롤）
   'tree.expand': '펼치기/접기',
   'tree.select': '{label} 선택',

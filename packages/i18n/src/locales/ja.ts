@@ -158,6 +158,11 @@ export const ja: LocaleMessages = {
   'table.clear': 'クリア',
   // list（リスト）
   'list.empty': 'データなし',
+  // kanban（かんばん）
+  'kanban.emptyColumn': 'カードをここにドラッグ',
+  'kanban.moveCard': 'カードを移動',
+  'kanban.moveUp': '上へ移動',
+  'kanban.moveDown': '下へ移動',
   // tree（ツリーコントロール）
   'tree.expand': '展開/折りたたみ',
   'tree.select': '{label} を選択',
