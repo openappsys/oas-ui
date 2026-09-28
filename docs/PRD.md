@@ -1693,3 +1693,26 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - e2e（chromium）：60 列×40 行大宽表——th/td 窗口化（<30）、scrollWidth >7200（colgroup 撑总宽）、固定列恒渲染、行列双开滚动推移 + thead/tbody 窗口一致性、编辑×列窗口定位回归；全量 8306 passed
 - table 域全量单测绿（全仓 8306 passed，含列窗口/编辑协议回归 8 条）；format 0；lint:md 0；api:check 通过（editComponent 语料同步——attribute 收割外字段，说明在正文）
+
+## oas-kanban 看板组件（新组件，未发布）
+
+### 立项依据
+
+data 族阶段化协作形态补位：任务流转、需求池、招聘进度等场景需要「列 + 卡片拖拽」的看板视图，此前无承载件。
+
+### 功能定义
+
+- 属性：columns（JSON [{ key, title }] 列定义）+ cards（JSON [{ id, column, title, ...任意字段 }]，column 为所属列 key）；attribute JSON + property 数组双通道（setter 反射 attribute）
+- 拖拽：HTML5 DnD 换列 + 列内排序，落点主色插入指示线（悬停卡上半/下半区分插前/插后、空列/列尾尾部标记）；落定回写 cards attribute（非受控回写 + attribute 反射）并派发 oas-change（detail { id, from, to, index }，index 为移除卡片自身后的目标列插入位）；拖回原位零操作不派发
+- 列头：标题 + 卡片计数；列体独立纵向滚动（滚动高度由宿主设定）
+- 空列占位文案走 i18n（kanban.emptyColumn，10 语言包），mpty-column-text 属性覆盖
+- 自定义渲染：enderCard property 函数通道（(card) => Node | string；Node 直挂 / 字符串纯文本防注入；在场时数据不反射 cards attribute）
+- 触屏降级：卡片右上角移动按钮（pointer:coarse 显示）——上移/下移/移到指定列（边界项 aria-disabled）
+- 键盘可达：卡片 tabindex=0（listitem）；列体 role=list + aria-label 列名
+- 第一期不做：列拖拽重排、泳道、WIP 限制、卡片多选
+
+### 验收标准
+
+- 单测：渲染分组/列头计数/空列占位/双通道反射/拖拽语义（换列 index、同列排序口径、原位零操作、取消路径指示线清除、无效落点零操作）/触屏菜单（开合/边界禁用/落定派发）/renderCard 契约（Node/字符串防注入/不反射/触屏按钮保留）全绿
+- 门禁：vitest + format:check + lint:md + ui build + api:check 双向 0
+- 用户视角：demo 拖拽真点真看、dark 主题过视觉（浏览器复核）
