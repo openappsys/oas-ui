@@ -178,7 +178,7 @@
 ### 组件编辑器（editComponent）
 
 <DemoBlock title="editComponent：任意组件作为单元格编辑器">
-  <oas-table editable row-key="word" columns='[{"key":"word","title":"词条","editable":true,"editComponent":"oas-input"},{"key":"note","title":"备注","editable":true,"editComponent":"oas-textarea"}]' data='[{"word":"oas-ui","note":"Web Components 组件库"},{"word":"divider","note":"分隔线"}]'></oas-table>
+  <oas-table id="table-edit-component" editable row-key="word" columns='[{"key":"word","title":"词条","editable":true,"editComponent":"oas-input"},{"key":"note","title":"备注","editable":true,"editComponent":"oas-textarea"}]' data='[{"word":"oas-ui","note":"Web Components 组件库"},{"word":"divider","note":"分隔线"}]'></oas-table>
 </DemoBlock>
 
 `editComponent`（columns JSON 字段）指定**组件编辑器**（优先于 `editor`）：双击后挂载对应组件并注入当前值。组件契约（最小集）：值可读（`getFormValue()` → value property → value attribute 三级兜底）、提交事件（`oas-change` 或原生 `change` 其一）、Esc 取消；多行编辑器（textarea 内核）Enter 让路换行，提交走失焦。库内 form 组件（oas-input / oas-textarea / oas-switch 等）天然满足，宿主自定义 WC 同样可用。第一期约定为非浮层组件（date-picker / select 等浮层类后续批次支持）。注意：横向滚动触发列窗口变化时整表重渲染，进行中的编辑会被静默取消（不派 `oas-edit-cancel`）。
@@ -215,6 +215,12 @@
 </DemoBlock>
 
 设置 `height` 开启虚拟滚动（搭配 `row-height` 定高），表格只渲染可见窗口内的行，配合固定列与排序/多选使用；滚动派发 `oas-scroll`。
+
+<DemoBlock title="column-virtual：宽表横向虚拟滚动">
+  <oas-table id="table-col-virtual" column-virtual height="300" checkable></oas-table>
+</DemoBlock>
+
+`column-virtual` 开启横向虚拟滚动（列窗口化）：非固定列只渲染可视窗口列，窗口外列以占位格 `colSpan` 归并（宽度由 `colgroup` 求和，`table-layout: fixed` 强制启用）——60 列宽表 DOM 里只有十几列。可与 `height` 行虚拟双开；固定列须两端布局且恒渲染。约束（告警降级）：多级表头 / span-method / 合计行不兼容；建议全列显式 `width`（未设宽按预估 100px）。注意：横向滚动触发列窗口变化时整表重渲染，进行中的编辑会被静默取消。
 
 ## 斑马纹与边框
 
@@ -450,6 +456,22 @@
 
 <script setup>
 import { onMounted } from 'vue'
+
+// column-virtual demo：60 列指标 × 40 行（数据量大走客户端注入，SSR 输出空表壳）
+onMounted(() => {
+  const cols = [{ key: 'name', title: '姓名', fixed: 'left', width: '100px' }]
+  const cvRows = Array.from({ length: 40 }, (_, r) => ({ name: `员工${r + 1}`, level: `P${(r % 9) + 1}` }))
+  for (let i = 1; i <= 60; i++) {
+    cols.push({ key: `c${i}`, title: `指标${i}`, width: '110px' })
+    cvRows.forEach((row, r) => (row[`c${i}`] = `${i}-${r}`))
+  }
+  cols.push({ key: 'level', title: '评级', fixed: 'right', width: '80px' })
+  const el = document.querySelector('#table-col-virtual')
+  if (el) {
+    el.setAttribute('columns', JSON.stringify(cols))
+    el.setAttribute('data', JSON.stringify(cvRows))
+  }
+})
 
 // 通用演示数据集（12 条）
 const MOCK = [

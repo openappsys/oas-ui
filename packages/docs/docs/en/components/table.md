@@ -178,7 +178,7 @@ Clicks / double-clicks landing inside an inline “interactive host” never cas
 ### Component Editor (editComponent)
 
 <DemoBlock title="editComponent: any component as the cell editor">
-  <oas-table editable row-key="word" columns='[{"key":"word","title":"Term","editable":true,"editComponent":"oas-input"},{"key":"note","title":"Note","editable":true,"editComponent":"oas-textarea"}]' data='[{"word":"oas-ui","note":"Web Components library"},{"word":"divider","note":"Divider"}]'></oas-table>
+  <oas-table id="table-edit-component" editable row-key="word" columns='[{"key":"word","title":"Term","editable":true,"editComponent":"oas-input"},{"key":"note","title":"Note","editable":true,"editComponent":"oas-textarea"}]' data='[{"word":"oas-ui","note":"Web Components library"},{"word":"divider","note":"Divider"}]'></oas-table>
 </DemoBlock>
 
 `editComponent` (a columns JSON field) specifies a **component editor** (takes precedence over `editor`): double-clicking mounts the given component and injects the current value. Component contract (minimal): readable value (`getFormValue()` → value property → value attribute, three-level fallback), submit event (`oas-change` or native `change`, either one), Escape cancels; multiline editors (textarea-based) let Enter through for line breaks and submit on blur. In-library form components (oas-input / oas-textarea / oas-switch etc.) satisfy it natively, and host-defined custom elements work the same way. First-phase scope covers non-overlay components (overlay editors like date-picker / select in a later batch). Note: horizontal scrolling that shifts the column window re-renders the whole table and silently cancels any in-progress edit (no `oas-edit-cancel` is dispatched).
@@ -215,6 +215,12 @@ Clicks / double-clicks landing inside an inline “interactive host” never cas
 </DemoBlock>
 
 Setting `height` enables virtual scrolling (with a fixed `row-height`): only rows within the visible window are rendered. It works together with fixed columns, sorting, and multi-select; scrolling emits `oas-scroll`.
+
+<DemoBlock title="column-virtual: horizontal virtualization for wide tables">
+  <oas-table id="table-col-virtual" column-virtual height="300" checkable></oas-table>
+</DemoBlock>
+
+`column-virtual` enables horizontal virtualization (column windowing): only visible-window columns render; off-window columns collapse into `colSpan` placeholder cells (widths summed via `colgroup`; `table-layout: fixed` is enforced) — a 60-column table keeps only a dozen or so in the DOM. It can be combined with `height` row virtualization; fixed columns must use two-end layout and always render. Constraints (warns and degrades): grouped header / span-method / summary rows are incompatible; explicit `width` on every column is recommended (unset widths fall back to an estimated 100px). Note: horizontal scrolling that shifts the column window re-renders the whole table and silently cancels any in-progress edit.
 
 ## Stripes and Borders
 
@@ -450,6 +456,22 @@ Listen to `oas-sort-change`, then set `loading` and re-request remote paginated/
 
 <script setup>
 import { onMounted } from 'vue'
+
+// column-virtual demo: 60 metric columns × 40 rows (client-side injection for large data)
+onMounted(() => {
+  const cols = [{ key: 'name', title: 'Name', fixed: 'left', width: '100px' }]
+  const cvRows = Array.from({ length: 40 }, (_, r) => ({ name: `Employee ${r + 1}`, level: `P${(r % 9) + 1}` }))
+  for (let i = 1; i <= 60; i++) {
+    cols.push({ key: `c${i}`, title: `Metric ${i}`, width: '110px' })
+    cvRows.forEach((row, r) => (row[`c${i}`] = `${i}-${r}`))
+  }
+  cols.push({ key: 'level', title: 'Level', fixed: 'right', width: '80px' })
+  const el = document.querySelector('#table-col-virtual')
+  if (el) {
+    el.setAttribute('columns', JSON.stringify(cols))
+    el.setAttribute('data', JSON.stringify(cvRows))
+  }
+})
 
 // Shared demo dataset (12 rows)
 const MOCK = [
