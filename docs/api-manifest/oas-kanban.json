@@ -1,0 +1,55 @@
+{
+  "className": "OASKanban",
+  "sourceFile": "packages/ui/src/data/kanban/oas-kanban.ts",
+  "attrs": [
+    {
+      "name": "columns",
+      "observed": true
+    },
+    {
+      "name": "cards",
+      "observed": true
+    },
+    {
+      "name": "empty-column-text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "columns",
+      "type": "KanbanColumn[] | string",
+      "default": "[]"
+    },
+    {
+      "name": "cards",
+      "type": "KanbanCard[] | string",
+      "default": "[]"
+    },
+    {
+      "name": "renderCard",
+      "type": "KanbanCardRenderer | null",
+      "api": true
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ id, from, to: toKey, index } satisfies KanbanChangeDetail"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-kanban-column-min-width",
+      "default": "220px"
+    },
+    {
+      "name": "--oas-kanban-column-min-height",
+      "default": "60px"
+    }
+  ],
+  "unresolved": []
+}
