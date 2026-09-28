@@ -2911,7 +2911,7 @@
     "attrs": {
       "bordered": "Full border: draws a grid outline around cells (the outer frame is built in)",
       "checkable": "Row selection: present = multi-select (checkboxes + select-all header); `=\"radio\"` = single-select (mutually exclusive, click again to deselect, no select-all), oas-check detail.keys ≤1",
-      "columns": "Column config [{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions? }], JSON string (declarative attribute channel; property assignment takes precedence)",
+      "columns": "Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions? }]`, JSON string (declarative attribute channel; property assignment takes precedence)",
       "data": "Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence)",
       "editable": "Inline editing switch (requires `editable: true` on columns; same for the `actions: true` operation column)",
       "edit-controlled": "Controlled editing: does not write back `data` on submit, only fires `oas-edit`; the host listens and updates `data` itself",

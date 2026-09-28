@@ -954,8 +954,9 @@ export class OASTableBase extends OASElement {
   private wrap: HTMLElement | null = null
   /** column-virtual：非固定列（middle 段）的列宽前缀缓存（复用 virtual-list 的 HeightCache，横向换轴复用） */
   private colWidthCache: HeightCache | null = null
-  /** 列宽缓存归属的 segments 引用（每次 update 重建 segments → 列宽定义变化必然重测，setColumnWidth 即时生效） */
-  private colWidthCacheFor: unknown = null
+  /** 列宽缓存归属的内容签名（key+width 序列；segments 每 update 新引用但内容常不变——
+      按签名失效避免滚动帧 update 时反复重建，列宽定义变化（setColumnWidth）仍即时生效） */
+  private colWidthCacheFor = ''
   /** column-virtual：当前列窗口（middle 段内的 [start, end)） */
   private colWin: { start: number; end: number } = { start: 0, end: 0 }
   /** column-virtual：容器尺寸观察（视口宽变化 → 可见列数变化 → 重算列窗口） */
@@ -2772,7 +2773,13 @@ export class OASTableBase extends OASElement {
       return
     }
     table.setAttribute('role', 'grid')
-    for (const th of this.shadow.querySelectorAll('thead th')) th.setAttribute('role', 'columnheader')
+    for (const th of this.shadow.querySelectorAll('thead th')) {
+      th.setAttribute('role', 'columnheader')
+      // 表头占位 th（column-virtual 窗口外列的 colSpan 归并）同款补 aria-colspan（与 tbody 一致）
+      if (th.classList.contains('col-virtual-placeholder') && (th as HTMLTableCellElement).colSpan > 1) {
+        th.setAttribute('aria-colspan', String((th as HTMLTableCellElement).colSpan))
+      }
+    }
     for (const tr of this.shadow.querySelectorAll('tbody tr.row')) tr.setAttribute('role', 'row')
     for (const td of this.shadow.querySelectorAll<HTMLTableCellElement>('tbody tr.row td')) {
       td.setAttribute('role', 'gridcell')
@@ -2839,7 +2846,11 @@ export class OASTableBase extends OASElement {
       const tr = curTd.closest('tr')!
       const rows = this.dragRows()
       const row = rows.indexOf(tr as HTMLTableRowElement)
-      const col = [...tr.querySelectorAll('td')].indexOf(curTd)
+      // 列索引必须与 gridMatrix 同口径（过滤占位格）：占位格左侧/右侧格子的
+      // 全 td 索引与矩阵索引不一致，混用会让 ArrowLeft/Right 错位或原地不动
+      const col = [...tr.querySelectorAll('td')]
+        .filter((td) => !td.classList.contains('col-virtual-placeholder'))
+        .indexOf(curTd)
       if (row >= 0 && col >= 0) cur = { row, col }
     }
     const start = cur ?? {
@@ -3020,11 +3031,12 @@ export class OASTableBase extends OASElement {
     const w = this.wrap
     if (!w) return false
     const n = segments.middle.length
-    if (!this.colWidthCache || this.colWidthCacheFor !== segments) {
+    const sig = segments.middle.map((c) => `${c.key}:${c.width ?? ''}`).join('|')
+    if (!this.colWidthCache || this.colWidthCacheFor !== sig) {
       this.colWidthCache = new HeightCache()
       this.colWidthCache.configure(n, 100)
       for (let i = 0; i < n; i++) this.colWidthCache.measure(i, columnWidth(segments.middle[i]!))
-      this.colWidthCacheFor = segments
+      this.colWidthCacheFor = sig
     }
     const prefix: number[] = [0]
     for (let i = 0; i < n; i++) prefix.push((prefix[i] ?? 0) + this.colWidthCache.heightAt(i))
@@ -3388,11 +3400,11 @@ export class OASTableBase extends OASElement {
   }
 }
 
-/** 解析列宽（px 数字）；固定列未声明宽度时按 100px 兜底 */
+/** 解析列宽（px 数字）；固定列未声明宽度时按 100px 兜底（非正值同兜底——0/负宽会腐蚀 colgroup 与窗口前缀和） */
 function columnWidth(col: TableColumn): number {
   if (col.width) {
     const n = parseFloat(col.width)
-    if (Number.isFinite(n)) return n
+    if (Number.isFinite(n) && n > 0) return n
   }
   return 100
 }
