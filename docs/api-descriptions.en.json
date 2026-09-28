@@ -1676,6 +1676,19 @@
       "": "Link content (text / icons)"
     }
   },
+  "oas-kanban": {
+    "attrs": {
+      "columns": "Column definitions (JSON array [{ key, title }]; the same-named property array channel works identically — the setter reflects back to the attribute)",
+      "cards": "Card data (JSON array [{ id, column, title, ...arbitrary fields }] where column is the owning column key). After a drop the component writes the new grouping/order back to this attribute (uncontrolled write-back + attribute reflection); skipped while a renderCard function is present (the host owns the data)",
+      "empty-column-text": "Override for the empty-column placeholder text (defaults to the i18n kanban.emptyColumn key, translated with the locale)"
+    },
+    "events": {
+      "oas-change": "Emitted after a drag cross-column move, an in-column reorder, or a touch move-menu action settles (dropping back at the original spot emits nothing). detail { id, from, to, index } — from/to are column keys, index is the insertion position in the target column (measured after removing the dragged card itself; hosts can reproduce with splice(index, 0, card) on the target array)"
+    },
+    "props": {
+      "renderCard": "Custom card renderer (card) => Node | string (property channel; functions cannot be serialized and stay out of attributes/SSR). A returned Node mounts directly; a returned string renders as plain text (injection-safe). While present, card data is not reflected back to the cards attribute (the host owns the data) while drag and the touch move menu still emit oas-change. Set to null to restore the default title rendering"
+    }
+  },
   "oas-list": {
     "attrs": {
       "bordered": "Whether to show the outer border",
