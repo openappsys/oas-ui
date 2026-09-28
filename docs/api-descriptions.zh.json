@@ -2911,7 +2911,7 @@
     "attrs": {
       "bordered": "完整边框：单元格网格描边（外框由组件自带）",
       "checkable": "行选择开关：存在即多选（复选框 + 全选头）；`=\"radio\"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1",
-      "columns": "列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）",
+      "columns": "列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）；`type` 声明字段类型（number/currency/select/multi-select/date/checkbox/link/progress/rate）作用于默认展示渲染与默认编辑器，`currency` 为 currency 列货币符号（缺省 ¥），`options` 为 select/multi-select 选项 `[{ value, label, color? }]`",
       "data": "行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）",
       "editable": "行内编辑开关（需配合列配置 `editable: true`；操作列 `actions: true` 同理）",
       "edit-controlled": "受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data`",
@@ -2945,7 +2945,9 @@
       "export-file-name": "导出文件名（不含扩展名；路径分隔符与保留字符自动净化）",
       "grid-navigation": "键盘网格导航：role=grid，数据区单停靠点 + 方向键在单元格间漫游（Home/End/PageUp-Down，Enter/Space 激活格内控件）",
       "row-draggable": "行拖拽排序：渲染拖拽手柄列，拖放派发 oas-row-reorder；虚拟滚动（height）下禁用并告警一次",
-      "column-virtual": "横向虚拟滚动（列窗口化）：非固定列只渲染可视窗口列，窗口外列以占位格 colSpan 归并（宽度由 colgroup 求和）。约束：建议全列显式 width；多级表头 / span-method / 合计行不兼容（告警降级）；固定列须两端布局"
+      "column-virtual": "横向虚拟滚动（列窗口化）：非固定列只渲染可视窗口列，窗口外列以占位格 colSpan 归并（宽度由 colgroup 求和）。约束：建议全列显式 width；多级表头 / span-method / 合计行不兼容（告警降级）；固定列须两端布局",
+      "group-by": "分组视图：按字段值分节渲染（分节头 = 字段值 + 组内计数 + 折叠箭头，点击折叠/展开该组，默认全展开）；组间按字段值首次出现序、组内排序生效；空值行归入「（空）」组；与 merge 列 / span-method 同用时告警一次并降级为普通渲染；可与 column-virtual / 虚拟滚动并用（分节头整行 colSpan 全宽）",
+      "cell-tooltip": "单元格溢出提示（默认开启，`\"false\"` 关闭）：纯文本单元格溢出（scrollWidth > clientWidth）时 hover 显示全文浮层——表格级单例浮层（token 反色，暗色可读），滚动/重渲染自动隐藏；富内容格与已有原生 title 的 ellipsis 列豁免（避免双重提示）"
     },
     "events": {
       "oas-check": "复选框选中变化，`detail: { keys: string[] }`",
@@ -2974,6 +2976,9 @@
       "data-key": "列标识（Vue 模板保留字 key 的规避通道；原生 HTML 下 key 直写亦可，组件双通道读取）",
       "actions": "列操作（如行内编辑的保存/取消钮列）",
       "align": "列内容对齐（left/center/right）",
+      "type": "列字段类型（number/currency/select/multi-select/date/checkbox/link/progress/rate；text 为缺省纯文本）：驱动默认展示渲染与默认编辑器；render/cellTemplate 自定义渲染优先",
+      "currency": "currency 类型列的货币符号（缺省 ¥）",
+      "options": "select/multi-select 类型列的展示选项 JSON `[{ value, label, color? }]`（color 缺省走 token 默认色；type=select 时自动同步为编辑选项）",
       "editable": "列可编辑（双击单元格进编辑态）",
       "editor": "编辑器类型/配置（select/input 等）",
       "ellipsis": "列内容超宽单行截断省略号（悬停 title 看全文）",

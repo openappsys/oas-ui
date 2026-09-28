@@ -879,6 +879,42 @@ onMounted(() => {
   </div>
 </DemoBlock>
 
+## 字段类型（column type）
+
+`columns` 列配置的 `type` 字段声明字段类型，作用于**默认展示渲染与默认编辑器**（`render` / `cellTemplate` 自定义渲染在场时优先于 `type`）。全部类型：`text`（缺省纯文本）/ `number` / `currency` / `select` / `multi-select` / `date` / `checkbox` / `link` / `progress` / `rate`。配套列字段：`currency`（货币符号，缺省 `¥`）、`options`（select / multi-select 选项 `[{ value, label, color? }]`，color 缺省走 token 默认色，找不到选项时显示原值文本）。数值类列（number / currency / progress / rate）与 `sortable` 并存时按原始数值排序，`date` 列按时间序；徽章 / 进度条 / 星级颜色全部走 CSS 变量 token（暗色自动可读）。
+
+<DemoBlock title="一个表内的多种字段类型列">
+  <div style="width: 100%">
+    <oas-table row-key="id" columns='[{"key":"name","title":"商品","width":"110px"},{"key":"cat","title":"类目","type":"select","width":"110px","options":[{"value":"fruit","label":"水果","color":"var(--oas-color-success)"},{"value":"digital","label":"数码","color":"var(--oas-color-primary)"},{"value":"food","label":"食品"}]},{"key":"price","title":"价格","type":"currency","width":"100px"},{"key":"stock","title":"库存","type":"number","width":"90px"},{"key":"listed","title":"上架日期","type":"date","width":"110px"},{"key":"progress","title":"售罄进度","type":"progress","width":"120px"},{"key":"rating","title":"评分","type":"rate","width":"110px"},{"key":"active","title":"在售","type":"checkbox","width":"70px"},{"key":"tags","title":"标签","type":"multi-select","width":"160px","options":[{"value":"new","label":"新品"},{"value":"hot","label":"热卖"},{"value":"promo","label":"促销"}]}]' data='[{"id":1,"name":"红富士苹果","cat":"fruit","price":12.8,"stock":15230,"listed":"2026-08-12","progress":35,"rating":4.7,"active":true,"tags":["new","hot"]},{"id":2,"name":"无线降噪耳机","cat":"digital","price":899,"stock":860,"listed":1753920000000,"progress":72,"rating":4,"active":true,"tags":["hot","promo"]},{"id":3,"name":"冷榨橄榄油","cat":"food","price":88,"stock":"待盘点","listed":"2026-06-01T09:30:00","progress":150,"rating":5,"active":false,"tags":["promo"]},{"id":4,"name":"机械键盘","cat":"digital","price":459,"stock":2341,"listed":"2026-07-20","progress":18,"rating":3.5,"active":true,"tags":[]},{"id":5,"name":"阳光玫瑰葡萄","cat":"fruit","price":39.9,"stock":7600,"listed":"2026-09-01","progress":55,"rating":4.2,"active":true,"tags":["new"]},{"id":6,"name":"便携咖啡机","cat":"food","price":299,"stock":null,"listed":"未知","progress":-8,"rating":99,"active":false,"tags":["hot"]}]'></oas-table>
+  </div>
+</DemoBlock>
+
+示例同时覆盖空态：第 3 行库存为非数字（原样文本）、上架日期 ISO 串（取日期部分）；第 6 行库存为 null（空）、日期非法（原样文本）、进度条出界（夹取 0%）、评分出界（夹取 5 星）。
+
+字段类型的行内编辑：`number` / `currency` / `link` 走原生 input（数值列提交回写 number）；`progress` / `rate` 原生 input 提交时夹取 0-100 / 0-5；`multi-select` 第一期为 input 逗号分隔编辑（提交拆回数组，多选组件编辑后续版本提供）；`date` 内置 `YYYY-MM-DD` 形态校验（非法形态保持编辑态）；`checkbox` 经组件编辑器通道挂 `oas-switch`（提交回写布尔）；`select` 走既有 select 编辑器通道（`options` 自动同步为编辑选项）。开启 `editable` 后双击任意类型列即可体验。
+
+## 分组视图（group-by）
+
+`group-by="字段key"` 按该字段值分节渲染：分节头行 = 折叠箭头 + 字段值 + 组内计数，点击箭头折叠 / 展开该组（默认全展开，`aria-expanded` 同步）。组间顺序按字段值首次出现序、排序作用于组内行；分组字段值缺失 / 为空的行归入「（空）」组（文案走 i18n）。分节头作为扁平行的一种参与行虚拟滚动，整行 `colSpan` 全宽（与 `column-virtual` / 固定列正交）；折叠状态在数据 / 属性变化时保留。与 merge 列 / `span-method` 同用时不兼容（告警一次并降级为普通渲染）。
+
+<DemoBlock title="按部门分组（组内可排序，点击箭头折叠/展开）">
+  <div style="width: 100%">
+    <oas-table group-by="dept" row-key="name" columns='[{"key":"dept","title":"部门"},{"key":"name","title":"姓名","sortable":true},{"key":"city","title":"城市"},{"key":"role","title":"职位"}]' data='[{"dept":"前端","name":"张三","city":"北京","role":"前端工程师"},{"dept":"后端","name":"李四","city":"上海","role":"后端工程师"},{"dept":"前端","name":"王五","city":"深圳","role":"前端工程师"},{"dept":"后端","name":"赵六","city":"杭州","role":"架构师"},{"dept":"设计","name":"陈七","city":"广州","role":"UI 设计师"},{"dept":"前端","name":"周八","city":"成都","role":"前端负责人"},{"dept":"","name":"孙九","city":"武汉","role":"测试工程师"}]'></oas-table>
+  </div>
+</DemoBlock>
+
+## 单元格溢出提示（cell-tooltip）
+
+`cell-tooltip` 默认开启（设 `cell-tooltip="false"` 关闭）：纯文本单元格溢出（内容宽超出列宽）时，悬停显示全文浮层——表格级**单例浮层**（不为每格创建实例），反色 token 配色暗色可读，滚动 / 重渲染时自动隐藏。已有原生 `title` 提示的 `ellipsis` 列与富内容格（自定义渲染 / 徽章 / 进度条等）不触发，避免双重提示。
+
+<DemoBlock title="悬停溢出格查看全文">
+  <div style="width: 100%">
+    <oas-table columns='[{"key":"env","title":"环境","width":"90px"},{"key":"url","title":"访问地址","width":"220px"},{"key":"owner","title":"负责人","width":"80px"}]' data='[{"env":"生产","url":"https://prod-cluster.example-assets-platform.com/dashboard/overview/health","owner":"张三"},{"env":"预发","url":"https://staging.example-assets-platform.com/monitor/health-check/status","owner":"李四"},{"env":"灰度","url":"https://canary.example-assets-platform.com/release/notes/latest","owner":"王五"}]'></oas-table>
+  </div>
+</DemoBlock>
+
+访问地址列的完整 URL 远超列宽（长串不可断行）：悬停任一溢出格即可在浮层中查看全文，移开即隐藏。
+
 ## API
 
 ### oas-table
@@ -888,10 +924,11 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `bordered` | 完整边框：单元格网格描边（外框由组件自带） | — | — |
+| `cell-tooltip` | 单元格溢出提示（默认开启，`"false"` 关闭）：纯文本单元格溢出（scrollWidth > clientWidth）时 hover 显示全文浮层——表格级单例浮层（token 反色，暗色可读），滚动/重渲染自动隐藏；富内容格与已有原生 title 的 ellipsis 列豁免（避免双重提示） | `string` | `true` |
 | `checkable` | 行选择开关：存在即多选（复选框 + 全选头）；`="radio"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1 | `string` | — |
 | `column-keys` | 受控列显隐与顺序（key 数组或逗号串）：在场时按有效叶序重组表头与数据列（多级表头同祖先链叶子并组） | `string[] \| string` | `[]` |
 | `column-virtual` | 横向虚拟滚动（列窗口化）：非固定列只渲染可视窗口列，窗口外列以占位格 colSpan 归并（宽度由 colgroup 求和）。约束：建议全列显式 width；多级表头 / span-method / 合计行不兼容（告警降级）；固定列须两端布局 | `boolean` | — |
-| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
+| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）；`type` 声明字段类型（number/currency/select/multi-select/date/checkbox/link/progress/rate）作用于默认展示渲染与默认编辑器，`currency` 为 currency 列货币符号（缺省 ¥），`options` 为 select/multi-select 选项 `[{ value, label, color? }]` | `TableColumn[] \| string` | `[]` |
 | `current` | 当前页码（内置分页，受控） | `string` | `1` |
 | `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `Array<Record<string, unknown>> \| string` | `[]` |
 | `edit-controlled` | 受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data` | `boolean` | — |
@@ -903,6 +940,7 @@ onMounted(() => {
 | `exportable` | 导出开关：表格顶部渲染导出工具栏（默认 CSV，可配 CSV/Excel），并开放 exportData 方法 | `boolean` | — |
 | `filter-values` | 受控列过滤值（JSON 对象：列 key → 选中值数组） | `string` | — |
 | `grid-navigation` | 键盘网格导航：role=grid，数据区单停靠点 + 方向键在单元格间漫游（Home/End/PageUp-Down，Enter/Space 激活格内控件） | `boolean` | — |
+| `group-by` | 分组视图：按字段值分节渲染（分节头 = 字段值 + 组内计数 + 折叠箭头，点击折叠/展开该组，默认全展开）；组间按字段值首次出现序、组内排序生效；空值行归入「（空）」组；与 merge 列 / span-method 同用时告警一次并降级为普通渲染；可与 column-virtual / 虚拟滚动并用（分节头整行 colSpan 全宽） | `string` | — |
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
 | `hover` | 行 hover 底色开关（仅视觉，不影响选中行为），`"false"` 关闭 | — | — |
 | `indent-size` | 树形数据每级缩进量（px） | `string` | `24` |
@@ -959,6 +997,8 @@ onMounted(() => {
 | `--oas-table-cell-padding-block` | `var(--oas-space-3)` |
 | `--oas-table-cell-padding-inline` | `var(--oas-space-4)` |
 | `--oas-table-font-size` | `var(--oas-font-size-md)` |
+| `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
+| `--oas-tooltip-color` | `var(--oas-color-bg)` |
 
 ### oas-table-column
 
@@ -968,6 +1008,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `actions` | 列操作（如行内编辑的保存/取消钮列） | — | — |
 | `align` | 列内容对齐（left/center/right） | — | — |
+| `currency` | currency 类型列的货币符号（缺省 ¥） | — | — |
 | `data-key` | 列标识（Vue 模板保留字 key 的规避通道；原生 HTML 下 key 直写亦可，组件双通道读取） | — | — |
 | `editable` | 列可编辑（双击单元格进编辑态） | — | — |
 | `editor` | 编辑器类型/配置（select/input 等） | — | — |
@@ -978,10 +1019,12 @@ onMounted(() => {
 | `hidden` | 列隐藏（初始不参与渲染，列显隐面板可开） | — | — |
 | `key` | 列标识字段名（原生 HTML 直写；Vue 模板请用 data-key） | — | — |
 | `merge` | 列自动合并相邻同值单元格 | — | — |
+| `options` | select/multi-select 类型列的展示选项 JSON `[{ value, label, color? }]`（color 缺省走 token 默认色；type=select 时自动同步为编辑选项） | — | — |
 | `serial-number` | 行序号列（从 1 递增，不取数据字段） | — | — |
 | `sortable` | 列可排序（表头点击切换升/降/取消） | — | — |
 | `summary` | 列参与合计行（sum/avg/count） | — | — |
 | `title` | 列表头标题（缺省取默认插槽文本） | — | — |
+| `type` | 列字段类型（number/currency/select/multi-select/date/checkbox/link/progress/rate；text 为缺省纯文本）：驱动默认展示渲染与默认编辑器；render/cellTemplate 自定义渲染优先 | — | — |
 | `width` | 列宽（px 或 CSS 值；fixed 列建议显式声明） | — | — |
 
 #### 插槽

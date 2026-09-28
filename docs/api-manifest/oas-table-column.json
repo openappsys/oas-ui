@@ -67,6 +67,18 @@
       "observed": true
     },
     {
+      "name": "type",
+      "observed": true
+    },
+    {
+      "name": "currency",
+      "observed": true
+    },
+    {
+      "name": "options",
+      "observed": true
+    },
+    {
       "name": "data-key",
       "observed": false
     }

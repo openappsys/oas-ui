@@ -156,6 +156,7 @@ export const ko: LocaleMessages = {
   'table.editHint': '두 번 클릭하여 편집',
   'table.filter': '필터',
   'table.clear': '지우기',
+  'table.groupEmpty': '(비어 있음)',
   // list（리스트）
   'list.empty': '데이터 없음',
   // tree（트리 컨트롤）

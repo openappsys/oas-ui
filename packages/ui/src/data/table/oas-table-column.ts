@@ -15,8 +15,9 @@ const STYLE = `
  * 列（子元素声明式通道）。
  *
  * 纯数据载体：属性对齐 TableColumn 字段（key/title/sortable/width/align/fixed/hidden/
- * serial-number/ellipsis/merge/filterable/filters/summary/editable/editor/actions），
- * 默认插槽文本为 title 兜底（title 属性优先）。嵌套 <oas-table-column> 表达多级表头（children）。
+ * serial-number/ellipsis/merge/filterable/filters/summary/editable/editor/actions/
+ * type/currency/options），默认插槽文本为 title 兜底（title 属性优先）。
+ * 嵌套 <oas-table-column> 表达多级表头（children）。
  * 宿主 <oas-table> 在 columns 属性/property 未显式设置时解析子元素收敛到同一渲染路径。
  *
  * ⚠️ 函数型字段（render / filterMatch / editOptions 回调）无法经属性/JSON 序列化，
@@ -41,6 +42,10 @@ export class OASTableColumn extends OASElement {
       'editable',
       'editor',
       'actions',
+      // 列字段类型通道（type/currency/options 对齐 TableColumn 字段）
+      'type',
+      'currency',
+      'options',
     ]
   }
 

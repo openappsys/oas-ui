@@ -883,6 +883,42 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
   </div>
 </DemoBlock>
 
+## Column field types (column type)
+
+The `type` field in a column config declares the field type, driving the **default cell rendering and the default editor** (custom `render` / `cellTemplate` take precedence over `type`). All types: `text` (default plain text) / `number` / `currency` / `select` / `multi-select` / `date` / `checkbox` / `link` / `progress` / `rate`. Companion fields: `currency` (currency symbol, default `¥`), `options` (select / multi-select options `[{ value, label, color? }]`; color falls back to the default token, unknown values render as raw text). Numeric columns (number / currency / progress / rate) sort by the raw numeric value when combined with `sortable`; `date` sorts chronologically. Badge / progress / star colors all use CSS variable tokens (readable in dark mode automatically).
+
+<DemoBlock title="Multiple field-type columns in one table">
+  <div style="width: 100%">
+    <oas-table row-key="id" columns='[{"key":"name","title":"Product","width":"110px"},{"key":"cat","title":"Category","type":"select","width":"110px","options":[{"value":"fruit","label":"Fruit","color":"var(--oas-color-success)"},{"value":"digital","label":"Digital","color":"var(--oas-color-primary)"},{"value":"food","label":"Food"}]},{"key":"price","title":"Price","type":"currency","width":"100px"},{"key":"stock","title":"Stock","type":"number","width":"90px"},{"key":"listed","title":"Listed","type":"date","width":"110px"},{"key":"progress","title":"Sold","type":"progress","width":"120px"},{"key":"rating","title":"Rating","type":"rate","width":"110px"},{"key":"active","title":"Active","type":"checkbox","width":"70px"},{"key":"tags","title":"Tags","type":"multi-select","width":"160px","options":[{"value":"new","label":"New"},{"value":"hot","label":"Hot"},{"value":"promo","label":"Promo"}]}]' data='[{"id":1,"name":"Fuji Apple","cat":"fruit","price":12.8,"stock":15230,"listed":"2026-08-12","progress":35,"rating":4.7,"active":true,"tags":["new","hot"]},{"id":2,"name":"ANC Headphones","cat":"digital","price":899,"stock":860,"listed":1753920000000,"progress":72,"rating":4,"active":true,"tags":["hot","promo"]},{"id":3,"name":"Cold-Pressed Olive Oil","cat":"food","price":88,"stock":"pending","listed":"2026-06-01T09:30:00","progress":150,"rating":5,"active":false,"tags":["promo"]},{"id":4,"name":"Mechanical Keyboard","cat":"digital","price":459,"stock":2341,"listed":"2026-07-20","progress":18,"rating":3.5,"active":true,"tags":[]},{"id":5,"name":"Shine Muscat Grape","cat":"fruit","price":39.9,"stock":7600,"listed":"2026-09-01","progress":55,"rating":4.2,"active":true,"tags":["new"]},{"id":6,"name":"Portable Espresso Maker","cat":"food","price":299,"stock":null,"listed":"unknown","progress":-8,"rating":99,"active":false,"tags":["hot"]}]'></oas-table>
+  </div>
+</DemoBlock>
+
+The example also covers empty states: row 3 has a non-numeric stock (raw text) and an ISO datetime (date part shown); row 6 has a null stock (empty), an invalid date (raw text), an out-of-range progress (clamped to 0%), and an out-of-range rating (clamped to 5 stars).
+
+Inline editing per type: `number` / `currency` / `link` use a native input (numeric columns write back numbers); `progress` / `rate` clamp to 0-100 / 0-5 on submit; `multi-select` is comma-separated input in the first release (split back into an array on submit; a multi-select component editor arrives in a later release); `date` ships a built-in `YYYY-MM-DD` format check (invalid format keeps the editor open); `checkbox` mounts `oas-switch` through the component-editor channel (writes back a boolean); `select` reuses the existing select editor channel (`options` are auto-synced as edit options). Turn on `editable` and double-click any typed column to try it.
+
+## Grouped view (group-by)
+
+`group-by="fieldKey"` renders sections by field value: a section header = collapse arrow + field value + row count; clicking the arrow collapses / expands that group (expanded by default, with `aria-expanded` kept in sync). Groups are ordered by first occurrence of the field value, and sorting applies within groups; rows with missing / empty grouping values fall into the "(empty)" group (i18n text). Section headers are a kind of flat row and participate in row virtualization, spanning the full width via `colSpan` (orthogonal to `column-virtual` / fixed columns); collapsed groups survive data / attribute changes. Combining with merge columns / `span-method` is unsupported (warns once and degrades to plain rendering).
+
+<DemoBlock title="Group by department (sortable within groups, click the arrow to collapse/expand)">
+  <div style="width: 100%">
+    <oas-table group-by="dept" row-key="name" columns='[{"key":"dept","title":"Department"},{"key":"name","title":"Name","sortable":true},{"key":"city","title":"City"},{"key":"role","title":"Role"}]' data='[{"dept":"Frontend","name":"Alice","city":"Beijing","role":"Frontend Engineer"},{"dept":"Backend","name":"Bob","city":"Shanghai","role":"Backend Engineer"},{"dept":"Frontend","name":"Carol","city":"Shenzhen","role":"Frontend Engineer"},{"dept":"Backend","name":"David","city":"Hangzhou","role":"Architect"},{"dept":"Design","name":"Ethan","city":"Guangzhou","role":"UI Designer"},{"dept":"Frontend","name":"Fiona","city":"Chengdu","role":"Frontend Lead"},{"dept":"","name":"Grace","city":"Wuhan","role":"QA Engineer"}]'></oas-table>
+  </div>
+</DemoBlock>
+
+## Cell overflow tooltip (cell-tooltip)
+
+`cell-tooltip` is on by default (set `cell-tooltip="false"` to disable): when a plain-text cell overflows (content wider than the column), hovering shows the full text in a floating layer — a table-level **singleton tooltip** (no per-cell instances), token inverse colors readable in dark mode, auto-hidden on scroll / re-render. `ellipsis` columns that already carry a native `title` and rich-content cells (custom render / badges / progress bars) do not trigger it, avoiding a double tooltip.
+
+<DemoBlock title="Hover an overflowing cell to read the full text">
+  <div style="width: 100%">
+    <oas-table columns='[{"key":"env","title":"Env","width":"90px"},{"key":"url","title":"Endpoint","width":"220px"},{"key":"owner","title":"Owner","width":"80px"}]' data='[{"env":"Production","url":"https://prod-cluster.example-assets-platform.com/dashboard/overview/health","owner":"Alice"},{"env":"Staging","url":"https://staging.example-assets-platform.com/monitor/health-check/status","owner":"Bob"},{"env":"Canary","url":"https://canary.example-assets-platform.com/release/notes/latest","owner":"Carol"}]'></oas-table>
+  </div>
+</DemoBlock>
+
+The full endpoint URLs far exceed the column width (long unbreakable strings): hover any overflowing cell to read the full text in the tooltip; it hides as soon as the pointer leaves.
+
 ## API
 
 ### oas-table
@@ -892,10 +928,11 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `bordered` | Full border: draws a grid outline around cells (the outer frame is built in) | — | — |
+| `cell-tooltip` | Cell overflow tooltip (on by default, `"false"` to disable): when a plain-text cell overflows (scrollWidth > clientWidth), hover shows the full text in a floating layer — one table-level singleton tooltip (token inverse colors, readable in dark mode), auto-hidden on scroll/re-render; rich-content cells and ellipsis columns with a native title are exempt (no double tooltip) | `string` | `true` |
 | `checkable` | Row selection: present = multi-select (checkboxes + select-all header); `="radio"` = single-select (mutually exclusive, click again to deselect, no select-all), oas-check detail.keys ≤1 | `string` | — |
 | `column-keys` | Controlled column visibility and order (key array or comma list): header tree and data columns re-order to the effective leaf order (same-ancestor leaves grouped) | `string[] \| string` | `[]` |
 | `column-virtual` | Column virtualization (column windowing): only visible-window columns render; off-window columns collapse into placeholder cells (colSpan-summed via colgroup). Constraints: explicit width on all columns recommended; grouped header / span-method / summary rows incompatible (warns and degrades) | `boolean` | — |
-| `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `TableColumn[] \| string` | `[]` |
+| `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`, JSON string (declarative attribute channel; property assignment takes precedence); `type` declares the field type (number/currency/select/multi-select/date/checkbox/link/progress/rate) driving default cell rendering and the default editor, `currency` is the currency symbol for currency columns (default ¥), `options` are select/multi-select options `[{ value, label, color? }]` | `TableColumn[] \| string` | `[]` |
 | `current` | Current page (built-in pagination, controlled) | `string` | `1` |
 | `data` | Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `Array<Record<string, unknown>> \| string` | `[]` |
 | `edit-controlled` | Controlled editing: does not write back `data` on submit, only fires `oas-edit`; the host listens and updates `data` itself | `boolean` | — |
@@ -907,6 +944,7 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 | `exportable` | Enables export: renders export buttons in a toolbar above the table (CSV by default, CSV/Excel configurable), and exposes the exportData method | `boolean` | — |
 | `filter-values` | Controlled column filter values (JSON object: column key → selected values) | `string` | — |
 | `grid-navigation` | Keyboard grid navigation: role=grid, single Tab stop for the data region, arrow keys roam cells (Home/End/PageUp-Down, Enter/Space activate in-cell controls) | `boolean` | — |
+| `group-by` | Grouped view: render sections by field value (section header = value + row count + collapse arrow, click to collapse/expand, expanded by default); groups ordered by first occurrence, sorting applies within groups; empty values fall into the "(empty)" group; combined with merge columns / span-method it warns once and degrades to plain rendering; works with column-virtual / virtual scrolling (section header spans the full width) | `string` | — |
 | `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | `string` | `320` |
 | `hover` | Row hover background switch (purely visual), `"false"` disables | — | — |
 | `indent-size` | Per-level indent of tree data in px | `string` | `24` |
@@ -963,6 +1001,8 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 | `--oas-table-cell-padding-block` | `var(--oas-space-3)` |
 | `--oas-table-cell-padding-inline` | `var(--oas-space-4)` |
 | `--oas-table-font-size` | `var(--oas-font-size-md)` |
+| `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
+| `--oas-tooltip-color` | `var(--oas-color-bg)` |
 
 ### oas-table-column
 
@@ -972,6 +1012,7 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 | --- | --- | --- | --- |
 | `actions` | Column actions (e.g. save/cancel buttons for row editing) | — | — |
 | `align` | Column content alignment (left/center/right) | — | — |
+| `currency` | Currency symbol for currency-type columns (default ¥) | — | — |
 | `data-key` | Column key (escape channel for the Vue reserved word `key`; plain `key` also works in native HTML — the component reads both) | — | — |
 | `editable` | Column editable (double-click a cell to edit) | — | — |
 | `editor` | Editor type/configuration (select/input etc.) | — | — |
@@ -982,10 +1023,12 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
 | `hidden` | Column hidden initially (available in the column visibility panel) | — | — |
 | `key` | Column key field name (native HTML writes key directly; Vue templates use data-key) | — | — |
 | `merge` | Auto-merge adjacent same-value cells in the column | — | — |
+| `options` | Display options for select/multi-select columns, JSON `[{ value, label, color? }]` (color falls back to the default token; auto-synced as edit options when type=select) | — | — |
 | `serial-number` | Row serial number column (1-based, not from data fields) | — | — |
 | `sortable` | Column sortable (header click cycles asc/desc/none) | — | — |
 | `summary` | Column participates in the summary row (sum/avg/count) | — | — |
 | `title` | Column header title (defaults to the default slot text) | — | — |
+| `type` | Column field type (number/currency/select/multi-select/date/checkbox/link/progress/rate; text is the default plain text): drives default cell rendering and the default editor; render/cellTemplate take precedence | — | — |
 | `width` | Column width (px or CSS value; fixed columns should declare it explicitly) | — | — |
 
 #### Slots

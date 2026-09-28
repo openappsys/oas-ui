@@ -74,6 +74,34 @@ export interface TableColumn {
   /** 合并单元格：连续相同显示值的行在该列合并为一个 rowspan 单元格（非虚拟模式生效，虚拟滚动时忽略；
       与表格级 spanMethod property 按列独立并存——被显式 span 覆盖而缺格的行会断开本列的连续分组） */
   merge?: boolean
+  /** 列字段类型（作用于默认展示渲染与默认编辑器；render/cellTemplate 自定义渲染在场时优先于 type） */
+  type?: TableColumnType
+  /** currency 类型列的货币符号（缺省 ¥） */
+  currency?: string
+  /** select / multi-select 类型列的展示选项（color 缺省走 token 默认色；select 类型自动同步给
+      既有 select 编辑器通道作为选项） */
+  options?: TableSelectOption[]
+}
+
+/** 列字段类型（type 字段合法值；text 为缺省纯文本行为） */
+export type TableColumnType =
+  | 'text'
+  | 'number'
+  | 'currency'
+  | 'select'
+  | 'multi-select'
+  | 'date'
+  | 'checkbox'
+  | 'link'
+  | 'progress'
+  | 'rate'
+
+/** select / multi-select 类型的展示选项 */
+export interface TableSelectOption {
+  value: string | number
+  label: string
+  /** 徽章色（CSS 颜色值 / CSS 变量；缺省走 token 默认色） */
+  color?: string
 }
 
 /** 行内编辑 select 选项 */
@@ -866,6 +894,110 @@ tr.row.drop-after td {
     width: 44px;
   }
 }
+/* ===== 列字段类型（type）默认渲染 ===== */
+/* select / multi-select 徽章：颜色全走 token（--_badge-color/--_badge-bg 由 JS 按 options[].color
+   注入，缺省回落 bg-hover + 次级文字色的中性 token 组合，暗色自动可读） */
+.type-badge {
+  display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 1px var(--oas-space-2);
+  border-radius: var(--oas-radius-full, 999px);
+  font-size: var(--oas-font-size-xs, var(--oas-font-size-sm));
+  line-height: 1.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--_badge-bg, var(--oas-color-bg-hover));
+  color: var(--_badge-color, var(--oas-color-text-secondary));
+}
+.type-badge-group {
+  display: inline-flex;
+  max-width: 100%;
+  flex-wrap: wrap;
+  gap: var(--oas-space-1);
+}
+/* progress 进度条：track 中性底 + fill 主色（token，暗色自动适配） */
+.type-progress {
+  width: 100%;
+  min-width: 64px;
+  height: 6px;
+  border-radius: var(--oas-radius-full, 999px);
+  background: var(--oas-color-bg-hover);
+  overflow: hidden;
+}
+.type-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--oas-color-primary);
+}
+/* rate 星级：实心警示色 / 空心次级灰（token） */
+.type-rate {
+  white-space: nowrap;
+  letter-spacing: 1px;
+}
+.type-rate-on {
+  color: var(--oas-color-warning);
+}
+.type-rate-off {
+  color: var(--oas-color-text-secondary);
+}
+/* link 类型：主色下划线（hover 加重） */
+.type-link {
+  color: var(--oas-color-primary);
+  text-decoration: underline;
+}
+.type-link:hover {
+  color: var(--oas-color-primary);
+  opacity: 0.8;
+}
+.type-link:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+  border-radius: var(--oas-radius-xs, 4px);
+}
+/* checkbox 类型只读勾选态：✓ 主色 / — 次级灰 */
+.type-check-on {
+  color: var(--oas-color-primary);
+}
+.type-check-off {
+  color: var(--oas-color-text-secondary);
+}
+/* ===== 分组视图（group-by）分节头行 ===== */
+tr.group-header td {
+  background: var(--oas-color-bg-hover);
+  font-weight: 600;
+}
+tr.group-header .group-count {
+  margin-inline-start: var(--oas-space-2);
+  font-weight: 400;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+tr.group-header .toggle {
+  margin-inline-end: var(--oas-space-1);
+}
+/* ===== 单元格溢出提示（cell-tooltip 单例浮层） =====
+   反色浮层与 tooltip 组件同源 token（暗色自动可读）；fixed 定位 + 视口夹取由 floating 引擎计算；
+   pointer-events:none 防浮层遮挡单元格触发 mouseout 抖动 */
+.cell-tooltip {
+  position: fixed;
+  z-index: calc(var(--oas-z-index-base, 0) + 1000);
+  max-width: min(60vw, 360px);
+  box-sizing: border-box;
+  padding: var(--oas-space-1) var(--oas-space-2);
+  background: var(--oas-tooltip-bg, var(--oas-color-text-primary));
+  color: var(--oas-tooltip-color, var(--oas-color-bg));
+  border-radius: var(--oas-radius-sm);
+  font-size: var(--oas-font-size-sm);
+  line-height: 1.6;
+  word-break: break-all;
+  pointer-events: none;
+  display: none;
+}
+.cell-tooltip[data-visible='true'] {
+  display: block;
+}
 `
 
 const CHECK_CELL_WIDTH = 40
@@ -937,6 +1069,10 @@ export class OASTableBase extends OASElement {
       'row-draggable',
       // 横向虚拟滚动（列窗口）：建议全列显式 width；多级表头 / span-method / 非两端固定列布局不兼容（告警降级）
       'column-virtual',
+      // 分组视图：按字段值分节渲染（分节头参与行虚拟滚动；与 merge 列 / span-method 互斥——告警降级）
+      'group-by',
+      // 单元格溢出提示：纯文本格溢出时 hover 显示全文（表格级单例浮层；"false" 关闭）
+      'cell-tooltip',
     ]
   }
 
@@ -1000,6 +1136,12 @@ export class OASTableBase extends OASElement {
   private dragRowKey = ''
   /** 行拖拽：最近一次 dragover 计算的落点（目标行 key + 插前/插后） */
   private dragDrop: { key: string; pos: 'before' | 'after' } | null = null
+  /** 分组视图：已折叠组的键集合（内部语义；数据/属性变化时保留已折叠组） */
+  private collapsedGroups = new Set<string>()
+  /** 分组视图互斥告警去重（group-by × merge 列 / span-method） */
+  private groupWarned = new Set<string>()
+  /** 单元格溢出提示浮层（表格级单例；shadow 重建后经 isConnected 检查惰性重建） */
+  private cellTooltipEl: HTMLElement | null = null
 
   /**
    * 能力注入：构造时快照已注册能力 + connected 期订阅晚加入（注册可能晚于元素构造——
@@ -1265,6 +1407,9 @@ export class OASTableBase extends OASElement {
     tbody?.addEventListener('dragleave', this.handleRowDragLeave)
     tbody?.addEventListener('drop', this.handleRowDrop)
     tbody?.addEventListener('dragend', this.handleRowDragEnd)
+    // 单元格溢出提示：mouseover/mouseout 委托到滚动容器（表格级单例浮层复用定位，不为每格建实例）
+    this.wrap?.addEventListener('mouseover', this.handleCellMouseOver)
+    this.wrap?.addEventListener('mouseout', this.handleCellMouseOut)
     this.onCleanup(() => {
       this.wrap?.removeEventListener('scroll', this.handleScroll)
       this.colResizeObs?.disconnect()
@@ -1278,9 +1423,12 @@ export class OASTableBase extends OASElement {
       tbody?.removeEventListener('dragleave', this.handleRowDragLeave)
       tbody?.removeEventListener('drop', this.handleRowDrop)
       tbody?.removeEventListener('dragend', this.handleRowDragEnd)
+      this.wrap?.removeEventListener('mouseover', this.handleCellMouseOver)
+      this.wrap?.removeEventListener('mouseout', this.handleCellMouseOut)
       if (this.scrollRaf) cancelAnimationFrame(this.scrollRaf)
       this.scrollRaf = 0
       this.closeFilterPanel()
+      this.destroyCellTooltip()
     })
   }
 
@@ -1299,6 +1447,8 @@ export class OASTableBase extends OASElement {
   }
 
   protected override update(): void {
+    // 单元格溢出提示浮层：重渲染（滚动/数据变化/排序等）时先隐藏（无孤儿浮层）
+    this.hideCellTooltip()
     // 外部重渲染（data/sort/selected 等变化）时先静默取消进行中的编辑（委托 edit 能力），
     // 防止编辑 DOM 被整体重建静默销毁
     this.editCap?.settleEdit()
@@ -1349,7 +1499,19 @@ export class OASTableBase extends OASElement {
     }
 
     const sorts = this.resolveSorts()
-    const flat = this.buildFlat(sorts, rowKey, roots)
+    // 分组视图：group-by 在场且无互斥形态（merge 列 / span-method → 告警降级为普通渲染）时生效
+    let groupBy = this.getAttr('group-by', '')
+    if (groupBy) {
+      const hasMerge = this.flattenLeaves(this._columns).some((c) => c.merge)
+      if (hasMerge || this._spanMethod) {
+        groupBy = ''
+        this.warnGroupByOnce(
+          'merge-span',
+          'group-by 与 merge 列 / span-method 不兼容（分节头会破坏合并语义）：已降级为普通渲染（group-by 已忽略）',
+        )
+      }
+    }
+    const flat = this.buildFlat(sorts, rowKey, roots, groupBy)
     const display = this.visibleFlat(flat, expanded, rowKey)
     // D8：导出数据集 = 当前展示的数据行（过滤 + 排序 + 分页切片后；虚拟模式取完整展示集合）
     this._exportRows = display.filter((f) => f.kind === 'data').map((f) => f.row)
@@ -1563,7 +1725,9 @@ export class OASTableBase extends OASElement {
         const tr =
           f.kind === 'expand'
             ? this.buildExpandRow(f)
-            : this.buildRow(f, i, rowKey, selected, expanded, layout, dataIndex)
+            : f.kind === 'group'
+              ? this.buildGroupRow(f)
+              : this.buildRow(f, i, rowKey, selected, expanded, layout, dataIndex)
         if (f.kind === 'data') dataIndex++
         rowInfos.push({ tr, kind: f.kind })
         body.appendChild(tr)
@@ -1746,7 +1910,9 @@ export class OASTableBase extends OASElement {
         for (let c = colIdx + 1; c < colIdx + td.colSpan; c++) this._spanCovered.add(`${dataIndex}:${c}`)
       }
       this.applyColumnOffset(td, col, layout)
-      if (col.align) td.className = `align-${col.align}`
+      // 列对齐：显式 align 优先；number/currency 类型默认右对齐（数值列惯例）
+      const align = col.align ?? (col.type === 'number' || col.type === 'currency' ? 'right' : undefined)
+      if (align) td.className = `align-${align}`
       td.setAttribute('data-col', col.key)
       if (colIdx === 0) {
         // 树形：按层级缩进（indent-size 属性控制每级 px，缺省 24=现状；非法/负值回落默认）
@@ -1902,7 +2068,7 @@ export class OASTableBase extends OASElement {
     return null
   }
 
-  /** 虚拟滚动：占位行 + 可见窗口行 */
+  /** 虚拟滚动：占位行 + 可见窗口行（数据/展开内容/分节头行均参与窗口） */
   private renderVirtualBody(
     body: HTMLElement,
     display: FlatRow[],
@@ -1921,8 +2087,7 @@ export class OASTableBase extends OASElement {
     if (stickyEnd > 0) {
       for (let i = 0; i < stickyEnd; i++) {
         const f = display[i]!
-        const tr =
-          f.kind === 'expand' ? this.buildExpandRow(f) : this.buildRow(f, i, rowKey, selected, expanded, layout)
+        const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout)
         tr.style.height = `${this.rowHeight()}px`
         body.appendChild(tr)
       }
@@ -1939,7 +2104,7 @@ export class OASTableBase extends OASElement {
 
     for (let i = windowStart; i < win.end; i++) {
       const f = display[i]!
-      const tr = f.kind === 'expand' ? this.buildExpandRow(f) : this.buildRow(f, i, rowKey, selected, expanded, layout)
+      const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout)
       tr.style.height = `${this.rowHeight()}px`
       body.appendChild(tr)
     }
@@ -1951,6 +2116,20 @@ export class OASTableBase extends OASElement {
     bottomTd.style.height = `${(display.length - win.end) * this.rowHeight()}px`
     bottomSpacer.appendChild(bottomTd)
     body.appendChild(bottomSpacer)
+  }
+
+  /** 虚拟窗口行的统一分派：数据行 / 展开内容行 / 分节头行 */
+  private buildVirtualRow(
+    f: FlatRow,
+    i: number,
+    rowKey: string,
+    selected: string[],
+    expanded: Set<string>,
+    layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
+  ): HTMLTableRowElement {
+    if (f.kind === 'expand') return this.buildExpandRow(f)
+    if (f.kind === 'group') return this.buildGroupRow(f)
+    return this.buildRow(f, i, rowKey, selected, expanded, layout)
   }
 
   /** 为 th/td 写入固定列 sticky 偏移（left/right） */
@@ -2303,6 +2482,82 @@ export class OASTableBase extends OASElement {
     document.addEventListener('keydown', onKey)
   }
 
+  // ==================== 单元格溢出提示（cell-tooltip：表格级单例浮层） ====================
+
+  /** cell-tooltip 是否开启（默认开；cell-tooltip="false" 关闭） */
+  private cellTooltipOn(): boolean {
+    return this.getAttr('cell-tooltip', 'true') !== 'false'
+  }
+
+  /**
+   * 溢出提示候选格判定：纯文本格（无元素子节点、非空文本）+ 无原生 title（ellipsis 列已有
+   * 原生提示，豁免避免双重提示）+ 实际溢出（scrollWidth > clientWidth）。
+   * happy-dom 等无排版环境两值恒 0 不触发——机制测试以实例属性 mock 判定输入。
+   */
+  private cellTooltipCandidate(td: HTMLTableCellElement): boolean {
+    if (td.querySelector('*')) return false
+    if (td.getAttribute('title')) return false
+    const text = td.textContent ?? ''
+    if (!text.trim()) return false
+    return td.scrollWidth > td.clientWidth
+  }
+
+  /** 取（或惰性重建）单例浮层：render 重建 shadow 后旧节点脱离文档，按 isConnected 检查重建 */
+  private ensureCellTooltip(): HTMLElement {
+    if (!this.cellTooltipEl || !this.cellTooltipEl.isConnected) {
+      const el = document.createElement('div')
+      el.className = 'cell-tooltip'
+      el.setAttribute('part', 'cell-tooltip')
+      el.setAttribute('role', 'tooltip')
+      this.shadowRoot?.appendChild(el)
+      this.cellTooltipEl = el
+    }
+    return this.cellTooltipEl
+  }
+
+  /** 显示浮层：全文 + bottom-start 锚定单元格 + 视口夹取（与过滤面板同源的 floating 引擎） */
+  private showCellTooltip(td: HTMLTableCellElement): void {
+    const el = this.ensureCellTooltip()
+    el.textContent = td.textContent ?? ''
+    el.setAttribute('data-visible', 'true')
+    const rect = td.getBoundingClientRect()
+    const pRect = el.getBoundingClientRect()
+    const pos = computePosition(rect, pRect, 'bottom-start', getViewport(), 6, true, {
+      direction: resolveDirection(this),
+    })
+    el.style.left = `${pos.left}px`
+    el.style.top = `${pos.top}px`
+  }
+
+  /** 隐藏浮层（保留单例节点复用，只切可见态） */
+  private hideCellTooltip(): void {
+    this.cellTooltipEl?.setAttribute('data-visible', 'false')
+  }
+
+  /** 销毁浮层节点（断开连接清理用） */
+  private destroyCellTooltip(): void {
+    this.cellTooltipEl?.remove()
+    this.cellTooltipEl = null
+  }
+
+  /** mouseover 委托：命中溢出纯文本格显示全文浮层，其余一律隐藏 */
+  private handleCellMouseOver = (e: MouseEvent): void => {
+    if (!this.cellTooltipOn()) return
+    const target = e.target as HTMLElement | null
+    const td = target?.closest?.('td[data-col]') as HTMLTableCellElement | null
+    if (td && this.wrap?.contains(td) && this.cellTooltipCandidate(td)) {
+      this.showCellTooltip(td)
+    } else {
+      this.hideCellTooltip()
+    }
+  }
+
+  /** mouseout 委托：离开数据格即隐藏（浮层 pointer-events:none 不会自遮挡） */
+  private handleCellMouseOut = (e: MouseEvent): void => {
+    const target = e.target as HTMLElement | null
+    if (target?.closest?.('td[data-col]')) this.hideCellTooltip()
+  }
+
   /**
    * 解析当前排序状态：无 multi-sort 时回退单列 sort-key/sort-order（向后兼容）。
    * 返回数组按优先级排序（先比较首个，相等再比较次个）。
@@ -2329,34 +2584,59 @@ export class OASTableBase extends OASElement {
 
   /**
    * 排序比较器：按 sorts 数组逐级比较，数字按数值、其余按字符串码点确定性比较。
-   * 不依赖宿主 locale（localeCompare 无显式 locale 时 Windows full-ICU 中文拼音与
-   * Linux small-ICU 码点排序结果不同，导致跨环境行为不一致）；语言感知排序（如中文
-   * 拼音）应由宿主在数据侧预排序或提供自定义 comparator。
+   * type 数值类列（number/currency/progress/rate）无论原始形态按数值序、date 按时间序
+   *（解析失败回落码点）；不依赖宿主 locale（localeCompare 无显式 locale 时 Windows full-ICU
+   * 中文拼音与 Linux small-ICU 码点排序结果不同，导致跨环境行为不一致）；语言感知排序
+   *（如中文拼音）应由宿主在数据侧预排序或提供自定义 comparator。
    */
   private compareRows(a: Record<string, unknown>, b: Record<string, unknown>, sorts: SortState[]): number {
+    const leaves = this.flattenLeaves(this._columns)
     for (const { key, order } of sorts) {
       if (!order) continue
       const av = a[key]
       const bv = b[key]
       let cmp = 0
-      if (typeof av === 'number' && typeof bv === 'number') {
+      const type = leaves.find((c) => c.key === key)?.type
+      if (type === 'number' || type === 'currency' || type === 'progress' || type === 'rate') {
+        // 数值类型列：按数值序比较（原始形态为数字或数字字符串）；null/空串/非数字回落码点
+        const an = av === null || av === undefined || av === '' ? NaN : Number(av)
+        const bn = bv === null || bv === undefined || bv === '' ? NaN : Number(bv)
+        cmp = Number.isFinite(an) && Number.isFinite(bn) ? an - bn : this.codePointCompare(av, bv)
+      } else if (type === 'date') {
+        // date 列：时间序（时间戳/ISO 串）；解析失败回落码点
+        const ad = av === null || av === undefined || av === '' ? NaN : new Date(av as string | number).getTime()
+        const bd = bv === null || bv === undefined || bv === '' ? NaN : new Date(bv as string | number).getTime()
+        cmp = Number.isNaN(ad) || Number.isNaN(bd) ? this.codePointCompare(av, bv) : ad - bd
+      } else if (typeof av === 'number' && typeof bv === 'number') {
         cmp = av - bv
       } else {
-        const sa = String(av)
-        const sb = String(bv)
-        cmp = sa < sb ? -1 : sa > sb ? 1 : 0
+        cmp = this.codePointCompare(av, bv)
       }
       if (cmp !== 0) return order === 'asc' ? cmp : -cmp
     }
     return 0
   }
 
+  /** 字符串码点确定性比较（不依赖宿主 locale） */
+  private codePointCompare(av: unknown, bv: unknown): number {
+    const sa = String(av ?? '')
+    const sb = String(bv ?? '')
+    return sa < sb ? -1 : sa > sb ? 1 : 0
+  }
+
   /**
    * 构建扁平行列表（含树形 children 递归）。排序在各层级兄弟间独立进行，不破坏父子结构；
    * 返回的 flat 是完整列表（树形含隐藏子行），visibleFlat 再做可见性过滤。
    * roots 传入时只遍历这些顶层行（供分页切片用），否则遍历 this._data。
+   * groupBy 传入字段 key 时按该字段值分节：分节头行（kind='group'）前置于组内行，
+   * 组间按字段值首次出现序、组内独立排序（sorts 作用于组内）；空值行归入「（空）」组（i18n）。
    */
-  private buildFlat(sorts: SortState[], rowKey: string, roots: Array<Record<string, unknown>> = this._data): FlatRow[] {
+  private buildFlat(
+    sorts: SortState[],
+    rowKey: string,
+    roots: Array<Record<string, unknown>> = this._data,
+    groupBy = '',
+  ): FlatRow[] {
     const flat: FlatRow[] = []
     const walk = (nodes: Array<Record<string, unknown>>, depth: number, parent?: string): void => {
       const list = [...nodes]
@@ -2371,6 +2651,30 @@ export class OASTableBase extends OASElement {
         }
       }
     }
+    if (groupBy) {
+      // 分组：Map 保持首次出现序（组间序 = 字段值首次出现序）
+      const groups = new Map<string, Array<Record<string, unknown>>>()
+      for (const row of roots) {
+        const v = row[groupBy]
+        // null/undefined/空白串归入「（空）」组（键为空串，与真实值键不冲突）
+        const key = v === null || v === undefined || String(v).trim() === '' ? '' : String(v)
+        const bucket = groups.get(key)
+        if (bucket) bucket.push(row)
+        else groups.set(key, [row])
+      }
+      for (const [key, rows] of groups) {
+        flat.push({
+          row: {},
+          depth: 0,
+          kind: 'group',
+          groupKey: key,
+          groupLabel: key === '' ? tableText(this, 'table.groupEmpty', '(empty)') : key,
+          groupCount: rows.length,
+        })
+        walk(rows, 0)
+      }
+      return flat
+    }
     walk(roots, 0)
     return flat
   }
@@ -2378,10 +2682,18 @@ export class OASTableBase extends OASElement {
   /**
    * 可见行列表：树形数据按 expanded（父行 key）过滤；可展开行的内容行紧随数据行。
    * 父行有 children 时优先展示子树（不叠加 expand 内容行）。
+   * 分组模式下跟踪当前组折叠态（collapsedGroups 内部语义）：折叠组只保留分节头行。
    */
   private visibleFlat(flat: FlatRow[], expanded: Set<string>, rowKey: string): FlatRow[] {
     const out: FlatRow[] = []
+    let groupCollapsed = false
     for (const f of flat) {
+      if (f.kind === 'group') {
+        groupCollapsed = this.collapsedGroups.has(f.groupKey ?? '')
+        out.push(f)
+        continue
+      }
+      if (groupCollapsed) continue
       if (f.parent !== undefined && !expanded.has(f.parent)) continue
       out.push(f)
       const row = f.row
@@ -2409,6 +2721,50 @@ export class OASTableBase extends OASElement {
     this.setAttribute('expanded', [...set].join(','))
     this.emit('expand', { key, expanded })
     this.runUpdateAndNotify()
+  }
+
+  /** 折叠/展开某分组（group-by 内部语义，状态保留于 collapsedGroups；数据/属性变化不重置） */
+  private toggleGroup(groupKey: string, collapsed: boolean): void {
+    if (collapsed) this.collapsedGroups.add(groupKey)
+    else this.collapsedGroups.delete(groupKey)
+    this.runUpdateAndNotify()
+  }
+
+  /** 渲染分节头行（整行 colSpan 全宽，与 loading/empty 行同款；折叠箭头 + 字段值 + 组内计数） */
+  private buildGroupRow(flat: FlatRow): HTMLTableRowElement {
+    const tr = document.createElement('tr')
+    tr.className = 'group-header'
+    tr.setAttribute('part', 'group-row')
+    tr.setAttribute('data-group', flat.groupKey ?? '')
+    const collapsed = this.collapsedGroups.has(flat.groupKey ?? '')
+    const td = document.createElement('td')
+    td.colSpan = this.columnCount()
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = `toggle${collapsed ? '' : ' open'}`
+    btn.setAttribute('aria-label', this.t('table.expand'))
+    btn.setAttribute('aria-expanded', String(!collapsed))
+    btn.textContent = '›'
+    const gk = flat.groupKey ?? ''
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.toggleGroup(gk, !collapsed)
+    })
+    const label = document.createElement('span')
+    label.textContent = flat.groupLabel ?? ''
+    const count = document.createElement('span')
+    count.className = 'group-count'
+    count.textContent = String(flat.groupCount ?? 0)
+    td.append(btn, label, count)
+    tr.appendChild(td)
+    return tr
+  }
+
+  /** group-by 互斥降级告警（同值去重；参照 column-virtual 的 warnOnce 先例） */
+  private warnGroupByOnce(kind: string, message: string): void {
+    if (this.groupWarned.has(kind)) return
+    this.groupWarned.add(kind)
+    console.warn(`[oas-table] ${message}`)
   }
 
   /** 总列数（行拖拽手柄列 + 勾选列 + 数据列 + 可展开行尾列） */
@@ -3129,6 +3485,8 @@ export class OASTableBase extends OASElement {
       this.ignoreNextScroll = false
       return
     }
+    // 滚动即隐藏溢出提示浮层（锚定格可能滚出视口，无孤儿浮层）
+    this.hideCellTooltip()
     // 横向虚拟（column-virtual）：非行虚拟时也要按 scrollLeft 重算列窗口。
     // 用 _colSegments 在场判定（update 时已完成兼容形态判定），scroll 热路径不做全树走查
     if (this._colSegments && !this.isVirtual() && this.wrap) {
@@ -3159,7 +3517,11 @@ export class OASTableBase extends OASElement {
       const rowKey = this.getAttr('row-key', 'key')
       const selected = this.getAttr('selected', '').split(',').filter(Boolean)
       const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
-      const flat = this.buildFlat(this.resolveSorts(), rowKey)
+      // 滚动帧分组口径与 update 一致（互斥形态判定以 update 结果为准：降级时 groupBy 已清空）
+      const groupByRaw = this.getAttr('group-by', '')
+      const groupBy =
+        groupByRaw && !this.flattenLeaves(this._columns).some((c) => c.merge) && !this._spanMethod ? groupByRaw : ''
+      const flat = this.buildFlat(this.resolveSorts(), rowKey, this._data, groupBy)
       const display = this.visibleFlat(flat, expanded, rowKey)
       // 滚动窗口重渲染前静默取消进行中的编辑（委托 edit 能力）
       this.editCap?.settleEdit()
@@ -3179,7 +3541,7 @@ export class OASTableBase extends OASElement {
 
   // ==================== 单元格展示辅助（core 渲染；编辑能力退出时也经 paintCell 复用 cellNode） ====================
 
-  /** 单元格展示文本（select 列按选项 label 展示；render 函数优先） */
+  /** 单元格展示文本（select 列按选项 label 展示；type 列取类型化文本形态；render 函数优先） */
   private cellText(col: TableColumn, row: Record<string, unknown>): string {
     if (col.actions) return ''
     const raw = row[col.key]
@@ -3192,10 +3554,12 @@ export class OASTableBase extends OASElement {
       const rendered = col.render(row)
       return typeof rendered === 'string' ? rendered : String(raw ?? '')
     }
+    if (col.type && col.type !== 'text') return typeCellText(col, raw)
     return String(raw ?? '')
   }
 
-  /** 单元格渲染：render 返回 Node/元素则直接挂载（富内容），否则文本节点 */
+  /** 单元格渲染：render 返回 Node/元素则直接挂载（富内容），否则文本节点；
+      type 列（无自定义渲染/模板时）走类型化默认渲染（badge/进度条/星级/链接等） */
   private cellNode(col: TableColumn, row: Record<string, unknown>): Node | null {
     if (col.actions) return null
     const raw = row[col.key]
@@ -3214,6 +3578,11 @@ export class OASTableBase extends OASElement {
     }
     if (col.cellTemplate) {
       return hydrateRowTemplate(col.cellTemplate, row)
+    }
+    // 列字段类型默认渲染（render/cellTemplate 自定义渲染优先于 type）
+    if (col.type && col.type !== 'text') {
+      const node = buildTypeCellNode(col, raw)
+      if (node) return node
     }
     return document.createTextNode(String(raw ?? ''))
   }
@@ -3306,6 +3675,20 @@ export class OASTableBase extends OASElement {
     if (fixed) col.fixed = fixed as TableColumn['fixed']
     const editor = el.getAttribute('editor')
     if (editor) col.editor = editor as TableColumn['editor']
+    // 列字段类型通道（type/currency/options 对齐 TableColumn 字段）
+    const colType = el.getAttribute('type')
+    if (colType) col.type = colType as TableColumn['type']
+    const currency = el.getAttribute('currency')
+    if (currency) col.currency = currency
+    const options = el.getAttribute('options')
+    if (options) {
+      try {
+        const parsed = JSON.parse(options)
+        if (Array.isArray(parsed)) col.options = parsed
+      } catch {
+        /* 非法 options 忽略 */
+      }
+    }
     const summary = el.getAttribute('summary')
     if (summary) col.summary = summary as TableColumn['summary']
     const filters = el.getAttribute('filters')
@@ -3366,6 +3749,9 @@ export class OASTableBase extends OASElement {
         'summary',
         'editable',
         'editor',
+        'type',
+        'currency',
+        'options',
         'actions',
         'slot',
         'data-role',
@@ -3466,12 +3852,186 @@ function isSummaryType(v: unknown): v is SummaryType {
   return v === 'sum' || v === 'avg' || v === 'count'
 }
 
-/** 扁平行：树形/可展开行统一渲染单位 */
+// ==================== 列字段类型（type）默认渲染辅助（纯函数） ====================
+
+/** 数值类列的展示文本：千分位（number/currency 共用）；非有限数字返回 null（调用方回落原样文本） */
+function numericCellText(raw: unknown): string | null {
+  if (raw === null || raw === undefined || raw === '') return null
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return null
+  return n.toLocaleString()
+}
+
+/** date 列展示文本：时间戳/ISO 串 → YYYY-MM-DD（本地时区）；无法解析回落原样文本 */
+function dateCellText(raw: unknown): string {
+  if (raw === null || raw === undefined || raw === '') return String(raw ?? '')
+  const d = raw instanceof Date ? raw : new Date(raw as string | number)
+  if (Number.isNaN(d.getTime())) return String(raw)
+  const pad = (x: number): string => String(x).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/** checkbox 列值归一化（布尔/数字/字符串形态统一判定勾选态） */
+function isTruthyCell(raw: unknown): boolean {
+  return raw === true || raw === 1 || raw === 'true' || raw === '1' || raw === 'on'
+}
+
+/** 0-100 夹取（progress 展示/提交共用） */
+function clampPercent(n: number): number {
+  return Math.min(100, Math.max(0, n))
+}
+
+/** 0-5 夹取（rate 展示/提交共用） */
+function clampRate(n: number): number {
+  return Math.min(5, Math.max(0, n))
+}
+
+/** type 列的文本形态（导出 CSV/Excel 与 ellipsis title 用，与展示文案一致） */
+function typeCellText(col: TableColumn, raw: unknown): string {
+  switch (col.type) {
+    case 'number':
+      return numericCellText(raw) ?? String(raw ?? '')
+    case 'currency':
+      return raw === null || raw === undefined || raw === ''
+        ? ''
+        : (numericCellText(raw) && `${col.currency ?? '¥'}${numericCellText(raw)}`) || String(raw)
+    case 'select':
+      return selectOptionOf(col, raw)?.label ?? String(raw ?? '')
+    case 'multi-select':
+      return Array.isArray(raw)
+        ? raw.map((v) => selectOptionOf(col, v)?.label ?? String(v ?? '')).join(',')
+        : String(raw ?? '')
+    case 'date':
+      return dateCellText(raw)
+    case 'checkbox':
+      return isTruthyCell(raw) ? '✓' : '—'
+    case 'link':
+    case 'progress':
+    case 'rate':
+    default:
+      return String(raw ?? '')
+  }
+}
+
+/** select/multi-select 选项查找（找不到返回 undefined → 调用方回落原值文本） */
+function selectOptionOf(col: TableColumn, raw: unknown): TableSelectOption | undefined {
+  return (col.options ?? []).find((o) => String(o.value) === String(raw ?? ''))
+}
+
+/** type 列的默认渲染节点（badge/进度条/星级/链接/勾选态等；无类型专属节点返回 null → 调用方回落纯文本） */
+function buildTypeCellNode(col: TableColumn, raw: unknown): Node | null {
+  switch (col.type) {
+    case 'number': {
+      const text = numericCellText(raw)
+      return text === null ? document.createTextNode(String(raw ?? '')) : document.createTextNode(text)
+    }
+    case 'currency': {
+      const text = numericCellText(raw)
+      return text === null
+        ? document.createTextNode(String(raw ?? ''))
+        : document.createTextNode(`${col.currency ?? '¥'}${text}`)
+    }
+    case 'select': {
+      if (raw === null || raw === undefined || raw === '') return document.createTextNode('')
+      const opt = selectOptionOf(col, raw)
+      if (!opt) return document.createTextNode(String(raw))
+      return buildBadgeNode(opt.label, opt.color)
+    }
+    case 'multi-select': {
+      if (!Array.isArray(raw)) return document.createTextNode(String(raw ?? ''))
+      if (raw.length === 0) return document.createTextNode('')
+      const group = document.createElement('span')
+      group.className = 'type-badge-group'
+      for (const v of raw) {
+        const opt = selectOptionOf(col, v)
+        group.appendChild(buildBadgeNode(opt ? opt.label : String(v ?? ''), opt?.color))
+      }
+      return group
+    }
+    case 'date':
+      return document.createTextNode(dateCellText(raw))
+    case 'checkbox': {
+      const mark = document.createElement('span')
+      mark.className = isTruthyCell(raw) ? 'type-check-on' : 'type-check-off'
+      mark.textContent = isTruthyCell(raw) ? '✓' : '—'
+      return mark
+    }
+    case 'link': {
+      const href = String(raw ?? '')
+      if (!href) return document.createTextNode('')
+      const a = document.createElement('a')
+      a.className = 'type-link'
+      a.href = href
+      a.target = '_blank'
+      a.rel = 'noopener'
+      a.textContent = href
+      return a
+    }
+    case 'progress': {
+      const n = Number(raw)
+      if (raw === null || raw === undefined || raw === '' || !Number.isFinite(n)) {
+        return document.createTextNode(String(raw ?? ''))
+      }
+      const pct = clampPercent(n)
+      const track = document.createElement('div')
+      track.className = 'type-progress'
+      track.setAttribute('role', 'progressbar')
+      track.setAttribute('aria-valuemin', '0')
+      track.setAttribute('aria-valuemax', '100')
+      track.setAttribute('aria-valuenow', String(pct))
+      const fill = document.createElement('div')
+      fill.className = 'type-progress-fill'
+      fill.style.width = `${pct}%`
+      track.appendChild(fill)
+      return track
+    }
+    case 'rate': {
+      const n = Number(raw)
+      if (raw === null || raw === undefined || raw === '' || !Number.isFinite(n)) {
+        return document.createTextNode(String(raw ?? ''))
+      }
+      const filled = Math.floor(clampRate(n))
+      const span = document.createElement('span')
+      span.className = 'type-rate'
+      span.setAttribute('aria-label', `${filled}/5`)
+      const on = document.createElement('span')
+      on.className = 'type-rate-on'
+      on.textContent = '★'.repeat(filled)
+      const off = document.createElement('span')
+      off.className = 'type-rate-off'
+      off.textContent = '☆'.repeat(5 - filled)
+      span.append(on, off)
+      return span
+    }
+    default:
+      return null
+  }
+}
+
+/** 徽章节点：color 注入 CSS 变量（--_badge-color 主色 / --_badge-bg 同色低透明底），缺省走 token 默认色 */
+function buildBadgeNode(label: string, color?: string): HTMLElement {
+  const badge = document.createElement('span')
+  badge.className = 'type-badge'
+  badge.textContent = label
+  if (color) {
+    badge.style.setProperty('--_badge-color', color)
+    badge.style.setProperty('--_badge-bg', `color-mix(in srgb, ${color} 12%, transparent)`)
+  }
+  return badge
+}
+
+/** 扁平行：树形/可展开行/分节头统一渲染单位 */
 interface FlatRow {
   row: Record<string, unknown>
   depth: number
   parent?: string
-  kind: 'data' | 'expand'
+  kind: 'data' | 'expand' | 'group'
   /** expand 类型行的自定义内容（来自 row.expand 字段） */
   expandContent?: string
+  /** group 类型行：组键（折叠状态集合的标识；空值组为空串） */
+  groupKey?: string
+  /** group 类型行：分节头展示文案（空值组走 i18n「（空）」） */
+  groupLabel?: string
+  /** group 类型行：组内数据行计数 */
+  groupCount?: number
 }
