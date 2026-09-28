@@ -228,7 +228,7 @@ const MOVE_ICON =
  * 交互：
  * - 卡片 HTML5 DnD 拖拽：换列 + 列内排序；落点插入指示线；拖回原位零操作；
  * - 触屏降级：卡片右上角移动按钮（pointer:coarse 显示）——上移/下移/移到指定列；
- * - 键盘可达：卡片 tabindex=0（listitem）；列体 role=list + aria-label 列名；
+ * - 键盘可达：卡片 tabindex=0（listitem）；非空列体 role=list + aria-label 列名（空列不设 list 语义）；
  * - 空列占位文案走 i18n（`kanban.emptyColumn`），`empty-column-text` 属性可覆盖。
  *
  * 事件（bubbles + composed）：
@@ -245,6 +245,8 @@ export class OASKanban extends OASElement {
 
   private _columns: KanbanColumn[] = []
   private _cards: KanbanCard[] = []
+  /** 已解析的 cards attribute 原文（变化才重解析，renderCard 在场不阻断首帧解析） */
+  private _cardsRaw = ''
   /** renderCard property 函数在场：数据内存持有，不反射 cards attribute（同 table 函数列先例） */
   private _renderCard: KanbanCardRenderer | null = null
 
@@ -314,7 +316,7 @@ export class OASKanban extends OASElement {
     // 外点与滚动关菜单：挂 document——shadow 根监听收不到宿主/外部区域冒泡的事件；
     // scroll 不冒泡，capture 捕获列体滚动（菜单 fixed 定位防错位）
     document.addEventListener('click', this.handleOutsideClick, true)
-    document.addEventListener('scroll', this.closeMenu, true)
+    document.addEventListener('scroll', this.handleDocumentScroll, true)
     // Esc 关菜单（shadow 内 keydown 不冒泡出宿主，shadow 根监听够用）
     root.addEventListener('keydown', this.handleKeydown)
     this.onCleanup(() => {
@@ -353,13 +355,18 @@ export class OASKanban extends OASElement {
     }
   }
 
-  /** 属性解析：JSON 非法/非数组回退空数组；renderCard 在场时 cards 保持内存态 */
+  /** 属性解析：JSON 非法/非数组回退空数组；cards 按 attribute 原文变化重解析
+      （renderCard 在场一刀切跳过会让「renderCard 先于连接赋值」的宿主首帧拿到空板——review 实抓） */
   private parse(): void {
     const cols = this.parseJsonArray('columns')
     this._columns = cols.filter(
       (c): c is KanbanColumn => c != null && typeof c === 'object' && typeof (c as { key?: unknown }).key === 'string',
     )
-    if (!this._renderCard) this._cards = this.parseJsonArray('cards') as KanbanCard[]
+    const cardsRaw = this.getAttribute('cards') ?? ''
+    if (cardsRaw !== this._cardsRaw) {
+      this._cardsRaw = cardsRaw
+      this._cards = this.parseJsonArray('cards') as KanbanCard[]
+    }
   }
 
   private parseJsonArray(name: string): unknown[] {
@@ -405,15 +412,17 @@ export class OASKanban extends OASElement {
     const body = document.createElement('div')
     body.className = 'column-body'
     body.setAttribute('part', 'column-body')
-    body.setAttribute('role', 'list')
-    body.setAttribute('aria-label', col.title)
     if (cards.length === 0) {
+      // 空列不设 role=list：axe aria-required-children 要求 list 必有 listitem 子元素，
+      // 空列无卡片时 list 语义不成立（列头 aria-label 已提供列名可达性）
       const empty = document.createElement('div')
       empty.className = 'empty-column'
       empty.setAttribute('part', 'empty-column')
       empty.textContent = this.emptyColumnText()
       body.appendChild(empty)
     } else {
+      body.setAttribute('role', 'list')
+      body.setAttribute('aria-label', col.title)
       for (const card of cards) body.appendChild(this.buildCard(card))
     }
 
@@ -496,16 +505,28 @@ export class OASKanban extends OASElement {
     const list = this.cardsInColumn(toKey)
     let index: number
     let before: boolean
+    let markCard = hoverCard
     if (hoverCard) {
       const rect = hoverCard.getBoundingClientRect()
       before = de.clientY < rect.top + rect.height / 2
       index = list.indexOf(hoverCard.getAttribute('data-id') ?? '') + (before ? 0 : 1)
     } else {
-      before = false
-      index = list.length
+      // 悬在卡片间隙/列体空白（gap/padding 区）：按 clientY 找下方最近卡插其前，
+      // 否则列尾——旧版一律列尾会让间隙松手的卡片飞列尾（review 实抓）
+      const next = [...column.querySelectorAll<HTMLElement>('.card')].find(
+        (c) => c.getBoundingClientRect().top > de.clientY,
+      )
+      if (next) {
+        before = true
+        index = list.indexOf(next.getAttribute('data-id') ?? '')
+        markCard = next
+      } else {
+        before = false
+        index = list.length
+      }
     }
     this.dropTarget = { column: toKey, index }
-    this.paintDropMark(column, hoverCard, before)
+    this.paintDropMark(column, markCard, before)
   }
 
   private handleDrop = (e: Event): void => {
@@ -679,6 +700,14 @@ export class OASKanban extends OASElement {
     this.menuCardId = ''
   }
 
+  /** document 级滚动关菜单：菜单自身滚动豁免（composedPath 含 .move-menu 时保留——
+      菜单超高（max-height 260px）时滚动菜单不应被关闭，否则够不到下方列项） */
+  private handleDocumentScroll = (e: Event): void => {
+    if (!this.menuCardId) return
+    if (e.composedPath().some((n) => n instanceof HTMLElement && n.classList?.contains('move-menu'))) return
+    this.closeMenu()
+  }
+
   private handleMenuItemClick = (item: HTMLElement): void => {
     if (item.getAttribute('aria-disabled') === 'true') return
     const action = item.dataset.action ?? ''
@@ -691,8 +720,11 @@ export class OASKanban extends OASElement {
     if (action === 'up' || action === 'down') {
       const siblings = this._cards.filter((c) => String(c.column ?? '') === from)
       const idx = siblings.indexOf(card)
-      const index = action === 'up' ? idx - 1 : idx + 1
-      if (index < 0 || index >= siblings.length) return
+      // 下移传 idx+2 而非 idx+1：applyMove 同列原位判定把「原位+1」视为没动（拖到紧随
+      // 其后 = 原位零操作），idx+1 会被静默吞掉——触屏「下移」曾因此恒为死按钮（review 实抓）；
+      // idx+2 经 applyMove 的 index>originIndex → index-=1 换算后恰为正确插入位
+      const index = action === 'up' ? idx - 1 : Math.min(idx + 2, siblings.length)
+      if (index < 0) return
       this.applyMove(cardId, from, index)
       return
     }

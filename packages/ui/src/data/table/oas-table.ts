@@ -909,7 +909,8 @@ tr.row.drop-after td {
   overflow: hidden;
   text-overflow: ellipsis;
   background: var(--_badge-bg, var(--oas-color-bg-hover));
-  color: var(--_badge-color, var(--oas-color-text-secondary));
+  color: var(--_badge-fg, var(--oas-color-text-secondary));
+  border: 1px solid var(--_badge-border, transparent);
 }
 .type-badge-group {
   display: inline-flex;
@@ -1414,8 +1415,11 @@ export class OASTableBase extends OASElement {
     // 单元格溢出提示：mouseover/mouseout 委托到滚动容器（表格级单例浮层复用定位，不为每格建实例）
     this.wrap?.addEventListener('mouseover', this.handleCellMouseOver)
     this.wrap?.addEventListener('mouseout', this.handleCellMouseOut)
+    // 页面级/外层容器滚动时同步隐藏浮层（scroll 不冒泡，document capture 捕获——浮层滞留原位 review 实抓）
+    document.addEventListener('scroll', this.handleDocumentScrollForTooltip, true)
     this.onCleanup(() => {
       this.wrap?.removeEventListener('scroll', this.handleScroll)
+      document.removeEventListener('scroll', this.handleDocumentScrollForTooltip, true)
       this.colResizeObs?.disconnect()
       if (this.colResizeRaf) {
         cancelAnimationFrame(this.colResizeRaf)
@@ -1497,7 +1501,10 @@ export class OASTableBase extends OASElement {
       }
       const sorted = [...roots]
       const sorts = this.resolveSorts()
-      if (sorts.length > 0) sorted.sort((a, b) => this.compareRows(a, b, sorts))
+      if (sorts.length > 0) {
+        const tm = this.columnTypeMap()
+        sorted.sort((a, b) => this.compareRows(a, b, sorts, tm))
+      }
       const start = (current - 1) * pageSize
       roots = sorted.slice(start, start + pageSize)
     }
@@ -1512,6 +1519,14 @@ export class OASTableBase extends OASElement {
         this.warnGroupByOnce(
           'merge-span',
           'group-by 与 merge 列 / span-method 不兼容（分节头会破坏合并语义）：已降级为普通渲染（group-by 已忽略）',
+        )
+      } else if (this.hasAttr('row-draggable')) {
+        // 分组后展示序 ≠ 宿主 data 原始数组序，oas-row-reorder 的 from/to 应用到宿主
+        // splice 会得到错误结果——互斥降级（review 实抓索引口径静默错位）
+        groupBy = ''
+        this.warnGroupByOnce(
+          'row-draggable',
+          'group-by 与 row-draggable 不兼容（分组后展示序与原始数组序不一致，行重排索引会错位）：已降级为普通渲染（group-by 已忽略）',
         )
       }
     }
@@ -2562,6 +2577,11 @@ export class OASTableBase extends OASElement {
     if (target?.closest?.('td[data-col]')) this.hideCellTooltip()
   }
 
+  /** 页面级/外层容器滚动时隐藏浮层（wrap 自身滚动走 handleScroll 同路径，这里捕其余滚动源） */
+  private handleDocumentScrollForTooltip = (): void => {
+    this.hideCellTooltip()
+  }
+
   /**
    * 解析当前排序状态：无 multi-sort 时回退单列 sort-key/sort-order（向后兼容）。
    * 返回数组按优先级排序（先比较首个，相等再比较次个）。
@@ -2586,6 +2606,13 @@ export class OASTableBase extends OASElement {
     return key && (order === 'asc' || order === 'desc') ? [{ key, order }] : []
   }
 
+  /** key → 列 type 映射（排序比较器热路径外提：sort 每次比较都全树走查 flattenLeaves 是 O(列数) 重复开销——review 实抓万行排序 14 万次全列树走查） */
+  private columnTypeMap(): Map<string, TableColumn['type']> {
+    const map = new Map<string, TableColumn['type']>()
+    for (const c of this.flattenLeaves(this._columns)) map.set(c.key, c.type)
+    return map
+  }
+
   /**
    * 排序比较器：按 sorts 数组逐级比较，数字按数值、其余按字符串码点确定性比较。
    * type 数值类列（number/currency/progress/rate）无论原始形态按数值序、date 按时间序
@@ -2593,14 +2620,18 @@ export class OASTableBase extends OASElement {
    * 中文拼音与 Linux small-ICU 码点排序结果不同，导致跨环境行为不一致）；语言感知排序
    *（如中文拼音）应由宿主在数据侧预排序或提供自定义 comparator。
    */
-  private compareRows(a: Record<string, unknown>, b: Record<string, unknown>, sorts: SortState[]): number {
-    const leaves = this.flattenLeaves(this._columns)
+  private compareRows(
+    a: Record<string, unknown>,
+    b: Record<string, unknown>,
+    sorts: SortState[],
+    typeMap: Map<string, TableColumn['type']>,
+  ): number {
     for (const { key, order } of sorts) {
       if (!order) continue
       const av = a[key]
       const bv = b[key]
       let cmp = 0
-      const type = leaves.find((c) => c.key === key)?.type
+      const type = typeMap.get(key)
       if (type === 'number' || type === 'currency' || type === 'progress' || type === 'rate') {
         // 数值类型列：按数值序比较（原始形态为数字或数字字符串）；null/空串/非数字回落码点
         const an = av === null || av === undefined || av === '' ? NaN : Number(av)
@@ -2642,10 +2673,11 @@ export class OASTableBase extends OASElement {
     groupBy = '',
   ): FlatRow[] {
     const flat: FlatRow[] = []
+    const sortTypeMap = sorts.length > 0 ? this.columnTypeMap() : null
     const walk = (nodes: Array<Record<string, unknown>>, depth: number, parent?: string): void => {
       const list = [...nodes]
       if (sorts.length > 0) {
-        list.sort((a, b) => this.compareRows(a, b, sorts))
+        list.sort((a, b) => this.compareRows(a, b, sorts, sortTypeMap!))
       }
       for (const row of list) {
         flat.push({ row, depth, parent, kind: 'data' })
@@ -3895,10 +3927,11 @@ function typeCellText(col: TableColumn, raw: unknown): string {
   switch (col.type) {
     case 'number':
       return numericCellText(raw) ?? String(raw ?? '')
-    case 'currency':
-      return raw === null || raw === undefined || raw === ''
-        ? ''
-        : (numericCellText(raw) && `${col.currency ?? '¥'}${numericCellText(raw)}`) || String(raw)
+    case 'currency': {
+      if (raw === null || raw === undefined || raw === '') return ''
+      const text = numericCellText(raw)
+      return text ? `${col.currency ?? '¥'}${text}` : String(raw)
+    }
     case 'select':
       return selectOptionOf(col, raw)?.label ?? String(raw ?? '')
     case 'multi-select':
@@ -3968,6 +4001,9 @@ function buildTypeCellNode(col: TableColumn, raw: unknown): Node | null {
     case 'link': {
       const href = String(raw ?? '')
       if (!href) return document.createTextNode('')
+      // 协议白名单（防数据驱动的 javascript: XSS——renderCard 防注入先例的同口径）：
+      // 仅放行 http(s): / mailto: / 相对路径，其余回落纯文本展示
+      if (!/^(https?:|mailto:|\/|\.|#)/i.test(href)) return document.createTextNode(href)
       const a = document.createElement('a')
       a.className = 'type-link'
       a.href = href
@@ -3988,6 +4024,8 @@ function buildTypeCellNode(col: TableColumn, raw: unknown): Node | null {
       track.setAttribute('aria-valuemin', '0')
       track.setAttribute('aria-valuemax', '100')
       track.setAttribute('aria-valuenow', String(pct))
+      // axe aria-progressbar-name：role=progressbar 必须有可访问名称（列名 + 当前值）
+      track.setAttribute('aria-label', `${col.title} ${pct}%`)
       const fill = document.createElement('div')
       fill.className = 'type-progress-fill'
       fill.style.width = `${pct}%`
@@ -4023,8 +4061,11 @@ function buildBadgeNode(label: string, color?: string): HTMLElement {
   badge.className = 'type-badge'
   badge.textContent = label
   if (color) {
-    badge.style.setProperty('--_badge-color', color)
+    // 文字色不可直接用主色（主色 on 12% 浅底对比度不达标——a11y 感知门禁实抓 50.66<60）：
+    // 混入主题文字色（light 混近黑加深 / dark 混近白提亮），双主题自适应（tag 的 *-text 变体同款思路）
+    badge.style.setProperty('--_badge-fg', `color-mix(in srgb, ${color} 72%, var(--oas-color-text))`)
     badge.style.setProperty('--_badge-bg', `color-mix(in srgb, ${color} 12%, transparent)`)
+    badge.style.setProperty('--_badge-border', `color-mix(in srgb, ${color} 40%, transparent)`)
   }
   return badge
 }

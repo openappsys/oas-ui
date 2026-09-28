@@ -4,6 +4,13 @@
 
 ## [未发布]
 
+### 特性
+
+- **oas-kanban 看板（新组件，data 族）**：`columns` / `cards` JSON 双通道声明式数据；卡片 HTML5 DnD 拖拽换列与列内排序（落点主色插入指示线，拖回原位零操作）→ 落定回写并派发 `oas-change`（detail { id, from, to, index }）；列头计数、列体独立滚动、空列占位（i18n ×10）；`renderCard` property 函数通道自定义卡片（Node 直挂 / 字符串防注入）；触屏降级移动按钮（pointer:coarse，上移/下移/移到指定列）；卡片 tabindex=0 键盘可达。第一期不含：列拖拽重排、泳道、WIP 限制
+- **oas-table 列 `type` 字段类型系统**：columns JSON 加 `type`——text / number（千分位右对齐）/ currency（货币符号）/ select（badge，`options` 配 value/label/color）/ multi-select（badge 组）/ date（YYYY-MM-DD）/ checkbox（只读勾选态）/ link（主色下划线新标签页，协议白名单防 javascript: 注入）/ progress（0-100 进度条）/ rate（0-5 星级）。编辑器复用既有通道（input 系原生 input、select 走 editor:'select'、checkbox 挂 oas-switch），回写类型按语义（数值/数组/布尔）；排序按列 type 数值序/时间序；自定义渲染（render/cellTemplate）优先于 type。浮层类编辑器（oas-select/oas-date-picker）为后续批次
+- **oas-table `group-by` 分组视图**：按字段值分节（分节头 = 折叠箭头 + 字段值 + 计数，点击折叠/展开，状态在数据变化时保留）；空值归「（空）」组；分节头作为扁平行参与行虚拟滚动、整行 colSpan 全宽（与 column-virtual 正交）；排序作用于组内行；与 merge 列 / span-method / row-draggable 互斥（告警降级）；与 pagination 同用时为页内分组口径
+- **oas-table `cell-tooltip` 单元格溢出提示（单例浮层）**：纯文本单元格溢出（scrollWidth > clientWidth）时悬停显示全文——表格级单一浮层实例（事件委托 + 视口夹取），不为每格创建组件实例；默认开启（`cell-tooltip="false"` 关闭）；滚动 / 重渲染自动隐藏
+
 ### 修复
 
 - **oas-table `editComponent` 通道端到端修复（独立 review 实抓）**：库内 form 组件此前完全不可用——提交事件并听 `oas-change`（库内组件经 core emit 统一前缀）与原生 `change`（宿主自定义 WC）；读值改 `getFormValue()` → value property → value attribute 三级兜底（旧版只读 attribute，而 oas-input 用户输入不回写 attribute，提交恒为初始值）；编辑器初值改 attribute + property 双通道注入。行虚拟 × 列虚拟双开横向滚动时同步重建 thead（表头不再滞留旧窗口列）；编辑单元格定位改 `td[data-col]` 查询（占位 colSpan 归并不再使索引错位）；编辑器失焦改监听 `focusout`（composed，shadow 内控件失焦可感知）；多行编辑器（textarea 内核）Enter 让路换行；列窗口起点扣除前置列与 left 固定段宽度（固定列右侧不再露空洞）；RTL 下 scrollLeft 取绝对值标准化；`setColumnWidth` 后列宽缓存即时失效；expand 列 colgroup 定宽与 sticky 偏移收敛为同一常量（40px）；列宽解析归一（兜底统一 100px）；容器尺寸变化（ResizeObserver）重算列窗口；占位格补 `aria-colspan` 且不入网格导航矩阵

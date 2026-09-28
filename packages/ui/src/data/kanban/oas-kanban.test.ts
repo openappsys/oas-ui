@@ -112,7 +112,7 @@ describe('OASKanban', () => {
       expect(count('done')).toBe('0')
     })
 
-    it('键盘可达：卡片 tabindex=0 + listitem 语义；列体 role=list + aria-label 列名', () => {
+    it('键盘可达：卡片 tabindex=0 + listitem 语义；非空列体 role=list + aria-label 列名（空列无 list 语义）', () => {
       const el = mount()
       for (const card of shadow(el).querySelectorAll<HTMLElement>('.card')) {
         expect(card.getAttribute('tabindex')).toBe('0')
@@ -120,8 +120,15 @@ describe('OASKanban', () => {
       }
       for (const col of columnEls(el)) {
         const body = col.querySelector<HTMLElement>('.column-body')!
-        expect(body.getAttribute('role')).toBe('list')
-        expect(body.getAttribute('aria-label')).toBe(col.querySelector<HTMLElement>('.column-title')!.textContent)
+        const hasCards = body.querySelector('.card') !== null
+        if (hasCards) {
+          expect(body.getAttribute('role')).toBe('list')
+          expect(body.getAttribute('aria-label')).toBe(col.querySelector<HTMLElement>('.column-title')!.textContent)
+        } else {
+          // 空列不设 role=list（axe aria-required-children：list 必有 listitem 子元素）
+          expect(body.getAttribute('role')).toBeNull()
+          expect(body.querySelector('.empty-column'), '空列占位在').not.toBeNull()
+        }
       }
     })
 
@@ -360,6 +367,29 @@ describe('OASKanban', () => {
       expect(shadow(el).querySelector('.move-menu')).toBeNull()
     })
 
+    it('点击「下移」：同列下移一位（index 经原位判定换算后正确落位），派发 oas-change——review C1 回归（旧版 idx+1 被原位判定静默吞掉恒为死按钮）', () => {
+      const el = mount()
+      const events = trackChange(el)
+      // 中间卡下移：c1（todo 首位）→ 移到第二位
+      openMenu(el, 'c1')
+      const down = [...shadow(el).querySelectorAll<HTMLElement>('.move-menu [role="menuitem"]')].find(
+        (i) => i.textContent === '下移',
+      )!
+      down.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(events.length, '下移必须派发事件（旧版恒零操作）').toBe(1)
+      expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'todo', index: 1 })
+      expect(cardsOf(el, 'todo').map((c) => c.getAttribute('data-id'))).toEqual(['c2', 'c1'])
+      // 换一张卡（c2，此时在首位）下移：回到原序，事件 index=1
+      openMenu(el, 'c2')
+      const down2 = [...shadow(el).querySelectorAll<HTMLElement>('.move-menu [role="menuitem"]')].find(
+        (i) => i.textContent === '下移',
+      )!
+      down2.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(events.length).toBe(2)
+      expect(events[1]!.detail).toEqual({ id: 'c2', from: 'todo', to: 'todo', index: 1 })
+      expect(cardsOf(el, 'todo').map((c) => c.getAttribute('data-id'))).toEqual(['c1', 'c2'])
+    })
+
     it('点击列名项：跨列移动', () => {
       const el = mount()
       const events = trackChange(el)
@@ -441,6 +471,30 @@ describe('OASKanban', () => {
       const el = mount()
       el.renderCard = (card) => String(card.title)
       expect(cardOf(el, 'c1')!.querySelector('.card-move')).not.toBeNull()
+    })
+
+    it('renderCard 先于连接赋值：首帧 cards 仍解析（面板非空）——review I2 回归', () => {
+      // 框架桥接层常见时序：property 在 appendChild 前赋值。旧版 parse() 按 renderCard
+      // 在场一刀切跳过 cards 解析 → 首帧空板且无告警
+      const el = new OASKanban()
+      el.setAttribute('columns', JSON.stringify(COLUMNS))
+      el.setAttribute('cards', JSON.stringify(CARDS))
+      el.renderCard = (card) => String(card.title)
+      document.body.appendChild(el)
+      expect(el.cards.length, 'cards 首帧解析（不被 renderCard 阻断）').toBe(CARDS.length)
+      expect(shadow(el).querySelectorAll('.card').length, '面板渲染卡片').toBeGreaterThan(0)
+    })
+
+    it('renderCard 置 null 后：内存态（拖拽成果）保留，恢复默认 title 渲染', () => {
+      const el = mount()
+      el.renderCard = (card) => String(card.title)
+      dragDrop(el, 'c1', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
+      el.renderCard = null
+      // I2 修复后：parse 按 attribute 原文变化判定——attribute 未变（renderCard 路径不反射），
+      // 内存态保留（拖拽成果不丢），渲染回落默认 title
+      expect(el.cards.find((c) => c.id === 'c1')!.column).toBe('done')
+      expect(cardsOf(el, 'done').length).toBe(1)
+      expect(cardsOf(el, 'done')[0]!.querySelector('.card-title')).not.toBeNull()
     })
   })
 })

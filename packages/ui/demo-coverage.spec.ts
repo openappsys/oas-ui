@@ -190,6 +190,9 @@ const INTERACTIONS: Array<[string, string]> = [
 const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   grid: [['oas-grid[collapsed-rows] [part="collapse-tail-btn"]', 'click', '点折叠尾格展开 → oas-collapse']],
   swatch: [['oas-swatch-group:not([disabled]) oas-swatch:not([disabled])', 'click', '点色板 → 组 oas-change']],
+  kanban: [
+    ['oas-kanban .card', 'dragmockto:oas-kanban .column:nth-of-type(2) .card', '拖拽首卡跨列到第二列首卡 → oas-change'],
+  ],
   list: [
     ['oas-list[sortable] [part="data-items"] oas-list-item', 'dragmock', '拖拽数据通道行（shadow 内）→ oas-reorder'],
     ['oas-list[sortable] > oas-list-item', 'dragmock', '拖拽声明式行（light DOM）→ oas-reorder'],
@@ -784,6 +787,24 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
             const dt = new DataTransfer()
             tgt.dispatchEvent(new DragEvent('dragover', { bubbles: true, composed: true, dataTransfer: dt }))
             tgt.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
+          })
+        }
+      } else if (act.startsWith('dragmockto:')) {
+        // 显式目标的 DnD 模拟：dragmock 的 nth(0)→nth(1) 对「紧随其后就位零操作」语义的组件
+        // （如 kanban 拖到邻卡 = 原位）不触发事件；本动作显式指定跨列/跨位目标
+        const targetSel = act.slice('dragmockto:'.length)
+        const src = page.locator(sel).first()
+        const tgt = page.locator(targetSel).first()
+        if ((await src.count()) && (await tgt.count())) {
+          await src.evaluate((s) => {
+            s.dispatchEvent(
+              new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: new DataTransfer() }),
+            )
+          })
+          await tgt.evaluate((t) => {
+            const dt = new DataTransfer()
+            t.dispatchEvent(new DragEvent('dragover', { bubbles: true, composed: true, dataTransfer: dt }))
+            t.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
           })
         }
       } else if (act.startsWith('wait:')) {

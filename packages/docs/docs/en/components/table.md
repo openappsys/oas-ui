@@ -899,7 +899,7 @@ Inline editing per type: `number` / `currency` / `link` use a native input (nume
 
 ## Grouped view (group-by)
 
-`group-by="fieldKey"` renders sections by field value: a section header = collapse arrow + field value + row count; clicking the arrow collapses / expands that group (expanded by default, with `aria-expanded` kept in sync). Groups are ordered by first occurrence of the field value, and sorting applies within groups; rows with missing / empty grouping values fall into the "(empty)" group (i18n text). Section headers are a kind of flat row and participate in row virtualization, spanning the full width via `colSpan` (orthogonal to `column-virtual` / fixed columns); collapsed groups survive data / attribute changes. Combining with merge columns / `span-method` is unsupported (warns once and degrades to plain rendering).
+`group-by="fieldKey"` renders sections by field value: a section header = collapse arrow + field value + row count; clicking the arrow collapses / expands that group (expanded by default, with `aria-expanded` kept in sync). Groups are ordered by first occurrence of the field value, and sorting applies within groups; rows with missing / empty grouping values fall into the "(empty)" group (i18n text). Section headers are a kind of flat row and participate in row virtualization, spanning the full width via `colSpan` (orthogonal to `column-virtual` / fixed columns); collapsed groups survive data / attribute changes. Combining with merge columns / `span-method` / `row-draggable` is unsupported (warns once and degrades to plain rendering). With `pagination`, grouping is per-page (group counts reflect the current page; cross-page groups reappear on each page).
 
 <DemoBlock title="Group by department (sortable within groups, click the arrow to collapse/expand)">
   <div style="width: 100%">
@@ -913,7 +913,7 @@ Inline editing per type: `number` / `currency` / `link` use a native input (nume
 
 <DemoBlock title="Hover an overflowing cell to read the full text">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"env","title":"Env","width":"90px"},{"key":"url","title":"Endpoint","width":"220px"},{"key":"owner","title":"Owner","width":"80px"}]' data='[{"env":"Production","url":"https://prod-cluster.example-assets-platform.com/dashboard/overview/health","owner":"Alice"},{"env":"Staging","url":"https://staging.example-assets-platform.com/monitor/health-check/status","owner":"Bob"},{"env":"Canary","url":"https://canary.example-assets-platform.com/release/notes/latest","owner":"Carol"}]'></oas-table>
+    <oas-table cell-tooltip columns='[{"key":"env","title":"Env","width":"90px"},{"key":"url","title":"Endpoint","width":"220px"},{"key":"owner","title":"Owner","width":"80px"}]' data='[{"env":"Production","url":"https://prod-cluster.example-assets-platform.com/dashboard/overview/health","owner":"Alice"},{"env":"Staging","url":"https://staging.example-assets-platform.com/monitor/health-check/status","owner":"Bob"},{"env":"Canary","url":"https://canary.example-assets-platform.com/release/notes/latest","owner":"Carol"}]'></oas-table>
   </div>
 </DemoBlock>
 
