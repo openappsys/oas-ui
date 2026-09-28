@@ -173,9 +173,7 @@
 
 可编辑单元格自带可感知线索：hover 或键盘聚焦（focus-visible）时显示淡底色与右上角铅笔图标（图标不拦截交互），悬停有 `title` 提示「双击编辑」；三种方式进入编辑——双击、聚焦后按 Enter、聚焦后按 F2。
 
-行内「交互宿主」上的点击/双击不连带行级手势：落在原生控件（`button`/`a`/`input`/`select`/`textarea`）、带 `role` 的 ARIA 元素或库内交互组件（如 `oas-button`、`oas-link`、`oas-select`）内部的点击只触发该控件自身行为——不切换行选中、也不会被双击判定误带入编辑；行点击与双击进编辑共用同一份排除清单，并随组件库新增交互型组件同步维护。业务侧行内自定义交互内容（图表、迷你挂件等）无需等库发版：在容器上标注 `data-oas-row-click-ignore` 即可让整块内容豁免行点击与行编辑。
-
-行内「交互宿主」上的点击/双击不连带行级手势：落在原生控件（`button`/`a`/`input`/`select`/`textarea`）、带 `role` 的 ARIA 元素或库内交互组件（如 `oas-button`、`oas-link`、`oas-switch`、`oas-checkbox`）上的点击/双击不派发行级手势（防误触），但**不阻止编辑态本身**。
+行内「交互宿主」上的点击/双击不连带行级手势：落在原生控件（`button`/`a`/`input`/`select`/`textarea`）、带 `role` 的 ARIA 元素或库内交互组件（如 `oas-button`、`oas-link`、`oas-select`）内部的点击只触发该控件自身行为——不切换行选中、也不会被双击判定误带入编辑；行点击与双击进编辑共用同一份排除清单，并随组件库新增交互型组件同步维护。业务侧行内自定义交互内容（图表、迷你挂件等）无需等库发版：在容器上标注 `data-oas-row-click-ignore` 即可让整块内容豁免行点击与行编辑。交互宿主不派发行级手势，但**不阻止编辑态本身**。
 
 ### 组件编辑器（editComponent）
 
@@ -183,7 +181,7 @@
   <oas-table editable row-key="word" columns='[{"key":"word","title":"词条","editable":true,"editComponent":"oas-input"},{"key":"note","title":"备注","editable":true,"editComponent":"oas-textarea"}]' data='[{"word":"oas-ui","note":"Web Components 组件库"},{"word":"divider","note":"分隔线"}]'></oas-table>
 </DemoBlock>
 
-`edit-component` 指定**组件编辑器**（优先于 `editor`）：双击后挂载对应组件并注入当前值，`change` 提交、Esc 取消。组件契约（最小集）：**value attribute 读写当前值 + change 事件**——库内 form 组件（oas-input / oas-textarea / oas-switch 等）天然满足，宿主自定义 WC 同样可用。第一期约定为非浮层组件（date-picker / select 等浮层类后续批次支持）。
+`editComponent`（columns JSON 字段）指定**组件编辑器**（优先于 `editor`）：双击后挂载对应组件并注入当前值。组件契约（最小集）：值可读（`getFormValue()` → value property → value attribute 三级兜底）、提交事件（`oas-change` 或原生 `change` 其一）、Esc 取消；多行编辑器（textarea 内核）Enter 让路换行，提交走失焦。库内 form 组件（oas-input / oas-textarea / oas-switch 等）天然满足，宿主自定义 WC 同样可用。第一期约定为非浮层组件（date-picker / select 等浮层类后续批次支持）。注意：横向滚动触发列窗口变化时整表重渲染，进行中的编辑会被静默取消（不派 `oas-edit-cancel`）。
 
 ## 受控编辑
 
@@ -871,7 +869,7 @@ onMounted(() => {
 | `checkable` | 行选择开关：存在即多选（复选框 + 全选头）；`="radio"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1 | `string` | — |
 | `column-keys` | 受控列显隐与顺序（key 数组或逗号串）：在场时按有效叶序重组表头与数据列（多级表头同祖先链叶子并组） | `string[] \| string` | `[]` |
 | `column-virtual` | 横向虚拟滚动（列窗口化）：非固定列只渲染可视窗口列，窗口外列以占位格 colSpan 归并（宽度由 colgroup 求和）。约束：建议全列显式 width；多级表头 / span-method / 合计行不兼容（告警降级）；固定列须两端布局 | `boolean` | — |
-| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
+| `columns` | 列配置 [{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions? }]，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
 | `current` | 当前页码（内置分页，受控） | `string` | `1` |
 | `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `Array<Record<string, unknown>> \| string` | `[]` |
 | `edit-controlled` | 受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data` | `boolean` | — |

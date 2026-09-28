@@ -4,10 +4,14 @@
 
 ## [未发布]
 
+### 修复
+
+- **oas-table `editComponent` 通道端到端修复（独立 review 实抓）**：库内 form 组件此前完全不可用——提交事件并听 `oas-change`（库内组件经 core emit 统一前缀）与原生 `change`（宿主自定义 WC）；读值改 `getFormValue()` → value property → value attribute 三级兜底（旧版只读 attribute，而 oas-input 用户输入不回写 attribute，提交恒为初始值）；编辑器初值改 attribute + property 双通道注入。行虚拟 × 列虚拟双开横向滚动时同步重建 thead（表头不再滞留旧窗口列）；编辑单元格定位改 `td[data-col]` 查询（占位 colSpan 归并不再使索引错位）；编辑器失焦改监听 `focusout`（composed，shadow 内控件失焦可感知）；多行编辑器（textarea 内核）Enter 让路换行；列窗口起点扣除前置列与 left 固定段宽度（固定列右侧不再露空洞）；RTL 下 scrollLeft 取绝对值标准化；`setColumnWidth` 后列宽缓存即时失效；expand 列 colgroup 定宽与 sticky 偏移收敛为同一常量（40px）；列宽解析归一（兜底统一 100px）；容器尺寸变化（ResizeObserver）重算列窗口；占位格补 `aria-colspan` 且不入网格导航矩阵
+
 ### 特性
 
-- **oas-table `column-virtual` 横向虚拟滚动（双向虚拟补齐）**：非固定列窗口化——DOM 只渲染窗口列 th/td，窗口外列以占位格 colSpan 归并（宽度由 colgroup 对应列求和，`table-layout: fixed` 强制启用——auto 布局把 col 宽当建议忽略、总宽塌缩）。列宽模型复用 virtual-list 的 HeightCache（横向换轴），全列显式 width（未设宽按预估 120px 定宽截断，文档注明）；约束（告警降级）：多级表头 / span-method / 合计行；固定列须两端布局（left 段 → 非固定段 → right 段）且恒渲染
-- **oas-table-edit `editComponent` 组件编辑器通道**：列配置 `edit-component` 指定任意 value 语义的 WC（库内 form 组件 / 宿主自定义组件同通道，优先于原生 editor）——双击挂载组件并注入当前值、change 提交、Esc 取消。单元格编辑器标准化第一期（非浮层组件；浮层类编辑器后续批次）
+- **oas-table `column-virtual` 横向虚拟滚动（双向虚拟补齐）**：非固定列窗口化——DOM 只渲染窗口列 th/td，窗口外列以占位格 colSpan 归并（宽度由 colgroup 对应列求和，`table-layout: fixed` 强制启用——auto 布局把 col 宽当建议忽略、总宽塌缩）。列宽模型复用 virtual-list 的 HeightCache（横向换轴），全列显式 width（未设宽按预估 100px 定宽截断，文档注明）；约束（告警降级）：多级表头 / span-method / 合计行；固定列须两端布局（left 段 → 非固定段 → right 段）且恒渲染
+- **oas-table-edit `editComponent` 组件编辑器通道**：列配置 `editComponent`（columns JSON 字段）指定任意 value 语义的 WC（库内 form 组件 / 宿主自定义组件同通道，优先于原生 editor）——双击挂载组件并注入当前值、`oas-change`/`change` 提交、Esc 取消。单元格编辑器标准化第一期（非浮层组件；浮层类编辑器后续批次）
 
 ## [2.5.7] - 2026-09-27
 

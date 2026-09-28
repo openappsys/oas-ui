@@ -2911,7 +2911,7 @@
     "attrs": {
       "bordered": "完整边框：单元格网格描边（外框由组件自带）",
       "checkable": "行选择开关：存在即多选（复选框 + 全选头）；`=\"radio\"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1",
-      "columns": "列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）",
+      "columns": "列配置 [{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions? }]，JSON 字符串（attribute 声明式通道；property 赋值优先）",
       "data": "行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）",
       "editable": "行内编辑开关（需配合列配置 `editable: true`；操作列 `actions: true` 同理）",
       "edit-controlled": "受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data`",

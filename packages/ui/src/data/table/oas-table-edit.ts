@@ -38,8 +38,6 @@ export interface TableEditHost {
   ): void
   /** 行数据（提交回写时经此取当前全量） */
   readonly data: Array<Record<string, unknown>>
-  /** 前置非数据列数（行拖拽手柄列 + 勾选列）：数据列索引 → tr 内 td 索引的换算基准 */
-  leadingColumnCount(): number
 }
 
 /** 行内编辑进行中的单元格状态（同一时刻至多一格在编辑） */
@@ -284,7 +282,9 @@ export class TableEditController implements ReactiveController, TableEditCapabil
       editor: col.editComponent ? 'component' : col.editor === 'select' ? 'select' : 'input',
       componentEl: col.editComponent ? (editor as HTMLElement) : null,
     }
-    editor.focus()
+    // preventScroll：默认聚焦会让浏览器 scrollIntoView 编辑器（行虚拟下产生微 scroll →
+    // 滚动重建路径 settleEdit 静默拆掉刚打开的编辑器——双击进编辑 30ms 内即被拆除，实测复现）
+    editor.focus({ preventScroll: true })
     if (editor instanceof HTMLInputElement) editor.select()
     this.refreshActionCells()
   }
@@ -310,7 +310,8 @@ export class TableEditController implements ReactiveController, TableEditCapabil
       }
     })
     input.addEventListener('click', (e) => e.stopPropagation())
-    input.addEventListener('blur', (e: FocusEvent) => this.handleEditorBlur(e))
+    // focusout（composed）而非 blur：shadow DOM 内部控件失焦时 blur 不跨边界，focusout 可冒泡
+    input.addEventListener('focusout', (e: FocusEvent) => this.handleEditorBlur(e))
     return input
   }
 
@@ -337,7 +338,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
       }
     })
     select.addEventListener('click', (e) => e.stopPropagation())
-    select.addEventListener('blur', (e: FocusEvent) => this.handleEditorBlur(e))
+    select.addEventListener('focusout', (e: FocusEvent) => this.handleEditorBlur(e))
     return select
   }
 
@@ -356,10 +357,10 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     const invalid = err === false || (typeof err === 'string' && err.trim() !== '')
     this.renderEditError(st, invalid ? (typeof err === 'string' ? err : undefined) : undefined)
     if (invalid) {
-      // 校验失败：保持编辑态、不提交（编辑器仍可编辑重试）
+      // 校验失败：保持编辑态、不提交（编辑器仍可编辑重试）；preventScroll 同 enterEdit（防微滚拆编辑）
       st.td.dataset.invalid = 'true'
-      ;(st.componentEl as HTMLElement | null)?.focus?.()
-      st.td.querySelector<HTMLInputElement | HTMLSelectElement>('input, select')?.focus()
+      ;(st.componentEl as HTMLElement | null)?.focus?.({ preventScroll: true })
+      st.td.querySelector<HTMLInputElement | HTMLSelectElement>('input, select')?.focus({ preventScroll: true })
       return
     }
     st.td.removeAttribute('data-invalid')
@@ -435,9 +436,19 @@ export class TableEditController implements ReactiveController, TableEditCapabil
 
   private readEditorValue(st: EditState): string {
     if (st.editor === 'component') {
-      // 组件编辑器：value **attribute** 语义（WC 公共契约最稳——property 通道各组件不一）
-      const el = st.td.querySelector<HTMLElement>('.cell-editor-component')
-      return el?.getAttribute('value') ?? st.oldValue
+      // 组件编辑器读值优先级：getFormValue()（库内 form 组件 form-associated 钩子）→
+      // value property（宿主自定义 WC 常见形态）→ value attribute 兜底。
+      // 库内组件用户输入不回写 attribute，只读 attribute 会拿到初始值（review 实抓的假绿根因）
+      const el = st.componentEl ?? st.td.querySelector<HTMLElement>('.cell-editor-component')
+      if (!el) return st.oldValue
+      const withHook = el as unknown as { getFormValue?: () => unknown }
+      if (typeof withHook.getFormValue === 'function') {
+        const v = withHook.getFormValue()
+        if (v !== null && v !== undefined) return String(v)
+      }
+      const prop = (el as unknown as { value?: unknown }).value
+      if (prop !== undefined && prop !== null) return String(prop)
+      return el.getAttribute('value') ?? st.oldValue
     }
     if (st.editor === 'select') {
       const sel = st.td.querySelector<HTMLSelectElement>('select.cell-editor')
@@ -449,30 +460,44 @@ export class TableEditController implements ReactiveController, TableEditCapabil
 
   /**
    * 组件编辑器（editComponent 通道）：创建对应 WC、注入初值与提交/取消语义。
-   * 契约（最小集）：组件支持 **value attribute** 读写当前值、派发 change 事件提交、Esc 键取消。
-   * 库内 form 组件天然满足（attribute 反射到内部控件）。注意：读值走 attribute（property 通道各组件不一）。
+   * 契约（最小集）：可读当前值（getFormValue() / value property / value attribute 三级兜底）、
+   * 提交事件（oas-change 或 change 二者其一）、Esc 取消。
+   * 库内 form 组件天然满足（派发 oas-change、值经 getFormValue 可读）；宿主自定义 WC 常以
+   * value property + 原生 change 接入。多行编辑器（textarea 内核）Enter 让路换行，提交走失焦。
    */
   private buildFormComponentEditor(col: TableColumn, key: string, value: string): HTMLElement {
     const el = document.createElement(col.editComponent!) as HTMLElement
     el.className = 'cell-editor cell-editor-component'
     el.setAttribute('part', 'cell-editor')
+    // 初值双注入：attribute（attribute-only 契约组件）+ property（宿主自定义 WC 多为 property 型，
+    // 无 attribute→property 同步，只写 attribute 会让 property 停在类型默认值）
     el.setAttribute('value', value)
+    ;(el as unknown as { value?: unknown }).value = value
     el.setAttribute('aria-label', this.hostEl.translateText('table.editCell', { column: col.title, key }))
-    el.addEventListener('change', (e) => {
+    // 并听 oas-change（库内组件经 core emit 统一 oas- 前缀）与原生 change（宿主自定义 WC 常用）：
+    // submitEdit 的 editState 空守卫保证同名双派发时第二次调用幂等
+    const submit = (e: Event): void => {
       e.stopPropagation()
       this.submitEdit()
-    })
+    }
+    el.addEventListener('oas-change', submit)
+    el.addEventListener('change', submit)
     el.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
         this.cancelEdit()
       } else if (e.key === 'Enter') {
+        // 多行编辑器（textarea 内核）Enter 让路换行：提交交给失焦（focusout）/change
+        const multiline = el instanceof HTMLTextAreaElement || el.shadowRoot?.querySelector('textarea') != null
+        if (multiline) return
         e.preventDefault()
         this.submitEdit()
       }
     })
     el.addEventListener('click', (e) => e.stopPropagation())
-    el.addEventListener('blur', (e: FocusEvent) => this.handleEditorBlur(e))
+    // focusout（composed）而非 blur：编辑器为自定义元素时焦点落在 shadow 内部控件上，
+    // blur 不跨 shadow 边界，宿主上的 blur 监听永不触发（点击表格外滞留编辑态）
+    el.addEventListener('focusout', (e: FocusEvent) => this.handleEditorBlur(e))
     return el
   }
 
@@ -512,11 +537,10 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   private refreshActionCells(): void {
     const body = this.hostEl.shadowRoot?.querySelector('tbody')
     if (!body) return
-    const actionIndex = this.hostEl.effectiveColumns().findIndex((c) => c.actions)
-    if (actionIndex < 0) return
-    const offset = this.tdOffset(actionIndex)
+    const actionCol = this.hostEl.effectiveColumns().find((c) => c.actions)
+    if (!actionCol) return
     for (const tr of body.querySelectorAll('tr.row')) {
-      const td = tr.querySelectorAll('td')[offset]
+      const td = tr.querySelector(`td[data-col="${CSS.escape(actionCol.key)}"]`)
       if (td) this.renderActionCell(td as HTMLTableCellElement, tr as HTMLTableRowElement)
     }
   }
@@ -542,10 +566,9 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   }
 
   private cellOf(tr: HTMLTableRowElement, colKey: string): HTMLTableCellElement | null {
-    const colIndex = this.hostEl.effectiveColumns().findIndex((c) => c.key === colKey)
-    if (colIndex < 0) return null
-    const td = tr.querySelectorAll('td')[this.tdOffset(colIndex)]
-    return (td as HTMLTableCellElement | undefined) ?? null
+    // 按 data-col 查询（与 applyRowMerge 同范式）：column-virtual 下 tr 内 td 序列含占位格
+    // （colSpan 归并），「索引 = 列索引 + 前置列数」的换算会错位到占位格/错误列
+    return tr.querySelector<HTMLTableCellElement>(`td[data-col="${CSS.escape(colKey)}"]`)
   }
 
   private rowKeyOf(td: HTMLTableCellElement): string {
@@ -557,11 +580,6 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     const body = this.hostEl.shadowRoot?.querySelector('tbody')
     if (!body) return -1
     return [...body.querySelectorAll('tr.row')].indexOf(tr)
-  }
-
-  /** 数据列 td 在 tr 内的索引（前置列 = 行拖拽手柄列 + 勾选列，由宿主统一给出） */
-  private tdOffset(colIndex: number): number {
-    return colIndex + this.hostEl.leadingColumnCount()
   }
 
   /** 按行键在数据树中找行对象（提交时回写用） */
