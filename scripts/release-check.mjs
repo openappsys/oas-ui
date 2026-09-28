@@ -63,17 +63,21 @@ try {
   // tag 不存在（git show 抛错）→ 未打，仅校验当前磁盘即可
 }
 
-// 3b) tag 已存在时必须指向 HEAD——否则发布内容落后于最后修复
-//     （曾发生：tag 打完后又提交了门禁修复，版本校验照过、发布漏带修复）
+// 3b) tag 已存在且不指向 HEAD 时警告（不拦截）：列出 tag 之后的提交清单。
+//     防的是「tag 打完后又提交了本属于本 release 的修复 → 版本校验照过、发布漏带修复」；
+//     但「tag 后接续做与本 release 无关的工作」同样合法，脚本无法区分二者，
+//     只能把清单摆出来交人判断——若清单里有本 release 的修复，删 tag 重打：
+//     git tag -d v<版本> && git tag -a v<版本> -m "v<版本>"
 if (tagExists) {
   const tagSha = execSync(`git rev-list -n 1 "v${version}"`, { encoding: 'utf8' }).trim()
   const head = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim()
   if (tagSha !== head) {
-    console.error(
-      `✗ tag v${version} 指向 ${tagSha.slice(0, 9)}，落后 HEAD ${head.slice(0, 9)}——` +
-        `发布将漏带其后的提交。请删 tag 重打：git tag -d v${version} && git tag -a v${version} -m "v${version}"`,
+    const gap = execSync(`git log --oneline "v${version}"..HEAD`, { encoding: 'utf8' }).trim()
+    console.warn(
+      `⚠ [release-check] tag v${version} 指向 ${tagSha.slice(0, 9)}，非 HEAD ${head.slice(0, 9)}。` +
+        `tag 之后的提交（发布不会包含它们）：\n${gap}\n` +
+        `若其中有本属于 v${version} 的修复，请删 tag 重打后再推；若均为无关新工作，可忽略本警告。`,
     )
-    fail++
   }
 }
 
