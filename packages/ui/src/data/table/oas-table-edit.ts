@@ -1,6 +1,6 @@
 import type { ReactiveController } from '@oas-ui/core'
 import { editPath } from '@oas-ui/icons'
-import type { TableColumn, TableEditCapability } from './oas-table.js'
+import type { EditOption, TableColumn, TableEditCapability } from './oas-table.js'
 // 行内交互宿主排除清单：双击进编辑判定与行点击共用同一份（单一事实来源，
 // 见 oas-table-interactive.js 的维护纪律注释——库内新增交互型组件须同步该清单）
 import { ROW_INTERACTIVE_EXCLUSION } from './oas-table-interactive.js'
@@ -254,13 +254,18 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     if (!tr) return
     const key = tr.getAttribute('data-key') ?? ''
     const row = this.findDataRow(key) ?? {}
+    // 编辑前原值（字符串形态）：multi-select 数组天然 join 为逗号形态展示
     const oldValue = String(row[colKey] ?? '')
     const displayIndex = this.displayIndexOf(tr)
+    // 编辑器分派：editComponent 显式指定 > 列 type 专属编辑器（select 通道 / checkbox 开关）>
+    // editor 声明（select）> 默认原生 input
     const editor: HTMLInputElement | HTMLSelectElement | HTMLElement = col.editComponent
       ? this.buildFormComponentEditor(col, key, oldValue)
-      : col.editor === 'select'
-        ? this.buildSelectEditor(col, key, oldValue)
-        : this.buildInputEditor(col, key, oldValue)
+      : col.type === 'checkbox'
+        ? this.buildCheckboxEditor(col, key, oldValue)
+        : col.type === 'select' || col.editor === 'select'
+          ? this.buildSelectEditor(col, key, oldValue)
+          : this.buildInputEditor(col, key, oldValue)
     // 不可见占位：保留原单元格文本的布局贡献（auto 表格布局下列宽/行高与常态逐像素一致），
     // 编辑器绝对定位覆于其上零贡献——进/出编辑不撑列、不挤邻列、不跳行高
     const sizer = document.createElement('span')
@@ -279,8 +284,14 @@ export class TableEditController implements ReactiveController, TableEditCapabil
       row,
       td,
       oldValue,
-      editor: col.editComponent ? 'component' : col.editor === 'select' ? 'select' : 'input',
-      componentEl: col.editComponent ? (editor as HTMLElement) : null,
+      editor: col.editComponent
+        ? 'component'
+        : col.type === 'checkbox'
+          ? 'component'
+          : col.type === 'select' || col.editor === 'select'
+            ? 'select'
+            : 'input',
+      componentEl: col.editComponent || col.type === 'checkbox' ? (editor as HTMLElement) : null,
     }
     // preventScroll：默认聚焦会让浏览器 scrollIntoView 编辑器（行虚拟下产生微 scroll →
     // 滚动重建路径 settleEdit 静默拆掉刚打开的编辑器——双击进编辑 30ms 内即被拆除，实测复现）
@@ -320,7 +331,8 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     select.className = 'cell-editor'
     select.setAttribute('part', 'cell-editor')
     select.setAttribute('aria-label', this.hostEl.translateText('table.editCell', { column: col.title, key }))
-    for (const opt of col.editOptions ?? []) {
+    // 选项来源：显式 editOptions 优先；type=select 列把展示 options 同步为编辑选项（同一份选项语义）
+    for (const opt of this.editOptionsOf(col)) {
       const o = document.createElement('option')
       o.value = String(opt.value)
       o.textContent = opt.label
@@ -343,6 +355,53 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   }
 
   /**
+   * select 通道的编辑选项：显式 editOptions 优先；type=select/multi-select 列回落展示 options
+   *（options 与 editOptions 是同一份选项语义的两种声明位置）。
+   */
+  private editOptionsOf(col: TableColumn): EditOption[] {
+    if (Array.isArray(col.editOptions) && col.editOptions.length > 0) return col.editOptions
+    if (col.type === 'select' || col.type === 'multi-select') {
+      return (col.options ?? []).map((o) => ({ label: o.label, value: o.value }))
+    }
+    return []
+  }
+
+  /**
+   * checkbox 类型列的编辑器（editComponent 通道挂 oas-switch，非浮层 ✓）：
+   * true-value/false-value 固定 'true'/'false'，读值链（getFormValue → value property →
+   * value attribute）在开/关两态均得确定性字符串。
+   */
+  private buildCheckboxEditor(col: TableColumn, key: string, value: string): HTMLElement {
+    const el = document.createElement('oas-switch') as HTMLElement
+    el.className = 'cell-editor cell-editor-component'
+    el.setAttribute('part', 'cell-editor')
+    el.setAttribute('true-value', 'true')
+    el.setAttribute('false-value', 'false')
+    const checked = value === 'true' || value === '1'
+    el.setAttribute('value', checked ? 'true' : 'false')
+    if ('value' in el) (el as unknown as { value?: unknown }).value = checked ? 'true' : 'false'
+    el.setAttribute('aria-label', this.hostEl.translateText('table.editCell', { column: col.title, key }))
+    const submit = (e: Event): void => {
+      e.stopPropagation()
+      this.submitEdit()
+    }
+    el.addEventListener('oas-change', submit)
+    el.addEventListener('change', submit)
+    el.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        this.cancelEdit()
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        this.submitEdit()
+      }
+    })
+    el.addEventListener('click', (e) => e.stopPropagation())
+    el.addEventListener('focusout', (e: FocusEvent) => this.handleEditorBlur(e))
+    return el
+  }
+
+  /**
    * 提交当前编辑（Enter / blur / 操作列保存）：
    * - 空值 → 还原旧值（默认非破坏）并派发 oas-edit-cancel
    * - 值变化且非空 → 非受控模式回写 data 并派发 oas-edit；受控模式仅派发 oas-edit
@@ -353,7 +412,14 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     if (!st) return
     const value = this.readEditorValue(st)
     const col = this.hostEl.effectiveColumns().find((c) => c.key === st.colKey)
-    const err = col?.validate ? col.validate(value, st.row) : undefined
+    // 校验：自定义 validate 优先；type=date 且未自定义时内置 YYYY-MM-DD 形态校验
+    //（失败无自定义文案，保持编辑态 + data-invalid 红框提示）
+    let err: string | boolean | undefined
+    if (col?.validate) {
+      err = col.validate(value, st.row)
+    } else if (col?.type === 'date' && value !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      err = false
+    }
     const invalid = err === false || (typeof err === 'string' && err.trim() !== '')
     this.renderEditError(st, invalid ? (typeof err === 'string' ? err : undefined) : undefined)
     if (invalid) {
@@ -507,13 +573,46 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     return el
   }
 
-  /** 数字列编辑回写保持数值类型（非字符串化） */
-  private coerceEditValue(st: EditState, value: string): string | number {
-    const old = st.row[st.colKey]
-    if (typeof old === 'number' && value !== '' && Number.isFinite(Number(value))) {
-      return Number(value)
+  /**
+   * 编辑提交值的类型回写：按列 type 归一化——
+   * - number/currency：数字（非法输入原样字符串交由展示端空态回落）；
+   * - progress：数字夹取 0-100；rate：数字夹取 0-5；
+   * - multi-select：逗号（中英文逗号均可）拆分数组（trim 空段）；
+   * - checkbox：布尔；
+   * - 其余：现状行为（旧值 number 且新值为有限数字 → 保持 number 类型回写）。
+   */
+  private coerceEditValue(st: EditState, value: string): string | number | boolean | string[] {
+    const col = this.hostEl.effectiveColumns().find((c) => c.key === st.colKey)
+    switch (col?.type) {
+      case 'number':
+      case 'currency': {
+        const n = Number(value)
+        return Number.isFinite(n) ? n : value
+      }
+      case 'progress': {
+        const n = Number(value)
+        return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : value
+      }
+      case 'rate': {
+        const n = Number(value)
+        return Number.isFinite(n) ? Math.min(5, Math.max(0, n)) : value
+      }
+      case 'multi-select':
+        return value
+          .split(/[,，]/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+      case 'checkbox':
+        return value === 'true' || value === 'on' || value === '1'
+      default: {
+        // 数字列先例（type 未声明列保持现状）：旧值 number 且新值合法数字 → 数值回写
+        const old = st.row[st.colKey]
+        if (typeof old === 'number' && value !== '' && Number.isFinite(Number(value))) {
+          return Number(value)
+        }
+        return value
+      }
     }
-    return value
   }
 
   private editDetail(st: EditState, value: string): { rowIndex: number; key: string; column: string; value: string } {

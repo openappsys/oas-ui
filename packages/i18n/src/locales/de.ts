@@ -156,6 +156,7 @@ export const de: LocaleMessages = {
   'table.editHint': 'Doppelklick zum Bearbeiten',
   'table.filter': 'Filtern',
   'table.clear': 'Leeren',
+  'table.groupEmpty': '(leer)',
   // list (Liste)
   'list.empty': 'Keine Daten',
   // tree (Baumstruktur)

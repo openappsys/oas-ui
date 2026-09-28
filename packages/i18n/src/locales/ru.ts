@@ -156,6 +156,7 @@ export const ru: LocaleMessages = {
   'table.editHint': 'Дважды нажмите, чтобы изменить',
   'table.filter': 'Фильтр',
   'table.clear': 'Очистить',
+  'table.groupEmpty': '(пусто)',
   // list (список)
   'list.empty': 'Нет данных',
   // tree (дерево)

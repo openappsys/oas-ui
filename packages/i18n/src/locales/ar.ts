@@ -156,6 +156,7 @@ export const ar: LocaleMessages = {
   'table.editHint': 'انقر مرتين للتحرير',
   'table.filter': 'تصفية',
   'table.clear': 'مسح',
+  'table.groupEmpty': '(فارغ)',
   // list (قائمة)
   'list.empty': 'لا توجد بيانات',
   // tree (شجرة)

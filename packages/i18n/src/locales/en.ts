@@ -121,6 +121,7 @@ export const en: LocaleMessages = {
   'table.editHint': 'Double-click to edit',
   'table.filter': 'Filter',
   'table.clear': 'Clear',
+  'table.groupEmpty': '(empty)',
   'list.empty': 'No data',
   'tree.expand': 'Expand/Collapse',
   'tree.select': 'Select {label}',
