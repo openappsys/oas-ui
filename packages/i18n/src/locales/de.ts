@@ -158,6 +158,11 @@ export const de: LocaleMessages = {
   'table.clear': 'Leeren',
   // list (Liste)
   'list.empty': 'Keine Daten',
+  // kanban (Kanban-Board)
+  'kanban.emptyColumn': 'Karten hierher ziehen',
+  'kanban.moveCard': 'Karte verschieben',
+  'kanban.moveUp': 'Nach oben',
+  'kanban.moveDown': 'Nach unten',
   // tree (Baumstruktur)
   'tree.expand': 'Ausklappen/Einklappen',
   'tree.select': '{label} auswählen',

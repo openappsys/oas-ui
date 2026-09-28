@@ -158,6 +158,11 @@ export const ar: LocaleMessages = {
   'table.clear': 'مسح',
   // list (قائمة)
   'list.empty': 'لا توجد بيانات',
+  // kanban (لوحة كانبان)
+  'kanban.emptyColumn': 'اسحب البطاقات إلى هنا',
+  'kanban.moveCard': 'نقل البطاقة',
+  'kanban.moveUp': 'نقل لأعلى',
+  'kanban.moveDown': 'نقل لأسفل',
   // tree (شجرة)
   'tree.expand': 'توسيع/طي',
   'tree.select': 'تحديد {label}',

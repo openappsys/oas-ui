@@ -158,6 +158,11 @@ export const ru: LocaleMessages = {
   'table.clear': 'Очистить',
   // list (список)
   'list.empty': 'Нет данных',
+  // kanban (канбан-доска)
+  'kanban.emptyColumn': 'Перетащите карточки сюда',
+  'kanban.moveCard': 'Переместить карточку',
+  'kanban.moveUp': 'Переместить вверх',
+  'kanban.moveDown': 'Переместить вниз',
   // tree (дерево)
   'tree.expand': 'Развернуть/Свернуть',
   'tree.select': 'Выбрать {label}',
