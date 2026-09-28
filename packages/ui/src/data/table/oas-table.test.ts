@@ -3103,13 +3103,15 @@ describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 
   }
   const wrapOf = (el: OASTable): HTMLElement => el.shadowRoot!.querySelector('.table-scroll')!
   const dataKeys = (el: OASTable, rowIdx = 0): string[] =>
-    [...el.shadowRoot!.querySelectorAll('tbody tr.row')[rowIdx]!.querySelectorAll('td[data-col]')].map((td) =>
-      td.getAttribute('data-col'),
+    [...el.shadowRoot!.querySelectorAll('tbody tr.row')[rowIdx]!.querySelectorAll('td[data-col]')].map(
+      (td) => td.getAttribute('data-col')!,
     )
   const headKeys = (el: OASTable): string[] =>
-    [...el.shadowRoot!.querySelectorAll('thead th[data-key]')].map((th) => th.getAttribute('data-key'))
+    [...el.shadowRoot!.querySelectorAll('thead th[data-key]')].map((th) => th.getAttribute('data-key')!)
   const placeholders = (el: OASTable, rowIdx = 0): HTMLTableCellElement[] => [
-    ...el.shadowRoot!.querySelectorAll('tbody tr.row')[rowIdx]!.querySelectorAll('td.col-virtual-placeholder'),
+    ...el
+      .shadowRoot!.querySelectorAll('tbody tr.row')
+      [rowIdx]!.querySelectorAll<HTMLTableCellElement>('td.col-virtual-placeholder'),
   ]
   const scrollX = async (el: OASTable, left: number): Promise<void> => {
     const w = wrapOf(el)
