@@ -1096,7 +1096,7 @@ describe('OASTable 行内编辑（inline editing）', () => {
     cells(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const input = cellInput(el, 0, 0)!
     input.value = '张四'
-    input.dispatchEvent(new FocusEvent('blur'))
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     expect(el.getAttribute('data')).toContain('"张四"')
     expect(cells(el)[0]!.textContent).toBe('张四')
     expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张四' })
@@ -1109,7 +1109,7 @@ describe('OASTable 行内编辑（inline editing）', () => {
     cells(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const input = cellInput(el, 0, 0)!
     input.value = ''
-    input.dispatchEvent(new FocusEvent('blur'))
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     expect(el.getAttribute('data')).not.toContain('"张四"')
     expect(cells(el)[0]!.textContent).toBe('张三')
     expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张三' })
@@ -2951,7 +2951,7 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
   const cellOf = (el: OASTable, row: number, col: number): HTMLElement =>
     ([...el.shadowRoot!.querySelectorAll('tr.row td')] as HTMLElement[])[row * 2 + col]!
 
-  it('editComponent 优先于 editor：双击挂载 oas-input（cell-editor-component）并注入初值', () => {
+  it('editComponent 优先于 editor：双击挂载 oas-input（cell-editor-component）并双通道注入初值', () => {
     const el = compMount()
     const td = cellOf(el, 0, 0)
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
@@ -2959,10 +2959,11 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     expect(comp, '组件编辑器挂载（而非原生 input.cell-editor）').not.toBeNull()
     expect(td.querySelector('input.cell-editor')).toBeNull()
     expect(comp!.getAttribute('value')).toBe('张三')
+    expect((comp as unknown as { value: string }).value).toBe('张三')
     expect(comp!.classList.contains('cell-editor')).toBe(true)
   })
 
-  it('组件 value 变化 + change 事件 → 提交并回写 data、派发 oas-edit', () => {
+  it('真实链路提交：内部 input 输入 → blur → oas-change → 提交回写 data、派发 oas-edit', () => {
     const el = compMount()
     type EditDetail = { value: string }
     let detail: EditDetail | null = null
@@ -2972,14 +2973,37 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     const td = cellOf(el, 0, 0)
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const comp = td.querySelector<HTMLElement>('oas-input.cell-editor-component')!
-    // 组件内部 value 属性变化 + change 事件（oas-input 的 value 属性写后内部 input 同步——
-    // 此处直接驱动其 change 派发路径：先设属性再派发，编辑控制器读组件 value）
-    comp.setAttribute('value', '新名字')
-    comp.dispatchEvent(new Event('change', { bubbles: true }))
+    // 驱动 oas-input 真实提交链路：用户输入落在内部 input（不回写宿主 attribute），
+    // blur 触发 commitChange 与提交基线比对后派发 oas-change——编辑控制器监听 oas-change 提交，
+    // 读值经 getFormValue()（库内 form-associated 钩子）取新值。
+    // 旧版（合成 setAttribute + 手工 change）恰好绕开两个断点，属假绿（review 实抓）
+    const inner = comp.shadowRoot!.querySelector('input')!
+    inner.value = '新名字'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    inner.dispatchEvent(new FocusEvent('blur'))
     // TS 闭包窄化：回调内赋值对控制流不可见，读值前显式还原类型
     const d = detail as EditDetail | null
     expect(d?.value).toBe('新名字')
     // 非受控回写：data 的 name 字段更新
+    expect(JSON.parse(el.getAttribute('data')!)[0].name).toBe('新名字')
+  })
+
+  it('原生 change 事件契约：库内组件 oas-change 与宿主原生 change 并听', () => {
+    const el = compMount()
+    let edited = 0
+    el.addEventListener('oas-edit', () => edited++)
+    const td = cellOf(el, 0, 0)
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const comp = td.querySelector<HTMLElement>('oas-input.cell-editor-component')!
+    // oas-input 有 getFormValue 钩子（读内部 input）：property 写值不影响读值——
+    // 库内组件的提交事件是 oas-change（真实链路用例覆盖），此处验证同名原生 change
+    // 派发同样被并听（幂等守卫下重复提交安全）
+    const inner = comp.shadowRoot!.querySelector('input')!
+    inner.value = '新名字'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    comp.dispatchEvent(new Event('change', { bubbles: true }))
+    comp.dispatchEvent(new CustomEvent('oas-change', { bubbles: true }))
+    expect(edited).toBe(1)
     expect(JSON.parse(el.getAttribute('data')!)[0].name).toBe('新名字')
   })
 
@@ -2999,7 +3023,7 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     expect(cellOf(el, 0, 0).textContent).toContain('张三')
   })
 
-  it('宿主自定义 WC（最小 value 契约）同通道可用', () => {
+  it('宿主自定义 WC（value property 型）：双通道初值注入 + property 写值 + 原生 change 提交', () => {
     class MiniEditor extends HTMLElement {
       value = ''
     }
@@ -3013,25 +3037,125 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const comp = td.querySelector<HTMLElement>('mini-editor-x.cell-editor-component')
     expect(comp, '宿主自定义组件挂载').not.toBeNull()
+    // 双通道注入：attribute（attribute-only 契约）+ property（property 型 WC 无
+    // attribute→property 同步，只写 attribute 会停在类型默认值）
     expect(comp!.getAttribute('value')).toBe('李四')
+    expect((comp as unknown as { value: string }).value).toBe('李四')
+    ;(comp as unknown as { value: string }).value = '王五'
+    comp!.dispatchEvent(new Event('change', { bubbles: true }))
+    expect(JSON.parse(el.getAttribute('data')!)[1].name).toBe('王五')
   })
 })
 
-describe('editComponent 诊断', () => {
-  it('诊断：setAttribute 后组件 value property 与 attribute 读取', async () => {
-    const el = document.createElement('oas-input')
-    document.body.appendChild(el)
-    el.setAttribute('value', 'abc')
-    const host = el as unknown as { value?: unknown; shadowRoot: ShadowRoot }
-    console.log('attr value =', el.getAttribute('value'))
-    console.log('property value =', JSON.stringify(host.value))
-    console.log('inner input value =', host.shadowRoot?.querySelector('input')?.value)
-    el.setAttribute('value', 'xyz')
-    console.log(
-      'after set: property =',
-      JSON.stringify(host.value),
-      'inner =',
-      host.shadowRoot?.querySelector('input')?.value,
+describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 / RTL 标准化）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const N = 60
+  const wideCols = (extra: Record<string, unknown>[] = []): string =>
+    JSON.stringify(
+      Array.from({ length: N }, (_, i) => ({
+        key: `c${i}`,
+        title: `列${i}`,
+        width: '80px',
+        ...(extra[i] ?? {}),
+      })),
     )
+  const wideRow = (r: number): Record<string, unknown> =>
+    Object.fromEntries(Array.from({ length: N }, (_, i) => [`c${i}`, `${r}-${i}`]))
+  const wideMount = (attrs: Record<string, string> = {}, extraCols: Record<string, unknown>[] = []): OASTable => {
+    const el = new OASTable()
+    el.setAttribute('column-virtual', '')
+    el.setAttribute('columns', wideCols(extraCols))
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 5 }, (_, r) => wideRow(r))))
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    document.body.appendChild(el)
+    return el
+  }
+  const wrapOf = (el: OASTable): HTMLElement => el.shadowRoot!.querySelector('.table-scroll')!
+  const dataKeys = (el: OASTable, rowIdx = 0): string[] =>
+    [...el.shadowRoot!.querySelectorAll('tbody tr.row')[rowIdx]!.querySelectorAll('td[data-col]')].map((td) =>
+      td.getAttribute('data-col'),
+    )
+  const headKeys = (el: OASTable): string[] =>
+    [...el.shadowRoot!.querySelectorAll('thead th[data-key]')].map((th) => th.getAttribute('data-key'))
+  const placeholders = (el: OASTable, rowIdx = 0): HTMLTableCellElement[] => [
+    ...el.shadowRoot!.querySelectorAll('tbody tr.row')[rowIdx]!.querySelectorAll('td.col-virtual-placeholder'),
+  ]
+  const scrollX = async (el: OASTable, left: number): Promise<void> => {
+    const w = wrapOf(el)
+    w.scrollLeft = left
+    w.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 30))
+  }
+  const renderedPlusMerged = (el: OASTable): number =>
+    dataKeys(el).length + placeholders(el).reduce((acc, td) => acc + td.colSpan, 0)
+
+  it('初始窗口裁剪：DOM 只渲染窗口列，占位 colSpan 归并后列数守恒', () => {
+    const el = wideMount()
+    expect(dataKeys(el).length, '窗口列远少于全列').toBeLessThan(N)
+    expect(renderedPlusMerged(el)).toBe(N)
+    expect(dataKeys(el)[0]).toBe('c0')
+  })
+
+  it('横向滚动窗口移动：首列前移、colSpan 归并恒等于全列数', async () => {
+    const el = wideMount()
+    await scrollX(el, 2000)
+    expect(dataKeys(el)[0]).not.toBe('c0')
+    expect(renderedPlusMerged(el)).toBe(N)
+  })
+
+  it('双开（height × column-virtual）横向滚动后 thead 与 tbody 窗口一致（review C2 回归）', async () => {
+    const el = wideMount({ height: '300' })
+    await scrollX(el, 2000)
+    expect(headKeys(el), '表头窗口列与表体窗口列一一对应').toEqual(dataKeys(el))
+  })
+
+  it('前缀扣除：left 固定段宽 > scrollLeft 时窗口不得跳过首列（review I1 回归）', async () => {
+    const el = wideMount({}, [{ fixed: 'left', width: '200px' }])
+    await scrollX(el, 100)
+    expect(dataKeys(el), 'scrollLeft(100) < 前缀宽(200)，窗口仍应从 c0 起').toContain('c0')
+  })
+
+  it('RTL 标准化：负 scrollLeft 与对应正值窗口一致（review I5 回归）', async () => {
+    const el = wideMount()
+    await scrollX(el, 2000)
+    const forward = dataKeys(el)
+    await scrollX(el, -2000)
+    expect(dataKeys(el), '规范 RTL 实现下 scrollLeft 为负，取绝对值应得同一窗口').toEqual(forward)
+  })
+
+  it('setColumnWidth 后列宽缓存即时失效：colgroup 与窗口宽度同步（review I4 回归）', () => {
+    const el = wideMount()
+    el.setColumnWidth('c30', 500)
+    const col = el.shadowRoot!.querySelectorAll('colgroup col')[30] as HTMLElement
+    expect(col.style.width).toBe('500px')
+    expect(renderedPlusMerged(el)).toBe(N)
+  })
+
+  it('expand 列 colgroup 定宽与 sticky 偏移同源（review I2 回归：48/40 双常量收敛）', () => {
+    const rows = Array.from({ length: 5 }, (_, r) => ({ ...wideRow(r), expand: `内容${r}` }))
+    const el = new OASTable()
+    el.setAttribute('column-virtual', '')
+    el.setAttribute('columns', wideCols())
+    el.setAttribute('data', JSON.stringify(rows))
+    document.body.appendChild(el)
+    const cols = el.shadowRoot!.querySelectorAll('colgroup col')
+    expect((cols[cols.length - 1] as HTMLElement).style.width).toBe('40px')
+  })
+
+  it('占位格不入网格导航矩阵：方向键不停在空白合并格（review M4 回归）', () => {
+    const el = wideMount({ 'grid-navigation': '' })
+    const ph = placeholders(el)[0]
+    expect(ph, '初始窗口下存在占位格').toBeTruthy()
+    expect(ph!.getAttribute('role')).toBe('gridcell')
+    expect(ph!.getAttribute('aria-colspan')).toBe(String(ph!.colSpan))
   })
 })

@@ -1204,6 +1204,10 @@ test('table column-virtual 横向虚拟：窗口列渲染 + 占位归并 + 滚�
     const afterScroll = {
       firstDataKey: el.shadowRoot!.querySelector('tbody td[data-col]')?.getAttribute('data-col'),
       fixedVisible: !!el.shadowRoot!.querySelector('td[data-fixed="left"]'),
+      headKeys: [...el.shadowRoot!.querySelectorAll('thead th[data-key]')].map((th) => th.getAttribute('data-key')),
+      firstRowKeys: [
+        ...(el.shadowRoot!.querySelectorAll('tbody tr.row')[0]?.querySelectorAll('td[data-col]') ?? []),
+      ].map((td) => td.getAttribute('data-col')),
     }
 
     // 纵向滚动到底 → 行窗口推移（双开验证）
@@ -1228,5 +1232,90 @@ test('table column-virtual 横向虚拟：窗口列渲染 + 占位归并 + 滚�
   expect(r.fixedVisible, 'left 固定列恒渲染').toBe(true)
   // 滚动后窗口推移（data-col 内容由窗口决定；此处验证窗口列在滚动后仍正确渲染）
   expect(r.afterScroll.fixedVisible, '横向滚动后固定列仍在').toBe(true)
+  expect(r.afterScroll.firstDataKey, '滚动后窗口首列前移（非初始列）').toBeTruthy()
+  expect(r.afterScroll.headKeys.length, '表头窗口列已渲染').toBeGreaterThan(0)
+  expect(
+    r.afterScroll.headKeys,
+    '横向滚动后 thead 与 tbody 首行窗口列一一对应（review C2 回归：双开 thead 滞留旧窗口）',
+  ).toEqual(r.afterScroll.firstRowKeys)
   expect(r.lastRowKeys.length, '纵向滚动后行窗口仍正常').toBeGreaterThan(0)
+})
+
+test('table 编辑 × column-virtual：滚动后双击窗口列，编辑器落在正确格并提交正确列（review C3 回归）', async ({
+  page,
+}) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-edit')
+  // 自建 60 列宽表：editable + editComponent（oas-input 组件编辑器）+ column-virtual
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-edit-colvirtual'
+    el.setAttribute('editable', '')
+    el.setAttribute('column-virtual', '')
+    el.setAttribute(
+      'columns',
+      JSON.stringify(
+        Array.from({ length: 60 }, (_, i) => ({
+          key: `c${i}`,
+          title: `列${i}`,
+          width: '80px',
+          editable: true,
+          editComponent: 'oas-input',
+        })),
+      ),
+    )
+    el.setAttribute(
+      'data',
+      JSON.stringify(
+        Array.from({ length: 8 }, (_, r) =>
+          Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`c${i}`, `${r}-${i}`])),
+        ),
+      ),
+    )
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(() => {
+    const t = document.querySelector('#qa-edit-colvirtual')
+    return !!t && t.shadowRoot!.querySelectorAll('tbody td[data-col]').length > 0
+  })
+  // 横向滚动到中段后取窗口内一个具体列，双击该列单元格
+  const target = await page.evaluate(() => {
+    const t = document.querySelector('#qa-edit-colvirtual')!
+    const scroll = t.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    scroll.scrollLeft = 2400
+    return new Promise<string>((resolve) =>
+      setTimeout(() => resolve(t.shadowRoot!.querySelector('tbody td[data-col]')!.getAttribute('data-col')!), 150),
+    )
+  })
+  // 双击该格 → 组件编辑器挂载在同一 td 内（列窗口占位归并不使索引错位）
+  const opened = await page.evaluate((col) => {
+    const t = document.querySelector('#qa-edit-colvirtual')!
+    const td = t.shadowRoot!.querySelector(`tbody td[data-col="${col}"]`)!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    return new Promise<string | null>((resolve) =>
+      setTimeout(() => {
+        const editor = td.querySelector('oas-input.cell-editor-component')
+        resolve(editor ? td.getAttribute('data-col') : null)
+      }, 150),
+    )
+  }, target)
+  expect(opened, `双击 ${target} 后编辑器落在同格（C3：占位格曾使索引错位到错误列/占位格）`).toBe(target)
+  // 输入新值 → 失焦提交（oas-input 真实链路：内部 input blur → oas-change）→ 回写正确列
+  const submitted = await page.evaluate(async (col) => {
+    const t = document.querySelector('#qa-edit-colvirtual')!
+    const td = t.shadowRoot!.querySelector(`tbody td[data-col="${col}"]`)!
+    const comp = td.querySelector('oas-input.cell-editor-component')!
+    const inner = comp.shadowRoot!.querySelector('input')!
+    inner.value = `已编辑-${col}`
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    inner.dispatchEvent(new FocusEvent('blur'))
+    await new Promise((r) => setTimeout(r, 150))
+    const hostData = JSON.parse(t.getAttribute('data') ?? '[]')
+    return {
+      colValue: (hostData[0] as Record<string, unknown>)[col],
+      editorGone: !td.querySelector('.cell-editor-component'),
+    }
+  }, target)
+  expect(submitted.editorGone, '失焦提交后编辑器退出').toBe(true)
+  expect(submitted.colValue, `值回写到被编辑列 ${target}`).toBe(`已编辑-${target}`)
 })

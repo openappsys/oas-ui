@@ -48,8 +48,11 @@ export interface TableColumn {
   editor?: 'input' | 'select'
   /**
    * 组件编辑器：库内/宿主任意 value 语义的 Web Components tag 名（如 `oas-input` / `oas-date-picker`）。
-   * 设置后优先于 `editor`（原生 input/select 通道）。第一期约定：组件须满足「value 属性读写 + change 事件提交 +
-   * Esc 取消」的最小契约，且为非浮层组件（浮层类 date-picker/select 等的 blur 判定后续批次支持）
+   * 设置后优先于 `editor`（原生 input/select 通道）。最小契约：值可读（`getFormValue()` →
+   * value property → value attribute 三级兜底）+ 提交事件（`oas-change` 或原生 `change` 其一）+
+   * Esc 取消；多行编辑器（textarea 内核）Enter 让路换行。库内 form 组件天然满足；
+   * 非浮层组件第一期约定（浮层类 blur 判定后续批次支持）。
+   * 注意：横向滚动触发列窗口变化时整表重渲染，进行中的编辑会被静默取消（不派 oas-edit-cancel）。
    */
   editComponent?: string
   /** select 编辑器的选项 */
@@ -869,8 +872,6 @@ const CHECK_CELL_WIDTH = 40
 const EXPAND_CELL_WIDTH = 40
 /** 行拖拽手柄列宽度（px；固定列 sticky 偏移的占位，与手写 CSS 宽度同步） */
 const DRAG_CELL_WIDTH = 40
-/** 展开切换列宽（column-virtual 的 colgroup 定宽用；非 col-virtual 模式该列 auto） */
-const EXPAND_TOGGLE_WIDTH = 48
 const FILTER_ICON =
   '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M4.5 6.5h7M6.5 10h3"/></svg>'
 
@@ -953,8 +954,13 @@ export class OASTableBase extends OASElement {
   private wrap: HTMLElement | null = null
   /** column-virtual：非固定列（middle 段）的列宽前缀缓存（复用 virtual-list 的 HeightCache，横向换轴复用） */
   private colWidthCache: HeightCache | null = null
+  /** 列宽缓存归属的 segments 引用（每次 update 重建 segments → 列宽定义变化必然重测，setColumnWidth 即时生效） */
+  private colWidthCacheFor: unknown = null
   /** column-virtual：当前列窗口（middle 段内的 [start, end)） */
   private colWin: { start: number; end: number } = { start: 0, end: 0 }
+  /** column-virtual：容器尺寸观察（视口宽变化 → 可见列数变化 → 重算列窗口） */
+  private colResizeObs: ResizeObserver | null = null
+  private colResizeRaf = 0
   /** column-virtual：叶子列三段分组缓存（update 时刷新；null = 未启用/已降级） */
   private _colSegments: {
     left: TableColumn[]
@@ -1237,6 +1243,18 @@ export class OASTableBase extends OASElement {
       if (th) this.sortBy((th as HTMLElement).getAttribute('data-key') ?? '', (e as MouseEvent).shiftKey)
     })
     this.wrap?.addEventListener('scroll', this.handleScroll, { passive: true })
+    // column-virtual：容器尺寸变化（视口宽 → 可见列数）重算列窗口（与 scroll 同一 rAF 节流口径）
+    if (typeof ResizeObserver !== 'undefined' && this.wrap) {
+      this.colResizeObs ??= new ResizeObserver(() => {
+        if (this.colResizeRaf) return
+        this.colResizeRaf = requestAnimationFrame(() => {
+          this.colResizeRaf = 0
+          const segs = this._colSegments
+          if (segs && this.syncColumnWindow(segs)) this.update()
+        })
+      })
+      this.colResizeObs.observe(this.wrap)
+    }
     // D9 网格导航：keydown 委托到滚动容器（方向键漫游 / Home-End / PageUp-Down / 空格·回车激活）
     this.wrap?.addEventListener('keydown', this.handleGridKeydown)
     // D15 行拖拽：drag 事件委托到 tbody（重渲染只换 tr，tbody 容器稳定）
@@ -1248,6 +1266,11 @@ export class OASTableBase extends OASElement {
     tbody?.addEventListener('dragend', this.handleRowDragEnd)
     this.onCleanup(() => {
       this.wrap?.removeEventListener('scroll', this.handleScroll)
+      this.colResizeObs?.disconnect()
+      if (this.colResizeRaf) {
+        cancelAnimationFrame(this.colResizeRaf)
+        this.colResizeRaf = 0
+      }
       this.wrap?.removeEventListener('keydown', this.handleGridKeydown)
       tbody?.removeEventListener('dragstart', this.handleRowDragStart)
       tbody?.removeEventListener('dragover', this.handleRowDragOver)
@@ -1400,12 +1423,12 @@ export class OASTableBase extends OASElement {
       }
       for (const col of this.effectiveColumns()) {
         const c = document.createElement('col')
-        c.style.width = `${this.colWidthPx(col)}px`
+        c.style.width = `${columnWidth(col)}px`
         cg.appendChild(c)
       }
       if (this._expandable) {
         const c = document.createElement('col')
-        c.style.width = `${EXPAND_TOGGLE_WIDTH}px`
+        c.style.width = `${EXPAND_CELL_WIDTH}px`
         cg.appendChild(c)
       }
       tableEl.insertBefore(cg, tableEl.firstChild)
@@ -2397,11 +2420,6 @@ export class OASTableBase extends OASElement {
     )
   }
 
-  /** 前置非数据列数（行拖拽手柄列 + 勾选列）：编辑能力据此把数据列索引换算为 td 索引 */
-  leadingColumnCount(): number {
-    return (this.rowDragEnabled() ? 1 : 0) + (this.hasAttr('checkable') ? 1 : 0)
-  }
-
   /** 汇总合计配置：表格级 summary 属性（JSON 数组）+ 列级 summary 字段 */
   private buildSummaryConfigs(): SummaryConfig[] {
     const configs: SummaryConfig[] = []
@@ -2758,6 +2776,10 @@ export class OASTableBase extends OASElement {
     for (const tr of this.shadow.querySelectorAll('tbody tr.row')) tr.setAttribute('role', 'row')
     for (const td of this.shadow.querySelectorAll<HTMLTableCellElement>('tbody tr.row td')) {
       td.setAttribute('role', 'gridcell')
+      // 占位格（column-virtual 窗口外列的 colSpan 归并）：ARIA 补 aria-colspan，读屏按合并列数播报
+      if (td.classList.contains('col-virtual-placeholder') && td.colSpan > 1) {
+        td.setAttribute('aria-colspan', String(td.colSpan))
+      }
       td.tabIndex = -1
       // 行内交互控件收归 -1（沿用网格单停靠点惯例）：方向键移动单元格焦点，Enter/Space 激活控件
       for (const el of td.querySelectorAll<HTMLElement>('button, a, input, select, textarea, [tabindex]')) {
@@ -2766,9 +2788,14 @@ export class OASTableBase extends OASElement {
     }
   }
 
-  /** 可导航单元格矩阵：当前渲染的数据行 × 该行 td 列表 */
+  /** 可导航单元格矩阵：当前渲染的数据行 × 该行 td 列表（column-virtual 占位格不入矩阵——
+      空白合并格不作键盘停靠点，方向键跨过它直达窗口列） */
   private gridMatrix(): HTMLTableCellElement[][] {
-    return this.dragRows().map((tr) => [...tr.querySelectorAll<HTMLTableCellElement>('td')])
+    return this.dragRows().map((tr) =>
+      [...tr.querySelectorAll<HTMLTableCellElement>('td')].filter(
+        (td) => !td.classList.contains('col-virtual-placeholder'),
+      ),
+    )
   }
 
   private gridCellAt(row: number, col: number): HTMLTableCellElement | null {
@@ -2984,56 +3011,35 @@ export class OASTableBase extends OASElement {
     return { left, middle, right }
   }
 
-  /** 列宽像素解析：width 形如 "120" / "120px" → 数值；缺省/非法 → 预估 120（横向虚拟建议全列显式 width） */
-  private colWidthPx(col: TableColumn): number {
-    const raw = String(col.width ?? '').trim()
-    const n = Number.parseFloat(raw)
-    return Number.isFinite(n) && n > 0 ? n : 120
-  }
-
   /**
    * column-virtual 列窗口同步：scrollLeft / 视口宽 / 列宽变化时重算 middle 段窗口；
-   * 窗口变化时触发整表重渲染（行虚拟窗口在重渲染中保留）。rAF 由 scroll handler 节流。
+   * 窗口变化时返回 true（由调用方触发重渲染）。rAF 由 scroll/resize handler 节流。
+   * 列宽缓存按 segments 引用失效（每次 update 重建 segments，列宽定义变化必然重测）。
    */
   private syncColumnWindow(segments: { left: TableColumn[]; middle: TableColumn[]; right: TableColumn[] }): boolean {
     const w = this.wrap
     if (!w) return false
     const n = segments.middle.length
-    if (!this.colWidthCache || this.colWidthCache.length !== n) {
+    if (!this.colWidthCache || this.colWidthCacheFor !== segments) {
       this.colWidthCache = new HeightCache()
-      this.colWidthCache.configure(n, 120)
-      for (let i = 0; i < n; i++) this.colWidthCache.measure(i, this.colWidthPx(segments.middle[i]!))
+      this.colWidthCache.configure(n, 100)
+      for (let i = 0; i < n; i++) this.colWidthCache.measure(i, columnWidth(segments.middle[i]!))
+      this.colWidthCacheFor = segments
     }
     const prefix: number[] = [0]
     for (let i = 0; i < n; i++) prefix.push((prefix[i] ?? 0) + this.colWidthCache.heightAt(i))
-    const win = computeDynamicWindow(prefix, n, w.scrollLeft, w.clientWidth, 2)
+    // middle 段内容坐标换算：前置列（drag/check）+ left 固定段占据前缀宽 P，
+    // 视口起点 scrollLeft 对应 middle 内容坐标 scrollLeft - P（不扣会窗口偏右、固定列右侧露空洞）
+    const leading =
+      (this.rowDragEnabled() ? DRAG_CELL_WIDTH : 0) +
+      (this.hasAttr('checkable') ? CHECK_CELL_WIDTH : 0) +
+      segments.left.reduce((acc, c) => acc + columnWidth(c), 0)
+    // RTL 下规范实现 scrollLeft 为负值（Chrome/Firefox/Safari 现代版一致），取绝对值 = 从初始端滚出距离
+    const start = Math.max(0, Math.abs(w.scrollLeft) - leading)
+    const win = computeDynamicWindow(prefix, n, start, w.clientWidth, 2)
     if (win.start === this.colWin.start && win.end === this.colWin.end) return false
     this.colWin = win
     return true
-  }
-
-  /**
-   * column-virtual 渲染序列：[前置列（drag/check，由 buildRow 既有逻辑处理）]
-   * [left 固定段] [左占位] [middle 窗口列] [右占位] [right 固定段] [后置列（expand）]。
-   * 占位以 colSpan 归并窗口外列（宽度由 colgroup 对应列求和，table fixed 布局原生支持）。
-   */
-  private columnWindowLayout(cols: TableColumn[]): {
-    leftPlaceholder: number
-    rendered: TableColumn[]
-    rightPlaceholder: number
-  } {
-    const segments = this.splitColSegments(cols)
-    if (!segments) return { leftPlaceholder: 0, rendered: cols, rightPlaceholder: 0 }
-    const { left, middle, right } = segments
-    const leftN = left.length
-    const win = this.colWin
-    const start = Math.min(Math.max(0, win.start), middle.length)
-    const end = Math.min(Math.max(start, win.end), middle.length)
-    return {
-      leftPlaceholder: start,
-      rendered: middle.slice(start, end),
-      rightPlaceholder: middle.length - end,
-    }
   }
 
   /**
@@ -3111,9 +3117,9 @@ export class OASTableBase extends OASElement {
       this.ignoreNextScroll = false
       return
     }
-    // 横向虚拟（column-virtual）：非行虚拟时也要按 scrollLeft 重算列窗口
-    const colVirtualOnly = this.columnVirtualOn() && !this.isVirtual()
-    if (colVirtualOnly && this.wrap) {
+    // 横向虚拟（column-virtual）：非行虚拟时也要按 scrollLeft 重算列窗口。
+    // 用 _colSegments 在场判定（update 时已完成兼容形态判定），scroll 热路径不做全树走查
+    if (this._colSegments && !this.isVirtual() && this.wrap) {
       if (this.scrollRaf) return
       this.scrollRaf = requestAnimationFrame(() => {
         this.scrollRaf = 0
@@ -3130,8 +3136,13 @@ export class OASTableBase extends OASElement {
       const body = this.shadow.querySelector('tbody')
       const head = this.shadow.querySelector('thead')
       if (!body || !head) return
-      // 双开（行虚拟 × column-virtual）：横向滚动同步列窗口（纵向滚动不改变列窗口，重算幂等）
-      if (this._colSegments) this.syncColumnWindow(this._colSegments)
+      // 双开（行虚拟 × column-virtual）：横向滚动先同步列窗口——窗口变化时走整表更新
+      //（含 thead 窗口序列重建；只重建 tbody 会让表头滞留旧窗口列、与表体错位）。
+      // 纵向滚动帧窗口不变，仍走下方轻量 tbody 重建
+      if (this._colSegments && this.syncColumnWindow(this._colSegments)) {
+        this.update()
+        return
+      }
       const st = this.wrap!.scrollTop
       const rowKey = this.getAttr('row-key', 'key')
       const selected = this.getAttr('selected', '').split(',').filter(Boolean)
