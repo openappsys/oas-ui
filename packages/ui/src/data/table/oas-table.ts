@@ -963,6 +963,10 @@ tr.row.drop-after td {
 .type-check-off {
   color: var(--oas-color-text-secondary);
 }
+/* date 类型：防连字符折行 */
+.type-date {
+  white-space: nowrap;
+}
 /* ===== 分组视图（group-by）分节头行 ===== */
 tr.group-header td {
   background: var(--oas-color-bg-hover);
@@ -3948,8 +3952,13 @@ function buildTypeCellNode(col: TableColumn, raw: unknown): Node | null {
       }
       return group
     }
-    case 'date':
-      return document.createTextNode(dateCellText(raw))
+    case 'date': {
+      // 包裹 span 防连字符处折行（YYYY-MM-DD 在窄列下断成两行视觉碎裂）
+      const span = document.createElement('span')
+      span.className = 'type-date'
+      span.textContent = dateCellText(raw)
+      return span
+    }
     case 'checkbox': {
       const mark = document.createElement('span')
       mark.className = isTruthyCell(raw) ? 'type-check-on' : 'type-check-off'
