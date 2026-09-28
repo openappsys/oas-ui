@@ -205,6 +205,18 @@
       "name": "column-virtual",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "group-by",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "cell-tooltip",
+      "type": "string",
+      "default": "true",
+      "observed": true
     }
   ],
   "props": [
@@ -316,6 +328,14 @@
     {
       "name": "--oas-table-cell-padding-inline",
       "default": "var(--oas-space-4)"
+    },
+    {
+      "name": "--oas-tooltip-bg",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-tooltip-color",
+      "default": "var(--oas-color-bg)"
     }
   ],
   "unresolved": []
