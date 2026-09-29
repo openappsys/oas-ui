@@ -2959,7 +2959,7 @@
       "grid-navigation": "键盘网格导航：role=grid，数据区单停靠点 + 方向键在单元格间漫游（Home/End/PageUp-Down，Enter/Space 激活格内控件）",
       "row-draggable": "行拖拽排序：渲染拖拽手柄列，拖放派发 oas-row-reorder；虚拟滚动（height）下禁用并告警一次",
       "column-virtual": "横向虚拟滚动（列窗口化）：非固定列只渲染可视窗口列，窗口外列以占位格 colSpan 归并（宽度由 colgroup 求和）。约束：建议全列显式 width；多级表头 / span-method / 合计行不兼容（告警降级）；固定列须两端布局",
-      "group-by": "分组视图：按字段值分节渲染（分节头 = 字段值 + 组内计数 + 折叠箭头，点击折叠/展开该组，默认全展开）；组间按字段值首次出现序、组内排序生效；空值行归入「（空）」组；与 merge 列 / span-method 同用时告警一次并降级为普通渲染；可与 column-virtual / 虚拟滚动并用（分节头整行 colSpan 全宽）",
+      "group-by": "分组视图：按字段值分节渲染（分节头 = 字段值 + 组内计数 + 折叠箭头，点击折叠/展开该组，默认全展开）；组间按字段值首次出现序、组内排序生效；空值行归入「（空）」组；与 merge 列 / span-method / row-draggable 同用时告警一次并降级为普通渲染；可与 column-virtual / 虚拟滚动并用（分节头整行 colSpan 全宽）",
       "cell-tooltip": "单元格溢出提示（默认开启，`\"false\"` 关闭）：纯文本单元格溢出（scrollWidth > clientWidth）时 hover 显示全文浮层——表格级单例浮层（token 反色，暗色可读），滚动/重渲染自动隐藏；富内容格与已有原生 title 的 ellipsis 列豁免（避免双重提示）"
     },
     "events": {

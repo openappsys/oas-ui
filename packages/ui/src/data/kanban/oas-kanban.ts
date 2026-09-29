@@ -317,15 +317,14 @@ export class OASKanban extends OASElement {
     // scroll 不冒泡，capture 捕获列体滚动（菜单 fixed 定位防错位）
     document.addEventListener('click', this.handleOutsideClick, true)
     document.addEventListener('scroll', this.handleDocumentScroll, true)
+    // shadow 内滚动（列体 overflow-y）必须另挂 shadow 根：scroll 是 non-composed 事件，
+    // 不跨 shadow 边界——document capture 收不到列体滚动（实证），菜单会悬停原地脱锚
+    root.addEventListener('scroll', this.handleDocumentScroll, true)
     // Esc 关菜单（shadow 内 keydown 不冒泡出宿主，shadow 根监听够用）
     root.addEventListener('keydown', this.handleKeydown)
     this.onCleanup(() => {
-      root.removeEventListener('dragstart', this.handleDragStart)
-      root.removeEventListener('dragover', this.handleDragOver)
-      root.removeEventListener('drop', this.handleDrop)
-      root.removeEventListener('dragend', this.handleDragEnd)
-      root.removeEventListener('click', this.handleClick)
-      root.removeEventListener('keydown', this.handleKeydown)
+      // 只摘 document 级监听（shadow 根监听随元素 GC，不摘也不泄漏——摘除反而让
+      // append/re-parent 重连后交互全灭且永不恢复：render 生命周期只 bind 一次）
       document.removeEventListener('click', this.handleOutsideClick, true)
       document.removeEventListener('scroll', this.handleDocumentScroll, true)
       this.closeMenu()
@@ -540,7 +539,7 @@ export class OASKanban extends OASElement {
     e.preventDefault()
     const id = this.dragId
     const target = this.dropTarget
-    this.clearDropMarks()
+    this.clearAllDragMarks()
     this.dragId = ''
     this.dropTarget = null
     if (!target) return
@@ -549,7 +548,7 @@ export class OASKanban extends OASElement {
 
   private handleDragEnd = (): void => {
     // 取消路径（Esc/拖出窗口/无效落点）：零操作，只清指示与状态，无孤儿标记
-    this.clearDropMarks()
+    this.clearAllDragMarks()
     this.dragId = ''
     this.dropTarget = null
   }
@@ -575,9 +574,16 @@ export class OASKanban extends OASElement {
   }
 
   private clearDropMarks(): void {
-    for (const el of this.shadow.querySelectorAll('.drop-before, .drop-after, .drop-tail, .drag-source')) {
-      el.classList.remove('drop-before', 'drop-after', 'drop-tail', 'drag-source')
+    for (const el of this.shadow.querySelectorAll('.drop-before, .drop-after, .drop-tail')) {
+      el.classList.remove('drop-before', 'drop-after', 'drop-tail')
     }
+  }
+
+  /** 拖拽终了清全部标记（含源卡淡化）；dragover 期间只清落点标记（clearDropMarks）——
+      源卡淡化必须贯穿拖拽全程（否则指针一移动淡化即消失，drag-source 形同虚设） */
+  private clearAllDragMarks(): void {
+    this.clearDropMarks()
+    for (const el of this.shadow.querySelectorAll('.drag-source')) el.classList.remove('drag-source')
   }
 
   /**
@@ -696,6 +702,38 @@ export class OASKanban extends OASElement {
     this.menuCardId = cardId
     this.menuAnchor = anchor
     anchor.setAttribute('aria-expanded', 'true')
+    // 键盘可达（ARIA menu 惯例）：开菜单焦点移交首项，↑↓ 漫游、Home/End 跳首尾、Esc 关菜单回焦锚点
+    const items = [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+    items.forEach((it) => (it.tabIndex = -1))
+    const first = items.find((it) => it.getAttribute('aria-disabled') !== 'true') ?? items[0]
+    if (first) {
+      first.tabIndex = 0
+      first.focus()
+    }
+    menu.addEventListener('keydown', (e: KeyboardEvent) => {
+      const enabled = items.filter((it) => it.getAttribute('aria-disabled') !== 'true')
+      if (enabled.length === 0) return
+      const cur = enabled.indexOf(this.shadow.activeElement as HTMLElement)
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        const next =
+          e.key === 'ArrowDown'
+            ? enabled[(cur + 1 + enabled.length) % enabled.length]
+            : enabled[(cur - 1 + enabled.length) % enabled.length]
+        enabled.forEach((it) => (it.tabIndex = it === next ? 0 : -1))
+        next!.focus()
+      } else if (e.key === 'Home' || e.key === 'End') {
+        e.preventDefault()
+        const target = e.key === 'Home' ? enabled[0] : enabled[enabled.length - 1]
+        enabled.forEach((it) => (it.tabIndex = it === target ? 0 : -1))
+        target!.focus()
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        const anchor = this.menuAnchor
+        this.closeMenu()
+        anchor?.focus()
+      }
+    })
   }
 
   private closeMenu = (): void => {

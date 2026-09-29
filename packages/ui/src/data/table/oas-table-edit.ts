@@ -1,6 +1,7 @@
 import type { ReactiveController } from '@oas-ui/core'
 import { editPath } from '@oas-ui/icons'
 import type { EditOption, TableColumn, TableEditCapability } from './oas-table.js'
+import { isTruthyCell } from './oas-table.js'
 // 行内交互宿主排除清单：双击进编辑判定与行点击共用同一份（单一事实来源，
 // 见 oas-table-interactive.js 的维护纪律注释——库内新增交互型组件须同步该清单）
 import { ROW_INTERACTIVE_EXCLUSION } from './oas-table-interactive.js'
@@ -377,7 +378,9 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     el.setAttribute('part', 'cell-editor')
     el.setAttribute('true-value', 'true')
     el.setAttribute('false-value', 'false')
-    const checked = value === 'true' || value === '1'
+    // 初值判定与展示侧同口径（isTruthyCell 含 'on'——表单序列化真值形态；
+    // 漏判会让 'on' 值进编辑显示 off，失焦提交把数据静默翻转为 false——两模型交叉审同抓）
+    const checked = isTruthyCell(value)
     el.setAttribute('value', checked ? 'true' : 'false')
     if ('value' in el) (el as unknown as { value?: unknown }).value = checked ? 'true' : 'false'
     el.setAttribute('aria-label', this.hostEl.translateText('table.editCell', { column: col.title, key }))
@@ -417,7 +420,8 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     let err: string | boolean | undefined
     if (col?.validate) {
       err = col.validate(value, st.row)
-    } else if (col?.type === 'date' && value !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    } else if (col?.type === 'date' && value !== '' && value !== st.oldValue && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      // 内置校验豁免「未改动」：旧值是 ISO/时间戳形态时沿用原串提交不该被拦（否则无法退出编辑态）
       err = false
     }
     const invalid = err === false || (typeof err === 'string' && err.trim() !== '')
@@ -436,7 +440,10 @@ export class TableEditController implements ReactiveController, TableEditCapabil
       this.focusCell(st.key, st.colKey)
       return
     }
-    if (value !== st.oldValue) {
+    // checkbox 走语义相等（'on'/'true'/'1' 同真——原始形态与编辑器读值形态不同但语义未变，不得误判为变化改写数据）
+    const unchanged =
+      col?.type === 'checkbox' ? isTruthyCell(value) === isTruthyCell(st.oldValue) : value === st.oldValue
+    if (!unchanged) {
       if (!this.hostEl.hasAttribute('edit-controlled')) {
         st.row[st.colKey] = this.coerceEditValue(st, value)
         this.hostEl.setAttribute('data', JSON.stringify(this.hostEl.data))

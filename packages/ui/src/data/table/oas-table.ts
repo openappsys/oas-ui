@@ -938,18 +938,19 @@ tr.row.drop-after td {
   letter-spacing: 1px;
 }
 .type-rate-on {
-  color: var(--oas-color-warning);
+  /* warning 主色直接铺底对比度不达标（a11y 实抓）：混主文字色加深/提亮（badge 同款安全档） */
+  color: color-mix(in srgb, var(--oas-color-warning) 72%, var(--oas-color-text-primary));
 }
 .type-rate-off {
   color: var(--oas-color-text-secondary);
 }
-/* link 类型：主色下划线（hover 加重） */
+/* link 类型：主色下划线（hover 加重）；主色铺底对比度不达标配同上混主文字色 */
 .type-link {
-  color: var(--oas-color-primary);
+  color: color-mix(in srgb, var(--oas-color-primary) 72%, var(--oas-color-text-primary));
   text-decoration: underline;
 }
 .type-link:hover {
-  color: var(--oas-color-primary);
+  color: color-mix(in srgb, var(--oas-color-primary) 72%, var(--oas-color-text-primary));
   opacity: 0.8;
 }
 .type-link:focus-visible {
@@ -1143,6 +1144,8 @@ export class OASTableBase extends OASElement {
   private dragDrop: { key: string; pos: 'before' | 'after' } | null = null
   /** 分组视图：已折叠组的键集合（内部语义；数据/属性变化时保留已折叠组） */
   private collapsedGroups = new Set<string>()
+  /** 当前生效的 group-by 属性值（变化时清空折叠残留） */
+  private _groupByAttrCache = ''
   /** 分组视图互斥告警去重（group-by × merge 列 / span-method） */
   private groupWarned = new Set<string>()
   /** 单元格溢出提示浮层（表格级单例；shadow 重建后经 isConnected 检查惰性重建） */
@@ -2783,6 +2786,11 @@ export class OASTableBase extends OASElement {
       互斥时告警一次并返回 ''（降级普通渲染）。update 与虚拟滚动重建共用同一判定（防孪生路径漂移） */
   private groupByEffective(): string {
     const groupBy = this.getAttr('group-by', '')
+    if (this._groupByAttrCache !== groupBy) {
+      // 分组字段变化：清空旧组键的折叠残留（旧组键在新分组下无意义）
+      this._groupByAttrCache = groupBy
+      this.collapsedGroups.clear()
+    }
     if (!groupBy) return ''
     const hasMerge = this.flattenLeaves(this._columns).some((c) => c.merge)
     if (hasMerge || this._spanMethod) {
@@ -2792,8 +2800,9 @@ export class OASTableBase extends OASElement {
       )
       return ''
     }
-    if (this.hasAttr('row-draggable')) {
-      // 分组后展示序 ≠ 宿主 data 原始数组序，oas-row-reorder 的 from/to 应用到宿主 splice 会得到错误结果
+    if (this.rowDragEnabled()) {
+      // 分组后展示序 ≠ 宿主 data 原始数组序，oas-row-reorder 的 from/to 应用到宿主 splice 会得到错误结果。
+      // 用 rowDragEnabled() 而非 hasAttr：虚拟滚动下拖拽本就禁用（另有告警），此时分组安全，无谓降级是语义误导
       this.warnGroupByOnce(
         'row-draggable',
         'group-by 与 row-draggable 不兼容（分组后展示序与原始数组序不一致，行重排索引会错位）：已降级为普通渲染（group-by 已忽略）',
@@ -3106,7 +3115,7 @@ export class OASTableBase extends OASElement {
     e.preventDefault()
     const fromKey = this.dragRowKey
     const drop = this.dragDrop
-    this.clearDropMarks()
+    this.clearAllDragMarks()
     this.dragRowKey = ''
     this.dragDrop = null
     if (!drop) return
@@ -3123,7 +3132,7 @@ export class OASTableBase extends OASElement {
   }
 
   private handleRowDragEnd = (): void => {
-    this.clearDropMarks()
+    this.clearAllDragMarks()
     this.dragRowKey = ''
     this.dragDrop = null
   }
@@ -3137,7 +3146,16 @@ export class OASTableBase extends OASElement {
   private clearDropMarks(): void {
     const body = this.shadow.querySelector('tbody')
     if (!body) return
-    for (const tr of body.querySelectorAll('tr')) tr.classList.remove('drop-before', 'drop-after', 'drag-source')
+    for (const tr of body.querySelectorAll('tr')) tr.classList.remove('drop-before', 'drop-after')
+  }
+
+  /** 拖拽终了清全部标记（含源行淡化）；dragover 期间只清落点标记（clearDropMarks）——
+      源行淡化必须贯穿拖拽全程（否则指针一移动淡化即消失，drag-source 形同虚设） */
+  private clearAllDragMarks(): void {
+    this.clearDropMarks()
+    const body = this.shadow.querySelector('tbody')
+    if (!body) return
+    for (const tr of body.querySelectorAll('tr.drag-source')) tr.classList.remove('drag-source')
   }
 
   /** 键盘重排（网格导航内的 Alt+↑/↓，无鼠标路径的行排序）：派发同契约 oas-row-reorder */
@@ -3914,7 +3932,7 @@ function dateCellText(raw: unknown): string {
 }
 
 /** checkbox 列值归一化（布尔/数字/字符串形态统一判定勾选态） */
-function isTruthyCell(raw: unknown): boolean {
+export function isTruthyCell(raw: unknown): boolean {
   return raw === true || raw === 1 || raw === 'true' || raw === '1' || raw === 'on'
 }
 
@@ -4014,7 +4032,7 @@ function buildTypeCellNode(col: TableColumn, raw: unknown): Node | null {
       a.className = 'type-link'
       a.href = href
       a.target = '_blank'
-      a.rel = 'noopener'
+      a.rel = 'noopener noreferrer'
       a.textContent = href
       return a
     }
@@ -4030,8 +4048,8 @@ function buildTypeCellNode(col: TableColumn, raw: unknown): Node | null {
       track.setAttribute('aria-valuemin', '0')
       track.setAttribute('aria-valuemax', '100')
       track.setAttribute('aria-valuenow', String(pct))
-      // axe aria-progressbar-name：role=progressbar 必须有可访问名称（列名 + 当前值）
-      track.setAttribute('aria-label', `${col.title} ${pct}%`)
+      // axe aria-progressbar-name：role=progressbar 必须有可访问名称（列名缺省回退 key）
+      track.setAttribute('aria-label', `${col.title ?? col.key} ${pct}%`)
       const fill = document.createElement('div')
       fill.className = 'type-progress-fill'
       fill.style.width = `${pct}%`
@@ -4068,8 +4086,9 @@ function buildBadgeNode(label: string, color?: string): HTMLElement {
   badge.textContent = label
   if (color) {
     // 文字色不可直接用主色（主色 on 12% 浅底对比度不达标——a11y 感知门禁实抓 50.66<60）：
-    // 混入主题文字色（light 混近黑加深 / dark 混近白提亮），双主题自适应（tag 的 *-text 变体同款思路）
-    badge.style.setProperty('--_badge-fg', `color-mix(in srgb, ${color} 72%, var(--oas-color-text))`)
+    // 混入主题主文字色（light 混近黑加深 / dark 混近白提亮），双主题自适应（tag 的 *-text 变体同款思路）。
+    // 注意 token 名是 --oas-color-text-primary（裸 --oas-color-text 不存在——var 未命中会静默走 fallback）
+    badge.style.setProperty('--_badge-fg', `color-mix(in srgb, ${color} 72%, var(--oas-color-text-primary))`)
     badge.style.setProperty('--_badge-bg', `color-mix(in srgb, ${color} 12%, transparent)`)
     badge.style.setProperty('--_badge-border', `color-mix(in srgb, ${color} 40%, transparent)`)
   }

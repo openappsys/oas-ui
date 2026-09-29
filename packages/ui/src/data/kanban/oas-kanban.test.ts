@@ -200,6 +200,18 @@ describe('OASKanban', () => {
       expect(cardOf(el, 'c1').classList.contains('drag-source')).toBe(false)
     })
 
+    it('dragover 期间源卡淡化保持（落点标记清除不连带源淡化）', () => {
+      const el = mount()
+      cardOf(el, 'c1').dispatchEvent(dragEvent('dragstart'))
+      // 多次 dragover（落点标记反复清除重画）：源卡淡化必须全程保持
+      cardOf(el, 'c3').dispatchEvent(dragEvent('dragover', { clientY: -10 }))
+      expect(cardOf(el, 'c1').classList.contains('drag-source')).toBe(true)
+      cardOf(el, 'c2').dispatchEvent(dragEvent('dragover', { clientY: 10 }))
+      expect(cardOf(el, 'c1').classList.contains('drag-source')).toBe(true)
+      cardOf(el, 'c1').dispatchEvent(dragEvent('dragend'))
+      expect(cardOf(el, 'c1').classList.contains('drag-source')).toBe(false)
+    })
+
     it('非卡片发起的 dragstart 不进入拖拽态', () => {
       const el = mount()
       columnOf(el, 'todo').dispatchEvent(dragEvent('dragstart'))
