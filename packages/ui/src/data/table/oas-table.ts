@@ -1482,35 +1482,9 @@ export class OASTableBase extends OASElement {
     const selected = this.getAttr('selected', '').split(',').filter(Boolean)
     const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
 
-    // 过滤：按 filter-values 过滤顶层行（在排序/分页之前，保证分页页数反映过滤后数据）
-    const filterValues = this.parseFilterValues()
-    let roots = this._data
-    if (Object.keys(filterValues).length > 0) {
-      roots = roots.filter((row) => this.matchesFilters(row, filterValues))
-    }
-    // 分页切片前的完整筛选+排序集合（summary-scope=all 时合计基于此）
-    const fullRoots = roots
-
-    // 分页：顶层行先全局排序再切片为当前页，喂给 buildFlat（页内子行 children 随父行保留）
-    const paginationOn = this.hasAttr('pagination')
-    const pageSize = Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
-    let current = Math.max(1, Number(this.getAttr('current', '1')) || 1)
-    const total = roots.length
-    if (paginationOn) {
-      const pageCount = Math.max(1, Math.ceil(total / pageSize))
-      if (current > pageCount) {
-        current = pageCount
-        this.setAttribute('current', String(current))
-      }
-      const sorted = [...roots]
-      const sorts = this.resolveSorts()
-      if (sorts.length > 0) {
-        const tm = this.columnTypeMap()
-        sorted.sort((a, b) => this.compareRows(a, b, sorts, tm))
-      }
-      const start = (current - 1) * pageSize
-      roots = sorted.slice(start, start + pageSize)
-    }
+    // 过滤 + 分页切片统一走 computeDisplayRoots（虚拟滚动重建路径同源——孪生路径曾
+    // 直取 this._data，过滤行复活、分页失效，交叉审运行时复现）
+    const { roots, fullRoots, current, pageSize, total, paginationOn } = this.computeDisplayRoots()
 
     const sorts = this.resolveSorts()
     // 分组视图：group-by 在场且无互斥形态时生效（判定统一走 groupByEffective，
@@ -1531,7 +1505,7 @@ export class OASTableBase extends OASElement {
       summaryFlat = flat
     } else {
       // scope=all 合计是顺序无关聚合（sum/avg/count 不依赖排序），cacheKey 不含 sorts（排序变化不该失效重算）
-      const cacheKey = `${this.getAttr('data', '')}||${JSON.stringify(filterValues)}`
+      const cacheKey = `${this.getAttr('data', '')}||${this.getAttr('filter-values', '')}`
       if (this.summaryFlatCache && this.summaryFlatCache.key === cacheKey) {
         summaryFlat = this.summaryFlatCache.flat
       } else {
@@ -1754,6 +1728,50 @@ export class OASTableBase extends OASElement {
       this.ignoreNextScroll = true
       this.wrap.scrollTop = st
     }
+  }
+
+  /**
+   * 过滤 + 分页切片（update 与虚拟滚动重建共用——孪生路径必须同口径）：
+   * 顶层行先过滤（filter-values），分页开启时先全局排序再切片当前页。
+   * 返回分页元数据（renderPagination 用）与分页前完整集合（summary-scope=all 用）。
+   */
+  private computeDisplayRoots(): {
+    roots: Array<Record<string, unknown>>
+    fullRoots: Array<Record<string, unknown>>
+    current: number
+    pageSize: number
+    total: number
+    paginationOn: boolean
+  } {
+    // 过滤：按 filter-values 过滤顶层行（在排序/分页之前，保证分页页数反映过滤后数据）
+    const filterValues = this.parseFilterValues()
+    let roots = this._data
+    if (Object.keys(filterValues).length > 0) {
+      roots = roots.filter((row) => this.matchesFilters(row, filterValues))
+    }
+    // 分页切片前的完整筛选+排序集合（summary-scope=all 时合计基于此）
+    const fullRoots = roots
+    // 分页：顶层行先全局排序再切片为当前页，喂给 buildFlat（页内子行 children 随父行保留）
+    const paginationOn = this.hasAttr('pagination')
+    const pageSize = Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
+    let current = Math.max(1, Number(this.getAttr('current', '1')) || 1)
+    const total = roots.length
+    if (paginationOn) {
+      const pageCount = Math.max(1, Math.ceil(total / pageSize))
+      if (current > pageCount) {
+        current = pageCount
+        this.setAttribute('current', String(current))
+      }
+      const sorted = [...roots]
+      const sorts = this.resolveSorts()
+      if (sorts.length > 0) {
+        const tm = this.columnTypeMap()
+        sorted.sort((a, b) => this.compareRows(a, b, sorts, tm))
+      }
+      const start = (current - 1) * pageSize
+      roots = sorted.slice(start, start + pageSize)
+    }
+    return { roots, fullRoots, current, pageSize, total, paginationOn }
   }
 
   /** 分页器挂载：开启分页时在 .pagination 容器放入 oas-pagination（复用现有分页组件），
@@ -3578,10 +3596,11 @@ export class OASTableBase extends OASElement {
       const rowKey = this.getAttr('row-key', 'key')
       const selected = this.getAttr('selected', '').split(',').filter(Boolean)
       const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
-      // 滚动帧分组口径与 update 完全一致（统一走 groupByEffective 判定——孪生路径
-      // 曾漏接 row-draggable 互斥：首帧降级、滚动后分节头凭空出现，I-2 实抓）
+      // 滚动帧的数据口径与 update 完全一致（统一走 groupByEffective + computeDisplayRoots——
+      // 孪生路径曾漏接互斥判定与过滤/分页切片：过滤行复活、分页失效，交叉审运行时复现）
       const groupBy = this.groupByEffective()
-      const flat = this.buildFlat(this.resolveSorts(), rowKey, this._data, groupBy)
+      const { roots } = this.computeDisplayRoots()
+      const flat = this.buildFlat(this.resolveSorts(), rowKey, roots, groupBy)
       const display = this.visibleFlat(flat, expanded, rowKey)
       // 滚动窗口重渲染前静默取消进行中的编辑（委托 edit 能力）
       this.editCap?.settleEdit()
@@ -4048,8 +4067,8 @@ function buildTypeCellNode(col: TableColumn, raw: unknown): Node | null {
       track.setAttribute('aria-valuemin', '0')
       track.setAttribute('aria-valuemax', '100')
       track.setAttribute('aria-valuenow', String(pct))
-      // axe aria-progressbar-name：role=progressbar 必须有可访问名称（列名缺省回退 key）
-      track.setAttribute('aria-label', `${col.title ?? col.key} ${pct}%`)
+      // axe aria-progressbar-name：role=progressbar 必须有可访问名称（列名缺省/空串回退 key）
+      track.setAttribute('aria-label', `${col.title || col.key} ${pct}%`)
       const fill = document.createElement('div')
       fill.className = 'type-progress-fill'
       fill.style.width = `${pct}%`

@@ -610,7 +610,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
           .map((s) => s.trim())
           .filter(Boolean)
       case 'checkbox':
-        return value === 'true' || value === 'on' || value === '1'
+        return isTruthyCell(value)
       default: {
         // 数字列先例（type 未声明列保持现状）：旧值 number 且新值合法数字 → 数值回写
         const old = st.row[st.colKey]

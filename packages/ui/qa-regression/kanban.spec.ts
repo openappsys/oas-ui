@@ -102,3 +102,29 @@ test('kanban 菜单：列体（shadow 内）滚动时菜单关闭（交叉审实
   expect(r.menuBefore, '菜单已打开').toBe(true)
   expect(r.menuAfter, '列体滚动后菜单关闭').toBe(false)
 })
+
+test('kanban 断开重连后：开菜单 → 外点关闭正常（交叉审同抓回归——document 监听生命周期改跟菜单走前，re-parent 后外点/滚动关菜单永久失效）', async ({
+  page,
+}) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-kanban')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-kanban')!
+    // 断开重连（re-parent）
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    // 开菜单
+    const card = el.shadowRoot!.querySelector('.card') as HTMLElement
+    ;(card.querySelector('.card-move') as HTMLElement).dispatchEvent(
+      new MouseEvent('click', { bubbles: true, composed: true }),
+    )
+    const menuOpen = !!el.shadowRoot!.querySelector('.move-menu')
+    // 外点（document 级点击看板外）
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    const menuAfterOutside = !!el.shadowRoot!.querySelector('.move-menu')
+    return { menuOpen, menuAfterOutside }
+  })
+  expect(r.menuOpen, '重连后菜单可打开').toBe(true)
+  expect(r.menuAfterOutside, '重连后外点关菜单（document 监听已重挂）').toBe(false)
+})

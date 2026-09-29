@@ -402,6 +402,33 @@ describe('OASKanban', () => {
       expect(cardsOf(el, 'todo').map((c) => c.getAttribute('data-id'))).toEqual(['c1', 'c2'])
     })
 
+    it('菜单自身滚动豁免：composedPath 含 .move-menu 的 document scroll 不关菜单，外部滚动关闭', () => {
+      const el = mount()
+      openMenu(el, 'c1')
+      const menu = shadow(el).querySelector('.move-menu') as HTMLElement
+      expect(menu).not.toBeNull()
+      // 菜单内部滚动（composedPath 含 .move-menu）：豁免，菜单保持打开
+      menu.dispatchEvent(new Event('scroll', { bubbles: true, composed: true }))
+      expect(shadow(el).querySelector('.move-menu'), '菜单自身滚动豁免').not.toBeNull()
+      // 外部滚动（document 级，path 不含菜单）：关闭
+      document.body.dispatchEvent(new Event('scroll', { bubbles: true, composed: true }))
+      expect(shadow(el).querySelector('.move-menu'), '外部滚动关菜单').toBeNull()
+    })
+
+    it('菜单关闭后重开：document 监听幂等重挂（断开重连场景的外点关闭仍可用）', () => {
+      const el = mount()
+      openMenu(el, 'c1')
+      expect(shadow(el).querySelector('.move-menu')).not.toBeNull()
+      // 外点关闭
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(shadow(el).querySelector('.move-menu')).toBeNull()
+      // 重开后外点仍可关闭（监听随菜单生命周期幂等重挂）
+      openMenu(el, 'c1')
+      expect(shadow(el).querySelector('.move-menu')).not.toBeNull()
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(shadow(el).querySelector('.move-menu')).toBeNull()
+    })
+
     it('点击列名项：跨列移动', () => {
       const el = mount()
       const events = trackChange(el)
