@@ -331,36 +331,7 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   layout-measuring pilot, form components batch 1, feedback components
   batch 2, data-display components batch 3, navigation/layout components
   batch 4, whitelist-finalization batch 5, and oas-kanban (data family) — 132 tags in total):
-  `oas-button`, `oas-tag`, `oas-tag-group`,
-  `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`,
-  `oas-table`, `oas-kanban`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`,
-  `oas-select`, `oas-input`, `oas-textarea`, `oas-checkbox`,
-  `oas-checkbox-group`, `oas-radio`, `oas-radio-group`, `oas-switch`,
-  `oas-slider`, `oas-input-number`, `oas-rate`, `oas-auto-complete`,
-  `oas-combobox`, `oas-cascader`, `oas-tree-select`, `oas-mentions`,
-  `oas-date-picker`, `oas-time-picker`, `oas-calendar`, `oas-upload`,
-  `oas-transfer`, `oas-color-picker`, `oas-toggle-button`, `oas-toggle-group`,
-  `oas-pin-input`, `oas-dynamic-input`, `oas-dynamic-tags`, `oas-editable`,
-  `oas-form`, `oas-form-item`, `oas-form-list`, `oas-highlight`, `oas-alert`, `oas-progress`, `oas-spin`,
-  `oas-skeleton`, `oas-skeleton-item`, `oas-result`, `oas-backdrop`, `oas-modal`, `oas-drawer`,
-  `oas-popconfirm`, `oas-card`, `oas-avatar`, `oas-avatar-group`,
-  `oas-image`, `oas-qrcode`, `oas-watermark`, `oas-collapse`,
-  `oas-collapse-item`, `oas-descriptions`, `oas-descriptions-item`,
-  `oas-timeline`, `oas-timeline-item`, `oas-list`, `oas-list-item`,
-  `oas-carousel`, `oas-statistic`, `oas-countdown`, `oas-chart`, `oas-code`,
-  `oas-equation`, `oas-log`, `oas-masonry`, `oas-comment`, `oas-marquee`,
-  `oas-number-animation`, `oas-gradient-text`, `oas-aspect-ratio`,
-  `oas-virtual-list`, `oas-tabs`, `oas-tab-panel`, `oas-bottom-navigation`,
-  `oas-pagination`, `oas-steps`, `oas-segmented`, `oas-breadcrumb`,
-  `oas-anchor`, `oas-back-top`, `oas-menu`, `oas-dropdown`,
-  `oas-context-menu`, `oas-menubar`, `oas-navigation-menu`, `oas-toolbar`,
-  `oas-command`, `oas-tour`, `oas-hover-card`, `oas-splitter`, `oas-flex`,
-  `oas-page-header`, `oas-float-button`, `oas-speed-dial`, `oas-layout`,
-  `oas-header`, `oas-sider`, `oas-content`, `oas-footer`, `oas-sidebar`,
-  `oas-container`, `oas-grid`, `oas-grid-item`, `oas-badge`,
-  `oas-button-group`, `oas-icon`, `oas-kbd`, `oas-label`, `oas-link`,
-  `oas-space`, `oas-compact`, `oas-visually-hidden`, `oas-tooltip`, `oas-popover`,
-  `oas-config-provider`, `oas-app`, `oas-app-bar`, `oas-stepper`, `oas-stepper-panel`.
+  `oas-button`, `oas-tag`, `oas-tag-group`, `oas-compact`, `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`, `oas-table`, `oas-kanban`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`, `oas-select`, `oas-input`, `oas-textarea`, `oas-checkbox`, `oas-checkbox-group`, `oas-radio`, `oas-radio-group`, `oas-switch`, `oas-slider`, `oas-input-number`, `oas-rate`, `oas-auto-complete`, `oas-combobox`, `oas-cascader`, `oas-tree-select`, `oas-mentions`, `oas-date-picker`, `oas-time-picker`, `oas-calendar`, `oas-upload`, `oas-transfer`, `oas-color-picker`, `oas-toggle-button`, `oas-toggle-group`, `oas-pin-input`, `oas-dynamic-input`, `oas-dynamic-tags`, `oas-editable`, `oas-form`, `oas-form-item`, `oas-form-list`, `oas-alert`, `oas-progress`, `oas-spin`, `oas-skeleton`, `oas-skeleton-item`, `oas-result`, `oas-backdrop`, `oas-modal`, `oas-drawer`, `oas-popconfirm`, `oas-card`, `oas-avatar`, `oas-avatar-group`, `oas-image`, `oas-qrcode`, `oas-watermark`, `oas-collapse`, `oas-collapse-item`, `oas-descriptions`, `oas-descriptions-item`, `oas-timeline`, `oas-timeline-item`, `oas-list`, `oas-list-item`, `oas-carousel`, `oas-statistic`, `oas-countdown`, `oas-chart`, `oas-code`, `oas-equation`, `oas-log`, `oas-masonry`, `oas-comment`, `oas-marquee`, `oas-number-animation`, `oas-gradient-text`, `oas-aspect-ratio`, `oas-virtual-list`, `oas-tabs`, `oas-tab-panel`, `oas-bottom-navigation`, `oas-pagination`, `oas-steps`, `oas-segmented`, `oas-breadcrumb`, `oas-anchor`, `oas-back-top`, `oas-menu`, `oas-dropdown`, `oas-context-menu`, `oas-menubar`, `oas-navigation-menu`, `oas-toolbar`, `oas-command`, `oas-tour`, `oas-hover-card`, `oas-splitter`, `oas-flex`, `oas-page-header`, `oas-float-button`, `oas-speed-dial`, `oas-layout`, `oas-header`, `oas-sider`, `oas-content`, `oas-footer`, `oas-sidebar`, `oas-container`, `oas-grid`, `oas-grid-item`, `oas-badge`, `oas-button-group`, `oas-icon`, `oas-kbd`, `oas-label`, `oas-link`, `oas-space`, `oas-visually-hidden`, `oas-tooltip`, `oas-popover`, `oas-config-provider`, `oas-app`, `oas-app-bar`, `oas-stepper`, `oas-stepper-panel`, `oas-highlight`.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
 - The imperative components (message / notification / toast / snackbar /
