@@ -1319,3 +1319,44 @@ test('table 编辑 × column-virtual：滚动后双击窗口列，编辑器落�
   expect(submitted.editorGone, '失焦提交后编辑器退出').toBe(true)
   expect(submitted.colValue, `值回写到被编辑列 ${target}`).toBe(`已编辑-${target}`)
 })
+
+test('table 三开（height + group-by + row-draggable）：互斥降级在虚拟滚动重建后保持一致（review I-2 回归——孪生路径曾漏接互斥，滚动后分节头凭空出现）', async ({
+  page,
+}) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-edit')
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-table')
+    el.setAttribute('height', '300')
+    el.setAttribute('group-by', 'dept')
+    el.setAttribute('row-draggable', '')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'dept', title: '部门' },
+        { key: 'name', title: '姓名' },
+      ]),
+    )
+    el.setAttribute(
+      'data',
+      JSON.stringify(Array.from({ length: 30 }, (_, i) => ({ dept: `组${i % 3}`, name: `员工${i}` }))),
+    )
+    document.body.appendChild(el)
+    await new Promise((res) => setTimeout(res, 250))
+    const countGroupRows = () => el.shadowRoot!.querySelectorAll('tr.group-header').length
+    const initial = countGroupRows()
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 500
+    await new Promise((res) => setTimeout(res, 150))
+    const afterScroll = countGroupRows()
+    wrap.scrollTop = 0
+    await new Promise((res) => setTimeout(res, 150))
+    const afterBack = countGroupRows()
+    el.remove()
+    return { initial, afterScroll, afterBack }
+  })
+  expect(r.initial, '首帧互斥降级（无分节头）').toBe(0)
+  expect(r.afterScroll, '虚拟滚动重建后仍无分节头（孪生路径同判定）').toBe(0)
+  expect(r.afterBack, '回滚后口径仍一致').toBe(0)
+})

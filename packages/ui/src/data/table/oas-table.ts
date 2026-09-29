@@ -1510,26 +1510,9 @@ export class OASTableBase extends OASElement {
     }
 
     const sorts = this.resolveSorts()
-    // 分组视图：group-by 在场且无互斥形态（merge 列 / span-method → 告警降级为普通渲染）时生效
-    let groupBy = this.getAttr('group-by', '')
-    if (groupBy) {
-      const hasMerge = this.flattenLeaves(this._columns).some((c) => c.merge)
-      if (hasMerge || this._spanMethod) {
-        groupBy = ''
-        this.warnGroupByOnce(
-          'merge-span',
-          'group-by 与 merge 列 / span-method 不兼容（分节头会破坏合并语义）：已降级为普通渲染（group-by 已忽略）',
-        )
-      } else if (this.hasAttr('row-draggable')) {
-        // 分组后展示序 ≠ 宿主 data 原始数组序，oas-row-reorder 的 from/to 应用到宿主
-        // splice 会得到错误结果——互斥降级（review 实抓索引口径静默错位）
-        groupBy = ''
-        this.warnGroupByOnce(
-          'row-draggable',
-          'group-by 与 row-draggable 不兼容（分组后展示序与原始数组序不一致，行重排索引会错位）：已降级为普通渲染（group-by 已忽略）',
-        )
-      }
-    }
+    // 分组视图：group-by 在场且无互斥形态时生效（判定统一走 groupByEffective，
+    // 与虚拟滚动重建路径同源，防孪生路径漂移）
+    const groupBy = this.groupByEffective()
     const flat = this.buildFlat(sorts, rowKey, roots, groupBy)
     const display = this.visibleFlat(flat, expanded, rowKey)
     // D8：导出数据集 = 当前展示的数据行（过滤 + 排序 + 分页切片后；虚拟模式取完整展示集合）
@@ -2796,6 +2779,30 @@ export class OASTableBase extends OASElement {
     return tr
   }
 
+  /** group-by 生效判定：属性在场 + 无互斥形态（merge 列 / span-method / row-draggable）。
+      互斥时告警一次并返回 ''（降级普通渲染）。update 与虚拟滚动重建共用同一判定（防孪生路径漂移） */
+  private groupByEffective(): string {
+    const groupBy = this.getAttr('group-by', '')
+    if (!groupBy) return ''
+    const hasMerge = this.flattenLeaves(this._columns).some((c) => c.merge)
+    if (hasMerge || this._spanMethod) {
+      this.warnGroupByOnce(
+        'merge-span',
+        'group-by 与 merge 列 / span-method 不兼容（分节头会破坏合并语义）：已降级为普通渲染（group-by 已忽略）',
+      )
+      return ''
+    }
+    if (this.hasAttr('row-draggable')) {
+      // 分组后展示序 ≠ 宿主 data 原始数组序，oas-row-reorder 的 from/to 应用到宿主 splice 会得到错误结果
+      this.warnGroupByOnce(
+        'row-draggable',
+        'group-by 与 row-draggable 不兼容（分组后展示序与原始数组序不一致，行重排索引会错位）：已降级为普通渲染（group-by 已忽略）',
+      )
+      return ''
+    }
+    return groupBy
+  }
+
   /** group-by 互斥降级告警（同值去重；参照 column-virtual 的 warnOnce 先例） */
   private warnGroupByOnce(kind: string, message: string): void {
     if (this.groupWarned.has(kind)) return
@@ -3553,10 +3560,9 @@ export class OASTableBase extends OASElement {
       const rowKey = this.getAttr('row-key', 'key')
       const selected = this.getAttr('selected', '').split(',').filter(Boolean)
       const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
-      // 滚动帧分组口径与 update 一致（互斥形态判定以 update 结果为准：降级时 groupBy 已清空）
-      const groupByRaw = this.getAttr('group-by', '')
-      const groupBy =
-        groupByRaw && !this.flattenLeaves(this._columns).some((c) => c.merge) && !this._spanMethod ? groupByRaw : ''
+      // 滚动帧分组口径与 update 完全一致（统一走 groupByEffective 判定——孪生路径
+      // 曾漏接 row-draggable 互斥：首帧降级、滚动后分节头凭空出现，I-2 实抓）
+      const groupBy = this.groupByEffective()
       const flat = this.buildFlat(this.resolveSorts(), rowKey, this._data, groupBy)
       const display = this.visibleFlat(flat, expanded, rowKey)
       // 滚动窗口重渲染前静默取消进行中的编辑（委托 edit 能力）

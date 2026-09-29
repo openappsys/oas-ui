@@ -68,7 +68,7 @@ Only `title` renders by default; for richer cards (tags, owners, progress) use t
 ## Touch and keyboard
 
 - Touch devices (`pointer: coarse`) cannot drive HTML5 drag: every card gets a move button in its top-right corner that opens a small menu — move up / move down / move to a column (move up is disabled on the first card, move down on the last);
-- Keyboard accessible: cards are focusable (`tabindex=0`), column bodies are `role="list"`, cards are `role="listitem"`, with readable names from column titles and card titles.
+- Keyboard accessible: cards are focusable (`tabindex=0`), non-empty column bodies are `role="list"` (empty columns carry no list semantics), cards are `role="listitem"`, with readable names from column titles and card titles.
 
 ## API
 

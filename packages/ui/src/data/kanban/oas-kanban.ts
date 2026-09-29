@@ -327,7 +327,7 @@ export class OASKanban extends OASElement {
       root.removeEventListener('click', this.handleClick)
       root.removeEventListener('keydown', this.handleKeydown)
       document.removeEventListener('click', this.handleOutsideClick, true)
-      document.removeEventListener('scroll', this.closeMenu, true)
+      document.removeEventListener('scroll', this.handleDocumentScroll, true)
       this.closeMenu()
     })
   }
@@ -516,6 +516,12 @@ export class OASKanban extends OASElement {
       const next = [...column.querySelectorAll<HTMLElement>('.card')].find(
         (c) => c.getBoundingClientRect().top > de.clientY,
       )
+      if (next?.getAttribute('data-id') === this.dragId) {
+        // 「下方最近卡」是拖动源卡自身（悬在源卡正上方间隙）：视同悬在自身——原位零操作、无落点指示
+        this.clearDropMarks()
+        this.dropTarget = null
+        return
+      }
       if (next) {
         before = true
         index = list.indexOf(next.getAttribute('data-id') ?? '')
