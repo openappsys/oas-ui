@@ -321,22 +321,32 @@ export class OASKanban extends OASElement {
     root.addEventListener('dragend', this.handleDragEnd)
     // 点击委托：触屏移动按钮开菜单 / 菜单项落定
     root.addEventListener('click', this.handleClick)
-    // 外点与滚动关菜单：挂 document——shadow 根监听收不到宿主/外部区域冒泡的事件；
-    // scroll 不冒泡，capture 捕获列体滚动（菜单 fixed 定位防错位）
-    document.addEventListener('click', this.handleOutsideClick, true)
-    document.addEventListener('scroll', this.handleDocumentScroll, true)
     // shadow 内滚动（列体 overflow-y）必须另挂 shadow 根：scroll 是 non-composed 事件，
     // 不跨 shadow 边界——document capture 收不到列体滚动（实证），菜单会悬停原地脱锚
     root.addEventListener('scroll', this.handleDocumentScroll, true)
     // Esc 关菜单（shadow 内 keydown 不冒泡出宿主，shadow 根监听够用）
     root.addEventListener('keydown', this.handleKeydown)
     this.onCleanup(() => {
-      // 只摘 document 级监听（shadow 根监听随元素 GC，不摘也不泄漏——摘除反而让
-      // append/re-parent 重连后交互全灭且永不恢复：render 生命周期只 bind 一次）
-      document.removeEventListener('click', this.handleOutsideClick, true)
-      document.removeEventListener('scroll', this.handleDocumentScroll, true)
+      // 只关菜单（closeMenu 内部顺带摘 document 级监听——监听生命周期跟菜单走，
+      // openMenu 挂 / closeMenu 摘；重连后再开菜单自然重挂，无「断开摘除后重连失效」）
       this.closeMenu()
     })
+  }
+
+  /** document 级外点/滚动关菜单监听：openMenu 时挂、closeMenu 时摘（幂等）——
+      监听生命周期跟菜单走而非组件 bind（组件断开重连后 bind 不重跑，挂 bind 里会永久失效） */
+  private menuDocBound = false
+  private bindMenuDocument(): void {
+    if (this.menuDocBound) return
+    this.menuDocBound = true
+    document.addEventListener('click', this.handleOutsideClick, true)
+    document.addEventListener('scroll', this.handleDocumentScroll, true)
+  }
+  private unbindMenuDocument(): void {
+    if (!this.menuDocBound) return
+    this.menuDocBound = false
+    document.removeEventListener('click', this.handleOutsideClick, true)
+    document.removeEventListener('scroll', this.handleDocumentScroll, true)
   }
 
   protected override render(): void {
@@ -710,6 +720,7 @@ export class OASKanban extends OASElement {
     this.menuCardId = cardId
     this.menuAnchor = anchor
     anchor.setAttribute('aria-expanded', 'true')
+    this.bindMenuDocument()
     // 键盘可达（ARIA menu 惯例）：开菜单焦点移交首项，↑↓ 漫游、Home/End 跳首尾、Esc 关菜单回焦锚点
     const items = [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')]
     items.forEach((it) => (it.tabIndex = -1))
@@ -745,6 +756,7 @@ export class OASKanban extends OASElement {
   }
 
   private closeMenu = (): void => {
+    this.unbindMenuDocument()
     if (!this.menuCardId) return
     this.shadow.querySelector('.move-menu')?.remove()
     this.menuAnchor?.setAttribute('aria-expanded', 'false')

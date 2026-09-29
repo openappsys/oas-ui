@@ -1703,7 +1703,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 ### 特性
 
 - **oas-table 列 `type` 字段类型系统**：columns JSON 加 `type` 字段——`text`（默认，现状）/ `number`（右对齐 + 千分位）/ `currency`（货币符号 + 千分位 + 右对齐，`currency` 列字段配符号，默认 ¥）/ `select`（badge 渲染，`options` 列字段配 value/label/color）/ `multi-select`（badge 组）/ `date`（YYYY-MM-DD 格式化）/ `checkbox`（只读勾选态）/ `link`（主色下划线，新标签页）/ `progress`（0-100 进度条）/ `rate`（0-5 星级）。编辑器复用既有通道：input 系（text/number/currency/link/progress/rate/date 输入校验）→ 原生 input；select → 既有 `editor: 'select'` + editOptions；checkbox → oas-switch（非浮层）。列级 `type` 与 `render`/`cellTemplate` 并存时自定义渲染优先。浮层类编辑器（oas-select / oas-date-picker 挂载编辑）为后续批次
-- **oas-table `group-by` 分组视图**：按指定字段值分节——分节头行（字段值 + 组内计数 + 折叠箭头）+ 组内数据行；折叠状态默认全展开，点击分节头切换；排序作用于组内行；分节头作为 flat 行的一种 kind 参与行虚拟滚动（与 expand 行先例同构）；与 column-virtual 正交（分节头 colSpan 全宽行走 columnCount 先例）；group-by 与 merge / span-method 互斥（告警降级）
+- **oas-table `group-by` 分组视图**：按指定字段值分节——分节头行（字段值 + 组内计数 + 折叠箭头）+ 组内数据行；折叠状态默认全展开，点击分节头切换；排序作用于组内行；分节头作为 flat 行的一种 kind 参与行虚拟滚动（与 expand 行先例同构）；与 column-virtual 正交（分节头 colSpan 全宽行走 columnCount 先例）；group-by 与 merge / span-method / row-draggable 互斥（告警降级）
 
 ### 验收
 
@@ -1717,7 +1717,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ### 特性
 
-- **oas-kanban 看板**：`columns`（JSON [{ key, title }] 列定义）+ `cards`（JSON [{ id, column, title, ...任意字段 }]，column 为所属列 key）声明式数据，attribute JSON + property 数组双通道（setter 反射 attribute）；卡片拖拽换列 + 列内排序（HTML5 DnD，落点主色插入指示线——悬停卡上半/下半区分插前/插后、空列/列尾尾部标记）→ 落定回写 cards attribute 并派发 `oas-change`（detail：{ id, from, to, index }，index 为移除卡片自身后的目标列插入位；拖回原位零操作不派发）；列头标题 + 计数；列体独立纵向滚动；空列占位文案走 i18n（10 语言包），`empty-column-text` 属性覆盖；卡片默认渲染 title，自定义走 `renderCard`（property 函数通道，(card) => Node | string——Node 直挂、字符串纯文本防注入；函数在场时数据不反射）；触屏降级：卡片移动按钮（pointer:coarse 显示）上移/下移/移到指定列（边界项 aria-disabled）；键盘可达：卡片 tabindex=0（listitem）、列体 role=list。第一期不做：列拖拽重排、泳道、WIP 限制、卡片多选
+- **oas-kanban 看板**：`columns`（JSON [{ key, title }] 列定义）+ `cards`（JSON [{ id, column, title, ...任意字段 }]，column 为所属列 key）声明式数据，attribute JSON + property 数组双通道（setter 反射 attribute）；卡片拖拽换列 + 列内排序（HTML5 DnD，落点主色插入指示线——悬停卡上半/下半区分插前/插后、空列/列尾尾部标记）→ 落定回写 cards attribute 并派发 `oas-change`（detail：{ id, from, to, index }，index 为移除卡片自身后的目标列插入位；拖回原位零操作不派发）；列头标题 + 计数；列体独立纵向滚动；空列占位文案走 i18n（10 语言包），`empty-column-text` 属性覆盖；卡片默认渲染 title，自定义走 `renderCard`（property 函数通道，(card) => Node | string——Node 直挂、字符串纯文本防注入；函数在场时数据不反射）；触屏降级：卡片移动按钮（pointer:coarse 显示）上移/下移/移到指定列（边界项 aria-disabled），菜单支持键盘操作（开菜单焦点移交首项 + 方向键漫游 + Home/End + Esc 回焦锚点）；键盘可达：卡片 tabindex=0（listitem）、非空列体 role=list（空列不设 list 语义）。第一期不做：列拖拽重排、泳道、WIP 限制、卡片多选
 
 ### 验收
 

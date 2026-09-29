@@ -396,12 +396,15 @@ describe('OASTable 字段类型编辑（type × editable）', () => {
 
   it("type=checkbox 编辑：行值 'on'（表单序列化真值形态）初值勾选——交叉审同抓回归（初值漏判 'on' 会显示 off，失焦提交静默翻值）", () => {
     const el = editableMount([{ key: 'on', title: '开关', type: 'checkbox', editable: true }], [{ id: 1, on: 'on' }])
+    let edited = 0
+    el.addEventListener('oas-edit', () => edited++)
     const td = enterEdit(el, 'on')
     const sw = td.querySelector<HTMLElement>('oas-switch')!
     expect(sw.getAttribute('value'), "'on' 初值应判勾选").toBe('true')
-    // 不改动直接失焦提交：数据保持不变（'true' 与 'on' 语义同真，不得误判为变化改写）
+    // 不改动直接失焦提交：数据保持不变（'true' 与 'on' 语义同真，不得误判为变化改写），且不派发 oas-edit
     sw.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     expect(JSON.parse(el.getAttribute('data')!)).toEqual([{ id: 1, on: 'on' }])
+    expect(edited, '语义未变不派发 oas-edit').toBe(0)
   })
 
   it('type=date 编辑：旧值为 ISO/时间戳形态时不改动直接 Enter 正常退出（内置校验豁免未改动值）', () => {
@@ -529,6 +532,26 @@ describe('OASTable 分组视图（group-by）', () => {
     el.setAttribute('data', JSON.stringify([...JSON.parse(GROUP_DATA), { dept: '前端', name: '新同事' }]))
     expect(rows(el).length).toBe(2)
     expect(groupRows(el)[0]!.textContent).toContain('4')
+  })
+
+  it('切换 group-by 字段：旧组键的折叠残留清空（新分组下全部展开）', () => {
+    const el = groupMount()
+    ;(groupRows(el)[0]!.querySelector('button') as HTMLElement)!.click()
+    expect(rows(el).length).toBe(2)
+    // 换分组字段（dept → city 形态）：旧折叠态（dept=前端）在新分组下无意义，应全部展开
+    const cols = JSON.parse(GROUP_COLUMNS) as Array<Record<string, unknown>>
+    const cityData = JSON.stringify(
+      (JSON.parse(GROUP_DATA) as Array<Record<string, unknown>>).map((r, i) => ({
+        ...r,
+        city: i % 2 === 0 ? '北京' : '上海',
+      })),
+    )
+    cols.unshift({ key: 'city', title: '城市' })
+    el.setAttribute('columns', JSON.stringify(cols))
+    el.setAttribute('data', cityData)
+    el.setAttribute('group-by', 'city')
+    // 新分组下无折叠残留：5 行数据全部可见
+    expect(rows(el).length).toBe(5)
   })
 
   it('分组字段值缺失/为空的行归入「（空）」组', () => {

@@ -1,6 +1,9 @@
 import { registerTableCapability } from '../oas-table-capability.js'
 import { TableEditController, createEditController, type TableEditHost } from '../oas-table-edit.js'
-
+// type='checkbox' 列的编辑器走 oas-switch（editComponent 组件通道）——副作用注册随能力包
+// 闭合：未引全量入口的消费者（core + edit 子路径）声明 checkbox 编辑时编辑器可正常升级，
+// 否则挂载永不升级的白板元素（无 shadow 不可交互的死编辑态，交叉审实抓）
+import '../../../form/switch/index.js'
 /**
  * table 编辑能力包入口（ESM 子路径 `@oas-ui/ui/data/table/edit`）。
  *
