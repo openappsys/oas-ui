@@ -2977,7 +2977,7 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     // 驱动 oas-input 真实提交链路：用户输入落在内部 input（不回写宿主 attribute），
     // blur 触发 commitChange 与提交基线比对后派发 oas-change——编辑控制器监听 oas-change 提交，
     // 读值经 getFormValue()（库内 form-associated 钩子）取新值。
-    // 旧版（合成 setAttribute + 手工 change）恰好绕开两个断点，属假绿（review 实抓）
+    // 旧版（合成 setAttribute + 手工 change）恰好绕开两个断点，属假绿（实抓）
     const inner = comp.shadowRoot!.querySelector('input')!
     inner.value = '新名字'
     inner.dispatchEvent(new Event('input', { bubbles: true }))
@@ -3047,7 +3047,7 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     expect(JSON.parse(el.getAttribute('data')!)[1].name).toBe('王五')
   })
 
-  it('attribute-only 宿主 WC（无 value property）：用户经 attribute 改值提交读新值（review I-1 回归）', () => {
+  it('attribute-only 宿主 WC（无 value property）：用户经 attribute 改值提交读新值（回归）', () => {
     class AttrEditor extends HTMLElement {
       // 无 value property——按「value attribute 读写 + change 事件」契约实现的宿主组件形态
     }
@@ -3136,13 +3136,13 @@ describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 
     expect(renderedPlusMerged(el)).toBe(N)
   })
 
-  it('双开（height × column-virtual）横向滚动后 thead 与 tbody 窗口一致（review C2 回归）', async () => {
+  it('双开（height × column-virtual）横向滚动后 thead 与 tbody 窗口一致（回归）', async () => {
     const el = wideMount({ height: '300' })
     await scrollX(el, 2000)
     expect(headKeys(el), '表头窗口列与表体窗口列一一对应').toEqual(dataKeys(el))
   })
 
-  it('前缀扣除：窗口起点须扣 left 固定段宽（review I1 回归：旧算法窗口偏右、固定列右侧露空洞）', async () => {
+  it('前缀扣除：窗口起点须扣 left 固定段宽（回归：旧算法窗口偏右、固定列右侧露空洞）', async () => {
     // c0 设 fixed:left（恒渲染）后断言 middle 段首列 c1：正确算法 start=360-200=160 → 窗口含 c1；
     // 不扣前缀的旧算法 start=360 → 窗口首列跳到 c3、c1 缺席（c0 恒渲染故 toContain('c0') 不构成判别）
     const el = wideMount({}, [{ fixed: 'left', width: '200px' }])
@@ -3150,7 +3150,7 @@ describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 
     expect(dataKeys(el), 'middle 段窗口首列未被跳过（前缀已扣除）').toContain('c1')
   })
 
-  it('RTL 标准化：负 scrollLeft 与对应正值窗口一致（review I5 回归）', async () => {
+  it('RTL 标准化：负 scrollLeft 与对应正值窗口一致（回归）', async () => {
     // 注：本条验证的是 abs() 标准化的数学等价（LTR 表设负 scrollLeft 模拟规范 RTL 实现的
     // 负值语义），非真 RTL 布局端到端；真 RTL 布局走 qa-regression 浏览器通道
     const el = wideMount()
@@ -3160,7 +3160,7 @@ describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 
     expect(dataKeys(el), '规范 RTL 实现下 scrollLeft 为负，取绝对值应得同一窗口').toEqual(forward)
   })
 
-  it('setColumnWidth 后列宽缓存即时失效：colgroup 与窗口宽度同步（review I4 回归）', () => {
+  it('setColumnWidth 后列宽缓存即时失效：colgroup 与窗口宽度同步（回归）', () => {
     const el = wideMount()
     el.setColumnWidth('c30', 500)
     const col = el.shadowRoot!.querySelectorAll('colgroup col')[30] as HTMLElement
@@ -3168,7 +3168,7 @@ describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 
     expect(renderedPlusMerged(el)).toBe(N)
   })
 
-  it('expand 列 colgroup 定宽与 sticky 偏移同源（review I2 回归：48/40 双常量收敛）', () => {
+  it('expand 列 colgroup 定宽与 sticky 偏移同源（回归：48/40 双常量收敛）', () => {
     const rows = Array.from({ length: 5 }, (_, r) => ({ ...wideRow(r), expand: `内容${r}` }))
     const el = new OASTable()
     el.setAttribute('column-virtual', '')
@@ -3179,7 +3179,7 @@ describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 
     expect((cols[cols.length - 1] as HTMLElement).style.width).toBe('40px')
   })
 
-  it('占位格不入网格导航矩阵：方向键不停在空白合并格（review M4 回归）', () => {
+  it('占位格不入网格导航矩阵：方向键不停在空白合并格（回归）', () => {
     const el = wideMount({ 'grid-navigation': '' })
     const ph = placeholders(el)[0]
     expect(ph, '初始窗口下存在占位格').toBeTruthy()

@@ -367,7 +367,7 @@ export class OASGrid extends OASElement {
     const cols = Number(this.getAttr('cols', '24')) || 24
     // 不写内联 display——:host{display:grid} 与 :host([hidden]) 兜底已由样式表覆盖；
     // 内联 display 特异性压过 :host([hidden])，且 hidden 不在 observedAttributes 时
-    // 动态加 hidden 会依旧可见（review 实抓）
+    // 动态加 hidden 会依旧可见（实抓）
     this.applyGap()
     this.applyAxisGaps()
     this.applyAlignment()

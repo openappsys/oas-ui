@@ -1233,7 +1233,7 @@ export class OASSidebar extends OASElement {
     })
     // hover 链路关键补丁：指针进入面板时取消一切开合计时——btn↔flyout 之间有定位 gap，
     // 穿越 gap 会触发 block 的 pointerleave（关闭计时已启动），flyout 自身若无 pointerenter
-    // 处理器，面板会在指针已在面板内悬停时仍于 300ms 后被关闭（review 实抓 hover 链路断裂）
+    // 处理器，面板会在指针已在面板内悬停时仍于 300ms 后被关闭（实抓 hover 链路断裂）
     flyout.addEventListener('pointerenter', () => this.clearFlyoutTimers())
     return flyout
   }

@@ -367,7 +367,7 @@ describe('OASKanban', () => {
       expect(shadow(el).querySelector('.move-menu')).toBeNull()
     })
 
-    it('点击「下移」：同列下移一位（index 经原位判定换算后正确落位），派发 oas-change——review C1 回归（旧版 idx+1 被原位判定静默吞掉恒为死按钮）', () => {
+    it('点击「下移」：同列下移一位（index 经原位判定换算后正确落位），派发 oas-change——回归（旧版 idx+1 被原位判定静默吞掉恒为死按钮）', () => {
       const el = mount()
       const events = trackChange(el)
       // 中间卡下移：c1（todo 首位）→ 移到第二位
@@ -473,7 +473,7 @@ describe('OASKanban', () => {
       expect(cardOf(el, 'c1')!.querySelector('.card-move')).not.toBeNull()
     })
 
-    it('renderCard 先于连接赋值：首帧 cards 仍解析（面板非空）——review I2 回归', () => {
+    it('renderCard 先于连接赋值：首帧 cards 仍解析（面板非空）——回归', () => {
       // 框架桥接层常见时序：property 在 appendChild 前赋值。旧版 parse() 按 renderCard
       // 在场一刀切跳过 cards 解析 → 首帧空板且无告警
       const el = new OASKanban()

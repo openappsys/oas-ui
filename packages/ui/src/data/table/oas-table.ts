@@ -1415,7 +1415,7 @@ export class OASTableBase extends OASElement {
     // 单元格溢出提示：mouseover/mouseout 委托到滚动容器（表格级单例浮层复用定位，不为每格建实例）
     this.wrap?.addEventListener('mouseover', this.handleCellMouseOver)
     this.wrap?.addEventListener('mouseout', this.handleCellMouseOut)
-    // 页面级/外层容器滚动时同步隐藏浮层（scroll 不冒泡，document capture 捕获——浮层滞留原位 review 实抓）
+    // 页面级/外层容器滚动时同步隐藏浮层（scroll 不冒泡，document capture 捕获——浮层滞留原位 实抓）
     document.addEventListener('scroll', this.handleDocumentScrollForTooltip, true)
     this.onCleanup(() => {
       this.wrap?.removeEventListener('scroll', this.handleScroll)
@@ -2589,7 +2589,7 @@ export class OASTableBase extends OASElement {
     return key && (order === 'asc' || order === 'desc') ? [{ key, order }] : []
   }
 
-  /** key → 列 type 映射（排序比较器热路径外提：sort 每次比较都全树走查 flattenLeaves 是 O(列数) 重复开销——review 实抓万行排序 14 万次全列树走查） */
+  /** key → 列 type 映射（排序比较器热路径外提：sort 每次比较都全树走查 flattenLeaves 是 O(列数) 重复开销——实抓万行排序 14 万次全列树走查） */
   private columnTypeMap(): Map<string, TableColumn['type']> {
     const map = new Map<string, TableColumn['type']>()
     for (const c of this.flattenLeaves(this._columns)) map.set(c.key, c.type)
