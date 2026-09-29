@@ -303,7 +303,15 @@ export class OASKanban extends OASElement {
     `
   }
 
-  /** 缓存节点引用 + 事件委托绑定 + 注册清理（render 路径；无 hydrate，DSD 回退全量重建） */
+  /** 真水合：校验 SSR 快照结构（看板容器与列存在）后直接接管，跳过 shadow 重建（oas-table 同款先例） */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.kanban')) return false
+    if (!this.shadow.querySelector('.column')) return false
+    this.bind()
+    return true
+  }
+
+  /** 缓存节点引用 + 事件委托绑定 + 注册清理（render/hydrate 共用路径） */
   private bind(): void {
     const root = this.shadow
     // 拖拽事件委托到 shadow 根：列/卡片重建无需重绑（dragstart 触屏不可用，触屏走移动菜单）

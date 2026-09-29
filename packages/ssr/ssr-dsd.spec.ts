@@ -314,6 +314,20 @@ test.beforeAll(async () => {
   const VL_ITEMS = JSON.stringify(Array.from({ length: 100 }, (_, i) => `项${i}`))
   const dataSnaps = await Promise.all([
     renderToString('oas-card', { title: '卡片标题' }, '<p>卡片内容</p>'),
+    renderToString(
+      'oas-kanban',
+      {
+        columns: JSON.stringify([
+          { key: 'todo', title: '待办' },
+          { key: 'done', title: '已完成' },
+        ]),
+        cards: JSON.stringify([
+          { id: 'k1', column: 'todo', title: '快照卡片一' },
+          { id: 'k2', column: 'done', title: '快照卡片二' },
+        ]),
+      },
+      '',
+    ),
     renderToString('oas-avatar', { src: PNG_1PX, size: '40' }),
     renderToString('oas-avatar-group', { max: '3' }),
     renderToString('oas-image', { src: PNG_1PX, preview: '', alt: '示例图' }),

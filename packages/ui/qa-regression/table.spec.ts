@@ -503,24 +503,30 @@ test('table 逃生口：data-oas-row-click-ignore 容器内点击不连带 oas-r
       t.dataset.rowClick = String(Number(t.dataset.rowClick!) + 1)
     })
     ;(document.querySelector('.vp-doc') ?? document.body).append(t)
-    // 行内自定义交互容器：逃生口标注包住原生 span（span 自身不在点名清单内，靠容器豁免）
-    const wrap = document.createElement('div')
-    wrap.setAttribute('data-oas-row-click-ignore', '')
-    const inner = document.createElement('span')
-    inner.textContent = '迷你挂件'
-    wrap.appendChild(inner)
-    t.shadowRoot!.querySelector('td[data-col="op"]')!.appendChild(wrap)
   })
   // 点逃生口容器内的 span：不连带 oas-row-click / 不触发选中重建。
   // 用 JS 派发冒泡 click（与真实点击走同一条委托/豁免判定路径），消除满载下
   // 文档页布局抖动导致的指针落点漂移 flake——本用例验证的是组件豁免逻辑而非指针命中。
   // 注意 wrap/span 注入在 shadow 树内，document.querySelector 不穿透，须经 shadowRoot 查询。
+  // 注入 + 点击在同一个 evaluate 里原子化完成：表格 update（locale 就绪/水合晚期重渲染）
+  // 会重建 tbody 冲掉注入的 wrap——先建表等渲染稳定，再一次 evaluate 同步注入并点击，
+  // 消除「注入→等待→点击」之间被 update 插针的窗口（满载下三次复现的 flaky 根因）
+  await page.waitForFunction(() => {
+    const t = document.querySelector('#qa-row-ignore-escape')
+    return (t?.shadowRoot?.querySelectorAll('tbody tr').length ?? 0) > 0
+  })
   await page.waitForTimeout(300)
   await page.evaluate(() => {
-    const span = document
-      .querySelector<HTMLElement>('#qa-row-ignore-escape')!
-      .shadowRoot!.querySelector('td[data-col="op"] span')!
-    span.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    const t = document.querySelector('#qa-row-ignore-escape')!
+    const td = t.shadowRoot!.querySelector('td[data-col="op"]')!
+    const wrap = document.createElement('div')
+    wrap.setAttribute('data-oas-row-click-ignore', '')
+    const inner = document.createElement('span')
+    inner.textContent = '迷你挂件'
+    wrap.appendChild(inner)
+    td.appendChild(wrap)
+    // 同一 JS 回合内注入并点击（同步任务，update 无法插针）
+    inner.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
   })
   await page.waitForTimeout(200)
   const r1 = await page.evaluate(() => {
@@ -1317,7 +1323,7 @@ test('table 编辑 × column-virtual：滚动后双击窗口列，编辑器落�
   expect(submitted.colValue, `值回写到被编辑列 ${target}`).toBe(`已编辑-${target}`)
 })
 
-test('table 三开（height + group-by + row-draggable）：互斥降级在虚拟滚动重建后保持一致（回归——孪生路径曾漏接互斥，滚动后分节头凭空出现）', async ({
+test('table 三开（height + group-by + row-draggable）：虚拟下拖拽禁用故分组安全生效，且虚拟滚动重建后口径一致（回归——孪生路径曾漏接互斥判定，滚动后分组口径漂移）', async ({
   page,
 }) => {
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
@@ -1353,7 +1359,7 @@ test('table 三开（height + group-by + row-draggable）：互斥降级在虚�
     el.remove()
     return { initial, afterScroll, afterBack }
   })
-  expect(r.initial, '首帧互斥降级（无分节头）').toBe(0)
-  expect(r.afterScroll, '虚拟滚动重建后仍无分节头（孪生路径同判定）').toBe(0)
-  expect(r.afterBack, '回滚后口径仍一致').toBe(0)
+  expect(r.initial, '虚拟下拖拽禁用，分组安全生效（有分节头）').toBeGreaterThan(0)
+  expect(r.afterScroll, '虚拟滚动重建后分组口径一致').toBe(r.initial)
+  expect(r.afterBack, '回滚后口径仍一致').toBe(r.initial)
 })
