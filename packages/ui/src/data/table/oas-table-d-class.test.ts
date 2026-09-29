@@ -325,6 +325,18 @@ describe('OASTable D15 row-draggable', () => {
     expect(tr.classList.contains('drag-source')).toBe(false)
   })
 
+  it('dragover 期间源行淡化保持（落点标记清除不连带源淡化）', () => {
+    const el = mount({ 'row-draggable': '' })
+    const tr0 = rowTrs(el)[0]!
+    shadow(el).querySelector<HTMLElement>('tr.row .row-drag-handle')!.dispatchEvent(dragEvent('dragstart'))
+    rowTrs(el)[1]!.dispatchEvent(dragEvent('dragover', { clientY: 10 }))
+    expect(tr0.classList.contains('drag-source')).toBe(true)
+    rowTrs(el)[2]?.dispatchEvent(dragEvent('dragover', { clientY: -10 }))
+    expect(tr0.classList.contains('drag-source')).toBe(true)
+    shadow(el).querySelector<HTMLElement>('tbody')!.dispatchEvent(dragEvent('dragend'))
+    expect(tr0.classList.contains('drag-source')).toBe(false)
+  })
+
   it('拖拽到目标行下半区 → 派发 oas-row-reorder { from, to, row }（事件驱动，组件不改数据）', () => {
     const el = mount({ 'row-draggable': '' })
     let detail: { from: number; to: number; row: Record<string, unknown> } | null = null

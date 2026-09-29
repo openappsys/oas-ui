@@ -79,3 +79,26 @@ test('kanban 列语义：非空列 role=list、空列无 list 语义（axe aria-
     else expect(col.role, '空列不得设 list 语义（axe 要求 list 必有 listitem）').toBeNull()
   }
 })
+
+test('kanban 菜单：列体（shadow 内）滚动时菜单关闭（交叉审实证回归——scroll 是 non-composed 事件不跨 shadow 边界，document 监听收不到列体滚动曾致菜单脱锚）', async ({
+  page,
+}) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-kanban')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-kanban')!
+    const card = el.shadowRoot!.querySelector('.card') as HTMLElement
+    ;(card.querySelector('.card-move') as HTMLElement).dispatchEvent(
+      new MouseEvent('click', { bubbles: true, composed: true }),
+    )
+    const menuBefore = !!el.shadowRoot!.querySelector('.move-menu')
+    // 列体（shadow 内 overflow-y 容器）派发真实 scroll
+    const body = el.shadowRoot!.querySelector('.column-body') as HTMLElement
+    body.scrollTop = 50
+    body.dispatchEvent(new Event('scroll'))
+    const menuAfter = !!el.shadowRoot!.querySelector('.move-menu')
+    return { menuBefore, menuAfter }
+  })
+  expect(r.menuBefore, '菜单已打开').toBe(true)
+  expect(r.menuAfter, '列体滚动后菜单关闭').toBe(false)
+})

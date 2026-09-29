@@ -133,6 +133,9 @@ describe('OASTable 列字段类型系统（column type）', () => {
     })
     const colored = cellOf(el, 's', 0).querySelector<HTMLElement>('.type-badge')!
     expect(colored.style.getPropertyValue('--_badge-fg')).toContain('var(--oas-color-success)')
+    // 混色须引用真实存在的 token（--oas-color-text-primary；裸 --oas-color-text 不存在，
+    // var 未命中会静默走 fallback 使混色失效——交叉审实抓）
+    expect(colored.style.getPropertyValue('--_badge-fg')).toContain('--oas-color-text-primary')
     const plain = cellOf(el, 's', 1).querySelector<HTMLElement>('.type-badge')!
     expect(plain.style.getPropertyValue('--_badge-fg')).toBe('')
   })
@@ -202,7 +205,7 @@ describe('OASTable 列字段类型系统（column type）', () => {
     const a = cellOf(el, 'url').querySelector<HTMLAnchorElement>('a.type-link')!
     expect(a.getAttribute('href')).toBe('https://example.com')
     expect(a.getAttribute('target')).toBe('_blank')
-    expect(a.getAttribute('rel')).toBe('noopener')
+    expect(a.getAttribute('rel')).toBe('noopener noreferrer')
     expect(a.textContent).toBe('https://example.com')
   })
 
@@ -389,6 +392,28 @@ describe('OASTable 字段类型编辑（type × editable）', () => {
     expect(data).toEqual([{ id: 1, on: false }])
     // 退出编辑后展示只读勾选态
     expect(cellOf(el, 'on').textContent).toBe('—')
+  })
+
+  it("type=checkbox 编辑：行值 'on'（表单序列化真值形态）初值勾选——交叉审同抓回归（初值漏判 'on' 会显示 off，失焦提交静默翻值）", () => {
+    const el = editableMount([{ key: 'on', title: '开关', type: 'checkbox', editable: true }], [{ id: 1, on: 'on' }])
+    const td = enterEdit(el, 'on')
+    const sw = td.querySelector<HTMLElement>('oas-switch')!
+    expect(sw.getAttribute('value'), "'on' 初值应判勾选").toBe('true')
+    // 不改动直接失焦提交：数据保持不变（'true' 与 'on' 语义同真，不得误判为变化改写）
+    sw.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    expect(JSON.parse(el.getAttribute('data')!)).toEqual([{ id: 1, on: 'on' }])
+  })
+
+  it('type=date 编辑：旧值为 ISO/时间戳形态时不改动直接 Enter 正常退出（内置校验豁免未改动值）', () => {
+    const el = editableMount(
+      [{ key: 'd', title: '日期', type: 'date', editable: true }],
+      [{ id: 1, d: '2026-06-01T09:30:00' }],
+    )
+    const td = enterEdit(el, 'd')
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(td.querySelector('input.cell-editor'), '未改动提交不得被校验拦下').toBeNull()
+    expect(JSON.parse(el.getAttribute('data')!)).toEqual([{ id: 1, d: '2026-06-01T09:30:00' }])
   })
 
   it('type=date 编辑：内置 YYYY-MM-DD 形态校验失败不提交（保持编辑态）', () => {

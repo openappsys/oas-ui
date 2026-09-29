@@ -333,7 +333,7 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   batch 4, and whitelist-finalization batch 5 — 131 tags in total):
   `oas-button`, `oas-tag`, `oas-tag-group`,
   `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`,
-  `oas-table`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`,
+  `oas-table`, `oas-kanban`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`,
   `oas-select`, `oas-input`, `oas-textarea`, `oas-checkbox`,
   `oas-checkbox-group`, `oas-radio`, `oas-radio-group`, `oas-switch`,
   `oas-slider`, `oas-input-number`, `oas-rate`, `oas-auto-complete`,
