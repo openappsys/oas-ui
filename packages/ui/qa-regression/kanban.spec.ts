@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('kanban 触屏「下移」：菜单下移换序并派发 oas-change（review C1 回归：idx+1 曾被原位判定静默吞掉恒为死按钮）', async ({
+test('kanban 触屏「下移」：菜单下移换序并派发 oas-change（回归：idx+1 曾被原位判定静默吞掉恒为死按钮）', async ({
   page,
 }) => {
   await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })

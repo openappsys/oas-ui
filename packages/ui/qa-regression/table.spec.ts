@@ -1234,16 +1234,13 @@ test('table column-virtual 横向虚拟：窗口列渲染 + 占位归并 + 滚�
   expect(r.afterScroll.fixedVisible, '横向滚动后固定列仍在').toBe(true)
   expect(r.afterScroll.firstDataKey, '滚动后窗口首列前移（非初始列）').toBeTruthy()
   expect(r.afterScroll.headKeys.length, '表头窗口列已渲染').toBeGreaterThan(0)
-  expect(
-    r.afterScroll.headKeys,
-    '横向滚动后 thead 与 tbody 首行窗口列一一对应（review C2 回归：双开 thead 滞留旧窗口）',
-  ).toEqual(r.afterScroll.firstRowKeys)
+  expect(r.afterScroll.headKeys, '横向滚动后 thead 与 tbody 首行窗口列一一对应（回归：双开 thead 滞留旧窗口）').toEqual(
+    r.afterScroll.firstRowKeys,
+  )
   expect(r.lastRowKeys.length, '纵向滚动后行窗口仍正常').toBeGreaterThan(0)
 })
 
-test('table 编辑 × column-virtual：滚动后双击窗口列，编辑器落在正确格并提交正确列（review C3 回归）', async ({
-  page,
-}) => {
+test('table 编辑 × column-virtual：滚动后双击窗口列，编辑器落在正确格并提交正确列（回归）', async ({ page }) => {
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-edit')
   // 自建 60 列宽表：editable + editComponent（oas-input 组件编辑器）+ column-virtual
@@ -1320,7 +1317,7 @@ test('table 编辑 × column-virtual：滚动后双击窗口列，编辑器落�
   expect(submitted.colValue, `值回写到被编辑列 ${target}`).toBe(`已编辑-${target}`)
 })
 
-test('table 三开（height + group-by + row-draggable）：互斥降级在虚拟滚动重建后保持一致（review I-2 回归——孪生路径曾漏接互斥，滚动后分节头凭空出现）', async ({
+test('table 三开（height + group-by + row-draggable）：互斥降级在虚拟滚动重建后保持一致（回归——孪生路径曾漏接互斥，滚动后分节头凭空出现）', async ({
   page,
 }) => {
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })

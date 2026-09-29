@@ -27,7 +27,7 @@ function main() {
   const files = readdirSync(MANIFEST_DIR).filter((f) => f.endsWith('.json') && f !== 'index.json')
   const stale = []
   const skipped = []
-  // unresolved 零容忍（DeepSeek 八轮 review 立）：manifest 里带 unresolved 标记 = 扫描器有
+  // unresolved 零容忍：manifest 里带 unresolved 标记 = 扫描器有
   // 解析盲区（属性可能静默丢失），门禁绿但产物错——stale 检查抓不到，单列一类
   const unresolvedHits = []
   for (const f of files) {

@@ -60,7 +60,7 @@ async function auditPage(browser, name) {
   // dir 必须在解析期生效：JS 方向判定组件（resolveDirection/isRtl）在 connect 时定型。
   // 文档站 <html> 自带 dir="ltr"（首访语言适配），重复属性首个胜出——先剥旧 dir 再注入。
   // 仅 RTL pass 注册 route：两个 pass 都注入会让 LTR 基线变成「解析期 RTL + 运行时翻回 LTR」，
-  // connect 时定型且不观察 dir 的组件在两 pass 同为 RTL，差集漏报其 RTL 独有缺陷（review 实抓）。
+  // connect 时定型且不观察 dir 的组件在两 pass 同为 RTL，差集漏报其 RTL 独有缺陷（实抓）。
   const run = async (dir) => {
     if (dir === 'rtl') {
       await page.route(`**/components/${name}.html`, async (route) => {

@@ -356,7 +356,7 @@ export class OASKanban extends OASElement {
   }
 
   /** 属性解析：JSON 非法/非数组回退空数组；cards 按 attribute 原文变化重解析
-      （renderCard 在场一刀切跳过会让「renderCard 先于连接赋值」的宿主首帧拿到空板——review 实抓） */
+      （renderCard 在场一刀切跳过会让「renderCard 先于连接赋值」的宿主首帧拿到空板——实抓） */
   private parse(): void {
     const cols = this.parseJsonArray('columns')
     this._columns = cols.filter(
@@ -512,7 +512,7 @@ export class OASKanban extends OASElement {
       index = list.indexOf(hoverCard.getAttribute('data-id') ?? '') + (before ? 0 : 1)
     } else {
       // 悬在卡片间隙/列体空白（gap/padding 区）：按 clientY 找下方最近卡插其前，
-      // 否则列尾——旧版一律列尾会让间隙松手的卡片飞列尾（review 实抓）
+      // 否则列尾——旧版一律列尾会让间隙松手的卡片飞列尾（实抓）
       const next = [...column.querySelectorAll<HTMLElement>('.card')].find(
         (c) => c.getBoundingClientRect().top > de.clientY,
       )
@@ -727,7 +727,7 @@ export class OASKanban extends OASElement {
       const siblings = this._cards.filter((c) => String(c.column ?? '') === from)
       const idx = siblings.indexOf(card)
       // 下移传 idx+2 而非 idx+1：applyMove 同列原位判定把「原位+1」视为没动（拖到紧随
-      // 其后 = 原位零操作），idx+1 会被静默吞掉——触屏「下移」曾因此恒为死按钮（review 实抓）；
+      // 其后 = 原位零操作），idx+1 会被静默吞掉——触屏「下移」曾因此恒为死按钮（实抓）；
       // idx+2 经 applyMove 的 index>originIndex → index-=1 换算后恰为正确插入位
       const index = action === 'up' ? idx - 1 : Math.min(idx + 2, siblings.length)
       if (index < 0) return

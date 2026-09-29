@@ -206,7 +206,7 @@ describe('OASTable 列字段类型系统（column type）', () => {
     expect(a.textContent).toBe('https://example.com')
   })
 
-  it('type=link：协议白名单——javascript:/data: 等回落纯文本（防数据驱动 XSS，review I3 回归）', () => {
+  it('type=link：协议白名单——javascript:/data: 等回落纯文本（防数据驱动 XSS，回归）', () => {
     const el = mount({
       columns: JSON.stringify([{ key: 'url', title: '链接', type: 'link' }]),
       data: JSON.stringify([
@@ -565,7 +565,7 @@ describe('OASTable 分组视图（group-by）', () => {
     }
   })
 
-  it('group-by 与 row-draggable 同用：告警一次并降级为普通渲染——review I4 回归（分组后展示序≠原始数组序，行重排索引会错位）', () => {
+  it('group-by 与 row-draggable 同用：告警一次并降级为普通渲染——回归（分组后展示序≠原始数组序，行重排索引会错位）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
       const el = mount({
@@ -742,7 +742,7 @@ describe('OASTable 单元格溢出提示（cell-tooltip 单例浮层）', () => 
     expect(tooltip(el)!.getAttribute('data-visible')).toBe('false')
   })
 
-  it('页面级滚动（document capture）隐藏浮层（review M5 回归）', () => {
+  it('页面级滚动（document capture）隐藏浮层（回归）', () => {
     const { el, td } = tipMount()
     td.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
     expect(tooltip(el)!.getAttribute('data-visible')).toBe('true')

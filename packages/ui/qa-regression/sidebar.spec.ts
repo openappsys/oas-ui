@@ -254,7 +254,7 @@ test('sidebar 折叠态树形父项点击开 flyout：面板在 rail 右侧视�
   expect(r2.closed, '选中后面板关闭').toBe(true)
 })
 
-// —— 缺陷回归（review 实抓）：hover 打开的 flyout 在指针进入面板后 300ms 被误关 ——
+// —— 缺陷回归（实抓）：hover 打开的 flyout 在指针进入面板后 300ms 被误关 ——
 // 根因：btn↔flyout 的定位 gap 穿越触发 block pointerleave（启动 300ms 关闭计时），flyout 自身
 // 无 pointerenter 处理器取消计时。真实鼠标轨迹：hover btn 打开 → 移入面板驻留 >400ms → 面板仍开。
 test('sidebar flyout hover 链路：hover 父项打开，移入面板驻留不自动关闭', async ({ page }) => {

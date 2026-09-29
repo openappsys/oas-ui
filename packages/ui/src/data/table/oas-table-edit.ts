@@ -504,7 +504,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     if (st.editor === 'component') {
       // 组件编辑器读值优先级：getFormValue()（库内 form 组件 form-associated 钩子）→
       // value property（宿主自定义 WC 常见形态）→ value attribute 兜底。
-      // 库内组件用户输入不回写 attribute，只读 attribute 会拿到初始值（review 实抓的假绿根因）
+      // 库内组件用户输入不回写 attribute，只读 attribute 会拿到初始值（实抓的假绿根因）
       const el = st.componentEl ?? st.td.querySelector<HTMLElement>('.cell-editor-component')
       if (!el) return st.oldValue
       const withHook = el as unknown as { getFormValue?: () => unknown }
@@ -542,7 +542,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     el.setAttribute('part', 'cell-editor')
     // 初值双注入：attribute（attribute-only 契约组件）+ property（仅当元素真拥有 value
     // property——含原型链与 class field；无条件赋值会给无 property 元素建 expando，读值时
-    // expando 先于 attribute 命中，attribute-only 组件的用户新值被静默吞掉——review 实抓）
+    // expando 先于 attribute 命中，attribute-only 组件的用户新值被静默吞掉——实抓）
     el.setAttribute('value', value)
     if ('value' in el) (el as unknown as { value?: unknown }).value = value
     el.setAttribute('aria-label', this.hostEl.translateText('table.editCell', { column: col.title, key }))

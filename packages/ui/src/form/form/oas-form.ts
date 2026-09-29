@@ -129,7 +129,7 @@ register(
 )
 register(['oas-checkbox'], undefined, (el, v) => {
   // 走 property setter：true-value/false-value 映射与布尔分发在 setter 内（setAttribute 会绕过，
-  // initial-values/reset 无法驱动 checked 态——review 实抓）
+  // initial-values/reset 无法驱动 checked 态——实抓）
   ;(el as unknown as { value: string }).value = v
 })
 register(
