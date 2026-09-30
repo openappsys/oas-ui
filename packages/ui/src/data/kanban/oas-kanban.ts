@@ -1186,8 +1186,8 @@ export class OASKanban extends OASElement {
       return
     }
     if (!this._columns.some((c) => c.key === toKey)) return
-    // 零操作判定用引用比较（renderCard 通道下 cards 是宿主内存对象——JSON.stringify 遇循环
-    // 引用会抛 TypeError、函数/undefined 字段被静默丢弃导致误判零操作，交叉审实抓）
+    // 零操作判定前对 this._cards 取快照引用（供签名比对），不复用 JSON.stringify
+    //（renderCard 内存对象循环引用会抛、函数字段被丢——交叉审实抓）
     const beforeRef = this._cards
     const first = selected[0]!
     const from = String(first.column ?? '')
