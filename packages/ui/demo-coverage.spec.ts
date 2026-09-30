@@ -192,6 +192,11 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   swatch: [['oas-swatch-group:not([disabled]) oas-swatch:not([disabled])', 'click', '点色板 → 组 oas-change']],
   kanban: [
     ['oas-kanban .card', 'dragmockto:oas-kanban .column:nth-of-type(2) .card', '拖拽首卡跨列到第二列首卡 → oas-change'],
+    [
+      'oas-kanban .column-drag',
+      'dragmockto:oas-kanban .column:nth-of-type(2) .column-head',
+      '列头手柄拖到第二列头 → oas-column-reorder（落点右半区插后，原位零操作不触发）',
+    ],
   ],
   list: [
     ['oas-list[sortable] [part="data-items"] oas-list-item', 'dragmock', '拖拽数据通道行（shadow 内）→ oas-reorder'],
@@ -791,7 +796,9 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
         }
       } else if (act.startsWith('dragmockto:')) {
         // 显式目标的 DnD 模拟：dragmock 的 nth(0)→nth(1) 对「紧随其后就位零操作」语义的组件
-        // （如 kanban 拖到邻卡 = 原位）不触发事件；本动作显式指定跨列/跨位目标
+        //（如 kanban 拖到邻卡 = 原位）不触发事件；本动作显式指定跨列/跨位目标。
+        // 坐标给定 clientX 大值 + clientY=0：列重排（水平左右半区）落右半区插后（真移动），
+        // 卡片跨列（垂直上下半区）落上半区插前（跨列必真移动）——两族语义均避开原位零操作
         const targetSel = act.slice('dragmockto:'.length)
         const src = page.locator(sel).first()
         const tgt = page.locator(targetSel).first()
@@ -803,7 +810,15 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
           })
           await tgt.evaluate((t) => {
             const dt = new DataTransfer()
-            t.dispatchEvent(new DragEvent('dragover', { bubbles: true, composed: true, dataTransfer: dt }))
+            t.dispatchEvent(
+              new DragEvent('dragover', {
+                bubbles: true,
+                composed: true,
+                dataTransfer: dt,
+                clientX: 9999,
+                clientY: 0,
+              } as DragEventInit),
+            )
             t.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
           })
         }
