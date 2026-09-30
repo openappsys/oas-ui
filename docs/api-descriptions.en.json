@@ -1678,12 +1678,14 @@
   },
   "oas-kanban": {
     "attrs": {
-      "columns": "Column definitions (JSON array [{ key, title }]; the same-named property array channel works identically — the setter reflects back to the attribute)",
+      "columns": "Column definitions (JSON array [{ key, title, limit? }]; the same-named property array channel works identically — the setter reflects back to the attribute). limit is a WIP limit: when the column's card count exceeds it, the header count turns warning-colored and the column gets a data-over-limit marker (advisory only — drops still land); unset/0/negative = unlimited",
       "cards": "Card data (JSON array [{ id, column, title, ...arbitrary fields }] where column is the owning column key). After a drop the component writes the new grouping/order back to this attribute (uncontrolled write-back + attribute reflection); skipped while a renderCard function is present (the host owns the data)",
-      "empty-column-text": "Override for the empty-column placeholder text (defaults to the i18n kanban.emptyColumn key, translated with the locale)"
+      "empty-column-text": "Override for the empty-column / empty swimlane-cell placeholder text (defaults to the i18n kanban.emptyColumn key, translated with the locale)",
+      "swimlane-by": "Swimlane field key: splits the board into horizontal bands by that field's value (band header = fold arrow + field value + count; all expanded by default, fold state survives data changes); missing/empty values fall into the \"(empty)\" band; dropping a card into another band rewrites the swimlane field value; omit for the plain column layout"
     },
     "events": {
-      "oas-change": "Emitted after a drag cross-column move, an in-column reorder, or a touch move-menu action settles (dropping back at the original spot emits nothing). detail { id, from, to, index } — from/to are column keys, index is the insertion position in the target column (measured after removing the dragged card itself; hosts can reproduce with splice(index, 0, card) on the target array)"
+      "oas-change": "Emitted after a drag cross-column move, an in-column reorder, or a touch move-menu action settles (dropping back at the original spot emits nothing). detail { id, from, to, index } — from/to are column keys, index is the insertion position in the target column (measured after removing the moved cards; hosts can reproduce with splice(index, 0, card) on the target array); multi-select drags move all selected cards and emit one event whose detail gains ids (all selected ids in data order, id is the first); cross-swimlane drops also gain swimlane { from, to } (the swimlane field value change)",
+      "oas-column-reorder": "Emitted after a column reorder settles (column-head handle drag / keyboard ←/→ / touch move buttons; no-op at the original position emits nothing). detail { from, to, keys } — from is the moved column's original position, to its new position after the reorder, keys the full reordered list of column keys; the component also writes the new order back to the columns attribute (card data is untouched)"
     },
     "props": {
       "renderCard": "Custom card renderer (card) => Node | string (property channel; functions cannot be serialized and stay out of attributes/SSR). A returned Node mounts directly; a returned string renders as plain text (injection-safe). While present, card data is not reflected back to the cards attribute (the host owns the data) while drag and the touch move menu still emit oas-change. Set to null to restore the default title rendering"

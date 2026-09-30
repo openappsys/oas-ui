@@ -164,6 +164,11 @@ export const ko: LocaleMessages = {
   'kanban.moveCard': '카드 이동',
   'kanban.moveUp': '위로 이동',
   'kanban.moveDown': '아래로 이동',
+  'kanban.groupEmpty': '(비어 있음)',
+  'kanban.toggleLane': '스윔레인 펼치기/접기',
+  'kanban.dragColumn': '드래그로 열 순서 변경',
+  'kanban.moveLeft': '열 왼쪽으로 이동',
+  'kanban.moveRight': '열 오른쪽으로 이동',
   // tree（트리 컨트롤）
   'tree.expand': '펼치기/접기',
   'tree.select': '{label} 선택',

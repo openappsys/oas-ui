@@ -164,6 +164,11 @@ export const ar: LocaleMessages = {
   'kanban.moveCard': 'نقل البطاقة',
   'kanban.moveUp': 'نقل لأعلى',
   'kanban.moveDown': 'نقل لأسفل',
+  'kanban.groupEmpty': '(فارغ)',
+  'kanban.toggleLane': 'طي/توسيع الممر',
+  'kanban.dragColumn': 'اسحب لإعادة ترتيب الأعمدة',
+  'kanban.moveLeft': 'نقل العمود لليسار',
+  'kanban.moveRight': 'نقل العمود لليمين',
   // tree (شجرة)
   'tree.expand': 'توسيع/طي',
   'tree.select': 'تحديد {label}',

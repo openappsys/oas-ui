@@ -164,6 +164,11 @@ export const de: LocaleMessages = {
   'kanban.moveCard': 'Karte verschieben',
   'kanban.moveUp': 'Nach oben',
   'kanban.moveDown': 'Nach unten',
+  'kanban.groupEmpty': '(leer)',
+  'kanban.toggleLane': 'Swimlane ein-/ausklappen',
+  'kanban.dragColumn': 'Spalten per Drag umsortieren',
+  'kanban.moveLeft': 'Spalte nach links verschieben',
+  'kanban.moveRight': 'Spalte nach rechts verschieben',
   // tree (Baumstruktur)
   'tree.expand': 'Ausklappen/Einklappen',
   'tree.select': '{label} auswählen',
