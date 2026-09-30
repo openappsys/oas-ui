@@ -6,9 +6,11 @@ import { OASKanban } from './index.js'
 
 // oas-kanban 看板组件：columns/cards JSON 双通道 + HTML5 DnD 拖拽换列/列内排序 +
 // oas-change { id, from, to, index } + 触屏移动菜单 + renderCard 自定义渲染。
+// 二期：列拖拽重排（oas-column-reorder）+ WIP 限制（limit / data-over-limit）+
+// 卡片多选（Ctrl/Shift 点击 + 多选拖拽 ids）+ 泳道（swimlane-by 分带 + 折叠 + 跨带拖拽）。
 //
 // happy-dom 限制（与 table 行拖拽测试同口径）：
-// - 无排版测量（getBoundingClientRect 全 0）→ dragover 的上/下半按 clientY 显式给值；
+// - 无排版测量（getBoundingClientRect 全 0）→ dragover 的上/下半按 clientY（列按 clientX）显式给值；
 // - DragEvent 是裸 Event（不带 clientY/dataTransfer）→ 拖拽测试用 MouseEvent 补齐，
 //   实现内部持有拖拽源 id，不依赖 dataTransfer。
 
@@ -73,6 +75,82 @@ function dragDrop(el: OASKanban, fromId: string, target: HTMLElement, clientY: n
   target.dispatchEvent(dragEvent('dragover', { clientY }))
   target.dispatchEvent(dragEvent('drop', { clientY }))
   cardOf(el, fromId)!.dispatchEvent(dragEvent('dragend'))
+}
+
+/** 泳道测试数据：prio 字段分带——high（s1,s4）/ low（s2）/（空）（s3、s5，首现序） */
+const SWIM_COLUMNS = [
+  { key: 'todo', title: '待办' },
+  { key: 'doing', title: '进行中' },
+]
+const SWIM_CARDS = [
+  { id: 's1', column: 'todo', title: '高优一', prio: 'high' },
+  { id: 's2', column: 'doing', title: '低优一', prio: 'low' },
+  { id: 's3', column: 'todo', title: '无值' },
+  { id: 's4', column: 'doing', title: '高优二', prio: 'high' },
+  { id: 's5', column: 'todo', title: '空串', prio: '' },
+]
+
+function mountSwim(attrs: Record<string, string> = {}): OASKanban {
+  return mount({
+    'swimlane-by': 'prio',
+    columns: JSON.stringify(SWIM_COLUMNS),
+    cards: JSON.stringify(SWIM_CARDS),
+    ...attrs,
+  })
+}
+
+/** 泳道带（.lane），按 data-lane 原值查找 */
+function laneOf(el: OASKanban, lane: string): HTMLElement {
+  return [...shadow(el).querySelectorAll<HTMLElement>('.lane[data-lane]')].find(
+    (l) => l.getAttribute('data-lane') === lane,
+  )!
+}
+
+/** 泳道带 × 列 = 单元格 */
+function cellOf(el: OASKanban, lane: string, key: string): HTMLElement {
+  return [...shadow(el).querySelectorAll<HTMLElement>('.lane-cell[data-column]')].find(
+    (c) => c.getAttribute('data-column') === key && c.closest('.lane')?.getAttribute('data-lane') === lane,
+  )!
+}
+
+/** 单元格内卡片元素 */
+function cardsInCell(el: OASKanban, lane: string, key: string): HTMLElement[] {
+  return [...cellOf(el, lane, key).querySelectorAll<HTMLElement>('.card[data-id]')]
+}
+
+/** 列头（两种模式统一携带 data-key） */
+function headOf(el: OASKanban, key: string): HTMLElement {
+  return shadow(el).querySelector<HTMLElement>(`.column-head[data-key="${key}"]`)!
+}
+
+/** 列头拖拽手柄 */
+function handleOf(el: OASKanban, key: string): HTMLElement {
+  return headOf(el, key).querySelector<HTMLElement>('.column-drag')!
+}
+
+/** 完整列拖放：手柄 dragstart → 目标列头 dragover（clientX 定前/后半）→ drop → dragend */
+function columnDragDrop(el: OASKanban, fromKey: string, toKey: string, clientX: number): void {
+  handleOf(el, fromKey).dispatchEvent(dragEvent('dragstart'))
+  headOf(el, toKey).dispatchEvent(dragEvent('dragover', { clientX }))
+  headOf(el, toKey).dispatchEvent(dragEvent('drop', { clientX }))
+  handleOf(el, fromKey).dispatchEvent(dragEvent('dragend'))
+}
+
+/** 收集 oas-column-reorder 事件 */
+function trackColumnReorder(el: OASKanban): CustomEvent[] {
+  const events: CustomEvent[] = []
+  el.addEventListener('oas-column-reorder', (e) => events.push(e as CustomEvent))
+  return events
+}
+
+/** 点击卡片（可带修饰键） */
+function clickCard(el: OASKanban, id: string, init: MouseEventInit = {}): void {
+  cardOf(el, id).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, ...init }))
+}
+
+/** 当前带 data-selected 的卡片 id */
+function selectedIds(el: OASKanban): string[] {
+  return [...shadow(el).querySelectorAll<HTMLElement>('.card[data-selected]')].map((c) => c.getAttribute('data-id')!)
 }
 
 describe('OASKanban', () => {
@@ -534,6 +612,564 @@ describe('OASKanban', () => {
       expect(el.cards.find((c) => c.id === 'c1')!.column).toBe('done')
       expect(cardsOf(el, 'done').length).toBe(1)
       expect(cardsOf(el, 'done')[0]!.querySelector('.card-title')).not.toBeNull()
+    })
+  })
+
+  describe('列拖拽重排', () => {
+    it('列头带拖拽手柄：draggable=true + aria-label（i18n）', () => {
+      const el = mount()
+      for (const col of columnEls(el)) {
+        const handle = col.querySelector<HTMLElement>('.column-drag')!
+        expect(handle, '每列头一个手柄').not.toBeNull()
+        expect(handle.getAttribute('draggable')).toBe('true')
+        expect(handle.getAttribute('aria-label')).toBe('拖拽调整列顺序')
+      }
+    })
+
+    it('手柄拖拽换序：派发 oas-column-reorder { from, to, keys }，回写 columns，DOM 列序更新，cards 不动', () => {
+      const el = mount()
+      const cardsBefore = el.getAttribute('cards')
+      const events = trackColumnReorder(el)
+      columnDragDrop(el, 'todo', 'done', -10) // done 头左半 = 插在 done 之前 → 新位次 1
+      expect(events.length).toBe(1)
+      expect(events[0]!.detail).toEqual({ from: 0, to: 1, keys: ['doing', 'todo', 'done'] })
+      expect(events[0]!.bubbles).toBe(true)
+      expect(events[0]!.composed).toBe(true)
+      expect(JSON.parse(el.getAttribute('columns')!).map((c: { key: string }) => c.key)).toEqual([
+        'doing',
+        'todo',
+        'done',
+      ])
+      expect(columnEls(el).map((c) => c.getAttribute('data-key'))).toEqual(['doing', 'todo', 'done'])
+      expect(el.getAttribute('cards')).toBe(cardsBefore)
+    })
+
+    it('拖到紧邻位置零操作：不派发、columns 不变、无落点指示残留', () => {
+      const el = mount()
+      const before = el.getAttribute('columns')
+      const events = trackColumnReorder(el)
+      // doing(1) 拖到 done 头左半 → 视觉位 2 → 移除后插入位 1 === 原位 → 零操作
+      columnDragDrop(el, 'doing', 'done', -10)
+      expect(events.length).toBe(0)
+      expect(el.getAttribute('columns')).toBe(before)
+      expect(shadow(el).querySelector('.drop-before, .drop-after')).toBeNull()
+    })
+
+    it('拖到列头右半 = 之后落点（from 末位移到中间）', () => {
+      const el = mount()
+      const events = trackColumnReorder(el)
+      columnDragDrop(el, 'done', 'todo', 10) // done(2) 拖到 todo 头右半 → 视觉位 1 → 新位次 1
+      expect(events[0]!.detail).toEqual({ from: 2, to: 1, keys: ['todo', 'done', 'doing'] })
+      expect(columnEls(el).map((c) => c.getAttribute('data-key'))).toEqual(['todo', 'done', 'doing'])
+    })
+
+    it('dragend 清除手柄淡化与落点指示（取消路径无孤儿标记）', () => {
+      const el = mount()
+      handleOf(el, 'todo').dispatchEvent(dragEvent('dragstart'))
+      expect(headOf(el, 'todo').classList.contains('drag-source')).toBe(true)
+      headOf(el, 'done').dispatchEvent(dragEvent('dragover', { clientX: -10 }))
+      expect(headOf(el, 'done').classList.contains('drop-before')).toBe(true)
+      handleOf(el, 'todo').dispatchEvent(dragEvent('dragend'))
+      expect(shadow(el).querySelector('.drag-source, .drop-before, .drop-after')).toBeNull()
+    })
+
+    it('列头落点指示：目标头左半 drop-before / 右半 drop-after（列间插入线）', () => {
+      const el = mount()
+      handleOf(el, 'todo').dispatchEvent(dragEvent('dragstart'))
+      headOf(el, 'done').dispatchEvent(dragEvent('dragover', { clientX: -10 }))
+      expect(headOf(el, 'done').classList.contains('drop-before')).toBe(true)
+      headOf(el, 'done').dispatchEvent(dragEvent('dragover', { clientX: 10 }))
+      expect(headOf(el, 'done').classList.contains('drop-after')).toBe(true)
+      expect(headOf(el, 'done').classList.contains('drop-before')).toBe(false)
+      handleOf(el, 'todo').dispatchEvent(dragEvent('dragend'))
+    })
+
+    it('触屏列移动按钮：coarse 降级——边界 aria-disabled，点击换序派发事件', () => {
+      const el = mount()
+      const prev = headOf(el, 'todo').querySelector<HTMLButtonElement>('.column-nav[data-nav="prev"]')!
+      const next = headOf(el, 'todo').querySelector<HTMLButtonElement>('.column-nav[data-nav="next"]')!
+      expect(prev.getAttribute('aria-label')).toBe('列左移')
+      expect(next.getAttribute('aria-label')).toBe('列右移')
+      expect(prev.getAttribute('aria-disabled')).toBe('true') // 首列左移禁用
+      expect(next.getAttribute('aria-disabled')).not.toBe('true')
+      expect(
+        headOf(el, 'done')
+          .querySelector<HTMLButtonElement>('.column-nav[data-nav="next"]')!
+          .getAttribute('aria-disabled'),
+      ).toBe('true') // 末列右移禁用
+      const events = trackColumnReorder(el)
+      next.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(events.length).toBe(1)
+      expect(events[0]!.detail).toEqual({ from: 0, to: 1, keys: ['doing', 'todo', 'done'] })
+      // aria-disabled 项点击零操作
+      prev.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(events.length).toBe(1)
+    })
+
+    it('手柄键盘 ←/→ 换序（键盘可达；边界零操作）', () => {
+      const el = mount()
+      const events = trackColumnReorder(el)
+      handleOf(el, 'done').dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, composed: true }),
+      )
+      expect(events.length).toBe(1)
+      expect(events[0]!.detail).toEqual({ from: 2, to: 1, keys: ['todo', 'done', 'doing'] })
+      handleOf(el, 'todo').dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, composed: true }),
+      )
+      expect(events.length).toBe(1) // 首列左移零操作
+      handleOf(el, 'todo').dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, composed: true }),
+      )
+      expect(events.length).toBe(2)
+      expect(events[1]!.detail).toEqual({ from: 0, to: 1, keys: ['done', 'todo', 'doing'] })
+    })
+
+    it('泳道模式下列重排：各带内单元格列序跟随新列序，带序不变', () => {
+      const el = mountSwim()
+      const events = trackColumnReorder(el)
+      columnDragDrop(el, 'todo', 'doing', 10) // todo(0) → doing 头右半 → 视觉位 1 → 新位次 1
+      expect(events[0]!.detail).toEqual({ from: 0, to: 1, keys: ['doing', 'todo'] })
+      // high 带内单元格：doing 在前
+      const highBody = laneOf(el, 'high').querySelector<HTMLElement>('.lane-body')!
+      expect(
+        [...highBody.querySelectorAll<HTMLElement>('.lane-cell')].map((c) => c.getAttribute('data-column')),
+      ).toEqual(['doing', 'todo'])
+      // 带序不变
+      expect(
+        [...shadow(el).querySelectorAll<HTMLElement>('.lane[data-lane]')].map((l) => l.getAttribute('data-lane')),
+      ).toEqual(['high', 'low', ''])
+    })
+  })
+
+  describe('WIP 限制', () => {
+    it('无 limit：不标 data-over-limit，计数无 over-limit 类', () => {
+      const el = mount()
+      for (const col of columnEls(el)) {
+        expect(col.hasAttribute('data-over-limit')).toBe(false)
+        expect(col.querySelector('.column-count')!.classList.contains('over-limit')).toBe(false)
+      }
+    })
+
+    it('超限：列容器 data-over-limit + 列头计数 warning 类', () => {
+      const el = mount({
+        columns: JSON.stringify([
+          { key: 'todo', title: '待办', limit: 1 },
+          { key: 'doing', title: '进行中' },
+          { key: 'done', title: '已完成' },
+        ]),
+      })
+      expect(columnOf(el, 'todo').hasAttribute('data-over-limit')).toBe(true)
+      expect(columnOf(el, 'todo').querySelector('.column-count')!.classList.contains('over-limit')).toBe(true)
+      expect(columnOf(el, 'doing').hasAttribute('data-over-limit')).toBe(false)
+      expect(columnOf(el, 'done').hasAttribute('data-over-limit')).toBe(false)
+    })
+
+    it('恰好等于 limit：不标记（超限才标）', () => {
+      const el = mount({
+        columns: JSON.stringify([
+          { key: 'todo', title: '待办', limit: 2 },
+          { key: 'doing', title: '进行中' },
+          { key: 'done', title: '已完成' },
+        ]),
+      })
+      expect(columnOf(el, 'todo').hasAttribute('data-over-limit')).toBe(false)
+    })
+
+    it('limit 0 / 负数 = 不限制', () => {
+      for (const limit of [0, -1]) {
+        const el = mount({
+          columns: JSON.stringify([
+            { key: 'todo', title: '待办', limit },
+            { key: 'doing', title: '进行中' },
+            { key: 'done', title: '已完成' },
+          ]),
+        })
+        expect(columnOf(el, 'todo').hasAttribute('data-over-limit')).toBe(false)
+      }
+    })
+
+    it('拖入超限列正常落定（提示语义非阻断）：事件照发、数据落定、标记保持', () => {
+      const el = mount({
+        columns: JSON.stringify([
+          { key: 'todo', title: '待办', limit: 1 },
+          { key: 'doing', title: '进行中' },
+          { key: 'done', title: '已完成' },
+        ]),
+      })
+      const events = trackChange(el)
+      dragDrop(el, 'c3', columnOf(el, 'todo').querySelector<HTMLElement>('.column-body')!, 0)
+      expect(events.length).toBe(1)
+      expect(events[0]!.detail).toEqual({ id: 'c3', from: 'doing', to: 'todo', index: 2 })
+      expect(JSON.parse(el.getAttribute('cards')!).find((c: { id: string }) => c.id === 'c3').column).toBe('todo')
+      expect(columnOf(el, 'todo').hasAttribute('data-over-limit')).toBe(true)
+    })
+
+    it('宿主更新数据解除超限', () => {
+      const columns = JSON.stringify([
+        { key: 'todo', title: '待办', limit: 1 },
+        { key: 'doing', title: '进行中' },
+        { key: 'done', title: '已完成' },
+      ])
+      const el = mount({ columns })
+      expect(columnOf(el, 'todo').hasAttribute('data-over-limit')).toBe(true)
+      el.cards = [{ id: 'c1', column: 'todo', title: '任务一' }]
+      expect(columnOf(el, 'todo').hasAttribute('data-over-limit')).toBe(false)
+      expect(columnOf(el, 'todo').querySelector('.column-count')!.classList.contains('over-limit')).toBe(false)
+    })
+
+    it('泳道下按列聚合判定（跨带合计）', () => {
+      const el = mountSwim({
+        columns: JSON.stringify([{ key: 'todo', title: '待办', limit: 2 }, ...SWIM_COLUMNS.slice(1)]),
+      })
+      // todo 列跨带合计 s1/s3/s5 = 3 > 2
+      expect(headOf(el, 'todo').hasAttribute('data-over-limit')).toBe(true)
+      expect(headOf(el, 'todo').querySelector('.column-count')!.classList.contains('over-limit')).toBe(true)
+      for (const lane of ['high', 'low', '']) {
+        expect(cellOf(el, lane, 'todo').hasAttribute('data-over-limit')).toBe(true)
+      }
+      expect(headOf(el, 'doing').hasAttribute('data-over-limit')).toBe(false)
+      expect(cellOf(el, 'low', 'doing').hasAttribute('data-over-limit')).toBe(false)
+    })
+  })
+
+  describe('卡片多选', () => {
+    it('Ctrl+点击逐枚切换选中（data-selected）', () => {
+      const el = mount()
+      clickCard(el, 'c1', { ctrlKey: true })
+      expect(selectedIds(el)).toEqual(['c1'])
+      clickCard(el, 'c2', { ctrlKey: true })
+      expect(selectedIds(el).sort()).toEqual(['c1', 'c2'])
+      clickCard(el, 'c1', { ctrlKey: true })
+      expect(selectedIds(el)).toEqual(['c2'])
+    })
+
+    it('Cmd+点击同 Ctrl（metaKey）', () => {
+      const el = mount()
+      clickCard(el, 'c1', { metaKey: true })
+      expect(selectedIds(el)).toEqual(['c1'])
+    })
+
+    it('Shift+点击同列范围选（锚点到最后点击）', () => {
+      const el = mount()
+      clickCard(el, 'c1') // 锚点 c1
+      clickCard(el, 'c2', { shiftKey: true })
+      expect(selectedIds(el)).toEqual(['c1', 'c2'])
+      // 新锚点为 c2：shift 回点 c1 → 仍是整段
+      clickCard(el, 'c1', { shiftKey: true })
+      expect(selectedIds(el)).toEqual(['c1', 'c2'])
+    })
+
+    it('Shift+点击跨列（跨单元格）退化为单选该枚', () => {
+      const el = mount()
+      clickCard(el, 'c1')
+      clickCard(el, 'c3', { shiftKey: true })
+      expect(selectedIds(el)).toEqual(['c3'])
+    })
+
+    it('普通点击清空多选选中该枚', () => {
+      const el = mount()
+      clickCard(el, 'c1', { ctrlKey: true })
+      clickCard(el, 'c2', { ctrlKey: true })
+      expect(selectedIds(el).length).toBe(2)
+      clickCard(el, 'c3')
+      expect(selectedIds(el)).toEqual(['c3'])
+    })
+
+    it('空白处点击（列体空白）清空多选', () => {
+      const el = mount()
+      clickCard(el, 'c1', { ctrlKey: true })
+      clickCard(el, 'c2', { ctrlKey: true })
+      columnOf(el, 'done')
+        .querySelector<HTMLElement>('.column-body')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(selectedIds(el)).toEqual([])
+    })
+
+    it('Esc 清空多选（菜单未开时）', () => {
+      const el = mount()
+      clickCard(el, 'c1', { ctrlKey: true })
+      expect(selectedIds(el).length).toBe(1)
+      shadow(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }))
+      expect(selectedIds(el)).toEqual([])
+    })
+
+    it('多选拖拽：移动全部选中卡到落点列——一条 oas-change，detail 含 ids（id 为首枚），落定后清空选中', () => {
+      const el = mount()
+      clickCard(el, 'c1', { ctrlKey: true })
+      clickCard(el, 'c2', { ctrlKey: true })
+      const events = trackChange(el)
+      dragDrop(el, 'c1', cardOf(el, 'c3'), 10) // 拖 c1 到 doing 的 c3 下半
+      expect(events.length).toBe(1)
+      expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'doing', index: 1, ids: ['c1', 'c2'] })
+      expect(cardsOf(el, 'doing').map((c) => c.getAttribute('data-id'))).toEqual(['c3', 'c1', 'c2'])
+      expect(cardsOf(el, 'todo')).toEqual([])
+      const cards = JSON.parse(el.getAttribute('cards')!) as Array<Record<string, unknown>>
+      expect(cards.find((c) => c.id === 'c1')!.column).toBe('doing')
+      expect(cards.find((c) => c.id === 'c2')!.column).toBe('doing')
+      expect(selectedIds(el)).toEqual([])
+    })
+
+    it('多选拖拽 index 为移除选中卡后的插入位', () => {
+      const el = mount()
+      clickCard(el, 'c1', { ctrlKey: true })
+      clickCard(el, 'c2', { ctrlKey: true })
+      const events = trackChange(el)
+      dragDrop(el, 'c1', cardOf(el, 'c3'), -10) // c3 上半：视觉位 0 → 移除后插入位 0
+      expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'doing', index: 0, ids: ['c1', 'c2'] })
+      expect(cardsOf(el, 'doing').map((c) => c.getAttribute('data-id'))).toEqual(['c1', 'c2', 'c3'])
+    })
+
+    it('选中卡跨列时 from 取首枚列，全部选中卡换列', () => {
+      const el = mount()
+      clickCard(el, 'c1', { ctrlKey: true }) // todo
+      clickCard(el, 'c3', { ctrlKey: true }) // doing
+      const events = trackChange(el)
+      dragDrop(el, 'c1', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
+      expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'done', index: 0, ids: ['c1', 'c3'] })
+      expect(cardsOf(el, 'done').map((c) => c.getAttribute('data-id'))).toEqual(['c1', 'c3'])
+    })
+
+    it('单枚选中拖拽保持单卡契约（detail 无 ids 字段）', () => {
+      const el = mount()
+      clickCard(el, 'c1') // 普通点击 = 单选
+      const events = trackChange(el)
+      dragDrop(el, 'c1', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
+      expect(events.length).toBe(1)
+      expect(Object.keys(events[0]!.detail).sort()).toEqual(['from', 'id', 'index', 'to'])
+      expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'done', index: 0 })
+    })
+
+    it('拖拽未选中卡只动该卡（其余选中保持）', () => {
+      const el = mount()
+      clickCard(el, 'c1', { ctrlKey: true })
+      clickCard(el, 'c2', { ctrlKey: true })
+      const events = trackChange(el)
+      dragDrop(el, 'c3', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
+      expect(events[0]!.detail).toEqual({ id: 'c3', from: 'doing', to: 'done', index: 0 })
+      expect(cardsOf(el, 'done').map((c) => c.getAttribute('data-id'))).toEqual(['c3'])
+      expect(cardsOf(el, 'todo').map((c) => c.getAttribute('data-id'))).toEqual(['c1', 'c2'])
+    })
+
+    it('触屏菜单移动不受多选影响：菜单只作用于按钮所在卡（第一期语义）', () => {
+      const el = mount()
+      clickCard(el, 'c1', { ctrlKey: true })
+      clickCard(el, 'c2', { ctrlKey: true })
+      const events = trackChange(el)
+      cardOf(el, 'c1')
+        .querySelector<HTMLButtonElement>('.card-move')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      const done = [...shadow(el).querySelectorAll<HTMLElement>('.move-menu [role="menuitem"]')].find(
+        (i) => i.textContent === '已完成',
+      )!
+      done.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(events.length).toBe(1)
+      expect(Object.keys(events[0]!.detail).sort()).toEqual(['from', 'id', 'index', 'to'])
+      expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'done', index: 0 })
+      // c2 留在 todo（未被带动）
+      expect(cardsOf(el, 'todo').map((c) => c.getAttribute('data-id'))).toEqual(['c2'])
+    })
+
+    it('泳道下 Shift 范围选限同一单元格（跨带退化单选）', () => {
+      const el = mountSwim()
+      clickCard(el, 's1') // high-todo 锚点
+      clickCard(el, 's5', { shiftKey: true }) // （空）-todo：不同单元格
+      expect(selectedIds(el)).toEqual(['s5'])
+    })
+
+    it('多选拖拽 × 泳道：全部选中卡改写泳道字段，detail 含 ids + swimlane（首枚口径）', () => {
+      const el = mountSwim()
+      clickCard(el, 's1', { ctrlKey: true }) // high-todo
+      clickCard(el, 's5', { ctrlKey: true }) // （空）-todo
+      const events = trackChange(el)
+      dragDrop(el, 's1', cardOf(el, 's2'), 10) // 拖到 low-doing 的 s2 下半
+      expect(events.length).toBe(1)
+      expect(events[0]!.detail).toEqual({
+        id: 's1',
+        from: 'todo',
+        to: 'doing',
+        index: 1,
+        ids: ['s1', 's5'],
+        swimlane: { from: 'high', to: 'low' },
+      })
+      const cards = JSON.parse(el.getAttribute('cards')!) as Array<Record<string, unknown>>
+      expect(cards.find((c) => c.id === 's1')!.prio).toBe('low')
+      expect(cards.find((c) => c.id === 's5')!.prio).toBe('low')
+      expect(cardsInCell(el, 'low', 'doing').map((c) => c.getAttribute('data-id'))).toEqual(['s2', 's1', 's5'])
+    })
+  })
+
+  describe('泳道（swimlane-by）', () => {
+    it('按字段值横向分带：带序为首次出现序，带头含字段值 + 计数 + 折叠箭头', () => {
+      const el = mountSwim()
+      const lanes = [...shadow(el).querySelectorAll<HTMLElement>('.lane[data-lane]')]
+      expect(lanes.map((l) => l.getAttribute('data-lane'))).toEqual(['high', 'low', ''])
+      expect(laneOf(el, 'high').querySelector<HTMLElement>('.lane-label')!.textContent).toBe('high')
+      expect(laneOf(el, 'high').querySelector<HTMLElement>('.lane-count')!.textContent).toBe('2')
+      expect(laneOf(el, 'low').querySelector<HTMLElement>('.lane-count')!.textContent).toBe('1')
+      const toggle = laneOf(el, 'high').querySelector<HTMLButtonElement>('.lane-toggle')!
+      expect(toggle.getAttribute('aria-label')).toBe('展开/收起泳道')
+      expect(toggle.getAttribute('aria-expanded')).toBe('true') // 默认全展开
+    })
+
+    it('字段值缺失/空归「（空）」泳道（i18n，table.groupEmpty 同语义）', () => {
+      const el = mountSwim()
+      expect(laneOf(el, '').querySelector<HTMLElement>('.lane-label')!.textContent).toBe('（空）')
+      expect(laneOf(el, '').querySelector<HTMLElement>('.lane-count')!.textContent).toBe('2')
+    })
+
+    it('泳道内卡片按列分组渲染（带 × 列 = 单元格矩阵）', () => {
+      const el = mountSwim()
+      expect(cardsInCell(el, 'high', 'todo').map((c) => c.getAttribute('data-id'))).toEqual(['s1'])
+      expect(cardsInCell(el, 'high', 'doing').map((c) => c.getAttribute('data-id'))).toEqual(['s4'])
+      expect(cardsInCell(el, 'low', 'doing').map((c) => c.getAttribute('data-id'))).toEqual(['s2'])
+      expect(cardsInCell(el, '', 'todo').map((c) => c.getAttribute('data-id'))).toEqual(['s3', 's5'])
+      expect(cellOf(el, 'low', 'todo').querySelector('.card')).toBeNull()
+    })
+
+    it('无 swimlane-by：保持原列结构（无 .lane）', () => {
+      const el = mount()
+      expect(shadow(el).querySelector('.lane')).toBeNull()
+      expect(columnEls(el).length).toBe(3)
+    })
+
+    it('空单元格显示占位文案（复用空列占位 i18n / empty-column-text 覆盖）', () => {
+      const el = mountSwim()
+      expect(cellOf(el, 'low', 'todo').querySelector<HTMLElement>('.empty-cell')!.textContent).toBe('拖拽卡片到此处')
+      const el2 = mountSwim({ 'empty-column-text': '这里空着' })
+      expect(cellOf(el2, 'low', 'todo').querySelector<HTMLElement>('.empty-cell')!.textContent).toBe('这里空着')
+    })
+
+    it('点击折叠/展开：aria-expanded 同步 + 带体显隐', () => {
+      const el = mountSwim()
+      const toggle = laneOf(el, 'high').querySelector<HTMLButtonElement>('.lane-toggle')!
+      toggle.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(laneOf(el, 'high').classList.contains('lane-collapsed')).toBe(true)
+      expect(toggle.getAttribute('aria-expanded')).toBe('false')
+      toggle.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(laneOf(el, 'high').classList.contains('lane-collapsed')).toBe(false)
+      expect(toggle.getAttribute('aria-expanded')).toBe('true')
+    })
+
+    it('折叠状态在数据变化（重渲染）时保留', () => {
+      const el = mountSwim()
+      laneOf(el, 'high')
+        .querySelector<HTMLButtonElement>('.lane-toggle')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      // 同单元格内排序触发数据变化重渲染
+      dragDrop(el, 's5', cardOf(el, 's3'), -10)
+      expect(laneOf(el, 'high').classList.contains('lane-collapsed')).toBe(true)
+    })
+
+    it('swimlane-by 变化清空折叠残留', () => {
+      const el = mountSwim()
+      laneOf(el, 'high')
+        .querySelector<HTMLButtonElement>('.lane-toggle')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(laneOf(el, 'high').classList.contains('lane-collapsed')).toBe(true)
+      el.setAttribute('swimlane-by', 'owner')
+      expect(shadow(el).querySelector('.lane-collapsed')).toBeNull()
+    })
+
+    it('跨泳道拖拽 = 改泳道字段值：oas-change detail 加 swimlane { from, to }，数据回写', () => {
+      const el = mountSwim()
+      const events = trackChange(el)
+      dragDrop(el, 's1', cardOf(el, 's2'), 10) // high-todo → low-doing 的 s2 下半
+      expect(events.length).toBe(1)
+      expect(events[0]!.detail).toEqual({
+        id: 's1',
+        from: 'todo',
+        to: 'doing',
+        index: 1,
+        swimlane: { from: 'high', to: 'low' },
+      })
+      const cards = JSON.parse(el.getAttribute('cards')!) as Array<Record<string, unknown>>
+      expect(cards.find((c) => c.id === 's1')!.prio).toBe('low')
+      expect(cards.find((c) => c.id === 's1')!.column).toBe('doing')
+      // 重渲染后落入 low 带
+      expect(cardsInCell(el, 'low', 'doing').map((c) => c.getAttribute('data-id'))).toEqual(['s2', 's1'])
+    })
+
+    it('同带拖拽（跨列）不派发 swimlane 字段、字段值不变', () => {
+      const el = mountSwim()
+      const events = trackChange(el)
+      dragDrop(el, 's1', cardOf(el, 's4'), 10) // high-todo → high-doing
+      expect(events.length).toBe(1)
+      expect(Object.keys(events[0]!.detail).sort()).toEqual(['from', 'id', 'index', 'to'])
+      expect(events[0]!.detail).toEqual({ id: 's1', from: 'todo', to: 'doing', index: 1 })
+      expect(JSON.parse(el.getAttribute('cards')!).find((c: { id: string }) => c.id === 's1').prio).toBe('high')
+    })
+
+    it('拖到「（空）」泳道：字段值写空串，swimlane.to 为空串', () => {
+      const el = mountSwim()
+      const events = trackChange(el)
+      dragDrop(el, 's1', cardOf(el, 's3'), 10) // high-todo → （空）-todo 的 s3 下半
+      expect(events[0]!.detail).toEqual({
+        id: 's1',
+        from: 'todo',
+        to: 'todo',
+        index: 1,
+        swimlane: { from: 'high', to: '' },
+      })
+      expect(JSON.parse(el.getAttribute('cards')!).find((c: { id: string }) => c.id === 's1').prio).toBe('')
+    })
+
+    it('拖拽悬停折叠带头自动展开（只切类不重建，drop 可正常落定）', () => {
+      const el = mountSwim()
+      laneOf(el, 'low')
+        .querySelector<HTMLButtonElement>('.lane-toggle')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(laneOf(el, 'low').classList.contains('lane-collapsed')).toBe(true)
+      cardOf(el, 's1').dispatchEvent(dragEvent('dragstart'))
+      laneOf(el, 'low').dispatchEvent(dragEvent('dragover', { clientY: 0 }))
+      expect(laneOf(el, 'low').classList.contains('lane-collapsed')).toBe(false)
+      // 展开后可正常拖入
+      dragDrop(el, 's1', cardOf(el, 's2'), 10)
+      expect(cardsInCell(el, 'low', 'doing').map((c) => c.getAttribute('data-id'))).toEqual(['s2', 's1'])
+    })
+
+    it('泳道下菜单移动保持泳道不变（菜单作用于所在单元格）', () => {
+      const el = mountSwim()
+      const events = trackChange(el)
+      cardOf(el, 's1')
+        .querySelector<HTMLButtonElement>('.card-move')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      const doing = [...shadow(el).querySelectorAll<HTMLElement>('.move-menu [role="menuitem"]')].find(
+        (i) => i.textContent === '进行中',
+      )!
+      doing.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(events.length).toBe(1)
+      // 目标列同带（high）内已有 s4 → index 1；泳道字段不变、无 swimlane 字段
+      expect(events[0]!.detail).toEqual({ id: 's1', from: 'todo', to: 'doing', index: 1 })
+      expect(JSON.parse(el.getAttribute('cards')!).find((c: { id: string }) => c.id === 's1').prio).toBe('high')
+      expect(cardsInCell(el, 'high', 'doing').map((c) => c.getAttribute('data-id'))).toEqual(['s4', 's1'])
+    })
+
+    it('DSD 真水合兼容泳道结构（.lane 快照接管不重建）', () => {
+      const el = new OASKanban()
+      el.setAttribute('swimlane-by', 'prio')
+      el.setAttribute('columns', JSON.stringify(SWIM_COLUMNS))
+      el.setAttribute('cards', JSON.stringify(SWIM_CARDS))
+      // 泳道结构快照（与 update() 产物同构）
+      el.shadowRoot!.innerHTML =
+        '<meta data-oas-ssr="oas-kanban"><div class="kanban swimlane"><div class="lane-header"></div><div class="lane" data-lane="high"><div class="lane-body"><div class="lane-cell" data-column="todo"></div></div></div></div>'
+      document.body.appendChild(el)
+      // 水合接管成功：render() 未跑（shadow 无新增 <style>，只有 update() 重建板体内容）
+      expect(el.shadowRoot!.querySelector('style'), '水合路径不重建 shadow（无新 <style>）').toBeNull()
+      expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('.card').length, '水合后 update 正常填充卡片').toBeGreaterThan(0)
+    })
+
+    it('DSD 真水合兼容旧列结构（.column 快照接管不重建）', () => {
+      const el = new OASKanban()
+      el.setAttribute('columns', JSON.stringify(COLUMNS))
+      el.setAttribute('cards', JSON.stringify(CARDS))
+      el.shadowRoot!.innerHTML =
+        '<meta data-oas-ssr="oas-kanban"><div class="kanban"><div class="column" data-key="todo"><div class="column-head"></div><div class="column-body"></div></div></div>'
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelector('style'), '水合路径不重建 shadow（无新 <style>）').toBeNull()
+      expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('.card').length, '水合后 update 正常填充卡片').toBeGreaterThan(0)
     })
   })
 })

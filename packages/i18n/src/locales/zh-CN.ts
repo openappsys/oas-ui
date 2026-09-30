@@ -164,6 +164,11 @@ export const zhCN = {
   'kanban.moveCard': '移动卡片',
   'kanban.moveUp': '上移',
   'kanban.moveDown': '下移',
+  'kanban.groupEmpty': '（空）',
+  'kanban.toggleLane': '展开/收起泳道',
+  'kanban.dragColumn': '拖拽调整列顺序',
+  'kanban.moveLeft': '列左移',
+  'kanban.moveRight': '列右移',
   // tree（树形控件）
   'tree.expand': '展开/收起',
   'tree.select': '选择 {label}',

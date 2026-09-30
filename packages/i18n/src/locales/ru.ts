@@ -164,6 +164,11 @@ export const ru: LocaleMessages = {
   'kanban.moveCard': 'Переместить карточку',
   'kanban.moveUp': 'Переместить вверх',
   'kanban.moveDown': 'Переместить вниз',
+  'kanban.groupEmpty': '(пусто)',
+  'kanban.toggleLane': 'Свернуть/развернуть дорожку',
+  'kanban.dragColumn': 'Перетащите, чтобы изменить порядок столбцов',
+  'kanban.moveLeft': 'Переместить столбец влево',
+  'kanban.moveRight': 'Переместить столбец вправо',
   // tree (дерево)
   'tree.expand': 'Развернуть/Свернуть',
   'tree.select': 'Выбрать {label}',
