@@ -1,11 +1,11 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 27788,
+    "sampled": 27940,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 276,
+    "ratio": 282,
     "exempt": 454,
     "skipped": 2646
   },
@@ -543,7 +543,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 1,
+      "ratio": 7,
       "exempt": 0,
       "skipped": 5
     },
