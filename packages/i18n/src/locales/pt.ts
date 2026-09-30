@@ -164,6 +164,11 @@ export const pt: LocaleMessages = {
   'kanban.moveCard': 'Mover cartão',
   'kanban.moveUp': 'Mover para cima',
   'kanban.moveDown': 'Mover para baixo',
+  'kanban.groupEmpty': '(vazio)',
+  'kanban.toggleLane': 'Recolher/expandir raia',
+  'kanban.dragColumn': 'Arraste para reordenar colunas',
+  'kanban.moveLeft': 'Mover coluna para a esquerda',
+  'kanban.moveRight': 'Mover coluna para a direita',
   // tree (árvore)
   'tree.expand': 'Expandir/Recolher',
   'tree.select': 'Selecionar {label}',
