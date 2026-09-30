@@ -596,6 +596,23 @@ td.editing .cell-editor:focus {
   background: var(--oas-color-bg);
   box-shadow: inset 0 0 0 2px var(--oas-color-primary);
 }
+/* 浮层类编辑器（select/date-picker 组件通道）：组件宿主的触发器自带内边距与控高，
+   通用规则的单元格 padding 会压缩其内容盒（trigger 被压到内容宽→文字逐字换行+行高裁剪）——
+   overlay 宿主 padding 归零，part 穿透让 wrapper/trigger 撑满单元格 */
+td.editing .cell-editor-overlay {
+  padding: 0;
+}
+td.editing .cell-editor-overlay::part(wrapper),
+td.editing .cell-editor-overlay::part(picker) {
+  width: 100%;
+  height: 100%;
+}
+td.editing .cell-editor-overlay::part(trigger) {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  white-space: nowrap;
+}
 th[data-editing-col='true'] {
   color: var(--oas-color-primary);
   box-shadow: inset 0 -2px 0 var(--oas-color-primary);
