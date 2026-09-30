@@ -1737,3 +1737,58 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 ### 验收
 
 - cell-tooltip 溢出显示/非溢出不显示/单例实例数=1/暗色可读单测 + e2e；内存基线用例稳定通过（chromium）；全量单测绿
+
+## table 编辑器完成度批次（浮层编辑器 + multi-select 升级，未发布）
+
+### 背景
+
+editComponent 第一期约定非浮层组件（浮层类的 blur 判定缺口）；multi-select 第一期为逗号分隔 input 占位。本批补齐：浮层类组件挂载编辑 + multi-select 换多选组件。
+
+### 特性
+
+- **浮层类组件编辑器通道**（editComponent 第二期）：`oas-select` / `oas-date-picker` 等浮层组件挂载单元格编辑——浮层面板交互（点选项/翻日历）不触发 focusout 误提交；浮层关闭（选定/外点）即提交；Esc 第一层关浮层、第二层取消编辑；进入编辑自动打开浮层（open 驱动）
+- **multi-select 编辑器升级**：`type: 'multi-select'` 列的编辑器由逗号分隔 input 换为 oas-select multiple（勾选多个选项，options 同步）；提交回写数组；第一期逗号分隔通道退役（CHANGELOG 记行为变更）
+
+### 验收
+
+- 浮层编辑器（select/date-picker）挂载/选定提交/Esc 双层级/外点提交/编辑中滚动不被拆 全单测 + e2e；multi-select 勾选多个提交回写数组单测 + e2e；全量门禁绿
+
+## kanban 二期（列重排 + WIP 限制 + 卡片多选 + 泳道，未发布）
+
+### 特性
+
+- **列拖拽重排**：列头拖拽手柄换列序 → 派发 `oas-column-reorder`（detail { from, to, keys }）；触屏降级：列头内左移/右移按钮（coarse）
+- **WIP 限制**：列定义 `limit`（数字）——超限列头计数转 warning 色 + `data-over-limit` 标记；拖入超限列正常落定（限制为提示语义非阻断）
+- **卡片多选**：Ctrl/Cmd 点击逐枚切换、Shift 点击范围选（同列内）；选中态样式（`data-selected` + token 色）；多选拖拽任选一枚移动全部选中卡（派发一条 oas-change，detail 含 `ids` 数组——与单选 detail 兼容（id 取首枚））；触屏不做多选（单卡移动按钮不变）
+- **泳道**：`swimlane-by="字段key"`——按该字段值横向分带横贯各列（泳道头行：字段值 + 计数 + 折叠）；卡片拖拽跨泳道即改泳道字段值（oas-change detail 含 swimlane from/to）；空泳道带显示占位；与列拖拽重排/多选正交。泳道语义对齐分组视图的 flat 行先例
+
+### 验收
+
+- 四项各自的单测 + e2e（真实拖拽/键盘/触屏按钮）；多选批量移动事件契约；泳道折叠/跨带拖拽/空带占位；全量门禁绿
+
+## core 断开重连架构（render-once 重绑，未发布）
+
+### 背景
+
+OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组件断开重连（append/re-parent/路由缓存摘挂——宿主框架常见操作）后 bind 不重跑：shadow 内事件委托/observer 视各组件 cleanup 摘除与否处于失绑或侥幸存活的不一致态（table 的 wrap/tbody 委托摘除后全灭、kanban shadow 根监听保留幸存）。库级统一治理。
+
+### 特性
+
+- **重连重绑统一语义**：`connectedCallback` 在非首次连接时重跑 bind 面（组件 bind 幂等化——addEventListener 同 handler 同 target 天然去重；observer 类（ResizeObserver/MutationObserver）重挂）；`disconnectedCallback` 清理语义统一（document/window 级摘除 + shadow 级随元素 GC 不摘）
+- **oas-table / oas-kanban 先行接线**（本批暴露问题的两个组件），其余组件按同模式批量核
+- 不重建 shadow DOM（render-once 保留——性能语义不变；只补绑定）
+
+### 验收
+
+- table（列设置/编辑/拖拽/网格导航/虚拟滚动）与 kanban（拖拽/菜单/键盘）的「断开→重连→交互恢复」单测 + e2e；抽查 5 个其他组件同模式核对；全量门禁绿
+
+## 文档批（表单视图 recipe + i18n 自定义语言包指南，未发布）
+
+### 特性
+
+- **表单视图 recipe**：docs 食谱页新增「多维表格式记录编辑」模式——table 字段类型 + oas-form 组合的完整可拷贝示例（记录详情编辑表单 + 校验 + 提交回写链路）
+- **i18n 自定义语言包指南**：README/faq 补 step-by-step——复制 zh-CN 为模板、LocaleMessages 类型标注（缺 key 编译期报错）、dir RTL 标注、registerLocale/setLocale 注册切换、按需分包建议
+
+### 验收
+
+- recipe 页面 demo 真实可交互（e2e 过 demo-coverage/smoke 自动收集）；i18n 指南代码示例真实可编译（类型断言链）
