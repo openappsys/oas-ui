@@ -618,8 +618,9 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   private parseMultiInitial(raw: unknown): string[] {
     if (Array.isArray(raw)) return raw.map((v) => String(v))
     if (typeof raw === 'string') {
+      // 中英逗号兼容（已退役的逗号 input 通道接受中文逗号，历史数据同口径）
       return raw
-        .split(',')
+        .split(/[,，]/)
         .map((s) => s.trim())
         .filter(Boolean)
     }
@@ -779,6 +780,9 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     document.addEventListener('keydown', this.onDocumentKeydown, true)
     document.addEventListener('pointerdown', this.onDocumentPointerdown, true)
     document.addEventListener('mousedown', this.onDocumentPointerdown, true)
+    // 窗口失焦（Alt+Tab 切走）解除指针抑制：此后无 pointerdown/keydown 经 document，
+    // 陈旧「指针在面板内」会挡住失焦提交（滞留编辑态）
+    window.addEventListener('blur', this.onWindowBlur)
   }
 
   /** 拆浮层编辑器守卫（退出编辑/静默取消/宿主断开三路都必须到达，否则 document 监听泄漏） */
@@ -789,6 +793,12 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     document.removeEventListener('keydown', this.onDocumentKeydown, true)
     document.removeEventListener('pointerdown', this.onDocumentPointerdown, true)
     document.removeEventListener('mousedown', this.onDocumentPointerdown, true)
+    window.removeEventListener('blur', this.onWindowBlur)
+  }
+
+  /** 窗口失焦：解除指针抑制窗口（Alt+Tab 场景陈旧状态不挡失焦提交） */
+  private onWindowBlur = (): void => {
+    this.pointerInEditor = false
   }
 
   /**

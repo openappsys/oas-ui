@@ -1186,7 +1186,9 @@ export class OASKanban extends OASElement {
       return
     }
     if (!this._columns.some((c) => c.key === toKey)) return
-    const before = JSON.stringify(this._cards)
+    // 零操作判定用引用比较（renderCard 通道下 cards 是宿主内存对象——JSON.stringify 遇循环
+    // 引用会抛 TypeError、函数/undefined 字段被静默丢弃导致误判零操作，交叉审实抓）
+    const beforeRef = this._cards
     const first = selected[0]!
     const from = String(first.column ?? '')
     const fromLane = this.laneOf(first)
@@ -1218,7 +1220,15 @@ export class OASKanban extends OASElement {
       rest.splice(insertAt, 0, moved)
       insertAt++
     }
-    if (JSON.stringify(rest) === before) return
+    // 零操作判定：id+column+泳道 三元签名比对（原位移动/未变 → 零操作；跨列/跨带/换序必检出）。
+    // 不用 JSON.stringify：renderCard 通道下 cards 是宿主内存对象（循环引用会抛、函数字段被丢——
+    // 交叉审实抓）；不用引用比较：移动卡是新展开对象（引用必不同，原位会误判有变化）
+    const laneKey = this.hasLanes ? this.swimlaneField : null
+    const sigOf = (list: KanbanCard[]): string =>
+      list
+        .map((c) => `${String(c.id ?? '')}${String(c.column ?? '')}${laneKey ? String(c[laneKey] ?? '') : ''}`)
+        .join('|')
+    if (sigOf(rest) === sigOf(beforeRef)) return
     this._cards = rest
     this.clearSelection()
     this.writeBackCards()

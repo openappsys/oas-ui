@@ -89,7 +89,7 @@ Ctrl/Cmd+click toggles cards into the selection; Shift+click selects a range wit
 
 ## Swimlanes
 
-`swimlane-by="fieldKey"` splits the board into horizontal bands by that field's value: each band has a header row (field value + count + fold arrow; click to fold/unfold, all expanded by default, fold state survives data changes) and its cards are grouped by column inside. Dropping a card into another band rewrites that field's value (`oas-change` detail gains `swimlane: { from, to }`); cards missing the value fall into the "(empty)" band and empty cells show a placeholder:
+`swimlane-by="fieldKey"` splits the board into horizontal bands by that field's value: each band has a header row (field value + count + fold arrow; click to fold/unfold, all expanded by default, fold state survives data changes) and its cards are grouped by column inside. Dropping a card into another band rewrites that field's value (`oas-change` detail gains `swimlane: { from, to }`); cards missing the value fall into the "(empty)" band and empty cells show a placeholder (bands derive from existing cards — no fully-empty band form). Note: the `swimlane-by` field name must not collide with the built-in `column` field (cross-band dragging rewrites that field — a same-named field would destroy column assignment). Hovering a collapsed band during a drag auto-expands it for drop targeting; cancelling the drag keeps it expanded (the user has seen the content — no rollback):
 
 <DemoBlock title="Swimlanes (grouped by priority)">
   <div style="width: 100%">

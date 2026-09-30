@@ -1746,7 +1746,7 @@ editComponent 第一期约定非浮层组件（浮层类的 blur 判定缺口）
 
 ### 特性
 
-- **浮层类组件编辑器通道**（editComponent 第二期）：`oas-select` / `oas-date-picker` 等浮层组件挂载单元格编辑——浮层面板交互（点选项/翻日历）不触发 focusout 误提交；浮层关闭（选定/外点）即提交；Esc 第一层关浮层、第二层取消编辑；进入编辑自动打开浮层（open 驱动）
+- **浮层类组件编辑器通道**（editComponent 第二期）：`oas-select` / `oas-date-picker` 等浮层组件挂载单元格编辑——浮层面板交互（点选项/翻日历）不触发 focusout 误提交；浮层关闭（选定/外点）即提交；Esc 第一层关浮层、第二层取消编辑；进入编辑自动打开浮层（触发器 click 非受控通道——不写受控 open 属性，组件自身开合语义不受扰）
 - **multi-select 编辑器升级**：`type: 'multi-select'` 列的编辑器由逗号分隔 input 换为 oas-select multiple（勾选多个选项，options 同步）；提交回写数组；第一期逗号分隔通道退役（CHANGELOG 记行为变更）
 
 ### 验收
@@ -1760,7 +1760,7 @@ editComponent 第一期约定非浮层组件（浮层类的 blur 判定缺口）
 - **列拖拽重排**：列头拖拽手柄换列序 → 派发 `oas-column-reorder`（detail { from, to, keys }）；触屏降级：列头内左移/右移按钮（coarse）
 - **WIP 限制**：列定义 `limit`（数字）——超限列头计数转 warning 色 + `data-over-limit` 标记；拖入超限列正常落定（限制为提示语义非阻断）
 - **卡片多选**：Ctrl/Cmd 点击逐枚切换、Shift 点击范围选（同列内）；选中态样式（`data-selected` + token 色）；多选拖拽任选一枚移动全部选中卡（派发一条 oas-change，detail 含 `ids` 数组——与单选 detail 兼容（id 取首枚））；触屏不做多选（单卡移动按钮不变）
-- **泳道**：`swimlane-by="字段key"`——按该字段值横向分带横贯各列（泳道头行：字段值 + 计数 + 折叠）；卡片拖拽跨泳道即改泳道字段值（oas-change detail 含 swimlane from/to）；空泳道带显示占位；与列拖拽重排/多选正交。泳道语义对齐分组视图的 flat 行先例
+- **泳道**：`swimlane-by="字段key"`——按该字段值横向分带横贯各列（泳道头行：字段值 + 计数 + 折叠）；卡片拖拽跨泳道即改泳道字段值（oas-change detail 含 swimlane from/to）；泳道带内的空列单元格显示占位（泳道带由现有卡片派生——无整带全空形态）；与列拖拽重排/多选正交。泳道语义对齐分组视图的 flat 行先例
 
 ### 验收
 
