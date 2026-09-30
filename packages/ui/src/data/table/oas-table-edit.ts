@@ -55,13 +55,30 @@ interface EditState {
   td: HTMLTableCellElement
   /** 编辑前原值（字符串形态） */
   oldValue: string
-  /** 编辑器类型：input / select（原生通道）/ component（editComponent 组件通道） */
-  editor: 'input' | 'select' | 'component'
+  /** 编辑器类型：input / select（原生通道）/ component（editComponent 组件通道）/ overlay（浮层组件通道） */
+  editor: 'input' | 'select' | 'component' | 'overlay'
   /** component 态的编辑器元素（value 属性语义的任意 WC） */
   componentEl: HTMLElement | null
+  /** 浮层多值编辑器（oas-select multiple）：读值/提交走字符串数组形态（空数组为合法值） */
+  multiEditor: boolean
+  /** multiEditor 的初值快照（未变更判定用；非多值编辑器为 null） */
+  oldArray: string[] | null
 }
 
 const EDIT_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${editPath}</svg>`
+
+/**
+ * 浮层类编辑器组件名单（editComponent 第二期 + multi-select 列默认编辑器）。
+ * 这些组件的浮层面板挂在自身 shadow 内（select 为 position: fixed 的 .dropdown，仍在
+ * 组件 shadowRoot 里），面板内点击会引发「焦点离开编辑器宿主」的 focusout——第一期
+ * 通用失焦提交链会把面板内交互误判为离开编辑器（未选完就提交/拆编辑器）。
+ * 名单内组件改走 buildOverlayEditor 浮层通道：自动展开、失焦抑制、Esc 双层级；
+ * 名单外组件保持第一期通用组件通道。库内新增浮层编辑类组件时同步本名单。
+ */
+const OVERLAY_EDITOR_TAGS: ReadonlySet<string> = new Set(['oas-select', 'oas-date-picker'])
+
+/** multi-select 列的默认浮层编辑器（第一期逗号分隔 input 通道已退役） */
+const MULTI_SELECT_EDITOR_TAG = 'oas-select'
 
 export class TableEditController implements ReactiveController, TableEditCapability {
   private hostEl: HTMLElement & TableEditHost
@@ -86,6 +103,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     this.delegatedTable?.removeEventListener('dblclick', this.onTableDblClick)
     this.delegatedTable = null
     this.lastCellClick = null
+    this.teardownOverlayGuards()
     this.editState = null
   }
 
@@ -211,6 +229,9 @@ export class TableEditController implements ReactiveController, TableEditCapabil
 
   /** 外部重渲染（数据/排序/滚动等触发整体重建）前静默取消进行中的编辑 */
   settleEdit(): void {
+    // 浮层编辑器的 document 级守卫不随编辑器 DOM 移除自动消失，重建取消时必须显式拆除
+    //（否则泄漏的 Esc capture 会在表格外键盘流里误触发取消）
+    this.teardownOverlayGuards()
     this.editState = null
   }
 
@@ -258,15 +279,36 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     // 编辑前原值（字符串形态）：multi-select 数组天然 join 为逗号形态展示
     const oldValue = String(row[colKey] ?? '')
     const displayIndex = this.displayIndexOf(tr)
-    // 编辑器分派：editComponent 显式指定 > 列 type 专属编辑器（select 通道 / checkbox 开关）>
+    // 编辑器分派：editComponent 显式指定（浮层名单内走浮层通道，否则通用组件通道）>
+    // 列 type 专属编辑器（checkbox 开关 / select 原生通道 / multi-select 浮层多选）>
     // editor 声明（select）> 默认原生 input
-    const editor: HTMLInputElement | HTMLSelectElement | HTMLElement = col.editComponent
-      ? this.buildFormComponentEditor(col, key, oldValue)
-      : col.type === 'checkbox'
-        ? this.buildCheckboxEditor(col, key, oldValue)
-        : col.type === 'select' || col.editor === 'select'
-          ? this.buildSelectEditor(col, key, oldValue)
-          : this.buildInputEditor(col, key, oldValue)
+    const overlayTag = col.editComponent
+      ? OVERLAY_EDITOR_TAGS.has(col.editComponent)
+        ? col.editComponent
+        : null
+      : col.type === 'multi-select'
+        ? MULTI_SELECT_EDITOR_TAG
+        : null
+    const multiOverlay = overlayTag === MULTI_SELECT_EDITOR_TAG && col.type === 'multi-select'
+    const multiInitial = multiOverlay ? this.parseMultiInitial(row[colKey]) : null
+    let editor: HTMLInputElement | HTMLSelectElement | HTMLElement
+    let kind: EditState['editor']
+    if (overlayTag) {
+      editor = this.buildOverlayEditor(col, key, oldValue, overlayTag, multiInitial)
+      kind = 'overlay'
+    } else if (col.editComponent) {
+      editor = this.buildFormComponentEditor(col, key, oldValue)
+      kind = 'component'
+    } else if (col.type === 'checkbox') {
+      editor = this.buildCheckboxEditor(col, key, oldValue)
+      kind = 'component'
+    } else if (col.type === 'select' || col.editor === 'select') {
+      editor = this.buildSelectEditor(col, key, oldValue)
+      kind = 'select'
+    } else {
+      editor = this.buildInputEditor(col, key, oldValue)
+      kind = 'input'
+    }
     // 不可见占位：保留原单元格文本的布局贡献（auto 表格布局下列宽/行高与常态逐像素一致），
     // 编辑器绝对定位覆于其上零贡献——进/出编辑不撑列、不挤邻列、不跳行高
     const sizer = document.createElement('span')
@@ -285,19 +327,20 @@ export class TableEditController implements ReactiveController, TableEditCapabil
       row,
       td,
       oldValue,
-      editor: col.editComponent
-        ? 'component'
-        : col.type === 'checkbox'
-          ? 'component'
-          : col.type === 'select' || col.editor === 'select'
-            ? 'select'
-            : 'input',
-      componentEl: col.editComponent || col.type === 'checkbox' ? (editor as HTMLElement) : null,
+      editor: kind,
+      componentEl: kind === 'component' || kind === 'overlay' ? (editor as HTMLElement) : null,
+      multiEditor: multiOverlay,
+      oldArray: multiInitial,
     }
     // preventScroll：默认聚焦会让浏览器 scrollIntoView 编辑器（行虚拟下产生微 scroll →
     // 滚动重建路径 settleEdit 静默拆掉刚打开的编辑器——双击进编辑 30ms 内即被拆除，实测复现）
     editor.focus({ preventScroll: true })
     if (editor instanceof HTMLInputElement) editor.select()
+    // 浮层编辑器：进入编辑自动展开面板 + 挂 document 级守卫（Esc 双层级 / 失焦抑制）
+    if (kind === 'overlay') {
+      this.openOverlayEditor(editor as HTMLElement)
+      this.setupOverlayGuards()
+    }
     this.refreshActionCells()
   }
 
@@ -406,14 +449,17 @@ export class TableEditController implements ReactiveController, TableEditCapabil
 
   /**
    * 提交当前编辑（Enter / blur / 操作列保存）：
-   * - 空值 → 还原旧值（默认非破坏）并派发 oas-edit-cancel
+   * - 空值 → 还原旧值（默认非破坏）并派发 oas-edit-cancel（浮层多值编辑器除外：空数组是合法值）
    * - 值变化且非空 → 非受控模式回写 data 并派发 oas-edit；受控模式仅派发 oas-edit
    * - 值未变 → 静默退出
    */
   private submitEdit(): void {
     const st = this.editState
     if (!st) return
-    const value = this.readEditorValue(st)
+    const raw = this.readEditorRawValue(st)
+    // 多值编辑器（oas-select multiple）以数组为提交语义：事件 detail 仍用逗号 join 字符串形态
+    const isMulti = Array.isArray(raw)
+    const value = isMulti ? raw.join(',') : raw
     const col = this.hostEl.effectiveColumns().find((c) => c.key === st.colKey)
     // 校验：自定义 validate 优先；type=date 且未自定义时内置 YYYY-MM-DD 形态校验
     //（失败无自定义文案，保持编辑态 + data-invalid 红框提示）
@@ -435,22 +481,32 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     }
     st.td.removeAttribute('data-invalid')
     this.exitEdit(st)
-    if (value === '') {
+    // 空值取消仅针对字符串形态：多值编辑器的空数组是合法值（用户清空全部勾选 = 明确置空），照常提交
+    if (!isMulti && value === '') {
       this.hostEl.notifyEdit('edit-cancel', this.editDetail(st, st.oldValue))
       this.focusCell(st.key, st.colKey)
       return
     }
-    // checkbox 走语义相等（'on'/'true'/'1' 同真——原始形态与编辑器读值形态不同但语义未变，不得误判为变化改写数据）
-    const unchanged =
-      col?.type === 'checkbox' ? isTruthyCell(value) === isTruthyCell(st.oldValue) : value === st.oldValue
+    // checkbox 走语义相等（'on'/'true'/'1' 同真——原始形态与编辑器读值形态不同但语义未变，不得误判为变化改写数据）；
+    // 多值走数组全等（顺序敏感：选择顺序变化视为变化，按新顺序回写）
+    const unchanged = isMulti
+      ? this.multiValuesEqual(raw, st.oldArray ?? [])
+      : col?.type === 'checkbox'
+        ? isTruthyCell(value) === isTruthyCell(st.oldValue)
+        : value === st.oldValue
     if (!unchanged) {
       if (!this.hostEl.hasAttribute('edit-controlled')) {
-        st.row[st.colKey] = this.coerceEditValue(st, value)
+        st.row[st.colKey] = isMulti ? raw : this.coerceEditValue(st, value)
         this.hostEl.setAttribute('data', JSON.stringify(this.hostEl.data))
       }
       this.hostEl.notifyEdit('edit', this.editDetail(st, value))
     }
     this.focusCell(st.key, st.colKey)
+  }
+
+  /** 多选值全等（同长同序同项） */
+  private multiValuesEqual(a: string[], b: string[]): boolean {
+    return a.length === b.length && a.every((v, i) => v === b[i])
   }
 
   /** 编辑校验错误展示：写入/清除 td 的 error 消息（重渲染编辑器时保留该错误于单元格内） */
@@ -483,6 +539,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   /** 退出编辑态：还原单元格展示、清除高亮、刷新操作列按钮 */
   private exitEdit(st: EditState): void {
     // 先置 null：清 td 会移除聚焦的 input 触发 blur，若 editState 未清空，blur→handleEditorBlur→submitEdit 会把值误提交
+    this.teardownOverlayGuards()
     this.editState = null
     const col = this.hostEl.effectiveColumns().find((c) => c.key === st.colKey)
     if (col) {
@@ -504,7 +561,69 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     const related = e.relatedTarget as Node | null
     // 焦点移至组件内部（操作列保存/取消按钮）时交给按钮 click，避免双重提交
     if (related && this.hostEl.shadowRoot?.contains(related)) return
+    if (this.editState.editor === 'overlay') {
+      const el = this.editState.componentEl
+      // 焦点在浮层编辑器组件自身 shadow 内转移（如进入编辑自动展开时 trigger → 面板网格、
+      // trigger → 搜索框）：不是离开编辑器。兼容两种环境——真实浏览器把 relatedTarget retarget
+      // 成宿主元素（related === el），happy-dom 保留原始内部节点（el.shadowRoot.contains 命中）
+      if (
+        el &&
+        related &&
+        (related === el || (el.contains(related) as boolean) || (el.shadowRoot?.contains(related) ?? false))
+      ) {
+        return
+      }
+      // 浮层内指针交互（点选项/滚动条等非焦点元素）引发的焦点转移：见 onDocumentPointerdown
+      if (this.pointerInEditor) return
+    }
     this.submitEdit()
+  }
+
+  /**
+   * 编辑器读值（统一入口）：浮层通道区分多值（数组形态）与单值（字符串形态），
+   * 其余通道恒为字符串。多值读 value attribute 的 JSON 数组（oas-select multiple 的
+   * 受控源即 value 属性）；单值沿用 getFormValue → value attribute 兜底链。
+   */
+  private readEditorRawValue(st: EditState): string | string[] {
+    if (st.editor === 'overlay') {
+      const el = st.componentEl ?? st.td.querySelector<HTMLElement>('.cell-editor-component')
+      if (!el) return st.multiEditor ? (st.oldArray ?? []) : st.oldValue
+      if (st.multiEditor) return this.readOverlayArrayValue(el)
+      // 单值浮层组件：getFormValue 优先（库内 form-associated 钩子；仅收字符串形态——
+      // 多值/范围形态返回 FormData，落到 value attribute 兜底），value attribute 次之
+      const withHook = el as unknown as { getFormValue?: () => unknown }
+      if (typeof withHook.getFormValue === 'function') {
+        const v = withHook.getFormValue()
+        if (typeof v === 'string' && v !== '') return v
+      }
+      return el.getAttribute('value') ?? st.oldValue
+    }
+    return this.readEditorValue(st)
+  }
+
+  /** 浮层多值编辑器读值：value attribute 的 JSON 数组（非法/非数组回落空数组） */
+  private readOverlayArrayValue(el: HTMLElement): string[] {
+    try {
+      const parsed: unknown = JSON.parse(el.getAttribute('value') ?? '[]')
+      return Array.isArray(parsed) ? parsed.map((v) => String(v)) : []
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * multi-select 列初值归一为数组：数组原样（String 归一）；字符串按逗号拆分 trim 空段
+   *（兼容第一期逗号分隔 input 通道存储的字符串形态数据）；其余（null/undefined 等）空集。
+   */
+  private parseMultiInitial(raw: unknown): string[] {
+    if (Array.isArray(raw)) return raw.map((v) => String(v))
+    if (typeof raw === 'string') {
+      return raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    }
+    return []
   }
 
   private readEditorValue(st: EditState): string {
@@ -581,11 +700,129 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   }
 
   /**
+   * 浮层组件编辑器（editComponent 第二期：oas-select / oas-date-picker；multi-select
+   * 类型列的默认编辑器同样走本通道——oas-select multiple）。与非浮层组件通道的差异：
+   * - 挂载后自动展开浮层：模拟触发器 click 走组件**非受控**开合通道——不写 open 属性
+   *  （open 是受控模式：写人后组件只派 oas-open-change 不自行收合，面板会被钉死）。
+   *  组件未注册（宿主笔误/漏 import）时挂载即白板，不展开不告警——对齐第一期通道行为。
+   * - 浮层内指针交互不误提交：document 级 pointerdown/mousedown capture 维护「指针在
+   *  编辑器子树内」抑制窗口，配合 handleEditorBlur 的失焦抑制（见该处注释）。
+   * - Esc 双层级：document 级 keydown capture 先于组件内部 Esc 处理——浮层开着让组件
+   *  自关面板（不取消编辑），浮层已关才取消编辑。
+   * - 提交语义：单值浮层组件选定即提交（oas-change）；多选浮层组件勾选是中间态不提交，
+   *  失焦/外点一次性提交数组（空数组为合法值回写 []）。
+   */
+  private buildOverlayEditor(
+    col: TableColumn,
+    key: string,
+    value: string,
+    tag: string,
+    multiInitial: string[] | null,
+  ): HTMLElement {
+    const el = document.createElement(tag) as HTMLElement
+    el.className = 'cell-editor cell-editor-component cell-editor-overlay'
+    el.setAttribute('part', 'cell-editor')
+    const multi = tag === MULTI_SELECT_EDITOR_TAG && col.type === 'multi-select'
+    if (tag === MULTI_SELECT_EDITOR_TAG) {
+      // 选项同步：editOptions 优先，回落列 options（与展示侧同一份选项语义）；
+      // value 统一归一字符串——oas-select 的 options 解析只收字符串 value，数字 value 会被过滤丢失
+      const opts = this.editOptionsOf(col).map((o) => ({ label: o.label, value: String(o.value) }))
+      el.setAttribute('options', JSON.stringify(opts))
+      if (multi) {
+        // 多选初值为 JSON 数组（oas-select multiple 的 value attribute 契约形态）
+        el.setAttribute('multiple', '')
+        el.setAttribute('value', JSON.stringify(multiInitial ?? []))
+      } else {
+        el.setAttribute('value', value)
+      }
+    } else {
+      // date-picker 等 attribute-only 浮层组件：初值走 value attribute
+      //（date-picker 值契约为格式化字符串，缺省 yyyy-MM-dd；旧值是时间戳/带时刻形态时
+      // 组件解析不出锚点显示为空——属组件解析边界，提交未改动值仍走原串静默退出不丢数据）
+      el.setAttribute('value', value)
+    }
+    el.setAttribute('aria-label', this.hostEl.translateText('table.editCell', { column: col.title, key }))
+    if (!multi) {
+      // 单值浮层组件：选定即提交（oas-change）；多选不在此提交（勾选是中间态）
+      el.addEventListener('oas-change', (e) => {
+        e.stopPropagation()
+        this.submitEdit()
+      })
+    }
+    // 面板在组件 shadow 内，click 冒泡出宿主会参与表格双击判定/行级手势，统一拦在编辑器层
+    el.addEventListener('click', (e) => e.stopPropagation())
+    el.addEventListener('focusout', (e: FocusEvent) => this.handleEditorBlur(e))
+    return el
+  }
+
+  /** 进入编辑自动展开浮层：模拟触发器 click（非受控开合通道）。组件未注册时不动作（白板对齐第一期） */
+  private openOverlayEditor(el: HTMLElement): void {
+    if (customElements.get(el.tagName.toLowerCase()) === undefined) return
+    // 触发器为库内浮层组件的统一内部结构（select 的 button.trigger / date-picker 的 input.trigger）
+    el.shadowRoot?.querySelector<HTMLElement>('.trigger')?.click()
+  }
+
+  /** 浮层开合态：读触发器 aria-expanded 镜像（两组件的触发器均同步该 aria 状态） */
+  private overlayOpen(el: HTMLElement | null): boolean {
+    return el?.shadowRoot?.querySelector<HTMLElement>('.trigger')?.getAttribute('aria-expanded') === 'true'
+  }
+
+  /** 浮层编辑器 document 级守卫是否在场（幂等拆挂开关） */
+  private overlayGuardsActive = false
+  /** 最近一次指针按下是否落在浮层编辑器子树内（面板内交互的失焦抑制窗口） */
+  private pointerInEditor = false
+
+  /** 挂浮层编辑器守卫（Esc 双层级 + 指针抑制），重复进入先拆旧（幂等） */
+  private setupOverlayGuards(): void {
+    this.teardownOverlayGuards()
+    this.overlayGuardsActive = true
+    document.addEventListener('keydown', this.onDocumentKeydown, true)
+    document.addEventListener('pointerdown', this.onDocumentPointerdown, true)
+    document.addEventListener('mousedown', this.onDocumentPointerdown, true)
+  }
+
+  /** 拆浮层编辑器守卫（退出编辑/静默取消/宿主断开三路都必须到达，否则 document 监听泄漏） */
+  private teardownOverlayGuards(): void {
+    if (!this.overlayGuardsActive) return
+    this.overlayGuardsActive = false
+    this.pointerInEditor = false
+    document.removeEventListener('keydown', this.onDocumentKeydown, true)
+    document.removeEventListener('pointerdown', this.onDocumentPointerdown, true)
+    document.removeEventListener('mousedown', this.onDocumentPointerdown, true)
+  }
+
+  /**
+   * document keydown capture：Esc 双层级 + 键盘输入解除指针抑制。
+   * capture 先于组件内部 Esc 处理执行——此刻读到的浮层开合态还是「处理前」的真值：
+   * 开着 → 直接放行（组件自关面板，同一事件继续传播到组件）；已关 → 本层消费（取消编辑
+   * 并 stopPropagation，防组件把 Esc 再当开合手势）。
+   */
+  private onDocumentKeydown = (e: KeyboardEvent): void => {
+    // 任何键盘输入都解除指针抑制窗口：键盘引发的失焦（如 Tab 离开）不得被陈旧的
+    // 「指针在面板内」状态挡住（那会滞留编辑态无法用键盘退出）
+    this.pointerInEditor = false
+    if (e.key !== 'Escape') return
+    const st = this.editState
+    if (!st || st.editor !== 'overlay') return
+    if (this.overlayOpen(st.componentEl)) return
+    e.preventDefault()
+    e.stopPropagation()
+    this.cancelEdit()
+  }
+
+  /** document pointerdown/mousedown capture：维护「指针是否落在浮层编辑器子树内」窗口 */
+  private onDocumentPointerdown = (e: Event): void => {
+    const st = this.editState
+    if (!st || st.editor !== 'overlay') return
+    this.pointerInEditor = !!st.componentEl && e.composedPath().includes(st.componentEl)
+  }
+
+  /**
    * 编辑提交值的类型回写：按列 type 归一化——
    * - number/currency：数字（非法输入原样字符串交由展示端空态回落）；
    * - progress：数字夹取 0-100；rate：数字夹取 0-5；
-   * - multi-select：逗号（中英文逗号均可）拆分数组（trim 空段）；
    * - checkbox：布尔；
+   * - multi-select 不经此函数（浮层多选通道直接回写字符串数组，逗号拆分通道已退役）；
    * - 其余：现状行为（旧值 number 且新值为有限数字 → 保持 number 类型回写）。
    */
   private coerceEditValue(st: EditState, value: string): string | number | boolean | string[] {
@@ -604,11 +841,6 @@ export class TableEditController implements ReactiveController, TableEditCapabil
         const n = Number(value)
         return Number.isFinite(n) ? Math.min(5, Math.max(0, n)) : value
       }
-      case 'multi-select':
-        return value
-          .split(/[,，]/)
-          .map((s) => s.trim())
-          .filter(Boolean)
       case 'checkbox':
         return isTruthyCell(value)
       default: {

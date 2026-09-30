@@ -181,7 +181,22 @@
   <oas-table id="table-edit-component" editable row-key="word" columns='[{"key":"word","title":"词条","editable":true,"editComponent":"oas-input"},{"key":"note","title":"备注","editable":true,"editComponent":"oas-textarea"}]' data='[{"word":"oas-ui","note":"Web Components 组件库"},{"word":"divider","note":"分隔线"}]'></oas-table>
 </DemoBlock>
 
-`editComponent`（columns JSON 字段）指定**组件编辑器**（优先于 `editor`）：双击后挂载对应组件并注入当前值。组件契约（最小集）：值可读（`getFormValue()` → value property → value attribute 三级兜底——`getFormValue` 为库内组件的 form-associated 内部通道，宿主自定义组件实现 value property 或 value attribute 其一即可）、提交事件（`oas-change` 或原生 `change` 其一）、Esc 取消；多行编辑器（textarea 内核）Enter 让路换行，提交走失焦。库内 form 组件（oas-input / oas-textarea / oas-switch 等）天然满足，宿主自定义 WC 同样可用。第一期约定为非浮层组件（date-picker / select 等浮层类后续批次支持）。注意：横向滚动触发列窗口变化时整表重渲染，进行中的编辑会被静默取消（不派 `oas-edit-cancel`）。
+`editComponent`（columns JSON 字段）指定**组件编辑器**（优先于 `editor`）：双击后挂载对应组件并注入当前值。组件契约（最小集）：值可读（`getFormValue()` → value property → value attribute 三级兜底——`getFormValue` 为库内组件的 form-associated 内部通道，宿主自定义组件实现 value property 或 value attribute 其一即可）、提交事件（`oas-change` 或原生 `change` 其一）、Esc 取消；多行编辑器（textarea 内核）Enter 让路换行，提交走失焦。库内 form 组件（oas-input / oas-textarea / oas-switch 等）天然满足，宿主自定义 WC 同样可用。注意：横向滚动触发列窗口变化时整表重渲染，进行中的编辑会被静默取消（不派 `oas-edit-cancel`）——浮层编辑器同样适用该语义。
+
+#### 浮层组件编辑器（oas-select / oas-date-picker）
+
+<DemoBlock title="浮层编辑器：下拉选择 + 日期选择">
+  <oas-table id="table-edit-overlay" editable row-key="name" columns='[{"key":"name","title":"成员","editable":true},{"key":"dept","title":"部门","editable":true,"editComponent":"oas-select","editOptions":[{"value":"fe","label":"前端部"},{"value":"be","label":"后端部"},{"value":"qa","label":"测试部"}]},{"key":"joined","title":"入职日期","editable":true,"editComponent":"oas-date-picker"}]' data='[{"name":"张三","dept":"fe","joined":"2026-03-15"},{"name":"李四","dept":"be","joined":"2025-11-02"}]'></oas-table>
+</DemoBlock>
+
+浮层类组件（`editComponent: 'oas-select'` / `'oas-date-picker'`）自动走**浮层编辑器通道**，与非浮层组件通道的差异：
+
+- **进入编辑自动展开浮层**（触发器驱动组件非受控开合，不写 `open` 受控属性）；组件未注册（笔误 tag / 漏 import）时挂载即白板、不展开不告警，与非浮层通道行为一致。
+- **浮层面板内交互不误提交**：面板挂在组件 shadow 内，指针落在编辑器子树内的失焦（点选项/翻日历/搜索）被抑制——单值组件选定（`oas-change`）即提交；多选组件勾选是中间态，失焦时一次性提交。
+- **Esc 双层级**：浮层开着 Esc 只关浮层（编辑保留），浮层已关再按 Esc 取消编辑。
+- **外点提交**：点击编辑器与浮层以外区域提交当前值；点击表格内其他单元格沿用既有语义（触发行重建静默取消）。
+
+`oas-select` 的编辑选项同步列配置：`editOptions` 优先，回落 `options`（与展示侧同一份选项语义）。`type: 'multi-select'` 列的默认编辑器即本通道的 `oas-select multiple`（见下方「字段类型」）。
 
 ## 受控编辑
 
@@ -891,7 +906,7 @@ onMounted(() => {
 
 示例同时覆盖空态：第 3 行库存为非数字（原样文本）、上架日期 ISO 串（取日期部分）；第 6 行库存为 null（空）、日期非法（原样文本）、进度条出界（夹取 0%）、评分出界（夹取 5 星）。
 
-字段类型的行内编辑：`number` / `currency` / `link` 走原生 input（数值列提交回写 number）；`progress` / `rate` 原生 input 提交时夹取 0-100 / 0-5；`multi-select` 第一期为 input 逗号分隔编辑（提交拆回数组，多选组件编辑后续版本提供）；`date` 内置 `YYYY-MM-DD` 形态校验（非法形态保持编辑态）；`checkbox` 经组件编辑器通道挂 `oas-switch`（提交回写布尔）；`select` 走既有 select 编辑器通道（`options` 自动同步为编辑选项）。开启 `editable` 后双击任意类型列即可体验。
+字段类型的行内编辑：`number` / `currency` / `link` 走原生 input（数值列提交回写 number）；`progress` / `rate` 原生 input 提交时夹取 0-100 / 0-5；`multi-select` 走浮层组件编辑器通道挂 `oas-select multiple`（勾选多个选项，`options` 自动同步为编辑选项，提交回写字符串数组，清空全部勾选后失焦提交 `[]` 也是合法值；第一期逗号分隔 input 编辑已退役，历史逗号分隔字符串数据在进入编辑时自动解析为选中集）；`date` 内置 `YYYY-MM-DD` 形态校验（非法形态保持编辑态）；`checkbox` 经组件编辑器通道挂 `oas-switch`（提交回写布尔）；`select` 走既有 select 编辑器通道（`options` 自动同步为编辑选项）。开启 `editable` 后双击任意类型列即可体验。
 
 ## 分组视图（group-by）
 

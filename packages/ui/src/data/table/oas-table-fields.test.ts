@@ -368,17 +368,32 @@ describe('OASTable 字段类型编辑（type × editable）', () => {
     expect(JSON.parse(el.getAttribute('data')!)).toEqual([{ id: 1, r: 5 }])
   })
 
-  it('type=multi-select 编辑：初值逗号展示，提交拆回数组回写', () => {
+  it('type=multi-select 编辑：走浮层组件通道（oas-select multiple，浮层细节见 edit-overlay 用例）', () => {
     const el = editableMount(
-      [{ key: 'tags', title: '标签', type: 'multi-select', editable: true }],
-      [{ id: 1, tags: ['a', 'b'] }],
+      [
+        {
+          key: 'tags',
+          title: '标签',
+          type: 'multi-select',
+          editable: true,
+          options: [
+            { value: 'a', label: 'A' },
+            { value: 'b', label: 'B' },
+          ],
+        },
+      ],
+      [{ id: 1, tags: ['a'] }],
     )
     const td = enterEdit(el, 'tags')
-    const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
-    expect(input.value).toBe('a,b')
-    input.value = 'a, c , d'
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-    expect(JSON.parse(el.getAttribute('data')!)).toEqual([{ id: 1, tags: ['a', 'c', 'd'] }])
+    const comp = td.querySelector<HTMLElement>('oas-select.cell-editor-component')!
+    expect(comp, '多选列默认编辑器为 oas-select multiple').not.toBeNull()
+    expect(td.querySelector('input.cell-editor'), '第一期逗号分隔 input 通道退役').toBeNull()
+    expect(comp.hasAttribute('multiple')).toBe(true)
+    // 选项同步自列 options（editOptions 优先通道在浮层用例覆盖）
+    expect(JSON.parse(comp.getAttribute('options')!)).toEqual([
+      { label: 'A', value: 'a' },
+      { label: 'B', value: 'b' },
+    ])
   })
 
   it('type=checkbox 编辑：挂 oas-switch（editComponent 通道），切换提交回写布尔', () => {
