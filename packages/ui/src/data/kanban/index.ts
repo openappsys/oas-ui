@@ -6,4 +6,10 @@ if (!customElements.get('oas-kanban')) {
 }
 
 export { OASKanban }
-export type { KanbanCard, KanbanCardRenderer, KanbanChangeDetail, KanbanColumn } from './oas-kanban.js'
+export type {
+  KanbanCard,
+  KanbanCardRenderer,
+  KanbanChangeDetail,
+  KanbanColumn,
+  KanbanColumnReorderDetail,
+} from './oas-kanban.js'

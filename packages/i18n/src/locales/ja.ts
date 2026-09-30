@@ -164,6 +164,11 @@ export const ja: LocaleMessages = {
   'kanban.moveCard': 'カードを移動',
   'kanban.moveUp': '上へ移動',
   'kanban.moveDown': '下へ移動',
+  'kanban.groupEmpty': '（空）',
+  'kanban.toggleLane': 'スイムレーンの開閉',
+  'kanban.dragColumn': 'ドラッグで列の順序を変更',
+  'kanban.moveLeft': '列を左へ移動',
+  'kanban.moveRight': '列を右へ移動',
   // tree（ツリーコントロール）
   'tree.expand': '展開/折りたたみ',
   'tree.select': '{label} を選択',
