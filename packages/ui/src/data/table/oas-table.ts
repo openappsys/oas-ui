@@ -47,11 +47,12 @@ export interface TableColumn {
   /** 编辑器类型：input（默认）/ select（配 editOptions） */
   editor?: 'input' | 'select'
   /**
-   * 组件编辑器：库内/宿主任意 value 语义的 Web Components tag 名（如 `oas-input` / `oas-date-picker`）。
+   * 组件编辑器：库内/宿主任意 value 语义的 Web Components tag 名（如 `oas-input` / `oas-textarea`）。
    * 设置后优先于 `editor`（原生 input/select 通道）。最小契约：值可读（`getFormValue()` →
    * value property → value attribute 三级兜底）+ 提交事件（`oas-change` 或原生 `change` 其一）+
    * Esc 取消；多行编辑器（textarea 内核）Enter 让路换行。库内 form 组件天然满足；
-   * 非浮层组件第一期约定（浮层类 blur 判定后续批次支持）。
+   * 浮层类组件（`oas-select` / `oas-date-picker`）自动走浮层编辑器通道（自动展开面板、
+   * 面板内交互不误提交、Esc 先关面板再取消编辑、外点提交当前值）。
    * 注意：横向滚动触发列窗口变化时整表重渲染，进行中的编辑会被静默取消（不派 oas-edit-cancel）。
    */
   editComponent?: string

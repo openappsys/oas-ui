@@ -4,6 +4,9 @@ import { TableEditController, createEditController, type TableEditHost } from '.
 // 闭合：未引全量入口的消费者（core + edit 子路径）声明 checkbox 编辑时编辑器可正常升级，
 // 否则挂载永不升级的白板元素（无 shadow 不可交互的死编辑态，交叉审实抓）
 import '../../../form/switch/index.js'
+// type='multi-select' 列的默认编辑器走 oas-select multiple（浮层组件通道）——同理随能力包
+// 闭合注册；oas-date-picker 仅经显式 editComponent 声明使用，与 oas-input 同惯例不预注册
+import '../../../form/select/index.js'
 /**
  * table 编辑能力包入口（ESM 子路径 `@oas-ui/ui/data/table/edit`）。
  *
