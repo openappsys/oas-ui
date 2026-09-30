@@ -1379,3 +1379,87 @@ test('table 三开（height + group-by + row-draggable）：虚拟下拖拽禁�
     expect(valid.has(k), `组键 ${k} 属于合法分组`).toBe(true)
   }
 })
+
+test('table 浮层编辑器通道（editComponent 第二期）：选定即提交 + Esc 双层级 + 外点提交（PRD 验收闭环）', async ({
+  page,
+}) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-edit-overlay')
+  // 1. 双击部门列 → oas-select 挂载 + 浮层自动展开
+  const opened = await page.evaluate(() => {
+    const t = document.querySelector('#table-edit-overlay')!
+    const td = t.shadowRoot!.querySelector('tbody td[data-col="dept"]') as HTMLElement
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    return new Promise((r) =>
+      setTimeout(() => {
+        const editor = td.querySelector('.cell-editor-component')
+        r({
+          tag: editor?.tagName.toLowerCase() ?? null,
+          open: editor?.shadowRoot!.querySelector('.trigger')?.getAttribute('aria-expanded') === 'true',
+          options: editor?.shadowRoot!.querySelectorAll('.option, [role="option"]').length,
+        })
+      }, 300),
+    )
+  })
+  expect((opened as { tag: string }).tag, 'oas-select 挂载').toBe('oas-select')
+  expect((opened as { open: boolean }).open, '浮层自动展开').toBe(true)
+  expect((opened as { options: number }).options, '选项渲染').toBeGreaterThan(0)
+
+  // 2. 选定选项 → 提交并回写（浮层关闭 + 编辑退出）
+  const submitted = await page.evaluate(() => {
+    const t = document.querySelector('#table-edit-overlay')!
+    const editor = t.shadowRoot!.querySelector('.cell-editor-component')!
+    const opts = [...editor.shadowRoot!.querySelectorAll<HTMLElement>('.option, [role="option"]')]
+    const target = opts.find((o) => /后端/.test(o.textContent ?? '')) ?? opts[1]!
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    return new Promise((r) =>
+      setTimeout(() => {
+        const data = JSON.parse(t.getAttribute('data') ?? '[]')
+        r({
+          dept: (data[0] as Record<string, unknown>).dept,
+          editing: !!t.shadowRoot!.querySelector('[data-editing="true"]'),
+        })
+      }, 250),
+    )
+  })
+  expect((submitted as { dept: string }).dept, '选定提交回写').toBe('be')
+  expect((submitted as { editing: boolean }).editing, '提交后退出编辑态').toBe(false)
+
+  // 3. Esc 双层级：第一层关浮层（编辑不取消），第二层取消编辑
+  const escFlow = await page.evaluate(async () => {
+    const t = document.querySelector('#table-edit-overlay')!
+    const td = t.shadowRoot!.querySelector('tbody td[data-col="dept"]') as HTMLElement
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    await new Promise((r) => setTimeout(r, 300))
+    const editor = () => td.querySelector('.cell-editor-component')!
+    const trigger = () => editor().shadowRoot!.querySelector('.trigger')!
+    const isOpen = () => trigger().getAttribute('aria-expanded') === 'true'
+    const open1 = isOpen()
+    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }))
+    await new Promise((r) => setTimeout(r, 200))
+    const afterFirst = { open: isOpen(), editing: !!t.shadowRoot!.querySelector('[data-editing="true"]') }
+    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }))
+    await new Promise((r) => setTimeout(r, 200))
+    const afterSecond = !!t.shadowRoot!.querySelector('[data-editing="true"]')
+    return { open1, afterFirst, afterSecond }
+  })
+  expect(escFlow.open1, '进编辑浮层开').toBe(true)
+  expect(escFlow.afterFirst.open, '第一层 Esc 关浮层').toBe(false)
+  expect(escFlow.afterFirst.editing, '第一层不取消编辑').toBe(true)
+  expect(escFlow.afterSecond, '第二层 Esc 取消编辑').toBe(false)
+
+  // 4. 外点提交：进编辑 → 指针落在表外 + 焦点离开编辑器（真实点击的两步：pointerdown 判定
+  // 抑制窗口 + blur 触发提交；合成事件不转移焦点，须显式派 focusout 模拟真实焦点链）
+  const outside = await page.evaluate(async () => {
+    const t = document.querySelector('#table-edit-overlay')!
+    const td = t.shadowRoot!.querySelector('tbody td[data-col="dept"]') as HTMLElement
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+    await new Promise((r) => setTimeout(r, 300))
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }))
+    const editor = td.querySelector('.cell-editor-component')!
+    editor.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true }))
+    return new Promise((r) => setTimeout(() => r(!t.shadowRoot!.querySelector('[data-editing="true"]')), 250))
+  })
+  expect(outside, '外点提交退出编辑态').toBe(true)
+})

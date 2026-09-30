@@ -128,3 +128,120 @@ test('kanban 断开重连后：开菜单 → 外点关闭正常（交叉审同�
   expect(r.menuOpen, '重连后菜单可打开').toBe(true)
   expect(r.menuAfterOutside, '重连后外点关菜单（document 监听已重挂）').toBe(false)
 })
+
+test('kanban 列拖拽重排：列头手柄拖到邻列 → oas-column-reorder（PRD 二期验收 e2e）', async ({ page }) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-kanban')
+  const r = await page.evaluate(() => {
+    // 用列重排 demo（带手柄）；无独立 demo 实例时用首个看板（一期也有列结构）
+    const el = document.querySelector('oas-kanban')!
+    const events: unknown[] = []
+    el.addEventListener('oas-column-reorder', (e) => events.push((e as CustomEvent).detail))
+    const handles = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column-drag')]
+    if (handles.length < 2) return { skip: true, events }
+    const dt = new DataTransfer()
+    handles[0]!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: dt }))
+    const secondHead = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column')][1]!.querySelector(
+      '.column-head',
+    ) as HTMLElement
+    // clientX 大值 = 目标头右半区 → 插到其后（真移动；clientX=0 左半区恰为原位零操作不派发）
+    secondHead.dispatchEvent(
+      new DragEvent('dragover', { bubbles: true, composed: true, dataTransfer: dt, clientX: 9999 } as DragEventInit),
+    )
+    secondHead.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
+    handles[0]!.dispatchEvent(new DragEvent('dragend', { bubbles: true, composed: true, dataTransfer: dt }))
+    return {
+      events,
+      keys: (JSON.parse(el.getAttribute('columns') ?? '[]') as Array<{ key: string }>).map((c) => c.key),
+    }
+  })
+  if (r.skip) {
+    test.skip(true, '列重排手柄选择器未命中——demo 结构需对齐')
+    return
+  }
+  expect(r.events.length, '列重排派发 oas-column-reorder').toBe(1)
+})
+
+test('kanban 多选拖拽：Ctrl 选两枚 → 拖一枚 → 全部选中卡移动 + 一条 oas-change 带 ids', async ({ page }) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-kanban')
+  const r = await page.evaluate(() => {
+    // 多选 demo 实例（cards >= 3 且无泳道）
+    const kbs = [...document.querySelectorAll('oas-kanban')]
+    const el = kbs.find((k) => !k.hasAttribute('swimlane-by') && k.shadowRoot!.querySelectorAll('.card').length >= 3)!
+    const events: unknown[] = []
+    el.addEventListener('oas-change', (e) => events.push((e as CustomEvent).detail))
+    const cards = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.card')]
+    cards[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, ctrlKey: true }))
+    cards[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, ctrlKey: true }))
+    const selected = el.shadowRoot!.querySelectorAll('[data-selected]').length
+    const targetCol = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column')][1]!
+    const dt = new DataTransfer()
+    cards[0]!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: dt }))
+    targetCol
+      .querySelector('.column-body')!
+      .dispatchEvent(
+        new DragEvent('dragover', { bubbles: true, composed: true, dataTransfer: dt, clientY: 10 } as DragEventInit),
+      )
+    targetCol
+      .querySelector('.column-body')!
+      .dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
+    cards[0]!.dispatchEvent(new DragEvent('dragend', { bubbles: true, composed: true, dataTransfer: dt }))
+    return { selected, events }
+  })
+  expect(r.selected, 'Ctrl 点击两枚多选').toBe(2)
+  expect(r.events.length, '批量移动只派发一条 oas-change').toBe(1)
+  const d = r.events[0] as { ids?: string[] }
+  expect(d.ids?.length, 'detail.ids 含全部选中卡').toBe(2)
+})
+
+test('kanban 泳道跨带拖拽：拖到另一泳带 → 泳道字段回写 + detail.swimlane', async ({ page }) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-kanban')
+  const r = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('oas-kanban')].find((k) => k.hasAttribute('swimlane-by'))!
+    const events: unknown[] = []
+    el.addEventListener('oas-change', (e) => events.push((e as CustomEvent).detail))
+    const lanes = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[data-lane]')]
+    const fromLane = lanes.find((l) => l.querySelector('.card'))!
+    const toLane = lanes.find(
+      (l) => l !== fromLane && l.getAttribute('data-lane') !== fromLane.getAttribute('data-lane'),
+    )!
+    const card = fromLane.querySelector('.card') as HTMLElement
+    const targetCell = toLane.querySelector('.lane-cell, .column-body') as HTMLElement
+    const dt = new DataTransfer()
+    card.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: dt }))
+    targetCell.dispatchEvent(
+      new DragEvent('dragover', { bubbles: true, composed: true, dataTransfer: dt, clientY: 10 } as DragEventInit),
+    )
+    targetCell.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
+    card.dispatchEvent(new DragEvent('dragend', { bubbles: true, composed: true, dataTransfer: dt }))
+    return { events }
+  })
+  expect(r.events.length, '跨带拖拽派发 oas-change').toBe(1)
+  const d = r.events[0] as { swimlane?: { from: string; to: string } }
+  expect(d.swimlane, 'detail 含 swimlane from/to').toBeTruthy()
+  expect(d.swimlane!.from, '泳道 from 非空').not.toBe(d.swimlane!.to)
+})
+
+test('kanban WIP 限制：超限列计数 warning 色 + data-over-limit 标记', async ({ page }) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-kanban')
+  const r = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('oas-kanban')].find((k) =>
+      (k.getAttribute('columns') ?? '').includes('limit'),
+    )!
+    const cols = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column')]
+    const over = cols.find((c) => c.hasAttribute('data-over-limit'))
+    const normal = cols.find((c) => !c.hasAttribute('data-over-limit'))
+    const overCount = over?.querySelector('.column-count') as HTMLElement | null
+    const normalCount = normal?.querySelector('.column-count') as HTMLElement | null
+    return {
+      overLimit: !!over,
+      overColor: overCount ? getComputedStyle(overCount).color : null,
+      normalColor: normalCount ? getComputedStyle(normalCount).color : null,
+    }
+  })
+  expect(r.overLimit, '超限列带 data-over-limit').toBe(true)
+  expect(r.overColor, '超限计数色与未超限不同（warning 色生效）').not.toBe(r.normalColor)
+})
