@@ -452,7 +452,7 @@ test('table 行内 oas-button 点击不连带 oas-row-click（宿主无 role，�
   })
   await page.waitForTimeout(300)
   await page.evaluate(() => {
-    const t = document.querySelector('#qa-inline-oas-button')!
+    const t = document.querySelector<HTMLElement>('#qa-inline-oas-button')!
     const btn = document.createElement('oas-button')
     btn.textContent = '编辑'
     btn.addEventListener('oas-click', () => {
@@ -1357,7 +1357,7 @@ test('table 三开（height + group-by + row-draggable）：虚拟下拖拽禁�
     document.body.appendChild(el)
     await new Promise((res) => setTimeout(res, 250))
     const groupKeysOf = () =>
-      [...el.shadowRoot!.querySelectorAll('tr.group-header')].map((tr) => tr.getAttribute('data-group'))
+      [...el.shadowRoot!.querySelectorAll('tr.group-header')].map((tr) => tr.getAttribute('data-group') ?? '')
     const initial = groupKeysOf()
     const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
     wrap.scrollTop = 500
