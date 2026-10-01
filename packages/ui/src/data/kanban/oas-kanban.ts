@@ -265,7 +265,7 @@ const STYLE = `
   border-radius: var(--oas-radius-sm);
   padding: var(--oas-space-4);
   text-align: center;
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-secondary-strong);
   font-size: var(--oas-font-size-sm);
 }
 /* 泳道带：横向分带横贯各列（带头行 + 列单元格矩阵） */

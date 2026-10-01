@@ -284,7 +284,7 @@ th.sortable {
 }
 th.header-group {
   text-align: center;
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-secondary-strong);
   font-weight: 600;
   border-bottom: 1px solid var(--oas-color-border);
 }
@@ -960,7 +960,7 @@ tr.row.drop-after td {
   color: color-mix(in srgb, var(--oas-color-warning) 72%, var(--oas-color-text-primary));
 }
 .type-rate-off {
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-secondary-strong);
 }
 /* link 类型：主色下划线（hover 加重）；主色铺底对比度不达标配同上混主文字色 */
 .type-link {
@@ -981,7 +981,7 @@ tr.row.drop-after td {
   color: var(--oas-color-primary);
 }
 .type-check-off {
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-secondary-strong);
 }
 /* date 类型：防连字符折行 */
 .type-date {
