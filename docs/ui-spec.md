@@ -31,6 +31,7 @@
 | `--oas-color-danger`         | `#dc2626`        | `#fbb2b2`        | 危险/删除          |
 | `--oas-color-text-primary`   | `#18181b`        | `#fafafa`        | 主文字             |
 | `--oas-color-text-secondary` | `#71717a`        | `#c6c6ce`        | 次级文字           |
+| `--oas-color-text-secondary-strong` | `color-mix(secondary 88%, primary)` | `=secondary` | 次级文字安全档（弱化底色 bg-hover 上的次级文字——secondary on bg-hover 仅 4.39 不达 AA，本档实测 5.15；普通底色仍用 secondary） |
 | `--oas-color-text-disabled`  | `#a1a1aa`        | `#8d8d95`        | 禁用文字           |
 | `--oas-color-border`         | `#e4e4e7`        | `#3f3f46`        | 描边/分割线        |
 | `--oas-color-bg`             | `#ffffff`        | `#18181b`        | 组件底             |

@@ -6,6 +6,9 @@
 
 ### 特性
 
+- **oas-kanban RTL 逻辑方向化 + 键盘多选/移动**：列重排落点判定/指示线/键盘 ←→/触屏按钮语义与 aria-label 按 data-rtl 镜像；键盘多选 Space 切换选中（Ctrl+click 等价键盘路径，renderCard 内可聚焦元素 Space 让路）+ Alt+方向键移动（Alt+←/→ 换列尾部、Alt+↑/↓ 列内移动对齐 table 行重排先例；←/→ 选中集批量一条 oas-change 带 ids，移动后焦点回同 id 新卡）
+- **oas-swatch-group 首帧时序防护**：静态 HTML 带 value 时组的首帧 update 可能先于子项 upgrade（白板子项调 syncSelected 即 TypeError）——判空跳过 + microtask 重试一次（防连锁重试风暴；全量包与 form 族包静态 value 首帧 e2e 固化）
+- **theme 次级文字安全档 token**：新增 --oas-color-text-secondary-strong（light 混主文字色 88% 实测 5.15 达 WCAG AA；dark/high-contrast 原值已达标保持引用）——secondary on bg-hover 仅 4.39 不达 4.5 的既有债实例换用：table 多级表头 header-group / rate-off / check-off / 禁用行 + kanban 空列与空泳道单元格占位；a11y 基线 kanban 页违规归零、table 8→2、totals 276→265
 - **core 断开重连重绑统一语义**：OASElement 新增 onReconnect 可选钩子——断开重连（append/re-parent/路由缓存摘挂）时 render 不重建（布局与内部状态保留）、仅重跑绑定恢复交互；oas-table（wrap 滚动/网格导航/行拖拽/单元格提示委托与 ResizeObserver）与 oas-kanban（shadow 根拖拽/点击/键盘委托）先行接线（thead 排序委托改类字段引用消除重复挂）；dropdown/menu/tooltip/select/date-picker 抽查确认「监听跟打开态走」模式天生免疫
 - **oas-kanban 看板（新组件，data 族）**：`columns` / `cards` JSON 双通道声明式数据；卡片 HTML5 DnD 拖拽换列与列内排序（落点主色插入指示线，拖回原位零操作）→ 落定回写并派发 `oas-change`（detail { id, from, to, index }）；列头计数、列体独立滚动、空列占位（i18n ×10）；`renderCard` property 函数通道自定义卡片（Node 直挂 / 字符串防注入）；触屏降级移动按钮（pointer:coarse，上移/下移/移到指定列），移动菜单支持键盘操作（开菜单焦点移交首项 + 方向键漫游 + Home/End + Esc 回焦锚点）；卡片 tabindex=0 键盘可达（非空列体 role=list，空列不设 list 语义）。第一期不含：列拖拽重排、泳道、WIP 限制
 - **oas-table 浮层组件编辑器通道（editComponent 第二期）+ multi-select 编辑器升级**：`editComponent: 'oas-select' / 'oas-date-picker'` 自动走浮层编辑器通道——进入编辑自动展开浮层（触发器驱动组件非受控开合，不写 `open` 受控属性）；浮层面板内指针交互（点选项/翻日历/搜索）不再触发失焦误提交（指针落在编辑器子树内的失焦被抑制：单值组件选定即提交、多选组件勾选为中间态失焦一次性提交）；Esc 双层级（浮层开着只关浮层，已关才取消编辑）；点击编辑器与浮层以外区域提交当前值；`oas-select` 编辑选项同步 `editOptions`（回落列 `options`）。`type: 'multi-select'` 列编辑器由第一期逗号分隔 input 升级为 `oas-select multiple`（选项同步、数组初值注入、提交回写字符串数组，清空全部勾选后失焦提交 `[]` 亦为合法值；历史逗号分隔字符串数据进入编辑时自动解析为选中集）；浮层编辑器的 document 级守卫（Esc capture / 指针抑制）随退出编辑、静默取消、宿主断开三路拆除不泄漏

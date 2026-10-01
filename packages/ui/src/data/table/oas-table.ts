@@ -1450,6 +1450,8 @@ export class OASTableBase extends OASElement {
     this.onCleanup(() => {
       this.wrap?.removeEventListener('scroll', this.handleScroll)
       document.removeEventListener('scroll', this.handleDocumentScrollForTooltip, true)
+      // filter panel 的 document 关闭监听兜底摘（一次性注册——bind 重入（onReconnect）也不累积闭包）
+      this.unbindFilterPanelClose()
       this.colResizeObs?.disconnect()
       if (this.colResizeRaf) {
         cancelAnimationFrame(this.colResizeRaf)
@@ -2525,7 +2527,6 @@ export class OASTableBase extends OASElement {
     this.filterPanelCloseBound = true
     document.addEventListener('click', this.onFilterDocClick, true)
     document.addEventListener('keydown', this.onFilterKey)
-    this.onCleanup(() => this.unbindFilterPanelClose())
   }
 
   private unbindFilterPanelClose(): void {

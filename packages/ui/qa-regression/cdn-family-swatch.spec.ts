@@ -26,4 +26,9 @@ test('cdn 族包 form.js swatch-group 静态 value 首帧', async ({ page }) => 
   console.log('ERRORS ' + JSON.stringify(errors.slice(0, 4)))
   console.log('DIAG ' + JSON.stringify(diag))
   expect(errors.filter((e) => e.includes('syncSelected')).length, '族包首帧不应抛 syncSelected 错误').toBe(0)
+  const selected = await page.evaluate(() => {
+    const first = document.querySelector('oas-swatch')!
+    return first.hasAttribute('selected') || first.getAttribute('aria-checked')
+  })
+  expect(selected, '族包首帧 value 命中项选中态同步').toBeTruthy()
 })

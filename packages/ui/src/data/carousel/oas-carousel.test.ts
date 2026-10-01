@@ -1031,12 +1031,11 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     parent.appendChild(el)
     // dots 点击一次应只切一次页（重复挂会连跳多页）
     const dots = el.shadowRoot!.querySelectorAll<HTMLElement>('[part="dot"]')
-    if (dots.length > 1) {
-      dots[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      const active = [...el.shadowRoot!.querySelectorAll('[part="dot"]')].findIndex(
-        (d) => d.getAttribute('aria-current') === 'true',
-      )
-      expect(active, '重连后 dots 点击只切到目标页（委托不重复挂）').toBe(1)
-    }
+    expect(dots.length, '指示器渲染多页（条件跳过的恒绿守卫）').toBeGreaterThan(1)
+    dots[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    const active = [...el.shadowRoot!.querySelectorAll('[part="dot"]')].findIndex(
+      (d) => d.getAttribute('aria-current') === 'true',
+    )
+    expect(active, '重连后 dots 点击只切到目标页（委托不重复挂）').toBe(1)
   })
 })

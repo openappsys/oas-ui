@@ -160,10 +160,9 @@ const STYLE = `
 :host([data-rtl]) .column-head.drop-after {
   box-shadow: inset 3px 0 0 var(--oas-color-primary);
 }
-/* 触屏列移动按钮图标 RTL 镜像（prev/next 视觉方向翻转，语义按 dir 翻转后图标对齐） */
-:host([data-rtl]) .column-nav svg {
-  transform: scaleX(-1);
-}
+/* 触屏列移动按钮图标**不**随 RTL 镜像：prev/next 的语义翻转由 JS 完成（navDelta），
+   物理左箭头在 RTL 下视觉指向 inline-start（右）恰是「prev=向 start 移」的正确方向——
+   CSS 再镜像会与 JS 翻转构成双重翻转（图标指向与执行方向相反，交叉审实抓 I1） */
 /* 触屏列移动按钮：coarse 显示，边界项 aria-disabled（PC 态 display:none 零影响） */
 .column-nav {
   flex: none;
@@ -480,7 +479,7 @@ interface KanbanDropTarget {
  */
 export class OASKanban extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['columns', 'cards', 'empty-column-text', 'swimlane-by']
+    return ['columns', 'cards', 'empty-column-text', 'swimlane-by', 'dir']
   }
 
   private _columns: KanbanColumn[] = []
@@ -833,16 +832,17 @@ export class OASKanban extends OASElement {
     title.setAttribute('part', 'column-title')
     title.textContent = col.title
 
-    // 触屏列移动按钮（coarse 显示）：HTML5 DnD 替代路径，边界 aria-disabled
+    // 触屏列移动按钮（coarse 显示）：HTML5 DnD 替代路径，边界 aria-disabled。
+    // RTL 下 prev/next 的 DOM 序方向与 aria-label 同步互换（navDelta 翻转 + 读对侧文案——
+    // 读屏「列右移」时实际执行的就是向右移（物理方向文案曾致读屏方向相反）
     const idx = this._columns.findIndex((c) => c.key === col.key)
+    const rtl = this.hasAttribute('data-rtl')
     const prev = document.createElement('button')
     prev.type = 'button'
     prev.className = 'column-nav'
     prev.setAttribute('part', 'column-nav')
     prev.dataset.nav = 'prev'
-    // 触屏列移动按钮：语义按 inline 方向（prev=inline-start 侧移）——RTL 下图标镜像（CSS）、
-    // aria-label 保持「向 start 移」语义（文案 dir 无关，语义翻转在 handleClick 按 data-rtl 执行）
-    prev.setAttribute('aria-label', this.t('kanban.moveLeft'))
+    prev.setAttribute('aria-label', this.t(rtl ? 'kanban.moveRight' : 'kanban.moveLeft'))
     prev.setAttribute('aria-disabled', String(idx <= 0))
     prev.innerHTML = NAV_LEFT_ICON
     const next = document.createElement('button')
@@ -850,7 +850,7 @@ export class OASKanban extends OASElement {
     next.className = 'column-nav'
     next.setAttribute('part', 'column-nav')
     next.dataset.nav = 'next'
-    next.setAttribute('aria-label', this.t('kanban.moveRight'))
+    next.setAttribute('aria-label', this.t(rtl ? 'kanban.moveLeft' : 'kanban.moveRight'))
     next.setAttribute('aria-disabled', String(idx < 0 || idx >= this._columns.length - 1))
     next.innerHTML = NAV_RIGHT_ICON
 
@@ -1430,9 +1430,12 @@ export class OASKanban extends OASElement {
     const key = (e as KeyboardEvent).key
     const ke = e as KeyboardEvent
     const target = e.target as HTMLElement | null
-    // 卡片键盘多选：Space 切换选中（与 Ctrl+click 等价的键盘路径——焦点卡逐枚加选/退选）
+    // 卡片键盘多选：Space 切换选中（与 Ctrl+click 等价的键盘路径——焦点卡逐枚加选/退选）。
+    // renderCard 自定义内容内的可聚焦交互元素（button/input/a 等）Space 让路其原生激活语义
     const card = target?.closest?.('.card') as HTMLElement | null
     if (card && key === ' ') {
+      if ((e.target as HTMLElement).closest('button, a, input, select, textarea, [role="button"], [role="link"]'))
+        return
       e.preventDefault()
       const id = card.getAttribute('data-id') ?? ''
       if (this.selectedIds.has(id)) this.selectedIds.delete(id)
@@ -1442,10 +1445,17 @@ export class OASKanban extends OASElement {
       return
     }
     // 卡片键盘移动：Alt+←/→ 换列（inline 方向，RTL 镜像）、Alt+↑/↓ 列内移动——
-    // 选中集优先（批量一条 oas-change），无选中回退焦点卡；事件契约与拖拽/菜单同一条 oas-change
+    // ←/→ 选中集优先（批量一条 oas-change），↑/↓ 列内恒单卡（批量换序的列内位置语义复杂，
+    // 第一期单卡）；无选中回退焦点卡；事件契约与拖拽/菜单同一条 oas-change。
+    // 移动后焦点卡随重建脱离文档——回焦同 id 新卡（对齐 table edit 的 focusCell 先例）
     if (card && ke.altKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(key)) {
       e.preventDefault()
       this.keyboardMove(card, key)
+      const movedId = card.getAttribute('data-id') ?? ''
+      const fresh = [...this.shadow.querySelectorAll<HTMLElement>('.card')].find(
+        (c) => c.getAttribute('data-id') === movedId,
+      )
+      fresh?.focus({ preventScroll: true })
       return
     }
     // 列手柄键盘换序：←/→（键盘可达；触屏按钮之外的第三条路径）——RTL 下 ←/→ 视觉方向与 DOM 序互换
