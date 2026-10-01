@@ -100,8 +100,10 @@ export class OASSwatchGroup extends OASElement {
         if (!this.syncRetryQueued) {
           this.syncRetryQueued = true
           queueMicrotask(() => {
-            this.syncRetryQueued = false
+            // 重试期间 flag 保持 true（防重试的 syncChildren 再次入队成无限风暴——
+            // 复位必须在重试调用之后（此前复位在前，守卫形同虚设）
             this.syncChildren()
+            this.syncRetryQueued = false
           })
         }
         continue
