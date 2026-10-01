@@ -89,6 +89,13 @@ export class OASSwatchGroup extends OASElement {
       // 组禁用下发走 data-group-disabled（对齐 radio-group/checkbox-group 惯例）：
       // 不写子件自有 disabled——否则组未禁用时 toggleAttribute(false) 会抹掉子件自身写的 disabled
       sw.toggleAttribute('data-group-disabled', disabled)
+      // 首帧时序防护：静态 HTML 带 value 时本 update 可能先于子项 upgrade（upgrade 回调按队列
+      // 在 group 的 connectedCallback 之后）——未升级子项是白板，调方法即 TypeError（demands 实抓）。
+      // 判空跳过并下一微任务重试（upgrade 是 microtask，重试时子项已升级）
+      if (typeof sw.syncSelected !== 'function') {
+        queueMicrotask(() => this.syncChildren())
+        continue
+      }
       const color = sw.getAttribute('color')
       const sel = color ? selected.includes(color) : false
       sw.syncSelected(sel)
