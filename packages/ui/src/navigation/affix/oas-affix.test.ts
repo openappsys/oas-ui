@@ -503,3 +503,22 @@ describe('OASAffix z-index（能力缺口 P2）', () => {
     }
   })
 })
+
+describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
+  it('断开重连后 window scroll 监听恢复：handleScroll 被调用（spy 直接锁重挂）', () => {
+    const el = mount({ 'offset-top': '10' })
+    const host = el as unknown as { handleScroll: () => void }
+    const original = host.handleScroll.bind(el)
+    let calls = 0
+    host.handleScroll = (() => {
+      calls++
+      return original()
+    }) as typeof host.handleScroll
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    // 断开重连后 window scroll 事件应触发 handleScroll（cleanup 摘除 → onReconnect→bind 重挂）
+    window.dispatchEvent(new Event('scroll'))
+    expect(calls, '重连后 scroll 监听恢复（handleScroll 被调）').toBeGreaterThan(0)
+  })
+})

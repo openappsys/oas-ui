@@ -3296,3 +3296,42 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     expect(observes, '重连后 observe 重挂（onReconnect→bind 的 ??= 复用实例重挂）').toBeGreaterThan(before)
   })
 })
+
+describe('filter panel 关闭监听生命周期（监听跟面板走，不残留 document）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('开面板挂监听、关面板摘监听、断开组件兜底摘（不再靠监听器自摘残留）', () => {
+    const el = new OASTable()
+    el.setAttribute('filter', 'name')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '姓名', filterable: true }]))
+    el.setAttribute('data', JSON.stringify([{ name: '张三' }]))
+    document.body.appendChild(el)
+    const host = el as unknown as {
+      filterPanel: HTMLElement | null
+      openFilterPanel(col: { key: string }, trigger: HTMLElement): void
+      closeFilterPanel(): void
+      filterPanelCloseBound: boolean
+    }
+    const btn = el.shadowRoot!.querySelector('.filter-btn') as HTMLElement
+    host.openFilterPanel({ key: 'name' }, btn)
+    expect(host.filterPanel, '面板已开').not.toBeNull()
+    expect(host.filterPanelCloseBound, '开面板挂监听').toBe(true)
+    // 外点关闭：监听工作（document click → closeFilterPanel → 摘监听）
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(host.filterPanel, '外点关面板').toBeNull()
+    expect(host.filterPanelCloseBound, '关面板摘监听').toBe(false)
+    // 再开 + 断开组件：cleanup 兜底摘（不残留 document 监听）
+    host.openFilterPanel({ key: 'name' }, btn)
+    expect(host.filterPanelCloseBound).toBe(true)
+    el.remove()
+    expect(host.filterPanelCloseBound, '断开组件兜底摘监听').toBe(false)
+  })
+})

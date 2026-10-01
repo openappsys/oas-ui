@@ -2484,11 +2484,12 @@ export class OASTableBase extends OASElement {
     // 先挂 DOM（fixed 定位不占布局）再定位：面板尺寸量取依赖真实渲染盒子
     this.shadowRoot?.appendChild(panel)
     this.positionFilterPanel(panel, trigger)
-    this.bindFilterPanelClose(panel)
+    this.bindFilterPanelClose()
   }
 
-  /** 关闭并清理过滤弹层 */
+  /** 关闭并清理过滤弹层（document 监听随面板生命周期摘除） */
   private closeFilterPanel(): void {
+    this.unbindFilterPanelClose()
     this.filterPanel?.remove()
     this.filterPanel = null
     this.filterPanelKey = null
@@ -2515,21 +2516,34 @@ export class OASTableBase extends OASElement {
     panel.style.top = `${pos.top}px`
   }
 
-  /** 点击面板外 / Escape 关闭过滤面板 */
-  private bindFilterPanelClose(panel: HTMLElement): void {
-    const onDocClick = (e: Event) => {
-      if (panel.contains(e.target as Node) || this.contains(e.target as Node)) return
-      this.closeFilterPanel()
-      document.removeEventListener('click', onDocClick, true)
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        this.closeFilterPanel()
-        document.removeEventListener('keydown', onKey)
-      }
-    }
-    document.addEventListener('click', onDocClick, true)
-    document.addEventListener('keydown', onKey)
+  /** 点击面板外 / Escape 关闭过滤面板——document 监听跟面板生命周期走
+      （开面板挂、关面板摘；组件断开时 onCleanup 兜底摘，不再靠监听器自摘残留） */
+  private filterPanelCloseBound = false
+
+  private bindFilterPanelClose(): void {
+    if (this.filterPanelCloseBound) return
+    this.filterPanelCloseBound = true
+    document.addEventListener('click', this.onFilterDocClick, true)
+    document.addEventListener('keydown', this.onFilterKey)
+    this.onCleanup(() => this.unbindFilterPanelClose())
+  }
+
+  private unbindFilterPanelClose(): void {
+    if (!this.filterPanelCloseBound) return
+    this.filterPanelCloseBound = false
+    document.removeEventListener('click', this.onFilterDocClick, true)
+    document.removeEventListener('keydown', this.onFilterKey)
+  }
+
+  private onFilterDocClick = (e: Event): void => {
+    if (!this.filterPanel) return
+    if (this.filterPanel.contains(e.target as Node) || this.contains(e.target as Node)) return
+    this.closeFilterPanel()
+  }
+
+  private onFilterKey = (e: KeyboardEvent): void => {
+    if (e.key !== 'Escape' || !this.filterPanel) return
+    this.closeFilterPanel()
   }
 
   // ==================== 单元格溢出提示（cell-tooltip：表格级单例浮层） ====================

@@ -79,7 +79,13 @@ export class OASAffix extends OASElement {
     `
   }
 
-  /** 缓存节点引用 + 绑定滚动/resize 监听（render 与水合路径共用） */
+  /** 断开重连重绑（core onReconnect 钩子）：bind() 幂等重入——handleScroll/handleResize
+      类字段引用（addEventListener 规范去重），scrollSource 经 unbindScroll 先摘再挂不叠 */
+  protected override onReconnect(): void {
+    this.bind()
+  }
+
+  /** 缓存节点引用 + 绑定滚动/resize 监听（render 与水合与重连路径共用） */
   private bind(): void {
     this.placeholder = this.shadow.querySelector('.placeholder')
     this.wrap = this.shadow.querySelector('.wrap')

@@ -425,18 +425,17 @@ export class OASCarousel extends OASElement {
   }
 
   /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  /** 断开重连重绑（core onReconnect 钩子）：bind() 幂等重入——全部委托类字段引用
+      （addEventListener 规范去重），cleanup 断开已清空故重新注册 */
+  protected override onReconnect(): void {
+    this.bind()
+  }
+
   private bind(): void {
-    this.shadow.querySelector('.dots')?.addEventListener('click', (e) => {
-      const dot = (e.target as HTMLElement).closest('[part="dot"], [part="thumb"]')
-      if (dot) this.goTo(Number((dot as HTMLElement).getAttribute('data-index')) || 0)
-    })
+    this.shadow.querySelector('.dots')?.addEventListener('click', this.onDotActivate)
     // 指示器触发方式：trigger="hover" 时悬停指示器切页（click 为默认；hover 下 click 仍可用）；
     // 非法值静默回落 click。委托到容器监听（指示器重建无需重绑）
-    this.shadow.querySelector('.dots')?.addEventListener('pointerover', (e) => {
-      if (this.getAttr('trigger', 'click') !== 'hover') return
-      const dot = (e.target as HTMLElement).closest('[part="dot"], [part="thumb"]')
-      if (dot) this.goTo(Number((dot as HTMLElement).getAttribute('data-index')) || 0)
-    })
+    this.shadow.querySelector('.dots')?.addEventListener('pointerover', this.onDotHover)
     // 指示器键盘导航（WAI-ARIA carousel pattern：方向键 + Home/End；水平轴 RTL 镜像）
     this.shadow.querySelector('.dots')?.addEventListener('keydown', (e) => {
       const key = (e as KeyboardEvent).key
@@ -504,32 +503,50 @@ export class OASCarousel extends OASElement {
       this.update()
     })
     // 悬停/聚焦暂停自动播放（默认开，pause-on-hover=false 可关）
-    this.addEventListener('pointerenter', () => {
-      this.hoverPaused = true
-    })
-    this.addEventListener('pointerleave', () => {
-      this.hoverPaused = false
-      this.schedule()
-    })
-    this.addEventListener('focusin', () => {
-      this.focusPaused = true
-    })
-    this.addEventListener('focusout', () => {
-      this.focusPaused = false
-      this.schedule()
-    })
+    this.addEventListener('pointerenter', this.onHoverEnter)
+    this.addEventListener('pointerleave', this.onHoverLeave)
+    this.addEventListener('focusin', this.onFocusIn)
+    this.addEventListener('focusout', this.onFocusOut)
     // 页面不可见停播，可见后恢复
-    const onVisibility = () => {
-      this.hiddenPaused = document.hidden
-      this.schedule()
-    }
-    document.addEventListener('visibilitychange', onVisibility)
+    document.addEventListener('visibilitychange', this.onVisibilityChange)
     this.bindDrag()
     this.onCleanup(() => {
       if (this.timer) clearInterval(this.timer)
       this.timer = null
-      document.removeEventListener('visibilitychange', onVisibility)
+      document.removeEventListener('visibilitychange', this.onVisibilityChange)
     })
+  }
+
+  /** 指示器激活（click 默认触发；类字段引用——bind 幂等重入不重复挂） */
+  private onDotActivate = (e: Event): void => {
+    const dot = (e.target as HTMLElement).closest('[part="dot"], [part="thumb"]')
+    if (dot) this.goTo(Number((dot as HTMLElement).getAttribute('data-index')) || 0)
+  }
+
+  /** 指示器悬停切页（trigger="hover" 时） */
+  private onDotHover = (e: Event): void => {
+    if (this.getAttr('trigger', 'click') !== 'hover') return
+    const dot = (e.target as HTMLElement).closest('[part="dot"], [part="thumb"]')
+    if (dot) this.goTo(Number((dot as HTMLElement).getAttribute('data-index')) || 0)
+  }
+
+  private onHoverEnter = (): void => {
+    this.hoverPaused = true
+  }
+  private onHoverLeave = (): void => {
+    this.hoverPaused = false
+    this.schedule()
+  }
+  private onFocusIn = (): void => {
+    this.focusPaused = true
+  }
+  private onFocusOut = (): void => {
+    this.focusPaused = false
+    this.schedule()
+  }
+  private onVisibilityChange = (): void => {
+    this.hiddenPaused = document.hidden
+    this.schedule()
   }
 
   /**
