@@ -108,6 +108,8 @@ compile-time errors). `oas-config-provider` supports local injection (the `local
 attribute): components inside it prefer the injected locale for built-in texts
 without any global setup.
 
+For languages beyond the built-in 10: clone the `zh-CN` pack as a template → spread `...zhCN` to inherit all keys and replace them one by one → tag `messages` as `LocaleMessages` (type guardrail: missing keys fail at compile time) → mark `dir: 'rtl'` for RTL languages → `registerLocale` → `setLocale`. See the `@oas-ui/i18n` package README, "Custom locale packs" section, for the full step-by-step example. Ship custom packs with your own dynamic `import()` for code splitting (`loadLocale()` only maps the 10 built-in names).
+
 ### Which languages are built in? Can they be loaded on demand?
 
 Ten locales ship built in: `zh-CN` (default), `en`, `ja`, `ko`, `de`, `fr`, `es`,
