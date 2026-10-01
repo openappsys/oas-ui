@@ -1287,3 +1287,33 @@ describe('Alt 移动后焦点回焦（键盘移动的焦点不滞留游离节点
     expect(active?.closest('.column')?.getAttribute('data-key'), '焦点卡已在新列').toBe('doing')
   })
 })
+
+describe('RTL 触屏列移动按钮（图标/执行/读屏三者一致 + 边界对齐）', () => {
+  beforeEach(() => {
+    document.documentElement.dir = 'rtl'
+  })
+  afterEach(() => {
+    document.documentElement.dir = ''
+  })
+
+  it('RTL 下 prev = DOM 前移（视觉右移向 inline-start）；DOM 首位列 prev 禁用、末位列 next 禁用', () => {
+    const el = mount()
+    const events: string[] = []
+    el.addEventListener('oas-column-reorder', () => events.push('reorder'))
+    const heads = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column-head')]
+    // DOM 首位列（todo，RTL 视觉最右）：prev（向 start=视觉右移）应禁用（idx<=0 边界）
+    const firstPrev = heads[0]!.querySelector<HTMLElement>('.column-nav[data-nav="prev"]')!
+    expect(firstPrev.getAttribute('aria-disabled'), 'DOM 首位列 prev 禁用（RTL 视觉最右即边界）').toBe('true')
+    // DOM 第二列（doing）：prev = DOM 前移（视觉右移向 start）→ todo 前插入
+    const doingPrev = heads[1]!.querySelector<HTMLElement>('.column-nav[data-nav="prev"]')!
+    expect(doingPrev.getAttribute('aria-disabled'), 'DOM 第二列 prev 可用').toBe('false')
+    expect(doingPrev.getAttribute('aria-label'), 'RTL 下 prev 读「列右移」（执行方向=读屏一致）').toBe('列右移')
+    doingPrev.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(events.length, 'prev 点击执行 DOM 前移（视觉右移）').toBe(1)
+    const keys = (JSON.parse(el.getAttribute('columns') ?? '[]') as Array<{ key: string }>).map((c) => c.key)
+    expect(keys[0], 'doing 移到 todo 前（DOM 前移）').toBe('doing')
+    // next 的 DOM 末位（done，RTL 视觉最左）：next 禁用（idx>=len-1 边界）
+    const lastNext = heads[2]!.querySelector<HTMLElement>('.column-nav[data-nav="next"]')!
+    expect(lastNext.getAttribute('aria-disabled'), 'DOM 末位列 next 禁用（RTL 视觉最左即边界）').toBe('true')
+  })
+})

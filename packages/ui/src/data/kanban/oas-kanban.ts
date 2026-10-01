@@ -160,9 +160,9 @@ const STYLE = `
 :host([data-rtl]) .column-head.drop-after {
   box-shadow: inset 3px 0 0 var(--oas-color-primary);
 }
-/* 触屏列移动按钮图标**不**随 RTL 镜像：prev/next 的语义翻转由 JS 完成（navDelta），
-   物理左箭头在 RTL 下视觉指向 inline-start（右）恰是「prev=向 start 移」的正确方向——
-   CSS 再镜像会与 JS 翻转构成双重翻转（图标指向与执行方向相反，交叉审实抓 I1） */
+/* 触屏列移动按钮：prev/next 语义 = 向 inline-start/end 移（prev 恒 DOM -1 / next 恒 +1——
+   LTR 视觉左/右、RTL 视觉右/左，均向 start/end，无方向分支）。RTL 镜像全部在表现层：
+   图标按执行方向互换、aria-label 读对侧文案（图标/执行/读屏三者一致） */
 /* 触屏列移动按钮：coarse 显示，边界项 aria-disabled（PC 态 display:none 零影响） */
 .column-nav {
   flex: none;
@@ -844,7 +844,8 @@ export class OASKanban extends OASElement {
     prev.dataset.nav = 'prev'
     prev.setAttribute('aria-label', this.t(rtl ? 'kanban.moveRight' : 'kanban.moveLeft'))
     prev.setAttribute('aria-disabled', String(idx <= 0))
-    // RTL 下 prev（视觉向 start 移 = 右移）图标指向右——图标与执行方向一致（不依赖 CSS 镜像）
+    // RTL 下 prev（视觉向 start 移 = DOM -1 的视觉右移）配右箭头、next 配左箭头——
+    // 图标/执行/读屏三者一致（prev 恒 DOM -1 = 向 inline-start 移，无方向分支）
     prev.innerHTML = rtl ? NAV_RIGHT_ICON : NAV_LEFT_ICON
     const next = document.createElement('button')
     next.type = 'button'
@@ -1634,9 +1635,9 @@ export class OASKanban extends OASElement {
     const head = btn.closest('.column-head') as HTMLElement | null
     const idx = this._columns.findIndex((c) => c.key === (head?.getAttribute('data-key') ?? ''))
     if (idx < 0) return
-    // RTL 下 prev/next 的 DOM 序方向互换（prev=视觉 start 侧移——RTL 视觉 start 在右 = DOM 后移）
-    const rtl = this.hasAttribute('data-rtl')
-    const navDelta = btn.dataset.nav === 'next' ? (rtl ? -1 : 1) : rtl ? 1 : -1
+    // prev/next 语义 = 向 inline-start/end 移——prev 恒 DOM -1、next 恒 +1（LTR 视觉左/右、
+    // RTL 视觉右/左——均向 start/end ✓ 无方向分支；aria-disabled 的 DOM 边界天然对齐）
+    const navDelta = btn.dataset.nav === 'next' ? 1 : -1
     this.applyColumnReorder(idx, idx + navDelta)
   }
 }
