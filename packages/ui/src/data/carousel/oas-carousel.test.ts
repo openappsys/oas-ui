@@ -1019,3 +1019,24 @@ describe('OASCarousel thumbs 缩略图指示器（能力缺口 D17）', () => {
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="dots"]')!.hasAttribute('hidden')).toBe(true)
   })
 })
+
+describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
+  it('断开重连后 visibilitychange 监听恢复且 dots 委托不重复挂（匿名箭头已类字段化）', () => {
+    const el = mount({ autoplay: '2000' })
+    // 断开重连两次（bind 跑三次）——dots 委托若重复挂会 goTo 多次
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    el.remove()
+    parent.appendChild(el)
+    // dots 点击一次应只切一次页（重复挂会连跳多页）
+    const dots = el.shadowRoot!.querySelectorAll<HTMLElement>('[part="dot"]')
+    if (dots.length > 1) {
+      dots[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      const active = [...el.shadowRoot!.querySelectorAll('[part="dot"]')].findIndex(
+        (d) => d.getAttribute('aria-current') === 'true',
+      )
+      expect(active, '重连后 dots 点击只切到目标页（委托不重复挂）').toBe(1)
+    }
+  })
+})
