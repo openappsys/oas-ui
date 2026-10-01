@@ -520,3 +520,52 @@ describe('injectValue 表单级尺寸通道（data-form-size）', () => {
     el.remove()
   })
 })
+
+describe('OASElement 断开重连 onReconnect 钩子', () => {
+  class ReconnectProbe extends OASElement {
+    renderCount = 0
+    reconnectCount = 0
+    cleanupCount = 0
+    bindCount = 0
+    protected override render(): void {
+      this.renderCount++
+      this.shadow.innerHTML = '<span></span>'
+      this.bindLike()
+    }
+    /** 模拟 table/kanban 的 onReconnect→bind() 模式：绑定方法内无条件注册清理（cleanupFns 断开时清空，重注册不叠） */
+    private bindLike(): void {
+      this.bindCount++
+      this.onCleanup(() => {
+        this.cleanupCount++
+      })
+    }
+    protected override onReconnect(): void {
+      this.reconnectCount++
+      this.bindLike()
+    }
+  }
+  if (!customElements.get('oas-reconnect-probe')) customElements.define('oas-reconnect-probe', ReconnectProbe)
+
+  it('首次连接不调用 onReconnect；断开重连后调用且 render 不重建', () => {
+    const el = new ReconnectProbe()
+    document.body.appendChild(el)
+    expect(el.renderCount).toBe(1)
+    expect(el.reconnectCount, '首连不走重连钩子').toBe(0)
+    // 断开 → 重连（re-parent）
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    expect(el.renderCount, 'render 不重建（布局/状态保留语义）').toBe(1)
+    expect(el.reconnectCount, '重连调用 onReconnect 一次').toBe(1)
+  })
+
+  it('断开的 cleanup 执行后，重连可重新注册（cleanupFns 清空不累积）', () => {
+    const el = new ReconnectProbe()
+    document.body.appendChild(el)
+    el.remove()
+    expect(el.cleanupCount, '断开执行清理').toBe(1)
+    document.body.appendChild(el)
+    el.remove()
+    expect(el.cleanupCount, '重连后再断开：重新注册的清理再次执行（不丢不叠）').toBe(2)
+  })
+})

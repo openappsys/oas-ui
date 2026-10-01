@@ -68,6 +68,13 @@ export abstract class OASElement extends HTMLElement {
         this.render()
       }
       this.rendered = true
+    } else {
+      // 断开重连（append/re-parent/路由缓存摘挂）：render 不重建（布局与内部状态保留），
+      // 给子类一次「重绑」机会恢复交互——disconnectedCallback 的 cleanup 已摘除 document/observer
+      // 级监听，不重绑则永久失效。子类把绑定集中在可幂等重入的方法并挂到本钩子：
+      // addEventListener 同 handler 同 target 规范去重，observer 类由子类自行幂等重挂；
+      // 不接钩子的组件维持现状（同样不重建，仅交互不恢复——接入按批次渐进迁移）。
+      this.onReconnect()
     }
     this.runUpdateAndNotify()
     // locale 切换（translator 变化）时自动重刷文案，断开连接时取消订阅
@@ -84,6 +91,14 @@ export abstract class OASElement extends HTMLElement {
     // 能力控制器：宿主连接完成后依次通知（render/update 已就绪，controller 可访问 DOM）
     for (const c of this.controllers) c.hostConnected?.()
   }
+
+  /**
+   * 子类可选重连钩子：断开重连（非首次连接）时调用——重建事件/observer 绑定恢复交互。
+   * 语义约定：实现必须幂等（addEventListener 同 handler 同 target 规范去重；
+   * ResizeObserver/MutationObserver 等先断开再挂或复用实例重 observe）。
+   * render() 与内部状态不重建（布局/输入中内容/滚动位置保留）。
+   */
+  protected onReconnect(): void {}
 
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     void name

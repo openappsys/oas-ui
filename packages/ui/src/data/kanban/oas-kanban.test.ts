@@ -1173,3 +1173,42 @@ describe('OASKanban', () => {
     })
   })
 })
+
+describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
+  it('断开重连后拖拽/点击委托恢复且不双挂：dragstart 设置 dragId、applyMove 只触发一次', () => {
+    const el = mount()
+    // 断开重连两次（bind 跑三次）——shadow 根委托若双挂会重复触发 applyMove
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    el.remove()
+    parent.appendChild(el)
+    // 拖拽换列：dragId 设置（shadow 根 dragstart 委托恢复）+ 落定只移动一次
+    const events = trackChange(el)
+    dragDrop(el, 'c1', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
+    expect(events.length, '重连后拖拽派发一次 oas-change（委托不双挂）').toBe(1)
+    expect((events[0]!.detail as { to: string }).to).toBe('done')
+    expect(cardsOf(el, 'done').map((c) => c.getAttribute('data-id'))).toEqual(['c1'])
+  })
+
+  it('断开重连后 applyMove 只被调用一次（spy 直接锁「不双挂」——零操作判定兜底会让 events=1 的假绿无处遁形）', () => {
+    const el = mount()
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    el.remove()
+    parent.appendChild(el)
+    // 双挂时 drop 委托触发 N 次 → applyMove 被调 N 次（事件层的零操作判定虽兜住派发，
+    // 但调用次数暴露双挂本体）——spy 直接数调用
+    type WithApplyMove = { applyMove(id: string, toKey: string, visualIndex: number, targetLane?: string): void }
+    const host = el as unknown as WithApplyMove
+    const original = host.applyMove.bind(el)
+    let calls = 0
+    host.applyMove = ((...args: Parameters<WithApplyMove['applyMove']>) => {
+      calls++
+      return original(...args)
+    }) as WithApplyMove['applyMove']
+    dragDrop(el, 'c1', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
+    expect(calls, 'applyMove 只被调用一次（重连两次 bind 后委托不双挂）').toBe(1)
+  })
+})

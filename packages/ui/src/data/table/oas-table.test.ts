@@ -3197,3 +3197,102 @@ describe('column-virtual 列窗口（窗口序列 / 滚动同步 / 前缀扣除 
     expect(active.hasAttribute('data-col'), '焦点停在窗口末列数据格').toBe(true)
   })
 })
+
+describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const wideCols = (n: number): string =>
+    JSON.stringify(Array.from({ length: n }, (_, i) => ({ key: `c${i}`, title: `列${i}`, width: '80px' })))
+  const wideData = (rows: number, cols: number): string =>
+    JSON.stringify(
+      Array.from({ length: rows }, (_, r) =>
+        Object.fromEntries(Array.from({ length: cols }, (_, i) => [`c${i}`, `${r}-${i}`])),
+      ),
+    )
+
+  it('断开重连后 wrap scroll 监听恢复：列窗口随滚动推移（onReconnect→bind 重挂）', async () => {
+    const el = new OASTable()
+    el.setAttribute('column-virtual', '')
+    el.setAttribute('columns', wideCols(60))
+    el.setAttribute('data', wideData(5, 60))
+    document.body.appendChild(el)
+    const scrollX = async (left: number): Promise<string[]> => {
+      const w = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+      w.scrollLeft = left
+      w.dispatchEvent(new Event('scroll'))
+      await new Promise((r) => setTimeout(r, 30))
+      return [...el.shadowRoot!.querySelectorAll('tbody tr.row')[0]!.querySelectorAll('td[data-col]')].map(
+        (td) => td.getAttribute('data-col') ?? '',
+      )
+    }
+    await scrollX(2000)
+    const before = [...el.shadowRoot!.querySelectorAll('tbody tr.row')[0]!.querySelectorAll('td[data-col]')].map(
+      (td) => td.getAttribute('data-col') ?? '',
+    )
+    expect(before[0]).not.toBe('c0')
+    // 断开重连（re-parent）：cleanup 摘除 wrap 监听 → onReconnect→bind 重挂
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    // 回滚到 0：重连后 scroll 监听恢复 → 窗口回 c0
+    const after = await scrollX(0)
+    expect(after[0], '重连后 scroll 监听恢复（窗口随滚动回 c0）').toBe('c0')
+  })
+
+  it('断开重连不重复挂监听：排序点击只触发一次 sortBy（匿名箭头改类字段后的去重固化）', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '姓名', sortable: true }]))
+    el.setAttribute('data', JSON.stringify([{ name: 'b' }, { name: 'a' }]))
+    el.setAttribute('row-key', 'name')
+    document.body.appendChild(el)
+    // 重连两次（bind 跑三次）——排序委托若重复挂会多次 sortBy（asc→desc→取消 循环相位错乱）
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    el.remove()
+    parent.appendChild(el)
+    const th = el.shadowRoot!.querySelector('thead th.sortable') as HTMLElement
+    th.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    const firstCell = el.shadowRoot!.querySelector('tbody tr.row td[data-col="name"]')!.textContent
+    expect(firstCell, '一次点击只走一次排序切换（升序 → a 在前）').toBe('a')
+  })
+
+  it('断开重连后 ResizeObserver 重挂：colResizeObs 复用实例 observe 恢复（cross-check 列窗口 resize 链路）', () => {
+    const el = new OASTable()
+    el.setAttribute('column-virtual', '')
+    el.setAttribute('columns', wideCols(20))
+    el.setAttribute('data', wideData(3, 20))
+    document.body.appendChild(el)
+    const obs = (el as unknown as { colResizeObs: ResizeObserver | null }).colResizeObs
+    expect(obs, 'column-virtual 挂载后 RO 实例在场').not.toBeNull()
+    if (!obs) return
+    // happy-dom 的 ResizeObserver 是 stub 不触发回调——断言「断开 disconnect、重连 observe」
+    // 的调用链即可锁定重挂路径（回调语义由 scroll 恢复用例与 e2e 覆盖）
+    let observes = 0
+    let disconnects = 0
+    const origObs = obs!.observe.bind(obs)
+    const origDisc = obs!.disconnect.bind(obs)
+    obs.observe = ((t: Element) => {
+      observes++
+      return origObs(t)
+    }) as typeof obs.observe
+    obs.disconnect = (() => {
+      disconnects++
+      return origDisc()
+    }) as typeof obs.disconnect
+    const parent = el.parentElement!
+    el.remove()
+    expect(disconnects, '断开时 RO disconnect（cleanup 摘除）').toBeGreaterThan(0)
+    const before = observes
+    parent.appendChild(el)
+    expect(observes, '重连后 observe 重挂（onReconnect→bind 的 ??= 复用实例重挂）').toBeGreaterThan(before)
+  })
+})

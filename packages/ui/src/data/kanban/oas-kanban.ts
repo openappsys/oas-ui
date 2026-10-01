@@ -551,7 +551,13 @@ export class OASKanban extends OASElement {
     return true
   }
 
-  /** 缓存节点引用 + 事件委托绑定 + 注册清理（render/hydrate 共用路径） */
+  /** 断开重连重绑（core onReconnect 钩子）：bind() 幂等重入——shadow 根委托全部类字段
+      引用（addEventListener 规范去重），cleanup 断开已清空故重新注册 */
+  protected override onReconnect(): void {
+    this.bind()
+  }
+
+  /** 缓存节点引用 + 事件委托绑定 + 注册清理（render/hydrate/onReconnect 共用路径） */
   private bind(): void {
     const root = this.shadow
     // 拖拽事件委托到 shadow 根：列/卡片/泳道重建无需重绑（dragstart 触屏不可用，触屏走按钮）
