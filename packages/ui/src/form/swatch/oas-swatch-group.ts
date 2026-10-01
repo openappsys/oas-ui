@@ -80,6 +80,9 @@ export class OASSwatchGroup extends OASElement {
   }
 
   /** 子件同步：selected 由组 value 统一驱动（受控）+ 组语义 role/ARIA + 禁用透传 + roving 起点 */
+  /** 重试守卫（首帧时序防护最多一次，防连锁重试） */
+  private syncRetryQueued = false
+
   private syncChildren(): void {
     const disabled = this.hasAttr('disabled') || this.injectDisabled()
     const selected = this.selectedValues
@@ -91,9 +94,16 @@ export class OASSwatchGroup extends OASElement {
       sw.toggleAttribute('data-group-disabled', disabled)
       // 首帧时序防护：静态 HTML 带 value 时本 update 可能先于子项 upgrade（upgrade 回调按队列
       // 在 group 的 connectedCallback 之后）——未升级子项是白板，调方法即 TypeError（demands 实抓）。
-      // 判空跳过并下一微任务重试（upgrade 是 microtask，重试时子项已升级）
+      // 判空跳过并下一微任务重试一次（upgrade 是 microtask，重试时子项已升级；
+      // 最多一次防「子项陆续升级/异常白板」场景的连锁重试风暴）
       if (typeof sw.syncSelected !== 'function') {
-        queueMicrotask(() => this.syncChildren())
+        if (!this.syncRetryQueued) {
+          this.syncRetryQueued = true
+          queueMicrotask(() => {
+            this.syncRetryQueued = false
+            this.syncChildren()
+          })
+        }
         continue
       }
       const color = sw.getAttribute('color')

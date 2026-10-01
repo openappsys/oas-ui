@@ -26,4 +26,6 @@ test('cdn swatch-group 静态 value 首帧（demands 复现）', async ({ page }
   })
   console.log('DIAG ' + JSON.stringify(diag))
   expect(errors.filter((e) => e.includes('syncSelected')).length, '首帧不应抛 syncSelected 错误').toBe(0)
+  // 修复目标本身也要锁：value 命中项首帧选中态（重试机制失效时白板首帧无选中环）
+  expect(diag.firstSelected, 'value 命中项首帧选中态同步').toBeTruthy()
 })

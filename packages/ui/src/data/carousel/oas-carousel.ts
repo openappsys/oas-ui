@@ -437,25 +437,7 @@ export class OASCarousel extends OASElement {
     // 非法值静默回落 click。委托到容器监听（指示器重建无需重绑）
     this.shadow.querySelector('.dots')?.addEventListener('pointerover', this.onDotHover)
     // 指示器键盘导航（WAI-ARIA carousel pattern：方向键 + Home/End；水平轴 RTL 镜像）
-    this.shadow.querySelector('.dots')?.addEventListener('keydown', (e) => {
-      const key = (e as KeyboardEvent).key
-      const pages = this.pageCount()
-      const fwd = isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
-      const back = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
-      if (key === fwd || key === 'ArrowDown') {
-        e.preventDefault()
-        this.goTo(this.current() + 1)
-      } else if (key === back || key === 'ArrowUp') {
-        e.preventDefault()
-        this.goTo(this.current() - 1)
-      } else if (key === 'Home') {
-        e.preventDefault()
-        this.goTo(0)
-      } else if (key === 'End') {
-        e.preventDefault()
-        this.goTo(pages - 1)
-      }
-    })
+    this.shadow.querySelector('.dots')?.addEventListener('keydown', this.onDotsKeydown)
     this.shadow.querySelector('[part="arrow-prev"]')?.addEventListener('click', () => {
       this.prev()
     })
@@ -475,29 +457,9 @@ export class OASCarousel extends OASElement {
       this.schedule()
     })
     // 卡片模式：点击任一邻卡直接切到该卡（等效多步 next/prev），点击当前卡 no-op
-    this.addEventListener('click', (e) => {
-      if (!this.isCard()) return
-      const path = e.composedPath()
-      const kids = Array.from(this.children)
-      const hit = kids.findIndex((k) => path.includes(k))
-      if (hit >= 0 && hit !== this.current()) this.goTo(hit)
-    })
+    this.addEventListener('click', this.onHostCardClick)
     // 卡片模式：宿主级方向键切换（焦点在轮播项内时可达；指示器区有独立导航，避免重复处理；水平轴 RTL 镜像）
-    this.addEventListener('keydown', (e) => {
-      if (!this.isCard()) return
-      const ev = e as KeyboardEvent
-      const dots = this.shadow.querySelector('.dots')
-      if (dots && ev.composedPath().includes(dots)) return
-      const fwd = isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
-      const back = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
-      if (ev.key === fwd || ev.key === 'ArrowDown') {
-        ev.preventDefault()
-        this.next()
-      } else if (ev.key === back || ev.key === 'ArrowUp') {
-        ev.preventDefault()
-        this.prev()
-      }
-    })
+    this.addEventListener('keydown', this.onHostCardKeydown)
     // 动态增删轮播项：slotchange 重数数量、重建指示器、收敛 index
     this.shadow.querySelector('slot')?.addEventListener('slotchange', () => {
       this.update()
@@ -507,7 +469,9 @@ export class OASCarousel extends OASElement {
     this.addEventListener('pointerleave', this.onHoverLeave)
     this.addEventListener('focusin', this.onFocusIn)
     this.addEventListener('focusout', this.onFocusOut)
-    // 页面不可见停播，可见后恢复
+    // 页面不可见停播，可见后恢复；bind 重入（重连）时同步当前可见态——
+    // 断开期间 document.hidden 变化后 hiddenPaused 是陈旧值（监听已摘，交叉审 M3）
+    this.hiddenPaused = document.hidden
     document.addEventListener('visibilitychange', this.onVisibilityChange)
     this.bindDrag()
     this.onCleanup(() => {
@@ -515,6 +479,54 @@ export class OASCarousel extends OASElement {
       this.timer = null
       document.removeEventListener('visibilitychange', this.onVisibilityChange)
     })
+  }
+
+  /** 卡片模式：点击任一邻卡直接切到该卡（等效多步 next/prev），点击当前卡 no-op */
+  private onHostCardClick = (e: Event): void => {
+    if (!this.isCard()) return
+    const path = e.composedPath()
+    const kids = Array.from(this.children)
+    const hit = kids.findIndex((k) => path.includes(k))
+    if (hit >= 0 && hit !== this.current()) this.goTo(hit)
+  }
+
+  /** 卡片模式宿主级方向键切换（焦点在轮播项内时可达；指示器区有独立导航避免重复处理；水平轴 RTL 镜像） */
+  private onHostCardKeydown = (e: Event): void => {
+    if (!this.isCard()) return
+    const ev = e as KeyboardEvent
+    const dots = this.shadow.querySelector('.dots')
+    if (dots && ev.composedPath().includes(dots)) return
+    const fwd = isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
+    const back = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
+    if (ev.key === fwd || ev.key === 'ArrowDown') {
+      ev.preventDefault()
+      this.next()
+    } else if (ev.key === back || ev.key === 'ArrowUp') {
+      ev.preventDefault()
+      this.prev()
+    }
+  }
+
+  /** 指示器键盘导航（WAI-ARIA carousel pattern：方向键 + Home/End；水平轴 RTL 镜像；
+      类字段引用——bind 幂等重入不重复挂（匿名期重连双挂连跳多页，交叉审实抓 C1） */
+  private onDotsKeydown = (e: Event): void => {
+    const key = (e as KeyboardEvent).key
+    const pages = this.pageCount()
+    const fwd = isRtl(this) ? 'ArrowLeft' : 'ArrowRight'
+    const back = isRtl(this) ? 'ArrowRight' : 'ArrowLeft'
+    if (key === fwd || key === 'ArrowDown') {
+      e.preventDefault()
+      this.goTo(this.current() + 1)
+    } else if (key === back || key === 'ArrowUp') {
+      e.preventDefault()
+      this.goTo(this.current() - 1)
+    } else if (key === 'Home') {
+      e.preventDefault()
+      this.goTo(0)
+    } else if (key === 'End') {
+      e.preventDefault()
+      this.goTo(pages - 1)
+    }
   }
 
   /** 指示器激活（click 默认触发；类字段引用——bind 幂等重入不重复挂） */
@@ -566,53 +578,62 @@ export class OASCarousel extends OASElement {
   private bindDrag(): void {
     const viewport = this.shadow.querySelector<HTMLElement>('[part="viewport"]')
     if (!viewport) return
-    viewport.addEventListener('pointerdown', (e) => {
-      const ev = e as PointerEvent
-      if (!this.dragEnabled() || this.drag || ev.button !== 0 || this.count === 0) return
-      this.drag = { startX: ev.clientX, startY: ev.clientY, delta: 0, startAt: performance.now() }
-      this.dragPaused = true
-      trackOf(this)?.classList.add('no-transition')
-      try {
-        viewport.setPointerCapture(ev.pointerId)
-      } catch {
-        /* 环境不支持指针捕获时忽略（事件仍挂在 viewport 上） */
-      }
-    })
-    viewport.addEventListener('pointermove', (e) => {
-      if (!this.drag) return
-      const ev = e as PointerEvent
-      const vertical = !this.isCard() && this.getAttr('direction', 'horizontal') === 'vertical'
-      this.drag.delta = vertical ? ev.clientY - this.drag.startY : ev.clientX - this.drag.startX
-      trackOf(this)?.style.setProperty('transform', this.trackTransform(this.drag.delta))
-    })
-    const finish = (e: Event) => {
-      if (!this.drag) return
-      const ev = e as PointerEvent
-      const vertical = !this.isCard() && this.getAttr('direction', 'horizontal') === 'vertical'
-      const delta = vertical ? this.drag.delta : ev.clientX - this.drag.startX || this.drag.delta
-      const elapsed = Math.max(performance.now() - this.drag.startAt, 1)
-      this.drag = null
-      this.dragPaused = false
-      const t = trackOf(this)
-      t?.classList.remove('no-transition')
-      // 松手阈值：距离 > 视口 25%（水平视宽/垂直视高；无布局量测时回落 50px）
-      // 或快速轻扫（≥40px 且速度 > 0.5px/ms）；否则回弹。
-      // 方向：LTR 左拖（delta<0）= 下一张；RTL 镜像为右拖（delta>0）= 下一张
-      const rect = viewport.getBoundingClientRect()
-      const span = Math.max(vertical ? rect.height : rect.width, 0)
-      const distance = Math.abs(delta)
-      const distanceThreshold = span > 0 ? span * 0.25 : 50
-      const flick = distance >= 40 && distance / elapsed > 0.5
-      const rtl = !vertical && isRtl(this)
-      const forward = rtl ? delta > 0 : delta < 0
-      if (distance > distanceThreshold || flick) this.goTo(this.current() + (forward ? 1 : -1))
-      // 回弹/边界归位：统一重算 transform（未达阈值或循环关闭触界时恢复原位）
-      this.update()
-      // 拖拽后重置自动播放计时
-      this.schedule()
+    viewport.addEventListener('pointerdown', this.onViewportPointerdown)
+    viewport.addEventListener('pointermove', this.onViewportPointermove)
+    viewport.addEventListener('pointerup', this.onViewportPointerFinish)
+    viewport.addEventListener('pointercancel', this.onViewportPointerFinish)
+  }
+
+  /** pointer 拖拽按下（类字段引用——bindDrag 幂等重入不重复挂） */
+  private onViewportPointerdown = (e: Event): void => {
+    const ev = e as PointerEvent
+    if (!this.dragEnabled() || this.drag || ev.button !== 0 || this.count === 0) return
+    const viewport = this.shadow.querySelector<HTMLElement>('[part="viewport"]')!
+    this.drag = { startX: ev.clientX, startY: ev.clientY, delta: 0, startAt: performance.now() }
+    this.dragPaused = true
+    trackOf(this)?.classList.add('no-transition')
+    try {
+      viewport.setPointerCapture(ev.pointerId)
+    } catch {
+      /* 环境不支持指针捕获时忽略（事件仍挂在 viewport 上） */
     }
-    viewport.addEventListener('pointerup', finish)
-    viewport.addEventListener('pointercancel', finish)
+  }
+
+  private onViewportPointermove = (e: Event): void => {
+    if (!this.drag) return
+    const ev = e as PointerEvent
+    const vertical = !this.isCard() && this.getAttr('direction', 'horizontal') === 'vertical'
+    this.drag.delta = vertical ? ev.clientY - this.drag.startY : ev.clientX - this.drag.startX
+    trackOf(this)?.style.setProperty('transform', this.trackTransform(this.drag.delta))
+  }
+
+  /** pointer 拖拽收尾（up/cancel 同路径）：阈值切屏或回弹 + 方向 RTL 镜像 */
+  private onViewportPointerFinish = (e: Event): void => {
+    if (!this.drag) return
+    const ev = e as PointerEvent
+    const viewport = this.shadow.querySelector<HTMLElement>('[part="viewport"]')!
+    const vertical = !this.isCard() && this.getAttr('direction', 'horizontal') === 'vertical'
+    const delta = vertical ? this.drag.delta : ev.clientX - this.drag.startX || this.drag.delta
+    const elapsed = Math.max(performance.now() - this.drag.startAt, 1)
+    this.drag = null
+    this.dragPaused = false
+    const t = trackOf(this)
+    t?.classList.remove('no-transition')
+    // 松手阈值：距离 > 视口 25%（水平视宽/垂直视高；无布局量测时回落 50px）
+    // 或快速轻扫（≥40px 且速度 > 0.5px/ms）；否则回弹。
+    // 方向：LTR 左拖（delta<0）= 下一张；RTL 镜像为右拖（delta>0）= 下一张
+    const rect = viewport.getBoundingClientRect()
+    const span = Math.max(vertical ? rect.height : rect.width, 0)
+    const distance = Math.abs(delta)
+    const distanceThreshold = span > 0 ? span * 0.25 : 50
+    const flick = distance >= 40 && distance / elapsed > 0.5
+    const rtl = !vertical && isRtl(this)
+    const forward = rtl ? delta > 0 : delta < 0
+    if (distance > distanceThreshold || flick) this.goTo(this.current() + (forward ? 1 : -1))
+    // 回弹/边界归位：统一重算 transform（未达阈值或循环关闭触界时恢复原位）
+    this.update()
+    // 拖拽后重置自动播放计时
+    this.schedule()
   }
 
   protected override render(): void {

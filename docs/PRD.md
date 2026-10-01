@@ -1778,7 +1778,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **oas-table / oas-kanban 先行接线**（本批暴露问题的两个组件），其余组件按同模式批量核
 - 不重建 shadow DOM（render-once 保留——性能语义不变；只补绑定）
 
-### 后续批输入（报批项，本批不动）
+### 后续批输入（报批项——affix 接线与 filter panel 已于同批后续 commit 落地（onReconnect 受益者接线批 + 监听生命周期化），下两条仍为开放报批项）
 
 - **常驻监听型组件接线**：oas-affix（window resize+scroll 常驻监听——断开被 cleanup 摘、重连无钩子 → 吸顶失灵）等「常驻监听型」组件按 table/kanban 同模式接 onReconnect（交叉审补扫全仓发现的 onReconnect 真实受益者）
 - **table filter panel 监听残留**：面板开着时断开组件，onDocClick/onKey 监听残留 document（靠监听器自摘兜底）——filter panel 的监听改跟面板生命周期走
