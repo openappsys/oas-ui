@@ -19,6 +19,14 @@
   --oas-color-text-on-danger: #ffffff;
   --oas-color-text-primary: #18181b;
   --oas-color-text-secondary: #71717a;
+  /* 次级文字安全档（弱化背景专用）：secondary 混主文字色加深——secondary on bg-hover 仅 4.39
+     不达 WCAG AA 4.5（本档实测 5.15）；dark/高对比下 secondary 原值已达标（保持引用）。
+     适用：弱化底色（bg-hover/禁用行/空态占位）上的次级文字——普通底色仍用 secondary。 */
+  --oas-color-text-secondary-strong: color-mix(
+    in srgb,
+    var(--oas-color-text-secondary) 88%,
+    var(--oas-color-text-primary)
+  );
   --oas-color-text-disabled: #a1a1aa;
   --oas-color-border: #e4e4e7;
   --oas-color-border-strong: #d4d4d8;
@@ -151,6 +159,8 @@ html.dark {
   --oas-color-text-primary: #fafafa;
   /* 次要文字 #c6c6ce：压 elevated 底 #3f3f46 感知分 62.8（原 #b8b8c0 仅 54.7） */
   --oas-color-text-secondary: #c6c6ce;
+  /* dark：secondary 原值 on bg-hover 已达标（≈7+），安全档保持引用（与 light 同 token 名消费） */
+  --oas-color-text-secondary-strong: var(--oas-color-text-secondary);
   --oas-color-text-disabled: #8d8d95;
   --oas-color-border: #52525b;
   --oas-color-border-strong: #71717a;
@@ -212,6 +222,8 @@ html.dark {
   --oas-color-text-on-danger: #ffffff;
   --oas-color-text-primary: #000000;
   --oas-color-text-secondary: #262626;
+  /* high-contrast：secondary 已足够深，安全档保持引用 */
+  --oas-color-text-secondary-strong: var(--oas-color-text-secondary);
   --oas-color-text-disabled: #595959;
   --oas-color-border: #000000;
   --oas-color-bg: #ffffff;

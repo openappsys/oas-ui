@@ -118,7 +118,7 @@ The header checkbox selects / clears all rows at once; row checkboxes toggle ind
 <style>
 #table-row-class::part(row-disabled) {
   background: var(--oas-color-bg-hover);
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-secondary-strong);
   text-decoration: line-through;
 }
 #table-row-class::part(row-warn) {
