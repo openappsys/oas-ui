@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 /** 列定义：`columns` 属性（JSON）元素结构 */
 export interface KanbanColumn {
@@ -151,6 +152,17 @@ const STYLE = `
 }
 .column-head.drop-after {
   box-shadow: inset -3px 0 0 var(--oas-color-primary);
+}
+/* RTL 逻辑方向化：列间指示线 before/after 视觉镜像（落点判定已按 dir 翻转，此处对齐视觉） */
+:host([data-rtl]) .column-head.drop-before {
+  box-shadow: inset -3px 0 0 var(--oas-color-primary);
+}
+:host([data-rtl]) .column-head.drop-after {
+  box-shadow: inset 3px 0 0 var(--oas-color-primary);
+}
+/* 触屏列移动按钮图标 RTL 镜像（prev/next 视觉方向翻转，语义按 dir 翻转后图标对齐） */
+:host([data-rtl]) .column-nav svg {
+  transform: scaleX(-1);
 }
 /* 触屏列移动按钮：coarse 显示，边界项 aria-disabled（PC 态 display:none 零影响） */
 .column-nav {
@@ -602,6 +614,8 @@ export class OASKanban extends OASElement {
   }
 
   protected override update(): void {
+    // RTL 逻辑方向化钩子：列重排落点/指示线/键盘 ←→/触屏按钮按 data-rtl 镜像（库先例）
+    this.toggleAttribute('data-rtl', isRtl(this))
     // 数据重渲染前先关菜单（菜单项引用的列/卡序即将重建，防孤儿态）
     this.closeMenu()
     this.parse()
@@ -826,6 +840,8 @@ export class OASKanban extends OASElement {
     prev.className = 'column-nav'
     prev.setAttribute('part', 'column-nav')
     prev.dataset.nav = 'prev'
+    // 触屏列移动按钮：语义按 inline 方向（prev=inline-start 侧移）——RTL 下图标镜像（CSS）、
+    // aria-label 保持「向 start 移」语义（文案 dir 无关，语义翻转在 handleClick 按 data-rtl 执行）
     prev.setAttribute('aria-label', this.t('kanban.moveLeft'))
     prev.setAttribute('aria-disabled', String(idx <= 0))
     prev.innerHTML = NAV_LEFT_ICON
@@ -933,6 +949,40 @@ export class OASKanban extends OASElement {
     this.selectedIds.clear()
     this.anchorId = ''
     this.paintSelection()
+  }
+
+  /** 卡片键盘移动（Alt+方向键）：Alt+←/→ 换列（inline 方向，RTL 镜像）、Alt+↑/↓ 列内移动。
+      选中集（selectedIds 非空）批量走 applyMultiMove（一条 oas-change 带 ids），单卡走 applyMove——
+      与拖拽/触屏菜单同一条 oas-change 契约（Alt+↑↓ 对齐 table 行重排的键盘先例） */
+  private keyboardMove(card: HTMLElement, key: string): void {
+    const id = card.getAttribute('data-id') ?? ''
+    const cardData = this._cards.find((c) => String(c.id ?? '') === id)
+    if (!cardData) return
+    const from = String(cardData.column ?? '')
+    const lane = this.laneOf(cardData)
+    if (key === 'ArrowUp' || key === 'ArrowDown') {
+      // 列内移动：菜单上移/下移同款语义（down 传视觉位 +2 经原位换算，见 handleMenuItemClick 注释）
+      const siblings = this._cards.filter((c) => String(c.column ?? '') === from && this.laneOf(c) === lane)
+      const idx = siblings.indexOf(cardData)
+      const delta = key === 'ArrowUp' ? idx - 1 : Math.min(idx + 2, siblings.length)
+      if (delta < 0) return
+      this.applyMove(id, from, delta, lane)
+      return
+    }
+    // Alt+←/→ 换列：inline 方向邻列（RTL 镜像）；落点 = 目标列尾部（对齐菜单「移到列」语义）
+    const rtl = this.hasAttribute('data-rtl')
+    const colIdx = this._columns.findIndex((c) => c.key === from)
+    if (colIdx < 0) return
+    const delta = key === 'ArrowRight' ? (rtl ? -1 : 1) : rtl ? 1 : -1
+    const toCol = this._columns[colIdx + delta]
+    if (!toCol) return
+    const toKey = toCol.key
+    const tailIndex = this._cards.filter((c) => String(c.column ?? '') === toKey && this.laneOf(c) === lane).length
+    if (this.selectedIds.size > 0) {
+      this.applyMultiMove([...this.selectedIds], toKey, tailIndex, lane)
+      return
+    }
+    this.applyMove(id, toKey, tailIndex, lane)
   }
 
   /** 卡片点击多选语义：Ctrl/Cmd 切换、Shift 同单元格范围选、普通点击单选 */
@@ -1296,7 +1346,8 @@ export class OASKanban extends OASElement {
       return
     }
     const rect = head.getBoundingClientRect()
-    const before = de.clientX < rect.left + rect.width / 2
+    // RTL 逻辑方向化：左半区在 LTR=before（inline-start）、RTL=after（inline-end）——按 dir 翻转
+    const before = de.clientX < rect.left + rect.width / 2 !== this.hasAttribute('data-rtl')
     const visual = h + (before ? 0 : 1)
     const to = visual > this.colDragFrom ? visual - 1 : visual
     if (to === this.colDragFrom) {
@@ -1377,13 +1428,35 @@ export class OASKanban extends OASElement {
 
   private handleKeydown = (e: Event): void => {
     const key = (e as KeyboardEvent).key
+    const ke = e as KeyboardEvent
     const target = e.target as HTMLElement | null
-    // 列手柄键盘换序：←/→（键盘可达；触屏按钮之外的第三条路径）
+    // 卡片键盘多选：Space 切换选中（与 Ctrl+click 等价的键盘路径——焦点卡逐枚加选/退选）
+    const card = target?.closest?.('.card') as HTMLElement | null
+    if (card && key === ' ') {
+      e.preventDefault()
+      const id = card.getAttribute('data-id') ?? ''
+      if (this.selectedIds.has(id)) this.selectedIds.delete(id)
+      else this.selectedIds.add(id)
+      this.anchorId = id
+      this.paintSelection()
+      return
+    }
+    // 卡片键盘移动：Alt+←/→ 换列（inline 方向，RTL 镜像）、Alt+↑/↓ 列内移动——
+    // 选中集优先（批量一条 oas-change），无选中回退焦点卡；事件契约与拖拽/菜单同一条 oas-change
+    if (card && ke.altKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(key)) {
+      e.preventDefault()
+      this.keyboardMove(card, key)
+      return
+    }
+    // 列手柄键盘换序：←/→（键盘可达；触屏按钮之外的第三条路径）——RTL 下 ←/→ 视觉方向与 DOM 序互换
     if (target?.closest?.('.column-drag') && (key === 'ArrowLeft' || key === 'ArrowRight')) {
       e.preventDefault()
       const head = target.closest('.column-head') as HTMLElement | null
       const idx = this._columns.findIndex((c) => c.key === (head?.getAttribute('data-key') ?? ''))
-      if (idx >= 0) this.applyColumnReorder(idx, idx + (key === 'ArrowRight' ? 1 : -1))
+      if (idx < 0) return
+      const rtl = this.hasAttribute('data-rtl')
+      const delta = key === 'ArrowRight' ? (rtl ? -1 : 1) : rtl ? 1 : -1
+      this.applyColumnReorder(idx, idx + delta)
       return
     }
     if (key === 'Escape') {
@@ -1550,6 +1623,9 @@ export class OASKanban extends OASElement {
     const head = btn.closest('.column-head') as HTMLElement | null
     const idx = this._columns.findIndex((c) => c.key === (head?.getAttribute('data-key') ?? ''))
     if (idx < 0) return
-    this.applyColumnReorder(idx, idx + (btn.dataset.nav === 'next' ? 1 : -1))
+    // RTL 下 prev/next 的 DOM 序方向互换（prev=视觉 start 侧移——RTL 视觉 start 在右 = DOM 后移）
+    const rtl = this.hasAttribute('data-rtl')
+    const navDelta = btn.dataset.nav === 'next' ? (rtl ? -1 : 1) : rtl ? 1 : -1
+    this.applyColumnReorder(idx, idx + navDelta)
   }
 }

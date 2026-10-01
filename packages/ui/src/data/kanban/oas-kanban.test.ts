@@ -1212,3 +1212,66 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     expect(calls, 'applyMove 只被调用一次（重连两次 bind 后委托不双挂）').toBe(1)
   })
 })
+
+describe('键盘多选与移动（Space 切换 + Alt+方向键，5b 键盘可达补全）', () => {
+  it('Space 切换聚焦卡选中（多选键盘路径）；再按退选', () => {
+    const el = mount()
+    const c1 = cardOf(el, 'c1')!
+    c1.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, composed: true }))
+    expect(c1.hasAttribute('data-selected'), 'Space 选中').toBe(true)
+    c1.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, composed: true }))
+    expect(c1.hasAttribute('data-selected'), '再按退选').toBe(false)
+  })
+
+  it('Alt+→ 换列到邻列尾部（事件同拖拽契约；Alt+↑ 列内上移）', () => {
+    const el = mount()
+    const events = trackChange(el)
+    const c1 = cardOf(el, 'c1')!
+    c1.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true, composed: true }))
+    expect(events.length, 'Alt+→ 换列派发 oas-change').toBe(1)
+    expect((events[0]!.detail as { to: string }).to).toBe('doing')
+    expect(cardsOf(el, 'doing').map((c) => c.getAttribute('data-id'))).toContain('c1')
+    // Alt+↑ 列内上移（doing 列 c3 在首位，c1 移到其后——c1 当前在 doing 尾部）
+    const c1Now = cardsOf(el, 'doing').find((c) => c.getAttribute('data-id') === 'c1')!
+    c1Now.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true, composed: true }))
+    expect(events.length, 'Alt+↑ 列内移动派发').toBe(2)
+  })
+
+  it('选中集 Alt+→：批量移动一条 oas-change 带 ids（多选键盘移动契约）', () => {
+    const el = mount()
+    const events = trackChange(el)
+    // Ctrl 选两枚
+    cardOf(el, 'c1')!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, ctrlKey: true }))
+    cardOf(el, 'c2')!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, ctrlKey: true }))
+    cardOf(el, 'c1')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true, composed: true }),
+    )
+    expect(events.length, '批量移动一条事件').toBe(1)
+    const d = events[0]!.detail as { ids?: string[]; to: string }
+    expect(d.ids?.length, 'detail.ids 含全部选中').toBe(2)
+    expect(d.to).toBe('doing')
+  })
+})
+
+describe('RTL 逻辑方向化（列重排/键盘/触屏按钮镜像）', () => {
+  beforeEach(() => {
+    document.documentElement.dir = 'rtl'
+  })
+  afterEach(() => {
+    document.documentElement.dir = ''
+  })
+
+  it('dir=rtl 时 data-rtl 同步 + Alt+→ 为 DOM 前移（视觉 end 方向镜像）', () => {
+    const el = mount()
+    expect(el.hasAttribute('data-rtl'), 'update 同步 data-rtl').toBe(true)
+    const events = trackChange(el)
+    const c1 = cardOf(el, 'c1')!
+    c1.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true, composed: true }))
+    // RTL 下 Alt+→ = 视觉 end 方向 = DOM 前移：todo（首位列）的前一列不存在 → 零操作不派发
+    expect(events.length, 'RTL Alt+→ 在首列前界零操作').toBe(0)
+    // 反向验证：Alt+←（RTL 视觉 start）= DOM 后移到 doing
+    c1.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true, composed: true }))
+    expect(events.length, 'RTL Alt+← = DOM 后移派发').toBe(1)
+    expect((events[0]!.detail as { to: string }).to).toBe('doing')
+  })
+})
