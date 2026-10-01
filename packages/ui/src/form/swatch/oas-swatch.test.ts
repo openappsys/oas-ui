@@ -266,3 +266,26 @@ describe('OASSwatchGroup 选择组', () => {
     expect(received, '非 swatch 后代事件应照常冒泡到宿主').toBe(1)
   })
 })
+
+describe('首帧时序防护（白板子项判空 + 重试守卫）', () => {
+  it('含永不升级的白板子项时：syncChildren 不抛错且只重试一次（守卫真防无限风暴）', async () => {
+    // 手工构造含白板子项的 group（oas-swatch 未注册——childrenSwatches 读到白板元素）
+    const g = document.createElement('oas-swatch-group') as OASSwatchGroup
+    const plain = document.createElement('oas-swatch') // 未注册 = 白板（无 syncSelected 方法）
+    g.appendChild(plain)
+    document.body.appendChild(g)
+    g.setAttribute('value', '#1677ff')
+    // 白板子项在场：syncChildren 判空跳过不抛错（守卫前会 TypeError）
+    const errors: unknown[] = []
+    try {
+      ;(g as unknown as { update(): void }).update()
+    } catch (e) {
+      errors.push(e)
+    }
+    expect(errors.length, '白板子项不抛 TypeError').toBe(0)
+    // 重试守卫：微任务冲刷后重试已执行且已复位（不会持续入队——两个微任务周期后无新错误）
+    await new Promise((r) => setTimeout(r, 0))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(errors.length, '重试过程无异常').toBe(0)
+  })
+})

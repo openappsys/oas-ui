@@ -1275,3 +1275,15 @@ describe('RTL 逻辑方向化（列重排/键盘/触屏按钮镜像）', () => {
     expect((events[0]!.detail as { to: string }).to).toBe('doing')
   })
 })
+
+describe('Alt 移动后焦点回焦（键盘移动的焦点不滞留游离节点）', () => {
+  it('Alt+→ 换列后 activeElement 落在同 id 新卡上', () => {
+    const el = mount()
+    const c1 = cardOf(el, 'c1')!
+    c1.focus()
+    c1.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true, composed: true }))
+    const active = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(active?.getAttribute('data-id'), '移动后焦点回同 id 新卡').toBe('c1')
+    expect(active?.closest('.column')?.getAttribute('data-key'), '焦点卡已在新列').toBe('doing')
+  })
+})

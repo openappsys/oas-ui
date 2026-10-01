@@ -844,7 +844,8 @@ export class OASKanban extends OASElement {
     prev.dataset.nav = 'prev'
     prev.setAttribute('aria-label', this.t(rtl ? 'kanban.moveRight' : 'kanban.moveLeft'))
     prev.setAttribute('aria-disabled', String(idx <= 0))
-    prev.innerHTML = NAV_LEFT_ICON
+    // RTL 下 prev（视觉向 start 移 = 右移）图标指向右——图标与执行方向一致（不依赖 CSS 镜像）
+    prev.innerHTML = rtl ? NAV_RIGHT_ICON : NAV_LEFT_ICON
     const next = document.createElement('button')
     next.type = 'button'
     next.className = 'column-nav'
@@ -852,7 +853,7 @@ export class OASKanban extends OASElement {
     next.dataset.nav = 'next'
     next.setAttribute('aria-label', this.t(rtl ? 'kanban.moveLeft' : 'kanban.moveRight'))
     next.setAttribute('aria-disabled', String(idx < 0 || idx >= this._columns.length - 1))
-    next.innerHTML = NAV_RIGHT_ICON
+    next.innerHTML = rtl ? NAV_LEFT_ICON : NAV_RIGHT_ICON
 
     const countEl = document.createElement('span')
     countEl.className = 'column-count'

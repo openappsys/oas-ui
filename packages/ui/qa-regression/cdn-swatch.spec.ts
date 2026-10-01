@@ -21,7 +21,7 @@ test('cdn swatch-group 静态 value 首帧（demands 复现）', async ({ page }
     return {
       groupShadow: !!g.shadowRoot,
       firstSwShadow: !!first.shadowRoot,
-      firstSelected: first.hasAttribute('selected') || first.getAttribute('aria-checked'),
+      firstSelected: first.hasAttribute('selected'),
     }
   })
   console.log('DIAG ' + JSON.stringify(diag))

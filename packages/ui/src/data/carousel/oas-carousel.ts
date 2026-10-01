@@ -438,32 +438,16 @@ export class OASCarousel extends OASElement {
     this.shadow.querySelector('.dots')?.addEventListener('pointerover', this.onDotHover)
     // 指示器键盘导航（WAI-ARIA carousel pattern：方向键 + Home/End；水平轴 RTL 镜像）
     this.shadow.querySelector('.dots')?.addEventListener('keydown', this.onDotsKeydown)
-    this.shadow.querySelector('[part="arrow-prev"]')?.addEventListener('click', () => {
-      this.prev()
-    })
-    this.shadow.querySelector('[part="arrow-next"]')?.addEventListener('click', () => {
-      this.next()
-    })
+    this.shadow.querySelector('[part="arrow-prev"]')?.addEventListener('click', this.onArrowPrevClick)
+    this.shadow.querySelector('[part="arrow-next"]')?.addEventListener('click', this.onArrowNextClick)
     // 显式暂停按钮：autoplay 未开启时点击=开启播放；已开启时切换暂停/继续
-    this.shadow.querySelector('[part="pause-button"]')?.addEventListener('click', () => {
-      if (!this.hasAttr('autoplay')) {
-        this.userPaused = false
-        // attributeChangedCallback 会同步 update/schedule
-        this.setAttribute('autoplay', '')
-        return
-      }
-      this.userPaused = !this.userPaused
-      this.update()
-      this.schedule()
-    })
+    this.shadow.querySelector('[part="pause-button"]')?.addEventListener('click', this.onPauseButtonClick)
     // 卡片模式：点击任一邻卡直接切到该卡（等效多步 next/prev），点击当前卡 no-op
     this.addEventListener('click', this.onHostCardClick)
     // 卡片模式：宿主级方向键切换（焦点在轮播项内时可达；指示器区有独立导航，避免重复处理；水平轴 RTL 镜像）
     this.addEventListener('keydown', this.onHostCardKeydown)
     // 动态增删轮播项：slotchange 重数数量、重建指示器、收敛 index
-    this.shadow.querySelector('slot')?.addEventListener('slotchange', () => {
-      this.update()
-    })
+    this.shadow.querySelector('slot')?.addEventListener('slotchange', this.onSlotChange)
     // 悬停/聚焦暂停自动播放（默认开，pause-on-hover=false 可关）
     this.addEventListener('pointerenter', this.onHoverEnter)
     this.addEventListener('pointerleave', this.onHoverLeave)
@@ -548,6 +532,28 @@ export class OASCarousel extends OASElement {
   private onHoverLeave = (): void => {
     this.hoverPaused = false
     this.schedule()
+  }
+
+  /** 箭头/暂停钮/slotchange（类字段引用——bind 幂等重入不重复挂；定点审实抓的残留匿名） */
+  private onArrowPrevClick = (): void => {
+    this.prev()
+  }
+  private onArrowNextClick = (): void => {
+    this.next()
+  }
+  private onPauseButtonClick = (): void => {
+    if (!this.hasAttr('autoplay')) {
+      this.userPaused = false
+      // attributeChangedCallback 会同步 update/schedule
+      this.setAttribute('autoplay', '')
+      return
+    }
+    this.userPaused = !this.userPaused
+    this.update()
+    this.schedule()
+  }
+  private onSlotChange = (): void => {
+    this.update()
   }
   private onFocusIn = (): void => {
     this.focusPaused = true
