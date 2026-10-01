@@ -1404,13 +1404,22 @@ export class OASTableBase extends OASElement {
     return th
   }
 
+  /** 表头排序委托（类字段引用——bind() 幂等重入时 addEventListener 规范去重，不重复挂） */
+  private onTheadSortClick = (e: Event): void => {
+    const th = (e.target as HTMLElement).closest('th.sortable')
+    if (th) this.sortBy((th as HTMLElement).getAttribute('data-key') ?? '', (e as MouseEvent).shiftKey)
+  }
+
+  /** 断开重连重绑（core onReconnect 钩子）：bind() 幂等重入——委托监听同引用去重、
+      ResizeObserver 复用实例重 observe、cleanup 断开已清空故重新注册 */
+  protected override onReconnect(): void {
+    this.bind()
+  }
+
   private bind(): void {
     this.wrap = this.shadow.querySelector('.table-scroll')
     this.ensureChildColumnsObserver()
-    this.shadow.querySelector('thead')?.addEventListener('click', (e) => {
-      const th = (e.target as HTMLElement).closest('th.sortable')
-      if (th) this.sortBy((th as HTMLElement).getAttribute('data-key') ?? '', (e as MouseEvent).shiftKey)
-    })
+    this.shadow.querySelector('thead')?.addEventListener('click', this.onTheadSortClick)
     this.wrap?.addEventListener('scroll', this.handleScroll, { passive: true })
     // column-virtual：容器尺寸变化（视口宽 → 可见列数）重算列窗口（与 scroll 同一 rAF 节流口径）
     if (typeof ResizeObserver !== 'undefined' && this.wrap) {

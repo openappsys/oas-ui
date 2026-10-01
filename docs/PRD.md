@@ -1778,9 +1778,14 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **oas-table / oas-kanban 先行接线**（本批暴露问题的两个组件），其余组件按同模式批量核
 - 不重建 shadow DOM（render-once 保留——性能语义不变；只补绑定）
 
+### 后续批输入（报批项，本批不动）
+
+- **常驻监听型组件接线**：oas-affix（window resize+scroll 常驻监听——断开被 cleanup 摘、重连无钩子 → 吸顶失灵）等「常驻监听型」组件按 table/kanban 同模式接 onReconnect（交叉审补扫全仓发现的 onReconnect 真实受益者）
+- **table filter panel 监听残留**：面板开着时断开组件，onDocClick/onKey 监听残留 document（靠监听器自摘兜底）——filter panel 的监听改跟面板生命周期走
+
 ### 验收
 
-- table（列设置/编辑/拖拽/网格导航/虚拟滚动）与 kanban（拖拽/菜单/键盘）的「断开→重连→交互恢复」单测 + e2e；抽查 5 个其他组件同模式核对；全量门禁绿
+- core onReconnect 钩子（首连不调/重连调/render 不重建/cleanup 清空重注册）单测 2 条；table 3 条（scroll 监听恢复窗口推移 + 排序委托不重复挂 + ResizeObserver 重挂）与 kanban 2 条（拖拽恢复 + applyMove spy 直接锁调用次数——零操作判定兜底会让 events=1 的假绿无处遁形）的「断开→重连→交互恢复」单测；抽查 dropdown/menu/tooltip/select/date-picker 五组件——全部「监听跟打开态/触发态走」模式（kanban 菜单同款先例），天生免疫重连无需接线；全量门禁绿
 
 ## 文档批（表单视图 recipe + i18n 自定义语言包指南，未发布）
 
