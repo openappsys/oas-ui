@@ -14,6 +14,15 @@ React 生态的 asChild / Slot / Portal 解决的是「库强加的包装元素�
 
 一句话：Web Components 下的组合三件套是「**属性驱动根元素 + 命名插槽 + append-to**」，覆盖 React 的 asChild / Slot / Portal 场景，迁移时无需在组件上寻找同名 API。
 
+### React 里属性名和 DOM 原生 property 撞名怎么办？
+
+React 19 对 custom element 的属性传递有个坑：属性名若命中元素上**已有的 DOM property**，React 会按 **property 写入**（`el[name] = value`）而不是 `setAttribute`。这会分两类踩雷：
+
+- **只读 property → 直接抛错，崩掉整棵 React 树**：典型是 `prefix` 撞 `Element.prefix`（只读 getter）——`<oas-input prefix="¥">` 在 React 下抛 `Cannot set property prefix of #<Element> which has only a getter`，页面白屏。**解法**：走 `ref` + `setAttribute('prefix', '¥')`（attribute 通道）。
+- **可写 property / 方法 → 副作用或被覆盖**：`title` 在设置属性值的同时会触发浏览器**原生 tooltip**；`blur`（oas-backdrop）在 React 下会覆盖 `HTMLElement.blur()` 方法。
+
+OAS-UI 中已知与 DOM property 同名的属性：`prefix`（oas-input）、`title`、`dir`、`role`、`hidden`、`draggable`、`spellcheck`、`autofocus`、`align`、`blur`、`id`——其中**只有 `prefix` 是必崩的只读冲突**，其余为可写 property / 方法（一般可正常设置，但需知道副作用）。Vue 走 attribute 通道，无此问题；只有 React（及同类按 property 写的宿主）需要留意。
+
 ## 事件
 
 ### 为什么事件都带 `oas-` 前缀？
