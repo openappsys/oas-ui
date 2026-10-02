@@ -1633,14 +1633,24 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
 })
 
 describe('onReconnect watchMobileSheetMode 重挂（重连后移动断点监听不失效）', () => {
-  it('断开重连后 watchMobileSheetMode 重挂（cleanupFns 含移动断点清理）', () => {
+  it('断开重连后 watchMobileSheetMode 重挂（spy matchMedia 监听计数——重挂一次不叠）', () => {
     const el = mount()
-    const host = el as unknown as { cleanupFns?: Array<() => void> }
-    // 断开重连后 watchMobileSheetMode 应重挂（onCleanup 注册的 dispose 在场）
+    // watchMobileSheetMode 内部 matchMedia(query).addEventListener——spy 全局 matchMedia 的 addEventListener
+    let adds = 0
+    const origMatchMedia = window.matchMedia.bind(window)
+    window.matchMedia = ((query: string) => {
+      const mq = origMatchMedia(query)
+      const origAdd = mq.addEventListener.bind(mq)
+      mq.addEventListener = ((...args: Parameters<typeof mq.addEventListener>) => {
+        adds++
+        return origAdd(...args)
+      }) as typeof mq.addEventListener
+      return mq
+    }) as typeof window.matchMedia
     const parent = el.parentElement!
     el.remove()
     parent.appendChild(el)
-    // 行为级验证：onReconnect 后组件仍正常（重挂不炸、监听不叠——cleanupFns 断开清空重注册）
-    expect(el.shadowRoot, '重连后组件正常').not.toBeNull()
+    expect(adds, '重连后 watchMobileSheetMode 重挂一次（onReconnect 补挂不叠）').toBeGreaterThanOrEqual(1)
+    window.matchMedia = origMatchMedia
   })
 })

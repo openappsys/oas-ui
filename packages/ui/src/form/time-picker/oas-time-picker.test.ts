@@ -999,11 +999,23 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
 })
 
 describe('onReconnect watchMobileSheetMode 重挂（同 date-picker 漏挂修复）', () => {
-  it('断开重连后组件正常（watchMobileSheetMode 重挂不炸）', () => {
+  it('断开重连后 watchMobileSheetMode 重挂（spy matchMedia 监听计数）', () => {
     const el = mount()
+    let adds = 0
+    const origMatchMedia = window.matchMedia.bind(window)
+    window.matchMedia = ((query: string) => {
+      const mq = origMatchMedia(query)
+      const origAdd = mq.addEventListener.bind(mq)
+      mq.addEventListener = ((...args: Parameters<typeof mq.addEventListener>) => {
+        adds++
+        return origAdd(...args)
+      }) as typeof mq.addEventListener
+      return mq
+    }) as typeof window.matchMedia
     const parent = el.parentElement!
     el.remove()
     parent.appendChild(el)
-    expect(el.shadowRoot, '重连后组件正常').not.toBeNull()
+    expect(adds, '重连后 watchMobileSheetMode 重挂').toBeGreaterThanOrEqual(1)
+    window.matchMedia = origMatchMedia
   })
 })

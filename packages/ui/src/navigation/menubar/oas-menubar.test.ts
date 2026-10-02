@@ -1533,6 +1533,6 @@ describe('onReconnect mobileMq change 监听恢复（重连后移动断点切换
     const parent = el.parentElement!
     el.remove()
     parent.appendChild(el)
-    expect(adds, '重连后 mobileMq change 监听恢复').toBeGreaterThan(0)
+    expect(adds, '重连后 mobileMq change 监听恢复一次（不叠）').toBe(1)
   })
 })

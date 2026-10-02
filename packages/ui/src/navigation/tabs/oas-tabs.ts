@@ -816,7 +816,10 @@ export class OASTabs extends OASElement {
       }
     })
     this.observer.observe(this, { childList: true, attributes: true, attributeFilter: ['title'], subtree: true })
-    this.onCleanup(() => this.observer?.disconnect())
+    this.onCleanup(() => {
+      this.observer?.disconnect()
+      this.observer = null
+    })
     // + 按钮（template 占位，update 按需显隐）：click → oas-add
     this.shadow.querySelector('.tab-add')?.addEventListener('click', () => {
       this.emit('add', { label: this.t('tabs.newTab') })
@@ -1371,8 +1374,7 @@ export class OASTabs extends OASElement {
       （类字段引用，重挂不叠）；more 溢出下拉的外点收起交互不失效 */
   protected override onReconnect(): void {
     document.addEventListener('click', this.handleMoreDocClick, true)
-    // 面板 MutationObserver 重建（cleanup disconnect 后 update 的 null 守卫不重建——
-    // 与 navigation-menu childObserver 同款漏挂实抓；observer 置 null 重走创建路径）
+    // 面板 MutationObserver 重建（cleanup 已 disconnect **且置 null**——null 守卫重建生效）
     if (!this.observer) {
       this.observer = new MutationObserver((mutations) => {
         for (const m of mutations) {
@@ -1389,10 +1391,29 @@ export class OASTabs extends OASElement {
         }
       })
       this.observer.observe(this, { childList: true, attributes: true, attributeFilter: ['title'], subtree: true })
-      this.onCleanup(() => this.observer?.disconnect())
+      this.onCleanup(() => {
+        this.observer?.disconnect()
+        this.observer = null
+      })
     }
-    // 溢出 ResizeObserver 重建（bindScroll 的 null 守卫同理——bindScroll 重跑幂等（tablist 即时查询 ✓ 内部 observer 守卫处理）
-    this.bindScroll()
+    // 溢出 ResizeObserver 重建（同款 null 守卫）
+    if (typeof ResizeObserver !== 'undefined' && !this.resizeObserver) {
+      const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
+      if (tablist) {
+        this.resizeObserver = new ResizeObserver(() => {
+          this.syncScrollControls()
+          this.syncMore()
+        })
+        this.resizeObserver.observe(tablist)
+        this.onCleanup(() => {
+          this.resizeObserver?.disconnect()
+          this.resizeObserver = null
+        })
+      }
+    }
+    // scroll-start/end 的 click/scroll/wheel 监听**不**重挂：它们挂在 render 一次性模板节点上
+    //（render 不重建、断开时节点随 shadow 整体回收语义不变——监听随节点存活，无需重挂；
+    // 此前 onReconnect 调 bindScroll() 会叠加匿名监听致点击跳两次（本批新引入的叠加回归，定点复审实抓）
   }
 
   /** more 溢出收缩：绑定更多按钮点击弹/收下拉、外部点击收起 */

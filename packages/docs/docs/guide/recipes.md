@@ -180,4 +180,4 @@ WIP 限制为提示语义（`data-over-limit` 标记），强制阻断由宿主�
   </script>
 </DemoBlock>
 
-**模式要点**：`oas-cell-render` 的 `detail.element` 即日格容器——追加 `.cell-dot`（内置标记点样式）+ `element.title` 承载悬停明细；事件数据按 `date` 字段索引（`events.filter(ev => ev.date === detail.date)`）——与画册共用同一份记录数据时，三种视图（表格/画册/日历）是同一数据的三种投影。
+**模式要点**：`oas-cell-render` 的 `detail.element` 即日格容器——追加 `.cell-dot`（内置标记点样式）+ `element.title` 承载悬停明细；事件数据按 `date` 字段索引——注意 `detail.date` 是 **Date 对象**（parseISODate 返回），需格式化为 ISO key（`YYYY-MM-DD`）再与事件数据比对（直接 `ev.date === detail.date` 会因类型错配恒 false——本食谱 demo 曾因此死渲染）；与画册共用同一份记录数据时，三种视图（表格/画册/日历）是同一数据的三种投影。
