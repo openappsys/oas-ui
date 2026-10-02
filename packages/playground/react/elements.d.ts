@@ -59,6 +59,16 @@ declare namespace React {
         HTMLElement
       >
       'oas-message': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+      'oas-kanban': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement> & {
+          columns?: string
+          cards?: string
+          'swimlane-by'?: string
+          onOasChange?: (e: Event) => void
+          onOasColumnReorder?: (e: Event) => void
+        },
+        HTMLElement
+      >
     }
   }
 }

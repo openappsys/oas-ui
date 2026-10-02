@@ -15,6 +15,9 @@ export default function App() {
   const [sortInfo, setSortInfo] = useState('')
   const formRef = useRef<HTMLElement | null>(null)
   const tableRef = useRef<HTMLElement | null>(null)
+  const kanbanRef = useRef<HTMLElement | null>(null)
+  const inputPrefixRef = useRef<HTMLElement | null>(null)
+  const [moveInfo, setMoveInfo] = useState('')
 
   // 主题挂 html（documentElement）：token 的 [data-theme] 变量定义在 html 上，
   // body 背景与全部组件一起跟随；挂根 div 会导致页面底色不跟随（普通行透明底透出白页，dark 下文字不可见）
@@ -44,6 +47,25 @@ export default function App() {
     }
     el.addEventListener('oas-sort-change', handler)
     return () => el.removeEventListener('oas-sort-change', handler)
+  }, [])
+
+  // oas-kanban 派发 oas-change（detail: { id, from, to, index }），kebab 事件同样 ref + useEffect
+  useEffect(() => {
+    const el = kanbanRef.current
+    if (!el) return
+    const handler = (e: Event) => {
+      const d = (e as CustomEvent<{ id: string; from: string; to: string; index: number }>).detail
+      setMoveInfo(`「${d.id}」${d.from} → ${d.to} 第 ${d.index + 1} 位`)
+    }
+    el.addEventListener('oas-change', handler)
+    return () => el.removeEventListener('oas-change', handler)
+  }, [])
+
+  // React 19 会把 JSX 的 `prefix` 当 DOM property 写入 el.prefix，而 Element.prefix 是只读 getter
+  // → 直接写 <oas-input prefix="¥"> 会抛「Cannot set property prefix of #<Element>」并崩掉整棵 React 树。
+  // 走 ref + setAttribute（attribute 通道）绕开命名冲突——这也是 React 消费 WC 的通用注意点。
+  useEffect(() => {
+    inputPrefixRef.current?.setAttribute('prefix', '¥')
   }, [])
 
   // oas-button 在 oas-form 的 shadow DOM 外，点击不触发跨 shadow 的原生 submit 语义；
@@ -107,6 +129,16 @@ export default function App() {
       </div>
 
       <div className="demo-block">
+        <h3>看板（attribute 通道 + oas-change 桥接）</h3>
+        <oas-kanban
+          ref={kanbanRef}
+          columns='[{"key":"todo","title":"待办"},{"key":"doing","title":"进行中"},{"key":"done","title":"已完成"}]'
+          cards='[{"id":"t1","column":"todo","title":"梳理需求"},{"id":"t2","column":"doing","title":"开发组件"},{"id":"t3","column":"done","title":"发布"}]'
+        ></oas-kanban>
+        {moveInfo && <p>移动：{moveInfo}</p>}
+      </div>
+
+      <div className="demo-block">
         <h3>消息（命令式 API）</h3>
         <oas-button size="small" onClick={() => message.success('React 侧成功提示')}>
           成功消息
@@ -120,7 +152,7 @@ export default function App() {
           options='[{"value":"a","label":"选项 A"},{"value":"b","label":"选项 B"}]'
           style={{ width: '220px' }}
         ></oas-select>
-        <oas-input prefix="¥" placeholder="金额" style={{ width: '180px' }}></oas-input>
+        <oas-input ref={inputPrefixRef} placeholder="金额" style={{ width: '180px' }}></oas-input>
       </div>
     </div>
   )
