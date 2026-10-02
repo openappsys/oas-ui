@@ -94,3 +94,86 @@ document.querySelector('oas-kanban').addEventListener('oas-change', async (e) =>
 ```
 
 WIP limits are advisory (the `data-over-limit` marker); hard blocking is the host's choice, enforced after the event.
+
+## Gallery View (Cards Grouped by Field)
+
+**Scenario**: the "gallery" form of a spreadsheet — records are shown as rich card stacks grouped by a field value instead of rows. Compose it with `oas-card` + grouping; no dedicated component needed.
+
+<DemoBlock title="Product gallery grouped by category">
+  <div id="recipe-gallery" style="display: flex; gap: var(--oas-space-4); align-items: flex-start"></div>
+  <script setup>
+    import { onMounted } from 'vue'
+    onMounted(() => {
+      const records = [
+        { id: 1, name: 'Red Fuji Apple', cat: 'Fruit', price: 12.8, stock: 15230, on: true },
+        { id: 2, name: 'Shine Muscat', cat: 'Fruit', price: 39.9, stock: 7600, on: true },
+        { id: 3, name: 'ANC Headphones', cat: 'Digital', price: 899, stock: 860, on: false },
+        { id: 4, name: 'Mech Keyboard', cat: 'Digital', price: 459, stock: 2341, on: true },
+        { id: 5, name: 'Olive Oil', cat: 'Food', price: 88, stock: 320, on: true },
+      ]
+      const groups = [...new Set(records.map((r) => r.cat))]
+      const host = document.querySelector('#recipe-gallery')
+      for (const g of groups) {
+        const col = document.createElement('div')
+        col.style.cssText = 'display:flex;flex-direction:column;gap:var(--oas-space-2);min-width:180px'
+        const head = document.createElement('strong')
+        head.textContent = `${g} (${records.filter((r) => r.cat === g).length})`
+        head.style.color = 'var(--oas-color-text-secondary)'
+        col.appendChild(head)
+        for (const r of records.filter((x) => x.cat === g)) {
+          const card = document.createElement('oas-card')
+          card.setAttribute('title', r.name)
+          const body = document.createElement('div')
+          body.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px'
+          const price = document.createElement('span')
+          price.textContent = `$${r.price}`
+          const tag = document.createElement('oas-tag')
+          tag.setAttribute('type', r.on ? 'success' : 'default')
+          tag.textContent = r.on ? 'On Sale' : 'Off'
+          body.append(price, tag)
+          const meta = document.createElement('div')
+          meta.style.cssText = 'color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)'
+          meta.textContent = `Stock ${r.stock.toLocaleString()}`
+          card.append(body, meta)
+          col.appendChild(card)
+        }
+        host.appendChild(col)
+      }
+    })
+  </script>
+</DemoBlock>
+
+**Pattern notes**: the group key drives columns (`new Set(records.map(r => r.cat))`), and each card is a rich record view (`oas-card` + `oas-tag` status badge). The gallery is essentially "group + cards" — the badge/format semantics stay aligned with the table's `type` column (price/stock/status share one dataset).
+
+## Calendar View (Records Laid Out by Date)
+
+**Scenario**: the "calendar" form — lay records into calendar day cells by a date field. `oas-calendar`'s `oas-cell-render` event is the channel (fired for every day cell; the host appends content).
+
+<DemoBlock title="Release schedule calendar (event dots + hover details)">
+  <oas-calendar id="recipe-calendar" value="2026-08-09"></oas-calendar>
+  <script setup>
+    import { onMounted } from 'vue'
+    onMounted(() => {
+      const events = [
+        { date: '2026-08-12', name: 'Red Fuji Apple', type: 'success' },
+        { date: '2026-08-12', name: 'Mech Keyboard', type: 'primary' },
+        { date: '2026-08-20', name: 'ANC Headphones', type: 'primary' },
+        { date: '2026-08-27', name: 'Olive Oil', type: 'warning' },
+      ]
+      const cal = document.querySelector('#recipe-calendar')
+      cal.addEventListener('oas-cell-render', (e) => {
+        const dayEvents = events.filter((ev) => ev.date === e.detail.date)
+        if (dayEvents.length === 0) return
+        for (const ev of dayEvents) {
+          const dot = document.createElement('span')
+          dot.className = 'cell-dot'
+          dot.title = ev.name
+          e.detail.element.appendChild(dot)
+        }
+        e.detail.element.title = dayEvents.map((ev) => ev.name).join(', ')
+      })
+    })
+  </script>
+</DemoBlock>
+
+**Pattern notes**: `oas-cell-render`'s `detail.element` is the day-cell container — append `.cell-dot` (the built-in dot style) and set `element.title` for hover details; index events by the `date` field (`events.filter(ev => ev.date === detail.date)`). With one shared dataset, table / gallery / calendar become three projections of the same records.
