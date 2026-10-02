@@ -13,6 +13,24 @@ function display(el: OASCountdown): string {
   return el.shadowRoot!.querySelector('[part="display"]')!.textContent!
 }
 
+describe('OASCountdown prefix/suffix：遮蔽只读 Element.prefix 的 property 通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+  it('property 写入反射到规范属性 prefix-text/suffix-text（React JSX / Vue 绑定不崩）', () => {
+    const el = mount()
+    el.prefix = '¥'
+    el.suffix = '.00'
+    expect(el.getAttribute('prefix-text')).toBe('¥')
+    expect(el.getAttribute('suffix-text')).toBe('.00')
+    expect(el.prefix).toBe('¥')
+    expect(el.suffix).toBe('.00')
+  })
+})
+
 describe('formatDuration（纯函数）', () => {
   it('HH:mm:ss 默认把天滚入小时', () => {
     expect(formatDuration(90061000, 'HH:mm:ss')).toBe('25:01:01')

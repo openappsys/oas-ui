@@ -134,7 +134,7 @@ function onChangeMove(e: Event) {
         options='[{"value":"a","label":"选项 A"},{"value":"b","label":"选项 B"}]'
         style="width: 220px"
       ></oas-select>
-      <oas-input prefix-text="¥" placeholder="金额" style="width: 180px"></oas-input>
+      <oas-input prefix="¥" placeholder="金额" style="width: 180px"></oas-input>
     </div>
   </div>
 </template>

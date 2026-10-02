@@ -60,9 +60,8 @@ export default function App() {
     return () => el.removeEventListener('oas-change', handler)
   }, [])
 
-  // React 19 会把 JSX 的属性名命中 DOM property 者按 property 写入。注意 `prefix` 撞只读
-  // `Element.prefix` 会抛错崩整棵 React 树；而 oas-input 的前缀真名是 `prefix-text`（非 DOM property）
-  // → 直接用 `prefix-text="¥"` 即可，安全且能真渲染。（雷区与解法见集成 FAQ。）
+  // 组件对 `prefix` 遮蔽了只读 `Element.prefix` 并反射到规范属性 `prefix-text`——React 直接写
+  // `prefix`（property 通道）不再崩，HTML / Vue 静态写法（attribute 通道）同样支持，两条通道都可用。
   // oas-button 在 oas-form 的 shadow DOM 外，点击不触发跨 shadow 的原生 submit 语义；
   // 显式调 oas-form 内部 form 的 requestSubmit()（与文档站 demo 同一接法）
   const submitForm = () => {
@@ -147,7 +146,7 @@ export default function App() {
           options='[{"value":"a","label":"选项 A"},{"value":"b","label":"选项 B"}]'
           style={{ width: '220px' }}
         ></oas-select>
-        <oas-input prefix-text="¥" placeholder="金额" style={{ width: '180px' }}></oas-input>
+        <oas-input prefix="¥" placeholder="金额" style={{ width: '180px' }}></oas-input>
       </div>
     </div>
   )
