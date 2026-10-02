@@ -927,7 +927,7 @@ tr.row.drop-after td {
   overflow: hidden;
   text-overflow: ellipsis;
   background: var(--_badge-bg, var(--oas-color-bg-hover));
-  color: var(--_badge-fg, var(--oas-color-text-secondary));
+  color: var(--_badge-fg, var(--oas-color-text-secondary-strong));
   border: 1px solid var(--_badge-border, transparent);
 }
 .type-badge-group {
