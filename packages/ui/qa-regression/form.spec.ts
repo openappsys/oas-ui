@@ -236,9 +236,8 @@ test('form 两段式提交：校验失败 → 修正 → 再提交应派发 oas-
     timeout: 15000,
   })
   await page.evaluate(() => {
-    const dialog = document.createElement('oas-dialog')
+    const dialog = document.createElement('div')
     dialog.id = 'qa-2stage-dialog'
-    dialog.setAttribute('title', '编辑分类')
     const form = document.createElement('oas-form') as HTMLElement & { submit(): void }
     form.id = 'qa-2stage-form'
     form.setAttribute('rules', JSON.stringify({ name: [{ required: true, message: '名称必填' }] }))
@@ -266,12 +265,12 @@ test('form 两段式提交：校验失败 → 修正 → 再提交应派发 oas-
     ;(window as unknown as { __qa2stage: string[] }).__qa2stage = out
     form.addEventListener('oas-submit', () => {
       out.push('submit')
-      dialog.removeAttribute('open')
+      dialog.removeAttribute('data-open')
     })
     form.addEventListener('oas-validate-fail', () => out.push('fail'))
   })
   await page.evaluate(() => {
-    ;(document.querySelector('#qa-2stage-dialog') as HTMLElement).setAttribute('open', '')
+    ;(document.querySelector('#qa-2stage-dialog') as HTMLElement).setAttribute('data-open', '')
     ;(document.querySelector('#qa-2stage-form') as unknown as { submit(): void }).submit()
   })
   await page.waitForTimeout(300)
@@ -292,6 +291,6 @@ test('form 两段式提交：校验失败 → 修正 → 再提交应派发 oas-
   await page.waitForTimeout(400)
   const events2 = await page.evaluate(() => (window as unknown as { __qa2stage: string[] }).__qa2stage.join(','))
   expect(events2, '修正后再提交应派发 oas-submit').toContain('submit')
-  const dialogOpen = await page.evaluate(() => document.querySelector('#qa-2stage-dialog')!.hasAttribute('open'))
+  const dialogOpen = await page.evaluate(() => document.querySelector('#qa-2stage-dialog')!.hasAttribute('data-open'))
   expect(dialogOpen, 'oas-submit 后宿主关闭弹窗').toBe(false)
 })

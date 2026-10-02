@@ -8,9 +8,15 @@ import { resolve, basename } from 'node:path'
 const WARN_ALLOW = [/net::ERR_/, /Failed to load resource/, /vite/, /hydrating/]
 const ERR_ALLOW = [/net::ERR_/, /Failed to load resource/]
 
-const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'))
-  .filter((f) => f.endsWith('.md'))
-  .map((f) => `/components/${basename(f, '.md')}.html`)
+const PAGES = [
+  ...readdirSync(resolve(import.meta.dirname, '../docs/docs/components'))
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => `/components/${basename(f, '.md')}.html`),
+  // guide 页同样纳入：recipes 的 demo 曾因页面级脚本缺失而全灭却零告警检出（guide 页零 e2e 覆盖）
+  ...readdirSync(resolve(import.meta.dirname, '../docs/docs/guide'))
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => `/guide/${basename(f, '.md')}.html`),
+]
 
 // 文件内 test 并行：每页 1 test 曾串行共享 1 个 worker；各 test 独立 page + 独立 console 监听
 test.describe.configure({ mode: 'parallel' })

@@ -115,7 +115,7 @@
                   v-if="tk.type === 'color'"
                   type="color"
                   class="ts-editor-ctrl"
-                  :value="currentValue(tk)"
+                  :value="colorInputValue(tk)"
                   @input="applyToken(tk, ($event.target as HTMLInputElement).value)"
                 />
                 <input
@@ -190,6 +190,14 @@ function currentValue(tk: { name: string }): string {
   if (!el) return ''
   const v = getComputedStyle(el).getPropertyValue(tk.name).trim()
   return v
+}
+
+// <input type="color"> 只接受合法颜色值：SSR / 首帧 currentValue 为空（或主题值非 hex）时
+// 必须给有效兜底，否则浏览器对 value="" 抛「does not conform to a valid CSS color」告警。
+const COLOR_FALLBACK = '#0b6cff'
+function colorInputValue(tk: { name: string }): string {
+  const v = currentValue(tk)
+  return /^#[0-9a-fA-F]{3,8}$/.test(v) ? v : COLOR_FALLBACK
 }
 
 function currentNumber(tk: { name: string }): number | string {

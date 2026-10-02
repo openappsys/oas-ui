@@ -9,7 +9,7 @@ Common questions and pitfalls from real-world integrations.
 The asChild / Slot / Portal concepts from the React ecosystem solve component-composition problems that grew out of the React model (eliminating library-imposed wrapper elements, mounting content elsewhere). Under Web Components those premises either do not exist or already have equivalents:
 
 - **Swapping the root element (the wrapper-elimination job of asChild / Slot)** — a Web Component itself (its host) *is* a real element in the DOM, so external layouts and selectors act on it directly; there is no library-imposed wrapper to strip. When a component must render as a different semantic element (e.g. a button that behaves as a link), use **attribute-driven root switching**: when `href` is present, buttons/tags render a native `<a>` internally and keep keyboard & disabled semantics (see the oas-button / oas-tag docs).
-- **Using an arbitrary element as a trigger** (e.g. the common `Trigger asChild` composition) — the equivalent is a **named slot**: overlay components expose `trigger` / `anchor` slots; whatever element the host places there becomes the trigger, with events and ARIA wired up internally by the component. This is strictly more capable than asChild (multiple triggers, arbitrary content).
+- **Using an arbitrary element as a trigger** (e.g. the common `Trigger asChild` composition) — the equivalent is the **default slot + a trigger attribute**: overlay components treat the default slot's first child as the trigger (any element / component), and a `trigger` attribute picks the mode (`click` / `hover` / `contextmenu`, …); panel content goes through the `content` attribute or named slots (`title` / `header` / `content` / `footer`, …). Events and ARIA are wired up internally by the component.
 - **Mounting content into `body` or another container (Portal / Teleport)** — the equivalent is the **`append-to` system**: overlay/pinned components such as tooltip / popover / modal / drawer accept `append-to="body"` to move the overlay into a target container while preserving style scoping and stacking contexts; removing it returns the node and leaves no orphaned elements.
 
 In short: the composition trio under Web Components is "**attribute-driven root element + named slots + append-to**", which covers the scenarios asChild / Slot / Portal solve — no same-named API is needed when migrating.
@@ -18,14 +18,16 @@ In short: the composition trio under Web Components is "**attribute-driven root 
 
 ### Why do all events carry the `oas-` prefix?
 
-Web Components CustomEvents are `bubbles + composed` by default and escape the
-Shadow DOM to window. Unprefixed `change` / `select` would collide with native
-events (e.g. the text-selection `select` event) and host-framework synthetic
-events, making debugging painful. The prefix makes the origin unambiguous —
-**listen for `oas-change`, not `change`**.
+`oas-` events are emitted through the core's shared `emit()`, which explicitly
+sets `bubbles + composed` so they escape the Shadow DOM to window (note: the
+platform's native `CustomEvent` defaults both to `false` — the escape is a
+library convention, not a platform default). Unprefixed `change` / `select`
+would collide with native events (e.g. the text-selection `select` event) and
+host-framework synthetic events, making debugging painful. The prefix makes the
+origin unambiguous — **listen for `oas-change`, not `change`**.
 
 Each component's docs list its events and when they fire (see the "Events"
-section of the API table).
+section of the component docs).
 
 ### Difference between `oas-input` and `oas-change`?
 
@@ -108,7 +110,7 @@ compile-time errors). `oas-config-provider` supports local injection (the `local
 attribute): components inside it prefer the injected locale for built-in texts
 without any global setup.
 
-For languages beyond the built-in 10: clone the `zh-CN` pack as a template → spread `...zhCN` to inherit all keys and replace them one by one → tag `messages` as `LocaleMessages` (type guardrail: missing keys fail at compile time) → mark `dir: 'rtl'` for RTL languages → `registerLocale` → `setLocale`. See the `@oas-ui/i18n` package README, "Custom locale packs" section, for the full step-by-step example. Ship custom packs with your own dynamic `import()` for code splitting (`loadLocale()` only maps the 10 built-in names).
+For languages beyond the built-in 10: use the `zh-CN` pack's messages as a template → spread `...zhCN.messages` to inherit all keys and replace them one by one → tag `messages` as a `Locale` (type guardrail: missing keys fail at compile time) → mark `dir: 'rtl'` for RTL languages → `registerLocale` → `setLocale`. See the `@oas-ui/i18n` package README, "Custom locale packs" section, for the full step-by-step example. Ship custom packs with your own dynamic `import()` for code splitting (`loadLocale()` only maps the 10 built-in names).
 
 ### Which languages are built in? Can they be loaded on demand?
 
