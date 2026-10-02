@@ -197,7 +197,8 @@ function currentValue(tk: { name: string }): string {
 const COLOR_FALLBACK = '#0b6cff'
 function colorInputValue(tk: { name: string }): string {
   const v = currentValue(tk)
-  return /^#[0-9a-fA-F]{3,8}$/.test(v) ? v : COLOR_FALLBACK
+  // <input type="color"> 仅接受 #rrggbb（simple color）——3/4/5/7/8 位一律走兜底
+  return /^#[0-9a-fA-F]{6}$/.test(v) ? v : COLOR_FALLBACK
 }
 
 function currentNumber(tk: { name: string }): number | string {
