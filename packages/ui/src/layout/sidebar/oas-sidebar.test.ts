@@ -1416,6 +1416,6 @@ describe('onReconnect mq change 监听恢复（重连后媒体断点切换不失
     const parent = el.parentElement!
     el.remove()
     parent.appendChild(el)
-    expect(adds, '重连后 mq change 监听恢复（onReconnect 补挂）').toBeGreaterThan(0)
+    expect(adds, '重连后 mq change 监听恢复一次（onReconnect 补挂不叠）').toBe(1)
   })
 })

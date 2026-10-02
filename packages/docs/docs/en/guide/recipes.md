@@ -178,4 +178,4 @@ WIP limits are advisory (the `data-over-limit` marker); hard blocking is the hos
   </script>
 </DemoBlock>
 
-**Pattern notes**: `oas-cell-render`'s `detail.element` is the day-cell container — append `.cell-dot` (the built-in dot style) and set `element.title` for hover details; index events by the `date` field (`events.filter(ev => ev.date === detail.date)`). With one shared dataset, table / gallery / calendar become three projections of the same records.
+**Pattern notes**: `oas-cell-render`'s `detail.element` is the day-cell container — append `.cell-dot` (the built-in dot style) and set `element.title` for hover details; index events by the `date` field — note that `detail.date` is a **Date object** (from parseISODate): format it to an ISO key (`YYYY-MM-DD`) before comparing with your event data (a direct `ev.date === detail.date` comparison always fails on type mismatch — this recipe's demo once dead-rendered because of it). With one shared dataset, table / gallery / calendar become three projections of the same records.
