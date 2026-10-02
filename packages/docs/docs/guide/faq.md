@@ -20,9 +20,9 @@ React 生态的 asChild / Slot / Portal 解决的是「库强加的包装元素�
 
 OAS-UI 组的处理：
 
-- **`prefix` / `suffix`**：`prefix` 撞只读的 `Element.prefix`；`suffix` 并无 DOM 对应，仅为对称与 property 通道一并处理。相关组件（input / input-number / statistic / countdown / tree-select）**遮蔽**这两个访问器并反射到规范属性 **`prefix-text` / `suffix-text`**——因此 `prefix` / `suffix` 在 **attribute 与 property 两条通道都可用**：React 写 `<oas-input prefix="¥">`、Vue 的静态/绑定写法、纯 HTML，均正常。正式名仍是 `prefix-text` / `suffix-text`，`prefix` / `suffix` 是兼容别名。
-- **其它撞名属性**（`title`、`dir`、`role`、`hidden`、`draggable`、`spellcheck`、`autofocus`、`id` 等）是**可写** DOM property，React / Vue 按 property 写入会正常反射成属性；需留意 `title` 会同时触发浏览器**原生 tooltip**。另：`blur`（oas-backdrop 的属性）撞的是 **`HTMLElement.blur()` 方法**——按 property 写入会**覆盖该方法**且属性未被设置，React / Vue 下请改走 attribute 写法（`blur="…"` / `:blur.attr`）或 `setAttribute`。
-- 若你自行封装**自定义**组件，避免使用与 `Element` / `HTMLElement` **只读**属性同名的属性名（如 `prefix`），或同样用访问器遮蔽。
+- **`prefix` / `suffix` / `blur`**：`prefix` 撞只读的 `Element.prefix`、`blur`（oas-backdrop）撞方法 `HTMLElement.blur()`；`suffix` 无 DOM 对应，为对称与 property 通道一并处理。相关组件（input / input-number / statistic / countdown / tree-select / backdrop）用属性访问器**遮蔽**这些名字并映射到规范属性 **`prefix-text` / `suffix-text` / `blur`**——因此它们在 **attribute 与 property 两条通道都可用**：React 写 `prefix="¥"` / `blur="blur(8px)"`、Vue 静态/绑定写法、纯 HTML 均正常。`prefix-text` / `suffix-text` 是规范名，`prefix` / `suffix` 为兼容别名；`blur` 被遮蔽后该元素的**原生 `blur()` 方法被属性访问器取代**（backdrop 无实际影响）。
+- **其它可写撞名属性**（`title`、`dir`、`role`、`hidden`、`draggable`、`spellcheck`、`autofocus`、`id` 等）是**可写** DOM property，React / Vue 按 property 写入会正常反射成属性；需留意 `title` 会同时触发浏览器**原生 tooltip**。
+- 若你自行封装**自定义**组件，避免使用与 `Element` / `HTMLElement` **只读属性或方法**同名的属性名（如 `prefix`、`blur`），或同样用访问器遮蔽。
 
 ## 事件
 

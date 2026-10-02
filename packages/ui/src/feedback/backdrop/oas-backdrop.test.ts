@@ -30,6 +30,24 @@ function maskClick(el: OASBackdrop): MouseEvent {
   return ev
 }
 
+describe('OASBackdrop blur 属性：遮蔽 HTMLElement.blur() 的 property 通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+  it('property 写入映射到 blur 属性（React JSX / Vue 绑定按 property 写入不再覆盖原生方法、属性生效）', () => {
+    const el = mount()
+    const view = el as unknown as { blur: string | null }
+    view.blur = 'blur(8px)'
+    expect(el.getAttribute('blur')).toBe('blur(8px)')
+    expect(view.blur).toBe('blur(8px)')
+    view.blur = null
+    expect(el.hasAttribute('blur')).toBe(false)
+  })
+})
+
 describe('OASBackdrop', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
