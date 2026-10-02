@@ -16,7 +16,6 @@ export default function App() {
   const formRef = useRef<HTMLElement | null>(null)
   const tableRef = useRef<HTMLElement | null>(null)
   const kanbanRef = useRef<HTMLElement | null>(null)
-  const inputPrefixRef = useRef<HTMLElement | null>(null)
   const [moveInfo, setMoveInfo] = useState('')
 
   // 主题挂 html（documentElement）：token 的 [data-theme] 变量定义在 html 上，
@@ -61,13 +60,9 @@ export default function App() {
     return () => el.removeEventListener('oas-change', handler)
   }, [])
 
-  // React 19 会把 JSX 的 `prefix` 当 DOM property 写入 el.prefix，而 Element.prefix 是只读 getter
-  // → 直接写 <oas-input prefix="¥"> 会抛「Cannot set property prefix of #<Element>」并崩掉整棵 React 树。
-  // 走 ref + setAttribute（attribute 通道）绕开命名冲突——这也是 React 消费 WC 的通用注意点。
-  useEffect(() => {
-    inputPrefixRef.current?.setAttribute('prefix', '¥')
-  }, [])
-
+  // React 19 会把 JSX 的属性名命中 DOM property 者按 property 写入。注意 `prefix` 撞只读
+  // `Element.prefix` 会抛错崩整棵 React 树；而 oas-input 的前缀真名是 `prefix-text`（非 DOM property）
+  // → 直接用 `prefix-text="¥"` 即可，安全且能真渲染。（雷区与解法见集成 FAQ。）
   // oas-button 在 oas-form 的 shadow DOM 外，点击不触发跨 shadow 的原生 submit 语义；
   // 显式调 oas-form 内部 form 的 requestSubmit()（与文档站 demo 同一接法）
   const submitForm = () => {
@@ -152,7 +147,7 @@ export default function App() {
           options='[{"value":"a","label":"选项 A"},{"value":"b","label":"选项 B"}]'
           style={{ width: '220px' }}
         ></oas-select>
-        <oas-input ref={inputPrefixRef} placeholder="金额" style={{ width: '180px' }}></oas-input>
+        <oas-input prefix-text="¥" placeholder="金额" style={{ width: '180px' }}></oas-input>
       </div>
     </div>
   )
