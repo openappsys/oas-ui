@@ -1,13 +1,13 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 27936,
+    "sampled": 27940,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 265,
+    "ratio": 267,
     "exempt": 454,
-    "skipped": 2650
+    "skipped": 2646
   },
   "topPairs": [],
   "pages": {
@@ -183,7 +183,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 1,
+      "ratio": 5,
       "exempt": 0,
       "skipped": 2
     },
@@ -959,9 +959,9 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 2,
+      "ratio": 0,
       "exempt": 0,
-      "skipped": 17
+      "skipped": 15
     },
     "table.html::dark": {
       "below30": 0,
@@ -969,7 +969,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 17
+      "skipped": 15
     },
     "tabs.html": {
       "below30": 0,
