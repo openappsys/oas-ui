@@ -66,6 +66,7 @@
 | **未发布** | **table 字段类型系统 + 分组视图 + kanban + 单元格性能专项**（多维表格类场景评估立项，2026-09-28）：列 `type` 十种内建字段（badge/进度/星级/货币等展示渲染 + 复用 editComponent 编辑通道）+ `group-by` 分节折叠视图 + **oas-kanban 看板**（新组件 data 族：声明式列/卡片 + 拖拽换列 + 触屏按钮降级）+ `cell-tooltip` 单例浮层与内存回归基线 | 🚧 进行中 |
 | **未发布** | **编辑器完成度 + kanban 二期 + core 重连架构 + 文档批**（评估立项续批）：table 浮层编辑器通道（select/date-picker 挂载 + 浮层交互不误提交 + Esc 双层级）+ multi-select 编辑器换多选组件 + kanban 列重排/WIP 限制/卡片多选/泳道 + core 断开重连重绑统一语义（table/kanban 先行接线）+ 表单视图 recipe 与 i18n 自定义语言包指南 | 🚧 进行中 |
 | **未发布** | **demands 修复 + onReconnect 受益者接线 + kanban RTL/键盘长尾 + token 烧债**：swatch-group 首帧时序防护（白板子项判空 + microtask 重试）+ form 两段式提交双通道回归；oas-affix/carousel 接 onReconnect（carousel 匿名监听全类字段化）+ filter panel 监听生命周期化；kanban RTL 逻辑方向化（落点/指示线/键盘/按钮全镜像）+ 键盘多选 Space 与 Alt 方向键移动；--oas-color-text-secondary-strong 安全档（kanban 页违规归零、table 8→2、totals 276→265） | 🚧 进行中 |
+| **未发布** | **全仓监听复核 + 画册/日历 recipe**：51 文件 document/window 监听重连甄别台账（A 打开态/B 自愈/C 常驻/D 一次性）+ C 类 8 组件接 onReconnect + 漏挂系列补齐（sidebar mq / date-picker·time-picker watchMobileSheetMode / menubar mobileMq / navigation-menu·tabs observer）；badge 默认色对换 secondary-strong（table 违规清零）；画册（分组卡片墙）+ 日历（cell-render 铺格）recipe 中英 | 🚧 进行中 |
 
 > **注（可选工具包）**：`@oas-ui/react` 桥接包**不单独发布**，降级为仓库内可选工具包——React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`；桥接 hooks（`useOasEvent`/`useOasEvents`）供需要 camelCase 惯例 / TS 类型 / React 17-18 兼容的宿主按需使用，不随版本发布、不写入发布清单（详见 PRD）。
 

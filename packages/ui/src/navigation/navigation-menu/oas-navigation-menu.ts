@@ -830,6 +830,9 @@ export class OASNavigationMenu extends OASElement {
       外点关闭/文档级键盘导航重连不失效（悬停延迟定时器清理一并重注册） */
   protected override onReconnect(): void {
     this.bindDocListeners()
+    // childObserver 重建（cleanup 断开置 null 后 update/ensureChildObserver 的 null 守卫不会重建——
+    // ensureChildObserver 重跑幂等（childObserver 为 null 时重建，在场时跳过 ✓）
+    this.ensureChildObserver()
   }
 
   /** 建立宿主尺寸观察器（幂等；断连清理后由 update 重建，兼容重新挂载） */

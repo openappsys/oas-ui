@@ -779,6 +779,9 @@ export class OASSidebar extends OASElement {
     document.addEventListener('pointerdown', this.handleDocPointerDown, true)
     window.addEventListener('scroll', this.handleViewportScrollResize, true)
     window.addEventListener('resize', this.handleViewportScrollResize)
+    // mq change 监听恢复（cleanup 摘除后 syncMq 的 media 未变 early-return 不会重挂——
+    // 直接补挂（mq 实例在断开期未变，change 回调恢复；媒体变化时 update 的 syncMq 会重建）
+    this.mq?.addEventListener('change', this.mqListener)
   }
 
   /** rail 拖拽：以 width 属性为唯一事实源（update 会写入 CSS 变量，不冲突） */

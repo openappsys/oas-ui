@@ -1399,3 +1399,23 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     expect(scrollCalls, '重连后 window scroll 监听恢复').toBeGreaterThan(0)
   })
 })
+
+describe('onReconnect mq change 监听恢复（重连后媒体断点切换不失效）', () => {
+  it('断开重连后 mq change 监听恢复（spy 断言重挂）', () => {
+    const el = mount({ collapsed: '' })
+    const host = el as unknown as { mq: MediaQueryList | null }
+    // mq 实例在场（syncMq 已建）；断开重连后 mq 的 change 监听应恢复（cleanup 摘除 → onReconnect 补挂）
+    expect(host.mq, 'mq 实例在场').not.toBeNull()
+    const mq = host.mq!
+    let adds = 0
+    const origAdd = mq.addEventListener.bind(mq)
+    mq.addEventListener = ((...args: Parameters<typeof mq.addEventListener>) => {
+      adds++
+      return origAdd(...args)
+    }) as typeof mq.addEventListener
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    expect(adds, '重连后 mq change 监听恢复（onReconnect 补挂）').toBeGreaterThan(0)
+  })
+})

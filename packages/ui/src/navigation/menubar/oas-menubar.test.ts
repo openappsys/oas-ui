@@ -1517,3 +1517,22 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     expect(calls, '重连后 document pointerdown 监听恢复（handleDocumentPointerDown 被调）').toBeGreaterThan(0)
   })
 })
+
+describe('onReconnect mobileMq change 监听恢复（重连后移动断点切换不失效）', () => {
+  it('断开重连后 mobileMq change 监听恢复（spy 断言重挂）', () => {
+    const el = mount({ breakpoint: '768' })
+    const host = el as unknown as { mobileMq: MediaQueryList | null }
+    expect(host.mobileMq, 'breakpoint 属性在场时 mobileMq 实例必建（恒绿守卫）').not.toBeNull()
+    const mq = host.mobileMq!
+    let adds = 0
+    const origAdd = mq.addEventListener.bind(mq)
+    mq.addEventListener = ((...args: Parameters<typeof mq.addEventListener>) => {
+      adds++
+      return origAdd(...args)
+    }) as typeof mq.addEventListener
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    expect(adds, '重连后 mobileMq change 监听恢复').toBeGreaterThan(0)
+  })
+})

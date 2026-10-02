@@ -504,6 +504,8 @@ export class OASTimePicker extends OASFormElement {
   protected override onReconnect(): void {
     window.addEventListener('resize', this.repositionOnViewportChange)
     window.addEventListener('scroll', this.repositionOnViewportChange, true)
+    // watchMobileSheetMode 重挂（同 date-picker 的漏挂实抓；onCleanup 注册幂等）
+    this.onCleanup(watchMobileSheetMode(() => this.resyncMobileMode()))
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */

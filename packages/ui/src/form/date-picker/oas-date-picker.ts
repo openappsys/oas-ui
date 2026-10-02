@@ -887,6 +887,9 @@ export class OASDatePicker extends OASFormElement {
   protected override onReconnect(): void {
     window.addEventListener('resize', this.repositionOnViewportChange)
     window.addEventListener('scroll', this.repositionOnViewportChange, true)
+    // watchMobileSheetMode 重挂（bind 注册一次、cleanup dispose、update 路径不重挂——
+    // 重连后移动断点切换失效（交叉审漏挂实抓）；onCleanup 注册幂等（dispose 重复调用无害）
+    this.onCleanup(watchMobileSheetMode(() => this.resyncMobileMode()))
   }
 
   private bind(): void {

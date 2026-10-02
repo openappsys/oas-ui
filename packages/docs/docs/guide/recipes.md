@@ -157,25 +157,24 @@ WIP 限制为提示语义（`data-over-limit` 标记），强制阻断由宿主�
     import { onMounted } from 'vue'
     onMounted(() => {
       const events = [
-        { date: '2026-08-12', name: '红富士苹果', type: 'success' },
-        { date: '2026-08-12', name: '机械键盘', type: 'primary' },
-        { date: '2026-08-20', name: '无线降噪耳机', type: 'primary' },
-        { date: '2026-08-27', name: '冷榨橄榄油', type: 'warning' },
+        { date: '2026-08-12', name: '红富士苹果' },
+        { date: '2026-08-12', name: '机械键盘' },
+        { date: '2026-08-20', name: '无线降噪耳机' },
+        { date: '2026-08-27', name: '冷榨橄榄油' },
       ]
       const cal = document.querySelector('#recipe-calendar')
       cal.addEventListener('oas-cell-render', (e) => {
-        const dayEvents = events.filter((ev) => ev.date === e.detail.date)
+        // detail.date 是 Date 对象（parseISODate 返回），不是字符串——格式化为 ISO key 再比对（契约错配曾致 demo 死渲染）
+        const d = e.detail.date as Date
+        const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        const dayEvents = events.filter((ev) => ev.date === dayKey)
         if (dayEvents.length === 0) return
-        // 事件点（内置 cell-dot 形态）+ title 悬停明细
-        for (const ev of dayEvents) {
-          const dot = document.createElement('span')
-          dot.className = 'cell-dot'
-          dot.title = ev.name
-          e.detail.element.appendChild(dot)
-        }
-        if (dayEvents.length > 0) {
-          e.detail.element.title = dayEvents.map((ev) => ev.name).join('、')
-        }
+        // 事件点（内置 cell-dot 形态）+ title 悬停明细——同日多事件合并为单点（避免绝对定位同坐标重叠）
+        const dot = document.createElement('span')
+        dot.className = 'cell-dot'
+        dot.title = dayEvents.map((ev) => ev.name).join('、')
+        e.detail.element.appendChild(dot)
+        e.detail.element.title = dayEvents.map((ev) => ev.name).join('、')
       })
     })
   </script>
