@@ -581,7 +581,7 @@ test('popover virtual 定点：(160,90) 标记点可见且箭头对准该点（�
 // 箭头永远停在 24px 默认位、不指向打开的触发器。修复后按当前触发器中心写入变量。
 
 // —— 能力增强批次（P1-P25）回归：ARIA 关联 / 触发键幂等 / 开关默认值 / 结构化插槽 ——
-// 本批新增能力的机制级断言（Vue demo 属性存活 + 交互反馈）；视觉判定由主 agent 截图复核。
+// 本批新增能力的机制级断言（Vue demo 属性存活 + 交互反馈）；视觉判定由人工截图复核。
 
 test('popover P1/P2/P6/P11：锚点 ARIA 三时机 + trigger-keys 默认值 + size 档位 + 结构化插槽渲染', async ({ page }) => {
   await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
