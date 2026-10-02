@@ -1791,7 +1791,8 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 特性
 
-- **表单视图 recipe**：docs 食谱页新增「多维表格式记录编辑」模式——table 字段类型 + oas-form 组合的完整可拷贝示例（记录详情编辑表单 + 校验 + 提交回写链路）
+- **表单视图 recipe**：docs 食谱页新增「多维表格式记录编辑」模式
+- **画册/日历视图 recipe**：同页补两个场景——画册（按字段分组的卡片墙：oas-card + oas-tag 状态徽章，分组键驱动列）+ 日历（oas-calendar 的 oas-cell-render 铺格：事件点 + 悬停明细，detail.date 为 Date 对象需格式化 ISO key 比对）——表格/画册/日历共用同一份记录数据的三种投影——table 字段类型 + oas-form 组合的完整可拷贝示例（记录详情编辑表单 + 校验 + 提交回写链路）
 - **i18n 自定义语言包指南**：README/faq 补 step-by-step——复制 zh-CN 为模板、LocaleMessages 类型标注（缺 key 编译期报错）、dir RTL 标注、registerLocale/setLocale 注册切换、按需分包建议
 
 ### 验收

@@ -688,6 +688,8 @@ export class OASMenubar extends OASElement {
       cleanup 摘除后恢复——菜单栏键盘导航/typeahead/外点关闭/溢出收纳重连不失效 */
   protected override onReconnect(): void {
     this.bindDocListeners()
+    // mobileMq change 监听恢复（cleanup 摘除后 syncMobileMode 的 query 未变 early-return 不重挂——直接补挂）
+    this.mobileMq?.addEventListener('change', this.handleMq)
   }
 
   protected override render(): void {

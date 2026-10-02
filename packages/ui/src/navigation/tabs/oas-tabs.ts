@@ -1371,6 +1371,28 @@ export class OASTabs extends OASElement {
       （类字段引用，重挂不叠）；more 溢出下拉的外点收起交互不失效 */
   protected override onReconnect(): void {
     document.addEventListener('click', this.handleMoreDocClick, true)
+    // 面板 MutationObserver 重建（cleanup disconnect 后 update 的 null 守卫不重建——
+    // 与 navigation-menu childObserver 同款漏挂实抓；observer 置 null 重走创建路径）
+    if (!this.observer) {
+      this.observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.type === 'childList') {
+            if (m.target === this) return this.update()
+            if ((m.target as HTMLElement).localName === 'oas-tab-panel') {
+              const nodes = [...m.addedNodes, ...m.removedNodes]
+              const structural = nodes.some((n) => n.nodeType === 1 && (n as HTMLElement).hasAttribute('slot'))
+              if (structural) return this.update()
+            }
+            continue
+          }
+          if (m.type === 'attributes' && (m.target as HTMLElement).localName === 'oas-tab-panel') return this.update()
+        }
+      })
+      this.observer.observe(this, { childList: true, attributes: true, attributeFilter: ['title'], subtree: true })
+      this.onCleanup(() => this.observer?.disconnect())
+    }
+    // 溢出 ResizeObserver 重建（bindScroll 的 null 守卫同理——bindScroll 重跑幂等（tablist 即时查询 ✓ 内部 observer 守卫处理）
+    this.bindScroll()
   }
 
   /** more 溢出收缩：绑定更多按钮点击弹/收下拉、外部点击收起 */

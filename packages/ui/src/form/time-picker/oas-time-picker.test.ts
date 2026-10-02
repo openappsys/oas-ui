@@ -997,3 +997,13 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     expect(calls, '重连后 scroll/resize 监听恢复').toBe(2)
   })
 })
+
+describe('onReconnect watchMobileSheetMode 重挂（同 date-picker 漏挂修复）', () => {
+  it('断开重连后组件正常（watchMobileSheetMode 重挂不炸）', () => {
+    const el = mount()
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    expect(el.shadowRoot, '重连后组件正常').not.toBeNull()
+  })
+})

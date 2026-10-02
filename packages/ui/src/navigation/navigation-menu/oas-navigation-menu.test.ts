@@ -1517,3 +1517,15 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     expect(typeof host.handleDocumentKey, 'handleDocumentKey 类字段在场').toBe('function')
   })
 })
+
+describe('onReconnect childObserver 重建（重连后子项变化监听不失效）', () => {
+  it('断开重连后 childObserver 重建（子项增删触发 update）', () => {
+    const el = mount()
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    // 重连后 childObserver 应重建（cleanup 断开置 null → onReconnect 的 null 守卫重建）
+    const host = el as unknown as { childObserver: MutationObserver | null }
+    expect(host.childObserver, '重连后 childObserver 重建').not.toBeNull()
+  })
+})

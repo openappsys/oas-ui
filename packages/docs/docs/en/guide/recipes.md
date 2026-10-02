@@ -155,21 +155,23 @@ WIP limits are advisory (the `data-over-limit` marker); hard blocking is the hos
     import { onMounted } from 'vue'
     onMounted(() => {
       const events = [
-        { date: '2026-08-12', name: 'Red Fuji Apple', type: 'success' },
-        { date: '2026-08-12', name: 'Mech Keyboard', type: 'primary' },
-        { date: '2026-08-20', name: 'ANC Headphones', type: 'primary' },
-        { date: '2026-08-27', name: 'Olive Oil', type: 'warning' },
+        { date: '2026-08-12', name: 'Red Fuji Apple' },
+        { date: '2026-08-12', name: 'Mech Keyboard' },
+        { date: '2026-08-20', name: 'ANC Headphones' },
+        { date: '2026-08-27', name: 'Olive Oil' },
       ]
       const cal = document.querySelector('#recipe-calendar')
       cal.addEventListener('oas-cell-render', (e) => {
-        const dayEvents = events.filter((ev) => ev.date === e.detail.date)
+        // detail.date is a Date object (from parseISODate), not a string — format to an ISO key before comparing
+        const d = e.detail.date as Date
+        const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        const dayEvents = events.filter((ev) => ev.date === dayKey)
         if (dayEvents.length === 0) return
-        for (const ev of dayEvents) {
-          const dot = document.createElement('span')
-          dot.className = 'cell-dot'
-          dot.title = ev.name
-          e.detail.element.appendChild(dot)
-        }
+        // Built-in cell-dot + title hover details — merge same-day events into a single dot (avoids absolute-position overlap)
+        const dot = document.createElement('span')
+        dot.className = 'cell-dot'
+        dot.title = dayEvents.map((ev) => ev.name).join(', ')
+        e.detail.element.appendChild(dot)
         e.detail.element.title = dayEvents.map((ev) => ev.name).join(', ')
       })
     })
