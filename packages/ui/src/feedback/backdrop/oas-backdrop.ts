@@ -400,6 +400,23 @@ export class OASBackdrop extends OASElement {
     return this.getAttr('blur') || DEFAULT_BLUR
   }
 
+  /** 宿主（React 19 / Vue 绑定）按 `key in el` 对 `blur` 走 property 写入；`blur` 撞 `HTMLElement.blur()` 方法，
+   *  按 property 写入会覆盖该方法、且属性不落（模糊不生效）。用 defineProperty 在原型上遮蔽该方法名并映射到 `blur`
+   *  属性，使 `blur` 在 attribute 与 property 两条通道都可用（代价：本元素的原生 `blur()` 方法被属性访问器取代）。
+   *  （不用 TS 访问器 override：遮蔽基类方法会触发 TS4113/4114 死锁。） */
+  static {
+    Object.defineProperty(this.prototype, 'blur', {
+      configurable: true,
+      get(this: OASBackdrop): string {
+        return this.getAttribute('blur') ?? ''
+      },
+      set(this: OASBackdrop, value: string | null): void {
+        if (value == null) this.removeAttribute('blur')
+        else this.setAttribute('blur', value)
+      },
+    })
+  }
+
   protected override update(): void {
     const mask = this.shadow.querySelector<HTMLElement>('.mask')
     const scrim = this.shadow.querySelector<HTMLElement>('.scrim')
