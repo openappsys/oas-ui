@@ -656,6 +656,16 @@ export class OASMenubar extends OASElement {
       this.syncRoving()
       this.focusCurrent()
     })
+    // 移动端外部点击关闭汉堡面板 + typeahead 定时器清理 + 溢出收纳 RO
+    this.bindDocListeners()
+  }
+
+  /**
+   * document 级监听 + 水平溢出收纳观察器（render/hydrate 与断开重连路径共用）。
+   * 全部类字段引用/幂等结构：addEventListener 同引用规范去重；onCleanup 断开时清空、
+   * 重连重注册不叠；RO 旧实例已随 cleanup disconnect，重建覆盖引用安全。
+   */
+  private bindDocListeners(): void {
     // 移动端外部点击关闭汉堡面板
     document.addEventListener('pointerdown', this.handleDocumentPointerDown)
     this.onCleanup(() => document.removeEventListener('pointerdown', this.handleDocumentPointerDown))
@@ -672,6 +682,12 @@ export class OASMenubar extends OASElement {
       this.overflowObserver.observe(this)
       this.onCleanup(() => this.overflowObserver?.disconnect())
     }
+  }
+
+  /** 断开重连重绑（core onReconnect 钩子）：document keydown/pointerdown 监听与收纳 RO
+      cleanup 摘除后恢复——菜单栏键盘导航/typeahead/外点关闭/溢出收纳重连不失效 */
+  protected override onReconnect(): void {
+    this.bindDocListeners()
   }
 
   protected override render(): void {

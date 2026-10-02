@@ -700,52 +700,20 @@ export class OASSidebar extends OASElement {
     this.shadow.querySelector('[part="trigger"]')?.addEventListener('click', () => this.openDrawer())
     this.shadow.querySelector('[part="toggle"]')?.addEventListener('click', () => this.toggleCollapsed())
 
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        // 折叠态 flyout 优先于抽屉关闭（Esc 逐层退出）
-        if (this.flyoutOpen !== null) {
-          this.closeAllFlyouts(true)
-          return
-        }
-        this.closeDrawer()
-      }
-      // ctrl/cmd+b 折叠切换（仅 shortcut 属性开启时，避免默认劫持全局键）
-      if (
-        this.hasAttr('shortcut') &&
-        (e.ctrlKey || e.metaKey) &&
-        !e.shiftKey &&
-        !e.altKey &&
-        e.key.toLowerCase() === 'b'
-      ) {
-        e.preventDefault()
-        this.toggleCollapsed()
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    this.onCleanup(() => document.removeEventListener('keydown', onKey))
+    document.addEventListener('keydown', this.handleDocKeydown)
+    this.onCleanup(() => document.removeEventListener('keydown', this.handleDocKeydown))
 
     // flyout 外部点击关闭（pointerdown 在 shadow 外落到别处即关）
-    const onOutside = (e: PointerEvent): void => {
-      if (this.flyoutOpen === null) return
-      const path = e.composedPath()
-      if (path.includes(this)) return
-      this.closeAllFlyouts(false)
-    }
-    document.addEventListener('pointerdown', onOutside, true)
-    this.onCleanup(() => document.removeEventListener('pointerdown', onOutside, true))
+    document.addEventListener('pointerdown', this.handleDocPointerDown, true)
+    this.onCleanup(() => document.removeEventListener('pointerdown', this.handleDocPointerDown, true))
 
     // flyout 打开期间页面滚动/缩放：关闭（fixed 定位脱锚，对齐浮层组件 close-on-scroll 惯例）；
     // 组件内部滚动（.nav 滚动 / flyout 自身超长滚动）不关——锚点未位移，仅放行内部滚动源
-    const onScrollResize = (e?: Event): void => {
-      if (this.flyoutOpen === null) return
-      if (e && e.type === 'scroll' && e.composedPath().includes(this)) return
-      this.closeAllFlyouts(false)
-    }
-    window.addEventListener('scroll', onScrollResize, true)
-    window.addEventListener('resize', onScrollResize)
+    window.addEventListener('scroll', this.handleViewportScrollResize, true)
+    window.addEventListener('resize', this.handleViewportScrollResize)
     this.onCleanup(() => {
-      window.removeEventListener('scroll', onScrollResize, true)
-      window.removeEventListener('resize', onScrollResize)
+      window.removeEventListener('scroll', this.handleViewportScrollResize, true)
+      window.removeEventListener('resize', this.handleViewportScrollResize)
     })
 
     // 菜单键盘导航：↑/↓ 在可见项间移动焦点（Home/End 跳首末；Enter/Space 走原生 button 激活）
@@ -760,6 +728,57 @@ export class OASSidebar extends OASElement {
 
     this.syncMq()
     this.onCleanup(() => this.mq?.removeEventListener('change', this.mqListener))
+  }
+
+  /**
+   * document keydown：Esc 逐层退出（折叠态 flyout 优先于抽屉关闭）+ ctrl/cmd+b 折叠切换
+   * （仅 shortcut 属性开启时，避免默认劫持全局键）。类字段引用：addEventListener 规范
+   * 去重 + onReconnect 幂等重挂。
+   */
+  private handleDocKeydown = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape') {
+      // 折叠态 flyout 优先于抽屉关闭（Esc 逐层退出）
+      if (this.flyoutOpen !== null) {
+        this.closeAllFlyouts(true)
+        return
+      }
+      this.closeDrawer()
+    }
+    if (
+      this.hasAttr('shortcut') &&
+      (e.ctrlKey || e.metaKey) &&
+      !e.shiftKey &&
+      !e.altKey &&
+      e.key.toLowerCase() === 'b'
+    ) {
+      e.preventDefault()
+      this.toggleCollapsed()
+    }
+  }
+
+  /** flyout 外部点击关闭（pointerdown 在 shadow 外落到别处即关）——类字段引用（重连幂等重挂） */
+  private handleDocPointerDown = (e: PointerEvent): void => {
+    if (this.flyoutOpen === null) return
+    const path = e.composedPath()
+    if (path.includes(this)) return
+    this.closeAllFlyouts(false)
+  }
+
+  /** flyout 打开期间页面滚动/缩放关闭——类字段引用（重连幂等重挂）；组件内部滚动不关 */
+  private handleViewportScrollResize = (e?: Event): void => {
+    if (this.flyoutOpen === null) return
+    if (e && e.type === 'scroll' && e.composedPath().includes(this)) return
+    this.closeAllFlyouts(false)
+  }
+
+  /** 断开重连重绑（core onReconnect 钩子）：document keydown/pointerdown 与 window
+      scroll/resize 监听 cleanup 摘除后恢复（类字段引用，重挂不叠）——Esc 退出、
+      外点关闭、滚动脱锚关闭与 ctrl/cmd+b 快捷键重连不失效 */
+  protected override onReconnect(): void {
+    document.addEventListener('keydown', this.handleDocKeydown)
+    document.addEventListener('pointerdown', this.handleDocPointerDown, true)
+    window.addEventListener('scroll', this.handleViewportScrollResize, true)
+    window.addEventListener('resize', this.handleViewportScrollResize)
   }
 
   /** rail 拖拽：以 width 属性为唯一事实源（update 会写入 CSS 变量，不冲突） */

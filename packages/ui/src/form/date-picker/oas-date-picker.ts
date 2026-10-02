@@ -874,6 +874,21 @@ export class OASDatePicker extends OASFormElement {
   }
 
   /** 缓存节点引用 + 绑定触发器/面板/外部点击事件（render 与水合路径共用） */
+  /**
+   * 视口 resize / 祖先滚动重定位（类字段引用：addEventListener 规范去重 + onReconnect 幂等重挂）。
+   * 仅展开态有意义（收起时 positionDropdown 无操作）；capture 捕获滚动以覆盖任何可滚动祖先。
+   */
+  private repositionOnViewportChange = (): void => {
+    if (this.openState) this.positionDropdown()
+  }
+
+  /** 断开重连重绑（core onReconnect 钩子）：window resize/scroll 监听 cleanup 摘除后恢复
+      （类字段引用，重挂不叠）；展开态下缩放/滚动面板跟随重定位不失效 */
+  protected override onReconnect(): void {
+    window.addEventListener('resize', this.repositionOnViewportChange)
+    window.addEventListener('scroll', this.repositionOnViewportChange, true)
+  }
+
   private bind(): void {
     this.triggerEl = this.shadow.querySelector<HTMLInputElement>('[part="trigger"]')
     this.dropdown = this.shadow.querySelector<HTMLElement>('[part="dropdown"]')
@@ -928,13 +943,10 @@ export class OASDatePicker extends OASFormElement {
     })
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
     // 视口 resize / 祖先滚动时重定位（仅展开态有意义）；capture 捕获滚动以覆盖任何可滚动祖先
-    const reposition = (): void => {
-      if (this.openState) this.positionDropdown()
-    }
-    window.addEventListener('resize', reposition)
-    this.onCleanup(() => window.removeEventListener('resize', reposition))
-    window.addEventListener('scroll', reposition, true)
-    this.onCleanup(() => window.removeEventListener('scroll', reposition, true))
+    window.addEventListener('resize', this.repositionOnViewportChange)
+    this.onCleanup(() => window.removeEventListener('resize', this.repositionOnViewportChange))
+    window.addEventListener('scroll', this.repositionOnViewportChange, true)
+    this.onCleanup(() => window.removeEventListener('scroll', this.repositionOnViewportChange, true))
     // 视口/指针形态变化（窗口缩放、横竖屏、设备仿真切换）时重判定移动/PC 形态——
     // 否则形态冻结在上次 update 的结果（PC↔mobile 切换不重判定、强刷才对）
     this.onCleanup(watchMobileSheetMode(() => this.resyncMobileMode()))

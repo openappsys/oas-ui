@@ -1478,3 +1478,42 @@ describe('子菜单回折边界以视口为准', () => {
     expect(sub.classList.contains('flip-right'), '回折后仍越视口右缘 → 不回折（避免右越界）').toBe(false)
   })
 })
+
+describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('断开重连后 document keydown 监听恢复（onReconnect 重挂 bindDocListeners）', () => {
+    const el = mount()
+    const host = el as unknown as { handleDocumentKey: (e: KeyboardEvent) => void }
+    const original = host.handleDocumentKey.bind(el)
+    let calls = 0
+    host.handleDocumentKey = (e: KeyboardEvent): void => {
+      calls++
+      original(e)
+    }
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    // 断开重连后 document keydown 应进入导航/收起判定（cleanup 摘除 → onReconnect 重挂）
+    document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
+    expect(calls, '重连后 document keydown 监听恢复（handleDocumentKey 被调）').toBeGreaterThan(0)
+  })
+
+  it('断开重连后 document pointerdown 监听恢复（外部点击关闭汉堡面板）', () => {
+    const el = mount()
+    const host = el as unknown as { handleDocumentPointerDown: (e: PointerEvent) => void }
+    const original = host.handleDocumentPointerDown.bind(el)
+    let calls = 0
+    host.handleDocumentPointerDown = (e: PointerEvent): void => {
+      calls++
+      original(e)
+    }
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
+    expect(calls, '重连后 document pointerdown 监听恢复（handleDocumentPointerDown 被调）').toBeGreaterThan(0)
+  })
+})

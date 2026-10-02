@@ -2146,3 +2146,27 @@ describe('OASTabs tabindex 透传（能力缺口 P2）', () => {
     expect(tabsOf(el).map((t) => t.getAttribute('tabindex'))).toEqual(['0', '-1'])
   })
 })
+
+describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('断开重连后 document click 外点收起监听恢复（onDocClick 类字段化 + onReconnect 重挂）', () => {
+    const el = mount()
+    const host = el as unknown as { handleMoreDocClick: (e: Event) => void }
+    expect(host.handleMoreDocClick, 'onDocClick 已类字段化（接线前置）').toBeTypeOf('function')
+    const original = host.handleMoreDocClick.bind(el)
+    let calls = 0
+    host.handleMoreDocClick = (e: Event): void => {
+      calls++
+      original(e)
+    }
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    // 断开重连后 document click 应进入外点收起判定（cleanup 摘除 → onReconnect 重挂）
+    document.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(calls, '重连后 document click 监听恢复').toBeGreaterThan(0)
+  })
+})

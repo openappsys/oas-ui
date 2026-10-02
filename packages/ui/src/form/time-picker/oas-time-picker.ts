@@ -491,6 +491,21 @@ export class OASTimePicker extends OASFormElement {
     return wallClockIn(this.effectiveTimezone())
   }
 
+  /**
+   * 视口 resize / 祖先滚动重定位（类字段引用：addEventListener 规范去重 + onReconnect 幂等重挂；
+   * 同引用供弹层撑宽 ResizeObserver 复用）。仅展开态有意义（收起时无操作）。
+   */
+  private repositionOnViewportChange = (): void => {
+    if (this.openState) this.positionDropdown()
+  }
+
+  /** 断开重连重绑（core onReconnect 钩子）：window resize/scroll 监听 cleanup 摘除后恢复
+      （类字段引用，重挂不叠）；展开态下缩放/滚动下拉面板跟随重定位不失效 */
+  protected override onReconnect(): void {
+    window.addEventListener('resize', this.repositionOnViewportChange)
+    window.addEventListener('scroll', this.repositionOnViewportChange, true)
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
@@ -569,17 +584,14 @@ export class OASTimePicker extends OASFormElement {
     })
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
     // 视口 resize / 祖先滚动时重定位（仅展开态）
-    const reposition = (): void => {
-      if (this.openState) this.positionDropdown()
-    }
-    window.addEventListener('resize', reposition)
-    this.onCleanup(() => window.removeEventListener('resize', reposition))
-    window.addEventListener('scroll', reposition, true)
-    this.onCleanup(() => window.removeEventListener('scroll', reposition, true))
+    window.addEventListener('resize', this.repositionOnViewportChange)
+    this.onCleanup(() => window.removeEventListener('resize', this.repositionOnViewportChange))
+    window.addEventListener('scroll', this.repositionOnViewportChange, true)
+    this.onCleanup(() => window.removeEventListener('scroll', this.repositionOnViewportChange, true))
     // 弹层内容撑宽（spinner 列渲染晚于首次定位）后 popupRect 过期：RO 跟随尺寸变化重定位。
     // RTL 审计实抓：end 对齐曾按 60px 旧宽算 left，内容撑到 198px 后右溢 27px
     if (typeof ResizeObserver === 'function') {
-      const ro = new ResizeObserver(reposition)
+      const ro = new ResizeObserver(this.repositionOnViewportChange)
       this.onCleanup(() => ro.disconnect())
       // dropdown 在 render 后才存在：绑定推迟到首次打开（见 watchDropdownGrowth）
       this.dropdownGrowObserver = ro

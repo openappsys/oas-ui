@@ -580,6 +580,21 @@ export class OASColorPicker extends OASElement {
   private recentLoaded = false
   private loadedRecentKey = ''
 
+  /**
+   * 视口 resize / 祖先滚动重定位（类字段引用：addEventListener 规范去重 + onReconnect 幂等重挂）。
+   * 仅非 inline 的展开态有意义（inline 常显无需跟随，locked 冻结时也不重定位）。
+   */
+  private repositionOnViewportChange = (): void => {
+    if (!this.isInline() && this.hasAttr('open') && !this.isLocked()) this.positionPanel()
+  }
+
+  /** 断开重连重绑（core onReconnect 钩子）：window resize/scroll 监听 cleanup 摘除后恢复
+      （类字段引用，重挂不叠）；展开态下缩放/滚动面板跟随重定位不失效 */
+  protected override onReconnect(): void {
+    window.addEventListener('resize', this.repositionOnViewportChange)
+    window.addEventListener('scroll', this.repositionOnViewportChange, true)
+  }
+
   // ---------- 构造：快照注入 + 生命周期订阅晚加入 ----------
 
   constructor() {
@@ -769,13 +784,10 @@ export class OASColorPicker extends OASElement {
     })
 
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
-    const reposition = (): void => {
-      if (!this.isInline() && this.hasAttr('open') && !this.isLocked()) this.positionPanel()
-    }
-    window.addEventListener('resize', reposition)
-    this.onCleanup(() => window.removeEventListener('resize', reposition))
-    window.addEventListener('scroll', reposition, true)
-    this.onCleanup(() => window.removeEventListener('scroll', reposition, true))
+    window.addEventListener('resize', this.repositionOnViewportChange)
+    this.onCleanup(() => window.removeEventListener('resize', this.repositionOnViewportChange))
+    window.addEventListener('scroll', this.repositionOnViewportChange, true)
+    this.onCleanup(() => window.removeEventListener('scroll', this.repositionOnViewportChange, true))
   }
 
   protected override render(): void {

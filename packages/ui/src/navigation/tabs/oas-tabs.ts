@@ -1350,6 +1350,29 @@ export class OASTabs extends OASElement {
     end.setAttribute('aria-disabled', String(atEnd))
   }
 
+  /**
+   * more 下拉外点收起（宿主 document 级，composed 跨 shadow）——类字段引用：
+   * addEventListener 规范去重 + onReconnect 幂等重挂。命中检测对 shadow 节点即时查询
+   * （.more-btn / .more-dropdown 是 template 固定结构，断开重连后节点与监听同存）。
+   */
+  private handleMoreDocClick = (e: Event): void => {
+    if (!this.moreOpen) return
+    const path = e.composedPath()
+    const moreBtn = this.shadow.querySelector('.more-btn')
+    const moreDropdown = this.shadow.querySelector('.more-dropdown')
+    if (!moreBtn || !moreDropdown) return
+    if (!path.includes(moreBtn) && !path.includes(moreDropdown)) {
+      this.moreOpen = false
+      this.syncMoreDropdown()
+    }
+  }
+
+  /** 断开重连重绑（core onReconnect 钩子）：document click 外点收起监听 cleanup 摘除后恢复
+      （类字段引用，重挂不叠）；more 溢出下拉的外点收起交互不失效 */
+  protected override onReconnect(): void {
+    document.addEventListener('click', this.handleMoreDocClick, true)
+  }
+
   /** more 溢出收缩：绑定更多按钮点击弹/收下拉、外部点击收起 */
   private bindMore(): void {
     const moreBtn = this.shadow.querySelector('.more-btn') as HTMLButtonElement | null
@@ -1377,17 +1400,9 @@ export class OASTabs extends OASElement {
         this.closeMore()
       }
     })
-    // 外部点击收起（宿主 document 级，composed 跨 shadow）
-    const onDocClick = (e: Event) => {
-      if (!this.moreOpen) return
-      const path = e.composedPath()
-      if (!path.includes(moreBtn) && !path.includes(this.shadow.querySelector('.more-dropdown') as Node)) {
-        this.moreOpen = false
-        this.syncMoreDropdown()
-      }
-    }
-    document.addEventListener('click', onDocClick, true)
-    this.onCleanup(() => document.removeEventListener('click', onDocClick, true))
+    // 外部点击收起（宿主 document 级，composed 跨 shadow）——类字段监听（bindMore 链挂载）
+    document.addEventListener('click', this.handleMoreDocClick, true)
+    this.onCleanup(() => document.removeEventListener('click', this.handleMoreDocClick, true))
     // 搜索框输入实时过滤收起项；键盘 ArrowDown 进入列表项、Escape 收起
     const search = this.shadow.querySelector('.more-search') as HTMLInputElement | null
     search?.addEventListener('input', () => this.renderMoreDropdown())
