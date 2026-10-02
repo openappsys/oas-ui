@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 视觉复核工具（大任务收口必 review 流程的截图臂）：
- * 对指定组件页的全部 demo 块逐一截图（light + dark 双主题），产出供识图 agent 复核。
+ * 对指定组件页的全部 demo 块逐一截图（light + dark 双主题），产出供识图复核。
  *
  * 用法：
  *   pnpm visual:review -- calendar carousel tabs        # 三个组件页全量 demo 块

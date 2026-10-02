@@ -1310,7 +1310,7 @@ describe('OASTable 吸顶行（sticky-rows）', () => {
     expect(trs[0]!.getAttribute('data-sticky')).toBe('true')
     expect(trs[1]!.getAttribute('data-sticky')).toBe('true')
     expect(trs[2]!.getAttribute('data-sticky')).toBeNull()
-    // happy-dom 无排版：thead 高度 0 → top 全为 0px（真实高度由浏览器排版，主 agent 复核）
+    // happy-dom 无排版：thead 高度 0 → top 全为 0px（真实高度由浏览器排版，人工复核）
     expect((trs[0]!.querySelector('td') as HTMLElement).style.top).toBe('0px')
     expect((trs[1]!.querySelector('td') as HTMLElement).style.top).toBe('0px')
     expect((trs[2]!.querySelector('td') as HTMLElement).style.top).toBe('')
