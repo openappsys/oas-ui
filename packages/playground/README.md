@@ -37,7 +37,7 @@ React / Vue 各维护一份页面，**结构完全一致**（同一份清单，d
 - **Vue 3 原生支持**：`@oas-submit`、`@oas-sort-change` 直接可用。
 - **跨 shadow 无 submit 语义**：oas-form 内部 `<form>` 靠 submit 事件触发，shadow DOM 外的 oas-button 点击不会自动提交，需显式 `shadowRoot.querySelector('form').requestSubmit()`。
 - **消息 API**：`window.OASMessage` 不存在，必须 `import { message } from '@oas-ui/ui'` 后调用 `message.success(...)`。
-- **`prefix` 撞名原生只读 property（组件已兜底）**：DOM `Element.prototype.prefix` 是只读 getter，React / Vue 绑定按 `key in el` 走 property 写入会撞。相关组件（input / input-number / statistic / countdown / tree-select）已 `override get/set prefix` **遮蔽**该只读访问器并反射到规范属性 `prefix-text` / `suffix-text`——所以 **React 写 `prefix`、Vue 静态/绑定、纯 HTML 都可用**，不再崩。规范名仍是 `prefix-text`，`prefix` 为兼容别名；oas-mentions 的旧名 `prefix` 迁移到 `trigger`。完整说明见集成 FAQ。
+- **`prefix` / `suffix` / `blur` 撞名原生只读 property / 方法（组件已兜底）**：`Element.prototype.prefix` 是只读 getter、`HTMLElement.prototype.blur` 是方法，React / Vue 绑定按 `key in el` 走 property 写入会撞。相关组件（input / input-number / statistic / countdown / tree-select 遮蔽 `prefix`/`suffix`；backdrop 遮蔽 `blur`；mentions 遮蔽 `prefix` 映射到 `trigger`）**用属性访问器遮蔽**并映射到规范属性——所以 **React 写 `prefix` / `blur`、Vue 静态/绑定、纯 HTML 都可用**，不再崩。规范名仍是 `prefix-text` / `suffix-text`。完整说明见集成 FAQ。
 
 ## 缓存说明
 

@@ -52,6 +52,24 @@ function placeCaret(t: HTMLTextAreaElement, pos: number): void {
   t.selectionStart = t.selectionEnd = pos
 }
 
+describe('OASMentions prefix（trigger 遗留别名）：遮蔽只读 Element.prefix 的 property 通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+  it('property 写入映射到规范属性 trigger（React JSX / Vue 绑定按 property 写入不崩）', () => {
+    const el = mount()
+    const v = el as unknown as { prefix: string | null }
+    v.prefix = '#'
+    expect(el.getAttribute('trigger')).toBe('#')
+    expect(v.prefix).toBe('#')
+    v.prefix = null
+    expect(el.hasAttribute('trigger')).toBe(false)
+  })
+})
+
 describe('OASMentions', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
