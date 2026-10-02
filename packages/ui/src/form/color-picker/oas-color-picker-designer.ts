@@ -241,7 +241,7 @@ export class ColorPickerDesignerController implements ReactiveController, ColorP
         h.setAttribute('aria-orientation', 'horizontal')
         h.setAttribute('aria-valuemin', '0')
         h.setAttribute('aria-valuemax', '100')
-        // 色标无专属文案 key（i18n 表由主 agent 收口），可访问名用「位置 % + 颜色值」数据自述
+        // 色标无专属文案 key（i18n 表统一收口），可访问名用「位置 % + 颜色值」数据自述
         h.setAttribute('aria-label', `${formatColor(stop.color, { alpha: true })} ${Math.round(stop.pos * 100)}%`)
         h.setAttribute('aria-valuetext', `${formatColor(stop.color, { alpha: true })} ${Math.round(stop.pos * 100)}%`)
         box.appendChild(h)

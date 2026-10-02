@@ -210,7 +210,7 @@ test('upload oas-progress：drop 后进度事件派发（percent 推进到 100�
 })
 
 // ===== crop：图片上传前裁剪（D19）=====
-// 机制链路（真实 drop → 裁剪对话框 → canvas 导出入列）；视觉核对由主 agent 负责。
+// 机制链路（真实 drop → 裁剪对话框 → canvas 导出入列）；视觉核对由人工截图负责。
 
 test('upload crop：drop 图片弹裁剪框（固定比例 1:1），确认后 canvas 结果入列 + oas-crop', async ({ page }) => {
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
