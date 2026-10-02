@@ -14,6 +14,15 @@ The asChild / Slot / Portal concepts from the React ecosystem solve component-co
 
 In short: the composition trio under Web Components is "**attribute-driven root element + named slots + append-to**", which covers the scenarios asChild / Slot / Portal solve — no same-named API is needed when migrating.
 
+### React: what if an attribute name collides with a native DOM property?
+
+React 19 has a footgun when passing attributes to custom elements: if an attribute name matches an **existing DOM property** on the element, React writes it as a **property** (`el[name] = value`) instead of calling `setAttribute`. This bites in two ways:
+
+- **Read-only property → throws and crashes the whole React tree**: the classic is `prefix`, which collides with `Element.prefix` (a read-only getter) — `<oas-input prefix="¥">` throws `Cannot set property prefix of #<Element> which has only a getter` and blanks the page. **Fix**: use a `ref` + `setAttribute('prefix', '¥')` (the attribute channel).
+- **Writable property / method → side effects or overwrite**: setting `title` also triggers the browser's **native tooltip**; `blur` (oas-backdrop) overwrites the `HTMLElement.blur()` method in React.
+
+OAS-UI attributes known to collide with DOM properties: `prefix` (oas-input), `title`, `dir`, `role`, `hidden`, `draggable`, `spellcheck`, `autofocus`, `align`, `blur`, `id` — of these, **only `prefix` is a read-only collision that always throws**; the rest are writable properties / methods (usually settable, but know the side effects). Vue uses the attribute channel and is unaffected; only React (and hosts that write properties) needs care.
+
 ## Events
 
 ### Why do all events carry the `oas-` prefix?
