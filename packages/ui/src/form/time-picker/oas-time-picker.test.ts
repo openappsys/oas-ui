@@ -1015,7 +1015,10 @@ describe('onReconnect watchMobileSheetMode 重挂（同 date-picker 漏挂修复
     const parent = el.parentElement!
     el.remove()
     parent.appendChild(el)
-    expect(adds, '重连后 watchMobileSheetMode 重挂').toBeGreaterThanOrEqual(1)
-    window.matchMedia = origMatchMedia
+    try {
+      expect(adds, '重连后 watchMobileSheetMode 重挂一次（双 MQL 补挂不叠）').toBe(2)
+    } finally {
+      window.matchMedia = origMatchMedia
+    }
   })
 })

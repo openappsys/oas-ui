@@ -1650,7 +1650,11 @@ describe('onReconnect watchMobileSheetMode 重挂（重连后移动断点监听�
     const parent = el.parentElement!
     el.remove()
     parent.appendChild(el)
-    expect(adds, '重连后 watchMobileSheetMode 重挂一次（onReconnect 补挂不叠）').toBeGreaterThanOrEqual(1)
-    window.matchMedia = origMatchMedia
+    try {
+      // watchMobileSheetMode 建两个 MQL（coarse pointer + 窄视口——mobile-sheet.ts 双查询），重挂一次 adds=2
+      expect(adds, '重连后 watchMobileSheetMode 重挂一次（双 MQL 补挂不叠）').toBe(2)
+    } finally {
+      window.matchMedia = origMatchMedia
+    }
   })
 })

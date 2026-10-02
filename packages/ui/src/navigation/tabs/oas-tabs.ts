@@ -1296,7 +1296,10 @@ export class OASTabs extends OASElement {
         this.syncMore()
       })
       this.resizeObserver.observe(tablist)
-      this.onCleanup(() => this.resizeObserver?.disconnect())
+      this.onCleanup(() => {
+        this.resizeObserver?.disconnect()
+        this.resizeObserver = null
+      })
     }
     this.syncScrollControls()
   }

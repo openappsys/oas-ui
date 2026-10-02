@@ -2174,12 +2174,15 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
 describe('onReconnect 面板 MutationObserver 重建（cleanup disconnect + 置 null 后 null 守卫重建生效）', () => {
   it('断开重连后面板 MutationObserver 重建（此前 cleanup 不置 null 致重建代码为死代码）', () => {
     const el = mount()
-    const host = el as unknown as { observer: MutationObserver | null }
-    expect(host.observer, '首连 observer 在场').not.toBeNull()
+    const host = el as unknown as { observer: MutationObserver | null; resizeObserver: ResizeObserver | null }
+    expect(host.observer, '首连 MutationObserver 在场').not.toBeNull()
+    expect(host.resizeObserver, '首连溢出 ResizeObserver 在场').not.toBeNull()
     el.remove()
-    expect(host.observer, '断开后 observer 置 null（cleanup disconnect + 置 null）').toBeNull()
+    expect(host.observer, '断开后 MutationObserver 置 null（cleanup disconnect + 置 null）').toBeNull()
+    expect(host.resizeObserver, '断开后溢出 ResizeObserver 置 null（同款——此前漏置 null 致 RO 重建死代码）').toBeNull()
     const parent = el.parentElement ?? document.body
     parent.appendChild(el)
-    expect(host.observer, '重连后 observer 重建（null 守卫生效）').not.toBeNull()
+    expect(host.observer, '重连后 MutationObserver 重建（null 守卫生效）').not.toBeNull()
+    expect(host.resizeObserver, '重连后溢出 ResizeObserver 重建（null 守卫生效）').not.toBeNull()
   })
 })
