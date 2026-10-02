@@ -14,14 +14,14 @@ React 生态的 asChild / Slot / Portal 解决的是「库强加的包装元素�
 
 一句话：Web Components 下的组合三件套是「**属性驱动根元素 + 命名插槽 + append-to**」，覆盖 React 的 asChild / Slot / Portal 场景，迁移时无需在组件上寻找同名 API。
 
-### React 里属性名和 DOM 原生 property 撞名怎么办？
+### React / Vue 里属性名和 DOM 原生 property 撞名怎么办？
 
-React 19 对 custom element 的属性传递有个坑：属性名若命中元素上**已有的 DOM property**，React 会按 **property 写入**（`el[name] = value`）而不是 `setAttribute`。这会分两类踩雷：
+给 custom element 传属性时，若属性名命中元素上**已有的 DOM property**，宿主会按 **property 写入**（`el[name] = value`）而不是 `setAttribute`——React 19 如此，Vue 的**绑定**写法（`:name`）在 custom element 上也走同一判定（源码 `key in el`；`spellcheck` / `draggable` / `translate` / `autocorrect` 除外，恒走 attribute）。这会分两类踩雷：
 
-- **只读 property → 直接抛错，崩掉整棵 React 树**：典型是 `prefix` 撞 `Element.prefix`（只读 getter）——`<oas-input prefix="¥">` 在 React 下抛 `Cannot set property prefix of #<Element> which has only a getter`，页面白屏。**解法**：走 `ref` + `setAttribute('prefix', '¥')`（attribute 通道）。
-- **可写 property / 方法 → 副作用或被覆盖**：`title` 在设置属性值的同时会触发浏览器**原生 tooltip**；`blur`（oas-backdrop）在 React 下会覆盖 `HTMLElement.blur()` 方法。
+- **只读 property → 直接抛错**：典型是名为 `prefix` 的属性撞只读的 `Element.prefix`——React 下任何 `<X prefix="…">` 都会抛 `Cannot set property prefix of #<Element> which has only a getter`、崩掉整棵组件树白屏。注意 oas-input 的前缀真实属性是 **`prefix-text`**（不是 `prefix`），误写成 `prefix` 才会触发。**解法**：用组件真实的属性名，或走 `ref` + `setAttribute`。
+- **可写 property / 方法 → 副作用或被覆盖**：`title` 在写属性值的同时触发浏览器**原生 tooltip**；`blur`（oas-backdrop）会覆盖 `HTMLElement.blur()` 方法。
 
-OAS-UI 中已知与 DOM property 同名的属性：`prefix`（oas-input）、`title`、`dir`、`role`、`hidden`、`draggable`、`spellcheck`、`autofocus`、`align`、`blur`、`id`——其中**只有 `prefix` 是必崩的只读冲突**，其余为可写 property / 方法（一般可正常设置，但需知道副作用）。Vue 走 attribute 通道，无此问题；只有 React（及同类按 property 写的宿主）需要留意。
+OAS-UI 中已知与 DOM property 同名的属性：`title`、`dir`、`role`、`hidden`、`draggable`、`spellcheck`、`autofocus`、`blur`、`id`——其中只有 `blur`（方法）与 `title`（原生 tooltip）需特别留意，其余可写、一般可正常设置。真正致命的是与**只读 property** 同名者（如 `prefix`）。
 
 ## 事件
 

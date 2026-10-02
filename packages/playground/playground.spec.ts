@@ -97,17 +97,22 @@ for (const [app, port] of [
 
     const mounted = await page.evaluate(() => {
       const k = document.querySelector('oas-kanban')
+      const prefixInput = [...document.querySelectorAll('oas-input')].find((i) => i.hasAttribute('prefix-text'))
+      const prefixPart =
+        prefixInput && prefixInput.shadowRoot ? prefixInput.shadowRoot.querySelector("[part='prefix']") : null
       return {
         buttons: document.querySelectorAll('oas-button').length,
         form: !!document.querySelector('oas-form'),
         table: !!document.querySelector('oas-table'),
         kanban: !!k,
         kanbanRendered: !!k && !!k.shadowRoot && (k.shadowRoot.textContent || '').includes('待办'),
+        prefixRendered: prefixPart ? (prefixPart.textContent || '').trim() : '',
       }
     })
     expect(mounted.buttons, '组件已挂载').toBeGreaterThan(0)
     expect(mounted.form && mounted.table && mounted.kanban, '表单/表格/看板 demo 块均存在').toBe(true)
     expect(mounted.kanbanRendered, 'kanban 真渲染').toBe(true)
+    expect(mounted.prefixRendered, 'oas-input prefix-text 真渲染（非仅不崩）').toBe('¥')
     expect(errs, `${app} playground 报错:\n${[...new Set(errs)].slice(0, 5).join('\n')}`).toEqual([])
   })
 }
