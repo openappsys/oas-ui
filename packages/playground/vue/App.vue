@@ -44,6 +44,22 @@ function onSortChange(e: Event) {
   const d = (e as CustomEvent<{ key: string; order: string }>).detail
   sortInfo.value = `key=${d.key} order=${d.order || '无'}`
 }
+
+const moveInfo = ref('')
+const kanbanColumns = [
+  { key: 'todo', title: '待办' },
+  { key: 'doing', title: '进行中' },
+  { key: 'done', title: '已完成' },
+]
+const kanbanCards = [
+  { id: 't1', column: 'todo', title: '梳理需求' },
+  { id: 't2', column: 'doing', title: '开发组件' },
+  { id: 't3', column: 'done', title: '发布' },
+]
+function onChangeMove(e: Event) {
+  const d = (e as CustomEvent<{ id: string; from: string; to: string; index: number }>).detail
+  moveInfo.value = `「${d.id}」${d.from} → ${d.to} 第 ${d.index + 1} 位`
+}
 </script>
 
 <template>
@@ -94,6 +110,16 @@ function onSortChange(e: Event) {
         @oas-sort-change="onSortChange"
       ></oas-table>
       <p v-if="sortInfo">排序：{{ sortInfo }}</p>
+    </div>
+
+    <div class="demo-block">
+      <h3>看板（attribute 通道 + oas-change 桥接）</h3>
+      <oas-kanban
+        :columns="JSON.stringify(kanbanColumns)"
+        :cards="JSON.stringify(kanbanCards)"
+        @oas-change="onChangeMove"
+      ></oas-kanban>
+      <p v-if="moveInfo">移动：{{ moveInfo }}</p>
     </div>
 
     <div class="demo-block">
