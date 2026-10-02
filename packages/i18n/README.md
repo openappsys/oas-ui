@@ -36,20 +36,20 @@ setLocale('ja')
 以 `zh-CN` 为模板逐步落地（`zh-CN` 是 key 全集的单一事实源，以下每一步都有编译期或运行时护栏）：
 
 ```ts
-// 1. 复制 zh-CN 为模板，标注 LocaleMessages——缺 key 编译期报错（类型护栏）
+// 1. 以 zh-CN 的消息为模板逐步替换（vi 标注为 Locale：messages 缺 key 编译期报错）
 import zhCN from '@oas-ui/i18n/zh-CN'
-import type { Locale, LocaleMessages } from '@oas-ui/i18n'
+import type { Locale } from '@oas-ui/i18n'
 import { registerLocale, setLocale } from '@oas-ui/i18n'
 
 const vi: Locale = {
   name: 'vi',
   dir: 'ltr', // RTL 语言标 'rtl'（getDirection() 查询、dir 属性下发由此驱动）
   messages: {
-    ...zhCN, // 先全量继承（未翻译的 key 回落中文保底，可逐步替换）
-    'common.confirm': 'Xác nhận',
-    'common.cancel': 'Hủy',
+    ...zhCN.messages, // 先全量继承（未翻译的 key 回落中文保底，可逐步替换）
+    'modal.ok': 'Xác nhận',
+    'modal.cancel': 'Hủy',
     // ...逐个 key 替换为目标语言
-  } as LocaleMessages, // 断言为全集类型：多 key 不报错（超集），缺 key 由 spread 保证
+  },
 }
 
 // 2. 注册（同名覆盖）并切换
@@ -59,8 +59,8 @@ setLocale('vi') // 或一步：setLocale(vi)（传对象自动注册并切换）
 
 要点：
 
-- **key 全集**：`packages/i18n/src/locales/zh-CN.ts`（约 500+ key，导出默认对象）——逐 key 翻译，组件内置文案全部走这些 key
-- **类型约束**：`LocaleMessages = { [K in LocaleKey]: string }`——`messages` 标注后缺 key 编译期报错（不要省掉 `...zhCN` spread 除非你能保证全集）
+- **key 全集**：`packages/i18n/src/locales/zh-CN.ts`（约 290 个 key）——逐 key 翻译，组件内置文案全部走这些 key
+- **类型约束**：`LocaleMessages = { [K in LocaleKey]: string }`——`messages` 标注为 `Locale` 的 `messages` 后缺 key 编译期报错（`...zhCN.messages` spread 提供全量 key，逐 key 覆盖即得新语言）
 - **按需分包**：自定义语言包走宿主自己的动态 `import()`（`loadLocale()` 只认内置 10 种的包名映射）；注册后 `setLocale(name)` 照常生效
 - **运行时护栏**：`setLocale('未注册名')` 抛错并提示先注册；`getDirection()` 对 RTL 包返回 `'rtl'`
 
@@ -106,20 +106,20 @@ Built-in component texts (confirm buttons, validation messages, etc.) switch glo
 Use `zh-CN` as the template — it is the single source of truth for the full key set, and every step below has a compile-time or runtime guardrail:
 
 ```ts
-// 1. Clone zh-CN as the template, tagged as LocaleMessages — missing keys fail at compile time
+// 1. Use zh-CN's messages as a template and replace incrementally (tagged as Locale — missing keys fail at compile time)
 import zhCN from '@oas-ui/i18n/zh-CN'
-import type { Locale, LocaleMessages } from '@oas-ui/i18n'
+import type { Locale } from '@oas-ui/i18n'
 import { registerLocale, setLocale } from '@oas-ui/i18n'
 
 const vi: Locale = {
   name: 'vi',
   dir: 'ltr', // RTL packs: 'rtl' (drives getDirection() and the dir attribute)
   messages: {
-    ...zhCN, // inherit all keys first (untranslated keys fall back to Chinese, replace incrementally)
-    'common.confirm': 'Xác nhận',
-    'common.cancel': 'Hủy',
+    ...zhCN.messages, // inherit all keys first (untranslated keys fall back to Chinese, replace incrementally)
+    'modal.ok': 'Xác nhận',
+    'modal.cancel': 'Hủy',
     // ...replace each key with the target language
-  } as LocaleMessages, // assert the full-map type: extra keys are fine, missing keys are covered by the spread
+  },
 }
 
 // 2. Register (same-name overwrites) and switch
@@ -129,8 +129,8 @@ setLocale('vi') // or one step: setLocale(vi) (passing the object auto-registers
 
 Notes:
 
-- **Full key set**: `packages/i18n/src/locales/zh-CN.ts` (~500+ keys, default-exported object) — every built-in component text goes through these keys
-- **Type constraint**: `LocaleMessages = { [K in LocaleKey]: string }` — keep the `...zhCN` spread unless you can guarantee the full set
+- **Full key set**: `packages/i18n/src/locales/zh-CN.ts` (~290 keys) — every built-in component text goes through these keys
+- **Type constraint**: `LocaleMessages = { [K in LocaleKey]: string }` — tag `messages` as a `Locale`'s `messages` to fail at compile time on missing keys (the `...zhCN.messages` spread supplies every key; override each to build the new locale)
 - **Code splitting**: ship custom packs with your own dynamic `import()` (`loadLocale()` only maps the 10 built-in names); after `registerLocale`, `setLocale(name)` works as usual
 - **Runtime guardrails**: `setLocale('unregistered-name')` throws with a hint; `getDirection()` returns `'rtl'` for RTL packs
 

@@ -9,7 +9,7 @@
 React 生态的 asChild / Slot / Portal 解决的是「库强加的包装元素要消除、内容要挂到别处」这类组件组合问题；Web Components 的组件模型不同，这些前提要么不存在、要么已有等价方案：
 
 - **换根元素（asChild / Slot 的包装消除）**——WC 组件自身（host）就是 DOM 里的真实元素，外部布局与选择器天然直接作用于它，不存在「库强加的 wrapper」问题。需要组件渲染成别的语义元素（如把按钮变成链接）时，走**属性驱动换根**：`href` 存在时按钮 / 标签内部渲染为原生 `<a>`，键盘与禁用语义由组件维护（见 oas-button / oas-tag 文档）。
-- **让任意元素当触发器**（React 里常见的 `Trigger asChild` 组合）——对应**命名插槽**：浮层组件提供 `trigger` / `anchor` 插槽，宿主把任意元素放入即成为触发器，事件与 ARIA 连接由组件内部完成；比 asChild 更强（可放多个、可放任意复杂内容）。
+- **让任意元素当触发器**（React 里常见的 `Trigger asChild` 组合）——对应**默认插槽 + 触发器属性**：浮层组件把默认插槽的首个子元素当作触发元素（可放任意元素 / 组件），`trigger` 属性选择触发方式（`click` / `hover` / `contextmenu` 等）；面板内容走 `content` 属性或命名插槽（`title` / `header` / `content` / `footer` 等）。事件绑定与 ARIA 连接由组件内部完成，宿主无需关心。
 - **把内容挂到 body 等容器**（Portal / Teleport）——对应 **`append-to` 体系**：tooltip / popover / modal / drawer 等浮层组件的 `append-to="body"` 把浮层移入目标容器，样式作用域与 z-index 上下文不破，移除时归位、无孤儿节点。
 
 一句话：Web Components 下的组合三件套是「**属性驱动根元素 + 命名插槽 + append-to**」，覆盖 React 的 asChild / Slot / Portal 场景，迁移时无需在组件上寻找同名 API。
@@ -18,7 +18,7 @@ React 生态的 asChild / Slot / Portal 解决的是「库强加的包装元素�
 
 ### 为什么事件都带 `oas-` 前缀？
 
-Web Components 的 CustomEvent 默认 `bubbles + composed`，会穿透 Shadow DOM 冒泡到 window。无前缀的 `change` / `select` 会与原生事件（如文本选区 `select`）及宿主框架合成事件互相污染，排查困难。前缀让事件来源一目了然——**监听时写 `oas-change` 而不是 `change`**。
+组件派发的 `oas-` 事件在 core 层统一 `emit()` 时显式设置 `bubbles + composed`，会穿透 Shadow DOM 冒泡到 window（平台原生 `CustomEvent` 默认两者均为 `false`——穿透是本库显式约定，非平台默认）。无前缀的 `change` / `select` 会与原生事件（如文本选区 `select`）及宿主框架合成事件互相污染，排查困难。前缀让事件来源一目了然——**监听时写 `oas-change` 而不是 `change`**。
 
 各组件派发的事件名与触发时机见组件文档的「事件」小节。
 
@@ -71,7 +71,7 @@ CSS 规范限制：`::part()` 伪元素后**只能接伪类**（`:hover` / `:foc
 
 `@oas-ui/i18n` 提供全局 locale registry：`registerLocale(locale)` 注册自定义语言包、`setLocale(name)` 全局切换；语言包结构对齐内置 `zh-CN`（key 全集类型化，缺 key 编译期报错）。`oas-config-provider` 支持就近注入（`locale` 属性），包裹内组件优先用注入的 locale 翻译内置文案，无需全局设置。
 
-内置 10 种之外的新语言：复制 `zh-CN` 语言包为模板 → `...zhCN` 全量继承后逐 key 替换 → `messages` 标注 `LocaleMessages`（类型护栏：缺 key 编译期报错）→ RTL 语言标 `dir: 'rtl'` → `registerLocale` 注册 → `setLocale` 切换。**完整 step-by-step 示例见 `@oas-ui/i18n` 包 README「自定义语言包」节**。自定义包的按需分包走宿主自己的动态 `import()`（`loadLocale()` 只认内置 10 种包名）。
+内置 10 种之外的新语言：以 `zh-CN` 语言包的消息为模板 → `...zhCN.messages` 全量继承后逐 key 替换 → 把 `messages` 标注为 `Locale`（类型护栏：缺 key 编译期报错）→ RTL 语言标 `dir: 'rtl'` → `registerLocale` 注册 → `setLocale` 切换。**完整 step-by-step 示例见 `@oas-ui/i18n` 包 README「自定义语言包」节**。自定义包的按需分包走宿主自己的动态 `import()`（`loadLocale()` 只认内置 10 种包名）。
 
 ### 内置支持哪些语言？可以按需加载吗？
 
