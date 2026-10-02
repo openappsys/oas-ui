@@ -34,6 +34,11 @@ describe('OASStatistic prefix/suffix：遮蔽只读 Element.prefix 的 property 
     expect(el.getAttribute('suffix-text')).toBe('.00')
     expect(el.prefix).toBe('¥')
     expect(el.suffix).toBe('.00')
+    const v = el as unknown as { prefix: string | null; suffix: string | null }
+    v.prefix = null
+    v.suffix = null
+    expect(el.hasAttribute('prefix-text')).toBe(false)
+    expect(el.hasAttribute('suffix-text')).toBe(false)
   })
 })
 

@@ -1086,6 +1086,6 @@ export class OASInputNumber extends OASFormElement {
 export interface OASInputNumber {
   /** 前缀兼容属性（遮蔽只读 Element.prefix，映射到规范属性 prefix-text） */
   prefix: string
-  /** 后缀兼容属性（遮蔽只读 Element.suffix，映射到规范属性 suffix-text） */
+  /** 后缀兼容属性（无 DOM 对应，为对称与 property 通道一并遮蔽，映射到规范属性 suffix-text） */
   suffix: string
 }

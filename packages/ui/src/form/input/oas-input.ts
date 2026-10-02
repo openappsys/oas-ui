@@ -1083,7 +1083,7 @@ export class OASInput extends OASFormElement {
   protected override update(): void {
     const i = this.inputEl
     if (!i) return
-    // 遗留属性名规范：旧 prefix/suffix（与 DOM 内建只读冲突，Vue 走 property 会吞值）
+    // 遗留属性名规范：旧 prefix（与 DOM 内建只读冲突）/suffix（无 DOM 对应），Vue 走 property 会吞值
     // 迁移到 prefix-text/suffix-text（纯 HTML 老用法自动升级，CSS 只认新名）
     this.normalizeLegacyAlias('prefix-text', 'prefix')
     this.normalizeLegacyAlias('suffix-text', 'suffix')
@@ -1497,6 +1497,6 @@ export class OASInput extends OASFormElement {
 export interface OASInput {
   /** 前缀兼容属性（遮蔽只读 Element.prefix，映射到规范属性 prefix-text） */
   prefix: string
-  /** 后缀兼容属性（遮蔽只读 Element.suffix，映射到规范属性 suffix-text） */
+  /** 后缀兼容属性（无 DOM 对应，为对称与 property 通道一并遮蔽，映射到规范属性 suffix-text） */
   suffix: string
 }

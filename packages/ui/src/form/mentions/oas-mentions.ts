@@ -402,6 +402,21 @@ export class OASMentions extends OASFormElement {
     return true
   }
 
+  /** 宿主（React 19 / Vue 绑定）按 `key in el` 对 `prefix` 走 property 写入；`Element.prefix` 是只读 getter，
+   *  不遮蔽会崩掉宿主（旧 `prefix` 是 `trigger` 的遗留别名）。用 defineProperty 在原型上遮蔽并映射到规范属性 `trigger`。 */
+  static {
+    Object.defineProperty(this.prototype, 'prefix', {
+      configurable: true,
+      get(this: OASMentions): string {
+        return this.getAttribute('trigger') ?? ''
+      },
+      set(this: OASMentions, value: string | null): void {
+        if (value == null) this.removeAttribute('trigger')
+        else this.setAttribute('trigger', value)
+      },
+    })
+  }
+
   protected override update(): void {
     // 遗留属性名规范：旧 prefix（与 DOM 内建只读冲突，Vue 走 property 会吞数组值）迁移到 trigger
     this.normalizeLegacyAlias('trigger', 'prefix')
@@ -1154,4 +1169,10 @@ export class OASMentions extends OASFormElement {
   override blur(): void {
     this.shadow.querySelector<HTMLTextAreaElement>('textarea')?.blur()
   }
+}
+
+// 声明合并：为运行期用 defineProperty 遮蔽定义的 prefix（trigger 遗留别名）属性补类型
+export interface OASMentions {
+  /** 触发符遗留别名（遮蔽只读 Element.prefix，映射到规范属性 trigger） */
+  prefix: string
 }

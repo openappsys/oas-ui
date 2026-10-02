@@ -36,6 +36,11 @@ describe('OASInput prefix/suffix：遮蔽只读 Element.prefix 的 property 通�
     el.suffix = '元'
     expect(el.getAttribute('prefix-text')).toBe('$')
     expect(el.getAttribute('suffix-text')).toBe('元')
+    const v = el as unknown as { prefix: string | null; suffix: string | null }
+    v.prefix = null
+    v.suffix = null
+    expect(el.hasAttribute('prefix-text')).toBe(false)
+    expect(el.hasAttribute('suffix-text')).toBe(false)
   })
 })
 
