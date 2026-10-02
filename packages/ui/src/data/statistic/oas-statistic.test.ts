@@ -19,6 +19,24 @@ function text(el: OASStatistic): string {
   return el.shadowRoot!.querySelector<HTMLElement>('[part="statistic"]')!.textContent!
 }
 
+describe('OASStatistic prefix/suffix：遮蔽只读 Element.prefix 的 property 通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+  it('property 写入反射到规范属性 prefix-text/suffix-text（React JSX / Vue 绑定不崩）', () => {
+    const el = mount()
+    el.prefix = '¥'
+    el.suffix = '.00'
+    expect(el.getAttribute('prefix-text')).toBe('¥')
+    expect(el.getAttribute('suffix-text')).toBe('.00')
+    expect(el.prefix).toBe('¥')
+    expect(el.suffix).toBe('.00')
+  })
+})
+
 describe('OASStatistic', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

@@ -103,7 +103,7 @@ With `loading` set, a spinner shows at the end of the field and `aria-busy="true
   <oas-input suffix-icon="chevron-down" clearable value="Clearable with icon" style="width: 240px"></oas-input>
 </DemoBlock>
 
-`prefix-text` / `suffix-text` are inline text inside the input and can coexist with `clearable`, icons, and addons without conflicts.
+`prefix-text` / `suffix-text` are inline text inside the input and can coexist with `clearable`, icons, and addons without conflicts. `prefix` / `suffix` are compatibility aliases (writable through both the `attribute` and `property` channels, including React / Vue bindings) — the **canonical names are `prefix-text` / `suffix-text`**.
 
 ## Custom Clear Icon (clear-icon slot)
 

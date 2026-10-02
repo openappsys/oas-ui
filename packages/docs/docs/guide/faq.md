@@ -16,12 +16,13 @@ React 生态的 asChild / Slot / Portal 解决的是「库强加的包装元素�
 
 ### React / Vue 里属性名和 DOM 原生 property 撞名怎么办？
 
-给 custom element 传属性时，若属性名命中元素上**已有的 DOM property**，宿主会按 **property 写入**（`el[name] = value`）而不是 `setAttribute`——React 19 如此，Vue 的**绑定**写法（`:name`）在 custom element 上也走同一判定（源码 `key in el`；`spellcheck` / `draggable` / `translate` / `autocorrect` 除外，恒走 attribute）。这会分两类踩雷：
+给 custom element 传属性时，若属性名命中元素上**已有的 DOM property**，宿主会按 **property 写入**（`el[name] = value`）而不是 `setAttribute`——React 19 如此，Vue 的**绑定**写法（`:name`）在 custom element 上也走同一判定（源码 `key in el`；`spellcheck` / `draggable` / `translate` / `autocorrect` 除外，恒走 attribute）。
 
-- **只读 property → 直接抛错**：名为 `prefix` 的属性撞只读的 `Element.prefix`——React 下任何 `<X prefix="…">`（含 Vue 绑定 `:prefix`）都会抛 `Cannot set property prefix of #<Element> which has only a getter`、崩掉整棵组件树白屏。oas-input / oas-statistic 的**规范属性名是 `prefix-text`**（`prefix` 只是属性级旧别名，HTML / Vue 静态 attribute 下仍可用——正是 React 的 property 写法才崩）。**解法**：用规范属性名 `prefix-text`，或走 `ref` + `setAttribute`。
-- **可写 property / 方法 → 副作用或被覆盖**：`title` 在写属性值的同时触发浏览器**原生 tooltip**；`blur`（oas-backdrop）会覆盖 `HTMLElement.blur()` 方法。
+OAS-UI 组的处理：
 
-OAS-UI 中已知与 DOM property 同名的属性：`title`、`dir`、`role`、`hidden`、`draggable`、`spellcheck`、`autofocus`、`blur`、`id`——其中只有 `blur`（方法）与 `title`（原生 tooltip）需特别留意，其余可写、一般可正常设置。真正致命的是与**只读 property** 同名者（如 `prefix`）。
+- **`prefix` / `suffix`（撞只读的 `Element.prefix` / `Element.suffix`）**：相关组件（input / input-number / statistic / countdown / tree-select）**遮蔽**了这两个只读访问器并反射到规范属性 **`prefix-text` / `suffix-text`**——因此 `prefix` 在 **attribute 与 property 两条通道都可用**：React 写 `<oas-input prefix="¥">`、Vue 的静态/绑定写法、纯 HTML，均正常。正式名仍是 `prefix-text`，`prefix` 是兼容别名。
+- **其它撞名属性**（`title`、`dir`、`role`、`hidden`、`draggable`、`spellcheck`、`autofocus`、`id`、`blur` 等）都是**可写** DOM property，React / Vue 按 property 写入会正常反射成属性；唯一需留意的是 `title` 会同时触发浏览器**原生 tooltip**。
+- 若你自行封装**自定义**组件，避免使用与 `Element` / `HTMLElement` **只读**属性同名的属性名（如 `prefix`），或同样用访问器遮蔽。
 
 ## 事件
 

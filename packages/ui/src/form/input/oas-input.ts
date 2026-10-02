@@ -1058,6 +1058,27 @@ export class OASInput extends OASFormElement {
     return true
   }
 
+  /** 宿主（React 19 / Vue 绑定）按 `key in el` 对 `prefix`/`suffix` 走 property 写入；而 `Element.prefix`/`suffix` 是
+   *  只读 getter，不遮蔽会崩掉宿主（React 下整棵树白屏）。用 defineProperty 在原型上遮蔽这两个只读访问器并反射到
+   *  规范属性 `prefix-text`/`suffix-text`，使 `prefix`/`suffix` 在 attribute 与 property 两条通道都可用。
+   *  （不用 TS 访问器 override：遮蔽 getter-only 基类成员会触发 TS4113/4114 死锁。） */
+  static {
+    for (const [name, attr] of [
+      ['prefix', 'prefix-text'],
+      ['suffix', 'suffix-text'],
+    ] as const) {
+      Object.defineProperty(this.prototype, name, {
+        configurable: true,
+        get(this: OASInput): string {
+          return this.getAttribute(attr) ?? ''
+        },
+        set(this: OASInput, value: string): void {
+          this.setAttribute(attr, value)
+        },
+      })
+    }
+  }
+
   protected override update(): void {
     const i = this.inputEl
     if (!i) return
@@ -1469,4 +1490,12 @@ export class OASInput extends OASFormElement {
   select(): void {
     this.shadow.querySelector<HTMLInputElement>('input')?.select()
   }
+}
+
+// 声明合并：为运行期用 defineProperty 遮蔽定义的 prefix/suffix 兼容属性补类型
+export interface OASInput {
+  /** 前缀兼容属性（遮蔽只读 Element.prefix，映射到规范属性 prefix-text） */
+  prefix: string
+  /** 后缀兼容属性（遮蔽只读 Element.suffix，映射到规范属性 suffix-text） */
+  suffix: string
 }

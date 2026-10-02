@@ -103,7 +103,7 @@
   <oas-input suffix-icon="chevron-down" clearable value="可清空带图标" style="width: 240px"></oas-input>
 </DemoBlock>
 
-`prefix-text` / `suffix-text` 为输入框内部文案，与 `clearable`、图标、addon 可并存不冲突。
+`prefix-text` / `suffix-text` 为输入框内部文案，与 `clearable`、图标、addon 可并存不冲突。`prefix` / `suffix` 为兼容别名（`attribute` 与 `property` 两条通道均可写入，React / Vue 绑定也生效）——**规范名是 `prefix-text` / `suffix-text`**。
 
 ## 自定义清除图标（clear-icon 插槽）
 

@@ -97,7 +97,9 @@ for (const [app, port] of [
 
     const mounted = await page.evaluate(() => {
       const k = document.querySelector('oas-kanban')
-      const prefixInput = [...document.querySelectorAll('oas-input')].find((i) => i.hasAttribute('prefix-text'))
+      const prefixInput = [...document.querySelectorAll('oas-input')].find(
+        (i) => i.hasAttribute('prefix') || i.hasAttribute('prefix-text'),
+      )
       const prefixPart =
         prefixInput && prefixInput.shadowRoot ? prefixInput.shadowRoot.querySelector("[part='prefix']") : null
       return {

@@ -16,12 +16,13 @@ In short: the composition trio under Web Components is "**attribute-driven root 
 
 ### React / Vue: what if an attribute name collides with a native DOM property?
 
-When passing attributes to a custom element, if the name matches an **existing DOM property** on the element, the host writes it as a **property** (`el[name] = value`) instead of `setAttribute` — React 19 does this, and Vue's **bound** syntax (`:name`) hits the same rule for custom elements (source: `key in el`; except `spellcheck` / `draggable` / `translate` / `autocorrect`, which always go through attributes). It bites in two ways:
+When passing attributes to a custom element, if the name matches an **existing DOM property** on the element, the host writes it as a **property** (`el[name] = value`) instead of `setAttribute` — React 19 does this, and Vue's **bound** syntax (`:name`) hits the same rule for custom elements (source: `key in el`; except `spellcheck` / `draggable` / `translate` / `autocorrect`, which always go through attributes).
 
-- **Read-only property → throws**: an attribute named `prefix` collides with the read-only `Element.prefix` — in React any `<X prefix="…">` (and Vue's bound `:prefix`) throws `Cannot set property prefix of #<Element> which has only a getter` and crashes the whole tree / blanks the page. oas-input / oas-statistic's **canonical attribute is `prefix-text`** (`prefix` is only a legacy attribute alias, still usable in HTML / Vue static attributes — it is React's property write that crashes). **Fix**: use the canonical `prefix-text`, or a `ref` + `setAttribute`.
-- **Writable property / method → side effects or overwrite**: `title` also fires the browser's **native tooltip**; `blur` (oas-backdrop) overwrites the `HTMLElement.blur()` method.
+How OAS-UI handles it:
 
-OAS-UI attributes known to collide with DOM properties: `title`, `dir`, `role`, `hidden`, `draggable`, `spellcheck`, `autofocus`, `blur`, `id` — only `blur` (method) and `title` (native tooltip) need special care; the rest are writable and usually settable. The truly fatal case is a name matching a **read-only property** (e.g. `prefix`).
+- **`prefix` / `suffix` (colliding with the read-only `Element.prefix` / `Element.suffix`)**: the relevant components (input / input-number / statistic / countdown / tree-select) **shadow** those read-only accessors and reflect to the canonical attributes **`prefix-text` / `suffix-text`** — so `prefix` works through **both channels**: React's `<oas-input prefix="¥">`, Vue's static/bound syntax, and plain HTML all behave. The canonical name remains `prefix-text`; `prefix` is a compatibility alias.
+- **Other colliding attributes** (`title`, `dir`, `role`, `hidden`, `draggable`, `spellcheck`, `autofocus`, `id`, `blur`, …) are **writable** DOM properties, so React / Vue writing them as properties reflects back to attributes normally; the only caveat is that `title` also fires the browser's **native tooltip**.
+- If you build your **own** custom element, avoid attribute names that match **read-only** `Element` / `HTMLElement` properties (e.g. `prefix`) — or shadow them with accessors the same way.
 
 ## Events
 

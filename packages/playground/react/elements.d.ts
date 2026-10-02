@@ -32,6 +32,8 @@ declare namespace React {
       'oas-input': React.DetailedHTMLProps<
         React.InputHTMLAttributes<HTMLInputElement> & {
           name?: string
+          prefix?: string
+          suffix?: string
           'prefix-text'?: string
           'suffix-text'?: string
           'prefix-icon'?: string

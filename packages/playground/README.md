@@ -7,7 +7,7 @@
 验证 Web Components 在 **React 19** / **Vue 3** 真实宿主里的三类机制：
 
 - **事件桥接**：`oas-submit`、`oas-sort-change` 等自定义事件在两种框架里的监听方式与差异
-- **属性通道**：attribute（声明式字符串）vs property（宿主赋值）两条路径；撞名只读原生 property 的属性（如 `prefix`）在 React（及 Vue 绑定写法）下会被按 property 写入而崩，须走组件规范属性名（见下）
+- **属性通道**：attribute（声明式字符串）vs property（宿主赋值）两条路径；`prefix` / `suffix` 撞名原生只读 property，组件已遮蔽访问器兜底（两条通道都可用，见下）
 - **主题联动**：宿主写 `document.documentElement` 的 `data-theme`，`oas-*` 组件随 token 变色（dark / high-contrast）
 
 ## 跑法
@@ -27,7 +27,7 @@ React / Vue 各维护一份页面，**结构完全一致**（同一份清单，d
 2. 表单（oas-submit 桥接）
 3. 表格（attribute 通道 + sort-change 桥接）
 4. 消息（命令式 API）
-5. 属性传递通道（select options JSON + input `prefix-text`）
+5. 属性传递通道（select options JSON + input 前缀 `prefix` / `prefix-text`）
 
 某一端异常时对照另一端即可定位是「框架桥接问题」还是「组件自身问题」。
 
@@ -37,7 +37,7 @@ React / Vue 各维护一份页面，**结构完全一致**（同一份清单，d
 - **Vue 3 原生支持**：`@oas-submit`、`@oas-sort-change` 直接可用。
 - **跨 shadow 无 submit 语义**：oas-form 内部 `<form>` 靠 submit 事件触发，shadow DOM 外的 oas-button 点击不会自动提交，需显式 `shadowRoot.querySelector('form').requestSubmit()`。
 - **消息 API**：`window.OASMessage` 不存在，必须 `import { message } from '@oas-ui/ui'` 后调用 `message.success(...)`。
-- **`prefix` 撞名原生只读 property**：DOM `Element.prototype.prefix` 是命名空间前缀只读 getter。React 对 custom element 按 `key in el` 判定走 property 赋值 → 撞只读 getter 抛错并崩掉整棵 React 树；Vue 的**绑定**写法（`:prefix`）同理。组件规范属性名是 **`prefix-text` / `suffix-text`**（另有属性级旧别名 `prefix` / `suffix`，经 `normalizeLegacyAlias` 迁移——HTML / Vue **静态** attribute 下仍可用）。**React 里写 `prefix-text`（或 ref + setAttribute），不要写 JSX `prefix`**。同类：oas-statistic 的 `prefix-text`；oas-mentions 的旧名 `prefix` 迁移到 `trigger`。完整雷区清单见集成 FAQ。
+- **`prefix` 撞名原生只读 property（组件已兜底）**：DOM `Element.prototype.prefix` 是只读 getter，React / Vue 绑定按 `key in el` 走 property 写入会撞。相关组件（input / input-number / statistic / countdown / tree-select）已 `override get/set prefix` **遮蔽**该只读访问器并反射到规范属性 `prefix-text` / `suffix-text`——所以 **React 写 `prefix`、Vue 静态/绑定、纯 HTML 都可用**，不再崩。规范名仍是 `prefix-text`，`prefix` 为兼容别名；oas-mentions 的旧名 `prefix` 迁移到 `trigger`。完整说明见集成 FAQ。
 
 ## 缓存说明
 

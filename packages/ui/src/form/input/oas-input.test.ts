@@ -17,6 +17,28 @@ function styleText(el: OASInput): string {
   return el.shadowRoot!.querySelector('style')?.textContent ?? ''
 }
 
+describe('OASInput prefix/suffix：遮蔽只读 Element.prefix 的 property 通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+  it('property 写入反射到规范属性 prefix-text/suffix-text（React JSX / Vue 绑定按 property 写入不崩）', () => {
+    const el = mount({ prefix: '¥', suffix: '.00' })
+    // 属性级于 update 迁移为规范名
+    expect(el.getAttribute('prefix-text')).toBe('¥')
+    expect(el.getAttribute('suffix-text')).toBe('.00')
+    // property 读写走遮蔽访问器，不命中原生只读 Element.prefix
+    expect(el.prefix).toBe('¥')
+    expect(el.suffix).toBe('.00')
+    el.prefix = '$'
+    el.suffix = '元'
+    expect(el.getAttribute('prefix-text')).toBe('$')
+    expect(el.getAttribute('suffix-text')).toBe('元')
+  })
+})
+
 describe('OASInput', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
