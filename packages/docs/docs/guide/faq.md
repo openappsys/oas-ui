@@ -20,8 +20,8 @@ React 生态的 asChild / Slot / Portal 解决的是「库强加的包装元素�
 
 OAS-UI 组的处理：
 
-- **`prefix` / `suffix`（撞只读的 `Element.prefix` / `Element.suffix`）**：相关组件（input / input-number / statistic / countdown / tree-select）**遮蔽**了这两个只读访问器并反射到规范属性 **`prefix-text` / `suffix-text`**——因此 `prefix` 在 **attribute 与 property 两条通道都可用**：React 写 `<oas-input prefix="¥">`、Vue 的静态/绑定写法、纯 HTML，均正常。正式名仍是 `prefix-text`，`prefix` 是兼容别名。
-- **其它撞名属性**（`title`、`dir`、`role`、`hidden`、`draggable`、`spellcheck`、`autofocus`、`id`、`blur` 等）都是**可写** DOM property，React / Vue 按 property 写入会正常反射成属性；唯一需留意的是 `title` 会同时触发浏览器**原生 tooltip**。
+- **`prefix` / `suffix`**：`prefix` 撞只读的 `Element.prefix`；`suffix` 并无 DOM 对应，仅为对称与 property 通道一并处理。相关组件（input / input-number / statistic / countdown / tree-select）**遮蔽**这两个访问器并反射到规范属性 **`prefix-text` / `suffix-text`**——因此 `prefix` / `suffix` 在 **attribute 与 property 两条通道都可用**：React 写 `<oas-input prefix="¥">`、Vue 的静态/绑定写法、纯 HTML，均正常。正式名仍是 `prefix-text` / `suffix-text`，`prefix` / `suffix` 是兼容别名。
+- **其它撞名属性**（`title`、`dir`、`role`、`hidden`、`draggable`、`spellcheck`、`autofocus`、`id` 等）是**可写** DOM property，React / Vue 按 property 写入会正常反射成属性；需留意 `title` 会同时触发浏览器**原生 tooltip**。另：`blur`（oas-backdrop 的属性）撞的是 **`HTMLElement.blur()` 方法**——按 property 写入会**覆盖该方法**且属性未被设置，React / Vue 下请改走 attribute 写法（`blur="…"` / `:blur.attr`）或 `setAttribute`。
 - 若你自行封装**自定义**组件，避免使用与 `Element` / `HTMLElement` **只读**属性同名的属性名（如 `prefix`），或同样用访问器遮蔽。
 
 ## 事件

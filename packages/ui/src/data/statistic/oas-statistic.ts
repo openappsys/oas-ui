@@ -131,9 +131,9 @@ export class OASStatistic extends OASElement {
     return true
   }
 
-  /** 宿主（React 19 / Vue 绑定）按 `key in el` 对 `prefix`/`suffix` 走 property 写入；而 `Element.prefix`/`suffix` 是
-   *  只读 getter，不遮蔽会崩掉宿主（React 下整棵树白屏）。用 defineProperty 在原型上遮蔽这两个只读访问器并反射到
-   *  规范属性 `prefix-text`/`suffix-text`，使 `prefix`/`suffix` 在 attribute 与 property 两条通道都可用。
+  /** 宿主（React 19 / Vue 绑定）按 `key in el` 对 `prefix`/`suffix` 走 property 写入；`Element.prefix` 是只读 getter，
+   *  不遮蔽会崩掉宿主（React 下整棵树白屏）；`suffix` 无 DOM 对应，仅为对称与 property 通道一并遮蔽。用 defineProperty
+   *  在原型上遮蔽并反射到规范属性 `prefix-text`/`suffix-text`，使 `prefix`/`suffix` 在 attribute 与 property 两条通道都可用。
    *  （不用 TS 访问器 override：遮蔽 getter-only 基类成员会触发 TS4113/4114 死锁。） */
   static {
     for (const [name, attr] of [
@@ -145,8 +145,9 @@ export class OASStatistic extends OASElement {
         get(this: OASStatistic): string {
           return this.getAttribute(attr) ?? ''
         },
-        set(this: OASStatistic, value: string): void {
-          this.setAttribute(attr, value)
+        set(this: OASStatistic, value: string | null): void {
+          if (value == null) this.removeAttribute(attr)
+          else this.setAttribute(attr, value)
         },
       })
     }
