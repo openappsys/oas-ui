@@ -523,6 +523,24 @@ export class OASMenu extends OASElement {
   private hoverCloseTimer: ReturnType<typeof setTimeout> | null = null
   private hoverCloseValue: string | null = null
 
+  /**
+   * 视口尺寸/滚动变化重定位（类字段引用：addEventListener 规范去重 + onReconnect 幂等重挂）。
+   * 展开态下重算子菜单翻转；桥区保持期间滚动 / 缩放：指针没动但菜单盒与面板整体位移 →
+   * 按最后已知指针位置重判，避免留下「指针早已不在路径上、面板还开着」的悬挂态
+   * （滚动不保证补发 mousemove）。
+   */
+  private repositionOnViewportChange = (): void => {
+    if (this.expanded.size > 0) this.syncSubmenuPositions()
+    this.recheckHoverBridge()
+  }
+
+  /** 断开重连重绑（core onReconnect 钩子）：window resize/scroll 监听 cleanup 摘除后恢复
+      （类字段引用，重挂不叠）；展开态中的滚动/缩放翻转重算与桥区重判不失效 */
+  protected override onReconnect(): void {
+    window.addEventListener('resize', this.repositionOnViewportChange)
+    window.addEventListener('scroll', this.repositionOnViewportChange, true)
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
@@ -568,16 +586,10 @@ export class OASMenu extends OASElement {
       this.syncOpen()
     })
     // 视口尺寸/滚动变化时重算子菜单翻转（仅展开态下有意义，浮层是瞬时的）
-    const reposition = (): void => {
-      if (this.expanded.size > 0) this.syncSubmenuPositions()
-      // 桥区保持期间滚动 / 缩放：指针没动但菜单盒与面板整体位移 → 按最后已知指针位置重判，
-      // 避免留下「指针早已不在路径上、面板还开着」的悬挂态（滚动不保证补发 mousemove）
-      this.recheckHoverBridge()
-    }
-    window.addEventListener('resize', reposition)
-    this.onCleanup(() => window.removeEventListener('resize', reposition))
-    window.addEventListener('scroll', reposition, true)
-    this.onCleanup(() => window.removeEventListener('scroll', reposition, true))
+    window.addEventListener('resize', this.repositionOnViewportChange)
+    this.onCleanup(() => window.removeEventListener('resize', this.repositionOnViewportChange))
+    window.addEventListener('scroll', this.repositionOnViewportChange, true)
+    this.onCleanup(() => window.removeEventListener('scroll', this.repositionOnViewportChange, true))
     // 桥区观察器随实例断开清理（挂载/卸载由 watchHoverBridge / stopHoverBridgeWatch 管理）
     this.onCleanup(() => this.stopHoverBridgeWatch())
     // open-on-hover 延迟定时器随实例断开清理

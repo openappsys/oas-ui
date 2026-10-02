@@ -1364,3 +1364,38 @@ describe('OASSidebar 图标通道与着色', () => {
     expect(toggle!.textContent).toBe('»')
   })
 })
+
+describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('断开重连后 document keydown 与 window scroll 监听恢复（匿名闭包类字段化 + onReconnect 重挂）', () => {
+    const el = mount()
+    const host = el as unknown as {
+      handleDocKeydown: (e: KeyboardEvent) => void
+      handleViewportScrollResize: (e?: Event) => void
+    }
+    expect(host.handleDocKeydown, 'document keydown 闭包已类字段化（接线前置）').toBeTypeOf('function')
+    expect(host.handleViewportScrollResize, 'window scroll/resize 闭包已类字段化（接线前置）').toBeTypeOf('function')
+    const origKey = host.handleDocKeydown.bind(el)
+    const origScroll = host.handleViewportScrollResize.bind(el)
+    let keyCalls = 0
+    let scrollCalls = 0
+    host.handleDocKeydown = (e: KeyboardEvent): void => {
+      keyCalls++
+      origKey(e)
+    }
+    host.handleViewportScrollResize = (e?: Event): void => {
+      scrollCalls++
+      origScroll(e)
+    }
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
+    window.dispatchEvent(new Event('scroll'))
+    expect(keyCalls, '重连后 document keydown 监听恢复').toBeGreaterThan(0)
+    expect(scrollCalls, '重连后 window scroll 监听恢复').toBeGreaterThan(0)
+  })
+})

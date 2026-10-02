@@ -804,16 +804,32 @@ export class OASNavigationMenu extends OASElement {
     })
     this.viewportEl?.addEventListener('mouseleave', () => this.scheduleClose())
     this.backdropEl?.addEventListener('click', () => this.close())
-    document.addEventListener('pointerdown', this.handleDocPointer)
-    document.addEventListener('keydown', this.handleDocumentKey)
+    // document 级监听 + 悬停延迟定时器清理（类字段引用，重连经 onReconnect 幂等重挂）
+    this.bindDocListeners()
     // 子元素通道：items 属性未显式设置时监听 light DOM 子元素变化（render 与水合路径共用）
     this.ensureChildObserver()
+  }
+
+  /**
+   * document 级外点/键盘监听 + 悬停延迟定时器清理（render/hydrate 与断开重连路径共用）。
+   * 类字段引用（handleDocPointer/handleDocumentKey）：addEventListener 同引用规范去重、
+   * onCleanup 断开时清空、重连重注册不叠。
+   */
+  private bindDocListeners(): void {
+    document.addEventListener('pointerdown', this.handleDocPointer)
+    document.addEventListener('keydown', this.handleDocumentKey)
     this.onCleanup(() => {
       document.removeEventListener('pointerdown', this.handleDocPointer)
       document.removeEventListener('keydown', this.handleDocumentKey)
       if (this.openTimer) clearTimeout(this.openTimer)
       if (this.closeTimer) clearTimeout(this.closeTimer)
     })
+  }
+
+  /** 断开重连重绑（core onReconnect 钩子）：document 外点/键盘监听 cleanup 摘除后恢复——
+      外点关闭/文档级键盘导航重连不失效（悬停延迟定时器清理一并重注册） */
+  protected override onReconnect(): void {
+    this.bindDocListeners()
   }
 
   /** 建立宿主尺寸观察器（幂等；断连清理后由 update 重建，兼容重新挂载） */

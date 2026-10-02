@@ -683,3 +683,28 @@ describe('OASColorPicker recent 最近使用色', () => {
     expect(localStorage.length).toBe(0)
   })
 })
+
+describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('断开重连后 window scroll/resize 重定位监听恢复（reposition 类字段化 + onReconnect 重挂）', () => {
+    const el = mount()
+    const host = el as unknown as { repositionOnViewportChange: () => void }
+    expect(host.repositionOnViewportChange, 'reposition 已类字段化（接线前置）').toBeTypeOf('function')
+    const original = host.repositionOnViewportChange.bind(el)
+    let calls = 0
+    host.repositionOnViewportChange = (): void => {
+      calls++
+      original()
+    }
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    // 断开重连后 window scroll/resize 应触发展开态重定位（cleanup 摘除 → onReconnect 重挂）
+    window.dispatchEvent(new Event('scroll'))
+    window.dispatchEvent(new Event('resize'))
+    expect(calls, '重连后 scroll/resize 监听恢复').toBe(2)
+  })
+})

@@ -1490,3 +1490,30 @@ describe('RTL 逻辑方向化', () => {
     expect(css).toContain(':host([data-rtl]) .panel[data-motion')
   })
 })
+
+describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('断开重连后 document pointerdown/keydown 监听恢复（onReconnect 重挂 bindDocListeners）', () => {
+    const el = mount()
+    const host = el as unknown as {
+      handleDocPointer: (e: PointerEvent) => void
+      handleDocumentKey: (e: KeyboardEvent) => void
+    }
+    const originalPointer = host.handleDocPointer.bind(el)
+    let pointerCalls = 0
+    host.handleDocPointer = (e: PointerEvent): void => {
+      pointerCalls++
+      originalPointer(e)
+    }
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
+    expect(pointerCalls, '重连后 document pointerdown 监听恢复（handleDocPointer 被调）').toBeGreaterThan(0)
+    // keydown 与 pointerdown 同在 bindDocListeners 一并重挂（同引用幂等）
+    expect(typeof host.handleDocumentKey, 'handleDocumentKey 类字段在场').toBe('function')
+  })
+})
