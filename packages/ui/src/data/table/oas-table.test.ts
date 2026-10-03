@@ -1882,6 +1882,47 @@ describe('OASTable 子元素声明式通道（oas-table-column）', () => {
     expect(rows(el).length).toBe(3)
   })
 
+  it('子元素通道 + cellTemplate 模板 + setColumnWidth：不崩表、模板不丢（回归：JSON 回写把 DOM 模板序列化成 {} 后重解析渲染抛错）', () => {
+    const el = mountChild(
+      '<oas-table-column data-key="name" title="姓名"><template><strong>{{row.name}}</strong></template></oas-table-column>' +
+        '<oas-table-column data-key="age" title="年龄"></oas-table-column>',
+    )
+    el.setAttribute('data', DATA)
+    // resize 前：模板渲染生效
+    expect(rows(el)[0]!.querySelector('td[data-col="name"] strong')?.textContent).toBe('张三')
+    // 列宽调整（列设置控制器的公共 sink）：不得抛错、不得整表崩、模板保留、不写回 columns attribute
+    expect(() => el.setColumnWidth('name', 240)).not.toThrow()
+    expect(rows(el).length, 'resize 后整表仍渲染').toBe(3)
+    expect(rows(el)[0]!.querySelector('td[data-col="name"] strong')?.textContent, '模板不丢').toBe('张三')
+    expect(el.getAttribute('columns'), '含模板的列定义不回写 columns attribute（序列化会毁模板）').toBeNull()
+    // 宽度落到声明源：子元素 width attribute
+    expect(el.querySelector('oas-table-column[data-key="name"]')!.getAttribute('width')).toBe('240px')
+  })
+
+  it('子元素通道 + headerTemplate 模板 + setColumnWidth：表头模板不丢（同源回归）', () => {
+    const el = mountChild(
+      '<oas-table-column data-key="name"><template data-role="header"><em>H姓名</em></template></oas-table-column>' +
+        '<oas-table-column data-key="age" title="年龄"></oas-table-column>',
+    )
+    el.setAttribute('data', DATA)
+    expect(el.shadowRoot!.querySelector('th[data-key="name"] em')?.textContent).toBe('H姓名')
+    expect(() => el.setColumnWidth('name', 200)).not.toThrow()
+    expect(el.shadowRoot!.querySelector('th[data-key="name"] em')?.textContent, '表头模板不丢').toBe('H姓名')
+    expect(rows(el).length).toBe(3)
+    expect(el.getAttribute('columns')).toBeNull()
+  })
+
+  it('子元素通道无模板时 setColumnWidth 维持既有契约：回写 columns attribute（现状回归）', () => {
+    const el = mountChild(
+      '<oas-table-column data-key="name" title="姓名"></oas-table-column>' +
+        '<oas-table-column data-key="age" title="年龄"></oas-table-column>',
+    )
+    el.setAttribute('data', DATA)
+    el.setColumnWidth('name', 240)
+    const cols = JSON.parse(el.getAttribute('columns') ?? '[]') as Array<{ key: string; width?: string }>
+    expect(cols.find((c) => c.key === 'name')?.width).toBe('240px')
+  })
+
   it('#16 title 缺省时取默认插槽文本（trim）', () => {
     const el = mountChild('<oas-table-column key="name">  姓名  </oas-table-column>')
     expect(el.shadowRoot!.querySelector('th[data-key="name"]')!.textContent).toBe('姓名')

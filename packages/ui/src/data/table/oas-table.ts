@@ -2271,9 +2271,44 @@ export class OASTableBase extends OASElement {
       this.emit('column-resize', { key, width })
       return
     }
+    // 子元素声明通道且列定义带模板（cellTemplate/headerTemplate 为 DOM 节点）：JSON 回写会把模板
+    // 序列化成 {}（重解析后 *.content 为 undefined → 渲染抛错整表崩——实抓）。模板本就来自声明源，
+    // 回写改为改子元素的 width attribute：MutationObserver 重解析时模板仍在（回写目标改变，
+    // 与文档「宿主持久化可用」契约不冲突——文档从未承诺 resize 回写 columns attribute）。
+    if (!this.hasAttribute('columns') && this.hasTemplateColumns(this._columns)) {
+      const el = this.findChildColumnEl(this, key)
+      if (el) {
+        el.setAttribute('width', `${width}px`)
+        this.runUpdateAndNotify()
+      } else {
+        // 声明源找不到（不应发生）：仅改内存不回写——宁可丢持久化也不能崩表
+        this._columns = update(this._columns)
+        this.runUpdateAndNotify()
+      }
+      this.emit('column-resize', { key, width })
+      return
+    }
     this._columnsFromProperty = false
     this.setAttribute('columns', JSON.stringify(update(this._columns)))
     this.emit('column-resize', { key, width })
+  }
+
+  /** 列定义（递归含嵌套子列）是否带 DOM 模板字段（cellTemplate/headerTemplate） */
+  private hasTemplateColumns(cols: TableColumn[]): boolean {
+    return cols.some(
+      (c) => c.cellTemplate || c.headerTemplate || (c.children ? this.hasTemplateColumns(c.children) : false),
+    )
+  }
+
+  /** 按 key 递归查找子元素声明源（key/data-key 双通道，与 childToColumn 读取口径一致） */
+  private findChildColumnEl(root: Element, key: string): Element | null {
+    for (const child of Array.from(root.children)) {
+      if (child.tagName !== 'OAS-TABLE-COLUMN') continue
+      if ((child.getAttribute('key') ?? child.getAttribute('data-key') ?? '') === key) return child
+      const found = this.findChildColumnEl(child, key)
+      if (found) return found
+    }
+    return null
   }
 
   private computeLayout(): { offsets: Map<string, ColumnOffset>; hasFixed: boolean } {

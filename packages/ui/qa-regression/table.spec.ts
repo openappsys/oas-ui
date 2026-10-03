@@ -1463,3 +1463,62 @@ test('table 浮层编辑器通道（editComponent 第二期）：选定即提交
   })
   expect(outside, '外点提交退出编辑态').toBe(true)
 })
+
+test('table 子元素通道 + 列内模板 + 真实列宽拖拽：不崩表（回归：resize 回写 JSON 把 DOM 模板序列化成 {} 致整表渲染抛错）', async ({
+  page,
+}) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-table')
+  // md/Vue 编译管线不支持 <template> 子内容（文档明写该路径仅原生 HTML）——页面内注入原生形态
+  const pageErrors: string[] = []
+  page.on('pageerror', (e) => pageErrors.push(String(e.message)))
+  await page.evaluate(async () => {
+    await customElements.whenDefined('oas-table')
+    const host = document.createElement('oas-table')
+    host.id = 'tbl-child-tpl'
+    host.setAttribute('row-key', 'name')
+    host.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '张三', age: 30 },
+        { name: '李四', age: 25 },
+      ]),
+    )
+    host.innerHTML =
+      '<oas-table-column data-key="name" title="姓名" width="120">' +
+      '<template><strong>{{row.name}}</strong></template></oas-table-column>' +
+      '<oas-table-column data-key="age" title="年龄"></oas-table-column>'
+    host.style.cssText = 'position:fixed;left:0;top:0;width:480px;z-index:9999'
+    document.body.appendChild(host)
+  })
+  await page.waitForSelector('#tbl-child-tpl', { state: 'attached' })
+  await page.waitForTimeout(400)
+  // 真实列宽拖拽：th 右缘热区 pointerdown → move → up（走列设置控制器完整链路）
+  const edge = await page.evaluate(() => {
+    const host = document.querySelector('#tbl-child-tpl')!
+    const th = host.shadowRoot!.querySelector('th[data-key="name"]')!
+    const r = th.getBoundingClientRect()
+    return { x: r.right - 2, y: r.top + r.height / 2 }
+  })
+  await page.mouse.move(edge.x, edge.y)
+  await page.mouse.down()
+  await page.mouse.move(edge.x + 100, edge.y, { steps: 5 })
+  await page.mouse.up()
+  await page.waitForTimeout(300)
+  const r = await page.evaluate(() => {
+    const host = document.querySelector('#tbl-child-tpl')!
+    return {
+      rows: host.shadowRoot!.querySelectorAll('tbody tr').length,
+      tplAlive: host.shadowRoot!.querySelector('td[data-col="name"] strong')?.textContent ?? null,
+      columnsAttr: host.getAttribute('columns'),
+      childWidth: host.querySelector('oas-table-column[data-key="name"]')?.getAttribute('width') ?? null,
+    }
+  })
+  expect(pageErrors, '页面零报错（旧版 TypeError: cloneNode of undefined）').toEqual([])
+  expect(r.rows, 'resize 后整表仍渲染').toBe(2)
+  expect(r.tplAlive, '模板渲染不丢').toBe('张三')
+  expect(r.columnsAttr, '含模板的列定义不回写 columns attribute').toBeNull()
+  // 宽度落到声明源：值为拖拽结果（table-layout auto 下 th 实际宽 ≠ 声明的 120，断言机制而非绝对值）
+  expect(r.childWidth, '宽度落到声明源（子元素 width attribute）').toMatch(/^\d+px$/)
+  expect(r.childWidth, '宽度随拖拽更新（不再是初始 120px）').not.toBe('120px')
+})
