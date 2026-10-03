@@ -62,7 +62,9 @@ const PAGE_TOLERANCE: Record<string, number> = { 'carousel.html': 6 }
 // 任何 ratchet 都会被时序误伤。对这类页在扫描前冻结定时器（goto 前 hook setInterval 记录句柄，
 // waitForStableDom 后全部 clear），扫描对象定格为「已渲染内容」：计数稳定，且 <60 硬闸
 // 与 ratio/exempt ratchet 对该页仍全部生效（不是豁免，只是把测量变成确定性的）。
-const TIMER_FROZEN_PAGES = new Set(['log.html'])
+// 定时追加/自动播放型 demo（log 定时追加、carousel autoplay）在 axe 扫描中途会变（内容/过渡态），
+// goto 前 hook setInterval、静止后冻结，保证扫描对象与对比度实测的确定性。
+const TIMER_FROZEN_PAGES = new Set(['log.html', 'carousel.html'])
 const BASELINE_FILE = resolve(import.meta.dirname, 'a11y-contrast-baseline.json')
 const UPDATE_BASELINE = process.env.CONTRAST_BASELINE === 'update'
 // 基线模式显式提示：误在全量门禁/CI 携带该环境变量时，逐页断言全部 skipped（报告可见），而非静默全绿
