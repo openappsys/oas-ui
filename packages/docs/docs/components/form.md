@@ -292,7 +292,7 @@
 
 ### 校验触发时机（validate-trigger）
 
-> `validate-trigger` 控制字段级即时校验时机：`change`（默认）/ `blur` / `input`；字段规则里的 `validateTrigger` 可覆盖表级。提交时始终全量校验。字段一旦出现错误，之后每次输入都会实时复校（改对即清），不等待失焦——避免残留错误文案拖到点击按钮触发的失焦瞬间才被移除。下方示例改为 `blur`：输入非法手机号后点击别处（失焦）即出现红字，改正后再失焦红字消失。
+> `validate-trigger` 控制字段级即时校验时机：`input`（默认，边输入边校验）/ `blur` / `change`；字段规则里的 `validateTrigger` 可覆盖表级。提交时始终全量校验。默认边输入边校验：错误在点击提交前即已结算，避免「点击瞬间错误文案增删 → 布局位移 → 吞掉该次点击」。已出错的字段在输入时实时复校、改对即清。下方示例改为 `blur`：输入非法手机号后点击别处（失焦）即出现红字，改正后再失焦红字消失。
 
 <DemoBlock title="失焦触发校验">
   <oas-form id="form-trigger" validate-trigger="blur" rules='{"phone":[{"pattern":"^1\\d{10}$","message":"手机号格式不正确"}]}' style="width: 340px">
@@ -599,7 +599,7 @@ onMounted(() => {
 | `scroll-to-first-error` | 校验失败后聚焦首个错误字段并平滑滚动进视口（prefers-reduced-motion 时瞬跳） | `boolean` | — |
 | `size` | 表级尺寸档：经 data-form-size 通道下发表内全部字段（字段自身显式 size 优先，form-associated 字段动态跟随） | — | — |
 | `validate-messages` | 按规则类型覆盖 locale 默认校验文案（property/JSON 双通道，支持 ${min}/${max}/${value} 插值，default 兜底） | `ValidateMessages \| string` | — |
-| `validate-trigger` | 字段级即时校验触发时机：`change`（默认）/ `blur` / `input`；规则 `validateTrigger` 可逐字段覆盖；提交始终全量校验 | `string` | `change` |
+| `validate-trigger` | 字段级即时校验触发时机：`input`（默认，边输入边校验）/ `blur` / `change`；规则 `validateTrigger` 可逐字段覆盖；提交始终全量校验 | `string` | `change` |
 
 #### 事件
 

@@ -1323,7 +1323,7 @@
       "rules": "Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`",
       "disabled": "Whole-form disable: fields are disabled via their form-associated channel (no write-back of the disabled attribute); submission skips validation while disabled",
       "scroll-to-first-error": "On validation failure, focus the first invalid field and smooth-scroll it into view (instant jump under prefers-reduced-motion)",
-      "validate-trigger": "When per-field live validation fires: `change` (default) / `blur` / `input`; a rule's `validateTrigger` overrides per field; submission always validates everything",
+      "validate-trigger": "When per-field live validation fires: `input` (default, validate as you type) / `blur` / `change`; a rule's `validateTrigger` overrides per field; submission always validates everything",
       "initial-values": "Initial values JSON (the `initialValues` property takes precedence): written into fields after mount; `reset()` restores them",
       "size": "Form-level size tier distributed to all fields via the data-form-size channel (a field's own explicit size wins; form-associated fields follow dynamically)",
       "colon": "Renders a colon after every form-item label in the form (CSS ::after, no DOM text)",

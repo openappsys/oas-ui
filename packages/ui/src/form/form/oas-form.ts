@@ -639,8 +639,8 @@ export class OASForm extends OASElement {
     for (const rule of (Object.hasOwn(this._rules, name) ? this._rules[name] : undefined) ?? []) {
       if (rule.validateTrigger !== undefined && TRIGGERS.includes(rule.validateTrigger)) return rule.validateTrigger
     }
-    const level = this.getAttr('validate-trigger', 'change')
-    return TRIGGERS.includes(level as ValidateTrigger) ? (level as ValidateTrigger) : 'change'
+    const level = this.getAttr('validate-trigger', 'input')
+    return TRIGGERS.includes(level as ValidateTrigger) ? (level as ValidateTrigger) : 'input'
   }
 
   /** 单字段校验（validate-trigger 触发）：只更新该字段错误态，不派发表级事件 */

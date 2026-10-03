@@ -292,7 +292,7 @@ Controlled syncing and event listeners (wired in one `<script>` block):
 
 ### Validation Trigger (validate-trigger)
 
-> `validate-trigger` controls when per-field live validation runs: `change` (default) / `blur` / `input`; a rule's `validateTrigger` overrides the form level. Submission always validates everything. Once a field has an error, every subsequent keystroke re-validates it live (clearing as soon as it is corrected), without waiting for blur — so a stale error message is never removed only at the blur caused by clicking a button. The example below uses `blur`: type an invalid phone number, then click elsewhere (blur) to see the red error text; fix it and blur again to clear it.
+> `validate-trigger` controls when per-field live validation runs: `input` (default, validate as you type) / `blur` / `change`; a rule's `validateTrigger` overrides the form level. Submission always validates everything. The default live-on-input validation settles errors before the user clicks submit, so an error appearing/disappearing at click time can never shift a control out from under the pointer and swallow the click. Once a field has an error, every subsequent keystroke re-validates it live (clearing as soon as it is corrected). The example below uses `blur`: type an invalid phone number, then click elsewhere (blur) to see the red error text; fix it and blur again to clear it.
 
 <DemoBlock title="Validate on blur">
   <oas-form id="form-trigger" validate-trigger="blur" rules='{"phone":[{"pattern":"^1\\d{10}$","message":"Invalid phone number"}]}' style="width: 340px">
@@ -600,7 +600,7 @@ onMounted(() => {
 | `scroll-to-first-error` | On validation failure, focus the first invalid field and smooth-scroll it into view (instant jump under prefers-reduced-motion) | `boolean` | — |
 | `size` | Form-level size tier distributed to all fields via the data-form-size channel (a field's own explicit size wins; form-associated fields follow dynamically) | — | — |
 | `validate-messages` | Overrides locale-default validation messages per rule type (property/JSON channels, ${min}/${max}/${value} placeholders, default fallback) | `ValidateMessages \| string` | — |
-| `validate-trigger` | When per-field live validation fires: `change` (default) / `blur` / `input`; a rule's `validateTrigger` overrides per field; submission always validates everything | `string` | `change` |
+| `validate-trigger` | When per-field live validation fires: `input` (default, validate as you type) / `blur` / `change`; a rule's `validateTrigger` overrides per field; submission always validates everything | `string` | `change` |
 
 #### Events
 

@@ -759,14 +759,14 @@ describe('OASForm validate-trigger', () => {
     return el.querySelector(`oas-input[name="${name}"]`)!.hasAttribute('aria-invalid')
   }
 
-  it('默认 change：字段 oas-change 即校验该字段（失败标记 aria-invalid + 错误文案）', () => {
+  it('默认 input：字段 oas-input 即校验该字段（失败标记 aria-invalid + 错误文案）', () => {
     const el = mountForm('<oas-input name="name" value=""></oas-input>', { rules: RULES })
-    fireChange(el, 'name', 'abc')
+    fireInput(el, 'name', 'abc')
     expect(invalid(el, 'name')).toBe(true)
     const err = el.querySelector('.error-text')!
     expect(err.textContent).toBe('仅数字')
 
-    fireChange(el, 'name', '123')
+    fireInput(el, 'name', '123')
     expect(invalid(el, 'name')).toBe(false)
     expect(el.querySelector('.error-text')).toBeNull()
   })
@@ -814,31 +814,28 @@ describe('OASForm validate-trigger', () => {
     let failFired = 0
     el.addEventListener('oas-submit', () => submitFired++)
     el.addEventListener('oas-validate-fail', () => failFired++)
-    fireChange(el, 'name', 'abc')
+    fireInput(el, 'name', 'abc')
     expect(submitFired).toBe(0)
     expect(failFired).toBe(0)
     expect(invalid(el, 'name')).toBe(true)
   })
 
-  it('非法 validate-trigger 值回退 change；禁用字段不触发校验', () => {
+  it('非法 validate-trigger 值回退 input；禁用字段不触发校验', () => {
     const el = mountForm('<oas-input name="name" value="" disabled></oas-input>', {
       rules: RULES,
       'validate-trigger': 'nonsense',
     })
-    fireChange(el, 'name', 'abc')
-    expect(invalid(el, 'name')).toBe(false)
-  })
-
-  it('默认 change：未出错字段的 oas-input 不触发校验（validate-trigger 语义不被改动）', () => {
-    const el = mountForm('<oas-input name="name" value=""></oas-input>', { rules: RULES })
     fireInput(el, 'name', 'abc')
     expect(invalid(el, 'name')).toBe(false)
-    expect(el.querySelector('.error-text')).toBeNull()
   })
 
-  it('默认 change：已出错字段在 oas-input 时实时复校，改对即清（避免残留错误文案在随后点击的 blur 才移除，布局位移吞掉该次点击）', () => {
-    const el = mountForm('<oas-input name="name" value=""></oas-input>', { rules: RULES })
-    fireChange(el, 'name', 'abc')
+  it('validate-trigger=blur：已出错字段在 oas-input 时实时复校，改对即清（避免残留错误文案在随后点击的 blur 才移除，布局位移吞掉该次点击）', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', {
+      rules: RULES,
+      'validate-trigger': 'blur',
+    })
+    fireInput(el, 'name', 'abc')
+    fireBlur(el, 'name', 'abc')
     expect(invalid(el, 'name')).toBe(true)
 
     fireInput(el, 'name', '123')

@@ -1323,7 +1323,7 @@
       "rules": "校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`",
       "disabled": "整表禁用：字段经 form-associated 禁用通道并入生效（不回写字段 disabled 属性，防自锁）；禁用时提交跳过全部校验",
       "scroll-to-first-error": "校验失败后聚焦首个错误字段并平滑滚动进视口（prefers-reduced-motion 时瞬跳）",
-      "validate-trigger": "字段级即时校验触发时机：`change`（默认）/ `blur` / `input`；规则 `validateTrigger` 可逐字段覆盖；提交始终全量校验",
+      "validate-trigger": "字段级即时校验触发时机：`input`（默认，边输入边校验）/ `blur` / `change`；规则 `validateTrigger` 可逐字段覆盖；提交始终全量校验",
       "initial-values": "表单初始值 JSON（property `initialValues` 优先）：挂载后写入对应字段；`reset()` 回到初始值",
       "size": "表级尺寸档：经 data-form-size 通道下发表内全部字段（字段自身显式 size 优先，form-associated 字段动态跟随）",
       "colon": "表内所有 form-item 标签渲染冒号（CSS ::after，不进 DOM 文本）",

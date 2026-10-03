@@ -46,7 +46,7 @@
     {
       "name": "validate-trigger",
       "type": "string",
-      "default": "change",
+      "default": "input",
       "observed": true
     },
     {
