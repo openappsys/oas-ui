@@ -228,69 +228,58 @@ test('form-list 动态字段组：add/remove 真实点击，行值随行保留�
   expect(out).toContain('"members":[{"name":"李四","role":""}]')
 })
 
-test('form 两段式提交：校验失败 → 修正 → 再提交应派发 oas-submit（demands 登记回归——2.5.7 起 validate-trigger=change 与提交时序的互斥疑案）', async ({
-  page,
-}) => {
+test('form 两段式提交：校验失败 → 修正 → 再提交应派发 oas-submit（弹窗包裹 + 真实指针点击）', async ({ page }) => {
   await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForFunction(() => customElements.get('oas-form') != null, null, {
-    timeout: 15000,
-  })
+  await page.waitForFunction(
+    () => customElements.get('oas-form') != null && customElements.get('oas-modal') != null,
+    null,
+    {
+      timeout: 15000,
+    },
+  )
   await page.evaluate(() => {
-    const dialog = document.createElement('div')
-    dialog.id = 'qa-2stage-dialog'
+    const modal = document.createElement('oas-modal')
+    modal.setAttribute('data-testid', 'qa-2stage-modal')
+    modal.setAttribute('no-footer', '')
     const form = document.createElement('oas-form') as HTMLElement & { submit(): void }
     form.id = 'qa-2stage-form'
     form.setAttribute('rules', JSON.stringify({ name: [{ required: true, message: '名称必填' }] }))
     const input = document.createElement('oas-input')
     input.setAttribute('name', 'name')
-    input.setAttribute('label', '名称')
+    input.setAttribute('data-testid', 'qa-2stage-name')
+    input.setAttribute('value', '数码')
     form.appendChild(input)
     const btn = document.createElement('oas-button')
     btn.setAttribute('type', 'primary')
+    btn.setAttribute('data-testid', 'qa-2stage-save')
     btn.textContent = '保存'
-    btn.addEventListener('oas-click', () => {
-      ;(window as unknown as { __qa2clicks?: number }).__qa2clicks =
-        ((window as unknown as { __qa2clicks?: number }).__qa2clicks ?? 0) + 1
-      form.submit()
-    })
+    // 走公开 API（oas-click → form.submit()）；真实指针点击能否命中即本用例的校验点
+    btn.addEventListener('oas-click', () => form.submit())
     form.appendChild(btn)
-    dialog.appendChild(form)
-    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(dialog)
-  })
-  await page.evaluate(() => {
-    const form = document.querySelector('#qa-2stage-form')!
-    const dialog = document.querySelector('#qa-2stage-dialog')!
+    modal.appendChild(form)
+    document.body.appendChild(modal)
+
     const out: string[] = []
-    // 挂 window：evaluate 返回值是序列化快照，后续事件 push 需要共享引用
     ;(window as unknown as { __qa2stage: string[] }).__qa2stage = out
     form.addEventListener('oas-submit', () => {
       out.push('submit')
-      dialog.removeAttribute('data-open')
+      modal.removeAttribute('visible')
     })
     form.addEventListener('oas-validate-fail', () => out.push('fail'))
+    modal.setAttribute('visible', '')
   })
-  await page.evaluate(() => {
-    ;(document.querySelector('#qa-2stage-dialog') as HTMLElement).setAttribute('data-open', '')
-    ;(document.querySelector('#qa-2stage-form') as unknown as { submit(): void }).submit()
-  })
-  await page.waitForTimeout(300)
-  const events1 = await page.evaluate(() => (window as unknown as { __qa2stage: string[] }).__qa2stage.join(','))
-  expect(events1, '空提交触发 validate-fail').toContain('fail')
+  await page.waitForTimeout(200)
 
-  // 真实输入修正（fill → blur 触发 change 提交链）
-  const input = page.locator('#qa-2stage-form oas-input')
-  await input.click()
-  await page.keyboard.type('修正名称')
-  // 提交（合成 click 直派 shadow 内 button——oas-click → form.submit() → 校验 → oas-submit
-  // 的完整链路；真实指针命中与本用例验证的提交链语义无关，排除命中层不稳定因素）
-  await page.evaluate(() => {
-    const btn = document.querySelector('#qa-2stage-form oas-button')!
-    const inner = btn.shadowRoot!.querySelector('button[part="button"], a[part="button"]') as HTMLElement
-    inner.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-  })
-  await page.waitForTimeout(400)
-  const events2 = await page.evaluate(() => (window as unknown as { __qa2stage: string[] }).__qa2stage.join(','))
-  expect(events2, '修正后再提交应派发 oas-submit').toContain('submit')
-  const dialogOpen = await page.evaluate(() => document.querySelector('#qa-2stage-dialog')!.hasAttribute('data-open'))
-  expect(dialogOpen, 'oas-submit 后宿主关闭弹窗').toBe(false)
+  // 第一段：清空名称 → 真实点击保存 → 校验失败（错误文案出现）
+  await page.getByTestId('qa-2stage-name').locator('input').fill('')
+  await page.getByTestId('qa-2stage-save').click()
+  await expect(page.locator('#qa-2stage-form .error-text')).toContainText('名称必填')
+
+  // 第二段：填入合法值 → 真实点击保存 → oas-submit 派发、宿主关闭弹窗
+  await page.getByTestId('qa-2stage-name').locator('input').fill('影音')
+  await page.getByTestId('qa-2stage-save').click()
+  await page.waitForTimeout(200)
+  const events = await page.evaluate(() => (window as unknown as { __qa2stage: string[] }).__qa2stage.join(','))
+  expect(events, '修正后再提交应派发 oas-submit').toContain('submit')
+  await expect(page.getByTestId('qa-2stage-modal')).not.toHaveAttribute('visible', '')
 })

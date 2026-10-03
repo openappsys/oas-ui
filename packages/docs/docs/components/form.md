@@ -292,7 +292,7 @@
 
 ### 校验触发时机（validate-trigger）
 
-> `validate-trigger` 控制字段级即时校验时机：`change`（默认）/ `blur` / `input`；字段规则里的 `validateTrigger` 可覆盖表级。提交时始终全量校验。下方示例改为 `blur`：输入非法手机号后点击别处（失焦）即出现红字，改正后再失焦红字消失。
+> `validate-trigger` 控制字段级即时校验时机：`change`（默认）/ `blur` / `input`；字段规则里的 `validateTrigger` 可覆盖表级。提交时始终全量校验。字段一旦出现错误，之后每次输入都会实时复校（改对即清），不等待失焦——避免残留错误文案拖到点击按钮触发的失焦瞬间才被移除。下方示例改为 `blur`：输入非法手机号后点击别处（失焦）即出现红字，改正后再失焦红字消失。
 
 <DemoBlock title="失焦触发校验">
   <oas-form id="form-trigger" validate-trigger="blur" rules='{"phone":[{"pattern":"^1\\d{10}$","message":"手机号格式不正确"}]}' style="width: 340px">

@@ -828,6 +828,23 @@ describe('OASForm validate-trigger', () => {
     fireChange(el, 'name', 'abc')
     expect(invalid(el, 'name')).toBe(false)
   })
+
+  it('默认 change：未出错字段的 oas-input 不触发校验（validate-trigger 语义不被改动）', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', { rules: RULES })
+    fireInput(el, 'name', 'abc')
+    expect(invalid(el, 'name')).toBe(false)
+    expect(el.querySelector('.error-text')).toBeNull()
+  })
+
+  it('默认 change：已出错字段在 oas-input 时实时复校，改对即清（避免残留错误文案在随后点击的 blur 才移除，布局位移吞掉该次点击）', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', { rules: RULES })
+    fireChange(el, 'name', 'abc')
+    expect(invalid(el, 'name')).toBe(true)
+
+    fireInput(el, 'name', '123')
+    expect(invalid(el, 'name')).toBe(false)
+    expect(el.querySelector('.error-text')).toBeNull()
+  })
 })
 
 describe('OASForm initial-values 与 reset', () => {

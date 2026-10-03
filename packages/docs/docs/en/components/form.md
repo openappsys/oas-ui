@@ -292,7 +292,7 @@ Controlled syncing and event listeners (wired in one `<script>` block):
 
 ### Validation Trigger (validate-trigger)
 
-> `validate-trigger` controls when per-field live validation runs: `change` (default) / `blur` / `input`; a rule's `validateTrigger` overrides the form level. Submission always validates everything. The example below uses `blur`: type an invalid phone number, then click elsewhere (blur) to see the red error text; fix it and blur again to clear it.
+> `validate-trigger` controls when per-field live validation runs: `change` (default) / `blur` / `input`; a rule's `validateTrigger` overrides the form level. Submission always validates everything. Once a field has an error, every subsequent keystroke re-validates it live (clearing as soon as it is corrected), without waiting for blur — so a stale error message is never removed only at the blur caused by clicking a button. The example below uses `blur`: type an invalid phone number, then click elsewhere (blur) to see the red error text; fix it and blur again to clear it.
 
 <DemoBlock title="Validate on blur">
   <oas-form id="form-trigger" validate-trigger="blur" rules='{"phone":[{"pattern":"^1\\d{10}$","message":"Invalid phone number"}]}' style="width: 340px">

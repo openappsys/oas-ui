@@ -347,6 +347,17 @@ export class OASForm extends OASElement {
         this.validateFieldByTrigger(name, target)
       }) as EventListener)
     }
+    // 实时清错：已显示错误的字段在输入时复校（改对即清），不改动 validate-trigger 语义。
+    // 否则残留错误文案要等到用户点击按钮触发的 blur 才被移除，那一瞬的布局位移会把
+    // 按钮从指针下顶走，click 落到最近公共祖先（form）而非按钮，吞掉这次提交。
+    this.addEventListener('oas-input', ((e: CustomEvent) => {
+      const target = e.composedPath()[0]
+      if (!(target instanceof Element) || !this.contains(target)) return
+      const name = target.getAttribute('name')
+      if (!name || this.effectiveTrigger(name) === 'input') return
+      if (!Object.hasOwn(this.errors, name)) return
+      this.validateFieldByTrigger(name, target)
+    }) as EventListener)
   }
 
   protected override render(): void {
