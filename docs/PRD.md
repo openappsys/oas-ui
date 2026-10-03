@@ -1815,3 +1815,19 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：5 组件 + mentions + backdrop 的 property 通道（含 null→removeAttribute）；`pnpm test` 全绿。
 - e2e：`qa-regression/property-shadow`（真浏览器 property 通道）+ `collision-guard`（撞名守卫 ratchet）+ `playground.spec`（React/Vue 宿主 smoke）+ `cdn-kanban` + guide 页 console-sweep；全量 e2e 全绿。
 - 文档：FAQ zh/en 镜像；CHANGELOG / PRD / ROADMAP 同步。
+
+## 表单读值通道 + 默认校验时机根治（未发布）
+
+### 特性
+
+- **oas-input 及「字符串输入系」公开 `value` property（get/set）**：此前 `value` 只有 attribute 写入通道 + `oas-*` 事件通知，宿主程序性读当前值只能监听事件自存 state 或穿透 shadow 读内部控件（脆弱）；字符串输入系组件均无公开 `value` property（`oas-checkbox` / `oas-switch` 等另有既有 `value` property）。补齐 `oas-input` / `oas-textarea` / `oas-input-number` / `oas-auto-complete` / `oas-mentions` / `oas-combobox` 的公开读/写通道：`el.value` 读取该组件 `getFormValue()` 语义的当前值（parser/mask 感知、label/值分离、实时解析等各自口径），`el.value = x` 写受控 `value` 属性并强制回写内部控件、不派发事件（对齐原生 `input.value` / `textarea.value` 的受控赋值即生效语义）。React/Vue 受控集成与宿主读写不再需要样板。
+
+### 修复
+
+- **oas-form 弹窗内两段式提交被布局位移吞掉（默认校验时机对齐主流表单库）**：默认 `validate-trigger` 由 `change`（DOM change = 文本失焦语义）改为 `input`（边输入边校验）——错误在用户点击提交前即已结算，从根上消除「点击瞬间错误文案增删 → 布局位移 → 提交按钮从指针下被顶走 → `click` 按规范落到 mousedown/mouseup 两目标的最近公共祖先而非按钮 → 吞掉整次提交」。原缺陷表现为 `oas-modal` 包裹内「校验失败 → 修正 → 再提交」时 `oas-submit` 不派发 / 弹窗不关 / 表格不更新（直连 oas-form 因残留错误文案恰在点击前已结算而侥幸通过）。`change` / `blur` 档保留，且这些档下已出错字段在输入时亦实时复校、改对即清。
+
+### 验收
+
+- 单测：`oas-form.test.ts` validate-trigger 组（默认 input + blur 档 onTouched）+ 6 个输入系组件各 4 条 value property 断言；`pnpm test` 全绿。
+- e2e：`qa-regression/form.spec.ts` 两段式（真实 `oas-modal` + 真实指针点击）+ `qa-regression/input.spec.ts` value property（真浏览器）；**原始缺陷场景实证**：oas-ui-templates cdn-mpa `category.spec.ts:48`（编辑回填 + 必填校验 + 改名校验生效）在 2.5.8 原 dist 下 `1 failed`（表格不更新）、修复 dist 下 `4 passed`（RED→GREEN）；全量 e2e 全绿。
+- 文档：`form.md` / 6 组件 md（zh/en）+ `api-descriptions` + `api-manifest` 同步（api:gen 重生成）；CHANGELOG / PRD / ROADMAP 同步。

@@ -285,6 +285,27 @@ export class OASMentions extends OASFormElement {
     ]
   }
 
+  /**
+   * 当前值（公开读通道，对齐原生 `textarea.value`）：内部 textarea 在场读其当前文本
+   * （含 @提及标记的完整草稿），否则回落 `value` 属性，与 getFormValue()/FormData 口径一致。
+   */
+  get value(): string {
+    return this.ta ? this.ta.value : this.getAttr('value', '')
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性并清草稿标记（`draft` 是
+   * update 内「属性 → 内部控件」应用路径的守卫，与 select()/clearValue() 写值前清
+   * 草稿的既有模式一致），再显式强制 update——同值 `setAttribute` 不触发
+   * attributeChangedCallback，赋值在任何情况下都生效。不派发任何事件。
+   */
+  set value(v: string) {
+    const next = v == null ? '' : String(v)
+    this.setAttribute('value', next)
+    this.draft = false
+    this.update()
+  }
+
   private ta: HTMLTextAreaElement | null = null
   private panel: HTMLElement | null = null
   private listbox: HTMLElement | null = null

@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -138,6 +137,10 @@
     }
   ],
   "props": [
+    {
+      "name": "value",
+      "type": "string"
+    },
     {
       "name": "formatter",
       "type": "((value: number) => string) | null"

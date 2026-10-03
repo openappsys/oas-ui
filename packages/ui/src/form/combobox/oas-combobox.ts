@@ -298,6 +298,26 @@ export class OASCombobox extends OASFormElement {
     if (this.hasAttr('open')) this.renderListbox()
   }
 
+  /**
+   * 当前值（公开读通道）：等价既有 getFormValue() 语义——选中值（`value` 属性）优先，
+   * 无选中时键入草稿兜底（datalist 语义），双空回落空串。注意 label/值分离：
+   * 输入框显示的是选中项 label，此处读的是受控值本身。
+   */
+  get value(): string {
+    return this.getFormValue() ?? ''
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性并走 revert() 路径——清键入
+   * 草稿、输入框按 labelOf(选中值) 回显（本组件既有的受控显示路径）。同值 `setAttribute`
+   * 不触发 attributeChangedCallback，revert() 保证赋值在任何情况下都生效。不派发任何事件。
+   */
+  set value(v: string) {
+    const next = v == null ? '' : String(v)
+    this.setAttribute('value', next)
+    this.revert()
+  }
+
   private activeIndex = 0
   /** 用户正在输入的过滤词（未选中前不覆盖受控 value，失焦/Esc 回退为选中项 label） */
   private query = ''

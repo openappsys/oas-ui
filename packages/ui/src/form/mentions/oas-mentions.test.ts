@@ -854,3 +854,49 @@ describe('form-associated（原生表单集成）', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('OASMentions value property（公开读/写通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 返回当前值（初值 → 用户输入后为当前文本，含 @提及标记）', () => {
+    const el = mount({ value: '你好', options: OPTIONS })
+    expect(el.value).toBe('你好')
+    type(el, '你好 @Ap')
+    expect(el.value).toBe('你好 @Ap')
+  })
+
+  it('set value 写入受控属性并强制回写内部控件，不派发事件', () => {
+    const el = mount({ value: '', options: OPTIONS })
+    let fired = 0
+    el.addEventListener('oas-input', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    el.value = '新内容'
+    expect(el.getAttribute('value')).toBe('新内容')
+    expect(ta(el).value).toBe('新内容')
+    expect(el.value).toBe('新内容')
+    expect(fired).toBe(0)
+  })
+
+  it('set value 在属性同值（用户有未确认草稿）时仍强制回写内部控件', () => {
+    const el = mount({ value: '你好', options: OPTIONS })
+    type(el, '草稿文本')
+    expect(el.value).toBe('草稿文本')
+    el.value = '你好'
+    expect(ta(el).value).toBe('你好')
+    expect(el.value).toBe('你好')
+  })
+
+  it("'value' in el === true（访问器在原型上、非实例 expando）", () => {
+    const el = mount({ options: OPTIONS })
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = 'x'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

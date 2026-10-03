@@ -192,6 +192,25 @@ export class OASTextarea extends OASFormElement {
     ]
   }
 
+  /**
+   * 当前值（公开读通道，对齐原生 `textarea.value`）：内部 textarea 在场读其当前文本，
+   * 否则回落 `value` 属性（render 前快照），与 getFormValue()/FormData 提交口径一致。
+   */
+  get value(): string {
+    return this.ta ? this.ta.value : this.getAttr('value', '')
+  }
+
+  /**
+   * 程序性写值（对齐原生 `textarea.value = x` 的受控赋值即生效语义）：写受控 `value`
+   * 属性并显式强制 update 回写内部 textarea——同值 `setAttribute` 不触发
+   * attributeChangedCallback，赋值在任何情况下都必须生效。不派发任何事件。
+   */
+  set value(v: string) {
+    const next = v == null ? '' : String(v)
+    this.setAttribute('value', next)
+    this.update()
+  }
+
   private ta: HTMLTextAreaElement | null = null
   private clearBtn: HTMLButtonElement | null = null
   private countEl: HTMLElement | null = null

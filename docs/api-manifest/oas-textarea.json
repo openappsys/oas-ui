@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -124,7 +123,12 @@
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "value",
+      "type": "string"
+    }
+  ],
   "events": [
     {
       "name": "oas-input",

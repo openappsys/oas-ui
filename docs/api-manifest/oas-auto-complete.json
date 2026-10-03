@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -97,6 +96,10 @@
     }
   ],
   "props": [
+    {
+      "name": "value",
+      "type": "string"
+    },
     {
       "name": "options",
       "type": "Option[] | string",

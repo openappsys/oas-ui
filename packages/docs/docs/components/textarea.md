@@ -145,6 +145,8 @@
 
 `focus(options?)` / `blur()` / `select()` 均委托内部原生文本域。
 
+程序性读/写当前值走公开 `value` property（对齐原生 `textarea.value`）：`el.value` 读取——当前文本（内部 textarea 在场）否则 `value` 属性快照；`el.value = x` 写入——写受控 `value` 属性并即时回写内部控件，不派发事件。
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {

@@ -34,7 +34,7 @@ An enhanced base input built on the native `<input>` element.
 
 The component is a **form-associated** custom element (`formAssociated: true`): `<label for>` works natively (clicking the label focuses the real input inside the shadow root, and screen readers announce the label text); inside a native `<form>` the value is collected via standard `FormData` (submitted only when `name` is set), `form.reset()` restores the initial `value`, and a parent `fieldset[disabled]` disables it. Works in parallel with `oas-form`'s `collectFields` mechanism.
 
-Reading/writing the current value is done via the public `value` property (matching native `input.value`): `el.value` reads the parser/mask-aware submitted-value semantics (same as `oas-input`/`oas-change`/FormData); `el.value = x` writes the controlled `value` attribute and immediately syncs the inner control, dispatching no events.
+Reading/writing the current value is done via the public `value` property (matching native `input.value`): `el.value` reads the parser/mask-aware submitted-value semantics (same as `oas-input`/`oas-change`/FormData); `el.value = x` writes the controlled `value` attribute and immediately syncs the inner control, dispatching no events. **Controlled assignment is immediate**: even a same-value assignment force-writes the inner control; frameworks like Vue re-write an element's `:value` binding unconditionally on every patch, so under a controlled binding sync external state via events (`oas-input`/`oas-change`) to avoid an unrelated re-render wiping uncommitted input.
 
 ## Types
 

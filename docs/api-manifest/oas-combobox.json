@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -91,6 +90,10 @@
       "name": "filter",
       "type": "((option: Option, query: string) => boolean) | null",
       "api": true
+    },
+    {
+      "name": "value",
+      "type": "string"
     }
   ],
   "events": [

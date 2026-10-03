@@ -145,6 +145,8 @@ Whitelisted attributes are passed through to the inner native `<textarea>`: `nam
 
 `focus(options?)` / `blur()` / `select()` all delegate to the inner native textarea.
 
+Programmatic read/write of the current value goes through the public `value` property (like the native `textarea.value`): `el.value` reads the current text while the inner textarea is present, otherwise the `value` attribute snapshot; `el.value = x` writes the controlled `value` attribute and immediately syncs the inner control without dispatching events.
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {

@@ -291,6 +291,27 @@ export class OASAutoComplete extends OASFormElement {
     ]
   }
 
+  /**
+   * 当前值（公开读通道，对齐原生 `input.value`）：内部 input 在场读其当前文本
+   * （自由文本组件以可见文本为准），否则回落 `value` 属性，与 getFormValue()/FormData 口径一致。
+   */
+  get value(): string {
+    return this.input ? this.input.value : this.getAttr('value', '')
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性并清掉键入过滤词（`query`
+   * 是 update 内「属性 → 内部控件」应用路径的守卫，不清理会跳过回写），再显式强制
+   * update——同值 `setAttribute` 不触发 attributeChangedCallback，赋值在任何情况下都生效。
+   * 不派发任何事件。
+   */
+  set value(v: string) {
+    const next = v == null ? '' : String(v)
+    this.setAttribute('value', next)
+    this.query = ''
+    this.update()
+  }
+
   private input: HTMLInputElement | null = null
   private dropdown: HTMLElement | null = null
   private listbox: HTMLElement | null = null

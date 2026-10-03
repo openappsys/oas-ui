@@ -27,6 +27,13 @@ function optionRows(el: OASCombobox): HTMLElement[] {
   return [...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')]
 }
 
+/** 模拟输入：设置值并派发 input 事件 */
+function type(el: OASCombobox, text: string): void {
+  const i = input(el)
+  i.value = text
+  i.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
 describe('OASCombobox', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -784,5 +791,53 @@ describe('OASCombobox autocomplete 透传', () => {
     const el = mount({ autocomplete: 'name' })
     el.removeAttribute('autocomplete')
     expect(input(el).getAttribute('autocomplete')).toBe('off')
+  })
+})
+
+describe('OASCombobox value property（公开读/写通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 返回当前值（选中值优先；无选中时键入草稿兜底，等价 getFormValue 语义）', () => {
+    const el = mount()
+    expect(el.value).toBe('')
+    type(el, '苹')
+    expect(el.value).toBe('苹')
+    el.setAttribute('value', 'banana')
+    expect(el.value).toBe('banana')
+  })
+
+  it('set value 写入受控属性并回显选项 label（label/值分离），不派发事件', () => {
+    const el = mount({ value: '' })
+    let fired = 0
+    el.addEventListener('oas-input', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    el.value = 'banana'
+    expect(el.getAttribute('value')).toBe('banana')
+    expect(input(el).value).toBe('香蕉')
+    expect(el.value).toBe('banana')
+    expect(fired).toBe(0)
+  })
+
+  it('set value 在属性同值（用户有未提交草稿）时仍强制回写显示', () => {
+    const el = mount({ value: 'banana' })
+    type(el, '橙子')
+    expect(input(el).value).toBe('橙子')
+    el.value = 'banana'
+    expect(input(el).value).toBe('香蕉')
+    expect(el.value).toBe('banana')
+  })
+
+  it("'value' in el === true（访问器在原型上、非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = 'apple'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })

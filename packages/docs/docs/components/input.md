@@ -34,7 +34,7 @@
 
 组件是 **form-associated** 自定义元素（`formAssociated: true`）：`<label for>` 原生关联生效（点击 label 聚焦到 shadow 内真实 input，读屏朗读 label 文本）；放进原生 `<form>` 后经标准 `FormData` 收集（有 `name` 才提交）、`form.reset()` 回到 `value` 初始值、父级 `fieldset[disabled]` 联动禁用。与 `oas-form` 的 `collectFields` 机制并行可用。
 
-程序性读/写当前值走公开 `value` property（对齐原生 `input.value`）：`el.value` 读取——parser/mask 感知的提交值语义（与 `oas-input`/`oas-change`/FormData 口径一致）；`el.value = x` 写入——写受控 `value` 属性并即时回写内部控件，不派发事件。
+程序性读/写当前值走公开 `value` property（对齐原生 `input.value`）：`el.value` 读取——parser/mask 感知的提交值语义（与 `oas-input`/`oas-change`/FormData 口径一致）；`el.value = x` 写入——写受控 `value` 属性并即时回写内部控件，不派发事件。**受控赋值即生效语义**：即使传入值与当前属性值相同也会强制回写内部控件；Vue 等框架对自定义元素的 `:value` 绑定在每次 patch 会无条件重写，受控绑定下请以事件（`oas-input`/`oas-change`）同步外部状态，避免无关重渲染抹掉用户未提交的输入。
 
 ## 类型
 

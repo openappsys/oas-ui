@@ -948,3 +948,49 @@ describe('OASInputNumber P2：autofocus / decimal-separator / variant / align', 
     expect(css).not.toMatch(/text-align:\s*(left|right)\b/)
   })
 })
+
+describe('OASInputNumber value property（公开读/写通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 返回当前值（初值 → 键入后为实时解析值，等价 getFormValue 语义）', () => {
+    const el = mount({ value: '5' })
+    expect(el.value).toBe('5')
+    type(el, '42')
+    expect(el.value).toBe('42')
+  })
+
+  it('set value 写入受控属性并强制回显内部控件，不派发事件', () => {
+    const el = mount({ value: '' })
+    let fired = 0
+    el.addEventListener('oas-input', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    el.value = '42'
+    expect(el.getAttribute('value')).toBe('42')
+    expect(input(el).value).toBe('42')
+    expect(el.value).toBe('42')
+    expect(fired).toBe(0)
+  })
+
+  it('set value 在属性同值（用户键入未提交）时仍强制回显内部控件', () => {
+    const el = mount({ value: '5' })
+    type(el, '99')
+    expect(input(el).value).toBe('99')
+    el.value = '5'
+    expect(input(el).value).toBe('5')
+    expect(el.value).toBe('5')
+  })
+
+  it("'value' in el === true（访问器在原型上、非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = '7'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

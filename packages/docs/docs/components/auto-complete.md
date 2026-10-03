@@ -26,6 +26,8 @@
   <oas-auto-complete value="苹果" placeholder="已选中的值" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-auto-complete>
 </DemoBlock>
 
+程序性读/写当前值走公开 `value` property（`el.value` 读、`el.value = x` 写，对齐原生 `input.value`）。注意 **label / 值分离**：本组件提交语义为「可见文本」——选中某建议后 `el.value` 返回该建议的 **label**（可见文本），而 `value` **属性**为 `option.value`（如 `apple`）；`oas-form` 的 `values` 快照读属性（= `option.value`），两者数据不同层，按需选用。
+
 ## 可清空
 
 <DemoBlock title="可清空（clearable）">
@@ -258,6 +260,8 @@ onMounted(() => {
 </DemoBlock>
 
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
+
+程序性读/写当前值走公开 `value` property（对齐原生 `input.value`）：`el.value` 读取——当前输入文本；`el.value = x` 写入——写受控 `value` 属性并即时回写内部控件（清掉键入过滤词），不派发事件。
 
 ## 面板放置方向
 

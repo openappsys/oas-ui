@@ -229,6 +229,8 @@ onMounted(() => {
 
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
 
+程序性读/写当前值走公开 `value` property：`el.value` 读取——选中值（`value` 属性）优先，无选中时键入草稿兜底（FormData 口径）；`el.value = x` 写入——写受控 `value` 属性并按选项 label 回显输入框（label/值分离），不派发事件。
+
 ## autocomplete 透传
 
 <DemoBlock title="autocomplete 透传">

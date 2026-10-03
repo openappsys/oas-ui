@@ -295,6 +295,8 @@ onMounted(() => {
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
 
+Programmatic read/write of the current value goes through the public `value` property: `el.value` reads the FormData-equivalent value (the real-time parsed value while the inner input is present; empty string for empty/invalid typing); `el.value = x` writes the controlled `value` attribute and force-refreshes the inner control (ignoring focus protection) without dispatching events.
+
 ## API
 
 ### oas-input-number

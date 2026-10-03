@@ -228,6 +228,8 @@ onMounted(() => {
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
 
+Programmatic read/write of the current value goes through the public `value` property: `el.value` reads the selected value (`value` attribute) first, falling back to the in-progress draft when nothing is selected (FormData semantics); `el.value = x` writes the controlled `value` attribute and reflects the option label in the input (label/value separation) without dispatching events.
+
 ## autocomplete Passthrough
 
 <DemoBlock title="autocomplete passthrough">

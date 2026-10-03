@@ -91,6 +91,22 @@ describe('OASInput value property（公开读/写通道）', () => {
     expect(input(el).value).toBe('¥1234')
     expect(el.value).toBe('1234')
   })
+
+  it('value 是原型访问器（非实例 expando），且 setter 不派发任何 oas-* 事件', () => {
+    const el = mount({ value: '' })
+    expect('value' in el).toBe(true)
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')
+    expect(typeof desc?.get).toBe('function')
+    expect(typeof desc?.set).toBe('function')
+
+    const events: string[] = []
+    for (const n of ['oas-input', 'oas-change', 'oas-clear', 'oas-enter', 'oas-focus', 'oas-blur', 'oas-validate']) {
+      el.addEventListener(n, () => events.push(n))
+    }
+    el.value = '程序写入'
+    expect(events).toEqual([])
+  })
 })
 
 describe('OASInput', () => {

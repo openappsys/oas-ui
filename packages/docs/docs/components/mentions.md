@@ -283,6 +283,8 @@ onMounted(() => {
 
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
 
+程序性读/写当前值走公开 `value` property（对齐原生 `textarea.value`）：`el.value` 读取——当前完整文本（含 @提及标记）；`el.value = x` 写入——写受控 `value` 属性并即时回写内部控件（受控赋值优先于未确认草稿），不派发事件。
+
 ## API
 
 ### oas-mentions

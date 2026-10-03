@@ -842,6 +842,30 @@ describe('OASForm validate-trigger', () => {
     expect(invalid(el, 'name')).toBe(false)
     expect(el.querySelector('.error-text')).toBeNull()
   })
+
+  it('validate-trigger=blur：未出错字段的 oas-input 不校验（实时复校仅作用于已出错字段）', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', {
+      rules: RULES,
+      'validate-trigger': 'blur',
+    })
+    fireInput(el, 'name', 'abc')
+    expect(invalid(el, 'name')).toBe(false)
+    expect(el.querySelector('.error-text')).toBeNull()
+  })
+
+  it('validate-trigger=blur：已出错字段输入仍非法的值时，实时复校保持并刷新错误态', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', {
+      rules: RULES,
+      'validate-trigger': 'blur',
+    })
+    fireInput(el, 'name', 'abc')
+    fireBlur(el, 'name', 'abc')
+    expect(invalid(el, 'name')).toBe(true)
+
+    fireInput(el, 'name', 'xyz')
+    expect(invalid(el, 'name')).toBe(true)
+    expect(el.querySelector('.error-text')?.textContent).toBe('仅数字')
+  })
 })
 
 describe('OASForm initial-values 与 reset', () => {
@@ -1223,6 +1247,38 @@ describe('OASForm review 回归（真实路径，非合成事件造假绿）', (
     inner.dispatchEvent(new Event('input', { bubbles: true }))
     await new Promise((r) => setTimeout(r, 90))
     expect(field.getAttribute('aria-invalid'), '最新一次（快，通过）生效，慢旧结果不得覆盖').toBeNull()
+  })
+
+  it('I5：提交作废在途字段级异步校验——慢旧结果不得覆盖提交终态（默认 input 下每击键起异步校验，实抓竞态）', async () => {
+    const el = ((): OASForm => {
+      const f = new OASForm()
+      f.innerHTML = '<oas-input name="n1"></oas-input>'
+      document.body.appendChild(f)
+      return f
+    })()
+    el.rules = {
+      n1: [
+        {
+          validator: (v: string) =>
+            new Promise<true | string>((res) =>
+              setTimeout(() => res(v === 'a' ? '慢旧错误' : true), v === 'a' ? 60 : 0),
+            ),
+        },
+      ],
+    }
+    const field = el.querySelector('oas-input') as OASInput
+    const inner = field.shadowRoot!.querySelector('input')!
+    let submitted = 0
+    el.addEventListener('oas-submit', () => submitted++)
+    inner.value = 'a'
+    inner.dispatchEvent(new Event('input', { bubbles: true })) // 字段级慢校验起飞
+    field.setAttribute('value', 'ok')
+    inner.value = 'ok'
+    el.submit()
+    await new Promise((r) => setTimeout(r, 200))
+    expect(submitted, '提交通过').toBe(1)
+    expect(field.hasAttribute('aria-invalid'), '提交通过后慢旧字段结果不得覆盖').toBe(false)
+    expect(el.getErrors()).toEqual({})
   })
 
   it('I4：initial-values 经 checkbox property setter 驱动映射勾选 + reset 恢复 checked', async () => {

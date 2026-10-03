@@ -490,6 +490,26 @@ export class OASInputNumber extends OASFormElement {
     ]
   }
 
+  /**
+   * 当前值（公开读通道）：等价既有 getFormValue() 语义——内部 input 在场读实时解析值
+   * （显示文本解析为数字串；空值/非法键入为空串），否则读 `value` 属性快照。
+   */
+  get value(): string {
+    return this.getFormValue() ?? ''
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性并走 writeDisplay() 强制回显
+   * （无视聚焦保护、复位键入脏标记，是本组件既有的「属性 → 内部控件」强制应用路径）。
+   * 同值 `setAttribute` 不触发 attributeChangedCallback，writeDisplay 保证赋值在任何情况下
+   * 都生效。不派发任何事件。
+   */
+  set value(v: string) {
+    const next = v == null ? '' : String(v)
+    this.setAttribute('value', next)
+    this.writeDisplay()
+  }
+
   /** 函数式格式化通道：优先于声明式 format/grouping/precision（attribute 传不了函数的等价能力） */
   get formatter(): ((value: number) => string) | null {
     return this._formatter

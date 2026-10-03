@@ -832,3 +832,49 @@ describe('OASAutoComplete 虚拟滚动（virtual）', () => {
     expect(vlistOf(el).getAttribute('height')).toBe('300')
   })
 })
+
+describe('OASAutoComplete value property（公开读/写通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 返回当前值（初值 → 用户输入后为当前文本）', () => {
+    const el = mount({ value: '苹' })
+    expect(el.value).toBe('苹')
+    type(el, '香蕉')
+    expect(el.value).toBe('香蕉')
+  })
+
+  it('set value 写入受控属性并强制回写内部控件，不派发事件', () => {
+    const el = mount({ value: '' })
+    let fired = 0
+    el.addEventListener('oas-input', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    el.value = '橙'
+    expect(el.getAttribute('value')).toBe('橙')
+    expect(input(el).value).toBe('橙')
+    expect(el.value).toBe('橙')
+    expect(fired).toBe(0)
+  })
+
+  it('set value 在属性同值（用户已输入其它文本）时仍强制回写内部控件', () => {
+    const el = mount({ value: '苹' })
+    type(el, '用户输入')
+    expect(el.value).toBe('用户输入')
+    el.value = '苹'
+    expect(input(el).value).toBe('苹')
+    expect(el.value).toBe('苹')
+  })
+
+  it("'value' in el === true（访问器在原型上、非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = 'x'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

@@ -26,6 +26,8 @@ Typing auto-filters matching items in the dropdown; the first item is highlighte
   <oas-auto-complete value="苹果" placeholder="Selected value" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-auto-complete>
 </DemoBlock>
 
+Reading/writing the current value goes through the public `value` property (`el.value` to read, `el.value = x` to write, matching native `input.value`). Note the **label / value split**: this component's submission semantics are the *visible text* — after selecting a suggestion, `el.value` returns that suggestion's **label** (visible text), while the `value` **attribute** is the `option.value` (e.g. `apple`); `oas-form`'s `values` snapshot reads the attribute (= `option.value`). The two are different layers — pick per need.
+
 ## Clearable
 
 <DemoBlock title="Clearable">
@@ -258,6 +260,8 @@ onMounted(() => {
 </DemoBlock>
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
+
+Programmatic read/write of the current value goes through the public `value` property (like the native `input.value`): `el.value` reads the current input text; `el.value = x` writes the controlled `value` attribute and immediately syncs the inner control (clearing the in-progress filter query) without dispatching events.
 
 ## Panel placement
 

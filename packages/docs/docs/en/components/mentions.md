@@ -283,6 +283,8 @@ onMounted(() => {
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
 
+Programmatic read/write of the current value goes through the public `value` property (like the native `textarea.value`): `el.value` reads the full current text (including @mention marks); `el.value = x` writes the controlled `value` attribute and immediately syncs the inner control (controlled assignment takes precedence over unconfirmed drafts) without dispatching events.
+
 ## API
 
 ### oas-mentions
