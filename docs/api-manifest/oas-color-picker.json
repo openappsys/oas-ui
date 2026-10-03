@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -112,7 +111,13 @@
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "value",
+      "type": "string",
+      "api": true
+    }
+  ],
   "events": [
     {
       "name": "oas-open-change",

@@ -697,3 +697,43 @@ describe('OASToggleGroup RTL 键盘镜像', () => {
     expect(el.getAttribute('value')).toBe('month')
   })
 })
+
+describe('OASToggleGroup value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 单选读字符串 / 多选读数组', () => {
+    const single = mount({ value: 'week' })
+    expect(single.value).toBe('week')
+    const multi = mount({ multiple: '', value: '["day","month"]' })
+    expect(multi.value).toEqual(['day', 'month'])
+  })
+
+  it('set value 写入属性并同步按钮选中态，不派发事件', () => {
+    const el = mount({ value: 'day' })
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = 'month'
+    expect(el.getAttribute('value')).toBe('month')
+    expect(el.value).toBe('month')
+    expect(buttons(el)[2]!.getAttribute('aria-checked')).toBe('true')
+    expect(fired).toBe(0)
+
+    const multi = mount({ multiple: '', value: '["day"]' })
+    multi.value = ['week', 'month']
+    expect(JSON.parse(multi.getAttribute('value')!)).toEqual(['week', 'month'])
+    expect(multi.value).toEqual(['week', 'month'])
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = 'day'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

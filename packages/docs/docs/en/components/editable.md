@@ -234,6 +234,12 @@ onMounted(() => {
 | `trigger` | Trigger: `text` (default, click text) / `icon` (pencil button, prevents misclicks) / `dblclick` (double-click to edit; single click doesn't trigger; Enter/Space while focused enters edit as keyboard fallback) | `string` | — |
 | `value` | Current value (controlled) | `string` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the input text while editing, otherwise the `value` attribute | `string` | — |
+
 #### Events
 
 | Event | Description |

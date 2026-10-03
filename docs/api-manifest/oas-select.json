@@ -191,6 +191,11 @@
       "name": "open",
       "type": "boolean",
       "default": "false"
+    },
+    {
+      "name": "value",
+      "type": "string | string[]",
+      "api": true
     }
   ],
   "events": [

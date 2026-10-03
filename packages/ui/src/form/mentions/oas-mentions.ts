@@ -286,7 +286,7 @@ export class OASMentions extends OASFormElement {
   }
 
   /**
-   * 当前值（公开读通道，对齐原生 `textarea.value`）：内部 textarea 在场读其当前文本
+   * @apiProperty 当前值（公开读通道，对齐原生 `textarea.value`）：内部 textarea 在场读其当前文本
    * （含 @提及标记的完整草稿），否则回落 `value` 属性，与 getFormValue()/FormData 口径一致。
    */
   get value(): string {

@@ -349,8 +349,14 @@ onMounted(() => {
 | `target-sort` | Target-side ordering: `original` (default, data-source order) / `push` (append) / `unshift` (prepend). Note the value-array ordering semantics: with original, a pre-set out-of-order value is normalized to data order | `string` | `original` |
 | `target-title` | Right panel title | — | — |
 | `titles` | Panel titles (JSON array) or `source-title`/`target-title` | `string` | — |
-| `value` | Selected key array (JSON attribute) | `string` | `[]` |
+| `value` | Selected key array (JSON attribute) | `string[] \| string` | `[]` |
 | `virtual` | Windowed rendering for large data (virtual scroll, default row height 36px) | `boolean` | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: array of target-side keys | `string[] \| string` | — |
 
 #### Events
 

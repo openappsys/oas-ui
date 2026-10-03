@@ -491,7 +491,7 @@ export class OASInputNumber extends OASFormElement {
   }
 
   /**
-   * 当前值（公开读通道）：等价既有 getFormValue() 语义——内部 input 在场读实时解析值
+   * @apiProperty 当前值（公开读通道）：等价既有 getFormValue() 语义——内部 input 在场读实时解析值
    * （显示文本解析为数字串；空值/非法键入为空串），否则读 `value` 属性快照。
    */
   get value(): string {

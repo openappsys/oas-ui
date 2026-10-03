@@ -331,6 +331,12 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `variant` | Visual variant outlined/filled/borderless (aligned with input) | `string` | — |
 | `wheel` | Wheel stepping while focused (up increments, down decrements; off by default to prevent accidental changes) | `boolean` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the live-parsed numeric string (empty / invalid input yields an empty string) | `string` | — |
+
 #### Events
 
 | Event | Description |

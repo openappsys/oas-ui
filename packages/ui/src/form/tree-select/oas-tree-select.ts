@@ -791,6 +791,31 @@ export class OASTreeSelect extends OASFormElement {
   }
 
   /**
+   * 当前值（公开读通道）：等价既有 getFormValue() 语义的当前值——单选为选中值字符串
+   * （无选中 → 空串），多选为选中值字符串数组；label-in-value 对象形态提升为纯值，
+   * 与 FormData 提交口径一致（label 展示通道不受影响）。
+   */
+  get value(): string | string[] {
+    const values = this.currentValues()
+    return this.hasAttr('multiple') ? values : (values[0] ?? '')
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：走组件既有 serializeValues 序列化（label-in-value
+   * 保持 { value, label } 契约形态）写受控 `value` 属性，空值移除属性（与内部清空路径一致）；
+   * update() 强制应用（同值 `setAttribute` 不触发 attributeChangedCallback，trigger 回显/
+   * chips/面板勾选全量重刷）。单选传数组取首项、多选传单值包装为单项数组（不强猜语义）。
+   * 不派发任何事件、不动 valueDirty（受控写入跟随刷新 reset 基线，用户交互置脏后基线
+   * 冻结的既有语义不变）。
+   */
+  set value(v: string | string[] | null) {
+    const values = Array.isArray(v) ? v.map((x) => String(x)) : v == null || v === '' ? [] : [String(v)]
+    if (values.length === 0) this.removeAttribute('value')
+    else this.setAttribute('value', this.serializeValues(values))
+    this.update()
+  }
+
+  /**
    * 表单值快照（form-associated）：
    * - 单选：选中节点值字符串（无选中 → null，FormData 不含此项）
    * - 多选：原生「同名多条」语义——含多条同名 entry 的 FormData（key 取 name 属性；无选中 → null）

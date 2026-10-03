@@ -2131,3 +2131,38 @@ describe('OASSelect hide-selected（能力缺口 D20）', () => {
     expect(optionLabels(el)).toEqual(['香蕉'])
   })
 })
+
+describe('OASSelect value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 单选读选中值字符串，交互后更新', () => {
+    const el = mount({ value: 'apple' })
+    expect(el.value).toBe('apple')
+    open(el)
+    el.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')[1]!.click()
+    expect(el.value).toBe('banana')
+  })
+
+  it('get value 多选读数组；set value 写入 JSON 并同步选中态，不派发事件', () => {
+    let fired = 0
+    const el = mount({ multiple: '' })
+    el.addEventListener('oas-change', () => fired++)
+    el.value = ['apple', 'orange']
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['apple', 'orange'])
+    expect(el.value).toEqual(['apple', 'orange'])
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = 'banana'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

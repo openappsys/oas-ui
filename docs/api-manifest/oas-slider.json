@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -160,6 +159,11 @@
     }
   ],
   "props": [
+    {
+      "name": "value",
+      "type": "number | number[]",
+      "api": true
+    },
     {
       "name": "marks",
       "type": "string | Record<string, string | number> | number[]"

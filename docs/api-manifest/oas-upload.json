@@ -129,6 +129,11 @@
       "default": "[]"
     },
     {
+      "name": "value",
+      "type": "File[] | null",
+      "default": "[]"
+    },
+    {
       "name": "customRequest",
       "type": "UploadCustomRequest | null"
     },

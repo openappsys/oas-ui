@@ -289,9 +289,15 @@ onMounted(() => {
 | `size` | Size preset `small` / `medium` (default 20px) / `large` (28px) | `string` | — |
 | `texts` | Per-value helper texts (comma-separated, pair with show-text) | — | — |
 | `tooltips` | Per-star tooltip texts (comma-separated, shown on star hover; light oas-tooltip integration) | — | — |
-| `value` | Current score (controlled) | `string` | `0` |
+| `value` | Current score (controlled) | `number` | `0` |
 | `void-color` | Unselected color | — | — |
 | `void-icon` | Unselected icon name (e.g. heart for a ♥/♡ dual state) | — | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the rating score (number) | `number` | — |
 
 #### Events
 

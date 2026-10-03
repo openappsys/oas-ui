@@ -622,6 +622,39 @@ export class OASCascader extends OASElement {
   private hoverTimer: ReturnType<typeof setTimeout> | null = null
   private hoverPendingDepth: number | null = null
 
+  /**
+   * @apiProperty 当前值：单选为选中路径 `string[]`（无选中为空数组）；`multiple` 为选中
+   * 路径集合 `string[][]`（与本组件 oas-change detail 形态一致）。
+   */
+  get value(): string[] | string[][] {
+    return this.isMultiple() ? this.currentPaths() : this.currentPath()
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性（JSON）并强制 update 重渲触发器
+   * 展示（chips/文本），不派发任何事件。单选接受路径数组 `string[]`；多选接受路径集合
+   * `string[][]`（也容忍扁平 `string[]` 视为单条路径）。同值 `setAttribute` 不触发
+   * attributeChangedCallback，显式 update 保证生效。
+   */
+  set value(v: string[] | string[][] | null) {
+    const nested = Array.isArray(v) && v.length > 0 && Array.isArray((v as unknown[])[0])
+    if (this.isMultiple()) {
+      let paths: string[][]
+      if (v == null) paths = []
+      else if (nested) paths = (v as string[][]).map((p) => p.map(String))
+      else if (v.length) paths = [(v as string[]).map(String)]
+      else paths = []
+      this.setAttribute('value', JSON.stringify(paths))
+    } else {
+      let path: string[]
+      if (v == null) path = []
+      else if (nested) path = ((v as string[][])[0] ?? []).map(String)
+      else path = (v as string[]).map(String)
+      this.setAttribute('value', JSON.stringify(path))
+    }
+    this.update()
+  }
+
   constructor() {
     super()
     // 宿主预设 open 属性时首帧即为展开态：不产生 open-change 事件（与受控组件惯例一致）

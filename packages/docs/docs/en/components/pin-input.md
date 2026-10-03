@@ -316,6 +316,12 @@ onMounted(() => {
 | `value` | Current value (controlled) | `string` | — |
 | `variant` | Variant: `outlined` (default) / `filled` / `underlined` | `string` | `outlined` |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: concatenated string of all cell characters | `string` | — |
+
 #### Events
 
 | Event | Description |

@@ -523,6 +523,30 @@ export class OASSlider extends OASElement {
     ]
   }
 
+  /**
+   * @apiProperty 当前值：单把手为数值，多把手（range / `value` 数组）为数值数组。
+   * 已渲染读各把手实时值（拖动中即时反映）；未渲染回落解析 `value` 属性。
+   */
+  get value(): number | number[] {
+    if (this.thumbs.length) {
+      return this.isMulti() ? this.currentValues() : Number(this.thumbs[0]?.value ?? 0)
+    }
+    const arr = parseValueArray(this.getAttr('value', ''))
+    if (arr) return arr.slice()
+    return Number(this.getAttr('value', '0')) || 0
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性（数组走 JSON）并强制 update
+   * 重建/回显把手与数值框，不派发任何事件。同值 `setAttribute` 不触发
+   * attributeChangedCallback，显式 update 保证生效。
+   */
+  set value(v: number | number[]) {
+    const attr = Array.isArray(v) ? JSON.stringify(v.map((n) => Number(n))) : String(Number(v) || 0)
+    this.setAttribute('value', attr)
+    this.update()
+  }
+
   /** 动态把手（原生 range input）：索引即把手序号，N 由 value 数组长度/range 决定 */
   private thumbs: HTMLInputElement[] = []
   /** 每个把手的自定义视觉层（.custom-thumb，含值气泡） */

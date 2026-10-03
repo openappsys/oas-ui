@@ -45,6 +45,30 @@ export class OASSwatchGroup extends OASElement {
 
   private groupEl: HTMLElement | null = null
 
+  /**
+   * @apiProperty 当前值：单选为选中子件 color 字符串（无选中回落空串）；`multiple` 时为
+   * 选中 color 数组（等价既有 selectedValues，与 oas-change detail 形态一致）。
+   */
+  get value(): string | string[] {
+    return this.hasAttr('multiple') ? this.selectedValues : (this.selectedValues[0] ?? '')
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性（多选逗号分隔）并强制 update
+   * 同步各子件选中态/roving 焦点，不派发任何事件。同值 `setAttribute` 不触发
+   * attributeChangedCallback，显式 update 保证生效。
+   */
+  set value(v: string | string[]) {
+    if (this.hasAttr('multiple')) {
+      const arr = Array.isArray(v) ? v.map((x) => String(x)) : v == null || v === '' ? [] : [String(v)]
+      this.setAttribute('value', arr.join(','))
+    } else {
+      const s = Array.isArray(v) ? (v[0] ?? '') : v == null ? '' : String(v)
+      this.setAttribute('value', s)
+    }
+    this.update()
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板 */
   private template(): string {
     return `

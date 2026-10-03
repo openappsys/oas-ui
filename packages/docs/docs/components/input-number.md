@@ -332,6 +332,12 @@ onMounted(() => {
 | `variant` | 形态 outlined/filled/borderless（对齐 input） | `string` | — |
 | `wheel` | 聚焦时滚轮步进（上增下减；默认关防误触） | `boolean` | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：实时解析后的数字串（空值 / 非法键入为空串） | `string` | — |
+
 #### 事件
 
 | 事件 | 说明 |

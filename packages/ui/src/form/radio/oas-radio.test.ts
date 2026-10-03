@@ -818,3 +818,50 @@ describe('oas-radio-group × config-provider size 注入（injectValue 改动回
     expect(group.shadowRoot!.querySelector('oas-radio')?.getAttribute('data-size')).toBe('large')
   })
 })
+
+describe('OASRadio value property（公开读/写通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 返回提交值语义（对齐原生 radio.value）：缺省 on，与选中态分立', () => {
+    const el = mountRadio({ value: 'a' })
+    expect(el.value).toBe('a')
+    expect(native(el).checked).toBe(false)
+    native(el).click()
+    expect(el.hasAttribute('checked')).toBe(true)
+    expect(el.value).toBe('a') // value 是提交值本身，选中与否走 checked 通道
+    el.setAttribute('value', 'b')
+    expect(el.value).toBe('b')
+    const bare = mountRadio()
+    expect(bare.value).toBe('on')
+  })
+
+  it('set value 写受控属性并同步 FormData 提交口径，不派发事件', () => {
+    const el = mountRadio({ name: 'g', value: 'a', checked: '' })
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = 'b'
+    expect(el.getAttribute('value')).toBe('b')
+    expect(el.value).toBe('b')
+    expect(fake.setFormValue).toHaveBeenLastCalledWith('b') // 选中态下提交值随写刷新
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（访问器在原型上、非实例 expando）", () => {
+    const el = mountRadio()
+    expect('value' in el).toBe(true)
+    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')
+    expect(desc).toBeDefined()
+    expect(typeof desc!.get).toBe('function')
+    expect(typeof desc!.set).toBe('function')
+    el.value = 'b'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

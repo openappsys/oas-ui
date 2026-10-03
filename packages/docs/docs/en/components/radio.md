@@ -278,6 +278,8 @@ onMounted(() => {
 
 Click submit without selecting: the browser shows the valueMissing validation bubble, the form is not submitted, and the page asks you to pick a plan first; select an option and submit again to see the submitted value.
 
+The current value is available through the public `value` property for read/write (mirroring the native `radio.value`): submission-value semantics — falls back to `'on'` when the `value` attribute is absent, independent of the checked state (whether it is submitted is decided by `checked`); `el.value = 'x'` writes the controlled `value` attribute and refreshes the FormData submission value. No events are dispatched.
+
 ## API
 
 ### oas-radio
@@ -295,8 +297,14 @@ Click submit without selecting: the browser shows the valueMissing validation bu
 | `required` | Required marker (per-element semantics: this item unchecked means valueMissing; group-level any-checked semantics are a known boundary) | `boolean` | — |
 | `size` | Size: `small` (14px) / `medium` (default 16px) / `large` (18px), dot and font scale together; a group-level value cascades to items while an explicit item value wins | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success` (tints the dot; error also sets host aria-invalid) | `string` | — |
-| `value` | Option identifier | `string` | — |
+| `value` | Option identifier | `string \| null` | — |
 | `variant` | Variant: `default` / `card` (whole block clickable, selected border tint, hover feedback) | `string` | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | The submitted value (attribute default `on`; separate from `checked`, matching native radio.value) | — | — |
 
 #### Events
 

@@ -10,7 +10,6 @@
     },
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -107,7 +106,13 @@
       "observed": false
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "value",
+      "type": "string",
+      "api": true
+    }
+  ],
   "events": [
     {
       "name": "oas-focus",

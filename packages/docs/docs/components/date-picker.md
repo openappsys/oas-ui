@@ -270,6 +270,8 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
 
+程序性读/写当前值走公开 `value` property：`el.value` 读取——等价 `getFormValue()` 语义的当前值（单值为 `value` 属性原串；`multiple`/范围模式为字符串数组，与 `oas-change` detail 同形）；`el.value = x` 写入——写受控 `value` 属性并即时回显 trigger（范围/多选传数组自动 JSON 序列化，空值移除属性），展开态面板选中态同步重锚，不派发事件。
+
 ## API
 
 ### oas-date-picker
@@ -301,7 +303,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `timezone` | 时区锚点：IANA 时区名（如 America/New_York）或 UTC；缺省/非法回落宿主本地。「今天」高亮、快捷预设与默认时刻推导按该时区墙钟解析，value 契约不变 | `string` | — |
 | `type` | 类型：`date` / `daterange` / `month` / `monthrange` / `year` / `yearrange` / `datetime` / `datetimerange` / `week` / `quarter` | `string` | `date` |
 | `unlink-panels` | 范围双月各自独立翻页（默认联动） | `boolean` | — |
-| `value` | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | `string` | — |
+| `value` | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | `string \| string[] \| null` | — |
 
 #### Property（仅 JS property，不反射 attribute）
 
@@ -309,6 +311,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | --- | --- | --- | --- |
 | `disabledDate` | 禁用日期谓词（property 函数通道，`(date) => boolean`） | `((d: Date) => boolean) \| null` | — |
 | `shortcuts` | 快捷预设（property 通道，`[{ label, value/getValue }]`） | `ShortcutItem[] \| null` | — |
+| `value` | 当前值：单值日期串；范围 / 多选为字符串数组 | — | — |
 
 #### 事件
 

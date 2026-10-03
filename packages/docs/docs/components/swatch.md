@@ -128,6 +128,12 @@ onMounted(() => {
 | `shape` | 形状：`square` / `rounded`（默认）/ `circle` | `string` | `rounded` |
 | `size` | 边长档位：`xs` / `small` / `medium`（默认）/ `large` / `xl` | `string` | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：色块颜色标识（即 `color` 属性） | `string` | — |
+
 #### 事件
 
 | 事件 | 说明 |
@@ -143,7 +149,13 @@ onMounted(() => {
 | `aria-label` | 组可访问名（缺省走 locale 兜底） | — | — |
 | `disabled` | 禁用整组（透传子件） | `boolean` | — |
 | `multiple` | 多选模式（checkbox 语义） | `boolean` | — |
-| `value` | 当前值：单选为子件 color 值；多选逗号分隔多个选中值 | `string` | — |
+| `value` | 当前值：单选为子件 color 值；多选逗号分隔多个选中值 | `string \| string[]` | — |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：单选取选中 color 字符串，`multiple` 时取 color 数组 | `string \| string[]` | — |
 
 #### 事件
 

@@ -97,6 +97,12 @@
       "name": "modelValue",
       "type": "string[]",
       "default": "[]"
+    },
+    {
+      "name": "value",
+      "type": "string[]",
+      "default": "[]",
+      "api": true
     }
   ],
   "events": [

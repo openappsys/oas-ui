@@ -139,7 +139,8 @@
   "props": [
     {
       "name": "value",
-      "type": "string"
+      "type": "string",
+      "api": true
     },
     {
       "name": "formatter",

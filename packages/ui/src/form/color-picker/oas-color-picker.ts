@@ -556,6 +556,24 @@ export class OASColorPicker extends OASElement {
     ]
   }
 
+  /**
+   * @apiProperty 当前值：单色为颜色字符串（受控 `value` 属性原样）；渐变模式为设计器
+   * 序列化字符串。与 oas-change detail / FormData 提交口径一致。
+   */
+  get value(): string {
+    return this.getAttr('value', '')
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性并强制 update 解析为新色、
+   * 重绘触发器色块与文本，不派发任何事件。同值 `setAttribute` 不触发
+   * attributeChangedCallback，显式 update 保证生效。
+   */
+  set value(v: string) {
+    this.setAttribute('value', v == null ? '' : String(v))
+    this.update()
+  }
+
   private triggerEl: HTMLButtonElement | null = null
   private panel: HTMLElement | null = null
   private presets: PresetEntry[] = DEFAULT_PRESETS

@@ -362,6 +362,22 @@ export class OASDynamicTags extends OASElement {
     this.syncInputState()
   }
 
+  /**
+   * @apiProperty 当前值（标签字符串数组）：等价 modelValue property（既有 property 通道的
+   * 公开别名），与 oas-change detail 形态一致。
+   */
+  get value(): string[] {
+    return this.tags.slice()
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：等价 `modelValue` setter——归一化标签、回写
+   * `model-value` 属性并重建标签，不派发任何事件。
+   */
+  set value(v: string[]) {
+    this.modelValue = v
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `

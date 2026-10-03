@@ -125,6 +125,12 @@ onMounted(() => {
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
 | `value` | 选中值（缺省选第一项，受控属性） | `string` | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：选中项值字符串 | `string` | — |
+
 #### 事件
 
 | 事件 | 说明 |

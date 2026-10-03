@@ -203,6 +203,24 @@ export class OASRate extends OASElement {
     if (this.hasRendered) this.runUpdateAndNotify()
   }
 
+  /**
+   * @apiProperty 当前值（评分分值）：等价既有 currentValue()——读 `value` 属性数值，
+   * 缺省/非法回落 0；hover 预览值不提交，不反映在这里。
+   */
+  get value(): number {
+    return this.currentValue()
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性并强制 update 重绘星形/文案，
+   * 不派发任何事件。同值 `setAttribute` 不触发 attributeChangedCallback，显式 update 保证生效。
+   */
+  set value(v: number) {
+    const next = Number(v)
+    this.setAttribute('value', String(Number.isFinite(next) ? next : 0))
+    this.update()
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `

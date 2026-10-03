@@ -1015,3 +1015,36 @@ describe('OASTransfer oas-scroll（列表滚动事件，PRD P2）', () => {
     expect(details.length, '同位置二次滚动只派一次').toBe(1)
   })
 })
+
+describe('OASTransfer value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 读目标侧 key 数组', () => {
+    const el = mount({ value: '["a"]' })
+    expect(el.value).toEqual(['a'])
+  })
+
+  it('set value 写入 JSON 并重渲两侧面板，不派发事件', () => {
+    const el = mount()
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = ['a', 'b']
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['a', 'b'])
+    expect(el.value).toEqual(['a', 'b'])
+    expect(rightOptions(el).length).toBe(2)
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = ['a']
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

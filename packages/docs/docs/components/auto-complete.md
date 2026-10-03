@@ -306,6 +306,12 @@ onMounted(() => {
 | `variant` | 形态变体：`outlined`（默认）/ `filled` / `borderless`，非法值静默回落 | `string` | — |
 | `virtual` | 虚拟滚动（复用 oas-virtual-list 仅渲染可视窗口；带 group 的选项自动回退全量渲染） | `boolean` | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：可见文本（选中建议后为该项 label）；`value` 属性为 `option.value` | `string` | — |
+
 #### 事件
 
 | 事件 | 说明 |

@@ -1022,3 +1022,77 @@ describe('onReconnect watchMobileSheetMode 重挂（同 date-picker 漏挂修复
     }
   })
 })
+
+describe('OASTimePicker value property（公开读/写通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    vi.useRealTimers()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    vi.useRealTimers()
+  })
+
+  it('get value 返回当前值（等价 getFormValue 语义）：单值初值 + 手输提交后新值；range 解析数组', () => {
+    const el = mount({ value: '09:05:30' })
+    expect(el.value).toBe('09:05:30')
+    type(el, '11:22:33')
+    blurInput(el)
+    expect(el.getAttribute('value')).toBe('11:22:33')
+    expect(el.value).toBe('11:22:33')
+
+    const range = mount({ 'is-range': '', value: '["09:00:00","11:00:00"]' })
+    expect(range.value).toEqual(['09:00:00', '11:00:00'])
+    const empty = mount()
+    expect(empty.value).toBe('')
+  })
+
+  it('set value 写受控属性并即时回显 trigger，零事件；空值移除属性', () => {
+    const el = mount({ value: '09:05:30' })
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.addEventListener('oas-clear', () => fired++)
+    el.value = '11:22:33'
+    expect(el.getAttribute('value')).toBe('11:22:33')
+    expect(trigger(el).value).toBe('11:22:33')
+    expect(el.value).toBe('11:22:33')
+    expect(fired).toBe(0)
+    el.value = ''
+    expect(el.hasAttribute('value')).toBe(false)
+    expect(trigger(el).value).toBe('')
+  })
+
+  it('set value：range 数组写 JSON 序列化属性；面板打开时未提交点选不被同值写入冲掉', () => {
+    const range = mount({ 'is-range': '', value: '["09:00:00","11:00:00"]' })
+    let fired = 0
+    range.addEventListener('oas-change', () => fired++)
+    range.value = ['08:00:00', '12:00:00']
+    expect(range.getAttribute('value')).toBe('["08:00:00","12:00:00"]')
+    expect(range.value).toEqual(['08:00:00', '12:00:00'])
+    expect(fired).toBe(0)
+
+    const el = mount({ value: '09:05:30' })
+    open(el)
+    optionsIn(columns(el)[1]!)
+      .find((o) => o.textContent === '45')!
+      .click() // 面板内点选未提交
+    expect(selectedOption(el, 1)!.textContent).toBe('45')
+    el.value = '09:05:30' // 同值写入：面板内未提交点选保留（组件 lastSyncedValue 守卫经 property 通道同样生效）
+    expect(selectedOption(el, 1)!.textContent).toBe('45')
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（访问器在原型上、非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')
+    expect(desc).toBeDefined()
+    expect(typeof desc!.get).toBe('function')
+    expect(typeof desc!.set).toBe('function')
+    el.value = '10:00:00'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

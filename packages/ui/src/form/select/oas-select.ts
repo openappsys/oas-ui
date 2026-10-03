@@ -600,6 +600,31 @@ export class OASSelect extends OASFormElement {
   private inputTimer: number | null = null
   /** aria-invalid 由 status=error 设置的所有权标志（清理时只移除自己设置的，不动宿主自设值） */
   private invalidByStatus = false
+  /**
+   * @apiProperty 当前值：单选为选中值字符串（无选中回落空串）；`multiple` 时为选中值数组
+   * （等价既有 currentValues()，与 oas-change detail 一致）。
+   */
+  get value(): string | string[] {
+    const values = this.currentValues()
+    return this.hasAttr('multiple') ? values : (values[0] ?? '')
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性（多选 JSON 数组）并强制 update
+   * 重建列表选中态与触发器回显，不派发任何事件。同值 `setAttribute` 不触发
+   * attributeChangedCallback，显式 update 保证生效。
+   */
+  set value(v: string | string[]) {
+    if (this.hasAttr('multiple')) {
+      const arr = Array.isArray(v) ? v.map((x) => String(x)) : v == null || v === '' ? [] : [String(v)]
+      this.setAttribute('value', JSON.stringify(arr))
+    } else {
+      const s = Array.isArray(v) ? (v[0] ?? '') : v == null ? '' : String(v)
+      this.setAttribute('value', s)
+    }
+    this.update()
+  }
+
   /** 初始选中基线（form.reset 恢复目标）：初始渲染/受控写入跟随 value 属性刷新（多选为数组快照） */
   private initialValue: string[] = []
   /** 用户交互脏标记（对齐原生 dirty 语义）：置位后基线冻结，reset 恢复基线并清脏 */

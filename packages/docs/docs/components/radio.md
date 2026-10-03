@@ -276,6 +276,8 @@ onMounted(() => {
 
 未选择就点击提交：浏览器弹出 valueMissing 校验气泡、表单不提交，页面提示「请先选择方案」；选中后再提交则显示提交值。
 
+当前值可经公开 `value` property 读/写（对齐原生 `radio.value`）：提交值语义——`value` 属性缺省回落 `'on'`，与选中态分立（是否提交由 `checked` 决定）；`el.value = 'x'` 写入受控 `value` 属性并同步 FormData 提交口径，不派发事件。
+
 ## API
 
 ### oas-radio
@@ -293,8 +295,14 @@ onMounted(() => {
 | `required` | 必填标记（单元素语义：本项未选中即 valueMissing；组级任一选中语义为已知边界） | `boolean` | — |
 | `size` | 尺寸档：`small`（14px）/ `medium`（默认 16px）/ `large`（18px），圆点与字号联动；组级设置统向下发子项，单项显式优先 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`（圆点着色；error 联动宿主 aria-invalid） | `string` | — |
-| `value` | 选项标识 | `string` | — |
+| `value` | 选项标识 | `string \| null` | — |
 | `variant` | 形态：`default`（默认）/ `card`（卡片：整块可点、选中描边着色、hover 反馈） | `string` | — |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 提交值（属性缺省回落 `on`；与 `checked` 分立，对齐原生 radio.value） | — | — |
 
 #### 事件
 

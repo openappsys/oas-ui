@@ -110,6 +110,12 @@ onMounted(() => {
 | `status` | 校验态：`error` / `warning` / `success`；error 联动 aria-invalid | `string` | — |
 | `value` | 值（随事件回传） | `string` | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：值标识字符串（按下态为独立 `pressed` 属性） | `string` | — |
+
 #### 事件
 
 | 事件 | 说明 |

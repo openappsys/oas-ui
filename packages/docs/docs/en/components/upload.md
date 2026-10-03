@@ -426,6 +426,8 @@ onMounted(async () => {
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
 
+The current form value is available through the public `value` property for read/write: `el.value` returns the submittable `File` array (`{name,url}` echo records carry no file body and are not included; an empty array when there are no files); `el.value = [file]` replaces the whole file list (same controlled channel as the `files` property, no events dispatched).
+
 ## API
 
 ### oas-upload
@@ -461,6 +463,7 @@ onMounted(async () => {
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
 | `files` | Controlled file list (property channel; assigning re-renders) | `Array<File \| UploadEchoFile>` | `[]` |
+| `value` | Current value: the submittable `File[]` (file-body entries only; echo records without a body are excluded) | — | — |
 
 #### Events
 

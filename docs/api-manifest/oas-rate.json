@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "0",
       "observed": true
     },
@@ -103,6 +102,11 @@
     {
       "name": "colors",
       "type": "string[] | null"
+    },
+    {
+      "name": "value",
+      "type": "number",
+      "api": true
     }
   ],
   "events": [

@@ -361,6 +361,25 @@ export class OASRadio extends OASFormElement {
     this.syncNamedSlots()
   }
 
+  /**
+   * 当前值（公开读通道，对齐原生 `radio.value`）：提交值语义——value 属性原串，缺省回落 'on'
+   * （选中时与 getFormValue() 的提交值一致）。选中态走 checked 属性/property 通道，与原生
+   * radio 的 value / checked 分立一致：未选中同样返回提交值（FormData 提交与否由 checked 决定）。
+   */
+  get value(): string {
+    return this.getAttr('value', '') || 'on'
+  }
+
+  /**
+   * 程序性写值（对齐原生 `radio.value = x`）：写受控 `value` 属性并 update() 强制同步
+   * （FormData / 校验链经 syncFormValue 按新提交值刷新；同值 `setAttribute` 不触发
+   * attributeChangedCallback，显式 update 保证赋值在任何情况下都生效）。不派发任何事件。
+   */
+  set value(v: string | null) {
+    this.setAttribute('value', v == null ? '' : String(v))
+    this.update()
+  }
+
   /** 表单值快照：选中才提交（value 属性为提交值，缺省 'on' 与原生一致）；未选中提交 null */
   protected override getFormValue(): string | null {
     if (!this.hasAttr('checked')) return null

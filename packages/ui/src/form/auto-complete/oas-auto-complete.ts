@@ -292,7 +292,7 @@ export class OASAutoComplete extends OASFormElement {
   }
 
   /**
-   * 当前值（公开读通道，对齐原生 `input.value`）：内部 input 在场读其当前文本
+   * @apiProperty 当前值（公开读通道，对齐原生 `input.value`）：内部 input 在场读其当前文本
    * （自由文本组件以可见文本为准），否则回落 `value` 属性，与 getFormValue()/FormData 口径一致。
    */
   get value(): string {

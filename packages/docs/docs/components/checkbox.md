@@ -351,7 +351,13 @@ onMounted(() => {
 | `readonly` | 只读（下发子项）：可聚焦不切换 | `boolean` | — |
 | `size` | 尺寸档（下发子项）：`small` / `medium`（默认）/ `large` | `string` | — |
 | `status` | 校验态（下发子项）：`error` / `warning` / `success` | `string` | — |
-| `value` | 组值（JSON 字符串数组，选中项的 value 集合） | `string` | `[]` |
+| `value` | 组值（JSON 字符串数组，选中项的 value 集合） | `string[] \| string` | `[]` |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：勾选值字符串数组（等价读 `value` 属性 JSON 解析） | `string[] \| string` | — |
 
 #### 事件
 

@@ -505,6 +505,12 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `value` | Value (controlled) | `string` | — |
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: parser/mask-aware submitted-value semantics (`el.value` reads; `el.value = x` writes the controlled `value` and syncs the inner control, no event) | `string` | — |
+
 #### Events
 
 | Event | Description |

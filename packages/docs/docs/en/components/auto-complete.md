@@ -306,6 +306,12 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `variant` | Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently | `string` | — |
 | `virtual` | Virtual scrolling (renders only the visible window via oas-virtual-list; grouped options fall back to full rendering) | `boolean` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the visible text (the selected suggestion label after choosing); the `value` attribute is the `option.value` | `string` | — |
+
 #### Events
 
 | Event | Description |

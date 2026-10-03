@@ -716,9 +716,15 @@ onMounted(() => {
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large`：控高/字号/标签高联动 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`；error 联动宿主 aria-invalid | `string` | — |
 | `tabindex` | 透传内部触发器控制 Tab 序（宿主属性委托后移除，防双停靠点） | — | — |
-| `value` | 当前值（多选为 JSON 数组） | — | — |
+| `value` | 当前值（多选为 JSON 数组） | `string \| string[]` | — |
 | `variant` | 形态变体：`outlined`（默认）/ `filled` / `borderless`，非法值静默回落；status 语义色优先 | `string` | — |
 | `virtual` | 大数据量虚拟滚动：只渲染可视窗口，滚动流畅（复用 oas-virtual-list）；带 `group` 的选项自动回退全量渲染 | `boolean` | — |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：单选取选中值字符串，`multiple` 时取选中值数组（等价读 `value` 属性） | `string \| string[]` | — |
 
 #### 事件
 

@@ -110,6 +110,12 @@ onMounted(() => {
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid | `string` | — |
 | `value` | Value (returned with events) | `string` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the value identifier string (the pressed state is the separate `pressed` attribute) | `string` | — |
+
 #### Events
 
 | Event | Description |

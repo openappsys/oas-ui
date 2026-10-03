@@ -81,6 +81,12 @@
       "name": "modelValue",
       "type": "DynamicInputRowValue[]",
       "default": "[]"
+    },
+    {
+      "name": "value",
+      "type": "DynamicInputRowValue[]",
+      "default": "[]",
+      "api": true
     }
   ],
   "events": [

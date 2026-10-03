@@ -316,6 +316,12 @@ onMounted(() => {
 | `value` | 当前值（受控） | `string` | — |
 | `variant` | 形态：`outlined`（默认）/ `filled` / `underlined` | `string` | `outlined` |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：各格字符拼接字符串 | `string` | — |
+
 #### 事件
 
 | 事件 | 说明 |

@@ -218,6 +218,12 @@ onMounted(() => {
 | `variant` | 形态：`outlined`（默认）/ `filled` / `borderless` | `string` | `outlined` |
 | `wrap` | 换行策略（透传原生：soft/hard） | — | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：内部 textarea 当前文本（`el.value` 读；`el.value = x` 写受控 `value` 并即时回写，不派发事件） | `string` | — |
+
 #### 事件
 
 | 事件 | 说明 |

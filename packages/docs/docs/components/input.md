@@ -505,6 +505,12 @@ onMounted(() => {
 | `value` | 值（受控） | `string` | — |
 | `variant` | 形态：`outlined`（默认描边）/ `filled`（填充底色）/ `borderless`（无框） | `string` | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：parser/mask 感知的提交值语义（`el.value` 读；`el.value = x` 写受控 `value` 并即时回写内部控件，不派发事件） | `string` | — |
+
 #### 事件
 
 | 事件 | 说明 |

@@ -125,6 +125,12 @@ onMounted(() => {
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
 | `value` | Selected value (defaults to the first option; controlled) | `string` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the selected option value string | `string` | — |
+
 #### Events
 
 | Event | Description |

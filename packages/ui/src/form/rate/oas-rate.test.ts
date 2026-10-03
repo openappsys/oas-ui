@@ -667,3 +667,38 @@ describe('OASRate RTL 逻辑方向化', () => {
     expect(el.getAttribute('value')).toBe('3.5')
   })
 })
+
+describe('OASRate value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 读取当前分值（初值 + 交互后为 number）', () => {
+    const el = mount({ value: '3' })
+    expect(el.value).toBe(3)
+    stars(el)[4]!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.value).toBe(5)
+  })
+
+  it('set value 写入 value 属性并重绘选中态，不派发事件', () => {
+    const el = mount({ value: '1' })
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = 4
+    expect(el.getAttribute('value')).toBe('4')
+    expect(el.value).toBe(4)
+    expect(stars(el).filter((s) => s.classList.contains('active')).length).toBe(4)
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = 2
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

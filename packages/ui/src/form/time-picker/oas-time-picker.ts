@@ -1314,6 +1314,42 @@ export class OASTimePicker extends OASFormElement {
     this.triggerEl?.focus()
   }
 
+  /**
+   * 当前值（公开读通道）：等价既有 getFormValue() 语义的当前值，形态与 oas-change detail 一致——
+   * 单值为 value 属性原串（空 → 空串）；is-range 为 JSON 数组解析后的字符串数组
+   * （非法 JSON → 空数组）。
+   */
+  get value(): string | string[] {
+    const raw = this.getAttr('value', '')
+    if (raw === '') return ''
+    if (!this.isRange()) return raw
+    try {
+      const arr: unknown = JSON.parse(raw)
+      if (Array.isArray(arr)) return arr.map(String)
+    } catch {
+      /* 非法 JSON → 空数组 */
+    }
+    return []
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：数组写 JSON 序列化受控 `value` 属性，空值移除属性
+   * （与内部清空路径一致）；update() 强制应用（同值 `setAttribute` 不触发
+   * attributeChangedCallback），展开态经组件既有 lastSyncedValue 守卫同步面板 sides——
+   * 同值写入不冲掉面板内未提交点选，异值写入即时反映。不派发任何事件、不动 valueDirty
+   * （受控写入跟随刷新 reset 基线，用户交互置脏后基线冻结的既有语义不变）。
+   */
+  set value(v: string | string[] | null) {
+    if (Array.isArray(v)) {
+      this.setAttribute('value', JSON.stringify(v.map(String)))
+    } else {
+      const next = v == null ? '' : String(v)
+      if (next === '') this.removeAttribute('value')
+      else this.setAttribute('value', next)
+    }
+    this.update()
+  }
+
   // ---- 原生表单集成（form-associated） ----
 
   /**

@@ -252,3 +252,39 @@ describe('OASToggleButton 校验态（status）', () => {
     expect(css).not.toMatch(/(^|[^-a-z])(left|right):\s/)
   })
 })
+
+describe('OASToggleButton value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 读值标识（点击切换只改 pressed，不改 value）', () => {
+    const el = mount({ value: 'bold' })
+    expect(el.value).toBe('bold')
+    btn(el).click()
+    expect(el.value).toBe('bold')
+    expect(el.hasAttribute('pressed')).toBe(true)
+  })
+
+  it('set value 写入 value 属性，不派发事件、不影响 pressed', () => {
+    const el = mount({ value: 'bold', pressed: '' })
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = 'italic'
+    expect(el.getAttribute('value')).toBe('italic')
+    expect(el.value).toBe('italic')
+    expect(el.hasAttribute('pressed')).toBe(true)
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = 'x'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

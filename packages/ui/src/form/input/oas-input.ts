@@ -816,7 +816,7 @@ export class OASInput extends OASFormElement {
   }
 
   /**
-   * 当前值（公开读通道，对齐原生 `input.value`）：parser/mask 感知的原始值语义，与
+   * @apiProperty 当前值（公开读通道，对齐原生 `input.value`）：parser/mask 感知的原始值语义，与
    * `oas-input` / `oas-change` / FormData 提交口径一致。宿主与 React/Vue 集成可直接
    * `el.value` 读，无需监听事件自存 state 或穿透 shadow 读内层 input。
    */

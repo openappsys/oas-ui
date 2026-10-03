@@ -127,6 +127,23 @@ export class OASSwatch extends OASElement {
 
   private btnEl: HTMLButtonElement | null = null
 
+  /**
+   * @apiProperty 当前值（色块代表的颜色标识）：即 `color` 属性字符串，与 oas-swatch-group
+   * 的 value 语义一致（组内选中值取子件 color 值）；选中态是独立的 `selected` 受控属性。
+   */
+  get value(): string {
+    return this.getAttr('color', '')
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `color` 属性并强制 update 重绘填充色，
+   * 不派发任何事件。同值 `setAttribute` 不触发 attributeChangedCallback，显式 update 保证生效。
+   */
+  set value(v: string) {
+    this.setAttribute('color', v == null ? '' : String(v))
+    this.update()
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板 */
   private template(): string {
     return `

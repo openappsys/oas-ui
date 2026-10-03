@@ -193,7 +193,7 @@ export class OASTextarea extends OASFormElement {
   }
 
   /**
-   * 当前值（公开读通道，对齐原生 `textarea.value`）：内部 textarea 在场读其当前文本，
+   * @apiProperty 当前值（公开读通道，对齐原生 `textarea.value`）：内部 textarea 在场读其当前文本，
    * 否则回落 `value` 属性（render 前快照），与 getFormValue()/FormData 提交口径一致。
    */
   get value(): string {

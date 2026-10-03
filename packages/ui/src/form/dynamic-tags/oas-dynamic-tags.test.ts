@@ -825,3 +825,36 @@ describe('OASDynamicTags RTL 逻辑方向化', () => {
     expect(el.modelValue).toEqual(['b', 'a', 'c'])
   })
 })
+
+describe('OASDynamicTags value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 读标签数组', () => {
+    const el = mount({ 'model-value': '["a","b"]' })
+    expect(el.value).toEqual(['a', 'b'])
+  })
+
+  it('set value 回写 model-value 并重建标签，不派发事件', () => {
+    const el = mount()
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = ['x', 'y']
+    expect(JSON.parse(el.getAttribute('model-value')!)).toEqual(['x', 'y'])
+    expect(el.value).toEqual(['x', 'y'])
+    expect(tagEls(el).length).toBe(2)
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = ['a']
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

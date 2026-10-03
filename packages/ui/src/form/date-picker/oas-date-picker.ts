@@ -2574,6 +2574,50 @@ export class OASDatePicker extends OASFormElement {
     }
   }
 
+  /**
+   * 当前值（公开读通道）：等价既有 getFormValue() 语义的当前值，形态与 oas-change detail 一致——
+   * 单值为 value 属性原串（空 / 解析不出 → 空串，与 FormData「不含此项」对齐）；
+   * multiple 为选中日期 ISO 数组（selectedAnchorArray 语义，含单值形态兜底）；
+   * range 为 JSON 数组解析后的字符串数组（非法 JSON → 空数组）。
+   */
+  get value(): string | string[] {
+    const raw = this.getAttr('value', '')
+    if (raw === '') return ''
+    if (this.isMultiple()) {
+      return this.selectedAnchorArray().map((d) => toISODate(d))
+    }
+    if (this.isRangeType()) {
+      try {
+        const arr: unknown = JSON.parse(raw)
+        if (Array.isArray(arr)) return arr.map(String)
+      } catch {
+        /* 非法 JSON → 空数组 */
+      }
+      return []
+    }
+    return this.parseValueAnchor(raw) ? raw : ''
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：数组写 JSON 序列化受控 `value` 属性，空值移除属性
+   * （与内部清空路径一致，保持「空值 = 属性缺席」的 reset 基线形态）；update() 强制应用
+   * （同值 `setAttribute` 不触发 attributeChangedCallback），展开态再 bootPanel 重锚面板内部
+   * range/多选高亮与视图（update 只按旧内部状态重渲染，不够）。不派发任何事件、不动
+   * valueDirty（受控写入跟随刷新 reset 基线，用户交互置脏后基线冻结的既有语义不变）。
+   */
+  set value(v: string | string[] | null) {
+    if (Array.isArray(v)) {
+      this.setAttribute('value', JSON.stringify(v.map(String)))
+    } else {
+      const next = v == null ? '' : String(v)
+      if (next === '') this.removeAttribute('value')
+      else this.setAttribute('value', next)
+    }
+    this.update()
+    // 展开态重锚（resetFormValue 同款路径）：面板内部 range/多选/视图按新值重建
+    if (this.openState) this.bootPanel(false)
+  }
+
   // ---- 原生表单集成（form-associated） ----
 
   /**

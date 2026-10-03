@@ -1658,3 +1658,79 @@ describe('onReconnect watchMobileSheetMode 重挂（重连后移动断点监听�
     }
   })
 })
+
+describe('OASDatePicker value property（公开读/写通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('get value 返回当前值（等价 getFormValue 语义）：单值初值 + 面板点选后新值；multiple 解析数组', () => {
+    const el = mount({ value: '2026-08-09' })
+    expect(el.value).toBe('2026-08-09')
+    open(el)
+    day(el, '2026-08-15').click()
+    expect(el.getAttribute('value')).toBe('2026-08-15')
+    expect(el.value).toBe('2026-08-15')
+
+    const multi = mount({ multiple: '', value: '2026-08-09' })
+    expect(multi.value).toEqual(['2026-08-09'])
+    open(multi)
+    day(multi, '2026-08-20').click()
+    expect(multi.value).toEqual(['2026-08-09', '2026-08-20'])
+
+    const empty = mount()
+    expect(empty.value).toBe('')
+  })
+
+  it('set value 写受控属性并即时回显 trigger，零事件；空值移除属性', () => {
+    const el = mount({ value: '2026-08-09' })
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.addEventListener('oas-clear', () => fired++)
+    el.value = '2026-09-12'
+    expect(el.getAttribute('value')).toBe('2026-09-12')
+    expect(input(el).value).toBe('2026-09-12')
+    expect(el.value).toBe('2026-09-12')
+    expect(fired).toBe(0)
+    el.value = ''
+    expect(el.hasAttribute('value')).toBe(false)
+    expect(input(el).value).toBe('')
+    expect(el.value).toBe('')
+  })
+
+  it('set value 数组形态（range）写 JSON 序列化属性；同值强制写入重锚展开态面板选中', () => {
+    const range = mount({ type: 'daterange', value: '["2026-08-05","2026-08-15"]' })
+    let fired = 0
+    range.addEventListener('oas-change', () => fired++)
+    range.value = ['2026-08-10', '2026-08-20']
+    expect(range.getAttribute('value')).toBe('["2026-08-10","2026-08-20"]')
+    expect(range.value).toEqual(['2026-08-10', '2026-08-20'])
+    expect(input(range).value).toContain('2026-08-10')
+    expect(fired).toBe(0)
+    // 展开态：内部半选态被同值 property 写入强制重锚（同值 setAttribute 不触发回调，update/bootPanel 兜底）
+    open(range)
+    day(range, '2026-09-01').click() // 重选起点（半选未提交）
+    expect(day(range, '2026-08-10').classList.contains('range-start')).toBe(false)
+    range.value = ['2026-08-10', '2026-08-20']
+    expect(day(range, '2026-08-10').classList.contains('range-start')).toBe(true)
+    expect(day(range, '2026-08-20').classList.contains('range-end')).toBe(true)
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（访问器在原型上、非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')
+    expect(desc).toBeDefined()
+    expect(typeof desc!.get).toBe('function')
+    expect(typeof desc!.set).toBe('function')
+    el.value = '2026-08-09'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

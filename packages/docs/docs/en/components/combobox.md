@@ -267,6 +267,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
 | `filter` | Custom filter function (property channel, `(input, option) => boolean`) | `((option: Option, query: string) => boolean) \| null` | — |
+| `value` | Current value: the selected value (falls back to the typed draft when nothing is selected) | `string` | — |
 
 #### Events
 

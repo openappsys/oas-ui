@@ -314,6 +314,12 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | `outlined` |
 | `whole` | Whole delete: when cursor is right after a mention, Backspace removes the whole prefix + label and fires oas-whole-remove | `boolean` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the full text including @mention tokens | `string` | — |
+
 #### Events
 
 | Event | Description |

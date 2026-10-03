@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -110,6 +109,10 @@
       "name": "presets",
       "type": "PresetItem[] | null",
       "api": true
+    },
+    {
+      "name": "value",
+      "type": "string | string[] | null"
     }
   ],
   "events": [

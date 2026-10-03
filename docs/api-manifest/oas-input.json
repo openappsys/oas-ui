@@ -218,7 +218,8 @@
     },
     {
       "name": "value",
-      "type": "string"
+      "type": "string",
+      "api": true
     }
   ],
   "events": [

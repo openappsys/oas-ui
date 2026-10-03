@@ -158,6 +158,8 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
 
+程序性读/写当前值走公开 `value` property：`el.value` 读取——单值为 `value` 属性原串，`is-range` 模式为起止时间字符串数组（与 `oas-change` detail 同形）；`el.value = x` 写入——写受控 `value` 属性并即时回显 trigger（范围模式传数组自动 JSON 序列化，空值移除属性），不派发事件。
+
 ## API
 
 ### oas-time-picker
@@ -183,7 +185,7 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 | `step` | 步进：JSON 三元组 `{"h":2,"m":5,"s":1}` 分别控制时/分/秒列；单数字等价于分钟步进 | `string` | — |
 | `timezone` | 时区锚点：IANA 时区名或 UTC；缺省/非法回落本地。「此刻」按钮与默认值推导按该时区墙钟取值，value 契约不变 | `string` | — |
 | `use12-hours` | 12 小时制：显示与列走 12 小时制（附上午/下午列，文案随 locale）；value 恒为 24 小时制 | `boolean` | — |
-| `value` | 当前值（`HH:mm:ss`；`is-range` 为 JSON 数组） | `string` | — |
+| `value` | 当前值（`HH:mm:ss`；`is-range` 为 JSON 数组） | `string \| string[] \| null` | — |
 
 #### Property（仅 JS property，不反射 attribute）
 
@@ -191,6 +193,7 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 | --- | --- | --- | --- |
 | `disabledTime` | 禁用时间谓词（property 函数通道，`(parts) => { hours?, minutes?, seconds? }`） | `\| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } \| null) \| null` | — |
 | `presets` | 快捷时刻预设（property 通道，`[{ label, value }]`） | `PresetItem[] \| null` | — |
+| `value` | 当前值：单值时间串；`is-range` 为字符串数组 | — | — |
 
 #### 事件
 

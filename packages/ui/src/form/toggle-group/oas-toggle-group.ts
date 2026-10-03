@@ -286,6 +286,31 @@ export class OASToggleGroup extends OASElement {
     ]
   }
 
+  /**
+   * @apiProperty 当前值：单选取选中项字符串（无选中回落空串）；`multiple` 时为选中值数组
+   * （等价既有 selectedValues()，与 oas-change detail 形态一致）。
+   */
+  get value(): string | string[] {
+    const selected = this.selectedValues()
+    return this.hasAttr('multiple') ? selected : (selected[0] ?? '')
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性（多选 JSON 数组）并强制 update
+   * 同步各按钮选中态/限制态，不派发任何事件。同值 `setAttribute` 不触发
+   * attributeChangedCallback，显式 update 保证生效。
+   */
+  set value(v: string | string[]) {
+    if (this.hasAttr('multiple')) {
+      const arr = Array.isArray(v) ? v.map((x) => String(x)) : v == null || v === '' ? [] : [String(v)]
+      this.setAttribute('value', JSON.stringify(arr))
+    } else {
+      const s = Array.isArray(v) ? (v[0] ?? '') : v == null ? '' : String(v)
+      this.setAttribute('value', s)
+    }
+    this.update()
+  }
+
   private itemsList: ToggleItem[] = []
   private buttons: HTMLButtonElement[] = []
   private group: HTMLElement | null = null

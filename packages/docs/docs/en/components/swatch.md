@@ -123,6 +123,12 @@ onMounted(() => {
 | `shape` | Shape: `square` / `rounded` (default) / `circle` | `string` | `rounded` |
 | `size` | Side-length step: `xs` / `small` / `medium` (default) / `large` / `xl` | `string` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the swatch color identifier (i.e. the `color` attribute) | `string` | — |
+
 #### Events
 
 | Event | Description |
@@ -138,7 +144,13 @@ onMounted(() => {
 | `aria-label` | Group accessible name (locale fallback by default) | — | — |
 | `disabled` | Disable the whole group (propagated to children) | `boolean` | — |
 | `multiple` | Multiple-select mode (checkbox semantics) | `boolean` | — |
-| `value` | Current value: child swatch's color in single select; comma-separated list in multiple select | `string` | — |
+| `value` | Current value: child swatch's color in single select; comma-separated list in multiple select | `string \| string[]` | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the selected color string, or an array of colors when `multiple` | `string \| string[]` | — |
 
 #### Events
 

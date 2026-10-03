@@ -314,6 +314,12 @@ onMounted(() => {
 | `variant` | 形态：`outlined`（默认）/ `filled` / `borderless` | `string` | `outlined` |
 | `whole` | 整段删除：光标紧跟提及段按 Backspace 一次删除「prefix + 成员名」并派发 oas-whole-remove | `boolean` | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：含 @提及标记的完整文本 | `string` | — |
+
 #### 事件
 
 | 事件 | 说明 |

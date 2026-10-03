@@ -152,6 +152,12 @@ onMounted(() => {
 | `status` | Validation status: `error` / `warning` / `success` (passed to the row inputs) | `string` | — |
 | `value-placeholder` | Value placeholder in pair form | `string` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: array of row values (`string[]` for input preset, `{ key, value }[]` for pair preset) | `DynamicInputRowValue[]` | `[]` |
+
 #### Events
 
 | Event | Description |

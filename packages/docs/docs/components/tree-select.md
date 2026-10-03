@@ -471,6 +471,8 @@ onMounted(() => {
 
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
 
+程序性读/写当前值走公开 `value` property：`el.value` 读取——单选为选中值字符串（无选中为空串），多选为选中值字符串数组（`label-in-value` 形态提升为纯值，与 FormData 提交口径一致）；`el.value = x` 写入——写受控 `value` 属性并回显 label/chips（多选传数组自动 JSON 序列化，`label-in-value` 保持对象契约形态，空值移除属性），不派发事件。
+
 ## API
 
 ### oas-tree-select
@@ -512,8 +514,14 @@ onMounted(() => {
 | `status` | 校验态：`error` / `warning` / `success` | `string` | — |
 | `suffix-text` | 触发器后缀内容（slot="suffix" 同上） | `string` | — |
 | `tree-lines` | 树线缩进引导线 | `boolean` | — |
-| `value` | 选中值（多选为 JSON 数组） | `string` | — |
+| `value` | 选中值（多选为 JSON 数组） | `string \| string[] \| null` | — |
 | `virtual` | 开启虚拟滚动：大数据量下拉仅渲染可见窗口（复用 oas-virtual-list），键盘/ARIA 保持 | `boolean` | — |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：单选为值；多选为值数组 | — | — |
 
 #### 事件
 

@@ -708,3 +708,36 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     expect(calls, '重连后 scroll/resize 监听恢复').toBe(2)
   })
 })
+
+describe('OASColorPicker value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 读受控 value 属性', () => {
+    const el = mount({ value: '#ff0000' })
+    expect(el.value).toBe('#ff0000')
+  })
+
+  it('set value 写入属性并重绘触发器文本，不派发事件', () => {
+    const el = mount()
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = '#00ff00'
+    expect(el.getAttribute('value')).toBe('#00ff00')
+    expect(el.value).toBe('#00ff00')
+    expect(textEl(el).textContent).toContain('00ff00')
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = '#123456'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

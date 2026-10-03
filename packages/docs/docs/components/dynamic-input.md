@@ -152,6 +152,12 @@ onMounted(() => {
 | `status` | 校验态：`error` / `warning` / `success`（透传给行内输入框） | `string` | — |
 | `value-placeholder` | pair 形态值占位文本 | `string` | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：行值数组（input 预设 `string[]`，pair 预设 `{ key, value }[]`） | `DynamicInputRowValue[]` | `[]` |
+
 #### 事件
 
 | 事件 | 说明 |

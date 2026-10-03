@@ -156,6 +156,8 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
 
+Programmatic read/write of the current value goes through the public `value` property: `el.value` reads the raw `value` attribute in single mode, or an array of start/end time strings in `is-range` mode (same shape as the `oas-change` detail); `el.value = x` writes the controlled `value` attribute and immediately syncs the trigger (arrays for range mode are JSON-serialized automatically, empty values remove the attribute). No events are dispatched.
+
 ## API
 
 ### oas-time-picker
@@ -181,7 +183,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `step` | Stepping: a JSON triple `{"h":2,"m":5,"s":1}` per unit; a single number remains the minute step | `string` | — |
 | `timezone` | Timezone anchor: an IANA zone name or UTC; omitted/invalid falls back to local. The Now button and default-value derivation read this zone's wall clock; the value contract is unchanged | `string` | — |
 | `use12-hours` | 12-hour mode: display and columns switch to 12-hour (with an AM/PM column following the locale); the value stays 24-hour | `boolean` | — |
-| `value` | Current value (`HH:mm:ss`; a JSON array when `is-range`) | `string` | — |
+| `value` | Current value (`HH:mm:ss`; a JSON array when `is-range`) | `string \| string[] \| null` | — |
 
 #### Property (JS property only, not reflected as attribute)
 
@@ -189,6 +191,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | --- | --- | --- | --- |
 | `disabledTime` | Disabled-time predicate (property function channel, `(parts) => { hours?, minutes?, seconds? }`) | `\| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } \| null) \| null` | — |
 | `presets` | Quick time presets (property channel, `[{ label, value }]`) | `PresetItem[] \| null` | — |
+| `value` | Current value: a time string for single; a string array when `is-range` | — | — |
 
 #### Events
 

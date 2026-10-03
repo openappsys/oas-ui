@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "[]",
       "observed": true
     },
@@ -51,6 +50,11 @@
     }
   ],
   "props": [
+    {
+      "name": "value",
+      "type": "string[] | string",
+      "api": true
+    },
     {
       "name": "options",
       "type": "CheckboxOption[] | string"

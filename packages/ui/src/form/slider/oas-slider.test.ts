@@ -1449,3 +1449,45 @@ describe('OASSlider 多滑块泛化（D26）', () => {
     expect(css).toContain(":host([data-range]) input[data-role='range-min']")
   })
 })
+
+describe('OASSlider value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 单把手为数值（初值 + 交互后）', () => {
+    const el = mount({ value: '40' })
+    expect(el.value).toBe(40)
+    const r = range(el)
+    r.value = '70'
+    r.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.value).toBe(70)
+  })
+
+  it('get value 多把手为数值数组', () => {
+    const el = mount({ range: '', value: '[20, 80]' })
+    expect(el.value).toEqual([20, 80])
+  })
+
+  it('set value 写入属性并同步把手，不派发事件', () => {
+    const el = mount({ value: '10' })
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = 55
+    expect(el.getAttribute('value')).toBe('55')
+    expect(el.value).toBe(55)
+    expect(Number(range(el).value)).toBe(55)
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = 3
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

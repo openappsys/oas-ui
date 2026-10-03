@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -209,6 +208,10 @@
       "name": "options",
       "type": "TreeOption[] | string",
       "default": "[]"
+    },
+    {
+      "name": "value",
+      "type": "string | string[] | null"
     }
   ],
   "events": [

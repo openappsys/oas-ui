@@ -219,6 +219,12 @@ onMounted(() => {
 | `value` | Current color (hex) | `string` | — |
 | `value-on-clear` | Fallback value on clear: clicking clear writes this back instead of emptying `value` | `string` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the color string (read from the controlled `value` attribute) | `string` | — |
+
 #### Events
 
 | Event | Description |

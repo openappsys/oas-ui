@@ -201,6 +201,12 @@ onMounted(() => {
 | `sortable` | Tag sorting: drag + keyboard Alt+←/→ adjacent swap | `boolean` | — |
 | `status` | Validation status: `error` / `warning` / `success` | `string` | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: array of tag strings | `string[]` | `[]` |
+
 #### Events
 
 | Event | Description |

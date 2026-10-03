@@ -352,7 +352,13 @@ Move focus with the Tab key: the middle item is skipped; clicking it with a mous
 | `readonly` | Readonly (cascades to items): focusable, no toggling | `boolean` | — |
 | `size` | Size (cascades to items): `small` / `medium` (default) / `large` | `string` | — |
 | `status` | Validation status (cascades to items): `error` / `warning` / `success` | `string` | — |
-| `value` | Group value (JSON string array of checked item values) | `string` | `[]` |
+| `value` | Group value (JSON string array of checked item values) | `string[] \| string` | `[]` |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: array of checked value strings (equivalent to parsing the `value` attribute JSON) | `string[] \| string` | — |
 
 #### Events
 

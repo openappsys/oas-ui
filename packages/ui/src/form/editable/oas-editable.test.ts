@@ -686,3 +686,41 @@ describe('OASEditable RTL 逻辑方向化', () => {
     expect(css).not.toMatch(/(^|[^-a-z])(left|right):\s/)
   })
 })
+
+describe('OASEditable value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 非编辑态读属性，编辑中读内部输入框', () => {
+    const el = mount({ value: 'abc' })
+    expect(el.value).toBe('abc')
+    display(el).click()
+    expect(el.value).toBe('abc')
+    field(el).value = 'xyz'
+    expect(el.value).toBe('xyz')
+  })
+
+  it('set value 写入属性并回写编辑框，不派发事件', () => {
+    const el = mount({ value: 'abc' })
+    display(el).click()
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = 'next'
+    expect(el.getAttribute('value')).toBe('next')
+    expect(el.value).toBe('next')
+    expect(field(el).value).toBe('next')
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = 'z'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -146,6 +145,10 @@
       "name": "disabledDate",
       "type": "((d: Date) => boolean) | null",
       "api": true
+    },
+    {
+      "name": "value",
+      "type": "string | string[] | null"
     }
   ],
   "events": [

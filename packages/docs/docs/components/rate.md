@@ -289,9 +289,15 @@ onMounted(() => {
 | `size` | 尺寸档位 `small` / `medium`（默认 20px）/ `large`（28px） | `string` | — |
 | `texts` | 各分值辅助文案（逗号分隔，配 show-text） | — | — |
 | `tooltips` | 逐星 tooltip 文案（逗号分隔，hover 星时显示；oas-tooltip 浅集成） | — | — |
-| `value` | 当前分值（受控） | `string` | `0` |
+| `value` | 当前分值（受控） | `number` | `0` |
 | `void-color` | 未选中色 | — | — |
 | `void-icon` | 未选中图标名（如 heart 配 ♥/♡ 双态） | — | — |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：评分分值（number） | `number` | — |
 
 #### 事件
 

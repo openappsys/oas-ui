@@ -169,6 +169,22 @@ export class OASSegmented extends OASElement {
     return ['options', 'value', 'disabled', 'disabled-skip', 'size', 'block', 'direction', 'name', 'readonly']
   }
 
+  /**
+   * @apiProperty 当前值（单选）：`value` 属性；缺省回落首个选项（radio 组恒有选中项）。
+   */
+  get value(): string {
+    return this.currentValue()
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性并强制 update 同步选中态/指示器，
+   * 不派发任何事件。同值 `setAttribute` 不触发 attributeChangedCallback，显式 update 保证生效。
+   */
+  set value(v: string) {
+    this.setAttribute('value', v == null ? '' : String(v))
+    this.update()
+  }
+
   private optionsList: SegmentedOption[] = []
   /** 选项重建签名：options 原文 + option slot 模板在场状态（变化才重建，value 变化只增量同步） */
   private lastSignature = ''

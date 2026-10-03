@@ -985,3 +985,52 @@ describe('OASCheckbox tabindex 透传', () => {
     expect(native(el).hasAttribute('tabindex')).toBe(false)
   })
 })
+
+describe('OASCheckboxGroup value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountGroup(attrs: Record<string, string> = {}): OASCheckboxGroup {
+    const el = new OASCheckboxGroup()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = `
+      <oas-checkbox value="a">A</oas-checkbox>
+      <oas-checkbox value="b">B</oas-checkbox>
+      <oas-checkbox value="c">C</oas-checkbox>
+    `
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('get value 读勾选值数组（初值 + 交互后）', () => {
+    const el = mountGroup({ value: '["a"]' })
+    expect(el.value).toEqual(['a'])
+    const b = el.querySelector('oas-checkbox[value="b"]')!
+    b.shadowRoot!.querySelector<HTMLInputElement>('input')!.click()
+    expect(el.value).toEqual(['a', 'b'])
+  })
+
+  it('set value 写入 JSON 并同步子项勾选态，不派发事件', () => {
+    const el = mountGroup()
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = ['b', 'c']
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['b', 'c'])
+    expect(el.value).toEqual(['b', 'c'])
+    expect(el.querySelector('oas-checkbox[value="b"]')!.hasAttribute('checked')).toBe(true)
+    expect(el.querySelector('oas-checkbox[value="a"]')!.hasAttribute('checked')).toBe(false)
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mountGroup()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = ['a']
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

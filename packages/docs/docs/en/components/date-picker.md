@@ -266,6 +266,8 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
 
+Programmatic read/write of the current value goes through the public `value` property: `el.value` reads the current value with `getFormValue()` semantics (single mode: the raw `value` attribute; `multiple`/range modes: an array of strings, same shape as the `oas-change` detail); `el.value = x` writes the controlled `value` attribute and immediately syncs the trigger (arrays for range/multiple are JSON-serialized automatically, empty values remove the attribute), and the open panel's selection re-anchors accordingly. No events are dispatched.
+
 ## API
 
 ### oas-date-picker
@@ -297,7 +299,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `timezone` | Timezone anchor: an IANA zone name (e.g. America/New_York) or UTC; omitted/invalid falls back to the host local zone. Today highlight, shortcuts and default-time derivation read this zone's wall clock; the value contract is unchanged | `string` | — |
 | `type` | Type: `date` / `daterange` / `month` / `monthrange` / `year` / `yearrange` / `datetime` / `datetimerange` / `week` / `quarter` | `string` | `date` |
 | `unlink-panels` | Range months flip independently (linked by default) | `boolean` | — |
-| `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | `string` | — |
+| `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | `string \| string[] \| null` | — |
 
 #### Property (JS property only, not reflected as attribute)
 
@@ -305,6 +307,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | --- | --- | --- | --- |
 | `disabledDate` | Disabled-date predicate (property function channel, `(date) => boolean`) | `((d: Date) => boolean) \| null` | — |
 | `shortcuts` | Shortcut presets (property channel, `[{ label, value/getValue }]`) | `ShortcutItem[] \| null` | — |
+| `value` | Current value: a date string for single; a string array for range / multiple | — | — |
 
 #### Events
 

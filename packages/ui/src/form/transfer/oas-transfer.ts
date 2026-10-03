@@ -368,6 +368,35 @@ export class OASTransfer extends OASElement {
     ]
   }
 
+  /**
+   * @apiProperty 当前值（目标侧 key 数组）：等价既有 currentValue()——解析受控 `value`
+   * 属性的 JSON 字符串数组，与 oas-change detail 一致。
+   */
+  get value(): string[] {
+    return this.currentValue()
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性（JSON 字符串数组）并强制 update
+   * 重渲两侧面板，不派发任何事件。同值 `setAttribute` 不触发 attributeChangedCallback，
+   * 显式 update 保证生效。接受数组或 JSON 字符串（兼容宿主框架的 attribute 通道）。
+   */
+  set value(v: string[] | string) {
+    let arr: string[]
+    if (Array.isArray(v)) arr = v.map((x) => String(x))
+    else if (v == null || v === '') arr = []
+    else {
+      try {
+        const parsed: unknown = JSON.parse(v)
+        arr = Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []
+      } catch {
+        arr = []
+      }
+    }
+    this.setAttribute('value', JSON.stringify(arr))
+    this.update()
+  }
+
   private _data: TransferItem[] = []
   private leftSelected = new Set<string>()
   private rightSelected = new Set<string>()

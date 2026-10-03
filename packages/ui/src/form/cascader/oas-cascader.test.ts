@@ -1263,3 +1263,54 @@ describe('OASCascader 虚拟滚动（virtual）', () => {
     expect(vlistOf(el).getAttribute('height')).toBe('300')
   })
 })
+
+describe('OASCascader value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 单选读路径数组', () => {
+    const el = mount({ value: JSON.stringify(['zj', 'hz']) })
+    expect(el.value).toEqual(['zj', 'hz'])
+  })
+
+  it('get value 多选读路径集合', () => {
+    const el = mount({ multiple: '', value: JSON.stringify([['zj', 'hz'], ['js']]) })
+    expect(el.value).toEqual([['zj', 'hz'], ['js']])
+  })
+
+  it('set value 写入 JSON 并同步展示，不派发事件；多选接受路径集合', () => {
+    const single = mount()
+    let fired = 0
+    single.addEventListener('oas-change', () => fired++)
+    single.value = ['js', 'nj']
+    expect(JSON.parse(single.getAttribute('value')!)).toEqual(['js', 'nj'])
+    expect(single.value).toEqual(['js', 'nj'])
+    expect(fired).toBe(0)
+
+    const multi = mount({ multiple: '' })
+    multi.value = [
+      ['zj', 'hz'],
+      ['js', 'nj'],
+    ]
+    expect(JSON.parse(multi.getAttribute('value')!)).toEqual([
+      ['zj', 'hz'],
+      ['js', 'nj'],
+    ])
+    expect(multi.value).toEqual([
+      ['zj', 'hz'],
+      ['js', 'nj'],
+    ])
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = ['zj']
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

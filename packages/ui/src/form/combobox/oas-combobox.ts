@@ -299,7 +299,7 @@ export class OASCombobox extends OASFormElement {
   }
 
   /**
-   * 当前值（公开读通道）：等价既有 getFormValue() 语义——选中值（`value` 属性）优先，
+   * @apiProperty 当前值（公开读通道）：等价既有 getFormValue() 语义——选中值（`value` 属性）优先，
    * 无选中时键入草稿兜底（datalist 语义），双空回落空串。注意 label/值分离：
    * 输入框显示的是选中项 label，此处读的是受控值本身。
    */

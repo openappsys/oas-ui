@@ -167,6 +167,9 @@
       "footer": "建议面板底部内容（如「查看全部」链接）",
       "header": "建议面板头部内容（如「输入试试 xx」提示条）",
       "template[slot=\"option\"]": "自定义选项模板骨架，`[data-option-label]` 节点自动绑定选项文本"
+    },
+    "props": {
+      "value": "当前值：可见文本（选中建议后为该项 label）；`value` 属性为 `option.value`"
     }
   },
   "oas-avatar": {
@@ -582,6 +585,9 @@
     "slots": {
       "template[slot=\"option\"]": "选项行自定义渲染模板，`[data-option-label]` 节点绑定选项文本",
       "template[slot=\"suffix-icon\"]": "自定义触发器后缀图标（替换默认箭头；loading 时让位 spinner）"
+    },
+    "props": {
+      "value": "当前值：单选取选中路径数组，`multiple` 时取选中路径集合数组"
     }
   },
   "oas-chart": {
@@ -715,6 +721,9 @@
     },
     "slots": {
       "trigger": "自定义触发器（替代默认色块按钮）"
+    },
+    "props": {
+      "value": "当前值：颜色字符串（读受控 `value` 属性）"
     }
   },
   "oas-combobox": {
@@ -743,7 +752,8 @@
     },
     "slots": {},
     "props": {
-      "filter": "自定义过滤函数（property 通道，`(input, option) => boolean`）"
+      "filter": "自定义过滤函数（property 通道，`(input, option) => boolean`）",
+      "value": "当前值：选中值（无选中时键入草稿兜底）"
     }
   },
   "oas-compact": {
@@ -958,7 +968,8 @@
     },
     "props": {
       "shortcuts": "快捷预设（property 通道，`[{ label, value/getValue }]`）",
-      "disabledDate": "禁用日期谓词（property 函数通道，`(date) => boolean`）"
+      "disabledDate": "禁用日期谓词（property 函数通道，`(date) => boolean`）",
+      "value": "当前值：单值日期串；范围 / 多选为字符串数组"
     }
   },
   "oas-descriptions": {
@@ -1148,6 +1159,9 @@
     },
     "slots": {
       "template[slot=\"row\"]": "自定义行内容（`[data-row-value]`/`[data-row-key]` 绑定；删除/排序按钮保留组件侧）"
+    },
+    "props": {
+      "value": "当前值：行值数组（input 预设 `string[]`，pair 预设 `{ key, value }[]`）"
     }
   },
   "oas-dynamic-tags": {
@@ -1183,6 +1197,9 @@
       "template[slot=\"tag\"]": "自定义标签（`[data-tag-label]` 绑定；删除按钮组件侧）",
       "template[slot=\"prefix\"]": "前缀内容插槽",
       "template[slot=\"suffix\"]": "后缀内容插槽"
+    },
+    "props": {
+      "value": "当前值：标签字符串数组"
     }
   },
   "oas-editable": {
@@ -1209,6 +1226,9 @@
     },
     "slots": {
       "template[slot=\"display\"]": "展示态自定义（`[data-display-value]`/`[data-display-placeholder]` 绑定）"
+    },
+    "props": {
+      "value": "当前值：编辑中读输入框文本，否则读 `value` 属性"
     }
   },
   "oas-ellipsis": {
@@ -1570,6 +1590,9 @@
       "prepend": "前置 addon 区（可嵌 select/按钮等任意内容）",
       "append": "后置 addon 区（可嵌 select/按钮等任意内容）",
       "clear-icon": "自定义清除按钮图标（插槽有内容即替换内置）"
+    },
+    "props": {
+      "value": "当前值：parser/mask 感知的提交值语义（`el.value` 读；`el.value = x` 写受控 `value` 并即时回写内部控件，不派发事件）"
     }
   },
   "oas-input-number": {
@@ -1610,6 +1633,9 @@
     "slots": {
       "prefix": "前缀内容插槽（不参与数值解析）",
       "suffix": "后缀内容插槽（不参与数值解析）"
+    },
+    "props": {
+      "value": "当前值：实时解析后的数字串（空值 / 非法键入为空串）"
     }
   },
   "oas-kbd": {
@@ -1831,6 +1857,9 @@
       "footer": "建议面板底部内容",
       "template[slot=\"option\"]": "自定义选项模板（`[data-option-label]` 绑定）",
       "empty": "无匹配项时的空态内容（替代默认 noMatch 文案）"
+    },
+    "props": {
+      "value": "当前值：含 @提及标记的完整文本"
     }
   },
   "oas-menu": {
@@ -2252,7 +2281,10 @@
       "oas-focus": "焦点进入组件时派发（格间移动不派发），`detail: { index }`",
       "oas-blur": "焦点离开组件时派发，`detail: { index }`"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "value": "当前值：各格字符拼接字符串"
+    }
   },
   "oas-popconfirm": {
     "attrs": {
@@ -2430,6 +2462,9 @@
       "": "标签内容（可放富文本/链接）",
       "checked-icon": "自定义选中指示器（template[slot] 或直接元素；未选态回落默认空心圆轮廓）",
       "description": "辅助文本分发通道（优先于 description 属性）"
+    },
+    "props": {
+      "value": "提交值（属性缺省回落 `on`；与 `checked` 分立，对齐原生 radio.value）"
     }
   },
   "oas-rate": {
@@ -2462,6 +2497,9 @@
       "icon": "选中态自定义图标（替代默认星形）",
       "void-icon": "未选中态自定义图标（替代默认星形）",
       "icon-${i}": "按序号覆盖单个分值图标（宿主写 `<span slot=\"icon-1\">` …，i 为从 1 起的序号）；`icon` 为整体覆盖"
+    },
+    "props": {
+      "value": "当前值：评分分值（number）"
     }
   },
   "oas-result": {
@@ -2513,6 +2551,9 @@
     },
     "slots": {
       "template[slot=\"option\"]": "选项自定义模板（`<template slot=\"option\">`）"
+    },
+    "props": {
+      "value": "当前值：选中项值字符串"
     }
   },
   "oas-select": {
@@ -2573,6 +2614,9 @@
       "template[slot=\"suffix-icon\"]": "自定义触发器后缀图标（替换默认箭头）",
       "template[slot=\"prefix\"]": "触发器前缀内容模板",
       "template[slot=\"suffix\"]": "触发器后缀内容模板"
+    },
+    "props": {
+      "value": "当前值：单选取选中值字符串，`multiple` 时取选中值数组（等价读 `value` 属性）"
     }
   },
   "oas-sidebar": {
@@ -2701,6 +2745,9 @@
     },
     "slots": {
       "template[slot=\"custom-thumb\"]": "自定义滑块内容（图标/文字）：`template[slot=\"custom-thumb\"]`（静态模板，克隆到每个可见滑块，范围模式两个滑块都会克隆）或普通 `[slot=\"custom-thumb\"]` 元素"
+    },
+    "props": {
+      "value": "当前值：单把手为数值，多把手为数值数组"
     }
   },
   "oas-snackbar": {
@@ -3181,7 +3228,10 @@
       "oas-change": "原生 change 语义：失焦且值已变时派发，`detail: { value }`",
       "oas-clear": "点击清除按钮时派发（同时派发 oas-input）"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "value": "当前值：内部 textarea 当前文本（`el.value` 读；`el.value = x` 写受控 `value` 并即时回写，不派发事件）"
+    }
   },
   "oas-theme-editor": {
     "attrs": {
@@ -3225,7 +3275,8 @@
     "slots": {},
     "props": {
       "disabledTime": "禁用时间谓词（property 函数通道，`(parts) => { hours?, minutes?, seconds? }`）",
-      "presets": "快捷时刻预设（property 通道，`[{ label, value }]`）"
+      "presets": "快捷时刻预设（property 通道，`[{ label, value }]`）",
+      "value": "当前值：单值时间串；`is-range` 为字符串数组"
     }
   },
   "oas-timeline": {
@@ -3336,6 +3387,9 @@
     },
     "slots": {
       "": "按钮内容（文案 / 图标）"
+    },
+    "props": {
+      "value": "当前值：值标识字符串（按下态为独立 `pressed` 属性）"
     }
   },
   "oas-toggle-item": {
@@ -3370,7 +3424,10 @@
       "oas-change": "切换，`detail: { value: string | string[] }`",
       "oas-exceed-limit": "达 max-count 上限后的越界选择尝试，`detail: { value, max }`"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "value": "当前值：单选取选中值字符串，`multiple` 时取选中值数组"
+    }
   },
   "oas-tooltip": {
     "attrs": {
@@ -3566,6 +3623,9 @@
     "slots": {
       "template[slot=\"empty\"]": "空态与无匹配共用自定义内容",
       "template[slot=\"item\"]": "自定义行（`[data-item-label]` 绑定，静态+虚拟行一致）"
+    },
+    "props": {
+      "value": "当前值：目标侧 key 数组"
     }
   },
   "oas-tree": {
@@ -3677,6 +3737,9 @@
       "template[slot=\"empty\"]": "自定义空态内容",
       "template[slot=\"node\"]": "自定义节点模板（`[data-node-label]` 绑定标签）",
       "template[slot=\"suffix-icon\"]": "自定义触发器后缀图标（替换默认箭头）"
+    },
+    "props": {
+      "value": "当前值：单选为值；多选为值数组"
     }
   },
   "oas-upload": {
@@ -3724,7 +3787,8 @@
       "template[slot=\"trigger\"]": "自绘触发区模板（native slot 对 template 元素不生效，走克隆通道；zone 点击仍打开文件选择）"
     },
     "props": {
-      "files": "受控文件列表（property 通道，写回即同步渲染）"
+      "files": "受控文件列表（property 通道，写回即同步渲染）",
+      "value": "当前值：可提交的 `File[]`（仅文件体条目；回显记录不含文件体、不计入）"
     }
   },
   "oas-virtual-list": {
@@ -3877,6 +3941,9 @@
     "slots": {
       "": "声明式子项通道（`<oas-checkbox>` 子元素；options 显式时让位）",
       "label": "组标题（渲染进 legend）"
+    },
+    "props": {
+      "value": "当前值：勾选值字符串数组（等价读 `value` 属性 JSON 解析）"
     }
   },
   "oas-radio-group": {
@@ -3916,7 +3983,10 @@
       "oas-click": "点击，`detail: { color }`（组内由组拦截后派发组级 oas-change）"
     },
     "slots": {},
-    "cssVars": {}
+    "cssVars": {},
+    "props": {
+      "value": "当前值：色块颜色标识（即 `color` 属性）"
+    }
   },
   "oas-swatch-group": {
     "attrs": {
@@ -3931,7 +4001,10 @@
     "slots": {
       "": "色板子件（`<oas-swatch>`）"
     },
-    "cssVars": {}
+    "cssVars": {},
+    "props": {
+      "value": "当前值：单选取选中 color 字符串，`multiple` 时取 color 数组"
+    }
   },
   "oas-highlight": {
     "attrs": {

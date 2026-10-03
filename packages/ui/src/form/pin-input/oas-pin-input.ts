@@ -225,6 +225,23 @@ export class OASPinInput extends OASElement {
     ]
   }
 
+  /**
+   * @apiProperty 当前值（各格字符拼接）：已渲染读各格实时值，未渲染回落 `value` 属性快照。
+   */
+  get value(): string {
+    return this.cells.length ? this.getValue() : this.getAttr('value', '')
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性并强制 update 分发到各格
+   * （沿用既有「属性 → 各格」的过滤/截断路径），不派发任何事件。同值 `setAttribute`
+   * 不触发 attributeChangedCallback，显式 update 保证生效。
+   */
+  set value(v: string) {
+    this.setAttribute('value', v == null ? '' : String(v))
+    this.update()
+  }
+
   private container: HTMLElement | null = null
   private spinner: HTMLElement | null = null
   private cells: HTMLInputElement[] = []

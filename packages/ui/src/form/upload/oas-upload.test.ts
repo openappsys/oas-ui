@@ -1285,3 +1285,52 @@ describe('crop 纯函数', () => {
     expect(cropFileName('.png', 'image/png')).toBe('image.png')
   })
 })
+
+describe('OASUpload value property（公开读/写通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 返回 File 列表（等价 getFormValue 语义）：初值空数组、选择文件后有值；回显记录不计入', () => {
+    const el = mount()
+    expect(el.value).toEqual([])
+    pick(el, [makeFile('a.txt')])
+    expect(el.value.length).toBe(1)
+    expect(el.value[0]!.name).toBe('a.txt')
+    el.files = [{ name: 'e.png', url: 'https://example.com/e.png' }]
+    expect(el.value).toEqual([]) // {name,url} 回显记录无文件体，不进表单值
+  })
+
+  it('set value 整体替换文件列表（受控通道），零事件；null/空数组清空', () => {
+    const el = mount()
+    el.value = [makeFile('a.txt')]
+    expect(el.files.map((f) => (f instanceof File ? f.name : ''))).toEqual(['a.txt'])
+    expect(el.shadowRoot!.querySelectorAll('.item').length).toBe(1)
+    let fired = 0
+    for (const ev of ['oas-change', 'oas-remove', 'oas-upload', 'oas-error']) {
+      el.addEventListener(ev, () => fired++)
+    }
+    el.value = [makeFile('b.txt'), makeFile('c.txt')]
+    expect(el.value.map((f) => f.name)).toEqual(['b.txt', 'c.txt'])
+    expect(el.shadowRoot!.querySelectorAll('.item').length).toBe(2)
+    el.value = null
+    expect(el.files).toEqual([])
+    expect(el.shadowRoot!.querySelectorAll('.item').length).toBe(0)
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（访问器在原型上、非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')
+    expect(desc).toBeDefined()
+    expect(typeof desc!.get).toBe('function')
+    expect(typeof desc!.set).toBe('function')
+    el.value = [makeFile('a.txt')]
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

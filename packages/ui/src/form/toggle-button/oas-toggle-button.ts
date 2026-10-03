@@ -170,6 +170,24 @@ export class OASToggleButton extends OASElement {
   /** aria-invalid 由 status=error 联动写入的所有权标志：清理时只移除组件设置的，不动宿主自设 */
   private invalidByStatus = false
 
+  /**
+   * @apiProperty 当前值（值标识，随 oas-change 回传）：即 `value` 属性字符串；按下态是独立
+   * 的 `pressed` 受控属性，不是本 property 语义（与 checkbox 组内「value = 选项标识」一致）。
+   */
+  get value(): string {
+    return this.getAttr('value', '')
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性（值标识）并强制 update 同步内部
+   * 按钮状态，不派发任何事件。同值 `setAttribute` 不触发 attributeChangedCallback，显式
+   * update 保证生效。
+   */
+  set value(v: string) {
+    this.setAttribute('value', v == null ? '' : String(v))
+    this.update()
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `

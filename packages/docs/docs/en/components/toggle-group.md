@@ -373,8 +373,14 @@ onMounted(() => {
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
 | `spread` | Full-width equal split (aligned with button-group spread) | — | — |
 | `status` | Validation status: `error` / `warning` / `success` (unselected border + selected block tint) | `string` | — |
-| `value` | Current value: string for single; JSON array string for multiple | `string` | `[]` |
+| `value` | Current value: string for single; JSON array string for multiple | `string \| string[]` | `[]` |
 | `vertical` | Vertical arrangement (mirrors aria-orientation and axis keys) | `boolean` | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the selected value string, or an array of selected values when `multiple` | `string \| string[]` | — |
 
 #### Events
 

@@ -425,6 +425,8 @@ onMounted(async () => {
 
 `required` 驱动原生校验链（form-associated）：未填时 `checkValidity()` 为 false（`valueMissing`），原生表单提交被阻止；填写后自动恢复 `:valid`。
 
+当前表单值可经公开 `value` property 读/写：`el.value` 返回可提交的 `File` 数组（`{name,url}` 回显记录无文件体、不计入），无文件时为空数组；`el.value = [file]` 整体替换文件列表（走 `files` property 同款受控通道，不派发事件）。
+
 ## API
 
 ### oas-upload
@@ -460,6 +462,7 @@ onMounted(async () => {
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `files` | 受控文件列表（property 通道，写回即同步渲染） | `Array<File \| UploadEchoFile>` | `[]` |
+| `value` | 当前值：可提交的 `File[]`（仅文件体条目；回显记录不含文件体、不计入） | — | — |
 
 #### 事件
 

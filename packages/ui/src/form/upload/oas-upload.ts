@@ -821,6 +821,23 @@ export class OASUpload extends OASFormElement {
     this.adoptEntries(list)
   }
 
+  /**
+   * 当前表单值（公开读通道，等价 getFormValue() 语义）：仅 File 条目（{name,url} 回显记录
+   * 无文件体、不参与提交），无 File → 空数组；返回快照拷贝。
+   */
+  get value(): File[] {
+    return this._files.filter((e): e is File => e instanceof File)
+  }
+
+  /**
+   * 程序性写值：File 数组整体替换文件列表，走既有 adoptEntries 受控通道（渲染 / FormData /
+   * 校验链 / reset 基线随写刷新，不派发事件）。value 只承载可提交的 File 形态——
+   * {name,url} 回显记录请走 files / defaultFiles property（同通道、更宽的条目形态）。
+   */
+  set value(files: File[] | null) {
+    this.adoptEntries(Array.isArray(files) ? files : [])
+  }
+
   /** custom-request 逃生舱：函数 property（函数无法走 attribute 通道），非函数赋值容错为 null */
   get customRequest(): UploadCustomRequest | null {
     return this._customRequest

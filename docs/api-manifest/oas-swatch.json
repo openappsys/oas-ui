@@ -49,7 +49,13 @@
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "value",
+      "type": "string",
+      "api": true
+    }
+  ],
   "events": [
     {
       "name": "oas-click",

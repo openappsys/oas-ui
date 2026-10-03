@@ -1270,11 +1270,80 @@ describe('OASTreeSelect 长尾组（能力缺口 P2）', () => {
   it('template[slot="suffix-icon"] 替换默认 chevron', () => {
     const el = new OASTreeSelect()
     el.setAttribute('options', OPTIONS)
-    appendSlot(el, 'suffix-icon', '<i class="my-ic">◈</i>')
+    appendSlot(el, 'suffix-icon', '<i class="my-ic">?</i>')
     document.body.appendChild(el)
     const box = trigger(el).querySelector<HTMLElement>('.suffix-icon')!
     expect(box.hidden).toBe(false)
     expect(box.querySelector('.my-ic')).not.toBeNull()
     expect(trigger(el).querySelector('.chevron')!.hasAttribute('hidden')).toBe(true)
+  })
+})
+
+describe('OASTreeSelect value property（公开读/写通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 返回当前值（等价 getFormValue 语义）：单选初值 + 点选后新值；多选解析数组', () => {
+    const el = mount({ value: 'fe' })
+    expect(el.value).toBe('fe')
+    trigger(el).click()
+    // 展开「前端」后点选子节点「样式」（照既有单选交互路径）
+    byLabel(el, '前端')
+      .querySelector('.toggle')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    const cssNode = [...el.shadowRoot!.querySelectorAll('.node')].find((n) =>
+      n.textContent?.includes('样式'),
+    ) as HTMLElement
+    cssNode.click()
+    expect(el.getAttribute('value')).toBe('css')
+    expect(el.value).toBe('css')
+
+    const multi = mount({ multiple: '', value: '["fe","be"]' })
+    expect(multi.value).toEqual(['fe', 'be'])
+    const empty = mount()
+    expect(empty.value).toBe('')
+  })
+
+  it('set value 写受控属性并回显 label（单选字符串/多选 JSON 数组），零事件', () => {
+    const el = mount({ value: 'fe' })
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = 'react'
+    expect(el.getAttribute('value')).toBe('react')
+    expect(trigger(el).textContent).toContain('React')
+    expect(el.value).toBe('react')
+
+    const multi = mount({ multiple: '', value: '[]' })
+    multi.value = ['fe', 'be']
+    expect(multi.getAttribute('value')).toBe('["fe","be"]')
+    expect(multi.value).toEqual(['fe', 'be'])
+    expect(fired).toBe(0)
+  })
+
+  it('set value 清空（null / 空串）移除属性；单选传数组取首项（不强猜语义）', () => {
+    const el = mount({ value: 'fe' })
+    el.value = null
+    expect(el.hasAttribute('value')).toBe(false)
+    expect(el.value).toBe('')
+    expect(trigger(el).textContent).not.toContain('前端')
+    el.value = ['react']
+    expect(el.getAttribute('value')).toBe('react')
+    expect(el.value).toBe('react')
+  })
+
+  it("'value' in el === true（访问器在原型上、非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')
+    expect(desc).toBeDefined()
+    expect(typeof desc!.get).toBe('function')
+    expect(typeof desc!.set).toBe('function')
+    el.value = 'react'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })

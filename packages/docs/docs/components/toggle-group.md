@@ -373,8 +373,14 @@ onMounted(() => {
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
 | `spread` | 满宽等分（对齐 button-group 的 spread） | — | — |
 | `status` | 校验态：`error` / `warning` / `success`（未选项边框色 + 选中项整块着色） | `string` | — |
-| `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | `string` | `[]` |
+| `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | `string \| string[]` | `[]` |
 | `vertical` | 纵向排列（联动 aria-orientation 与轴向键） | `boolean` | — |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：单选取选中值字符串，`multiple` 时取选中值数组 | `string \| string[]` | — |
 
 #### 事件
 

@@ -295,6 +295,26 @@ export class OASEditable extends OASElement {
     ]
   }
 
+  /**
+   * @apiProperty 当前值：编辑中读内部输入框实时文本，非编辑态读受控 `value` 属性
+   * （提交口径与 oas-change 一致）。
+   */
+  get value(): string {
+    return this.editing && this.fieldEl ? this.fieldEl.value : this.getAttr('value', '')
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性并强制回写内部输入框 + update
+   * 刷新展示态，不派发任何事件。同值 `setAttribute` 不触发 attributeChangedCallback，
+   * 显式回写/update 保证生效。
+   */
+  set value(v: string) {
+    const next = v == null ? '' : String(v)
+    this.setAttribute('value', next)
+    if (this.fieldEl) this.fieldEl.value = next
+    this.update()
+  }
+
   private displayEl: HTMLElement | null = null
   private editEl: HTMLElement | null = null
   private fieldEl: HTMLInputElement | HTMLTextAreaElement | null = null

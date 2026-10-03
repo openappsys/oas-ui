@@ -66,6 +66,35 @@ export class OASCheckboxGroup extends OASElement {
     return ['value', 'disabled', 'options', 'direction', 'max', 'min', 'size', 'status', 'readonly']
   }
 
+  /**
+   * @apiProperty 当前值（多选勾选值数组）：等价既有 parseValue()——解析受控 `value` 属性
+   * 的 JSON 数组（组内固定为「选项标识」字符串集合），与 oas-change detail 形态一致。
+   */
+  get value(): string[] {
+    return this.parseValue()
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性（JSON 数组）并强制 collect()
+   * 同步各子项勾选态/全选联动，不派发任何事件。同值 `setAttribute` 不触发
+   * attributeChangedCallback，显式 collect 保证生效。
+   */
+  set value(v: string[] | string) {
+    let arr: string[]
+    if (Array.isArray(v)) arr = v.map((x) => String(x))
+    else if (v == null || v === '') arr = []
+    else {
+      try {
+        const parsed: unknown = JSON.parse(v)
+        arr = Array.isArray(parsed) ? parsed.map((x) => String(x)) : [String(v)]
+      } catch {
+        arr = [String(v)]
+      }
+    }
+    this.setAttribute('value', JSON.stringify(arr))
+    this.collect()
+  }
+
   private items: OASCheckbox[] = []
   /** 已挂 oas-change / oas-limit-blocked 监听的子项（去重，修复 collect 重复挂监听机制债） */
   private boundItems = new WeakSet<OASCheckbox>()

@@ -186,6 +186,22 @@ export class OASDynamicInput extends OASElement {
     this.syncRows()
   }
 
+  /**
+   * @apiProperty 当前值（行值数组；input 预设为 `string[]`，pair 预设为 `{ key, value }[]`）：
+   * 等价 modelValue property（既有 property 通道的公开别名），与 oas-change detail 形态一致。
+   */
+  get value(): DynamicInputRowValue[] {
+    return this.values.slice()
+  }
+
+  /**
+   * 程序性写值（受控赋值即生效语义）：等价 `modelValue` setter——归一化行值、回写
+   * `model-value` 属性并重建行内容，不派发任何事件。
+   */
+  set value(v: DynamicInputRowValue[]) {
+    this.modelValue = v
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `

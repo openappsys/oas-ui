@@ -218,6 +218,12 @@ onMounted(() => {
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | `outlined` |
 | `wrap` | Wrap strategy (native passthrough: soft/hard) | — | — |
 
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the inner textarea text (`el.value` reads; `el.value = x` writes the controlled `value` and syncs, no event) | `string` | — |
+
 #### Events
 
 | Event | Description |

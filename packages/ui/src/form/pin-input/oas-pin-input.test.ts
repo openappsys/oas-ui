@@ -576,3 +576,43 @@ describe('OASPinInput', () => {
     expect(cells(el)[0]!.getAttribute('aria-invalid')).toBeNull()
   })
 })
+
+describe('OASPinInput value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 读各格拼接（初值 + 交互后）', () => {
+    const el = mount({ value: '12', length: '4' })
+    expect(el.value).toBe('12')
+    typeCell(cells(el)[2]!, '3')
+    expect(el.value).toBe('123')
+  })
+
+  it('set value 写入属性并分发到各格（过滤/截断），不派发事件', () => {
+    const el = mount({ length: '4' })
+    let fired = 0
+    el.addEventListener('oas-input', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    el.value = '9876'
+    expect(el.getAttribute('value')).toBe('9876')
+    expect(el.value).toBe('9876')
+    expect(
+      cells(el)
+        .map((c) => c.value)
+        .join(''),
+    ).toBe('9876')
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = '1'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

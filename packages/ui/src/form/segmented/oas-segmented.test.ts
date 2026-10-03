@@ -363,3 +363,38 @@ describe('OASSegmented RTL 键盘镜像', () => {
     expect(el.getAttribute('value')).toBe('week')
   })
 })
+
+describe('OASSegmented value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 读当前选中值（交互后）', () => {
+    const el = mount({ value: 'day' })
+    expect(el.value).toBe('day')
+    items(el)[1]!.click()
+    expect(el.value).toBe('week')
+  })
+
+  it('set value 写入属性并同步 radio 选中态，不派发事件', () => {
+    const el = mount({ value: 'day' })
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = 'month'
+    expect(el.getAttribute('value')).toBe('month')
+    expect(el.value).toBe('month')
+    expect(inputs(el)[2]!.checked).toBe(true)
+    expect(fired).toBe(0)
+  })
+
+  it("'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mount()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = 'day'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

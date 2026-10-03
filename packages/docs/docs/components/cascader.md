@@ -392,9 +392,15 @@ onMounted(() => {
 | `show-all-levels` | 回显完整路径（默认 true）；`false` 仅末级 | `string` | `true` |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`；error 联动 aria-invalid | `string` | — |
-| `value` | 路径数组（JSON），如 `["zj","hz"]` | `string` | `[]` |
+| `value` | 路径数组（JSON），如 `["zj","hz"]` | `string[] \| string[][] \| null` | `[]` |
 | `value-mode` | 多选值策略：`all`（默认，全路径）/ `parentFirst` / `onlyLeaf` | `string` | `all` |
 | `virtual` | 面板列虚拟滚动（超过 50 项的长列复用 oas-virtual-list 窗口渲染；短列/搜索/加载占位保持普通渲染） | `boolean` | — |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：单选取选中路径数组，`multiple` 时取选中路径集合数组 | `string[] \| string[][] \| null` | — |
 
 #### 事件
 

@@ -471,6 +471,8 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 
 `required` drives the native validation chain (form-associated): when unfilled, `checkValidity()` returns false (`valueMissing`) and native form submission is blocked; it recovers to `:valid` once filled.
 
+Programmatic read/write of the current value goes through the public `value` property: `el.value` reads the selected value string in single mode (empty string when nothing is selected) or an array of selected values in multiple mode (`label-in-value` objects are lifted to plain values, matching the FormData submission semantics); `el.value = x` writes the controlled `value` attribute and re-renders the label/chips (arrays are JSON-serialized automatically, `label-in-value` keeps the object contract shape, empty values remove the attribute). No events are dispatched.
+
 ## API
 
 ### oas-tree-select
@@ -512,8 +514,14 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the panel is aut
 | `status` | Validation status: `error` / `warning` / `success` | `string` | — |
 | `suffix-text` | Trigger suffix content (slot="suffix" likewise) | `string` | — |
 | `tree-lines` | Tree indentation guide lines | `boolean` | — |
-| `value` | Selected value (JSON array in multiple mode) | `string` | — |
+| `value` | Selected value (JSON array in multiple mode) | `string \| string[] \| null` | — |
 | `virtual` | Enable virtual scroll: the dropdown renders only the visible window for large data (reuses oas-virtual-list), keeping keyboard/ARIA intact | `boolean` | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: a value for single; an array of values for multiple | — | — |
 
 #### Events
 

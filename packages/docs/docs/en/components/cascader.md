@@ -392,9 +392,15 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | `show-all-levels` | Show the full path (default true); `false` shows only the leaf | `string` | `true` |
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid | `string` | — |
-| `value` | Path array (JSON), e.g. `["zj","hz"]` | `string` | `[]` |
+| `value` | Path array (JSON), e.g. `["zj","hz"]` | `string[] \| string[][] \| null` | `[]` |
 | `value-mode` | Multi-select value strategy: `all` (default, full paths) / `parentFirst` / `onlyLeaf` | `string` | `all` |
 | `virtual` | Per-column virtual scrolling (columns above 50 items render via oas-virtual-list; short columns/search/loading keep normal rendering) | `boolean` | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the selected path array, or an array of selected paths when `multiple` | `string[] \| string[][] \| null` | — |
 
 #### Events
 

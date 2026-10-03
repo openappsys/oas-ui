@@ -268,6 +268,7 @@ onMounted(() => {
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `filter` | 自定义过滤函数（property 通道，`(input, option) => boolean`） | `((option: Option, query: string) => boolean) \| null` | — |
+| `value` | 当前值：选中值（无选中时键入草稿兜底） | `string` | — |
 
 #### 事件
 

@@ -266,3 +266,49 @@ describe('OASSwatchGroup 选择组', () => {
     expect(received, '非 swatch 后代事件应照常冒泡到宿主').toBe(1)
   })
 })
+
+describe('OASSwatch / OASSwatchGroup value property（get/set）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('oas-swatch get value 读 color；set value 写入 color 并重绘', () => {
+    const el = mountSwatch({ color: 'blue' })
+    expect(el.value).toBe('blue')
+    el.value = '#123456'
+    expect(el.getAttribute('color')).toBe('#123456')
+    expect(el.value).toBe('#123456')
+    expect(btn(el).style.backgroundColor).not.toBe('')
+  })
+
+  it('oas-swatch-group get value 单选/多选；set value 同步子件选中态，不派发事件', () => {
+    let fired = 0
+    const single = mountGroup({ value: 'blue' })
+    single.addEventListener('oas-change', () => fired++)
+    expect(single.value).toBe('blue')
+    single.value = 'red'
+    expect(single.getAttribute('value')).toBe('red')
+    expect(single.value).toBe('red')
+    expect(single.querySelector('oas-swatch[color="red"]')!.hasAttribute('selected')).toBe(true)
+    expect(fired).toBe(0)
+
+    const multi = mountGroup({ multiple: '', value: 'red,blue' })
+    expect(multi.value).toEqual(['red', 'blue'])
+    multi.value = ['blue']
+    expect(multi.getAttribute('value')).toBe('blue')
+    expect(multi.value).toEqual(['blue'])
+  })
+
+  it("oas-swatch 'value' in el === true（原型访问器，非实例 expando）", () => {
+    const el = mountSwatch()
+    expect('value' in el).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
+    el.value = 'green'
+    expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})

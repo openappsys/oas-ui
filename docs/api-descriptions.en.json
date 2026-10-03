@@ -167,6 +167,9 @@
       "footer": "Suggestion panel footer content (e.g. a view-all link)",
       "header": "Suggestion panel header content (e.g. a hint bar)",
       "template[slot=\"option\"]": "Custom option template skeleton; the `[data-option-label]` node auto-binds the option text"
+    },
+    "props": {
+      "value": "Current value: the visible text (the selected suggestion label after choosing); the `value` attribute is the `option.value`"
     }
   },
   "oas-avatar": {
@@ -582,6 +585,9 @@
     "slots": {
       "template[slot=\"option\"]": "Custom option row template; `[data-option-label]` nodes bind the option text",
       "template[slot=\"suffix-icon\"]": "Custom trailing trigger icon (replaces the default arrow; yields to the spinner while loading)"
+    },
+    "props": {
+      "value": "Current value: the selected path array, or an array of selected paths when `multiple`"
     }
   },
   "oas-chart": {
@@ -715,6 +721,9 @@
     },
     "slots": {
       "trigger": "Custom trigger (replaces the default swatch button)"
+    },
+    "props": {
+      "value": "Current value: the color string (read from the controlled `value` attribute)"
     }
   },
   "oas-combobox": {
@@ -743,7 +752,8 @@
     },
     "slots": {},
     "props": {
-      "filter": "Custom filter function (property channel, `(input, option) => boolean`)"
+      "filter": "Custom filter function (property channel, `(input, option) => boolean`)",
+      "value": "Current value: the selected value (falls back to the typed draft when nothing is selected)"
     }
   },
   "oas-compact": {
@@ -958,7 +968,8 @@
     },
     "props": {
       "shortcuts": "Shortcut presets (property channel, `[{ label, value/getValue }]`)",
-      "disabledDate": "Disabled-date predicate (property function channel, `(date) => boolean`)"
+      "disabledDate": "Disabled-date predicate (property function channel, `(date) => boolean`)",
+      "value": "Current value: a date string for single; a string array for range / multiple"
     }
   },
   "oas-descriptions": {
@@ -1148,6 +1159,9 @@
     },
     "slots": {
       "template[slot=\"row\"]": "Custom row content (`[data-row-value]`/`[data-row-key]` bindings; remove/sort buttons stay component-side)"
+    },
+    "props": {
+      "value": "Current value: array of row values (`string[]` for input preset, `{ key, value }[]` for pair preset)"
     }
   },
   "oas-dynamic-tags": {
@@ -1183,6 +1197,9 @@
       "template[slot=\"tag\"]": "Custom tag (`[data-tag-label]` binding; remove button stays component-side)",
       "template[slot=\"prefix\"]": "Prefix content slot",
       "template[slot=\"suffix\"]": "Suffix content slot"
+    },
+    "props": {
+      "value": "Current value: array of tag strings"
     }
   },
   "oas-editable": {
@@ -1209,6 +1226,9 @@
     },
     "slots": {
       "template[slot=\"display\"]": "Custom display state (`[data-display-value]`/`[data-display-placeholder]` bindings)"
+    },
+    "props": {
+      "value": "Current value: the input text while editing, otherwise the `value` attribute"
     }
   },
   "oas-ellipsis": {
@@ -1570,6 +1590,9 @@
       "prepend": "Prepend addon area (may contain select/button or any content)",
       "append": "Append addon area (may contain select/button or any content)",
       "clear-icon": "Custom clear-button icon (replaces the built-in when present)"
+    },
+    "props": {
+      "value": "Current value: parser/mask-aware submitted-value semantics (`el.value` reads; `el.value = x` writes the controlled `value` and syncs the inner control, no event)"
     }
   },
   "oas-input-number": {
@@ -1610,6 +1633,9 @@
     "slots": {
       "prefix": "Prefix content slot (not part of value parsing)",
       "suffix": "Suffix content slot (not part of value parsing)"
+    },
+    "props": {
+      "value": "Current value: the live-parsed numeric string (empty / invalid input yields an empty string)"
     }
   },
   "oas-kbd": {
@@ -1831,6 +1857,9 @@
       "footer": "Panel footer content",
       "template[slot=\"option\"]": "Custom option template (`[data-option-label]` binding)",
       "empty": "Empty-state content when nothing matches (replaces the default noMatch text)"
+    },
+    "props": {
+      "value": "Current value: the full text including @mention tokens"
     }
   },
   "oas-menu": {
@@ -2252,7 +2281,10 @@
       "oas-focus": "Fires when focus enters the component (not on cell-to-cell moves), `detail: { index }`",
       "oas-blur": "Fires when focus leaves the component, `detail: { index }`"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "value": "Current value: concatenated string of all cell characters"
+    }
   },
   "oas-popconfirm": {
     "attrs": {
@@ -2430,6 +2462,9 @@
       "": "Label content (rich text/links allowed)",
       "checked-icon": "Custom checked indicator (template[slot] or a direct element; unchecked falls back to the default hollow circle)",
       "description": "Description distribution channel (takes priority over the description attribute)"
+    },
+    "props": {
+      "value": "The submitted value (attribute default `on`; separate from `checked`, matching native radio.value)"
     }
   },
   "oas-rate": {
@@ -2462,6 +2497,9 @@
       "icon": "Custom icon for the selected state (replaces the default star)",
       "void-icon": "Custom icon for the unselected state (replaces the default star)",
       "icon-${i}": "Per-index icon override (host writes `<span slot=\"icon-1\">` …; i is the 1-based index); `icon` overrides all"
+    },
+    "props": {
+      "value": "Current value: the rating score (number)"
     }
   },
   "oas-result": {
@@ -2513,6 +2551,9 @@
     },
     "slots": {
       "template[slot=\"option\"]": "Custom option template (`<template slot=\"option\">`)"
+    },
+    "props": {
+      "value": "Current value: the selected option value string"
     }
   },
   "oas-select": {
@@ -2573,6 +2614,9 @@
       "template[slot=\"suffix-icon\"]": "Custom trailing trigger icon (replaces the default arrow)",
       "template[slot=\"prefix\"]": "Trigger prefix content template",
       "template[slot=\"suffix\"]": "Trigger suffix content template"
+    },
+    "props": {
+      "value": "Current value: the selected value string, or an array of selected values when `multiple` (equivalent to reading the `value` attribute)"
     }
   },
   "oas-sidebar": {
@@ -2701,6 +2745,9 @@
     },
     "slots": {
       "template[slot=\"custom-thumb\"]": "Custom thumb content (icon/text): `template[slot=\"custom-thumb\"]` (static template, cloned into every visible thumb — both thumbs in range mode) or a plain `[slot=\"custom-thumb\"]` element"
+    },
+    "props": {
+      "value": "Current value: a number for a single thumb, or an array of numbers for multiple thumbs"
     }
   },
   "oas-snackbar": {
@@ -3181,7 +3228,10 @@
       "oas-change": "Native change semantics: fires on blur when the value changed, `detail: { value }`",
       "oas-clear": "Fires when the clear button is clicked (oas-input also fires)"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "value": "Current value: the inner textarea text (`el.value` reads; `el.value = x` writes the controlled `value` and syncs, no event)"
+    }
   },
   "oas-theme-editor": {
     "attrs": {
@@ -3225,7 +3275,8 @@
     "slots": {},
     "props": {
       "disabledTime": "Disabled-time predicate (property function channel, `(parts) => { hours?, minutes?, seconds? }`)",
-      "presets": "Quick time presets (property channel, `[{ label, value }]`)"
+      "presets": "Quick time presets (property channel, `[{ label, value }]`)",
+      "value": "Current value: a time string for single; a string array when `is-range`"
     }
   },
   "oas-timeline": {
@@ -3336,6 +3387,9 @@
     },
     "slots": {
       "": "Button content (label / icon)"
+    },
+    "props": {
+      "value": "Current value: the value identifier string (the pressed state is the separate `pressed` attribute)"
     }
   },
   "oas-toggle-item": {
@@ -3370,7 +3424,10 @@
       "oas-change": "Toggle, `detail: { value: string | string[] }`",
       "oas-exceed-limit": "Selection attempt past max-count, `detail: { value, max }`"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "value": "Current value: the selected value string, or an array of selected values when `multiple`"
+    }
   },
   "oas-tooltip": {
     "attrs": {
@@ -3566,6 +3623,9 @@
     "slots": {
       "template[slot=\"empty\"]": "Custom content shared by empty and no-match states",
       "template[slot=\"item\"]": "Custom row (`[data-item-label]` binding, identical for static and virtual rows)"
+    },
+    "props": {
+      "value": "Current value: array of target-side keys"
     }
   },
   "oas-tree": {
@@ -3677,6 +3737,9 @@
       "template[slot=\"empty\"]": "Custom empty-state content",
       "template[slot=\"node\"]": "Custom node template (`[data-node-label]` binds the label)",
       "template[slot=\"suffix-icon\"]": "Custom trailing trigger icon (replaces the default arrow)"
+    },
+    "props": {
+      "value": "Current value: a value for single; an array of values for multiple"
     }
   },
   "oas-upload": {
@@ -3724,7 +3787,8 @@
       "template[slot=\"trigger\"]": "Self-drawn trigger-area template (native slot does not render template elements — cloned by the component; clicking the zone still opens the file picker)"
     },
     "props": {
-      "files": "Controlled file list (property channel; assigning re-renders)"
+      "files": "Controlled file list (property channel; assigning re-renders)",
+      "value": "Current value: the submittable `File[]` (file-body entries only; echo records without a body are excluded)"
     }
   },
   "oas-virtual-list": {
@@ -3877,6 +3941,9 @@
     "slots": {
       "": "Declarative item channel (`<oas-checkbox>` children; steps aside when options is explicit)",
       "label": "Group title (rendered into the legend)"
+    },
+    "props": {
+      "value": "Current value: array of checked value strings (equivalent to parsing the `value` attribute JSON)"
     }
   },
   "oas-radio-group": {
@@ -3916,7 +3983,10 @@
       "oas-click": "Click, `detail: { color }` (intercepted by the group which emits the group-level oas-change)"
     },
     "slots": {},
-    "cssVars": {}
+    "cssVars": {},
+    "props": {
+      "value": "Current value: the swatch color identifier (i.e. the `color` attribute)"
+    }
   },
   "oas-swatch-group": {
     "attrs": {
@@ -3931,7 +4001,10 @@
     "slots": {
       "": "Swatch children (`<oas-swatch>`)"
     },
-    "cssVars": {}
+    "cssVars": {},
+    "props": {
+      "value": "Current value: the selected color string, or an array of colors when `multiple`"
+    }
   },
   "oas-highlight": {
     "attrs": {

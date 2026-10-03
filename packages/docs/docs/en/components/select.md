@@ -720,9 +720,15 @@ onMounted(() => {
 | `size` | Size preset `small` / `medium` (default) / `large`: control height/font/chip height scale | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the host | `string` | — |
 | `tabindex` | Forwarded to the internal trigger (host attribute removed after delegation to avoid double tab stops) | — | — |
-| `value` | Current value (JSON array in multiple mode) | — | — |
+| `value` | Current value (JSON array in multiple mode) | `string \| string[]` | — |
 | `variant` | Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently; status colors take precedence | `string` | — |
 | `virtual` | Virtual scrolling for large datasets: renders only the visible window (reuses oas-virtual-list); options with a `group` field fall back to full rendering | `boolean` | — |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Current value: the selected value string, or an array of selected values when `multiple` (equivalent to reading the `value` attribute) | `string \| string[]` | — |
 
 #### Events
 

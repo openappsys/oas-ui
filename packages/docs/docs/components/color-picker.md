@@ -219,6 +219,12 @@ onMounted(() => {
 | `value` | 当前颜色（hex） | `string` | — |
 | `value-on-clear` | 清除时的回落值：设置后点「清除」写回该值而非清空 `value` | `string` | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：颜色字符串（读受控 `value` 属性） | `string` | — |
+
 #### 事件
 
 | 事件 | 说明 |

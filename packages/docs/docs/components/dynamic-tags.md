@@ -201,6 +201,12 @@ onMounted(() => {
 | `sortable` | 标签排序：拖拽 + 键盘 Alt+←/→ 相邻交换 | `boolean` | — |
 | `status` | 校验态：`error` / `warning` / `success` | `string` | — |
 
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 当前值：标签字符串数组 | `string[]` | `[]` |
+
 #### 事件
 
 | 事件 | 说明 |
