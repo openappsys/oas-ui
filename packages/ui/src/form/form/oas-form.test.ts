@@ -853,18 +853,19 @@ describe('OASForm validate-trigger', () => {
     expect(el.querySelector('.error-text')).toBeNull()
   })
 
-  it('validate-trigger=blur：已出错字段输入仍非法的值时，实时复校保持并刷新错误态', () => {
-    const el = mountForm('<oas-input name="name" value=""></oas-input>', {
-      rules: RULES,
-      'validate-trigger': 'blur',
-    })
+  it('validate-trigger=blur：已出错字段输入仍非法值时实时复校并刷新错误文案（区分于仅残留旧文案）', () => {
+    const el = mountForm('<oas-input name="name" value=""></oas-input>', { 'validate-trigger': 'blur' })
+    el.rules = {
+      name: [{ validator: (v: string) => (v === 'abc' ? '错误abc' : v === 'xyz' ? '错误xyz' : true) }],
+    }
     fireInput(el, 'name', 'abc')
     fireBlur(el, 'name', 'abc')
-    expect(invalid(el, 'name')).toBe(true)
+    expect(el.querySelector('.error-text')?.textContent).toBe('错误abc')
 
+    // 输入仍非法的另一值：复校发生才会把文案刷成 xyz 版（若仅残留旧文案则仍是 abc 版）
     fireInput(el, 'name', 'xyz')
     expect(invalid(el, 'name')).toBe(true)
-    expect(el.querySelector('.error-text')?.textContent).toBe('仅数字')
+    expect(el.querySelector('.error-text')?.textContent).toBe('错误xyz')
   })
 })
 
