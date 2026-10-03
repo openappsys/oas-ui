@@ -728,8 +728,9 @@ export class OASForm extends OASElement {
     const fields = this.collectFields()
     // 提交为最高优先级：作废所有在途的字段级异步校验。默认 input 档下每次击键都可能起一笔
     // 异步校验，若用户在它落地前提交，其延迟结果会在 finalize 之后写回，覆盖提交终态
-    // （提交通过却仍标红 / 提交失败的错误被静默清掉）——实抓竞态
-    for (const { name } of fields) this.fieldValidateSeq.set(name, (this.fieldValidateSeq.get(name) ?? 0) + 1)
+    // （提交通过却仍标红 / 提交失败的错误被静默清掉）——实抓竞态。
+    // 用 clear() 而非按 name 逐个 bump：可一并覆盖「在途期间被移除/改名、collectFields 收不到」的字段
+    this.fieldValidateSeq.clear()
     const invalid: Array<{ name: string; element: Element; message: string }> = []
     const asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }> = []
 
@@ -841,8 +842,8 @@ export class OASForm extends OASElement {
   /** 重置回初始值（与 form-associated reset 基线语义一致：回初始值、清除校验错误态、不派发任何事件） */
   reset(): void {
     const fields = this.collectFields()
-    // 同提交：作废在途字段级异步校验，避免其延迟结果在重置后再写回（幽灵错误态）
-    for (const { name } of fields) this.fieldValidateSeq.set(name, (this.fieldValidateSeq.get(name) ?? 0) + 1)
+    // 同提交：作废在途字段级异步校验（clear 覆盖全部，含移除/改名字段），避免其延迟结果在重置后再写回（幽灵错误态）
+    this.fieldValidateSeq.clear()
     for (const { name, element } of fields) {
       this.writeValue(element, this._initialSnapshot[name] ?? '')
     }
