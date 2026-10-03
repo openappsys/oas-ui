@@ -1798,3 +1798,20 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 ### 验收
 
 - recipe 页面 demo 真实可交互（e2e 过 demo-coverage/smoke 自动收集）；i18n 指南代码示例真实可编译（类型断言链）
+
+## 宿主属性撞名遮蔽 + 文档批修复（未发布）
+
+### 特性
+
+- **`prefix` / `suffix` / `blur` / `mentions` 遮蔽（宿主全通道可用）**：这些属性名撞 DOM 只读访问器（`Element.prefix`）或方法（`HTMLElement.blur`）——React 19 / Vue 绑定按 `key in el` 走 property 写入：`prefix` 撞只读 getter 会抛错并**崩掉整棵 React 树**，`blur` 撞方法会**覆盖 `blur()` 方法且属性不落**。用 `Object.defineProperty` 在原型上遮蔽并映射到规范属性（`prefix-text` / `suffix-text` / `blur` / `trigger`），恢复 `715e20b8` 误删的 property 通道；`suffix` 无 DOM 对应为对称处理，`mentions` 的 `prefix` 是 `trigger` 的遗留别名。`prefix-text` / `suffix-text` 仍是规范名，`prefix` / `suffix` 为兼容别名。
+
+### 修复
+
+- **文档批**：recipes 三个 demo 因内联 `<script setup>` 落在 `DemoBlock` 槽内不被 Vue 编译而全部死掉 → 改**页级单脚本** + 修正 API 契约（`oas-dialog`→`oas-modal` + `visible`、`form.validate`→`form.submit` + `oas-submit`、`rules` 上提表单级、switch 初值走 `checked`）；i18n README/faq 修正不存在的 key / spread 目标 / 键数 / 插槽与 CustomEvent 归因；faq 新增「React / Vue 属性名撞 DOM property」冲突清单与解法。
+- **宿主 / CDN 验证**：React playground 的 `prefix` 崩溃根治 + kanban 桥接样例；`dist/cdn.js` 的 kanban 一致性；`a11y carousel` autoplay 致对比度实测漂移的 flaky 修复（定时冻结）。
+
+### 验收
+
+- 单测：5 组件 + mentions + backdrop 的 property 通道（含 null→removeAttribute）；`pnpm test` 全绿。
+- e2e：`qa-regression/property-shadow`（真浏览器 property 通道）+ `collision-guard`（撞名守卫 ratchet）+ `playground.spec`（React/Vue 宿主 smoke）+ `cdn-kanban` + guide 页 console-sweep；全量 e2e 全绿。
+- 文档：FAQ zh/en 镜像；CHANGELOG / PRD / ROADMAP 同步。
