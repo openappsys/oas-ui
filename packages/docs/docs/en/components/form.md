@@ -600,7 +600,7 @@ onMounted(() => {
 | `scroll-to-first-error` | On validation failure, focus the first invalid field and smooth-scroll it into view (instant jump under prefers-reduced-motion) | `boolean` | — |
 | `size` | Form-level size tier distributed to all fields via the data-form-size channel (a field's own explicit size wins; form-associated fields follow dynamically) | — | — |
 | `validate-messages` | Overrides locale-default validation messages per rule type (property/JSON channels, ${min}/${max}/${value} placeholders, default fallback) | `ValidateMessages \| string` | — |
-| `validate-trigger` | When per-field live validation fires: `input` (default, validate as you type) / `blur` / `change`; a rule's `validateTrigger` overrides per field; submission always validates everything | `string` | `change` |
+| `validate-trigger` | When per-field live validation fires: `input` (default, validate as you type) / `blur` / `change`; a rule's `validateTrigger` overrides per field; submission always validates everything | `string` | `input` |
 
 #### Events
 
