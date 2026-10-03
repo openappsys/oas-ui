@@ -20,7 +20,7 @@ React 生态的 asChild / Slot / Portal 解决的是「库强加的包装元素�
 
 OAS-UI 组的处理：
 
-- **`prefix` / `suffix` / `blur`**：`prefix` 撞只读的 `Element.prefix`、`blur`（oas-backdrop）撞方法 `HTMLElement.blur()`；`suffix` 无 DOM 对应，为对称与 property 通道一并处理。相关组件（input / input-number / statistic / countdown / tree-select / backdrop）用属性访问器**遮蔽**这些名字并映射到规范属性 **`prefix-text` / `suffix-text` / `blur`**——因此它们在 **attribute 与 property 两条通道都可用**：React 写 `prefix="¥"` / `blur="blur(8px)"`、Vue 静态/绑定写法、纯 HTML 均正常。`prefix-text` / `suffix-text` 是规范名，`prefix` / `suffix` 为兼容别名；`blur` 被遮蔽后该元素的**原生 `blur()` 方法被属性访问器取代**（backdrop 无实际影响）。
+- **`prefix` / `suffix` / `blur`**：`prefix` 撞只读的 `Element.prefix`、`blur`（oas-backdrop）撞方法 `HTMLElement.blur()`；`suffix` 无 DOM 对应，为对称与 property 通道一并处理。相关组件（input / input-number / statistic / countdown / tree-select / backdrop）用属性访问器**遮蔽**这些名字并映射到规范属性 **`prefix-text` / `suffix-text` / `blur`**——因此它们在 **attribute 与 property 两条通道都可用**：React 写 `prefix="¥"` / `blur="blur(8px)"`、Vue 静态/绑定写法、纯 HTML 均正常。`prefix-text` / `suffix-text` 是规范名，`prefix` / `suffix` 为兼容别名；`blur` 被遮蔽后该元素的**原生 `blur()` 方法被属性访问器取代**（backdrop 无实际影响）。TypeScript 下 `blur` 仍按继承的方法类型（因方法类型无法声明合并），需要以 property 赋值时请改走 attribute 或 `setAttribute`。
 - **其它可写撞名属性**（`title`、`dir`、`role`、`hidden`、`draggable`、`spellcheck`、`autofocus`、`id` 等）是**可写** DOM property，React / Vue 按 property 写入会正常反射成属性；需留意 `title` 会同时触发浏览器**原生 tooltip**。
 - 若你自行封装**自定义**组件，避免使用与 `Element` / `HTMLElement` **只读属性或方法**同名的属性名（如 `prefix`、`blur`），或同样用访问器遮蔽。
 
