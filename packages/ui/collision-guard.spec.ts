@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, basename, relative } from 'node:path'
 
-// 撞名守卫（ratchet）：收集各组件的属性名（observed 属性取自权威生成物 api-manifest；遗留别名取 normalizeLegacyAlias
-// 第二参），与真实 DOM 上的「方法 / 只读访问器」求交；凡命中者，**运行时该组件原型上必须存在对应 setter**
+// 撞名守卫（ratchet）：收集各组件的属性名（取自权威生成物 api-manifest 的**全量 attrs**——含非 observed 的
+// property 通道属性；另有遗留别名取 normalizeLegacyAlias 第二参），与真实 DOM 上的「方法 / 只读访问器」求交；凡命中者，**运行时该组件原型上必须存在对应 setter**
 // （即已用 Object.defineProperty 遮蔽）。用运行时核验（customElements.get(tag).prototype 的 own descriptor）而非
 // 源码字符串匹配——避免「渲染循环里恰好也有同名映射」「注释致正则漏采」等造成的误绿。
 // 背景：属性名撞 DOM 只读 getter（Element.prefix）或方法（HTMLElement.blur）时，React/Vue 会按 `key in el`
