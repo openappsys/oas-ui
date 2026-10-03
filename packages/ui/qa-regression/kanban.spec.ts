@@ -245,3 +245,32 @@ test('kanban WIP 限制：超限列计数 warning 色 + data-over-limit 标记',
   expect(r.overLimit, '超限列带 data-over-limit').toBe(true)
   expect(r.overColor, '超限计数色与未超限不同（warning 色生效）').not.toBe(r.normalColor)
 })
+
+test('kanban 宿主定高：板体吃满宿主不溢出 + 列体真内滚（回归：.kanban 无 height:100% 按内容自长盖住后续兄弟）', async ({
+  page,
+}) => {
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#kanban-scroll')
+  const r = await page.evaluate(() => {
+    const host = document.querySelector('#kanban-scroll')!
+    const board = host.shadowRoot!.querySelector('.kanban') as HTMLElement
+    const body = board.querySelector('.column-body') as HTMLElement
+    // 宿主后面的说明文字（曾与板体重叠）
+    const next = host.nextElementSibling as HTMLElement
+    const h = host.getBoundingClientRect()
+    const b = board.getBoundingClientRect()
+    const n = next?.getBoundingClientRect()
+    const overlap = n ? !(n.top >= b.bottom - 0.5 || b.top >= n.bottom - 0.5) : false
+    return {
+      hostH: h.height,
+      boardH: b.height,
+      boardOverflow: host.scrollHeight - host.clientHeight,
+      bodyScrolls: body.scrollHeight > body.clientHeight,
+      overlap,
+    }
+  })
+  expect(r.boardH, '板体高度收敛到宿主 height').toBeLessThanOrEqual(r.hostH + 0.5)
+  expect(r.boardOverflow, '宿主无纵向溢出（scrollHeight == clientHeight）').toBeLessThanOrEqual(0.5)
+  expect(r.bodyScrolls, '列体独立纵向滚动真成立（内容超高出现内滚）').toBe(true)
+  expect(r.overlap, '板体不得与宿主后续兄弟内容重叠').toBe(false)
+})

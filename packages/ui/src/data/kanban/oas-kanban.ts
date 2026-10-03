@@ -52,11 +52,17 @@ const STYLE = `
   display: flex;
   gap: var(--oas-space-3);
   align-items: stretch;
+  /* 高度约束（「列体独立纵向滚动」文档行为的前提）：板体吃满宿主高度，列才有确定高度
+     可供列体内滚；宿主无 height 时 100% 解析为 auto（内容高），零影响。
+     缺此行板体按内容自长溢出宿主盒子，会盖住宿主后续兄弟内容（实抓） */
+  height: 100%;
 }
-/* 泳道模式：板体纵向排布（列头行 + 各泳道带横贯） */
+/* 泳道模式：板体纵向排布（列头行 + 各泳道带横贯）；宿主设 height 时带内容超高由板体
+   自身纵向滚动兜底（带不内滚）——宿主无 height 时内容自适应无滚动条，零影响 */
 .kanban.swimlane {
   flex-direction: column;
   gap: var(--oas-space-3);
+  overflow-y: auto;
 }
 .column {
   flex: 1 1 0;
