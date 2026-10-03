@@ -119,7 +119,7 @@ With `lazy`, nodes without `children` and not marked `isLeaf` / `loaded` are tre
   </div>
 </DemoBlock>
 
-With `clearable`, a clear button shows when there is a value (clicking clears and emits `oas-clear`). `prefix-text` / `suffix-text` render affix texts inside the trigger; `template[slot="prefix"]` / `[slot="suffix"]` provide custom content. In plain HTML, the legacy `prefix` / `suffix` still work as aliases.
+With `clearable`, a clear button shows when there is a value (clicking clears and emits `oas-clear`). `prefix-text` / `suffix-text` render affix texts inside the trigger; `template[slot="prefix"]` / `[slot="suffix"]` provide custom content. `prefix` / `suffix` are compatibility aliases (canonical: `prefix-text` / `suffix-text`), usable through both the attribute and property channels (React / Vue bindings included).
 
 ## Custom Suffix Icon (suffix-icon slot)
 

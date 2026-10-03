@@ -53,7 +53,7 @@
 
 ## 前缀 / 后缀 / 标题
 
-`title` 属性（或 `slot="title"`）在上方渲染标题；`prefix-text` / `suffix-text` 夹在显示值两侧（属性文本或同名 slot 双通道；纯 HTML 场景旧的 `prefix` / `suffix` 仍可作为遗留别名使用）。
+`title` 属性（或 `slot="title"`）在上方渲染标题；`prefix-text` / `suffix-text` 夹在显示值两侧（属性文本或同名 slot 双通道；`prefix` / `suffix` 为兼容别名（规范名 `prefix-text` / `suffix-text`），attribute 与 property（React / Vue 绑定）两条通道均可用）。
 
 <DemoBlock title="title + prefix / suffix">
   <oas-countdown value="90000" title="距活动开始" prefix-text="还剩 " suffix-text=" 结束"></oas-countdown>

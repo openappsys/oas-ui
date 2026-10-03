@@ -58,7 +58,7 @@
   <oas-input-number value="500" prefix-text="月销" suffix-text="件" style="width: 180px"></oas-input-number>
 </DemoBlock>
 
-`prefix-text` / `suffix-text` 为输入框内嵌装饰文案（不参与数值解析）；也支持同名插槽分发任意内容：`<span slot="prefix">…</span>`。纯 HTML 场景旧的 `prefix` / `suffix` 仍可作为遗留别名使用。
+`prefix-text` / `suffix-text` 为输入框内嵌装饰文案（不参与数值解析）；也支持同名插槽分发任意内容：`<span slot="prefix">…</span>`。`prefix` / `suffix` 为兼容别名（规范名 `prefix-text` / `suffix-text`），attribute 与 property（React / Vue 绑定）两条通道均可用。
 
 <DemoBlock title="clearable + 步进钮 + 后缀叠加">
   <oas-input-number value="1280" clearable suffix-text="元" style="width: 200px"></oas-input-number>

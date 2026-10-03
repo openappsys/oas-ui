@@ -306,7 +306,7 @@ onMounted(() => {
   <oas-input placeholder="Amount" value="1280" prefix-text="¥" suffix-text=".00" style="width: 240px"></oas-input>
 </DemoBlock>
 
-Use the `prefix-text` / `suffix-text` attributes for simple text; for complex content (icons/buttons/badges etc.) distribute via the same-named `slot="prefix"` / `slot="suffix"` slots — distributed content natively replaces the attribute text. In plain HTML, the legacy `prefix` / `suffix` attributes still work as aliases.
+Use the `prefix-text` / `suffix-text` attributes for simple text; for complex content (icons/buttons/badges etc.) distribute via the same-named `slot="prefix"` / `slot="suffix"` slots — distributed content natively replaces the attribute text. `prefix` / `suffix` are compatibility aliases (canonical: `prefix-text` / `suffix-text`), usable through both the attribute and property channels (React / Vue bindings included).
 
 ## Sizes
 
@@ -487,7 +487,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `pattern` | Passes the native regex validation pattern through | — | — |
 | `placeholder` | Placeholder text | `string` | — |
 | `prefix-icon` | Icon name for the leading icon | `string` | — |
-| `prefix-text` | Inline text before the input value (plain HTML may use the legacy alias prefix) | `string` | — |
+| `prefix-text` | Inline text before the input value; `prefix` is a compatibility alias (usable via attribute and property channels) | `string` | — |
 | `readonly` | Readonly | `boolean` | — |
 | `required` | Required marker (native passthrough to the inner input; drives the valueMissing validation chain) | `boolean` | — |
 | `show-clear-on` | Clear button visibility: `always` (default) / `hover` / `focus` | `string` | — |
@@ -498,7 +498,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the inner input | `string` | — |
 | `step` | Native step mirrored to the inner input | — | — |
 | `suffix-icon` | Icon name for the trailing icon | `string` | — |
-| `suffix-text` | Inline text after the input value (plain HTML may use the legacy alias suffix) | `string` | — |
+| `suffix-text` | Inline text after the input value; `suffix` is a compatibility alias (usable via attribute and property channels) | `string` | — |
 | `type` | Native input type | `string` | `text` |
 | `value` | Value (controlled) | `string` | — |
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | — |

@@ -53,7 +53,7 @@ Add the `SSS` token to output milliseconds (zero-padded to 3 digits); internal r
 
 ## Prefix / Suffix / Title
 
-The `title` attribute (or `slot="title"`) renders a heading above; `prefix-text` / `suffix-text` flank the display value (attribute text or same-named slots, dual channel; in plain HTML the legacy `prefix` / `suffix` attributes still work as aliases).
+The `title` attribute (or `slot="title"`) renders a heading above; `prefix-text` / `suffix-text` flank the display value (attribute text or same-named slots, dual channel; `prefix` / `suffix` are compatibility aliases (canonical: `prefix-text` / `suffix-text`), usable through both the attribute and property channels (React / Vue bindings included)).
 
 <DemoBlock title="title + prefix / suffix">
   <oas-countdown value="90000" title="Until the event" prefix-text="in " suffix-text=" left"></oas-countdown>

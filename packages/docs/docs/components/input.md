@@ -306,7 +306,7 @@ onMounted(() => {
   <oas-input placeholder="金额" value="1280" prefix-text="¥" suffix-text=".00" style="width: 240px"></oas-input>
 </DemoBlock>
 
-简单文本用 `prefix-text` / `suffix-text` 属性；复杂内容（图标/按钮/徽标等）用同名 `slot="prefix"` / `slot="suffix"` 分发，slot 有内容时原生替换属性文本。纯 HTML 场景下旧的 `prefix` / `suffix` 属性仍可作为遗留别名使用。
+简单文本用 `prefix-text` / `suffix-text` 属性；复杂内容（图标/按钮/徽标等）用同名 `slot="prefix"` / `slot="suffix"` 分发，slot 有内容时原生替换属性文本。`prefix` / `suffix` 为兼容别名（规范名 `prefix-text` / `suffix-text`），attribute 与 property（React / Vue 绑定）两条通道均可用。
 
 ## 尺寸
 
@@ -487,7 +487,7 @@ onMounted(() => {
 | `pattern` | 透传内层原生 input 的正则校验模式 | — | — |
 | `placeholder` | 占位提示 | `string` | — |
 | `prefix-icon` | 前置图标名 | `string` | — |
-| `prefix-text` | 内嵌前置文案（纯 HTML 可沿用遗留别名 prefix） | `string` | — |
+| `prefix-text` | 内嵌前置文案；`prefix` 为兼容别名（attribute 与 property 通道均可用） | `string` | — |
 | `readonly` | 只读 | `boolean` | — |
 | `required` | 必填标记（透传原生 input；驱动原生校验链 valueMissing） | `boolean` | — |
 | `show-clear-on` | 清除按钮显隐：`always`（默认常显）/ `hover` / `focus` | `string` | — |
@@ -498,7 +498,7 @@ onMounted(() => {
 | `status` | 校验态：`error` / `warning` / `success`；error 同步内层 aria-invalid | `string` | — |
 | `step` | 透传内层原生 input 的步长 | — | — |
 | `suffix-icon` | 后置图标名 | `string` | — |
-| `suffix-text` | 内嵌后置文案（纯 HTML 可沿用遗留别名 suffix） | `string` | — |
+| `suffix-text` | 内嵌后置文案；`suffix` 为兼容别名（attribute 与 property 通道均可用） | `string` | — |
 | `type` | 原生 input 类型 | `string` | `text` |
 | `value` | 值（受控） | `string` | — |
 | `variant` | 形态：`outlined`（默认描边）/ `filled`（填充底色）/ `borderless`（无框） | `string` | — |

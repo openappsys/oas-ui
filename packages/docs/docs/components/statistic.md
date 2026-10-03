@@ -80,7 +80,7 @@
   </oas-statistic>
 </DemoBlock>
 
-简单文本用 `prefix-text` / `suffix-text` 属性；复杂内容（图标/标签/徽标等）用同名 `slot="prefix"` / `slot="suffix"` 分发，slot 有内容时原生替换属性文本。纯 HTML 场景旧的 `prefix` / `suffix` 仍可作为遗留别名使用。
+简单文本用 `prefix-text` / `suffix-text` 属性；复杂内容（图标/标签/徽标等）用同名 `slot="prefix"` / `slot="suffix"` 分发，slot 有内容时原生替换属性文本。`prefix` / `suffix` 为兼容别名（规范名 `prefix-text` / `suffix-text`），attribute 与 property（React / Vue 绑定）两条通道均可用。
 
 ## API
 

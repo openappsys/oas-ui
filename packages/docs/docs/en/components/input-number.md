@@ -58,7 +58,7 @@ Press and hold a stepper button for 800ms to enter auto-repeat: it steps every 1
   <oas-input-number value="500" prefix-text="Qty" suffix-text="pcs" style="width: 180px"></oas-input-number>
 </DemoBlock>
 
-`prefix-text` / `suffix-text` are inline decorative texts (not part of value parsing); same-named slots also accept arbitrary content: `<span slot="prefix">…</span>`. In plain HTML, the legacy `prefix` / `suffix` still work as aliases.
+`prefix-text` / `suffix-text` are inline decorative texts (not part of value parsing); same-named slots also accept arbitrary content: `<span slot="prefix">…</span>`. `prefix` / `suffix` are compatibility aliases (canonical: `prefix-text` / `suffix-text`), usable through both the attribute and property channels (React / Vue bindings included).
 
 <DemoBlock title="clearable + controls + suffix stacked">
   <oas-input-number value="1280" clearable suffix-text="USD" style="width: 200px"></oas-input-number>

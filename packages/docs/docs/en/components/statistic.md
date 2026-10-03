@@ -80,7 +80,7 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
   </oas-statistic>
 </DemoBlock>
 
-Use the `prefix-text` / `suffix-text` attributes for simple text; for complex content (icons/tags/badges etc.) distribute via the same-named `slot="prefix"` / `slot="suffix"` slots — distributed content natively replaces the attribute text. In plain HTML, the legacy `prefix` / `suffix` attributes still work as aliases.
+Use the `prefix-text` / `suffix-text` attributes for simple text; for complex content (icons/tags/badges etc.) distribute via the same-named `slot="prefix"` / `slot="suffix"` slots — distributed content natively replaces the attribute text. `prefix` / `suffix` are compatibility aliases (canonical: `prefix-text` / `suffix-text`), usable through both the attribute and property channels (React / Vue bindings included).
 
 ## API
 
