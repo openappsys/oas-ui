@@ -32,7 +32,7 @@ Continue typing after `@` to filter: **by default it fuzzy-matches `label` OR `v
   <oas-mentions trigger='["@","#"]' style="width: 320px" placeholder="@ members, # tasks — both trigger" options='[{"label":"Alice","value":"alice"},{"label":"Bob","value":"bob"},{"label":"Requirement review","value":"req-review"},{"label":"Implementation","value":"impl"},{"label":"QA","value":"qa"}]'></oas-mentions>
 </DemoBlock>
 
-`trigger` defaults to `@`; it accepts a single string or a JSON array like `["@","#"]`. The `oas-search`/`oas-select` details carry the matched `prefix` field, letting the host route each trigger to its own data source. In plain HTML, the legacy `prefix` attribute still works as an alias.
+`trigger` defaults to `@`; it accepts a single string or a JSON array like `["@","#"]`. The `oas-search`/`oas-select` details carry the matched `prefix` field, letting the host route each trigger to its own data source. `prefix` is a compatibility alias of `trigger`, usable through both attribute and property channels.
 
 ## Async Suggestions (oas-search + loading)
 

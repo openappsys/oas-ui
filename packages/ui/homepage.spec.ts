@@ -98,11 +98,13 @@ test.describe('官网首页（重设计版）', () => {
     await expect(divider).toBeAttached()
     await expect(divider).toHaveCSS('height', '1px')
     // 位置：贴 home-cta 顶部（与其他屏 .home-section::before 的 top:0 同位）
-    const box = await divider.boundingBox()
-    const ctaTop = await page.evaluate(
-      () => document.querySelector('.home-cta')!.getBoundingClientRect().top + window.scrollY,
-    )
-    expect(Math.abs(box!.y - ctaTop), '分隔线应贴 CTA 屏顶').toBeLessThan(1)
+    // 两者同用 getBoundingClientRect（视口相对）比较——避免 boundingBox（视口相对）与文档相对（+scrollY）混比，
+    // 页面一旦滚动即产生等于 scrollY 的假差（曾以 16px 偶发失败）。
+    const { dividerTop, ctaTop } = await page.evaluate(() => ({
+      dividerTop: document.querySelector('.home-cta > .home-divider')!.getBoundingClientRect().top,
+      ctaTop: document.querySelector('.home-cta')!.getBoundingClientRect().top,
+    }))
+    expect(Math.abs(dividerTop - ctaTop), '分隔线应贴 CTA 屏顶').toBeLessThan(1)
     // 渐变线本体非透明（品牌蓝渐变 + 光晕）
     const bg = await divider.evaluate((el) => getComputedStyle(el).backgroundImage)
     expect(bg).toContain('linear-gradient')

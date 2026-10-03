@@ -103,7 +103,7 @@ Switch to the card style with `type="card"`: every tab has its own border, the a
 
 > This interaction is part of the manager capability package: the main entry `@oas-ui/ui/navigation/tabs` already ships it (as do the full entry and the CDN navigation bundle) — no explicit import needed. If you only want the lightweight switch/close/overflow baseline, import the pure-core entry `@oas-ui/ui/navigation/tabs/core` instead — it omits the manager capability, and using these options there logs a dev hint pointing to `import '@oas-ui/ui/navigation/tabs/manager'` (or back to the main entry).
 
-> Hosts can reword the menu per business domain (e.g. "New file"): override individual locale keys — `setLocale({ name: 'en', messages: { ...en, 'tabs.ctxNew': 'New file' } })` (import `setLocale`/`en` from `@oas-ui/i18n`; same-name registration overwrites, touch only the keys you need).
+> Hosts can reword the menu per business domain (e.g. "New file"): override individual locale keys — `setLocale({ name: 'en', messages: { ...en.messages, 'tabs.ctxNew': 'New file' } })` (import `setLocale` from `@oas-ui/i18n`, `en` from `@oas-ui/i18n/en`; same-name registration overwrites, touch only the keys you need).
 
 ## Badges
 

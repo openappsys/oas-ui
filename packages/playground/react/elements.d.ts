@@ -16,8 +16,6 @@ declare namespace React {
           rules?: string
           inline?: boolean
           layout?: string
-          onOasSubmit?: (e: Event) => void
-          onOasValidateFail?: (e: Event) => void
         },
         HTMLElement
       >
@@ -57,8 +55,6 @@ declare namespace React {
           columns?: string
           data?: string
           'row-key'?: string
-          onOasSortChange?: (e: Event) => void
-          onOasRowClick?: (e: Event) => void
         },
         HTMLElement
       >
@@ -68,8 +64,6 @@ declare namespace React {
           columns?: string
           cards?: string
           'swimlane-by'?: string
-          onOasChange?: (e: Event) => void
-          onOasColumnReorder?: (e: Event) => void
         },
         HTMLElement
       >

@@ -32,7 +32,7 @@
   <oas-mentions trigger='["@","#"]' style="width: 320px" placeholder="@ 成员、# 任务可同时触发" options='[{"label":"张三","value":"zhangsan"},{"label":"李四","value":"lisi"},{"label":"需求评审","value":"req-review"},{"label":"编码实现","value":"impl"},{"label":"测试验收","value":"qa"}]'></oas-mentions>
 </DemoBlock>
 
-`trigger` 默认 `@`，支持单字符串或 JSON 数组 `["@","#"]` 并存。`oas-search`/`oas-select` 的 detail 带命中 `prefix` 字段，宿主可据此把不同触发符分流到各自数据源。纯 HTML 场景旧的 `prefix` 属性仍可作为遗留别名使用。
+`trigger` 默认 `@`，支持单字符串或 JSON 数组 `["@","#"]` 并存。`oas-search`/`oas-select` 的 detail 带命中 `prefix` 字段，宿主可据此把不同触发符分流到各自数据源。`prefix` 是 `trigger` 的兼容别名（attribute 与 property 通道均可用）。
 
 ## 异步建议（oas-search + loading）
 

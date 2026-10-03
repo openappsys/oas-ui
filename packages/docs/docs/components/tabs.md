@@ -103,7 +103,7 @@
 
 > 该交互属于 manager 能力包：主路径 `@oas-ui/ui/navigation/tabs` 已默认内含该能力（全量入口与 CDN 导航族包同样内含），无需显式 import。若只想保留纯切换/关闭/溢出的轻量基线，可改从纯核入口 `@oas-ui/ui/navigation/tabs/core` 引入——它不含 manager 能力，此时用到该交互配置会 dev 告警提示显式 import `@oas-ui/ui/navigation/tabs/manager` 或换回主路径。
 
-> 宿主可按业务改文案（如「新建文件」）：覆盖 locale 个别键即可——`setLocale({ name: 'zh-CN', messages: { ...zhCN, 'tabs.ctxNew': '新建文件' } })`（从 `@oas-ui/i18n` 导入 `setLocale`/`zhCN`；同名注册即覆盖，只动需要的键）。
+> 宿主可按业务改文案（如「新建文件」）：覆盖 locale 个别键即可——`setLocale({ name: 'zh-CN', messages: { ...zhCN.messages, 'tabs.ctxNew': '新建文件' } })`（`setLocale` 从 `@oas-ui/i18n` 导入、`zhCN` 从 `@oas-ui/i18n/zh-CN` 导入；同名注册即覆盖，只动需要的键）。
 
 ## 徽标
 

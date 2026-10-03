@@ -119,7 +119,7 @@
   </div>
 </DemoBlock>
 
-`clearable` 有值时触发器显示清空按钮（点击清空并派发 `oas-clear`）；`prefix-text` / `suffix-text` 为触发器内前后缀文本，也可用 `template[slot="prefix"]` / `[slot="suffix"]` 插槽自定义内容。纯 HTML 场景旧的 `prefix` / `suffix` 仍可作为遗留别名使用。
+`clearable` 有值时触发器显示清空按钮（点击清空并派发 `oas-clear`）；`prefix-text` / `suffix-text` 为触发器内前后缀文本，也可用 `template[slot="prefix"]` / `[slot="suffix"]` 插槽自定义内容。`prefix` / `suffix` 为兼容别名（规范名 `prefix-text` / `suffix-text`），attribute 与 property（React / Vue 绑定）两条通道均可用。
 
 ## 自定义后缀图标（suffix-icon 插槽）
 
