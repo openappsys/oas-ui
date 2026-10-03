@@ -462,7 +462,7 @@ onMounted(async () => {
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `files` | 受控文件列表（property 通道，写回即同步渲染） | `Array<File \| UploadEchoFile>` | `[]` |
-| `value` | 当前值：可提交的 `File[]`（仅文件体条目；回显记录不含文件体、不计入） | — | — |
+| `value` | 当前值：可提交的 `File[]`（仅文件体条目；回显记录不含文件体、不计入） | `File[] \| null` | `[]` |
 
 #### 事件
 

@@ -791,7 +791,7 @@ export class OASTreeSelect extends OASFormElement {
   }
 
   /**
-   * 当前值（公开读通道）：等价既有 getFormValue() 语义的当前值——单选为选中值字符串
+   * @apiProperty 当前值（公开读通道）：等价既有 getFormValue() 语义的当前值——单选为选中值字符串
    * （无选中 → 空串），多选为选中值字符串数组；label-in-value 对象形态提升为纯值，
    * 与 FormData 提交口径一致（label 展示通道不受影响）。
    */

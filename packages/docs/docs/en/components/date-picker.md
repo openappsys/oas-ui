@@ -307,7 +307,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | --- | --- | --- | --- |
 | `disabledDate` | Disabled-date predicate (property function channel, `(date) => boolean`) | `((d: Date) => boolean) \| null` | — |
 | `shortcuts` | Shortcut presets (property channel, `[{ label, value/getValue }]`) | `ShortcutItem[] \| null` | — |
-| `value` | Current value: a date string for single; a string array for range / multiple | — | — |
+| `value` | Current value: a date string for single; a string array for range / multiple | `string \| string[] \| null` | — |
 
 #### Events
 

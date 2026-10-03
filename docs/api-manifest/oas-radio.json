@@ -65,7 +65,8 @@
   "props": [
     {
       "name": "value",
-      "type": "string | null"
+      "type": "string | null",
+      "api": true
     }
   ],
   "events": [

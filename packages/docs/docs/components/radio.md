@@ -302,7 +302,7 @@ onMounted(() => {
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `value` | 提交值（属性缺省回落 `on`；与 `checked` 分立，对齐原生 radio.value） | — | — |
+| `value` | 提交值（属性缺省回落 `on`；与 `checked` 分立，对齐原生 radio.value） | `string \| null` | — |
 
 #### 事件
 

@@ -304,7 +304,7 @@ The current value is available through the public `value` property for read/writ
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `value` | The submitted value (attribute default `on`; separate from `checked`, matching native radio.value) | — | — |
+| `value` | The submitted value (attribute default `on`; separate from `checked`, matching native radio.value) | `string \| null` | — |
 
 #### Events
 

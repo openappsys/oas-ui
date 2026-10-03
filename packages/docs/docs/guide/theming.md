@@ -20,6 +20,24 @@
 document.documentElement.dataset.theme = 'high-contrast'
 ```
 
+## 皮肤预设（可选）
+
+`@oas-ui/theme/skins.css` 提供 6 套品牌色皮肤预设（`violet` / `emerald` / `rose` / `amber` / `graphite` / `teal`）：在 `data-theme` 之上叠加 `data-skin` 即可切换，且与三套内置主题自由组合（皮肤只改品牌色相，不动尺寸/结构）。
+
+```html
+<!-- opt-in：不引此文件则完全无影响 -->
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/skins.css" />
+<html data-theme="dark" data-skin="violet">
+  …
+</html>
+```
+
+```js
+document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | amber | graphite | teal
+```
+
+皮肤仅覆盖 `--oas-color-primary`，`-hover` / `-active` / `-primary-text` / 焦点环等派生档自动跟随；需要更深定制（表面色 / 圆角 / 密度）仍走下方 CSS 变量覆盖。
+
 ## 自定义主题（CSS 变量覆盖）
 
 所有组件只引用语义 token（见 `docs/ui-spec.md §1`），因此通过覆盖 CSS 变量即可定制品牌色，无需改组件：

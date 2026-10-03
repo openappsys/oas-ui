@@ -191,7 +191,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | --- | --- | --- | --- |
 | `disabledTime` | Disabled-time predicate (property function channel, `(parts) => { hours?, minutes?, seconds? }`) | `\| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } \| null) \| null` | — |
 | `presets` | Quick time presets (property channel, `[{ label, value }]`) | `PresetItem[] \| null` | — |
-| `value` | Current value: a time string for single; a string array when `is-range` | — | — |
+| `value` | Current value: a time string for single; a string array when `is-range` | `string \| string[] \| null` | — |
 
 #### Events
 

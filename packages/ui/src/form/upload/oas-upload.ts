@@ -822,7 +822,7 @@ export class OASUpload extends OASFormElement {
   }
 
   /**
-   * 当前表单值（公开读通道，等价 getFormValue() 语义）：仅 File 条目（{name,url} 回显记录
+   * @apiProperty 当前表单值（公开读通道，等价 getFormValue() 语义）：仅 File 条目（{name,url} 回显记录
    * 无文件体、不参与提交），无 File → 空数组；返回快照拷贝。
    */
   get value(): File[] {

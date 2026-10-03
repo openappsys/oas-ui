@@ -311,7 +311,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | --- | --- | --- | --- |
 | `disabledDate` | 禁用日期谓词（property 函数通道，`(date) => boolean`） | `((d: Date) => boolean) \| null` | — |
 | `shortcuts` | 快捷预设（property 通道，`[{ label, value/getValue }]`） | `ShortcutItem[] \| null` | — |
-| `value` | 当前值：单值日期串；范围 / 多选为字符串数组 | — | — |
+| `value` | 当前值：单值日期串；范围 / 多选为字符串数组 | `string \| string[] \| null` | — |
 
 #### 事件
 

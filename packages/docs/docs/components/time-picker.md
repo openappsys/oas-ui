@@ -193,7 +193,7 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 | --- | --- | --- | --- |
 | `disabledTime` | 禁用时间谓词（property 函数通道，`(parts) => { hours?, minutes?, seconds? }`） | `\| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } \| null) \| null` | — |
 | `presets` | 快捷时刻预设（property 通道，`[{ label, value }]`） | `PresetItem[] \| null` | — |
-| `value` | 当前值：单值时间串；`is-range` 为字符串数组 | — | — |
+| `value` | 当前值：单值时间串；`is-range` 为字符串数组 | `string \| string[] \| null` | — |
 
 #### 事件
 

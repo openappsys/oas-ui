@@ -1315,7 +1315,7 @@ export class OASTimePicker extends OASFormElement {
   }
 
   /**
-   * 当前值（公开读通道）：等价既有 getFormValue() 语义的当前值，形态与 oas-change detail 一致——
+   * @apiProperty 当前值（公开读通道）：等价既有 getFormValue() 语义的当前值，形态与 oas-change detail 一致——
    * 单值为 value 属性原串（空 → 空串）；is-range 为 JSON 数组解析后的字符串数组
    * （非法 JSON → 空数组）。
    */

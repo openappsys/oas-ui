@@ -2575,7 +2575,7 @@ export class OASDatePicker extends OASFormElement {
   }
 
   /**
-   * 当前值（公开读通道）：等价既有 getFormValue() 语义的当前值，形态与 oas-change detail 一致——
+   * @apiProperty 当前值（公开读通道）：等价既有 getFormValue() 语义的当前值，形态与 oas-change detail 一致——
    * 单值为 value 属性原串（空 / 解析不出 → 空串，与 FormData「不含此项」对齐）；
    * multiple 为选中日期 ISO 数组（selectedAnchorArray 语义，含单值形态兜底）；
    * range 为 JSON 数组解析后的字符串数组（非法 JSON → 空数组）。

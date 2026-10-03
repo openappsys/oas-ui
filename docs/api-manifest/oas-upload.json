@@ -131,7 +131,8 @@
     {
       "name": "value",
       "type": "File[] | null",
-      "default": "[]"
+      "default": "[]",
+      "api": true
     },
     {
       "name": "customRequest",

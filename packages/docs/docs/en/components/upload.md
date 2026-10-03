@@ -463,7 +463,7 @@ The current form value is available through the public `value` property for read
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
 | `files` | Controlled file list (property channel; assigning re-renders) | `Array<File \| UploadEchoFile>` | `[]` |
-| `value` | Current value: the submittable `File[]` (file-body entries only; echo records without a body are excluded) | — | — |
+| `value` | Current value: the submittable `File[]` (file-body entries only; echo records without a body are excluded) | `File[] \| null` | `[]` |
 
 #### Events
 

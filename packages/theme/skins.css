@@ -1,0 +1,62 @@
+/* OAS UI 皮肤预设（可选层，规范见 docs/ui-spec.md §1）
+ *
+ * 用法：在 data-theme 之上叠加 data-skin —— `<html data-theme="dark" data-skin="violet">`。
+ * 每个皮肤只覆盖品牌主色 token；hover / active / primary-text / focus-ring / 各安全档
+ * 均经 `color-mix(in srgb, var(--oas-color-primary) …)` 从主色自动派生，故无需逐档写死。
+ * 皮肤只改「品牌色相」，不改尺寸/间距/结构，可与三种 data-theme（light/dark/high-contrast）自由组合。
+ * 不含此文件时无任何影响（纯 opt-in）。
+ */
+
+/* 紫罗兰（violet） */
+[data-skin="violet"] {
+  --oas-color-primary: #7c3aed;
+}
+[data-theme="dark"][data-skin="violet"],
+[data-theme="high-contrast"][data-skin="violet"] {
+  --oas-color-primary: #b69bff;
+}
+
+/* 翡翠（emerald） */
+[data-skin="emerald"] {
+  --oas-color-primary: #059669;
+}
+[data-theme="dark"][data-skin="emerald"],
+[data-theme="high-contrast"][data-skin="emerald"] {
+  --oas-color-primary: #5fe0b4;
+}
+
+/* 玫瑰（rose） */
+[data-skin="rose"] {
+  --oas-color-primary: #e11d48;
+}
+[data-theme="dark"][data-skin="rose"],
+[data-theme="high-contrast"][data-skin="rose"] {
+  --oas-color-primary: #ff9aab;
+}
+
+/* 琥珀（amber） */
+[data-skin="amber"] {
+  --oas-color-primary: #b45309;
+}
+[data-theme="dark"][data-skin="amber"],
+[data-theme="high-contrast"][data-skin="amber"] {
+  --oas-color-primary: #f7c265;
+}
+
+/* 石墨（graphite，中性单色） */
+[data-skin="graphite"] {
+  --oas-color-primary: #334155;
+}
+[data-theme="dark"][data-skin="graphite"],
+[data-theme="high-contrast"][data-skin="graphite"] {
+  --oas-color-primary: #9fb3c8;
+}
+
+/* 青碧（teal） */
+[data-skin="teal"] {
+  --oas-color-primary: #0d9488;
+}
+[data-theme="dark"][data-skin="teal"],
+[data-theme="high-contrast"][data-skin="teal"] {
+  --oas-color-primary: #63d9cf;
+}

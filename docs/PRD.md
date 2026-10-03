@@ -1832,3 +1832,14 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：`oas-form.test.ts` validate-trigger 组（默认 input + blur 档 onTouched）+ 6 个输入系组件各 4 条 value property 断言；`pnpm test` 全绿。
 - e2e：`qa-regression/form.spec.ts` 两段式（真实 `oas-modal` + 真实指针点击）+ `qa-regression/input.spec.ts` value property（真浏览器）；**原始缺陷场景实证**：oas-ui-templates cdn-mpa `category.spec.ts:48`（编辑回填 + 必填校验 + 改名校验生效）在 2.5.8 原 dist 下 `1 failed`（表格不更新）、修复 dist 下 `4 passed`（RED→GREEN）；全量 e2e 全绿。
 - 文档：`form.md` / 6 组件 md（zh/en）+ `api-descriptions` + `api-manifest` 同步（api:gen 重生成）；CHANGELOG / PRD / ROADMAP 同步。
+
+## 主题皮肤预设 + 默认视觉精修（未发布）
+
+### 特性
+
+- **可选皮肤预设层 `@oas-ui/theme/skins.css`**：6 套品牌色皮肤（`violet` / `emerald` / `rose` / `amber` / `graphite` / `teal`），`data-skin` 叠加于 `data-theme` 之上、与三套内置主题自由组合；皮肤仅覆盖 `--oas-color-primary`，`-hover` / `-active` / `-primary-text` / 焦点环等派生档自动跟随；opt-in 无副作用（不引则完全无影响）。定位为可选增强层，不进核心（核心保持中性 / 框架无关）。
+- **默认投影精修**：阴影三档改现代分层投影（两层：近距硬边 + 远距柔和扩散），提升默认观感与层次感。
+
+### 验收
+
+- `packages/theme/skins.css` + `package.json` exports/files + README / `guide/theming.md`(zh/en) 同步；纯 token 层、无组件改动；全量 e2e 全绿（`visual.spec` 只截图不比对基线，阴影改动不触发视觉回归）。

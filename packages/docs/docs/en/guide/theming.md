@@ -21,6 +21,24 @@ between three built-in themes:
 document.documentElement.dataset.theme = 'high-contrast'
 ```
 
+## Skin presets (optional)
+
+`@oas-ui/theme/skins.css` ships 6 brand-color skin presets (`violet` / `emerald` / `rose` / `amber` / `graphite` / `teal`): layer `data-skin` on top of `data-theme` to switch, freely combinable with the three built-in themes (a skin only changes the brand hue, not sizes/structure).
+
+```html
+<!-- opt-in: no effect unless this file is imported -->
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/skins.css" />
+<html data-theme="dark" data-skin="violet">
+  …
+</html>
+```
+
+```js
+document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | amber | graphite | teal
+```
+
+A skin only overrides `--oas-color-primary`; the derived steps (`-hover` / `-active` / `-primary-text` / focus ring) follow automatically. For deeper customization (surfaces / radius / density) use the CSS variable overrides below.
+
 ## Custom themes (CSS variable overrides)
 
 All components only reference semantic tokens (see `docs/ui-spec.md §1`), so you

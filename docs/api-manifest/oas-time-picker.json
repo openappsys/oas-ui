@@ -112,7 +112,8 @@
     },
     {
       "name": "value",
-      "type": "string | string[] | null"
+      "type": "string | string[] | null",
+      "api": true
     }
   ],
   "events": [

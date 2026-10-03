@@ -521,7 +521,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `value` | Current value: a value for single; an array of values for multiple | — | — |
+| `value` | Current value: a value for single; an array of values for multiple | `string \| string[] \| null` | — |
 
 #### Events
 

@@ -30,6 +30,19 @@ import '@oas-ui/theme'
 document.documentElement.dataset.theme = 'dark' // light | dark | high-contrast
 ```
 
+### 皮肤预设
+
+`skins.css` 提供 6 套品牌色皮肤（`violet` / `emerald` / `rose` / `amber` / `graphite` / `teal`），在 `data-theme` 之上叠加 `data-skin` 切换（opt-in，不引则完全无影响）：
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/skins.css" />
+<html data-theme="dark" data-skin="violet">
+```
+
+```js
+document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | amber | graphite | teal
+```
+
 ### 相关包
 
 | 包 | 作用 |
@@ -64,6 +77,19 @@ Switch themes by setting the root attribute:
 
 ```js
 document.documentElement.dataset.theme = 'dark' // light | dark | high-contrast
+```
+
+### Skin presets
+
+`skins.css` ships 6 brand-color skins (`violet` / `emerald` / `rose` / `amber` / `graphite` / `teal`): layer `data-skin` on top of `data-theme` (opt-in — no effect unless imported):
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/skins.css" />
+<html data-theme="dark" data-skin="violet">
+```
+
+```js
+document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | amber | graphite | teal
 ```
 
 ### Related packages

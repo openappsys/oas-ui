@@ -362,7 +362,7 @@ export class OASRadio extends OASFormElement {
   }
 
   /**
-   * 当前值（公开读通道，对齐原生 `radio.value`）：提交值语义——value 属性原串，缺省回落 'on'
+   * @apiProperty 当前值（公开读通道，对齐原生 `radio.value`）：提交值语义——value 属性原串，缺省回落 'on'
    * （选中时与 getFormValue() 的提交值一致）。选中态走 checked 属性/property 通道，与原生
    * radio 的 value / checked 分立一致：未选中同样返回提交值（FormData 提交与否由 checked 决定）。
    */
