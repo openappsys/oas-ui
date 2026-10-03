@@ -49,18 +49,18 @@ if (!changelog.includes(`[${version}]`)) {
 // 3) tag 已存在时，其指向提交的 ui 包版本必须 == 目标
 let tagExists = false
 try {
-  tagExists = true
   const uiPkgAtTag = execSync(`git show "v${version}^{commit}:packages/ui/package.json"`, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   })
+  tagExists = true
   const v = JSON.parse(uiPkgAtTag).version
   if (v !== version) {
     console.error(`✗ tag v${version} 指向提交的 @oas-ui/ui 版本为 ${v} ≠ ${version}（tag 指向了未 bump 的提交！）`)
     fail++
   }
 } catch {
-  // tag 不存在（git show 抛错）→ 未打，仅校验当前磁盘即可
+  // tag 不存在（git show 抛错）→ 未打，仅校验当前磁盘即可（tagExists 保持 false）
 }
 
 // 3b) tag 已存在且不指向 HEAD 时警告（不拦截）：列出 tag 之后的提交清单。
