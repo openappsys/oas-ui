@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test'
 import { readdirSync, readFileSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { join, basename, relative } from 'node:path'
 
 // 撞名守卫（ratchet）：扫描全部组件的 observedAttributes 与 normalizeLegacyAlias 别名名，
-// 与真实 DOM 上的「方法 / 只读访问器」求交——凡命中者，**该组件文件本身**必须用
-// `Object.defineProperty(this.prototype, '<名>'` 遮蔽。按文件校验（而非全局按名白名单），
-// 避免新组件用同一个名字却忘了遮蔽也被放过。
+// 与真实 DOM 上的「方法 / 只读访问器」求交；凡命中者，**运行时该组件原型上必须存在对应 setter**
+// （即已用 Object.defineProperty 遮蔽）。用运行时核验（customElements.get(tag).prototype 的 own
+// descriptor）而非源码字符串匹配——避免「渲染循环里恰好也有同名映射」等造成的误绿。
 // 背景：属性名撞 DOM 只读 getter（Element.prefix）或方法（HTMLElement.blur）时，React/Vue 会按
 // `key in el` 走 property 写入——未遮蔽则抛错崩宿主（历史：715e20b8 删访问器致 React 白屏）。
 const SRC = join(import.meta.dirname, 'src')
@@ -19,16 +19,18 @@ function walk(dir: string, out: string[] = []): string[] {
   return out
 }
 
-function collectEntries(): { name: string; file: string; src: string }[] {
-  const out: { name: string; file: string; src: string }[] = []
+function collectEntries(): { tag: string; name: string; file: string }[] {
+  const out: { tag: string; name: string; file: string }[] = []
   for (const f of walk(SRC)) {
     const src = readFileSync(f, 'utf8')
     const file = relative(SRC, f).replace(/\\/g, '/')
+    const tag = basename(f, '.ts')
+    if (!tag.startsWith('oas-')) continue
     const push = (name: string): void => {
-      if (!out.some((e) => e.name === name && e.file === file)) out.push({ name, file, src })
+      if (!out.some((e) => e.tag === tag && e.name === name)) out.push({ tag, name, file })
     }
-    // observedAttributes 数组里的字符串字面量
-    const m = src.match(/observedAttributes[^{]*\{([\s\S]*?)\n\s*\}/)
+    // 锚定 observedAttributes getter 的返回数组（避开「注释里先出现 observedAttributes」的误配）
+    const m = src.match(/get observedAttributes\(\): string\[\] \{\s*return \[([\s\S]*?)\]/)
     if (m) for (const q of m[1]!.matchAll(/'([a-zA-Z][a-zA-Z0-9-]*)'/g)) push(q[1]!)
     // normalizeLegacyAlias('primary', 'legacy') —— 别名名同样纳入（旧名也是宿主可写的）
     for (const q of src.matchAll(/normalizeLegacyAlias\(\s*'[^']*'\s*,\s*'([a-zA-Z][a-zA-Z0-9-]*)'/g)) push(q[1]!)
@@ -36,38 +38,33 @@ function collectEntries(): { name: string; file: string; src: string }[] {
   return out
 }
 
-test('组件属性名撞 DOM 方法/只读访问器时，该组件文件必须自行遮蔽', async ({ page }) => {
+test('组件属性名撞 DOM 方法/只读访问器时，其原型必须已遮蔽（运行时核验）', async ({ page }) => {
   await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
   const entries = collectEntries()
-  const names = [...new Set(entries.map((e) => e.name))]
-  const kind = await page.evaluate((ns) => {
-    const el = document.createElement('x-unknown')
-    const out: Record<string, string> = {}
-    for (const n of ns) {
-      let proto: object | null = Object.getPrototypeOf(el)
-      out[n] = 'absent'
+  const offenders = await page.evaluate((ents) => {
+    const probe = document.createElement('x-unknown')
+    const kindOf = (name: string): string => {
+      let proto: object | null = Object.getPrototypeOf(probe)
       while (proto) {
-        const d = Object.getOwnPropertyDescriptor(proto, n)
-        if (d) {
-          out[n] = typeof d.value === 'function' ? 'method' : d.set ? 'writable' : d.get ? 'read-only' : 'data'
-          break
-        }
+        const d = Object.getOwnPropertyDescriptor(proto, name)
+        if (d) return typeof d.value === 'function' ? 'method' : d.set ? 'writable' : d.get ? 'read-only' : 'data'
         proto = Object.getPrototypeOf(proto)
       }
+      return 'absent'
     }
-    return out
-  }, names)
-
-  const isShadowed = (src: string, name: string): boolean =>
-    src.includes(`defineProperty(this.prototype, '${name}'`) || // 单例：defineProperty(this.prototype, 'blur', …)
-    src.includes(`[['${name}',`) || // 循环映射表：[['prefix', 'prefix-text'], …] + defineProperty(this.prototype, name, …)
-    src.includes(`['${name}', '`) // 同上（换行/其它格式）
-  const offenders = entries
-    .filter((e) => (kind[e.name] === 'method' || kind[e.name] === 'read-only') && !isShadowed(e.src, e.name))
-    .map((e) => `${e.file} 的 '${e.name}'（${kind[e.name]}）`)
+    const out: string[] = []
+    for (const { tag, name } of ents) {
+      const k = kindOf(name)
+      if (k !== 'method' && k !== 'read-only') continue
+      const ctor = customElements.get(tag)
+      const d = ctor ? Object.getOwnPropertyDescriptor(ctor.prototype, name) : undefined
+      if (!(d && d.set)) out.push(`${tag} 的 '${name}'（${k}）`)
+    }
+    return [...new Set(out)]
+  }, entries)
 
   expect(
-    [...new Set(offenders)].sort(),
-    `以下属性名撞 DOM 方法/只读访问器但未在该组件文件里遮蔽：\n${offenders.join('\n')}\n需用 Object.defineProperty(this.prototype, '<名>', …) 遮蔽`,
+    offenders.sort(),
+    `以下属性名撞 DOM 方法/只读访问器但组件原型上无 setter（未遮蔽）：\n${offenders.join('\n')}\n需用 Object.defineProperty(this.prototype, '<名>', …) 遮蔽`,
   ).toEqual([])
 })
