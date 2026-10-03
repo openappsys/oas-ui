@@ -2,12 +2,13 @@ import { test, expect } from '@playwright/test'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, basename, relative } from 'node:path'
 
-// 撞名守卫（ratchet）：扫描全部组件的 observedAttributes 与 normalizeLegacyAlias 别名名，
-// 与真实 DOM 上的「方法 / 只读访问器」求交；凡命中者，**运行时该组件原型上必须存在对应 setter**
-// （即已用 Object.defineProperty 遮蔽）。用运行时核验（customElements.get(tag).prototype 的 own
-// descriptor）而非源码字符串匹配——避免「渲染循环里恰好也有同名映射」等造成的误绿。
-// 背景：属性名撞 DOM 只读 getter（Element.prefix）或方法（HTMLElement.blur）时，React/Vue 会按
-// `key in el` 走 property 写入——未遮蔽则抛错崩宿主（历史：715e20b8 删访问器致 React 白屏）。
+// 撞名守卫（ratchet）：收集各组件的属性名（observed 属性取自权威生成物 api-manifest；遗留别名取 normalizeLegacyAlias
+// 第二参），与真实 DOM 上的「方法 / 只读访问器」求交；凡命中者，**运行时该组件原型上必须存在对应 setter**
+// （即已用 Object.defineProperty 遮蔽）。用运行时核验（customElements.get(tag).prototype 的 own descriptor）而非
+// 源码字符串匹配——避免「渲染循环里恰好也有同名映射」「注释致正则漏采」等造成的误绿。
+// 背景：属性名撞 DOM 只读 getter（Element.prefix）或方法（HTMLElement.blur）时，React/Vue 会按 `key in el`
+// 走 property 写入——未遮蔽则抛错崩宿主（历史：715e20b8 删访问器致 React 白屏）。
+const MANIFEST = join(import.meta.dirname, '../../docs/api-manifest')
 const SRC = join(import.meta.dirname, 'src')
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -19,49 +20,81 @@ function walk(dir: string, out: string[] = []): string[] {
   return out
 }
 
-function collectEntries(): { tag: string; name: string; file: string }[] {
-  const out: { tag: string; name: string; file: string }[] = []
+function collect(): { tag: string; name: string; file: string }[] {
+  const map = new Map<string, { tag: string; name: string; file: string }>()
+  const add = (tag: string, name: string, file: string): void => {
+    if (!/^[a-zA-Z][a-zA-Z0-9-]*$/.test(name)) return
+    const k = tag + '\u0000' + name
+    if (!map.has(k)) map.set(k, { tag, name, file })
+  }
+  // observed 属性：api-manifest（权威生成物，doc api 章节同源）
+  for (const f of readdirSync(MANIFEST)) {
+    if (!/^oas-.+\.json$/.test(f)) continue
+    let m: { attrs?: { name?: string }[] }
+    try {
+      m = JSON.parse(readFileSync(join(MANIFEST, f), 'utf8'))
+    } catch {
+      continue
+    }
+    const tag = basename(f, '.json')
+    for (const a of m.attrs ?? []) if (a?.name) add(tag, a.name, f)
+  }
+  // 遗留别名：normalizeLegacyAlias('primary', 'legacy')
   for (const f of walk(SRC)) {
-    const src = readFileSync(f, 'utf8')
-    const file = relative(SRC, f).replace(/\\/g, '/')
     const tag = basename(f, '.ts')
     if (!tag.startsWith('oas-')) continue
-    const push = (name: string): void => {
-      if (!out.some((e) => e.tag === tag && e.name === name)) out.push({ tag, name, file })
+    const src = readFileSync(f, 'utf8')
+    for (const q of src.matchAll(/normalizeLegacyAlias\(\s*'[^']*'\s*,\s*'([a-zA-Z][a-zA-Z0-9-]*)'/g)) {
+      add(tag, q[1]!, relative(SRC, f).replace(/\\/g, '/'))
     }
-    // 锚定 observedAttributes getter 的返回数组（避开「注释里先出现 observedAttributes」的误配）
-    const m = src.match(/get observedAttributes\(\): string\[\] \{\s*return \[([\s\S]*?)\]/)
-    if (m) for (const q of m[1]!.matchAll(/'([a-zA-Z][a-zA-Z0-9-]*)'/g)) push(q[1]!)
-    // normalizeLegacyAlias('primary', 'legacy') —— 别名名同样纳入（旧名也是宿主可写的）
-    for (const q of src.matchAll(/normalizeLegacyAlias\(\s*'[^']*'\s*,\s*'([a-zA-Z][a-zA-Z0-9-]*)'/g)) push(q[1]!)
   }
-  return out
+  return [...map.values()]
 }
 
 test('组件属性名撞 DOM 方法/只读访问器时，其原型必须已遮蔽（运行时核验）', async ({ page }) => {
+  const entries = collect()
   await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
-  const entries = collectEntries()
-  const offenders = await page.evaluate((ents) => {
-    const probe = document.createElement('x-unknown')
-    const kindOf = (name: string): string => {
-      let proto: object | null = Object.getPrototypeOf(probe)
-      while (proto) {
-        const d = Object.getOwnPropertyDescriptor(proto, name)
-        if (d) return typeof d.value === 'function' ? 'method' : d.set ? 'writable' : d.get ? 'read-only' : 'data'
-        proto = Object.getPrototypeOf(proto)
+
+  // 1) 先在探针上分类（不需要组件已注册）
+  const kind = await page.evaluate(
+    (ns) => {
+      const probe = document.createElement('x-unknown')
+      const out: Record<string, string> = {}
+      for (const n of ns) {
+        let proto: object | null = Object.getPrototypeOf(probe)
+        out[n] = 'absent'
+        while (proto) {
+          const d = Object.getOwnPropertyDescriptor(proto, n)
+          if (d) {
+            out[n] = typeof d.value === 'function' ? 'method' : d.set ? 'writable' : d.get ? 'read-only' : 'data'
+            break
+          }
+          proto = Object.getPrototypeOf(proto)
+        }
       }
-      return 'absent'
-    }
-    const out: string[] = []
-    for (const { tag, name } of ents) {
-      const k = kindOf(name)
-      if (k !== 'method' && k !== 'read-only') continue
-      const ctor = customElements.get(tag)
-      const d = ctor ? Object.getOwnPropertyDescriptor(ctor.prototype, name) : undefined
-      if (!(d && d.set)) out.push(`${tag} 的 '${name}'（${k}）`)
-    }
-    return [...new Set(out)]
-  }, entries)
+      return out
+    },
+    [...new Set(entries.map((e) => e.name))],
+  )
+
+  // 2) 只等「可能撞名」的组件注册完成，避免与 docs 主题动态注册竞态
+  const relevant = entries.filter((e) => kind[e.name] === 'method' || kind[e.name] === 'read-only')
+  const tags = [...new Set(relevant.map((e) => e.tag))]
+  await page.waitForFunction((ts) => ts.every((t) => customElements.get(t) != null), tags, { timeout: 30000 })
+
+  // 3) 运行时核验遮蔽：组件原型 own descriptor 必须有 setter
+  const offenders = await page.evaluate(
+    (rel) => {
+      const out: string[] = []
+      for (const { tag, name, kind: k } of rel) {
+        const ctor = customElements.get(tag)
+        const d = ctor ? Object.getOwnPropertyDescriptor(ctor.prototype, name) : undefined
+        if (!(d && d.set)) out.push(`${tag} 的 '${name}'（${k}）`)
+      }
+      return [...new Set(out)]
+    },
+    relevant.map((e) => ({ tag: e.tag, name: e.name, kind: kind[e.name] })),
+  )
 
   expect(
     offenders.sort(),
