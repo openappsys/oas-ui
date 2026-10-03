@@ -4,6 +4,10 @@
 
 ## [未发布]
 
+### 特性
+
+- **oas-input 公开 `value` property（get/set）**：补上程序性读值的公开通道——此前 `value` 只有 attribute 写入通道与 `oas-input` 事件通知，宿主读当前值只能监听事件自存 state 或穿透 shadow 读内层 input（脆弱）。`el.value` 读取 parser/mask 感知的提交值语义（与 `oas-input`/`oas-change`/FormData 口径一致），`el.value = x` 写受控 `value` 属性并即时回写内部控件、不派发事件（对齐原生 `input.value`）。React/Vue 受控集成与宿主读写不再需要样板
+
 ### 修复
 
 - **oas-form 默认校验时机改为 `input`（边输入边校验）+ 弹窗内两段式提交被布局位移吞掉的根治**：对齐主流表单库「边输入边校验」的通行做法——默认 `validate-trigger` 由 `change`（失焦语义）改为 `input`，错误在用户点击提交前即已结算，从根上消除「点击瞬间错误文案增删 → 布局位移 → 把按钮从指针下顶走、`click` 按规范落到 mousedown/mouseup 目标的最近公共祖先（form）而非按钮、吞掉整次提交」。原 bug 表现为弹窗包裹（`oas-modal`）内「校验失败 → 修正 → 再提交」时 `oas-submit` 不派发、弹窗不关、表格不更新（直连 oas-form 场景此前靠残留错误文案恰在点击前结算而侥幸通过）。`change` / `blur` 档保留，且这些档下已出错字段在输入时亦实时复校、改对即清。回归改用真实 `oas-modal` + 真实指针点击（原用例假 div + 合成 click 恰好绕过了本 bug）

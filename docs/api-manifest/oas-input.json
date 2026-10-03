@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -216,6 +215,10 @@
     {
       "name": "parser",
       "type": "((value: string) => string) | null"
+    },
+    {
+      "name": "value",
+      "type": "string"
     }
   ],
   "events": [

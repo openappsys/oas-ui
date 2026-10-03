@@ -815,6 +815,27 @@ export class OASInput extends OASFormElement {
     this.refreshFormatter()
   }
 
+  /**
+   * 当前值（公开读通道，对齐原生 `input.value`）：parser/mask 感知的原始值语义，与
+   * `oas-input` / `oas-change` / FormData 提交口径一致。宿主与 React/Vue 集成可直接
+   * `el.value` 读，无需监听事件自存 state 或穿透 shadow 读内层 input。
+   */
+  get value(): string {
+    return this.inputEl ? this.rawValue() : this.getAttr('value', '')
+  }
+
+  /**
+   * 程序性写值（对齐原生 `input.value = x`）：写受控 `value` 属性并即时回写内部控件，
+   * 不派发任何事件。同值 `setAttribute` 不触发 `attributeChangedCallback`，故显式重置
+   * 应用基线并强制 update，确保赋值在任何情况下都生效（受控赋值即生效语义）。
+   */
+  set value(v: string) {
+    const next = v == null ? '' : String(v)
+    this.setAttribute('value', next)
+    this.lastAttrValue = null
+    this.update()
+  }
+
   private inputEl: HTMLInputElement | null = null
   private clearBtn: HTMLButtonElement | null = null
   private eyeBtn: HTMLButtonElement | null = null

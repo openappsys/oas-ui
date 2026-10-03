@@ -44,6 +44,55 @@ describe('OASInput prefix/suffix：遮蔽只读 Element.prefix 的 property 通�
   })
 })
 
+describe('OASInput value property（公开读/写通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('get value 返回当前值（初值 → 用户输入后为当前文本）', () => {
+    const el = mount({ value: '数码' })
+    expect(el.value).toBe('数码')
+    const i = input(el)
+    i.value = '影音'
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.value).toBe('影音')
+  })
+
+  it('set value 写入受控属性并即时回写内部控件，不派发事件', () => {
+    const el = mount({ value: '' })
+    let fired = 0
+    el.addEventListener('oas-input', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    el.value = '影音'
+    expect(el.getAttribute('value')).toBe('影音')
+    expect(input(el).value).toBe('影音')
+    expect(el.value).toBe('影音')
+    expect(fired).toBe(0)
+  })
+
+  it('set value 在属性同值（用户已输入其它文本）时仍强制回写内部控件', () => {
+    const el = mount({ value: '数码' })
+    const i = input(el)
+    i.value = '用户输入'
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.value).toBe('用户输入')
+    el.value = '数码'
+    expect(input(el).value).toBe('数码')
+    expect(el.value).toBe('数码')
+  })
+
+  it('get value 走 parser 原始值语义（formatter/parser 在场时返回解析后原始值）', () => {
+    const el = mount({ value: '1234' })
+    el.formatter = (v) => (v === '' ? '' : `¥${v}`)
+    el.parser = (d) => d.replace(/[^\d]/g, '')
+    expect(input(el).value).toBe('¥1234')
+    expect(el.value).toBe('1234')
+  })
+})
+
 describe('OASInput', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

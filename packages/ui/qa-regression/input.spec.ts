@@ -284,3 +284,32 @@ test('input mask：真实键入序列自动跳字面量、非法字符过滤、�
   await page.keyboard.press('Backspace')
   await expect(rawHost.locator('input')).toHaveValue('12')
 })
+
+test('input 公开 value property：宿主程序性读当前值 / 写值即时回写（不再需事件自存 state 或穿透 shadow）', async ({
+  page,
+}) => {
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-input')
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-input') as HTMLElement & { value: string }
+    document.body.appendChild(el)
+    await new Promise((res) => setTimeout(res, 200))
+    const inner = el.shadowRoot!.querySelector('input')!
+    // 用户键入（只写内层、不回写宿主 attribute）→ 公开 property 应读到当前值
+    inner.value = '程序输入'
+    inner.dispatchEvent(new Event('input', { bubbles: true }))
+    const readTyped = el.value
+    // 程序性写值 → 属性 + 内部控件同步
+    el.value = '程序写入'
+    return {
+      readTyped,
+      afterWrite: el.value,
+      innerAfter: inner.value,
+      attr: el.getAttribute('value'),
+    }
+  })
+  expect(r.readTyped).toBe('程序输入')
+  expect(r.afterWrite).toBe('程序写入')
+  expect(r.innerAfter).toBe('程序写入')
+  expect(r.attr).toBe('程序写入')
+})

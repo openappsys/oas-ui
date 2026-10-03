@@ -2959,8 +2959,9 @@ describe('editComponent 组件编辑器（form 组件 ↔ table 编辑协议）'
     expect(comp, '组件编辑器挂载（而非原生 input.cell-editor）').not.toBeNull()
     expect(td.querySelector('input.cell-editor')).toBeNull()
     expect(comp!.getAttribute('value')).toBe('张三')
-    // oas-input 无真 value property（读值走 getFormValue 钩子）：注入条件化后不得建 expando
-    expect('value' in comp!).toBe(false)
+    // oas-input 现拥有真 value property：条件化注入走 property 通道（不再是「无 property」形态）
+    expect('value' in comp!).toBe(true)
+    expect((comp as unknown as { value: string }).value).toBe('张三')
     expect(comp!.classList.contains('cell-editor')).toBe(true)
   })
 
