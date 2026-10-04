@@ -126,6 +126,9 @@ export const en: LocaleMessages = {
   // scheduler（日程调度）
   'scheduler.today': 'Today',
   'scheduler.more': '+{count}',
+  'scheduler.viewMonth': 'Month',
+  'scheduler.viewWeek': 'Week',
+  'scheduler.viewDay': 'Day',
   // kanban（看板）
   'kanban.emptyColumn': 'Drag cards here',
   'kanban.moveCard': 'Move card',

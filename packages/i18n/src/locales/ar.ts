@@ -162,6 +162,9 @@ export const ar: LocaleMessages = {
   // scheduler（日程调度）
   'scheduler.today': 'اليوم',
   'scheduler.more': '+{count}',
+  'scheduler.viewMonth': 'شهر',
+  'scheduler.viewWeek': 'أسبوع',
+  'scheduler.viewDay': 'يوم',
   // kanban (لوحة كانبان)
   'kanban.emptyColumn': 'اسحب البطاقات إلى هنا',
   'kanban.moveCard': 'نقل البطاقة',

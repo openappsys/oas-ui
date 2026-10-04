@@ -162,6 +162,9 @@ export const ru: LocaleMessages = {
   // scheduler（日程调度）
   'scheduler.today': 'Сегодня',
   'scheduler.more': '+{count}',
+  'scheduler.viewMonth': 'Месяц',
+  'scheduler.viewWeek': 'Неделя',
+  'scheduler.viewDay': 'День',
   // kanban (канбан-доска)
   'kanban.emptyColumn': 'Перетащите карточки сюда',
   'kanban.moveCard': 'Переместить карточку',

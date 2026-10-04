@@ -162,6 +162,9 @@ export const es: LocaleMessages = {
   // scheduler（日程调度）
   'scheduler.today': 'Hoy',
   'scheduler.more': '+{count}',
+  'scheduler.viewMonth': 'Mes',
+  'scheduler.viewWeek': 'Semana',
+  'scheduler.viewDay': 'Día',
   // kanban (tablero kanban)
   'kanban.emptyColumn': 'Arrastra tarjetas aquí',
   'kanban.moveCard': 'Mover tarjeta',

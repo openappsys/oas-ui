@@ -12,6 +12,18 @@ Month-view scheduling component (L3 capability subpath): renders event chips (ti
   <oas-scheduler id="scheduler-basic" page-show-date="2026-08-01" events='[{"date":"2026-08-08","title":"Release v2.6","color":"#dc2626"},{"date":"2026-08-08","title":"Green regressions"},{"date":"2026-08-15","title":"Review meeting"},{"date":"2026-08-22","title":"Review alignment","color":"#059669"},{"date":"2026-08-22","title":"Docs batch"},{"date":"2026-08-22","title":"Finalize"}]'></oas-scheduler>
 </DemoBlock>
 
+## Week / Day Views (P1)
+
+<DemoBlock title="Week view (time axis + timed event blocks; all-day row on top)">
+  <oas-scheduler id="scheduler-week" view="week" page-show-date="2026-08-10" start-hour="8" end-hour="20" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00","color":"#dc2626"},{"date":"2026-08-10","title":"Review","start":"14:00","end":"15:30","color":"#059669"},{"date":"2026-08-11","title":"All-day activity"},{"date":"2026-08-13","title":"Review meeting","start":"10:30","end":"12:00"}]'></oas-scheduler>
+</DemoBlock>
+
+<DemoBlock title="Day view (single-column time axis) + oas-view-change">
+  <oas-scheduler id="scheduler-day" view="day" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00"},{"date":"2026-08-10","title":"Review","start":"14:00","end":"15:30"}]'></oas-scheduler>
+</DemoBlock>
+
+Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): events with `start`/`end` are positioned as blocks by time; untimed events go to the all-day row on top; switching views via the header buttons dispatches `oas-view-change`. Event blocks support **drag-to-move** (drop on a target column/time to change `date` + `start`, keeping duration) and **bottom-edge drag-resize** (change `end` in 15-minute steps), written back with `oas-events-change` on settle.
+
 ## CRUD (method channel)
 
 <DemoBlock title="addEvent / updateEvent / removeEvent + oas-events-change feedback">

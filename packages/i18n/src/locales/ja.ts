@@ -162,6 +162,9 @@ export const ja: LocaleMessages = {
   // scheduler（日程调度）
   'scheduler.today': '今日',
   'scheduler.more': '+{count}件',
+  'scheduler.viewMonth': '月',
+  'scheduler.viewWeek': '週',
+  'scheduler.viewDay': '日',
   // kanban（かんばん）
   'kanban.emptyColumn': 'カードをここにドラッグ',
   'kanban.moveCard': 'カードを移動',

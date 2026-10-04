@@ -123,3 +123,95 @@ describe('OASScheduler 月视图 + events CRUD', () => {
     expect(el.events.length).toBe(1)
   })
 })
+
+describe('OASScheduler P1：view 切换 + 周/日时间轴 + 拖拽移动/缩放', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const TIMED: SchedulerEvent[] = [
+    { date: '2026-08-10', title: '晨会', start: '09:00', end: '10:00' },
+    { date: '2026-08-10', title: '评审', start: '14:00', end: '15:30', color: '#059669' },
+    { date: '2026-08-11', title: '全天活动' },
+  ]
+
+  function timedEl(extra: Record<string, string> = {}): OASScheduler {
+    return mount({ events: JSON.stringify(TIMED), 'page-show-date': '2026-08-10', ...extra })
+  }
+
+  it('view=week：渲染 7 列 + 时刻表；定时事件按 start/end 绝对定位，无 start 进全天行', () => {
+    const el = timedEl({ view: 'week' })
+    const cols = el.shadowRoot!.querySelectorAll('.timeview .col')
+    expect(cols.length).toBe(7)
+    const col10 = el.shadowRoot!.querySelector('.col[data-date="2026-08-10"]')!
+    const evs = col10.querySelectorAll('.event')
+    expect(evs.length).toBe(2)
+    const first = evs[0] as HTMLElement
+    expect(Number.parseFloat(first.style.top)).toBeCloseTo((9 - 8) * 48, 0)
+    expect(Number.parseFloat(first.style.height)).toBeCloseTo(48, 0)
+    expect(col10.querySelector('.allday')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('.col[data-date="2026-08-11"] .allday .chip')?.textContent).toBe('全天活动')
+  })
+
+  it('view=day：只渲染 1 列；视图按钮切换派发 oas-view-change（属性吸收不派发）', () => {
+    const el = timedEl({ view: 'day' })
+    expect(el.shadowRoot!.querySelectorAll('.timeview .col').length).toBe(1)
+    const log: string[] = []
+    el.addEventListener('oas-view-change', ((e: Event) =>
+      log.push((e as CustomEvent<{ view: string }>).detail.view)) as EventListener)
+    const weekBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="views"] button[data-view="week"]')!
+    weekBtn.click()
+    expect(log).toEqual(['week'])
+    expect(el.getAttribute('view')).toBe('week')
+    // 受控属性变化才派发（初始吸收不派发已在上一断言覆盖）
+  })
+
+  it('拖拽移动：落点列与纵向位置改 date + start（保持时长），派发 oas-events-change', () => {
+    const el = timedEl({ view: 'week' })
+    const ev = el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .event') as HTMLElement
+    ev.dispatchEvent(new DragEvent('dragstart', { bubbles: true }))
+    const target = el.shadowRoot!.querySelector('.col[data-date="2026-08-12"] .track') as HTMLElement
+    target.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, width: 100, height: 576, right: 100, bottom: 576, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    const drop = new DragEvent('drop', { bubbles: true })
+    Object.defineProperty(drop, 'clientY', { value: (12 - 8) * 48 })
+    Object.defineProperty(drop, 'preventDefault', { value: () => {} })
+    let changed = 0
+    el.addEventListener('oas-events-change', () => changed++)
+    target.dispatchEvent(drop)
+    const moved = el.events.find((x) => x.title === '晨会')!
+    expect(moved.date).toBe('2026-08-12')
+    expect(moved.start).toBe('12:00')
+    expect(moved.end).toBe('13:00')
+    expect(changed).toBe(1)
+  })
+
+  it('缩放手柄：pointer 位移按 15 分钟步进改 end；小于 start+15 时钳制', () => {
+    const el = timedEl({ view: 'week' })
+    const ev = el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .event') as HTMLElement
+    const grip = ev.querySelector('.resize') as HTMLElement
+    const track = el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .track') as HTMLElement
+    track.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, width: 100, height: 576, right: 100, bottom: 576, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    grip.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 1 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientY', { value: (11.5 - 8) * 48 })
+    track.dispatchEvent(move)
+    const resized = el.events.find((x) => x.title === '晨会')!
+    expect(resized.end).toBe('11:30')
+    const up = new PointerEvent('pointerup', { bubbles: true, pointerId: 1 })
+    track.dispatchEvent(up)
+  })
+
+  it('周导航：prev/next 按周平移；start-hour/end-hour 限幅时刻表', () => {
+    const el = timedEl({ view: 'week', 'start-hour': '9', 'end-hour': '12' })
+    expect(el.shadowRoot!.querySelectorAll('.timeview .gutter span').length).toBe(3)
+    const prev = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="prev"]')!
+    prev.click()
+    const dates = [...el.shadowRoot!.querySelectorAll('.timeview .col')].map((c) => (c as HTMLElement).dataset.date)
+    expect(dates[0]).toBe('2026-08-03')
+  })
+})

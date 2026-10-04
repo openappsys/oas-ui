@@ -162,6 +162,9 @@ export const zhCN = {
   // scheduler（日程调度）
   'scheduler.today': '今天',
   'scheduler.more': '+{count} 条',
+  'scheduler.viewMonth': '月',
+  'scheduler.viewWeek': '周',
+  'scheduler.viewDay': '日',
   // kanban（看板）
   'kanban.emptyColumn': '拖拽卡片到此处',
   'kanban.moveCard': '移动卡片',

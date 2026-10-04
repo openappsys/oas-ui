@@ -4040,12 +4040,16 @@
       "events": "Schedule events (JSON): [{ id?, date: YYYY-MM-DD, title, color?, start?, end? }] — chips rendered in day cells (title + color bar), collapsed to +N beyond 2",
       "page-show-date": "Panel month anchor (controlled): yyyy-MM-dd; re-anchors the shown month on change",
       "first-day-of-week": "First day of week (0-6); defaults to locale-derived",
-      "locale": "Localization (overrides config-provider injection and global locale)"
+      "locale": "Localization (overrides config-provider injection and global locale)",
+      "view": "View: month (default) / week / day; week/day views show a time axis with absolutely-positioned event blocks; untimed events go to the all-day row",
+      "start-hour": "Time axis start hour (0-23, default 8)",
+      "end-hour": "Time axis end hour (> start-hour and <= 24, default 20)"
     },
     "events": {
       "oas-day-click": "Dispatched when an empty day cell is clicked, detail: { date } — host attaches an add form",
       "oas-event-click": "Dispatched when an event chip is clicked, detail: { id, event } (does not trigger the day click)",
-      "oas-events-change": "Dispatched on any events change (set/addEvent/updateEvent/removeEvent), detail: { events }"
+      "oas-events-change": "Dispatched on any events change (set/addEvent/updateEvent/removeEvent), detail: { events }",
+      "oas-view-change": "Dispatched on view switch (month/week/day), detail: { view }; not dispatched on initial attribute absorption"
     },
     "props": {
       "events": "Schedule events (SchedulerEvent[]): \u001bl.events reads (copy incl. auto ids); \u001bl.events = [...] writes (syncs the events attribute + re-renders + dispatches oas-events-change)"

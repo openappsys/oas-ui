@@ -24,6 +24,24 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "view",
+      "type": "SchedulerView",
+      "default": "month",
+      "observed": true
+    },
+    {
+      "name": "start-hour",
+      "type": "string",
+      "default": "8",
+      "observed": true
+    },
+    {
+      "name": "end-hour",
+      "type": "string",
+      "default": "20",
+      "observed": true
     }
   ],
   "props": [
@@ -37,6 +55,10 @@
   "events": [
     {
       "name": "oas-events-change"
+    },
+    {
+      "name": "oas-view-change",
+      "detail": "{ view: v } satisfies SchedulerViewChangeDetail | { view: viewAttr } satisfies SchedulerViewChangeDetail"
     },
     {
       "name": "oas-day-click",

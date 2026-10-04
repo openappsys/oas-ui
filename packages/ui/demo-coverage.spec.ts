@@ -193,6 +193,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   scheduler: [
     ['oas-scheduler .chip', 'click', '点事件芯片 → oas-event-click'],
     ['oas-scheduler .day:not(.outside)', 'click', '点当月日格 → oas-day-click'],
+    ['oas-scheduler [part="views"] button[data-view="week"]', 'click', '切周视图 → oas-view-change'],
   ],
   kanban: [
     ['oas-kanban .card', 'dragmockto:oas-kanban .column:nth-of-type(2) .card', '拖拽首卡跨列到第二列首卡 → oas-change'],
