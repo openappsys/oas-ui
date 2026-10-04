@@ -190,6 +190,10 @@ const INTERACTIONS: Array<[string, string]> = [
 const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   grid: [['oas-grid[collapsed-rows] [part="collapse-tail-btn"]', 'click', '点折叠尾格展开 → oas-collapse']],
   swatch: [['oas-swatch-group:not([disabled]) oas-swatch:not([disabled])', 'click', '点色板 → 组 oas-change']],
+  scheduler: [
+    ['oas-scheduler .chip', 'click', '点事件芯片 → oas-event-click'],
+    ['oas-scheduler .day:not(.outside)', 'click', '点当月日格 → oas-day-click'],
+  ],
   kanban: [
     ['oas-kanban .card', 'dragmockto:oas-kanban .column:nth-of-type(2) .card', '拖拽首卡跨列到第二列首卡 → oas-change'],
     [

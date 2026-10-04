@@ -1833,6 +1833,19 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：`qa-regression/form.spec.ts` 两段式（真实 `oas-modal` + 真实指针点击）+ `qa-regression/input.spec.ts` value property（真浏览器）；**原始缺陷场景实证**：oas-ui-templates cdn-mpa `category.spec.ts:48`（编辑回填 + 必填校验 + 改名校验生效）在 2.5.8 原 dist 下 `1 failed`（表格不更新）、修复 dist 下 `4 passed`（RED→GREEN）；全量 e2e 全绿。
 - 文档：`form.md` / 6 组件 md（zh/en）+ `api-descriptions` + `api-manifest` 同步（api:gen 重生成）；CHANGELOG / PRD / ROADMAP 同步。
 
+## oas-scheduler 日程调度组件（L3 能力子包，分期交付）
+
+> 立项背景：Calendar/Scheduler 级能力按「独立子包隔离大面」落地（L3 能力子包先例），分期交付、每期独立立项与门禁。
+
+### P0 —— 月视图 + events CRUD（本期）
+
+- **oas-scheduler 日程调度组件（data 族，`@oas-ui/ui` L3 能力子路径）**：月视图（复用 calendar 日格引擎），日格内渲染事件芯片（标题 + 色条，>N 合并为「+N 条」）；`events` property 读/写（`SchedulerEvent[]`：`{ id?, date, title, color?, start?, end? }`）+ **CRUD 方法**（`addEvent` / `updateEvent(id, patch)` / `removeEvent(id)`，id 缺省自动分配）→ 数据变更派发 `oas-events-change { events }`；点事件芯片派发 `oas-event-click { id }`、点日格派发 `oas-day-click { date }`（宿主接编辑器/表单，组件不内置表单）。纯 UI 态，不做持久化。
+- 边界（后续期）：P1 周/日视图 + 拖拽移动/缩放；P2 重复规则（RRULE 子集）+ 提醒；P3 时区 + 日程（agenda）视图。
+
+### 验收
+
+- 单测（渲染/CRUD/事件派发/数据变更）+ docs（zh/en）+ api-manifest + i18n ×10 + 全量 e2e 全绿。
+
 ## oas-calendar `events` 排期条目通道（未发布）
 
 ### 特性

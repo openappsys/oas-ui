@@ -4034,5 +4034,21 @@
     "slots": {
       "": "行模板（首个无 slot 属性的 template 元素；字段 name 用 `{index}` 占位或自动索引化）"
     }
+  },
+  "oas-scheduler": {
+    "attrs": {
+      "events": "日程事件（JSON）：[{ id?, date: YYYY-MM-DD, title, color?, start?, end? }]——日格渲染事件芯片（标题+色条），>2 合并 +N 条",
+      "page-show-date": "面板月锚点（受控）：yyyy-MM-dd，变化时重锚定显示月份",
+      "first-day-of-week": "周起始日（0-6）；缺省按 locale 推导",
+      "locale": "本地化（覆盖 config-provider 注入与全局 locale）"
+    },
+    "events": {
+      "oas-day-click": "点击空白日格时派发，detail: { date }——宿主接新增表单",
+      "oas-event-click": "点击事件芯片时派发，detail: { id, event }（不触发日格点击）",
+      "oas-events-change": "events 数据变化（set/addEvent/updateEvent/removeEvent）时派发，detail: { events }"
+    },
+    "props": {
+      "events": "日程事件（SchedulerEvent[]）：\u001bl.events 读（含自动 id 的拷贝）；\u001bl.events = [...] 写（同步 events 属性 + 重渲染 + 派发 oas-events-change）"
+    }
   }
 }

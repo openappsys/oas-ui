@@ -416,7 +416,7 @@ export class OASCalendar extends OASElement {
   }
 
   /**
-   * 排期条目（公开读/写通道）：`[{ date: 'YYYY-MM-DD', title?, color? }]`。
+   * @apiProperty 排期条目（公开读/写通道）：`[{ date: 'YYYY-MM-DD', title?, color? }]`。
    * 读：当前生效条目（数组拷贝）；写：程序性赋值，序列化进受控 `events` 属性并即时重渲染（不派发事件）。
    */
   get events(): CalendarEvent[] {

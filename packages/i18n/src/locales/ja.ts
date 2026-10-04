@@ -159,6 +159,9 @@ export const ja: LocaleMessages = {
   'table.groupEmpty': '（空）',
   // list（リスト）
   'list.empty': 'データなし',
+  // scheduler（日程调度）
+  'scheduler.today': '今日',
+  'scheduler.more': '+{count}件',
   // kanban（かんばん）
   'kanban.emptyColumn': 'カードをここにドラッグ',
   'kanban.moveCard': 'カードを移動',

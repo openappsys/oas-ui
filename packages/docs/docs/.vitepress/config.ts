@@ -157,6 +157,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'GradientText 渐变文字', link: '/components/gradient-text' },
       { text: 'Highlight 文本高亮', link: '/components/highlight' },
       { text: 'Kanban 看板', link: '/components/kanban' },
+      { text: 'Scheduler 日程调度', link: '/components/scheduler' },
     ],
   },
   {

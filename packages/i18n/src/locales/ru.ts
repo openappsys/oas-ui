@@ -159,6 +159,9 @@ export const ru: LocaleMessages = {
   'table.groupEmpty': '(пусто)',
   // list (список)
   'list.empty': 'Нет данных',
+  // scheduler（日程调度）
+  'scheduler.today': 'Сегодня',
+  'scheduler.more': '+{count}',
   // kanban (канбан-доска)
   'kanban.emptyColumn': 'Перетащите карточки сюда',
   'kanban.moveCard': 'Переместить карточку',

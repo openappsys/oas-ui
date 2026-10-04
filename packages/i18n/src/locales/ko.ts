@@ -159,6 +159,9 @@ export const ko: LocaleMessages = {
   'table.groupEmpty': '(비어 있음)',
   // list（리스트）
   'list.empty': '데이터 없음',
+  // scheduler（日程调度）
+  'scheduler.today': '오늘',
+  'scheduler.more': '+{count}개',
   // kanban（칸반）
   'kanban.emptyColumn': '카드를 여기로 끌어다 놓으세요',
   'kanban.moveCard': '카드 이동',

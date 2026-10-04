@@ -159,6 +159,9 @@ export const ar: LocaleMessages = {
   'table.groupEmpty': '(فارغ)',
   // list (قائمة)
   'list.empty': 'لا توجد بيانات',
+  // scheduler（日程调度）
+  'scheduler.today': 'اليوم',
+  'scheduler.more': '+{count}',
   // kanban (لوحة كانبان)
   'kanban.emptyColumn': 'اسحب البطاقات إلى هنا',
   'kanban.moveCard': 'نقل البطاقة',

@@ -316,6 +316,7 @@ import './data/descriptions/index.js'
 import './data/timeline/index.js'
 import './data/list/index.js'
 import './data/kanban/index.js'
+import './data/scheduler/index.js'
 import './data/carousel/index.js'
 import './data/tree/index.js'
 // 能力包必须先于组件注册（同上）
@@ -362,6 +363,13 @@ export {
   type KanbanCardRenderer,
   type KanbanChangeDetail,
 } from './data/kanban/index.js'
+export {
+  OASScheduler,
+  type SchedulerEvent,
+  type SchedulerEventsChangeDetail,
+  type SchedulerEventClickDetail,
+  type SchedulerDayClickDetail,
+} from './data/scheduler/index.js'
 export { OASCarousel } from './data/carousel/oas-carousel.js'
 export { OASTree, type TreeNode } from './data/tree/index.js'
 export { OASTable, type TableColumn, type SortOrder } from './data/table/index.js'

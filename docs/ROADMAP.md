@@ -71,6 +71,7 @@
 | **未发布** | **表单读值通道 + 默认校验时机根治**：oas-input 及「字符串输入系」（textarea / input-number / auto-complete / mentions / combobox）公开 `value` property（get/set，对齐原生 `input.value`：读 getFormValue 语义当前值、写受控属性并即时回写内部控件、不派发事件）+ oas-form 默认 `validate-trigger` 由 `change` 改 `input`（边输入边校验，错误在点击提交前即结算，根治 `oas-modal` 包裹内两段式提交被错误文案布局位移吞点击；`change`/`blur` 档保留 + 已出错字段输入实时复校）+ 两段式回归改真实 `oas-modal` + 真实指针点击 + 字段级异步校验 vs 提交跨路径竞态修复（提交/reset 作废在途字段级异步校验，`fieldValidateSeq.clear()`） | 🚧 进行中 |
 | **未发布** | **主题皮肤预设 + 默认视觉精修**：`@oas-ui/theme/skins.css` 6 套品牌色皮肤（`data-skin` 叠加 `data-theme`、仅覆盖主色、派生档自动跟随、opt-in 无副作用）+ 默认阴影改现代分层投影（default 更好看） | 🚧 进行中 |
 | **未发布** | **oas-calendar `events` 排期条目通道**：声明式 `[{date,title?,color?}]` → 格内圆点 / `+N` 徽标 + 当日行内条目浮层（`oas-cell-render` 保留兜底；不含跨日/拖拽/周视图——Scheduler 另行立项） | 🚧 进行中 |
+| **未发布** | **oas-scheduler 日程调度组件（L3 能力子包，四期）**：P0 月视图 + events CRUD（芯片/+N + `oas-event-click`/`oas-day-click`/`oas-events-change`）；P1 周/日视图 + 拖拽移动/缩放；P2 重复规则（RRULE 子集）+ 提醒；P3 时区 + 日程视图 | 🚧 进行中 |
 
 > **注（可选工具包）**：`@oas-ui/react` 桥接包**不单独发布**，降级为仓库内可选工具包——React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`；桥接 hooks（`useOasEvent`/`useOasEvents`）供需要 camelCase 惯例 / TS 类型 / React 17-18 兼容的宿主按需使用，不随版本发布、不写入发布清单（详见 PRD）。
 

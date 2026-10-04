@@ -159,6 +159,9 @@ export const pt: LocaleMessages = {
   'table.groupEmpty': '(vazio)',
   // list (lista)
   'list.empty': 'Sem dados',
+  // scheduler（日程调度）
+  'scheduler.today': 'Hoje',
+  'scheduler.more': '+{count}',
   // kanban (quadro kanban)
   'kanban.emptyColumn': 'Arraste cartões para cá',
   'kanban.moveCard': 'Mover cartão',

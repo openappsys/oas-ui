@@ -1,0 +1,53 @@
+{
+  "className": "OASScheduler",
+  "sourceFile": "packages/ui/src/data/scheduler/oas-scheduler.ts",
+  "attrs": [
+    {
+      "name": "events",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "page-show-date",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "first-day-of-week",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "events",
+      "type": "SchedulerEvent[]",
+      "default": "[]",
+      "api": true
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-events-change"
+    },
+    {
+      "name": "oas-day-click",
+      "detail": "{ date: iso } satisfies SchedulerDayClickDetail"
+    },
+    {
+      "name": "oas-event-click",
+      "detail": "{ id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

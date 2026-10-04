@@ -123,6 +123,9 @@ export const en: LocaleMessages = {
   'table.clear': 'Clear',
   'table.groupEmpty': '(empty)',
   'list.empty': 'No data',
+  // scheduler（日程调度）
+  'scheduler.today': 'Today',
+  'scheduler.more': '+{count}',
   // kanban（看板）
   'kanban.emptyColumn': 'Drag cards here',
   'kanban.moveCard': 'Move card',

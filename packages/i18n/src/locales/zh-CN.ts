@@ -159,6 +159,9 @@ export const zhCN = {
   'table.groupEmpty': '（空）',
   // list（列表）
   'list.empty': '暂无数据',
+  // scheduler（日程调度）
+  'scheduler.today': '今天',
+  'scheduler.more': '+{count} 条',
   // kanban（看板）
   'kanban.emptyColumn': '拖拽卡片到此处',
   'kanban.moveCard': '移动卡片',
