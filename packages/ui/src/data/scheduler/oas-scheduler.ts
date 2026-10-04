@@ -291,6 +291,23 @@ export interface SchedulerEvent {
   color?: string
   start?: string
   end?: string
+  /** 重复规则（RRULE 子集）：按 freq × interval 从 date 起重复，until 截止（含当日） */
+  repeat?: SchedulerRepeat
+  /** 提前提醒分钟数（组件到点派发 oas-remind） */
+  remind?: number
+}
+
+/** 重复规则（RRULE 子集） */
+export interface SchedulerRepeat {
+  freq: 'daily' | 'weekly' | 'monthly'
+  interval?: number
+  until?: string
+}
+
+/** remind 事件载荷 */
+export interface SchedulerRemindDetail {
+  id: string
+  event: SchedulerEvent
 }
 
 /** events-change 事件载荷 */
@@ -336,6 +353,16 @@ function sanitizeEvents(v: unknown): SchedulerEvent[] {
     if (typeof it.color === 'string' && it.color !== '') ev.color = it.color
     if (typeof it.start === 'string' && it.start !== '') ev.start = it.start
     if (typeof it.end === 'string' && it.end !== '') ev.end = it.end
+    if (typeof it.repeat === 'object' && it.repeat !== null) {
+      const r = it.repeat as Record<string, unknown>
+      if (r.freq === 'daily' || r.freq === 'weekly' || r.freq === 'monthly') {
+        const rep: SchedulerRepeat = { freq: r.freq }
+        if (typeof r.interval === 'number' && r.interval >= 1) rep.interval = r.interval
+        if (typeof r.until === 'string' && r.until !== '') rep.until = r.until
+        ev.repeat = rep
+      }
+    }
+    if (typeof it.remind === 'number' && Number.isFinite(it.remind) && it.remind >= 0) ev.remind = it.remind
     out.push(ev)
   }
   return out
@@ -534,6 +561,7 @@ export class OASScheduler extends OASElement {
 
   protected override update(): void {
     this.syncEvents()
+    this.scheduleReminders()
     // view 属性同步（受控宿主驱动才发 oas-view-change；属性首次吸收不派发）
     const viewAttr = (this.getAttr('view', 'month') as SchedulerView) || 'month'
     if (viewAttr !== this.lastView) {
@@ -579,7 +607,57 @@ export class OASScheduler extends OASElement {
   }
 
   private eventsOn(iso: string): Array<SchedulerEvent & { id: string }> {
-    return this._events.filter((e) => e.date === iso)
+    return this._events.filter((e) => (e.repeat ? this.isOccurrence(e, iso) : e.date === iso))
+  }
+
+  /** iso 是否该重复事件的某个发生日（RRULE 子集：daily/weekly 按天数间隔、monthly 按同日） */
+  private isOccurrence(ev: SchedulerEvent, iso: string): boolean {
+    const rep = ev.repeat
+    if (!rep) return false
+    const d0 = parseISODate(ev.date)
+    const d = parseISODate(iso)
+    if (!d0 || !d || d.getTime() < d0.getTime()) return false
+    const until = rep.until ? parseISODate(rep.until) : null
+    if (until && d.getTime() > until.getTime()) return false
+    const interval = Math.max(rep.interval ?? 1, 1)
+    const days = Math.round((d.getTime() - d0.getTime()) / 86400_000)
+    if (rep.freq === 'daily') return days % interval === 0
+    if (rep.freq === 'weekly') return days % (7 * interval) === 0
+    const monthDiff = d.getFullYear() * 12 + d.getMonth() - (d0.getFullYear() * 12 + d0.getMonth())
+    return d.getDate() === d0.getDate() && monthDiff % interval === 0
+  }
+
+  /** 提醒调度：每个带 remind 的事件在「start - remind 分钟」到点派发 oas-remind */
+  private remindTimers = new Map<string, number>()
+
+  private scheduleReminders(): void {
+    for (const t of this.remindTimers.values()) clearTimeout(t)
+    this.remindTimers.clear()
+    const now = Date.now()
+    for (const ev of this._events) {
+      if (ev.remind === undefined || ev.remind < 0) continue
+      const at = this.remindAt(ev)
+      if (at === null || at <= now) continue
+      const id = ev.id
+      const timer = window.setTimeout(() => {
+        this.remindTimers.delete(id)
+        this.emit('remind', { id, event: { ...ev } } satisfies SchedulerRemindDetail)
+      }, at - now)
+      this.remindTimers.set(id, timer)
+    }
+  }
+
+  private remindAt(ev: SchedulerEvent): number | null {
+    const d = parseISODate(ev.date)
+    if (!d) return null
+    const start = parseTime(ev.start) ?? 0
+    return d.getTime() + start * 60_000 - ev.remind! * 60_000
+  }
+
+  override disconnectedCallback(): void {
+    for (const t of this.remindTimers.values()) clearTimeout(t)
+    this.remindTimers.clear()
+    super.disconnectedCallback()
   }
 
   private renderMonth(): void {

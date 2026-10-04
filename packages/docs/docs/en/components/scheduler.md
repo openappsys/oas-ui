@@ -24,6 +24,21 @@ Month-view scheduling component (L3 capability subpath): renders event chips (ti
 
 Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): events with `start`/`end` are positioned as blocks by time; untimed events go to the all-day row on top; switching views via the header buttons dispatches `oas-view-change`. Event blocks support **drag-to-move** (drop on a target column/time to change `date` + `start`, keeping duration) and **bottom-edge drag-resize** (change `end` in 15-minute steps), written back with `oas-events-change` on settle.
 
+## Recurrence & Reminders (P2)
+
+<DemoBlock title="Recurrence rules (RRULE subset: daily/weekly/monthly + interval + until)">
+  <oas-scheduler page-show-date="2026-08-01" events='[{"date":"2026-08-03","title":"Daily standup","repeat":{"freq":"daily"},"color":"#dc2626"},{"date":"2026-08-05","title":"Biweekly meeting","repeat":{"freq":"weekly","interval":2,"until":"2026-08-19"}},{"date":"2026-08-10","title":"Monthly review","repeat":{"freq":"monthly"}}]'></oas-scheduler>
+</DemoBlock>
+
+`repeat` expands occurrences from `date` by `freq` × `interval` (daily by day interval, weekly by week, monthly by same day-of-month), with `until` as the inclusive end; `el.events` still reads the raw entries (expansion happens only at render time).
+
+<DemoBlock title="Reminders (remind minutes; oas-remind when due)">
+  <oas-scheduler id="scheduler-remind" page-show-date="2026-08-10"></oas-scheduler>
+  <div id="scheduler-remind-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+For events with `remind` (minutes), the component dispatches `oas-remind` (`detail: { id, event }`) at `start` − `remind` minutes (untimed events count as 00:00). Past/removed/disconnected events never fire.
+
 ## CRUD (method channel)
 
 <DemoBlock title="addEvent / updateEvent / removeEvent + oas-events-change feedback">
@@ -83,6 +98,20 @@ onMounted(async () => {
     click.addEventListener('oas-day-click', (e) => {
       cout.textContent = `oas-day-click: ${e.detail.date} (host may open an add form here)`
     })
+  }
+
+  const remind = document.getElementById('scheduler-remind')
+  const rout = document.getElementById('scheduler-remind-output')
+  if (remind) {
+    const now = new Date()
+    const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const startMin = (now.getHours() * 60 + now.getMinutes() + 2) % (24 * 60)
+    const start = `${String(Math.floor(startMin / 60)).padStart(2, '0')}:${String(startMin % 60).padStart(2, '0')}`
+    remind.events = [{ date: iso, title: 'Starts in 2 min (remind 1 min early)', start, remind: 1, color: '#d97706' }]
+    remind.addEventListener('oas-remind', (e) => {
+      rout.textContent = `oas-remind: ${e.detail.event.title} (reminder fired)`
+    })
+    rout.textContent = `Demo: oas-remind feedback appears here in about a minute`
   }
 })
 </script>

@@ -61,6 +61,10 @@
       "detail": "{ view: v } satisfies SchedulerViewChangeDetail | { view: viewAttr } satisfies SchedulerViewChangeDetail"
     },
     {
+      "name": "oas-remind",
+      "detail": "{ id, event: { ...ev } } satisfies SchedulerRemindDetail"
+    },
+    {
       "name": "oas-day-click",
       "detail": "{ date: iso } satisfies SchedulerDayClickDetail"
     },

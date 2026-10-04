@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASScheduler } from './index.js'
 import type { SchedulerEvent } from './index.js'
 
@@ -121,6 +121,93 @@ describe('OASScheduler 月视图 + events CRUD', () => {
     })
     expect(dayOf(el, '2026-08-09').querySelectorAll('.chip').length).toBe(1)
     expect(el.events.length).toBe(1)
+  })
+})
+
+describe('OASScheduler P2：重复规则（RRULE 子集）+ 提醒', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('daily 重复：按月视图逐日展开；weekly 按周；monthly 按同日；until 截止；interval 间隔', () => {
+    const el = mount({
+      events: JSON.stringify([
+        { date: '2026-08-03', title: '每日站会', repeat: { freq: 'daily' } },
+        { date: '2026-08-05', title: '周会', repeat: { freq: 'weekly', interval: 2, until: '2026-08-19' } },
+        { date: '2026-08-10', title: '月度盘点', repeat: { freq: 'monthly' } },
+      ]),
+      'page-show-date': '2026-08-01',
+    })
+    // daily：8-03/8-04/8-05 都有
+    expect(dayOf(el, '2026-08-03').querySelector('.chip')?.textContent).toBe('每日站会')
+    expect(dayOf(el, '2026-08-04').querySelector('.chip')?.textContent).toBe('每日站会')
+    // weekly interval=2：8-05 有、8-12 无、8-19 有、8-26 无（until 截止外）
+    expect([...dayOf(el, '2026-08-05').querySelectorAll('.chip')].some((c) => c.textContent === '周会')).toBe(true)
+    expect([...dayOf(el, '2026-08-12').querySelectorAll('.chip')].some((c) => c.textContent === '周会')).toBe(false)
+    expect([...dayOf(el, '2026-08-19').querySelectorAll('.chip')].some((c) => c.textContent === '周会')).toBe(true)
+    expect([...dayOf(el, '2026-08-26').querySelectorAll('.chip')].some((c) => c.textContent === '周会')).toBe(false)
+    // monthly：8-10 有、8-11 无
+    expect([...dayOf(el, '2026-08-10').querySelectorAll('.chip')].some((c) => c.textContent === '月度盘点')).toBe(true)
+    expect([...dayOf(el, '2026-08-11').querySelectorAll('.chip')].some((c) => c.textContent === '月度盘点')).toBe(false)
+  })
+
+  it('周视图定时重复事件也展开；events 属性只读原始条目（非展开）', () => {
+    const el = mount({
+      events: JSON.stringify([
+        { date: '2026-08-10', title: '晨会', start: '09:00', end: '09:30', repeat: { freq: 'daily' } },
+      ]),
+      'page-show-date': '2026-08-10',
+      view: 'week',
+    })
+    expect(el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .event')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('.col[data-date="2026-08-11"] .event')).not.toBeNull()
+    expect(el.events.length).toBe(1)
+    expect(el.events[0]!.repeat?.freq).toBe('daily')
+  })
+
+  it('remind：到点派发 oas-remind（start - remind 分钟）；过期不排', () => {
+    vi.useFakeTimers()
+    try {
+      const now = new Date()
+      const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+      const startMin = (now.getHours() * 60 + now.getMinutes() + 2) % (24 * 60) // 2 分钟后开始 → 1 分钟后提醒
+      const start = `${String(Math.floor(startMin / 60)).padStart(2, '0')}:${String(startMin % 60).padStart(2, '0')}`
+      const el = mount({
+        events: JSON.stringify([
+          { date: iso, title: '快到点', start, remind: 1 },
+          { date: '2020-01-01', title: '过期', start: '08:00', remind: 5 },
+        ]),
+      })
+      const fired: string[] = []
+      el.addEventListener('oas-remind', ((e: Event) =>
+        fired.push((e as CustomEvent<{ id: string; event: { title: string } }>).detail.event.title)) as EventListener)
+      vi.advanceTimersByTime(61_000)
+      expect(fired).toEqual(['快到点'])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('CRUD 变化重排提醒（removeEvent 后不再派发）', () => {
+    vi.useFakeTimers()
+    try {
+      const now = new Date()
+      const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+      const startMin = (now.getHours() * 60 + now.getMinutes() + 2) % (24 * 60)
+      const start = `${String(Math.floor(startMin / 60)).padStart(2, '0')}:${String(startMin % 60).padStart(2, '0')}`
+      const el = mount({ events: JSON.stringify([{ date: iso, title: '将删', start, remind: 1 }]) })
+      const id = el.events[0]!.id!
+      expect(el.removeEvent(id)).toBe(true)
+      const fired: string[] = []
+      el.addEventListener('oas-remind', () => fired.push('x'))
+      vi.advanceTimersByTime(61_000)
+      expect(fired).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

@@ -1176,7 +1176,7 @@
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 44,
+      "exempt": 66,
       "skipped": 6
     },
     "scheduler.html::dark": {
@@ -1184,7 +1184,7 @@
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 44,
+      "exempt": 66,
       "skipped": 6
     }
   }

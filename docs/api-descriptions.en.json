@@ -4049,7 +4049,8 @@
       "oas-day-click": "Dispatched when an empty day cell is clicked, detail: { date } — host attaches an add form",
       "oas-event-click": "Dispatched when an event chip is clicked, detail: { id, event } (does not trigger the day click)",
       "oas-events-change": "Dispatched on any events change (set/addEvent/updateEvent/removeEvent), detail: { events }",
-      "oas-view-change": "Dispatched on view switch (month/week/day), detail: { view }; not dispatched on initial attribute absorption"
+      "oas-view-change": "Dispatched on view switch (month/week/day), detail: { view }; not dispatched on initial attribute absorption",
+      "oas-remind": "Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers)"
     },
     "props": {
       "events": "Schedule events (SchedulerEvent[]): \u001bl.events reads (copy incl. auto ids); \u001bl.events = [...] writes (syncs the events attribute + re-renders + dispatches oas-events-change)"

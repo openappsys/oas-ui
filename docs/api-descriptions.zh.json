@@ -4049,7 +4049,8 @@
       "oas-day-click": "点击空白日格时派发，detail: { date }——宿主接新增表单",
       "oas-event-click": "点击事件芯片时派发，detail: { id, event }（不触发日格点击）",
       "oas-events-change": "events 数据变化（set/addEvent/updateEvent/removeEvent）时派发，detail: { events }",
-      "oas-view-change": "视图切换（month/week/day）时派发，detail: { view }；属性首次吸收不派发"
+      "oas-view-change": "视图切换（month/week/day）时派发，detail: { view }；属性首次吸收不派发",
+      "oas-remind": "事件提醒到点时派发，detail: { id, event }（start - remind 分钟，组件内置定时器）"
     },
     "props": {
       "events": "日程事件（SchedulerEvent[]）：\u001bl.events 读（含自动 id 的拷贝）；\u001bl.events = [...] 写（同步 events 属性 + 重渲染 + 派发 oas-events-change）"

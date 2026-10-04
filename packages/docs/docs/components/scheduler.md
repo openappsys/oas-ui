@@ -24,6 +24,21 @@
 
 周/日视图为时刻表（`start-hour` / `end-hour` 限幅，默认 8–20 点）：带 `start`/`end` 的事件按时间绝对定位成块，无 `start` 的事件进顶部全天行；视图按钮切换派发 `oas-view-change`。事件块支持**拖拽移动**（拖到目标列/时刻改 `date` + `start`，保持时长）与**底缘拖拽缩放**（改 `end`，15 分钟步进），落定回写并派发 `oas-events-change`。
 
+## 重复规则与提醒（P2）
+
+<DemoBlock title="重复规则（RRULE 子集：daily/weekly/monthly + interval + until）">
+  <oas-scheduler page-show-date="2026-08-01" events='[{"date":"2026-08-03","title":"每日站会","repeat":{"freq":"daily"},"color":"#dc2626"},{"date":"2026-08-05","title":"双周会","repeat":{"freq":"weekly","interval":2,"until":"2026-08-19"}},{"date":"2026-08-10","title":"月度盘点","repeat":{"freq":"monthly"}}]'></oas-scheduler>
+</DemoBlock>
+
+`repeat` 按 `freq` × `interval` 从 `date` 起展开（daily 按天数间隔、weekly 按周、monthly 按同日），`until` 截止（含当日）；`el.events` 仍只读原始条目（展开只发生在渲染层）。
+
+<DemoBlock title="提醒（remind 分钟，到点派发 oas-remind）">
+  <oas-scheduler id="scheduler-remind" page-show-date="2026-08-10"></oas-scheduler>
+  <div id="scheduler-remind-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+带 `remind`（分钟）的事件，组件在「`start` − `remind` 分钟」到点派发 `oas-remind`（`detail: { id, event }`；无 `start` 按当日 00:00 计）。过期/已删/断开连接均不再派发。
+
 ## CRUD（方法通道）
 
 <DemoBlock title="addEvent / updateEvent / removeEvent + oas-events-change 反馈">
@@ -83,6 +98,20 @@ onMounted(async () => {
     click.addEventListener('oas-day-click', (e) => {
       cout.textContent = `oas-day-click：${e.detail.date}（宿主可在此打开新增表单）`
     })
+  }
+
+  const remind = document.getElementById('scheduler-remind')
+  const rout = document.getElementById('scheduler-remind-output')
+  if (remind) {
+    const now = new Date()
+    const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const startMin = (now.getHours() * 60 + now.getMinutes() + 2) % (24 * 60)
+    const start = `${String(Math.floor(startMin / 60)).padStart(2, '0')}:${String(startMin % 60).padStart(2, '0')}`
+    remind.events = [{ date: iso, title: '两分钟后开始（提前 1 分钟提醒）', start, remind: 1, color: '#d97706' }]
+    remind.addEventListener('oas-remind', (e) => {
+      rout.textContent = `oas-remind：${e.detail.event.title}（到点提醒已派发）`
+    })
+    rout.textContent = `演示：约 1 分钟后此处出现 oas-remind 反馈`
   }
 })
 </script>
