@@ -156,6 +156,63 @@ const STYLE = `
   border-radius: 50%;
   background: var(--oas-color-danger);
 }
+/* 排期条目（events 通道）：当日标记点/计数徽标 */
+[part='grid'] .day .ev-marks {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+}
+[part='grid'] .day .ev-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--oas-color-primary);
+}
+[part='grid'] .day .ev-more {
+  font-size: 9px;
+  line-height: 1;
+  color: var(--oas-color-text-secondary-strong);
+}
+/* 排期条目行内浮层（shadow 内自渲染） */
+:host .calendar {
+  position: relative;
+}
+:host .ev-panel {
+  position: absolute;
+  z-index: var(--oas-z-dropdown);
+  min-width: 120px;
+  max-width: 220px;
+  padding: var(--oas-space-2);
+  background: var(--oas-color-bg-elevated);
+  color: var(--oas-color-text-primary);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  box-shadow: var(--oas-shadow-md);
+  font-size: var(--oas-font-size-sm);
+}
+:host .ev-row {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-1_5);
+  padding: 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:host .ev-row .ev-dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+}
+:host .ev-row .ev-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 [part='grid'] .day:hover:not(.disabled) {
   background: var(--oas-color-bg-hover);
 }
@@ -281,6 +338,29 @@ const STYLE = `
 /** 面板层级：days 日网格 / months 12 月网格 / years decade 年网格（内部导航态） */
 type PanelView = 'days' | 'months' | 'years'
 
+/** 排期条目：`{ date: 'YYYY-MM-DD', title?, color? }` */
+export interface CalendarEvent {
+  date: string
+  title?: string
+  color?: string
+}
+
+/** 清洗 events 入参：仅保留 date 可解析的条目，title/color 仅收字符串 */
+function sanitizeEvents(v: unknown): CalendarEvent[] {
+  if (!Array.isArray(v)) return []
+  const out: CalendarEvent[] = []
+  for (const item of v) {
+    if (typeof item !== 'object' || item === null) continue
+    const it = item as Record<string, unknown>
+    if (typeof it.date !== 'string' || !parseISODate(it.date)) continue
+    const ev: CalendarEvent = { date: it.date }
+    if (typeof it.title === 'string' && it.title !== '') ev.title = it.title
+    if (typeof it.color === 'string' && it.color !== '') ev.color = it.color
+    out.push(ev)
+  }
+  return out
+}
+
 export class OASCalendar extends OASElement {
   static override get observedAttributes(): string[] {
     return [
@@ -298,8 +378,17 @@ export class OASCalendar extends OASElement {
       'format',
       'calendar-system',
       'months',
+      'events',
     ]
   }
+
+  /** 排期条目类型：`{ date: 'YYYY-MM-DD', title?, color? }` */
+  private _events: CalendarEvent[] = []
+  /** events 属性快照（避免每帧重解析 JSON） */
+  private _eventsAttrCache = ''
+  /** 当日条目浮层节点（至多一个） */
+  private evPanel: HTMLElement | null = null
+  private evPanelHideTimer: number | null = null
 
   private viewDate: Date = startOfDay(new Date())
   private focusDate: Date | null = null
@@ -321,10 +410,44 @@ export class OASCalendar extends OASElement {
   get disabledDate(): ((d: Date) => boolean) | null {
     return this._disabledDate
   }
-
   set disabledDate(fn: ((d: Date) => boolean) | null) {
     this._disabledDate = fn
     if (this.isConnected) this.update()
+  }
+
+  /**
+   * 排期条目（公开读/写通道）：`[{ date: 'YYYY-MM-DD', title?, color? }]`。
+   * 读：当前生效条目（数组拷贝）；写：程序性赋值，序列化进受控 `events` 属性并即时重渲染（不派发事件）。
+   */
+  get events(): CalendarEvent[] {
+    return this._events.slice()
+  }
+  set events(v: CalendarEvent[]) {
+    this._events = sanitizeEvents(v)
+    this._eventsAttrCache = JSON.stringify(this._events)
+    this.setAttribute('events', this._eventsAttrCache)
+    this.hideEventsPanel()
+    this.update()
+  }
+
+  /** 解析 events（属性变化时重解析；property 写入已由 setter 置好快照） */
+  private syncEvents(): void {
+    const raw = this.getAttr('events', '')
+    if (raw === this._eventsAttrCache) return
+    this._eventsAttrCache = raw
+    let parsed: unknown
+    try {
+      parsed = raw === '' ? [] : JSON.parse(raw)
+    } catch {
+      parsed = []
+    }
+    this._events = sanitizeEvents(parsed)
+    this.hideEventsPanel()
+  }
+
+  /** 当日条目（按 ISO 日分组） */
+  private eventsOn(iso: string): CalendarEvent[] {
+    return this._events.filter((e) => e.date === iso)
   }
 
   /** 生效周起始：first-day-of-week 覆写（0-6）> 面板 locale 推导 */
@@ -449,6 +572,21 @@ export class OASCalendar extends OASElement {
     this.shadow.querySelector<HTMLElement>('[part="title"]')?.addEventListener('click', () => this.onTitleClick())
     this.shadow.querySelector<HTMLElement>('[part="today"]')?.addEventListener('click', () => this.goToday())
     this.grid?.addEventListener('keydown', (e) => this.handleGridKey(e as KeyboardEvent))
+    // 排期条目浮层：悬停/聚焦当日（有条目时）展开行内清单；离开延迟收起（允许指针移入浮层）
+    this.grid?.addEventListener('pointerover', (e) => {
+      const day = (e.target as Element).closest?.('.day') as HTMLButtonElement | null
+      if (day) this.maybeShowEventsPanel(day)
+    })
+    this.grid?.addEventListener('focusin', (e) => {
+      const day = (e.target as Element).closest?.('.day') as HTMLButtonElement | null
+      if (day) this.maybeShowEventsPanel(day)
+    })
+    const scheduleHide = (): void => {
+      if (this.evPanelHideTimer !== null) clearTimeout(this.evPanelHideTimer)
+      this.evPanelHideTimer = window.setTimeout(() => this.hideEventsPanel(), 140)
+    }
+    this.grid?.addEventListener('pointerout', scheduleHide)
+    this.grid?.addEventListener('focusout', scheduleHide)
   }
 
   protected override render(): void {
@@ -466,6 +604,7 @@ export class OASCalendar extends OASElement {
   }
 
   protected override update(): void {
+    this.syncEvents()
     const locale = this.effectiveLocale()
     const mode = this.getAttr('mode', 'month')
     // mode 属性变化统一派发 oas-mode-change（受控宿主可据此重新设置 mode 保持模式）
@@ -677,7 +816,92 @@ export class OASCalendar extends OASElement {
         if (binder) binder.textContent = String(date.getDate())
       }
       this.emit('cell-render', { date, element: btn })
+      // 排期条目标记（一等公民 events 通道）：当日有条目渲染圆点（有 color 用之，无则主色），>2 合并 +N 徽标
+      const iso = btn.dataset.date ?? ''
+      const evs = iso ? this.eventsOn(iso) : []
+      if (evs.length > 0) {
+        const marks = document.createElement('span')
+        marks.className = 'ev-marks'
+        for (const ev of evs.slice(0, 2)) {
+          const dot = document.createElement('span')
+          dot.className = 'ev-dot'
+          if (ev.color) dot.style.background = ev.color
+          marks.appendChild(dot)
+        }
+        if (evs.length > 2) {
+          const more = document.createElement('span')
+          more.className = 'ev-more'
+          more.textContent = `+${evs.length - 2}`
+          marks.appendChild(more)
+        }
+        btn.appendChild(marks)
+      }
     }
+  }
+
+  /** 悬停/聚焦当日：有条目时展开行内条目浮层（日历 shadow 内自渲染，不经 oas-popover） */
+  private maybeShowEventsPanel(day: HTMLButtonElement): void {
+    const iso = day.dataset.date ?? ''
+    const evs = iso ? this.eventsOn(iso) : []
+    if (evs.length === 0) {
+      if (this.evPanel) this.hideEventsPanel()
+      return
+    }
+    if (this.evPanelHideTimer !== null) {
+      clearTimeout(this.evPanelHideTimer)
+      this.evPanelHideTimer = null
+    }
+    if (this.evPanel && this.evPanel.dataset.date === iso) return
+    this.hideEventsPanel()
+    const host = this.shadow.querySelector<HTMLElement>('.calendar')
+    if (!host) return
+    const panel = document.createElement('div')
+    panel.className = 'ev-panel'
+    panel.dataset.date = iso
+    panel.setAttribute('role', 'dialog')
+    panel.setAttribute('aria-label', iso)
+    for (const ev of evs) {
+      const row = document.createElement('div')
+      row.className = 'ev-row'
+      const dot = document.createElement('span')
+      dot.className = 'ev-dot'
+      if (ev.color) dot.style.background = ev.color
+      row.appendChild(dot)
+      const text = document.createElement('span')
+      text.className = 'ev-title'
+      text.textContent = ev.title ?? iso
+      row.appendChild(text)
+      panel.appendChild(row)
+    }
+    host.appendChild(panel)
+    // 定位：按钮下方；下方空间不足则上翻
+    const btnRect = day.getBoundingClientRect()
+    const hostRect = host.getBoundingClientRect()
+    panel.style.insetInlineStart = `${btnRect.left - hostRect.left}px`
+    if (btnRect.bottom - hostRect.top + 6 + panel.offsetHeight > hostRect.height) {
+      panel.style.top = `${btnRect.top - hostRect.top - panel.offsetHeight - 4}px`
+    } else {
+      panel.style.top = `${btnRect.bottom - hostRect.top + 4}px`
+    }
+    panel.addEventListener('pointerover', () => {
+      if (this.evPanelHideTimer !== null) {
+        clearTimeout(this.evPanelHideTimer)
+        this.evPanelHideTimer = null
+      }
+    })
+    panel.addEventListener('pointerout', () => {
+      this.evPanelHideTimer = window.setTimeout(() => this.hideEventsPanel(), 140)
+    })
+    this.evPanel = panel
+  }
+
+  private hideEventsPanel(): void {
+    if (this.evPanelHideTimer !== null) {
+      clearTimeout(this.evPanelHideTimer)
+      this.evPanelHideTimer = null
+    }
+    this.evPanel?.remove()
+    this.evPanel = null
   }
 
   /** 12 月面板（mode=year 的常驻视图 / month 模式标题钻取的子面板共用） */

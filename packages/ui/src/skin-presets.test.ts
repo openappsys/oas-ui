@@ -10,13 +10,15 @@ const SKINS = ['violet', 'emerald', 'rose', 'amber', 'graphite', 'teal'] as cons
 
 describe('theme/skins.css 皮肤预设静态守卫', () => {
   it('6 套皮肤：亮态块 + 暗态块都在，且暗态同时覆盖 data-theme 与 html.dark 两种机制', () => {
+    // biome 会统一引号风格，断言前先去引号做引号无关匹配
+    const flat = css.replace(/'/g, '"')
     for (const s of SKINS) {
-      expect(css, `${s} 亮态块`).toContain(`[data-skin='${s}']`)
-      expect(css, `${s} 暗态需覆盖 data-theme='dark'`).toContain(`[data-theme='dark'][data-skin='${s}']`)
-      expect(css, `${s} 暗态需覆盖 data-theme='high-contrast'`).toContain(
-        `[data-theme='high-contrast'][data-skin='${s}']`,
+      expect(flat, `${s} 亮态块`).toContain(`[data-skin="${s}"]`)
+      expect(flat, `${s} 暗态需覆盖 data-theme='dark'`).toContain(`[data-theme="dark"][data-skin="${s}"]`)
+      expect(flat, `${s} 暗态需覆盖 data-theme='high-contrast'`).toContain(
+        `[data-theme="high-contrast"][data-skin="${s}"]`,
       )
-      expect(css, `${s} 暗态需覆盖 html.dark（class 式暗色）`).toContain(`html.dark[data-skin='${s}']`)
+      expect(flat, `${s} 暗态需覆盖 html.dark（class 式暗色）`).toContain(`html.dark[data-skin="${s}"]`)
     }
   })
 

@@ -1833,6 +1833,16 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：`qa-regression/form.spec.ts` 两段式（真实 `oas-modal` + 真实指针点击）+ `qa-regression/input.spec.ts` value property（真浏览器）；**原始缺陷场景实证**：oas-ui-templates cdn-mpa `category.spec.ts:48`（编辑回填 + 必填校验 + 改名校验生效）在 2.5.8 原 dist 下 `1 failed`（表格不更新）、修复 dist 下 `4 passed`（RED→GREEN）；全量 e2e 全绿。
 - 文档：`form.md` / 6 组件 md（zh/en）+ `api-descriptions` + `api-manifest` 同步（api:gen 重生成）；CHANGELOG / PRD / ROADMAP 同步。
 
+## oas-calendar `events` 排期条目通道（未发布）
+
+### 特性
+
+- **一等公民 `events` 属性/属性通道**：声明式 `[{ date, title?, color? }]`——当日有条目时格内渲染圆点（有 `color` 用之、无则主色），多于 2 条合并为 `+N` 徽标；悬停/聚焦当日出**行内条目浮层**（日历 shadow 内自渲染，标题逐行 + 色点），不经宿主手写 `oas-cell-render` 监听（该事件保留为兜底）。不做：跨日条目、拖拽改期、周/日程视图（属 Scheduler，另行立项）。
+
+### 验收
+
+- 单测（events 解析/标记/徽标/浮层/与 oas-cell-render 共存）+ docs calendar.md（zh/en）+ api-manifest 同步；全量 e2e 全绿。
+
 ## 主题皮肤预设 + 默认视觉精修（未发布）
 
 ### 特性

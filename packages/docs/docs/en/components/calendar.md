@@ -55,6 +55,14 @@ In year mode, selecting a month dispatches `yyyy-MM`.
 
 `oas-cell-render` is dispatched for each rendered day cell (`detail: { date, element }`), letting the host append markers/badges/rich content (e.g. holidays, event dots); alternatively drop a `<template slot="cell">` inside the component for a static skeleton whose `[data-cell-date]` node is auto-bound to the day number. Appending `<span class="cell-dot">` inside `element` shows the built-in marker dot (uses the `--oas-color-danger` token; adapts to light/dark themes).
 
+## Scheduled Items (events)
+
+<DemoBlock title="events scheduled items (declarative markers + day detail popover)">
+  <oas-calendar id="calendar-events" value="2026-08-01" events='[{"date":"2026-08-08","title":"Release v2.6","color":"#dc2626"},{"date":"2026-08-08","title":"Green regressions"},{"date":"2026-08-15","title":"Review meeting"},{"date":"2026-08-22","title":"Review alignment","color":"#059669"},{"date":"2026-08-22","title":"Docs batch"},{"date":"2026-08-22","title":"Finalize"}]'></oas-calendar>
+</DemoBlock>
+
+The `events` attribute/property channel declares per-day items: `[{ date: 'YYYY-MM-DD', title?, color? }]`. A day with items renders marker dots (uses `color` when given, else the primary color); more than 2 items collapse into a `+N` badge; hovering or focusing the day opens an **inline items popover** (one row per title with its dot). Fully declarative — no hand-written `oas-cell-render` listener needed (that event stays as a fallback). Excludes cross-day items / drag-to-reschedule / week view (Scheduler-level capabilities).
+
 ## Mode Switching
 
 <DemoBlock title="Mode switching (month ↔ year quick year jump)">
@@ -212,6 +220,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | --- | --- | --- | --- |
 | `calendar-system` | Non-Gregorian calendar (Intl calendar option, e.g. chinese/islamic/hebrew): title, weekday headers, cell numbers and aria descriptions follow it; date math and value/data-date stay Gregorian | `string` | — |
 | `disabled` | Globally disabled: greys out the calendar and stops all interaction (picking / paging / keyboard) | `boolean` | — |
+| `events` | Scheduled items (JSON): [{ date: YYYY-MM-DD, title?, color? }] — marker dots per day (uses color if given, else primary), +N badge beyond 2; hover/focus opens an inline items popover | `CalendarEvent[]` | `[]` |
 | `first-day-of-week` | Week start override: `0` (Sunday) to `6` (Saturday); defaults to the locale (Monday for European/Chinese, Sunday for Japanese/Korean/English/Arabic) | `string` | — |
 | `format` | Header title format string (yyyy/MM/dd tokens; day/month panels) | `string` | — |
 | `locale` | Panel language override (title/weekdays/cell descriptions/nav copy/week start); defaults to config-provider > global | `string` | — |
@@ -230,6 +239,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabledDate` | Disabled-date predicate (property function channel, `(date) => boolean`) | `((d: Date) => boolean) \| null` | — |
+| `events` | Scheduled items (CalendarEvent[], { date, title?, color? }): l.events reads the effective items; l.events = [...] writes programmatically (syncs the events attribute and re-renders, no event) | — | — |
 
 #### Events
 

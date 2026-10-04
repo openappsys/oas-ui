@@ -55,6 +55,14 @@
 
 每个日单元格渲染时派发 `oas-cell-render`（`detail: { date, element }`），宿主可在单元格内追加标记/徽标/富文本（如节假日、事件点）；也可在组件内放 `<template slot="cell">` 提供静态骨架，`[data-cell-date]` 节点自动绑定日期数字。`element` 内追加 `<span class="cell-dot">` 即显示内置标记点（`--oas-color-danger` token，明暗主题自适应）。
 
+## 排期条目（events）
+
+<DemoBlock title="events 排期条目（声明式标记 + 当日条目浮层）">
+  <oas-calendar id="calendar-events" value="2026-08-01" events='[{"date":"2026-08-08","title":"发布 v2.6","color":"#dc2626"},{"date":"2026-08-08","title":"回归全绿"},{"date":"2026-08-15","title":"评审会"},{"date":"2026-08-22","title":"对齐 review","color":"#059669"},{"date":"2026-08-22","title":"文档批"},{"date":"2026-08-22","title":"定版"}]'></oas-calendar>
+</DemoBlock>
+
+`events` 属性/属性通道声明当日条目：`[{ date: 'YYYY-MM-DD', title?, color? }]`。当日有条目时格内渲染圆点（有 `color` 用之、无则主色），多于 2 条合并为 `+N` 徽标；悬停或聚焦当日展开**行内条目浮层**（标题逐行 + 色点）。纯声明式数据通道，不经手写 `oas-cell-render` 监听（该事件仍保留为兜底）。不含跨日条目 / 拖拽改期 / 周视图（属 Scheduler 级别能力）。
+
 ## 模式切换
 
 <DemoBlock title="模式切换（month ↔ year 快速跳年）">
@@ -212,6 +220,7 @@
 | --- | --- | --- | --- |
 | `calendar-system` | 非公历历法（Intl calendar 选项透传，如 chinese/islamic/hebrew）：标题/周头/日格数字/aria 跟随；日期计算与 value/data-date 仍为公历 | `string` | — |
 | `disabled` | 整体禁用：置灰并停止全部交互（点选/翻页/键盘） | `boolean` | — |
+| `events` | 排期条目声明（JSON）：[{ date: YYYY-MM-DD, title?, color? }]——当日渲染圆点（有 color 用之，无则主色），>2 合并 +N 徽标；悬停/聚焦当日展开行内条目浮层 | `CalendarEvent[]` | `[]` |
 | `first-day-of-week` | 周起始覆写：`0`（周日）～`6`（周六）；缺省随 locale（欧陆/中文周一、日/韩/英/阿周日） | `string` | — |
 | `format` | 头部标题格式串（yyyy/MM/dd token，日/月面板适用） | `string` | — |
 | `locale` | 面板语言覆盖（标题/周头/单元格描述/导航文案/周起始），缺省走 config-provider > 全局 | `string` | — |
@@ -230,6 +239,7 @@
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `disabledDate` | 禁用日期谓词（property 函数通道，`(date) => boolean`） | `((d: Date) => boolean) \| null` | — |
+| `events` | 排期条目（CalendarEvent[]，{ date, title?, color? }）：l.events 读当前生效条目；l.events = [...] 程序性写（同步 events 属性并重渲染，不派发事件） | — | — |
 
 #### 事件
 

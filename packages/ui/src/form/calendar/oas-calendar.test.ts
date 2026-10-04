@@ -23,6 +23,83 @@ function rovingFocus(el: OASCalendar): HTMLButtonElement {
   return el.shadowRoot!.querySelector<HTMLButtonElement>('.day[tabindex="0"]')!
 }
 
+describe('OASCalendar events 排期条目通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('attribute JSON：当日渲染标记点（前 2 条）+ >2 合并 +N 徽标；无效条目被清洗忽略', () => {
+    const el = mount({
+      events: JSON.stringify([
+        { date: '2026-08-15', title: '发布', color: '#ff0000' },
+        { date: '2026-08-15', title: '评审' },
+        { date: '2026-08-15', title: '第三条' },
+        { date: 'bad-date', title: '忽略' },
+        { notDate: 'x' },
+      ]),
+      value: '2026-08-01',
+    })
+    const d = day(el, '2026-08-15')
+    const dots = d.querySelectorAll('.ev-dot')
+    expect(dots.length, '仅前 2 条渲染圆点').toBe(2)
+    expect((dots[0] as HTMLElement).style.background).toContain('ff0000')
+    const more = d.querySelector('.ev-more')
+    expect(more?.textContent, '第 3 条合并为 +1').toBe('+1')
+  })
+
+  it('property get/set events：读为数组拷贝；写同步 attribute 并重渲染，不派发事件', () => {
+    const el = mount({ value: '2026-08-01' })
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.events = [{ date: '2026-08-20', title: '发版' }]
+    expect(el.getAttribute('events')).toBe(JSON.stringify([{ date: '2026-08-20', title: '发版' }]))
+    expect(day(el, '2026-08-20').querySelectorAll('.ev-dot').length).toBe(1)
+    expect(el.events.length).toBe(1)
+    expect(el.events).not.toBe((el as unknown as { _events: unknown[] })._events)
+    expect(fired).toBe(0)
+    // attribute 与 property 同步解析
+    el.setAttribute('events', JSON.stringify([{ date: '2026-08-21', title: 'x' }]))
+    expect(el.events.length).toBe(1)
+    expect(el.events[0]!.date).toBe('2026-08-21')
+  })
+
+  it('悬停当日（有条目）展开行内浮层，逐行列 title + 色点；离开收起', async () => {
+    const el = mount({
+      events: JSON.stringify([
+        { date: '2026-08-15', title: '发布' },
+        { date: '2026-08-15', title: '评审', color: '#00ff00' },
+      ]),
+      value: '2026-08-01',
+    })
+    const d = day(el, '2026-08-15')
+    d.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }))
+    const panel = el.shadowRoot!.querySelector('.ev-panel')
+    expect(panel, '浮层出现').not.toBeNull()
+    const rows = panel!.querySelectorAll('.ev-row')
+    expect(rows.length).toBe(2)
+    expect(rows[0]!.textContent).toContain('发布')
+    expect(rows[1]!.textContent).toContain('评审')
+    expect(panel!.getAttribute('role')).toBe('dialog')
+    grid(el).dispatchEvent(new PointerEvent('pointerout', { bubbles: true }))
+    await new Promise((r) => setTimeout(r, 200))
+    expect(el.shadowRoot!.querySelector('.ev-panel')).toBeNull()
+  })
+
+  it('无 events 当日不渲染标记、不展开浮层；oas-cell-render 兜底通道仍共存', () => {
+    const el = mount({ value: '2026-08-01' })
+    let cellRenderCount = 0
+    el.addEventListener('oas-cell-render', () => cellRenderCount++)
+    el.events = [{ date: '2026-08-16', title: 'y' }]
+    expect(day(el, '2026-08-17').querySelector('.ev-marks')).toBeNull()
+    day(el, '2026-08-17').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }))
+    expect(el.shadowRoot!.querySelector('.ev-panel')).toBeNull()
+    expect(cellRenderCount).toBeGreaterThan(0)
+  })
+})
+
 describe('OASCalendar', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

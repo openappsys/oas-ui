@@ -81,6 +81,11 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "events",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -88,6 +93,11 @@
       "name": "disabledDate",
       "type": "((d: Date) => boolean) | null",
       "api": true
+    },
+    {
+      "name": "events",
+      "type": "CalendarEvent[]",
+      "default": "[]"
     }
   ],
   "events": [

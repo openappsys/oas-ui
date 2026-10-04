@@ -469,7 +469,8 @@
       "locale": "Panel language override (title/weekdays/cell descriptions/nav copy/week start); defaults to config-provider > global",
       "format": "Header title format string (yyyy/MM/dd tokens; day/month panels)",
       "calendar-system": "Non-Gregorian calendar (Intl calendar option, e.g. chinese/islamic/hebrew): title, weekday headers, cell numbers and aria descriptions follow it; date math and value/data-date stay Gregorian",
-      "months": "Number of side-by-side month panels (1-12, default 1): panels lay out horizontally and paging steps the whole strip; the title shows the month range"
+      "months": "Number of side-by-side month panels (1-12, default 1): panels lay out horizontally and paging steps the whole strip; the title shows the month range",
+      "events": "Scheduled items (JSON): [{ date: YYYY-MM-DD, title?, color? }] — marker dots per day (uses color if given, else primary), +N badge beyond 2; hover/focus opens an inline items popover"
     },
     "events": {
       "oas-cell-render": "Dispatched when each day cell renders, `detail: { date, element }` (element is the day button; host can append markers/badges/rich content)",
@@ -482,7 +483,8 @@
       "header": "Custom header replacing the built-in navigation (built-in kept when not distributed)"
     },
     "props": {
-      "disabledDate": "Disabled-date predicate (property function channel, `(date) => boolean`)"
+      "disabledDate": "Disabled-date predicate (property function channel, `(date) => boolean`)",
+      "events": "Scheduled items (CalendarEvent[], { date, title?, color? }): \u001bl.events reads the effective items; \u001bl.events = [...] writes programmatically (syncs the events attribute and re-renders, no event)"
     }
   },
   "oas-card": {
