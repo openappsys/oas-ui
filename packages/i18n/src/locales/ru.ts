@@ -165,6 +165,9 @@ export const ru: LocaleMessages = {
   'scheduler.viewMonth': 'Месяц',
   'scheduler.viewWeek': 'Неделя',
   'scheduler.viewDay': 'День',
+  'scheduler.viewAgenda': 'Повестка',
+  'scheduler.allDay': 'Весь день',
+  'scheduler.noEvents': 'Нет событий в этом диапазоне',
   // kanban (канбан-доска)
   'kanban.emptyColumn': 'Перетащите карточки сюда',
   'kanban.moveCard': 'Переместить карточку',

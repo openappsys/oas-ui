@@ -165,6 +165,9 @@ export const zhCN = {
   'scheduler.viewMonth': '月',
   'scheduler.viewWeek': '周',
   'scheduler.viewDay': '日',
+  'scheduler.viewAgenda': '日程',
+  'scheduler.allDay': '全天',
+  'scheduler.noEvents': '此区间无日程',
   // kanban（看板）
   'kanban.emptyColumn': '拖拽卡片到此处',
   'kanban.moveCard': '移动卡片',

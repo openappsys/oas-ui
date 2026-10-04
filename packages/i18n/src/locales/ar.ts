@@ -165,6 +165,9 @@ export const ar: LocaleMessages = {
   'scheduler.viewMonth': 'شهر',
   'scheduler.viewWeek': 'أسبوع',
   'scheduler.viewDay': 'يوم',
+  'scheduler.viewAgenda': 'الأجندة',
+  'scheduler.allDay': 'طوال اليوم',
+  'scheduler.noEvents': 'لا توجد أحداث في هذا النطاق',
   // kanban (لوحة كانبان)
   'kanban.emptyColumn': 'اسحب البطاقات إلى هنا',
   'kanban.moveCard': 'نقل البطاقة',

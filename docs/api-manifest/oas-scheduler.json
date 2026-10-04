@@ -42,6 +42,12 @@
       "type": "string",
       "default": "20",
       "observed": true
+    },
+    {
+      "name": "timezone",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -61,16 +67,16 @@
       "detail": "{ view: v } satisfies SchedulerViewChangeDetail | { view: viewAttr } satisfies SchedulerViewChangeDetail"
     },
     {
-      "name": "oas-remind",
-      "detail": "{ id, event: { ...ev } } satisfies SchedulerRemindDetail"
-    },
-    {
       "name": "oas-day-click",
       "detail": "{ date: iso } satisfies SchedulerDayClickDetail"
     },
     {
       "name": "oas-event-click",
       "detail": "{ id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail"
+    },
+    {
+      "name": "oas-remind",
+      "detail": "{ id, event: { ...ev } } satisfies SchedulerRemindDetail"
     }
   ],
   "slots": [],

@@ -165,6 +165,9 @@ export const ja: LocaleMessages = {
   'scheduler.viewMonth': '月',
   'scheduler.viewWeek': '週',
   'scheduler.viewDay': '日',
+  'scheduler.viewAgenda': '予定表',
+  'scheduler.allDay': '終日',
+  'scheduler.noEvents': 'この期間に予定はありません',
   // kanban（かんばん）
   'kanban.emptyColumn': 'カードをここにドラッグ',
   'kanban.moveCard': 'カードを移動',

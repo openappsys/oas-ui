@@ -124,6 +124,71 @@ describe('OASScheduler 月视图 + events CRUD', () => {
   })
 })
 
+describe('OASScheduler P3：时区 + 日程（agenda）视图', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('view=agenda：从锚点起 28 天按日分组列出事件（含重复展开），timed 带时间、untimed 标全天', () => {
+    const el = mount({
+      events: JSON.stringify([
+        { date: '2026-08-10', title: '晨会', start: '09:00', end: '10:00' },
+        { date: '2026-08-12', title: '评审', color: '#059669' },
+        { date: '2026-08-05', title: '每日站会', repeat: { freq: 'daily' } },
+      ]),
+      'page-show-date': '2026-08-10',
+      view: 'agenda',
+    })
+    const days = el.shadowRoot!.querySelectorAll('.ag-day')
+    expect(days.length).toBeGreaterThanOrEqual(2)
+    const rows = [...el.shadowRoot!.querySelectorAll('.ag-row')].map((r) => r.textContent)
+    expect(rows.some((t) => t?.includes('09:00–10:00') && t.includes('晨会'))).toBe(true)
+    expect(rows.some((t) => t?.includes('评审'))).toBe(true)
+    expect(rows.filter((t) => t?.includes('每日站会')).length).toBeGreaterThan(1)
+    expect(rows.some((t) => t?.includes('全天') && t.includes('评审'))).toBe(true)
+  })
+
+  it('agenda 空区间显示占位；点事件行派发 oas-event-click、点日头派发 oas-day-click', () => {
+    const el = mount({ 'page-show-date': '2026-08-10', view: 'agenda' })
+    expect(el.shadowRoot!.querySelector('.ag-empty')?.textContent).toBeTruthy()
+    const el2 = mount({
+      events: JSON.stringify([{ date: '2026-08-10', title: 'x' }]),
+      'page-show-date': '2026-08-10',
+      view: 'agenda',
+    })
+    const log: string[] = []
+    el2.addEventListener('oas-event-click', () => log.push('ev'))
+    el2.addEventListener('oas-day-click', () => log.push('day'))
+    el2.shadowRoot!.querySelector<HTMLButtonElement>('.ag-row')!.click()
+    el2.shadowRoot!.querySelector<HTMLButtonElement>('.ag-day')!.click()
+    expect(log).toEqual(['ev', 'day'])
+  })
+
+  it('timezone：IANA 时区影响标题/列头格式化与「今天」标记；非法时区回落本地', () => {
+    const el = mount({ 'page-show-date': '2026-08-10', view: 'week', timezone: 'Asia/Shanghai' })
+    const head = el.shadowRoot!.querySelector('.col-head')?.textContent ?? ''
+    expect(head).toMatch(/\d{2}-\d{2}/)
+    const bad = mount({ 'page-show-date': '2026-08-10', timezone: 'Not/AZone' })
+    expect(bad.shadowRoot!.querySelector('[part="title"]')?.textContent).toContain('2026')
+  })
+
+  it('视图按钮含 agenda；切换派发 oas-view-change', () => {
+    const el = mount({ 'page-show-date': '2026-08-10' })
+    const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="views"] button[data-view="agenda"]')
+    expect(btn).not.toBeNull()
+    const log: string[] = []
+    el.addEventListener('oas-view-change', ((e: Event) =>
+      log.push((e as CustomEvent<{ view: string }>).detail.view)) as EventListener)
+    btn!.click()
+    expect(log).toEqual(['agenda'])
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="agenda"]')?.hidden).toBe(false)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="grid"]')?.hidden).toBe(true)
+  })
+})
+
 describe('OASScheduler P2：重复规则（RRULE 子集）+ 提醒', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

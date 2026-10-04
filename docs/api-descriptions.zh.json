@@ -4043,7 +4043,8 @@
       "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
       "view": "视图：month（默认）/ week / day；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行",
       "start-hour": "时间轴起始小时（0-23，默认 8）",
-      "end-hour": "时间轴结束小时（>start-hour 且 <=24，默认 20）"
+      "end-hour": "时间轴结束小时（>start-hour 且 <=24，默认 20）",
+      "timezone": "时区（IANA，如 Asia/Shanghai；空串=本地）：影响标题/列头日期格式化与「今天」标记（经 Intl timeZone）；非法时区回落本地"
     },
     "events": {
       "oas-day-click": "点击空白日格时派发，detail: { date }——宿主接新增表单",

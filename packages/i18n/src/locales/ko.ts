@@ -165,6 +165,9 @@ export const ko: LocaleMessages = {
   'scheduler.viewMonth': '월',
   'scheduler.viewWeek': '주',
   'scheduler.viewDay': '일',
+  'scheduler.viewAgenda': '일정',
+  'scheduler.allDay': '종일',
+  'scheduler.noEvents': '이 기간에 일정이 없습니다',
   // kanban（칸반）
   'kanban.emptyColumn': '카드를 여기로 끌어다 놓으세요',
   'kanban.moveCard': '카드 이동',

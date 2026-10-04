@@ -39,6 +39,20 @@
 
 带 `remind`（分钟）的事件，组件在「`start` − `remind` 分钟」到点派发 `oas-remind`（`detail: { id, event }`；无 `start` 按当日 00:00 计）。过期/已删/断开连接均不再派发。
 
+## 时区与日程视图（P3）
+
+<DemoBlock title="日程视图（agenda：锚点起 28 天时序清单）">
+  <oas-scheduler view="agenda" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00","color":"#dc2626"},{"date":"2026-08-12","title":"评审","color":"#059669"},{"date":"2026-08-05","title":"每日站会","repeat":{"freq":"daily"}}]'></oas-scheduler>
+</DemoBlock>
+
+`view="agenda"` 从锚点起 28 天按日分组列出事件（重复事件已展开）：定时事件带 `start–end` 时间、无 `start` 标「全天」；点事件行派发 `oas-event-click`、点日头派发 `oas-day-click`。
+
+<DemoBlock title="时区（timezone：影响标题/列头与「今天」标记）">
+  <oas-scheduler page-show-date="2026-08-10" timezone="Asia/Shanghai" events='[{"date":"2026-08-10","title":"上海例会","start":"09:00","end":"10:00"}]'></oas-scheduler>
+</DemoBlock>
+
+`timezone` 接受 IANA 时区名（如 `Asia/Shanghai` / `America/New_York` / `UTC`），影响标题/列头的日期格式化与「今天」标记（经 `Intl` timeZone）；非法时区回落本地。
+
 ## CRUD（方法通道）
 
 <DemoBlock title="addEvent / updateEvent / removeEvent + oas-events-change 反馈">

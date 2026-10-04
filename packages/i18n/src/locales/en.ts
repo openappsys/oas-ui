@@ -129,6 +129,9 @@ export const en: LocaleMessages = {
   'scheduler.viewMonth': 'Month',
   'scheduler.viewWeek': 'Week',
   'scheduler.viewDay': 'Day',
+  'scheduler.viewAgenda': 'Agenda',
+  'scheduler.allDay': 'All day',
+  'scheduler.noEvents': 'No events in this range',
   // kanban（看板）
   'kanban.emptyColumn': 'Drag cards here',
   'kanban.moveCard': 'Move card',

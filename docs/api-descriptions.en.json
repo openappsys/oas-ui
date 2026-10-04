@@ -4043,7 +4043,8 @@
       "locale": "Localization (overrides config-provider injection and global locale)",
       "view": "View: month (default) / week / day; week/day views show a time axis with absolutely-positioned event blocks; untimed events go to the all-day row",
       "start-hour": "Time axis start hour (0-23, default 8)",
-      "end-hour": "Time axis end hour (> start-hour and <= 24, default 20)"
+      "end-hour": "Time axis end hour (> start-hour and <= 24, default 20)",
+      "timezone": "Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local"
     },
     "events": {
       "oas-day-click": "Dispatched when an empty day cell is clicked, detail: { date } — host attaches an add form",

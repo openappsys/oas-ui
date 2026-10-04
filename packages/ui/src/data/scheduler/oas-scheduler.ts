@@ -27,6 +27,13 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   overflow: hidden;
 }
+/* hidden 属性切换视图：组件自身的 display:grid/flex 会覆盖 UA 的 [hidden] 默认，需显式压制 */
+.grid[hidden],
+.weekdays[hidden],
+.timeview[hidden],
+.agenda[hidden] {
+  display: none !important;
+}
 .header {
   display: flex;
   align-items: center;
@@ -175,6 +182,56 @@ const STYLE = `
 .timeview .col.drop {
   outline: 2px dashed var(--oas-color-primary);
   outline-offset: -2px;
+}
+.agenda {
+  display: flex;
+  flex-direction: column;
+  max-height: 640px;
+  overflow-y: auto;
+}
+.ag-day {
+  appearance: none;
+  border: none;
+  border-bottom: 1px solid var(--oas-color-border);
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-primary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-sm);
+  font-weight: 600;
+  padding: var(--oas-space-1) var(--oas-space-3);
+  text-align: start;
+  cursor: pointer;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.ag-day.today {
+  color: var(--oas-color-primary);
+}
+.ag-row {
+  appearance: none;
+  border: none;
+  border-bottom: 1px solid var(--oas-color-border);
+  border-inline-start: 3px solid var(--chip-color, var(--oas-color-primary));
+  background: transparent;
+  color: var(--oas-color-text-primary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-sm);
+  padding: var(--oas-space-1_5) var(--oas-space-3);
+  text-align: start;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ag-row:hover {
+  background: var(--oas-color-bg-hover);
+}
+.ag-empty {
+  padding: var(--oas-space-4);
+  text-align: center;
+  color: var(--oas-color-text-secondary-strong);
+  font-size: var(--oas-font-size-sm);
 }
 .weekdays,
 .grid {
@@ -331,7 +388,7 @@ export interface SchedulerViewChangeDetail {
   view: SchedulerView
 }
 
-export type SchedulerView = 'month' | 'week' | 'day'
+export type SchedulerView = 'month' | 'week' | 'day' | 'agenda'
 
 /** 'HH:mm' → 分钟数；非法返回 null */
 function parseTime(s: string | undefined): number | null {
@@ -370,7 +427,7 @@ function sanitizeEvents(v: unknown): SchedulerEvent[] {
 
 export class OASScheduler extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['events', 'page-show-date', 'first-day-of-week', 'locale', 'view', 'start-hour', 'end-hour']
+    return ['events', 'page-show-date', 'first-day-of-week', 'locale', 'view', 'start-hour', 'end-hour', 'timezone']
   }
 
   private _events: Array<SchedulerEvent & { id: string }> = []
@@ -487,6 +544,46 @@ export class OASScheduler extends OASElement {
     return Number.isFinite(h) && h > this.startHour() && h <= 24 ? h : 20
   }
 
+  /** 时区（IANA，如 'Asia/Shanghai'；空串 = 本地） */
+  private timezone(): string {
+    const tz = this.getAttr('timezone', '')
+    if (!tz) return ''
+    try {
+      new Intl.DateTimeFormat('en', { timeZone: tz })
+      return tz
+    } catch {
+      return ''
+    }
+  }
+
+  /** 时区感知的日期格式化（设了 timezone 走 Intl timeZone，否则本地 formatToken） */
+  private fmtTz(d: Date, token: string): string {
+    const tz = this.timezone()
+    if (!tz) return formatToken(d, token, this.effectiveLocale())
+    const parts = new Intl.DateTimeFormat(this.effectiveLocale(), {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(d)
+    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? ''
+    return token.replace(/yyyy|MM|dd/g, (m) => (m === 'yyyy' ? get('year') : m === 'MM' ? get('month') : get('day')))
+  }
+
+  /** 时区感知的「今天」（按目标时区的年月日取本地零点） */
+  private todayTz(): Date {
+    const tz = this.timezone()
+    if (!tz) return startOfDay(new Date())
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date())
+    const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0)
+    return new Date(get('year'), get('month') - 1, get('day'))
+  }
+
   private setView(v: SchedulerView): void {
     this.view = v
     this.setAttribute('view', v)
@@ -497,10 +594,14 @@ export class OASScheduler extends OASElement {
   private renderCurrentView(): void {
     const monthParts = this.shadow.querySelectorAll<HTMLElement>('[part="weekdays"], [part="grid"]')
     const timeview = this.shadow.querySelector<HTMLElement>('[part="timeview"]')
-    const isTime = this.view !== 'month'
-    for (const p of monthParts) p.hidden = isTime
+    const agenda = this.shadow.querySelector<HTMLElement>('[part="agenda"]')
+    const isTime = this.view === 'week' || this.view === 'day'
+    const isAgenda = this.view === 'agenda'
+    for (const p of monthParts) p.hidden = isTime || isAgenda
     if (timeview) timeview.hidden = !isTime
+    if (agenda) agenda.hidden = !isAgenda
     if (isTime) this.renderTimeView()
+    else if (isAgenda) this.renderAgenda()
     else {
       this.renderWeekdays()
       this.renderMonth()
@@ -520,11 +621,13 @@ export class OASScheduler extends OASElement {
             <button type="button" data-view="month"></button>
             <button type="button" data-view="week"></button>
             <button type="button" data-view="day"></button>
+            <button type="button" data-view="agenda"></button>
           </span>
         </div>
         <div class="weekdays" part="weekdays"></div>
         <div class="grid" part="grid" role="group"></div>
         <div class="timeview" part="timeview" hidden></div>
+        <div class="agenda" part="agenda" hidden></div>
       </div>
     `
   }
@@ -569,7 +672,7 @@ export class OASScheduler extends OASElement {
       this.lastView = viewAttr
       if (!first && viewAttr !== this.view)
         this.emit('view-change', { view: viewAttr } satisfies SchedulerViewChangeDetail)
-      this.view = ['month', 'week', 'day'].includes(viewAttr) ? viewAttr : 'month'
+      this.view = ['month', 'week', 'day', 'agenda'].includes(viewAttr) ? viewAttr : 'month'
     }
     // 面板月锚点：page-show-date 变化时重锚定（受控），未变不打断浏览
     const rawPage = this.getAttr('page-show-date', '')
@@ -587,7 +690,9 @@ export class OASScheduler extends OASElement {
     for (const btn of this.shadow.querySelectorAll<HTMLButtonElement>('[part="views"] button')) {
       btn.classList.toggle('on', btn.dataset.view === this.view)
       const v = btn.dataset.view as SchedulerView
-      btn.textContent = this.t(`scheduler.view${v === 'month' ? 'Month' : v === 'week' ? 'Week' : 'Day'}`)
+      btn.textContent = this.t(
+        `scheduler.view${v === 'month' ? 'Month' : v === 'week' ? 'Week' : v === 'day' ? 'Day' : 'Agenda'}`,
+      )
     }
     this.renderCurrentView()
   }
@@ -595,10 +700,59 @@ export class OASScheduler extends OASElement {
   private navigate(delta: number): void {
     if (this.view === 'month') this.viewDate = addMonths(this.viewDate, delta)
     else if (this.view === 'week') this.viewDate = new Date(this.viewDate.getTime() + delta * 7 * 86400_000)
+    else if (this.view === 'agenda') this.viewDate = new Date(this.viewDate.getTime() + delta * 28 * 86400_000)
     else this.viewDate = new Date(this.viewDate.getTime() + delta * 86400_000)
     this.renderCurrentView()
   }
 
+  /** 日程（agenda）视图：从锚点起 28 天按日分组的时序清单（重复事件已展开） */
+  private renderAgenda(): void {
+    const el = this.shadow.querySelector<HTMLElement>('[part="agenda"]')
+    if (!el) return
+    const start = startOfDay(this.viewDate)
+    const today = this.todayTz()
+    const locale = this.effectiveLocale()
+    if (this.titleEl) {
+      const end = new Date(start.getTime() + 27 * 86400_000)
+      this.titleEl.textContent = `${this.fmtTz(start, 'yyyy-MM-dd')} ~ ${this.fmtTz(end, 'MM-dd')}`
+    }
+    el.innerHTML = ''
+    let any = false
+    for (let i = 0; i < 28; i++) {
+      const d = new Date(start.getTime() + i * 86400_000)
+      const iso = toISODate(d)
+      const evs = this.eventsOn(iso)
+      if (evs.length === 0) continue
+      any = true
+      const day = document.createElement('button')
+      day.type = 'button'
+      day.className = 'ag-day'
+      if (isSameDay(d, today)) day.classList.add('today')
+      day.textContent = `${this.fmtTz(d, 'MM-dd')} ${weekdayLabels(locale, this.effectiveWeekStart())[d.getDay() === 0 ? 6 : d.getDay() - 1] ?? ''}`
+      day.addEventListener('click', () => {
+        this.emit('day-click', { date: iso } satisfies SchedulerDayClickDetail)
+      })
+      el.appendChild(day)
+      for (const ev of evs) {
+        const row = document.createElement('button')
+        row.type = 'button'
+        row.className = 'ag-row'
+        if (ev.color) row.style.setProperty('--chip-color', ev.color)
+        const time = ev.start ? `${ev.start}${ev.end ? `–${ev.end}` : ''}` : this.t('scheduler.allDay')
+        row.textContent = `${time} ${ev.title}`
+        row.addEventListener('click', () => {
+          this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)
+        })
+        el.appendChild(row)
+      }
+    }
+    if (!any) {
+      const empty = document.createElement('div')
+      empty.className = 'ag-empty'
+      empty.textContent = this.t('scheduler.noEvents')
+      el.appendChild(empty)
+    }
+  }
   private renderWeekdays(): void {
     const el = this.shadow.querySelector<HTMLElement>('[part="weekdays"]')
     if (!el) return
@@ -665,9 +819,9 @@ export class OASScheduler extends OASElement {
     if (!grid) return
     const locale = this.effectiveLocale()
     const weekStart = this.effectiveWeekStart()
-    const today = startOfDay(new Date())
+    const today = this.todayTz()
     if (this.titleEl) {
-      this.titleEl.textContent = formatToken(this.viewDate, 'yyyy-MM', locale)
+      this.titleEl.textContent = this.fmtTz(this.viewDate, 'yyyy-MM')
     }
     grid.innerHTML = ''
     const cells = buildMonthCells(this.viewDate, locale, weekStart)
@@ -744,7 +898,7 @@ export class OASScheduler extends OASElement {
     const startH = this.startHour()
     const endH = this.endHour()
     const locale = this.effectiveLocale()
-    const today = startOfDay(new Date())
+    const today = this.todayTz()
     const days: Date[] = []
     if (this.view === 'week') {
       const ws = this.weekStartOf(this.viewDate)
@@ -755,9 +909,9 @@ export class OASScheduler extends OASElement {
     if (this.titleEl) {
       if (this.view === 'week') {
         const end = days[6]!
-        this.titleEl.textContent = `${formatToken(days[0]!, 'yyyy-MM-dd', locale)} ~ ${formatToken(end, 'MM-dd', locale)}`
+        this.titleEl.textContent = `${this.fmtTz(days[0]!, 'yyyy-MM-dd')} ~ ${this.fmtTz(end, 'MM-dd')}`
       } else {
-        this.titleEl.textContent = formatToken(days[0]!, 'yyyy-MM-dd', locale)
+        this.titleEl.textContent = this.fmtTz(days[0]!, 'yyyy-MM-dd')
       }
     }
     tv.innerHTML = ''
@@ -782,7 +936,7 @@ export class OASScheduler extends OASElement {
       if (isSameDay(d, today)) col.classList.add('today')
       const head = document.createElement('div')
       head.className = 'col-head'
-      head.textContent = formatToken(d, 'MM-dd', locale)
+      head.textContent = this.fmtTz(d, 'MM-dd')
       col.appendChild(head)
 
       const allDay = document.createElement('div')

@@ -39,6 +39,20 @@ Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): eve
 
 For events with `remind` (minutes), the component dispatches `oas-remind` (`detail: { id, event }`) at `start` − `remind` minutes (untimed events count as 00:00). Past/removed/disconnected events never fire.
 
+## Timezone & Agenda View (P3)
+
+<DemoBlock title="Agenda view (28-day chronological list from anchor)">
+  <oas-scheduler view="agenda" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00","color":"#dc2626"},{"date":"2026-08-12","title":"Review","color":"#059669"},{"date":"2026-08-05","title":"Daily standup","repeat":{"freq":"daily"}}]'></oas-scheduler>
+</DemoBlock>
+
+`view="agenda"` lists events grouped by day for 28 days from the anchor (recurring events expanded): timed events show `start–end`, untimed events are labeled all-day; clicking a row dispatches `oas-event-click`, clicking a day header dispatches `oas-day-click`.
+
+<DemoBlock title="Timezone (affects title/column headers and the today marker)">
+  <oas-scheduler page-show-date="2026-08-10" timezone="Asia/Shanghai" events='[{"date":"2026-08-10","title":"Shanghai standup","start":"09:00","end":"10:00"}]'></oas-scheduler>
+</DemoBlock>
+
+`timezone` accepts an IANA name (e.g. `Asia/Shanghai` / `America/New_York` / `UTC`) and affects date formatting in the title/column headers and the today marker (via `Intl` timeZone); invalid values fall back to local.
+
 ## CRUD (method channel)
 
 <DemoBlock title="addEvent / updateEvent / removeEvent + oas-events-change feedback">

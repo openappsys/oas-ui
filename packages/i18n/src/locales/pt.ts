@@ -165,6 +165,9 @@ export const pt: LocaleMessages = {
   'scheduler.viewMonth': 'Mês',
   'scheduler.viewWeek': 'Semana',
   'scheduler.viewDay': 'Dia',
+  'scheduler.viewAgenda': 'Agenda',
+  'scheduler.allDay': 'Dia inteiro',
+  'scheduler.noEvents': 'Sem eventos neste período',
   // kanban (quadro kanban)
   'kanban.emptyColumn': 'Arraste cartões para cá',
   'kanban.moveCard': 'Mover cartão',
