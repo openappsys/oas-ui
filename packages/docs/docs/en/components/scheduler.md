@@ -12,7 +12,7 @@ Month-view scheduling component: renders event chips (title + color bar) inside 
   <oas-scheduler id="scheduler-basic" page-show-date="2026-08-01" events='[{"date":"2026-08-08","title":"Release v2.6","color":"#dc2626"},{"date":"2026-08-08","title":"Green regressions"},{"date":"2026-08-15","title":"Review meeting"},{"date":"2026-08-22","title":"Review alignment","color":"#059669"},{"date":"2026-08-22","title":"Docs batch"},{"date":"2026-08-22","title":"Finalize"}]'></oas-scheduler>
 </DemoBlock>
 
-## Week / Day Views (P1)
+## Week / Day Views
 
 <DemoBlock title="Week view (time axis + timed event blocks; all-day row on top)">
   <oas-scheduler id="scheduler-week" view="week" page-show-date="2026-08-10" start-hour="8" end-hour="20" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00","color":"#dc2626"},{"date":"2026-08-10","title":"Review","start":"14:00","end":"15:30","color":"#059669"},{"date":"2026-08-11","title":"All-day activity"},{"date":"2026-08-13","title":"Review meeting","start":"10:30","end":"12:00"}]'></oas-scheduler>
@@ -24,7 +24,7 @@ Month-view scheduling component: renders event chips (title + color bar) inside 
 
 Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): events with `start`/`end` are positioned as blocks by time; untimed events go to the all-day row on top; switching views via the header buttons dispatches `oas-view-change`. Event blocks support **drag-to-move** (drop on a target column/time to change `date` + `start`, keeping duration) and **bottom-edge drag-resize** (change `end` in 15-minute steps), written back with `oas-events-change` on settle.
 
-## Recurrence & Reminders (P2)
+## Recurrence & Reminders
 
 <DemoBlock title="Recurrence rules (RRULE subset: daily/weekly/monthly + interval + until)">
   <oas-scheduler id="scheduler-repeat" page-show-date="2026-08-01" events='[{"date":"2026-08-03","title":"Daily standup","repeat":{"freq":"daily"},"color":"#dc2626"},{"date":"2026-08-05","title":"Biweekly meeting","repeat":{"freq":"weekly","interval":2,"until":"2026-08-19"}},{"date":"2026-08-10","title":"Monthly review","repeat":{"freq":"monthly"}}]'></oas-scheduler>
@@ -39,7 +39,7 @@ Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): eve
 
 For events with `remind` (minutes), the component dispatches `oas-remind` (`detail: { id, event }`) at `start` − `remind` minutes (untimed events count as 00:00). Past/removed/disconnected events never fire.
 
-## Timezone & Agenda View (P3)
+## Timezone & Agenda View
 
 <DemoBlock title="Agenda view (28-day chronological list from anchor)">
   <oas-scheduler view="agenda" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00","color":"#dc2626"},{"date":"2026-08-12","title":"Review","color":"#059669"},{"date":"2026-08-05","title":"Daily standup","repeat":{"freq":"daily"}}]'></oas-scheduler>

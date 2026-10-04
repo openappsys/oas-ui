@@ -43,6 +43,16 @@ test('scheduler 浏览器回归：月/周/agenda 视图渲染与切换 + console
   const agenda = page.locator('[view="agenda"]')
   await expect(agenda.locator('.ag-row', { hasText: '晨会' }).first()).toBeVisible()
 
+  // agenda 行不被 flex 压缩：内容超 max-height 应滚动溢出而非压扁行（实抓：行被压到 13px 裁掉文本上半）
+  const agendaMetrics = await agenda.evaluate((host) => {
+    const s = (host as HTMLElement).shadowRoot!
+    const row = s.querySelector('.ag-row') as HTMLElement
+    const box = s.querySelector('.agenda') as HTMLElement
+    return { rowH: row.getBoundingClientRect().height, scrollable: box.scrollHeight > box.clientHeight + 1 }
+  })
+  expect(agendaMetrics.rowH, 'agenda 行应保持自然高度（flex-shrink:0），不被压扁').toBeGreaterThanOrEqual(24)
+  expect(agendaMetrics.scrollable, 'agenda 内容超高应出现纵向滚动').toBe(true)
+
   // 暗色：各视图仍可见
   await page.evaluate(() => document.documentElement.classList.add('dark'))
   await page.waitForTimeout(300)

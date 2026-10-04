@@ -196,6 +196,9 @@ const STYLE = `
   max-height: 640px;
   overflow-y: auto;
 }
+.agenda > * {
+  flex-shrink: 0;
+}
 .ag-day {
   appearance: none;
   border: none;
