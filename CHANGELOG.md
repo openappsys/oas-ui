@@ -6,7 +6,7 @@
 
 ### 特性
 
-- **theme 默认阴影精修（现代分层投影）+ 可选皮肤预设层**：阴影三档由单层改为两层（近距硬边 + 远距柔和扩散，观感更细腻、边缘不脏）；新增 `@oas-ui/theme/skins.css`——6 套品牌色皮肤预设（`violet` / `emerald` / `rose` / `amber` / `graphite` / `teal`），在 `data-theme` 之上叠加 `data-skin` 切换、与三套内置主题自由组合，仅覆盖 `--oas-color-primary`（`-hover`/`-active`/`-primary-text`/焦点环等派生档自动跟随），opt-in 无副作用（不引则完全无影响）。暗色变体选择器同时覆盖 `[data-theme='dark']`（库内规范）与 `html.dark`（宿主常见的 class 式暗色，如 docs 站）——初版只覆盖前者，致宿主 class 式暗色下皮肤被默认主色回填而失效（视觉复核实抓并回归固化 `packages/ui/src/skin-presets.test.ts`）
+- **theme 默认阴影精修（现代分层投影）+ 可选皮肤预设层 + docs 皮肤画廊**：阴影三档由单层改为两层（近距硬边 + 远距柔和扩散，观感更细腻、边缘不脏）；新增 `@oas-ui/theme/skins.css`——6 套品牌色皮肤预设（`violet` / `emerald` / `rose` / `amber` / `graphite` / `teal`），在 `data-theme` 之上叠加 `data-skin` 切换、与三套内置主题自由组合，仅覆盖 `--oas-color-primary`（`-hover`/`-active`/`-primary-text`/焦点环等派生档自动跟随），opt-in 无副作用（不引则完全无影响）；新增 docs「皮肤画廊」页（`/guide/skins`，6 皮肤 × 3 主题实时切换预览）。暗色变体选择器同时覆盖 `[data-theme='dark']`（库内规范）与 `html.dark`（宿主常见的 class 式暗色，如 docs 站）——初版只覆盖前者，致宿主 class 式暗色下皮肤被默认主色回填而失效（视觉复核实抓并回归固化 `packages/ui/src/skin-presets.test.ts`）
 - **oas-input 及「字符串输入系」公开 `value` property（get/set）**（`oas-input` / `oas-textarea` / `oas-input-number` / `oas-auto-complete` / `oas-mentions` / `oas-combobox`）：补上程序性读值的公开通道——此前 `value` 只有 attribute 写入通道与 `oas-*` 事件通知，宿主读当前值只能监听事件自存 state 或穿透 shadow 读内部控件（脆弱）。`el.value` 读取该组件 `getFormValue()` 语义的当前值（parser/mask 感知、label/值分离、实时解析等各自口径），`el.value = x` 写受控 `value` 属性并强制回写内部控件、不派发事件（对齐原生 `input.value` / `textarea.value` 的受控赋值即生效语义）。React/Vue 受控集成与宿主读写不再需要样板。
 
 ### 修复
