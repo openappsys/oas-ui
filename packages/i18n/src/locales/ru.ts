@@ -160,6 +160,8 @@ export const ru: LocaleMessages = {
   // list (список)
   'list.empty': 'Нет данных',
   // scheduler（日程调度）
+  'scheduler.prev': 'Назад',
+  'scheduler.next': 'Вперёд',
   'scheduler.today': 'Сегодня',
   'scheduler.more': '+{count}',
   'scheduler.viewMonth': 'Месяц',

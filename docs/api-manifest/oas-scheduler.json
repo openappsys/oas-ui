@@ -60,7 +60,8 @@
   ],
   "events": [
     {
-      "name": "oas-events-change"
+      "name": "oas-events-change",
+      "detail": "{ events: this.events } satisfies SchedulerEventsChangeDetail"
     },
     {
       "name": "oas-view-change",

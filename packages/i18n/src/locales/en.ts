@@ -124,6 +124,8 @@ export const en: LocaleMessages = {
   'table.groupEmpty': '(empty)',
   'list.empty': 'No data',
   // scheduler（日程调度）
+  'scheduler.prev': 'Previous',
+  'scheduler.next': 'Next',
   'scheduler.today': 'Today',
   'scheduler.more': '+{count}',
   'scheduler.viewMonth': 'Month',

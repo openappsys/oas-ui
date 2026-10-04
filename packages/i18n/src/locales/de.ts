@@ -160,6 +160,8 @@ export const de: LocaleMessages = {
   // list (Liste)
   'list.empty': 'Keine Daten',
   // scheduler（日程调度）
+  'scheduler.prev': 'Zurück',
+  'scheduler.next': 'Weiter',
   'scheduler.today': 'Heute',
   'scheduler.more': '+{count}',
   'scheduler.viewMonth': 'Monat',

@@ -369,6 +369,9 @@ export {
   type SchedulerEventsChangeDetail,
   type SchedulerEventClickDetail,
   type SchedulerDayClickDetail,
+  type SchedulerRemindDetail,
+  type SchedulerRepeat,
+  type SchedulerView,
 } from './data/scheduler/index.js'
 export { OASCarousel } from './data/carousel/oas-carousel.js'
 export { OASTree, type TreeNode } from './data/tree/index.js'

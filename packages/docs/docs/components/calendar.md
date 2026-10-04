@@ -239,7 +239,7 @@
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `disabledDate` | 禁用日期谓词（property 函数通道，`(date) => boolean`） | `((d: Date) => boolean) \| null` | — |
-| `events` | 排期条目（CalendarEvent[]，{ date, title?, color? }）：l.events 读当前生效条目；l.events = [...] 程序性写（同步 events 属性并重渲染，不派发事件） | `CalendarEvent[]` | `[]` |
+| `events` | 排期条目（`CalendarEvent[]`，`{ date, title?, color? }`）：`el.events` 读当前生效条目；`el.events = [...]` 程序性写（同步 events 属性并重渲染，不派发事件） | `CalendarEvent[]` | `[]` |
 
 #### 事件
 

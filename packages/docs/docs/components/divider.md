@@ -161,7 +161,7 @@ vertical 模式下 `content-position` 支持 `top`（贴顶）/ `center`（默�
 | `middle` | 对称缩进：水平线两侧等宽内缩（默认 16.67%，走 `--oas-divider-middle-inset` 变量） | `boolean` | — |
 | `size` | 间距档位：`small` / `medium`（默认）/ `large`；仅水平布局生效 | `string` | — |
 | `strong` | 分隔文字加重（font-weight 600） | `boolean` | — |
-| `text-orientation` | 垂直分割线的文字方向：horizontal（默认横排）/ ertical（竖排，跟随竖线方向从上到下）；仅 vertical 分割线有意义 | `string` | — |
+| `text-orientation` | 垂直分割线的文字方向：horizontal（默认横排）/ vertical（竖排，跟随竖线方向从上到下）；仅 vertical 分割线有意义 | `string` | — |
 | `variant` | 线型：solid / dashed / dotted / double / double-dashed（双虚线）/ double-dotted（双点线）；显式设置优先于 dashed 布尔（兼容写法）。线型仅水平布局生效 | `string` | — |
 
 #### 插槽

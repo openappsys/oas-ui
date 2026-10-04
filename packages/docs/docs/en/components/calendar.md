@@ -239,7 +239,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabledDate` | Disabled-date predicate (property function channel, `(date) => boolean`) | `((d: Date) => boolean) \| null` | — |
-| `events` | Scheduled items (CalendarEvent[], { date, title?, color? }): l.events reads the effective items; l.events = [...] writes programmatically (syncs the events attribute and re-renders, no event) | `CalendarEvent[]` | `[]` |
+| `events` | Scheduled items (`CalendarEvent[]`, `{ date, title?, color? }`): `el.events` reads the effective items; `el.events = [...]` writes programmatically (syncs the events attribute and re-renders, no event) | `CalendarEvent[]` | `[]` |
 
 #### Events
 

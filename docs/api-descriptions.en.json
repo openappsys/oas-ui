@@ -484,7 +484,7 @@
     },
     "props": {
       "disabledDate": "Disabled-date predicate (property function channel, `(date) => boolean`)",
-      "events": "Scheduled items (CalendarEvent[], { date, title?, color? }): \u001bl.events reads the effective items; \u001bl.events = [...] writes programmatically (syncs the events attribute and re-renders, no event)"
+      "events": "Scheduled items (`CalendarEvent[]`, `{ date, title?, color? }`): `el.events` reads the effective items; `el.events = [...]` writes programmatically (syncs the events attribute and re-renders, no event)"
     }
   },
   "oas-card": {
@@ -1013,7 +1013,7 @@
       "size": "Spacing tier: `small` / `medium` (default) / `large`; horizontal layout only",
       "strong": "Bolder divider title (font-weight 600)",
       "color": "Color: accepts 11 preset names (mapped to `--oas-preset-*` tokens) or any CSS color value",
-      "text-orientation": "Text orientation on a vertical divider: horizontal (default, reads normally) / \u000bertical (vertical, top-to-bottom along the line); only meaningful for vertical dividers"
+      "text-orientation": "Text orientation on a vertical divider: horizontal (default, reads normally) / vertical (vertical, top-to-bottom along the line); only meaningful for vertical dividers"
     },
     "events": {},
     "slots": {
@@ -2419,7 +2419,7 @@
   "oas-qrcode": {
     "attrs": {
       "aria-label": "Accessible name of the container; defaults to i18n",
-      "error-correction": "Error correction level l/m/q/h (all four implemented; default l. Use q/h for a center logo or weak-light/damaged scenarios)",
+      "error-correction": "Error correction level l/m/q/h (all four implemented; default el. Use q/h for a center logo or weak-light/damaged scenarios)",
       "size": "Rendered width/height (px)",
       "value": "QR code content text",
       "bg-color": "Background color (default white — scanners need a light quiet zone; stays white in dark theme for scannability; override via `--oas-qrcode-bg`)",
@@ -4041,7 +4041,7 @@
       "page-show-date": "Panel month anchor (controlled): yyyy-MM-dd; re-anchors the shown month on change",
       "first-day-of-week": "First day of week (0-6); defaults to locale-derived",
       "locale": "Localization (overrides config-provider injection and global locale)",
-      "view": "View: month (default) / week / day; week/day views show a time axis with absolutely-positioned event blocks; untimed events go to the all-day row",
+      "view": "View: month (default) / week / day / agenda; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list",
       "start-hour": "Time axis start hour (0-23, default 8)",
       "end-hour": "Time axis end hour (> start-hour and <= 24, default 20)",
       "timezone": "Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local"
@@ -4050,11 +4050,11 @@
       "oas-day-click": "Dispatched when an empty day cell is clicked, detail: { date } — host attaches an add form",
       "oas-event-click": "Dispatched when an event chip is clicked, detail: { id, event } (does not trigger the day click)",
       "oas-events-change": "Dispatched on any events change (set/addEvent/updateEvent/removeEvent), detail: { events }",
-      "oas-view-change": "Dispatched on view switch (month/week/day), detail: { view }; not dispatched on initial attribute absorption",
+      "oas-view-change": "Dispatched on view switch (month/week/day/agenda), detail: { view }; not dispatched on initial attribute absorption",
       "oas-remind": "Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers)"
     },
     "props": {
-      "events": "Schedule events (SchedulerEvent[]): \u001bl.events reads (copy incl. auto ids); \u001bl.events = [...] writes (syncs the events attribute + re-renders + dispatches oas-events-change)"
+      "events": "Schedule events (`SchedulerEvent[]`): `el.events` reads (copy incl. auto ids); `el.events = [...]` writes (syncs the events attribute + re-renders + dispatches oas-events-change)"
     }
   }
 }

@@ -124,6 +124,252 @@ describe('OASScheduler 月视图 + events CRUD', () => {
   })
 })
 
+describe('OASScheduler 终轮修复回归（F1/F2/F3/F4）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('F1：setter 读→回写 id 稳定；受控 attribute 更新 id 稳定', () => {
+    const el = mount({ 'page-show-date': '2026-08-01' })
+    el.events = [{ date: '2026-08-10', title: 'a', id: 'a' }]
+    expect(el.events[0]!.id).toBe('a')
+    el.events = el.events
+    expect(el.events[0]!.id, 'setter 回写不得改名').toBe('a')
+    el.events = [...el.events, { date: '2026-08-11', title: 'b', id: 'b' }]
+    expect(el.events.map((e) => e.id)).toEqual(['a', 'b'])
+    el.setAttribute('events', JSON.stringify([{ date: '2026-08-10', title: 'a2', id: 'a' }]))
+    expect(el.events[0]!.id, '受控 attribute 更新不得改名').toBe('a')
+    expect(el.events[0]!.title).toBe('a2')
+  })
+
+  it('F4：同批重复显式 id 自动避让', () => {
+    const el = mount({ 'page-show-date': '2026-08-01' })
+    el.events = [
+      { date: '2026-08-10', title: 'a', id: 'x' },
+      { date: '2026-08-11', title: 'b', id: 'x' },
+    ]
+    const ids = el.events.map((e) => e.id)
+    expect(new Set(ids).size).toBe(2)
+  })
+
+  it('F2：America/New_York 时区 month 标题当月正确、day 列与 page-show-date 一致', () => {
+    const el = mount({ timezone: 'America/New_York', 'page-show-date': '2026-08-10' })
+    const title = el.shadowRoot!.querySelector('[part="title"]')!.textContent ?? ''
+    expect(title, 'month 标题应为 2026-08 而非回退 2026-07').toContain('2026')
+    expect(title).toContain('08')
+    const day = mount({ timezone: 'America/New_York', 'page-show-date': '2026-08-10', view: 'day' })
+    expect(day.shadowRoot!.querySelector<HTMLElement>('.col')?.dataset.date).toBe('2026-08-10')
+    expect(day.shadowRoot!.querySelector('.col-head')?.textContent).toContain('08-10')
+  })
+
+  it('F3：monthly day-31 提醒跳过短月落 3-31（非 2-28）；当天提醒已过推进仍保锚定日', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-01-31T10:00:00'))
+      const el = mount({
+        events: JSON.stringify([
+          { date: '2026-01-31', title: '月末', start: '09:00', remind: 10, repeat: { freq: 'monthly' } },
+        ]),
+      })
+      const me = el as unknown as { remindAt(ev: unknown): number | null }
+      const at = me.remindAt(el.events[0])
+      expect(at).not.toBeNull()
+      const when = new Date(at!)
+      // 2 月无 31 号：应跳过 2 月落 3-31（而非幻影 2-28）
+      expect(when.getMonth()).toBe(2)
+      expect(when.getDate()).toBe(31)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('C-1：monthly day-31 的 nextOccurrence 在「中间月」不漏最近发生月（from 用 1 号构造防漂移）', () => {
+    vi.useFakeTimers()
+    try {
+      for (const [today, expectDate] of [
+        ['2026-03-20', '2026-03-31'],
+        ['2026-05-10', '2026-05-31'],
+        ['2026-10-15', '2026-10-31'],
+        ['2026-12-01', '2026-12-31'],
+      ] as const) {
+        vi.setSystemTime(new Date(`${today}T08:00:00`))
+        const el = mount({
+          events: JSON.stringify([
+            { date: '2026-01-31', title: '月末', start: '09:00', remind: 10, repeat: { freq: 'monthly' } },
+          ]),
+        })
+        const me = el as unknown as { remindAt(ev: unknown): number | null }
+        const at = me.remindAt(el.events[0])
+        const when = new Date(at!)
+        expect(
+          `${when.getFullYear()}-${String(when.getMonth() + 1).padStart(2, '0')}-${String(when.getDate()).padStart(2, '0')}`,
+          `${today} → ${expectDate}`,
+        ).toBe(expectDate)
+      }
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('I-1：timezone 下「今天」按钮锚 todayTz（跨月差一天时点按不跳整月、today 高亮不丢）', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-09-01T02:00:00')) // 宿主 +08:00；NY 当天为 2026-08-31
+      const el = mount({ timezone: 'America/New_York' })
+      const todayBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="today"]')!
+      todayBtn.click()
+      const title = el.shadowRoot!.querySelector('[part="title"]')!.textContent ?? ''
+      expect(title, '点今天应锚 NY 的 2026-08 而非宿主 2026-09').toContain('08')
+      expect(title).not.toContain('09')
+      expect(el.shadowRoot!.querySelector('.day.today'), 'today 高亮不丢').not.toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('OASScheduler review 修复回归（C1/I1/I2/I4/I5/I-5/I-6/I-7/I-1）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('C1：远期事件的 remind 不在挂载瞬间误触发（setTimeout 溢出分段重排）', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-01-01T00:00:00'))
+      const el = mount({ events: JSON.stringify([{ date: '2026-03-01', title: '远期', start: '09:00', remind: 10 }]) })
+      const fired: string[] = []
+      el.addEventListener('oas-remind', () => fired.push('x'))
+      vi.advanceTimersByTime(1000)
+      expect(fired, '远期提醒不得在挂载后立即派发').toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('I1：repeat 事件的 remind 按「下一发生日」调度（不再只认首个锚点日）', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-08-10T08:49:00'))
+      const el = mount({
+        events: JSON.stringify([
+          { date: '2026-08-01', title: '每日站会', start: '09:00', remind: 10, repeat: { freq: 'daily' } },
+        ]),
+      })
+      const fired: string[] = []
+      el.addEventListener('oas-remind', () => fired.push('x'))
+      vi.advanceTimersByTime(11 * 60 * 1000)
+      expect(fired, '今日发生日 09:00 前十分钟应提醒').toEqual(['x'])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('I2：agenda 星期标签按 weekStart 正确换算（en/周日起始不错位）', () => {
+    const el = mount({
+      'page-show-date': '2026-08-10',
+      view: 'agenda',
+      locale: 'en',
+      events: JSON.stringify([{ date: '2026-08-10', title: 'x' }]),
+    })
+    const day = el.shadowRoot!.querySelector('.ag-day')!
+    expect(day.textContent, '周一 2026-08-10 在 en（周日起始）下应标 M').toContain('M')
+    expect(day.textContent).not.toContain(' S')
+  })
+
+  it('I4：显式 id 与自动 id 不碰撞（CRUD 命中正确条目）', () => {
+    const el = mount({ 'page-show-date': '2026-08-01' })
+    el.events = [
+      { date: '2026-08-10', title: 'a' },
+      { date: '2026-08-11', title: 'b', id: 'ev1' },
+    ]
+    const ids = el.events.map((e) => e.id)
+    expect(new Set(ids).size, 'id 必须唯一').toBe(ids.length)
+    expect(el.removeEvent('ev1')).toBe(true)
+    expect(el.events.map((e) => e.title)).toEqual(['a'])
+  })
+
+  it('I5：start-hour >= end-hour 钳制（end = start+1，时间轴不塌陷）', () => {
+    const el = mount({
+      view: 'week',
+      'start-hour': '21',
+      events: JSON.stringify([{ date: '2026-08-10', title: 'x', start: '09:00', end: '10:00' }]),
+      'page-show-date': '2026-08-10',
+    })
+    const track = el.shadowRoot!.querySelector('.track') as HTMLElement
+    expect(Number.parseFloat(track.style.height)).toBeGreaterThan(0)
+    expect(el.shadowRoot!.querySelectorAll('.gutter span').length).toBeGreaterThan(0)
+  })
+
+  it('I-5：拖拽移动按时长约束落点（2 小时事件拖到 23:30 不截断时长）', () => {
+    const el = mount({
+      view: 'week',
+      events: JSON.stringify([{ date: '2026-08-10', title: '长会', start: '09:00', end: '11:00' }]),
+      'page-show-date': '2026-08-10',
+    })
+    const ev = el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .event') as HTMLElement
+    ev.dispatchEvent(new DragEvent('dragstart', { bubbles: true }))
+    const target = el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .track') as HTMLElement
+    target.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, width: 100, height: 576, right: 100, bottom: 576, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    const drop = new DragEvent('drop', { bubbles: true })
+    Object.defineProperty(drop, 'clientY', { value: (23.5 - 8) * 48 })
+    Object.defineProperty(drop, 'preventDefault', { value: () => {} })
+    target.dispatchEvent(drop)
+    const moved = el.events[0]!
+    expect(moved.start).toBe('22:00')
+    expect(moved.end).toBe('24:00')
+  })
+
+  it('I-6：updateEvent 走 sanitize（坏 date/空标题被拒并返回 false，不污染内部状态）', () => {
+    const el = mount({ events: JSON.stringify([{ date: '2026-08-10', title: 'a' }]), 'page-show-date': '2026-08-01' })
+    const id = el.events[0]!.id!
+    expect(el.updateEvent(id, { date: 'not-a-date' })).toBe(false)
+    expect(el.updateEvent(id, { title: '' })).toBe(false)
+    expect(el.events[0]!.date).toBe('2026-08-10')
+    expect(el.events[0]!.title).toBe('a')
+  })
+
+  it('I-7：非法时间（25:00）被清洗为不定时（进全天行而非溢出）', () => {
+    const el = mount({
+      view: 'week',
+      events: JSON.stringify([{ date: '2026-08-10', title: 'x', start: '25:00', end: '26:00' }]),
+      'page-show-date': '2026-08-10',
+    })
+    expect(el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .event')).toBeNull()
+    expect(el.shadowRoot!.querySelector('.band-col[data-date="2026-08-10"] .allday .chip')).not.toBeNull()
+  })
+
+  it('I-1：resize 落定才派发 oas-events-change（move 期间不重建 DOM）', () => {
+    const el = mount({
+      view: 'week',
+      events: JSON.stringify([{ date: '2026-08-10', title: '晨会', start: '09:00', end: '10:00' }]),
+      'page-show-date': '2026-08-10',
+    })
+    const ev = el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .event') as HTMLElement
+    const grip = ev.querySelector('.resize') as HTMLElement
+    const track = el.shadowRoot!.querySelector('.col[data-date="2026-08-10"] .track') as HTMLElement
+    track.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, width: 100, height: 576, right: 100, bottom: 576, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    let changed = 0
+    el.addEventListener('oas-events-change', () => changed++)
+    grip.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 1 }))
+    const move = new PointerEvent('pointermove', { bubbles: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientY', { value: (11.5 - 8) * 48 })
+    track.dispatchEvent(move)
+    expect(changed, 'move 期间不派发').toBe(0)
+    track.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }))
+    expect(changed, '落定派发一次').toBe(1)
+    expect(el.events[0]!.end).toBe('11:30')
+  })
+})
+
 describe('OASScheduler P3：时区 + 日程（agenda）视图', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -304,8 +550,10 @@ describe('OASScheduler P1：view 切换 + 周/日时间轴 + 拖拽移动/缩放
     const first = evs[0] as HTMLElement
     expect(Number.parseFloat(first.style.top)).toBeCloseTo((9 - 8) * 48, 0)
     expect(Number.parseFloat(first.style.height)).toBeCloseTo(48, 0)
-    expect(col10.querySelector('.allday')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('.col[data-date="2026-08-11"] .allday .chip')?.textContent).toBe('全天活动')
+    expect(el.shadowRoot!.querySelector('.band-col[data-date="2026-08-10"] .allday')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('.band-col[data-date="2026-08-11"] .allday .chip')?.textContent).toBe(
+      '全天活动',
+    )
   })
 
   it('view=day：只渲染 1 列；视图按钮切换派发 oas-view-change（属性吸收不派发）', () => {
@@ -352,10 +600,10 @@ describe('OASScheduler P1：view 切换 + 周/日时间轴 + 拖拽移动/缩放
     const move = new PointerEvent('pointermove', { bubbles: true, pointerId: 1 })
     Object.defineProperty(move, 'clientY', { value: (11.5 - 8) * 48 })
     track.dispatchEvent(move)
-    const resized = el.events.find((x) => x.title === '晨会')!
-    expect(resized.end).toBe('11:30')
     const up = new PointerEvent('pointerup', { bubbles: true, pointerId: 1 })
     track.dispatchEvent(up)
+    const resized = el.events.find((x) => x.title === '晨会')!
+    expect(resized.end).toBe('11:30')
   })
 
   it('周导航：prev/next 按周平移；start-hour/end-hour 限幅时刻表', () => {

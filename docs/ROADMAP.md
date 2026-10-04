@@ -73,6 +73,8 @@
 | **未发布** | **oas-calendar `events` 排期条目通道**：声明式 `[{date,title?,color?}]` → 格内圆点 / `+N` 徽标 + 当日行内条目浮层（`oas-cell-render` 保留兜底；不含跨日/拖拽/周视图——Scheduler 另行立项） | 🚧 进行中 |
 | **未发布** | **oas-scheduler 日程调度组件（L3 能力子包，四期）**：P0 月视图 + events CRUD（芯片/+N + `oas-event-click`/`oas-day-click`/`oas-events-change`）；P1 周/日视图 + 拖拽移动/缩放；P2 重复规则（RRULE 子集）+ 提醒；P3 时区 + 日程视图 | 🚧 进行中 |
 
+| **未发布** | **移动原生形态批**（2026-10-04 立项评估：组件并集矩阵偏桌面，移动原生交互 5 项真缺口）：**oas-notice-bar**（通告栏：marquee 引擎复用 + 图标/可关闭/action）+ **oas-index-bar**（索引栏：字母侧栏点/拖跳转 + scrollspy 联动）+ **oas-pull-refresh**（下拉刷新：手势/滚动协调 + 阻力曲线 + 状态机 i18n）+ **oas-swipe-cell**（滑动操作：横滑露按钮 + 吸附开合 + 单开互斥 + 键盘可达）+ **oas-picker**（滚轮选择器：scroll-snap 惯性轮 + 多列联动 + listbox 语义 + form-associated） | 🚧 进行中 |
+
 > **注（可选工具包）**：`@oas-ui/react` 桥接包**不单独发布**，降级为仓库内可选工具包——React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`；桥接 hooks（`useOasEvent`/`useOasEvents`）供需要 camelCase 惯例 / TS 类型 / React 17-18 兼容的宿主按需使用，不随版本发布、不写入发布清单（详见 PRD）。
 
 > 组件总数：v1.0 核心集约 68 件；v1.x 长尾推进至约 115~120 件，100% 覆盖。原 13 个未排期组件已全部分配：轻量基础组件（button-group/label/kbd/visually-hidden）提到最前的 v1.1（独立、无前置依赖、快速交付），其余按功能族归到 v1.3/v1.4/v1.5/v1.7，无遗漏。

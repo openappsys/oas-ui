@@ -160,6 +160,8 @@ export const zhCN = {
   // list（列表）
   'list.empty': '暂无数据',
   // scheduler（日程调度）
+  'scheduler.prev': '上一页',
+  'scheduler.next': '下一页',
   'scheduler.today': '今天',
   'scheduler.more': '+{count} 条',
   'scheduler.viewMonth': '月',

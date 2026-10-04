@@ -2,10 +2,12 @@ import { OASElement } from '@oas-ui/core'
 import {
   addMonths,
   buildMonthCells,
+  daysInMonth,
   formatToken,
   getWeekStart,
   isSameDay,
   parseISODate,
+  resolveLocale,
   startOfDay,
   toISODate,
   weekdayLabels,
@@ -71,16 +73,10 @@ const STYLE = `
 }
 .header .views {
   display: inline-flex;
-  gap: 0;
+  gap: var(--oas-space-1);
 }
 .header .views button {
-  border-radius: 0;
-}
-.header .views button:first-child {
-  border-radius: var(--oas-radius-sm) 0 0 var(--oas-radius-sm);
-}
-.header .views button:last-child {
-  border-radius: 0 var(--oas-radius-sm) var(--oas-radius-sm) 0;
+  border-radius: var(--oas-radius-sm);
 }
 .header .views button.on {
   background: var(--oas-color-primary);
@@ -93,6 +89,33 @@ const STYLE = `
   grid-template-columns: 48px 1fr;
   overflow-y: auto;
   max-height: 640px;
+}
+.band-spacer {
+  border-inline-end: 1px solid var(--oas-color-border);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+.band {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+.band-col {
+  border-inline-end: 1px solid var(--oas-color-border);
+  border-bottom: 1px solid var(--oas-color-border);
+  min-width: 0;
+}
+.band-col:last-child {
+  border-inline-end: none;
+}
+.band-col .col-head {
+  padding: var(--oas-space-1);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary-strong);
+  text-align: center;
+}
+.band-col.today .col-head {
+  color: var(--oas-color-primary);
+  font-weight: 600;
 }
 .timeview .gutter {
   border-inline-end: 1px solid var(--oas-color-border);
@@ -126,27 +149,11 @@ const STYLE = `
 .timeview .col:last-child {
   border-inline-end: none;
 }
-.timeview .col-head {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  padding: var(--oas-space-1);
-  font-size: var(--oas-font-size-sm);
-  color: var(--oas-color-text-secondary-strong);
-  text-align: center;
-  background: var(--oas-color-bg);
-  border-bottom: 1px solid var(--oas-color-border);
-}
-.timeview .col.today .col-head {
-  color: var(--oas-color-primary);
-  font-weight: 600;
-}
 .timeview .allday {
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
   padding: var(--oas-space-1);
-  border-bottom: 1px solid var(--oas-color-border);
   min-height: 26px;
 }
 .timeview .event {
@@ -390,11 +397,12 @@ export interface SchedulerViewChangeDetail {
 
 export type SchedulerView = 'month' | 'week' | 'day' | 'agenda'
 
-/** 'HH:mm' → 分钟数；非法返回 null */
+/** 'HH:mm' → 分钟数；非法或越界返回 null（h 0-24、m 0-59，且 24 点仅允许整点） */
 function parseTime(s: string | undefined): number | null {
   if (typeof s !== 'string' || !/^\d{1,2}:\d{2}$/.test(s)) return null
   const [h, m] = s.split(':').map(Number)
-  return (h ?? 0) * 60 + (m ?? 0)
+  if (h === undefined || m === undefined || h > 24 || m > 59 || (h === 24 && m !== 0)) return null
+  return h * 60 + m
 }
 
 function sanitizeEvents(v: unknown): SchedulerEvent[] {
@@ -408,8 +416,8 @@ function sanitizeEvents(v: unknown): SchedulerEvent[] {
     const ev: SchedulerEvent = { date: it.date, title: it.title }
     if (typeof it.id === 'string' && it.id !== '') ev.id = it.id
     if (typeof it.color === 'string' && it.color !== '') ev.color = it.color
-    if (typeof it.start === 'string' && it.start !== '') ev.start = it.start
-    if (typeof it.end === 'string' && it.end !== '') ev.end = it.end
+    if (typeof it.start === 'string' && it.start !== '' && parseTime(it.start) !== null) ev.start = it.start
+    if (typeof it.end === 'string' && it.end !== '' && parseTime(it.end) !== null) ev.end = it.end
     if (typeof it.repeat === 'object' && it.repeat !== null) {
       const r = it.repeat as Record<string, unknown>
       if (r.freq === 'daily' || r.freq === 'weekly' || r.freq === 'monthly') {
@@ -435,11 +443,19 @@ export class OASScheduler extends OASElement {
   private nextId = 1
   private viewDate: Date = startOfDay(new Date())
   private lastPageAnchor = ''
+  private lastTz = ''
+  private anchorInit = false
   private gridEl: HTMLElement | null = null
   private titleEl: HTMLElement | null = null
   private view: SchedulerView = 'month'
   private lastView = ''
-  private dragCtx: { id: string; mode: 'move' | 'resize'; originStart: number; originEnd: number } | null = null
+  private dragCtx: {
+    id: string
+    mode: 'move' | 'resize'
+    originStart: number
+    originEnd: number
+    newEnd?: string
+  } | null = null
   private dropCol: HTMLElement | null = null
 
   /**
@@ -447,7 +463,7 @@ export class OASScheduler extends OASElement {
    * （序列化进受控 `events` 属性并重渲染、派发 oas-events-change）。
    */
   get events(): SchedulerEvent[] {
-    return this._events.map((e) => ({ ...e }))
+    return this._events.map((e) => ({ ...e, repeat: e.repeat ? { ...e.repeat } : undefined }))
   }
   set events(v: SchedulerEvent[]) {
     this._events = this.normalizeWithIds(sanitizeEvents(v))
@@ -459,7 +475,7 @@ export class OASScheduler extends OASElement {
 
   /** 新增事件：返回分配到的 id */
   addEvent(ev: SchedulerEvent): string {
-    const [item] = this.normalizeWithIds(sanitizeEvents([ev]))
+    const [item] = this.normalizeWithIds(sanitizeEvents([ev]), true)
     if (!item) return ''
     this._events = [...this._events, item]
     this.syncEventsAttr()
@@ -467,12 +483,19 @@ export class OASScheduler extends OASElement {
     return item.id
   }
 
-  /** 按 id 更新事件（浅合并 patch）；找不到返回 false */
+  /** 按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到返回 false） */
   updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean {
     const idx = this._events.findIndex((e) => e.id === id)
     if (idx < 0) return false
     const merged = { ...this._events[idx]!, ...patch, id }
-    this._events = [...this._events.slice(0, idx), merged, ...this._events.slice(idx + 1)]
+    const [clean] = sanitizeEvents([merged])
+    if (!clean) return false
+    ;(clean as SchedulerEvent & { id: string }).id = id
+    this._events = [
+      ...this._events.slice(0, idx),
+      clean as SchedulerEvent & { id: string },
+      ...this._events.slice(idx + 1),
+    ]
     this.syncEventsAttr()
     this.emitEventsChange()
     return true
@@ -488,13 +511,35 @@ export class OASScheduler extends OASElement {
     return true
   }
 
-  private normalizeWithIds(v: SchedulerEvent[]): Array<SchedulerEvent & { id: string }> {
-    return v.map((e) => ({ ...e, id: e.id && e.id !== '' ? e.id : this.allocId() }))
+  /**
+   * id 归一化（避让集与重复判定分离）：
+   * - 显式 id：本批首次出现且不撞（respectExisting 时的）存量 → 保留；本批重复或撞存量 → 自动避让
+   * - 自动 id：避让「存量 + 本批全部显式 id + 已分配 id」
+   */
+  private normalizeWithIds(v: SchedulerEvent[], respectExisting = false): Array<SchedulerEvent & { id: string }> {
+    const avoid = new Set<string>()
+    if (respectExisting) for (const e of this._events) avoid.add(e.id)
+    for (const e of v) {
+      if (e.id && e.id !== '') avoid.add(e.id)
+    }
+    const seen = new Set<string>()
+    return v.map((e) => {
+      let id: string
+      if (e.id && e.id !== '' && !seen.has(e.id) && (!respectExisting || !this._events.some((x) => x.id === e.id))) {
+        id = e.id
+      } else {
+        id = this.allocId(avoid)
+      }
+      seen.add(id)
+      avoid.add(id)
+      return { ...e, id }
+    })
   }
 
-  private allocId(): string {
+  private allocId(used?: Set<string>): string {
+    const taken = used ?? new Set(this._events.map((e) => e.id))
     let id = `ev${this.nextId++}`
-    while (this._events.some((e) => e.id === id)) id = `ev${this.nextId++}`
+    while (taken.has(id)) id = `ev${this.nextId++}`
     return id
   }
 
@@ -505,8 +550,7 @@ export class OASScheduler extends OASElement {
   }
 
   private emitEventsChange(): void {
-    const detail: SchedulerEventsChangeDetail = { events: this.events }
-    this.emit('events-change', detail)
+    this.emit('events-change', { events: this.events } satisfies SchedulerEventsChangeDetail)
   }
 
   private syncEvents(): void {
@@ -525,7 +569,7 @@ export class OASScheduler extends OASElement {
   private effectiveLocale(): string {
     const own = this.getAttr('locale', '')
     if (own) return own
-    return 'zh-CN'
+    return resolveLocale(this)
   }
 
   private effectiveWeekStart(): number {
@@ -535,13 +579,15 @@ export class OASScheduler extends OASElement {
   }
 
   private startHour(): number {
-    const h = Number(this.getAttr('start-hour', '8'))
+    const h = Math.floor(Number(this.getAttr('start-hour', '8')))
     return Number.isFinite(h) && h >= 0 && h <= 23 ? h : 8
   }
 
   private endHour(): number {
-    const h = Number(this.getAttr('end-hour', '20'))
-    return Number.isFinite(h) && h > this.startHour() && h <= 24 ? h : 20
+    const h = Math.floor(Number(this.getAttr('end-hour', '20')))
+    const valid = Number.isFinite(h) && h <= 24 ? h : 20
+    // 非法区间（end <= start）钳到 start+1，防时间轴负高度塌陷
+    return Math.max(valid, this.startHour() + 1)
   }
 
   /** 时区（IANA，如 'Asia/Shanghai'；空串 = 本地） */
@@ -558,16 +604,8 @@ export class OASScheduler extends OASElement {
 
   /** 时区感知的日期格式化（设了 timezone 走 Intl timeZone，否则本地 formatToken） */
   private fmtTz(d: Date, token: string): string {
-    const tz = this.timezone()
-    if (!tz) return formatToken(d, token, this.effectiveLocale())
-    const parts = new Intl.DateTimeFormat(this.effectiveLocale(), {
-      timeZone: tz,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).formatToParts(d)
-    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? ''
-    return token.replace(/yyyy|MM|dd/g, (m) => (m === 'yyyy' ? get('year') : m === 'MM' ? get('month') : get('day')))
+    // 面板日期已是「目标时区日历日」（page-show-date 直用 / todayTz 归一），直接本地格式化
+    return formatToken(d, token, this.effectiveLocale())
   }
 
   /** 时区感知的「今天」（按目标时区的年月日取本地零点） */
@@ -613,8 +651,8 @@ export class OASScheduler extends OASElement {
       <style>${STYLE}</style>
       <div class="calendar" part="calendar">
         <div class="header" part="header">
-          <button type="button" class="prev" part="prev" aria-label="prev">‹</button>
-          <button type="button" class="next" part="next" aria-label="next">›</button>
+          <button type="button" class="prev" part="prev"></button>
+          <button type="button" class="next" part="next"></button>
           <div class="title" part="title" aria-live="polite"></div>
           <button type="button" class="today" part="today"></button>
           <span class="views" part="views">
@@ -638,7 +676,7 @@ export class OASScheduler extends OASElement {
     this.shadow.querySelector<HTMLElement>('[part="prev"]')?.addEventListener('click', () => this.navigate(-1))
     this.shadow.querySelector<HTMLElement>('[part="next"]')?.addEventListener('click', () => this.navigate(1))
     this.shadow.querySelector<HTMLElement>('[part="today"]')?.addEventListener('click', () => {
-      this.viewDate = startOfDay(new Date())
+      this.viewDate = this.todayTz()
       this.renderCurrentView()
     })
     for (const btn of this.shadow.querySelectorAll<HTMLButtonElement>('[part="views"] button')) {
@@ -674,7 +712,8 @@ export class OASScheduler extends OASElement {
         this.emit('view-change', { view: viewAttr } satisfies SchedulerViewChangeDetail)
       this.view = ['month', 'week', 'day', 'agenda'].includes(viewAttr) ? viewAttr : 'month'
     }
-    // 面板月锚点：page-show-date 变化时重锚定（受控），未变不打断浏览
+    // 面板月锚点：page-show-date 变化时重锚定（受控），未变不打断浏览。
+    // page-show-date 视为「目标时区的日历日」直接使用（不换算；防偏西时区差一天/整月）
     const rawPage = this.getAttr('page-show-date', '')
     if (rawPage !== this.lastPageAnchor) {
       this.lastPageAnchor = rawPage
@@ -684,15 +723,34 @@ export class OASScheduler extends OASElement {
         if (p) this.viewDate = this.view === 'month' ? new Date(p.getFullYear(), p.getMonth(), 1) : startOfDay(p)
       }
     }
+    // timezone 变化或首次（无受控锚点）：锚到目标时区的今天
+    const tz = this.timezone()
+    if (tz !== this.lastTz || !this.anchorInit) {
+      this.lastTz = tz
+      this.anchorInit = true
+      if (!rawPage) this.viewDate = this.todayTz()
+    }
 
     const todayBtn = this.shadow.querySelector<HTMLElement>('[part="today"]')
     if (todayBtn) todayBtn.textContent = this.t('scheduler.today')
     for (const btn of this.shadow.querySelectorAll<HTMLButtonElement>('[part="views"] button')) {
-      btn.classList.toggle('on', btn.dataset.view === this.view)
+      const active = btn.dataset.view === this.view
+      btn.classList.toggle('on', active)
+      btn.setAttribute('aria-pressed', String(active))
       const v = btn.dataset.view as SchedulerView
       btn.textContent = this.t(
         `scheduler.view${v === 'month' ? 'Month' : v === 'week' ? 'Week' : v === 'day' ? 'Day' : 'Agenda'}`,
       )
+    }
+    const prev = this.shadow.querySelector<HTMLElement>('[part="prev"]')
+    const next = this.shadow.querySelector<HTMLElement>('[part="next"]')
+    if (prev) {
+      prev.textContent = '‹'
+      prev.setAttribute('aria-label', this.t('scheduler.prev'))
+    }
+    if (next) {
+      next.textContent = '›'
+      next.setAttribute('aria-label', this.t('scheduler.next'))
     }
     this.renderCurrentView()
   }
@@ -709,7 +767,7 @@ export class OASScheduler extends OASElement {
   private renderAgenda(): void {
     const el = this.shadow.querySelector<HTMLElement>('[part="agenda"]')
     if (!el) return
-    const start = startOfDay(this.viewDate)
+    const start = this.viewDate
     const today = this.todayTz()
     const locale = this.effectiveLocale()
     if (this.titleEl) {
@@ -728,7 +786,7 @@ export class OASScheduler extends OASElement {
       day.type = 'button'
       day.className = 'ag-day'
       if (isSameDay(d, today)) day.classList.add('today')
-      day.textContent = `${this.fmtTz(d, 'MM-dd')} ${weekdayLabels(locale, this.effectiveWeekStart())[d.getDay() === 0 ? 6 : d.getDay() - 1] ?? ''}`
+      day.textContent = `${this.fmtTz(d, 'MM-dd')} ${weekdayLabels(locale, this.effectiveWeekStart())[(d.getDay() - this.effectiveWeekStart() + 7) % 7] ?? ''}`
       day.addEventListener('click', () => {
         this.emit('day-click', { date: iso } satisfies SchedulerDayClickDetail)
       })
@@ -781,31 +839,116 @@ export class OASScheduler extends OASElement {
     return d.getDate() === d0.getDate() && monthDiff % interval === 0
   }
 
-  /** 提醒调度：每个带 remind 的事件在「start - remind 分钟」到点派发 oas-remind */
+  /** 提醒调度：每个带 remind 的事件在「下一发生日的 start - remind 分钟」到点派发 oas-remind。
+   *  setTimeout delay 超 2^31-1（≈24.85 天）会被浏览器钳为 0 立即误触发——分段重排直到真正到点 */
   private remindTimers = new Map<string, number>()
 
   private scheduleReminders(): void {
     for (const t of this.remindTimers.values()) clearTimeout(t)
     this.remindTimers.clear()
-    const now = Date.now()
+    const MAX_DELAY = 2_147_483_647
     for (const ev of this._events) {
       if (ev.remind === undefined || ev.remind < 0) continue
       const at = this.remindAt(ev)
-      if (at === null || at <= now) continue
+      if (at === null) continue
       const id = ev.id
-      const timer = window.setTimeout(() => {
-        this.remindTimers.delete(id)
-        this.emit('remind', { id, event: { ...ev } } satisfies SchedulerRemindDetail)
-      }, at - now)
-      this.remindTimers.set(id, timer)
+      const arm = (): void => {
+        const remaining = at - Date.now()
+        if (remaining <= 0) return
+        this.remindTimers.set(
+          id,
+          window.setTimeout(
+            () => {
+              if (Date.now() < at) {
+                arm()
+                return
+              }
+              this.remindTimers.delete(id)
+              this.emit('remind', { id, event: { ...ev } } satisfies SchedulerRemindDetail)
+            },
+            Math.min(remaining, MAX_DELAY),
+          ),
+        )
+      }
+      arm()
     }
   }
 
+  /** 下一发生日的提醒时刻（repeat 事件取今天起最近的发生日；无 repeat 用 date 本身；过期返回 null） */
   private remindAt(ev: SchedulerEvent): number | null {
-    const d = parseISODate(ev.date)
-    if (!d) return null
     const start = parseTime(ev.start) ?? 0
-    return d.getTime() + start * 60_000 - ev.remind! * 60_000
+    if (!ev.repeat) {
+      const d = parseISODate(ev.date)
+      if (!d) return null
+      const at = d.getTime() + start * 60_000 - ev.remind! * 60_000
+      return at > Date.now() ? at : null
+    }
+    const next = this.nextOccurrence(ev)
+    if (!next) return null
+    let d = next
+    let at = d.getTime() + start * 60_000 - ev.remind! * 60_000
+    if (at <= Date.now()) {
+      // 今天发生日的提醒时刻已过（页面在提醒点后挂载）→ 推进到下一个发生日
+      d = this.advanceOneStep(d, ev.repeat!, parseISODate(ev.date)!.getDate())
+      const until = ev.repeat!.until ? parseISODate(ev.repeat!.until) : null
+      if (until && d.getTime() > until.getTime()) return null
+      at = d.getTime() + start * 60_000 - ev.remind! * 60_000
+    }
+    return at > Date.now() ? at : null
+  }
+
+  /** 发生日按重复规则前进一步（monthly 携带锚定日、跳过无该日的短月） */
+  private advanceOneStep(d: Date, rep: SchedulerRepeat, dayOfMonth: number): Date {
+    const interval = Math.max(rep.interval ?? 1, 1)
+    if (rep.freq === 'daily') return new Date(d.getTime() + interval * 86400_000)
+    if (rep.freq === 'weekly') return new Date(d.getTime() + interval * 7 * 86400_000)
+    return this.nextMonthly(d, interval, dayOfMonth)
+  }
+
+  /** monthly：从某月推进 interval 步，跳过「无锚定日」的短月（如 1-31 跳过 2 月落 3-31） */
+  private nextMonthly(from: Date, interval: number, dayOfMonth: number): Date {
+    let total = from.getFullYear() * 12 + from.getMonth() + Math.max(interval, 1)
+    for (let guard = 0; guard < 36; guard++) {
+      const first = new Date(Math.floor(total / 12), total % 12, 1)
+      if (daysInMonth(first) >= dayOfMonth) return new Date(first.getFullYear(), first.getMonth(), dayOfMonth)
+      total += Math.max(interval, 1)
+    }
+    return from
+  }
+
+  /** repeat 事件从今天起的下一个发生日（按 freq×interval 直接推进，无逐日循环） */
+  private nextOccurrence(ev: SchedulerEvent): Date | null {
+    const rep = ev.repeat!
+    const d0 = parseISODate(ev.date)
+    if (!d0) return null
+    const until = rep.until ? parseISODate(rep.until) : null
+    const interval = Math.max(rep.interval ?? 1, 1)
+    const today = startOfDay(new Date())
+    let d: Date
+    if (rep.freq === 'daily') {
+      const days = Math.max(0, Math.ceil((today.getTime() - d0.getTime()) / 86400_000 / interval) * interval)
+      d = new Date(d0.getTime() + days * 86400_000)
+    } else if (rep.freq === 'weekly') {
+      const weeks = Math.max(0, Math.ceil((today.getTime() - d0.getTime()) / (7 * 86400_000) / interval) * interval)
+      d = new Date(d0.getTime() + weeks * 7 * 86400_000)
+    } else {
+      const monthDiff = Math.max(
+        0,
+        today.getFullYear() * 12 + today.getMonth() - (d0.getFullYear() * 12 + d0.getMonth()),
+      )
+      const steps = Math.ceil(monthDiff / interval) * interval
+      d = this.nextMonthly(
+        // from 用 1 号构造：防「前一步月无锚定日」时 Date 规范化滚入下月、跳过目标发生月
+        new Date(d0.getFullYear(), d0.getMonth() + steps - Math.max(interval, 1), 1),
+        interval,
+        d0.getDate(),
+      )
+      // nextMonthly 的 from 取「目标发生月前一步」，第一次调用即落在目标发生月（含短月跳过）
+      if (d.getTime() < today.getTime()) d = this.nextMonthly(d, interval, d0.getDate())
+    }
+    if (d.getTime() < today.getTime()) return null
+    if (until && d.getTime() > until.getTime()) return null
+    return d
   }
 
   override disconnectedCallback(): void {
@@ -820,16 +963,17 @@ export class OASScheduler extends OASElement {
     const locale = this.effectiveLocale()
     const weekStart = this.effectiveWeekStart()
     const today = this.todayTz()
+    const anchor = this.viewDate
     if (this.titleEl) {
-      this.titleEl.textContent = this.fmtTz(this.viewDate, 'yyyy-MM')
+      this.titleEl.textContent = this.fmtTz(anchor, 'yyyy-MM')
     }
     grid.innerHTML = ''
-    const cells = buildMonthCells(this.viewDate, locale, weekStart)
+    const cells = buildMonthCells(anchor, locale, weekStart)
     for (const cell of cells) {
       const dayEl = document.createElement('div')
       dayEl.className = 'day'
       dayEl.dataset.date = toISODate(cell.date)
-      if (!isSameMonthSafe(cell.date, this.viewDate)) dayEl.classList.add('outside')
+      if (!isSameMonthSafe(cell.date, anchor)) dayEl.classList.add('outside')
       if (isSameDay(cell.date, today)) dayEl.classList.add('today')
 
       const iso = dayEl.dataset.date!
@@ -838,6 +982,7 @@ export class OASScheduler extends OASElement {
       num.type = 'button'
       num.className = 'num'
       num.textContent = String(cell.date.getDate())
+      num.setAttribute('aria-label', iso)
       num.addEventListener('click', () => {
         this.emit('day-click', { date: iso } satisfies SchedulerDayClickDetail)
       })
@@ -904,7 +1049,7 @@ export class OASScheduler extends OASElement {
       const ws = this.weekStartOf(this.viewDate)
       for (let i = 0; i < 7; i++) days.push(new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i))
     } else {
-      days.push(startOfDay(this.viewDate))
+      days.push(this.viewDate)
     }
     if (this.titleEl) {
       if (this.view === 'week') {
@@ -916,6 +1061,16 @@ export class OASScheduler extends OASElement {
     }
     tv.innerHTML = ''
     tv.style.setProperty('--hour-h', `${hourH}px`)
+
+    // band 行（列头 + 全天行）与 gutter 对齐：头部信息整体上移到独立带，gutter 与 track 从同一水平线起排，
+    // 避免 col-head/allday 把 track 下推导致时刻刻度错位
+    const spacer = document.createElement('div')
+    spacer.className = 'band-spacer'
+    tv.appendChild(spacer)
+
+    const band = document.createElement('div')
+    band.className = 'band'
+    tv.appendChild(band)
 
     const gutter = document.createElement('div')
     gutter.className = 'gutter'
@@ -930,14 +1085,14 @@ export class OASScheduler extends OASElement {
     cols.className = 'cols'
     for (const d of days) {
       const iso = toISODate(d)
-      const col = document.createElement('div')
-      col.className = 'col'
-      col.dataset.date = iso
-      if (isSameDay(d, today)) col.classList.add('today')
+      const bandCol = document.createElement('div')
+      bandCol.className = 'band-col'
+      bandCol.dataset.date = iso
+      if (isSameDay(d, today)) bandCol.classList.add('today')
       const head = document.createElement('div')
       head.className = 'col-head'
       head.textContent = this.fmtTz(d, 'MM-dd')
-      col.appendChild(head)
+      bandCol.appendChild(head)
 
       const allDay = document.createElement('div')
       allDay.className = 'allday'
@@ -951,7 +1106,13 @@ export class OASScheduler extends OASElement {
           timed.push({ ev, s, e: Math.max(e, s + 15) })
         }
       }
-      col.appendChild(allDay)
+      bandCol.appendChild(allDay)
+      band.appendChild(bandCol)
+
+      const col = document.createElement('div')
+      col.className = 'col'
+      col.dataset.date = iso
+      if (isSameDay(d, today)) col.classList.add('today')
 
       const track = document.createElement('div')
       track.className = 'track'
@@ -974,6 +1135,10 @@ export class OASScheduler extends OASElement {
       })
       track.addEventListener('pointermove', (e) => this.onTrackPointerMove(track, iso, e))
       track.addEventListener('pointerup', () => this.onTrackPointerUp())
+      track.addEventListener('pointercancel', () => {
+        this.dragCtx = null
+        this.setDropCol(null)
+      })
       col.appendChild(track)
       cols.appendChild(col)
     }
@@ -996,6 +1161,7 @@ export class OASScheduler extends OASElement {
     const el = document.createElement('button')
     el.type = 'button'
     el.className = 'event'
+    el.dataset.id = ev.id
     el.draggable = true
     el.textContent = ev.title
     if (ev.color) el.style.setProperty('--chip-color', ev.color)
@@ -1028,7 +1194,7 @@ export class OASScheduler extends OASElement {
     return el
   }
 
-  /** 拖拽移动落定：按落点列与纵向位置改 date + start（保持时长） */
+  /** 拖拽移动落定：按落点列与纵向位置改 date + start（保持时长——先按时长约束落点，避免 23:30 截断） */
   private onTrackDrop(col: HTMLElement, iso: string, e: DragEvent): void {
     const ctx = this.dragCtx
     this.dragCtx = null
@@ -1040,18 +1206,19 @@ export class OASScheduler extends OASElement {
     const track = col.querySelector<HTMLElement>('.track')
     const rect = track?.getBoundingClientRect()
     const startH = this.startHour()
+    const duration = ctx.originEnd - ctx.originStart
     let minutes = startH * 60 + (rect ? ((e.clientY - rect.top) / hourH) * 60 : 0)
     minutes = Math.round(minutes / 30) * 30
-    minutes = Math.max(0, Math.min(minutes, 23 * 60 + 30))
-    const duration = ctx.originEnd - ctx.originStart
+    // 先按时长约束落点：start+duration 不得超过 24:00（保时长优先于落点精度）
+    minutes = Math.max(0, Math.min(minutes, 24 * 60 - duration))
+    const endMin = minutes + duration
     const start = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
-    const endMin = Math.min(minutes + duration, 24 * 60)
     const end = `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`
     this.updateEvent(ctx.id, { date: iso, start, end })
   }
 
-  /** 缩放进行：pointer 捕获期间按纵向位移改 end（15 分钟步进） */
-  private onTrackPointerMove(track: HTMLElement, iso: string, e: PointerEvent): void {
+  /** 缩放进行：只更新被拖块的视觉高度（不重建 DOM），把新 end 记在 dragCtx，pointerup 才一次性回写+派发 */
+  private onTrackPointerMove(track: HTMLElement, _iso: string, e: PointerEvent): void {
     const ctx = this.dragCtx
     if (!ctx || ctx.mode !== 'resize') return
     const hourH = 48
@@ -1060,19 +1227,17 @@ export class OASScheduler extends OASElement {
     let end = startH * 60 + ((e.clientY - rect.top) / hourH) * 60
     end = Math.round(end / 15) * 15
     end = Math.max(ctx.originStart + 15, Math.min(end, 24 * 60))
-    const ev = this._events.find((x) => x.id === ctx.id)
-    if (!ev) return
-    ev.end = `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`
-    ev.date = iso
-    this.syncEventsAttr()
+    ctx.newEnd = `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`
+    const block = track.querySelector<HTMLElement>(`.event[data-id="${ctx.id}"]`)
+    if (block) block.style.height = `${Math.max(((end - ctx.originStart) / 60) * hourH, 16)}px`
   }
 
+  /** 缩放落定：一次性回写 end（update → 单次重建）并派发 oas-events-change */
   private onTrackPointerUp(): void {
-    if (this.dragCtx?.mode === 'resize') {
-      const id = this.dragCtx.id
-      this.dragCtx = null
-    }
+    const ctx = this.dragCtx
     this.dragCtx = null
+    if (!ctx || ctx.mode !== 'resize' || !ctx.newEnd) return
+    this.updateEvent(ctx.id, { end: ctx.newEnd })
   }
 }
 

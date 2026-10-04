@@ -7,6 +7,7 @@
 ### 特性
 
 - **theme 默认阴影精修（现代分层投影）+ 可选皮肤预设层 + docs 皮肤画廊**：阴影三档由单层改为两层（近距硬边 + 远距柔和扩散，观感更细腻、边缘不脏）；新增 `@oas-ui/theme/skins.css`——6 套品牌色皮肤预设（`violet` / `emerald` / `rose` / `amber` / `graphite` / `teal`），在 `data-theme` 之上叠加 `data-skin` 切换、与三套内置主题自由组合，仅覆盖 `--oas-color-primary`（`-hover`/`-active`/`-primary-text`/焦点环等派生档自动跟随），opt-in 无副作用（不引则完全无影响）；新增 docs「皮肤画廊」页（`/guide/skins`，6 皮肤 × 3 主题实时切换预览）。暗色变体选择器同时覆盖 `[data-theme='dark']`（库内规范）与 `html.dark`（宿主常见的 class 式暗色，如 docs 站）——初版只覆盖前者，致宿主 class 式暗色下皮肤被默认主色回填而失效（视觉复核实抓并回归固化 `packages/ui/src/skin-presets.test.ts`）
+- **oas-scheduler 日程调度组件（新组件，data 族，四期交付）**：月视图事件芯片（标题 + 色条，>2 合并）+ `events` 读/写通道与 `addEvent` / `updateEvent` / `removeEvent` CRUD（派发 `oas-events-change`；点芯片 `oas-event-click`、点日格 `oas-day-click`，宿主接编辑器）；周/日时刻表视图（定时事件块定位 + 全天行，`start-hour`/`end-hour` 限幅）+ 拖拽移动（30 分钟步进）/ 底缘缩放（15 分钟步进）+ `oas-view-change`；重复规则 `repeat`（daily / weekly / monthly + interval + until，渲染层展开）+ 提醒 `remind`（到点派发 `oas-remind`）；`timezone`（IANA 时区影响格式化与今日标记）+ `view="agenda"` 日程视图（28 天时序清单）
 - **oas-input 及「字符串输入系」公开 `value` property（get/set）**（`oas-input` / `oas-textarea` / `oas-input-number` / `oas-auto-complete` / `oas-mentions` / `oas-combobox`）：补上程序性读值的公开通道——此前 `value` 只有 attribute 写入通道与 `oas-*` 事件通知，宿主读当前值只能监听事件自存 state 或穿透 shadow 读内部控件（脆弱）。`el.value` 读取该组件 `getFormValue()` 语义的当前值（parser/mask 感知、label/值分离、实时解析等各自口径），`el.value = x` 写受控 `value` 属性并强制回写内部控件、不派发事件（对齐原生 `input.value` / `textarea.value` 的受控赋值即生效语义）。React/Vue 受控集成与宿主读写不再需要样板。
 
 ### 修复
@@ -272,7 +273,7 @@
 
 - **list 选中行 hover 文字不可读**：`clickable` 行 hover 浅灰底压盖 `selected` 选中蓝底（白字白底不可读）——选中态 hover 保持 primary 系底色，文字保持可读
 - **`prefix` / `suffix` 属性与 DOM 内建只读 `prefix` 冲突（Vue 下属性被吞 + 控制台告警）**：`prefix` 是 DOM Element 内建只读属性（XML 命名空间前缀），框架（如 Vue）在自定义元素 upgrade 前对其走 property 赋值会撞只读 getter 报错并丢失值。已将视觉前后缀属性迁移到不与内建冲突的 `prefix-text` / `suffix-text`（对齐主流 Web Components 库命名），`prefix` / `suffix` 保留为纯 HTML 使用的遗留别名（组件内自动迁移、文档注明）；触及组件：input / input-number / statistic / countdown / tree-select。**mentions 的触发符属性 `prefix` 改名 `trigger`**（触发符语义，`prefix` 保留为遗留别名），事件 detail 的 `prefix` 字段保持不变（对外契约稳定）。同时删除为对抗该冲突而存在的 `override get/set prefix` 访问器补丁（其既是冲突根源也是 vue-prop-hijack 门禁漏报的原因），`normalizeLegacyAlias` 归入 OASElement 基类统一处理。
-- **L3 子路径语义修正（回归根治）**：v2.4.1 把 tabs/table/modal/color-picker/popover 的重型能力拆成 L3 能力包后，组件子路径入口变成 core-only、既有子路径消费者能力静默失效（dev 告警一次、生产无声）——五组件主路径 `index.ts` 恢复内置能力 import（同一组件任何主路径引入行为一致），各新增 `/core` 纯核路径作显式瘦身 opt-in，五处 dev 告警文案同步翻转；每组件新增入口语义测试对（主路径断言能力已激活 / 纯核断言静默失效 + 告警一次）
+- **能力子包子路径语义修正（回归根治）**：v2.4.1 把 tabs/table/modal/color-picker/popover 的重型能力拆成能力子包后，组件子路径入口变成 core-only、既有子路径消费者能力静默失效（dev 告警一次、生产无声）——五组件主路径 `index.ts` 恢复内置能力 import（同一组件任何主路径引入行为一致），各新增 `/core` 纯核路径作显式瘦身 opt-in，五处 dev 告警文案同步翻转；每组件新增入口语义测试对（主路径断言能力已激活 / 纯核断言静默失效 + 告警一次）
 
 ### 变更
 
@@ -282,7 +283,7 @@
 
 ### 特性
 
-- **组件内能力子包（按需打包第三层 L3）**：五个组件的重型可选能力拆为独立子包——`table/edit`（行内编辑）、`tabs/manager`（双击重命名/右键菜单/拖拽排序）、`modal/prompt`（输入确认）、`popover/contextmenu`（右键光标定位/触屏长按/断点简写）、`color-picker/designer`（2D 色域/渐变设计器）。import 即注册、顺序随意（晚加入对已挂载元素自动补齐）；按需引入组件时默认不含（配置静默失效 + dev 告警指引）；全量入口与 CDN 族包内含无感知。getting-started 中英双版补能力子包对照表
+- **组件内能力子包（按需打包）**：五个组件的重型可选能力拆为独立子包——`table/edit`（行内编辑）、`tabs/manager`（双击重命名/右键菜单/拖拽排序）、`modal/prompt`（输入确认）、`popover/contextmenu`（右键光标定位/触屏长按/断点简写）、`color-picker/designer`（2D 色域/渐变设计器）。import 即注册、顺序随意（晚加入对已挂载元素自动补齐）；按需引入组件时默认不含（配置静默失效 + dev 告警指引）；全量入口与 CDN 族包内含无感知。getting-started 中英双版补能力子包对照表
 - **能力注册表晚加入（late-join）订阅**：宿主构造快照之外，connected 期订阅注册通知 + 断开退订防泄漏 + 按名幂等注入——入口求值顺序、打包器重排、按需「先组件后能力」、运行中动态 import 场景全部自愈
 - **反馈/基础/布局组能力收尾**：
   - progress：indeterminate 不确定态 / warning 状态 / color+track-color 自定义色 / striped(-flow) 条纹 / steps 步进分段 / buffer 缓冲段 / dashboard 仪表盘 / 尺寸档 / stroke-linecap / aria label / 状态图标真 SVG / text-inside 内嵌文本 / max 值域；默认 slot 自定义文本

@@ -160,6 +160,8 @@ export const ar: LocaleMessages = {
   // list (قائمة)
   'list.empty': 'لا توجد بيانات',
   // scheduler（日程调度）
+  'scheduler.prev': 'السابق',
+  'scheduler.next': 'التالي',
   'scheduler.today': 'اليوم',
   'scheduler.more': '+{count}',
   'scheduler.viewMonth': 'شهر',

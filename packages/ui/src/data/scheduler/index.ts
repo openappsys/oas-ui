@@ -11,4 +11,7 @@ export type {
   SchedulerEvent,
   SchedulerEventClickDetail,
   SchedulerEventsChangeDetail,
+  SchedulerRemindDetail,
+  SchedulerRepeat,
+  SchedulerView,
 } from './oas-scheduler.js'

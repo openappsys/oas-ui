@@ -160,6 +160,8 @@ export const ja: LocaleMessages = {
   // list（リスト）
   'list.empty': 'データなし',
   // scheduler（日程调度）
+  'scheduler.prev': '前へ',
+  'scheduler.next': '次へ',
   'scheduler.today': '今日',
   'scheduler.more': '+{count}件',
   'scheduler.viewMonth': '月',

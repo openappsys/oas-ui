@@ -161,7 +161,7 @@ The `color` attribute accepts 11 preset names (auto-adapting to light/dark theme
 | `middle` | Symmetric inset: equal insets on both sides of a horizontal line (default 16.67%, via `--oas-divider-middle-inset`) | `boolean` | — |
 | `size` | Spacing tier: `small` / `medium` (default) / `large`; horizontal layout only | `string` | — |
 | `strong` | Bolder divider title (font-weight 600) | `boolean` | — |
-| `text-orientation` | Text orientation on a vertical divider: horizontal (default, reads normally) / ertical (vertical, top-to-bottom along the line); only meaningful for vertical dividers | `string` | — |
+| `text-orientation` | Text orientation on a vertical divider: horizontal (default, reads normally) / vertical (vertical, top-to-bottom along the line); only meaningful for vertical dividers | `string` | — |
 | `variant` | Line style: solid / dashed / dotted / double / double-dashed (double dashed) / double-dotted (double dotted); an explicit value takes precedence over the dashed boolean (compat form). Line styles apply to horizontal layout only | `string` | — |
 
 #### Slots

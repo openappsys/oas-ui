@@ -160,6 +160,8 @@ export const ko: LocaleMessages = {
   // list（리스트）
   'list.empty': '데이터 없음',
   // scheduler（日程调度）
+  'scheduler.prev': '이전',
+  'scheduler.next': '다음',
   'scheduler.today': '오늘',
   'scheduler.more': '+{count}개',
   'scheduler.viewMonth': '월',

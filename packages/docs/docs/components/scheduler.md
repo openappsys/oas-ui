@@ -1,6 +1,6 @@
 # Scheduler 日程调度
 
-月视图日程组件（L3 能力子路径）：日格内渲染事件芯片（标题 + 色条），`events` 读/写通道 + `addEvent` / `updateEvent` / `removeEvent` CRUD 方法；点事件芯片派发 `oas-event-click`、点日格派发 `oas-day-click`（宿主接编辑器），数据变更派发 `oas-events-change`。
+月视图日程组件：日格内渲染事件芯片（标题 + 色条），`events` 读/写通道 + `addEvent` / `updateEvent` / `removeEvent` CRUD 方法；点事件芯片派发 `oas-event-click`、点日格派发 `oas-day-click`（宿主接编辑器），数据变更派发 `oas-events-change`。
 
 ## 基础用法
 
@@ -27,7 +27,7 @@
 ## 重复规则与提醒（P2）
 
 <DemoBlock title="重复规则（RRULE 子集：daily/weekly/monthly + interval + until）">
-  <oas-scheduler page-show-date="2026-08-01" events='[{"date":"2026-08-03","title":"每日站会","repeat":{"freq":"daily"},"color":"#dc2626"},{"date":"2026-08-05","title":"双周会","repeat":{"freq":"weekly","interval":2,"until":"2026-08-19"}},{"date":"2026-08-10","title":"月度盘点","repeat":{"freq":"monthly"}}]'></oas-scheduler>
+  <oas-scheduler id="scheduler-repeat" page-show-date="2026-08-01" events='[{"date":"2026-08-03","title":"每日站会","repeat":{"freq":"daily"},"color":"#dc2626"},{"date":"2026-08-05","title":"双周会","repeat":{"freq":"weekly","interval":2,"until":"2026-08-19"}},{"date":"2026-08-10","title":"月度盘点","repeat":{"freq":"monthly"}}]'></oas-scheduler>
 </DemoBlock>
 
 `repeat` 按 `freq` × `interval` 从 `date` 起展开（daily 按天数间隔、weekly 按周、monthly 按同日），`until` 截止（含当日）；`el.events` 仍只读原始条目（展开只发生在渲染层）。
@@ -73,12 +73,6 @@
 </DemoBlock>
 
 点击事件芯片派发 `oas-event-click`（`detail: { id, event }`，且不触发日格点击）；点空白日格派发 `oas-day-click`（`detail: { date }`）——宿主据此打开编辑器/表单，组件不内置编辑表单。
-
-## 排期边界
-
-本期（P0）为月视图 + events CRUD；后续：周/日视图 + 拖拽移动缩放（P1）、重复规则 + 提醒（P2）、时区 + 日程视图（P3）。
-
-## API
 
 <script setup>
 import { onMounted } from 'vue'
@@ -129,3 +123,36 @@ onMounted(async () => {
   }
 })
 </script>
+
+## API
+
+### oas-scheduler
+
+#### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `end-hour` | 时间轴结束小时（>start-hour 且 <=24，默认 20） | `string` | `20` |
+| `events` | 日程事件（JSON）：[{ id?, date: YYYY-MM-DD, title, color?, start?, end? }]——日格渲染事件芯片（标题+色条），>2 合并 +N 条 | `SchedulerEvent[]` | `[]` |
+| `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导 | `string` | — |
+| `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
+| `page-show-date` | 面板月锚点（受控）：yyyy-MM-dd，变化时重锚定显示月份 | `string` | — |
+| `start-hour` | 时间轴起始小时（0-23，默认 8） | `string` | `8` |
+| `timezone` | 时区（IANA，如 Asia/Shanghai；空串=本地）：影响标题/列头日期格式化与「今天」标记（经 Intl timeZone）；非法时区回落本地 | `string` | — |
+| `view` | 视图：month（默认）/ week / day / agenda；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行；agenda 为 28 天时序清单 | `SchedulerView` | `month` |
+
+#### Property（仅 JS property，不反射 attribute）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `events` | 日程事件（`SchedulerEvent[]`）：`el.events` 读（含自动 id 的拷贝）；`el.events = [...]` 写（同步 events 属性 + 重渲染 + 派发 oas-events-change） | `SchedulerEvent[]` | `[]` |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-day-click` | 点击空白日格时派发，detail: { date }——宿主接新增表单 |
+| `oas-event-click` | 点击事件芯片时派发，detail: { id, event }（不触发日格点击） |
+| `oas-events-change` | events 数据变化（set/addEvent/updateEvent/removeEvent）时派发，detail: { events } |
+| `oas-remind` | 事件提醒到点时派发，detail: { id, event }（start - remind 分钟，组件内置定时器） |
+| `oas-view-change` | 视图切换（month/week/day/agenda）时派发，detail: { view }；属性首次吸收不派发 |

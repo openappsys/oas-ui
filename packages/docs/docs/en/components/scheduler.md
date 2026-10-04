@@ -1,6 +1,6 @@
 # Scheduler
 
-Month-view scheduling component (L3 capability subpath): renders event chips (title + color bar) inside day cells; `events` read/write channel plus `addEvent` / `updateEvent` / `removeEvent` CRUD methods; clicking a chip dispatches `oas-event-click`, clicking a day dispatches `oas-day-click` (host attaches an editor), and any data change dispatches `oas-events-change`.
+Month-view scheduling component: renders event chips (title + color bar) inside day cells; `events` read/write channel plus `addEvent` / `updateEvent` / `removeEvent` CRUD methods; clicking a chip dispatches `oas-event-click`, clicking a day dispatches `oas-day-click` (host attaches an editor), and any data change dispatches `oas-events-change`.
 
 ## Basic Usage
 
@@ -27,7 +27,7 @@ Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): eve
 ## Recurrence & Reminders (P2)
 
 <DemoBlock title="Recurrence rules (RRULE subset: daily/weekly/monthly + interval + until)">
-  <oas-scheduler page-show-date="2026-08-01" events='[{"date":"2026-08-03","title":"Daily standup","repeat":{"freq":"daily"},"color":"#dc2626"},{"date":"2026-08-05","title":"Biweekly meeting","repeat":{"freq":"weekly","interval":2,"until":"2026-08-19"}},{"date":"2026-08-10","title":"Monthly review","repeat":{"freq":"monthly"}}]'></oas-scheduler>
+  <oas-scheduler id="scheduler-repeat" page-show-date="2026-08-01" events='[{"date":"2026-08-03","title":"Daily standup","repeat":{"freq":"daily"},"color":"#dc2626"},{"date":"2026-08-05","title":"Biweekly meeting","repeat":{"freq":"weekly","interval":2,"until":"2026-08-19"}},{"date":"2026-08-10","title":"Monthly review","repeat":{"freq":"monthly"}}]'></oas-scheduler>
 </DemoBlock>
 
 `repeat` expands occurrences from `date` by `freq` × `interval` (daily by day interval, weekly by week, monthly by same day-of-month), with `until` as the inclusive end; `el.events` still reads the raw entries (expansion happens only at render time).
@@ -73,12 +73,6 @@ For events with `remind` (minutes), the component dispatches `oas-remind` (`deta
 </DemoBlock>
 
 Clicking an event chip dispatches `oas-event-click` (`detail: { id, event }`, without triggering the day click); clicking an empty day cell dispatches `oas-day-click` (`detail: { date }`) — the host opens an editor/form there; the component ships no built-in edit form.
-
-## Scope
-
-This phase (P0) is the month view + events CRUD; next: week/day views + drag move/resize (P1), recurrence rules + reminders (P2), timezone + agenda view (P3).
-
-## API
 
 <script setup>
 import { onMounted } from 'vue'
@@ -129,3 +123,36 @@ onMounted(async () => {
   }
 })
 </script>
+
+## API
+
+### oas-scheduler
+
+#### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `end-hour` | Time axis end hour (> start-hour and <= 24, default 20) | `string` | `20` |
+| `events` | Schedule events (JSON): [{ id?, date: YYYY-MM-DD, title, color?, start?, end? }] — chips rendered in day cells (title + color bar), collapsed to +N beyond 2 | `SchedulerEvent[]` | `[]` |
+| `first-day-of-week` | First day of week (0-6); defaults to locale-derived | `string` | — |
+| `locale` | Localization (overrides config-provider injection and global locale) | `string` | — |
+| `page-show-date` | Panel month anchor (controlled): yyyy-MM-dd; re-anchors the shown month on change | `string` | — |
+| `start-hour` | Time axis start hour (0-23, default 8) | `string` | `8` |
+| `timezone` | Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local | `string` | — |
+| `view` | View: month (default) / week / day / agenda; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list | `SchedulerView` | `month` |
+
+#### Property (JS property only, not reflected as attribute)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `events` | Schedule events (`SchedulerEvent[]`): `el.events` reads (copy incl. auto ids); `el.events = [...]` writes (syncs the events attribute + re-renders + dispatches oas-events-change) | `SchedulerEvent[]` | `[]` |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-day-click` | Dispatched when an empty day cell is clicked, detail: { date } — host attaches an add form |
+| `oas-event-click` | Dispatched when an event chip is clicked, detail: { id, event } (does not trigger the day click) |
+| `oas-events-change` | Dispatched on any events change (set/addEvent/updateEvent/removeEvent), detail: { events } |
+| `oas-remind` | Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers) |
+| `oas-view-change` | Dispatched on view switch (month/week/day/agenda), detail: { view }; not dispatched on initial attribute absorption |

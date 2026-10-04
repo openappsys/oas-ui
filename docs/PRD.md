@@ -569,8 +569,7 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 
 ### 详细需求
 
-- **tag-group**：属性 alue（单选单值 / 多选逗号分隔）、multiple（多选）、disabled（全组禁用）、ria-label（组容器可访问名称，默认走 i18n「标签组」）。事件：oas-change——单选 detail { value }、多选 detail { value: [] }。实现：slot 放 <oas-tag checkable value="x">，组在 capture 阶段拦截子签 oas-change 计算新 value 并同步所有子签 checked（子签事件不外泄，宿主只收到组级事件）；容器
-ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可取消（点已选中项保持选中）；disabled 透传全组不可切。
+- **tag-group**：属性 value（单选单值 / 多选逗号分隔）、multiple（多选）、disabled（全组禁用）、aria-label（组容器可访问名称，默认走 i18n「标签组」）。事件：oas-change——单选 detail { value }、多选 detail { value: [] }。实现：slot 放 <oas-tag checkable value="x">，组在 capture 阶段拦截子签 oas-change 计算新 value 并同步所有子签 checked（子签事件不外泄，宿主只收到组级事件）；容器 role="group"+aria-label。边界：零子签渲染空组不报错；单选不可取消（点已选中项保持选中）；disabled 透传全组不可切。
 
 ### 增强（space 第二轮 + compact）
 
@@ -1840,7 +1839,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 ### P0 —— 月视图 + events CRUD（本期）
 
 - **oas-scheduler 日程调度组件（data 族，`@oas-ui/ui` L3 能力子路径）**：月视图（复用 calendar 日格引擎），日格内渲染事件芯片（标题 + 色条，>N 合并为「+N 条」）；`events` property 读/写（`SchedulerEvent[]`：`{ id?, date, title, color?, start?, end? }`）+ **CRUD 方法**（`addEvent` / `updateEvent(id, patch)` / `removeEvent(id)`，id 缺省自动分配）→ 数据变更派发 `oas-events-change { events }`；点事件芯片派发 `oas-event-click { id }`、点日格派发 `oas-day-click { date }`（宿主接编辑器/表单，组件不内置表单）。纯 UI 态，不做持久化。
-- 边界（后续期）：P1 周/日视图 + 拖拽移动/缩放；P2 重复规则（RRULE 子集）+ 提醒；P3 时区 + 日程（agenda）视图。
+- 边界（后续期）：P1 周/日视图 + 拖拽移动/缩放；P2 重复规则（RRULE 子集）+ 提醒；P3 时区 + 日程（agenda）视图。**P0–P3 均已交付**（P1 周/日时刻表视图 + 拖拽移动/缩放 + oas-view-change；P2 repeat 重复展开 + remind 定时提醒；P3 timezone + agenda 日程视图）
 
 ### 验收
 
@@ -1866,3 +1865,21 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 ### 验收
 
 - `packages/theme/skins.css` + `package.json` exports/files + README / `guide/theming.md`(zh/en) 同步；纯 token 层、无组件改动；全量 e2e 全绿（`visual.spec` 只截图不比对基线，阴影改动不触发视觉回归）。
+
+## 移动原生形态批（未发布）
+
+> 立项背景：组件并集矩阵偏桌面（24 源中移动源仅 Ant Design Mobile / Ionic / Quasar），移动端虽有响应式 + coarse pointer 触屏降级 + bottom-sheet / bottom-navigation，但移动原生交互形态存在 5 项真缺口（2026-10-04 立项评估）。
+
+### 特性
+
+- **oas-notice-bar 通告栏**（feedback 族，低复杂度）：图标 + 滚动文本（复用 marquee 引擎）+ 可关闭 + action 链接 + 多条轮播；i18n ×10。
+- **oas-index-bar 索引栏**（navigation 族，低-中）：数据驱动分节列表 + 字母侧栏（点按/拖拽跳转分节）+ 滚动联动当前字母高亮（scrollspy 复用 anchor 先例）；键盘可达。
+- **oas-pull-refresh 下拉刷新**（feedback 族，中）：滚动容器顶部下拉手势——scrollTop=0 判定 + 阻力曲线 + 阈值释放进 refreshing 态 + 宿主回调结束复位；状态机 idle/pulling/release/refreshing/success 走 i18n；与原生滚动协调（touch-action / overscroll-behavior），桌面端不干扰滚轮。
+- **oas-swipe-cell 滑动操作**（data 族，中）：列表项横向滑动露出操作按钮组——pointer capture 横滑（slider 拖拽先例）+ 阈值/速度吸附开合 + 单开互斥 + 外点/滚动关闭；操作按钮键盘可达（焦点入列不读屏跳变）。
+- **oas-picker 滚轮选择器**（form 族，中-高）：移动式滚轮列（scroll-snap 惯性 + 选中居中）+ 多列 + 列联动（cascade 数据）+ value / oas-change；每列 listbox/option 语义 + 方向键选中；form-associated（OASFormElement）。
+
+### 验收
+
+- 单测：5 组件 TDD（手势走合成 pointer 事件；picker 选中同步/联动/键盘）；`pnpm test` 全绿。
+- e2e：qa-regression 各组件固化（pull-refresh 真手势链 / swipe-cell 开合互斥 / picker 滚动选中）+ 移动仿真视口；全量 e2e 全绿。
+- 文档：5 组件 md（zh/en）+ api-manifest + i18n ×10 + PRD/ROADMAP 同步；新组件前置规矩（ui-spec §2 命名对照、颜色只走 token 含暗色）。
