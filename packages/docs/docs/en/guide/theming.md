@@ -81,3 +81,17 @@ component code:
 
 The library ships `prefers-reduced-motion` support: when the system has
 "reduce motion" enabled, all transitions/animations are shortened automatically.
+
+## Customization capability matrix
+
+Theme / skin / layout / style are four **orthogonal, freely combinable** control axes; the final "style" is what they jointly determine:
+
+| Axis | Meaning | Mechanism | How far |
+| --- | --- | --- | --- |
+| Theme | Color mode (light / dark / contrast) | `data-theme` (light / dark / high-contrast) | Any color mode; custom via tokens |
+| Skin | Brand hue (primary) | `data-skin` + `skins.css` (6 presets) | Any primary; derived steps follow automatically |
+| Layout | Sizing / spacing / density / radius / container | `--oas-space-*` / `radius-*` / `control-height-*` / `container-*`; size presets | Any density / radius / container; RTL auto-mirrors |
+| Style | Typography / motion / elevation / focus ring / contrast | `--oas-font-size-*` / `transition` / `ease` / `shadow-*` / `focus-ring` + `-text` safe grades | Most design languages can be approximated |
+
+**Ceiling**: anything expressible as a CSS variable (token) can be re-skinned purely via CSS, without touching components.
+**Boundary**: ① per-component structural variants (`size` / `variant` / `status` / `shape` attributes) are the component's own contract, not a global axis; ② swapping in a wholly different design language (font stack / motion-curve family / contrast tiers) exceeds what a single token set can express and needs a separate initiative; ③ arbitrarily re-rendering a component's internal structure / DOM is intentionally not supported (keeps components consistent).
