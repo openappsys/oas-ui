@@ -134,15 +134,6 @@ Font size follows the outer context (inherited) by default; override with the CS
 
 The container's `aria-label` equals the raw LaTeX source text, so screen readers read the formula source directly.
 
-### Engine Choice (Architecture Decision)
-
-**Self-developed simplified LaTeX subset, no third-party formula engine**:
-
-1. **Zero-dependency core selling point**: zero third-party runtime dependencies; the in-house parser (tokenizer + recursive descent) introduces no dependencies.
-2. **The subset covers common scenarios**: superscripts/subscripts, fractions, square roots (with root index), summation/integration/product (with limits), Greek letters, common operators — covering common high-school / university formulas; full LaTeX (matrices, large operators, multi-line alignment, etc.) is a future enhancement to be re-evaluated.
-3. **Unknown command tolerance**: unknown commands are shown literally without errors, following the same strategy as "unknown language renders as plain text".
-4. Rendered as HTML (stacked spans + CSS layout) using only library tokens, inheriting font size / theme.
-
 ### Boundaries
 
 - All text is HTML-escaped to prevent injection

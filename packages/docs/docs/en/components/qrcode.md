@@ -202,9 +202,4 @@ When `value` is empty, a "No content" placeholder is shown; when the content exc
 | `--oas-qrcode-bg` | `#ffffff` |
 | `--oas-qrcode-color` | `#18181b` |
 
-### Encoder Choice (Architecture Decision)
-
-- Under the **zero-dependency principle**, a full QR standard implementation (M/Q/H correction + masks + full version block tables) was judged too heavy, so a **custom simplified L-level version** was chosen;
-- Supports versions 1–10, byte / alphanumeric / numeric modes, and picks the best of 8 mask patterns by penalty scoring;
-- Correctness is cross-validated against standard reference vectors (RS error correction / format info / version info) and verified by matrix read-back self-checks; the output is recognized by standard scanners;
-- The encoder functions (`encodeQR` / `matrixToPath`, etc.) are exported by `@oas-ui/ui` and can be used for SSR or custom rendering.
+The encoder functions (`encodeQR` / `matrixToPath`, etc.) are exported by `@oas-ui/ui` and can be used directly for SSR or custom rendering.

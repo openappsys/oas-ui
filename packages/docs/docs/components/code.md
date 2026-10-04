@@ -261,12 +261,3 @@ export { fib }'></oas-code>
 | `--oas-code-font` | `0.875em` |
 | `--oas-code-highlight-bg` | `color-mix(in srgb, var(--oas-color-primary) 8%, transparent)` |
 | `--oas-code-on-color` | `var(--oas-color-bg)` |
-
-### 引擎选型（架构决策）
-
-**自研正则 token 高亮，不引入第三方高亮库**：
-
-1. **零依赖核心卖点**：运行时零第三方依赖；自研正则高亮不引入任何依赖。
-2. **覆盖主流语言基础着色**：js/ts/html/css/json 的关键字/字符串/注释/数字/函数/标签/属性着色覆盖大多数文档场景；精确的语法级高亮（多行状态机、上下文感知）属后续增强，届时再评估。
-3. **安全**：先转义 HTML 再着色，杜绝注入；未知语言纯文本渲染不报错。
-4. 实现为单遍组合正则（互斥捕获组），一次 replace 完成，无二次处理破坏转义实体的问题。

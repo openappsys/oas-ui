@@ -119,17 +119,9 @@
 
 `data` / `options` 也支持 property 通道（JS 对象，优先级高于 attribute）。
 
-### 引擎选型（架构决策）
-
-**自研 SVG 渲染，不引入第三方图表引擎**：
-
-1. **零依赖核心卖点**：运行时零第三方依赖是组件库的核心约束；自研 SVG 不引入任何依赖。
-2. **六型覆盖常见场景**：折线/柱状/饼图/面积/环形/堆叠柱状覆盖绝大多数后台/数据展示场景；复杂图表（散点、组合坐标系、复杂地图等）属后续增强，届时再评估引入引擎的取舍。
-3. **样式与主题一致**：自研可完全用组件库 token 配色（含暗色变体），与库内视觉语言统一。
-4. 动画为纯 CSS（`@media (prefers-reduced-motion: no-preference)` 包裹），reduced-motion 下自动关闭，无 JS 计时器、零泄漏。
-
 ### 边界
 
 - 数据更新重绘 SVG（同 qrcode 模式），节点不重建
 - 空/非法数据 → 空态占位
 - 每个数据点带原生 `<title>` tooltip，零孤儿浮层
+- 动画为纯 CSS（`@media (prefers-reduced-motion: no-preference)` 包裹），reduced-motion 下自动关闭，无 JS 计时器

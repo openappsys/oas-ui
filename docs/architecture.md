@@ -14,6 +14,7 @@
 | 单测          | Vitest + happy-dom                                 | 组件事件/属性/渲染                                      |
 | 视觉/交互测试 | Playwright（chromium/firefox/webkit）              | 真实浏览器交互、视觉回归（可先行 chromium）             |
 | 主题          | CSS 变量（`:root` + `[data-theme]`）               | 运行时换肤、宿主可覆盖                                  |
+| 数据族引擎    | **全部自研**（chart SVG 绘制 / code 正则 token 高亮 / equation LaTeX 子集解析 / qrcode 编码器） | 零依赖核心约束的延伸；现有覆盖度足够（六型图表、主流语言基础着色、常用公式子集、QR 全级别 v1–40）；token 配色与主题一致；组合坐标系/语法级高亮/完整 LaTeX 等复杂场景属后续增强，届时再评估引入引擎的取舍 |
 | 包管理        | pnpm workspace（monorepo）                         | 多包（core/主题/图标/文档站）依赖清晰                   |
 
 ## 2. 架构分层

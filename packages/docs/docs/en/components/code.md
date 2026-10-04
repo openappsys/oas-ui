@@ -261,12 +261,3 @@ export { fib }'></oas-code>
 | `--oas-code-font` | `0.875em` |
 | `--oas-code-highlight-bg` | `color-mix(in srgb, var(--oas-color-primary) 8%, transparent)` |
 | `--oas-code-on-color` | `var(--oas-color-bg)` |
-
-### Engine Choice (Architecture Decision)
-
-**Self-developed regex token highlighting, no third-party highlighting library**:
-
-1. **Zero-dependency core selling point**: zero third-party runtime dependencies; self-developed regex highlighting introduces no dependencies.
-2. **Covers basic coloring of mainstream languages**: keyword/string/comment/number/function/tag/attribute coloring for js/ts/html/css/json covers most documentation scenarios; precise syntax-level highlighting (multi-line state machines, context awareness) is a future enhancement to be re-evaluated.
-3. **Safety**: HTML is escaped before highlighting to prevent injection; unknown languages render as plain text without errors.
-4. Implemented as a single-pass combined regex (mutually exclusive capture groups) with one `replace`, avoiding a second pass that could break escaped entities.

@@ -119,17 +119,9 @@ No data / invalid JSON shows an empty state placeholder without errors.
 
 `data` / `options` also support the property channel (JS objects, taking precedence over attributes).
 
-### Engine Choice (Architecture Decision)
-
-**Self-developed SVG rendering, no third-party chart engine**:
-
-1. **Zero-dependency core selling point**: zero third-party runtime dependencies is a core constraint of the library; self-developed SVG introduces no dependencies.
-2. **Six types cover common scenarios**: line/bar/pie/area/donut/stacked-bar cover the vast majority of dashboard/data-display scenarios; complex charts (scatter, composite coordinate systems, complex maps, etc.) are future enhancements, at which point the trade-off of introducing an engine will be re-evaluated.
-3. **Consistent styling and theming**: the in-house implementation can use the library's token palette entirely (including dark variants), staying unified with the library's visual language.
-4. Animations are pure CSS (wrapped in `@media (prefers-reduced-motion: no-preference)`), auto-disabled under reduced-motion, with no JS timers and zero leaks.
-
 ### Boundaries
 
 - Data updates redraw the SVG (same pattern as qrcode), without rebuilding nodes
 - Empty / invalid data → empty state placeholder
-- Every data point carries a native `<title>` tooltip; zero orphaned overlays
+- Every data point carries a native `<title>` tooltip
+- Animations are pure CSS (wrapped in `@media (prefers-reduced-motion: no-preference)`), auto-disabled under reduced-motion, with no JS timers; zero orphaned overlays
