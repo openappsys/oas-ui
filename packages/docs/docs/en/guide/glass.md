@@ -6,10 +6,11 @@
 import { ref, onMounted } from 'vue'
 const theme = ref('light')
 const open = ref(false)
+const msg = ref(null)
 onMounted(async () => {
   document.documentElement.setAttribute('data-glass', '')
   const { message } = await import('@oas-ui/ui')
-  window.__glassMessage = message
+  msg.value = message
 })
 </script>
 

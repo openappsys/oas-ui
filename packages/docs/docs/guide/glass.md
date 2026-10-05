@@ -6,10 +6,11 @@
 import { ref, onMounted } from 'vue'
 const theme = ref('light')
 const open = ref(false)
+const msg = ref(null)
 onMounted(async () => {
   document.documentElement.setAttribute('data-glass', '')
   const { message } = await import('@oas-ui/ui')
-  window.__glassMessage = message
+  msg.value = message
 })
 </script>
 
@@ -18,7 +19,7 @@ onMounted(async () => {
     <button class="sg-btn" :class="{ 'sg-active': theme === 'light' }" @click="theme = 'light'">light</button>
     <button class="sg-btn" :class="{ 'sg-active': theme === 'dark' }" @click="theme = 'dark'">dark</button>
     <oas-button type="primary" @click="open = true">打开对话框</oas-button>
-    <oas-button @click="__glassMessage?.success('玻璃材质消息：背景透出磨砂质感')">弹出消息</oas-button>
+    <oas-button @click="msg?.success('玻璃材质消息：背景透出磨砂质感')">弹出消息</oas-button>
   </div>
   <div class="gg-cards">
     <div class="gg-card">
