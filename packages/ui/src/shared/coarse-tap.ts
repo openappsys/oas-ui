@@ -31,7 +31,9 @@ function isCoarse(): boolean {
 export function bindCoarseTap(el: EventTarget, handler: () => void): () => void {
   const onUp = (e: Event): void => {
     if (!isCoarse()) return
-    handledTaps.set(el, (e as PointerEvent).timeStamp ?? Date.now())
+    // timeStamp 可能为 0（部分合成事件）：?? 不兜底 0，显式判正
+    const ts = (e as PointerEvent).timeStamp
+    handledTaps.set(el, ts > 0 ? ts : Date.now())
     handler()
   }
   el.addEventListener('pointerup', onUp)

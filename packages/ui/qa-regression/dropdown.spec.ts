@@ -553,24 +553,34 @@ test('dropdown split 主按钮 oas-action 的 originalEvent 为真实事件（�
 }) => {
   await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-dropdown')
-  const r = await page.evaluate(async () => {
+  await page.evaluate(() => {
     const dd = document.createElement('oas-dropdown')
     dd.setAttribute('split', '')
     dd.setAttribute('items', JSON.stringify([{ label: '编辑', value: 'edit' }]))
     dd.innerHTML = '<button>split 主按钮</button>'
+    dd.dataset.e2eSplit = '1'
     dd.style.cssText = 'position: fixed; top: 320px; left: 20px; z-index: 9999'
     document.body.appendChild(dd)
-    await customElements.whenDefined('oas-dropdown')
-    await new Promise((res) => setTimeout(res, 300))
-    return await new Promise<{ type: string; isClick: boolean }>((resolve) => {
-      dd.addEventListener('oas-action', (e) => {
-        const oe = (e as CustomEvent).detail?.originalEvent
-        resolve({ type: oe?.type ?? String(oe), isClick: oe instanceof MouseEvent })
-      })
-      dd.querySelector('button')!.click()
-      setTimeout(() => resolve({ type: 'TIMEOUT', isClick: false }), 2000)
+    ;(window as unknown as { __action?: unknown }).__action = undefined
+    dd.addEventListener('oas-action', (e) => {
+      ;(window as unknown as { __action?: unknown }).__action = (e as CustomEvent).detail?.originalEvent
     })
   })
+  // 真实鼠标点击（produce pointerup+click 完整链）——程序性 .click() 无 pointerup，
+  // 在 pre-fix 代码上同样得真实事件，无法捕获 {} 占位回归（五轮 review 实锤假绿）
+  const btn = page.locator('oas-dropdown[data-e2e-split] > button')
+  await btn.scrollIntoViewIfNeeded()
+  await btn.click()
+  await page.waitForTimeout(300)
+  const r = await page.evaluate(() => {
+    const oe = (window as unknown as { __action?: unknown }).__action
+    return {
+      fired: oe !== undefined,
+      type: (oe as MouseEvent | undefined)?.type ?? String(oe),
+      isClick: oe instanceof MouseEvent,
+    }
+  })
+  expect(r.fired, 'oas-action 应已派发').toBe(true)
   expect(r.isClick, 'originalEvent 应为真实 MouseEvent').toBe(true)
   expect(r.type).toBe('click')
 })
