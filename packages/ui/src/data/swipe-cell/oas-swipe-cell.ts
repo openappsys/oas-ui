@@ -79,6 +79,9 @@ const STYLE = `
   /* 纵向滚动交还浏览器，横向手势由 pointer 接管（不触发原生滚动） */
   touch-action: pan-y;
   will-change: transform;
+  /* 底缘外延 1px 同色投影（不影响布局）：内容底缘落在小数像素时，合成器抗锯齿会让
+     下层 actions（彩色按钮）沿底缘透出 1px 线段（高倍屏实抓）；同色投影盖住透出线 */
+  box-shadow: 0 1px 0 var(--oas-swipe-cell-bg);
 }
 /* 拖动中关过渡，保证内容层严格跟手；禁用文本选中避免桌面拖拽时选中文字 */
 :host([data-dragging]) .content {
