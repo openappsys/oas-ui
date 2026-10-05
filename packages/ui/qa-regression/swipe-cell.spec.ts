@@ -279,3 +279,31 @@ test('swipe-cell actions 按钮铺满行高（回归：oas-button 内层恒定�
   expect(r.innerH, '内层按钮填满宿主（此前恒定档值高顶对齐）').toBe(r.actionsH)
   expect(r.topDelta, '内层与 actions 顶缘对齐（纵向居中成立）').toBeLessThanOrEqual(1)
 })
+
+test('swipe-cell side=start：真实向右滑开（LTR），actions 在左（回归：side 与书写方向正交）', async ({ page }) => {
+  await page.goto('/components/swipe-cell.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#swipe-side')
+  const cell = page.locator('#swipe-side')
+  await cell.scrollIntoViewIfNeeded()
+  const box = (await cell.boundingBox())!
+  // 真实向右拖（从左侧 40px 处向右拖 140px）
+  await page.mouse.move(box.x + 40, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 180, box.y + box.height / 2, { steps: 10 })
+  await page.mouse.up()
+  await page.waitForTimeout(400)
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#swipe-side')!
+    const actions = el.shadowRoot!.querySelector('.actions')!.getBoundingClientRect()
+    const content = el.shadowRoot!.querySelector('.content')!.getBoundingClientRect()
+    return {
+      open: el.hasAttribute('open'),
+      actionsLeft: Math.round(actions.left),
+      contentLeft: Math.round(content.left),
+      offset: getComputedStyle(el.shadowRoot!.querySelector('.content')!).transform,
+    }
+  })
+  expect(r.open, '向右滑开').toBe(true)
+  expect(r.contentLeft, '内容层右移（物理正偏移）').toBeGreaterThan(r.actionsLeft)
+  expect(r.offset).toContain('matrix')
+})

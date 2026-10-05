@@ -15,6 +15,19 @@
   </div>
 </DemoBlock>
 
+## side：actions 挂左侧（向右滑开）
+
+actions 默认挂 inline-end 侧（LTR 右侧，左滑露出）；`side="start"` 改挂 inline-start 侧（LTR 左侧，**向右滑开**）。side 是交互侧选择、与书写方向正交——RTL 下两侧定义自动镜像（侧位与滑动方向随逻辑方向翻转）：
+
+<DemoBlock title='side="start"：向右滑开'>
+  <div style="width: 100%">
+    <oas-swipe-cell id="swipe-side" side="start">
+      <div style="padding: var(--oas-space-3) var(--oas-space-4); background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">向右滑动查看操作</div>
+      <oas-button slot="actions" type="primary">编辑</oas-button>
+    </oas-swipe-cell>
+  </div>
+</DemoBlock>
+
 ## 多按钮并排
 
 `slot="actions"` 可放多个按钮：组件按总宽度测量，滑开后整排露出（各自独立点击）：
@@ -97,6 +110,7 @@
 | --- | --- | --- | --- |
 | `disabled` | 全禁手势 | `boolean` | — |
 | `open` | 打开态（可读写；程序性变化派发 oas-open / oas-close） | `boolean` | — |
+| `side` | actions 挂侧：`end`（默认，inline-end——LTR 右/RTL 左，向 inline-start 滑开）/ `start`（inline-start，向 inline-end 滑开——LTR 右滑）；与书写方向正交，RTL 自动镜像 | `string` | `end` |
 | `threshold` | 释放吸附阈值（px）；位移超过则吸附到开态，否则回弹关 | — | — |
 
 #### 事件

@@ -4060,7 +4060,8 @@
     "attrs": {
       "disabled": "全禁手势",
       "open": "打开态（可读写；程序性变化派发 oas-open / oas-close）",
-      "threshold": "释放吸附阈值（px）；位移超过则吸附到开态，否则回弹关"
+      "threshold": "释放吸附阈值（px）；位移超过则吸附到开态，否则回弹关",
+      "side": "actions 挂侧：`end`（默认，inline-end——LTR 右/RTL 左，向 inline-start 滑开）/ `start`（inline-start，向 inline-end 滑开——LTR 右滑）；与书写方向正交，RTL 自动镜像"
     },
     "events": {
       "oas-open": "落定开态时派发（手势或程序性 open 变化）",

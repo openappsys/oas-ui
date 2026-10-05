@@ -2,6 +2,19 @@
 
 Reveal a row of action buttons by swiping a list item horizontally: the default slot is the **content layer** (the list item body) and `slot="actions"` is the **action button group** (the host places `button` / `oas-button` elements). Swiping the content layer toward inline-start reveals the inline-end action area; releasing snaps to open or closed based on the drag threshold. `oas-open` / `oas-close` are dispatched once each when the open / closed state settles (programmatic `open` attribute changes dispatch them too).
 
+## side: Actions on the Left (Swipe Right)
+
+By default actions attach to the inline-end side (right in LTR, revealed by swiping left); `side="start"` moves them to inline-start (left in LTR, **revealed by swiping right**). `side` is an interaction choice orthogonal to text direction—in RTL both the side and the swipe direction mirror automatically:
+
+<DemoBlock title='side="start": swipe right'>
+  <div style="width: 100%">
+    <oas-swipe-cell id="swipe-side" side="start">
+      <div style="padding: var(--oas-space-3) var(--oas-space-4); background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">Swipe right for actions</div>
+      <oas-button slot="actions" type="primary">Edit</oas-button>
+    </oas-swipe-cell>
+  </div>
+</DemoBlock>
+
 ## Multiple Buttons
 
 `slot="actions"` accepts multiple buttons: the component measures their total width and reveals the whole row on swipe (each button clicks independently):
@@ -97,6 +110,7 @@ At most one swipe item is open within the same document at a time: once an item 
 | --- | --- | --- | --- |
 | `disabled` | Disable all gestures | `boolean` | — |
 | `open` | Open state (read/write; programmatic changes dispatch oas-open / oas-close) | `boolean` | — |
+| `side` | Side the actions attach to: `end` (default, inline-end—right in LTR / left in RTL, swipe toward inline-start) / `start` (inline-start, swipe toward inline-end—rightward in LTR); orthogonal to text direction, mirrors automatically in RTL | `string` | `end` |
 | `threshold` | Release snap threshold (px); a drag beyond it snaps open, otherwise it bounces closed | — | — |
 
 #### Events

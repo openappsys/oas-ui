@@ -4060,7 +4060,8 @@
     "attrs": {
       "disabled": "Disable all gestures",
       "open": "Open state (read/write; programmatic changes dispatch oas-open / oas-close)",
-      "threshold": "Release snap threshold (px); a drag beyond it snaps open, otherwise it bounces closed"
+      "threshold": "Release snap threshold (px); a drag beyond it snaps open, otherwise it bounces closed",
+      "side": "Side the actions attach to: `end` (default, inline-end—right in LTR / left in RTL, swipe toward inline-start) / `start` (inline-start, swipe toward inline-end—rightward in LTR); orthogonal to text direction, mirrors automatically in RTL"
     },
     "events": {
       "oas-open": "Dispatched when the open state settles (gesture or programmatic open change)",

@@ -5,8 +5,8 @@ import { isRtl } from '../../shared/direction.js'
  * oas-swipe-cell —— 列表项横向滑动操作（data 族）。
  *
  * 结构：默认插槽 = 内容层（列表项主体，铺在最上层）；`slot="actions"` = 操作按钮组
- * （宿主放 button 等，组件排成一行置于内容层下方、inline-end 侧）。向 inline-start
- * 方向横滑内容层，露出 actions；松手按位移阈值吸附开/关。
+ * （宿主放 button 等，组件排成一行置于内容层下方、inline-end 侧；`side="start"` 改挂
+ * inline-start 侧）。向 actions 反方向横滑内容层露出 actions；松手按位移阈值吸附开/关。
  *
  * 方向：逻辑方向化——LTR 左滑露出右侧 actions，RTL 右滑露出左侧 actions（物理 CSS 用
  * 逻辑属性 `inset-inline-end`，位移量按 `shared/direction` 的 RTL 判定取符号）。方向判定
@@ -60,6 +60,11 @@ const STYLE = `
   display: flex;
   align-items: stretch;
   background: var(--oas-swipe-cell-actions-bg);
+}
+/* side="start"：actions 改挂 inline-start（向 inline-end 方向滑开——LTR 右滑/RTL 左滑） */
+:host([side='start']) .actions {
+  inset-inline-end: auto;
+  inset-inline-start: 0;
 }
 /* actions 内按钮填满行高（移动滑动操作的通行观感）：::slotted 可设自定义属性穿透
    shadow 边界（::slotted 后不支持链 ::part，oas-button 的高度开口走变量） */
@@ -116,7 +121,7 @@ interface DragState {
 
 export class OASSwipeCell extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['disabled', 'open', 'threshold']
+    return ['disabled', 'open', 'threshold', 'side']
   }
 
   private contentEl: HTMLElement | null = null
@@ -241,7 +246,7 @@ export class OASSwipeCell extends OASElement {
   /** 逻辑偏移 [0, actionsWidth] → 物理偏移并写入 CSS 变量（RTL 取正、LTR 取负） */
   private applyOffsetLogical(logical: number): void {
     const clamped = this.clampLogical(logical)
-    const physical = Math.round(this.dirSign() * clamped)
+    const physical = Math.round(this.offsetSign() * clamped)
     this.style.setProperty('--oas-swipe-cell-offset', `${physical}px`)
   }
 
@@ -253,6 +258,12 @@ export class OASSwipeCell extends OASElement {
   /** 逻辑进度 → 物理位移方向的符号（RTL +1、LTR -1） */
   private dirSign(): number {
     return isRtl(this) ? 1 : -1
+  }
+
+  /** 总位移符号：side 选择（start=向 inline-end 滑开取反）× 书写方向（RTL 镜像）。
+      与 LTR/RTL 正交——side 是产品交互选择（LTR 下也可选右滑），dirSign 只是书写方向镜像 */
+  private offsetSign(): number {
+    return (this.getAttr('side', 'end') === 'start' ? -1 : 1) * this.dirSign()
   }
 
   /** 当前开态对应的逻辑偏移 */
@@ -319,7 +330,7 @@ export class OASSwipeCell extends OASElement {
 
     // 横向跟手（钳制到 [0, actionsWidth]）
     if (ev.cancelable) ev.preventDefault()
-    this.dragLogical = this.clampLogical(drag.startLogical + dx * this.dirSign())
+    this.dragLogical = this.clampLogical(drag.startLogical + dx * this.offsetSign())
     this.applyOffsetLogical(this.dragLogical)
     // 速度轨迹（flick 吸附用）
     drag.prevX = drag.lastX
@@ -341,7 +352,7 @@ export class OASSwipeCell extends OASElement {
     // 速度窗口下限 8ms（一帧）：合成事件同刻连发 dt≈0 一律走位移阈值，
     // 真实手势 move 间隔 8-16ms 才进入 flick 判定
     const dt = drag.lastT - drag.prevT
-    const v = dt >= 8 ? ((drag.lastX - drag.prevX) / dt) * this.dirSign() : 0
+    const v = dt >= 8 ? ((drag.lastX - drag.prevX) / dt) * this.offsetSign() : 0
     const FLICK = 0.5
     let shouldOpen: boolean
     if (v >= FLICK) shouldOpen = this.actionsWidth > 0

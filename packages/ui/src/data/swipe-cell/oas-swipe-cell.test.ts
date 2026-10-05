@@ -525,6 +525,44 @@ describe('OASSwipeCell', () => {
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
   })
 
+  // ---------- side="start"（actions 挂 inline-start，向 inline-end 滑开） ----------
+
+  it('side=start：actions 挂 inline-start（CSS 侧位覆写 + 属性进 observedAttributes）', () => {
+    expect((OASSwipeCell as unknown as { observedAttributes: string[] }).observedAttributes).toContain('side')
+    const el = mount({ side: 'start' })
+    stubActionsWidth(el, 80)
+    const actions = el.shadowRoot!.querySelector('.actions') as HTMLElement
+    // happy-dom 对 inset-inline-start: 0 序列化为 '0'
+    expect(getComputedStyle(actions).insetInlineStart).toBe('0')
+  })
+
+  it('side=start（LTR）：向右滑开（dx>0 逻辑偏移增长）、向左回弹关', () => {
+    const el = mount({ side: 'start' })
+    stubActionsWidth(el, 80)
+    const c = content(el)
+    c.dispatchEvent(pointer('pointerdown', 100, 10))
+    c.dispatchEvent(pointer('pointermove', 160, 10)) // dx=+60 向右（side=start 向 inline-end 滑开）
+    expect(offset(el)).toBe('60px')
+    c.dispatchEvent(pointer('pointerup', 160, 10))
+    expect(el.hasAttribute('open')).toBe(true)
+    // 向左滑回弹关
+    c.dispatchEvent(pointer('pointerdown', 160, 10))
+    c.dispatchEvent(pointer('pointermove', 100, 10)) // dx=-60
+    c.dispatchEvent(pointer('pointerup', 100, 10))
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('side=start（RTL）：向左滑开（书写方向镜像与 side 正交）', () => {
+    document.documentElement.setAttribute('dir', 'rtl')
+    const el = mount({ side: 'start' })
+    stubActionsWidth(el, 80)
+    const c = content(el)
+    c.dispatchEvent(pointer('pointerdown', 200, 10))
+    c.dispatchEvent(pointer('pointermove', 130, 10)) // dx=-70：RTL+side=start 向 inline-end（物理左）滑开
+    expect(offset(el)).toBe('-70px')
+    document.documentElement.removeAttribute('dir')
+  })
+
   it('flick 速度吸附：快速甩动不达位移阈值也开（显式 timeStamp 驱动速度窗口）', () => {
     const el = mount()
     stubActionsWidth(el, 80)
