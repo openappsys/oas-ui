@@ -1883,3 +1883,20 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：5 组件 TDD（手势走合成 pointer 事件；picker 选中同步/联动/键盘）；`pnpm test` 全绿。
 - e2e：qa-regression 各组件固化（pull-refresh 真手势链 / swipe-cell 开合互斥 / picker 滚动选中）+ 移动仿真视口；全量 e2e 全绿。
 - 文档：5 组件 md（zh/en）+ api-manifest + i18n ×10 + PRD/ROADMAP 同步；新组件前置规矩（ui-spec §2 命名对照、颜色只走 token 含暗色）。
+
+## 液态玻璃材质层（未发布）
+
+> 立项背景：液态玻璃（Liquid Glass）材质风格支持——非换色、是材质：半透明 surface + backdrop 模糊 + 高光描边 + 大圆角 + 分层阴影。本库「颜色只走 token」硬约束使 surface 集中于少数变量，可做到一层变量全局切换（2026-10-04 立项）。
+
+### 特性
+
+- **玻璃皮肤包 `packages/theme/glass.css`（opt-in，独立文件）**：surface token（`--oas-color-bg` / `bg-elevated` / `bg-hover` 等）改 rgba 半透明档（明暗两套 alpha）、border 半透明白、radius 档加大、shadow 分层加深；不引则零影响，与 skins.css 机制同构但独立成文（含材质效果变量，不只是品牌色）。
+- **全局材质效果变量**：`--oas-glass-blur`（默认 `none`）+ `--oas-glass-specular`（默认无高光）——surface 类组件（card / modal·drawer·popover 面板 / menu / dropdown / message·notification·toast / bottom-sheet / app-bar / sidebar / table 容器与表头等约 20-30 件，含移动原生批新组件）统一样式接线 `backdrop-filter: var(--oas-glass-blur, none)` + specular inset shadow 变量消费；默认零影响，玻璃皮肤置值即全库启用。机制先例：`oas-backdrop` 的 `--oas-backdrop-blur`、modal 的 `--oas-modal-mask-blur`。
+- **边界（克制）**：苹果的折射/透镜动态效果属平台级渲染，CSS 只能近似，不做追逐；blur 只上容器级 surface，行级/长列表不上（性能）；提供降级档（变量置 none）。
+
+### 验收
+
+- 感知对比度实测门禁：玻璃皮 alpha 档在代表性渐变/图背景下实测，<60 分零容忍（明暗双主题）。
+- 单测：接线组件 backdrop-filter 变量消费断言；`pnpm test` 全绿。
+- e2e：明暗双主题截图审 + 真实背景可读性核对；全量 e2e 全绿。
+- 文档：theming.md（zh/en）玻璃层用法 + PRD/ROADMAP 同步。
