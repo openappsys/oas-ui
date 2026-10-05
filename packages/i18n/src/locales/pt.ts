@@ -127,6 +127,7 @@ export const pt: LocaleMessages = {
   // speed-dial (botões de ação flutuantes)
   'speedDial.actions': 'Ações',
   // pagination (paginação)
+  'picker.columnLabel': 'Coluna {index}',
   'pagination.nav': 'Paginação',
   'pagination.prev': 'Página anterior',
   'pagination.next': 'Próxima página',

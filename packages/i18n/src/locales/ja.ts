@@ -127,6 +127,7 @@ export const ja: LocaleMessages = {
   // speed-dial（クイックアクションボタン）
   'speedDial.actions': 'アクションメニュー',
   // pagination（ページネーション）
+  'picker.columnLabel': '{index} 列目',
   'pagination.nav': 'ページネーション',
   'pagination.prev': '前のページ',
   'pagination.next': '次のページ',

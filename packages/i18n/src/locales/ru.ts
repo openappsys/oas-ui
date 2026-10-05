@@ -127,6 +127,7 @@ export const ru: LocaleMessages = {
   // speedDial (быстрые действия)
   'speedDial.actions': 'Действия',
   // pagination (пагинация)
+  'picker.columnLabel': 'Столбец {index}',
   'pagination.nav': 'Пагинация',
   'pagination.prev': 'Предыдущая страница',
   'pagination.next': 'Следующая страница',

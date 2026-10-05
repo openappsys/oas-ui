@@ -127,6 +127,7 @@ export const ar: LocaleMessages = {
   // speedDial (إجراءات سريعة عائمة)
   'speedDial.actions': 'الإجراءات',
   // pagination (ترقيم الصفحات)
+  'picker.columnLabel': 'العمود {index}',
   'pagination.nav': 'ترقيم الصفحات',
   'pagination.prev': 'الصفحة السابقة',
   'pagination.next': 'الصفحة التالية',

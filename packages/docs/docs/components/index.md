@@ -1,6 +1,6 @@
 # 组件总览
 
-OAS-UI 提供 120 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 121 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -37,6 +37,7 @@ OAS-UI 提供 120 个框架无关的 Web Components 组件，按用途划分为 
 - [Radio 单选框](/components/radio) —— 原生 `<input type="radio">` 增强，支持单选组与受控 value。
 - [Switch 开关](/components/switch) —— `role="switch"` 的开关按钮。
 - [Segmented 分段器](/components/segmented) —— 单选的线性分段选择器，用于轻度筛选 / 切换视图，`role="radiogroup"`，可禁用单项。
+- [Picker 滚轮选择器](/components/picker) —— 移动式滚轮列选择：独立多列 / 级联树两形态，原生滚动惯性 + 吸附，键盘可达，form-associated 直接进原生表单。
 - [Slider 滑块](/components/slider) —— 原生 `<input type="range">` 增强的滑动条。
 - [InputNumber 数字输入](/components/input-number) —— 原生 `<input type="number">` 增强，带步进按钮并支持范围约束。
 - [Rate 评分](/components/rate) —— 星级评分，支持键盘方向键调节，默认点击已选中的同一颗星可清空。

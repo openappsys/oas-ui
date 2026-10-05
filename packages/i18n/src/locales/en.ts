@@ -93,6 +93,7 @@ export const en: LocaleMessages = {
   'floatButton.action': 'Quick actions',
   'toggleGroup.group': 'Toggle group',
   'speedDial.actions': 'Actions',
+  'picker.columnLabel': 'Column {index}',
   'pagination.nav': 'Pagination',
   'pagination.prev': 'Previous page',
   'pagination.next': 'Next page',

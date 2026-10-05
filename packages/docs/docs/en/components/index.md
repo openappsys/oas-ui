@@ -1,6 +1,6 @@
 # Component Overview
 
-OAS-UI provides 120 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 121 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -37,6 +37,7 @@ OAS-UI provides 120 framework-agnostic Web Components, organized into 7 groups b
 - [Radio](/en/components/radio) —— An enhanced native `<input type="radio">` supporting radio groups and controlled values.
 - [Switch](/en/components/switch) —— A switch button with `role="switch"`.
 - [Segmented](/en/components/segmented) —— A single-select linear segmented control for light filtering / view switching, `role="radiogroup"`, with per-item disabling.
+- [Picker](/en/components/picker) — Mobile-style scroll-wheel column selector: independent columns or cascading tree, native inertial scrolling with snap, keyboard accessible, form-associated.
 - [Slider](/en/components/slider) —— A slider built on an enhanced native `<input type="range">`.
 - [InputNumber](/en/components/input-number) —— An enhanced native `<input type="number">` with stepper buttons and range constraints.
 - [Rate](/en/components/rate) —— A star rating supporting keyboard arrow-key adjustment; clicking the currently selected star clears the value by default.

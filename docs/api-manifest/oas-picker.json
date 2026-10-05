@@ -1,0 +1,54 @@
+{
+  "className": "OASPicker",
+  "sourceFile": "packages/ui/src/form/picker/oas-picker.ts",
+  "attrs": [
+    {
+      "name": "columns",
+      "observed": true
+    },
+    {
+      "name": "options",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "item-height",
+      "observed": true
+    },
+    {
+      "name": "visible-count",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "name",
+      "observed": true
+    },
+    {
+      "name": "required",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "value",
+      "type": "string[] | string"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value, labels: this.currentLabels(), columnIndex: colIdx, } satisfies PickerChangeDetail"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

@@ -127,6 +127,7 @@ export const zhCN = {
   // speed-dial（悬浮动作按钮）
   'speedDial.actions': '操作菜单',
   // pagination（分页）
+  'picker.columnLabel': '第 {index} 列',
   'pagination.nav': '分页',
   'pagination.prev': '上一页',
   'pagination.next': '下一页',

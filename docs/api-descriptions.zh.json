@@ -4118,5 +4118,20 @@
     "props": {
       "events": "日程事件（`SchedulerEvent[]`）：`el.events` 读（含自动 id 的拷贝）；`el.events = [...]` 写（同步 events 属性 + 重渲染 + 派发 oas-events-change）"
     }
+  },
+  "oas-picker": {
+    "attrs": {
+      "columns": "独立多列数据（JSON 数组 [{ key?, label?, items: [{ label, value?, disabled? }] }]；与 options 互斥且优先）",
+      "disabled": "整件禁用（滚轮不响应、值不变）",
+      "item-height": "行高 px（正整数，非法回落默认）",
+      "options": "级联树数据（JSON [{ label, value?, children: [...] }]）；列数随选中路径派生，父列变更重建子列并复位首可用项",
+      "value": "各列选中值（JSON 数组，项 value 缺省回退 label）；落停回写反射，程序性写入只滚动不派发事件",
+      "visible-count": "可见行数（≥3，偶数自动归奇）",
+      "name": "原生表单字段名（form-associated：FormData 提交的键，值为 JSON 数组字符串）",
+      "required": "必填标记（驱动原生校验链 valueMissing：未选 = 未填）"
+    },
+    "events": {
+      "oas-change": "滚动/键盘选中落停后派发（程序性 value 写入不派发）。detail { value, labels, columnIndex }——value/labels 为全列当前口径，columnIndex 为本次变更列"
+    }
   }
 }

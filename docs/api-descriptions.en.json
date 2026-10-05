@@ -4118,5 +4118,20 @@
     "props": {
       "events": "Schedule events (`SchedulerEvent[]`): `el.events` reads (copy incl. auto ids); `el.events = [...]` writes (syncs the events attribute + re-renders + dispatches oas-events-change)"
     }
+  },
+  "oas-picker": {
+    "attrs": {
+      "columns": "Independent column data (JSON array [{ key?, label?, items: [{ label, value?, disabled? }] }]; mutually exclusive with options and takes priority)",
+      "disabled": "Whole-component disable (wheels unresponsive, value unchanged)",
+      "item-height": "Row height in px (positive integer, invalid values fall back to default)",
+      "options": "Cascading tree data (JSON [{ label, value?, children: [...] }]); column count derives from selection path, parent change rebuilds child columns and resets to first enabled item",
+      "value": "Selected values per column (JSON array; item value falls back to label); written back on settle, programmatic writes only scroll without firing events",
+      "visible-count": "Visible row count (≥3, even values round up to odd)",
+      "name": "Native form field name (form-associated: the FormData submission key; value is a JSON array string)",
+      "required": "Required marker (drives the native valueMissing validation chain: unselected counts as unfilled)"
+    },
+    "events": {
+      "oas-change": "Fired after scroll/keyboard selection settles (not fired on programmatic value writes). detail { value, labels, columnIndex }—value/labels reflect all columns, columnIndex is the changed column"
+    }
   }
 }

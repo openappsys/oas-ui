@@ -569,6 +569,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   'pull-refresh': [
     ['oas-pull-refresh', 'dragdown:140', '顶部下拉超阈值释放 → oas-refresh（demo 宿主置 refreshing→success 复位）'],
   ],
+  picker: [['oas-picker [part="column"]', 'press:ArrowDown', '方向键移动选中 → oas-change']],
   'swipe-cell': [
     ['oas-swipe-cell', 'open', '设置 open 属性 → oas-open（受控开态也派发）'],
     ['oas-swipe-cell', 'rmattr:open', '移除 open 属性 → oas-close'],

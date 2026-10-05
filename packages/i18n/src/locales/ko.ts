@@ -127,6 +127,7 @@ export const ko: LocaleMessages = {
   // speed-dial（플로팅 작업 버튼）
   'speedDial.actions': '작업 메뉴',
   // pagination（페이지네이션）
+  'picker.columnLabel': '{index}번째 열',
   'pagination.nav': '페이지네이션',
   'pagination.prev': '이전 페이지',
   'pagination.next': '다음 페이지',
