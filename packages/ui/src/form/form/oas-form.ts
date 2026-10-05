@@ -365,7 +365,6 @@ export class OASForm extends OASElement {
       //（change/input 档的 oas-change 会同时命中两条监听，二轮 review 实抓重复校验）
       if (e.type === 'oas-input' && trig === 'input') return
       if (e.type === 'oas-change' && (trig === 'change' || trig === 'input')) return
-      if (e.type === 'oas-blur' && trig === 'blur') return
       if (!Object.hasOwn(this.errors, name)) return
       this.validateFieldByTrigger(name, target)
     }) as EventListener

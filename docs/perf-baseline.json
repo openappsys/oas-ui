@@ -1,27 +1,27 @@
 {
   "size": {
-    "generatedAt": "2026-10-05",
+    "generatedAt": "2026-10-06",
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 30108913,
+        "distTotalBytes": 30110803,
         "browserJs": {
           "files": 370,
-          "rawBytes": 8336281,
-          "gzipBytes": 2265088,
-          "brotliBytes": 1711800
+          "rawBytes": 8336659,
+          "gzipBytes": 2265191,
+          "brotliBytes": 1712028
         },
         "fullEntry": {
           "files": 411,
-          "rawBytes": 2963921,
-          "gzipBytes": 912234,
-          "brotliBytes": 766258
+          "rawBytes": 2964041,
+          "gzipBytes": 912262,
+          "brotliBytes": 766276
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 2490183,
-          "gzipBytes": 623132,
-          "brotliBytes": 413182
+          "rawBytes": 2490312,
+          "gzipBytes": 623170,
+          "brotliBytes": 413371
         }
       },
       "@oas-ui/theme": {
@@ -227,9 +227,9 @@
         "entry": "form/form",
         "spec": "@oas-ui/ui/form/form",
         "files": 11,
-        "rawBytes": 69047,
-        "gzipBytes": 25350,
-        "brotliBytes": 21047,
+        "rawBytes": 69167,
+        "gzipBytes": 25378,
+        "brotliBytes": 21065,
         "fileList": [
           "packages/ui/dist/form/form/index.js",
           "packages/i18n/dist/index.js",
@@ -248,16 +248,16 @@
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
-        "actualBytes": 623132,
+        "actualBytes": 623170,
         "limitBytes": 716800,
         "warnAtBytes": 645120,
         "pass": true,
         "warn": false,
-        "basis": "天花板制：实测 gzip 519.1 KB（form-associated 批次 + v2.5.6 无障碍批次后），定档 700 KB 预留后续增长；前档 600 KB 定档于 2026-09-22（519.1 KB 实测），再前档 575 KB 定档于 v2.5.3（498.4 KB 实测），再前档 300 KB 定档于 v2.2.2（240,557 B）"
+        "basis": "天花板制：实测 gzip 608.5 KB（移动原生批 5 组件 + scheduler 进全量入口后），上浮约 15% 定档 700 KB；前档 600 KB 定档于 2026-09-22（519.1 KB 实测），再前档 575 KB 定档于 v2.5.3（498.4 KB 实测）"
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 912234,
+        "actualBytes": 912262,
         "limitBytes": 1048576,
         "warnAtBytes": 943718,
         "pass": true,
@@ -284,7 +284,7 @@
       },
       {
         "name": "@oas-ui/ui/form/form 链 gzip",
-        "actualBytes": 25350,
+        "actualBytes": 25378,
         "limitBytes": 28672,
         "warnAtBytes": 25805,
         "pass": true,
