@@ -1,13 +1,13 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 27940,
+    "sampled": 29274,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 267,
-    "exempt": 454,
-    "skipped": 2646
+    "ratio": 263,
+    "exempt": 630,
+    "skipped": 2684
   },
   "topPairs": [],
   "pages": {
@@ -183,7 +183,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 5,
+      "ratio": 1,
       "exempt": 0,
       "skipped": 2
     },
@@ -545,7 +545,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 5
+      "skipped": 3
     },
     "kanban.html::dark": {
       "below30": 0,
@@ -553,7 +553,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 5
+      "skipped": 3
     },
     "kbd.html": {
       "below30": 0,
@@ -779,6 +779,22 @@
       "exempt": 0,
       "skipped": 18
     },
+    "pull-refresh.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 9
+    },
+    "pull-refresh.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 9
+    },
     "qrcode.html": {
       "below30": 0,
       "below45": 0,
@@ -826,6 +842,22 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": 1
+    },
+    "scheduler.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 77,
+      "skipped": 5
+    },
+    "scheduler.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 77,
+      "skipped": 5
     },
     "scroll-area.html": {
       "below30": 0,
@@ -954,6 +986,22 @@
       "ratio": 0,
       "exempt": 5,
       "skipped": 75
+    },
+    "swipe-cell.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 5
+    },
+    "swipe-cell.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 5
     },
     "table.html": {
       "below30": 0,
@@ -1169,22 +1217,6 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 6
-    },
-    "scheduler.html": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 77,
-      "skipped": 6
-    },
-    "scheduler.html::dark": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 77,
       "skipped": 6
     }
   }

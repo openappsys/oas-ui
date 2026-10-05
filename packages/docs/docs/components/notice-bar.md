@@ -40,7 +40,7 @@
 `items` 传 JSON 字符串数组，多条通告纵向轮播（淡出 → 换文本 → 淡入），间隔 `interval` 毫秒（默认 4000）。`prefers-reduced-motion` 下不自动轮播，静态显示第一条；轮播自动播放时内容区 `aria-live="off"`，不打扰读屏。非法 JSON / 空数组回退默认插槽单条内容。
 
 <DemoBlock title="items 轮播（interval=2500）">
-  <oas-notice-bar id="nb-items-demo" items='["第一条：版本 v2.7 已发布","第二条：新版主题编辑器上线","第三条：移动端组件批次立项"]' interval="2500"></oas-notice-bar>
+  <oas-notice-bar id="nb-items-demo" items='["第一条：服务例行维护通知","第二条：新版主题编辑器上线","第三条：移动端组件批次立项"]' interval="2500"></oas-notice-bar>
 </DemoBlock>
 
 ## action 操作

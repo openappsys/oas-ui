@@ -320,4 +320,9 @@ export const en: LocaleMessages = {
   'datePicker.shortcutThisQuarter': 'This quarter',
   'indexBar.navAriaLabel': 'Alphabet index navigation',
   'indexBar.listLabel': 'Section list',
+  'swipeCell.actionsLabel': 'Swipe actions',
+  'pullRefresh.pull': 'Pull to refresh',
+  'pullRefresh.release': 'Release to refresh',
+  'pullRefresh.refreshing': 'Refreshing…',
+  'pullRefresh.success': 'Refresh successful',
 }

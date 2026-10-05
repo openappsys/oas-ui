@@ -71,7 +71,7 @@ test('notice-bar items 轮播：interval 到点后文本真实切换到第二条
       return el.shadowRoot!.querySelector('.item-text')!.textContent
     })
 
-  expect(await readItem()).toBe('第一条：版本 v2.7 已发布')
+  expect(await readItem()).toBe('第一条：服务例行维护通知')
   // interval=2500 + 淡出换文本 200ms → 2.8s 后第二条已落定
   await page.waitForTimeout(2800)
   expect(await readItem()).toBe('第二条：新版主题编辑器上线')

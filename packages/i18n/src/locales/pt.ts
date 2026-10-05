@@ -390,5 +390,10 @@ export const pt: LocaleMessages = {
   'timePicker.now': 'Agora',
   'indexBar.navAriaLabel': 'Navegação por índice alfabético',
   'indexBar.listLabel': 'Lista de seções',
+  'swipeCell.actionsLabel': 'Ações de deslizar',
+  'pullRefresh.pull': 'Puxe para atualizar',
+  'pullRefresh.release': 'Solte para atualizar',
+  'pullRefresh.refreshing': 'Atualizando…',
+  'pullRefresh.success': 'Atualizado',
   'datePicker.shortcutThisQuarter': 'Este trimestre',
 }

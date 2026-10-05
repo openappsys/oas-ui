@@ -1,6 +1,6 @@
 # 组件总览
 
-OAS-UI 提供 118 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 120 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -79,6 +79,7 @@ OAS-UI 提供 118 个框架无关的 Web Components 组件，按用途划分为 
 - [Popconfirm 气泡确认](/components/popconfirm) —— 在触发元素旁显示确认气泡，常用于删除等危险操作前的二次确认。
 - [Alert 警告提示](/components/alert) —— 内嵌式提示条，用于展示成功、信息、警告或错误信息，支持自定义标题与关闭按钮。
 - [NoticeBar 通告栏](/components/notice-bar) —— 页面顶部/区块内通告条：图标 + 超长横向滚动文本 + 多条纵向轮播 + 可关闭 + action 链接。
+- [PullRefresh 下拉刷新](/components/pull-refresh) —— 移动端下拉刷新容器：列表滚到顶部继续下拉露出指示区（阻力曲线跟手），过阈值释放派发 oas-refresh 并停驻；宿主完成后移除 refreshing，组件播成功文案回弹复位。
 - [Progress 进度条](/components/progress) —— 显示任务执行进度，支持线形与圆环两种形态、状态色与隐藏文字。
 - [LoadingBar 顶部加载](/components/loading-bar) —— 页面顶部的全局加载进度条，命令式 API 驱动。
 - [Spin 加载中](/components/spin) —— 加载指示器，可单独使用，也可包裹内容并叠加遮罩。
@@ -138,6 +139,7 @@ OAS-UI 提供 118 个框架无关的 Web Components 组件，按用途划分为 
 - [NumberAnimation 数字滚动](/components/number-animation) —— 数字从当前值缓动到目标值的动画组件，到目标值停止并派发 `oas-finish`；`prefers-reduced-motion` 时直接跳目标，断开连接自动取消 rAF 无泄漏。
 - [GradientText 渐变文字](/components/gradient-text) —— 以渐变色填充文字的纯展示组件，`background-clip: text` 实现；默认走主题 token 双色渐变，支持任意色标数组与方向。无事件。
 - [Highlight 文本高亮](/components/highlight) —— 文本命中高亮：`text` + `highlight`（空格多词或 JSON 数组）命中片段渲染为 `<mark>`（token 配色，dark 自适应），支持大小写/整词/重音三开关，内容重算后派发 `oas-count`。
+- [SwipeCell 滑动操作](/components/swipe-cell) —— 列表项横向滑动露出操作按钮组：默认插槽为内容层、`slot="actions"` 为操作区，向 inline-start 滑开、按 `threshold` 吸附开合；单开互斥、外点/滚动关闭、Esc 关闭、操作按钮键盘可达；`oas-open` / `oas-close` 落定派发。
 
 ## 框架级容器
 

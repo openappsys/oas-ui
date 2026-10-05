@@ -2449,6 +2449,20 @@
       "": "自定义文本：line 右侧 / text-inside 条内 / 圆心；优先于状态图标与内置百分比"
     }
   },
+  "oas-pull-refresh": {
+    "attrs": {
+      "disabled": "全禁下拉手势（config-provider 全局禁用注入同效）；拖拽中途置位立即取消回弹，不派发事件",
+      "threshold": "触发刷新的下拉阈值（px，默认 60）：释放时拉动位移达到该值才派发 oas-refresh；非法/非正回落默认，生效值夹取不超过 max-pull",
+      "max-pull": "拉动位移上限（px，默认 100）：阻力曲线 `pull = maxPull × (1 − e^(−dy/maxPull))` 渐近上限，增益递减",
+      "refreshing": "刷新中（宿主受控）：oas-refresh 派发后宿主置 true 开始异步刷新，完成后移除；组件播 success 文案约 600ms 后回弹复位；refreshing 期间再次下拉忽略；无手势直接置位（程序性刷新）同样停驻刷新中视觉、不派发事件"
+    },
+    "events": {
+      "oas-refresh": "下拉位移达到阈值后释放时派发一次；组件停驻阈值高度进刷新中视觉，等宿主置 refreshing（不置则保持停驻等待宿主）"
+    },
+    "slots": {
+      "": "滚动内容（列表等）；容器自身为滚动盒（overflow-y: auto），高度由宿主约束"
+    }
+  },
   "oas-qrcode": {
     "attrs": {
       "aria-label": "容器可访问名称，缺省走 i18n",
@@ -4039,6 +4053,21 @@
     "cssVars": {},
     "props": {
       "value": "当前值：单选取选中 color 字符串，`multiple` 时取 color 数组"
+    }
+  },
+  "oas-swipe-cell": {
+    "attrs": {
+      "disabled": "全禁手势",
+      "open": "打开态（可读写；程序性变化派发 oas-open / oas-close）",
+      "threshold": "释放吸附阈值（px）；位移超过则吸附到开态，否则回弹关"
+    },
+    "events": {
+      "oas-open": "落定开态时派发（手势或程序性 open 变化）",
+      "oas-close": "落定关态时派发（手势、外点、滚动、Esc 或程序性 open 变化）"
+    },
+    "slots": {
+      "": "内容层（列表项主体）；组件不改动其语义",
+      "actions": "操作按钮组（置于 inline-end 侧；role=group + aria-label）"
     }
   },
   "oas-highlight": {

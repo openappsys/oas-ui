@@ -1,0 +1,50 @@
+{
+  "className": "OASPullRefresh",
+  "sourceFile": "packages/ui/src/feedback/pull-refresh/oas-pull-refresh.ts",
+  "attrs": [
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "threshold",
+      "observed": true
+    },
+    {
+      "name": "max-pull",
+      "observed": true
+    },
+    {
+      "name": "refreshing",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-refresh"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-pull-refresh-indicator-height",
+      "default": "48px"
+    },
+    {
+      "name": "--oas-pull-refresh-label-color",
+      "default": "var(--oas-color-text-secondary)"
+    },
+    {
+      "name": "--oas-pull-refresh-spinner-color",
+      "default": "var(--oas-color-primary)"
+    }
+  ],
+  "unresolved": []
+}

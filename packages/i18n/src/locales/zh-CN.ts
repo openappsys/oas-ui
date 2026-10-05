@@ -392,4 +392,11 @@ export const zhCN = {
   // index-bar（索引栏）
   'indexBar.navAriaLabel': '字母索引导航',
   'indexBar.listLabel': '分节列表',
+  // swipe-cell（滑动操作）
+  'swipeCell.actionsLabel': '滑动操作',
+  // pull-refresh（下拉刷新）
+  'pullRefresh.pull': '下拉刷新',
+  'pullRefresh.release': '松开立即刷新',
+  'pullRefresh.refreshing': '刷新中…',
+  'pullRefresh.success': '刷新成功',
 } as const

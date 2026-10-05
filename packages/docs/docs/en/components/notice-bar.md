@@ -40,7 +40,7 @@ A notice bar for the top of a page or inside a section: icon + text + closable +
 Pass a JSON string array to `items` to rotate multiple notices vertically (fade out → swap text → fade in) every `interval` ms (default 4000). Under `prefers-reduced-motion` rotation is disabled and the first item shows statically; while auto-rotating the content area is `aria-live="off"` so screen readers are not interrupted. Invalid JSON / empty arrays fall back to the default slot.
 
 <DemoBlock title="items rotation (interval=2500)">
-  <oas-notice-bar id="nb-items-demo" items='["First: version v2.7 has been released","Second: the new theme editor is live","Third: the mobile-native component batch kicked off"]' interval="2500"></oas-notice-bar>
+  <oas-notice-bar id="nb-items-demo" items='["Scheduled maintenance notice","Second: the new theme editor is live","Third: the mobile-native component batch kicked off"]' interval="2500"></oas-notice-bar>
 </DemoBlock>
 
 ## Action

@@ -1,0 +1,56 @@
+{
+  "className": "OASSwipeCell",
+  "sourceFile": "packages/ui/src/data/swipe-cell/oas-swipe-cell.ts",
+  "attrs": [
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "observed": true
+    },
+    {
+      "name": "threshold",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "open",
+      "type": "boolean"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-open"
+    },
+    {
+      "name": "oas-close"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "actions"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-swipe-cell-actions-bg",
+      "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-swipe-cell-bg",
+      "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-swipe-cell-offset",
+      "default": "0px"
+    }
+  ],
+  "unresolved": []
+}

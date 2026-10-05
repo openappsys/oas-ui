@@ -181,6 +181,8 @@ const INTERACTIONS: Array<[string, string]> = [
 //   file          对第一个匹配 setInputFiles（隐藏 file input）
 //   drag          拖拽分隔条（真实指针手势）
 //   dragto        HTML5 拖放：源 = 第 1 个匹配，目标 = 第 2 个匹配（Playwright dragTo 触发真实 dragstart/drop）
+//   dragdown:<px> 纵向真实指针拖拽（默认 120px）：匹配元素中心按下 → 垂直下拖 → 松开
+//                 （下拉刷新类手势组件的通用触发；真实鼠标事件驱动组件自身的手势接管链路）
 //   wait:<ms>     等待
 //   waitfor       sel 字段为 JS 条件表达式，等页面求值为真（demo 异步注入 onMounted 等）
 //   file:svg      设置 SVG 图片文件（走 accept 过滤但可用于触达 max 超限/预览）
@@ -564,6 +566,13 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-notice-bar [part="close"]', 'click', '点关闭按钮 → oas-close（组件自隐藏）'],
     ['oas-notice-bar button.action', 'click', '点按钮形态 action → oas-action-click'],
   ],
+  'pull-refresh': [
+    ['oas-pull-refresh', 'dragdown:140', '顶部下拉超阈值释放 → oas-refresh（demo 宿主置 refreshing→success 复位）'],
+  ],
+  'swipe-cell': [
+    ['oas-swipe-cell', 'open', '设置 open 属性 → oas-open（受控开态也派发）'],
+    ['oas-swipe-cell', 'rmattr:open', '移除 open 属性 → oas-close'],
+  ],
   avatar: [
     ['oas-avatar [part="trigger"]', 'domclick', '点换头像遮罩（hover/focus 才显形，DOM click 直达）→ oas-trigger'],
   ],
@@ -753,6 +762,21 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
           await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
           await page.mouse.down()
           await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2, { steps: 6 })
+          await page.mouse.up()
+        }
+      } else if (act.startsWith('dragdown:')) {
+        // 纵向真实指针拖拽：元素中心按下 → 垂直下拖指定距离（默认 120）→ 松开。
+        // 下拉刷新类手势组件（scrollTop=0 起手）的通用触发；先滚进视口（mouse 事件不自动滚动）
+        const dist = Number(act.slice(9)) || 120
+        const el = page.locator(sel).first()
+        if (await el.count()) {
+          await el.evaluate((e) => (e as HTMLElement).scrollIntoView({ block: 'center' }))
+          const box = (await el.boundingBox())!
+          const cx = box.x + box.width / 2
+          const cy = box.y + Math.min(box.height / 2, 60)
+          await page.mouse.move(cx, cy)
+          await page.mouse.down()
+          await page.mouse.move(cx, cy + dist, { steps: 8 })
           await page.mouse.up()
         }
       } else if (act === 'dragto') {

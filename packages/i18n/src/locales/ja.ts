@@ -390,5 +390,10 @@ export const ja: LocaleMessages = {
   'timePicker.now': '現在',
   'indexBar.navAriaLabel': 'アルファベット索引ナビゲーション',
   'indexBar.listLabel': 'セクション一覧',
+  'swipeCell.actionsLabel': 'スワイプ操作',
+  'pullRefresh.pull': '引っ張って更新',
+  'pullRefresh.release': '指を離して更新',
+  'pullRefresh.refreshing': '更新中…',
+  'pullRefresh.success': '更新しました',
   'datePicker.shortcutThisQuarter': '今四半期',
 }

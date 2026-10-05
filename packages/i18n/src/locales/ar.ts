@@ -390,5 +390,10 @@ export const ar: LocaleMessages = {
   'timePicker.now': 'الآن',
   'indexBar.navAriaLabel': 'تنقل بفهرس أبجدي',
   'indexBar.listLabel': 'قائمة الأقسام',
+  'swipeCell.actionsLabel': 'إجراءات السحب',
+  'pullRefresh.pull': 'اسحب للتحديث',
+  'pullRefresh.release': 'أفلت للتحديث',
+  'pullRefresh.refreshing': 'جارٍ التحديث…',
+  'pullRefresh.success': 'تم التحديث',
   'datePicker.shortcutThisQuarter': 'هذا الربع',
 }

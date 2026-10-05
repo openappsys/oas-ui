@@ -1,6 +1,6 @@
 # Component Overview
 
-OAS-UI provides 118 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 120 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -79,6 +79,7 @@ OAS-UI provides 118 framework-agnostic Web Components, organized into 7 groups b
 - [Popconfirm](/en/components/popconfirm) —— Shows a confirmation bubble next to the trigger element, commonly used before destructive actions like deletion.
 - [Alert](/en/components/alert) —— An inline notice bar for success, info, warning, or error messages, with support for a custom title and a close button.
 - [NoticeBar](/en/components/notice-bar) —— A notice bar for the top of a page or inside a section: icon + seamlessly scrolling long text + vertical multi-notice rotation + closable + an action link.
+- [PullRefresh](/en/components/pull-refresh) —— A mobile pull-to-refresh container: pull past the top of the list to reveal the indicator (finger-following resistance curve); releasing past the threshold dispatches oas-refresh and parks; when the host finishes it removes refreshing and the component plays the success copy before bouncing back.
 - [Progress](/en/components/progress) —— Shows task progress, supporting line and circle forms, status colors, and hidden text.
 - [LoadingBar](/en/components/loading-bar) —— A global loading progress bar at the top of the page, driven by an imperative API.
 - [Spin](/en/components/spin) —— A loading indicator that can be used standalone or wrap content with an overlaid mask.
@@ -138,6 +139,7 @@ OAS-UI provides 118 framework-agnostic Web Components, organized into 7 groups b
 - [NumberAnimation](/en/components/number-animation) —— An animation component that eases a number from its current value to the target value, stops at the target and emits `oas-finish`; under `prefers-reduced-motion` it jumps straight to the target, and disconnecting cancels the rAF without leaks.
 - [GradientText](/en/components/gradient-text) —— A purely presentational component that fills text with a gradient color, implemented with `background-clip: text`; it defaults to a two-color theme-token gradient and supports arbitrary color-stop arrays and directions. No events.
 - [Highlight](/en/components/highlight) —— Text match highlighting: matched segments from `text` + `highlight` (space-separated words or a JSON array) render as `<mark>` (token colors, dark-mode aware), with case / whole-word / accent toggles, dispatching `oas-count` after each recompute.
+- [SwipeCell](/en/components/swipe-cell) —— Reveal an action button group by swiping a list item horizontally: the default slot is the content layer and `slot="actions"` the action area, swiped toward inline-start and snapped open/closed by `threshold`; single-open exclusion, outside-click/scroll close, Esc close, and keyboard-reachable action buttons; `oas-open` / `oas-close` dispatched when the state settles.
 
 ## Framework Containers
 

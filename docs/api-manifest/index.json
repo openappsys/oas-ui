@@ -79,6 +79,7 @@
   "oas-popconfirm",
   "oas-alert",
   "oas-notice-bar",
+  "oas-pull-refresh",
   "oas-progress",
   "oas-loading-bar",
   "oas-spin",
@@ -171,6 +172,7 @@
   "oas-log",
   "oas-comment",
   "oas-highlight",
+  "oas-swipe-cell",
   "oas-config-provider",
   "oas-app",
   "oas-theme-editor"

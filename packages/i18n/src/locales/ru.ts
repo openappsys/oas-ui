@@ -390,5 +390,10 @@ export const ru: LocaleMessages = {
   'timePicker.now': 'Сейчас',
   'indexBar.navAriaLabel': 'Навигация по алфавитному указателю',
   'indexBar.listLabel': 'Список разделов',
+  'swipeCell.actionsLabel': 'Действия смахивания',
+  'pullRefresh.pull': 'Потяните для обновления',
+  'pullRefresh.release': 'Отпустите для обновления',
+  'pullRefresh.refreshing': 'Обновление…',
+  'pullRefresh.success': 'Обновлено',
   'datePicker.shortcutThisQuarter': 'В этом квартале',
 }

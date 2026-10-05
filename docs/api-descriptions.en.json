@@ -2449,6 +2449,20 @@
       "": "Custom text: right of the line / inside the bar (text-inside) / circle center; wins over status icons and the built-in percentage"
     }
   },
+  "oas-pull-refresh": {
+    "attrs": {
+      "disabled": "Disables the pull gesture entirely (the config-provider global disabled injection behaves the same); setting it mid-drag cancels immediately and springs back without dispatching",
+      "threshold": "Pull distance threshold to trigger a refresh (px, default 60): oas-refresh is dispatched on release only when the pulled distance reaches it; invalid/non-positive falls back to the default; the effective value is clamped to max-pull",
+      "max-pull": "Pull distance cap (px, default 100): the resistance curve `pull = maxPull × (1 − e^(−dy/maxPull))` approaches the cap with diminishing gain",
+      "refreshing": "Refreshing (host-controlled): after oas-refresh the host sets it to start the async refresh and removes it when done; the component plays the success copy for about 600ms then bounces back; further pulls are ignored while refreshing; setting it without a gesture (programmatic refresh) parks at the refreshing visual too, without dispatching"
+    },
+    "events": {
+      "oas-refresh": "Dispatched once when the pull is released past the threshold; the component parks at the threshold height in the refreshing visual and waits for the host to set refreshing (it stays parked otherwise)"
+    },
+    "slots": {
+      "": "Scrollable content (a list, etc.); the container itself is the scroll box (overflow-y: auto), height constrained by the host"
+    }
+  },
   "oas-qrcode": {
     "attrs": {
       "aria-label": "Accessible name of the container; defaults to i18n",
@@ -4039,6 +4053,21 @@
     "cssVars": {},
     "props": {
       "value": "Current value: the selected color string, or an array of colors when `multiple`"
+    }
+  },
+  "oas-swipe-cell": {
+    "attrs": {
+      "disabled": "Disable all gestures",
+      "open": "Open state (read/write; programmatic changes dispatch oas-open / oas-close)",
+      "threshold": "Release snap threshold (px); a drag beyond it snaps open, otherwise it bounces closed"
+    },
+    "events": {
+      "oas-open": "Dispatched when the open state settles (gesture or programmatic open change)",
+      "oas-close": "Dispatched when the closed state settles (gesture, outside click, scroll, Esc, or programmatic open change)"
+    },
+    "slots": {
+      "": "Content layer (list item body); the component does not change its semantics",
+      "actions": "Action button group (placed on the inline-end side; role=group + aria-label)"
     }
   },
   "oas-highlight": {

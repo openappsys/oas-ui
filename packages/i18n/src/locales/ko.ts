@@ -390,5 +390,10 @@ export const ko: LocaleMessages = {
   'timePicker.now': '현재',
   'indexBar.navAriaLabel': '알파벳 색인 탐색',
   'indexBar.listLabel': '섹션 목록',
+  'swipeCell.actionsLabel': '스와이프 작업',
+  'pullRefresh.pull': '당겨서 새로고침',
+  'pullRefresh.release': '놓으면 새로고침',
+  'pullRefresh.refreshing': '새로고침 중…',
+  'pullRefresh.success': '새로고침 완료',
   'datePicker.shortcutThisQuarter': '이번 분기',
 }
