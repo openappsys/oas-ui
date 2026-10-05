@@ -204,6 +204,13 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `oas-focus` | The component as a whole gains focus |
 | `oas-open-change` | Open state change, `detail: { open }` (both controlled and uncontrolled) |
 
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 Keyboard: `Enter` / `↓` to open, `↑`/`↓` to adjust the current column, `Home`/`End` to jump to bounds, `←`/`→` to switch columns, `Enter` to confirm, `Esc` to cancel.
 
 <script setup>

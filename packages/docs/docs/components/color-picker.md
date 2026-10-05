@@ -239,4 +239,11 @@ onMounted(() => {
 | --- | --- |
 | `trigger` | 自定义触发器（替代默认色块按钮） |
 
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 键盘：触发按钮聚焦时 `Enter`/`Space` 开关面板、`Esc` 关闭；面板内输入框聚焦时 `Esc` 关闭，外部点击关闭。

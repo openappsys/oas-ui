@@ -761,6 +761,8 @@ onMounted(async () => {
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
 | `--oas-modal-mask-bg` | `var(--oas-color-overlay)` |
 | `--oas-modal-mask-blur` | `0px` |
 | `--oas-modal-max-height` | `90vh` |

@@ -149,6 +149,14 @@
   ],
   "cssVars": [
     {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-auto-complete-dropdown-height",
       "default": "240px"
     }

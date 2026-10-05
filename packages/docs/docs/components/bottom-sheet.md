@@ -91,6 +91,8 @@ onMounted(async () => {
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-bottom-sheet-max-height` | `85vh` |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
 
 - `open` 为受控属性：组件手势（下滑/遮罩/Esc）只派发 `oas-close`，收起由宿主移除 `open` 完成。
 - 焦点陷阱内置：打开时焦点锁在面板内，关闭后归还；safe-area-inset-bottom 自动适配刘海屏手势区。

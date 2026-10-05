@@ -278,4 +278,11 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `oas-input` | Filter keyword typed, `detail: { value }` |
 | `oas-open-change` | Open state transition (both controlled setAttribute and internal toggles dispatch), `detail: { open }` |
 
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 Keyboard: `Enter` / focus to open, `↑`/`↓` to move the highlight, `Enter` to select, `Esc` to close and revert.

@@ -227,6 +227,14 @@
       "default": "90vh"
     },
     {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-modal-origin-x",
       "default": "center"
     },

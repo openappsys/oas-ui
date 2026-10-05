@@ -342,3 +342,10 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `footer` | Panel footer content |
 | `header` | Panel header content |
 | `template[slot="option"]` | Custom option template (`[data-option-label]` binding) |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |

@@ -239,4 +239,11 @@ onMounted(() => {
 | --- | --- |
 | `trigger` | Custom trigger (replaces the default swatch button) |
 
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 Keyboard: with the trigger button focused, `Enter`/`Space` toggles the panel and `Esc` closes it; `Esc` also closes from a focused panel input, and clicking outside closes.

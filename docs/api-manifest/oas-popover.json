@@ -315,6 +315,14 @@
       "default": "200px"
     },
     {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-popover-font-size",
       "default": "var(--oas-font-size-md)"
     },

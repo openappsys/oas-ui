@@ -366,6 +366,8 @@ onMounted(async () => {
 
 | CSS Variable | Description | Default |
 | --- | --- | --- |
+| `--oas-glass-blur` | — | `none` |
+| `--oas-glass-ring` | — | `transparent` |
 | `--oas-notification-progress-color` | Countdown progress bar color | `var(--oas-color-primary)` |
 | `--oas-notification-width` | Card width (referenced internally by size levels) | `320px` |
 

@@ -1,0 +1,62 @@
+/* OAS UI 液态玻璃材质层（可选层，机制同 skins.css：opt-in 不引则零影响）
+ *
+ * 用法：主题之上叠加 `data-glass` —— `<html data-theme="dark" data-glass>`。
+ * 材质本质：半透明 surface + backdrop 模糊 + 高光描边环 + 圆角放大 + 分层深影。
+ *
+ * 两个效果变量（组件侧统一消费，缺省值天然无效）：
+ * - `--oas-glass-blur`（本文件内置值；不引时为组件侧回落 `none`）：
+ *   surface 组件经 `backdrop-filter: var(--oas-glass-blur, none)` 消费（容器级 surface 才接——
+ *   行级/长列表不接，避免大面积模糊的性能成本）；
+ * - `--oas-glass-ring`（高光描边环）：surface 组件经
+ *   `outline: 1px solid var(--oas-glass-ring, transparent); outline-offset: -1px` 消费
+ *   （贴近玻璃的折光边；默认 transparent 不可见）。
+ *
+ * 降级：局部停用可对任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent`。
+ * 边界：材质依赖背景反差——纯色/同色相背景上玻璃感减弱（文字仍走 token 安全档可读）；
+ * high-contrast 主题下不启用（实心可访问性档优先，选择器已排除）。
+ */
+
+:root[data-glass]:not([data-theme="high-contrast"]) {
+  /* surface：半透明白（素材感来自背景透出） */
+  --oas-color-bg: rgba(255, 255, 255, 0.55);
+  --oas-color-bg-elevated: rgba(255, 255, 255, 0.72);
+  --oas-color-bg-hover: rgba(244, 244, 245, 0.66);
+  --oas-color-bg-disabled: rgba(244, 244, 245, 0.55);
+  /* 描边：亮背景上的折光边 */
+  --oas-color-border: rgba(255, 255, 255, 0.6);
+  --oas-color-border-strong: rgba(255, 255, 255, 0.75);
+  /* 圆角放大一档 */
+  --oas-radius-xs: 4px;
+  --oas-radius-sm: 6px;
+  --oas-radius-md: 10px;
+  --oas-radius-lg: 16px;
+  --oas-radius-xl: 20px;
+  /* 分层深影 */
+  --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.1);
+  --oas-shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.08), 0 12px 28px -4px rgba(0, 0, 0, 0.14);
+  --oas-shadow-lg: 0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 24px 48px -8px rgba(0, 0, 0, 0.2);
+  /* 材质效果变量 */
+  --oas-glass-blur: blur(18px) saturate(1.6);
+  --oas-glass-ring: rgba(255, 255, 255, 0.55);
+}
+
+/* dark（同时覆盖库内 [data-theme='dark'] 规范与宿主常见的 html.dark class 式暗色）。
+   特异性必须压过 light 段（light 是 :root+属性+:not = (0,3,0)；html.dark 裸写只有 (0,2,1)
+   会被 light 段反超——dark 下实际吃到 light token，实抓） */
+:root[data-glass][data-theme="dark"]:not([data-theme="high-contrast"]),
+:root.dark[data-glass] {
+  /* dark surface 高 alpha 档：亮背板上合成色必须保持足够暗（文字安全档的硬约束——
+     低 alpha 时亮背板亮度主导合成色，白字感知分崩（实测亮蓝背板 0.68 → 19.3 < 60）；
+     高 alpha 仍透出背板色相与模糊，材质感保留（深色玻璃的通行取舍） */
+  --oas-color-bg: rgba(24, 24, 27, 0.78);
+  --oas-color-bg-elevated: rgba(46, 46, 54, 0.85);
+  --oas-color-bg-hover: rgba(52, 52, 58, 0.7);
+  --oas-color-bg-disabled: rgba(39, 39, 42, 0.66);
+  --oas-color-border: rgba(255, 255, 255, 0.14);
+  --oas-color-border-strong: rgba(255, 255, 255, 0.22);
+  --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.5);
+  --oas-shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.45), 0 12px 28px -4px rgba(0, 0, 0, 0.55);
+  --oas-shadow-lg: 0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 24px 48px -8px rgba(0, 0, 0, 0.65);
+  --oas-glass-blur: blur(18px) saturate(1.3);
+  --oas-glass-ring: rgba(255, 255, 255, 0.16);
+}

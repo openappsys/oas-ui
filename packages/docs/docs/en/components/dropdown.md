@@ -499,6 +499,8 @@ onMounted(() => {
 | `--oas-dropdown-arrow-height` | `12px` |
 | `--oas-dropdown-arrow-radius` | `0` |
 | `--oas-dropdown-arrow-width` | `12px` |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
 | `--oas-origin-x` | `center` |
 | `--oas-origin-y` | `center` |
 

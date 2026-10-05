@@ -131,6 +131,11 @@ const STYLE = `
      （dialog 静息态 transform:none 不构成包含块），P17 无回归 */
   overflow: hidden;
   box-shadow: var(--oas-shadow-lg);
+  /* 液态玻璃接线（容器级 surface）：变量缺省时 blur=none / ring=transparent，零影响 */
+  backdrop-filter: var(--oas-glass-blur, none);
+  -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  outline: 1px solid var(--oas-glass-ring, transparent);
+  outline-offset: -1px;
   z-index: calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050)) + 1);
   font-family: inherit;
   color: var(--oas-color-text-primary);

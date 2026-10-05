@@ -425,3 +425,5 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-cascader-dropdown-height` | `240px` |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |

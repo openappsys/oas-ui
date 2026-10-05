@@ -114,6 +114,14 @@
       "default": "320px"
     },
     {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-notification-progress-color",
       "default": "var(--oas-color-primary)"
     }

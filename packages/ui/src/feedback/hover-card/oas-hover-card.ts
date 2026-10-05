@@ -70,6 +70,11 @@ const STYLE = `
   box-shadow: var(--oas-shadow-md);
   padding: var(--oas-space-4);
   min-width: 200px;
+  /* 液态玻璃接线（容器级 surface）：变量缺省时零影响 */
+  backdrop-filter: var(--oas-glass-blur, none);
+  -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  outline: 1px solid var(--oas-glass-ring, transparent);
+  outline-offset: -1px;
   color: var(--oas-color-text-primary);
   /* portal（append-to）时 host 为 pointer-events:none（不吞页面指针），卡片显式 auto
      保持可悬停（跨间隙移动不闪关）；非 portal 下与默认值等价 */

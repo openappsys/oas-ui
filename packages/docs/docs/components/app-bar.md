@@ -200,3 +200,5 @@ onMounted(() => {
 | `--oas-app-bar-inset` | `var(--oas-space-3)` |
 | `--oas-app-bar-shadow` | `var(--oas-shadow-md)` |
 | `--oas-app-bar-top` | `0px` |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |

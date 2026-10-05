@@ -130,6 +130,14 @@
       "default": "center"
     },
     {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-dropdown-arrow-width",
       "default": "12px"
     },

@@ -542,3 +542,10 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `template[slot="empty"]` | Custom empty-state content |
 | `template[slot="node"]` | Custom node template (`[data-node-label]` binds the label) |
 | `template[slot="suffix-icon"]` | Custom trailing trigger icon (replaces the default arrow) |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |

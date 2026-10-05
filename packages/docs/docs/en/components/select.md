@@ -763,6 +763,8 @@ onMounted(() => {
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-button-group-radius` | `var(--oas-radius-md)` |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
 | `--oas-select-dropdown-height` | `240px` |
 
 ### oas-option

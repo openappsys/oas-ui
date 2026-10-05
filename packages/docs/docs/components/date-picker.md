@@ -334,6 +334,13 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `suffix-icon` | 触发器内后置图标（清除钮可见时让位，清空后恢复） |
 | `template[slot="cell"]` | `template[slot="cell"]` 克隆进每个日格，`[data-cell-date]` 自动绑定日期数字（与 `oas-cell-render` 双通道） |
 
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 #### Property（快捷预设）
 
 - `shortcuts`：快捷预设

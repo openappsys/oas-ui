@@ -177,6 +177,13 @@ onMounted(async () => {
 | --- | --- |
 | default | Notification content |
 
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 - `open` is controlled: only `oas-close` is dispatched on timeout and the host removes `open`; reusing one instance with a changed `message` does not restart the timer — close it first or create a new element.
 - At most 3 bars stack per direction (vertical, no overlap, newest at the edge); the oldest receives `oas-close` (`reason: evict`) when exceeded; `queue` switches to FIFO backfilling.
 - Accessibility: always `role="status"` + `aria-live="polite"` + `aria-atomic="true"` (feedback bars never use assertive announcements); only the newest bar's buttons join the tab order while stacked (others are `inert`); the component never steals focus.

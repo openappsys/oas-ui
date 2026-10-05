@@ -425,3 +425,5 @@ onMounted(() => {
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-cascader-dropdown-height` | `240px` |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |

@@ -271,6 +271,14 @@
       "default": "var(--oas-radius-md)"
     },
     {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-select-dropdown-height",
       "default": "240px"
     }

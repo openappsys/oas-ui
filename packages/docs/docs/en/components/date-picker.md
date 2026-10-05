@@ -330,6 +330,13 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `suffix-icon` | Trailing icon inside the trigger (yields while the clear button is visible) |
 | `template[slot="cell"]` | `template[slot="cell"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`) |
 
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 #### Property (shortcut presets)
 
 - `shortcuts`: shortcut presets

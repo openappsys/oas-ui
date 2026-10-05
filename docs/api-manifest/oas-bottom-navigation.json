@@ -59,6 +59,14 @@
   "slots": [],
   "cssVars": [
     {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-bottom-navigation-height",
       "default": "56px"
     },

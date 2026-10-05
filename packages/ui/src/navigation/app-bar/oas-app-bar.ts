@@ -26,6 +26,11 @@ const STYLE = `
   font-family: inherit;
   color: var(--oas-color-text-primary);
   background: var(--oas-color-bg-elevated);
+  /* 液态玻璃接线（栏体 surface，玻璃栏为合法形态）：变量缺省时零影响 */
+  backdrop-filter: var(--oas-glass-blur, none);
+  -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  outline: 1px solid var(--oas-glass-ring, transparent);
+  outline-offset: -1px;
   box-sizing: border-box;
   /* hide-on-scroll 滑动收起/恢复：transition 只动 transform（不碰布局），走 token */
   transition: transform var(--oas-transition-base) var(--oas-ease-out);

@@ -279,4 +279,11 @@ onMounted(() => {
 | `oas-input` | 输入过滤词，`detail: { value }` |
 | `oas-open-change` | 展开状态迁移（受控 setAttribute 与内部开合都派发），`detail: { open }` |
 
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 键盘：`Enter` / 聚焦展开，`↑`/`↓` 移动高亮，`Enter` 选中，`Esc` 关闭并回退。

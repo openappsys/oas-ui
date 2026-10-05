@@ -38,6 +38,29 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 皮肤仅覆盖 `--oas-color-primary`，`-hover` / `-active` / `-primary-text` / 焦点环等派生档自动跟随；需要更深定制（表面色 / 圆角 / 密度）仍走下方 CSS 变量覆盖。
 
+## 液态玻璃（glass.css）
+
+`@oas-ui/theme/glass.css` 提供液态玻璃材质层（可选层，与 skins.css 同机制：opt-in 不引则零影响）——半透明 surface + backdrop 模糊 + 高光折光边 + 圆角放大 + 分层深影。在 `data-theme` / `data-skin` 之上叠加 `data-glass` 启用，三者自由组合：
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/glass.css" />
+<html data-theme="dark" data-glass>
+  …
+</html>
+```
+
+**机制**：浮层 surface 组件（modal / drawer / popover / tooltip / dropdown / select 系面板 / message / snackbar / bottom-sheet / app-bar 等 25 个）统一消费两个效果变量——`--oas-glass-blur`（`backdrop-filter` 模糊档）与 `--oas-glass-ring`（折光描边环）；不引 glass.css 时两变量回落 `none` / `transparent`，组件行为与此前完全一致。
+
+**边界**：
+
+- 材质依赖背景反差——页面有色彩层次（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍走 token 安全档可读）；
+- 文字安全是硬约束：dark 档 surface 用高 alpha（亮背板上合成色保持足够暗，感知对比度实测门禁 ≥60 分，见「液态玻璃画廊」）；
+- blur 只上容器级 surface（行级/长列表不接，避免大面积模糊的性能成本）；
+- `high-contrast` 主题下不启用（实心可访问性档优先）；
+- 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent`。
+
+实时预览见[液态玻璃画廊](/guide/glass)。
+
 ## 自定义主题（CSS 变量覆盖）
 
 所有组件只引用语义 token（见 `docs/ui-spec.md §1`），因此通过覆盖 CSS 变量即可定制品牌色，无需改组件：

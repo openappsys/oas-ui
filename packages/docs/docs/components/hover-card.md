@@ -303,6 +303,8 @@ onMounted(() => {
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
 | `--oas-hover-card-arrow-height` | `12px` |
 | `--oas-hover-card-arrow-radius` | `0` |
 | `--oas-hover-card-arrow-width` | `12px` |

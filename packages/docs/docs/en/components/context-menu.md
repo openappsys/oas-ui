@@ -196,6 +196,13 @@ onMounted(() => {
 | --- | --- |
 | default | Context menu content (items / groups) |
 
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 ### oas-context-menu-item
 
 #### Attributes

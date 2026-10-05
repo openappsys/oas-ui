@@ -297,6 +297,8 @@ onMounted(async () => {
 
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
 | `--oas-message-anim-in` | `220ms` |
 | `--oas-message-anim-out` | `180ms` |
 | `--oas-msg-type-color` | `var(--oas-color-border)` |

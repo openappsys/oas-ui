@@ -206,6 +206,13 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 | `oas-focus` | 组件整体获焦 |
 | `oas-open-change` | 开合变化，`detail: { open }`（受控/非受控均派发） |
 
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 键盘：`Enter` / `↓` 展开，`↑`/`↓` 调整当前列，`Home`/`End` 跳首末，`←`/`→` 切换列，`Enter` 确认，`Esc` 取消。
 
 <script setup>

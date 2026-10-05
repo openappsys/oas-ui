@@ -20,6 +20,11 @@ const STYLE = `
   border-radius: var(--oas-radius-lg);
   background: var(--oas-color-bg);
   box-shadow: var(--oas-shadow-md);
+  /* 液态玻璃接线（容器级 surface）：变量缺省时零影响 */
+  backdrop-filter: var(--oas-glass-blur, none);
+  -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  outline: 1px solid var(--oas-glass-ring, transparent);
+  outline-offset: -1px;
   padding: var(--oas-space-4);
 }
 /* onClick 场景的可点击暗示（命令式层有 onClick 时设 clickable 属性） */

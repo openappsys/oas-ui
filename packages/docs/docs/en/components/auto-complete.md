@@ -337,5 +337,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-auto-complete-dropdown-height` | `240px` |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
 
 Keyboard: `↑`/`↓` to move (looping), `Enter` to select the highlighted item (first item highlighted by default), `Esc` to close.

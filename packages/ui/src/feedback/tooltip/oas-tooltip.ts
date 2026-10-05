@@ -27,6 +27,11 @@ const STYLE = `
   border-radius: max(0px, min(var(--oas-radius-sm), calc((var(--oas-tip-cross, 999px) - 11.31px) / 2)));
   background: var(--oas-tooltip-bg, var(--oas-color-text-primary));
   color: var(--oas-tooltip-color, var(--oas-color-bg));
+  /* 液态玻璃接线（容器级 surface）：变量缺省时零影响 */
+  backdrop-filter: var(--oas-glass-blur, none);
+  -webkit-backdrop-filter: var(--oas-glass-blur, none);
+  outline: 1px solid var(--oas-glass-ring, transparent);
+  outline-offset: -1px;
   font-size: var(--oas-font-size-sm);
   max-width: var(--oas-tooltip-max-width, 240px);
   /* 无空格长串（路径/URL/哈希）在 max-width 内断行，防溢出浮层边界 */

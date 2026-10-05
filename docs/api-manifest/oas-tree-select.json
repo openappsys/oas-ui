@@ -256,6 +256,15 @@
       "name": "template[slot=\"suffix-icon\"]"
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    }
+  ],
   "unresolved": []
 }

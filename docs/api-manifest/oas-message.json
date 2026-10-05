@@ -120,6 +120,14 @@
       "default": "var(--oas-color-border)"
     },
     {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-message-anim-in",
       "default": "220ms"
     },

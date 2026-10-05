@@ -215,6 +215,14 @@
       "default": "var(--oas-color-bg)"
     },
     {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-tooltip-max-width",
       "default": "240px"
     },

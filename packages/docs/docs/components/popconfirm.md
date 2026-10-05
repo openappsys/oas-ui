@@ -317,6 +317,8 @@ onMounted(async () => {
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
 | `--oas-origin-x` | `center` |
 | `--oas-origin-y` | `center` |
 | `--oas-popconfirm-arrow-height` | `12px` |

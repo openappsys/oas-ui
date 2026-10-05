@@ -450,4 +450,11 @@ onMounted(async () => {
 | `header-actions` | 标题栏右侧操作区 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 `role="dialog"` + `aria-modal="true"`；打开时移入焦点（默认 ✕，可 `initial-focus` 指定），关闭后归还来源焦点。

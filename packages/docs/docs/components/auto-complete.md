@@ -337,5 +337,7 @@ onMounted(() => {
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-auto-complete-dropdown-height` | `240px` |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
 
 键盘：`↑`/`↓` 移动（循环），`Enter` 选中高亮项（首项默认高亮），`Esc` 关闭。

@@ -542,3 +542,10 @@ onMounted(() => {
 | `template[slot="empty"]` | 自定义空态内容 |
 | `template[slot="node"]` | 自定义节点模板（`[data-node-label]` 绑定标签） |
 | `template[slot="suffix-icon"]` | 自定义触发器后缀图标（替换默认箭头） |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |

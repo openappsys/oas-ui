@@ -33,6 +33,14 @@
   ],
   "cssVars": [
     {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-bottom-sheet-max-height",
       "default": "85vh"
     }

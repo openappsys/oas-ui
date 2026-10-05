@@ -427,6 +427,8 @@ onMounted(async () => {
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
 | `--oas-tour-arrow-align-offset` | `16px` |
 | `--oas-tour-arrow-height` | `12px` |
 | `--oas-tour-arrow-radius` | `0` |

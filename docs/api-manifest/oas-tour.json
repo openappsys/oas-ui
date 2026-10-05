@@ -300,6 +300,14 @@
       "default": "var(--oas-color-bg)"
     },
     {
+      "name": "--oas-glass-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-glass-ring",
+      "default": "transparent"
+    },
+    {
       "name": "--oas-tour-arrow-width",
       "default": "12px"
     },

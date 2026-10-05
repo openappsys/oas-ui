@@ -25,11 +25,13 @@
   "types": "./index.css",
   "exports": {
     ".": "./index.css",
-    "./skins.css": "./skins.css"
+    "./skins.css": "./skins.css",
+    "./glass.css": "./glass.css"
   },
   "files": [
     "index.css",
     "skins.css",
+    "glass.css",
     "LICENSE-APACHE",
     "LICENSE-MIT"
   ]

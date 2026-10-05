@@ -177,6 +177,13 @@ onMounted(async () => {
 | --- | --- |
 | 默认 | 通知内容 |
 
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 - `open` 受控：到期只派发 `oas-close`，由外部负责移除 `open`；单实例复用时 `message` 变更不会重启计时，新消息请先关后开或新建元素。
 - 同方向最多堆叠 3 条（纵向排列不重叠，最新贴边），超出时最老的一条收到 `oas-close`（`reason: evict`）；`queue` 模式改为 FIFO 排队补位。
 - 无障碍：始终为 `role="status"` + `aria-live="polite"` + `aria-atomic="true"`（反馈条不使用打断式播报）；多条堆叠时仅最新一条的按钮参与 Tab 序（其余 `inert`），组件不抢占焦点。

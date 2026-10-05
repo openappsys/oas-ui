@@ -798,6 +798,8 @@ onMounted(() => {
 
 | CSS 变量 | 默认值 |
 | --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
 | `--oas-tip-cross` | `999px` |
 | `--oas-tooltip-animation` | `oas-tooltip-in` |
 | `--oas-tooltip-arrow-align-offset` | `16px` |

@@ -450,4 +450,11 @@ onMounted(async () => {
 | `header-actions` | Action area on the right of the title bar |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
+
 `role="dialog"` + `aria-modal="true"`; focus moves in on open (default ✕, overridable via `initial-focus`) and is restored on close.

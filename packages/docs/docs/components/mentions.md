@@ -342,3 +342,10 @@ onMounted(() => {
 | `footer` | 建议面板底部内容 |
 | `header` | 建议面板顶部内容 |
 | `template[slot="option"]` | 自定义选项模板（`[data-option-label]` 绑定） |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-glass-blur` | `none` |
+| `--oas-glass-ring` | `transparent` |
