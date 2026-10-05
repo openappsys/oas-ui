@@ -9,6 +9,7 @@ import '../transfer/index.js'
 import '../checkbox/index.js'
 import '../cascader/index.js'
 import '../radio/index.js'
+import '../picker/index.js'
 function mount(): OASForm {
   const el = new OASForm()
   el.setAttribute(
@@ -122,6 +123,66 @@ describe('OASForm', () => {
     expect((detail as { values: Record<string, string> }).values).toEqual({
       env: '[{"key":"A","value":"1"}]',
     })
+  })
+
+  it('内置注册表含 oas-picker：values 收集 / required 拦截 / reset 恢复 / initial-values 驱动（C1 回归）', () => {
+    const COLORS = '[{"label":"颜色","items":[{"label":"黑"},{"label":"白"}]}]'
+    const mk = (attrs: Record<string, string>, inner: string): OASForm => {
+      const el = new OASForm()
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      el.innerHTML = inner
+      document.body.appendChild(el)
+      return el
+    }
+    const RULES = JSON.stringify({ spec: [{ required: true, message: '必选规格' }] })
+    const el = mk(
+      { rules: RULES },
+      `<oas-picker name="spec" columns='${COLORS}' value='["黑"]'></oas-picker><oas-input name="title"></oas-input>`,
+    )
+    const submitted: Array<Record<string, string>> = []
+    el.addEventListener('oas-submit', (e) => submitted.push((e as CustomEvent).detail.values))
+    el.submit()
+    expect(submitted.length).toBe(1)
+    expect(submitted[0]!.spec, 'values 含 picker 字段').toBe('["黑"]')
+
+    // required 空值被拦（C1 实证形态：必填空值照样提交成功）
+    const el2 = mk({ rules: RULES }, `<oas-picker name="spec" columns='[{"items":[]}]'></oas-picker>`)
+    const fails: unknown[] = []
+    const subs: unknown[] = []
+    el2.addEventListener('oas-validate-fail', (e) => fails.push(e))
+    el2.addEventListener('oas-submit', (e) => subs.push(e))
+    el2.submit()
+    expect(fails.length, '必填空 picker 应拦截').toBe(1)
+    expect(subs.length, '必填空 picker 不得提交').toBe(0)
+
+    // reset 恢复 initial-values
+    const el3 = mk(
+      { 'initial-values': '{"spec":["白"]}' },
+      `<oas-picker name="spec" columns='${COLORS}' value='["黑"]'></oas-picker>`,
+    )
+    el3.reset()
+    expect(el3.querySelector('oas-picker')!.getAttribute('value'), 'reset 恢复初始值').toBe('["白"]')
+  })
+
+  it('默认 input 档：picker 滚轮选值触发字段校验 + 选择类控件改对即清（I3 回归）', async () => {
+    const el = new OASForm()
+    el.setAttribute('rules', JSON.stringify({ spec: [{ required: true, message: '必选规格' }] }))
+    el.innerHTML =
+      `<oas-picker name="spec" columns='[{"items":[]}]'></oas-picker>` +
+      `<oas-picker name="color" columns='[{"label":"颜色","items":[{"label":"黑"},{"label":"白"}]}]' value='["黑"]'></oas-picker>`
+    document.body.appendChild(el)
+    // 先提交制造错误（spec 空）
+    el.submit()
+    expect(Object.hasOwn(el.getErrors(), 'spec')).toBe(true)
+    // 改对（给 spec 设置 columns 并滚动选值）→ oas-change 触发复校清错
+    const picker = el.querySelector('oas-picker[name="spec"]')!
+    picker.setAttribute('columns', '[{"label":"规格","items":[{"label":"甲"},{"label":"乙"}]}]')
+    await new Promise((r) => setTimeout(r, 200))
+    const col = picker.shadowRoot!.querySelector('.column') as HTMLElement
+    col.scrollTop = 36
+    col.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 300))
+    expect(Object.hasOwn(el.getErrors(), 'spec'), 'oas-change 清错').toBe(false)
   })
 
   it('registerFormControl 允许收集自定义控件', () => {

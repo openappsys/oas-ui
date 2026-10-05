@@ -115,6 +115,7 @@ register([
   'oas-pin-input',
   'oas-dynamic-tags',
   'oas-combobox',
+  'oas-picker',
 ])
 // 特殊 value 通道
 register(
@@ -332,10 +333,14 @@ export class OASForm extends OASElement {
       this.emitValuesChange(target.getAttribute('name'), written)
     }) as EventListener)
     // 校验触发时机：事件与 effectiveTrigger 匹配的字段做单字段校验（注册在值同步之后，读到的是新值）
+    // input 档把 oas-change 一并视为编辑事件：选择类控件（picker/select/slider/rate 等）
+    // 只派 oas-change——文本系走 oas-input、选择系走 oas-change，同为「边编辑边校验」（I3 实抓：
+    // picker 滚轮选值在默认 input 档永不触发字段校验）
     const triggerEvents: Array<[string, ValidateTrigger]> = [
       ['oas-change', 'change'],
       ['oas-blur', 'blur'],
       ['oas-input', 'input'],
+      ['oas-change', 'input'],
     ]
     for (const [event, trigger] of triggerEvents) {
       this.addEventListener(event, ((e: CustomEvent) => {
@@ -350,14 +355,17 @@ export class OASForm extends OASElement {
     // 实时清错：已显示错误的字段在输入时复校（改对即清），不改动 validate-trigger 语义。
     // 否则残留错误文案要等到用户点击按钮触发的 blur 才被移除，那一瞬的布局位移会把
     // 按钮从指针下顶走，click 落到最近公共祖先（form）而非按钮，吞掉这次提交。
-    this.addEventListener('oas-input', ((e: CustomEvent) => {
+    const clearOnEdit = ((e: CustomEvent) => {
       const target = e.composedPath()[0]
       if (!(target instanceof Element) || !this.contains(target)) return
       const name = target.getAttribute('name')
       if (!name || this.effectiveTrigger(name) === 'input') return
       if (!Object.hasOwn(this.errors, name)) return
       this.validateFieldByTrigger(name, target)
-    }) as EventListener)
+    }) as EventListener
+    this.addEventListener('oas-input', clearOnEdit)
+    // 选择类控件同权清错（picker/select 等只派 oas-change）
+    this.addEventListener('oas-change', clearOnEdit)
   }
 
   protected override render(): void {
