@@ -2,6 +2,20 @@
 
 Reveal a row of action buttons by swiping a list item horizontally: the default slot is the **content layer** (the list item body) and `slot="actions"` is the **action button group** (the host places `button` / `oas-button` elements). Swiping the content layer toward inline-start reveals the inline-end action area; releasing snaps to open or closed based on the drag threshold. `oas-open` / `oas-close` are dispatched once each when the open / closed state settles (programmatic `open` attribute changes dispatch them too).
 
+## Multiple Buttons
+
+`slot="actions"` accepts multiple buttons: the component measures their total width and reveals the whole row on swipe (each button clicks independently):
+
+<DemoBlock title="Edit + Delete">
+  <div style="width: 100%">
+    <oas-swipe-cell id="swipe-multi">
+      <div style="padding: var(--oas-space-3) var(--oas-space-4); background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">Swipe left to reveal two actions</div>
+      <oas-button slot="actions" type="primary">Edit</oas-button>
+      <oas-button slot="actions" type="danger">Delete</oas-button>
+    </oas-swipe-cell>
+  </div>
+</DemoBlock>
+
 ## Basic Usage
 
 A single swipe item: put the content in the default slot and the action button in `slot="actions"`. Swipe left (LTR) to reveal the right-hand action area and release to snap.

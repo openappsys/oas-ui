@@ -15,6 +15,20 @@
   </div>
 </DemoBlock>
 
+## 多按钮并排
+
+`slot="actions"` 可放多个按钮：组件按总宽度测量，滑开后整排露出（各自独立点击）：
+
+<DemoBlock title="编辑 + 删除双按钮">
+  <div style="width: 100%">
+    <oas-swipe-cell id="swipe-multi">
+      <div style="padding: var(--oas-space-3) var(--oas-space-4); background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">向左滑动露出两个操作</div>
+      <oas-button slot="actions" type="primary">编辑</oas-button>
+      <oas-button slot="actions" type="danger">删除</oas-button>
+    </oas-swipe-cell>
+  </div>
+</DemoBlock>
+
 ## 单开互斥与事件
 
 同一 document 内同一时刻至多一个滑动项处于打开态：任一项落定开态会广播，自动关闭其他打开项。点击空白处、滚动容器或按 Esc 也会关闭当前项。下方反馈区显示最近派发的 `oas-open` / `oas-close`。
