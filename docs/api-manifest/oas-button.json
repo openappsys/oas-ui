@@ -195,6 +195,10 @@
       "default": "var(--oas-color-text-primary)"
     },
     {
+      "name": "--oas-button-height",
+      "default": "var(--oas-control-height-md)"
+    },
+    {
       "name": "--oas-button-group-radius",
       "default": "var(--oas-radius-md)"
     },

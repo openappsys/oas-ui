@@ -371,6 +371,7 @@
 | `--oas-button-color-deep` | 自定义色（`color`）的文字安全档：hover/active 及 outlined/dashed/filled 文字的加深混合色（组件按 `--oas-deep-mix` / `--oas-deep-sink` 注入；无自定义色时不生效） | `var(--btn-color, var(--oas-color-text-primary))` |
 | `--oas-button-group-radius` | — | `var(--oas-radius-md)` |
 | `--oas-button-group-width` | — | `auto` |
+| `--oas-button-height` | 按钮高度开口（默认回落尺寸档值）；swipe-cell actions 等需要按钮填满行高的场景经 ::slotted 注入 100%（swipe-cell 已内建注入） | `var(--oas-control-height-md)` |
 | `--oas-button-on-color` | — | `var(--oas-color-text-on-primary)` |
 
 <script setup>

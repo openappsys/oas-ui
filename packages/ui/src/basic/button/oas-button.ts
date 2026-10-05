@@ -75,7 +75,10 @@ a[part='button'] {
   /* color 自定义色的兜底入口：无 type 时 outlined/filled/text 等形态也能吃到 --oas-button-color */
   --btn-color: var(--oas-button-color, var(--oas-color-text-primary));
   font-size: var(--oas-font-size-md);
-  height: var(--oas-control-height-md);
+  /* 高度走变量（档值兜底）：swipe-cell actions 等需要「按钮填满行高」的场景经
+     --oas-button-height: 100% 开口注入（::slotted 可设自定义属性穿透）；
+     默认回落档值——无开口时行为与固定档值完全一致 */
+  height: var(--oas-button-height, var(--oas-control-height-md));
   padding: 0 var(--oas-space-4);
   /* 默认单行不换行（通行做法）；长文换行需显式 wrap 属性（见末尾 .wrap 规则） */
   white-space: nowrap;
@@ -281,17 +284,17 @@ button.danger:hover {
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
 }
 button.small {
-  height: var(--oas-control-height-sm);
+  height: var(--oas-button-height, var(--oas-control-height-sm));
   font-size: var(--oas-font-size-sm);
   padding: 0 var(--oas-space-2);
 }
 a[part='button'].small {
-  height: var(--oas-control-height-sm);
+  height: var(--oas-button-height, var(--oas-control-height-sm));
   font-size: var(--oas-font-size-sm);
   padding: 0 var(--oas-space-2);
 }
 button.xs {
-  height: var(--oas-control-height-xs);
+  height: var(--oas-button-height, var(--oas-control-height-xs));
   font-size: var(--oas-font-size-xs);
 }
 a[part='button'].xs {
@@ -304,21 +307,21 @@ button.xs:not(.icon-only) {
   min-width: 44px;
 }
 button.large {
-  height: var(--oas-control-height-lg);
+  height: var(--oas-button-height, var(--oas-control-height-lg));
   font-size: var(--oas-font-size-lg);
   padding: 0 var(--oas-space-5);
 }
 a[part='button'].large {
-  height: var(--oas-control-height-lg);
+  height: var(--oas-button-height, var(--oas-control-height-lg));
   font-size: var(--oas-font-size-lg);
   padding: 0 var(--oas-space-5);
 }
 button.xl {
-  height: var(--oas-control-height-xl);
+  height: var(--oas-button-height, var(--oas-control-height-xl));
   font-size: var(--oas-font-size-xl);
 }
 a[part='button'].xl {
-  height: var(--oas-control-height-xl);
+  height: var(--oas-button-height, var(--oas-control-height-xl));
   font-size: var(--oas-font-size-xl);
 }
 button.xl:not(.icon-only) {

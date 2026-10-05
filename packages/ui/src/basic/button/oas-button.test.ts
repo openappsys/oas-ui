@@ -952,8 +952,10 @@ describe('OASButton 触控目标（coarse pointer 抬升）', () => {
     while ((idx = css.indexOf('--oas-touch-target-min', idx + 1)) !== -1) {
       expect(idx).toBeGreaterThan(mediaIdx)
     }
-    // 基础按钮仍由固定 height 控制（PC 各档高度不变）
-    expect(css).toMatch(/button,\s*a\[part='button'\]\s*\{[^}]*height: var\(--oas-control-height-md\)/)
+    // 基础按钮仍由 height 变量控制（档值兜底；PC 各档高度不变）
+    expect(css).toMatch(
+      /button,\s*a\[part='button'\]\s*\{[^}]*height: var\(--oas-button-height, var\(--oas-control-height-md\)\)/,
+    )
   })
 })
 

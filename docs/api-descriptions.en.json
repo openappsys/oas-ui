@@ -442,7 +442,8 @@
       "loading-icon": "Custom loading icon replacing the built-in spinner ring when slot content is present"
     },
     "cssVars": {
-      "--oas-button-color-deep": "Text-safe deepened variant of the custom `color`: the color-mix used for hover/active and outlined/dashed/filled text (injected by the component via `--oas-deep-mix` / `--oas-deep-sink`; inert without a custom color)"
+      "--oas-button-color-deep": "Text-safe deepened variant of the custom `color`: the color-mix used for hover/active and outlined/dashed/filled text (injected by the component via `--oas-deep-mix` / `--oas-deep-sink`; inert without a custom color)",
+      "--oas-button-height": "Button height override (falls back to the size-tier value by default); containers needing full-row-height buttons (e.g. swipe-cell actions) inject 100% via ::slotted (built into swipe-cell)"
     }
   },
   "oas-button-group": {

@@ -61,6 +61,14 @@ const STYLE = `
   align-items: stretch;
   background: var(--oas-swipe-cell-actions-bg);
 }
+/* actions 内按钮填满行高（移动滑动操作的通行观感）：::slotted 可设自定义属性穿透
+   shadow 边界（::slotted 后不支持链 ::part，oas-button 的高度开口走变量） */
+.actions ::slotted(oas-button) {
+  --oas-button-height: 100%;
+}
+.actions ::slotted(button) {
+  height: 100%;
+}
 /* 内容层盖在 actions 之上，横向平移露出下层 */
 .content {
   position: relative;

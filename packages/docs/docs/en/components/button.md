@@ -371,6 +371,7 @@ Clicking "Submit" fires the native `submit` event (the demo calls `preventDefaul
 | `--oas-button-color-deep` | Text-safe deepened variant of the custom `color`: the color-mix used for hover/active and outlined/dashed/filled text (injected by the component via `--oas-deep-mix` / `--oas-deep-sink`; inert without a custom color) | `var(--btn-color, var(--oas-color-text-primary))` |
 | `--oas-button-group-radius` | — | `var(--oas-radius-md)` |
 | `--oas-button-group-width` | — | `auto` |
+| `--oas-button-height` | Button height override (falls back to the size-tier value by default); containers needing full-row-height buttons (e.g. swipe-cell actions) inject 100% via ::slotted (built into swipe-cell) | `var(--oas-control-height-md)` |
 | `--oas-button-on-color` | — | `var(--oas-color-text-on-primary)` |
 
 <script setup>

@@ -255,3 +255,27 @@ test.describe('移动仿真（触屏真手势）', () => {
     expect(await cell.evaluate((el) => el.hasAttribute('open')), '触屏横滑开态').toBe(true)
   })
 })
+
+test('swipe-cell actions 按钮铺满行高（回归：oas-button 内层恒定档值高，宿主拉伸后内层顶对齐不居中）', async ({
+  page,
+}) => {
+  await page.goto('/components/swipe-cell.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#swipe-demo-1')
+  await page.evaluate(() => document.querySelector('#swipe-demo-1')!.setAttribute('open', ''))
+  await page.waitForTimeout(400)
+  const r = await page.evaluate(() => {
+    const cell = document.querySelector('#swipe-demo-1')!
+    const actions = cell.shadowRoot!.querySelector('.actions')!.getBoundingClientRect()
+    const btn = cell.querySelector('oas-button')!
+    const inner = btn.shadowRoot!.querySelector('[part="button"]')!.getBoundingClientRect()
+    return {
+      actionsH: actions.height,
+      hostH: btn.getBoundingClientRect().height,
+      innerH: inner.height,
+      topDelta: Math.abs(inner.top - actions.top),
+    }
+  })
+  expect(r.hostH, '宿主铺满 actions 高（flex stretch）').toBe(r.actionsH)
+  expect(r.innerH, '内层按钮填满宿主（此前恒定档值高顶对齐）').toBe(r.actionsH)
+  expect(r.topDelta, '内层与 actions 顶缘对齐（纵向居中成立）').toBeLessThanOrEqual(1)
+})
