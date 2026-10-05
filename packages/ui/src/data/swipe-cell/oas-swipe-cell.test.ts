@@ -524,4 +524,26 @@ describe('OASSwipeCell', () => {
     expect(el.shadowRoot!.querySelector('[part="content"]')).not.toBeNull()
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
   })
+
+  it('flick 速度吸附：快速甩动不达位移阈值也开（显式 timeStamp 驱动速度窗口）', () => {
+    const el = mount()
+    stubActionsWidth(el, 80)
+    const c = content(el)
+    let t0 = 1000
+    const pe = (type: string, x: number): PointerEvent => {
+      const e = new PointerEvent(type, { bubbles: true, pointerId: 1, clientX: x, clientY: 10 })
+      Object.defineProperty(e, 'timeStamp', { value: t0 })
+      return e
+    }
+    c.dispatchEvent(pe('pointerdown', 300))
+    // 30ms 内甩 120px（3px/ms，超 flick 阈值）；末段速度 |v|=3px/ms ≥ 0.5 → 直接开
+    //（位移虽超 40 阈值，本例锁的是「速度窗口生效」——另见位移阈值用例的同刻 dt≈0 回退）
+    t0 += 10
+    c.dispatchEvent(pe('pointermove', 210))
+    t0 += 10
+    c.dispatchEvent(pe('pointermove', 180))
+    t0 += 10
+    c.dispatchEvent(pe('pointerup', 180))
+    expect(el.hasAttribute('open'), 'flick 直接开').toBe(true)
+  })
 })

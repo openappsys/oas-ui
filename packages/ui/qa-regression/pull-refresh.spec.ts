@@ -181,3 +181,41 @@ test('pull-refresh 指示区几何：拉动中 indicator 与内容零重叠（�
   expect(r.indHeight, '指示区高度存在').toBeGreaterThan(20)
   expect(r.indBottom, '指示区底缘不得越过内容顶缘（零重叠）').toBeLessThanOrEqual(r.contentTop + 0.5)
 })
+
+test.describe('移动仿真（触屏真手势）', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+
+  test('触屏下拉超阈值 → oas-refresh（CDP 真 touch 链，覆盖 touch-action 接管路径）', async ({ page }) => {
+    await page.goto('/components/pull-refresh.html', { waitUntil: 'domcontentloaded' })
+    await up(page, '#pr-basic')
+    // 移动视口下 demo 在首屏外：先滚入视口再量坐标（否则 touch 落在视口外，
+    // elementFromPoint=null，浏览器首 move 即 pointercancel——探针实抓）
+    await page.locator('#pr-basic').scrollIntoViewIfNeeded()
+    const box = await page.locator('#pr-basic').boundingBox()
+    expect(box).not.toBeNull()
+    const cx = box!.x + box!.width / 2
+    const y0 = box!.y + Math.min(box!.height / 2, 40)
+    const events = await page.evaluate(() => {
+      const arr: string[] = []
+      document.querySelector('#pr-basic')!.addEventListener('oas-refresh', () => arr.push('refresh'))
+      return arr
+    })
+    const cdp = await page.context().newCDPSession(page)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: cx, y: y0 }] })
+    for (let i = 1; i <= 8; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: cx, y: y0 + i * 20 }] })
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await page.waitForTimeout(400)
+    const r = await page.evaluate(() => ({
+      state: document.querySelector('#pr-basic')!.getAttribute('data-state'),
+      fired: (window as unknown as { __len?: number }).__len,
+    }))
+    const fired = await page.evaluate(() => {
+      let n = 0
+      document.querySelector('#pr-basic')!.addEventListener('oas-refresh', () => n++)
+      return document.querySelector('#pr-basic')!.getAttribute('data-state')
+    })
+    expect(['refreshing', 'success'], '触屏下拉触发刷新态（实际: ' + fired + '）').toContain(fired)
+  })
+})

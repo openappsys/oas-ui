@@ -41,7 +41,7 @@ An item with `disabled: true` snaps to the nearest enabled item on settle; whole
 
 ## Sizing
 
-`item-height` (row height px, default 36) × `visible-count` (visible rows, default 5, even values round up to odd) sets the wheel height; the center band anchors the selected row:
+`item-height` (row height px, default 36) × `visible-count` (visible rows, default 5, even values round up to odd) sets the wheel height; the selected-row highlight anchors the selected row:
 
 <DemoBlock title="Row height 44 + 3 visible rows">
   <div style="width: 100%">
@@ -56,7 +56,7 @@ Form-associated: with `name`, FormData submits a JSON array string; `form.reset(
 <DemoBlock title="oas-form submit">
   <div style="width: 100%">
     <oas-form id="pk-form">
-      <oas-picker name="spec" columns='[{"label":"Color","items":[{"label":"Black"},{"label":"White"},{"label":"Blue"}]}]' value='["Black"]'></oas-picker>
+      <oas-picker name="spec" required columns='[{"label":"Color","items":[{"label":"Black"},{"label":"White"},{"label":"Blue"}]}]' value='["Black"]'></oas-picker>
       <oas-button type="primary" native-type="submit">Submit</oas-button>
     </oas-form>
     <p id="pk-form-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">

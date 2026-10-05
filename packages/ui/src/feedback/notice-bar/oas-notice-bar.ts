@@ -509,6 +509,15 @@ export class OASNoticeBar extends OASElement {
       clearTimeout(this.fadeTimer)
       this.fadeTimer = null
     }
+    // interval < FADE_MS 的极端配置：淡出永远等不到落定（每次 tick 都重挂）——
+    // 跳过淡出直接换文（review M9 实抓 interval=100 永不换文）
+    if (resolveIntervalMs(this.getAttr('interval', '')) < FADE_MS) {
+      const next = this.parseItems()
+      if (next.length === 0) return
+      this.itemIndex = (this.itemIndex + 1) % next.length
+      textEl.textContent = next[this.itemIndex]!
+      return
+    }
     textEl.classList.add('fading')
     this.fadeTimer = setTimeout(() => {
       this.fadeTimer = null

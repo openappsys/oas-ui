@@ -1,6 +1,6 @@
 # Component Overview
 
-OAS-UI provides 121 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 126 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -37,6 +37,7 @@ OAS-UI provides 121 framework-agnostic Web Components, organized into 7 groups b
 - [Radio](/en/components/radio) —— An enhanced native `<input type="radio">` supporting radio groups and controlled values.
 - [Switch](/en/components/switch) —— A switch button with `role="switch"`.
 - [Segmented](/en/components/segmented) —— A single-select linear segmented control for light filtering / view switching, `role="radiogroup"`, with per-item disabling.
+- [Swatch](/en/components/swatch) — Inline preset color swatches for quick pick & display: theme/tag/favorite colors without opening a panel; swatch item + selection group (single/multi, roving keyboard).
 - [Picker](/en/components/picker) — Mobile-style scroll-wheel column selector: independent columns or cascading tree, native inertial scrolling with snap, keyboard accessible, form-associated.
 - [Slider](/en/components/slider) —— A slider built on an enhanced native `<input type="range">`.
 - [InputNumber](/en/components/input-number) —— An enhanced native `<input type="number">` with stepper buttons and range constraints.
@@ -114,6 +115,9 @@ OAS-UI provides 121 framework-agnostic Web Components, organized into 7 groups b
 - [SpeedDial](/en/components/speed-dial) —— A floating main button that expands a list of sub-actions, commonly used for quick actions like "New/Share"; `aria-expanded` stays in sync, clicking outside / Esc collapses it, with no orphan popups.
 
 ## Data Display
+
+- [Kanban](/en/components/kanban) — Column + card kanban board: drag across columns / reorder within / column reorder / WIP limits / multi-select / swimlanes, fires oas-change on drop.
+- [Scheduler](/en/components/scheduler) — Month-view scheduler: event chips in day cells (title + color bar) + events read/write channel + CRUD methods and events, pure UI state.
 
 - [Table](/en/components/table) —— Displays structured data in a row-and-column grid with sorting, row selection, multi-select, and a loading state. It can be wired together with a pagination component.
 - [Tree](/en/components/tree) —— Displays hierarchical data with support for selection, expansion, multi-select, lazy loading, and node drag-and-drop.

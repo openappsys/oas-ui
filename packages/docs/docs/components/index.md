@@ -1,6 +1,6 @@
 # 组件总览
 
-OAS-UI 提供 121 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 126 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -37,6 +37,7 @@ OAS-UI 提供 121 个框架无关的 Web Components 组件，按用途划分为 
 - [Radio 单选框](/components/radio) —— 原生 `<input type="radio">` 增强，支持单选组与受控 value。
 - [Switch 开关](/components/switch) —— `role="switch"` 的开关按钮。
 - [Segmented 分段器](/components/segmented) —— 单选的线性分段选择器，用于轻度筛选 / 切换视图，`role="radiogroup"`，可禁用单项。
+- [Swatch 色板](/components/swatch) —— 内联预设色快选与展示的色块件：主题色/标签色/收藏色等不开面板直接选色场景；色块件 + 选择组（单选/多选，roving 键盘导航）。
 - [Picker 滚轮选择器](/components/picker) —— 移动式滚轮列选择：独立多列 / 级联树两形态，原生滚动惯性 + 吸附，键盘可达，form-associated 直接进原生表单。
 - [Slider 滑块](/components/slider) —— 原生 `<input type="range">` 增强的滑动条。
 - [InputNumber 数字输入](/components/input-number) —— 原生 `<input type="number">` 增强，带步进按钮并支持范围约束。
@@ -114,6 +115,9 @@ OAS-UI 提供 121 个框架无关的 Web Components 组件，按用途划分为 
 - [SpeedDial 悬浮动作](/components/speed-dial) —— 悬浮主按钮 + 展开子动作列表，常用于「新建/分享」等快捷操作；`aria-expanded` 同步，点击外部/Esc 收起，无孤儿浮层。
 
 ## 数据展示组件
+
+- [Kanban 看板](/components/kanban) —— 列 + 卡片的看板视图：拖拽换列/列内排序/列重排/WIP 限制/卡片多选/泳道分带，落定派发 oas-change。
+- [Scheduler 日程](/components/scheduler) —— 月视图日程组件：日格事件芯片（标题 + 色条）+ events 读写通道 + CRUD 方法与事件，纯 UI 态。
 
 - [Table 表格](/components/table) —— 用于以行列表格形式展示结构化数据，支持排序、行选中、多选与加载态，可与分页组件联动。
 - [Tree 树](/components/tree) —— 用于展示层级数据，支持选中、展开、多选、懒加载与节点拖拽。

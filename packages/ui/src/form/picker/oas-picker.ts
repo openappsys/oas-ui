@@ -122,6 +122,11 @@ const DEFAULT_VISIBLE_COUNT = 5
 /** 滚动落停判定：最后一次 scroll 后无新事件的静默窗口（scrollend 不兼容环境的兜底） */
 const SETTLE_MS = 100
 
+/** 条目合法性：对象且 label 为字符串（合法 JSON 但非法元素——null/数字/缺 label——一律过滤，与 index-bar 防御口径一致） */
+function isValidItem(it: unknown): it is PickerItem {
+  return it != null && typeof it === 'object' && typeof (it as PickerItem).label === 'string'
+}
+
 export class OASPicker extends OASFormElement {
   static override get observedAttributes(): string[] {
     return ['columns', 'options', 'value', 'item-height', 'visible-count', 'disabled', 'name', 'required']
@@ -165,25 +170,61 @@ export class OASPicker extends OASFormElement {
     }
   }
 
-  /** 列数据源：columns 优先；options 树按选中路径派生列 */
+  /** 列数据源：columns 优先（过滤非法列/项）；options 树按当前选中路径走（见 walkCascade） */
   private resolvedColumns(): PickerColumn[] {
     const cols = this.parseJson<PickerColumn[]>('columns')
-    if (cols && cols.length > 0) return cols.filter((c) => c && Array.isArray(c.items))
-    const tree = this.parseJson<PickerItem[]>('options')
-    if (!tree || tree.length === 0) return []
-    const out: PickerColumn[] = [{ items: tree }]
-    let level = tree
-    for (let i = 0; i < this.selectedIdx.length; i++) {
-      const sel = level[this.selectedIdx[i] ?? 0]
-      if (!sel || !Array.isArray(sel.children) || sel.children.length === 0) break
-      out.push({ items: sel.children })
-      level = sel.children
+    if (cols && cols.length > 0) {
+      return cols.filter((c) => c && Array.isArray(c.items)).map((c) => ({ ...c, items: c.items.filter(isValidItem) }))
     }
-    return out
+    return this.walkCascade(this.selectedIdx).cols
   }
 
   private isCascade(): boolean {
     return !this.parseJson<PickerColumn[]>('columns')?.length && !!this.parseJson<PickerItem[]>('options')?.length
+  }
+
+  /**
+   * 级联：按给定下标路径单趟走树（列与下标一次成型；越界/缺失/禁用回落首可用项，无子层即止）。
+   * 不得从 selectedIdx.length 迭代推导列数——深层初始 value 首帧会少渲列，
+   * 且把缺失级错报为第 0 项（静默提交错误值，review C1 实抓）。
+   */
+  private walkCascade(path: number[]): { cols: PickerColumn[]; indices: number[] } {
+    const tree = (this.parseJson<PickerItem[]>('options') ?? []).filter(isValidItem)
+    const cols: PickerColumn[] = []
+    const indices: number[] = []
+    let level = tree
+    while (level.length > 0) {
+      cols.push({ items: level })
+      const depth = cols.length - 1
+      let idx = path[depth] ?? -1
+      if (idx < 0 || idx >= level.length || level[idx]!.disabled) idx = level.findIndex((it) => !it.disabled)
+      if (idx < 0) idx = 0
+      indices.push(idx)
+      const sel = level[idx]!
+      level = Array.isArray(sel.children) ? sel.children.filter(isValidItem) : []
+    }
+    return { cols, indices }
+  }
+
+  /** 级联首帧/属性变更解析：按 value 属性路径走树（value 驱动；交互中间态走 walkCascade(selectedIdx)） */
+  private resolveCascadeByValue(): { cols: PickerColumn[]; indices: number[] } {
+    const values = this.parseJson<unknown[]>('value') ?? []
+    const tree = (this.parseJson<PickerItem[]>('options') ?? []).filter(isValidItem)
+    const cols: PickerColumn[] = []
+    const indices: number[] = []
+    let level = tree
+    while (level.length > 0) {
+      cols.push({ items: level })
+      const depth = cols.length - 1
+      const v = values[depth]
+      let idx = typeof v === 'string' ? level.findIndex((it) => (it.value ?? it.label) === v) : -1
+      if (idx < 0 || level[idx]!.disabled) idx = level.findIndex((it) => !it.disabled)
+      if (idx < 0) idx = 0
+      indices.push(idx)
+      const sel = level[idx]!
+      level = Array.isArray(sel.children) ? sel.children.filter(isValidItem) : []
+    }
+    return { cols, indices }
   }
 
   /** 当前选中值（value 缺省回退 label；无列回空数组） */
@@ -207,7 +248,7 @@ export class OASPicker extends OASFormElement {
     return out
   }
 
-  /** value 属性 → 各列下标（按 value ?? label 匹配；未命中回 0 或首个可用项） */
+  /** value 属性 → 各列下标（columns 形态按列匹配；级联形态由 resolveCascadeByValue 单趟成型） */
   private indicesFromValue(): number[] {
     const cols = this.resolvedColumns()
     const values = this.parseJson<string[]>('value') ?? []
@@ -215,11 +256,18 @@ export class OASPicker extends OASFormElement {
       const v = values[i]
       if (v != null) {
         const hit = c.items.findIndex((it) => (it.value ?? it.label) === v)
-        if (hit >= 0) return hit
+        if (hit >= 0 && !c.items[hit]!.disabled) return hit
       }
       const firstEnabled = c.items.findIndex((it) => !it.disabled)
       return firstEnabled >= 0 ? firstEnabled : 0
     })
+  }
+
+  /** update 的统一解析入口：列 + 下标一次成型（级联按 value 路径，columns 按列匹配） */
+  private resolveAll(): { cols: PickerColumn[]; indices: number[] } {
+    if (this.isCascade()) return this.resolveCascadeByValue()
+    const cols = this.resolvedColumns()
+    return { cols, indices: this.indicesFromValue() }
   }
 
   protected override render(): void {
@@ -250,10 +298,9 @@ export class OASPicker extends OASFormElement {
   protected override update(): void {
     const wheels = this.shadow.querySelector<HTMLElement>('.wheels')
     if (!wheels) return
-    const cols = this.resolvedColumns()
-    // 选中下标同步：列结构变化（含级联重建/属性变更）后按 value 重解析，长度对齐列数
-    const fromValue = this.indicesFromValue()
-    this.selectedIdx = cols.map((_, i) => fromValue[i] ?? 0)
+    // 统一解析：列 + 下标一次成型（级联深层初值首帧即完整列数）
+    const { cols, indices } = this.resolveAll()
+    this.selectedIdx = cols.map((_, i) => indices[i] ?? 0)
     const h = this.itemHeight()
     const count = this.visibleCount()
     const spacer = ((count - 1) / 2) * h
@@ -267,6 +314,7 @@ export class OASPicker extends OASFormElement {
     cols.forEach((_, i) => this.scrollToIndex(i, this.selectedIdx[i] ?? 0, false))
     this.emitReady = true
     this.syncFormValue()
+    this.syncValidity()
   }
 
   private buildColumn(
@@ -390,25 +438,35 @@ export class OASPicker extends OASFormElement {
   /** 提交选中：变化才回写/派发（天然防程序性回环）；级联截断路径并重建子列 */
   private commit(colIdx: number, idx: number): void {
     if (this.selectedIdx[colIdx] === idx) return
+    const colsNow = this.resolvedColumns()
+    // 全禁用列边界：吸附也找不到可用项时静默不提交（不写禁用项进 value）
+    if (colsNow[colIdx]?.items[idx]?.disabled) return
     this.selectedIdx[colIdx] = idx
-    if (this.isCascade() && colIdx < this.resolvedColumns().length - 1) {
-      // 级联：截断深层路径 + 子列复位首可用项；不写中间态——统一由下方 setAttribute('value')
-      // 触发整体重建（update 重推导读的正是新 value，口径一致，避免旧 value 把路径顶回去）
+    if (this.isCascade() && colIdx < colsNow.length - 1) {
+      // 级联：截断深层路径，按新路径单趟走树取列与复位下标；不写中间态——统一由下方
+      // setAttribute('value') 触发整体重建（update 重推导读的正是新 value，口径一致）
       this.selectedIdx = this.selectedIdx.slice(0, colIdx + 1)
-      const cols = this.resolvedColumns()
-      for (let i = colIdx + 1; i < cols.length; i++) {
-        this.selectedIdx[i] = this.nearestEnabled(cols[i]!.items, 0)
-      }
+      this.selectedIdx = this.walkCascade(this.selectedIdx).indices
     }
     const value = this.currentValues()
     this.setAttribute('value', JSON.stringify(value))
     this.syncFormValue()
+    this.syncValidity()
     if (this.emitReady) {
       this.emit('change', {
         value,
         labels: this.currentLabels(),
         columnIndex: colIdx,
       } satisfies PickerChangeDetail)
+    }
+  }
+
+  /** required 校验链：未选（无列/无有效值）即未填 */
+  private syncValidity(): void {
+    if (this.hasAttr('required') && this.currentValues().length === 0) {
+      this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
+    } else {
+      this.setValidity({})
     }
   }
 

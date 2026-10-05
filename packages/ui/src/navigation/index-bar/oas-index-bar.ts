@@ -386,6 +386,7 @@ export class OASIndexBar extends OASElement {
     list.classList.toggle('sticky', sticky)
     bar.setAttribute('aria-label', this.t('indexBar.navAriaLabel'))
     list.setAttribute('aria-label', this.t('indexBar.listLabel'))
+    // RTL 标记（kanban 同款：方向判定锚 + 宿主可用的方向信号；有测试锁定，非死代码）
     this.toggleAttribute('data-rtl', isRtl(this))
   }
 

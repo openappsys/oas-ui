@@ -41,7 +41,7 @@
 
 ## 档位定制
 
-`item-height`（行高 px，默认 36）× `visible-count`（可见行数，默认 5，偶数自动归奇）决定滚轮高度；中心指示带锚定选中行：
+`item-height`（行高 px，默认 36）× `visible-count`（可见行数，默认 5，偶数自动归奇）决定滚轮高度；选中行高亮锚定选中行：
 
 <DemoBlock title="行高 44 + 可见 3 行">
   <div style="width: 100%">
@@ -56,7 +56,7 @@ form-associated：有 `name` 时 FormData 提交 JSON 数组字符串；`form.re
 <DemoBlock title="oas-form 提交">
   <div style="width: 100%">
     <oas-form id="pk-form">
-      <oas-picker name="spec" columns='[{"label":"颜色","items":[{"label":"黑"},{"label":"白"},{"label":"蓝"}]}]' value='["黑"]'></oas-picker>
+      <oas-picker name="spec" required columns='[{"label":"颜色","items":[{"label":"黑"},{"label":"白"},{"label":"蓝"}]}]' value='["黑"]'></oas-picker>
       <oas-button type="primary" native-type="submit">提交</oas-button>
     </oas-form>
     <p id="pk-form-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">

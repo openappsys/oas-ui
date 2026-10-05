@@ -1874,7 +1874,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - **oas-notice-bar 通告栏**（feedback 族，低复杂度）：图标 + 滚动文本（复用 marquee 引擎）+ 可关闭 + action 链接 + 多条轮播；i18n ×10。
 - **oas-index-bar 索引栏**（navigation 族，低-中）：数据驱动分节列表 + 字母侧栏（点按/拖拽跳转分节）+ 滚动联动当前字母高亮（scrollspy 复用 anchor 先例）；键盘可达。
-- **oas-pull-refresh 下拉刷新**（feedback 族，中）：滚动容器顶部下拉手势——scrollTop=0 判定 + 阻力曲线 + 阈值释放进 refreshing 态 + 宿主回调结束复位；状态机 idle/pulling/release/refreshing/success 走 i18n；与原生滚动协调（touch-action / overscroll-behavior），桌面端不干扰滚轮。
+- **oas-pull-refresh 下拉刷新**（feedback 族，中）：滚动容器顶部下拉手势——scrollTop=0 判定 + 阻力曲线 + 阈值释放进 refreshing 态 + 宿主回调结束复位；状态机 idle/pulling/refreshing/success（release 为 pulling 内文案/箭头相位非独立 phase）走 i18n；与原生滚动协调（touch-action / overscroll-behavior），桌面端不干扰滚轮。
 - **oas-swipe-cell 滑动操作**（data 族，中）：列表项横向滑动露出操作按钮组——pointer capture 横滑（slider 拖拽先例）+ 阈值/速度吸附开合 + 单开互斥 + 外点/滚动关闭；操作按钮键盘可达（焦点入列不读屏跳变）。
 - **oas-picker 滚轮选择器**（form 族，中-高）：移动式滚轮列（scroll-snap 惯性 + 选中居中）+ 多列 + 列联动（cascade 数据）+ value / oas-change；每列 listbox/option 语义 + 方向键选中；form-associated（OASFormElement）。
 

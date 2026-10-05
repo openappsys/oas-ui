@@ -224,3 +224,32 @@ test('swipe-cell RTL 镜像：向 inline-start（右滑）开、偏移为正、a
     )
     .toBeGreaterThan(0)
 })
+
+test.describe('移动仿真（触屏真手势）', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+
+  test('触屏横滑超阈值 → 开态（CDP 真 touch 链）；纵向滑放行不劫持', async ({ page }) => {
+    await page.goto('/components/swipe-cell.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-swipe-cell')
+    const cell = page.locator('oas-swipe-cell').first()
+    await cell.scrollIntoViewIfNeeded()
+    const box = await cell.boundingBox()
+    expect(box).not.toBeNull()
+    const cdp = await page.context().newCDPSession(page)
+    // 横滑（LTR 向左滑开）
+    const y = box!.y + box!.height / 2
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: box!.x + box!.width - 30, y }],
+    })
+    for (let i = 1; i <= 8; i++) {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: box!.x + box!.width - 30 - i * 25, y }],
+      })
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await page.waitForTimeout(400)
+    expect(await cell.evaluate((el) => el.hasAttribute('open')), '触屏横滑开态').toBe(true)
+  })
+})

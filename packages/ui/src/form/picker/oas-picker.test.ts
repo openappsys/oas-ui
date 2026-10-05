@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import zhCN from '@oas-ui/i18n/zh-CN'
 import '@oas-ui/i18n'
@@ -69,7 +69,7 @@ describe('OASPicker', () => {
   })
 
   describe('结构与渲染', () => {
-    it('columns 渲染：每列 listbox + items option + 上下占位 + 中心指示带', () => {
+    it('columns 渲染：每列 listbox + items option + 上下占位 + 选中行高亮', () => {
       const el = mount({ columns: COLUMNS })
       expect(cols(el).length).toBe(2)
       const c0 = cols(el)[0]!
@@ -191,6 +191,81 @@ describe('OASPicker', () => {
     })
   })
 
+  describe('级联深度与防御（review 回归）', () => {
+    it('三级及以上级联 + 深层初始 value：首帧即渲全列数且值正确（C1 回归：曾少渲一列并把缺失级错报为第 0 项）', async () => {
+      const el = mount({
+        options: JSON.stringify([
+          {
+            label: 'A',
+            value: 'a',
+            children: [
+              {
+                label: 'A1',
+                value: 'a1',
+                children: [
+                  { label: 'A1x', value: 'a1x' },
+                  { label: 'A1y', value: 'a1y' },
+                ],
+              },
+            ],
+          },
+        ]),
+        value: '["a","a1","a1y"]',
+      })
+      await settle()
+      expect(cols(el).length, '三级全列').toBe(3)
+      expect(items(cols(el)[2]!).map((i) => i.textContent)).toEqual(['A1x', 'A1y'])
+      expect(el.value).toEqual(['a', 'a1', 'a1y'])
+      expect(items(cols(el)[2]!)[1]!.getAttribute('aria-selected')).toBe('true')
+    })
+
+    it('合法 JSON 但非法元素（null/数字/缺 label）一律过滤不抛错（I2 回归）', async () => {
+      const el = mount({ columns: '[{"items":[null,1,{"label":"x"}]}]' })
+      await settle()
+      expect(items(cols(el)[0]!).map((i) => i.textContent)).toEqual(['x'])
+      const tree = mount({ options: '[null,{"label":"A","children":[null,5,{"label":"A1"}]}]' })
+      await settle()
+      expect(items(cols(tree)[0]!).map((i) => i.textContent)).toEqual(['A'])
+      expect(items(cols(tree)[1]!).map((i) => i.textContent)).toEqual(['A1'])
+    })
+
+    it('全禁用列：吸附无可用项时静默不提交（M4 回归：禁用项不得进 value）', async () => {
+      const el = mount({
+        columns: JSON.stringify(
+          [
+            [
+              { label: 'a', disabled: true },
+              { label: 'b', disabled: true },
+            ],
+          ].map((items) => ({ items })),
+        ),
+      })
+      await settle()
+      const before = el.getAttribute('value')
+      scrollTo(el, 0, 1)
+      await settle()
+      expect(el.getAttribute('value'), '全禁用列不写禁用项进 value').toBe(before)
+    })
+
+    it('required：空数据驱动 valueMissing；有值即通过（I1 回归；happy-dom 无 internals，fakeInternals 惯例探针）', async () => {
+      const fakeOf = (el: OASPicker) => {
+        const fake = { setFormValue: () => {}, setValidity: vi.fn() }
+        ;(el as unknown as { internals_: unknown }).internals_ = fake
+        return fake
+      }
+      const empty = mount({ columns: '{bad', required: '', name: 'x' })
+      const fakeEmpty = fakeOf(empty)
+      empty.setAttribute('columns', '{bad2') // 触发 update → syncValidity
+      await settle()
+      expect(fakeEmpty.setValidity.mock.calls.at(-1)?.[0]).toMatchObject({ valueMissing: true })
+      const ok = mount({ columns: COLUMNS, required: '', name: 'x' })
+      const fakeOk = fakeOf(ok)
+      scrollTo(ok, 0, 1)
+      await settle()
+      expect(fakeOk.setValidity.mock.calls.at(-1)?.[0]).toEqual({})
+    })
+  })
+
   describe('表单集成（form-associated）', () => {
     it('getFormValue：JSON 数组字符串；空选 null（happy-dom 无 ElementInternals，fakeInternals 惯例探针）', async () => {
       const el = mount({ columns: COLUMNS, name: 'pick' })
@@ -198,6 +273,7 @@ describe('OASPicker', () => {
       const calls: Array<string | null> = []
       ;(el as unknown as { internals_: unknown }).internals_ = {
         setFormValue: (v: string | null) => calls.push(v),
+        setValidity: () => {},
       }
       scrollTo(el, 0, 2)
       await settle()

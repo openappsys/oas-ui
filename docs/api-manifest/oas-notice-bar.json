@@ -28,6 +28,8 @@
     },
     {
       "name": "interval",
+      "type": "string",
+      "default": "",
       "observed": true
     },
     {

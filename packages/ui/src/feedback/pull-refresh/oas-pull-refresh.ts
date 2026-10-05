@@ -222,6 +222,9 @@ export class OASPullRefresh extends OASElement {
     this.scrollEl?.addEventListener('pointermove', this.onPointerMove)
     this.scrollEl?.addEventListener('pointerup', this.onPointerUp)
     this.scrollEl?.addEventListener('pointercancel', this.onPointerCancel)
+    // 原生 touchmove（passive:false）：pan-y 下垂直手势归浏览器——顶部下拉（dy>0）必须
+    // preventDefault 阻断浏览器接管（否则 pointercancel 打断 pointer 序列，移动仿真实抓 idle 不动）
+    this.scrollEl?.addEventListener('touchmove', this.onTouchMove, { passive: false })
     this.onCleanup(() => this.clearSuccessTimer())
   }
 
@@ -326,6 +329,14 @@ export class OASPullRefresh extends OASElement {
     }
   }
 
+  /** 原生 touchmove：顶部下拉手势阻断浏览器原生 pan（见 bind 注释）；上推（dy<=0）放行正常滚动 */
+  private onTouchMove = (ev: TouchEvent): void => {
+    const st = this.pointerState
+    if (!st) return
+    const dy = (ev.touches[0]?.clientY ?? 0) - st.startY
+    if ((st.taken || dy > 0) && ev.cancelable) ev.preventDefault()
+  }
+
   private onPointerCancel = (e: Event): void => {
     const ev = e as PointerEvent
     const st = this.pointerState
@@ -418,7 +429,8 @@ export class OASPullRefresh extends OASElement {
   private thresholdValue(): number {
     const n = Number(this.getAttr('threshold', String(DEFAULT_THRESHOLD)))
     const raw = Number.isFinite(n) && n > 0 ? n : DEFAULT_THRESHOLD
-    return Math.min(raw, this.maxPullValue())
+    // 夹取到 max-pull-1：阻力曲线渐近 max-pull，threshold=max-pull 时实际不可达（配置陷阱，review M5）
+    return Math.max(1, Math.min(raw, this.maxPullValue() - 1))
   }
 
   /** 滚动盒当前 scrollTop（0 = 顶部，下拉手势的前提条件） */

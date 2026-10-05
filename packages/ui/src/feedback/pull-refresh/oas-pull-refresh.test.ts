@@ -10,7 +10,7 @@ import { OASPullRefresh } from './index.js'
  * 设计前必答清单（AGENTS.md 六问）：
  * 1. 取消路径：释放不足阈值回弹归零（零事件零残留）；pointercancel 强制回弹不派发；
  *    refreshing 中断开连接时 onCleanup 清 success 计时器（零孤儿产物）。
- * 2. 属性默认值：`threshold` 缺省 60px（非法/非正回落 60，生效值夹取不超过 max-pull）；
+ * 2. 属性默认值：`threshold` 缺省 60px（非法/非正回落 60，生效值夹取到 max-pull-1（渐近不可达修正））；
  *    `max-pull` 缺省 100px（非法/非正回落 100）；`disabled` 缺省否；`refreshing` 缺省否。
  * 3. 多步交互失败点：释放过阈值派发 oas-refresh 后停驻阈值高度进刷新中视觉——宿主不响应则
  *    保持停驻（等待宿主）；宿主移除 refreshing → success 文案 ~600ms → 回弹复位；
@@ -430,8 +430,9 @@ describe('OASPullRefresh', () => {
     const el2 = mount({ threshold: '150', 'max-pull': '100' })
     const events2 = recordRefresh(el2)
     drag(el2, [2000])
-    expect(events2.length, 'threshold 夹到 max-pull，大位移渐近封顶后可达').toBe(1)
-    expect(pullOf(el2)).toBe(100)
+    // threshold 夹到 max-pull-1（=max-pull 时渐近曲线不可达，review M5 配置陷阱修正）
+    expect(events2.length, 'threshold=150 夹到 99，大位移后可达').toBe(1)
+    expect(pullOf(el2)).toBe(99)
   })
 
   it('max-pull 自定义：位移上限 50、threshold 夹取后 40 仍可达', () => {

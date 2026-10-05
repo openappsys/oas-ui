@@ -96,6 +96,11 @@ interface DragState {
   /** 按下时的逻辑偏移（0 = 关，actionsWidth = 开） */
   startLogical: number
   axis: 'pending' | 'x' | 'y'
+  /** 最近两个 move 点（速度吸附用） */
+  lastX: number
+  lastT: number
+  prevX: number
+  prevT: number
 }
 
 export class OASSwipeCell extends OASElement {
@@ -107,6 +112,8 @@ export class OASSwipeCell extends OASElement {
   private actionsEl: HTMLElement | null = null
   /** 生效开态（与 open 属性同步） */
   private openState = false
+  /** 首次同步标记：连接初始 open 不派发事件 */
+  private syncedOnce = false
   /** actions 实测宽度（打开前测量；0 = 无操作区，不可开） */
   private actionsWidth = 0
   private drag: DragState | null = null
@@ -198,9 +205,13 @@ export class OASSwipeCell extends OASElement {
     this.measureActions()
 
     const want = this.hasAttr('open')
-    if (want && !this.openState) this.applyOpen(true, true)
-    else if (!want && this.openState) this.applyOpen(false, true)
+    // 首次同步（连接时声明式初始 open）：只落态不派发——与全库「初始不派发」惯例一致
+    //（框架在 upgrade 前挂监听不应收到空闲事件，review M1）；其后的属性变化照派
+    const emit = this.syncedOnce
+    if (want && !this.openState) this.applyOpen(true, emit)
+    else if (!want && this.openState) this.applyOpen(false, emit)
     else this.syncTranslation()
+    this.syncedOnce = true
 
     this.syncOpenListeners()
   }
@@ -266,6 +277,10 @@ export class OASSwipeCell extends OASElement {
       startY: ev.clientY,
       startLogical,
       axis: 'pending',
+      lastX: ev.clientX,
+      lastT: ev.timeStamp,
+      prevX: ev.clientX,
+      prevT: ev.timeStamp,
     }
   }
 
@@ -295,6 +310,11 @@ export class OASSwipeCell extends OASElement {
     if (ev.cancelable) ev.preventDefault()
     this.dragLogical = this.clampLogical(drag.startLogical + dx * this.dirSign())
     this.applyOffsetLogical(this.dragLogical)
+    // 速度轨迹（flick 吸附用）
+    drag.prevX = drag.lastX
+    drag.prevT = drag.lastT
+    drag.lastX = ev.clientX
+    drag.lastT = ev.timeStamp
   }
 
   private onPointerUp = (e: Event): void => {
@@ -305,8 +325,17 @@ export class OASSwipeCell extends OASElement {
     if (drag.axis !== 'x') return
     this.toggleAttribute('data-dragging', false)
     this.release(drag.pointerId)
-    // 释放吸附：位移达到阈值且确有可露出内容 → 开；否则回弹关
-    const shouldOpen = this.actionsWidth > 0 && this.dragLogical >= this.thresholdValue()
+    // 释放吸附：快速甩动（|v| ≥ 0.5px/ms）按方向直接开/关（PRD「速度吸附」）；
+    // 慢速按位移阈值——位移达到阈值且确有可露出内容 → 开；否则回弹关
+    // 速度窗口下限 8ms（一帧）：合成事件同刻连发 dt≈0 一律走位移阈值，
+    // 真实手势 move 间隔 8-16ms 才进入 flick 判定
+    const dt = drag.lastT - drag.prevT
+    const v = dt >= 8 ? ((drag.lastX - drag.prevX) / dt) * this.dirSign() : 0
+    const FLICK = 0.5
+    let shouldOpen: boolean
+    if (v >= FLICK) shouldOpen = this.actionsWidth > 0
+    else if (v <= -FLICK) shouldOpen = false
+    else shouldOpen = this.actionsWidth > 0 && this.dragLogical >= this.thresholdValue()
     this.applyOpen(shouldOpen, true)
   }
 

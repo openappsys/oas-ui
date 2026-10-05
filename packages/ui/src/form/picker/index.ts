@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASPicker } from './oas-picker.js'
 
 if (!customElements.get('oas-picker')) {

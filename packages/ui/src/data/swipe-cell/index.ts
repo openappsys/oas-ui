@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASSwipeCell } from './oas-swipe-cell.js'
 
 if (!customElements.get('oas-swipe-cell')) {
