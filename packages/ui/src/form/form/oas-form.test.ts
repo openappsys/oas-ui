@@ -185,6 +185,35 @@ describe('OASForm', () => {
     expect(Object.hasOwn(el.getErrors(), 'spec'), 'oas-change 清错').toBe(false)
   })
 
+  it('change 档已出错字段的 oas-change 不重复校验（M1 回归：曾 triggerEvents + clearOnEdit 双触发）', () => {
+    let calls = 0
+    const el = new OASForm()
+    el.setAttribute('validate-trigger', 'change')
+    // validator 是函数：必须走 property 通道（JSON 序列化丢函数）
+    el.rules = {
+      spec: [
+        {
+          validator: () => {
+            calls++
+            return calls > 1 || '再想想'
+          },
+        },
+      ],
+    }
+    el.innerHTML = `<oas-picker name="spec" columns='[{"label":"颜色","items":[{"label":"黑"},{"label":"白"}]}]'></oas-picker>`
+    document.body.appendChild(el)
+    el.submit()
+    expect(calls, '提交校验一次').toBe(1)
+    // change 档字段出错后，oas-change 触发档校验一次（clearOnEdit 不得叠加第二次）
+    const picker = el.querySelector('oas-picker')!
+    const col = picker.shadowRoot!.querySelector('.column') as HTMLElement
+    col.scrollTop = 36
+    col.dispatchEvent(new Event('scroll'))
+    return new Promise((r) => setTimeout(r, 300)).then(() => {
+      expect(calls, 'oas-change 只校验一次（不双触发）').toBe(2)
+    })
+  })
+
   it('registerFormControl 允许收集自定义控件', () => {
     const unreg = registerFormControl('oas-custom-field', (el) => el.getAttribute('model-value'))
     try {

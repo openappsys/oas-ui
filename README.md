@@ -10,10 +10,10 @@ TypeScript 全量类型 · tree-shakable · light/dark 双主题 · SSR + DSD ·
 
 | 指标 | 数值 |
 | --- | --- |
-| 组件数 | 117 |
-| CDN 全量单文件（gzip） | 153.2 KB |
-| 按钮单链（gzip） | 20.7 KB |
-| 单测 | 2200+ |
+| 组件数 | 126 |
+| CDN 全量单文件（gzip） | 608.5 KB |
+| 按钮单链（gzip） | 33.5 KB |
+| 单测 | 8700+ |
 | 语言包 | 内置 10 种：zh-CN / en / ja / ko / de / fr / es / pt / ru / ar（ar 为 RTL） |
 | 当前版本 | v2.5.2 |
 
@@ -80,7 +80,7 @@ SSR / DSD 指南见文档站 [SSR 页](https://oas-ui.dev/guide/ssr)与 `@oas-ui
 | `packages/theme` | CSS 变量设计 token（light/dark），单源 index.css |
 | `packages/i18n` | 框架无关 locale registry，语言包 tree-shakable |
 | `packages/icons` | 内联 SVG 图标集（可 tree-shake，无图标字体） |
-| `packages/ui` | 117 个组件（basic / form / data / feedback / navigation / layout / framework / overlay） |
+| `packages/ui` | 126 个组件（basic / form / data / feedback / navigation / layout / framework / overlay） |
 | `packages/ssr` | DSD 快照渲染器 + Node-safe 入口 + 真水合 |
 | `packages/nuxt` | Nuxt 3 集成插件 |
 | `packages/next` | Next.js（RSC）集成插件 |

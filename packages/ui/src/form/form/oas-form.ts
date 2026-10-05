@@ -359,7 +359,13 @@ export class OASForm extends OASElement {
       const target = e.composedPath()[0]
       if (!(target instanceof Element) || !this.contains(target)) return
       const name = target.getAttribute('name')
-      if (!name || this.effectiveTrigger(name) === 'input') return
+      if (!name) return
+      const trig = this.effectiveTrigger(name)
+      // 本事件已按该字段触发档走过一次校验（triggerEvents 循环）——不重复
+      //（change/input 档的 oas-change 会同时命中两条监听，二轮 review 实抓重复校验）
+      if (e.type === 'oas-input' && trig === 'input') return
+      if (e.type === 'oas-change' && (trig === 'change' || trig === 'input')) return
+      if (e.type === 'oas-blur' && trig === 'blur') return
       if (!Object.hasOwn(this.errors, name)) return
       this.validateFieldByTrigger(name, target)
     }) as EventListener

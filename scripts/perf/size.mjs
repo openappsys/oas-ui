@@ -252,44 +252,44 @@ const BUDGETS = [
     // 增长纪律由单组件链预算（绝对值制）与按需叙事守住。
     name: 'dist/cdn.js gzip',
     get: () => cdn.gzipBytes,
-    limit: 600 * 1024, // 600 KB 天花板（2026-09-22 重定档：form-associated + v2.5.6 无障碍批连续增长触前档预警线）
+    limit: 700 * 1024, // 700 KB 天花板（2026-10-05 重定档：移动原生批 5 组件 + scheduler 进全量入口，实测 608.5 KB 触前档）
     basis:
-      '天花板制：实测 gzip 519.1 KB（form-associated 批次 + v2.5.6 无障碍批次后），定档 600 KB 预留后续增长；前档 575 KB 定档于 v2.5.3（498.4 KB 实测），再前档 300 KB 定档于 v2.2.2（240,557 B）',
+      '天花板制：实测 gzip 519.1 KB（form-associated 批次 + v2.5.6 无障碍批次后），定档 700 KB 预留后续增长；前档 600 KB 定档于 2026-09-22（519.1 KB 实测），再前档 575 KB 定档于 v2.5.3（498.4 KB 实测），再前档 300 KB 定档于 v2.2.2（240,557 B）',
   },
   {
     name: '@oas-ui/ui 全量入口链 gzip',
     get: () => fullEntry.gzipBytes,
-    limit: 905 * 1024, // 905 KB 天花板（2026-09-22 随 cdn 天花板等比重定档，600 × 实测比 ≈1.51）
+    limit: 1024 * 1024, // 1024 KB 天花板（2026-10-05 重定档：实测 890.9 KB，+15% 预留）
     basis:
-      '天花板制：905 KB ≈ cdn 天花板 600 KB × 全量链/cdn 实测比 ≈1.51（逐文件求和上界口径）；实测 gzip 779.3 KB（form-associated 批次后）；前档 870 KB 定档于 2026-09-13，再前档 520 KB 定档于 v2.2.2（415,403 B）',
+      '天花板制：实测 gzip 890.9 KB（移动原生批 + scheduler 批次后），上浮约 15%；前档 905 KB 定档于 2026-09-22（779.3 KB 实测），再前档 520 KB 定档于 v2.2.2（415,403 B）',
   },
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
     get: () => componentMeasures.button.gzipBytes,
-    limit: 35 * 1024, // 35 KB（2026-09-22 重定档：form-associated 批次 core 新增 OASFormElement 基类入全链）
+    limit: 39 * 1024, // 39 KB（2026-10-05 重定档：实测 33.5 KB 触前档 96%）
     basis:
-      '实测 gzip 30.3 KB（form-associated 批次：core 新增 OASFormElement 基类进所有链；含 core + 全量 icon 注册表），上浮约 15%；前档 31 KB 定档于 2026-09-09（26.4 KB 实测）',
+      '实测 gzip 33.5 KB（form-associated 批次后：OASFormElement 基类 + value property 系增量；含 core + 全量 icon 注册表），上浮约 15%；前档 35 KB 定档于 2026-09-22（30.3 KB 实测）',
   },
   {
     name: '@oas-ui/ui/data/table 链 gzip',
     get: () => componentMeasures.table.gzipBytes,
-    limit: 70 * 1024, // 70 KB（2026-09-22 重定档：form-associated 批次 core 增量）
+    limit: 116 * 1024, // 116 KB（2026-10-05 重定档：v2.5.7/v2.5.8 列导出/移动 sheet/编辑器依赖入链，实测 101 KB）
     basis:
-      '实测 gzip 60.6 KB（form-associated 批次 core 增量 + v2.5.3 后 RTL/移动批新增——列重排触屏上移/下移按钮、过滤面板改走共享 floating 引擎、coarse 触控目标；链含 core+virtual-list+i18n+oas-pagination），上浮约 15%；前档 65 KB 定档于 2026-09-13（56.2 KB 实测）',
+      '实测 gzip 101 KB（v2.5.7/v2.5.8 新增入链：oas-table-export 导出、feedback/bottom-sheet + shared/mobile-sheet 移动降级、编辑器浮层通道 select/switch；链含 core+virtual-list+i18n+oas-pagination），上浮约 15%；前档 70 KB 定档于 2026-09-22（60.6 KB 实测）',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',
     get: () => componentMeasures.form.gzipBytes,
-    limit: 24 * 1024, // 24 KB（2026-09-22 重定档：form-associated 批次顶到前档 100%）
+    limit: 28 * 1024, // 28 KB（2026-10-05 重定档：校验时机 input 化 + 选择控件双通道 + picker 注册增量，实测 24.8 KB）
     basis:
-      '实测 gzip 20.7 KB（form-associated 批次：15 表单组件接入 OASFormElement 公共机制 + 校验链路 + label 命名转发；含 core + i18n），上浮约 15%；前档 20 KB 定档于 2026-09-15（17.2 KB 实测）',
+      '实测 gzip 24.8 KB（form-associated 批次后 + 默认校验时机 input 化与竞态修复、oas-picker 注册、value property 系增量；含 core + i18n），上浮约 15%；前档 24 KB 定档于 2026-09-22（20.7 KB 实测）',
   },
   {
     name: '@oas-ui/theme index.css gzip',
     get: () => theme.gzipBytes,
-    limit: 3.5 * 1024, // 3.5 KB（2026-09-15 重定档）。实测 gzip 3.0 KB（阴影三档 token light/dark），上浮约 15%
+    limit: 4 * 1024, // 4 KB（2026-10-05 重定档：skins.css 皮肤层变量 + 阴影精修，实测 3.52 KB）
     basis:
-      '实测 gzip 3.0 KB（未发布批次：--oas-shadow-sm/md/lg 三档阴影 token + light/dark 双变体），上浮约 15%；前档 3.2 KB 定档于 2026-09-13（2.7 KB 实测）',
+      '实测 gzip 3.52 KB（skins 皮肤层变量族 + 阴影双层精修后），上浮约 15%；前档 3.5 KB 定档于 2026-09-15（3.0 KB 实测）',
   },
 ]
 

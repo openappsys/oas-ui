@@ -627,13 +627,19 @@ test('table 可编辑格内 oas-button 双击不进入编辑（编辑路径排�
   expect(afterBtn.editingCol, '双击 oas-button 不应置列编辑高亮').toBe(false)
   // 对照：双击同表纯文本可编辑格照常进入编辑（扩展排除未误伤普通双击）
   await page.locator('#qa-edit-inline-oas-button td[data-col="age"]').first().dblclick()
-  await page.waitForTimeout(300)
-  const afterPlain = await page.evaluate(() => {
-    const t = document.querySelector<HTMLElement>('#qa-edit-inline-oas-button')!
-    const hasEditor = !!t.shadowRoot!.querySelector('input.cell-editor')
-    t.remove()
-    return hasEditor
-  })
+  // 满负载下编辑器出现可能晚于固定等待（Firefox 全量并发实抓）——轮询替代固定 300ms
+  const afterPlain = await page
+    .waitForFunction(
+      () => {
+        const t = document.querySelector<HTMLElement>('#qa-edit-inline-oas-button')
+        return !!t?.shadowRoot?.querySelector('input.cell-editor')
+      },
+      null,
+      { timeout: 5000 },
+    )
+    .then(() => true)
+    .catch(() => false)
+  await page.evaluate(() => document.querySelector('#qa-edit-inline-oas-button')?.remove())
   expect(afterPlain, '纯文本可编辑格双击应照常进入编辑').toBe(true)
 })
 

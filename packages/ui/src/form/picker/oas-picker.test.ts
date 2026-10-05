@@ -339,6 +339,7 @@ describe('OASPicker', () => {
     it('进 ssr 注册（Node 环境可安全导入类）', async () => {
       const ssr = await import('../../ssr.js')
       expect((ssr as Record<string, unknown>).OASPicker).toBeTruthy()
-    })
+      // 全量并发下动态导入整包 ssr 聚合口偶超 5s 默认超时（二轮 review 实抓）
+    }, 15000)
   })
 })
