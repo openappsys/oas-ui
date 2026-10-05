@@ -63,7 +63,15 @@ export default defineConfig({
     // （Firefox headless 时序差异可能引入 flaky，宁少勿滥）。
     {
       name: 'firefox',
-      use: {},
+      // 必须显式 browserName——缺省 browserType 是 chromium，「firefox 抽样」会拿
+      // Chromium 跑两遍（跨浏览器覆盖为零，三轮 review 实证 pw:browser 启动的是 chrome-headless-shell）
+      use: {
+        browserName: 'firefox',
+        // Firefox 不吃 Playwright 的 locale 配置（Juggler 不映射 intl.locale.requested，
+        // 实测 navigator.language 仍 en-US → docs 首访语言适配把中文断言页跳去 /en/）——
+        // 用 firefoxUserPrefs 锁 intl.accept_languages（navigator.language 的真实来源，实测生效）
+        firefoxUserPrefs: { 'intl.accept_languages': 'zh-CN' },
+      },
       testMatch: [/visual\.spec\.ts/, /smoke\.spec\.ts/, /qa-regression\/.*\.spec\.ts/],
     },
   ],

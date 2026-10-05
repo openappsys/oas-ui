@@ -227,6 +227,8 @@ test('swipe-cell RTL 镜像：向 inline-start（右滑）开、偏移为正、a
 
 test.describe('移动仿真（触屏真手势）', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+  // CDP dispatchTouchEvent 为 Chromium 专属——Firefox project 下跳过
+  test.skip(({ browserName }) => browserName !== 'chromium', '触屏 CDP 链仅 chromium')
 
   test('触屏横滑超阈值 → 开态（CDP 真 touch 链）；纵向滑放行不劫持', async ({ page }) => {
     await page.goto('/components/swipe-cell.html', { waitUntil: 'domcontentloaded' })

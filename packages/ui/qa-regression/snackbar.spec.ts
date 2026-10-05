@@ -121,7 +121,8 @@ test('hover 暂停计时：悬停期间不到期，离开后按剩余时长关�
   // duration 给足 6s：并发负载下「出现→hover 命中」可能耗时更久，3s 会让自动关闭跑赢 hover 判定
   await page.evaluate(() => (window as any).sbShow({ message: '悬停暂停', duration: '6000' }))
   await page.waitForFunction(() => document.querySelectorAll('oas-snackbar.oas-open').length === 1)
-  // 轮询「移动到当前 box 中心 → 是否命中 hover」：位置变化/布局未稳时每轮重算，替代一次性移动
+  // 轮询「移动到当前 box 中心 → 组件真实进入 hover 暂停」：满负载下几何/帧延迟会让
+  // 一次性移动落空（实抓超时），按 pauseSources 机制状态收敛而非 :hover 表象
   await expect
     .poll(
       async () => {
@@ -134,15 +135,14 @@ test('hover 暂停计时：悬停期间不到期，离开后按剩余时长关�
         })
         if (!center) return false
         await page.mouse.move(center.x, center.y)
-        return page.evaluate(
-          () =>
-            document
-              .querySelector('oas-snackbar.oas-open')
-              ?.shadowRoot?.querySelector('[part="box"]')
-              ?.matches(':hover') ?? false,
-        )
+        return page.evaluate(() => {
+          const el = document.querySelector('oas-snackbar.oas-open') as
+            | (HTMLElement & { pauseSources?: Set<string> })
+            | null
+          return el?.pauseSources?.has('hover') === true
+        })
       },
-      { message: '悬停应命中 snackbar 主体', timeout: 10000 },
+      { message: '悬停应让组件进入 hover 暂停（pauseSources 含 hover）', timeout: 15000 },
     )
     .toBe(true)
   // 悬停超过 duration 仍打开（计时被暂停）

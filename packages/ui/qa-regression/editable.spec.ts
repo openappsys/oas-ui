@@ -125,8 +125,11 @@ test('editable 失焦提交（默认 submit-on-blur）：点击页面其他区�
   // 真实点击页面其他位置会先撞上 default-editing demo 的失焦提交链拽走滚动，徒增不稳定
   await page.evaluate(() => {
     // 打标防漂移：失焦提交会改写 value 属性，attribute 选择器会失配
-    document.querySelector('oas-editable[value="点击我修改"]')!.setAttribute('data-qa-probe', 'blur-submit')
-    ;(document.activeElement as HTMLElement | null)?.blur()
+    const el = document.querySelector('oas-editable[value="点击我修改"]')!
+    el.setAttribute('data-qa-probe', 'blur-submit')
+    // blur 目标必须是 shadow 内真实聚焦的 input：Firefox 的 shadow 焦点代理下
+    // host.blur() 不会把内部 input 的焦点移出（focusout 不发 → 失焦提交不触发，实抓）
+    ;(el.shadowRoot!.activeElement as HTMLElement | null)?.blur()
   })
   await page.waitForTimeout(200)
   const after = await page.evaluate(() => {

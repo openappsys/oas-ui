@@ -51,7 +51,8 @@ test('sidebar 公开方法：外部调用 openDrawer/closeDrawer 开合移动抽
   expect(r.opened.attr, 'openDrawer 应置位 drawer-open').toBe(true)
   expect(r.opened.panelVisibility, 'openDrawer 后面板应可见').toBe('visible')
   expect(r.opened.panelWidth, '面板应有真实宽度').toBeGreaterThan(0)
-  expect(r.opened.panelLeft, 'openDrawer 后面板应滑入到 x=0').toBe(0)
+  // 面板左缘贴 0（-0/亚像素引擎差异容差：Firefox 可算出 -0 或 -0.4px）
+  expect(Math.abs(r.opened.panelLeft), 'openDrawer 后面板应滑入到 x=0').toBeLessThan(1)
   expect(r.opened.maskVisibility, 'openDrawer 后遮罩应可见').toBe('visible')
   // closeDrawer 后：属性移除 + 面板真实滑出（可见反馈可逆）
   expect(r.closed.attr, 'closeDrawer 应移除 drawer-open').toBe(false)

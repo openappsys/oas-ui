@@ -34,6 +34,8 @@ async function readShadow(page: import('@playwright/test').Page, sel: string): P
 
 /** 真实鼠标纵向拖拽：从元素内 (cx, y+40) 按下，垂直下拖 dist 后松开 */
 async function dragDown(page: import('@playwright/test').Page, sel: string, dist: number): Promise<void> {
+  // e2e 指针先 scrollIntoView（库惯例）：Firefox 默认视口下 demo 可能出屏，裸坐标拖拽落空
+  await page.locator(sel).scrollIntoViewIfNeeded()
   const box = await page.locator(sel).boundingBox()
   expect(box).not.toBeNull()
   const cx = box!.x + box!.width / 2
@@ -184,6 +186,8 @@ test('pull-refresh 指示区几何：拉动中 indicator 与内容零重叠（�
 
 test.describe('移动仿真（触屏真手势）', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+  // CDP dispatchTouchEvent 为 Chromium 专属——Firefox project 下跳过
+  test.skip(({ browserName }) => browserName !== 'chromium', '触屏 CDP 链仅 chromium')
 
   test('触屏下拉超阈值 → oas-refresh（CDP 真 touch 链，覆盖 touch-action 接管路径）', async ({ page }) => {
     await page.goto('/components/pull-refresh.html', { waitUntil: 'domcontentloaded' })

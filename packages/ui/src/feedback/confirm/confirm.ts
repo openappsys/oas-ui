@@ -1,5 +1,4 @@
 import { OASModal } from '../modal/oas-modal.js'
-import { t } from '@oas-ui/i18n'
 
 export interface ConfirmOptions {
   title?: string
@@ -29,11 +28,11 @@ export function confirm(options: ConfirmOptions = {}): Promise<void> {
     // 异步 onOk：确定点击不自动关闭，由本模块在 onOk resolve/reject 后决定关闭/保持
     if (options.onOk !== undefined) el.deferOkClose = true
     document.body.appendChild(el)
-    // 按钮文案默认走 locale registry（属性 okText/cancelText 可覆盖）
-    const okLabel = el.shadowRoot!.querySelector<HTMLElement>('[part="ok"] .ok-label')
-    if (okLabel) okLabel.textContent = options.okText ?? t('confirm.ok')
-    const cancelBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="cancel"]')
-    if (cancelBtn) cancelBtn.textContent = options.cancelText ?? t('confirm.cancel')
+    // 按钮文案走 modal 公开属性通道（ok-text/cancel-text 由其响应式渲染）——
+    // 不得直接戳 shadow 写 textContent：modal 的 update 重渲染时序在 Firefox 下会覆盖
+    // 直写值（okLabel 命中但随后被重渲染冲掉，qa Firefox 实抓）；属性通道两引擎一致
+    if (options.okText !== undefined) el.setAttribute('ok-text', options.okText)
+    if (options.cancelText !== undefined) el.setAttribute('cancel-text', options.cancelText)
 
     let settled = false
 

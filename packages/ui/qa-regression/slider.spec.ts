@@ -230,7 +230,10 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
     const fill = sr.querySelector<HTMLElement>('.fill')!
     const fr = fill.getBoundingClientRect()
     const fillCs = getComputedStyle(fill)
-    const trackBg = getComputedStyle(maxInput, '::-webkit-slider-runnable-track').backgroundColor
+    // 伪元素按引擎取：Firefox 无 webkit 伪（返回空），取 ::-moz-range-track；组件双侧均已声明透明
+    const webkitTrackBg = getComputedStyle(maxInput, '::-webkit-slider-runnable-track').backgroundColor
+    const mozTrackBg = getComputedStyle(maxInput, '::-moz-range-track').backgroundColor
+    const trackBg = webkitTrackBg || mozTrackBg
     return {
       fillWidth: fr.width,
       fillBg: fillCs.backgroundColor,

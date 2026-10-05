@@ -15,12 +15,12 @@ function box(el: OASSnackbar): HTMLElement {
   return el.shadowRoot!.querySelector<HTMLElement>('[part="box"]')!
 }
 
-/** 模拟 hover 暂停（pointerenter 直接派发到 box） */
+/** 模拟 hover 暂停（pointerenter 派发到宿主——组件监听挂宿主，跨 shadow 重建存活） */
 function hover(el: OASSnackbar): void {
-  box(el).dispatchEvent(new Event('pointerenter'))
+  el.dispatchEvent(new Event('pointerenter'))
 }
 function unhover(el: OASSnackbar): void {
-  box(el).dispatchEvent(new Event('pointerleave'))
+  el.dispatchEvent(new Event('pointerleave'))
 }
 /** 模拟 Escape 键 */
 function escOn(target: EventTarget): void {

@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { bindCoarseTap, clickIgnorable } from '../../shared/coarse-tap.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
@@ -311,6 +312,7 @@ export class OAStooltip extends OASElement {
 
   private tipEl: HTMLElement | null = null
   private anchor: Element | null = null
+  private unbindCoarseTap: (() => void) | null = null
   /** 上次 open 状态（null = 未初始化，首帧不派发事件） */
   private prevOpen: boolean | null = null
   /** Esc 关闭后 restoreFocus 的 focusin 会重新触发打开——关闭瞬间置位，忽略下一条 focusin */
@@ -415,13 +417,20 @@ export class OAStooltip extends OASElement {
       this.scheduleShow('focus')
     })
     this.anchor?.addEventListener('focusout', () => this.scheduleHide('focus'))
-    this.anchor?.addEventListener('click', () => {
+    const handleTap = (): void => {
       if (!this.triggerHas('click') && !this.tapToggleOnCoarse()) return
       // 长按（touch 通道）刚打开后抬手的 click 是手势收尾，跳过本次切换，
       // 避免"长按打开 → 抬手即被 tap 切换关掉"
       if (this.hasAttr('open') && Date.now() - this.touchOpenedAt < 800) return
       if (this.hasAttr('open')) this.setOpen(false, 'click')
       else this.setOpen(true, 'click')
+    }
+    // coarse 降级 tap 判定走 pointerup（Gecko 对 slot 裸文本节点的触屏命中会静默丢整串
+    // touch/compat 事件致 click 不到——移动仿真实证）；compat click 去重忽略
+    if (this.anchor) this.unbindCoarseTap = bindCoarseTap(this.anchor, handleTap)
+    this.anchor?.addEventListener('click', (e) => {
+      if (this.anchor && clickIgnorable(this.anchor, e)) return
+      handleTap()
     })
     this.anchor?.addEventListener('contextmenu', () => {
       if (!this.triggerHas('contextmenu')) return

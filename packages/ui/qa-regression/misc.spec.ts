@@ -139,7 +139,8 @@ test('展示型组件字号继承：A 类跟随外层 font-size、B 类大数字
   // A 类：跟随外层 32px（code 0.875em = 28px）
   expect(r.gradientText).toBe('32px')
   expect(r.comment).toBe('32px')
-  expect(r.commentTime, 'comment 次级文本 0.857em 比例跟随').toBe('27.424px')
+  // em 舍入引擎差异（Chromium 27.424 / Firefox 27.4375）：比数值不比特异性字符串
+  expect(parseFloat(r.commentTime ?? '0'), 'comment 次级文本 0.857em 比例跟随').toBeCloseTo(27.424, 1)
   expect(r.equation).toBe('32px')
   expect(r.log).toBe('32px')
   expect(r.timeline).toBe('32px')

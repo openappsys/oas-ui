@@ -456,7 +456,9 @@ test.describe('触屏降级（P3 扩展，iPhone 仿真）：dropdown hover 回�
           ?.hidden === false,
       { timeout: 5000 },
     )
-    await page.touchscreen.tap(6, Math.floor(page.viewportSize()!.height / 2))
+    // 外点坐标取视口右缘安全区：面板钳制贴左缘（x=4 起、宽约 170），x=6 仍落在面板上
+    //（Chromium 命中菜单项触发选择关、Firefox 命中容器不关——外点语义两引擎不一致，实抓）
+    await page.touchscreen.tap(page.viewportSize()!.width - 12, Math.floor(page.viewportSize()!.height / 2))
     await page.waitForFunction(
       () => document.querySelector('oas-dropdown[data-e2e-coarse]')?.hasAttribute('open') === false,
       { timeout: 5000 },

@@ -38,7 +38,15 @@ for (const page of PAGES) {
         !e.includes('404') &&
         !e.includes('Hydration completed') &&
         !e.includes('net::ERR_') && // 外部资源（picsum 等 CDN）网络/DNS 失败，非组件问题
-        !e.includes('Failed to load resource'),
+        !e.includes('Failed to load resource') &&
+        // Firefox 特有 benign 告警：sticky/滚动联动布局的性能提示（docs 布局侧栏 sticky 每页必触发，
+        // 非组件缺陷；Chromium 无此告警——firefox project 修真后实抓）
+        !e.includes('scroll-linked positioning effect') &&
+        // Firefox 特有 benign 告警：分析脚本 cookie 属性覆写提示（第三方脚本行为，非组件缺陷）
+        !(e.includes('for the cookie') && e.includes('has been overwritten')) &&
+        // Firefox 特有 Intl 告警：裸 islamic 历法是引擎内一致解析的合法透传值
+        //（Intl 契约透传，行为与引擎默认变体一致；告警建议写具体变体名，属宿主写法提示非缺陷）
+        !e.includes('does not specify the calendar variant'),
     )
     expect(filtered).toEqual([])
   })

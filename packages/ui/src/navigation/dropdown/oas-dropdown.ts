@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { bindCoarseTap, clickIgnorable } from '../../shared/coarse-tap.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { cssVarPx } from '../../shared/css-var.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
@@ -239,6 +240,7 @@ export class OASDropdown extends OASElement {
   private itemsList: MenuItem[] = []
   private menuEl: OASMenu | null = null
   private anchorEl: HTMLElement | null = null
+  private unbindCoarseTap: (() => void) | null = null
   /** 子元素通道观察器：light DOM 里 oas-dropdown-item/group/divider 增删或属性/文本变化 → 重解析渲染 */
   private childObserver: MutationObserver | null = null
   private anchor: Element | null = null
@@ -290,7 +292,7 @@ export class OASDropdown extends OASElement {
 
     // 点击触发：trigger 含 click 时生效；触屏降级（P3）：coarse 且 trigger 含 hover 时
     // 点击通道接管 tap 切换（hover 通道已停用）。运行时改 trigger 走同一监听，处理内按当前属性 gate
-    this.anchor?.addEventListener('click', (e: Event) => {
+    const handleTap = (e: Event): void => {
       if ((!this.hasTrigger('click') && !this.tapToggleOnCoarse()) || this.hasAttr('disabled')) return
       if (this.hasAttr('split') && !this.tapToggleOnCoarse()) {
         // 下拉按钮模式：主按钮只派发动作事件，不开菜单；箭头按钮负责开合。
@@ -299,6 +301,13 @@ export class OASDropdown extends OASElement {
       } else {
         this.toggle()
       }
+    }
+    // coarse 降级 tap 判定走 pointerup（Gecko 对 slot 裸文本节点的触屏命中会静默丢整串
+    // touch/compat 事件致 click 不到——移动仿真实证）；compat click 去重忽略
+    if (this.anchor) this.unbindCoarseTap = bindCoarseTap(this.anchor, () => handleTap({} as Event))
+    this.anchor?.addEventListener('click', (e: Event) => {
+      if (this.anchor && clickIgnorable(this.anchor, e)) return
+      handleTap(e)
     })
     this.arrowBtn?.addEventListener('click', (e: MouseEvent) => {
       e.stopPropagation()

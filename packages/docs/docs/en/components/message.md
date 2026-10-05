@@ -161,7 +161,7 @@ Messages with the same `group` merge into one; repeated triggers increment the c
 
 <DemoBlock title="Declarative usage">
   <oas-space direction="vertical" style="width: 100%">
-    <oas-message type="success" duration="6000" closable>Declarative success message (auto-closes in 6s)</oas-message>
+    <oas-message type="success" duration="0" closable>Declarative success message</oas-message>
     <oas-message type="info" duration="15000" show-progress>Countdown progress demo (auto-closes in 15s; hover to pause)</oas-message>
     <oas-message type="question" duration="0" repeat-num="3">Declarative + static badge</oas-message>
     <oas-message type="warning" duration="0"><b slot="content">Rich declarative content: </b>slots supported</oas-message>

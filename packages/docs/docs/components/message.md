@@ -161,7 +161,7 @@
 
 <DemoBlock title="声明式用法">
   <oas-space direction="vertical" style="width: 100%">
-    <oas-message type="success" duration="6000" closable>声明式成功消息（6 秒自动关闭）</oas-message>
+    <oas-message type="success" duration="0" closable>声明式成功消息</oas-message>
     <oas-message type="info" duration="15000" show-progress>倒计时进度演示（15 秒自动关闭，悬停暂停）</oas-message>
     <oas-message type="question" duration="0" repeat-num="3">声明式 + 静态徽标</oas-message>
     <oas-message type="warning" duration="0"><b slot="content">富内容声明式：</b>支持插槽</oas-message>

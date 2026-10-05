@@ -64,8 +64,13 @@ test('index-bar 滚动联动：scrollspy 高亮最近越顶分节 + oas-change d
 })
 
 test('index-bar 侧栏拖拽：按下经过字母即跳转分节', async ({ page }) => {
+  // reduced-motion：平滑滚动瞬时落定（满负载下 Firefox 平滑滚动与 waitForFunction 赛跑曾超时）
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/components/index-bar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ib-basic')
+  // e2e 指针先 scrollIntoView：720px 视口下字母栏底两个字母可能出屏（x/y 实测），
+  // 裸坐标拖拽落空 active 恒 A（Firefox 实抓 30s 超时）
+  await page.locator('#ib-basic').scrollIntoViewIfNeeded()
 
   const letters = page.locator('#ib-basic [part="letter"]')
   const first = await letters.nth(0).boundingBox()
@@ -75,7 +80,13 @@ test('index-bar 侧栏拖拽：按下经过字母即跳转分节', async ({ page
 
   await page.mouse.move(first!.x + first!.width / 2, first!.y + first!.height / 2)
   await page.mouse.down()
-  await page.mouse.move(last!.x + last!.width / 2, last!.y + last!.height / 2, { steps: 12 })
+  // 逐字母中心点停驻移动：满负载下 pointermove 会被合并，一气呵成的大步移动经过字母覆盖不全
+  //（实抓超时）——逐字母停顿给每帧留出发送窗口，与负载无关
+  for (let i = 1; i <= 5; i++) {
+    const b = (await letters.nth(i).boundingBox())!
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
+    await page.waitForTimeout(60)
+  }
   await page.mouse.up()
 
   await page.waitForFunction(
@@ -85,7 +96,9 @@ test('index-bar 侧栏拖拽：按下经过字母即跳转分节', async ({ page
       const list = root.querySelector('[part="list"]') as HTMLElement
       const letters = [...root.querySelectorAll<HTMLElement>('[part="letter"]')]
       const active = letters.find((l) => l.getAttribute('aria-current') === 'true')
-      return active?.textContent === 'F' && list.scrollTop > 0
+      // 落点容差：两引擎字体度量差会让指针落点映射差 1 个字母（实抓 Chromium=F / Firefox=E）——
+      // 锁「跳转到拖拽经过的后段字母」而非精确字母
+      return active != null && ['D', 'E', 'F'].includes(active.textContent ?? '') && list.scrollTop > 0
     },
     { timeout: 5000 },
   )

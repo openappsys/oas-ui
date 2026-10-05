@@ -57,7 +57,7 @@ Pass a JSON string array to `items` to rotate multiple notices vertically (fade 
 
 ## Extra-long Scrolling (scrollable)
 
-With `scrollable`, extra-long single content scrolls seamlessly horizontally — the `oas-marquee` engine is reused via embedding (seamless loop, auto-fill when content is shorter than the container, and `prefers-reduced-motion` static fallback are all handled by marquee). Note: the scrolling duplicates live inside the component's shadow, so page stylesheet class selectors do not reach them (inline styles survive); prefer plain text or inline styles for scrolling content.
+With `scrollable`, extra-long single content scrolls seamlessly horizontally — the `oas-marquee` engine is reused via embedding (seamless loop, auto-fill when content is shorter than the container, and `prefers-reduced-motion` static fallback are all handled by marquee). Note: the scrolling duplicates live inside the component's shadow, so page stylesheet class selectors do not reach them (inline styles survive); prefer plain text or inline styles for scrolling content; clones do not carry event listeners, so interactive elements inside the replica are visible but inert.
 
 <DemoBlock title="scrollable: extra-long notice scrolling horizontally">
   <oas-notice-bar scrollable>Long notice: this deliberately long text demonstrates the seamless horizontal scrolling of overflowing content — seamless loop at a constant speed, with hover and reduced-motion behavior handled uniformly by the embedded marquee engine.</oas-notice-bar>

@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { bindCoarseTap, clickIgnorable } from '../../shared/coarse-tap.js'
 import { getViewport } from '../../overlay/floating/index.js'
 import { isRtl } from '../../shared/direction.js'
 
@@ -325,6 +326,7 @@ export class OASHoverCard extends OASElement {
 
   private card: HTMLElement | null = null
   private anchor: Element | null = null
+  private unbindCoarseTap: (() => void) | null = null
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
 
@@ -388,8 +390,14 @@ export class OASHoverCard extends OASElement {
     this.anchor?.addEventListener('mouseleave', () => this.onAnchorLeave())
     this.anchor?.addEventListener('focusin', () => this.onFocusEnter())
     this.anchor?.addEventListener('focusout', (e) => this.onFocusLeave(e as FocusEvent))
-    // 触屏降级（P3）：coarse pointer 下 hover/focus 通道停用，点按锚点 tap 切换（开/关）
-    this.anchor?.addEventListener('click', () => this.onAnchorTap())
+    // 触屏降级（P3）：coarse pointer 下 hover/focus 通道停用，点按锚点 tap 切换（开/关）。
+    // tap 判定走 pointerup（Gecko 对 slot 裸文本节点的触屏命中会静默丢整串 touch/compat
+    // 事件致 click 永远不到——移动仿真实证；pointerup 该路径恒可达）；compat click 去重忽略
+    if (this.anchor) this.unbindCoarseTap = bindCoarseTap(this.anchor, () => this.onAnchorTap())
+    this.anchor?.addEventListener('click', (e) => {
+      if (this.anchor && clickIgnorable(this.anchor, e)) return
+      this.onAnchorTap()
+    })
     this.card?.addEventListener('mouseenter', () => this.onCardEnter())
     this.card?.addEventListener('mouseleave', () => this.onCardLeave())
     // title 插槽内容增减时重刷标题区显隐（双通道 slot 覆盖判空）

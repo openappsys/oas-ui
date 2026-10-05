@@ -316,9 +316,11 @@ export class OASSnackbar extends OASElement {
     `
     const box = this.boxEl()
     if (!box) return
-    // hover 暂停（focus 暂停挂在宿主 focusin/focusout，覆盖内部按钮获焦）
-    box.addEventListener('pointerenter', () => this.pauseFor('hover'))
-    box.addEventListener('pointerleave', () => this.resumeFor('hover'))
+    // hover 暂停挂宿主（不挂 box）：shadow 重建会换掉 box 节点，挂 box 时指针悬停中
+    // 重建后旧节点监听从文档消失、新节点不再触发 enter——暂停静默失效（计时恢复提前关闭）。
+    // 宿主节点跨重建存活，enter/leave 语义不变（focus 暂停挂在宿主 focusin/focusout，覆盖内部按钮获焦）
+    this.addEventListener('pointerenter', () => this.pauseFor('hover'))
+    this.addEventListener('pointerleave', () => this.resumeFor('hover'))
     this.addEventListener('focusin', () => this.pauseFor('focus'))
     this.addEventListener('focusout', () => this.resumeFor('focus'))
     // 操作按钮（P14 精神：多动作场景由插槽自理，内置只保留单 action 便捷通道）

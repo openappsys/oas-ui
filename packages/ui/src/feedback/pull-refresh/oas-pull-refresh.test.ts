@@ -435,6 +435,19 @@ describe('OASPullRefresh', () => {
     expect(pullOf(el2)).toBe(99)
   })
 
+  it('threshold 夹取下限分支：max-pull=1 与 0.4 时仍可达（cap=max(maxPull-1, maxPull/2)，亚像素/极小值不死锁）', () => {
+    // maxPull=1 → cap=max(0, 0.5)=0.5
+    const el = mount({ threshold: '60', 'max-pull': '1' })
+    const events = recordRefresh(el)
+    drag(el, [2000])
+    expect(events.length, 'max-pull=1 时 threshold 夹到 0.5，大位移可达').toBe(1)
+    // maxPull=0.4 → cap=max(-0.6, 0.2)=0.2
+    const el2 = mount({ threshold: '60', 'max-pull': '0.4' })
+    const events2 = recordRefresh(el2)
+    drag(el2, [2000])
+    expect(events2.length, 'max-pull=0.4 时 threshold 夹到 0.2，大位移可达').toBe(1)
+  })
+
   it('max-pull 自定义：位移上限 50、threshold 夹取后 40 仍可达', () => {
     const el = mount({ 'max-pull': '50', threshold: '40' })
     const events = recordRefresh(el)

@@ -233,8 +233,10 @@ export class OASPicker extends OASFormElement {
     const out: string[] = []
     cols.forEach((c, i) => {
       const item = c.items[this.selectedIdx[i] ?? 0]
-      // 禁用项不进 value（与 commit 的 M4 守卫同原则——全禁用列初值也不得报禁用项）
-      if (item && !item.disabled) out.push(item.value ?? item.label)
+      // 位置语义高于禁用过滤：value 是位置数组（第 i 项对应第 i 列），跳过禁用项会让
+      // 后续列前移错位（混合全禁用列静默错值 + 选中弹回，三轮 C1 实证）。
+      // 「禁用项不进 value」由 commit 守卫在写入路径拦截（M4），读取路径必须保位置完整。
+      if (item) out.push(item.value ?? item.label)
     })
     return out
   }
@@ -244,7 +246,7 @@ export class OASPicker extends OASFormElement {
     const out: string[] = []
     cols.forEach((c, i) => {
       const item = c.items[this.selectedIdx[i] ?? 0]
-      if (item && !item.disabled) out.push(item.label)
+      if (item) out.push(item.label)
     })
     return out
   }

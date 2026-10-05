@@ -36,8 +36,13 @@ test('visually-hidden focusable：内容聚焦显形（skip-link），失焦恢�
     .poll(() => page.evaluate((s) => document.querySelector(s)!.getBoundingClientRect().width, sel))
     .toBeGreaterThan(10)
 
-  // 失焦 → 恢复隐藏
-  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+  // 失焦 → 恢复隐藏（blur 目标必须是 shadow 内真实聚焦的元素：Firefox 的 shadow 焦点代理下
+  // host.blur() 不移出内部焦点，focusout 不发、隐藏不恢复——editable 同款实抓）
+  await page.evaluate((s) => {
+    const wrap = document.querySelector(s)!
+    const inner = wrap.querySelector('oas-link')
+    ;(inner?.shadowRoot?.activeElement as HTMLElement | null)?.blur()
+  }, sel)
   await expect
     .poll(() => page.evaluate((s) => document.querySelector(s)!.getBoundingClientRect().width, sel))
     .toBeLessThanOrEqual(1)
