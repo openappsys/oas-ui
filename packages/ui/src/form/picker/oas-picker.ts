@@ -233,7 +233,8 @@ export class OASPicker extends OASFormElement {
     const out: string[] = []
     cols.forEach((c, i) => {
       const item = c.items[this.selectedIdx[i] ?? 0]
-      if (item) out.push(item.value ?? item.label)
+      // 禁用项不进 value（与 commit 的 M4 守卫同原则——全禁用列初值也不得报禁用项）
+      if (item && !item.disabled) out.push(item.value ?? item.label)
     })
     return out
   }
@@ -243,7 +244,7 @@ export class OASPicker extends OASFormElement {
     const out: string[] = []
     cols.forEach((c, i) => {
       const item = c.items[this.selectedIdx[i] ?? 0]
-      if (item) out.push(item.label)
+      if (item && !item.disabled) out.push(item.label)
     })
     return out
   }

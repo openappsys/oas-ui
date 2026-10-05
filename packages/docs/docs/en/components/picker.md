@@ -84,7 +84,7 @@ Form-associated: with `name`, FormData submits a JSON array string; `form.reset(
 | `item-height` | Row height in px (positive integer, invalid values fall back to default) | — | — |
 | `name` | Native form field name (form-associated: the FormData submission key; value is a JSON array string) | — | — |
 | `options` | Cascading tree data (JSON [{ label, value?, children: [...] }]); column count derives from selection path, parent change rebuilds child columns and resets to first enabled item | — | — |
-| `required` | Required marker (drives the native valueMissing validation chain: unselected counts as unfilled) | — | — |
+| `required` | Required marker (drives the native valueMissing validation chain: unselected counts as unfilled) | `boolean` | — |
 | `value` | Selected values per column (JSON array; item value falls back to label); written back on settle, programmatic writes only scroll without firing events | `string[] \| string` | — |
 | `visible-count` | Visible row count (≥3, even values round up to odd) | — | — |
 

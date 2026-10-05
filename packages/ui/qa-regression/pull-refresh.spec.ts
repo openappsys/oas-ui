@@ -195,10 +195,11 @@ test.describe('移动仿真（触屏真手势）', () => {
     expect(box).not.toBeNull()
     const cx = box!.x + box!.width / 2
     const y0 = box!.y + Math.min(box!.height / 2, 40)
-    const events = await page.evaluate(() => {
-      const arr: string[] = []
-      document.querySelector('#pr-basic')!.addEventListener('oas-refresh', () => arr.push('refresh'))
-      return arr
+    await page.evaluate(() => {
+      ;(window as unknown as { __rf: number }).__rf = 0
+      document.querySelector('#pr-basic')!.addEventListener('oas-refresh', () => {
+        ;(window as unknown as { __rf: number }).__rf++
+      })
     })
     const cdp = await page.context().newCDPSession(page)
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: cx, y: y0 }] })
@@ -209,13 +210,9 @@ test.describe('移动仿真（触屏真手势）', () => {
     await page.waitForTimeout(400)
     const r = await page.evaluate(() => ({
       state: document.querySelector('#pr-basic')!.getAttribute('data-state'),
-      fired: (window as unknown as { __len?: number }).__len,
+      fired: (window as unknown as { __rf: number }).__rf,
     }))
-    const fired = await page.evaluate(() => {
-      let n = 0
-      document.querySelector('#pr-basic')!.addEventListener('oas-refresh', () => n++)
-      return document.querySelector('#pr-basic')!.getAttribute('data-state')
-    })
-    expect(['refreshing', 'success'], '触屏下拉触发刷新态（实际: ' + fired + '）').toContain(fired)
+    expect(['refreshing', 'success'], '触屏下拉触发刷新态（实际: ' + r.state + '）').toContain(r.state)
+    expect(r.fired, 'oas-refresh 真实派发一次').toBe(1)
   })
 })

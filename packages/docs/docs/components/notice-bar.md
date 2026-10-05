@@ -57,7 +57,7 @@
 
 ## 超长滚动（scrollable）
 
-`scrollable` 开启后，单条内容超长时横向无缝滚动——内嵌 `oas-marquee` 组合复用其滚动引擎（无缝循环、内容不足一屏自动填充、`prefers-reduced-motion` 静态降级均由 marquee 承担）。注意：滚动副本处于组件 shadow 内，页面样式表的 class 选择器不作用于副本（行内样式保留），滚动内容建议用纯文本或行内样式。
+`scrollable` 开启后，单条内容超长时横向无缝滚动——内嵌 `oas-marquee` 组合复用其滚动引擎（无缝循环、内容不足一屏自动填充、`prefers-reduced-motion` 静态降级均由 marquee 承担）。注意：滚动副本处于组件 shadow 内，页面样式表的 class 选择器不作用于副本（行内样式保留），滚动内容建议用纯文本或行内样式；克隆不复制事件监听，副本内交互元素可见但不可交互。
 
 <DemoBlock title="scrollable：超长通告横向滚动">
   <oas-notice-bar scrollable>长通告：这是一条特别长的公告文本，用于演示超长内容的横向无缝滚动效果——无缝循环、恒定速度，悬停行为与暗色降级由内嵌走马灯引擎统一处理。</oas-notice-bar>
@@ -116,7 +116,7 @@ onMounted(() => {
 | `closable` | 是否显示关闭按钮；点击派发 oas-close 并自隐藏（设 open 恢复） | `boolean` | — |
 | `href` | action 链接地址：在场时 action 渲染为 `<a>`（原生导航），缺省渲染为 `<button>`（派发 oas-action-click）；运行时增删切换形态 | — | — |
 | `icon` | 图标名（oas-icon 体系）；缺省按 type 自动匹配，icon="none" 不显示，非法名回落 type 默认；slot="icon" 富内容优先 | — | — |
-| `interval` | items 轮播间隔（毫秒，默认 4000）；非法/非正数回退默认 | — | — |
+| `interval` | items 轮播间隔（毫秒，默认 4000）；非法/非正数回退默认 | `string` | — |
 | `items` | 多条通告 JSON 字符串数组：纵向轮播（淡入淡出）；非法 JSON/空数组回退默认插槽；items 优先于插槽；prefers-reduced-motion 下不自动轮播 | — | — |
 | `open` | 恢复开关：关闭后设置即恢复显示（组件关闭时自移除本属性，在场 = 强制可见） | `boolean` | — |
 | `scrollable` | 单条内容超长时横向无缝滚动（内嵌走马灯引擎）；仅插槽单条模式生效（items 优先） | `boolean` | — |

@@ -18,7 +18,7 @@ import { iconRegistry, type IconName } from '@oas-ui/icons'
  *   （克隆 `<slot>` 在 light DOM 不分配、渲染为空），因此本组件把宿主内容**深克隆物化**为
  *   marquee 的 light DOM 源份（隐藏 probe `<slot>` 充当 slotchange 探针）。局限：克隆份处于
  *   本组件 shadow 内，页面样式表的 class 选择器不作用于滚动副本（行内 style 保留）——
- *   滚动内容建议用纯文本或行内样式
+ *   滚动内容建议用纯文本或行内样式；cloneNode 不复制事件监听——副本内交互元素可见但不可交互
  * - `items`：JSON 字符串数组——多条通告纵向轮播（淡出 → 换文本 → 淡入，间隔 `interval`
  *   毫秒，默认 4000，非法回退默认）；`prefers-reduced-motion` 下不自动轮播（静态显示第一条）；
  *   非法 JSON / 非数组 / 空数组回退默认插槽单条内容；items 优先于默认插槽；仅插槽单条模式下
@@ -510,12 +510,15 @@ export class OASNoticeBar extends OASElement {
       this.fadeTimer = null
     }
     // interval < FADE_MS 的极端配置：淡出永远等不到落定（每次 tick 都重挂）——
-    // 跳过淡出直接换文（review M9 实抓 interval=100 永不换文）
+    // 跳过淡出直接换文（review M9 实抓 interval=100 永不换文）。
+    // 注意：itemIndex 在 advance() 入口已推进——不得二次自增（双步跳/回原点）；
+    // lastTextSet 必须同步（跳过了正常写入路径的同步点）
     if (resolveIntervalMs(this.getAttr('interval', '')) < FADE_MS) {
       const next = this.parseItems()
       if (next.length === 0) return
-      this.itemIndex = (this.itemIndex + 1) % next.length
-      textEl.textContent = next[this.itemIndex]!
+      this.itemIndex = this.itemIndex % next.length
+      this.lastTextSet = next[this.itemIndex]!
+      textEl.textContent = this.lastTextSet
       return
     }
     textEl.classList.add('fading')

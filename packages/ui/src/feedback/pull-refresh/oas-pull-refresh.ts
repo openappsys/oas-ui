@@ -429,8 +429,10 @@ export class OASPullRefresh extends OASElement {
   private thresholdValue(): number {
     const n = Number(this.getAttr('threshold', String(DEFAULT_THRESHOLD)))
     const raw = Number.isFinite(n) && n > 0 ? n : DEFAULT_THRESHOLD
-    // 夹取到 max-pull-1：阻力曲线渐近 max-pull，threshold=max-pull 时实际不可达（配置陷阱，review M5）
-    return Math.max(1, Math.min(raw, this.maxPullValue() - 1))
+    // 夹取上限 max(maxPull-1, maxPull/2)：阻力曲线渐近 max-pull，threshold≥max-pull 不可达
+    //（配置陷阱，review M5）；maxPull 极小/亚像素时用半值兜底（max(1,…)=1>maxPull 死锁，二轮 Minor 实抓）
+    const maxPull = this.maxPullValue()
+    return Math.min(raw, Math.max(maxPull - 1, maxPull / 2))
   }
 
   /** 滚动盒当前 scrollTop（0 = 顶部，下拉手势的前提条件） */

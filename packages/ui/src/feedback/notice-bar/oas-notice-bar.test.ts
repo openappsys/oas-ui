@@ -77,6 +77,16 @@ function styleText(el: OASNoticeBar): string {
 }
 
 describe('OASNoticeBar', () => {
+  it('items 轮播：interval < FADE_MS（100ms）时跳过淡出直接换文，顺序正确（I-B 回归：曾二次自增致永不换文/乱序）', () => {
+    const el = mount({ items: JSON.stringify(['甲', '乙', '丙']), interval: '100' })
+    const text = () => el.shadowRoot!.querySelector('.item-text')!.textContent
+    const seq: Array<string | null> = [text()]
+    for (let i = 0; i < 4; i++) {
+      vi.advanceTimersByTime(100)
+      seq.push(text())
+    }
+    expect(seq).toEqual(['甲', '乙', '丙', '甲', '乙'])
+  })
   beforeEach(() => {
     document.body.innerHTML = ''
     setLocale('zh-CN')
