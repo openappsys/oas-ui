@@ -14,12 +14,23 @@
 const handledTaps = new WeakMap<EventTarget, number>()
 const DEDUP_MS = 300
 
+/** coarse 环境判定（matchMedia 缺失环境视为非 coarse——SSR/happy-dom 安全） */
+function isCoarse(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches === true
+}
+
 /**
  * 绑定触屏 tap：pointerup 触发 handler（文本节点路径可靠），同一次手势的 compat click
  * 由 clickIgnorable() 判定忽略。返回解绑函数。
+ *
+ * 绑定无条件、判定按运行时 coarse 环境门控（fine pointer 下 pointerup 不接管）——
+ * fine 场景维持纯 click 语义：① 右/中键 pointerup 不会误触发（右键无 compat click，
+ * 行为与修复前一致）；② click 通道携带真实 MouseEvent（split 的 oas-action
+ * originalEvent 完整）；③ 键盘 Enter 的 click 不受 dedup 残留影响。
  */
 export function bindCoarseTap(el: EventTarget, handler: () => void): () => void {
   const onUp = (e: Event): void => {
+    if (!isCoarse()) return
     handledTaps.set(el, (e as PointerEvent).timeStamp ?? Date.now())
     handler()
   }

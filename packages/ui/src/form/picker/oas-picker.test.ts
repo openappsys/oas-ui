@@ -229,6 +229,33 @@ describe('OASPicker', () => {
       expect(items(cols(tree)[1]!).map((i) => i.textContent)).toEqual(['A1'])
     })
 
+    it('混合全禁用列：value 位置语义完整（三轮 C1 回退固化——禁用项读取路径保位置，写入路径由 commit 守卫拦）', async () => {
+      const el = mount({
+        columns: JSON.stringify([
+          {
+            items: [
+              { label: 'a', disabled: true },
+              { label: 'b', disabled: true },
+            ],
+          },
+          {
+            items: [
+              { label: 'X', value: 'x' },
+              { label: 'Y', value: 'y' },
+            ],
+          },
+        ]),
+      })
+      await settle()
+      // 读取路径保位置：第 0 位对应第 0 列（含禁用项），后续列不前移
+      expect(el.value).toEqual(['a', 'x'])
+      // 交互路径：滚第 1 列到 Y，commit 正常提交且位置不错位
+      scrollTo(el, 1, 1)
+      await settle()
+      expect(el.getAttribute('value')).toBe('["a","y"]')
+      expect(items(cols(el)[1]!)[1]!.getAttribute('aria-selected')).toBe('true')
+    })
+
     it('全禁用列：吸附无可用项时静默不提交（M4 回归：禁用项不得进 value）', async () => {
       const el = mount({
         columns: JSON.stringify(

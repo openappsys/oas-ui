@@ -516,3 +516,61 @@ test('dropdown size/type/max-height（P2）：Vue 下属性存活、size/type �
   // 关闭面板（避免残留浮层影响后续 spec）
   await page.keyboard.press('Escape')
 })
+
+test('dropdown fine pointer 右键/中键不切换（回归：coarse-tap 曾无条件接管 pointerup，右键也开菜单）', async ({
+  page,
+}) => {
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-dropdown')
+  await page.evaluate(() => {
+    const dd = document.createElement('oas-dropdown')
+    dd.setAttribute('items', JSON.stringify([{ label: '编辑', value: 'edit' }]))
+    dd.innerHTML = '<button>右键锚点</button>'
+    dd.dataset.e2eRight = '1'
+    dd.style.cssText = 'position: fixed; top: 240px; left: 20px; z-index: 9999'
+    document.body.appendChild(dd)
+  })
+  const btn = page.locator('oas-dropdown[data-e2e-right] > button')
+  await btn.scrollIntoViewIfNeeded()
+  await btn.click({ button: 'right' })
+  await page.waitForTimeout(300)
+  expect(
+    await page.locator('oas-dropdown[data-e2e-right]').evaluate((e) => e.hasAttribute('open')),
+    '右键不得开合菜单（fine pointer 纯 click 语义，右键无 click 即无切换）',
+  ).toBe(false)
+  await btn.click({ button: 'middle' })
+  await page.waitForTimeout(300)
+  expect(
+    await page.locator('oas-dropdown[data-e2e-right]').evaluate((e) => e.hasAttribute('open')),
+    '中键不得开合菜单',
+  ).toBe(false)
+  //（左键开合主路径由本 spec 既有 click 用例覆盖，此处不再重复——连发右/中/左序列的第三次
+  //  click 在 harness 下不产出 click 事件，属输入编排伪影）
+})
+
+test('dropdown split 主按钮 oas-action 的 originalEvent 为真实事件（回归：pointerup 通道曾恒传 {} 占位）', async ({
+  page,
+}) => {
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-dropdown')
+  const r = await page.evaluate(async () => {
+    const dd = document.createElement('oas-dropdown')
+    dd.setAttribute('split', '')
+    dd.setAttribute('items', JSON.stringify([{ label: '编辑', value: 'edit' }]))
+    dd.innerHTML = '<button>split 主按钮</button>'
+    dd.style.cssText = 'position: fixed; top: 320px; left: 20px; z-index: 9999'
+    document.body.appendChild(dd)
+    await customElements.whenDefined('oas-dropdown')
+    await new Promise((res) => setTimeout(res, 300))
+    return await new Promise<{ type: string; isClick: boolean }>((resolve) => {
+      dd.addEventListener('oas-action', (e) => {
+        const oe = (e as CustomEvent).detail?.originalEvent
+        resolve({ type: oe?.type ?? String(oe), isClick: oe instanceof MouseEvent })
+      })
+      dd.querySelector('button')!.click()
+      setTimeout(() => resolve({ type: 'TIMEOUT', isClick: false }), 2000)
+    })
+  })
+  expect(r.isClick, 'originalEvent 应为真实 MouseEvent').toBe(true)
+  expect(r.type).toBe('click')
+})

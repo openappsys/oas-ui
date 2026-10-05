@@ -121,6 +121,11 @@ test('hover 暂停计时：悬停期间不到期，离开后按剩余时长关�
   // duration 给足 6s：并发负载下「出现→hover 命中」可能耗时更久，3s 会让自动关闭跑赢 hover 判定
   await page.evaluate(() => (window as any).sbShow({ message: '悬停暂停', duration: '6000' }))
   await page.waitForFunction(() => document.querySelectorAll('oas-snackbar.oas-open').length === 1)
+  // 先等入场 transition 收尾：期间 Firefox 会对动画中的 fixed 元素发假 pointerleave
+  //（四轮实锤：enter 后 6ms 连发两次 leave，暂停被静默释放）——固定 900ms 覆盖动画+负载
+  //（几何稳定轮询在 Firefox headless 的微漂移下不可靠，曾 8s 超时）
+  await page.waitForTimeout(900)
+
   // 轮询「移动到当前 box 中心 → 组件真实进入 hover 暂停」：满负载下几何/帧延迟会让
   // 一次性移动落空（实抓超时），按 pauseSources 机制状态收敛而非 :hover 表象
   await expect
