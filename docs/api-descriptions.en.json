@@ -45,6 +45,18 @@
       "icon": "Icon slot; overrides the default type icon"
     }
   },
+  "oas-index-bar": {
+    "attrs": {
+      "sections": "Sections JSON: `[{ key, title?, items: [{ label, value? }] }]`; the letter rail is derived from sections (keys are unique, the first duplicate wins), `title` falls back to `key`, and an item's `value` falls back to `label`",
+      "height": "Fixed height of the list area in px; when it overflows the list scrolls internally. When unset the list grows with its content and the scroll spy watches the viewport",
+      "sticky": "Sticky section headers (default true); explicitly set `sticky=\"false\"` to disable"
+    },
+    "events": {
+      "oas-item-click": "Fired when a list item is clicked, `detail: { value, label, section }` (`section` is the section key)",
+      "oas-change": "Fired when the highlighted letter changes (via tap/drag jump or scroll linkage), `detail: { key }`; not fired on initial render"
+    },
+    "slots": {}
+  },
   "oas-anchor": {
     "attrs": {
       "active": "Currently highlighted href (controlled: external set/remove takes effect immediately; the scroll spy writes it back)",
@@ -2141,6 +2153,27 @@
     "events": {},
     "slots": {
       "": "Navigation item label content (default slot text; direct child items/group carriers are excluded)"
+    }
+  },
+  "oas-notice-bar": {
+    "attrs": {
+      "action-text": "Action label text; the action area is not rendered when absent",
+      "closable": "Show the close button; clicking dispatches oas-close and hides the bar (set open to restore)",
+      "href": "Action link URL: when present the action renders as an `<a>` (native navigation), otherwise as a `<button>` (dispatching oas-action-click); adding/removing it at runtime switches the variant",
+      "icon": "Icon name (oas-icon system); defaults per type, icon=\"none\" hides it, invalid names fall back to the type default; slot=\"icon\" rich content takes priority",
+      "interval": "items rotation interval (ms, default 4000); invalid/non-positive values fall back to the default",
+      "items": "JSON string array of multiple notices: vertical rotation (crossfade); invalid JSON/empty arrays fall back to the default slot; items take priority over the slot; no auto-rotation under prefers-reduced-motion",
+      "open": "Restore switch: setting it after close shows the bar again (the component removes this attribute when closed; presence forces visibility)",
+      "scrollable": "Scroll extra-long single content seamlessly horizontally (embedded marquee engine); only effective in the single-notice slot mode (items take priority)",
+      "type": "Notice type: info (default, primary palette) / success / warning / error; background and icon colors derive from semantic tokens and adapt to dark mode; invalid values fall back to info"
+    },
+    "events": {
+      "oas-action-click": "Dispatched when the action is clicked in its button variant (no href)",
+      "oas-close": "Dispatched after the close button is clicked; the bar then hides itself (fade-out exit). Set open to restore"
+    },
+    "slots": {
+      "": "Single notice content (shown when items is absent; materialized as scrolling content in scrollable mode)",
+      "icon": "Icon slot, overrides the default/type icon"
     }
   },
   "oas-number-animation": {

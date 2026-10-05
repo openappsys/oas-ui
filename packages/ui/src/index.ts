@@ -147,6 +147,7 @@ import './feedback/drawer/index.js'
 import './feedback/bottom-sheet/index.js'
 import './feedback/popconfirm/index.js'
 import './feedback/alert/index.js'
+import './feedback/notice-bar/index.js'
 import './feedback/progress/index.js'
 import './feedback/loading-bar/index.js'
 import './feedback/spin/index.js'
@@ -208,6 +209,7 @@ export {
 } from './feedback/drawer/index.js'
 export { OASPopconfirm } from './feedback/popconfirm/oas-popconfirm.js'
 export { OASAlert } from './feedback/alert/oas-alert.js'
+export { OASNoticeBar, type NoticeBarType } from './feedback/notice-bar/oas-notice-bar.js'
 export { OASProgress } from './feedback/progress/oas-progress.js'
 export {
   OASLoadingBar,
@@ -237,6 +239,7 @@ import './navigation/back-top/index.js'
 import './navigation/anchor/index.js'
 import './navigation/tour/index.js'
 import './navigation/bottom-navigation/index.js'
+import './navigation/index-bar/index.js'
 import './navigation/stepper/index.js'
 import './navigation/steps/index.js'
 import './navigation/pagination/index.js'
@@ -296,6 +299,11 @@ export {
   OASBottomNavigationItem,
   type BottomNavItem,
 } from './navigation/bottom-navigation/index.js'
+export {
+  OASIndexBar,
+  type IndexBarItem,
+  type IndexBarSection,
+} from './navigation/index-bar/index.js'
 export { OASStepper, OASStepperPanel, type StepperStep } from './navigation/stepper/index.js'
 export { OASSteps, type StepItem } from './navigation/steps/index.js'
 export { OASPagination } from './navigation/pagination/oas-pagination.js'

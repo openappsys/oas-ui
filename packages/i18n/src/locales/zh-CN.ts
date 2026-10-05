@@ -30,6 +30,9 @@ export const zhCN = {
   // notification（通知提醒）
   'notification.close': '关闭',
   'notification.region': '通知',
+  // notice-bar（通告栏）
+  'noticeBar.closeAriaLabel': '关闭',
+  'noticeBar.regionLabel': '通告',
   // toast（轻提示）
   'toast.close': '关闭',
   // snackbar（消息条）
@@ -386,4 +389,7 @@ export const zhCN = {
   'dynamicInput.moveDown': '下移',
   'timePicker.now': '此刻',
   'datePicker.shortcutThisQuarter': '本季度',
+  // index-bar（索引栏）
+  'indexBar.navAriaLabel': '字母索引导航',
+  'indexBar.listLabel': '分节列表',
 } as const

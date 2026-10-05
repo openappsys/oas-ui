@@ -1,6 +1,6 @@
 # 组件总览
 
-OAS-UI 提供 117 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 118 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -78,6 +78,7 @@ OAS-UI 提供 117 个框架无关的 Web Components 组件，按用途划分为 
 - [Drawer 抽屉](/components/drawer) —— 从侧边滑出的面板，常用于筛选条件、详情信息等场景。
 - [Popconfirm 气泡确认](/components/popconfirm) —— 在触发元素旁显示确认气泡，常用于删除等危险操作前的二次确认。
 - [Alert 警告提示](/components/alert) —— 内嵌式提示条，用于展示成功、信息、警告或错误信息，支持自定义标题与关闭按钮。
+- [NoticeBar 通告栏](/components/notice-bar) —— 页面顶部/区块内通告条：图标 + 超长横向滚动文本 + 多条纵向轮播 + 可关闭 + action 链接。
 - [Progress 进度条](/components/progress) —— 显示任务执行进度，支持线形与圆环两种形态、状态色与隐藏文字。
 - [LoadingBar 顶部加载](/components/loading-bar) —— 页面顶部的全局加载进度条，命令式 API 驱动。
 - [Spin 加载中](/components/spin) —— 加载指示器，可单独使用，也可包裹内容并叠加遮罩。
@@ -97,6 +98,7 @@ OAS-UI 提供 117 个框架无关的 Web Components 组件，按用途划分为 
 - [AppBar 应用栏](/components/app-bar) —— 页面顶部应用栏布局条：标题 + 操作区 + overflow 收纳 + 滚动折叠 + 扩展区，`role="banner"`，汉堡钮派发 `oas-menu-toggle` 并同步 `aria-expanded`。
 - [Breadcrumb 面包屑](/components/breadcrumb) —— 展示页面层级路径，末项为当前页（不可点击）。
 - [Anchor 锚点](/components/anchor) —— 滚动监听当前章节并自动高亮，点击锚点平滑滚动定位。
+- [IndexBar 索引栏](/components/index-bar) —— 移动端分节列表 + 字母索引导航：点按/拖拽字母跳转分节，滚动反向联动当前字母高亮。
 - [BackTop 回到顶部](/components/back-top) —— 固定于视口角落的回到顶部按钮，点击平滑滚动到页面顶部。
 - [Tour 引导](/components/tour) —— 分步功能引导，带全屏遮罩与目标高亮。
 - [Tabs 标签页](/components/tabs) —— 标签式内容切换，支持键盘方向键导航；未激活面板通过 `hidden` 隐藏。`oas-tabs` + `oas-tab-panel` 配套使用。

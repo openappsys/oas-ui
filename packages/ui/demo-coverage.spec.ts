@@ -556,6 +556,14 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   'theme-editor': [['oas-theme-editor input[type="number"]', 'fill:13', '改数字 token → oas-change']],
   anchor: [['oas-anchor [part="link"]', 'click', '点锚点 → oas-change（组件已 preventDefault）']],
+  'index-bar': [
+    ['oas-index-bar [part="item"]', 'click', '点条目 → oas-item-click'],
+    ['oas-index-bar [part="letter"]', 'click:n1', '点第二个字母 → oas-change（跳转联动）'],
+  ],
+  'notice-bar': [
+    ['oas-notice-bar [part="close"]', 'click', '点关闭按钮 → oas-close（组件自隐藏）'],
+    ['oas-notice-bar button.action', 'click', '点按钮形态 action → oas-action-click'],
+  ],
   avatar: [
     ['oas-avatar [part="trigger"]', 'domclick', '点换头像遮罩（hover/focus 才显形，DOM click 直达）→ oas-trigger'],
   ],

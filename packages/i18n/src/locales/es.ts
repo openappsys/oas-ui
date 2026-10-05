@@ -30,6 +30,9 @@ export const es: LocaleMessages = {
   // notification (notificación)
   'notification.close': 'Cerrar',
   'notification.region': 'Notificaciones',
+  // notice-bar (barra de avisos)
+  'noticeBar.closeAriaLabel': 'Cerrar',
+  'noticeBar.regionLabel': 'Aviso',
   // toast (aviso breve)
   'toast.close': 'Cerrar',
   // snackbar (barra de mensajes)
@@ -385,5 +388,7 @@ export const es: LocaleMessages = {
   'dynamicInput.moveUp': 'Subir',
   'dynamicInput.moveDown': 'Bajar',
   'timePicker.now': 'Ahora',
+  'indexBar.navAriaLabel': 'Navegación por índice alfabético',
+  'indexBar.listLabel': 'Lista de secciones',
   'datePicker.shortcutThisQuarter': 'Este trimestre',
 }

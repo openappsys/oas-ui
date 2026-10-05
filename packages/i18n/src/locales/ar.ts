@@ -30,6 +30,9 @@ export const ar: LocaleMessages = {
   // notification (إشعار)
   'notification.close': 'إغلاق',
   'notification.region': 'الإشعارات',
+  // notice-bar (شريط الإعلانات)
+  'noticeBar.closeAriaLabel': 'إغلاق',
+  'noticeBar.regionLabel': 'إعلان',
   // toast (إشعار خفيف)
   'toast.close': 'إغلاق',
   // snackbar (شريط رسائل)
@@ -385,5 +388,7 @@ export const ar: LocaleMessages = {
   'dynamicInput.moveUp': 'تحريك لأعلى',
   'dynamicInput.moveDown': 'تحريك لأسفل',
   'timePicker.now': 'الآن',
+  'indexBar.navAriaLabel': 'تنقل بفهرس أبجدي',
+  'indexBar.listLabel': 'قائمة الأقسام',
   'datePicker.shortcutThisQuarter': 'هذا الربع',
 }

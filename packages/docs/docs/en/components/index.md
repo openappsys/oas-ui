@@ -1,6 +1,6 @@
 # Component Overview
 
-OAS-UI provides 117 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 118 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -78,6 +78,7 @@ OAS-UI provides 117 framework-agnostic Web Components, organized into 7 groups b
 - [Drawer](/en/components/drawer) —— A panel that slides in from the side, often used for filters, details, and similar scenarios.
 - [Popconfirm](/en/components/popconfirm) —— Shows a confirmation bubble next to the trigger element, commonly used before destructive actions like deletion.
 - [Alert](/en/components/alert) —— An inline notice bar for success, info, warning, or error messages, with support for a custom title and a close button.
+- [NoticeBar](/en/components/notice-bar) —— A notice bar for the top of a page or inside a section: icon + seamlessly scrolling long text + vertical multi-notice rotation + closable + an action link.
 - [Progress](/en/components/progress) —— Shows task progress, supporting line and circle forms, status colors, and hidden text.
 - [LoadingBar](/en/components/loading-bar) —— A global loading progress bar at the top of the page, driven by an imperative API.
 - [Spin](/en/components/spin) —— A loading indicator that can be used standalone or wrap content with an overlaid mask.
@@ -96,6 +97,7 @@ OAS-UI provides 117 framework-agnostic Web Components, organized into 7 groups b
 - [Toolbar](/en/components/toolbar) —— A container for groups of tool buttons: `role="toolbar"` + `aria-label`, `Tab` enters and arrow keys move between buttons (roving tabindex — only the current item is focused).
 - [Breadcrumb](/en/components/breadcrumb) —— Shows the page hierarchy path; the last item is the current page (not clickable).
 - [Anchor](/en/components/anchor) —— Tracks the current section on scroll and highlights it automatically; clicking an anchor smooth-scrolls to the target.
+- [IndexBar](/en/components/index-bar) —— A mobile sectioned list with an alphabet index rail: tap/drag a letter to jump to a section, and scrolling highlights the current letter in reverse.
 - [BackTop](/en/components/back-top) —— A back-to-top button fixed to a corner of the viewport; clicking it smooth-scrolls back to the top of the page.
 - [Tour](/en/components/tour) —— Step-by-step feature onboarding with a fullscreen overlay and target highlighting.
 - [Tabs](/en/components/tabs) —— Tab-based content switching with arrow-key navigation; inactive panels are hidden via the `hidden` attribute. Use `oas-tabs` together with `oas-tab-panel`.

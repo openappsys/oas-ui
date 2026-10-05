@@ -1,8 +1,8 @@
 {
-  "components": 126,
+  "components": 128,
   "cdnGzipKB": 519.1,
   "locales": 10,
-  "tests": 9171,
+  "tests": 9241,
   "version": "2.5.8",
   "perf": {
     "cdnGzipKB": 519.1,

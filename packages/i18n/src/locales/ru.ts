@@ -30,6 +30,9 @@ export const ru: LocaleMessages = {
   // notification (уведомление)
   'notification.close': 'Закрыть',
   'notification.region': 'Уведомления',
+  // notice-bar (панель объявлений)
+  'noticeBar.closeAriaLabel': 'Закрыть',
+  'noticeBar.regionLabel': 'Объявление',
   // toast (лёгкое уведомление)
   'toast.close': 'Закрыть',
   // snackbar (панель сообщений)
@@ -385,5 +388,7 @@ export const ru: LocaleMessages = {
   'dynamicInput.moveUp': 'Переместить вверх',
   'dynamicInput.moveDown': 'Переместить вниз',
   'timePicker.now': 'Сейчас',
+  'indexBar.navAriaLabel': 'Навигация по алфавитному указателю',
+  'indexBar.listLabel': 'Список разделов',
   'datePicker.shortcutThisQuarter': 'В этом квартале',
 }

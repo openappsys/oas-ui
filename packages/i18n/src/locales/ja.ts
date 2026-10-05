@@ -30,6 +30,9 @@ export const ja: LocaleMessages = {
   // notification（通知）
   'notification.close': '閉じる',
   'notification.region': '通知',
+  // notice-bar（お知らせバー）
+  'noticeBar.closeAriaLabel': '閉じる',
+  'noticeBar.regionLabel': 'お知らせ',
   // toast（軽量トースト）
   'toast.close': '閉じる',
   // snackbar（メッセージバー）
@@ -385,5 +388,7 @@ export const ja: LocaleMessages = {
   'dynamicInput.moveUp': '上へ移動',
   'dynamicInput.moveDown': '下へ移動',
   'timePicker.now': '現在',
+  'indexBar.navAriaLabel': 'アルファベット索引ナビゲーション',
+  'indexBar.listLabel': 'セクション一覧',
   'datePicker.shortcutThisQuarter': '今四半期',
 }

@@ -23,6 +23,9 @@ export const en: LocaleMessages = {
   'message.close': 'Close',
   'notification.close': 'Close',
   'notification.region': 'Notification',
+  // notice-bar (notice bar)
+  'noticeBar.closeAriaLabel': 'Close',
+  'noticeBar.regionLabel': 'Notice',
   'toast.close': 'Close',
   'snackbar.close': 'Close',
   'popconfirm.ok': 'OK',
@@ -315,4 +318,6 @@ export const en: LocaleMessages = {
   'dynamicInput.moveDown': 'Move down',
   'timePicker.now': 'Now',
   'datePicker.shortcutThisQuarter': 'This quarter',
+  'indexBar.navAriaLabel': 'Alphabet index navigation',
+  'indexBar.listLabel': 'Section list',
 }

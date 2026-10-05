@@ -30,6 +30,9 @@ export const fr: LocaleMessages = {
   // notification (notification)
   'notification.close': 'Fermer',
   'notification.region': 'Notifications',
+  // notice-bar (bandeau d'avis)
+  'noticeBar.closeAriaLabel': 'Fermer',
+  'noticeBar.regionLabel': 'Avis',
   // toast (notification éphémère)
   'toast.close': 'Fermer',
   // snackbar (barre de messages)
@@ -385,5 +388,7 @@ export const fr: LocaleMessages = {
   'dynamicInput.moveUp': 'Monter',
   'dynamicInput.moveDown': 'Descendre',
   'timePicker.now': 'Maintenant',
+  'indexBar.navAriaLabel': 'Navigation par index alphabétique',
+  'indexBar.listLabel': 'Liste des sections',
   'datePicker.shortcutThisQuarter': 'Ce trimestre',
 }

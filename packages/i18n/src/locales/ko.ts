@@ -30,6 +30,9 @@ export const ko: LocaleMessages = {
   // notification（알림）
   'notification.close': '닫기',
   'notification.region': '알림',
+  // notice-bar(공지 바)
+  'noticeBar.closeAriaLabel': '닫기',
+  'noticeBar.regionLabel': '공지',
   // toast（토스트）
   'toast.close': '닫기',
   // snackbar（스낵바）
@@ -385,5 +388,7 @@ export const ko: LocaleMessages = {
   'dynamicInput.moveUp': '위로 이동',
   'dynamicInput.moveDown': '아래로 이동',
   'timePicker.now': '현재',
+  'indexBar.navAriaLabel': '알파벳 색인 탐색',
+  'indexBar.listLabel': '섹션 목록',
   'datePicker.shortcutThisQuarter': '이번 분기',
 }

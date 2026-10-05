@@ -1,0 +1,66 @@
+{
+  "className": "OASNoticeBar",
+  "sourceFile": "packages/ui/src/feedback/notice-bar/oas-notice-bar.ts",
+  "attrs": [
+    {
+      "name": "type",
+      "type": "string",
+      "default": "info",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "observed": true
+    },
+    {
+      "name": "closable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "scrollable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "items",
+      "observed": true
+    },
+    {
+      "name": "interval",
+      "observed": true
+    },
+    {
+      "name": "action-text",
+      "observed": true
+    },
+    {
+      "name": "href",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-action-click"
+    },
+    {
+      "name": "oas-close"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "icon"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

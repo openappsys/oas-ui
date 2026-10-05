@@ -1,0 +1,55 @@
+{
+  "className": "OASIndexBar",
+  "sourceFile": "packages/ui/src/navigation/index-bar/oas-index-bar.ts",
+  "attrs": [
+    {
+      "name": "sections",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "sticky",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-item-click",
+      "detail": "{ value: item.value, label: item.label, section: section.key }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ key }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-index-bar-header-bg",
+      "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-index-bar-letter-color",
+      "default": "var(--oas-color-text-secondary)"
+    },
+    {
+      "name": "--oas-index-bar-letter-active-color",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-index-bar-letter-active-bg",
+      "default": "var(--oas-color-bg-hover)"
+    }
+  ],
+  "unresolved": []
+}

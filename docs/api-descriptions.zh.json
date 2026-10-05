@@ -45,6 +45,18 @@
       "icon": "图标插槽，覆盖 type 默认图标"
     }
   },
+  "oas-index-bar": {
+    "attrs": {
+      "sections": "分节列表 JSON：`[{ key, title?, items: [{ label, value? }] }]`；字母侧栏从 sections 自动派生（key 唯一，重复保留首个），`title` 缺省回退 `key`，条目 `value` 缺省回退 `label`",
+      "height": "列表区固定高度（px），超出时列表内部滚动；缺省时列表自适应内容高、滚动联动监听视口",
+      "sticky": "分节头吸顶（默认 true）；显式 `sticky=\"false\"` 关闭"
+    },
+    "events": {
+      "oas-item-click": "点击列表条目，`detail: { value, label, section }`（`section` 为分节 key）",
+      "oas-change": "当前高亮字母变化（点按/拖拽跳转或滚动联动），`detail: { key }`；初始渲染不派发"
+    },
+    "slots": {}
+  },
   "oas-anchor": {
     "attrs": {
       "active": "当前高亮 href（受控：外部设置/清除立即生效；滚动联动接管后回写）",
@@ -2141,6 +2153,27 @@
     "events": {},
     "slots": {
       "": "导航项 label 内容（默认插槽文本；直接子项/分组载体不计入）"
+    }
+  },
+  "oas-notice-bar": {
+    "attrs": {
+      "action-text": "action 操作文字；缺省不渲染 action 区",
+      "closable": "是否显示关闭按钮；点击派发 oas-close 并自隐藏（设 open 恢复）",
+      "href": "action 链接地址：在场时 action 渲染为 `<a>`（原生导航），缺省渲染为 `<button>`（派发 oas-action-click）；运行时增删切换形态",
+      "icon": "图标名（oas-icon 体系）；缺省按 type 自动匹配，icon=\"none\" 不显示，非法名回落 type 默认；slot=\"icon\" 富内容优先",
+      "interval": "items 轮播间隔（毫秒，默认 4000）；非法/非正数回退默认",
+      "items": "多条通告 JSON 字符串数组：纵向轮播（淡入淡出）；非法 JSON/空数组回退默认插槽；items 优先于插槽；prefers-reduced-motion 下不自动轮播",
+      "open": "恢复开关：关闭后设置即恢复显示（组件关闭时自移除本属性，在场 = 强制可见）",
+      "scrollable": "单条内容超长时横向无缝滚动（内嵌走马灯引擎）；仅插槽单条模式生效（items 优先）",
+      "type": "通告类型：info（默认，主色系）/ success / warning / error；底色与图标色走语义 token，暗色自动适配；非法值回落 info"
+    },
+    "events": {
+      "oas-action-click": "action 为按钮形态（无 href）点击时派发",
+      "oas-close": "点击关闭按钮后派发，随后组件自隐藏（淡出退场）；宿主设 open 可恢复"
+    },
+    "slots": {
+      "": "单条通告内容（items 缺省时显示；scrollable 时物化为滚动内容）",
+      "icon": "图标插槽，覆盖默认/type 图标"
     }
   },
   "oas-number-animation": {
