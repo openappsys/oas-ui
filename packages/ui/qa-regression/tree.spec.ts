@@ -314,13 +314,34 @@ test('tree motion 开关：容器挂 motion 类、展开入场/收起离场行�
         .length
     })
   await page.locator('#tree-motion [part="toggle"]').first().click()
-  await page.waitForTimeout(60)
+  // 满负载下 motion 类挂载晚于固定 60ms（Firefox 全量并发实抓）——轮询替代固定等待
+  await page.waitForFunction(
+    () => {
+      const tree = document.querySelector('#tree-motion')!
+      return (
+        [...tree.shadowRoot!.querySelectorAll('[part="row"]')].filter((r) => r.classList.contains('oas-row-enter'))
+          .length >= 2
+      )
+    },
+    null,
+    { timeout: 5000 },
+  )
   expect(await countEnter()).toBeGreaterThanOrEqual(2)
   // g1 + 其直接子级 2 行 + g2 = 4 行（更深的 g1-1 子级默认收起）
   expect(await countRows()).toBe(4)
   // 收起分组 1：先离场（行仍在 + oas-row-leave），动画后再移除
   await page.locator('#tree-motion [part="toggle"]').first().click()
-  await page.waitForTimeout(60)
+  await page.waitForFunction(
+    () => {
+      const tree = document.querySelector('#tree-motion')!
+      return (
+        [...tree.shadowRoot!.querySelectorAll('[part="row"]')].filter((r) => r.classList.contains('oas-row-leave'))
+          .length >= 2
+      )
+    },
+    null,
+    { timeout: 5000 },
+  )
   expect(await countLeave()).toBeGreaterThanOrEqual(2)
   await page.waitForTimeout(400)
   expect(await countRows()).toBe(2)
