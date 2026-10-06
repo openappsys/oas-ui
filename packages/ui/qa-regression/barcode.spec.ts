@@ -132,8 +132,43 @@ test('barcode：六码制切换全部可渲染，整体宽度由内容决定；�
     expect(r.rendered[key], `${key} 应渲染出条形 path`).toBe(true)
     expect(Number(r.widths[key]), `${key} 宽度应由内容决定（>0）`).toBeGreaterThan(0)
   }
+  // ITF-14 '10614141000415'：标准起始 nnnn + 14 数字 + 停止 Wnn = 106 模；106×2 + 20 = 232
+  expect(r.widths.itf14, 'ITF-14 须为标准 106 模宽').toBe('232')
   // '123'（68 模 × 2）+ 收敛静区 20×2 = 176
   expect(r.clampedWidth, 'margin 低于下限收敛到 10×bar-width').toBe('176')
   expect(r.darkFill, '暗色下默认底仍固定白 var 通道').toBe('var(--oas-barcode-bg, #ffffff)')
   expect(r.darkPathFill, '暗色下默认条仍固定深色 var 通道').toBe('var(--oas-barcode-color, #18181b)')
+})
+
+test('barcode：EAN-8 中央护条同样向下延伸（护条 path 6 段）；EAN-13 文字置顶时护条不被截断', async ({ page }) => {
+  await page.goto('/components/barcode.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-barcode')
+
+  const r = await page.evaluate(async () => {
+    const make = async (attrs: Record<string, string>): Promise<HTMLElement> => {
+      const el = document.createElement('oas-barcode')
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      document.body.append(el)
+      await customElements.whenDefined('oas-barcode')
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+      return el
+    }
+    const svgOf = (el: HTMLElement): SVGSVGElement => el.shadowRoot!.querySelector('svg')!
+
+    // EAN-8：普通条 path 在前、护条 path 在后；护条 path 每条一段 `v` 延伸 → 左/中/右各 2 条 = 6
+    const ean8 = await make({ value: '96385074', format: 'ean8' })
+    const ean8Paths = [...svgOf(ean8).querySelectorAll('path')]
+    const ean8GuardSegments = ((ean8Paths[1]?.getAttribute('d') ?? '').match(/v/g) ?? []).length
+    ean8.remove()
+
+    // EAN-13 文字置顶：护条延伸（5×2=10）须计入总高 20 + 100 + 10 = 130
+    const top = await make({ value: '4006381333931', format: 'ean13', 'text-position': 'top' })
+    const topHeight = svgOf(top).getAttribute('height')
+    top.remove()
+
+    return { ean8GuardSegments, topHeight }
+  })
+
+  expect(r.ean8GuardSegments, 'EAN-8 三组护条全部延伸').toBe(6)
+  expect(r.topHeight, 'EAN-13 文字置顶时护条延伸不截断').toBe('130')
 })

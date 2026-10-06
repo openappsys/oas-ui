@@ -171,8 +171,8 @@ export class OASBarcode extends OASElement {
         emptyEl.setAttribute('hidden', '')
         errorEl.removeAttribute('hidden')
         errorEl.textContent = `${this.t('barcode.invalid')}：${this.t(`barcode.invalid${cap(e.reason)}`)}`
-        // 同一非法输入（value+format 指纹）只派发一次；修正后重新允许
-        const key = `${this.getAttr('format', 'code128')}\u0000${value}`
+        // 同一非法输入（归一码制 + value 指纹）只派发一次；修正后重新允许
+        const key = `${this.normalizeFormat()}\u0000${value}`
         if (this.invalidKey !== key) {
           this.invalidKey = key
           this.emit('invalid', { reason: e.reason })
@@ -277,12 +277,16 @@ export class OASBarcode extends OASElement {
     const codeW = result.modules * barWidth
     const width = margin * 2 + gutterL + codeW + gutterR
 
-    // 护条延伸（EAN/UPC 标准结构，向下 5X）恒绘制；文字区与延伸区取大者
+    // 护条延伸（EAN/UPC 标准结构，向下 5X）恒绘制：
+    // 顶部文字把条体整体下移给文字留区，护条延伸留在条体下方——两者叠加都必须计入总高，
+    // 否则 viewBox 会截断护条延伸（text-position="top" + EAN/UPC 的经典错位）。
     const guardExtPx = result.guardExtend * barWidth
+    const guardExt = result.guards.length ? guardExtPx : 0
     const textH = textMargin + fontSize
-    const textZone = showText ? Math.max(result.guards.length ? guardExtPx : 0, textH) : 0
-    const barsTop = showText && textTop ? textZone : 0
-    const height = barH + textZone + (showText ? 0 : result.guards.length ? guardExtPx : 0)
+    const topZone = showText && textTop ? textH : 0
+    const bottomZone = showText && !textTop ? textH : 0
+    const barsTop = topZone
+    const height = topZone + barH + Math.max(guardExt, bottomZone)
 
     // 条形 path：普通条与护条延伸条分两条（延伸条更高）
     const guardSet = new Set(result.guards)
@@ -410,11 +414,9 @@ export class OASBarcode extends OASElement {
       fg: this.resolveFgForCanvas(),
       bg: this.resolveBgForCanvas(),
     })
-    const px = Math.max(width, height) * scale
     // 内容整体缩放（不改内部坐标）；等比以最长边为准（一维条码宽远大于高）
     const w = width * scale
     const h = height * scale
-    void px
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${width} ${height}"><g transform="scale(${scale})">${inner}</g></svg>`
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
   }

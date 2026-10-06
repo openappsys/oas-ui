@@ -428,9 +428,10 @@ function encodeEan8(value: string): EncodeResult {
   bits += '01010'
   for (const ch of data.slice(4)) bits += EAN_R[Number(ch)]
   bits += '101'
+  // 护条模块坐标：左起 0/2；中央 '01010' 落在模块 31–35，条在 32/34；右收 64/66
   const { runs, guards } = encodeEanModules(bits, [
     [0, 2],
-    [31, 33],
+    [32, 34],
     [64, 66],
   ])
   return {
@@ -581,7 +582,7 @@ const itfWidth = (ch: string): number[] => [...ITF_PATTERNS[Number(ch)]!].map((c
 
 function encodeItf14(value: string): EncodeResult {
   const data = withCheckDigit(value, 13, 'ITF-14')
-  const runs: number[] = [1, 1] // 起始：窄条 + 窄空
+  const runs: number[] = [1, 1, 1, 1] // 起始 nnnn：窄条 + 窄空 + 窄条 + 窄空
   for (let k = 0; k < 14; k += 2) {
     const bars = itfWidth(data[k]!)
     const spaces = itfWidth(data[k + 1]!)
@@ -589,14 +590,14 @@ function encodeItf14(value: string): EncodeResult {
       runs.push(bars[j]!, spaces[j]!)
     }
   }
-  runs.push(2, 1, 1) // 停止：宽条 + 窄空 + 窄条
+  runs.push(2, 1, 1) // 停止 Wnn：宽条 + 窄空 + 窄条
   return {
     runs,
     guards: [],
     guardExtend: 0,
-    // 起点 2 + 7 对 × 14（每数字 2 宽 3 窄 = 7X）+ 停止 4 = 104X
-    modules: 104,
-    text: [{ value: data, start: 0, width: 104 }],
+    // 起点 4 + 7 对 × 14（每数字 2 宽 3 窄 = 7X）+ 停止 4 = 106X
+    modules: 106,
+    text: [{ value: data, start: 0, width: 106 }],
     outside: {},
     display: data,
   }

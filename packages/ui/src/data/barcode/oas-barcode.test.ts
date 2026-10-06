@@ -126,6 +126,24 @@ describe('OASBarcode', () => {
       expect(el.shadowRoot!.querySelector('[part="error"]')!.hasAttribute('hidden')).toBe(true)
       expect(svgOf(el).hasAttribute('hidden')).toBe(false)
     })
+
+    it('合法化后再回到同一非法输入会重新派发；停在非法值上不重复派发', async () => {
+      const events: Array<CustomEvent> = []
+      const el = mount({ value: '40063813339A', format: 'ean13' })
+      el.addEventListener('oas-invalid', (e) => events.push(e as CustomEvent))
+      // 合法化 → 复位派发指纹
+      el.setAttribute('value', '4006381333931')
+      await Promise.resolve()
+      expect(events, '合法值不派发').toHaveLength(0)
+      // 再次非法 → 重新派发一次
+      el.setAttribute('value', '40063813339A')
+      await Promise.resolve()
+      expect(events, '合法化后再次非法应重新派发').toHaveLength(1)
+      // 停留在同一非法值 → 不重复
+      el.setAttribute('value', '40063813339A')
+      await Promise.resolve()
+      expect(events, '同一非法输入不重复派发').toHaveLength(1)
+    })
   })
 
   describe('可扫性约束内建', () => {
@@ -203,6 +221,25 @@ describe('OASBarcode', () => {
       const text = svg.querySelector('text')!
       expect(Number(text.getAttribute('y'))).toBeLessThan(100)
       expect(svg.getAttribute('height')).toBe('120')
+    })
+
+    it('text-position="top" + EAN-13：护条延伸计入总高，不被 viewBox 截断', () => {
+      const el = mount({ value: '4006381333931', format: 'ean13', 'text-position': 'top' })
+      // 顶部文字区 4+16=20，条高 100，护条延伸 5×2=10 → 20+100+10 = 130
+      expect(svgOf(el).getAttribute('height')).toBe('130')
+      el.remove()
+      // 对照：底部文字时护条与文字区重叠，取大者 → 100 + max(10,20) = 120
+      const bottom = mount({ value: '4006381333931', format: 'ean13' })
+      expect(svgOf(bottom).getAttribute('height')).toBe('120')
+    })
+
+    it('EAN-8 中央护条同样向下延伸（护条 path 6 段，左/中/右各 2 条）', () => {
+      const el = mount({ value: '96385074', format: 'ean8' })
+      const paths = [...svgOf(el).querySelectorAll('path')]
+      expect(paths).toHaveLength(2)
+      // 第二条为护条 path（普通条在前、护条在后）；每条一段 `v` 延伸
+      const guardsPath = paths[1]!.getAttribute('d') ?? ''
+      expect((guardsPath.match(/v/g) ?? []).length).toBe(6)
     })
 
     it('font-size / text-margin 控制文字区几何', () => {

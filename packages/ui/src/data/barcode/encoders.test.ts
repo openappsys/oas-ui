@@ -92,6 +92,49 @@ describe('CODE128（auto A/B/C）', () => {
   })
 })
 
+describe('CODE128 子集切换边界（已知样例条宽序列，符号值断言）', () => {
+  it('长数字串（奇数 11 位）→ 起始 C 吃满偶对，末位单数字回 B 吸收', () => {
+    // START_C + 12,34,56,78,90 + CodeB(100) + '1'(17)
+    // 校验 (105+12+2*34+3*56+4*78+5*90+6*100+7*17) mod 103 = 1834 mod 103 = 83
+    const r = encodeBarcode('12345678901', 'code128')
+    expect(r.symbols).toEqual([105, 12, 34, 56, 78, 90, 100, 17, 83])
+    assertRunInvariants(r)
+  })
+
+  it('尾随奇数位数字段：先 B 出 1 位、余下 4 位切线 C（"A12345"）', () => {
+    // START_B + A(33) + '1'(17) + CodeC(99) + 23,45
+    // 校验 (104+33+2*17+3*99+4*23+5*45) mod 103 = 785 mod 103 = 64
+    const r = encodeBarcode('A12345', 'code128')
+    expect(r.symbols).toEqual([104, 33, 17, 99, 23, 45, 64])
+    assertRunInvariants(r)
+  })
+
+  it('尾随 7 位奇数字段：C 吃 6 位、末位回 B（"A1234567"）', () => {
+    // START_B + A(33) + CodeC(99) + 12,34,56 + CodeB(100) + '7'(23)
+    // 校验 (104+33+2*99+3*12+4*34+5*56+6*100+7*23) mod 103 = 1548 mod 103 = 3
+    const r = encodeBarcode('A1234567', 'code128')
+    expect(r.symbols).toEqual([104, 33, 99, 12, 34, 56, 100, 23, 3])
+    assertRunInvariants(r)
+  })
+
+  it('串尾偶数位数字段切线 C 省宽度（"ABC1234"）', () => {
+    // START_B + A,B,C(33,34,35) + CodeC(99) + 12,34
+    // 校验 (104+33+2*34+3*35+4*99+5*12+6*34) mod 103 = 970 mod 103 = 43
+    const r = encodeBarcode('ABC1234', 'code128')
+    expect(r.symbols).toEqual([104, 33, 34, 35, 99, 12, 34, 43])
+    assertRunInvariants(r)
+  })
+
+  it('A/B/C 往返：控制符起始 A、中段 4 位数字不切线、控制符仍留 A、大写回 B', () => {
+    // START_A + \u0001(65) + '1''2''3''4'(17,18,19,20) + \u0001(65) + 'X'(56)
+    // 中段偶数 4 位不在串尾，切线 C 无净收益 → 留 A
+    // 校验 (103+65+2*17+3*18+4*19+5*20+6*65+7*56) mod 103 = 1214 mod 103 = 81
+    const r = encodeBarcode('\u00011234\u0001X', 'code128')
+    expect(r.symbols).toEqual([103, 65, 17, 18, 19, 20, 65, 56, 81])
+    assertRunInvariants(r)
+  })
+})
+
 describe('EAN-13', () => {
   it('12 位自动补校验位；模块序列符合首位数字 parity 模式（4 → LGLLGG）', () => {
     const r = encodeBarcode('400638133393', 'ean13')
@@ -142,6 +185,12 @@ describe('EAN-13', () => {
     // 三组护条（左/中/右）各 2 条 = 6 条延伸条
     expect(r.guards).toHaveLength(6)
   })
+
+  it('真实商品码样例：690123456789 自动补校验位得 6901234567892', () => {
+    const r = encodeBarcode('690123456789', 'ean13')
+    expect(r.display).toBe('6901234567892')
+    expect(encodeBarcode('6901234567892', 'ean13').runs).toEqual(r.runs)
+  })
 })
 
 describe('EAN-8', () => {
@@ -175,6 +224,16 @@ describe('EAN-8', () => {
     } catch (e) {
       expect((e as BarcodeEncodeError).reason).toBe('charset')
     }
+  })
+
+  it('中央护条落在模块 32/34（中央 01010 的条位，不是空位），三组护条全为整数条序号', () => {
+    const r = encodeBarcode('96385074', 'ean8')
+    // 左 0/2 → [0,1]；中央 32/34 → [10,11]；右 64/66 → [20,21]
+    expect(r.guards).toEqual([0, 1, 10, 11, 20, 21])
+    expect(
+      r.guards.every((g) => Number.isInteger(g)),
+      '护条须落在条位（整数条序号）',
+    ).toBe(true)
   })
 })
 
@@ -230,14 +289,16 @@ describe('CODE39', () => {
 })
 
 describe('ITF-14', () => {
-  it('13 位自动补校验位；起点/交错对/停止符条宽序列正确，模块数 76', () => {
+  it('13 位自动补校验位；起点/交错对/停止符条宽序列正确，模块数 106', () => {
     const r = encodeBarcode('1061414100041', 'itf14')
     expect(r.display).toBe('10614141000415')
-    // 起点 2 + 7 对 × 14（每数字 2 宽 3 窄 = 7X）+ 停止 4 = 104X
-    expect(r.modules).toBe(104)
-    // 起始 [1,1]；首对 (1,0)：条取 '1'=wnnnw → [2,1,1,1,2]，空取 '0'=nnwwn → [1,1,2,2,1]
-    expect(r.runs.slice(0, 12)).toEqual([1, 1, 2, 1, 1, 1, 1, 2, 1, 2, 2, 1])
-    // 停止符：宽条 + 窄空 + 窄条 = [2,1,1]
+    // 起点 4 + 7 对 × 14（每数字 2 宽 3 窄 = 7X）+ 停止 4 = 106X
+    expect(r.modules).toBe(106)
+    // 起始须为标准 nnnn（窄条+窄空+窄条+窄空），少了后半段扫码枪无法同步
+    expect(r.runs.slice(0, 4)).toEqual([1, 1, 1, 1])
+    // 首对 (1,0)：条取 '1'=wnnnw → [2,1,1,1,2]，空取 '0'=nnwwn → [1,1,2,2,1]
+    expect(r.runs.slice(0, 12)).toEqual([1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 2])
+    // 停止符 Wnn：宽条 + 窄空 + 窄条 = [2,1,1]
     expect(r.runs.slice(-3)).toEqual([2, 1, 1])
     assertRunInvariants(r)
   })
@@ -259,6 +320,24 @@ describe('ITF-14', () => {
       encodeBarcode('123456789012a', 'itf14')
     } catch (e) {
       expect((e as BarcodeEncodeError).reason).toBe('charset')
+    }
+  })
+})
+
+describe('EAN/UPC 护条不变量', () => {
+  it('三码制护条恒为 6 条，且序号必须是整数（落在条位而非空位）', () => {
+    const cases: Array<[string, string]> = [
+      ['ean13', '4006381333931'],
+      ['ean8', '96385074'],
+      ['upca', '036000291452'],
+    ]
+    for (const [fmt, v] of cases) {
+      const r = encodeBarcode(v, fmt as never)
+      expect(r.guards, fmt).toHaveLength(6)
+      expect(
+        r.guards.every((g) => Number.isInteger(g)),
+        `${fmt} 护条须落在条位`,
+      ).toBe(true)
     }
   })
 })
