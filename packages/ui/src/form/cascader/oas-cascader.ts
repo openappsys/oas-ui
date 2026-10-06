@@ -657,7 +657,7 @@ export class OASCascader extends OASElement {
       else path = (v as string[]).map(String)
       this.setAttribute('value', JSON.stringify(path))
     }
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   constructor() {
