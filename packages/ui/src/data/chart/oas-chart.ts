@@ -419,7 +419,7 @@ export class OASChart extends OASElement {
       const pts = series.data.map((v, k) => pointAt(k, Math.max(0, (Number(v) || 0) / (scaleMax || 1))))
       const d = pts.map((p, k) => `${k === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ') + ' Z'
       const points = pts.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
-      const style = color ? ` style="color:${color}"` : ''
+      const style = this.colorStyle(color)
       out += `<polygon class="radar-area ${cls} animate" points="${points}"${style}></polygon>`
       out += `<path class="radar-line ${cls} animate" d="${d}" fill="none"${style}></path>`
       pts.forEach((p, k) => {
@@ -494,7 +494,7 @@ export class OASChart extends OASElement {
       const path = options.smooth
         ? this.smoothPath(pts)
         : pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
-      out += `<path class="line-path ${cls} animate" d="${path}"${color ? ` style="color:${color}"` : ''}></path>`
+      out += `<path class="line-path ${cls} animate" d="${path}"${this.colorStyle(color)}></path>`
       pts.forEach((p, i) => {
         const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
         out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"><title>${this.escapeAttr(label)}</title></circle>`
@@ -532,15 +532,15 @@ export class OASChart extends OASElement {
       // 填充：折线 + 末点垂线到底 + 沿基线回到首点 + 闭合
       const lastI = Math.min(n, series.data.length) - 1
       const fill = `${path} L ${xAt(lastI).toFixed(1)} ${baseY.toFixed(1)} L ${xAt(0).toFixed(1)} ${baseY.toFixed(1)} Z`
-      let areaStyle = color ? ` style="color:${color}"` : ''
+      let areaStyle = this.colorStyle(color)
       if (useGrad) {
         const gid = `oas-chart-ag-${++areaGradSeq}`
-        const col = color ?? PALETTE[si % PALETTE.length]
-        defs += `<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity="0.35"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient>`
+        const col = color ?? PALETTE[si % PALETTE.length] ?? ''
+        defs += `<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${this.escapeAttr(col)}" stop-opacity="0.35"/><stop offset="1" stop-color="${this.escapeAttr(col)}" stop-opacity="0"/></linearGradient>`
         areaStyle = ` style="fill:url(#${gid});opacity:1"`
       }
       out += `<path class="area-path ${cls} animate" d="${fill}"${areaStyle}></path>`
-      out += `<path class="line-path ${cls} animate" d="${path}"${color ? ` style="color:${color}"` : ''}></path>`
+      out += `<path class="line-path ${cls} animate" d="${path}"${this.colorStyle(color)}></path>`
       pts.forEach((p, i) => {
         const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
         out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"><title>${this.escapeAttr(label)}</title></circle>`
@@ -613,7 +613,7 @@ export class OASChart extends OASElement {
         const x = PAD.l + i * bandW + groupGap / 2 + bi * (barW + (m > 1 ? 1 : 0))
         const y = baseY - h
         const label = this.datumLabel(data.labels[i] ?? '', v)
-        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></rect>`
+        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></rect>`
       })
     })
 
@@ -629,9 +629,9 @@ export class OASChart extends OASElement {
       if (t === 'area') {
         const lastI = Math.min(n, series.data.length) - 1
         const fill = `${path} L ${xAt(lastI).toFixed(1)} ${baseY.toFixed(1)} L ${xAt(0).toFixed(1)} ${baseY.toFixed(1)} Z`
-        out += `<path class="area-path ${cls} animate" d="${fill}"${color ? ` style="color:${color}"` : ''}></path>`
+        out += `<path class="area-path ${cls} animate" d="${fill}"${this.colorStyle(color)}></path>`
       }
-      out += `<path class="line-path ${cls} animate" d="${path}"${color ? ` style="color:${color}"` : ''}></path>`
+      out += `<path class="line-path ${cls} animate" d="${path}"${this.colorStyle(color)}></path>`
       pts.forEach((p, i) => {
         const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
         out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"><title>${this.escapeAttr(label)}</title></circle>`
@@ -663,7 +663,7 @@ export class OASChart extends OASElement {
         const x = PAD.l + i * bandW + groupGap / 2 + si * (barW + (m > 1 ? 1 : 0))
         const y = PAD.t + plotH - h
         const label = this.datumLabel(data.labels[i] ?? '', v)
-        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></rect>`
+        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></rect>`
       })
     })
     return out
@@ -698,7 +698,7 @@ export class OASChart extends OASElement {
         const y = PAD.t + plotH - acc - h
         const x = PAD.l + i * bandW + (bandW - barW) / 2
         const title = this.datumLabel(data.labels[i] ?? '', v)
-        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(title)}</title></rect>`
+        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}><title>${this.escapeAttr(title)}</title></rect>`
         acc += h
       })
     })
@@ -730,7 +730,7 @@ export class OASChart extends OASElement {
       const cls = SWATCH_CLASSES[i % SWATCH_CLASSES.length]!
       const color = options.colors?.[i]
       const label = `${this.datumLabel(data.labels[i] ?? '', v)} (${Math.round((v / total) * 100)}%)`
-      out += `<path class="slice ${cls} animate" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></path>`
+      out += `<path class="slice ${cls} animate" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></path>`
       angle += sweep
     })
     return out
@@ -766,7 +766,7 @@ export class OASChart extends OASElement {
       const cls = SWATCH_CLASSES[i % SWATCH_CLASSES.length]!
       const color = options.colors?.[i]
       const label = `${this.datumLabel(data.labels[i] ?? '', v)} (${Math.round((v / total) * 100)}%)`
-      out += `<path class="slice ${cls} animate" d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} L ${ix1.toFixed(1)} ${iy1.toFixed(1)} A ${ir} ${ir} 0 ${large} 0 ${ix2.toFixed(1)} ${iy2.toFixed(1)} Z"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></path>`
+      out += `<path class="slice ${cls} animate" d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} L ${ix1.toFixed(1)} ${iy1.toFixed(1)} A ${ir} ${ir} 0 ${large} 0 ${ix2.toFixed(1)} ${iy2.toFixed(1)} Z"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></path>`
       angle += sweep
     })
     return out
@@ -803,7 +803,7 @@ export class OASChart extends OASElement {
       const label = this.datumLabel(data.labels[i] ?? '', v)
       // 单分类（整圆）：SVG arc 起止点重合会被规范省略，改用 <circle> 才画得出来
       if (n === 1) {
-        out += `<circle class="slice ${cls} animate" cx="${cx}" cy="${cy}" r="${ri.toFixed(1)}"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></circle>`
+        out += `<circle class="slice ${cls} animate" cx="${cx}" cy="${cy}" r="${ri.toFixed(1)}"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></circle>`
         angle += sweep
         return
       }
@@ -814,7 +814,7 @@ export class OASChart extends OASElement {
       const y1 = cy + ri * Math.sin(a1)
       const x2 = cx + ri * Math.cos(a2)
       const y2 = cy + ri * Math.sin(a2)
-      out += `<path class="slice ${cls} animate" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${ri.toFixed(1)} ${ri.toFixed(1)} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></path>`
+      out += `<path class="slice ${cls} animate" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${ri.toFixed(1)} ${ri.toFixed(1)} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></path>`
       angle += sweep
     })
     return out
@@ -873,7 +873,7 @@ export class OASChart extends OASElement {
       .map((s, i) => {
         const cls = SWATCH_CLASSES[i % SWATCH_CLASSES.length]!
         const color = options.colors?.[i]
-        return `<span class="legend-item"><i class="legend-dot ${cls}"${color ? ` style="color:${color}"` : ''}></i><span class="legend-name">${this.escapeText(s.name)}</span></span>`
+        return `<span class="legend-item"><i class="legend-dot ${cls}"${this.colorStyle(color)}></i><span class="legend-name">${this.escapeText(s.name)}</span></span>`
       })
       .join('')
   }
@@ -994,8 +994,15 @@ export class OASChart extends OASElement {
               const name = rec.name != null ? String(rec.name) : ''
               const type: ChartSeries['type'] | undefined =
                 rec.type === 'bar' || rec.type === 'line' || rec.type === 'area' ? rec.type : undefined
-              // yAxisIndex 类型矫正：attribute JSON 手写 "1"（字符串）归一为数字 1（1 / "1" 均绑右轴，其余归左轴缺省）
-              const yAxisIndex: ChartSeries['yAxisIndex'] | undefined = Number(rec.yAxisIndex) === 1 ? 1 : undefined
+              // yAxisIndex 类型矫正：数字 1 / 字符串 "1"（含 "1.0"/"01" 等数值 1 的写法）绑右轴，
+              // 其余（true/false/null/[1]/1.9/"2"…）一律归左轴缺省——不用 Number() 全量强制转换，
+              // 否则 true/[1] 会被转成 1 误绑右轴（与「缺省/非法值归左轴」契约冲突）
+              const rawAxis: unknown = rec.yAxisIndex
+              const yAxisIndex: ChartSeries['yAxisIndex'] | undefined =
+                (typeof rawAxis === 'number' && rawAxis === 1) ||
+                (typeof rawAxis === 'string' && rawAxis.trim() !== '' && Number(rawAxis) === 1)
+                  ? 1
+                  : undefined
               const outSeries: ChartSeries = { name, data }
               if (type) outSeries.type = type
               if (yAxisIndex) outSeries.yAxisIndex = yAxisIndex
@@ -1053,5 +1060,13 @@ export class OASChart extends OASElement {
 
   private escapeAttr(text: string): string {
     return escapeAttr(text)
+  }
+
+  /**
+   * 系列配色内联 style：色值来自宿主 options.colors，必须先转义再注入属性。
+   * 否则恶意值（含 `"`）可引号逃逸注入事件属性/额外 SVG 节点（DOM 注入）。
+   */
+  private colorStyle(color: string | undefined): string {
+    return color ? ` style="color:${this.escapeAttr(color)}"` : ''
   }
 }

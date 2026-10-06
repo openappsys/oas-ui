@@ -248,3 +248,48 @@ test('chart radar 顶点标签不压刻度值；combo 层序恒为 bar→area→
   expect(r.barBeforeArea, 'combo bar 层在 area 层之前').toBe(true)
   expect(r.areaBeforeLine, 'combo area 层在 line 层之前（线盖面）').toBe(true)
 })
+
+// 安全回归：options.colors 来自宿主，注入 SVG 前必须转义（此前直接拼进 style/stop-color，
+// 恶意值可引号逃逸注入事件属性——hover 即执行——或额外 SVG 节点）。
+test('chart options.colors 恶意值不逃逸属性：不注入事件属性/额外节点', async ({ page }) => {
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+  const r = await page.evaluate(() => {
+    const make = (type: string, options: string, data: string): Element => {
+      const el = document.createElement('oas-chart')
+      el.setAttribute('type', type)
+      el.setAttribute('options', options)
+      el.setAttribute('data', data)
+      document.body.appendChild(el)
+      return el
+    }
+    const evt = make(
+      'line',
+      JSON.stringify({ colors: ['red" onmouseover="globalThis.__pwned=1'] }),
+      JSON.stringify([{ label: 'a', value: 1 }]),
+    )
+    const lineEvt = [...evt.shadowRoot!.querySelectorAll('path')].some((p) => p.hasAttribute('onmouseover'))
+    evt.remove()
+
+    const node = make(
+      'polar-area',
+      JSON.stringify({ colors: ['blue"><circle r="999"'] }),
+      JSON.stringify({ labels: ['a'], series: [{ name: 'S', data: [5] }] }),
+    )
+    const injectedNode = [...node.shadowRoot!.querySelectorAll('circle')].some((c) => c.getAttribute('r') === '999')
+    node.remove()
+
+    const stop = make(
+      'area',
+      JSON.stringify({ gradient: true, colors: ['red"/>"><rect width="999"'] }),
+      JSON.stringify({ labels: ['a'], series: [{ name: 'S', data: [1] }] }),
+    )
+    const injectedRect = [...stop.shadowRoot!.querySelectorAll('rect')].some((x) => x.getAttribute('width') === '999')
+    stop.remove()
+
+    return { lineEvt, injectedNode, injectedRect }
+  })
+  expect(r.lineEvt, 'style 不得被引号逃逸注入事件属性').toBe(false)
+  expect(r.injectedNode, '颜色值不得闭合属性注入额外节点').toBe(false)
+  expect(r.injectedRect, 'gradient stop-color 不得被逃逸注入节点').toBe(false)
+})

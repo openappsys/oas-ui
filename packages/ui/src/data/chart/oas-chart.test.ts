@@ -742,4 +742,90 @@ describe('OASChart', () => {
     expect(legend.textContent).toContain('A')
     expect(legend.textContent).toContain('B')
   })
+
+  // 安全回归：options.colors 由宿主提供，注入 SVG 前必须先转义。
+  // 此前直接拼进 `style="color:${color}"`/`stop-color="${col}"`，恶意值可引号逃逸、
+  // 注入事件属性（hover 即执行）或额外 SVG 节点（DOM 注入）。
+  it('options.colors 恶意值不逃逸属性：不注入事件属性、不多出节点（line/polar/gradient 三注入面）', () => {
+    const evtPayload = 'red" onmouseover="globalThis.__pwned=1'
+    const line = mount({ data: SINGLE, options: JSON.stringify({ colors: [evtPayload, evtPayload, evtPayload] }) })
+    for (const p of svgOf(line).querySelectorAll('path')) {
+      expect(p.hasAttribute('onmouseover'), 'style 属性不得被引号逃逸注入事件属性').toBe(false)
+    }
+    line.remove()
+
+    const nodePayload = 'blue"><circle r="999"'
+    const polar = mount({
+      type: 'polar-area',
+      data: JSON.stringify({ labels: ['a'], series: [{ name: 'S', data: [5] }] }),
+      options: JSON.stringify({ colors: [nodePayload] }),
+    })
+    expect(
+      [...svgOf(polar).querySelectorAll('circle')].some((c) => c.getAttribute('r') === '999'),
+      '颜色值不得闭合属性注入额外节点',
+    ).toBe(false)
+    polar.remove()
+
+    const stopPayload = 'red"/>"><rect width="999"'
+    const area = mount({
+      type: 'area',
+      options: JSON.stringify({ gradient: true, colors: [stopPayload, stopPayload] }),
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'S', data: [1, 2] },
+          { name: 'T', data: [2, 1] },
+        ],
+      }),
+    })
+    expect(
+      [...svgOf(area).querySelectorAll('rect')].some((r) => r.getAttribute('width') === '999'),
+      'gradient stop-color 不得被逃逸注入节点',
+    ).toBe(false)
+    area.remove()
+  })
+
+  it('options.colors 正常值（含 CSS 变量 / 逗号 / 括号）转义后语义不变', () => {
+    const el = mount({ data: SINGLE, options: JSON.stringify({ colors: ['var(--oas-color-primary, #3b82f6)'] }) })
+    const path = svgOf(el).querySelector('.line-path')!
+    expect(path.getAttribute('style')).toBe('color:var(--oas-color-primary, #3b82f6)')
+  })
+
+  // yAxisIndex 契约：仅数字 1 / 字符串 "1"（数值 1）绑右轴，其余非法值归左轴。
+  // 此前 `Number(rec.yAxisIndex) === 1` 会把 true / [1] 数值强制转换成 1 误绑右轴。
+  it('series.yAxisIndex 非法类型（true / [1]）归左轴，不因数值强制转换误绑右轴', () => {
+    const opt = '{"yAxis":[{"name":"L"},{"name":"R"}]}'
+    for (const bad of [true, [1], false, null] as unknown[]) {
+      const el = mount({
+        type: 'bar',
+        options: opt,
+        data: JSON.stringify({
+          labels: ['a', 'b'],
+          series: [
+            { name: 'A', data: [50, 100] },
+            { name: 'B', data: [5, 10], yAxisIndex: bad },
+          ],
+        }),
+      })
+      const right = [...svgOf(el).querySelectorAll('text.axis-text')].filter(
+        (t) => t.getAttribute('text-anchor') === 'start',
+      )
+      expect(right.length, `yAxisIndex=${JSON.stringify(bad)} 应归左轴（无右轴刻度）`).toBe(0)
+      el.remove()
+    }
+    const ok = mount({
+      type: 'bar',
+      options: opt,
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'A', data: [50, 100] },
+          { name: 'B', data: [5, 10], yAxisIndex: 1 },
+        ],
+      }),
+    })
+    expect(
+      [...svgOf(ok).querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'start').length,
+    ).toBe(5)
+  })
 })
