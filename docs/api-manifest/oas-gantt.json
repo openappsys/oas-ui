@@ -1,0 +1,208 @@
+{
+  "className": "OASGantt",
+  "sourceFile": "packages/ui/src/data/gantt/oas-gantt.ts",
+  "attrs": [
+    {
+      "name": "tasks",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "scale",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "expanded",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "dates-readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "progress-readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-today",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "weekends",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "holidays",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "first-day-of-week",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "320",
+      "observed": true
+    },
+    {
+      "name": "row-height",
+      "type": "string",
+      "default": "36",
+      "observed": true
+    },
+    {
+      "name": "label-position",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "snap",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "tasks",
+      "type": "GanttTask[]",
+      "default": "[]",
+      "api": true
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-tasks-change",
+      "detail": "{ tasks: this.tasks } satisfies GanttTasksChangeDetail"
+    },
+    {
+      "name": "oas-expand-change",
+      "detail": "{ id, expanded: willExpand } satisfies GanttExpandChangeDetail"
+    },
+    {
+      "name": "oas-scale-change",
+      "detail": "{ scale } satisfies GanttScaleChangeDetail"
+    },
+    {
+      "name": "oas-task-render",
+      "detail": "{ task: this.taskSnapshot(row.task), element: bar } satisfies GanttTaskRenderDetail"
+    },
+    {
+      "name": "oas-task-click",
+      "detail": "{ id: row.task.id, task: this.taskSnapshot(row.task) } satisfies GanttTaskClickDetail"
+    },
+    {
+      "name": "oas-task-dblclick",
+      "detail": "{ id: row.task.id, task: this.taskSnapshot(row.task) } satisfies GanttTaskClickDetail"
+    },
+    {
+      "name": "oas-task-change",
+      "detail": "{ id, task: this.taskSnapshot(this._tasks.find((t) => t.id === id)!), oldStart: this.fmtIso(oldStartMs, datetime), oldEnd: task.end ? this.fmtEnd(oldEndMs, datetime) : start, start, end: endStr, } satisfies GanttTaskChangeDetail"
+    },
+    {
+      "name": "oas-progress-change",
+      "detail": "{ id, task: this.taskSnapshot(this._tasks.find((t) => t.id === id)!), progress, } satisfies GanttProgressChangeDetail"
+    }
+  ],
+  "slots": [
+    {
+      "name": "template[slot=\"empty\"]"
+    },
+    {
+      "name": "template[slot=\"task\"]"
+    },
+    {
+      "name": "template[slot=\"tooltip\"]"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-gantt-height",
+      "default": "320px"
+    },
+    {
+      "name": "--oas-gantt-list-width",
+      "default": "220px"
+    },
+    {
+      "name": "--oas-gantt-header-bg",
+      "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-gantt-header-height",
+      "default": "44px"
+    },
+    {
+      "name": "--oas-gantt-grid-line-color",
+      "default": "var(--oas-color-border)"
+    },
+    {
+      "name": "--oas-gantt-row-height",
+      "default": "36px"
+    },
+    {
+      "name": "--oas-gantt-weekend-bg",
+      "default": "color-mix(in srgb, var(--oas-color-bg-hover) 60%, transparent)"
+    },
+    {
+      "name": "--oas-gantt-holiday-bg",
+      "default": "color-mix(in srgb, var(--oas-color-warning) 12%, transparent)"
+    },
+    {
+      "name": "--oas-gantt-link-color",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-gantt-bar-height",
+      "default": "22px"
+    },
+    {
+      "name": "--oas-gantt-bar-bg",
+      "default": "color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, transparent)"
+    },
+    {
+      "name": "--oas-gantt-bar-progress-bg",
+      "default": "var(--oas-gantt-bar-color, var(--oas-color-primary))"
+    },
+    {
+      "name": "--oas-gantt-milestone-color",
+      "default": "var(--oas-color-warning)"
+    },
+    {
+      "name": "--oas-gantt-summary-bg",
+      "default": "var(--oas-color-text-secondary-strong)"
+    },
+    {
+      "name": "--oas-gantt-today-color",
+      "default": "var(--oas-color-danger)"
+    }
+  ],
+  "unresolved": []
+}

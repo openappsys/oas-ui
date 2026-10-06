@@ -491,6 +491,22 @@
       "exempt": 0,
       "skipped": 3
     },
+    "gantt.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 6
+    },
+    "gantt.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 6
+    },
     "gradient-text.html": {
       "below30": 0,
       "below45": 0,

@@ -156,6 +156,7 @@
   "oas-list-item",
   "oas-kanban",
   "oas-scheduler",
+  "oas-gantt",
   "oas-carousel",
   "oas-tree",
   "oas-table",

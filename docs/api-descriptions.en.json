@@ -4142,6 +4142,43 @@
       "events": "Schedule events (`SchedulerEvent[]`): `el.events` reads (copy incl. auto ids); `el.events = [...]` writes (syncs the events attribute + re-renders + dispatches oas-events-change)"
     }
   },
+  "oas-gantt": {
+    "attrs": {
+      "tasks": "Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }] — flat parent pointers are the primary contract; nested children are flattened automatically; no end = milestone",
+      "scale": "Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day",
+      "expanded": "Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle",
+      "readonly": "Whole chart read-only (no rescheduling/progress, drag handles not rendered)",
+      "dates-readonly": "No rescheduling/resizing (progress still draggable)",
+      "progress-readonly": "No progress dragging (dates still draggable)",
+      "show-today": "Today line (on by default; false to disable)",
+      "weekends": "Weekend column highlights (on by default; applies on day/hour tiers; false to disable)",
+      "holidays": "Holiday list (JSON [\"YYYY-MM-DD\",…]): matching columns highlighted (takes precedence over weekend tint)",
+      "first-day-of-week": "Week start day (0-6); defaults to locale derivation (used for week-tier alignment)",
+      "locale": "Localization (overrides config-provider injection and the global locale)",
+      "height": "Component height in px (default 320)",
+      "row-height": "Row height in px (default 36, minimum 20)",
+      "label-position": "Bar label position: right (default) / inside / left",
+      "snap": "Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision)"
+    },
+    "events": {
+      "oas-task-click": "Dispatched on task bar/milestone click, detail: { id, task }",
+      "oas-task-dblclick": "Dispatched on task bar double-click, detail: { id, task } — hosts attach an edit form",
+      "oas-task-change": "Dispatched when a drag/resize/keyboard reschedule settles (pointerup), detail: { id, task, oldStart, oldEnd, start, end }; not dispatched on zero movement",
+      "oas-progress-change": "Dispatched when a progress handle drag settles, detail: { id, task, progress }",
+      "oas-tasks-change": "Dispatched on task data change (programmatic tasks write / updateTask / drag write-back), detail: { tasks }",
+      "oas-expand-change": "Dispatched on row tree collapse/expand, detail: { id, expanded }",
+      "oas-scale-change": "Dispatched when the scale attribute changes, detail: { scale }; not dispatched on initial absorption",
+      "oas-task-render": "Dispatched after each task bar renders, detail: { task, element } — hosts may rewrite bar DOM"
+    },
+    "slots": {
+      "template[slot=\"empty\"]": "Empty-state content (defaults to \"No tasks\")",
+      "template[slot=\"task\"]": "Task bar label template (cloned into the bar; [data-task-name] nodes get the task name)",
+      "template[slot=\"tooltip\"]": "Hover tooltip template ([data-task-name] / [data-task-range] / [data-task-progress] bind points)"
+    },
+    "props": {
+      "tasks": "Gantt tasks (`GanttTask[]`): `el.tasks` reads (copy; nested input already flattened to parent pointers); `el.tasks = [...]` writes (syncs the tasks attribute + re-renders + dispatches oas-tasks-change)"
+    }
+  },
   "oas-picker": {
     "attrs": {
       "columns": "Independent column data (JSON array [{ key?, label?, items: [{ label, value?, disabled? }] }]; mutually exclusive with options and takes priority)",

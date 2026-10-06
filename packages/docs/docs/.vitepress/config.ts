@@ -163,6 +163,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'SwipeCell 滑动操作', link: '/components/swipe-cell' },
       { text: 'Kanban 看板', link: '/components/kanban' },
       { text: 'Scheduler 日程调度', link: '/components/scheduler' },
+      { text: 'Gantt 甘特图', link: '/components/gantt' },
     ],
   },
   {

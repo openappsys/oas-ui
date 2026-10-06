@@ -4142,6 +4142,43 @@
       "events": "日程事件（`SchedulerEvent[]`）：`el.events` 读（含自动 id 的拷贝）；`el.events = [...]` 写（同步 events 属性 + 重渲染 + 派发 oas-events-change）"
     }
   },
+  "oas-gantt": {
+    "attrs": {
+      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }]——扁平 parent 指针为主，嵌套 children 自动拍平；无 end = 里程碑",
+      "scale": "时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day",
+      "expanded": "已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回",
+      "readonly": "整图只读（禁改期/禁进度，不渲染拖拽手柄）",
+      "dates-readonly": "禁改期/拉伸（进度仍可拖）",
+      "progress-readonly": "禁改进度（改期仍可拖）",
+      "show-today": "今日线（默认开；false 关闭）",
+      "weekends": "周末列高亮（默认开；day/hour 档生效；false 关闭）",
+      "holidays": "假日列表（JSON [\"YYYY-MM-DD\",…]）：对应列高亮（优先于周末底色）",
+      "first-day-of-week": "周起始日（0-6）；缺省按 locale 推导（week 档对齐用）",
+      "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
+      "height": "组件高度 px（默认 320）",
+      "row-height": "行高 px（默认 36，下限 20）",
+      "label-position": "任务条标签位置：right（默认）/ inside / left",
+      "snap": "拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度）"
+    },
+    "events": {
+      "oas-task-click": "点击任务条/里程碑时派发，detail: { id, task }",
+      "oas-task-dblclick": "双击任务条时派发，detail: { id, task }——宿主接编辑表单",
+      "oas-task-change": "拖拽/拉伸/键盘改期收口（pointerup）时派发，detail: { id, task, oldStart, oldEnd, start, end }；零位移不派发",
+      "oas-progress-change": "拖进度手柄收口时派发，detail: { id, task, progress }",
+      "oas-tasks-change": "任务数据变化（程序写 tasks / updateTask / 拖拽写回）时派发，detail: { tasks }",
+      "oas-expand-change": "行树折叠/展开时派发，detail: { id, expanded }",
+      "oas-scale-change": "scale 属性变化时派发，detail: { scale }；首次吸收不派发",
+      "oas-task-render": "每条任务渲染后派发，detail: { task, element }——宿主可改写条内 DOM"
+    },
+    "slots": {
+      "template[slot=\"empty\"]": "空数据态内容（缺省「暂无任务」）",
+      "template[slot=\"task\"]": "任务条标签模板（克隆进条身，[data-task-name] 节点自动填任务名）",
+      "template[slot=\"tooltip\"]": "悬停浮层模板（[data-task-name] / [data-task-range] / [data-task-progress] 绑定点）"
+    },
+    "props": {
+      "tasks": "甘特任务（`GanttTask[]`）：`el.tasks` 读（拷贝，嵌套输入已拍平为 parent 指针）；`el.tasks = [...]` 写（同步 tasks 属性 + 重渲染 + 派发 oas-tasks-change）"
+    }
+  },
   "oas-picker": {
     "attrs": {
       "columns": "独立多列数据（JSON 数组 [{ key?, label?, items: [{ label, value?, disabled? }] }]；与 options 互斥且优先）",

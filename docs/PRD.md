@@ -1925,3 +1925,25 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：data-URI 滤镜链结构（discrete 阈值归一 + 位移曲线三段值 + scale=8 + 滤镜区域横向 -50%/200% 纵向 -100%/300%）/ 9 组件消费断言 / 范围纪律（modal/drawer/popover + select 全族不含折射变量）/ app-bar data-more-open 关折射钩子 / 缺省回落 none；
 - e2e：data-glass 下 computed filter 生效（含 slider 把手伪元素）/ 无 data-glass 时安全降级 / 像素级断言（Chromium：整体开/关必不同 = 滤镜真实执行 + 中心区开/关一致 = 中间恒不变形硬约束；Firefox：开/关视觉无差 = 无感降级契约，防假绿）/ filter 与 backdrop-filter 共存（折射生效时模糊不丢）/ 文档化降级路径（容器覆盖空值后基础态 none 且 button hover 亮度反馈仍在）/ app-bar 弹层打开期间 filter 回落 none / 布局盒不变（双主题）；
 - 全门禁 + 双引擎 + perf:size 预算不突破。
+
+## oas-gantt 甘特图组件（未发布）
+
+> 立项背景：项目排期语义（任务/工期/依赖/进度）与 oas-scheduler 的约会语义（日历格/事件）互补不重叠，为独立组件（data 族）。数据契约以扁平 `parent` 指针为主（嵌套 `children` 输入在清洗层自动拍平兼容）；依赖连线用 SVG 单画布覆盖层（FS/SS/FF/SF 四型）；非法/边界约束组件内建（坏数据清洗丢弃、悬空 parent 按根渲染并告警一次、progress 越界 clamp、非法 scale 回退 day），宿主责任（undo/redo、编辑表单、导出）文档明示。
+
+### 特性
+
+- **行树 WBS**：父任务摘要条（时间 = 子任务并集、进度 = 子任务工期加权平均），折叠/展开集合走 `expanded` 属性（JSON 数组，缺省全展开、显式 `[]` 全收起）+ `oas-expand-change`；悬空 parent 按根渲染并 console.warn 一次。
+- **任务条三形态**：task（进度填充 + 标签 `label-position` inside/right/left）/ milestone（无 `end` 推导，菱形）/ summary（摘要条）；条色 `color` 走 CSS 变量解析；`template[slot="task"]` + `oas-task-render` 双通道定制。
+- **依赖连线**：`dependencies: [{ id, type?: fs/ss/ff/sf }]`，SVG 单画布绘制折线 + 箭头（虚拟滚动下只画窗口行内的连线，目标悬空跳过）。
+- **时间刻度六档**：`scale` hour/day/week/month/quarter/year，双层表头（上层主刻度合并 + 下层辅刻度），非法值回落 day；`snap` 吸附当前刻度（可关，按像素比例平移保留时间精度）；`first-day-of-week` + `locale` 本地化。
+- **拖拽三件套**：拖条身改期（保工期）/ 左右手柄拉伸（不越过对侧）/ 条内圆点改进度，pointerup 收口一次性写回并派发 `oas-task-change`（含 old/new）与 `oas-progress-change` + `oas-tasks-change`；零位移零事件；Esc/pointercancel 取消回滚零事件；拖拽中外部重写 `tasks` 终止拖拽回滚；键盘 Shift+←/→ 改期一格（RTL 镜像）。
+- **只读三级 + 任务级禁用**：`readonly`（全禁）/ `dates-readonly` / `progress-readonly`；只读态不渲染拖拽手柄（视觉即语义）；数据 `disabled: true` 单条禁拖。
+- **今日线与日历底色**：`show-today`（默认开，装饰层 aria-hidden）+ `weekends` 周末列高亮（day/hour 档）+ `holidays` 假日列表。
+- **行虚拟滚动**：行数超出视口只渲染窗口行 + buffer（名称列/任务条/连线/底色全部窗口化）；方法 `scrollToTask(id)`（命名避开 DOM 内建 Element.scrollTo）/ `scrollToDate(date)` / `scrollToToday()` / `updateTask(id, patch)`。
+- **宿主责任边界**：undo/redo（组件发全量事件，宿主维护历史栈）、编辑表单（`oas-task-dblclick` 宿主接 oas-dialog）、导出（数据转换属业务层）、依赖联动排程/基线对比/关键路径（v2 候选）不做。
+
+### 验收
+
+- 单测 50 条（渲染/刻度六档/行树折叠/依赖连线四型/拖拽三件套收口与取消/虚拟滚动/只读三级/今日线/RTL 镜像/暗色 token 纪律/tasks 通道与方法）；`pnpm test` 全绿。
+- e2e：`qa-regression/gantt.spec.ts`（渲染/刻度切换/折叠/真指针拖拽改期/tooltip/暗色/console 零告警）；全量 e2e 全绿。
+- 文档：gantt.md（zh/en）+ api-manifest + api-descriptions + i18n ×10 + PRD/ROADMAP 同步。
