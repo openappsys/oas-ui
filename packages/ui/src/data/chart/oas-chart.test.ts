@@ -385,6 +385,113 @@ describe('OASChart', () => {
     expect(left.map((t) => t.textContent)).toEqual(['0', '50', '100', '150', '200'])
   })
 
+  it('combo（bar 顶层 + line 覆盖）：柱与线共存，线点对齐 band 中心（非纯折线的端点对齐）', () => {
+    const el = mount({
+      type: 'bar',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: '销量', data: [50, 100] },
+          { name: '增长率', data: [5, 10], type: 'line' },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    expect(svg.querySelectorAll('rect.bar').length).toBe(2) // 仅柱型系列出柱
+    expect(svg.querySelectorAll('.line-path').length).toBe(1)
+    expect(svg.querySelectorAll('circle.dot').length).toBe(2) // 柱不带 dot，线型系列 2 点
+    // 线点对齐柱组 band 中心：plotW=466、bandW=233 → 中心 158.5 / 391.5
+    const dots = [...svg.querySelectorAll('circle.dot')]
+    expect(Number(dots[0]!.getAttribute('cx'))).toBeCloseTo(158.5, 0)
+    expect(Number(dots[1]!.getAttribute('cx'))).toBeCloseTo(391.5, 0)
+    // 柱宽按柱型系列数（1）算：bandW×0.45 = 104.9（不是双系列柱的 0.72/2）
+    expect(Number(svg.querySelector('rect.bar')!.getAttribute('width'))).toBeCloseTo(233 * 0.45, 0)
+    // 层序：bar 层先于 line 层（线盖柱的通行读法）
+    const bar = svg.querySelector('rect.bar')!
+    const line = svg.querySelector('.line-path')!
+    expect(bar.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('combo（bar 顶层 + area 覆盖）：面积层闭合到基线', () => {
+    const el = mount({
+      type: 'bar',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: '销量', data: [50, 100] },
+          { name: '成本', data: [20, 30], type: 'area' },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    expect(svg.querySelectorAll('rect.bar').length).toBe(2)
+    expect(svg.querySelectorAll('.area-path').length).toBe(1)
+    const d = svg.querySelector('.area-path')!.getAttribute('d')!
+    expect(d.endsWith('Z')).toBe(true)
+    expect(d).toContain('250.0') // 基线闭合
+  })
+
+  it('combo（line 顶层 + bar 覆盖）：纯折线图中混入柱系列', () => {
+    const el = mount({
+      type: 'line',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'A', data: [50, 100] },
+          { name: 'B', data: [20, 30], type: 'bar' },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    expect(svg.querySelectorAll('rect.bar').length).toBe(2)
+    expect(svg.querySelectorAll('.line-path').length).toBe(1) // 仅线型系列 A 画折线；柱系列不画线
+  })
+
+  it('combo 继承与回退：无 type 覆盖走纯柱；非法 type（pie）静默回退顶层型', () => {
+    const inherit = mount({
+      type: 'bar',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'A', data: [50, 100] },
+          { name: 'B', data: [20, 30] },
+        ],
+      }),
+    })
+    expect(inherit.shadowRoot!.querySelectorAll('rect.bar').length).toBe(4)
+    expect(inherit.shadowRoot!.querySelector('.line-path')).toBeNull()
+
+    const fallback = mount({
+      type: 'bar',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'A', data: [50, 100] },
+          { name: 'B', data: [20, 30], type: 'pie' },
+        ],
+      }),
+    })
+    expect(fallback.shadowRoot!.querySelector('.slice')).toBeNull()
+    expect(fallback.shadowRoot!.querySelectorAll('rect.bar').length).toBe(4)
+  })
+
+  it('combo × 双轴：line 覆盖系列绑右轴（yAxisIndex=1），点按右轴量程落 y', () => {
+    const el = mount({
+      type: 'bar',
+      options: '{"yAxis":[{"name":"销量"},{"name":"增长率"}]}',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: '销量', data: [50, 100] },
+          { name: '增长率', data: [5, 10], type: 'line', yAxisIndex: 1 },
+        ],
+      }),
+    })
+    const dots = [...svgOf(el).querySelectorAll('circle.dot')]
+    // 右轴量程 12（raw max 10 → step 3 × 4）；值 10 → y = 16+234-10/12×234 = 155
+    expect(Number(dots[dots.length - 1]!.getAttribute('cy'))).toBeCloseTo(16 + 234 - (10 / 12) * 234, 0)
+  })
+
   it('type=stacked-bar 多系列堆叠（段高之和=分类总高，不超绘图区）', () => {
     const el = mount({ type: 'stacked-bar', data: MULTI })
     const bars = svgOf(el).querySelectorAll('.bar')

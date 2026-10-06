@@ -10,6 +10,8 @@ export interface ChartDatum {
 export interface ChartSeries {
   name: string
   data: number[]
+  /** 系列级图型覆盖（组合图）：'bar' | 'line' | 'area'，缺省/非法继承顶层 type */
+  type?: 'bar' | 'line' | 'area'
   /** 系列绑定的 y 轴下标（双轴）：0 左（默认）| 1 右；仅直角坐标系图型消费 */
   yAxisIndex?: 0 | 1
 }
@@ -314,15 +316,21 @@ export class OASChart extends OASElement {
     this.renderLegend(legend, data, options)
   }
 
-  /** 渲染主体图形（line/bar/pie/area/donut/stacked-bar/radar/polar-area 八型） */
+  /** 渲染主体图形（line/bar/pie/area/donut/stacked-bar/radar/polar-area 八型 + combo 系列级混排） */
   private renderBody(type: ChartType, data: ChartData, options: ChartOptions): string {
     if (type === 'pie') return this.renderPie(data, options)
     if (type === 'donut') return this.renderDonut(data, options)
     if (type === 'stacked-bar') return this.renderStackedBars(data, options)
     if (type === 'polar-area') return this.renderPolarArea(data, options)
     if (type === 'radar') return this.renderRadar(data, options)
-    if (type === 'area') return this.renderArea(data, options)
-    return type === 'bar' ? this.renderBars(data, options) : this.renderLine(data, options)
+    if (type === 'area') {
+      return this.isCombo(data, type) ? this.renderCombo(data, options, type) : this.renderArea(data, options)
+    }
+    if (type === 'bar') {
+      return this.isCombo(data, type) ? this.renderCombo(data, options, type) : this.renderBars(data, options)
+    }
+    // line（含未知 type 回退）
+    return this.isCombo(data, 'line') ? this.renderCombo(data, options, 'line') : this.renderLine(data, options)
   }
 
   /**
@@ -529,6 +537,87 @@ export class OASChart extends OASElement {
       })
     })
     return defs + out
+  }
+
+  /** combo 判定：顶层型 ∈ 直角坐标系三型，且任一系列覆盖为不同有效型（无覆盖走纯型渲染，零回归） */
+  private isCombo(data: ChartData, topType: 'line' | 'bar' | 'area'): boolean {
+    return data.series.some((s) => {
+      const t = s.type
+      return (t === 'bar' || t === 'line' || t === 'area') && t !== topType
+    })
+  }
+
+  /** 系列级有效图型：series.type ∈ bar/line/area 覆盖，缺省/非法静默回退顶层 type */
+  private seriesType(series: ChartSeries, topType: 'line' | 'bar' | 'area'): 'line' | 'bar' | 'area' {
+    const t = series.type
+    return t === 'bar' || t === 'line' || t === 'area' ? t : topType
+  }
+
+  /**
+   * 组合图（系列级混排）：无独立 combo type 值，顶层 type 为缺省系列型、series.type 逐系列覆盖。
+   * 共享同一 x 分类轴，line/area 的点对齐柱组 band 中心（与纯折线的端点对齐是关键差异）；
+   * 绘制层序固定 bar → area → line（线盖柱的通行读法，不暴露 order）；柱宽按柱型系列数计算
+   * （混排下 1 柱 1 线时柱不腰斩）；双轴（series.yAxisIndex）经 axisContext 通用；配色/图例按
+   * 原始系列下标（与图例顺序一致）。area 层为半透明纯色填充（gradient 仅纯 area 型支持）。
+   */
+  private renderCombo(data: ChartData, options: ChartOptions, topType: 'line' | 'bar' | 'area'): string {
+    const { plotW, ticksFor, yAt, grid } = this.axisContext(data, options)
+    const plotH = H - PAD.t - PAD.b
+    const n = data.labels.length
+
+    let out = grid(plotH)
+    out += this.renderXLabels(data.labels, plotW, 'middle')
+
+    const bandW = plotW / n
+    const xAt = (i: number): number => PAD.l + i * bandW + bandW / 2
+    const baseY = PAD.t + plotH
+
+    const resolved = data.series.map((series, si) => ({
+      series,
+      si,
+      t: this.seriesType(series, topType),
+    }))
+    const barSeries = resolved.filter((r) => r.t === 'bar')
+    const overlay = resolved.filter((r) => r.t !== 'bar') // area 层 + line 层
+
+    // bar 层
+    const m = barSeries.length
+    const barW = m > 1 ? (bandW * 0.72) / m : bandW * 0.45
+    const groupGap = m > 1 ? bandW * 0.14 : 0
+    barSeries.forEach(({ series, si }, bi) => {
+      const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
+      const color = options.colors?.[si]
+      const ticks = ticksFor(this.axisOf(series))
+      series.data.forEach((v, i) => {
+        const h = ticks.max > 0 ? Math.max(0, (v / ticks.max) * plotH) : 0
+        const x = PAD.l + i * bandW + groupGap / 2 + bi * (barW + (m > 1 ? 1 : 0))
+        const y = baseY - h
+        const label = this.datumLabel(data.labels[i] ?? '', v)
+        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></rect>`
+      })
+    })
+
+    // area 层（含描边）→ line 层
+    overlay.forEach(({ series, si, t }) => {
+      const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
+      const color = options.colors?.[si]
+      const axis = this.axisOf(series)
+      const pts = series.data.map((v, i) => ({ x: xAt(i), y: yAt(axis, v) }))
+      const path = options.smooth
+        ? this.smoothPath(pts)
+        : pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
+      if (t === 'area') {
+        const lastI = Math.min(n, series.data.length) - 1
+        const fill = `${path} L ${xAt(lastI).toFixed(1)} ${baseY.toFixed(1)} L ${xAt(0).toFixed(1)} ${baseY.toFixed(1)} Z`
+        out += `<path class="area-path ${cls} animate" d="${fill}"${color ? ` style="color:${color}"` : ''}></path>`
+      }
+      out += `<path class="line-path ${cls} animate" d="${path}"${color ? ` style="color:${color}"` : ''}></path>`
+      pts.forEach((p, i) => {
+        const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
+        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"><title>${this.escapeAttr(label)}</title></circle>`
+      })
+    })
+    return out
   }
 
   /** 柱状图：网格 + 分组柱 rect + x 分类 + title */
@@ -870,10 +959,14 @@ export class OASChart extends OASElement {
                 ? rec.data.map((v) => (Number.isFinite(Number(v)) ? Number(v) : 0))
                 : []
               if (data.length === 0) return null
-              const yAxisIndex = rec.yAxisIndex === 1 ? 1 : rec.yAxisIndex === 0 ? 0 : undefined
-              return yAxisIndex === 1
-                ? { name: rec.name != null ? String(rec.name) : '', data, yAxisIndex }
-                : { name: rec.name != null ? String(rec.name) : '', data }
+              const name = rec.name != null ? String(rec.name) : ''
+              const type: ChartSeries['type'] | undefined =
+                rec.type === 'bar' || rec.type === 'line' || rec.type === 'area' ? rec.type : undefined
+              const yAxisIndex: ChartSeries['yAxisIndex'] | undefined = rec.yAxisIndex === 1 ? 1 : undefined
+              const outSeries: ChartSeries = { name, data }
+              if (type) outSeries.type = type
+              if (yAxisIndex) outSeries.yAxisIndex = yAxisIndex
+              return outSeries
             })
             .filter((s): s is ChartSeries => s !== null)
         : []
