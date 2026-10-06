@@ -33,7 +33,7 @@ onMounted(async () => {
       <oas-input placeholder="输入框（实心控件）" style="width: 220px"></oas-input>
     </div>
   </div>
-  <oas-modal v-if="open" visible no-mask title="液态玻璃对话框" @oas-close="open = false">
+  <oas-modal v-if="open" visible no-mask draggable title="液态玻璃对话框" @oas-close="open = false">
     <p>面板背景透出背后的渐变与按钮——blur + 高光边共同构成玻璃材质。</p>
   </oas-modal>
 </div>

@@ -33,7 +33,7 @@ onMounted(async () => {
       <oas-input placeholder="Input (solid control)" style="width: 220px"></oas-input>
     </div>
   </div>
-  <oas-modal v-if="open" visible no-mask title="Liquid glass dialog" @oas-close="open = false">
+  <oas-modal v-if="open" visible no-mask draggable title="Liquid glass dialog" @oas-close="open = false">
     <p>The gradient and buttons behind show through the panel—blur and specular ring form the glass material.</p>
   </oas-modal>
 </div>
