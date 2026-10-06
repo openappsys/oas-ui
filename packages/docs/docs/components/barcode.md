@@ -73,7 +73,7 @@
     <oas-barcode value="OAS-UI-2026" margin="48" aria-label="加大静区条码"></oas-barcode>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    <code>margin</code> 是左右静区（px，默认 10）。扫码枪要求条码两侧有足够空白，否则拒读——组件内建护栏：<b>显式值低于 <code>10 × bar-width</code> 时收敛到下限并 console.warn 一次</b>（默认值不参与收敛），宿主可加大、不可破坏。
+    <code>margin</code> 是左右静区（px，默认 10）。扫码枪要求条码两侧有足够空白，否则拒读——组件内建护栏：<b>显式值低于 <code>10 × bar-width</code> 时收敛到下限并 console.warn 一次</b>（默认值不参与收敛），宿主可加大、不可破坏。护栏只保下限——具体部署场景（打印尺寸、扫描距离、扫码枪型号）对静区的物理要求由宿主按实际情况评估。
   </p>
 </DemoBlock>
 

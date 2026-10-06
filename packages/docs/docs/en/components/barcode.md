@@ -73,7 +73,7 @@ A 1D barcode component based on a **pure TypeScript, zero-dependency encoder** (
     <oas-barcode value="OAS-UI-2026" margin="48" aria-label="Barcode with an enlarged quiet zone"></oas-barcode>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    <code>margin</code> is the left/right quiet zone (px, default 10). Scanners require enough whitespace on both sides or they refuse to read — the component has a built-in guardrail: <b>explicit values below <code>10 × bar-width</code> are clamped up to the floor with a one-time console.warn</b> (the default value is exempt). Hosts may enlarge it, not break it.
+    <code>margin</code> is the left/right quiet zone (px, default 10). Scanners require enough whitespace on both sides or they refuse to read — the component has a built-in guardrail: <b>explicit values below <code>10 × bar-width</code> are clamped up to the floor with a one-time console.warn</b> (the default value is exempt). Hosts may enlarge it, not break it. The guardrail only enforces the floor — whether the quiet zone meets the physical requirements of a specific deployment (print size, scan distance, scanner model) is for the host to evaluate.
   </p>
 </DemoBlock>
 
