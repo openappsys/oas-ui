@@ -72,6 +72,10 @@
       "default": "none"
     },
     {
+      "name": "--oas-glass-refraction",
+      "default": "none"
+    },
+    {
       "name": "--oas-glass-ring",
       "default": "transparent"
     },

@@ -1,6 +1,6 @@
 # Liquid Glass Gallery
 
-> A static-approximation material layer of translucent surfaces, backdrop blur, and specular edge rings (edge refraction and dynamic fluidity are follow-ups—see [Theming](/en/guide/theming#liquid-glass-glass-css)).
+> A static-approximation material layer of translucent surfaces, backdrop blur, and specular edge rings (edge refraction ships as a static displacement approximation; dynamic fluidity remains a follow-up—see [Theming](/en/guide/theming#liquid-glass-glass-css)).
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
@@ -24,6 +24,13 @@ onBeforeUnmount(() => {
     <button class="sg-btn" :class="{ 'sg-active': theme === 'dark' }" @click="theme = 'dark'">dark</button>
     <oas-button type="primary" @click="open = true">Open dialog</oas-button>
     <oas-button @click="message.success('Glass message: frosted backdrop shows through')">Show message</oas-button>
+  </div>
+  <div class="gg-controls">
+    <oas-button type="primary">Primary</oas-button>
+    <oas-button>Default</oas-button>
+    <oas-switch checked></oas-switch>
+    <oas-slider value="45" style="width: 200px"></oas-slider>
+    <span class="gg-note">Edge refraction (static displacement approximation): control edge outlines displace, center untouched</span>
   </div>
   <div class="gg-cards">
     <div class="gg-card">
@@ -61,6 +68,8 @@ onBeforeUnmount(() => {
   /* 弹窗透度微调（modal 消费 --oas-color-bg；变量可继承进 shadow——零库影响） */
   --oas-color-bg: rgba(24, 24, 27, 0.5);
 }
+.gg-controls { display: flex; align-items: center; gap: var(--oas-space-4); margin-bottom: var(--oas-space-4); padding: var(--oas-space-2) 0; }
+.gg-note { color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); }
 .gg-toolbar { display: flex; gap: var(--oas-space-3); align-items: center; margin-bottom: var(--oas-space-5) }
 .gg-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--oas-space-4) }
 .gg-card {
@@ -94,5 +103,5 @@ onBeforeUnmount(() => {
 
 - `data-glass` stacks on top of `data-theme` / `data-skin`—freely composable;
 - the material needs backdrop contrast: it shines over colorful gradients/photos and recedes on flat same-hue backgrounds (text stays legible);
-- local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent` on any container;
+- local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;` on any container (the refraction opt-out value must be empty, not `none`—see [Theming](/en/guide/theming#liquid-glass-glass-css));
 - disabled under the `high-contrast` theme (solid accessibility tier wins).

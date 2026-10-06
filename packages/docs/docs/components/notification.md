@@ -367,6 +367,7 @@ onMounted(async () => {
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
 | `--oas-glass-blur` | — | `none` |
+| `--oas-glass-refraction` | — | `none` |
 | `--oas-glass-ring` | — | `transparent` |
 | `--oas-notification-progress-color` | 倒计时进度条颜色 | `var(--oas-color-primary)` |
 | `--oas-notification-width` | 卡片宽度（尺寸档位内部引用） | `320px` |

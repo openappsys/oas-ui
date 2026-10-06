@@ -15,6 +15,7 @@ const STYLE = `
 }
 .box {
   display: flex;
+  filter: var(--oas-glass-refraction, none);
   flex-direction: column;
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-lg);

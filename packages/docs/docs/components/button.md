@@ -373,6 +373,7 @@
 | `--oas-button-group-width` | — | `auto` |
 | `--oas-button-height` | 按钮高度开口（默认回落尺寸档值）；swipe-cell actions 等需要按钮填满行高的场景经 ::slotted 注入 100%（swipe-cell 已内建注入） | `var(--oas-control-height-md)` |
 | `--oas-button-on-color` | — | `var(--oas-color-text-on-primary)` |
+| `--oas-glass-refraction` | — | `none` |
 
 <script setup>
 import { onMounted } from 'vue'

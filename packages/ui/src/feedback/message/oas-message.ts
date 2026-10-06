@@ -27,6 +27,7 @@ const STYLE = `
 .box {
   position: relative;
   z-index: 1;
+  filter: var(--oas-glass-refraction, none);
   display: flex;
   align-items: flex-start;
   gap: var(--oas-space-2);

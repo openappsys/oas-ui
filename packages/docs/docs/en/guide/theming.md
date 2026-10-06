@@ -50,9 +50,9 @@ A skin only overrides `--oas-color-primary`; the derived steps (`-hover` / `-act
 </html>
 ```
 
-**Mechanism**: 25 floating-surface components (modal / drawer / popover / tooltip / dropdown / select-family panels / message / snackbar / bottom-sheet / app-bar, etc.) uniformly consume two effect variables—`--oas-glass-blur` (backdrop-filter tier) and `--oas-glass-ring` (specular outline ring); without glass.css both fall back to `none` / `transparent`, leaving components exactly as before.
+**Mechanism**: 25 floating-surface components (modal / drawer / popover / tooltip / dropdown / select-family panels / message / snackbar / bottom-sheet / app-bar, etc.) uniformly consume `--oas-glass-blur` (backdrop-filter tier) and `--oas-glass-ring` (specular outline ring); nine controls/nav/notification components (button / switch / slider / app-bar / bottom-navigation / message / toast / snackbar / notification) additionally consume `--oas-glass-refraction` (edge-refraction displacement filter; content panels excluded; auto-disabled for disabled buttons and while the app-bar overflow panel is open). Without glass.css everything falls back to `none` / `transparent`, leaving components exactly as before.
 
-**Relationship to Apple's full definition (honest note)**: this material layer is a **static approximation**—it delivers translucency, gaussian blur, specular edge ring, and layered shadows. Apple Liquid Glass's signature traits—**edge refraction distortion** (a liquid "bulge" confined to edges via feDisplacementMap) and **dynamic fluidity** (interaction-driven morphing and environment-reactive live highlights)—are follow-up enhancements to be delivered as a separate batch.
+**Relationship to Apple's full definition (honest note)**: this material layer is a **static approximation**—it delivers translucency, gaussian blur, specular edge ring, and layered shadows. The signature **edge refraction distortion** now ships as a **static displacement approximation** (feDisplacementMap edge-outline displacement—only the edge band distorts, the center never does; self-contained data-URI filter that resolves inside shadow DOM). **Dynamic fluidity** (interaction-driven morphing and environment-reactive live highlights) remains a follow-up enhancement to be delivered as a separate batch. Engine boundary (honest note): the refraction displacement takes real effect in Chromium-based browsers; Firefox does not execute data-URI SVG filters via CSS `filter` and degrades safely to no refraction (rendering is unaffected).
 
 **Boundaries**:
 
@@ -60,7 +60,7 @@ A skin only overrides `--oas-color-primary`; the derived steps (`-hover` / `-act
 - text safety is a hard constraint: the dark tier uses high-alpha surfaces (composites stay dark enough over bright backdrops; perceptual-contrast gate ≥60, see the gallery);
 - blur applies only to container-level surfaces (rows/long lists are excluded to avoid the cost of blurring large areas);
 - disabled under the `high-contrast` theme (solid accessibility tier wins);
-- local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent` on any container.
+- local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;` on any container (the refraction opt-out value must be **empty**, not `none`: button hover/pressed/selected states compose `brightness()` with this variable, and `none` mixed with functions invalidates the whole filter declaration, breaking the brightness feedback; an empty value is valid on both paths). For dense lists, disabling refraction at the container avoids many small filter rasterizations; likewise disable it for app-bars hosting overlay content (dropdown/popover)—`filter` clips overflowing subtrees into the filter region (the built-in overflow panel is handled automatically). If your build chain strips empty custom properties (some minifiers), use `--oas-glass-refraction: saturate(1)` instead (an identity filter that is equally valid in compositions).
 
 Live preview: [Liquid Glass Gallery](/en/guide/glass).
 

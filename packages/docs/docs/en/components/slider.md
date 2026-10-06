@@ -318,6 +318,7 @@ onMounted(() => {
 
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-glass-refraction` | `none` |
 | `--oas-slider-color` | `var(--oas-color-primary)` |
 | `--oas-slider-height` | `200px` |
 | `--oas-slider-thumb-size` | `14px` |

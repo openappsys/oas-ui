@@ -128,6 +128,10 @@
       "default": "18px"
     },
     {
+      "name": "--oas-glass-refraction",
+      "default": "none"
+    },
+    {
       "name": "--oas-switch-on-color",
       "default": "var(--oas-color-bg)"
     }

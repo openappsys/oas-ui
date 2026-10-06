@@ -191,6 +191,10 @@
   ],
   "cssVars": [
     {
+      "name": "--oas-glass-refraction",
+      "default": "none"
+    },
+    {
       "name": "--oas-button-color",
       "default": "var(--oas-color-text-primary)"
     },

@@ -182,6 +182,7 @@ onMounted(async () => {
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-glass-blur` | `none` |
+| `--oas-glass-refraction` | `none` |
 | `--oas-glass-ring` | `transparent` |
 
 - `open` is controlled: only `oas-close` is dispatched on timeout and the host removes `open`; reusing one instance with a changed `message` does not restart the timer — close it first or create a new element.

@@ -190,6 +190,7 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | `--oas-bottom-navigation-pill-inset` | `12px` |
 | `--oas-bottom-navigation-pill-shadow` | `var(--oas-shadow-sm)` |
 | `--oas-glass-blur` | `none` |
+| `--oas-glass-refraction` | `none` |
 | `--oas-glass-ring` | `transparent` |
 
 ### oas-bottom-navigation-item

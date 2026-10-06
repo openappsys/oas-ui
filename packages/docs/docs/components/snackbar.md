@@ -182,6 +182,7 @@ onMounted(async () => {
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-glass-blur` | `none` |
+| `--oas-glass-refraction` | `none` |
 | `--oas-glass-ring` | `transparent` |
 
 - `open` 受控：到期只派发 `oas-close`，由外部负责移除 `open`；单实例复用时 `message` 变更不会重启计时，新消息请先关后开或新建元素。

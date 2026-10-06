@@ -60,6 +60,7 @@ const STYLE = `
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-fixed, 1030));
 }
 .tablist {
+  filter: var(--oas-glass-refraction, none);
   display: flex;
   border-top: 1px solid var(--oas-color-border);
   background: var(--oas-color-bg-elevated);

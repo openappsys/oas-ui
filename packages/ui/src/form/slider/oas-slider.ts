@@ -183,6 +183,7 @@ input::-webkit-slider-runnable-track {
 }
 input::-webkit-slider-thumb {
   appearance: none;
+  filter: var(--oas-glass-refraction, none);
   width: var(--oas-slider-thumb-size);
   height: var(--oas-slider-thumb-size);
   border-radius: 50%;
@@ -212,6 +213,7 @@ input::-moz-range-track {
 }
 input::-moz-range-thumb {
   width: var(--oas-slider-thumb-size);
+  filter: var(--oas-glass-refraction, none);
   height: var(--oas-slider-thumb-size);
   box-sizing: border-box;
   border-radius: 50%;

@@ -202,6 +202,10 @@
       "default": "var(--oas-color-border)"
     },
     {
+      "name": "--oas-glass-refraction",
+      "default": "none"
+    },
+    {
       "name": "--oas-slider-thumb-size",
       "default": "14px"
     },

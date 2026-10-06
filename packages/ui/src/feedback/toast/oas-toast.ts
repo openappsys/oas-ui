@@ -31,6 +31,7 @@ const STYLE = `
 .box {
   position: relative;
   display: flex;
+  filter: var(--oas-glass-refraction, none);
   align-items: flex-start;
   gap: var(--oas-space-2);
   padding: var(--oas-space-3) var(--oas-space-4);

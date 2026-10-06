@@ -3,15 +3,20 @@
  * 用法：主题之上叠加 `data-glass` —— `<html data-theme="dark" data-glass>`。
  * 材质本质：半透明 surface + backdrop 模糊 + 高光描边环 + 圆角放大 + 分层深影。
  *
- * 两个效果变量（组件侧统一消费，缺省值天然无效）：
+ * 三个效果变量（组件侧统一消费，缺省值天然无效）：
  * - `--oas-glass-blur`（本文件内置值；不引时为组件侧回落 `none`）：
  *   surface 组件经 `backdrop-filter: var(--oas-glass-blur, none)` 消费（容器级 surface 才接——
  *   行级/长列表不接，避免大面积模糊的性能成本）；
  * - `--oas-glass-ring`（高光描边环）：surface 组件经
  *   `outline: 1px solid var(--oas-glass-ring, transparent); outline-offset: -1px` 消费
- *   （贴近玻璃的折光边；默认 transparent 不可见）。
+ *   （贴近玻璃的折光边；默认 transparent 不可见）；
+ * - `--oas-glass-refraction`（边缘折射，仅 9 个 controls/nav/notification 组件消费，
+ *   内容面板不接）：data-URI 自包含 SVG 位移滤镜。
  *
- * 降级：局部停用可对任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent`。
+ * 降级：局部停用可对任意容器覆盖
+ * `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;`
+ * （折射的停用值必须留空而非 none：button 的 hover/按下/选中态把 brightness() 与该变量
+ * 组合书写，none 与函数混排会让整条 filter 声明非法、亮度反馈失效——空值则两条路径都合法）。
  * 边界：材质依赖背景反差——纯色/同色相背景上玻璃感减弱（文字仍走 token 安全档可读）；
  * high-contrast 主题下不启用（实心可访问性档优先，选择器已排除）。
  */
@@ -38,7 +43,23 @@
   --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.1);
   --oas-shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.08), 0 12px 28px -4px rgba(0, 0, 0, 0.14);
   --oas-shadow-lg: 0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 24px 48px -8px rgba(0, 0, 0, 0.2);
-  /* 材质效果变量 */
+  /* 材质效果变量。
+     折射滤镜用 data-URI 自包含 SVG（不依赖 DOM 注入）：shadow DOM 内 CSS 的
+     url(#id) 片段引用无法跨 shadow 边界解析到外部文档（实测 Chromium/Firefox 静默忽略），
+     data-URI 内联滤镜在任何树内天然可解析。CSP 禁 data: 时滤镜引用失效的表现由浏览器
+     决定（主流按忽略滤镜处理）；严格 CSP 宿主可显式覆盖 --oas-glass-refraction: ;（空值，
+     理由同上——none 与 brightness() 混排非法）。
+     滤镜链（四步）：
+     ① discrete 阈值（alpha≥0.5→1）：把半透明玻璃面与不透明面统一归一为实心剪影——
+        玻璃面 alpha 0.55~0.75 不归一则中心偏离中性（review 实抓），这步是
+        「中心恒不变形」硬约束与表面透明度无关的前提；
+     ② blur 4px：实心剪影边缘生成过渡带（位移曲线的输入）；
+     ③ table 0.5→1→0.5：中心/外部 0.5 中性、边缘环带 1 全量位移——只有边缘变形；
+     ④ displacement scale=8：单轴位移上限 4px，控制视觉膨胀与热区偏差。
+     滤镜区域横向 -50%/200%、纵向 -100%/300%：投影主下探（shadow-md 尾部约 40px），
+     纵向留一倍元素高的缓冲防滤镜区域硬切投影（review 实抓 -8%/116% 切投影、-50%/200%
+     对矮元素仍可能切在衰减段）；位移是渲染后像素操作，布局/命中区不受影响 */
+  --oas-glass-refraction: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter%20id='oas-glass-refraction'%20x='-50%25'%20y='-100%25'%20width='200%25'%20height='300%25'%20color-interpolation-filters='sRGB'%3E%3CfeComponentTransfer%20in='SourceAlpha'%20result='t'%3E%3CfeFuncA%20type='discrete'%20tableValues='0%201'/%3E%3C/feComponentTransfer%3E%3CfeGaussianBlur%20in='t'%20stdDeviation='4'%20result='a'/%3E%3CfeComponentTransfer%20in='a'%20result='m'%3E%3CfeFuncA%20type='table'%20tableValues='0.5%201%200.5'/%3E%3C/feComponentTransfer%3E%3CfeDisplacementMap%20in='SourceGraphic'%20in2='m'%20scale='8'%20xChannelSelector='A'%20yChannelSelector='A'/%3E%3C/filter%3E%3C/svg%3E#oas-glass-refraction");
   --oas-glass-blur: blur(18px) saturate(1.6);
   --oas-glass-ring: rgba(255, 255, 255, 0.55);
 }

@@ -10,6 +10,7 @@ const STYLE = `
 }
 .box {
   position: fixed;
+  filter: var(--oas-glass-refraction, none);
   left: 50%;
   transform: translate(-50%, 0);
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-message, 1060));

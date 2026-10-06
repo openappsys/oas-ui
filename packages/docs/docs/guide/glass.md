@@ -1,6 +1,6 @@
 # 液态玻璃画廊
 
-> 半透明 surface + backdrop 模糊 + 高光折光边的静态近似材质层（边缘折射与动态流动属后续增强，详见[主题与自定义](/guide/theming#液态玻璃-glass-css)）。
+> 半透明 surface + backdrop 模糊 + 高光折光边的静态近似材质层（边缘折射已交付为静态置换近似，动态流动感仍属后续增强，详见[主题与自定义](/guide/theming#液态玻璃-glass-css)）。
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
@@ -24,6 +24,13 @@ onBeforeUnmount(() => {
     <button class="sg-btn" :class="{ 'sg-active': theme === 'dark' }" @click="theme = 'dark'">dark</button>
     <oas-button type="primary" @click="open = true">打开对话框</oas-button>
     <oas-button @click="msg?.success('玻璃材质消息：背景透出磨砂质感')">弹出消息</oas-button>
+  </div>
+  <div class="gg-controls">
+    <oas-button type="primary">主按钮</oas-button>
+    <oas-button>次按钮</oas-button>
+    <oas-switch checked></oas-switch>
+    <oas-slider value="45" style="width: 200px"></oas-slider>
+    <span class="gg-note">边缘折射（静态置换近似）：控件边缘轮廓位移，中间不变形</span>
   </div>
   <div class="gg-cards">
     <div class="gg-card">
@@ -61,6 +68,8 @@ onBeforeUnmount(() => {
   /* 弹窗透度微调（modal 消费 --oas-color-bg；变量可继承进 shadow——零库影响） */
   --oas-color-bg: rgba(24, 24, 27, 0.5);
 }
+.gg-controls { display: flex; align-items: center; gap: var(--oas-space-4); margin-bottom: var(--oas-space-4); padding: var(--oas-space-2) 0; }
+.gg-note { color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); }
 .gg-toolbar { display: flex; gap: var(--oas-space-3); align-items: center; margin-bottom: var(--oas-space-5) }
 .gg-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--oas-space-4) }
 .gg-card {
@@ -94,5 +103,5 @@ onBeforeUnmount(() => {
 
 - `data-glass` 叠加在 `data-theme` / `data-skin` 之上，三者自由组合；
 - 材质依赖背景反差——给页面一个有色彩层次的背景（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍可读）；
-- 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent`；
+- 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;`（折射停用值留空而非 none，原因见[主题与自定义](/guide/theming#液态玻璃-glass-css)）；
 - `high-contrast` 主题下不启用（实心可访问性档优先）。

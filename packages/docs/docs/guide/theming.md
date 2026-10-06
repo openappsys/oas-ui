@@ -49,9 +49,9 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 </html>
 ```
 
-**机制**：浮层 surface 组件（modal / drawer / popover / tooltip / dropdown / select 系面板 / message / snackbar / bottom-sheet / app-bar 等 25 个）统一消费两个效果变量——`--oas-glass-blur`（`backdrop-filter` 模糊档）与 `--oas-glass-ring`（折光描边环）；不引 glass.css 时两变量回落 `none` / `transparent`，组件行为与此前完全一致。
+**机制**：浮层 surface 组件（modal / drawer / popover / tooltip / dropdown / select 系面板 / message / snackbar / bottom-sheet / app-bar 等 25 个）统一消费 `--oas-glass-blur`（`backdrop-filter` 模糊档）与 `--oas-glass-ring`（折光描边环）两个变量；另有 9 个 controls/nav/notification 组件（button / switch / slider / app-bar / bottom-navigation / message / toast / snackbar / notification）消费 `--oas-glass-refraction`（边缘折射位移滤镜，内容面板不接；button 的禁用态与 app-bar 溢出弹层打开期间自动关闭）。不引 glass.css 时全部回落 `none` / `transparent`，组件行为与此前完全一致。
 
-**与 Apple 完整定义的关系（如实说明）**：本材质层是**静态近似**——达成半透明 / 高斯模糊 / 折光边 / 分层深影四项观感；Apple Liquid Glass 的标志性特征「**边缘折射变形**（feDisplacementMap 边缘液态膨胀）与**动态流动感**（随交互变形、随环境变化的实时高光）」属后续增强，届时以独立批次交付。
+**与 Apple 完整定义的关系（如实说明）**：本材质层是**静态近似**——达成半透明 / 高斯模糊 / 折光边 / 分层深影四项观感；标志性特征「**边缘折射变形**」已交付为**静态置换近似**（feDisplacementMap 边缘轮廓位移，仅边缘环带变形、中间恒不变形；data-URI 自包含滤镜，shadow DOM 内可解析）；「**动态流动感**」（随交互变形、随环境变化的实时高光）仍属后续增强，届时以独立批次交付。引擎边界（如实）：折射位移在 Chromium 系真实生效；Firefox 不执行 CSS `filter` 的 data-URI SVG 滤镜，安全无感降级为无折射（不破坏渲染）。
 
 **边界**：
 
@@ -59,7 +59,7 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 - 文字安全是硬约束：dark 档 surface 用高 alpha（亮背板上合成色保持足够暗，感知对比度实测门禁 ≥60 分，见「液态玻璃画廊」）；
 - blur 只上容器级 surface（行级/长列表不接，避免大面积模糊的性能成本）；
 - `high-contrast` 主题下不启用（实心可访问性档优先）；
-- 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent`。
+- 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;`（折射的停用值**留空**而非 none：button 的 hover/按下/选中态把 brightness() 与该变量组合书写，`none` 与函数混排会使整条 filter 声明非法、亮度反馈失效；空值两条路径都合法）。密集列表场景建议对容器关掉折射，避免大量小滤镜栅格化开销；含浮层内容（dropdown/popover 等）的 app-bar 同样建议关掉（filter 会把向下溢出的子树裁进滤镜区域，内置溢出弹层已自动处理）。若宿主构建链会吞掉空值自定义属性（个别压缩器），可改用 `--oas-glass-refraction: saturate(1)`（恒等滤镜，混排同样合法）作为停用值。
 
 实时预览见[液态玻璃画廊](/guide/glass)。
 

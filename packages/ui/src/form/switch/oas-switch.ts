@@ -90,6 +90,7 @@ button {
   padding: 0;
   cursor: pointer;
   position: relative;
+  filter: var(--oas-glass-refraction, none);
   display: inline-flex;
   align-items: center;
   box-sizing: border-box;

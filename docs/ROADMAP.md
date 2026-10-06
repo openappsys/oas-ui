@@ -77,6 +77,8 @@
 
 | **v2.5.9** | **液态玻璃材质层**（2026-10-04 立项）：`glass.css` 玻璃皮肤包（surface token 半透明明暗双档 + border/radius/shadow 材质档，opt-in 独立文件）+ `--oas-glass-blur`/`--oas-glass-specular` 全局材质效果变量（默认零影响）+ surface 组件统一接线扫面（约 20-30 件，含移动原生批新组件）+ 感知对比度实测门禁（代表性背景 <60 零容忍）；边界：折射动态效果不做、行级/长列表不上 blur | ✅ 已完成 |
 
+| **未发布** | **玻璃边缘折射 v1**（承接液态玻璃批如实口径，范围纪律=Apple 定义域：data-URI 自包含边缘环带置换滤镜（中间恒不变形；shadow DOM 内 `url(#id)` 跨树不可解析，故用内联）+ 9 组件消费（button/switch/slider/app-bar/bottom-navigation/message/toast/snackbar/notification，缺省回落 none 零副作用）+ 画廊 controls 展示；内容面板与动态流动感不进本批） | 🚧 进行中 |
+
 > **注（可选工具包）**：`@oas-ui/react` 桥接包**不单独发布**，降级为仓库内可选工具包——React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`；桥接 hooks（`useOasEvent`/`useOasEvents`）供需要 camelCase 惯例 / TS 类型 / React 17-18 兼容的宿主按需使用，不随版本发布、不写入发布清单（详见 PRD）。
 
 > 组件总数：v1.0 核心集约 68 件；v1.x 长尾推进至约 115~120 件，100% 覆盖。原 13 个未排期组件已全部分配：轻量基础组件（button-group/label/kbd/visually-hidden）提到最前的 v1.1（独立、无前置依赖、快速交付），其余按功能族归到 v1.3/v1.4/v1.5/v1.7，无遗漏。

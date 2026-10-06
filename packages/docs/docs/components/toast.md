@@ -316,6 +316,7 @@ onMounted(async () => {
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-glass-blur` | `none` |
+| `--oas-glass-refraction` | `none` |
 | `--oas-glass-ring` | `transparent` |
 | `--oas-toast-ease` | `ease` |
 | `--oas-toast-enter-duration` | `0.2s` |

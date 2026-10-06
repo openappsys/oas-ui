@@ -1900,3 +1900,28 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：接线组件 backdrop-filter 变量消费断言；`pnpm test` 全绿。
 - e2e：明暗双主题截图审 + 真实背景可读性核对；全量 e2e 全绿。
 - 文档：theming.md（zh/en）玻璃层用法 + PRD/ROADMAP 同步。
+
+## 玻璃边缘折射 v1（未发布）
+
+> 承接液态玻璃批的如实口径：静态磨砂近似已发布（v2.5.9），本批补 Apple 定义的标志性特征「边缘折射变形」。**范围纪律（用户定）**：Apple 定义的材料范围是控制/导览/系统体验（按钮、开关、滑块、标签页栏、边栏、通知、控制中心）——本批只在对应元素落地，不无限扩展到全部浮层（内容面板不进 v1；动态流动感/实时光学高光仍属后续）。
+
+### 特性
+
+- **边缘折射滤镜（glass.css 内置 data-URI）**：`--oas-glass-refraction` 指向自包含 SVG 滤镜，四步链——① `feComponentTransfer` discrete 阈值（alpha≥0.5→1）把半透明玻璃面与不透明面统一归一为实心剪影（**不归一则玻璃面中心偏离中性**，review 实抓：这是「中心恒不变形」与表面透明度无关的前提）；② `feGaussianBlur` 4px 生成边缘过渡带；③ table 位移曲线 0.5→1→0.5（中心/外部中性、边缘环带全量位移）；④ `feDisplacementMap` scale=8（单轴位移上限 4px）控制视觉/热区偏差。**只有边缘环带变形、中间恒不变形**（对照社区「全局折射致浑浊拉丝」教训，限边缘是本批硬要求）。实现选型：`url(#id)` 片段引用在 shadow DOM 内无法跨 shadow 边界解析（实测静默忽略），data-URI 内联滤镜在任何树内天然可解析；CSP 禁 data: 时滤镜引用失效的表现由浏览器决定（主流按忽略滤镜处理），严格 CSP 宿主可显式覆盖 `--oas-glass-refraction: ;`（空值——`none` 与 button 态的 `brightness()` 混排会使整条声明非法，review 实抓）。滤镜区域横向 -50%/200%、纵向 -100%/300%：给位移与分层投影主下探留缓冲（-8%/116% 硬切投影并裁掉 app-bar 溢出弹层、-50%/200% 对矮元素仍可能切在衰减段，review 两轮实抓）。
+
+- **消费范围（对应 Apple 定义域，逐项映射）**：oas-button / oas-switch / oas-slider（把手）/ oas-app-bar / oas-bottom-navigation / oas-message / oas-toast / oas-snackbar / oas-notification（盒体）。统一经 `filter: var(--oas-glass-refraction, none)` 消费——不引 glass.css 或无 `data-glass` 时回落 none，零副作用。三个状态例外：oas-button 的 hover/按下/选中态把 `brightness()` 与折射变量**组合**书写（不互相覆盖；空值 fallback，无 glass.css 时仍只剩 brightness）；oas-button 禁用态（`[disabled]` / `aria-disabled` / `disabled-focusable`）显式关折射（禁用外观恒定不变形）；oas-app-bar 溢出弹层打开期间经 `:host([data-more-open])` 关折射（filter 非 none 会把向下弹出的面板裁进滤镜区域；宿主在栏内容置浮层时建议容器级关折射，已写入 theming 文档）。
+- **画廊 controls 展示行**：舞台加按钮/开关/滑块控件行，静态置换近似可见；文案同步（折射已交付为静态置换，动态流动仍后续）。
+
+### 边界
+
+- 内容面板（modal/drawer/popover/select 系面板）不进 v1——超出 Apple 定义域且大面积置换成本高易翻车；
+- 行级/长列表不接（与 blur 同一性能纪律）；
+- 滤镜不可用时（如宿主 CSP 禁 data:）表现由浏览器决定（主流按忽略滤镜处理），严格 CSP 宿主可显式覆盖变量为空值；
+- **引擎边界（如实）**：折射位移在 Chromium 系真实生效；Firefox 对 CSS `filter` 的 data-URI SVG 滤镜不执行位移（实测开/关仅 ±1 LSB 栅格噪声）——安全无感降级为无折射，不破坏渲染；WebKit 未实测（按 engineering §2 手工验证清单补验）；
+- 位移是渲染后像素操作：布局/命中区不受影响（scale=8，单轴位移上限 4px 约束视觉膨胀与热区偏差）。
+
+### 验收
+
+- 单测：data-URI 滤镜链结构（discrete 阈值归一 + 位移曲线三段值 + scale=8 + 滤镜区域横向 -50%/200% 纵向 -100%/300%）/ 9 组件消费断言 / 范围纪律（modal/drawer/popover + select 全族不含折射变量）/ app-bar data-more-open 关折射钩子 / 缺省回落 none；
+- e2e：data-glass 下 computed filter 生效（含 slider 把手伪元素）/ 无 data-glass 时安全降级 / 像素级断言（Chromium：整体开/关必不同 = 滤镜真实执行 + 中心区开/关一致 = 中间恒不变形硬约束；Firefox：开/关视觉无差 = 无感降级契约，防假绿）/ filter 与 backdrop-filter 共存（折射生效时模糊不丢）/ 文档化降级路径（容器覆盖空值后基础态 none 且 button hover 亮度反馈仍在）/ app-bar 弹层打开期间 filter 回落 none / 布局盒不变（双主题）；
+- 全门禁 + 双引擎 + perf:size 预算不突破。
