@@ -2,11 +2,15 @@
 
 所有显著变更记录于此。
 
-## [未发布]
+## [2.6.0] - 未发布
 
 ### 特性
 
-- **玻璃边缘折射 v1**（承接液态玻璃批如实口径，范围纪律=Apple 定义域）：`glass.css` 内置 `--oas-glass-refraction` —— data-URI 自包含 SVG 位移滤镜（四步链：discrete 阈值把半透明玻璃面与不透明面归一为实心剪影 → blur 边缘过渡带 → 位移曲线 0.5→1→0.5 中心/外部中性仅边缘环带偏离 → `feDisplacementMap` scale=8 单轴上限 4px），**只有边缘环带变形、中间恒不变形**（布局/命中区不受影响）。实现选型：shadow DOM 内 `url(#id)` 片段引用无法跨 shadow 边界解析（实测静默忽略），data-URI 内联滤镜在任何树内天然可解析；滤镜区域横向 -50%/200%、纵向 -100%/300% 给位移与分层投影主下探留缓冲。引擎边界（如实）：折射位移在 Chromium 系真实生效；Firefox 对 CSS `filter` 的 data-URI SVG 滤镜不执行位移，安全无感降级为无折射（不破坏渲染）；WebKit 未实测。9 组件经 `filter: var(--oas-glass-refraction, none)` 消费：oas-button / oas-switch / oas-slider（把手）/ oas-app-bar / oas-bottom-navigation / oas-message / oas-toast / oas-snackbar / oas-notification——不引 glass.css 或无 `data-glass` 时回落 none 零副作用；oas-button hover/按下/选中态 `brightness()` 与折射组合书写不互覆（局部停用折射请覆盖为空值而非 none）；oas-button 禁用态显式关折射；oas-app-bar 溢出弹层打开期间自动关折射（防弹层被滤镜区域裁切）。内容面板（modal/drawer/popover/select 系）与动态流动感不进本批。画廊 controls 展示行同步；e2e 固化像素级断言（Chromium：开/关必不同 = 真实执行、中心区一致 = 中间恒不变形；Firefox：无差 = 无感降级契约防假绿）+ filter×backdrop-filter 共存断言 + 布局盒不变断言。
+- **玻璃边缘折射 v1**（承接液态玻璃批如实口径，范围纪律=Apple 定义域）：`glass.css` 内置 `--oas-glass-refraction` —— data-URI 自包含 SVG 位移滤镜（四步链：discrete 阈值把半透明玻璃面与不透明面归一为实心剪影 → blur 边缘过渡带 → 位移曲线 0.5→1→0.5 中心/外部中性仅边缘环带偏离 → `feDisplacementMap` scale=8 单轴上限 4px），**只有边缘环带变形、中间恒不变形**（布局/命中区不受影响）。实现选型：shadow DOM 内 `url(#id)` 片段引用无法跨 shadow 边界解析（实测静默忽略），data-URI 内联滤镜在任何树内天然可解析；滤镜区域横向 -50%/200%、纵向 -100%/300% 给位移与分层投影主下探留缓冲。引擎边界（如实）：折射位移在 Chromium 系真实生效；Firefox 对 CSS `filter` 的 data-URI SVG 滤镜不执行位移，安全无感降级为无折射（不破坏渲染）；WebKit 未实测。9 组件经 `filter: var(--oas-glass-refraction, none)` 消费：oas-button / oas-switch / oas-slider（把手）/ oas-app-bar / oas-bottom-navigation / oas-message / oas-toast / oas-snackbar / oas-notification——不引 glass.css 或无 `data-glass` 时回落 none 零副作用；oas-button hover/按下/选中态 `brightness()` 与折射组合书写不互覆（局部停用折射请覆盖为空值而非 none）；禁用态显式关折射跨组件统一（oas-button 含 hover/active/选中反超守卫、oas-switch 含 busy、oas-slider 双伪元素——禁用控件静态无装饰变形）；oas-app-bar 溢出弹层打开期间自动关折射（防弹层被滤镜区域裁切）。内容面板（modal/drawer/popover/select 系）与动态流动感不进本批。画廊 controls 展示行同步；e2e 固化像素级断言（Chromium：开/关必不同 = 真实执行、中心区一致 = 中间恒不变形；Firefox：无差 = 无感降级契约防假绿）+ filter×backdrop-filter 共存断言 + 布局盒不变断言。
+
+### 文档
+
+- **订正 v2.5.9 立项段变量名漂移**：`--oas-glass-specular`（立项拟名）实为 `--oas-glass-ring`（实现定名）——PRD/ROADMAP 回写订正；**明确 button-group 禁用 × 选中为有意设计**（禁用只灭交互与装饰变形，选中态颜色保留可读，加注释与 e2e 回归锁）。
 
 ## [2.5.9] - 2026-10-05
 

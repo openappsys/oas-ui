@@ -197,6 +197,14 @@ input::-webkit-slider-thumb {
   border: none;
   transition: transform var(--oas-transition-fast) var(--oas-ease-out);
 }
+/* 禁用关折射（与 button/switch 同一纪律：禁用控件静态无装饰变形）；
+   webkit/moz 伪元素必须分开书写（不认识的选择器会使整条规则失效） */
+input:disabled::-webkit-slider-thumb {
+  filter: none;
+}
+input:disabled::-moz-range-thumb {
+  filter: none;
+}
 /* hover 放大只在支持 hover 的设备生效：触屏点按后 :hover 会粘滞，拇指会一直保持放大
    （与纵向自定义拇指共用同一守卫，四种「横向/纵向 × 桌面/触屏」组合行为一致） */
 @media (hover: hover) {

@@ -134,6 +134,9 @@ button:focus-visible {
 button[disabled] {
   cursor: not-allowed;
   opacity: 0.6;
+  /* 禁用关折射（与 button/slider 同一纪律：禁用控件静态无装饰变形——含 busy 态，
+     busy 同样 btn.disabled=true） */
+  filter: none;
 }
 .thumb {
   position: absolute;

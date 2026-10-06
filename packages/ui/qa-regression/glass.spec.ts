@@ -161,6 +161,21 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
     expect(r.pressedDisabledFocusable, '选中 × disabled-focusable 不得恢复组合滤镜').toBe('none')
   })
 
+  test('switch 禁用态关折射（禁用控件静态无装饰变形——跨组件统一纪律）', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(800)
+    const r = await page.evaluate(() => {
+      const sw = document.createElement('oas-switch')
+      sw.setAttribute('disabled', '')
+      document.querySelector('.gg-stage')!.appendChild(sw)
+      const inner = sw.shadowRoot!.querySelector('button')!
+      const filter = getComputedStyle(inner).filter
+      sw.remove()
+      return filter
+    })
+    expect(r, 'switch 禁用态应关折射（含 busy，busy 同样 btn.disabled=true）').toBe('none')
+  })
+
   test('slider 把手折射真实执行（chromium 像素级；UA 伪元素无 computed 通道）', async ({ page, browserName }) => {
     test.skip(browserName === 'firefox', 'Firefox 不执行 data-URI SVG 滤镜位移（降级契约由像素断言锁）')
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })

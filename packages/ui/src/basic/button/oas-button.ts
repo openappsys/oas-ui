@@ -191,7 +191,11 @@ button:focus-visible {
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
-/* 选中态（button-group 单/多选经 host aria-pressed 标记）；置于类型规则前，有色按钮由下方规则覆盖 */
+/* 选中态（button-group 单/多选经 host aria-pressed 标记）；置于类型规则前，有色按钮由下方规则覆盖。
+   有意设计：禁用 × 选中时颜色维度的选中态不被禁用规则反超（特异性更高）——禁用组里
+   当前选中项保持主色淡底/描边（经 opacity 0.6 柔化），用户能读到「当前状态是什么」；
+   全灰会丢失状态信息（通行做法：禁用只灭交互与装饰变形，不抹状态）。折射/亮度等
+   装饰变形则由下方禁用守卫钉死 */
 :host([aria-pressed='true']) button,
 :host([aria-pressed='true']) a[part='button'] {
   color: var(--oas-color-primary-text);

@@ -111,6 +111,37 @@ test('button 语义色状态方向统一：success hover 变暗（0.94）、选�
   expect(await readFilter(), 'success 选中应比 hover 更深').toBe('brightness(0.85)')
 })
 
+test('button-group 禁用 × 选中：选中态颜色保留可读（有意设计——禁用只灭交互与装饰变形，不抹状态）', async ({ page }) => {
+  // 通行做法：禁用组的当前选中项保持主色描边/淡底（经 opacity 柔化），用户能读到当前状态；
+  // 全灰会丢失状态信息。此处锁定「禁用不反超选中态颜色」（曾被怀疑是缺陷，实为有意）。
+  await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForTimeout(600)
+  const r = await page.evaluate(() => {
+    const g = document.querySelector('oas-button-group[value]') ?? document.querySelector('oas-button-group')!
+    g.setAttribute('disabled', '')
+    const pressed = g.querySelector('oas-button[aria-pressed="true"]') ?? g.querySelector('oas-button')!
+    pressed.setAttribute('aria-pressed', 'true')
+    const btn = pressed.shadowRoot!.querySelector('button')!
+    const cs = getComputedStyle(btn)
+    return {
+      borderColor: cs.borderColor,
+      pressedOnlyBorder: (() => {
+        const g2 = g.cloneNode(true) as HTMLElement
+        g2.removeAttribute('disabled')
+        g.parentElement!.appendChild(g2)
+        const b2 = (g2.querySelector('oas-button[aria-pressed="true"]') ?? g2.querySelector('oas-button'))!
+        b2.setAttribute('aria-pressed', 'true')
+        const c = getComputedStyle(b2.shadowRoot!.querySelector('button')!).borderColor
+        g2.remove()
+        return c
+      })(),
+      opacity: cs.opacity,
+    }
+  })
+  expect(r.borderColor, '禁用 × 选中应保留主色描边（选中态可读）').toBe(r.pressedOnlyBorder)
+  expect(r.opacity, '禁用柔化仍在（opacity < 1）').toBe('0.6')
+})
+
 test('button primary（solid）：hover/选中背景不被自定义底色兜底规则压死', async ({ page }) => {
   // 曾现 bug：--oas-button-bg 覆盖规则的选择器带 :not() 链（权重 (0,6,1)），压死
   // button.primary:hover / :active / :host([aria-pressed]) 的 background (0,2,1)——

@@ -75,9 +75,9 @@
 
 | **v2.5.9** | **移动原生形态批**（2026-10-04 立项评估：组件并集矩阵偏桌面，移动原生交互 5 项真缺口）：**oas-notice-bar**（通告栏：marquee 引擎复用 + 图标/可关闭/action）+ **oas-index-bar**（索引栏：字母侧栏点/拖跳转 + scrollspy 联动）+ **oas-pull-refresh**（下拉刷新：手势/滚动协调 + 阻力曲线 + 状态机 i18n）+ **oas-swipe-cell**（滑动操作：横滑露按钮 + 吸附开合 + 单开互斥 + 键盘可达）+ **oas-picker**（滚轮选择器：scroll-snap 惯性轮 + 多列联动 + listbox 语义 + form-associated） | ✅ 已完成 |
 
-| **v2.5.9** | **液态玻璃材质层**（2026-10-04 立项）：`glass.css` 玻璃皮肤包（surface token 半透明明暗双档 + border/radius/shadow 材质档，opt-in 独立文件）+ `--oas-glass-blur`/`--oas-glass-specular` 全局材质效果变量（默认零影响）+ surface 组件统一接线扫面（约 20-30 件，含移动原生批新组件）+ 感知对比度实测门禁（代表性背景 <60 零容忍）；边界：折射动态效果不做、行级/长列表不上 blur | ✅ 已完成 |
+| **v2.5.9** | **液态玻璃材质层**（2026-10-04 立项）：`glass.css` 玻璃皮肤包（surface token 半透明明暗双档 + border/radius/shadow 材质档，opt-in 独立文件）+ `--oas-glass-blur`/`--oas-glass-ring` 全局材质效果变量（默认零影响；立项时曾拟名 specular，实现定为 ring）+ surface 组件统一接线扫面（约 20-30 件，含移动原生批新组件）+ 感知对比度实测门禁（代表性背景 <60 零容忍）；边界：折射动态效果不做、行级/长列表不上 blur | ✅ 已完成 |
 
-| **未发布** | **玻璃边缘折射 v1**（承接液态玻璃批如实口径，范围纪律=Apple 定义域：data-URI 自包含边缘环带置换滤镜（中间恒不变形；shadow DOM 内 `url(#id)` 跨树不可解析，故用内联）+ 9 组件消费（button/switch/slider/app-bar/bottom-navigation/message/toast/snackbar/notification，缺省回落 none 零副作用）+ 画廊 controls 展示；内容面板与动态流动感不进本批） | 🚧 进行中 |
+| **v2.6.0**（待发布） | **玻璃边缘折射 v1**（承接液态玻璃批如实口径，范围纪律=Apple 定义域：data-URI 自包含边缘环带置换滤镜（中间恒不变形；shadow DOM 内 `url(#id)` 跨树不可解析，故用内联）+ 9 组件消费（button/switch/slider/app-bar/bottom-navigation/message/toast/snackbar/notification，缺省回落 none 零副作用）+ 状态例外（button 组合书写/三类禁用守卫/app-bar 弹层自动关）+ 引擎边界如实（Chromium 生效、Firefox 无感降级）+ 画廊 controls 展示；内容面板与动态流动感不进本批） | ✅ 已完成 |
 
 > **注（可选工具包）**：`@oas-ui/react` 桥接包**不单独发布**，降级为仓库内可选工具包——React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`；桥接 hooks（`useOasEvent`/`useOasEvents`）供需要 camelCase 惯例 / TS 类型 / React 17-18 兼容的宿主按需使用，不随版本发布、不写入发布清单（详见 PRD）。
 

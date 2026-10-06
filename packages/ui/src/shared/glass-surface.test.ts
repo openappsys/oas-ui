@@ -180,6 +180,23 @@ describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
     expect(src).toContain("this.removeAttribute('data-more-open')")
   })
 
+  it('禁用关折射跨组件统一：switch button[disabled] + slider 双伪元素 disabled 守卫（UA 伪元素无 computed 通道，锁源码形态）', () => {
+    const sw = readFileSync(
+      resolve(import.meta.dirname, '../../../../packages/ui/src/form/switch/oas-switch.ts'),
+      'utf8',
+    )
+    expect(sw).toMatch(/button\[disabled\]\s*\{[^}]*filter:\s*none/)
+    const slider = readFileSync(
+      resolve(import.meta.dirname, '../../../../packages/ui/src/form/slider/oas-slider.ts'),
+      'utf8',
+    )
+    expect(slider).toContain('input:disabled::-webkit-slider-thumb')
+    expect(slider).toContain('input:disabled::-moz-range-thumb')
+    // webkit/moz 守卫必须分条书写（合并选择器遇到不认识的伪元素整条失效）
+    expect(slider).toMatch(/input:disabled::-webkit-slider-thumb\s*\{\s*filter:\s*none/)
+    expect(slider).toMatch(/input:disabled::-moz-range-thumb\s*\{\s*filter:\s*none/)
+  })
+
   it('glass.css 定义 --oas-glass-refraction：data-URI 自包含滤镜（shadow 内可解析）且仅在 data-glass 作用域', () => {
     const css = readFileSync(resolve(import.meta.dirname, '../../../../packages/theme/glass.css'), 'utf8')
     // data-URI 内联 SVG：url(#id) 片段引用在 shadow DOM 内无法跨树解析（实测静默忽略），
