@@ -126,6 +126,7 @@ OAS-UI 提供 126 个框架无关的 Web Components 组件，按用途划分为 
 - [Avatar 头像](/components/avatar) —— 用于展示用户或对象头像，支持文字占位与图片两种形态。
 - [Image 图片](/components/image) —— 用于展示图片资源，支持可选预览能力。
 - [QRCode 二维码](/components/qrcode) —— 基于**纯 TypeScript 零依赖编码器**（自研）的二维码组件，输出内联 SVG，可扫码、可下载。
+- [Barcode 条码](/components/barcode) —— 基于**纯 TypeScript 零依赖编码器**（自研）的一维条码组件，第一期 6 码制（CODE128/EAN-13/EAN-8/UPC-A/CODE39/ITF-14），可扫性约束内建（静区护栏/固定白底），输出内联 SVG，可下载。
 - [Watermark 水印](/components/watermark) —— 容器级水印层，铺在内容之上且不拦截任何交互，适合敏感信息防泄露。
 - [Collapse 折叠面板](/components/collapse) —— 用于将内容收纳在可折叠的面板中，聚焦关键信息。
 - [Descriptions 描述列表](/components/descriptions) —— 用于成组展示只读信息，适合详情页场景。

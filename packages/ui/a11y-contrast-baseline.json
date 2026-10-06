@@ -91,6 +91,22 @@
       "exempt": 0,
       "skipped": 1
     },
+    "barcode.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 34
+    },
+    "barcode.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 34
+    },
     "badge.html": {
       "below30": 0,
       "below45": 0,

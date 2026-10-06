@@ -126,6 +126,7 @@ OAS-UI provides 126 framework-agnostic Web Components, organized into 7 groups b
 - [Avatar](/en/components/avatar) —— Displays a user or object avatar, supporting both text-placeholder and image forms.
 - [Image](/en/components/image) —— Displays image resources, with an optional built-in preview feature.
 - [QRCode](/en/components/qrcode) —— A QR code component based on a **pure TypeScript, zero-dependency encoder** (built in-house) that outputs inline SVG and is scannable and downloadable.
+- [Barcode](/en/components/barcode) —— A 1D barcode component based on a **pure TypeScript, zero-dependency encoder** (built in-house): 6 symbologies in the first release (CODE128/EAN-13/EAN-8/UPC-A/CODE39/ITF-14), built-in scannability guardrails (quiet-zone floor / fixed white background), inline SVG output, downloadable.
 - [Watermark](/en/components/watermark) —— A container-level watermark layer that sits on top of the content without intercepting any interaction, suitable for preventing sensitive information from leaking.
 - [Collapse](/en/components/collapse) —— Stows content in collapsible panels to keep the focus on key information.
 - [Descriptions](/en/components/descriptions) —— Displays read-only information in groups, suitable for detail page scenarios.

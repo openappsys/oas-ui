@@ -2500,6 +2500,26 @@
       "template[slot=\"status\"]": "Custom status overlay content (built-in overlays per state by default)"
     }
   },
+  "oas-barcode": {
+    "attrs": {
+      "aria-label": "Accessible name of the container; defaults to i18n",
+      "value": "Barcode content (empty value shows the empty placeholder)",
+      "format": "Symbology: `code128` (default, auto A/B/C subset switching) / `ean13` / `ean8` / `upca` / `code39` / `itf14` (invalid values fall back to code128)",
+      "bar-width": "Bar width X-dimension (px, default 2, clamped to ≥1)",
+      "height": "Bar height (px, default 100, excluding the text zone and guard-bar extension)",
+      "display-value": "Show the human readable interpretation (shown by default; set to `\"false\"` to hide)",
+      "text-position": "HRI text position: `bottom` (default) / `top`",
+      "font-size": "HRI text font size (px, default 16)",
+      "text-margin": "Spacing between text and bars (px, default 4)",
+      "margin": "Left/right quiet zone (px, default 10); explicit values below `10 × bar-width` are clamped up to the floor with a one-time console.warn (scannability guardrail)",
+      "color": "Bar color (default fixed dark `#18181b` — paired with the white background for dark-theme scannability; override via `--oas-barcode-color`, preset name, or any color value)",
+      "bg-color": "Quiet-zone background (default white — scanners need a light quiet zone; stays white in dark theme for scannability; override via `--oas-barcode-bg`)"
+    },
+    "events": {
+      "oas-invalid": "Fired when invalid input renders the error placeholder, detail { reason }: `charset` (characters not allowed) / `length` (wrong digit count) / `checksum` (check digit mismatch); fires once per invalid input"
+    },
+    "slots": {}
+  },
   "oas-radio": {
     "attrs": {
       "checked": "Whether checked",

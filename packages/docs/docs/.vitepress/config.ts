@@ -142,6 +142,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Avatar 头像', link: '/components/avatar' },
       { text: 'Image 图片', link: '/components/image' },
       { text: 'QRCode 二维码', link: '/components/qrcode' },
+      { text: 'Barcode 条码', link: '/components/barcode' },
       { text: 'Watermark 水印', link: '/components/watermark' },
       { text: 'Collapse 折叠面板', link: '/components/collapse' },
       { text: 'Descriptions 描述列表', link: '/components/descriptions' },

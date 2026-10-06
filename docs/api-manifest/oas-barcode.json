@@ -1,0 +1,93 @@
+{
+  "className": "OASBarcode",
+  "sourceFile": "packages/ui/src/data/barcode/oas-barcode.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "default": "code128",
+      "observed": true
+    },
+    {
+      "name": "bar-width",
+      "type": "string",
+      "default": "2",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "100",
+      "observed": true
+    },
+    {
+      "name": "display-value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "text-position",
+      "type": "string",
+      "default": "bottom",
+      "observed": true
+    },
+    {
+      "name": "font-size",
+      "type": "string",
+      "default": "16",
+      "observed": true
+    },
+    {
+      "name": "text-margin",
+      "type": "string",
+      "default": "4",
+      "observed": true
+    },
+    {
+      "name": "margin",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "bg-color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-invalid",
+      "detail": "{ reason: e.reason }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-barcode-color",
+      "default": "#18181b"
+    },
+    {
+      "name": "--oas-barcode-bg",
+      "default": "#ffffff"
+    }
+  ],
+  "unresolved": []
+}

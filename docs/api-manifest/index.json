@@ -145,6 +145,7 @@
   "oas-image",
   "oas-image-group",
   "oas-qrcode",
+  "oas-barcode",
   "oas-watermark",
   "oas-collapse",
   "oas-collapse-item",
