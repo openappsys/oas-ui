@@ -102,6 +102,14 @@ test.describe('液态玻璃材质层', () => {
     expect(blur, 'HC × .dark 下玻璃不启用（blur 回落 none）').toBe('none')
   })
 
+  test('浅色玻璃阴影含发丝线（白底面板边缘不消失——用户实抓回归锁）', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(500)
+    const shadow = await page.evaluate(() => getComputedStyle(document.querySelector('.gg-card')!).boxShadow)
+    // 浅色玻璃：surface/折光边皆为白色系，白底上面板边界消失——发丝线 0 0 0 1px 深色细线补边缘
+    expect(shadow, '浅色玻璃阴影应含发丝线（0px 0px 0px 1px）').toContain('0px 0px 0px 1px')
+  })
+
   test('局部降级：容器覆盖变量后 surface 回实心语义', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(500)

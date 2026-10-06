@@ -123,6 +123,16 @@ describe('液态玻璃 L1：浮层 surface 接线', () => {
     expect(css).toContain(':not([data-theme=')
     expect(css).toContain('high-contrast')
   })
+
+  it('浅色玻璃阴影带发丝线（白底面板边缘不消失；dark 段不加——范围纪律）', () => {
+    const css = readFileSync(resolve(import.meta.dirname, '../../../../packages/theme/glass.css'), 'utf8')
+    const darkIdx = css.indexOf('[data-theme="dark"]')
+    const lightPart = darkIdx > 0 ? css.slice(0, darkIdx) : css
+    const darkPart = darkIdx > 0 ? css.slice(darkIdx) : ''
+    // 浅色 surface 白叠白 + 白色折光边 → 白底上边界消失（用户实抓）；发丝线隐入 busy 投影不可见
+    expect(lightPart).toContain('0 0 0 1px rgba(0, 0, 0,')
+    expect(darkPart, 'dark 阴影段不得加发丝线（范围纪律：只修浅色白底场景）').not.toContain('0 0 0 1px')
+  })
 })
 
 describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
