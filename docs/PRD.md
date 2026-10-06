@@ -1855,6 +1855,30 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测（events 解析/标记/徽标/浮层/与 oas-cell-render 共存）+ docs calendar.md（zh/en）+ api-manifest 同步；全量 e2e 全绿。
 
+## oas-barcode 一维条码组件（未发布）
+
+> 立项背景：一维条码面向打印标签/扫码枪的 B 端作业场景（WMS 仓储标签、零售 POS、物流单号、箱码），与 vision 的企业后台/作业场景吻合；组件库品类空白位。与 `oas-qrcode` 编码与渲染零共享（条空宽度序列 vs 模块矩阵），仅复用组件骨架惯例（SVG-only 渲染、download() 离屏栅格化、空态/错误占位、role=img 可访问名、i18n ×10）。
+
+### 特性（第一期 6 码制）
+
+- **码制**：`code128`（默认，auto A/B/C 子集自动切换——C 段两位一符密度翻倍、控制字符段自动切 A）/ `ean13` / `ean8` / `upca`（首位 0 退化形态 ⊂ EAN-13，首位/末位按标准渲染在护条外侧）/ `code39`（43 字符表，自动大写化）/ `itf14`（交插 2of5 固定 13+1 位箱码）。编码实现全部原创自公开行业标准（GS1 GenSpec / ISO/IEC 15417 / 16388 / 15420），零第三方依赖。
+- **校验位**：EAN/UPC 系给 12/7/11/13 位数据自动补算 GS1 mod10 校验位；给全码则校验末位合法性。
+- **非法输入三类**（字符集 / 位数 / 校验位）：渲染错误占位（i18n）+ 派发 `oas-invalid` 事件（detail `{ reason: 'charset' | 'length' | 'checksum' }`，同一非法输入只派发一次），宿主可接管提示；`download()` 对非法值静默返回（不产出不可扫的图）。
+- **可扫性内建**：`margin` 静区默认 10，显式值低于 `10 × bar-width` 收敛到下限并 console.warn 一次（护栏：宿主可加大不可破坏）；`bar-width` clamp ≥1；默认深条（`#18181b`）+ 固定白底不随主题（dark 下同样可扫，`--oas-barcode-color` / `--oas-barcode-bg` 双变量可覆）；EAN/UPC 护条按标准向下延伸 5X。
+- **宽度由内容决定**：不设 `size`/`width` 属性——整体宽度 = 静区 ×2 + 护条外侧沟槽 + 总模数 × `bar-width`（与 qrcode 最反直觉的 API 差异，文档写清）。
+- **人读文字（HRI）**：`display-value` 默认显示（显式 `"false"` 关闭）、`text-position` top/bottom、`font-size`/`text-margin`；文字用 generic sans（OCR-B 无自由许可不内嵌，宿主可 @font-face 自接后经 `::part(text)` 覆盖）。
+- **输出**：内联 SVG（crispEdges）+ `role="img"` + aria-label（i18n `barcode.image`）；`download()` 复用 qrcode 式离屏 4× 栅格化 PNG。
+
+### 工程
+
+- 编码器拆纯函数层 `src/data/barcode/encoders.ts`（条/空 run 序列统一产物形状 + 护条/HRI 分段模块坐标，可独立单测，对齐 qrcode shapes.ts 分层惯例）；组件层只做归一/渲染/事件。
+- TDD：六码制逐码制已知样例断言（条宽序列/校验位/mod103 校验符/交错对）、非法输入三类 reason、margin clamp+warn、SVG 结构/静区/download 产物、dark 白底。
+
+### 验收
+
+- 单测（编码器 26 + 组件 24）+ docs（zh/en）+ api-manifest + i18n ×10 + qa-regression e2e + 全量门禁全绿。
+- 后续期边界：CODE128 强制子集（force A/B/C）、GS1-128（FNC1/AI）、UPC-E、MSI/Codabar/Pharmacode、EAN addon、ITF-14 承载框（bearer bar）——按真实需求逐项立项。
+
 ## 主题皮肤预设 + 默认视觉精修（未发布）
 
 ### 特性
