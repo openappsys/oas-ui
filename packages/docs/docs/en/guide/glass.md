@@ -1,6 +1,6 @@
 # Liquid Glass Gallery
 
-> Translucent surfaces + backdrop blur + specular ring as a material layer. Mechanism & boundaries: [Theming](/en/guide/theming#liquid-glass-glass-css).
+> A static-approximation material layer of translucent surfaces, backdrop blur, and specular edge rings (edge refraction and dynamic fluidity are follow-ups—see [Theming](/en/guide/theming#liquid-glass-glass-css)).
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'

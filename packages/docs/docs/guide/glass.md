@@ -1,6 +1,6 @@
 # 液态玻璃画廊
 
-> 半透明 surface + backdrop 模糊 + 高光折光边的材质层。机制与边界见[主题与自定义](/guide/theming#液态玻璃-glass-css)。
+> 半透明 surface + backdrop 模糊 + 高光折光边的静态近似材质层（边缘折射与动态流动属后续增强，详见[主题与自定义](/guide/theming#液态玻璃-glass-css)）。
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'

@@ -52,6 +52,8 @@ A skin only overrides `--oas-color-primary`; the derived steps (`-hover` / `-act
 
 **Mechanism**: 25 floating-surface components (modal / drawer / popover / tooltip / dropdown / select-family panels / message / snackbar / bottom-sheet / app-bar, etc.) uniformly consume two effect variables—`--oas-glass-blur` (backdrop-filter tier) and `--oas-glass-ring` (specular outline ring); without glass.css both fall back to `none` / `transparent`, leaving components exactly as before.
 
+**Relationship to Apple's full definition (honest note)**: this material layer is a **static approximation**—it delivers translucency, gaussian blur, specular edge ring, and layered shadows. Apple Liquid Glass's signature traits—**edge refraction distortion** (a liquid "bulge" confined to edges via feDisplacementMap) and **dynamic fluidity** (interaction-driven morphing and environment-reactive live highlights)—are follow-up enhancements to be delivered as a separate batch.
+
 **Boundaries**:
 
 - the material needs backdrop contrast—richest over colorful gradients/photos, recedes on flat same-hue backgrounds (text stays legible via token safe tiers);

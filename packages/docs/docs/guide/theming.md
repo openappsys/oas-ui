@@ -51,6 +51,8 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 **机制**：浮层 surface 组件（modal / drawer / popover / tooltip / dropdown / select 系面板 / message / snackbar / bottom-sheet / app-bar 等 25 个）统一消费两个效果变量——`--oas-glass-blur`（`backdrop-filter` 模糊档）与 `--oas-glass-ring`（折光描边环）；不引 glass.css 时两变量回落 `none` / `transparent`，组件行为与此前完全一致。
 
+**与 Apple 完整定义的关系（如实说明）**：本材质层是**静态近似**——达成半透明 / 高斯模糊 / 折光边 / 分层深影四项观感；Apple Liquid Glass 的标志性特征「**边缘折射变形**（feDisplacementMap 边缘液态膨胀）与**动态流动感**（随交互变形、随环境变化的实时高光）」属后续增强，届时以独立批次交付。
+
 **边界**：
 
 - 材质依赖背景反差——页面有色彩层次（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍走 token 安全档可读）；
