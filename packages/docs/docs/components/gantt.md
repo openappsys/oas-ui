@@ -21,7 +21,7 @@
   <oas-gantt id="gantt-scale" scale="day" tasks='[{"id":"s1","name":"一期交付","start":"2026-01-05","end":"2026-06-30","progress":50},{"id":"s2","name":"二期启动","start":"2026-04-01","end":"2026-08-15","progress":0,"dependencies":[{"id":"s1","type":"fs"}]}]'></oas-gantt>
 </DemoBlock>
 
-切换 `scale` 重排时间轴（列宽随档位自适应），派发 `oas-scale-change`；非法值回落 `day`。拖拽吸附以当前刻度为单位（`snap="false"` 关闭吸附，按像素比例平移并保留时间精度）。
+切换 `scale` 重排时间轴（列宽随档位自适应，下限保证标签有立足位），派发 `oas-scale-change`；非法值回落 `day`。列宽被容器压窄到放不下标签时辅刻度按 N 抽稀（保留格线、隐去部分文本，如日档窄列每 2 格），避免日号/月号首尾相接。拖拽吸附以当前刻度为单位（`snap="false"` 关闭吸附，按像素比例平移并保留时间精度）。
 
 ## 拖拽三件套
 
@@ -81,8 +81,11 @@
 
 ## 展开集合受控 / 标签与吸附 / 本地化
 
-<DemoBlock title="expanded 受控（JSON 数组 = 已展开集合；显式 [] 全收起）+ label-position 条内标签">
-  <oas-gantt expanded='["p1"]' label-position="inside" tasks='[{"id":"p1","name":"阶段一","start":"2026-03-02","end":"2026-03-13","type":"summary","children":[{"id":"w1","name":"设计","start":"2026-03-02","end":"2026-03-06","progress":80},{"id":"w2","name":"编码","start":"2026-03-04","end":"2026-03-13","progress":35}]},{"id":"p2","name":"阶段二","start":"2026-03-16","end":"2026-03-20","type":"summary","children":[{"id":"w3","name":"验收","start":"2026-03-16","end":"2026-03-20"}]}]'></oas-gantt>
+<DemoBlock title="expanded 受控（JSON 数组 = 已展开集合；显式 [] 全收起）+ label-position 标签（缺省 none 不渲染——行名列已承载名称；inside 条内 / right 条旁需显式开启）">
+  <div style="display:flex;flex-direction:column;gap:var(--oas-space-4)">
+    <oas-gantt expanded='["p1"]' label-position="inside" tasks='[{"id":"p1","name":"阶段一","start":"2026-03-02","end":"2026-03-13","type":"summary","children":[{"id":"w1","name":"设计","start":"2026-03-02","end":"2026-03-06","progress":80},{"id":"w2","name":"编码","start":"2026-03-04","end":"2026-03-13","progress":35}]},{"id":"p2","name":"阶段二","start":"2026-03-16","end":"2026-03-20","type":"summary","children":[{"id":"w3","name":"验收","start":"2026-03-16","end":"2026-03-20"}]}]'></oas-gantt>
+    <oas-gantt label-position="right" tasks='[{"id":"l1","name":"条旁标签（right）","start":"2026-03-02","end":"2026-03-06","progress":60},{"id":"l2","name":"缺省 none 只有条无标签","start":"2026-03-09","end":"2026-03-13","progress":30}]'></oas-gantt>
+  </div>
 </DemoBlock>
 
 <DemoBlock title="snap=false 非吸附（半格平移保留时间精度）+ locale / first-day-of-week 本地化">
@@ -92,7 +95,7 @@
   </div>
 </DemoBlock>
 
-`template[slot="task"]` 覆盖条内标签内容（`[data-task-name]` 绑定名称）；每条任务渲染后派发 `oas-task-render`（`detail: { task, element }`），宿主可改写条内 DOM。
+`template[slot="task"]` 覆盖条内标签内容（`[data-task-name]` 绑定名称；缺省 `label-position="none"` 不渲染标签，需显式开启后模板才生效）；每条任务渲染后派发 `oas-task-render`（`detail: { task, element }`），宿主可改写条内 DOM。
 
 <script setup>
 import { onMounted } from 'vue'
@@ -185,7 +188,7 @@ onMounted(async () => {
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导（week 档对齐用） | `string` | — |
 | `height` | 组件高度 px（默认 320） | `string` | `320` |
 | `holidays` | 假日列表（JSON ["YYYY-MM-DD",…]）：对应列高亮（优先于周末底色） | `string` | — |
-| `label-position` | 任务条标签位置：right（默认）/ inside / left | `string` | — |
+| `label-position` | 任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
 | `progress-readonly` | 禁改进度（改期仍可拖） | `boolean` | — |
 | `readonly` | 整图只读（禁改期/禁进度，不渲染拖拽手柄） | `boolean` | — |

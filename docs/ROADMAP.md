@@ -79,7 +79,7 @@
 
 | **v2.6.0**（待发布） | **玻璃边缘折射 v1**（承接液态玻璃批如实口径，范围纪律=Apple 定义域：data-URI 自包含边缘环带置换滤镜（中间恒不变形；shadow DOM 内 `url(#id)` 跨树不可解析，故用内联）+ 9 组件消费（button/switch/slider/app-bar/bottom-navigation/message/toast/snackbar/notification，缺省回落 none 零副作用）+ 状态例外（button 组合书写/三类禁用守卫/app-bar 弹层自动关）+ 引擎边界如实（Chromium 生效、Firefox 无感降级）+ 画廊 controls 展示；内容面板与动态流动感不进本批） | ✅ 已完成 |
 
-| **未发布** | **oas-gantt 甘特图组件**（新组件，data 族；项目排期语义与 scheduler 约会语义互补）：行树 WBS（摘要条 = 子级并集 + 折叠展开集合）+ 任务条/里程碑/摘要条三形态 + 进度；依赖连线 FS/SS/FF/SF（SVG 单画布）；时间刻度六档双层表头 + 拖拽吸附；拖拽三件套（改期/拉伸/进度，pointerup 收口 + Esc 取消 + 键盘改期）；只读三级 + 任务级禁用；今日线/周末/假日底色；行虚拟滚动 + scrollToTask/updateTask 方法；扁平 parent 数据契约（children 拍平兼容）+ i18n ×10 | 🚧 进行中 |
+| **未发布** | **oas-gantt 甘特图组件**（新组件，data 族；项目排期语义与 scheduler 约会语义互补）：行树 WBS（摘要条 = 子级并集 + 折叠展开集合）+ 任务条/里程碑/摘要条三形态 + 进度；依赖连线 FS/SS/FF/SF（SVG 单画布）；时间刻度六档双层表头（列宽压窄时辅刻度按 N 抽稀，防日号堆叠）+ 拖拽吸附；拖拽三件套（改期/拉伸/进度，pointerup 收口 + Esc 取消 + 键盘改期）；只读三级 + 任务级禁用；今日线/周末/假日底色；行虚拟滚动 + scrollToTask/updateTask 方法；扁平 parent 数据契约（children 拍平兼容）+ i18n ×10 | 🚧 进行中 |
 
 > **注（可选工具包）**：`@oas-ui/react` 桥接包**不单独发布**，降级为仓库内可选工具包——React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`；桥接 hooks（`useOasEvent`/`useOasEvents`）供需要 camelCase 惯例 / TS 类型 / React 17-18 兼容的宿主按需使用，不随版本发布、不写入发布清单（详见 PRD）。
 

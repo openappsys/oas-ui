@@ -21,7 +21,7 @@ Project-scheduling chart component (data family): a WBS row tree (parent summary
   <oas-gantt id="gantt-scale" scale="day" tasks='[{"id":"s1","name":"Phase 1 delivery","start":"2026-01-05","end":"2026-06-30","progress":50},{"id":"s2","name":"Phase 2 kickoff","start":"2026-04-01","end":"2026-08-15","progress":0,"dependencies":[{"id":"s1","type":"fs"}]}]'></oas-gantt>
 </DemoBlock>
 
-Changing `scale` re-lays the time axis (column width adapts per tier) and dispatches `oas-scale-change`; invalid values fall back to `day`. Dragging snaps to the current scale unit (`snap="false"` disables snapping and shifts by pixel ratio, preserving time precision).
+Changing `scale` re-lays the time axis (column width adapts per tier, with a floor that keeps labels legible) and dispatches `oas-scale-change`; invalid values fall back to `day`. When the container squeezes columns too narrow for labels, minor ticks are thinned by N (grid lines kept, some texts hidden — e.g. every 2nd day on a narrow day axis) so day/month numbers never collide. Dragging snaps to the current scale unit (`snap="false"` disables snapping and shifts by pixel ratio, preserving time precision).
 
 ## Drag Trio
 
@@ -81,8 +81,11 @@ Methods: `scrollToTask(id)` to bring a task row into view, `scrollToDate(date)` 
 
 ## Controlled Expansion / Labels & Snapping / Localization
 
-<DemoBlock title="expanded as a controlled set (JSON array = expanded set; explicit [] collapses all) + label-position inside bars">
-  <oas-gantt expanded='["p1"]' label-position="inside" tasks='[{"id":"p1","name":"Phase 1","start":"2026-03-02","end":"2026-03-13","type":"summary","children":[{"id":"w1","name":"Design","start":"2026-03-02","end":"2026-03-06","progress":80},{"id":"w2","name":"Coding","start":"2026-03-04","end":"2026-03-13","progress":35}]},{"id":"p2","name":"Phase 2","start":"2026-03-16","end":"2026-03-20","type":"summary","children":[{"id":"w3","name":"Acceptance","start":"2026-03-16","end":"2026-03-20"}]}]'></oas-gantt>
+<DemoBlock title="expanded as a controlled set (JSON array = expanded set; explicit [] collapses all) + label-position (default none, since the row-name column already shows names; inside / right must be opted in)">
+  <div style="display:flex;flex-direction:column;gap:var(--oas-space-4)">
+    <oas-gantt expanded='["p1"]' label-position="inside" tasks='[{"id":"p1","name":"Phase 1","start":"2026-03-02","end":"2026-03-13","type":"summary","children":[{"id":"w1","name":"Design","start":"2026-03-02","end":"2026-03-06","progress":80},{"id":"w2","name":"Coding","start":"2026-03-04","end":"2026-03-13","progress":35}]},{"id":"p2","name":"Phase 2","start":"2026-03-16","end":"2026-03-20","type":"summary","children":[{"id":"w3","name":"Acceptance","start":"2026-03-16","end":"2026-03-20"}]}]'></oas-gantt>
+    <oas-gantt label-position="right" tasks='[{"id":"l1","name":"Label to the right","start":"2026-03-02","end":"2026-03-06","progress":60},{"id":"l2","name":"Default none: bar only, no label","start":"2026-03-09","end":"2026-03-13","progress":30}]'></oas-gantt>
+  </div>
 </DemoBlock>
 
 <DemoBlock title="snap=false (pixel-ratio shift keeps time precision) + locale / first-day-of-week">
@@ -92,7 +95,7 @@ Methods: `scrollToTask(id)` to bring a task row into view, `scrollToDate(date)` 
   </div>
 </DemoBlock>
 
-`template[slot="task"]` overrides in-bar label content (`[data-task-name]` binding); each rendered bar dispatches `oas-task-render` (`detail: { task, element }`) so hosts can rewrite its DOM.
+`template[slot="task"]` overrides in-bar label content (`[data-task-name]` binding; labels are not rendered by default with `label-position="none"`, so the template takes effect only after opting in); each rendered bar dispatches `oas-task-render` (`detail: { task, element }`) so hosts can rewrite its DOM.
 
 <script setup>
 import { onMounted } from 'vue'
@@ -185,7 +188,7 @@ onMounted(async () => {
 | `first-day-of-week` | Week start day (0-6); defaults to locale derivation (used for week-tier alignment) | `string` | — |
 | `height` | Component height in px (default 320) | `string` | `320` |
 | `holidays` | Holiday list (JSON ["YYYY-MM-DD",…]): matching columns highlighted (takes precedence over weekend tint) | `string` | — |
-| `label-position` | Bar label position: right (default) / inside / left | `string` | — |
+| `label-position` | Bar label position: inside / right / left; default `none` (the row-name column already shows the name, so the bar does not repeat it); invalid values fall back to `none` | `string` | — |
 | `locale` | Localization (overrides config-provider injection and the global locale) | `string` | — |
 | `progress-readonly` | No progress dragging (dates still draggable) | `boolean` | — |
 | `readonly` | Whole chart read-only (no rescheduling/progress, drag handles not rendered) | `boolean` | — |

@@ -150,6 +150,28 @@ test('gantt 窗口自适应/可见性回归：首任务贴近左缘 + 今日线/
   expect(nameStyle.textOverflow).toBe('ellipsis')
   expect(nameStyle.overflow).toBe('hidden')
   expect(nameStyle.scrollW).toBeGreaterThan(nameStyle.clientW)
+
+  // 条旁标签缺省不渲染（行名列已承载名称，旧缺陷：条旁重复行名）；显式 inside/right 才渲染
+  await expect(basic.locator('.bars .bar[data-id="t1"] .bar-label')).toHaveCount(0)
+  await expect(page.locator('oas-gantt[label-position="inside"] .bar-label').first()).toBeVisible()
+  await expect(page.locator('oas-gantt[label-position="right"] .bar-label').first()).toBeVisible()
+
+  // 轴标签抽稀：日档窄容器下相邻可见辅刻度中心距 ≥ 阈值（旧缺陷：14.4px 列宽下双位日号首尾相接）
+  const scaleDemo = page.locator('#gantt-scale')
+  await scaleDemo.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await page.waitForTimeout(200)
+  const centers = await scaleDemo.locator('.head-minor .unit').evaluateAll((cells) =>
+    cells
+      .filter((c) => (c.textContent ?? '').trim() !== '')
+      .map((c) => {
+        const r = c.getBoundingClientRect()
+        return r.left + r.width / 2
+      }),
+  )
+  expect(centers.length, '抽稀后仍有可见刻度标签').toBeGreaterThan(2)
+  for (let i = 1; i < centers.length; i++) {
+    expect(centers[i]! - centers[i - 1]!, '相邻可见刻度标签不得堆叠').toBeGreaterThanOrEqual(16)
+  }
 })
 
 // RTL scrollToDate 走真实浏览器 scrollLeft 负值模型（0 在最右、向左滚为负）——
@@ -178,19 +200,31 @@ test('gantt RTL scrollToDate 负值模型 + 显式 milestone 带 end 渲染菱�
       'tasks',
       JSON.stringify([{ id: 'm', name: 'M', start: '2026-03-05', end: '2026-03-10', type: 'milestone' }]),
     )
+    // 感知层验证：RTL 下 scrollToDate 后目标列真的落在视口内（旧缺陷：LTR 公式把视口钉在画布左端）
+    const target = make('rtl') as HTMLElement & { scrollToDate(d: string): void }
+    target.setAttribute('tasks', JSON.stringify([{ id: 'x', name: 'X', start: '2026-03-18', end: '2026-03-19' }]))
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
     ltr.scrollToDate('2026-03-18')
     rtl.scrollToDate('2026-03-18')
+    target.scrollToDate('2026-03-18')
+    const tbRect = (target.shadowRoot!.querySelector('.tbody') as HTMLElement).getBoundingClientRect()
+    const barRect = (target.shadowRoot!.querySelector('.bar[data-id="x"]') as HTMLElement).getBoundingClientRect()
+    const centered =
+      barRect.width > 0 &&
+      barRect.left >= tbRect.left - 1 &&
+      barRect.left + barRect.width <= tbRect.left + tbRect.width + 1
     const out = {
       rtlAttr: rtl.hasAttribute('data-rtl'),
       ltr: (ltr.shadowRoot!.querySelector('.tbody') as HTMLElement).scrollLeft,
       rtl: (rtl.shadowRoot!.querySelector('.tbody') as HTMLElement).scrollLeft,
       milestoneDiamond: !!ms.shadowRoot!.querySelector('.bar.milestone .dia'),
       milestoneW: (ms.shadowRoot!.querySelector('.bar.milestone') as HTMLElement).style.width,
+      centered,
     }
     ltr.remove()
     rtl.remove()
     ms.remove()
+    target.remove()
     return out
   })
   expect(result.rtlAttr).toBe(true)
@@ -198,6 +232,8 @@ test('gantt RTL scrollToDate 负值模型 + 显式 milestone 带 end 渲染菱�
   expect(result.ltr).toBeGreaterThan(0)
   // RTL 负值模型：同一目标日期 scrollLeft 为负（时间轴镜像，0 在画布最右）
   expect(result.rtl).toBeLessThan(0)
+  // 感知层：目标日期列滚动后落在视口内（不只是公式为负）
+  expect(result.centered, 'RTL scrollToDate 后目标列应可见').toBe(true)
   expect(result.milestoneDiamond).toBe(true)
   // end 忽略：菱形容器恒 16px 宽（按 end 渲染则会是条形宽度）
   expect(result.milestoneW).toBe('16px')

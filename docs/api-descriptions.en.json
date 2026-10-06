@@ -4157,7 +4157,7 @@
       "locale": "Localization (overrides config-provider injection and the global locale)",
       "height": "Component height in px (default 320)",
       "row-height": "Row height in px (default 36, minimum 20)",
-      "label-position": "Bar label position: right (default) / inside / left",
+      "label-position": "Bar label position: inside / right / left; default `none` (the row-name column already shows the name, so the bar does not repeat it); invalid values fall back to `none`",
       "snap": "Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision)"
     },
     "events": {

@@ -201,6 +201,8 @@ svg.links marker path {
   cursor: grab;
   box-sizing: border-box;
   overflow: visible;
+  /* 触摸端起拖：横向手势留给拖拽（纵向仍可滚动页面），否则浏览器把手势判给滚动并发出 pointercancel */
+  touch-action: pan-y;
 }
 .bar:active {
   cursor: grabbing;
@@ -251,6 +253,8 @@ svg.links marker path {
   height: 100%;
   width: 8px;
   cursor: ew-resize;
+  /* 手柄是明确的拖拽热区：触摸手势全部交给拖拽，避免滚动打断 */
+  touch-action: none;
 }
 .handle-start {
   inset-inline-start: -4px;
@@ -270,6 +274,7 @@ svg.links marker path {
   box-shadow: var(--oas-shadow-sm);
   cursor: ew-resize;
   box-sizing: border-box;
+  touch-action: none;
 }
 .bar.milestone {
   background: transparent;
@@ -478,6 +483,22 @@ interface DragCtx {
 const SCALES: GanttScale[] = ['hour', 'day', 'week', 'month', 'quarter', 'year']
 /** 各档列宽（px） */
 const SCALE_COL: Record<GanttScale, number> = { hour: 44, day: 36, week: 90, month: 110, quarter: 150, year: 130 }
+/** 各档列宽下限（px）：保证抽稀后的最小标签仍有呼吸位。
+ *  旧实现统一取基准的 40%（day 档 14.4px），两位数日号在窄容器下首尾相接成一团不可读。 */
+const SCALE_MIN_COL: Record<GanttScale, number> = { hour: 22, day: 16, week: 36, month: 44, quarter: 60, year: 52 }
+/** 各档辅刻度抽稀步进阶梯（格）：取首个满足「步进 × 列宽 ≥ 标签估宽 + 间隙」者 */
+const SCALE_STRIDES: Record<GanttScale, number[]> = {
+  hour: [1, 2, 3, 4, 6, 12, 24],
+  day: [1, 2, 7, 14, 28],
+  week: [1, 2, 4, 13, 26],
+  month: [1, 2, 3, 6, 12],
+  quarter: [1, 2, 4],
+  year: [1, 2, 5, 10],
+}
+/** 标签估宽（px）：xs 字号下 ASCII 数字/字母/冒号/连字符的平均字宽 */
+const LABEL_CHAR_W = 6.6
+/** 相邻可见标签之间的最小间隙（px） */
+const LABEL_GAP = 6
 /** 起始留白（档位数）：保持小值——旧值 7 天在窄容器下把首个任务推到可见区右缘、左侧大片空白，
  *  今日线/里程碑随之滚出视口；起始留白只需留出条缘手柄的呼吸位。 */
 const SCALE_PAD_START: Record<GanttScale, number> = { hour: 1, day: 1, week: 1, month: 1, quarter: 1, year: 1 }
@@ -486,6 +507,39 @@ const SCALE_PAD_END: Record<GanttScale, number> = { hour: 6, day: 3, week: 1, mo
 const DAY_MS = 86_400_000
 
 const DEP_TYPES = new Set(['fs', 'ss', 'ff', 'sf'])
+
+/** 轴标签估宽（px，纯函数）：按字符数估算（刻度标签均为 ASCII，字宽近似等宽） */
+export function estimateLabelWidth(text: string): number {
+  return text.length * LABEL_CHAR_W
+}
+
+/**
+ * 轴标签抽稀（纯函数）：返回应显示标签的下标集合。
+ * 从 strides 阶梯取首个满足「步进 × 列宽 ≥ 最长标签估宽 + 间隙」的步进，
+ * 列宽被压窄时按 N 取一显示，保证相邻可见标签不堆叠（密集日期轴可读性的通行做法）。
+ * 列宽不可用（<=0，如无布局环境）或阶梯为空时全显示。
+ */
+export function pickVisibleLabels(labels: string[], colW: number, strides: number[], gap = LABEL_GAP): number[] {
+  const n = labels.length
+  if (n === 0) return []
+  if (!(colW > 0) || strides.length === 0) return labels.map((_, i) => i)
+  let maxW = 0
+  for (const l of labels) {
+    const w = estimateLabelWidth(l)
+    if (w > maxW) maxW = w
+  }
+  const target = maxW + gap
+  let step = strides[strides.length - 1]!
+  for (const s of strides) {
+    if (s * colW >= target) {
+      step = s
+      break
+    }
+  }
+  const out: number[] = []
+  for (let i = 0; i < n; i += step) out.push(i)
+  return out
+}
 
 function parseTaskDate(s: unknown): Date | null {
   if (typeof s !== 'string') return null
@@ -641,8 +695,10 @@ export class OASGantt extends OASElement {
   private warnedParents = new Set<string>()
   /** 清洗层数据自愈告警去重（key = 任务 id） */
   private warnedSanitize = new Set<string>()
-  /** 显式 milestone 与 end 并存的数据矛盾告警去重（key = 任务 id） */
+  /** 显式 milestone 与 end/子级并存的数据矛盾告警去重（key = `${id}:${kind}`） */
   private warnedMilestones = new Set<string>()
+  /** buildRows 产物缓存：渲染窗口（滚动每帧）复用，避免万级任务下每帧重建展开集 */
+  private expandedSetCache: Set<string> | null = null
   /** 自适应列宽（px）：视口可用宽度内铺下整个窗口时收窄至恰好适配；null = 回落各档基准列宽（无布局环境） */
   private displayColW: number | null = null
   private resizeObs: ResizeObserver | null = null
@@ -752,6 +808,14 @@ export class OASGantt extends OASElement {
     console.warn(msg)
   }
 
+  /** milestone 数据矛盾告警（同任务同类型只告一次；key 含类型，形态变化时重新提示） */
+  private warnMilestone(id: string, kind: string, msg: string): void {
+    const key = `${id}:${kind}`
+    if (this.warnedMilestones.has(key)) return
+    this.warnedMilestones.add(key)
+    console.warn(msg)
+  }
+
   private syncTasksAttr(): void {
     this.tasksAttrCache = JSON.stringify(this._tasks)
     this.setAttribute('tasks', this.tasksAttrCache)
@@ -815,19 +879,21 @@ export class OASGantt extends OASElement {
   }
 
   /**
-   * 自适应列宽：窗口单位数 × 基准列宽超过视口可用宽时，收窄列宽让整个窗口恰好铺满（下限基准的 40%，
-   * 防超大跨度被压成亚像素）；可用宽度不可得（happy-dom 等无布局环境）回落基准列宽。
+   * 自适应列宽：窗口单位数 × 基准列宽超过视口可用宽时，收窄列宽让整个窗口尽量铺满
+   * （下限为各档 SCALE_MIN_COL，防超大跨度被压成亚像素或标签无处安放；低于下限宁可行内滚动）；
+   * 可用宽度不可得（happy-dom 等无布局环境）回落基准列宽。
    * 数据跨度小时任务不再被起始留白推挤到右缘、今日线/里程碑随之可见。
    */
   private computeColW(): void {
-    const base = SCALE_COL[this.scale()]
+    const scale = this.scale()
+    const base = SCALE_COL[scale]
     const avail = this.tbody?.clientWidth ?? 0
     if (avail <= 0 || this.units.length === 0) {
       this.displayColW = null
       return
     }
     const fit = avail / this.units.length
-    this.displayColW = Math.min(base, Math.max(base * 0.4, fit))
+    this.displayColW = Math.min(base, Math.max(SCALE_MIN_COL[scale], fit))
   }
 
   /** 视口尺寸变化（含首次观测到真实宽）：仅当自适应列宽实际改变时重排，避免无谓重建 */
@@ -855,9 +921,11 @@ export class OASGantt extends OASElement {
     return Number.isFinite(n) && n > 0 ? n : 320
   }
 
-  private labelPosition(): 'inside' | 'right' | 'left' {
+  /** 条旁标签位置：缺省 none——行名列已承载名称，条旁再渲染同名文本属重复信息 */
+  private labelPosition(): 'inside' | 'right' | 'left' | 'none' {
     const raw = this.getAttr('label-position', '')
-    return raw === 'inside' || raw === 'left' ? raw : 'right'
+    if (raw === 'inside' || raw === 'right' || raw === 'left') return raw
+    return 'none'
   }
 
   private snapOn(): boolean {
@@ -1112,15 +1180,29 @@ export class OASGantt extends OASElement {
     }
 
     const expanded = this.effectiveExpandedSet(childMap)
+    // 缓存：后续渲染窗口（含滚动每帧）直接复用，避免万级任务下每帧重建展开集（O(n) → O(1)）
+    this.expandedSetCache = expanded
     const rows: GanttRow[] = []
     const walk = (t: TG, depth: number): void => {
       const childIds = childMap.get(t.id) ?? []
       const hasChildren = childIds.length > 0
+      // 形态判定：显式 milestone 优先，但「有子级」恒为摘要（子级承载聚合语义，形态与聚合必须一致）
       const isMilestone = isMilestoneTask(t) && !hasChildren
-      // 数据矛盾告警：显式 milestone 声明与 end 并存（end 渲染忽略、数据保留）——一次即可
-      if (t.type === 'milestone' && t.end && !this.warnedMilestones.has(t.id)) {
-        this.warnedMilestones.add(t.id)
-        console.warn(`[oas-gantt] 任务 "${t.id}" 显式声明 type:"milestone" 但携带 end，已按里程碑渲染（end 忽略）`)
+      // 数据矛盾告警（同任务同类型只告一次，受控反复重写不刷屏）；文案必须与实际形态一致
+      if (t.type === 'milestone') {
+        if (hasChildren) {
+          this.warnMilestone(
+            t.id,
+            'children',
+            `[oas-gantt] 任务 "${t.id}" 声明 type:"milestone" 但有子任务，已按摘要渲染`,
+          )
+        } else if (t.end) {
+          this.warnMilestone(
+            t.id,
+            'end',
+            `[oas-gantt] 任务 "${t.id}" 显式声明 type:"milestone" 但携带 end，已按里程碑渲染（end 忽略）`,
+          )
+        }
       }
       const isSummary = hasChildren || (t.type === 'summary' && !isMilestone)
       const a = aggregate(t.id)
@@ -1150,9 +1232,11 @@ export class OASGantt extends OASElement {
     return set
   }
 
-  /** 当前展开集合（toggle 用；未受控时从数据构建；id 索引 Set 保证万级任务 O(n)——some 线性扫描会 O(n²)） */
+  /** 当前展开集合（toggle 用）：优先取 buildRows 缓存；未受控且无缓存时从数据构建
+   *  （id 索引 Set 保证万级任务 O(n)——some 线性扫描会 O(n²)） */
   private currentExpandedSet(): Set<string> {
     if (this.expanded) return this.expanded
+    if (this.expandedSetCache) return this.expandedSetCache
     const ids = new Set(this._tasks.map((t) => t.id))
     const childMap = new Map<string, string[]>()
     for (const t of this._tasks) {
@@ -1323,10 +1407,18 @@ export class OASGantt extends OASElement {
       frag1.appendChild(cell)
       i = j + 1
     }
+    // 辅刻度抽稀：列宽不足以容纳标签 + 间隙时按 N 取一显示（保留全部格线，只隐藏文本），
+    // 防止窄容器下双位日号/月号首尾相接成一团
+    const labels = this.units.map((u) => u.minor)
+    const visible = new Set(pickVisibleLabels(labels, colW, SCALE_STRIDES[this.scale()]))
     for (let k = 0; k < this.units.length; k++) {
       const cell = document.createElement('div')
       cell.className = 'unit'
-      cell.textContent = this.units[k]!.minor
+      if (visible.has(k)) {
+        cell.textContent = this.units[k]!.minor
+      } else {
+        cell.classList.add('blank')
+      }
       cell.style.left = `${this.mirrorCellLeft(k * colW, colW)}px`
       cell.style.width = `${colW}px`
       frag2.appendChild(cell)
@@ -1444,7 +1536,8 @@ export class OASGantt extends OASElement {
         if (row.isSummary) {
           bar.classList.add('summary')
         } else {
-          bar.classList.add(`label-${this.labelPosition()}`)
+          const pos = this.labelPosition()
+          if (pos !== 'none') bar.classList.add(`label-${pos}`)
           bar.setAttribute('role', 'button')
           bar.tabIndex = 0
           bar.setAttribute(
@@ -1460,16 +1553,19 @@ export class OASGantt extends OASElement {
           prog.className = 'bar-progress'
           prog.style.width = `${row.progress}%`
           bar.appendChild(prog)
-          const label = document.createElement('span')
-          label.className = 'bar-label'
-          if (tplTask instanceof HTMLTemplateElement) {
-            label.appendChild(tplTask.content.cloneNode(true))
-            const bound = label.querySelector<HTMLElement>('[data-task-name]')
-            if (bound) bound.textContent = row.task.name
-          } else {
-            label.textContent = row.task.name
+          // 条旁/条内标签：仅 label-position 显式开启时渲染（缺省 none，避免与行名重复）
+          if (pos !== 'none') {
+            const label = document.createElement('span')
+            label.className = 'bar-label'
+            if (tplTask instanceof HTMLTemplateElement) {
+              label.appendChild(tplTask.content.cloneNode(true))
+              const bound = label.querySelector<HTMLElement>('[data-task-name]')
+              if (bound) bound.textContent = row.task.name
+            } else {
+              label.textContent = row.task.name
+            }
+            bar.appendChild(label)
           }
-          bar.appendChild(label)
           // 手柄（只读/禁用态不出手柄，视觉即语义）
           if (!roDates && !disabled) {
             const hs = document.createElement('span')

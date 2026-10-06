@@ -1933,9 +1933,9 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 ### 特性
 
 - **行树 WBS**：父任务摘要条（时间 = 子任务并集、进度 = 子任务工期加权平均），折叠/展开集合走 `expanded` 属性（JSON 数组，缺省全展开、显式 `[]` 全收起）+ `oas-expand-change`；悬空 parent 按根渲染并 console.warn 一次。
-- **任务条三形态**：task（进度填充 + 标签 `label-position` inside/right/left）/ milestone（无 `end` 推导，菱形）/ summary（摘要条）；条色 `color` 走 CSS 变量解析；`template[slot="task"]` + `oas-task-render` 双通道定制。
+- **任务条三形态**：task（进度填充 + 标签 `label-position` inside/right/left，缺省 none——行名列已承载名称，条旁不重复）/ milestone（无 `end` 推导，菱形）/ summary（摘要条）；条色 `color` 走 CSS 变量解析；`template[slot="task"]` + `oas-task-render` 双通道定制。
 - **依赖连线**：`dependencies: [{ id, type?: fs/ss/ff/sf }]`，SVG 单画布绘制折线 + 箭头（虚拟滚动下只画窗口行内的连线，目标悬空跳过）。
-- **时间刻度六档**：`scale` hour/day/week/month/quarter/year，双层表头（上层主刻度合并 + 下层辅刻度），非法值回落 day；`snap` 吸附当前刻度（可关，按像素比例平移保留时间精度）；`first-day-of-week` + `locale` 本地化。
+- **时间刻度六档**：`scale` hour/day/week/month/quarter/year，双层表头（上层主刻度合并 + 下层辅刻度，列宽被压窄时按 N 抽稀辅刻度标签、保留格线，防日号/月号堆叠；列宽下限保证标签有立足位），非法值回落 day；`snap` 吸附当前刻度（可关，按像素比例平移保留时间精度）；`first-day-of-week` + `locale` 本地化。
 - **拖拽三件套**：拖条身改期（保工期）/ 左右手柄拉伸（不越过对侧）/ 条内圆点改进度，pointerup 收口一次性写回并派发 `oas-task-change`（含 old/new）与 `oas-progress-change` + `oas-tasks-change`；零位移零事件；Esc/pointercancel 取消回滚零事件；拖拽中外部重写 `tasks` 终止拖拽回滚；键盘 Shift+←/→ 改期一格（RTL 镜像）。
 - **只读三级 + 任务级禁用**：`readonly`（全禁）/ `dates-readonly` / `progress-readonly`；只读态不渲染拖拽手柄（视觉即语义）；数据 `disabled: true` 单条禁拖。
 - **今日线与日历底色**：`show-today`（默认开，装饰层 aria-hidden）+ `weekends` 周末列高亮（day/hour 档）+ `holidays` 假日列表。

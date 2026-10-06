@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASGantt } from './index.js'
+import { pickVisibleLabels } from './oas-gantt.js'
 import type { GanttTask } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASGantt {
@@ -225,6 +226,78 @@ describe('OASGantt 渲染基础', () => {
       warn.mockRestore()
     }
   })
+
+  it('start 晚于 end 自愈交换：parent / dependencies 引用不受影响（交换只动日期字段）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        tasks: JSON.stringify([
+          { id: 'p', name: '父', start: '2026-03-01', end: '2026-03-20', type: 'summary' },
+          { id: 'c', name: '子', start: '2026-03-10', end: '2026-03-05', parent: 'p', dependencies: [{ id: 'z' }] },
+          { id: 'z', name: 'Z', start: '2026-03-01', end: '2026-03-02' },
+        ]),
+      })
+      const c = el.tasks.find((t) => t.id === 'c')!
+      expect(c.start).toBe('2026-03-05')
+      expect(c.end).toBe('2026-03-10')
+      expect(c.parent, 'parent 指针保留').toBe('p')
+      expect(c.dependencies, 'dependencies 保留').toEqual([{ id: 'z' }])
+      // 行树仍按父子关系渲染（c 在 p 之下）
+      const names = nameRows(el).map((r) => r.textContent ?? '')
+      expect(names.findIndex((t) => t.includes('子'))).toBeGreaterThan(names.findIndex((t) => t.includes('父')))
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('显式 type:"milestone" 但有子任务：按摘要渲染（形态与聚合一致）+ 告警文案指向摘要而非里程碑', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        tasks: JSON.stringify([
+          {
+            id: 'p',
+            name: '父',
+            start: '2026-03-02',
+            end: '2026-03-10',
+            type: 'milestone',
+            children: [{ id: 'c', name: '子', start: '2026-03-02', end: '2026-03-04' }],
+          },
+        ]),
+      })
+      const bar = barOf(el, 'p')
+      expect(bar.classList.contains('summary'), '有子级恒为摘要').toBe(true)
+      expect(bar.classList.contains('milestone')).toBe(false)
+      const msgs = warn.mock.calls.map((c) => String(c[0]))
+      expect(msgs.some((m) => m.includes('milestone') && m.includes('摘要'))).toBe(true)
+      expect(
+        msgs.some((m) => m.includes('已按里程碑渲染')),
+        '不得声称按里程碑渲染（实际是摘要）',
+      ).toBe(false)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('受控反复重写 tasks：milestone 矛盾告警去重不刷屏（warnedMilestones 生命周期）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        tasks: JSON.stringify([{ id: 'm', name: 'M', start: '2026-03-05', end: '2026-03-10', type: 'milestone' }]),
+      })
+      const before = warn.mock.calls.length
+      expect(before).toBeGreaterThan(0)
+      // 同 id 内容变更重写 → 重新清洗 + 重渲染，仍不重复告警
+      el.setAttribute(
+        'tasks',
+        JSON.stringify([{ id: 'm', name: 'M2', start: '2026-03-05', end: '2026-03-10', type: 'milestone' }]),
+      )
+      el.requestUpdate()
+      expect(warn.mock.calls.length).toBe(before)
+    } finally {
+      warn.mockRestore()
+    }
+  })
 })
 
 describe('OASGantt 刻度六档', () => {
@@ -297,6 +370,41 @@ describe('OASGantt 刻度六档', () => {
     el.setAttribute('scale', 'month')
     expect(log).toEqual(['month'])
     expect(el.getAttribute('scale')).toBe('month')
+  })
+
+  it('轴标签抽稀纯函数：列宽不足时取漂亮步进按 N 取一（日号不堆叠）', () => {
+    const dayStrides = [1, 2, 7, 14, 28]
+    // 宽列：全显示
+    expect(pickVisibleLabels(['01', '02', '03', '04', '05'], 40, dayStrides)).toEqual([0, 1, 2, 3, 4])
+    // 窄列（16px）：步进 2（2 × 16 = 32 ≥ 2 字符估宽 13.2 + 间隙 6）
+    expect(pickVisibleLabels(['01', '02', '03', '04', '05', '06'], 16, dayStrides)).toEqual([0, 2, 4])
+    // 极窄列（8px）：跃到周步进 7
+    expect(pickVisibleLabels(new Array(10).fill('01'), 8, dayStrides)).toEqual([0, 7])
+    // 月档长标签（7 字符）：44px 列宽下步进 2，且相邻可见标签间距 ≥ 估宽 + 间隙
+    const labels = new Array(12).fill('2026-09')
+    const idx = pickVisibleLabels(labels, 44, [1, 2, 3, 6, 12], 6)
+    expect(idx).toEqual([0, 2, 4, 6, 8, 10])
+    expect(44 * (idx[1]! - idx[0]!)).toBeGreaterThanOrEqual(7 * 6.6 + 6)
+    // 边界：空标签集 / 列宽不可用（无布局环境）→ 不抽稀
+    expect(pickVisibleLabels([], 16, dayStrides)).toEqual([])
+    expect(pickVisibleLabels(['a', 'b', 'c'], 0, dayStrides)).toEqual([0, 1, 2])
+  })
+
+  it('视口压窄：辅刻度按 N 抽稀（保留格数，仅隐藏文本），相邻可见标签间距 ≥ 2 格', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-02-01', end: '2026-04-30' }]) })
+    const tbody = shadowOf(el).querySelector<HTMLElement>('.tbody')!
+    // happy-dom 无布局：显式 mock 视口宽触发自适应列宽重排
+    Object.defineProperty(tbody, 'clientWidth', { value: 200, configurable: true })
+    ;(el as unknown as { onViewportResize(): void }).onViewportResize()
+    const cells = [...shadowOf(el).querySelectorAll<HTMLElement>('.head-minor .unit')]
+    const visible = cells.filter((c) => (c.textContent ?? '') !== '')
+    expect(cells.length, '格线格数不因抽稀减少').toBeGreaterThan(visible.length)
+    expect(visible.length).toBeGreaterThan(1)
+    // day 档 200px 视口 / 90 天 → 列宽取到下限附近 → 步进 2：可见标签间隔 2 格
+    const lefts = visible.map((c) => Number.parseFloat(c.style.left))
+    const gap = lefts[1]! - lefts[0]!
+    expect(gap).toBeGreaterThanOrEqual(2 * 16 - 0.001)
+    for (let i = 1; i < lefts.length; i++) expect(lefts[i]! - lefts[i - 1]!).toBeCloseTo(gap, 5)
   })
 })
 
@@ -452,6 +560,19 @@ describe('OASGantt 行树（WBS）与折叠', () => {
     expect(p1Row?.getAttribute('aria-level')).toBe('1')
     const c1Row = shadowOf(el).querySelector('.row-name[data-key="c1"]')
     expect(c1Row?.getAttribute('aria-level')).toBe('2')
+  })
+
+  it('展开集合缓存不串味：折叠 → 滚动重渲染 → 再展开，行数随受控集合变化', () => {
+    const el = mount({ tasks: JSON.stringify(TREE) })
+    const toggle = (): HTMLButtonElement =>
+      shadowOf(el).querySelector<HTMLButtonElement>('.row-name[data-key="p1"] .toggle')!
+    toggle().click()
+    expect(nameRows(el).length).toBe(2)
+    // 滚动重渲染复用 buildRows 缓存：仍保持收起
+    shadowOf(el).querySelector<HTMLElement>('.tbody')!.dispatchEvent(new Event('scroll'))
+    expect(nameRows(el).length).toBe(2)
+    toggle().click()
+    expect(nameRows(el).length).toBe(4)
   })
 })
 
@@ -877,13 +998,26 @@ describe('OASGantt 今日线 / 周末与假日 / tooltip / 标签', () => {
     expect(tip2.querySelector('[data-task-name]')?.textContent).toBe('x')
   })
 
-  it('label-position：inside 条内标签 / right 条外右侧（缺省 right）', () => {
+  it('label-position：缺省 none（行名列已承载名称，条旁不再重复）；inside/right/left 显式开启', () => {
     const tasks = JSON.stringify([{ id: 'a', name: '标签', start: '2026-03-02', end: '2026-03-06' }])
+    // 缺省：不渲染条旁/条内标签（旧缺陷：与左侧行名重复）
     const el = mount({ tasks })
     const bar = barOf(el, 'a')
-    expect(bar.classList.contains('label-right')).toBe(true)
+    expect(bar.classList.contains('label-right')).toBe(false)
+    expect(bar.classList.contains('label-inside')).toBe(false)
+    expect(bar.querySelector('.bar-label')).toBeNull()
+    // 显式开启：三种位置各自生效且渲染标签文本
     const el2 = mount({ tasks, 'label-position': 'inside' })
-    expect(barOf(el2, 'a').classList.contains('label-inside')).toBe(true)
+    const inside = barOf(el2, 'a')
+    expect(inside.classList.contains('label-inside')).toBe(true)
+    expect(inside.querySelector('.bar-label')?.textContent).toBe('标签')
+    const el3 = mount({ tasks, 'label-position': 'right' })
+    expect(barOf(el3, 'a').classList.contains('label-right')).toBe(true)
+    const el4 = mount({ tasks, 'label-position': 'left' })
+    expect(barOf(el4, 'a').classList.contains('label-left')).toBe(true)
+    // 非法值回落 none（不渲染标签）
+    const el5 = mount({ tasks, 'label-position': 'bogus' })
+    expect(barOf(el5, 'a').querySelector('.bar-label')).toBeNull()
   })
 })
 
@@ -977,6 +1111,14 @@ describe('OASGantt 暗色 token 与样式纪律', () => {
     expect(css).toContain('--oas-gantt-link-color')
     expect(css).toContain('--oas-gantt-today-color')
     expect(css).toContain('var(--oas-color-')
+  })
+
+  it('触摸手势：条身 touch-action pan-y（横向留给拖拽、纵向仍滚动）；手柄/进度点 none', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.bar \{[^}]*touch-action: pan-y/)
+    expect(css).toMatch(/\.handle \{[^}]*touch-action: none/)
+    expect(css).toMatch(/\.progress-handle \{[^}]*touch-action: none/)
   })
 })
 

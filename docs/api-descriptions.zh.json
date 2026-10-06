@@ -4157,7 +4157,7 @@
       "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
       "height": "组件高度 px（默认 320）",
       "row-height": "行高 px（默认 36，下限 20）",
-      "label-position": "任务条标签位置：right（默认）/ inside / left",
+      "label-position": "任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none",
       "snap": "拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度）"
     },
     "events": {
