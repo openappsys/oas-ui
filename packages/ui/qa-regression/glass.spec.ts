@@ -46,7 +46,8 @@ test.describe('液态玻璃材质层', () => {
           ringColor: cs.outlineColor,
           titleColor: getComputedStyle(card.querySelector('strong')!).color,
           textColor: getComputedStyle(card.querySelector('p')!).color,
-          secondaryColor: getComputedStyle(card.querySelectorAll('p')[1] ?? card.querySelector('p')!).color,
+          // 真次要文字（第二卡带 inline secondary 样式的 p；不得用第一卡 p 兜底——曾因此漏测 light secondary）
+          secondaryColor: getComputedStyle(document.querySelectorAll('.gg-card')[1]!.querySelector('p')!).color,
           stageBg: getComputedStyle(stage).backgroundImage,
         }
       })

@@ -17,11 +17,14 @@
  */
 
 :root[data-glass]:not([data-theme="high-contrast"]) {
-  /* surface：半透明白（素材感来自背景透出） */
-  --oas-color-bg: rgba(255, 255, 255, 0.55);
-  --oas-color-bg-elevated: rgba(255, 255, 255, 0.72);
-  --oas-color-bg-hover: rgba(244, 244, 245, 0.66);
-  --oas-color-bg-disabled: rgba(244, 244, 245, 0.55);
+  /* surface：半透明白（素材感来自背景透出）。alpha 档与文字档联动标定（oklab 实测）：
+     亮背板亮蓝/品红 + 暗背板深青三类代表面上，主/次文字感知分均 ≥60 */
+  --oas-color-bg: rgba(255, 255, 255, 0.6);
+  --oas-color-bg-elevated: rgba(255, 255, 255, 0.75);
+  --oas-color-bg-hover: rgba(244, 244, 245, 0.7);
+  --oas-color-bg-disabled: rgba(244, 244, 245, 0.66);
+  /* 玻璃档次要文字加深（busy 背板上默认档不达标——材质感与文字安全分开标定） */
+  --oas-color-text-secondary: #4a4a52;
   /* 描边：亮背景上的折光边 */
   --oas-color-border: rgba(255, 255, 255, 0.6);
   --oas-color-border-strong: rgba(255, 255, 255, 0.75);
@@ -45,18 +48,21 @@
    会被 light 段反超——dark 下实际吃到 light token，实抓） */
 :root[data-glass][data-theme="dark"]:not([data-theme="high-contrast"]),
 :root.dark[data-glass] {
-  /* dark surface 高 alpha 档：亮背板上合成色必须保持足够暗（文字安全档的硬约束——
-     低 alpha 时亮背板亮度主导合成色，白字感知分崩（实测亮蓝背板 0.68 → 19.3 < 60）；
-     高 alpha 仍透出背板色相与模糊，材质感保留（深色玻璃的通行取舍） */
-  --oas-color-bg: rgba(24, 24, 27, 0.78);
-  --oas-color-bg-elevated: rgba(46, 46, 54, 0.85);
-  --oas-color-bg-hover: rgba(52, 52, 58, 0.7);
-  --oas-color-bg-disabled: rgba(39, 39, 42, 0.66);
+  /* dark surface：低 alpha 高透（深色玻璃的材质感主场）。alpha 档与文字档联动标定
+     （oklab 实测：亮蓝/品红/深青三类代表面上主/次文字感知分均 ≥60）——
+     19.3 分事故的根因是 dark 选择器特异性吃错 light token（白底白字），
+     不是 dark 材质本身需要高 alpha */
+  --oas-color-bg: rgba(24, 24, 27, 0.62);
+  --oas-color-bg-elevated: rgba(46, 46, 54, 0.55);
+  --oas-color-bg-hover: rgba(52, 52, 58, 0.62);
+  --oas-color-bg-disabled: rgba(39, 39, 42, 0.6);
+  /* 玻璃档次要文字提亮（busy 背板上默认档不达标） */
+  --oas-color-text-secondary: #d8d8e0;
   --oas-color-border: rgba(255, 255, 255, 0.14);
   --oas-color-border-strong: rgba(255, 255, 255, 0.22);
   --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.5);
   --oas-shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.45), 0 12px 28px -4px rgba(0, 0, 0, 0.55);
   --oas-shadow-lg: 0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 24px 48px -8px rgba(0, 0, 0, 0.65);
-  --oas-glass-blur: blur(18px) saturate(1.3);
+  --oas-glass-blur: blur(18px) saturate(1.6);
   --oas-glass-ring: rgba(255, 255, 255, 0.16);
 }
