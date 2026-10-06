@@ -133,6 +133,17 @@ describe('液态玻璃 L1：浮层 surface 接线', () => {
     expect(lightPart).toContain('0 0 0 1px rgba(0, 0, 0,')
     expect(darkPart, 'dark 阴影段不得加发丝线（范围纪律：只修浅色白底场景）').not.toContain('0 0 0 1px')
   })
+
+  it('浅色玻璃结构线（border token）为深色发丝（白面板上内部隔断不消失；dark 段保持白色结构线）', () => {
+    const css = readFileSync(resolve(import.meta.dirname, '../../../../packages/theme/glass.css'), 'utf8')
+    const darkIdx = css.indexOf('[data-theme="dark"]')
+    const lightPart = darkIdx > 0 ? css.slice(0, darkIdx) : css
+    const darkPart = darkIdx > 0 ? css.slice(darkIdx) : ''
+    // modal 标题/底部分割线走 border token——白色版在白面板上消失（用户实抓：浅色无分割线、暗色有）；
+    // 折光边职责归 --oas-glass-ring（白色 outline），结构线与折光边分工（iOS 浅色半透明面板同款）
+    expect(lightPart).toContain('--oas-color-border: rgba(0, 0, 0,')
+    expect(darkPart).toContain('--oas-color-border: rgba(255, 255, 255,')
+  })
 })
 
 describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {

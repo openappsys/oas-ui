@@ -110,6 +110,29 @@ test.describe('液态玻璃材质层', () => {
     expect(shadow, '浅色玻璃阴影应含发丝线（0px 0px 0px 1px）').toContain('0px 0px 0px 1px')
   })
 
+  test('浅色玻璃内部隔断线为深色（modal 标题分割线在白面板上可见——用户实抓回归锁）', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(800)
+    const divider = await page.evaluate(async () => {
+      const btns = [...document.querySelectorAll('oas-button')]
+      ;(
+        btns.find((b) => /打开对话框/.test(b.textContent || ''))?.shadowRoot?.querySelector('button') as
+          | HTMLButtonElement
+          | undefined
+      )?.click()
+      await new Promise((res) => setTimeout(res, 500))
+      const modal = document.querySelector('oas-modal')
+      const header = modal?.shadowRoot?.querySelector('.header, [part="header"]')
+      if (!header) return null
+      const bb = getComputedStyle(header).borderBottomColor
+      modal?.remove()
+      return bb
+    })
+    expect(divider, '画廊对话框应打开且有标题区').not.toBeNull()
+    // 白色结构线（rgba(255,255,255,...)）在白面板上消失——必须为深色系
+    expect(divider, '标题分割线必须为深色系（白面板上可见）').toMatch(/^rgba?\(0, 0, 0,/)
+  })
+
   test('局部降级：容器覆盖变量后 surface 回实心语义', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(500)

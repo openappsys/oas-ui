@@ -31,9 +31,11 @@
   --oas-color-bg-disabled: rgba(244, 244, 245, 0.66);
   /* 玻璃档次要文字加深（busy 背板上默认档不达标——材质感与文字安全分开标定） */
   --oas-color-text-secondary: #4a4a52;
-  /* 描边：亮背景上的折光边 */
-  --oas-color-border: rgba(255, 255, 255, 0.6);
-  --oas-color-border-strong: rgba(255, 255, 255, 0.75);
+  /* 结构线（内部隔断/控件描边）：深色发丝——白色版在白面板上消失（modal 标题/底部
+     分割线不可见，用户实抓）；折光边职责归 --oas-glass-ring（白色、走 outline 内缩），
+     结构线与折光边分工对齐 iOS 浅色半透明面板（dark 段反向：白色结构线同样分工） */
+  --oas-color-border: rgba(0, 0, 0, 0.08);
+  --oas-color-border-strong: rgba(0, 0, 0, 0.14);
   /* 圆角放大一档 */
   --oas-radius-xs: 4px;
   --oas-radius-sm: 6px;
