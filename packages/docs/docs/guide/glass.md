@@ -7,6 +7,14 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 const theme = ref('light')
 const open = ref(false)
 const msg = ref(null)
+const popMsg = () => {
+  // 消息默认贴视口顶 16px——落在文档站白色导航区上，磨砂无从显现；
+  // 把偏移量算到舞台渐变区上方，让 busy 背景垫在消息背后（磨砂感知依赖背景透出）
+  const stage = document.querySelector('.gg-stage')
+  const top = stage ? stage.getBoundingClientRect().top : 0
+  const offset = Math.max(16, Math.min(top + 120, window.innerHeight - 120))
+  msg.value?.success('玻璃材质消息：背景透出磨砂质感', { offset })
+}
 onMounted(async () => {
   document.documentElement.setAttribute('data-glass', '')
   const { message } = await import('@oas-ui/ui')
@@ -23,7 +31,7 @@ onBeforeUnmount(() => {
     <button class="sg-btn" :class="{ 'sg-active': theme === 'light' }" @click="theme = 'light'">light</button>
     <button class="sg-btn" :class="{ 'sg-active': theme === 'dark' }" @click="theme = 'dark'">dark</button>
     <oas-button type="primary" @click="open = true">打开对话框</oas-button>
-    <oas-button @click="msg?.success('玻璃材质消息：背景透出磨砂质感')">弹出消息</oas-button>
+    <oas-button @click="popMsg">弹出消息</oas-button>
   </div>
   <div class="gg-controls">
     <oas-button type="primary">主按钮</oas-button>

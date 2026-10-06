@@ -7,6 +7,15 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 const theme = ref('light')
 const open = ref(false)
 const msg = ref(null)
+const popMsg = () => {
+  // messages default to 16px below the viewport top—over the docs site's white nav,
+  // where no frost can show; offset the message above the stage gradient so a busy
+  // backdrop sits behind it (frost perception depends on the backdrop showing through)
+  const stage = document.querySelector('.gg-stage')
+  const top = stage ? stage.getBoundingClientRect().top : 0
+  const offset = Math.max(16, Math.min(top + 120, window.innerHeight - 120))
+  msg.value?.success('Glass message: frosted backdrop shows through', { offset })
+}
 onMounted(async () => {
   document.documentElement.setAttribute('data-glass', '')
   const { message } = await import('@oas-ui/ui')
@@ -23,7 +32,7 @@ onBeforeUnmount(() => {
     <button class="sg-btn" :class="{ 'sg-active': theme === 'light' }" @click="theme = 'light'">light</button>
     <button class="sg-btn" :class="{ 'sg-active': theme === 'dark' }" @click="theme = 'dark'">dark</button>
     <oas-button type="primary" @click="open = true">Open dialog</oas-button>
-    <oas-button @click="message.success('Glass message: frosted backdrop shows through')">Show message</oas-button>
+    <oas-button @click="popMsg">Show message</oas-button>
   </div>
   <div class="gg-controls">
     <oas-button type="primary">Primary</oas-button>
