@@ -14,7 +14,6 @@ onMounted(async () => {
 })
 </script>
 
-<div class="gg-backdrop" aria-hidden="true"></div>
 <div class="gg-stage" :data-theme="theme">
   <div class="gg-toolbar">
     <button class="sg-btn" :class="{ 'sg-active': theme === 'light' }" @click="theme = 'light'">light</button>
@@ -40,37 +39,16 @@ onMounted(async () => {
 </div>
 
 <style>
-/* 弹窗专用亮背板：modal 固定于视口 (x≈330-850, y≈100-314)，亮板精确垫在其下——
-   不依赖舞台几何（此前多轮调 radial 位置都对不准弹窗落区的根因解法） */
-.gg-backdrop {
-  position: fixed;
-  left: 300px;
-  top: 70px;
-  width: 580px;
-  height: 300px;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: 32px;
-  background:
-    radial-gradient(300px 180px at 30% 30%, rgba(120, 200, 255, 0.95), transparent 70%),
-    radial-gradient(320px 200px at 72% 62%, rgba(255, 130, 190, 0.95), transparent 70%),
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.4) 0 14px, transparent 14px 28px),
-    repeating-linear-gradient(-45deg, rgba(60, 80, 200, 0.25) 0 10px, transparent 10px 22px),
-    linear-gradient(135deg, rgba(255, 200, 120, 0.95), rgba(255, 160, 150, 0.9));
-}
 .gg-stage {
 
   margin: 0 0 var(--oas-space-4);
   padding: var(--oas-space-6);
   border-radius: var(--oas-radius-lg);
   background:
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.06) 0 12px, transparent 12px 26px),
-    radial-gradient(900px 520px at 46% 12%, rgba(255, 200, 120, 0.95), transparent 62%),
-    radial-gradient(600px 360px at 18% 8%, rgba(120, 200, 255, 0.9), transparent 58%),
-    radial-gradient(600px 360px at 78% 4%, rgba(255, 130, 190, 0.85), transparent 58%),
-    radial-gradient(1200px 500px at 15% 0%, rgba(64, 120, 255, 0.55), transparent 60%),
-    radial-gradient(900px 480px at 85% 20%, rgba(255, 120, 180, 0.5), transparent 60%),
-    radial-gradient(1000px 600px at 50% 100%, rgba(80, 220, 170, 0.45), transparent 60%),
+    radial-gradient(720px 420px at 24% 8%, rgba(120, 200, 255, 0.85), transparent 68%),
+    radial-gradient(680px 400px at 78% 12%, rgba(255, 130, 190, 0.8), transparent 68%),
+    radial-gradient(900px 520px at 50% 30%, rgba(255, 200, 120, 0.75), transparent 66%),
+    radial-gradient(1000px 620px at 50% 105%, rgba(80, 220, 170, 0.4), transparent 62%),
     linear-gradient(160deg, #2a3550, #4a2a50 55%, #1f4a44);
   /* modal 按视口居中——舞台须占满大部分视口高，弹窗才落在渐变之上（否则弹在深色页面上看不出玻璃感） */
   min-height: 72vh;
