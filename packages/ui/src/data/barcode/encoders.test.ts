@@ -286,6 +286,29 @@ describe('CODE39', () => {
       }
     }
   })
+
+  it('全字符集覆盖：数字/字母/空格与 -.$/+% 全部编码成功且 display 保持（大写化后）', () => {
+    // 43 个合法数据字符全覆盖（* 为保留起止符，不在数据集）
+    const all = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%'
+    const r = encodeBarcode(all, 'code39')
+    expect(r.display).toBe(all)
+    expect(r.runs.every((n) => Number.isInteger(n) && n > 0)).toBe(true)
+    assertRunInvariants(r)
+    // 43 数据字符 + 首尾 * = 45 字符 → 45×9 + 44 间隔 = 449 run
+    expect(r.runs).toHaveLength(45 * 9 + 44)
+  })
+
+  it('特殊符号逐字符编码与已知表一致（-.% 各 3 宽 9 元素）', () => {
+    // '-'='010000101'、'.'='110000100'、'%'='010000110'（宽 3 处，2:1 宽窄比）
+    const dash = encodeBarcode('-', 'code39')
+    // '-' + 首尾 *：3 字符 × 9 run + 2 间隔 = 29 run
+    expect(dash.runs).toHaveLength(29)
+    // 逐 run 对照：* = 010010100 → [1,2,1,1,2,1,2,1,1]
+    expect(dash.runs.slice(0, 9)).toEqual([1, 2, 1, 1, 2, 1, 2, 1, 1])
+    // '-' = 010000101 → [1,2,1,1,1,1,2,1,2]
+    expect(dash.runs.slice(10, 19)).toEqual([1, 2, 1, 1, 1, 1, 2, 1, 2])
+    assertRunInvariants(dash)
+  })
 })
 
 describe('ITF-14', () => {
@@ -321,6 +344,21 @@ describe('ITF-14', () => {
     } catch (e) {
       expect((e as BarcodeEncodeError).reason).toBe('charset')
     }
+  })
+
+  it('全 0 码逐模块对称验证：每对交插 bars/spaces 同构（nnwwn×nnwwn → 1,1,1,1,2,2,1,1,2,2）', () => {
+    // '0000000000000' 校验位 0 → 全 0 码；起始 nnnn + 7 对同构交插 + 停止 Wnn
+    const r = encodeBarcode('0000000000000', 'itf14')
+    expect(r.display).toBe('00000000000000')
+    // 起始 4 模 + 7 对 × 14 模 + 停止 4 模 = 106
+    expect(r.modules).toBe(106)
+    // 每对：bars nnnww → [1,1,2,2,1]、spaces 同 → 交插 [1,1, 1,1, 2,2, 2,2, 1,1]（10 run 14 模）
+    expect(r.runs.slice(4, 14)).toEqual([1, 1, 1, 1, 2, 2, 2, 2, 1, 1])
+    // 第二对从 run 索引 14 起（起始 4 + 每对 10 run），序列与首对完全一致（对称性）
+    expect(r.runs.slice(14, 24)).toEqual(r.runs.slice(4, 14))
+    // 停止 Wnn：宽条 + 窄空 + 窄条
+    expect(r.runs.slice(-3)).toEqual([2, 1, 1])
+    assertRunInvariants(r)
   })
 })
 

@@ -7,6 +7,10 @@ const STYLE = `
   font-family: inherit;
   color: var(--oas-color-text-primary);
   line-height: 1;
+  /* 条码是有方向性的图形：HRI 文字与条序恒 LTR（isolate 隔离宿主 dir=rtl 继承，
+     否则 RTL 上下文里 HRI 中性字符——连字符/空格/符号——会视觉错位）。同 code/color-picker 惯例 */
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 :host([hidden]) {
   display: none;

@@ -87,6 +87,21 @@ describe('OASBarcode', () => {
     expect(svgOf(el).getAttribute('width')).toBe('156')
   })
 
+  it('format 常见笔误（带连字符 ean-13）同样静默回退 code128，不误判为合法码制', () => {
+    const el = mount({ value: '123', format: 'ean-13' })
+    expect(svgOf(el).getAttribute('width')).toBe('156')
+  })
+
+  it('RTL 隔离：:host 锁 direction:ltr + unicode-bidi:isolate（条码有方向性，HRI 不随宿主 dir 镜像）', () => {
+    const el = mount({ value: 'ASSET-0093', format: 'code39' })
+    document.documentElement.setAttribute('dir', 'rtl')
+    // 样式规则常驻 shadow <style>（同 code/color-picker 惯例）；dir 变化不增删规则
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/:host\s*\{[^}]*direction:\s*ltr/)
+    expect(css).toMatch(/:host\s*\{[^}]*unicode-bidi:\s*isolate/)
+    document.documentElement.removeAttribute('dir')
+  })
+
   describe('非法输入：错误占位 + oas-invalid（detail.reason = charset/length/checksum）', () => {
     it('字符集不符 → charset', async () => {
       const el = mount({ value: '40063813339A', format: 'ean13' })
@@ -305,6 +320,30 @@ describe('OASBarcode', () => {
       const el = mount({ value: '123' })
       await expect(el.download()).resolves.toBeUndefined()
       vi.unstubAllGlobals()
+    })
+
+    it('download() onerror 路径：SVG rasterize 失败时向调用方抛出（不静默吞错）', async () => {
+      vi.stubGlobal(
+        'Image',
+        class {
+          onload: (() => void) | null = null
+          onerror: (() => void) | null = null
+          set src(_v: string) {
+            this.onerror?.()
+          }
+        },
+      )
+      const el = mount({ value: '123' })
+      await expect(el.download()).rejects.toThrowError(/rasterize failed/i)
+      vi.unstubAllGlobals()
+    })
+
+    it('download() 空值/非法值静默返回（不产出不可扫的图）', async () => {
+      const empty = mount({})
+      await expect(empty.download()).resolves.toBeUndefined()
+      empty.remove()
+      const invalid = mount({ value: '40063813339A', format: 'ean13' })
+      await expect(invalid.download()).resolves.toBeUndefined()
     })
   })
 })

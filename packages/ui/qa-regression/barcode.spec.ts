@@ -172,3 +172,46 @@ test('barcode：EAN-8 中央护条同样向下延伸（护条 path 6 段）；EA
   expect(r.ean8GuardSegments, 'EAN-8 三组护条全部延伸').toBe(6)
   expect(r.topHeight, 'EAN-13 文字置顶时护条延伸不截断').toBe('130')
 })
+
+test('barcode：dir=rtl 下条码不镜像（条形 path 与 HRI 文字锚点与 LTR 完全一致）', async ({ page }) => {
+  await page.goto('/components/barcode.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-barcode')
+
+  const r = await page.evaluate(async () => {
+    const make = async (attrs: Record<string, string>): Promise<HTMLElement> => {
+      const el = document.createElement('oas-barcode')
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      document.body.append(el)
+      await customElements.whenDefined('oas-barcode')
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+      return el
+    }
+    const svgOf = (el: HTMLElement): SVGSVGElement => el.shadowRoot!.querySelector('svg')!
+    const snapshot = (el: HTMLElement): { d: string; texts: string } => {
+      const svg = svgOf(el)
+      return {
+        // 条形几何（含护条延伸）：条码有方向性，任何上下文都不得镜像
+        d: [...svg.querySelectorAll('path')].map((p) => p.getAttribute('d')).join('|'),
+        // HRI 文字锚点：RTL base direction 不得改变文字 x/内容
+        texts: [...svg.querySelectorAll('text')].map((t) => `${t.getAttribute('x')}@${t.textContent}`).join('|'),
+      }
+    }
+
+    document.documentElement.setAttribute('dir', 'rtl')
+    const rtl = await make({ value: 'ASSET-0093', format: 'code39' })
+    const rtlSnap = snapshot(rtl)
+    rtl.remove()
+
+    document.documentElement.setAttribute('dir', 'ltr')
+    const ltr = await make({ value: 'ASSET-0093', format: 'code39' })
+    const ltrSnap = snapshot(ltr)
+    ltr.remove()
+    document.documentElement.removeAttribute('dir')
+
+    return { rtlSnap, ltrSnap }
+  })
+
+  expect(r.rtlSnap.d, 'RTL 下条形 path 与 LTR 完全一致（不镜像）').toBe(r.ltrSnap.d)
+  expect(r.rtlSnap.texts, 'RTL 下 HRI 文字锚点不变').toBe(r.ltrSnap.texts)
+  expect(r.ltrSnap.texts, '样例含 CODE39 中性字符（连字符）与分段').toContain('@')
+})
