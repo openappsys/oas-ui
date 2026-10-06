@@ -273,6 +273,118 @@ describe('OASChart', () => {
     expect(wrapperOf(el).getAttribute('aria-label')).toBe('雷达图')
   })
 
+  it('type=bar 双轴：右轴刻度贴右缘（anchor start）、网格右缘扩到 478、右刻度数与左轴同（alignTicks）', () => {
+    const el = mount({
+      type: 'bar',
+      options: '{"yAxis":[{"name":"销量"},{"name":"增长率"}]}',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'A', data: [50, 100] },
+          { name: 'B', data: [5, 10], yAxisIndex: 1 },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    // 左轴 raw max 100 → step 25 top 100；右轴 raw max 10 → 以主轴档数（4 段）为锚重算 niceStep：step 3 top 12
+    const texts = [...svg.querySelectorAll('text.axis-text')]
+    const left = texts.filter((t) => t.getAttribute('text-anchor') === 'end')
+    const right = texts.filter((t) => t.getAttribute('text-anchor') === 'start')
+    expect(left.map((t) => t.textContent)).toEqual(['0', '25', '50', '75', '100'])
+    expect(right.map((t) => t.textContent)).toEqual(['0', '3', '6', '9', '12'])
+    // 右轴刻度贴右缘（x = W - 42 + 8 = 486）
+    for (const t of right) expect(Number(t.getAttribute('x'))).toBe(486)
+    // 网格右缘扩到双轴 padR（x2 = 520 - 42 = 478；单轴是 508）
+    for (const line of svg.querySelectorAll('line.axis-line')) expect(Number(line.getAttribute('x2'))).toBe(478)
+  })
+
+  it('双轴轴名渲染在轴顶（左轴名靠轴起、右轴名贴右缘收）', () => {
+    const el = mount({
+      type: 'bar',
+      options: '{"yAxis":[{"name":"销量"},{"name":"增长率"}]}',
+      data: JSON.stringify({
+        labels: ['a'],
+        series: [
+          { name: 'A', data: [50] },
+          { name: 'B', data: [5], yAxisIndex: 1 },
+        ],
+      }),
+    })
+    const names = [...svgOf(el).querySelectorAll('text.axis-name')]
+    expect(names.map((t) => t.textContent)).toEqual(['销量', '增长率'])
+    expect(Number(names[0]!.getAttribute('x'))).toBe(42)
+    expect(Number(names[1]!.getAttribute('x'))).toBe(478)
+    expect(names[0]!.getAttribute('text-anchor')).toBe('start')
+    expect(names[1]!.getAttribute('text-anchor')).toBe('end')
+  })
+
+  it('series.yAxisIndex=1 按右轴比例落位（bar 高度用右轴量程）', () => {
+    const el = mount({
+      type: 'bar',
+      options: '{"yAxis":[{"name":"L"},{"name":"R"}]}',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'A', data: [50, 100] },
+          { name: 'B', data: [5, 10], yAxisIndex: 1 },
+        ],
+      }),
+    })
+    const bars = [...svgOf(el).querySelectorAll('rect.bar')]
+    const plotH = 234
+    // 左轴量程 100：A 值 100 满高；右轴量程 12（step 3×4）：B 值 10 → 高 10/12×234
+    expect(Number(bars[1]!.getAttribute('y'))).toBeCloseTo(16, 0) // A 值 100 → 顶到 PAD.t
+    expect(Number(bars[3]!.getAttribute('height'))).toBeCloseTo((10 / 12) * plotH, 0)
+    // 对照：若误用左轴量程 100，高度会是 10/100×234=23.4——明显不同
+    expect(Number(bars[3]!.getAttribute('height'))).toBeGreaterThan(100)
+  })
+
+  it('type=line 双轴：右轴系列的点按右轴量程落 y', () => {
+    const el = mount({
+      type: 'line',
+      options: '{"yAxis":[{"name":"L"},{"name":"R"}]}',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'A', data: [50, 100] },
+          { name: 'B', data: [5, 10], yAxisIndex: 1 },
+        ],
+      }),
+    })
+    const dots = [...svgOf(el).querySelectorAll('circle.dot')]
+    // B 值 10（右轴量程 12）→ y = 16 + 234 - 10/12×234 = 155；若误用左轴（量程 100）→ y = 230.6
+    expect(Number(dots[3]!.getAttribute('cy'))).toBeCloseTo(16 + 234 - (10 / 12) * 234, 0)
+  })
+
+  it('缺省单轴：无右轴刻度、网格右缘 508（行为不变）', () => {
+    const el = mount({ type: 'bar', data: MULTI })
+    const svg = svgOf(el)
+    const right = [...svg.querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'start')
+    expect(right.length).toBe(0)
+    for (const line of svg.querySelectorAll('line.axis-line')) expect(Number(line.getAttribute('x2'))).toBe(508)
+  })
+
+  it('yAxis 只有一项（无右轴）不启用双轴；yAxisIndex 非法值归 0（并入左轴量程）', () => {
+    const el = mount({
+      type: 'bar',
+      options: '{"yAxis":[{"name":"L"}]}',
+      data: JSON.stringify({
+        labels: ['a'],
+        series: [
+          { name: 'A', data: [50] },
+          { name: 'B', data: [200], yAxisIndex: 2 },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    // 无右轴刻度
+    const right = [...svg.querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'start')
+    expect(right.length).toBe(0)
+    // yAxisIndex=2 归 0：左轴量程并入 B(200) → step 50 top 200
+    const left = [...svg.querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'end')
+    expect(left.map((t) => t.textContent)).toEqual(['0', '50', '100', '150', '200'])
+  })
+
   it('type=stacked-bar 多系列堆叠（段高之和=分类总高，不超绘图区）', () => {
     const el = mount({ type: 'stacked-bar', data: MULTI })
     const bars = svgOf(el).querySelectorAll('.bar')

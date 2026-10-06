@@ -10,6 +10,8 @@ export interface ChartDatum {
 export interface ChartSeries {
   name: string
   data: number[]
+  /** 系列绑定的 y 轴下标（双轴）：0 左（默认）| 1 右；仅直角坐标系图型消费 */
+  yAxisIndex?: 0 | 1
 }
 
 export interface ChartData {
@@ -83,6 +85,11 @@ svg {
   fill: var(--oas-color-text-secondary);
   font-size: 12px;
   text-anchor: middle;
+}
+/* 双轴轴名（轴顶标注，text-anchor 由渲染按左右归属给出） */
+.axis-name {
+  fill: var(--oas-color-text-secondary);
+  font-size: 11px;
 }
 /* 系列配色：通过 color 继承到 SVG 元素（stroke/fill 用 currentColor） */
 .c0 { color: var(--oas-color-primary); }
@@ -198,6 +205,8 @@ svg {
 const W = 520
 const H = 280
 const PAD = { l: 42, r: 12, t: 16, b: 30 }
+/** 双轴模式右缘留白（对称左轴刻度列宽） */
+const PAD_R_DUAL = 42
 
 /**
  * oas-chart —— 自研 SVG 图表（零第三方引擎）。
@@ -407,25 +416,63 @@ export class OASChart extends OASElement {
     return out
   }
 
+  /**
+   * 直角坐标系轴上下文（renderLine/renderBars/renderArea 共用）：
+   * 单轴=全系列左轴 niceTicks；双轴=按 series.yAxisIndex 分组各算量程，
+   * 副轴以主轴档数为锚 alignTicks 重算 niceStep（刻度错位误读根治）。
+   */
+  private axisContext(
+    data: ChartData,
+    options: ChartOptions,
+  ): {
+    padR: number
+    plotW: number
+    dual: boolean
+    ticksFor: (axis: 0 | 1) => { max: number; step: number; values: number[] }
+    yAt: (axis: 0 | 1, v: number) => number
+    grid: (plotH: number) => string
+  } {
+    const plotH = H - PAD.t - PAD.b
+    const dual = this.isDualAxis(options)
+    const padR = dual ? PAD_R_DUAL : PAD.r
+    const plotW = W - PAD.l - padR
+    const left = dual ? this.alignTicksTo(this.maxForAxis(data, 0), 4) : this.niceTicks(this.maxValue(data))
+    // alignTicks：以主轴档数（左轴刻度数 - 1 段）为锚，副轴同档数重算 niceStep
+    const right = dual ? this.alignTicksTo(this.maxForAxis(data, 1), left.values.length - 1) : null
+    const ticksFor = (axis: 0 | 1): { max: number; step: number; values: number[] } =>
+      axis === 1 && right ? right : left
+    const yAt = (axis: 0 | 1, v: number): number => {
+      const t = ticksFor(axis)
+      return PAD.t + plotH - (t.max > 0 ? (v / t.max) * plotH : 0)
+    }
+    const grid = (ph: number): string =>
+      dual
+        ? this.renderGrid(left, ph, {
+            padR,
+            rightTicks: right,
+            names: [options.yAxis?.[0]?.name, options.yAxis?.[1]?.name],
+          })
+        : this.renderGrid(left, ph)
+    return { padR, plotW, dual, ticksFor, yAt, grid }
+  }
+
   /** 折线图：网格 + y 刻度 + x 分类 + 每系列 path + 数据点 title */
   private renderLine(data: ChartData, options: ChartOptions): string {
-    const plotW = W - PAD.l - PAD.r
+    const { plotW, yAt, grid } = this.axisContext(data, options)
     const plotH = H - PAD.t - PAD.b
-    const maxVal = this.maxValue(data)
-    const ticks = this.niceTicks(maxVal)
     const n = data.labels.length
 
-    let out = this.renderGrid(ticks, plotH)
+    let out = grid(plotH)
     out += this.renderXLabels(data.labels, plotW, 'top')
 
     const stepX = n > 1 ? plotW / (n - 1) : plotW / 2
     const xAt = (i: number): number => PAD.l + (n > 1 ? i * stepX : stepX)
-    const yAt = (v: number): number => PAD.t + plotH - (ticks.max > 0 ? (v / ticks.max) * plotH : 0)
 
     data.series.forEach((series, si) => {
       const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
       const color = options.colors?.[si]
-      const pts = series.data.map((v, i) => ({ x: xAt(i), y: yAt(v) }))
+      const axis = this.axisOf(series)
+      const pts = series.data.map((v, i) => ({ x: xAt(i), y: yAt(axis, v) }))
       const path = options.smooth
         ? this.smoothPath(pts)
         : pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
@@ -440,13 +487,11 @@ export class OASChart extends OASElement {
 
   /** 面积图：折线 + 闭合到基线的半透明填充（多系列叠加显示） */
   private renderArea(data: ChartData, options: ChartOptions): string {
-    const plotW = W - PAD.l - PAD.r
+    const { plotW, yAt, grid } = this.axisContext(data, options)
     const plotH = H - PAD.t - PAD.b
-    const maxVal = this.maxValue(data)
-    const ticks = this.niceTicks(maxVal)
     const n = data.labels.length
 
-    let out = this.renderGrid(ticks, plotH)
+    let out = grid(plotH)
     out += this.renderXLabels(data.labels, plotW, 'top')
 
     // 渐变填充（可选）：每系列一个垂直 linearGradient（顶部系列色 0.35 → 底部全透明），
@@ -456,13 +501,13 @@ export class OASChart extends OASElement {
 
     const stepX = n > 1 ? plotW / (n - 1) : plotW / 2
     const xAt = (i: number): number => PAD.l + (n > 1 ? i * stepX : stepX)
-    const yAt = (v: number): number => PAD.t + plotH - (ticks.max > 0 ? (v / ticks.max) * plotH : 0)
     const baseY = PAD.t + plotH
 
     data.series.forEach((series, si) => {
       const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
       const color = options.colors?.[si]
-      const pts = series.data.map((v, i) => ({ x: xAt(i), y: yAt(v) }))
+      const axis = this.axisOf(series)
+      const pts = series.data.map((v, i) => ({ x: xAt(i), y: yAt(axis, v) }))
       const path = options.smooth
         ? this.smoothPath(pts)
         : pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
@@ -488,14 +533,12 @@ export class OASChart extends OASElement {
 
   /** 柱状图：网格 + 分组柱 rect + x 分类 + title */
   private renderBars(data: ChartData, options: ChartOptions): string {
-    const plotW = W - PAD.l - PAD.r
+    const { plotW, ticksFor, grid } = this.axisContext(data, options)
     const plotH = H - PAD.t - PAD.b
-    const maxVal = this.maxValue(data)
-    const ticks = this.niceTicks(maxVal)
     const n = data.labels.length
     const m = data.series.length
 
-    let out = this.renderGrid(ticks, plotH)
+    let out = grid(plotH)
     out += this.renderXLabels(data.labels, plotW, 'middle')
 
     const bandW = plotW / n
@@ -505,6 +548,7 @@ export class OASChart extends OASElement {
     data.series.forEach((series, si) => {
       const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
       const color = options.colors?.[si]
+      const ticks = ticksFor(this.axisOf(series))
       series.data.forEach((v, i) => {
         const h = ticks.max > 0 ? Math.max(0, (v / ticks.max) * plotH) : 0
         const x = PAD.l + i * bandW + groupGap / 2 + si * (barW + (m > 1 ? 1 : 0))
@@ -661,18 +705,35 @@ export class OASChart extends OASElement {
     return out
   }
 
-  /** 水平网格线 + y 轴刻度文字 */
-  private renderGrid(ticks: { max: number; step: number; values: number[] }, plotH: number): string {
+  /**
+   * 水平网格线 + y 轴刻度文字（单轴：左轴；双轴：网格线按左轴画、右轴刻度贴右缘标注，
+   * 避免双网格视觉混乱；轴名渲染在轴顶。刻度档数两轴一致（alignTicks 锚定））
+   */
+  private renderGrid(
+    ticks: { max: number; step: number; values: number[] },
+    plotH: number,
+    opts?: { padR?: number; rightTicks?: { max: number; step: number } | null; names?: [string?, string?] },
+  ): string {
+    const padR = opts?.padR ?? PAD.r
+    const right = opts?.rightTicks ?? null
+    const names = opts?.names
     let out = ''
-    const lines = 5
+    const lines = ticks.values.length
     for (let i = 0; i < lines; i++) {
       const ratio = i / (lines - 1)
       const y = PAD.t + plotH - ratio * plotH
-      const value = ticks.step * i
-      out += `<line class="axis-line" x1="${PAD.l}" y1="${y.toFixed(1)}" x2="${W - PAD.r}" y2="${y.toFixed(1)}"></line>`
-      out += `<text class="axis-text" x="${PAD.l - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${Math.round(value)}</text>`
+      out += `<line class="axis-line" x1="${PAD.l}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"></line>`
+      out += `<text class="axis-text" x="${PAD.l - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${Math.round(ticks.step * i)}</text>`
+      if (right) {
+        out += `<text class="axis-text" x="${W - padR + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start">${Math.round(right.step * i)}</text>`
+      }
     }
-    void ticks.values
+    if (names?.[0]) {
+      out += `<text class="axis-name" x="${PAD.l}" y="10" text-anchor="start">${this.escapeText(names[0])}</text>`
+    }
+    if (names?.[1]) {
+      out += `<text class="axis-name" x="${W - padR}" y="10" text-anchor="end">${this.escapeText(names[1])}</text>`
+    }
     return out
   }
 
@@ -714,11 +775,36 @@ export class OASChart extends OASElement {
 
   /** 生成 nice 刻度：max 上取整为 4 等分的整步长 */
   private niceTicks(rawMax: number): { max: number; step: number; values: number[] } {
+    return this.alignTicksTo(rawMax, 4)
+  }
+
+  /** 以段数为锚重算 nice 刻度（双轴 alignTicks：副轴按主轴档数同档重算，消除刻度错位误读） */
+  private alignTicksTo(rawMax: number, segments: number): { max: number; step: number; values: number[] } {
     const max = Math.max(0, rawMax)
-    if (max === 0) return { max: 0, step: 0, values: [0, 0, 0, 0, 0] }
-    const step = Math.ceil(max / 4)
-    const top = step * 4
-    return { max: top, step, values: [0, 1, 2, 3, 4].map((i) => i * step) }
+    if (max === 0) return { max: 0, step: 0, values: Array.from({ length: segments + 1 }, () => 0) }
+    const step = Math.ceil(max / segments)
+    const top = step * segments
+    return { max: top, step, values: Array.from({ length: segments + 1 }, (_, i) => i * step) }
+  }
+
+  /** 双轴模式：options.yAxis 声明了右轴（第 2 项存在）即启用；仅直角坐标系图型消费 */
+  private isDualAxis(options: ChartOptions): boolean {
+    return Array.isArray(options.yAxis) && options.yAxis.length > 1 && options.yAxis[1] != null
+  }
+
+  /** 系列绑定的 y 轴（缺省/非法值归左轴 0） */
+  private axisOf(series: ChartSeries): 0 | 1 {
+    return series.yAxisIndex === 1 ? 1 : 0
+  }
+
+  /** 指定轴的量程基准：该轴绑定系列的 max（无绑定系列 → 0） */
+  private maxForAxis(data: ChartData, axis: 0 | 1): number {
+    let max = 0
+    for (const s of data.series) {
+      if (this.axisOf(s) !== axis) continue
+      for (const v of s.data) max = Math.max(max, Number(v) || 0)
+    }
+    return max
   }
 
   /** 折线平滑：Catmull-Rom 转三次贝塞尔——曲线经过每个数据点（端点处重用端点；控制点由相邻点 1/6 张力算出）。
@@ -784,7 +870,10 @@ export class OASChart extends OASElement {
                 ? rec.data.map((v) => (Number.isFinite(Number(v)) ? Number(v) : 0))
                 : []
               if (data.length === 0) return null
-              return { name: rec.name != null ? String(rec.name) : '', data }
+              const yAxisIndex = rec.yAxisIndex === 1 ? 1 : rec.yAxisIndex === 0 ? 0 : undefined
+              return yAxisIndex === 1
+                ? { name: rec.name != null ? String(rec.name) : '', data, yAxisIndex }
+                : { name: rec.name != null ? String(rec.name) : '', data }
             })
             .filter((s): s is ChartSeries => s !== null)
         : []
