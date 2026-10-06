@@ -4144,7 +4144,7 @@
   },
   "oas-gantt": {
     "attrs": {
-      "tasks": "Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:\"milestone\" takes precedence (rendered as milestone even with end, which is ignored), no end also infers milestone; start/end are swapped automatically when start is after end",
+      "tasks": "Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:\"milestone\" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end",
       "scale": "Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day",
       "expanded": "Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle",
       "readonly": "Whole chart read-only (no rescheduling/progress, drag handles not rendered)",

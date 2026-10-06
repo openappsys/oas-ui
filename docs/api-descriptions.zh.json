@@ -4144,7 +4144,7 @@
   },
   "oas-gantt": {
     "attrs": {
-      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），无 end 亦推导为里程碑；start 晚于 end 自动交换",
+      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换",
       "scale": "时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day",
       "expanded": "已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回",
       "readonly": "整图只读（禁改期/禁进度，不渲染拖拽手柄）",
