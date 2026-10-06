@@ -158,6 +158,73 @@ describe('OASGantt 渲染基础', () => {
     expect(el.tasks[0]!.progress).toBe(100)
     expect(shadowOf(el).querySelectorAll('.head-minor .unit').length).toBeGreaterThan(0)
   })
+
+  it('milestone 显式声明优先：type="milestone" 即使带 end 也按里程碑渲染（菱形，end 忽略）+ console.warn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        tasks: JSON.stringify([
+          { id: 'm', name: '矛盾里程碑', start: '2026-03-05', end: '2026-03-10', type: 'milestone' },
+        ]),
+      })
+      const bar = barOf(el, 'm')
+      expect(bar.classList.contains('milestone')).toBe(true)
+      // end 忽略：菱形宽 16px（条形则会按 end 计算宽）
+      expect(bar.style.width).toBe('16px')
+      expect(bar.querySelector('.dia')).not.toBeNull()
+      // 数据矛盾告警一次（重渲染不重复告警；同值 setAttribute 会被 attrCache 短路，用 requestUpdate 触发重建）
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('milestone')).length).toBe(1)
+      el.requestUpdate()
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('milestone')).length).toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('milestone 拖动只写 start：显式 type="milestone" 带 end 时 end 数据不被改写', () => {
+    const el = mount({
+      tasks: JSON.stringify([{ id: 'm', name: '节点', start: '2026-03-05', end: '2026-03-10', type: 'milestone' }]),
+    })
+    dragSeq(barOf(el, 'm'), 36)
+    expect(el.tasks[0]!.start).toBe('2026-03-06')
+    // end 数据保留原值（渲染忽略，但清洗层不丢宿主数据）
+    expect(el.tasks[0]!.end).toBe('2026-03-10')
+  })
+
+  it('start 晚于 end（日期颠倒）：清洗层自动交换 + console.warn 一次；同日任务（1 天工期）不交换', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        tasks: JSON.stringify([{ id: 'x', name: '颠倒', start: '2026-03-10', end: '2026-03-05' }]),
+      })
+      expect(el.tasks[0]!.start).toBe('2026-03-05')
+      expect(el.tasks[0]!.end).toBe('2026-03-10')
+      // 交换后按正常条形渲染（03-05..03-10 含端 6 天 × 36 = 216px，非 2px 假条）
+      expect(Number.parseFloat(barOf(el, 'x').style.width)).toBe(216)
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('颠倒')).length).toBe(1)
+      // 同日（start == end，含端语义 1 天工期）合法不交换
+      const el2 = mount({
+        tasks: JSON.stringify([{ id: 'y', name: '同日', start: '2026-03-05', end: '2026-03-05' }]),
+      })
+      expect(el2.tasks[0]!.start).toBe('2026-03-05')
+      expect(el2.tasks[0]!.end).toBe('2026-03-05')
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('颠倒')).length).toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('updateTask 颠倒 patch（start 晚于 end）同样自动交换', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ tasks: JSON.stringify([{ id: 't', name: 'T', start: '2026-03-02', end: '2026-03-08' }]) })
+      expect(el.updateTask('t', { start: '2026-03-15' })).toBe(true)
+      expect(el.tasks[0]!.start).toBe('2026-03-08')
+      expect(el.tasks[0]!.end).toBe('2026-03-15')
+    } finally {
+      warn.mockRestore()
+    }
+  })
 })
 
 describe('OASGantt 刻度六档', () => {
@@ -529,7 +596,31 @@ describe('OASGantt 拖拽三件套（改期/拉伸/进度）', () => {
     bar.dispatchEvent(up)
     expect(changed).toBe(0)
     expect(el.tasks[0]!.start).toBe('2026-03-02')
-    expect(Number.parseFloat(bar.style.left)).toBeLessThan(Number.parseFloat('9999'))
+    // 视觉回滚到拖前精确位置：anchor=03-01（起始留白 1 档）→ 03-02 落在第 1 列，left = 36；
+    // end 含端语义 03-02..03-06 = 5 天 → 宽 180
+    expect(Number.parseFloat(bar.style.left)).toBe(36)
+    expect(Number.parseFloat(bar.style.width)).toBe(5 * 36)
+  })
+
+  it('拖拽中视口 resize（自适应列宽重排）：拖拽终止回滚（零事件，ctx.bar 不悬在脱节 DOM 上）', () => {
+    const el = mountDrag()
+    let changed = 0
+    el.addEventListener('oas-task-change', () => changed++)
+    const bar = barOf(el, 't1')
+    const down = new PointerEvent('pointerdown', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(down, 'clientX', { value: 100 })
+    bar.dispatchEvent(down)
+    const move = new PointerEvent('pointermove', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(move, 'clientX', { value: 172 })
+    bar.dispatchEvent(move)
+    // ResizeObserver 回调路径：视口宽变化 → 列宽重排会重建 bars 层，
+    // 进行中的拖拽必须先终止（否则 ctx.bar 持已脱离 DOM 的旧节点，视觉断线）
+    ;(el as unknown as { onViewportResize(): void }).onViewportResize()
+    const up = new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 1 })
+    Object.defineProperty(up, 'clientX', { value: 172 })
+    document.dispatchEvent(up)
+    expect(changed).toBe(0)
+    expect(el.tasks[0]!.start).toBe('2026-03-02')
   })
 
   it('pointercancel 回滚（零事件）', () => {
@@ -836,6 +927,36 @@ describe('OASGantt RTL', () => {
     expect(Number.parseFloat(minors[minors.length - 1]!.style.left)).toBeCloseTo(0, 5)
     // 第二格镜像后左缘 = canvasW − 2 × colW
     expect(Number.parseFloat(minors[1]!.style.left)).toBeCloseTo(canvasW - 2 * colW, 5)
+  })
+
+  it('RTL 下 scrollToDate 走 scrollLeft 负值模型（真实浏览器 RTL：0 在最右、向左滚为负）', () => {
+    const tasks = JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }])
+    const ltr = mount({ tasks })
+    const rtl = mount({ tasks, dir: 'rtl' })
+    // happy-dom 无布局：显式 mock 视口/画布尺寸（clientWidth 200、scrollWidth 360 = 画布宽 10 格，
+    // 与 .inner 宽自洽 → 最大滚动量 maxScroll = 160）
+    for (const el of [ltr, rtl]) {
+      const tbody = shadowOf(el).querySelector<HTMLElement>('.tbody')!
+      Object.defineProperty(tbody, 'clientWidth', { value: 200, configurable: true })
+      Object.defineProperty(tbody, 'scrollWidth', { value: 360, configurable: true })
+    }
+    ltr.scrollToDate('2026-03-05')
+    rtl.scrollToDate('2026-03-05')
+    const canvasW = Number.parseFloat(shadowOf(ltr).querySelector<HTMLElement>('.inner')!.style.width)
+    const ltrLeft = ltr.shadowRoot!.querySelector<HTMLElement>('.tbody')!.scrollLeft
+    const rtlLeft = rtl.shadowRoot!.querySelector<HTMLElement>('.tbody')!.scrollLeft
+    // LTR：scrollLeft = 目标物理 x − 半视口（正值模型）
+    expect(ltrLeft).toBeGreaterThan(0)
+    // RTL 物理 x 是镜像坐标（p = canvasW − x = canvasW − ltrLeft − half）：
+    // scrollLeft = (p − half) − maxScroll = canvasW − ltrLeft − 2×half − maxScroll ∈ [−maxScroll, 0]
+    expect(rtlLeft).toBe(canvasW - ltrLeft - 200 - 160)
+    expect(rtlLeft).toBeLessThan(0)
+    // 目标在时间轴起点（RTL 画布物理右端，镜像 p = canvasW → 视口左缘越上界）：钳制在 0（不越成正值）
+    rtl.scrollToDate('2026-03-01')
+    expect(rtl.shadowRoot!.querySelector<HTMLElement>('.tbody')!.scrollLeft).toBe(0)
+    // 目标在画布最左端（RTL 视角的时间轴末端，镜像 p = 0）：钳制在 −maxScroll
+    rtl.scrollToDate('2026-04-01')
+    expect(rtl.shadowRoot!.querySelector<HTMLElement>('.tbody')!.scrollLeft).toBe(-160)
   })
 })
 

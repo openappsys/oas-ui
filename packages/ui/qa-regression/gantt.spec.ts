@@ -151,3 +151,54 @@ test('gantt 窗口自适应/可见性回归：首任务贴近左缘 + 今日线/
   expect(nameStyle.overflow).toBe('hidden')
   expect(nameStyle.scrollW).toBeGreaterThan(nameStyle.clientW)
 })
+
+// RTL scrollToDate 走真实浏览器 scrollLeft 负值模型（0 在最右、向左滚为负）——
+// happy-dom 无 RTL 滚动布局，单测只能锁公式，负值语义必须真浏览器验证；
+// 附带显式 type:"milestone" 带 end 的浏览器渲染（菱形可见，end 不渲染成条形）
+test('gantt RTL scrollToDate 负值模型 + 显式 milestone 带 end 渲染菱形', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#gantt-basic', { timeout: 15000 })
+  const result = await page.evaluate(async () => {
+    await customElements.whenDefined('oas-gantt')
+    const tasks = JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-20' }])
+    const make = (dir?: string) => {
+      const el = document.createElement('oas-gantt')
+      if (dir) el.setAttribute('dir', dir)
+      el.setAttribute('tasks', tasks)
+      el.style.position = 'fixed'
+      el.style.width = '400px' // 固定宽：视口半宽小于目标 x，scrollLeft 计算不被钳 0
+      el.style.top = '-9999px' // 离屏挂载：有真实布局测量，不干扰页面视觉
+      document.body.appendChild(el)
+      return el
+    }
+    const ltr = make() as HTMLElement & { scrollToDate(d: string): void }
+    const rtl = make('rtl') as HTMLElement & { scrollToDate(d: string): void }
+    const ms = make('rtl')
+    ms.setAttribute(
+      'tasks',
+      JSON.stringify([{ id: 'm', name: 'M', start: '2026-03-05', end: '2026-03-10', type: 'milestone' }]),
+    )
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    ltr.scrollToDate('2026-03-18')
+    rtl.scrollToDate('2026-03-18')
+    const out = {
+      rtlAttr: rtl.hasAttribute('data-rtl'),
+      ltr: (ltr.shadowRoot!.querySelector('.tbody') as HTMLElement).scrollLeft,
+      rtl: (rtl.shadowRoot!.querySelector('.tbody') as HTMLElement).scrollLeft,
+      milestoneDiamond: !!ms.shadowRoot!.querySelector('.bar.milestone .dia'),
+      milestoneW: (ms.shadowRoot!.querySelector('.bar.milestone') as HTMLElement).style.width,
+    }
+    ltr.remove()
+    rtl.remove()
+    ms.remove()
+    return out
+  })
+  expect(result.rtlAttr).toBe(true)
+  // LTR 正值模型：向右滚为正
+  expect(result.ltr).toBeGreaterThan(0)
+  // RTL 负值模型：同一目标日期 scrollLeft 为负（时间轴镜像，0 在画布最右）
+  expect(result.rtl).toBeLessThan(0)
+  expect(result.milestoneDiamond).toBe(true)
+  // end 忽略：菱形容器恒 16px 宽（按 end 渲染则会是条形宽度）
+  expect(result.milestoneW).toBe('16px')
+})

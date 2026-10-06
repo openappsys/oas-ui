@@ -532,8 +532,13 @@ function flattenInput(
 /**
  * 清洗任务数组：坏数据丢弃；children 嵌套拍平为 parent 指针；缺 id 自动分配并避让
  * （显式 id 重复/冲突时自动避让，对齐 scheduler 语义）；type 推导在渲染模型层完成。
+ * onWarn：数据自愈告警通道（key 去重由调用方持有，模块函数保持无状态）。
  */
-function sanitizeTasks(v: unknown, allocId: (used: Set<string>) => string): TG[] {
+function sanitizeTasks(
+  v: unknown,
+  allocId: (used: Set<string>) => string,
+  onWarn?: (key: string, msg: string) => void,
+): TG[] {
   const flat: Array<{ raw: Record<string, unknown>; parent: string | null; fromNest: boolean }> = []
   flattenInput(v, flat, null)
 
@@ -569,7 +574,21 @@ function sanitizeTasks(v: unknown, allocId: (used: Set<string>) => string): TG[]
     const { raw, parent, fromNest } = flat[i]!
     const t: TG = { id, name: raw.name as string, start: (raw.start as string).trim() }
     const endRaw = typeof raw.end === 'string' && raw.end.trim() !== '' ? raw.end.trim() : undefined
-    if (endRaw && parseTaskDate(endRaw)) t.end = endRaw
+    if (endRaw && parseTaskDate(endRaw)) {
+      // start 晚于 end（日期颠倒）自愈：按渲染语义交换（不静默渲染 2px 假条）。
+      // 颠倒判定与渲染层 endMsOf 同口径：日精度 end 含当日（区间右缘 = 次日 00:00）
+      const startD = parseTaskDate(t.start)!
+      const endD = parseTaskDate(endRaw)!
+      const endMs = endRaw.length > 10 ? endD.getTime() : endD.getTime() + DAY_MS
+      let endStr = endRaw
+      if (endMs < startD.getTime()) {
+        onWarn?.(t.id, `[oas-gantt] 任务 "${t.id}" start 晚于 end（日期颠倒），已自动交换`)
+        const tmp = t.start
+        t.start = endStr
+        endStr = tmp
+      }
+      t.end = endStr
+    }
     const progress = parseProgress(raw.progress)
     if (progress !== undefined) t.progress = progress
     const parentVal = fromNest ? parent : typeof raw.parent === 'string' && raw.parent !== '' ? raw.parent : undefined
@@ -620,6 +639,10 @@ export class OASGantt extends OASElement {
   private canvasW = 0
   private lastScale = ''
   private warnedParents = new Set<string>()
+  /** 清洗层数据自愈告警去重（key = 任务 id） */
+  private warnedSanitize = new Set<string>()
+  /** 显式 milestone 与 end 并存的数据矛盾告警去重（key = 任务 id） */
+  private warnedMilestones = new Set<string>()
   /** 自适应列宽（px）：视口可用宽度内铺下整个窗口时收窄至恰好适配；null = 回落各档基准列宽（无布局环境） */
   private displayColW: number | null = null
   private resizeObs: ResizeObserver | null = null
@@ -651,7 +674,11 @@ export class OASGantt extends OASElement {
     })
   }
   set tasks(v: GanttTask[]) {
-    this._tasks = sanitizeTasks(v, (used) => this.allocId(used))
+    this._tasks = sanitizeTasks(
+      v,
+      (used) => this.allocId(used),
+      (key, msg) => this.warnOnce(key, msg),
+    )
     this.tasksAttrCache = JSON.stringify(this._tasks)
     this.setAttribute('tasks', this.tasksAttrCache)
     this.update()
@@ -665,7 +692,11 @@ export class OASGantt extends OASElement {
     // 非法 end（非空串且解析失败）显式拒绝：否则清洗层静默丢弃 end，task 会被悄悄降级成 milestone
     if (patch.end !== undefined && patch.end !== '' && !parseTaskDate(patch.end)) return false
     const merged = { ...this._tasks[idx]!, ...patch, id }
-    const [clean] = sanitizeTasks([merged], (used) => this.allocId(used))
+    const [clean] = sanitizeTasks(
+      [merged],
+      (used) => this.allocId(used),
+      (key, msg) => this.warnOnce(key, msg),
+    )
     if (!clean) return false
     clean.id = id
     this._tasks = [...this._tasks.slice(0, idx), clean, ...this._tasks.slice(idx + 1)]
@@ -685,13 +716,22 @@ export class OASGantt extends OASElement {
     this.renderWindow()
   }
 
-  /** 滚动到指定日期（水平居中）；非法日期忽略 */
+  /** 滚动到指定日期（水平居中）；非法日期忽略。RTL 走真实浏览器 scrollLeft 负值模型
+   *  （0 在画布最右、向左滚为负；-maxScroll 为最左）——LTR 正值公式在 RTL 下会把视口
+   *  钉在画布左端（与时间轴镜像方向相反），目标永远落不在视口内 */
   scrollToDate(date: string): void {
     const d = parseTaskDate(date)
     if (!d || !this.tbody) return
-    const x = this.mirrorX(this.xOf(d.getTime()))
+    const p = this.mirrorX(this.xOf(d.getTime()))
     const half = this.tbody.clientWidth / 2
-    this.tbody.scrollLeft = Math.max(0, x - half)
+    if (isRtl(this)) {
+      const maxScroll = Math.max(0, this.tbody.scrollWidth - this.tbody.clientWidth)
+      // 视口左缘 L 钳在 [0, maxScroll]，scrollLeft = L − maxScroll ∈ [−maxScroll, 0]
+      const left = Math.min(Math.max(p - half, 0), maxScroll)
+      this.tbody.scrollLeft = left - maxScroll
+    } else {
+      this.tbody.scrollLeft = Math.max(0, p - half)
+    }
   }
 
   /** 滚动到今天 */
@@ -703,6 +743,13 @@ export class OASGantt extends OASElement {
     let id = `gt${this.nextId++}`
     while (used.has(id)) id = `gt${this.nextId++}`
     return id
+  }
+
+  /** 清洗层数据自愈告警（同 key 只告一次，防受控循环刷屏） */
+  private warnOnce(key: string, msg: string): void {
+    if (this.warnedSanitize.has(key)) return
+    this.warnedSanitize.add(key)
+    console.warn(msg)
   }
 
   private syncTasksAttr(): void {
@@ -724,7 +771,11 @@ export class OASGantt extends OASElement {
     } catch {
       parsed = []
     }
-    this._tasks = sanitizeTasks(parsed, (used) => this.allocId(used))
+    this._tasks = sanitizeTasks(
+      parsed,
+      (used) => this.allocId(used),
+      (key, msg) => this.warnOnce(key, msg),
+    )
   }
 
   /** expanded 属性同步（JSON 数组受控；属性缺席回落数据 expanded 初始集合） */
@@ -782,6 +833,9 @@ export class OASGantt extends OASElement {
   /** 视口尺寸变化（含首次观测到真实宽）：仅当自适应列宽实际改变时重排，避免无谓重建 */
   private onViewportResize(): void {
     if (!this.tbody) return
+    // 列宽重排会重建 bars 层：进行中的拖拽先终止（否则 ctx.bar 悬在脱离 DOM 的旧节点上，
+    // 视觉断线且回滚落在死节点上）；吸附步进基准（snap=列宽）随之失效，取消是唯一一致路径
+    if (this.dragCtx) this.cancelDrag()
     const before = this.displayColW
     this.computeColW()
     if (this.displayColW === before) return
@@ -1014,12 +1068,15 @@ export class OASGantt extends OASElement {
     }
 
     const startMsOf = (t: TG): number => parseTaskDate(t.start)?.getTime() ?? 0
+    // 里程碑口径（全局统一）：显式 type:"milestone" 优先（带 end 也算，渲染/聚合/连线锚点一致忽略 end），
+    // 其次推导「无 end 且无子级」
+    const isMilestoneTask = (t: TG): boolean => t.type === 'milestone' || !t.end
     const endMsOf = (t: TG): number => {
-      if (!t.end) return startMsOf(t)
-      const e = parseTaskDate(t.end)
+      if (isMilestoneTask(t)) return startMsOf(t)
+      const e = parseTaskDate(t.end!)
       if (!e) return startMsOf(t)
       // 日精度 end 含当日（区间右缘 = 次日 00:00）；带时间精度按原值
-      return t.end.length > 10 ? e.getTime() : e.getTime() + DAY_MS
+      return t.end!.length > 10 ? e.getTime() : e.getTime() + DAY_MS
     }
     // 摘要聚合（递归后代 min/max + 工期加权进度；叶子 = 自身）
     const agg = new Map<string, { startMs: number; endMs: number; progress: number }>()
@@ -1059,7 +1116,12 @@ export class OASGantt extends OASElement {
     const walk = (t: TG, depth: number): void => {
       const childIds = childMap.get(t.id) ?? []
       const hasChildren = childIds.length > 0
-      const isMilestone = !t.end && !hasChildren
+      const isMilestone = isMilestoneTask(t) && !hasChildren
+      // 数据矛盾告警：显式 milestone 声明与 end 并存（end 渲染忽略、数据保留）——一次即可
+      if (t.type === 'milestone' && t.end && !this.warnedMilestones.has(t.id)) {
+        this.warnedMilestones.add(t.id)
+        console.warn(`[oas-gantt] 任务 "${t.id}" 显式声明 type:"milestone" 但携带 end，已按里程碑渲染（end 忽略）`)
+      }
       const isSummary = hasChildren || (t.type === 'summary' && !isMilestone)
       const a = aggregate(t.id)
       rows.push({
@@ -1088,12 +1150,13 @@ export class OASGantt extends OASElement {
     return set
   }
 
-  /** 当前展开集合（toggle 用；未受控时从数据构建） */
+  /** 当前展开集合（toggle 用；未受控时从数据构建；id 索引 Set 保证万级任务 O(n)——some 线性扫描会 O(n²)） */
   private currentExpandedSet(): Set<string> {
     if (this.expanded) return this.expanded
+    const ids = new Set(this._tasks.map((t) => t.id))
     const childMap = new Map<string, string[]>()
     for (const t of this._tasks) {
-      if (t.parent && this._tasks.some((x) => x.id === t.parent)) {
+      if (t.parent && ids.has(t.parent)) {
         const list = childMap.get(t.parent!) ?? []
         list.push(t.id)
         childMap.set(t.parent!, list)
@@ -1644,17 +1707,18 @@ export class OASGantt extends OASElement {
   ): void {
     const task = this._tasks.find((t) => t.id === id)
     if (!task) return
-    const start = this.fmtIso(newStartMs, datetime)
-    // 里程碑只写 start（end 保持缺省，不把 milestone 改写成 task）；
+    // 里程碑只写 start（口径与渲染一致：显式 type:"milestone" 或无 end——end 数据保留不被改写）；
     // end 数据串按含端语义（endMs 为区间右缘 exclusive，日精度 -1ms 回到含端日）
-    const endStr = task.end ? this.fmtEnd(newEndMs, datetime) : start
-    const patch: Partial<GanttTask> = task.end ? { start, end: endStr } : { start }
+    const milestone = task.type === 'milestone' || !task.end
+    const start = this.fmtIso(newStartMs, datetime)
+    const endStr = milestone ? start : this.fmtEnd(newEndMs, datetime)
+    const patch: Partial<GanttTask> = milestone ? { start } : { start, end: endStr }
     if (!this.applyPatch(id, patch)) return
     this.emit('task-change', {
       id,
       task: this.taskSnapshot(this._tasks.find((t) => t.id === id)!),
       oldStart: this.fmtIso(oldStartMs, datetime),
-      oldEnd: task.end ? this.fmtEnd(oldEndMs, datetime) : start,
+      oldEnd: milestone ? start : this.fmtEnd(oldEndMs, datetime),
       start,
       end: endStr,
     } satisfies GanttTaskChangeDetail)
