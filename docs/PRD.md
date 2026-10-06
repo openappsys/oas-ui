@@ -1971,3 +1971,22 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测 50 条（渲染/刻度六档/行树折叠/依赖连线四型/拖拽三件套收口与取消/虚拟滚动/只读三级/今日线/RTL 镜像/暗色 token 纪律/tasks 通道与方法）；`pnpm test` 全绿。
 - e2e：`qa-regression/gantt.spec.ts`（渲染/刻度切换/折叠/真指针拖拽改期/tooltip/暗色/console 零告警）；全量 e2e 全绿。
 - 文档：gantt.md（zh/en）+ api-manifest + api-descriptions + i18n ×10 + PRD/ROADMAP 同步。
+
+## chart 图型扩展（radar / polar-area / combo / multi-axis，未发布）
+
+> 立项背景：场景缺口甄别 D11（chart 雷达/极坐标/组合/双轴）原随「chart 不深挖（2026-09-24）」定夺排除，2026-10-05 随 BI 议题翻盘重立——立场仍是不做全面深挖，只补这四类图型。已定夺（2026-10-06）：radar 维度走 labels 复用 + `options.max` 全局量程（per-dim 量程留兼容位不做）；alignTicks v1 就做（BI 报表读者误读代价高）；combo 不设 type 值；multi-axis 进 options 层。
+
+### 特性
+
+- **type 新值 ×2**：`radar`（雷达图）/ `polar-area`（极坐标面积图，kebab 对齐 `stacked-bar` 惯例）。**combo 不设 type 值**（三库共识：组合 = 系列级覆盖）——顶层 `type` 为缺省系列型，`series[].type ∈ bar/line/area` 逐系列覆盖，缺省/非法静默回退顶层型；**multi-axis 进 options 层**（三库共识：双轴是坐标系配置不是图型）——`options.yAxis` 数组（第 2 项存在即启用右轴，上限 2 轴），`series[].yAxisIndex: 0|1` 归属绑定。
+- **radar**：labels 即维度名（ChartData 零迁移、与折线/柱状共享数据心智）；`options.max` 全局统一量程（缺省取全系列 max 走 nice 刻度）；`options.radarShape: polygon|circle` 网格形态（默认同心多边形）；刻度值沿顶轴标注、维度名在顶点外侧；顶点 `<title>`（维度: 值）与图例/配色/fade 动画全复用。逐维独立量程不做——BI 场景各维通常已归一化，宿主可先行归一化兜底。
+- **polar-area**：每分类等角扇区（跨度 360/n）+ 半径编码值（最大值满半径）+ 同心参考圈（1/3、2/3、满半径）提供径向量级读数；tooltip 显示原始数值而非占比（半径是量级刻度不是份额）；单系列取 `series[0]`（与饼/环同一数据格式）；全 0 值不出扇区（与饼图同口径）。不做堆叠与镂空开口（donut 已覆盖镂空心智）。
+- **combo**：共享同一 x 分类轴，line/area 点对齐柱组 band 中心（与纯折线的端点对齐是关键差异）；绘制层序固定 bar → area → line（线盖柱的通行读法，不暴露 order）；柱宽按柱型系列数计算（混排 1 柱 1 线时柱不腰斩）；配色/图例按系列声明顺序（与图例一致）；area 层半透明纯色（`gradient` 仅纯 area 型支持）。只允许 bar/line/area 三型互混（同一直角坐标系）。
+- **multi-axis（alignTicks v1 就做）**：双轴时以主轴档数为锚、副轴同档数重算 niceStep——左右刻度线一一水平对齐，消除刻度错位误读；右轴刻度贴右缘（padR 对称左轴扩展）、轴名渲染在轴顶（`yAxis[i].name`）；网格线只按左轴画（避免双网格视觉混乱）；堆叠柱/饼系/雷达忽略 `yAxis`（单轴语义）；双轴可与 line/bar/组合图任意叠加。
+- i18n ×10：`chart.radar` / `chart.polar-area`（aria-label 缺省按类型走 locale）。
+
+### 验收
+
+- 单测：chart 文件 41 例（TDD RED→GREEN ×4 轮按 polar-area → radar → multi-axis → combo 推进——combo 回归面最大放最后，每步全量 chart 单测防回归）；全量 `pnpm test` 全绿。
+- qa-regression：`chart.spec.ts` 增四图型渲染产出断言（radar 网格/顶点/图例、polar-area 扇区/参考圈、combo 柱线共存、双轴右轴刻度与轴名）+ RTL 不破断言。
+- 文档：chart.md zh/en 四图型 DemoBlock（内联 attribute 数据）+ 边界说明；api 语料（type 枚举、options 新键、series 扩展字段）→ `api:gen --check` 全绿。

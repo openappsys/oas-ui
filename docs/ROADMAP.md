@@ -83,6 +83,8 @@
 
 | **未发布** | **oas-barcode 一维条码（data 族新组件）**：第一期 6 码制——CODE128（auto A/B/C 子集自动切换）/ EAN-13 / EAN-8 / UPC-A / CODE39 / ITF-14，编码器纯函数层零依赖原创实现（GS1 mod10 校验位自动补算与合法性校验）；非法输入三类（charset/length/checksum）错误占位 + `oas-invalid` 事件接管；可扫性内建（margin 静区下限护栏 + warn 一次、bar-width clamp、EAN/UPC 护条延伸、默认深条白底 dark 可扫）；HRI 人读文字（display-value/text-position/font-size/text-margin）；SVG-only 输出 + role=img + download() 离屏 4× 栅格化；宽度由内容决定（不设 size/width）；i18n ×10 + qa-regression 固化。后续期边界：force A/B/C、GS1-128、UPC-E、MSI/Codabar、EAN addon、bearer bar | 🚧 未发布 |
 
+| **未发布** | **chart 图型扩展**（场景缺口 D11 随 BI 议题翻盘立项，2026-10-06；只补四类不做全面深挖）：`type` 新值 `radar`（labels 即维度 + `options.max` 全局量程 + `radarShape` polygon/circle 网格 + 顶点 title/图例复用）与 `polar-area`（等角扇区 + 半径编码值 + 同心参考圈，tooltip 原始数值非占比）+ **combo 系列级混排**（不设 type 值：`series[].type` bar/line/area 覆盖 + band 中心对齐 + bar→area→line 固定层序）+ **双轴**（`options.yAxis` 数组 + `series.yAxisIndex` 归属 + **alignTicks 主轴档数锚定**刻度对齐 + 右轴渲染/轴名/padR 扩展）；i18n ×10 + qa-regression 四图型/RTL 固化 + 文档 zh/en | ✅ 已完成（未发布） |
+
 > **注（可选工具包）**：`@oas-ui/react` 桥接包**不单独发布**，降级为仓库内可选工具包——React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`；桥接 hooks（`useOasEvent`/`useOasEvents`）供需要 camelCase 惯例 / TS 类型 / React 17-18 兼容的宿主按需使用，不随版本发布、不写入发布清单（详见 PRD）。
 
 > 组件总数：v1.0 核心集约 68 件；v1.x 长尾推进至约 115~120 件，100% 覆盖。原 13 个未排期组件已全部分配：轻量基础组件（button-group/label/kbd/visually-hidden）提到最前的 v1.1（独立、无前置依赖、快速交付），其余按功能族归到 v1.3/v1.4/v1.5/v1.7，无遗漏。
