@@ -323,6 +323,8 @@ export const ko: LocaleMessages = {
   'chart.area': '영역 차트',
   'chart.donut': '도넛 차트',
   'chart.stacked-bar': '누적 막대 차트',
+  'chart.radar': '레이더 차트',
+  'chart.polar-area': '극좌표 영역 차트',
   'chart.empty': '데이터 없음',
   // code（코드 블록）
   'code.copy': '복사',

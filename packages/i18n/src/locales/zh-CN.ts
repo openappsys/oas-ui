@@ -323,6 +323,8 @@ export const zhCN = {
   'chart.area': '面积图',
   'chart.donut': '环形图',
   'chart.stacked-bar': '堆叠柱状图',
+  'chart.radar': '雷达图',
+  'chart.polar-area': '极坐标面积图',
   'chart.empty': '暂无数据',
   // code（代码块）
   'code.copy': '复制',

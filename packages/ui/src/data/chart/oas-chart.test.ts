@@ -139,6 +139,56 @@ describe('OASChart', () => {
     expect(radii[1]!).toBeLessThan(radii[0]!)
   })
 
+  it('type=polar-area 渲染等角扇区：扇区数 = 分类数，title 带数值（半径编码不显示占比）', () => {
+    const el = mount({ type: 'polar-area', data: SINGLE })
+    const slices = svgOf(el).querySelectorAll('.slice')
+    expect(slices.length).toBe(3)
+    expect(slices[0]!.querySelector('title')!.textContent).toBe('一月: 10')
+    // 半径编码（玫瑰图）≠ 占比心智：title 不含百分比
+    expect(slices[0]!.querySelector('title')!.textContent).not.toContain('%')
+  })
+
+  it('type=polar-area 半径随值线性缩放（最大值满半径）', () => {
+    const el = mount({
+      type: 'polar-area',
+      data: JSON.stringify({ labels: ['a', 'b', 'c'], series: [{ name: 'S', data: [10, 20, 30] }] }),
+    })
+    const slices = svgOf(el).querySelectorAll('.slice')
+    const radii = [...slices].map((s) => {
+      const m = s.getAttribute('d')!.match(/A ([\d.]+) /)!
+      return Number(m[1])
+    })
+    // 值 10/20/30 → 半径比 1:2:3（最大值满半径）
+    expect(radii[2]! / radii[0]!).toBeCloseTo(3, 1)
+    expect(radii[1]! / radii[0]!).toBeCloseTo(2, 1)
+  })
+
+  it('type=polar-area 等角：每扇区弧跨度相同（= 360/n）', () => {
+    const el = mount({ type: 'polar-area', data: SINGLE })
+    const slices = [...svgOf(el).querySelectorAll('.slice')]
+    // 扇区 path：M cx cy L x1 y1 A r r 0 f 1 x2 y2 Z——由 L 与 A 端点反解起止角
+    const spans = slices.map((s) => {
+      const d = s.getAttribute('d')!
+      const m = d.match(/^M ([\d.]+) ([\d.]+) L ([\d.]+) ([\d.]+) A [\d.]+ [\d.]+ \d \d 1 ([\d.]+) ([\d.]+) Z$/)!
+      const cx = Number(m[1])
+      const cy = Number(m[2])
+      const a1 = (Math.atan2(Number(m[4]) - cy, Number(m[3]) - cx) * 180) / Math.PI
+      const a2 = (Math.atan2(Number(m[6]) - cy, Number(m[5]) - cx) * 180) / Math.PI
+      return (a2 - a1 + 360) % 360
+    })
+    for (const span of spans) expect(span).toBeCloseTo(120, 0) // 360/3
+  })
+
+  it('type=polar-area 值为 0 的扇区不抛错、title 正确', () => {
+    const el = mount({
+      type: 'polar-area',
+      data: JSON.stringify({ labels: ['a', 'b'], series: [{ name: 'S', data: [5, 0] }] }),
+    })
+    const slices = svgOf(el).querySelectorAll('.slice')
+    expect(slices.length).toBe(2)
+    expect(slices[1]!.querySelector('title')!.textContent).toBe('b: 0')
+  })
+
   it('type=stacked-bar 多系列堆叠（段高之和=分类总高，不超绘图区）', () => {
     const el = mount({ type: 'stacked-bar', data: MULTI })
     const bars = svgOf(el).querySelectorAll('.bar')

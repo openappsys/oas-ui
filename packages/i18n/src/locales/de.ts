@@ -323,6 +323,8 @@ export const de: LocaleMessages = {
   'chart.area': 'Flächendiagramm',
   'chart.donut': 'Ringdiagramm',
   'chart.stacked-bar': 'Gestapeltes Balkendiagramm',
+  'chart.radar': 'Netzdiagramm',
+  'chart.polar-area': 'Polardiagramm',
   'chart.empty': 'Keine Daten',
   // code (Codeblock)
   'code.copy': 'Kopieren',

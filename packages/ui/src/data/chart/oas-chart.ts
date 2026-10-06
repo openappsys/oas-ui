@@ -1,6 +1,6 @@
 import { OASElement, escapeText, escapeAttr } from '@oas-ui/core'
 
-export type ChartType = 'line' | 'bar' | 'pie' | 'area' | 'donut' | 'stacked-bar'
+export type ChartType = 'line' | 'bar' | 'pie' | 'area' | 'donut' | 'stacked-bar' | 'radar' | 'polar-area'
 
 export interface ChartDatum {
   label: string
@@ -110,6 +110,11 @@ svg {
   fill: currentColor;
   stroke: var(--oas-color-bg);
   stroke-width: 1;
+}
+/* 径向网格参考圈（polar-area 同心圈 / radar 圆形网格）：token 描边、无填充 */
+.grid-ring {
+  fill: none;
+  stroke: var(--oas-color-border);
 }
 /* 图例 */
 .legend {
@@ -277,11 +282,12 @@ export class OASChart extends OASElement {
     this.renderLegend(legend, data, options)
   }
 
-  /** 渲染主体图形（line/bar/pie/area/donut/stacked-bar 六型） */
+  /** 渲染主体图形（line/bar/pie/area/donut/stacked-bar/polar-area 七型） */
   private renderBody(type: ChartType, data: ChartData, options: ChartOptions): string {
     if (type === 'pie') return this.renderPie(data, options)
     if (type === 'donut') return this.renderDonut(data, options)
     if (type === 'stacked-bar') return this.renderStackedBars(data, options)
+    if (type === 'polar-area') return this.renderPolarArea(data, options)
     if (type === 'area') return this.renderArea(data, options)
     return type === 'bar' ? this.renderBars(data, options) : this.renderLine(data, options)
   }
@@ -493,6 +499,48 @@ export class OASChart extends OASElement {
       const color = options.colors?.[i]
       const label = `${this.datumLabel(data.labels[i] ?? '', v)} (${Math.round((v / total) * 100)}%)`
       out += `<path class="slice ${cls} animate" d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} L ${ix1.toFixed(1)} ${iy1.toFixed(1)} A ${ir} ${ir} 0 ${large} 0 ${ix2.toFixed(1)} ${iy2.toFixed(1)} Z"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></path>`
+      angle += sweep
+    })
+    return out
+  }
+
+  /**
+   * 极坐标面积图（玫瑰图）：每分类等角扇区（跨度 = 360/n），半径编码数值（最大值满半径）。
+   * 单系列（取 series[0]，与 pie/donut 同心智）；不显示占比百分比（半径是量级刻度不是份额）。
+   * 同心参考圈（1/3、2/3、满半径）提供径向读数依据，不标刻度数字。
+   */
+  private renderPolarArea(data: ChartData, options: ChartOptions): string {
+    const values = data.series[0]?.data ?? []
+    const maxV = Math.max(0, ...values.map((v) => Number(v) || 0))
+    if (maxV <= 0) return ''
+
+    const cx = W / 2
+    const cy = H / 2
+    const r = Math.min(W, H) / 2 - 24
+
+    // 同心参考圈：径向量级读数依据（token 描边、无填充）
+    let out = ''
+    for (const ratio of [1 / 3, 2 / 3, 1]) {
+      out += `<circle class="grid-ring" cx="${cx}" cy="${cy}" r="${(r * ratio).toFixed(1)}"></circle>`
+    }
+
+    const n = values.length
+    const sweep = 360 / n
+    let angle = -90
+    values.forEach((raw, i) => {
+      const v = Math.max(0, Number(raw) || 0)
+      const ri = (v / maxV) * r
+      const a1 = (angle * Math.PI) / 180
+      const a2 = ((angle + sweep) * Math.PI) / 180
+      const large = sweep > 180 ? 1 : 0
+      const x1 = cx + ri * Math.cos(a1)
+      const y1 = cy + ri * Math.sin(a1)
+      const x2 = cx + ri * Math.cos(a2)
+      const y2 = cy + ri * Math.sin(a2)
+      const cls = SWATCH_CLASSES[i % SWATCH_CLASSES.length]!
+      const color = options.colors?.[i]
+      const label = this.datumLabel(data.labels[i] ?? '', v)
+      out += `<path class="slice ${cls} animate" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${ri.toFixed(1)} ${ri.toFixed(1)} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></path>`
       angle += sweep
     })
     return out

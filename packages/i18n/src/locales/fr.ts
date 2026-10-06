@@ -323,6 +323,8 @@ export const fr: LocaleMessages = {
   'chart.area': 'Graphique en aires',
   'chart.donut': 'Graphique en anneau',
   'chart.stacked-bar': 'Graphique à barres empilées',
+  'chart.radar': 'Diagramme radar',
+  'chart.polar-area': 'Diagramme polaire',
   'chart.empty': 'Aucune donnée',
   // code (bloc de code)
   'code.copy': 'Copier',

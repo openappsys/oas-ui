@@ -262,6 +262,8 @@ export const en: LocaleMessages = {
   'chart.area': 'Area chart',
   'chart.donut': 'Donut chart',
   'chart.stacked-bar': 'Stacked bar chart',
+  'chart.radar': 'Radar chart',
+  'chart.polar-area': 'Polar area chart',
   'chart.empty': 'No data',
   'code.copy': 'Copy',
   'code.copied': 'Copied',

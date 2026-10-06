@@ -323,6 +323,8 @@ export const ru: LocaleMessages = {
   'chart.area': 'Диаграмма с областями',
   'chart.donut': 'Кольцевая диаграмма',
   'chart.stacked-bar': 'Столбчатая диаграмма с накоплением',
+  'chart.radar': 'Лепестковая диаграмма',
+  'chart.polar-area': 'Полярная диаграмма',
   'chart.empty': 'Нет данных',
   // code (блок кода)
   'code.copy': 'Копировать',

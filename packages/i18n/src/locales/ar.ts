@@ -323,6 +323,8 @@ export const ar: LocaleMessages = {
   'chart.area': 'مخطط مساحي',
   'chart.donut': 'مخطط حلقي',
   'chart.stacked-bar': 'مخطط أعمدة تراكمي',
+  'chart.radar': 'مخطط راداري',
+  'chart.polar-area': 'مخطط المساحة القطبية',
   'chart.empty': 'لا توجد بيانات',
   // code (كتلة تعليمات برمجية)
   'code.copy': 'نسخ',

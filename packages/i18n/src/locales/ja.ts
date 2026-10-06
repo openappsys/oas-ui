@@ -323,6 +323,8 @@ export const ja: LocaleMessages = {
   'chart.area': '面グラフ',
   'chart.donut': 'ドーナツグラフ',
   'chart.stacked-bar': '積み上げ棒グラフ',
+  'chart.radar': 'レーダーチャート',
+  'chart.polar-area': 'ポーラーエリアチャート',
   'chart.empty': 'データなし',
   // code（コードブロック）
   'code.copy': 'コピー',
