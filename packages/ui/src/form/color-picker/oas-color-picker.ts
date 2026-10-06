@@ -576,7 +576,10 @@ export class OASColorPicker extends OASElement {
    */
   set value(v: string) {
     this.setAttribute('value', v == null ? '' : String(v))
-    this.update()
+    // 未首渲染（React 19 在元素连接前写 property 的时序）不得直调 update()：
+    // syncControls 等路径读未渲染内部件会抛 TypeError 中断宿主整树；属性已写，
+    // 首渲染自然读新值（与基类 attributeChangedCallback 的 !hasRendered 早退同语义）
+    if (this.hasRendered) this.update()
   }
 
   private triggerEl: HTMLButtonElement | null = null

@@ -367,7 +367,7 @@ onMounted(async () => {
 | CSS Variable | Description | Default |
 | --- | --- | --- |
 | `--oas-glass-blur` | — | `none` |
-| `--oas-glass-refraction` | — | `none` |
+| `--oas-glass-refraction` | Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration) | `none` |
 | `--oas-glass-ring` | — | `transparent` |
 | `--oas-notification-progress-color` | Countdown progress bar color | `var(--oas-color-primary)` |
 | `--oas-notification-width` | Card width (referenced internally by size levels) | `320px` |

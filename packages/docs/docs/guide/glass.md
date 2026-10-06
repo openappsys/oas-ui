@@ -30,7 +30,7 @@ onBeforeUnmount(() => {
     <oas-button>次按钮</oas-button>
     <oas-switch checked></oas-switch>
     <oas-slider value="45" style="width: 200px"></oas-slider>
-    <span class="gg-note">边缘折射（静态置换近似）：控件边缘轮廓位移，中间不变形</span>
+    <span class="gg-note">边缘折射（静态置换近似）：控件轮廓沿边缘法向微膨胀，中间不变形</span>
   </div>
   <div class="gg-cards">
     <div class="gg-card">
@@ -103,5 +103,5 @@ onBeforeUnmount(() => {
 
 - `data-glass` 叠加在 `data-theme` / `data-skin` 之上，三者自由组合；
 - 材质依赖背景反差——给页面一个有色彩层次的背景（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍可读）；
-- 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;`（折射停用值留空而非 none，原因见[主题与自定义](/guide/theming#液态玻璃-glass-css)）；
+- 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;`（折射停用值留空而非 none，原因见[主题与自定义](/guide/theming#液态玻璃-glass-css)；构建链吞空值时可用 `saturate(1)` 恒等滤镜替代）；
 - `high-contrast` 主题下不启用（实心可访问性档优先）。

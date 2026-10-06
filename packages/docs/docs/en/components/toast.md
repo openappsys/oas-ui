@@ -313,14 +313,14 @@ onMounted(async () => {
 
 #### CSS Variables
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-glass-blur` | `none` |
-| `--oas-glass-refraction` | `none` |
-| `--oas-glass-ring` | `transparent` |
-| `--oas-toast-ease` | `ease` |
-| `--oas-toast-enter-duration` | `0.2s` |
-| `--oas-toast-leave-duration` | `0.2s` |
+| CSS Variable | Description | Default |
+| --- | --- | --- |
+| `--oas-glass-blur` | — | `none` |
+| `--oas-glass-refraction` | Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration) | `none` |
+| `--oas-glass-ring` | — | `transparent` |
+| `--oas-toast-ease` | — | `ease` |
+| `--oas-toast-enter-duration` | — | `0.2s` |
+| `--oas-toast-leave-duration` | — | `0.2s` |
 
 - `error` defaults to `role="alert"` + `aria-live="assertive"`; others use `role="status"` + `aria-live="polite"`; override with `politeness`.
 - Multiple toasts share one stack container and stack by position; `duration` timers are cleaned up on close/unmount with no leaks.

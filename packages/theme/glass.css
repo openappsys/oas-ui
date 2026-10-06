@@ -16,7 +16,8 @@
  * 降级：局部停用可对任意容器覆盖
  * `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;`
  * （折射的停用值必须留空而非 none：button 的 hover/按下/选中态把 brightness() 与该变量
- * 组合书写，none 与函数混排会让整条 filter 声明非法、亮度反馈失效——空值则两条路径都合法）。
+ * 组合书写，none 与函数混排会让整条 filter 声明非法、亮度反馈失效——空值则两条路径都合法；
+ * 构建链会吞空值自定义属性时可改用 saturate(1) 恒等滤镜作停用值）。
  * 边界：材质依赖背景反差——纯色/同色相背景上玻璃感减弱（文字仍走 token 安全档可读）；
  * high-contrast 主题下不启用（实心可访问性档优先，选择器已排除）。
  */
@@ -49,26 +50,31 @@
      data-URI 内联滤镜在任何树内天然可解析。CSP 禁 data: 时滤镜引用失效的表现由浏览器
      决定（主流按忽略滤镜处理）；严格 CSP 宿主可显式覆盖 --oas-glass-refraction: ;（空值，
      理由同上——none 与 brightness() 混排非法）。
-     滤镜链（四步）：
+     滤镜链（法向位移——沿轮廓法线方向的整体微膨胀，非 45° 对角拖影）：
      ① discrete 阈值（alpha≥0.5→1）：把半透明玻璃面与不透明面统一归一为实心剪影——
         玻璃面 alpha 0.55~0.75 不归一则中心偏离中性（review 实抓），这步是
         「中心恒不变形」硬约束与表面透明度无关的前提；
-     ② blur 4px：实心剪影边缘生成过渡带（位移曲线的输入）；
-     ③ table 0.5→1→0.5：中心/外部 0.5 中性、边缘环带 1 全量位移——只有边缘变形；
-     ④ displacement scale=8：单轴位移上限 4px，控制视觉膨胀与热区偏差。
+     ② blur 3px + alpha 入 RGB：实心剪影边缘生成平滑过渡带（梯度的输入）；
+     ③ Sobel 双卷积（kernel 取反 + bias 0.5）：R 通道编码水平梯度、G 通道编码垂直梯度——
+        每个边缘带获得沿自身法线的位移矢量（右缘向右、上缘向上），中性区恒 0.5；
+     ④ feDisplacementMap(xChannel=R, yChannel=G) scale=10：膨胀峰值实测 ±4px（外包络宽高各 +8px，双轴对称——R/G 双通道方向性实测），
+        控制视觉膨胀与热区偏差。
      滤镜区域横向 -50%/200%、纵向 -100%/300%：投影主下探（shadow-md 尾部约 40px），
      纵向留一倍元素高的缓冲防滤镜区域硬切投影（review 实抓 -8%/116% 切投影、-50%/200%
      对矮元素仍可能切在衰减段）；位移是渲染后像素操作，布局/命中区不受影响 */
-  --oas-glass-refraction: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter%20id='oas-glass-refraction'%20x='-50%25'%20y='-100%25'%20width='200%25'%20height='300%25'%20color-interpolation-filters='sRGB'%3E%3CfeComponentTransfer%20in='SourceAlpha'%20result='t'%3E%3CfeFuncA%20type='discrete'%20tableValues='0%201'/%3E%3C/feComponentTransfer%3E%3CfeGaussianBlur%20in='t'%20stdDeviation='4'%20result='a'/%3E%3CfeComponentTransfer%20in='a'%20result='m'%3E%3CfeFuncA%20type='table'%20tableValues='0.5%201%200.5'/%3E%3C/feComponentTransfer%3E%3CfeDisplacementMap%20in='SourceGraphic'%20in2='m'%20scale='8'%20xChannelSelector='A'%20yChannelSelector='A'/%3E%3C/filter%3E%3C/svg%3E#oas-glass-refraction");
+  --oas-glass-refraction: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter%20id='oas-glass-refraction'%20x='-50%25'%20y='-100%25'%20width='200%25'%20height='300%25'%20color-interpolation-filters='sRGB'%3E%3CfeComponentTransfer%20in='SourceAlpha'%20result='t'%3E%3CfeFuncA%20type='discrete'%20tableValues='0%201'/%3E%3C/feComponentTransfer%3E%3CfeGaussianBlur%20in='t'%20stdDeviation='3'%20result='a'/%3E%3CfeColorMatrix%20in='a'%20type='matrix'%20values='0%200%200%201%200%200%200%200%201%200%200%200%200%201%200%200%200%200%200%201'%20result='w'/%3E%3CfeConvolveMatrix%20in='w'%20order='3'%20kernelMatrix='1%200%20-1%202%200%20-2%201%200%20-1'%20divisor='1'%20bias='0.5'%20preserveAlpha='true'%20result='gx'/%3E%3CfeConvolveMatrix%20in='w'%20order='3'%20kernelMatrix='1%202%201%200%200%200%20-1%20-2%20-1'%20divisor='1'%20bias='0.5'%20preserveAlpha='true'%20result='gy'/%3E%3CfeColorMatrix%20in='gx'%20type='matrix'%20values='1%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%201'%20result='rx'/%3E%3CfeColorMatrix%20in='gy'%20type='matrix'%20values='0%200%200%200%200%200%201%200%200%200%200%200%200%200%200%200%200%200%200%201'%20result='gy2'/%3E%3CfeComposite%20in='rx'%20in2='gy2'%20operator='arithmetic'%20k1='0'%20k2='1'%20k3='1'%20k4='0'%20result='m'/%3E%3CfeDisplacementMap%20in='SourceGraphic'%20in2='m'%20scale='10'%20xChannelSelector='R'%20yChannelSelector='G'/%3E%3C/filter%3E%3C/svg%3E#oas-glass-refraction");
   --oas-glass-blur: blur(18px) saturate(1.6);
   --oas-glass-ring: rgba(255, 255, 255, 0.55);
 }
 
 /* dark（同时覆盖库内 [data-theme='dark'] 规范与宿主常见的 html.dark class 式暗色）。
-   特异性必须压过 light 段（light 是 :root+属性+:not = (0,3,0)；html.dark 裸写只有 (0,2,1)
-   会被 light 段反超——dark 下实际吃到 light token，实抓） */
+   特异性必须压过 light 段：light 是 :root+属性+:not = (0,3,0)；两个 dark 段各带双属性+:not
+   = (0,4,0)，与 light 段拉开（html.dark 裸写只有 (0,2,1) 会被 light 段反超——dark 下实际
+   吃到 light token，实抓）。HC 排除写在每个 dark 段上（缺一则 HC×该路径下玻璃泄漏）。
+   维护注意：两 dark 段同特异性，靠源码顺序无关地命中同一声明块——不得把任一 dark 段
+   挪到 light 段之前（同特异性下顺序反转 = dark 吃 light token 复发） */
 :root[data-glass][data-theme="dark"]:not([data-theme="high-contrast"]),
-:root.dark[data-glass] {
+:root.dark[data-glass]:not([data-theme="high-contrast"]) {
   /* dark surface：低 alpha 高透（深色玻璃的材质感主场）。alpha 档与文字档联动标定
      （oklab 实测：亮蓝/品红/深青三类代表面上主/次文字感知分均 ≥60）——
      19.3 分事故的根因是 dark 选择器特异性吃错 light token（白底白字），

@@ -225,7 +225,7 @@ onMounted(() => {
 
 | CSS Variable | Description | Default |
 | --- | --- | --- |
-| `--oas-glass-refraction` | — | `none` |
+| `--oas-glass-refraction` | Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration) | `none` |
 | `--oas-switch-height` | — | `22px` |
 | `--oas-switch-on-color` | Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by luminance; falls back to `var(--oas-color-bg)`) | `var(--oas-color-bg)` |
 | `--oas-switch-thumb-size` | — | `18px` |

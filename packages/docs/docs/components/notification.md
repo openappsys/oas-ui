@@ -367,7 +367,7 @@ onMounted(async () => {
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
 | `--oas-glass-blur` | — | `none` |
-| `--oas-glass-refraction` | — | `none` |
+| `--oas-glass-refraction` | 液态玻璃边缘折射滤镜（`data-glass` 生效，默认 none）；局部停用覆盖为**空值**（`--oas-glass-refraction: ;`）——不得用 `none`（与 button 态的 brightness() 混排会使整条 filter 声明非法） | `none` |
 | `--oas-glass-ring` | — | `transparent` |
 | `--oas-notification-progress-color` | 倒计时进度条颜色 | `var(--oas-color-primary)` |
 | `--oas-notification-width` | 卡片宽度（尺寸档位内部引用） | `320px` |

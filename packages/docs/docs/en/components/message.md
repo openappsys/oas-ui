@@ -295,14 +295,14 @@ onMounted(async () => {
 
 #### CSS Variables
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-glass-blur` | `none` |
-| `--oas-glass-refraction` | `none` |
-| `--oas-glass-ring` | `transparent` |
-| `--oas-message-anim-in` | `220ms` |
-| `--oas-message-anim-out` | `180ms` |
-| `--oas-msg-type-color` | `var(--oas-color-border)` |
+| CSS Variable | Description | Default |
+| --- | --- | --- |
+| `--oas-glass-blur` | — | `none` |
+| `--oas-glass-refraction` | Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration) | `none` |
+| `--oas-glass-ring` | — | `transparent` |
+| `--oas-message-anim-in` | — | `220ms` |
+| `--oas-message-anim-out` | — | `180ms` |
+| `--oas-msg-type-color` | — | `var(--oas-color-border)` |
 
 ### options
 

@@ -30,7 +30,7 @@ onBeforeUnmount(() => {
     <oas-button>Default</oas-button>
     <oas-switch checked></oas-switch>
     <oas-slider value="45" style="width: 200px"></oas-slider>
-    <span class="gg-note">Edge refraction (static displacement approximation): control edge outlines displace, center untouched</span>
+    <span class="gg-note">Edge refraction (static displacement approximation): control outlines bulge along the edge normal, center untouched</span>
   </div>
   <div class="gg-cards">
     <div class="gg-card">
@@ -103,5 +103,5 @@ onBeforeUnmount(() => {
 
 - `data-glass` stacks on top of `data-theme` / `data-skin`—freely composable;
 - the material needs backdrop contrast: it shines over colorful gradients/photos and recedes on flat same-hue backgrounds (text stays legible);
-- local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;` on any container (the refraction opt-out value must be empty, not `none`—see [Theming](/en/guide/theming#liquid-glass-glass-css));
+- local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;` on any container (the refraction opt-out value must be empty, not `none`—see [Theming](/en/guide/theming#liquid-glass-glass-css); if your build chain strips empty custom properties, use the identity filter `saturate(1)` instead);
 - disabled under the `high-contrast` theme (solid accessibility tier wins).

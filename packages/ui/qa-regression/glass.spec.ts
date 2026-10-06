@@ -89,6 +89,19 @@ test.describe('液态玻璃材质层', () => {
     expect(blur, 'HC 下玻璃不启用（blur 回落 none）').toBe('none')
   })
 
+  test('high-contrast × class 式暗色同样不启用（.dark 选择器排除实抓回归锁）', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(500)
+    const blur = await page.evaluate(() => {
+      // 宿主常见的 html.dark class 式暗色与 HC 并存时，玻璃材质也必须整体让位
+      document.documentElement.classList.add('dark')
+      document.documentElement.setAttribute('data-theme', 'high-contrast')
+      const cs = getComputedStyle(document.querySelector('.gg-card')!)
+      return cs.backdropFilter
+    })
+    expect(blur, 'HC × .dark 下玻璃不启用（blur 回落 none）').toBe('none')
+  })
+
   test('局部降级：容器覆盖变量后 surface 回实心语义', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(500)
@@ -333,6 +346,69 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
     expect(centerDiff, '中间恒不变形（硬约束）：中心区像素开/关应一致').toBeLessThan(0.001)
     // ③布局零副作用：位移仅视觉层
     expect(r.with, '折射不得改变布局盒').toEqual(r.without)
+  })
+
+  test('法向位移方向性：外包络双轴对称膨胀（梯度图通道错乱盲区回归锁）', async ({ page, browserName }) => {
+    test.skip(browserName === 'firefox', 'Firefox 不执行 data-URI SVG 滤镜位移（降级契约由像素断言锁）')
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(800)
+    // 白底探针区 + primary 按钮：R/G 任一通道写反或 X/Y 互换 → 单轴不膨胀 → 红
+    const clip = await page.evaluate(() => {
+      const host = document.createElement('div')
+      host.style.cssText = 'position:fixed;left:40px;top:40px;width:320px;height:180px;background:#fff;z-index:9999'
+      const b = document.createElement('oas-button')
+      b.setAttribute('type', 'primary')
+      b.textContent = 'dir-probe'
+      b.style.cssText = 'position:absolute;left:90px;top:70px'
+      host.appendChild(b)
+      document.body.appendChild(host)
+      return { x: 40, y: 40, width: 320, height: 180 }
+    })
+    await page.waitForTimeout(500)
+    /** 蓝像素外包络（B 高 R 低区分白底） */
+    const bboxBlue = async () => {
+      const shot = await page.screenshot({ clip })
+      return page.evaluate(async (b64) => {
+        const img = new Image()
+        await new Promise((res) => {
+          img.onload = res
+          img.src = 'data:image/png;base64,' + (b64 as string)
+        })
+        const c = document.createElement('canvas')
+        c.width = img.width
+        c.height = img.height
+        const ctx = c.getContext('2d')!
+        ctx.drawImage(img, 0, 0)
+        const d = ctx.getImageData(0, 0, c.width, c.height).data
+        let minY = 1e9
+        let maxY = -1
+        let minX = 1e9
+        let maxX = -1
+        for (let y = 0; y < c.height; y++)
+          for (let x = 0; x < c.width; x++) {
+            const i = (y * c.width + x) * 4
+            if (d[i + 2]! > 180 && d[i]! < 120 && d[i + 1]! < 150) {
+              if (y < minY) minY = y
+              if (y > maxY) maxY = y
+              if (x < minX) minX = x
+              if (x > maxX) maxX = x
+            }
+          }
+        return maxX < 0 ? null : { w: maxX - minX + 1, h: maxY - minY + 1 }
+      }, shot.toString('base64'))
+    }
+    const on = await bboxBlue()
+    await page.evaluate(() => document.documentElement.style.setProperty('--oas-glass-refraction', 'none'))
+    await page.waitForTimeout(300)
+    const off = await bboxBlue()
+    expect(on, '探针按钮应可量测').not.toBeNull()
+    expect(off, '探针按钮应可量测').not.toBeNull()
+    const dw = on!.w - off!.w
+    const dh = on!.h - off!.h
+    expect(dw, '宽度方向应膨胀（R 通道位移生效）').toBeGreaterThan(2)
+    expect(dh, '高度方向应膨胀（G 通道位移生效）').toBeGreaterThan(2)
+    expect(Math.abs(dw - dh), '双轴应对称膨胀（通道互换/隔离写反 → 单轴不变 → 红）').toBeLessThanOrEqual(2)
+    expect(dw, '膨胀幅度上限（scale=10 峰值 ±4px/侧 → 外包络约 +8px + 抗锯齿余量）').toBeLessThanOrEqual(12)
   })
 
   test('app-bar 溢出弹层打开期间关折射（弹层不被滤镜区域裁切——review 实抓回归锁）', async ({ page }) => {

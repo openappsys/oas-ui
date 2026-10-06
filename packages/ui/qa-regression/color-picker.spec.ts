@@ -519,3 +519,26 @@ test('color-picker recent-key：localStorage 持久化最近使用色', async ({
   const stored = await page.evaluate(() => localStorage.getItem('oas-demo-recent'))
   expect(stored ?? '').toContain('0b6cff')
 })
+
+test('color-picker 未连接写 value 不崩（React 19 属性先写时序回归锁）', async ({ page }) => {
+  // React 19 宿主在元素已升级、未连接时设置 property；setter 直调 update() 曾读未渲染
+  // 内部件（syncControls 的 .r/.g/.b 非空断言）抛 TypeError 中断宿主整树。
+  // 等价时序在浏览器固化：createElement → set value → appendChild，全程不得有 pageerror。
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForTimeout(600)
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-color-picker') as HTMLElement & { value: string }
+    el.value = '#ff0000'
+    document.body.appendChild(el)
+    await new Promise((res) => setTimeout(res, 300))
+    const trigger = el.shadowRoot!.querySelector('[part="trigger"]')!
+    const text = trigger.textContent ?? ''
+    el.remove()
+    return { attr: el.getAttribute('value'), text }
+  })
+  expect(errors, '未连接写 value 不得产生 pageerror').toEqual([])
+  expect(r.attr).toBe('#ff0000')
+  expect(r.text, '连接后触发器显示新值').toContain('ff0000')
+})

@@ -606,7 +606,10 @@ a[part='button'].disabled-focusable:active {
 }
 /* 禁用态守卫（置于全部状态组合滤镜之后）：禁用原生按钮仍匹配 :hover，aria-pressed 选中态
    规则特异性更高——两者都会把 brightness+折射的组合滤镜反超回禁用按钮（review 实抓）。
-   三种禁用形态 × hover/active/选中 全部钉死 filter: none（禁用外观恒定不变形不闪断） */
+   三种禁用形态 × hover/active/选中 全部钉死 filter: none（禁用外观恒定不变形不闪断）。
+   只钉 filter 不钉 transform：原生 disabled 不触发 :active，wave 的 scale 不会生效
+   （disabled-focusable 不设原生 disabled，其 transform 已由上方块归零）。
+   维护注意：后续新增组合滤镜状态规则必须写在本块之前，写在本块之后会被守卫反超 */
 button[disabled]:hover,
 button[disabled]:active,
 :host([aria-pressed='true']) button[disabled],

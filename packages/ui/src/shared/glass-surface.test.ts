@@ -207,10 +207,14 @@ describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
     // 「中心恒不变形」与表面透明度无关的前提（不归一则玻璃面中心偏离中性，review 实抓）
     expect(css).toContain("type='discrete'")
     expect(css).toContain("tableValues='0%201'")
-    // 硬约束②：位移曲线 0.5→1→0.5（中心/外部中性、仅边缘环带变形，URL 编码后空格为 %20）
-    expect(css).toContain('0.5%201%200.5')
-    // 硬约束③：scale=8 位移上限 4px（控制视觉膨胀与热区偏差）
-    expect(css).toContain("scale='8'")
+    // 硬约束②：法向位移——Sobel 双卷积把轮廓梯度编入 R/G 通道（bias 0.5 中性），
+    // feDisplacementMap 按 R/G 双通道取位移矢量：每个边缘带沿自身法线微膨胀（非 45° 对角拖影）
+    expect(css).toContain('feConvolveMatrix')
+    expect(css).toContain("bias='0.5'")
+    expect(css).toContain("xChannelSelector='R'")
+    expect(css).toContain("yChannelSelector='G'")
+    // 硬约束③：scale=10——膨胀峰值实测 ±4px（外包络宽高各 +8px，控制视觉膨胀与热区偏差）
+    expect(css).toContain("scale='10'")
     // 硬约束④：滤镜区域横向 -50%/200%、纵向 -100%/300%——投影主下探（shadow-md 尾部约 40px），
     // 矮元素（message box 约 36px 高）纵向 -50% 缓冲仍可能切在衰减段（review 两轮实抓）
     expect(css).toContain("x='-50%25'")

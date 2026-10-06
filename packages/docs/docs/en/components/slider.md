@@ -316,13 +316,13 @@ onMounted(() => {
 
 #### CSS Variables
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-glass-refraction` | `none` |
-| `--oas-slider-color` | `var(--oas-color-primary)` |
-| `--oas-slider-height` | `200px` |
-| `--oas-slider-thumb-size` | `14px` |
-| `--oas-slider-track` | `var(--oas-color-border)` |
-| `--oas-slider-track-size` | `4px` |
+| CSS Variable | Description | Default |
+| --- | --- | --- |
+| `--oas-glass-refraction` | Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration) | `none` |
+| `--oas-slider-color` | — | `var(--oas-color-primary)` |
+| `--oas-slider-height` | — | `200px` |
+| `--oas-slider-thumb-size` | — | `14px` |
+| `--oas-slider-track` | — | `var(--oas-color-border)` |
+| `--oas-slider-track-size` | — | `4px` |
 
 `marks` also accepts a JS property channel (assign objects/arrays directly, reflected as a JSON attribute); `el.formatTooltip = (value) => string | number` is the value formatter function property (the output feeds both the value bubble and `aria-valuetext`, takes precedence over the `format` attribute, clear with `null`) — attributes cannot express function semantics, so the function channel is JS-property-only.

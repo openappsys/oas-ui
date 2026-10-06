@@ -373,7 +373,7 @@ Clicking "Submit" fires the native `submit` event (the demo calls `preventDefaul
 | `--oas-button-group-width` | — | `auto` |
 | `--oas-button-height` | Button height override (falls back to the size-tier value by default); containers needing full-row-height buttons (e.g. swipe-cell actions) inject 100% via ::slotted (built into swipe-cell) | `var(--oas-control-height-md)` |
 | `--oas-button-on-color` | — | `var(--oas-color-text-on-primary)` |
-| `--oas-glass-refraction` | — | `none` |
+| `--oas-glass-refraction` | Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration) | `none` |
 
 <script setup>
 import { onMounted } from 'vue'

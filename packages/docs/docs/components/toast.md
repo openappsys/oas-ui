@@ -313,14 +313,14 @@ onMounted(async () => {
 
 #### CSS 变量
 
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-glass-blur` | `none` |
-| `--oas-glass-refraction` | `none` |
-| `--oas-glass-ring` | `transparent` |
-| `--oas-toast-ease` | `ease` |
-| `--oas-toast-enter-duration` | `0.2s` |
-| `--oas-toast-leave-duration` | `0.2s` |
+| CSS 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--oas-glass-blur` | — | `none` |
+| `--oas-glass-refraction` | 液态玻璃边缘折射滤镜（`data-glass` 生效，默认 none）；局部停用覆盖为**空值**（`--oas-glass-refraction: ;`）——不得用 `none`（与 button 态的 brightness() 混排会使整条 filter 声明非法） | `none` |
+| `--oas-glass-ring` | — | `transparent` |
+| `--oas-toast-ease` | — | `ease` |
+| `--oas-toast-enter-duration` | — | `0.2s` |
+| `--oas-toast-leave-duration` | — | `0.2s` |
 
 - `error` 类型默认 `role="alert"` + `aria-live="assertive"`，其余 `role="status"` + `aria-live="polite"`；`politeness` 可覆盖。
 - 多个 toast 共用一个栈容器，同一方向按位置堆叠；`duration` 计时器在关闭/卸载时清理，无泄漏。

@@ -740,4 +740,16 @@ describe('OASColorPicker value property（get/set）', () => {
     el.value = '#123456'
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
+
+  it('未连接（未首渲染）时 set value 不抛错，连接后正确显示（React 19 属性先写时序）', () => {
+    // React 19 宿主在元素连接前设置 property（元素已升级、render() 未跑）：
+    // setter 直调 update() 会读未渲染的内部件（syncControls 的 .r/.g/.b 非空断言）→ TypeError 整树中断
+    const el = document.createElement('oas-color-picker') as InstanceType<typeof OASColorPicker>
+    expect(() => {
+      el.value = '#ff0000'
+    }).not.toThrow()
+    expect(el.getAttribute('value')).toBe('#ff0000')
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector('[part="trigger"], .trigger')!.textContent).toContain('ff0000')
+  })
 })

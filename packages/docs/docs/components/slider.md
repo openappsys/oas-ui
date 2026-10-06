@@ -316,13 +316,13 @@ onMounted(() => {
 
 #### CSS 变量
 
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-glass-refraction` | `none` |
-| `--oas-slider-color` | `var(--oas-color-primary)` |
-| `--oas-slider-height` | `200px` |
-| `--oas-slider-thumb-size` | `14px` |
-| `--oas-slider-track` | `var(--oas-color-border)` |
-| `--oas-slider-track-size` | `4px` |
+| CSS 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--oas-glass-refraction` | 液态玻璃边缘折射滤镜（`data-glass` 生效，默认 none）；局部停用覆盖为**空值**（`--oas-glass-refraction: ;`）——不得用 `none`（与 button 态的 brightness() 混排会使整条 filter 声明非法） | `none` |
+| `--oas-slider-color` | — | `var(--oas-color-primary)` |
+| `--oas-slider-height` | — | `200px` |
+| `--oas-slider-thumb-size` | — | `14px` |
+| `--oas-slider-track` | — | `var(--oas-color-border)` |
+| `--oas-slider-track-size` | — | `4px` |
 
 `marks` 支持 JS property 通道（对象/数组直接赋值，反射为 JSON attribute）；`el.formatTooltip = (value) => string | number` 为值格式化函数 property（输出同时进值气泡与 `aria-valuetext`，优先级高于 `format` 属性，置 `null` 清除）——attribute 无法表达函数语义，函数通道只能走 JS property。

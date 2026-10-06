@@ -124,6 +124,9 @@
       "leading": "Custom content before the title",
       "title": "Rich title channel (overrides the heading attribute)",
       "trailing": "Rightmost trailing custom area"
+    },
+    "cssVars": {
+      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
     }
   },
   "oas-aspect-ratio": {
@@ -326,7 +329,10 @@
     "events": {
       "oas-change": "The active item changed, `detail: { value }`"
     },
-    "slots": {}
+    "slots": {},
+    "cssVars": {
+      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
+    }
   },
   "oas-bottom-navigation-item": {
     "attrs": {
@@ -443,7 +449,8 @@
     },
     "cssVars": {
       "--oas-button-color-deep": "Text-safe deepened variant of the custom `color`: the color-mix used for hover/active and outlined/dashed/filled text (injected by the component via `--oas-deep-mix` / `--oas-deep-sink`; inert without a custom color)",
-      "--oas-button-height": "Button height override (falls back to the size-tier value by default); containers needing full-row-height buttons (e.g. swipe-cell actions) inject 100% via ::slotted (built into swipe-cell)"
+      "--oas-button-height": "Button height override (falls back to the size-tier value by default); containers needing full-row-height buttons (e.g. swipe-cell actions) inject 100% via ::slotted (built into swipe-cell)",
+      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
     }
   },
   "oas-button-group": {
@@ -2020,6 +2027,9 @@
     "slots": {
       "avatar": "Avatar slot (before the message text)",
       "content": "Rich body content slot"
+    },
+    "cssVars": {
+      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
     }
   },
   "oas-modal": {
@@ -2102,7 +2112,8 @@
     },
     "cssVars": {
       "--oas-notification-progress-color": "Countdown progress bar color",
-      "--oas-notification-width": "Card width (referenced internally by size levels)"
+      "--oas-notification-width": "Card width (referenced internally by size levels)",
+      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
     }
   },
   "oas-navigation-menu": {
@@ -2798,6 +2809,9 @@
     },
     "props": {
       "value": "Current value: a number for a single thumb, or an array of numbers for multiple thumbs"
+    },
+    "cssVars": {
+      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
     }
   },
   "oas-snackbar": {
@@ -2822,6 +2836,9 @@
     },
     "slots": {
       "": "Notification content"
+    },
+    "cssVars": {
+      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
     }
   },
   "oas-space": {
@@ -2997,7 +3014,8 @@
       "": "Switch content (label / rich content)"
     },
     "cssVars": {
-      "--oas-switch-on-color": "Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by luminance; falls back to `var(--oas-color-bg)`)"
+      "--oas-switch-on-color": "Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by luminance; falls back to `var(--oas-color-bg)`)",
+      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
     }
   },
   "oas-tab-panel": {
@@ -3419,6 +3437,9 @@
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present"
+    },
+    "cssVars": {
+      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
     }
   },
   "oas-toggle-button": {

@@ -181,17 +181,17 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 
 #### CSS Variables
 
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-badge-bg` | `var(--oas-color-danger)` |
-| `--oas-badge-on-color` | `var(--oas-color-text-on-danger)` |
-| `--oas-bottom-navigation-active-color` | `var(--oas-color-primary)` |
-| `--oas-bottom-navigation-height` | `56px` |
-| `--oas-bottom-navigation-pill-inset` | `12px` |
-| `--oas-bottom-navigation-pill-shadow` | `var(--oas-shadow-sm)` |
-| `--oas-glass-blur` | `none` |
-| `--oas-glass-refraction` | `none` |
-| `--oas-glass-ring` | `transparent` |
+| CSS Variable | Description | Default |
+| --- | --- | --- |
+| `--oas-badge-bg` | — | `var(--oas-color-danger)` |
+| `--oas-badge-on-color` | — | `var(--oas-color-text-on-danger)` |
+| `--oas-bottom-navigation-active-color` | — | `var(--oas-color-primary)` |
+| `--oas-bottom-navigation-height` | — | `56px` |
+| `--oas-bottom-navigation-pill-inset` | — | `12px` |
+| `--oas-bottom-navigation-pill-shadow` | — | `var(--oas-shadow-sm)` |
+| `--oas-glass-blur` | — | `none` |
+| `--oas-glass-refraction` | Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration) | `none` |
+| `--oas-glass-ring` | — | `transparent` |
 
 ### oas-bottom-navigation-item
 
