@@ -198,6 +198,17 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-scheduler .day:not(.outside)', 'click', '点当月日格 → oas-day-click'],
     ['oas-scheduler [part="views"] button[data-view="week"]', 'click', '切周视图 → oas-view-change'],
   ],
+  gantt: [
+    ['oas-gantt .bars .bar[data-id="dg1"]', 'click', '点任务条 → oas-task-click'],
+    ['oas-gantt .bars .bar[data-id="dg1"]', 'dblclick', '双击任务条 → oas-task-dblclick'],
+    [
+      'oas-gantt .bars .bar[data-id="dg1"]',
+      'drag',
+      '真指针拖条身右移 → oas-task-change + oas-tasks-change（pointerup 收口写回）',
+    ],
+    ['oas-gantt .bars .bar[data-id="dg1"] .progress-handle', 'drag', '真指针拖进度手柄 → oas-progress-change'],
+    ['oas-gantt .row-name[data-key] .toggle', 'click', '点行树折叠钮 → oas-expand-change'],
+  ],
   kanban: [
     ['oas-kanban .card', 'dragmockto:oas-kanban .column:nth-of-type(2) .card', '拖拽首卡跨列到第二列首卡 → oas-change'],
     [
