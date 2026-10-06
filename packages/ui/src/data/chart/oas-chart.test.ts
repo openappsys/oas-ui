@@ -189,6 +189,21 @@ describe('OASChart', () => {
     expect(slices[1]!.querySelector('title')!.textContent).toBe('b: 0')
   })
 
+  // 缺陷回归：单分类时整圆 arc 起止点重合（M cx cy L x1 y1 A r r 0 1 1 x1 y1），SVG 规范省略该 arc，
+  // 扇区退化为一条半径线（getBBox 宽 0）。改用 <circle> 才画得出整圆。
+  it('type=polar-area 单分类：渲染整圆扇区（非退化弧线）', () => {
+    const el = mount({
+      type: 'polar-area',
+      data: JSON.stringify({ labels: ['东'], series: [{ name: 'S', data: [5] }] }),
+    })
+    const slices = svgOf(el).querySelectorAll('.slice')
+    expect(slices.length).toBe(1)
+    const slice = slices[0]!
+    expect(slice.tagName.toLowerCase()).toBe('circle')
+    expect(Number(slice.getAttribute('r'))).toBeGreaterThan(0)
+    expect(slice.querySelector('title')!.textContent).toBe('东: 5')
+  })
+
   it('type=radar 渲染径向网格 + 维度轴线 + 系列多边形与顶点 title', () => {
     const el = mount({
       type: 'radar',
@@ -246,6 +261,18 @@ describe('OASChart', () => {
     // 「甲」在顶轴（-90°）；「乙」在正下方（90°，双维度等角 180°）——用距圆心的径向距离断言
     expect(cy - Number(dots[0]!.getAttribute('cy'))).toBeCloseTo(r * (50 / 92), 0)
     expect(Math.abs(Number(dots[1]!.getAttribute('cy')) - cy)).toBeCloseTo(r * (90 / 92), 0)
+  })
+
+  // 缺陷回归：options.max 非 4 倍数时 step 为小数，此前 Math.round 会产出重复/失真刻度
+  // （max=10 → step 2.5 → 1/3/5/8/10），改用保留小数的格式化。
+  it('type=radar options.max 非 4 倍数：刻度值保留小数（无重复刻度）', () => {
+    const el = mount({
+      type: 'radar',
+      options: '{"max":10}',
+      data: JSON.stringify({ labels: ['甲', '乙', '丙'], series: [{ name: 'S', data: [5, 8, 3] }] }),
+    })
+    const ticks = [...svgOf(el).querySelectorAll('text.axis-text')].map((t) => t.textContent)
+    expect(ticks).toEqual(['2.5', '5', '7.5', '10'])
   })
 
   it('type=radar radarShape=circle：网格换同心圆（无 polygon 网格）', () => {
@@ -385,6 +412,48 @@ describe('OASChart', () => {
     expect(left.map((t) => t.textContent)).toEqual(['0', '50', '100', '150', '200'])
   })
 
+  // 缺陷回归：PRD 声明 yAxis[i].name 可选，但此前 normalizeOptions 要求 name 为字符串，
+  // yAxis:[{},{}] 被整体丢弃 → 双轴未启用。现条目存在即占位（无名轴）。
+  it('options.yAxis 轴名可选：[{},{}] 也启用双轴（无名轴不渲染轴名）', () => {
+    const el = mount({
+      type: 'bar',
+      options: '{"yAxis":[{},{}]}',
+      data: JSON.stringify({
+        labels: ['a'],
+        series: [
+          { name: 'A', data: [50] },
+          { name: 'B', data: [5], yAxisIndex: 1 },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    const right = [...svg.querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'start')
+    expect(right.length).toBe(5)
+    expect(svg.querySelectorAll('text.axis-name').length).toBe(0)
+  })
+
+  // 缺陷回归：draw 层序文档承诺固定 bar → area → line，但 overlay 此前按声明顺序渲染，
+  // 线先声明时会被后声明的面积层盖住。按层序 rank 稳定排序根治。
+  it('combo 层序固定 bar → area → line：line 先声明也压在面积层之下', () => {
+    const el = mount({
+      type: 'bar',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'L', data: [5, 10], type: 'line' },
+          { name: 'A', data: [20, 30], type: 'area' },
+          { name: 'B', data: [50, 100] },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    const bar = svg.querySelector('rect.bar')!
+    const area = svg.querySelector('.area-path')!
+    const line = svg.querySelector('.line-path')!
+    expect(bar.compareDocumentPosition(area) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(area.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('combo（bar 顶层 + line 覆盖）：柱与线共存，线点对齐 band 中心（非纯折线的端点对齐）', () => {
     const el = mount({
       type: 'bar',
@@ -507,6 +576,24 @@ describe('OASChart', () => {
     // 柱体不超出绘图区：顶 ≥ PAD.t(16)、底 ≤ PAD.t + plotH(250)
     expect(yB).toBeGreaterThanOrEqual(16)
     expect(yA + hA).toBeLessThanOrEqual(250)
+  })
+
+  // 边界固化：series.type / yAxisIndex 只被直角坐标系 bar/line/area（含组合）消费；
+  // 堆叠柱等图型忽略系列级覆盖（全部按各自图型渲染，不混排）。
+  it('stacked-bar 忽略系列级 type/yAxisIndex（不进入组合图分支）', () => {
+    const el = mount({
+      type: 'stacked-bar',
+      data: JSON.stringify({
+        labels: ['a'],
+        series: [
+          { name: 'A', data: [10] },
+          { name: 'B', data: [20], type: 'line', yAxisIndex: 1 },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    expect(svg.querySelectorAll('rect.bar').length).toBe(2)
+    expect(svg.querySelector('.line-path')).toBeNull()
   })
 
   it('对象格式多系列：折线每系列一条 path', () => {

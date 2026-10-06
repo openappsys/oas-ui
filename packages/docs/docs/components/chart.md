@@ -168,3 +168,4 @@
 - radar 维度量程为全局统一（`options.max` 或 nice 刻度），暂不支持逐维独立量程——需要时宿主可先自行归一化（如 0-100 分制）
 - polar-area 值全为 0 时不渲染扇区（与饼图同口径）；半径量程为最大值满半径
 - 组合图只允许 `bar` / `line` / `area` 三型互混（同一直角坐标系），其他类型值静默回退顶层型
+- 系列级 `type` / `yAxisIndex` 只被直角坐标系图型（line / bar / area / 组合图）消费；`stacked-bar` / `pie` / `donut` / `radar` / `polar-area` 忽略系列级覆盖，一律按顶层 `type` 渲染

@@ -168,3 +168,4 @@ No data / invalid JSON shows an empty state placeholder without errors.
 - Radar uses one global scale (`options.max` or nice ticks); per-dimension scales are not supported yet — normalize your data first if needed (e.g. a 0–100 score)
 - Polar-area renders no sectors when all values are 0 (same as pie); the radius scale tops at the maximum value
 - Combo only allows mixing `bar` / `line` / `area` (one cartesian coordinate system); other type values silently fall back to the top-level type
+- Series-level `type` / `yAxisIndex` is consumed only by cartesian types (line / bar / area / combo); `stacked-bar` / `pie` / `donut` / `radar` / `polar-area` ignore series-level overrides and always render per the top-level `type`

@@ -140,3 +140,56 @@ test('chart 新图型 RTL：dir=rtl 下 radar/polar-area/combo 渲染产出与 L
   })
   expect(await count(), 'RTL 下三类图型 svg 子节点数不变').toEqual(before)
 })
+
+// 缺陷回归（happy-dom 测不了文字布局，用真实 getBBox）：
+// ① radar 顶轴维度名与最大刻度值同处顶点，此前两者文字框相交（重叠区约 7×6px）；
+// ② combo 文档承诺层序固定 bar→area→line，但 overlay 曾按声明顺序渲染——线先声明会被面积层盖住。
+test('chart radar 顶点标签不压刻度值；combo 层序恒为 bar→area→line（与声明顺序无关）', async ({ page }) => {
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+  const r = await page.evaluate(() => {
+    const radar = document.querySelector('oas-chart[type="radar"]')!
+    const svg = radar.shadowRoot!.querySelector('svg')!
+    const bb = (t: Element) => {
+      const b = (t as SVGGraphicsElement).getBBox()
+      return { x: b.x, y: b.y, w: b.width, h: b.height }
+    }
+    const ticks = [...svg.querySelectorAll('text.axis-text')].map(bb)
+    const dims = [...svg.querySelectorAll('text.axis-label')].map(bb)
+    let collide = false
+    for (const d of dims) {
+      for (const t of ticks) {
+        const ox = Math.min(d.x + d.w, t.x + t.w) - Math.max(d.x, t.x)
+        const oy = Math.min(d.y + d.h, t.y + t.h) - Math.max(d.y, t.y)
+        if (ox > 0 && oy > 0) collide = true
+      }
+    }
+
+    // combo：line 先声明、area 后声明，DOM 层序仍须 area 在 line 之前
+    const el = document.createElement('oas-chart')
+    el.setAttribute('type', 'bar')
+    el.setAttribute(
+      'data',
+      JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'L', data: [5, 10], type: 'line' },
+          { name: 'A', data: [20, 30], type: 'area' },
+          { name: 'B', data: [50, 100] },
+        ],
+      }),
+    )
+    document.body.appendChild(el)
+    const esvg = el.shadowRoot!.querySelector('svg')!
+    const before = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+    const order = {
+      barBeforeArea: before(esvg.querySelector('rect.bar')!, esvg.querySelector('.area-path')!),
+      areaBeforeLine: before(esvg.querySelector('.area-path')!, esvg.querySelector('.line-path')!),
+    }
+    el.remove()
+    return { radarCollide: collide, ...order }
+  })
+  expect(r.radarCollide, 'radar 维度名与刻度值文字框无重叠').toBe(false)
+  expect(r.barBeforeArea, 'combo bar 层在 area 层之前').toBe(true)
+  expect(r.areaBeforeLine, 'combo area 层在 line 层之前（线盖面）').toBe(true)
+})

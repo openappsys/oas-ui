@@ -389,19 +389,20 @@ export class OASChart extends OASElement {
       out += `<line class="radar-axis" x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}"></line>`
     }
 
-    // 刻度值沿顶轴标注（i=1..4 档）
+    // 刻度值沿顶轴标注（i=1..4 档）；options.max 非 4 倍数时步长为小数，用 formatTick 精确保留（避免 Math.round 失真/重复）
     for (let i = 1; i <= 4; i++) {
       const y = cy - r * (i / 4)
-      out += `<text class="axis-text" x="${cx + 5}" y="${(y + 3).toFixed(1)}" text-anchor="start">${Math.round(step * i)}</text>`
+      out += `<text class="axis-text" x="${cx + 5}" y="${(y + 3).toFixed(1)}" text-anchor="start">${this.formatTick(step * i)}</text>`
     }
 
-    // 维度名：顶点外侧（按方位选 text-anchor 与基线偏移）
+    // 维度名：顶点外侧（按方位选 text-anchor 与基线偏移）。
+    // 顶轴（dy≈-1）维度名与最大刻度值同处顶点，偏移量按 |dy| 放大，保证文字不与刻度值相撞
     for (let k = 0; k < dims; k++) {
       const p = pointAt(k, 1)
       const dx = Math.cos(angleAt(k))
       const dy = Math.sin(angleAt(k))
       const anchor = Math.abs(dx) < 0.3 ? 'middle' : dx > 0 ? 'start' : 'end'
-      const labelY = p.y + (dy < -0.3 ? -6 : dy > 0.3 ? 12 : 4)
+      const labelY = p.y + (dy < -0.3 ? -6 - 7 * Math.abs(dy) : dy > 0.3 ? 12 : 4)
       const labelX = p.x + (Math.abs(dx) < 0.3 ? 0 : dx > 0 ? 6 : -6)
       out += `<text class="axis-label" x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="${anchor}">${this.escapeText(data.labels[k] ?? '')}</text>`
     }
@@ -553,6 +554,11 @@ export class OASChart extends OASElement {
     return t === 'bar' || t === 'line' || t === 'area' ? t : topType
   }
 
+  /** combo 叠加层层序 rank：area 先于 line（线盖面，面不遮线）；bar 单独在先不参与排序 */
+  private layerRank(t: 'line' | 'bar' | 'area'): number {
+    return t === 'line' ? 1 : 0
+  }
+
   /**
    * 组合图（系列级混排）：无独立 combo type 值，顶层 type 为缺省系列型、series.type 逐系列覆盖。
    * 共享同一 x 分类轴，line/area 的点对齐柱组 band 中心（与纯折线的端点对齐是关键差异）；
@@ -578,7 +584,12 @@ export class OASChart extends OASElement {
       t: this.seriesType(series, topType),
     }))
     const barSeries = resolved.filter((r) => r.t === 'bar')
-    const overlay = resolved.filter((r) => r.t !== 'bar') // area 层 + line 层
+    // 层序固定 bar → area → line：overlay 按层序 rank 稳定排序（同层保留声明顺序），
+    // 与图例/配色无关（颜色仍取原始系列下标 si）
+    const overlay = resolved
+      .filter((r) => r.t !== 'bar')
+      .slice()
+      .sort((a, b) => this.layerRank(a.t) - this.layerRank(b.t))
 
     // bar 层
     const m = barSeries.length
@@ -778,6 +789,15 @@ export class OASChart extends OASElement {
     values.forEach((raw, i) => {
       const v = Math.max(0, Number(raw) || 0)
       const ri = (v / maxV) * r
+      const cls = SWATCH_CLASSES[i % SWATCH_CLASSES.length]!
+      const color = options.colors?.[i]
+      const label = this.datumLabel(data.labels[i] ?? '', v)
+      // 单分类（整圆）：SVG arc 起止点重合会被规范省略，改用 <circle> 才画得出来
+      if (n === 1) {
+        out += `<circle class="slice ${cls} animate" cx="${cx}" cy="${cy}" r="${ri.toFixed(1)}"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></circle>`
+        angle += sweep
+        return
+      }
       const a1 = (angle * Math.PI) / 180
       const a2 = ((angle + sweep) * Math.PI) / 180
       const large = sweep > 180 ? 1 : 0
@@ -785,9 +805,6 @@ export class OASChart extends OASElement {
       const y1 = cy + ri * Math.sin(a1)
       const x2 = cx + ri * Math.cos(a2)
       const y2 = cy + ri * Math.sin(a2)
-      const cls = SWATCH_CLASSES[i % SWATCH_CLASSES.length]!
-      const color = options.colors?.[i]
-      const label = this.datumLabel(data.labels[i] ?? '', v)
       out += `<path class="slice ${cls} animate" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${ri.toFixed(1)} ${ri.toFixed(1)} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></path>`
       angle += sweep
     })
@@ -854,6 +871,12 @@ export class OASChart extends OASElement {
 
   private datumLabel(label: string, value: number): string {
     return `${label}: ${value}`
+  }
+
+  /** 刻度数值格式化：整数原样；非整数保留至多 2 位小数（避免浮点噪声，同时不丢精度） */
+  private formatTick(v: number): string {
+    if (Number.isInteger(v)) return String(v)
+    return String(Math.round(v * 100) / 100)
   }
 
   private maxValue(data: ChartData): number {
@@ -1001,14 +1024,15 @@ export class OASChart extends OASElement {
     if (obj.radarShape === 'circle' || obj.radarShape === 'polygon') out.radarShape = obj.radarShape
     if (Array.isArray(obj.colors)) out.colors = obj.colors.map((c) => String(c))
     if (Array.isArray(obj.yAxis)) {
-      const axes = obj.yAxis
-        .slice(0, 2)
-        .map((a) =>
-          a && typeof a === 'object' && typeof (a as Record<string, unknown>).name === 'string'
-            ? { name: String((a as Record<string, unknown>).name) }
-            : null,
-        )
-      if (axes[0]) out.yAxis = [axes[0], axes[1] ?? undefined]
+      // 轴名可选：条目存在即占位（缺名 = 无名轴）；仅第 2 项非空才启用右轴。
+      // 非对象/缺 name 的条目按「存在但无名」处理（yAxis:[{},{}] 是合法双轴声明）
+      const axes = obj.yAxis.slice(0, 2).map((a): { name?: string } | undefined => {
+        if (a == null) return undefined
+        if (typeof a !== 'object') return {}
+        const name = (a as Record<string, unknown>).name
+        return typeof name === 'string' ? { name } : {}
+      })
+      if (axes[0]) out.yAxis = [axes[0], axes[1]]
     }
     return out
   }
