@@ -1,6 +1,6 @@
 # Chart 图表
 
-自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 饼图 / 面积 / 环形 / 堆叠柱状六型，数据更新自动重绘，`prefers-reduced-motion` 时关闭动画。
+自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积八型，外加系列级组合图与双轴。数据更新自动重绘，`prefers-reduced-motion` 时关闭动画。
 
 ## 折线图
 
@@ -70,6 +70,46 @@
 
 `type="stacked-bar"` 多系列自底向上堆叠为单柱，柱高 = 分类合计，y 轴刻度按合计值计算。
 
+## 雷达图
+
+<DemoBlock title="雷达图（radarShape + max 量程）">
+  <div style="width: 100%">
+    <oas-chart type="radar" options='{"max":100}' data='{"labels":["速度","稳定","续航","智能","安全"],"series":[{"name":"车型 A","data":[80,92,75,88,95]},{"name":"车型 B","data":[90,70,82,79,85]}]}'></oas-chart>
+  </div>
+</DemoBlock>
+
+`type="radar"` 的维度名复用 `labels`（与折线/柱状同一数据心智，零迁移成本）。`options.max` 设全局统一量程（缺省取全系列 max 走 nice 刻度）；`options.radarShape`（默认 `polygon` 同心多边形）设为 `circle` 换同心圆网格。悬停顶点显示「维度： 值」，图例/配色与其他图型一致。
+
+## 极坐标面积图
+
+<DemoBlock title="极坐标面积图（玫瑰图）">
+  <div style="width: 100%">
+    <oas-chart type="polar-area" data='[{"label":"东","value":11},{"label":"南","value":16},{"label":"西","value":7},{"label":"北","value":14}]'></oas-chart>
+  </div>
+</DemoBlock>
+
+`type="polar-area"` 每分类等角扇区、半径编码数值（最大值满半径），同心参考圈提供径向量级读数。与饼图的「份额」心智不同，tooltip 显示原始数值而非占比。单系列取 `series[0]`（与饼图/环图同一数据格式）。
+
+## 组合图
+
+<DemoBlock title="组合图（柱 + 线系列级混排）">
+  <div style="width: 100%">
+    <oas-chart type="bar" data='{"labels":["一月","二月","三月","四月"],"series":[{"name":"销量","data":[120,132,101,134]},{"name":"增速","data":[5,12,8,15],"type":"line"}]}'></oas-chart>
+  </div>
+</DemoBlock>
+
+组合图**不设独立 type 值**：顶层 `type` 作为缺省系列型，`series[].type`（`bar` / `line` / `area`）逐系列覆盖，缺省/非法值回退顶层型。共享同一分类轴，线/面积点对齐柱组中心（与纯折线的端点对齐不同）；绘制层序固定 bar → area → line；配色与图例按系列声明顺序。
+
+## 双轴图
+
+<DemoBlock title="双轴组合图（右轴 + alignTicks 刻度对齐）">
+  <div style="width: 100%">
+    <oas-chart type="bar" options='{"yAxis":[{"name":"销量"},{"name":"增速"}]}' data='{"labels":["一月","二月","三月","四月"],"series":[{"name":"销量","data":[120,132,101,134]},{"name":"增速","data":[5,12,8,15],"type":"line","yAxisIndex":1}]}'></oas-chart>
+  </div>
+</DemoBlock>
+
+双轴是坐标系配置不是图型：`options.yAxis` 数组第 2 项存在即启用右轴（`name` 为轴名，渲染在轴顶），`series[].yAxisIndex`（`0` 左默认 / `1` 右）绑定归属；可与 line / bar / 组合图任意叠加。双轴时刻度强制对齐（alignTicks）：副轴以主轴档数为锚重算 nice 刻度，左右刻度线一一水平对齐，消除刻度错位误读——但两轴单位不同，同一条线上的左右读数**不可横比**。堆叠柱状/饼系/雷达类忽略 `yAxis`（单轴语义）。
+
 ## 多系列 + 图例
 
 <DemoBlock title="多系列折线（smooth + 图例）">
@@ -113,9 +153,9 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `aria-label` | 图表描述（缺省按类型走 locale） | — | — |
-| `data` | 数据。数组单系列 `[{label, value}]` 或对象多系列 `{labels, series}` | `unknown` | — |
-| `options` | 配置：`smooth`（平滑）、`colors`（系列配色）、`showLegend`、`gradient`（面积图垂直渐变填充，默认 false） | `unknown` | — |
-| `type` | 图表类型：`line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` | `ChartType` | `line` |
+| `data` | 数据。数组单系列 `[{label, value}]` 或对象多系列 `{labels, series:[{name, data, type?, yAxisIndex?}]}`（系列级 `type` / `yAxisIndex` 用于组合图与双轴） | `unknown` | — |
+| `options` | 配置：`smooth`（平滑）、`colors`（系列配色）、`showLegend`、`gradient`（面积图垂直渐变填充，默认 false）、`max`（radar 全局量程）、`radarShape`（radar 网格 `polygon`/`circle`，默认 polygon）、`yAxis`（双轴数组，第 2 项存在即启用右轴） | `unknown` | — |
+| `type` | 图表类型：`line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` / `radar` / `polar-area`（组合图不设 type 值，用系列级 `series.type` 覆盖） | `ChartType` | `line` |
 
 `data` / `options` 也支持 property 通道（JS 对象，优先级高于 attribute）。
 
@@ -125,3 +165,6 @@
 - 空/非法数据 → 空态占位
 - 每个数据点带原生 `<title>` tooltip，零孤儿浮层
 - 动画为纯 CSS（`@media (prefers-reduced-motion: no-preference)` 包裹），reduced-motion 下自动关闭，无 JS 计时器
+- radar 维度量程为全局统一（`options.max` 或 nice 刻度），暂不支持逐维独立量程——需要时宿主可先自行归一化（如 0-100 分制）
+- polar-area 值全为 0 时不渲染扇区（与饼图同口径）；半径量程为最大值满半径
+- 组合图只允许 `bar` / `line` / `area` 三型互混（同一直角坐标系），其他类型值静默回退顶层型

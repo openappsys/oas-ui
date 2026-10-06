@@ -1,6 +1,6 @@
 # Chart
 
-A self-developed SVG chart component (no third-party chart engine) supporting line / bar / pie / area / donut / stacked-bar. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`.
+A self-developed SVG chart component (no third-party chart engine) supporting line / bar / pie / area / donut / stacked-bar / radar / polar-area, plus series-level combo and dual axis. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`.
 
 ## Line Chart
 
@@ -70,6 +70,46 @@ With `options.gradient` (default false), the area fill fades vertically from the
 
 `type="stacked-bar"` stacks multiple series from bottom to top into a single bar; the bar height equals the category total, and the y-axis ticks are computed from the totals.
 
+## Radar Chart
+
+<DemoBlock title="Radar chart (radarShape + max scale)">
+  <div style="width: 100%">
+    <oas-chart type="radar" options='{"max":100}' data='{"labels":["Speed","Stability","Range","Smart","Safety"],"series":[{"name":"Model A","data":[80,92,75,88,95]},{"name":"Model B","data":[90,70,82,79,85]}]}'></oas-chart>
+  </div>
+</DemoBlock>
+
+`type="radar"` reuses `labels` as dimension names (the same data shape as line/bar, zero migration cost). `options.max` sets a global unified scale (defaults to the series max passed through nice ticks); `options.radarShape` (default `polygon`, concentric polygons) can be set to `circle` for concentric-ring grid. Hovering a vertex shows "dimension: value"; legend and colors match the other chart types.
+
+## Polar Area Chart
+
+<DemoBlock title="Polar area chart (rose)">
+  <div style="width: 100%">
+    <oas-chart type="polar-area" data='[{"label":"East","value":11},{"label":"South","value":16},{"label":"West","value":7},{"label":"North","value":14}]'></oas-chart>
+  </div>
+</DemoBlock>
+
+`type="polar-area"` renders equal-angle sectors whose radius encodes the value (the maximum fills the full radius); concentric reference rings provide a radial magnitude cue. Unlike the pie chart's "share" mental model, the tooltip shows the raw value instead of a percentage. Single series takes `series[0]` (same data format as pie/donut).
+
+## Combo Chart
+
+<DemoBlock title="Combo chart (bar + line series-level mixing)">
+  <div style="width: 100%">
+    <oas-chart type="bar" data='{"labels":["Jan","Feb","Mar","Apr"],"series":[{"name":"Sales","data":[120,132,101,134]},{"name":"Growth","data":[5,12,8,15],"type":"line"}]}'></oas-chart>
+  </div>
+</DemoBlock>
+
+Combo has **no dedicated type value**: the top-level `type` acts as the default series type, and `series[].type` (`bar` / `line` / `area`) overrides it per series; missing/invalid values fall back to the top-level type. All series share one category axis, and line/area points align to band centers (unlike a pure line chart's endpoint alignment); the draw order is fixed to bar → area → line; colors and legend follow the series declaration order.
+
+## Dual Axis
+
+<DemoBlock title="Dual-axis combo (right axis + alignTicks)">
+  <div style="width: 100%">
+    <oas-chart type="bar" options='{"yAxis":[{"name":"Sales"},{"name":"Growth"}]}' data='{"labels":["Jan","Feb","Mar","Apr"],"series":[{"name":"Sales","data":[120,132,101,134]},{"name":"Growth","data":[5,12,8,15],"type":"line","yAxisIndex":1}]}'></oas-chart>
+  </div>
+</DemoBlock>
+
+Dual axis is axis configuration, not a chart type: a second entry in the `options.yAxis` array enables the right axis (`name` is the axis title rendered at the top), and `series[].yAxisIndex` (`0` left, default / `1` right) binds each series; it can be combined with line / bar / combo freely. With dual axes, ticks are force-aligned (alignTicks): the secondary axis recomputes its nice ticks anchored to the primary axis' segment count, so left/right tick lines align horizontally — eliminating the misaligned-ticks misreading. Note the two axes have different units, so readings on the same line are **not comparable across axes**. `yAxis` is ignored by stacked-bar / pie-family / radar (single-axis semantics).
+
 ## Multiple Series + Legend
 
 <DemoBlock title="Multi-series line (smooth + legend)">
@@ -113,9 +153,9 @@ No data / invalid JSON shows an empty state placeholder without errors.
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Chart description (falls back to locale by type) | — | — |
-| `data` | Data. Array single-series `[{label, value}]` or object multi-series `{labels, series}` | `unknown` | — |
-| `options` | Config: `smooth` (smoothing), `colors` (series palette), `showLegend`, `gradient` (area-chart vertical gradient fill, default false) | `unknown` | — |
-| `type` | Chart type: `line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` | `ChartType` | `line` |
+| `data` | Data. Array single-series `[{label, value}]` or object multi-series `{labels, series:[{name, data, type?, yAxisIndex?}]}` (series-level `type` / `yAxisIndex` for combo and dual-axis) | `unknown` | — |
+| `options` | Config: `smooth` (smoothing), `colors` (series palette), `showLegend`, `gradient` (area-chart vertical gradient fill, default false), `max` (radar global scale), `radarShape` (radar grid `polygon`/`circle`, default polygon), `yAxis` (dual-axis array; a second entry enables the right axis) | `unknown` | — |
+| `type` | Chart type: `line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` / `radar` / `polar-area` (combo has no type value — override per series via `series.type`) | `ChartType` | `line` |
 
 `data` / `options` also support the property channel (JS objects, taking precedence over attributes).
 
@@ -125,3 +165,6 @@ No data / invalid JSON shows an empty state placeholder without errors.
 - Empty / invalid data → empty state placeholder
 - Every data point carries a native `<title>` tooltip
 - Animations are pure CSS (wrapped in `@media (prefers-reduced-motion: no-preference)`), auto-disabled under reduced-motion, with no JS timers; zero orphaned overlays
+- Radar uses one global scale (`options.max` or nice ticks); per-dimension scales are not supported yet — normalize your data first if needed (e.g. a 0–100 score)
+- Polar-area renders no sectors when all values are 0 (same as pie); the radius scale tops at the maximum value
+- Combo only allows mixing `bar` / `line` / `area` (one cartesian coordinate system); other type values silently fall back to the top-level type

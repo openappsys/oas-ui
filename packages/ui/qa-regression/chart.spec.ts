@@ -79,3 +79,64 @@ test('chart 数据通道：attribute 改数据重绘（点数变化）；propert
     )
     .toEqual({ hidden: false, items: 2 })
 })
+
+// 四类新图型（radar / polar-area / combo / 双轴）渲染产出固化：
+// 页面 bar 型 demo 顺序 [柱状图, 组合图, 双轴组合图]，按索引取后两个
+test('chart 四类新图型：radar 径向网格与顶点 / polar-area 等角扇区 / combo 柱线混排 / 双轴右轴与轴名', async ({
+  page,
+}) => {
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+  const r = await page.evaluate(() => {
+    const svgOf = (el: Element) => el.shadowRoot!.querySelector('svg')!
+    const radar = document.querySelector('oas-chart[type="radar"]')!
+    const polar = document.querySelector('oas-chart[type="polar-area"]')!
+    const bars = document.querySelectorAll('oas-chart[type="bar"]')
+    const combo = bars[1]!
+    const dual = bars[2]!
+    return {
+      radarRings: svgOf(radar).querySelectorAll('polygon.grid-ring').length,
+      radarAxes: svgOf(radar).querySelectorAll('line.radar-axis').length,
+      radarDots: svgOf(radar).querySelectorAll('circle.dot').length,
+      radarLegendVisible: !radar.shadowRoot!.querySelector<HTMLElement>('[part="legend"]')!.hidden,
+      polarSlices: svgOf(polar).querySelectorAll('.slice').length,
+      polarRings: svgOf(polar).querySelectorAll('circle.grid-ring').length,
+      comboBars: svgOf(combo).querySelectorAll('rect.bar').length,
+      comboLines: svgOf(combo).querySelectorAll('.line-path').length,
+      dualRightTicks: [...svgOf(dual).querySelectorAll('text.axis-text')].filter(
+        (t) => t.getAttribute('text-anchor') === 'start',
+      ).length,
+      dualNames: [...svgOf(dual).querySelectorAll('text.axis-name')].map((t) => t.textContent),
+    }
+  })
+  expect(r.radarRings, 'radar 4 层同心多边形网格').toBe(4)
+  expect(r.radarAxes, 'radar 维度轴线 = 维度数（5）').toBe(5)
+  expect(r.radarDots, 'radar 顶点 = 5 维 × 2 系列').toBe(10)
+  expect(r.radarLegendVisible, 'radar 多系列图例复用').toBe(true)
+  expect(r.polarSlices, 'polar-area 扇区 = 分类数（4）').toBe(4)
+  expect(r.polarRings, 'polar-area 3 层同心参考圈').toBe(3)
+  expect(r.comboBars, 'combo 柱系列 4 柱').toBe(4)
+  expect(r.comboLines, 'combo 线系列 1 条折线').toBe(1)
+  expect(r.dualRightTicks, '双轴右轴 5 个刻度（anchor=start 贴右缘）').toBe(5)
+  expect(r.dualNames, '双轴轴名按 yAxis.name 渲染').toEqual(['销量', '增速'])
+})
+
+// RTL 不破：SVG 几何与书写方向正交，dir=rtl 下节点产出不变
+test('chart 新图型 RTL：dir=rtl 下 radar/polar-area/combo 渲染产出与 LTR 一致', async ({ page }) => {
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+  const count = () =>
+    page.evaluate(() => {
+      const svgOf = (el: Element) => el.shadowRoot!.querySelector('svg')!
+      return {
+        radar: svgOf(document.querySelector('oas-chart[type="radar"]')!).children.length,
+        polar: svgOf(document.querySelector('oas-chart[type="polar-area"]')!).children.length,
+        combo: svgOf(document.querySelectorAll('oas-chart[type="bar"]')[1]!).children.length,
+      }
+    })
+  const before = await count()
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('dir', 'rtl')
+  })
+  expect(await count(), 'RTL 下三类图型 svg 子节点数不变').toEqual(before)
+})
