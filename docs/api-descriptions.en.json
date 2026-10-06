@@ -616,7 +616,7 @@
     "attrs": {
       "aria-label": "Chart description (falls back to locale by type)",
       "data": "Data. Array single-series `[{label, value}]` or object multi-series `{labels, series:[{name, data, type?, yAxisIndex?}]}` (series-level `type` / `yAxisIndex` for combo and dual-axis)",
-      "options": "Config: `smooth` (smoothing), `colors` (series palette), `showLegend`, `gradient` (area-chart vertical gradient fill, default false), `max` (radar global scale), `radarShape` (radar grid `polygon`/`circle`, default polygon), `yAxis` (dual-axis array; a second entry enables the right axis)",
+      "options": "Config: `smooth` (smoothing), `colors` (series palette), `showLegend`, `gradient` (area-chart vertical gradient fill, default false), `max` (radar global scale), `radarShape` (radar grid `polygon`/`circle`, default polygon), `yAxis` (dual-axis array; dual axis requires the second entry AND series bound on both sides via yAxisIndex, otherwise single axis)",
       "type": "Chart type: `line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` / `radar` / `polar-area` (combo has no type value — override per series via `series.type`)"
     },
     "events": {},

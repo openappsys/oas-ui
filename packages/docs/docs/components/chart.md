@@ -108,7 +108,7 @@
   </div>
 </DemoBlock>
 
-双轴是坐标系配置不是图型：`options.yAxis` 数组第 2 项存在即启用右轴（`name` 为轴名，渲染在轴顶），`series[].yAxisIndex`（`0` 左默认 / `1` 右）绑定归属；可与 line / bar / 组合图任意叠加。双轴时刻度强制对齐（alignTicks）：副轴以主轴档数为锚重算 nice 刻度，左右刻度线一一水平对齐，消除刻度错位误读——但两轴单位不同，同一条线上的左右读数**不可横比**。堆叠柱状/饼系/雷达类忽略 `yAxis`（单轴语义）。
+双轴是坐标系配置不是图型：`options.yAxis` 数组第 2 项存在**且左右两侧均有 `series[].yAxisIndex` 绑定系列**时启用右轴（`name` 为轴名，渲染在轴顶；缺任一侧按单轴渲染，不渲染空轴），`series[].yAxisIndex`（`0` 左默认 / `1` 右）绑定归属；可与 line / bar / 组合图任意叠加。双轴时刻度强制对齐（alignTicks）：副轴以主轴档数为锚重算 nice 刻度，左右刻度线一一水平对齐，消除刻度错位误读——但两轴单位不同，同一条线上的左右读数**不可横比**。堆叠柱状/饼系/雷达类忽略 `yAxis`（单轴语义）。
 
 ## 多系列 + 图例
 
@@ -154,7 +154,7 @@
 | --- | --- | --- | --- |
 | `aria-label` | 图表描述（缺省按类型走 locale） | — | — |
 | `data` | 数据。数组单系列 `[{label, value}]` 或对象多系列 `{labels, series:[{name, data, type?, yAxisIndex?}]}`（系列级 `type` / `yAxisIndex` 用于组合图与双轴） | `unknown` | — |
-| `options` | 配置：`smooth`（平滑）、`colors`（系列配色）、`showLegend`、`gradient`（面积图垂直渐变填充，默认 false）、`max`（radar 全局量程）、`radarShape`（radar 网格 `polygon`/`circle`，默认 polygon）、`yAxis`（双轴数组，第 2 项存在即启用右轴） | `unknown` | — |
+| `options` | 配置：`smooth`（平滑）、`colors`（系列配色）、`showLegend`、`gradient`（面积图垂直渐变填充，默认 false）、`max`（radar 全局量程）、`radarShape`（radar 网格 `polygon`/`circle`，默认 polygon）、`yAxis`（双轴数组，第 2 项存在且两侧均有 yAxisIndex 绑定系列才启用双轴，缺侧按单轴） | `unknown` | — |
 | `type` | 图表类型：`line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` / `radar` / `polar-area`（组合图不设 type 值，用系列级 `series.type` 覆盖） | `ChartType` | `line` |
 
 `data` / `options` 也支持 property 通道（JS 对象，优先级高于 attribute）。
@@ -169,3 +169,7 @@
 - polar-area 值全为 0 时不渲染扇区（与饼图同口径）；半径量程为最大值满半径
 - 组合图只允许 `bar` / `line` / `area` 三型互混（同一直角坐标系），其他类型值静默回退顶层型
 - 系列级 `type` / `yAxisIndex` 只被直角坐标系图型（line / bar / area / 组合图）消费；`stacked-bar` / `pie` / `donut` / `radar` / `polar-area` 忽略系列级覆盖，一律按顶层 `type` 渲染
+- 仅声明 `options.yAxis` 第 2 项而绑定未覆盖两侧（无右绑、或全部系列绑右致左轴空置）时按单轴渲染——不渲染 0 刻度假轴（未用轴名同免）
+- y 轴刻度步长恒为整数（nice 上取整，最小步长 1）：小数量程（如 0~0.01、不足 4 段的量程）会退化为整步刻度、数据全部压底——小量程数据建议宿主先做单位换算（如 ×100 转百分比）
+- 配色映射语义：饼系（pie / donut / polar-area）按**分类**上色，直角系（line / bar / area / stacked-bar / radar / 组合图）按**系列**上色；`options.colors` 按同序覆盖
+- 图表 svg 内文字方向钉死 `direction: ltr`（坐标语义与书写方向正交）：宿主 `dir=rtl` 不翻转文字锚点、不镜像几何

@@ -108,7 +108,7 @@ Combo has **no dedicated type value**: the top-level `type` acts as the default 
   </div>
 </DemoBlock>
 
-Dual axis is axis configuration, not a chart type: a second entry in the `options.yAxis` array enables the right axis (`name` is the axis title rendered at the top), and `series[].yAxisIndex` (`0` left, default / `1` right) binds each series; it can be combined with line / bar / combo freely. With dual axes, ticks are force-aligned (alignTicks): the secondary axis recomputes its nice ticks anchored to the primary axis' segment count, so left/right tick lines align horizontally — eliminating the misaligned-ticks misreading. Note the two axes have different units, so readings on the same line are **not comparable across axes**. `yAxis` is ignored by stacked-bar / pie-family / radar (single-axis semantics).
+Dual axis is axis configuration, not a chart type: the right axis renders when a second entry exists in the `options.yAxis` array **AND both sides have series bound via `series[].yAxisIndex`** (`name` is the axis title rendered at the top; if either side has no bound series a single axis is rendered — no empty axis), and `series[].yAxisIndex` (`0` left, default / `1` right) binds each series; it can be combined with line / bar / combo freely. With dual axes, ticks are force-aligned (alignTicks): the secondary axis recomputes its nice ticks anchored to the primary axis' segment count, so left/right tick lines align horizontally — eliminating the misaligned-ticks misreading. Note the two axes have different units, so readings on the same line are **not comparable across axes**. `yAxis` is ignored by stacked-bar / pie-family / radar (single-axis semantics).
 
 ## Multiple Series + Legend
 
@@ -154,7 +154,7 @@ No data / invalid JSON shows an empty state placeholder without errors.
 | --- | --- | --- | --- |
 | `aria-label` | Chart description (falls back to locale by type) | — | — |
 | `data` | Data. Array single-series `[{label, value}]` or object multi-series `{labels, series:[{name, data, type?, yAxisIndex?}]}` (series-level `type` / `yAxisIndex` for combo and dual-axis) | `unknown` | — |
-| `options` | Config: `smooth` (smoothing), `colors` (series palette), `showLegend`, `gradient` (area-chart vertical gradient fill, default false), `max` (radar global scale), `radarShape` (radar grid `polygon`/`circle`, default polygon), `yAxis` (dual-axis array; a second entry enables the right axis) | `unknown` | — |
+| `options` | Config: `smooth` (smoothing), `colors` (series palette), `showLegend`, `gradient` (area-chart vertical gradient fill, default false), `max` (radar global scale), `radarShape` (radar grid `polygon`/`circle`, default polygon), `yAxis` (dual-axis array; dual axis requires the second entry AND series bound on both sides via yAxisIndex, otherwise single axis) | `unknown` | — |
 | `type` | Chart type: `line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` / `radar` / `polar-area` (combo has no type value — override per series via `series.type`) | `ChartType` | `line` |
 
 `data` / `options` also support the property channel (JS objects, taking precedence over attributes).
@@ -169,3 +169,7 @@ No data / invalid JSON shows an empty state placeholder without errors.
 - Polar-area renders no sectors when all values are 0 (same as pie); the radius scale tops at the maximum value
 - Combo only allows mixing `bar` / `line` / `area` (one cartesian coordinate system); other type values silently fall back to the top-level type
 - Series-level `type` / `yAxisIndex` is consumed only by cartesian types (line / bar / area / combo); `stacked-bar` / `pie` / `donut` / `radar` / `polar-area` ignore series-level overrides and always render per the top-level `type`
+- Declaring a second `options.yAxis` entry without bindings on both sides (nothing bound right, or everything bound right leaving the left axis empty) renders a single axis — no zero-tick fake axis (unused axis titles included)
+- Y-axis tick steps are always integers (nice ceiling, minimum step 1): sub-integer ranges (e.g. 0–0.01) degrade to whole-number steps and all data collapses to the baseline — rescale such data first (e.g. ×100 as percentages)
+- Color mapping semantics: the pie family (pie / donut / polar-area) colors by **category**, cartesian types (line / bar / area / stacked-bar / radar / combo) color by **series**; `options.colors` overrides in the same order
+- Text inside the chart svg is pinned to `direction: ltr` (coordinate semantics are orthogonal to writing direction): a host `dir=rtl` neither flips text anchors nor mirrors geometry

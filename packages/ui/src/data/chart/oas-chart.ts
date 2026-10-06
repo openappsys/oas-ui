@@ -34,7 +34,7 @@ export interface ChartOptions {
   max?: number
   /** radar 网格形态：'polygon' 同心多边形（默认）| 'circle' 同心圆 */
   radarShape?: 'polygon' | 'circle'
-  /** 双轴：y 轴数组。长度 ≥2 且第 2 项存在即启用右轴；name 为轴名（渲染在轴顶） */
+  /** 双轴：y 轴数组。第 2 项存在且两侧均有 series.yAxisIndex 绑定系列才启用双轴（缺侧按单轴，不渲染空轴）；name 为轴名（渲染在轴顶） */
   yAxis?: [{ name?: string }, { name?: string }?]
 }
 
@@ -72,6 +72,11 @@ svg {
   display: block;
   width: 100%;
   height: auto;
+  /* 图表文字 anchor 全按几何方位给出（刻度贴左/右缘、radar 顶点外推）。
+     direction 是继承属性：宿主 dir=rtl 会翻转 text-anchor start/end 的视觉语义
+     （刻度压进绘图区、轴名裁出 viewBox）——图表是坐标语义内容，与书写方向正交
+     （同 equation/code 的 direction:ltr 先例），在此钉死 ltr */
+  direction: ltr;
 }
 [hidden] {
   display: none !important;
@@ -429,6 +434,8 @@ export class OASChart extends OASElement {
    * 直角坐标系轴上下文（renderLine/renderBars/renderArea 共用）：
    * 单轴=全系列左轴 niceTicks；双轴=按 series.yAxisIndex 分组各算量程，
    * 副轴以主轴档数为锚 alignTicks 重算 niceStep（刻度错位误读根治）。
+   * 双轴启用双条件：options.yAxis 声明了右轴 **且** 两侧都有绑定系列——
+   * 仅声明无绑定（或全部系列绑右、左轴空置）时按单轴渲染，不产出 5 个 0 刻度的假轴（含轴名与 padR 扩展）。
    */
   private axisContext(
     data: ChartData,
@@ -442,7 +449,9 @@ export class OASChart extends OASElement {
     grid: (plotH: number) => string
   } {
     const plotH = H - PAD.t - PAD.b
-    const dual = this.isDualAxis(options)
+    const hasLeft = data.series.some((s) => this.axisOf(s) === 0)
+    const hasRight = data.series.some((s) => this.axisOf(s) === 1)
+    const dual = this.isDualAxis(options) && hasLeft && hasRight
     const padR = dual ? PAD_R_DUAL : PAD.r
     const plotW = W - PAD.l - padR
     const left = dual ? this.alignTicksTo(this.maxForAxis(data, 0), 4) : this.niceTicks(this.maxValue(data))
@@ -899,7 +908,7 @@ export class OASChart extends OASElement {
     return { max: top, step, values: Array.from({ length: segments + 1 }, (_, i) => i * step) }
   }
 
-  /** 双轴模式：options.yAxis 声明了右轴（第 2 项存在）即启用；仅直角坐标系图型消费 */
+  /** 双轴声明检测：options.yAxis 第 2 项存在（仅声明；实际启用还需两侧均有绑定系列，见 axisContext） */
   private isDualAxis(options: ChartOptions): boolean {
     return Array.isArray(options.yAxis) && options.yAxis.length > 1 && options.yAxis[1] != null
   }
@@ -985,7 +994,8 @@ export class OASChart extends OASElement {
               const name = rec.name != null ? String(rec.name) : ''
               const type: ChartSeries['type'] | undefined =
                 rec.type === 'bar' || rec.type === 'line' || rec.type === 'area' ? rec.type : undefined
-              const yAxisIndex: ChartSeries['yAxisIndex'] | undefined = rec.yAxisIndex === 1 ? 1 : undefined
+              // yAxisIndex 类型矫正：attribute JSON 手写 "1"（字符串）归一为数字 1（1 / "1" 均绑右轴，其余归左轴缺省）
+              const yAxisIndex: ChartSeries['yAxisIndex'] | undefined = Number(rec.yAxisIndex) === 1 ? 1 : undefined
               const outSeries: ChartSeries = { name, data }
               if (type) outSeries.type = type
               if (yAxisIndex) outSeries.yAxisIndex = yAxisIndex

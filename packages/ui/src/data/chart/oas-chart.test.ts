@@ -432,6 +432,82 @@ describe('OASChart', () => {
     expect(svg.querySelectorAll('text.axis-name').length).toBe(0)
   })
 
+  // 缺陷回归（review 定向）：仅声明 options.yAxis 双项但无任何系列 yAxisIndex:1 绑定时，
+  // 此前仍渲染右轴——maxForAxis(1)=0 产出 5 个 0 刻度的假轴。改为不渲染未绑定右轴（含轴名）。
+  it('声明右轴但无系列绑定：不渲染右轴刻度与轴名（按单轴渲染，网格右缘 508）', () => {
+    const el = mount({
+      type: 'bar',
+      options: '{"yAxis":[{"name":"销量"},{"name":"增长率"}]}',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'A', data: [50, 100] },
+          { name: 'B', data: [20, 30] }, // 无 yAxisIndex → 全在左轴
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    // 无右轴刻度（anchor=start 仅右轴使用）
+    const right = [...svg.querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'start')
+    expect(right.length).toBe(0)
+    // 无轴名（含声明的左/右 name——单轴路径不渲染轴名）
+    expect(svg.querySelectorAll('text.axis-name').length).toBe(0)
+    // 网格右缘走单轴 padR（508，非双轴 478）
+    for (const line of svg.querySelectorAll('line.axis-line')) expect(Number(line.getAttribute('x2'))).toBe(508)
+  })
+
+  // 类型矫正：attribute JSON 手写 "yAxisIndex":"1"（字符串）此前 === 1 判假被丢弃、静默归左轴。
+  it('series.yAxisIndex 字符串 "1" 矫正为数字：右轴照常启用', () => {
+    const el = mount({
+      type: 'bar',
+      options: '{"yAxis":[{"name":"L"},{"name":"R"}]}',
+      data: '{"labels":["a","b"],"series":[{"name":"A","data":[50,100]},{"name":"B","data":[5,10],"yAxisIndex":"1"}]}',
+    })
+    const svg = svgOf(el)
+    const right = [...svg.querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'start')
+    expect(right.length).toBe(5)
+    // 字符串 "0" 与非法值归左轴缺省：不触发右轴误绑（此处左轴量程并入全系列）
+    const left = [...svg.querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'end')
+    expect(left.length).toBe(5)
+  })
+
+  // 双轴启用要求两侧都有绑定系列：全部系列绑右（左轴空置）同样不渲染 0 刻度假轴，按单轴渲染
+  it('全部系列绑右轴（左轴空置）：按单轴渲染，不产出左轴 0 刻度假轴', () => {
+    const el = mount({
+      type: 'bar',
+      options: '{"yAxis":[{"name":"L"},{"name":"R"}]}',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'A', data: [50, 100], yAxisIndex: 1 },
+          { name: 'B', data: [5, 10], yAxisIndex: 1 },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    // 无右轴刻度（单轴路径）
+    const right = [...svg.querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'start')
+    expect(right.length).toBe(0)
+    // 左轴刻度按全系列量程重算（100 → step 25 top 100），非 0 刻度假轴
+    const left = [...svg.querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'end')
+    expect(left.map((t) => t.textContent)).toEqual(['0', '25', '50', '75', '100'])
+    expect(svg.querySelectorAll('text.axis-name').length).toBe(0)
+  })
+
+  // 图型切换（type 属性变更）走 svg.innerHTML 整体重绘：不得残留旧图型节点
+  it('type 属性切换重建图形：radar → bar 无旧图型节点残留', () => {
+    const el = mount({
+      type: 'radar',
+      data: JSON.stringify({ labels: ['甲', '乙', '丙'], series: [{ name: 'S', data: [1, 2, 3] }] }),
+    })
+    expect(svgOf(el).querySelectorAll('polygon.grid-ring').length).toBe(4)
+    el.setAttribute('type', 'bar')
+    const svg = svgOf(el)
+    expect(svg.querySelectorAll('polygon.grid-ring').length).toBe(0)
+    expect(svg.querySelectorAll('line.radar-axis').length).toBe(0)
+    expect(svg.querySelectorAll('rect.bar').length).toBe(3)
+  })
+
   // 缺陷回归：draw 层序文档承诺固定 bar → area → line，但 overlay 此前按声明顺序渲染，
   // 线先声明时会被后声明的面积层盖住。按层序 rank 稳定排序根治。
   it('combo 层序固定 bar → area → line：line 先声明也压在面积层之下', () => {

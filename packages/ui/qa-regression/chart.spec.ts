@@ -121,8 +121,12 @@ test('chart 四类新图型：radar 径向网格与顶点 / polar-area 等角扇
   expect(r.dualNames, '双轴轴名按 yAxis.name 渲染').toEqual(['销量', '增速'])
 })
 
-// RTL 不破：SVG 几何与书写方向正交，dir=rtl 下节点产出不变
-test('chart 新图型 RTL：dir=rtl 下 radar/polar-area/combo 渲染产出与 LTR 一致', async ({ page }) => {
+// RTL 不破：SVG 几何与书写方向正交，dir=rtl 下节点产出不变；
+// 且 svg 内文字 direction 钉死 ltr——图表文字 anchor 全按几何方位给出，
+// 若跟随宿主 direction:rtl，text-anchor start/end 视觉语义翻转（刻度压进绘图区、轴名裁出 viewBox）
+test('chart 新图型 RTL：dir=rtl 下 radar/polar-area/combo 渲染产出与 LTR 一致，且文字方向保持 ltr', async ({
+  page,
+}) => {
   await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-chart')
   const count = () =>
@@ -139,6 +143,57 @@ test('chart 新图型 RTL：dir=rtl 下 radar/polar-area/combo 渲染产出与 L
     document.documentElement.setAttribute('dir', 'rtl')
   })
   expect(await count(), 'RTL 下三类图型 svg 子节点数不变').toEqual(before)
+  const direction = await page.evaluate(() => {
+    const svg = document.querySelector('oas-chart[type="line"]')!.shadowRoot!.querySelector('svg')!
+    const text = svg.querySelector('text')
+    return {
+      svg: getComputedStyle(svg).direction,
+      text: text ? getComputedStyle(text).direction : null,
+    }
+  })
+  expect(direction.svg, 'chart svg direction 钉死 ltr（不随宿主翻转）').toBe('ltr')
+  expect(direction.text, 'svg 内文字继承 ltr（text-anchor 几何语义不翻转）').toBe('ltr')
+  await page.evaluate(() => {
+    document.documentElement.removeAttribute('dir')
+  })
+})
+
+// 缺陷回归（review 定向）：仅声明 options.yAxis 双项但无任何系列 yAxisIndex:1 绑定时，
+// 不渲染未绑定右轴（无右刻度、无轴名、网格右缘单轴）——此前渲染 5 个 0 刻度的假轴。
+test('chart 双轴：声明 yAxis 但无系列绑定时按单轴渲染（不渲染假右轴）', async ({ page }) => {
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+  const r = await page.evaluate(() => {
+    const el = document.createElement('oas-chart')
+    el.setAttribute('type', 'bar')
+    el.setAttribute('options', '{"yAxis":[{"name":"销量"},{"name":"增长率"}]}')
+    el.setAttribute(
+      'data',
+      JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'A', data: [50, 100] },
+          { name: 'B', data: [20, 30] }, // 无 yAxisIndex 绑定
+        ],
+      }),
+    )
+    document.body.appendChild(el)
+    const svg = el.shadowRoot!.querySelector('svg')!
+    const res = {
+      rightTicks: [...svg.querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'start')
+        .length,
+      axisNames: svg.querySelectorAll('text.axis-name').length,
+      gridEdge: [...svg.querySelectorAll('line.axis-line')].map((l) => l.getAttribute('x2')),
+    }
+    el.remove()
+    return res
+  })
+  expect(r.rightTicks, '无绑定系列：无右轴刻度').toBe(0)
+  expect(r.axisNames, '无绑定系列：不渲染轴名（含声明的 name）').toBe(0)
+  expect(
+    r.gridEdge.every((x) => x === '508'),
+    '网格右缘走单轴 padR（508），非双轴 478',
+  ).toBe(true)
 })
 
 // 缺陷回归（happy-dom 测不了文字布局，用真实 getBBox）：

@@ -616,7 +616,7 @@
     "attrs": {
       "aria-label": "图表描述（缺省按类型走 locale）",
       "data": "数据。数组单系列 `[{label, value}]` 或对象多系列 `{labels, series:[{name, data, type?, yAxisIndex?}]}`（系列级 `type` / `yAxisIndex` 用于组合图与双轴）",
-      "options": "配置：`smooth`（平滑）、`colors`（系列配色）、`showLegend`、`gradient`（面积图垂直渐变填充，默认 false）、`max`（radar 全局量程）、`radarShape`（radar 网格 `polygon`/`circle`，默认 polygon）、`yAxis`（双轴数组，第 2 项存在即启用右轴）",
+      "options": "配置：`smooth`（平滑）、`colors`（系列配色）、`showLegend`、`gradient`（面积图垂直渐变填充，默认 false）、`max`（radar 全局量程）、`radarShape`（radar 网格 `polygon`/`circle`，默认 polygon）、`yAxis`（双轴数组，第 2 项存在且两侧均有 yAxisIndex 绑定系列才启用双轴，缺侧按单轴）",
       "type": "图表类型：`line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` / `radar` / `polar-area`（组合图不设 type 值，用系列级 `series.type` 覆盖）"
     },
     "events": {},
