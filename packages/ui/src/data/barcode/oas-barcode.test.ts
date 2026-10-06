@@ -92,12 +92,16 @@ describe('OASBarcode', () => {
     expect(svgOf(el).getAttribute('width')).toBe('156')
   })
 
-  it('RTL 隔离：:host 锁 direction:ltr + unicode-bidi:isolate（条码有方向性，HRI 不随宿主 dir 镜像）', () => {
+  it('RTL 隔离：方向锁在条码 svg 上（内容恒 LTR），宿主不复写 direction（空态/错误占位随宿主 dir，RTL 语言文案方向正确）', () => {
     const el = mount({ value: 'ASSET-0093', format: 'code39' })
     document.documentElement.setAttribute('dir', 'rtl')
     // 样式规则常驻 shadow <style>（同 code/color-picker 惯例）；dir 变化不增删规则
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
-    expect(css).toMatch(/:host\s*\{[^}]*direction:\s*ltr/)
+    // 条码图形/HRI 方向锁在内容元素 svg 上（与 code 的 .line-code / color-picker 的 .hex-text 同惯例）
+    expect(css).toMatch(/svg\s*\{[^}]*direction:\s*ltr/)
+    // :host 不得复写 direction——否则 ar 等 RTL 语言的空态/错误占位被强制 LTR，基方向错误
+    expect(css).not.toMatch(/:host\s*\{[^}]*direction:\s*ltr/)
+    // 宿主盒仍于外层 bidi 上下文中隔离
     expect(css).toMatch(/:host\s*\{[^}]*unicode-bidi:\s*isolate/)
     document.documentElement.removeAttribute('dir')
   })

@@ -7,9 +7,9 @@ const STYLE = `
   font-family: inherit;
   color: var(--oas-color-text-primary);
   line-height: 1;
-  /* 条码是有方向性的图形：HRI 文字与条序恒 LTR（isolate 隔离宿主 dir=rtl 继承，
-     否则 RTL 上下文里 HRI 中性字符——连字符/空格/符号——会视觉错位）。同 code/color-picker 惯例 */
-  direction: ltr;
+  /* 宿主盒于外层 bidi 上下文中隔离。注意 direction 不复写在 :host：
+     条码内容（条序 + HRI 中性字符）的方向锁在 .barcode svg 上（与 code 的 .line-code /
+     color-picker 的 .hex-text 同惯例）；空态/错误占位保持宿主 dir，ar 等 RTL 语言文案基方向才正确 */
   unicode-bidi: isolate;
 }
 :host([hidden]) {
@@ -22,6 +22,10 @@ const STYLE = `
 }
 svg {
   display: block;
+  /* 条码是有方向性的图形：HRI 文字与条序恒 LTR（isolate 隔离宿主 dir=rtl 继承，
+     否则 RTL 上下文里 HRI 中性字符——连字符/空格/符号——会视觉错位） */
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 [hidden] {
   display: none !important;

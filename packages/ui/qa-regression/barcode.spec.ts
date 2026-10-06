@@ -215,3 +215,35 @@ test('barcode：dir=rtl 下条码不镜像（条形 path 与 HRI 文字锚点与
   expect(r.rtlSnap.texts, 'RTL 下 HRI 文字锚点不变').toBe(r.ltrSnap.texts)
   expect(r.ltrSnap.texts, '样例含 CODE39 中性字符（连字符）与分段').toContain('@')
 })
+
+// RTL 隔离范围回归：方向锁在条码内容（svg）上，宿主不复写 direction——
+// 否则 ar 等 RTL 语言的空态/错误占位被强制 LTR，基方向错误（文案视觉顺序反转）。
+test('barcode：dir=rtl 下条码 svg 锁 ltr，宿主与空态占位随文档方向（RTL 语言文案基方向正确）', async ({ page }) => {
+  await page.goto('/components/barcode.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-barcode')
+
+  const r = await page.evaluate(async () => {
+    const make = async (attrs: Record<string, string>): Promise<HTMLElement> => {
+      const el = document.createElement('oas-barcode')
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      document.body.append(el)
+      await customElements.whenDefined('oas-barcode')
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+      return el
+    }
+    document.documentElement.setAttribute('dir', 'rtl')
+    const withValue = await make({ value: 'ASSET-0093', format: 'code39' })
+    const svgDir = getComputedStyle(withValue.shadowRoot!.querySelector('svg')!).direction
+    withValue.remove()
+    const empty = await make({})
+    const emptyDir = getComputedStyle(empty.shadowRoot!.querySelector('[part="empty"]')!).direction
+    const hostDir = getComputedStyle(empty).direction
+    empty.remove()
+    document.documentElement.removeAttribute('dir')
+    return { svgDir, emptyDir, hostDir }
+  })
+
+  expect(r.svgDir, '条码内容（svg）方向锁 ltr，HRI 不随宿主翻转').toBe('ltr')
+  expect(r.hostDir, '宿主继承文档 RTL（未复写 direction）').toBe('rtl')
+  expect(r.emptyDir, '空态占位随宿主方向——RTL 语言文案基方向正确').toBe('rtl')
+})
