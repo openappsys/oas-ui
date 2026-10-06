@@ -3,7 +3,7 @@
 > 半透明 surface + backdrop 模糊 + 高光折光边的材质层。机制与边界见[主题与自定义](/guide/theming#液态玻璃-glass-css)。
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 const theme = ref('light')
 const open = ref(false)
 const msg = ref(null)
@@ -11,6 +11,10 @@ onMounted(async () => {
   document.documentElement.setAttribute('data-glass', '')
   const { message } = await import('@oas-ui/ui')
   msg.value = message
+})
+onBeforeUnmount(() => {
+  // SPA 泄漏防护：画廊激活的 data-glass 不得带出本页（否则全站页面都变玻璃）
+  document.documentElement.removeAttribute('data-glass')
 })
 </script>
 

@@ -3,7 +3,7 @@
 > Translucent surfaces + backdrop blur + specular ring as a material layer. Mechanism & boundaries: [Theming](/en/guide/theming#liquid-glass-glass-css).
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 const theme = ref('light')
 const open = ref(false)
 const msg = ref(null)
@@ -11,6 +11,10 @@ onMounted(async () => {
   document.documentElement.setAttribute('data-glass', '')
   const { message } = await import('@oas-ui/ui')
   msg.value = message
+})
+onBeforeUnmount(() => {
+  // SPA 泄漏防护：画廊激活的 data-glass 不得带出本页（否则全站页面都变玻璃）
+  document.documentElement.removeAttribute('data-glass')
 })
 </script>
 

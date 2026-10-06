@@ -254,9 +254,12 @@ const STYLE = `
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-  /* 滚动边缘指示（CSS-only scroll shadow）：上下边缘渐隐阴影提示该方向还有内容——
-     上下 bg 覆盖层随内容滚动、到边缘时遮住阴影；径向阴影固定在视口边缘（background-attachment 分层） */
   background-color: var(--oas-color-bg);
+  /* 滚动边缘指示（CSS-only scroll shadow）仅在真可滚时启用（data-scrollable）：覆盖层与
+     base 同 token——默认主题下叠色隐形，玻璃材质下 base+cover 叠出更深色带（实抓白条纹） */
+  background-image: none;
+}
+.body[data-scrollable] {
   background-image:
     linear-gradient(var(--oas-color-bg) 30%, transparent),
     linear-gradient(transparent, var(--oas-color-bg) 70%),
@@ -643,6 +646,7 @@ export class OASModal extends OASElement {
 
     // 命名插槽内容增减（slot 覆盖属性文案）时重刷双通道
     this.titleSlot?.addEventListener('slotchange', () => this.update())
+    this.shadow.querySelector('.body slot')?.addEventListener('slotchange', () => this.update())
     this.footerSlot?.addEventListener('slotchange', () => this.update())
     this.descriptionSlot?.addEventListener('slotchange', () => this.update())
     this.onCleanup(() => {
@@ -1208,6 +1212,9 @@ export class OASModal extends OASElement {
     const okBtn = this.okBtn
     const cancelBtn = this.cancelBtn
     const loading = this.hasAttr('loading')
+    // 滚动边缘指示仅真可滚时启用（见 .body 样式注释）
+    const bodyEl = this.shadow.querySelector('.body')
+    bodyEl?.toggleAttribute('data-scrollable', bodyEl.scrollHeight > bodyEl.clientHeight + 1)
 
     // P3 可见性数据态先行：data-open/data-closed 驱动 CSS 过渡；mask 显隐（P8）同步
     // （先落数据态再走边沿副作用，打开聚焦时元素已处于可见态可被真实浏览器聚焦）

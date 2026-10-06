@@ -48,11 +48,22 @@ describe('OASModal', () => {
     const el = mount({ visible: '' })
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     const bodyRule = css.match(/\.body\s*\{[^}]*\}/)?.[0] ?? ''
-    expect(bodyRule, 'body 应有 bg 覆盖层（local attachment，边缘遮住阴影）').toContain(
+    // 滚动阴影双层仅在 data-scrollable 时启用（玻璃下 base+cover 叠色出带的根因修复）
+    expect(bodyRule).toContain('background-color: var(--oas-color-bg)')
+    expect(bodyRule).toContain('background-image: none')
+    const scRule = css.match(/\.body\[data-scrollable\]\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(scRule, '可滚时才有 bg 覆盖层（local attachment，边缘遮住阴影）').toContain(
       'background-attachment: local, local, scroll, scroll',
     )
-    expect(bodyRule, 'body 应有上下径向阴影（scroll attachment 固定视口边缘）').toContain('radial-gradient')
-    expect(bodyRule).toContain('background-color: var(--oas-color-bg)')
+    expect(scRule, '可滚时才有上下径向阴影（scroll attachment 固定视口边缘）').toContain('radial-gradient')
+    // 门控属性：默认（内容不溢出）不带 data-scrollable；溢出时带上
+    //（happy-dom 无布局 scrollHeight 恒 0——高度属性覆写驱动判定）
+    const body = el.shadowRoot!.querySelector('.body') as HTMLElement
+    expect(body.hasAttribute('data-scrollable')).toBe(false)
+    Object.defineProperty(body, 'scrollHeight', { value: 3000, configurable: true })
+    Object.defineProperty(body, 'clientHeight', { value: 200, configurable: true })
+    ;(el as unknown as { update: () => void }).update()
+    expect(body.hasAttribute('data-scrollable')).toBe(true)
   })
 
   it('点击确定派发 oas-ok', async () => {
