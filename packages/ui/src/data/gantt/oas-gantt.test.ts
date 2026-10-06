@@ -66,6 +66,19 @@ describe('OASGantt 渲染基础', () => {
     expect(m1.classList.contains('milestone')).toBe(true)
   })
 
+  it('时间轴起始留白小：首个任务贴近左缘（起始留白 1 档；旧值 7 天把任务推到可见区右缘）', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03' }]) })
+    // anchor = 03-02，起始留白 1 天 → 03-01 为第 0 列，任务左缘 = 1 × 36
+    expect(Number.parseFloat(barOf(el, 'a').style.left)).toBe(36)
+  })
+
+  it('行名超长省略号：.row-name .name 具 min-width:0 + ellipsis（flex 子项默认不收缩会硬裁）', () => {
+    const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.row-name \.name \{[^}]*min-width: 0/)
+    expect(css).toMatch(/\.row-name \.name \{[^}]*text-overflow: ellipsis/)
+  })
+
   it('名称列渲染：行名与任务一一对应；aria-label 含名称与起止', () => {
     const el = mount({ tasks: JSON.stringify(BASE_TASKS) })
     const names = nameRows(el).map((r) => r.textContent ?? '')
@@ -202,6 +215,12 @@ describe('OASGantt 刻度六档', () => {
     ).toBe(true)
   })
 
+  it('主刻度标签靠 inline-start 对齐（合并格宽于视口时居中会把标签推出视口）', () => {
+    const el = mount({ tasks: JSON.stringify(one) })
+    const css = shadowOf(el).querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.head-major \.unit \{[^}]*justify-content: flex-start/)
+  })
+
   it('scale 属性切换重渲染并派发 oas-scale-change（首次吸收不派发）', () => {
     const el = mount({ tasks: JSON.stringify(one) })
     const log: string[] = []
@@ -326,6 +345,23 @@ describe('OASGantt 行树（WBS）与折叠', () => {
     shadowOf(el).querySelector<HTMLButtonElement>('.row-name[data-key="p"] .toggle')!.click()
     expect(nameRows(el).length).toBe(2)
     expect(JSON.parse(el.getAttribute('expanded') ?? '[]')).toEqual(['p'])
+  })
+
+  it('parent 指针成环：断环按根渲染（不整图空白）+ console.warn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        tasks: JSON.stringify([
+          { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-04', parent: 'b' },
+          { id: 'b', name: 'B', start: '2026-03-03', end: '2026-03-06', parent: 'a' },
+        ]),
+      })
+      expect(nameRows(el).length).toBe(2)
+      expect(bars(el).length).toBe(2)
+      expect(warn.mock.calls.filter((c) => String(c[0]).includes('成环')).length).toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
   })
 
   it('悬空 parent 按根渲染（console.warn 一次）', () => {
@@ -789,6 +825,18 @@ describe('OASGantt RTL', () => {
     dragSeq(barOf(rtl, 'a'), -72)
     expect(rtl.tasks[0]!.start).toBe('2026-03-04')
   })
+
+  it('RTL：刻度表头单元格镜像（左缘 = canvasW − 区间右缘），末端格贴右缘后落回 0', () => {
+    const tasks = JSON.stringify([{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-06' }])
+    const rtl = mount({ tasks, dir: 'rtl' })
+    const canvasW = Number.parseFloat(shadowOf(rtl).querySelector<HTMLElement>('.inner')!.style.width)
+    const colW = 36
+    const minors = [...shadowOf(rtl).querySelectorAll<HTMLElement>('.head-minor .unit')]
+    // 最后一格覆盖 [canvasW − colW, canvasW]，镜像后左缘 = canvasW − canvasW = 0
+    expect(Number.parseFloat(minors[minors.length - 1]!.style.left)).toBeCloseTo(0, 5)
+    // 第二格镜像后左缘 = canvasW − 2 × colW
+    expect(Number.parseFloat(minors[1]!.style.left)).toBeCloseTo(canvasW - 2 * colW, 5)
+  })
 })
 
 describe('OASGantt 暗色 token 与样式纪律', () => {
@@ -842,6 +890,15 @@ describe('OASGantt tasks 通道与方法', () => {
     expect(el.updateTask('nope', { end: '2026-03-09' })).toBe(false)
     expect(el.updateTask('t1', { start: 'not-a-date' })).toBe(false)
     expect(el.tasks[0]!.start).toBe('2026-03-02')
+  })
+
+  it('updateTask 非法 end 拒绝（不把 task 悄悄降级为 milestone）；显式空串转 milestone', () => {
+    const el = mount({ tasks: JSON.stringify([{ id: 't1', name: 'x', start: '2026-03-02', end: '2026-03-06' }]) })
+    expect(el.updateTask('t1', { end: 'bad' })).toBe(false)
+    expect(el.tasks[0]!.end).toBe('2026-03-06')
+    expect(barOf(el, 't1').classList.contains('milestone')).toBe(false)
+    expect(el.updateTask('t1', { end: '' })).toBe(true)
+    expect(barOf(el, 't1').classList.contains('milestone')).toBe(true)
   })
 
   it('scrollToDate / scrollToToday 可用（滚到目标日期）', () => {

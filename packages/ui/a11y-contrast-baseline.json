@@ -7,7 +7,7 @@
     "below60": 0,
     "ratio": 263,
     "exempt": 630,
-    "skipped": 2688
+    "skipped": 2730
   },
   "topPairs": [],
   "pages": {
@@ -497,7 +497,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 6
+      "skipped": 27
     },
     "gantt.html::dark": {
       "below30": 0,
@@ -505,7 +505,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 6
+      "skipped": 27
     },
     "gradient-text.html": {
       "below30": 0,

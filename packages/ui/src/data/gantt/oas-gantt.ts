@@ -70,6 +70,15 @@ const STYLE = `
   text-overflow: ellipsis;
   color: var(--oas-color-text-primary);
 }
+.row-name .name {
+  /* flex 子项默认 min-width:auto 不收缩，父级 text-overflow 对 flex 项不生效——
+     长任务名会硬裁无省略号；显式 min-width:0 + 自身 ellipsis 才能出「…」 */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .toggle {
   appearance: none;
   border: none;
@@ -130,6 +139,12 @@ const STYLE = `
   white-space: nowrap;
   overflow: hidden;
   box-sizing: border-box;
+}
+.head-major .unit {
+  /* 主刻度合并格可能远宽于视口（如 day 档下 31 天的月格）：标签必须靠 inline-start 对齐，
+     居中会把标签推到视口外——窄容器下整月无可见标签（实测 2026-01 标签落在 x≈1250 处）。 */
+  justify-content: flex-start;
+  padding-inline-start: var(--oas-space-2);
 }
 .head-minor .unit {
   border-inline-start: 1px solid var(--oas-gantt-grid-line-color, var(--oas-color-border));
@@ -461,9 +476,13 @@ interface DragCtx {
 }
 
 const SCALES: GanttScale[] = ['hour', 'day', 'week', 'month', 'quarter', 'year']
-/** 各档列宽（px）与前后留白档数 */
+/** 各档列宽（px） */
 const SCALE_COL: Record<GanttScale, number> = { hour: 44, day: 36, week: 90, month: 110, quarter: 150, year: 130 }
-const SCALE_PAD: Record<GanttScale, number> = { hour: 12, day: 7, week: 2, month: 2, quarter: 1, year: 1 }
+/** 起始留白（档位数）：保持小值——旧值 7 天在窄容器下把首个任务推到可见区右缘、左侧大片空白，
+ *  今日线/里程碑随之滚出视口；起始留白只需留出条缘手柄的呼吸位。 */
+const SCALE_PAD_START: Record<GanttScale, number> = { hour: 1, day: 1, week: 1, month: 1, quarter: 1, year: 1 }
+/** 末端留白（档位数）：给条外标签与依赖出线留余地 */
+const SCALE_PAD_END: Record<GanttScale, number> = { hour: 6, day: 3, week: 1, month: 1, quarter: 1, year: 1 }
 const DAY_MS = 86_400_000
 
 const DEP_TYPES = new Set(['fs', 'ss', 'ff', 'sf'])
@@ -601,6 +620,9 @@ export class OASGantt extends OASElement {
   private canvasW = 0
   private lastScale = ''
   private warnedParents = new Set<string>()
+  /** 自适应列宽（px）：视口可用宽度内铺下整个窗口时收窄至恰好适配；null = 回落各档基准列宽（无布局环境） */
+  private displayColW: number | null = null
+  private resizeObs: ResizeObserver | null = null
   private dragCtx: DragCtx | null = null
   private tbody: HTMLElement | null = null
   private theadEl: HTMLElement | null = null
@@ -640,6 +662,8 @@ export class OASGantt extends OASElement {
   updateTask(id: string, patch: Partial<GanttTask>): boolean {
     const idx = this._tasks.findIndex((t) => t.id === id)
     if (idx < 0) return false
+    // 非法 end（非空串且解析失败）显式拒绝：否则清洗层静默丢弃 end，task 会被悄悄降级成 milestone
+    if (patch.end !== undefined && patch.end !== '' && !parseTaskDate(patch.end)) return false
     const merged = { ...this._tasks[idx]!, ...patch, id }
     const [clean] = sanitizeTasks([merged], (used) => this.allocId(used))
     if (!clean) return false
@@ -736,7 +760,35 @@ export class OASGantt extends OASElement {
   }
 
   private colW(): number {
-    return SCALE_COL[this.scale()]
+    return this.displayColW ?? SCALE_COL[this.scale()]
+  }
+
+  /**
+   * 自适应列宽：窗口单位数 × 基准列宽超过视口可用宽时，收窄列宽让整个窗口恰好铺满（下限基准的 40%，
+   * 防超大跨度被压成亚像素）；可用宽度不可得（happy-dom 等无布局环境）回落基准列宽。
+   * 数据跨度小时任务不再被起始留白推挤到右缘、今日线/里程碑随之可见。
+   */
+  private computeColW(): void {
+    const base = SCALE_COL[this.scale()]
+    const avail = this.tbody?.clientWidth ?? 0
+    if (avail <= 0 || this.units.length === 0) {
+      this.displayColW = null
+      return
+    }
+    const fit = avail / this.units.length
+    this.displayColW = Math.min(base, Math.max(base * 0.4, fit))
+  }
+
+  /** 视口尺寸变化（含首次观测到真实宽）：仅当自适应列宽实际改变时重排，避免无谓重建 */
+  private onViewportResize(): void {
+    if (!this.tbody) return
+    const before = this.displayColW
+    this.computeColW()
+    if (this.displayColW === before) return
+    this.canvasW = this.units.length * this.colW()
+    if (this.innerEl) this.innerEl.style.width = `${this.canvasW}px`
+    this.renderHeader()
+    this.renderWindow()
   }
 
   private rowHeight(): number {
@@ -840,10 +892,11 @@ export class OASGantt extends OASElement {
         anchor = new Date(min.getFullYear(), 0, 1)
         break
     }
-    const pad = SCALE_PAD[scale]
+    const padStart = SCALE_PAD_START[scale]
+    const padEnd = SCALE_PAD_END[scale]
     const locale = this.effectiveLocale()
-    let cursor = OASGantt.addUnits(anchor, scale, -pad)
-    const endBound = OASGantt.addUnits(new Date(maxMs), scale, pad + 1).getTime()
+    let cursor = OASGantt.addUnits(anchor, scale, -padStart)
+    const endBound = OASGantt.addUnits(new Date(maxMs), scale, padEnd + 1).getTime()
     const units: TimeUnit[] = []
     let guard = 0
     while (cursor.getTime() < endBound && guard++ < 5000) {
@@ -909,6 +962,11 @@ export class OASGantt extends OASElement {
     return isRtl(this) ? this.canvasW - x : x
   }
 
+  /** 时间区间的左缘 x → 物理 left（RTL 需再减宽度：镜像的是区间右缘，非左缘） */
+  private mirrorCellLeft(xStart: number, width: number): number {
+    return isRtl(this) ? this.canvasW - xStart - width : xStart
+  }
+
   // ===== 渲染模型（行树 + 摘要聚合）=====
 
   private buildRows(): void {
@@ -917,8 +975,32 @@ export class OASGantt extends OASElement {
     for (const t of tasks) byId.set(t.id, t)
     const childMap = new Map<string, string[]>()
     const roots: TG[] = []
+    // 父指针成环（A.parent=B、B.parent=A）：环内任务全部互为子级、无根可达 → 整图空白。
+    // 全局三色标记（未访问/在途/已定）线性定环：沿 parent 上溯撞到「在途」节点即环，把该节点按根处理
+    // （不再挂到父下）并告警一次。已定节点后续直接复用，整体 O(n)，不因深链退化。
+    const color = new Map<string, 1 | 2>()
+    const broken = new Set<string>()
     for (const t of tasks) {
-      if (t.parent && byId.has(t.parent)) {
+      if (color.has(t.id)) continue
+      const stack: TG[] = []
+      let cur: TG | undefined = t
+      while (cur && cur.parent && byId.has(cur.parent) && !color.has(cur.id)) {
+        color.set(cur.id, 1)
+        stack.push(cur)
+        cur = byId.get(cur.parent)
+      }
+      if (cur && cur.parent && byId.has(cur.parent) && color.get(cur.id) === 1) {
+        broken.add(cur.id)
+        const key = `cycle:${cur.id}`
+        if (!this.warnedParents.has(key)) {
+          this.warnedParents.add(key)
+          console.warn(`[oas-gantt] parent 指针成环，任务 "${cur.id}" 已断环按根节点渲染`)
+        }
+      }
+      for (const n of stack) color.set(n.id, 2)
+    }
+    for (const t of tasks) {
+      if (t.parent && byId.has(t.parent) && !broken.has(t.id)) {
         const list = childMap.get(t.parent!) ?? []
         list.push(t.id)
         childMap.set(t.parent!, list)
@@ -1049,8 +1131,16 @@ export class OASGantt extends OASElement {
     this.tooltipEl = this.shadow.querySelector('.tooltip')
     this.emptyEl = this.shadow.querySelector('.empty')
     this.tbody?.addEventListener('scroll', this.onScroll, { passive: true })
+    // 首次观测到真实视口宽后自适应列宽（custom element 首连时 clientWidth 可能仍为 0）
+    if (typeof ResizeObserver !== 'undefined' && this.tbody) {
+      this.resizeObs?.disconnect()
+      this.resizeObs = new ResizeObserver(() => this.onViewportResize())
+      this.resizeObs.observe(this.tbody)
+    }
     this.onCleanup(() => {
       this.tbody?.removeEventListener('scroll', this.onScroll)
+      this.resizeObs?.disconnect()
+      this.resizeObs = null
       this.dragCtx = null
     })
   }
@@ -1119,6 +1209,8 @@ export class OASGantt extends OASElement {
       this.emit('scale-change', { scale } satisfies GanttScaleChangeDetail)
     }
     this.buildUnits()
+    this.computeColW()
+    this.canvasW = this.units.length * this.colW()
     if (this.innerEl) {
       this.innerEl.style.width = `${this.canvasW}px`
       this.innerEl.style.height = `${this.rows.length * this.rowHeight()}px`
@@ -1139,8 +1231,8 @@ export class OASGantt extends OASElement {
       }
     }
     if (this.tbody) this.tbody.style.visibility = isEmpty ? 'hidden' : ''
-    const sideHead = this.shadow.querySelector('.side-head')
-    if (sideHead) sideHead.setAttribute('aria-label', this.t('gantt.listLabel'))
+    const sideLabel = this.shadow.querySelector('.side-rows')
+    if (sideLabel) sideLabel.setAttribute('aria-label', this.t('gantt.listLabel'))
     this.renderHeader()
     this.renderWindow()
     this.renderToday()
@@ -1163,7 +1255,7 @@ export class OASGantt extends OASElement {
       const cell = document.createElement('div')
       cell.className = 'unit'
       cell.textContent = this.units[i]!.major
-      cell.style.left = `${this.mirrorX(i * colW)}px`
+      cell.style.left = `${this.mirrorCellLeft(i * colW, (j - i + 1) * colW)}px`
       cell.style.width = `${(j - i + 1) * colW}px`
       frag1.appendChild(cell)
       i = j + 1
@@ -1172,7 +1264,7 @@ export class OASGantt extends OASElement {
       const cell = document.createElement('div')
       cell.className = 'unit'
       cell.textContent = this.units[k]!.minor
-      cell.style.left = `${this.mirrorX(k * colW)}px`
+      cell.style.left = `${this.mirrorCellLeft(k * colW, colW)}px`
       cell.style.width = `${colW}px`
       frag2.appendChild(cell)
     }
@@ -1220,6 +1312,7 @@ export class OASGantt extends OASElement {
       el.setAttribute('part', 'row-name')
       if (row.hasChildren) {
         const expandedNow = expanded.has(row.task.id)
+        el.setAttribute('aria-expanded', String(expandedNow))
         const toggle = document.createElement('button')
         toggle.type = 'button'
         toggle.className = 'toggle'
@@ -1688,7 +1781,7 @@ export class OASGantt extends OASElement {
       if (!isHoliday && !isWeekend) continue
       const cell = document.createElement('div')
       cell.className = `cell${isHoliday ? ' holiday' : ' weekend'}`
-      cell.style.left = `${this.mirrorX(this.xOf(u.startMs))}px`
+      cell.style.left = `${this.mirrorCellLeft(this.xOf(u.startMs), colW)}px`
       cell.style.width = `${colW}px`
       cell.style.height = `${totalH}px`
       frag.appendChild(cell)

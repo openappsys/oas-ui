@@ -90,3 +90,64 @@ test('gantt 浏览器回归：渲染 + 刻度切换 + 折叠 + 拖拽改期 + co
 
   expect(errors).toEqual([])
 })
+
+// 窗口自适应与可见性回归：默认窗口贴合数据（首任务不被起始留白推到右缘）、今日线/里程碑在视口内、
+// 行名超长出省略号、跨月主刻度标签靠左可见（旧缺陷：合并格居中把标签推出视口）
+test('gantt 窗口自适应/可见性回归：首任务贴近左缘 + 今日线/里程碑在视口 + 行名 ellipsis + 主刻度标签可见', async ({
+  page,
+}) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#gantt-basic', { timeout: 15000 })
+  await page.waitForTimeout(500)
+
+  const basic = page.locator('#gantt-basic')
+  await basic.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await page.waitForTimeout(200)
+
+  // 首任务左缘落在时间轴左半区（旧缺陷：起始留白 7 天把条推到 252px 接近右缘）
+  const tbodyBox = (await basic.locator('.tbody').boundingBox())!
+  const t1Box = (await basic.locator('.bars .bar[data-id="t1"]').boundingBox())!
+  expect(t1Box.x).toBeGreaterThanOrEqual(tbodyBox.x)
+  expect(t1Box.x).toBeLessThan(tbodyBox.x + tbodyBox.width / 2)
+
+  // 主刻度标签靠 inline-start：文本左缘贴近合并格左缘（居中会把宽月格的标签推到格中部）
+  const majorAlign = await basic
+    .locator('.head-major .unit')
+    .first()
+    .evaluate((el) => {
+      const cell = el.getBoundingClientRect()
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      const text = range.getBoundingClientRect()
+      return { delta: text.left - cell.left, width: cell.width }
+    })
+  expect(majorAlign.delta).toBeLessThan(30)
+
+  // 今日线在视口内（#gantt-today 数据动态覆盖今天；旧缺陷：窗口起点留白使今日线滚出视口）
+  const todayDemo = page.locator('#gantt-today')
+  await todayDemo.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await page.waitForTimeout(200)
+  await expect(todayDemo.locator('.today-line:not([hidden])')).toBeInViewport()
+
+  // 里程碑菱形在视口内（拖拽 demo 的 dg2；旧缺陷：滚出视口 → 整行无菱形）
+  const drag = page.locator('#gantt-drag')
+  await drag.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await page.waitForTimeout(200)
+  await expect(drag.locator('.bars .bar[data-id="dg2"].milestone')).toBeInViewport()
+  await expect(drag.locator('.bars .bar[data-id="dg2"] .dia')).toBeVisible()
+
+  // readonly 整图只读 demo：任务条在视口内（旧缺陷：条被推到右缘外看似空白）
+  const readonly = page.locator('oas-gantt[readonly]')
+  await readonly.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await page.waitForTimeout(200)
+  await expect(readonly.locator('.bars .bar[data-id="r1"]')).toBeInViewport()
+
+  // 行名超长省略号：.name 收缩到行宽内且 ellipsis（旧缺陷：flex 子项不收缩 → 硬裁无省略号）
+  const nameStyle = await drag.locator('.row-name[data-key="dg1"] .name').evaluate((el) => {
+    const cs = getComputedStyle(el)
+    return { textOverflow: cs.textOverflow, overflow: cs.overflow, clientW: el.clientWidth, scrollW: el.scrollWidth }
+  })
+  expect(nameStyle.textOverflow).toBe('ellipsis')
+  expect(nameStyle.overflow).toBe('hidden')
+  expect(nameStyle.scrollW).toBeGreaterThan(nameStyle.clientW)
+})
