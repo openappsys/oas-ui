@@ -833,7 +833,7 @@ export class OASInput extends OASFormElement {
     const next = v == null ? '' : String(v)
     this.setAttribute('value', next)
     this.lastAttrValue = null
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   private inputEl: HTMLInputElement | null = null

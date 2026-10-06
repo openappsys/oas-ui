@@ -141,7 +141,7 @@ export class OASSwatch extends OASElement {
    */
   set value(v: string) {
     this.setAttribute('color', v == null ? '' : String(v))
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板 */

@@ -314,7 +314,7 @@ export class OASAutoComplete extends OASFormElement {
     const next = v == null ? '' : String(v)
     this.setAttribute('value', next)
     this.query = ''
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   private input: HTMLInputElement | null = null

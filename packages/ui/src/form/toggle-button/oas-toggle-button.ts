@@ -185,7 +185,7 @@ export class OASToggleButton extends OASElement {
    */
   set value(v: string) {
     this.setAttribute('value', v == null ? '' : String(v))
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */

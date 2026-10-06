@@ -66,7 +66,7 @@ export class OASSwatchGroup extends OASElement {
       const s = Array.isArray(v) ? (v[0] ?? '') : v == null ? '' : String(v)
       this.setAttribute('value', s)
     }
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板 */

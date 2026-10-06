@@ -1352,7 +1352,7 @@ export class OASTimePicker extends OASFormElement {
       if (next === '') this.removeAttribute('value')
       else this.setAttribute('value', next)
     }
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   // ---- 原生表单集成（form-associated） ----

@@ -627,7 +627,7 @@ export class OASSelect extends OASFormElement {
       const s = Array.isArray(v) ? (v[0] ?? '') : v == null ? '' : String(v)
       this.setAttribute('value', s)
     }
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   /** 初始选中基线（form.reset 恢复目标）：初始渲染/受控写入跟随 value 属性刷新（多选为数组快照） */

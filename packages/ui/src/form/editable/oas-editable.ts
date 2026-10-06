@@ -312,7 +312,7 @@ export class OASEditable extends OASElement {
     const next = v == null ? '' : String(v)
     this.setAttribute('value', next)
     if (this.fieldEl) this.fieldEl.value = next
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   private displayEl: HTMLElement | null = null

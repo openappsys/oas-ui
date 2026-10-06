@@ -308,7 +308,7 @@ export class OASToggleGroup extends OASElement {
       const s = Array.isArray(v) ? (v[0] ?? '') : v == null ? '' : String(v)
       this.setAttribute('value', s)
     }
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   private itemsList: ToggleItem[] = []

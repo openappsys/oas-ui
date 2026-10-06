@@ -308,7 +308,7 @@ export class OASMentions extends OASFormElement {
     const next = v == null ? '' : String(v)
     this.setAttribute('value', next)
     this.draft = false
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   private ta: HTMLTextAreaElement | null = null

@@ -394,7 +394,7 @@ export class OASTransfer extends OASElement {
       }
     }
     this.setAttribute('value', JSON.stringify(arr))
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   private _data: TransferItem[] = []

@@ -554,7 +554,7 @@ export class OASSlider extends OASElement {
   set value(v: number | number[]) {
     const attr = Array.isArray(v) ? JSON.stringify(v.map((n) => Number(n))) : String(Number(v) || 0)
     this.setAttribute('value', attr)
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   /** 动态把手（原生 range input）：索引即把手序号，N 由 value 数组长度/range 决定 */

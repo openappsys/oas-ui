@@ -817,7 +817,7 @@ export class OASTreeSelect extends OASFormElement {
     const values = Array.isArray(v) ? v.map((x) => String(x)) : v == null || v === '' ? [] : [String(v)]
     if (values.length === 0) this.removeAttribute('value')
     else this.setAttribute('value', this.serializeValues(values))
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   /**

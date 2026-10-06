@@ -10,7 +10,7 @@
 
 ### 修复
 
-- **oas-color-picker 未连接写 `value` 崩溃（React 19 宿主整树中断）**：React 19 在元素已升级、未连接时设置 property，`set value()` 直调 `update()` 读到未渲染内部件（`syncControls` 的 `.r/.g/.b` 非空断言）抛 TypeError。修复：setter 加 `hasRendered` 守卫（属性写入保留，首渲染自然读新值，与基类 `attributeChangedCallback` 早退同语义）。同步落地 29 组件 `value` setter 未连接守卫普查套件（实证仅 color-picker 有此缺陷，全量回归锁）+ 真实浏览器 e2e 固化。
+- **oas-color-picker 未连接写 `value` 崩溃（React 19 宿主整树中断）**：React 19 在元素已升级、未连接时设置 property，`set value()` 直调 `update()` 读到未渲染内部件（`syncControls` 的 `.r/.g/.b` 非空断言）抛 TypeError。修复：setter 加 `hasRendered` 守卫（属性写入保留，首渲染自然读新值，与基类 `attributeChangedCallback` 早退同语义）。同步落地 29 组件 `value` setter 未连接守卫普查套件 + 真实浏览器 e2e 固化；并把同款守卫**统一铺到全部 19 个直调 `update()` 的 value setter**（input/textarea/select/slider/switch 系/date-picker/time-picker/rate/radio/segmented/transfer/tree-select 等——此前「恰好不崩」靠各组件 update() 路径容错，现改为构造保证的「廉价 setter」约定：连接安全不依赖实现细节）。
 - **high-contrast × class 式暗色（`html.dark`）下玻璃材质泄漏**：`.dark` 选择器补 `:not([data-theme="high-contrast"])`——HC 可访问性强档下 blur/ring/折射全部让位（此前仅 `[data-theme='dark']` 路径排除）。
 
 ### 文档

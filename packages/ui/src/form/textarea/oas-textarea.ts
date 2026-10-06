@@ -208,7 +208,7 @@ export class OASTextarea extends OASFormElement {
   set value(v: string) {
     const next = v == null ? '' : String(v)
     this.setAttribute('value', next)
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   private ta: HTMLTextAreaElement | null = null

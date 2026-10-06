@@ -2618,7 +2618,7 @@ export class OASDatePicker extends OASFormElement {
       if (next === '') this.removeAttribute('value')
       else this.setAttribute('value', next)
     }
-    this.update()
+    if (this.hasRendered) this.update()
     // 展开态重锚（resetFormValue 同款路径）：面板内部 range/多选/视图按新值重建
     if (this.openState) this.bootPanel(false)
   }

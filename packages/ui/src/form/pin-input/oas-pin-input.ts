@@ -239,7 +239,7 @@ export class OASPinInput extends OASElement {
    */
   set value(v: string) {
     this.setAttribute('value', v == null ? '' : String(v))
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   private container: HTMLElement | null = null

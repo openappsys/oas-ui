@@ -182,7 +182,7 @@ export class OASSegmented extends OASElement {
    */
   set value(v: string) {
     this.setAttribute('value', v == null ? '' : String(v))
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   private optionsList: SegmentedOption[] = []

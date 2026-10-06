@@ -377,7 +377,7 @@ export class OASRadio extends OASFormElement {
    */
   set value(v: string | null) {
     this.setAttribute('value', v == null ? '' : String(v))
-    this.update()
+    if (this.hasRendered) this.update()
   }
 
   /** 表单值快照：选中才提交（value 属性为提交值，缺省 'on' 与原生一致）；未选中提交 null */
