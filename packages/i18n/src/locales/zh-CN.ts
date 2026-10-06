@@ -347,6 +347,13 @@ export const zhCN = {
   'qrcode.refresh': '刷新',
   'qrcode.loading': '加载中…',
   'qrcode.scanned': '已扫描',
+  // barcode（条码）
+  'barcode.image': '条码',
+  'barcode.empty': '暂无内容',
+  'barcode.invalid': '内容不符合所选码制的编码规则',
+  'barcode.invalidCharset': '包含码制不允许的字符',
+  'barcode.invalidLength': '位数不符合码制要求',
+  'barcode.invalidChecksum': '校验位不正确',
   // command（命令面板）
   'command.placeholder': '搜索命令…',
   'command.empty': '无匹配命令',

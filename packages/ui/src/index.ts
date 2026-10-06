@@ -322,6 +322,7 @@ import './data/avatar-group/index.js'
 import './data/image/index.js'
 import './data/image-group/index.js'
 import './data/qrcode/index.js'
+import './data/barcode/index.js'
 import './data/watermark/index.js'
 import './data/collapse/index.js'
 import './data/descriptions/index.js'
@@ -365,6 +366,17 @@ export {
   type QrMode,
   type QrErrorCorrection,
 } from './data/qrcode/index.js'
+export { OASBarcode } from './data/barcode/index.js'
+export {
+  encodeBarcode,
+  gs1CheckDigit,
+  BarcodeEncodeError,
+  BARCODE_FORMATS,
+  type BarcodeFormat,
+  type InvalidReason,
+  type EncodeResult,
+  type TextSegment,
+} from './data/barcode/index.js'
 export { OASWatermark, textTileDataUri } from './data/watermark/index.js'
 export { OASCollapse, OASCollapseItem } from './data/collapse/index.js'
 export { OASDescriptions, OASDescriptionsItem } from './data/descriptions/index.js'

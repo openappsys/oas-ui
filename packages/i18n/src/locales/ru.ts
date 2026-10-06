@@ -347,6 +347,13 @@ export const ru: LocaleMessages = {
   'qrcode.refresh': 'Обновить',
   'qrcode.loading': 'Загрузка…',
   'qrcode.scanned': 'Отсканировано',
+  // barcode (штрих-код)
+  'barcode.image': 'Штрих-код',
+  'barcode.empty': 'Нет содержимого',
+  'barcode.invalid': 'Содержимое не соответствует правилам выбранной символики',
+  'barcode.invalidCharset': 'Содержит символы, недопустимые для этой символики',
+  'barcode.invalidLength': 'Количество цифр не соответствует требованиям символики',
+  'barcode.invalidChecksum': 'Неверная контрольная цифра',
   // command (палитра команд)
   'command.placeholder': 'Поиск команд…',
   'command.empty': 'Нет подходящих команд',

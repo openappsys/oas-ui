@@ -347,6 +347,13 @@ export const de: LocaleMessages = {
   'qrcode.refresh': 'Aktualisieren',
   'qrcode.loading': 'Wird geladen…',
   'qrcode.scanned': 'Gescannt',
+  // barcode (Strichcode)
+  'barcode.image': 'Strichcode',
+  'barcode.empty': 'Kein Inhalt',
+  'barcode.invalid': 'Inhalt entspricht nicht den Regeln des gewählten Symbologietyps',
+  'barcode.invalidCharset': 'Enthält für die Symbologie nicht erlaubte Zeichen',
+  'barcode.invalidLength': 'Ziffernanzahl entspricht nicht den Anforderungen der Symbologie',
+  'barcode.invalidChecksum': 'Prüfziffer ist ungültig',
   // command (Befehlspalette)
   'command.placeholder': 'Befehle suchen…',
   'command.empty': 'Keine passenden Befehle',

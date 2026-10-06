@@ -347,6 +347,13 @@ export const ar: LocaleMessages = {
   'qrcode.refresh': 'تحديث',
   'qrcode.loading': 'جارٍ التحميل…',
   'qrcode.scanned': 'تم المسح',
+  // barcode (باركود)
+  'barcode.image': 'باركود',
+  'barcode.empty': 'لا يوجد محتوى',
+  'barcode.invalid': 'المحتوى لا يطابق قواعد نوع الرمز المحدد',
+  'barcode.invalidCharset': 'يحتوي على أحرف غير مسموح بها في نوع الرمز',
+  'barcode.invalidLength': 'عدد الأرقام لا يطابق متطلبات نوع الرمز',
+  'barcode.invalidChecksum': 'رقم التحقق غير صحيح',
   // command (لوحة الأوامر)
   'command.placeholder': 'ابحث عن الأوامر…',
   'command.empty': 'لا توجد أوامر مطابقة',

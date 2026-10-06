@@ -283,6 +283,13 @@ export const en: LocaleMessages = {
   'qrcode.refresh': 'Refresh',
   'qrcode.loading': 'Loading…',
   'qrcode.scanned': 'Scanned',
+  // barcode
+  'barcode.image': 'Barcode',
+  'barcode.empty': 'No content',
+  'barcode.invalid': 'Content does not match the selected symbology rules',
+  'barcode.invalidCharset': 'Contains characters not allowed by the symbology',
+  'barcode.invalidLength': 'Digit count does not match the symbology',
+  'barcode.invalidChecksum': 'Invalid check digit',
   'command.placeholder': 'Search commands…',
   'command.empty': 'No matching commands',
   'command.search': 'Search commands',

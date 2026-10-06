@@ -347,6 +347,13 @@ export const ja: LocaleMessages = {
   'qrcode.refresh': '更新',
   'qrcode.loading': '読み込み中…',
   'qrcode.scanned': 'スキャン済み',
+  // barcode（バーコード）
+  'barcode.image': 'バーコード',
+  'barcode.empty': '内容なし',
+  'barcode.invalid': '内容が選択したコード体系の規則に適合していません',
+  'barcode.invalidCharset': 'コード体系で許可されていない文字が含まれています',
+  'barcode.invalidLength': '桁数がコード体系の要件と一致しません',
+  'barcode.invalidChecksum': 'チェックデジットが正しくありません',
   // command（コマンドパレット）
   'command.placeholder': 'コマンドを検索…',
   'command.empty': '一致するコマンドなし',

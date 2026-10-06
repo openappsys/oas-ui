@@ -347,6 +347,13 @@ export const ko: LocaleMessages = {
   'qrcode.refresh': '새로고침',
   'qrcode.loading': '불러오는 중…',
   'qrcode.scanned': '스캔됨',
+  // barcode（바코드）
+  'barcode.image': '바코드',
+  'barcode.empty': '내용 없음',
+  'barcode.invalid': '내용이 선택한 코드 체계의 규칙에 맞지 않습니다',
+  'barcode.invalidCharset': '코드 체계에서 허용되지 않는 문자가 포함되어 있습니다',
+  'barcode.invalidLength': '자릿수가 코드 체계의 요구 사항과 일치하지 않습니다',
+  'barcode.invalidChecksum': '체크 디지트가 올바르지 않습니다',
   // command（명령 팔레트）
   'command.placeholder': '명령어 검색…',
   'command.empty': '일치하는 명령어 없음',

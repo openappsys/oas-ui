@@ -347,6 +347,13 @@ export const pt: LocaleMessages = {
   'qrcode.refresh': 'Atualizar',
   'qrcode.loading': 'Carregando…',
   'qrcode.scanned': 'Escaneado',
+  // barcode (código de barras)
+  'barcode.image': 'Código de barras',
+  'barcode.empty': 'Sem conteúdo',
+  'barcode.invalid': 'O conteúdo não segue as regras da simbologia selecionada',
+  'barcode.invalidCharset': 'Contém caracteres não permitidos pela simbologia',
+  'barcode.invalidLength': 'O número de dígitos não corresponde à simbologia',
+  'barcode.invalidChecksum': 'Dígito verificador inválido',
   // command (paleta de comandos)
   'command.placeholder': 'Pesquisar comandos…',
   'command.empty': 'Sem comandos correspondentes',
