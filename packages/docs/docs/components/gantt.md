@@ -9,8 +9,9 @@
   <div id="gantt-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-- 父任务渲染**摘要条**（时间 = 子任务并集、进度 = 子任务工期加权平均），行首折叠钮收起/展开子行，展开集合写回 `expanded` 属性（JSON 数组）并派发 `oas-expand-change`；
-- 无 `end` 的任务渲染为**里程碑**（菱形）；`dependencies` 声明依赖（`type` 缺省 `fs`，支持 `fs`/`ss`/`ff`/`sf` 四型），SVG 单画布绘制折线 + 箭头；
+- 父任务渲染**摘要条**（时间 = 子任务并集、进度 = 子任务工期加权平均），行首折叠钮收起/展开子行，展开集合写回 `expanded` 属性（JSON 数组）并派发 `oas-expand-change`；折叠后子行连同其依赖连线一并隐藏（连线随行可见性走，不穿到摘要条）；
+- **里程碑**渲染为菱形：`type: "milestone"` 显式声明优先（即使携带 `end` 也按里程碑渲染，`end` 忽略并 `console.warn` 提示数据矛盾一次），无 `end` 亦推导为里程碑；`start` 晚于 `end`（日期颠倒）在清洗层自动交换并 `console.warn` 一次（不渲染 2px 假条）；
+- `dependencies` 声明依赖（`type` 缺省 `fs`，支持 `fs`/`ss`/`ff`/`sf` 四型），SVG 单画布绘制折线 + 箭头；
 - 悬停任务条出 tooltip（名称 + 起止 + 进度）；`template[slot="tooltip"]` 可覆盖内容（`[data-task-name]` / `[data-task-range]` / `[data-task-progress]` 绑定点）。
 
 ## 刻度六档（scale）
@@ -192,7 +193,7 @@ onMounted(async () => {
 | `scale` | 时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day | `string` | — |
 | `show-today` | 今日线（默认开；false 关闭） | `string` | — |
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
-| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }]——扁平 parent 指针为主，嵌套 children 自动拍平；无 end = 里程碑 | `GanttTask[]` | `[]` |
+| `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
 | `weekends` | 周末列高亮（默认开；day/hour 档生效；false 关闭） | `string` | — |
 
 #### Property（仅 JS property，不反射 attribute）

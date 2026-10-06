@@ -124,7 +124,7 @@
     },
     {
       "name": "oas-task-change",
-      "detail": "{ id, task: this.taskSnapshot(this._tasks.find((t) => t.id === id)!), oldStart: this.fmtIso(oldStartMs, datetime), oldEnd: task.end ? this.fmtEnd(oldEndMs, datetime) : start, start, end: endStr, } satisfies GanttTaskChangeDetail"
+      "detail": "{ id, task: this.taskSnapshot(this._tasks.find((t) => t.id === id)!), oldStart: this.fmtIso(oldStartMs, datetime), oldEnd: milestone ? start : this.fmtEnd(oldEndMs, datetime), start, end: endStr, } satisfies GanttTaskChangeDetail"
     },
     {
       "name": "oas-progress-change",

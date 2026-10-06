@@ -9,8 +9,9 @@ Project-scheduling chart component (data family): a WBS row tree (parent summary
   <div id="gantt-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-- Parent tasks render **summary bars** (time = union of children, progress = duration-weighted average); the row toggle collapses/expands children; the expanded set is written back to the `expanded` attribute (JSON array) with `oas-expand-change`;
-- Tasks without `end` render as **milestones** (diamonds); `dependencies` declare links (`type` defaults to `fs`; `fs`/`ss`/`ff`/`sf` supported) drawn as polylines with arrowheads on a single SVG canvas;
+- Parent tasks render **summary bars** (time = union of children, progress = duration-weighted average); the row toggle collapses/expands children; the expanded set is written back to the `expanded` attribute (JSON array) with `oas-expand-change`; collapsed sub-rows hide together with their dependency links (links follow row visibility, they do not reroute to the summary bar);
+- **Milestones** render as diamonds: an explicit `type: "milestone"` takes precedence (a task renders as a milestone even when it carries `end`; the `end` is ignored with a one-time `console.warn` about the data conflict); tasks without `end` also infer as milestones; a `start` after `end` (reversed dates) is swapped automatically at the sanitize layer with a one-time `console.warn` (no 2px ghost bar);
+- `dependencies` declare links (`type` defaults to `fs`; `fs`/`ss`/`ff`/`sf` supported) drawn as polylines with arrowheads on a single SVG canvas;
 - Hovering a bar shows a tooltip (name + range + progress); `template[slot="tooltip"]` overrides the content (bind points `[data-task-name]` / `[data-task-range]` / `[data-task-progress]`).
 
 ## Time Scales (scale)
@@ -192,7 +193,7 @@ onMounted(async () => {
 | `scale` | Time scale: hour / day (default) / week / month / quarter / year; invalid values fall back to day | `string` | — |
 | `show-today` | Today line (on by default; false to disable) | `string` | — |
 | `snap` | Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision) | `string` | — |
-| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }] — flat parent pointers are the primary contract; nested children are flattened automatically; no end = milestone | `GanttTask[]` | `[]` |
+| `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded? }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored), no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
 | `weekends` | Weekend column highlights (on by default; applies on day/hour tiers; false to disable) | `string` | — |
 
 #### Property (JS property only, not reflected as attribute)
