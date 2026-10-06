@@ -138,6 +138,17 @@ export const en: LocaleMessages = {
   'scheduler.viewAgenda': 'Agenda',
   'scheduler.allDay': 'All day',
   'scheduler.noEvents': 'No events in this range',
+  // gantt（甘特图）
+  'gantt.empty': 'No tasks',
+  'gantt.listLabel': 'Task list',
+  'gantt.expand': 'Expand subtasks',
+  'gantt.collapse': 'Collapse subtasks',
+  'gantt.milestone': 'Milestone',
+  'gantt.taskAria': '{name}: {start} to {end}, {progress}% complete',
+  'gantt.milestoneAria': '{name}: {date}, milestone',
+  'gantt.today': 'Today',
+  'gantt.tooltipProgress': '{progress}% complete',
+  'gantt.tooltipRange': '{start} to {end}',
   // kanban（看板）
   'kanban.emptyColumn': 'Drag cards here',
   'kanban.moveCard': 'Move card',

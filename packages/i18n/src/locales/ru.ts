@@ -174,6 +174,17 @@ export const ru: LocaleMessages = {
   'scheduler.viewAgenda': 'Повестка',
   'scheduler.allDay': 'Весь день',
   'scheduler.noEvents': 'Нет событий в этом диапазоне',
+  // gantt (диаграмма Ганта)
+  'gantt.empty': 'Нет задач',
+  'gantt.listLabel': 'Список задач',
+  'gantt.expand': 'Развернуть подзадачи',
+  'gantt.collapse': 'Свернуть подзадачи',
+  'gantt.milestone': 'Веха',
+  'gantt.taskAria': '{name}: {start} — {end}, прогресс {progress}%',
+  'gantt.milestoneAria': '{name}: {date}, веха',
+  'gantt.today': 'Сегодня',
+  'gantt.tooltipProgress': 'Прогресс {progress}%',
+  'gantt.tooltipRange': '{start} — {end}',
   // kanban (канбан-доска)
   'kanban.emptyColumn': 'Перетащите карточки сюда',
   'kanban.moveCard': 'Переместить карточку',

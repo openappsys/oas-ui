@@ -174,6 +174,17 @@ export const ja: LocaleMessages = {
   'scheduler.viewAgenda': '予定表',
   'scheduler.allDay': '終日',
   'scheduler.noEvents': 'この期間に予定はありません',
+  // gantt（ガントチャート）
+  'gantt.empty': 'タスクはありません',
+  'gantt.listLabel': 'タスク一覧',
+  'gantt.expand': 'サブタスクを展開',
+  'gantt.collapse': 'サブタスクを折りたたむ',
+  'gantt.milestone': 'マイルストーン',
+  'gantt.taskAria': '{name}：{start} から {end}、進捗 {progress}%',
+  'gantt.milestoneAria': '{name}：{date}、マイルストーン',
+  'gantt.today': '今日',
+  'gantt.tooltipProgress': '進捗 {progress}%',
+  'gantt.tooltipRange': '{start} から {end}',
   // kanban（かんばん）
   'kanban.emptyColumn': 'カードをここにドラッグ',
   'kanban.moveCard': 'カードを移動',

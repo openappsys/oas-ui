@@ -21,6 +21,7 @@ import '../data/timeline/index.js'
 import '../data/list/index.js'
 import '../data/kanban/index.js'
 import '../data/scheduler/index.js'
+import '../data/gantt/index.js'
 import '../data/carousel/index.js'
 import '../data/tree/index.js'
 // 能力包必须先于组件注册（同上）

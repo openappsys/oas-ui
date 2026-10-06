@@ -174,6 +174,17 @@ export const ko: LocaleMessages = {
   'scheduler.viewAgenda': '일정',
   'scheduler.allDay': '종일',
   'scheduler.noEvents': '이 기간에 일정이 없습니다',
+  // gantt（간트 차트）
+  'gantt.empty': '작업이 없습니다',
+  'gantt.listLabel': '작업 목록',
+  'gantt.expand': '하위 작업 펼치기',
+  'gantt.collapse': '하위 작업 접기',
+  'gantt.milestone': '마일스톤',
+  'gantt.taskAria': '{name}: {start} ~ {end}, 진행률 {progress}%',
+  'gantt.milestoneAria': '{name}: {date}, 마일스톤',
+  'gantt.today': '오늘',
+  'gantt.tooltipProgress': '진행률 {progress}%',
+  'gantt.tooltipRange': '{start} ~ {end}',
   // kanban（칸반）
   'kanban.emptyColumn': '카드를 여기로 끌어다 놓으세요',
   'kanban.moveCard': '카드 이동',

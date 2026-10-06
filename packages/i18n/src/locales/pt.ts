@@ -174,6 +174,17 @@ export const pt: LocaleMessages = {
   'scheduler.viewAgenda': 'Agenda',
   'scheduler.allDay': 'Dia inteiro',
   'scheduler.noEvents': 'Sem eventos neste período',
+  // gantt (diagrama de Gantt)
+  'gantt.empty': 'Sem tarefas',
+  'gantt.listLabel': 'Lista de tarefas',
+  'gantt.expand': 'Expandir subtarefas',
+  'gantt.collapse': 'Recolher subtarefas',
+  'gantt.milestone': 'Marco',
+  'gantt.taskAria': '{name}: {start} a {end}, progresso {progress}%',
+  'gantt.milestoneAria': '{name}: {date}, marco',
+  'gantt.today': 'Hoje',
+  'gantt.tooltipProgress': 'Progresso {progress}%',
+  'gantt.tooltipRange': '{start} a {end}',
   // kanban (quadro kanban)
   'kanban.emptyColumn': 'Arraste cartões para cá',
   'kanban.moveCard': 'Mover cartão',

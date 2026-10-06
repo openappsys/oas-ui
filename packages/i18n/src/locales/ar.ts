@@ -174,6 +174,17 @@ export const ar: LocaleMessages = {
   'scheduler.viewAgenda': 'الأجندة',
   'scheduler.allDay': 'طوال اليوم',
   'scheduler.noEvents': 'لا توجد أحداث في هذا النطاق',
+  // gantt (مخطط جانت)
+  'gantt.empty': 'لا توجد مهام',
+  'gantt.listLabel': 'قائمة المهام',
+  'gantt.expand': 'توسيع المهام الفرعية',
+  'gantt.collapse': 'طي المهام الفرعية',
+  'gantt.milestone': 'معلم',
+  'gantt.taskAria': '{name}: {start} إلى {end}، التقدم {progress}%',
+  'gantt.milestoneAria': '{name}: {date}، معلم',
+  'gantt.today': 'اليوم',
+  'gantt.tooltipProgress': 'التقدم {progress}%',
+  'gantt.tooltipRange': '{start} إلى {end}',
   // kanban (لوحة كانبان)
   'kanban.emptyColumn': 'اسحب البطاقات إلى هنا',
   'kanban.moveCard': 'نقل البطاقة',

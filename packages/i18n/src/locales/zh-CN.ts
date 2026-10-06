@@ -174,6 +174,17 @@ export const zhCN = {
   'scheduler.viewAgenda': '日程',
   'scheduler.allDay': '全天',
   'scheduler.noEvents': '此区间无日程',
+  // gantt（甘特图）
+  'gantt.empty': '暂无任务',
+  'gantt.listLabel': '任务列表',
+  'gantt.expand': '展开子任务',
+  'gantt.collapse': '收起子任务',
+  'gantt.milestone': '里程碑',
+  'gantt.taskAria': '{name}：{start} 至 {end}，进度 {progress}%',
+  'gantt.milestoneAria': '{name}：{date}，里程碑',
+  'gantt.today': '今天',
+  'gantt.tooltipProgress': '进度 {progress}%',
+  'gantt.tooltipRange': '{start} 至 {end}',
   // kanban（看板）
   'kanban.emptyColumn': '拖拽卡片到此处',
   'kanban.moveCard': '移动卡片',
