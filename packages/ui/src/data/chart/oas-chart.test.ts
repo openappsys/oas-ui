@@ -189,6 +189,90 @@ describe('OASChart', () => {
     expect(slices[1]!.querySelector('title')!.textContent).toBe('b: 0')
   })
 
+  it('type=radar 渲染径向网格 + 维度轴线 + 系列多边形与顶点 title', () => {
+    const el = mount({
+      type: 'radar',
+      data: JSON.stringify({
+        labels: ['速度', '稳定', '续航'],
+        series: [
+          { name: 'A', data: [80, 92, 75] },
+          { name: 'B', data: [90, 70, 82] },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    // 同心网格环（默认 polygon，不含中心点）：4 层
+    expect(svg.querySelectorAll('polygon.grid-ring').length).toBe(4)
+    // 维度轴线 = 维度数
+    expect(svg.querySelectorAll('line.radar-axis').length).toBe(3)
+    // 每系列一个填充多边形 + 一个描边多边形
+    expect(svg.querySelectorAll('.radar-area').length).toBe(2)
+    expect(svg.querySelectorAll('path.radar-line').length).toBe(2)
+    // 顶点数据点 = 维度 × 系列，title 为「维度: 值」
+    const dots = svg.querySelectorAll('circle.dot')
+    expect(dots.length).toBe(6)
+    expect(dots[0]!.querySelector('title')!.textContent).toBe('速度: 80')
+    // 图例复用（多系列）
+    const legend = el.shadowRoot!.querySelector('[part="legend"]')!
+    expect(legend.hasAttribute('hidden')).toBe(false)
+    expect(legend.textContent).toContain('A')
+  })
+
+  it('type=radar options.max 全局量程：值为 max 一半的顶点落在半径中点', () => {
+    const el = mount({
+      type: 'radar',
+      options: '{"max":100}',
+      data: JSON.stringify({ labels: ['甲', '乙'], series: [{ name: 'S', data: [50, 100] }] }),
+    })
+    const dots = [...svgOf(el).querySelectorAll('circle.dot')]
+    // 顶轴（-90°）维度「甲」值 50/max100 → 顶点在中心正上方半个半径处；「乙」值 100 在正下方满半径（双维度等角 180°）
+    const cy = 140
+    const r = Math.min(520, 280) / 2 - 40
+    const y0 = Number(dots[0]!.getAttribute('cy'))
+    const y1 = Number(dots[1]!.getAttribute('cy'))
+    expect(cy - y0).toBeCloseTo(r / 2, 0)
+    expect(y1 - cy).toBeCloseTo(r, 0)
+  })
+
+  it('type=radar 缺省量程走 niceTicks：刻度顶 = 上取整档', () => {
+    const el = mount({
+      type: 'radar',
+      data: JSON.stringify({ labels: ['甲', '乙'], series: [{ name: 'S', data: [50, 90] }] }),
+    })
+    const dots = [...svgOf(el).querySelectorAll('circle.dot')]
+    const cy = 140
+    const r = Math.min(520, 280) / 2 - 40
+    // max 90 → niceTicks step = ceil(90/4)=23，量程顶 = 92；顶点按 值/92 线性落半径
+    // 「甲」在顶轴（-90°）；「乙」在正下方（90°，双维度等角 180°）——用距圆心的径向距离断言
+    expect(cy - Number(dots[0]!.getAttribute('cy'))).toBeCloseTo(r * (50 / 92), 0)
+    expect(Math.abs(Number(dots[1]!.getAttribute('cy')) - cy)).toBeCloseTo(r * (90 / 92), 0)
+  })
+
+  it('type=radar radarShape=circle：网格换同心圆（无 polygon 网格）', () => {
+    const el = mount({
+      type: 'radar',
+      options: '{"radarShape":"circle"}',
+      data: JSON.stringify({ labels: ['甲', '乙', '丙'], series: [{ name: 'S', data: [1, 2, 3] }] }),
+    })
+    const svg = svgOf(el)
+    expect(svg.querySelectorAll('circle.grid-ring').length).toBe(4)
+    expect(svg.querySelector('polygon.grid-ring')).toBeNull()
+  })
+
+  it('type=radar 维度名在顶点外侧（每维度一个 text）', () => {
+    const el = mount({
+      type: 'radar',
+      data: JSON.stringify({ labels: ['甲', '乙', '丙'], series: [{ name: 'S', data: [1, 2, 3] }] }),
+    })
+    const texts = [...svgOf(el).querySelectorAll('text.axis-label')]
+    expect(texts.map((t) => t.textContent)).toEqual(['甲', '乙', '丙'])
+  })
+
+  it('type=radar aria-label 缺省走 i18n（雷达图）', () => {
+    const el = mount({ type: 'radar', data: SINGLE })
+    expect(wrapperOf(el).getAttribute('aria-label')).toBe('雷达图')
+  })
+
   it('type=stacked-bar 多系列堆叠（段高之和=分类总高，不超绘图区）', () => {
     const el = mount({ type: 'stacked-bar', data: MULTI })
     const bars = svgOf(el).querySelectorAll('.bar')

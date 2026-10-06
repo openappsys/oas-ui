@@ -26,6 +26,12 @@ export interface ChartOptions {
   showLegend?: boolean
   /** 面积图垂直渐变填充（默认 false 纯色半透明；true 时顶部系列色 0.35 → 底部全透明） */
   gradient?: boolean
+  /** radar 全局量程上限（缺省取全系列 max 走 niceTicks；v1 全局统一量程，不做 per-dim） */
+  max?: number
+  /** radar 网格形态：'polygon' 同心多边形（默认）| 'circle' 同心圆 */
+  radarShape?: 'polygon' | 'circle'
+  /** 双轴：y 轴数组。长度 ≥2 且第 2 项存在即启用右轴；name 为轴名（渲染在轴顶） */
+  yAxis?: [{ name?: string }, { name?: string }?]
 }
 
 /** 默认系列配色（只用 token，含暗色变体） */
@@ -116,6 +122,21 @@ svg {
   fill: none;
   stroke: var(--oas-color-border);
 }
+/* 雷达图：维度轴线和量程网格同 token，系列轮廓走折线描边规格 */
+.radar-axis {
+  stroke: var(--oas-color-border);
+}
+.radar-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.radar-area {
+  fill: currentColor;
+  opacity: 0.18;
+}
 /* 图例 */
 .legend {
   display: flex;
@@ -159,7 +180,9 @@ svg {
   .slice.animate,
   .line-path.animate,
   .dot.animate,
-  .area-path.animate {
+  .area-path.animate,
+  .radar-area.animate,
+  .radar-line.animate {
     animation: oas-chart-fade 0.5s var(--oas-ease-out);
   }
 }
@@ -282,14 +305,106 @@ export class OASChart extends OASElement {
     this.renderLegend(legend, data, options)
   }
 
-  /** 渲染主体图形（line/bar/pie/area/donut/stacked-bar/polar-area 七型） */
+  /** 渲染主体图形（line/bar/pie/area/donut/stacked-bar/radar/polar-area 八型） */
   private renderBody(type: ChartType, data: ChartData, options: ChartOptions): string {
     if (type === 'pie') return this.renderPie(data, options)
     if (type === 'donut') return this.renderDonut(data, options)
     if (type === 'stacked-bar') return this.renderStackedBars(data, options)
     if (type === 'polar-area') return this.renderPolarArea(data, options)
+    if (type === 'radar') return this.renderRadar(data, options)
     if (type === 'area') return this.renderArea(data, options)
     return type === 'bar' ? this.renderBars(data, options) : this.renderLine(data, options)
+  }
+
+  /**
+   * 雷达图：labels 即维度名（与折线/柱状共享同一数据心智），每维度等角（顶轴 12 点方向起、顺时针）。
+   * 量程：options.max 全局统一量程（缺省取全系列 max 走 niceTicks）；网格默认同心多边形，
+   * options.radarShape='circle' 换同心圆；刻度值沿顶轴标注；维度名在顶点外侧。
+   * 每系列一个半透明填充多边形 + 描边轮廓，顶点数据点带原生 `<title>`（维度名: 值）。
+   */
+  private renderRadar(data: ChartData, options: ChartOptions): string {
+    const dims = data.labels.length
+    if (dims === 0) return ''
+
+    const cx = W / 2
+    const cy = H / 2
+    const r = Math.min(W, H) / 2 - 40
+
+    // 量程：options.max 优先（全局统一量程，4 等分）；缺省 niceTicks
+    let scaleMax: number
+    let step: number
+    if (options.max != null && options.max > 0) {
+      scaleMax = options.max
+      step = options.max / 4
+    } else {
+      const ticks = this.niceTicks(this.maxValue(data))
+      scaleMax = ticks.max
+      step = ticks.step
+    }
+
+    const angleAt = (k: number): number => ((-90 + (k * 360) / dims) * Math.PI) / 180
+    const pointAt = (k: number, ratio: number): { x: number; y: number } => ({
+      x: cx + r * ratio * Math.cos(angleAt(k)),
+      y: cy + r * ratio * Math.sin(angleAt(k)),
+    })
+    const polygonAt = (ratio: number): string =>
+      Array.from({ length: dims }, (_, k) => {
+        const p = pointAt(k, ratio)
+        return `${p.x.toFixed(1)} ${p.y.toFixed(1)}`
+      }).join(' ')
+
+    let out = ''
+
+    // 同心网格：4 层（不含中心点）；radarShape=circle 用同心圆，缺省同心多边形
+    const circle = options.radarShape === 'circle'
+    for (let i = 1; i <= 4; i++) {
+      const ratio = i / 4
+      if (circle) {
+        out += `<circle class="grid-ring" cx="${cx}" cy="${cy}" r="${(r * ratio).toFixed(1)}"></circle>`
+      } else {
+        out += `<polygon class="grid-ring" points="${polygonAt(ratio)}"></polygon>`
+      }
+    }
+
+    // 维度轴线：中心 → 顶点
+    for (let k = 0; k < dims; k++) {
+      const p = pointAt(k, 1)
+      out += `<line class="radar-axis" x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}"></line>`
+    }
+
+    // 刻度值沿顶轴标注（i=1..4 档）
+    for (let i = 1; i <= 4; i++) {
+      const y = cy - r * (i / 4)
+      out += `<text class="axis-text" x="${cx + 5}" y="${(y + 3).toFixed(1)}" text-anchor="start">${Math.round(step * i)}</text>`
+    }
+
+    // 维度名：顶点外侧（按方位选 text-anchor 与基线偏移）
+    for (let k = 0; k < dims; k++) {
+      const p = pointAt(k, 1)
+      const dx = Math.cos(angleAt(k))
+      const dy = Math.sin(angleAt(k))
+      const anchor = Math.abs(dx) < 0.3 ? 'middle' : dx > 0 ? 'start' : 'end'
+      const labelY = p.y + (dy < -0.3 ? -6 : dy > 0.3 ? 12 : 4)
+      const labelX = p.x + (Math.abs(dx) < 0.3 ? 0 : dx > 0 ? 6 : -6)
+      out += `<text class="axis-label" x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="${anchor}">${this.escapeText(data.labels[k] ?? '')}</text>`
+    }
+
+    // 系列多边形：填充（半透明）+ 描边 + 顶点 title
+    data.series.forEach((series, si) => {
+      const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
+      const color = options.colors?.[si]
+      const pts = series.data.map((v, k) => pointAt(k, Math.max(0, (Number(v) || 0) / (scaleMax || 1))))
+      const d = pts.map((p, k) => `${k === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ') + ' Z'
+      const points = pts.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
+      const style = color ? ` style="color:${color}"` : ''
+      out += `<polygon class="radar-area ${cls} animate" points="${points}"${style}></polygon>`
+      out += `<path class="radar-line ${cls} animate" d="${d}" fill="none"${style}></path>`
+      pts.forEach((p, k) => {
+        const label = this.datumLabel(data.labels[k] ?? '', series.data[k] ?? 0)
+        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${style}><title>${this.escapeAttr(label)}</title></circle>`
+      })
+    })
+    return out
   }
 
   /** 折线图：网格 + y 刻度 + x 分类 + 每系列 path + 数据点 title */
@@ -700,7 +815,19 @@ export class OASChart extends OASElement {
     if (typeof obj.smooth === 'boolean') out.smooth = obj.smooth
     if (typeof obj.showLegend === 'boolean') out.showLegend = obj.showLegend
     if (typeof obj.gradient === 'boolean') out.gradient = obj.gradient
+    if (typeof obj.max === 'number' && Number.isFinite(obj.max)) out.max = obj.max
+    if (obj.radarShape === 'circle' || obj.radarShape === 'polygon') out.radarShape = obj.radarShape
     if (Array.isArray(obj.colors)) out.colors = obj.colors.map((c) => String(c))
+    if (Array.isArray(obj.yAxis)) {
+      const axes = obj.yAxis
+        .slice(0, 2)
+        .map((a) =>
+          a && typeof a === 'object' && typeof (a as Record<string, unknown>).name === 'string'
+            ? { name: String((a as Record<string, unknown>).name) }
+            : null,
+        )
+      if (axes[0]) out.yAxis = [axes[0], axes[1] ?? undefined]
+    }
     return out
   }
 
