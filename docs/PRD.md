@@ -1917,7 +1917,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 内容面板（modal/drawer/popover/select 系面板）不进 v1——超出 Apple 定义域且大面积置换成本高易翻车；
 - 行级/长列表不接（与 blur 同一性能纪律）；
 - 滤镜不可用时（如宿主 CSP 禁 data:）表现由浏览器决定（主流按忽略滤镜处理），严格 CSP 宿主可显式覆盖变量为空值；
-- **引擎边界（如实）**：折射位移在 Chromium 系真实生效；Firefox 对 CSS `filter` 的 data-URI SVG 滤镜不执行位移（实测开/关仅 ±1 LSB 栅格噪声）——安全无感降级为无折射，不破坏渲染；WebKit 未实测（按 engineering §2 手工验证清单补验）；
+- **引擎边界（如实）**：折射位移在 Chromium 系真实生效；Firefox 对 CSS `filter` 的 data-URI SVG 滤镜不执行位移（实测开/关仅 ±1 LSB 栅格噪声）——安全无感降级为无折射，不破坏渲染；WebKit 引擎按 engineering §2 方法实测**真实执行**（Playwright WebKit 本机：开/关像素差异 4.55%、backdrop 模糊共存、pageerror 零、画廊渲染与 Chromium 一致——macOS/iOS 真机 Safari 同引擎源码，私有特性差异接受为已知边界）；
 - 位移是渲染后像素操作：布局/命中区不受影响（scale=8，单轴位移上限 4px 约束视觉膨胀与热区偏差）。
 
 ### 验收
