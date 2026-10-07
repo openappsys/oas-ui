@@ -224,6 +224,7 @@ const COMPONENT_ENTRIES = [
   { id: 'button', entry: 'basic/button', spec: '@oas-ui/ui/basic/button' },
   { id: 'table', entry: 'data/table', spec: '@oas-ui/ui/data/table' },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
+  { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
 ]
 const componentMeasures = {}
 for (const { id, entry } of COMPONENT_ENTRIES) {
@@ -252,16 +253,16 @@ const BUDGETS = [
     // 增长纪律由单组件链预算（绝对值制）与按需叙事守住。
     name: 'dist/cdn.js gzip',
     get: () => cdn.gzipBytes,
-    limit: 700 * 1024, // 700 KB 天花板（2026-10-05 重定档：移动原生批 5 组件 + scheduler 进全量入口，实测 608.5 KB 触前档）
+    limit: 730 * 1024, // 730 KB 天花板（2026-10-07 重定档：gantt/barcode/chart 扩展/glass 折射四批后实测 628.7 KB 触前档 90%）
     basis:
-      '天花板制：实测 gzip 608.5 KB（移动原生批 5 组件 + scheduler 进全量入口后），上浮约 15% 定档 700 KB；前档 600 KB 定档于 2026-09-22（519.1 KB 实测），再前档 575 KB 定档于 v2.5.3（498.4 KB 实测）',
+      '天花板制：实测 gzip 628.7 KB（gantt + barcode 新组件、chart 四图型、glass 折射批次后），上浮约 15% 定档 730 KB；前档 700 KB 定档于 2026-10-05（608.5 KB 实测），再前档 600 KB 定档于 2026-09-22（519.1 KB 实测）',
   },
   {
     name: '@oas-ui/ui 全量入口链 gzip',
     get: () => fullEntry.gzipBytes,
-    limit: 1024 * 1024, // 1024 KB 天花板（2026-10-05 重定档：实测 890.9 KB，+15% 预留）
+    limit: 1080 * 1024, // 1080 KB（≈1.05 MB）天花板（2026-10-07 重定档：四批后实测 917.7 KB 触前档 90%）
     basis:
-      '天花板制：实测 gzip 890.9 KB（移动原生批 + scheduler 批次后），上浮约 15%；前档 905 KB 定档于 2026-09-22（779.3 KB 实测），再前档 520 KB 定档于 v2.2.2（415,403 B）',
+      '天花板制：实测 gzip 917.7 KB（gantt/barcode/chart 扩展/glass 折射四批后），上浮约 15% 定档 1080 KB；前档 1024 KB 定档于 2026-10-05（890.9 KB 实测），再前档 905 KB 定档于 2026-09-22（779.3 KB 实测）',
   },
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
@@ -280,9 +281,16 @@ const BUDGETS = [
   {
     name: '@oas-ui/ui/form/form 链 gzip',
     get: () => componentMeasures.form.gzipBytes,
-    limit: 28 * 1024, // 28 KB（2026-10-05 重定档：校验时机 input 化 + 选择控件双通道 + picker 注册增量，实测 24.8 KB）
+    limit: 29 * 1024, // 29 KB（2026-10-07 重定档：四批后实测 25.1 KB 触前档 90%）
     basis:
-      '实测 gzip 24.8 KB（form-associated 批次后 + 默认校验时机 input 化与竞态修复、oas-picker 注册、value property 系增量；含 core + i18n），上浮约 15%；前档 24 KB 定档于 2026-09-22（20.7 KB 实测）',
+      '实测 gzip 25.1 KB（四批合并后；含 core + i18n），上浮约 15% 定档 29 KB；前档 28 KB 定档于 2026-10-05（24.8 KB 实测）',
+  },
+  {
+    name: '@oas-ui/ui/data/gantt 链 gzip',
+    get: () => componentMeasures.gantt.gzipBytes,
+    limit: 46 * 1024, // 46 KB（2026-10-07 首次定档：实测 39.6 KB——大组件独立档位，增长可见）
+    basis:
+      '首次定档：实测 gzip 39.6 KB（gantt 组件 + 编码器无关，链含 core + i18n + virtual-list，v2.6.0 落地），上浮约 15% 定档 46 KB',
   },
   {
     name: '@oas-ui/theme index.css gzip',

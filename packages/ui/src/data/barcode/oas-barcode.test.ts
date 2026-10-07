@@ -31,19 +31,19 @@ describe('OASBarcode', () => {
 
   it('渲染 SVG：整体宽度由内容决定（位数×码制×bar-width），不设 width/size 属性', () => {
     // code128 '123'：START_B + 3 符号 + 校验 = 5 符号 × 11 + 停止 13 = 68 模
-    // 默认 bar-width=2、margin=10 → 宽 = 68×2 + 20 = 156；高 = 100 + 文字区(4+16) = 120
+    // 默认 bar-width=2、margin=10×bar-width=20/侧 → 宽 = 68×2 + 40 = 176；高 = 100 + 文字区(4+16) = 120
     const el = mount({ value: '123' })
     const svg = svgOf(el)
-    expect(svg.getAttribute('viewBox')).toBe('0 0 156 120')
-    expect(svg.getAttribute('width')).toBe('156')
+    expect(svg.getAttribute('viewBox')).toBe('0 0 176 120')
+    expect(svg.getAttribute('width')).toBe('176')
     expect(svg.getAttribute('height')).toBe('120')
     expect(svg.querySelector('path')).not.toBeNull()
   })
 
   it('bar-width 放大整体几何（条宽与静区联动），下限 clamp ≥1', () => {
     const el = mount({ value: '123', 'bar-width': '3' })
-    // 68×3 + 20 = 224
-    expect(svgOf(el).getAttribute('width')).toBe('224')
+    // 68×3 + 2×(10×3)=60 → 264
+    expect(svgOf(el).getAttribute('width')).toBe('264')
     el.remove()
     const tiny = mount({ value: '123', 'bar-width': '0.5' })
     // clamp 到 1：68×1 + 20 = 88
@@ -83,13 +83,13 @@ describe('OASBarcode', () => {
 
   it('format 非法值静默回退 code128', () => {
     const el = mount({ value: '123', format: 'pdf417' })
-    // code128 '123' 默认宽 156
-    expect(svgOf(el).getAttribute('width')).toBe('156')
+    // code128 '123' 默认宽 176
+    expect(svgOf(el).getAttribute('width')).toBe('176')
   })
 
   it('format 常见笔误（带连字符 ean-13）同样静默回退 code128，不误判为合法码制', () => {
     const el = mount({ value: '123', format: 'ean-13' })
-    expect(svgOf(el).getAttribute('width')).toBe('156')
+    expect(svgOf(el).getAttribute('width')).toBe('176')
   })
 
   it('RTL 隔离：方向锁在条码 svg 上（内容恒 LTR），宿主不复写 direction（空态/错误占位随宿主 dir，RTL 语言文案方向正确）', () => {
@@ -178,10 +178,10 @@ describe('OASBarcode', () => {
       expect(warn).toHaveBeenCalledTimes(1)
     })
 
-    it('margin 缺省为 10（默认值豁免下限 clamp，不告警）', () => {
+    it('margin 缺省即 10×bar-width（可扫下限，不告警）', () => {
       const el = mount({ value: '123' })
       expect(vi.mocked(console.warn)).not.toHaveBeenCalled()
-      expect(svgOf(el).getAttribute('width')).toBe('156')
+      expect(svgOf(el).getAttribute('width')).toBe('176')
     })
 
     it('margin 显式值 ≥ 下限时原样生效', () => {
@@ -212,9 +212,9 @@ describe('OASBarcode', () => {
       const svg = svgOf(el)
       const texts = [...svg.querySelectorAll('text')]
       expect(texts).toHaveLength(3)
-      // 首位在左护条外侧：居中于静区之后的沟槽（沟槽 12px，护条起点 x = 10 + 12 = 22）
+      // 首位在左护条外侧：居中于静区之后的沟槽（沟槽 12px，默认静区 10×bar-width=20 → 护条起点 x = 20 + 12 = 32）
       const first = texts.find((t) => t.textContent === '4')!
-      expect(Number(first.getAttribute('x'))).toBeLessThan(22)
+      expect(Number(first.getAttribute('x'))).toBeLessThan(32)
       // 护条延伸 path 存在（guard bars 高于普通条）
       expect(svg.querySelectorAll('path')).toHaveLength(2)
       // 高 = 100 + max(护条延伸 5×2=10, 文字 4+16) = 120

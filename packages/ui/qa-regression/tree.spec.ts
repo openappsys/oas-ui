@@ -280,16 +280,25 @@ test('tree motion 开关：容器挂 motion 类、展开入场/收起离场行�
   // 开关类名/行钩子类为可测样式信号（视觉动画需浏览器复核）。
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-motion')
-  await page.waitForTimeout(600)
+  // 就绪轮询替代固定等待（满负载下渲染晚于固定毫秒——Firefox 全量并发实抓过抖动）
+  await page.waitForFunction(
+    () => document.querySelector('#tree-motion')?.shadowRoot?.querySelector('.tree') != null,
+    null,
+    { timeout: 15000 },
+  )
   // 默认关：容器无 motion 类
   let cls = await page.evaluate(() => {
     const tree = document.querySelector('#tree-motion')!
     return tree.shadowRoot!.querySelector('.tree')!.classList.contains('motion')
   })
   expect(cls).toBe(false)
-  // 开启
+  // 开启：轮询等 motion 类挂载（不赌固定毫秒）
   await page.locator('#tree-motion-toggle').click()
-  await page.waitForTimeout(200)
+  await page.waitForFunction(
+    () => document.querySelector('#tree-motion')!.shadowRoot!.querySelector('.tree')!.classList.contains('motion'),
+    null,
+    { timeout: 15000 },
+  )
   cls = await page.evaluate(() => {
     const tree = document.querySelector('#tree-motion')!
     return tree.shadowRoot!.querySelector('.tree')!.classList.contains('motion')
@@ -324,7 +333,7 @@ test('tree motion 开关：容器挂 motion 类、展开入场/收起离场行�
       )
     },
     null,
-    { timeout: 5000 },
+    { timeout: 15000 },
   )
   expect(await countEnter()).toBeGreaterThanOrEqual(2)
   // g1 + 其直接子级 2 行 + g2 = 4 行（更深的 g1-1 子级默认收起）
@@ -340,10 +349,20 @@ test('tree motion 开关：容器挂 motion 类、展开入场/收起离场行�
       )
     },
     null,
-    { timeout: 5000 },
+    { timeout: 15000 },
   )
   expect(await countLeave()).toBeGreaterThanOrEqual(2)
-  await page.waitForTimeout(400)
+  // 离场动画结束后落库：轮询等行数收敛（不赌固定毫秒，满负载下动画更慢）
+  await page.waitForFunction(
+    () => {
+      const tree = document.querySelector('#tree-motion')!
+      const rows = [...tree.shadowRoot!.querySelectorAll('[part="row"]')]
+      const leave = rows.filter((r) => r.classList.contains('oas-row-leave')).length
+      return rows.length === 2 && leave === 0
+    },
+    null,
+    { timeout: 15000 },
+  )
   expect(await countRows()).toBe(2)
   expect(await countLeave()).toBe(0)
 })

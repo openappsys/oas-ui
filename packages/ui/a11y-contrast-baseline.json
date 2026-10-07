@@ -1,13 +1,13 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 29348,
+    "sampled": 29978,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 263,
+    "ratio": 264,
     "exempt": 630,
-    "skipped": 2730
+    "skipped": 2838
   },
   "topPairs": [],
   "pages": {
@@ -91,22 +91,6 @@
       "exempt": 0,
       "skipped": 1
     },
-    "barcode.html": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 1,
-      "exempt": 0,
-      "skipped": 34
-    },
-    "barcode.html::dark": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 0,
-      "skipped": 34
-    },
     "badge.html": {
       "below30": 0,
       "below45": 0,
@@ -122,6 +106,22 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": 27
+    },
+    "barcode.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": 34
+    },
+    "barcode.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 34
     },
     "breadcrumb.html": {
       "below30": 0,
@@ -513,7 +513,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 27
+      "skipped": 8
     },
     "gantt.html::dark": {
       "below30": 0,
@@ -521,7 +521,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 27
+      "skipped": 8
     },
     "gradient-text.html": {
       "below30": 0,
@@ -762,22 +762,6 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": 2
-    },
-    "picker.html": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 0,
-      "skipped": 4
-    },
-    "picker.html::dark": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 0,
-      "skipped": 4
     },
     "pin-input.html": {
       "below30": 0,
@@ -1041,7 +1025,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 5
+      "skipped": 8
     },
     "swipe-cell.html::dark": {
       "below30": 0,
@@ -1049,7 +1033,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 5
+      "skipped": 8
     },
     "table.html": {
       "below30": 0,

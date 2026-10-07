@@ -10,7 +10,7 @@ Full TypeScript types · tree-shakable · light/dark themes · SSR + DSD · fram
 
 | Metric | Value |
 | --- | --- |
-| Components | 126 |
+| Components | 133 |
 | Full CDN bundle (gzip) | 608.5 KB |
 | Button chain (gzip) | 33.5 KB |
 | Unit tests | 8700+ |
@@ -80,7 +80,7 @@ SSR / DSD guide: the [SSR page](https://oas-ui.dev/guide/ssr) on the docs site a
 | `packages/theme` | CSS custom-property design tokens (light/dark), single-source index.css |
 | `packages/i18n` | Framework-agnostic locale registry, tree-shakable language packs |
 | `packages/icons` | Inline SVG icon set (tree-shakable, no icon fonts) |
-| `packages/ui` | 126 components (8 source family dirs: basic / form / data / feedback / navigation / layout / framework / overlay; presented as 7 groups on the docs site) |
+| `packages/ui` | 133 components (8 source family dirs: basic / form / data / feedback / navigation / layout / framework / overlay; presented as 7 groups on the docs site) |
 | `packages/ssr` | DSD snapshot renderer + Node-safe entry + true hydration |
 | `packages/nuxt` | Nuxt 3 integration plugin |
 | `packages/next` | Next.js (RSC) integration plugin |

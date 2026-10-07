@@ -118,6 +118,7 @@ OAS-UI 提供 126 个框架无关的 Web Components 组件，按用途划分为 
 
 - [Kanban 看板](/components/kanban) —— 列 + 卡片的看板视图：拖拽换列/列内排序/列重排/WIP 限制/卡片多选/泳道分带，落定派发 oas-change。
 - [Scheduler 日程](/components/scheduler) —— 月视图日程组件：日格事件芯片（标题 + 色条）+ events 读写通道 + CRUD 方法与事件，纯 UI 态。
+- [Gantt 甘特图](/components/gantt) —— 项目排期组件：行树 WBS + 任务条/里程碑/摘要条 + FS/SS/FF/SF 依赖连线 + 六档时间刻度 + 拖拽改期/拉伸/改进度 + 只读三级 + 行虚拟滚动。
 
 - [Table 表格](/components/table) —— 用于以行列表格形式展示结构化数据，支持排序、行选中、多选与加载态，可与分页组件联动。
 - [Tree 树](/components/tree) —— 用于展示层级数据，支持选中、展开、多选、懒加载与节点拖拽。
@@ -136,7 +137,7 @@ OAS-UI 提供 126 个框架无关的 Web Components 组件，按用途划分为 
 - [Statistic 统计数值](/components/statistic) —— 统计数值展示，`Intl.NumberFormat` 千分位与精度（locale 感知），支持前后缀与骨架屏加载占位。
 - [Countdown 倒计时](/components/countdown) —— 倒计时组件，实时刷新、支持天/时/分/秒格式化模板，到达终点派发 `oas-finish`，断开连接自动清理计时器。
 - [Ellipsis 文本省略](/components/ellipsis) —— 用于长文本的自动省略，支持单行/多行截断，溢出时悬停展示全文 tooltip，也可展开/收起。
-- [Chart 图表](/components/chart) —— 自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 饼图 / 面积 / 环形 / 堆叠柱状六型，数据更新自动重绘，`prefers-reduced-motion` 时关闭动画。
+- [Chart 图表](/components/chart) —— 自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积 + 组合图与双轴，数据更新自动重绘，`prefers-reduced-motion` 时关闭动画。
 - [Code 代码块](/components/code) —— 代码块组件（自研正则 token 高亮，零第三方高亮引擎），支持常见语言基础着色、行号与复制按钮。
 - [Equation 数学公式](/components/equation) —— 数学公式组件（自研简化 LaTeX 子集，零第三方公式引擎），覆盖高中/大学常用公式：上下标、分数、根号、求和/积分（带上下限）、希腊字母与常用运算符。
 - [Log 日志流](/components/log) —— 等宽字体的日志展示容器，支持增量追加与"贴底"自动滚动，适合构建控制台/构建输出等场景。

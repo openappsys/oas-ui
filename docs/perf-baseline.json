@@ -1,27 +1,27 @@
 {
   "size": {
-    "generatedAt": "2026-10-06",
+    "generatedAt": "2026-10-07",
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 30110803,
+        "distTotalBytes": 30983582,
         "browserJs": {
-          "files": 370,
-          "rawBytes": 8336659,
-          "gzipBytes": 2265191,
-          "brotliBytes": 1712028
+          "files": 375,
+          "rawBytes": 8570314,
+          "gzipBytes": 2335511,
+          "brotliBytes": 1765106
         },
         "fullEntry": {
-          "files": 411,
-          "rawBytes": 2964041,
-          "gzipBytes": 912262,
-          "brotliBytes": 766276
+          "files": 416,
+          "rawBytes": 3049804,
+          "gzipBytes": 939716,
+          "brotliBytes": 789386
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 2490312,
-          "gzipBytes": 623170,
-          "brotliBytes": 413371
+          "rawBytes": 2561994,
+          "gzipBytes": 643836,
+          "brotliBytes": 427556
         }
       },
       "@oas-ui/theme": {
@@ -39,9 +39,9 @@
       },
       "@oas-ui/i18n": {
         "files": 23,
-        "rawBytes": 176352,
-        "gzipBytes": 56893,
-        "brotliBytes": 48279
+        "rawBytes": 186947,
+        "gzipBytes": 59899,
+        "brotliBytes": 50944
       },
       "@oas-ui/icons": {
         "files": 51,
@@ -61,9 +61,9 @@
         "entry": "basic/button",
         "spec": "@oas-ui/ui/basic/button",
         "files": 59,
-        "rawBytes": 90482,
-        "gzipBytes": 34268,
-        "brotliBytes": 28821,
+        "rawBytes": 92379,
+        "gzipBytes": 34909,
+        "brotliBytes": 29325,
         "fileList": [
           "packages/ui/dist/basic/button/index.js",
           "packages/ui/dist/basic/button/oas-button.js",
@@ -130,9 +130,9 @@
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
         "files": 87,
-        "rawBytes": 312607,
-        "gzipBytes": 103384,
-        "brotliBytes": 87023,
+        "rawBytes": 314268,
+        "gzipBytes": 104043,
+        "brotliBytes": 87568,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/i18n/dist/index.js",
@@ -227,9 +227,9 @@
         "entry": "form/form",
         "spec": "@oas-ui/ui/form/form",
         "files": 11,
-        "rawBytes": 69167,
-        "gzipBytes": 25378,
-        "brotliBytes": 21065,
+        "rawBytes": 70062,
+        "gzipBytes": 25676,
+        "brotliBytes": 21324,
         "fileList": [
           "packages/ui/dist/form/form/index.js",
           "packages/i18n/dist/index.js",
@@ -243,30 +243,55 @@
           "packages/core/dist/oas-element.js",
           "packages/ui/dist/form/form/oas-form.js"
         ]
+      },
+      "gantt": {
+        "entry": "data/gantt",
+        "spec": "@oas-ui/ui/data/gantt",
+        "files": 15,
+        "rawBytes": 119229,
+        "gzipBytes": 40534,
+        "brotliBytes": 34252,
+        "fileList": [
+          "packages/ui/dist/data/gantt/index.js",
+          "packages/i18n/dist/index.js",
+          "packages/i18n/dist/registry.js",
+          "packages/i18n/dist/locales/zh-CN.js",
+          "packages/core/dist/index.js",
+          "packages/core/dist/config-context.js",
+          "packages/core/dist/translator.js",
+          "packages/core/dist/escape.js",
+          "packages/core/dist/form-element.js",
+          "packages/core/dist/oas-element.js",
+          "packages/ui/dist/data/gantt/oas-gantt.js",
+          "packages/ui/dist/data/virtual-list/oas-virtual-list.js",
+          "packages/ui/dist/data/virtual-list/dynamic-height.js",
+          "packages/ui/dist/form/calendar/date-grid.js",
+          "packages/ui/dist/shared/direction.js"
+        ]
       }
     },
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
-        "actualBytes": 623170,
-        "limitBytes": 716800,
-        "warnAtBytes": 645120,
+        "actualBytes": 643836,
+        "limitBytes": 747520,
+        "warnAtBytes": 672768,
         "pass": true,
         "warn": false,
-        "basis": "天花板制：实测 gzip 608.5 KB（移动原生批 5 组件 + scheduler 进全量入口后），上浮约 15% 定档 700 KB；前档 600 KB 定档于 2026-09-22（519.1 KB 实测），再前档 575 KB 定档于 v2.5.3（498.4 KB 实测）"
+        "basis": "天花板制：实测 gzip 628.7 KB（gantt + barcode 新组件、chart 四图型、glass 折射批次后），上浮约 15% 定档 730 KB；前档 700 KB 定档于 2026-10-05（608.5 KB 实测），再前档 600 KB 定档于 2026-09-22（519.1 KB 实测）"
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 912262,
-        "limitBytes": 1048576,
-        "warnAtBytes": 943718,
+        "actualBytes": 939716,
+        "limitBytes": 1105920,
+        "warnAtBytes": 995328,
         "pass": true,
         "warn": false,
-        "basis": "天花板制：实测 gzip 890.9 KB（移动原生批 + scheduler 批次后），上浮约 15%；前档 905 KB 定档于 2026-09-22（779.3 KB 实测），再前档 520 KB 定档于 v2.2.2（415,403 B）"
+        "basis": "天花板制：实测 gzip 917.7 KB（gantt/barcode/chart 扩展/glass 折射四批后），上浮约 15% 定档 1080 KB；前档 1024 KB 定档于 2026-10-05（890.9 KB 实测），再前档 905 KB 定档于 2026-09-22（779.3 KB 实测）"
       },
       {
         "name": "@oas-ui/ui/basic/button 链 gzip",
-        "actualBytes": 34268,
+        "actualBytes": 34909,
         "limitBytes": 39936,
         "warnAtBytes": 35942,
         "pass": true,
@@ -275,7 +300,7 @@
       },
       {
         "name": "@oas-ui/ui/data/table 链 gzip",
-        "actualBytes": 103384,
+        "actualBytes": 104043,
         "limitBytes": 118784,
         "warnAtBytes": 106906,
         "pass": true,
@@ -284,12 +309,21 @@
       },
       {
         "name": "@oas-ui/ui/form/form 链 gzip",
-        "actualBytes": 25378,
-        "limitBytes": 28672,
-        "warnAtBytes": 25805,
+        "actualBytes": 25676,
+        "limitBytes": 29696,
+        "warnAtBytes": 26726,
         "pass": true,
         "warn": false,
-        "basis": "实测 gzip 24.8 KB（form-associated 批次后 + 默认校验时机 input 化与竞态修复、oas-picker 注册、value property 系增量；含 core + i18n），上浮约 15%；前档 24 KB 定档于 2026-09-22（20.7 KB 实测）"
+        "basis": "实测 gzip 25.1 KB（四批合并后；含 core + i18n），上浮约 15% 定档 29 KB；前档 28 KB 定档于 2026-10-05（24.8 KB 实测）"
+      },
+      {
+        "name": "@oas-ui/ui/data/gantt 链 gzip",
+        "actualBytes": 40534,
+        "limitBytes": 47104,
+        "warnAtBytes": 42394,
+        "pass": true,
+        "warn": false,
+        "basis": "首次定档：实测 gzip 39.6 KB（gantt 组件 + 编码器无关，链含 core + i18n + virtual-list，v2.6.0 落地），上浮约 15% 定档 46 KB"
       },
       {
         "name": "@oas-ui/theme index.css gzip",

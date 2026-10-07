@@ -81,8 +81,8 @@ const VALID_FORMATS = new Set(['code128', 'ean13', 'ean8', 'upca', 'code39', 'it
  * - `text-position`：`bottom`（默认）/ `top`
  * - `font-size`：文字字号（px，默认 16）
  * - `text-margin`：文字与条间距（px，默认 4）
- * - `margin`：左右静区（px，默认 10）；**显式值低于 `10 × bar-width` 时收敛到下限并
- *   console.warn 一次**（扫码枪静区硬约束，宿主可加大不可破坏）
+ * - `margin`：左右静区（px，缺省即 `10 × bar-width`——默认产物可扫）；显式值低于下限时
+ *   收敛并 console.warn 一次（扫码枪静区硬约束，宿主可加大不可破坏）
  * - `color`：条色（CSS 色值或 11 预设名；缺省固定深色 `#18181b`，`--oas-barcode-color` 可覆）
  * - `bg-color`：静区底色（默认固定白 #fff——可扫性优先于主题一致性，dark 下同样可扫；
  *   `--oas-barcode-bg` 变量可覆）
@@ -207,12 +207,12 @@ export class OASBarcode extends OASElement {
   }
 
   /**
-   * 静区归一：缺省 10；显式值低于 10×bar-width 时收敛到下限并告警一次
-   * （默认值豁免——下限是给「显式调小」的宿主的护栏，不是给默认值的）
+   * 静区归一：缺省即 10×bar-width（可扫性下限——默认产物必须可扫，不依赖宿主显式设置）；
+   * 显式值低于下限时收敛并告警一次；显式更大值可用（静区大不影响识读）
    */
   private normalizeMargin(barWidth: number): number {
     const raw = this.getAttribute('margin')
-    const fallback = 10
+    const fallback = 10 * barWidth
     if (raw == null || raw.trim() === '') return fallback
     const n = Number(raw)
     if (!Number.isFinite(n) || n < 0) return fallback

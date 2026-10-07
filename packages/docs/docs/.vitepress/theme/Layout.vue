@@ -24,15 +24,26 @@ const route = useRoute()
 
 // 内置语言下拉只切路由；这里跟随页面 locale 同步组件内部文案（@oas-ui/i18n）。
 // immediate：直接落在 /en/ 深链的首屏也要对齐。
-// 持久化（oas-lang）只在用户「实际切换」时写：首屏落地（oldValue === undefined，即 immediate 的
-// 首次调用）不能写——落地页 locale 是 head 适配脚本跳过来的结果，把它当用户偏好写回会与脚本
-// 互相触发重定向回环（zh 浏览器整页打开 /en/ 页：脚本按浏览器语言跳 zh，本组件又把 en 写回，
-// 脚本下次读到 en 再跳 /en/，无限互踢）。
+// 持久化（oas-lang）只在用户「显式切换」时写——判据是点击语言下拉（.VPNavBarTranslations）里的
+// 链接；落地首屏与 SPA 内的 lang 重算一律不写。仅靠 oldValue === undefined 判定不够：路由/水合
+// 重算会以「oldValue 有值」的形式再次触发，满负载下曾把落地页 locale 写回偏好槽（污染后 en 浏览器
+// 访问 zh 深链不再跳转，homepage.spec 全量并发实抓），故改为显式点击判据 + 首调守卫双保险。
+let userSwitchedLang = false
+if (typeof document !== 'undefined') {
+  document.addEventListener(
+    'click',
+    (e) => {
+      const el = e.target as Element | null
+      if (el?.closest?.('.VPNavBarTranslations')) userSwitchedLang = true
+    },
+    true,
+  )
+}
 watch(
   lang,
   (value, oldValue) => {
     void applyI18n(value === 'en' ? 'en' : 'zh-CN')
-    if (oldValue === undefined) return
+    if (oldValue === undefined || !userSwitchedLang) return
     try {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('oas-lang', value === 'en' ? 'en' : 'zh')

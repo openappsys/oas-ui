@@ -69,11 +69,11 @@ A 1D barcode component based on a **pure TypeScript, zero-dependency encoder** (
 
 <DemoBlock title="margin quiet zone">
   <div style="width: 100%; display: flex; gap: var(--oas-space-5); align-items: flex-start; flex-wrap: wrap">
-    <oas-barcode value="OAS-UI-2026" margin="20" aria-label="Barcode with default floor quiet zone"></oas-barcode>
+    <oas-barcode value="OAS-UI-2026" aria-label="Barcode with the default (10 × bar-width) quiet zone"></oas-barcode>
     <oas-barcode value="OAS-UI-2026" margin="48" aria-label="Barcode with an enlarged quiet zone"></oas-barcode>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    <code>margin</code> is the left/right quiet zone (px, default 10). Scanners require enough whitespace on both sides or they refuse to read — the component has a built-in guardrail: <b>explicit values below <code>10 × bar-width</code> are clamped up to the floor with a one-time console.warn</b> (the default value is exempt). Hosts may enlarge it, not break it. The guardrail only enforces the floor — whether the quiet zone meets the physical requirements of a specific deployment (print size, scan distance, scanner model) is for the host to evaluate.
+    <code>margin</code> is the left/right quiet zone (px, <b>defaults to <code>10 × bar-width</code></b>—the default output is scannable out of the box). Scanners require enough whitespace on both sides or they refuse to read — the component has a built-in guardrail: explicit values below <code>10 × bar-width</code> are clamped up to the floor with a one-time console.warn. Hosts may enlarge it, not break it. The guardrail only enforces the floor — whether the quiet zone meets the physical requirements of a specific deployment (print size, scan distance, scanner model) is for the host to evaluate.
   </p>
 </DemoBlock>
 
@@ -167,7 +167,7 @@ onMounted(() => {
 | `font-size` | HRI text font size (px, default 16) | `string` | `16` |
 | `format` | Symbology: `code128` (default, auto A/B/C subset switching) / `ean13` / `ean8` / `upca` / `code39` / `itf14` (invalid values fall back to code128) | `string` | `code128` |
 | `height` | Bar height (px, default 100, excluding the text zone and guard-bar extension) | `string` | `100` |
-| `margin` | Left/right quiet zone (px, default 10); explicit values below `10 × bar-width` are clamped up to the floor with a one-time console.warn (scannability guardrail) | — | — |
+| `margin` | Left/right quiet zone (px, defaults to `10 × bar-width`—scannable out of the box); explicit values below `10 × bar-width` are clamped up to the floor with a one-time console.warn (scannability guardrail) | — | — |
 | `text-margin` | Spacing between text and bars (px, default 4) | `string` | `4` |
 | `text-position` | HRI text position: `bottom` (default) / `top` | `string` | `bottom` |
 | `value` | Barcode content (empty value shows the empty placeholder) | `string` | — |

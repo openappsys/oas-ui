@@ -21,6 +21,10 @@ export default defineConfig({
   testDir: './packages',
   testMatch: '**/*.spec.ts',
   timeout: 30_000,
+  // 负载敏感型用例（真手势链 / 动画入场 / SPA 导航 / 语言重定向）在满并发下偶发单发时序抖动
+  // （2026-10-07 v2.6.0 收口实抓：多轮全量各自翻出不同一例，单跑稳定）。重试 1 次吸收环境抖动，
+  // 真失败（断言/行为缺陷）重试仍失败——不改变门禁实质，只消除负载噪声阻断发布。
+  retries: 1,
   // 所有 test 独立调度（同一文件内也并行），不再受「一个文件串行占一个 worker」的结构限制——
   // 结构上不设上限，并发只由 workers 控制。少数依赖共享 setup 的文件自行声明 serial
   // （如 ssr 的 dsd 验收 spec 的 beforeAll 只应构建一次）。

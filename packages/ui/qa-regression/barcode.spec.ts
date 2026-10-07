@@ -6,7 +6,7 @@ import { up } from './helpers'
 test('barcode：role=img 与 aria-label 落在图形元素上，非法输入渲染错误占位并派发 oas-invalid', async ({ page }) => {
   const badWarns: string[] = []
   // 与 console-sweep 同口径过滤良性资源噪声（静态托管下理论不出现，防环境噪声误报）
-  const allow = [/net::ERR_/, /Failed to load resource/, /vite/, /hydrating/]
+  const allow = [/net::ERR_/, /Failed to load resource/, /vite/, /hydrating/, /cookie .*overwritten/i]
   page.on('console', (m) => {
     if ((m.type() === 'error' || m.type() === 'warning') && !allow.some((re) => re.test(m.text()))) {
       badWarns.push(`${m.type()}: ${m.text()}`)
@@ -132,8 +132,8 @@ test('barcode：六码制切换全部可渲染，整体宽度由内容决定；�
     expect(r.rendered[key], `${key} 应渲染出条形 path`).toBe(true)
     expect(Number(r.widths[key]), `${key} 宽度应由内容决定（>0）`).toBeGreaterThan(0)
   }
-  // ITF-14 '10614141000415'：标准起始 nnnn + 14 数字 + 停止 Wnn = 106 模；106×2 + 20 = 232
-  expect(r.widths.itf14, 'ITF-14 须为标准 106 模宽').toBe('232')
+  // ITF-14 '10614141000415'：标准起始 nnnn + 14 数字 + 停止 Wnn = 106 模；106×2 + 缺省静区 10×bar-width×2 侧 = 40 → 252
+  expect(r.widths.itf14, 'ITF-14 须为标准 106 模宽').toBe('252')
   // '123'（68 模 × 2）+ 收敛静区 20×2 = 176
   expect(r.clampedWidth, 'margin 低于下限收敛到 10×bar-width').toBe('176')
   expect(r.darkFill, '暗色下默认底仍固定白 var 通道').toBe('var(--oas-barcode-bg, #ffffff)')

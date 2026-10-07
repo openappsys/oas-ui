@@ -69,11 +69,11 @@
 
 <DemoBlock title="margin 静区">
   <div style="width: 100%; display: flex; gap: var(--oas-space-5); align-items: flex-start; flex-wrap: wrap">
-    <oas-barcode value="OAS-UI-2026" margin="20" aria-label="默认下限静区条码"></oas-barcode>
+    <oas-barcode value="OAS-UI-2026" aria-label="默认静区（10×bar-width）条码"></oas-barcode>
     <oas-barcode value="OAS-UI-2026" margin="48" aria-label="加大静区条码"></oas-barcode>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    <code>margin</code> 是左右静区（px，默认 10）。扫码枪要求条码两侧有足够空白，否则拒读——组件内建护栏：<b>显式值低于 <code>10 × bar-width</code> 时收敛到下限并 console.warn 一次</b>（默认值不参与收敛），宿主可加大、不可破坏。护栏只保下限——具体部署场景（打印尺寸、扫描距离、扫码枪型号）对静区的物理要求由宿主按实际情况评估。
+    <code>margin</code> 是左右静区（px，<b>缺省即 <code>10 × bar-width</code></b>——默认产物即可扫，不依赖宿主设置）。扫码枪要求条码两侧有足够空白，否则拒读——组件内建护栏：显式值低于 <code>10 × bar-width</code> 时收敛到下限并 console.warn 一次，宿主可加大、不可破坏。护栏只保下限——具体部署场景（打印尺寸、扫描距离、扫码枪型号）对静区的物理要求由宿主按实际情况评估。
   </p>
 </DemoBlock>
 
@@ -167,7 +167,7 @@ onMounted(() => {
 | `font-size` | 人读文字字号（px，默认 16） | `string` | `16` |
 | `format` | 码制：`code128`（默认，auto A/B/C 子集自动切换）/ `ean13` / `ean8` / `upca` / `code39` / `itf14`（非法值回退 code128） | `string` | `code128` |
 | `height` | 条高（px，默认 100，不含文字区与护条延伸） | `string` | `100` |
-| `margin` | 左右静区（px，默认 10）；显式值低于 `10 × bar-width` 时收敛到下限并 console.warn 一次（可扫性护栏） | — | — |
+| `margin` | 左右静区（px，缺省即 `10 × bar-width`——默认即可扫）；显式值低于 `10 × bar-width` 时收敛到下限并 console.warn 一次（可扫性护栏） | — | — |
 | `text-margin` | 文字与条间距（px，默认 4） | `string` | `4` |
 | `text-position` | 人读文字位置：`bottom`（默认）/ `top` | `string` | `bottom` |
 | `value` | 条码内容（空值走空态占位） | `string` | — |

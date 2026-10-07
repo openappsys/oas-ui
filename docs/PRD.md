@@ -1864,7 +1864,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **码制**：`code128`（默认，auto A/B/C 子集自动切换——C 段两位一符密度翻倍、控制字符段自动切 A）/ `ean13` / `ean8` / `upca`（首位 0 退化形态 ⊂ EAN-13，首位/末位按标准渲染在护条外侧）/ `code39`（43 字符表，自动大写化）/ `itf14`（交插 2of5 固定 13+1 位箱码）。编码实现全部原创自公开行业标准（GS1 GenSpec / ISO/IEC 15417 / 16388 / 15420），零第三方依赖。
 - **校验位**：EAN/UPC 系给 12/7/11/13 位数据自动补算 GS1 mod10 校验位；给全码则校验末位合法性。
 - **非法输入三类**（字符集 / 位数 / 校验位）：渲染错误占位（i18n）+ 派发 `oas-invalid` 事件（detail `{ reason: 'charset' | 'length' | 'checksum' }`，同一非法输入只派发一次），宿主可接管提示；`download()` 对非法值静默返回（不产出不可扫的图）。
-- **可扫性内建**：`margin` 静区默认 10，显式值低于 `10 × bar-width` 收敛到下限并 console.warn 一次（护栏：宿主可加大不可破坏）；`bar-width` clamp ≥1；默认深条（`#18181b`）+ 固定白底不随主题（dark 下同样可扫，`--oas-barcode-color` / `--oas-barcode-bg` 双变量可覆）；EAN/UPC 护条按标准向下延伸 5X。
+- **可扫性内建**：`margin` 静区缺省即 `10 × bar-width`（默认产物即可扫，不依赖宿主设置），显式值低于下限时收敛并 console.warn 一次（护栏：宿主可加大不可破坏）；`bar-width` clamp ≥1；默认深条（`#18181b`）+ 固定白底不随主题（dark 下同样可扫，`--oas-barcode-color` / `--oas-barcode-bg` 双变量可覆）；EAN/UPC 护条按标准向下延伸 5X。
 - **宽度由内容决定**：不设 `size`/`width` 属性——整体宽度 = 静区 ×2 + 护条外侧沟槽 + 总模数 × `bar-width`（与 qrcode 最反直觉的 API 差异，文档写清）。
 - **人读文字（HRI）**：`display-value` 默认显示（显式 `"false"` 关闭）、`text-position` top/bottom、`font-size`/`text-margin`；文字用 generic sans（OCR-B 无自由许可不内嵌，宿主可 @font-face 自接后经 `::part(text)` 覆盖）。
 - **输出**：内联 SVG（crispEdges）+ `role="img"` + aria-label（i18n `barcode.image`）；`download()` 复用 qrcode 式离屏 4× 栅格化 PNG。
@@ -1876,7 +1876,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 验收
 
-- 单测（编码器 26 + 组件 24）+ docs（zh/en）+ api-manifest + i18n ×10 + qa-regression e2e + 全量门禁全绿。
+- 单测（编码器 37 + 组件 31）+ docs（zh/en）+ api-manifest + i18n ×10 + qa-regression e2e + 全量门禁全绿。
 - 后续期边界：CODE128 强制子集（force A/B/C）、GS1-128（FNC1/AI）、UPC-E、MSI/Codabar/Pharmacode、EAN addon、ITF-14 承载框（bearer bar）——按真实需求逐项立项。
 
 ## 主题皮肤预设 + 默认视觉精修（未发布）
@@ -1942,11 +1942,11 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 行级/长列表不接（与 blur 同一性能纪律）；
 - 滤镜不可用时（如宿主 CSP 禁 data:）表现由浏览器决定（主流按忽略滤镜处理），严格 CSP 宿主可显式覆盖变量为空值；
 - **引擎边界（如实）**：折射位移在 Chromium 系真实生效；Firefox 对 CSS `filter` 的 data-URI SVG 滤镜不执行位移（实测开/关仅 ±1 LSB 栅格噪声）——安全无感降级为无折射，不破坏渲染；WebKit 引擎按 engineering §2 方法实测**真实执行**（Playwright WebKit 本机：开/关像素差异 4.55%、backdrop 模糊共存、pageerror 零、画廊渲染与 Chromium 一致——macOS/iOS 真机 Safari 同引擎源码，私有特性差异接受为已知边界）；
-- 位移是渲染后像素操作：布局/命中区不受影响（scale=8，单轴位移上限 4px 约束视觉膨胀与热区偏差）。
+- 位移是渲染后像素操作：布局/命中区不受影响（scale=10，膨胀峰值实测 ±4px 约束视觉膨胀与热区偏差）。
 
 ### 验收
 
-- 单测：data-URI 滤镜链结构（discrete 阈值归一 + 位移曲线三段值 + scale=8 + 滤镜区域横向 -50%/200% 纵向 -100%/300%）/ 9 组件消费断言 / 范围纪律（modal/drawer/popover + select 全族不含折射变量）/ app-bar data-more-open 关折射钩子 / 缺省回落 none；
+- 单测：data-URI 滤镜链结构（discrete 阈值归一 + Sobel 梯度入 R/G 双通道 + feDisplacementMap scale=10 + 滤镜区域横向 -50%/200% 纵向 -100%/300%）/ 9 组件消费断言 / 范围纪律（modal/drawer/popover + select 全族不含折射变量）/ app-bar data-more-open 关折射钩子 / 缺省回落 none；
 - e2e：data-glass 下 computed filter 生效（含 slider 把手伪元素）/ 无 data-glass 时安全降级 / 像素级断言（Chromium：整体开/关必不同 = 滤镜真实执行 + 中心区开/关一致 = 中间恒不变形硬约束；Firefox：开/关视觉无差 = 无感降级契约，防假绿）/ filter 与 backdrop-filter 共存（折射生效时模糊不丢）/ 文档化降级路径（容器覆盖空值后基础态 none 且 button hover 亮度反馈仍在）/ app-bar 弹层打开期间 filter 回落 none / 布局盒不变（双主题）；
 - 全门禁 + 双引擎 + perf:size 预算不突破。
 
@@ -1968,7 +1968,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 验收
 
-- 单测 50 条（渲染/刻度六档/行树折叠/依赖连线四型/拖拽三件套收口与取消/虚拟滚动/只读三级/今日线/RTL 镜像/暗色 token 纪律/tasks 通道与方法）；`pnpm test` 全绿。
+- 单测 69 条（渲染/刻度六档/行树折叠/依赖连线四型/拖拽三件套收口与取消/虚拟滚动/只读三级/今日线/RTL 镜像/暗色 token 纪律/tasks 通道与方法）；`pnpm test` 全绿。
 - e2e：`qa-regression/gantt.spec.ts`（渲染/刻度切换/折叠/真指针拖拽改期/tooltip/暗色/console 零告警）；全量 e2e 全绿。
 - 文档：gantt.md（zh/en）+ api-manifest + api-descriptions + i18n ×10 + PRD/ROADMAP 同步。
 

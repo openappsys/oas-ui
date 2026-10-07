@@ -2511,7 +2511,7 @@
       "text-position": "人读文字位置：`bottom`（默认）/ `top`",
       "font-size": "人读文字字号（px，默认 16）",
       "text-margin": "文字与条间距（px，默认 4）",
-      "margin": "左右静区（px，默认 10）；显式值低于 `10 × bar-width` 时收敛到下限并 console.warn 一次（可扫性护栏）",
+      "margin": "左右静区（px，缺省即 `10 × bar-width`——默认即可扫）；显式值低于 `10 × bar-width` 时收敛到下限并 console.warn 一次（可扫性护栏）",
       "color": "条色（默认固定深色 `#18181b`——与固定白底配套保证 dark 可扫；`--oas-barcode-color` 变量或预设名/任意色值覆盖）",
       "bg-color": "静区底色（默认白色——扫码器要求浅色静区，dark 主题下保持白底保证可扫；`--oas-barcode-bg` 变量可覆盖）"
     },

@@ -117,12 +117,14 @@ test.describe('官网首页（重设计版）', () => {
     const ctxEn = await browser.newContext({ locale: 'en-US' })
     const pEn = await ctxEn.newPage()
     await pEn.goto('/', { waitUntil: 'domcontentloaded' })
+    await expect.poll(() => pEn.url(), { timeout: 15000 }).toContain('/en/')
     const hero = pEn.locator('.home-hero')
     await expect(hero).toBeAttached()
     await expect(hero.locator('.hh-title')).toContainText('framework-agnostic')
     await ctxEn.close()
-    // zh 浏览器：中文首页
+    // zh 浏览器：中文首页（有界沉降后断言，防重定向中途取样）
     await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(1200)
     await expect(page.locator('.home-hero .hh-title')).toContainText('框架无关的')
   })
 
@@ -130,19 +132,22 @@ test.describe('官网首页（重设计版）', () => {
   // 其余一律英文兜底（/en/）；已带 /en/ 前缀的路径是显式英文，不回弹。
   // 手动切换写 localStorage（oas-lang）持久化，优先于浏览器语言探测
   test('首访语言适配：zh 浏览器留中文，en 浏览器跳 /en/，zh 深链同规则', async ({ browser }) => {
-    // en 浏览器：根路径跳 /en/
+    // en 浏览器：根路径跳 /en/（等目标 URL——单次采样会早于 head 脚本重定向完成，满负载实抓）
     const ctxEn = await browser.newContext({ locale: 'en-US' })
     const pEn = await ctxEn.newPage()
     await pEn.goto('/', { waitUntil: 'domcontentloaded' })
+    await expect.poll(() => pEn.url(), { timeout: 15000 }).toContain('/en/')
     expect(pEn.url(), 'en 浏览器首访根路径应跳英文').toContain('/en/')
     // en 浏览器：深链 zh 页面跳对应 en 页
     await pEn.goto('/components/button', { waitUntil: 'domcontentloaded' })
+    await expect.poll(() => pEn.url(), { timeout: 15000 }).toContain('/en/components/button')
     expect(pEn.url(), 'en 浏览器访问 zh 深链应跳对应英文页').toContain('/en/components/button')
     await ctxEn.close()
-    // zh 浏览器：根路径留中文
+    // zh 浏览器：根路径留中文（等一段有界沉降后负断言——防「尚未跳」被误判为「不跳」）
     const ctxZh = await browser.newContext({ locale: 'zh-CN' })
     const pZh = await ctxZh.newPage()
     await pZh.goto('/', { waitUntil: 'domcontentloaded' })
+    await pZh.waitForTimeout(1200)
     expect(pZh.url(), 'zh 浏览器首访应留中文根路径').not.toContain('/en/')
     await ctxZh.close()
   })
@@ -154,6 +159,7 @@ test.describe('官网首页（重设计版）', () => {
     await p.goto('/en/', { waitUntil: 'domcontentloaded' })
     await p.evaluate(() => localStorage.setItem('oas-lang', 'zh'))
     await p.goto('/', { waitUntil: 'domcontentloaded' })
+    await p.waitForTimeout(1200)
     expect(p.url(), '已存 zh 偏好的 en 浏览器访问根路径应留中文').not.toContain('/en/')
     // 反向：zh 浏览器 + 已存 en 偏好 → 跳英文
     const ctx2 = await browser.newContext({ locale: 'zh-CN' })
@@ -161,6 +167,7 @@ test.describe('官网首页（重设计版）', () => {
     await p2.goto('/', { waitUntil: 'domcontentloaded' })
     await p2.evaluate(() => localStorage.setItem('oas-lang', 'en'))
     await p2.goto('/', { waitUntil: 'domcontentloaded' })
+    await expect.poll(() => p2.url(), { timeout: 15000 }).toContain('/en/')
     expect(p2.url(), '已存 en 偏好的 zh 浏览器访问根路径应跳英文').toContain('/en/')
     await ctx.close()
     await ctx2.close()
@@ -191,6 +198,23 @@ test.describe('官网首页（重设计版）', () => {
     await settle('zh-CN', '/en/components/button-group.html', '/en/components/button-group.html')
     // en 浏览器整页打开中文深链：无显式语言前缀，按浏览器语言兜底跳对应英文页
     await settle('en-US', '/components/button-group.html', '/en/components/button-group.html')
+  })
+
+  test('语言偏好只在显式切换时写：落地首屏不写、点语言下拉切换才写（满负载污染实抓回归锁）', async ({ browser }) => {
+    // 曾现：仅靠 oldValue === undefined 判定「首屏不写」不够——路由/水合重算会以 oldValue 有值
+    // 再次触发 watcher，满负载下把落地页 locale 写回 oas-lang（en 浏览器访问 zh 深链不再跳转）。
+    // 现判据：点击 .VPNavBarTranslations 内的链接才算显式切换。
+    const ctx = await browser.newContext({ locale: 'zh-CN' })
+    const p = await ctx.newPage()
+    await p.goto('/', { waitUntil: 'domcontentloaded' })
+    await p.waitForTimeout(1200)
+    expect(await p.evaluate(() => localStorage.getItem('oas-lang')), '落地首屏不得写偏好').toBeNull()
+    // 显式切换：打开语言下拉 → 点 English
+    await p.locator('.VPNavBarTranslations button.button').click()
+    await p.locator('.VPNavBarTranslations .VPMenuLink a[href="/en/"]').click()
+    await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toContain('/en')
+    await expect.poll(() => p.evaluate(() => localStorage.getItem('oas-lang')), { timeout: 15000 }).toBe('en')
+    await ctx.close()
   })
 
   test('页脚：自定义四栏页脚 + 双许可与版权', async ({ page }) => {
@@ -238,8 +262,12 @@ test.describe('官网首页（重设计版）', () => {
     await page.waitForURL(/\/$/)
     const reveal = page.locator('.home-reveal').first()
     await expect(reveal).toBeAttached()
-    // 滚动触发 IntersectionObserver → 加 .in 显形
-    await reveal.scrollIntoViewIfNeeded()
+    // 滚动触发 IntersectionObserver → 加 .in 显形。
+    // 用 block:'center' 把元素完整滚进视口（scrollIntoViewIfNeeded 对「部分可见」不下滚，
+    // 低于 IO threshold 时不触发回调——满负载字体加载改变高度时实抓过该类抖动）
+    await page.evaluate(() => {
+      document.querySelector('.home-reveal')?.scrollIntoView({ block: 'center' })
+    })
     await expect.poll(() => page.locator('.home-reveal.in').count()).toBeGreaterThan(0)
     await expect(reveal).toHaveClass(/in/)
   })

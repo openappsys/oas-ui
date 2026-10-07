@@ -118,6 +118,7 @@ OAS-UI provides 126 framework-agnostic Web Components, organized into 7 groups b
 
 - [Kanban](/en/components/kanban) — Column + card kanban board: drag across columns / reorder within / column reorder / WIP limits / multi-select / swimlanes, fires oas-change on drop.
 - [Scheduler](/en/components/scheduler) — Month-view scheduler: event chips in day cells (title + color bar) + events read/write channel + CRUD methods and events, pure UI state.
+- [Gantt](/en/components/gantt) — Project scheduling: row-tree WBS + task bars/milestones/summary bars + FS/SS/FF/SF dependency links + six-scale time ruler + drag to reschedule/stretch/progress + three-level read-only + virtual scrolling.
 
 - [Table](/en/components/table) —— Displays structured data in a row-and-column grid with sorting, row selection, multi-select, and a loading state. It can be wired together with a pagination component.
 - [Tree](/en/components/tree) —— Displays hierarchical data with support for selection, expansion, multi-select, lazy loading, and node drag-and-drop.
@@ -136,7 +137,7 @@ OAS-UI provides 126 framework-agnostic Web Components, organized into 7 groups b
 - [Statistic](/en/components/statistic) —— Displays statistical values with `Intl.NumberFormat` thousands separators and precision (locale-aware), supporting prefix/suffix and a skeleton loading placeholder.
 - [Countdown](/en/components/countdown) —— A countdown component that refreshes in real time, supports day/hour/minute/second formatting templates, emits `oas-finish` when reaching zero, and automatically cleans up its timer on disconnect.
 - [Ellipsis](/en/components/ellipsis) —— Automatically truncates long text with single-line / multi-line clipping; on overflow it shows the full text in a tooltip on hover, and it can also expand / collapse.
-- [Chart](/en/components/chart) —— A self-developed SVG chart component (no third-party chart engine) supporting line / bar / pie / area / donut / stacked-bar. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`.
+- [Chart](/en/components/chart) —— A self-developed SVG chart component (no third-party chart engine) supporting line / bar / pie / area / donut / stacked-bar / radar / polar-area plus combo and dual-axis. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`.
 - [Code](/en/components/code) —— A code block component (self-developed regex token highlighting, no third-party highlighting engine) supporting basic coloring for common languages, line numbers, and a copy button.
 - [Equation](/en/components/equation) —— A math formula component (self-developed simplified LaTeX subset, zero third-party formula engine) covering common high-school / university formulas: superscripts/subscripts, fractions, square roots, summation/integration (with limits), Greek letters, and common operators.
 - [Log](/en/components/log) —— A monospace log display container that supports incremental appending and "stick-to-bottom" auto-scrolling, suitable for consoles / build output scenarios.
