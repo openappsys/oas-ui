@@ -16,6 +16,9 @@
 
 ### 修复
 
+- **oas-barcode 默认静区不可扫（默认 5X 低于组件自身强制的 10X 下限）**：`margin` 缺省改为 `10 × bar-width`——默认产物即可扫，不依赖宿主显式设置（此前默认 10px = 5X，与「可扫性内建」承诺自相矛盾）；单测/e2e/文档/API 语料同步。
+- **`@oas-ui/ui/ssr` 出口补全**：新增 `OASGantt`/`OASBarcode`/`OASScheduler`/`OASBottomSheet`/`OASAppBar`/`OASStepperPanel`/`OASFormItem`/`OASButtonGroupSeparator` 类导出（此前文件头宣称「re-export 全部组件类」但缺 8 个——含 v2.5.9 的 scheduler；均从类文件直出，不引含 define 副作用的目录入口）。
+- **文档站语言偏好污染（满负载实抓）**：首访适配的偏好槽 `oas-lang` 此前只靠 `oldValue === undefined` 判定「落地不写」，路由/水合重算会以 oldValue 有值再次触发 watcher 写回落地页 locale——污染后 en 浏览器访问 zh 深链不再跳转。改为「点击语言下拉才算显式切换」写入 + e2e 回归锁。
 - **浅色玻璃面板在白色背景下边界与内部隔断线消失（用户两轮实抓）**：浅色玻璃的 surface（白 0.6~0.75 半透明）与折光边（白 0.55）在白底上同为白色系，面板读作浮字；内部隔断线（modal 标题/底部分割线）走白色 border token，在白面板上同样消失（暗色下白色结构线可见，故只有浅色出问题）。修复双管齐下：① 三档阴影前置发丝线（`0 0 0 1px rgba(0,0,0,0.06~0.08)`）补面板外缘；② 浅色 `--oas-color-border` 系列改深色发丝（`rgba(0,0,0,0.08/0.14)`）补内部隔断——折光边职责仍归白色 `--oas-glass-ring`（outline 内缩），结构线与折光边分工对齐 iOS 浅色半透明面板；dark 段不动（范围纪律）。e2e 固化 computed 阴影含发丝线 + modal 标题分割线为深色系断言 + 白底/渐变双场景截图复核。
 - **oas-color-picker 未连接写 `value` 崩溃（React 19 宿主整树中断）**：React 19 在元素已升级、未连接时设置 property，`set value()` 直调 `update()` 读到未渲染内部件（`syncControls` 的 `.r/.g/.b` 非空断言）抛 TypeError。修复：setter 加 `hasRendered` 守卫（属性写入保留，首渲染自然读新值，与基类 `attributeChangedCallback` 早退同语义）。同步落地 29 组件 `value` setter 未连接守卫普查套件 + 真实浏览器 e2e 固化；并把同款守卫**统一铺到全部 20 个直调 `update()` 的 value setter**（input/textarea/select/slider/cascader/date-picker/time-picker/rate/radio/segmented/transfer/tree-select 等——此前「恰好不崩」靠各组件 update() 路径容错，现改为构造保证的「廉价 setter」约定：连接安全不依赖实现细节）。
 - **high-contrast × class 式暗色（`html.dark`）下玻璃材质泄漏**：`.dark` 选择器补 `:not([data-theme="high-contrast"])`——HC 可访问性强档下 blur/ring/折射全部让位（此前仅 `[data-theme='dark']` 路径排除）。
