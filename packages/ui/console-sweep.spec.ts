@@ -5,7 +5,14 @@ import { resolve, basename } from 'node:path'
 // 每页零 console 告警/报错的门禁：
 // 曾经漏检的类目（Vue isCustomElement 告警、demo 全局未挂载的 ReferenceError）都靠这里兜底。
 // 白名单仅放允许的无害噪音（外部资源 CDN 不可达、文档站第三方分析脚本的 cookie 覆盖告警等），新增告警一律红灯。
-const WARN_ALLOW = [/net::ERR_/, /Failed to load resource/, /vite/, /hydrating/, /cookie .*overwritten/i]
+const WARN_ALLOW = [
+  /net::ERR_/,
+  /Failed to load resource/,
+  /vite/,
+  /hydrating/,
+  /cookie .*overwritten/i,
+  /OpaqueResponseBlocking/,
+]
 const ERR_ALLOW = [/net::ERR_/, /Failed to load resource/]
 
 const PAGES = [

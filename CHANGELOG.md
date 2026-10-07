@@ -2,6 +2,12 @@
 
 所有显著变更记录于此。
 
+## [未发布]
+
+### 修复
+
+- **CI 长期失败两处根因修复**：① a11y 长列表页（calendar 等）在 CI 负载下 page.evaluate 超 30s 测试超时——此前误报为「calendar.html axe 违规」，实为超时；测试超时 30s → 60s（本地充裕、CI 打满 CPU 需双倍余量）。② Firefox OpaqueResponseBlocking 拦截 card demo 跨域外链图（picsum）产生的 benign 告警未入白名单 → smoke/console-sweep 白名单补该模式。
+
 ## [2.6.0] - 2026-10-07
 
 ### 特性

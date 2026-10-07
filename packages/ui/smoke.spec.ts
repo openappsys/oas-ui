@@ -39,6 +39,8 @@ for (const page of PAGES) {
         !e.includes('Hydration completed') &&
         !e.includes('net::ERR_') && // 外部资源（picsum 等 CDN）网络/DNS 失败，非组件问题
         !e.includes('Failed to load resource') &&
+        // Firefox ORB 拦截跨域 no-cors 图片（picsum 外链，CI 网络下必触发；本地常已缓存而无）
+        !e.includes('OpaqueResponseBlocking') &&
         // Firefox 特有 benign 告警：sticky/滚动联动布局的性能提示（docs 布局侧栏 sticky 每页必触发，
         // 非组件缺陷；Chromium 无此告警——firefox project 修真后实抓）
         !e.includes('scroll-linked positioning effect') &&

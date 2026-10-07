@@ -20,7 +20,10 @@ export default defineConfig({
   // 放 ui 会形成构建环）——故收到 packages 一级，`**/*.spec.ts` 两个目录都覆盖。
   testDir: './packages',
   testMatch: '**/*.spec.ts',
-  timeout: 30_000,
+  // 60s：CI（2 核 runner + 4 worker 分片）单页 e2e 的 page.evaluate 偶超 30s——a11y 长列表页
+  // 曾因此以「超时」形态失败（报 calendar.html 但非 axe 违规，实为 disabledTextColor 的 evaluate 超时，
+  // CI 连续多轮 1 failed 实抓）。本地充裕、CI 打满 CPU 时需双倍余量
+  timeout: 60_000,
   // 负载敏感型用例（真手势链 / 动画入场 / SPA 导航 / 语言重定向）在满并发下偶发单发时序抖动
   // （2026-10-07 v2.6.0 收口实抓：多轮全量各自翻出不同一例，单跑稳定）。重试 1 次吸收环境抖动，
   // 真失败（断言/行为缺陷）重试仍失败——不改变门禁实质，只消除负载噪声阻断发布。
