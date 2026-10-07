@@ -71,6 +71,12 @@
   --oas-glass-refraction: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter%20id='oas-glass-refraction'%20x='-50%25'%20y='-100%25'%20width='200%25'%20height='300%25'%20color-interpolation-filters='sRGB'%3E%3CfeComponentTransfer%20in='SourceAlpha'%20result='t'%3E%3CfeFuncA%20type='discrete'%20tableValues='0%201'/%3E%3C/feComponentTransfer%3E%3CfeGaussianBlur%20in='t'%20stdDeviation='3'%20result='a'/%3E%3CfeColorMatrix%20in='a'%20type='matrix'%20values='0%200%200%201%200%200%200%200%201%200%200%200%200%201%200%200%200%200%200%201'%20result='w'/%3E%3CfeConvolveMatrix%20in='w'%20order='3'%20kernelMatrix='1%200%20-1%202%200%20-2%201%200%20-1'%20divisor='1'%20bias='0.5'%20preserveAlpha='true'%20result='gx'/%3E%3CfeConvolveMatrix%20in='w'%20order='3'%20kernelMatrix='1%202%201%200%200%200%20-1%20-2%20-1'%20divisor='1'%20bias='0.5'%20preserveAlpha='true'%20result='gy'/%3E%3CfeColorMatrix%20in='gx'%20type='matrix'%20values='1%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%201'%20result='rx'/%3E%3CfeColorMatrix%20in='gy'%20type='matrix'%20values='0%200%200%200%200%200%201%200%200%200%200%200%200%200%200%200%200%200%200%201'%20result='gy2'/%3E%3CfeComposite%20in='rx'%20in2='gy2'%20operator='arithmetic'%20k1='0'%20k2='1'%20k3='1'%20k4='0'%20result='m'/%3E%3CfeDisplacementMap%20in='SourceGraphic'%20in2='m'%20scale='10'%20xChannelSelector='R'%20yChannelSelector='G'/%3E%3C/filter%3E%3C/svg%3E#oas-glass-refraction");
   --oas-glass-blur: blur(18px) saturate(1.6);
   --oas-glass-ring: rgba(255, 255, 255, 0.55);
+  /* v2.6.1 动态流动感：指针镜面高光（运行时 glass-fluid.js 写 --oas-glass-px/py；
+     组件影子 ::after 消费本组变量；alpha 刻意压低——高光叠在文字上不得拉低文字对比度） */
+  --oas-glass-sheen: rgba(255, 255, 255, 0.28);
+  --oas-glass-sheen-size: 180px;
+  /* 按压=更强的高光色（真增强；不是压暗） */
+  --oas-glass-sheen-press: rgba(255, 255, 255, 0.5);
 }
 
 /* dark（同时覆盖库内 [data-theme='dark'] 规范与宿主常见的 html.dark class 式暗色）。
@@ -98,4 +104,8 @@
   --oas-shadow-lg: 0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 24px 48px -8px rgba(0, 0, 0, 0.65);
   --oas-glass-blur: blur(18px) saturate(1.6);
   --oas-glass-ring: rgba(255, 255, 255, 0.16);
+  /* 动态流动感高光（暗色）：白高光更低 alpha，避免暗面板上过曝与文字对比度波动 */
+  --oas-glass-sheen: rgba(255, 255, 255, 0.14);
+  --oas-glass-sheen-size: 180px;
+  --oas-glass-sheen-press: rgba(255, 255, 255, 0.24);
 }

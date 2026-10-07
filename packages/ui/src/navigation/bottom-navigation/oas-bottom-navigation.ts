@@ -72,6 +72,37 @@ const STYLE = `
   padding: 0;
   margin: 0;
 }
+
+/* v2.6.1 动态流动感：指针镜面高光（glass-fluid.js 写坐标变量；opt-in——静止无 background，
+   仅命中时经 data-glass-fluid 生成，axe 采样不受扰） */
+.tablist[data-glass-surface] { position: relative; }
+.tablist[data-glass-surface]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--oas-transition-fast) var(--oas-ease-out);
+}
+.tablist[data-glass-surface][data-glass-fluid]::after {
+  opacity: 1;
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen, transparent),
+    transparent 65%
+  );
+}
+/* 按压收紧：换成更强的高光色（真增强；opacity 保持 1） */
+.tablist[data-glass-surface][data-glass-fluid]:active::after {
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen-press, transparent),
+    transparent 65%
+  );
+}
+
+
 .tab {
   flex: 1;
   display: flex;
@@ -256,7 +287,7 @@ export class OASBottomNavigation extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <div class="tablist" part="tablist"></div>
+      <div class="tablist" part="tablist" data-glass-surface></div>
     `
   }
 

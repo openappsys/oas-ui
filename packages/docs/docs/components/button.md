@@ -373,7 +373,12 @@
 | `--oas-button-group-width` | — | `auto` |
 | `--oas-button-height` | 按钮高度开口（默认回落尺寸档值）；swipe-cell actions 等需要按钮填满行高的场景经 ::slotted 注入 100%（swipe-cell 已内建注入） | `var(--oas-control-height-md)` |
 | `--oas-button-on-color` | — | `var(--oas-color-text-on-primary)` |
+| `--oas-glass-px` | — | `50%` |
+| `--oas-glass-py` | — | `50%` |
 | `--oas-glass-refraction` | 液态玻璃边缘折射滤镜（`data-glass` 生效，默认 none）；局部停用覆盖为**空值**（`--oas-glass-refraction: ;`）——不得用 `none`（与 button 态的 brightness() 混排会使整条 filter 声明非法） | `none` |
+| `--oas-glass-sheen` | — | `transparent` |
+| `--oas-glass-sheen-press` | — | `transparent` |
+| `--oas-glass-sheen-size` | — | `180px` |
 
 <script setup>
 import { onMounted } from 'vue'

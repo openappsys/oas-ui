@@ -190,8 +190,13 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | `--oas-bottom-navigation-pill-inset` | — | `12px` |
 | `--oas-bottom-navigation-pill-shadow` | — | `var(--oas-shadow-sm)` |
 | `--oas-glass-blur` | — | `none` |
+| `--oas-glass-px` | — | `50%` |
+| `--oas-glass-py` | — | `50%` |
 | `--oas-glass-refraction` | Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration) | `none` |
 | `--oas-glass-ring` | — | `transparent` |
+| `--oas-glass-sheen` | — | `transparent` |
+| `--oas-glass-sheen-press` | — | `transparent` |
+| `--oas-glass-sheen-size` | — | `180px` |
 
 ### oas-bottom-navigation-item
 

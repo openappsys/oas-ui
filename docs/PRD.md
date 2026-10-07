@@ -1994,3 +1994,25 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：chart 文件 41 例（TDD RED→GREEN ×4 轮按 polar-area → radar → multi-axis → combo 推进——combo 回归面最大放最后，每步全量 chart 单测防回归）；全量 `pnpm test` 全绿。
 - qa-regression：`chart.spec.ts` 增四图型渲染产出断言（radar 网格/顶点/图例、polar-area 扇区/参考圈、combo 柱线共存、双轴右轴刻度与轴名）+ RTL 不破断言。
 - 文档：chart.md zh/en 四图型 DemoBlock（内联 attribute 数据）+ 边界说明；api 语料（type 枚举、options 新键、series 扩展字段）→ `api:gen --check` 全绿。
+
+## 液态玻璃动态流动感 v1（未发布）
+
+> 承接液态玻璃批的如实口径：静态近似（v2.5.9）与边缘折射（v2.6.0）已交付，本批补「随交互变形」的第一层——**指针跟随的镜面高光**与**按压收紧**。范围纪律（用户定）：与折射同域，仅 9 个控件/导航/通知组件消费，内容面板不进；随环境内容变化的实时高光仍属后续。
+
+### 特性
+
+- **指针镜面高光**：主题层运行时（`@oas-ui/theme/glass-fluid.js`）单文档级 `pointermove` 监听 + `composedPath` 命中 `[data-glass-surface]` → rAF 合批写元素本地归一坐标（`--oas-glass-px` / `--oas-glass-py`）→ 组件影子样式经空闲伪元素 `::after` 渲染径向高光；指针离开或元素卸载即淡出并清内联变量（SPA 泄漏防护）。
+- **按压收紧**：`[data-glass-surface]:active` 把高光换成**更强的高光色**（真增强，非压暗），slider 把手另有按压外扩环；纯 CSS 实现（不动 transform——避免与 button wave / 拖拽等既有 transform 语义冲突）。
+- **消费范围**：oas-button / oas-switch / oas-slider（把手）/ oas-app-bar / oas-bottom-navigation / oas-message / oas-toast / oas-snackbar / oas-notification。
+
+### 边界
+
+- `prefers-reduced-motion: reduce` 不启用；粗指针（`pointer: coarse`）不接（触屏无 hover 语义）；`high-contrast` 不启用；无 `data-glass` 时零监听零开销；
+- 性能：单文档监听 + rAF 合批 + passive 监听；每帧至多一次 rect 读取；命中判定走事件 `composedPath`（不查表不遍历）；
+- 更强的「随交互变形」形态（拖拽中塑性形变、随背景内容变化的实时高光）不在 v1。
+
+### 验收
+
+- 单测：运行时（命中/坐标换算/rAF 节流/离开清理/reduced-motion/粗指针/HC/无 data-glass 零监听）+ 9 组件消费与范围纪律断言；
+- e2e：真实指针移动 → 变量写入且高光可见；reduced-motion / 无 data-glass 零监听；双主题截图；console 零告警；
+- 全门禁 + 双引擎 + perf（theme 运行时新增预算档）。

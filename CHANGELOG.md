@@ -4,6 +4,10 @@
 
 ## [未发布]
 
+### 特性
+
+- **液态玻璃「动态流动感」v1**（承接玻璃批：静态近似 v2.5.9 + 边缘折射 v2.6.0 之后补「随交互变形」第一层，范围纪律=Apple 定义域）：① **指针镜面高光**——新增主题运行时 `@oas-ui/theme/glass-fluid.js`（单文档 `pointermove` 监听 + `composedPath` 命中 `[data-glass-surface]` → rAF 合批写元素本地归一坐标 `--oas-glass-px`/`--oas-glass-py` → 组件影子 `::after` 渲染径向高光；指针离开/停用即淡出并清内联变量，SPA 泄漏防护）；② **按压收紧**——`[data-glass-surface]:active` 把高光色换成更强档（真增强，非压暗；slider 把手另有按压外扩环），纯 CSS 不动 transform（避开 wave/拖拽的既有 transform 语义）。9 控件域组件消费：oas-button / oas-switch / oas-slider（经把手伪元素继承变量）/ oas-app-bar（`:host::after`）/ oas-bottom-navigation / oas-message / oas-toast / oas-snackbar / oas-notification。守卫：无 `data-glass` 零监听、`prefers-reduced-motion` 不启用、粗指针不接、`high-contrast` 不启用；`glass.css` 新增 `--oas-glass-sheen`/`-size`/`-press` 三变量（明暗双档，alpha 压低防拉低文字对比度）。内容面板与随环境内容变化的实时高光不进本批。
+
 ### 修复
 
 - **CI 长期失败两处根因修复**：① a11y 长列表页（calendar 等）在 CI 负载下 page.evaluate 超 30s 测试超时——此前误报为「calendar.html axe 违规」，实为超时；测试超时 30s → 60s（本地充裕、CI 打满 CPU 需双倍余量）。② Firefox OpaqueResponseBlocking 拦截 card demo 跨域外链图（picsum）产生的 benign 告警未入白名单 → smoke/console-sweep 白名单补该模式。

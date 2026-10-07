@@ -28,6 +28,39 @@ const STYLE = `
   outline-offset: -1px;
   padding: var(--oas-space-4);
 }
+
+/* v2.6.1 动态流动感：指针镜面高光（glass-fluid.js 写坐标变量；opt-in——静止无 background，
+   仅命中时经 data-glass-fluid 生成，axe 采样不受扰） */
+.box[data-glass-surface] {
+  position: relative;
+}
+.box[data-glass-surface]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--oas-transition-fast) var(--oas-ease-out);
+}
+.box[data-glass-surface][data-glass-fluid]::after {
+  opacity: 1;
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen, transparent),
+    transparent 65%
+  );
+}
+/* 按压收紧：换成更强的高光色（真增强；opacity 保持 1） */
+.box[data-glass-surface][data-glass-fluid]:active::after {
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen-press, transparent),
+    transparent 65%
+  );
+}
+
+
 /* onClick 场景的可点击暗示（命令式层有 onClick 时设 clickable 属性） */
 :host([clickable]) .box {
   cursor: pointer;
@@ -216,7 +249,7 @@ export class OASNotification extends OASElement {
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <div class="box" part="box" role="region" aria-label="">
+      <div class="box" part="box" role="region" aria-label="" data-glass-surface>
         <div class="title-row">
           <span class="spinner" part="spinner" aria-hidden="true"></span>
           <span class="icon" part="icon" aria-hidden="true"><slot name="icon"></slot></span>

@@ -442,6 +442,327 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
     expect(dw, '膨胀幅度上限（scale=10 峰值 ±4px/侧 → 外包络约 +8px + 抗锯齿余量）').toBeLessThanOrEqual(12)
   })
 
+  /** 动态流动感覆盖的控件域探针：[标签, 在宿主内取 surface 元素]（message 系共享 .box 形态，见源断言） */
+  const FLUID_CASES: Array<[string, (host: HTMLElement) => Element | null]> = [
+    ['oas-button', (h) => h.shadowRoot!.querySelector('button')],
+    ['oas-switch', (h) => h.shadowRoot!.querySelector('button')],
+    ['oas-slider', (h) => h.shadowRoot!.querySelector('input[type="range"]')],
+    ['oas-app-bar', (h) => h],
+    ['oas-bottom-navigation', (h) => h.shadowRoot!.querySelector('.tablist')],
+    ['oas-message', (h) => h.shadowRoot!.querySelector('.box')],
+  ]
+
+  test('动态流动感：多组件指针命中 → 坐标变量 + 高光亮起 → 离开清理（跨引擎）', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(900)
+    // 逐个注入探针组件到固定位置（docs 全量包已注册全部组件）
+    // 等组件升级 + 一帧渲染后取 **surface 自身** rect（宿主 rect ≠ surface rect，空 bottom-nav 高度为 0）
+    const boxes = await page.evaluate(
+      async (cases: string[]) => {
+        const selOf = (t: string): string | null =>
+          t === 'oas-button' || t === 'oas-switch'
+            ? 'button'
+            : t === 'oas-slider'
+              ? 'input[type="range"]'
+              : t === 'oas-bottom-navigation'
+                ? '.tablist'
+                : t === 'oas-message'
+                  ? '.box'
+                  : null
+        const out: Record<string, { x: number; y: number; w: number; h: number }> = {}
+        for (let i = 0; i < cases.length; i++) {
+          const tag = cases[i]!
+          const el = document.createElement(tag) as HTMLElement
+          el.style.cssText = `position:fixed;left:80px;top:${60 + i * 70}px;z-index:9999;width:220px;min-height:40px`
+          if (tag === 'oas-message') el.setAttribute('open', '')
+          document.body.appendChild(el)
+          await customElements.whenDefined(tag)
+          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))))
+          const sel = selOf(tag)
+          const surface = ((sel ? el.shadowRoot?.querySelector(sel) : el) ?? el) as HTMLElement
+          const r = surface.getBoundingClientRect()
+          out[tag] = { x: r.x, y: r.y, w: Math.max(1, r.width), h: Math.max(1, r.height) }
+        }
+        return out
+      },
+      FLUID_CASES.map(([tag]) => tag),
+    )
+    for (const [tag] of FLUID_CASES) {
+      const b = boxes[tag]!
+      await page.mouse.move(b.x + b.w / 2, b.y + b.h / 2)
+      // 轮询等待高光激活（去固定等待赌博）
+      await page.waitForFunction(
+        (t: string) => {
+          const sel =
+            t === 'oas-button' || t === 'oas-switch'
+              ? 'button'
+              : t === 'oas-slider'
+                ? 'input[type="range"]'
+                : t === 'oas-bottom-navigation'
+                  ? '.tablist'
+                  : t === 'oas-message'
+                    ? '.box'
+                    : null
+          const host = [...document.querySelectorAll(t)].pop() as HTMLElement
+          const surface = (sel ? host.shadowRoot!.querySelector(sel) : host) as Element | null
+          return !!surface && surface.hasAttribute('data-glass-fluid')
+        },
+        tag,
+        { timeout: 5000 },
+      )
+      const on = await page.evaluate((t: string) => {
+        const sel =
+          t === 'oas-button' || t === 'oas-switch'
+            ? 'button'
+            : t === 'oas-slider'
+              ? 'input[type="range"]'
+              : t === 'oas-bottom-navigation'
+                ? '.tablist'
+                : t === 'oas-message'
+                  ? '.box'
+                  : null
+        const host = [...document.querySelectorAll(t)].pop() as HTMLElement
+        const surface = (sel ? host.shadowRoot!.querySelector(sel) : host) as HTMLElement | null
+        return {
+          surface: !!surface && surface.hasAttribute('data-glass-surface'),
+          px: surface ? surface.style.getPropertyValue('--oas-glass-px') : '',
+          afterOpacity: surface ? getComputedStyle(surface, '::after').opacity : '',
+        }
+      }, tag)
+      expect(on.surface, `${tag} 应挂 data-glass-surface`).toBe(true)
+      expect(on.px, `${tag} 应写本地坐标`).toMatch(/%$/)
+      expect(on.afterOpacity, `${tag} 高光层应可见`).toBe('1')
+    }
+    // 离开：全部清理
+    await page.mouse.move(5, 5)
+    await page.waitForTimeout(300)
+    const leftover = await page.evaluate(() => {
+      const hosts = [
+        ...document.querySelectorAll(
+          'oas-button, oas-switch, oas-slider, oas-app-bar, oas-bottom-navigation, oas-message',
+        ),
+      ]
+      let n = 0
+      for (const h of hosts) {
+        const els = [h, ...(h.shadowRoot ? [...h.shadowRoot.querySelectorAll('*')] : [])]
+        for (const el of els) if (el.hasAttribute('data-glass-fluid')) n++
+      }
+      return n
+    })
+    expect(leftover, '指针离开后不得残留 data-glass-fluid').toBe(0)
+  })
+
+  test('动态流动感：surface 内部子元素跨界不熄灭高光（leave 精判回归）', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(900)
+    const box = await page.evaluate(async () => {
+      const btn = document.createElement('oas-button') as HTMLElement
+      btn.setAttribute('type', 'primary')
+      btn.textContent = 'fluid-cross-probe'
+      btn.style.cssText = 'position:fixed;left:120px;top:120px;z-index:9999'
+      document.body.appendChild(btn)
+      await customElements.whenDefined('oas-button')
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))))
+      const r = btn.getBoundingClientRect()
+      return { x: r.x, y: r.y, w: r.width, h: r.height }
+    })
+    await page.mouse.move(box.x + box.w / 2, box.y + box.h / 2)
+    await page.waitForFunction(
+      () =>
+        [...document.querySelectorAll('oas-button')]
+          .pop()!
+          .shadowRoot!.querySelector('button')!
+          .hasAttribute('data-glass-fluid'),
+      null,
+      { timeout: 5000 },
+    )
+    // 在 surface 内部跨界（跨过内部文字/插槽子元素边界，触发 capture pointerleave 派发链）
+    await page.mouse.move(box.x + box.w * 0.3, box.y + box.h / 2)
+    await page.mouse.move(box.x + box.w * 0.8, box.y + box.h / 2)
+    await page.waitForTimeout(250)
+    const r = await page.evaluate(() => {
+      const inner = [...document.querySelectorAll('oas-button')].pop()!.shadowRoot!.querySelector('button')!
+      return { fluid: inner.hasAttribute('data-glass-fluid'), px: inner.style.getPropertyValue('--oas-glass-px') }
+    })
+    expect(r.fluid, 'surface 内部跨界后高光应仍在（leave 精判）').toBe(true)
+    expect(r.px, '坐标应已重写').toMatch(/%$/)
+  })
+
+  test('动态流动感按压：按下换成更强的高光色（真增强），非压暗', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(900)
+    // 专用探针（append 在最后 → `.pop()` 稳定命中，不依赖页面既有按钮的 DOM 次序）
+    const box = await page.evaluate(() => {
+      const btn = document.createElement('oas-button') as HTMLElement
+      btn.setAttribute('type', 'primary')
+      btn.textContent = 'fluid-press-probe'
+      btn.style.cssText = 'position:fixed;left:120px;top:120px;z-index:9999'
+      document.body.appendChild(btn)
+      const r = btn.getBoundingClientRect()
+      return { x: r.x, y: r.y, w: r.width, h: r.height }
+    })
+    await page.waitForTimeout(200)
+    await page.mouse.move(box.x + box.w * 0.6, box.y + box.h * 0.5)
+    await page.waitForFunction(
+      () => {
+        const inner = [...document.querySelectorAll('oas-button')].pop()!.shadowRoot!.querySelector('button')
+        return !!inner && inner.hasAttribute('data-glass-fluid')
+      },
+      null,
+      { timeout: 5000 },
+    )
+    const hoverBg = await page.evaluate(() => {
+      const inner = [...document.querySelectorAll('oas-button')].pop()!.shadowRoot!.querySelector('button')!
+      return getComputedStyle(inner, '::after').backgroundImage
+    })
+    await page.mouse.down()
+    await page.waitForTimeout(250)
+    const pressBg = await page.evaluate(() => {
+      const inner = [...document.querySelectorAll('oas-button')].pop()!.shadowRoot!.querySelector('button')!
+      const cs = getComputedStyle(inner, '::after')
+      return { bg: cs.backgroundImage, opacity: cs.opacity }
+    })
+    await page.mouse.up()
+    expect(hoverBg, 'hover 态应有高光渐变').toContain('gradient')
+    expect(pressBg.bg, '按压态应有高光渐变').toContain('gradient')
+    expect(pressBg.bg, '按压高光色应强于 hover（0.5 vs 0.28）').not.toBe(hoverBg)
+    expect(pressBg.bg, '按压用更强 sheen 色').toContain('0.5')
+    expect(pressBg.opacity, '按压态不得把高光层压暗').toBe('1')
+  })
+
+  test('动态流动感对比度门禁：高光叠在文字上仍达感知分 ≥60（双主题 × 三类背板）', async ({ page }) => {
+    const BACKDROPS: Array<[string, [number, number, number]]> = [
+      ['亮蓝', [64, 120, 255]],
+      ['品红', [255, 120, 180]],
+      ['深青', [31, 74, 68]],
+    ]
+    for (const theme of ['light', 'dark'] as const) {
+      await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+      if (theme === 'dark') await page.evaluate(() => document.documentElement.classList.add('dark'))
+      await page.waitForTimeout(600)
+      const r = await page.evaluate(
+        async (cases: string[]) => {
+          const parse = (s: string) => {
+            const m = s.match(/rgba?\(([^)]+)\)/)
+            if (!m) return null
+            const p = m[1]!.split(',').map((x) => parseFloat(x))
+            return [p[0]!, p[1]!, p[2]!, p.length > 3 ? p[3]! : 1] as [number, number, number, number]
+          }
+          const out: Array<{ tag: string; fg: number[]; bg: number[]; sheen: number[] }> = []
+          for (const tag of cases) {
+            // slider 的文字在 track 容器而非 input 上、input 底透明 → 无文字可比，跳过（其高光为纯装饰）
+            const host = document.createElement(tag) as HTMLElement
+            host.style.cssText = 'position:fixed;left:-9999px;top:0'
+            document.body.appendChild(host)
+            await customElements.whenDefined(tag)
+            await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+            const sel =
+              tag === 'oas-button' || tag === 'oas-switch'
+                ? 'button'
+                : tag === 'oas-slider'
+                  ? 'input[type="range"]'
+                  : tag === 'oas-bottom-navigation'
+                    ? '.tablist'
+                    : tag === 'oas-message'
+                      ? '.box'
+                      : null
+            const surface = (sel ? host.shadowRoot!.querySelector(sel) : host) as HTMLElement | null
+            if (surface) {
+              const cs = getComputedStyle(surface)
+              const rgb = parse(cs.color)
+              const bg = parse(cs.backgroundColor)
+              const sheen = parse(
+                getComputedStyle(host).getPropertyValue('--oas-glass-sheen').trim() || 'rgba(255,255,255,0)',
+              )
+              if (rgb && bg && sheen) out.push({ tag, fg: rgb, bg, sheen })
+            }
+            host.remove()
+          }
+          return out
+        },
+        FLUID_CASES.filter(([t]) => t !== 'oas-slider').map(([t]) => t),
+      )
+      expect(r.length, `${theme}：应采到控件文字与底色`).toBeGreaterThan(3)
+      for (const item of r) {
+        for (const [label, bd] of BACKDROPS) {
+          // surface bg 合成到背板 → 再叠 sheen（高光最坏情形：铺满整层）
+          const [br, bg1, bb, ba] = item.bg as [number, number, number, number]
+          const a = ba
+          const eff: [number, number, number] = [
+            br * a + bd[0] * (1 - a),
+            bg1 * a + bd[1] * (1 - a),
+            bb * a + bd[2] * (1 - a),
+          ]
+          const [sr, sg, sb, sa] = item.sheen as [number, number, number, number]
+          expect(sa, `${theme}/${item.tag}：sheen 必须有 alpha（为 0 则门禁空转假绿）`).toBeGreaterThan(0)
+          const [fr, fg2, fb] = item.fg as [number, number, number, number]
+          // 最坏情形取双向：①高光叠底、文字不动；②高光叠文字、底不动（取更差者，模型保守）
+          const litBg: [number, number, number] = [
+            sr * sa + eff[0] * (1 - sa),
+            sg * sa + eff[1] * (1 - sa),
+            sb * sa + eff[2] * (1 - sa),
+          ]
+          const litText: [number, number, number] = [
+            sr * sa + fr * (1 - sa),
+            sg * sa + fg2 * (1 - sa),
+            sb * sa + fb * (1 - sa),
+          ]
+          const score = Math.min(
+            Math.abs(perceptualContrast(relativeLuminance([fr, fg2, fb]), relativeLuminance(litBg))),
+            Math.abs(perceptualContrast(relativeLuminance(litText), relativeLuminance(eff))),
+          )
+          expect(
+            score,
+            `${theme}/${item.tag} 高光最高时 ${label} 背板感知分 ${score.toFixed(1)} 应 ≥60`,
+          ).toBeGreaterThanOrEqual(60)
+        }
+      }
+    }
+  })
+
+  test('动态流动感守卫：reduced-motion 下不启用（零变量）', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(900)
+    const box = await page.evaluate(() => {
+      const btn = document.createElement('oas-button') as HTMLElement
+      btn.setAttribute('type', 'primary')
+      btn.textContent = 'fluid-rm-probe'
+      btn.style.cssText = 'position:fixed;left:120px;top:120px;z-index:9999'
+      document.body.appendChild(btn)
+      const r = btn.getBoundingClientRect()
+      return { x: r.x, y: r.y, w: r.width, h: r.height }
+    })
+    await page.waitForTimeout(200)
+    await page.mouse.move(box.x + box.w * 0.7, box.y + box.h * 0.5)
+    await page.waitForTimeout(300)
+    const r = await page.evaluate(() => {
+      const inner = [...document.querySelectorAll('oas-button')].pop()!.shadowRoot!.querySelector('button')!
+      return { fluid: inner.hasAttribute('data-glass-fluid'), px: inner.style.getPropertyValue('--oas-glass-px') }
+    })
+    expect(r.fluid, 'reduced-motion 下不得亮高光').toBe(false)
+    expect(r.px, 'reduced-motion 下不得写坐标').toBe('')
+  })
+
+  test('动态流动感守卫：无 data-glass 页面零变量', async ({ page }) => {
+    await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(700)
+    const box = await page.evaluate(() => {
+      const btn = document.querySelector('oas-button') as HTMLElement
+      btn.style.cssText += ';position:fixed;left:120px;top:120px;z-index:9999'
+      const r = btn.getBoundingClientRect()
+      return { x: r.x, y: r.y, w: r.width, h: r.height }
+    })
+    await page.mouse.move(box.x + box.w * 0.7, box.y + box.h * 0.5)
+    await page.waitForTimeout(250)
+    const r = await page.evaluate(() => {
+      const inner = document.querySelector('oas-button')!.shadowRoot!.querySelector('button')!
+      return { fluid: inner.hasAttribute('data-glass-fluid'), px: inner.style.getPropertyValue('--oas-glass-px') }
+    })
+    expect(r.fluid, '无 data-glass 不得亮高光').toBe(false)
+    expect(r.px, '无 data-glass 不得写坐标').toBe('')
+  })
+
   test('app-bar 溢出弹层打开期间关折射（弹层不被滤镜区域裁切——review 实抓回归锁）', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(800)

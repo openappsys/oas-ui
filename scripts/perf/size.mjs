@@ -189,6 +189,13 @@ const theme = {
   gzipBytes: gzip(themeCss),
   brotliBytes: brotli(themeCss),
 }
+// v2.6.1 动态流动感运行时（theme 包的可选 JS 层，独立预算档）
+const glassFluid = readFileSync(join(ROOT, 'packages/theme/glass-fluid.js'))
+const fluidJs = {
+  rawBytes: glassFluid.length,
+  gzipBytes: gzip(glassFluid),
+  brotliBytes: brotli(glassFluid),
+}
 
 // ui 全量入口链：`import '@oas-ui/ui'`（dist/index.js）的实际加载集合
 const fullEntry = measureFiles(collectGraph(join(UI_DIST, 'index.js')))
@@ -298,6 +305,13 @@ const BUDGETS = [
     limit: 4 * 1024, // 4 KB（2026-10-05 重定档：skins.css 皮肤层变量 + 阴影精修，实测 3.52 KB）
     basis:
       '实测 gzip 3.52 KB（skins 皮肤层变量族 + 阴影双层精修后），上浮约 15%；前档 3.5 KB 定档于 2026-09-15（3.0 KB 实测）',
+  },
+  {
+    name: '@oas-ui/theme glass-fluid.js gzip',
+    get: () => fluidJs.gzipBytes,
+    limit: 4.5 * 1024, // 4.5 KB（2026-10-07 重定档：修复批后实测 3.6 KB 触 4KB 档 90% 预警）
+    basis:
+      '实测 gzip 3.6 KB（v2.6.1 修复批：capture leave 精判/双向起停/子像素坐标/守卫与文档），上浮约 25% 定档 4.5 KB；前档 4 KB 首次定档于 2026-10-07（2.97 KB 实测）（v2.6.1 指针镜面高光运行时：监听/命中/坐标/rAF/守卫/清理），上浮约 15% 定档 4 KB',
   },
 ]
 

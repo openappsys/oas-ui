@@ -114,3 +114,19 @@ onBeforeUnmount(() => {
 - the material needs backdrop contrast: it shines over colorful gradients/photos and recedes on flat same-hue backgrounds (text stays legible);
 - local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;` on any container (the refraction opt-out value must be empty, not `none`—see [Theming](/en/guide/theming#liquid-glass-glass-css); if your build chain strips empty custom properties, use the identity filter `saturate(1)` instead);
 - disabled under the `high-contrast` theme (solid accessibility tier wins).
+
+### Dynamic fluidity (pointer specular highlight, optional runtime)
+
+The highlight needs a small runtime (`glass-fluid.js`): a single document `pointermove` listener resolves the surface via `composedPath` and writes the pointer position as element-local CSS variables; the component's shadow layer paints a radial highlight from them (follows the pointer; pressing swaps in a stronger highlight color).
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/glass.css" />
+<script type="module">
+  import 'https://unpkg.com/@oas-ui/theme@2/glass-fluid.js'
+</script>
+<html data-glass>
+```
+
+- Scope matches refraction (9 controls/nav/notification components: button / switch / slider thumb / app-bar / bottom-navigation / message / toast / snackbar / notification); content panels are excluded;
+- Guards: zero listeners without `data-glass`; disabled under `prefers-reduced-motion: reduce`; not enabled for coarse pointers (touch); disabled under `high-contrast`; starts/stops automatically as the markers or media queries change;
+- v1 boundary: with a still pointer, scrolling won't move the highlight until the pointer moves again; the slider thumb highlight is hidden in overlay states (dragging / focused / `show-tooltip` / custom thumb `data-custom-thumb`), and the press ring is only visible while pressed without moving; the sheen alpha is intentionally low to protect text contrast (covered by an e2e perceptual-contrast gate ≥60 across both themes and three backdrops).

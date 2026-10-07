@@ -41,6 +41,36 @@ const STYLE = `
 :host([data-more-open]) {
   filter: none;
 }
+/* v2.6.1 动态流动感：指针镜面高光（host 上挂 surface 标记；静止无 background，命中时才生成） */
+:host([data-glass-surface]) {
+  position: relative;
+}
+:host([data-glass-surface])::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--oas-transition-fast) var(--oas-ease-out);
+}
+:host([data-glass-fluid])::after {
+  opacity: 1;
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen, transparent),
+    transparent 65%
+  );
+}
+:host([data-glass-fluid]):active::after {
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen-press, transparent),
+    transparent 65%
+  );
+}
+
+
 :host([hidden]) {
   display: none;
 }
@@ -406,6 +436,7 @@ export class OASAppBar extends OASElement {
     this.trailingWrapEl = this.shadow.querySelector('[part="trailing"]')
     this.extendedWrapEl = this.shadow.querySelector('[part="extended"]')
     this.menuBtnEl = this.shadow.querySelector('[part="menu-button"]')
+    this.setAttribute('data-glass-surface', '')
     this.moreBtnEl = this.shadow.querySelector('[part="more"]')
     this.morePanelEl = this.shadow.querySelector('[part="more-panel"]')
     // 汉堡钮：点击派发 oas-menu-toggle（宿主自行开合抽屉并回写 menu-open）

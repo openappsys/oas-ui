@@ -182,8 +182,13 @@ onMounted(async () => {
 | CSS Variable | Description | Default |
 | --- | --- | --- |
 | `--oas-glass-blur` | — | `none` |
+| `--oas-glass-px` | — | `50%` |
+| `--oas-glass-py` | — | `50%` |
 | `--oas-glass-refraction` | Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration) | `none` |
 | `--oas-glass-ring` | — | `transparent` |
+| `--oas-glass-sheen` | — | `transparent` |
+| `--oas-glass-sheen-press` | — | `transparent` |
+| `--oas-glass-sheen-size` | — | `180px` |
 
 - `open` is controlled: only `oas-close` is dispatched on timeout and the host removes `open`; reusing one instance with a changed `message` does not restart the timer — close it first or create a new element.
 - At most 3 bars stack per direction (vertical, no overlap, newest at the edge); the oldest receives `oas-close` (`reason: evict`) when exceeded; `queue` switches to FIFO backfilling.

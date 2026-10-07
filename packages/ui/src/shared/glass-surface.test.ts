@@ -201,6 +201,49 @@ describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
     expect(src).toContain("this.removeAttribute('data-more-open')")
   })
 
+  it('动态流动感 v1：9 控件域组件挂 data-glass-surface + 指针高光规则（范围纪律外不含）', () => {
+    const files: Array<[string, string]> = [
+      ['oas-button', 'basic/button/oas-button.ts'],
+      ['oas-switch', 'form/switch/oas-switch.ts'],
+      ['oas-slider', 'form/slider/oas-slider.ts'],
+      ['oas-app-bar', 'navigation/app-bar/oas-app-bar.ts'],
+      ['oas-bottom-navigation', 'navigation/bottom-navigation/oas-bottom-navigation.ts'],
+      ['oas-message', 'feedback/message/oas-message.ts'],
+      ['oas-toast', 'feedback/toast/oas-toast.ts'],
+      ['oas-snackbar', 'feedback/snackbar/oas-snackbar.ts'],
+      ['oas-notification', 'feedback/notification/oas-notification.ts'],
+    ]
+    for (const [name, rel] of files) {
+      const src = readFileSync(resolve(import.meta.dirname, `../../../../packages/ui/src/${rel}`), 'utf8')
+      expect(src, `[${name}] 缺 data-glass-surface 标记`).toContain('data-glass-surface')
+      expect(src, `[${name}] 缺指针高光激活规则（data-glass-fluid）`).toContain('data-glass-fluid')
+      expect(src, `[${name}] 缺高光坐标变量消费（--oas-glass-px）`).toContain('--oas-glass-px')
+    }
+    // 范围纪律：内容面板（modal/drawer/popover/select 全族）不挂流动感标记
+    const out: Array<[string, string]> = [
+      ['oas-modal', 'feedback/modal/oas-modal.ts'],
+      ['oas-drawer', 'feedback/drawer/oas-drawer.ts'],
+      ['oas-popover', 'feedback/popover/oas-popover.ts'],
+      ['oas-select', 'form/select/oas-select.ts'],
+      ['oas-cascader', 'form/cascader/oas-cascader.ts'],
+      ['oas-combobox', 'form/combobox/oas-combobox.ts'],
+    ]
+    for (const [name, rel] of out) {
+      const src = readFileSync(resolve(import.meta.dirname, `../../../../packages/ui/src/${rel}`), 'utf8')
+      expect(src, `[${name}] 不得挂流动感标记（范围纪律）`).not.toContain('data-glass-surface')
+    }
+  })
+
+  it('glass.css 定义动态流动感高光变量（sheen/半径/按压档，明暗双段）', () => {
+    const css = readFileSync(resolve(import.meta.dirname, '../../../../packages/theme/glass.css'), 'utf8')
+    expect(css).toContain('--oas-glass-sheen:')
+    expect(css).toContain('--oas-glass-sheen-size:')
+    expect(css).toContain('--oas-glass-sheen-press:')
+    const darkIdx = css.indexOf('[data-theme="dark"]')
+    expect(darkIdx).toBeGreaterThan(0)
+    expect(css.slice(darkIdx), 'dark 段应有独立 sheen 档').toContain('--oas-glass-sheen:')
+  })
+
   it('禁用关折射跨组件统一：switch button[disabled] + slider 双伪元素 disabled 守卫（UA 伪元素无 computed 通道，锁源码形态）', () => {
     const sw = readFileSync(
       resolve(import.meta.dirname, '../../../../packages/ui/src/form/switch/oas-switch.ts'),

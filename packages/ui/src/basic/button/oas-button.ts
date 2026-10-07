@@ -97,6 +97,39 @@ a[part='button'] {
   text-decoration: none;
   box-sizing: border-box;
 }
+/* v2.6.1 动态流动感：指针镜面高光（静止无 background，仅命中时经 data-glass-fluid 生成） */
+button[data-glass-surface],
+a[part='button'][data-glass-surface] {
+  position: relative;
+}
+button[data-glass-surface]::after,
+a[part='button'][data-glass-surface]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--oas-transition-fast) var(--oas-ease-out);
+}
+button[data-glass-surface][data-glass-fluid]::after,
+a[part='button'][data-glass-surface][data-glass-fluid]::after {
+  opacity: 1;
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen, transparent),
+    transparent 65%
+  );
+}
+button[data-glass-surface][data-glass-fluid]:active::after,
+a[part='button'][data-glass-surface][data-glass-fluid]:active::after {
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen-press, transparent),
+    transparent 65%
+  );
+}
+
 button:hover,
 a[part='button']:hover {
   background: var(--oas-color-bg-hover);
@@ -876,7 +909,7 @@ export class OASButton extends OASElement {
     ].join('')
     return `
       <style>${STYLE}</style>
-      <${tag} part="button"${hrefAttr}>
+      <${tag} part="button" data-glass-surface${hrefAttr}>
         <span class="spinner" part="spinner" hidden><slot name="loading-icon"></slot></span>
         <span class="icon" part="icon" aria-hidden="true" hidden></span>
         <slot></slot>

@@ -26,12 +26,18 @@
   "exports": {
     ".": "./index.css",
     "./skins.css": "./skins.css",
-    "./glass.css": "./glass.css"
+    "./glass.css": "./glass.css",
+    "./glass-fluid.js": {
+      "types": "./glass-fluid.d.ts",
+      "default": "./glass-fluid.js"
+    }
   },
   "files": [
     "index.css",
     "skins.css",
     "glass.css",
+    "glass-fluid.js",
+    "glass-fluid.d.ts",
     "LICENSE-APACHE",
     "LICENSE-MIT"
   ]

@@ -49,6 +49,36 @@ const STYLE = `
   will-change: transform, opacity;
   animation: oas-toast-enter var(--oas-toast-enter-duration) var(--oas-toast-ease);
 }
+
+/* v2.6.1 动态流动感：指针镜面高光（glass-fluid.js 写坐标变量；opt-in——静止无 background，
+   仅命中时经 data-glass-fluid 生成，axe 采样不受扰） */
+.box[data-glass-surface]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--oas-transition-fast) var(--oas-ease-out);
+}
+.box[data-glass-surface][data-glass-fluid]::after {
+  opacity: 1;
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen, transparent),
+    transparent 65%
+  );
+}
+/* 按压收紧：换成更强的高光色（真增强；opacity 保持 1） */
+.box[data-glass-surface][data-glass-fluid]:active::after {
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen-press, transparent),
+    transparent 65%
+  );
+}
+
+
 /* 离场：JS 按 --oas-toast-leave-duration 延迟 remove（动画与移除同拍） */
 .box.closing {
   animation: oas-toast-leave var(--oas-toast-leave-duration) var(--oas-toast-ease) forwards;
@@ -343,7 +373,7 @@ export class OASToast extends OASElement {
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <div class="box" part="box" role="status" aria-live="polite" aria-atomic="true">
+      <div class="box" part="box" role="status" aria-live="polite" aria-atomic="true" data-glass-surface>
         <span class="spinner" part="spinner" aria-hidden="true"></span>
         <span class="icon" part="icon" aria-hidden="true"></span>
         <div class="content" part="content">

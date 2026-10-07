@@ -113,3 +113,19 @@ onBeforeUnmount(() => {
 - 材质依赖背景反差——给页面一个有色彩层次的背景（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍可读）；
 - 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;`（折射停用值留空而非 none，原因见[主题与自定义](/guide/theming#液态玻璃-glass-css)；构建链吞空值时可用 `saturate(1)` 恒等滤镜替代）；
 - `high-contrast` 主题下不启用（实心可访问性档优先）。
+
+### 动态流动感（指针镜面高光，可选运行时）
+
+镜面高光需要一小段运行时（`glass-fluid.js`）——单文档 `pointermove` 监听 + `composedPath` 命中 surface，把指针位置写成元素本地坐标变量，组件影子层据此渲染径向高光（随指针移动 + 按压时换成更强的高光色）。
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/glass.css" />
+<script type="module">
+  import 'https://unpkg.com/@oas-ui/theme@2/glass-fluid.js'
+</script>
+<html data-glass>
+```
+
+- 消费范围与折射同域（9 个控件/导航/通知组件：button / switch / slider 把手 / app-bar / bottom-navigation / message / toast / snackbar / notification）；内容面板不接；
+- 守卫：无 `data-glass` 零监听；`prefers-reduced-motion: reduce` 不启用；粗指针（触屏）不接；`high-contrast` 不启用；标记/媒体查询变化会自动起停；
+- 边界（v1）：指针静止时滚动页面，高光坐标不随元素位移更新（移动指针即恢复）；slider 把手高光在 overlay 态（拖动中/聚焦/`show-tooltip`/自定义把手 `data-custom-thumb`）不显示，按压环也仅在「按下未移动」时可见；高光 alpha 已压低以保证文字对比度（e2e 有双主题三类背板感知分 ≥60 门禁）。

@@ -46,6 +46,36 @@ const STYLE = `
   cursor: pointer;
   animation: oas-msg-in var(--oas-message-anim-in) var(--oas-ease-out) both;
 }
+
+/* v2.6.1 动态流动感：指针镜面高光（glass-fluid.js 写坐标变量；opt-in——静止无 background，
+   仅命中时经 data-glass-fluid 生成，axe 采样不受扰） */
+.box[data-glass-surface]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--oas-transition-fast) var(--oas-ease-out);
+}
+.box[data-glass-surface][data-glass-fluid]::after {
+  opacity: 1;
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen, transparent),
+    transparent 65%
+  );
+}
+/* 按压收紧：换成更强的高光色（真增强；opacity 保持 1） */
+.box[data-glass-surface][data-glass-fluid]:active::after {
+  background: radial-gradient(
+    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
+    var(--oas-glass-sheen-press, transparent),
+    transparent 65%
+  );
+}
+
+
 /* type 属性设在 host 上，颜色选择器从 host 属性命中；自定义注册类型走 --oas-msg-type-color。
    浅底文字走 -text 档（感知对比度：success 基色压白 60 分边缘、warning 58 均不达标，
    #a75c05/#11813a 对白 74/74 达标）；边框仍用基色保持色相辨识 */
@@ -349,7 +379,7 @@ export class OASMessage extends OASElement {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
       <div class="mask" part="mask" aria-hidden="true" hidden></div>
-      <div class="box" part="box" role="status">
+      <div class="box" part="box" role="status" data-glass-surface>
         <span class="avatar" part="avatar"><slot name="avatar"><span class="avatar-fallback"></span></slot></span>
         <span class="spinner" part="spinner" aria-hidden="true"><span class="spinner-fallback"></span></span>
         <span class="icon" part="icon" aria-hidden="true"></span>
