@@ -328,6 +328,39 @@ test.beforeAll(async () => {
       },
       '',
     ),
+    // —— SSR 白名单补位批次：scheduler/gantt/barcode ——
+    // 布局稳定性约定：三者均同步确定性渲染、无 rAF/视口测量依赖（宿主几何升级前后不变）；
+    // 日期全部固定（勿用 new Date()）：scheduler 用 page-show-date 锚定面板月 + events JSON
+    // 固定事件，gantt 时间窗口由 tasks 数据决定，且 fixture 日期远离「今天」→ today 高亮类
+    // 与今日线在快照/升级两侧均不出现，彻底消除跨升级的日期差风险。
+    renderToString(
+      'oas-scheduler',
+      {
+        view: 'month',
+        'page-show-date': '2026-08-01',
+        events: JSON.stringify([
+          { id: 's1', date: '2026-08-05', title: '迭代评审' },
+          { id: 's2', date: '2026-08-12', title: '发布窗口' },
+          { id: 's3', date: '2026-08-20', title: '团队周会' },
+        ]),
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString(
+      'oas-gantt',
+      {
+        tasks: JSON.stringify([
+          { id: 'g1', name: '一期工程', start: '2026-03-02', end: '2026-03-13', type: 'summary', expanded: true },
+          { id: 'g2', name: '需求确认', start: '2026-03-02', end: '2026-03-06', parent: 'g1', progress: 60 },
+          { id: 'g3', name: '开发排期', start: '2026-03-06', end: '2026-03-12', parent: 'g1', progress: 30 },
+          { id: 'g4', name: '评审节点', start: '2026-03-13', type: 'milestone', parent: 'g1' },
+        ]),
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-barcode', { value: 'OAS-UI-2026', format: 'code128' }),
     renderToString('oas-avatar', { src: PNG_1PX, size: '40' }),
     renderToString('oas-avatar-group', { max: '3' }),
     renderToString('oas-image', { src: PNG_1PX, preview: '', alt: '示例图' }),

@@ -28,7 +28,10 @@
  * 白名单收尾批次 5（badge/button-group/icon/kbd/label/link/space/visually-hidden 纯展示组件直出完整
  * 快照；tooltip/popover 浮层触发类默认关闭、快照为触发器 slot 原样 + 关闭态气泡骨架；config-provider/
  * app 框架级容器无自身视觉、快照为子树原样 + 容器属性就位，嵌套子组件由 injectNestedDSD 覆盖；
- * theme-editor 为开发工具组件、SSR 意义低，评估后排除）。
+ * theme-editor 为开发工具组件、SSR 意义低，评估后排除）+ SSR 白名单补位批次（scheduler/gantt/barcode
+ * 漏登记补齐，数据走 JSON attribute 声明式通道：scheduler 由 page-show-date 固定锚定面板月 +
+ * events JSON 声明事件，gantt 时间窗口由 tasks JSON 决定，barcode 纯编码器同步直出 SVG——三者均
+ * 同步确定性渲染、无测量/rAF 依赖，快照与升级后结构严格一致）。
  *
  * 嵌套递归序列化：light DOM 里已 upgrade 的子组件（如 form>form-item>oas-input、tabs>tab-panel、
  * layout>sider）会被递归包成嵌套 `<template shadowrootmode="open">`（含子组件指纹），
@@ -81,7 +84,9 @@ import { ensureShim } from './shim.js'
  * menu/menubar/navigation-menu/toolbar 可见菜单结构直出快照；layout 多 tag 组件走嵌套递归序列化）+
  * 白名单收尾批次 5（badge/button-group/icon/kbd/label/link/space/visually-hidden 纯展示组件直出完整
  * 快照；tooltip/popover 浮层触发类快照为触发器 slot 原样 + 关闭态气泡骨架；config-provider/app
- * 框架级容器快照为子树原样；theme-editor 开发工具组件 SSR 意义低，排除）。
+ * 框架级容器快照为子树原样；theme-editor 开发工具组件 SSR 意义低，排除）+
+ * SSR 白名单补位批次（scheduler/gantt/barcode 漏登记补齐：数据走 JSON attribute 声明式通道，
+ * 同 calendar/kanban/table/qrcode 类，同步确定性渲染、无测量依赖）。
  */
 export const WHITELIST = [
   'oas-button',
@@ -221,6 +226,10 @@ export const WHITELIST = [
   'oas-stepper-panel',
   // —— 未发布批次：highlight 文本命中高亮（同步确定性渲染，纯展示直出） ——
   'oas-highlight',
+  // —— SSR 白名单补位：scheduler/gantt/barcode 漏登记补齐（数据走 JSON attribute 声明式通道，同 calendar/kanban/table/qrcode 类） ——
+  'oas-scheduler',
+  'oas-gantt',
+  'oas-barcode',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -397,6 +406,10 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-stepper-panel': '@oas-ui/ui/navigation/stepper',
   // —— 未发布批次：highlight 文本命中高亮 ——
   'oas-highlight': '@oas-ui/ui/data/highlight',
+  // —— SSR 白名单补位：scheduler/gantt/barcode（漏登记补齐） ——
+  'oas-scheduler': '@oas-ui/ui/data/scheduler',
+  'oas-gantt': '@oas-ui/ui/data/gantt',
+  'oas-barcode': '@oas-ui/ui/data/barcode',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */

@@ -24,6 +24,7 @@ import { OASNumberAnimation } from './number-animation/index.js'
 import { OASGradientText } from './gradient-text/index.js'
 import { OASAspectRatio } from '../layout/aspect-ratio/index.js'
 import { OASVirtualList } from './virtual-list/index.js'
+import { OASBarcode } from './barcode/index.js'
 
 /**
  * data 展示组件 DSD 真水合批次 3 单测（对应 SSR 白名单化改造）。
@@ -223,9 +224,20 @@ const FIXTURES: Fixture[] = [
     setup: (e) => {
       e.setAttribute('height', '100')
       e.setAttribute('item-height', '20')
-      e.setAttribute('items', JSON.stringify(['甲', '乙', '丙']))
+      e.setAttribute('items', JSON.stringify(['一', '二', '三']))
     },
     probe: '[part="items"]',
+  },
+  {
+    // SSR 白名单补位回归：barcode 一度缺 hydrate() 覆写，DSD 快照在 upgrade 时被
+    // render() 全量重建（style 引用变更、指纹回退路径）——补覆写后此处固化防复发
+    name: 'barcode',
+    cls: OASBarcode,
+    setup: (e) => {
+      e.setAttribute('value', 'OAS-UI-2026')
+      e.setAttribute('format', 'code128')
+    },
+    probe: 'svg[part="barcode"]',
   },
 ]
 

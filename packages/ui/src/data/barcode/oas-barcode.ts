@@ -140,6 +140,14 @@ export class OASBarcode extends OASElement {
     this.update()
   }
 
+  /** 真水合：校验 SSR 快照结构（svg/占位骨架存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('svg')) return false
+    if (!this.shadow.querySelector('[part="empty"]')) return false
+    if (!this.shadow.querySelector('[part="error"]')) return false
+    return true
+  }
+
   protected override update(): void {
     const svg = this.shadow.querySelector<SVGSVGElement>('svg')
     const emptyEl = this.shadow.querySelector<HTMLElement>('[part="empty"]')
