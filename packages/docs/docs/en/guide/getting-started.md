@@ -83,6 +83,8 @@ import '@oas-ui/theme'
 import '@oas-ui/ui/basic/button'
 ```
 
+> On-demand mode **does not include the full built-in icon set** (so each component chain doesn't carry every icon). If you use a **built-in icon name** (e.g. `<oas-button icon="check">`, `<oas-icon name="close">`), add `import '@oas-ui/icons/register'` once (the full entry `@oas-ui/ui` already includes it). Not needed if you only supply icons via `registerIcon` / `registerIconLibrary` / iconfont / slot.
+
 Use directly in React / Vue (rendering, attributes and slot content work in both; **event listening — see the section below**):
 
 ```tsx

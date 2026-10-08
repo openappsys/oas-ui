@@ -151,7 +151,7 @@ describe('OASButton', () => {
     expect(before.getAttribute('aria-busy')).toBe('true')
   })
 
-  it('icon 渲染：按钮内出现 iconRegistry 内联 SVG，带 has-icon 类', () => {
+  it('icon 渲染：按钮内出现查表内联 SVG，带 has-icon 类', () => {
     const el = mount({ icon: 'search' }, '搜索')
     const btn = shadowBtn(el)
     const iconEl = btn.querySelector<HTMLElement>('.icon')

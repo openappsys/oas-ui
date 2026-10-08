@@ -232,7 +232,7 @@ onMounted(() => {
 | 字段   | 说明                                       | 类型     |
 | ------ | ------------------------------------------ | -------- |
 | `label` | 动作文案                                   | `string` |
-| `icon`  | 图标名（`@oas-ui/icons` 的 iconRegistry 键） | `string` |
+| `icon`  | 图标名（`@oas-ui/icons` 的 内置图标名） | `string` |
 | `hide-label` | true 时只渲染 icon（圆形小钮），label 视觉隐藏、hover/键盘聚焦时浮出文字气泡；未提供可渲染 icon 时回落显示 label | `boolean` |
 
 行为：点击主按钮切换展开（`aria-expanded` 同步）；`trigger="hover"` 可改为悬停触发（触屏回落 click）；点击外部或 Esc 收起（Esc 后焦点回到主按钮）；点击子动作收起并派发 `oas-select`；展开时自动聚焦第一个子动作，方向键/Home/End 在动作间导航；`hide-label` 子动作的 menuitem 以 `aria-label` 保留可访问名。默认定位 `position: fixed; bottom/right`，可覆盖。文档级监听仅在展开时挂载、断开连接清理，无孤儿浮层。

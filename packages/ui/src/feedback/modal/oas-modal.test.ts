@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASModal } from './index.js'
-import { iconRegistry } from '@oas-ui/icons'
+import { iconRegistry } from '@oas-ui/icons/registry'
 import { t } from '@oas-ui/i18n'
 
 function mount(attrs: Record<string, string> = {}): OASModal {

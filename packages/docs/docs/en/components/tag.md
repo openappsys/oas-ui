@@ -454,11 +454,11 @@ Try it with DevTools device emulation (e.g. iPhone SE 375×667); desktop browser
 | --- | --- | --- | --- |
 | `checkable` | Selectable: click / Enter / Space toggles `checked` and dispatches `oas-change`; mutually exclusive with `closable` | `boolean` | — |
 | `checked` | Checked state (effective when `checkable`) | `boolean` | — |
-| `checked-icon` | Checkmark icon before a checked checkable tag (iconRegistry name, default check) | `string` | `check` |
+| `checked-icon` | Checkmark icon before a checked checkable tag (built-in icon name, default check) | `string` | `check` |
 | `chip` | Chip (pill radius + compact padding) | `boolean` | — |
 | `clickable` | Whole tag clickable (focusable, dispatches `oas-click`) | `boolean` | — |
 | `closable` | Closable | `boolean` | — |
-| `close-icon` | Custom close-button icon (iconRegistry name), replaces the default × | `string` | — |
+| `close-icon` | Custom close-button icon (built-in icon name), replaces the default × | `string` | — |
 | `close-label` | aria-label of the close button (a11y context, e.g. "Remove tag xx"); defaults to the locale "Close" | `string` | — |
 | `color` | Custom color: 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens) or any CSS value, overrides the `type` semantic color; renders as `filled` when `variant` is unset | `string` | — |
 | `disabled` | Disabled (cannot be clicked or closed) | `boolean` | — |

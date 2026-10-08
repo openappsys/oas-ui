@@ -1,5 +1,8 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { checkCirclePath } from '@oas-ui/icons/icons/check-circle'
+import { errorPath } from '@oas-ui/icons/icons/error'
+import { infoPath } from '@oas-ui/icons/icons/info'
+import { warningPath } from '@oas-ui/icons/icons/warning'
 import { normalizeSizeStrict, normalizeSize, THREE_SIZES } from '../../shared/size.js'
 
 export type ResultStatus = 'success' | 'error' | 'warning' | 'info' | '403' | '404' | '500'
@@ -120,15 +123,15 @@ const STYLE = `
 }
 `
 
-/** 四语义状态图标：复用库内语义图标映射（与 alert/modal/message 一致），走 oas-icon registry 内联 SVG */
-const STATUS_ICONS: Record<ResultStatus, IconName> = {
-  success: 'check-circle',
-  error: 'error',
-  warning: 'warning',
-  info: 'info',
-  '403': 'warning',
-  '404': 'info',
-  '500': 'error',
+/** 四语义状态图标：复用库内语义图标映射（与 alert/modal/message 一致），path 常量精确导入（不拉全量注册表） */
+const STATUS_ICONS: Record<ResultStatus, string> = {
+  success: checkCirclePath,
+  error: errorPath,
+  warning: warningPath,
+  info: infoPath,
+  '403': warningPath,
+  '404': infoPath,
+  '500': errorPath,
 }
 
 /** HTTP 错误页图标字形（原创自绘，16 viewBox 与 registry 同风格：圆环 + 语义图形）。
@@ -232,8 +235,8 @@ export class OASResult extends OASElement {
       icon.setAttribute('role', 'status')
       icon.setAttribute('aria-label', status)
       glyph.hidden = false
-      // 字形：HTTP 状态自研字形 > registry 语义图标（403/404/500 复用同色语义图标映射）
-      const inner = HTTP_GLYPHS[status] ?? iconRegistry[STATUS_ICONS[status]]
+      // 字形：HTTP 状态自研字形 > 语义图标 path 常量（403/404/500 复用同色语义图标映射）
+      const inner = HTTP_GLYPHS[status] ?? STATUS_ICONS[status]
       const markup = iconSvg(inner)
       if (glyph.dataset.glyph !== markup) {
         glyph.innerHTML = markup

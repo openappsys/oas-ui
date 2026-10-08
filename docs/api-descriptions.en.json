@@ -301,7 +301,7 @@
       "text": "Ribbon or status text; the `ribbon` slot takes precedence when it has content",
       "value": "Number",
       "bordered": "White outline: boolean, adds a 2px background-color ring around the badge (box-shadow: 0 0 0 2px var(--oas-color-bg)) to separate it from an avatar/image background; visual-only, never changes positioning (composes with corner/offset/overlap)",
-      "icon": "In-badge icon: an iconRegistry icon name (e.g. check / warning), rendered as an inline SVG (1em following the badge font size, decorative and hidden from screen readers); mutually exclusive with value/dot (icon wins)",
+      "icon": "In-badge icon: a built-in icon name (e.g. check / warning), rendered as an inline SVG (1em following the badge font size, decorative and hidden from screen readers); mutually exclusive with value/dot (icon wins)",
       "variant": "Variant: solid (default, filled) or outline (transparent background, border and text follow the color semantics); invalid values silently fall back to solid",
       "shape": "Badge shape `round` (default) / `square` / `pill`, applying to both counts and dots"
     },
@@ -427,7 +427,7 @@
       "color": "Custom color: overrides the `type` semantic color (any color value)",
       "wave": "Press feedback: slight sink + darken (on by default); `wave=\"false\"` disables",
       "auto-insert-space": "CJK auto spacing: inserts a space between two consecutive CJK characters (off by default)",
-      "icon-end": "A second icon after the text (iconRegistry name), works with `icon`/`icon-position` — e.g. left icon + right dropdown arrow",
+      "icon-end": "A second icon after the text (built-in icon name), works with `icon`/`icon-position` — e.g. left icon + right dropdown arrow",
       "loading-text": "Text shown while loading (e.g. \"Submitting…\"); replaces the label content when set",
       "disabled-focusable": "Visually disabled but stays focusable/hoverable (aria-disabled + click intercepted), for tooltips explaining why",
       "download": "Passthrough `download` attribute in link mode (href) for file-download buttons",
@@ -3216,10 +3216,10 @@
       "target": "How the link opens (`_blank` / `_self` etc.), with `href`",
       "type": "Type",
       "variant": "Shape (orthogonal to `type`): `outlined` / `filled` / `solid`; when unset, keeps the legacy type rendering",
-      "close-icon": "Custom close-button icon (iconRegistry name), replaces the default ×",
+      "close-icon": "Custom close-button icon (built-in icon name), replaces the default ×",
       "close-label": "aria-label of the close button (a11y context, e.g. \"Remove tag xx\"); defaults to the locale \"Close\"",
       "loading": "Loading state: spinner replaces the close icon and blocks clicks (`oas-close` detail has a `done()` callback the host calls after async work)",
-      "checked-icon": "Checkmark icon before a checked checkable tag (iconRegistry name, default check)",
+      "checked-icon": "Checkmark icon before a checked checkable tag (built-in icon name, default check)",
       "icon-end": "Icon-set name (oas-icon registry) rendered at the tail of the text (before the close button), sized to the font; can coexist with icon"
     },
     "events": {

@@ -334,7 +334,7 @@ Clicking "Submit" fires the native `submit` event (the demo calls `preventDefaul
 | `href` | Link address: renders a native `<a>` when set | `string` | — |
 | `html-type` | Native form behavior: `button` (default, none) / `submit` submits the containing or `form`-targeted form / `reset` resets it (bridged via a proxy submitter) | `string` | `button` |
 | `icon` | Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label | `string` | — |
-| `icon-end` | A second icon after the text (iconRegistry name), works with `icon`/`icon-position` — e.g. left icon + right dropdown arrow | `string` | — |
+| `icon-end` | A second icon after the text (built-in icon name), works with `icon`/`icon-position` — e.g. left icon + right dropdown arrow | `string` | — |
 | `icon-position` | Icon position: `start` (default, left) / `end` (right) | `string` | `start` |
 | `loading` | Loading state | — | — |
 | `loading-text` | Text shown while loading (e.g. "Submitting…"); replaces the label content when set | `string` | — |

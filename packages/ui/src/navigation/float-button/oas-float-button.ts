@@ -1,5 +1,5 @@
 import { OASElement, escapeAttr } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES, type OasSize } from '../../shared/size.js'
 
@@ -950,9 +950,9 @@ export class OASFloatButton extends OASElement {
     if (!action.href) this.btn?.focus()
   }
 
-  /** 用 iconRegistry 渲染图标（内联 SVG，跟随 currentColor） */
+  /** 查表渲染图标（内联 SVG，跟随 currentColor） */
   private createIcon(icon: string): HTMLElement | null {
-    const content = iconRegistry[icon as IconName]
+    const content = lookupIcon(icon)
     if (!content) return null
     const span = document.createElement('span')
     span.className = 'icon'

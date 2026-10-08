@@ -1,8 +1,9 @@
 import { OASElement } from '@oas-ui/core'
 import type { MenuItem, MenuItemKind } from '../menu/index.js'
-// 图标查表走 oas-icon 同一通道（customIcons 注册优先、内置 iconRegistry 兜底）：
-// 用户 `registerIcon()` 注册的自定义图标菜单家族可见；oas-icon.ts 不依赖 menu，无循环引用
-import { lookupIcon } from '../../basic/icon/oas-icon.js'
+// 图标查表走 @oas-ui/icons 运行时（registerIcon 自定义优先、内置集兜底，与 oas-icon 同源）；
+// 不经 oas-icon 组件模块——避免把整个 <oas-icon> 拉进 menubar 按需链
+import { lookupIcon } from '@oas-ui/icons/runtime'
+import { menuPath } from '@oas-ui/icons/icons/menu'
 import { isRtl } from '../../shared/direction.js'
 
 export interface MenubarItem extends MenuItem {
@@ -612,9 +613,9 @@ export class OASMenubar extends OASElement {
     this.barEl = this.shadow.querySelector('.bar')
     this.hamburgerBtn = this.shadow.querySelector<HTMLButtonElement>('.hamburger')
     this.hamburgerPanel = this.shadow.querySelector('.hamburger-panel')
-    // 汉堡按钮图标（iconRegistry 的 menu 图标，原创 SVG 路径）
+    // 汉堡按钮图标（组件自身 chrome，精确导入 menuPath——不依赖内置集注册在场）
     if (this.hamburgerBtn) {
-      const ic = this.createIcon('menu')
+      const ic = this.createIconFromPath(menuPath)
       if (ic) this.hamburgerBtn.appendChild(ic)
       this.hamburgerBtn.setAttribute('aria-label', this.t('menubar.menu'))
     }
@@ -1369,6 +1370,11 @@ export class OASMenubar extends OASElement {
   private createIcon(icon: string, className = 'icon', iconColor?: string): HTMLElement | null {
     const content = lookupIcon(icon)
     if (!content) return null
+    return this.createIconFromPath(content, className, iconColor)
+  }
+
+  /** 已解析 path 内容 → 内联 SVG（createIcon 的下游；组件固定 chrome 也可直接喂精确 path 常量） */
+  private createIconFromPath(content: string, className = 'icon', iconColor?: string): HTMLElement | null {
     const stroke = iconColor || 'currentColor'
     const coloredContent = iconColor ? content.replace(/stroke="currentColor"/g, `stroke="${stroke}"`) : content
     const span = document.createElement('span')

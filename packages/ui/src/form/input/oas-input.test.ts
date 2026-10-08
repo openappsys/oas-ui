@@ -237,7 +237,7 @@ describe('OASInput', () => {
     expect(part(el, 'prefix').hidden).toBe(false)
   })
 
-  it('prefix-icon/suffix-icon 用 iconRegistry 渲染内联 SVG', () => {
+  it('prefix-icon/suffix-icon 用 lookupIcon 渲染内联 SVG', () => {
     const el = mount({ 'prefix-icon': 'search', 'suffix-icon': 'close' })
     expect(el.shadowRoot!.querySelector('[part="prefix-icon"] svg')).not.toBeNull()
     expect(el.shadowRoot!.querySelector('[part="suffix-icon"] svg')).not.toBeNull()

@@ -1,5 +1,5 @@
 import { OASElement, escapeAttr } from '@oas-ui/core'
-import { iconRegistry, iconNames } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { normalizeSizeStrict, normalizeSize, THREE_SIZES } from '../../shared/size.js'
 
 export type EmptySize = 'small' | 'medium' | 'large'
@@ -37,11 +37,11 @@ function warnInvalid(raw: string, valid: readonly string[], label: string, warne
 function warnInvalidIcon(raw: string): void {
   if (!warnedIcons.has(raw)) {
     warnedIcons.add(raw)
-    console.warn(`[oas-empty] 非法 icon "${raw}"，已忽略；合法值为 @oas-ui/icons registry 图标名`)
+    console.warn(
+      `[oas-empty] 非法 icon "${raw}"，已忽略；合法值为 @oas-ui/icons 图标名（或 registerIcon 自定义注册名）`,
+    )
   }
 }
-
-const ICON_NAMES = new Set<string>(iconNames)
 
 const STYLE = `
 :host {
@@ -342,8 +342,9 @@ export class OASEmpty extends OASElement {
         markup = `<img src="${escapeAttr(illu)}" alt="" aria-hidden="true">`
       }
     } else if (icon !== '') {
-      if (ICON_NAMES.has(icon)) {
-        markup = iconSvg(iconRegistry[icon as keyof typeof iconRegistry])
+      const iconPath = lookupIcon(icon)
+      if (iconPath !== undefined) {
+        markup = iconSvg(iconPath)
         mode = 'icon'
       } else {
         warnInvalidIcon(icon)

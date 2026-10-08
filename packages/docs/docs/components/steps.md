@@ -38,7 +38,7 @@
 
 ## 带图标步骤
 
-通过每步的 `icon` 字段（`iconRegistry` 键）在指示器位置渲染图标，显式 `icon` 优先于状态默认图标（序号 / ✓ / ✕）；`icon` 无匹配时不渲染，回落状态默认图标。
+通过每步的 `icon` 字段（`内置图标名` 键）在指示器位置渲染图标，显式 `icon` 优先于状态默认图标（序号 / ✓ / ✕）；`icon` 无匹配时不渲染，回落状态默认图标。
 
 <DemoBlock title="图标步骤">
   <oas-steps current="1" steps='[{"title":"创建订单","description":"填写订单信息","icon":"edit"},{"title":"确认支付","description":"选择支付方式","icon":"check-circle"},{"title":"完成发货","description":"等待收货","icon":"download"}]'></oas-steps>

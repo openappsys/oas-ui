@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { downloadPath } from '@oas-ui/icons'
+import { downloadPath } from '@oas-ui/icons/icons/download'
 import { resolveDirection } from '../../shared/direction.js'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'

@@ -96,7 +96,7 @@ With `loading` set, a spinner shows at the end of the field and `aria-busy="true
   <oas-input suffix-icon="eye" placeholder="Password" type="password" style="width: 240px"></oas-input>
 </DemoBlock>
 
-`prefix-icon` / `suffix-icon` accept icon names (from `@oas-ui/icons` iconRegistry) and inline-render decorative SVG icons.
+`prefix-icon` / `suffix-icon` accept icon names (from `@oas-ui/icons` built-in icon set) and inline-render decorative SVG icons.
 
 ## Inline Affixes & Clear Together
 

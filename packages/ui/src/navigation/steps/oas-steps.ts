@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
-import { lookupIcon } from '../../basic/icon/oas-icon.js'
+// 图标查表走 @oas-ui/icons 运行时（不经 oas-icon 组件模块，避免拉进 steps 按需链）
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 
@@ -22,7 +23,7 @@ export interface StepItem {
   description?: string
   /** 显式状态，缺省时按 current 推导（前序 finish / 当前 process / 其余 wait）；比容器 status 属性更高优先 */
   status?: StepStatus
-  /** 图标名（iconRegistry 键）：显式 icon 优先于状态默认图标（序号/✓/✕）渲染在指示器位置；无匹配时不渲染（回落状态默认图标） */
+  /** 图标名（lookupIcon 查表键）：显式 icon 优先于状态默认图标（序号/✓/✕）渲染在指示器位置；无匹配时不渲染（回落状态默认图标） */
   icon?: string
   /** 禁用步骤：clickable/navigation 下不可点击（无按钮语义）、视觉弱化（弱化色 token）；显式 status 仍正常显示 */
   disabled?: boolean
@@ -1184,7 +1185,7 @@ export class OASSteps extends OASElement {
             icon.textContent = String(this.stepNumber(idx))
           }
         } else {
-          // 显式 icon 优先（iconRegistry 键，无匹配回落后续链）；finish/error 状态默认图标（✓/✕）不受 prefix 影响
+          // 显式 icon 优先（lookupIcon 查表，无匹配回落后续链）；finish/error 状态默认图标（✓/✕）不受 prefix 影响
           const svg = step.icon ? this.iconSvg(step.icon) : null
           if (svg) icon.innerHTML = svg
           else if (status === 'finish') icon.textContent = '✓'

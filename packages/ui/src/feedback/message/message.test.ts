@@ -310,7 +310,7 @@ describe('P1 type 图标与 icon 自定义', () => {
     document.body.innerHTML = ''
   })
 
-  it('内置类型渲染 iconRegistry 内联 SVG（info/success/warning/error）', async () => {
+  it('内置类型渲染查表内联 SVG（info/success/warning/error）', async () => {
     message.info('信息')
     await Promise.resolve()
     const info = document.body.querySelector('oas-message')!

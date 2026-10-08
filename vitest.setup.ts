@@ -5,6 +5,10 @@
 // 测试语义对齐浏览器（内存存储、每测试文件隔离），与 Node 版本解耦。
 import { Storage } from 'happy-dom'
 
+// 单测环境注册内置全量图标集：组件单测按需引入单个组件（不含全量集），此处统一补上内置图名，
+// 使依赖内置图标名（icon="check" 等）的断言与真实全量入口行为一致。
+import '@oas-ui/icons/register'
+
 // 测试环境禁止真实网络导航：happy-dom 下点击带真实 href 的 <a>（如 breadcrumb/anchor
 // 的「不阻止默认行为」用例）会走浏览器级导航，由 happy-dom 内部 Fetch 发起真实请求
 // （http://localhost:3000/ → ECONNREFUSED）。该请求不经 globalThis.fetch，故 stub

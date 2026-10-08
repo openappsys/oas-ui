@@ -1,5 +1,5 @@
 import type { ReactiveController } from '@oas-ui/core'
-import { editPath } from '@oas-ui/icons'
+import { editPath } from '@oas-ui/icons/icons/edit'
 import type { EditOption, TableColumn, TableEditCapability } from './oas-table.js'
 import { isTruthyCell } from './oas-table.js'
 // 行内交互宿主排除清单：双击进编辑判定与行点击共用同一份（单一事实来源，

@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 
 export interface BottomNavItem {
   label: string
@@ -212,7 +212,7 @@ const STYLE = `
  * oas-bottom-navigation —— 移动端底部导航。
  *
  * 属性（kebab-case）：
- * - `items`：JSON `[{ label, value, icon?, disabled?, badge? }]`，icon 取 @oas-ui/icons 的 iconRegistry
+ * - `items`：JSON `[{ label, value, icon?, disabled?, badge? }]`，icon 走 lookupIcon 查表（@oas-ui/icons）
  * - `value`：激活项 value；未设置默认激活第一个可用项
  * - `fixed`：布尔，置顶 fixed 底部（默认静态，demo 用 static + 说明）
  * - `hide-on-scroll`：布尔，需配合 `fixed`——向下滚动时导航条 `translateY(100%)` 滑出隐藏、
@@ -572,9 +572,9 @@ export class OASBottomNavigation extends OASElement {
     this.buttons[index]?.focus()
   }
 
-  /** 用 iconRegistry 渲染图标（内联 SVG，跟随 currentColor） */
+  /** 查表渲染图标（内联 SVG，跟随 currentColor） */
   private createIcon(icon: string): HTMLElement | null {
-    const content = iconRegistry[icon as IconName]
+    const content = lookupIcon(icon)
     if (!content) return null
     const span = document.createElement('span')
     span.className = 'icon'

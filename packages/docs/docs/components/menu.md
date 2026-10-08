@@ -59,7 +59,7 @@
 
 ## 带图标
 
-`icon` 使用 `@oas-ui/icons` 的图标名（iconRegistry），以内联 SVG 渲染在文字左侧。
+`icon` 使用 `@oas-ui/icons` 的图标名（内置图标名），以内联 SVG 渲染在文字左侧。
 
 <DemoBlock title="带图标">
   <oas-menu style="width: 200px" items='[{"label":"搜索","value":"search","icon":"search"},{"label":"用户","value":"user","icon":"user"},{"label":"设置","value":"settings","icon":"gear"},{"label":"下载","value":"download","icon":"download"}]'></oas-menu>

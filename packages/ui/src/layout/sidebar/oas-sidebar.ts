@@ -1,7 +1,7 @@
 import { OASElement } from '@oas-ui/core'
-// 图标渲染走 oas-icon 同一通道（customIcons 注册表读取，不经 iconRegistry 直查），
-// 用户 `registerIcon()` 注册的自定义图标 sidebar 可见（oas-icon.ts 契约，sidebar 不越界）
-import { lookupIcon } from '../../basic/icon/oas-icon.js'
+// 图标渲染走 @oas-ui/icons 运行时查表（registerIcon 自定义优先、内置集兜底，与 oas-icon 同源），
+// 不经 oas-icon 组件模块——避免把整个 <oas-icon> 拉进 sidebar 按需链
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
 

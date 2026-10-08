@@ -1,4 +1,7 @@
 import '@oas-ui/i18n'
+// 全量入口自动注册内置图标集（保持 icon="..." 开箱即用）；按需引入单个组件的消费方
+// 若使用内置图名，需自行 `import '@oas-ui/icons/register'` 一次（见 docs）。
+import '@oas-ui/icons/register'
 
 import './basic/button/index.js'
 import './basic/icon/index.js'

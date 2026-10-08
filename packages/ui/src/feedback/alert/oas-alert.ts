@@ -1,17 +1,20 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { checkCirclePath } from '@oas-ui/icons/icons/check-circle'
+import { errorPath } from '@oas-ui/icons/icons/error'
+import { infoPath } from '@oas-ui/icons/icons/info'
+import { warningPath } from '@oas-ui/icons/icons/warning'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 
 export type AlertType = 'info' | 'success' | 'warning' | 'error'
 export type AlertVariant = 'tint' | 'filled' | 'outlined'
 export type AlertSize = 'small' | 'medium' | 'large'
 
-/** 语义变体 → 内置图标名（iconRegistry 键，与 modal 的语义图标映射一致） */
-const SEMANTIC_ICONS: Record<AlertType, IconName> = {
-  info: 'info',
-  success: 'check-circle',
-  warning: 'warning',
-  error: 'error',
+/** 语义变体 → 内置图标 path 常量（精确导入，不拉全量注册表；与 modal 的语义图标映射一致） */
+const SEMANTIC_ICONS: Record<AlertType, string> = {
+  info: infoPath,
+  success: checkCirclePath,
+  warning: warningPath,
+  error: errorPath,
 }
 
 const ROLES = { info: 'status', success: 'status', warning: 'status', error: 'alert' } as const
@@ -472,8 +475,8 @@ export class OASAlert extends OASElement {
       iconEl.hidden = !(hasCustom || this.hasAttr('icon') || this.hasAttr('banner'))
       if (iconFallback) {
         iconFallback.hidden = hasCustom
-        const iconName = SEMANTIC_ICONS[type as AlertType] ?? 'info'
-        iconFallback.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${iconRegistry[iconName]}</svg>`
+        const iconPath = SEMANTIC_ICONS[type as AlertType] ?? infoPath
+        iconFallback.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${iconPath}</svg>`
       }
     }
 

@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
-import { arrowDownPath, arrowUpPath } from '@oas-ui/icons'
+import { arrowDownPath } from '@oas-ui/icons/icons/arrow-down'
+import { arrowUpPath } from '@oas-ui/icons/icons/arrow-up'
 import { resolveLocale } from '../../form/calendar/date-grid.js'
 
 const STYLE = `

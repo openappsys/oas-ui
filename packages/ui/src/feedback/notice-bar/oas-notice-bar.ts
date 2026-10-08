@@ -1,5 +1,10 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
+import { checkCirclePath } from '@oas-ui/icons/icons/check-circle'
+import { closePath } from '@oas-ui/icons/icons/close'
+import { errorPath } from '@oas-ui/icons/icons/error'
+import { infoPath } from '@oas-ui/icons/icons/info'
+import { warningPath } from '@oas-ui/icons/icons/warning'
 
 /**
  * oas-notice-bar —— 通告栏（feedback 族，移动原生形态批）。
@@ -9,7 +14,7 @@ import { iconRegistry, type IconName } from '@oas-ui/icons'
  * 属性（kebab-case）：
  * - `type`：`info`（默认，主色系）/ `success` / `warning` / `error`；底色/图标色走语义
  *   token（`--oas-color-*` / `*-text` 档），暗色主题随 token 自动适配；非法值回落 info
- * - `icon`：图标名（iconRegistry 键）；缺省按 type 取默认图标（info/success/warning/error）；
+ * - `icon`：图标名（lookupIcon 查表）；缺省按 type 取默认图标（info/success/warning/error）；
  *   `icon="none"` 不显示图标；非法名回落 type 默认；slot="icon" 富内容优先
  * - `closable`：布尔，显示关闭按钮（aria-label 走 i18n `noticeBar.closeAriaLabel`）
  * - `scrollable`：布尔，单条内容超长时横向走马灯——内嵌 `<oas-marquee>` 组合复用其滚动
@@ -46,12 +51,12 @@ import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type NoticeBarType = 'info' | 'success' | 'warning' | 'error'
 
-/** 语义 type → 内置图标名（iconRegistry 键，与 alert 的语义图标映射一致） */
-const SEMANTIC_ICONS: Record<NoticeBarType, IconName> = {
-  info: 'info',
-  success: 'check-circle',
-  warning: 'warning',
-  error: 'error',
+/** 语义 type → 内置图标 path 常量（精确导入，不拉全量注册表；与 alert 的语义图标映射一致） */
+const SEMANTIC_ICONS: Record<NoticeBarType, string> = {
+  info: infoPath,
+  success: checkCirclePath,
+  warning: warningPath,
+  error: errorPath,
 }
 
 const VALID_TYPES: readonly NoticeBarType[] = ['info', 'success', 'warning', 'error']
@@ -284,8 +289,8 @@ export class OASNoticeBar extends OASElement {
   private lastItemsRaw: string | null = null
   /** 上一帧写入的条目文本：相同不重写（不与淡入淡出过渡打架） */
   private lastTextSet = ''
-  /** 上一帧渲染的图标名：相同不重写 innerHTML */
-  private lastIconName = ''
+  /** 上一帧渲染的图标 path 内容：相同不重写 innerHTML */
+  private lastIconContent = ''
   /** 上一帧物化进 marquee 的宿主内容指纹：相同不重建 */
   private lastScrollSig = ''
 
@@ -302,7 +307,7 @@ export class OASNoticeBar extends OASElement {
         </div>
         <a class="action" part="action" hidden></a>
         <button class="action" part="action" type="button" hidden></button>
-        <button class="close-btn" part="close" type="button" hidden aria-label=""><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${iconRegistry['close']}</svg></button>
+        <button class="close-btn" part="close" type="button" hidden aria-label=""><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${closePath}</svg></button>
       </div>
     `
   }
@@ -425,12 +430,11 @@ export class OASNoticeBar extends OASElement {
       if (this.iconFallback) {
         this.iconFallback.hidden = hasCustom
         if (!hasCustom && !none) {
-          const iconName = (
-            iconAttr !== '' && iconRegistry[iconAttr as IconName] ? iconAttr : SEMANTIC_ICONS[type]
-          ) as IconName
-          if (iconName !== this.lastIconName) {
-            this.lastIconName = iconName
-            this.iconFallback.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${iconRegistry[iconName]}</svg>`
+          // icon 属性（动态名）走 lookupIcon（自定义注册优先、内置集兜底）；无有效名回落语义 path 常量
+          const iconContent = (iconAttr !== '' ? lookupIcon(iconAttr) : undefined) ?? SEMANTIC_ICONS[type]
+          if (iconContent !== this.lastIconContent) {
+            this.lastIconContent = iconContent
+            this.iconFallback.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${iconContent}</svg>`
           }
         }
       }

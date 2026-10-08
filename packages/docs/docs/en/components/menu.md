@@ -59,7 +59,7 @@ Menu items with `type: "group"` render as a section with a group title (small te
 
 ## With icons
 
-`icon` uses icon names from `@oas-ui/icons` (iconRegistry) and renders an inline SVG to the left of the text.
+`icon` uses icon names from `@oas-ui/icons` (built-in icon set) and renders an inline SVG to the left of the text.
 
 <DemoBlock title="With icons">
   <oas-menu style="width: 200px" items='[{"label":"Search","value":"search","icon":"search"},{"label":"User","value":"user","icon":"user"},{"label":"Settings","value":"settings","icon":"gear"},{"label":"Download","value":"download","icon":"download"}]'></oas-menu>
@@ -556,7 +556,7 @@ The menu item `shortcut` field (items JSON) or the `<oas-menu-item shortcut="…
 | `value`    | Selection value                                                    | `string`     |
 | `type`     | Item type: `item` (default) / `group` (group title) / `divider`    | `string`     |
 | `kind`     | Leaf semantics: `radio` (default, checkable) / `action` (action item, no checkmark, doesn't write back `value` on click) | `string` |
-| `icon`     | Icon name (a key of `@oas-ui/icons` iconRegistry)                | `string`     |
+| `icon`     | Icon name (a key of `@oas-ui/icons` built-in icon set)                | `string`     |
 | `disabled` | Disables the item                                                  | `boolean`    |
 | `children` | Submenu items array with the same shape as the parent (nested recursively) | `MenuItem[]` |
 

@@ -125,7 +125,7 @@ describe('OASToggleButton 图标（icon / icon-only）', () => {
     return el
   }
 
-  it('icon 渲染 iconRegistry 内联 SVG（装饰性 aria-hidden）+ has-icon 布局类', () => {
+  it('icon 渲染查表内联 SVG（装饰性 aria-hidden）+ has-icon 布局类', () => {
     const el = mountText('收藏', { icon: 'star' })
     const b = btn(el)
     expect(b.classList.contains('has-icon')).toBe(true)

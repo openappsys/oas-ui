@@ -38,7 +38,7 @@ With `clickable` enabled, step items are clickable to jump (the whole item is cl
 
 ## Steps with icons
 
-Set the `icon` field per step (an `iconRegistry` key) to render an icon at the indicator position; an explicit `icon` takes priority over the status default icon (number / ✓ / ✕). When the `icon` is not found in the registry it is not rendered and falls back to the status default.
+Set the `icon` field per step (an `built-in icon set` key) to render an icon at the indicator position; an explicit `icon` takes priority over the status default icon (number / ✓ / ✕). When the `icon` is not found in the registry it is not rendered and falls back to the status default.
 
 <DemoBlock title="Icon steps">
   <oas-steps current="1" steps='[{"title":"Create order","description":"Fill in order details","icon":"edit"},{"title":"Confirm payment","description":"Choose a payment method","icon":"check-circle"},{"title":"Complete shipping","description":"Wait for delivery","icon":"download"}]'></oas-steps>

@@ -6,7 +6,7 @@
 
 ## 基础用法
 
-`items` 传 JSON 数组 `[{ label, value, icon? }]`，`icon` 取 `@oas-ui/icons` 的 iconRegistry 图标名；未指定 `value` 时默认激活第一项。
+`items` 传 JSON 数组 `[{ label, value, icon? }]`，`icon` 取 `@oas-ui/icons` 的 内置图标名；未指定 `value` 时默认激活第一项。
 
 <DemoBlock title="基础用法">
   <oas-bottom-navigation id="bn-basic" value="home" style="width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"消息","icon":"mail","value":"mail"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
@@ -216,8 +216,8 @@ onMounted(() => {
 | -------- | ---------------------------------------------------- | -------- |
 | `label`  | 文案                                                 | `string` |
 | `value`  | 值（唯一标识）                                       | `string` |
-| `icon`   | 图标名（`@oas-ui/icons` 的 iconRegistry 键）        | `string` |
+| `icon`   | 图标名（`@oas-ui/icons` 的 内置图标名）        | `string` |
 | `disabled` | 禁用（不可选中、键盘跳过）                         | `boolean` |
 | `badge`  | 右上角标（数字/文本，叠在 icon 上；未设置不渲染）   | `string` |
 
-行为：`role="tablist"` + `role="tab"` + `aria-selected` / `aria-disabled` 同步；roving tabindex 仅激活项可聚焦；方向键（左右/上下）在可用项间循环移动焦点（Home/End 首尾），Enter/Space 选中当前焦点项；点击已激活项不重复派发；空 `items` 渲染空 tablist 不报错。激活项主色 + 图标（iconRegistry 内联 SVG，跟随 currentColor），顶部细分隔线；`badge` 右上角标（叠在 icon 上，走 badge token）；`fixed` + `safe-area` 加底部安全区内边距。
+行为：`role="tablist"` + `role="tab"` + `aria-selected` / `aria-disabled` 同步；roving tabindex 仅激活项可聚焦；方向键（左右/上下）在可用项间循环移动焦点（Home/End 首尾），Enter/Space 选中当前焦点项；点击已激活项不重复派发；空 `items` 渲染空 tablist 不报错。激活项主色 + 图标（内置图标内联 SVG，跟随 currentColor），顶部细分隔线；`badge` 右上角标（叠在 icon 上，走 badge token）；`fixed` + `safe-area` 加底部安全区内边距。

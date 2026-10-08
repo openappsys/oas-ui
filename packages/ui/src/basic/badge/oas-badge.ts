@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { normalizeSize, THREE_SIZES } from '../../shared/size.js'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 
 export type BadgeMode = 'count' | 'ribbon'
 export type BadgeColor = 'primary' | 'success' | 'warning' | 'danger'
@@ -1613,14 +1613,15 @@ export class OASBadge extends OASElement {
 
         el.classList.toggle('dot', dot)
 
-        // icon 徽标：icon 属性（iconRegistry 图标名）优先于 value/dot（互斥）；
+        // icon 徽标：icon 属性（图标名，走 lookupIcon 查表：自定义注册优先、内置集兜底）优先于 value/dot（互斥）；
         // 非法图标名静默回落数字/圆点逻辑
         const iconName = this.getAttr('icon', '')
-        const hasIcon = iconName !== '' && iconRegistry[iconName as IconName] !== undefined
+        const iconPath = iconName !== '' ? lookupIcon(iconName) : undefined
+        const hasIcon = iconPath !== undefined
         el.classList.toggle('has-icon', hasIcon)
 
         if (hasIcon) {
-          // 渲染 iconRegistry 内联 SVG（装饰性对读屏隐藏，1em 跟随徽标字号）；
+          // 渲染查表所得内联 SVG（装饰性对读屏隐藏，1em 跟随徽标字号）；
           // SVG 节点复用（增量更新不重建），仅图标名变化时重写内容
           let svg = el.querySelector<SVGElement>('svg')
           if (!svg) {
@@ -1633,7 +1634,7 @@ export class OASBadge extends OASElement {
             el.appendChild(svg)
           }
           if (el.dataset.icon !== iconName) {
-            svg.innerHTML = iconRegistry[iconName as IconName]
+            svg.innerHTML = iconPath
             el.dataset.icon = iconName
           }
           el.removeAttribute('aria-label')

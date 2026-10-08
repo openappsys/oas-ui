@@ -5,6 +5,8 @@ import '@oas-ui/theme'
 import '@oas-ui/theme/skins.css'
 import '@oas-ui/theme/glass.css'
 import '@oas-ui/theme/glass-fluid.js'
+// 静态注册内置图标集：早于 onMounted 的动态 import('@oas-ui/ui')，避免组件首渲染时内置图名未注册
+import '@oas-ui/icons/register'
 import './style.css'
 import DemoBlock from './components/DemoBlock.vue'
 import TokenShowcase from './components/TokenShowcase.vue'

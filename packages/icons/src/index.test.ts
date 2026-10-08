@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
+// registry（全量数据）已移出 barrel：需要全量数据的代码显式走 registry 子路径
+import { iconRegistry, iconNames } from './registry.js'
 import {
-  iconRegistry,
-  iconNames,
   checkPath,
   closePath,
   arrowUpPath,

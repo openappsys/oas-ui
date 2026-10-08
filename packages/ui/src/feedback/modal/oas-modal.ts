@@ -1,5 +1,8 @@
 import { OASElement, type ReactiveController } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { checkCirclePath } from '@oas-ui/icons/icons/check-circle'
+import { errorPath } from '@oas-ui/icons/icons/error'
+import { infoPath } from '@oas-ui/icons/icons/info'
+import { warningPath } from '@oas-ui/icons/icons/warning'
 import { registeredModalCapabilities, onModalCapabilityRegistered } from './oas-modal-capability.js'
 
 export type ModalVariant = 'info' | 'success' | 'warning' | 'error'
@@ -23,12 +26,12 @@ const CLOSE_ACTION: Record<ModalCloseSource, 'confirm' | 'cancel' | 'close'> = {
   programmatic: 'close',
 }
 
-/** 语义变体 → 内置图标名（iconRegistry 键） */
-const SEMANTIC_ICONS: Record<ModalVariant, IconName> = {
-  info: 'info',
-  success: 'check-circle',
-  warning: 'warning',
-  error: 'error',
+/** 语义变体 → 内置图标 path 常量（精确导入，不拉全量注册表） */
+const SEMANTIC_ICONS: Record<ModalVariant, string> = {
+  info: infoPath,
+  success: checkCirclePath,
+  warning: warningPath,
+  error: errorPath,
 }
 
 /** P23 shake 动画总时长（CSS 300ms + 余量，用于移除 class 保证可重播） */
@@ -1316,13 +1319,13 @@ export class OASModal extends OASElement {
       cancelBtn.setAttribute('aria-label', cancelText)
       cancelBtn.textContent = cancelText
     }
-    // 语义变体图标（type 属性）：内置图标名映射；无 type / 非法值隐藏
+    // 语义变体图标（type 属性）：path 常量映射；无 type / 非法值隐藏
     const semanticIcon = this.semanticIcon
     if (semanticIcon) {
-      const iconName = SEMANTIC_ICONS[this.getAttr('type') as ModalVariant]
-      if (iconName) {
+      const iconPath = SEMANTIC_ICONS[this.getAttr('type') as ModalVariant]
+      if (iconPath) {
         semanticIcon.hidden = false
-        semanticIcon.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${iconRegistry[iconName]}</svg>`
+        semanticIcon.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${iconPath}</svg>`
       } else {
         semanticIcon.hidden = true
         semanticIcon.innerHTML = ''

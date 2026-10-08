@@ -1,12 +1,12 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, iconNames, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { getViewport } from '../../overlay/floating/index.js'
 import { isRtl } from '../../shared/direction.js'
 
 export interface BreadcrumbItem {
   label: string
   href?: string
-  /** 前置图标（@oas-ui/icons 注册表图标名） */
+  /** 前置图标（@oas-ui/icons 图标名，lookupIcon 查表） */
   icon?: string
   /** 禁用项：渲染为非交互文本（aria-disabled） */
   disabled?: boolean
@@ -21,9 +21,6 @@ export interface BreadcrumbItem {
   /** 显式标记当前项（aria-current="page"），默认取末项 */
   active?: boolean
 }
-
-/** 图标名集合（O(1) 判断 separator / icon 是否图标名） */
-const ICON_NAMES = new Set<string>(iconNames)
 
 /** 子元素通道内部扩展：任意节点分隔符（JSON 通道无法表达），不透出公共 BreadcrumbItem */
 interface BreadcrumbItemInternal extends BreadcrumbItem {
@@ -691,10 +688,10 @@ export class OASBreadcrumb extends OASElement {
     span.appendChild(this.plainContent(item, maxItemWidth))
   }
 
-  /** 前置图标 svg（复用 @oas-ui/icons 注册表，与 oas-icon 同源） */
+  /** 前置图标 svg（lookupIcon 查表：自定义注册优先、内置集兜底，与 oas-icon 同源） */
   private iconSvg(name?: string): SVGElement | null {
     if (!name) return null
-    const path = iconRegistry[name as IconName]
+    const path = lookupIcon(name)
     if (!path) return null
     const wrap = document.createElement('div')
     wrap.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">${path}</svg>`
@@ -795,7 +792,7 @@ export class OASBreadcrumb extends OASElement {
       sep.appendChild(document.importNode(value, true))
       return sep
     }
-    if (ICON_NAMES.has(value as IconName)) {
+    if (lookupIcon(value) !== undefined) {
       const svg = this.iconSvg(value)
       if (svg) {
         svg.setAttribute('aria-hidden', 'true')

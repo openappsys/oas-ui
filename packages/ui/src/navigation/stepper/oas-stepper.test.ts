@@ -94,7 +94,7 @@ describe('OASStepper 渲染与状态', () => {
     expect(list[0]!.querySelector('.indicator')!.textContent).toBe('✕')
   })
 
-  it('icon 字段：显式 icon（iconRegistry 键）优先于状态默认图标渲染内联 SVG', () => {
+  it('icon 字段：显式 icon（lookupIcon 查表键）优先于状态默认图标渲染内联 SVG', () => {
     const el = mount({
       steps: JSON.stringify([{ title: 'A', icon: 'check-circle' }, { title: 'B' }, { title: 'C' }]),
     })

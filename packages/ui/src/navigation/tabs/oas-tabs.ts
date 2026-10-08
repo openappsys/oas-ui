@@ -1,5 +1,11 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
+import { chevronDownPath } from '@oas-ui/icons/icons/chevron-down'
+import { chevronLeftPath } from '@oas-ui/icons/icons/chevron-left'
+import { chevronRightPath } from '@oas-ui/icons/icons/chevron-right'
+import { chevronUpPath } from '@oas-ui/icons/icons/chevron-up'
+import { morePath } from '@oas-ui/icons/icons/more'
+import { plusPath } from '@oas-ui/icons/icons/plus'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
@@ -1042,10 +1048,10 @@ export class OASTabs extends OASElement {
       }
       btn.setAttribute('data-value', value)
 
-      // 图标：icon 属性（iconRegistry 内联 SVG）优先；否则取面板直接子元素
+      // 图标：icon 属性（lookupIcon 查表内联 SVG）优先；否则取面板直接子元素
       // [slot="icon"] 克隆进图标位（装饰性，读屏隐藏）
       const iconName = panel.getAttribute('icon')
-      const iconContent = iconName ? iconRegistry[iconName as IconName] : undefined
+      const iconContent = iconName ? lookupIcon(iconName) : undefined
       let slotIcon: HTMLElement | null = null
       if (!iconContent) {
         for (const child of panel.children) {
@@ -1198,7 +1204,7 @@ export class OASTabs extends OASElement {
           add.innerHTML = ''
           add.appendChild(slotAdd.cloneNode(true))
         } else {
-          add.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">${iconRegistry['plus']}</svg>`
+          add.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">${plusPath}</svg>`
         }
         this.addBtn = add
       } else {
@@ -1253,8 +1259,8 @@ export class OASTabs extends OASElement {
     start.setAttribute('aria-label', this.t('tabs.scrollPrev'))
     end.setAttribute('aria-label', this.t('tabs.scrollNext'))
     const vertical = this.isVertical()
-    const prevSvg = iconRegistry[vertical ? 'chevron-up' : 'chevron-left']
-    const nextSvg = iconRegistry[vertical ? 'chevron-down' : 'chevron-right']
+    const prevSvg = vertical ? chevronUpPath : chevronLeftPath
+    const nextSvg = vertical ? chevronDownPath : chevronRightPath
     start.innerHTML = `<svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${prevSvg}</svg>`
     end.innerHTML = `<svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${nextSvg}</svg>`
     start.addEventListener('click', () => this.scrollTabs(-1))
@@ -1426,7 +1432,7 @@ export class OASTabs extends OASElement {
     moreBtn.setAttribute('aria-label', this.t('tabs.more'))
     moreBtn.setAttribute('aria-haspopup', 'menu')
     moreBtn.setAttribute('aria-expanded', 'false')
-    moreBtn.innerHTML = `<svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${iconRegistry['more']}</svg>`
+    moreBtn.innerHTML = `<svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${morePath}</svg>`
     moreBtn.addEventListener('click', (e) => {
       e.stopPropagation()
       this.moreOpen = !this.moreOpen

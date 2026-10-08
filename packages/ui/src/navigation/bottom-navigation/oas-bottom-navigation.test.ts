@@ -136,7 +136,7 @@ describe('OASBottomNavigation', () => {
     expect(el.getAttribute('value')).toBeNull()
   })
 
-  it('icon 用 iconRegistry 渲染内联 SVG', () => {
+  it('icon 用 lookupIcon 渲染内联 SVG', () => {
     const el = mount()
     const svgs = el.shadowRoot!.querySelectorAll('svg')
     expect(svgs.length).toBe(3)

@@ -334,7 +334,7 @@
 | `href` | 链接地址：设置后渲染为原生链接 `<a>` | `string` | — |
 | `html-type` | 原生表单行为：`button`（默认，无行为）/ `submit` 提交所在或 `form` 指向的表单 / `reset` 重置（shadow 内按钮经代理桥接原生激活行为） | `string` | `button` |
 | `icon` | 图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称 | `string` | — |
-| `icon-end` | 文字后的第二个图标（iconRegistry 图标名），与 `icon`/`icon-position` 并存——「左图标+右下拉箭头」等双侧内容形态 | `string` | — |
+| `icon-end` | 文字后的第二个图标（内置图标名），与 `icon`/`icon-position` 并存——「左图标+右下拉箭头」等双侧内容形态 | `string` | — |
 | `icon-position` | 图标位置：`start`（默认，图标在左）/ `end`（图标在右） | `string` | `start` |
 | `loading` | 加载态 | — | — |
 | `loading-text` | 加载态显示的文本（如「提交中…」），设置后 loading 时替换标签内容 | `string` | — |

@@ -1,5 +1,8 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry } from '@oas-ui/icons'
+import { chevronDownPath } from '@oas-ui/icons/icons/chevron-down'
+import { chevronLeftPath } from '@oas-ui/icons/icons/chevron-left'
+import { chevronRightPath } from '@oas-ui/icons/icons/chevron-right'
+import { chevronUpPath } from '@oas-ui/icons/icons/chevron-up'
 import { isRtl } from '../../shared/direction.js'
 
 const STYLE = `
@@ -742,13 +745,12 @@ export class OASSplitter extends OASElement {
 
   private collapseIcon(collapsed: boolean): string {
     if (this.hasAttr('vertical')) {
-      return iconRegistry[collapsed ? 'chevron-down' : 'chevron-up'] ?? ''
+      return collapsed ? chevronDownPath : chevronUpPath
     }
-    return (
-      iconRegistry[
-        collapsed ? (isRtl(this) ? 'chevron-left' : 'chevron-right') : isRtl(this) ? 'chevron-right' : 'chevron-left'
-      ] ?? ''
-    )
+    const rtl = isRtl(this)
+    // 收起方向：水平布局下折叠箭头指向将收拢的一侧（RTL 镜像）
+    if (collapsed) return rtl ? chevronLeftPath : chevronRightPath
+    return rtl ? chevronRightPath : chevronLeftPath
   }
 
   private panelSize(index: number): number {

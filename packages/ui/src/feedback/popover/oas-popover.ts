@@ -1,7 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
 import { cssVarPx } from '../../shared/css-var.js'
-import { iconRegistry } from '@oas-ui/icons'
+import { closePath } from '@oas-ui/icons/icons/close'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { registeredPopoverCapabilities, onPopoverCapabilityRegistered } from './oas-popover-capability.js'
 
@@ -731,7 +731,7 @@ export class OASPopover extends OASElement {
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
-    const closeIcon = iconRegistry['close'] ?? ''
+    const closeIcon = closePath
     return `
       <style>${STYLE}</style>
       <slot></slot>

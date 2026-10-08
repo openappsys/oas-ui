@@ -155,7 +155,7 @@
 
 ## 自定义图标与着色
 
-菜单项 `icon` 默认取 `@oas-ui/icons` 内置注册表图标名；应用级自定义图标走官方正路 `registerIcon(name, svg)`（`@oas-ui/ui` 导出）——**一处注册，`<oas-icon>` 与侧栏及未来其它消费方全部可见**（勿直接改 `@oas-ui/icons` 的 `iconRegistry`），同名注册覆盖内置图标。
+菜单项 `icon` 默认取 `@oas-ui/icons` 内置注册表图标名；应用级自定义图标走官方正路 `registerIcon(name, svg)`（`@oas-ui/ui` 导出）——**一处注册，`<oas-icon>` 与侧栏及未来其它消费方全部可见**（勿直接改内置图标数据；按需模式用内置名需 `import '@oas-ui/icons/register'` 一次），同名注册覆盖内置图标。
 
 `iconColor` 给单项目标色：显式时固定该色、优先于禁用/激活态默认色；缺省 `currentColor` 随态着色（激活态走主色）。注册的彩色 SVG（path 自带 `stroke`/`fill`）自带色天然保留，外层 `stroke` 不强制覆盖。
 

@@ -1,5 +1,7 @@
 import { OASElement } from '@oas-ui/core'
-import { registerIcon, lookupIcon } from '../../basic/icon/oas-icon.js'
+// 图标走 @oas-ui/icons 运行时查表（registerIcon 自定义优先、内置集兜底），
+// 不经 oas-icon 组件模块——避免把整个 <oas-icon> 拉进 message 按需链
+import { registerIcon, lookupIcon } from '@oas-ui/icons/runtime'
 
 const STYLE = `
 :host {
@@ -238,7 +240,7 @@ export type MessageCloseSource = 'auto' | 'close' | 'destroy' | 'click' | 'mask'
 export type MessageContent = string | Node
 
 export interface CustomMessageType {
-  /** 图标名（lookupIcon 查表通道：registerIcon 自定义优先、内置 iconRegistry 兜底） */
+  /** 图标名（lookupIcon 查表通道：registerIcon 自定义优先、内置集兜底） */
   icon?: string
   /** 类型配色（任意 CSS 颜色，组件默认只走 CSS 变量 token，此值为用户显式注入） */
   color?: string
@@ -246,7 +248,7 @@ export interface CustomMessageType {
   closable?: boolean
 }
 
-/** 内置类型 → 图标名（lookupIcon 键） */
+/** 内置类型 → 图标名（lookupIcon 键；解析时自定义注册优先） */
 const BUILTIN_ICONS: Partial<Record<string, string>> = {
   info: 'info',
   success: 'check-circle',

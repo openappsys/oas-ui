@@ -45,5 +45,8 @@ export { treePath } from './icons/tree.js'
 export { uploadPath } from './icons/upload.js'
 export { userPath } from './icons/user.js'
 export { warningPath } from './icons/warning.js'
-export { iconRegistry, iconNames } from './registry.js'
+// registry（内置全量数据）不进 barrel：按需组件链只引 path 常量/运行时，不背整套图标；
+// 需要全量数据的代码显式走 '@oas-ui/icons/registry' 子路径
 export type { IconName } from './registry.js'
+// 运行时（不含全量集）：lookupIcon / registerIcon / registerIconAlias / registerIconLibrary / registerBuiltinIcons
+export * from './runtime.js'

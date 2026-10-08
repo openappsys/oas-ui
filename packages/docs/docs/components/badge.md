@@ -56,7 +56,7 @@
 
 ## 图标徽标
 
-`icon` 传入 iconRegistry 图标名，徽标内渲染小图标（如状态角标放 √ / !）。与 `value` / `dot` 互斥：`icon` 优先显示图标，不渲染数字/圆点；非法图标名静默回落数字逻辑。
+`icon` 传入 内置图标名，徽标内渲染小图标（如状态角标放 √ / !）。与 `value` / `dot` 互斥：`icon` 优先显示图标，不渲染数字/圆点；非法图标名静默回落数字逻辑。
 
 <DemoBlock title="图标徽标">
   <oas-badge icon="check" color="success" style="margin-inline-end: var(--oas-space-4)">
@@ -628,7 +628,7 @@ oas-badge#badge-dyn.bump::part(badge) {
 | `color` | 徽标颜色：4 语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、或 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效，实心文字色按底色亮度自动取黑/白保证可读 | `BadgeColor \| BadgePresetColor` | — |
 | `corner` | 角标四角定位：`top-right`（默认）/ `top-left` / `bottom-right` / `bottom-left`，仅影响 count / dot 角标（ribbon 用 `placement`）；`offset` 在其结果上做屏幕坐标 px 微调（x 正向右、y 正向下，与 corner 朝向无关），先定角再平移可叠加；非法值静默回落 `top-right` | `BadgeCorner` | `top-right` |
 | `dot` | 小圆点模式 | `boolean` | — |
-| `icon` | 徽标内图标：iconRegistry 图标名（如 check / warning），渲染内联 SVG（1em 跟随徽标字号、装饰性对读屏隐藏）；与 value/dot 互斥（icon 优先） | `string` | — |
+| `icon` | 徽标内图标：内置图标名（如 check / warning），渲染内联 SVG（1em 跟随徽标字号、装饰性对读屏隐藏）；与 value/dot 互斥（icon 优先） | `string` | — |
 | `max` | 上限 | `string` | — |
 | `mode` | 模式：`count`（默认，数字/圆点徽标）或 `ribbon`（缎带角标，等价 `ribbon` 属性） | `BadgeMode` | `count` |
 | `offset` | 位置微调：`"x,y"`（px 数字，支持负值），在角标/缎带定位基础上额外平移（x 正向右、y 正向下）；与 `corner` / `placement` / `ribbon-vertical` 可叠加（先定位再平移）；非法值（非数字、缺坐标）静默忽略 | `string` | — |

@@ -1,5 +1,6 @@
 import { OASFormElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
+import { eyePath } from '@oas-ui/icons/icons/eye'
 import { isRtl } from '../../shared/direction.js'
 
 /** addon 槽内「自包含控件」tag 白名单：自带底色/描边/圆角，不应被放进文本托盘的灰底与内边距里 */
@@ -951,7 +952,7 @@ export class OASInput extends OASFormElement {
             </button>
             <button class="eye-btn" part="eye" type="button" hidden aria-pressed="false">
               <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-                ${iconRegistry['eye']}
+                ${eyePath}
               </svg>
             </button>
             <span class="spinner" part="spinner" aria-hidden="true" hidden></span>
@@ -1417,14 +1418,14 @@ export class OASInput extends OASFormElement {
     setAddon('append', 'addon-after', 'data-slot-append')
   }
 
-  /** 内嵌前后缀：prefix/suffix 文案（attribute 文本为 slot fallback）+ prefix-icon/suffix-icon 图标（iconRegistry 内联 SVG）。
+  /** 内嵌前后缀：prefix/suffix 文案（attribute 文本为 slot fallback）+ prefix-icon/suffix-icon 图标（lookupIcon 查表内联 SVG）。
    *  attribute 与 slot 双通道并行：slot 有分发时原生替换 fallback（零 JS 优先级判断），attribute 文本只写 fallback 不直接覆盖 span
    *  （避免误清 slot 节点）；显隐 = 有 attribute 文本 || slot 有分发内容；slot 分发时给 host 打 data-slot-prefix/suffix 驱动 input 内边距。 */
   private syncAffixes(): void {
     const renderIcon = (part: string, iconName: string): void => {
       const el = this.shadow.querySelector<HTMLElement>(`[part="${part}"]`)
       if (!el) return
-      const content = iconName ? iconRegistry[iconName as IconName] : undefined
+      const content = iconName ? lookupIcon(iconName) : undefined
       if (content) {
         el.hidden = false
         // 装饰性图标对读屏隐藏（输入框 aria-label 提供可访问名称）

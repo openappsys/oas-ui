@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
-import { lookupIcon } from '../../basic/icon/oas-icon.js'
+// 图标查表走 @oas-ui/icons 运行时（不经 oas-icon 组件模块，避免拉进 stepper 按需链）
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import type { OASStepperPanel } from './oas-stepper-panel.js'
@@ -13,7 +14,7 @@ export interface StepperStep {
   description?: string
   /** 显式状态，缺省时按 current 推导（前序 finish / 当前 process / 其余 wait） */
   status?: StepperStatus
-  /** 图标名（iconRegistry / registerIcon 键）：显式 icon 优先于状态默认图标（序号/✓/✕） */
+  /** 图标名（lookupIcon 查表键 / registerIcon 自定义名）：显式 icon 优先于状态默认图标（序号/✓/✕） */
   icon?: string
   /** 禁用步骤：不可点击（aria-disabled）、键盘跳过、视觉弱化；显式 status 仍正常显示 */
   disabled?: boolean

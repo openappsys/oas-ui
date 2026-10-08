@@ -2,9 +2,9 @@ import { OASElement } from '@oas-ui/core'
 import { getViewport } from '../../overlay/floating/index.js'
 import type { MenuItem } from '../menu/index.js'
 import type { MenuItemKind } from '../menu/oas-menu.js'
-// 图标查表走 oas-icon 同一通道（customIcons 注册优先、内置 iconRegistry 兜底）：
-// 用户 `registerIcon()` 注册的自定义图标菜单家族可见；oas-icon.ts 不依赖 menu，无循环引用
-import { lookupIcon } from '../../basic/icon/oas-icon.js'
+// 图标查表走 @oas-ui/icons 运行时（registerIcon 自定义优先、内置集兜底，与 oas-icon 同源）；
+// 不经 oas-icon 组件模块——避免把整个 <oas-icon> 拉进 navigation-menu 按需链
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { onMeasurable, type MeasureDisposer } from '../../shared/measure-when-visible.js'
 

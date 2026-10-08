@@ -56,7 +56,7 @@ When no child content is wrapped, the badge falls back from the "top-end corner"
 
 ## Icon badge
 
-`icon` takes an iconRegistry icon name and renders a small icon inside the badge (e.g. a √ / ! status corner). It is mutually exclusive with `value` / `dot`: `icon` wins and shows the icon instead of a number/dot; an invalid icon name silently falls back to the numeric logic.
+`icon` takes a built-in icon name and renders a small icon inside the badge (e.g. a √ / ! status corner). It is mutually exclusive with `value` / `dot`: `icon` wins and shows the icon instead of a number/dot; an invalid icon name silently falls back to the numeric logic.
 
 <DemoBlock title="Icon badges">
   <oas-badge icon="check" color="success" style="margin-inline-end: var(--oas-space-4)">
@@ -628,7 +628,7 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 | `color` | Badge color: the four semantic colors (`primary` / `success` / `warning` / `danger`), any CSS color value, or one of the 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens, auto-brightened in dark). Applies uniformly across count / dot / ribbon; the solid text color is picked black/white by the background luminance for readability | `BadgeColor \| BadgePresetColor` | — |
 | `corner` | Corner placement: `top-right` (default) / `top-left` / `bottom-right` / `bottom-left`, affects count / dot corner badges only (the ribbon uses `placement`); `offset` fine-tunes in screen px on top of the corner result (x positive rightward, y positive downward, independent of the corner direction), corner first then shift, they compose; invalid values silently fall back to `top-right` | `BadgeCorner` | `top-right` |
 | `dot` | Dot mode | `boolean` | — |
-| `icon` | In-badge icon: an iconRegistry icon name (e.g. check / warning), rendered as an inline SVG (1em following the badge font size, decorative and hidden from screen readers); mutually exclusive with value/dot (icon wins) | `string` | — |
+| `icon` | In-badge icon: a built-in icon name (e.g. check / warning), rendered as an inline SVG (1em following the badge font size, decorative and hidden from screen readers); mutually exclusive with value/dot (icon wins) | `string` | — |
 | `max` | Upper limit | `string` | — |
 | `mode` | Mode: `count` (default, numeric/dot badge) or `ribbon` (ribbon corner, same as `ribbon` attribute) | `BadgeMode` | `count` |
 | `offset` | Position fine-tune: `"x,y"` (px numbers, negative values allowed), shifts the corner badge or ribbon on top of its anchor position (x positive rightward, y positive downward); composes with `corner` / `placement` / `ribbon-vertical` (anchor first, then shift); invalid values (non-numeric, missing coordinate) are silently ignored | `string` | — |

@@ -23,12 +23,21 @@ export default defineConfig(() => {
 
   return {
     resolve: {
-      alias: {
+      // 数组形式保证匹配顺序：更具体的子路径必须先于包名映射（对象形式的匹配顺序不保证先长后短）
+      alias: [
         // 内联工作区包源码而非其 dist，CDN 构建自包含、不依赖其他包先构建
-        '@oas-ui/core': resolve(import.meta.dirname, '../core/src/index.ts'),
-        '@oas-ui/i18n': resolve(import.meta.dirname, '../i18n/src/index.ts'),
-        '@oas-ui/icons': resolve(import.meta.dirname, '../icons/src/index.ts'),
-      },
+        { find: '@oas-ui/core', replacement: resolve(import.meta.dirname, '../core/src/index.ts') },
+        { find: '@oas-ui/i18n', replacement: resolve(import.meta.dirname, '../i18n/src/index.ts') },
+        { find: '@oas-ui/icons/register', replacement: resolve(import.meta.dirname, '../icons/src/register.ts') },
+        { find: '@oas-ui/icons/runtime', replacement: resolve(import.meta.dirname, '../icons/src/runtime.ts') },
+        { find: '@oas-ui/icons/registry', replacement: resolve(import.meta.dirname, '../icons/src/registry.ts') },
+        // 正则 + $1 捕获：字符串前缀 alias 在 rolldown 下可能被更短的包名先匹配，正则语义无歧义
+        {
+          find: /^@oas-ui\/icons\/icons\/(.*)$/,
+          replacement: `${resolve(import.meta.dirname, '../icons/src/icons').replaceAll('\\', '/')}/$1`,
+        },
+        { find: '@oas-ui/icons', replacement: resolve(import.meta.dirname, '../icons/src/index.ts') },
+      ],
     },
     build: {
       lib: {

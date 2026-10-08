@@ -96,7 +96,7 @@
   <oas-input suffix-icon="eye" placeholder="密码" type="password" style="width: 240px"></oas-input>
 </DemoBlock>
 
-`prefix-icon` / `suffix-icon` 接受图标名（`@oas-ui/icons` 的 iconRegistry），内联渲染 SVG 装饰图标。
+`prefix-icon` / `suffix-icon` 接受图标名（`@oas-ui/icons` 的 内置图标名），内联渲染 SVG 装饰图标。
 
 ## 内嵌前后缀与清空并存
 

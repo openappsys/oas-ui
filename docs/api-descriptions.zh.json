@@ -301,7 +301,7 @@
       "text": "缎带或状态点文字；`slot=\"ribbon\"` 有内容时以插槽为准",
       "value": "数字",
       "bordered": "白描边：布尔属性，徽标加 2px 背景色描边（box-shadow: 0 0 0 2px var(--oas-color-bg)），从头像/图片背景分离；仅视觉叠加不改定位（与 corner/offset/overlap 联动正常）",
-      "icon": "徽标内图标：iconRegistry 图标名（如 check / warning），渲染内联 SVG（1em 跟随徽标字号、装饰性对读屏隐藏）；与 value/dot 互斥（icon 优先）",
+      "icon": "徽标内图标：内置图标名（如 check / warning），渲染内联 SVG（1em 跟随徽标字号、装饰性对读屏隐藏）；与 value/dot 互斥（icon 优先）",
       "variant": "形态：solid（默认，实心）或 outline（描边：背景透明、边框与文字走 color 语义色）；非法值静默回落 solid",
       "shape": "徽标形态 `round`（默认）/ `square` / `pill`，数值与 dot 通用"
     },
@@ -427,7 +427,7 @@
       "color": "自定义颜色：覆盖 `type` 语义色（任意色值），优先级高于 `type`",
       "wave": "按下反馈：轻微下沉 + 加深（默认开）；`wave=\"false\"` 关闭",
       "auto-insert-space": "中文间自动空格：两个连续汉字间插入空格（排版优化，默认关）",
-      "icon-end": "文字后的第二个图标（iconRegistry 图标名），与 `icon`/`icon-position` 并存——「左图标+右下拉箭头」等双侧内容形态",
+      "icon-end": "文字后的第二个图标（内置图标名），与 `icon`/`icon-position` 并存——「左图标+右下拉箭头」等双侧内容形态",
       "loading-text": "加载态显示的文本（如「提交中…」），设置后 loading 时替换标签内容",
       "disabled-focusable": "视觉禁用但保持可聚焦/可悬停（aria-disabled + 拦截点击），用于挂 tooltip 解释禁用原因",
       "download": "链接模式（href）透传 `download` 属性（文件下载按钮）",
@@ -3216,10 +3216,10 @@
       "target": "链接打开方式（`_blank` / `_self` 等），配合 `href`",
       "type": "类型",
       "variant": "形态（与 `type` 正交）：`outlined`（描边）/ `filled`（浅底）/ `solid`（实心）；缺省保持类型默认渲染",
-      "close-icon": "自定义关闭按钮图标（iconRegistry 图标名），替换默认 ×",
+      "close-icon": "自定义关闭按钮图标（内置图标名），替换默认 ×",
       "close-label": "关闭按钮的 aria-label（a11y 上下文朗读，如「移除标签 xx」），默认走 locale「关闭」",
       "loading": "加载态：关闭流程中转 spinner 并禁点（`oas-close` detail 含 `done()` 回调，宿主异步完成后调用退出 loading）",
-      "checked-icon": "checkable 选中时标签前的勾选图标（iconRegistry 图标名，默认 check）",
+      "checked-icon": "checkable 选中时标签前的勾选图标（内置图标名，默认 check）",
       "icon-end": "图标名（复用 oas-icon 图标集），置于文字尾部（关闭按钮前），尺寸跟随字号；可与 icon 并存"
     },
     "events": {

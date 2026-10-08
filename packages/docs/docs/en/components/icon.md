@@ -65,7 +65,7 @@ Four channels (pick by scenario):
 - **`registerIcon(name, svg)`**: register once, then use via `name` (same-name overrides built-ins) — **the proper path for app-level custom icon sets**
 - **`registerIconLibrary`**: hook up a whole remote icon library (resolver → URL fetched on demand, sprite supported) — external icon libraries
 
-> ⚠️ **Do not mutate `iconRegistry` directly** (the built-in registry object exported by `@oas-ui/icons`): it is an internal data structure with no override/cleanup semantics. The proper path is `registerIcon()` (official API, pure function, SSR-safe).
+> ⚠️ **The built-in icon set is opt-in**: the full entry `@oas-ui/ui` registers it automatically; per-component imports that use a **built-in icon name** (`<oas-icon name="close">`, etc.) need a one-time `import '@oas-ui/icons/register'`. **Do not mutate the built-in icon data** (the internal structure exported by `@oas-ui/icons/registry`, with no override/cleanup semantics); the proper path is `registerIcon()` / `registerIconLibrary()` (official API, pure function, SSR-safe).
 
 <DemoBlock title="src SVG">
   <oas-icon src="/demo-icon.svg" size="24" color="var(--oas-color-primary)"></oas-icon>

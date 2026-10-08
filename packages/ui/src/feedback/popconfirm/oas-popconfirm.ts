@@ -1,7 +1,8 @@
 import { OASElement } from '@oas-ui/core'
 import { resolveDirection } from '../../shared/direction.js'
 import { cssVarPx } from '../../shared/css-var.js'
-import { iconRegistry } from '@oas-ui/icons'
+import { alertCirclePath } from '@oas-ui/icons/icons/alert-circle'
+import { warningPath } from '@oas-ui/icons/icons/warning'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 /** 面板与触发元素的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
@@ -847,8 +848,8 @@ export class OASPopconfirm extends OASElement {
     const svg = icon.querySelector<HTMLElement>('slot[name="icon"] > svg')
     if (!svg) return
     const theme = this.themeAttr()
-    const d = theme === 'danger' ? iconRegistry['alert-circle'] : iconRegistry['warning']
-    svg.innerHTML = d ?? ''
+    const d = theme === 'danger' ? alertCirclePath : warningPath
+    svg.innerHTML = d
   }
 
   /** title/description 双通道：slot 有真实内容时隐藏兜底 span（富内容优先），无则渲染缓存文本 */

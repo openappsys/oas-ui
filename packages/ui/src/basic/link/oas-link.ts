@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 
 export type LinkType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
@@ -215,10 +215,10 @@ export class OASLink extends OASElement {
     return true
   }
 
-  /** 从图标集取图标（复用 @oas-ui/icons 的 iconRegistry，与 oas-icon 同源）；
-   * 注册表值是 path 片段（非完整 svg），这里包 svg 壳（viewBox 16×16 与图标集一致） */
+  /** 从图标运行时查图标（lookupIcon：自定义注册优先、内置集兜底，与 oas-icon 同源）；
+   * 查表值是 path 片段（非完整 svg），这里包 svg 壳（viewBox 16×16 与图标集一致） */
   private iconSvg(name: string): string {
-    const path = iconRegistry[name as IconName]
+    const path = lookupIcon(name)
     if (!path) return ''
     return `<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">${path}</svg>`
   }

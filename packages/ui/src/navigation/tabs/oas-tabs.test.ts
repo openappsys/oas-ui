@@ -685,7 +685,7 @@ describe('OASTabs', () => {
     expect((el.shadowRoot!.querySelector('.nav') as HTMLElement).contains(add)).toBe(true)
   })
 
-  it('icon：tab 渲染 iconRegistry 内联 SVG，装饰性对读屏隐藏', () => {
+  it('icon：tab 渲染查表内联 SVG，装饰性对读屏隐藏', () => {
     const el = new OASTabs()
     el.innerHTML = `
       <oas-tab-panel label="消息" value="a" icon="mail"><p>内容</p></oas-tab-panel>

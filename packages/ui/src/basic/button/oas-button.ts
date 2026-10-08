@@ -1,6 +1,6 @@
 import { OASElement, readConfigValue } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 
 export type ButtonType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'text'
 export type ButtonSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
@@ -1088,8 +1088,8 @@ export class OASButton extends OASElement {
     const color = this.getAttr('color', '')
     const wave = this.getAttr('wave', 'true') !== 'false'
 
-    const hasLeadingIcon = icon !== '' && iconRegistry[icon as IconName] !== undefined
-    const hasEndIcon = iconEnd !== '' && iconRegistry[iconEnd as IconName] !== undefined
+    const hasLeadingIcon = icon !== '' && lookupIcon(icon) !== undefined
+    const hasEndIcon = iconEnd !== '' && lookupIcon(iconEnd) !== undefined
     const hasIcon = hasLeadingIcon || hasEndIcon
     const hasText = (this.textContent ?? '').trim().length > 0
     const iconOnly = hasIcon && !hasText
@@ -1169,7 +1169,7 @@ export class OASButton extends OASElement {
       loadingTextEl.hidden = !(loading && loadingText)
     }
 
-    // 图标：iconRegistry 内联 SVG（跟随 currentColor，装饰性对读屏隐藏）
+    // 图标：lookupIcon 查表内联 SVG（跟随 currentColor，装饰性对读屏隐藏）
     const iconEl = this.btn.querySelector<HTMLElement>('.icon')
     if (iconEl) this.renderIcon(iconEl, icon)
     const endIconEl = this.btn.querySelector<HTMLElement>('[part="icon-end"]')
@@ -1189,9 +1189,9 @@ export class OASButton extends OASElement {
     this.applyAutoInsertSpace()
   }
 
-  /** 向图标容器注入 iconRegistry 内联 SVG：空名/无效名时隐藏（跟随 currentColor，装饰性对读屏隐藏） */
+  /** 向图标容器注入 lookupIcon 查表内联 SVG：空名/无效名时隐藏（跟随 currentColor，装饰性对读屏隐藏） */
   private renderIcon(el: HTMLElement, name: string): void {
-    const content = name ? iconRegistry[name as IconName] : undefined
+    const content = name ? lookupIcon(name) : undefined
     el.hidden = !content
     el.innerHTML = ''
     if (content) {

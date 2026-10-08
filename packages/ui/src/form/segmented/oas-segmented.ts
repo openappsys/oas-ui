@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 
 export interface SegmentedOption {
@@ -21,7 +21,7 @@ function normalizeChoice(raw: string, fallback: string, valid: readonly string[]
 
 /** 图标名是否可渲染（未注册名不渲染，与 tag 的 icon 通道一致） */
 function isValidIcon(name: string): boolean {
-  return name !== '' && iconRegistry[name as IconName] !== undefined
+  return name !== '' && lookupIcon(name) !== undefined
 }
 
 /** 图标名转可读文本（oas-icons 图标名即语义名；连字符转空格），仅图标形态的 aria-label 兜底 */

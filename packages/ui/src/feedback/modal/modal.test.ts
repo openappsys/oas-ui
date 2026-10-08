@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { modal, destroyAll, type ModalOptions, type OptionsOptions } from './index.js'
 import { registerAppHost, unregisterAppHost } from '../../framework/app/app-host.js'
-import { iconRegistry } from '@oas-ui/icons'
+import { iconRegistry } from '@oas-ui/icons/registry'
 // prompt 用例经主路径 index 已默认含 prompt 能力（v2.5.0 语义：主路径内置能力包），
 // 本文件仍显式 import 能力包（幂等冗余，与族包/全量入口同注册路径），prompt 用例全部
 // 跑「能力已注入」路径（纯核 core 入口边界由 oas-modal-prompt-capability.test.ts 单独覆盖）

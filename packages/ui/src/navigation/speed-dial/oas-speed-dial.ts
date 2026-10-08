@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 
 export interface SpeedDialAction {
@@ -407,7 +407,7 @@ export class OASSpeedDial extends OASElement {
       btn.addEventListener('click', () => this.select(index, action))
       // hide-label（icon-only）：仅当 icon 真实可渲染才有意义；否则回落显示 label（降级告警一次）
       const iconOnly = action['hide-label'] === true
-      const hasRenderableIcon = !!action.icon && !!iconRegistry[action.icon as IconName]
+      const hasRenderableIcon = !!action.icon && lookupIcon(action.icon) !== undefined
       if (iconOnly && hasRenderableIcon) {
         btn.classList.add('icon-only')
         // 可访问名 = label 文本（label 视觉隐藏但读屏可达）
@@ -436,9 +436,9 @@ export class OASSpeedDial extends OASElement {
     )
   }
 
-  /** 用 iconRegistry 渲染图标（内联 SVG，跟随 currentColor） */
+  /** 查表渲染图标（内联 SVG，跟随 currentColor） */
   private createIcon(icon: string): HTMLElement | null {
-    const content = iconRegistry[icon as IconName]
+    const content = lookupIcon(icon)
     if (!content) return null
     const span = document.createElement('span')
     span.className = 'icon'

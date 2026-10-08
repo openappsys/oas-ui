@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { normalizeSize, THREE_SIZES } from '../../shared/size.js'
 
 export type ToggleButtonSize = 'small' | 'medium' | 'large'
@@ -100,7 +100,7 @@ button[disabled] {
   color: var(--oas-color-text-disabled);
   border-color: var(--oas-color-border);
 }
-/* ---- 图标：iconRegistry 内联 SVG（跟随 currentColor，装饰性对读屏隐藏） ---- */
+/* ---- 图标：查表所得内联 SVG（跟随 currentColor，装饰性对读屏隐藏） ---- */
 button.has-icon {
   gap: var(--oas-space-2);
 }
@@ -250,7 +250,7 @@ export class OASToggleButton extends OASElement {
     const btn = this.btn
     if (!btn) return
     const icon = this.getAttr('icon', '')
-    const content = icon ? iconRegistry[icon as IconName] : undefined
+    const content = icon ? lookupIcon(icon) : undefined
     const hasIcon = content !== undefined
     const hasText = (this.textContent ?? '').trim().length > 0
     const iconOnly = hasIcon && !hasText

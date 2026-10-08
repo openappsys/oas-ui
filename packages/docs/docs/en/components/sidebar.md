@@ -155,7 +155,7 @@ Items support `badge` count badges (colors via `--oas-sidebar-badge-bg/-color` v
 
 ## Custom icons and coloring
 
-Item `icon` defaults to the built-in `@oas-ui/icons` registry; app-level custom icons go through the official `registerIcon(name, svg)` path (exported by `@oas-ui/ui`) — **register once, and `<oas-icon>`, the sidebar and any future consumers all see it** (do not mutate `@oas-ui/icons`'s `iconRegistry` directly); a same-name registration overrides the built-in icon.
+Item `icon` defaults to the built-in `@oas-ui/icons` registry; app-level custom icons go through the official `registerIcon(name, svg)` path (exported by `@oas-ui/ui`) — **register once, and `<oas-icon>`, the sidebar and any future consumers all see it** (do not mutate the built-in icon data; on-demand mode using built-in names needs a one-time `import '@oas-ui/icons/register'`); a same-name registration overrides the built-in icon.
 
 `iconColor` sets a per-item target color: when present it is fixed, taking precedence over the default disabled/active-state colors; when absent it falls back to `currentColor` and follows the state (active uses the primary color). Registered colored SVGs (paths with their own `stroke`/`fill`) keep their own color naturally — the outer `stroke` never overrides them.
 

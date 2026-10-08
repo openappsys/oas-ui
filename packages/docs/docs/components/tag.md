@@ -454,11 +454,11 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `checkable` | 可选中：点击 / Enter / Space 切换 `checked` 并派发 `oas-change`；与 `closable` 互斥 | `boolean` | — |
 | `checked` | 选中态（`checkable` 时生效） | `boolean` | — |
-| `checked-icon` | checkable 选中时标签前的勾选图标（iconRegistry 图标名，默认 check） | `string` | `check` |
+| `checked-icon` | checkable 选中时标签前的勾选图标（内置图标名，默认 check） | `string` | `check` |
 | `chip` | 胶囊 | `boolean` | — |
 | `clickable` | 整签可点 | `boolean` | — |
 | `closable` | 可关闭 | `boolean` | — |
-| `close-icon` | 自定义关闭按钮图标（iconRegistry 图标名），替换默认 × | `string` | — |
+| `close-icon` | 自定义关闭按钮图标（内置图标名），替换默认 × | `string` | — |
 | `close-label` | 关闭按钮的 aria-label（a11y 上下文朗读，如「移除标签 xx」），默认走 locale「关闭」 | `string` | — |
 | `color` | 自定义颜色：支持 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token）或任意 CSS 色值，覆盖 `type` 语义色；未指定 `variant` 时按 `filled` 渲染 | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |

@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry } from '@oas-ui/icons'
+import { closeCirclePath } from '@oas-ui/icons/icons/close-circle'
 import { isRtl } from '../../shared/direction.js'
 
 const STYLE = `
@@ -255,7 +255,7 @@ export class OASFormItem extends OASElement {
       return
     }
     if (!el.querySelector('svg')) {
-      el.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">${iconRegistry['close-circle']}</svg>`
+      el.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">${closeCirclePath}</svg>`
     }
     el.hidden = false
   }

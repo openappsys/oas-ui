@@ -1,82 +1,11 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { getIconLibrary, lookupIcon, resolveIconAlias } from '@oas-ui/icons/runtime'
+import type { IconName } from '@oas-ui/icons'
 
-/**
- * 用户自定义图标注册表（name → 内联 SVG 片段）。
- * 查询优先级高于内置 iconRegistry：同名时覆盖内置图标。
- */
-const customIcons = new Map<string, string>()
-
-/**
- * 注册自定义图标，注册后即可通过 `<oas-icon name="xxx">` 使用。
- * 与内置图标同名时覆盖内置图标。
- * 纯函数、无 DOM 依赖，可在 SSR/Node 环境调用。
- */
-export function registerIcon(name: string, svg: string): void {
-  customIcons.set(name, svg)
-}
-
-/**
- * 图标别名注册表（alias → target）。查询时先做别名替换，再走注册表：
- * - 精确别名：`registerIconAlias('home', 'house')` → `name="home"` 解析为 `house`
- * - 前缀别名：`registerIconAlias('lf-', '')` → `name="lf-star"` 解析为 `star`
- *
- * 与 `registerIcon` / `registerIconLibrary` 同为纯函数、无 DOM 依赖，SSR/Node 可调用。
- */
-const iconAliases = new Map<string, string>()
-
-/**
- * 注册图标别名（含前缀别名）。别名解析发生在 `lookupIcon` 内，故 `<oas-icon>` 与
- * sidebar/menu/message 等全部查表消费方统一生效；解析按最长别名优先，避免短前缀误吞长别名。
- */
-export function registerIconAlias(alias: string, target: string): void {
-  iconAliases.set(alias, target)
-}
-
-/** 别名解析：按最长别名优先做前缀替换；无命中返回原名（无别名时零开销直通） */
-function resolveIconAlias(name: string): string {
-  if (iconAliases.size === 0) return name
-  let best: string | null = null
-  for (const alias of iconAliases.keys()) {
-    if (name.startsWith(alias) && (best === null || alias.length > best.length)) best = alias
-  }
-  return best === null ? name : (iconAliases.get(best) ?? '') + name.slice(best.length)
-}
-
-/** 查表：别名解析 → 自定义注册优先 → 内置图标集。
- *  单一注册点原则：`registerIcon()` 一处注册后，`<oas-icon>` 与本函数
- *  的所有消费方（如 sidebar 图标通道）全部可见。 */
-export function lookupIcon(name: string): string | undefined {
-  const resolved = resolveIconAlias(name)
-  return customIcons.get(resolved) ?? iconRegistry[resolved as IconName]
-}
-
-/**
- * 远程图标库注册项。
- * - resolver：图标名 → SVG URL（可携带 family/variant 属性参数），按需 fetch 加载
- * - mutator：加载内联后调整 SVG（如 fill/stroke=currentColor）
- * - spriteSheet：sprite 模式，URL 为同一张 sprite 表地址，渲染 `<use href="url#name">`，不内联整 SVG
- */
-export interface IconLibraryOptions {
-  /** 图标名 → SVG URL */
-  resolver: (name: string, family?: string, variant?: string) => string
-  /** 加载内联后调整 SVG（如 fill/stroke=currentColor） */
-  mutator?: (svg: SVGElement) => void
-  /** sprite 模式：URL 含 #name 片段引用 sprite 表 symbol，渲染 <use> 而非内联 */
-  spriteSheet?: boolean
-}
-
-/** 图标库注册表（libraryName → 选项），模块级共享 */
-const iconLibraries = new Map<string, IconLibraryOptions>()
-
-/**
- * 注册远程图标库。注册后通过 `<oas-icon library="xxx" name="yyy">` 使用：
- * 组件调用 resolver 得到 SVG URL，按需 fetch 加载内联渲染（sprite 模式渲染 <use>）。
- * 纯函数、无 DOM 依赖，可在 SSR/Node 环境调用。
- */
-export function registerIconLibrary(name: string, options: IconLibraryOptions): void {
-  iconLibraries.set(name, options)
-}
+// 注册 / 查询 API 由 `@oas-ui/icons` 运行时统一提供（组件与本模块共用同一注册表，不含内置全量集）；
+// 此处 re-export 保持既有导入路径兼容（`@oas-ui/ui/basic/icon`）。
+export { registerIcon, registerIconAlias, registerIconLibrary, lookupIcon } from '@oas-ui/icons/runtime'
+export type { IconLibraryOptions } from '@oas-ui/icons'
 
 /** iconfont 项目脚本：URL → 加载 Promise（去重，同一 URL 只注入一次） */
 const iconfontScripts = new Map<string, Promise<void>>()
@@ -418,7 +347,7 @@ export class OASIcon extends OASElement {
    * 否则 fetch 内联渲染后调 mutator 调整 SVG（如 fill/stroke=currentColor）。
    */
   private loadLibrary(library: string, name: string, family: string, variant: string): void {
-    const options = iconLibraries.get(library)
+    const options = getIconLibrary(library)
     const host = this.svgHost
     if (!options || !host) return
     const url = options.resolver(name, family || undefined, variant || undefined)
@@ -545,7 +474,7 @@ export class OASIcon extends OASElement {
     const variant = this.getAttr('variant', '')
     const slotSvg = this.slotSvg()
     const content = slotSvg ? undefined : src ? undefined : lookupIcon(rawName)
-    const libOptions = library ? iconLibraries.get(library) : undefined
+    const libOptions = library ? getIconLibrary(library) : undefined
 
     if (!this.svgHost) {
       this.shadow.innerHTML = this.template()

@@ -65,7 +65,7 @@
 - **`registerIcon(name, svg)`**：注册后直接用 `name` 引用（同名覆盖内置）——**应用级自定义图标集的正路**
 - **`registerIconLibrary`**：整套远程图标库接入（resolver → URL 按需 fetch，支持 sprite）——接入外部图标库
 
-> ⚠️ **不要直接改 `iconRegistry`**（`@oas-ui/icons` 导出的内置注册表对象）：那是内部数据结构、无覆盖/清理语义，正路是 `registerIcon()`（官方 API、纯函数、SSR 安全）。
+> ⚠️ **内置图标集为 opt-in**：全量引入 `@oas-ui/ui` 已自动注册；按需引入单组件时若使用**内置图标名**（`<oas-icon name="close">` 等）需 `import '@oas-ui/icons/register'` 一次。**不要直接改内置图标数据**（`@oas-ui/icons/registry` 导出的内部结构，无覆盖/清理语义）；正路是 `registerIcon()` / `registerIconLibrary()`（官方 API、纯函数、SSR 安全）。
 
 <DemoBlock title="src 加载 SVG">
   <oas-icon src="/demo-icon.svg" size="24" color="var(--oas-color-primary)"></oas-icon>

@@ -1,7 +1,7 @@
 import { OASElement } from '@oas-ui/core'
-// 图标走与 oas-icon 同一通道（customIcons 注册表优先级 > iconRegistry 兜底）——
-// 用户 `registerIcon()` 注册自定义图标后可见（oas-icon.ts 详细说明）；menu 不循环依赖
-import { lookupIcon } from '../../basic/icon/oas-icon.js'
+// 图标走 @oas-ui/icons 运行时查表（registerIcon 自定义注册优先、内置集兜底，与 oas-icon 同源）——
+// 不经 oas-icon 组件模块，避免把整个 <oas-icon> 拉进 menu 按需链
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { isRtl } from '../../shared/direction.js'
 

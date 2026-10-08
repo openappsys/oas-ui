@@ -1409,7 +1409,7 @@ describe('OASBadge icon 徽标图标', () => {
     document.body.innerHTML = ''
   })
 
-  it('icon 渲染 iconRegistry 内联 SVG（装饰性对读屏隐藏，尺寸跟随字号）', () => {
+  it('icon 渲染查表内联 SVG（装饰性对读屏隐藏，尺寸跟随字号）', () => {
     const el = mount({ icon: 'check' })
     const b = badge(el)!
     expect(b.hidden).toBe(false)

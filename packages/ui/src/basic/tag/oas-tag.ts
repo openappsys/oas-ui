@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 
 export type TagType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
 export type TagSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
@@ -708,7 +708,7 @@ export class OASTag extends OASElement {
       const closeIconEl = btn.querySelector<HTMLElement>('.close-icon')
       const closeIcon = this.getAttr('close-icon', '')
       if (closeIconEl) {
-        const valid = closeIcon !== '' && iconRegistry[closeIcon as IconName] !== undefined
+        const valid = closeIcon !== '' && lookupIcon(closeIcon) !== undefined
         if (valid) {
           if (closeIconEl.dataset.icon !== closeIcon) {
             closeIconEl.innerHTML = `<oas-icon name="${closeIcon}"></oas-icon>`
@@ -739,7 +739,7 @@ export class OASTag extends OASElement {
     const iconEl = this.tagRoot.querySelector<HTMLElement>('.icon')
     const icon = this.getAttr('icon', '')
     if (iconEl) {
-      const valid = icon !== '' && iconRegistry[icon as IconName] !== undefined
+      const valid = icon !== '' && lookupIcon(icon) !== undefined
       iconEl.hidden = !valid
       if (valid) {
         if (iconEl.dataset.icon !== icon) {
@@ -756,7 +756,7 @@ export class OASTag extends OASElement {
     const iconEndEl = this.tagRoot.querySelector<HTMLElement>('.icon-end')
     const iconEnd = this.getAttr('icon-end', '')
     if (iconEndEl) {
-      const valid = iconEnd !== '' && iconRegistry[iconEnd as IconName] !== undefined
+      const valid = iconEnd !== '' && lookupIcon(iconEnd) !== undefined
       iconEndEl.hidden = !valid
       if (valid) {
         if (iconEndEl.dataset.icon !== iconEnd) {
@@ -773,7 +773,7 @@ export class OASTag extends OASElement {
     const checkedIconEl = this.tagRoot.querySelector<HTMLElement>('.checked-icon')
     const checkedIcon = this.getAttr('checked-icon', 'check')
     if (checkedIconEl) {
-      const valid = checkedIcon !== '' && iconRegistry[checkedIcon as IconName] !== undefined
+      const valid = checkedIcon !== '' && lookupIcon(checkedIcon) !== undefined
       checkedIconEl.hidden = !(checkable && checked && valid)
       if (valid) {
         if (checkedIconEl.dataset.icon !== checkedIcon) {

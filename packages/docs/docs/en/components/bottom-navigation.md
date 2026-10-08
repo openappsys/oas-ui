@@ -6,7 +6,7 @@ A mobile bottom navigation bar: `role="tablist"` with each item `role="tab"` + s
 
 ## Basic usage
 
-Pass a JSON array via `items` `[{ label, value, icon? }]`; `icon` is an icon name from `@oas-ui/icons` iconRegistry. When `value` is not set, the first item is active by default.
+Pass a JSON array via `items` `[{ label, value, icon? }]`; `icon` is an icon name from `@oas-ui/icons` built-in icon set. When `value` is not set, the first item is active by default.
 
 <DemoBlock title="Basic usage">
   <oas-bottom-navigation id="bn-basic" value="home" style="width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Messages","icon":"mail","value":"mail"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
@@ -216,8 +216,8 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | ---------- | ------------------------------------------------------- | -------- |
 | `label`    | Text                                                    | `string` |
 | `value`    | Value (unique identifier)                               | `string` |
-| `icon`     | Icon name (a key of `@oas-ui/icons` iconRegistry)     | `string` |
+| `icon`     | Icon name (a key of `@oas-ui/icons` built-in icon set)     | `string` |
 | `disabled` | Disabled (not selectable, skipped by keyboard)          | `boolean`|
 | `badge`    | Top-right corner badge (number/text overlaid on the icon; not rendered when unset) | `string` |
 
-Behavior: `role="tablist"` + `role="tab"` + synced `aria-selected` / `aria-disabled`; roving tabindex keeps only the active item focusable; arrow keys (left/right or up/down) cycle focus among available items (Home/End jump to the ends), Enter/Space selects the focused item; clicking an already-active item does not re-fire; empty `items` renders an empty tablist without errors. The active item uses the primary color plus an icon (iconRegistry inline SVG following `currentColor`), with a thin top divider; `badge` renders a top-right corner badge (overlaid on the icon, badge tokens); `fixed` + `safe-area` adds bottom safe-area padding.
+Behavior: `role="tablist"` + `role="tab"` + synced `aria-selected` / `aria-disabled`; roving tabindex keeps only the active item focusable; arrow keys (left/right or up/down) cycle focus among available items (Home/End jump to the ends), Enter/Space selects the focused item; clicking an already-active item does not re-fire; empty `items` renders an empty tablist without errors. The active item uses the primary color plus an icon (built-in inline SVG following `currentColor`), with a thin top divider; `badge` renders a top-right corner badge (overlaid on the icon, badge tokens); `fixed` + `safe-area` adds bottom safe-area padding.

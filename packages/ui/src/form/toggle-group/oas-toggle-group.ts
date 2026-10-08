@@ -1,5 +1,5 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { normalizeSize, THREE_SIZES } from '../../shared/size.js'
@@ -118,7 +118,7 @@ const STYLE = `
   color: var(--oas-color-text-disabled);
   border-color: var(--oas-color-border);
 }
-/* ---- 项图标：iconRegistry 内联 SVG（跟随 currentColor，装饰性对读屏隐藏） ---- */
+/* ---- 项图标：查表所得内联 SVG（跟随 currentColor，装饰性对读屏隐藏） ---- */
 .item.has-icon {
   gap: var(--oas-space-2);
 }
@@ -546,10 +546,10 @@ export class OASToggleGroup extends OASElement {
     this.syncState()
   }
 
-  /** 项内容填充：图标（iconRegistry 内联 SVG）+ 文本；icon-only 判定与可访问名称兜底 */
+  /** 项内容填充：图标（lookupIcon 查表内联 SVG）+ 文本；icon-only 判定与可访问名称兜底 */
   private fillItemContent(btn: HTMLButtonElement, item: ToggleItem): void {
     const iconName = item.icon ?? ''
-    const content = iconName ? iconRegistry[iconName as IconName] : undefined
+    const content = iconName ? lookupIcon(iconName) : undefined
     const hasIcon = content !== undefined
     const iconOnly = hasIcon && !item.label
     if (hasIcon) btn.classList.add('has-icon')

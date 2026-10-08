@@ -3,7 +3,7 @@ import { bindCoarseTap, clickIgnorable } from '../../shared/coarse-tap.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { cssVarPx } from '../../shared/css-var.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
-import { iconRegistry } from '@oas-ui/icons'
+import { chevronDownPath } from '@oas-ui/icons/icons/chevron-down'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
 import type { OASMenu } from '../menu/index.js'
@@ -274,7 +274,7 @@ export class OASDropdown extends OASElement {
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
-    const chevron = iconRegistry['chevron-down'] ?? ''
+    const chevron = chevronDownPath
     return `
       <style>${STYLE}</style>
       <div class="split-group" part="split-group">
