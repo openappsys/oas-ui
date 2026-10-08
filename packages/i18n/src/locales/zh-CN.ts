@@ -80,6 +80,8 @@ export const zhCN = {
   'slider.valueLabel': '滑块',
   'slider.minLabel': '最小值',
   'slider.maxLabel': '最大值',
+  // knob（旋钮）
+  'knob.valueLabel': '旋钮',
   // rate（评分）
   'rate.rate': '评分',
   // form（表单校验）

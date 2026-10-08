@@ -80,6 +80,8 @@ export const ru: LocaleMessages = {
   'slider.valueLabel': 'Ползунок',
   'slider.minLabel': 'Минимум',
   'slider.maxLabel': 'Максимум',
+  // knob (регулятор)
+  'knob.valueLabel': 'Регулятор',
   // rate (оценка)
   'rate.rate': 'Оценка',
   // form (валидация формы)

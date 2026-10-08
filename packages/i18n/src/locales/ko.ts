@@ -80,6 +80,8 @@ export const ko: LocaleMessages = {
   'slider.valueLabel': '슬라이더',
   'slider.minLabel': '최솟값',
   'slider.maxLabel': '최댓값',
+  // knob（노브）
+  'knob.valueLabel': '노브',
   // rate（평점）
   'rate.rate': '평점',
   // form（폼 유효성 검사）

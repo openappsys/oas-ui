@@ -80,6 +80,8 @@ export const ja: LocaleMessages = {
   'slider.valueLabel': 'スライダー',
   'slider.minLabel': '最小値',
   'slider.maxLabel': '最大値',
+  // knob（ノブ）
+  'knob.valueLabel': 'ノブ',
   // rate（評価）
   'rate.rate': '評価',
   // form（フォーム検証）

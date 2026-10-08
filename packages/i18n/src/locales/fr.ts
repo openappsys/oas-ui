@@ -80,6 +80,8 @@ export const fr: LocaleMessages = {
   'slider.valueLabel': 'Curseur',
   'slider.minLabel': 'Minimum',
   'slider.maxLabel': 'Maximum',
+  // knob (bouton rotatif)
+  'knob.valueLabel': 'Bouton rotatif',
   // rate (évaluation)
   'rate.rate': 'Évaluation',
   // form (validation de formulaire)

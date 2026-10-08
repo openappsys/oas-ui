@@ -80,6 +80,8 @@ export const es: LocaleMessages = {
   'slider.valueLabel': 'Control deslizante',
   'slider.minLabel': 'Mínimo',
   'slider.maxLabel': 'Máximo',
+  // knob (perilla)
+  'knob.valueLabel': 'Perilla',
   // rate (valoración)
   'rate.rate': 'Valoración',
   // form (validación de formulario)

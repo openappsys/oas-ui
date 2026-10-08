@@ -80,6 +80,8 @@ export const ar: LocaleMessages = {
   'slider.valueLabel': 'منزلق',
   'slider.minLabel': 'الحد الأدنى',
   'slider.maxLabel': 'الحد الأقصى',
+  // knob (مقبض دوّار)
+  'knob.valueLabel': 'مقبض دوّار',
   // rate (تقييم)
   'rate.rate': 'التقييم',
   // form (التحقق من النموذج)

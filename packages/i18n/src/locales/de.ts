@@ -80,6 +80,8 @@ export const de: LocaleMessages = {
   'slider.valueLabel': 'Schieberegler',
   'slider.minLabel': 'Minimum',
   'slider.maxLabel': 'Maximum',
+  // knob (Drehregler)
+  'knob.valueLabel': 'Drehregler',
   // rate (Bewertung)
   'rate.rate': 'Bewertung',
   // form (Formularvalidierung)

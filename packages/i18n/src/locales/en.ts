@@ -61,6 +61,7 @@ export const en: LocaleMessages = {
   'slider.valueLabel': 'Slider',
   'slider.minLabel': 'Minimum',
   'slider.maxLabel': 'Maximum',
+  'knob.valueLabel': 'Knob',
   'rate.rate': 'Rating',
   'form.validationFailed': 'Validation failed',
   'tour.skip': 'Skip',
