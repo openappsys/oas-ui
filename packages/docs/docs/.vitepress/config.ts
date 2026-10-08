@@ -1,5 +1,31 @@
 import { defineConfig } from 'vitepress'
-import type { DefaultTheme } from 'vitepress'
+import type { DefaultTheme, HeadConfig } from 'vitepress'
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+/**
+ * 站点规范域名（SEO 绝对 URL：canonical / OG / sitemap 的基准——这些按规范必须是绝对 URL，
+ * SSG 构建期拿不到请求 host，故只能用绝对基准）。默认生产域；换域或预览构建用环境变量
+ * `SITE_URL` 覆盖即可，无需改代码。
+ */
+const SITE_URL = process.env.SITE_URL || 'https://oas-ui.dev'
+const SITE_NAME = 'OAS-UI'
+/** 英文 locale 的目录前缀（root = 中文，/en/ = 英文） */
+const EN_PREFIX = 'en/'
+
+/**
+ * 由页面源文件相对路径推导站点 URL，规则与 VitePress 内置 sitemap 完全一致：
+ * cleanUrls 未开启，所以子页保留 `.html`，目录页（如 index.md / components/index.md）以 `/` 结尾。
+ */
+function pageUrl(relativePath: string): string {
+  const url = relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '.html')
+  return '/' + url
+}
+
+/** 是否为英文 locale 页面 */
+function isEnglishPage(relativePath: string): boolean {
+  return relativePath.startsWith(EN_PREFIX)
+}
 
 /**
  * 组件分组侧栏（中文）。英文侧栏由 enComponentSidebar 派生：
@@ -225,14 +251,27 @@ export default defineConfig({
   title: 'OAS-UI',
   description: '框架无关的 Web Components UI 组件库',
   lang: 'zh-CN',
+  // 生成 sitemap.xml；VitePress 会按 locale 分组自动补 <xhtml:link rel="alternate"> hreflang
+  sitemap: {
+    hostname: SITE_URL,
+  },
+  // robots.txt 由构建期生成（而非 public/ 静态文件），Sitemap 与其余 SEO 绝对 URL 共用同一个 SITE_URL，
+  // 避免域名散落多处；buildEnd 在 public 拷贝与 sitemap 生成之后执行，必然覆盖任何同名静态文件。
+  buildEnd(siteConfig) {
+    writeFileSync(
+      join(siteConfig.outDir, 'robots.txt'),
+      `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`,
+    )
+  },
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' }],
     ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon-180.png' }],
-    // 首访语言适配：只对「未带语言前缀」的默认路径（中文 root）生效——zh* 浏览器留中文，其余一律
-    // 英文（/en/ 兜底）；已带 /en/ 前缀的路径视为显式指定英文，不再按语言/偏好回弹（显式路径优先）。
-    // 手动切换后写 localStorage（oas-lang）持久化，优先于浏览器语言探测。
-    // location.replace 不产生历史记录；脚本内联在 head 尽早执行（减少语言闪烁）。
+    // 语言偏好跳转：只认「用户显式切换过」的偏好（localStorage oas-lang=en），中文 root 与中文深链
+    // 才跳对应英文页；不再按浏览器语言（navigator.language）自动跳——否则 Googlebot 默认 en-US 会被
+    // 从中文页带走、稀释中文页收录（Google 明确建议避免按感知语言自动跳转）。首访一律留中文（默认
+    // 语言），已带 /en/ 前缀的路径视为显式英文，永不回弹。location.replace 不产生历史记录；脚本内联
+    // 在 head 尽早执行（减少语言闪烁）。
     [
       'script',
       {},
@@ -241,10 +280,7 @@ export default defineConfig({
     var path = location.pathname
     var onEn = path === '/en' || path.indexOf('/en/') === 0
     if (onEn) return
-    var pref = localStorage.getItem('oas-lang')
-    var isZhBrowser = (navigator.language || '').toLowerCase().indexOf('zh') === 0
-    var want = pref || (isZhBrowser ? 'zh' : 'en')
-    if (want === 'en') location.replace('/en' + path)
+    if (localStorage.getItem('oas-lang') === 'en') location.replace('/en' + path)
   } catch (e) {}
 })()`,
     ] as [string, Record<string, string>, string],
@@ -267,6 +303,58 @@ gtag('config', 'G-RXS142HBXF');`,
         ]
       : []),
   ],
+  // 逐页注入 SEO head：canonical、hreflang 中英互指、Open Graph / Twitter 卡片；首页额外补 JSON-LD。
+  // title / description 由 VitePress 传入，已含站点后缀与页面级兜底，直接复用避免二次拼接。
+  transformHead({ pageData, title, description }) {
+    if (pageData.isNotFound) return []
+    const rel = pageData.relativePath
+    const canonical = SITE_URL + pageUrl(rel)
+    const en = isEnglishPage(rel)
+    const zhUrl = SITE_URL + pageUrl(en ? rel.slice(EN_PREFIX.length) : rel)
+    const enUrl = SITE_URL + pageUrl(en ? rel : EN_PREFIX + rel)
+    const isHome = rel === 'index.md' || rel === 'en/index.md'
+    const ogImage = SITE_URL + '/favicon-512.png'
+    const head: HeadConfig[] = [
+      ['link', { rel: 'canonical', href: canonical }],
+      ['link', { rel: 'alternate', hreflang: 'zh-CN', href: zhUrl }],
+      ['link', { rel: 'alternate', hreflang: 'en', href: enUrl }],
+      ['link', { rel: 'alternate', hreflang: 'x-default', href: zhUrl }],
+      ['meta', { property: 'og:type', content: isHome ? 'website' : 'article' }],
+      ['meta', { property: 'og:site_name', content: SITE_NAME }],
+      ['meta', { property: 'og:title', content: title }],
+      ['meta', { property: 'og:description', content: description }],
+      ['meta', { property: 'og:url', content: canonical }],
+      ['meta', { property: 'og:image', content: ogImage }],
+      ['meta', { property: 'og:locale', content: en ? 'en_US' : 'zh_CN' }],
+      ['meta', { property: 'og:locale:alternate', content: en ? 'zh_CN' : 'en_US' }],
+      ['meta', { name: 'twitter:card', content: 'summary' }],
+      ['meta', { name: 'twitter:title', content: title }],
+      ['meta', { name: 'twitter:description', content: description }],
+      ['meta', { name: 'twitter:image', content: ogImage }],
+    ]
+    if (isHome) {
+      head.push([
+        'script',
+        { type: 'application/ld+json' },
+        JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareApplication',
+          name: SITE_NAME,
+          applicationCategory: 'DeveloperApplication',
+          operatingSystem: 'Web',
+          description,
+          url: canonical,
+          license: 'https://opensource.org/license/mit',
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+          sameAs: [
+            'https://github.com/openappsys/oas-ui',
+            'https://www.npmjs.com/package/@oas-ui/ui',
+          ],
+        }),
+      ])
+    }
+    return head
+  },
   vue: {
     template: {
       compilerOptions: {

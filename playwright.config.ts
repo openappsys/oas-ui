@@ -39,9 +39,9 @@ export default defineConfig({
   workers: E2E_WORKERS,
   use: {
     baseURL: `http://localhost:${E2E_PORT}`,
-    // 首访语言适配（zh* 留中文、其余跳 /en/）上线后，Playwright 默认 en-US  locale
-    // 会被重定向到英文页——绝大多数 spec 断言面向中文页，默认锁 zh-CN；
-    // 语言适配自身的用例在 homepage.spec.ts 里用 browser.newContext({ locale }) 显式覆盖
+    // 默认锁 zh-CN：绝大多数 spec 断言面向中文页。（历史上 en-US 会被首访语言适配跳去 /en/；
+    // 该适配已改为「仅显式 oas-lang 偏好跳转」，不再按浏览器语言跳。语言偏好自身的用例在
+    // homepage.spec.ts 里用 browser.newContext({ locale }) 显式覆盖。）
     locale: 'zh-CN',
   },
   webServer: {
@@ -74,9 +74,9 @@ export default defineConfig({
       // Chromium 跑两遍（跨浏览器覆盖为零，三轮 review 实证 pw:browser 启动的是 chrome-headless-shell）
       use: {
         browserName: 'firefox',
-        // Firefox 不吃 Playwright 的 locale 配置（Juggler 不映射 intl.locale.requested，
-        // 实测 navigator.language 仍 en-US → docs 首访语言适配把中文断言页跳去 /en/）——
-        // 用 firefoxUserPrefs 锁 intl.accept_languages（navigator.language 的真实来源，实测生效）
+        // Firefox 不吃 Playwright 的 locale 配置（Juggler 不映射 intl.locale.requested，navigator.language
+        // 仍 en-US）。docs 语言跳转已不再按浏览器语言自动跳，此锁对语言适配已非必需；保留以让 Firefox 的
+        // navigator.language 与 chromium 一致（intl.accept_languages 是其真实来源，实测生效）。
         firefoxUserPrefs: { 'intl.accept_languages': 'zh-CN' },
       },
       testMatch: [/visual\.spec\.ts/, /smoke\.spec\.ts/, /qa-regression\/.*\.spec\.ts/],

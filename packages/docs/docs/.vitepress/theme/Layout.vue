@@ -49,7 +49,7 @@ watch(
         localStorage.setItem('oas-lang', value === 'en' ? 'en' : 'zh')
       }
     } catch {
-      // localStorage 不可用（隐私模式等）静默——首访适配退回浏览器语言探测
+      // localStorage 不可用（隐私模式等）静默——偏好无法持久化，首访一律留默认中文（不再按浏览器语言探测）
     }
   },
   { immediate: true },

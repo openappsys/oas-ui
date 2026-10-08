@@ -113,37 +113,42 @@ test.describe('官网首页（重设计版）', () => {
   })
 
   test('英文首页渲染 + 中英切换链路', async ({ browser, page }) => {
-    // 首访语言适配后：en 浏览器落 /en/（/en/ 是显式英文路径，zh 浏览器整页打开也保持英文）
+    // /en/ 是显式英文路径：直接打开即英文首页（首访不再按浏览器语言自动跳转）
     const ctxEn = await browser.newContext({ locale: 'en-US' })
     const pEn = await ctxEn.newPage()
-    await pEn.goto('/', { waitUntil: 'domcontentloaded' })
-    await expect.poll(() => pEn.url(), { timeout: 15000 }).toContain('/en/')
+    await pEn.goto('/en/', { waitUntil: 'domcontentloaded' })
     const hero = pEn.locator('.home-hero')
     await expect(hero).toBeAttached()
     await expect(hero.locator('.hh-title')).toContainText('framework-agnostic')
     await ctxEn.close()
-    // zh 浏览器：中文首页（有界沉降后断言，防重定向中途取样）
+    // 中文首页（默认，不自动跳转）
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(1200)
     await expect(page.locator('.home-hero .hh-title')).toContainText('框架无关的')
   })
 
-  // 首访语言适配（head inline 脚本）：只对未带语言前缀的默认路径（中文 root）生效——zh* → 中文，
-  // 其余一律英文兜底（/en/）；已带 /en/ 前缀的路径是显式英文，不回弹。
-  // 手动切换写 localStorage（oas-lang）持久化，优先于浏览器语言探测
-  test('首访语言适配：zh 浏览器留中文，en 浏览器跳 /en/，zh 深链同规则', async ({ browser }) => {
-    // en 浏览器：根路径跳 /en/（等目标 URL——单次采样会早于 head 脚本重定向完成，满负载实抓）
+  // 语言偏好跳转（head inline 脚本）：只认用户「显式切换过」的偏好（localStorage oas-lang=en）——
+  // 无偏好时不再按浏览器语言自动跳，首访一律留中文（默认语言）；已带 /en/ 的路径是显式英文，不回弹。
+  test('语言偏好跳转：无偏好不跳（留中文），显式 oas-lang=en 才跳 /en/', async ({ browser }) => {
+    // en 浏览器、无偏好：根路径留中文
     const ctxEn = await browser.newContext({ locale: 'en-US' })
     const pEn = await ctxEn.newPage()
     await pEn.goto('/', { waitUntil: 'domcontentloaded' })
+    await pEn.waitForTimeout(1200)
+    expect(pEn.url(), 'en 浏览器无偏好应留中文根路径').not.toContain('/en/')
+    // en 浏览器、无偏好：zh 深链留中文
+    await pEn.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+    await pEn.waitForTimeout(1200)
+    expect(new URL(pEn.url()).pathname, 'en 浏览器无偏好访问 zh 深链应留中文').not.toContain('/en')
+    // 显式偏好 en：zh 根路径与深链跳对应英文页
+    await pEn.evaluate(() => localStorage.setItem('oas-lang', 'en'))
+    await pEn.goto('/', { waitUntil: 'domcontentloaded' })
     await expect.poll(() => pEn.url(), { timeout: 15000 }).toContain('/en/')
-    expect(pEn.url(), 'en 浏览器首访根路径应跳英文').toContain('/en/')
-    // en 浏览器：深链 zh 页面跳对应 en 页
-    await pEn.goto('/components/button', { waitUntil: 'domcontentloaded' })
+    await pEn.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
     await expect.poll(() => pEn.url(), { timeout: 15000 }).toContain('/en/components/button')
-    expect(pEn.url(), 'en 浏览器访问 zh 深链应跳对应英文页').toContain('/en/components/button')
+    expect(new URL(pEn.url()).pathname, '已存 en 偏好访问 zh 深链应跳对应英文页').toContain('/en/components/button')
     await ctxEn.close()
-    // zh 浏览器：根路径留中文（等一段有界沉降后负断言——防「尚未跳」被误判为「不跳」）
+    // zh 浏览器、无偏好：根路径留中文
     const ctxZh = await browser.newContext({ locale: 'zh-CN' })
     const pZh = await ctxZh.newPage()
     await pZh.goto('/', { waitUntil: 'domcontentloaded' })
@@ -152,8 +157,8 @@ test.describe('官网首页（重设计版）', () => {
     await ctxZh.close()
   })
 
-  test('首访语言适配：手动切换持久化（localStorage oas-lang 优先于浏览器语言）', async ({ browser }) => {
-    // en 浏览器 + 已存 zh 偏好 → 留中文（pref 覆盖浏览器探测）
+  test('语言偏好持久化：显式 oas-lang 决定跳转方向', async ({ browser }) => {
+    // en 浏览器 + 已存 zh 偏好 → 留中文
     const ctx = await browser.newContext({ locale: 'en-US' })
     const p = await ctx.newPage()
     await p.goto('/en/', { waitUntil: 'domcontentloaded' })
@@ -173,31 +178,31 @@ test.describe('官网首页（重设计版）', () => {
     await ctx2.close()
   })
 
-  // 回归（回环 + 显式路径优先）：head 适配脚本按 oas-lang/浏览器语言决定跳向，而 Layout 一度把
-  // 「落地页 locale」无条件写回 oas-lang——zh 浏览器整页打开 /en/ 深链时：脚本按浏览器语言跳中文、
-  // 组件又把 en 写回偏好，脚本下次读到 en 再跳 /en/，整页互踢（dev 下 hydration 快，实测 4s 内
-  // 40+ 次整页 load；构建产物里同一根因表现为「落地即污染偏好槽」，之后访问被错误偏好劫持，且
-  // SPA 下拉切换不触发 head 脚本，平时不易撞见）。现语义：/en/ 是显式语言路径，一律不回弹。
-  // 断言「稳定收敛 + 落点正确 + 首屏不写偏好槽」——只在某一刻取样 URL 是抓不到的。
-  test('首访语言适配：/en/ 显式路径优先且不回环（历史缺陷：/en/ ↔ 中文页互踢）', async ({ browser }) => {
-    const settle = async (locale: string, start: string, expectPath: string) => {
+  // 回归（回环 + 显式路径优先）：head 脚本按 oas-lang 决定跳向，Layout 一度把「落地页 locale」无条件
+  // 写回 oas-lang——zh 浏览器整页打开 /en/ 深链时组件把 en 写回偏好，脚本下次读到 en 再跳 /en/，整页
+  // 互踢。现语义：/en/ 是显式语言路径一律不回弹；显式 en 偏好访问 zh 深链才跳，且收敛不循环。
+  // 断言「稳定收敛 + 落点正确」——只在某一刻取样 URL 是抓不到的。
+  test('语言偏好跳转：/en/ 显式路径优先且不回环', async ({ browser }) => {
+    const settle = async (locale: string, start: string, expectPath: string, pref?: 'en' | 'zh') => {
       const ctx = await browser.newContext({ locale })
       const p = await ctx.newPage()
+      if (pref) {
+        await p.goto('/', { waitUntil: 'domcontentloaded' })
+        await p.evaluate((v) => localStorage.setItem('oas-lang', v), pref)
+      }
       let loads = 0
       p.on('load', () => loads++)
       await p.goto(start, { waitUntil: 'domcontentloaded' })
       await p.waitForTimeout(2500)
       const path = new URL(p.url()).pathname
-      const pref = await p.evaluate(() => localStorage.getItem('oas-lang'))
       await ctx.close()
-      expect(path, `${locale} 整页打开 ${start} 应稳定落在 ${expectPath}`).toBe(expectPath)
-      expect(loads, `${locale} 整页打开 ${start} 不应反复整页重定向`).toBeLessThanOrEqual(3)
-      expect(pref, '落地首屏不应把当前 locale 当用户偏好写回 oas-lang').toBeNull()
+      expect(path, `${locale} 打开 ${start} 应稳定落在 ${expectPath}`).toBe(expectPath)
+      expect(loads, `${locale} 打开 ${start} 不应反复整页重定向`).toBeLessThanOrEqual(3)
     }
-    // zh 浏览器整页打开 /en/ 深链：显式英文路径优先，保持英文（不再被浏览器语言弹回中文）
+    // zh 浏览器整页打开 /en/ 深链：显式英文路径优先，保持英文（不被偏好/语言弹回中文）
     await settle('zh-CN', '/en/components/button-group.html', '/en/components/button-group.html')
-    // en 浏览器整页打开中文深链：无显式语言前缀，按浏览器语言兜底跳对应英文页
-    await settle('en-US', '/components/button-group.html', '/en/components/button-group.html')
+    // 显式 en 偏好整页打开中文深链：跳对应英文页并稳定收敛
+    await settle('zh-CN', '/components/button-group.html', '/en/components/button-group.html', 'en')
   })
 
   test('语言偏好只在显式切换时写：落地首屏不写、点语言下拉切换才写（满负载污染实抓回归锁）', async ({ browser }) => {
