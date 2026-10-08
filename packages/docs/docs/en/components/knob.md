@@ -197,6 +197,9 @@ onMounted(() => {
 
 - Pointer Events unify mouse/touch (`touch-action: none` claims the drag, primary pointer is exclusive, `pointercancel` cancels and rolls back);
 - **Esc** during a drag cancels: rolls back to the start value with zero commits (no `oas-change`);
+- Reset gestures during a drag (double-click / Ctrl+click) are ignored; losing pointer capture to another element (`lostpointercapture`) cancels and rolls back; a programmatic `reset()` during a drag first cancels the drag, then resets;
+- `wheel` responds to vertical scrolling (`deltaY`) only; horizontal trackpad panning does not adjust the value;
+- A throwing `formatValue` function degrades to the `format` template / `unit` suffix / plain number (rendering and gestures keep working);
 - External `value` writes during a drag: the display keeps the dragging value; on release a committed drag wins, a zero-change release keeps the external value;
 - Touch assist technologies may not fully support custom slider gestures (W3C ARIA APG note) — test with real AT before shipping on mobile.
 

@@ -197,6 +197,9 @@ onMounted(() => {
 
 - Pointer Events 统一鼠标/触屏（`touch-action: none` 接管拖拽、主指针独占、`pointercancel` 取消回滚）；
 - 拖拽中按 **Esc** 取消：回滚到起点值、零提交（不派发 `oas-change`）；
+- 拖拽中的复位手势（双击 / Ctrl+单击）被忽略，指针捕获被外部夺走（`lostpointercapture`）即取消回滚；程序 `reset()` 在拖拽中调用则先取消拖拽再复位；
+- `wheel` 仅响应纵向滚动（`deltaY`），横向触控板平移不调值；
+- `formatValue` 函数抛错时自动降级到 `format` 模板 / `unit` 后缀 / 裸数字（渲染与手势不中断）；
 - 拖拽中外部写 `value`：显示保持拖拽值，松手时若拖拽已产生提交则拖拽值落盘，零变化松手则外部值保留显示；
 - 触屏辅助技术对自定义 slider 手势的支持可能不完整（W3C ARIA APG 提示），移动端生产使用前请做真实 AT 测试。
 
