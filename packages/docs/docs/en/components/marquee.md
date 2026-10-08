@@ -49,7 +49,7 @@ When content is shorter than the container, duplicating it only once leaves blan
 
 <DemoBlock title="orientation=vertical: vertical scrolling (fixed 96px height container)">
   <oas-marquee orientation="vertical" style="height: 96px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2);">
-    <div>Notice 1: v2.6 display components batch released</div>
+    <div>Notice 1: New version released</div>
     <div>Notice 2: marquee supports true pixels-per-second speed</div>
     <div>Notice 3: content shorter than the viewport is auto-filled</div>
     <div>Notice 4: appending content does not jump the scroll</div>
@@ -134,7 +134,7 @@ onMounted(() => {
 <DemoBlock title="slot supports arbitrary element combinations">
   <oas-marquee speed="60" style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
     <oas-tag>New</oas-tag>
-    <span style="margin: 0 var(--oas-space-3);">v1.6 display components are released</span>
+    <span style="margin: 0 var(--oas-space-3);">The latest release is live</span>
     <oas-tag type="success">Recommended</oas-tag>
     <span style="margin-left: var(--oas-space-3);">Built on Web Components standards</span>
   </oas-marquee>

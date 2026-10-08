@@ -123,7 +123,7 @@ When `disabled` is on, form-family controls inside the subtree that consume the 
 - **`disabled-skip` (component-level)**: a single control escapes the global disable (e.g. a help link / reset button that must stay clickable in a disabled form section) — exempting means "do not read the injection"
 - **`disabledExempt` (provider-level)**: declare a top-level `{"disabledExempt":["oas-button"]}` key in the `config` JSON to exempt a whole tag class
 
-Priority: explicit `disabled` > `disabled-skip` exemption > `disabledExempt` whole-class exemption > provider-injected disabled. `disabled-skip` is a global convention attribute (not part of a component's own API, so it doesn't appear in attribute tables). Navigation/link components (link / menu / breadcrumb, etc.) do not consume the injection in this release — they are naturally exempt from the global disable; hosts can declare other whole-class exemptions via `disabledExempt` as needed.
+Priority: explicit `disabled` > `disabled-skip` exemption > `disabledExempt` whole-class exemption > provider-injected disabled. `disabled-skip` is a global convention attribute (not part of a component's own API, so it doesn't appear in attribute tables). Navigation/link components (link / menu / breadcrumb, etc.) do not consume the injection — they are naturally exempt from the global disable; hosts can declare other whole-class exemptions via `disabledExempt` as needed.
 
 <DemoBlock title="Global disabled">
   <oas-space>

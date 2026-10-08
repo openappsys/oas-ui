@@ -38,7 +38,7 @@ Current progress:
   one direction; invalid JSON falls back to the empty state), and the SSR
   snapshot serializes the header and data rows / tree node rows / dropdown
   options / shuttle panel data / button groups.
-- Form components batch 1 (DSD whitelisting): input / textarea / checkbox /
+- Form components (DSD whitelisting): input / textarea / checkbox /
   radio / switch / slider / input-number / rate / auto-complete / combobox /
   cascader / tree-select / mentions / date-picker / time-picker / calendar /
   upload / color-picker / toggle-button / toggle-group / pin-input /
@@ -50,7 +50,7 @@ Current progress:
   closed state, the upload list is empty, and the textarea autosize height is the
   un-measured state (corrected on the first frame after hydration via rAF, same
   strategy as affix).
-- Feedback components batch 2 (DSD whitelisting): alert / progress / spin /
+- Feedback components (DSD whitelisting): alert / progress / spin /
   skeleton / result / backdrop / modal / drawer / popconfirm all follow the same
   three-part split — the visible-state components (alert/progress/spin/skeleton/
   result) snapshot their full visual; backdrop renders a visible mask with
@@ -67,7 +67,7 @@ Current progress:
   upgrade when a DSD snapshot is detected (via rAF) — the snapshot is the
   un-measured state, the first frame after upgrade matches it (no jump), and the
   real layout is applied on the next frame.
-- Whitelist-finalization batch 5 (DSD whitelisting): the pure-presentation
+- Pure-presentation and framework-container components (DSD whitelisting): the pure-presentation
   components badge / button-group / icon / kbd / label / link / space /
   visually-hidden snapshot their full visual deterministically (badge count,
   kbd key-cap splitting, space host inline layout styles); the floating-trigger
@@ -327,10 +327,7 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 
 ### Whitelist and boundaries
 
-- Whitelist (pure-presentation components, declarative-data components, the
-  layout-measuring pilot, form components batch 1, feedback components
-  batch 2, data-display components batch 3, navigation/layout components
-  batch 4, whitelist-finalization batch 5, and oas-kanban (data family) — 132 tags in total):
+- Whitelist (pure-presentation components, declarative-data components, the layout-measuring pilot, form components, feedback components, data-display components, navigation/layout components, pure-presentation and framework-container components, and oas-kanban (data family) — 132 tags in total):
   `oas-button`, `oas-tag`, `oas-tag-group`, `oas-compact`, `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`, `oas-table`, `oas-kanban`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`, `oas-select`, `oas-input`, `oas-textarea`, `oas-checkbox`, `oas-checkbox-group`, `oas-radio`, `oas-radio-group`, `oas-switch`, `oas-slider`, `oas-input-number`, `oas-rate`, `oas-auto-complete`, `oas-combobox`, `oas-cascader`, `oas-tree-select`, `oas-mentions`, `oas-date-picker`, `oas-time-picker`, `oas-calendar`, `oas-upload`, `oas-transfer`, `oas-color-picker`, `oas-toggle-button`, `oas-toggle-group`, `oas-pin-input`, `oas-dynamic-input`, `oas-dynamic-tags`, `oas-editable`, `oas-form`, `oas-form-item`, `oas-form-list`, `oas-alert`, `oas-progress`, `oas-spin`, `oas-skeleton`, `oas-skeleton-item`, `oas-result`, `oas-backdrop`, `oas-modal`, `oas-drawer`, `oas-popconfirm`, `oas-card`, `oas-avatar`, `oas-avatar-group`, `oas-image`, `oas-qrcode`, `oas-watermark`, `oas-collapse`, `oas-collapse-item`, `oas-descriptions`, `oas-descriptions-item`, `oas-timeline`, `oas-timeline-item`, `oas-list`, `oas-list-item`, `oas-carousel`, `oas-statistic`, `oas-countdown`, `oas-chart`, `oas-code`, `oas-equation`, `oas-log`, `oas-masonry`, `oas-comment`, `oas-marquee`, `oas-number-animation`, `oas-gradient-text`, `oas-aspect-ratio`, `oas-virtual-list`, `oas-tabs`, `oas-tab-panel`, `oas-bottom-navigation`, `oas-pagination`, `oas-steps`, `oas-segmented`, `oas-breadcrumb`, `oas-anchor`, `oas-back-top`, `oas-menu`, `oas-dropdown`, `oas-context-menu`, `oas-menubar`, `oas-navigation-menu`, `oas-toolbar`, `oas-command`, `oas-tour`, `oas-hover-card`, `oas-splitter`, `oas-flex`, `oas-page-header`, `oas-float-button`, `oas-speed-dial`, `oas-layout`, `oas-header`, `oas-sider`, `oas-content`, `oas-footer`, `oas-sidebar`, `oas-container`, `oas-grid`, `oas-grid-item`, `oas-badge`, `oas-button-group`, `oas-icon`, `oas-kbd`, `oas-label`, `oas-link`, `oas-space`, `oas-visually-hidden`, `oas-tooltip`, `oas-popover`, `oas-config-provider`, `oas-app`, `oas-app-bar`, `oas-stepper`, `oas-stepper-panel`, `oas-highlight`.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
@@ -348,13 +345,13 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   channel (property assignment reflects to the attribute; invalid JSON falls
   back to the empty state), and the SSR snapshot includes the header and data
   rows / tree node rows / dropdown options / shuttle panel data / button groups.
-- Form components batch 1: dropdown-panel components (auto-complete / combobox /
+- Form components: dropdown-panel components (auto-complete / combobox /
   cascader / tree-select / mentions / date-picker / time-picker / color-picker)
   snapshot the closed state (the panel skeleton carries no popup content; the
   browser opens it on interaction after upgrade); upload snapshots the empty
   list; the textarea autosize height is the un-measured state (corrected on the
   first frame after hydration via rAF).
-- Data-display components batch 3: pure-presentation components
+- Data-display components: pure-presentation components
   (card / avatar / qrcode / watermark / descriptions / statistic / masonry /
   comment / gradient-text / aspect-ratio and the sub-components collapse-item /
   descriptions-item / timeline-item / list-item) snapshot the full visuals;
@@ -372,7 +369,7 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   the window recomputed from the same attributes after upgrade is identical;
   log adopts the snapshot rows incrementally and marquee re-syncs its clone
   group idempotently — neither duplicates DOM.
-- Navigation/layout components batch 4: static-structure components (tabs /
+- Navigation/layout components: static-structure components (tabs /
   steps / pagination / breadcrumb / segmented / flex / page-header / container /
   grid / splitter, etc.) snapshot their full structure; floating-trigger
   components (dropdown / context-menu / hover-card / command / tour / speed-dial)
@@ -381,7 +378,7 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   interaction after upgrade; visible-menu components (menu / menubar /
   navigation-menu / toolbar) snapshot the menu structure (submenus default to
   collapsed).
-- Whitelist-finalization batch 5: the pure-presentation components badge /
+- Pure-presentation and framework-container components: the pure-presentation components badge /
   button-group / icon / kbd / label / link / space / visually-hidden snapshot
   their full visuals (badge count, kbd key caps, space host inline layout
   styles); tooltip / popover default to the closed state and snapshot the

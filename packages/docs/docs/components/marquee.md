@@ -49,7 +49,7 @@
 
 <DemoBlock title="orientation=vertical：垂直滚动（容器固定高 96px）">
   <oas-marquee orientation="vertical" style="height: 96px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2);">
-    <div>第一条公告：v2.6 展示组件批次发布</div>
+    <div>第一条公告：新版本发布</div>
     <div>第二条公告：跑马灯支持像素/秒真实速度</div>
     <div>第三条公告：内容不足一屏自动填充</div>
     <div>第四条公告：动态追加内容滚动不跳变</div>
@@ -134,7 +134,7 @@ onMounted(() => {
 <DemoBlock title="slot 支持任意元素组合">
   <oas-marquee speed="60" style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
     <oas-tag>新增</oas-tag>
-    <span style="margin: 0 var(--oas-space-3);">v1.6 展示组件已发布</span>
+    <span style="margin: 0 var(--oas-space-3);">新版本已发布</span>
     <oas-tag type="success">推荐</oas-tag>
     <span style="margin-left: var(--oas-space-3);">构建于 Web Components 标准之上</span>
   </oas-marquee>

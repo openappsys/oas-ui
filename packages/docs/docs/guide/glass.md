@@ -1,6 +1,6 @@
 # 液态玻璃画廊
 
-> 半透明 surface + backdrop 模糊 + 高光折光边的静态近似材质层（边缘折射已交付为静态置换近似，动态流动感仍属后续增强，详见[主题与自定义](/guide/theming#液态玻璃-glass-css)）。
+> 半透明 surface + backdrop 模糊 + 高光折光边的材质层（边缘折射为静态置换近似；动态流动感由可选运行时 `glass-fluid.js` 提供——指针镜面高光 + 按压收紧，详见本页「动态流动感」）。
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
@@ -132,4 +132,4 @@ onBeforeUnmount(() => {
 - 高光层落在「surface 背景之上、文字之下」（`isolation: isolate` + 负 `z-index`），镜面反射不冲淡标签文字；
 - 作用域与按压：hover 镜面高光对所有玻璃面与按钮生效（含**实心语义色/自定义色按钮** primary/success/warning/danger/has-color）；**实心按钮的按压改用边缘内描边（box-shadow inset，不提亮铺底）**——白高光铺底会把白字对比度压到门限下，边缘描边不冲淡文字（与 Apple 镜面描边 / Fluent 内凹的按压常态一致）；玻璃面的按压仍是更强的高光色（真增强）；
 - 对比度门禁：玻璃面 hover 按主题页面底（light `#fff` / dark `#18181b`）合成取最坏 ≥60、按压 ≥45；**实心按钮 hover（瞬态大字档）≥45**，其静止/按压基线（底不被提亮）≥60；半透明表面若落在极端宿主底色上，文字对比度由宿主负责；switch 轨道内文案随选中态换底，其组合矩阵不在该门禁内。
-- 边界（v1）：指针静止时滚动页面，高光坐标不随元素位移更新（移动指针即恢复）；slider 把手高光在 overlay 态（拖动中/聚焦/`show-tooltip`/自定义把手 `data-custom-thumb`）不显示，按压环也仅在「按下未移动」时可见。
+- 边界：指针静止时滚动页面，高光坐标不随元素位移更新（移动指针即恢复）；slider 把手高光在 overlay 态（拖动中/聚焦/`show-tooltip`/自定义把手 `data-custom-thumb`）不显示，按压环也仅在「按下未移动」时可见。

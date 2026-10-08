@@ -123,7 +123,7 @@ config-provider 的 `theme` 会写入 `data-theme` 到自身，包裹的子树�
 - **`disabled-skip`（组件级）**：单个控件逃逸全局禁用（如禁用表单区里仍可点的帮助链接 / 重置按钮）——逃逸语义即「不读注入」
 - **`disabledExempt`（provider 级）**：config JSON 顶层声明 `{"disabledExempt":["oas-button"]}`，按 tag 整类豁免
 
-优先级：组件显式 `disabled` > `disabled-skip` 豁免 > `disabledExempt` 整类豁免 > provider 注入 disabled。`disabled-skip` 为全局约定属性（非组件自身 API，不进属性表）。导航/链接类组件（link / menu / breadcrumb 等）本批不接注入消费——它们天然豁免全局禁用，宿主也可按需用 `disabledExempt` 显式声明其他整类豁免。
+优先级：组件显式 `disabled` > `disabled-skip` 豁免 > `disabledExempt` 整类豁免 > provider 注入 disabled。`disabled-skip` 为全局约定属性（非组件自身 API，不进属性表）。导航/链接类组件（link / menu / breadcrumb 等）暂不接注入消费——它们天然豁免全局禁用，宿主也可按需用 `disabledExempt` 显式声明其他整类豁免。
 
 <DemoBlock title="全局禁用">
   <oas-space>

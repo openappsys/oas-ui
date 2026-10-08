@@ -51,7 +51,7 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 **机制**：浮层 surface 组件（modal / drawer / popover / tooltip / dropdown / select 系面板 / message / snackbar / bottom-sheet / app-bar 等 25 个）统一消费 `--oas-glass-blur`（`backdrop-filter` 模糊档）与 `--oas-glass-ring`（折光描边环）两个变量；另有 9 个 controls/nav/notification 组件（button / switch / slider / app-bar / bottom-navigation / message / toast / snackbar / notification）消费 `--oas-glass-refraction`（边缘折射位移滤镜，内容面板不接；button 的禁用态与 app-bar 溢出弹层打开期间自动关闭）。不引 glass.css 时全部回落 `none` / `transparent`，组件行为与此前完全一致。
 
-**与 Apple 完整定义的关系（如实说明）**：本材质层是**静态近似**——达成半透明 / 高斯模糊 / 折光边 / 分层深影四项观感；标志性特征「**边缘折射变形**」已交付为**静态置换近似**（feDisplacementMap 边缘轮廓位移，仅边缘环带变形、中间恒不变形；data-URI 自包含滤镜，shadow DOM 内可解析）；「**动态流动感**」（随交互变形、随环境变化的实时高光）仍属后续增强，将在后续版本提供。引擎边界（如实）：折射位移在 Chromium 系真实生效；Firefox 不执行 CSS `filter` 的 data-URI SVG 滤镜，安全无感降级为无折射（不破坏渲染）。
+**与 Apple 完整定义的关系（如实说明）**：本材质层是**静态近似**——达成半透明 / 高斯模糊 / 折光边 / 分层深影四项观感；标志性特征「**边缘折射变形**」已交付为**静态置换近似**（feDisplacementMap 边缘轮廓位移，仅边缘环带变形、中间恒不变形；data-URI 自包含滤镜，shadow DOM 内可解析）；「**动态流动感**」（随交互变形、随环境变化的实时高光）由可选运行时 `glass-fluid.js` 提供（指针镜面高光 + 按压收紧，见[液态玻璃](/guide/glass)）。引擎边界（如实）：折射位移在 Chromium 系真实生效；Firefox 不执行 CSS `filter` 的 data-URI SVG 滤镜，安全无感降级为无折射（不破坏渲染）。
 
 **边界**：
 

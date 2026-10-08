@@ -1,6 +1,6 @@
 # Liquid Glass Gallery
 
-> A static-approximation material layer of translucent surfaces, backdrop blur, and specular edge rings (edge refraction ships as a static displacement approximation; dynamic fluidity remains a follow-up—see [Theming](/en/guide/theming#liquid-glass-glass-css)).
+> A material layer of translucent surfaces, backdrop blur, and specular edge rings (edge refraction ships as a static displacement approximation; dynamic fluidity is provided by the optional `glass-fluid.js` runtime — pointer specular highlight + press tightening; see "Dynamic fluidity" on this page).
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
@@ -133,4 +133,4 @@ The highlight needs a small runtime (`glass-fluid.js`): a single document `point
 - The highlight layer sits above the surface background and below the label text (`isolation: isolate` + negative `z-index`), so the specular reflection never washes out the label;
 - Scope and press: the hover sheen applies to all glass surfaces and buttons (including solid semantic/custom-color buttons — primary/success/warning/danger/has-color); **for solid buttons the pressed state uses an edge inset ring (`box-shadow inset`, no fill lightening)** — a white fill wash would push white-text contrast below the floor, while an edge ring leaves the label untouched (matching Apple's rim specular / Fluent's inset pressed cue); glass surfaces keep the stronger pressed sheen (a true enhancement);
 - Contrast gate: glass surfaces are gated at ≥60 on hover (composited over the theme page background — light `#fff` / dark `#18181b`) and ≥45 pressed; **solid buttons at ≥45 on hover (transient large-text tier)** with their resting/pressed baseline (no fill lightening) ≥60. For translucent surfaces over extreme host backdrops, ensuring text contrast is the host's responsibility; the switch's in-track label changes background with its checked state and is not part of this gate.
-- v1 boundary: with a still pointer, scrolling won't move the highlight until the pointer moves again; the slider thumb highlight is hidden in overlay states (dragging / focused / `show-tooltip` / custom thumb `data-custom-thumb`), and the press ring is only visible while pressed without moving.
+- Boundary: with a still pointer, scrolling won't move the highlight until the pointer moves again; the slider thumb highlight is hidden in overlay states (dragging / focused / `show-tooltip` / custom thumb `data-custom-thumb`), and the press ring is only visible while pressed without moving.
