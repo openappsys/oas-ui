@@ -51,6 +51,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Segmented 分段器', link: '/components/segmented' },
               { text: 'Picker 滚轮选择器', link: '/components/picker' },
         { text: 'Slider 滑块', link: '/components/slider' },
+      { text: 'Knob 旋钮', link: '/components/knob' },
       { text: 'InputNumber 数字输入', link: '/components/input-number' },
       { text: 'Rate 评分', link: '/components/rate' },
       { text: 'Select 选择器', link: '/components/select' },

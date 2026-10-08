@@ -1672,6 +1672,53 @@
       "": "Key content (text / icons)"
     }
   },
+  "oas-knob": {
+    "attrs": {
+      "value": "Current value (controlled): out-of-range values are clamped to `[min, max]` and snapped by `step`; written back to the attribute after interaction (hosts can read the latest value directly from the attribute)",
+      "min": "Range lower bound (default 0); invalid values or `min > max` are swapped as a fallback",
+      "max": "Range upper bound (default 100)",
+      "step": "Snap step (default 1); `0` or negative means continuous (no snapping)",
+      "start-angle": "Sweep start angle (0° = 12 o'clock, clockwise; default 225); `end-angle <= start-angle` is normalized to a minimal 1° sweep",
+      "end-angle": "Sweep end angle (default 495, a 270° sweep with a bottom gap); may exceed 360 (e.g. 510 = start at 210°, 300° clockwise); sweep is capped at 360",
+      "size": "Size tier: sm (40px) / md (56px, default) / lg (72px); also accepts the small / medium / large vocabulary (config-provider injectable); invalid values fall back to md; custom diameters override the CSS variable `--oas-knob-size`; on touch devices the sm tier is raised to the 44px touch-target minimum",
+      "interaction": "Gesture model: `cursor` (pointer bearing drives the value incrementally, clockwise increases) / `axis` (linear drag) / `auto` (default — resolved within the first few pixels: dominant direction along the preferred axis goes linear, perpendicular goes circular, resolved once and locked for the gesture); relative semantics: pressing writes nothing, a tap without movement is a no-op, primary pointer is exclusive",
+      "axis": "Linear drag axis: `vertical` (default, up increases, 150px covers the full range) / `horizontal` (right increases); acts as the preferred axis for `interaction=auto`",
+      "indicator": "Indicator style: `line` (radial pointer line, default) / `dot` (dot near the rim); invalid values fall back to line",
+      "include-arc": "Show the value arc: filled from `start-point` (falling back to min) to the current value; hidden when the value equals the origin (prevents a round linecap dot)",
+      "start-point": "Value arc origin (missing/invalid falls back to `min`, clamped to the range); setting it to the center value makes the arc bipolar — values above the origin extend to one side, below to the other (pan/gain zero point)",
+      "show-value": "Display the current value below the knob (formatted via the `formatValue` function / `format` template / `unit` suffix, same source as `aria-valuetext`)",
+      "unit": "Value suffix (e.g. `Hz`/`%`/`dB`): feeds the show-value text and `aria-valuetext`; lower priority than the `format` template and the `formatValue` function",
+      "format": "Value format template: the `${value}` placeholder is replaced with the current value (e.g. `\"${value} dB\"`); output feeds both the value text and `aria-valuetext`; lower priority than the `formatValue` function",
+      "disabled": "Disabled: unfocusable (tabindex removed), dragging/keyboard/wheel/reset all blocked, `aria-disabled=\"true\"`, dimmed (opacity .6)",
+      "readonly": "Readonly (independent of `disabled`): stays focusable and the value still participates in host collection, but dragging/keyboard/wheel/reset are all intercepted; not visually dimmed; sets `aria-readonly=\"true\"`",
+      "reverse": "Reverse: mirrors the value sweep (min → end-angle, max → start-angle) and mirrors the circular gesture and the left/right arrow keys; XORs with the RTL writing direction",
+      "large-step": "Keyboard large step (Shift+arrows / PageUp / PageDown); defaults to 10 × step (span / 10 when continuous)",
+      "label": "Knob accessible name (`aria-label`; renders no visible label — visible labels belong to oas-form-item); falls back to the built-in \"Knob\" i18n copy",
+      "default-value": "Reset target: double-click / Ctrl+click / `reset()` resets to this value (snapped + clamped); falls back to `min`; resetting emits `oas-reset` (not `oas-change`)",
+      "wheel": "Wheel adjustment on hover (off by default): scroll up increases, down decreases, one notch = `step` (span/50 when continuous), Shift+wheel runs at 0.2×; preventDefault stops page scrolling while enabled"
+    },
+    "events": {
+      "oas-input": "Emitted live on each value change while dragging / wheel / keyboard, `detail: { value }` (snapped current value)",
+      "oas-change": "Emitted on release commit / each full keyboard or wheel confirmation, `detail: { value }`; not emitted for cancels (Esc/pointercancel) or zero-change releases",
+      "oas-drag-start": "Emitted after the pointer presses and moves effectively (≥ threshold), `detail: { value }` (start value); not emitted for a tap without movement",
+      "oas-drag-end": "Emitted when the drag ends, `detail: { value, cancelled }`; `cancelled=true` marks the cancel path (rolled back to the start value, no `oas-change` follows)",
+      "oas-reset": "Emitted after a reset gesture (double-click / Ctrl+click / `reset()`), `detail: { value, defaultValue }`"
+    },
+    "slots": {},
+    "props": {
+      "value": "Current value: reads back the clamped + snapped number (the live dragging value mid-drag); writing is controlled-assign-immediate (writes the attribute and force-syncs, no events)",
+      "defaultValue": "Reset target: reads the `default-value` attribute (null when unset = falls back to min); assigning a number reflects to the attribute, assigning null clears it",
+      "formatValue": "Value formatter: `el.formatValue = (value) => string`, output feeds both the show-value text and `aria-valuetext`; higher priority than the `format` attribute and `unit` suffix; set null to clear"
+    },
+    "cssVars": {
+      "--oas-knob-size": "Knob diameter (carrier of the size tiers sm=40px / md=56px / lg=72px; override for a custom diameter)",
+      "--oas-knob-track": "Track arc color (full-range sweep arc)",
+      "--oas-knob-fill": "Value arc color (when include-arc is on)",
+      "--oas-knob-body": "Knob body color",
+      "--oas-knob-indicator": "Indicator (pointer line / dot) color",
+      "--oas-knob-value-color": "show-value text color"
+    }
+  },
   "oas-label": {
     "attrs": {
       "for": "Target control id; click forwards to `getElementById(for).focus()`",

@@ -1,0 +1,193 @@
+{
+  "className": "OASKnob",
+  "sourceFile": "packages/ui/src/form/knob/oas-knob.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "min",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "100",
+      "observed": true
+    },
+    {
+      "name": "step",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "start-angle",
+      "observed": true
+    },
+    {
+      "name": "end-angle",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "interaction",
+      "type": "string",
+      "default": "auto",
+      "observed": true
+    },
+    {
+      "name": "axis",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "indicator",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "include-arc",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "start-point",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "show-value",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "unit",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "reverse",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "large-step",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "default-value",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "wheel",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "value",
+      "type": "number",
+      "api": true
+    },
+    {
+      "name": "defaultValue",
+      "type": "number | null",
+      "api": true
+    },
+    {
+      "name": "formatValue",
+      "type": "((value: number) => string | number | null | undefined) | null",
+      "api": true
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-drag-start",
+      "detail": "{ value: d.startValue }"
+    },
+    {
+      "name": "oas-input",
+      "detail": "{ value: shown }"
+    },
+    {
+      "name": "oas-drag-end",
+      "detail": "{ value: d.startValue, cancelled: true } | { value: shown, cancelled: false }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: shown }"
+    },
+    {
+      "name": "oas-reset",
+      "detail": "{ value: target, defaultValue: target }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-knob-size",
+      "default": "56px"
+    },
+    {
+      "name": "--oas-knob-track",
+      "default": "var(--oas-color-border)"
+    },
+    {
+      "name": "--oas-knob-fill",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-knob-body",
+      "default": "var(--oas-color-bg-elevated)"
+    },
+    {
+      "name": "--oas-knob-indicator",
+      "default": "var(--oas-color-text-secondary-strong)"
+    },
+    {
+      "name": "--oas-knob-value-color",
+      "default": "var(--oas-color-text-secondary)"
+    }
+  ],
+  "unresolved": []
+}

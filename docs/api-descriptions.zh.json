@@ -1672,6 +1672,53 @@
       "": "按键内容（文本 / 图标等）"
     }
   },
+  "oas-knob": {
+    "attrs": {
+      "value": "当前值（受控）：越界自动夹取到 `[min, max]` 并按 `step` 吸附；交互后写回属性（宿主可直接读属性取最新值）",
+      "min": "值域下界（默认 0）；非法或 `min > max` 自动交换容错",
+      "max": "值域上界（默认 100）",
+      "step": "吸附步长（默认 1）；`0` 或负数视为连续（不吸附）",
+      "start-angle": "扫角起点（0° = 12 点方向、顺时针，默认 225）；`end-angle <= start-angle` 时归一化为最小 1° 扫角",
+      "end-angle": "扫角终点（默认 495，即 270° 扫角、底部留缺口）；可大于 360（如 510 = 210° 起顺时针 300°），sweep 上限 360",
+      "size": "尺寸三档：sm（40px）/ md（56px，默认）/ lg（72px），也接受 small / medium / large 词表（支持 config-provider 注入），非法值回落 md；自定义直径走 CSS 变量 `--oas-knob-size`；触屏下 sm 档自动抬到 44px 触控目标下限",
+      "interaction": "手势模型：`cursor`（指针方位角增量驱动，顺时针增值）/ `axis`（线性拖拽）/ `auto`（默认——起手前几像素解析：主方向与偏好轴一致走线性、垂直走圆周，解析后一次锁定不中途切换）；相对语义：按下不写值、无移动点按零操作、主指针独占",
+      "axis": "线性拖拽轴：`vertical`（默认，向上增值、150px 拖满量程）/ `horizontal`（向右增值）；`interaction=auto` 下作为偏好轴",
+      "indicator": "指示器形态：`line`（径向指针线，默认）/ `dot`（近缘圆点）；非法值回落 line",
+      "include-arc": "显示值弧：从 `start-point`（缺省 min）端填到当前值；值与起点重合时弧隐藏（防 round linecap 出圆点）",
+      "start-point": "值弧起点（缺省/非法回落 `min`，自动夹取到值域）；设为中心值即双极弧——值大于起点向一侧延伸、小于向另一侧延伸（pan/gain 双向零位）",
+      "show-value": "在旋钮下方显示当前值文本（经 `formatValue` 函数 / `format` 模板 / `unit` 后缀格式化，与 `aria-valuetext` 同源）",
+      "unit": "值后缀（如 `Hz`/`%`/`dB`）：输出进 show-value 值文本与 `aria-valuetext`；优先级低于 `format` 模板与 `formatValue` 函数",
+      "format": "值格式化模板串：`${value}` 占位符替换为当前值（如 `\"${value} dB\"`）；输出同时进值文本与 `aria-valuetext`；优先级低于 `formatValue` 函数",
+      "disabled": "禁用：不可聚焦（移除 tabindex）、拖拽/键盘/滚轮/复位全封、`aria-disabled=\"true\"`、灰显（opacity .6）",
+      "readonly": "只读（与 `disabled` 分立）：仍可聚焦、值仍参与宿主收集，拖拽/键盘/滚轮/复位全部拦截，视觉不降饱和，`aria-readonly=\"true\"`",
+      "reverse": "反向：值扫描镜像（min → end-angle、max → start-angle），圆周手势与键盘左右键同步镜像；与 RTL 书写方向取异或",
+      "large-step": "键盘大步步进量（Shift+方向键 / PageUp / PageDown 生效）；缺省为 10 × step（连续模式为量程 / 10）",
+      "label": "旋钮可访问名（`aria-label`，不渲染可见标签——可见标签由 oas-form-item 承担）；缺省回落内置 i18n 文案「旋钮」",
+      "default-value": "复位目标值：双击 / Ctrl+单击 / `reset()` 复位到此值（吸附+夹取）；缺省回落 `min`；复位派发 `oas-reset`（不派发 `oas-change`）",
+      "wheel": "悬停滚轮调节（默认关）：上滚增值、下滚减值，一格 = `step`（连续模式为量程 1/50），Shift+滚轮 0.2× 精调；开启后 preventDefault 阻止页面滚动"
+    },
+    "events": {
+      "oas-input": "拖拽中 / 滚轮 / 键盘每次改值实时派发，`detail: { value }`（吸附后的当前值）",
+      "oas-change": "松手提交 / 键盘与滚轮每次完整确认派发，`detail: { value }`；取消（Esc/pointercancel）与零变化松手不派发",
+      "oas-drag-start": "指针按下并发生有效移动（≥ 阈值）后派发，`detail: { value }`（起点值）；无移动点按不派发",
+      "oas-drag-end": "拖拽结束派发，`detail: { value, cancelled }`；`cancelled=true` 表示取消路径（已回滚到起点值，不派发 `oas-change`）",
+      "oas-reset": "复位手势（双击 / Ctrl+单击 / `reset()`）后派发，`detail: { value, defaultValue }`"
+    },
+    "slots": {},
+    "props": {
+      "value": "当前值：读返回夹取+吸附后的数值（拖拽中为拖拽实时值），写为受控赋值即生效（写受控属性并强制同步，不派发事件）",
+      "defaultValue": "复位目标值：读 `default-value` 属性（未设返回 null = 回落 min）；写数值反射到属性，写 null 清除",
+      "formatValue": "值格式化函数：`el.formatValue = (value) => string`，输出同时进 show-value 值文本与 `aria-valuetext`，优先级高于 `format` 属性与 `unit` 后缀，置 null 清除"
+    },
+    "cssVars": {
+      "--oas-knob-size": "旋钮直径（尺寸档 sm=40px / md=56px / lg=72px 的档值载体，直接覆盖即自定义直径）",
+      "--oas-knob-track": "轨道弧颜色（全量程扫角弧）",
+      "--oas-knob-fill": "值弧颜色（include-arc 开启时）",
+      "--oas-knob-body": "旋钮盘体颜色",
+      "--oas-knob-indicator": "指示器（指针线/圆点）颜色",
+      "--oas-knob-value-color": "show-value 值文本颜色"
+    }
+  },
   "oas-label": {
     "attrs": {
       "for": "目标控件 id，点击代理 `getElementById(for).focus()`",
