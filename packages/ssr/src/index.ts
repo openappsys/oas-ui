@@ -31,7 +31,11 @@
  * theme-editor 为开发工具组件、SSR 意义低，评估后排除）+ SSR 白名单补位批次（scheduler/gantt/barcode
  * 漏登记补齐，数据走 JSON attribute 声明式通道：scheduler 由 page-show-date 固定锚定面板月 +
  * events JSON 声明事件，gantt 时间窗口由 tasks JSON 决定，barcode 纯编码器同步直出 SVG——三者均
- * 同步确定性渲染、无测量/rAF 依赖，快照与升级后结构严格一致）。
+ * 同步确定性渲染、无测量/rAF 依赖，快照与升级后结构严格一致）+ SSR 白名单补位批次 2
+ * （form 收尾 knob/questionnaire + conversation 五件 bubble/attachment/message-scroller/
+ * marker/message-row + workbench 构件族 titlebar/statusbar/inspector/action-bar 及各自子件：
+ * 纯展示/骨架组件直出完整快照；questionnaire 步骤内容走 slot 声明式通道；scroller 快照为
+ * 初始滚动位，升级后 rAF 初始定位不改变宿主几何；全部组件有 hydrate() 覆写、真水合接管）。
  *
  * 嵌套递归序列化：light DOM 里已 upgrade 的子组件（如 form>form-item>oas-input、tabs>tab-panel、
  * layout>sider）会被递归包成嵌套 `<template shadowrootmode="open">`（含子组件指纹），
@@ -86,7 +90,10 @@ import { ensureShim } from './shim.js'
  * 快照；tooltip/popover 浮层触发类快照为触发器 slot 原样 + 关闭态气泡骨架；config-provider/app
  * 框架级容器快照为子树原样；theme-editor 开发工具组件 SSR 意义低，排除）+
  * SSR 白名单补位批次（scheduler/gantt/barcode 漏登记补齐：数据走 JSON attribute 声明式通道，
- * 同 calendar/kanban/table/qrcode 类，同步确定性渲染、无测量依赖）。
+ * 同 calendar/kanban/table/qrcode 类，同步确定性渲染、无测量依赖）+
+ * SSR 白名单补位批次 2（form 收尾 knob/questionnaire + conversation 五件 bubble/attachment/
+ * message-scroller/marker/message-row + workbench 构件族 titlebar/statusbar/inspector/action-bar
+ * 及各自子件，纯展示/骨架直出快照，全部组件有 hydrate() 真水合覆写）。
  */
 export const WHITELIST = [
   'oas-button',
@@ -230,6 +237,27 @@ export const WHITELIST = [
   'oas-scheduler',
   'oas-gantt',
   'oas-barcode',
+  // —— SSR 白名单补位批次 2：form 收尾（knob/questionnaire）+ conversation 五件 + workbench 构件族
+  //    （titlebar/statusbar/inspector/action-bar 全部 tag；浮层与输入交互默认关闭/空态直出骨架） ——
+  'oas-knob',
+  'oas-questionnaire',
+  'oas-bubble',
+  'oas-attachment',
+  'oas-message-scroller',
+  'oas-marker',
+  'oas-message-row',
+  'oas-titlebar',
+  'oas-statusbar',
+  'oas-statusbar-item',
+  'oas-inspector',
+  'oas-inspector-tabs',
+  'oas-inspector-section',
+  'oas-inspector-row',
+  'oas-action-bar',
+  'oas-action-bar-button',
+  'oas-action-bar-well',
+  'oas-statistic-well',
+  'oas-task-progress-well',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -410,6 +438,29 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-scheduler': '@oas-ui/ui/data/scheduler',
   'oas-gantt': '@oas-ui/ui/data/gantt',
   'oas-barcode': '@oas-ui/ui/data/barcode',
+  // —— SSR 白名单补位批次 2：form 收尾 + conversation 五件 + workbench 构件族 ——
+  'oas-knob': '@oas-ui/ui/form/knob',
+  'oas-questionnaire': '@oas-ui/ui/form/questionnaire',
+  'oas-bubble': '@oas-ui/ui/conversation/bubble',
+  'oas-attachment': '@oas-ui/ui/conversation/attachment',
+  'oas-message-scroller': '@oas-ui/ui/conversation/message-scroller',
+  'oas-marker': '@oas-ui/ui/conversation/marker',
+  'oas-message-row': '@oas-ui/ui/conversation/message-row',
+  'oas-titlebar': '@oas-ui/ui/workbench/titlebar',
+  // statusbar-item 与 statusbar 同目录，装载一次注册两个 tag
+  'oas-statusbar': '@oas-ui/ui/workbench/statusbar',
+  'oas-statusbar-item': '@oas-ui/ui/workbench/statusbar',
+  // inspector 四 tag 同目录，装载一次注册全部
+  'oas-inspector': '@oas-ui/ui/workbench/inspector',
+  'oas-inspector-tabs': '@oas-ui/ui/workbench/inspector',
+  'oas-inspector-section': '@oas-ui/ui/workbench/inspector',
+  'oas-inspector-row': '@oas-ui/ui/workbench/inspector',
+  // action-bar 五 tag 同目录，装载一次注册全部
+  'oas-action-bar': '@oas-ui/ui/workbench/action-bar',
+  'oas-action-bar-button': '@oas-ui/ui/workbench/action-bar',
+  'oas-action-bar-well': '@oas-ui/ui/workbench/action-bar',
+  'oas-statistic-well': '@oas-ui/ui/workbench/action-bar',
+  'oas-task-progress-well': '@oas-ui/ui/workbench/action-bar',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */
