@@ -4,6 +4,14 @@
 
 ## [未发布]
 
+### 破坏性变更（迁移）
+
+- **内置图标集改为 opt-in（按需引入需显式注册）**：内置图标全量集从组件链解耦，按需引入单组件链不再自动携带整套图标（体积收益：button 链 34.1→24.8、table 101.6→92.6 KB gzip）。
+  - **不受影响**：全量引入 `import '@oas-ui/ui'`（含 CDN）——已自动注册内置集，行为不变。
+  - **需迁移**：**按需引入单个组件**（如 `@oas-ui/ui/basic/button`）且使用**内置图名**（`<oas-button icon="check">`、`<oas-icon name="close">`、table/menu 等的 item `icon`）时，追加一次 `import '@oas-ui/icons/register'`（应用入口一次即可）；否则该图名不渲染（静默空态）。
+  - **无需引入**：仅用 `registerIcon()` / `registerIconLibrary()`（远程 / sprite）/ iconfont / slot 提供图标时。
+  - 另：`@oas-ui/icons` 主入口不再导出 `iconRegistry` / `iconNames`（内部数据，改从 `@oas-ui/icons/registry` 引入）；`IconName` 类型与注册/查询 API（`registerIcon` / `registerIconAlias` / `registerIconLibrary` / `lookupIcon`）仍从 `@oas-ui/icons` 导出。
+
 ### 特性
 
 - **液态玻璃「动态流动感」v1**（承接玻璃批：静态近似 v2.5.9 + 边缘折射 v2.6.0 之后补「随交互变形」第一层，范围纪律=Apple 定义域）：① **指针镜面高光**——新增主题运行时 `@oas-ui/theme/glass-fluid.js`（单文档 `pointermove` 监听 + `composedPath` 命中注册表 surface → rAF 合批写元素本地归一坐标 `--oas-glass-px`/`--oas-glass-py`；**高光样式表由运行时按注册表经 `adoptedStyleSheets` 注入对应 shadow 根——组件源码零玻璃规则体、零标记属性**，只保留 `--oas-glass-*` 变量消费；指针离开/停用即清理，SPA 泄漏防护）；② **按压收紧**——`命中标记 :active` 把高光色换成更强档（真增强，非压暗；slider 把手另有按压外扩环），纯 CSS 不动 transform（避开 wave/拖拽的既有 transform 语义）。9 控件域组件消费：oas-button / oas-switch / oas-slider（经把手伪元素继承变量）/ oas-app-bar（`:host::after`）/ oas-bottom-navigation / oas-message / oas-toast / oas-snackbar / oas-notification。守卫：无 `data-glass` 零监听、`prefers-reduced-motion` 不启用、粗指针不接、`high-contrast` 不启用；`glass.css` 新增 `--oas-glass-sheen`/`-size`/`-press` 三变量（明暗双档，alpha 压低防拉低文字对比度）；高光层给 surface `isolation: isolate` + 基态 `::after { z-index:-1 }`，落在「背景之上、文字之下」不冲淡标签；**实心语义色/自定义色按钮（primary/success/warning/danger/has-color）hover 保留镜面高光、按压改用边缘内描边（box-shadow inset，不提亮铺底）**——白高光铺底会把白字对比度压到门限下，边缘描边不冲淡文字（与 Apple 镜面描边 / Fluent 内凹按压常态一致）；对比度门禁：玻璃面 hover ≥60（按主题页面底合成）/ 按压 ≥45，实心按钮 hover ≥45（瞬态大字档）/ 静止·按压基线 ≥60。内容面板与随环境内容变化的实时高光不进本批。
