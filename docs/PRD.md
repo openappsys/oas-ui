@@ -2022,8 +2022,6 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：真实指针移动 → 变量写入且高光可见；reduced-motion / 无 data-glass 零监听；双主题截图；console 零告警；
 - 全门禁 + 双引擎 + perf（theme 运行时新增预算档）。
 
-
-
 ## oas-knob 旋钮组件（未发布）
 
 > 立项背景：参数密集面板（音频/DAW、3D/CAD、工业 HMI、调音台）需要把数值编码为圆周角度的紧凑输入控件——同面积可横排数十个参数、支持双向零位（pan/gain 以 12 点为中性）、相对拖拽大范围值不跳变。与 slider 互补不重叠：slider 做线性区间/多把手/移动端，knob 不做 range/marks 环绕刻度；两者共享 `value/min/max/step`、`show-value`/`format`、`reverse`、`size`、事件命名与 token 策略，宿主可在两种控件间无缝切换（form 族）。
@@ -2045,6 +2043,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：TDD RED→GREEN（渲染/值域钳制/step 吸附/角度映射/圆周与线性手势/auto 中途解析锁定/键盘全键位/ARIA 三通道/受控 property/事件链/禁用只读/复位/RTL 镜像/token 纪律/SSR 水合）；`pnpm test` 全绿。
 - e2e：`qa-regression/knob.spec.ts`（真实指针三手势 + 键盘链路 + 双击复位 + 暗色 token 切换 + console 零告警 + readonly/disabled 拦截）。
 - 文档：knob.md zh/en（内联 attribute 演示 + 页级 script 事件反馈）+ api-manifest/api-descriptions + 侧栏；PRD/ROADMAP 同步（版本号未定，标「未发布」）。
+
 ## conversation 会话组件族首批五件（未发布）
 
 ### 立项依据
@@ -2077,6 +2076,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：5 组件 61 用例（状态机/事件/ARIA/RTL 逻辑属性/clamp/保位/重连/DSD 水合/i18n 可读名称）+ families 八族注册一致性 + i18n completeness ×10 全绿。
 - e2e：qa-regression/conversation.spec.ts（scroller 钉底/跳底真交互 + 暗色 + console 零告警）+ demo-coverage 事件探针（attachment 三事件 / scroller scroll-state）+ 新页自动纳入 smoke/dark/code/visual/console-sweep/a11y。
 - 文档：zh/en 双语五页（含交互 demo）+ 会话组件侧栏组 + API 表 gen 接管 + api:check 双向 0。
+
 ## oas-questionnaire 多步问答组件 + oas-form validate()（未发布）
 
 > 立项背景：向导式表单 / 问卷 / 多步结算场景需要「步骤 + 每步字段 + 单步校验门控 + 进度 + 汇总」的编排层——steps/stepper 只管导航语义、oas-form 只管单表校验，二者组合的「门控 + 回退保值 + 跨步汇总」宿主每次手搓。定位：questionnaire 是编排层，每步面板内放一个 `<oas-form>` 零侵入复用校验内核；步骤头语义对齐 steps/stepper 但独立实现（不 import 相邻组件内部）。
