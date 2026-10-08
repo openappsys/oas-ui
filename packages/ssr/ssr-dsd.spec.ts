@@ -610,6 +610,78 @@ test.beforeAll(async () => {
     ),
   ])
 
+  // —— SSR 白名单补位批次 2：form 收尾（knob/questionnaire）+ conversation 五件 + workbench 构件族 ——
+  // 布局稳定性约定：纯展示/骨架组件直出快照（全部组件已有 hydrate() 覆写、真水合接管）；
+  // questionnaire 步骤内容走具名 slot（普通元素，无嵌套自定义组件）；
+  // message-scroller 短内容（不溢出 → 无滚动条与跳底按钮出现；升级后 rAF 初始定位只改
+  // scrollTop 不改宿主几何）；bubble 取默认内容态（非 loading）、titlebar 取非可编辑、
+  // attachment 取默认 done 态（无 spinner/进度）、message-row status=read（图标确定性）；
+  // statusbar/inspector/action-bar 容器 fixture 空/普通元素插槽内容，子件
+  // （statusbar-item/inspector-tabs/-section/-row/action-bar-button/-well/statistic-well/
+  // task-progress-well）全部独立 fixture，避免 light DOM 子组件布局耦合
+  // （嵌套组合 DSD 由嵌套序列化专项用例覆盖）；数据/文案全部固定、无 new Date()。
+  const wbSnaps = await Promise.all([
+    renderToString('oas-knob', { value: '60', min: '0', max: '100', 'show-value': '', unit: '%' }, '', {
+      locale: 'zh-CN',
+    }),
+    renderToString(
+      'oas-questionnaire',
+      {
+        steps: JSON.stringify([
+          { key: 'basic', title: '基本信息' },
+          { key: 'confirm', title: '确认提交' },
+          { key: 'done', title: '完成' },
+        ]),
+        current: '0',
+      },
+      '<div slot="step-basic">第一步内容</div><div slot="step-confirm">第二步内容</div><div slot="step-done">第三步内容</div>',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-bubble', {}, '<p>你好，这是一条消息</p>'),
+    renderToString('oas-attachment', { name: '需求文档.pdf', detail: '2.4 MB' }, '', { locale: 'zh-CN' }),
+    renderToString('oas-message-scroller', { label: '会话消息' }, '<p>消息一</p><p>消息二</p>'),
+    renderToString('oas-marker', { variant: 'border' }, '分组标记'),
+    renderToString(
+      'oas-message-row',
+      { status: 'read' },
+      '<span slot="header">张三 10:24</span><p>今天下午三点开会</p>',
+    ),
+    renderToString(
+      'oas-titlebar',
+      { title: '未命名文档', subtitle: '已保存', 'window-actions': 'minimize,maximize,close' },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-statusbar', { label: '状态栏' }, '', { locale: 'zh-CN' }),
+    renderToString('oas-statusbar-item', { label: '行 12', value: '列 8' }, '', { locale: 'zh-CN' }),
+    renderToString('oas-inspector', { label: '属性面板' }, '', { locale: 'zh-CN' }),
+    renderToString(
+      'oas-inspector-tabs',
+      {
+        items: JSON.stringify([
+          { label: '属性', value: 'props' },
+          { label: '状态', value: 'state' },
+        ]),
+        value: 'props',
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString(
+      'oas-inspector-section',
+      { heading: '变换', name: 'transform', collapsible: '', open: '' },
+      '<p>位置与旋转</p>',
+    ),
+    renderToString('oas-inspector-row', { label: '宽度', value: '320px' }),
+    renderToString('oas-action-bar', {}, '<span>主操作区</span>', { locale: 'zh-CN' }),
+    renderToString('oas-action-bar-button', { value: 'bold', active: '' }, '加粗'),
+    renderToString('oas-action-bar-well', {}, '<span>井内容</span>'),
+    renderToString('oas-statistic-well', { label: '内存', value: '68%', detail: '峰值 82%' }),
+    renderToString('oas-task-progress-well', { label: '构建任务', progress: '60', detail: '编译中 42/70' }, '', {
+      locale: 'zh-CN',
+    }),
+  ])
+
   dsdHtml = `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -643,6 +715,7 @@ ${[
   ...navLayoutSnaps,
   ...batch5Snaps,
   ...nestedSnaps,
+  ...wbSnaps,
 ].join('\n')}
 </body>
 </html>`
