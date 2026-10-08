@@ -170,6 +170,19 @@ describe('OASKnob', () => {
     expect(neg.getAttribute('aria-valuenow')).toBe('43')
   })
 
+  it('step=0.1 浮点步进：键盘连续步进不累积误差（吸附网格每次从 min 重导出）', () => {
+    const el = mount({ value: '0', step: '0.1', min: '0', max: '1' })
+    for (let i = 0; i < 3; i++) key(el, 'ArrowUp')
+    // 0.1×3 浮点尘埃（0.30000000000000004）必须被吸附回 0.3
+    expect(el.getAttribute('aria-valuenow')).toBe('0.3')
+    expect(el.value).toBe(0.3)
+    for (let i = 0; i < 3; i++) key(el, 'ArrowDown')
+    expect(el.getAttribute('aria-valuenow')).toBe('0')
+    // 负向同样干净
+    key(el, 'ArrowDown')
+    expect(el.getAttribute('aria-valuenow')).toBe('0')
+  })
+
   it('value property 通道：get 返回钳制后数值，set 写受控属性并即时同步', () => {
     const el = mount({ value: '150' })
     expect(el.value).toBe(100)
