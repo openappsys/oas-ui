@@ -450,6 +450,23 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       '点第 2 个可见轨道（range 双滑块 demo value=[20,80]，中心点击 ≈50 → 值变化 → oas-input + oas-change；fill 不支持原生 range，首轨道 hidden 为双滑块实现）',
     ],
   ],
+  knob: [
+    [
+      `(() => { const el = document.querySelector('oas-knob:not([readonly]):not([disabled])'); el?.scrollIntoView({ block: 'center' }); return !!el?.shadowRoot })()`,
+      'waitfor',
+      '滚到首个可交互旋钮（drag 动作按 boundingBox 直拖不自动滚动，先就位视口）',
+    ],
+    [
+      'oas-knob:not([readonly]):not([disabled])',
+      'drag',
+      '真指针右向拖拽（auto 解析圆周跟随，相对手势）→ oas-drag-start + oas-input + oas-drag-end + oas-change',
+    ],
+    [
+      `(() => { const el = document.querySelector('oas-knob[default-value]'); const f = el?.shadowRoot?.querySelector('[part="frame"]'); if (!f) return false; f.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); return true })()`,
+      'waitfor',
+      '穿透 shadow 对 frame 派发 dblclick（dblclick 动作只派发到 light DOM 元素，够不到 shadow 内监听）→ oas-reset',
+    ],
+  ],
   modal: [
     [
       '#modal-basic',
