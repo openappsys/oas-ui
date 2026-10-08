@@ -189,7 +189,7 @@ const theme = {
   gzipBytes: gzip(themeCss),
   brotliBytes: brotli(themeCss),
 }
-// v2.6.1 动态流动感运行时（theme 包的可选 JS 层，独立预算档）
+// 动态流动感运行时（theme 包的可选 JS 层，独立预算档）
 const glassFluid = readFileSync(join(ROOT, 'packages/theme/glass-fluid.js'))
 const fluidJs = {
   rawBytes: glassFluid.length,
@@ -309,9 +309,9 @@ const BUDGETS = [
   {
     name: '@oas-ui/theme glass-fluid.js gzip',
     get: () => fluidJs.gzipBytes,
-    limit: 4.5 * 1024, // 4.5 KB（2026-10-07 重定档：修复批后实测 3.6 KB 触 4KB 档 90% 预警）
+    limit: 8.5 * 1024, // 8.5 KB（2026-10-07 重定档：B 档 + 修复批后实测 7.81 KB）
     basis:
-      '实测 gzip 3.6 KB（v2.6.1 修复批：capture leave 精判/双向起停/子像素坐标/守卫与文档），上浮约 25% 定档 4.5 KB；前档 4 KB 首次定档于 2026-10-07（2.97 KB 实测）（v2.6.1 指针镜面高光运行时：监听/命中/坐标/rAF/守卫/清理），上浮约 15% 定档 4 KB',
+      '实测 gzip 7.81 KB（B 档 + 修复批：注册表 + 注入样式表并入运行时——ui 包相应减少同量玻璃规则体；高光层改「surface 背景之上、文字之下」，补 .box 基态/命中成对、isolation:isolate、z-index:-1、禁用守卫（含链接形态 aria-disabled，且同时 background/box-shadow:none）、实心按钮 hover 高光 + 按压边缘内描边（:where 归零特异性）、全根观察 + 帧内 prune 防泄漏），上浮约 15% 定档 8.5 KB；前档 4.5 / 4 KB 首次定档于 2026-10-07（3.6 / 2.97 KB 实测；B 档重定档 6.5 KB 见未提交历史）（指针镜面高光运行时：监听/命中/坐标/rAF/守卫/清理）',
   },
 ]
 

@@ -148,26 +148,6 @@
       "default": "ease"
     },
     {
-      "name": "--oas-glass-sheen-size",
-      "default": "180px"
-    },
-    {
-      "name": "--oas-glass-px",
-      "default": "50%"
-    },
-    {
-      "name": "--oas-glass-py",
-      "default": "50%"
-    },
-    {
-      "name": "--oas-glass-sheen",
-      "default": "transparent"
-    },
-    {
-      "name": "--oas-glass-sheen-press",
-      "default": "transparent"
-    },
-    {
       "name": "--oas-toast-leave-duration",
       "default": "0.2s"
     }

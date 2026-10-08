@@ -182,13 +182,8 @@ onMounted(async () => {
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
 | `--oas-glass-blur` | — | `none` |
-| `--oas-glass-px` | — | `50%` |
-| `--oas-glass-py` | — | `50%` |
 | `--oas-glass-refraction` | 液态玻璃边缘折射滤镜（`data-glass` 生效，默认 none）；局部停用覆盖为**空值**（`--oas-glass-refraction: ;`）——不得用 `none`（与 button 态的 brightness() 混排会使整条 filter 声明非法） | `none` |
 | `--oas-glass-ring` | — | `transparent` |
-| `--oas-glass-sheen` | — | `transparent` |
-| `--oas-glass-sheen-press` | — | `transparent` |
-| `--oas-glass-sheen-size` | — | `180px` |
 
 - `open` 受控：到期只派发 `oas-close`，由外部负责移除 `open`；单实例复用时 `message` 变更不会重启计时，新消息请先关后开或新建元素。
 - 同方向最多堆叠 3 条（纵向排列不重叠，最新贴边），超出时最老的一条收到 `oas-close`（`reason: evict`）；`queue` 模式改为 FIFO 排队补位。

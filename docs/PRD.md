@@ -1933,7 +1933,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - **边缘折射滤镜（glass.css 内置 data-URI）**：`--oas-glass-refraction` 指向自包含 SVG 滤镜，法向位移链——① `feComponentTransfer` discrete 阈值（alpha≥0.5→1）把半透明玻璃面与不透明面统一归一为实心剪影（**不归一则玻璃面中心偏离中性**，review 实抓：这是「中心恒不变形」与表面透明度无关的前提）；② `feGaussianBlur` 3px + alpha 入 RGB 生成平滑过渡带；③ Sobel 双卷积（bias 0.5）把轮廓梯度编入 R/G 通道——**每个边缘带获得沿自身法线的位移矢量（轮廓整体微膨胀），平坦区恒 0.5 中性**；④ `feDisplacementMap`（xChannel=R/yChannel=G）scale=10，膨胀峰值实测 ±4px（外包络宽高各 +8px 双轴对称）。**只有边缘环带变形、中间恒不变形**（对照社区「全局折射致浑浊拉丝」教训，限边缘是本批硬要求；初版 45° 对角拖影经实测定为不合格，改法向）。实现选型：`url(#id)` 片段引用在 shadow DOM 内无法跨 shadow 边界解析（实测静默忽略），data-URI 内联滤镜在任何树内天然可解析；CSP 禁 data: 时滤镜引用失效的表现由浏览器决定（主流按忽略滤镜处理），严格 CSP 宿主可显式覆盖 `--oas-glass-refraction: ;`（空值——`none` 与 button 态的 `brightness()` 混排会使整条声明非法，review 实抓）。滤镜区域横向 -50%/200%、纵向 -100%/300%：给位移与分层投影主下探留缓冲（-8%/116% 硬切投影并裁掉 app-bar 溢出弹层、-50%/200% 对矮元素仍可能切在衰减段，review 两轮实抓）。
 
-- **消费范围（对应 Apple 定义域，逐项映射）**：oas-button / oas-switch / oas-slider（把手）/ oas-app-bar / oas-bottom-navigation / oas-message / oas-toast / oas-snackbar / oas-notification（盒体）。统一经 `filter: var(--oas-glass-refraction, none)` 消费——不引 glass.css 或无 `data-glass` 时回落 none，零副作用。三个状态例外：oas-button 的 hover/按下/选中态把 `brightness()` 与折射变量**组合**书写（不互相覆盖；空值 fallback，无 glass.css 时仍只剩 brightness）；禁用态显式关折射跨组件统一——oas-button（`[disabled]` / `aria-disabled` / `disabled-focusable`，含 hover/active/选中反超守卫）、oas-switch（含 busy，busy 同样原生 disabled）、oas-slider（`input:disabled` 双伪元素分条书写）——禁用控件静态无装饰变形（通行做法：禁用只灭交互与装饰，不抹选中态颜色——button-group 禁用 × 选中保留主色描边为有意设计，已加注释与回归锁）；oas-app-bar 溢出弹层打开期间经 `:host([data-more-open])` 关折射（filter 非 none 会把向下弹出的面板裁进滤镜区域；宿主在栏内容置浮层时建议容器级关折射，已写入 theming 文档）。
+- **消费范围（对应 Apple 定义域，逐项映射）**：oas-button / oas-switch / oas-slider（把手）/ oas-app-bar / oas-bottom-navigation / oas-message / oas-toast / oas-snackbar / oas-notification（盒体）。统一经 `filter: var(--oas-glass-refraction, none)` 消费——不引 glass.css 或无 `data-glass` 时回落 none，零副作用。三个状态例外：oas-button 的 hover/按下/选中态把 `brightness()` 与折射变量**组合**书写（不互相覆盖；空值 fallback，无 glass.css 时仍只剩 brightness）；禁用态显式关折射跨组件统一——oas-button（`[disabled]` / `aria-disabled` / `disabled-focusable`，含 hover/active/选中反超守卫）、oas-switch（含 busy，busy 同样原生 disabled）、oas-slider（`input:disabled` 双伪元素分条书写）——禁用控件静态无装饰变形（通行做法：禁用只灭交互与装饰，不抹选中态颜色——button-group 禁用 × 选中保留主色描边为有意设计，已加注释与回归锁）；oas-app-bar 溢出弹层打开期间经组件内中性标记 `:host([data-panel-open])` 关折射（filter 非 none 会把向下弹出的面板裁进滤镜区域；该标记由组件维护、不依赖玻璃运行时——仅引 glass.css 或 reduced-motion 下同样安全；宿主在栏内容置浮层时建议容器级关折射，已写入 theming 文档）。
 - **画廊 controls 展示行**：舞台加按钮/开关/滑块控件行，静态置换近似可见；文案同步（折射已交付为静态置换，动态流动仍后续）。
 
 ### 边界
@@ -1946,7 +1946,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 验收
 
-- 单测：data-URI 滤镜链结构（discrete 阈值归一 + Sobel 梯度入 R/G 双通道 + feDisplacementMap scale=10 + 滤镜区域横向 -50%/200% 纵向 -100%/300%）/ 9 组件消费断言 / 范围纪律（modal/drawer/popover + select 全族不含折射变量）/ app-bar data-more-open 关折射钩子 / 缺省回落 none；
+- 单测：data-URI 滤镜链结构（discrete 阈值归一 + Sobel 梯度入 R/G 双通道 + feDisplacementMap scale=10 + 滤镜区域横向 -50%/200% 纵向 -100%/300%）/ 9 组件消费断言 / 范围纪律（modal/drawer/popover + select 全族不含折射变量）/ app-bar data-panel-open 关折射中性钩子 / 缺省回落 none；
 - e2e：data-glass 下 computed filter 生效（含 slider 把手伪元素）/ 无 data-glass 时安全降级 / 像素级断言（Chromium：整体开/关必不同 = 滤镜真实执行 + 中心区开/关一致 = 中间恒不变形硬约束；Firefox：开/关视觉无差 = 无感降级契约，防假绿）/ filter 与 backdrop-filter 共存（折射生效时模糊不丢）/ 文档化降级路径（容器覆盖空值后基础态 none 且 button hover 亮度反馈仍在）/ app-bar 弹层打开期间 filter 回落 none / 布局盒不变（双主题）；
 - 全门禁 + 双引擎 + perf:size 预算不突破。
 
@@ -2001,14 +2001,19 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 特性
 
-- **指针镜面高光**：主题层运行时（`@oas-ui/theme/glass-fluid.js`）单文档级 `pointermove` 监听 + `composedPath` 命中 `[data-glass-surface]` → rAF 合批写元素本地归一坐标（`--oas-glass-px` / `--oas-glass-py`）→ 组件影子样式经空闲伪元素 `::after` 渲染径向高光；指针离开或元素卸载即淡出并清内联变量（SPA 泄漏防护）。
-- **按压收紧**：`[data-glass-surface]:active` 把高光换成**更强的高光色**（真增强，非压暗），slider 把手另有按压外扩环；纯 CSS 实现（不动 transform——避免与 button wave / 拖拽等既有 transform 语义冲突）。
-- **消费范围**：oas-button / oas-switch / oas-slider（把手）/ oas-app-bar / oas-bottom-navigation / oas-message / oas-toast / oas-snackbar / oas-notification。
+- **指针镜面高光**：主题层运行时（`@oas-ui/theme/glass-fluid.js`）单文档级 `pointermove` 监听 + `composedPath` 命中注册表 surface → rAF 合批写元素本地归一坐标（`--oas-glass-px` / `--oas-glass-py`）→ 组件影子样式经空闲伪元素 `::after` 渲染径向高光；指针离开或元素卸载即淡出并清内联变量（SPA 泄漏防护）。
+- **按压收紧**：命中标记 `:active` 态把高光换成**更强的高光色**（真增强，非压暗），slider 把手另有按压外扩环；纯 CSS 实现（不动 transform——避免与 button wave / 拖拽等既有 transform 语义冲突）。
+- **消费范围与实现归属（B 档）**：oas-button / oas-switch / oas-slider（把手）/ oas-app-bar / oas-bottom-navigation / oas-message / oas-toast / oas-snackbar / oas-notification——**高光样式表由运行时按注册表注入各 shadow 根（adoptedStyleSheets），组件源码零玻璃规则体/零标记属性，只保留 `--oas-glass-*` 变量消费行**（不引玻璃层 → 组件对 glass 零字节、零副作用）。
+- **作用域与按压**：hover 镜面高光对所有玻璃面与按钮生效（含实心语义色/自定义色按钮 primary/success/warning/danger/has-color）；**实心按钮按压改用边缘内描边（`box-shadow inset`，不提亮铺底）**——白高光铺底会把白字对比度压到门限下，边缘描边不冲淡文字（与 Apple 镜面描边 / Fluent 内凹按压常态一致）；玻璃面按压仍是更强高光色（真增强）。实心判定选择器整段用 `:where()` 归零特异性，不得反超禁用守卫。
+- **对比度门禁**：玻璃面 hover 按主题页面底（light `#fff` / dark `#18181b`）合成取最坏 ≥60、按压 ≥45；实心按钮 hover（瞬态大字档）≥45、静止/按压基线（底不被提亮）≥60；半透明表面落在极端宿主底色时文字对比度由宿主负责。
+- **高光层定位**：注入表给 surface `isolation: isolate` + 基态 `::after { z-index: -1 }`，高光落在「surface 背景之上、文字之下」，镜面反射不冲淡标签文字。
 
 ### 边界
 
 - `prefers-reduced-motion: reduce` 不启用；粗指针（`pointer: coarse`）不接（触屏无 hover 语义）；`high-contrast` 不启用；无 `data-glass` 时零监听零开销；
 - 性能：单文档监听 + rAF 合批 + passive 监听；每帧至多一次 rect 读取；命中判定走事件 `composedPath`（不查表不遍历）；
+- 实心按钮命中后运行时写标记与坐标变量以驱动 hover 高光，按压态由 CSS 换边缘内描边（不提亮）；
+- 已知缺口（挂账）：`oas-switch` 选中态轨道内文案随选中态换底，其对比度组合矩阵不在本批门禁内（slider 把手高光为纯装饰，同理不入门禁）。
 - 更强的「随交互变形」形态（拖拽中塑性形变、随背景内容变化的实时高光）不在 v1。
 
 ### 验收

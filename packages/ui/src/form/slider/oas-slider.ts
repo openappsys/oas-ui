@@ -214,28 +214,7 @@ input:disabled::-moz-range-thumb {
 }
 /* Firefox：moz 伪元素必须与 webkit 分开书写（浏览器遇到不认识的伪元素会使整条规则失效）；
    ::-moz-range-thumb 相对 track 自动居中，无需 webkit 的 margin-top 偏移 */
-/* v2.6.1 动态流动感：把手镜面高光（变量在 input 上，伪元素继承；仅命中时生成——opt-in 零影响） */
-input[data-glass-surface][data-glass-fluid]::-webkit-slider-thumb {
-  background: radial-gradient(
-    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
-    var(--oas-glass-sheen, transparent),
-    transparent 65%
-  ), var(--oas-slider-color);
-}
-input[data-glass-surface][data-glass-fluid]::-moz-range-thumb {
-  background: radial-gradient(
-    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
-    var(--oas-glass-sheen, transparent),
-    transparent 65%
-  ), var(--oas-slider-color);
-}
-/* 按压收紧：拖拽中把手外扩光晕（门到 data-glass-fluid——非玻璃宿主零影响） */
-input[data-glass-surface][data-glass-fluid]:active::-webkit-slider-thumb {
-  box-shadow: 0 0 0 2px var(--oas-color-bg), 0 0 0 4px color-mix(in srgb, var(--oas-slider-color) 45%, transparent);
-}
-input[data-glass-surface][data-glass-fluid]:active::-moz-range-thumb {
-  box-shadow: 0 0 0 2px var(--oas-color-bg), 0 0 0 4px color-mix(in srgb, var(--oas-slider-color) 45%, transparent);
-}
+
 
 input::-moz-range-track {
   height: var(--oas-slider-track-size);
@@ -931,7 +910,6 @@ export class OASSlider extends OASElement {
       const r = document.createElement('input')
       r.type = 'range'
       r.setAttribute('part', 'track')
-      r.setAttribute('data-glass-surface', '')
       r.dataset.role = 'range'
       r.addEventListener('input', () => this.onThumbInput(i, false))
       r.addEventListener('change', () => this.onThumbInput(i, true))

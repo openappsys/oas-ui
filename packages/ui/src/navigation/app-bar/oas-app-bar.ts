@@ -36,43 +36,16 @@ const STYLE = `
   /* hide-on-scroll 滑动收起/恢复：transition 只动 transform（不碰布局），走 token */
   transition: transform var(--oas-transition-base) var(--oas-ease-out);
 }
-/* 溢出弹层打开期间关折射：filter 非 none 时整棵子树被裁进滤镜区域，
-   向下弹出的 .more-panel 会整体落在区域外不可见（review 实抓） */
-:host([data-more-open]) {
-  filter: none;
-}
-/* v2.6.1 动态流动感：指针镜面高光（host 上挂 surface 标记；静止无 background，命中时才生成） */
-:host([data-glass-surface]) {
-  position: relative;
-}
-:host([data-glass-surface])::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--oas-transition-fast) var(--oas-ease-out);
-}
-:host([data-glass-fluid])::after {
-  opacity: 1;
-  background: radial-gradient(
-    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
-    var(--oas-glass-sheen, transparent),
-    transparent 65%
-  );
-}
-:host([data-glass-fluid]):active::after {
-  background: radial-gradient(
-    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
-    var(--oas-glass-sheen-press, transparent),
-    transparent 65%
-  );
-}
+
 
 
 :host([hidden]) {
   display: none;
+}
+/* 溢出弹层打开期间关滤镜（功能规则：filter 非 none 会把向下弹出的面板裁进滤镜区域）。
+   中性标记 data-panel-open 由组件维护——不引用玻璃变量、不依赖玻璃运行时（仅 CSS 场景同安全） */
+:host([data-panel-open]) {
+  filter: none;
 }
 /* ===== 主行 ===== */
 .row {
@@ -436,7 +409,6 @@ export class OASAppBar extends OASElement {
     this.trailingWrapEl = this.shadow.querySelector('[part="trailing"]')
     this.extendedWrapEl = this.shadow.querySelector('[part="extended"]')
     this.menuBtnEl = this.shadow.querySelector('[part="menu-button"]')
-    this.setAttribute('data-glass-surface', '')
     this.moreBtnEl = this.shadow.querySelector('[part="more"]')
     this.morePanelEl = this.shadow.querySelector('[part="more-panel"]')
     // 汉堡钮：点击派发 oas-menu-toggle（宿主自行开合抽屉并回写 menu-open）
@@ -676,9 +648,10 @@ export class OASAppBar extends OASElement {
     if (!this.morePanelEl || !this.moreBtnEl || !this.actionsWrapEl) return
     this.moreOpen = true
     this.morePanelEl.hidden = false
+    // 弹层打开期间关滤镜（功能规则：filter 非 none 时整棵子树被裁进滤镜区域，向下弹出的面板会整体落在区域外）。
+    // 用中性标记 data-panel-open（不引用玻璃变量、不依赖运行时——仅引 glass.css 或 reduced-motion 下同样安全）
+    this.setAttribute('data-panel-open', '')
     this.moreBtnEl.setAttribute('aria-expanded', 'true')
-    // 弹层打开期间关折射滤镜（见 STYLE 中 :host([data-more-open]) 注释）
-    this.setAttribute('data-more-open', '')
     // 弹层打开时 actions 容器切 overflow: visible（横向超出不被 clip 裁掉）
     this.actionsWrapEl.classList.add('open')
     const first = this.morePanelEl.querySelector<HTMLButtonElement>('[role="menuitem"]:not([disabled])')
@@ -689,7 +662,7 @@ export class OASAppBar extends OASElement {
   private closeMore(returnFocus = false): void {
     if (!this.moreOpen) return
     this.moreOpen = false
-    this.removeAttribute('data-more-open')
+    this.removeAttribute('data-panel-open')
     if (this.morePanelEl) this.morePanelEl.hidden = true
     if (this.moreBtnEl) {
       this.moreBtnEl.setAttribute('aria-expanded', 'false')

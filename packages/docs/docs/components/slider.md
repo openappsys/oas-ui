@@ -318,11 +318,7 @@ onMounted(() => {
 
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--oas-glass-px` | — | `50%` |
-| `--oas-glass-py` | — | `50%` |
 | `--oas-glass-refraction` | 液态玻璃边缘折射滤镜（`data-glass` 生效，默认 none）；局部停用覆盖为**空值**（`--oas-glass-refraction: ;`）——不得用 `none`（与 button 态的 brightness() 混排会使整条 filter 声明非法） | `none` |
-| `--oas-glass-sheen` | — | `transparent` |
-| `--oas-glass-sheen-size` | — | `180px` |
 | `--oas-slider-color` | — | `var(--oas-color-primary)` |
 | `--oas-slider-height` | — | `200px` |
 | `--oas-slider-thumb-size` | — | `14px` |

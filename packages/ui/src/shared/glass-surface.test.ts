@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, it, expect, afterEach } from 'vitest'
 import { OASModal } from '../feedback/modal/index.js'
@@ -191,46 +191,53 @@ describe('玻璃边缘折射 v1：controls/nav/notification 消费', () => {
     }
   })
 
-  it('app-bar 溢出弹层打开期间关折射（filter 非 none 会把弹层裁进滤镜区域——review 实抓回归锁）', () => {
+  it('app-bar 溢出弹层关折射为组件内中性功能规则（不依赖玻璃运行时；仅 CSS 场景同安全）', () => {
     const src = readFileSync(
       resolve(import.meta.dirname, '../../../../packages/ui/src/navigation/app-bar/oas-app-bar.ts'),
       'utf8',
     )
-    expect(src).toContain(':host([data-more-open])')
-    expect(src).toContain("this.setAttribute('data-more-open', '')")
-    expect(src).toContain("this.removeAttribute('data-more-open')")
+    // 组件侧不得出现玻璃专属标记（data-glass*）；防裁切改用中性功能标记 data-panel-open
+    expect(src).not.toMatch(/data-glass/)
+    expect(src).not.toContain('data-more-open')
+    expect(src, '缺弹层打开标记').toContain("setAttribute('data-panel-open', '')")
+    expect(src, '缺弹层关闭清理').toContain("removeAttribute('data-panel-open')")
+    expect(src, '缺组件内让位规则（filter: none）').toMatch(/:host\(\[data-panel-open\]\)\s*\{[^}]*filter:\s*none/)
   })
 
-  it('动态流动感 v1：9 控件域组件挂 data-glass-surface + 指针高光规则（范围纪律外不含）', () => {
-    const files: Array<[string, string]> = [
-      ['oas-button', 'basic/button/oas-button.ts'],
-      ['oas-switch', 'form/switch/oas-switch.ts'],
-      ['oas-slider', 'form/slider/oas-slider.ts'],
-      ['oas-app-bar', 'navigation/app-bar/oas-app-bar.ts'],
-      ['oas-bottom-navigation', 'navigation/bottom-navigation/oas-bottom-navigation.ts'],
-      ['oas-message', 'feedback/message/oas-message.ts'],
-      ['oas-toast', 'feedback/toast/oas-toast.ts'],
-      ['oas-snackbar', 'feedback/snackbar/oas-snackbar.ts'],
-      ['oas-notification', 'feedback/notification/oas-notification.ts'],
-    ]
-    for (const [name, rel] of files) {
-      const src = readFileSync(resolve(import.meta.dirname, `../../../../packages/ui/src/${rel}`), 'utf8')
-      expect(src, `[${name}] 缺 data-glass-surface 标记`).toContain('data-glass-surface')
-      expect(src, `[${name}] 缺指针高光激活规则（data-glass-fluid）`).toContain('data-glass-fluid')
-      expect(src, `[${name}] 缺高光坐标变量消费（--oas-glass-px）`).toContain('--oas-glass-px')
+  it('玻璃消费点纪律：组件源码只允许 var 消费行（零规则体/零标记属性/零高光逻辑）', () => {
+    // B 档契约：动态层（高光样式 + 命中标记 + 状态镜像）全部由 @oas-ui/theme/glass-fluid.js 注入；
+    // 组件只保留「主题变量消费」——不引 glass 层时回落 none/transparent 零影响。
+    const glassDir = resolve(import.meta.dirname, '../../../../packages/ui/src')
+    const files: string[] = []
+    const walk = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = resolve(dir, e.name)
+        if (e.isDirectory()) walk(p)
+        else if (e.name.startsWith('oas-') && e.name.endsWith('.ts') && !e.name.includes('.test.')) files.push(p)
+      }
     }
-    // 范围纪律：内容面板（modal/drawer/popover/select 全族）不挂流动感标记
-    const out: Array<[string, string]> = [
-      ['oas-modal', 'feedback/modal/oas-modal.ts'],
-      ['oas-drawer', 'feedback/drawer/oas-drawer.ts'],
-      ['oas-popover', 'feedback/popover/oas-popover.ts'],
-      ['oas-select', 'form/select/oas-select.ts'],
-      ['oas-cascader', 'form/cascader/oas-cascader.ts'],
-      ['oas-combobox', 'form/combobox/oas-combobox.ts'],
+    walk(glassDir)
+    const ALLOWED = [
+      /--oas-glass-blur/,
+      /--oas-glass-ring/,
+      /--oas-glass-refraction/,
+      /^\/\*/, // 块注释行
+      /^\*/,
+      /^\/\//, // 行注释
     ]
-    for (const [name, rel] of out) {
-      const src = readFileSync(resolve(import.meta.dirname, `../../../../packages/ui/src/${rel}`), 'utf8')
-      expect(src, `[${name}] 不得挂流动感标记（范围纪律）`).not.toContain('data-glass-surface')
+    for (const f of files) {
+      const src = readFileSync(f, 'utf8')
+      const lines = src.split('\n')
+      lines.forEach((line, i) => {
+        if (!/glass/i.test(line)) return
+        const ok = ALLOWED.some((re) => re.test(line.trim()))
+        expect(
+          ok,
+          `[${f.replace(glassDir, 'src')}:${i + 1}] 组件内不得出现玻璃规则体/标记（只允许 var 消费行）：${line.trim()}`,
+        ).toBe(true)
+      })
+      expect(src, `[${f}] 不得含 data-glass* 标记属性`).not.toMatch(/data-glass/)
+      expect(src, `[${f}] 不得含玻璃高光规则（sheen）`).not.toContain('oas-glass-sheen')
     }
   })
 

@@ -4,6 +4,7 @@
 
 import { test, expect } from '@playwright/test'
 import { perceptualContrast, relativeLuminance } from '../../theme/oklab'
+import { GLASS_REGISTRY } from '../../theme/glass-fluid.js'
 
 const PAGE = '/guide/glass.html'
 
@@ -22,6 +23,25 @@ function parseRgba(s: string): [number, number, number, number] | null {
   if (!m) return null
   const parts = m[1]!.split(',').map((x) => parseFloat(x))
   return [parts[0]!, parts[1]!, parts[2]!, parts.length > 3 ? parts[3]! : 1]
+}
+
+/** 归一化任意计算色值 → [r,g,b,a]（0-255）：hex / color(srgb r g b [/ a]) / rgb(a)。
+ *  color-mix 计算值经浏览器序列化为 `color(srgb …)`，只匹配 `rgba?()` 会静默漏采（假绿）。 */
+function parseSrgb(s: string): [number, number, number, number] | null {
+  const hex = s.match(/^#([0-9a-f]{6})$/i)
+  if (hex) {
+    const n = parseInt(hex[1]!, 16)
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1]
+  }
+  const cs = s.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)/)
+  if (cs) return [Number(cs[1]) * 255, Number(cs[2]) * 255, Number(cs[3]) * 255, cs[4] != null ? Number(cs[4]) : 1]
+  const m = s.match(/rgba?\(([^)]+)\)/)
+  if (!m) return null
+  const p = m[1]!
+    .split(/[,\s/]+/)
+    .filter(Boolean)
+    .map(Number)
+  return [p[0]!, p[1]!, p[2]!, p.length > 3 ? p[3]! : 1]
 }
 
 const BACKDROPS: Array<[string, [number, number, number]]> = [
@@ -523,15 +543,25 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
                   : null
         const host = [...document.querySelectorAll(t)].pop() as HTMLElement
         const surface = (sel ? host.shadowRoot!.querySelector(sel) : host) as HTMLElement | null
+        const after = surface ? getComputedStyle(surface, '::after') : null
         return {
-          surface: !!surface && surface.hasAttribute('data-glass-surface'),
           px: surface ? surface.style.getPropertyValue('--oas-glass-px') : '',
-          afterOpacity: surface ? getComputedStyle(surface, '::after').opacity : '',
+          // 真断言：无 content 的伪元素不生成（backgroundImage 会照返回声明值 → 单看它会假绿）
+          afterContent: after?.content ?? '',
+          afterBg: after?.backgroundImage ?? '',
+          afterOpacity: after?.opacity ?? '',
+          sheetInjected: (host.shadowRoot?.adoptedStyleSheets?.length ?? 0) > 0,
         }
       }, tag)
-      expect(on.surface, `${tag} 应挂 data-glass-surface`).toBe(true)
+      // B 档：组件源码零标记；命中后运行时写坐标变量 + 注入样式表渲染高光层
       expect(on.px, `${tag} 应写本地坐标`).toMatch(/%$/)
-      expect(on.afterOpacity, `${tag} 高光层应可见`).toBe('1')
+      expect(on.sheetInjected, `${tag} shadow 根应被注入共享样式表`).toBe(true)
+      if (tag !== 'oas-slider') {
+        expect(on.afterContent, `${tag} 高光层必须真生成（::after content 非 none）`).not.toBe('none')
+        expect(on.afterBg, `${tag} 注入表应渲染高光（radial-gradient）`).toContain('radial-gradient')
+      }
+      // slider 高光落在把手伪元素（::-webkit-slider-thumb / ::-moz-range-thumb）——UA 伪元素的
+      // computed 通道不可靠，其规则存在性由单测（sheet 断言）与「注册表↔真实 DOM 对账」覆盖
     }
     // 离开：全部清理
     await page.mouse.move(5, 5)
@@ -550,6 +580,63 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
       return n
     })
     expect(leftover, '指针离开后不得残留 data-glass-fluid').toBe(0)
+  })
+
+  test('动态流动感：shadow 内动态新增的注册组件也被注入（观察器不跨 shadow 边界回归锁）', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(700)
+    const r = await page.evaluate(async () => {
+      const host = document.createElement('oas-card')
+      document.body.appendChild(host)
+      await customElements.whenDefined('oas-card')
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+      // 往 shadow 内动态插入注册组件（模拟 oas-table 可编辑单元格在 shadow 内插入 oas-switch；
+      // MutationObserver 不跨 shadow 边界，必须由该根自己的观察器发现）
+      const btn = document.createElement('oas-button')
+      btn.textContent = 'nested'
+      host.shadowRoot!.appendChild(btn)
+      await customElements.whenDefined('oas-button')
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+      const injected = btn.shadowRoot ? (btn.shadowRoot.adoptedStyleSheets?.length ?? 0) : -1
+      btn.remove()
+      host.remove()
+      return { injected }
+    })
+    expect(r.injected, 'shadow 内动态新增的注册组件也应被注入共享样式表').toBeGreaterThan(0)
+  })
+
+  test('动态流动感：message 系 `.box` 高光层真生成（四组件防「漏基态 → 伪元素不生成」假绿）', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(600)
+    const r = await page.evaluate(
+      async (tags: string[]) => {
+        const out: Record<string, { content: string; bg: string; opacity: string; border: string }> = {}
+        for (const tag of tags) {
+          const host = document.createElement(tag) as HTMLElement
+          document.body.appendChild(host)
+          await customElements.whenDefined(tag)
+          await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+          const box = (host.shadowRoot?.querySelector('.box') ?? host) as HTMLElement
+          // 直接置运行时标记（等价指针命中）——验「注入表本身」是否生成高光层
+          box.setAttribute('data-glass-fluid', '')
+          const cs = getComputedStyle(box, '::after')
+          out[tag] = {
+            content: cs.content,
+            bg: cs.backgroundImage,
+            opacity: cs.opacity,
+            border: getComputedStyle(box).borderRadius,
+          }
+          box.removeAttribute('data-glass-fluid')
+          host.remove()
+        }
+        return out
+      },
+      ['oas-message', 'oas-toast', 'oas-snackbar', 'oas-notification'],
+    )
+    for (const [tag, v] of Object.entries(r)) {
+      expect(v.content, `${tag} .box 高光层必须真生成（::after content 非 none）`).not.toBe('none')
+      expect(v.bg, `${tag} .box 高光应含 radial-gradient`).toContain('radial-gradient')
+    }
   })
 
   test('动态流动感：surface 内部子元素跨界不熄灭高光（leave 精判回归）', async ({ page }) => {
@@ -591,10 +678,10 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
   test('动态流动感按压：按下换成更强的高光色（真增强），非压暗', async ({ page }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(900)
-    // 专用探针（append 在最后 → `.pop()` 稳定命中，不依赖页面既有按钮的 DOM 次序）
+    // 专用探针（append 在最后 → `.pop()` 稳定命中，不依赖页面既有按钮的 DOM 次序）；
+    // 用默认（玻璃）按钮：实心按钮的按压走内描边而非「更强高光铺底」，故以玻璃按钮验证更强按压高光
     const box = await page.evaluate(() => {
       const btn = document.createElement('oas-button') as HTMLElement
-      btn.setAttribute('type', 'primary')
       btn.textContent = 'fluid-press-probe'
       btn.style.cssText = 'position:fixed;left:120px;top:120px;z-index:9999'
       document.body.appendChild(btn)
@@ -630,27 +717,112 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
     expect(pressBg.opacity, '按压态不得把高光层压暗').toBe('1')
   })
 
-  test('动态流动感对比度门禁：高光叠在文字上仍达感知分 ≥60（双主题 × 三类背板）', async ({ page }) => {
-    const BACKDROPS: Array<[string, [number, number, number]]> = [
-      ['亮蓝', [64, 120, 255]],
-      ['品红', [255, 120, 180]],
-      ['深青', [31, 74, 68]],
-    ]
+  test('动态流动感作用域：实心按钮 hover 有高光、按压走边缘内描边（非提亮）；禁用玻璃无高光', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(800)
+    const rects = await page.evaluate(async () => {
+      const mk = (id: string, setup: (b: HTMLElement) => void) => {
+        const b = document.createElement('oas-button') as HTMLElement
+        b.id = id
+        setup(b)
+        b.style.cssText = `position:fixed;left:60px;top:${40 + ['g', 'p', 'c', 'd'].indexOf(id[0]!) * 70}px;z-index:99999`
+        document.body.appendChild(b)
+        return b
+      }
+      mk('g-glass', (b) => (b.textContent = 'g'))
+      mk('p-primary', (b) => {
+        b.setAttribute('type', 'primary')
+        b.textContent = 'p'
+      })
+      mk('c-custom', (b) => {
+        b.setAttribute('color', '#fbbf24')
+        b.textContent = 'c'
+      })
+      mk('d-disabled', (b) => {
+        b.setAttribute('disabled-focusable', '')
+        b.textContent = 'd'
+      })
+      await customElements.whenDefined('oas-button')
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+      return ['g-glass', 'p-primary', 'c-custom', 'd-disabled'].map((id) => {
+        const r = document.getElementById(id)!.getBoundingClientRect()
+        return { id, x: r.x, y: r.y, w: r.width, h: r.height }
+      })
+    })
+    const bgOf: Record<string, string> = {}
+    const contentOf: Record<string, string> = {}
+    const hitOf: Record<string, boolean> = {}
+    for (const rect of rects) {
+      await page.mouse.move(rect.x + rect.w / 2, rect.y + rect.h / 2)
+      await page.waitForTimeout(150)
+      const read = await page.evaluate((id) => {
+        const inner = document.getElementById(id)!.shadowRoot!.querySelector('button')!
+        const cs = getComputedStyle(inner, '::after')
+        return {
+          bg: cs.backgroundImage,
+          content: cs.content,
+          hit: inner.hasAttribute('data-glass-fluid'),
+        }
+      }, rect.id)
+      bgOf[rect.id] = read.bg
+      contentOf[rect.id] = read.content
+      hitOf[rect.id] = read.hit
+    }
+    // 先证命中链路通（否则排除项「未命中」也会得到 none → 假绿）
+    for (const id of ['g-glass', 'p-primary', 'c-custom', 'd-disabled']) {
+      expect(hitOf[id], `${id} 指针应命中（运行时写入 data-glass-fluid）`).toBe(true)
+    }
+    expect(bgOf['g-glass'], '玻璃按钮 hover 应有高光').toContain('radial-gradient')
+    expect(bgOf['p-primary'], '实心语义色按钮 hover 应有高光').toContain('radial-gradient')
+    expect(bgOf['c-custom'], '自定义色实心按钮 hover 应有高光').toContain('radial-gradient')
+    // 高光层必须真生成（content 非 none）——不透明底 + z-index:-1 下不能只靠 backgroundImage 声明值
+    for (const id of ['g-glass', 'p-primary', 'c-custom']) {
+      expect(contentOf[id], `${id} 高光层必须真生成（::after content 非 none）`).not.toBe('none')
+    }
+    expect(bgOf['d-disabled'], '禁用玻璃按钮不得有高光（守卫不得被反超）').toBe('none')
+    // 按压：实心按钮走边缘内描边（background 清空、box-shadow inset），不铺白底
+    await page.mouse.move(rects[1]!.x + rects[1]!.w / 2, rects[1]!.y + rects[1]!.h / 2)
+    await page.mouse.down()
+    await page.waitForTimeout(150)
+    const pressed = await page.evaluate(() => {
+      const inner = document.getElementById('p-primary')!.shadowRoot!.querySelector('button')!
+      const cs = getComputedStyle(inner, '::after')
+      return { bg: cs.backgroundImage, shadow: cs.boxShadow }
+    })
+    await page.mouse.up()
+    expect(pressed.bg, '按压不得提亮铺底（守白字对比度）').toBe('none')
+    expect(pressed.shadow, '按压应显示边缘内描边').toContain('inset')
+  })
+
+  test('动态流动感对比度门禁：玻璃面高光叠底后文字仍达标（hover ≥60 / 按压 ≥45，双主题）', async ({ page }) => {
     for (const theme of ['light', 'dark'] as const) {
       await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
       if (theme === 'dark') await page.evaluate(() => document.documentElement.classList.add('dark'))
       await page.waitForTimeout(600)
       const r = await page.evaluate(
         async (cases: string[]) => {
-          const parse = (s: string) => {
+          const parse = (s: string): [number, number, number, number] | null => {
+            const hex = s.match(/^#([0-9a-f]{6})$/i)
+            if (hex) {
+              const n = parseInt(hex[1]!, 16)
+              return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1]
+            }
+            const cs = s.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)/)
+            if (cs)
+              return [Number(cs[1]) * 255, Number(cs[2]) * 255, Number(cs[3]) * 255, cs[4] != null ? Number(cs[4]) : 1]
             const m = s.match(/rgba?\(([^)]+)\)/)
             if (!m) return null
-            const p = m[1]!.split(',').map((x) => parseFloat(x))
-            return [p[0]!, p[1]!, p[2]!, p.length > 3 ? p[3]! : 1] as [number, number, number, number]
+            const p = m[1]!
+              .split(/[,\s/]+/)
+              .filter(Boolean)
+              .map(Number)
+            return [p[0]!, p[1]!, p[2]!, p.length > 3 ? p[3]! : 1]
           }
-          const out: Array<{ tag: string; fg: number[]; bg: number[]; sheen: number[] }> = []
+          const out: Array<{ tag: string; fg: number[]; bg: number[]; sheen: number[]; sheenPress: number[] }> = []
           for (const tag of cases) {
-            // slider 的文字在 track 容器而非 input 上、input 底透明 → 无文字可比，跳过（其高光为纯装饰）
+            // 排除项（其 surface 文字与底色的组合无法用单点取样刻画）：
+            // - slider：文字在 track 容器上、input 底透明，surface 无文字；
+            // - switch：轨道内文案随 checked/未选中两态底色切换（组合矩阵需单独覆盖），且轨道底随状态变
             const host = document.createElement(tag) as HTMLElement
             host.style.cssText = 'position:fixed;left:-9999px;top:0'
             document.body.appendChild(host)
@@ -674,48 +846,124 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
               const sheen = parse(
                 getComputedStyle(host).getPropertyValue('--oas-glass-sheen').trim() || 'rgba(255,255,255,0)',
               )
-              if (rgb && bg && sheen) out.push({ tag, fg: rgb, bg, sheen })
+              const sheenPress = parse(
+                getComputedStyle(host).getPropertyValue('--oas-glass-sheen-press').trim() || 'rgba(255,255,255,0)',
+              )
+              if (!rgb || !bg || !sheen || !sheenPress) throw new Error(`无法归一化 ${tag} 的计算色值（禁止静默漏采）`)
+              out.push({ tag, fg: rgb, bg, sheen, sheenPress })
             }
             host.remove()
           }
           return out
         },
-        FLUID_CASES.filter(([t]) => t !== 'oas-slider').map(([t]) => t),
+        FLUID_CASES.filter(([t]) => t !== 'oas-slider' && t !== 'oas-switch').map(([t]) => t),
       )
       expect(r.length, `${theme}：应采到控件文字与底色`).toBeGreaterThan(3)
+      // 玻璃面（半透明）：有效底色取决于身后内容，按主题真实页面底合成；hover ≥60、按压（玻璃面提亮更强）≥45
+      const pageBg: [number, number, number] = theme === 'light' ? [255, 255, 255] : [24, 24, 27]
       for (const item of r) {
-        for (const [label, bd] of BACKDROPS) {
-          // surface bg 合成到背板 → 再叠 sheen（高光最坏情形：铺满整层）
-          const [br, bg1, bb, ba] = item.bg as [number, number, number, number]
-          const a = ba
-          const eff: [number, number, number] = [
-            br * a + bd[0] * (1 - a),
-            bg1 * a + bd[1] * (1 - a),
-            bb * a + bd[2] * (1 - a),
-          ]
-          const [sr, sg, sb, sa] = item.sheen as [number, number, number, number]
-          expect(sa, `${theme}/${item.tag}：sheen 必须有 alpha（为 0 则门禁空转假绿）`).toBeGreaterThan(0)
-          const [fr, fg2, fb] = item.fg as [number, number, number, number]
-          // 最坏情形取双向：①高光叠底、文字不动；②高光叠文字、底不动（取更差者，模型保守）
-          const litBg: [number, number, number] = [
-            sr * sa + eff[0] * (1 - sa),
-            sg * sa + eff[1] * (1 - sa),
-            sb * sa + eff[2] * (1 - sa),
-          ]
-          const litText: [number, number, number] = [
-            sr * sa + fr * (1 - sa),
-            sg * sa + fg2 * (1 - sa),
-            sb * sa + fb * (1 - sa),
-          ]
-          const score = Math.min(
-            Math.abs(perceptualContrast(relativeLuminance([fr, fg2, fb]), relativeLuminance(litBg))),
-            Math.abs(perceptualContrast(relativeLuminance(litText), relativeLuminance(eff))),
-          )
-          expect(
-            score,
-            `${theme}/${item.tag} 高光最高时 ${label} 背板感知分 ${score.toFixed(1)} 应 ≥60`,
-          ).toBeGreaterThanOrEqual(60)
-        }
+        const [br, bg1, bb, ba] = item.bg as [number, number, number, number]
+        const a = ba ?? 1
+        const eff: [number, number, number] = [
+          br * a + pageBg[0] * (1 - a),
+          bg1 * a + pageBg[1] * (1 - a),
+          bb * a + pageBg[2] * (1 - a),
+        ]
+        const [sr, sg, sb, sa] = item.sheen as [number, number, number, number]
+        expect(sa, `${theme}/${item.tag}：sheen 必须有 alpha（为 0 则门禁空转假绿）`).toBeGreaterThan(0)
+        const [fr, fg2, fb] = item.fg as [number, number, number, number]
+        // 高光层落在「surface 背景之上、文字之下」（注入表 isolation:isolate + z-index:-1）——
+        // 文字亮度不变，只有底被提亮；取「高光叠底（文字不动）」与「无高光基线」更差者
+        const litBg: [number, number, number] = [
+          sr * sa + eff[0] * (1 - sa),
+          sg * sa + eff[1] * (1 - sa),
+          sb * sa + eff[2] * (1 - sa),
+        ]
+        const score = Math.min(
+          Math.abs(perceptualContrast(relativeLuminance([fr, fg2, fb]), relativeLuminance(litBg))),
+          Math.abs(perceptualContrast(relativeLuminance([fr, fg2, fb]), relativeLuminance(eff))),
+        )
+        expect(score, `${theme}/${item.tag} hover 高光叠底后感知分 ${score.toFixed(1)} 应 ≥60`).toBeGreaterThanOrEqual(
+          60,
+        )
+        // 按压态用更强高光色：瞬态、指针局部峰值、按钮/标签属大字号档——按 APCA 大字档 ≥45 设门限
+        const [pr, pg, pb, pa] = item.sheenPress as [number, number, number, number]
+        const litBgPress: [number, number, number] = [
+          pr * pa + eff[0] * (1 - pa),
+          pg * pa + eff[1] * (1 - pa),
+          pb * pa + eff[2] * (1 - pa),
+        ]
+        const pressScore = Math.min(
+          Math.abs(perceptualContrast(relativeLuminance([fr, fg2, fb]), relativeLuminance(litBgPress))),
+          Math.abs(perceptualContrast(relativeLuminance([fr, fg2, fb]), relativeLuminance(eff))),
+        )
+        expect(
+          pressScore,
+          `${theme}/${item.tag} 按压高光感知分 ${pressScore.toFixed(1)} 应 ≥45（瞬态大字档）`,
+        ).toBeGreaterThanOrEqual(45)
+      }
+      // 实心语义色按钮：hover 保留镜面高光（玻璃面同级），**按压走边缘内描边不提亮**（守白字对比度）。
+      // hover 属瞬态大字档按 ≥45；静止/按压基线（底不被提亮）仍须 ≥60。
+      const solSpecs: Array<{ label: string; type?: string; color?: string }> = [
+        { label: 'primary', type: 'primary' },
+        { label: 'success', type: 'success' },
+        { label: 'warning', type: 'warning' },
+        { label: 'danger', type: 'danger' },
+        { label: 'custom#7c3aed', color: '#7c3aed' },
+      ]
+      const sol = await page.evaluate(
+        (specs: Array<{ label: string; type?: string; color?: string }>) =>
+          specs.map((spec) => {
+            const host = document.createElement('oas-button')
+            if (spec.type) host.setAttribute('type', spec.type)
+            if (spec.color) host.setAttribute('color', spec.color)
+            document.body.appendChild(host)
+            const inner = host.shadowRoot!.querySelector('button')!
+            const cs = getComputedStyle(inner)
+            const out = {
+              t: spec.label,
+              color: cs.color,
+              bg: cs.backgroundColor,
+              sheen: getComputedStyle(host).getPropertyValue('--oas-glass-sheen').trim(),
+            }
+            host.remove()
+            return out
+          }),
+        solSpecs,
+      )
+      const mixOver = (
+        a: [number, number, number],
+        b: [number, number, number],
+        alpha: number,
+      ): [number, number, number] => [
+        a[0] * alpha + b[0] * (1 - alpha),
+        a[1] * alpha + b[1] * (1 - alpha),
+        a[2] * alpha + b[2] * (1 - alpha),
+      ]
+      for (const s of sol) {
+        const fg = parseSrgb(s.color)
+        const bg = parseSrgb(s.bg)
+        const sh = parseSrgb(s.sheen || 'rgba(255,255,255,0)')
+        expect(fg, `${theme}/${s.t} 文字色无法归一化（color-mix？）`).not.toBeNull()
+        expect(bg, `${theme}/${s.t} 底色无法归一化（color-mix？）`).not.toBeNull()
+        expect(sh, `${theme}/${s.t} sheen 无法归一化`).not.toBeNull()
+        expect(sh![3], `${theme}/${s.t} sheen 必须有 alpha（为 0 则 hover 断言空转）`).toBeGreaterThan(0)
+        const fgRgb: [number, number, number] = [fg![0], fg![1], fg![2]]
+        const bgRgb: [number, number, number] = [bg![0], bg![1], bg![2]]
+        const base = Math.abs(perceptualContrast(relativeLuminance(fgRgb), relativeLuminance(bgRgb)))
+        expect(
+          base,
+          `${theme}/${s.t} 实心按钮静止/按压基线 ${base.toFixed(1)} 应 ≥60（按压不提亮）`,
+        ).toBeGreaterThanOrEqual(60)
+        const hoverBg = mixOver([sh![0], sh![1], sh![2]], bgRgb, sh![3])
+        const hoverScore = Math.min(
+          Math.abs(perceptualContrast(relativeLuminance(fgRgb), relativeLuminance(hoverBg))),
+          base,
+        )
+        expect(
+          hoverScore,
+          `${theme}/${s.t} 实心按钮 hover 高光感知分 ${hoverScore.toFixed(1)} 应 ≥45（瞬态大字档）`,
+        ).toBeGreaterThanOrEqual(45)
       }
     }
   })
@@ -763,25 +1011,108 @@ test.describe('玻璃边缘折射 v1（data-URI 自包含滤镜）', () => {
     expect(r.px, '无 data-glass 不得写坐标').toBe('')
   })
 
-  test('app-bar 溢出弹层打开期间关折射（弹层不被滤镜区域裁切——review 实抓回归锁）', async ({ page }) => {
+  test('app-bar 溢出弹层打开期间关折射（组件内中性功能规则；弹层不被滤镜区域裁切）', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(800)
+    // 真实交互：压窄栏体触发 overflow 收纳 → 出现「···」→ 点击打开弹层
+    const r = await page.evaluate(async () => {
+      const bar = document.createElement('oas-app-bar') as HTMLElement & { shadowRoot: ShadowRoot; remove(): void }
+      for (let i = 0; i < 6; i++) {
+        const a = document.createElement('oas-button')
+        a.setAttribute('slot', 'actions')
+        a.textContent = 'A' + i
+        bar.appendChild(a)
+      }
+      bar.style.cssText = 'display:block;width:280px;position:fixed;left:40px;top:80px;z-index:9999'
+      document.body.appendChild(bar)
+      await customElements.whenDefined('oas-app-bar')
+      await new Promise((res) => setTimeout(res, 300))
+      const more = bar.shadowRoot.querySelector('[part="more"]') as HTMLButtonElement | null
+      if (!more || more.hidden) return { noOverflow: true } as const
+      const read = () => ({ filter: getComputedStyle(bar).filter, open: bar.hasAttribute('data-panel-open') })
+      const closed = read()
+      more.click()
+      await new Promise((res) => setTimeout(res, 120))
+      const opened = read()
+      // 真实键盘路径：openMore 已把焦点移入面板首项；Esc 在 shadow 内派发（host 上派发不会进入自己的 shadow）
+      const panel = bar.shadowRoot.querySelector('[part="more-panel"]') as HTMLElement
+      const focused = (bar.shadowRoot.activeElement as HTMLElement | null) ?? panel
+      focused.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+      await new Promise((res) => setTimeout(res, 120))
+      const restored = read()
+      bar.remove()
+      return { closed, opened, restored }
+    })
+    expect(r, '应触发溢出收纳以出现「···」').not.toHaveProperty('noOverflow')
+    const rr = r as {
+      closed: { filter: string; open: boolean }
+      opened: { filter: string; open: boolean }
+      restored: { filter: string; open: boolean }
+    }
+    expect(rr.closed.filter, '常态应消费折射滤镜').toContain('data:image/svg+xml')
+    expect(rr.opened.open, '弹层打开时应挂中性标记 data-panel-open').toBe(true)
+    expect(rr.opened.filter, '弹层打开期间应关滤波（防裁切）').toBe('none')
+    expect(rr.restored.filter, '弹层关闭后应恢复折射').toContain('data:image/svg+xml')
+  })
+
+  test('注册表 ↔ 真实 DOM 对账：每个注册组件的 surface 选择器都命中（防漂移静默失效）', async ({ page }) => {
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(600)
+    const miss = await page.evaluate(async (registry: Array<{ tag: string; surface: string; host?: boolean }>) => {
+      const out: string[] = []
+      for (const e of registry) {
+        const host = document.createElement(e.tag) as HTMLElement
+        document.body.appendChild(host)
+        await customElements.whenDefined(e.tag)
+        await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+        if (e.host) {
+          if (host.localName !== e.tag) out.push(`${e.tag} host`)
+        } else if (!host.shadowRoot?.querySelector(e.surface)) {
+          out.push(`${e.tag} ${e.surface}`)
+        }
+        host.remove()
+      }
+      return out
+    }, GLASS_REGISTRY)
+    expect(miss, '注册表选择器必须与组件真实 shadow DOM 一致（漂移即静默失效）').toEqual([])
+  })
+
+  test('注入不得改变既有定位：fixed/absolute 宿主与 fixed 盒悬停后 position 不变（B 档实抓回归锁）', async ({
+    page,
+  }) => {
     await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(800)
     const r = await page.evaluate(async () => {
-      const bar = document.createElement('oas-app-bar')
-      document.body.appendChild(bar)
+      const fixedBar = document.createElement('oas-app-bar')
+      fixedBar.setAttribute('data-position', 'fixed')
+      fixedBar.setAttribute('title', 'fixed-bar')
+      fixedBar.style.cssText = 'position:fixed;left:40px;top:60px;width:260px;z-index:9998'
+      document.body.appendChild(fixedBar)
       await customElements.whenDefined('oas-app-bar')
-      const read = () => getComputedStyle(bar).filter
-      const before = read()
-      bar.setAttribute('data-more-open', '')
-      const opened = read()
-      bar.removeAttribute('data-more-open')
-      const after = read()
-      bar.remove()
-      return { before, opened, after }
+      // snackbar：`.box` 基础态是 fixed —— 构造可见盒体（组件打开通道不可用时的最小复刻：直接取真实盒体并置显示）
+      const snack = document.createElement('oas-snackbar') as HTMLElement & { shadowRoot: ShadowRoot }
+      document.body.appendChild(snack)
+      await customElements.whenDefined('oas-snackbar')
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res(null))))
+      const boxOf = () => snack.shadowRoot.querySelector('.box') as HTMLElement | null
+      const beforeBar = getComputedStyle(fixedBar).position
+      const box = boxOf()
+      const beforeBox = box ? getComputedStyle(box).position : null
+      // 命中（写标记）——用真实指针在 e2e 层完成，这里只返回定位基线
+      fixedBar.setAttribute('data-glass-fluid', '')
+      if (box) box.setAttribute('data-glass-fluid', '')
+      const afterBar = getComputedStyle(fixedBar).position
+      const afterBox = box ? getComputedStyle(box).position : null
+      fixedBar.remove()
+      snack.remove()
+      return { beforeBar, afterBar, beforeBox, afterBox }
     })
-    expect(r.before, '常态应消费折射滤镜').toContain('data:image/svg+xml')
-    expect(r.opened, '弹层打开期间应关折射（filter 非 none 会把弹层裁进滤镜区域）').toBe('none')
-    expect(r.after, '弹层关闭后应恢复折射').toContain('data:image/svg+xml')
+    expect(r.beforeBar).toBe('fixed')
+    expect(r.afterBar, 'fixed 宿主命中高光后不得掉回 relative').toBe('fixed')
+    if (r.beforeBox !== null) {
+      expect(r.beforeBox).toBe('fixed')
+      expect(r.afterBox, 'fixed 盒体命中高光后不得掉回 relative').toBe('fixed')
+    }
   })
 
   test('无 data-glass 时回落 none（opt-in 零影响）', async ({ page }) => {

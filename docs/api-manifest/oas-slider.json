@@ -212,22 +212,6 @@
     {
       "name": "--oas-slider-color",
       "default": "var(--oas-color-primary)"
-    },
-    {
-      "name": "--oas-glass-sheen-size",
-      "default": "180px"
-    },
-    {
-      "name": "--oas-glass-px",
-      "default": "50%"
-    },
-    {
-      "name": "--oas-glass-py",
-      "default": "50%"
-    },
-    {
-      "name": "--oas-glass-sheen",
-      "default": "transparent"
     }
   ],
   "unresolved": []

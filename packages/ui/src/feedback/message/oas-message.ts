@@ -47,33 +47,7 @@ const STYLE = `
   animation: oas-msg-in var(--oas-message-anim-in) var(--oas-ease-out) both;
 }
 
-/* v2.6.1 动态流动感：指针镜面高光（glass-fluid.js 写坐标变量；opt-in——静止无 background，
-   仅命中时经 data-glass-fluid 生成，axe 采样不受扰） */
-.box[data-glass-surface]::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--oas-transition-fast) var(--oas-ease-out);
-}
-.box[data-glass-surface][data-glass-fluid]::after {
-  opacity: 1;
-  background: radial-gradient(
-    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
-    var(--oas-glass-sheen, transparent),
-    transparent 65%
-  );
-}
-/* 按压收紧：换成更强的高光色（真增强；opacity 保持 1） */
-.box[data-glass-surface][data-glass-fluid]:active::after {
-  background: radial-gradient(
-    var(--oas-glass-sheen-size, 180px) circle at var(--oas-glass-px, 50%) var(--oas-glass-py, 50%),
-    var(--oas-glass-sheen-press, transparent),
-    transparent 65%
-  );
-}
+
 
 
 /* type 属性设在 host 上，颜色选择器从 host 属性命中；自定义注册类型走 --oas-msg-type-color。
@@ -379,7 +353,7 @@ export class OASMessage extends OASElement {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
       <div class="mask" part="mask" aria-hidden="true" hidden></div>
-      <div class="box" part="box" role="status" data-glass-surface>
+      <div class="box" part="box" role="status">
         <span class="avatar" part="avatar"><slot name="avatar"><span class="avatar-fallback"></span></slot></span>
         <span class="spinner" part="spinner" aria-hidden="true"><span class="spinner-fallback"></span></span>
         <span class="icon" part="icon" aria-hidden="true"></span>
