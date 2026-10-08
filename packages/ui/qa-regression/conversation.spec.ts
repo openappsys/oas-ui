@@ -3,7 +3,7 @@
 // 回底跟随）、IM 式钉底、scroll-state demo 反馈、attachment 内置操作事件可见反馈、暗色 token 切换。
 
 import { test, expect } from '@playwright/test'
-import { up } from './helpers'
+import { up, realClick } from './helpers'
 
 /** 读 scroller shadow 视口滚动几何 */
 function readScroll(page: import('@playwright/test').Page, sel: string) {
@@ -260,6 +260,126 @@ test('message-scroller 加载历史 demo：滚到顶触发 prepend 且保位补�
 
   // 保位补偿：scrollTop 落在插入高度差上（未补偿会停在 0，阅读位置被新内容顶走）
   await expect.poll(async () => (await readScroll(page, sel)).top, { timeout: 8000 }).toBeGreaterThan(0)
+})
+
+// ---------- B 批：滚动的精确性（异步保位 / 首屏防跳 / last-anchor / 轮次锚定）真交互固化 ----------
+
+test('message-scroller 异步保位：prepend 历史含延迟图片，撑高后锚行位置不漂移', async ({ page }) => {
+  await page.goto('/components/message-scroller.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#msc-async')
+  // 等 demo 动态填充完成（锚行带 message-id）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelectorAll('#msc-async oas-message-row').length), { timeout: 8000 })
+    .toBeGreaterThanOrEqual(12)
+  await waitLayout(page, '#msc-async')
+
+  // 真点「插入历史（含延迟图片）」→ demo 内部 150ms 后图片撑高、500ms 后输出漂移结果
+  await realClick(page, '#msc-async-load', null)
+  await expect(page.locator('#msc-async-out')).toHaveText(/保位锚生效/, { timeout: 10000 })
+})
+
+test('message-scroller 首屏防跳：连接时 data-pending-scroll 在场，定位后同帧移除且已落底', async ({ page }) => {
+  await page.goto('/components/message-scroller.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#msc-basic')
+  const result = await page.evaluate(async () => {
+    const el = document.createElement('oas-message-scroller')
+    el.style.height = '160px'
+    el.style.width = '320px'
+    for (let i = 0; i < 12; i++) {
+      const p = document.createElement('p')
+      p.textContent = '防跳验证行 ' + i
+      el.appendChild(p)
+    }
+    document.body.appendChild(el)
+    // 同步段（upgrade 完成）：防跳反射必须已在场
+    const duringConnect = el.hasAttribute('data-pending-scroll')
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    const vp = el.shadowRoot!.querySelector('.viewport') as HTMLElement
+    const out = {
+      duringConnect,
+      removed: !el.hasAttribute('data-pending-scroll'),
+      top: vp.scrollTop,
+      atBottom: vp.scrollHeight - vp.clientHeight - vp.scrollTop <= 8,
+    }
+    el.remove()
+    return out
+  })
+  expect(result.duringConnect, '连接即反射 data-pending-scroll（隐藏未定位帧）').toBe(true)
+  expect(result.removed, '首帧定位后移除（不永久隐藏）').toBe(true)
+  expect(result.top, '初始定位（end）已生效').toBeGreaterThan(0)
+  expect(result.atBottom).toBe(true)
+})
+
+test('message-scroller last-anchor：打开定位在最后提问行顶部；scrollToMessage 精确跳转有可见反馈', async ({ page }) => {
+  await page.goto('/components/message-scroller.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#msc-last-anchor')
+  // 等 demo 动态填充（1 + 6 + 1 轮 = 16 行，锚行 8 条）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelectorAll('#msc-last-anchor oas-message-row').length), {
+      timeout: 8000,
+    })
+    .toBeGreaterThanOrEqual(16)
+  // demo 填充后由宿主 scrollToMessage 补定位（客户端异步填充场景；demo 内部轮询收敛页面级晚应用样式）。
+  // 注意语义边界：最后锚点靠底时「顶对齐」物理不可达（下方内容不足一屏，浏览器 clamp 贴底）——
+  // 断言「锚顶对齐或贴底 + 锚行可见」
+  await expect
+    .poll(
+      async () => {
+        const state = await page.evaluate(() => {
+          const host = document.querySelector('#msc-last-anchor') as HTMLElement
+          const vp = host.shadowRoot!.querySelector('.viewport') as HTMLElement
+          const anchor = [...host.querySelectorAll('oas-message-row[anchor]')].at(-1) as HTMLElement
+          return {
+            offset: Math.abs(anchor.getBoundingClientRect().top - vp.getBoundingClientRect().top),
+            bottomGap: vp.scrollHeight - vp.clientHeight - vp.scrollTop,
+            visible: anchor.getBoundingClientRect().top < vp.getBoundingClientRect().top + vp.clientHeight,
+          }
+        })
+        return state.offset <= 8 || state.bottomGap <= 8 ? (state.visible ? 'settled' : 'invisible') : 'drifted'
+      },
+      { timeout: 8000 },
+    )
+    .toBe('settled')
+
+  // scrollToMessage 真点：可见反馈（返回值 true + 输出行更新）
+  await realClick(page, '#msc-la-first', null)
+  await expect(page.locator('#msc-la-out')).toHaveText(/→ true/, { timeout: 5000 })
+  const firstTop = await page.evaluate(() => {
+    const host = document.querySelector('#msc-last-anchor') as HTMLElement
+    const vp = host.shadowRoot!.querySelector('.viewport') as HTMLElement
+    const first = host.querySelector('oas-message-row') as HTMLElement
+    return first.getBoundingClientRect().top - vp.getBoundingClientRect().top
+  })
+  expect(Math.abs(firstTop), 'scrollToMessage(m1) 后第一条消息顶对视口顶').toBeLessThanOrEqual(8)
+})
+
+test('message-scroller turn-anchor：锚顶跟随中流式追加，提问钉在视口顶不漂移', async ({ page }) => {
+  await page.goto('/components/message-scroller.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#msc-turn')
+  // 等 demo 动态填充（1 锚 + 8 回答行）
+  await expect
+    .poll(() => page.evaluate(() => document.querySelectorAll('#msc-turn oas-message-row').length), { timeout: 8000 })
+    .toBeGreaterThanOrEqual(9)
+
+  // 真点「跳到当前提问」→ scrollToMessage 精确到锚顶（offset ≈0）
+  await realClick(page, '#msc-turn-anchor', null)
+  await page.waitForTimeout(200)
+  const readAnchorOffset = () =>
+    page.evaluate(() => {
+      const host = document.querySelector('#msc-turn') as HTMLElement
+      const vp = host.shadowRoot!.querySelector('.viewport') as HTMLElement
+      const anchor = [...host.querySelectorAll('oas-message-row[anchor]')].at(-1) as HTMLElement
+      return anchor.getBoundingClientRect().top - vp.getBoundingClientRect().top
+    })
+  expect(Math.abs(await readAnchorOffset()), '跳转后锚行顶对视口顶（±8px）').toBeLessThanOrEqual(8)
+
+  // 真点「流式追加回答」：首行把锚对齐到 prev-peek 位（demo 首锚在内容顶，contentY-peek<0
+  // clamp 到 0 → 锚保持在顶）；后续追加锚顶不动
+  await realClick(page, '#msc-turn-stream', null)
+  await expect(page.locator('#msc-turn-out')).toHaveText(/锚顶跟随/, { timeout: 10000 })
+  const offsetAfter = await readAnchorOffset()
+  expect(offsetAfter, '追加后锚钉在视口顶（peek 被 clamp，锚上无上文可露）').toBeLessThanOrEqual(8)
+  expect(offsetAfter, '锚不漂移为负').toBeGreaterThanOrEqual(-8)
 })
 
 test('attachment 内置操作钮：点击派发事件且 demo 可见反馈（消息出现）', async ({ page }) => {
