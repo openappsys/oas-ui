@@ -50,7 +50,7 @@ Add a feedback family (a page that combines forms and message toasts):
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
 
-For multiple components, add one short path each — **only the components you use and their dependency chains are downloaded** (e.g. the button chain is ≈ 21KB gzip, including the core runtime and the icon set); unused components cost nothing:
+For multiple components, add one short path each — **only the components you use and their dependency chains are downloaded** (e.g. the button chain is ≈ 25KB gzip, including the core runtime; on-demand mode **does not include the full icon set** — using built-in icon names needs `import '@oas-ui/icons/register'`, see above); unused components cost nothing:
 
 ```html
 <script type="module">

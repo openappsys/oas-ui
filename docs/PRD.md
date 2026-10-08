@@ -2139,3 +2139,12 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：questionnaire 39 条（steps 数据驱动 / current 受控 / 门控 / 导航 / 进度 / 跳过 / 回退保值 / 提交汇总 / before-change / hidden / 参与步口径（hidden 与已跳过步不进 getValues·oas-submit·重校，重新进入恢复） / i18n / size / 异步防重入 / 在途竞态离开不误推进 / getValues 实时读取含 value 属性预填 / 样式机制）+ oas-form `validate()` 6 条全绿；typecheck / build / api:check 全绿
 - e2e：`qa-regression/questionnaire.spec.ts`（多步真点推进 / 门控拦截与放行 / before-change 否决 / 跳过 / 提交回显）
 - i18n ×10（`questionnaire.*` 6 键）+ docs zh/en + 交互 demo + a11y 基线（键盘流矩阵）+ qa-regression 固化
+
+## 图标库 opt-in（未发布，工程 / 包结构）
+
+背景：内置图标全量集此前被 25+ 组件 eager 引用，任一按需链都背整套 47 图标（≈10.5 KB gzip）。本批把它从组件链解耦（对齐"图标库 / 解析器"通行做法）：动态图名走 `lookupIcon`（`@oas-ui/icons/runtime`），组件内部固定 chrome 图标走精确 path（`@oas-ui/icons/icons/<name>`）；内置全量集改为 **opt-in 注册**（`@oas-ui/icons/register`——全量入口 `@oas-ui/ui` 与各 CDN 族包静态注册，开箱即用不变），全量数据移至 `@oas-ui/icons/registry`。
+
+- **收益（gzip）**：button 34.1→25.0、table 101.6→93.2、table/core 71.4→60.9 KB；全量入口保持含整套图标（开箱即用不变），cdn 无额外增负。
+- **破坏性（迁移）**：按需引入使用**内置图名**（`icon="check"`、`<oas-icon name="close">`）需显式 `import '@oas-ui/icons/register'` 一次；主入口不再导出 `iconRegistry`/`iconNames`（改从 `@oas-ui/icons/registry`）；注册 / 查询 API（`registerIcon` / `registerIconAlias` / `registerIconLibrary` / `lookupIcon`）与 `IconName` 类型仍从 `@oas-ui/icons` 导出。
+- **门禁**：`perf:size` 断言图标全量注册表 `registry.js` 不进任一按需组件链；源码守卫 `packages/ui/src/shared/icon-optin.test.ts`（组件不得从主入口取 iconRegistry / iconNames、lookupIcon 须走 `/runtime`、全量入口与族入口必须静态注册）；CDN 内置图标回归 `qa-regression/cdn-icons.spec.ts`；文档图名守卫 `docs-icon-names.test.ts`。
+- **验收**：见 CHANGELOG `[未发布]` 迁移段与 `docs/perf-baseline.md`。

@@ -168,7 +168,7 @@ When the `slot="description"` secondary line is present, the button switches to 
 <DemoBlock title="Two-row button">
   <oas-space size="small">
     <oas-button type="primary" icon="upload">Upload file<span slot="description">Drag & drop supported, ≤ 500KB per file</span></oas-button>
-    <oas-button icon="setting">Preferences<span slot="description">Shortcut ⌘ + ,</span></oas-button>
+    <oas-button icon="gear">Preferences<span slot="description">Shortcut ⌘ + ,</span></oas-button>
     <oas-button size="large" type="primary" loading loading-text="Submitting">Submit order<span slot="description">~3 seconds to complete</span></oas-button>
   </oas-space>
 </DemoBlock>

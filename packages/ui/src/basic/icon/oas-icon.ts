@@ -1,6 +1,5 @@
 import { OASElement } from '@oas-ui/core'
 import { getIconLibrary, lookupIcon, resolveIconAlias } from '@oas-ui/icons/runtime'
-import type { IconName } from '@oas-ui/icons'
 
 // 注册 / 查询 API 由 `@oas-ui/icons` 运行时统一提供（组件与本模块共用同一注册表，不含内置全量集）；
 // 此处 re-export 保持既有导入路径兼容（`@oas-ui/ui/basic/icon`）。
@@ -466,7 +465,7 @@ export class OASIcon extends OASElement {
   protected override update(): void {
     const rawName = this.getAttr('name', '')
     // 别名解析后统一用于库 resolver / iconfont 符号名查找（lookupIcon 内部同样先解析别名）
-    const name = resolveIconAlias(rawName) as IconName
+    const name = resolveIconAlias(rawName)
     const src = this.getAttr('src', '')
     const library = this.getAttr('library', '')
     const iconfontUrl = this.getAttr('iconfont-url', '')

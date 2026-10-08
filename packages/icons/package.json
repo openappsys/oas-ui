@@ -45,7 +45,8 @@
     }
   },
   "sideEffects": [
-    "./dist/register.js"
+    "./dist/register.js",
+    "./src/register.ts"
   ],
   "files": [
     "dist",

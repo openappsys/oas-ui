@@ -50,7 +50,7 @@
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
 
-多个组件逐个短路径即可——**只下载用到的组件及其依赖链**（如 button 链 ≈ 21KB gzip，含 core 运行时与图标集），未用到的组件零开销：
+多个组件逐个短路径即可——**只下载用到的组件及其依赖链**（如 button 链 ≈ 25KB gzip，含 core 运行时；按需模式**不含整套内置图标集**，用内置图名需 `import '@oas-ui/icons/register'`，见上），未用到的组件零开销：
 
 ```html
 <script type="module">

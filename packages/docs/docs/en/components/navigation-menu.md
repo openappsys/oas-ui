@@ -5,7 +5,7 @@ A website-style multi-level navigation bar: top-level triggers open a unified vi
 ## Basic usage (mega panel)
 
 <DemoBlock title="Basic usage">
-  <oas-navigation-menu keep-mounted id="nav-basic" onoas-select="navLog(event)" onoas-change="navChange(event)" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ ready-to-use components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"Full API docs and guides"},{"label":"More","value":"more","children":[{"label":"Blog","value":"blog","href":"/blog"},{"label":"Community","value":"community","href":"/community"}]}]},{"label":"Pricing","value":"pricing","href":"/pricing"},{"label":"About","value":"about","href":"/about"}]'></oas-navigation-menu>
+  <oas-navigation-menu keep-mounted id="nav-basic" onoas-select="navLog(event)" onoas-change="navChange(event)" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"menu","description":"30+ ready-to-use components"},{"label":"Docs","value":"docs","href":"/docs","icon":"info","description":"Full API docs and guides"},{"label":"More","value":"more","children":[{"label":"Blog","value":"blog","href":"/blog"},{"label":"Community","value":"community","href":"/community"}]}]},{"label":"Pricing","value":"pricing","href":"/pricing"},{"label":"About","value":"about","href":"/about"}]'></oas-navigation-menu>
   <oas-tag id="nav-result" type="info">Nothing selected</oas-tag>
 </DemoBlock>
 
@@ -20,7 +20,7 @@ A website-style multi-level navigation bar: top-level triggers open a unified vi
     <oas-button id="nav-close" size="small">Close</oas-button>
   </oas-button-group>
   <br />
-  <oas-navigation-menu id="nav-controlled" value="products" onoas-change="navControlled(event)" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ ready-to-use components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"Full API docs and guides"}]},{"label":"Resources","value":"resources","children":[{"label":"Themes","value":"themes","href":"/themes","icon":"star","description":"Theming and tokens"},{"label":"Guide","value":"guide","href":"/guide","icon":"mail","description":"Getting started and best practices"}]},{"label":"Pricing","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
+  <oas-navigation-menu id="nav-controlled" value="products" onoas-change="navControlled(event)" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"menu","description":"30+ ready-to-use components"},{"label":"Docs","value":"docs","href":"/docs","icon":"info","description":"Full API docs and guides"}]},{"label":"Resources","value":"resources","children":[{"label":"Themes","value":"themes","href":"/themes","icon":"star","description":"Theming and tokens"},{"label":"Guide","value":"guide","href":"/guide","icon":"mail","description":"Getting started and best practices"}]},{"label":"Pricing","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
   <oas-tag id="nav-controlled-result" type="info">Currently open: products</oas-tag>
 </DemoBlock>
 
@@ -33,13 +33,13 @@ A website-style multi-level navigation bar: top-level triggers open a unified vi
 ## Vertical orientation
 
 <DemoBlock title="Vertical">
-  <oas-navigation-menu orientation="vertical" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"API docs"}]},{"label":"Pricing","value":"pricing","href":"/pricing"},{"label":"About","value":"about","href":"/about"}]'></oas-navigation-menu>
+  <oas-navigation-menu orientation="vertical" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"menu","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","icon":"info","description":"API docs"}]},{"label":"Pricing","value":"pricing","href":"/pricing"},{"label":"About","value":"about","href":"/about"}]'></oas-navigation-menu>
 </DemoBlock>
 
 ## Multi-column grid
 
 <DemoBlock title="Multi-column grid (columns=3)">
-  <oas-navigation-menu columns="3" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"API docs"},{"label":"Themes","value":"themes","href":"/themes","icon":"star","description":"Theming"},{"label":"Guide","value":"guide","href":"/guide","icon":"mail","description":"Getting started"},{"label":"Blog","value":"blog","href":"/blog","icon":"edit","description":"Tech blog"},{"label":"Community","value":"community","href":"/community","icon":"user","description":"User community"}]}]'></oas-navigation-menu>
+  <oas-navigation-menu columns="3" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"menu","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","icon":"info","description":"API docs"},{"label":"Themes","value":"themes","href":"/themes","icon":"star","description":"Theming"},{"label":"Guide","value":"guide","href":"/guide","icon":"mail","description":"Getting started"},{"label":"Blog","value":"blog","href":"/blog","icon":"edit","description":"Tech blog"},{"label":"Community","value":"community","href":"/community","icon":"user","description":"User community"}]}]'></oas-navigation-menu>
 </DemoBlock>
 
 ## Icon color (iconColor)
@@ -53,7 +53,7 @@ Panel link-card icons accept an `iconColor` field (fixes the icon color, overrid
 ## Backdrop + keep-mounted + arrow
 
 <DemoBlock title="Backdrop + keep-mounted + arrow">
-  <oas-navigation-menu backdrop keep-mounted arrow items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"API docs"}]}]'></oas-navigation-menu>
+  <oas-navigation-menu backdrop keep-mounted arrow items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"menu","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","icon":"info","description":"API docs"}]}]'></oas-navigation-menu>
   <p class="demo-tip">backdrop shows an overlay when open; keep-mounted keeps the panel DOM after closing; arrow shows the pointer arrow.</p>
 </DemoBlock>
 
@@ -88,7 +88,7 @@ By default the panel's **writing-start edge follows the active trigger** (left e
 A panel item with a `sub` field (second-level nav data) renders a "sub trigger"; clicking opens an overlay second-level panel inside the panel (slide-in cascade animation): `Esc` / `←` steps back to the main panel (focus returns to the trigger), another `Esc` closes the whole panel; `↓` moves between the second-level links (skipping disabled ones), `Enter` selects. Coexists with the inline section folding (`sub` takes precedence over `children`).
 
 <DemoBlock title="Sub second-level cascade">
-  <oas-navigation-menu id="nav-sub" delay-duration="0" onoas-select="navSubLog(event)" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ ready-to-use components"},{"label":"Learn","value":"learn","sub":[{"label":"Docs","value":"docs","href":"/docs"},{"label":"Tutorials","value":"tutorial","href":"/tutorial"},{"label":"Community","value":"community","href":"/community"},{"label":"Showcase","value":"showcase","href":"/showcase"}]}]},{"label":"Pricing","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
+  <oas-navigation-menu id="nav-sub" delay-duration="0" onoas-select="navSubLog(event)" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"menu","description":"30+ ready-to-use components"},{"label":"Learn","value":"learn","sub":[{"label":"Docs","value":"docs","href":"/docs"},{"label":"Tutorials","value":"tutorial","href":"/tutorial"},{"label":"Community","value":"community","href":"/community"},{"label":"Showcase","value":"showcase","href":"/showcase"}]}]},{"label":"Pricing","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
   <oas-tag id="nav-sub-result" type="info">Click "Learn" to expand the second-level nav inside the panel</oas-tag>
 </DemoBlock>
 
@@ -97,7 +97,7 @@ A panel item with a `sub` field (second-level nav data) renders a "sub trigger";
 `slot="panel-footer"` renders a footer container at the bottom of the panel (CTA cards etc.) — only when it has content; it opens together with the panel, and the `--vp-h` height transition includes it.
 
 <DemoBlock title="panel-footer marketing slot">
-  <oas-navigation-menu id="nav-footer" delay-duration="0" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ ready-to-use components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"Full API docs and guides"}]}]'>
+  <oas-navigation-menu id="nav-footer" delay-duration="0" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"menu","description":"30+ ready-to-use components"},{"label":"Docs","value":"docs","href":"/docs","icon":"info","description":"Full API docs and guides"}]}]'>
     <div slot="panel-footer" style="display: flex; gap: 12px; align-items: center; justify-content: space-between">
       <span style="font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">Want to talk about your needs first?</span>
       <oas-button size="small" type="primary">Book a demo</oas-button>

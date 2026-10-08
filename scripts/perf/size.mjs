@@ -288,30 +288,30 @@ const BUDGETS = [
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
     get: () => componentMeasures.button.gzipBytes,
-    limit: 29 * 1024, // 29 KB（2026-10-08 重定档：图标库 opt-in 卸掉整套图标，实测 24.8 KB）
+    limit: 29 * 1024, // 29 KB（2026-10-08 重定档：图标库 opt-in 卸掉整套图标，实测 25.0 KB）
     basis:
       '实测 gzip 25.0 KB（图标库 opt-in：组件链只含自身所需图标 path，不再背全量 47 图标 ~9.5 KB；含 core），上浮约 15% 定档 29 KB；前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）',
   },
   {
     name: '@oas-ui/ui/data/table 链 gzip',
     get: () => componentMeasures.table.gzipBytes,
-    limit: 108 * 1024, // 108 KB（2026-10-08 重定档：图标库 opt-in 后实测 92.6 KB）
+    limit: 108 * 1024, // 108 KB（2026-10-08 重定档：图标库 opt-in 后实测 93.2 KB）
     basis:
-      '实测 gzip 93.1 KB（图标库 opt-in 后：链含 core+virtual-list+i18n+oas-pagination + 列导出/移动降级/编辑器依赖，但不再背全量图标 ~9 KB），上浮约 15% 定档 108 KB；前档 116 KB 定档于 2026-10-05（101 KB 实测）',
+      '实测 gzip 93.2 KB（图标库 opt-in 后：链含 core+virtual-list+i18n+oas-pagination + 列导出/移动降级/编辑器依赖，但不再背全量图标 ~9 KB），上浮约 15% 定档 108 KB；前档 116 KB 定档于 2026-10-05（101 KB 实测）',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',
     get: () => componentMeasures.form.gzipBytes,
-    limit: 29 * 1024, // 29 KB（2026-10-07 重定档：四批后实测 25.1 KB 触前档 90%）
+    limit: 29 * 1024, // 29 KB（2026-10-07 重定档：四批后实测 25.6 KB 触前档 90%）
     basis:
-      '实测 gzip 25.1 KB（四批合并后；含 core + i18n），上浮约 15% 定档 29 KB；前档 28 KB 定档于 2026-10-05（24.8 KB 实测）',
+      '实测 gzip 25.6 KB（四批合并后；含 core + i18n），上浮约 15% 定档 29 KB；前档 28 KB 定档于 2026-10-05（24.8 KB 实测）',
   },
   {
     name: '@oas-ui/ui/data/gantt 链 gzip',
     get: () => componentMeasures.gantt.gzipBytes,
     limit: 46 * 1024, // 46 KB（2026-10-07 首次定档：实测 39.6 KB——大组件独立档位，增长可见）
     basis:
-      '首次定档：实测 gzip 39.6 KB（gantt 组件 + 编码器无关，链含 core + i18n + virtual-list，v2.6.0 落地），上浮约 15% 定档 46 KB',
+      '首次定档：实测 gzip 40.0 KB（gantt 组件 + 编码器无关，链含 core + i18n + virtual-list，v2.6.0 落地），上浮约 15% 定档 46 KB',
   },
   {
     name: '@oas-ui/theme index.css gzip',
@@ -345,7 +345,7 @@ const BUDGETS = [
     get: () => componentMeasures.tableCore.gzipBytes,
     limit: 70 * 1024, // 70 KB（/core 纯核路径，2026-10-08 重定档：图标库 opt-in 后实测 60.9 KB）
     basis:
-      '实测 gzip 61.2 KB（/core = 主路径减去能力子包 + 图标库 opt-in；须小于主链 table 92.6 KB，退化即报红），上浮约 15% 定档 70 KB',
+      '实测 gzip 61.3 KB（/core = 主路径减去能力子包 + 图标库 opt-in；须小于主链 table 93.2 KB，退化即报红），上浮约 15% 定档 70 KB',
   },
 ]
 

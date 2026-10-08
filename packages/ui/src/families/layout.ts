@@ -4,6 +4,7 @@
  * 族内容 = 源码顶层目录「布局」全部组件 index.js（import 即注册，与 src/index.ts 的 布局 段一致）。
  * 纯 import 组装，无执行逻辑。
  */
+import '@oas-ui/icons/register'
 import '@oas-ui/i18n'
 import '../framework/config-provider/index.js'
 import '../framework/app/index.js'

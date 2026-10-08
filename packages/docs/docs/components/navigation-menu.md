@@ -5,7 +5,7 @@
 ## 基础用法（大面板）
 
 <DemoBlock title="基础用法">
-  <oas-navigation-menu keep-mounted id="nav-basic" onoas-select="navLog(event)" onoas-change="navChange(event)" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"grid","description":"30+ 开箱即用组件"},{"label":"文档","value":"docs","href":"/docs","icon":"book","description":"完整 API 文档与指南"},{"label":"更多","value":"more","children":[{"label":"博客","value":"blog","href":"/blog"},{"label":"社区","value":"community","href":"/community"}]}]},{"label":"定价","value":"pricing","href":"/pricing"},{"label":"关于","value":"about","href":"/about"}]'></oas-navigation-menu>
+  <oas-navigation-menu keep-mounted id="nav-basic" onoas-select="navLog(event)" onoas-change="navChange(event)" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"menu","description":"30+ 开箱即用组件"},{"label":"文档","value":"docs","href":"/docs","icon":"info","description":"完整 API 文档与指南"},{"label":"更多","value":"more","children":[{"label":"博客","value":"blog","href":"/blog"},{"label":"社区","value":"community","href":"/community"}]}]},{"label":"定价","value":"pricing","href":"/pricing"},{"label":"关于","value":"about","href":"/about"}]'></oas-navigation-menu>
   <oas-tag id="nav-result" type="info">尚未选择</oas-tag>
 </DemoBlock>
 
@@ -20,7 +20,7 @@
     <oas-button id="nav-close" size="small">关闭</oas-button>
   </oas-button-group>
   <br />
-  <oas-navigation-menu id="nav-controlled" value="products" onoas-change="navControlled(event)" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"grid","description":"30+ 开箱即用组件"},{"label":"文档","value":"docs","href":"/docs","icon":"book","description":"完整 API 文档与指南"}]},{"label":"资源","value":"resources","children":[{"label":"主题","value":"themes","href":"/themes","icon":"star","description":"主题定制与令牌"},{"label":"指南","value":"guide","href":"/guide","icon":"mail","description":"上手与最佳实践"}]},{"label":"定价","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
+  <oas-navigation-menu id="nav-controlled" value="products" onoas-change="navControlled(event)" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"menu","description":"30+ 开箱即用组件"},{"label":"文档","value":"docs","href":"/docs","icon":"info","description":"完整 API 文档与指南"}]},{"label":"资源","value":"resources","children":[{"label":"主题","value":"themes","href":"/themes","icon":"star","description":"主题定制与令牌"},{"label":"指南","value":"guide","href":"/guide","icon":"mail","description":"上手与最佳实践"}]},{"label":"定价","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
   <oas-tag id="nav-controlled-result" type="info">当前打开：products</oas-tag>
 </DemoBlock>
 
@@ -33,13 +33,13 @@
 ## 垂直方向
 
 <DemoBlock title="垂直方向">
-  <oas-navigation-menu orientation="vertical" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"grid","description":"30+ 组件"},{"label":"文档","value":"docs","href":"/docs","icon":"book","description":"API 文档"}]},{"label":"定价","value":"pricing","href":"/pricing"},{"label":"关于","value":"about","href":"/about"}]'></oas-navigation-menu>
+  <oas-navigation-menu orientation="vertical" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"menu","description":"30+ 组件"},{"label":"文档","value":"docs","href":"/docs","icon":"info","description":"API 文档"}]},{"label":"定价","value":"pricing","href":"/pricing"},{"label":"关于","value":"about","href":"/about"}]'></oas-navigation-menu>
 </DemoBlock>
 
 ## 多列网格
 
 <DemoBlock title="多列网格（columns=3）">
-  <oas-navigation-menu columns="3" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"grid","description":"30+ 组件"},{"label":"文档","value":"docs","href":"/docs","icon":"book","description":"API 文档"},{"label":"主题","value":"themes","href":"/themes","icon":"star","description":"主题定制"},{"label":"指南","value":"guide","href":"/guide","icon":"mail","description":"上手实践"},{"label":"博客","value":"blog","href":"/blog","icon":"edit","description":"技术博客"},{"label":"社区","value":"community","href":"/community","icon":"user","description":"用户社区"}]}]'></oas-navigation-menu>
+  <oas-navigation-menu columns="3" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"menu","description":"30+ 组件"},{"label":"文档","value":"docs","href":"/docs","icon":"info","description":"API 文档"},{"label":"主题","value":"themes","href":"/themes","icon":"star","description":"主题定制"},{"label":"指南","value":"guide","href":"/guide","icon":"mail","description":"上手实践"},{"label":"博客","value":"blog","href":"/blog","icon":"edit","description":"技术博客"},{"label":"社区","value":"community","href":"/community","icon":"user","description":"用户社区"}]}]'></oas-navigation-menu>
 </DemoBlock>
 
 ## 图标颜色（iconColor）
@@ -53,7 +53,7 @@
 ## 遮罩 + 保挂载 + 箭头
 
 <DemoBlock title="遮罩 + 保挂载 + 箭头">
-  <oas-navigation-menu backdrop keep-mounted arrow items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"grid","description":"30+ 组件"},{"label":"文档","value":"docs","href":"/docs","icon":"book","description":"API 文档"}]}]'></oas-navigation-menu>
+  <oas-navigation-menu backdrop keep-mounted arrow items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"menu","description":"30+ 组件"},{"label":"文档","value":"docs","href":"/docs","icon":"info","description":"API 文档"}]}]'></oas-navigation-menu>
   <p class="demo-tip">backdrop 打开时显示遮罩；keep-mounted 关闭后保留面板 DOM；arrow 显示指向箭头。</p>
 </DemoBlock>
 
@@ -88,7 +88,7 @@
 面板项带 `sub` 字段（二级导航数据）时渲染「二级触发器」，点击在面板内打开覆盖式二级面板（slide-in 级联动画）：`Esc` / `←` 逐层回退到主面板（焦点回触发器），再 `Esc` 关闭整个面板；`↓` 在二级链接间移动、跳过禁用项，`Enter` 选择。与 inline section 折叠并存（`sub` 优先于 `children`）。
 
 <DemoBlock title="Sub 二级级联">
-  <oas-navigation-menu id="nav-sub" delay-duration="0" onoas-select="navSubLog(event)" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"grid","description":"30+ 开箱即用组件"},{"label":"学习中心","value":"learn","sub":[{"label":"文档","value":"docs","href":"/docs"},{"label":"教程","value":"tutorial","href":"/tutorial"},{"label":"社区","value":"community","href":"/community"},{"label":"案例","value":"showcase","href":"/showcase"}]}]},{"label":"定价","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
+  <oas-navigation-menu id="nav-sub" delay-duration="0" onoas-select="navSubLog(event)" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"menu","description":"30+ 开箱即用组件"},{"label":"学习中心","value":"learn","sub":[{"label":"文档","value":"docs","href":"/docs"},{"label":"教程","value":"tutorial","href":"/tutorial"},{"label":"社区","value":"community","href":"/community"},{"label":"案例","value":"showcase","href":"/showcase"}]}]},{"label":"定价","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
   <oas-tag id="nav-sub-result" type="info">点「学习中心」在面板内展开二级导航</oas-tag>
 </DemoBlock>
 
@@ -97,7 +97,7 @@
 `slot="panel-footer"` 在面板底部渲染营销位容器（CTA 卡片等），有内容才显示；与面板联动打开，`--vp-h` 高度过渡自动把营销位计入。
 
 <DemoBlock title="panel-footer 营销位插槽">
-  <oas-navigation-menu id="nav-footer" delay-duration="0" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"grid","description":"30+ 开箱即用组件"},{"label":"文档","value":"docs","href":"/docs","icon":"book","description":"完整 API 文档与指南"}]}]'>
+  <oas-navigation-menu id="nav-footer" delay-duration="0" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"menu","description":"30+ 开箱即用组件"},{"label":"文档","value":"docs","href":"/docs","icon":"info","description":"完整 API 文档与指南"}]}]'>
     <div slot="panel-footer" style="display: flex; gap: 12px; align-items: center; justify-content: space-between">
       <span style="font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">想先聊聊需求？</span>
       <oas-button size="small" type="primary">预约演示</oas-button>

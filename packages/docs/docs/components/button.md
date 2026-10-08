@@ -168,7 +168,7 @@
 <DemoBlock title="双行按钮">
   <oas-space size="small">
     <oas-button type="primary" icon="upload">上传文件<span slot="description">支持拖拽，单文件不超过 500KB</span></oas-button>
-    <oas-button icon="setting">偏好设置<span slot="description">快捷键 ⌘ + ,</span></oas-button>
+    <oas-button icon="gear">偏好设置<span slot="description">快捷键 ⌘ + ,</span></oas-button>
     <oas-button size="large" type="primary" loading loading-text="提交中">提交订单<span slot="description">预计 3 秒完成</span></oas-button>
   </oas-space>
 </DemoBlock>

@@ -94,6 +94,16 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
     }
   })
 
+  it('每个族入口与全量入口都静态注册内置图标集（CDN 开箱即用；防被 treeshake 摇掉）', () => {
+    // 全量入口
+    expect(readFileSync(resolve(srcRoot, 'index.ts'), 'utf8')).toContain("import '@oas-ui/icons/register'")
+    // 每个族入口（CDN 族包内置图标同样开箱即用）
+    for (const fam of FAMILY_FILES) {
+      const text = readFileSync(resolve(here, `${fam}.ts`), 'utf8')
+      expect(text, `${fam}.ts 应 import '@oas-ui/icons/register'`).toContain("import '@oas-ui/icons/register'")
+    }
+  })
+
   it('全族并集 = 全量注册表，无重复无遗漏', () => {
     const union = new Map<string, number>()
     for (const fam of FAMILY_FILES) {

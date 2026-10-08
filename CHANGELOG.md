@@ -6,7 +6,7 @@
 
 ### 破坏性变更（迁移）
 
-- **内置图标集改为 opt-in（按需引入需显式注册）**：内置图标全量集从组件链解耦，按需引入单组件链不再自动携带整套图标（体积收益：button 链 34.1→25.0、table 101.6→93.1 KB gzip）。
+- **内置图标集改为 opt-in（按需引入需显式注册）**：内置图标全量集从组件链解耦，按需引入单组件链不再自动携带整套图标（体积收益：button 链 34.1→25.0、table 101.6→93.2 KB gzip）。
   - **不受影响**：全量引入 `import '@oas-ui/ui'`（含 CDN）——已自动注册内置集，行为不变。
   - **需迁移**：**按需引入单个组件**（如 `@oas-ui/ui/basic/button`）且使用**内置图名**（`<oas-button icon="check">`、`<oas-icon name="close">`、table/menu 等的 item `icon`）时，追加一次 `import '@oas-ui/icons/register'`（应用入口一次即可）；否则该图名不渲染（静默空态）。
   - **无需引入**：仅用 `registerIcon()` / `registerIconLibrary()`（远程 / sprite）/ iconfont / slot 提供图标时。
