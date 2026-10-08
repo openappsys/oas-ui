@@ -263,6 +263,17 @@ export default defineConfig({
   // 生成 sitemap.xml；VitePress 会按 locale 分组自动补 <xhtml:link rel="alternate"> hreflang
   sitemap: {
     hostname: SITE_URL,
+    // 内置只补各语言版本 alternate（zh-CN/en），缺 x-default；这里补上（指向中文默认版）
+    transformItems(items) {
+      for (const item of items) {
+        const links = item.links
+        if (!links || links.length < 2) continue
+        if (links.some((link) => link.lang === 'x-default')) continue
+        const fallback = links.find((link) => link.lang === 'zh-CN')
+        if (fallback) links.push({ lang: 'x-default', url: fallback.url })
+      }
+      return items
+    },
   },
   // robots.txt 由构建期生成（而非 public/ 静态文件），Sitemap 与其余 SEO 绝对 URL 共用同一个 SITE_URL，
   // 避免域名散落多处；buildEnd 在 public 拷贝与 sitemap 生成之后执行，必然覆盖任何同名静态文件。
@@ -322,7 +333,8 @@ gtag('config', 'G-RXS142HBXF');`,
     const zhUrl = SITE_URL + pageUrl(en ? rel.slice(EN_PREFIX.length) : rel)
     const enUrl = SITE_URL + pageUrl(en ? rel : EN_PREFIX + rel)
     const isHome = rel === 'index.md' || rel === 'en/index.md'
-    const ogImage = SITE_URL + '/favicon-512.png'
+    const ogImage = SITE_URL + '/og-image.png'
+    const ogImageAlt = 'OAS-UI — 框架无关的 Web Components UI 组件库'
     const head: HeadConfig[] = [
       ['link', { rel: 'canonical', href: canonical }],
       ['link', { rel: 'alternate', hreflang: 'zh-CN', href: zhUrl }],
@@ -334,12 +346,16 @@ gtag('config', 'G-RXS142HBXF');`,
       ['meta', { property: 'og:description', content: description }],
       ['meta', { property: 'og:url', content: canonical }],
       ['meta', { property: 'og:image', content: ogImage }],
+      ['meta', { property: 'og:image:width', content: '1200' }],
+      ['meta', { property: 'og:image:height', content: '630' }],
+      ['meta', { property: 'og:image:alt', content: ogImageAlt }],
       ['meta', { property: 'og:locale', content: en ? 'en_US' : 'zh_CN' }],
       ['meta', { property: 'og:locale:alternate', content: en ? 'zh_CN' : 'en_US' }],
-      ['meta', { name: 'twitter:card', content: 'summary' }],
+      ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
       ['meta', { name: 'twitter:title', content: title }],
       ['meta', { name: 'twitter:description', content: description }],
       ['meta', { name: 'twitter:image', content: ogImage }],
+      ['meta', { name: 'twitter:image:alt', content: ogImageAlt }],
     ]
     if (isHome) {
       head.push([

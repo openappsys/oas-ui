@@ -57,7 +57,7 @@ try {
   for (const name of pages) {
     const dir = resolve('.opencode/visual-review', name)
     mkdirSync(dir, { recursive: true })
-    await page.goto(`${base}/components/${name}.html`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`${base}/components/${name}`, { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('.demo-block', { state: 'attached', timeout: 10000 }).catch(() => {})
     await page.waitForTimeout(400)
     const titles = await page.evaluate(() =>

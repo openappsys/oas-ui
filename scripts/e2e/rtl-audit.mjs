@@ -63,7 +63,7 @@ async function auditPage(browser, name) {
   // connect 时定型且不观察 dir 的组件在两 pass 同为 RTL，差集漏报其 RTL 独有缺陷（实抓）。
   const run = async (dir) => {
     if (dir === 'rtl') {
-      await page.route(`**/components/${name}.html`, async (route) => {
+      await page.route(`**/components/${name}`, async (route) => {
         const res = await route.fetch()
         const body = (await res.text())
           .replace(/(<html[^>]*?)\sdir="[^"]*"/i, '$1')
@@ -71,9 +71,9 @@ async function auditPage(browser, name) {
         await route.fulfill({ response: res, body })
       })
     } else {
-      await page.unroute(`**/components/${name}.html`)
+      await page.unroute(`**/components/${name}`)
     }
-    await page.goto(`${base}/components/${name}.html`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`${base}/components/${name}`, { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('.demo-block', { state: 'attached', timeout: 5000 }).catch(() => {})
     await page.evaluate(
       ({ d, shellNeutral }) => {

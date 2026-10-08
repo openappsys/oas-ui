@@ -68,7 +68,7 @@ async function runPass(browser, dir) {
   const page = await context.newPage()
   const results = []
   for (const comp of COMPONENTS) {
-    const url = `${base}/components/${comp.name}.html`
+    const url = `${base}/components/${comp.name}`
     try {
       if (dir === 'rtl') {
         await page.route(url, async (route) => {
