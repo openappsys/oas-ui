@@ -426,7 +426,7 @@ onMounted(async () => {
 
 | Name | Description |
 | --- | --- |
-| default | Custom icon content (replaces the named registry icon) |
+| default | Custom icon content (replaces the built-in icon) |
 
 #### CSS Variables
 

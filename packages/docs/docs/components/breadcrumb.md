@@ -357,7 +357,7 @@ onMounted(() => {
 | `disabled` | 禁用项：渲染为非交互文本（aria-disabled） | — | — |
 | `dropdown` | 项带下拉菜单：链接列表 JSON（如 `[{"label":"子项","href":"/a"}]`），项渲染为下拉触发器 | — | — |
 | `href` | 链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`） | — | — |
-| `icon` | 前置图标（`@oas-ui/icons` 注册表图标名） | — | — |
+| `icon` | 前置图标（`@oas-ui/icons` 内置图标名） | — | — |
 | `max-width` | 单项最大宽度（px）：超出省略号截断 + `title` 悬停提示 | — | — |
 | `separator` | 项级分隔符：覆盖全局 `separator`（支持文本或图标名）；亦可用 `slot="separator"` 子元素传任意节点 | — | — |
 | `target` | 链接 target（`_blank` 时自动补 `noopener noreferrer`） | — | — |

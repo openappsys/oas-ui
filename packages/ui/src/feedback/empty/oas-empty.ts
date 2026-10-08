@@ -38,7 +38,7 @@ function warnInvalidIcon(raw: string): void {
   if (!warnedIcons.has(raw)) {
     warnedIcons.add(raw)
     console.warn(
-      `[oas-empty] 非法 icon "${raw}"，已忽略；合法值为 @oas-ui/icons 图标名（或 registerIcon 自定义注册名）`,
+      `[oas-empty] 非法 icon "${raw}"，已忽略；合法值为 @oas-ui/icons 图标名（按需引入需 import '@oas-ui/icons/register'；或 registerIcon 自定义注册名）`,
     )
   }
 }

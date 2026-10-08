@@ -338,7 +338,7 @@
     "attrs": {
       "badge": "右上角标（数字/文本，叠在 icon 上；未设置不渲染）",
       "value": "选中值（子元素声明式通道的数据载体字段）",
-      "icon": "前置图标（`@oas-ui/icons` 注册表图标名）",
+      "icon": "前置图标（`@oas-ui/icons` 内置图标名）",
       "disabled": "禁用该项（不可选中、键盘跳过）"
     },
     "events": {},
@@ -389,7 +389,7 @@
       "disabled": "禁用项：渲染为非交互文本（aria-disabled）",
       "dropdown": "项带下拉菜单：链接列表 JSON（如 `[{\"label\":\"子项\",\"href\":\"/a\"}]`），项渲染为下拉触发器",
       "href": "链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`）",
-      "icon": "前置图标（`@oas-ui/icons` 注册表图标名）",
+      "icon": "前置图标（`@oas-ui/icons` 内置图标名）",
       "max-width": "单项最大宽度（px）：超出省略号截断 + `title` 悬停提示",
       "separator": "项级分隔符：覆盖全局 `separator`（支持文本或图标名）；亦可用 `slot=\"separator\"` 子元素传任意节点",
       "target": "链接 target（`_blank` 时自动补 `noopener noreferrer`）"
@@ -911,7 +911,7 @@
       "value": "选中值（子元素声明式通道的数据载体字段）",
       "disabled": "禁用该项",
       "loading": "加载中：渲染 spinner、禁点，由数据驱动恢复",
-      "icon": "前置图标（`@oas-ui/icons` 注册表图标名）",
+      "icon": "前置图标（`@oas-ui/icons` 内置图标名）",
       "kind": "叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集）",
       "danger": "破坏性项：红色语义（删除/退出等危险操作）",
       "href": "链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`）",
@@ -1141,7 +1141,7 @@
       "value": "选中值（子元素声明式通道的数据载体字段）",
       "disabled": "禁用该项",
       "loading": "加载中：渲染 spinner、禁点，由数据驱动恢复",
-      "icon": "前置图标（`@oas-ui/icons` 注册表图标名）",
+      "icon": "前置图标（`@oas-ui/icons` 内置图标名）",
       "kind": "叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集）",
       "danger": "破坏性项：红色语义（删除/退出等危险操作）",
       "href": "链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`）",
@@ -1498,14 +1498,14 @@
       "swap-opacity": "交换双色图标的 primary / secondary 透明度",
       "canvas": "占位框模式：`fixed`（默认 1.25×1em）/ `auto`（自然宽 × 1em）/ `square`（1.25×1.25em）/ `roomy`（1.5×1.5em）",
       "depth": "透明度层级：`1`（100%）~ `5`（20%），用于批量图标营造层次感",
-      "library": "远程图标库名（`registerIconLibrary` 注册的库），优先于 `name` 内置注册表",
+      "library": "远程图标库名（`registerIconLibrary` 注册的库），优先于 `name` 内置图标",
       "family": "图标族（传给库 resolver 的 family 参数，如描边/实心）",
       "variant": "图标变体（传给库 resolver 的 variant 参数，如粗细）",
       "iconfont-url": "远程 iconfont 项目脚本地址：按需注入、同 URL 去重，加载后刷新使用方并内联 symbol 内容"
     },
     "events": {},
     "slots": {
-      "": "自定义图标内容（替代 name 注册表图标）"
+      "": "自定义图标内容（替代 name 内置图标）"
     }
   },
   "oas-image": {
@@ -1959,7 +1959,7 @@
       "value": "选中值（子元素声明式通道的数据载体字段）",
       "disabled": "禁用该项",
       "loading": "加载中：渲染 spinner、禁点，由数据驱动恢复",
-      "icon": "前置图标（`@oas-ui/icons` 注册表图标名）",
+      "icon": "前置图标（`@oas-ui/icons` 内置图标名）",
       "icon-color": "图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色",
       "kind": "叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集）",
       "danger": "破坏性项：红色语义（删除/退出等危险操作）",
@@ -2019,7 +2019,7 @@
     "attrs": {
       "value": "选中值（子元素声明式通道的数据载体字段）",
       "disabled": "禁用该项",
-      "icon": "前置图标（`@oas-ui/icons` 注册表图标名）",
+      "icon": "前置图标（`@oas-ui/icons` 内置图标名）",
       "icon-color": "图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色",
       "kind": "叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集）",
       "danger": "破坏性项：红色语义（删除/退出等危险操作）",
@@ -2200,7 +2200,7 @@
       "description": "链接卡描述：大面板形态下渲染在标题下方",
       "disabled": "禁用：渲染 aria-disabled，禁点（点击/键盘/hover 均拦截）",
       "href": "链接地址：带 href 的叶子项渲染为 `<a>`（顶级与面板链接卡均生效）",
-      "icon": "图标名（`@oas-ui/icons` 注册表图标名）：面板链接卡图标",
+      "icon": "图标名（`@oas-ui/icons` 内置图标名）：面板链接卡图标",
       "icon-color": "图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色",
       "kind": "叶子项语义：`radio`（默认）/ `action` / `checkbox`",
       "loading": "加载中：禁点，由数据驱动恢复",
@@ -2796,7 +2796,7 @@
   "oas-sidebar-item": {
     "attrs": {
       "value": "选中值（子元素声明式通道的数据载体字段）",
-      "icon": "前置图标（`@oas-ui/icons` 注册表图标名；折叠图标条态显示）",
+      "icon": "前置图标（`@oas-ui/icons` 内置图标名；折叠图标条态显示）",
       "group": "分组名（连续同组项在组首项前渲染组标题）",
       "badge": "徽标计数（纯数字字符串转 number，其余保留 string；对齐 SidebarItem.badge 的 string|number）",
       "icon-color": "前置图标颜色：显式时固定该色（替换内置单色 path 的 currentColor，优先于禁用/激活态默认色）；缺省 currentColor 随态着色"
@@ -4483,7 +4483,7 @@
     "attrs": {
       "value": "数值/状态值（表格数字体呈现）",
       "label": "文本标签",
-      "icon": "内置图标名（@oas-ui/icons 注册表；未知名不渲染）",
+      "icon": "内置图标名（@oas-ui/icons 内置图标；未知名不渲染）",
       "button": "渲染为原生 button（可点、键盘可达）；缺省为只读 div 语义",
       "status": "语义色档：default（默认）/ info / warning / error / progress——warning/error 用底色醒目（仅特殊且必要场景慎用），info/progress 只着文字色；非法值回落 default 并告警一次",
       "spinning": "后台活动旋转指示（prefers-reduced-motion 停转）"

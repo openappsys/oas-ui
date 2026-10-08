@@ -466,7 +466,7 @@ Try it with DevTools device emulation (e.g. iPhone SE 375×667); desktop browser
 | `hit` | Heavy border: opaque semantic-color outline (follows the custom color when set) | `boolean` | — |
 | `href` | Link URL: renders a native `<a>` when set | `string` | — |
 | `icon` | Icon name (reusing the oas-icon icon set), placed before the text, sized to the font | `string` | — |
-| `icon-end` | Icon-set name (oas-icon registry) rendered at the tail of the text (before the close button), sized to the font; can coexist with icon | `string` | — |
+| `icon-end` | Icon-set name (oas-icon icon name) rendered at the tail of the text (before the close button), sized to the font; can coexist with icon | `string` | — |
 | `loading` | Loading state: spinner replaces the close icon and blocks clicks (`oas-close` detail has a `done()` callback the host calls after async work) | `boolean` | — |
 | `max-width` | Max width of the tag content (e.g. `120px`); overflow is truncated with an ellipsis; with `multiline` it only constrains the width so content wraps | `string` | — |
 | `multiline` | Multiline: content wraps (auto height + vertical padding compensation); with `max-width` content wraps instead of being truncated | `boolean` | — |

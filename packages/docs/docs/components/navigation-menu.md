@@ -221,7 +221,7 @@ onMounted(() => {
 | `description` | 链接卡描述：大面板形态下渲染在标题下方 | — | — |
 | `disabled` | 禁用：渲染 aria-disabled，禁点（点击/键盘/hover 均拦截） | — | — |
 | `href` | 链接地址：带 href 的叶子项渲染为 `<a>`（顶级与面板链接卡均生效） | — | — |
-| `icon` | 图标名（`@oas-ui/icons` 注册表图标名）：面板链接卡图标 | — | — |
+| `icon` | 图标名（`@oas-ui/icons` 内置图标名）：面板链接卡图标 | — | — |
 | `icon-color` | 图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色 | — | — |
 | `kind` | 叶子项语义：`radio`（默认）/ `action` / `checkbox` | — | — |
 | `loading` | 加载中：禁点，由数据驱动恢复 | — | — |

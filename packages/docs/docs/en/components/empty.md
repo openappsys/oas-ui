@@ -147,7 +147,7 @@ Place action buttons in the `action` slot below the content.
 | `align` | Layout alignment: `center` (default, vertical) / `start` / `end` (horizontal, media leading or trailing) | `string` | `center` |
 | `description` | Description text | — | — |
 | `hide-image` | Hide the illustration | — | — |
-| `icon` | Icon-set name (oas-icon registry): icon media with a tinted circular backdrop, mutually exclusive with illustration | — | — |
+| `icon` | Icon-set name (oas-icon icon name): icon media with a tinted circular backdrop, mutually exclusive with illustration | — | — |
 | `illustration` | Custom illustration: SVG/HTML markup or image URL | — | — |
 | `image-size` | Illustration size (px) | — | — |
 | `size` | Size preset `small` / `medium` (default) / `large`: scales media and font sizes; orthogonal to `image-size` | `string` | `medium` |

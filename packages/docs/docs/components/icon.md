@@ -412,7 +412,7 @@ onMounted(async () => {
 | `flip` | 翻转：镜像（`x` / `y` / `both` 轴），可与 `rotate` 组合 | `string` | — |
 | `iconfont-url` | 远程 iconfont 项目脚本地址：按需注入、同 URL 去重，加载后刷新使用方并内联 symbol 内容 | `string` | — |
 | `label` | 可读名称；设置后 `role="img"` | `string` | — |
-| `library` | 远程图标库名（`registerIconLibrary` 注册的库），优先于 `name` 内置注册表 | `string` | — |
+| `library` | 远程图标库名（`registerIconLibrary` 注册的库），优先于 `name` 内置图标 | `string` | — |
 | `name` | 图标名（kebab-case） | `string` | — |
 | `rotate` | 角度旋转：任意角度（`rotate="45"` 度数） | `string` | — |
 | `size` | 尺寸（px 或 em） | `string` | — |
@@ -425,7 +425,7 @@ onMounted(async () => {
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | 自定义图标内容（替代 name 注册表图标） |
+| 默认 | 自定义图标内容（替代 name 内置图标） |
 
 #### CSS 变量
 

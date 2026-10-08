@@ -512,7 +512,7 @@ onMounted(() => {
 | `danger` | 破坏性项：红色语义（删除/退出等危险操作） | — | — |
 | `disabled` | 禁用该项 | — | — |
 | `href` | 链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`） | — | — |
-| `icon` | 前置图标（`@oas-ui/icons` 注册表图标名） | — | — |
+| `icon` | 前置图标（`@oas-ui/icons` 内置图标名） | — | — |
 | `icon-color` | 图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色 | — | — |
 | `kind` | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集） | — | — |
 | `loading` | 加载中：渲染 spinner、禁点，由数据驱动恢复 | — | — |

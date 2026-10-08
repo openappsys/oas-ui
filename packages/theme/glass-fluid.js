@@ -12,6 +12,9 @@
  * 粗指针（`pointer: coarse`，触屏无 hover 语义）；`high-contrast`。
  * 生命周期：`startGlassFluid()` / `stopGlassFluid()` 幂等；stop 真移除注入表与注入观察器；
  * 起停观察器常驻（条件恢复后自动重启）。
+ * 单例假设：本运行时按**单实例**设计（`glass.css`/`glass-fluid.js` 只应引入一次）。若将来出现
+ * 「宿主 bundle 与 CDN / 多包各持一份」的重复加载（监听器/注入表翻倍），再对齐 icons 运行时的
+ * `globalThis` 单例方案（同 `architecture.md §3.1` 效果层扩展点）。
  * 兼容基线：`adoptedStyleSheets` / `CSSStyleSheet` 需 Safari 16.4+ / Firefox 101+ / Chrome 73+；
  * 注入表用到 `:where()`（Chrome 88+ / Safari 14+ / Firefox 78+），与库内既有 `:where()`/`color-mix()` 用法一致，
  * 实际基线更高（本库另有 color-mix 基线）。不支持构造样式表时静默跳过（高光缺失，不影响其余玻璃层）。
