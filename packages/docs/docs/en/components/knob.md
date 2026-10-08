@@ -109,11 +109,11 @@ All gestures are relative: pressing writes nothing, a tap without movement is a 
 
 ## Mouse wheel (wheel)
 
-<DemoBlock title="wheel adjusts on hover (off by default), Shift+wheel for fine steps">
+<DemoBlock title="wheel adjusts on hover (off by default)">
   <oas-knob wheel value="40" show-value label="Volume"></oas-knob>
 </DemoBlock>
 
-With `wheel` enabled, scrolling over the knob adjusts the value (scroll up increases; one notch = `step`, or 1/50 of the range when continuous); Shift+wheel runs at 0.2× for fine steps. Off by default (page scrolling stays untouched).
+With `wheel` enabled, scrolling over the knob adjusts the value (scroll up increases; one notch = `step`, or 1/50 of the range when continuous). Modifier keys do not change the step; for fine adjustment use **Shift+drag** (0.2×). Off by default (page scrolling stays untouched).
 
 ## Reverse (reverse)
 
@@ -232,7 +232,7 @@ onMounted(() => {
 | `step` | Snap step (default 1); `0` or negative means continuous (no snapping) | `string` | `1` |
 | `unit` | Value suffix (e.g. `Hz`/`%`/`dB`): feeds the show-value text and `aria-valuetext`; lower priority than the `format` template and the `formatValue` function | `string` | — |
 | `value` | Current value (controlled): out-of-range values are clamped to `[min, max]` and snapped by `step`; written back to the attribute after interaction (hosts can read the latest value directly from the attribute) | `number` | `0` |
-| `wheel` | Wheel adjustment on hover (off by default): scroll up increases, down decreases, one notch = `step` (span/50 when continuous), Shift+wheel runs at 0.2×; preventDefault stops page scrolling while enabled | `boolean` | — |
+| `wheel` | Wheel adjustment on hover (off by default): scroll up increases, down decreases, one notch = `step` (span/50 when continuous); modifier keys do not change the step (fine adjustment via Shift+drag); preventDefault stops page scrolling while enabled | `boolean` | — |
 
 #### Property (JS property only, not reflected as attribute)
 

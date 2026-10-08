@@ -769,7 +769,7 @@ describe('OASKnob', () => {
 
   // ---------- 滚轮（wheel，默认关） ----------
 
-  it('wheel 属性开启后滚轮 ±step 调节（上滚增），Shift 精调；默认关闭不响应', () => {
+  it('wheel 属性开启后滚轮 ±step 调节（上滚增），shift 修饰不改变步长；默认关闭不响应', () => {
     const off = mount({ value: '50' })
     off.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, cancelable: true, bubbles: true }))
     expect(attrValue(off)).toBe(50)
@@ -781,21 +781,21 @@ describe('OASKnob', () => {
     expect(e.defaultPrevented).toBe(true)
     el.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true, bubbles: true }))
     expect(attrValue(el)).toBe(50)
-    // Shift 精调 0.2×step：50 - 0.2 → 吸附回 50（step=1 时精调不越档，连续 step 下才可见）
-    const fine = new WheelEvent('wheel', { deltaY: 100, cancelable: true, bubbles: true })
-    Object.defineProperty(fine, 'shiftKey', { value: true })
-    el.dispatchEvent(fine)
-    expect(attrValue(el)).toBe(50)
+    // 滚轮恒按 step 调节：shift 修饰不做精调分支（Chromium 真机把 Shift+滚轮转译为横向滚动，语义不稳；精调走 Shift+拖拽）
+    const shifted = new WheelEvent('wheel', { deltaY: 100, cancelable: true, bubbles: true })
+    Object.defineProperty(shifted, 'shiftKey', { value: true })
+    el.dispatchEvent(shifted)
+    expect(attrValue(el)).toBe(49)
     const cont = mount({ value: '50', step: '0', wheel: '' })
-    const contFine = new WheelEvent('wheel', { deltaY: 100, cancelable: true, bubbles: true })
-    Object.defineProperty(contFine, 'shiftKey', { value: true })
-    cont.dispatchEvent(contFine)
-    // 连续模式：2（span/50）× 0.2 = 0.4 → 49.6
-    expect(cont.getAttribute('aria-valuenow')).toBe('49.6')
+    const contShift = new WheelEvent('wheel', { deltaY: 100, cancelable: true, bubbles: true })
+    Object.defineProperty(contShift, 'shiftKey', { value: true })
+    cont.dispatchEvent(contShift)
+    // 连续模式：一格 = span/50 = 2，shift 同样不改变步长 → 48
+    expect(cont.getAttribute('aria-valuenow')).toBe('48')
     // 横向触控板平移（仅 deltaX、deltaY=0）：不调值、不抢占滚动
     const h = new WheelEvent('wheel', { deltaX: 120, deltaY: 0, cancelable: true, bubbles: true })
     el.dispatchEvent(h)
-    expect(attrValue(el)).toBe(50)
+    expect(attrValue(el)).toBe(49)
     expect(h.defaultPrevented).toBe(false)
   })
 

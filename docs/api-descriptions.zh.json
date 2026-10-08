@@ -1695,7 +1695,7 @@
       "large-step": "键盘大步步进量（Shift+方向键 / PageUp / PageDown 生效）；缺省为 10 × step（连续模式为量程 / 10）",
       "label": "旋钮可访问名（`aria-label`，不渲染可见标签——可见标签由 oas-form-item 承担）；缺省回落内置 i18n 文案「旋钮」",
       "default-value": "复位目标值：双击 / Ctrl+单击 / `reset()` 复位到此值（吸附+夹取）；缺省回落 `min`；复位派发 `oas-reset`（不派发 `oas-change`）",
-      "wheel": "悬停滚轮调节（默认关）：上滚增值、下滚减值，一格 = `step`（连续模式为量程 1/50），Shift+滚轮 0.2× 精调；开启后 preventDefault 阻止页面滚动"
+      "wheel": "悬停滚轮调节（默认关）：上滚增值、下滚减值，一格 = `step`（连续模式为量程 1/50）；修饰键不改变步长（精调走 Shift+拖拽）；开启后 preventDefault 阻止页面滚动"
     },
     "events": {
       "oas-input": "拖拽中 / 滚轮 / 键盘每次改值实时派发，`detail: { value }`（吸附后的当前值）",

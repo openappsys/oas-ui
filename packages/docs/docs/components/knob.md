@@ -109,11 +109,11 @@
 
 ## 滚轮（wheel）
 
-<DemoBlock title="wheel 悬停滚轮调节（默认关），Shift+滚轮精调">
+<DemoBlock title="wheel 悬停滚轮调节（默认关）">
   <oas-knob wheel value="40" show-value label="音量"></oas-knob>
 </DemoBlock>
 
-`wheel` 开启后悬停滚轮即可调节（上滚增值、下滚减值，一格 = `step`；连续模式为量程的 1/50），Shift+滚轮为 0.2× 精调。默认关闭（避免抢占页面滚动）。
+`wheel` 开启后悬停滚轮即可调节（上滚增值、下滚减值，一格 = `step`；连续模式为量程的 1/50）。滚轮不做修饰键分支（恒按 `step`）；精细调节用 **Shift+拖拽**（0.2×）。默认关闭（避免抢占页面滚动）。
 
 ## 反向（reverse）
 
@@ -232,7 +232,7 @@ onMounted(() => {
 | `step` | 吸附步长（默认 1）；`0` 或负数视为连续（不吸附） | `string` | `1` |
 | `unit` | 值后缀（如 `Hz`/`%`/`dB`）：输出进 show-value 值文本与 `aria-valuetext`；优先级低于 `format` 模板与 `formatValue` 函数 | `string` | — |
 | `value` | 当前值（受控）：越界自动夹取到 `[min, max]` 并按 `step` 吸附；交互后写回属性（宿主可直接读属性取最新值） | `number` | `0` |
-| `wheel` | 悬停滚轮调节（默认关）：上滚增值、下滚减值，一格 = `step`（连续模式为量程 1/50），Shift+滚轮 0.2× 精调；开启后 preventDefault 阻止页面滚动 | `boolean` | — |
+| `wheel` | 悬停滚轮调节（默认关）：上滚增值、下滚减值，一格 = `step`（连续模式为量程 1/50）；修饰键不改变步长（精调走 Shift+拖拽）；开启后 preventDefault 阻止页面滚动 | `boolean` | — |
 
 #### Property（仅 JS property，不反射 attribute）
 

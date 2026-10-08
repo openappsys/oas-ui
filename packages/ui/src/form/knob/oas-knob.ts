@@ -22,7 +22,7 @@ const STROKE_WIDTH = 8
 const DECIDE_PX = 6
 /** 线性拖拽灵敏度：拖满全量程的像素距离 */
 const AXIS_PX = 150
-/** Shift 精调乘子（只做 Shift 一档，加速档不做） */
+/** Shift 精调乘子（拖拽手势专用；滚轮恒按 step，不做 shift 分支） */
 const FINE_FACTOR = 0.2
 /** 连续模式滚轮一格的量程占比（span / 50） */
 const WHEEL_DIVISOR = 50
@@ -402,16 +402,16 @@ export class OASKnob extends OASElement {
     if (!this.hasAttr('wheel')) return
     if (this.injectDisabled() || this.hasAttr('readonly')) return
     const we = e as WheelEvent
-    // 横向触控板平移（仅 deltaX、deltaY=0）不调值、不抢占滚动
+    // 横向触控板平移（仅 deltaX、deltaY=0）不调值、不抢占滚动；
+    // 也覆盖 Chromium 真机把 Shift+滚轮转译为横向滚动的行为（deltaY=0）——滚轮恒按 step 调节，不做 shift 精调分支（精调走 Shift+拖拽）
     if (we.deltaY === 0) return
     we.preventDefault()
     const [min, max] = this.bounds()
     const span = max - min || 1
     const step = this.stepSize()
     const unit = step > 0 ? step : span / WHEEL_DIVISOR
-    const fine = we.shiftKey ? FINE_FACTOR : 1
     const dir = we.deltaY < 0 ? 1 : -1
-    this.applyValue(this.displayValue() + dir * unit * fine)
+    this.applyValue(this.displayValue() + dir * unit)
   }
 
   // ---------- 生命周期 ----------

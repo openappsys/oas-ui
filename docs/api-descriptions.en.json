@@ -1695,7 +1695,7 @@
       "large-step": "Keyboard large step (Shift+arrows / PageUp / PageDown); defaults to 10 × step (span / 10 when continuous)",
       "label": "Knob accessible name (`aria-label`; renders no visible label — visible labels belong to oas-form-item); falls back to the built-in \"Knob\" i18n copy",
       "default-value": "Reset target: double-click / Ctrl+click / `reset()` resets to this value (snapped + clamped); falls back to `min`; resetting emits `oas-reset` (not `oas-change`)",
-      "wheel": "Wheel adjustment on hover (off by default): scroll up increases, down decreases, one notch = `step` (span/50 when continuous), Shift+wheel runs at 0.2×; preventDefault stops page scrolling while enabled"
+      "wheel": "Wheel adjustment on hover (off by default): scroll up increases, down decreases, one notch = `step` (span/50 when continuous); modifier keys do not change the step (fine adjustment via Shift+drag); preventDefault stops page scrolling while enabled"
     },
     "events": {
       "oas-input": "Emitted live on each value change while dragging / wheel / keyboard, `detail: { value }` (snapped current value)",

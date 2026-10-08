@@ -2032,7 +2032,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **复位**：双击 / Ctrl+单击 / `reset()` 复位到 `default-value`（缺省回落 `min`），派发 `oas-reset`（不派发 `oas-change`）；`readonly`/`disabled` 全封。
 - **值弧与双极零位**：`include-arc` 值弧 + `start-point`（设中心值即双极弧，pan/gain 惯例）；`indicator` line/dot 两形态；`start-angle`/`end-angle` 自定义扫角（默认 225→495 共 270° 底部留缺口，`end-angle` 可 >360）。
 - **值显示三通道**：`show-value` + `unit` 后缀 + `format` 模板串 + `formatValue` 函数 property（优先级最高），输出同时进值文本与 `aria-valuetext`（读屏同源）。
-- **滚轮**：`wheel` 悬停滚轮调节（默认关，不抢页面滚动），Shift+滚轮精调。
+- **滚轮**：`wheel` 悬停滚轮调节（默认关，不抢页面滚动），恒按 `step` 调节（修饰键不改变步长——精调走 Shift+拖拽）。
 - **键盘/ARIA**：宿主 `role="slider"` + tabindex + `aria-valuemin/max/now` + 格式化 `aria-valuetext` + `aria-label`（`label` 属性或内置文案）；方向键 ±step（上下键恒定值语义、左右键随镜像翻转）、Shift+方向 / PageUp·Down 大步（`large-step`）、Home/End 极值、Esc 取消拖拽回滚。
 - **方向**：`reverse` 属性镜像值扫描与手势，RTL 书写方向自动镜像（XOR）；`size` 三档 sm/md/lg 对齐全库 + `--oas-knob-size` 自定义直径 + 触屏 44px 目标下限。
 - **取消路径**：Esc / pointercancel 回滚到起点值（零提交，drag-end `cancelled=true`）；拖拽中外部写 `value` 显示保持拖拽值，已提交拖拽拖拽值落盘、零变化松手外部值保留。
