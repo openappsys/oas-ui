@@ -4,5 +4,5 @@ if (!customElements.get('oas-icon')) {
   customElements.define('oas-icon', OASIcon)
 }
 
-export { OASIcon, registerIcon, registerIconAlias, registerIconLibrary } from './oas-icon.js'
+export { OASIcon, registerIcon, registerIconAlias, registerIconLibrary, lookupIcon } from './oas-icon.js'
 export type { IconLibraryOptions } from './oas-icon.js'
