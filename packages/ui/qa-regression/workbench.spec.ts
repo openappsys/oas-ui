@@ -451,6 +451,56 @@ test('statistic-well 全空态宿主级隐藏：data-empty 反射 + 零尺寸（
   ).toBeGreaterThan(0)
 })
 
+test('task-progress-well 全空态宿主级隐藏：data-empty 反射 + 零尺寸（回归：空井曾恒显 0% + 取消钮占胶囊）', async ({
+  page,
+}) => {
+  await page.goto('/components/action-bar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ab-btn')
+  // 动态注入全空 task-progress-well（label/detail 全缺且未设 progress）
+  await page.evaluate(() => {
+    const bar = document.querySelector('#ab-btn')!
+    const wrap = document.createElement('oas-action-bar-well')
+    wrap.slot = 'center'
+    const empty = document.createElement('oas-task-progress-well')
+    empty.setAttribute('data-empty-probe', '')
+    wrap.appendChild(empty)
+    bar.appendChild(wrap)
+  })
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('oas-task-progress-well[data-empty-probe]')!
+        return el.hasAttribute('data-empty')
+      }),
+    )
+    .toBe(true)
+  const probe = await page.evaluate(() => {
+    const el = document.querySelector('oas-task-progress-well[data-empty-probe]')!
+    const r = el.getBoundingClientRect()
+    return { width: r.width, height: r.height }
+  })
+  expect(probe.width, '空井零宽（不留固定高胶囊占位）').toBe(0)
+  expect(probe.height, '空井零高').toBe(0)
+  // 对照：设 label 后真实占位
+  await page.evaluate(() =>
+    document.querySelector('oas-task-progress-well[data-empty-probe]')!.setAttribute('label', '导出'),
+  )
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const el = document.querySelector('oas-task-progress-well[data-empty-probe]')!
+        return { empty: el.hasAttribute('data-empty'), width: el.getBoundingClientRect().width }
+      }),
+    )
+    .toEqual({ empty: false, width: expect.any(Number) })
+  expect(
+    await page.evaluate(
+      () => document.querySelector('oas-task-progress-well[data-empty-probe]')!.getBoundingClientRect().width,
+    ),
+    '有内容后井真实占位（胶囊可见）',
+  ).toBeGreaterThan(0)
+})
+
 test('action-bar 语义降级为 role=group + aria-label（取舍：center 槽读数井非命令控件，不满足 toolbar roving 契约）', async ({
   page,
 }) => {

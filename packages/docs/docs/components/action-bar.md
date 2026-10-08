@@ -61,6 +61,8 @@
 
 `label` / `progress`（0-100，受控显示——宿主驱动）/ `detail`；取消钮派发 `oas-cancel`（detail `{ label }`，组件只发事件不移除自身，宿主决定后续）；进度到 100 保留完成态。
 
+全空态（`label`/`detail` 全缺且未设 `progress`）整体退场（宿主 `data-empty` 反射、无布局足迹，同 `oas-statistic-well`）——无任务时不占胶囊。
+
 <DemoBlock title="导出任务进度 + 取消">
   <div style="width: 100%">
     <oas-action-bar id="ab-task">

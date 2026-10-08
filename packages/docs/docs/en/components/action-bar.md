@@ -61,6 +61,8 @@ Clicking dispatches `oas-action` (detail `{ value, active }` — active is the s
 
 `label` / `progress` (0-100, controlled display — host-driven) / `detail`; the cancel button dispatches `oas-cancel` (detail `{ label }`; the component only emits — it does not remove itself, the host decides what follows); progress 100 keeps the finished state.
 
+When fully empty (`label`/`detail` both absent and no `progress` set) the well collapses entirely (host `data-empty` reflection, no layout footprint, same as `oas-statistic-well`) — no idle capsule when there is no task.
+
 <DemoBlock title="Export task progress + cancel">
   <div style="width: 100%">
     <oas-action-bar id="ab-task">

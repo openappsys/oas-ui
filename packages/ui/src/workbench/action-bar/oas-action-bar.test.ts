@@ -357,6 +357,18 @@ describe('OASTaskProgressWell', () => {
     expect(label.hidden).toBe(true)
   })
 
+  it('全空态（label/detail 全缺且未设 progress）：宿主 data-empty 反射（整体退场，无布局足迹）', () => {
+    const empty = mount<OASTaskProgressWell>({ Ctor: OASTaskProgressWell, attrs: {} })
+    expect(empty.hasAttribute('data-empty')).toBe(true)
+    // 任一内容出现即恢复（progress 在场即有意义）
+    empty.setAttribute('progress', '0')
+    expect(empty.hasAttribute('data-empty')).toBe(false)
+    empty.removeAttribute('progress')
+    expect(empty.hasAttribute('data-empty')).toBe(true)
+    empty.setAttribute('label', '导出')
+    expect(empty.hasAttribute('data-empty')).toBe(false)
+  })
+
   it('dir=rtl 钩子 + token 纪律', () => {
     const el = mount<OASTaskProgressWell>({ Ctor: OASTaskProgressWell, attrs: { dir: 'rtl' } })
     expect(el.hasAttribute('data-rtl')).toBe(true)

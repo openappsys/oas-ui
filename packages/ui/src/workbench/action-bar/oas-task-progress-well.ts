@@ -12,6 +12,10 @@ const STYLE = `
 :host([hidden]) {
   display: none;
 }
+/* 全空态（label/detail 全缺且未设 progress）：宿主打 data-empty 反射并整体不显示（无布局足迹，不留固定高胶囊） */
+:host([data-empty]) {
+  display: none;
+}
 .well {
   display: flex;
   flex-direction: column;
@@ -189,6 +193,8 @@ export class OASTaskProgressWell extends OASElement {
     const detail = this.getAttr('detail', '')
     detailEl.textContent = detail
     detailEl.hidden = detail === ''
+    // 全空态（label/detail 全缺且未设 progress）：整体退场（同 statistic-well，空井零布局足迹）
+    this.toggleAttribute('data-empty', label === '' && detail === '' && !this.hasAttribute('progress'))
 
     // 进度：受控显示（宿主驱动），clamp 0-100；progressbar 可访问名：label 属性 > i18n 兜底
     // （axe 严重违规「ARIA progressbar nodes must have an accessible name」的硬闸修复）
