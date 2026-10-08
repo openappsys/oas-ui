@@ -196,9 +196,22 @@ const fluidJs = {
   gzipBytes: gzip(glassFluid),
   brotliBytes: brotli(glassFluid),
 }
+// 玻璃静态层 / 皮肤层（theme 包的可选 CSS 层，独立预算档）
+const readCss = (name) => {
+  const buf = readFileSync(join(ROOT, `packages/theme/${name}`))
+  return { rawBytes: buf.length, gzipBytes: gzip(buf), brotliBytes: brotli(buf) }
+}
+const glassCss = readCss('glass.css')
+const skinsCss = readCss('skins.css')
+/** 可选层文件（不得泄漏进任何基础链闭包；见文末「可选层零泄漏」断言） */
+const OPTIONAL_LAYER_FILES = ['packages/theme/glass-fluid.js', 'packages/theme/glass.css', 'packages/theme/skins.css']
 
 // ui 全量入口链：`import '@oas-ui/ui'`（dist/index.js）的实际加载集合
-const fullEntry = measureFiles(collectGraph(join(UI_DIST, 'index.js')))
+const fullEntryGraph = collectGraph(join(UI_DIST, 'index.js'))
+const fullEntry = {
+  ...measureFiles(fullEntryGraph),
+  fileList: fullEntryGraph.map((f) => relative(ROOT, f).replaceAll('\\', '/')),
+}
 
 // dist/cdn.js 单文件 IIFE bundle
 const cdnBuf = readFileSync(join(UI_DIST, 'cdn.js'))
@@ -230,6 +243,7 @@ console.log('\n=== 单组件按需引入链（入口 + 依赖静态 import 闭�
 const COMPONENT_ENTRIES = [
   { id: 'button', entry: 'basic/button', spec: '@oas-ui/ui/basic/button' },
   { id: 'table', entry: 'data/table', spec: '@oas-ui/ui/data/table' },
+  { id: 'tableCore', entry: 'data/table/core', spec: '@oas-ui/ui/data/table/core' },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
   { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
 ]
@@ -313,6 +327,26 @@ const BUDGETS = [
     basis:
       '实测 gzip 7.81 KB（B 档 + 修复批：注册表 + 注入样式表并入运行时——ui 包相应减少同量玻璃规则体；高光层改「surface 背景之上、文字之下」，补 .box 基态/命中成对、isolation:isolate、z-index:-1、禁用守卫（含链接形态 aria-disabled，且同时 background/box-shadow:none）、实心按钮 hover 高光 + 按压边缘内描边（:where 归零特异性）、全根观察 + 帧内 prune 防泄漏），上浮约 15% 定档 8.5 KB；前档 4.5 / 4 KB 首次定档于 2026-10-07（3.6 / 2.97 KB 实测；B 档重定档 6.5 KB 见未提交历史）（指针镜面高光运行时：监听/命中/坐标/rAF/守卫/清理）',
   },
+  {
+    name: '@oas-ui/theme glass.css gzip',
+    get: () => glassCss.gzipBytes,
+    limit: 6 * 1024, // 6 KB（可选玻璃静态层，首次定档 2026-10-08；实测约 4.42 KB）
+    basis:
+      '实测 gzip 约 4.42 KB（玻璃静态层：surface 半透明 token + 折射 data-URI 滤镜 + 折光边 + 阴影；独立可选，不进 union），上浮约 35% 定档 6 KB',
+  },
+  {
+    name: '@oas-ui/theme skins.css gzip',
+    get: () => skinsCss.gzipBytes,
+    limit: 2 * 1024, // 2 KB（可选皮肤层，首次定档 2026-10-08；实测约 0.91 KB）
+    basis: '实测 gzip 约 0.91 KB（皮肤层变量族：预设色板皮肤档；独立可选，不进 union），上浮定档 2 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/table/core 链 gzip',
+    get: () => componentMeasures.tableCore.gzipBytes,
+    limit: 82 * 1024, // 82 KB（/core 纯核路径，首次定档 2026-10-08；实测 71.4 KB，须小于主链 table）
+    basis:
+      '实测 gzip 71.4 KB（/core = 主路径减去能力子包——纯核瘦身消费者的入口；实测小于主链 table 101.6 KB，退化即报红），上浮约 15% 定档 82 KB',
+  },
 ]
 
 console.log('\n=== 体积预算断言（全量类=天花板制；单组件链/theme=绝对值制；90% 预警线） ===')
@@ -367,6 +401,21 @@ if (process.argv.includes('--update-baseline')) {
 } else {
   console.log(`\n[perf:size] 仅测量，未改写入库基线（确需更新请加 --update-baseline）`)
 }
+// ---------- 可选层零泄漏断言（结构断言：可选层文件不得出现在任何基础链闭包） ----------
+const baseChainFiles = {
+  全量入口链: fullEntry.fileList,
+  ...Object.fromEntries(Object.entries(componentMeasures).map(([id, m]) => [`${id} 链`, m.fileList])),
+}
+let leaked = false
+for (const [chain, list] of Object.entries(baseChainFiles)) {
+  const hit = OPTIONAL_LAYER_FILES.filter((f) => list.includes(f))
+  if (hit.length) {
+    leaked = true
+    console.error(`FAIL [可选层泄漏] ${chain} 含可选层文件：${hit.join(', ')}`)
+  }
+}
+if (leaked) fail = true
+
 if (fail) {
   console.error('[perf:size] 存在超预算项，性能门槛未通过。')
   process.exit(1)

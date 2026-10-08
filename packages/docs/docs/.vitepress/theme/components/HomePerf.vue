@@ -15,20 +15,27 @@
       <div class="hp-vol home-reveal">
         <div class="hp-legend">
           <span class="hp-legend-item"><i class="sw" style="width:22px"></i>{{ isEn ? 'Button chain' : '按钮链' }} <b>{{ stats.perf.buttonChainKB }}</b> KB</span>
-          <span class="hp-legend-item"><i class="sw" style="width:49%"></i>CDN gzip <b>{{ stats.perf.cdnGzipKB }}</b> KB</span>
+          <span class="hp-legend-item"><i class="sw" :style="{ width: pct(stats.perf.cdnGzipKB) }"></i>CDN gzip <b>{{ stats.perf.cdnGzipKB }}</b> KB</span>
           <span class="hp-legend-item"><i class="sw" style="width:100%"></i>{{ isEn ? 'Full entry' : '全量入口' }} <b>{{ stats.perf.fullEntryKB }}</b> KB</span>
         </div>
         <div class="hp-scale">
-          <div class="hp-seg seg-btn"><span class="hp-val">{{ stats.perf.buttonChainKB }}</span><span class="hp-unit">KB</span></div>
-          <div class="hp-seg seg-cdn"><span class="hp-val">{{ stats.perf.cdnGzipKB }}</span><span class="hp-unit">KB</span></div>
-          <div class="hp-seg seg-full"><span class="hp-val">{{ stats.perf.fullEntryKB }}</span><span class="hp-unit">KB</span></div>
-          <div class="hp-mark">
+          <div class="hp-seg seg-btn" :style="{ width: pct(stats.perf.buttonChainKB) }"><span class="hp-val">{{ stats.perf.buttonChainKB }}</span><span class="hp-unit">KB</span></div>
+          <div class="hp-seg seg-cdn" :style="{ width: pct(stats.perf.cdnGzipKB) }"><span class="hp-val">{{ stats.perf.cdnGzipKB }}</span><span class="hp-unit">KB</span></div>
+          <div class="hp-seg seg-full" style="width:100%"><span class="hp-val">{{ stats.perf.fullEntryKB }}</span><span class="hp-unit">KB</span></div>
+          <div class="hp-mark" :style="{ left: pct(stats.perf.buttonChainKB) }">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 11-13h-7l0-7z"/></svg>
-            {{ isEn ? 'On-demand, save ' : '按需引入，省下 ' }}<b>93%</b>
+            {{ isEn ? 'On-demand, save ' : '按需引入，省下 ' }}<b>{{ savePct }}%</b>
           </div>
         </div>
         <p class="hp-foot">
           tree-shakable · {{ isEn ? 'import one component, bundle only its own chain' : '按需引入一个组件，只打包它自己的链路' }}
+        </p>
+        <p class="hp-foot hp-foot-sub">
+          {{
+            isEn
+              ? 'Full entry is a convenience/upper-bound figure (per-file sum), not the cost of a single consumption.'
+              : '全量为便利路径 / 上界估计（逐文件求和），不代表单次消费的产品大小。'
+          }}
         </p>
       </div>
       <p class="hp-note home-reveal">
@@ -45,6 +52,11 @@ import stats from '../../generated/stats.json'
 
 const { lang } = useData()
 const isEn = computed(() => lang.value.startsWith('en'))
+
+// 条宽与「省下 x%」均由 stats.json 推导（禁止硬编码——数据变即跟随）
+const perf = stats.perf
+const pct = (kb: number): string => `${((kb / perf.fullEntryKB) * 100).toFixed(2)}%`
+const savePct = computed(() => Math.round((1 - perf.buttonChainKB / perf.fullEntryKB) * 100))
 </script>
 
 <style scoped>
@@ -182,28 +194,24 @@ const isEn = computed(() => lang.value.startsWith('en'))
   font-size: 10px;
   color: #a1a1aa;
 }
-.seg-btn {
-  width: 6.6%;
+.seg-btn,
+.seg-cdn,
+.seg-full {
   height: 100%;
-  background: linear-gradient(180deg, #60a5fa, #3b82f6);
   border-radius: 6px 6px 0 0;
+}
+.seg-btn {
+  background: linear-gradient(180deg, #60a5fa, #3b82f6);
 }
 .seg-cdn {
-  width: 49%;
-  height: 100%;
   background: linear-gradient(180deg, #7aa2ff, #2f6fe0);
-  border-radius: 6px 6px 0 0;
 }
 .seg-full {
-  width: 100%;
-  height: 100%;
   background: linear-gradient(180deg, #4d9fff, #1d4fd8);
-  border-radius: 6px 6px 0 0;
 }
 .hp-mark {
   position: absolute;
   top: -6px;
-  left: 6.6%;
   transform: translateX(6px);
   display: inline-flex;
   align-items: center;
