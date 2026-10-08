@@ -30,7 +30,7 @@
 │   ├── 渲染层（Shadow DOM 模板、样式）          │  src/components
 │   └── 公共基础设施（事件、焦点陷阱、浮层、防抖） │  src/core
 ├────────────────────────────────────────────┤
-│  主题 token（CSS 变量：色/字号/间距/圆角/动效） │  packages/theme
+│  主题（token CSS + 可选材质/皮肤层）           │  packages/theme
 ├────────────────────────────────────────────┤
 │  图标（内联 SVG 集，tree-shakable）           │  packages/icons
 └────────────────────────────────────────────┘
@@ -97,7 +97,7 @@ oas-ui/
 ├── docs/                        # 产品档案（本目录）
 ├── packages/
 │   ├── core/                    # OASElement、工具、事件/焦点/浮层基础设施
-│   ├── theme/                   # CSS 变量 token（light/dark/高对比）
+│   ├── theme/                   # 语义 token（CSS）+ 可选材质/皮肤层（glass.css/glass-fluid.js/skins.css，独立可选、不进 union）
 │   ├── icons/                   # 内联 SVG 图标（生成）
 │   ├── ui/                      # 全部组件（按目录分组，见下）
 │   ├── i18n/                    # locale registry + 语言包（v0.10）
@@ -162,6 +162,10 @@ oas-ui/
 | L3 能力子包（`table/edit` 等）  | **是**（含于 L1） | 主路径已含；`/core` 用户显式补引      | `warnEditNotImported`  | 纯核瘦身消费者   |
 
 > 原则：**整包级可选层**（材质/皮肤/运行时，独立文件）不进 union；**L3 能力子包**必须含于 L1（否则 CDN 一把梭消费者用不到该能力）。两类"可选"不可混同。
+
+**效果层扩展点（预留锚点）**：新增"效果/材质运行时"（如指针高光、实时材质）一律按**既有运行时注册表机制**挂接——单文档命中（`composedPath`）+ surface 注册表 + 按注册表注入/降级，`glass-fluid.js` 即首个实例。**不预设抽象层**：等第二个运行时真实出现再按 §3.1「JS 运行时的包归属」的触发条件收敛，避免为不存在的第二实现投机泛化。
+
+**JS 运行时的包归属（决策记录 2026-10-08）**：可选 JS 运行时（当前仅 `glass-fluid.js`）**暂留 `@oas-ui/theme` 子路径，不为单文件新建发布包**——拆包只有语义纯度收益、**零体积收益**（本就不进 union），却带来发布拓扑成本（`release-check` 包清单、OIDC Trusted Publisher、构建/dev 链路接线）。**拆包触发条件**（任一命中即报批拆分）：**T1** 效果运行时族出现第二个 JS 成员（族外首个 runtime 立项即算）；**T2** `glass-fluid.js` 需拆多文件或实测超其独立预算档 2 倍；**T3** 出现「只要效果层、不要 token」的真实解耦消费需求。**硬规则**：届时若拆，**必须保留 `@oas-ui/theme/glass-fluid.js` 为 re-export shim**（`export * from '@oas-ui/<新包>'`），不得硬删——把可避免的 breaking 消解掉。
 
 ## 4. 构建与产物
 
