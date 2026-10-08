@@ -2021,3 +2021,25 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：运行时（命中/坐标换算/rAF 节流/离开清理/reduced-motion/粗指针/HC/无 data-glass 零监听）+ 9 组件消费与范围纪律断言；
 - e2e：真实指针移动 → 变量写入且高光可见；reduced-motion / 无 data-glass 零监听；双主题截图；console 零告警；
 - 全门禁 + 双引擎 + perf（theme 运行时新增预算档）。
+
+## oas-knob 旋钮组件（未发布）
+
+> 立项背景：参数密集面板（音频/DAW、3D/CAD、工业 HMI、调音台）需要把数值编码为圆周角度的紧凑输入控件——同面积可横排数十个参数、支持双向零位（pan/gain 以 12 点为中性）、相对拖拽大范围值不跳变。与 slider 互补不重叠：slider 做线性区间/多把手/移动端，knob 不做 range/marks 环绕刻度；两者共享 `value/min/max/step`、`show-value`/`format`、`reverse`、`size`、事件命名与 token 策略，宿主可在两种控件间无缝切换（form 族）。
+
+### 特性
+
+- **三档手势 `interaction`**：`cursor`（指针绕轴心方位角增量驱动，顺时针增值）/ `axis`（线性拖拽，`axis` 竖直默认/水平，150px 拖满量程）/ `auto`（默认——起手前几像素解析，主方向与偏好轴一致走线性、垂直走圆周，**解析后一次锁定**不中途切换）。全部为相对语义：按下不写值（无跳变）、无移动点按零操作、主指针独占、Shift 0.2× 精调一档。
+- **复位**：双击 / Ctrl+单击 / `reset()` 复位到 `default-value`（缺省回落 `min`），派发 `oas-reset`（不派发 `oas-change`）；`readonly`/`disabled` 全封。
+- **值弧与双极零位**：`include-arc` 值弧 + `start-point`（设中心值即双极弧，pan/gain 惯例）；`indicator` line/dot 两形态；`start-angle`/`end-angle` 自定义扫角（默认 225→495 共 270° 底部留缺口，`end-angle` 可 >360）。
+- **值显示三通道**：`show-value` + `unit` 后缀 + `format` 模板串 + `formatValue` 函数 property（优先级最高），输出同时进值文本与 `aria-valuetext`（读屏同源）。
+- **滚轮**：`wheel` 悬停滚轮调节（默认关，不抢页面滚动），Shift+滚轮精调。
+- **键盘/ARIA**：宿主 `role="slider"` + tabindex + `aria-valuemin/max/now` + 格式化 `aria-valuetext` + `aria-label`（`label` 属性或内置文案）；方向键 ±step（上下键恒定值语义、左右键随镜像翻转）、Shift+方向 / PageUp·Down 大步（`large-step`）、Home/End 极值、Esc 取消拖拽回滚。
+- **方向**：`reverse` 属性镜像值扫描与手势，RTL 书写方向自动镜像（XOR）；`size` 三档 sm/md/lg 对齐全库 + `--oas-knob-size` 自定义直径 + 触屏 44px 目标下限。
+- **取消路径**：Esc / pointercancel 回滚到起点值（零提交，drag-end `cancelled=true`）；拖拽中外部写 `value` 显示保持拖拽值，已提交拖拽拖拽值落盘、零变化松手外部值保留。
+- 基建：全 CSS 变量 token（`--oas-knob-*` 六通道含暗色变体）、Pointer Events 统一触屏（touch-action 接管/pointercancel 取消）、SSR `template()`/`hydrate()` 双路径、i18n ×10、事件 `oas-input`/`oas-change`/`oas-drag-start`/`oas-drag-end`/`oas-reset`。
+
+### 验收
+
+- 单测：TDD RED→GREEN（渲染/值域钳制/step 吸附/角度映射/圆周与线性手势/auto 中途解析锁定/键盘全键位/ARIA 三通道/受控 property/事件链/禁用只读/复位/RTL 镜像/token 纪律/SSR 水合）；`pnpm test` 全绿。
+- e2e：`qa-regression/knob.spec.ts`（真实指针三手势 + 键盘链路 + 双击复位 + 暗色 token 切换 + console 零告警 + readonly/disabled 拦截）。
+- 文档：knob.md zh/en（内联 attribute 演示 + 页级 script 事件反馈）+ api-manifest/api-descriptions + 侧栏；PRD/ROADMAP 同步（版本号未定，标「未发布」）。
