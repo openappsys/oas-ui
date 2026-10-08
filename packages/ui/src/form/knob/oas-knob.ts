@@ -447,9 +447,17 @@ export class OASKnob extends OASElement {
     return true
   }
 
+  /** 拖拽中摘除：走取消路径（回滚起点值、零提交），避免残留 drag 状态阻塞重连后的新手势 */
+  override disconnectedCallback(): void {
+    if (this.drag) this.finishDrag(null, true)
+    super.disconnectedCallback()
+  }
+
   protected override update(): void {
     const disabled = this.injectDisabled()
     const readonly = this.hasAttr('readonly')
+    // 拖拽中变为禁用/只读：终止手势并回滚起点值（取消路径零提交；finishDrag 先清 drag 再 update，不会递归）
+    if (this.drag && (disabled || readonly)) this.finishDrag(null, true)
     // 宿主状态镜像（data-* 非 observed 属性，写入不触发 attributeChangedCallback 循环）
     this.toggleAttribute('data-disabled', disabled)
     this.toggleAttribute('data-readonly', readonly)

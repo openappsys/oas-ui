@@ -140,6 +140,27 @@ test('knob 暗色 token 跟随 + console 零告警（加载 + 拖拽 + 键盘 + 
   )
 })
 
+test('knob 拖拽中置 disabled：终止手势立即回滚起点值（零提交）', async ({ page }) => {
+  await page.goto('/components/knob.html', { waitUntil: 'domcontentloaded' })
+  const sel = 'oas-knob[interaction="cursor"]'
+  await up(page, sel)
+  const c = await frameCenter(page, sel)
+  const before = await valueOf(page, sel)
+  await page.mouse.move(c.x, c.y - 20)
+  await page.mouse.down()
+  await page.mouse.move(c.x + 20, c.y - 20, { steps: 5 })
+  const during = await valueOf(page, sel)
+  // 拖拽中途禁用：update() 检测到禁用即终止手势并回滚起点值
+  await page.evaluate((s) => document.querySelector(s)?.setAttribute('disabled', ''), sel)
+  const afterDisable = await valueOf(page, sel)
+  await page.mouse.move(c.x + 40, c.y - 20, { steps: 5 })
+  await page.mouse.up()
+  const afterUp = await valueOf(page, sel)
+  expect(during, '拖拽应已改值').not.toBe(before)
+  expect(afterDisable, '禁用后应立即回滚起点值').toBe(before)
+  expect(afterUp, '继续移动/松手不再改值').toBe(before)
+})
+
 test('knob readonly 拦截与 disabled 不可聚焦（demo 实例）', async ({ page }) => {
   await page.goto('/components/knob.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-knob[readonly]')

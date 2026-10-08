@@ -289,17 +289,18 @@ describe('OASKnob', () => {
     expect(attrValue(el)).toBe(40)
   })
 
-  it('cursor：跨 ±180° 边界的方位角增量按最短路径解析（不绕圈跳变）', () => {
+  it('cursor：跨 0°/360° 边界的方位角增量按最短路径解析（不绕圈跳变）', () => {
     const el = mount({ interaction: 'cursor', 'start-angle': '0', 'end-angle': '360', step: '0', value: '50' })
     stubRect(el)
-    // 3 点（90°）按下，小幅逆时针跨过 6 点（180°/−180° 边界）到 175° 方位：增量 −85° 而非 +275°
-    dragSequence(el, [
-      [110, 60],
-      [60 + 50 * Math.sin((175 * Math.PI) / 180), 60 + 50 * Math.cos((175 * Math.PI) / 180)],
-    ])
-    const v = attrValue(el)
-    expect(v).toBeGreaterThan(20)
-    expect(v).toBeLessThan(40)
+    const r = 50
+    const p = (deg: number): [number, number] => [
+      60 + r * Math.sin((deg * Math.PI) / 180),
+      60 - r * Math.cos((deg * Math.PI) / 180),
+    ]
+    // 350°（近 12 点左侧）按下 → 10°（近 12 点右侧）松开：原始角差 −340°，最短路径须解析为 +20°
+    // → 50 + 20/360×100 ≈ 55.56（若走原始 −340° 会钳到 0，断言可区分两种实现）
+    dragSequence(el, [p(350), p(10)])
+    expect(attrValue(el)).toBeCloseTo(55.56, 1)
   })
 
   // ---------- 线性手势（interaction=axis） ----------
@@ -516,6 +517,72 @@ describe('OASKnob', () => {
     el2.setAttribute('value', '99')
     f2.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 60, clientY: 60, pointerId: 1 }))
     expect(el2.getAttribute('aria-valuenow')).toBe('99')
+  })
+
+  it('拖拽中置 disabled：终止手势回滚起点值（drag-end cancelled=true，零 change），后续移动不再改值', () => {
+    const el = mount({ interaction: 'axis', step: '0', value: '30' })
+    stubRect(el)
+    const f = frame(el)
+    let endDetail: unknown
+    let change = 0
+    el.addEventListener('oas-drag-end', (e) => (endDetail = (e as CustomEvent).detail))
+    el.addEventListener('oas-change', () => change++)
+    f.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, clientX: 60, clientY: 60, pointerId: 1, button: 0 }),
+    )
+    f.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 45, pointerId: 1 }))
+    expect(attrValue(el)).toBe(40)
+    // 拖拽中途禁用：立即回滚到起点值并派发取消
+    el.setAttribute('disabled', '')
+    expect(attrValue(el)).toBe(30)
+    expect(endDetail).toEqual({ value: 30, cancelled: true })
+    expect(change).toBe(0)
+    // 手势已终止：继续移动/松手都不再改值、不再派发 change
+    f.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 10, pointerId: 1 }))
+    f.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 60, clientY: 10, pointerId: 1 }))
+    expect(attrValue(el)).toBe(30)
+    expect(change).toBe(0)
+  })
+
+  it('拖拽中置 readonly：同禁用（终止手势回滚、零提交）', () => {
+    const el = mount({ interaction: 'axis', step: '0', value: '30' })
+    stubRect(el)
+    const f = frame(el)
+    let endDetail: unknown
+    let change = 0
+    el.addEventListener('oas-drag-end', (e) => (endDetail = (e as CustomEvent).detail))
+    el.addEventListener('oas-change', () => change++)
+    f.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, clientX: 60, clientY: 60, pointerId: 1, button: 0 }),
+    )
+    f.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 45, pointerId: 1 }))
+    expect(attrValue(el)).toBe(40)
+    el.setAttribute('readonly', '')
+    expect(attrValue(el)).toBe(30)
+    expect(endDetail).toEqual({ value: 30, cancelled: true })
+    expect(change).toBe(0)
+  })
+
+  it('拖拽中移除再重连：手势被取消（不残留 drag 阻塞后续拖拽）', () => {
+    const el = mount({ interaction: 'axis', step: '0', value: '30' })
+    stubRect(el)
+    const f = frame(el)
+    f.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, clientX: 60, clientY: 60, pointerId: 1, button: 0 }),
+    )
+    f.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 45, pointerId: 1 }))
+    expect(attrValue(el)).toBe(40)
+    // 拖拽中摘除 → 走取消路径回滚起点值
+    document.body.removeChild(el)
+    expect(attrValue(el)).toBe(30)
+    // 重连后新拖拽必须可用（旧 drag 不残留）：起点 30 上拖 30px → +20 → 50
+    document.body.appendChild(el)
+    const f2 = frame(el)
+    f2.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, clientX: 60, clientY: 60, pointerId: 1, button: 0 }),
+    )
+    f2.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 30, pointerId: 1 }))
+    expect(attrValue(el)).toBe(50)
   })
 
   // ---------- 键盘 ----------
