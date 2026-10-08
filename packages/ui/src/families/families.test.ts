@@ -30,6 +30,7 @@ const FAMILY_DIR: Record<string, string> = {
   navigation: 'navigation',
   data: 'data',
   conversation: 'conversation',
+  workbench: 'workbench',
   framework: 'framework',
 }
 
@@ -93,7 +94,7 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
     }
   })
 
-  it('七族并集 = 全量注册表，无重复无遗漏', () => {
+  it('全族并集 = 全量注册表，无重复无遗漏', () => {
     const union = new Map<string, number>()
     for (const fam of FAMILY_FILES) {
       const text = readFileSync(resolve(here, `${fam}.ts`), 'utf8')

@@ -293,9 +293,9 @@ export class OASStatusbarItem extends OASElement {
   }
 }
 
-/** 从内置图标注册表取 path（查 @oas-ui/icons 注册表，组件 chrome 图标统一内置来源） */
-import { iconRegistry } from '@oas-ui/icons'
+/** 从内置图标运行时取 path（@oas-ui/icons 图标 opt-in 后统一走 runtime 查询，组件 chrome 图标同一来源） */
+import { lookupIcon } from '@oas-ui/icons/runtime'
 function iconPathOf(name: string): string | null {
-  const path = (iconRegistry as Record<string, string>)[name]
+  const path = lookupIcon(name)
   return typeof path === 'string' ? path : null
 }
