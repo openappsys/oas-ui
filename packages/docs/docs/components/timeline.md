@@ -160,7 +160,7 @@
 <DemoBlock title="横向时间轴">
   <div style="width: 100%">
     <oas-timeline direction="horizontal">
-      <oas-timeline-item time="Q1" type="success"><p>立项</p></oas-timeline-item>
+      <oas-timeline-item time="Q1" type="success"><p>规划</p></oas-timeline-item>
       <oas-timeline-item time="Q2" type="success"><p>核心开发</p></oas-timeline-item>
       <oas-timeline-item time="Q3" type="warning"><p>联调</p></oas-timeline-item>
       <oas-timeline-item time="Q4"><p>发布</p></oas-timeline-item>
@@ -171,7 +171,7 @@
 <DemoBlock title="横向 + 交替">
   <div style="width: 100%">
     <oas-timeline direction="horizontal" mode="alternate">
-      <oas-timeline-item time="Q1" type="success"><p>立项</p></oas-timeline-item>
+      <oas-timeline-item time="Q1" type="success"><p>规划</p></oas-timeline-item>
       <oas-timeline-item time="Q2" type="success"><p>核心开发</p></oas-timeline-item>
       <oas-timeline-item time="Q3" type="warning"><p>联调</p></oas-timeline-item>
       <oas-timeline-item time="Q4"><p>发布</p></oas-timeline-item>
