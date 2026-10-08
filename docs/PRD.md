@@ -2080,7 +2080,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 对话/消息形态立项（能力缺口 D-P2；feedback/message 批次已定性「会话行是另一组件类别，单独立项」）。与 oas-comment（评论区，回复树）**并存不合并**：会话流有方向（我方/对方左右分侧）、动态追加 + 自动滚动 + 流式增长、时间戳/系统事件分隔标记、附件行——评论区均不承载。新族目录 `packages/ui/src/conversation/`（第八个语义族，源码目录 = 文档站语义组），会话行命名 `oas-message-row`（避开全局提示 oas-message）。
 
-本批 = A 批（静态四件 + scroller 钉底/跳底）；轮次锚定 / last-anchor 打开位置 / 可见性追踪 / 首屏防跳（data-pending-scroll）留 B 批。
+本批 = A 批（静态四件 + scroller 钉底/跳底）；B 批已并入本段（精确滚动与会话体验）：稳定锚点异步保位、同帧混合插入精确结算、首屏防跳（data-pending-scroll）、`last-anchor` 打开位置、轮次锚定（`turn-anchor`）、`scrollToMessage`。可见性追踪判定 v2 候选（牵出大纲/已读独立语义，pay-for-use），不随本批交付。
 
 ### 功能定义
 
@@ -2088,7 +2088,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 **oas-attachment（附件行）**：媒体（icon 缺省图形 / slot=media 缩略图）+ 文件名/元数据 + 状态机 idle/uploading/processing/error/done（与 oas-upload 词表一致；进行中 spinner + aria-busy + uploading 细进度条 role=progressbar，progress 0–100 clamp）+ 操作（downloadable/removable 内置钮 + slot=actions 自定义；oas-download/oas-remove detail {name}，删除默认不自移除）+ href 整卡触发器（oas-open detail {href}，cancelable 联动导航阻断）+ size 三档（default/sm/xs）+ orientation 双向。仅图标操作钮 aria-label 含文件名。
 
-**oas-message-scroller（会话滚动容器）**：滚动意图模型，不拥有消息。默认 AI 式（`auto-scroll` 在场时仅读者在底部跟随，near-bottom ≤ `edge-threshold` 默认 8px）；`pin-to-bottom` IM 式始终钉底（同时在场优先）；`default-position` start/end（默认 end）；跳底内置按钮（slot=button 可换内容，显隐组件裁决）+ `scrollToEnd()/scrollToStart()` 方法；`oas-scroll-state` 事件（detail atBottom/atTop/canScrollStart/canScrollEnd）+ `data-scrollable` 反射；prepend 保位基础（首节点变化的顶部插入按 scrollHeight 差补偿 scrollTop，`preserve-scroll-on-prepend` 缺省开）；ARIA：viewport role=region + 可读名称（`label` 属性覆盖，读入即吸收）+ tabindex=0、content role=log + aria-relevant=additions。
+**oas-message-scroller（会话滚动容器）**：滚动意图模型，不拥有消息。默认 AI 式（`auto-scroll` 在场时仅读者在底部跟随，near-bottom ≤ `edge-threshold` 默认 8px）；`pin-to-bottom` IM 式始终钉底（同时在场优先）；`default-position` start/end/last-anchor（默认 end；非法回退 end；last-anchor 定位到最后一个 `anchor` 标记消息顶部——AI「回到最后提问位置」，无锚点回退 end）；跳底内置按钮（slot=button 可换内容，显隐组件裁决）+ `scrollToEnd()/scrollToStart()/scrollToMessage(id)` 方法（scrollToMessage 按 `message-id` 精确滚到消息顶，未知 id 返回 false 不重试）；`oas-scroll-state` 事件（detail atBottom/atTop/canScrollStart/canScrollEnd）+ `data-scrollable` 反射 + `data-pending-scroll` 首屏防跳反射（end/last-anchor 初始定位应用前 viewport visibility:hidden，定位/读者让位后移除——未定位帧不闪现顶部）；prepend 保位（`preserve-scroll-on-prepend` 缺省开）：按插入前首节点的内容坐标位移精确结算（同帧 append+prepend 混合只结算顶部插入量，底部追加不参与），补偿后锁定保位锚——历史内异步资源（图片等）撑高上方内容时按锚点视口位移持续补偿（stable `message-id` 优先重查；读者真实滚动即释放）；轮次锚定 `turn-anchor`（可选）：一次「提问+回答」为锚定单元——锚点贴视口顶时把最后 `anchor` 标记消息钉在视口顶 `prev-peek` px 处（默认 64，露上一条语境），回答在锚下方流入；读者在底部延续贴底跟随，上翻即静止（跟随模式按位置一次性定型，贴底中锚点穿越顶部窗口不误拉回）；ARIA：viewport role=region + 可读名称（`label` 属性覆盖，读入即吸收）+ tabindex=0、content role=log + aria-relevant=additions。
 
 **oas-marker（会话标记）**：variant default（次级小字）/ border（描边胶囊）/ separator（两侧伸缩线 + 中间文字，时间戳分隔主形态）；icon 装饰槽（包裹 aria-hidden）；role=status 由宿主直接写（原生 ARIA 反射，组件不转发）；空内容 default/border 隐藏、separator 保留线本体；纪律：带文字分隔不得加 role=separator。
 
@@ -2096,16 +2096,18 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 族级：i18n ×10（15 键）；颜色全走语义 token（无硬编码色）；RTL 全逻辑属性；reduced-motion 全覆盖；与 oas-comment 并存不合并。
 
-### 边界（B 批预告 / 不做）
+### 边界（B 批后仍不做）
 
-- B 批：轮次锚定（scrollAnchor/上一项 peek）、last-anchor 打开位置、可见性追踪、首屏防跳（data-pending-scroll）、stable-id 逐行保位精化。
+- 可见性追踪（视口内消息清单，`oas-visible-change`/`data-visible`）：v2 候选——牵出大纲菜单/已读标记独立语义，宿主可用 IntersectionObserver 自行组合。
+- 虚拟化（数千轮长会话）：宿主接虚拟列表组合；`content-visibility` 在 slotted 元素上单独启用会卡占位高度不展开（实测撤回），随虚拟化一起评估。
 - 不做（框架/宿主层）：消息 parts 管线、run 状态机、sendMessage/stop/regenerate、分支/编辑、持久化；文件类型图标库（图标由宿主/slot 传）；长文折叠/浮层/反应条（组合模式或 v2）。
+- 首屏防跳只覆盖「连接 → 首帧定位」段；客户端异步拉取首批消息的场景由 auto-scroll/pin-to-bottom 装载行为接管。
 
 ### 验收
 
-- 单测：5 组件 61 用例（状态机/事件/ARIA/RTL 逻辑属性/clamp/保位/重连/DSD 水合/i18n 可读名称）+ families 八族注册一致性 + i18n completeness ×10 全绿。
-- e2e：qa-regression/conversation.spec.ts（scroller 钉底/跳底真交互 + 暗色 + console 零告警）+ demo-coverage 事件探针（attachment 三事件 / scroller scroll-state）+ 新页自动纳入 smoke/dark/code/visual/console-sweep/a11y。
-- 文档：zh/en 双语五页（含交互 demo）+ 会话组件侧栏组 + API 表 gen 接管 + api:check 双向 0。
+- 单测：5 组件 61 用例（状态机/事件/ARIA/RTL 逻辑属性/clamp/保位/重连/DSD 水合/i18n 可读名称）+ B 批 scroller 21 用例（首屏防跳/last-anchor/scrollToMessage/异步保位锚含 message-id 重查与回声抑制/混合插入精确结算/turn-anchor 锚顶-贴底-接管三态与 prev-peek）+ families 八族注册一致性 + i18n completeness ×10 全绿。
+- e2e：qa-regression/conversation.spec.ts（scroller 钉底/跳底真交互 + B 批异步保位/首屏防跳/last-anchor/turn-anchor 真交互 + 暗色 + console 零告警）+ demo-coverage 事件探针（attachment 三事件 / scroller scroll-state）+ 新页自动纳入 smoke/dark/code/visual/console-sweep/a11y。
+- 文档：zh/en 双语五页（含交互 demo 与 B 批新 demo：异步保位/首屏防跳/last-anchor/轮次锚定）+ 会话组件侧栏组 + API 表 gen 接管 + api:check 双向 0。
 
 ## oas-questionnaire 多步问答组件 + oas-form validate()（未发布）
 
