@@ -419,4 +419,16 @@ export const ar: LocaleMessages = {
   'pullRefresh.refreshing': 'جارٍ التحديث…',
   'pullRefresh.success': 'تم التحديث',
   'datePicker.shortcutThisQuarter': 'هذا الربع',
+  // conversation (عائلة المحادثة)
+  'bubble.loading': 'يكتب…',
+  'attachment.remove': 'إزالة {name}',
+  'attachment.download': 'تنزيل {name}',
+  'attachment.error': 'فشل الرفع',
+  'messageScroller.label': 'الرسائل',
+  'messageScroller.scrollToBottom': 'التمرير إلى الأسفل',
+  'messageRow.status.sending': 'جارٍ الإرسال',
+  'messageRow.status.sent': 'تم الإرسال',
+  'messageRow.status.delivered': 'تم التسليم',
+  'messageRow.status.read': 'تمت القراءة',
+  'messageRow.status.error': 'فشل الإرسال',
 }

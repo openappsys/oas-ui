@@ -169,6 +169,17 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
     ],
   },
   {
+    text: '会话组件',
+    collapsed: true,
+    items: [
+      { text: 'Bubble 气泡', link: '/components/bubble' },
+      { text: 'Attachment 附件', link: '/components/attachment' },
+      { text: 'MessageScroller 会话滚动容器', link: '/components/message-scroller' },
+      { text: 'Marker 会话标记', link: '/components/marker' },
+      { text: 'MessageRow 消息行', link: '/components/message-row' },
+    ],
+  },
+  {
     text: '框架级容器',
     collapsed: true,
     items: [
@@ -186,6 +197,7 @@ const enGroupNames: Record<string, string> = {
   反馈与浮层组件: 'Feedback & Overlays',
   导航组件: 'Navigation',
   数据展示组件: 'Data Display',
+  会话组件: 'Conversation',
   框架级容器: 'Framework Containers',
 }
 

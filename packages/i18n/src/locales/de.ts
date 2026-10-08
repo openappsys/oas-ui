@@ -419,4 +419,16 @@ export const de: LocaleMessages = {
   'pullRefresh.refreshing': 'Aktualisieren…',
   'pullRefresh.success': 'Aktualisiert',
   'datePicker.shortcutThisQuarter': 'Dieses Quartal',
+  // conversation (Chat-Familie)
+  'bubble.loading': 'Schreibt…',
+  'attachment.remove': '{name} entfernen',
+  'attachment.download': '{name} herunterladen',
+  'attachment.error': 'Upload fehlgeschlagen',
+  'messageScroller.label': 'Nachrichten',
+  'messageScroller.scrollToBottom': 'Nach unten scrollen',
+  'messageRow.status.sending': 'Wird gesendet',
+  'messageRow.status.sent': 'Gesendet',
+  'messageRow.status.delivered': 'Zugestellt',
+  'messageRow.status.read': 'Gelesen',
+  'messageRow.status.error': 'Senden fehlgeschlagen',
 }

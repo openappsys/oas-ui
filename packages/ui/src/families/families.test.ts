@@ -29,12 +29,13 @@ const FAMILY_DIR: Record<string, string> = {
   feedback: 'feedback',
   navigation: 'navigation',
   data: 'data',
+  conversation: 'conversation',
   framework: 'framework',
 }
 
 const FAMILY_FILES = Object.keys(FAMILY_DIR)
 
-describe('CDN 按需打包：七族注册文件覆盖全量注册表', () => {
+describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
   // 全量注册表 = src/index.ts 的组件 import 清单（每个组件目录一个 index.js 入口）
   const indexText = readFileSync(resolve(srcRoot, 'index.ts'), 'utf8')
   const all = parseComponentImports(indexText)
@@ -100,11 +101,11 @@ describe('CDN 按需打包：七族注册文件覆盖全量注册表', () => {
         union.set(p, (union.get(p) ?? 0) + 1)
       }
     }
-    // 每个组件（非基座）恰好出现在一个族文件；基座三件每族各出现一次（7 次）
+    // 每个组件（非基座）恰好出现在一个族文件；基座三件每族各出现一次（每族 1 次）
     for (const c of all) {
       const count = union.get(c) ?? 0
       if (BASE_MODULES.includes(c)) {
-        expect(count, `${c} 基座应每族都 import（7 次）`).toBe(FAMILY_FILES.length)
+        expect(count, `${c} 基座应每族都 import`).toBe(FAMILY_FILES.length)
       } else {
         expect(count, `${c} 应恰好在一个族文件`).toBe(1)
       }

@@ -2022,6 +2022,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：真实指针移动 → 变量写入且高光可见；reduced-motion / 无 data-glass 零监听；双主题截图；console 零告警；
 - 全门禁 + 双引擎 + perf（theme 运行时新增预算档）。
 
+
 ## oas-knob 旋钮组件（未发布）
 
 > 立项背景：参数密集面板（音频/DAW、3D/CAD、工业 HMI、调音台）需要把数值编码为圆周角度的紧凑输入控件——同面积可横排数十个参数、支持双向零位（pan/gain 以 12 点为中性）、相对拖拽大范围值不跳变。与 slider 互补不重叠：slider 做线性区间/多把手/移动端，knob 不做 range/marks 环绕刻度；两者共享 `value/min/max/step`、`show-value`/`format`、`reverse`、`size`、事件命名与 token 策略，宿主可在两种控件间无缝切换（form 族）。
@@ -2043,3 +2044,35 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：TDD RED→GREEN（渲染/值域钳制/step 吸附/角度映射/圆周与线性手势/auto 中途解析锁定/键盘全键位/ARIA 三通道/受控 property/事件链/禁用只读/复位/RTL 镜像/token 纪律/SSR 水合）；`pnpm test` 全绿。
 - e2e：`qa-regression/knob.spec.ts`（真实指针三手势 + 键盘链路 + 双击复位 + 暗色 token 切换 + console 零告警 + readonly/disabled 拦截）。
 - 文档：knob.md zh/en（内联 attribute 演示 + 页级 script 事件反馈）+ api-manifest/api-descriptions + 侧栏；PRD/ROADMAP 同步（版本号未定，标「未发布」）。
+## conversation 会话组件族首批五件（未发布）
+
+### 立项依据
+
+对话/消息形态立项（能力缺口 D-P2；feedback/message 批次已定性「会话行是另一组件类别，单独立项」）。与 oas-comment（评论区，回复树）**并存不合并**：会话流有方向（我方/对方左右分侧）、动态追加 + 自动滚动 + 流式增长、时间戳/系统事件分隔标记、附件行——评论区均不承载。新族目录 `packages/ui/src/conversation/`（第八个语义族，源码目录 = 文档站语义组），会话行命名 `oas-message-row`（避开全局提示 oas-message）。
+
+本批 = A 批（静态四件 + scroller 钉底/跳底）；轮次锚定 / last-anchor 打开位置 / 可见性追踪 / 首屏防跳（data-pending-scroll）留 B 批。
+
+### 功能定义
+
+**oas-bubble（气泡表面）**：纯外观容器——`align` start/end（逻辑属性 RTL 镜像）+ `variant` default/secondary/muted/outline/ghost/destructive（secondary/destructive 用 color-mix 主题语义色浅调，theme-aware 暗色适配）+ `loading` 布尔（三点打字指示 + aria-busy，reduced-motion 停动画）；宽度上限 80%（`--oas-bubble-max-width` 开口，ghost 放开）。头像/名字/时间/发送态不属气泡（归 message-row）。
+
+**oas-attachment（附件行）**：媒体（icon 缺省图形 / slot=media 缩略图）+ 文件名/元数据 + 状态机 idle/uploading/processing/error/done（与 oas-upload 词表一致；进行中 spinner + aria-busy + uploading 细进度条 role=progressbar，progress 0–100 clamp）+ 操作（downloadable/removable 内置钮 + slot=actions 自定义；oas-download/oas-remove detail {name}，删除默认不自移除）+ href 整卡触发器（oas-open detail {href}，cancelable 联动导航阻断）+ size 三档（default/sm/xs）+ orientation 双向。仅图标操作钮 aria-label 含文件名。
+
+**oas-message-scroller（会话滚动容器）**：滚动意图模型，不拥有消息。默认 AI 式（`auto-scroll` 在场时仅读者在底部跟随，near-bottom ≤ `edge-threshold` 默认 8px）；`pin-to-bottom` IM 式始终钉底（同时在场优先）；`default-position` start/end（默认 end）；跳底内置按钮（slot=button 可换内容，显隐组件裁决）+ `scrollToEnd()/scrollToStart()` 方法；`oas-scroll-state` 事件（detail atBottom/atTop/canScrollStart/canScrollEnd）+ `data-scrollable` 反射；prepend 保位基础（首节点变化的顶部插入按 scrollHeight 差补偿 scrollTop，`preserve-scroll-on-prepend` 缺省开）；ARIA：viewport role=region + 可读名称（`label` 属性覆盖，读入即吸收）+ tabindex=0、content role=log + aria-relevant=additions。
+
+**oas-marker（会话标记）**：variant default（次级小字）/ border（描边胶囊）/ separator（两侧伸缩线 + 中间文字，时间戳分隔主形态）；icon 装饰槽（包裹 aria-hidden）；role=status 由宿主直接写（原生 ARIA 反射，组件不转发）；空内容 default/border 隐藏、separator 保留线本体；纪律：带文字分隔不得加 role=separator。
+
+**oas-message-row（消息行）**：组合行（行布局所有者）——avatar/header/footer/默认四插槽（空自动收起）+ align start/end（row-reverse 逻辑翻转）+ status 五态 sending/sent/delivered/read/error（可见小字 + 装饰图标，locale 文案，error 追加 danger 色；非法值不渲染）+ grouped 连续同发送者聚拢（--oas-message-gap 收间距）；头像底对齐。
+
+族级：i18n ×10（15 键）；颜色全走语义 token（无硬编码色）；RTL 全逻辑属性；reduced-motion 全覆盖；与 oas-comment 并存不合并。
+
+### 边界（B 批预告 / 不做）
+
+- B 批：轮次锚定（scrollAnchor/上一项 peek）、last-anchor 打开位置、可见性追踪、首屏防跳（data-pending-scroll）、stable-id 逐行保位精化。
+- 不做（框架/宿主层）：消息 parts 管线、run 状态机、sendMessage/stop/regenerate、分支/编辑、持久化；文件类型图标库（图标由宿主/slot 传）；长文折叠/浮层/反应条（组合模式或 v2）。
+
+### 验收
+
+- 单测：5 组件 61 用例（状态机/事件/ARIA/RTL 逻辑属性/clamp/保位/重连/DSD 水合/i18n 可读名称）+ families 八族注册一致性 + i18n completeness ×10 全绿。
+- e2e：qa-regression/conversation.spec.ts（scroller 钉底/跳底真交互 + 暗色 + console 零告警）+ demo-coverage 事件探针（attachment 三事件 / scroller scroll-state）+ 新页自动纳入 smoke/dark/code/visual/console-sweep/a11y。
+- 文档：zh/en 双语五页（含交互 demo）+ 会话组件侧栏组 + API 表 gen 接管 + api:check 双向 0。

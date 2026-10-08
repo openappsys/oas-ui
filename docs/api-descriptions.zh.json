@@ -4260,5 +4260,77 @@
     "events": {
       "oas-change": "滚动/键盘选中落停后派发（程序性 value 写入不派发）。detail { value, labels, columnIndex }——value/labels 为全列当前口径，columnIndex 为本次变更列"
     }
+  },
+  "oas-bubble": {
+    "attrs": {
+      "loading": "打字中态（布尔在场）：内容切换为三点打字指示，宿主元素反射 aria-busy（AI「正在输入」场景）"
+    },
+    "events": {},
+    "slots": {
+      "": "气泡内容"
+    }
+  },
+  "oas-attachment": {
+    "attrs": {
+      "name": "文件名（title 通道；缺省只渲染 media 不报错）",
+      "detail": "次级元数据（类型 · 大小）；error 态缺省时显示 locale 错误文案（「上传失败」），显式给值则保留宿主文案",
+      "state": "上传状态机：idle / uploading / processing / error / done（默认 done；词表与 oas-upload 一致；uploading/processing 反射 aria-busy）",
+      "progress": "上传进度 0–100（越界自动收敛到 0/100；仅 uploading 态渲染底部细进度条 role=progressbar）",
+      "size": "三档尺寸：default（默认）/ sm（接受 small 别名）/ xs，逐档收内边距与媒体",
+      "orientation": "排布方向：horizontal（默认）/ vertical（图上文下，窄栏场景）",
+      "href": "有值则整卡为可点触发器（a[part=trigger]），点击派发 oas-open；宿主 preventDefault 可接管并阻断默认导航",
+      "downloadable": "布尔在场：显示内置下载按钮（点击派发 oas-download，下载动作由宿主接管）",
+      "removable": "布尔在场：显示内置删除按钮（点击派发 oas-remove；组件默认不自移除，删除决策在宿主）"
+    },
+    "events": {
+      "oas-open": "点击 href 整卡触发器时派发，detail { href }；cancelable——宿主 preventDefault 后组件同步阻断链接默认导航",
+      "oas-download": "点击内置下载按钮时派发，detail { name }",
+      "oas-remove": "点击内置删除按钮时派发，detail { name }；默认不自移除"
+    },
+    "slots": {
+      "actions": "追加自定义操作区（内置下载/删除按钮之后）",
+      "media": "媒体槽（图标/缩略图），放内容即覆盖内置缺省图形"
+    }
+  },
+  "oas-message-scroller": {
+    "attrs": {
+      "auto-scroll": "AI 式底部跟随（布尔在场，默认关）：仅当读者在底部（near-bottom ≤ edge-threshold）时跟随流式增长，上翻阅读不打扰",
+      "pin-to-bottom": "IM 式始终钉底（布尔在场）：新内容总是滚到底、读者上翻也拉回；与 auto-scroll 同时在场时优先",
+      "default-position": "打开位置：start（顶部）/ end（底部，默认；非法值回退 end）；last-anchor 随 B 批锚定提供",
+      "edge-threshold": "底部判定阈值 px（默认 8）——距底 ≤ 阈值即视为在底部（near-bottom 检测）",
+      "label": "viewport 可读名称覆盖（缺省走 locale「消息列表」；读入渲染后从宿主移除——原生全局属性吸收惯例）",
+      "preserve-scroll-on-prepend": "顶部插入历史时补偿 scrollTop 保持阅读位置（缺省开启；显式 =\"false\" 关闭）"
+    },
+    "events": {
+      "oas-scroll-state": "滚动位置跨过判定线时派发，detail { atBottom, atTop, canScrollStart, canScrollEnd }；首帧（初始定位后）广播一次初始态——宿主监听晚于 upgrade 也能收到"
+    },
+    "slots": {
+      "": "消息行列表（oas-message-row / oas-marker 等）",
+      "button": "自定义跳底按钮内容（替换内置箭头图形；显隐与点击仍由组件裁决——缺省为内置按钮 part=button）"
+    }
+  },
+  "oas-marker": {
+    "attrs": {
+      "variant": "变体：default（小号次级文字，默认）/ border（描边胶囊行）/ separator（两侧伸缩线 + 中间文字，时间戳分隔主形态）；空内容时 default/border 整件隐藏、separator 保留分隔线本体"
+    },
+    "events": {},
+    "slots": {
+      "": "文字内容",
+      "icon": "装饰图标槽（包裹层 aria-hidden；流式/进度状态由宿主直接写 role=status，组件不重复转发）"
+    }
+  },
+  "oas-message-row": {
+    "attrs": {
+      "align": "方向：start（对方，默认）/ end（我方）——逻辑属性实现（row-reverse + 逻辑对齐），RTL 自动镜像",
+      "status": "发送状态便利属性：sending / sent / delivered / read / error——渲染可见小字 + 装饰图标（文案走 locale，语义不单靠颜色；error 追加 danger 色作增强）；非法值/缺省不渲染状态区",
+      "grouped": "布尔在场：与上一条同发送者的连续消息（宿主声明），行间距收拢（走 --oas-message-gap）"
+    },
+    "events": {},
+    "slots": {
+      "": "消息内容（放 oas-bubble）",
+      "avatar": "头像槽（底对齐，长消息贴底）",
+      "header": "头部槽（发送者名/时间）",
+      "footer": "尾部槽（操作/附加元数据，随方向对齐）"
+    }
   }
 }

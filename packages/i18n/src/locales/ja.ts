@@ -419,4 +419,16 @@ export const ja: LocaleMessages = {
   'pullRefresh.refreshing': '更新中…',
   'pullRefresh.success': '更新しました',
   'datePicker.shortcutThisQuarter': '今四半期',
+  // conversation（チャットファミリー）
+  'bubble.loading': '入力中…',
+  'attachment.remove': '{name} を削除',
+  'attachment.download': '{name} をダウンロード',
+  'attachment.error': 'アップロード失敗',
+  'messageScroller.label': 'メッセージ',
+  'messageScroller.scrollToBottom': '最下部へスクロール',
+  'messageRow.status.sending': '送信中',
+  'messageRow.status.sent': '送信済み',
+  'messageRow.status.delivered': '配信済み',
+  'messageRow.status.read': '既読',
+  'messageRow.status.error': '送信失敗',
 }

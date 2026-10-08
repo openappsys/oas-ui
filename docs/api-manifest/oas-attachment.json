@@ -1,0 +1,71 @@
+{
+  "className": "OASAttachment",
+  "sourceFile": "packages/ui/src/conversation/attachment/oas-attachment.ts",
+  "attrs": [
+    {
+      "name": "name",
+      "observed": true
+    },
+    {
+      "name": "detail",
+      "observed": true
+    },
+    {
+      "name": "state",
+      "type": "string",
+      "default": "done",
+      "observed": true
+    },
+    {
+      "name": "progress",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "observed": true
+    },
+    {
+      "name": "orientation",
+      "observed": true
+    },
+    {
+      "name": "href",
+      "observed": true
+    },
+    {
+      "name": "removable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "downloadable",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-open",
+      "detail": "{ href: this.boundHref }"
+    },
+    {
+      "name": "oas-download",
+      "detail": "{ name: this.getAttr('name') }"
+    },
+    {
+      "name": "oas-remove",
+      "detail": "{ name: this.getAttr('name') }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "actions"
+    },
+    {
+      "name": "media"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

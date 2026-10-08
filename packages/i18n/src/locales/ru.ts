@@ -419,4 +419,16 @@ export const ru: LocaleMessages = {
   'pullRefresh.refreshing': 'Обновление…',
   'pullRefresh.success': 'Обновлено',
   'datePicker.shortcutThisQuarter': 'В этом квартале',
+  // conversation (семейство диалогов)
+  'bubble.loading': 'Печатает…',
+  'attachment.remove': 'Удалить {name}',
+  'attachment.download': 'Скачать {name}',
+  'attachment.error': 'Не удалось загрузить',
+  'messageScroller.label': 'Сообщения',
+  'messageScroller.scrollToBottom': 'Прокрутить вниз',
+  'messageRow.status.sending': 'Отправка',
+  'messageRow.status.sent': 'Отправлено',
+  'messageRow.status.delivered': 'Доставлено',
+  'messageRow.status.read': 'Прочитано',
+  'messageRow.status.error': 'Не удалось отправить',
 }

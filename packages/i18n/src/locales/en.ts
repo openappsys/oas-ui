@@ -347,4 +347,16 @@ export const en: LocaleMessages = {
   'pullRefresh.release': 'Release to refresh',
   'pullRefresh.refreshing': 'Refreshing…',
   'pullRefresh.success': 'Refresh successful',
+  // conversation (chat family: bubble/attachment/message-scroller/message-row)
+  'bubble.loading': 'Typing…',
+  'attachment.remove': 'Remove {name}',
+  'attachment.download': 'Download {name}',
+  'attachment.error': 'Upload failed',
+  'messageScroller.label': 'Messages',
+  'messageScroller.scrollToBottom': 'Scroll to bottom',
+  'messageRow.status.sending': 'Sending',
+  'messageRow.status.sent': 'Sent',
+  'messageRow.status.delivered': 'Delivered',
+  'messageRow.status.read': 'Read',
+  'messageRow.status.error': 'Failed to send',
 }

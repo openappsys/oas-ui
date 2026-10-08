@@ -1,0 +1,53 @@
+{
+  "className": "OASMessageScroller",
+  "sourceFile": "packages/ui/src/conversation/message-scroller/oas-message-scroller.ts",
+  "attrs": [
+    {
+      "name": "auto-scroll",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "pin-to-bottom",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "default-position",
+      "observed": true
+    },
+    {
+      "name": "edge-threshold",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "observed": true
+    },
+    {
+      "name": "preserve-scroll-on-prepend",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-scroll-state"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "button"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-message-gap",
+      "default": "var(--oas-space-4)"
+    }
+  ],
+  "unresolved": []
+}

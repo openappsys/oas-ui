@@ -177,6 +177,11 @@
   "oas-comment",
   "oas-highlight",
   "oas-swipe-cell",
+  "oas-bubble",
+  "oas-attachment",
+  "oas-message-scroller",
+  "oas-marker",
+  "oas-message-row",
   "oas-config-provider",
   "oas-app",
   "oas-theme-editor"

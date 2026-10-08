@@ -1,0 +1,42 @@
+{
+  "className": "OASMessageRow",
+  "sourceFile": "packages/ui/src/conversation/message-row/oas-message-row.ts",
+  "attrs": [
+    {
+      "name": "align",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "MessageRowStatus",
+      "observed": true
+    },
+    {
+      "name": "grouped",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "avatar"
+    },
+    {
+      "name": "footer"
+    },
+    {
+      "name": "header"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-message-gap",
+      "default": "var(--oas-space-4)"
+    }
+  ],
+  "unresolved": []
+}

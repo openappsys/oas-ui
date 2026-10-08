@@ -1,0 +1,27 @@
+{
+  "className": "OASMarker",
+  "sourceFile": "packages/ui/src/conversation/marker/oas-marker.ts",
+  "attrs": [
+    {
+      "name": "variant",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "icon"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-marker-font",
+      "default": "inherit"
+    }
+  ],
+  "unresolved": []
+}

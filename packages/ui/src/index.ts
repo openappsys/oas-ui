@@ -356,6 +356,12 @@ import './data/log/index.js'
 import './data/comment/index.js'
 import './data/highlight/index.js'
 import './data/swipe-cell/index.js'
+
+import './conversation/bubble/index.js'
+import './conversation/attachment/index.js'
+import './conversation/message-scroller/index.js'
+import './conversation/marker/index.js'
+import './conversation/message-row/index.js'
 export { OASCard } from './data/card/oas-card.js'
 export { OASAvatar } from './data/avatar/oas-avatar.js'
 export { OASAvatarGroup } from './data/avatar-group/oas-avatar-group.js'
@@ -449,6 +455,19 @@ export { OASLog } from './data/log/oas-log.js'
 export { OASComment } from './data/comment/oas-comment.js'
 export { OASHighlight } from './data/highlight/oas-highlight.js'
 export { OASSwipeCell } from './data/swipe-cell/oas-swipe-cell.js'
+
+export { OASBubble } from './conversation/bubble/oas-bubble.js'
+export type { BubbleVariant } from './conversation/bubble/oas-bubble.js'
+export { OASAttachment } from './conversation/attachment/oas-attachment.js'
+export type { AttachmentState, AttachmentSize } from './conversation/attachment/oas-attachment.js'
+export { OASMessageScroller } from './conversation/message-scroller/oas-message-scroller.js'
+export type {
+  ScrollerDefaultPosition,
+  MessageScrollerState,
+} from './conversation/message-scroller/oas-message-scroller.js'
+export { OASMarker } from './conversation/marker/oas-marker.js'
+export { OASMessageRow } from './conversation/message-row/oas-message-row.js'
+export type { MessageRowStatus } from './conversation/message-row/oas-message-row.js'
 
 import './framework/config-provider/index.js'
 import './framework/app/index.js'

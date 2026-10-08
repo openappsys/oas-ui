@@ -7,7 +7,7 @@
     "below60": 0,
     "ratio": 268,
     "exempt": 630,
-    "skipped": 2838
+    "skipped": 2843
   },
   "topPairs": [],
   "pages": {
@@ -1266,6 +1266,22 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": 6
+    },
+    "message-scroller.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 5
+    },
+    "message-scroller.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 5
     }
   }
 }

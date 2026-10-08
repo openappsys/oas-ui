@@ -4260,5 +4260,77 @@
     "events": {
       "oas-change": "Fired after scroll/keyboard selection settles (not fired on programmatic value writes). detail { value, labels, columnIndex }—value/labels reflect all columns, columnIndex is the changed column"
     }
+  },
+  "oas-bubble": {
+    "attrs": {
+      "loading": "Typing state (boolean presence): content switches to a three-dot typing indicator and the host reflects aria-busy (the AI \"typing\" scenario)"
+    },
+    "events": {},
+    "slots": {
+      "": "Bubble content"
+    }
+  },
+  "oas-attachment": {
+    "attrs": {
+      "name": "File name (title channel; renders media only without error when absent)",
+      "detail": "Secondary metadata (type · size); in the error state with no detail, shows the localized failure text (\"Upload failed\"); an explicit value is kept",
+      "state": "Upload state machine: idle / uploading / processing / error / done (default done; vocabulary matches oas-upload; uploading/processing reflect aria-busy)",
+      "progress": "Upload progress 0–100 (clamped; the thin bottom progress bar with role=progressbar renders only while uploading)",
+      "size": "Three size steps: default / sm (accepts the small alias) / xs, tightening padding and media per step",
+      "orientation": "Layout direction: horizontal (default) / vertical (media above text, for narrow columns)",
+      "href": "When set, the whole card becomes a clickable trigger (a[part=trigger]) and clicks dispatch oas-open; host preventDefault takes over and blocks default navigation",
+      "downloadable": "Boolean presence: shows the built-in download button (clicking dispatches oas-download; the download itself is host-owned)",
+      "removable": "Boolean presence: shows the built-in remove button (clicking dispatches oas-remove; the component never removes itself — removal is a host decision)"
+    },
+    "events": {
+      "oas-open": "Dispatched when the href card trigger is clicked, detail { href }; cancelable — host preventDefault also blocks the anchor default navigation",
+      "oas-download": "Dispatched when the built-in download button is clicked, detail { name }",
+      "oas-remove": "Dispatched when the built-in remove button is clicked, detail { name }; never self-removes"
+    },
+    "slots": {
+      "actions": "Appends custom actions (after the built-in download/remove buttons)",
+      "media": "Media slot (icon/thumbnail); any slotted content overrides the built-in default glyph"
+    }
+  },
+  "oas-message-scroller": {
+    "attrs": {
+      "auto-scroll": "AI-style bottom follow (boolean presence, off by default): follows streaming growth only while the reader is at the bottom (near-bottom ≤ edge-threshold); scrolled-up reading is never interrupted",
+      "pin-to-bottom": "IM-style always pinned (boolean presence): new content always scrolls to the bottom, pulling readers back; wins when combined with auto-scroll",
+      "default-position": "Opening position: start (top) / end (bottom, default; invalid values fall back to end); last-anchor arrives with batch B anchoring",
+      "edge-threshold": "Bottom detection threshold in px (default 8) — within the threshold of the bottom counts as at-bottom (near-bottom detection)",
+      "label": "Overrides the viewport accessible name (locale \"Messages\" by default; absorbed into the viewport and removed from the host — global-attribute absorption convention)",
+      "preserve-scroll-on-prepend": "Compensates scrollTop when older messages are prepended to keep the reading position (on by default; explicit =\"false\" disables)"
+    },
+    "events": {
+      "oas-scroll-state": "Dispatched when scrolling crosses a decision line, detail { atBottom, atTop, canScrollStart, canScrollEnd }; an initial state is broadcast once on the first frame (after initial positioning) — received even when the host attaches its listener after the upgrade"
+    },
+    "slots": {
+      "": "Message rows (oas-message-row / oas-marker etc.)",
+      "button": "Custom jump-to-bottom button content (replaces the built-in arrow glyph; visibility and click remain component-owned; default is the built-in part=button)"
+    }
+  },
+  "oas-marker": {
+    "attrs": {
+      "variant": "Variant: default (small secondary text), border (outlined pill row), separator (stretching lines both sides of the text — the primary time-divider form); empty content hides default/border entirely while separator keeps the line"
+    },
+    "events": {},
+    "slots": {
+      "": "Text content",
+      "icon": "Decorative icon slot (wrapper is aria-hidden; streaming/progress status is declared by the host via role=status, not duplicated by the component)"
+    }
+  },
+  "oas-message-row": {
+    "attrs": {
+      "align": "Direction: start (theirs, default) / end (mine) — logical properties (row-reverse + logical alignment), mirrored automatically in RTL",
+      "status": "Delivery status convenience attribute: sending / sent / delivered / read / error — renders visible text + decorative icons (localized copy; meaning never rides on color alone; error adds danger color as enhancement); invalid/absent values render no status area",
+      "grouped": "Boolean presence: consecutive message from the same sender (declared by the host), tightening row spacing via --oas-message-gap"
+    },
+    "events": {},
+    "slots": {
+      "": "Message content (place oas-bubble)",
+      "avatar": "Avatar slot (bottom-aligned; long messages hug the bottom)",
+      "header": "Header slot (sender name/time)",
+      "footer": "Footer slot (actions/extra metadata, aligned with direction)"
+    }
   }
 }

@@ -1,0 +1,29 @@
+{
+  "className": "OASBubble",
+  "sourceFile": "packages/ui/src/conversation/bubble/oas-bubble.ts",
+  "attrs": [
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-bubble-max-width",
+      "default": "80%"
+    },
+    {
+      "name": "--oas-bubble-radius",
+      "default": "var(--oas-radius-lg)"
+    }
+  ],
+  "unresolved": []
+}

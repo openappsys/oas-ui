@@ -422,4 +422,16 @@ export const zhCN = {
   'pullRefresh.release': '松开立即刷新',
   'pullRefresh.refreshing': '刷新中…',
   'pullRefresh.success': '刷新成功',
+  // conversation（会话族：bubble/attachment/message-scroller/message-row）
+  'bubble.loading': '正在输入…',
+  'attachment.remove': '移除 {name}',
+  'attachment.download': '下载 {name}',
+  'attachment.error': '上传失败',
+  'messageScroller.label': '消息列表',
+  'messageScroller.scrollToBottom': '滚动到底部',
+  'messageRow.status.sending': '发送中',
+  'messageRow.status.sent': '已发送',
+  'messageRow.status.delivered': '已送达',
+  'messageRow.status.read': '已读',
+  'messageRow.status.error': '发送失败',
 } as const

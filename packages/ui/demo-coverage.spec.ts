@@ -605,6 +605,18 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   avatar: [
     ['oas-avatar [part="trigger"]', 'domclick', '点换头像遮罩（hover/focus 才显形，DOM click 直达）→ oas-trigger'],
   ],
+  attachment: [
+    ['oas-attachment[removable] [part="remove"]', 'domclick', '点删除钮 → oas-remove'],
+    ['oas-attachment[downloadable] [part="download"]', 'domclick', '点下载钮 → oas-download'],
+    ['oas-attachment[href] [part="trigger"]', 'domclick', 'DOM click 整卡触发（真实点击会 # 导航抖动）→ oas-open'],
+  ],
+  'message-scroller': [
+    [
+      'oas-message-scroller',
+      'scrollbottom',
+      '视口确定性滚到底（shadow .viewport scrollTop=scrollHeight）→ oas-scroll-state',
+    ],
+  ],
   'bottom-navigation': [['oas-bottom-navigation [part="tab"]', 'click:n1', '点非激活 tab → oas-change']],
   sidebar: [
     ['oas-sidebar [part="toggle"]', 'domclick', '折叠开关 → oas-collapse'],

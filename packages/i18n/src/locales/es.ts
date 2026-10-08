@@ -419,4 +419,16 @@ export const es: LocaleMessages = {
   'pullRefresh.refreshing': 'Actualizando…',
   'pullRefresh.success': 'Actualizado',
   'datePicker.shortcutThisQuarter': 'Este trimestre',
+  // conversation (familia de conversación)
+  'bubble.loading': 'Escribiendo…',
+  'attachment.remove': 'Quitar {name}',
+  'attachment.download': 'Descargar {name}',
+  'attachment.error': 'Error al subir',
+  'messageScroller.label': 'Mensajes',
+  'messageScroller.scrollToBottom': 'Desplazarse al final',
+  'messageRow.status.sending': 'Enviando',
+  'messageRow.status.sent': 'Enviado',
+  'messageRow.status.delivered': 'Entregado',
+  'messageRow.status.read': 'Leído',
+  'messageRow.status.error': 'Error al enviar',
 }

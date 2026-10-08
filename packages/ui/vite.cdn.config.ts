@@ -9,9 +9,9 @@ import { resolve } from 'node:path'
  * - 与主构建（preserveModules ESM）互不干扰：单独配置文件 + emptyOutDir:false
  * - 浏览器直连 unpkg 可用，普通 <script> 标签即可（IIFE 自执行注册，无需 type=module）
  *
- * 构建驱动：packages/ui/package.json `build:cdn` 循环 8 次调用（7 族 + 全量）。
+ * 构建驱动：packages/ui/package.json `build:cdn` 循环 9 次调用（8 族 + 全量）。
  */
-const FAMILIES = ['basic', 'layout', 'form', 'feedback', 'navigation', 'data', 'framework']
+const FAMILIES = ['basic', 'layout', 'form', 'feedback', 'navigation', 'data', 'conversation', 'framework']
 
 export default defineConfig(() => {
   const family = (process.env.OAS_CDN_ENTRY ?? '').trim()

@@ -419,4 +419,16 @@ export const ko: LocaleMessages = {
   'pullRefresh.refreshing': '새로고침 중…',
   'pullRefresh.success': '새로고침 완료',
   'datePicker.shortcutThisQuarter': '이번 분기',
+  // conversation(대화 패밀리)
+  'bubble.loading': '입력 중…',
+  'attachment.remove': '{name} 제거',
+  'attachment.download': '{name} 다운로드',
+  'attachment.error': '업로드 실패',
+  'messageScroller.label': '메시지',
+  'messageScroller.scrollToBottom': '맨 아래로 스크롤',
+  'messageRow.status.sending': '전송 중',
+  'messageRow.status.sent': '전송됨',
+  'messageRow.status.delivered': '전달됨',
+  'messageRow.status.read': '읽음',
+  'messageRow.status.error': '전송 실패',
 }
