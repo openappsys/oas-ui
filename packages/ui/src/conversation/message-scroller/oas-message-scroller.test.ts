@@ -57,6 +57,24 @@ function viewportOf(el: OASMessageScroller): HTMLElement {
   return el.shadowRoot!.querySelector<HTMLElement>('.viewport')!
 }
 
+const makeRect = (top: number): DOMRect =>
+  ({ top, bottom: top, left: 0, right: 0, width: 0, height: 0, x: 0, y: top, toJSON: () => {} }) as unknown as DOMRect
+
+/**
+ * 桩化滚动内容几何（模拟真实布局）：content 盒顶随 scrollTop 上移、元素按内容坐标 y 定位。
+ * contentYOf(el) = elRect.top - contentRect.top（滚动不变量）；viewportYOf = elRect.top（vpRect=0）。
+ */
+function stubGeometry(el: OASMessageScroller, items: Array<{ node: Element; y: number }>) {
+  const vp = viewportOf(el)
+  const content = el.shadowRoot!.querySelector('[part="content"]')!
+  vp.getBoundingClientRect = () => makeRect(0)
+  content.getBoundingClientRect = () => makeRect(-vp.scrollTop)
+  for (const { node, y } of items) {
+    node.getBoundingClientRect = () => makeRect(y - vp.scrollTop)
+  }
+  return vp
+}
+
 const raf = () => new Promise<void>((r) => requestAnimationFrame(() => r()))
 
 describe('OASMessageScroller', () => {
@@ -206,6 +224,8 @@ describe('OASMessageScroller', () => {
   it('prepend 保位基础：顶部插入更早消息后 scrollTop 补偿高度差（默认开）', async () => {
     const el = mount('<p>newer</p>', { 'default-position': 'start' })
     const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    const p1 = el.children[0]!
+    stubGeometry(el, [{ node: p1, y: 0 }])
     await raf()
     await raf()
     vp.scrollTop = 500
@@ -214,7 +234,8 @@ describe('OASMessageScroller', () => {
     Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1300 })
     const older = document.createElement('p')
     older.textContent = 'older'
-    el.insertBefore(older, el.firstChild)
+    el.insertBefore(older, p1)
+    stubGeometry(el, [{ node: p1, y: 300 }])
     await raf()
     expect(vp.scrollTop).toBe(800) // 500 + 300
   })
@@ -222,6 +243,8 @@ describe('OASMessageScroller', () => {
   it('prepend 保位基础：已装载后滚到顶部（scrollTop=0）再插入历史也补偿；首次装载不补偿', async () => {
     const el = mount('<p>newer</p>', { 'default-position': 'start' })
     const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    const p1 = el.children[0]!
+    stubGeometry(el, [{ node: p1, y: 0 }])
     await raf()
     await raf()
     // 首次内容装载：首节点从无到有，不得补偿（否则 scrollTop 被顶到整段高度跳底）
@@ -232,7 +255,8 @@ describe('OASMessageScroller', () => {
     Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1300 })
     const older = document.createElement('p')
     older.textContent = 'older'
-    el.insertBefore(older, el.firstChild)
+    el.insertBefore(older, p1)
+    stubGeometry(el, [{ node: p1, y: 300 }])
     await raf()
     expect(vp.scrollTop, '顶部插入历史补偿高度差，阅读位置不跳').toBe(300)
   })
@@ -240,12 +264,17 @@ describe('OASMessageScroller', () => {
   it('preserve-scroll-on-prepend="false" 关闭保位补偿', async () => {
     const el = mount('<p>newer</p>', { 'default-position': 'start', 'preserve-scroll-on-prepend': 'false' })
     const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    const p1 = el.children[0]!
+    stubGeometry(el, [{ node: p1, y: 0 }])
     await raf()
     await raf()
     vp.scrollTop = 500
     vp.dispatchEvent(new Event('scroll'))
     Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1300 })
-    el.insertBefore(Object.assign(document.createElement('p'), { textContent: 'older' }), el.firstChild)
+    const older = document.createElement('p')
+    older.textContent = 'older'
+    el.insertBefore(older, p1)
+    stubGeometry(el, [{ node: p1, y: 300 }])
     await raf()
     expect(vp.scrollTop).toBe(500)
   })
@@ -405,5 +434,423 @@ describe('OASMessageScroller', () => {
     await raf()
     expect(short.getAttribute('data-scrollable'), 'scrollHeight < clientHeight 无可滚').toBe('')
     expect(short.shadowRoot!.querySelector('[part="button"]')!.hasAttribute('hidden')).toBe(true)
+  })
+})
+
+// ---------- B 批：滚动的精确性与会话体验（异步保位锚 / 混合结算 / 首屏防跳 / last-anchor / 轮次锚定） ----------
+
+describe('OASMessageScroller B 批', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  // ---------- 首屏防跳（data-pending-scroll） ----------
+
+  it('首屏防跳：end 打开——连接即在宿主上反射 data-pending-scroll，首帧定位后移除', async () => {
+    const el = mount('<p>m1</p>')
+    stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    expect(el.hasAttribute('data-pending-scroll'), '定位应用前在场（防未定位帧闪现顶部）').toBe(true)
+    await raf()
+    expect(el.hasAttribute('data-pending-scroll'), '定位后移除').toBe(false)
+    expect(viewportOf(el).scrollTop, '定位在移除前已生效').toBe(600)
+  })
+
+  it('首屏防跳：default-position=start 天然定位（scrollTop=0 是初始值），不设 pending', () => {
+    const el = mount('<p>m1</p>', { 'default-position': 'start' })
+    expect(el.hasAttribute('data-pending-scroll')).toBe(false)
+  })
+
+  it('首屏防跳：读者在定位前已滚动（让位）也移除 pending，viewport 不被永久隐藏', async () => {
+    const el = mount('<p>m1</p>')
+    stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    viewportOf(el).scrollTop = 100
+    viewportOf(el).dispatchEvent(new Event('scroll'))
+    await raf()
+    expect(el.hasAttribute('data-pending-scroll')).toBe(false)
+    expect(viewportOf(el).scrollTop).toBe(100)
+  })
+
+  it('首屏防跳 CSS 机制：样式表含 :host([data-pending-scroll]) 下 viewport visibility:hidden 规则', () => {
+    const el = mount('<p>m1</p>')
+    const style = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(style).toContain(':host([data-pending-scroll])')
+    expect(style).toContain('visibility: hidden')
+  })
+
+  // ---------- default-position=last-anchor 与 scrollToMessage ----------
+
+  it('last-anchor：定位到最后一个 anchor 标记消息顶部；多个锚取最后', async () => {
+    const el = mount('<p>a1</p><p anchor>q1</p><p>mid</p><p anchor>q2</p><p>tail</p>', {
+      'default-position': 'last-anchor',
+    })
+    const vp = stubScroll(el, { scrollHeight: 2000, clientHeight: 400 })
+    stubGeometry(el, [
+      { node: el.children[0]!, y: 0 },
+      { node: el.children[1]!, y: 100 },
+      { node: el.children[2]!, y: 300 },
+      { node: el.children[3]!, y: 900 },
+      { node: el.children[4]!, y: 1000 },
+    ])
+    await raf()
+    await raf()
+    expect(vp.scrollTop, '最后一个锚（内容 y=900）顶对齐').toBe(900)
+  })
+
+  it('last-anchor：无锚点消息时回退 end', async () => {
+    const el = mount('<p>m1</p><p>m2</p>', { 'default-position': 'last-anchor' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    await raf()
+    await raf()
+    expect(vp.scrollTop, '无锚点回退 end（600）').toBe(600)
+  })
+
+  it('scrollToMessage(id)：滚到对应 message-id 元素顶返回 true；未知 id 返回 false 且不滚动', async () => {
+    const el = mount('<p message-id="m1">a</p><p message-id="m2">b</p>')
+    const vp = stubScroll(el, { scrollHeight: 2000, clientHeight: 400 })
+    stubGeometry(el, [
+      { node: el.children[0]!, y: 0 },
+      { node: el.children[1]!, y: 700 },
+    ])
+    await raf()
+    await raf()
+    expect(el.scrollToMessage('m2', { behavior: 'instant' })).toBe(true)
+    expect(vp.scrollTop).toBe(700)
+    expect(el.scrollToMessage('nope', { behavior: 'instant' })).toBe(false)
+    expect(vp.scrollTop, '未知 id 不动').toBe(700)
+  })
+
+  // ---------- prepend 异步资源保位（锚点追踪） ----------
+
+  it('prepend 保位锚：插入历史后异步资源撑高（RO 通道）按锚点视口位移补偿', async () => {
+    const created = installFakeRO()
+    const el = mount('<p>newer</p>', { 'default-position': 'start' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    const p1 = el.children[0]!
+    stubGeometry(el, [{ node: p1, y: 0 }])
+    await raf()
+    await raf()
+    vp.scrollTop = 500
+    vp.dispatchEvent(new Event('scroll'))
+    // prepend 300px 历史（p1 被顶到内容 y=300，补偿后 scrollTop=800，p1 视口 y=-500）
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1300 })
+    const older = document.createElement('p')
+    el.insertBefore(older, p1)
+    stubGeometry(el, [{ node: p1, y: 300 }])
+    await raf()
+    await raf()
+    expect(vp.scrollTop, 'prepend 补偿基础').toBe(800)
+    // 模拟历史内图片加载撑高上方内容 300px（p1 被顶到 y=600）
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1600 })
+    stubGeometry(el, [{ node: p1, y: 600 }])
+    const ro = created.at(-1)!
+    ro.callback([], ro as unknown as ResizeObserver)
+    await raf()
+    expect(vp.scrollTop, '锚点视口位置保持（-500 不变 → scrollTop+300）').toBe(1100)
+  })
+
+  it('prepend 保位锚：stable message-id 优先——锚行被宿主替换后按 id 重查继续保位', async () => {
+    const created = installFakeRO()
+    const el = mount('<p message-id="m1">newer</p>', { 'default-position': 'start' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    const p1 = el.children[0]!
+    stubGeometry(el, [{ node: p1, y: 0 }])
+    await raf()
+    await raf()
+    vp.scrollTop = 500
+    vp.dispatchEvent(new Event('scroll'))
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1300 })
+    const older = document.createElement('p')
+    el.insertBefore(older, p1)
+    stubGeometry(el, [{ node: p1, y: 300 }])
+    await raf()
+    await raf()
+    expect(vp.scrollTop).toBe(800)
+    // 宿主重建锚行（同 id 新元素替换旧节点）
+    const p2 = document.createElement('p')
+    p2.setAttribute('message-id', 'm1')
+    el.replaceChild(p2, p1)
+    // 异步撑高 300px
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1600 })
+    stubGeometry(el, [{ node: p2, y: 600 }])
+    const ro = created.at(-1)!
+    ro.callback([], ro as unknown as ResizeObserver)
+    await raf()
+    expect(vp.scrollTop, '按 message-id 重查锚点继续补偿').toBe(1100)
+  })
+
+  it('prepend 保位锚：读者真实滚动释放锚（后续撑高不再补偿）', async () => {
+    const created = installFakeRO()
+    const el = mount('<p>newer</p>', { 'default-position': 'start' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    const p1 = el.children[0]!
+    stubGeometry(el, [{ node: p1, y: 0 }])
+    await raf()
+    await raf()
+    vp.scrollTop = 500
+    vp.dispatchEvent(new Event('scroll'))
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1300 })
+    const older = document.createElement('p')
+    el.insertBefore(older, p1)
+    stubGeometry(el, [{ node: p1, y: 300 }])
+    await raf()
+    await raf()
+    expect(vp.scrollTop).toBe(800)
+    // 读者接管：真实滚动到 400
+    vp.scrollTop = 400
+    vp.dispatchEvent(new Event('scroll'))
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1600 })
+    stubGeometry(el, [{ node: p1, y: 600 }])
+    const ro = created.at(-1)!
+    ro.callback([], ro as unknown as ResizeObserver)
+    await raf()
+    expect(vp.scrollTop, '锚已释放，不再补偿').toBe(400)
+  })
+
+  it('程序滚动回声：保位补偿自身触发的 scroll 事件不当读者意图（不释放锚）', async () => {
+    const created = installFakeRO()
+    const el = mount('<p>newer</p>', { 'default-position': 'start' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    const p1 = el.children[0]!
+    stubGeometry(el, [{ node: p1, y: 0 }])
+    await raf()
+    await raf()
+    vp.scrollTop = 500
+    vp.dispatchEvent(new Event('scroll'))
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1300 })
+    const older = document.createElement('p')
+    el.insertBefore(older, p1)
+    stubGeometry(el, [{ node: p1, y: 300 }])
+    await raf()
+    await raf()
+    expect(vp.scrollTop).toBe(800)
+    // 浏览器对程序 scrollTop 赋值会异步派发 scroll——happy-dom 手动补一次回声
+    vp.dispatchEvent(new Event('scroll'))
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1600 })
+    stubGeometry(el, [{ node: p1, y: 600 }])
+    const ro = created.at(-1)!
+    ro.callback([], ro as unknown as ResizeObserver)
+    await raf()
+    expect(vp.scrollTop, '回声未释放锚，补偿照常').toBe(1100)
+  })
+
+  it('prepend 保位锚：preserve-scroll-on-prepend="false" 时不设锚（撑高不补偿）', async () => {
+    const created = installFakeRO()
+    const el = mount('<p>newer</p>', { 'default-position': 'start', 'preserve-scroll-on-prepend': 'false' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    const p1 = el.children[0]!
+    stubGeometry(el, [{ node: p1, y: 0 }])
+    await raf()
+    await raf()
+    vp.scrollTop = 500
+    vp.dispatchEvent(new Event('scroll'))
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1300 })
+    const older = document.createElement('p')
+    el.insertBefore(older, p1)
+    stubGeometry(el, [{ node: p1, y: 300 }])
+    await raf()
+    await raf()
+    expect(vp.scrollTop).toBe(500)
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1600 })
+    stubGeometry(el, [{ node: p1, y: 600 }])
+    const ro = created.at(-1)!
+    ro.callback([], ro as unknown as ResizeObserver)
+    await raf()
+    expect(vp.scrollTop, '关闭保位 → 无锚 → 不补偿').toBe(500)
+  })
+
+  // ---------- 同帧 append+prepend 混合结算 ----------
+
+  it('混合插入：同帧 prepend 历史 + append 新消息，补偿只结算顶部插入量（不多补底部追加）', async () => {
+    const el = mount('<p>newer</p>', { 'default-position': 'start' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    const p1 = el.children[0]!
+    stubGeometry(el, [{ node: p1, y: 0 }])
+    await raf()
+    await raf()
+    vp.scrollTop = 500
+    vp.dispatchEvent(new Event('scroll'))
+    // 同帧：顶部插 300px 历史 + 底部追加（总高 +700 = 顶 300 + 底 400）
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1700 })
+    const older = document.createElement('p')
+    el.insertBefore(older, p1)
+    const newer = document.createElement('p')
+    el.appendChild(newer)
+    stubGeometry(el, [{ node: p1, y: 300 }])
+    await raf()
+    expect(vp.scrollTop, '只补顶部 300（500+300），底部追加的 400 不参与补偿').toBe(800)
+  })
+
+  it('混合插入 + auto-scroll 底部跟随：读者在底部时先结算 prepend、钉底后发覆盖', async () => {
+    const el = mount('<p>m1</p>', { 'auto-scroll': '' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    const p1 = el.children[0]!
+    stubGeometry(el, [{ node: p1, y: 0 }])
+    await raf()
+    // 同帧混合插入
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1700 })
+    const older = document.createElement('p')
+    el.insertBefore(older, p1)
+    const newer = document.createElement('p')
+    el.appendChild(newer)
+    stubGeometry(el, [{ node: p1, y: 300 }])
+    await raf()
+    expect(vp.scrollTop, '底部跟随（1700-400）').toBe(1300)
+  })
+
+  // ---------- 轮次锚定（turn-anchor + prev-peek） ----------
+
+  it('turn-anchor：锚贴顶时内容增长保持锚顶对齐（锚定在视口顶 prev-peek 处）', async () => {
+    const el = mount('<p>a1</p><p anchor>q1</p><p>ans1</p>', { 'turn-anchor': '' })
+    const vp = stubScroll(el, { scrollHeight: 2000, clientHeight: 400 })
+    const q1 = el.children[1]!
+    stubGeometry(el, [
+      { node: el.children[0]!, y: 0 },
+      { node: q1, y: 100 },
+      { node: el.children[2]!, y: 200 },
+    ])
+    await raf()
+    await raf()
+    // 读者滚到锚定位置（锚视口 y = prev-peek 64）
+    vp.scrollTop = 100 - 64
+    vp.dispatchEvent(new Event('scroll'))
+    // 回答流式增长（append 行，无锚点行）
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 2400 })
+    el.appendChild(document.createElement('p'))
+    await raf()
+    expect(vp.scrollTop, '锚顶对齐保持（contentY(q1)=100 - peek 64 = 36）').toBe(36)
+  })
+
+  it('turn-anchor：锚顶跟随中上方插入历史，锚点被顶下后对齐修正', async () => {
+    const el = mount('<p>a1</p><p anchor>q1</p>', { 'turn-anchor': '' })
+    const vp = stubScroll(el, { scrollHeight: 2000, clientHeight: 400 })
+    const [a1, q1] = [el.children[0]!, el.children[1]!]
+    stubGeometry(el, [
+      { node: a1, y: 0 },
+      { node: q1, y: 100 },
+    ])
+    await raf()
+    await raf()
+    vp.scrollTop = 36 // 锚定位置（100 - 64）
+    vp.dispatchEvent(new Event('scroll'))
+    // prepend 200px 历史：q1 内容 y 100→300；prepend 补偿后 scrollTop=236，锚视口 y=64 → 对齐幂等保持
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 2200 })
+    const older = document.createElement('p')
+    el.insertBefore(older, a1)
+    stubGeometry(el, [
+      { node: a1, y: 200 },
+      { node: q1, y: 300 },
+    ])
+    await raf()
+    expect(vp.scrollTop, 'prepend 补偿 + 锚顶对齐保持（36+200）').toBe(236)
+  })
+
+  it('turn-anchor：读者在底部时新锚到来，定型贴底跟随（bottom 模式）', async () => {
+    const el = mount('<p>a1</p><p anchor>q1</p><p>ans…</p>', { 'turn-anchor': '' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    stubGeometry(el, [
+      { node: el.children[0]!, y: 0 },
+      { node: el.children[1]!, y: 50 },
+      { node: el.children[2]!, y: 100 },
+    ])
+    await raf()
+    // 读者在底（首帧 end 定位后 600）
+    // 新一轮：append 新锚 + 回答，内容撑高
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1600 })
+    const q2 = document.createElement('p')
+    q2.setAttribute('anchor', '')
+    el.appendChild(q2)
+    el.appendChild(document.createElement('p'))
+    stubGeometry(el, [
+      { node: el.children[0]!, y: 0 },
+      { node: el.children[1]!, y: 50 },
+      { node: el.children[2]!, y: 100 },
+      { node: q2, y: 1100 },
+    ])
+    await raf()
+    expect(vp.scrollTop, '贴底跟随（1600-400）——新轮次从底部流入视野').toBe(1200)
+  })
+
+  it('turn-anchor：读者上翻历史区（锚离顶离底）内容增长静止', async () => {
+    const el = mount('<p>a1</p><p anchor>q1</p><p>ans</p>', { 'turn-anchor': '' })
+    const vp = stubScroll(el, { scrollHeight: 2000, clientHeight: 400 })
+    const q1 = el.children[1]!
+    stubGeometry(el, [
+      { node: el.children[0]!, y: 0 },
+      { node: q1, y: 100 },
+      { node: el.children[2]!, y: 200 },
+    ])
+    await raf()
+    await raf()
+    // 上翻到顶部（锚视口 y=100，不在顶窗口也不在 peek 窗口）
+    vp.scrollTop = 0
+    vp.dispatchEvent(new Event('scroll'))
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 2400 })
+    el.appendChild(document.createElement('p'))
+    await raf()
+    expect(vp.scrollTop, '读者接管，不拉回').toBe(0)
+  })
+
+  it('turn-anchor：无锚点回退钉底', async () => {
+    const el = mount('<p>m1</p>', { 'turn-anchor': '' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    await raf()
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1400 })
+    el.appendChild(Object.assign(document.createElement('p'), { textContent: 'm2' }))
+    await raf()
+    expect(vp.scrollTop, '无锚回退钉底').toBe(1000)
+  })
+
+  it('turn-anchor：prev-peek 自定义值生效（对齐在锚顶上方 peek px 处）', async () => {
+    const el = mount('<p>a1</p><p anchor>q1</p>', { 'turn-anchor': '', 'prev-peek': '20' })
+    const vp = stubScroll(el, { scrollHeight: 2000, clientHeight: 400 })
+    const q1 = el.children[1]!
+    stubGeometry(el, [
+      { node: el.children[0]!, y: 0 },
+      { node: q1, y: 100 },
+    ])
+    await raf()
+    await raf()
+    vp.scrollTop = 80 // 锚视口 y=20（自定义 peek 位置）
+    vp.dispatchEvent(new Event('scroll'))
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 2400 })
+    el.appendChild(document.createElement('p'))
+    await raf()
+    expect(vp.scrollTop, '对齐 contentY(q1)-20=80（保持）').toBe(80)
+  })
+
+  it('回底后零位移的过期 scroll 事件不释放跟随（原生事件异步到达时几何已被追加更新）', async () => {
+    const el = mount('<p>m1</p>', { 'auto-scroll': '' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 400 })
+    await raf()
+    // 铺垫 + 上翻接管
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1400 })
+    el.appendChild(Object.assign(document.createElement('p'), { textContent: '铺垫' }))
+    await raf()
+    vp.scrollTop = 100
+    vp.dispatchEvent(new Event('scroll'))
+    // 回底（真实位移 → following 恢复）
+    vp.scrollTop = 1000
+    vp.dispatchEvent(new Event('scroll'))
+    // 立即追加一行（gap=436）——回底写入的「原生 scroll 事件」此刻才异步到达：scrollTop 无位移，
+    // 但几何已含新行（过期快照若参与重判会把 following 错误置 false）
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1436 })
+    el.appendChild(Object.assign(document.createElement('p'), { textContent: '回底后立即追加' }))
+    vp.dispatchEvent(new Event('scroll')) // 零位移的过期事件
+    // 再追加：跟随必须仍在（钉底），证明过期事件没有释放 following
+    Object.defineProperty(vp, 'scrollHeight', { configurable: true, value: 1872 })
+    el.appendChild(Object.assign(document.createElement('p'), { textContent: '再追加' }))
+    await raf()
+    expect(vp.scrollTop, '过期 scroll 事件未释放跟随，追加仍钉底（1472=1872-400）').toBe(1472)
+  })
+
+  it('observedAttributes 覆盖 B 批新增属性（turn-anchor / prev-peek）', () => {
+    expect(OASMessageScroller.observedAttributes).toContain('turn-anchor')
+    expect(OASMessageScroller.observedAttributes).toContain('prev-peek')
   })
 })
