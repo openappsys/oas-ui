@@ -290,15 +290,16 @@ export class OASKnob extends OASElement {
       pe.preventDefault()
       return
     }
+    // 鼠标非主键不接管（右键等原生行为保留）；已有人在拖则主指针独占——
+    // 第二指针整体忽略（含 Ctrl 复位意图：拖拽中的复位手势一律不打断进行中手势）
+    if (pe.pointerType === 'mouse' && pe.button !== 0) return
+    if (this.drag) return
     // Ctrl/Cmd + 单击 = 复位默认值（专业音频惯例，与拖拽互斥）
     if (pe.ctrlKey || pe.metaKey) {
       pe.preventDefault()
       this.applyReset()
       return
     }
-    // 鼠标非主键不接管（右键等原生行为保留）；已有人在拖则主指针独占
-    if (pe.pointerType === 'mouse' && pe.button !== 0) return
-    if (this.drag) return
     const rect = this.frame?.getBoundingClientRect()
     // 无布局尺寸（hidden / 未挂载）不启动手势
     if (!rect || !rect.width || !rect.height) return
@@ -327,6 +328,7 @@ export class OASKnob extends OASElement {
     this.frame?.addEventListener('pointermove', this.onPointerMove)
     this.frame?.addEventListener('pointerup', this.onPointerFinish)
     this.frame?.addEventListener('pointercancel', this.onPointerFinish)
+    this.frame?.addEventListener('lostpointercapture', this.onCaptureLost)
   }
 
   private readonly onPointerMove = (e: Event): void => {
@@ -349,8 +351,15 @@ export class OASKnob extends OASElement {
     this.finishDrag(e as PointerEvent, e.type === 'pointercancel')
   }
 
+  private readonly onCaptureLost = (): void => {
+    // 指针捕获被外部夺走：后续 move/up 不再到达本元素，走取消路径防僵尸拖拽
+    if (this.drag) this.finishDrag(null, true)
+  }
+
   private readonly onDblClick = (): void => {
     if (this.injectDisabled() || this.hasAttr('readonly')) return
+    // 拖拽进行中的双击（多指误触）忽略——复位手势不打断进行中的拖拽
+    if (this.drag) return
     this.applyReset()
   }
 
@@ -393,6 +402,8 @@ export class OASKnob extends OASElement {
     if (!this.hasAttr('wheel')) return
     if (this.injectDisabled() || this.hasAttr('readonly')) return
     const we = e as WheelEvent
+    // 横向触控板平移（仅 deltaX、deltaY=0）不调值、不抢占滚动
+    if (we.deltaY === 0) return
     we.preventDefault()
     const [min, max] = this.bounds()
     const span = max - min || 1
@@ -627,8 +638,12 @@ export class OASKnob extends OASElement {
   private formatNumber(v: number): string {
     const fn = this._formatValue
     if (typeof fn === 'function') {
-      const r = fn(v)
-      if (r != null) return String(r)
+      try {
+        const r = fn(v)
+        if (r != null) return String(r)
+      } catch {
+        /* 宿主格式化函数抛错：降级到下一通道（format 模板 / unit 后缀 / 裸数字），渲染与手势不中断 */
+      }
     }
     const tpl = this.getAttr('format', '')
     if (tpl) return tpl.replaceAll('${value}', String(v))
@@ -723,6 +738,7 @@ export class OASKnob extends OASElement {
     this.frame?.removeEventListener('pointermove', this.onPointerMove)
     this.frame?.removeEventListener('pointerup', this.onPointerFinish)
     this.frame?.removeEventListener('pointercancel', this.onPointerFinish)
+    this.frame?.removeEventListener('lostpointercapture', this.onCaptureLost)
     if (pe) {
       try {
         this.frame?.releasePointerCapture(pe.pointerId)
@@ -778,6 +794,8 @@ export class OASKnob extends OASElement {
 
   /** 复位到 default-value（缺省 min）：派发 oas-reset（不派发 change——复位不是一次数值确认） */
   private applyReset(): void {
+    // 拖拽中复位（程序 reset() 等路径）：先走取消路径终止手势（回滚零提交），再落复位值
+    if (this.drag) this.finishDrag(null, true)
     const target = this.resolveDefaultValue()
     this.setAttribute('value', String(target))
     this.update()

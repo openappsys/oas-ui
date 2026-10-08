@@ -132,22 +132,15 @@ describe('OASKnob', () => {
     expect(fillPath(el).hasAttribute('hidden')).toBe(true)
   })
 
-  it('SSR 快照与 render 路径结构一致（同一 template 纯函数）', () => {
+  it('增量同步不重建 shadow（update 幂等：style 节点引用稳定）', () => {
     const a = mount({ value: '60' })
-    const b = new OASKnob()
-    b.setAttribute('value', '60')
-    // 未连接元素（无 render）直接取内部模板不可行——用两个已连接实例对比幂等性：
-    // 同属性两次 update 后结构不变（增量同步不重建 shadow）
-    const htmlBefore = a.shadowRoot!.innerHTML
-    a.setAttribute('value', '30')
-    expect(a.shadowRoot!.querySelector('[part="frame"]')).toBeTruthy()
-    a.setAttribute('value', '60')
-    // 增量路径：style 节点保持同一引用（未被 innerHTML 重建）
     const styleA = a.shadowRoot!.querySelector('style')
     a.setAttribute('value', '30')
+    expect(a.shadowRoot!.querySelector('[part="frame"]')).toBeTruthy()
+    // 增量路径：style 节点保持同一引用（未被 innerHTML 重建）
     expect(a.shadowRoot!.querySelector('style')).toBe(styleA)
-    void htmlBefore
-    void b
+    a.setAttribute('value', '60')
+    expect(a.shadowRoot!.querySelector('style')).toBe(styleA)
   })
 
   // ---------- 值域钳制 / step 吸附 ----------
@@ -585,6 +578,103 @@ describe('OASKnob', () => {
     expect(attrValue(el)).toBe(50)
   })
 
+  it('拖拽中第二指针按下（含 Ctrl）：整体忽略——不复位、不接管', () => {
+    const el = mount({ interaction: 'axis', step: '0', value: '0', 'default-value': '50' })
+    stubRect(el)
+    const f = frame(el)
+    let reset = 0
+    el.addEventListener('oas-reset', () => reset++)
+    f.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, clientX: 60, clientY: 60, pointerId: 1, button: 0 }),
+    )
+    f.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 45, pointerId: 1 }))
+    expect(attrValue(el)).toBe(10)
+    // 第二指针 Ctrl+按下：不得触发复位，也不得接管手势
+    f.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        clientX: 60,
+        clientY: 20,
+        pointerId: 2,
+        button: 0,
+        ctrlKey: true,
+      }),
+    )
+    expect(attrValue(el)).toBe(10)
+    expect(reset).toBe(0)
+    // 主指针继续独占驱动
+    f.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 30, pointerId: 1 }))
+    expect(attrValue(el)).toBe(20)
+    f.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 60, clientY: 30, pointerId: 1 }))
+  })
+
+  it('拖拽中 dblclick：忽略（不复位、不打断手势）', () => {
+    const el = mount({ interaction: 'axis', step: '0', value: '0', 'default-value': '50' })
+    stubRect(el)
+    const f = frame(el)
+    let reset = 0
+    el.addEventListener('oas-reset', () => reset++)
+    f.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, clientX: 60, clientY: 60, pointerId: 1, button: 0 }),
+    )
+    f.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 45, pointerId: 1 }))
+    expect(attrValue(el)).toBe(10)
+    f.dispatchEvent(new Event('dblclick', { bubbles: true }))
+    expect(attrValue(el)).toBe(10)
+    expect(reset).toBe(0)
+    // 手势未被复位打断：继续移动仍由主指针驱动
+    f.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 30, pointerId: 1 }))
+    expect(attrValue(el)).toBe(20)
+    f.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 60, clientY: 30, pointerId: 1 }))
+  })
+
+  it('reset() 在拖拽中调用：先取消拖拽（回滚零提交）再复位，手势终止', () => {
+    const el = mount({ interaction: 'axis', step: '0', value: '0', 'default-value': '50' })
+    stubRect(el)
+    const f = frame(el)
+    let cancelled: boolean | null = null
+    let resetDetail: unknown
+    el.addEventListener(
+      'oas-drag-end',
+      (e) => (cancelled = ((e as CustomEvent).detail as { cancelled: boolean }).cancelled),
+    )
+    el.addEventListener('oas-reset', (e) => (resetDetail = (e as CustomEvent).detail))
+    f.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, clientX: 60, clientY: 60, pointerId: 1, button: 0 }),
+    )
+    f.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 45, pointerId: 1 }))
+    expect(attrValue(el)).toBe(10)
+    el.reset()
+    expect(attrValue(el)).toBe(50)
+    expect(cancelled).toBe(true)
+    expect(resetDetail).toEqual({ value: 50, defaultValue: 50 })
+    // 拖拽已终止：后续移动不再改值
+    f.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 20, pointerId: 1 }))
+    expect(attrValue(el)).toBe(50)
+  })
+
+  it('lostpointercapture：捕获被夺走时取消拖拽（回滚零提交，防僵尸手势）', () => {
+    const el = mount({ interaction: 'axis', step: '0', value: '30' })
+    stubRect(el)
+    const f = frame(el)
+    let endDetail: unknown
+    let change = 0
+    el.addEventListener('oas-drag-end', (e) => (endDetail = (e as CustomEvent).detail))
+    el.addEventListener('oas-change', () => change++)
+    f.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, clientX: 60, clientY: 60, pointerId: 1, button: 0 }),
+    )
+    f.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 60, clientY: 45, pointerId: 1 }))
+    expect(attrValue(el)).toBe(40)
+    f.dispatchEvent(new Event('lostpointercapture'))
+    expect(attrValue(el)).toBe(30)
+    expect(endDetail).toEqual({ value: 30, cancelled: true })
+    expect(change).toBe(0)
+    // 手势已清：后续 up 不再二次收口
+    f.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 60, clientY: 45, pointerId: 1 }))
+    expect(change).toBe(0)
+  })
+
   // ---------- 键盘 ----------
 
   it('键盘全键位：方向键 ±step、Shift+方向 / PageUp·Down 大步、Home/End 极值，每次按键派发 input+change', () => {
@@ -689,6 +779,11 @@ describe('OASKnob', () => {
     cont.dispatchEvent(contFine)
     // 连续模式：2（span/50）× 0.2 = 0.4 → 49.6
     expect(cont.getAttribute('aria-valuenow')).toBe('49.6')
+    // 横向触控板平移（仅 deltaX、deltaY=0）：不调值、不抢占滚动
+    const h = new WheelEvent('wheel', { deltaX: 120, deltaY: 0, cancelable: true, bubbles: true })
+    el.dispatchEvent(h)
+    expect(attrValue(el)).toBe(50)
+    expect(h.defaultPrevented).toBe(false)
   })
 
   // ---------- 复位 ----------
@@ -770,6 +865,22 @@ describe('OASKnob', () => {
     expect(el3.getAttribute('aria-valuetext')).toBe('40%')
     const el4 = mount({ value: '40' })
     expect(el4.hasAttribute('aria-valuetext')).toBe(false)
+  })
+
+  it('formatValue 抛错：降级到下一通道（format 模板 / unit 后缀 / 裸数字），渲染与交互不中断', () => {
+    const el = mount({ value: '40', unit: 'Hz' })
+    el.formatValue = () => {
+      throw new Error('boom')
+    }
+    expect(() => el.setAttribute('value', '50')).not.toThrow()
+    expect(el.getAttribute('aria-valuetext')).toBe('50Hz')
+    // 手势与键盘不被抛错打断
+    stubRect(el)
+    dragSequence(el, [
+      [60, 60],
+      [60, 45],
+    ])
+    expect(attrValue(el)).toBe(60)
   })
 
   it('show-value：显示格式化值文本，格式化函数/模板同源', () => {
