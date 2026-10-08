@@ -30,8 +30,10 @@ export default defineConfig({
     rollupOptions: {
       external: [/^@oas-ui\//],
       treeshake: {
-        // i18n 主入口含注册副作用（注入 translator），必须保留 side-effect import
-        moduleSideEffects: (id: string) => id.endsWith('.css') || id === '@oas-ui/i18n' || /[/\\\\]index\.ts$/.test(id),
+        // 含注册副作用的 side-effect import 必须保留：i18n（注入 translator）、
+        // icons/register（注册内置图标集，全量入口开箱即用所依赖）
+        moduleSideEffects: (id: string) =>
+          id.endsWith('.css') || id === '@oas-ui/i18n' || id === '@oas-ui/icons/register' || /[/\\]index\.ts$/.test(id),
       },
       output: {
         preserveModules: true,

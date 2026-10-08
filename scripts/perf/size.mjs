@@ -290,14 +290,14 @@ const BUDGETS = [
     get: () => componentMeasures.button.gzipBytes,
     limit: 29 * 1024, // 29 KB（2026-10-08 重定档：图标库 opt-in 卸掉整套图标，实测 24.8 KB）
     basis:
-      '实测 gzip 24.8 KB（图标库 opt-in：组件链只含自身所需图标 path，不再背全量 47 图标 ~9.5 KB；含 core），上浮约 15% 定档 29 KB；前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）',
+      '实测 gzip 25.0 KB（图标库 opt-in：组件链只含自身所需图标 path，不再背全量 47 图标 ~9.5 KB；含 core），上浮约 15% 定档 29 KB；前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）',
   },
   {
     name: '@oas-ui/ui/data/table 链 gzip',
     get: () => componentMeasures.table.gzipBytes,
     limit: 108 * 1024, // 108 KB（2026-10-08 重定档：图标库 opt-in 后实测 92.6 KB）
     basis:
-      '实测 gzip 92.6 KB（图标库 opt-in 后：链含 core+virtual-list+i18n+oas-pagination + 列导出/移动降级/编辑器依赖，但不再背全量图标 ~9 KB），上浮约 15% 定档 108 KB；前档 116 KB 定档于 2026-10-05（101 KB 实测）',
+      '实测 gzip 93.1 KB（图标库 opt-in 后：链含 core+virtual-list+i18n+oas-pagination + 列导出/移动降级/编辑器依赖，但不再背全量图标 ~9 KB），上浮约 15% 定档 108 KB；前档 116 KB 定档于 2026-10-05（101 KB 实测）',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',
@@ -345,7 +345,7 @@ const BUDGETS = [
     get: () => componentMeasures.tableCore.gzipBytes,
     limit: 70 * 1024, // 70 KB（/core 纯核路径，2026-10-08 重定档：图标库 opt-in 后实测 60.9 KB）
     basis:
-      '实测 gzip 60.9 KB（/core = 主路径减去能力子包 + 图标库 opt-in；须小于主链 table 92.6 KB，退化即报红），上浮约 15% 定档 70 KB',
+      '实测 gzip 61.2 KB（/core = 主路径减去能力子包 + 图标库 opt-in；须小于主链 table 92.6 KB，退化即报红），上浮约 15% 定档 70 KB',
   },
 ]
 
@@ -413,9 +413,9 @@ for (const [chain, list] of Object.entries(baseChainFiles)) {
     leaked = true
     console.error(`FAIL [可选层泄漏] ${chain} 含可选层文件：${hit.join(', ')}`)
   }
-  // 图标全量注册表不得进入任何基础链（opt-in 图标库：全量集由 `@oas-ui/icons/register` 注册，
-  // 组件链只应走 runtime/lookupIcon 或精确 path）——锁死「按需链不含整套图标」的收益
-  if (list.includes('packages/icons/dist/registry.js')) {
+  // 图标全量注册表不得进入**按需组件链**（opt-in 图标库：组件链只应走 runtime/lookupIcon 或精确 path；
+  // 全量入口链内含有属预期——它经 `@oas-ui/icons/register` 注册全量集以开箱即用）
+  if (chain !== '全量入口链' && list.includes('packages/icons/dist/registry.js')) {
     leaked = true
     console.error(`FAIL [图标税] ${chain} 含图标全量注册表 registry.js（应走 runtime + 精确 path）`)
   }

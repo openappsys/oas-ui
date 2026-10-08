@@ -318,7 +318,7 @@ const iconfontUrl = `data:text/javascript;charset=utf-8,${encodeURIComponent(ICO
 
 onMounted(async () => {
   const [{ iconNames }, ui, { registerIconAlias }] = await Promise.all([
-    import('@oas-ui/icons'),
+    import('@oas-ui/icons/registry'),
     import('@oas-ui/ui'),
     import('@oas-ui/ui/basic/icon'),
   ])
