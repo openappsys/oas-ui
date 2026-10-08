@@ -580,6 +580,8 @@ onMounted(() => {
 | 方法 | 说明 |
 | --- | --- |
 | `submit()` | 公开提交入口：委托内部 form 的 `requestSubmit()`（保留 submit 事件与 submitter 语义），经校验后派发 `oas-submit` / `oas-validate-fail`。跨 shadow 边界时 light DOM 按钮无原生提交语义，统一用此方法（如 `this.closest('oas-form').submit()`） |
+| `validate()` | 公开校验入口：校验全部字段并同步错误态（`aria-invalid` + 错误文案），返回 `Promise<boolean>`。**纯校验**——不派发 `oas-submit` / `oas-validate-fail`、不做 scroll-to-first-error；供分步容器等外部门控复用校验内核（异步 validator 聚合等待、禁用字段跳过、无 rules 默认放行） |
+| `getValues()` | 公开取值入口：全表当前值快照（嵌套结构），与 `submit()` 派发的 `detail.values` 同口径——不做校验、不过滤禁用字段，零交互字段的 `value` 属性预填同样计入。返回 `Record<string, unknown>` |
 
 ### oas-form
 

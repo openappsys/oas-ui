@@ -100,6 +100,13 @@ export const de: LocaleMessages = {
   'steps.prev': 'Zurück',
   'steps.next': 'Weiter',
   'steps.optional': 'Optional',
+  // questionnaire（多步问答）
+  'questionnaire.prev': 'Zurück',
+  'questionnaire.next': 'Weiter',
+  'questionnaire.submit': 'Abschließen',
+  'questionnaire.skip': 'Diesen Schritt überspringen',
+  'questionnaire.stepLabel': 'Schritt {current} von {total}',
+  'questionnaire.optional': 'Optional',
   // anchor (Ankernavigation)
   'anchor.nav': 'Ankernavigation',
   // breadcrumb (Brotkrumen-Navigation)

@@ -74,6 +74,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'DynamicTags 动态标签', link: '/components/dynamic-tags' },
       { text: 'Editable 就地编辑', link: '/components/editable' },
       { text: 'Form 表单', link: '/components/form' },
+      { text: 'Questionnaire 多步问答', link: '/components/questionnaire' },
     ],
   },
   {

@@ -100,6 +100,13 @@ export const ar: LocaleMessages = {
   'steps.prev': 'السابق',
   'steps.next': 'التالي',
   'steps.optional': 'اختياري',
+  // questionnaire（多步问答）
+  'questionnaire.prev': 'السابق',
+  'questionnaire.next': 'التالي',
+  'questionnaire.submit': 'إنهاء',
+  'questionnaire.skip': 'تخطي هذه الخطوة',
+  'questionnaire.stepLabel': 'الخطوة {current} من {total}',
+  'questionnaire.optional': 'اختياري',
   // anchor (تنقل بالمراسي)
   'anchor.nav': 'التنقل بالمراسي',
   // breadcrumb (مسار تنقل)

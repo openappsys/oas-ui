@@ -1782,3 +1782,101 @@ describe('OASForm 嵌套 name 路径（D10）', () => {
     expect(late.getAttribute('value')).toBe('标题')
   })
 })
+
+describe('OASForm.validate()（公开校验入口，供分步容器等外部门控复用）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 局部挂载：rules + 字段 light DOM */
+  function mountValidate(fields: string, rules?: unknown): OASForm {
+    const el = new OASForm()
+    if (rules !== undefined) el.setAttribute('rules', JSON.stringify(rules))
+    el.innerHTML = fields
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('全部字段通过返回 true，且不派发 oas-submit / oas-validate-fail', async () => {
+    const el = mountValidate('<oas-input name="name" value="张三"></oas-input>', {
+      name: [{ required: true, message: '必填' }],
+    })
+    let events = 0
+    el.addEventListener('oas-submit', () => events++)
+    el.addEventListener('oas-validate-fail', () => events++)
+    await expect(el.validate()).resolves.toBe(true)
+    expect(events, 'validate() 是纯校验入口，不得触发提交事件').toBe(0)
+  })
+
+  it('校验失败返回 false：aria-invalid 与错误文案上屏，getErrors() 可读，不派发事件', async () => {
+    const el = mountValidate(
+      '<oas-input name="name" value=""></oas-input><oas-input name="mail" value="bad"></oas-input>',
+      {
+        name: [{ required: true, message: '姓名必填' }],
+        mail: [{ pattern: '^\\S+@\\S+$', message: '邮箱格式不正确' }],
+      },
+    )
+    let events = 0
+    el.addEventListener('oas-submit', () => events++)
+    el.addEventListener('oas-validate-fail', () => events++)
+    await expect(el.validate()).resolves.toBe(false)
+    expect(events).toBe(0)
+    const name = el.querySelector('oas-input[name="name"]')!
+    const mail = el.querySelector('oas-input[name="mail"]')!
+    expect(name.hasAttribute('aria-invalid')).toBe(true)
+    expect(mail.hasAttribute('aria-invalid')).toBe(true)
+    expect(el.getErrors()).toEqual({ name: '姓名必填', mail: '邮箱格式不正确' })
+  })
+
+  it('校验通过后清除既有错误态（aria-invalid 摘除、错误文案移除）', async () => {
+    const el = mountValidate('<oas-input name="name" value=""></oas-input>', {
+      name: [{ required: true, message: '必填' }],
+    })
+    await el.validate()
+    expect(el.querySelector('oas-input')!.hasAttribute('aria-invalid')).toBe(true)
+    el.querySelector('oas-input')!.setAttribute('value', '已填')
+    await expect(el.validate()).resolves.toBe(true)
+    expect(el.querySelector('oas-input')!.hasAttribute('aria-invalid')).toBe(false)
+    expect(el.shadowRoot!.querySelector('.error-text')).toBeNull()
+  })
+
+  it('支持异步 validator：await 后才出结果', async () => {
+    const el = new OASForm()
+    el.innerHTML = '<oas-input name="name" value="admin"></oas-input>'
+    document.body.appendChild(el)
+    el.rules = {
+      name: [
+        {
+          validator: (v) =>
+            new Promise<true | string>((resolve) => {
+              setTimeout(() => resolve(v === 'admin' ? '已被保留' : true), 5)
+            }),
+        },
+      ],
+    }
+    await expect(el.validate()).resolves.toBe(false)
+    expect(el.querySelector('oas-input')!.hasAttribute('aria-invalid')).toBe(true)
+  })
+
+  it('禁用字段跳过校验（对齐提交口径）', async () => {
+    const el = mountValidate(
+      '<oas-input name="name" value=""></oas-input><oas-input name="locked" value="" disabled></oas-input>',
+      {
+        name: [{ required: true, message: '必填' }],
+        locked: [{ required: true, message: '禁用字段不应参与' }],
+      },
+    )
+    await expect(el.validate()).resolves.toBe(false)
+    expect(el.querySelector('oas-input[name="locked"]')!.hasAttribute('aria-invalid')).toBe(false)
+    expect(Object.hasOwn(el.getErrors(), 'locked')).toBe(false)
+  })
+
+  it('无 rules 的空表单返回 true（默认放行，供无校验步骤复用）', async () => {
+    const el = mountValidate('<oas-input name="free" value=""></oas-input>')
+    await expect(el.validate()).resolves.toBe(true)
+  })
+})

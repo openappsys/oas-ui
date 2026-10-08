@@ -692,6 +692,12 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   'page-header': [['oas-page-header[back] [part="back"]', 'domclick', '返回钮 → oas-back（真实点击会被下方元素拦截）']],
   splitter: [['oas-splitter [part="splitter"]', 'drag', '拖拽分隔条 → oas-resize']],
+  questionnaire: [
+    ['#q-skip oas-input[name="nickname"] input', 'fill:小明', '填必填昵称（下一步门控放行）'],
+    ['#q-skip [part="next"]', 'click', '下一步 → oas-before-change + oas-step-validate + oas-change'],
+    ['#q-skip [part="skip"]', 'click', '跳过可选步 → oas-skip（不校验直接前进）'],
+    ['#q-skip [part="next"]', 'click', '末步完成 → 重校全部步后 oas-submit'],
+  ],
   'scroll-area': [
     ['oas-scroll-area', 'scrollbottom', '视口确定性滚到底（shadow .viewport scrollTop=scrollHeight）→ oas-end-reached'],
   ],

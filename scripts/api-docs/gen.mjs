@@ -85,6 +85,10 @@ const SLOT_BLIND_OK = new Set([
   'oas-list-item.slots: (默认)',
   'oas-rate.slots: icon-${i}',
   'oas-command.slots: view-${view}',
+  // questionnaire 的面板插槽按 `step-<key>` / `step-<index>` 动态命名 createElement 建（键随 steps 数据变化，
+  // 无法写成静态 <slot name>），AST 扫不到——已人工复核为宿主可写的公开插槽
+  'oas-questionnaire.slots: step-<key>',
+  'oas-questionnaire.slots: step-<index>',
 ])
 
 // ---------- 基础工具 ----------

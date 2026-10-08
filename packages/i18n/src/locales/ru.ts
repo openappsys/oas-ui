@@ -100,6 +100,13 @@ export const ru: LocaleMessages = {
   'steps.prev': 'Назад',
   'steps.next': 'Далее',
   'steps.optional': 'Необязательно',
+  // questionnaire（多步问答）
+  'questionnaire.prev': 'Назад',
+  'questionnaire.next': 'Далее',
+  'questionnaire.submit': 'Готово',
+  'questionnaire.skip': 'Пропустить этот шаг',
+  'questionnaire.stepLabel': 'Шаг {current} из {total}',
+  'questionnaire.optional': 'Необязательно',
   // anchor (навигация по якорям)
   'anchor.nav': 'Навигация по якорям',
   // breadcrumb (навигационная цепочка)

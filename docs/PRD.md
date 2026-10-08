@@ -2023,6 +2023,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 全门禁 + 双引擎 + perf（theme 运行时新增预算档）。
 
 
+
 ## oas-knob 旋钮组件（未发布）
 
 > 立项背景：参数密集面板（音频/DAW、3D/CAD、工业 HMI、调音台）需要把数值编码为圆周角度的紧凑输入控件——同面积可横排数十个参数、支持双向零位（pan/gain 以 12 点为中性）、相对拖拽大范围值不跳变。与 slider 互补不重叠：slider 做线性区间/多把手/移动端，knob 不做 range/marks 环绕刻度；两者共享 `value/min/max/step`、`show-value`/`format`、`reverse`、`size`、事件命名与 token 策略，宿主可在两种控件间无缝切换（form 族）。
@@ -2076,3 +2077,35 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：5 组件 61 用例（状态机/事件/ARIA/RTL 逻辑属性/clamp/保位/重连/DSD 水合/i18n 可读名称）+ families 八族注册一致性 + i18n completeness ×10 全绿。
 - e2e：qa-regression/conversation.spec.ts（scroller 钉底/跳底真交互 + 暗色 + console 零告警）+ demo-coverage 事件探针（attachment 三事件 / scroller scroll-state）+ 新页自动纳入 smoke/dark/code/visual/console-sweep/a11y。
 - 文档：zh/en 双语五页（含交互 demo）+ 会话组件侧栏组 + API 表 gen 接管 + api:check 双向 0。
+## oas-questionnaire 多步问答组件 + oas-form validate()（未发布）
+
+> 立项背景：向导式表单 / 问卷 / 多步结算场景需要「步骤 + 每步字段 + 单步校验门控 + 进度 + 汇总」的编排层——steps/stepper 只管导航语义、oas-form 只管单表校验，二者组合的「门控 + 回退保值 + 跨步汇总」宿主每次手搓。定位：questionnaire 是编排层，每步面板内放一个 `<oas-form>` 零侵入复用校验内核；步骤头语义对齐 steps/stepper 但独立实现（不 import 相邻组件内部）。
+
+### 功能定义
+
+**oas-questionnaire（新组件，form 族）**：
+
+- 属性：`steps`（JSON `[{ key?, title, description?, optional?, hidden? }]`，attribute + property 双通道）/ `current`（受控双向，非法回落 0、越界夹取）/ `linear`（默认 true，未来步头部禁点）/ `validation`（默认 true，`"false"`=纯导航）/ `progress` + `progress-variant`（both/text/bar）/ `prev-text`·`next-text`·`finish-text`·`skip-text` / `hide-header`·`hide-nav` / `size` 五档
+- 单步门控：`next()` 前对当前步 `oas-form` 校验（委托其公开 `validate()`），未过不放行并派发 `oas-step-validate`；`prev()` 不校验（回退不被错误困住，通行惯例）；无 `oas-form` 的步默认放行；异步 validator 在途时重入直接拒绝
+- 跳过：`optional` 步显示「跳过本步」按钮，跳过不校验直接前进（派发 `oas-skip`）；被跳过的步退出「参与步」集合——不进取值与校验，重新进入该步即恢复参与，`reset()` 清全部跳过记录
+- `oas-before-change`（cancelable）：一切跳步（按钮 / 头部点击 / next / prev / goto / skip）前派发，宿主 `preventDefault()` 否决——自定义分支跳转挂点
+- 进度自渲染：「第 n / m 步」文本 + `role="progressbar"`（aria-valuenow/min/max + aria-label），不复用 oas-progress；`progress-variant` 三档可调
+- 面板常驻不卸载（仅切 `hidden`）：回退值保留；提交（末步完成按钮 / `submit()`）**重校全部参与步**（非 `hidden` 且未跳过；防早期步被程序改值绕过）后派发 `oas-submit{values}`（跨步汇总，同口径仅含参与步）
+- 方法：`next()` / `prev()` / `goto(index)`（直跳不做门控，语义与 next 分离）/ `validate()`（全部参与步）/ `submit()` / `getValues()` / `reset()`
+- 值汇总（参与步口径，与校验同集合——取值=校验）：各参与步 `oas-form` 当前值按步序深合并（与单表 `submit()` 的 `detail.values` 同口径，零交互的 `value` 属性预填同样计入；委托 form 公开 `getValues()` 实时读取，未 upgrade 时回退 `initial-values` 基线 + 内层 `oas-values-change` 跟踪快照）；需全量数据（含 `hidden` / 已跳过步）的宿主可读取各面板内的 `oas-form` 自行汇总；内层值变化事件自然冒泡穿出（转发不重复派发）
+- a11y：头部可点项为**内层原生 `<button>`**（`li` 保持 `listitem` 语义——在 `li` 上置 `role="button"` 会使 `<ol>` 的子角色结构非法，axe list 规则）+ Enter/Space 浏览器原生触发、当前步 `aria-current="step"`、`aria-live="polite"` 播报步切换、导航原生按钮；hidden 步不进流程（头部/进度/导航/取值/校验全跳过）；RTL 逻辑属性（连接线 `inset-inline-start`、进度条方向随 dir 自动镜像）
+
+**oas-form `validate()`（公开方法）**：校验全部字段并同步错误态（aria-invalid + 错误文案），返回 `Promise<boolean>`；**纯校验**——不派发 `oas-submit` / `oas-validate-fail`、不做 scroll-to-first-error，供分步容器等外部门控复用校验内核（异步 validator 聚合等待、禁用字段跳过、无 rules 默认放行、提交/reset 同款作废在途异步校验）。`submit()` 事件契约不变。
+
+### 边界（v1 不做，文档标注）
+
+- 条件分支（visibleIf 谓词 / 表达式引擎 / skip logic）：经 `oas-before-change` 由宿主自行实现
+- 起始页 / 完成页特型步：普通步 + 宿主组合
+- 续填 / 草稿持久化：宿主经 `current` + `getValues()` 自理
+- 每步面板经命名插槽（`step-<key|index>`）关联，面板 DOM 不由组件创建——值收集以各步 `oas-form` 实时值为准（与单表提交同口径，`value` 属性预填亦计入）
+
+### 验收标准
+
+- 单测：questionnaire 39 条（steps 数据驱动 / current 受控 / 门控 / 导航 / 进度 / 跳过 / 回退保值 / 提交汇总 / before-change / hidden / 参与步口径（hidden 与已跳过步不进 getValues·oas-submit·重校，重新进入恢复） / i18n / size / 异步防重入 / 在途竞态离开不误推进 / getValues 实时读取含 value 属性预填 / 样式机制）+ oas-form `validate()` 6 条全绿；typecheck / build / api:check 全绿
+- e2e：`qa-regression/questionnaire.spec.ts`（多步真点推进 / 门控拦截与放行 / before-change 否决 / 跳过 / 提交回显）
+- i18n ×10（`questionnaire.*` 6 键）+ docs zh/en + 交互 demo + a11y 基线（键盘流矩阵）+ qa-regression 固化

@@ -4008,6 +4008,40 @@
       "": "命令项 label 内容（默认插槽文本）；直接子元素 `<oas-command-item>` 递归为 `page` 子页"
     }
   },
+  "oas-questionnaire": {
+    "attrs": {
+      "current": "当前步索引（0 起，受控双向：内部跳步写回、外部设置即时同步）；非法值回落 0，越界夹取",
+      "finish-text": "末步主按钮文案（覆盖 locale 缺省「完成」）",
+      "hide-header": "隐藏内置步骤头（宿主自组合）",
+      "hide-nav": "隐藏内置导航区（宿主自组合）",
+      "linear": "线性模式（默认开，`linear=\"false\"` 关闭）：未来步头部禁点；关闭后任意步可点（仍走 oas-before-change 拦截）",
+      "next-text": "「下一步」按钮文案（覆盖 locale 缺省）",
+      "prev-text": "「上一步」按钮文案（覆盖 locale 缺省）",
+      "progress": "进度区显隐（`progress=\"false\"` 隐藏）",
+      "progress-variant": "进度形态：`both`（默认，文本+进度条）/ `text` / `bar`；非法值回落 `both`",
+      "size": "尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + dev 告警）",
+      "skip-text": "「跳过本步」按钮文案（覆盖 locale 缺省）",
+      "steps": "步骤数据 JSON `[{ key?, title, description?, optional?, hidden? }]`；非法/空回落 `[]`",
+      "validation": "单步校验门控（默认开，`validation=\"false\"` 纯导航；`submit()` 不受此开关影响、始终重校）"
+    },
+    "events": {
+      "oas-before-change": "跳步前（按钮 / 头部点击 / next / prev / goto / 跳过）可取消；`detail: { index, key?, from }`，`preventDefault()` 否决本次跳转",
+      "oas-change": "切步成功后；`detail: { index, key? }`",
+      "oas-step-validate": "单步校验结束时；`detail: { index, key?, valid, errors }`",
+      "oas-skip": "跳过可选步时；`detail: { index, key? }`（跳过不触发校验；被跳过的步退出取值/校验口径，重新进入恢复）",
+      "oas-submit": "末步完成（全部参与步校验通过）；`detail: { values }`（跨步汇总值，仅参与步——hidden / 已跳过步不计入）",
+      "oas-values-change": "内层 oas-form 值变化事件自然冒泡转发（`detail: { name, value, values }`，values 为该步快照）；跨步汇总视图用 getValues()"
+    },
+    "slots": {
+      "step-<key>": "步骤内容面板（有 key 的步骤）；面板内建议放一个 `<oas-form>` 承载该步字段与校验规则",
+      "step-<index>": "步骤内容面板（无 key 的步骤按数组下标关联）"
+    },
+    "cssVars": {
+      "--oas-questionnaire-nav-gap": "导航区按钮间距",
+      "--oas-questionnaire-progress-bg": "进度条轨道底色",
+      "--oas-questionnaire-progress-bar-bg": "进度条填充色"
+    }
+  },
   "oas-stepper": {
     "attrs": {
       "clickable": "步骤可点击跳步（默认 true；`clickable=\"false\"` 关闭：点击/键盘静默，键盘仍可移动焦点）",

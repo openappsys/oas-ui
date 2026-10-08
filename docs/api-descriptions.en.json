@@ -4008,6 +4008,40 @@
       "": "Command item label content (default slot text); direct child `<oas-command-item>` elements recursively become the `page` sub-page"
     }
   },
+  "oas-questionnaire": {
+    "attrs": {
+      "current": "Current step index (0-based, two-way: internal jumps write back, external updates sync instantly); invalid values fall back to 0, out-of-range clamped",
+      "finish-text": "Last-step primary button label (overrides the locale default \"Submit\")",
+      "hide-header": "Hide the built-in step header (host composition)",
+      "hide-nav": "Hide the built-in nav region (host composition)",
+      "linear": "Linear mode (on by default, `linear=\"false\"` disables): future steps are not clickable in the header; when disabled, any step is clickable (still intercepted by oas-before-change)",
+      "next-text": "\"Next\" button label (overrides the locale default)",
+      "prev-text": "\"Previous\" button label (overrides the locale default)",
+      "progress": "Progress region visibility (`progress=\"false\"` hides it)",
+      "progress-variant": "Progress variant: `both` (default, text + bar) / `text` / `bar`; invalid values fall back to `both`",
+      "size": "Size tier: `xs`/`small`/`medium`/`large`/`xl` (title font density; invalid values fall back to medium + dev warning)",
+      "skip-text": "\"Skip this step\" button label (overrides the locale default)",
+      "steps": "Step data JSON `[{ key?, title, description?, optional?, hidden? }]`; invalid/empty falls back to `[]`",
+      "validation": "Per-step validation gating (on by default, `validation=\"false\"` for pure navigation; `submit()` always re-validates regardless)"
+    },
+    "events": {
+      "oas-before-change": "Fires before any jump (buttons / header clicks / next / prev / goto / skip), cancelable; `detail: { index, key?, from }` — `preventDefault()` vetoes the jump",
+      "oas-change": "After a successful step switch; `detail: { index, key? }`",
+      "oas-step-validate": "After a per-step validation; `detail: { index, key?, valid, errors }`",
+      "oas-skip": "When an optional step is skipped; `detail: { index, key? }` (skipping never validates; the skipped step leaves the values/validation scope until revisited)",
+      "oas-submit": "Finished on the last step (all participating steps validated); `detail: { values }` (merged across participating steps only — hidden / skipped steps excluded)",
+      "oas-values-change": "Natural bubble-through of the inner oas-form value changes (`detail: { name, value, values }`, values is that step's snapshot); use getValues() for the merged view"
+    },
+    "slots": {
+      "step-<key>": "Step content panel (keyed steps); place one `<oas-form>` inside to carry the step's fields and rules",
+      "step-<index>": "Step content panel (unkeyed steps associate by array index)"
+    },
+    "cssVars": {
+      "--oas-questionnaire-nav-gap": "Nav region button gap",
+      "--oas-questionnaire-progress-bg": "Progress track background",
+      "--oas-questionnaire-progress-bar-bg": "Progress fill color"
+    }
+  },
   "oas-stepper": {
     "attrs": {
       "clickable": "Steps are clickable to jump (default true; `clickable=\"false\"` disables: click/keyboard silent, arrow focus still works)",

@@ -34,6 +34,7 @@ the component demo area (`.demo`).
 | Carousel                                    | Indicators tabbable                  | `role="tablist"` + `role="tab"`     |
 | Collapse                                    | Header tabbable + Enter/Space toggles | Button semantics                   |
 | Splitter                                    | Arrow keys adjust                    | `separator` + `aria-orientation`    |
+| Questionnaire                               | Header items Enter/Space to jump, native buttons | `progressbar` + `aria-current="step"` + `aria-live` announcements |
 
 ## Semantic principles
 

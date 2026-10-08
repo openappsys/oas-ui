@@ -32,6 +32,7 @@ pnpm test:e2e
 | Carousel                                      | 指示器可 Tab 聚焦                  | `role="tablist"` + `role="tab"`     |
 | Collapse                                      | 表头可 Tab 聚焦 + Enter/Space 展开 | 按钮语义                            |
 | Splitter                                      | 方向键调整                         | `separator` + `aria-orientation`    |
+| Questionnaire                                 | 头部项 Enter/Space 跳步、原生按钮  | `progressbar` + `aria-current="step"` + `aria-live` 播报 |
 
 ## 语义原则
 

@@ -76,6 +76,13 @@ export const en: LocaleMessages = {
   'steps.prev': 'Previous',
   'steps.next': 'Next',
   'steps.optional': 'Optional',
+  // questionnaire（多步问答）
+  'questionnaire.prev': 'Previous',
+  'questionnaire.next': 'Next',
+  'questionnaire.submit': 'Submit',
+  'questionnaire.skip': 'Skip this step',
+  'questionnaire.stepLabel': 'Step {current} of {total}',
+  'questionnaire.optional': 'Optional',
   'anchor.nav': 'Anchor navigation',
   'breadcrumb.nav': 'Breadcrumb',
   'breadcrumb.expand': 'Expand collapsed breadcrumb items',

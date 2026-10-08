@@ -100,6 +100,13 @@ export const ja: LocaleMessages = {
   'steps.prev': '前へ',
   'steps.next': '次へ',
   'steps.optional': '任意',
+  // questionnaire（多步问答）
+  'questionnaire.prev': '前へ',
+  'questionnaire.next': '次へ',
+  'questionnaire.submit': '完了',
+  'questionnaire.skip': 'このステップをスキップ',
+  'questionnaire.stepLabel': 'ステップ {current} / {total}',
+  'questionnaire.optional': '任意',
   // anchor（アンカーナビゲーション）
   'anchor.nav': 'アンカーナビゲーション',
   // breadcrumb（パンくずリスト）

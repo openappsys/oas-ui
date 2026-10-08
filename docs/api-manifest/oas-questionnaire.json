@@ -1,0 +1,118 @@
+{
+  "className": "OASQuestionnaire",
+  "sourceFile": "packages/ui/src/form/questionnaire/oas-questionnaire.ts",
+  "attrs": [
+    {
+      "name": "steps",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "current",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "linear",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "validation",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "progress",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "progress-variant",
+      "type": "string",
+      "default": "both",
+      "observed": true
+    },
+    {
+      "name": "prev-text",
+      "observed": true
+    },
+    {
+      "name": "next-text",
+      "observed": true
+    },
+    {
+      "name": "finish-text",
+      "observed": true
+    },
+    {
+      "name": "skip-text",
+      "observed": true
+    },
+    {
+      "name": "hide-header",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "hide-nav",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "steps",
+      "type": "QuestionnaireStep[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-before-change",
+      "detail": "{ index: idx, ...this.keyOf(idx), from } | { index: target, ...this.keyOf(target), from }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ index: idx, ...this.keyOf(idx) } | { index: target, ...this.keyOf(target) }"
+    },
+    {
+      "name": "oas-skip",
+      "detail": "{ index: from, ...this.keyOf(from) }"
+    },
+    {
+      "name": "oas-step-validate",
+      "detail": "{ index: idx, ...this.keyOf(idx), valid: ok, errors }"
+    },
+    {
+      "name": "oas-submit",
+      "detail": "{ values: this.getValues() }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-questionnaire-progress-bg",
+      "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-questionnaire-progress-bar-bg",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-questionnaire-nav-gap",
+      "default": "var(--oas-space-2)"
+    }
+  ],
+  "unresolved": []
+}

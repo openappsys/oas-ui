@@ -100,6 +100,13 @@ export const zhCN = {
   'steps.prev': '上一步',
   'steps.next': '下一步',
   'steps.optional': '可选',
+  // questionnaire（多步问答）
+  'questionnaire.prev': '上一步',
+  'questionnaire.next': '下一步',
+  'questionnaire.submit': '完成',
+  'questionnaire.skip': '跳过本步',
+  'questionnaire.stepLabel': '第 {current} / {total} 步',
+  'questionnaire.optional': '可选',
   // anchor（锚点导航）
   'anchor.nav': '锚点导航',
   // breadcrumb（面包屑）

@@ -100,6 +100,13 @@ export const ko: LocaleMessages = {
   'steps.prev': '이전',
   'steps.next': '다음',
   'steps.optional': '선택',
+  // questionnaire（多步问答）
+  'questionnaire.prev': '이전',
+  'questionnaire.next': '다음',
+  'questionnaire.submit': '완료',
+  'questionnaire.skip': '이 단계 건너뛰기',
+  'questionnaire.stepLabel': '{total}단계 중 {current}단계',
+  'questionnaire.optional': '선택',
   // anchor（앵커 내비게이션）
   'anchor.nav': '앵커 내비게이션',
   // breadcrumb（브레드크럼）

@@ -581,6 +581,8 @@ onMounted(() => {
 | Method | Description |
 | --- | --- |
 | `submit()` | Public submit entry: delegates to the inner form's `requestSubmit()` (preserves the submit event and submitter semantics); after validation dispatches `oas-submit` / `oas-validate-fail`. Across the shadow boundary light-DOM buttons have no native submit semantics, so use this method uniformly (e.g. `this.closest('oas-form').submit()`) |
+| `validate()` | Public validation entry: validates all fields and syncs error states (`aria-invalid` + error text), returns `Promise<boolean>`. **Pure validation** — dispatches no `oas-submit` / `oas-validate-fail` and performs no scroll-to-first-error; intended for external gating consumers such as step containers (awaits async validators, skips disabled fields, passes by default with no rules) |
+| `getValues()` | Public value entry: a snapshot of all current field values (nested structure), same shape as the `detail.values` dispatched by `submit()` — no validation, disabled fields not filtered out; zero-interaction fields prefilled via the `value` attribute are included. Returns `Record<string, unknown>` |
 
 ### oas-form
 

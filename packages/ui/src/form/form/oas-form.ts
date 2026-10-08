@@ -841,6 +841,59 @@ export class OASForm extends OASElement {
   }
 
   /**
+   * 公开取值入口：全表当前值快照（嵌套结构），与 submit() 派发的 detail.values 同口径
+   * （collectFields 收集 + nestValues 组装）——不做校验、不过滤禁用字段（校验语义走
+   * validate() / submit()），零交互字段的 value 属性预填同样计入。
+   * 供 oas-questionnaire 等外部容器跨步汇总实时读取。
+   */
+  getValues(): Record<string, unknown> {
+    return this.nestValues(this.snapshotValues())
+  }
+
+  /**
+   * 公开校验入口：校验全部字段并同步错误态（aria-invalid + 错误文案），返回是否全部通过。
+   *
+   * 与 submit() 的分工：本方法是**纯校验**——不派发 oas-submit / oas-validate-fail、
+   * 不做 scroll-to-first-error 定位（错误展示语义与提交一致，供 oas-questionnaire 等
+   * 分步容器在不触发提交副作用的前提下复用校验内核）。提交语义仍走 submit()（事件契约不变）。
+   * 异步 validator 全部聚合等待；禁用字段跳过（对齐提交口径）；无 rules 默认放行。
+   */
+  async validate(): Promise<boolean> {
+    const values = this.snapshotValues()
+    this.errors = Object.create(null)
+    const fields = this.collectFields()
+    // 与提交/reset 同级：进入即作废全部在途字段级异步校验，防慢旧结果在校验终态后写回
+    this.fieldValidateSeq.clear()
+    const invalid: Array<{ name: string; element: Element; message: string }> = []
+    const asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }> = []
+    for (const { name, element } of fields) {
+      if (this.isFieldDisabled(element)) continue
+      const result = this.firstFieldError(name, values)
+      if (result === null) continue
+      if (typeof result === 'string') invalid.push({ name, element, message: result })
+      else asyncJobs.push({ name, element, promise: result })
+    }
+    if (asyncJobs.length > 0) {
+      const resolved = await Promise.all(asyncJobs.map((job) => job.promise.then((message) => ({ job, message }))))
+      for (const { job, message } of resolved) {
+        if (message !== null) invalid.push({ name: job.name, element: job.element, message })
+      }
+      // 混合同步/异步时按字段 DOM 序重排（getErrors() 键序稳定，与提交路径同口径）
+      const order = new Map(fields.map((f, i) => [f.name, i]))
+      invalid.sort((a, b) => (order.get(a.name) ?? 0) - (order.get(b.name) ?? 0))
+    }
+    this.errors = Object.create(null)
+    for (const { name, message } of invalid) this.errors[name] = message
+    for (const { name, element } of fields) {
+      const bad = Object.hasOwn(this.errors, name)
+      if (bad) element.setAttribute('aria-invalid', 'true')
+      else element.removeAttribute('aria-invalid')
+      this.syncErrorText(element, bad ? this.errors[name]! : null)
+    }
+    return invalid.length === 0
+  }
+
+  /**
    * 公开提交入口：委托内部 form 的 requestSubmit()。
    *
    * shadow 边界内包 `<form part="form">` 后，light DOM 的按钮（含 oas-button）不再具备原生
