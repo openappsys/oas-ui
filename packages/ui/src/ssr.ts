@@ -162,6 +162,7 @@ export { OASTabPanel } from './navigation/tabs/oas-tab-panel.js'
 export { OASAffix } from './navigation/affix/oas-affix.js'
 export { OASPageHeader } from './navigation/page-header/oas-page-header.js'
 export { OASAppBar } from './navigation/app-bar/oas-app-bar.js'
+export { OASStepper } from './navigation/stepper/oas-stepper.js'
 export { OASStepperPanel } from './navigation/stepper/oas-stepper-panel.js'
 export { OASFloatButton } from './navigation/float-button/oas-float-button.js'
 
@@ -202,6 +203,13 @@ export { OASLog } from './data/log/oas-log.js'
 export { OASComment } from './data/comment/oas-comment.js'
 export { OASHighlight } from './data/highlight/oas-highlight.js'
 export { OASSwipeCell } from './data/swipe-cell/oas-swipe-cell.js'
+
+// ---------- conversation ----------
+export { OASBubble } from './conversation/bubble/oas-bubble.js'
+export { OASAttachment } from './conversation/attachment/oas-attachment.js'
+export { OASMessageScroller } from './conversation/message-scroller/oas-message-scroller.js'
+export { OASMarker } from './conversation/marker/oas-marker.js'
+export { OASMessageRow } from './conversation/message-row/oas-message-row.js'
 
 // ---------- workbench ----------
 export { OASTitlebar } from './workbench/titlebar/oas-titlebar.js'
