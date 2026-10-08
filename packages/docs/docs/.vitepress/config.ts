@@ -12,13 +12,21 @@ const SITE_URL = process.env.SITE_URL || 'https://oas-ui.dev'
 const SITE_NAME = 'OAS-UI'
 /** 英文 locale 的目录前缀（root = 中文，/en/ = 英文） */
 const EN_PREFIX = 'en/'
+/**
+ * 无扩展名 URL：Cloudflare Workers 静态资产默认（auto-trailing-slash）把无扩展名当规范 URL、
+ * `.html` 当 307 别名，故构建产物统一输出无扩展名（文件页 `/foo`、目录页 `/foo/`），
+ * 使内部链接、canonical、sitemap 全部指向同一规范 URL，零跳转。
+ */
+const CLEAN_URLS = true
 
 /**
- * 由页面源文件相对路径推导站点 URL，规则与 VitePress 内置 sitemap 完全一致：
- * cleanUrls 未开启，所以子页保留 `.html`，目录页（如 index.md / components/index.md）以 `/` 结尾。
+ * 由页面源文件相对路径推导站点 URL，规则与 VitePress 内置 sitemap 一致（cleanUrls 时去 `.html`）：
+ * 文件页 `foo.md` → `/foo`；目录页 `foo/index.md` → `/foo/`（保留斜杠）；根 `index.md` → `/`。
  */
 function pageUrl(relativePath: string): string {
-  const url = relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '.html')
+  const url = relativePath
+    .replace(/(^|\/)index\.md$/, '$1')
+    .replace(/\.md$/, CLEAN_URLS ? '' : '.html')
   return '/' + url
 }
 
@@ -251,6 +259,7 @@ export default defineConfig({
   title: 'OAS-UI',
   description: '框架无关的 Web Components UI 组件库',
   lang: 'zh-CN',
+  cleanUrls: CLEAN_URLS,
   // 生成 sitemap.xml；VitePress 会按 locale 分组自动补 <xhtml:link rel="alternate"> hreflang
   sitemap: {
     hostname: SITE_URL,

@@ -8,8 +8,8 @@
  * 表现为「单 server 并发上限约 6~10」甚至被误判为进程崩溃。e2e 全在 localhost，
  * 压缩毫无收益。
  *
- * 本服务器只做：静态文件 + 正确 MIME + 404.html 回退 + 可选 cluster 多进程。
- * 对 e2e 而言与 preview 等价（docs 站无 cleanUrls/base，路径都是显式 .html）。
+ * 本服务器只做：静态文件 + 正确 MIME + clean URLs 解析 + 404.html 回退 + 可选 cluster 多进程。
+ * 对 e2e 而言与 preview 等价（docs 站 cleanUrls、base 为 /；无扩展名与显式 .html 路径都能命中）。
  * 关键：文件系统操作一律走异步（fs.promises.stat），避免同步 stat 在高并发下阻塞
  * 事件循环、把响应拖到超时。
  *
@@ -60,28 +60,33 @@ function createServer() {
       return
     }
     let pathname = decodeURIComponent((req.url || '/').split('?')[0])
-    if (pathname.endsWith('/')) pathname += 'index.html'
-    const file = normalize(join(DIST, pathname))
-    // 目录逃逸防护
-    if (!file.startsWith(DIST)) {
-      res.statusCode = 403
-      res.end()
-      return
-    }
-    let target = file
+    // clean URLs 兼容（与 Cloudflare Workers 静态资产默认的 auto-trailing-slash 对齐）：
+    // 目录请求 → <dir>/index.html；无扩展名文件请求 → 同名 .html。显式 .html 路径照常直出。
+    const candidates = [pathname]
+    if (pathname.endsWith('/')) candidates.push(`${pathname}index.html`)
+    else if (extname(pathname) === '') candidates.push(`${pathname}.html`)
+
+    let target = null
     let size = null
-    try {
-      const st = await stat(file)
-      if (st.isDirectory()) {
-        target = join(file, 'index.html')
-        size = (await stat(target)).size
-      } else {
-        size = st.size
+    for (const candidate of candidates) {
+      const file = normalize(join(DIST, candidate))
+      // 目录逃逸防护
+      if (!file.startsWith(DIST)) continue
+      try {
+        const st = await stat(file)
+        if (st.isDirectory()) {
+          target = join(file, 'index.html')
+          size = (await stat(target)).size
+        } else {
+          target = file
+          size = st.size
+        }
+        break
+      } catch {
+        // 该候选不存在，试下一个
       }
-    } catch {
-      size = null
     }
-    if (size == null) {
+    if (size == null || target == null) {
       res.statusCode = 404
       // 与 vitepress 一致：非资源路径回 404 页，资源路径空体
       if (!pathname.startsWith('/assets/')) {
