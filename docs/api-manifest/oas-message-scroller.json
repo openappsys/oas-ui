@@ -27,6 +27,15 @@
     {
       "name": "preserve-scroll-on-prepend",
       "observed": true
+    },
+    {
+      "name": "turn-anchor",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "prev-peek",
+      "observed": true
     }
   ],
   "props": [],

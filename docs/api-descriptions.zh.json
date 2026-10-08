@@ -4330,16 +4330,18 @@
     "attrs": {
       "auto-scroll": "AI 式底部跟随（布尔在场，默认关）：仅当读者在底部（near-bottom ≤ edge-threshold）时跟随流式增长，上翻阅读不打扰",
       "pin-to-bottom": "IM 式始终钉底（布尔在场）：新内容总是滚到底、读者上翻也拉回；与 auto-scroll 同时在场时优先",
-      "default-position": "打开位置：start（顶部）/ end（底部，默认；非法值回退 end）；last-anchor 随 B 批锚定提供",
+      "default-position": "打开位置：start（顶部）/ end（底部，默认；非法值回退 end）/ last-anchor（定位到最后一个 anchor 标记消息顶部——AI 场景「回到最后提问位置」；无锚点回退 end）",
       "edge-threshold": "底部判定阈值 px（默认 8）——距底 ≤ 阈值即视为在底部（near-bottom 检测）",
       "label": "viewport 可读名称覆盖（缺省走 locale「消息列表」；读入渲染后从宿主移除——原生全局属性吸收惯例）",
-      "preserve-scroll-on-prepend": "顶部插入历史时补偿 scrollTop 保持阅读位置（缺省开启；显式 =\"false\" 关闭）"
+      "preserve-scroll-on-prepend": "顶部插入历史时补偿 scrollTop 保持阅读位置（缺省开启；显式 =\"false\" 关闭）——按插入前首节点位移精确结算（同帧 append+prepend 混合只结算顶部插入量），补偿后锁定保位锚：历史内异步资源（图片等）撑高上方内容时按锚点视口位移持续补偿（message-id 优先重查）",
+      "turn-anchor": "轮次锚定（布尔在场）：把一次提问+回答作为锚定单元——锚点贴视口顶时把最后 anchor 标记消息钉在视口顶 prev-peek 处，回答在锚下方流入；读者在底部延续贴底跟随，上翻即静止（绝不逆着读者意图移动）",
+      "prev-peek": "轮次锚定对齐时锚顶上方露出的语境 px（默认 64；非法/负值回退 64）"
     },
     "events": {
       "oas-scroll-state": "滚动位置跨过判定线时派发，detail { atBottom, atTop, canScrollStart, canScrollEnd }；首帧（初始定位后）广播一次初始态——宿主监听晚于 upgrade 也能收到"
     },
     "slots": {
-      "": "消息行列表（oas-message-row / oas-marker 等）",
+      "": "消息行列表（oas-message-row / oas-marker 等；行上的 anchor / message-id 属性为 scroller 协作标记）",
       "button": "自定义跳底按钮内容（替换内置箭头图形；显隐与点击仍由组件裁决——缺省为内置按钮 part=button）"
     }
   },

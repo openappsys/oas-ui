@@ -4330,16 +4330,18 @@
     "attrs": {
       "auto-scroll": "AI-style bottom follow (boolean presence, off by default): follows streaming growth only while the reader is at the bottom (near-bottom ≤ edge-threshold); scrolled-up reading is never interrupted",
       "pin-to-bottom": "IM-style always pinned (boolean presence): new content always scrolls to the bottom, pulling readers back; wins when combined with auto-scroll",
-      "default-position": "Opening position: start (top) / end (bottom, default; invalid values fall back to end); last-anchor arrives with batch B anchoring",
+      "default-position": "Opening position: start (top) / end (bottom, default; invalid values fall back to end) / last-anchor (top of the last anchor-marked message — the AI \"return to the last question\" scenario; falls back to end with no anchor)",
       "edge-threshold": "Bottom detection threshold in px (default 8) — within the threshold of the bottom counts as at-bottom (near-bottom detection)",
       "label": "Overrides the viewport accessible name (locale \"Messages\" by default; absorbed into the viewport and removed from the host — global-attribute absorption convention)",
-      "preserve-scroll-on-prepend": "Compensates scrollTop when older messages are prepended to keep the reading position (on by default; explicit =\"false\" disables)"
+      "preserve-scroll-on-prepend": "Compensates scrollTop when older messages are prepended to keep the reading position (on by default; explicit =\"false\" disables) — settles precisely by the pre-insertion first-node displacement (same-frame append+prepend mixes settle only the top insertion), then locks a preservation anchor: async resources (images etc.) growing the upper history keep being compensated by the anchor's viewport drift (message-id re-queried first)",
+      "turn-anchor": "Turn anchoring (boolean presence): one question+answer exchange is the anchoring unit — while the anchor sits at the viewport top the last anchor-marked message is pinned at prev-peek from the top with answers flowing in beneath; bottom following continues at the bottom; scrolled-up readers are never pulled",
+      "prev-peek": "Context px revealed above the anchor top during turn-anchor alignment (default 64; invalid/negative values fall back to 64)"
     },
     "events": {
       "oas-scroll-state": "Dispatched when scrolling crosses a decision line, detail { atBottom, atTop, canScrollStart, canScrollEnd }; an initial state is broadcast once on the first frame (after initial positioning) — received even when the host attaches its listener after the upgrade"
     },
     "slots": {
-      "": "Message rows (oas-message-row / oas-marker etc.)",
+      "": "Message rows (oas-message-row / oas-marker etc.; the anchor / message-id attributes on rows are scroller cooperation markers)",
       "button": "Custom jump-to-bottom button content (replaces the built-in arrow glyph; visibility and click remain component-owned; default is the built-in part=button)"
     }
   },
