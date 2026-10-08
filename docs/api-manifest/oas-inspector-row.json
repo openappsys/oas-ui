@@ -1,0 +1,51 @@
+{
+  "className": "OASInspectorRow",
+  "sourceFile": "packages/ui/src/workbench/inspector/oas-inspector-row.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "mixed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "reset",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-row-reset",
+      "detail": "{ label: this.getAttr('label', '') }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-inspector-row-height",
+      "default": "28px"
+    },
+    {
+      "name": "--oas-inspector-divider-color",
+      "default": "transparent"
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,75 @@
+{
+  "className": "OASStatusbarItem",
+  "sourceFile": "packages/ui/src/workbench/statusbar/oas-statusbar-item.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "button",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "default",
+      "observed": true
+    },
+    {
+      "name": "spinning",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-item-click",
+      "detail": "{ value: this.getAttr('value', ''), label: this.getAttr('label', '') }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-statusbar-item-height",
+      "default": "22px"
+    },
+    {
+      "name": "--oas-statusbar-item-hover-bg",
+      "default": "var(--oas-color-bg-hover)"
+    },
+    {
+      "name": "--oas-statusbar-info-color",
+      "default": "color-mix(in srgb, var(--oas-color-info-text) 88%, var(--oas-color-text-primary))"
+    },
+    {
+      "name": "--oas-statusbar-warning-bg",
+      "default": "var(--oas-color-warning)"
+    },
+    {
+      "name": "--oas-statusbar-error-bg",
+      "default": "var(--oas-color-danger)"
+    },
+    {
+      "name": "--oas-statusbar-progress-color",
+      "default": "var(--oas-color-primary-text)"
+    }
+  ],
+  "unresolved": []
+}

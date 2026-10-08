@@ -426,6 +426,7 @@ export const ko: LocaleMessages = {
   'pullRefresh.refreshing': '새로고침 중…',
   'pullRefresh.success': '새로고침 완료',
   'datePicker.shortcutThisQuarter': '이번 분기',
+
   // conversation(대화 패밀리)
   'bubble.loading': '입력 중…',
   'attachment.remove': '{name} 제거',
@@ -438,4 +439,18 @@ export const ko: LocaleMessages = {
   'messageRow.status.delivered': '전달됨',
   'messageRow.status.read': '읽음',
   'messageRow.status.error': '전송 실패',
+  // workbench（워크벤치 구성 요소）
+  'titlebar.label': '제목 표시줄',
+  'titlebar.docTitle': '문서 제목',
+  'titlebar.minimize': '최소화',
+  'titlebar.maximize': '최대화',
+  'titlebar.close': '닫기',
+  'statusbar.label': '상태 표시줄',
+  'inspector.label': '인스펙터',
+  'inspector.mixed': '혼합 값',
+  'inspector.reset': '초기화',
+  'inspector.empty': '선택된 항목 없음',
+  'actionBar.label': '액션 바',
+  'actionBar.progress': '작업 진행률',
+  'actionBar.cancel': '작업 취소',
 }

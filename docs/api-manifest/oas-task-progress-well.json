@@ -1,0 +1,47 @@
+{
+  "className": "OASTaskProgressWell",
+  "sourceFile": "packages/ui/src/workbench/action-bar/oas-task-progress-well.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "progress",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "detail",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-cancel",
+      "detail": "{ label: this.getAttr('label', '') }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-action-bar-well-max-width",
+      "default": "320px"
+    },
+    {
+      "name": "--oas-action-bar-well-bg",
+      "default": "color-mix(in srgb, var(--oas-color-on-ink) 10%, transparent)"
+    },
+    {
+      "name": "--oas-action-bar-progress-color",
+      "default": "var(--oas-color-primary)"
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,67 @@
+{
+  "className": "OASInspector",
+  "sourceFile": "packages/ui/src/workbench/inspector/oas-inspector.ts",
+  "attrs": [
+    {
+      "name": "side",
+      "type": "string",
+      "default": "right",
+      "observed": true
+    },
+    {
+      "name": "active-tab",
+      "observed": true
+    },
+    {
+      "name": "density",
+      "type": "string",
+      "default": "default",
+      "observed": true
+    },
+    {
+      "name": "empty",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "empty"
+    },
+    {
+      "name": "footer"
+    },
+    {
+      "name": "header"
+    },
+    {
+      "name": "tabs"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-inspector-bg",
+      "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-inspector-width",
+      "default": "280px"
+    },
+    {
+      "name": "--oas-inspector-gap",
+      "default": "var(--oas-space-2)"
+    }
+  ],
+  "unresolved": []
+}

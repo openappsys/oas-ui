@@ -11,7 +11,8 @@ import { resolve } from 'node:path'
  *
  * 构建驱动：packages/ui/package.json `build:cdn` 循环 9 次调用（8 族 + 全量）。
  */
-const FAMILIES = ['basic', 'layout', 'form', 'feedback', 'navigation', 'data', 'conversation', 'framework']
+
+const FAMILIES = ['basic', 'layout', 'form', 'feedback', 'navigation', 'data', 'conversation', 'workbench', 'framework']
 
 export default defineConfig(() => {
   const family = (process.env.OAS_CDN_ENTRY ?? '').trim()

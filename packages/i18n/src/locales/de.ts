@@ -426,6 +426,7 @@ export const de: LocaleMessages = {
   'pullRefresh.refreshing': 'Aktualisieren…',
   'pullRefresh.success': 'Aktualisiert',
   'datePicker.shortcutThisQuarter': 'Dieses Quartal',
+
   // conversation (Chat-Familie)
   'bubble.loading': 'Schreibt…',
   'attachment.remove': '{name} entfernen',
@@ -438,4 +439,18 @@ export const de: LocaleMessages = {
   'messageRow.status.delivered': 'Zugestellt',
   'messageRow.status.read': 'Gelesen',
   'messageRow.status.error': 'Senden fehlgeschlagen',
+  // workbench (Workbench-Bauteile)
+  'titlebar.label': 'Titelleiste',
+  'titlebar.docTitle': 'Dokumenttitel',
+  'titlebar.minimize': 'Minimieren',
+  'titlebar.maximize': 'Maximieren',
+  'titlebar.close': 'Schließen',
+  'statusbar.label': 'Statusleiste',
+  'inspector.label': 'Inspektor',
+  'inspector.mixed': 'Gemischt',
+  'inspector.reset': 'Zurücksetzen',
+  'inspector.empty': 'Keine Auswahl',
+  'actionBar.label': 'Aktionsleiste',
+  'actionBar.progress': 'Aufgabenfortschritt',
+  'actionBar.cancel': 'Aufgabe abbrechen',
 }

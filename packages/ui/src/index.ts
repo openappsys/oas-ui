@@ -67,6 +67,60 @@ export { OASContainer } from './layout/container/index.js'
 export { OASAspectRatio } from './layout/aspect-ratio/index.js'
 export { OASMasonry, type MasonryItem } from './layout/masonry/oas-masonry.js'
 
+import './workbench/titlebar/index.js'
+import './workbench/statusbar/index.js'
+import './workbench/inspector/index.js'
+import './workbench/action-bar/index.js'
+export { OASTitlebar, type TitlebarSize, type TitlebarWindowAction } from './workbench/titlebar/index.js'
+export type {
+  TitlebarProps,
+  TitlebarTitleChangeDetail,
+  TitlebarWindowActionDetail,
+  TitlebarEventMap,
+} from './workbench/titlebar/index.js'
+export { OASStatusbar, OASStatusbarItem, type StatusbarItemStatus } from './workbench/statusbar/index.js'
+export type {
+  StatusbarProps,
+  StatusbarItemProps,
+  StatusbarItemClickDetail,
+  StatusbarItemEventMap,
+} from './workbench/statusbar/index.js'
+export {
+  OASInspector,
+  OASInspectorTabs,
+  OASInspectorSection,
+  OASInspectorRow,
+  type InspectorTabItem,
+} from './workbench/inspector/index.js'
+export type {
+  InspectorProps,
+  InspectorTabsProps,
+  InspectorSectionProps,
+  InspectorRowProps,
+  InspectorTabsChangeDetail,
+  InspectorSectionToggleDetail,
+  InspectorRowResetDetail,
+  InspectorEventMap,
+} from './workbench/inspector/index.js'
+export {
+  OASActionBar,
+  OASActionBarButton,
+  OASActionBarWell,
+  OASStatisticWell,
+  OASTaskProgressWell,
+  type ActionBarTheme,
+} from './workbench/action-bar/index.js'
+export type {
+  ActionBarProps,
+  ActionBarButtonProps,
+  ActionBarWellProps,
+  StatisticWellProps,
+  TaskProgressWellProps,
+  ActionBarActionDetail,
+  ActionBarCancelDetail,
+  ActionBarEventMap,
+} from './workbench/action-bar/index.js'
+
 import './form/input/index.js'
 import './form/textarea/index.js'
 import './form/checkbox/index.js'

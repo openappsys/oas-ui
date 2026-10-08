@@ -1,0 +1,63 @@
+{
+  "className": "OASInspectorSection",
+  "sourceFile": "packages/ui/src/workbench/inspector/oas-inspector-section.ts",
+  "attrs": [
+    {
+      "name": "heading",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "collapsible",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "default-open",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-toggle",
+      "detail": "{ name: this.getAttr('name', ''), open: next }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "extra"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-inspector-divider-color",
+      "default": "var(--oas-color-border)"
+    },
+    {
+      "name": "--oas-inspector-section-header-height",
+      "default": "36px"
+    },
+    {
+      "name": "--oas-inspector-section-header-fg",
+      "default": "var(--oas-color-text-secondary)"
+    }
+  ],
+  "unresolved": []
+}

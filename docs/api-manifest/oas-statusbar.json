@@ -1,0 +1,33 @@
+{
+  "className": "OASStatusbar",
+  "sourceFile": "packages/ui/src/workbench/statusbar/oas-statusbar.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "end"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-statusbar-bg",
+      "default": "var(--oas-color-bg-elevated)"
+    },
+    {
+      "name": "--oas-statusbar-height",
+      "default": "24px"
+    }
+  ],
+  "unresolved": []
+}

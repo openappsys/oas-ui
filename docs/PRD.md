@@ -1995,6 +1995,36 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - qa-regression：`chart.spec.ts` 增四图型渲染产出断言（radar 网格/顶点/图例、polar-area 扇区/参考圈、combo 柱线共存、双轴右轴刻度与轴名）+ RTL 不破断言。
 - 文档：chart.md zh/en 四图型 DemoBlock（内联 attribute 数据）+ 边界说明；api 语料（type 枚举、options 新键、series 扩展字段）→ `api:gen --check` 全绿。
 
+## 工作台构件族：titlebar / statusbar / inspector / action-bar（未发布）
+
+> 专业软件（音视频 / 3D / 设计 / IDE / MES 控制台）应用外壳的条形/面板件，围绕「一块主工作区」排布外圈。新建 `packages/ui/src/workbench/` 族目录 + `families/workbench.ts`（第 8 个 CDN 族）。与既有件的边界：titlebar ≠ app-bar（窗口 chrome vs 页面应用栏）、statusbar ≠ footer（状态词汇 vs 内容页脚）、inspector ≠ sidebar（属性编辑 vs 导航菜单）、action-bar ≠ toolbar（底部命令 + 读数井 vs 工具调色板）。
+
+### 已批定夺
+
+- **titlebar 独立薄件**：`drag` 属性写 `-webkit-app-region: drag` + `data-tauri-drag-region`，交互子件自动 no-drag；纯 Web 下弱化为应用外壳语义（无害空操作）；`window-actions` 内建窗口操作钮 + `oas-window-action` 事件（组件只发事件不执行）；`editable` 文档井（Enter 提交 / Esc 取消回滚）；compact/large 两档高度。
+- **inspector 自建 `oas-inspector-section`**（不复用 collapse）——折叠行为对齐 collapse 的 grid rows 过渡经验，API 贴属性面板（heading/name/collapsible/open 受控/default-open）。
+- **action-bar v1 仅通用**：统计井 + 任务进度井；媒体 transport / music 井延后 v2（文档标注）。
+
+### 组件清单（4 主件 + 8 子件）
+
+- **oas-titlebar**：`size`（compact 34px / large 68px，控件保持紧凑）、`drag`、`title`/`subtitle`、`editable`、`window-actions`；插槽 leading/center/title/trailing；事件 `oas-title-change`/`oas-window-action`；安全区 `--oas-titlebar-leading-inset`/`-trailing-inset` 变量开口。
+- **oas-statusbar** + **oas-statusbar-item**：底部静默信息条（`role="status"` + 可访问名），默认段（左）+ `end` 段（右）；item 支持 `value`/`label`/`icon`/`button`/`status`（default/info/warning/error/progress 语义色）/`spinning`；可点项派发 `oas-item-click`。
+- **oas-inspector** + **oas-inspector-tabs/-section/-row**：属性检视面板（`role="complementary"`），`side`/`density`/`empty`；tabs 胶囊条（tablist + 方向键）；section 折叠分节（aria-expanded）；row 键值行 / 控件行 / `mixed` 混合值 / `reset` 行级复位（`oas-row-reset`）。
+- **oas-action-bar** + **oas-action-bar-button/-well** + **oas-statistic-well** + **oas-task-progress-well**：底部命令条（`role="toolbar"`），`theme` 三表体（charcoal/dark/light，恒深表面 token `--oas-color-ink*`）；button 支持 `active`/`active-tint`/`plain`，点击派发 `oas-action`；well 读数容器（`max-width`）；statistic-well 标签+数值+detail；task-progress-well 进度 + `oas-cancel`（组件不自行移除，宿主决定）。
+
+### 边界
+
+- 拖动区内的按钮/输入必须自动 no-drag（titlebar 最易翻车点，qa-regression 固化）；
+- titlebar 编辑中外部 `title` 重写 → 终止编辑（防外部状态与输入态冲突）；
+- 所有颜色走语义 token（含暗色变体）；`size`/`theme`/`density`/`side` 非法值回落默认并 dev 告警（同值去重）；
+- action-bar 任务进度为受控显示（宿主驱动，组件不自涨）；进度到 100% 保留完成态等宿主隐藏。
+
+### 验收
+
+- 单测：渲染/slot/受控/事件/ARIA/RTL/暗色 token（4 主件 + 子件全覆盖）；
+- e2e：qa-regression/workbench.spec.ts（titlebar 拖动区契约 / inspector 分节折叠 / statusbar 项点击 / action-bar 事件 + console 零告警 + 暗色）；
+- i18n ×10 + API 语料 zh/en + 文档站 4 页 zh/en + a11y 门禁（新页自动进 axe 审计）。
+
 ## 液态玻璃动态流动感 v1（未发布）
 
 > 承接液态玻璃批的如实口径：静态近似（v2.5.9）与边缘折射（v2.6.0）已交付，本批补「随交互变形」的第一层——**指针跟随的镜面高光**与**按压收紧**。范围纪律（用户定）：与折射同域，仅 9 个控件/导航/通知组件消费，内容面板不进；随环境内容变化的实时高光仍属后续。

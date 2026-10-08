@@ -134,11 +134,20 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
     ],
   },
   {
+    text: '工作台构件',
+    collapsed: true,
+    items: [
+      { text: 'TitleBar 标题栏', link: '/components/titlebar' },
+      { text: 'StatusBar 状态栏', link: '/components/statusbar' },
+      { text: 'Inspector 属性检视面板', link: '/components/inspector' },
+      { text: 'ActionBar 操作栏', link: '/components/action-bar' },
+    ],
+  },
+  {
     text: '数据展示组件',
     collapsed: true,
     items: [
-      { text: 'Table 表格', link: '/components/table' },
-      { text: 'Tree 树', link: '/components/tree' },
+      { text: 'Table 表格', link: '/components/table' },      { text: 'Tree 树', link: '/components/tree' },
       { text: 'VirtualList 虚拟列表', link: '/components/virtual-list' },
       { text: 'Card 卡片', link: '/components/card' },
       { text: 'Avatar 头像', link: '/components/avatar' },
@@ -197,6 +206,7 @@ const enGroupNames: Record<string, string> = {
   表单组件: 'Form',
   反馈与浮层组件: 'Feedback & Overlays',
   导航组件: 'Navigation',
+  工作台构件: 'Workbench',
   数据展示组件: 'Data Display',
   会话组件: 'Conversation',
   框架级容器: 'Framework Containers',

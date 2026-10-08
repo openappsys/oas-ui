@@ -4366,5 +4366,164 @@
       "header": "Header slot (sender name/time)",
       "footer": "Footer slot (actions/extra metadata, aligned with direction)"
     }
+  },
+  "oas-action-bar": {
+    "attrs": {
+      "theme": "Surface: charcoal (default, constant-ink surface) / dark (constant ink · deep) / light (theme-native); constant-ink surfaces use the --oas-color-ink* semantic tokens and do not flip with the host theme; invalid values fall back to charcoal with a one-time warning"
+    },
+    "events": {},
+    "slots": {
+      "": "Command area (oas-action-bar-button or any command control)",
+      "start": "Leading command area",
+      "center": "Readout well area (oas-action-bar-well + well children; pushed to the far end of the writing direction)",
+      "end": "End area"
+    }
+  },
+  "oas-action-bar-button": {
+    "attrs": {
+      "value": "Command identifier (carried in the oas-action detail)",
+      "active": "Selected state (controlled display — the host listens to oas-action and writes back; the component does not toggle itself)",
+      "active-tint": "Selected highlight color: the 11 preset names resolve to --oas-preset-*; any CSS color is injected as-is (e.g. record-red #e11d48); text contrast is the host’s responsibility",
+      "plain": "No fill within groups (selected state only tints the text)",
+      "disabled": "Native disabled passthrough (unclickable, unfocusable; aria-disabled kept in sync)"
+    },
+    "events": {
+      "oas-action": "Dispatched on click; detail { value, active } — active is the state at click time; bubbles + composed"
+    },
+    "slots": {
+      "": "Button content"
+    }
+  },
+  "oas-action-bar-well": {
+    "attrs": {
+      "max-width": "Well max width (number, px; default 320; invalid values ignored, negatives clamp to 0)"
+    },
+    "events": {},
+    "slots": {
+      "": "Well content (oas-statistic-well / oas-task-progress-well or host-defined readouts)"
+    }
+  },
+  "oas-inspector": {
+    "attrs": {
+      "side": "Panel side: right (default) / left (divider-direction semantic hook only; positioning is decided by host layout); invalid values fall back to right with a one-time warning",
+      "active-tab": "Current tab (paired with oas-inspector-tabs; attribute-as-state)",
+      "density": "Density tier: default (row height 28px) / compact (row height 24px, tightened spacing, delivered to children via tokens); invalid values fall back to default with a one-time warning",
+      "empty": "No-selection state: the default slot hides and the empty slot (built-in \"No selection\" copy by default) shows",
+      "label": "Accessible name (falls back to the i18n \"Inspector\" default)"
+    },
+    "events": {},
+    "slots": {
+      "": "Sections / content area (oas-inspector-section etc.)",
+      "tabs": "Tab strip channel (oas-inspector-tabs)",
+      "header": "Top area",
+      "footer": "Bottom area",
+      "empty": "No-selection content (overrides the built-in copy)"
+    }
+  },
+  "oas-inspector-row": {
+    "attrs": {
+      "label": "Label text (the label area hides when empty)",
+      "value": "Read-only value (key-value row; tabular numerals)",
+      "mixed": "Multi-selection mixed state: shows the built-in \"Mixed\" copy, value yields",
+      "reset": "Shows a row-level reset button that dispatches oas-row-reset"
+    },
+    "events": {
+      "oas-row-reset": "Dispatched when the row-level reset button is clicked; detail { label }; bubbles + composed"
+    },
+    "slots": {
+      "": "Control channel (slotted content switches the row to a 50/50 control row; without it the row is a read-only key-value row; form controls are provided by the host with their own accessible names)"
+    }
+  },
+  "oas-inspector-section": {
+    "attrs": {
+      "heading": "Section title (also the fold button’s aria-label)",
+      "name": "Section name (carried in the oas-toggle detail; empty string by default)",
+      "collapsible": "Enables folding (plain non-collapsible title by default)",
+      "open": "Expanded state (attribute-as-state — click toggles and reflects; hosts may coordinate by listening to oas-toggle)",
+      "default-open": "Expands initially (uncontrolled convenience: writes open on the first frame when absent)"
+    },
+    "events": {
+      "oas-toggle": "Dispatched when the fold button is clicked; detail { name, open }; bubbles + composed"
+    },
+    "slots": {
+      "": "Section content",
+      "extra": "End-of-header action area (decoupled from the fold click)"
+    }
+  },
+  "oas-inspector-tabs": {
+    "attrs": {
+      "items": "JSON [{ label, value, disabled? }] (attribute declarative channel); invalid JSON renders empty with a one-time warning",
+      "value": "Current tab (attribute-as-state — the component updates and reflects it on switch; hosts may coordinate by listening to oas-change)"
+    },
+    "events": {
+      "oas-change": "Dispatched when the selected tab changes; detail { value }; bubbles + composed"
+    },
+    "slots": {}
+  },
+  "oas-statistic-well": {
+    "attrs": {
+      "label": "Readout label (hides when empty)",
+      "value": "Readout value (tabular numerals)",
+      "detail": "Supplementary info (hides when empty)"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-statusbar": {
+    "attrs": {
+      "label": "Accessible name (falls back to the i18n \"Status bar\" default)"
+    },
+    "events": {},
+    "slots": {
+      "": "Left-segment status cells (workspace-wide aggregate state)",
+      "end": "Right-segment status cells (secondary/context items, pushed to the far end of the writing direction)"
+    }
+  },
+  "oas-statusbar-item": {
+    "attrs": {
+      "value": "Numeric / status value (rendered in tabular numerals)",
+      "label": "Text label",
+      "icon": "Built-in icon name (@oas-ui/icons registry; unknown names render nothing)",
+      "button": "Renders as a native button (clickable, keyboard reachable); read-only div semantics by default",
+      "status": "Semantic color tier: default / info / warning / error / progress — warning/error use background fills (reserved for special, necessary cases), info/progress only tint the text; invalid values fall back to default with a one-time warning",
+      "spinning": "Background-activity spinner (stopped under prefers-reduced-motion)"
+    },
+    "events": {
+      "oas-item-click": "Dispatched on click in button mode; detail { value, label }; bubbles + composed (listenable on the container or the host)"
+    },
+    "slots": {}
+  },
+  "oas-task-progress-well": {
+    "attrs": {
+      "label": "Task name (hides when empty)",
+      "progress": "Progress 0-100 (controlled display — host-driven, the component does not self-advance; out-of-range clamps, invalid falls back to 0); progress 100 keeps the finished state, the component does not remove itself",
+      "detail": "Supplementary info (speed / time remaining etc.; hides when empty)"
+    },
+    "events": {
+      "oas-cancel": "Dispatched when the cancel button is clicked; detail { label }; the component only emits — it does not remove itself, the host decides what follows"
+    },
+    "slots": {}
+  },
+  "oas-titlebar": {
+    "attrs": {
+      "size": "Height tier: compact (default, 34px) / large (68px, controls stay compact); invalid values fall back to compact with a one-time warning",
+      "drag": "Turns the whole bar into a window drag region (writes -webkit-app-region: drag + data-tauri-drag-region, effective in Electron/Tauri hosts; harmless no-op in plain Web); interactive children automatically opt out (no-drag), [data-no-drag] opts out explicitly",
+      "title": "Centered title text (overridden when slot=\"title\" has content). Same-named as the native global attribute — absorbed (removed from the host) once rendered into the title area, preventing duplicate native tooltips; rendering is driven by the component-internal cache; to clear or reset, write the title attribute explicitly",
+      "subtitle": "Subtitle / document state (last edited time etc.)",
+      "editable": "Makes the document-well title editable: Enter or blur commits (dispatches oas-title-change and updates the absorbed cache), Esc cancels and rolls back; rewriting title externally while editing terminates the edit",
+      "window-actions": "Built-in window action button subset (comma-separated: minimize,maximize,close); clicking dispatches oas-window-action — the component does not perform window operations",
+      "leading-inset": "Safe area: leading-side native-control clearance (CSS length; also settable via --oas-titlebar-leading-inset)",
+      "trailing-inset": "Safe area: trailing-side native-control clearance (CSS length; also settable via --oas-titlebar-trailing-inset)"
+    },
+    "events": {
+      "oas-title-change": "Dispatched when the document well commits (Enter/blur) with a changed value; detail { title }; the absorbed cache is updated (the title attribute does not stay on the host)",
+      "oas-window-action": "Dispatched when a built-in window action button is clicked; detail { action } (minimize/maximize/close); the component only emits — hosts wire Electron/Tauri APIs"
+    },
+    "slots": {
+      "leading": "Custom area before the title (brand / macOS traffic lights provided by the host)",
+      "center": "Central interactive content channel (overrides the title / document well when present, e.g. document tag combos)",
+      "title": "Rich title channel (overrides the title attribute text)",
+      "trailing": "End-of-bar custom area (beyond the window action buttons)"
+    }
   }
 }

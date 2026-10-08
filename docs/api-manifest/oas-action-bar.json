@@ -1,0 +1,43 @@
+{
+  "className": "OASActionBar",
+  "sourceFile": "packages/ui/src/workbench/action-bar/oas-action-bar.ts",
+  "attrs": [
+    {
+      "name": "theme",
+      "type": "string",
+      "default": "charcoal",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "center"
+    },
+    {
+      "name": "end"
+    },
+    {
+      "name": "start"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-action-bar-height",
+      "default": "44px"
+    },
+    {
+      "name": "--oas-action-bar-bg",
+      "default": "var(--oas-color-ink)"
+    },
+    {
+      "name": "--oas-action-bar-fg",
+      "default": "var(--oas-color-on-ink)"
+    }
+  ],
+  "unresolved": []
+}

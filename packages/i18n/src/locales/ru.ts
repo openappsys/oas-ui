@@ -426,6 +426,7 @@ export const ru: LocaleMessages = {
   'pullRefresh.refreshing': 'Обновление…',
   'pullRefresh.success': 'Обновлено',
   'datePicker.shortcutThisQuarter': 'В этом квартале',
+
   // conversation (семейство диалогов)
   'bubble.loading': 'Печатает…',
   'attachment.remove': 'Удалить {name}',
@@ -438,4 +439,18 @@ export const ru: LocaleMessages = {
   'messageRow.status.delivered': 'Доставлено',
   'messageRow.status.read': 'Прочитано',
   'messageRow.status.error': 'Не удалось отправить',
+  // workbench (компоненты рабочей среды)
+  'titlebar.label': 'Строка заголовка',
+  'titlebar.docTitle': 'Заголовок документа',
+  'titlebar.minimize': 'Свернуть',
+  'titlebar.maximize': 'Развернуть',
+  'titlebar.close': 'Закрыть',
+  'statusbar.label': 'Строка состояния',
+  'inspector.label': 'Инспектор',
+  'inspector.mixed': 'Смешанное значение',
+  'inspector.reset': 'Сбросить',
+  'inspector.empty': 'Ничего не выбрано',
+  'actionBar.label': 'Панель действий',
+  'actionBar.progress': 'Ход задачи',
+  'actionBar.cancel': 'Отменить задачу',
 }

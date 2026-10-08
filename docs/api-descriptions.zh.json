@@ -4366,5 +4366,164 @@
       "header": "头部槽（发送者名/时间）",
       "footer": "尾部槽（操作/附加元数据，随方向对齐）"
     }
+  },
+  "oas-action-bar": {
+    "attrs": {
+      "theme": "表体：charcoal（默认，恒深表面）/ dark（恒深·深档）/ light（主题本色）；恒深表面走 --oas-color-ink* 语义 token，不随宿主主题翻转；非法值回落 charcoal 并告警一次（同值去重）"
+    },
+    "events": {},
+    "slots": {
+      "": "命令区（oas-action-bar-button 或任意命令控件）",
+      "start": "前部命令区",
+      "center": "读数井区（oas-action-bar-well + 井子件；自动推到书写方向远端）",
+      "end": "末端区"
+    }
+  },
+  "oas-action-bar-button": {
+    "attrs": {
+      "value": "命令标识（oas-action detail 携带）",
+      "active": "选中态（受控显示——宿主监听 oas-action 回写，组件不自切）",
+      "active-tint": "选中高亮色：11 预设名解析为 --oas-preset-*，任意 CSS 色值原样注入（如录音红 #e11d48）；文字对比度由宿主负责",
+      "plain": "组内无填充（选中只着色不加底）",
+      "disabled": "原生禁用透传（禁点、禁聚焦，aria-disabled 同步）"
+    },
+    "events": {
+      "oas-action": "点击时派发；detail { value, active }——active 为点击时刻状态；bubbles + composed"
+    },
+    "slots": {
+      "": "按钮内容"
+    }
+  },
+  "oas-action-bar-well": {
+    "attrs": {
+      "max-width": "井最大宽度（number，px；默认 320；非法值忽略，负值 clamp 到 0）"
+    },
+    "events": {},
+    "slots": {
+      "": "井内容（oas-statistic-well / oas-task-progress-well 或宿主自定义读数）"
+    }
+  },
+  "oas-inspector": {
+    "attrs": {
+      "side": "栏位方向：right（默认）/ left（仅分隔线方向语义钩子，定位由宿主布局决定）；非法值回落 right 并告警一次",
+      "active-tab": "当前 tab（配合 oas-inspector-tabs 使用；属性即状态）",
+      "density": "密度档：default（默认，行高 28px）/ compact（行高 24px、间距收窄，token 通道下发子件）；非法值回落 default 并告警一次",
+      "empty": "无选中态：默认插槽隐藏、empty 插槽（缺省内置文案「未选中对象」）显示",
+      "label": "可访问名称（缺省走 i18n「属性面板」）"
+    },
+    "events": {},
+    "slots": {
+      "": "分节 / 内容区（oas-inspector-section 等）",
+      "tabs": "tab 条通道（oas-inspector-tabs）",
+      "header": "顶部区",
+      "footer": "底部区",
+      "empty": "无选中态内容（覆盖内置文案）"
+    }
+  },
+  "oas-inspector-row": {
+    "attrs": {
+      "label": "标签文本（空时标签区隐藏）",
+      "value": "只读值（键值行；表格数字体对齐）",
+      "mixed": "多选混合态：显示「混合值」内置文案，value 让位",
+      "reset": "显示行级复位钮，点击派发 oas-row-reset"
+    },
+    "events": {
+      "oas-row-reset": "点击行级复位钮时派发；detail { label }；bubbles + composed"
+    },
+    "slots": {
+      "": "控件通道（有分发内容即为控件行 50/50 分栏；无则为只读键值行；表单控件由宿主放入并自带可访问名）"
+    }
+  },
+  "oas-inspector-section": {
+    "attrs": {
+      "heading": "分节标题（折叠钮 aria-label 同源）",
+      "name": "分节名（oas-toggle detail 携带；缺省空串）",
+      "collapsible": "启用折叠（缺省纯标题不可折叠）",
+      "open": "展开状态（属性即状态——点击切换并反射，宿主可监听 oas-toggle 协调）",
+      "default-open": "初始默认展开（非受控便利：无 open 属性时首帧写入 open）"
+    },
+    "events": {
+      "oas-toggle": "点击折叠钮时派发；detail { name, open }；bubbles + composed"
+    },
+    "slots": {
+      "": "分节内容",
+      "extra": "标题行末端操作区（与折叠点击解耦）"
+    }
+  },
+  "oas-inspector-tabs": {
+    "attrs": {
+      "items": "JSON [{ label, value, disabled? }]（attribute 声明式通道）；非法 JSON 渲染为空并告警一次",
+      "value": "当前 tab（属性即状态——切换后组件更新并反射，宿主可监听 oas-change 协调）"
+    },
+    "events": {
+      "oas-change": "选中 tab 变化时派发；detail { value }；bubbles + composed"
+    },
+    "slots": {}
+  },
+  "oas-statistic-well": {
+    "attrs": {
+      "label": "读数标签（空时隐藏）",
+      "value": "读数数值（表格数字体对齐）",
+      "detail": "补充信息（空时隐藏）"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-statusbar": {
+    "attrs": {
+      "label": "可访问名称（缺省走 i18n「状态栏」）"
+    },
+    "events": {},
+    "slots": {
+      "": "左段状态单元格（与整个工作区相关的聚合状态）",
+      "end": "右段状态单元格（次要/上下文项，自动推到书写方向远端）"
+    }
+  },
+  "oas-statusbar-item": {
+    "attrs": {
+      "value": "数值/状态值（表格数字体呈现）",
+      "label": "文本标签",
+      "icon": "内置图标名（@oas-ui/icons 注册表；未知名不渲染）",
+      "button": "渲染为原生 button（可点、键盘可达）；缺省为只读 div 语义",
+      "status": "语义色档：default（默认）/ info / warning / error / progress——warning/error 用底色醒目（仅特殊且必要场景慎用），info/progress 只着文字色；非法值回落 default 并告警一次",
+      "spinning": "后台活动旋转指示（prefers-reduced-motion 停转）"
+    },
+    "events": {
+      "oas-item-click": "button 模式点击时派发；detail { value, label }；bubbles + composed（容器与宿主均可监听）"
+    },
+    "slots": {}
+  },
+  "oas-task-progress-well": {
+    "attrs": {
+      "label": "任务名（空时隐藏）",
+      "progress": "进度 0-100（受控显示——宿主驱动，组件不自涨；越界 clamp、非法回落 0）；到 100 保留完成态，组件不自行移除",
+      "detail": "补充信息（速度/剩余时间等；空时隐藏）"
+    },
+    "events": {
+      "oas-cancel": "点击取消钮时派发；detail { label }；组件只发事件不移除自身，宿主决定后续"
+    },
+    "slots": {}
+  },
+  "oas-titlebar": {
+    "attrs": {
+      "size": "高度档：compact（默认，34px）/ large（68px，控件保持紧凑）；非法值回落 compact 并告警一次（同值去重）",
+      "drag": "整栏设为窗口拖动区（写 -webkit-app-region: drag + data-tauri-drag-region，Electron/Tauri 宿主生效；纯 Web 下无害空操作）；交互子件自动 no-drag，[data-no-drag] 显式退出",
+      "title": "居中标题文本（slot=\"title\" 有内容时覆盖）。原生全局属性同名——渲染进标题区后即从宿主吸收移除（防原生 tooltip 重复干扰），渲染由组件内缓存驱动；清空/重设请显式写 title 属性",
+      "subtitle": "副标题 / 文档状态（已编辑时间等）",
+      "editable": "文档井标题可编辑：Enter 或失焦提交（派发 oas-title-change 并更新吸收缓存），Esc 取消回滚；编辑中外部重写 title 即终止编辑",
+      "window-actions": "内建窗口操作钮子集（逗号分隔：minimize,maximize,close）；点击派发 oas-window-action，组件不执行窗口操作",
+      "leading-inset": "安全区：leading 端原生控件防压（CSS 长度；亦可直接覆写 --oas-titlebar-leading-inset）",
+      "trailing-inset": "安全区：trailing 端原生控件防压（CSS 长度；亦可直接覆写 --oas-titlebar-trailing-inset）"
+    },
+    "events": {
+      "oas-title-change": "文档井提交（Enter/失焦）且值有变化时派发；detail { title }，吸收缓存同步更新（title 属性不常驻宿主）",
+      "oas-window-action": "点击内建窗口操作钮时派发；detail { action }（minimize/maximize/close）；组件只发事件，宿主接 Electron/Tauri API"
+    },
+    "slots": {
+      "leading": "标题前置自定义区（品牌 / macOS 交通灯由宿主传入）",
+      "center": "中央交互内容通道（有内容时覆盖标题/文档井，如文档标签组合）",
+      "title": "标题富内容通道（覆盖 title 属性文本）",
+      "trailing": "末端自定义区（窗口操作钮之外）"
+    }
   }
 }

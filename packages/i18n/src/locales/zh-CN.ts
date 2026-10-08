@@ -429,6 +429,7 @@ export const zhCN = {
   'pullRefresh.release': '松开立即刷新',
   'pullRefresh.refreshing': '刷新中…',
   'pullRefresh.success': '刷新成功',
+
   // conversation（会话族：bubble/attachment/message-scroller/message-row）
   'bubble.loading': '正在输入…',
   'attachment.remove': '移除 {name}',
@@ -441,4 +442,18 @@ export const zhCN = {
   'messageRow.status.delivered': '已送达',
   'messageRow.status.read': '已读',
   'messageRow.status.error': '发送失败',
+  // workbench（工作台构件族）
+  'titlebar.label': '标题栏',
+  'titlebar.docTitle': '文档标题',
+  'titlebar.minimize': '最小化',
+  'titlebar.maximize': '最大化',
+  'titlebar.close': '关闭',
+  'statusbar.label': '状态栏',
+  'inspector.label': '属性面板',
+  'inspector.mixed': '混合值',
+  'inspector.reset': '复位',
+  'inspector.empty': '未选中对象',
+  'actionBar.label': '操作栏',
+  'actionBar.progress': '任务进度',
+  'actionBar.cancel': '取消任务',
 } as const

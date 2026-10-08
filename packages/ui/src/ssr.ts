@@ -203,6 +203,20 @@ export { OASComment } from './data/comment/oas-comment.js'
 export { OASHighlight } from './data/highlight/oas-highlight.js'
 export { OASSwipeCell } from './data/swipe-cell/oas-swipe-cell.js'
 
+// ---------- workbench ----------
+export { OASTitlebar } from './workbench/titlebar/oas-titlebar.js'
+export { OASStatusbar } from './workbench/statusbar/oas-statusbar.js'
+export { OASStatusbarItem } from './workbench/statusbar/oas-statusbar-item.js'
+export { OASInspector } from './workbench/inspector/oas-inspector.js'
+export { OASInspectorTabs } from './workbench/inspector/oas-inspector-tabs.js'
+export { OASInspectorSection } from './workbench/inspector/oas-inspector-section.js'
+export { OASInspectorRow } from './workbench/inspector/oas-inspector-row.js'
+export { OASActionBar } from './workbench/action-bar/oas-action-bar.js'
+export { OASActionBarButton } from './workbench/action-bar/oas-action-bar-button.js'
+export { OASActionBarWell } from './workbench/action-bar/oas-action-bar-well.js'
+export { OASStatisticWell } from './workbench/action-bar/oas-statistic-well.js'
+export { OASTaskProgressWell } from './workbench/action-bar/oas-task-progress-well.js'
+
 // ---------- framework ----------
 export { OASConfigProvider } from './framework/config-provider/oas-config-provider.js'
 export { OASApp } from './framework/app/oas-app.js'

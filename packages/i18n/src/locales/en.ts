@@ -354,6 +354,7 @@ export const en: LocaleMessages = {
   'pullRefresh.release': 'Release to refresh',
   'pullRefresh.refreshing': 'Refreshing…',
   'pullRefresh.success': 'Refresh successful',
+
   // conversation (chat family: bubble/attachment/message-scroller/message-row)
   'bubble.loading': 'Typing…',
   'attachment.remove': 'Remove {name}',
@@ -366,4 +367,18 @@ export const en: LocaleMessages = {
   'messageRow.status.delivered': 'Delivered',
   'messageRow.status.read': 'Read',
   'messageRow.status.error': 'Failed to send',
+  // workbench (workbench chrome family)
+  'titlebar.label': 'Title bar',
+  'titlebar.docTitle': 'Document title',
+  'titlebar.minimize': 'Minimize',
+  'titlebar.maximize': 'Maximize',
+  'titlebar.close': 'Close',
+  'statusbar.label': 'Status bar',
+  'inspector.label': 'Inspector',
+  'inspector.mixed': 'Mixed',
+  'inspector.reset': 'Reset',
+  'inspector.empty': 'No selection',
+  'actionBar.label': 'Action bar',
+  'actionBar.progress': 'Task progress',
+  'actionBar.cancel': 'Cancel task',
 }

@@ -426,6 +426,7 @@ export const ar: LocaleMessages = {
   'pullRefresh.refreshing': 'جارٍ التحديث…',
   'pullRefresh.success': 'تم التحديث',
   'datePicker.shortcutThisQuarter': 'هذا الربع',
+
   // conversation (عائلة المحادثة)
   'bubble.loading': 'يكتب…',
   'attachment.remove': 'إزالة {name}',
@@ -438,4 +439,18 @@ export const ar: LocaleMessages = {
   'messageRow.status.delivered': 'تم التسليم',
   'messageRow.status.read': 'تمت القراءة',
   'messageRow.status.error': 'فشل الإرسال',
+  // workbench (مكونات بيئة العمل)
+  'titlebar.label': 'شريط العنوان',
+  'titlebar.docTitle': 'عنوان المستند',
+  'titlebar.minimize': 'تصغير',
+  'titlebar.maximize': 'تكبير',
+  'titlebar.close': 'إغلاق',
+  'statusbar.label': 'شريط الحالة',
+  'inspector.label': 'لوحة الخصائص',
+  'inspector.mixed': 'قيمة مختلطة',
+  'inspector.reset': 'إعادة تعيين',
+  'inspector.empty': 'لا يوجد تحديد',
+  'actionBar.label': 'شريط الإجراءات',
+  'actionBar.progress': 'تقدم المهمة',
+  'actionBar.cancel': 'إلغاء المهمة',
 }

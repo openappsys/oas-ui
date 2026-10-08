@@ -426,6 +426,7 @@ export const ja: LocaleMessages = {
   'pullRefresh.refreshing': '更新中…',
   'pullRefresh.success': '更新しました',
   'datePicker.shortcutThisQuarter': '今四半期',
+
   // conversation（チャットファミリー）
   'bubble.loading': '入力中…',
   'attachment.remove': '{name} を削除',
@@ -438,4 +439,18 @@ export const ja: LocaleMessages = {
   'messageRow.status.delivered': '配信済み',
   'messageRow.status.read': '既読',
   'messageRow.status.error': '送信失敗',
+  // workbench（ワークベンチ構成部品）
+  'titlebar.label': 'タイトルバー',
+  'titlebar.docTitle': 'ドキュメントタイトル',
+  'titlebar.minimize': '最小化',
+  'titlebar.maximize': '最大化',
+  'titlebar.close': '閉じる',
+  'statusbar.label': 'ステータスバー',
+  'inspector.label': 'インスペクター',
+  'inspector.mixed': '混合値',
+  'inspector.reset': 'リセット',
+  'inspector.empty': '未選択',
+  'actionBar.label': 'アクションバー',
+  'actionBar.progress': 'タスクの進行状況',
+  'actionBar.cancel': 'タスクをキャンセル',
 }

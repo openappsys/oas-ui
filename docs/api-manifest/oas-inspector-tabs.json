@@ -1,0 +1,33 @@
+{
+  "className": "OASInspectorTabs",
+  "sourceFile": "packages/ui/src/workbench/inspector/oas-inspector-tabs.ts",
+  "attrs": [
+    {
+      "name": "items",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-inspector-tab-active-bg",
+      "default": "var(--oas-color-primary)"
+    }
+  ],
+  "unresolved": []
+}

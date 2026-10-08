@@ -1,0 +1,72 @@
+{
+  "className": "OASActionBarButton",
+  "sourceFile": "packages/ui/src/workbench/action-bar/oas-action-bar-button.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "active",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "active-tint",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "plain",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-action",
+      "detail": "{ value: this.getAttr('value', ''), active: this.hasAttr('active') }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-action-bar-button-min-width",
+      "default": "32px"
+    },
+    {
+      "name": "--oas-action-bar-button-height",
+      "default": "32px"
+    },
+    {
+      "name": "--oas-action-bar-button-bg",
+      "default": "color-mix(in srgb, var(--oas-color-on-ink) 10%, transparent)"
+    },
+    {
+      "name": "--oas-action-bar-button-hover-bg",
+      "default": "color-mix(in srgb, var(--oas-color-on-ink) 16%, transparent)"
+    },
+    {
+      "name": "--oas-action-bar-button-active-bg",
+      "default": "color-mix(in srgb, var(--oas-color-ink-deep) 52%, transparent)"
+    },
+    {
+      "name": "--oas-action-bar-active-tint",
+      "default": "var(--oas-color-primary)"
+    }
+  ],
+  "unresolved": []
+}

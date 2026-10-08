@@ -191,6 +191,24 @@ const INTERACTIONS: Array<[string, string]> = [
 //   resizecol     DOM 列宽拖拽：在匹配 th 右缘热区派发 pointerdown/move/up 合成事件序列
 //                 （真实指针会被原生 draggable 拖拽启动/视口外遮挡干扰）
 const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
+  titlebar: [
+    ['oas-titlebar [part="win-button"]', 'click', '点窗口操作钮 → oas-window-action'],
+    [
+      'oas-titlebar[editable] [part="doc-title"]',
+      'fill:新标题',
+      '文档井改名（probe 末尾 Enter 提交）→ oas-title-change',
+    ],
+  ],
+  statusbar: [['oas-statusbar-item[button] [part="item"]', 'click', '点可点单元格 → oas-item-click']],
+  inspector: [
+    ['oas-inspector-tabs [role="tab"]', 'click', '点 tab → oas-change'],
+    ['oas-inspector-section[collapsible] [part="section-toggle"]', 'click', '点折叠头 → oas-toggle'],
+    ['oas-inspector-row[reset] [part="row-reset"]', 'click', '点行级复位 → oas-row-reset'],
+  ],
+  'action-bar': [
+    ['oas-action-bar-button [part="button"]', 'click', '点命令按钮 → oas-action'],
+    ['oas-task-progress-well [part="well-cancel"]', 'click', '点任务井取消 → oas-cancel'],
+  ],
   grid: [['oas-grid[collapsed-rows] [part="collapse-tail-btn"]', 'click', '点折叠尾格展开 → oas-collapse']],
   swatch: [['oas-swatch-group:not([disabled]) oas-swatch:not([disabled])', 'click', '点色板 → 组 oas-change']],
   scheduler: [

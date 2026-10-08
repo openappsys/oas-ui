@@ -1,0 +1,34 @@
+{
+  "className": "OASActionBarWell",
+  "sourceFile": "packages/ui/src/workbench/action-bar/oas-action-bar-well.ts",
+  "attrs": [
+    {
+      "name": "max-width",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-action-bar-well-max-width",
+      "default": "320px"
+    },
+    {
+      "name": "--oas-action-bar-well-height",
+      "default": "32px"
+    },
+    {
+      "name": "--oas-action-bar-well-bg",
+      "default": "color-mix(in srgb, var(--oas-color-on-ink) 10%, transparent)"
+    }
+  ],
+  "unresolved": []
+}

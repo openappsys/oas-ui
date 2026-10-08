@@ -36,6 +36,12 @@
   --oas-color-bg-disabled: #f4f4f5;
   --oas-color-overlay: rgba(0, 0, 0, 0.5);
 
+  /* 恒深表面（主题无关，light/dark 同值）：工作台操作条 transport 表体等
+     「表面不随宿主主题翻转」的组件用；ink（中深）→ ink-deep（近黑）两档 + 其上前景 */
+  --oas-color-ink: #26262b;
+  --oas-color-ink-deep: #18181b;
+  --oas-color-on-ink: #fafafa;
+
   /* 预设色板（color 属性按名引用；dark 走下方调亮变体） */
   --oas-preset-magenta: #eb2f96;
   --oas-preset-red: #f5222d;
@@ -170,6 +176,10 @@ html.dark {
   --oas-color-bg-hover: #27272a;
   --oas-color-bg-disabled: #27272a;
   --oas-color-overlay: rgba(0, 0, 0, 0.6);
+  /* 恒深表面：主题无关（与 light 段同值，恒定即恒定） */
+  --oas-color-ink: #26262b;
+  --oas-color-ink-deep: #18181b;
+  --oas-color-on-ink: #fafafa;
   /* dark 阴影：暗底加深 */
   --oas-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
   --oas-shadow-md: 0 2px 4px -1px rgba(0, 0, 0, 0.4), 0 4px 12px -2px rgba(0, 0, 0, 0.5);
@@ -232,6 +242,10 @@ html.dark {
   --oas-color-bg-hover: #e6f7ff;
   --oas-color-bg-disabled: #d9d9d9;
   --oas-color-overlay: rgba(0, 0, 0, 0.8);
+  /* 恒深表面：主题无关（继承 :root 同值；显式重申与 dark 段口径一致——恒定即恒定） */
+  --oas-color-ink: #26262b;
+  --oas-color-ink-deep: #18181b;
+  --oas-color-on-ink: #fafafa;
   --oas-focus-ring: 0 0 0 3px #ffd666;
   --oas-deep-mix: 72%;
   --oas-deep-sink: black;

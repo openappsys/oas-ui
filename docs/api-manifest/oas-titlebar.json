@@ -1,0 +1,88 @@
+{
+  "className": "OASTitlebar",
+  "sourceFile": "packages/ui/src/workbench/titlebar/oas-titlebar.ts",
+  "attrs": [
+    {
+      "name": "size",
+      "type": "string",
+      "default": "compact",
+      "observed": true
+    },
+    {
+      "name": "drag",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "subtitle",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "editable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "window-actions",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "leading-inset",
+      "observed": true
+    },
+    {
+      "name": "trailing-inset",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-window-action",
+      "detail": "{ action }"
+    },
+    {
+      "name": "oas-title-change",
+      "detail": "{ title: next }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "center"
+    },
+    {
+      "name": "leading"
+    },
+    {
+      "name": "title"
+    },
+    {
+      "name": "trailing"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-titlebar-height",
+      "default": "var(--oas-titlebar-compact-height, 34px)"
+    },
+    {
+      "name": "--oas-titlebar-leading-inset",
+      "default": "0px"
+    },
+    {
+      "name": "--oas-titlebar-trailing-inset",
+      "default": "0px"
+    }
+  ],
+  "unresolved": []
+}
