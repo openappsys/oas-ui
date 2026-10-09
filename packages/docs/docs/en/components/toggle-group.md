@@ -426,6 +426,7 @@ onMounted(() => {
 | --- | --- |
 | `--oas-toggle-color` | `var(--oas-color-primary)` |
 | `--oas-toggle-on-color` | `var(--oas-color-text-on-primary)` |
+| `--oas-toggle-tint-text` | `var(--oas-color-primary-text)` |
 
 ### oas-toggle-item
 

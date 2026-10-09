@@ -78,6 +78,10 @@
     {
       "name": "--oas-toggle-on-color",
       "default": "var(--oas-color-text-on-primary)"
+    },
+    {
+      "name": "--oas-toggle-tint-text",
+      "default": "var(--oas-color-primary-text)"
     }
   ],
   "unresolved": []
