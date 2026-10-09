@@ -26,7 +26,6 @@
     },
     {
       "name": "default-open",
-      "type": "boolean",
       "observed": true
     }
   ],

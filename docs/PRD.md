@@ -2174,6 +2174,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：`shared/scrub.test.ts` 10 条 + `shared/measure-text.test.ts` 4 条；slider 160（+22）/ input-number 88（+12）/ collapse 46（+5）/ dropdown 78（+6）/ select 165（+5）；全量 `pnpm test` 全绿（含 SSR 快照零漂移——`show-track` 未设置时不写 data-*）。
 - e2e：`qa-regression` 五 spec 增补真交互回归（scrub 真拖计步/双击复位/summary 显隐/reserve-width 锁宽）。
 - typecheck / build / lint:md / api:check 全绿；docs zh/en 五组件 + api-descriptions + api-manifest 同步；CHANGELOG `[未发布]`。
+
 ## 表单一致性补齐批（未发布）
 
 ### 特性
@@ -2187,6 +2188,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：combobox +16 / switch +9 / toggle-button +8 / toggle-group +5 断言（RED→GREEN）；`pnpm test` 全绿。
 - e2e：`qa-regression/combobox.spec.ts`（多选真点叠加 chips + chip 移除 + 上限拦截反馈可见 + 折叠 +N）、`qa-regression/switch.spec.ts`（卡片真点切换 + demo 反馈 + 禁用卡拦截）、`qa-regression/toggle-button.spec.ts`（三形态真点 + 静态镜像）、`qa-regression/toggle-group.spec.ts`（四形态镜像 + filled 多选真点反馈）全绿。
 - 文档：combobox/switch/toggle-button/toggle-group md（zh/en）新增章节 + 可交互 demo；`api-descriptions.{zh,en}.json` 增补 + api:scan/api:gen 重生成；CHANGELOG `[未发布]` 英文条目。
+
 ## 专业密度 C 批：oas-collapsible 新组件 + list / menu 系 / typography 能力增量（未发布）
 
 > 立项背景：能力对照第 C/D 组收口后的「做」档四项——单面板自折叠原语（C 组唯一实质缺口）、通用行组件的引导媒体与整行链接、菜单系前置媒体插槽（dropdown avatar 例）、排版内容块（blockquote / list / table）。定位纪律：不另立通用 item 件（扩展 `oas-list-item`）、不新立 prose 长文容器（扩展 typography 的 `tag` 体系）。

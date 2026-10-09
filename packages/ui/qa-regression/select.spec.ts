@@ -488,6 +488,8 @@ test('select reserve-width：锁宽生效且真切换选中值后触发器宽度
     .toBe('c')
   const widthAfter = await page.locator('#sel-reserve').evaluate((node) => node.getBoundingClientRect().width)
   expect(Math.abs(widthAfter - widthBefore)).toBeLessThanOrEqual(1)
+})
+
 // 回归（二轮 review）：多选无 name 不注入空名 entry——FormData 通道由组件自建 entry，
 // 不受浏览器「无 name 不提交」兜底保护，须显式拦下（对齐 combobox 同款拦截）。
 // 用真实 <form> + FormData(form) 收集，走浏览器 FACE 原生提交链路验证。
