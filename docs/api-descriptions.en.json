@@ -4555,6 +4555,31 @@
     },
     "slots": {}
   },
+  "oas-transport-well": {
+    "attrs": {
+      "label": "Readout label (hides when empty)",
+      "frames": "Current frame (controlled display — keyboard seek only emits, the host writes back to drive the readout; invalid falls back to 0, negatives clamp to 0, beyond duration clamps to the last frame)",
+      "frame-rate": "Frame rate fps (timecode conversion base; when absent/invalid the timecode degrades to a raw frame count)",
+      "duration": "Total frames (optional — drives the /total segment, the seek upper bound and aria-valuemax)",
+      "detail": "Supplementary info (resolution / color space etc., composed with the auto frame-rate text; hides when empty)"
+    },
+    "events": {
+      "oas-seek": "Dispatched on keyboard seek (←/→ ±1 frame, ↑/↓ ±1 second, Home/End first/last frame; RTL mirrors the horizontal arrows); detail { frames } (proposal already clamped); controlled display — the component never changes frames itself, the host writes back"
+    },
+    "slots": {}
+  },
+  "oas-music-well": {
+    "attrs": {
+      "label": "Readout label (hides when empty)",
+      "bars": "Current bar (1-based; with beats drives the bar.beat position segment, hidden when both are absent)",
+      "beats": "Current beat (1-based; with bars drives the bar.beat position segment, hidden when both are absent)",
+      "tempo": "Tempo BPM (invalid values drop the segment)",
+      "meter": "Time signature (e.g. 4/4, shown verbatim; hides when empty)",
+      "detail": "Supplementary info (composed with the auto BPM/meter text; hides when empty)"
+    },
+    "events": {},
+    "slots": {}
+  },
   "oas-titlebar": {
     "attrs": {
       "size": "Height tier: compact (default, 34px) / large (68px, controls stay compact); invalid values fall back to compact with a one-time warning",

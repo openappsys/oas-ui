@@ -1,0 +1,56 @@
+{
+  "className": "OASMusicWell",
+  "sourceFile": "packages/ui/src/workbench/action-bar/oas-music-well.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "bars",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "beats",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "tempo",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "meter",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "detail",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-action-bar-well-height",
+      "default": "32px"
+    },
+    {
+      "name": "--oas-action-bar-well-bg",
+      "default": "color-mix(in srgb, var(--oas-color-on-ink) 10%, transparent)"
+    }
+  ],
+  "unresolved": []
+}

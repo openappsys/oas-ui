@@ -455,4 +455,5 @@ export const ar: LocaleMessages = {
   'actionBar.label': 'شريط الإجراءات',
   'actionBar.progress': 'تقدم المهمة',
   'actionBar.cancel': 'إلغاء المهمة',
+  'actionBar.seek': 'الانتقال إلى الإطار',
 }

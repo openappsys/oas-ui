@@ -44,6 +44,8 @@
   "oas-action-bar-well",
   "oas-statistic-well",
   "oas-task-progress-well",
+  "oas-transport-well",
+  "oas-music-well",
   "oas-input",
   "oas-textarea",
   "oas-checkbox",

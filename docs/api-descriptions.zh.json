@@ -4555,6 +4555,31 @@
     },
     "slots": {}
   },
+  "oas-transport-well": {
+    "attrs": {
+      "label": "读数标签（空时隐藏）",
+      "frames": "当前帧（受控显示——键盘 seek 只发事件，宿主回写驱动读数推进；非法回落 0、负值 clamp 0、超 duration 压到尾帧）",
+      "frame-rate": "帧率 fps（时间码换算基准；缺省/非法时时间码退化为原始帧数显示）",
+      "duration": "总帧数（可选——决定「/总时长」段、seek 上界与 aria-valuemax）",
+      "detail": "补充信息（分辨率/色彩空间等，与自动帧率文本拼段；空时隐藏）"
+    },
+    "events": {
+      "oas-seek": "键盘 seek（←/→ ±1 帧、↑/↓ ±1 秒、Home/End 首/尾帧，RTL 镜像水平方向）时派发；detail { frames }（提议值已 clamp）；受控显示——组件不自改 frames，宿主回写"
+    },
+    "slots": {}
+  },
+  "oas-music-well": {
+    "attrs": {
+      "label": "读数标签（空时隐藏）",
+      "bars": "当前小节（1 起；与 beats 共同决定「小节.节拍」位置段，双缺整段隐藏）",
+      "beats": "当前节拍（1 起；与 bars 共同决定「小节.节拍」位置段，双缺整段隐藏）",
+      "tempo": "速度 BPM（非法值忽略该段）",
+      "meter": "拍号（如 4/4，原样显示；空时隐藏）",
+      "detail": "补充信息（与自动 BPM/拍号文本拼段；空时隐藏）"
+    },
+    "events": {},
+    "slots": {}
+  },
   "oas-titlebar": {
     "attrs": {
       "size": "高度档：compact（默认，34px）/ large（68px，控件保持紧凑）；非法值回落 compact 并告警一次（同值去重）",

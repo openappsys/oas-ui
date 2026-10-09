@@ -2,10 +2,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
-import { OASActionBar, OASActionBarButton, OASActionBarWell, OASStatisticWell, OASTaskProgressWell } from './index.js'
+import {
+  OASActionBar,
+  OASActionBarButton,
+  OASActionBarWell,
+  OASStatisticWell,
+  OASTaskProgressWell,
+  OASTransportWell,
+  OASMusicWell,
+} from './index.js'
 
 /**
- * oas-action-bar（操作栏）+ button/well/statistic-well/task-progress-well 子件单元测试。
+ * oas-action-bar（操作栏）+ button/well/statistic-well/task-progress-well/
+ * transport-well/music-well 子件单元测试。
  *
  * happy-dom 限制：CSS 类样式不进 element.style、getComputedStyle 不解析 var()——
  * 三表体/tint/按压态等视觉断言走「属性钩子 + 内联变量 + shadow 内 style 文本」路径。
@@ -29,8 +38,9 @@ function mount<T extends HTMLElement = OASActionBar>(opts: MountOptions<T> = {})
 const barPart = (el: OASActionBar): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
 const btnPart = (el: OASActionBarButton): HTMLButtonElement =>
   el.shadowRoot!.querySelector<HTMLButtonElement>('[part="button"]')!
-const wellPart = (el: OASActionBarWell | OASStatisticWell | OASTaskProgressWell): HTMLElement =>
-  el.shadowRoot!.querySelector<HTMLElement>('[part="well"]')!
+const wellPart = (
+  el: OASActionBarWell | OASStatisticWell | OASTaskProgressWell | OASTransportWell | OASMusicWell,
+): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('[part="well"]')!
 const cancelBtn = (el: OASTaskProgressWell): HTMLButtonElement =>
   el.shadowRoot!.querySelector<HTMLButtonElement>('[part="well-cancel"]')!
 const progressbar = (el: OASTaskProgressWell): HTMLElement =>
@@ -371,6 +381,253 @@ describe('OASTaskProgressWell', () => {
 
   it('dir=rtl 钩子 + token 纪律', () => {
     const el = mount<OASTaskProgressWell>({ Ctor: OASTaskProgressWell, attrs: { dir: 'rtl' } })
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    expect(styleText(el)).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+  })
+})
+
+// ===== transport-well =====
+
+const tcSlider = (el: OASTransportWell): HTMLElement =>
+  el.shadowRoot!.querySelector<HTMLElement>('[part="well-value"]')!
+
+function pressKey(el: OASTransportWell, key: string): void {
+  tcSlider(el).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+}
+
+describe('OASTransportWell', () => {
+  it('observedAttributes 完整（含 dir）', () => {
+    expect(OASTransportWell.observedAttributes).toEqual(
+      expect.arrayContaining(['label', 'frames', 'frame-rate', 'duration', 'detail', 'dir']),
+    )
+  })
+
+  it('时间码换算：frames+frame-rate → HH:MM:SS:FF（纯展示换算，表格数字体）', () => {
+    const el = mount<OASTransportWell>({ Ctor: OASTransportWell, attrs: { frames: '1079', 'frame-rate': '25' } })
+    expect(tcSlider(el).textContent).toBe('00:00:43:04')
+  })
+
+  it('非法 frame-rate：时间码退化为原始帧数显示（valuetext 同步）', () => {
+    const el = mount<OASTransportWell>({ Ctor: OASTransportWell, attrs: { frames: '1079', 'frame-rate': 'abc' } })
+    expect(tcSlider(el).textContent).toBe('1079')
+    expect(tcSlider(el).getAttribute('aria-valuetext')).toBe('1079')
+  })
+
+  it('frames 非法回落 0、负值 clamp 0', () => {
+    const el = mount<OASTransportWell>({ Ctor: OASTransportWell, attrs: { frames: 'abc', 'frame-rate': '25' } })
+    expect(tcSlider(el).textContent).toBe('00:00:00:00')
+    el.setAttribute('frames', '-5')
+    expect(tcSlider(el).textContent).toBe('00:00:00:00')
+  })
+
+  it('duration：/总时长 段 + seek 上界（frames 越界 clamp）+ valuemax 同步', () => {
+    const el = mount<OASTransportWell>({
+      Ctor: OASTransportWell,
+      attrs: { frames: '5000', 'frame-rate': '25', duration: '1500' },
+    })
+    const total = el.shadowRoot!.querySelector<HTMLElement>('[part="well-total"]')!
+    expect(total.textContent).toBe('/ 00:01:00:00')
+    expect(total.hidden).toBe(false)
+    expect(tcSlider(el).textContent, 'frames 超 duration clamp 到总帧数').toBe('00:01:00:00')
+    expect(tcSlider(el).getAttribute('aria-valuemax')).toBe('1500')
+    el.removeAttribute('duration')
+    expect(total.hidden).toBe(true)
+    expect(tcSlider(el).getAttribute('aria-valuemax'), '无 duration 时 valuemax 撤除').toBeNull()
+  })
+
+  it('detail 段自动拼帧率（25 fps）+ detail 属性，两缺则整段隐藏', () => {
+    const el = mount<OASTransportWell>({
+      Ctor: OASTransportWell,
+      attrs: { frames: '0', 'frame-rate': '25', detail: '3840 × 2160' },
+    })
+    const detail = el.shadowRoot!.querySelector<HTMLElement>('[part="well-detail"]')!
+    expect(detail.textContent).toBe('25 fps · 3840 × 2160')
+    el.removeAttribute('frame-rate')
+    expect(detail.textContent).toBe('3840 × 2160')
+    el.removeAttribute('detail')
+    expect(detail.hidden).toBe(true)
+  })
+
+  it('label 渲染，空时隐藏', () => {
+    const el = mount<OASTransportWell>({ Ctor: OASTransportWell, attrs: { label: 'Timecode', frames: '0' } })
+    const label = el.shadowRoot!.querySelector<HTMLElement>('[part="well-label"]')!
+    expect(label.textContent).toBe('Timecode')
+    expect(label.hidden).toBe(false)
+    el.removeAttribute('label')
+    expect(label.hidden).toBe(true)
+  })
+
+  it('scrub 滑轨语义：role=slider + tabindex=0 + valuenow/valuetext + aria-live=polite', () => {
+    const el = mount<OASTransportWell>({ Ctor: OASTransportWell, attrs: { frames: '1079', 'frame-rate': '25' } })
+    const slider = tcSlider(el)
+    expect(slider.getAttribute('role')).toBe('slider')
+    expect(slider.getAttribute('tabindex')).toBe('0')
+    expect(slider.getAttribute('aria-valuemin')).toBe('0')
+    expect(slider.getAttribute('aria-valuenow')).toBe('1079')
+    expect(slider.getAttribute('aria-valuetext')).toBe('00:00:43:04')
+    expect(wellPart(el).getAttribute('aria-live')).toBe('polite')
+  })
+
+  it('滑轨可访问名：label 属性优先，缺省 i18n 兜底且随 locale 切换', () => {
+    const el = mount<OASTransportWell>({ Ctor: OASTransportWell, attrs: { label: 'Timecode', frames: '0' } })
+    expect(tcSlider(el).getAttribute('aria-label')).toBe('Timecode')
+    const el2 = mount<OASTransportWell>({ Ctor: OASTransportWell, attrs: { frames: '0' } })
+    expect(tcSlider(el2).getAttribute('aria-label')).toBe('跳转到指定帧')
+    setLocale(en)
+    expect(tcSlider(el2).getAttribute('aria-label')).toBe('Seek to frame')
+    setLocale('zh-CN')
+  })
+
+  it('键盘 seek：→ +1 帧、← -1 帧、↑ +1 秒（fps 帧）、Home 0、End 尾帧，均派发 oas-seek', () => {
+    const el = mount<OASTransportWell>({
+      Ctor: OASTransportWell,
+      attrs: { frames: '50', 'frame-rate': '25', duration: '100' },
+    })
+    const events: Array<{ frames: number }> = []
+    el.addEventListener('oas-seek', (e) => events.push((e as CustomEvent).detail))
+    pressKey(el, 'ArrowRight')
+    expect(events.at(-1)).toEqual({ frames: 51 })
+    pressKey(el, 'ArrowLeft')
+    expect(events.at(-1)).toEqual({ frames: 49 })
+    pressKey(el, 'ArrowUp')
+    expect(events.at(-1)).toEqual({ frames: 75 })
+    pressKey(el, 'ArrowDown')
+    expect(events.at(-1)).toEqual({ frames: 25 })
+    pressKey(el, 'Home')
+    expect(events.at(-1)).toEqual({ frames: 0 })
+    pressKey(el, 'End')
+    expect(events.at(-1)).toEqual({ frames: 100 })
+  })
+
+  it('seek 提议值 clamp：低于 0 抬到 0、超 duration 压到尾帧；无 duration 时 End 不派发', () => {
+    const el = mount<OASTransportWell>({
+      Ctor: OASTransportWell,
+      attrs: { frames: '1', 'frame-rate': '25', duration: '10' },
+    })
+    const events: Array<{ frames: number }> = []
+    el.addEventListener('oas-seek', (e) => events.push((e as CustomEvent).detail))
+    pressKey(el, 'ArrowLeft')
+    expect(events.at(-1)).toEqual({ frames: 0 })
+    pressKey(el, 'ArrowDown')
+    expect(events.at(-1)).toEqual({ frames: 0 })
+    el.removeAttribute('duration')
+    pressKey(el, 'End')
+    expect(events).toHaveLength(2)
+  })
+
+  it('RTL 镜像水平方向键（→ 退帧、← 进帧），垂直键不受影响', () => {
+    const el = mount<OASTransportWell>({
+      Ctor: OASTransportWell,
+      attrs: { frames: '50', 'frame-rate': '25', dir: 'rtl' },
+    })
+    const events: Array<{ frames: number }> = []
+    el.addEventListener('oas-seek', (e) => events.push((e as CustomEvent).detail))
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    pressKey(el, 'ArrowRight')
+    expect(events.at(-1)).toEqual({ frames: 49 })
+    pressKey(el, 'ArrowLeft')
+    expect(events.at(-1)).toEqual({ frames: 51 })
+  })
+
+  it('受控显示：键盘 seek 只发事件不自改 frames 属性（宿主回写驱动，同 task-progress progress）', () => {
+    const el = mount<OASTransportWell>({ Ctor: OASTransportWell, attrs: { frames: '50', 'frame-rate': '25' } })
+    pressKey(el, 'ArrowRight')
+    expect(el.getAttribute('frames')).toBe('50')
+    expect(tcSlider(el).getAttribute('aria-valuenow')).toBe('50')
+  })
+
+  it('全空态（label/frames/frame-rate/duration/detail 全缺）：宿主 data-empty 反射（整体退场，零足迹）', () => {
+    const el = mount<OASTransportWell>({ Ctor: OASTransportWell })
+    expect(el.hasAttribute('data-empty')).toBe(true)
+    expect(styleText(el), '宿主级 display:none 规则就位').toMatch(/:host\(\[data-empty\]\)\s*\{[^}]*display:\s*none/)
+    el.setAttribute('frames', '0')
+    expect(el.hasAttribute('data-empty'), 'frames 在场即有意义（起点帧）').toBe(false)
+    el.removeAttribute('frames')
+    expect(el.hasAttribute('data-empty')).toBe(true)
+    el.setAttribute('frame-rate', '25')
+    expect(el.hasAttribute('data-empty')).toBe(false)
+  })
+
+  it('无时间数据时 value 段隐藏（不留 00:00:00:00 假读数）', () => {
+    const el = mount<OASTransportWell>({ Ctor: OASTransportWell, attrs: { label: 'Timecode' } })
+    expect(tcSlider(el).hidden).toBe(true)
+    el.setAttribute('frames', '0')
+    expect(tcSlider(el).hidden).toBe(false)
+  })
+
+  it('dir=rtl 钩子 + token 纪律（颜色全走变量）', () => {
+    const el = mount<OASTransportWell>({ Ctor: OASTransportWell, attrs: { dir: 'rtl' } })
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    expect(styleText(el)).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+    expect(styleText(el)).toContain('focus-ring')
+  })
+})
+
+// ===== music-well =====
+
+const musicValue = (el: OASMusicWell): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('[part="well-value"]')!
+const musicDetail = (el: OASMusicWell): HTMLElement =>
+  el.shadowRoot!.querySelector<HTMLElement>('[part="well-detail"]')!
+
+describe('OASMusicWell', () => {
+  it('observedAttributes 完整（含 dir）', () => {
+    expect(OASMusicWell.observedAttributes).toEqual(
+      expect.arrayContaining(['label', 'bars', 'beats', 'tempo', 'meter', 'detail', 'dir']),
+    )
+  })
+
+  it('小节.节拍位置段：bars.beats（1 起显示），bars/beats 双缺时整段隐藏', () => {
+    const el = mount<OASMusicWell>({ Ctor: OASMusicWell, attrs: { bars: '5', beats: '3' } })
+    expect(musicValue(el).textContent).toBe('5.3')
+    expect(musicValue(el).hidden).toBe(false)
+    el.removeAttribute('bars')
+    expect(musicValue(el).textContent, '仅 beats 在场仍显示（bars 缺省按 1 起）').toBe('1.3')
+    el.removeAttribute('beats')
+    expect(musicValue(el).hidden).toBe(true)
+  })
+
+  it('bars/beats 非法/越界回落 1（位置段 1.1 起步，不出 0/负数假位置）', () => {
+    const el = mount<OASMusicWell>({ Ctor: OASMusicWell, attrs: { bars: 'abc', beats: '-2' } })
+    expect(musicValue(el).textContent).toBe('1.1')
+  })
+
+  it('detail 段自动拼 BPM 与拍号 + detail 属性，全缺则整段隐藏', () => {
+    const el = mount<OASMusicWell>({
+      Ctor: OASMusicWell,
+      attrs: { tempo: '120', meter: '4/4', detail: 'Stereo' },
+    })
+    expect(musicDetail(el).textContent).toBe('120 BPM · 4/4 · Stereo')
+    el.setAttribute('tempo', 'abc')
+    expect(musicDetail(el).textContent, '非法 tempo 忽略').toBe('4/4 · Stereo')
+    el.removeAttribute('meter')
+    el.removeAttribute('detail')
+    expect(musicDetail(el).hidden).toBe(true)
+  })
+
+  it('label 渲染，空时隐藏；井读数 aria-live=polite + 数值 tabular-nums', () => {
+    const el = mount<OASMusicWell>({ Ctor: OASMusicWell, attrs: { label: 'Position', bars: '1' } })
+    const label = el.shadowRoot!.querySelector<HTMLElement>('[part="well-label"]')!
+    expect(label.textContent).toBe('Position')
+    expect(label.hidden).toBe(false)
+    el.removeAttribute('label')
+    expect(label.hidden).toBe(true)
+    expect(wellPart(el).getAttribute('aria-live')).toBe('polite')
+    expect(styleText(el)).toContain('tabular-nums')
+  })
+
+  it('全空态（label/bars/beats/tempo/meter/detail 全缺）：宿主 data-empty 反射（整体退场，零足迹）', () => {
+    const el = mount<OASMusicWell>({ Ctor: OASMusicWell })
+    expect(el.hasAttribute('data-empty')).toBe(true)
+    expect(styleText(el)).toMatch(/:host\(\[data-empty\]\)\s*\{[^}]*display:\s*none/)
+    el.setAttribute('bars', '1')
+    expect(el.hasAttribute('data-empty')).toBe(false)
+    el.removeAttribute('bars')
+    el.setAttribute('meter', '4/4')
+    expect(el.hasAttribute('data-empty')).toBe(false)
+  })
+
+  it('dir=rtl 钩子 + token 纪律（颜色全走变量）', () => {
+    const el = mount<OASMusicWell>({ Ctor: OASMusicWell, attrs: { dir: 'rtl' } })
     expect(el.hasAttribute('data-rtl')).toBe(true)
     expect(styleText(el)).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
   })

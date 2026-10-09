@@ -1,0 +1,55 @@
+{
+  "className": "OASTransportWell",
+  "sourceFile": "packages/ui/src/workbench/action-bar/oas-transport-well.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "frames",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "frame-rate",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "duration",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "detail",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-seek",
+      "detail": "{ frames: next }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-action-bar-well-height",
+      "default": "32px"
+    },
+    {
+      "name": "--oas-action-bar-well-bg",
+      "default": "color-mix(in srgb, var(--oas-color-on-ink) 10%, transparent)"
+    }
+  ],
+  "unresolved": []
+}

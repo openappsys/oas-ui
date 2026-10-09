@@ -455,4 +455,5 @@ export const ko: LocaleMessages = {
   'actionBar.label': '액션 바',
   'actionBar.progress': '작업 진행률',
   'actionBar.cancel': '작업 취소',
+  'actionBar.seek': '프레임으로 이동',
 }

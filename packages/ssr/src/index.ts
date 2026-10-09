@@ -262,6 +262,8 @@ export const WHITELIST = [
   'oas-action-bar-well',
   'oas-statistic-well',
   'oas-task-progress-well',
+  'oas-transport-well',
+  'oas-music-well',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -460,12 +462,14 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-inspector-tabs': '@oas-ui/ui/workbench/inspector',
   'oas-inspector-section': '@oas-ui/ui/workbench/inspector',
   'oas-inspector-row': '@oas-ui/ui/workbench/inspector',
-  // action-bar 五 tag 同目录，装载一次注册全部
+  // action-bar 七 tag 同目录，装载一次注册全部
   'oas-action-bar': '@oas-ui/ui/workbench/action-bar',
   'oas-action-bar-button': '@oas-ui/ui/workbench/action-bar',
   'oas-action-bar-well': '@oas-ui/ui/workbench/action-bar',
   'oas-statistic-well': '@oas-ui/ui/workbench/action-bar',
   'oas-task-progress-well': '@oas-ui/ui/workbench/action-bar',
+  'oas-transport-well': '@oas-ui/ui/workbench/action-bar',
+  'oas-music-well': '@oas-ui/ui/workbench/action-bar',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */

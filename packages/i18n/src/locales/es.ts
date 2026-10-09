@@ -455,4 +455,5 @@ export const es: LocaleMessages = {
   'actionBar.label': 'Barra de acciones',
   'actionBar.progress': 'Progreso de la tarea',
   'actionBar.cancel': 'Cancelar tarea',
+  'actionBar.seek': 'Ir al fotograma',
 }

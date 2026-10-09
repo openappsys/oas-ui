@@ -458,4 +458,5 @@ export const zhCN = {
   'actionBar.label': '操作栏',
   'actionBar.progress': '任务进度',
   'actionBar.cancel': '取消任务',
+  'actionBar.seek': '跳转到指定帧',
 } as const

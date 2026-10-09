@@ -3,7 +3,8 @@
 // titlebar/action-bar 容器语义（role=group + aria-label——无 role 的 aria-label 会被 AT 忽略；
 // action-bar 因 center 槽常规承载读数井不作 toolbar roving 承诺）、
 // inspector 分节折叠（open 反射 + aria-expanded + 可见反馈）、statusbar 项点击事件反馈、
-// statusbar-item / statistic-well 全空态宿主级隐藏（data-empty + 零布局足迹，相邻项 x 不变）、
+// statusbar-item / statistic-well / transport-well / music-well 全空态宿主级隐藏
+// （data-empty + 零布局足迹，相邻项 x 不变）、transport-well 键盘 seek 受控回写闭环、
 // action-bar 事件反馈（oas-action 回写 / oas-cancel）、charcoal 恒深表面跨主题不变、
 // 四页 console 零告警 + 暗色冒烟。
 // 断言轮询属性/显隐/输出行文案，不断言过渡动画帧。
@@ -517,6 +518,110 @@ test('task-progress-well 全空态宿主级隐藏：data-empty 反射 + 零尺�
     ),
     '有内容后井真实占位（胶囊可见）',
   ).toBeGreaterThan(0)
+})
+
+test('transport-well 键盘 seek：←/→ 真实键盘路径派发 oas-seek、宿主回写后时间码推进 + 输出行可见', async ({ page }) => {
+  await page.goto('/components/action-bar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ab-tc-well')
+  const tc = () =>
+    page.evaluate(() => {
+      const well = document.querySelector('#ab-tc-well')!
+      const slider = well.shadowRoot!.querySelector('[part="well-value"]')!
+      return {
+        text: slider.textContent ?? '',
+        now: slider.getAttribute('aria-valuenow'),
+        frames: well.getAttribute('frames'),
+      }
+    })
+  const before = await tc()
+  expect(before.frames, 'demo 初始 frames=1079').toBe('1079')
+  // 真实键盘路径：聚焦 shadow 内滑轨 → page.keyboard 发键
+  await page.evaluate(() =>
+    (document.querySelector('#ab-tc-well')!.shadowRoot!.querySelector('[part="well-value"]') as HTMLElement).focus(),
+  )
+  await page.keyboard.press('ArrowRight')
+  await page.waitForFunction(
+    () => (document.querySelector('#ab-tc-out')?.textContent ?? '').includes('oas-seek'),
+    null,
+    { timeout: 5000 },
+  )
+  const after = await tc()
+  expect(after.frames, '宿主回写 frames=1080（受控 seek 闭环）').toBe('1080')
+  expect(after.text, '时间码读数真实推进（用户可见）').toBe('00:00:43:05')
+  expect(after.now, 'aria-valuenow 同步').toBe('1080')
+  // End 键：跳尾帧（duration=2500）
+  await page.keyboard.press('End')
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#ab-tc-well')!.getAttribute('frames')))
+    .toBe('2500')
+  const out = await page.evaluate(() => document.querySelector('#ab-tc-out')!.textContent ?? '')
+  expect(out, '输出行含 seek 反馈（可见反馈块）').toContain('oas-seek 已派发')
+})
+
+test('music-well 渲染：位置段 5.3 + detail 拼接 120 BPM · 4/4（用户可见读数）', async ({ page }) => {
+  await page.goto('/components/action-bar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ab-tc-well')
+  const state = await page.evaluate(() => {
+    const well = [...document.querySelectorAll('oas-music-well')][0]!
+    const root = well.shadowRoot!
+    return {
+      value: root.querySelector<HTMLElement>('[part="well-value"]')!.textContent,
+      valueHidden: root.querySelector<HTMLElement>('[part="well-value"]')!.hidden,
+      detail: root.querySelector<HTMLElement>('[part="well-detail"]')!.textContent,
+      empty: well.hasAttribute('data-empty'),
+    }
+  })
+  expect(state.empty, 'demo 井有内容（不退场）').toBe(false)
+  expect(state.value, '位置段显示 小节.节拍').toBe('5.3')
+  expect(state.detail, 'detail 段自动拼 BPM 与拍号').toBe('120 BPM · 4/4')
+})
+
+test('transport/music 井全空态宿主级隐藏：data-empty 反射 + 零尺寸（同 statistic-well 契约）', async ({ page }) => {
+  await page.goto('/components/action-bar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ab-btn')
+  // 动态注入两个全空探针井
+  await page.evaluate(() => {
+    const bar = document.querySelector('#ab-btn')!
+    for (const tag of ['oas-transport-well', 'oas-music-well']) {
+      const wrap = document.createElement('oas-action-bar-well')
+      wrap.slot = 'center'
+      const empty = document.createElement(tag)
+      empty.setAttribute('data-empty-probe', '')
+      wrap.appendChild(empty)
+      bar.appendChild(wrap)
+    }
+  })
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('[data-empty-probe]')].every((el) => el.hasAttribute('data-empty')),
+      ),
+    )
+    .toBe(true)
+  const rects = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-empty-probe]')].map((el) => {
+      const r = el.getBoundingClientRect()
+      return { tag: el.tagName.toLowerCase(), w: r.width, h: r.height }
+    }),
+  )
+  expect(rects, '两个空探针均零宽零高（不留固定高胶囊占位）').toEqual([
+    { tag: 'oas-transport-well', w: 0, h: 0 },
+    { tag: 'oas-music-well', w: 0, h: 0 },
+  ])
+  // 填内容后恢复占位
+  await page.evaluate(() => {
+    ;(document.querySelector('oas-transport-well[data-empty-probe]') as HTMLElement).setAttribute('frames', '0')
+    ;(document.querySelector('oas-music-well[data-empty-probe]') as HTMLElement).setAttribute('bars', '1')
+  })
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('[data-empty-probe]')].every(
+          (el) => !el.hasAttribute('data-empty') && el.getBoundingClientRect().width > 0,
+        ),
+      ),
+    )
+    .toBe(true)
 })
 
 test('action-bar 语义降级为 role=group + aria-label（取舍：center 槽读数井非命令控件，不满足 toolbar roving 契约）', async ({

@@ -108,6 +108,8 @@ export {
   OASActionBarWell,
   OASStatisticWell,
   OASTaskProgressWell,
+  OASTransportWell,
+  OASMusicWell,
   type ActionBarTheme,
 } from './workbench/action-bar/index.js'
 export type {
@@ -116,6 +118,9 @@ export type {
   ActionBarWellProps,
   StatisticWellProps,
   TaskProgressWellProps,
+  TransportWellProps,
+  TransportSeekDetail,
+  MusicWellProps,
   ActionBarActionDetail,
   ActionBarCancelDetail,
   ActionBarEventMap,
