@@ -462,6 +462,12 @@ export class OASQuestionnaire extends OASElement {
     this.addEventListener('keydown', this.onKeydown)
     this.onCleanup(() => this.removeEventListener('keydown', this.onKeydown))
     this.bindValueListeners()
+    // 值与 bind() 对称：断开时摘除内层 form 值跟踪监听（否则第 2 次断开不再清理）
+    this.onCleanup(() => {
+      for (const { form } of this.stepForms()) {
+        form.removeEventListener('oas-values-change', this.onInnerValues as EventListener)
+      }
+    })
     this.domObserver?.observe(this, { childList: true, subtree: true })
     this.onCleanup(() => this.domObserver?.disconnect())
   }

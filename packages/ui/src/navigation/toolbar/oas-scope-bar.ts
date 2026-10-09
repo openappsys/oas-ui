@@ -100,13 +100,13 @@ const STYLE = `
 /**
  * oas-scope-bar —— 过滤药丸行（过滤器 / 作用域切换场景）。
  *
- * 一排可点击药丸，选中项以低透明度主色「active 填充」表达；单选（缺省，radio 语义——组内互斥，
+ * 一排可点击药丸，选中项以低透明度主色「active 填充」表达；单选（缺省，按压（aria-pressed）语义——组内互斥，
  * 点已选中项不变更）与多选（`multiple`，每项独立切换）。`value` 受控（单选字符串 / 多选 JSON 数组），
  * 点击派发 `oas-change`。轻量、可与 `oas-toolbar` 组合（作为其中一个 Tab 停靠点，内部方向键自管）。
  *
  * 属性（kebab-case）：
  * - `items`：JSON `[{ label, value, disabled? }]`（property 赋值单向反射 attribute）
- * - `value`：单选为字符串（radio 语义）；`multiple` 时为 JSON 数组字符串
+ * - `value`：单选为字符串（按压（aria-pressed）语义）；`multiple` 时为 JSON 数组字符串
  * - `multiple`：多选模式（每个药丸独立切换）
  * - `disabled`：整组禁用（叠加最近 oas-toolbar 的 disabled）
  * - `size`：尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar 的 size
@@ -372,7 +372,7 @@ export class OASScopeBar extends OASElement {
         const item = items[this.focusIndex]
         if (item) this.selectItem(item)
       }
-      // 单选：radio 语义，方向键移动即选中；Space/Enter 不重复处理（原生 button 已激活）
+      // 单选：按压（aria-pressed）语义，方向键移动即选中；Space/Enter 不重复处理（原生 button 已激活）
     }
   }
 

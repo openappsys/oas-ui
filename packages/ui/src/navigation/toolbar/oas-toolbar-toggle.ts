@@ -85,7 +85,7 @@ const STYLE = `
  *
  * 属性（kebab-case）：
  * - `items`：JSON `[{ label, value, disabled? }]`（property 赋值单向反射 attribute）
- * - `value`：单选为字符串（radio 语义）；`multiple` 时为 JSON 数组字符串
+ * - `value`：单选为字符串（按压（aria-pressed）语义）；`multiple` 时为 JSON 数组字符串
  * - `multiple`：多选模式（每个按钮独立切换）
  * - `disabled`：整组禁用
  * - `size`：尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar 的 size
@@ -423,7 +423,7 @@ export class OASToolbarToggle extends OASElement {
         const item = items[this.focusIndex]
         if (item) this.selectItem(item)
       }
-      // 单选：radio 语义，方向键移动即选中；Space/Enter 不重复处理（原生 button 已激活）
+      // 单选：按压（aria-pressed）语义，方向键移动即选中；Space/Enter 不重复处理（原生 button 已激活）
     }
   }
 

@@ -138,6 +138,35 @@ test('scroll-area type 四档显示模式行为正确（always/auto/scroll/hover
   expect((await peekState(autoArea)).peek).toBe(false)
 })
 
+// hover 档：拖拽 thumb 中指针移出容器 → 松手补隐藏（回归：曾滞留可见不消失）
+test('scroll-area hover 档：拖拽中指针移出，松手补隐藏', async ({ page }) => {
+  await page.goto('/components/scroll-area.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-scroll-area')
+  await page.waitForTimeout(600)
+  const area = page.locator('oas-scroll-area[type="hover"]')
+  await area.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(300)
+  const c = await area.evaluate((el) => {
+    const b = el.shadowRoot!.querySelector('[part=viewport]')!.getBoundingClientRect()
+    return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+  })
+  await page.mouse.move(c.x, c.y)
+  await page.waitForTimeout(200)
+  const t = await area.evaluate((el) => {
+    const th = el.shadowRoot!.querySelector('[part=thumb-v]')!
+    const b = th.getBoundingClientRect()
+    return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+  })
+  await page.mouse.move(t.x, t.y)
+  await page.mouse.down()
+  await page.mouse.move(t.x, t.y + 20, { steps: 3 })
+  await page.mouse.move(10, 10, { steps: 3 }) // 拖拽中移出容器
+  await page.mouse.up()
+  await page.waitForTimeout(300)
+  const peek = await area.evaluate((el) => el.shadowRoot!.querySelector('.track-v')!.classList.contains('peek'))
+  expect(peek, 'hover 档拖拽移出后松手应隐藏（不滞留）').toBe(false)
+})
+
 // —— 缺陷 8：多级子菜单视口边界翻转 ——
 // 曾现 bug：ContextMenu/Menu/Dropdown 的多级子菜单一律向右展开，贴近视口右缘时被子菜单
 // 顶出屏幕被裁剪。修复：展开前检测视口剩余空间，右侧不足向左翻转（flip-left）、

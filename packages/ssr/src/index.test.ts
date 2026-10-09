@@ -56,6 +56,13 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('</template>提交</oas-button>')
   })
 
+  it('oas-collapsible：DSD 快照 + slot 文本（白名单一致性回归）', async () => {
+    const html = await renderToString('oas-collapsible', { header: '折叠标题' }, '<p>内容</p>')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<oas-collapsible')
+    expect(html).toContain('内容')
+  })
+
   it('真水合指纹：快照 shadow 内容最前面（style 之前）嵌入 data-oas-ssr meta，值为对应 tag', async () => {
     const btn = await renderToString('oas-button', {}, '确定')
     // 指纹紧随 template 开头；shadow 内容可能以空白文本节点起始，故 meta 与 style 之间允许有空白
