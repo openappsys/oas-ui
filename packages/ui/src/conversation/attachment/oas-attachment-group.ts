@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { isRtl } from '../../shared/direction.js'
 
 const STYLE = `
 :host {
@@ -46,6 +47,21 @@ const STYLE = `
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
+/* RTL：逻辑 start/end 与物理左/右反向，渐隐方向随之翻转（data-rtl 由 isRtl 反射） */
+:host([data-rtl][data-scrollable~="start"]) .group {
+  -webkit-mask-image: linear-gradient(to left, transparent, black var(--oas-attachment-group-fade, 24px));
+  mask-image: linear-gradient(to left, transparent, black var(--oas-attachment-group-fade, 24px));
+}
+:host([data-rtl][data-scrollable~="end"]) .group {
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--oas-attachment-group-fade, 24px));
+  mask-image: linear-gradient(to right, transparent, black var(--oas-attachment-group-fade, 24px));
+}
+:host([data-rtl][data-scrollable~="start"][data-scrollable~="end"]) .group {
+  -webkit-mask-image: linear-gradient(to right, transparent, black var(--oas-attachment-group-fade, 24px)), linear-gradient(to left, transparent, black var(--oas-attachment-group-fade, 24px));
+  mask-image: linear-gradient(to right, transparent, black var(--oas-attachment-group-fade, 24px)), linear-gradient(to left, transparent, black var(--oas-attachment-group-fade, 24px));
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
 `
 
 /**
@@ -64,6 +80,10 @@ const STYLE = `
  * ARIA：滚动行 `role="group"` + 可读名称（locale「附件组」）+ `tabindex="0"`（键盘可滚）。
  */
 export class OASAttachmentGroup extends OASElement {
+  static override get observedAttributes(): string[] {
+    return ['dir']
+  }
+
   /** 内容尺寸观察（子项增删/图片撑宽后刷新边缘可滚态；视口 resize 同样经此） */
   private ro: ResizeObserver | null = null
   /** 默认 slot（slotchange 通道：新增子项后刷新边缘态） */
@@ -125,19 +145,22 @@ export class OASAttachmentGroup extends OASElement {
   protected override update(): void {
     const g = this.group
     if (!g) return
+    this.toggleAttribute('data-rtl', isRtl(this))
     g.setAttribute('aria-label', this.t('attachment.group'))
     this.syncScrollable()
   }
 
-  /** 反射两侧可滚性：data-scrollable="start end"（无可滚为空串，CSS 不命中渐隐） */
+  /** 反射两侧可滚性：data-scrollable="start end"（无可滚为空串，CSS 不命中渐隐）。
+   * RTL 下 scrollLeft 为负（Chrome/Firefox 规范：[-max, 0]），归一到「0 = inline-start」口径。 */
   private syncScrollable(): void {
     const g = this.group
     if (!g) return
     const epsilon = 1
     const max = g.scrollWidth - g.clientWidth
+    const norm = isRtl(this) ? -g.scrollLeft : g.scrollLeft
     const dirs: string[] = []
-    if (max > epsilon && g.scrollLeft > epsilon) dirs.push('start')
-    if (max > epsilon && g.scrollLeft < max - epsilon) dirs.push('end')
+    if (max > epsilon && norm > epsilon) dirs.push('start')
+    if (max > epsilon && norm < max - epsilon) dirs.push('end')
     this.setAttribute('data-scrollable', dirs.join(' '))
   }
 

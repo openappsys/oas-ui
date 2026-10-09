@@ -1901,7 +1901,8 @@ export class OASSlider extends OASElement {
       }
       const levelsEl = th.querySelector<HTMLElement>('.levels')
       if (levelsEl) {
-        if (levels && useOverlay) {
+        // levels 是单个 {left,right} 全局值：仅单值模式渲染（多拇指/range 无对应语义，避免每把手一副重复电平）
+        if (levels && useOverlay && !this.isMulti()) {
           levelsEl.hidden = false
           for (const ch of ['left', 'right'] as const) {
             const barFill = levelsEl.querySelector<HTMLElement>(`.level-bar[data-channel='${ch}'] .level-fill`)

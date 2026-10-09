@@ -78,7 +78,7 @@ describe('OASAttachmentGroup', () => {
     expect(slot.assignedNodes()).toContain(child)
   })
 
-  it('无公开数据属性（纯容器）', () => {
-    expect(OASAttachmentGroup.observedAttributes).toEqual([])
+  it('无公开数据属性（纯容器；仅观察全局 dir 以驱动 RTL）', () => {
+    expect(OASAttachmentGroup.observedAttributes).toEqual(['dir'])
   })
 })

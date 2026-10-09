@@ -123,7 +123,9 @@ const STYLE = `
   background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
-  color: transparent;
+  /* 文字用实体色（axe 读 color 达标）+ text-fill 透明让渐变透出（Blink/Firefox 均支持） */
+  color: var(--oas-marker-shimmer-from, var(--oas-color-text-secondary));
+  -webkit-text-fill-color: transparent;
   animation: marker-shimmer 1.6s linear infinite;
 }
 @keyframes marker-shimmer {
@@ -140,6 +142,7 @@ const STYLE = `
     animation: none;
     background-image: none;
     color: inherit;
+    -webkit-text-fill-color: currentColor;
   }
 }
 `

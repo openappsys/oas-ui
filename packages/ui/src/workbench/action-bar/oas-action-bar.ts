@@ -94,7 +94,7 @@ const STYLE = `
  * oas-action-bar —— 操作/transport 条（底部命令条 + 读数井）。
  *
  * 与 oas-toolbar（工具调色板）的分工：action-bar 是底部命令 + 读数——按钮组之外
- * 承载读数井（统计/任务进度；媒体 transport/music 井延后 v2），井是本件立身之本。
+ * 承载读数井（统计/任务进度/媒体 transport/音乐节奏），井是本件立身之本。
  *
  * 属性（kebab-case）：
  * - `theme`：`charcoal`（默认，恒深表面）/ `dark`（恒深·深档）/ `light`（主题本色）；

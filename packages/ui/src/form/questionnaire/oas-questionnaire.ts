@@ -460,8 +460,10 @@ export class OASQuestionnaire extends OASElement {
   /** 断开重连：内层 form 值监听重挂 + MutationObserver 重挂（cleanup 断开时已 disconnect） */
   protected override onReconnect(): void {
     this.addEventListener('keydown', this.onKeydown)
+    this.onCleanup(() => this.removeEventListener('keydown', this.onKeydown))
     this.bindValueListeners()
     this.domObserver?.observe(this, { childList: true, subtree: true })
+    this.onCleanup(() => this.domObserver?.disconnect())
   }
 
   protected override update(): void {

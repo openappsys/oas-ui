@@ -109,6 +109,18 @@ describe('OASScopeBar', () => {
     expect(el.getAttribute('value')).toBe('c')
   })
 
+  it('初值指向 disabled 项：roving 校正到首个可用项（恰好一个 tab stop）', () => {
+    const el = mount(
+      '[{"label":"A","value":"a","disabled":true},{"label":"B","value":"b"},{"label":"C","value":"c"}]',
+      {
+        value: 'a',
+      },
+    )
+    const stops = buttons(el).filter((b) => b.tabIndex === 0)
+    expect(stops, '恰好一个 tab stop').toHaveLength(1)
+    expect(stops[0]!.getAttribute('aria-disabled'), '落在可用项').toBe('false')
+  })
+
   it('整组 disabled：所有项 aria-disabled 且不参与键盘/点击', () => {
     const el = mount(ITEMS, { disabled: '' })
     const btns = buttons(el)

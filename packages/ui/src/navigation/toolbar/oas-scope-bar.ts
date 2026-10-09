@@ -282,8 +282,11 @@ export class OASScopeBar extends OASElement {
   }
 
   private resolveInitialFocus(selected: string[]): number {
-    const idx = this.itemsList.findIndex((it) => it.value === selected[0])
-    return idx >= 0 ? idx : 0
+    // 优先选中项、其次首个可用项：跳过 disabled，保证 roving 恒有一个 tab stop
+    const selIdx = this.itemsList.findIndex((it) => it.value === selected[0] && !it.disabled)
+    if (selIdx >= 0) return selIdx
+    const first = this.itemsList.findIndex((it) => !it.disabled)
+    return first >= 0 ? first : 0
   }
 
   private syncState(): void {
@@ -296,6 +299,8 @@ export class OASScopeBar extends OASElement {
     else group.removeAttribute('aria-label')
     const { disabled, focusable } = this.disabledState()
     const selected = this.parseSelected()
+    // roving 校正：焦点索引落在 disabled 项时移到首个可用项（恢复「恰好一个 tab stop」）
+    if (this.itemsList[this.focusIndex]?.disabled) this.focusIndex = this.resolveInitialFocus(selected)
     this.buttons.forEach((btn, i) => {
       const item = this.itemsList[i]
       if (!item) return

@@ -516,3 +516,31 @@ test('attachment-group：横向溢出反射边缘可滚 + 滚动到端改变 dat
   })
   await expect.poll(readState, { timeout: 5000 }).toContain('start')
 })
+
+test('attachment-group RTL：data-rtl 反射 + 边缘可滚按逻辑方向归一 + 渐隐方向翻转', async ({ page }) => {
+  await page.goto('/components/attachment.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-attachment-group')
+  await page.evaluate(() => {
+    document.querySelector('oas-attachment-group')!.setAttribute('dir', 'rtl')
+  })
+  await expect
+    .poll(() =>
+      page.evaluate(() => (document.querySelector('oas-attachment-group') as HTMLElement).hasAttribute('data-rtl')),
+    )
+    .toBe(true)
+
+  // RTL 下滚到内联末端（scrollLeft 负值）：应得 start（起始端可滚），且渐隐方向翻转为 to left
+  const probe = await page.evaluate(() => {
+    const host = document.querySelector('oas-attachment-group') as HTMLElement
+    const g = host.shadowRoot!.querySelector('.group') as HTMLElement
+    g.scrollLeft = -(g.scrollWidth - g.clientWidth)
+    g.dispatchEvent(new Event('scroll'))
+    const cs = getComputedStyle(g)
+    return {
+      scrollable: host.getAttribute('data-scrollable') ?? '',
+      mask: (cs as unknown as { webkitMaskImage: string; maskImage: string }).webkitMaskImage || cs.maskImage,
+    }
+  })
+  expect(probe.scrollable, 'RTL 内联末端：起始端可滚（逻辑 start）').toContain('start')
+  expect(probe.mask, 'RTL 下 start 渐隐方向翻转（to left，淡出右缘）').toContain('to left')
+})

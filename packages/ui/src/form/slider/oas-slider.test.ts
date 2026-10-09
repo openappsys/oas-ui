@@ -1887,6 +1887,13 @@ describe('OASSlider 立体声电平表（levels）', () => {
     expect(fillHeights(el)).toEqual(['100%', '0%'])
   })
 
+  it('多拇指/range 不渲染电平表（levels 单值语义，避免每把手一副重复电平）', () => {
+    const el = mount({ value: '[20,60]', thumb: 'round', levels: '{"left":0.8,"right":0.4}' })
+    const meters = el.shadowRoot!.querySelectorAll<HTMLElement>('.levels')
+    expect(meters.length).toBeGreaterThan(0)
+    for (const m of meters) expect(m.hidden, '每个把手的电平表都隐藏').toBe(true)
+  })
+
   it('缺省单侧时另一侧回落 0', () => {
     const el = mount({ value: '50', levels: '{"left":0.5}' })
     expect(fillHeights(el)).toEqual(['50%', '0%'])
