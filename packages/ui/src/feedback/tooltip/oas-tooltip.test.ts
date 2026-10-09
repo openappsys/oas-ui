@@ -1033,6 +1033,14 @@ describe('OAStooltip', () => {
     expect(tip(el).style.getPropertyValue('--oas-tooltip-bg')).toBe('var(--oas-color-success)')
   })
 
+  it('color="purple"：预设名映射 --oas-preset-purple token（不走探针）', async () => {
+    const el = mount({ open: '', content: 'x', color: 'purple' })
+    await Promise.resolve()
+    const t = tip(el)
+    expect(t.style.getPropertyValue('--oas-tooltip-bg')).toBe('var(--oas-preset-purple)')
+    expect(t.style.getPropertyValue('--oas-tooltip-color')).toBe('var(--oas-color-text-on-primary)')
+  })
+
   it('color 移除后回落到默认（清空变量）', async () => {
     const el = mount({ open: '', content: 'x', color: 'primary' })
     await Promise.resolve()

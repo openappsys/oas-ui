@@ -176,6 +176,7 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 - 键盘可达：Tab 进、方向键/Enter/Space 操作、Esc 关闭浮层（焦点返回触发元素）
 - 焦点环：`focus-visible` 样式（1px ring + 偏移），不得移除 outline 而不给替代
 - ARIA：动态状态同步（`aria-expanded` `aria-checked` `aria-selected` `aria-busy`）；错误消息 `aria-describedby` 关联
+- 单选切换组（`oas-toggle-group` / `oas-scope-bar` / `oas-toolbar-toggle`）：采用「按压」`aria-pressed` 的 toggle-button 模式（WAI-ARIA APG Toolbar 惯例）——容器 `role="group"` + 组名 + roving tabindex，**不用** `radiogroup`（组件属 toggle 族，非表单单选）
 - 表单原生优先：能用 `<input>/<select>/<button>` 不用 div 模拟；自定义控件补 `role` 与键盘
 - 文案：组件内置文案（空态"暂无数据"、分页"共 X 条"、confirm"确定/取消"等）一律走 locale registry（`@oas-ui/i18n`），**禁止在组件里硬编码文案**；locale key 全集有类型约束，漏翻译编译期/测试期报错（locale-completeness 测试）
 - 格式化：数字/日期一律走 `Intl.*`（NumberFormat / DateTimeFormat），不手写格式化逻辑。**展示侧 locale 感知为既定决策**（千分位/小数点随宿主 locale 呈现）；与之相对，**逻辑比较侧一律确定性**（排序/相等判定走码点，不依赖 locale）——两口径各有归属，不混用

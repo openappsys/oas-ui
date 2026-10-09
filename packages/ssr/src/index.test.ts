@@ -56,11 +56,13 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('</template>提交</oas-button>')
   })
 
-  it('oas-collapsible：DSD 快照 + slot 文本（白名单一致性回归）', async () => {
+  it('oas-collapsible：DSD 快照 + header 渲染 + slot 文本（白名单一致性回归）', async () => {
     const html = await renderToString('oas-collapsible', { header: '折叠标题' }, '<p>内容</p>')
     expect(html).toContain('<template shadowrootmode="open">')
-    expect(html).toContain('<oas-collapsible')
-    expect(html).toContain('内容')
+    expect(html).toContain('<oas-collapsible header="折叠标题">')
+    // header 属性在 shadow 内渲染（非仅回显宿主属性）
+    expect(html).toContain('折叠标题</')
+    expect(html).toContain('<p>内容</p>')
   })
 
   it('真水合指纹：快照 shadow 内容最前面（style 之前）嵌入 data-oas-ssr meta，值为对应 tag', async () => {
