@@ -96,6 +96,10 @@ slot:not([name])::slotted(*) {
 :host([striped]) .row {
   background: var(--oas-inspector-row-striped-bg, var(--oas-color-bg-hover));
 }
+/* 斑马底上标签提深一档，保证次级文字在底纹上仍达对比度（回归：曾 4.39 < 4.5） */
+:host([striped]) .label {
+  color: var(--oas-color-text-secondary-strong);
+}
 `
 
 /** 复位图标（原创 SVG：逆时针回环箭头） */
