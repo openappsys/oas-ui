@@ -904,3 +904,48 @@ test('slider track：色轨真实渲染（伪元素 background-image 为渐变�
   const img = r.hue.image
   expect(img, 'hue 渐变应含方向（to right/left/top/bottom）').toMatch(/to (right|left|top|bottom)/)
 })
+
+// ---- 增强批：速度档统一（Shift 精调 ×0.2 / Alt 超精调 ×0.04，与 knob 一致，无 ×5 加速） ----
+
+test('slider scrub：Shift 精调真拖比无修饰更细（同一像素位移值变化更小）', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#slider-scrub')
+  await defocus(page)
+  await page.locator('#slider-scrub').evaluate((node) => node.scrollIntoView({ block: 'center' }))
+  const el = page.locator('#slider-scrub')
+  const box = await el.evaluate((node) => {
+    const num = node.shadowRoot!.querySelector<HTMLInputElement>('[data-role="num"]')!
+    const r = num.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  const reset = async () => {
+    const track = await el.evaluate((node) => {
+      const t = node.shadowRoot!.querySelector('[part="track-wrap"]')!
+      const r = t.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    })
+    await page.mouse.dblclick(track.x, track.y)
+    await expect.poll(() => el.evaluate((node) => Number(node.getAttribute('value'))), { timeout: 3000 }).toBe(50)
+  }
+  await reset()
+
+  // 无修饰：+40px = 10 步（step=1）→ +10
+  await page.mouse.move(box.x, box.y)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 40, box.y, { steps: 8 })
+  await page.mouse.up()
+  const plain = await el.evaluate((node) => Number(node.getAttribute('value')))
+  expect(plain).toBe(60)
+
+  await reset()
+  // Shift 精调：同 +40px = 10 步 × 0.2 = +2
+  await page.keyboard.down('Shift')
+  await page.mouse.move(box.x, box.y)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 40, box.y, { steps: 8 })
+  await page.mouse.up()
+  await page.keyboard.up('Shift')
+  const fine = await el.evaluate((node) => Number(node.getAttribute('value')))
+  expect(fine).toBe(52)
+  expect(fine - 50, 'Shift 精调值变化应小于无修饰（同一像素位移）').toBeLessThan(plain - 50)
+})

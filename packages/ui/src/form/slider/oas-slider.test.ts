@@ -1570,6 +1570,15 @@ describe('OASSlider 数值 scrub（读数区像素锚定计步）', () => {
     window.dispatchEvent(pointer('pointerup', 120, 1, { shift: true }))
   })
 
+  it('Alt 超精调（×0.04）：同为 20px 位移仅 +0.2（比 Shift 更细一档）', () => {
+    const el = mount({ value: '10', step: '1', 'show-input': '' })
+    numInput(el).dispatchEvent(pointer('pointerdown', 100))
+    // 20px = 5 步 × 0.04 = +0.2（浮点尾巴自动收敛为一位小数）
+    window.dispatchEvent(pointer('pointermove', 120, 1, { alt: true }))
+    expect(el.value).toBeCloseTo(10.2, 6)
+    window.dispatchEvent(pointer('pointerup', 120, 1, { alt: true }))
+  })
+
   it('无 precision 时浮点尾巴自动收敛：step=0.1 拖 3 步值通道干净（0.3 而非 0.30000000000000004）', () => {
     const el = mount({ value: '0', min: '0', max: '1', step: '0.1', 'show-input': '' })
     const changes: number[] = []
