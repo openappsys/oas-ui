@@ -1674,3 +1674,77 @@ describe('OASInput mask 输入掩码（能力缺口 D7）', () => {
     expect(detail).toEqual({ value: '1234' })
   })
 })
+
+describe('OASInput 块级 addon（slot=block-start / block-end）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function blockPart(el: OASInput, name: 'block-start' | 'block-end'): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>(`[part="${name}"]`)!
+  }
+
+  /** 分发 slot 内容（slotchange 在 happy-dom 中经微任务同步，flush 之） */
+  async function dispatch(el: OASInput, name: 'block-start' | 'block-end', text = 'X'): Promise<HTMLElement> {
+    const span = document.createElement('span')
+    span.textContent = text
+    span.setAttribute('slot', name)
+    el.appendChild(span)
+    await new Promise((r) => setTimeout(r, 0))
+    return span
+  }
+
+  it('默认无分发：block-start/block-end 隐藏，不占布局位', () => {
+    const el = mount()
+    expect(blockPart(el, 'block-start').hidden).toBe(true)
+    expect(blockPart(el, 'block-end').hidden).toBe(true)
+  })
+
+  it('分发 slot=block-start / block-end：块行显示 + 内容分发；移除后恢复隐藏（slotchange 动态同步）', async () => {
+    const el = mount({ placeholder: '收件人' })
+    const start = await dispatch(el, 'block-start', '上方提示')
+    const end = await dispatch(el, 'block-end', '下方动作')
+    expect(blockPart(el, 'block-start').hidden).toBe(false)
+    expect(blockPart(el, 'block-end').hidden).toBe(false)
+    expect(blockPart(el, 'block-start').querySelector('slot')!.assignedNodes()).toContain(start)
+    expect(blockPart(el, 'block-end').querySelector('slot')!.assignedNodes()).toContain(end)
+    // 移除 block-start 分发 → 该块行隐藏，block-end 不受影响
+    el.removeChild(start)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(blockPart(el, 'block-start').hidden).toBe(true)
+    expect(blockPart(el, 'block-end').hidden).toBe(false)
+  })
+
+  it('show-count（outside）与 block-end 并存：count 挂进 block-end 行（不与块级行重叠）', async () => {
+    const el = mount({ 'show-count': '', value: 'abc' })
+    await dispatch(el, 'block-end', '说明行')
+    const count = el.shadowRoot!.querySelector<HTMLElement>('.count')!
+    const blockEnd = blockPart(el, 'block-end')
+    expect(blockEnd.contains(count), 'outside 计数应归属 block-end 行').toBe(true)
+    expect(count.getAttribute('data-in-block')).toBe('true')
+    expect(count.hidden).toBe(false)
+    expect(blockEnd.hidden).toBe(false)
+  })
+
+  it('show-count inside：count 不移入 block-end（留在输入区内，不受块级行影响）', async () => {
+    const el = mount({ 'show-count': '', 'count-position': 'inside', value: 'abc' })
+    await dispatch(el, 'block-end', '说明行')
+    const count = el.shadowRoot!.querySelector<HTMLElement>('.count')!
+    expect(count.closest('[part="block-end"]')).toBeNull()
+    expect(count.hasAttribute('data-in-block')).toBe(false)
+  })
+
+  it('block-end 分发移除后：outside count 回到输入区（原始绝对定位）', async () => {
+    const el = mount({ 'show-count': '', value: 'abc' })
+    const end = await dispatch(el, 'block-end', '说明行')
+    el.removeChild(end)
+    await new Promise((r) => setTimeout(r, 0))
+    const count = el.shadowRoot!.querySelector<HTMLElement>('.count')!
+    expect(count.closest('[part="block-end"]')).toBeNull()
+    expect(count.hasAttribute('data-in-block')).toBe(false)
+  })
+})

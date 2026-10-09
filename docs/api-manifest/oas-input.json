@@ -257,6 +257,12 @@
       "name": "append"
     },
     {
+      "name": "block-end"
+    },
+    {
+      "name": "block-start"
+    },
+    {
       "name": "clear-icon"
     },
     {

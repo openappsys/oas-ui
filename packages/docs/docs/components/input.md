@@ -205,6 +205,14 @@ onMounted(() => {
     const el = document.getElementById('input-search-output'); if (el) el.textContent = '触发搜索'
   })
 
+  // 块级 addon demo：block-end 内按钮清空输入（公开 value setter 即时回写，可见反馈）
+  document.getElementById('input-block-clear')?.addEventListener('click', () => {
+    const host = document.getElementById('input-block-addon')
+    if (host) host.value = ''
+    const out = document.getElementById('input-block-output')
+    if (out) out.textContent = '已清空地址（block-end 按钮生效）'
+  })
+
   // loading 加载态 demo：切换 loading 属性并同步输出
   const loadingEl = document.getElementById('input-loading')
   const loadingOut = document.getElementById('input-loading-output')
@@ -388,6 +396,18 @@ onMounted(() => {
   </oas-compact>
 </DemoBlock>
 
+## 块级 addon（block-start / block-end）
+
+<DemoBlock title="slot=block-start / slot=block-end（输入框上/下方整行块）">
+  <oas-input id="input-block-addon" placeholder="收件地址" show-count maxlength="20" style="width: 320px">
+    <span slot="block-start">📦 配送到：北京市海淀区</span>
+    <oas-button slot="block-end" size="small" variant="text" id="input-block-clear">清空地址</oas-button>
+  </oas-input>
+  <span id="input-block-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
+</DemoBlock>
+
+`slot="block-start"` / `slot="block-end"` 在输入框**上方 / 下方**各渲染一个整行块级 addon：与 `prepend` / `append`（水平拼接在输入框两侧）不同维度，块级行独立占位、不参与边框拼接，可放提示文案、动作按钮、链接等任意内容。行容器字号走 `--oas-font-size-sm`、次要色（禁用时灰化），经 `::part(block-start)` / `::part(block-end)` 可深度定制。与 `show-count`（outside 计数同在输入框下方）并存时，计数自动挂进 `block-end` 行内靠右显示，不重叠。
+
 ## 字数统计位置与字素计数
 
 <DemoBlock title="count-position + emoji 字素计数">
@@ -528,6 +548,8 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | `append` | 后置 addon 区（可嵌 select/按钮等任意内容） |
+| `block-end` | 输入框下方整行块级 addon（动作行/计数行，任意内容；outside 字数计数并存时自动挂入本行） |
+| `block-start` | 输入框上方整行块级 addon（提示行/说明行，任意内容） |
 | `clear-icon` | 自定义清除按钮图标（插槽有内容即替换内置） |
 | `prefix` | 内嵌前置内容（图标/按钮等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可 |
 | `prepend` | 前置 addon 区（可嵌 select/按钮等任意内容） |

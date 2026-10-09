@@ -978,7 +978,8 @@
       "name": "表单字段名（原生 FormData 提交的 key；范围模式派生 name-start / name-end 两条 entry；无 name 浏览器自动不提交）",
       "separator": "范围类型触发器内起止值分隔符（仅显示层，value 契约不变）",
       "default-time": "datetimerange 起止默认时刻（JSON 数组或单串同值；值缺时间部分时补齐）",
-      "timezone": "时区锚点：IANA 时区名（如 America/New_York）或 UTC；缺省/非法回落宿主本地。「今天」高亮、快捷预设与默认时刻推导按该时区墙钟解析，value 契约不变"
+      "timezone": "时区锚点：IANA 时区名（如 America/New_York）或 UTC；缺省/非法回落宿主本地。「今天」高亮、快捷预设与默认时刻推导按该时区墙钟解析，value 契约不变",
+      "caption-layout": "面板标题形态：buttons（默认，标题按钮切月面板）/ dropdown（月/年下拉快速跳转，出生日期等远年场景；仅日网格单值面板 date/datetime/week 生效，选择仅导航不改值）"
     },
     "events": {
       "oas-calendar-change": "范围类型起止落选即派发，`detail: { value: [start, end|null] }`（宿主可做已选起点提示）",
@@ -1620,7 +1621,9 @@
       "suffix": "内嵌后置内容（图标/按钮等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可",
       "prepend": "前置 addon 区（可嵌 select/按钮等任意内容）",
       "append": "后置 addon 区（可嵌 select/按钮等任意内容）",
-      "clear-icon": "自定义清除按钮图标（插槽有内容即替换内置）"
+      "clear-icon": "自定义清除按钮图标（插槽有内容即替换内置）",
+      "block-start": "输入框上方整行块级 addon（提示行/说明行，任意内容）",
+      "block-end": "输入框下方整行块级 addon（动作行/计数行，任意内容；outside 字数计数并存时自动挂入本行）"
     },
     "props": {
       "value": "当前值：parser/mask 感知的提交值语义（`el.value` 读；`el.value = x` 写受控 `value` 并即时回写内部控件，不派发事件）"
