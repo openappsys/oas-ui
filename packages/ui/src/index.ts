@@ -71,7 +71,13 @@ import './workbench/titlebar/index.js'
 import './workbench/statusbar/index.js'
 import './workbench/inspector/index.js'
 import './workbench/action-bar/index.js'
-export { OASTitlebar, type TitlebarSize, type TitlebarWindowAction } from './workbench/titlebar/index.js'
+export {
+  OASTitlebar,
+  OASTrafficLights,
+  type TitlebarSize,
+  type TitlebarWindowAction,
+  type TrafficLightAction,
+} from './workbench/titlebar/index.js'
 export type {
   TitlebarProps,
   TitlebarTitleChangeDetail,

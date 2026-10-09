@@ -1,12 +1,18 @@
 import { OASTitlebar } from './oas-titlebar.js'
 import type { TitlebarSize, TitlebarWindowAction } from './oas-titlebar.js'
+import { OASTrafficLights } from './oas-traffic-lights.js'
+import type { TrafficLightAction } from './oas-traffic-lights.js'
 
 if (!customElements.get('oas-titlebar')) {
   customElements.define('oas-titlebar', OASTitlebar)
 }
+if (!customElements.get('oas-traffic-lights')) {
+  customElements.define('oas-traffic-lights', OASTrafficLights)
+}
 
-export { OASTitlebar }
+export { OASTitlebar, OASTrafficLights }
 export type { TitlebarSize, TitlebarWindowAction } from './oas-titlebar.js'
+export type { TrafficLightAction } from './oas-traffic-lights.js'
 
 export interface TitlebarProps {
   /** 高度档：compact（默认，34px）/ large（68px，控件保持紧凑） */

@@ -2007,7 +2007,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 组件清单（4 主件 + 8 子件）
 
-- **oas-titlebar**：`size`（compact 34px / large 68px，控件保持紧凑）、`drag`、`title`/`subtitle`、`editable`、`window-actions`；插槽 leading/center/title/trailing；事件 `oas-title-change`/`oas-window-action`；安全区 `--oas-titlebar-leading-inset`/`-trailing-inset` 变量开口。
+- **oas-titlebar**：`size`（compact 34px / large 68px，控件保持紧凑）、`drag`、`title`/`subtitle`、`editable`、`window-actions`；插槽 leading/center/title/trailing；事件 `oas-title-change`/`oas-window-action`；安全区 `--oas-titlebar-leading-inset`/`-trailing-inset` 变量开口。**oas-traffic-lights**（macOS 交通灯子件）：关闭 / 最小化 / 最大化三圆点（标准色 + 悬停显符号），点击派发 `oas-window-action`（与 `window-actions` 同一契约）；置 titlebar 的 `slot="leading"` 即得 macOS 形态（左侧交通灯 + 居中标题）。
 - **oas-statusbar** + **oas-statusbar-item**：底部静默信息条（`role="status"` + 可访问名），默认段（左）+ `end` 段（右）；item 支持 `value`/`label`/`icon`/`button`/`status`（default/info/warning/error/progress 语义色）/`spinning`；可点项派发 `oas-item-click`。
 - **oas-inspector** + **oas-inspector-tabs/-section/-row**：属性检视面板（`role="complementary"`），`side`/`density`/`empty`；tabs 胶囊条（tablist + 方向键）；section 折叠分节（aria-expanded）；row 键值行 / 控件行 / `mixed` 混合值 / `reset` 行级复位（`oas-row-reset`）。
 - **oas-action-bar** + **oas-action-bar-button/-well** + **oas-statistic-well** + **oas-task-progress-well**：底部命令条（`role="toolbar"`），`theme` 三表体（charcoal/dark/light，恒深表面 token `--oas-color-ink*`）；button 支持 `active`/`active-tint`/`plain`，点击派发 `oas-action`；well 读数容器（`max-width`）；statistic-well 标签+数值+detail；task-progress-well 进度 + `oas-cancel`（组件不自行移除，宿主决定）。

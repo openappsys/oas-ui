@@ -86,6 +86,19 @@ oas-titlebar {
   </div>
 </DemoBlock>
 
+## macOS 交通灯
+
+在 `slot="leading"` 放内建 `oas-traffic-lights`（关闭 / 最小化 / 最大化 三圆点，悬停显符号），配合居中标题即得 macOS 形态；点击派发 `oas-window-action`（与内建 `window-actions` 同一契约）。
+
+<DemoBlock title="macOS 交通灯 + 居中标题">
+  <div style="width: 100%">
+    <oas-titlebar id="tb-macos" title="Hilton Rome Airport — Photo Studio" drag>
+      <oas-traffic-lights slot="leading"></oas-traffic-lights>
+    </oas-titlebar>
+    <span id="tb-macos-out" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">点交通灯查看 oas-window-action 反馈</span>
+  </div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -98,6 +111,11 @@ onMounted(() => {
   const docOut = document.getElementById('tb-doc-out')
   doc?.addEventListener('oas-title-change', (e) => {
     docOut.textContent = `oas-title-change 已派发：title=${e.detail.title}（title 已吸收进组件缓存，宿主经事件同步）`
+  })
+  const macos = document.getElementById('tb-macos')
+  const macosOut = document.getElementById('tb-macos-out')
+  macos?.addEventListener('oas-window-action', (e) => {
+    macosOut.textContent = `oas-window-action 已派发：action=${e.detail.action}（交通灯与 window-actions 同一契约）`
   })
 })
 </script>
@@ -142,3 +160,27 @@ onMounted(() => {
 | `--oas-titlebar-height` | `var(--oas-titlebar-compact-height, 34px)` |
 | `--oas-titlebar-leading-inset` | `0px` |
 | `--oas-titlebar-trailing-inset` | `0px` |
+
+### oas-traffic-lights
+
+#### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 全禁：三点均不可点（原生 disabled + 半透明） | `boolean` | — |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-window-action` | 点击交通灯时派发；detail { action }（minimize/maximize/close）；组件只发事件，宿主接 Electron/Tauri API |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-traffic-lights-close` | `#ff5f57` |
+| `--oas-traffic-lights-gap` | `8px` |
+| `--oas-traffic-lights-maximize` | `#28c840` |
+| `--oas-traffic-lights-minimize` | `#febc2e` |
+| `--oas-traffic-lights-size` | `12px` |

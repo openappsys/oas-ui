@@ -1,0 +1,42 @@
+{
+  "className": "OASTrafficLights",
+  "sourceFile": "packages/ui/src/workbench/titlebar/oas-traffic-lights.ts",
+  "attrs": [
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-window-action",
+      "detail": "{ action: btn.dataset.action }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-traffic-lights-gap",
+      "default": "8px"
+    },
+    {
+      "name": "--oas-traffic-lights-size",
+      "default": "12px"
+    },
+    {
+      "name": "--oas-traffic-lights-close",
+      "default": "#ff5f57"
+    },
+    {
+      "name": "--oas-traffic-lights-minimize",
+      "default": "#febc2e"
+    },
+    {
+      "name": "--oas-traffic-lights-maximize",
+      "default": "#28c840"
+    }
+  ],
+  "unresolved": []
+}

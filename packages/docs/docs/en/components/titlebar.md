@@ -142,3 +142,27 @@ onMounted(() => {
 | `--oas-titlebar-height` | `var(--oas-titlebar-compact-height, 34px)` |
 | `--oas-titlebar-leading-inset` | `0px` |
 | `--oas-titlebar-trailing-inset` | `0px` |
+
+### oas-traffic-lights
+
+#### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disables all three dots (native disabled + reduced opacity) | `boolean` | — |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-window-action` | Fired on traffic-light click; detail { action } (minimize/maximize/close); the component only emits — the host wires Electron/Tauri APIs |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-traffic-lights-close` | `#ff5f57` |
+| `--oas-traffic-lights-gap` | `8px` |
+| `--oas-traffic-lights-maximize` | `#28c840` |
+| `--oas-traffic-lights-minimize` | `#febc2e` |
+| `--oas-traffic-lights-size` | `12px` |

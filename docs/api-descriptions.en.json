@@ -4648,5 +4648,14 @@
     "slots": {
       "": "Attachment card sequence (oas-attachment or any cards; snap-scrolls with edge fade when overflowing horizontally)"
     }
+  },
+  "oas-traffic-lights": {
+    "attrs": {
+      "disabled": "Disables all three dots (native disabled + reduced opacity)"
+    },
+    "events": {
+      "oas-window-action": "Fired on traffic-light click; detail { action } (minimize/maximize/close); the component only emits — the host wires Electron/Tauri APIs"
+    },
+    "slots": {}
   }
 }

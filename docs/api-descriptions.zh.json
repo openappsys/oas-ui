@@ -4648,5 +4648,14 @@
     "slots": {
       "": "附件卡片序列（oas-attachment 或任意卡片；横向溢出时吸附滚动 + 边缘渐隐）"
     }
+  },
+  "oas-traffic-lights": {
+    "attrs": {
+      "disabled": "全禁：三点均不可点（原生 disabled + 半透明）"
+    },
+    "events": {
+      "oas-window-action": "点击交通灯时派发；detail { action }（minimize/maximize/close）；组件只发事件，宿主接 Electron/Tauri API"
+    },
+    "slots": {}
   }
 }

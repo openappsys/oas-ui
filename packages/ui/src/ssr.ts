@@ -219,6 +219,7 @@ export { OASMessageRow } from './conversation/message-row/oas-message-row.js'
 
 // ---------- workbench ----------
 export { OASTitlebar } from './workbench/titlebar/oas-titlebar.js'
+export { OASTrafficLights } from './workbench/titlebar/oas-traffic-lights.js'
 export { OASStatusbar } from './workbench/statusbar/oas-statusbar.js'
 export { OASStatusbarItem } from './workbench/statusbar/oas-statusbar-item.js'
 export { OASInspector } from './workbench/inspector/oas-inspector.js'

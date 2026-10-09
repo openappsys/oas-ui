@@ -669,3 +669,36 @@ for (const page_ of ['titlebar', 'statusbar', 'inspector', 'action-bar']) {
     ).toEqual([])
   })
 }
+
+test('titlebar macOS 交通灯：三点 macOS 固定色 + 点击派发 oas-window-action + 悬停显符号', async ({ page }) => {
+  await page.goto('/components/titlebar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tb-macos')
+  const colors = await page.evaluate(() => {
+    const tl = document.querySelector('#tb-macos oas-traffic-lights')!.shadowRoot!
+    const cs = (a: string) => getComputedStyle(tl.querySelector(`.dot[data-action="${a}"]`)!).backgroundColor
+    return { close: cs('close'), min: cs('minimize'), max: cs('maximize'), count: tl.querySelectorAll('.dot').length }
+  })
+  expect(colors.count, '三点').toBe(3)
+  expect(colors.close, '关闭点为 macOS 红').toBe('rgb(255, 95, 87)')
+  expect(colors.min, '最小化为黄').toBe('rgb(254, 188, 46)')
+  expect(colors.max, '最大化为绿').toBe('rgb(40, 200, 64)')
+
+  // 悬停显符号（.dot color 由 transparent → 有色）
+  await page.hover('#tb-macos oas-traffic-lights')
+  await page.waitForTimeout(150)
+  const glyph = await page.evaluate(() => {
+    const tl = document.querySelector('#tb-macos oas-traffic-lights')!.shadowRoot!
+    return getComputedStyle(tl.querySelector('.dot[data-action="close"]')!).color
+  })
+  expect(glyph, '悬停符号色为实体色').not.toBe('rgba(0, 0, 0, 0)')
+
+  // 点击关闭 → oas-window-action 反馈可见
+  await page.evaluate(() =>
+    (
+      document
+        .querySelector('#tb-macos oas-traffic-lights')!
+        .shadowRoot!.querySelector('.dot[data-action="close"]') as HTMLElement
+    ).click(),
+  )
+  await expect(page.locator('#tb-macos-out')).toContainText('action=close', { timeout: 5000 })
+})
