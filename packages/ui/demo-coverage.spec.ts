@@ -108,6 +108,7 @@ const EXEMPT_EVENTS = new Set([
   'oas-limit-blocked',
   // 特殊交互才能触发（通用探针无法触达，均有 qa-regression 单独固化）：
   'oas-whole-remove', // mentions：光标紧跟提及段按 Backspace 整段删（demo 有专门块）
+  'oas-exceed-limit', // combobox：多选达 max-count 后越界点击才触发（qa-regression/combobox.spec.ts 真点第 4 项固化 + demo 有反馈块）
   'oas-preview-nav', // image：预览内 prev/next 翻页（image-group 共享预览转发）
   'oas-node-rename', // tree：双击节点 label/F2 进内联编辑后 Enter 提交（demo 有专门块）
   'oas-crop', // upload：裁剪需完整对话框流程（选图→拖拽→确认），通用探针不可达（qa-regression/upload.spec.ts 已固化真实链路）
