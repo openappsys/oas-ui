@@ -1,3 +1,4 @@
+import os from 'node:os'
 import { defineConfig } from '@playwright/test'
 
 // e2e 端口可用环境变量 E2E_PORT 覆盖（默认 4173）——多 git worktree / 本地分片并行时
@@ -12,8 +13,11 @@ const E2E_SKIP_BUILD = process.env.E2E_SKIP_BUILD === '1' || !!process.env.CI
 // 端口由编排脚本动态选空闲端口——不复用可避免误连崩溃残留的陈旧 preview（陈旧 dist 陷阱）。
 const E2E_REUSE = process.env.E2E_REUSE != null ? process.env.E2E_REUSE === '1' : !process.env.CI
 
-// 单次调用的并发：默认 4（见下），E2E_WORKERS 覆盖。
-const E2E_WORKERS = Number(process.env.E2E_WORKERS) || 4
+// 单次调用的并发：E2E_WORKERS 显式覆盖优先；否则 CI 保底 4（2 核 runner，过多 worker 抢 CPU 反慢）、
+// 本地按 CPU 自适应（留 2 核给单线程 preview server + 系统，上限 12）——本地机器充裕时显著缩短全量时长。
+// 高并发下负载敏感用例（真手势/动画/SPA 导航）偶发时序抖动由 retries:1 吸收；若真翻车可临时调低 E2E_WORKERS。
+const E2E_WORKERS =
+  Number(process.env.E2E_WORKERS) || (process.env.CI ? 4 : Math.min(Math.max(os.cpus().length - 2, 4), 12))
 
 export default defineConfig({
   // 收集根：组件/文档站 e2e 在 packages/ui，dsd 验收 spec 在 packages/ssr（依赖方向 ssr → ui，
