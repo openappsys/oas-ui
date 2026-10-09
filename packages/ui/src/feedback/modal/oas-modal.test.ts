@@ -1576,3 +1576,104 @@ describe('OASModal maximizable（标题栏最大化/还原，PRD D28）', () => 
     expect(css).toMatch(/\.max-btn:focus-visible\s*\{[^}]*box-shadow:\s*var\(--oas-focus-ring\)/)
   })
 })
+
+describe('OASModal media 插槽与 sticky-footer（三期）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mediaOf(el: OASModal): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('[part="media"]')!
+  }
+
+  // ===== slot="media" 媒体区 =====
+
+  it('media 无内容时媒体区隐藏（不占位），有内容时显示且 slot 分配', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const media = mediaOf(el)
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="media"]')!
+    expect(media, '媒体区容器随模板常驻').not.toBeNull()
+    expect(slot).not.toBeNull()
+    expect(media.hidden, '无内容隐藏（不占位）').toBe(true)
+    // 注入媒体内容 → 显示并分配到媒体 slot
+    const img = document.createElement('img')
+    img.setAttribute('slot', 'media')
+    img.src = 'thumb.png'
+    el.appendChild(img)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(media.hidden, '有内容显示').toBe(false)
+    expect(slot.assignedNodes()).toContain(img)
+  })
+
+  it('media 内容移除后媒体区重新隐藏（slotchange 增量同步）', async () => {
+    const el = mount({ visible: '' })
+    const img = document.createElement('img')
+    img.setAttribute('slot', 'media')
+    el.appendChild(img)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(mediaOf(el).hidden).toBe(false)
+    el.removeChild(img)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(mediaOf(el).hidden).toBe(true)
+  })
+
+  it('media 媒体区样式走 token、无硬编码色值，且对插槽媒体做不溢出约束', () => {
+    const el = mount({ visible: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const mediaRule = /\.media\s*\{[^}]*\}/.exec(css)?.[0] ?? ''
+    expect(mediaRule).toContain('var(--oas-space-3)')
+    expect(css).toContain('.media[hidden]')
+    expect(css).toContain('::slotted')
+    // 媒体内容默认不溢出正文宽度
+    expect(css).toMatch(/\.media\s+::slotted\([^)]*\)[^{]*\{[^}]*max-width:\s*100%/)
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,6}/)
+  })
+
+  // ===== sticky-footer 页脚吸底 =====
+
+  it('sticky-footer 进 observedAttributes，缺省时 base .body 无 max-height（默认非破坏）', () => {
+    const el = mount({ visible: '' })
+    expect(OASModal.observedAttributes).toContain('sticky-footer')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 剔除注释（注释解释性文本可能含 "max-height" 字样，非声明）
+    const clean = css.replace(/\/\*[\s\S]*?\*\//g, '')
+    const base = /\.body\s*\{[^}]*\}/.exec(clean)?.[0] ?? ''
+    expect(base, '默认 body 不受限高（不设属性行为不变）').not.toContain('max-height')
+  })
+
+  it('sticky-footer CSS：仅开启时约束 body 高度（走 --oas-modal-body-max-height 变量），全屏态豁免', () => {
+    const el = mount({ visible: '', 'sticky-footer': '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(
+      /:host\(\[sticky-footer\]\)\s+\.dialog:not\(\[data-fullscreen\]\)\s+\.body\s*\{[^}]*max-height:\s*var\(--oas-modal-body-max-height/,
+    )
+    expect(css).toContain('var(--oas-modal-body-max-height, 60vh)')
+  })
+
+  it('sticky-footer 下对话框仍为纵向 flex、body 可滚、footer 常驻（页脚吸底结构成立）', async () => {
+    const el = mount({ visible: '', 'sticky-footer': '' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('[part="dialog"]')!
+    const body = el.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!
+    expect(getComputedStyle(dialog).display).toBe('flex')
+    expect(getComputedStyle(dialog).flexDirection).toBe('column')
+    expect(getComputedStyle(body).overflowY).toBe('auto')
+    // footer 是 body 的后续兄弟节点（flex 列布局下自然吸底，不随正文滚走）
+    const footer = el.shadowRoot!.querySelector<HTMLElement>('[part="footer"]')!
+    expect(footer).not.toBeNull()
+    expect(body.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('sticky-footer 动态增删：属性往返不残留（CSS 由 host 属性门控，移除即回默认布局）', () => {
+    const el = mount({ visible: '' })
+    el.setAttribute('sticky-footer', '')
+    expect(el.hasAttribute('sticky-footer')).toBe(true)
+    el.removeAttribute('sticky-footer')
+    expect(el.hasAttribute('sticky-footer')).toBe(false)
+  })
+})

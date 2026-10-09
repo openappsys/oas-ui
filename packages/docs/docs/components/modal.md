@@ -470,6 +470,31 @@
   </oas-modal>
 </DemoBlock>
 
+## 媒体区（media 插槽）
+
+`slot="media"` 提供正文顶部的媒体区（图标 / 插图 / 缩略图等富媒体），**有内容才显示**——未提供内容时该区域不渲染、不占位。
+
+<DemoBlock title="media 媒体插槽">
+  <oas-button type="primary" onclick="document.querySelector('#modal-media').setAttribute('visible','')">打开带媒体区对话框</oas-button>
+  <oas-modal id="modal-media" title="媒体区示例">
+    <svg slot="media" width="64" height="64" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--oas-color-primary)"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1 14.5-4-4 1.4-1.4 2.6 2.6 5.6-5.6L18 9.5 11 16.5Z" fill="currentColor"/></svg>
+    <p>顶部媒体区来自 <code>slot="media"</code>；未提供内容时该区域不渲染、不留白。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 页脚吸底（sticky-footer）
+
+`sticky-footer` 让正文区在 `--oas-modal-body-max-height`（默认 `60vh`）内滚动，页脚常驻对话框底部、不随正文滚走（全屏态自动豁免该限高）。**默认关闭**——不设时布局与原来完全一致；可在宿主上覆盖该变量调整正文滚动区高度。
+
+<DemoBlock title="sticky-footer 页脚吸底">
+  <oas-button type="primary" onclick="document.querySelector('#modal-sticky').setAttribute('visible','')">打开长内容对话框</oas-button>
+  <oas-modal id="modal-sticky" title="服务条款" sticky-footer>
+    <div style="height: 90vh; display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">
+      <p>正文很长（此块高 90vh）：正文区在限定高度内滚动，底部按钮始终吸底可见。</p>
+    </div>
+  </oas-modal>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -724,6 +749,7 @@ onMounted(async () => {
 | `position` | 垂直定位：`top` 贴视口顶缘；缺省距顶 100px；与 `centered` 同设时 `top` 规则后置生效 | — | — |
 | `role` | 对话框 ARIA 角色（默认 `dialog`；语义变体确认场景可设 `alertdialog`） | `string` | `dialog` |
 | `size` | 尺寸预设：`sm`（400px）/ `lg`（720px）；`width` 显式值优先；非法值回落主题默认 520px | `ModalSizePreset` | — |
+| `sticky-footer` | 页脚吸底：正文区在 `--oas-modal-body-max-height`（默认 60vh）内滚动、页脚常驻对话框底部不随正文滚走；全屏态（data-fullscreen）自动豁免该限高。默认关闭——不设时布局不变（非破坏） | — | — |
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `transition` | 开合动画预设：`zoom`（默认，淡入 + 缩放，缩放原点跟随打开前的点击位置）/ `fade`（仅透明度）/ `none`（无过渡即时显隐） | — | — |
 | `trigger` | 声明式触发元素 id：点击该元素设置 `visible` 打开弹窗（不动受控模型）；元素不存在时静默，后续 update 重试 | — | — |
@@ -755,6 +781,7 @@ onMounted(async () => {
 | `close-icon` | 自定义关闭图标（替代默认 ✕） |
 | `description` | 描述文案（标题下方说明） |
 | `footer` | 底部操作区 |
+| `media` | 媒体区插槽（图标 / 插图 / 缩略图等富媒体），正文顶部居中；有内容才显示，无内容不占位 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
 #### CSS 变量
@@ -763,6 +790,7 @@ onMounted(async () => {
 | --- | --- |
 | `--oas-glass-blur` | `none` |
 | `--oas-glass-ring` | `transparent` |
+| `--oas-modal-body-max-height` | `60vh` |
 | `--oas-modal-mask-bg` | `var(--oas-color-overlay)` |
 | `--oas-modal-mask-blur` | `0px` |
 | `--oas-modal-max-height` | `90vh` |

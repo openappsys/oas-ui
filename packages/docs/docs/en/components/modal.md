@@ -470,6 +470,31 @@ When `oas-before-close` is blocked with `preventDefault()` (unsaved-data protect
   </oas-modal>
 </DemoBlock>
 
+## Media region (media slot)
+
+`slot="media"` provides a media region at the top of the body (icon / illustration / thumbnail); it is rendered **only when it has content** — when empty, the region is not rendered and leaves no gap.
+
+<DemoBlock title="media slot">
+  <oas-button type="primary" onclick="document.querySelector('#modal-media').setAttribute('visible','')">Open dialog with media</oas-button>
+  <oas-modal id="modal-media" title="Media example">
+    <svg slot="media" width="64" height="64" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--oas-color-primary)"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1 14.5-4-4 1.4-1.4 2.6 2.6 5.6-5.6L18 9.5 11 16.5Z" fill="currentColor"/></svg>
+    <p>The top media region comes from <code>slot="media"</code>; when no content is provided the region is not rendered and leaves no gap.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Sticky footer (sticky-footer)
+
+`sticky-footer` makes the body scroll within `--oas-modal-body-max-height` (default `60vh`) while the footer stays pinned to the dialog bottom instead of scrolling away (exempt under fullscreen). **Off by default** — the layout is identical to before when not set; override the variable on the host to adjust the body scroll height.
+
+<DemoBlock title="sticky-footer">
+  <oas-button type="primary" onclick="document.querySelector('#modal-sticky').setAttribute('visible','')">Open long-content dialog</oas-button>
+  <oas-modal id="modal-sticky" title="Terms of service" sticky-footer>
+    <div style="height: 90vh; display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">
+      <p>Long content (this block is 90vh tall): the body scrolls within the limited height while the footer stays pinned and visible.</p>
+    </div>
+  </oas-modal>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -724,6 +749,7 @@ onMounted(async () => {
 | `position` | Vertical positioning: `top` pins the dialog to the viewport top edge; default sits 100px from the top; when set together with `centered`, the `top` rule wins (later in the cascade) | — | — |
 | `role` | Dialog ARIA role (default `dialog`; set `alertdialog` for semantic confirmation scenarios) | `string` | `dialog` |
 | `size` | Size preset: `sm` (400px) / `lg` (720px); an explicit `width` wins; invalid values fall back to the theme default 520px | `ModalSizePreset` | — |
+| `sticky-footer` | Sticky footer: the body scrolls within `--oas-modal-body-max-height` (default 60vh) while the footer stays pinned to the dialog bottom instead of scrolling away; exempt under fullscreen (data-fullscreen). Off by default — layout is unchanged when not set (non-breaking) | — | — |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 | `transition` | Open/close animation preset: `zoom` (default, fade + scale, scale origin follows the click position before opening) / `fade` (opacity only) / `none` (no transition, instant) | — | — |
 | `trigger` | Declarative trigger element id: clicking the element sets `visible` to open the modal (does not touch the controlled model); silently retries on later updates when the element is missing | — | — |
@@ -755,6 +781,7 @@ onMounted(async () => {
 | `close-icon` | Custom close icon (replaces the default ✕) |
 | `description` | Description text (shown below the title) |
 | `footer` | Footer action area |
+| `media` | Media region slot (icon / illustration / thumbnail); centered at the top of the body, rendered only when it has content (no placeholder when empty) |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
 #### CSS Variables
@@ -763,6 +790,7 @@ onMounted(async () => {
 | --- | --- |
 | `--oas-glass-blur` | `none` |
 | `--oas-glass-ring` | `transparent` |
+| `--oas-modal-body-max-height` | `60vh` |
 | `--oas-modal-mask-bg` | `var(--oas-color-overlay)` |
 | `--oas-modal-mask-blur` | `0px` |
 | `--oas-modal-max-height` | `90vh` |

@@ -148,6 +148,10 @@
       "name": "confirm-on-enter",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "sticky-footer",
+      "observed": true
     }
   ],
   "props": [
@@ -210,6 +214,9 @@
       "name": "footer"
     },
     {
+      "name": "media"
+    },
+    {
       "name": "title"
     }
   ],
@@ -241,6 +248,10 @@
     {
       "name": "--oas-modal-origin-y",
       "default": "center"
+    },
+    {
+      "name": "--oas-modal-body-max-height",
+      "default": "60vh"
     }
   ],
   "unresolved": []

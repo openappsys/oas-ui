@@ -685,3 +685,63 @@ test('modal maximizable：最大化/还原切换 data-fullscreen + oas-maximize 
   expect(r.afterMax.label === r.labelBefore, '最大化后无障碍名应切换为还原').toBe(false)
   expect(r.events, '两次切换各派发一次 oas-maximize（true/false）').toEqual([true, false])
 })
+
+// —— media 媒体区插槽 + sticky-footer 页脚吸底（三期） ——
+
+test('modal media 插槽：有内容时媒体区显示、slot 分配且真实占位', async ({ page }) => {
+  await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#modal-media')
+  await page.evaluate(() => document.querySelector('#modal-media')?.setAttribute('visible', ''))
+  await page.waitForFunction(
+    () => document.querySelector('#modal-media')?.shadowRoot?.querySelector('[part="media"]:not([hidden])') != null,
+    null,
+    { timeout: 5000 },
+  )
+  const r = await page.evaluate(() => {
+    const m = document.querySelector('#modal-media')!
+    const media = m.shadowRoot!.querySelector<HTMLElement>('[part="media"]')!
+    const slot = m.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="media"]')!
+    const svg = m.querySelector('svg[slot="media"]')
+    return {
+      hidden: media.hidden,
+      assigned: slot.assignedNodes().length,
+      hasMedia: svg != null,
+      mediaHeight: media.getBoundingClientRect().height,
+    }
+  })
+  expect(r.hidden).toBe(false)
+  expect(r.assigned).toBeGreaterThan(0)
+  expect(r.hasMedia).toBe(true)
+  expect(r.mediaHeight, '媒体区真实占位（有内容可见）').toBeGreaterThan(0)
+})
+
+test('modal sticky-footer：正文限高内滚动 + 页脚吸底贴近对话框底边', async ({ page }) => {
+  await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#modal-sticky')
+  await page.evaluate(() => document.querySelector('#modal-sticky')?.setAttribute('visible', ''))
+  await page.waitForFunction(
+    () => document.querySelector('#modal-sticky')?.shadowRoot?.querySelector('.dialog[data-open]') != null,
+    null,
+    { timeout: 5000 },
+  )
+  const r = await page.evaluate(() => {
+    const m = document.querySelector('#modal-sticky')!
+    const dialog = m.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    const body = m.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!
+    const footer = m.shadowRoot!.querySelector<HTMLElement>('[part="footer"]')!
+    const dr = dialog.getBoundingClientRect()
+    const fr = footer.getBoundingClientRect()
+    return {
+      bodyOverflowY: getComputedStyle(body).overflowY,
+      bodyScrolls: body.scrollHeight > body.clientHeight + 1,
+      bodyMaxHeight: getComputedStyle(body).maxHeight,
+      footerHeight: fr.height,
+      footerToDialogBottom: Math.abs(fr.bottom - dr.bottom),
+    }
+  })
+  expect(r.bodyOverflowY).toBe('auto')
+  expect(r.bodyScrolls, '正文区在限高内可滚动').toBe(true)
+  expect(r.bodyMaxHeight, '正文限高生效（非 none）').not.toBe('none')
+  expect(r.footerHeight).toBeGreaterThan(0)
+  expect(r.footerToDialogBottom, '页脚吸底贴近对话框底边（不随正文滚走）').toBeLessThanOrEqual(2)
+})

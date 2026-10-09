@@ -2127,7 +2127,8 @@
       "transition": "Open/close animation preset: `zoom` (default, fade + scale, scale origin follows the click position before opening) / `fade` (opacity only) / `none` (no transition, instant)",
       "trigger": "Declarative trigger element id: clicking the element sets `visible` to open the modal (does not touch the controlled model); silently retries on later updates when the element is missing",
       "z-index": "Explicit z-index base stacked on `--oas-z-index-base` (dialog sits 1 above the mask; defaults to the `--oas-z-modal` tier)",
-      "maximizable": "Show a maximize/restore button in the header: maximizing uses the same semantics as fullscreen; hidden when fullscreen is explicitly set"
+      "maximizable": "Show a maximize/restore button in the header: maximizing uses the same semantics as fullscreen; hidden when fullscreen is explicitly set",
+      "sticky-footer": "Sticky footer: the body scrolls within `--oas-modal-body-max-height` (default 60vh) while the footer stays pinned to the dialog bottom instead of scrolling away; exempt under fullscreen (data-fullscreen). Off by default — layout is unchanged when not set (non-breaking)"
     },
     "events": {
       "oas-cancel": "Cancel: cancel button / ✕ / mask click / Esc",
@@ -2146,7 +2147,8 @@
       "": "Dialog body content",
       "close-icon": "Custom close icon (replaces the default ✕)",
       "description": "Description text (shown below the title)",
-      "footer": "Footer action area"
+      "footer": "Footer action area",
+      "media": "Media region slot (icon / illustration / thumbnail); centered at the top of the body, rendered only when it has content (no placeholder when empty)"
     }
   },
   "oas-notification": {

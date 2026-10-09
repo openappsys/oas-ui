@@ -2127,7 +2127,8 @@
       "transition": "开合动画预设：`zoom`（默认，淡入 + 缩放，缩放原点跟随打开前的点击位置）/ `fade`（仅透明度）/ `none`（无过渡即时显隐）",
       "trigger": "声明式触发元素 id：点击该元素设置 `visible` 打开弹窗（不动受控模型）；元素不存在时静默，后续 update 重试",
       "z-index": "显式层级基准（叠加在 `--oas-z-index-base` 之上，对话框比遮罩高 1；缺省走 `--oas-z-modal` 档位）",
-      "maximizable": "标题栏显示最大化/还原按钮：最大化等同 fullscreen 语义，再点还原；显式 fullscreen 下隐藏"
+      "maximizable": "标题栏显示最大化/还原按钮：最大化等同 fullscreen 语义，再点还原；显式 fullscreen 下隐藏",
+      "sticky-footer": "页脚吸底：正文区在 `--oas-modal-body-max-height`（默认 60vh）内滚动、页脚常驻对话框底部不随正文滚走；全屏态（data-fullscreen）自动豁免该限高。默认关闭——不设时布局不变（非破坏）"
     },
     "events": {
       "oas-cancel": "取消：取消按钮 / ✕ / 遮罩点击 / Esc",
@@ -2146,7 +2147,8 @@
       "": "对话框主体内容",
       "close-icon": "自定义关闭图标（替代默认 ✕）",
       "description": "描述文案（标题下方说明）",
-      "footer": "底部操作区"
+      "footer": "底部操作区",
+      "media": "媒体区插槽（图标 / 插图 / 缩略图等富媒体），正文顶部居中；有内容才显示，无内容不占位"
     }
   },
   "oas-notification": {

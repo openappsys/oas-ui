@@ -276,6 +276,12 @@ const STYLE = `
     100% 12px;
   background-attachment: local, local, scroll, scroll;
 }
+/* sticky-footer：开启后正文区在 --oas-modal-body-max-height（默认 60vh）内滚动，
+   页脚常驻对话框底部（flex 列布局自然吸底）不随正文滚走；全屏态正文应填满视口，
+   故 data-fullscreen 下不施加该限高。默认关闭——不设 sticky-footer 时无任何影响（非破坏） */
+:host([sticky-footer]) .dialog:not([data-fullscreen]) .body {
+  max-height: var(--oas-modal-body-max-height, 60vh);
+}
 /* 描述区（P14：description 插槽承载内容，dialog aria-describedby 关联）；默认隐藏 */
 .description {
   padding-top: var(--oas-space-1);
@@ -284,6 +290,21 @@ const STYLE = `
 }
 .description[hidden] {
   display: none;
+}
+/* 媒体区插槽（slot="media"）：图标 / 插图 / 缩略图等富媒体承载，正文顶部居中；
+   有内容才显示（hidden 由 update() 同步），无内容不占位、不留白 */
+.media {
+  display: block;
+  text-align: center;
+  margin-bottom: var(--oas-space-3);
+}
+.media[hidden] {
+  display: none;
+}
+.media ::slotted(img),
+.media ::slotted(svg) {
+  max-width: 100%;
+  height: auto;
 }
 .footer {
   display: flex;
@@ -451,6 +472,8 @@ export class OASModal extends OASElement {
       'size',
       'fullscreen-breakpoint',
       'confirm-on-enter',
+      // —— 三期：media 媒体区插槽（无属性）+ sticky-footer 页脚吸底 ——
+      'sticky-footer',
     ]
   }
 
@@ -549,6 +572,8 @@ export class OASModal extends OASElement {
   private semanticIcon: HTMLElement | null = null
   private descriptionEl: HTMLElement | null = null
   private descriptionSlot: HTMLSlotElement | null = null
+  private mediaEl: HTMLElement | null = null
+  private mediaSlot: HTMLSlotElement | null = null
 
   /** 插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
   private hasSlotContent(slot: HTMLSlotElement): boolean {
@@ -589,6 +614,8 @@ export class OASModal extends OASElement {
           </span>
         </div>
         <div class="body" part="body">
+          <!-- 媒体区（slot="media"）：有内容才显示，无内容不占位（update 同步 hidden） -->
+          <div class="media" part="media" hidden><slot name="media"></slot></div>
           <span class="semantic-icon" part="semantic-icon" aria-hidden="true" hidden></span>
           <div class="description" part="description" id="oas-modal-desc" hidden>
             <slot name="description"></slot>
@@ -631,6 +658,8 @@ export class OASModal extends OASElement {
     this.semanticIcon = this.shadow.querySelector('.semantic-icon')
     this.descriptionEl = this.shadow.querySelector('#oas-modal-desc')
     this.descriptionSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="description"]')
+    this.mediaEl = this.shadow.querySelector('.media')
+    this.mediaSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="media"]')
 
     // 遮罩关闭只响应 mask 本体：mask 与 dialog 是兄弟节点（模板同层并排），dialog 内点击
     // 冒泡路径本就不经过 mask，无需在 dialog 上 stopPropagation（那样会阻断 document 级
@@ -652,6 +681,7 @@ export class OASModal extends OASElement {
     this.shadow.querySelector('.body slot')?.addEventListener('slotchange', () => this.update())
     this.footerSlot?.addEventListener('slotchange', () => this.update())
     this.descriptionSlot?.addEventListener('slotchange', () => this.update())
+    this.mediaSlot?.addEventListener('slotchange', () => this.update())
     this.onCleanup(() => {
       document.removeEventListener('pointermove', this.onDrag)
       document.removeEventListener('pointerup', this.endDrag)
@@ -1335,6 +1365,10 @@ export class OASModal extends OASElement {
     if (this.footerEl) this.footerEl.style.display = this.hasAttr('no-footer') ? 'none' : ''
     if (this.footerActions) {
       this.footerActions.hidden = this.footerSlot ? this.hasSlotContent(this.footerSlot) : false
+    }
+    // 媒体区（slot="media"）：有内容才显示（无内容不占位，对齐 alert-dialog 媒体区语义）
+    if (this.mediaEl) {
+      this.mediaEl.hidden = !(this.mediaSlot && this.hasSlotContent(this.mediaSlot))
     }
     // aria-describedby（P14）：宿主属性透传优先，其次 description 插槽，否则移除关联
     const hostDescribedby = this.getAttribute('aria-describedby')
