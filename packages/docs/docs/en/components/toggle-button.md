@@ -24,6 +24,14 @@ onMounted(() => {
   el?.addEventListener('oas-change', (e) => {
     out.textContent = `oas-change: { value: ${e.detail.value}, pressed: ${e.detail.pressed} }`
   })
+
+  // variant demo: real toggles + visible feedback
+  const variantOut = document.getElementById('tb-variant-out')
+  for (const id of ['tb-variant-outlined', 'tb-variant-filled', 'tb-variant-text', 'tb-variant-icon']) {
+    document.getElementById(id)?.addEventListener('oas-change', (e) => {
+      variantOut.textContent = `oas-change: { value: ${e.detail.value}, pressed: ${e.detail.pressed} }`
+    })
+  }
 })
 </script>
 
@@ -93,6 +101,41 @@ onMounted(() => {
   </oas-space>
 </DemoBlock>
 
+## Variant
+
+The `variant` dimension (aligned with the `oas-button` variant system, restricted to the subset meaningful for toggles): `solid` (default, bordered box, pressed = solid primary fill) / `outlined` (transparent background with border; pressed = primary border + faint tint) / `filled` (soft tinted background, no border; pressed = solid fill) / `text` (no border or background; pressed = faint tint + primary text). Invalid values silently fall back to `solid`; orthogonal to `size` / `color` / `status` (status colors win). Icon-only toolbar toggles suit `text` or `outlined`; filter panels suit `filled`.
+
+<DemoBlock title="Four variants (resting / pressed side by side)">
+  <oas-space size="small" direction="vertical">
+    <oas-space size="small">
+      <oas-toggle-button value="v-solid">Solid (default)</oas-toggle-button>
+      <oas-toggle-button value="v-solid-on" pressed>Solid (pressed)</oas-toggle-button>
+    </oas-space>
+    <oas-space size="small">
+      <oas-toggle-button variant="outlined" value="v-outlined">Outlined</oas-toggle-button>
+      <oas-toggle-button variant="outlined" value="v-outlined-on" pressed>Outlined (pressed)</oas-toggle-button>
+    </oas-space>
+    <oas-space size="small">
+      <oas-toggle-button variant="filled" value="v-filled">Filled</oas-toggle-button>
+      <oas-toggle-button variant="filled" value="v-filled-on" pressed>Filled (pressed)</oas-toggle-button>
+    </oas-space>
+    <oas-space size="small">
+      <oas-toggle-button variant="text" value="v-text">Text</oas-toggle-button>
+      <oas-toggle-button variant="text" value="v-text-on" pressed>Text (pressed)</oas-toggle-button>
+    </oas-space>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Variants with real toggling (click for feedback)">
+  <oas-space size="small">
+    <oas-toggle-button id="tb-variant-outlined" variant="outlined" value="mark">Mark</oas-toggle-button>
+    <oas-toggle-button id="tb-variant-filled" variant="filled" value="filter">Filter</oas-toggle-button>
+    <oas-toggle-button id="tb-variant-text" variant="text" value="pin">Pin</oas-toggle-button>
+    <oas-toggle-button id="tb-variant-icon" variant="text" icon="star" aria-label="Favorite"></oas-toggle-button>
+    <span id="tb-variant-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+  </oas-space>
+</DemoBlock>
+
 ## API
 
 ### oas-toggle-button
@@ -109,6 +152,7 @@ onMounted(() => {
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid | `string` | — |
 | `value` | Value (returned with events) | `string` | — |
+| `variant` | Variant (aligned with the button variant system): `solid` (default, bordered box, pressed = solid fill) / `outlined` (transparent bg + border; pressed = colored border + faint tint) / `filled` (soft tinted bg, no border; pressed = solid fill) / `text` (no border/background; pressed = faint tint + colored text); invalid values silently fall back to solid | `string` | — |
 
 #### Property (JS property only, not reflected as attribute)
 

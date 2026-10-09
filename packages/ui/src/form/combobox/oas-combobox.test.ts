@@ -841,3 +841,251 @@ describe('OASCombobox value property（公开读/写通道）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+describe('OASCombobox multiple 多选（对齐 oas-select 多选语义）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function chipLabels(el: OASCombobox): string[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.chip .chip-label')].map((n) => n.textContent ?? '')
+  }
+
+  function chipRemoveButtons(el: OASCombobox): HTMLButtonElement[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.chip button')]
+  }
+
+  it('multiple：点击选项叠加选中，chip 展示已选 label，面板不关闭', () => {
+    const el = mount({ multiple: '' })
+    open(el)
+    optionRows(el)[0]!.click()
+    expect(el.getAttribute('value')).toBe('["apple"]')
+    expect(chipLabels(el)).toEqual(['苹果'])
+    expect(input(el).getAttribute('aria-expanded')).toBe('true')
+    optionRows(el)[2]!.click()
+    expect(el.getAttribute('value')).toBe('["apple","orange"]')
+    expect(chipLabels(el)).toEqual(['苹果', '橙子'])
+  })
+
+  it('multiple：初始 value JSON 驱动已选 chips 与选项 aria-selected', () => {
+    const el = mount({ multiple: '', value: '["apple","banana"]' })
+    expect(chipLabels(el)).toEqual(['苹果', '香蕉'])
+    open(el)
+    const selected = optionRows(el).map((r) => r.getAttribute('aria-selected'))
+    expect(selected).toEqual(['true', 'true', 'false'])
+  })
+
+  it('multiple：再点已选项取消选中（chip 同步移除）', () => {
+    const el = mount({ multiple: '', value: '["apple"]' })
+    open(el)
+    optionRows(el)[0]!.click()
+    expect(el.getAttribute('value')).toBe('[]')
+    expect(chipLabels(el)).toEqual([])
+  })
+
+  it('chip 移除按钮：点击移除该项，oas-change detail 对齐 select 多选口径（value 数组 + options 对象）', () => {
+    const el = mount({ multiple: '', value: '["apple","banana"]' })
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    chipRemoveButtons(el)[0]!.click()
+    expect(el.getAttribute('value')).toBe('["banana"]')
+    expect(detail).toEqual({
+      value: ['banana'],
+      options: [{ label: '香蕉', value: 'banana' }],
+    })
+  })
+
+  it('multiple：输入过滤 + Enter 选中后输入框清空、面板保持展开、列表恢复全量', () => {
+    const el = mount({ multiple: '' })
+    open(el)
+    input(el).value = '香'
+    input(el).dispatchEvent(new Event('input', { bubbles: true }))
+    input(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.getAttribute('value')).toBe('["banana"]')
+    expect(input(el).value).toBe('')
+    expect(input(el).getAttribute('aria-expanded')).toBe('true')
+    expect(optionRows(el).length).toBe(3)
+  })
+
+  it('multiple：blur 丢弃输入草稿（输入框清空），已选值不受影响', () => {
+    const el = mount({ multiple: '', value: '["apple"]' })
+    open(el)
+    input(el).value = '橙'
+    input(el).dispatchEvent(new Event('input', { bubbles: true }))
+    input(el).dispatchEvent(new FocusEvent('blur'))
+    expect(input(el).value).toBe('')
+    expect(el.getAttribute('value')).toBe('["apple"]')
+  })
+
+  it('multiple：max-count 达上限时未选项渲染 aria-disabled，点击派发 oas-exceed-limit 且不选中', () => {
+    const el = mount({ multiple: '', 'max-count': '1', value: '["apple"]' })
+    open(el)
+    let exceeded: unknown
+    el.addEventListener('oas-exceed-limit', (e: Event) => (exceeded = (e as CustomEvent).detail))
+    const blocked = optionRows(el).find((r) => r.getAttribute('aria-disabled') === 'true')
+    expect(blocked).not.toBeNull()
+    // 被拦截的是第一个未选项（banana）；exceed-limit detail.value 对应被点的那项
+    blocked!.click()
+    expect(exceeded).toEqual({ value: 'banana', max: 1 })
+    expect(el.getAttribute('value')).toBe('["apple"]')
+  })
+
+  it('multiple：max-count 达上限时已选项仍可取消（取消后恢复可选）', () => {
+    const el = mount({ multiple: '', 'max-count': '1', value: '["apple"]' })
+    open(el)
+    optionRows(el)[0]!.click()
+    expect(el.getAttribute('value')).toBe('[]')
+    // 取消后限制解除，可重新选择
+    optionRows(el)[1]!.click()
+    expect(el.getAttribute('value')).toBe('["banana"]')
+  })
+
+  it('multiple：max-tag-count 显式设置时折叠为 +N chip（title 汇总被折叠项）', () => {
+    const el = mount({ multiple: '', 'max-tag-count': '1', value: '["apple","banana","orange"]' })
+    expect(chipLabels(el)).toEqual(['苹果'])
+    const plus = el.shadowRoot!.querySelector<HTMLElement>('.chip-plus')!
+    expect(plus.textContent).toBe('+2')
+    expect(plus.getAttribute('title')).toContain('香蕉')
+    expect(plus.getAttribute('title')).toContain('橙子')
+  })
+
+  it('multiple：未设置 max-tag-count 时标签默认换行不折叠（无 +N chip）', () => {
+    const el = mount({ multiple: '', value: '["apple","banana","orange"]' })
+    expect(chipLabels(el)).toEqual(['苹果', '香蕉', '橙子'])
+    expect(el.shadowRoot!.querySelector('.chip-plus')).toBeNull()
+  })
+
+  it('clearable：清空全部并派发 oas-clear（detail 清空前数组）+ oas-change（空数组口径）', () => {
+    const el = mount({ multiple: '', clearable: '', value: '["apple","banana"]' })
+    let clearDetail: unknown
+    let changeDetail: unknown
+    el.addEventListener('oas-clear', (e: Event) => (clearDetail = (e as CustomEvent).detail))
+    el.addEventListener('oas-change', (e: Event) => (changeDetail = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.click()
+    expect(el.getAttribute('value')).toBe('[]')
+    expect(clearDetail).toEqual({ value: ['apple', 'banana'] })
+    expect(changeDetail).toEqual({ value: [], options: [] })
+  })
+
+  it('value getter 返回选中数组、setter 接受数组写 JSON（受控赋值即生效，不派发事件）', () => {
+    const el = mount({ multiple: '' })
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.value = ['apple', 'banana']
+    expect(el.getAttribute('value')).toBe('["apple","banana"]')
+    expect(el.value).toEqual(['apple', 'banana'])
+    expect(fired).toBe(0)
+  })
+
+  it('readonly：chip 不带移除按钮（值只读语义与 select 一致）', () => {
+    const el = mount({ multiple: '', readonly: '', value: '["apple"]' })
+    expect(chipLabels(el)).toEqual(['苹果'])
+    expect(chipRemoveButtons(el).length).toBe(0)
+  })
+
+  it('disabled：chip 不带移除按钮（不可交互，对齐 select 的禁用语义）', () => {
+    const el = mount({ multiple: '', disabled: '', value: '["apple","banana"]' })
+    expect(chipLabels(el)).toEqual(['苹果', '香蕉'])
+    expect(chipRemoveButtons(el).length).toBe(0)
+  })
+
+  it('readonly + clearable：不显示清空按钮，且 clearValue 拒绝（值只读不可改）', () => {
+    const el = mount({ readonly: '', clearable: '', value: 'apple' })
+    const clearBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!
+    expect(clearBtn.hidden).toBe(true)
+    clearBtn.click()
+    expect(el.getAttribute('value')).toBe('apple')
+  })
+
+  it('max-count 拦截不污染过滤词：被拒点击后过滤态保持不变（ArrowDown 高亮仍落在过滤集内）', () => {
+    const el = mount({ multiple: '', 'max-count': '1', value: '["apple"]' })
+    open(el)
+    input(el).value = '香'
+    input(el).dispatchEvent(new Event('input', { bubbles: true }))
+    expect(optionRows(el).length).toBe(1)
+    optionRows(el)[0]!.click() // banana 遭上限拦截
+    expect(el.getAttribute('value')).toBe('["apple"]')
+    // 过滤词未被清空：ArrowDown 仍在过滤集内移动，渲染行保持高亮（不被清词后的全量索引错位）
+    input(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(el.shadowRoot!.querySelector('.option.active')).not.toBeNull()
+  })
+
+  it('FormData：运行时改 name 重同步同名多条 entry 的 key（对齐 select 观察 name）', () => {
+    const el = mount({ multiple: '', name: 'a', value: '["apple","banana"]' })
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    el.setAttribute('status', 'success') // 触发 update 同步
+    expect((fake.setFormValue.mock.lastCall![0] as FormData).getAll('a')).toEqual(['apple', 'banana'])
+    el.setAttribute('name', 'b')
+    const arg = fake.setFormValue.mock.lastCall![0]
+    expect(arg).toBeInstanceOf(FormData)
+    expect((arg as FormData).getAll('b')).toEqual(['apple', 'banana'])
+    expect((arg as FormData).getAll('a')).toEqual([])
+  })
+
+  it('FormData：multiple 无 name 时不注入空名 entry（getFormValue 回落 null，对齐「无 name 不提交」）', () => {
+    const el = mount({ multiple: '', value: '["apple","banana"]' })
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    el.setAttribute('status', 'success') // 触发 update 同步
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('required + multiple 无 name：有选中仍合法（按选中集判空，不因无 name 误报 valueMissing）', () => {
+    const el = mount({ multiple: '', required: '', value: '["apple"]' })
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    el.setAttribute('status', 'success')
+    expect(fake.setValidity.mock.lastCall![0]).toEqual({})
+    el.setAttribute('value', '[]')
+    expect(fake.setValidity.mock.lastCall![0]).toEqual({ valueMissing: true })
+  })
+
+  it('FormData：multiple 同名多条；无选中不含该项；required 空选 → valueMissing', () => {
+    const el = mount({ multiple: '', name: 'tags' })
+    const fake = { setFormValue: vi.fn(), setValidity: vi.fn(), labels: null, form: null }
+    ;(el as unknown as { internals_: unknown }).internals_ = fake
+    // 无选中 → null
+    el.setAttribute('status', 'success') // 触发 update 同步
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+    // 选中两条 → FormData 两条同名 entry
+    el.setAttribute('value', '["apple","banana"]')
+    const fd = fake.setFormValue.mock.lastCall![0] as FormData
+    expect(fd).toBeInstanceOf(FormData)
+    expect(fd.getAll('tags')).toEqual(['apple', 'banana'])
+    // required 校验：空选 valueMissing（基类 setValidity 透传 flags/message/anchor 三参）
+    el.toggleAttribute('required', true)
+    el.setAttribute('value', '[]')
+    expect(fake.setValidity.mock.lastCall![0]).toEqual({ valueMissing: true })
+    el.setAttribute('value', '["apple"]')
+    expect(fake.setValidity.mock.lastCall![0]).toEqual({})
+  })
+
+  it('单选形态不渲染 chips（结构零变化，行为回归护栏）', () => {
+    const el = mount({ value: 'apple' })
+    expect(el.shadowRoot!.querySelector('.chip')).toBeNull()
+    expect(input(el).value).toBe('苹果')
+  })
+
+  it('CSS：multiple 控件容器/尺寸档/max-tag-count 折叠规则存在（描边上移 .control）', () => {
+    const css = mount({ multiple: '' }).shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/:host\(\[multiple\]\) \.control\s*{[^}]*--oas-control-height-md/)
+    expect(css).toMatch(/:host\(\[multiple\]\[data-size='small'\]\) \.control\s*{[^}]*--oas-control-height-sm/)
+    expect(css).toMatch(/:host\(\[multiple\]\[data-size='large'\]\) \.control\s*{[^}]*--oas-control-height-lg/)
+    expect(css).toMatch(/:host\(\[multiple\]\[max-tag-count\]\) \.control\s*{[^}]*flex-wrap:\s*nowrap/)
+    expect(css).toMatch(/:host\(\[multiple\]\) \.control:focus-within\s*{[^}]*--oas-focus-ring/)
+  })
+
+  it('回归：chip 移除按钮 mousedown preventDefault（防 input 失焦收面板，与 clear-btn/dropdown 同纪律）', () => {
+    const el = mount({ multiple: '', value: '["apple"]' })
+    const rm = el.shadowRoot!.querySelector<HTMLButtonElement>('.chip button')!
+    expect(rm).not.toBeNull()
+    const e = new MouseEvent('mousedown', { cancelable: true, bubbles: true })
+    rm.dispatchEvent(e)
+    expect(e.defaultPrevented).toBe(true)
+  })
+})

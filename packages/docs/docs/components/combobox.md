@@ -7,10 +7,10 @@
 > | 组件 | 值的来源 | 输入框形态 | 一句话定位 |
 > | --- | --- | --- | --- |
 > | `oas-select` | 必须来自选项集合 | 按钮触发，输入框不常显 | 收敛选择的默认形态（含多选/创建/远程全家桶） |
-> | `oas-combobox` | 必须来自选项集合 | 输入框即控件，输入仅过滤 | 常显输入框形态的收敛单选 |
+> | `oas-combobox` | 必须来自选项集合 | 输入框即控件，输入仅过滤 | 常显输入框形态的收敛选择（单选 + 多选） |
 > | `oas-auto-complete` | **任意自由文本** | 输入框即控件 | 联想输入（值不必来自选项） |
 >
-> combobox 保持「值恒来自选项」的纯过滤语义：**不做** multiple（多选用 `oas-select multiple searchable`）、**不做** allow-create（创建用 `oas-select allow-create` 或 `oas-dynamic-tags`，自由文本用 `oas-auto-complete`）——与库内已有能力不重复。
+> combobox 保持「值恒来自选项」的纯过滤语义：多选已内建（`multiple`，对齐 `oas-select` 多选契约）；**不做** allow-create（创建用 `oas-select allow-create` 或 `oas-dynamic-tags`，自由文本用 `oas-auto-complete`）——与库内已有能力不重复。
 
 ## 基础用法
 
@@ -125,6 +125,26 @@
 
 有选中值时显示清空按钮，点击清空 `value` 并派发 `oas-clear` 与 `oas-change`。
 
+## 多选（multiple）
+
+设置 `multiple` 进入多选模式（对齐 `oas-select` 多选契约）：`value` 走 JSON 数组字符串，已选项渲染为**可移除标签**（点 `×` 移除单项）；选中后面板**保持展开**、输入框清空过滤词，便于连续挑选；输入仅作过滤（多选下自由输入语义关闭，失焦丢弃过滤词、不影响已选）。`oas-change` 的 `detail` 为 `{ value: string[], options: Array<Option|null> }`；`clearable` 清空全部并派发 `oas-clear`（detail 为清空前的数组）。
+
+<DemoBlock title="多选（multiple + chips）">
+  <oas-combobox id="cb-multi" multiple clearable placeholder="输入过滤，可多选" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"},{"label":"西瓜","value":"watermelon"}]'></oas-combobox>
+  <span id="cb-multi-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+### 多选上限与标签折叠（max-count / max-tag-count）
+
+`max-count` 限制最多可选数量（仅多选生效）：达上限后未选项在下拉内置灰（`aria-disabled`）、点击/键盘选中被拦截并派发 `oas-exceed-limit`（`detail: { value, max }`），**已选项仍可取消**。`max-tag-count` 显式设置时已选标签单行收纳、超出折叠为 `+N`（悬停 title 汇总被折叠项）；未设置时标签默认换行、触发器自适应增高。
+
+<DemoBlock title="多选上限（max-count=3）+ 标签折叠（max-tag-count=2）">
+  <oas-combobox id="cb-multi-max" multiple max-count="3" max-tag-count="2" placeholder="最多选 3 项" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"}]'></oas-combobox>
+  <span id="cb-multi-max-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+预设值与外部受控：`value='["apple","banana"]'` 直接驱动已选标签；`el.value` 读到选中数组、写数组（或单值）即刻生效，不派发事件。表单提交走原生 FormData「同名多条」语义（多选每项一条同名 entry）；`required` 校验按「至少选一项」判定。
+
 ## 加载中
 
 <DemoBlock title="加载中（loading）">
@@ -204,6 +224,28 @@ onMounted(() => {
     else openEl.setAttribute('open', '')
   })
 
+  // 多选 demo：chips 增删 + 事件回显
+  const multi = document.getElementById('cb-multi')
+  const multiOut = document.getElementById('cb-multi-out')
+  const renderMulti = () => {
+    if (multiOut) multiOut.textContent = `value: ${multi?.getAttribute('value') ?? ''}`
+  }
+  multi?.addEventListener('oas-change', renderMulti)
+  multi?.addEventListener('oas-clear', renderMulti)
+  renderMulti()
+
+  // 多选上限 demo：oas-exceed-limit 可见反馈
+  const multiMax = document.getElementById('cb-multi-max')
+  const multiMaxOut = document.getElementById('cb-multi-max-out')
+  const renderMultiMax = () => {
+    if (multiMaxOut) multiMaxOut.textContent = `value: ${multiMax?.getAttribute('value') ?? ''}`
+  }
+  multiMax?.addEventListener('oas-change', renderMultiMax)
+  multiMax?.addEventListener('oas-exceed-limit', (e) => {
+    if (multiMaxOut) multiMaxOut.textContent = `已达上限（${e.detail.max} 项），已拦截「${e.detail.value}」`
+  })
+  renderMultiMax()
+
   // 虚拟滚动 demo：1 万条选项
   const virtual = document.getElementById('cb-virtual')
   if (virtual) {
@@ -253,6 +295,10 @@ onMounted(() => {
 | `filterable` | 输入实时过滤 label（`filterable="false"` 关闭本地过滤） | `string` | `true` |
 | `item-height` | 虚拟滚动定高（px，配合 `virtual`，默认 36） | `string` | `36` |
 | `loading` | 加载占位（下拉显示「加载中…」） | `boolean` | — |
+| `max-count` | 多选上限（仅 `multiple` 生效）：达上限未选项置灰拦截并派发 `oas-exceed-limit`，已选项仍可取消 | `string` | — |
+| `max-tag-count` | 已选标签折叠数（仅 `multiple` 生效）：显式设置时标签单行收纳、超出折叠为 `+N`（title 汇总被折叠项）；未设置时标签默认换行展示 | `string` | — |
+| `multiple` | 多选模式（对齐 oas-select 多选语义：值走 JSON 数组、已选项渲染为可移除标签、选中后面板保持展开连续挑选；输入仅作过滤，自由输入语义关闭） | `boolean` | — |
+| `name` | 表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交） | `string` | — |
 | `open` | 受控展开状态（组件内部开合同步写回属性，任何迁移派发 `oas-open-change`；readonly/disabled 下强制收起）；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | `boolean` | — |
 | `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]`（group 为分组标题，与 oas-select 同一契约） | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
@@ -260,7 +306,7 @@ onMounted(() => {
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `size` | 尺寸档位：small / medium / large（默认 medium，就近跟随 config-provider 注入） | `string` | `medium` |
 | `status` | 校验态：success / warning / error（error 同步 aria-invalid，可被 oas-form-item 校验驱动） | `string` | — |
-| `value` | 当前值（受控，选中项 `option.value`） | `string` | — |
+| `value` | 当前值（受控，选中项 `option.value`；`multiple` 时为 JSON 数组字符串） | `string \| string[]` | — |
 | `virtual` | 虚拟滚动（复用 oas-virtual-list 仅渲染可视窗口；带 group 的选项自动回退全量渲染） | `boolean` | — |
 
 #### Property（仅 JS property，不反射 attribute）
@@ -268,14 +314,15 @@ onMounted(() => {
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `filter` | 自定义过滤函数（property 通道，`(input, option) => boolean`） | `((option: Option, query: string) => boolean) \| null` | — |
-| `value` | 当前值：选中值（无选中时键入草稿兜底） | `string` | — |
+| `value` | 当前值：单选为选中值字符串（无选中时键入草稿兜底）；`multiple` 时为选中值数组 | `string \| string[]` | — |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-change` | 选中/清空变化，`detail: { value }` |
-| `oas-clear` | 点击清空按钮，`detail: { value }`（清空前的值） |
+| `oas-change` | 选中/清空/移除变化，单选 `detail: { value }`；多选 `detail: { value: string[], options: Array<Option\|null> }`（对齐 oas-select 多选口径） |
+| `oas-clear` | 点击清空按钮，单选 `detail: { value }`（清空前的值）；多选 `detail: { value: string[] }`（清空前的数组） |
+| `oas-exceed-limit` | 多选达 max-count 上限后的越界选择尝试，`detail: { value, max }` |
 | `oas-input` | 输入过滤词，`detail: { value }` |
 | `oas-open-change` | 展开状态迁移（受控 setAttribute 与内部开合都派发），`detail: { open }` |
 

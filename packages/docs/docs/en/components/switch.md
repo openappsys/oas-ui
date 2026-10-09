@@ -112,6 +112,35 @@ Hit-area note: the host shrinks to the actual control width (`width: fit-content
   <oas-switch status="error"></oas-switch>
 </DemoBlock>
 
+## Description
+
+`description` renders a muted secondary line under the label explaining what the switch controls (same contract as the `oas-checkbox` / `oas-radio` description); rich content in `slot[name="description"]` wins over the attribute text:
+
+<DemoBlock title="Description">
+  <oas-space direction="vertical" size="small">
+    <oas-switch label="Notifications" description="Receive product updates and news"></oas-switch>
+    <oas-switch label="Auto update" checked description="Keep the system up to date"></oas-switch>
+    <oas-switch label="Rich description">
+      Custom label
+      <span slot="description">Rich <b>HTML</b> descriptions supported</span>
+    </oas-switch>
+  </oas-space>
+</DemoBlock>
+
+## Card Variant (variant="card")
+
+`variant="card"` upgrades the switch into a choice card: a bordered card wraps the thumb + label + description, **the whole card is clickable** (click anywhere on the card to toggle), and the selected state tints the border with the primary color over a faint background (same visual language as the `oas-checkbox` / `oas-radio` choice cards); `disabled` / `status` also apply to the card border. Ideal for settings-style per-item switch lists:
+
+<DemoBlock title="Card variant">
+  <oas-space direction="vertical" size="small" style="width: 360px">
+    <oas-switch id="sw-card" variant="card" label="Cloud sync" description="Changes are saved to the cloud automatically"></oas-switch>
+    <oas-switch variant="card" label="Sync on Wi-Fi only" description="Paused on mobile data" checked></oas-switch>
+    <oas-switch variant="card" label="Disabled card" description="Cannot be toggled" disabled checked></oas-switch>
+    <oas-switch variant="card" label="Validation failed" description="Complete security verification first" status="error"></oas-switch>
+  </oas-space>
+  <span id="sw-card-out" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## Custom Width
 
 `--oas-switch-width` / `--oas-switch-height` / `--oas-switch-thumb-size` CSS variables override the track width / height / thumb size across size tiers:
@@ -171,6 +200,15 @@ onMounted(() => {
   el?.addEventListener('oas-blur', () => {
     out.textContent = 'oas-blur'
   })
+
+  // Card variant demo: real toggle + visible feedback
+  const cardEl = document.getElementById('sw-card')
+  const cardOut = document.getElementById('sw-card-out')
+  const renderCard = () => {
+    if (cardOut) cardOut.textContent = `Cloud sync: ${cardEl?.hasAttribute('checked') ? 'on' : 'off'}`
+  }
+  cardEl?.addEventListener('oas-change', renderCard)
+  renderCard()
 })
 </script>
 
@@ -195,6 +233,7 @@ onMounted(() => {
 | `checked-icon` | Checked-state thumb icon (oas-icon name) | `string` | — |
 | `checked-text` | Label shown when on; inside the track at medium/large/xl, outside at xs/small | — | — |
 | `color` | Custom primary color for the on state, overrides `--oas-color-primary` (CSS color value) | — | — |
+| `description` | Secondary description text (muted line under the label; slot[name=description] rich content wins over the attribute text), same contract as checkbox/radio description | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `false-value` | Mapped value when unchecked | `string` | — |
 | `label` | Label text (label channel; clicking the label toggles; same-named slot for rich content) | `string` | — |
@@ -206,6 +245,7 @@ onMounted(() => {
 | `true-value` | Mapped value when checked (read via the value getter) | `string` | — |
 | `unchecked-icon` | Unchecked-state thumb icon | `string` | — |
 | `unchecked-text` | Label shown when off; inside the track at medium/large/xl, outside at xs/small | — | — |
+| `variant` | Variant: `default` (plain thumb) / `card` (a bordered card wrapping the thumb + label + description; whole card clickable, selected state tints the border, aligned with the checkbox/radio choice card); invalid values silently fall back to default | `string` | — |
 
 #### Events
 
@@ -220,6 +260,7 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Switch content (label / rich content) |
+| `description` | Rich description content (takes precedence over the description attribute text) |
 
 #### CSS Variables
 

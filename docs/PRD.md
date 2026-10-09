@@ -2174,3 +2174,16 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：`shared/scrub.test.ts` 10 条 + `shared/measure-text.test.ts` 4 条；slider 160（+22）/ input-number 88（+12）/ collapse 46（+5）/ dropdown 78（+6）/ select 165（+5）；全量 `pnpm test` 全绿（含 SSR 快照零漂移——`show-track` 未设置时不写 data-*）。
 - e2e：`qa-regression` 五 spec 增补真交互回归（scrub 真拖计步/双击复位/summary 显隐/reserve-width 锁宽）。
 - typecheck / build / lint:md / api:check 全绿；docs zh/en 五组件 + api-descriptions + api-manifest 同步；CHANGELOG `[未发布]`。
+## 表单一致性补齐批（未发布）
+
+### 特性
+
+- **oas-combobox `multiple` 多选**：可搜索多选闭环，对齐 `oas-select` 多选契约——`value` 走 JSON 数组字符串；已选项渲染为可移除标签（`readonly` 无移除钮）；选中后面板保持展开、过滤词清空便于连续挑选；多选下输入仅作过滤（自由输入/datalist 语义关闭，失焦丢弃过滤词不影响已选）。`max-count` 多选上限（未选项置灰 `aria-disabled` + 拦截派发 `oas-exceed-limit`，已选项仍可取消）；`max-tag-count` 显式设置时标签单行折叠 `+N`（title 汇总被折叠项），未设置默认换行。多选 `oas-change` detail 为 `{ value: string[], options }`（对齐 select 口径）；`oas-clear` detail 为清空前数组；原生表单「同名多条」FormData 语义 + `required` 按至少一项判定；`el.value` 读写数组。多选形态描边/聚焦上移 `.control` 容器（chips + 无边框弹性过滤输入同居），单选 DOM/CSS 零变化（`display: contents` 无盒）；虚拟滚动/分组/移动抽屉在多选下同样可用，浮层定位锚定控件容器。
+- **oas-switch `description` + `variant="card"`**：描述副文本渲染在标签下方（`slot[name=description]` 富内容优先于属性文本，契约对齐 checkbox/radio），补齐三件表单控件一致性缺口；`variant="card"` 升级为选择卡：描边容器包住拨杆 + 标签 + 描述、整卡可点（宿主点击委托，disabled/loading/before-change 全拦截）、选中描边主色 + 浅底着色、disabled/status 与 checkbox/radio 选择卡同视觉语言；非法值静默回落 default，默认形态零变化。
+- **oas-toggle-button / oas-toggle-group `variant`**（组为组级透传）：对齐 button variant 体系、取切换语义有意义的子集——`solid`（默认描边容器、按下实底）/ `outlined`（透明底描边、按下主色描边 + 淡底）/ `filled`（浅底无描边、按下实底）/ `text`（无框无底、按下淡底 + 主色文字）；非法值静默回落 solid；与 `size`/`color`/`status` 正交（status 语义色源顺序优先）、与 `attached`/`vertical` 正交；形态系禁用态回落统一禁用视觉；`data-variant` 镜像供 `:host()` 样式消费。
+
+### 验收
+
+- 单测：combobox +16 / switch +9 / toggle-button +8 / toggle-group +5 断言（RED→GREEN）；`pnpm test` 全绿。
+- e2e：`qa-regression/combobox.spec.ts`（多选真点叠加 chips + chip 移除 + 上限拦截反馈可见 + 折叠 +N）、`qa-regression/switch.spec.ts`（卡片真点切换 + demo 反馈 + 禁用卡拦截）、`qa-regression/toggle-button.spec.ts`（三形态真点 + 静态镜像）、`qa-regression/toggle-group.spec.ts`（四形态镜像 + filled 多选真点反馈）全绿。
+- 文档：combobox/switch/toggle-button/toggle-group md（zh/en）新增章节 + 可交互 demo；`api-descriptions.{zh,en}.json` 增补 + api:scan/api:gen 重生成；CHANGELOG `[未发布]` 英文条目。

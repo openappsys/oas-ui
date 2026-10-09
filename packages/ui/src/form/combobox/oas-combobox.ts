@@ -144,6 +144,140 @@ input:disabled {
 input:disabled:hover {
   border-color: var(--oas-color-border);
 }
+/* ---- multiple 多选形态：描边/聚焦上移到 .control 容器，input 变无边框弹性过滤字段 ----
+   单选形态 .control 为 display: contents（无盒、零影响）；多选时 .control 即控件本体，
+   已选 chips 与过滤输入框同居一个描边容器（对齐 oas-select 多选触发器形态） */
+.control {
+  display: contents;
+}
+:host([multiple]) .control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--oas-space-1);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--oas-control-height-md);
+  padding: var(--oas-space-1) var(--oas-space-3);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg);
+  cursor: text;
+  transition: border-color var(--oas-transition-fast) var(--oas-ease-out),
+    box-shadow var(--oas-transition-fast) var(--oas-ease-out);
+}
+:host([multiple]) .control:hover {
+  border-color: var(--oas-color-primary);
+}
+:host([multiple]) .control:focus-within {
+  border-color: var(--oas-color-primary);
+  box-shadow: var(--oas-focus-ring);
+}
+:host([multiple][data-size='small']) .control {
+  min-height: var(--oas-control-height-sm);
+}
+:host([multiple][data-size='large']) .control {
+  min-height: var(--oas-control-height-lg);
+}
+:host([multiple]) input {
+  flex: 1 1 48px;
+  min-width: 48px;
+  width: auto;
+  height: auto;
+  min-height: calc(var(--oas-control-height-md) - 12px);
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+:host([multiple]) input:focus {
+  box-shadow: none;
+}
+:host([multiple][data-size='small']) input {
+  min-height: calc(var(--oas-control-height-sm) - 12px);
+}
+:host([multiple][data-size='large']) input {
+  min-height: calc(var(--oas-control-height-lg) - 12px);
+}
+:host([multiple]) input:disabled {
+  background: transparent;
+}
+/* 状态/禁用/aria-invalid 视觉上移 .control（input 无边框后 border-color 不再可见） */
+:host([multiple][data-status='success']) .control {
+  border-color: var(--oas-color-success);
+}
+:host([multiple][data-status='warning']) .control {
+  border-color: var(--oas-color-warning);
+}
+:host([multiple][data-status='error']) .control,
+:host([multiple][aria-invalid='true']) .control {
+  border-color: var(--oas-color-danger);
+}
+:host([multiple]) .control:has(input:disabled) {
+  cursor: not-allowed;
+  background: var(--oas-color-bg-disabled);
+}
+/* max-tag-count 折叠模式：单行不换行、不出横向滚动条（未设置时默认换行自适应增高） */
+:host([multiple][max-tag-count]) .control {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+/* 已选标签（chip）：结构与视觉对齐 oas-select 的 .chip 契约 */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 20px;
+  max-width: 100%;
+  flex-shrink: 0;
+  gap: var(--oas-space-1);
+  background: var(--oas-color-bg-hover);
+  border-radius: var(--oas-radius-sm);
+  padding: 0 var(--oas-space-1);
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-primary);
+}
+.chip > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.chip[hidden] {
+  display: none;
+}
+.chip button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0 2px;
+  color: var(--oas-color-text-secondary);
+  font-size: 1em;
+  line-height: 1;
+}
+.chip button:hover {
+  color: var(--oas-color-text-primary);
+}
+.chip button:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+/* 折叠计数 chip：仅在显式设置 max-tag-count 且超量时插入 DOM */
+.chip-plus {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 20px;
+  flex-shrink: 0;
+  background: var(--oas-color-bg-hover);
+  border-radius: var(--oas-radius-sm);
+  padding: 0 var(--oas-space-1);
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+}
+.chip-plus[hidden] {
+  display: none;
+}
 /* clearable 时给清空按钮让位 */
 :host([clearable]) input {
   padding-inline-end: var(--oas-space-8, 40px);
@@ -260,9 +394,16 @@ export class OASCombobox extends OASFormElement {
       'virtual',
       'item-height',
       'readonly',
+      // multiple 多选（对齐 oas-select 多选语义：JSON 数组值 + chips + max-count/max-tag-count）
+      'multiple',
+      'max-count',
+      'max-tag-count',
       'disabled-skip',
       // required 仅驱动原生校验链（valueMissing）
       'required',
+      // name：多选 FormData「同名多条」的 entry key 在 syncFormValue 时按此读取，
+      // 运行时改名须重同步（同 oas-select）；无 name 浏览器不提交，单选值通道不受影响
+      'name',
       // autocomplete 透传内层 input（缺省回落 off：combobox 自绘下拉，浏览器自动补全默认关闭）
       'autocomplete',
     ]
@@ -272,6 +413,7 @@ export class OASCombobox extends OASFormElement {
   private dropdown: HTMLElement | null = null
   private listbox: HTMLElement | null = null
   private clearBtn: HTMLButtonElement | null = null
+  private controlEl: HTMLElement | null = null
   private vlist: OASVirtualList | null = null
   /** 移动端底部抽屉承载件（oas-bottom-sheet；PC 形态 passive 透传） */
   private sheetEl: OASBottomSheet | null = null
@@ -304,22 +446,33 @@ export class OASCombobox extends OASFormElement {
   }
 
   /**
-   * @apiProperty 当前值（公开读通道）：等价既有 getFormValue() 语义——选中值（`value` 属性）优先，
-   * 无选中时键入草稿兜底（datalist 语义），双空回落空串。注意 label/值分离：
+   * @apiProperty 当前值（公开读通道）：单选——等价既有 getFormValue() 语义，选中值（`value` 属性）
+   * 优先，无选中时键入草稿兜底（datalist 语义），双空回落空串。注意 label/值分离：
    * 输入框显示的是选中项 label，此处读的是受控值本身。
+   * 多选——选中值字符串数组（`value` 属性 JSON），无选中为空数组（草稿不参与多选取值）。
    */
-  get value(): string {
-    return this.getFormValue() ?? ''
+  get value(): string | string[] {
+    if (this.isMultiple()) return this.currentValues()
+    // 单选：等价 getFormValue() 单选分支（选中值优先，无选中时键入草稿兜底，双空空串）
+    const v = this.getAttr('value', '')
+    if (v !== '') return v
+    return this.query !== '' ? this.query : ''
   }
 
   /**
    * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性并走 revert() 路径——清键入
-   * 草稿、输入框按 labelOf(选中值) 回显（本组件既有的受控显示路径）。同值 `setAttribute`
-   * 不触发 attributeChangedCallback，revert() 保证赋值在任何情况下都生效。不派发任何事件。
+   * 草稿、单选按 labelOf(选中值) 回显（本组件既有的受控显示路径）、多选重渲 chips。
+   * 同值 `setAttribute` 不触发 attributeChangedCallback，revert() 保证赋值在任何情况下都
+   * 生效。不派发任何事件。
    */
-  set value(v: string) {
-    const next = v == null ? '' : String(v)
-    this.setAttribute('value', next)
+  set value(v: string | string[]) {
+    if (this.isMultiple()) {
+      const arr = Array.isArray(v) ? v.map((x) => String(x)) : v == null || v === '' ? [] : [String(v)]
+      this.setAttribute('value', JSON.stringify(arr))
+    } else {
+      const next = v == null || Array.isArray(v) ? '' : String(v)
+      this.setAttribute('value', next)
+    }
     this.revert()
   }
 
@@ -332,8 +485,10 @@ export class OASCombobox extends OASFormElement {
     return `
       <style>${STYLE}</style>
       <div class="wrapper" part="wrapper">
-        <input part="input" role="combobox" aria-haspopup="listbox" aria-autocomplete="list"
-          aria-expanded="false" aria-controls="combobox-list" autocomplete="off" />
+        <div class="control" part="control">
+          <input part="input" role="combobox" aria-haspopup="listbox" aria-autocomplete="list"
+            aria-expanded="false" aria-controls="combobox-list" autocomplete="off" />
+        </div>
         <button class="clear-btn" part="clear" type="button" hidden aria-label="">
           <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -355,6 +510,7 @@ export class OASCombobox extends OASFormElement {
     this.dropdown = this.shadow.querySelector('.dropdown')
     this.listbox = this.shadow.querySelector('.listbox')
     this.clearBtn = this.shadow.querySelector('.clear-btn')
+    this.controlEl = this.shadow.querySelector('.control')
     this.vlist = this.shadow.querySelector<OASVirtualList>('oas-virtual-list')
     // 移动端底部抽屉承载件：oas-close（下滑/backdrop/Esc）→ 同步收起
     this.sheetEl = this.shadow.querySelector<OASBottomSheet>('oas-bottom-sheet')
@@ -377,7 +533,7 @@ export class OASCombobox extends OASFormElement {
     ) => {
       const detail = e.detail
       if (detail && detail.item && detail.element) {
-        this.createOptionRow(detail.item, detail.index, this.getAttr('value', ''), detail.element)
+        this.createOptionRow(detail.item, detail.index, this.currentValues(), detail.element)
       }
     }) as EventListener)
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
@@ -422,10 +578,11 @@ export class OASCombobox extends OASFormElement {
     }
     this.prevOpen = open
 
-    const value = this.getAttr('value', '')
+    const multiple = this.isMultiple()
+    const values = this.currentValues()
     // form.reset 恢复基线：初始渲染/受控写入（非用户交互的属性变化）跟随 value 属性刷新；
-    // 用户交互置脏后基线冻结（空值映射为 null 基线）
-    if (!this.valueDirty) this.initialValue = value === '' ? null : value
+    // 用户交互置脏后基线冻结（空值/空数组映射为 null 基线）
+    if (!this.valueDirty) this.initialValue = values.length === 0 ? null : this.getAttr('value', '')
 
     // 尺寸/校验态镜像（size 就近读取 config-provider 注入，与全局密度联动）
     const size = normalizeChoice(this.injectValue('size', 'medium'), 'medium', VALID_SIZES)
@@ -443,22 +600,27 @@ export class OASCombobox extends OASFormElement {
     i.setAttribute('aria-label', placeholder)
     if (status === 'error') i.setAttribute('aria-invalid', 'true')
     else i.removeAttribute('aria-invalid')
-    // 受控 value 外部变化回填 label：仅未展开且未输入时覆盖（避免打断正在输入/过滤）
-    if (!open && this.query === '') {
-      const label = this.labelOf(value)
+    // 受控 value 外部变化回填 label：仅单选、未展开且未输入时覆盖（避免打断正在输入/过滤；
+    // 多选输入框只承载过滤词，已选状态由 chips 展示）
+    if (!multiple && !open && this.query === '') {
+      const label = this.labelOf(values[0] ?? '')
       if (i.value !== label) i.value = label
     }
     if (this.clearBtn) {
       this.clearBtn.setAttribute('aria-label', this.t('input.clear'))
-      this.clearBtn.hidden = !(this.hasAttr('clearable') && !disabled && value !== '')
+      // readonly 与 disabled 分立：只读值不可改，清空按钮一并隐藏（对齐 oas-select）
+      this.clearBtn.hidden = !(this.hasAttr('clearable') && !disabled && !readonly && values.length > 0)
     }
+    // 多选：已选 chips 增量重渲（readonly/disabled 不带移除按钮；max-tag-count 折叠）
+    if (multiple) this.syncChips(values, readonly || disabled)
 
     // 展开态同步：面板显隐 / aria / 列表渲染 / 定位
     this.dropdown?.classList.toggle('open', open)
     i.setAttribute('aria-expanded', String(open))
     if (open) {
-      // 高亮当前选中项（可见列表内），否则回到首项
-      const idx = this.visibleOptions().findIndex((o) => o.value === value)
+      // 高亮当前选中项（可见列表内），否则回到首项（多选取第一个已选项）
+      const firstSelected = values[0] ?? ''
+      const idx = this.visibleOptions().findIndex((o) => o.value === firstSelected)
       this.activeIndex = Math.max(idx, 0)
       this.renderListbox()
       if (opening) this.scrollActiveIntoView()
@@ -482,18 +644,33 @@ export class OASCombobox extends OASFormElement {
   }
 
   /**
-   * 表单值快照（form-associated）：选中值优先（value 属性）；无选中时草稿文本兜底
-   * （datalist 语义——草稿失焦经 revert() 丢弃、此处即回 null）；双空 → null（FormData 不含此项）
+   * 表单值快照（form-associated）：
+   * - 单选：选中值优先（value 属性）；无选中时草稿文本兜底（datalist 语义——草稿失焦经
+   *   revert() 丢弃、此处即回 null）；双空 → null（FormData 不含此项）
+   * - 多选：原生「同名多条」语义——返回含多条同名 entry 的 FormData（key 取 name 属性），
+   *   无选中 → null（草稿不参与多选取值，值恒来自选项集合）；**无 name 亦返回 null**——
+   *   FormData 通道由组件自建 entry，不受浏览器「无 name 不提交」兜底保护，须显式拦下避免空名 entry
    */
-  protected override getFormValue(): string | null {
+  protected override getFormValue(): string | FormData | null {
+    if (this.isMultiple()) {
+      const values = this.currentValues()
+      if (values.length === 0) return null
+      const name = this.getAttr('name', '')
+      if (name === '') return null
+      const fd = new FormData()
+      for (const v of values) fd.append(name, v)
+      return fd
+    }
     const v = this.getAttr('value', '')
     if (v !== '') return v
     return this.query !== '' ? this.query : null
   }
 
-  /** 原生校验链同步：required 且无选中且无草稿 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  /** 原生校验链同步：required 判空——多选按选中集是否为空，单选/草稿按 getFormValue（无 name 不参与，见上） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.getFormValue() === null) {
+    // 多选不能用 getFormValue()===null 作判据：无 name 时它恒为 null，会把「有选中」误判 valueMissing
+    const missing = this.isMultiple() ? this.currentValues().length === 0 : this.getFormValue() === null
+    if (this.hasAttr('required') && missing) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})
@@ -506,7 +683,10 @@ export class OASCombobox extends OASFormElement {
     this.query = ''
     if (this.initialValue === null) this.removeAttribute('value')
     else this.setAttribute('value', this.initialValue)
-    if (this.input) this.input.value = this.initialValue === null ? '' : this.labelOf(this.initialValue)
+    if (this.input) {
+      if (this.isMultiple()) this.input.value = ''
+      else this.input.value = this.initialValue === null ? '' : this.labelOf(this.initialValue)
+    }
     this.syncFormValue()
     this.syncValidity()
   }
@@ -534,6 +714,102 @@ export class OASCombobox extends OASFormElement {
   private labelOf(value: string): string {
     if (value === '') return ''
     return this._options.find((o) => o.value === value)?.label ?? value
+  }
+
+  /** 多选形态判定（multiple 属性在场） */
+  private isMultiple(): boolean {
+    return this.hasAttr('multiple')
+  }
+
+  /** 当前选中值数组：多选解析 value 属性 JSON（非法/非数组回落空）；单选为 0/1 元素 */
+  private currentValues(): string[] {
+    const raw = this.getAttr('value', this.isMultiple() ? '[]' : '')
+    if (this.isMultiple()) {
+      try {
+        const parsed: unknown = JSON.parse(raw)
+        return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []
+      } catch {
+        return []
+      }
+    }
+    return raw === '' ? [] : [raw]
+  }
+
+  /** 值数组反查完整 option 对象（label/value/group/disabled 全量；未匹配为 null，宿主无需再反查） */
+  private optionsOf(values: string[]): Array<Option | null> {
+    return values.map((v) => this._options.find((o) => o.value === v) ?? null)
+  }
+
+  /** max-count 多选上限（仅 multiple 生效；未设置/非法/<=0 视为无上限；单选行为不变） */
+  private maxCountLimit(): number | null {
+    if (!this.isMultiple()) return null
+    const raw = this.getAttr('max-count', '').trim()
+    if (raw === '') return null
+    const n = Number.parseInt(raw, 10)
+    return !Number.isNaN(n) && n >= 1 ? n : null
+  }
+
+  /** 多选已达上限（已选项仍可取消，未选项禁止新增） */
+  private limitReached(): boolean {
+    const max = this.maxCountLimit()
+    return max !== null && this.currentValues().length >= max
+  }
+
+  /** 上限拦截：超限时未选项的新增一律拒绝并派发 oas-exceed-limit（detail: { value, max }） */
+  private blockedByLimit(value: string): boolean {
+    if (!this.limitReached() || this.currentValues().includes(value)) return false
+    this.emit('exceed-limit', { value, max: this.maxCountLimit() })
+    return true
+  }
+
+  /**
+   * 多选已选 chips 增量重渲：先移除旧 chip，再按选中序插到 input 之前（保持输入框兜底居后）。
+   * noRemove 时不带移除按钮（readonly 值只读、disabled 不可交互，均与 oas-select 的分立语义一致）；
+   * max-tag-count 显式设置时超量折叠为 +N chip（title 汇总被折叠 label）。
+   */
+  private syncChips(values: string[], noRemove: boolean): void {
+    const control = this.controlEl
+    const input = this.input
+    if (!control || !input) return
+    for (const old of [...control.querySelectorAll<HTMLElement>('.chip')]) old.remove()
+    // max-tag-count：仅显式设置时才按数量折叠；未设置时标签默认换行展示
+    const rawLimit = this.getAttr('max-tag-count', '').trim()
+    const limitN = rawLimit === '' ? Number.POSITIVE_INFINITY : Number.parseInt(rawLimit, 10)
+    const limit = rawLimit !== '' && !Number.isNaN(limitN) && limitN >= 0 ? limitN : Number.POSITIVE_INFINITY
+    const shown = values.slice(0, limit)
+    const allLabels = values.map((v) => this.labelOf(v))
+    for (const v of shown) {
+      const label = this.labelOf(v)
+      const chip = document.createElement('span')
+      chip.className = 'chip'
+      chip.setAttribute('part', 'chip')
+      const labelEl = document.createElement('span')
+      labelEl.className = 'chip-label'
+      labelEl.textContent = label
+      chip.appendChild(labelEl)
+      if (!noRemove) {
+        const rm = document.createElement('button')
+        rm.setAttribute('aria-label', this.t('select.remove', { label }))
+        rm.textContent = '×'
+        // 与 dropdown/clear-btn 同纪律：mousedown preventDefault 阻止默认失焦——
+        // 否则点移除钮先 blur input（handleBlur → closePanel），面板在移除生效前意外收起
+        rm.addEventListener('mousedown', (e: MouseEvent) => e.preventDefault())
+        rm.addEventListener('click', (e: MouseEvent) => {
+          e.stopPropagation()
+          this.removeValue(v)
+        })
+        chip.appendChild(rm)
+      }
+      control.insertBefore(chip, input)
+    }
+    // 折叠计数 chip：仅在显式设置 max-tag-count 且有折叠时插入
+    if (rawLimit !== '' && values.length > shown.length) {
+      const plus = document.createElement('span')
+      plus.className = 'chip chip-plus'
+      plus.textContent = `+${values.length - shown.length}`
+      plus.setAttribute('title', allLabels.slice(shown.length).join('、'))
+      control.insertBefore(plus, input)
+    }
   }
 
   private parseOptions(): void {
@@ -570,7 +846,7 @@ export class OASCombobox extends OASFormElement {
     if (this.hasAttr('open')) this.removeAttribute('open')
   }
 
-  /** 失焦/Esc/点击外部时回退为当前选中项 label（默认非破坏），并丢弃未提交的过滤词 */
+  /** 失焦/Esc/点击外部时回退：单选恢复为当前选中项 label（默认非破坏）；多选仅丢弃过滤词（输入框清空） */
   private handleBlur(): void {
     if (this.injectDisabled()) return
     this.revert()
@@ -580,6 +856,12 @@ export class OASCombobox extends OASFormElement {
   private revert(): void {
     if (!this.input) return
     this.query = ''
+    if (this.isMultiple()) {
+      this.input.value = ''
+      this.syncFormValue()
+      this.syncValidity()
+      return
+    }
     this.input.value = this.labelOf(this.getAttr('value', ''))
     // 草稿丢弃是值变化点（datalist 语义下草稿曾是表单值的一部分）
     this.syncFormValue()
@@ -632,8 +914,33 @@ export class OASCombobox extends OASFormElement {
     if (option && !option.disabled) this.selectValue(option)
   }
 
-  /** 选中：value 置 option.value（受控属性）、输入框显示 label、关闭下拉并派发 oas-change */
+  /**
+   * 选中：
+   * - 单选——value 置 option.value（受控属性）、输入框显示 label、关闭下拉并派发 oas-change
+   *   （detail: { value }，既有口径不变）。
+   * - 多选——toggle 语义（再点已选项取消）；面板保持展开、过滤词清空；oas-change detail
+   *   对齐 oas-select 多选口径（{ value: string[], options: Array<Option|null> }）；
+   *   max-count 达上限时未选项拒绝新增并派发 oas-exceed-limit。
+   */
   private selectValue(option: Option): void {
+    if (this.isMultiple()) {
+      const current = this.currentValues()
+      const adding = !current.includes(option.value)
+      // 上限拦截放最前：被拒时不得污染 query/valueDirty（对齐 oas-select 在 selectValue 之前拦截）
+      if (adding && this.blockedByLimit(option.value)) return
+      // 用户选择置脏：冻结 reset 基线（须在 setAttribute 之前，防止 update 把基线刷成新值）
+      this.valueDirty = true
+      this.query = ''
+      const next = adding ? [...current, option.value] : current.filter((v) => v !== option.value)
+      this.setAttribute('value', JSON.stringify(next))
+      if (this.input) this.input.value = ''
+      this.emit('change', { value: next, options: this.optionsOf(next) })
+      // 保持面板展开（多选连续挑选），列表按新选中态重渲
+      this.renderListbox()
+      this.syncFormValue()
+      this.syncValidity()
+      return
+    }
     // 用户选择置脏：冻结 reset 基线（须在 setAttribute 之前，防止 update 把基线刷成新值）
     this.valueDirty = true
     this.query = ''
@@ -646,20 +953,41 @@ export class OASCombobox extends OASFormElement {
     this.syncValidity()
   }
 
-  /** clearable：清空 value 并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值） */
+  /** chip 移除按钮：移除单个已选值（多选专用），事件口径与选中 toggle 一致 */
+  private removeValue(value: string): void {
+    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    this.valueDirty = true
+    const next = this.currentValues().filter((v) => v !== value)
+    this.setAttribute('value', JSON.stringify(next))
+    this.emit('change', { value: next, options: this.optionsOf(next) })
+    this.syncFormValue()
+    this.syncValidity()
+  }
+
+  /** clearable：清空值并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值口径随模式）；readonly 拦截（值只读不可改） */
   private clearValue(): void {
-    if (this.injectDisabled()) return
+    if (this.injectDisabled() || this.hasAttr('readonly')) return
     // 用户清空置脏：reset 应恢复清空前的基线（对齐原生「用户交互不改默认值」）
     this.valueDirty = true
-    const prev = this.getAttr('value', '')
+    const prev = this.currentValues()
     this.query = ''
+    if (this.isMultiple()) {
+      this.setAttribute('value', '[]')
+      if (this.input) this.input.value = ''
+      this.emit('clear', { value: [...prev] })
+      this.emit('change', { value: [], options: [] })
+      this.renderListbox()
+      this.syncFormValue()
+      this.syncValidity()
+      return
+    }
     this.closePanel()
     this.removeAttribute('value')
     if (this.input) {
       this.input.value = ''
       this.input.focus()
     }
-    this.emit('clear', { value: prev })
+    this.emit('clear', { value: prev[0] ?? '' })
     this.emit('change', { value: '' })
     // value 属性原本不在场时 removeAttribute 不触发 update，兜底同步
     this.syncFormValue()
@@ -725,7 +1053,7 @@ export class OASCombobox extends OASFormElement {
     }
 
     this.setVirtualVisible(false)
-    const value = this.getAttr('value', '')
+    const selected = this.currentValues()
     let prevGroup: string | undefined
     let idx = 0
     for (const option of list) {
@@ -737,21 +1065,27 @@ export class OASCombobox extends OASFormElement {
         listbox.appendChild(groupEl)
       }
       prevGroup = option.group
-      this.createOptionRow(option, idx, value, listbox)
+      this.createOptionRow(option, idx, selected, listbox)
       idx++
     }
     this.syncActive()
   }
 
-  /** 构建一个选项行（角色/aria/高亮/点击/增量 mousemove），非虚拟与虚拟（vlist oas-item）两路共用 */
-  private createOptionRow(option: Option, optionIdx: number, value: string, container: HTMLElement): void {
+  /**
+   * 构建一个选项行（角色/aria/高亮/点击/增量 mousemove），非虚拟与虚拟（vlist oas-item）两路共用。
+   * selected 驱动 aria-selected（多选多项为 true）；max-count 达上限时未选项渲染 aria-disabled
+   * （置灰拦截，已选项仍可取消）——只读渲染，不在此处派发 exceed-limit（该事件只在实际交互时发）。
+   */
+  private createOptionRow(option: Option, optionIdx: number, selected: string[], container: HTMLElement): void {
+    const isSelected = selected.includes(option.value)
+    const blockedByLimit = !isSelected && this.limitReached()
     const row = document.createElement('div')
     row.className = 'option'
     if (option.group !== undefined) row.classList.add('grouped')
     row.setAttribute('part', 'option')
     row.setAttribute('role', 'option')
-    row.setAttribute('aria-selected', String(option.value === value))
-    row.setAttribute('aria-disabled', String(option.disabled ?? false))
+    row.setAttribute('aria-selected', String(isSelected))
+    row.setAttribute('aria-disabled', String(option.disabled || blockedByLimit))
     row.id = `combobox-option-${optionIdx}` // aria-activedescendant 锚点（shadow 内 id 作用域隔离）
     row.setAttribute('data-index', String(optionIdx))
     if (optionIdx === this.activeIndex) row.classList.add('active')
@@ -854,7 +1188,9 @@ export class OASCombobox extends OASFormElement {
   private positionDropdown(): void {
     if (!this.dropdown || !this.input) return
     if (this.isMobileSheet()) return // 移动形态由 bottom-sheet 承载，跳过 fixed 锚定
-    const anchorRect = this.input.getBoundingClientRect()
+    // 多选形态锚定控件容器（chips + input 同居的描边盒子；display:contents 单选态无盒，仍锚 input）
+    const anchor: HTMLElement = this.isMultiple() && this.controlEl ? this.controlEl : this.input
+    const anchorRect = anchor.getBoundingClientRect()
     // 先撑宽再测量/定位：dropdown 为 auto 宽度，撑宽前测会按固有宽度算 left → 首次展开偏右。
     this.dropdown.style.width = `${anchorRect.width}px`
     const panelRect = this.dropdown.getBoundingClientRect()

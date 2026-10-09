@@ -143,6 +143,28 @@
   </oas-space>
 </DemoBlock>
 
+## 组级形态（variant）
+
+`variant` 组级形态透传各切换项（对齐 `oas-button` 的 variant 体系）：`solid`（默认，描边容器、选中实底）/ `outlined`（透明底描边，选中主色描边 + 淡底着色）/ `filled`（浅底无描边，选中实底）/ `text`（无框无底，选中淡底 + 主色文字）。非法值静默回落 `solid`；与 `attached` / `vertical` / `color` / `status` 正交（status 语义色优先）。视图切换、富文本样式组适合 `attached + solid`，筛选面板适合 `filled` 或 `outlined`：
+
+<DemoBlock title="四种形态（选中态对照）">
+  <oas-space size="small" direction="vertical">
+    <oas-space size="small">
+      <oas-toggle-group value="day" aria-label="solid 形态" items='[{"label":"日","value":"day"},{"label":"周","value":"week"},{"label":"月","value":"month"}]'></oas-toggle-group>
+      <oas-toggle-group variant="outlined" value="day" aria-label="outlined 形态" items='[{"label":"日","value":"day"},{"label":"周","value":"week"},{"label":"月","value":"month"}]'></oas-toggle-group>
+    </oas-space>
+    <oas-space size="small">
+      <oas-toggle-group variant="filled" value="day" aria-label="filled 形态" items='[{"label":"日","value":"day"},{"label":"周","value":"week"},{"label":"月","value":"month"}]'></oas-toggle-group>
+      <oas-toggle-group variant="text" value="day" aria-label="text 形态" items='[{"label":"日","value":"day"},{"label":"周","value":"week"},{"label":"月","value":"month"}]'></oas-toggle-group>
+    </oas-space>
+    <oas-space size="small">
+      <oas-toggle-group variant="outlined" attached value="bold" aria-label="outlined 贴合形态" items='[{"label":"加粗","value":"bold"},{"label":"斜体","value":"italic"},{"label":"下划线","value":"underline"}]'></oas-toggle-group>
+      <oas-toggle-group id="tg-variant-filled" variant="filled" multiple aria-label="filled 多选形态" items='[{"label":"左对齐","value":"left"},{"label":"居中","value":"center"},{"label":"右对齐","value":"right"}]'></oas-toggle-group>
+    </oas-space>
+    <span id="tg-variant-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">对齐: []</span>
+  </oas-space>
+</DemoBlock>
+
 ## 满宽均分（spread）
 
 `spread` 布尔属性使组占满父容器宽度、选项等宽均分（移动端操作栏 / 筛选条形态）；纵向组同样占满宽度：
@@ -331,9 +353,17 @@ onMounted(() => {
   })
   max?.addEventListener('oas-exceed-limit', (e) => {
     if (maxOut) {
-      maxOut.textContent = `已达上限（${e.detail.max} 项），先取消一项再选「${e.detail.value}」`
+      maxOut.textContent = `已达上限（${e.detail.max} 项），请先取消一项再选「${e.detail.value}」`
       maxOut.style.color = 'var(--oas-color-warning)'
     }
+  })
+
+  // 组级形态 demo：filled 多选 + 可见反馈
+  const variantFilled = document.getElementById('tg-variant-filled')
+  const variantOut = document.getElementById('tg-variant-out')
+  variantFilled?.addEventListener('oas-change', (e) => {
+    variantFilled.setAttribute('value', JSON.stringify(e.detail.value))
+    if (variantOut) variantOut.textContent = `对齐: ${JSON.stringify(e.detail.value)}`
   })
 
   // 表单校验：提交时按选中态切换 status，给出可见反馈
@@ -374,6 +404,7 @@ onMounted(() => {
 | `spread` | 满宽等分（对齐 button-group 的 spread） | — | — |
 | `status` | 校验态：`error` / `warning` / `success`（未选项边框色 + 选中项整块着色） | `string` | — |
 | `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | `string \| string[]` | `[]` |
+| `variant` | 组级形态透传各切换项（对齐 button variant 体系）：`solid`（默认，描边容器、选中实底）/ `outlined`（透明底描边，选中主色描边 + 淡底）/ `filled`（浅底无描边，选中实底）/ `text`（无框无底，选中淡底 + 主色文字）；非法值静默回落 solid；与 attached/vertical 正交 | `string` | — |
 | `vertical` | 纵向排列（联动 aria-orientation 与轴向键） | `boolean` | — |
 
 #### Property（仅 JS property，不反射 attribute）

@@ -112,6 +112,35 @@
   <oas-switch status="error"></oas-switch>
 </DemoBlock>
 
+## 描述（description）
+
+`description` 在标签下方渲染一行弱化副文本，说明开关的业务含义（与 `oas-checkbox` / `oas-radio` 的 description 契约一致）；`slot[name="description"]` 富内容优先于属性文本：
+
+<DemoBlock title="描述副文本">
+  <oas-space direction="vertical" size="small">
+    <oas-switch label="消息通知" description="接收产品动态与运营消息"></oas-switch>
+    <oas-switch label="自动更新" checked description="保持系统为最新版本"></oas-switch>
+    <oas-switch label="富描述">
+      自定义内容
+      <span slot="description">支持 <b>HTML</b> 富文本描述</span>
+    </oas-switch>
+  </oas-space>
+</DemoBlock>
+
+## 卡片形态（variant=card）
+
+`variant="card"` 把开关升级为选择卡：描边容器包住拨杆 + 标签 + 描述，**整卡可点**（点击卡片任意位置切换）、选中时描边着主色并带浅色底（与 `oas-checkbox` / `oas-radio` 的选择卡同视觉语言）；`disabled` / `status` 校验态同样作用于卡片描边。适合设置页的逐项开关列表：
+
+<DemoBlock title="卡片形态">
+  <oas-space direction="vertical" size="small" style="width: 360px">
+    <oas-switch id="sw-card" variant="card" label="云端同步" description="更改将自动保存到云端"></oas-switch>
+    <oas-switch variant="card" label="仅在 Wi-Fi 下同步" description="移动数据下暂停" checked></oas-switch>
+    <oas-switch variant="card" label="禁用卡" description="不可切换" disabled checked></oas-switch>
+    <oas-switch variant="card" label="校验失败" description="开启前需先完成安全验证" status="error"></oas-switch>
+  </oas-space>
+  <span id="sw-card-out" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## 宽度自定义
 
 `--oas-switch-width` / `--oas-switch-height` / `--oas-switch-thumb-size` CSS 变量覆盖尺寸档的轨道宽 / 高 / 滑块大小（跨尺寸档生效）：
@@ -170,6 +199,15 @@ onMounted(() => {
   el?.addEventListener('oas-blur', () => {
     out.textContent = 'oas-blur'
   })
+
+  // 卡片形态 demo：真切换 + 可见反馈
+  const cardEl = document.getElementById('sw-card')
+  const cardOut = document.getElementById('sw-card-out')
+  const renderCard = () => {
+    if (cardOut) cardOut.textContent = `云端同步：${cardEl?.hasAttribute('checked') ? '已开启' : '已关闭'}`
+  }
+  cardEl?.addEventListener('oas-change', renderCard)
+  renderCard()
 })
 </script>
 
@@ -194,6 +232,7 @@ onMounted(() => {
 | `checked-icon` | 选中态滑块图标（oas-icon 图标名） | `string` | — |
 | `checked-text` | 开启时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | — | — |
 | `color` | 开启态自定义主色，覆盖 `--oas-color-primary`（CSS 颜色值） | — | — |
+| `description` | 描述副文本（label 下方的次级说明；slot[name=description] 富内容优先于属性文本），与 checkbox/radio 的 description 契约一致 | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `false-value` | 未选中时的映射值 | `string` | — |
 | `label` | 标签文本（label 通道，点击标签切换；slot 同名插槽可传富内容） | `string` | — |
@@ -205,6 +244,7 @@ onMounted(() => {
 | `true-value` | 选中时的映射值（读 value getter 取映射值） | `string` | — |
 | `unchecked-icon` | 未选中态滑块图标 | `string` | — |
 | `unchecked-text` | 关闭时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | — | — |
+| `variant` | 形态：`default`（默认拨杆）/ `card`（卡片：描边容器包住拨杆 + 标签 + 描述，整卡可点、选中描边着色，对齐 checkbox/radio 选择卡）；非法值静默回落 default | `string` | — |
 
 #### 事件
 
@@ -219,6 +259,7 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 开关内容（文案 / 富内容） |
+| `description` | 描述副文本富内容（优先于 description 属性文本） |
 
 #### CSS 变量
 

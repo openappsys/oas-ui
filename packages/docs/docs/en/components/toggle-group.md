@@ -143,6 +143,28 @@ The default is **detached** (a gap between buttons, each with its own radius —
   </oas-space>
 </DemoBlock>
 
+## Group Variant (variant)
+
+The `variant` group-level variant passes through to every toggle item (aligned with the `oas-button` variant system): `solid` (default, bordered box, selected = solid fill) / `outlined` (transparent background with border; selected = primary border + faint tint) / `filled` (soft tinted background, no border; selected = solid fill) / `text` (no border or background; selected = faint tint + primary text). Invalid values silently fall back to `solid`; orthogonal to `attached` / `vertical` / `color` / `status` (status colors win). View switches and rich-text style groups suit `attached + solid`; filter panels suit `filled` or `outlined`:
+
+<DemoBlock title="Four variants (selected-state comparison)">
+  <oas-space size="small" direction="vertical">
+    <oas-space size="small">
+      <oas-toggle-group value="day" aria-label="solid variant" items='[{"label":"Day","value":"day"},{"label":"Week","value":"week"},{"label":"Month","value":"month"}]'></oas-toggle-group>
+      <oas-toggle-group variant="outlined" value="day" aria-label="outlined variant" items='[{"label":"Day","value":"day"},{"label":"Week","value":"week"},{"label":"Month","value":"month"}]'></oas-toggle-group>
+    </oas-space>
+    <oas-space size="small">
+      <oas-toggle-group variant="filled" value="day" aria-label="filled variant" items='[{"label":"Day","value":"day"},{"label":"Week","value":"week"},{"label":"Month","value":"month"}]'></oas-toggle-group>
+      <oas-toggle-group variant="text" value="day" aria-label="text variant" items='[{"label":"Day","value":"day"},{"label":"Week","value":"week"},{"label":"Month","value":"month"}]'></oas-toggle-group>
+    </oas-space>
+    <oas-space size="small">
+      <oas-toggle-group variant="outlined" attached value="bold" aria-label="outlined attached variant" items='[{"label":"Bold","value":"bold"},{"label":"Italic","value":"italic"},{"label":"Underline","value":"underline"}]'></oas-toggle-group>
+      <oas-toggle-group id="tg-variant-filled" variant="filled" multiple aria-label="filled multiple variant" items='[{"label":"Left","value":"left"},{"label":"Center","value":"center"},{"label":"Right","value":"right"}]'></oas-toggle-group>
+    </oas-space>
+    <span id="tg-variant-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Align: []</span>
+  </oas-space>
+</DemoBlock>
+
 ## Spread (spread)
 
 The `spread` boolean makes the group fill the parent width with equal-width items (mobile action bars / filter bars); vertical groups also fill the width:
@@ -336,6 +358,14 @@ onMounted(() => {
     }
   })
 
+  // group variant demo: filled multiple + visible feedback
+  const variantFilled = document.getElementById('tg-variant-filled')
+  const variantOut = document.getElementById('tg-variant-out')
+  variantFilled?.addEventListener('oas-change', (e) => {
+    variantFilled.setAttribute('value', JSON.stringify(e.detail.value))
+    if (variantOut) variantOut.textContent = `Align: ${JSON.stringify(e.detail.value)}`
+  })
+
   // Form validation: switch status on submit with visible feedback
   const status = document.getElementById('tg-status')
   const statusMsg = document.getElementById('tg-status-msg')
@@ -374,6 +404,7 @@ onMounted(() => {
 | `spread` | Full-width equal split (aligned with button-group spread) | — | — |
 | `status` | Validation status: `error` / `warning` / `success` (unselected border + selected block tint) | `string` | — |
 | `value` | Current value: string for single; JSON array string for multiple | `string \| string[]` | `[]` |
+| `variant` | Group-level variant passthrough to items (aligned with the button variant system): `solid` (default, bordered box, selected = solid fill) / `outlined` (transparent bg + border; selected = colored border + faint tint) / `filled` (soft tinted bg, no border; selected = solid fill) / `text` (no border/background; selected = faint tint + colored text); invalid values silently fall back to solid; orthogonal to attached/vertical | `string` | — |
 | `vertical` | Vertical arrangement (mirrors aria-orientation and axis keys) | `boolean` | — |
 
 #### Property (JS property only, not reflected as attribute)

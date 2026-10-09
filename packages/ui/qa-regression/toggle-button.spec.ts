@@ -75,3 +75,91 @@ test('toggle-button 亮度自适应文字色与尺寸档：亮底自动深字、
   expect(r.small, 'size="small" 控高 24px（--oas-control-height-sm）').toBe('24px')
   expect(r.large, 'size="large" 控高 40px（--oas-control-height-lg）').toBe('40px')
 })
+
+// ---- variant 形态批次：三形态真点切换 + demo 反馈可见（对齐 button variant 体系）----
+
+test('toggle-button variant：outlined/filled/text 真点切换 + 反馈文本可见（disabled 不切换）', async ({ page }) => {
+  await page.goto('/components/toggle-button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tb-variant-outlined')
+  await page.locator('#tb-variant-outlined').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(300) // 等 demo 宿主挂事件监听
+
+  const pressedOf = (id: string) =>
+    page.evaluate((sel) => document.querySelector(`#${sel}`)!.hasAttribute('pressed'), id)
+
+  // outlined：点击 → pressed 翻转 + 反馈文本
+  await page.locator('#tb-variant-outlined').click()
+  await expect.poll(() => pressedOf('tb-variant-outlined')).toBe(true)
+  await expect(page.locator('#tb-variant-out')).toContainText('value: mark')
+  await expect(page.locator('#tb-variant-out')).toContainText('pressed: true')
+  await page.locator('#tb-variant-outlined').click()
+  await expect.poll(() => pressedOf('tb-variant-outlined')).toBe(false)
+  await expect(page.locator('#tb-variant-out')).toContainText('pressed: false')
+
+  // filled / text：同样真点切换
+  await page.locator('#tb-variant-filled').click()
+  await expect.poll(() => pressedOf('tb-variant-filled')).toBe(true)
+  await page.locator('#tb-variant-text').click()
+  await expect.poll(() => pressedOf('tb-variant-text')).toBe(true)
+  await expect(page.locator('#tb-variant-out')).toContainText('value: pin')
+})
+
+test('toggle-button variant 形态静态断言：data-variant 镜像 + 按下态 aria（对照 demo 块）', async ({ page }) => {
+  await page.goto('/components/toggle-button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-toggle-button[variant="outlined"][pressed]')
+  const r = await page.evaluate(() => {
+    const grab = (sel: string) => {
+      const el = document.querySelector(sel)!
+      return {
+        variant: el.getAttribute('data-variant'),
+        ariaPressed: el.shadowRoot!.querySelector('button')!.getAttribute('aria-pressed'),
+      }
+    }
+    return {
+      outlinedPressed: grab('oas-toggle-button[variant="outlined"][value="v-outlined-on"]'),
+      filledPressed: grab('oas-toggle-button[variant="filled"][value="v-filled-on"]'),
+      textPressed: grab('oas-toggle-button[variant="text"][value="v-text-on"]'),
+      solidDefault: grab('oas-toggle-button[value="v-solid"]'),
+    }
+  })
+  expect(r.outlinedPressed).toEqual({ variant: 'outlined', ariaPressed: 'true' })
+  expect(r.filledPressed).toEqual({ variant: 'filled', ariaPressed: 'true' })
+  expect(r.textPressed).toEqual({ variant: 'text', ariaPressed: 'true' })
+  expect(r.solidDefault).toEqual({ variant: 'solid', ariaPressed: 'false' })
+})
+
+// 回归（二轮 review）：config-provider 全局禁用注入——与 toggle-group/oas-button 同通道，
+// 修复前只读自身 disabled 属性，provider 注入失效（同批组件行为漂移）。
+test('toggle-button 全局禁用注入：provider disabled 继承禁用 + disabled-skip 逃逸 + 移除恢复', async ({ page }) => {
+  await page.goto('/components/toggle-button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-toggle-button')
+  const r = await page.evaluate(() => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const mk = (skip: boolean) => {
+      const el = document.createElement('oas-toggle-button')
+      el.textContent = '注入按钮'
+      if (skip) el.setAttribute('disabled-skip', '')
+      cp.appendChild(el)
+      return el
+    }
+    const plain = mk(false)
+    const escaped = mk(true)
+    document.body.appendChild(cp)
+    return new Promise<{ before: [boolean, boolean]; after: boolean; clicked: boolean }>((resolve) => {
+      requestAnimationFrame(() => {
+        const btnOf = (el: Element) => el.shadowRoot!.querySelector('button') as HTMLButtonElement
+        const before = [btnOf(plain).disabled, btnOf(escaped).disabled] as [boolean, boolean]
+        let clicked = false
+        plain.addEventListener('oas-change', () => (clicked = true))
+        btnOf(plain).click()
+        cp.removeAttribute('disabled')
+        requestAnimationFrame(() => resolve({ before, after: btnOf(plain).disabled, clicked }))
+      })
+    })
+  })
+  expect(r.before[0], 'provider disabled → 继承禁用').toBe(true)
+  expect(r.before[1], 'provider disabled + disabled-skip → 逃逸保持可用').toBe(false)
+  expect(r.clicked, 'provider disabled 时点击不派发 oas-change').toBe(false)
+  expect(r.after, 'provider 移除 disabled → 恢复可用').toBe(false)
+})

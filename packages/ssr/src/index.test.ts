@@ -566,7 +566,7 @@ describe('@oas-ui/ssr renderToString', () => {
 
   it('oas-toggle-button：pressed 同步 aria-pressed', async () => {
     const html = await renderToString('oas-toggle-button', { pressed: '', value: 'a' }, '白天')
-    expect(html).toContain('<oas-toggle-button pressed="" value="a" data-size="medium">')
+    expect(html).toContain('<oas-toggle-button pressed="" value="a" data-size="medium" data-variant="solid">')
     expect(html).toContain('aria-pressed="true"')
     expect(html).toContain('</template>白天</oas-toggle-button>')
   })

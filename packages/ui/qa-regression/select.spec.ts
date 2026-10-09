@@ -488,4 +488,57 @@ test('select reserve-width：锁宽生效且真切换选中值后触发器宽度
     .toBe('c')
   const widthAfter = await page.locator('#sel-reserve').evaluate((node) => node.getBoundingClientRect().width)
   expect(Math.abs(widthAfter - widthBefore)).toBeLessThanOrEqual(1)
+// 回归（二轮 review）：多选无 name 不注入空名 entry——FormData 通道由组件自建 entry，
+// 不受浏览器「无 name 不提交」兜底保护，须显式拦下（对齐 combobox 同款拦截）。
+// 用真实 <form> + FormData(form) 收集，走浏览器 FACE 原生提交链路验证。
+test('select 多选无 name：真实 FormData 收集零 entry（不出现空名 entry 污染）', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-select[multiple]')
+  const r = await page.evaluate(() => {
+    const build = (name?: string) => {
+      const el = document.createElement('oas-select')
+      el.setAttribute('multiple', '')
+      if (name) el.setAttribute('name', name)
+      el.setAttribute('value', '["apple","banana"]')
+      const form = document.createElement('form')
+      form.appendChild(el)
+      document.body.appendChild(form)
+      return form
+    }
+    const named = build('tags')
+    const nameless = build()
+    return {
+      named: [...new FormData(named).entries()],
+      nameless: [...new FormData(nameless).entries()],
+    }
+  })
+  expect(r.named, '有 name → 同名多条 entry').toEqual([
+    ['tags', 'apple'],
+    ['tags', 'banana'],
+  ])
+  expect(r.nameless, '无 name → 零 entry（不出现 ["", "apple"] 空名污染）').toEqual([])
+})
+
+// 回归（二轮 review）：多选无 name + required + 有选中不误报 valueMissing——
+// 校验按选中集判定，不按 FormData null（无 name 时 getFormValue 恒 null 的连带坑）。
+test('select 多选无 name + required + 有选中：不误报 valueMissing（checkValidity 通过）', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-select[multiple]')
+  const r = await page.evaluate(() => {
+    const el = document.createElement('oas-select')
+    el.setAttribute('multiple', '')
+    el.setAttribute('required', '')
+    el.setAttribute('value', '["apple"]')
+    document.body.appendChild(el)
+    return new Promise<{ valid: boolean; emptyValid: boolean }>((resolve) => {
+      requestAnimationFrame(() => {
+        const face = el as HTMLElement & { checkValidity(): boolean }
+        const valid = face.checkValidity()
+        el.setAttribute('value', '[]')
+        requestAnimationFrame(() => resolve({ valid, emptyValid: face.checkValidity() }))
+      })
+    })
+  })
+  expect(r.valid, '有选中（无 name）→ 校验通过').toBe(true)
+  expect(r.emptyValid, '清空后 → valueMissing 生效').toBe(false)
 })

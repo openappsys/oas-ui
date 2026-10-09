@@ -4,6 +4,8 @@ import { normalizeSize, THREE_SIZES } from '../../shared/size.js'
 
 export type ToggleButtonSize = 'small' | 'medium' | 'large'
 export type ToggleButtonStatus = 'success' | 'warning' | 'error'
+/** variant 形态（对齐 button variant 体系，取切换语义有意义的子集）：solid 实底 / outlined 描边 / filled 浅底 / text 纯文字 */
+const VALID_VARIANTS = ['solid', 'outlined', 'filled', 'text'] as const
 
 const VALID_STATUSES: readonly ToggleButtonStatus[] = ['success', 'warning', 'error']
 /** 预设色板名（ui-spec §4.1 color 协议，映射 --oas-preset-* token） */
@@ -122,6 +124,50 @@ button.icon-only {
   font-size: var(--oas-font-size-lg);
   padding-inline: var(--oas-space-5);
 }
+/* ===== variant 形态维度（正交 pressed 选中态与 status 语义色；status 规则置于其后按源顺序胜出）=====
+   solid 为默认不加 data-variant 形态样式；outlined 透明底描边、filled 浅底无描边、text 无框无底 */
+:host([data-variant='outlined']) button {
+  background: transparent;
+}
+:host([data-variant='outlined']) button:hover:not([disabled]) {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 8%, transparent);
+}
+:host([data-variant='outlined']) button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 10%, transparent);
+  border-color: var(--oas-toggle-color, var(--oas-color-primary));
+  color: var(--oas-toggle-color, var(--oas-color-primary));
+}
+:host([data-variant='filled']) button {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 12%, transparent);
+  border-color: transparent;
+}
+:host([data-variant='filled']) button:hover:not([disabled]) {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 18%, transparent);
+}
+:host([data-variant='filled']) button[aria-pressed='true'] {
+  background: var(--oas-toggle-color, var(--oas-color-primary));
+  border-color: var(--oas-toggle-color, var(--oas-color-primary));
+  color: var(--oas-toggle-on-color, var(--oas-color-text-on-primary));
+}
+:host([data-variant='text']) button {
+  background: transparent;
+  border-color: transparent;
+}
+:host([data-variant='text']) button:hover:not([disabled]) {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 8%, transparent);
+}
+:host([data-variant='text']) button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 12%, transparent);
+  color: var(--oas-toggle-color, var(--oas-color-primary));
+}
+/* variant 系列禁用态回落统一禁用视觉（不被形态底色覆盖） */
+:host([data-variant='outlined']) button[disabled],
+:host([data-variant='filled']) button[disabled],
+:host([data-variant='text']) button[disabled] {
+  background: var(--oas-color-bg-disabled);
+  border-color: var(--oas-color-border);
+  color: var(--oas-color-text-disabled);
+}
 /* ---- status 校验态：success / warning / error（宿主自设 aria-invalid 等效 error，置于最后统一胜出） ---- */
 :host([data-status='success']) button {
   border-color: var(--oas-color-success);
@@ -163,7 +209,7 @@ button.icon-only {
 
 export class OASToggleButton extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'pressed', 'disabled', 'size', 'icon', 'color', 'status', 'aria-label']
+    return ['value', 'pressed', 'disabled', 'disabled-skip', 'size', 'icon', 'color', 'status', 'variant', 'aria-label']
   }
 
   private btn: HTMLButtonElement | null = null
@@ -223,16 +269,20 @@ export class OASToggleButton extends OASElement {
     if (!btn) return
     const pressed = this.hasAttr('pressed')
     btn.setAttribute('aria-pressed', String(pressed))
-    btn.disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入；
+    // 与 toggle-group/oas-button 同通道，不再只读自身属性漏掉 config-provider 注入）
+    btn.disabled = this.hasAttr('disabled') || this.injectDisabled()
     this.syncSizeStatus()
     this.syncIcon()
     this.syncColor()
   }
 
-  /** size/status 镜像到宿主 data-*（供 :host([data-*]) 样式消费）；error 联动 aria-invalid */
+  /** size/status/variant 镜像到宿主 data-*（供 :host([data-*]) 样式消费）；error 联动 aria-invalid */
   private syncSizeStatus(): void {
     const size = normalizeSize(this.injectValue('size', 'medium'), THREE_SIZES, 'medium')
     this.setAttribute('data-size', size)
+    // variant 形态镜像（solid/outlined/filled/text；非法值静默回落 solid）
+    this.setAttribute('data-variant', normalizeChoice(this.getAttr('variant', ''), 'solid', VALID_VARIANTS))
     const status = normalizeChoice(this.getAttr('status', ''), '', VALID_STATUSES)
     if (status) this.setAttribute('data-status', status)
     else this.removeAttribute('data-status')
@@ -295,7 +345,7 @@ export class OASToggleButton extends OASElement {
   }
 
   private toggle(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.hasAttr('disabled') || this.injectDisabled()) return
     const pressed = !this.hasAttr('pressed')
     this.toggleAttribute('pressed', pressed)
     this.emit('change', { value: this.getAttr('value', ''), pressed })

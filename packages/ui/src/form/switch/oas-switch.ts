@@ -238,10 +238,60 @@ button[aria-checked='true'] .label {
 :host([data-label-position='start']) .ext-label {
   order: -1;
 }
+/* 描述（description 属性 / slot[name=description]）：块级副文本渲染在标签下方，
+   结构语义对齐 checkbox/radio 的 content > description */
+.description {
+  display: block;
+  font-size: var(--oas-font-size-sm);
+  line-height: 1.5;
+  color: var(--oas-color-text-secondary);
+}
+.desc-text {
+  display: block;
+}
+.desc-text[hidden],
+.description[hidden] {
+  display: none;
+}
 :host([disabled]) .ext-label,
 :host([data-disabled]) .ext-label {
   cursor: not-allowed;
   color: var(--oas-color-text-disabled);
+}
+/* ---- 卡片形态（variant=card）：宿主盒即卡片——描边容器包住拨杆 + 标签 + 描述，
+   整卡可点（宿主空白区点击委托切换）、选中描边着色（与 checkbox/radio 选择卡同视觉语言）。
+   注意置于 checked 背景规则之后靠源顺序覆盖默认灰，status 系列再置于其后统一胜出 ---- */
+:host([data-variant='card']) {
+  padding: var(--oas-space-3) var(--oas-space-4);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg);
+  cursor: pointer;
+  transition: border-color var(--oas-transition-fast) var(--oas-ease-out),
+    background var(--oas-transition-fast) var(--oas-ease-out);
+}
+:host([data-variant='card']:hover) {
+  border-color: var(--oas-color-primary);
+}
+:host([data-variant='card'][checked]) {
+  border-color: var(--oas-color-primary);
+  background: color-mix(in srgb, var(--oas-color-primary) 6%, var(--oas-color-bg));
+}
+:host([data-variant='card'][disabled]),
+:host([data-variant='card'][data-disabled]) {
+  cursor: not-allowed;
+  border-color: var(--oas-color-border);
+  background: var(--oas-color-bg-disabled);
+}
+:host([data-variant='card'][data-status='success']) {
+  border-color: var(--oas-color-success);
+}
+:host([data-variant='card'][data-status='warning']) {
+  border-color: var(--oas-color-warning);
+}
+:host([data-variant='card'][data-status='error']),
+:host([data-variant='card'][aria-invalid='true']) {
+  border-color: var(--oas-color-danger);
 }
 /* ---- status 校验态：轨道随状态着色（覆盖默认灰/主色两态），焦点环同步染色 ----
    注意置于 checked 背景规则之后（同特异性下后者胜出需靠源顺序，status 优先） */
@@ -317,6 +367,9 @@ export class OASSwitch extends OASFormElement {
       'required',
       'status',
       'aria-label',
+      // 描述副文本 + 卡片形态（对齐 checkbox/radio 的 description/variant=card 三件一致性）
+      'description',
+      'variant',
     ]
   }
 
@@ -368,6 +421,9 @@ export class OASSwitch extends OASFormElement {
       <label class="ext-label" part="label" hidden>
         <span class="label-text"></span>
         <span class="slot-wrap" hidden><slot></slot></span>
+        <span class="description" part="description" hidden>
+          <span class="desc-text" hidden></span><slot name="description"></slot>
+        </span>
       </label>
     `
   }
@@ -405,6 +461,10 @@ export class OASSwitch extends OASFormElement {
       })
     }
     this.slotHasContent = this.computeSlotContent()
+    // description 具名插槽内容增删 → 重算描述显隐（属性文本与 slot 分发并列互斥显示）
+    this.shadow.querySelector('slot[name="description"]')?.addEventListener('slotchange', () => {
+      this.update()
+    })
   }
 
   protected override render(): void {
@@ -486,13 +546,14 @@ export class OASSwitch extends OASFormElement {
       }
     }
 
-    // 外部标签：默认插槽内容优先于 label 属性文本
+    // 外部标签：默认插槽内容优先于 label 属性文本；description 在场时标签区承载描述副文本
     const ext = this.shadow.querySelector<HTMLElement>('.ext-label')
+    const descVisible = this.syncDescription()
     if (ext) {
       const textSpan = ext.querySelector<HTMLElement>('.label-text')
       const slotWrap = ext.querySelector<HTMLElement>('.slot-wrap')
       const labelText = this.getAttr('label', '')
-      ext.hidden = !(this.slotHasContent || labelText !== '')
+      ext.hidden = !(this.slotHasContent || labelText !== '' || descVisible)
       if (textSpan) {
         textSpan.hidden = this.slotHasContent
         textSpan.textContent = labelText
@@ -504,6 +565,9 @@ export class OASSwitch extends OASFormElement {
       'data-label-position',
       normalizeChoice(this.getAttr('label-position', ''), 'end', ['start', 'end']),
     )
+
+    // 形态镜像（default/card，对齐 checkbox/radio 的 variant 契约）
+    this.setAttribute('data-variant', normalizeChoice(this.getAttr('variant', ''), 'default', ['default', 'card']))
 
     // status 镜像 + aria-invalid 所有权（同 select 惯例；宿主自设 aria-invalid 等效 error 视觉）
     const status = normalizeChoice(this.getAttr('status', ''), '', VALID_STATUSES)
@@ -552,6 +616,26 @@ export class OASSwitch extends OASFormElement {
     return nodes.some(
       (n) => n.nodeType === Node.ELEMENT_NODE || (n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim() !== ''),
     )
+  }
+
+  /**
+   * 描述（description 属性 / slot[name=description]）显隐同步：返回是否可见（供 ext-label
+   * 联动显隐）。约束与 checkbox 一致——组件永不写 slot 子树（防 slotchange 泵死循环），
+   * 属性文本写独立的 .desc-text 节点，与 slot 分发并列互斥显示。
+   */
+  private syncDescription(): boolean {
+    const descWrap = this.shadow.querySelector<HTMLElement>('.description')
+    if (!descWrap) return false
+    const slot = descWrap.querySelector<HTMLSlotElement>('slot[name="description"]')
+    const hasSlotContent = (slot?.assignedElements().length ?? 0) > 0
+    const descText = this.getAttr('description', '')
+    const descTextEl = descWrap.querySelector<HTMLElement>('.desc-text')
+    if (descTextEl) {
+      if (descTextEl.textContent !== descText) descTextEl.textContent = descText
+      descTextEl.hidden = hasSlotContent || descText === ''
+    }
+    descWrap.hidden = !hasSlotContent && descText === ''
+    return !descWrap.hidden
   }
 
   /** true-value/false-value 映射：未设置为布尔，部分设置时缺失侧回落布尔 */

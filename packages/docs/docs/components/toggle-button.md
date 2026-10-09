@@ -24,6 +24,14 @@ onMounted(() => {
   el?.addEventListener('oas-change', (e) => {
     out.textContent = `oas-change: { value: ${e.detail.value}, pressed: ${e.detail.pressed} }`
   })
+
+  // variant demo：真切换 + 可见反馈
+  const variantOut = document.getElementById('tb-variant-out')
+  for (const id of ['tb-variant-outlined', 'tb-variant-filled', 'tb-variant-text', 'tb-variant-icon']) {
+    document.getElementById(id)?.addEventListener('oas-change', (e) => {
+      variantOut.textContent = `oas-change: { value: ${e.detail.value}, pressed: ${e.detail.pressed} }`
+    })
+  }
 })
 </script>
 
@@ -93,6 +101,41 @@ onMounted(() => {
   </oas-space>
 </DemoBlock>
 
+## 形态（variant）
+
+`variant` 形态维度（对齐 `oas-button` 的 variant 体系，取切换语义有意义的子集）：`solid`（默认，描边容器、按下实底主色）/ `outlined`（透明底描边，按下主色描边 + 淡底着色）/ `filled`（浅底无描边，按下实底）/ `text`（无框无底，按下淡底 + 主色文字）。非法值静默回落 `solid`；与 `size` / `color` / `status` 正交（status 语义色优先）。工具栏纯图标切换建议 `text` 或 `outlined`，筛选面板建议 `filled`。
+
+<DemoBlock title="四种形态（未按下 / 按下对照）">
+  <oas-space size="small" direction="vertical">
+    <oas-space size="small">
+      <oas-toggle-button value="v-solid">Solid（默认）</oas-toggle-button>
+      <oas-toggle-button value="v-solid-on" pressed>Solid（按下）</oas-toggle-button>
+    </oas-space>
+    <oas-space size="small">
+      <oas-toggle-button variant="outlined" value="v-outlined">Outlined</oas-toggle-button>
+      <oas-toggle-button variant="outlined" value="v-outlined-on" pressed>Outlined（按下）</oas-toggle-button>
+    </oas-space>
+    <oas-space size="small">
+      <oas-toggle-button variant="filled" value="v-filled">Filled</oas-toggle-button>
+      <oas-toggle-button variant="filled" value="v-filled-on" pressed>Filled（按下）</oas-toggle-button>
+    </oas-space>
+    <oas-space size="small">
+      <oas-toggle-button variant="text" value="v-text">Text</oas-toggle-button>
+      <oas-toggle-button variant="text" value="v-text-on" pressed>Text（按下）</oas-toggle-button>
+    </oas-space>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="形态 + 真实切换（点击看反馈）">
+  <oas-space size="small">
+    <oas-toggle-button id="tb-variant-outlined" variant="outlined" value="mark">标记</oas-toggle-button>
+    <oas-toggle-button id="tb-variant-filled" variant="filled" value="filter">筛选</oas-toggle-button>
+    <oas-toggle-button id="tb-variant-text" variant="text" value="pin">置顶</oas-toggle-button>
+    <oas-toggle-button id="tb-variant-icon" variant="text" icon="star" aria-label="收藏"></oas-toggle-button>
+    <span id="tb-variant-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+  </oas-space>
+</DemoBlock>
+
 ## API
 
 ### oas-toggle-button
@@ -109,6 +152,7 @@ onMounted(() => {
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`；error 联动 aria-invalid | `string` | — |
 | `value` | 值（随事件回传） | `string` | — |
+| `variant` | 形态（对齐 button variant 体系）：`solid`（默认，描边容器、按下实底）/ `outlined`（透明底描边，按下主色描边 + 淡底）/ `filled`（浅底无描边，按下实底）/ `text`（无框无底，按下淡底 + 主色文字）；非法值静默回落 solid | `string` | — |
 
 #### Property（仅 JS property，不反射 attribute）
 

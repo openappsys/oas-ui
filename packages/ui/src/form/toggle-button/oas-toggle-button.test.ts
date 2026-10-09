@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASToggleButton } from './index.js'
+import '../../framework/config-provider/index.js'
 
 function mount(attrs: Record<string, string> = {}): OASToggleButton {
   const el = new OASToggleButton()
@@ -286,5 +287,129 @@ describe('OASToggleButton value property（get/set）', () => {
     expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
     el.value = 'x'
     expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})
+
+describe('OASToggleButton variant 形态（对齐 button variant 体系）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('variant 镜像 data-variant：outlined/filled/text 生效；缺省 solid', () => {
+    expect(mount({ variant: 'outlined' }).getAttribute('data-variant')).toBe('outlined')
+    expect(mount({ variant: 'filled' }).getAttribute('data-variant')).toBe('filled')
+    expect(mount({ variant: 'text' }).getAttribute('data-variant')).toBe('text')
+    expect(mount().getAttribute('data-variant')).toBe('solid')
+    expect(mount({ variant: 'solid' }).getAttribute('data-variant')).toBe('solid')
+  })
+
+  it('非法 variant 静默回落 solid', () => {
+    expect(mount({ variant: 'outline' }).getAttribute('data-variant')).toBe('solid')
+    expect(mount({ variant: 'huge' }).getAttribute('data-variant')).toBe('solid')
+  })
+
+  it('variant 不影响切换行为与 aria（正交形态维度）', () => {
+    const el = mount({ variant: 'outlined', value: 'bold' })
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    btn(el).click()
+    expect(el.hasAttribute('pressed')).toBe(true)
+    expect(btn(el).getAttribute('aria-pressed')).toBe('true')
+    expect(detail).toEqual({ value: 'bold', pressed: true })
+  })
+
+  it('CSS：outlined 未按下透明底、按下主色描边 + 淡底着色', () => {
+    const css = mount({ variant: 'outlined' }).shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/:host\(\[data-variant='outlined'\]\) button\s*{[^}]*background:\s*transparent/)
+    expect(css).toMatch(
+      /:host\(\[data-variant='outlined'\]\) button\[aria-pressed='true'\]\s*{[^}]*color-mix\([^}]*--oas-toggle-color/,
+    )
+    expect(css).toMatch(
+      /:host\(\[data-variant='outlined'\]\) button\[aria-pressed='true'\]\s*{[^}]*border-color:\s*var\(--oas-toggle-color/,
+    )
+  })
+
+  it('CSS：filled 未按下语义色浅底无描边、按下实底', () => {
+    const css = mount({ variant: 'filled' }).shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/:host\(\[data-variant='filled'\]\) button\s*{[^}]*color-mix\([^}]*border-color:\s*transparent/)
+    expect(css).toMatch(
+      /:host\(\[data-variant='filled'\]\) button\[aria-pressed='true'\]\s*{[^}]*var\(--oas-toggle-color,\s*var\(--oas-color-primary\)\)/,
+    )
+  })
+
+  it('CSS：text 无框无底、按下淡底 + 主色文字', () => {
+    const css = mount({ variant: 'text' }).shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/:host\(\[data-variant='text'\]\) button\s*{[^}]*border-color:\s*transparent/)
+    expect(css).toMatch(/:host\(\[data-variant='text'\]\) button\[aria-pressed='true'\]\s*{[^}]*color-mix\(/)
+  })
+
+  it('CSS：variant 系列禁用态回落禁用视觉（不被形态底色覆盖）', () => {
+    const css = mount({ variant: 'outlined' }).shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/:host\(\[data-variant='outlined'\]\) button\[disabled\][^{]*{[^}]*--oas-color-bg-disabled/)
+  })
+
+  it('RTL：variant 样式走逻辑属性（无物理 left/right 声明）', () => {
+    const css = mount({ variant: 'outlined' }).shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).not.toMatch(/(padding|margin)-(left|right)/)
+    expect(css).not.toMatch(/(^|[^-a-z])(left|right):\s/)
+  })
+})
+
+describe('OASToggleButton 全局禁用注入（config-provider disabled）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function inProvider(attrs: Record<string, string> = {}): OASToggleButton {
+    const cp = document.createElement('oas-config-provider')
+    for (const [k, v] of Object.entries(attrs)) cp.setAttribute(k, v)
+    const el = new OASToggleButton()
+    el.textContent = '切换'
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+    return el
+  }
+
+  it('回归：provider disabled 时按钮继承禁用（与 toggle-group/oas-button 同通道，不再漏 injectDisabled）', () => {
+    const el = inProvider({ disabled: '' })
+    expect(btn(el).disabled).toBe(true)
+  })
+
+  it('回归：provider disabled + disabled-skip 时保持可用', () => {
+    const el = inProvider({ disabled: '' })
+    el.setAttribute('disabled-skip', '')
+    expect(btn(el).disabled).toBe(false)
+  })
+
+  it('回归：provider disabled 时点击不切换、不派发 oas-change', () => {
+    const el = inProvider({ disabled: '' })
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    btn(el).click()
+    expect(detail).toBeUndefined()
+    expect(el.hasAttribute('pressed')).toBe(false)
+  })
+
+  it('回归：provider 移除 disabled 后恢复可切换', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const el = new OASToggleButton()
+    el.textContent = '切换'
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+    expect(btn(el).disabled).toBe(true)
+    cp.removeAttribute('disabled')
+    expect(btn(el).disabled).toBe(false)
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    btn(el).click()
+    expect(detail).toEqual({ value: '', pressed: true })
   })
 })

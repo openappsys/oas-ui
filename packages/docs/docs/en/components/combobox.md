@@ -1,16 +1,16 @@
 # Combobox
 
-A filterable single-select combobox whose input is the control: **an always-visible editable input** shows the selected label, typing filters options in real time, and `value` takes `option.value` on selection.
+A filterable combobox whose input is the control: **an always-visible editable input** shows the selected label, typing filters options in real time, and `value` takes `option.value` on selection. Multi-select is built in via `multiple`.
 
 > **Choosing among the three (select / combobox / auto-complete)**
 >
 > | Component | Value source | Input form | One-line positioning |
 > | --- | --- | --- | --- |
 > | `oas-select` | Must come from the option set | Button-triggered; no always-visible input | The default form of constrained choice (multiple/create/remote full suite) |
-> | `oas-combobox` | Must come from the option set | Input is the control; typing only filters | Always-visible-input constrained single select |
+> | `oas-combobox` | Must come from the option set | Input is the control; typing only filters | Always-visible-input constrained choice (single + multiple) |
 > | `oas-auto-complete` | **Any free text** | Input is the control | Suggestion input (value need not come from options) |
 >
-> combobox keeps the pure-filtering semantics of "value always from options": **no** multiple (use `oas-select multiple searchable`), **no** allow-create (use `oas-select allow-create` or `oas-dynamic-tags` for creation, `oas-auto-complete` for free text) — no duplication with existing capabilities in the library.
+> combobox keeps the pure-filtering semantics of "value always from options": multiple is built in (`multiple`, mirroring the `oas-select` multiple contract); **no** allow-create (use `oas-select allow-create` or `oas-dynamic-tags` for creation, `oas-auto-complete` for free text) — no duplication with existing capabilities in the library.
 
 ## Basic Usage
 
@@ -125,6 +125,26 @@ With `filterable="false"`, typing no longer filters options; select only via key
 
 When a value is selected, a clear button appears; clicking clears `value` and dispatches `oas-clear` and `oas-change`.
 
+## Multiple
+
+Set `multiple` to enter multi-select mode (mirroring the `oas-select` multiple contract): `value` becomes a JSON array string, selected options render as **removable tags** (click `×` to remove one); after each pick the panel **stays open** and the input clears its filter for continuous selection; typing only filters (free-text semantics are off in multiple mode — blur discards the filter and never touches the selection). `oas-change` detail is `{ value: string[], options: Array<Option|null> }`; `clearable` clears all and dispatches `oas-clear` (detail holds the pre-clear array).
+
+<DemoBlock title="Multiple (multiple + tags)">
+  <oas-combobox id="cb-multi" multiple clearable placeholder="Type to filter, pick many" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"},{"label":"西瓜","value":"watermelon"}]'></oas-combobox>
+  <span id="cb-multi-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+### Multi-select Limit & Tag Collapse (max-count / max-tag-count)
+
+`max-count` caps how many options can be selected (multiple only): once reached, unselected options are greyed out in the dropdown (`aria-disabled`) and clicks/keyboard picks are blocked with `oas-exceed-limit` (`detail: { value, max }`); **selected options can still be removed**. When `max-tag-count` is explicitly set, the selected tags are laid out on one line and the overflow collapses into `+N` (hover title lists the folded labels); without it tags wrap and the control grows in height.
+
+<DemoBlock title="Multi-select limit (max-count=3) + tag collapse (max-tag-count=2)">
+  <oas-combobox id="cb-multi-max" multiple max-count="3" max-tag-count="2" placeholder="Pick up to 3" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"}]'></oas-combobox>
+  <span id="cb-multi-max-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
+</DemoBlock>
+
+Presets and external control: `value='["apple","banana"]'` drives the tags directly; reading `el.value` returns the selected array and writing an array (or a single value) applies immediately without dispatching events. Form submission uses the native FormData "same-name multiple entries" semantics (one same-name entry per selected value); `required` validates "at least one selected".
+
 ## Loading
 
 <DemoBlock title="Loading">
@@ -207,6 +227,28 @@ onMounted(() => {
     else openEl.setAttribute('open', '')
   })
 
+  // multiple demo: tag add/remove + event echo
+  const multi = document.getElementById('cb-multi')
+  const multiOut = document.getElementById('cb-multi-out')
+  const renderMulti = () => {
+    if (multiOut) multiOut.textContent = `value: ${multi?.getAttribute('value') ?? ''}`
+  }
+  multi?.addEventListener('oas-change', renderMulti)
+  multi?.addEventListener('oas-clear', renderMulti)
+  renderMulti()
+
+  // multi-select limit demo: visible oas-exceed-limit feedback
+  const multiMax = document.getElementById('cb-multi-max')
+  const multiMaxOut = document.getElementById('cb-multi-max-out')
+  const renderMultiMax = () => {
+    if (multiMaxOut) multiMaxOut.textContent = `value: ${multiMax?.getAttribute('value') ?? ''}`
+  }
+  multiMax?.addEventListener('oas-change', renderMultiMax)
+  multiMax?.addEventListener('oas-exceed-limit', (e) => {
+    if (multiMaxOut) multiMaxOut.textContent = `Limit reached (${e.detail.max}); "${e.detail.value}" blocked`
+  })
+  renderMultiMax()
+
   // virtual scroll demo: 10k options
   const virtual = document.getElementById('cb-virtual')
   if (virtual) {
@@ -252,6 +294,10 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `filterable` | Filter labels in real time while typing (`filterable="false"` disables local filtering) | `string` | `true` |
 | `item-height` | Virtual-scroll fixed row height (px, with `virtual`, default 36) | `string` | `36` |
 | `loading` | Loading placeholder (dropdown shows "加载中…") | `boolean` | — |
+| `max-count` | Multi-select limit (only with `multiple`): once reached, unselected options are greyed out and blocked with `oas-exceed-limit`; selected options can still be removed | `string` | — |
+| `max-tag-count` | Tag collapse count (only with `multiple`): when explicitly set, tags are laid out on one line and the overflow collapses into `+N` (title lists the folded labels); without it tags wrap by default | `string` | — |
+| `multiple` | Multi-select mode (mirrors oas-select multiple semantics: the value is a JSON array, selected options render as removable tags, the panel stays open after each pick for continuous selection; typing only filters, free-text semantics are off) | `boolean` | — |
+| `name` | Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent) | `string` | — |
 | `open` | Controlled open state (internal open/close writes back to the attribute; every transition dispatches `oas-open-change`; forced closed under readonly/disabled); in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | `boolean` | — |
 | `options` | Options, JSON array `[{ label, value, disabled?, group? }]` (group is the group title, same contract as oas-select) | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
@@ -259,7 +305,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `size` | Size tier: small / medium / large (default medium, follows the nearest config-provider injection) | `string` | `medium` |
 | `status` | Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation) | `string` | — |
-| `value` | Current value (controlled, the selected option's `option.value`) | `string` | — |
+| `value` | Current value (controlled, the selected option's `option.value`; a JSON array string under `multiple`) | `string \| string[]` | — |
 | `virtual` | Virtual scroll (reuses oas-virtual-list to render only the visible window; options with group fall back to full rendering) | `boolean` | — |
 
 #### Property (JS property only, not reflected as attribute)
@@ -267,14 +313,15 @@ Programmatic read/write of the current value goes through the public `value` pro
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
 | `filter` | Custom filter function (property channel, `(input, option) => boolean`) | `((option: Option, query: string) => boolean) \| null` | — |
-| `value` | Current value: the selected value (falls back to the typed draft when nothing is selected) | `string` | — |
+| `value` | Current value: single is the selected value string (falls back to the typed draft when nothing is selected); `multiple` is the array of selected values | `string \| string[]` | — |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-change` | Selection/clear change, `detail: { value }` |
-| `oas-clear` | Clear button clicked, `detail: { value }` (value before clearing) |
+| `oas-change` | Selection/clear/removal change; single `detail: { value }`; multiple `detail: { value: string[], options: Array<Option\|null> }` (mirrors the oas-select multiple contract) |
+| `oas-clear` | Clear button clicked; single `detail: { value }` (value before clearing); multiple `detail: { value: string[] }` (array before clearing) |
+| `oas-exceed-limit` | Selection attempt beyond the multiple max-count limit, `detail: { value, max }` |
 | `oas-input` | Filter keyword typed, `detail: { value }` |
 | `oas-open-change` | Open state transition (both controlled setAttribute and internal toggles dispatch), `detail: { open }` |
 

@@ -1779,21 +1779,26 @@ export class OASSelect extends OASFormElement {
    * 表单值快照（form-associated）：
    * - 单选：选中值字符串（value 属性；无选中 → null，FormData 不含此项）
    * - 多选：原生「同名多条」语义——返回含多条同名 entry 的 FormData（key 取 name 属性），
-   *   无选中 → null。读 value 属性（受控源），render 前也可安全取值
+   *   无选中 → null；**无 name 亦返回 null**——FormData 通道由组件自建 entry，不受浏览器
+   *   「无 name 不提交」兜底保护，须显式拦下避免空名 entry（对齐 combobox 多选同款拦截）
    */
   protected override getFormValue(): string | FormData | null {
     const values = this.currentValues()
     if (values.length === 0) return null
     if (!this.hasAttr('multiple')) return values[0] ?? null
-    const fd = new FormData()
     const name = this.getAttr('name', '')
+    if (name === '') return null
+    const fd = new FormData()
     for (const v of values) fd.append(name, v)
     return fd
   }
 
   /** 原生校验链同步：required 且无选中 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.getFormValue() === null) {
+    // 多选不能用 getFormValue()===null 作判据：无 name 时它恒为 null，会把「有选中」误判
+    // valueMissing——多选按选中集是否为空判定（对齐 combobox 同款分流）
+    const missing = this.hasAttr('multiple') ? this.currentValues().length === 0 : this.getFormValue() === null
+    if (this.hasAttr('required') && missing) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})

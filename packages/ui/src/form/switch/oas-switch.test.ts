@@ -556,3 +556,89 @@ describe('form-associated（原生表单集成）', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('OASSwitch description 与 variant=card（对齐 checkbox/radio 选择卡形态）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function descWrap(el: OASSwitch): HTMLElement {
+    return el.shadowRoot!.querySelector('.description')!
+  }
+
+  function flushSlot(): Promise<void> {
+    // MutationObserver / slotchange 回调在宏任务后，等一个宏任务
+    return new Promise((r) => setTimeout(r, 0))
+  }
+
+  it('description 属性渲染描述文本（副文本，弱化色）', () => {
+    const el = mount({ label: '消息通知', description: '接收产品与运营消息' })
+    expect(descWrap(el).hidden).toBe(false)
+    expect(descWrap(el).querySelector<HTMLElement>('.desc-text')!.textContent).toBe('接收产品与运营消息')
+  })
+
+  it('无 description 时描述区隐藏（零足迹）', () => {
+    const el = mount({ label: '消息通知' })
+    expect(descWrap(el).hidden).toBe(true)
+  })
+
+  it('slot[name=description] 有内容时优先于属性文本（属性文本让位隐藏）', async () => {
+    const el = mount({ label: '消息通知', description: '属性描述' })
+    const rich = document.createElement('span')
+    rich.setAttribute('slot', 'description')
+    rich.textContent = '富描述'
+    el.appendChild(rich)
+    await flushSlot()
+    expect(descWrap(el).hidden).toBe(false)
+    expect(descWrap(el).querySelector<HTMLElement>('.desc-text')!.hidden).toBe(true)
+  })
+
+  it('variant=card 镜像 data-variant；非法值回落 default（不加 data-variant=card）', () => {
+    expect(mount({ variant: 'card' }).getAttribute('data-variant')).toBe('card')
+    expect(mount({ variant: 'card' }).hasAttribute('data-variant')).toBe(true)
+    expect(mount().getAttribute('data-variant')).toBe('default')
+    expect(mount({ variant: 'huge' }).getAttribute('data-variant')).toBe('default')
+  })
+
+  it('card：点击宿主空白区切换（整卡可点，热区=卡片盒）', () => {
+    const el = mount({ variant: 'card', label: '消息通知', description: '副文本' })
+    expect(el.hasAttribute('checked')).toBe(false)
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('checked')).toBe(true)
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('checked')).toBe(false)
+  })
+
+  it('card disabled：宿主空白点击不切换', () => {
+    const el = mount({ variant: 'card', disabled: '', label: '禁用卡' })
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('checked')).toBe(false)
+  })
+
+  it('card + description 组合：描述渲染在卡片内（结构语义对齐 checkbox card 的 content/description）', () => {
+    const el = mount({ variant: 'card', label: '云端同步', description: '更改将自动保存' })
+    expect(el.getAttribute('data-variant')).toBe('card')
+    expect(descWrap(el).textContent).toContain('更改将自动保存')
+  })
+
+  it('CSS：card 形态规则存在（描边容器 / hover / checked 着色 / disabled / status 三色）', () => {
+    const css = mount({ variant: 'card' }).shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/:host\(\[data-variant='card'\]\)\s*{[^}]*--oas-color-border/)
+    expect(css).toMatch(/:host\(\[data-variant='card'\]:hover\)\s*{[^}]*--oas-color-primary/)
+    expect(css).toMatch(/:host\(\[data-variant='card'\]\[checked\]\)\s*{[^}]*color-mix\(/)
+    expect(css).toMatch(/:host\(\[data-variant='card'\]\[disabled\]\)[^{]*{[^}]*--oas-color-bg-disabled/)
+    expect(css).toMatch(/:host\(\[data-variant='card'\]\[data-status='success'\]\)\s*{[^}]*--oas-color-success/)
+    expect(css).toMatch(/:host\(\[data-variant='card'\]\[data-status='warning'\]\)\s*{[^}]*--oas-color-warning/)
+    expect(css).toMatch(/:host\(\[data-variant='card'\]\[data-status='error'\]\)[^{]*{[^}]*--oas-color-danger/)
+  })
+
+  it('CSS：描述样式规则存在（块级副文本 + 隐藏态零足迹）', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.description\s*{[^}]*display:\s*block/)
+    expect(css).toMatch(/\.description\[hidden\]\s*{[^}]*display:\s*none/)
+  })
+})

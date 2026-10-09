@@ -17,6 +17,8 @@ export interface ToggleItem {
 
 export type ToggleGroupSize = 'small' | 'medium' | 'large'
 export type ToggleGroupStatus = 'success' | 'warning' | 'error'
+/** variant 形态（组级透传，对齐 button variant 体系）：solid 实底 / outlined 描边 / filled 浅底 / text 纯文字 */
+const VALID_VARIANTS = ['solid', 'outlined', 'filled', 'text'] as const
 
 const VALID_STATUSES: readonly ToggleGroupStatus[] = ['success', 'warning', 'error']
 /** 预设色板名（ui-spec §4.1 color 协议，映射 --oas-preset-* token） */
@@ -200,6 +202,51 @@ const STYLE = `
   border-end-start-radius: 0;
   border-end-end-radius: 0;
 }
+/* ===== variant 形态维度（组级透传，作用于 .item；正交 checked 选中态与 status 语义色，
+   status 规则置于其后按源顺序胜出）。solid 为默认不加形态样式；outlined 透明底描边、
+   filled 浅底无描边、text 无框无底 ===== */
+:host([data-variant='outlined']) .item {
+  background: transparent;
+}
+:host([data-variant='outlined']) .item:hover:not([aria-disabled='true']) {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 8%, transparent);
+}
+:host([data-variant='outlined']) .item[aria-checked='true'] {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 10%, transparent);
+  border-color: var(--oas-toggle-color, var(--oas-color-primary));
+  color: var(--oas-toggle-color, var(--oas-color-primary));
+}
+:host([data-variant='filled']) .item {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 12%, transparent);
+  border-color: transparent;
+}
+:host([data-variant='filled']) .item:hover:not([aria-disabled='true']) {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 18%, transparent);
+}
+:host([data-variant='filled']) .item[aria-checked='true'] {
+  background: var(--oas-toggle-color, var(--oas-color-primary));
+  border-color: var(--oas-toggle-color, var(--oas-color-primary));
+  color: var(--oas-toggle-on-color, var(--oas-color-text-on-primary));
+}
+:host([data-variant='text']) .item {
+  background: transparent;
+  border-color: transparent;
+}
+:host([data-variant='text']) .item:hover:not([aria-disabled='true']) {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 8%, transparent);
+}
+:host([data-variant='text']) .item[aria-checked='true'] {
+  background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 12%, transparent);
+  color: var(--oas-toggle-color, var(--oas-color-primary));
+}
+/* variant 系列禁用态回落统一禁用视觉（不被形态底色覆盖） */
+:host([data-variant='outlined']) .item[aria-disabled='true'],
+:host([data-variant='filled']) .item[aria-disabled='true'],
+:host([data-variant='text']) .item[aria-disabled='true'] {
+  background: var(--oas-color-bg-disabled);
+  border-color: var(--oas-color-border);
+  color: var(--oas-color-text-disabled);
+}
 /* ---- status 校验态：success / warning / error（宿主自设 aria-invalid 等效 error，置于最后统一胜出） ---- */
 :host([data-status='success']) .item {
   border-color: var(--oas-color-success);
@@ -282,6 +329,8 @@ export class OASToggleGroup extends OASElement {
       'mandatory',
       'max-count',
       'spread',
+      // variant 形态（组级透传：solid/outlined/filled/text，对齐 button variant 体系）
+      'variant',
       'aria-label',
     ]
   }
@@ -396,10 +445,12 @@ export class OASToggleGroup extends OASElement {
     this.enforceForce()
   }
 
-  /** size/status/color/aria 等组级元数据镜像（每次 update 同步，供 CSS 与可访问性消费） */
+  /** size/status/color/variant/aria 等组级元数据镜像（每次 update 同步，供 CSS 与可访问性消费） */
   private syncMeta(): void {
     const size = normalizeSize(this.injectValue('size', 'medium'), THREE_SIZES, 'medium')
     this.setAttribute('data-size', size)
+    // variant 形态镜像（solid/outlined/filled/text；非法值静默回落 solid）
+    this.setAttribute('data-variant', normalizeChoice(this.getAttr('variant', ''), 'solid', VALID_VARIANTS))
     const status = normalizeChoice(this.getAttr('status', ''), '', VALID_STATUSES)
     if (status) this.setAttribute('data-status', status)
     else this.removeAttribute('data-status')
@@ -595,6 +646,16 @@ export class OASToggleGroup extends OASElement {
     group.setAttribute('aria-label', this.getAttr('aria-label', this.t('toggleGroup.group')))
     const selected = this.selectedValues()
     const limitReached = this.limitReached()
+    // roving tabindex 落点合法化：期望焦点项（单选=选中项；多选=focusIndex）为 disabled 或
+    // 不存在时回落首个可用项——否则整组 tabIndex 全 -1，Tab 键无法进入组（键盘可达性）
+    const enabledIdx = this.itemsList.map((it, i) => (!it.disabled && !hostDisabled ? i : -1)).filter((i) => i >= 0)
+    const fallback = enabledIdx[0] ?? -1
+    const singleIdx = selected.length > 0 ? this.itemsList.findIndex((it) => it.value === selected[0]) : -1
+    const singleFocus = singleIdx >= 0 && !this.itemsList[singleIdx]?.disabled ? singleIdx : fallback
+    const multiFocus =
+      this.focusIndex >= 0 && this.focusIndex < this.itemsList.length && !this.itemsList[this.focusIndex]?.disabled
+        ? this.focusIndex
+        : fallback
     this.buttons.forEach((btn, i) => {
       const item = this.itemsList[i]
       if (!item) return
@@ -605,8 +666,8 @@ export class OASToggleGroup extends OASElement {
       btn.setAttribute('aria-checked', String(selected.includes(item.value)))
       btn.setAttribute('aria-disabled', String(disabled))
       if (disabled && !disabledByLimit) btn.tabIndex = -1
-      else if (multiple) btn.tabIndex = i === this.focusIndex ? 0 : -1
-      else btn.tabIndex = item.value === selected[0] ? 0 : -1
+      else if (multiple) btn.tabIndex = i === multiFocus ? 0 : -1
+      else btn.tabIndex = i === singleFocus ? 0 : -1
     })
   }
 

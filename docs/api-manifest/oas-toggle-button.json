@@ -42,6 +42,12 @@
       "observed": true
     },
     {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "aria-label",
       "observed": true
     }

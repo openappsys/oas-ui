@@ -55,6 +55,42 @@ describe('OASToggleGroup', () => {
     expect(btns[2]!.tabIndex).toBe(-1)
   })
 
+  it('回归：单选无选中时首个可用项 tabIndex=0（组可 Tab 进入，roving 落点不悬空）', () => {
+    const el = mount({}) // 无 value
+    const btns = buttons(el)
+    expect(btns[0]!.tabIndex).toBe(0)
+    expect(btns[1]!.tabIndex).toBe(-1)
+    expect(btns[2]!.tabIndex).toBe(-1)
+  })
+
+  it('回归：单选选中项 disabled 时焦点落首个可用项（不悬空、不落禁用项）', () => {
+    const el = mount({
+      value: 'a',
+      items: JSON.stringify([
+        { label: 'a', value: 'a', disabled: true },
+        { label: 'b', value: 'b' },
+        { label: 'c', value: 'c' },
+      ]),
+    })
+    const btns = buttons(el)
+    expect(btns[0]!.tabIndex).toBe(-1)
+    expect(btns[1]!.tabIndex).toBe(0)
+    expect(btns[2]!.tabIndex).toBe(-1)
+  })
+
+  it('回归：多选焦点项为 disabled 时 tabIndex 落首个可用项（组可 Tab 进入）', () => {
+    const el = mount({
+      multiple: '',
+      items: JSON.stringify([
+        { label: 'a', value: 'a', disabled: true },
+        { label: 'b', value: 'b' },
+      ]),
+    })
+    const btns = buttons(el)
+    expect(btns[0]!.tabIndex).toBe(-1)
+    expect(btns[1]!.tabIndex).toBe(0)
+  })
+
   it('点击切换 value 并派发 oas-change（单选）', () => {
     const el = mount({ value: 'day' })
     let detail: unknown
@@ -735,5 +771,61 @@ describe('OASToggleGroup value property（get/set）', () => {
     expect(Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')).toBeDefined()
     el.value = 'day'
     expect(Object.hasOwn(el, 'value')).toBe(false)
+  })
+})
+
+describe('OASToggleGroup variant 形态（组级透传，对齐 button variant 体系）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('variant 镜像 data-variant：outlined/filled/text 生效；缺省 solid；非法值回落 solid', () => {
+    expect(mount({ variant: 'outlined' }).getAttribute('data-variant')).toBe('outlined')
+    expect(mount({ variant: 'filled' }).getAttribute('data-variant')).toBe('filled')
+    expect(mount({ variant: 'text' }).getAttribute('data-variant')).toBe('text')
+    expect(mount().getAttribute('data-variant')).toBe('solid')
+    expect(mount({ variant: 'outline' }).getAttribute('data-variant')).toBe('solid')
+  })
+
+  it('variant 不影响选中语义与事件（正交形态维度，单选/多选均不受影响）', () => {
+    const el = mount({ variant: 'outlined', value: 'day' })
+    expect(buttons(el)[0]!.getAttribute('aria-checked')).toBe('true')
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    buttons(el)[1]!.click()
+    expect(detail).toEqual({ value: 'week' })
+    const multi = mount({ variant: 'filled', multiple: '' })
+    buttons(multi)[0]!.click()
+    expect(JSON.parse(multi.getAttribute('value')!)).toEqual(['day'])
+  })
+
+  it('attached 贴合形态与 variant 组合共存（形态维度正交）', () => {
+    const el = mount({ variant: 'outlined', attached: '', value: 'day' })
+    expect(el.getAttribute('data-variant')).toBe('outlined')
+    expect(buttons(el).length).toBe(3)
+  })
+
+  it('CSS：outlined/filled/text 三形态规则作用于 .item（含按下态与禁用态兜底）', () => {
+    const css = mount({ variant: 'outlined' }).shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/:host\(\[data-variant='outlined'\]\) \.item\s*{[^}]*background:\s*transparent/)
+    expect(css).toMatch(/:host\(\[data-variant='outlined'\]\) \.item\[aria-checked='true'\]\s*{[^}]*color-mix\(/)
+    expect(css).toMatch(/:host\(\[data-variant='filled'\]\) \.item\s*{[^}]*border-color:\s*transparent/)
+    expect(css).toMatch(
+      /:host\(\[data-variant='filled'\]\) \.item\[aria-checked='true'\]\s*{[^}]*var\(--oas-toggle-color/,
+    )
+    expect(css).toMatch(/:host\(\[data-variant='text'\]\) \.item\s*{[^}]*border-color:\s*transparent/)
+    expect(css).toMatch(/:host\(\[data-variant='text'\]\) \.item\[aria-checked='true'\]\s*{[^}]*color-mix\(/)
+    expect(css).toMatch(
+      /:host\(\[data-variant='outlined'\]\) \.item\[aria-disabled='true'\][^{]*{[^}]*--oas-color-bg-disabled/,
+    )
+  })
+
+  it('RTL：variant 样式走逻辑属性（无物理 left/right 声明）', () => {
+    const css = mount({ variant: 'filled' }).shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).not.toMatch(/(padding|margin)-(left|right)/)
+    expect(css).not.toMatch(/(^|[^-a-z])(left|right):\s/)
   })
 })

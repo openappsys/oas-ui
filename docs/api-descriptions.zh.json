@@ -762,21 +762,26 @@
       "readonly": "只读（可聚焦可复制不可改值，聚焦与键盘不展开下拉）",
       "size": "尺寸档位：small / medium / large（默认 medium，就近跟随 config-provider 注入）",
       "status": "校验态：success / warning / error（error 同步 aria-invalid，可被 oas-form-item 校验驱动）",
-      "value": "当前值（受控，选中项 `option.value`）",
+      "value": "当前值（受控，选中项 `option.value`；`multiple` 时为 JSON 数组字符串）",
       "virtual": "虚拟滚动（复用 oas-virtual-list 仅渲染可视窗口；带 group 的选项自动回退全量渲染）",
       "required": "必填标记（驱动原生校验链 valueMissing；不透传内层控件）",
-      "autocomplete": "透传内层原生 input（缺省回落 off）"
+      "autocomplete": "透传内层原生 input（缺省回落 off）",
+      "multiple": "多选模式（对齐 oas-select 多选语义：值走 JSON 数组、已选项渲染为可移除标签、选中后面板保持展开连续挑选；输入仅作过滤，自由输入语义关闭）",
+      "max-count": "多选上限（仅 `multiple` 生效）：达上限未选项置灰拦截并派发 `oas-exceed-limit`，已选项仍可取消",
+      "max-tag-count": "已选标签折叠数（仅 `multiple` 生效）：显式设置时标签单行收纳、超出折叠为 `+N`（title 汇总被折叠项）；未设置时标签默认换行展示",
+      "name": "表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交）"
     },
     "events": {
-      "oas-change": "选中/清空变化，`detail: { value }`",
-      "oas-clear": "点击清空按钮，`detail: { value }`（清空前的值）",
+      "oas-change": "选中/清空/移除变化，单选 `detail: { value }`；多选 `detail: { value: string[], options: Array<Option|null> }`（对齐 oas-select 多选口径）",
+      "oas-clear": "点击清空按钮，单选 `detail: { value }`（清空前的值）；多选 `detail: { value: string[] }`（清空前的数组）",
       "oas-input": "输入过滤词，`detail: { value }`",
-      "oas-open-change": "展开状态迁移（受控 setAttribute 与内部开合都派发），`detail: { open }`"
+      "oas-open-change": "展开状态迁移（受控 setAttribute 与内部开合都派发），`detail: { open }`",
+      "oas-exceed-limit": "多选达 max-count 上限后的越界选择尝试，`detail: { value, max }`"
     },
     "slots": {},
     "props": {
       "filter": "自定义过滤函数（property 通道，`(input, option) => boolean`）",
-      "value": "当前值：选中值（无选中时键入草稿兜底）"
+      "value": "当前值：单选为选中值字符串（无选中时键入草稿兜底）；`multiple` 时为选中值数组"
     }
   },
   "oas-compact": {
@@ -3080,7 +3085,9 @@
       "false-value": "未选中时的映射值",
       "status": "校验态：`error` / `warning` / `success`；error 联动 aria-invalid",
       "aria-label": "可访问名（宿主覆盖通道，显式设置优先于 label 推导）",
-      "required": "必填标记（驱动原生校验链 valueMissing：关 = 未填）"
+      "required": "必填标记（驱动原生校验链 valueMissing：关 = 未填）",
+      "description": "描述副文本（label 下方的次级说明；slot[name=description] 富内容优先于属性文本），与 checkbox/radio 的 description 契约一致",
+      "variant": "形态：`default`（默认拨杆）/ `card`（卡片：描边容器包住拨杆 + 标签 + 描述，整卡可点、选中描边着色，对齐 checkbox/radio 选择卡）；非法值静默回落 default"
     },
     "events": {
       "oas-change": "切换，`detail: { checked }`",
@@ -3088,7 +3095,8 @@
       "oas-blur": "失焦时派发"
     },
     "slots": {
-      "": "开关内容（文案 / 富内容）"
+      "": "开关内容（文案 / 富内容）",
+      "description": "描述副文本富内容（优先于 description 属性文本）"
     },
     "cssVars": {
       "--oas-switch-on-color": "开启态轨道内文字色（`color` 自定义轨道底色时组件按底色亮度注入深/浅文字；缺省回落 `var(--oas-color-bg)`）",
@@ -3528,7 +3536,8 @@
       "icon": "图标（oas-icon 图标名）；无文本时纯图标等宽正方形",
       "color": "选中色：预设名（--oas-preset-* token）或任意 CSS 色值（自动算文字色）",
       "status": "校验态：`error` / `warning` / `success`；error 联动 aria-invalid",
-      "aria-label": "可访问名（宿主覆盖通道，写入内部 button）"
+      "aria-label": "可访问名（宿主覆盖通道，写入内部 button）",
+      "variant": "形态（对齐 button variant 体系）：`solid`（默认，描边容器、按下实底）/ `outlined`（透明底描边，按下主色描边 + 淡底）/ `filled`（浅底无描边，按下实底）/ `text`（无框无底，按下淡底 + 主色文字）；非法值静默回落 solid"
     },
     "events": {
       "oas-change": "切换，`detail: { value, pressed }`"
@@ -3566,7 +3575,8 @@
       "mandatory": "强制选中：布尔=唯一选中项不可取消；`force`=空态自动选首个非禁用项（向导流零代码）",
       "max-count": "多选上限：达上限未选项置灰并派 oas-exceed-limit，已选项仍可取消",
       "spread": "满宽等分（对齐 button-group 的 spread）",
-      "aria-label": "组可访问名（宿主覆盖；缺省走 locale 兜底）"
+      "aria-label": "组可访问名（宿主覆盖；缺省走 locale 兜底）",
+      "variant": "组级形态透传各切换项（对齐 button variant 体系）：`solid`（默认，描边容器、选中实底）/ `outlined`（透明底描边，选中主色描边 + 淡底）/ `filled`（浅底无描边，选中实底）/ `text`（无框无底，选中淡底 + 主色文字）；非法值静默回落 solid；与 attached/vertical 正交"
     },
     "events": {
       "oas-change": "切换，`detail: { value: string | string[] }`",

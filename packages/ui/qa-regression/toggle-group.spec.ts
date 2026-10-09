@@ -153,8 +153,9 @@ test('toggle-group disabled 项：aria-disabled + tabindex -1 + 点击不选中�
     }
   })
   expect((await target).ariaDisabled, '禁用项 aria-disabled=true').toEqual(['false', 'true', 'false'])
-  // roving tabindex 契约：单选模式下仅「选中项」为 0——该组无初始选中，故全部 -1；禁用项恒 -1
-  expect((await target).tabindexes, '无选中时全部不可 Tab 聚焦，禁用项恒 -1').toEqual(['-1', '-1', '-1'])
+  // roving tabindex 契约：单选无选中时焦点落首个可用项（组可 Tab 进入）；
+  // 禁用项不承接焦点恒 -1。（旧断言「无选中全部 -1」固化的是 roving 悬空缺陷，二轮 review 修正）
+  expect((await target).tabindexes, '无选中时焦点落首可用项 0，禁用项恒 -1').toEqual(['0', '-1', '-1'])
   // 点击禁用项：不选中、不派事件
   await page.evaluate(() => {
     const el = [...document.querySelectorAll('oas-toggle-group')].find((g) =>
@@ -302,4 +303,108 @@ test('toggle-group 横向贴合：首项右侧、末项左侧合并为直角（�
   expect(last.bl, '末项左下应为直角').toBe(0)
   expect(last.tr, '末项右上圆角').toBeGreaterThan(0)
   expect(last.br, '末项右下圆角').toBeGreaterThan(0)
+})
+
+// ---- 组级 variant 批次：形态镜像 + 真点选中语义/反馈（对齐 button variant 体系）----
+
+test('toggle-group variant：四形态 data-variant 镜像 + outlined 预设选中态正确', async ({ page }) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-toggle-group[variant="outlined"]')
+  const r = await page.evaluate(() => {
+    const grab = (sel: string) => {
+      const el = document.querySelector(sel)!
+      const btns = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
+      return {
+        variant: el.getAttribute('data-variant'),
+        checked: btns.map((b) => b.getAttribute('aria-checked')),
+      }
+    }
+    return {
+      solid: grab('oas-toggle-group[aria-label="solid 形态"]'),
+      outlined: grab('oas-toggle-group[aria-label="outlined 形态"]'),
+      filled: grab('oas-toggle-group[aria-label="filled 形态"]'),
+      text: grab('oas-toggle-group[aria-label="text 形态"]'),
+      attachedOutlined: grab('oas-toggle-group[aria-label="outlined 贴合形态"]'),
+    }
+  })
+  expect(r.solid).toEqual({ variant: 'solid', checked: ['true', 'false', 'false'] })
+  expect(r.outlined).toEqual({ variant: 'outlined', checked: ['true', 'false', 'false'] })
+  expect(r.filled).toEqual({ variant: 'filled', checked: ['true', 'false', 'false'] })
+  expect(r.text).toEqual({ variant: 'text', checked: ['true', 'false', 'false'] })
+  expect(r.attachedOutlined).toEqual({ variant: 'outlined', checked: ['true', 'false', 'false'] })
+})
+
+test('toggle-group variant：filled 多选真点切换 + demo 反馈文本可见', async ({ page }) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '#tg-variant-filled')
+  await page.locator('#tg-variant-filled').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(300) // 等 demo 宿主挂事件监听
+
+  // 点第 1 项 → aria-checked 翻转 + value JSON 回写 + 反馈文本
+  await page.locator('#tg-variant-filled [part="item"]').nth(0).click()
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        document
+          .querySelector('#tg-variant-filled')!
+          .shadowRoot!.querySelectorAll('[part="item"]')[0]!
+          .getAttribute('aria-checked'),
+      ),
+    )
+    .toBe('true')
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#tg-variant-filled')!.getAttribute('value')))
+    .toBe('["left"]')
+  await expect(page.locator('#tg-variant-out')).toContainText('["left"]')
+
+  // 再点第 2 项 → 叠加多选
+  await page.locator('#tg-variant-filled [part="item"]').nth(1).click()
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector('#tg-variant-filled')!.getAttribute('value')))
+    .toBe('["left","center"]')
+  await expect(page.locator('#tg-variant-out')).toContainText('["left","center"]')
+})
+
+// 回归（二轮 review）：roving tabindex 落点合法化——单选无选中/焦点项 disabled 时
+// 组内 tabIndex 不再全 -1（修复前 Tab 键无法进入组，键盘可达性断裂）。
+test('toggle-group roving tabindex 落点：单选无选中/焦点项 disabled 时首可用项可 Tab 进入', async ({ page }) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '#tg-single')
+  const r = await page.evaluate(() => {
+    const build = (attrs: Record<string, string>, items: unknown[]) => {
+      const el = document.createElement('oas-toggle-group')
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      el.setAttribute('items', JSON.stringify(items))
+      document.body.appendChild(el)
+      return el
+    }
+    const three = [
+      { label: 'a', value: 'a' },
+      { label: 'b', value: 'b' },
+      { label: 'c', value: 'c' },
+    ]
+    const singleEmpty = build({}, three) // 单选无选中
+    const singleDisabledSel = build({ value: 'a' }, [
+      { label: 'a', value: 'a', disabled: true },
+      { label: 'b', value: 'b' },
+      { label: 'c', value: 'c' },
+    ]) // 选中项 disabled
+    const multiDisabledFirst = build({ multiple: '' }, [
+      { label: 'a', value: 'a', disabled: true },
+      { label: 'b', value: 'b' },
+    ]) // 多选焦点项（首项）disabled
+    return new Promise<{ single: number[]; disSel: number[]; multi: number[] }>((resolve) => {
+      requestAnimationFrame(() => {
+        const tab = (el: Element) =>
+          [...el.shadowRoot!.querySelectorAll('[part="item"]')].map((b) => (b as HTMLButtonElement).tabIndex)
+        const single = tab(singleEmpty)
+        const disSel = tab(singleDisabledSel)
+        const multi = tab(multiDisabledFirst)
+        resolve({ single, disSel, multi })
+      })
+    })
+  })
+  expect(r.single, '单选无选中 → 首项 tabIndex=0（组可 Tab 进入）').toEqual([0, -1, -1])
+  expect(r.disSel, '选中项 disabled → 焦点落首个可用项').toEqual([-1, 0, -1])
+  expect(r.multi, '多选焦点项 disabled → 焦点落首个可用项').toEqual([-1, 0])
 })

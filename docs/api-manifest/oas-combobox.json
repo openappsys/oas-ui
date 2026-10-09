@@ -71,8 +71,31 @@
       "observed": true
     },
     {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "max-count",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max-tag-count",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "required",
       "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "default": "",
       "observed": true
     },
     {
@@ -93,7 +116,7 @@
     },
     {
       "name": "value",
-      "type": "string",
+      "type": "string | string[]",
       "api": true
     }
   ],
@@ -103,16 +126,20 @@
       "detail": "{ open }"
     },
     {
+      "name": "oas-exceed-limit",
+      "detail": "{ value, max: this.maxCountLimit() }"
+    },
+    {
       "name": "oas-input",
       "detail": "{ value: this.query }"
     },
     {
       "name": "oas-change",
-      "detail": "{ value: option.value } | { value: '' }"
+      "detail": "{ value: next, options: this.optionsOf(next) } | { value: option.value } | { value: [], options: [] } | { value: '' }"
     },
     {
       "name": "oas-clear",
-      "detail": "{ value: prev }"
+      "detail": "{ value: [...prev] } | { value: prev[0] ?? '' }"
     }
   ],
   "slots": [],

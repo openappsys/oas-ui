@@ -85,6 +85,18 @@
     {
       "name": "aria-label",
       "observed": true
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -112,6 +124,9 @@
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "description"
     }
   ],
   "cssVars": [

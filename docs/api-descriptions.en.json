@@ -762,21 +762,26 @@
       "readonly": "Readonly (focusable & copyable, no value change; focus and keyboard never open the dropdown)",
       "size": "Size tier: small / medium / large (default medium, follows the nearest config-provider injection)",
       "status": "Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation)",
-      "value": "Current value (controlled, the selected option's `option.value`)",
+      "value": "Current value (controlled, the selected option's `option.value`; a JSON array string under `multiple`)",
       "virtual": "Virtual scroll (reuses oas-virtual-list to render only the visible window; options with group fall back to full rendering)",
       "required": "Required marker (drives the native valueMissing validation chain; not passed through to the inner control)",
-      "autocomplete": "Passed through to the inner native input (falls back to off)"
+      "autocomplete": "Passed through to the inner native input (falls back to off)",
+      "multiple": "Multi-select mode (mirrors oas-select multiple semantics: the value is a JSON array, selected options render as removable tags, the panel stays open after each pick for continuous selection; typing only filters, free-text semantics are off)",
+      "max-count": "Multi-select limit (only with `multiple`): once reached, unselected options are greyed out and blocked with `oas-exceed-limit`; selected options can still be removed",
+      "max-tag-count": "Tag collapse count (only with `multiple`): when explicitly set, tags are laid out on one line and the overflow collapses into `+N` (title lists the folded labels); without it tags wrap by default",
+      "name": "Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent)"
     },
     "events": {
-      "oas-change": "Selection/clear change, `detail: { value }`",
-      "oas-clear": "Clear button clicked, `detail: { value }` (value before clearing)",
+      "oas-change": "Selection/clear/removal change; single `detail: { value }`; multiple `detail: { value: string[], options: Array<Option|null> }` (mirrors the oas-select multiple contract)",
+      "oas-clear": "Clear button clicked; single `detail: { value }` (value before clearing); multiple `detail: { value: string[] }` (array before clearing)",
       "oas-input": "Filter keyword typed, `detail: { value }`",
-      "oas-open-change": "Open state transition (both controlled setAttribute and internal toggles dispatch), `detail: { open }`"
+      "oas-open-change": "Open state transition (both controlled setAttribute and internal toggles dispatch), `detail: { open }`",
+      "oas-exceed-limit": "Selection attempt beyond the multiple max-count limit, `detail: { value, max }`"
     },
     "slots": {},
     "props": {
       "filter": "Custom filter function (property channel, `(input, option) => boolean`)",
-      "value": "Current value: the selected value (falls back to the typed draft when nothing is selected)"
+      "value": "Current value: single is the selected value string (falls back to the typed draft when nothing is selected); `multiple` is the array of selected values"
     }
   },
   "oas-compact": {
@@ -3080,7 +3085,9 @@
       "false-value": "Mapped value when unchecked",
       "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid",
       "aria-label": "Accessible name (host override channel; explicit value wins over label derivation)",
-      "required": "Required marker (drives the native valueMissing validation chain: off counts as unfilled)"
+      "required": "Required marker (drives the native valueMissing validation chain: off counts as unfilled)",
+      "description": "Secondary description text (muted line under the label; slot[name=description] rich content wins over the attribute text), same contract as checkbox/radio description",
+      "variant": "Variant: `default` (plain thumb) / `card` (a bordered card wrapping the thumb + label + description; whole card clickable, selected state tints the border, aligned with the checkbox/radio choice card); invalid values silently fall back to default"
     },
     "events": {
       "oas-change": "Toggle, `detail: { checked }`",
@@ -3088,7 +3095,8 @@
       "oas-blur": "Fires on blur"
     },
     "slots": {
-      "": "Switch content (label / rich content)"
+      "": "Switch content (label / rich content)",
+      "description": "Rich description content (takes precedence over the description attribute text)"
     },
     "cssVars": {
       "--oas-switch-on-color": "Label text color inside the on-track (when `color` overrides the track background, the component injects a dark/light text color by luminance; falls back to `var(--oas-color-bg)`)",
@@ -3528,7 +3536,8 @@
       "icon": "Icon (oas-icon name); icon-only renders an equal square",
       "color": "Selected color: preset name (--oas-preset-* token) or any CSS color (auto text color)",
       "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid",
-      "aria-label": "Accessible name (host override channel, written to the inner button)"
+      "aria-label": "Accessible name (host override channel, written to the inner button)",
+      "variant": "Variant (aligned with the button variant system): `solid` (default, bordered box, pressed = solid fill) / `outlined` (transparent bg + border; pressed = colored border + faint tint) / `filled` (soft tinted bg, no border; pressed = solid fill) / `text` (no border/background; pressed = faint tint + colored text); invalid values silently fall back to solid"
     },
     "events": {
       "oas-change": "Toggle, `detail: { value, pressed }`"
@@ -3566,7 +3575,8 @@
       "mandatory": "Mandatory selection: boolean = the sole selected item cannot be deselected; `force` = auto-select the first enabled item when empty (wizard flow, zero host code)",
       "max-count": "Multi-select limit: at the limit unselected items grey out and oas-exceed-limit fires; selected items stay removable",
       "spread": "Full-width equal split (aligned with button-group spread)",
-      "aria-label": "Group accessible name (host override; falls back to locale default)"
+      "aria-label": "Group accessible name (host override; falls back to locale default)",
+      "variant": "Group-level variant passthrough to items (aligned with the button variant system): `solid` (default, bordered box, selected = solid fill) / `outlined` (transparent bg + border; selected = colored border + faint tint) / `filled` (soft tinted bg, no border; selected = solid fill) / `text` (no border/background; selected = faint tint + colored text); invalid values silently fall back to solid; orthogonal to attached/vertical"
     },
     "events": {
       "oas-change": "Toggle, `detail: { value: string | string[] }`",

@@ -1619,6 +1619,23 @@ describe('OASSelect form-associated（原生表单集成）', () => {
     expect(fakeEmpty.setFormValue).toHaveBeenLastCalledWith(null)
   })
 
+  it('回归：多选无 name 不注入空名 entry（setFormValue(null)）——FormData 通道由组件自建，不受浏览器「无 name 不提交」兜底保护', () => {
+    const el = mount({ multiple: '', value: JSON.stringify(['apple']) }) // 无 name
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small') // 触发 update → 同步 FormData
+    expect(fake.setFormValue).toHaveBeenLastCalledWith(null)
+  })
+
+  it('回归：多选无 name + required + 有选中不误报 valueMissing（校验按选中集判定，不按 FormData null）', () => {
+    const el = mount({ multiple: '', value: JSON.stringify(['apple']), required: '' }) // 无 name
+    const fake = fakeInternals(el)
+    el.setAttribute('size', 'small')
+    expect(fake.setValidity.mock.lastCall?.[0]).toEqual({})
+    // 取消全部选中后才报 valueMissing
+    el.setAttribute('value', '[]')
+    expect(fake.setValidity.mock.lastCall?.[0]).toEqual({ valueMissing: true })
+  })
+
   it('多选逐项点击同步：FormData 跟随选中集增减', () => {
     const el = mount({ multiple: '', name: 'tags' })
     const fake = fakeInternals(el)
