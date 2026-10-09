@@ -2,7 +2,7 @@
 
 步骤驱动的表单流程编排组件：步骤头 + 进度（「第 n / m 步」）+ 每步内容面板 + 单步校验门控。适合向导式表单 / 问卷 / 多步结算等场景。校验复用 `oas-form` 内核——**每步面板内放一个 `<oas-form>`**，下一步前对当前步校验、未过不放行；回退不校验、面板常驻不卸载（已填值保留）。
 
-> 边界：只做线性门控 + 可选步跳过 + `oas-before-change` 宿主自定义跳转；条件分支（visibleIf / 表达式引擎）与起始页/完成页暂不内置——分支跳转可经 `oas-before-change` 由宿主决定，草稿持久化请用 `current` + `getValues()` 自行实现。
+> 边界：线性门控 + 可选步跳过 + `oas-before-change` 宿主自定义跳转 + **条件分支走宿主组合通道**（`hidden` 数据位 + `oas-before-change` + `oas-values-change`，见下文）；谓词 / 表达式引擎不内置（宿主持有全量答案数据，分支决策留在宿主可 veto、可测试的应用层）。起始页/完成页暂不内置；草稿持久化请用 `current` + `getValues()` 自行实现。
 
 ## 基础用法
 
@@ -72,6 +72,56 @@
     <oas-form slot="step-2"><p style="margin: 0">确认页（演示中被宿主拦截，进不来）</p></oas-form>
   </oas-questionnaire>
   <span id="q-veto-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## 条件分支（按答案跳步）
+
+条件分支走**宿主组合通道**，不内置谓词引擎：宿主监听 `oas-values-change` 拿到答案，按业务规则改写 `steps` 翻转 `hidden` 位即生效——被隐藏步退出头部与进度、`next()` 自动跳过、其值退出取值与校验口径。若翻转的是用户所在步，组件自动把 `current` 对齐到最近可见步并派发 `oas-change`（宿主无需再手动跳转）。分支决策留宿主的好处：规则可单测、可在 `oas-before-change` 里再 veto、避免在组件内重造一套表达式语言。
+
+<DemoBlock title="按答案隐藏/恢复步骤">
+  <oas-questionnaire id="q-cond" style="width: 100%; max-width: 520px" steps='[{"key":"need","title":"是否开票"},{"key":"invoice","title":"发票信息"},{"key":"done","title":"确认提交"}]'>
+    <oas-form slot="step-need" initial-values='{"need":"yes"}'>
+      <oas-radio-group name="need">
+        <oas-radio value="yes">需要开票</oas-radio>
+        <oas-radio value="no">不需要</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-invoice" rules='{"title":[{"required":true,"message":"请输入发票抬头"}]}'>
+      <oas-input name="title" placeholder="发票抬头（必填）" style="width: 240px"></oas-input>
+    </oas-form>
+    <oas-form slot="step-done">
+      <p style="color: var(--oas-color-text-secondary); margin: 0">最后一步。</p>
+    </oas-form>
+  </oas-questionnaire>
+  <span id="q-cond-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## 切换动画（animated）
+
+`animated` 开启题目切换过渡：新面板按导航方向滑入 + 淡入（前进自行尾侧、后退自行首侧；只动 transform/opacity，合成器友好）；`prefers-reduced-motion: reduce` 用户自动降级为无动画。时长经 CSS 变量 `--oas-questionnaire-anim-duration` 覆盖（缺省 `--oas-transition-base`）；RTL 布局下滑入方向自动镜像。
+
+<DemoBlock title="animated 切换过渡（点下一步/上一步观察滑入方向）">
+  <oas-questionnaire id="q-anim" animated style="width: 100%; max-width: 520px" steps='[{"title":"第一步"},{"title":"第二步"},{"title":"第三步"}]'>
+    <oas-form slot="step-0"><p style="margin: 0">点「下一步」：本面板按导航方向滑入 + 淡入。</p></oas-form>
+    <oas-form slot="step-1"><p style="margin: 0">前进与后退的滑入方向相反；回到第一步用「上一步」观察。</p></oas-form>
+    <oas-form slot="step-2"><p style="margin: 0">最后一步。</p></oas-form>
+  </oas-questionnaire>
+  <span style="display: flex; margin-top: 8px">
+    <oas-button id="q-anim-reset">reset()</oas-button>
+  </span>
+</DemoBlock>
+
+## 键盘快捷导航（shortcuts）
+
+`shortcuts` 开启键盘切步：**Alt+←/→** 在组件内任何位置（含输入框内）切上/下一步，并吞掉默认行为（防浏览器历史导航）；**裸 ←/→**（无修饰键）仅在焦点不在输入框/文本域/可编辑区等控件时切步（不劫持光标与控件自身键盘），点击面板空白处焦点落在组件容器上同样可达。触发走与按钮相同的门控链路（当前步未过校验不放行）；物理方向映射（→ 前进 / ← 后退），RTL 不镜像，与浏览器历史键惯例一致。
+
+<DemoBlock title="shortcuts 键盘切步（点进组件内按 Alt+←/→ 试试）">
+  <oas-questionnaire id="q-kbd" shortcuts style="width: 100%; max-width: 520px" steps='[{"title":"第一步"},{"title":"第二步"},{"title":"第三步"}]'>
+    <oas-form slot="step-0"><oas-input name="k1" placeholder="输入框内按 Alt+→ 也能切步" style="width: 260px"></oas-input></oas-form>
+    <oas-form slot="step-1"><p style="margin: 0">焦点在面板空白处时，裸 ←/→ 也能切步。</p></oas-form>
+    <oas-form slot="step-2"><p style="margin: 0">最后一步。</p></oas-form>
+  </oas-questionnaire>
+  <span id="q-kbd-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## 受控 current 与方法
@@ -228,6 +278,38 @@ onMounted(() => {
     }
   })
 
+  // 切换动画：reset 提供重复观看入口
+  document.getElementById('q-anim-reset')?.addEventListener('click', () => {
+    document.getElementById('q-anim')?.reset()
+  })
+
+  // 条件分支：按答案翻转 hidden（宿主组合通道，无内建谓词引擎）
+  const cond = document.getElementById('q-cond')
+  const condOut = document.getElementById('q-cond-output')
+  const condSteps = (invoiceHidden) =>
+    JSON.stringify([
+      { key: 'need', title: '是否开票' },
+      { key: 'invoice', title: '发票信息', hidden: invoiceHidden },
+      { key: 'done', title: '确认提交' },
+    ])
+  cond?.addEventListener('oas-values-change', (e) => {
+    const need = e.detail?.values?.need
+    if (need !== 'yes' && need !== 'no') return
+    const hide = need === 'no'
+    cond.setAttribute('steps', condSteps(hide))
+    condOut.textContent = hide
+      ? '已隐藏「发票信息」步：点「下一步」将自动跳过；选回「需要开票」即恢复'
+      : '「发票信息」步已恢复显示'
+  })
+
+  // 键盘快捷导航：切步反馈
+  document.getElementById('q-kbd')?.addEventListener('oas-change', (e) => {
+    // 内层字段 oas-change 同名冒泡：只处理带 index 的切步事件
+    if (typeof e.detail?.index !== 'number') return
+    const out = document.getElementById('q-kbd-output')
+    if (out) out.textContent = `键盘切步 → 第 ${e.detail.index + 1} 步`
+  })
+
   // 受控与方法
   const ctrl = document.getElementById('q-ctrl')
   const ctrlOut = document.getElementById('q-ctrl-output')
@@ -312,6 +394,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `animated` | 题目切换过渡（opt-in，存在且非 `"false"` 时开启）：新面板按导航方向滑入 + 淡入（只动 transform/opacity）；`prefers-reduced-motion: reduce` 自动降级为无动画；RTL 滑入方向自动镜像 | `boolean` | — |
 | `current` | 当前步索引（0 起，受控双向：内部跳步写回、外部设置即时同步）；非法值回落 0，越界夹取 | `string` | `0` |
 | `finish-text` | 末步主按钮文案（覆盖 locale 缺省「完成」） | — | — |
 | `hide-header` | 隐藏内置步骤头（宿主自组合） | `boolean` | — |
@@ -321,6 +404,7 @@ onMounted(() => {
 | `prev-text` | 「上一步」按钮文案（覆盖 locale 缺省） | — | — |
 | `progress` | 进度区显隐（`progress="false"` 隐藏） | `string` | `true` |
 | `progress-variant` | 进度形态：`both`（默认，文本+进度条）/ `text` / `bar`；非法值回落 `both` | `string` | `both` |
+| `shortcuts` | 键盘快捷导航（opt-in，存在且非 `"false"` 时开启）：`Alt+←/→` 在组件内任何位置切上/下一步（吞掉默认行为防浏览器历史导航）；裸 `←/→` 仅在焦点不在输入/可编辑控件时生效（不劫持光标） | `boolean` | — |
 | `size` | 尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + dev 告警） | `string` | `medium` |
 | `skip-text` | 「跳过本步」按钮文案（覆盖 locale 缺省） | — | — |
 | `steps` | 步骤数据 JSON `[{ key?, title, description?, optional?, hidden? }]`；非法/空回落 `[]` | `QuestionnaireStep[] \| string` | `[]` |
@@ -348,6 +432,7 @@ onMounted(() => {
 
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
+| `--oas-questionnaire-anim-duration` | 切步动画时长（animated 开启时生效） | `var(--oas-transition-base, 180ms)` |
 | `--oas-questionnaire-nav-gap` | 导航区按钮间距 | `var(--oas-space-2)` |
 | `--oas-questionnaire-progress-bar-bg` | 进度条填充色 | `var(--oas-color-primary)` |
 | `--oas-questionnaire-progress-bg` | 进度条轨道底色 | `var(--oas-color-bg-hover)` |

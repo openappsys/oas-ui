@@ -64,6 +64,16 @@
       "observed": true
     },
     {
+      "name": "animated",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "shortcuts",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "size",
       "type": "string",
       "default": "medium",
@@ -79,12 +89,12 @@
   ],
   "events": [
     {
-      "name": "oas-before-change",
-      "detail": "{ index: idx, ...this.keyOf(idx), from } | { index: target, ...this.keyOf(target), from }"
+      "name": "oas-change",
+      "detail": "{ index: eff, ...this.keyOf(eff) } | { index: idx, ...this.keyOf(idx) } | { index: target, ...this.keyOf(target) }"
     },
     {
-      "name": "oas-change",
-      "detail": "{ index: idx, ...this.keyOf(idx) } | { index: target, ...this.keyOf(target) }"
+      "name": "oas-before-change",
+      "detail": "{ index: idx, ...this.keyOf(idx), from } | { index: target, ...this.keyOf(target), from }"
     },
     {
       "name": "oas-skip",
@@ -108,6 +118,10 @@
     {
       "name": "--oas-questionnaire-progress-bar-bg",
       "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-questionnaire-anim-duration",
+      "default": "var(--oas-transition-base, 180ms)"
     },
     {
       "name": "--oas-questionnaire-nav-gap",

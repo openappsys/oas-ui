@@ -158,7 +158,7 @@ describe('OASQuestionnaire', () => {
     const el = mount({ panels: [formPanel('step-basic', 'name'), formPanel('step-1', 'phone')] })
     btn(el, 'next').click()
     await el.next() // 与按钮同链路，等在途校验落地
-    await Promise.resolve()
+    await tick()
     expect(el.getAttribute('current') ?? '0').toBe('0')
     expect(el.querySelector('[slot="step-basic"] oas-input')!.hasAttribute('aria-invalid')).toBe(true)
   })
@@ -494,6 +494,154 @@ describe('OASQuestionnaire', () => {
     expect(el.getValues()).toEqual({ a: '预填', b: '2' })
   })
 
+  // ---------- 条件分支（宿主组合通道：hidden 数据位运行时翻转，不引入谓词 DSL） ----------
+
+  it('条件分支：宿主按答案改写 steps 翻转 hidden → next() 跳过被隐藏步（按答案跳转地基）', async () => {
+    const el = mount({
+      steps: [
+        { key: 'ship', title: '是否需要配送' },
+        { key: 'addr', title: '配送地址' },
+        { key: 'done', title: '完成' },
+      ],
+      panels: [
+        '<oas-form slot="step-ship"><oas-input name="need" value="yes"></oas-input></oas-form>',
+        '<oas-form slot="step-addr"><oas-input name="addr" value=""></oas-input></oas-form>',
+        '<oas-form slot="step-done"><oas-input name="note" value=""></oas-input></oas-form>',
+      ],
+    })
+    // 宿主按答案「不需要配送」翻转未来步 hidden：重写 steps 即生效
+    el.setAttribute(
+      'steps',
+      JSON.stringify([
+        { key: 'ship', title: '是否需要配送' },
+        { key: 'addr', title: '配送地址', hidden: true },
+        { key: 'done', title: '完成' },
+      ]),
+    )
+    await el.next()
+    expect(el.getAttribute('current')).toBe('2')
+    expect(items(el).length).toBe(2)
+  })
+
+  it('条件分支：当前步被运行时隐藏 → current 自动对齐到解析步 + 派发 oas-change（宿主可感知）', () => {
+    const el = mount({
+      steps: [
+        { key: 'a', title: 'A' },
+        { key: 'b', title: 'B' },
+        { key: 'c', title: 'C' },
+      ],
+      panels: [
+        '<oas-form slot="step-a"><oas-input name="a" value="1"></oas-input></oas-form>',
+        '<oas-form slot="step-b"><oas-input name="b" value="2"></oas-input></oas-form>',
+        '<oas-form slot="step-c"><oas-input name="c" value="3"></oas-input></oas-form>',
+      ],
+    })
+    el.setAttribute('current', '1')
+    expect(panels(el)[1]!.hasAttribute('hidden')).toBe(false)
+    const change = track(el, 'oas-change')
+    // 宿主隐藏用户当前所在步：current 写回解析步、oas-change 告知宿主（不派发 before-change）
+    el.setAttribute(
+      'steps',
+      JSON.stringify([
+        { key: 'a', title: 'A' },
+        { key: 'b', title: 'B', hidden: true },
+        { key: 'c', title: 'C' },
+      ]),
+    )
+    expect(el.getAttribute('current')).toBe('2')
+    expect(change).toEqual([{ index: 2, key: 'c' }])
+    // 对齐后的 current 落在可见步：不再重复对齐、不重复派发
+    el.setAttribute('validation', 'false')
+    expect(change).toEqual([{ index: 2, key: 'c' }])
+  })
+
+  it('条件分支：当前步被隐藏 → 值退出 getValues()；恢复显示后回归', async () => {
+    const el = mount({
+      steps: [
+        { key: 'a', title: 'A' },
+        { key: 'b', title: 'B' },
+        { key: 'c', title: 'C' },
+      ],
+      panels: [
+        '<oas-form slot="step-a"><oas-input name="a" value="1"></oas-input></oas-form>',
+        '<oas-form slot="step-b"><oas-input name="b" value="2"></oas-input></oas-form>',
+        '<oas-form slot="step-c"><oas-input name="c" value="3"></oas-input></oas-form>',
+      ],
+    })
+    el.setAttribute('current', '1')
+    expect(panels(el)[1]!.hasAttribute('hidden')).toBe(false)
+    // 宿主隐藏用户当前所在步：视图自动落到下一个可见步，值退出参与口径
+    el.setAttribute(
+      'steps',
+      JSON.stringify([
+        { key: 'a', title: 'A' },
+        { key: 'b', title: 'B', hidden: true },
+        { key: 'c', title: 'C' },
+      ]),
+    )
+    expect(panels(el)[1]!.hasAttribute('hidden')).toBe(true)
+    expect(panels(el)[2]!.hasAttribute('hidden')).toBe(false)
+    expect(el.getAttribute('current')).toBe('2')
+    expect(el.getValues()).toEqual({ a: '1', c: '3' })
+    expect(items(el).length).toBe(2)
+    expect(progressEl(el).getAttribute('aria-valuemax')).toBe('2')
+    // 恢复显示：一切回归
+    el.setAttribute(
+      'steps',
+      JSON.stringify([
+        { key: 'a', title: 'A' },
+        { key: 'b', title: 'B' },
+        { key: 'c', title: 'C' },
+      ]),
+    )
+    expect(el.getValues()).toEqual({ a: '1', b: '2', c: '3' })
+    expect(progressEl(el).getAttribute('aria-valuemax')).toBe('3')
+  })
+
+  // ---------- 切换动画（animated） ----------
+
+  it('animated：默认关（切步无动画标记）；开启后切步方向感知（前进/后退），首帧不动画', async () => {
+    const off = mountDefault()
+    off.setAttribute('current', '2')
+    expect(panels(off)[2]!.hasAttribute('data-anim')).toBe(false)
+    const on = mountDefault({ animated: '' })
+    // 首帧：初始渲染不播动画（避免页面加载闪动）
+    expect(panels(on)[0]!.hasAttribute('data-anim')).toBe(false)
+    on.setAttribute('current', '2')
+    expect(panels(on)[2]!.getAttribute('data-anim')).toBe('forward')
+    on.setAttribute('current', '1')
+    expect(panels(on)[1]!.getAttribute('data-anim')).toBe('backward')
+    // 非切步的重渲染（如属性变化）不重复触发动画
+    on.setAttribute('validation', 'false')
+    expect(panels(on)[1]!.hasAttribute('data-anim')).toBe(false)
+  })
+
+  it('animated="false"：显式关闭不播动画；方法导航（goto/prev）同走方向标记', () => {
+    const el = mountDefault({ animated: 'false' })
+    el.setAttribute('current', '1')
+    expect(panels(el)[1]!.hasAttribute('data-anim')).toBe(false)
+    const on = mountDefault({ animated: '' })
+    on.goto(2)
+    expect(panels(on)[2]!.getAttribute('data-anim')).toBe('forward')
+    on.prev()
+    expect(panels(on)[1]!.getAttribute('data-anim')).toBe('backward')
+  })
+
+  it('animated CSS：keyframes 只动 transform/opacity、prefers-reduced-motion 门控降级、时长走出口变量', () => {
+    const el = mountDefault({ animated: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 降级：no-preference 门控（reduce 用户零动画），门控内才有动画规则
+    expect(css).toContain('@media (prefers-reduced-motion: no-preference)')
+    expect(css).toContain('oas-questionnaire-step-in-fwd')
+    expect(css).toContain('oas-questionnaire-step-in-bwd')
+    // 只动 transform/opacity（合成器友好），无位移外的布局属性
+    expect(css).toMatch(/@keyframes oas-questionnaire-step-in-fwd\s*\{[^@]*transform:\s*translateX/)
+    expect(css).toMatch(/@keyframes oas-questionnaire-step-in-fwd\s*\{[^@]*opacity:\s*0/)
+    // 时长出口变量（宿主可覆盖）；位移轴由 RTL 方向变量翻转
+    expect(css).toContain('var(--oas-questionnaire-anim-duration,')
+    expect(css).toContain('var(--q-dir, 1)')
+  })
+
   // ---------- i18n ----------
 
   it('i18n：setLocale(en) 后按钮/进度文案切英文；末步按钮为完成文案；文案属性覆盖', () => {
@@ -575,6 +723,84 @@ describe('OASQuestionnaire', () => {
     expect(el.getAttribute('current')).toBe('0')
     // prev() 自身的合法切步事件只有一次（落地后不再派发旧 target 的切步）
     expect(change).toEqual([{ index: 0 }])
+  })
+
+  // ---------- 键盘快捷导航（shortcuts） ----------
+
+  /** 向目标派发 keydown（模拟真实焦点在组件内的冒泡路径）；返回 dispatchEvent 结果（false = 被 preventDefault） */
+  function keyOn(target: Element, init: KeyboardEventInit): boolean {
+    return target.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, composed: true, cancelable: true, ...init }),
+    )
+  }
+
+  /** next() 校验管线可能跨多个微任务：宏任务 tick 等待落地 */
+  const tick = (): Promise<void> => new Promise((r) => setTimeout(r, 0))
+
+  /** oas-input 内部原生 input（真实事件 target；closest('input') 判据的依据） */
+  function nativeInput(el: OASQuestionnaire, slot: string): HTMLInputElement {
+    const host = el.querySelector(`[slot="${slot}"] oas-input`) as HTMLElement
+    return host.shadowRoot!.querySelector('input') as HTMLInputElement
+  }
+
+  it('shortcuts：默认关；开启后 Alt+←/→ 切步并吞掉默认行为（防浏览器历史导航）', async () => {
+    const off = mountDefault()
+    keyOn(off, { key: 'ArrowRight', altKey: true })
+    await tick()
+    expect(off.getAttribute('current') ?? '0').toBe('0')
+    const el = mountDefault({ shortcuts: '' })
+    // host 上派发（shadow/slotted 内容冒泡同路）；preventDefault → dispatchEvent 返回 false
+    expect(keyOn(el, { key: 'ArrowRight', altKey: true })).toBe(false)
+    await tick()
+    expect(el.getAttribute('current')).toBe('1')
+    expect(keyOn(el, { key: 'ArrowLeft', altKey: true })).toBe(false)
+    await tick()
+    expect(el.getAttribute('current')).toBe('0')
+  })
+
+  it('shortcuts：裸 ←/→ 仅在焦点不在输入类控件时生效；输入框内裸方向键不劫持（Alt 组合仍可切步）', async () => {
+    const el = mountDefault()
+    el.setAttribute('shortcuts', '')
+    const input = nativeInput(el, 'step-basic')
+    // 输入框内裸 →：光标移动不受劫持（未 preventDefault、不切步）
+    expect(keyOn(input, { key: 'ArrowRight' })).toBe(true)
+    await tick()
+    expect(el.getAttribute('current') ?? '0').toBe('0')
+    // host 容器上裸 →：切步生效
+    expect(keyOn(el, { key: 'ArrowRight' })).toBe(false)
+    await tick()
+    expect(el.getAttribute('current')).toBe('1')
+    // 输入框内 Alt+→：仍切步（当前步 1 的必填 phone 先填好放行门控）
+    fill(el.querySelector('[slot="step-1"] oas-input')!, '13800138000')
+    expect(keyOn(input, { key: 'ArrowRight', altKey: true })).toBe(false)
+    await tick()
+    expect(el.getAttribute('current')).toBe('2')
+  })
+
+  it('shortcuts：host tabindex=-1 兜底（点击面板空白处焦点落 host，裸方向键可达）；宿主显式 tabindex 不覆盖', () => {
+    const el = mountDefault()
+    expect(el.getAttribute('tabindex')).toBe('-1')
+    const custom = mountDefault({ tabindex: '0' })
+    expect(custom.getAttribute('tabindex')).toBe('0')
+  })
+
+  it('shortcuts：shortcuts="false" 显式关闭；Ctrl/Meta 组合不触发；IME 组合中跳过；末步吞默认但不切步', async () => {
+    const el = mountDefault({ shortcuts: 'false' })
+    expect(keyOn(el, { key: 'ArrowRight', altKey: true })).toBe(true)
+    await tick()
+    expect(el.getAttribute('current') ?? '0').toBe('0')
+    el.setAttribute('shortcuts', 'true')
+    // 修饰键不匹配：不处理也不吞默认
+    expect(keyOn(el, { key: 'ArrowRight', ctrlKey: true })).toBe(true)
+    expect(keyOn(el, { key: 'ArrowRight', metaKey: true })).toBe(true)
+    // IME 组合中：跳过
+    expect(keyOn(el, { key: 'ArrowRight', isComposing: true })).toBe(true)
+    expect(el.getAttribute('current') ?? '0').toBe('0')
+    // 末步：无下一步可走但不吞默认失败——preventDefault 仍发生（吞浏览器历史导航），current 不动
+    el.setAttribute('current', '2')
+    expect(keyOn(el, { key: 'ArrowRight', altKey: true })).toBe(false)
+    await tick()
+    expect(el.getAttribute('current')).toBe('2')
   })
 
   // ---------- 样式机制（token / 逻辑属性 / 焦点环 / hidden 兜底） ----------

@@ -168,6 +168,77 @@ test('questionnaire before-change 否决：linear=false 点击未来步被宿主
   await expect(page.locator('#q-veto-output')).toContainText('宿主已否决')
 })
 
+test('questionnaire 条件分支：按答案翻转 hidden → 头部收缩、next 自动跳过、恢复显示、汇总值跟随', async ({ page }) => {
+  await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#q-cond')
+  const q = page.locator('#q-cond')
+  const headerCount = () => q.evaluate((el) => el.shadowRoot!.querySelectorAll('.steps .item').length)
+
+  // 初始三步可见；选「不需要」→ 宿主翻转 hidden → 头部 3 → 2、反馈可见
+  expect(await headerCount()).toBe(3)
+  await page.locator('#q-cond oas-radio[value="no"]').click()
+  await expect(page.locator('#q-cond-output')).toContainText('已隐藏')
+  expect(await headerCount()).toBe(2)
+  await expect(q.locator('.progress')).toHaveAttribute('aria-valuemax', '2')
+
+  // next 自动跳过被隐藏步：直达确认提交（current=2）
+  await realClick(page, '#q-cond', '[part="next"]')
+  await expect(q).toHaveAttribute('current', '2')
+
+  // 回到第一步选回「需要开票」→ 步骤恢复、头部回到 3
+  await realClick(page, '#q-cond', '[part="item-button"]')
+  await expect(q).toHaveAttribute('current', '0')
+  await page.locator('#q-cond oas-radio[value="yes"]').click()
+  await expect(page.locator('#q-cond-output')).toContainText('已恢复')
+  expect(await headerCount()).toBe(3)
+  await expect(q.locator('.progress')).toHaveAttribute('aria-valuemax', '3')
+})
+
+test('questionnaire animated：开启后切步面板带方向标记、首帧与默认关无标记（动画视觉待人工核对）', async ({ page }) => {
+  await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#q-anim')
+  const q = page.locator('#q-anim')
+  const animOf = (step: number) =>
+    q.evaluate((el, s) => el.shadowRoot!.querySelector(`.panel[data-step="${s}"]`)!.getAttribute('data-anim'), step)
+
+  // 首帧不动画；前进切步 → 新面板 forward 标记
+  expect(await animOf(0)).toBeNull()
+  await realClick(page, '#q-anim', '[part="next"]')
+  await expect(q).toHaveAttribute('current', '1')
+  expect(await animOf(1)).toBe('forward')
+
+  // 后退 → backward 标记；非切步重渲染不重复触发
+  await realClick(page, '#q-anim', '[part="prev"]')
+  await expect(q).toHaveAttribute('current', '0')
+  expect(await animOf(0)).toBe('backward')
+})
+
+test('questionnaire shortcuts：Alt+→ 切步（输入框内也生效）、裸方向键输入避让、面板空白处可达、反馈可见', async ({
+  page,
+}) => {
+  await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#q-kbd')
+  const q = page.locator('#q-kbd')
+
+  // 输入框内裸 →：不切步（光标避让；初始步 current 属性为空/0）
+  await page.click('#q-kbd oas-input input')
+  await page.keyboard.press('ArrowRight')
+  const current0 = await q.evaluate((el) => el.getAttribute('current'))
+  expect(current0 === null || current0 === '0').toBe(true)
+
+  // 输入框内 Alt+→：切步（真实键盘事件）
+  await page.keyboard.press('Alt+ArrowRight')
+  await expect(q).toHaveAttribute('current', '1')
+  await expect(page.locator('#q-kbd-output')).toContainText('键盘切步 → 第 2 步')
+
+  // 点击面板空白 <p>：焦点落 host（tabindex=-1 兜底）→ 裸 → 前进、裸 ← 后退
+  await page.click('#q-kbd [slot="step-1"] p')
+  await page.keyboard.press('ArrowRight')
+  await expect(q).toHaveAttribute('current', '2')
+  await page.keyboard.press('ArrowLeft')
+  await expect(q).toHaveAttribute('current', '1')
+})
+
 test('questionnaire 跳过：optional 步点跳过按钮不校验直接前进', async ({ page }) => {
   await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#q-skip')

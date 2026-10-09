@@ -2,7 +2,7 @@
 
 A step-driven form flow orchestrator: step header + progress ("Step n / m") + per-step content panels + per-step validation gating. Ideal for wizards, surveys, and multi-step checkout. Validation reuses the `oas-form` kernel — **place one `<oas-form>` inside each step panel**; moving forward validates the current step and blocks on failure, while going back never validates and panels stay mounted (filled values are preserved).
 
-> v1 scope: linear gating + optional-step skip + host-defined jumps via `oas-before-change` only. Conditional branching (visibleIf / expression engine) and start/complete pages are not built in — use `oas-before-change` for custom jumps, and implement draft persistence yourself via `current` + `getValues()`.
+> Scope: linear gating + optional-step skip + host-defined jumps via `oas-before-change` + **conditional branching via the host composition channel** (`hidden` data bit + `oas-before-change` + `oas-values-change`, see below). No predicate / expression engine is built in — the host owns the full answer data, keeping branch logic testable and vetoable at the application layer. Start/complete pages are not built in; implement draft persistence yourself via `current` + `getValues()`.
 
 ## Basic usage
 
@@ -72,6 +72,56 @@ Before any jump (buttons / header clicks / `next()` / `prev()` / `goto()` / skip
     <oas-form slot="step-2"><p style="margin: 0">Confirm page (blocked by the host in this demo)</p></oas-form>
   </oas-questionnaire>
   <span id="q-veto-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## Conditional branching (skip by answer)
+
+Conditional branching uses the **host composition channel** — no built-in predicate engine: listen for `oas-values-change` to read the answer, then rewrite `steps` to flip the `hidden` bit. Hidden steps leave the header and progress, `next()` skips them automatically, and their values drop out of the values/validation scope. If the flipped step is the one the user is on, the component aligns `current` to the nearest visible step and emits `oas-change` (no manual jump needed). Keeping branch logic in the host means: testable rules, an extra veto point in `oas-before-change`, and no expression language re-invented inside the component.
+
+<DemoBlock title="Hide/restore steps by answer">
+  <oas-questionnaire id="q-cond" style="width: 100%; max-width: 520px" steps='[{"key":"need","title":"Invoicing"},{"key":"invoice","title":"Invoice details"},{"key":"done","title":"Confirm"}]'>
+    <oas-form slot="step-need" initial-values='{"need":"yes"}'>
+      <oas-radio-group name="need">
+        <oas-radio value="yes">Invoice needed</oas-radio>
+        <oas-radio value="no">No invoice</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-invoice" rules='{"title":[{"required":true,"message":"Invoice title is required"}]}'>
+      <oas-input name="title" placeholder="Invoice title (required)" style="width: 240px"></oas-input>
+    </oas-form>
+    <oas-form slot="step-done">
+      <p style="color: var(--oas-color-text-secondary); margin: 0">Final step.</p>
+    </oas-form>
+  </oas-questionnaire>
+  <span id="q-cond-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## Step transition (animated)
+
+`animated` enables the step transition: the incoming panel slides in along the navigation direction (forward from the inline-end side, backward from the inline-start side) while fading in — transform/opacity only, compositor-friendly; users with `prefers-reduced-motion: reduce` automatically get no animation. Override the duration via the CSS variable `--oas-questionnaire-anim-duration` (defaults to `--oas-transition-base`); the slide direction mirrors automatically in RTL layouts.
+
+<DemoBlock title="animated transition (click Next/Previous to watch the slide direction)">
+  <oas-questionnaire id="q-anim" animated style="width: 100%; max-width: 520px" steps='[{"title":"Step 1"},{"title":"Step 2"},{"title":"Step 3"}]'>
+    <oas-form slot="step-0"><p style="margin: 0">Click "Next": this panel slides in along the navigation direction.</p></oas-form>
+    <oas-form slot="step-1"><p style="margin: 0">Forward and backward slide from opposite sides; use "Previous" to watch the return.</p></oas-form>
+    <oas-form slot="step-2"><p style="margin: 0">Final step.</p></oas-form>
+  </oas-questionnaire>
+  <span style="display: flex; margin-top: 8px">
+    <oas-button id="q-anim-reset">reset()</oas-button>
+  </span>
+</DemoBlock>
+
+## Keyboard shortcuts
+
+`shortcuts` enables keyboard step navigation: **Alt+←/→** works anywhere inside the component (including inside inputs) and swallows the default action (preventing browser history navigation); **bare ←/→** (no modifiers) only switches steps when focus is not inside an input/textarea/editable region (never hijacks the caret or control-specific keyboard handling) — clicking panel whitespace focuses the component container, where bare arrows also work. Triggers reuse the same gating chain as the buttons (a failing current step blocks advance); physical mapping (→ forward / ← back), not mirrored in RTL, matching the browser history-key convention.
+
+<DemoBlock title="shortcuts (click into the component, then try Alt+←/→)">
+  <oas-questionnaire id="q-kbd" shortcuts style="width: 100%; max-width: 520px" steps='[{"title":"Step 1"},{"title":"Step 2"},{"title":"Step 3"}]'>
+    <oas-form slot="step-0"><oas-input name="k1" placeholder="Alt+→ works inside inputs too" style="width: 260px"></oas-input></oas-form>
+    <oas-form slot="step-1"><p style="margin: 0">With focus on panel whitespace, bare ←/→ also switch steps.</p></oas-form>
+    <oas-form slot="step-2"><p style="margin: 0">Final step.</p></oas-form>
+  </oas-questionnaire>
+  <span id="q-kbd-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## Controlled current & methods
@@ -228,6 +278,38 @@ onMounted(() => {
     }
   })
 
+  // Animated transition: reset as a replay entry point
+  document.getElementById('q-anim-reset')?.addEventListener('click', () => {
+    document.getElementById('q-anim')?.reset()
+  })
+
+  // Conditional branching: flip hidden by answer (host composition channel, no built-in predicate engine)
+  const cond = document.getElementById('q-cond')
+  const condOut = document.getElementById('q-cond-output')
+  const condSteps = (invoiceHidden) =>
+    JSON.stringify([
+      { key: 'need', title: 'Invoicing' },
+      { key: 'invoice', title: 'Invoice details', hidden: invoiceHidden },
+      { key: 'done', title: 'Confirm' },
+    ])
+  cond?.addEventListener('oas-values-change', (e) => {
+    const need = e.detail?.values?.need
+    if (need !== 'yes' && need !== 'no') return
+    const hide = need === 'no'
+    cond.setAttribute('steps', condSteps(hide))
+    condOut.textContent = hide
+      ? 'The "Invoice details" step is hidden: "Next" will skip it; switch back to "Invoice needed" to restore'
+      : 'The "Invoice details" step is visible again'
+  })
+
+  // Keyboard shortcuts: step feedback
+  document.getElementById('q-kbd')?.addEventListener('oas-change', (e) => {
+    // A field's own oas-change bubbles out and shares the event name: only handle step changes (with index)
+    if (typeof e.detail?.index !== 'number') return
+    const out = document.getElementById('q-kbd-output')
+    if (out) out.textContent = `Keyboard step → step ${e.detail.index + 1}`
+  })
+
   // Controlled & methods
   const ctrl = document.getElementById('q-ctrl')
   const ctrlOut = document.getElementById('q-ctrl-output')
@@ -312,6 +394,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `animated` | Step transition (opt-in, on when present and not `"false"`): the incoming panel slides in along the navigation direction while fading in (transform/opacity only); automatically disabled for `prefers-reduced-motion: reduce`; slide direction mirrors in RTL | `boolean` | — |
 | `current` | Current step index (0-based, two-way: internal jumps write back, external updates sync instantly); invalid values fall back to 0, out-of-range clamped | `string` | `0` |
 | `finish-text` | Last-step primary button label (overrides the locale default "Submit") | — | — |
 | `hide-header` | Hide the built-in step header (host composition) | `boolean` | — |
@@ -321,6 +404,7 @@ onMounted(() => {
 | `prev-text` | "Previous" button label (overrides the locale default) | — | — |
 | `progress` | Progress region visibility (`progress="false"` hides it) | `string` | `true` |
 | `progress-variant` | Progress variant: `both` (default, text + bar) / `text` / `bar`; invalid values fall back to `both` | `string` | `both` |
+| `shortcuts` | Keyboard step navigation (opt-in, on when present and not `"false"`): `Alt+←/→` switches steps anywhere inside the component (swallows the default to prevent browser history navigation); bare `←/→` only when focus is outside inputs/editable controls (never hijacks the caret) | `boolean` | — |
 | `size` | Size tier: `xs`/`small`/`medium`/`large`/`xl` (title font density; invalid values fall back to medium + dev warning) | `string` | `medium` |
 | `skip-text` | "Skip this step" button label (overrides the locale default) | — | — |
 | `steps` | Step data JSON `[{ key?, title, description?, optional?, hidden? }]`; invalid/empty falls back to `[]` | `QuestionnaireStep[] \| string` | `[]` |
@@ -348,6 +432,7 @@ onMounted(() => {
 
 | CSS Variable | Description | Default |
 | --- | --- | --- |
+| `--oas-questionnaire-anim-duration` | Step transition duration (applies when animated is on) | `var(--oas-transition-base, 180ms)` |
 | `--oas-questionnaire-nav-gap` | Nav region button gap | `var(--oas-space-2)` |
 | `--oas-questionnaire-progress-bar-bg` | Progress fill color | `var(--oas-color-primary)` |
 | `--oas-questionnaire-progress-bg` | Progress track background | `var(--oas-color-bg-hover)` |

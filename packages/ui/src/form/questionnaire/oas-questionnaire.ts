@@ -2,8 +2,10 @@ import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 
 /**
- * 步骤数据契约（v1）：线性门控 + 可选跳过 + oas-before-change 宿主自定跳转。
- * visibleIf 谓词 / 表达式引擎 / 分支跳转延后（hidden 为宿主预算好的可见性扩展位）。
+ * 步骤数据契约：线性门控 + 可选跳过 + 条件分支（宿主组合通道）。
+ * 条件分支不内置谓词 / 表达式引擎：宿主监听 oas-values-change 按答案改写 steps 翻转 hidden，
+ * 组件负责 hidden 的全部导航/取值/校验口径（含 current 落在 hidden 步时的自动对齐）；
+ * oas-before-change 保留宿主 veto 与自定义跳转挂点。
  */
 export interface QuestionnaireStep {
   /** 步骤唯一标识：事件回传与面板 slot 名（slot="step-<key>"）；缺省用数组下标 */
@@ -12,7 +14,8 @@ export interface QuestionnaireStep {
   description?: string
   /** 可跳过：显示 Skip 按钮，未答亦放行（跳过不触发校验；跳过后该步退出取值/校验口径，重新进入恢复） */
   optional?: boolean
-  /** 宿主预算好的可见性：不在流程内（不渲染头部、不计进度、导航跳过；值与校验同不计入） */
+  /** 可见性数据位（条件分支的组合通道）：宿主按答案预算/运行时改写——隐藏步不渲染头部、
+   * 不计进度、导航自动跳过、值与校验不计入；用户所在步被隐藏时 current 自动对齐到最近可见步 */
   hidden?: boolean
 }
 
@@ -211,6 +214,39 @@ const STYLE = `
 .panel[hidden] {
   display: none;
 }
+/* —— 题目切换动画（animated 开启时）：只动 transform/opacity（合成器友好）。
+ * prefers-reduced-motion: no-preference 门控 = reduce 用户零动画；
+ * 位移轴乘 --q-dir（host direction 探测写入 bodyEl 内联），RTL 自动镜像 —— */
+@media (prefers-reduced-motion: no-preference) {
+  .panel[data-anim='forward'] {
+    animation: oas-questionnaire-step-in-fwd
+      var(--oas-questionnaire-anim-duration, var(--oas-transition-base, 180ms)) var(--oas-ease-out, ease-out) both;
+  }
+  .panel[data-anim='backward'] {
+    animation: oas-questionnaire-step-in-bwd
+      var(--oas-questionnaire-anim-duration, var(--oas-transition-base, 180ms)) var(--oas-ease-out, ease-out) both;
+  }
+}
+@keyframes oas-questionnaire-step-in-fwd {
+  from {
+    opacity: 0;
+    transform: translateX(calc(16px * var(--q-dir, 1)));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes oas-questionnaire-step-in-bwd {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-16px * var(--q-dir, 1)));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 /* —— 导航区 —— */
 .nav {
   display: flex;
@@ -308,6 +344,10 @@ export class OASQuestionnaire extends OASElement {
       'skip-text',
       'hide-header',
       'hide-nav',
+      // 切换动画开关（opt-in；prefers-reduced-motion 自动降级为无动画）
+      'animated',
+      // 键盘快捷导航开关（opt-in；Alt+←/→ 恒可用 + 裸 ←/→ 输入避让）
+      'shortcuts',
       // size 五档（字号密度档位，几何恒定）
       'size',
     ]
@@ -317,6 +357,9 @@ export class OASQuestionnaire extends OASElement {
 
   /** 门控在途标志：next/submit 重入保护（异步 validator 未落地时不重复推进） */
   private busy = false
+
+  /** 上一次渲染的有效步：null = 尚未首帧（首帧不播切换动画）；切步方向标记的基准 */
+  private lastEff: number | null = null
 
   /** 每步被跟踪的值快照（内层 oas-form 的 oas-values-change detail.values，嵌套结构） */
   private tracked = new Map<number, Record<string, unknown>>()
@@ -378,6 +421,13 @@ export class OASQuestionnaire extends OASElement {
     this.prevBtn?.addEventListener('click', () => this.prev())
     this.nextBtn?.addEventListener('click', () => void this.primaryAction())
     this.skipBtn?.addEventListener('click', () => this.skipStep())
+    // 键盘快捷导航（host 级 keydown：shadow 内 + slotted light DOM 的冒泡都经过 host，
+    // 天然限定「焦点在组件内」才生效；同引用 addEventListener 幂等）
+    this.addEventListener('keydown', this.onKeydown)
+    this.onCleanup(() => this.removeEventListener('keydown', this.onKeydown))
+    // tabindex=-1 兜底：点击面板空白处（无 tabindex 内容）焦点落到 host 而非 body，
+    // 裸方向键在「点进组件后」依然可达；-1 不进 Tab 序、宿主显式设置不覆盖
+    if (this.getAttribute('tabindex') === null) this.setAttribute('tabindex', '-1')
     // 面板内容由宿主后挂（slot content 晚于连接）时重发现内层 form
     if (typeof MutationObserver !== 'undefined') {
       this.domObserver = new MutationObserver(() => {
@@ -409,6 +459,7 @@ export class OASQuestionnaire extends OASElement {
 
   /** 断开重连：内层 form 值监听重挂 + MutationObserver 重挂（cleanup 断开时已 disconnect） */
   protected override onReconnect(): void {
+    this.addEventListener('keydown', this.onKeydown)
     this.bindValueListeners()
     this.domObserver?.observe(this, { childList: true, subtree: true })
   }
@@ -424,11 +475,57 @@ export class OASQuestionnaire extends OASElement {
     // 重新进入被跳过的步即恢复参与：导航（next/prev/goto）与宿主直接写 current 两条路径
     // 都汇经 update，统一在此清除该步的跳过记录
     this.skipped.delete(eff)
+    // 条件分支（组合通道）：宿主运行时翻转 hidden 后 current 可能落在 hidden 步——
+    // 视图本就跟随解析步渲染，此处把受控属性与事件流对齐到用户所见（含首帧）
+    this.alignCurrent(eff)
     this.syncHeader(eff)
     this.syncProgress(eff)
-    this.syncPanels(eff)
+    this.syncAnimDir()
+    this.syncPanels(eff, this.animFor(eff))
     this.syncNav(eff)
     this.bindValueListeners()
+    this.lastEff = eff
+  }
+
+  /** 切换动画开关：opt-in（存在即开，="false" 显式关闭；Vue :animated="false" 移除属性即关） */
+  private animatedEnabled(): boolean {
+    if (!this.hasAttr('animated')) return false
+    return this.getAttribute('animated') !== 'false'
+  }
+
+  /** 切步方向标记：首帧（lastEff 为 null）与非切步重渲染不动画；前进/后退方向感知 */
+  private animFor(eff: number): 'forward' | 'backward' | null {
+    if (!this.animatedEnabled() || this.lastEff === null || this.lastEff === eff) return null
+    return eff > this.lastEff ? 'forward' : 'backward'
+  }
+
+  /** RTL 位移轴：host 计算 direction 写入 bodyEl 内联（keyframes 乘 var(--q-dir, 1) 镜像）
+   *（happy-dom 等环境 getComputedStyle 可能受限，异常兜底 ltr） */
+  private syncAnimDir(): void {
+    if (!this.bodyEl) return
+    let dir = 'ltr'
+    try {
+      dir = getComputedStyle(this).direction || 'ltr'
+    } catch {
+      /* 保持 ltr 兜底 */
+    }
+    this.bodyEl.style.setProperty('--q-dir', dir === 'rtl' ? '-1' : '1')
+  }
+
+  /**
+   * current 对齐：raw current 解析后落在 hidden 步（宿主按答案翻转 hidden）时，
+   * 写回 current = 解析步并派发 oas-change（宿主同步自身状态，无需再手动 goto）。
+   * 非用户导航动作：不派发 before-change（视图已随解析步渲染，无可 veto 的跳步）；
+   * 全部步 hidden 的退化路径（解析步 = 原 clamp）不动。写回触发一次重入 update 即收敛。
+   */
+  private alignCurrent(eff: number): void {
+    const n = this._steps.length
+    if (n === 0) return
+    const raw = Number(this.getAttr('current', '0'))
+    const clamp = Math.min(Math.max(Number.isFinite(raw) ? Math.floor(raw) : 0, 0), n - 1)
+    if (clamp === eff) return
+    this.setAttribute('current', String(eff))
+    this.emit('change', { index: eff, ...this.keyOf(eff) })
   }
 
   private parseSteps(): void {
@@ -636,8 +733,9 @@ export class OASQuestionnaire extends OASElement {
     if (this.liveEl) this.liveEl.textContent = `${stepLabel} ${this._steps[eff]?.title ?? ''}`.trim()
   }
 
-  /** 面板重建：slot 名按 key ?? 原始数组下标（宿主 slot 接线稳定）；仅切 hidden 不卸载 light DOM */
-  private syncPanels(eff: number): void {
+  /** 面板重建：slot 名按 key ?? 原始数组下标（宿主 slot 接线稳定）；仅切 hidden 不卸载 light DOM。
+   * anim 非空时给新 active 面板挂方向标记（元素新建 → CSS 入场动画只跑这一次；首帧与非切步为 null） */
+  private syncPanels(eff: number, anim: 'forward' | 'backward' | null = null): void {
     if (!this.bodyEl) return
     this.bodyEl.innerHTML = ''
     for (let idx = 0; idx < this._steps.length; idx++) {
@@ -646,6 +744,7 @@ export class OASQuestionnaire extends OASElement {
       panel.className = 'panel'
       panel.setAttribute('part', 'panel')
       panel.setAttribute('data-step', String(idx))
+      if (idx === eff && anim) panel.setAttribute('data-anim', anim)
       if (idx !== eff || step.hidden) panel.setAttribute('hidden', '')
       const slot = document.createElement('slot')
       slot.setAttribute('name', step.key ? `step-${step.key}` : `step-${idx}`)
@@ -717,6 +816,48 @@ export class OASQuestionnaire extends OASElement {
   }
 
   // ---------- 导航与门控 ----------
+
+  /** 快捷导航开关：opt-in（存在即开，="false" 显式关闭；运行时增删属性即时生效） */
+  private shortcutsEnabled(): boolean {
+    if (!this.hasAttr('shortcuts')) return false
+    return this.getAttribute('shortcuts') !== 'false'
+  }
+
+  /**
+   * 裸方向键避让：事件 target（composedPath[0]，穿透 shadow）落在输入/可编辑/
+   * 箭头键消费控件内时不劫持——原生 input（oas-input/radio/checkbox 内核）、
+   * textarea、select、contenteditable 与 slider/menu/tab 等 role 控件自身命中。
+   */
+  private isEditableTarget(e: KeyboardEvent): boolean {
+    const target = (e.composedPath()[0] ?? e.target) as Element | null
+    if (!target || !(target instanceof Element)) return false
+    return (
+      target.closest(
+        'input, textarea, select, [contenteditable="true"], [contenteditable=""], [role="slider"], [role="radiogroup"], [role="listbox"], [role="combobox"], [role="menu"], [role="menuitem"], [role="tab"]',
+      ) !== null
+    )
+  }
+
+  /**
+   * 键盘快捷导航：
+   * - Alt+←/→ 恒可用（含输入框内——Alt 组合不移动光标），preventDefault 吞掉浏览器历史导航；
+   * - 裸 ←/→（无任何修饰键）仅在焦点不在输入类控件时切步（不劫持光标/控件键盘）；
+   * - Ctrl/Meta/Shift 组合一律不处理（保留系统/浏览器快捷键）；IME 组合中跳过；
+   * - 触发走 next()/prev() 同一门控链路（校验未过/边界自然拦截）；物理方向映射
+   *   （→ 前进 / ← 后退，RTL 不镜像，与浏览器历史键惯例一致）。
+   */
+  private readonly onKeydown = (e: KeyboardEvent): void => {
+    if (!this.shortcutsEnabled()) return
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    if (e.isComposing) return
+    const alt = e.altKey && !e.ctrlKey && !e.metaKey
+    const bare = !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey
+    if (!alt && !bare) return
+    if (bare && this.isEditableTarget(e)) return
+    e.preventDefault()
+    if (e.key === 'ArrowRight') void this.next()
+    else this.prev()
+  }
 
   /** 统一跳转：before-change 拦截点（cancelable）→ 写 current → 派发 oas-change{index,key?} */
   private moveTo(idx: number): boolean {

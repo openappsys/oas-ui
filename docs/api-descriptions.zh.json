@@ -4047,6 +4047,7 @@
   },
   "oas-questionnaire": {
     "attrs": {
+      "animated": "题目切换过渡（opt-in，存在且非 `\"false\"` 时开启）：新面板按导航方向滑入 + 淡入（只动 transform/opacity）；`prefers-reduced-motion: reduce` 自动降级为无动画；RTL 滑入方向自动镜像",
       "current": "当前步索引（0 起，受控双向：内部跳步写回、外部设置即时同步）；非法值回落 0，越界夹取",
       "finish-text": "末步主按钮文案（覆盖 locale 缺省「完成」）",
       "hide-header": "隐藏内置步骤头（宿主自组合）",
@@ -4056,6 +4057,7 @@
       "prev-text": "「上一步」按钮文案（覆盖 locale 缺省）",
       "progress": "进度区显隐（`progress=\"false\"` 隐藏）",
       "progress-variant": "进度形态：`both`（默认，文本+进度条）/ `text` / `bar`；非法值回落 `both`",
+      "shortcuts": "键盘快捷导航（opt-in，存在且非 `\"false\"` 时开启）：`Alt+←/→` 在组件内任何位置切上/下一步（吞掉默认行为防浏览器历史导航）；裸 `←/→` 仅在焦点不在输入/可编辑控件时生效（不劫持光标）",
       "size": "尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + dev 告警）",
       "skip-text": "「跳过本步」按钮文案（覆盖 locale 缺省）",
       "steps": "步骤数据 JSON `[{ key?, title, description?, optional?, hidden? }]`；非法/空回落 `[]`",
@@ -4074,6 +4076,7 @@
       "step-<index>": "步骤内容面板（无 key 的步骤按数组下标关联）"
     },
     "cssVars": {
+      "--oas-questionnaire-anim-duration": "切步动画时长（animated 开启时生效）",
       "--oas-questionnaire-nav-gap": "导航区按钮间距",
       "--oas-questionnaire-progress-bg": "进度条轨道底色",
       "--oas-questionnaire-progress-bar-bg": "进度条填充色"
