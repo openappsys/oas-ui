@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { bindCoarseTap, clickIgnorable } from '../../shared/coarse-tap.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
@@ -783,31 +784,13 @@ export class OAStooltip extends OASElement {
     this.tipEl.style.setProperty('--oas-tooltip-color', on)
   }
 
-  /** 任意色值实心底的文字色：按相对亮度取深/浅（#rgb/#rrggbb/rgb(a) 可解析；其余回落白字 token） */
+  /** 任意色值实心底的文字色：按相对亮度取深/浅（共享实现见 `shared/on-color`；不可解析回落白字 token） */
   private pickOnColor(color: string): string {
-    let r = 0
-    let g = 0
-    let b = 0
-    const hex = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
-    const rgb = color.trim().match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i)
-    if (hex) {
-      const h = hex[1]!.length === 3 ? hex[1]!.replace(/(.)/g, '$1$1') : hex[1]!
-      r = parseInt(h.slice(0, 2), 16)
-      g = parseInt(h.slice(2, 4), 16)
-      b = parseInt(h.slice(4, 6), 16)
-    } else if (rgb) {
-      r = Number(rgb[1])
-      g = Number(rgb[2])
-      b = Number(rgb[3])
-    } else {
-      return 'var(--oas-color-text-on-primary)'
-    }
-    const f = (v: number): number => {
-      v /= 255
-      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
-    }
-    const lum = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
-    return lum > 0.35 ? 'var(--oas-color-text-primary)' : 'var(--oas-color-text-on-primary)'
+    return pickOnColorBase(color, {
+      dark: 'var(--oas-color-text-primary)',
+      light: 'var(--oas-color-text-on-primary)',
+      fallback: 'var(--oas-color-text-on-primary)',
+    })
   }
 
   /** max-width：数字补 px 或 CSS 长度（token 开口 --oas-tooltip-max-width 兜底 240px） */

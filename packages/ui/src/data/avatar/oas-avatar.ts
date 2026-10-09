@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 
 /** 相机图标（trigger 遮罩默认内容，原创 SVG；stroke=currentColor 随遮罩文字色） */
 const CAMERA_SVG =
@@ -43,34 +44,10 @@ function resolveSize(raw: string): number {
 }
 
 /**
- * 自定义色实心底的文字色：按相对亮度取深/浅，保证对比可读。
- * 支持 #rgb/#rrggbb/rgb(a) 解析；其余写法（var()/色名）返回 ''（由调用方回落 token）。
+ * 自定义色实心底的文字色：按相对亮度取深/浅，保证对比可读（共享实现见 `shared/on-color`）。
  */
 function pickOnColor(color: string): string {
-  let r = 0
-  let g = 0
-  let b = 0
-  const hex = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
-  const rgb = color.trim().match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i)
-  if (hex) {
-    const h = hex[1]!.length === 3 ? hex[1]!.replace(/(.)/g, '$1$1') : hex[1]!
-    r = parseInt(h.slice(0, 2), 16)
-    g = parseInt(h.slice(2, 4), 16)
-    b = parseInt(h.slice(4, 6), 16)
-  } else if (rgb) {
-    r = Number(rgb[1])
-    g = Number(rgb[2])
-    b = Number(rgb[3])
-  } else {
-    return ''
-  }
-  // W3C 相对亮度；0.35 阈值：亮底取深字、暗底取白字
-  const f = (v: number) => {
-    v /= 255
-    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
-  }
-  const lum = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
-  return lum > 0.35 ? '#18181b' : '#ffffff'
+  return pickOnColorBase(color, { dark: '#18181b', light: '#ffffff', fallback: '' })
 }
 
 /**

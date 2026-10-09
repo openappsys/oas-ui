@@ -1,4 +1,5 @@
 import { OASElement, readConfigValue } from '@oas-ui/core'
+import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { hintUnresolvedIcon } from '../../shared/icon-hint.js'
@@ -36,43 +37,10 @@ function warnInvalidSize(raw: string): void {
 }
 
 /**
- * 解析 CSS 颜色为 rgb。快路径 #rgb/#rrggbb/rgb(a)；色名/oklch 等经隐藏探针交浏览器解析；
- * `var()` 与非法色值返回 null（前者走 CSS 兜底 token）。
+ * 实底选中态「on」色（薄封装，共享实现见 `shared/on-color`；不可解析回落 CSS 兜底 token）。
  */
-function resolveRgb(color: string): { r: number; g: number; b: number } | null {
-  const c = color.trim()
-  const hex = c.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
-  if (hex) {
-    const h = hex[1]!.length === 3 ? hex[1]!.replace(/(.)/g, '$1$1') : hex[1]!
-    return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) }
-  }
-  const rgb = c.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i)
-  if (rgb) return { r: Number(rgb[1]), g: Number(rgb[2]), b: Number(rgb[3]) }
-  // var() 交 CSS 兜底；其余（色名/oklch 等）经探针解析为 rgb
-  if (/var\(/i.test(c) || c === '') return null
-  if (typeof document === 'undefined' || !document.body) return null
-  const probe = document.createElement('span')
-  probe.style.color = c
-  if (probe.style.color === '') return null // 非法色值被 CSSOM 丢弃，避免回落继承色造成假阳性
-  probe.style.cssText += ';position:absolute;visibility:hidden;pointer-events:none'
-  document.body.appendChild(probe)
-  const resolved = getComputedStyle(probe).color
-  probe.remove()
-  const m = resolved.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i)
-  return m ? { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) } : null
-}
-
 function pickOnColor(color: string): string {
-  const rgb = resolveRgb(color)
-  if (!rgb) return ''
-  const { r, g, b } = rgb
-  // W3C 相对亮度；0.35 阈值：亮底（如黄色）取深字、暗底（如 #7c3aed）取白字
-  const f = (v: number) => {
-    v /= 255
-    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
-  }
-  const lum = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
-  return lum > 0.35 ? '#18181b' : '#ffffff'
+  return pickOnColorBase(color, { dark: '#18181b', light: '#ffffff', fallback: '' })
 }
 
 const STYLE = `
