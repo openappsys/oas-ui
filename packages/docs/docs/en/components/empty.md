@@ -136,6 +136,37 @@ Place action buttons in the `action` slot below the content.
   </oas-empty>
 </DemoBlock>
 
+## Content composition (avatar / avatar group / search input)
+
+The empty state has no built-in variant props for business content — compose it via slots: put `oas-avatar` / `oas-avatar-group` in the `illustration` slot (media area, replacing the built-in illustration), and interactive elements such as `oas-input` in the default slot (rich description, overriding the `description` attribute when non-empty) or the `action` slot.
+
+<DemoBlock title="Avatar (slot=illustration)">
+  <oas-empty title="No profile yet" description="Upload an avatar and complete your info so teammates recognize you">
+    <oas-avatar slot="illustration" size="72" color="primary">A</oas-avatar>
+    <oas-button slot="action" size="small" type="primary">Complete profile</oas-button>
+  </oas-empty>
+</DemoBlock>
+
+<DemoBlock title="Avatar group (slot=illustration)">
+  <oas-empty title="No team members yet" description="Invite members to start collaborating" image-size="140">
+    <oas-avatar-group slot="illustration" max="4" size="32">
+      <oas-avatar color="primary">A</oas-avatar>
+      <oas-avatar color="success">B</oas-avatar>
+      <oas-avatar color="warning">C</oas-avatar>
+      <oas-avatar color="danger">D</oas-avatar>
+      <oas-avatar color="geekblue">E</oas-avatar>
+      <oas-avatar color="purple">F</oas-avatar>
+    </oas-avatar-group>
+    <oas-button slot="action" size="small" type="primary">Invite members</oas-button>
+  </oas-empty>
+</DemoBlock>
+
+<DemoBlock title="No search results (default slot + oas-input)">
+  <oas-empty title="No matching members found" icon="search">
+    <oas-input placeholder="Try another keyword" style="width: 240px; margin-top: var(--oas-space-2)"></oas-input>
+  </oas-empty>
+</DemoBlock>
+
 ## API
 
 ### oas-empty

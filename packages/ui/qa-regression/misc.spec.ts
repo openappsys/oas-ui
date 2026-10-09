@@ -373,3 +373,88 @@ test('浮层组件视口切换：PC↔窄视口不刷新即重判定移动形态
     await expect(host, `${tag} 拉宽后应回落 PC（去掉 data-mobile-sheet）`).not.toHaveAttribute('data-mobile-sheet')
   }
 })
+
+// 组合回归：badge 默认插槽内嵌 oas-spin（「徽标内含加载圈」组合能力）
+test('badge × spin 组合：默认插槽内嵌 oas-spin 保持角标定位与 spin 渲染', async ({ page }) => {
+  await page.goto('/components/badge.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-badge')
+  const r = await page.evaluate(async () => {
+    const badge = document.createElement('oas-badge')
+    badge.setAttribute('value', '3')
+    const spin = document.createElement('oas-spin')
+    spin.setAttribute('size', 'medium')
+    badge.appendChild(spin)
+    document.body.appendChild(badge)
+    await new Promise((res) => setTimeout(res, 120))
+    const badgeEl = badge.shadowRoot!.querySelector<HTMLElement>('.badge')!
+    const spinIndicator = spin.shadowRoot!.querySelector('[part="indicator"]')
+    const b = badgeEl.getBoundingClientRect()
+    const s = spin.getBoundingClientRect()
+    const out = {
+      hidden: badgeEl.hidden,
+      standalone: badgeEl.classList.contains('standalone'),
+      text: badgeEl.textContent,
+      hasSpinIndicator: !!spinIndicator,
+      // 角标位于内容右上角：角标中心应落在 spin 的右半区、上半区
+      rightOfCenter: b.left + b.width / 2 > s.left + s.width / 2,
+      aboveCenter: b.top + b.height / 2 < s.top + s.height / 2,
+    }
+    badge.remove()
+    return out
+  })
+  expect(r.hidden, '有值徽标可见').toBe(false)
+  expect(r.standalone, '默认插槽有内容时不回落 standalone').toBe(false)
+  expect(r.text).toBe('3')
+  expect(r.hasSpinIndicator, 'oas-spin 正常渲染指示器').toBe(true)
+  expect(r.rightOfCenter, '角标位于内容右上角（水平）').toBe(true)
+  expect(r.aboveCenter, '角标位于内容右上角（垂直）').toBe(true)
+})
+
+// 组合回归：empty 内容组合（illustration 插槽放头像组、默认插槽放输入框）
+test('empty 组合：illustration 插槽头像组替换内置插画、默认插槽输入框覆盖描述', async ({ page }) => {
+  await page.goto('/components/empty.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-empty')
+  const r = await page.evaluate(async () => {
+    const mk = () => {
+      const el = document.createElement('oas-empty')
+      el.setAttribute('title', 'T')
+      return el
+    }
+    // 媒体插槽：avatar-group 替换内置插画
+    const g = mk()
+    const group = document.createElement('oas-avatar-group')
+    group.setAttribute('slot', 'illustration')
+    group.setAttribute('size', '32')
+    for (const t of ['A', 'B', 'C']) {
+      const a = document.createElement('oas-avatar')
+      a.textContent = t
+      group.appendChild(a)
+    }
+    g.appendChild(group)
+    document.body.appendChild(g)
+    // 默认插槽：input 覆盖描述文案
+    const s = mk()
+    const input = document.createElement('oas-input')
+    input.setAttribute('placeholder', 'search')
+    s.appendChild(input)
+    document.body.appendChild(s)
+    await new Promise((res) => setTimeout(res, 150))
+    const gSlot = g.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="illustration"]')!
+    const gIllu = g.shadowRoot!.querySelector<HTMLElement>('[part="illustration"]')!
+    const sDesc = s.shadowRoot!.querySelector<HTMLElement>('[part="description"]')!
+    const sSlot = s.shadowRoot!.querySelector<HTMLSlotElement>('slot:not([name])')!
+    const out = {
+      groupAssigned: gSlot.assignedNodes().length > 0,
+      builtinHidden: gIllu.hidden,
+      inputAssigned: sSlot.assignedNodes().length > 0,
+      descHidden: sDesc.hidden,
+    }
+    g.remove()
+    s.remove()
+    return out
+  })
+  expect(r.groupAssigned, '头像组投影到 illustration 插槽').toBe(true)
+  expect(r.builtinHidden, '插槽有内容时内置插画隐藏').toBe(true)
+  expect(r.inputAssigned, '输入框投影到默认插槽').toBe(true)
+  expect(r.descHidden, '默认插槽有内容时描述属性/内置文案隐藏').toBe(true)
+})

@@ -615,6 +615,28 @@ oas-badge#badge-dyn.bump::part(badge) {
   </oas-badge>
 </DemoBlock>
 
+## 加载徽标（组合 oas-spin）
+
+徽标本体不内建 spinner 属性——把 `oas-spin` 放进默认插槽即可表达「徽标内含加载圈」：角标/圆点/状态点仍由 `oas-badge` 提供，加载指示器的形态（`variant`）与尺寸（`size`）由 `oas-spin` 独立控制，两者按需自由组合。
+
+<DemoBlock title="角标 + 加载圈（组合 oas-spin）">
+  <oas-badge dot color="primary" style="margin-inline-end: var(--oas-space-5)">
+    <oas-spin size="small"></oas-spin>
+  </oas-badge>
+  <oas-badge value="3" style="margin-inline-end: var(--oas-space-5)">
+    <oas-spin size="medium"></oas-spin>
+  </oas-badge>
+  <oas-badge dot overlap color="success" style="margin-inline-end: var(--oas-space-5)">
+    <oas-spin size="large"></oas-spin>
+  </oas-badge>
+  <oas-badge dot variant="outline" color="warning" style="margin-inline-end: var(--oas-space-5)">
+    <oas-spin size="medium" variant="dot"></oas-spin>
+  </oas-badge>
+  <oas-badge value="2" bordered>
+    <oas-spin size="large" tip="同步中"></oas-spin>
+  </oas-badge>
+</DemoBlock>
+
 ## API
 
 ### oas-badge
