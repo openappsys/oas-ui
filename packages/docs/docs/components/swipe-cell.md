@@ -97,7 +97,7 @@ actions 默认挂 inline-end 侧（LTR 右侧，左滑露出）；`side="start"`
 
 <DemoBlock title="程序开合（open）">
   <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-2)">
-    <oas-swipe-cell id="swipe-open-demo" open>
+    <oas-swipe-cell id="swipe-open-demo" open open-side="end">
       <div style="padding: var(--oas-space-3) var(--oas-space-4); background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">初始 open：操作区已露出</div>
       <oas-button slot="actions" type="primary" style="height: 100%">编辑</oas-button>
     </oas-swipe-cell>
