@@ -1846,4 +1846,16 @@ describe('caption-layout=dropdown（标题换月/年下拉，dob 远年快速跳
     open(month)
     expect(month.shadowRoot!.querySelectorAll('.caption-select').length).toBe(0)
   })
+
+  it('buttons 模式在途切到 dropdown：残留的月子面板被重置为日网格（不与下拉并存）', () => {
+    const el = mount({ value: '2026-08-09' })
+    open(el)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="title"]')!.click()
+    expect(el.shadowRoot!.querySelector('.month-cell')).not.toBeNull()
+    // open 态切属性（宿主动态切换）：months 子面板残留会让月网格与 caption 下拉并存
+    el.setAttribute('caption-layout', 'dropdown')
+    expect(el.shadowRoot!.querySelector('.month-cell')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="caption-year"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('.day')).not.toBeNull()
+  })
 })

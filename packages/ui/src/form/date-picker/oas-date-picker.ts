@@ -1634,8 +1634,11 @@ export class OASDatePicker extends OASFormElement {
     const locale = resolveLocale(this)
     const t = this.pickerType
     const body = this.panelSkeleton(panel)
-    const yearNav = this.subPanel === 'months'
+    // dropdown 模式无「标题切月面板」入口：buttons 模式在途切换（open 态改属性）可能残留
+    // months 子面板，与 caption 下拉并存且 prev/next aria-label 错位——进面板先归位日网格
     const dropdownCaption = this.isDropdownCaption()
+    if (dropdownCaption) this.subPanel = 'days'
+    const yearNav = this.subPanel === 'months'
     body.innerHTML = `
       <div class="header">
         <button type="button" class="nav" part="prev"
