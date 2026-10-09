@@ -978,7 +978,8 @@
       "name": "Form field name (key for native FormData submission; range mode derives name-start / name-end entries; the browser skips submission when name is absent)",
       "separator": "Custom separator between start/end values in the trigger for range types (display only)",
       "default-time": "Default start/end times for datetimerange (JSON array or single value); auto-filled when the value lacks a time part",
-      "timezone": "Timezone anchor: an IANA zone name (e.g. America/New_York) or UTC; omitted/invalid falls back to the host local zone. Today highlight, shortcuts and default-time derivation read this zone's wall clock; the value contract is unchanged"
+      "timezone": "Timezone anchor: an IANA zone name (e.g. America/New_York) or UTC; omitted/invalid falls back to the host local zone. Today highlight, shortcuts and default-time derivation read this zone's wall clock; the value contract is unchanged",
+      "caption-layout": "Panel caption style: buttons (default, caption button toggles the month panel) / dropdown (month/year dropdowns for quick jumps, date-of-birth style far-year navigation; applies to day-grid single-value panels only — date/datetime/week; picking navigates without changing the value)"
     },
     "events": {
       "oas-calendar-change": "Emitted on every range endpoint pick, `detail: { value: [start, end|null] }`",
@@ -1620,7 +1621,9 @@
       "suffix": "Inline trailing content (icons/buttons etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute",
       "prepend": "Prepend addon area (may contain select/button or any content)",
       "append": "Append addon area (may contain select/button or any content)",
-      "clear-icon": "Custom clear-button icon (replaces the built-in when present)"
+      "clear-icon": "Custom clear-button icon (replaces the built-in when present)",
+      "block-start": "Full-width block addon above the field (hint/note row, any content)",
+      "block-end": "Full-width block addon below the field (action/counter row, any content; the outside character counter moves into this row when both are present)"
     },
     "props": {
       "value": "Current value: parser/mask-aware submitted-value semantics (`el.value` reads; `el.value = x` writes the controlled `value` and syncs the inner control, no event)"

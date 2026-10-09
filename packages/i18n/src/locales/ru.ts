@@ -269,6 +269,8 @@ export const ru: LocaleMessages = {
   'datePicker.shortcutThisWeek': 'На этой неделе',
   'datePicker.shortcutThisMonth': 'В этом месяце',
   'datePicker.shortcutThisYear': 'В этом году',
+  'datePicker.selectMonth': 'Выбрать месяц',
+  'datePicker.selectYear': 'Выбрать год',
   // dropdown (выпадающее меню)
   'dropdown.openMenu': 'Открыть меню',
   // popover (всплывающая карточка)

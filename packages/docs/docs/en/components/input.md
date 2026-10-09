@@ -205,6 +205,14 @@ onMounted(() => {
     const el = document.getElementById('input-search-output'); if (el) el.textContent = 'Search triggered'
   })
 
+  // block addon demo: button inside block-end clears the field (public value setter, visible feedback)
+  document.getElementById('input-block-clear')?.addEventListener('click', () => {
+    const host = document.getElementById('input-block-addon')
+    if (host) host.value = ''
+    const out = document.getElementById('input-block-output')
+    if (out) out.textContent = 'Address cleared (block-end button)'
+  })
+
   // loading demo: toggle the loading attribute and update the output
   const loadingEl = document.getElementById('input-loading')
   const loadingOut = document.getElementById('input-loading-output')
@@ -388,6 +396,18 @@ The `addon-before` / `addon-after` attributes accept text only; for complex cont
   </oas-compact>
 </DemoBlock>
 
+## Block Addons (block-start / block-end)
+
+<DemoBlock title="slot=block-start / slot=block-end (full-width block above/below the field)">
+  <oas-input id="input-block-addon" placeholder="Shipping address" show-count maxlength="20" style="width: 320px">
+    <span slot="block-start">📦 Ship to: Haidian, Beijing</span>
+    <oas-button slot="block-end" size="small" variant="text" id="input-block-clear">Clear address</oas-button>
+  </oas-input>
+  <span id="input-block-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
+</DemoBlock>
+
+`slot="block-start"` / `slot="block-end"` render a full-width block row **above / below** the field — a different dimension from `prepend` / `append` (which join horizontally at either side). Block rows occupy their own line and never participate in border joining; they can host hint text, action buttons, links, or any other content. The row container uses `--oas-font-size-sm` in secondary text color (grayed out when disabled), and is deep-customizable via `::part(block-start)` / `::part(block-end)`. When combined with `show-count` (the outside counter also lives below the field), the counter automatically moves into the `block-end` row, aligned to the end edge — no overlap.
+
 ## Count Position & Grapheme Counting
 
 <DemoBlock title="count-position + emoji grapheme counting">
@@ -528,6 +548,8 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | Name | Description |
 | --- | --- |
 | `append` | Append addon area (may contain select/button or any content) |
+| `block-end` | Full-width block addon below the field (action/counter row, any content; the outside character counter moves into this row when both are present) |
+| `block-start` | Full-width block addon above the field (hint/note row, any content) |
 | `clear-icon` | Custom clear-button icon (replaces the built-in when present) |
 | `prefix` | Inline leading content (icons/buttons etc.; distributed content takes precedence over the `prefix` attribute text). For simple text use the `prefix` attribute |
 | `prepend` | Prepend addon area (may contain select/button or any content) |

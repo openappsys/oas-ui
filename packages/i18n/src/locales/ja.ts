@@ -269,6 +269,8 @@ export const ja: LocaleMessages = {
   'datePicker.shortcutThisWeek': '今週',
   'datePicker.shortcutThisMonth': '今月',
   'datePicker.shortcutThisYear': '今年',
+  'datePicker.selectMonth': '月を選択',
+  'datePicker.selectYear': '年を選択',
   // dropdown（ドロップダウンメニュー）
   'dropdown.openMenu': 'メニューを開く',
   // popover（ポップオーバー）

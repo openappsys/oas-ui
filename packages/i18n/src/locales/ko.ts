@@ -269,6 +269,8 @@ export const ko: LocaleMessages = {
   'datePicker.shortcutThisWeek': '이번 주',
   'datePicker.shortcutThisMonth': '이번 달',
   'datePicker.shortcutThisYear': '올해',
+  'datePicker.selectMonth': '월 선택',
+  'datePicker.selectYear': '연도 선택',
   // dropdown（드롭다운 메뉴）
   'dropdown.openMenu': '메뉴 열기',
   // popover（팝오버）

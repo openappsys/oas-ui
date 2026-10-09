@@ -313,3 +313,38 @@ test('input 公开 value property：宿主程序性读当前值 / 写值即时�
   expect(r.innerAfter).toBe('程序写入')
   expect(r.attr).toBe('程序写入')
 })
+
+// ---- 块级 addon（slot=block-start / block-end）----
+
+test('input 块级 addon：block-start/end 整行分发 + outside 计数挂入 block-end 行（不与块行重叠）+ 块内按钮真实点击有可见反馈', async ({
+  page,
+}) => {
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#input-block-addon')
+  const host = page.locator('#input-block-addon')
+  await host.scrollIntoViewIfNeeded()
+  const r = await host.evaluate((el) => {
+    const root = el.shadowRoot!
+    const blockStart = root.querySelector<HTMLElement>('[part="block-start"]')!
+    const blockEnd = root.querySelector<HTMLElement>('[part="block-end"]')!
+    const count = root.querySelector<HTMLElement>('.count')!
+    return {
+      startHidden: blockStart.hidden,
+      endHidden: blockEnd.hidden,
+      countInBlock: blockEnd.contains(count),
+      countMark: count.getAttribute('data-in-block'),
+      countHidden: count.hidden,
+    }
+  })
+  expect(r.startHidden, 'block-start 有分发应可见').toBe(false)
+  expect(r.endHidden, 'block-end 有分发应可见').toBe(false)
+  expect(r.countInBlock, 'outside 计数应归属 block-end 行（绝对定位与块行同区会重叠）').toBe(true)
+  expect(r.countMark).toBe('true')
+  expect(r.countHidden, '计数可见').toBe(false)
+
+  // 真实点击 block-end 行内按钮：清空输入 + 输出区可见反馈
+  await page.locator('#input-block-clear').click()
+  await expect(page.locator('#input-block-output')).toHaveText('已清空地址（block-end 按钮生效）')
+  const innerValue = await host.evaluate((el) => (el.shadowRoot!.querySelector('input') as HTMLInputElement).value)
+  expect(innerValue, '按钮应已清空输入').toBe('')
+})

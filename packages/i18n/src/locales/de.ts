@@ -269,6 +269,8 @@ export const de: LocaleMessages = {
   'datePicker.shortcutThisWeek': 'Diese Woche',
   'datePicker.shortcutThisMonth': 'Dieser Monat',
   'datePicker.shortcutThisYear': 'Dieses Jahr',
+  'datePicker.selectMonth': 'Monat wählen',
+  'datePicker.selectYear': 'Jahr wählen',
   // dropdown (Dropdown-Menü)
   'dropdown.openMenu': 'Menü öffnen',
   // popover (Popup-Karte)

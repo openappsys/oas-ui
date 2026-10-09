@@ -165,6 +165,14 @@ Range panels navigate in lockstep by default; `unlink-panels` lets both months f
   <oas-date-picker default-value="2026-08-15" placeholder="Anchors to August 2026 when empty"></oas-date-picker>
 </DemoBlock>
 
+When the value is empty the panel opens on the current month; with `default-value` it anchors to the given date's month (recalling a birthday month, for example).
+
+<DemoBlock title="Month/year caption dropdowns (caption-layout=dropdown, date-of-birth quick jumps)">
+  <oas-date-picker caption-layout="dropdown" default-value="1990-06-15" placeholder="Select date of birth"></oas-date-picker>
+</DemoBlock>
+
+`caption-layout="dropdown"` replaces the day-panel caption with **month / year dropdowns** (date-of-birth style far-year navigation without paging month by month): the year dropdown covers "current year −100 … current year +10" by default (shrinks to the boundary years when `min` / `max` are set; whole months outside the range are disabled), and picking an option navigates the panel — **navigation only, the value is untouched**; dates are still committed by clicking a day, a shortcut preset, or typing. The month/year caption order follows the locale (year first for zh); it applies to `type=date` / `datetime` / `week`, while the other panel families (month/year/quarter/range grids are block pickers already) keep the caption button. Keyboard-accessible (native selects); focus stays on the dropdown after a jump for consecutive navigation.
+
 <DemoBlock title="Week numbers & first day of week">
   <oas-date-picker value="2026-08-09" show-week-number first-day-of-week="0"></oas-date-picker>
 </DemoBlock>
@@ -276,6 +284,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `caption-layout` | Panel caption style: buttons (default, caption button toggles the month panel) / dropdown (month/year dropdowns for quick jumps, date-of-birth style far-year navigation; applies to day-grid single-value panels only — date/datetime/week; picking navigates without changing the value) | `string` | — |
 | `clearable` | Clearable: shows a clear button when a value exists; emits `oas-clear` + `oas-change` (empty value) | `boolean` | — |
 | `default-time` | Default start/end times for datetimerange (JSON array or single value); auto-filled when the value lacks a time part | `string` | — |
 | `default-value` | Panel anchor month when the value is empty (the value takes precedence when present) | `string` | — |

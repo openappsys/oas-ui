@@ -401,3 +401,63 @@ test('date-picker timezone：面板「今天」高亮与「今天」快捷预设
   expect(r.today, '面板「今天」高亮应落在纽约时区当日').toBe(r.ny)
   expect(r.value, '「今天」快捷预设应按纽约时区当日解析').toBe(r.ny)
 })
+
+// —— caption 下拉（caption-layout=dropdown，dob 出生日期远年快速跳转）——
+
+test('date-picker caption 下拉：月/年 select 渲染 + 真实选年跳远年不改值 + 焦点保持在下拉', async ({ page }) => {
+  await page.goto('/components/date-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-date-picker[caption-layout="dropdown"]')
+  const host = page.locator('oas-date-picker[caption-layout="dropdown"]').first()
+  await host.scrollIntoViewIfNeeded()
+  await host.locator('[part="trigger"]').click()
+  await page.waitForFunction(
+    () => {
+      const root = document.querySelector('oas-date-picker[caption-layout="dropdown"]')?.shadowRoot
+      return !!root?.querySelector('.day') && !!root?.querySelector('[part="caption-year"]')
+    },
+    null,
+    { timeout: 5000 },
+  )
+  const r = await host.evaluate((el) => {
+    const root = el.shadowRoot!
+    const monthSel = root.querySelector<HTMLSelectElement>('[part="caption-month"]')!
+    const yearSel = root.querySelector<HTMLSelectElement>('[part="caption-year"]')!
+    const thisYear = new Date().getFullYear()
+    const values = [...yearSel.options].map((o) => Number(o.value))
+    return {
+      monthOptions: monthSel.options.length,
+      windowStart: values[0],
+      windowEnd: values[values.length - 1],
+      expectedStart: thisYear - 100,
+      expectedEnd: thisYear + 10,
+      hasFar: [...yearSel.options].some((o) => o.value === String(thisYear - 100)),
+    }
+  })
+  expect(r.monthOptions, '月下拉 12 项').toBe(12)
+  expect(r.windowStart, '年下拉默认窗口起点为今年-100').toBe(r.expectedStart)
+  expect(r.windowEnd, '年下拉默认窗口终点为今年+10').toBe(r.expectedEnd)
+  expect(r.hasFar, '远年（今年-100）应在年下拉内可选').toBe(true)
+
+  // 真实链路：selectOption 选远年 → 日格重建到远年、value/触发器不变、焦点回落下拉
+  const farYear = String(new Date().getFullYear() - 100)
+  await host.locator('[part="caption-year"]').selectOption(farYear)
+  await page.waitForFunction(
+    (y) => {
+      const root = document.querySelector('oas-date-picker[caption-layout="dropdown"]')!.shadowRoot!
+      return [...root.querySelectorAll('.day')].some((d) => d.getAttribute('data-date')?.startsWith(`${y}-`))
+    },
+    farYear,
+    { timeout: 5000 },
+  )
+  const after = await host.evaluate((el) => {
+    const root = el.shadowRoot!
+    return {
+      value: el.getAttribute('value'),
+      trigger: (root.querySelector('[part="trigger"]') as HTMLInputElement).value,
+      focusedPart: (root.activeElement as HTMLElement | null)?.getAttribute('part') ?? null,
+    }
+  })
+  expect(after.value, '下拉导航是纯导航，不改 value（dob demo 空值）').toBe(null)
+  expect(after.trigger, '触发器显示不变').toBe('')
+  expect(after.focusedPart, '面板重建后焦点回落年下拉（键盘连续跳转不断链）').toBe('caption-year')
+})

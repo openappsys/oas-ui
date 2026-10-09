@@ -408,6 +408,32 @@ input:disabled:hover {
   display: none;
 }
 
+/* ---- 块级 addon（slot=block-start / block-end）：输入框上/下方的整行块（提示行/动作行）。
+     与行内 addon（prepend/append 拼接）不同维度：整行占位、不参与边框拼接，留独立间距。
+     内容任意（文案/按钮/链接），字号走 sm、次要色，禁用时随宿主灰化 ---- */
+.block-addon {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--oas-space-2);
+  width: 100%;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+.block-addon[data-block='start'] {
+  margin-bottom: var(--oas-space-1);
+}
+.block-addon[data-block='end'] {
+  margin-top: var(--oas-space-1);
+}
+:host([disabled]) .block-addon,
+:host([data-disabled]) .block-addon {
+  color: var(--oas-color-text-disabled);
+}
+.block-addon[hidden] {
+  display: none;
+}
+
 /* ---- 内嵌前后缀（prefix / suffix 文案 + prefix-icon / suffix-icon 图标） ---- */
 .affix,
 .affix-icon {
@@ -690,6 +716,12 @@ input:disabled:hover {
   margin-top: 0;
   margin-inline-start: var(--oas-space-2);
 }
+/* outside 计数挂进 block-end 行时（syncCount 归属移动）改流内靠右，避免与块级行重叠 */
+.count[data-position='outside'][data-in-block='true'] {
+  position: static;
+  margin-top: 0;
+  margin-inline-start: auto;
+}
 :host([data-count-inside]) input {
   flex: 1 1 0%;
   width: auto;
@@ -838,6 +870,7 @@ export class OASInput extends OASFormElement {
   }
 
   private inputEl: HTMLInputElement | null = null
+  private innerEl: HTMLElement | null = null
   private clearBtn: HTMLButtonElement | null = null
   private eyeBtn: HTMLButtonElement | null = null
   private countEl: HTMLElement | null = null
@@ -934,6 +967,7 @@ export class OASInput extends OASFormElement {
     return `
       <style>${STYLE}</style>
       <div class="root" part="root">
+        <span class="block-addon" part="block-start" data-block="start" hidden><slot name="block-start"></slot></span>
         <span class="wrapper" part="wrapper">
           <span class="addon" part="prepend" hidden><slot name="prepend"><span class="addon-fallback" data-fallback></span></slot></span>
           <span class="inner" part="inner">
@@ -960,6 +994,7 @@ export class OASInput extends OASFormElement {
           </span>
           <span class="addon" part="append" hidden><slot name="append"><span class="addon-fallback" data-fallback></span></slot></span>
         </span>
+        <span class="block-addon" part="block-end" data-block="end" hidden><slot name="block-end"></slot></span>
         <span class="hint" part="hint" id="${HINT_ID}" hidden></span>
       </div>
     `
@@ -968,6 +1003,7 @@ export class OASInput extends OASFormElement {
   /** 缓存节点引用 + 绑定输入/清空/密码眼/焦点事件（render 与水合路径共用） */
   private bind(): void {
     this.inputEl = this.shadow.querySelector('input')
+    this.innerEl = this.shadow.querySelector('.inner')
     this.clearBtn = this.shadow.querySelector('.clear-btn')
     this.eyeBtn = this.shadow.querySelector('.eye-btn')
     this.countEl = this.shadow.querySelector('.count')
@@ -1060,6 +1096,14 @@ export class OASInput extends OASFormElement {
     observeSlot('suffix', () => this.syncAffixes())
     observeSlot('prepend', () => this.syncAddons())
     observeSlot('append', () => this.syncAddons())
+    observeSlot('block-start', () => {
+      this.syncBlockAddons()
+      this.syncCount() // outside 计数的归属行随 block-end 显隐重算
+    })
+    observeSlot('block-end', () => {
+      this.syncBlockAddons()
+      this.syncCount()
+    })
 
     // autofocus：转发到内部 input（原生 autofocus 不穿透 shadow，挂载后手动聚焦一次）
     if (this.hasAttr('autofocus')) {
@@ -1204,9 +1248,10 @@ export class OASInput extends OASFormElement {
     }
     this.syncPasswordReveal()
     this.syncLoading()
-    this.syncCount()
     this.syncAddons()
     this.syncAffixes()
+    this.syncBlockAddons()
+    this.syncCount()
     this.toggleAttribute('data-auto-width', this.hasAttr('auto-width'))
     this.syncAutoWidthVars()
     this.measureAutoWidth()
@@ -1348,7 +1393,9 @@ export class OASInput extends OASFormElement {
   }
 
   /** show-count 字数统计：字素（grapheme）计数，outside 右下角 / inside 输入区内；
-   *  maxlength 在场显示 当前字素数/上限，超限标 data-over 并在状态翻转时派发 oas-validate */
+   *  maxlength 在场显示 当前字素数/上限，超限标 data-over 并在状态翻转时派发 oas-validate。
+   *  outside 计数为绝对定位（.inner 底部之下），与 block-end 块级行同区——block-end 可见时
+   *  计数改挂进块行内流内靠右（data-in-block），块行隐藏/移除分发后回到原位。 */
   private syncCount(): void {
     if (!this.countEl || !this.inputEl) return
     const show = this.hasAttr('show-count')
@@ -1356,6 +1403,16 @@ export class OASInput extends OASFormElement {
     const position = this.getAttr('count-position', '') === 'inside' ? 'inside' : 'outside'
     this.countEl.setAttribute('data-position', position)
     this.toggleAttribute('data-count-inside', show && position === 'inside')
+    // 归属行决策（每次同步重算，slotchange 与 update 双入口都自洽）：
+    // 仅 outside + block-end 可见时挂进块行；否则回到 .inner 原位
+    const blockEnd = this.shadow.querySelector<HTMLElement>('[part="block-end"]')
+    const inBlock = show && position === 'outside' && blockEnd !== null && !blockEnd.hidden
+    if (blockEnd && this.innerEl) {
+      if (inBlock && this.countEl.parentElement !== blockEnd) blockEnd.appendChild(this.countEl)
+      else if (!inBlock && this.countEl.parentElement !== this.innerEl) this.innerEl.appendChild(this.countEl)
+    }
+    if (inBlock) this.countEl.setAttribute('data-in-block', 'true')
+    else this.countEl.removeAttribute('data-in-block')
     if (!show) return
     const maxlength = this.getAttr('maxlength', '')
     const len = countGraphemes(this.rawValue())
@@ -1416,6 +1473,25 @@ export class OASInput extends OASFormElement {
     }
     setAddon('prepend', 'addon-before', 'data-slot-prepend')
     setAddon('append', 'addon-after', 'data-slot-append')
+  }
+
+  /**
+   * 块级 addon（block-start / block-end）：纯 slot 通道（无 attribute 文本双通道——块级行
+   * 常放富内容/动作，文案走 hint 或宿主内容更合适）。slot 有分发才显示块行，无分发隐藏
+   * 不占位；显隐变化后由调用方跟进 syncCount 重算 outside 计数的归属行。
+   */
+  private syncBlockAddons(): void {
+    const sync = (partName: string): void => {
+      const el = this.shadow.querySelector<HTMLElement>(`[part="${partName}"]`)
+      if (!el) return
+      const slotEl = el.querySelector<HTMLSlotElement>('slot')
+      // 注意不能用 flatten:true——空 slot 的扁平化结果会包含 fallback 子节点，导致恒判有内容
+      const slotHasContent =
+        slotEl !== null && slotEl.assignedNodes().some((n) => n.nodeType === 1 || (n.textContent ?? '').trim() !== '')
+      el.hidden = !slotHasContent
+    }
+    sync('block-start')
+    sync('block-end')
   }
 
   /** 内嵌前后缀：prefix/suffix 文案（attribute 文本为 slot fallback）+ prefix-icon/suffix-icon 图标（lookupIcon 查表内联 SVG）。

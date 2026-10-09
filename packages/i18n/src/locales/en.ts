@@ -218,6 +218,8 @@ export const en: LocaleMessages = {
   'datePicker.shortcutThisWeek': 'This week',
   'datePicker.shortcutThisMonth': 'This month',
   'datePicker.shortcutThisYear': 'This year',
+  'datePicker.selectMonth': 'Select month',
+  'datePicker.selectYear': 'Select year',
   'dropdown.openMenu': 'Open menu',
   // popover
   'popover.close': 'Close',

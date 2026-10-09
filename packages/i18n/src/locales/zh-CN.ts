@@ -269,6 +269,8 @@ export const zhCN = {
   'datePicker.shortcutThisWeek': '本周',
   'datePicker.shortcutThisMonth': '本月',
   'datePicker.shortcutThisYear': '今年',
+  'datePicker.selectMonth': '选择月份',
+  'datePicker.selectYear': '选择年份',
   // dropdown（下拉菜单）
   'dropdown.openMenu': '打开菜单',
   // popover（气泡卡片）
