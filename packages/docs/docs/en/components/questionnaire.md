@@ -111,6 +111,19 @@ Conditional branching uses the **host composition channel** — no built-in pred
   </span>
 </DemoBlock>
 
+## Keyboard shortcuts
+
+`shortcuts` enables keyboard step navigation: **Alt+←/→** works anywhere inside the component (including inside inputs) and swallows the default action (preventing browser history navigation); **bare ←/→** (no modifiers) only switches steps when focus is not inside an input/textarea/editable region (never hijacks the caret or control-specific keyboard handling) — clicking panel whitespace focuses the component container, where bare arrows also work. Triggers reuse the same gating chain as the buttons (a failing current step blocks advance); physical mapping (→ forward / ← back), not mirrored in RTL, matching the browser history-key convention.
+
+<DemoBlock title="shortcuts (click into the component, then try Alt+←/→)">
+  <oas-questionnaire id="q-kbd" shortcuts style="width: 100%; max-width: 520px" steps='[{"title":"Step 1"},{"title":"Step 2"},{"title":"Step 3"}]'>
+    <oas-form slot="step-0"><oas-input name="k1" placeholder="Alt+→ works inside inputs too" style="width: 260px"></oas-input></oas-form>
+    <oas-form slot="step-1"><p style="margin: 0">With focus on panel whitespace, bare ←/→ also switch steps.</p></oas-form>
+    <oas-form slot="step-2"><p style="margin: 0">Final step.</p></oas-form>
+  </oas-questionnaire>
+  <span id="q-kbd-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## Controlled current & methods
 
 `current` is two-way: internal jumps write it back, external updates sync instantly. Imperative methods `next()` / `prev()` / `goto(index)` / `validate()` / `submit()` / `getValues()` / `reset()` cover all navigation and value scenarios.
@@ -289,6 +302,14 @@ onMounted(() => {
       : 'The "Invoice details" step is visible again'
   })
 
+  // Keyboard shortcuts: step feedback
+  document.getElementById('q-kbd')?.addEventListener('oas-change', (e) => {
+    // A field's own oas-change bubbles out and shares the event name: only handle step changes (with index)
+    if (typeof e.detail?.index !== 'number') return
+    const out = document.getElementById('q-kbd-output')
+    if (out) out.textContent = `Keyboard step → step ${e.detail.index + 1}`
+  })
+
   // Controlled & methods
   const ctrl = document.getElementById('q-ctrl')
   const ctrlOut = document.getElementById('q-ctrl-output')
@@ -383,6 +404,7 @@ onMounted(() => {
 | `prev-text` | "Previous" button label (overrides the locale default) | — | — |
 | `progress` | Progress region visibility (`progress="false"` hides it) | `string` | `true` |
 | `progress-variant` | Progress variant: `both` (default, text + bar) / `text` / `bar`; invalid values fall back to `both` | `string` | `both` |
+| `shortcuts` | Keyboard step navigation (opt-in, on when present and not `"false"`): `Alt+←/→` switches steps anywhere inside the component (swallows the default to prevent browser history navigation); bare `←/→` only when focus is outside inputs/editable controls (never hijacks the caret) | `boolean` | — |
 | `size` | Size tier: `xs`/`small`/`medium`/`large`/`xl` (title font density; invalid values fall back to medium + dev warning) | `string` | `medium` |
 | `skip-text` | "Skip this step" button label (overrides the locale default) | — | — |
 | `steps` | Step data JSON `[{ key?, title, description?, optional?, hidden? }]`; invalid/empty falls back to `[]` | `QuestionnaireStep[] \| string` | `[]` |

@@ -111,6 +111,19 @@
   </span>
 </DemoBlock>
 
+## 键盘快捷导航（shortcuts）
+
+`shortcuts` 开启键盘切步：**Alt+←/→** 在组件内任何位置（含输入框内）切上/下一步，并吞掉默认行为（防浏览器历史导航）；**裸 ←/→**（无修饰键）仅在焦点不在输入框/文本域/可编辑区等控件时切步（不劫持光标与控件自身键盘），点击面板空白处焦点落在组件容器上同样可达。触发走与按钮相同的门控链路（当前步未过校验不放行）；物理方向映射（→ 前进 / ← 后退），RTL 不镜像，与浏览器历史键惯例一致。
+
+<DemoBlock title="shortcuts 键盘切步（点进组件内按 Alt+←/→ 试试）">
+  <oas-questionnaire id="q-kbd" shortcuts style="width: 100%; max-width: 520px" steps='[{"title":"第一步"},{"title":"第二步"},{"title":"第三步"}]'>
+    <oas-form slot="step-0"><oas-input name="k1" placeholder="输入框内按 Alt+→ 也能切步" style="width: 260px"></oas-input></oas-form>
+    <oas-form slot="step-1"><p style="margin: 0">焦点在面板空白处时，裸 ←/→ 也能切步。</p></oas-form>
+    <oas-form slot="step-2"><p style="margin: 0">最后一步。</p></oas-form>
+  </oas-questionnaire>
+  <span id="q-kbd-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## 受控 current 与方法
 
 `current` 双向：内部跳步写回属性，外部设置即时同步。命令式方法 `next()` / `prev()` / `goto(index)` / `validate()` / `submit()` / `getValues()` / `reset()` 覆盖全部导航与取值场景。
@@ -289,6 +302,14 @@ onMounted(() => {
       : '「发票信息」步已恢复显示'
   })
 
+  // 键盘快捷导航：切步反馈
+  document.getElementById('q-kbd')?.addEventListener('oas-change', (e) => {
+    // 内层字段 oas-change 同名冒泡：只处理带 index 的切步事件
+    if (typeof e.detail?.index !== 'number') return
+    const out = document.getElementById('q-kbd-output')
+    if (out) out.textContent = `键盘切步 → 第 ${e.detail.index + 1} 步`
+  })
+
   // 受控与方法
   const ctrl = document.getElementById('q-ctrl')
   const ctrlOut = document.getElementById('q-ctrl-output')
@@ -383,6 +404,7 @@ onMounted(() => {
 | `prev-text` | 「上一步」按钮文案（覆盖 locale 缺省） | — | — |
 | `progress` | 进度区显隐（`progress="false"` 隐藏） | `string` | `true` |
 | `progress-variant` | 进度形态：`both`（默认，文本+进度条）/ `text` / `bar`；非法值回落 `both` | `string` | `both` |
+| `shortcuts` | 键盘快捷导航（opt-in，存在且非 `"false"` 时开启）：`Alt+←/→` 在组件内任何位置切上/下一步（吞掉默认行为防浏览器历史导航）；裸 `←/→` 仅在焦点不在输入/可编辑控件时生效（不劫持光标） | `boolean` | — |
 | `size` | 尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + dev 告警） | `string` | `medium` |
 | `skip-text` | 「跳过本步」按钮文案（覆盖 locale 缺省） | — | — |
 | `steps` | 步骤数据 JSON `[{ key?, title, description?, optional?, hidden? }]`；非法/空回落 `[]` | `QuestionnaireStep[] \| string` | `[]` |

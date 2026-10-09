@@ -69,6 +69,11 @@
       "observed": true
     },
     {
+      "name": "shortcuts",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "size",
       "type": "string",
       "default": "medium",

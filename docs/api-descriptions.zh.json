@@ -4048,6 +4048,7 @@
       "prev-text": "「上一步」按钮文案（覆盖 locale 缺省）",
       "progress": "进度区显隐（`progress=\"false\"` 隐藏）",
       "progress-variant": "进度形态：`both`（默认，文本+进度条）/ `text` / `bar`；非法值回落 `both`",
+      "shortcuts": "键盘快捷导航（opt-in，存在且非 `\"false\"` 时开启）：`Alt+←/→` 在组件内任何位置切上/下一步（吞掉默认行为防浏览器历史导航）；裸 `←/→` 仅在焦点不在输入/可编辑控件时生效（不劫持光标）",
       "size": "尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + dev 告警）",
       "skip-text": "「跳过本步」按钮文案（覆盖 locale 缺省）",
       "steps": "步骤数据 JSON `[{ key?, title, description?, optional?, hidden? }]`；非法/空回落 `[]`",

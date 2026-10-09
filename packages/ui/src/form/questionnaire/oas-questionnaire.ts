@@ -346,6 +346,8 @@ export class OASQuestionnaire extends OASElement {
       'hide-nav',
       // 切换动画开关（opt-in；prefers-reduced-motion 自动降级为无动画）
       'animated',
+      // 键盘快捷导航开关（opt-in；Alt+←/→ 恒可用 + 裸 ←/→ 输入避让）
+      'shortcuts',
       // size 五档（字号密度档位，几何恒定）
       'size',
     ]
@@ -419,6 +421,13 @@ export class OASQuestionnaire extends OASElement {
     this.prevBtn?.addEventListener('click', () => this.prev())
     this.nextBtn?.addEventListener('click', () => void this.primaryAction())
     this.skipBtn?.addEventListener('click', () => this.skipStep())
+    // 键盘快捷导航（host 级 keydown：shadow 内 + slotted light DOM 的冒泡都经过 host，
+    // 天然限定「焦点在组件内」才生效；同引用 addEventListener 幂等）
+    this.addEventListener('keydown', this.onKeydown)
+    this.onCleanup(() => this.removeEventListener('keydown', this.onKeydown))
+    // tabindex=-1 兜底：点击面板空白处（无 tabindex 内容）焦点落到 host 而非 body，
+    // 裸方向键在「点进组件后」依然可达；-1 不进 Tab 序、宿主显式设置不覆盖
+    if (this.getAttribute('tabindex') === null) this.setAttribute('tabindex', '-1')
     // 面板内容由宿主后挂（slot content 晚于连接）时重发现内层 form
     if (typeof MutationObserver !== 'undefined') {
       this.domObserver = new MutationObserver(() => {
@@ -450,6 +459,7 @@ export class OASQuestionnaire extends OASElement {
 
   /** 断开重连：内层 form 值监听重挂 + MutationObserver 重挂（cleanup 断开时已 disconnect） */
   protected override onReconnect(): void {
+    this.addEventListener('keydown', this.onKeydown)
     this.bindValueListeners()
     this.domObserver?.observe(this, { childList: true, subtree: true })
   }
@@ -806,6 +816,48 @@ export class OASQuestionnaire extends OASElement {
   }
 
   // ---------- 导航与门控 ----------
+
+  /** 快捷导航开关：opt-in（存在即开，="false" 显式关闭；运行时增删属性即时生效） */
+  private shortcutsEnabled(): boolean {
+    if (!this.hasAttr('shortcuts')) return false
+    return this.getAttribute('shortcuts') !== 'false'
+  }
+
+  /**
+   * 裸方向键避让：事件 target（composedPath[0]，穿透 shadow）落在输入/可编辑/
+   * 箭头键消费控件内时不劫持——原生 input（oas-input/radio/checkbox 内核）、
+   * textarea、select、contenteditable 与 slider/menu/tab 等 role 控件自身命中。
+   */
+  private isEditableTarget(e: KeyboardEvent): boolean {
+    const target = (e.composedPath()[0] ?? e.target) as Element | null
+    if (!target || !(target instanceof Element)) return false
+    return (
+      target.closest(
+        'input, textarea, select, [contenteditable="true"], [contenteditable=""], [role="slider"], [role="radiogroup"], [role="listbox"], [role="combobox"], [role="menu"], [role="menuitem"], [role="tab"]',
+      ) !== null
+    )
+  }
+
+  /**
+   * 键盘快捷导航：
+   * - Alt+←/→ 恒可用（含输入框内——Alt 组合不移动光标），preventDefault 吞掉浏览器历史导航；
+   * - 裸 ←/→（无任何修饰键）仅在焦点不在输入类控件时切步（不劫持光标/控件键盘）；
+   * - Ctrl/Meta/Shift 组合一律不处理（保留系统/浏览器快捷键）；IME 组合中跳过；
+   * - 触发走 next()/prev() 同一门控链路（校验未过/边界自然拦截）；物理方向映射
+   *   （→ 前进 / ← 后退，RTL 不镜像，与浏览器历史键惯例一致）。
+   */
+  private readonly onKeydown = (e: KeyboardEvent): void => {
+    if (!this.shortcutsEnabled()) return
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    if (e.isComposing) return
+    const alt = e.altKey && !e.ctrlKey && !e.metaKey
+    const bare = !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey
+    if (!alt && !bare) return
+    if (bare && this.isEditableTarget(e)) return
+    e.preventDefault()
+    if (e.key === 'ArrowRight') void this.next()
+    else this.prev()
+  }
 
   /** 统一跳转：before-change 拦截点（cancelable）→ 写 current → 派发 oas-change{index,key?} */
   private moveTo(idx: number): boolean {

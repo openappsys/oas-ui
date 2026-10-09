@@ -213,6 +213,32 @@ test('questionnaire animated：开启后切步面板带方向标记、首帧与�
   expect(await animOf(0)).toBe('backward')
 })
 
+test('questionnaire shortcuts：Alt+→ 切步（输入框内也生效）、裸方向键输入避让、面板空白处可达、反馈可见', async ({
+  page,
+}) => {
+  await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#q-kbd')
+  const q = page.locator('#q-kbd')
+
+  // 输入框内裸 →：不切步（光标避让；初始步 current 属性为空/0）
+  await page.click('#q-kbd oas-input input')
+  await page.keyboard.press('ArrowRight')
+  const current0 = await q.evaluate((el) => el.getAttribute('current'))
+  expect(current0 === null || current0 === '0').toBe(true)
+
+  // 输入框内 Alt+→：切步（真实键盘事件）
+  await page.keyboard.press('Alt+ArrowRight')
+  await expect(q).toHaveAttribute('current', '1')
+  await expect(page.locator('#q-kbd-output')).toContainText('键盘切步 → 第 2 步')
+
+  // 点击面板空白 <p>：焦点落 host（tabindex=-1 兜底）→ 裸 → 前进、裸 ← 后退
+  await page.click('#q-kbd [slot="step-1"] p')
+  await page.keyboard.press('ArrowRight')
+  await expect(q).toHaveAttribute('current', '2')
+  await page.keyboard.press('ArrowLeft')
+  await expect(q).toHaveAttribute('current', '1')
+})
+
 test('questionnaire 跳过：optional 步点跳过按钮不校验直接前进', async ({ page }) => {
   await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#q-skip')
