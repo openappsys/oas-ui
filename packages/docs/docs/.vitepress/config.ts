@@ -190,6 +190,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Barcode 条码', link: '/components/barcode' },
       { text: 'Watermark 水印', link: '/components/watermark' },
       { text: 'Collapse 折叠面板', link: '/components/collapse' },
+      { text: 'Collapsible 折叠面板', link: '/components/collapsible' },
       { text: 'Descriptions 描述列表', link: '/components/descriptions' },
       { text: 'Timeline 时间线', link: '/components/timeline' },
       { text: 'List 列表', link: '/components/list' },

@@ -8,6 +8,7 @@ const STYLE = `
   padding: var(--oas-space-3) var(--oas-space-4);
   font-family: inherit;
   box-sizing: border-box;
+  position: relative;
 }
 :host([hidden]) {
   display: none;
@@ -57,6 +58,40 @@ const STYLE = `
   display: flex;
   align-items: center;
 }
+/* 前置图标位（slot="icon"）：通用图标通道，尺寸跟随内容（oas-icon 自带尺寸），仅占布局位 */
+.lead-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+/* 方形缩略图位（slot="image"）：与 avatar 同尺寸档联动，方形 + 小圆角 + 裁剪填充 */
+.lead-image {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--oas-radius-sm);
+  overflow: hidden;
+  background: var(--oas-color-bg-hover);
+}
+:host([size='sm']) .lead-image,
+:host([data-size='sm']) .lead-image {
+  width: 24px;
+  height: 24px;
+}
+:host([size='lg']) .lead-image,
+:host([data-size='lg']) .lead-image {
+  width: 40px;
+  height: 40px;
+}
+.lead-image ::slotted(img) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 /* 作者层 display（.avatar flex / .avatar-img block）会压过 UA 的 [hidden] 隐藏，
    无头像内容时必须显式兜底，否则空 img 渲染成灰圈 + 破图残影（用户实测缺陷） */
 [hidden] {
@@ -103,6 +138,23 @@ const STYLE = `
 .extra {
   flex-shrink: 0;
 }
+/* extra 操作区位于整行链接覆盖层之上：链接行（href）里放行内控件仍有可点热区 */
+.extra {
+  position: relative;
+  z-index: 2;
+}
+/* 整行链接覆盖层（href 时渲染）：绝对定位铺满整行，z-index 压过行内文本（点击即导航），
+   在 .extra（z-index 2）之下——操作区控件不受覆盖层遮挡 */
+.row-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  outline: none;
+}
+.row-link:focus-visible {
+  box-shadow: inset var(--oas-focus-ring);
+}
 `
 
 /** 行内交互元素判定选择器（命中则不触发行点击；含原生控件、ARIA 控件角色与可编辑区） */
@@ -111,7 +163,7 @@ const INTERACTIVE_SEL =
 
 export class OASListItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['title', 'description', 'avatar', 'clickable', 'selected', 'size']
+    return ['title', 'description', 'avatar', 'clickable', 'selected', 'size', 'href', 'target', 'rel']
   }
 
   /** 数据通道上下文：所属 oas-list 注入的原始数据项（oas-click detail 回传） */
@@ -121,6 +173,8 @@ export class OASListItem extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
+      <div class="lead-icon" part="lead-icon" hidden><slot name="icon"></slot></div>
+      <div class="lead-image" part="lead-image" hidden><slot name="image"></slot></div>
       <div class="avatar" part="avatar" hidden>
         <slot name="avatar"><img class="avatar-img" alt="" /></slot>
       </div>
@@ -141,9 +195,16 @@ export class OASListItem extends OASElement {
     return slot.assignedNodes().some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
-  /** 缓存节点引用（render 与水合路径共用；title/description/avatar 插槽内容增减时重刷） */
+  /** 缓存节点引用（render 与水合路径共用；title/description/avatar/icon/image 插槽内容增减时重刷） */
   private bind(): void {
-    for (const sel of ['slot[name="title"]', 'slot[name="description"]', 'slot:not([name])', 'slot[name="avatar"]']) {
+    for (const sel of [
+      'slot[name="title"]',
+      'slot[name="description"]',
+      'slot:not([name])',
+      'slot[name="avatar"]',
+      'slot[name="icon"]',
+      'slot[name="image"]',
+    ]) {
       this.shadow.querySelector<HTMLSlotElement>(sel)?.addEventListener('slotchange', () => {
         // 属性吸收（title）触发的 slotchange 自激防护：下次微任务再刷，幂等
         queueMicrotask(() => this.update())
@@ -151,6 +212,8 @@ export class OASListItem extends OASElement {
     }
     this.addEventListener('keydown', (e) => this.handleKeydown(e as KeyboardEvent))
     this.addEventListener('click', (e) => {
+      // 链接行：点击 = 原生导航（覆盖 <a> 承担），不派 oas-click（语义分离避免双触发）
+      if (this.hasAttribute('href')) return
       if (!this.hasAttribute('clickable')) return
       if (this.hitsInteractive(e)) return
       this.emit('click', { index: this.rowIndex(), item: this.itemData })
@@ -231,14 +294,66 @@ export class OASListItem extends OASElement {
       avatarEl.hidden = !hasSlot && avatarUrl === ''
     }
 
-    // 行交互：clickable → 可聚焦 + 高亮态钩子（可点行自身不挂 role=button：
-    // 行内常嵌控件（开关/按钮），role=button 会把控件裹进交互元素（axe: nested-interactive））。
+    // 前置图标 / 方形缩略图位（slot="icon" / slot="image"）：无内容即隐藏（不占布局空位）
+    const iconEl = this.shadow.querySelector<HTMLElement>('[part="lead-icon"]')
+    if (iconEl) iconEl.hidden = !this.slotHasContent(this.shadow.querySelector<HTMLSlotElement>('slot[name="icon"]'))
+    const imageEl = this.shadow.querySelector<HTMLElement>('[part="lead-image"]')
+    if (imageEl) {
+      imageEl.hidden = !this.slotHasContent(this.shadow.querySelector<HTMLSlotElement>('slot[name="image"]'))
+    }
+
+    // 行交互：clickable（或 href 链接行）→ hover 反馈钩子；链接行不派 oas-click
+    //（点击=导航，语义分离）——钩子仅驱动高亮态 CSS。
     // role / aria-pressed 组件一律不自设也不删——宿主显式挂的（如想恢复行级按钮语义的
     // role="button" + aria-pressed）原样保留不覆盖（与 card「宿主显式角色不覆盖」口径一致）
-    const clickable = this.hasAttribute('clickable')
+    const linked = this.hasAttribute('href')
+    const clickable = this.hasAttribute('clickable') || linked
     this.toggleAttribute('data-clickable', clickable)
-    if (clickable) this.setAttribute('tabindex', '0')
+    // 焦点：链接行的键盘焦点由内部覆盖 <a> 承担（host 不设 tabindex，避免双 Tab 停靠点）
+    if (clickable && !linked) this.setAttribute('tabindex', '0')
     else this.removeAttribute('tabindex')
+    // 整行链接覆盖层同步（href 缺席即摘除，不残留死链接）
+    this.syncRowLink()
+  }
+
+  /** 链接覆盖层可访问名称：title 缓存 → slot="title" 文本 → 行整体文本（axe link-name 达标） */
+  private linkLabel(): string {
+    if (this.titleCache) return this.titleCache
+    const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const slotText = (titleSlot?.assignedNodes() ?? [])
+      .map((n) => n.textContent ?? '')
+      .join('')
+      .trim()
+    if (slotText) return slotText
+    return (this.textContent ?? '').trim()
+  }
+
+  /** 整行链接覆盖层同步：href 在场渲染 absolute inset-0 的 <a>（z-index 1，位于 .extra 之下） */
+  private syncRowLink(): void {
+    let a = this.shadow.querySelector<HTMLAnchorElement>('a.row-link')
+    const href = this.getAttr('href', '')
+    if (href === '') {
+      a?.remove()
+      return
+    }
+    if (!a) {
+      a = document.createElement('a')
+      a.className = 'row-link'
+      a.setAttribute('part', 'link')
+      // appendChild 到 shadow 末尾：覆盖层位于所有布局位之后（配合 inset:0 + z-index 生效）
+      this.shadow.appendChild(a)
+    }
+    a.setAttribute('href', href)
+    const target = this.getAttr('target', '')
+    if (target) a.setAttribute('target', target)
+    else a.removeAttribute('target')
+    const rel = this.getAttr('rel', '')
+    if (rel) a.setAttribute('rel', rel)
+    else if (target) a.setAttribute('rel', 'noopener noreferrer')
+    else a.removeAttribute('rel')
+    const label = this.linkLabel()
+    if (label) a.setAttribute('aria-label', label)
+    else a.removeAttribute('aria-label')
   }
 
   /** 行内交互元素判定：命中则不触发行点击（防止点行内开关/按钮时行与控件双触发） */
@@ -246,8 +361,10 @@ export class OASListItem extends OASElement {
     return e.composedPath().some((n) => n instanceof Element && n !== this && n.matches(INTERACTIVE_SEL))
   }
 
-  /** 键盘可达：Enter / Space 触发行点击（Space 阻止页面滚动）；焦点在行内控件时不接管 */
+  /** 键盘可达：Enter / Space 触发行点击（Space 阻止页面滚动）；焦点在行内控件时不接管；
+   *  链接行 Enter 导航由内部原生 <a> 承担（preventDefault 会吞掉原生跳转，直接跳过） */
   private handleKeydown(e: KeyboardEvent): void {
+    if (this.hasAttribute('href')) return
     if (!this.hasAttribute('clickable')) return
     if (e.key !== 'Enter' && e.key !== ' ') return
     if (this.hitsInteractive(e)) return

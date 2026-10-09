@@ -123,6 +123,20 @@
   </oas-space>
 </DemoBlock>
 
+### 前置媒体（slot="leading"）
+
+菜单项支持前置媒体插槽：在 `<oas-menu-item>` 内放 `<template slot="leading">` 或带 `slot="leading"` 的直接子元素，内容渲染在 label 前、优先于 `icon` 图标（同时给时 icon 不渲染）；`loading` 加载态时 spinner 替换前置媒体位，收起态（collapsed）下媒体位与图标一致收敛（保留可见、间距归零——隐藏会让条目成为可 hover 的空白块）。适合头像、色块等任意富前置内容（`items` JSON 通道不支持——仅子元素声明式通道可用）。
+
+<DemoBlock title="头像前置媒体（avatar 例）">
+  <oas-menu style="width: 240px" value="lin">
+    <oas-menu-item value="lin">林晓雨<template slot="leading"><oas-avatar size="small">林</oas-avatar></template></oas-menu-item>
+    <oas-menu-item value="chen">陈以宁<template slot="leading"><oas-avatar size="small" color="success">陈</oas-avatar></template></oas-menu-item>
+    <oas-menu-item value="zhao">赵启铭<template slot="leading"><oas-avatar size="small" color="warning">赵</oas-avatar></template></oas-menu-item>
+    <oas-menu-divider></oas-menu-divider>
+    <oas-menu-item value="logout" icon="close">退出登录</oas-menu-item>
+  </oas-menu>
+</DemoBlock>
+
 ## 暗色菜单
 
 `theme="dark"` 使菜单局部使用暗色 token（深背景 + 浅文字），独立于全局主题；不设置时跟随全局主题。
@@ -478,7 +492,7 @@ onMounted(() => {
 | `collapsed` | 收起态（仅 vertical）：只显示图标，子菜单向右浮出 | `boolean` | — |
 | `disabled` | 整单禁用：点击/悬停/键盘全拦截，降饱和 + aria-disabled | `boolean` | — |
 | `expanded` | 受控展开项集合（JSON 数组字符串，inline 模式哪些子菜单展开）；非受控时内部管理 | `string` | — |
-| `items` | 菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单） | `string` | `[]` |
+| `items` | 菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单） | `MenuItem[] \| null` | `[]` |
 | `max-height` | 长菜单最大高度，超出内部滚动（数字补 px） | `string` | — |
 | `mode` | 布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条 | — | — |
 | `open-on-hover` | vertical/inline 父项 hover 延迟展开（约 150ms）/移出延迟收起（约 300ms），点击路径不变；horizontal 与 collapsed flyout 不受影响 | `boolean` | — |
@@ -524,6 +538,7 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` 递归为子菜单 children |
+| `template[slot="leading"]` | 前置媒体模板（或直接子元素加 slot="leading"）：头像/色块等任意前置内容，渲染在 label 前、优先于 icon 图标；loading 态由 spinner 替换；仅子元素声明式通道可用（items JSON 不支持） |
 
 ### oas-menu-group
 

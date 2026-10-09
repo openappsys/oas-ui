@@ -313,6 +313,21 @@ Besides the `items` JSON, you can declare the menu with `<oas-dropdown-item>` / 
   </oas-dropdown>
 </DemoBlock>
 
+### Leading media (slot="leading")
+
+Menu items support a leading media slot: put a `<template slot="leading">` (or a direct child with `slot="leading"`) inside an `<oas-dropdown-item>` (shared with `<oas-menu-item>`); the content renders before the label and takes precedence over the `icon` attribute (when both are given the icon is not rendered); in the `loading` state the spinner replaces the leading media. Suited to avatars, color chips, and any rich leading content (`items` JSON does not support it — declarative children only).
+
+<DemoBlock title="Leading avatars (avatar example)">
+  <oas-dropdown id="dd-leading" placement="bottom-start">
+    <oas-button>Switch account</oas-button>
+    <oas-dropdown-item value="lin">Lin Xiaoyu<template slot="leading"><oas-avatar size="small">Lin</oas-avatar></template></oas-dropdown-item>
+    <oas-dropdown-item value="chen">Chen Yining<template slot="leading"><oas-avatar size="small" color="success">Chen</oas-avatar></template></oas-dropdown-item>
+    <oas-dropdown-item value="zhao">Zhao Qiming<template slot="leading"><oas-avatar size="small" color="warning">Zhao</oas-avatar></template></oas-dropdown-item>
+    <oas-dropdown-divider></oas-dropdown-divider>
+    <oas-dropdown-item value="logout" icon="close">Sign out</oas-dropdown-item>
+  </oas-dropdown>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -553,6 +568,7 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Dropdown item label content (default slot text); direct child `<oas-dropdown-item>` elements recursively become the submenu `children` |
+| `template[slot="leading"]` | Leading media template (or a direct child with slot="leading"): avatars/color chips/any rich leading content, rendered before the label and taking precedence over the icon attribute; replaced by the spinner in the loading state; declarative child channel only (not supported by the items JSON) |
 
 ### oas-dropdown-group
 

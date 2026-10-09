@@ -239,6 +239,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-list[sortable] [part="data-items"] oas-list-item', 'dragmock', '拖拽数据通道行（shadow 内）→ oas-reorder'],
     ['oas-list[sortable] > oas-list-item', 'dragmock', '拖拽声明式行（light DOM）→ oas-reorder'],
   ],
+  collapsible: [['oas-collapsible [part="trigger"]', 'click', '点触发器 → oas-toggle']],
   stepper: [['oas-stepper[clickable] [role="tab"]', 'click', '点步骤头 → oas-change']],
   carousel: [['oas-carousel [part="arrow-next"]', 'click', '点下一张箭头 → oas-change']],
   'color-picker': [

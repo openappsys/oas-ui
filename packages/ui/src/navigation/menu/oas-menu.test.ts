@@ -1668,6 +1668,72 @@ describe('子元素声明式通道', () => {
     expect(plain.querySelector('path')!.getAttribute('stroke')).toBe('currentColor')
   })
 
+  describe('前置媒体插槽（slot="leading"，覆盖头像/色块等任意前置内容）', () => {
+    it('template[slot="leading"] 内容克隆进 .media 容器渲染在 label 前；模板文本不计入 label', () => {
+      const el = mountMenuChildren(
+        `<oas-menu-item value="user">张三<template slot="leading"><span data-avatar>张</span></template></oas-menu-item>`,
+      )
+      const li = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="user"]')!
+      const media = li.querySelector<HTMLElement>('.media')!
+      expect(media).not.toBeNull()
+      expect(media.querySelector('[data-avatar]')).not.toBeNull()
+      // media 在 label 之前（前置）
+      const label = li.querySelector<HTMLElement>('.label')!
+      expect(label.textContent).toBe('张三')
+      expect(li.insertBefore(media, label)).toBe(media)
+    })
+
+    it('元素通道：[slot="leading"] 直接子元素同样克隆进 .media', () => {
+      const el = mountMenuChildren(
+        `<oas-menu-item value="team"><b data-mark slot="leading">团</b>团队空间</oas-menu-item>`,
+      )
+      const media = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="team"] .media')!
+      expect(media.querySelector('[data-mark]')).not.toBeNull()
+    })
+
+    it('leading 优先于 icon 属性：同给时渲染 .media 不渲染 .icon；无 leading 项零回归', () => {
+      const el = mountMenuChildren(
+        `<oas-menu-item value="a" icon="star">优先 leading<template slot="leading"><i data-x></i></template></oas-menu-item>` +
+          `<oas-menu-item value="b" icon="gear">纯图标</oas-menu-item>`,
+      )
+      const a = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="a"]')!
+      expect(a.querySelector('.media')).not.toBeNull()
+      expect(a.querySelector('.icon')).toBeNull()
+      const b = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="b"]')!
+      expect(b.querySelector('.icon')).not.toBeNull()
+      expect(b.querySelector('.media')).toBeNull()
+    })
+
+    it('loading 优先于 leading：spinner 替换前置媒体位', () => {
+      const el = mountMenuChildren(
+        `<oas-menu-item value="sync" loading>同步中<template slot="leading"><i data-y></i></template></oas-menu-item>`,
+      )
+      const li = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="sync"]')!
+      expect(li.querySelector('.spin')).not.toBeNull()
+      expect(li.querySelector('.media')).toBeNull()
+    })
+
+    it('样式表含 .media 布局规则（flex none + 与 .icon 同档间距）', () => {
+      const el = mountMenuChildren(`<oas-menu-item value="a">首页</oas-menu-item>`)
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain('.media')
+      expect(css).toContain('flex: none')
+    })
+
+    it('嵌套子项：父项无自身 leading 时不继承子项的 leading 模板（提取只认直接子模板）', () => {
+      // 回归：extractLeadingFrom 曾用 querySelector 深查，父项会被误挂嵌套子项的前置媒体
+      const el = mountMenuChildren(
+        `<oas-menu-item value="parent">父级
+          <oas-menu-item value="child">子级<template slot="leading"><i data-child-lead></i></template></oas-menu-item>
+        </oas-menu-item>`,
+      )
+      const parent = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="parent"]')!
+      const child = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="child"]')!
+      expect(parent.querySelector(':scope > .media'), '父项不得挂子项的 leading').toBeNull()
+      expect(child.querySelector(':scope > .media [data-child-lead]'), '子项自己的 leading 正常渲染').not.toBeNull()
+    })
+  })
+
   it('MutationObserver：运行时 append oas-menu-item 后菜单刷新出现新项', async () => {
     const el = mountMenuChildren(`<oas-menu-item value="home">首页</oas-menu-item>`)
     expect(items(el).length).toBe(1)
@@ -2111,5 +2177,72 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     window.dispatchEvent(new Event('scroll'))
     window.dispatchEvent(new Event('resize'))
     expect(calls, '重连后 scroll/resize 监听恢复').toBe(2)
+  })
+})
+
+describe('items property 通道（对象数组直赋）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const labels = (el: OASMenu): Array<string | null | undefined> =>
+    items(el).map((li) => li.querySelector('.label')?.textContent)
+
+  it('property 赋值渲染对象数组', () => {
+    const el = new OASMenu()
+    el.setAttribute('items', JSON.stringify([{ label: '属性项', value: 'a' }]))
+    document.body.appendChild(el)
+    expect(labels(el)).toEqual(['属性项'])
+    el.items = [{ label: '对象项', value: 'b' }]
+    expect(labels(el)).toEqual(['对象项'])
+  })
+
+  it('property 设置后再写 items 属性即退位（最后写入通道胜出）', () => {
+    // 回归：propertyItems 非 null 时 update 跳过 attribute 解析，若不复位则属性写入被永久遮蔽
+    const el = new OASMenu()
+    el.items = [{ label: '对象项', value: 'b' }]
+    document.body.appendChild(el)
+    expect(labels(el)).toEqual(['对象项'])
+    el.setAttribute('items', JSON.stringify([{ label: '属性二次', value: 'c' }]))
+    expect(labels(el), 'attribute 重新解析应接管').toEqual(['属性二次'])
+  })
+
+  it('移除 items 属性同样让 property 退位，回落子元素通道', () => {
+    const el = document.createElement('oas-menu') as OASMenu
+    el.setAttribute('items', JSON.stringify([{ label: '属性项', value: 'a' }]))
+    el.innerHTML = '<oas-menu-item value="home">首页</oas-menu-item>'
+    document.body.appendChild(el)
+    expect(labels(el)).toEqual(['属性项'])
+    el.items = [{ label: '对象项', value: 'b' }]
+    expect(labels(el)).toEqual(['对象项'])
+    el.removeAttribute('items') // attribute 在场 → 移除触发复位回调 → 回落子元素通道
+    expect(labels(el)).toEqual(['首页'])
+  })
+
+  it('items = null 退位：立即重渲染回落 attribute/子元素通道（不留 property 陈旧数据）', () => {
+    // 回归：setter null 分支曾不触发 update——直用 oas-menu 的宿主 `items = null` 后
+    // UI 停留在 property 旧数据；消费方（dropdown 等）依赖后续 setAttribute 兜底，直用宿主无兜底
+    const el = new OASMenu()
+    el.setAttribute('items', JSON.stringify([{ label: '属性项', value: 'a' }]))
+    document.body.appendChild(el)
+    expect(labels(el)).toEqual(['属性项'])
+    el.items = [{ label: '对象项', value: 'b' }]
+    expect(labels(el)).toEqual(['对象项'])
+    el.items = null // 退位：attribute 仍在场 → update 重走 parseItems 接管
+    expect(labels(el), 'null 退位后 attribute 通道数据应立即渲染').toEqual(['属性项'])
+  })
+
+  it('collapsed 收起态：媒体位不写 display:none（隐藏会产生可 hover 的空白条目），仅 margin 收敛', () => {
+    const el = mountMenuChildren(
+      `<oas-menu-item value="a">首页<template slot="leading"><i data-x></i></template></oas-menu-item>`,
+    )
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // collapsed 收敛段只允许 margin 归零，不得对 .media 写 display:none
+    expect(css).not.toMatch(/\[collapsed\]\)\s*>\s*\.menu\s*>\s*\.item\s*>\s*\.media\s*\{[^}]*display:\s*none/s)
+    expect(css).toMatch(/\[collapsed\]\)\s*\.item\s*>\s*\.media\s*\{[^}]*margin-inline-end:\s*0/s)
   })
 })

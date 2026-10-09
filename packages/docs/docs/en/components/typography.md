@@ -143,10 +143,60 @@ Typography components for text, titles, and paragraphs.
 
 <DemoBlock title="Paragraphs">
   <div style="flex-direction: column; align-items: flex-start; display: flex">
-    <oas-paragraph>Paragraph text 1</oas-paragraph>
-    <oas-paragraph type="secondary">Paragraph text 2</oas-paragraph>
+    <oas-paragraph>Paragraph one</oas-paragraph>
+    <oas-paragraph type="secondary">Paragraph two</oas-paragraph>
   </div>
 </DemoBlock>
+
+## Content Blocks (blockquote / list / table)
+
+The `tag` whitelist covers block-level content forms, shared by all three components (text/title/paragraph) — no separate long-form prose container is introduced; this extends the existing `tag` system directly:
+
+- `tag="blockquote"`: quote block (token border on the inline-start side + logical indent, RTL mirrors with the writing direction);
+- `tag="ul"` / `tag="ol"`: list blocks (normalized indent, built-in li spacing; li items go in the default slot);
+- `tag="table"`: content table (full width + collapsed borders; for th/td cell details prefer host styles or the `oas-table` feature component);
+- Table parts (`thead`/`tbody`/`tr`/`th`/`td`/`caption`) and description lists (`dl`/`dt`/`dd`) are in the whitelist as well.
+
+List/table blocks use unwrapped projection: the default slot is attached directly to the root element (`ul` accepts only `li` children and `table` only table parts — the content span wrapper would be invalid inside these tags).
+
+<DemoBlock title="Quote block (tag=blockquote)">
+  <div style="width: 100%">
+    <oas-paragraph tag="blockquote">Design is not about adding things, but about nothing left to take away.</oas-paragraph>
+    <oas-paragraph tag="blockquote" type="secondary">Simplicity is the ultimate sophistication. — For quotes in help docs and prose.</oas-paragraph>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="List blocks (tag=ul / tag=ol)">
+  <div style="display: flex; gap: 32px; flex-wrap: wrap">
+    <oas-text tag="ul" style="min-width: 200px">
+      <li>Install the core package and icons</li>
+      <li>Register component families at the entry</li>
+      <li>Import single components on demand</li>
+    </oas-text>
+    <oas-text tag="ol" style="min-width: 200px">
+      <li>Read the design spec</li>
+      <li>Compose pages from components</li>
+      <li>Wire up theme tokens</li>
+    </oas-text>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="Content table (tag=table)">
+  <div style="width: 100%">
+    <oas-text tag="table">
+      <thead>
+        <tr><th>Component</th><th>Category</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>oas-collapse</td><td>Data display</td><td>Stable</td></tr>
+        <tr><td>oas-list</td><td>Data display</td><td>Stable</td></tr>
+        <tr><td>oas-typography</td><td>Basic</td><td>Stable</td></tr>
+      </tbody>
+    </oas-text>
+  </div>
+</DemoBlock>
+
+Cell details for `th` bolding and `td` borders/padding are left to the host (shadow styles cannot reach deep into slotted subtrees); for sorting/filtering/pagination content tables use `oas-table` directly.
 
 ## API
 
@@ -180,7 +230,7 @@ Typography components for text, titles, and paragraphs.
 | `numeric` | Tabular figures (font-variant-numeric: tabular-nums) for aligned numeric columns in tables/stats | — | — |
 | `size` | Three font-size presets mapped to font-size tokens (medium falls back to inherited size) | `string` | — |
 | `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
-| `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
+| `tag` | Render tag: replaces the default element — inline semantics (sub/sup/ins/em/strong etc.) and content-block forms (blockquote quote / ul·ol list / table content table / dl description list plus table parts) are all whitelisted; list and table blocks use unwrapped projection (the default slot attaches directly to the root) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | Underline | — | — |
 | `weight` | Font weight: `regular`/`medium`/`semibold`/`bold` (compatible with the strong boolean) | `WeightType` | — |
@@ -227,7 +277,7 @@ Typography components for text, titles, and paragraphs.
 | `mark` | Highlighted mark (light yellow background, `<mark>` semantics) | — | — |
 | `numeric` | Tabular numerals (`font-variant-numeric: tabular-nums`) so number columns line up in tables/stats | — | — |
 | `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
-| `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
+| `tag` | Render tag: replaces the default element — inline semantics (sub/sup/ins/em/strong etc.) and content-block forms (blockquote quote / ul·ol list / table content table / dl description list plus table parts) are all whitelisted; list and table blocks use unwrapped projection (the default slot attaches directly to the root) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | Underline | — | — |
 | `weight` | Font weight tier: `regular` (400) / `medium` (500) / `semibold` (600) / `bold` (700); an explicit tier wins over the `strong` boolean; invalid values fall back | `WeightType` | — |
@@ -274,7 +324,7 @@ Typography components for text, titles, and paragraphs.
 | `mark` | Highlighted mark (light yellow background, `<mark>` semantics) | — | — |
 | `numeric` | Tabular numerals (`font-variant-numeric: tabular-nums`) so number columns line up in tables/stats | — | — |
 | `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
-| `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
+| `tag` | Render tag: replaces the default element — inline semantics (sub/sup/ins/em/strong etc.) and content-block forms (blockquote quote / ul·ol list / table content table / dl description list plus table parts) are all whitelisted; list and table blocks use unwrapped projection (the default slot attaches directly to the root) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | Underline | — | — |
 | `weight` | Font weight tier: `regular` (400) / `medium` (500) / `semibold` (600) / `bold` (700); an explicit tier wins over the `strong` boolean; invalid values fall back | `WeightType` | — |

@@ -183,8 +183,10 @@ export class OASInspectorSection extends OASElement {
 
   protected override update(): void {
     this.toggleAttribute('data-rtl', isRtl(this))
-    // default-open 非受控便利：仅首帧写入一次（消费即置位，否则用户折叠后会被 update 反复回弹 → 折不动）
-    if (!this.defaultOpenApplied && this.hasAttr('default-open') && !this.hasAttr('open')) {
+    // default-open 非受控便利：仅首帧写入一次（消费即置位，否则用户折叠后会被 update 反复回弹 → 折不动）。
+    // 值语义：`default-open="false"`（框架布尔绑定会序列化为字符串 "false"）不播种展开，避免反向坑（同 oas-collapsible）。
+    const defaultSeed = this.getAttribute('default-open')
+    if (!this.defaultOpenApplied && defaultSeed !== null && defaultSeed !== 'false' && !this.hasAttr('open')) {
       this.defaultOpenApplied = true
       this.setAttribute('open', '')
     }

@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "items",
-      "type": "string",
       "default": "[]",
       "observed": true
     },
@@ -78,7 +77,12 @@
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "items",
+      "type": "MenuItem[] | null"
+    }
+  ],
   "events": [
     {
       "name": "oas-select",

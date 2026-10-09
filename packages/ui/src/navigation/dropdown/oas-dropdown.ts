@@ -7,6 +7,7 @@ import { measureMaxTextWidth } from '../../shared/measure-text.js'
 import { chevronDownPath } from '@oas-ui/icons/icons/chevron-down'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
+import { OASMenuItem } from '../menu/index.js'
 import type { OASMenu } from '../menu/index.js'
 import type { MenuItem, MenuItemKind } from '../menu/index.js'
 
@@ -634,7 +635,13 @@ export class OASDropdown extends OASElement {
     }
     this.prevOpen = open
     if (open) {
-      this.menuEl.setAttribute('items', JSON.stringify(this.itemsList))
+      // 含 leading 克隆节点的项无法 JSON 序列化：走 menu 的 items property 对象通道；纯数据仍走 JSON attribute
+      if (this.itemsList.some((i) => i.leading && i.leading.length > 0)) {
+        ;(this.menuEl as OASMenu).items = this.itemsList
+      } else {
+        ;(this.menuEl as OASMenu).items = null
+        this.menuEl.setAttribute('items', JSON.stringify(this.itemsList))
+      }
       this.menuEl.setAttribute('value', this.getAttr('value', ''))
       this.anchorEl.hidden = false
       this.anchorEl.classList.remove('oas-closing')
@@ -911,6 +918,8 @@ export class OASDropdown extends OASElement {
     if (target) item.target = target
     const rel = el.getAttribute('rel')
     if (rel) item.rel = rel
+    const leading = OASMenuItem.extractLeadingFrom(el)
+    if (leading.length > 0) item.leading = leading
     const children = this.parseChildLevel(el.children)
     if (children.length > 0) item.children = children
     return item
@@ -926,7 +935,8 @@ export class OASDropdown extends OASElement {
     return item
   }
 
-  /** 默认插槽 label 文本：跳过嵌套数据载体元素（其文本属于子菜单而非 label） */
+  /** 默认插槽 label 文本：跳过嵌套数据载体元素（其文本属于子菜单而非 label）
+   *  与前置媒体节点（判定工具挂数据载体类，宿主类内不留插槽标记字面量） */
   private childLabel(el: Element): string {
     let text = ''
     for (const node of el.childNodes) {
@@ -935,6 +945,7 @@ export class OASDropdown extends OASElement {
         if (tag === 'OAS-DROPDOWN-ITEM' || tag === 'OAS-DROPDOWN-GROUP' || tag === 'OAS-DROPDOWN-DIVIDER') {
           continue
         }
+        if (OASMenuItem.isLeadingNode(node)) continue
       }
       text += node.textContent ?? ''
     }

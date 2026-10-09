@@ -2187,3 +2187,47 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：combobox +16 / switch +9 / toggle-button +8 / toggle-group +5 断言（RED→GREEN）；`pnpm test` 全绿。
 - e2e：`qa-regression/combobox.spec.ts`（多选真点叠加 chips + chip 移除 + 上限拦截反馈可见 + 折叠 +N）、`qa-regression/switch.spec.ts`（卡片真点切换 + demo 反馈 + 禁用卡拦截）、`qa-regression/toggle-button.spec.ts`（三形态真点 + 静态镜像）、`qa-regression/toggle-group.spec.ts`（四形态镜像 + filled 多选真点反馈）全绿。
 - 文档：combobox/switch/toggle-button/toggle-group md（zh/en）新增章节 + 可交互 demo；`api-descriptions.{zh,en}.json` 增补 + api:scan/api:gen 重生成；CHANGELOG `[未发布]` 英文条目。
+## 专业密度 C 批：oas-collapsible 新组件 + list / menu 系 / typography 能力增量（未发布）
+
+> 立项背景：能力对照第 C/D 组收口后的「做」档四项——单面板自折叠原语（C 组唯一实质缺口）、通用行组件的引导媒体与整行链接、菜单系前置媒体插槽（dropdown avatar 例）、排版内容块（blockquote / list / table）。定位纪律：不另立通用 item 件（扩展 `oas-list-item`）、不新立 prose 长文容器（扩展 typography 的 `tag` 体系）。
+
+### oas-collapsible（新组件，data 族，放 `data/collapsible/` 邻近 collapse）
+
+- **定位**：无容器、自管开合的独立单面板折叠原语；与 `oas-collapse` 的分工——collapse 编排「容器 + 多面板」（面板开合由容器驱动，孤立 item 点击不开合），collapsible 是「一个区块自己开合」的积木（文件树节点 / 表单折叠分区 / 侧栏分组）。视觉与 collapse-item 同源（触发行 + grid 0fr→1fr 展开动画 + 内建箭头）。
+- **open 双模式契约**：`open` 属性缺席 = 非受控自管（首帧由 `default-open` 播种一次）；属性在场 = 受控（值语义：非 `"false"` 为展开、`"false"` 为收起），点击翻转后写回属性并派发事件（乐观更新）；受控 → 非受控切换（宿主移除 open）时内部状态播种为移除前显示值，不跳变。
+- **其余**：`header` 属性 + `slot="header"` 富触发内容 + `template[slot="toggle"]` 自定义展开图标（与 collapse-item 一致）；`disabled`（含 config-provider 全局禁用注入）；事件 `oas-toggle` detail `{ open }`。
+- **a11y**：触发按钮原生 focus + Enter/Space、`aria-expanded`/`aria-controls` 同步、`aria-disabled`；可读名称 = 触发器内容。
+- **无 JS 退化**：未升级时 light DOM 内容直接可见（信息不丢失；shadow DOM 架构下原生 `<details>` 兜底不可行，ui-spec 无既有约定，选可见退化并文档说明）。
+- SSR：`template()`/`hydrate()` 双路径实现（DSD 白名单另批跟进）；无内置文案，不需 i18n。
+
+### oas-list-item 能力增量
+
+- **前置媒体插槽**：`slot="icon"`（通用图标位，尺寸跟随内容）+ `slot="image"`（方形缩略图位，尺寸与头像同档联动 sm 24 / md 32 / lg 40、小圆角裁剪填充）；三者（icon/image/avatar）各自判空显隐、可组合。
+- **整行链接**：`href`/`target`/`rel`——行内渲染覆盖整行的 `<a>`（inset 0、z-index 1，可访问名称取行标题），点击任意空白处即原生导航、Tab 聚焦 Enter 触发；`target` 在场自动补 `rel="noopener noreferrer"`（显式 rel 不覆盖）；链接行点击**不再派发 `oas-click`**（导航与 clickable 语义分离，避免双触发歧义）；`slot="extra"` 操作区置于覆盖层之上（z-index 2），行内操作控件不受遮挡。
+
+### menu 系前置媒体插槽（slot="leading"）
+
+- `oas-menu-item` / `oas-dropdown-item` / `oas-context-menu-item`（数据载体继承体系一致收口）：`<template slot="leading">` 或带 `slot="leading"` 的直接子元素，渲染在 label 前、优先于 `icon`（同给时 icon 不渲染）；`loading` 态 spinner 替位；collapsed 收起态 leading 与 icon 一致**保持可见**（间距归零，作 rail 视觉锚点，不留空白可悬停行）。
+- 提取/判定工具挂在数据载体类（`extractLeadingFrom` / `isLeadingNode` 静态方法），宿主（menu/dropdown/context-menu）解析层调用——插槽标记归属载体，api:scan 归属正确。
+- **`oas-menu` 新增 `items` property 通道**（对象数组直赋，`MenuItem[] | null`）：携带 leading 克隆节点的项无法 JSON 序列化，宿主以 property 直传渲染；与 attribute JSON / 子元素通道三通道并存（property 最后写入胜出，attribute 重新解析即退位）。
+- `items` JSON 通道不支持 leading（文档标注，仅子元素声明式通道可用）。
+
+### typography 内容块排版（不新立 prose 容器）
+
+- `tag` 白名单扩展内容块形态：`blockquote`（引用块：起始侧 token 边条 + 逻辑缩进，RTL 随书写方向镜像）、`ul`/`ol`/`li`/`dl`/`dt`/`dd`（列表块）、`table`/`caption`/`thead`/`tbody`/`tfoot`/`tr`/`th`/`td`（内容表）；三件（text/title/paragraph）通用。
+- **解包投影**：`ul`/`ol`/`dl`/`table`/`caption`/`tr`/`thead`/`tbody`/`tfoot` 的 content model 不容 span 包装——换标签时取消 content/suffix 包装、默认 slot 直接挂根；blockquote/li/dt/dd/th/td 允许 flow/phrasing 内容保持包装。块级 ↔ 行内动态切换时包装随标签重建。
+- 块级形态下 ellipsis/line-clamp 跳过（display/white-space 规则会破坏块级布局）；suffix 仅行内省略语义不保留。表格 th/td 单元细节样式由宿主自理（shadow 样式无法作用插槽子树深层，文档标注；重内容表用 `oas-table`）。
+
+### 边界（本批不做）
+
+- collapsible 手风琴互斥 / `icon-placement` / `heading-level` / 折叠前可取消事件：宿主可用 `oas-collapse`（编排件）覆盖互斥场景，其余挂账按需。
+- 通用 `oas-item` 独立成件：已有 5+ 领域行组件，维持扩展 `oas-list-item` 路线。
+- `oas-prose` 长文容器：不立项，内容块走 typography `tag` 体系。
+- typographic 表格深样式（th/td 边框/内边距 token 化）：shadow 样式层级限制，文档给宿主指引。
+
+### 验收
+
+- 单测：TDD RED→GREEN——collapsible（双模式/播种值语义/事件/disabled 含注入/插槽/键盘退化/token/水合）+ list-item（icon/image 显隐/链接覆盖层/rel 自动补/aria 名称/焦点分离）+ menu 系（template/元素双通道/优先级/loading 替位/样式）+ dropdown 别名通道 + typography（白名单/解包/切换重建/样式 token）；分多批累计（计数随各轮 review 修复递增，不逐项固化数字）。
+- e2e：`qa-regression/collapsible.spec.ts` 新建 7 条（真点开合/受控写回/外部切换联动/disabled/键盘/暗色/console 零告警）+ list 补 2 条（真实点击 hash 导航 + extra 可点 + 焦点分离 / 前置媒体真实渲染）+ typography 补 1 条（块级真渲染断言）+ menu 补 1 条（leading 真实渲染在 label 前）。
+- 文档：collapsible.md zh/en 新页（进侧栏与 smoke 等自动收集面）+ list/typography/menu/dropdown zh/en demo 与说明 + api-manifest/api-descriptions 同步（api:check 双向 0）。
+- PRD/ROADMAP 标「未发布」；CHANGELOG `[未发布]` 英文条目。

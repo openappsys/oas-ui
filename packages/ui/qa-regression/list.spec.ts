@@ -205,3 +205,66 @@ test('list D14：sortable 拖拽派发 oas-reorder 并由宿主重排数据', as
   expect(titles.length).toBe(4)
   expect(titles[2], '被拖行应移动到目标索引（宿主据 oas-reorder 重排）').toBe(firstTitle)
 })
+
+// ===== 整行链接（href / target）：真实点击导航 + 键盘焦点 + extra 不被覆盖层挡住 =====
+test('list 链接行真实点击导航（hash 变化）+ 链接可访问名称 + extra 控件可点不误导航', async ({ page }) => {
+  await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-list-item[href]')
+  await page.evaluate(() => {
+    document.querySelector('oas-list-item[href]')!.scrollIntoView({ block: 'center', behavior: 'instant' })
+  })
+  // 真实点击行标题文本区：命中覆盖 <a> → hash 导航
+  await page.locator('oas-list-item[href]').first().click()
+  const hash1 = await page.evaluate(() => location.hash)
+  expect(hash1, '点击链接行应触发原生导航（hash 变化）').toBe('#list-anchor-demo')
+
+  const meta = await page.evaluate(() => {
+    const row = document.querySelector('oas-list-item[href]')!
+    const a = row.shadowRoot!.querySelector<HTMLAnchorElement>('a.row-link')!
+    // 链接行内 extra 控件真实点击：不应触发导航（hash 保持）
+    const extraBtn = row.querySelector('[slot="extra"]') as HTMLElement | null
+    return { label: a.getAttribute('aria-label'), hasExtra: !!extraBtn }
+  })
+  expect(meta.label, '链接 <a> 有可访问名称（行标题）').toBe('组件总览')
+  expect(meta.hasExtra, '链接行 demo 应含 extra 控件').toBe(true)
+
+  // extra 控件位于覆盖层之上：真实点击不误触导航（hash 保持不变）
+  const extra = page.locator('oas-list-item[href] [slot="extra"]').first()
+  await extra.click()
+  const hashAfterExtra = await page.evaluate(() => location.hash)
+  expect(hashAfterExtra, '点击链接行 extra 控件不得触发整行导航（覆盖层不得挡住操作区）').toBe('#list-anchor-demo')
+
+  // 键盘：Tab 聚焦链接行内的 <a>（host 无 tabindex，焦点由内部 a 承担）
+  const focusInLink = await page.evaluate(() => {
+    const row = document.querySelector('oas-list-item[href]')!
+    const a = row.shadowRoot!.querySelector<HTMLAnchorElement>('a.row-link')!
+    a.focus()
+    return document.activeElement === row && row.shadowRoot!.activeElement === a
+  })
+  expect(focusInLink, '键盘焦点应落在行内 <a>（host 不设 tabindex）').toBe(true)
+})
+
+test('list 前置媒体槽（icon / image）真实渲染 + 无内容隐藏', async ({ page }) => {
+  await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-list-item[slot="icon"], oas-list-item')
+  const r = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('oas-list-item')]
+    const withIcon = rows.find((row) => row.querySelector('[slot="icon"]'))
+    const withImage = rows.find((row) => row.querySelector('[slot="image"]'))
+    const plain = rows.find((row) => !row.querySelector('[slot="icon"], [slot="image"]'))
+    const read = (row: Element, part: string) => {
+      const el = row.shadowRoot!.querySelector(`[part="${part}"]`) as HTMLElement | null
+      return el ? !el.hidden && el.getBoundingClientRect().width > 0 : false
+    }
+    return {
+      iconVisible: withIcon ? read(withIcon, 'lead-icon') : null,
+      imageVisible: withImage ? read(withImage, 'lead-image') : null,
+      plainIconHidden: plain ? !read(plain, 'lead-icon') : null,
+      plainImageHidden: plain ? !read(plain, 'lead-image') : null,
+    }
+  })
+  expect(r.iconVisible, 'icon 槽行前置图标位可见').toBe(true)
+  expect(r.imageVisible, 'image 槽行方形缩略图位可见').toBe(true)
+  expect(r.plainIconHidden, '无内容行图标位隐藏').toBe(true)
+  expect(r.plainImageHidden, '无内容行缩略图位隐藏').toBe(true)
+})

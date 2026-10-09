@@ -1032,4 +1032,142 @@ describe('OASList', () => {
       expect(css).toContain(':host([data-rtl])')
     })
   })
+
+  describe('OASListItem 前置媒体槽（icon / image）', () => {
+    function item(content: string): import('./oas-list-item.js').OASListItem {
+      const row = document.createElement('oas-list-item') as import('./oas-list-item.js').OASListItem
+      row.innerHTML = content
+      document.body.appendChild(row)
+      return row
+    }
+
+    it('slot="icon" 投影到前置图标位；无内容时容器隐藏', () => {
+      const row = item('<oas-icon name="user" slot="icon"></oas-icon><span slot="title">甲</span>')
+      const iconWrap = row.shadowRoot!.querySelector<HTMLElement>('[part="lead-icon"]')!
+      expect(iconWrap).not.toBeNull()
+      expect(iconWrap.hidden).toBe(false)
+      expect(iconWrap.querySelector('slot[name="icon"]')).not.toBeNull()
+      // 无内容行：图标位隐藏
+      const plain = item('<span slot="title">乙</span>')
+      expect((plain.shadowRoot!.querySelector('[part="lead-icon"]') as HTMLElement).hidden).toBe(true)
+    })
+
+    it('slot="image" 投影到方形缩略图位；无内容时容器隐藏', () => {
+      const row = item('<img src="x.png" alt="" slot="image" /><span slot="title">甲</span>')
+      const imgWrap = row.shadowRoot!.querySelector<HTMLElement>('[part="lead-image"]')!
+      expect(imgWrap.hidden).toBe(false)
+      // 无内容行：缩略图位隐藏
+      const plain = item('<span slot="title">乙</span>')
+      expect((plain.shadowRoot!.querySelector('[part="lead-image"]') as HTMLElement).hidden).toBe(true)
+    })
+
+    it('icon / image / avatar 三前置位并存互斥显隐（各自判空）', () => {
+      const row = item(
+        '<oas-icon name="user" slot="icon"></oas-icon><img src="x.png" alt="" slot="image" /><span slot="title">甲</span>',
+      )
+      expect((row.shadowRoot!.querySelector('[part="lead-icon"]') as HTMLElement).hidden).toBe(false)
+      expect((row.shadowRoot!.querySelector('[part="lead-image"]') as HTMLElement).hidden).toBe(false)
+      expect((row.shadowRoot!.querySelector('[part="avatar"]') as HTMLElement).hidden).toBe(true)
+    })
+
+    it('样式表含前置位布局规则（flex none + token 尺寸，image 容器方形圆角）', () => {
+      const row = item('<span slot="title">甲</span>')
+      const css = row.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain('.lead-icon')
+      expect(css).toContain('.lead-image')
+      expect(css).toContain('var(--oas-radius-sm)')
+    })
+
+    it('动态增删 slot 内容即时切换显隐', async () => {
+      const row = item('<span slot="title">甲</span>')
+      expect((row.shadowRoot!.querySelector('[part="lead-icon"]') as HTMLElement).hidden).toBe(true)
+      const icon = document.createElement('oas-icon')
+      icon.setAttribute('name', 'user')
+      icon.setAttribute('slot', 'icon')
+      row.appendChild(icon)
+      await new Promise((r) => setTimeout(r, 0))
+      expect((row.shadowRoot!.querySelector('[part="lead-icon"]') as HTMLElement).hidden).toBe(false)
+      icon.remove()
+      await new Promise((r) => setTimeout(r, 0))
+      expect((row.shadowRoot!.querySelector('[part="lead-icon"]') as HTMLElement).hidden).toBe(true)
+    })
+  })
+
+  describe('OASListItem 整行链接（href / target）', () => {
+    function item(
+      attrs: Record<string, string>,
+      content = '<span slot="title">文档行</span>',
+    ): import('./oas-list-item.js').OASListItem {
+      const row = document.createElement('oas-list-item') as import('./oas-list-item.js').OASListItem
+      for (const [k, v] of Object.entries(attrs)) row.setAttribute(k, v)
+      row.innerHTML = content
+      document.body.appendChild(row)
+      return row
+    }
+
+    it('href 进 observedAttributes；链接行渲染内部覆盖 <a>（href 同步）', () => {
+      const row = item({ href: 'https://example.com/doc' })
+      expect((row.constructor as typeof import('./oas-list-item.js').OASListItem).observedAttributes).toContain('href')
+      const a = row.shadowRoot!.querySelector<HTMLAnchorElement>('a.row-link')!
+      expect(a).not.toBeNull()
+      expect(a.getAttribute('href')).toBe('https://example.com/doc')
+    })
+
+    it('target 同步到 <a>；target 在场且未显式给 rel 时自动补 noopener noreferrer', () => {
+      const row = item({ href: 'https://example.com', target: '_blank' })
+      const a = row.shadowRoot!.querySelector<HTMLAnchorElement>('a.row-link')!
+      expect(a.getAttribute('target')).toBe('_blank')
+      expect(a.getAttribute('rel')).toBe('noopener noreferrer')
+      // 显式 rel 不覆盖
+      const row2 = item({ href: 'https://example.com', target: '_blank', rel: 'opener' })
+      expect(row2.shadowRoot!.querySelector<HTMLAnchorElement>('a.row-link')!.getAttribute('rel')).toBe('opener')
+      // 无 target 不补 rel
+      const row3 = item({ href: 'https://example.com' })
+      expect(row3.shadowRoot!.querySelector<HTMLAnchorElement>('a.row-link')!.getAttribute('rel')).toBeNull()
+    })
+
+    it('链接 <a> 有可访问名称（aria-label = 行标题；axe link-name 达标）', () => {
+      const row = item({ href: '#a' })
+      const a = row.shadowRoot!.querySelector<HTMLAnchorElement>('a.row-link')!
+      expect(a.getAttribute('aria-label')).toBe('文档行')
+      // slot 标题时取插槽文本
+      const row2 = item({ href: '#b' }, '<b slot="title">富标题行</b>')
+      expect(row2.shadowRoot!.querySelector<HTMLAnchorElement>('a.row-link')!.getAttribute('aria-label')).toBe(
+        '富标题行',
+      )
+    })
+
+    it('无 href 时不渲染链接覆盖层；移除 href 即刻摘除', () => {
+      const row = item({})
+      expect(row.shadowRoot!.querySelector('a.row-link')).toBeNull()
+      row.setAttribute('href', '#c')
+      expect(row.shadowRoot!.querySelector('a.row-link')).not.toBeNull()
+      row.removeAttribute('href')
+      expect(row.shadowRoot!.querySelector('a.row-link')).toBeNull()
+    })
+
+    it('链接行打 data-clickable 钩子（hover 反馈）但 host 不设 tabindex（焦点由内部 a 承担）', () => {
+      const row = item({ href: '#d' })
+      expect(row.hasAttribute('data-clickable')).toBe(true)
+      expect(row.hasAttribute('tabindex')).toBe(false)
+    })
+
+    it('链接行 a 覆盖整行（inset-0）且 extra 操作区在其上层（行内控件可点不误导航）', () => {
+      const row = item({ href: '#e' }, '<span slot="title">标题</span><oas-button slot="extra">操作</oas-button>')
+      const css = row.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain('.row-link')
+      expect(css).toContain('inset: 0')
+      // extra 层级规则：链接之上（z-index 高于 row-link）
+      expect(css).toMatch(/\.extra\s*\{[^}]*z-index/)
+    })
+
+    it('链接行点击不派发 oas-click（点击=导航，语义与 clickable 行分离避免双触发歧义；键盘 Enter 交原生 a）', () => {
+      const row = item({ href: '#f' })
+      let clicks = 0
+      row.addEventListener('oas-click', () => clicks++)
+      row.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true, cancelable: true }))
+      expect(clicks, '链接行 oas-click 不派发（宿主埋点用 href 通道/监听原生导航）').toBe(0)
+    })
+  })
 })

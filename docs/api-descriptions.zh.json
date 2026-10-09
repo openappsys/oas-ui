@@ -928,7 +928,8 @@
     },
     "events": {},
     "slots": {
-      "": "右键菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-context-menu-item>` 递归为子菜单 children"
+      "": "右键菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-context-menu-item>` 递归为子菜单 children",
+      "template[slot=\"leading\"]": "前置媒体模板（或直接子元素加 slot=\"leading\"）：头像/色块等任意前置内容，渲染在 label 前、优先于 icon 图标；loading 态由 spinner 替换；仅子元素声明式通道可用（items JSON 不支持）"
     }
   },
   "oas-countdown": {
@@ -1159,7 +1160,8 @@
     },
     "events": {},
     "slots": {
-      "": "下拉菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-dropdown-item>` 递归为子菜单 children"
+      "": "下拉菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-dropdown-item>` 递归为子菜单 children",
+      "template[slot=\"leading\"]": "前置媒体模板（或直接子元素加 slot=\"leading\"）：头像/色块等任意前置内容，渲染在 label 前、优先于 icon 图标；loading 态由 spinner 替换；仅子元素声明式通道可用（items JSON 不支持）"
     }
   },
   "oas-dynamic-input": {
@@ -1833,7 +1835,10 @@
       "description": "描述文本快捷通道（slot=\"description\" 优先，可放富内容）",
       "selected": "选中行高亮（视觉态，选中态由宿主维护）",
       "size": "行密度：sm / md（默认）/ lg（oas-list 下发的 data-size 优先于本属性之外的默认）",
-      "title": "条目标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\""
+      "title": "条目标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
+      "href": "整行链接：行内渲染覆盖整行的 `<a>`（可访问名称取行标题），点击任意空白处即导航；链接行不再派发 oas-click（与 clickable 语义分离）",
+      "target": "链接打开方式（配合 href）；设置后自动补 rel=\"noopener noreferrer\"，显式 rel 不覆盖",
+      "rel": "链接 rel（配合 href）；显式设置时不自动补默认值"
     },
     "events": {
       "oas-click": "行点击，detail 带 { index, item }（数据行由 oas-list 注入上下文）"
@@ -1843,7 +1848,9 @@
       "description": "描述区（不提供时回退默认插槽）",
       "extra": "条目右侧扩展区",
       "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
-      "": "默认内容：渲染在描述区（未提供 `description` 插槽时作为其兜底）"
+      "": "默认内容：渲染在描述区（未提供 `description` 插槽时作为其兜底）",
+      "icon": "前置图标位（如 oas-icon），尺寸跟随内容；无内容时隐藏",
+      "image": "方形缩略图位（尺寸与头像同档联动 sm 24 / md 32 / lg 40，小圆角裁剪填充）；无内容时隐藏"
     }
   },
   "oas-log": {
@@ -1978,7 +1985,8 @@
     },
     "events": {},
     "slots": {
-      "": "菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` 递归为子菜单 children"
+      "": "菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` 递归为子菜单 children",
+      "template[slot=\"leading\"]": "前置媒体模板（或直接子元素加 slot=\"leading\"）：头像/色块等任意前置内容，渲染在 label 前、优先于 icon 图标；loading 态由 spinner 替换；仅子元素声明式通道可用（items JSON 不支持）"
     }
   },
   "oas-menu-group": {
@@ -2333,7 +2341,7 @@
       "ellipsis-suffix": "省略时保留的后缀（如展开链接），与 `ellipsis` / `line-clamp` 同用",
       "actions-position": "操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot=\"actions\"`",
       "line-clamp": "多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合",
-      "tag": "渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等）",
+      "tag": "渲染标签：替换默认元素——行内语义（sub/sup/ins/em/strong 等）与内容块形态（blockquote 引用 / ul·ol 列表 / table 内容表 / dl 描述列表及表格部件）均在白名单内；列表与表格块为解包投影（默认插槽直接挂根）",
       "depth": "文字弱化档位：`1` / `2` / `3`（主色渐淡）；仅 `type=\"default\"` 时生效",
       "strong": "加粗（font-weight 600，`<strong>` 语义）",
       "mark": "高亮标记（浅黄底，`<mark>` 语义）",
@@ -3325,7 +3333,7 @@
       "ellipsis-suffix": "省略时保留的后缀（如展开链接），与 `ellipsis` / `line-clamp` 同用",
       "actions-position": "操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot=\"actions\"`",
       "line-clamp": "多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合",
-      "tag": "渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等）",
+      "tag": "渲染标签：替换默认元素——行内语义（sub/sup/ins/em/strong 等）与内容块形态（blockquote 引用 / ul·ol 列表 / table 内容表 / dl 描述列表及表格部件）均在白名单内；列表与表格块为解包投影（默认插槽直接挂根）",
       "depth": "文字弱化档位：`1` / `2` / `3`（主色渐淡）；仅 `type=\"default\"` 时生效",
       "strong": "加粗（font-weight 600，`<strong>` 语义）",
       "mark": "高亮标记（浅黄底，`<mark>` 语义）",
@@ -3474,7 +3482,7 @@
       "ellipsis-suffix": "省略时保留的后缀（如展开链接），与 `ellipsis` / `line-clamp` 同用",
       "actions-position": "操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot=\"actions\"`",
       "line-clamp": "多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合",
-      "tag": "渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等）",
+      "tag": "渲染标签：替换默认元素——行内语义（sub/sup/ins/em/strong 等）与内容块形态（blockquote 引用 / ul·ol 列表 / table 内容表 / dl 描述列表及表格部件）均在白名单内；列表与表格块为解包投影（默认插槽直接挂根）",
       "depth": "文字弱化档位：`1` / `2` / `3`（主色渐淡）；仅 `type=\"default\"` 时生效",
       "strong": "加粗（font-weight 600，`<strong>` 语义）",
       "mark": "高亮标记（浅黄底，`<mark>` 语义）",
@@ -4546,6 +4554,22 @@
       "center": "中央交互内容通道（有内容时覆盖标题/文档井，如文档标签组合）",
       "title": "标题富内容通道（覆盖 title 属性文本）",
       "trailing": "末端自定义区（窗口操作钮之外）"
+    }
+  },
+  "oas-collapsible": {
+    "attrs": {
+      "open": "展开态（受控开关）：属性缺席 = 非受控自管（首帧由 default-open 播种）；属性在场 = 受控（值非 \"false\" 为展开、\"false\" 为收起），点击翻转后写回属性并派发事件（乐观更新）",
+      "default-open": "非受控初始展开（值语义：非 \"false\" 为展开，兼容框架布尔绑定序列化出的 \"false\" 在场写法）：首帧初值，之后组件自管，不写回属性；open 属性在场时失效（进入受控）",
+      "header": "触发器文案（渲染进触发按钮；富内容用 slot=\"header\"，插槽优先）",
+      "disabled": "禁用触发器：不可聚焦、不可点击、不派发事件；config-provider 全局禁用注入同样生效"
+    },
+    "events": {
+      "oas-toggle": "开合状态变化后派发，detail { open }（受控与非受控模式均派发）"
+    },
+    "slots": {
+      "": "折叠体内容",
+      "header": "触发器富内容插槽，覆盖 header 属性文案",
+      "template[slot=\"toggle\"]": "自定义展开图标模板（缺省为内建箭头）"
     }
   }
 }

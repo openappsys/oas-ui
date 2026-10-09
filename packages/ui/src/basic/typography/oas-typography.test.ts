@@ -259,6 +259,95 @@ describe('OAS typography', () => {
     })
   })
 
+  describe('内容块排版（tag 块级形态：blockquote / ul / ol / table）', () => {
+    it('块级 tag 进入白名单；危险标签仍拒绝', () => {
+      const el = mount(OASText, { tag: 'blockquote' }, '引用')
+      expect(el.shadowRoot!.querySelector('.text')!.tagName).toBe('BLOCKQUOTE')
+      const danger = mount(OASText, { tag: 'iframe' }, 'x')
+      expect(danger.shadowRoot!.querySelector('.text')!.tagName).toBe('SPAN')
+      const danger2 = mount(OASText, { tag: 'script' }, 'x')
+      expect(danger2.shadowRoot!.querySelector('.text')!.tagName).toBe('SPAN')
+    })
+
+    it('tag="blockquote"：根元素为 blockquote 且带引用样式（token 边条 + 逻辑 padding）', () => {
+      const el = mount(OASText, { tag: 'blockquote' }, '设计是去除多余的过程。')
+      const bq = el.shadowRoot!.querySelector<HTMLElement>('.text')!
+      expect(bq.tagName).toBe('BLOCKQUOTE')
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.text\.block-tag\b/)
+      expect(css).toContain('border-inline-start')
+      expect(css).toContain('var(--oas-color-border-strong)')
+    })
+
+    it('tag="ul"/"ol"：解包投影（slot 直接挂根，content span 不包——ul 子元素只能是 li）', () => {
+      const el = mount(OASText, { tag: 'ul' }, '')
+      const root = el.shadowRoot!.querySelector<HTMLElement>('.text')!
+      expect(root.tagName).toBe('UL')
+      // 无 content span 包装：slot 是根的直接子节点
+      expect(root.querySelector(':scope > .content')).toBeNull()
+      expect(root.querySelector(':scope > slot')).not.toBeNull()
+      const ol = mount(OASText, { tag: 'ol' }, '')
+      expect(ol.shadowRoot!.querySelector('.text')!.tagName).toBe('OL')
+    })
+
+    it('tag="table"：解包投影 + 表格基础样式（全宽 / border-collapse，token 开口）', () => {
+      const el = mount(OASText, { tag: 'table' }, '')
+      const root = el.shadowRoot!.querySelector<HTMLElement>('.text')!
+      expect(root.tagName).toBe('TABLE')
+      expect(root.querySelector(':scope > .content')).toBeNull()
+      // 块级链反射：host data-block-tag + wrap 切块（table width:100% 参照链需要，inline-flex wrap 会塌缩）
+      expect(el.hasAttribute('data-block-tag')).toBe(true)
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.text\.block-tag\b[^}]*width: 100%/s)
+      expect(css).toContain('border-collapse')
+      expect(css).toContain(':host([data-block-tag])')
+    })
+
+    it('表格内部件（thead/tbody/tr/th/td/caption）白名单准入（th/td 保持行内包装合法）', () => {
+      for (const t of ['thead', 'tbody', 'tr', 'th', 'td', 'caption']) {
+        const el = mount(OASText, { tag: t }, 'x')
+        expect(el.shadowRoot!.querySelector('.text')!.tagName).toBe(t.toUpperCase())
+      }
+    })
+
+    it('tag="li"：display:list-item 不被 .text.block-tag:not(table) 的 display:block 压制（保住列表 marker）', () => {
+      // 回归：li.block-tag（0,1,1）特异性低于 .text.block-tag:not(table)（0,3,0），
+      // li 被渲染成 display:block → 独立 tag="li" 丢列表符号
+      const el = mount(OASText, { tag: 'li' }, '项目')
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(el.shadowRoot!.querySelector('.text')!.tagName).toBe('LI')
+      expect(css).toMatch(/li\.text\.block-tag[^{]*\{[^}]*display:\s*list-item/s)
+    })
+
+    it('块级 ↔ 行内动态切换：包装随标签重建（切回 span 恢复 content 包装）', () => {
+      const el = mount(OASText, { tag: 'ul' }, '')
+      expect(el.shadowRoot!.querySelector('.text')!.querySelector(':scope > .content')).toBeNull()
+      el.setAttribute('tag', 'span')
+      const root = el.shadowRoot!.querySelector<HTMLElement>('.text')!
+      expect(root.tagName).toBe('SPAN')
+      expect(root.querySelector(':scope > .content')).not.toBeNull()
+    })
+
+    it('块级形态下 ellipsis-suffix 不渲染（suffix 仅行内省略语义）', () => {
+      const el = mount(OASText, { tag: 'ul', ellipsis: '', 'ellipsis-suffix': '展开' }, '')
+      expect(el.shadowRoot!.querySelector('.suffix')).toBeNull()
+    })
+
+    it('样式全走 token（块级样式段无硬编码色值）', () => {
+      const el = mount(OASText, { tag: 'table' }, '')
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      // 只审块级样式段（既有注释中的示例色值不属样式使用）
+      const blockCss = css.slice(css.indexOf('内容块排版'))
+      const colors = blockCss.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []
+      expect(colors).toEqual([])
+    })
+
+    it('oas-paragraph 同样可切块级 tag（三件共用）', () => {
+      const el = mount(OASParagraph, { tag: 'blockquote' }, '引用段')
+      expect(el.shadowRoot!.querySelector('.text')!.tagName).toBe('BLOCKQUOTE')
+    })
+  })
+
   describe('depth 三档弱化', () => {
     it('depth 进入 observedAttributes', () => {
       expect(OASText.observedAttributes).toContain('depth')

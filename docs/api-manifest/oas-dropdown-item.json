@@ -47,11 +47,19 @@
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "leadingSlotTemplate",
+      "type": "HTMLTemplateElement | null"
+    }
+  ],
   "events": [],
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "template[slot=\"leading\"]"
     }
   ],
   "cssVars": [],

@@ -123,6 +123,20 @@ Besides the `items` JSON, you can write items declaratively with `<oas-menu-item
   </oas-space>
 </DemoBlock>
 
+### Leading media (slot="leading")
+
+Menu items support a leading media slot: put a `<template slot="leading">` (or a direct child with `slot="leading"`) inside `<oas-menu-item>`; the content renders before the label and takes precedence over the `icon` attribute (when both are given the icon is not rendered); in the `loading` state the spinner replaces the leading media, and in the collapsed state the media converges like icons (kept visible with zeroed spacing — hiding it would leave a hoverable blank item). Suited to avatars, color chips, and any rich leading content (`items` JSON does not support it — declarative children only).
+
+<DemoBlock title="Leading avatars (avatar example)">
+  <oas-menu style="width: 240px" value="lin">
+    <oas-menu-item value="lin">Lin Xiaoyu<template slot="leading"><oas-avatar size="small">Lin</oas-avatar></template></oas-menu-item>
+    <oas-menu-item value="chen">Chen Yining<template slot="leading"><oas-avatar size="small" color="success">Chen</oas-avatar></template></oas-menu-item>
+    <oas-menu-item value="zhao">Zhao Qiming<template slot="leading"><oas-avatar size="small" color="warning">Zhao</oas-avatar></template></oas-menu-item>
+    <oas-menu-divider></oas-menu-divider>
+    <oas-menu-item value="logout" icon="close">Sign out</oas-menu-item>
+  </oas-menu>
+</DemoBlock>
+
 ## Dark menu
 
 `theme="dark"` applies dark tokens locally (dark background + light text) to the menu, independent of the global theme; when unset, it follows the global theme.
@@ -478,7 +492,7 @@ The menu item `shortcut` field (items JSON) or the `<oas-menu-item shortcut="…
 | `collapsed` | Collapsed state (vertical only): icons only, submenus pop to the right | `boolean` | — |
 | `disabled` | Disables the whole menu: click/hover/keyboard intercepted, dimmed with aria-disabled | `boolean` | — |
 | `expanded` | Controlled expanded set (JSON array string; which submenus are open in inline mode); internally managed when uncontrolled | `string` | — |
-| `items` | Menu items JSON (supports disabled / loading, icon, children submenus) | `string` | `[]` |
+| `items` | Menu items JSON (supports disabled / loading, icon, children submenus) | `MenuItem[] \| null` | `[]` |
 | `max-height` | Max height of a long menu; scrolls internally beyond it (number gets px appended) | `string` | — |
 | `mode` | Layout mode: `vertical` menu / `horizontal` top bar | — | — |
 | `open-on-hover` | Hover-opened submenus in vertical/inline modes (~150ms open / ~300ms close delay); clicks unchanged; horizontal and collapsed flyout unaffected | `boolean` | — |
@@ -524,6 +538,7 @@ The menu item `shortcut` field (items JSON) or the `<oas-menu-item shortcut="…
 | Name | Description |
 | --- | --- |
 | default | Menu item label content (default slot text); direct child `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` elements recursively become the submenu `children` |
+| `template[slot="leading"]` | Leading media template (or a direct child with slot="leading"): avatars/color chips/any rich leading content, rendered before the label and taking precedence over the icon attribute; replaced by the spinner in the loading state; declarative child channel only (not supported by the items JSON) |
 
 ### oas-menu-group
 

@@ -31,6 +31,24 @@
     {
       "name": "size",
       "observed": true
+    },
+    {
+      "name": "href",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "rel",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -54,6 +72,12 @@
     },
     {
       "name": "extra"
+    },
+    {
+      "name": "icon"
+    },
+    {
+      "name": "image"
     },
     {
       "name": "title"

@@ -1034,3 +1034,29 @@ test('menu D13：searchable 键入实时过滤、无匹配空态、shortcut kbd 
   })
   expect(kbd).toContain('Ctrl+')
 })
+
+test('menu 前置媒体插槽（slot="leading"）：头像真实渲染在 label 前、同项不渲染 icon', async ({ page }) => {
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  await page.waitForFunction(() =>
+    [...document.querySelectorAll('oas-menu')].some((el) => el.shadowRoot?.querySelector('.media')),
+  )
+  const r = await page.evaluate(() => {
+    const menu = [...document.querySelectorAll('oas-menu')].find((el) => el.shadowRoot?.querySelector('.media'))!
+    const li = [...menu.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')].find((n) =>
+      n.querySelector(':scope > .media'),
+    )!
+    const media = li.querySelector<HTMLElement>(':scope > .media')!
+    const label = li.querySelector<HTMLElement>(':scope > .label')!
+    return {
+      hasAvatar: !!media.querySelector('oas-avatar'),
+      mediaBeforeLabel: !!(media.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING),
+      hasIcon: !!li.querySelector(':scope > .icon'),
+      mediaWidth: media.getBoundingClientRect().width,
+    }
+  })
+  expect(r.hasAvatar, 'leading 模板内容（头像）真实渲染进媒体位').toBe(true)
+  expect(r.mediaBeforeLabel, '媒体位渲染在 label 之前').toBe(true)
+  expect(r.hasIcon, 'leading 优先于 icon：同项不渲染 .icon').toBe(false)
+  expect(r.mediaWidth, '媒体位有真实布局宽度（头像可见）').toBeGreaterThan(0)
+})

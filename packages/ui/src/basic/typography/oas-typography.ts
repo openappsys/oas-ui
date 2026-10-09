@@ -194,6 +194,60 @@ const BASE_STYLE = `
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
+/* ===== 内容块排版（tag 块级形态：blockquote / 列表 / 表格）===== */
+/* 块级形态宿主反射：host 与 wrap 由 inline 链切为块级链——table width:100% 参照链需要
+   确定宽度的祖先（inline-block host + inline-flex wrap 的 shrink-to-fit 会让 100% 塌缩到内容宽）；
+   内容块本就是块级元素，占满整行与原生 blockquote/table 布局一致 */
+:host([data-block-tag]) {
+  display: block;
+  max-width: 100%;
+}
+:host([data-block-tag]) .wrap {
+  display: block;
+}
+/* 块级基类：块级布局（宽度约束仍经 :host max-width 链生效）；table 保持 UA 表格盒 */
+.text.block-tag:not(table) {
+  display: block;
+  max-width: 100%;
+}
+/* blockquote 引用块：起始侧 token 边条 + 逻辑缩进（inline-start 随书写方向镜像，RTL 安全） */
+blockquote.block-tag {
+  margin: 0 0 var(--oas-space-3);
+  padding-inline-start: var(--oas-space-4);
+  border-inline-start: 2px solid var(--oas-color-border-strong);
+  color: var(--oas-color-text-secondary);
+}
+/* ul/ol 列表块：归一缩进（替代 UA 40px 默认）；marker 颜色随 currentColor；
+   li 间距经 ::slotted 作用在宿主直接投影的 li 上 */
+ul.block-tag,
+ol.block-tag {
+  margin: 0 0 var(--oas-space-3);
+  padding-inline-start: var(--oas-space-5);
+}
+ul.block-tag ::slotted(li),
+ol.block-tag ::slotted(li) {
+  margin-block: var(--oas-space-1);
+}
+/* dl 描述列表块 */
+dl.block-tag {
+  margin: 0 0 var(--oas-space-3);
+}
+/* table 内容表：全宽 + 合并边框 + 收尾间距；th/td 单元细节样式由宿主自理
+   （shadow 样式无法穿透 slotted 子树深层）或改用 oas-table 功能表 */
+table.block-tag {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 var(--oas-space-3);
+}
+/* li 独立换标签（宿主自带 ul 内直接放 oas-text tag="li"）：块级 + 行距。
+   与 .text.block-tag:not(table) 的特异性同为 (0,2,1)（:not() 只贡献其参数的 type 权重），
+   靠源码后写胜出——若规则前移会被 display:block 覆盖、列表 marker（disc/decimal）丢失 */
+li.text.block-tag,
+li.block-tag {
+  display: list-item;
+  margin-block: var(--oas-space-1);
+}
 `
 
 function styleFor(tag: string): string {
@@ -319,7 +373,8 @@ function createTypography(
       return true
     }
 
-    /** 合法 tag 白名单（换标签语义；危险标签 script/iframe 等天然不在列） */
+    /** 合法 tag 白名单（换标签语义；危险标签 script/iframe 等天然不在列）。
+     *  含内容块排版形态：blockquote 引用 / ul·ol·li·dl 系列表 / table 系内容表 */
     private static readonly VALID_TAGS = new Set([
       'span',
       'p',
@@ -342,6 +397,57 @@ function createTypography(
       'q',
       'time',
       'address',
+      'blockquote',
+      'ul',
+      'ol',
+      'li',
+      'dl',
+      'dt',
+      'dd',
+      'table',
+      'caption',
+      'thead',
+      'tbody',
+      'tfoot',
+      'tr',
+      'th',
+      'td',
+    ])
+
+    /**
+     * 解包投影集：这些标签的 content model 不容 span 包装子元素（ul 只收 li、table 只收
+     * 表格部件、caption 只收流内容等），换标签时取消 content/suffix 包装、默认 slot 直接挂根。
+     * blockquote/li/dt/dd/th/td 允许 flow/phrasing 内容，保持行内包装（合法且 suffix 可用）。
+     */
+    private static readonly UNWRAP_TAGS = new Set([
+      'ul',
+      'ol',
+      'dl',
+      'table',
+      'caption',
+      'tr',
+      'thead',
+      'tbody',
+      'tfoot',
+    ])
+
+    /** 块级形态 class 标记集（样式应用面；UNWRAP 集合 + 允许包装的块级标签） */
+    private static readonly BLOCK_TAGS = new Set([
+      'blockquote',
+      'ul',
+      'ol',
+      'li',
+      'dl',
+      'dt',
+      'dd',
+      'table',
+      'caption',
+      'thead',
+      'tbody',
+      'tfoot',
+      'tr',
+      'th',
+      'td',
     ])
 
     /** tag 换标签：合法则换（重建元素），非法忽略 */
@@ -350,17 +456,40 @@ function createTypography(
       if (!root) return
       if (root.tagName.toLowerCase() === targetTag) return
       if (!OASTypography.VALID_TAGS.has(targetTag)) return
+      const unwrap = OASTypography.UNWRAP_TAGS.has(targetTag)
       const next = document.createElement(targetTag)
       next.className = root.className
       next.style.cssText = root.style.cssText
       next.setAttribute('part', part)
-      // content/suffix 子结构迁移（slot 投影跟随）
-      while (root.firstChild) next.appendChild(root.firstChild)
+      const content = root.querySelector('.content')
+      const slot = root.querySelector('slot')
+      if (unwrap) {
+        // 解包投影：slot 元素本身（shadow 节点）移挂新根顶层（assignedNodes 属 light DOM 不可搬运，
+        // 投影跟随 slot 元素走）；suffix 仅行内省略语义，块级态不保留
+        if (slot) next.appendChild(slot)
+        root.querySelector('.suffix')?.remove()
+        this.suffixEl = null
+      } else if (content) {
+        // 行内 → 行内：content/suffix 整体搬迁（投影跟随元素移动）
+        while (root.firstChild) next.appendChild(root.firstChild)
+      } else {
+        // 解包态 → 行内：重建 content/suffix 包装（slot 移回新建 content span）
+        const contentSpan = document.createElement('span')
+        contentSpan.className = 'content'
+        contentSpan.setAttribute('part', 'content')
+        if (slot) contentSpan.appendChild(slot)
+        const suffixSpan = document.createElement('span')
+        suffixSpan.className = 'suffix'
+        suffixSpan.setAttribute('part', 'suffix')
+        suffixSpan.hidden = true
+        next.appendChild(contentSpan)
+        next.appendChild(suffixSpan)
+      }
       root.replaceWith(next)
       this.root = next
-      // 换标签后 content/suffix 引用失效，重绑
-      this.contentEl = next.querySelector('.content')
-      this.suffixEl = next.querySelector('.suffix')
+      // 引用重绑：解包态 content 失效置 null；行内态重查（重建或搬迁后引用均已更新）
+      this.contentEl = unwrap ? null : (next.querySelector('.content') ?? null)
+      this.suffixEl = unwrap ? null : (next.querySelector('.suffix') ?? null)
     }
 
     protected override update(): void {
@@ -380,14 +509,20 @@ function createTypography(
       }
       const root = this.root
       if (!root) return
+      // 块级形态标记（内容块排版 class 驱动样式；syncTag 重建元素后需重挂）；
+      // data-block-tag 反射驱动 host/wrap 切块级链（table width:100% 参照链需要）
+      const rootIsBlock = OASTypography.BLOCK_TAGS.has(root.tagName.toLowerCase())
+      root.classList.toggle('block-tag', rootIsBlock)
+      this.toggleAttribute('data-block-tag', rootIsBlock)
       const ellipsis = this.hasAttr('ellipsis')
       const lineClampRaw = this.getAttr('line-clamp', '')
       const lineClamp = Number(lineClampRaw)
       const hasLineClamp = Number.isInteger(lineClamp) && lineClamp >= 1 && lineClampRaw !== ''
-      // line-clamp 与 ellipsis 互斥：line-clamp 优先
-      const useEllipsis = ellipsis && !hasLineClamp
+      // line-clamp 与 ellipsis 互斥：line-clamp 优先；块级形态（列表/表格等）无单行省略语义，均跳过
+      //（ellipsis 规则的 display/white-space 会破坏块级布局）
+      const useEllipsis = ellipsis && !hasLineClamp && !rootIsBlock
       root.classList.toggle('ellipsis', useEllipsis)
-      root.classList.toggle('line-clamp', hasLineClamp)
+      root.classList.toggle('line-clamp', hasLineClamp && !rootIsBlock)
       if (hasLineClamp) root.style.setProperty('--oas-line-clamp', String(lineClamp))
       else root.style.removeProperty('--oas-line-clamp')
       // type 语义色

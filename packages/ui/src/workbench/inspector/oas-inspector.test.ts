@@ -309,6 +309,15 @@ describe('OASInspectorSection', () => {
     expect(el.hasAttribute('open')).toBe(true)
   })
 
+  it('default-open="false" 不播种展开（值语义，防 Vue 布尔绑定反向坑，同 oas-collapsible）', () => {
+    const el = mount<OASInspectorSection>({
+      Ctor: OASInspectorSection,
+      attrs: { heading: '变换', collapsible: '', 'default-open': 'false' },
+    })
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(el.hasAttribute('data-open')).toBe(false)
+  })
+
   it('default-open 只在首帧生效：用户折叠后保持收起（不被 update 回弹）', () => {
     const el = mount<OASInspectorSection>({
       Ctor: OASInspectorSection,

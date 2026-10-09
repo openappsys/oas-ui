@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { getViewport } from '../../overlay/floating/index.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
+import { OASMenuItem } from '../menu/index.js'
 import type { OASMenu } from '../menu/index.js'
 import type { MenuItem, MenuItemKind } from '../menu/index.js'
 
@@ -160,9 +161,15 @@ export class OASContextMenu extends OASElement {
       // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
       if (this.hasAttribute('items')) this.parseItems()
       else this.parseChildItems()
-      // items 未变时跳过重写（同值 setAttribute 会触发内层 menu 全量重建——value 高频受控场景的写放大）
-      const itemsJson = JSON.stringify(this.itemsList)
-      if (this.menuEl.getAttribute('items') !== itemsJson) this.menuEl.setAttribute('items', itemsJson)
+      // items 未变时跳过重写（同值 setAttribute 会触发内层 menu 全量重建——value 高频受控场景的写放大）；
+      // 含 leading 克隆节点的项无法 JSON 序列化：走 menu 的 items property 对象通道
+      if (this.itemsList.some((i) => i.leading && i.leading.length > 0)) {
+        ;(this.menuEl as OASMenu).items = this.itemsList
+      } else {
+        ;(this.menuEl as OASMenu).items = null
+        const itemsJson = JSON.stringify(this.itemsList)
+        if (this.menuEl.getAttribute('items') !== itemsJson) this.menuEl.setAttribute('items', itemsJson)
+      }
       // value 下传：checkbox/radio 勾选项的初始勾选态由内层 menu 的 value 驱动（缺之勾选永不回显）；
       // 同值守卫：同值 setAttribute 也触发内层 attributeChangedCallback → 全量重建（与 items 同款写放大）
       const hostValue = this.getAttr('value', '')
@@ -324,6 +331,8 @@ export class OASContextMenu extends OASElement {
     if (target) item.target = target
     const rel = el.getAttribute('rel')
     if (rel) item.rel = rel
+    const leading = OASMenuItem.extractLeadingFrom(el)
+    if (leading.length > 0) item.leading = leading
     const children = this.parseChildLevel(el.children)
     if (children.length > 0) item.children = children
     return item
@@ -348,6 +357,7 @@ export class OASContextMenu extends OASElement {
         if (tag === 'OAS-CONTEXT-MENU-ITEM' || tag === 'OAS-CONTEXT-MENU-GROUP' || tag === 'OAS-CONTEXT-MENU-DIVIDER') {
           continue
         }
+        if (OASMenuItem.isLeadingNode(node)) continue
       }
       text += node.textContent ?? ''
     }

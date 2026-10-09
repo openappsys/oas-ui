@@ -115,6 +115,52 @@ Displays a collection of related items, capable of carrying a title, description
   </div>
 </DemoBlock>
 
+## Leading Media (icon / image)
+
+Besides the round avatar, rows have two more leading media slots; all three show/hide independently and can be combined as needed:
+
+- `slot="icon"`: generic icon slot (e.g. `oas-icon`), size follows the content;
+- `slot="image"`: square thumbnail slot, sized in step with the avatar scale (sm 24 / md 32 / lg 40), small rounded clip-fill;
+- `slot="avatar"`: round avatar slot (see the previous section).
+
+<DemoBlock title="Icon slot and square thumbnail slot">
+  <div style="width: 100%">
+    <oas-list bordered>
+      <oas-list-item title="Doc center" description="slot=&quot;icon&quot; takes a generic icon">
+        <oas-icon name="search" slot="icon"></oas-icon>
+        <oas-tag slot="extra">12 docs</oas-tag>
+      </oas-list-item>
+      <oas-list-item title="Cover assets" description="slot=&quot;image&quot; takes a square thumbnail">
+        <img slot="image" src="https://picsum.photos/seed/oas-list-img/96/96" alt="Cover thumbnail" />
+        <oas-tag slot="extra" type="success">Synced</oas-tag>
+      </oas-list-item>
+      <oas-list-item title="Design spec" description="Icon and thumbnail can coexist (independently toggled)">
+        <oas-icon name="star" slot="icon"></oas-icon>
+        <img slot="image" src="https://picsum.photos/seed/oas-list-img2/96/96" alt="Spec thumbnail" />
+      </oas-list-item>
+    </oas-list>
+  </div>
+</DemoBlock>
+
+## Whole-row Link (href / target)
+
+`href` turns the row into a whole-row link: an `<a>` stretched over the row is rendered inside (accessible name taken from the row title) — clicking anywhere on the row navigates, keyboard Tab focuses and Enter activates; `target` controls how it opens (once set, `rel="noopener noreferrer"` is added automatically; an explicit `rel` is never overridden).
+
+<DemoBlock title="Link rows">
+  <div style="width: 100%">
+    <oas-list bordered>
+      <oas-list-item title="Component overview" description="Whole row clickable: click to navigate (demo anchor, stays on this page)" href="#list-anchor-demo">
+        <oas-tag slot="extra">Docs</oas-tag>
+      </oas-list-item>
+      <oas-list-item title="Release log" description="Opens in a new window with target=_blank (explicit rel is not auto-filled)" href="#list-anchor-demo-2" target="_blank" rel="noopener">
+        <oas-icon name="star" slot="icon"></oas-icon>
+      </oas-list-item>
+    </oas-list>
+  </div>
+</DemoBlock>
+
+Convention: a link row's click means navigation and no longer emits `oas-click` (kept separate from `clickable` rows to avoid double-trigger ambiguity); place in-row action controls in `slot="extra"` (the extra zone sits above the link overlay and stays interactive).
+
 ## Row Interaction (clickable / selected)
 
 With `clickable` on `oas-list-item`, the whole row becomes clickable: hover feedback, focusable (Enter / Space triggers), and an `oas-click` event on click. When interactive controls such as buttons or switches are embedded in a row, clicking them does not trigger the row click (row and control never fire together), and the row itself carries no interactive role so those controls are not wrapped in an interactive element. When row-level semantics are needed (e.g. `role="button"`), the host can set an explicit `role` (the component never overrides an explicit host role, consistent with card). `selected` marks the row with a highlight (visual state only). Selection is host-controlled — common in member lists and settings lists.
@@ -701,8 +747,11 @@ onMounted(() => {
 | `avatar` | Avatar URL quick channel (renders a circular avatar at the row start; slot="avatar" wins) | `string` | — |
 | `clickable` | Whole row clickable: hover feedback, focusable (Enter/Space triggers), click dispatches oas-click | — | — |
 | `description` | Description text quick channel (slot="description" wins, rich content allowed) | `string` | — |
+| `href` | Whole-row link: an `<a>` stretched over the row is rendered inside (accessible name taken from the row title); clicking anywhere on the row navigates; link rows no longer emit oas-click (separated from the clickable semantics) | `string` | — |
+| `rel` | Link rel (with href); when set explicitly the default is not auto-filled | `string` | — |
 | `selected` | Selected row highlight (visual state; selection is host-controlled) | — | — |
 | `size` | Row density: sm / md (default) / lg | — | — |
+| `target` | Link open mode (with href); once set, rel="noopener noreferrer" is added automatically, an explicit rel is never overridden | `string` | — |
 | `title` | Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot="title" for rich content | `string` | — |
 
 #### Events
@@ -719,4 +768,6 @@ onMounted(() => {
 | `avatar` | Rich avatar content (oas-avatar or anything), takes precedence over the avatar attribute |
 | `description` | Description area (falls back to the default slot when not provided) |
 | `extra` | Extra area on the right of the item |
+| `icon` | Leading icon slot (e.g. oas-icon), size follows the content; hidden when empty |
+| `image` | Square thumbnail slot (sized in step with the avatar scale sm 24 / md 32 / lg 40, small rounded clip-fill); hidden when empty |
 | `title` | Rich title content slot, overrides the title attribute text when present |

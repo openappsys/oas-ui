@@ -313,6 +313,21 @@ items 项支持 `children` 数组级联子菜单（任意层级），hover / 点
   </oas-dropdown>
 </DemoBlock>
 
+### 前置媒体（slot="leading"）
+
+菜单项支持前置媒体插槽：在 `<oas-dropdown-item>`（与 `<oas-menu-item>` 通用）内放 `<template slot="leading">` 或带 `slot="leading"` 的直接子元素，内容渲染在 label 前、优先于 `icon` 图标（同时给时 icon 不渲染）；`loading` 加载态时 spinner 替换前置媒体位。适合头像、色块等任意富前置内容（`items` JSON 通道不支持——仅子元素声明式通道可用）。
+
+<DemoBlock title="头像前置媒体（avatar 例）">
+  <oas-dropdown id="dd-leading" placement="bottom-start">
+    <oas-button>切换账号</oas-button>
+    <oas-dropdown-item value="lin">林晓雨<template slot="leading"><oas-avatar size="small">林</oas-avatar></template></oas-dropdown-item>
+    <oas-dropdown-item value="chen">陈以宁<template slot="leading"><oas-avatar size="small" color="success">陈</oas-avatar></template></oas-dropdown-item>
+    <oas-dropdown-item value="zhao">赵启铭<template slot="leading"><oas-avatar size="small" color="warning">赵</oas-avatar></template></oas-dropdown-item>
+    <oas-dropdown-divider></oas-dropdown-divider>
+    <oas-dropdown-item value="logout" icon="close">退出登录</oas-dropdown-item>
+  </oas-dropdown>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -552,6 +567,7 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 下拉菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-dropdown-item>` 递归为子菜单 children |
+| `template[slot="leading"]` | 前置媒体模板（或直接子元素加 slot="leading"）：头像/色块等任意前置内容，渲染在 label 前、优先于 icon 图标；loading 态由 spinner 替换；仅子元素声明式通道可用（items JSON 不支持） |
 
 ### oas-dropdown-group
 

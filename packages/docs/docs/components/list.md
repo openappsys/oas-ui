@@ -115,6 +115,52 @@
   </div>
 </DemoBlock>
 
+## 前置媒体（icon / image）
+
+除圆形头像外，条目另有两个前置媒体插槽，三者各自判空显隐、可按需组合：
+
+- `slot="icon"`：通用图标位（如 `oas-icon`），尺寸跟随内容；
+- `slot="image"`：方形缩略图位，尺寸与头像同档联动（sm 24 / md 32 / lg 40），小圆角裁剪填充；
+- `slot="avatar"`：圆形头像位（见上节）。
+
+<DemoBlock title="图标位与方形缩略图位">
+  <div style="width: 100%">
+    <oas-list bordered>
+      <oas-list-item title="文档中心" description="slot=&quot;icon&quot; 放通用图标">
+        <oas-icon name="search" slot="icon"></oas-icon>
+        <oas-tag slot="extra">12 篇</oas-tag>
+      </oas-list-item>
+      <oas-list-item title="封面素材包" description="slot=&quot;image&quot; 放方形缩略图">
+        <img slot="image" src="https://picsum.photos/seed/oas-list-img/96/96" alt="封面缩略图" />
+        <oas-tag slot="extra" type="success">已同步</oas-tag>
+      </oas-list-item>
+      <oas-list-item title="设计规范" description="图标与缩略图可并存（各自判空）">
+        <oas-icon name="star" slot="icon"></oas-icon>
+        <img slot="image" src="https://picsum.photos/seed/oas-list-img2/96/96" alt="规范缩略图" />
+      </oas-list-item>
+    </oas-list>
+  </div>
+</DemoBlock>
+
+## 整行链接（href / target）
+
+`href` 使条目成为整行链接：行内渲染覆盖整行的 `<a>`（可访问名称取行标题），点击任意空白处即导航，键盘 Tab 聚焦、Enter 触发；`target` 配置打开方式（设置后自动补 `rel="noopener noreferrer"`，显式 `rel` 不覆盖）。
+
+<DemoBlock title="链接行">
+  <div style="width: 100%">
+    <oas-list bordered>
+      <oas-list-item title="组件总览" description="整行可点：点击即跳转（演示锚点，不离开本页）" href="#list-anchor-demo">
+        <oas-tag slot="extra">文档</oas-tag>
+      </oas-list-item>
+      <oas-list-item title="发布日志" description="target=_blank 新窗口打开（显式 rel 不被自动补值覆盖）" href="#list-anchor-demo-2" target="_blank" rel="noopener">
+        <oas-icon name="star" slot="icon"></oas-icon>
+      </oas-list-item>
+    </oas-list>
+  </div>
+</DemoBlock>
+
+约定：链接行的点击语义 = 导航，不再派发 `oas-click`（与 `clickable` 行分离，避免双触发歧义）；行内操作控件请放 `slot="extra"`（操作区位于链接覆盖层之上，可正常交互）。
+
 ## 行交互（clickable / selected）
 
 给 `oas-list-item` 设置 `clickable` 后整行可点：有 hover 反馈、可聚焦（Enter / Space 触发），点击派发 `oas-click` 事件；行内嵌按钮/开关等交互控件时，点这些控件不触发行点击（行与控件不双触发），行本身不挂交互角色以免把它们裹进交互元素。需要行级交互语义（如 `role="button"`）时由宿主显式挂 `role`（组件不覆盖宿主显式角色，与 card 口径一致）。`selected` 标记选中行高亮。选中态由宿主维护，常用于成员列表、设置项列表。
@@ -699,8 +745,11 @@ onMounted(() => {
 | `avatar` | 头像 URL 快捷通道（渲染首部圆形头像；slot="avatar" 优先） | `string` | — |
 | `clickable` | 整行可点：hover 反馈、可聚焦（Enter/Space 触发）、点击派发 oas-click | — | — |
 | `description` | 描述文本快捷通道（slot="description" 优先，可放富内容） | `string` | — |
+| `href` | 整行链接：行内渲染覆盖整行的 `<a>`（可访问名称取行标题），点击任意空白处即导航；链接行不再派发 oas-click（与 clickable 语义分离） | `string` | — |
+| `rel` | 链接 rel（配合 href）；显式设置时不自动补默认值 | `string` | — |
 | `selected` | 选中行高亮（视觉态，选中态由宿主维护） | — | — |
 | `size` | 行密度：sm / md（默认）/ lg（oas-list 下发的 data-size 优先于本属性之外的默认） | — | — |
+| `target` | 链接打开方式（配合 href）；设置后自动补 rel="noopener noreferrer"，显式 rel 不覆盖 | `string` | — |
 | `title` | 条目标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 
 #### 事件
@@ -717,4 +766,6 @@ onMounted(() => {
 | `avatar` | 头像富内容（oas-avatar 或任意内容），优先于 avatar 属性 |
 | `description` | 描述区（不提供时回退默认插槽） |
 | `extra` | 条目右侧扩展区 |
+| `icon` | 前置图标位（如 oas-icon），尺寸跟随内容；无内容时隐藏 |
+| `image` | 方形缩略图位（尺寸与头像同档联动 sm 24 / md 32 / lg 40，小圆角裁剪填充）；无内容时隐藏 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |

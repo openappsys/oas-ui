@@ -226,6 +226,7 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 右键菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-context-menu-item>` 递归为子菜单 children |
+| `template[slot="leading"]` | 前置媒体模板（或直接子元素加 slot="leading"）：头像/色块等任意前置内容，渲染在 label 前、优先于 icon 图标；loading 态由 spinner 替换；仅子元素声明式通道可用（items JSON 不支持） |
 
 ### oas-context-menu-group
 

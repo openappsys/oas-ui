@@ -4,6 +4,8 @@ import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { isRtl } from '../../shared/direction.js'
+// 数据载体类：前置媒体（slot="leading"）的提取/判定工具挂在其类上（插槽标记归属载体，api:scan 归属正确）
+import { OASMenuItem } from './oas-menu-item.js'
 
 export type MenuItemType = 'item' | 'group' | 'divider'
 
@@ -33,6 +35,11 @@ export interface MenuItem {
   children?: MenuItem[]
   /** 快捷键标注（如 Ctrl+N）：渲染为右端 kbd 提示，与 menubar 视觉契约一致 */
   shortcut?: string
+  /**
+   * 前置媒体（子元素声明式通道 slot="leading"）：头像/色块等任意前置内容（克隆节点），
+   * 渲染在 label 前、优先于 `icon`（同时给时 icon 不渲染）；items JSON 通道不支持。
+   */
+  leading?: Node[]
 }
 
 /** 过滤视图去重相邻 / 首尾分隔线（过滤后无项的区间不留悬空分隔线） */
@@ -146,6 +153,15 @@ a.item:visited {
   display: block;
   width: 1em;
   height: 1em;
+}
+/* 前置媒体位（子元素声明式通道 slot="leading"）：头像/色块等任意前置内容，
+   与 .icon 同档间距，尺寸跟随内容（avatar/自定义节点自带尺寸） */
+.media {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-end: var(--oas-space-2);
+  flex: none;
 }
 .check {
   opacity: 0;
@@ -440,9 +456,13 @@ a.item:visited {
 :host(:not([mode='horizontal'])[collapsed]) .group-label {
   display: none;
 }
-:host(:not([mode='horizontal'])[collapsed]) .item > .icon {
+:host(:not([mode='horizontal'])[collapsed]) .item > .icon,
+:host(:not([mode='horizontal'])[collapsed]) .item > .media {
   margin-inline-end: 0;
 }
+/* collapsed 收起态：媒体位与图标一致收敛——不写 display:none（隐藏会让条目只剩空 padding
+   高度，成为可 hover/点击却无内容的空白块），仅靠上一条规则的 margin 归零收敛；
+   头像/色块正是收起态 rail 的视觉锚点，保持可见 */
 /* ===== disabled 整单禁用：视觉降饱和（ui-spec §2.3）+ 子项交互反馈抑制；
    点击/悬停/键盘由 JS 全拦截（href 链接项同时 preventDefault 阻断原生跳转）。
    置于 TOUCH_TARGET 之前声明序后段：与 .item.danger:hover 同特异性时后写胜出 ===== */
@@ -618,6 +638,18 @@ export class OASMenu extends OASElement {
     return true
   }
 
+  /**
+   * `items` 属性每次变更（含移除）即让 property 通道退位——兑现「最后写入通道胜出」契约：
+   * property setter 只写 propertyItems 不碰属性，若不在此复位，宿主在 `.items = [...]` 之后再
+   * 设置/移除 `items` 属性会被 property 永久遮蔽（attribute 变更永远不会触发 parseItems）。
+   * 消费方 oas-dropdown/oas-context-menu 切回属性通道时本就先 `items = null`，此处为直用 oas-menu
+   * 的宿主兜底（与 api 描述/PRD 承诺一致）。
+   */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === 'items' && oldValue !== newValue) this.propertyItems = null
+    super.attributeChangedCallback(name, oldValue, newValue)
+  }
+
   protected override update(): void {
     // RTL 镜像开关：子菜单展开侧/翻转判定与 CSS 镜像（chevron 等）消费
     this.toggleAttribute('data-rtl', isRtl(this))
@@ -625,8 +657,10 @@ export class OASMenu extends OASElement {
     this.setAttribute('aria-disabled', String(this.hasAttr('disabled')))
     // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
-    // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
-    if (this.hasAttribute('items')) this.parseItems()
+    // 三通道优先级：items property（对象数组，可携带 leading 节点）> items 属性（JSON）> 子元素收敛
+    if (this.propertyItems != null) {
+      /* itemsList 已由 property setter 接管，不重解析 */
+    } else if (this.hasAttribute('items')) this.parseItems()
     else this.parseChildItems()
     this.syncTheme()
     this.syncMaxHeight()
@@ -768,7 +802,33 @@ export class OASMenu extends OASElement {
     }
   }
 
+  /** items property 通道值（非 null 时 update 不再重解析 attribute/子元素通道——外部对象数组接管渲染数据） */
+  private propertyItems: MenuItem[] | null = null
+
+  /**
+   * items property 通道（对象数组直赋）：与 attribute JSON 通道同字段，但可携带
+   * `leading` 克隆节点（JSON attribute 通道无法序列化 Node）。赋值立即生效；
+   * 此后 attribute `items` 重新解析或子元素通道接管时失效（最后写入的通道胜出）。
+   * 主要消费方：oas-dropdown 等宿主把解析后的 MenuItem[]（含 leading 节点）直传渲染。
+   */
+  get items(): MenuItem[] | null {
+    return this.propertyItems
+  }
+
+  set items(value: MenuItem[] | null) {
+    this.propertyItems = value
+    if (value != null) {
+      this.itemsList = value
+      this.pruneState()
+    }
+    // 两种赋值都立即重渲染：null（退位）时不重渲染会让 UI 停留在 property 旧数据，
+    // 违背「最后写入通道胜出」——update 会回落 attribute/子元素通道重新解析
+    this.requestUpdate()
+  }
+
   private parseItems(): void {
+    // attribute 通道重新解析：property 通道退位（最后写入胜出）
+    this.propertyItems = null
     try {
       const parsed = JSON.parse(this.getAttr('items', '[]'))
       this.itemsList = Array.isArray(parsed)
@@ -834,6 +894,8 @@ export class OASMenu extends OASElement {
     if (rel) item.rel = rel
     const shortcut = el.getAttribute('shortcut')
     if (shortcut) item.shortcut = shortcut
+    const leading = OASMenuItem.extractLeadingFrom(el)
+    if (leading.length > 0) item.leading = leading
     const children = this.parseChildLevel(el.children)
     if (children.length > 0) item.children = children
     return item
@@ -849,7 +911,9 @@ export class OASMenu extends OASElement {
     return item
   }
 
-  /** 默认插槽 label 文本：跳过嵌套数据载体元素（其文本属于子菜单而非 label） */
+  /** 默认插槽 label 文本：跳过嵌套数据载体元素（其文本属于子菜单而非 label）
+   *  与前置媒体节点（判定工具挂数据载体类：template[slot="leading"] 的 content 文本、
+   *  [slot="leading"] 元素文本不进 label） */
   private childLabel(el: Element): string {
     let text = ''
     for (const node of el.childNodes) {
@@ -858,6 +922,7 @@ export class OASMenu extends OASElement {
         if (tag === 'OAS-MENU-ITEM' || tag === 'OAS-MENU-GROUP' || tag === 'OAS-MENU-DIVIDER') {
           continue
         }
+        if (OASMenuItem.isLeadingNode(node)) continue
       }
       text += node.textContent ?? ''
     }
@@ -1051,6 +1116,13 @@ export class OASMenu extends OASElement {
         spin.className = 'spin'
         spin.setAttribute('aria-hidden', 'true')
         li.appendChild(spin)
+      } else if (item.leading && item.leading.length > 0) {
+        // 前置媒体优先于 icon（头像/色块等富内容替位图标）
+        const media = document.createElement('span')
+        media.className = 'media'
+        media.setAttribute('part', 'media')
+        for (const node of item.leading) media.appendChild(node)
+        li.appendChild(media)
       } else if (item.icon) {
         const ic = this.createIcon(item.icon, 'icon', item.iconColor)
         if (ic) li.appendChild(ic)

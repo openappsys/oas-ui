@@ -928,7 +928,8 @@
     },
     "events": {},
     "slots": {
-      "": "Context-menu item label content (default slot text); direct child `<oas-context-menu-item>` elements recursively become the submenu `children`"
+      "": "Context-menu item label content (default slot text); direct child `<oas-context-menu-item>` elements recursively become the submenu `children`",
+      "template[slot=\"leading\"]": "Leading media template (or a direct child with slot=\"leading\"): avatars/color chips/any rich leading content, rendered before the label and taking precedence over the icon attribute; replaced by the spinner in the loading state; declarative child channel only (not supported by the items JSON)"
     }
   },
   "oas-countdown": {
@@ -1159,7 +1160,8 @@
     },
     "events": {},
     "slots": {
-      "": "Dropdown item label content (default slot text); direct child `<oas-dropdown-item>` elements recursively become the submenu `children`"
+      "": "Dropdown item label content (default slot text); direct child `<oas-dropdown-item>` elements recursively become the submenu `children`",
+      "template[slot=\"leading\"]": "Leading media template (or a direct child with slot=\"leading\"): avatars/color chips/any rich leading content, rendered before the label and taking precedence over the icon attribute; replaced by the spinner in the loading state; declarative child channel only (not supported by the items JSON)"
     }
   },
   "oas-dynamic-input": {
@@ -1833,7 +1835,10 @@
       "description": "Description text quick channel (slot=\"description\" wins, rich content allowed)",
       "selected": "Selected row highlight (visual state; selection is host-controlled)",
       "size": "Row density: sm / md (default) / lg",
-      "title": "Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content"
+      "title": "Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content",
+      "href": "Whole-row link: an `<a>` stretched over the row is rendered inside (accessible name taken from the row title); clicking anywhere on the row navigates; link rows no longer emit oas-click (separated from the clickable semantics)",
+      "target": "Link open mode (with href); once set, rel=\"noopener noreferrer\" is added automatically, an explicit rel is never overridden",
+      "rel": "Link rel (with href); when set explicitly the default is not auto-filled"
     },
     "events": {
       "oas-click": "Row click; detail carries { index, item } (data-row context injected by oas-list)"
@@ -1843,7 +1848,9 @@
       "description": "Description area (falls back to the default slot when not provided)",
       "extra": "Extra area on the right of the item",
       "title": "Rich title content slot, overrides the title attribute text when present",
-      "": "Default content: rendered in the description area (fallback for the `description` slot when not provided)"
+      "": "Default content: rendered in the description area (fallback for the `description` slot when not provided)",
+      "icon": "Leading icon slot (e.g. oas-icon), size follows the content; hidden when empty",
+      "image": "Square thumbnail slot (sized in step with the avatar scale sm 24 / md 32 / lg 40, small rounded clip-fill); hidden when empty"
     }
   },
   "oas-log": {
@@ -1978,7 +1985,8 @@
     },
     "events": {},
     "slots": {
-      "": "Menu item label content (default slot text); direct child `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` elements recursively become the submenu `children`"
+      "": "Menu item label content (default slot text); direct child `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` elements recursively become the submenu `children`",
+      "template[slot=\"leading\"]": "Leading media template (or a direct child with slot=\"leading\"): avatars/color chips/any rich leading content, rendered before the label and taking precedence over the icon attribute; replaced by the spinner in the loading state; declarative child channel only (not supported by the items JSON)"
     }
   },
   "oas-menu-group": {
@@ -2333,7 +2341,7 @@
       "ellipsis-suffix": "Suffix preserved when ellipsized (e.g. an expand link); works with `ellipsis` / `line-clamp`",
       "actions-position": "Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot=\"actions\"`",
       "line-clamp": "Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix`",
-      "tag": "Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`)",
+      "tag": "Render tag: replaces the default element — inline semantics (sub/sup/ins/em/strong etc.) and content-block forms (blockquote quote / ul·ol list / table content table / dl description list plus table parts) are all whitelisted; list and table blocks use unwrapped projection (the default slot attaches directly to the root)",
       "depth": "Text softening tier: `1` / `2` / `3` (progressively lighter); only effective with `type=\"default\"`",
       "strong": "Bold (font-weight 600, `<strong>` semantics)",
       "mark": "Highlighted mark (light yellow background, `<mark>` semantics)",
@@ -3325,7 +3333,7 @@
       "ellipsis-suffix": "Suffix preserved when ellipsized (e.g. an expand link); works with `ellipsis` / `line-clamp`",
       "actions-position": "Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot=\"actions\"`",
       "line-clamp": "Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix`",
-      "tag": "Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`)",
+      "tag": "Render tag: replaces the default element — inline semantics (sub/sup/ins/em/strong etc.) and content-block forms (blockquote quote / ul·ol list / table content table / dl description list plus table parts) are all whitelisted; list and table blocks use unwrapped projection (the default slot attaches directly to the root)",
       "depth": "Text softening tier: `1` / `2` / `3` (progressively lighter); only effective with `type=\"default\"`",
       "strong": "Bold (font-weight 600, `<strong>` semantics)",
       "mark": "Highlighted mark (light yellow background, `<mark>` semantics)",
@@ -3474,7 +3482,7 @@
       "ellipsis-suffix": "Suffix preserved when ellipsized (e.g. an expand link); works with `ellipsis` / `line-clamp`",
       "actions-position": "Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot=\"actions\"`",
       "line-clamp": "Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix`",
-      "tag": "Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`)",
+      "tag": "Render tag: replaces the default element — inline semantics (sub/sup/ins/em/strong etc.) and content-block forms (blockquote quote / ul·ol list / table content table / dl description list plus table parts) are all whitelisted; list and table blocks use unwrapped projection (the default slot attaches directly to the root)",
       "depth": "Text softening tier: `1` / `2` / `3` (progressively lighter); only effective with `type=\"default\"`",
       "strong": "Bold (font-weight 600, `<strong>` semantics)",
       "mark": "Highlighted mark (light yellow background, `<mark>` semantics)",
@@ -4546,6 +4554,22 @@
       "center": "Central interactive content channel (overrides the title / document well when present, e.g. document tag combos)",
       "title": "Rich title channel (overrides the title attribute text)",
       "trailing": "End-of-bar custom area (beyond the window action buttons)"
+    }
+  },
+  "oas-collapsible": {
+    "attrs": {
+      "open": "Open state (controlled switch): attribute absent = uncontrolled self-managed (seeded by default-open on the first frame); attribute present = controlled (any value other than \"false\" is open, \"false\" is collapsed), clicks flip, write the attribute back and emit (optimistic update)",
+      "default-open": "Uncontrolled initial open state (value semantics: anything other than \"false\" opens, so framework-serialized \"false\" bindings collapse correctly): seeds the first frame, afterwards self-managed and never written back; ignored when the open attribute is present (controlled mode)",
+      "header": "Trigger text (rendered inside the trigger button; rich content via slot=\"header\", slot wins)",
+      "disabled": "Disables the trigger: not focusable, not clickable, emits no events; the config-provider global disabled injection applies as well"
+    },
+    "events": {
+      "oas-toggle": "Emitted after the open state changes, detail { open } (both controlled and uncontrolled modes)"
+    },
+    "slots": {
+      "": "Collapsible body content",
+      "header": "Rich trigger content slot, overrides the header attribute text",
+      "template[slot=\"toggle\"]": "Custom toggle icon template (built-in arrow by default)"
     }
   }
 }

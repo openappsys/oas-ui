@@ -1,0 +1,45 @@
+{
+  "className": "OASCollapsible",
+  "sourceFile": "packages/ui/src/data/collapsible/oas-collapsible.ts",
+  "attrs": [
+    {
+      "name": "open",
+      "observed": true
+    },
+    {
+      "name": "default-open",
+      "observed": true
+    },
+    {
+      "name": "header",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-toggle",
+      "detail": "{ open: next }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "header"
+    },
+    {
+      "name": "template[slot=\"toggle\"]"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

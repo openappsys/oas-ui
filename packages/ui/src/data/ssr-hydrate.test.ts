@@ -7,6 +7,7 @@ import { OASImage } from './image/index.js'
 import { OASQRCode } from './qrcode/index.js'
 import { OASWatermark } from './watermark/index.js'
 import { OASCollapse, OASCollapseItem } from './collapse/index.js'
+import { OASCollapsible } from './collapsible/index.js'
 import { OASDescriptions, OASDescriptionsItem } from './descriptions/index.js'
 import { OASTimeline, OASTimelineItem } from './timeline/index.js'
 import { OASList, OASListItem } from './list/index.js'
@@ -96,6 +97,16 @@ const FIXTURES: Fixture[] = [
     cls: OASCollapseItem,
     setup: (e) => e.setAttribute('header', '面板'),
     probe: '[part="item"]',
+  },
+  {
+    name: 'collapsible',
+    cls: OASCollapsible,
+    setup: (e) => {
+      e.setAttribute('open', '')
+      e.setAttribute('header', '触发器')
+      e.innerHTML = '<p>内容</p>'
+    },
+    probe: '[part="trigger"]',
   },
   {
     name: 'descriptions',

@@ -120,3 +120,63 @@ test('typography 省略约束链：ellipsis/ellipsis-suffix/line-clamp 均不溢
   }
   expect(r.suffixVisible).toBe(true)
 })
+
+test('typography 内容块排版：blockquote 边条 / ul 解包投影（slot 直挂根）渲染 li / table 全宽', async ({ page }) => {
+  await page.goto('/components/typography.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-text')
+  const r = await page.evaluate(async () => {
+    const mk = (tag: 'oas-text' | 'oas-paragraph', attrs: Record<string, string>, html: string) => {
+      const el = document.createElement(tag) as HTMLElement
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      el.innerHTML = html
+      document.body.appendChild(el)
+      return el
+    }
+    const bq = mk('oas-paragraph', { tag: 'blockquote' }, '引用内容')
+    const ul = mk('oas-text', { tag: 'ul' }, '<li>甲</li><li>乙</li>')
+    const table = mk(
+      'oas-text',
+      { tag: 'table' },
+      '<thead><tr><th>列</th></tr></thead><tbody><tr><td>值</td></tr></tbody>',
+    )
+    await new Promise((res) => setTimeout(res, 100))
+    const bqRoot = bq.shadowRoot!.querySelector<HTMLElement>('.text')!
+    const bqStyle = getComputedStyle(bqRoot)
+    const ulRoot = ul.shadowRoot!.querySelector<HTMLElement>('.text')!
+    // 解包投影：slot 直挂根（无 content span 包装），li 投影渲染有布局高度
+    const hasContentWrap = !!ulRoot.querySelector(':scope > .content')
+    const slot = ulRoot.querySelector('slot')
+    const liCount = ul.querySelectorAll('li').length
+    const ulHeight = ulRoot.getBoundingClientRect().height
+    const tableRoot = table.shadowRoot!.querySelector<HTMLElement>('.text')!
+    const tableWidth = tableRoot.getBoundingClientRect().width
+    const tableCollapse = getComputedStyle(tableRoot).borderCollapse
+    // ellipsis 与块级互斥：块级 tag 下 ellipsis 类不挂
+    const ulEllipsisClass = ulRoot.classList.contains('ellipsis')
+    bq.remove()
+    ul.remove()
+    table.remove()
+    return {
+      bqTag: bqRoot.tagName,
+      bqBorder: bqStyle.borderInlineStartWidth,
+      hasContentWrap,
+      hasSlot: !!slot,
+      liCount,
+      ulHeight,
+      tableTag: tableRoot.tagName,
+      tableWidth,
+      tableCollapse,
+      ulEllipsisClass,
+    }
+  })
+  expect(r.bqTag).toBe('BLOCKQUOTE')
+  expect(r.bqBorder, '引用块有起始侧边条').not.toBe('0px')
+  expect(r.hasContentWrap, 'ul 解包投影：无 content span 包装').toBe(false)
+  expect(r.hasSlot, 'slot 直挂根').toBe(true)
+  expect(r.liCount).toBe(2)
+  expect(r.ulHeight, 'li 投影渲染（列表有布局高度）').toBeGreaterThan(0)
+  expect(r.tableTag).toBe('TABLE')
+  expect(r.tableWidth, '表格全宽').toBeGreaterThan(200)
+  expect(r.tableCollapse).toBe('collapse')
+  expect(r.ulEllipsisClass, '块级形态不挂 ellipsis 类（display 规则会破坏块级布局）').toBe(false)
+})

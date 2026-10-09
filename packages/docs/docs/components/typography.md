@@ -148,6 +148,56 @@
   </div>
 </DemoBlock>
 
+## 内容块排版（blockquote / 列表 / 表格）
+
+`tag` 白名单覆盖内容块级形态，三件（text/title/paragraph）通用——不引入独立长文容器，直接在现有 `tag` 体系上扩展：
+
+- `tag="blockquote"`：引用块（起始侧 token 边条 + 逻辑缩进，RTL 随书写方向镜像）；
+- `tag="ul"` / `tag="ol"`：列表块（归一缩进，li 间距内建；li 内容放默认插槽）；
+- `tag="table"`：内容表（全宽 + 合并边框；th/td 单元细节建议宿主自理或改用 `oas-table` 功能表）；
+- 表格部件（`thead`/`tbody`/`tr`/`th`/`td`/`caption`）与描述列表（`dl`/`dt`/`dd`）同在白名单，可按需换标签。
+
+列表/表格块采用解包投影：默认插槽直接挂在根元素上（`ul` 的子元素只能是 `li`、`table` 只收表格部件——content span 包装在这些标签下非法）。
+
+<DemoBlock title="引用块（tag=blockquote）">
+  <div style="width: 100%">
+    <oas-paragraph tag="blockquote">设计不是把东西加上去，而是再也拿不走任何东西。</oas-paragraph>
+    <oas-paragraph tag="blockquote" type="secondary">简洁是终极的复杂。—— 用于帮助文档、说明文字的引用排版。</oas-paragraph>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="列表块（tag=ul / tag=ol）">
+  <div style="display: flex; gap: 32px; flex-wrap: wrap">
+    <oas-text tag="ul" style="min-width: 200px">
+      <li>安装核心包与图标集</li>
+      <li>入口注册组件族</li>
+      <li>按需引入单个组件</li>
+    </oas-text>
+    <oas-text tag="ol" style="min-width: 200px">
+      <li>阅读设计规范</li>
+      <li>挑选组件组合页面</li>
+      <li>接入主题 token</li>
+    </oas-text>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="内容表（tag=table）">
+  <div style="width: 100%">
+    <oas-text tag="table">
+      <thead>
+        <tr><th>组件</th><th>类别</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>oas-collapse</td><td>数据展示</td><td>稳定</td></tr>
+        <tr><td>oas-list</td><td>数据展示</td><td>稳定</td></tr>
+        <tr><td>oas-typography</td><td>基础</td><td>稳定</td></tr>
+      </tbody>
+    </oas-text>
+  </div>
+</DemoBlock>
+
+`th` 加粗与 `td` 单元格的边框、内边距等细节样式由宿主自理（shadow 样式无法作用到插槽子树深层）；需要排序/筛选/分页等内容表请直接使用 `oas-table`。
+
 ## API
 
 | 组件      | 标签            | 属性                               |
@@ -180,7 +230,7 @@
 | `numeric` | 数字等宽（font-variant-numeric: tabular-nums），表格/统计数字列对齐 | — | — |
 | `size` | 三档字号映射 font-size token（medium 缺省回落继承字号） | `string` | — |
 | `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
-| `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
+| `tag` | 渲染标签：替换默认元素——行内语义（sub/sup/ins/em/strong 等）与内容块形态（blockquote 引用 / ul·ol 列表 / table 内容表 / dl 描述列表及表格部件）均在白名单内；列表与表格块为解包投影（默认插槽直接挂根） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | 下划线 | — | — |
 | `weight` | 字重：`regular`/`medium`/`semibold`/`bold`（与 strong 布尔兼容） | `WeightType` | — |
@@ -227,7 +277,7 @@
 | `mark` | 高亮标记（浅黄底，`<mark>` 语义） | — | — |
 | `numeric` | 数字等宽（`font-variant-numeric: tabular-nums`），表格/统计数字列对齐 | — | — |
 | `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
-| `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
+| `tag` | 渲染标签：替换默认元素——行内语义（sub/sup/ins/em/strong 等）与内容块形态（blockquote 引用 / ul·ol 列表 / table 内容表 / dl 描述列表及表格部件）均在白名单内；列表与表格块为解包投影（默认插槽直接挂根） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | 下划线 | — | — |
 | `weight` | 字重档：`regular`(400) / `medium`(500) / `semibold`(600) / `bold`(700)；显式档优先于 `strong` 布尔；非法值回落 | `WeightType` | — |
@@ -274,7 +324,7 @@
 | `mark` | 高亮标记（浅黄底，`<mark>` 语义） | — | — |
 | `numeric` | 数字等宽（`font-variant-numeric: tabular-nums`），表格/统计数字列对齐 | — | — |
 | `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
-| `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
+| `tag` | 渲染标签：替换默认元素——行内语义（sub/sup/ins/em/strong 等）与内容块形态（blockquote 引用 / ul·ol 列表 / table 内容表 / dl 描述列表及表格部件）均在白名单内；列表与表格块为解包投影（默认插槽直接挂根） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | 下划线 | — | — |
 | `weight` | 字重档：`regular`(400) / `medium`(500) / `semibold`(600) / `bold`(700)；显式档优先于 `strong` 布尔；非法值回落 | `WeightType` | — |

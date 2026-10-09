@@ -910,14 +910,17 @@ function scanMarkerSlots(text, names) {
   }
 }
 
-// `getAttribute('slot') === 'x'` / `.slot === 'x'`：组件按宿主子元素 slot 名识别槽位（写在代码而非模板里）
+// `getAttribute('slot') === 'x'` / `.slot === 'x'`：组件按宿主子元素 slot 名识别槽位（写在代码而非模板里）。
+// 同一槽已有归一形式 `template[slot="x"]` 时不再收裸名（避免同一槽位两种形式双行——与 scanMarkerSlots 同规）。
 function scanSlotAttrRefs(text, names) {
   if (!text) return
   const re = /getAttribute\(\s*['"]slot['"]\s*\)\s*===\s*['"]([^'"]+)['"]|\.slot\s*===\s*['"]([^'"]+)['"]/g
   let m
   while ((m = re.exec(text))) {
     const name = m[1] ?? m[2]
-    if (name && !name.includes('${')) names.add(name)
+    if (!name || name.includes('${')) continue
+    if (names.has(`template[slot="${name}"]`)) continue
+    names.add(name)
   }
 }
 

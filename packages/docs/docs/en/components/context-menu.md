@@ -226,6 +226,7 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Context-menu item label content (default slot text); direct child `<oas-context-menu-item>` elements recursively become the submenu `children` |
+| `template[slot="leading"]` | Leading media template (or a direct child with slot="leading"): avatars/color chips/any rich leading content, rendered before the label and taking precedence over the icon attribute; replaced by the spinner in the loading state; declarative child channel only (not supported by the items JSON) |
 
 ### oas-context-menu-group
 

@@ -24,6 +24,37 @@ export class OASMenuItem extends OASElement {
     return ['value', 'disabled', 'loading', 'icon', 'icon-color', 'kind', 'danger', 'href', 'target', 'rel', 'shortcut']
   }
 
+  /**
+   * 前置媒体模板查询（便捷通道，同时作为 api:scan 的插槽归属标记——
+   * 插槽内容由宿主 <oas-menu>/<oas-dropdown> 的解析层提取渲染，归属数据载体本身）。
+   */
+  get leadingSlotTemplate(): HTMLTemplateElement | null {
+    return this.querySelector<HTMLTemplateElement>(':scope > template[slot="leading"]')
+  }
+
+  /**
+   * 提取前置媒体内容（克隆，与 light DOM 解耦——宿主重渲染时经 MutationObserver 重新解析重克隆）：
+   * `<template slot="leading">`（content 优先，兼容框架 CSR 直插形态）或直接子元素 `[slot="leading"]`。
+   * 静态工具挂在数据载体类上：宿主解析层调用，插槽标记字符串归属本组件（api:scan 归属正确）。
+   */
+  static extractLeadingFrom(el: Element): Node[] {
+    // 仅取本项自己的直接子模板（`:scope >`）——裸 querySelector 会命中嵌套子菜单项的前置媒体，
+    // 使父项被误挂子项的 leading（菜单项可递归嵌套子级）
+    const tpl = el.querySelector<HTMLTemplateElement>(':scope > template[slot="leading"]')
+    if (tpl) {
+      const source = tpl.content.childNodes.length > 0 ? tpl.content : tpl
+      return Array.from(source.childNodes).map((n) => n.cloneNode(true))
+    }
+    return Array.from(el.children)
+      .filter((c) => c.getAttribute('slot') === 'leading')
+      .map((c) => c.cloneNode(true))
+  }
+
+  /** 默认插槽 label 提取时的前置媒体节点判定（template/元素两种通道的文本都不计入 label） */
+  static isLeadingNode(node: ChildNode): boolean {
+    return node instanceof Element && node.getAttribute('slot') === 'leading'
+  }
+
   protected override render(): void {
     this.shadow.innerHTML = `<style>${ITEM_STYLE}</style><slot></slot>`
   }

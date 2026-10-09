@@ -928,6 +928,23 @@ describe('OASDropdown 子元素声明式通道', () => {
     expect(el.getAttribute('value')).toBe('grid')
   })
 
+  it('前置媒体插槽（slot="leading"）：dropdown-item 声明头像类前置内容，渲染在 label 前（avatar 例）', async () => {
+    const el = mountDropdownChild(`
+      <oas-button>操作</oas-button>
+      <oas-dropdown-item value="user">张三<template slot="leading"><span data-avatar>张</span></template></oas-dropdown-item>
+      <oas-dropdown-item value="plain" icon="gear">纯图标</oas-dropdown-item>
+    `)
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    const root = innerMenuRoot(el)
+    const user = root.querySelector<HTMLElement>('[part="item"][data-value="user"]')!
+    expect(user.querySelector('.media [data-avatar]')).not.toBeNull()
+    expect(user.querySelector<HTMLElement>('.label')!.textContent).toBe('张三')
+    const plain = root.querySelector<HTMLElement>('[part="item"][data-value="plain"]')!
+    expect(plain.querySelector('.icon')).not.toBeNull()
+    expect(plain.querySelector('.media')).toBeNull()
+  })
+
   it('MutationObserver：运行时 append oas-dropdown-item 后菜单刷新出现新项', async () => {
     const el = mountDropdownChild(`
       <oas-button>操作</oas-button>
