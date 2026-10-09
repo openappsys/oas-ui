@@ -2889,7 +2889,8 @@
       "value-width": "Width of the show-input readout box: plain numbers get px, unit values pass through (written to --oas-slider-value-width); defaults to 72px",
       "accent-color": "Accent color while scrubbing the readout: preset semantic names (primary / success / warning / danger, dark-theme aware) map to theme tokens, other values pass through; falls back to the theme primary",
       "show-track": "Track visibility switch (shown by default); show-track=\"false\" hides the track bar and selection fill (the thumb remains draggable and keyboard operable)",
-      "thumb": "Thumb shape: `round` thick circular thumb (default) / `pointer` thin pointer (a slim bar along the axis; always uses the custom visual layer with the native thumb hidden — thin vertical bar horizontally, thin horizontal bar vertically); invalid values fall back to round"
+      "thumb": "Thumb shape: `round` thick circular thumb (default) / `pointer` thin pointer (a slim bar along the axis; always uses the custom visual layer with the native thumb hidden — thin vertical bar horizontally, thin horizontal bar vertically); invalid values fall back to round",
+      "levels": "Stereo level meter: `{ left, right }` normalized values (0–1, clamped) rendered as dual bars below the round thumb (decorative `aria-hidden`, non-interactive); renders only for `thumb=\"round\"` (the default) and is ignored for pointer; invalid/missing hides it"
     },
     "events": {
       "oas-change": "Committed on release, `detail: { value }` (single number; `[lo, hi]` array in `range` mode)",
@@ -2899,7 +2900,8 @@
       "template[slot=\"custom-thumb\"]": "Custom thumb content (icon/text): `template[slot=\"custom-thumb\"]` (static template, cloned into every visible thumb — both thumbs in range mode) or a plain `[slot=\"custom-thumb\"]` element"
     },
     "props": {
-      "value": "Current value: a number for a single thumb, or an array of numbers for multiple thumbs"
+      "value": "Current value: a number for a single thumb, or an array of numbers for multiple thumbs",
+      "levels": "Stereo level values `{ left, right }` (normalized 0–1; object assignment reflects to a JSON attribute, clear with `null`)"
     },
     "cssVars": {
       "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"

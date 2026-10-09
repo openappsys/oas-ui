@@ -174,6 +174,17 @@ Visibility: shown while dragging or when keyboard-focused by default; `tooltip-a
 
 `thumb` switches the handle shape: `round` is the default thick circular thumb; `pointer` is a thin pointer (a slim bar sitting along the axis — suited to color tracks/waveforms where precise reading matters and the track should stay visible). `pointer` always uses the custom visual layer (native thumb hidden): a thin vertical bar horizontally, a thin horizontal bar vertically; invalid values fall back to `round`.
 
+## Stereo Level Meter (levels)
+
+<DemoBlock title="levels {left,right}: dual level bars below the round thumb (0–1 normalized)">
+  <div style="display: flex; gap: 56px; align-items: flex-start;">
+    <oas-slider label="Left" levels='{"left":0.72,"right":0.4}' value="72" style="width: 200px"></oas-slider>
+    <oas-slider label="Right" levels='{"left":0.4,"right":0.72}' value="40" style="width: 200px"></oas-slider>
+  </div>
+</DemoBlock>
+
+`levels` renders a dual stereo level meter below the round thumb (`{ left, right }`, normalized 0–1, clamped) — suited to audio/mixer faders. The meter is decorative (`aria-hidden`, non-interactive); it renders only for `thumb="round"` (the default) and is ignored for `thumb="pointer"`. You can also assign functionally: `el.levels = { left, right }` (clear with `null`).
+
 ## Colors
 
 <DemoBlock title="color / track-color">
@@ -348,6 +359,7 @@ onMounted(() => {
 | `label-8` | Accessible name for thumb 8 (multi-thumb mode; takes precedence over labels/label) | — | — |
 | `labels` | JSON string array of per-thumb accessible names (e.g. `["低","中","高"]`; the label-N attribute family takes precedence) | `string` | — |
 | `large-step` | Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change` | `string` | — |
+| `levels` | Stereo level meter: `{ left, right }` normalized values (0–1, clamped) rendered as dual bars below the round thumb (decorative `aria-hidden`, non-interactive); renders only for `thumb="round"` (the default) and is ignored for pointer; invalid/missing hides it | `{ left?: number; right?: number } \| string \| null` | — |
 | `marks` | Ticks: JSON object `{"0":"0°C"}` (value→label) or JSON array `[0,26,60]` (also `{"value":26,"label":"26°C"}`); tick marks and labels are shown below the track, highlighted where the value passes; positions mirror under `reverse` | `string \| Record<string, string \| number> \| number[]` | — |
 | `max` | Range | `string` | `100` |
 | `min` | Range | `string` | `0` |
@@ -376,6 +388,7 @@ onMounted(() => {
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
+| `levels` | Stereo level values `{ left, right }` (normalized 0–1; object assignment reflects to a JSON attribute, clear with `null`) | `{ left?: number; right?: number } \| string \| null` | — |
 | `value` | Current value: a number for a single thumb, or an array of numbers for multiple thumbs | `number \| number[]` | — |
 
 #### Events

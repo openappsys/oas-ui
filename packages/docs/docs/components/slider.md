@@ -174,6 +174,17 @@
 
 `thumb` 切换把手形态：`round` 为默认粗圆推子；`pointer` 为细指针（薄条沿轴摆放，适合色轨/波形等需要精细读位、不遮挡轨道的场景）。`pointer` 恒走自定义视觉层（原生拇指隐藏），水平为薄竖条、垂直为薄横条；非法值回落 `round`。
 
+## 立体声电平表（levels）
+
+<DemoBlock title="levels {left,right}：圆推子下方的双条电平（0–1 归一化）">
+  <div style="display: flex; gap: 56px; align-items: flex-start;">
+    <oas-slider label="左声道" levels='{"left":0.72,"right":0.4}' value="72" style="width: 200px"></oas-slider>
+    <oas-slider label="右声道" levels='{"left":0.4,"right":0.72}' value="40" style="width: 200px"></oas-slider>
+  </div>
+</DemoBlock>
+
+`levels` 在圆推子下方渲染双条立体声电平（`{ left, right }`，0–1 归一化，越界自动夹取），适合音频/混音推子。电平表为装饰性（`aria-hidden`、不参与交互）；仅 `thumb="round"`（默认形态）渲染，`thumb="pointer"` 时忽略。也可用函数式赋值 `el.levels = { left, right }`（置 `null` 清除）。
+
 ## 颜色
 
 <DemoBlock title="color / track-color">
@@ -348,6 +359,7 @@ onMounted(() => {
 | `label-8` | 第 8 个把手的可访问名（多滑块模式；优先于 labels/label） | — | — |
 | `labels` | 逐把手可访问名的 JSON 数组（如 `["低","中","高"]`；label-N 属性族优先） | `string` | — |
 | `large-step` | 键盘大步步进量（Shift+方向键 / PageUp / PageDown 生效）；缺省为 10 × step；每次按键即派发 `oas-input` + `oas-change` | `string` | — |
+| `levels` | 立体声电平表：`{ left, right }` 归一化值（0–1，越界夹取），在圆推子下方渲染双条电平（装饰性 aria-hidden、不参与交互）；仅 `thumb="round"`（默认）渲染，pointer 形态忽略；非法/缺失隐藏 | `{ left?: number; right?: number } \| string \| null` | — |
 | `marks` | 刻度：JSON 对象 `{"0":"0°C"}`（值→标签）或 JSON 数组 `[0,26,60]`（也可为 `{"value":26,"label":"26°C"}`）；刻度点与标签显示在轨道下方，值经过处高亮；`reverse` 下位置镜像 | `string \| Record<string, string \| number> \| number[]` | — |
 | `max` | 范围 | `string` | `100` |
 | `min` | 范围 | `string` | `0` |
@@ -376,6 +388,7 @@ onMounted(() => {
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `levels` | 立体声电平值 `{ left, right }`（0–1 归一化；对象赋值反射为 JSON attribute，置 `null` 清除） | `{ left?: number; right?: number } \| string \| null` | — |
 | `value` | 当前值：单把手为数值，多把手为数值数组 | `number \| number[]` | — |
 
 #### 事件

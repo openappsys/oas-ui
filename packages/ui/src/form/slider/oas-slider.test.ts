@@ -1838,3 +1838,96 @@ describe('OASSlider thumb 两形态（pointer / round）', () => {
     expect(css).toContain('--oas-slider-thumb-size')
   })
 })
+
+// ---- 增强批：立体声电平表（levels {left,right}） ----
+
+describe('OASSlider 立体声电平表（levels）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function levelsOf(el: OASSlider): HTMLElement {
+    return thumbEl(el, 'value').querySelector<HTMLElement>('.levels')!
+  }
+
+  function fillHeights(el: OASSlider): string[] {
+    return [...levelsOf(el).querySelectorAll<HTMLElement>('.level-fill')].map((n) => n.style.height)
+  }
+
+  it('levels 提供 {left,right}：电平表常显 + 两条填充高度按归一化值', () => {
+    const el = mount({ value: '50', levels: '{"left":0.8,"right":0.4}' })
+    expect(levelsOf(el).hidden).toBe(false)
+    expect(levelsOf(el).querySelectorAll('.level-bar')).toHaveLength(2)
+    expect(fillHeights(el)).toEqual(['80%', '40%'])
+    // 电平表为装饰性，不参与交互
+    expect(levelsOf(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('电平表存在时恒启用自定义视觉层（不需拖动/聚焦）', () => {
+    const el = mount({ value: '50', levels: '{"left":0.5,"right":0.5}' })
+    expect(thumbEl(el, 'value').hidden).toBe(false)
+    expect(el.hasAttribute('data-custom-thumb')).toBe(true)
+  })
+
+  it('越界值夹取到 [0,1]', () => {
+    const el = mount({ value: '50', levels: '{"left":2,"right":-1}' })
+    expect(fillHeights(el)).toEqual(['100%', '0%'])
+  })
+
+  it('缺省单侧时另一侧回落 0', () => {
+    const el = mount({ value: '50', levels: '{"left":0.5}' })
+    expect(fillHeights(el)).toEqual(['50%', '0%'])
+  })
+
+  it('无 levels / 非法 JSON：电平表隐藏', () => {
+    const none = mount({ value: '50' })
+    expect(levelsOf(none).hidden).toBe(true)
+    const bad = mount({ value: '50', levels: '{oops' })
+    expect(levelsOf(bad).hidden).toBe(true)
+    const arr = mount({ value: '50', levels: '[0.1,0.2]' })
+    expect(levelsOf(arr).hidden).toBe(true)
+  })
+
+  it('pointer 形态不渲染电平表（电平表仅属圆推子）', () => {
+    const el = mount({ value: '50', thumb: 'pointer', levels: '{"left":0.9,"right":0.1}' })
+    expect(levelsOf(el).hidden).toBe(true)
+  })
+
+  it('levels property：对象赋值反射为 JSON attribute，getter 返回解析对象', () => {
+    const el = mount({ value: '50' })
+    el.levels = { left: 0.25, right: 0.75 }
+    expect(el.getAttribute('levels')).toBe('{"left":0.25,"right":0.75}')
+    expect(el.levels).toEqual({ left: 0.25, right: 0.75 })
+    expect(fillHeights(el)).toEqual(['25%', '75%'])
+    el.levels = null
+    expect(el.hasAttribute('levels')).toBe(false)
+    expect(el.levels).toBeNull()
+    expect(levelsOf(el).hidden).toBe(true)
+  })
+
+  it('运行时更新 levels：填充高度实时跟随', () => {
+    const el = mount({ value: '50', levels: '{"left":0.1,"right":0.2}' })
+    expect(fillHeights(el)).toEqual(['10%', '20%'])
+    el.setAttribute('levels', '{"left":0.9,"right":0.6}')
+    expect(fillHeights(el)).toEqual(['90%', '60%'])
+  })
+
+  it('vertical 下电平表同样渲染（定位轴由 CSS 切换）', () => {
+    const el = mount({ vertical: '', value: '50', levels: '{"left":0.3,"right":0.7}' })
+    expect(levelsOf(el).hidden).toBe(false)
+    expect(el.hasAttribute('data-vertical')).toBe(true)
+  })
+
+  it('CSS：电平表容器 / 两条目 / hidden 覆盖规则存在', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('.levels')
+    expect(css).toContain('.level-bar')
+    expect(css).toContain('.level-fill')
+    expect(css).toMatch(/\.levels\[hidden\]\s*{\s*display:\s*none/)
+    expect(css).toMatch(/:host\(\[data-vertical\]\)\s*\.levels/)
+  })
+})

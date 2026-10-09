@@ -166,6 +166,11 @@
       "observed": true
     },
     {
+      "name": "levels",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "label-1",
       "observed": true
     },
@@ -207,6 +212,11 @@
     {
       "name": "marks",
       "type": "string | Record<string, string | number> | number[]"
+    },
+    {
+      "name": "levels",
+      "type": "{ left?: number; right?: number } | string | null",
+      "api": true
     },
     {
       "name": "formatTooltip",

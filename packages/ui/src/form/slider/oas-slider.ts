@@ -365,6 +365,49 @@ input:disabled {
   max-height: 100%;
   overflow: hidden;
 }
+/* 立体声电平表：圆推子下方的双条电平指示（levels 属性提供归一化值；装饰性，不参与交互） */
+.levels {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 18px;
+  pointer-events: none;
+}
+/* author display:flex 会压过 UA [hidden]，无电平值时显式隐藏 */
+.levels[hidden] {
+  display: none;
+}
+.level-bar {
+  position: relative;
+  width: 3px;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 1px;
+  background: var(--oas-slider-track);
+}
+.level-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  background: var(--oas-slider-color);
+  transition: height var(--oas-transition-fast) var(--oas-ease-out);
+}
+/* 垂直模式：电平表移到圆推子右侧（沿横向排布，避免与下方输入区/刻度重叠） */
+:host([data-vertical]) .levels {
+  top: 50%;
+  left: calc(100% + 4px);
+  transform: translateY(-50%);
+}
+:host([disabled]) .levels,
+:host([data-disabled]) .levels {
+  opacity: 0.6;
+}
 /* 值气泡：默认在滑块上方；tooltip-position 四向切换（vertical 默认 right 由 JS 镜像 data-tooltip-pos） */
 .thumb-tip {
   position: absolute;
@@ -558,8 +601,9 @@ export class OASSlider extends OASElement {
       'value-width',
       'accent-color',
       'show-track',
-      // 增强批：thumb 两形态（pointer 细指针 / round 圆推子）
+      // 增强批：thumb 两形态（pointer 细指针 / round 圆推子）+ 立体声电平表
       'thumb',
+      'levels',
       'label-1',
       'label-2',
       'label-3',
@@ -638,6 +682,23 @@ export class OASSlider extends OASElement {
   }
   set marks(value: string | Record<string, string | number> | number[]) {
     this.setAttribute('marks', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /**
+   * @apiProperty 立体声电平表（立体声推子下方的双条电平指示）：`{ left, right }` 归一化值（0–1）。
+   * 属性通道为 JSON 字符串；宿主框架可用对象直接赋值（反射为 JSON attribute）。
+   * 仅 `thumb="round"`（默认）渲染；非法/空值隐藏电平表。
+   */
+  get levels(): { left: number; right: number } | null {
+    return this.parseLevels()
+  }
+  set levels(value: { left?: number; right?: number } | string | null) {
+    if (value == null || value === '') {
+      this.removeAttribute('levels')
+    } else {
+      this.setAttribute('levels', typeof value === 'string' ? value : JSON.stringify(value))
+    }
+    if (this.hasRendered) this.update()
   }
 
   /**
@@ -954,6 +1015,24 @@ export class OASSlider extends OASElement {
     return base ? `${base} ${i + 1}` : `${this.t('slider.valueLabel')} ${i + 1}`
   }
 
+  /** 解析立体声电平值 `{ left, right }`（归一化到 [0,1]）；非法/缺失返回 null */
+  private parseLevels(): { left: number; right: number } | null {
+    const raw = this.getAttr('levels', '')
+    if (!raw) return null
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      return null
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+    const o = parsed as Record<string, unknown>
+    const l = Number(o.left)
+    const r = Number(o.right)
+    if (!Number.isFinite(l) && !Number.isFinite(r)) return null
+    return { left: clampNum(Number.isFinite(l) ? l : 0, 0, 1), right: clampNum(Number.isFinite(r) ? r : 0, 0, 1) }
+  }
+
   /** labels JSON 数组（多把手可访问名），非法/非数组返回 null */
   private parseLabels(): string[] | null {
     const raw = this.getAttr('labels', '')
@@ -994,7 +1073,22 @@ export class OASSlider extends OASElement {
       const tip = document.createElement('div')
       tip.className = 'thumb-tip'
       tip.setAttribute('part', 'tip')
-      ov.append(content, tip)
+      // 立体声电平表：圆推子下方的双条电平指示（值由 syncOverlay 写入，装饰性 aria-hidden）
+      const levels = document.createElement('div')
+      levels.className = 'levels'
+      levels.setAttribute('part', 'levels')
+      levels.setAttribute('aria-hidden', 'true')
+      levels.hidden = true
+      for (const channel of ['left', 'right'] as const) {
+        const bar = document.createElement('span')
+        bar.className = 'level-bar'
+        bar.setAttribute('data-channel', channel)
+        const fill = document.createElement('span')
+        fill.className = 'level-fill'
+        bar.appendChild(fill)
+        levels.appendChild(bar)
+      }
+      ov.append(content, tip, levels)
       overlays.appendChild(ov)
       this.overlays.push(ov)
     }
@@ -1683,12 +1777,18 @@ export class OASSlider extends OASElement {
     // 气泡可见：常显 > 拖动 > 聚焦（focus 语义，不依赖 show-tooltip）
     const tipsVisible = this.hasAttr('show-tooltip') || this.hasAttr('tooltip-always') || this.dragging || focused
 
+    // 立体声电平表：仅圆推子（默认形态）渲染；有值时恒启用自定义视觉层（电平条需常显）
+    const levels = this.isPointerThumb() ? null : this.parseLevels()
+    const hasLevels = levels !== null
+
     // 拖动/聚焦/常显中启用自定义视觉层（拖动时临时显示值气泡，无需 show-tooltip）；
     // 垂直模式恒启用：原生 thumb 隐藏，.custom-thumb 承担默认拇指视觉与拖动反馈；
-    // pointer 形态恒启用：细指针造型由 .custom-thumb 承担（原生拇指无法跨浏览器统一为细条）
+    // pointer 形态恒启用：细指针造型由 .custom-thumb 承担（原生拇指无法跨浏览器统一为细条）；
+    // 电平表恒启用：立体声电平需常显，不能只在拖动/聚焦时出现
     const useOverlay =
       vertical ||
       this.isPointerThumb() ||
+      hasLevels ||
       this.hasCustomThumb() ||
       this.hasAttr('show-tooltip') ||
       this.hasAttr('tooltip-always') ||
@@ -1755,6 +1855,18 @@ export class OASSlider extends OASElement {
       if (tip) {
         tip.textContent = this.formatValue(v)
         tip.hidden = !tipsVisible
+      }
+      const levelsEl = th.querySelector<HTMLElement>('.levels')
+      if (levelsEl) {
+        if (levels && useOverlay) {
+          levelsEl.hidden = false
+          for (const ch of ['left', 'right'] as const) {
+            const barFill = levelsEl.querySelector<HTMLElement>(`.level-bar[data-channel='${ch}'] .level-fill`)
+            if (barFill) barFill.style.height = `${(ch === 'left' ? levels.left : levels.right) * 100}%`
+          }
+        } else {
+          levelsEl.hidden = true
+        }
       }
       if (!useOverlay) continue
       th.hidden = false

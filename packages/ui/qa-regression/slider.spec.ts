@@ -836,3 +836,40 @@ test('slider thumb=pointer：细指针形态真实渲染（薄条 + 原生拇指
   // 指针中心仍对齐轨道中线（translate -50%,-50% 不被形态改变破坏）
   expect(Math.abs(r.pointer!.centerY), '指针中心应与轨道中线对齐').toBeLessThanOrEqual(1)
 })
+
+// ---- 增强批：立体声电平表（levels {left,right}） ----
+
+test('slider levels：圆推子下方双条电平按归一化值渲染（真实高度）+ aria-hidden 装饰性', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[levels]')
+  const r = await page
+    .locator('oas-slider[levels]')
+    .first()
+    .evaluate((node) => {
+      const root = node.shadowRoot!
+      const th = root.querySelector<HTMLElement>('.custom-thumb:not([hidden])')!
+      const levels = th.querySelector<HTMLElement>('.levels')!
+      const bars = [...levels.querySelectorAll<HTMLElement>('.level-bar')]
+      const ratio = (bar: HTMLElement): number => {
+        const fill = bar.querySelector<HTMLElement>('.level-fill')!
+        const barH = bar.getBoundingClientRect().height
+        const fillH = fill.getBoundingClientRect().height
+        return barH ? fillH / barH : 0
+      }
+      const thumbRect = th.getBoundingClientRect()
+      const levelsRect = levels.getBoundingClientRect()
+      return {
+        display: getComputedStyle(levels).display,
+        ariaHidden: levels.getAttribute('aria-hidden'),
+        left: ratio(bars[0]!),
+        right: ratio(bars[1]!),
+        // 电平表应位于推子下方（top 大于推子顶部；中心在推子中心之下）
+        below: levelsRect.top > thumbRect.top,
+      }
+    })
+  expect(r.display, '有 levels 时电平表应可见').not.toBe('none')
+  expect(r.ariaHidden, '电平表为装饰性').toBe('true')
+  expect(r.left, '左条高度应按 0.72 归一化').toBeCloseTo(0.72, 1)
+  expect(r.right, '右条高度应按 0.4 归一化').toBeCloseTo(0.4, 1)
+  expect(r.below, '电平表应位于圆推子下方').toBe(true)
+})
