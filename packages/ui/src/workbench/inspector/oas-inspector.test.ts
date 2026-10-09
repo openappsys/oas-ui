@@ -371,7 +371,7 @@ describe('OASInspectorSection', () => {
 describe('OASInspectorRow', () => {
   it('observedAttributes 完整（含 dir）', () => {
     expect(OASInspectorRow.observedAttributes).toEqual(
-      expect.arrayContaining(['label', 'value', 'mixed', 'reset', 'dir']),
+      expect.arrayContaining(['label', 'value', 'mixed', 'reset', 'align-top', 'striped', 'dir']),
     )
   })
 
@@ -426,6 +426,20 @@ describe('OASInspectorRow', () => {
   it('label 为空时标签区隐藏（空态不塌占位）', () => {
     const el = mount<OASInspectorRow>({ Ctor: OASInspectorRow, attrs: { value: 'x' } })
     expect(rowLabel(el).hidden).toBe(true)
+  })
+
+  it('align-top：标签/控件顶对齐（:host([align-top]) 规则存在）', () => {
+    const el = mount<OASInspectorRow>({ Ctor: OASInspectorRow, attrs: { label: 'x', 'align-top': '' } })
+    expect(el.hasAttribute('align-top')).toBe(true)
+    expect(styleText(el)).toContain(':host([align-top])')
+  })
+
+  it('striped：斑马底走 token（`:host([striped])` + 自定义变量兜底）', () => {
+    const el = mount<OASInspectorRow>({ Ctor: OASInspectorRow, attrs: { label: 'x', striped: '' } })
+    const css = styleText(el)
+    expect(el.hasAttribute('striped')).toBe(true)
+    expect(css).toContain(':host([striped])')
+    expect(css).toContain('--oas-inspector-row-striped-bg')
   })
 
   it('dir=rtl 钩子 + token 纪律', () => {

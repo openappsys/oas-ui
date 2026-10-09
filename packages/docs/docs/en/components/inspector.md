@@ -69,6 +69,20 @@ Click or arrow keys to switch (roving tabindex + Home/End, mirrored in RTL); dis
   </oas-inspector>
 </DemoBlock>
 
+## Striping and top alignment (striped / align-top)
+
+`striped` adds a zebra background (value goes through `--oas-inspector-row-striped-bg`, with a dark variant); `align-top` aligns the label with the top of the control, for rows with tall controls (e.g. multiline text).
+
+<DemoBlock title="striped + align-top">
+  <oas-inspector style="height: 220px">
+    <oas-inspector-section heading="Alignment &amp; striping" collapsible default-open>
+      <oas-inspector-row label="Plain row" value="Centered"></oas-inspector-row>
+      <oas-inspector-row label="Striped row" value="Tinted" striped></oas-inspector-row>
+      <oas-inspector-row label="Notes (top-aligned)" align-top><oas-textarea rows="3" placeholder="Multiline notes"></oas-textarea></oas-inspector-row>
+    </oas-inspector-section>
+  </oas-inspector>
+</DemoBlock>
+
 ## Empty state (empty)
 
 The `empty` boolean attribute switches to the no-selection state: the default slot hides and `slot="empty"` shows (built-in copy "No selection" by default).

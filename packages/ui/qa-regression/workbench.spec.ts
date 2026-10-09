@@ -259,6 +259,24 @@ test('inspector 非折叠分节恒展开（纯标题分节内容不被 0fr 裁�
   expect(state.dataOpen, '非折叠分节必须展开（data-open 在场）').toBe(true)
 })
 
+test('inspector-row striped/align-top：斑马底可见（背景非透明且异于普通行）+ 顶对齐生效', async ({ page }) => {
+  await page.goto('/components/inspector.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-inspector-row[striped]')
+  const probe = await page.evaluate(() => {
+    const striped = document.querySelector('oas-inspector-row[striped]')!
+    const plain = [...document.querySelectorAll('oas-inspector-row')].find(
+      (r) => !r.hasAttribute('striped') && r.hasAttribute('value'),
+    )!
+    const align = document.querySelector('oas-inspector-row[align-top]')!
+    const bg = (el: Element) => getComputedStyle(el.shadowRoot!.querySelector('[part="row"]')!).backgroundColor
+    const ai = (el: Element) => getComputedStyle(el.shadowRoot!.querySelector('[part="row"]')!).alignItems
+    return { stripedBg: bg(striped), plainBg: bg(plain), alignTop: ai(align) }
+  })
+  expect(probe.stripedBg, 'striped 行有背景色（非 transparent）').not.toBe('rgba(0, 0, 0, 0)')
+  expect(probe.stripedBg, 'striped 与普通行底色不同（用户可见）').not.toBe(probe.plainBg)
+  expect(probe.alignTop, 'align-top 行 align-items 顶对齐').toBe('flex-start')
+})
+
 test('action-bar 任务进度井：取消派发 oas-cancel、进度受控推进、100% 保留完成态', async ({ page }) => {
   await page.goto('/components/action-bar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ab-task')

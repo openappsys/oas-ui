@@ -69,6 +69,20 @@
   </oas-inspector>
 </DemoBlock>
 
+## 斑马底与顶对齐（striped / align-top）
+
+`striped` 给行加斑马底（值走 `--oas-inspector-row-striped-bg`，含暗色变体）；`align-top` 让标签与控件顶部对齐，适配高控件行（如多行文本）。
+
+<DemoBlock title="striped + align-top">
+  <oas-inspector style="height: 220px">
+    <oas-inspector-section heading="对齐与斑马" collapsible default-open>
+      <oas-inspector-row label="普通行" value="居中"></oas-inspector-row>
+      <oas-inspector-row label="斑马行" value="带底纹" striped></oas-inspector-row>
+      <oas-inspector-row label="摘要（顶对齐）" align-top><oas-textarea rows="3" placeholder="多行备注"></oas-textarea></oas-inspector-row>
+    </oas-inspector-section>
+  </oas-inspector>
+</DemoBlock>
+
 ## 空态（empty）
 
 `empty` 布尔属性切换无选中态：默认插槽隐藏、`slot="empty"` 显示（缺省内置文案「未选中对象」）。

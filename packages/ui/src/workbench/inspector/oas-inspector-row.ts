@@ -88,6 +88,14 @@ slot:not([name])::slotted(*) {
 .reset-btn[hidden] {
   display: none;
 }
+/* align-top：标签与控件顶部对齐（适配高控件行，如多行控件） */
+:host([align-top]) .row {
+  align-items: flex-start;
+}
+/* striped：斑马纹底（宿主按行交替设置，值走 token 含暗色变体） */
+:host([striped]) .row {
+  background: var(--oas-inspector-row-striped-bg, var(--oas-color-bg-hover));
+}
 `
 
 /** 复位图标（原创 SVG：逆时针回环箭头） */
@@ -103,13 +111,14 @@ const RESET_ICON =
  * - **控件行**（有插槽内容）：label ↔ 控件 50/50 分栏（slider/select 等表单件由宿主放入，
  *   控件自带可访问名；跨 shadow 的 label for/aria-labelledby 引用平台不支持，结构相邻承担语义）
  *
- * 属性（kebab-case）：`label`、`value`、`mixed`（布尔）、`reset`（布尔，显示行级复位钮）。
+ * 属性（kebab-case）：`label`、`value`、`mixed`（布尔）、`reset`（布尔，显示行级复位钮）、
+ * `align-top`（布尔，标签/控件顶对齐）、`striped`（布尔，斑马纹底）。
  *
  * 事件：`oas-row-reset`（detail `{ label }`，bubbles + composed）。
  */
 export class OASInspectorRow extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['label', 'value', 'mixed', 'reset', 'dir']
+    return ['label', 'value', 'mixed', 'reset', 'align-top', 'striped', 'dir']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（单行书写防空白文本节点） */

@@ -23,6 +23,14 @@
       "name": "reset",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "align-top",
+      "observed": true
+    },
+    {
+      "name": "striped",
+      "observed": true
     }
   ],
   "props": [],
@@ -45,6 +53,10 @@
     {
       "name": "--oas-inspector-divider-color",
       "default": "transparent"
+    },
+    {
+      "name": "--oas-inspector-row-striped-bg",
+      "default": "var(--oas-color-bg-hover)"
     }
   ],
   "unresolved": []
