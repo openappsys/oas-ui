@@ -109,7 +109,7 @@ test('link 色板达标：预设名映射 -text 达标 token、自定义色原�
   // type 语义色改 -text 变体
   expect(r.success).toBe('rgb(17, 129, 58)')
   expect(r.warning).toBe('rgb(167, 92, 5)')
-  // 自定义色原值渲染：--oas-color-info-text（#0891b2）与 --oas-preset-purple-text（#722ed1）各自解析为本色
-  expect(r.custom).toBe('rgb(8, 145, 178)')
+  // 自定义色原值渲染：--oas-color-info-text（#0e7490）与 --oas-preset-purple-text（#722ed1）各自解析为本色
+  expect(r.custom).toBe('rgb(14, 116, 144)')
   expect(r.customOverride).toBe('rgb(114, 46, 209)')
 })
