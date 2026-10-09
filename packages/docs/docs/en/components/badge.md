@@ -615,6 +615,28 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
   </oas-badge>
 </DemoBlock>
 
+## Loading Badge (composed with oas-spin)
+
+The badge itself has no built-in spinner prop — put an `oas-spin` in the default slot to express "badge containing a loading ring": the corner count / dot / status point still come from `oas-badge`, while the indicator's form (`variant`) and size (`size`) are controlled independently by `oas-spin`, letting you compose them freely.
+
+<DemoBlock title="Corner badge + loading ring (composed with oas-spin)">
+  <oas-badge dot color="primary" style="margin-inline-end: var(--oas-space-5)">
+    <oas-spin size="small"></oas-spin>
+  </oas-badge>
+  <oas-badge value="3" style="margin-inline-end: var(--oas-space-5)">
+    <oas-spin size="medium"></oas-spin>
+  </oas-badge>
+  <oas-badge dot overlap color="success" style="margin-inline-end: var(--oas-space-5)">
+    <oas-spin size="large"></oas-spin>
+  </oas-badge>
+  <oas-badge dot variant="outline" color="warning" style="margin-inline-end: var(--oas-space-5)">
+    <oas-spin size="medium" variant="dot"></oas-spin>
+  </oas-badge>
+  <oas-badge value="2" bordered>
+    <oas-spin size="large" tip="Syncing"></oas-spin>
+  </oas-badge>
+</DemoBlock>
+
 ## API
 
 ### oas-badge

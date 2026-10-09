@@ -136,6 +136,37 @@
   </oas-empty>
 </DemoBlock>
 
+## 内容组合（头像 / 头像组 / 搜索输入）
+
+空态不内建各业务内容的变体属性，靠插槽组合：`oas-avatar` / `oas-avatar-group` 放 `illustration` 插槽（媒体区，替换内置插画），`oas-input` 等交互元素放默认插槽（描述富内容，有内容时覆盖 `description` 属性）或 `action` 插槽。
+
+<DemoBlock title="头像（slot=illustration）">
+  <oas-empty title="还没有个人资料" description="上传头像并完善信息，让同事更容易认出你">
+    <oas-avatar slot="illustration" size="72" color="primary">张</oas-avatar>
+    <oas-button slot="action" size="small" type="primary">完善资料</oas-button>
+  </oas-empty>
+</DemoBlock>
+
+<DemoBlock title="头像组（slot=illustration）">
+  <oas-empty title="还没有团队成员" description="邀请成员加入后即可开始协作" image-size="140">
+    <oas-avatar-group slot="illustration" max="4" size="32">
+      <oas-avatar color="primary">张</oas-avatar>
+      <oas-avatar color="success">李</oas-avatar>
+      <oas-avatar color="warning">王</oas-avatar>
+      <oas-avatar color="danger">赵</oas-avatar>
+      <oas-avatar color="geekblue">钱</oas-avatar>
+      <oas-avatar color="purple">孙</oas-avatar>
+    </oas-avatar-group>
+    <oas-button slot="action" size="small" type="primary">邀请成员</oas-button>
+  </oas-empty>
+</DemoBlock>
+
+<DemoBlock title="搜索无结果（默认插槽组合 oas-input）">
+  <oas-empty title="没有找到匹配的成员" icon="search">
+    <oas-input placeholder="换个关键词再试试" style="width: 240px; margin-top: var(--oas-space-2)"></oas-input>
+  </oas-empty>
+</DemoBlock>
+
 ## API
 
 ### oas-empty
