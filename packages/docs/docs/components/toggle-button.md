@@ -76,6 +76,18 @@ onMounted(() => {
   </oas-space>
 </DemoBlock>
 
+## 双态图标（icon-toggled）
+
+`icon-toggled` 指定按下态图标：按下时切换渲染该图标，抬起回落 `icon`（只设 `icon-toggled` 时未按下无图标）。与 `color` / `variant` / 纯图标形态正交；纯图标的可访问名兜底随生效图标切换（建议始终用 `aria-label` 提供稳定名称）：
+
+<DemoBlock title="双态图标（按下切换图标）">
+  <oas-space size="small">
+    <oas-toggle-button id="tb-icon-toggled" value="fav" icon="star" icon-toggled="heart">收藏</oas-toggle-button>
+    <oas-toggle-button value="fav-pressed" icon="star" icon-toggled="heart" pressed>收藏（按下）</oas-toggle-button>
+    <oas-toggle-button id="tb-icon-toggled-only" value="fav-only" icon="star" icon-toggled="heart" aria-label="收藏"></oas-toggle-button>
+  </oas-space>
+</DemoBlock>
+
 ## 选中色（color）
 
 `color` 按 ui-spec 统一协议解析：任意 CSS 色值（实底文字色按亮度自动取黑/白）优先；11 预设名（`magenta / red / volcano / orange / gold / lime / green / cyan / blue / geekblue / purple`）解析为 `--oas-preset-*` token（明暗主题自适应）；缺省主色。主题级批量定制走 CSS 变量 `--oas-toggle-color` / `--oas-toggle-on-color`：
@@ -148,6 +160,7 @@ onMounted(() => {
 | `color` | 选中色：预设名（--oas-preset-* token）或任意 CSS 色值（自动算文字色） | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `icon` | 图标（oas-icon 图标名）；无文本时纯图标等宽正方形 | `string` | — |
+| `icon-toggled` | 按下态图标（oas-icon 图标名）：按下时切换渲染该图标，抬起回落 icon（仅设 icon-toggled 时未按下无图标）；纯图标可访问名兜底随生效图标切换 | `string` | — |
 | `pressed` | 是否按下（受控） | `boolean` | — |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`；error 联动 aria-invalid | `string` | — |

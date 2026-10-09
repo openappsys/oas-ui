@@ -1079,6 +1079,8 @@ export class OASTableBase extends OASElement {
       'pagination',
       'page-size',
       'current',
+      // 外部数据分页总行数（服务端分页）：与 pagination/current/page-size 配合，见 externalTotal()
+      'total',
       'filter-values',
       'summary-scope',
       'show-header',
@@ -1760,6 +1762,20 @@ export class OASTableBase extends OASElement {
   }
 
   /**
+   * 外部数据分页总行数（`total` 属性，服务端分页场景）：带合法非负数字时生效——`data` 视为
+   * 宿主已切好的当前页数据，组件不再内部分页切片，总数直通分页器（页数按 total/pageSize 推导，
+   * 越界 current 同样钳制写回）。排序/列过滤仍作用于当前页数据（服务端排序/过滤由宿主监听
+   * oas-sort-change / oas-filter-change 自行处理）。返回 null = 未启用外部总数（内部切片模式）：
+   * 属性缺席、空串、非数字或负数一律回落。
+   */
+  private externalTotal(): number | null {
+    const raw = this.getAttr('total', '').trim()
+    if (raw === '') return null
+    const n = Number(raw)
+    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null
+  }
+
+  /**
    * 过滤 + 分页切片（update 与虚拟滚动重建共用——孪生路径必须同口径）：
    * 顶层行先过滤（filter-values），分页开启时先全局排序再切片当前页。
    * 返回分页元数据（renderPagination 用）与分页前完整集合（summary-scope=all 用）。
@@ -1784,7 +1800,9 @@ export class OASTableBase extends OASElement {
     const paginationOn = this.hasAttr('pagination')
     const pageSize = Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
     let current = Math.max(1, Number(this.getAttr('current', '1')) || 1)
-    const total = roots.length
+    // 外部总数（服务端分页）：total 属性在场时 data 已是当前页切片，总数不走 data 长度
+    const externalTotal = this.externalTotal()
+    const total = externalTotal ?? roots.length
     if (paginationOn) {
       const pageCount = Math.max(1, Math.ceil(total / pageSize))
       if (current > pageCount) {
@@ -1797,8 +1815,13 @@ export class OASTableBase extends OASElement {
         const tm = this.columnTypeMap()
         sorted.sort((a, b) => this.compareRows(a, b, sorts, tm))
       }
-      const start = (current - 1) * pageSize
-      roots = sorted.slice(start, start + pageSize)
+      // 内部切片模式：全局排序后取当前页；外部总数模式：宿主已切片，只排序不再切片
+      if (externalTotal === null) {
+        const start = (current - 1) * pageSize
+        roots = sorted.slice(start, start + pageSize)
+      } else {
+        roots = sorted
+      }
     }
     return { roots, fullRoots, current, pageSize, total, paginationOn }
   }

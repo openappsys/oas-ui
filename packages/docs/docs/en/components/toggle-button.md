@@ -76,6 +76,18 @@ onMounted(() => {
   </oas-space>
 </DemoBlock>
 
+## Two-state icon (icon-toggled)
+
+`icon-toggled` sets the pressed-state icon: while pressed that icon is rendered instead; on release it falls back to `icon` (with only `icon-toggled` set, nothing renders while unpressed). Orthogonal to `color` / `variant` / the icon-only form; the icon-only accessible-name fallback follows the active icon (prefer a stable `aria-label`):
+
+<DemoBlock title="Two-state icon (icon swaps when pressed)">
+  <oas-space size="small">
+    <oas-toggle-button id="tb-icon-toggled" value="fav" icon="star" icon-toggled="heart">Favorite</oas-toggle-button>
+    <oas-toggle-button value="fav-pressed" icon="star" icon-toggled="heart" pressed>Favorite (pressed)</oas-toggle-button>
+    <oas-toggle-button id="tb-icon-toggled-only" value="fav-only" icon="star" icon-toggled="heart" aria-label="Favorite"></oas-toggle-button>
+  </oas-space>
+</DemoBlock>
+
 ## Selection Color (color)
 
 `color` follows the unified ui-spec protocol: any CSS color value (text color auto black/white by luminance) takes precedence; the 11 preset names (`magenta / red / volcano / orange / gold / lime / green / cyan / blue / geekblue / purple`) resolve to `--oas-preset-*` tokens (light/dark adaptive); default is the primary color. Theme-level batch customization goes through the CSS variables `--oas-toggle-color` / `--oas-toggle-on-color`:
@@ -148,6 +160,7 @@ The `variant` dimension (aligned with the `oas-button` variant system, restricte
 | `color` | Selected color: preset name (--oas-preset-* token) or any CSS color (auto text color) | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `icon` | Icon (oas-icon name); icon-only renders an equal square | `string` | — |
+| `icon-toggled` | Pressed-state icon (oas-icon name): rendered while pressed, falls back to icon on release (with only icon-toggled set, nothing renders while unpressed); the icon-only accessible-name fallback follows the active icon | `string` | — |
 | `pressed` | Whether pressed (controlled) | `boolean` | — |
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid | `string` | — |

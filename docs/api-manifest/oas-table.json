@@ -135,6 +135,12 @@
       "observed": true
     },
     {
+      "name": "total",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "filter-values",
       "type": "string",
       "default": "",

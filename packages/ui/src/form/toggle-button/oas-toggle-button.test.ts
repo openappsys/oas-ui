@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { lookupIcon } from '@oas-ui/icons/runtime'
 import { OASToggleButton } from './index.js'
 import '../../framework/config-provider/index.js'
 
@@ -166,6 +167,78 @@ describe('OASToggleButton 图标（icon / icon-only）', () => {
     const css = mount().shadowRoot!.querySelector('style')!.textContent ?? ''
     expect(css).toMatch(/button\.icon-only\s*{[^}]*aspect-ratio:\s*1/)
     expect(css).toMatch(/button\.has-icon\s*{[^}]*gap/)
+  })
+})
+
+describe('OASToggleButton 双态图标（icon-toggled）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 带文本内容挂载（textContent 经 appendChild 设置，同上方图标 describe 的辅助） */
+  function mountText(text: string, attrs: Record<string, string> = {}): OASToggleButton {
+    const el = new OASToggleButton()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.textContent = text
+    document.body.appendChild(el)
+    return el
+  }
+
+  /** 图标 path 的 d 属性（innerHTML 序列化自闭合差异大，取 d 属性比对最稳） */
+  function iconD(el: OASToggleButton): string | undefined {
+    return btn(el).querySelector('.icon svg path')?.getAttribute('d') ?? undefined
+  }
+  /** lookupIcon 原串里的 d 属性值 */
+  function dOf(name: string): string {
+    return lookupIcon(name)!.match(/d="([^"]+)"/)![1]!
+  }
+
+  it('进 observedAttributes', () => {
+    expect(OASToggleButton.observedAttributes).toContain('icon-toggled')
+  })
+
+  it('未按下渲染 icon；按下后切换为 icon-toggled 图标（内容真切换）', () => {
+    const el = mountText('收藏', { icon: 'star', 'icon-toggled': 'heart' })
+    expect(iconD(el)).toBe(dOf('star'))
+    el.setAttribute('pressed', '')
+    expect(iconD(el)).toBe(dOf('heart'))
+  })
+
+  it('点击切换时图标随 pressed 双向切换', () => {
+    const el = mountText('收藏', { icon: 'star', 'icon-toggled': 'heart' })
+    btn(el).click()
+    expect(iconD(el)).toBe(dOf('heart'))
+    btn(el).click()
+    expect(iconD(el)).toBe(dOf('star'))
+  })
+
+  it('仅 icon-toggled：未按下无图标，按下渲染 toggled 图标', () => {
+    const el = mountText('', { 'icon-toggled': 'heart' })
+    expect(btn(el).querySelector('.icon svg')).toBeNull()
+    el.setAttribute('pressed', '')
+    expect(iconD(el)).toBe(dOf('heart'))
+  })
+
+  it('纯图标按下态 aria-label 兜底取 icon-toggled 名', () => {
+    const el = mountText('', { icon: 'star', 'icon-toggled': 'heart' })
+    expect(btn(el).getAttribute('aria-label')).toBe('star')
+    el.setAttribute('pressed', '')
+    expect(btn(el).getAttribute('aria-label')).toBe('heart')
+  })
+
+  it('宿主 aria-label 始终优先于双态图标名兜底', () => {
+    const el = mountText('', { icon: 'star', 'icon-toggled': 'heart', 'aria-label': '收藏' })
+    el.setAttribute('pressed', '')
+    expect(btn(el).getAttribute('aria-label')).toBe('收藏')
+  })
+
+  it('icon-toggled 非法图标名：按下时不渲染图标（同 icon 非法行为一致）', () => {
+    const el = mountText('', { icon: 'star', 'icon-toggled': 'not-exist' })
+    el.setAttribute('pressed', '')
+    expect(btn(el).querySelector('.icon svg')).toBeNull()
   })
 })
 
