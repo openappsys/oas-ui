@@ -1528,3 +1528,49 @@ test('table 子元素通道 + 列内模板 + 真实列宽拖拽：不崩表（�
   expect(r.childWidth, '宽度落到声明源（子元素 width attribute）').toMatch(/^\d+px$/)
   expect(r.childWidth, '宽度随拖拽更新（不再是初始 120px）').not.toBe('120px')
 })
+
+test('table 外部数据分页（total）：data 视为当前页不内部切片，真点翻页由宿主换数据（demo 可见反馈）', async ({
+  page,
+}) => {
+  // 缺陷防线：total 在场时组件若仍走内部分页切片，会把宿主给的当前页数据重新切片/钳行，
+  // 服务端分页场景下页数与数据双重错位；此处以 demo（#table-total，total=47）真点翻页固化。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-total')
+  await page.locator('#table-total').scrollIntoViewIfNeeded()
+
+  const state = () =>
+    page.evaluate(() => {
+      const host = document.querySelector('#table-total') as HTMLElement
+      const pag = host.shadowRoot!.querySelector('.pagination oas-pagination') as HTMLElement | null
+      const firstCell = host.shadowRoot!.querySelector('tbody td')?.textContent ?? null
+      return {
+        total: pag?.getAttribute('total') ?? null,
+        current: host.getAttribute('current'),
+        rows: host.shadowRoot!.querySelectorAll('tbody tr').length,
+        firstCell,
+        feedback: document.querySelector('#table-total-page')?.textContent ?? null,
+      }
+    })
+
+  const s0 = await state()
+  expect(s0.total, 'total 直通内层分页器').toBe('47')
+  expect(s0.current, '初始 current=1').toBe('1')
+  expect(s0.rows, '宿主当前页切片原样渲染（5 行）').toBe(5)
+  expect(s0.firstCell, '第 1 页首格为服务端第 1 条').toBe('1')
+  expect(s0.feedback, 'demo 反馈显示当前页').toBe('1')
+
+  // 真点内层分页器的下一页（嵌套两层 shadow，DOM click 走真实事件流）
+  await page.evaluate(() => {
+    const host = document.querySelector('#table-total') as HTMLElement
+    const pag = host.shadowRoot!.querySelector('.pagination oas-pagination') as HTMLElement
+    ;(pag.shadowRoot!.querySelector('[part="next"]') as HTMLElement).click()
+  })
+  // 等 demo 宿主 oas-page-change 换数据后重渲染
+  await page.waitForFunction(() => document.querySelector('#table-total')!.getAttribute('current') === '2')
+  const s1 = await state()
+  expect(s1.current, '翻页写回 current').toBe('2')
+  expect(s1.rows, '第 2 页仍 5 行（宿主换的数据，组件未切片改写）').toBe(5)
+  expect(s1.firstCell, '第 2 页首格为服务端第 6 条（数据真的换了）').toBe('6')
+  expect(s1.feedback, 'demo 反馈同步为 2').toBe('2')
+  expect(s1.total, '翻页后 total 仍 47').toBe('47')
+})

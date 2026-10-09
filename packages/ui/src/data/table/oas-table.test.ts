@@ -1723,6 +1723,96 @@ describe('OASTable 分页（pagination）', () => {
   })
 })
 
+describe('OASTable 外部数据分页（total）', () => {
+  const T_COLS = JSON.stringify([
+    { key: 'id', title: 'ID' },
+    { key: 'name', title: '姓名' },
+  ])
+  // 模拟服务端返回的当前页切片：每页 5 条时第 2 页只有 2 行（总 12 条）
+  const serverPage = (page: number, size: number, total: number) =>
+    JSON.stringify(
+      Array.from({ length: Math.min(size, Math.max(0, total - (page - 1) * size)) }, (_, i) => ({
+        id: (page - 1) * size + i + 1,
+        name: `n${(page - 1) * size + i}`,
+      })),
+    )
+
+  it('total 进 observedAttributes', () => {
+    expect(OASTable.observedAttributes).toContain('total')
+  })
+
+  it('外部 total：data 视为当前页切片（不内部切片），总数直通分页器', () => {
+    // data 只有尾页 2 行但 total=47：分页器按 47 显示页数，data 不再被切片/填充
+    const el = mount({
+      columns: T_COLS,
+      data: serverPage(10, 5, 47),
+      pagination: '',
+      'page-size': '5',
+      total: '47',
+      current: '10',
+    })
+    expect(rows(el).length).toBe(2)
+    expect(rows(el)[0]!.textContent).toContain('n45')
+    const pag = el.shadowRoot!.querySelector('.pagination oas-pagination')!
+    expect(pag.getAttribute('total')).toBe('47')
+    expect(pag.getAttribute('page-size')).toBe('5')
+    expect(pag.getAttribute('current')).toBe('10')
+  })
+
+  it('外部 total 翻页：写回 current + 派发 page-change，数据由宿主换（组件不切片）', () => {
+    const el = mount({ columns: T_COLS, data: serverPage(1, 5, 47), pagination: '', 'page-size': '5', total: '47' })
+    let detail: unknown
+    let servedData = ''
+    el.addEventListener('oas-page-change', (e: Event) => {
+      detail = (e as CustomEvent).detail
+      // 宿主模拟服务端换页：写回当前页数据
+      servedData = serverPage((detail as { page: number }).page, 5, 47)
+      el.setAttribute('data', servedData)
+    })
+    const pag = el.shadowRoot!.querySelector('.pagination oas-pagination')!
+    pag.dispatchEvent(new CustomEvent('oas-change', { detail: { page: 2 }, bubbles: true }))
+    expect(el.getAttribute('current')).toBe('2')
+    expect(detail).toEqual({ page: 2, pageSize: 5 })
+    expect(rows(el).length).toBe(5)
+    expect(rows(el)[0]!.textContent).toContain('n5')
+  })
+
+  it('外部 total + 越界 current：按 total 推导页数钳制并写回', () => {
+    // total=12 / pageSize=5 → 3 页；current=9 越界钳到 3
+    const el = mount({
+      columns: T_COLS,
+      data: serverPage(9, 5, 12),
+      pagination: '',
+      'page-size': '5',
+      total: '12',
+      current: '9',
+    })
+    expect(el.getAttribute('current')).toBe('3')
+  })
+
+  it('外部 total=0（服务端空集）：渲染空态 + 分页器 total=0', () => {
+    const el = mount({ columns: T_COLS, data: '[]', pagination: '', 'page-size': '5', total: '0' })
+    expect(el.shadowRoot!.querySelector('tbody .empty')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('.pagination oas-pagination')!.getAttribute('total')).toBe('0')
+  })
+
+  it('total 非法值（非数字/负数）：忽略并回落内部切片模式（回归保护）', () => {
+    const data = JSON.stringify(Array.from({ length: 12 }, (_, i) => ({ id: i + 1, name: `n${i}` })))
+    for (const bad of ['abc', '-3', ' ']) {
+      const el = mount({ columns: T_COLS, data, pagination: '', 'page-size': '5', total: bad })
+      expect(rows(el).length, `total="${bad}" 应回落内部切片为 5 行`).toBe(5)
+      expect(el.shadowRoot!.querySelector('.pagination oas-pagination')!.getAttribute('total')).toBe('12')
+    }
+  })
+
+  it('未设 total：内部切片行为不变（回归保护）', () => {
+    const data = JSON.stringify(Array.from({ length: 12 }, (_, i) => ({ id: i + 1, name: `n${i}` })))
+    const el = mount({ columns: T_COLS, data, pagination: '', 'page-size': '5' })
+    expect(rows(el).length).toBe(5)
+    expect(el.shadowRoot!.querySelector('.pagination oas-pagination')!.getAttribute('total')).toBe('12')
+  })
+})
+
 describe('OASTable 列过滤（filter）', () => {
   const FILTER_COLS = JSON.stringify([
     {

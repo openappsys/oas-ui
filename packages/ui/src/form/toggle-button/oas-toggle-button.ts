@@ -212,7 +212,19 @@ button.icon-only {
 
 export class OASToggleButton extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'pressed', 'disabled', 'disabled-skip', 'size', 'icon', 'color', 'status', 'variant', 'aria-label']
+    return [
+      'value',
+      'pressed',
+      'disabled',
+      'disabled-skip',
+      'size',
+      'icon',
+      'icon-toggled',
+      'color',
+      'status',
+      'variant',
+      'aria-label',
+    ]
   }
 
   private btn: HTMLButtonElement | null = null
@@ -298,11 +310,14 @@ export class OASToggleButton extends OASElement {
     }
   }
 
-  /** 图标渲染与可访问名称：宿主 aria-label 优先；纯图标（无文字）时以图标名兜底 */
+  /** 图标渲染与可访问名称：宿主 aria-label 优先；纯图标（无文字）时以图标名兜底。
+   *  双态图标：按下态优先用 `icon-toggled`（未设或未按下回落 `icon`；非法名同 icon 不渲染） */
   private syncIcon(): void {
     const btn = this.btn
     if (!btn) return
-    const icon = this.getAttr('icon', '')
+    const pressed = this.hasAttr('pressed')
+    const toggled = this.getAttr('icon-toggled', '')
+    const icon = pressed && toggled ? toggled : this.getAttr('icon', '')
     const content = icon ? lookupIcon(icon) : undefined
     const hasIcon = content !== undefined
     const hasText = (this.textContent ?? '').trim().length > 0

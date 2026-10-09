@@ -163,3 +163,32 @@ test('toggle-button 全局禁用注入：provider disabled 继承禁用 + disabl
   expect(r.clicked, 'provider disabled 时点击不派发 oas-change').toBe(false)
   expect(r.after, 'provider 移除 disabled → 恢复可用').toBe(false)
 })
+
+// ---- 双态图标（icon-toggled）批次：真点切换时按下态图标真切换（可见反馈 = 图标字形变化）----
+
+test('toggle-button icon-toggled：真点按下渲染 toggled 图标、抬起回落 icon（aria 随行）', async ({ page }) => {
+  await page.goto('/components/toggle-button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tb-icon-toggled')
+  await page.locator('#tb-icon-toggled').scrollIntoViewIfNeeded()
+  const state = () =>
+    page.evaluate(() => {
+      const host = document.querySelector('#tb-icon-toggled') as HTMLElement
+      const d = host.shadowRoot!.querySelector('.icon svg path')?.getAttribute('d') ?? null
+      const btn = host.shadowRoot!.querySelector('button')!
+      return { d, pressed: host.hasAttribute('pressed'), ariaPressed: btn.getAttribute('aria-pressed') }
+    })
+  const s0 = await state()
+  expect(s0.pressed, '初始未按下').toBe(false)
+  expect(s0.d, '未按下渲染 icon 图标').toBeTruthy()
+
+  await page.locator('#tb-icon-toggled').click()
+  const s1 = await state()
+  expect(s1.pressed, '点击后按下').toBe(true)
+  expect(s1.ariaPressed, 'aria-pressed 同步').toBe('true')
+  expect(s1.d, '按下后图标字形真切换（≠ 未按下图标）').not.toBe(s0.d)
+
+  await page.locator('#tb-icon-toggled').click()
+  const s2 = await state()
+  expect(s2.pressed, '再点抬起').toBe(false)
+  expect(s2.d, '抬起回落 icon 图标').toBe(s0.d)
+})

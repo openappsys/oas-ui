@@ -30,6 +30,12 @@
       "observed": true
     },
     {
+      "name": "icon-toggled",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "color",
       "type": "string",
       "default": "",

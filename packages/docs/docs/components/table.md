@@ -412,6 +412,17 @@
   </div>
 </DemoBlock>
 
+## 外部数据分页（total）
+
+<DemoBlock title="服务端分页（total + 受控 current，宿主换页数据）">
+  <div style="width: 100%">
+    <oas-table id="table-total" pagination page-size="5" total="47" current="1" row-key="id" columns='[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"姓名"},{"key":"age","title":"年龄"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      设置 `total` 声明总行数：`data` 只放当前页切片（组件不再内部分页），翻页/改页大小派发 `oas-page-change` 由宿主拉取对应页数据（本 demo 用本地数据模拟服务端切片）。当前页：<span id="table-total-page">1</span> · 已加载页数据行数：<span id="table-total-rows">—</span>
+    </p>
+  </div>
+</DemoBlock>
+
 ## 列过滤
 
 <DemoBlock title="表头列过滤（filterable + filter-values 受控）">
@@ -652,6 +663,25 @@ onMounted(() => {
   builtInPager?.addEventListener('oas-page-change', (e) => {
     document.querySelector('#table-pager-page').textContent = e.detail.page
   })
+
+  // 外部数据分页（total）：data 只放当前页切片，翻页由宿主换数据（模拟服务端）
+  const totalTable = document.querySelector('#table-total')
+  const TOTAL_ROWS = 47
+  const loadTotalPage = (page, size = 5) => {
+    const start = (page - 1) * size
+    const rows = Array.from({ length: Math.max(0, Math.min(size, TOTAL_ROWS - start)) }, (_, i) => ({
+      id: start + i + 1,
+      name: `员工${start + i + 1}`,
+      age: 22 + ((start + i) % 20),
+    }))
+    totalTable?.setAttribute('data', JSON.stringify(rows))
+    const pageEl = document.querySelector('#table-total-page')
+    const rowsEl = document.querySelector('#table-total-rows')
+    if (pageEl) pageEl.textContent = String(page)
+    if (rowsEl) rowsEl.textContent = String(rows.length)
+  }
+  totalTable?.addEventListener('oas-page-change', (e) => loadTotalPage(e.detail.page, e.detail.pageSize))
+  loadTotalPage(1)
 
   // 列过滤：当前过滤值反馈（含初始预置值渲染 + 清空按钮）
   const filterTable = document.querySelector('#table-filter')
@@ -977,6 +1007,7 @@ onMounted(() => {
 | `summary` | 合计配置 `[{ key, type: 'sum'\|'avg'\|'count', label? }]`，JSON 字符串 | `string` | — |
 | `summary-scope` | 合计行聚合范围：`all`（默认，全量数据）/ `page`（当前页） | `string` | `all` |
 | `table-layout` | 透传表格布局算法（fixed 时列宽严格按 width 声明） | `string` | — |
+| `total` | 外部数据分页总行数（服务端分页）：与 pagination/current/page-size 配合，`data` 只放当前页切片（组件不再内部分页），总数直通分页器；翻页派发 oas-page-change 由宿主换数据；属性缺席或非法值回落内部分页 | `string` | — |
 
 #### 事件
 

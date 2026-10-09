@@ -412,6 +412,17 @@ A column with `serialNumber: true` renders the row number (starting from 1, not 
   </div>
 </DemoBlock>
 
+## External data pagination (total)
+
+<DemoBlock title="Server-side pagination (total + controlled current, host swaps data)">
+  <div style="width: 100%">
+    <oas-table id="table-total" pagination page-size="5" total="47" current="1" row-key="id" columns='[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"Name"},{"key":"age","title":"Age"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      Setting `total` declares the total row count: `data` holds only the current page slice (no internal slicing); page / page-size changes fire `oas-page-change` and the host fetches that page (this demo simulates server slicing with local data). Current page: <span id="table-total-page">1</span> · rows in loaded page: <span id="table-total-rows">—</span>
+    </p>
+  </div>
+</DemoBlock>
+
 ## Column filter
 
 <DemoBlock title="Column filter (filterable + filter-values controlled)">
@@ -656,6 +667,25 @@ onMounted(() => {
   builtInPager?.addEventListener('oas-page-change', (e) => {
     document.querySelector('#table-pager-page').textContent = e.detail.page
   })
+
+  // External data pagination (total): data holds only the current page slice, host swaps data on page turn (simulated server)
+  const totalTable = document.querySelector('#table-total')
+  const TOTAL_ROWS = 47
+  const loadTotalPage = (page, size = 5) => {
+    const start = (page - 1) * size
+    const rows = Array.from({ length: Math.max(0, Math.min(size, TOTAL_ROWS - start)) }, (_, i) => ({
+      id: start + i + 1,
+      name: `Member ${start + i + 1}`,
+      age: 22 + ((start + i) % 20),
+    }))
+    totalTable?.setAttribute('data', JSON.stringify(rows))
+    const pageEl = document.querySelector('#table-total-page')
+    const rowsEl = document.querySelector('#table-total-rows')
+    if (pageEl) pageEl.textContent = String(page)
+    if (rowsEl) rowsEl.textContent = String(rows.length)
+  }
+  totalTable?.addEventListener('oas-page-change', (e) => loadTotalPage(e.detail.page, e.detail.pageSize))
+  loadTotalPage(1)
 
   // Column filter: current filter feedback (renders the initial preset too + clear button)
   const filterTable = document.querySelector('#table-filter')
@@ -981,6 +1011,7 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 | `summary` | Summary config `[{ key, type: 'sum'\|'avg'\|'count', label? }]`, JSON string | `string` | — |
 | `summary-scope` | Summary aggregation scope: `all` (default, full dataset) / `page` (current page) | `string` | `all` |
 | `table-layout` | Passes the table layout algorithm through (with `fixed`, column widths strictly follow `width`) | `string` | — |
+| `total` | Total row count for external (server-side) pagination: pairs with pagination/current/page-size — `data` holds only the current page slice (no internal slicing) and the total feeds the pager directly; page turns emit oas-page-change for the host to swap data; absent or invalid values fall back to internal pagination | `string` | — |
 
 #### Events
 
