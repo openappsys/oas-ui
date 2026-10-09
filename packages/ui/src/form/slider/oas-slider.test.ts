@@ -1491,3 +1491,285 @@ describe('OASSlider value property（get/set）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+describe('OASSlider 数值 scrub（读数区像素锚定计步）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function numInput(el: OASSlider): HTMLInputElement {
+    return el.shadowRoot!.querySelector<HTMLInputElement>('[data-role="num"]')!
+  }
+
+  function pointer(type: string, x: number, id = 1, mods: { shift?: boolean; alt?: boolean } = {}): PointerEvent {
+    return new PointerEvent(type, {
+      clientX: x,
+      pointerId: id,
+      bubbles: true,
+      cancelable: true,
+      shiftKey: !!mods.shift,
+      altKey: !!mods.alt,
+    })
+  }
+
+  it('横移每 4px 计一步：拖 +16px（step=1）→ 值 +4，过程派发 oas-input', () => {
+    const el = mount({ value: '10', min: '0', max: '100', step: '1', 'show-input': '' })
+    const inputs: number[] = []
+    el.addEventListener('oas-input', (e) => inputs.push((e as CustomEvent).detail.value))
+    numInput(el).dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 116))
+    expect(el.value).toBe(14)
+    expect(inputs.length).toBeGreaterThan(0)
+    window.dispatchEvent(pointer('pointerup', 116))
+    // 松手提交：派发 oas-change
+    let changed = 0
+    el.addEventListener('oas-change', () => changed++)
+    numInput(el).dispatchEvent(pointer('pointerdown', 116))
+    window.dispatchEvent(pointer('pointermove', 120))
+    window.dispatchEvent(pointer('pointerup', 120))
+    expect(el.value).toBe(15)
+    expect(changed).toBe(1)
+  })
+
+  it('位移不足 4px 不激活：按普通点击处理（值不变、无事件）', () => {
+    const el = mount({ value: '10', 'show-input': '' })
+    let fired = 0
+    el.addEventListener('oas-input', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    numInput(el).dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 102))
+    window.dispatchEvent(pointer('pointerup', 102))
+    expect(el.value).toBe(10)
+    expect(fired).toBe(0)
+  })
+
+  it('拖回锚点精确恢复基准值', () => {
+    const el = mount({ value: '30', 'show-input': '' })
+    numInput(el).dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 120))
+    expect(el.value).toBe(35)
+    window.dispatchEvent(pointer('pointermove', 100))
+    expect(el.value).toBe(30)
+    window.dispatchEvent(pointer('pointerup', 100))
+    // 值未变：松手不派发 change
+    let changed = 0
+    el.addEventListener('oas-change', () => changed++)
+    expect(changed).toBe(0)
+  })
+
+  it('Shift 精调（×0.2）、Alt 超精调（×0.04），与 knob 口径一致', () => {
+    const el = mount({ value: '10', step: '1', 'show-input': '' })
+    numInput(el).dispatchEvent(pointer('pointerdown', 100))
+    // 20px = 5 步 × 0.2 = +1
+    window.dispatchEvent(pointer('pointermove', 120, 1, { shift: true }))
+    expect(el.value).toBe(11)
+    window.dispatchEvent(pointer('pointerup', 120, 1, { shift: true }))
+  })
+
+  it('无 precision 时浮点尾巴自动收敛：step=0.1 拖 3 步值通道干净（0.3 而非 0.30000000000000004）', () => {
+    const el = mount({ value: '0', min: '0', max: '1', step: '0.1', 'show-input': '' })
+    const changes: number[] = []
+    el.addEventListener('oas-change', (e) => changes.push((e as CustomEvent).detail.value as number))
+    numInput(el).dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 112))
+    expect(el.value).toBe(0.3)
+    window.dispatchEvent(pointer('pointerup', 112))
+    expect(changes).toEqual([0.3])
+  })
+
+  it('step="mark" 模式 scrub 值吸附最近刻度（thumb 与 value 属性同步吸附，无脏档漂移）', () => {
+    const el = mount({
+      value: '26',
+      min: '0',
+      max: '60',
+      step: 'mark',
+      marks: '[0,26,60]',
+      'show-input': '',
+    })
+    numInput(el).dispatchEvent(pointer('pointerdown', 100))
+    // 16 步 → 26+16=42（档位外）：吸附语义下最近档为 26（|42-26|=16 < |42-60|=18）
+    window.dispatchEvent(pointer('pointermove', 164))
+    expect(el.value).toBe(26)
+    // value 属性与 getter 同源（表单序列化/宿主 attribute 读不得拿到档位外的脏值）
+    expect(el.getAttribute('value')).toBe('26')
+    window.dispatchEvent(pointer('pointerup', 164))
+    expect(el.getAttribute('value')).toBe('26')
+  })
+
+  it('scrub 中读数框带 data-scrubbing，松手移除', () => {
+    const el = mount({ value: '10', 'show-input': '' })
+    const num = numInput(el)
+    num.dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 116))
+    expect(num.hasAttribute('data-scrubbing')).toBe(true)
+    window.dispatchEvent(pointer('pointerup', 116))
+    expect(num.hasAttribute('data-scrubbing')).toBe(false)
+  })
+
+  it('scrub="false" 关闭（读数区拖动不写值）', () => {
+    const el = mount({ value: '10', 'show-input': '', scrub: 'false' })
+    numInput(el).dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 120))
+    window.dispatchEvent(pointer('pointerup', 120))
+    expect(el.value).toBe(10)
+  })
+
+  it('min/max 夹取', () => {
+    const el = mount({ value: '98', min: '0', max: '100', 'show-input': '' })
+    numInput(el).dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 200))
+    expect(el.value).toBe(100)
+    window.dispatchEvent(pointer('pointerup', 200))
+  })
+
+  it('多把手（range）scrub 各读数框独立生效', () => {
+    const el = mount({ range: '', value: '[20, 80]', min: '0', max: '100', 'show-input': '' })
+    const minNum = el.shadowRoot!.querySelector<HTMLInputElement>('[data-role="num-min"]')!
+    minNum.dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 116))
+    expect((el.value as number[])[0]).toBe(24)
+    window.dispatchEvent(pointer('pointerup', 116))
+  })
+
+  it('断连重连后读数 scrub 不失效（scrub 状态随断连复位，防早退守卫恒真）', () => {
+    const el = mount({ value: '10', min: '0', max: '100', 'show-input': '' })
+    const num = numInput(el)
+    // 按下后未松手即断连（re-parent/路由摘挂）——cleanup 摘监听并复位状态
+    num.dispatchEvent(pointer('pointerdown', 100))
+    el.remove()
+    document.body.appendChild(el)
+    // 重连后同一 readout 仍可 scrub（未复位则 beginNumScrub 早退、值不变）
+    num.dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 120))
+    expect(el.value).toBe(15)
+    window.dispatchEvent(pointer('pointerup', 120))
+  })
+})
+
+describe('OASSlider 双击复位（reset-value）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function dblclickTrack(el: OASSlider): void {
+    el.shadowRoot!.querySelector<HTMLElement>('[part="track-wrap"]')!.dispatchEvent(
+      new MouseEvent('dblclick', { bubbles: true }),
+    )
+  }
+
+  it('双击轨道复位到 reset-value，派发 oas-input + oas-change', () => {
+    const el = mount({ value: '70', min: '0', max: '100', 'reset-value': '25' })
+    const events: string[] = []
+    el.addEventListener('oas-input', () => events.push('input'))
+    el.addEventListener('oas-change', () => events.push('change'))
+    dblclickTrack(el)
+    expect(el.value).toBe(25)
+    expect(events).toEqual(['input', 'change'])
+  })
+
+  it('未设 reset-value 回落 min', () => {
+    const el = mount({ value: '70', min: '10', max: '100' })
+    dblclickTrack(el)
+    expect(el.value).toBe(10)
+  })
+
+  it('多把手（range）不响应双击复位（区间无单一复位语义）', () => {
+    const el = mount({ range: '', value: '[20, 80]', 'reset-value': '50' })
+    dblclickTrack(el)
+    expect(el.value).toEqual([20, 80])
+  })
+
+  it('disabled / readonly 下双击复位被拦截', () => {
+    const a = mount({ value: '70', 'reset-value': '25', disabled: '' })
+    dblclickTrack(a)
+    expect(a.value).toBe(70)
+    const b = mount({ value: '70', 'reset-value': '25', readonly: '' })
+    dblclickTrack(b)
+    expect(b.value).toBe(70)
+  })
+
+  it('step="mark" 模式复位值吸附最近刻度', () => {
+    const el = mount({
+      value: '70',
+      step: 'mark',
+      marks: '{"0":"XS","30":"S","60":"M","100":"XL"}',
+      'reset-value': '28',
+    })
+    dblclickTrack(el)
+    expect(el.value).toBe(30)
+  })
+})
+
+describe('OASSlider 专业属性（precision / value-width / accent-color / show-track）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('precision：无 format 通道时气泡与 aria-valuetext 按精度修约显示', () => {
+    const el = mount({ value: '0.30000000000000004', precision: '2', 'show-tooltip': '' })
+    const tip = el.shadowRoot!.querySelector<HTMLElement>('.thumb-tip')!
+    expect(tip.textContent).toBe('0.3')
+    expect(range(el).getAttribute('aria-valuetext')).toBe('0.3')
+  })
+
+  it('precision 不覆盖 format 模板串（format 优先）', () => {
+    const el = mount({ value: '0.30000000000000004', precision: '2', format: '${value}%', 'show-tooltip': '' })
+    const tip = el.shadowRoot!.querySelector<HTMLElement>('.thumb-tip')!
+    expect(tip.textContent).toBe('0.30000000000000004%')
+  })
+
+  it('value-width：数字补 px 写入宿主 CSS 变量；移除属性时清除', () => {
+    const el = mount({ 'value-width': '120' })
+    expect(el.style.getPropertyValue('--oas-slider-value-width')).toBe('120px')
+    el.removeAttribute('value-width')
+    expect(el.style.getPropertyValue('--oas-slider-value-width')).toBe('')
+  })
+
+  it('value-width 接受带单位值原样透传', () => {
+    const el = mount({ 'value-width': '8em' })
+    expect(el.style.getPropertyValue('--oas-slider-value-width')).toBe('8em')
+  })
+
+  it('accent-color：预设语义色映射 token、任意值透传、空值清除', () => {
+    const el = mount({ 'accent-color': 'success' })
+    expect(el.style.getPropertyValue('--oas-slider-accent')).toBe('var(--oas-color-success)')
+    el.setAttribute('accent-color', '#ff5500')
+    expect(el.style.getPropertyValue('--oas-slider-accent')).toBe('#ff5500')
+    el.removeAttribute('accent-color')
+    expect(el.style.getPropertyValue('--oas-slider-accent')).toBe('')
+  })
+
+  it('show-track="false"：宿主镜像 data-track=false（CSS 隐藏轨道与填充）；未设置时不写 data-track（SSR 快照零漂移）', () => {
+    const el = mount({ 'show-track': 'false' })
+    expect(el.getAttribute('data-track')).toBe('false')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/:host\(\[data-track='false'\]\)\s+\.track-wrap::before/)
+    el.removeAttribute('show-track')
+    expect(el.hasAttribute('data-track')).toBe(false)
+  })
+
+  it('默认 show-track 开（不写 data-track，轨道可见）', () => {
+    const el = mount()
+    expect(el.hasAttribute('data-track')).toBe(false)
+  })
+
+  it('precision 超大值钳到 100 不抛 RangeError（toFixed 上限）', () => {
+    expect(() => {
+      const el = mount({ value: '1.5', precision: '101', 'show-tooltip': '' })
+      const tip = el.shadowRoot!.querySelector<HTMLElement>('.thumb-tip')!
+      expect(tip.textContent).toBe('1.5')
+    }).not.toThrow()
+  })
+})

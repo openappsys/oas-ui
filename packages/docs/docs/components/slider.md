@@ -64,7 +64,40 @@
   <oas-slider show-input min="0" max="100" value="40" style="width: 360px"></oas-slider>
 </DemoBlock>
 
-右侧数值输入框与滑块双向同步：拖动滑块实时更新输入框；输入数字后防抖 300ms 生效并自动夹取到 `min`/`max` 范围，Enter/失焦立即提交。
+右�数�输入框与滑块双向同步：拖动滑块实时更新输入框；输入数字后防抖 300ms 生效并自动夹取到 `min`/`max` 范围，Enter/失焦立即提交。
+
+## 指针微调与双击复位（scrub）
+
+<DemoBlock title="按住读数框横向拖动（scrub）+ 双击轨道复位">
+  <oas-slider id="slider-scrub" show-input min="0" max="100" step="1" value="30" reset-value="50" style="width: 360px"></oas-slider>
+  <span id="slider-scrub-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+  <oas-slider id="slider-mark-scrub" step="mark" marks="[0,26,60]" min="0" max="60" value="26" show-input style="width: 360px"></oas-slider>
+  <span id="slider-mark-scrub-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+  <oas-slider id="slider-float-scrub" show-input min="0" max="1" step="0.1" value="0.2" style="width: 360px"></oas-slider>
+  <span id="slider-float-scrub-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+</DemoBlock>
+
+读数区支持指针微调（scrub）：按住数值输入框横向拖动，每 4px 计一步（步长 = `step`），适合密集调参时不精确点按轨迹。修饰键与 knob 同一口径：**Shift 精调（×0.2）、Alt 超精调（×0.04）**，不引入加速档；拖回按下位置即恢复原值（误拖无损撤销）；位移不足一步视为普通点击（仍可聚焦键入）。拖动过程派发 `oas-input`，松手提交 `oas-change`。`step="mark"` 模式下 scrub 值实时吸附最近刻度（第二颗滑块，值恒在档位集合上）。
+
+双击轨道复位到 `reset-value`（未设置回落 `min`）；复位走完整提交链路（`oas-input` + `oas-change`），仅单值模式响应。触屏（coarse pointer）不启用 scrub（点按即聚焦键入优先）；需要完全关闭时设 `scrub="false"`。
+
+## 专业属性（precision / value-width / accent-color / show-track）
+
+<DemoBlock title="precision 修约 + value-width 读数宽度">
+  <oas-slider show-input precision="2" value-width="96" min="0" max="1" step="0.01" value="0.3" style="width: 380px"></oas-slider>
+</DemoBlock>
+
+<DemoBlock title="accent-color（scrub 强调色）+ show-track=&quot;false&quot;（轨道退场）">
+  <div style="display: flex; flex-direction: column; gap: 16px; width: 360px;">
+    <oas-slider show-input accent-color="success" value="40" style="width: 360px"></oas-slider>
+    <oas-slider show-track="false" value="60" style="width: 360px"></oas-slider>
+  </div>
+</DemoBlock>
+
+- `precision`：值的小数位，scrub 步进与气泡/`aria-valuetext` 按此修约；未设置时步进值按 `step`/修饰倍率的有效小数位自动收敛浮点尾巴（`0.1 + 0.2` 类实现误差不出现在值通道），显式设置是更严的值约束（如 `0` 时修饰键精调被钳回整数位），优先级低于 `format`/`formatTooltip` 格式化通道；
+- `value-width`：读数框宽度，纯数字按 px、带单位值原样透传（缺省 72px）；
+- `accent-color`：scrub 拖动中读数框的强调色，预设语义色名映射主题 token（随暗色主题）、其他值原样透传；
+- `show-track`：轨道显隐开关，`show-track="false"` 隐藏轨道条与选中填充（把手保留，仍可拖动与键盘操作），适合把滑块嵌进自定义容器只留把手的场景。
 
 ## 范围选择
 
@@ -240,6 +273,31 @@ onMounted(() => {
     fnEl.formatTooltip = (v) =>
       new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY', maximumFractionDigits: 0 }).format(v)
   }
+
+  // scrub / 双击复位 demo：实时反馈当前值（oas-input 过程值 / oas-change 提交值 / 复位提示）
+  const scrubEl = document.getElementById('slider-scrub')
+  const scrubOut = document.getElementById('slider-scrub-out')
+  if (scrubEl && scrubOut) {
+    scrubEl.addEventListener('oas-input', (e) => (scrubOut.textContent = `scrub 中：${e.detail.value}`))
+    scrubEl.addEventListener('oas-change', (e) => (scrubOut.textContent = `已提交：${e.detail.value}`))
+    scrubEl.addEventListener('oas-input', (e) => {
+      if (Number(e.detail.value) === 50) scrubOut.textContent = '已复位：50'
+    })
+  }
+
+  // mark + scrub demo：刻度吸附值回显（值恒在档位集合上）
+  const markScrubEl = document.getElementById('slider-mark-scrub')
+  const markScrubOut = document.getElementById('slider-mark-scrub-out')
+  if (markScrubEl && markScrubOut) {
+    markScrubEl.addEventListener('oas-change', (e) => (markScrubOut.textContent = `已提交：${e.detail.value}`))
+  }
+
+  // 小数步长 scrub demo：无 precision 时步进值同样干净（浮点尾巴自动收敛）
+  const floatScrubEl = document.getElementById('slider-float-scrub')
+  const floatScrubOut = document.getElementById('slider-float-scrub-out')
+  if (floatScrubEl && floatScrubOut) {
+    floatScrubEl.addEventListener('oas-change', (e) => (floatScrubOut.textContent = `已提交：${e.detail.value}`))
+  }
 })
 </script>
 
@@ -263,6 +321,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `accent-color` | 读数区 scrub 拖动中的强调色：预设语义色名（primary / success / warning / danger，随暗色主题）映射主题 token，其他值原样透传；缺省回落主题主色 | — | — |
 | `color` | 填充区/滑块/经过刻度颜色：预设语义色名（primary / success / warning / danger，随暗色主题）映射主题 token；其他值原样透传为 CSS 色值 | — | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `format` | 值气泡模板串：`${value}` 占位符替换为当前值（如 `"${value}%"`），不含占位符时原样显示；输出同时进气泡与 `aria-valuetext`；优先级低于 `formatTooltip` 函数 | `string` | — |
@@ -280,12 +339,16 @@ onMounted(() => {
 | `marks` | 刻度：JSON 对象 `{"0":"0°C"}`（值→标签）或 JSON 数组 `[0,26,60]`（也可为 `{"value":26,"label":"26°C"}`）；刻度点与标签显示在轨道下方，值经过处高亮；`reverse` 下位置镜像 | `string \| Record<string, string \| number> \| number[]` | — |
 | `max` | 范围 | `string` | `100` |
 | `min` | 范围 | `string` | `0` |
+| `precision` | 值的小数位（scrub 步进与气泡/aria-valuetext 显示按此修约；未设置时步进值按 step/修饰倍率的有效小数位自动收敛浮点尾巴，显式设置是更严的值约束）；优先级低于 format/formatTooltip 格式化通道 | `string` | — |
 | `range` | 范围模式：双滑块区间选择，`value` 为 JSON 数组 `[lo, hi]` 或逗号分隔字符串 `"lo,hi"`；拖动态互相钳制（lo ≤ hi），事件 `detail.value` 为数组 | `boolean` | — |
 | `readonly` | 只读（与 `disabled` 分立）：仍可聚焦、值仍参与表单收集，拖动与键盘改值被拦截，视觉不降饱和 | `boolean` | — |
+| `reset-value` | 双击轨道复位的目标值：未设置回落 min；自动夹取到 [min, max]，step="mark" 模式吸附最近刻度；仅单值模式响应（range/多把手忽略），复位派发 oas-input + oas-change | `string` | — |
 | `reverse` | 方向反转：水平模式最小值在右端（轨道 `dir="rtl"`），垂直模式最小值在上端；填充区/刻度/自定义滑块位置随之镜像 | `boolean` | — |
+| `scrub` | 读数区指针微调（scrub，默认开启）：按住读数框横向拖动，每 4px 计一步（步长 = step）；Shift 精调（×0.2）、Alt 超精调（×0.04，与 knob 口径一致，无加速档）；拖回按下位置恢复原值；位移不足一步视为普通点击（保留键入）；scrub="false" 关闭；触屏（coarse pointer）不启用 | `string` | `true` |
 | `show-input` | 右侧显示数值输入框，与滑块双向同步：拖动实时更新输入框；输入数字防抖 300ms 后生效并夹取到 `min`/`max`，Enter/失焦立即提交；范围模式显示 min/max 两个输入框（min 超过 max 时推着 max 移动） | `boolean` | — |
 | `show-stops` | 按 `step` 在轨道上渲染刻度点（无标签），经过处高亮；与 `marks` 同时存在时刻度以 marks 为准；刻度点超过 100 个时不渲染 | `boolean` | — |
 | `show-tooltip` | 滑块上方显示当前值气泡（拖动中临时显示，与 `custom-thumb` 共存） | `boolean` | — |
+| `show-track` | 轨道显隐开关（默认显示）；show-track="false" 隐藏轨道条与选中填充（把手保留，仍可拖动与键盘操作） | `string` | `true` |
 | `size` | 尺寸三档：sm / md / lg（也接受 small / medium / large 词表，支持 config-provider 注入），轨道高度与滑块直径联动；非法值回落 md | `string` | `medium` |
 | `start-point` | 单值模式填充起点（缺省从 `min` 端填充）：值大于起点向右延伸、小于向左延伸；自动夹取到 `[min, max]`；`range` 模式忽略 | `string` | — |
 | `step` | 步长；特殊值 `"mark"` 把可选值约束到 `marks` 刻度值集合（拖动/键盘/受控值吸附最近刻度，需搭配 `marks`，缺省回落 1） | `string` | `1` |
@@ -293,6 +356,7 @@ onMounted(() => {
 | `tooltip-position` | 值气泡方向：top / bottom / left / right；水平默认 top、垂直默认 right，非法值回落默认 | `string` | — |
 | `track-color` | 轨道底色：预设语义色名映射主题 token；其他值原样透传为 CSS 色值 | — | — |
 | `value` | 当前值（受控）：单值为数值字符串；`range` 模式为 JSON 数组 `[lo, hi]` 或逗号分隔字符串 `"lo,hi"`，交互后写回 JSON 数组字符串（表单收集可直接 `JSON.parse`） | `number \| number[]` | — |
+| `value-width` | show-input 读数框宽度：纯数字按 px、带单位值原样透传（写入 --oas-slider-value-width）；缺省 72px | `string` | — |
 | `vertical` | 垂直模式：轨道竖直（最小值在下，`reverse` 镜像到上）；刻度标签移到轨道右侧、值气泡默认朝右、show-input 输入框移到轨道下方；高度默认 200px，用 CSS 变量 `--oas-slider-height` 调整 | `boolean` | — |
 
 #### Property（仅 JS property，不反射 attribute）
@@ -319,10 +383,12 @@ onMounted(() => {
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
 | `--oas-glass-refraction` | 液态玻璃边缘折射滤镜（`data-glass` 生效，默认 none）；局部停用覆盖为**空值**（`--oas-glass-refraction: ;`）——不得用 `none`（与 button 态的 brightness() 混排会使整条 filter 声明非法） | `none` |
+| `--oas-slider-accent` | — | `var(--oas-color-primary)` |
 | `--oas-slider-color` | — | `var(--oas-color-primary)` |
 | `--oas-slider-height` | — | `200px` |
 | `--oas-slider-thumb-size` | — | `14px` |
 | `--oas-slider-track` | — | `var(--oas-color-border)` |
 | `--oas-slider-track-size` | — | `4px` |
+| `--oas-slider-value-width` | — | `72px` |
 
 `marks` 支持 JS property 通道（对象/数组直接赋值，反射为 JSON attribute）；`el.formatTooltip = (value) => string | number` 为值格式化函数 property（输出同时进值气泡与 `aria-valuetext`，优先级高于 `format` 属性，置 `null` 清除）——attribute 无法表达函数语义，函数通道只能走 JS property。

@@ -466,3 +466,26 @@ test('select hide-selected：多选已选项从下拉隐藏、取消后回到列
   })
   await expect(page.locator('#select-hide-selected-output')).toContainText('4 项')
 })
+
+test('select reserve-width：锁宽生效且真切换选中值后触发器宽度不抖', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sel-reserve')
+  const locked = await page
+    .locator('#sel-reserve')
+    .evaluate((node) => node.style.getPropertyValue('--oas-select-reserve'))
+  expect(locked).toMatch(/^[\d.]+px$/)
+  // 对照（无预留）：变量不存在
+  const control = await page
+    .locator('#sel-narrow')
+    .evaluate((node) => node.style.getPropertyValue('--oas-select-reserve'))
+  expect(control).toBe('')
+  // 真切换：点开下拉选中最宽选项（两端对齐并自动换行）→ 触发器宽度由锁宽托底不抖
+  const widthBefore = await page.locator('#sel-reserve').evaluate((node) => node.getBoundingClientRect().width)
+  await page.locator('#sel-reserve').locator('.trigger').click()
+  await page.locator('#sel-reserve').locator('.option', { hasText: '两端对齐并自动换行' }).click()
+  await expect
+    .poll(() => page.locator('#sel-reserve').evaluate((node) => node.getAttribute('value')), { timeout: 3000 })
+    .toBe('c')
+  const widthAfter = await page.locator('#sel-reserve').evaluate((node) => node.getBoundingClientRect().width)
+  expect(Math.abs(widthAfter - widthBefore)).toBeLessThanOrEqual(1)
+})

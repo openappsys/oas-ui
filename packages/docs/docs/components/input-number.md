@@ -142,6 +142,17 @@ el.parser = (s) => Number(s.replace(/[^0-9.\-]/g, ''))
 
 设置 `wheel` 后聚焦输入框时滚轮步进（上滚增、下滚减），并阻止页面滚动；默认关闭以防误触。
 
+## 指针微调（scrub）
+
+<DemoBlock title="按住数字区横向拖动（scrub）+ Shift/Alt 精调">
+  <oas-input-number id="innum-scrub" value="50" min="0" max="100" step="1" style="width: 160px"></oas-input-number>
+  <span id="innum-scrub-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 120px"></span>
+</DemoBlock>
+
+数字区支持指针微调（scrub）：按住输入框横向拖动，每 4px 计一步（步长 = `step`），密集调参时不必精确点按或键入。修饰键与 knob 同一口径：**Shift 精调（×0.2）、Alt 超精调（×0.04）**，不引入加速档；拖回按下位置即恢复原值（误拖无损撤销）；位移不足一步视为普通点击（聚焦与文本选择不受影响）。松手按提交制写回（`oas-change`，值未变化不派发），拖动过程派发 `oas-input`。
+
+触屏（coarse pointer）不启用 scrub（点按即聚焦弹键盘，文本键入优先）；CSS 已放行纵向触摸滚动（`touch-action: pan-y`），横向位移才进入 scrub。需要完全关闭时设 `scrub="false"`。
+
 ## 禁用
 
 <DemoBlock title="禁用">
@@ -218,6 +229,13 @@ onMounted(() => {
   if (fnEl) {
     fnEl.formatter = (v) => `≈ ${v.toLocaleString()} 件`
     fnEl.parser = (s) => Number(s.replace(/[^0-9.\-]/g, ''))
+  }
+
+  // scrub demo：提交后显示当前值（oas-change）
+  const scrubEl = document.getElementById('innum-scrub')
+  const scrubOut = document.getElementById('innum-scrub-out')
+  if (scrubEl && scrubOut) {
+    scrubEl.addEventListener('oas-change', (e) => (scrubOut.textContent = `已提交：${e.detail.value}`))
   }
 
   const el = document.getElementById('num-event')
@@ -323,6 +341,7 @@ onMounted(() => {
 | `prefix-text` | 内嵌前缀文案（slot="prefix" 可分发任意内容，不参与数值解析） | `string` | — |
 | `readonly` | 只读：可聚焦可复制可提交，按钮禁用 + aria-readonly，键盘/滚轮不改值 | `boolean` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层 input） | `boolean` | — |
+| `scrub` | 数字区指针微调（scrub，默认开启）：按住输入框横向拖动，每 4px 计一步（步长 = step）；Shift 精调（×0.2）、Alt 超精调（×0.04）；拖回按下位置恢复原值；位移不足一步视为普通点击（保留键入/文本选择）；松手按提交制写回（oas-change）；scrub="false" 关闭；触屏（coarse pointer）不启用 | `string` | `true` |
 | `size` | 尺寸档位 `sm` / `md`（默认）/ `lg`：控高与字号联动 | — | — |
 | `status` | 校验态：`error` / `warning` / `success` 边框语义色 | — | — |
 | `step` | 步长 | `string` | `1` |

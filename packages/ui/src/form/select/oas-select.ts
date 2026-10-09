@@ -7,6 +7,8 @@ import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
+import { measureMaxTextWidth } from '../../shared/measure-text.js'
+import { cssVarPx } from '../../shared/css-var.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { OASFormElement } from '@oas-ui/core'
 
@@ -101,6 +103,8 @@ const STYLE = `
   --_ch: var(--oas-control-height-md);
   /* 下拉高度 CSS 变量开口：宿主覆盖即可调高（默认 240px），不占属性 API */
   --oas-select-dropdown-height: 240px;
+  /* reserve-width 锁宽通道：JS 写量测值，缺省 0px 无副作用（不占宿主盒） */
+  min-width: var(--oas-select-reserve, 0px);
 }
 :host([hidden]) {
   display: none;
@@ -544,6 +548,8 @@ export class OASSelect extends OASFormElement {
       'tabindex',
       'auto-width',
       'hint',
+      // 触发器预留最宽选项宽（opt-in）：切换选中值时触发器尺寸不抖动
+      'reserve-width',
       // 表单关联通道：required 驱动原生校验链（valueMissing）；name 变化需重同步多选 FormData 的 entry key
       'name',
       'required',
@@ -800,6 +806,8 @@ export class OASSelect extends OASFormElement {
     // 触发器前后缀/自定义图标 + 下方提示文案
     this.syncTriggerAffixes()
     this.syncHint()
+    // reserve-width：触发器预留最宽选项宽（options/子元素变化随 update 自动重测）
+    this.syncReserveWidth()
     // 原生表单数据 + 校验链同步（form-associated；无 name 时浏览器自动不提交）
     this.syncFormValue()
     this.syncValidity()
@@ -914,6 +922,36 @@ export class OASSelect extends OASFormElement {
     if (!this.triggerEl) return
     if (text) this.triggerEl.setAttribute('aria-describedby', 'oas-select-hint')
     else this.triggerEl.removeAttribute('aria-describedby')
+  }
+
+  // ===== reserve-width：触发器预留最宽选项（切值不抖） =====
+
+  /**
+   * 测最宽选项 label + placeholder 文本宽，经 `--oas-select-reserve` 变量锁宿主
+   * min-width（opt-in `reserve-width`；与 auto-width 组合最典型——宽度随内容收缩后
+   * 由预留值托底，切换选中值不抖）。文本量测走 shared 三级降级（canvas → 离屏 span
+   * → 估算），options/子元素变化经 update 自动重测。文本宽为近似值（触发器 chrome
+   * 余量经 --oas-select-reserve-pad 开口调整），目标是「切换不抖」而非像素级排版。
+   */
+  private syncReserveWidth(): void {
+    if (!this.hasAttr('reserve-width')) {
+      if (this.style.getPropertyValue('--oas-select-reserve') !== '') {
+        this.style.removeProperty('--oas-select-reserve')
+      }
+      return
+    }
+    const texts = this._options.map((o) => o.label)
+    const placeholder = this.getAttr('placeholder', this.t('select.placeholder'))
+    if (placeholder) texts.push(placeholder)
+    const cs = getComputedStyle(this)
+    const w = measureMaxTextWidth(texts, { fontSize: cs.fontSize, fontFamily: cs.fontFamily })
+    if (w <= 0) {
+      // 无可计量测文本（无选项且无 placeholder）：无预留，写 0 不占宿主盒
+      this.style.setProperty('--oas-select-reserve', '0px')
+      return
+    }
+    const pad = cssVarPx(this, '--oas-select-reserve-pad', 46)
+    this.style.setProperty('--oas-select-reserve', `${Math.ceil(w + pad)}px`)
   }
 
   /** 移动形态判定：触屏（coarse pointer）或窄视口（<768px）→ 下拉由 bottom-sheet 底部抽屉承载 */

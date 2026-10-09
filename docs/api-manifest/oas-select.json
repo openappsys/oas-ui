@@ -166,6 +166,11 @@
       "observed": true
     },
     {
+      "name": "reserve-width",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "name",
       "type": "string",
       "default": "",
@@ -266,6 +271,10 @@
     }
   ],
   "cssVars": [
+    {
+      "name": "--oas-select-reserve",
+      "default": "0px"
+    },
     {
       "name": "--oas-button-group-radius",
       "default": "var(--oas-radius-md)"

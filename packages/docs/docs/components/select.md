@@ -250,6 +250,20 @@
 
 `hint` 在触发器下方渲染一行提示文案（`aria-describedby` 关联，读屏可达）；`auto-width` 让触发器宽度随选中项/内容自适应收缩（缺省固定 `220px`）。
 
+## 触发器预留最宽选项（reserve-width）
+
+<DemoBlock title="reserve-width + auto-width：切值不抖（点开下拉切换选中项对比）">
+  <oas-space size="small" direction="vertical">
+    <oas-select id="sel-reserve" reserve-width auto-width value="a" placeholder="选择对齐" options='[{"label":"左对齐","value":"a"},{"label":"居中对齐","value":"b"},{"label":"两端对齐并自动换行","value":"c"}]'></oas-select>
+    <oas-select id="sel-narrow" auto-width value="a" placeholder="对照（无预留）" options='[{"label":"左对齐","value":"a"},{"label":"居中对齐","value":"b"},{"label":"两端对齐并自动换行","value":"c"}]'></oas-select>
+  </oas-space>
+  <div style="margin-top: var(--oas-space-2)">
+    <span id="sel-reserve-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </div>
+</DemoBlock>
+
+`reserve-width`（opt-in）量测全部选项 label 与 placeholder 的最大文本宽，锁定触发器最小宽度：切换选中值时触发器尺寸不抖动。常与 `auto-width` 组合——宽度随内容收缩后由预留值托底（上方第一个 select 锁定到最宽选项，第二个为对照；点开下拉切换选中项即可看到差别）。`options` 属性与子元素声明式通道都参与量测，内容变化自动重测；移除属性解除锁定。文本宽为近似值（触发器余量经 CSS 变量 `--oas-select-reserve-pad` 调整，默认 46px）。
+
 ## 多选上限
 
 <DemoBlock title="多选上限（max-count）">
@@ -416,6 +430,17 @@
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
+  // reserve-width demo：切换选中项后显示触发器宽度（锁宽 vs 对照）
+  const reserveOut = document.getElementById('sel-reserve-out')
+  const reserveSel = document.getElementById('sel-reserve')
+  const narrowSel = document.getElementById('sel-narrow')
+  if (reserveSel && reserveOut) {
+    const report = (el) => (el ? `（触发器宽 ${Math.round(el.getBoundingClientRect().width)}px）` : '')
+    reserveSel.addEventListener('oas-change', (e) => {
+      reserveOut.textContent = `已选：${e.detail.value} ${report(reserveSel)} vs 对照 ${report(narrowSel)}`
+    })
+  }
+
   const el = document.getElementById('select-event')
   const out = document.getElementById('select-output')
   el?.addEventListener('oas-change', (e) => {
@@ -711,6 +736,7 @@ onMounted(() => {
 | `remote` | 远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求 | `boolean` | — |
 | `required` | 必填标记（驱动原生校验链 valueMissing；不透传内层控件） | `boolean` | — |
 | `reserve-keyword` | searchable 选中后保留搜索词（缺省清空，对齐 tree-select） | `boolean` | — |
+| `reserve-width` | 触发器预留最宽选项宽（opt-in）：量测全部选项 label 与 placeholder 的最大文本宽锁定触发器最小宽度，切换选中值时尺寸不抖动；常与 auto-width 组合（收缩后由预留值托底）；options/子元素变化自动重测；移除属性解除锁定 | `boolean` | — |
 | `searchable` | 可搜索（打开下拉后输入过滤） | `boolean` | — |
 | `show-arrow` | 显式 `"false"` 隐藏默认下拉箭头 | `string` | `true` |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large`：控高/字号/标签高联动 | `string` | `medium` |
@@ -762,6 +788,7 @@ onMounted(() => {
 | `--oas-glass-blur` | `none` |
 | `--oas-glass-ring` | `transparent` |
 | `--oas-select-dropdown-height` | `240px` |
+| `--oas-select-reserve` | `0px` |
 
 ### oas-option
 

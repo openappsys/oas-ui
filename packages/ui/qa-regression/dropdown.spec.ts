@@ -584,3 +584,42 @@ test('dropdown split 主按钮 oas-action 的 originalEvent 为真实事件（�
   expect(r.isClick, 'originalEvent 应为真实 MouseEvent').toBe(true)
   expect(r.type).toBe('click')
 })
+
+test('dropdown reserve-width：触发器被锁 min-width，对照（无预留）不受影响', async ({ page }) => {
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dd-reserve')
+  const r = await page.evaluate(() => {
+    const w = (sel: string) => {
+      const dd = document.querySelector(sel)
+      const btn = dd?.querySelector(':scope > oas-button') as HTMLElement | null
+      return btn ? btn.style.minWidth : null
+    }
+    return { reserved: w('#dd-reserve'), control: w('#dd-narrow') }
+  })
+  expect(r.reserved).toMatch(/^[\d.]+px$/)
+  expect(Number.parseFloat(r.reserved!)).toBeGreaterThan(0)
+  expect(r.control).toBe('')
+})
+
+test('dropdown reserve-width：预留宽度不得小于最宽 label 的真实渲染宽（canvas font 串必须生效，防 10px 默认低估）', async ({
+  page,
+}) => {
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dd-reserve')
+  const r = await page.evaluate(() => {
+    const dd = document.getElementById('dd-reserve')!
+    const btn = dd.querySelector(':scope > oas-button') as HTMLElement
+    const minW = Number.parseFloat(btn.style.minWidth)
+    const cs = getComputedStyle(btn)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')!
+    ctx.font = `${cs.fontSize} ${cs.fontFamily}`
+    // demo 三条选项的最宽 label（与 dropdown.md #dd-reserve items 一致）
+    const labels = ['左对齐', '居中对齐', '两端对齐并自动换行']
+    const widest = Math.max(...labels.map((t) => ctx.measureText(t).width))
+    return { minW, widest }
+  })
+  // 预留 = 量测宽 + pad(≥0)，故必须 ≥ 最宽 label 的浏览器实测量宽；
+  // 若 canvas font 串非法回落到 10px 默认值，minW 会明显小于 widest
+  expect(r.minW).toBeGreaterThanOrEqual(r.widest)
+})

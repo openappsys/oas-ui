@@ -2150,3 +2150,27 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **破坏性（迁移）**：按需引入使用**内置图名**（`icon="check"`、`<oas-icon name="close">`）需显式 `import '@oas-ui/icons/register'` 一次；主入口不再导出 `iconRegistry`/`iconNames`（改从 `@oas-ui/icons/registry`）；注册 / 查询 API（`registerIcon` / `registerIconAlias` / `registerIconLibrary` / `lookupIcon`）与 `IconName` 类型仍从 `@oas-ui/icons` 导出。
 - **门禁**：`perf:size` 断言图标全量注册表 `registry.js` 不进任一按需组件链；源码守卫 `packages/ui/src/shared/icon-optin.test.ts`（组件不得从主入口取 iconRegistry / iconNames、lookupIcon 须走 `/runtime`、全量入口与族入口必须静态注册）；CDN 内置图标回归 `qa-regression/cdn-icons.spec.ts`；文档图名守卫 `docs-icon-names.test.ts`。
 - **验收**：见 CHANGELOG `[未发布]` 迁移段与 `docs/perf-baseline.md`。
+
+## 专业密度 A 批（未发布）
+
+### 背景
+
+专业密度（参数密集面板：ERP 录入 / MES 参数 / PLM 属性检视 / BI 阈值）数值录入高频能力的 A 组四件（能力调研已定夺「做」档，全量原创实现）：
+
+### 功能定义
+
+1. **数值 scrub（像素锚定计步）+ 双击复位**
+   - 共享纯函数工具 `shared/scrub.ts`：按下记锚点像素 + 基准值，横移每 4px 计一步（步长 = `step`）；**Shift 精调 ×0.2、Alt 超精调 ×0.04**（与 knob `FINE_FACTOR` 同口径，**不引入加速档**——同库修饰键方向唯一）；拖回锚点精确恢复基准值（误拖无损撤销）；位移不足一步视为普通点击（保聚焦/键入）。
+   - `oas-slider`：`show-input` 读数框按住横移 scrub（多把手各读数框独立），拖动派发 `oas-input`、松手提交 `oas-change`（值变化才派发）；`reset-value` + 双击轨道复位（缺省回落 min，`step="mark"` 吸附最近刻度，仅单值模式响应）。
+   - `oas-input-number`：数字区 scrub，对齐提交制（拖动 `oas-input` 显示文本、松手 `normalizeCommit` 提交写回）；空值从 min/0 起步；步进钮/滚轮/键盘路径不受影响。
+   - 两处触屏（coarse pointer）均不启用 scrub（点按聚焦键入优先），CSS `touch-action: pan-y` 放行纵向滚动。
+   - **取舍**：`oas-input-number` 不做双击复位（保护原生双击选词）；slider 读数框双击同样不复位（仅轨道双击）。
+2. **`oas-collapse-item` 折叠态摘要 `summary`**：收起时头部尾部展示内部值（如「12px 4px」），展开隐藏（避免重复展示/朗读）；单行省略号截断不挤标题；位于可折叠头 button 内（读屏收起态可读），不承担标题语义。
+3. **`oas-dropdown`/`oas-select` `reserve-width`（opt-in）**：量测最宽选项 label（select 另含 placeholder）锁触发器最小宽度，切值不抖；文本量测走 shared 三级降级（canvas → 离屏 span → 码点估算，SSR/测试环境可测）；内容变化自动重测；dropdown 清除时恢复触发器原 inline min-width，select 走 `--oas-select-reserve` 变量（缺省 0px 不占宿主盒）。
+4. **`oas-slider` 专业属性**：`precision`（scrub 步进与气泡/aria-valuetext 按 precision 修约，收敛浮点尾巴；低于 format/formatTooltip 通道）/ `value-width`（读数框宽度，数字补 px、带单位透传）/ `accent-color`（scrub 拖动强调色，预设语义色映射 token 随暗色主题）/ `show-track`（"false" 隐藏轨道与填充，把手保留）——与既有 color/track-color/format 不冲突。
+
+### 验收
+
+- 单测：`shared/scrub.test.ts` 10 条 + `shared/measure-text.test.ts` 4 条；slider 160（+22）/ input-number 88（+12）/ collapse 46（+5）/ dropdown 78（+6）/ select 165（+5）；全量 `pnpm test` 全绿（含 SSR 快照零漂移——`show-track` 未设置时不写 data-*）。
+- e2e：`qa-regression` 五 spec 增补真交互回归（scrub 真拖计步/双击复位/summary 显隐/reserve-width 锁宽）。
+- typecheck / build / lint:md / api:check 全绿；docs zh/en 五组件 + api-descriptions + api-manifest 同步；CHANGELOG `[未发布]`。

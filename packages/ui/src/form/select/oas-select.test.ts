@@ -2166,3 +2166,48 @@ describe('OASSelect value property（get/set）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+describe('OASSelect reserve-width（触发器预留最宽选项，切值不抖）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('设置后写入宿主 CSS 变量（px 正数），移除属性清除', () => {
+    const el = mount({ 'reserve-width': '' })
+    const v = el.style.getPropertyValue('--oas-select-reserve')
+    expect(v).toMatch(/^[\d.]+px$/)
+    expect(Number.parseFloat(v)).toBeGreaterThan(0)
+    el.removeAttribute('reserve-width')
+    expect(el.style.getPropertyValue('--oas-select-reserve')).toBe('')
+  })
+
+  it('量测包含选项与 placeholder（空态也不小于占位文案）', () => {
+    const el = mount({ 'reserve-width': '', placeholder: '非常非常长的占位提示文案' })
+    expect(Number.parseFloat(el.style.getPropertyValue('--oas-select-reserve'))).toBeGreaterThan(0)
+  })
+
+  it('options 变化重测：更宽选项进入后预留宽度增长', () => {
+    const el = mount({ 'reserve-width': '' })
+    const before = Number.parseFloat(el.style.getPropertyValue('--oas-select-reserve'))
+    el.setAttribute('options', JSON.stringify([{ label: '一个特别特别特别长的选项标签', value: 'long' }]))
+    const after = Number.parseFloat(el.style.getPropertyValue('--oas-select-reserve'))
+    expect(after).toBeGreaterThan(before)
+  })
+
+  it('与 auto-width 组合：宿主宽度让位后由预留值锁定下限', () => {
+    const el = mount({ 'reserve-width': '', 'auto-width': '' })
+    expect(el.style.getPropertyValue('--oas-select-reserve')).toMatch(/^[\d.]+px$/)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 锁定走 :host 的 min-width 变量通道（默认 0px 无副作用），不写死宿主盒
+    expect(css).toMatch(/:host\s*\{[^}]*min-width:\s*var\(--oas-select-reserve,\s*0px\)/)
+  })
+
+  it('无选项且无 placeholder 时写 0px（无预留）', () => {
+    const el = mount({ 'reserve-width': '', options: '[]', placeholder: '' })
+    expect(el.style.getPropertyValue('--oas-select-reserve')).toBe('0px')
+  })
+})

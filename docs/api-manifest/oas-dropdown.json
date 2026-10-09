@@ -98,6 +98,11 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "reserve-width",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],

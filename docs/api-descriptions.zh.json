@@ -703,7 +703,8 @@
       "destroy-on-collapse": "收起时销毁面板内容（再次展开重新挂载；收起动画随之跳过）",
       "force-render": "初始即渲染面板内容（默认收起态不渲染）",
       "icon-placement": "覆盖容器设置的展开图标位置（`start` / `end`）",
-      "heading-level": "覆盖容器设置的标题语义层级（`1`-`6` / `none`）"
+      "heading-level": "覆盖容器设置的标题语义层级（`1`-`6` / `none`）",
+      "summary": "折叠态摘要：面板收起时在头部尾部展示（用于不展开即报内部值，如「12px 4px」），展开后隐藏；单行超出省略号截断；不承担标题语义"
     },
     "events": {},
     "slots": {
@@ -1108,7 +1109,8 @@
       "offset": "浮层与触发器的间距像素（默认 8）",
       "size": "透传触发器 oas-button 尺寸五档（别名归一，非法回落 medium）",
       "type": "透传触发器 oas-button 类型词汇",
-      "max-height": "菜单面板限高滚动（数字补 px）"
+      "max-height": "菜单面板限高滚动（数字补 px）",
+      "reserve-width": "触发器预留最宽选项宽（opt-in）：量测全部菜单项 label 的最大文本宽写入触发器 min-width，切换选中值时触发器尺寸不抖动；items/子元素变化自动重测；移除属性恢复触发器原宽度"
     },
     "events": {
       "oas-action": "拆分模式下点击主按钮，`detail: { originalEvent }`",
@@ -1643,7 +1645,8 @@
       "autofocus": "挂载后聚焦内层输入（原生 autofocus 不穿透 shadow）",
       "decimal-separator": "小数点字符（显示与键入解析用；缺省 locale 感知，提交值仍规范数字串）",
       "variant": "形态 outlined/filled/borderless（对齐 input）",
-      "align": "数字文本对齐 left/center/right（逻辑映射，RTL 镜像）"
+      "align": "数字文本对齐 left/center/right（逻辑映射，RTL 镜像）",
+      "scrub": "数字区指针微调（scrub，默认开启）：按住输入框横向拖动，每 4px 计一步（步长 = step）；Shift 精调（×0.2）、Alt 超精调（×0.04）；拖回按下位置恢复原值；位移不足一步视为普通点击（保留键入/文本选择）；松手按提交制写回（oas-change）；scrub=\"false\" 关闭；触屏（coarse pointer）不启用"
     },
     "events": {
       "oas-change": "步进或失焦变化，`detail: { value }`（数字）",
@@ -2719,7 +2722,8 @@
       "tabindex": "透传内部触发器控制 Tab 序（宿主属性委托后移除，防双停靠点）",
       "auto-width": "触发器宽度随选中项收缩",
       "hint": "触发器下方提示文案（aria-describedby 关联）",
-      "hide-selected": "多选时已选选项从下拉列表隐藏，清空/取消后回到列表（仅 multiple 生效）"
+      "hide-selected": "多选时已选选项从下拉列表隐藏，清空/取消后回到列表（仅 multiple 生效）",
+      "reserve-width": "触发器预留最宽选项宽（opt-in）：量测全部选项 label 与 placeholder 的最大文本宽锁定触发器最小宽度，切换选中值时尺寸不抖动；常与 auto-width 组合（收缩后由预留值托底）；options/子元素变化自动重测；移除属性解除锁定"
     },
     "events": {
       "oas-change": "选择/清空变化，`detail: { value }`",
@@ -2865,7 +2869,13 @@
       "label-5": "第 5 个把手的可访问名（多滑块模式；优先于 labels/label）",
       "label-6": "第 6 个把手的可访问名（多滑块模式；优先于 labels/label）",
       "label-7": "第 7 个把手的可访问名（多滑块模式；优先于 labels/label）",
-      "label-8": "第 8 个把手的可访问名（多滑块模式；优先于 labels/label）"
+      "label-8": "第 8 个把手的可访问名（多滑块模式；优先于 labels/label）",
+      "scrub": "读数区指针微调（scrub，默认开启）：按住读数框横向拖动，每 4px 计一步（步长 = step）；Shift 精调（×0.2）、Alt 超精调（×0.04，与 knob 口径一致，无加速档）；拖回按下位置恢复原值；位移不足一步视为普通点击（保留键入）；scrub=\"false\" 关闭；触屏（coarse pointer）不启用",
+      "reset-value": "双击轨道复位的目标值：未设置回落 min；自动夹取到 [min, max]，step=\"mark\" 模式吸附最近刻度；仅单值模式响应（range/多把手忽略），复位派发 oas-input + oas-change",
+      "precision": "值的小数位（scrub 步进与气泡/aria-valuetext 显示按此修约；未设置时步进值按 step/修饰倍率的有效小数位自动收敛浮点尾巴，显式设置是更严的值约束）；优先级低于 format/formatTooltip 格式化通道",
+      "value-width": "show-input 读数框宽度：纯数字按 px、带单位值原样透传（写入 --oas-slider-value-width）；缺省 72px",
+      "accent-color": "读数区 scrub 拖动中的强调色：预设语义色名（primary / success / warning / danger，随暗色主题）映射主题 token，其他值原样透传；缺省回落主题主色",
+      "show-track": "轨道显隐开关（默认显示）；show-track=\"false\" 隐藏轨道条与选中填充（把手保留，仍可拖动与键盘操作）"
     },
     "events": {
       "oas-change": "松手确定，`detail: { value }`（单值数字；`range` 模式为 `[lo, hi]` 数组）",

@@ -1,4 +1,5 @@
 import { OASFormElement } from '@oas-ui/core'
+import { beginScrub, scrubValueAt, SCRUB_PX_PER_STEP } from '../../shared/scrub.js'
 
 /**
  * OASInputNumber 数字输入框。
@@ -108,6 +109,8 @@ input {
   font-family: inherit;
   transition: border-color var(--oas-transition-fast) var(--oas-ease-out),
     box-shadow var(--oas-transition-fast) var(--oas-ease-out);
+  /* 触屏放行纵向滚动：水平位移让给数字 scrub（pointer 接管），竖直滑动不困在输入框 */
+  touch-action: pan-y;
 }
 input:hover {
   border-color: var(--oas-color-primary);
@@ -127,6 +130,11 @@ input:disabled:hover {
 }
 input[readonly] {
   cursor: default;
+}
+/* scrub 拖动中：ew-resize 指示横向微调 + 抑制文本选择（拖动只改值） */
+input[data-scrubbing] {
+  cursor: ew-resize;
+  user-select: none;
 }
 
 /* ---- variant 形态：filled 填充 / borderless 无框（默认 outlined 走基础样式；对齐 oas-input 变体语义） ---- */
@@ -485,6 +493,8 @@ export class OASInputNumber extends OASFormElement {
       'align',
       'decimal-separator',
       'autofocus',
+      // 数值 scrub 开关（默认开，"false" 关）：数字区按住横移像素计步改值
+      'scrub',
       // required 仅驱动原生校验链（valueMissing），不透传内层 input（内层非 number 类型）
       'required',
     ]
@@ -546,6 +556,15 @@ export class OASInputNumber extends OASFormElement {
   private holdTimer: number | null = null
   private repeatTimer: number | null = null
 
+  /** 数字 scrub 状态（null = 未在 scrub；单指针独占） */
+  private scrub: {
+    id: number
+    anchor: ReturnType<typeof beginScrub>
+    active: boolean
+    /** 按下时的已提交值（值未变化时松手不派发 change） */
+    startValue: number | null
+  } | null = null
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
@@ -598,6 +617,8 @@ export class OASInputNumber extends OASFormElement {
       this.emit('focus', { value: this.committedValue() })
     })
     this.input?.addEventListener('keydown', (e) => this.onKeydown(e))
+    // 数字 scrub（像素锚定计步）：按下记录锚点，横移 ≥ 一个计步单位激活
+    this.input?.addEventListener('pointerdown', (e) => this.beginPointerScrub(e as PointerEvent))
     // 滚轮步进（wheel 属性显式开启 + 聚焦时；preventDefault 需非 passive）
     this.input?.addEventListener('wheel', (e) => this.onWheel(e), { passive: false })
 
@@ -649,9 +670,11 @@ export class OASInputNumber extends OASFormElement {
     return true
   }
 
-  /** 断连时清理长按连击计时器（孤儿计时器会在组件移除后继续步进） */
+  /** 断连时清理长按连击计时器与 scrub 监听（孤儿计时器/监听会在组件移除后继续步进） */
   override disconnectedCallback(): void {
     this.stopHold()
+    this.finishScrubListeners()
+    this.scrub = null
     super.disconnectedCallback()
   }
 
@@ -881,7 +904,8 @@ export class OASInputNumber extends OASFormElement {
     if (max !== '') v = Math.min(v, Number(max))
     if (min !== '') v = Math.max(v, Number(min))
     const precision = this.getAttr('precision', '')
-    if (precision !== '') v = Number(v.toFixed(Number(precision)))
+    // 上限 100：toFixed 只接受 0–100，超大精度（precision="1000"）会抛 RangeError（与 intlOptions 的钳制同口径）
+    if (precision !== '') v = Number(v.toFixed(Math.max(0, Math.min(100, Math.floor(Number(precision) || 0)))))
     return v
   }
 
@@ -977,6 +1001,102 @@ export class OASInputNumber extends OASFormElement {
     if (e.deltaY === 0) return
     e.preventDefault()
     this.stepBy(e.deltaY < 0 ? 1 : -1)
+  }
+
+  // ---------- 数字 scrub（像素锚定计步：按下记锚点，横移每 4px 计一步，拖回锚点恢复基准值） ----------
+
+  /** scrub 开关：默认开；scrub="false" 显式关闭（例如宿主要保留数字框原生文本选择手势） */
+  private scrubOff(): boolean {
+    return this.getAttr('scrub', 'true') === 'false'
+  }
+
+  /** 触屏不启用 scrub：点按即聚焦弹键盘（文本键入优先），且防 scrub 与系统手势打架 */
+  private isCoarsePointer(): boolean {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+    return window.matchMedia('(pointer: coarse)').matches
+  }
+
+  /** 输入框按下：记录锚点（像素 + 基准值），挂 window 级 move/up；不 preventDefault（保留聚焦） */
+  private beginPointerScrub(e: PointerEvent): void {
+    if (this.scrub) return
+    if (this.scrubOff() || this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isCoarsePointer()) return
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    const i = this.input
+    if (!i) return
+    // 基准值：当前键入文本 > 已提交值 > min > 0（空值也 scrub，从可用起点计步）
+    const parsed = this.parseText(i.value)
+    const committed = this.committedValue()
+    const minRaw = this.getAttr('min', '')
+    const base =
+      parsed !== null && !Number.isNaN(parsed) ? parsed : (committed ?? (minRaw !== '' ? Number(minRaw) || 0 : 0))
+    this.scrub = { id: e.pointerId, anchor: beginScrub(e.clientX, base), active: false, startValue: committed }
+    window.addEventListener('pointermove', this.onScrubMove)
+    window.addEventListener('pointerup', this.onScrubUp)
+    window.addEventListener('pointercancel', this.onScrubUp)
+  }
+
+  private onScrubMove = (e: PointerEvent): void => {
+    const s = this.scrub
+    const i = this.input
+    if (!s || e.pointerId !== s.id || !i) return
+    if (!s.active) {
+      // 激活阈值 = 一个计步单位：不足视为普通点击（保聚焦/文本选择），达到即接管
+      if (Math.abs(e.clientX - s.anchor.anchorX) < SCRUB_PX_PER_STEP) return
+      s.active = true
+      i.setAttribute('data-scrubbing', '')
+      // 收起拖动前可能已启动的文本选区（按住拖动不再带原生文本选择跑）
+      document.getSelection()?.removeAllRanges()
+      try {
+        i.setSelectionRange(i.value.length, i.value.length)
+        i.setPointerCapture(e.pointerId)
+      } catch {
+        /* 选区/捕获不可用不阻断 scrub */
+      }
+    }
+    e.preventDefault()
+    const step = Number(this.getAttr('step', '1')) || 1
+    const minRaw = this.getAttr('min', '')
+    const maxRaw = this.getAttr('max', '')
+    const precisionRaw = this.getAttr('precision', '')
+    const v = scrubValueAt(s.anchor, e.clientX, step, e.shiftKey, e.altKey, {
+      min: minRaw !== '' ? Number(minRaw) : undefined,
+      max: maxRaw !== '' ? Number(maxRaw) : undefined,
+      precision: precisionRaw !== '' ? Number(precisionRaw) || 0 : undefined,
+    })
+    // 对齐键入语义：写显示文本（过格式化通道）+ 派发 oas-input，不写回 value 属性（提交制）
+    const text = this.formatDisplay(v)
+    if (i.value !== text) i.value = text
+    this.emit('input', { value: text })
+    // scrub 值已夹取不会越界；aria/按钮态跟随实时值（与键入过程同款反馈）
+    this.removeAttribute('data-out-of-range')
+    this.syncAriaValue(v)
+    this.syncControls(v)
+  }
+
+  private onScrubUp = (e: PointerEvent): void => {
+    const s = this.scrub
+    if (!s || e.pointerId !== s.id) return
+    this.scrub = null
+    this.finishScrubListeners()
+    const i = this.input
+    i?.removeAttribute('data-scrubbing')
+    try {
+      i?.releasePointerCapture(e.pointerId)
+    } catch {
+      /* 已释放 */
+    }
+    if (!s.active) return // 普通点击：交给浏览器聚焦/选中文本
+    // 提交制收口：解析最终显示文本归一提交（写回 value 属性 + oas-change；值未变化不派发）
+    const parsed = i ? this.parseText(i.value) : Number.NaN
+    this.commit(parsed === null || Number.isNaN(parsed) ? s.startValue : this.normalizeCommit(parsed))
+  }
+
+  /** 摘除 window 级 scrub 监听（松手/断连共用；幂等） */
+  private finishScrubListeners(): void {
+    window.removeEventListener('pointermove', this.onScrubMove)
+    window.removeEventListener('pointerup', this.onScrubUp)
+    window.removeEventListener('pointercancel', this.onScrubUp)
   }
 
   /** 步进：base 取当前键入值，空值/非法回落已提交值 → 空值再回落 min（有 min 时）或 0 */

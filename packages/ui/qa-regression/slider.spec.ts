@@ -1,7 +1,7 @@
 // 复核回归：slider——历史缺陷固化断言。
 
 import { test, expect } from '@playwright/test'
-import { up } from './helpers'
+import { up, defocus } from './helpers'
 
 test('slider show-input：拖动滑块实时更新输入框、输入数字防抖后驱动滑块', async ({ page }) => {
   await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
@@ -703,4 +703,96 @@ test('slider 多滑块 show-input：3 个数值输入框 + 分隔符，提交驱
     n.dispatchEvent(new Event('change', { bubbles: true }))
   })
   expect(await el.getAttribute('value')).toBe('[10,55,70]')
+})
+
+test('slider scrub：真拖读数框按 4px 计步（Shift 无关路径）+ 双击轨道复位到 reset-value', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#slider-scrub')
+  // 清除页面初始焦点滚动并把目标滚进视口中央，坐标读取与鼠标操作间布局静止
+  await defocus(page)
+  await page.locator('#slider-scrub').evaluate((node) => node.scrollIntoView({ block: 'center' }))
+  const el = page.locator('#slider-scrub')
+  const box = await el.evaluate((node) => {
+    const num = node.shadowRoot!.querySelector<HTMLInputElement>('[data-role="num"]')!
+    const r = num.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, v0: Number(node.getAttribute('value')) }
+  })
+  // 真拖 +16px = +4 步（step=1）
+  await page.mouse.move(box.x, box.y)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 16, box.y, { steps: 4 })
+  await page.mouse.up()
+  await expect.poll(() => el.evaluate((node) => Number(node.getAttribute('value'))), { timeout: 3000 }).toBe(box.v0 + 4)
+  // 拖动反馈行有内容（oas-input/oas-change 可见反馈）
+  await expect(page.locator('#slider-scrub-out')).toContainText(String(box.v0 + 4))
+  // 双击轨道复位到 reset-value=50
+  const track = await el.evaluate((node) => {
+    const t = node.shadowRoot!.querySelector('[part="track-wrap"]')!
+    const r = t.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  await page.mouse.dblclick(track.x, track.y)
+  await expect.poll(() => el.evaluate((node) => Number(node.getAttribute('value'))), { timeout: 3000 }).toBe(50)
+})
+
+test('slider scrub：step="mark" 真拖读数框值吸附最近刻度（value 属性无档位外脏值）', async ({ page }) => {
+  // 缺陷固化：scrub 计步值曾直接写入 thumb/属性（吸附只发生在 update 链路的 thumb 上），
+  // value 属性短暂携带档位外脏值（如 42），宿主 attribute 读/表单序列化与组件 getter 漂移。
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#slider-mark-scrub')
+  await defocus(page)
+  await page.locator('#slider-mark-scrub').evaluate((node) => node.scrollIntoView({ block: 'center' }))
+  const el = page.locator('#slider-mark-scrub')
+  const box = await el.evaluate((node) => {
+    const num = node.shadowRoot!.querySelector<HTMLInputElement>('[data-role="num"]')!
+    const r = num.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  // 真拖 +136px = +34 步（scrub 步长 1）→ 26+34=60：恰落最近档位（吸附语义），值真跳档 → oas-change
+  await page.mouse.move(box.x, box.y)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 136, box.y, { steps: 8 })
+  await page.mouse.up()
+  const v = await el.evaluate((node) => Number(node.getAttribute('value')))
+  expect([0, 26, 60], `scrub 后 value 属性应落在刻度集合，实际 ${v}`).toContain(v)
+  // demo 反馈行可见（值变化才提交——吸附回原值时不派发是既有契约）
+  await expect(page.locator('#slider-mark-scrub-out')).toContainText(String(v))
+})
+
+test('slider scrub：小数步长（step=0.1）无 precision 真拖后值通道干净（无浮点尾巴）', async ({ page }) => {
+  // 缺陷固化：scrub 步进合成（0.1×3 等）曾把二进制浮点误差（0.30000000000000004）直接
+  // 写进 thumb/属性/事件 detail；修复后按 step/倍率有效小数位自动收敛到数学期望。
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#slider-float-scrub')
+  await defocus(page)
+  await page.locator('#slider-float-scrub').evaluate((node) => node.scrollIntoView({ block: 'center' }))
+  const el = page.locator('#slider-float-scrub')
+  const box = await el.evaluate((node) => {
+    const num = node.shadowRoot!.querySelector<HTMLInputElement>('[data-role="num"]')!
+    const r = num.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, v0: Number(node.getAttribute('value')) }
+  })
+  // 真拖 +12px = +3 步 × 0.1 → 0.2 + 0.3 = 0.5（数学期望；脏实现会给 0.500000000000000x）
+  await page.mouse.move(box.x, box.y)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 12, box.y, { steps: 3 })
+  await page.mouse.up()
+  const attr = await el.evaluate((node) => String(node.getAttribute('value')))
+  expect(attr, `value 属性应为干净步进值，实际 "${attr}"`).toMatch(/^0\.\d$/)
+  expect(Number(attr)).toBeCloseTo(box.v0 + 0.3, 6)
+})
+
+test('slider show-track="false"：data-track 镜像 + 轨道条与填充真实退场（computed display none）', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[data-track="false"]')
+  const r = await page.locator('oas-slider[data-track="false"]').evaluate((node) => {
+    const root = node.shadowRoot!
+    const trackBefore = getComputedStyle(root.querySelector<HTMLElement>('.track-wrap')!, '::before').display
+    const fill = getComputedStyle(root.querySelector<HTMLElement>('.fill')!).display
+    const thumb = root.querySelector<HTMLInputElement>('[data-role="range"]')!
+    return { trackBefore, fill, disabled: thumb.disabled }
+  })
+  expect(r.trackBefore).toBe('none')
+  expect(r.fill).toBe('none')
+  expect(r.disabled).toBe(false) // 把手保留可交互
 })

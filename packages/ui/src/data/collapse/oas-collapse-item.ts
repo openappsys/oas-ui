@@ -58,6 +58,23 @@ const STYLE = `
 :host([has-header-slot]) .header-text {
   display: none;
 }
+/* 折叠态摘要（summary）：收起时在头部尾部展示内部值（如「12px 4px」），展开隐藏。
+   截断策略：单行省略号（min-width:0 让出收缩空间 + overflow/ellipsis），不挤掉标题；
+   与标题间用次要色/小一号字区分层级（token 引用，暗色跟随） */
+.summary {
+  order: 1;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+  line-height: 1.4;
+}
+.summary[hidden] {
+  display: none;
+}
 .arrow {
   order: 2;
   flex: none;
@@ -142,6 +159,7 @@ export class OASCollapseItem extends OASElement {
     return [
       'name',
       'header',
+      'summary',
       'open',
       'disabled',
       'icon-placement',
@@ -161,6 +179,7 @@ export class OASCollapseItem extends OASElement {
             <button class="head" part="head" type="button" aria-expanded="false" aria-controls="body">
               <span class="header-text" part="header"></span>
               <span class="header-slot" part="header-slot"><slot name="header"></slot></span>
+              <span class="summary" part="summary" hidden></span>
               <span class="arrow" part="arrow" aria-hidden="true">›</span>
             </button>
           </div>
@@ -267,6 +286,14 @@ export class OASCollapseItem extends OASElement {
     else this.removeAttribute('has-header-slot')
     if (hasExtra) this.setAttribute('has-extra', '')
     else this.removeAttribute('has-extra')
+
+    // 折叠态摘要：收起时展示 summary（报内部值）、展开隐藏（避免与内容重复展示/朗读）；
+    // 未设置时恒隐藏（空 span 不占位）。显隐走 hidden 属性（SSR/水合/单测三路一致）
+    const summaryEl = this.shadow.querySelector<HTMLElement>('[part="summary"]')
+    if (summaryEl) {
+      summaryEl.textContent = this.getAttr('summary', '')
+      summaryEl.hidden = this.hasAttr('open') || this.getAttr('summary', '') === ''
+    }
 
     // 头 button 状态同步
     const disabled = this.isDisabled()

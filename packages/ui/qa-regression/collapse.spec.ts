@@ -167,3 +167,30 @@ test('collapse slot="extra" 操作区点击不触发展开/收起（组件内阻
   expect(r.open, 'extra 点击不应触发展开').toBe(false)
   if (r.found) expect(r.itemClicks, 'extra 点击不应派发 item-click').toBe(0)
 })
+
+test('collapse summary：收起时头部报内部值，展开后隐藏（真点击开合）', async ({ page }) => {
+  await page.goto('/components/collapse.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-collapse-item[name="shadow"]')
+  const item = page.locator('oas-collapse-item[name="shadow"]')
+  // 收起态：摘要可见且文本正确
+  const collapsed = await item.evaluate((node) => {
+    const s = node.shadowRoot!.querySelector<HTMLElement>('[part="summary"]')!
+    return { hidden: s.hidden, text: s.textContent }
+  })
+  expect(collapsed.hidden).toBe(false)
+  expect(collapsed.text).toContain('12px 4px')
+  // 真点击展开 → 摘要隐藏
+  await item.locator('[part="head"]').click()
+  await expect
+    .poll(() => item.evaluate((node) => node.shadowRoot!.querySelector<HTMLElement>('[part="summary"]')!.hidden), {
+      timeout: 3000,
+    })
+    .toBe(true)
+  // 收起 → 摘要恢复
+  await item.locator('[part="head"]').click()
+  await expect
+    .poll(() => item.evaluate((node) => node.shadowRoot!.querySelector<HTMLElement>('[part="summary"]')!.hidden), {
+      timeout: 3000,
+    })
+    .toBe(false)
+})

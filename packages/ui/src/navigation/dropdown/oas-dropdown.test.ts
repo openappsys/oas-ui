@@ -1118,3 +1118,80 @@ describe('OASDropdown size / type / max-height（能力缺口 P2）', () => {
     expect(menu.hasAttribute('max-height')).toBe(false)
   })
 })
+
+describe('OASDropdown reserve-width（触发器预留最宽选项，切值不抖）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function triggerBtn(el: OASDropdown): HTMLElement {
+    return el.querySelector<HTMLElement>(':scope > button')!
+  }
+
+  it('设置后给触发元素写 min-width（px），移除属性恢复触发器原值', () => {
+    const el = mount({ 'reserve-width': '' })
+    const btn = triggerBtn(el)
+    const w = btn.style.minWidth
+    expect(w).toMatch(/^[\d.]+px$/)
+    expect(Number.parseFloat(w)).toBeGreaterThan(0)
+    // 移除属性 → 清除（无原值恢复为空）
+    el.removeAttribute('reserve-width')
+    expect(btn.style.minWidth).toBe('')
+  })
+
+  it('清除时恢复触发器自身原有的 inline min-width（不吞宿主样式）', () => {
+    const el = new OASDropdown()
+    el.setAttribute('reserve-width', '')
+    el.setAttribute('items', ITEMS)
+    el.innerHTML = `<button style="min-width: 80px">操作</button>`
+    document.body.appendChild(el)
+    const btn = triggerBtn(el)
+    // 组件接管期间覆盖为量测值
+    expect(btn.style.minWidth).not.toBe('80px')
+    el.removeAttribute('reserve-width')
+    // 清除后恢复宿主原值
+    expect(btn.style.minWidth).toBe('80px')
+  })
+
+  it('测最宽选项：选项变长后重测（items 属性变化触发）', () => {
+    const el = mount({ 'reserve-width': '' })
+    const btn = triggerBtn(el)
+    const before = Number.parseFloat(btn.style.minWidth)
+    el.setAttribute('items', JSON.stringify([{ label: '这是一个特别特别特别长的选项标签文本', value: 'long' }]))
+    const after = Number.parseFloat(btn.style.minWidth)
+    expect(after).toBeGreaterThan(before)
+  })
+
+  it('分组平铺项与顶层项都计入，divider 不计入', () => {
+    const el = mount({
+      'reserve-width': '',
+      items: JSON.stringify([
+        { type: 'group', label: '组', children: [{ label: '组内选项', value: 'g1' }] },
+        { type: 'divider' },
+        { label: '顶层', value: 'top' },
+      ]),
+    })
+    expect(triggerBtn(el).style.minWidth).toMatch(/^[\d.]+px$/)
+  })
+
+  it('无 items（空菜单）时不写 min-width', () => {
+    const el = new OASDropdown()
+    el.setAttribute('reserve-width', '')
+    el.setAttribute('items', '[]')
+    el.innerHTML = `<button>操作</button>`
+    document.body.appendChild(el)
+    expect(triggerBtn(el).style.minWidth).toBe('')
+  })
+
+  it('子元素通道（oas-dropdown-item）同样计入重测', () => {
+    const el = new OASDropdown()
+    el.setAttribute('reserve-width', '')
+    el.innerHTML = `<button>操作</button><oas-dropdown-item value="a">选项甲</oas-dropdown-item>`
+    document.body.appendChild(el)
+    expect(triggerBtn(el).style.minWidth).toMatch(/^[\d.]+px$/)
+  })
+})

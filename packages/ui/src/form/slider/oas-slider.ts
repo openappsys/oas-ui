@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { beginScrub, scrubValueAt, roundToPrecision, type ScrubAnchor, SCRUB_PX_PER_STEP } from '../../shared/scrub.js'
 
 /** 单个刻度：数值 + 展示标签（show-stops 生成的刻度点无标签） */
 interface MarkEntry {
@@ -130,6 +131,11 @@ const STYLE = `
 :host([disabled]) .track-wrap::before,
 :host([data-disabled]) .track-wrap::before {
   opacity: 0.6;
+}
+/* show-track="false"：轨道条整体退场（灰轨底层 + 选中填充一并隐藏，把手保留可拖/可聚焦） */
+:host([data-track='false']) .track-wrap::before,
+:host([data-track='false']) .fill {
+  display: none;
 }
 input[type="range"] {
   appearance: none;
@@ -452,7 +458,8 @@ input:disabled {
 .inputs input {
   appearance: none;
   box-sizing: border-box;
-  width: 72px;
+  /* 读数宽度开口（value-width 属性写入 --oas-slider-value-width；缺省 72px） */
+  width: var(--oas-slider-value-width, 72px);
   height: var(--oas-control-height-md);
   padding: 0 var(--oas-space-2);
   border: 1px solid var(--oas-color-border);
@@ -464,6 +471,8 @@ input:disabled {
   text-align: center;
   transition: border-color var(--oas-transition-fast) var(--oas-ease-out),
     box-shadow var(--oas-transition-fast) var(--oas-ease-out);
+  /* 触屏放行纵向滚动：水平位移让给读数 scrub（pointer 接管），竖直滑动不困在输入框 */
+  touch-action: pan-y;
 }
 .inputs input:hover {
   border-color: var(--oas-color-primary);
@@ -480,6 +489,13 @@ input:disabled {
 }
 .inputs input[readonly] {
   cursor: default;
+}
+/* scrub 拖动中：ew-resize 指示横向微调；强调色走 accent-color（缺省主题主色） */
+.inputs input[data-scrubbing] {
+  cursor: ew-resize;
+  border-color: var(--oas-slider-accent, var(--oas-color-primary));
+  color: var(--oas-slider-accent, var(--oas-color-text-primary));
+  user-select: none;
 }
 /* 隐藏原生步进箭头，与滑块数值展示更干净 */
 .inputs input::-webkit-outer-spin-button,
@@ -524,6 +540,13 @@ export class OASSlider extends OASElement {
       'large-step',
       'label',
       'labels',
+      // 专业密度批：数值 scrub 开关（默认开，"false" 关）+ 双击复位 + 专业属性
+      'scrub',
+      'reset-value',
+      'precision',
+      'value-width',
+      'accent-color',
+      'show-track',
       'label-1',
       'label-2',
       'label-3',
@@ -585,6 +608,14 @@ export class OASSlider extends OASElement {
   private dragging = false
   /** 垂直拖动中的 pointerId（pointer 接管拖动的存活标记；null = 未在拖） */
   private verticalDragId: number | null = null
+  /** 读数区 scrub 状态（null = 未在 scrub；单指针独占，第二指按下忽略） */
+  private numScrub: {
+    id: number
+    anchor: ScrubAnchor
+    index: number
+    active: boolean
+    startValue: number
+  } | null = null
   /** tooltip 格式化函数（JS property 通道，优先于 format 模板串） */
   private _formatTooltip: ((value: number) => string | number | null | undefined) | null = null
 
@@ -654,6 +685,9 @@ export class OASSlider extends OASElement {
       this.raiseThumb(this.nearestThumbIndex(valueAt))
     })
 
+    // 双击轨道复位（reset-value，缺省回落 min）：单值模式响应，多把手/禁用/只读拦截
+    wrap?.addEventListener('dblclick', () => this.resetToValue())
+
     // 键盘/焦点：聚焦哪个把手置顶 + 焦点环映射到自定义视觉层（聚焦时显示值气泡）
     wrap?.addEventListener('focusin', (e) => {
       const i = this.thumbs.indexOf(e.target as HTMLInputElement)
@@ -690,6 +724,12 @@ export class OASSlider extends OASElement {
     }
     // 防抖计时器随断开清理（observer 随元素同生命周期，断开不失效）
     this.onCleanup(() => this.cancelDebounce())
+    // 读数 scrub 的 window 级监听随断连清理 + 复位 scrub 状态——否则断连重连后 numScrub
+    // 残留（beginNumScrub 早退守卫恒真）会让读数 scrub 永久失效（无孤儿监听/无悬挂态）
+    this.onCleanup(() => {
+      this.numScrub = null
+      this.finishNumScrubListeners()
+    })
     this.ensureLegacySlots()
   }
 
@@ -742,6 +782,19 @@ export class OASSlider extends OASElement {
     this.setAttribute('data-tooltip-pos', this.tooltipPosition(vertical))
     this.applyHostVar('color', '--oas-slider-color')
     this.applyHostVar('track-color', '--oas-slider-track')
+    this.applyHostVar('accent-color', '--oas-slider-accent')
+    // show-track 轨道显隐开关：仅显式 "false" 时镜像 data-track=false（CSS 消费）；
+    // 未设置时不写 data-*（不给宿主叠加属性、SSR 快照属性序列零漂移）
+    if (this.getAttr('show-track', 'true') === 'false') this.setAttribute('data-track', 'false')
+    else this.removeAttribute('data-track')
+    // value-width 读数宽度：纯数字补 px，带单位值原样透传（与 --oas-slider-height 同款约定）
+    const valueWidth = this.getAttr('value-width', '').trim()
+    if (valueWidth === '') {
+      this.style.removeProperty('--oas-slider-value-width')
+    } else {
+      const n = Number(valueWidth)
+      this.style.setProperty('--oas-slider-value-width', Number.isFinite(n) ? `${n}px` : valueWidth)
+    }
 
     // 受控值：多把手为数组（排序/夹取/刻度吸附），单把手沿用 value 字符串
     const values = multi ? this.orderedValues(n, min, max, markMode) : null
@@ -956,6 +1009,8 @@ export class OASSlider extends OASElement {
         this.cancelDebounce()
         this.commitFromNumber(i, true)
       })
+      // 读数区 scrub（像素锚定计步）：按下记录锚点，横移 ≥1 个计步单位激活
+      input.addEventListener('pointerdown', (e) => this.beginNumScrub(i, e as PointerEvent))
       box.appendChild(input)
       this.numInputs.push(input)
     }
@@ -1114,7 +1169,8 @@ export class OASSlider extends OASElement {
     return THUMB_SIZES[this.getAttribute('data-size') ?? 'md'] ?? THUMB_SIZE
   }
 
-  /** 格式化值（值气泡 + aria-valuetext 双通道）：函数 property 优先于 format 模板串 */
+  /** 格式化值（值气泡 + aria-valuetext 双通道）：函数 property 优先于 format 模板串；
+   *  都未配置时按 precision 修约显示（收敛步进浮点尾巴，如 0.30000000000000004 → 0.3） */
   private formatValue(v: number): string {
     const fn = this._formatTooltip
     if (typeof fn === 'function') {
@@ -1123,11 +1179,15 @@ export class OASSlider extends OASElement {
     }
     const tpl = this.getAttr('format', '')
     if (tpl) return tpl.replaceAll('${value}', String(v))
+    const precision = this.precisionAttr()
+    if (precision != null) return String(roundToPrecision(v, precision))
     return String(v)
   }
 
   private hasFormatter(): boolean {
-    return typeof this._formatTooltip === 'function' || this.getAttr('format', '') !== ''
+    return (
+      typeof this._formatTooltip === 'function' || this.getAttr('format', '') !== '' || this.precisionAttr() != null
+    )
   }
 
   /** 解析 start-point（夹取到 [min, max]；未设/非法回落 min = 从最小端填充） */
@@ -1339,6 +1399,132 @@ export class OASSlider extends OASElement {
   }
 
   // ---------- show-input 联动 ----------
+
+  // ---- 读数区 scrub（像素锚定计步：按下记锚点，横移每 4px 计一步，拖回锚点恢复基准值） ----
+
+  /** scrub 开关：默认开；scrub="false" 显式关闭（例如宿主要保留读数框原生文本选择手势） */
+  private scrubOff(): boolean {
+    return this.getAttr('scrub', 'true') === 'false'
+  }
+
+  /** precision 属性（小数位，≥0 整数，上限 100）；未设置/非法返回 null（不修约） */
+  private precisionAttr(): number | null {
+    const raw = this.getAttr('precision', '').trim()
+    if (raw === '') return null
+    const n = Number(raw)
+    return Number.isFinite(n) && n >= 0 ? Math.min(100, Math.floor(n)) : null
+  }
+
+  /** 当前生效步长（mark/any 交给刻度吸附；非法回落 1） */
+  private scrubStepValue(): number {
+    const raw = this.getAttr('step', '1')
+    if (raw === 'mark') return 1
+    const n = Number(raw)
+    return Number.isFinite(n) && n > 0 ? n : 1
+  }
+
+  /** 触屏不启用 scrub：点按即聚焦弹键盘（文本键入优先），且防 scrub 与系统手势打架 */
+  private isCoarsePointer(): boolean {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+    return window.matchMedia('(pointer: coarse)').matches
+  }
+
+  /** 读数框按下：记录锚点（像素 + 基准值），挂 window 级 move/up；不 preventDefault（保留聚焦） */
+  private beginNumScrub(i: number, e: PointerEvent): void {
+    if (this.numScrub) return
+    if (this.scrubOff() || this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isCoarsePointer()) return
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    const base = Number(this.thumbs[i]?.value ?? 0)
+    if (!Number.isFinite(base)) return
+    this.numScrub = { id: e.pointerId, anchor: beginScrub(e.clientX, base), index: i, active: false, startValue: base }
+    window.addEventListener('pointermove', this.onNumScrubMove)
+    window.addEventListener('pointerup', this.onNumScrubUp)
+    window.addEventListener('pointercancel', this.onNumScrubUp)
+  }
+
+  private onNumScrubMove = (e: PointerEvent): void => {
+    const s = this.numScrub
+    if (!s || e.pointerId !== s.id) return
+    const input = this.numInputs[s.index]
+    if (!input) return
+    if (!s.active) {
+      // 激活阈值 = 一个计步单位：不足视为普通点击（保聚焦/文本选择），达到即接管
+      if (Math.abs(e.clientX - s.anchor.anchorX) < SCRUB_PX_PER_STEP) return
+      s.active = true
+      input.setAttribute('data-scrubbing', '')
+      // 收起拖动前可能已启动的文本选区（按住拖动不再带原生文本选择跑）
+      document.getSelection()?.removeAllRanges()
+      try {
+        input.setSelectionRange(input.value.length, input.value.length)
+        input.setPointerCapture(e.pointerId)
+      } catch {
+        /* 选区/捕获不可用不阻断 scrub */
+      }
+    }
+    e.preventDefault()
+    const min = Number(this.getAttr('min', '0'))
+    const max = Number(this.getAttr('max', '100'))
+    const v = scrubValueAt(s.anchor, e.clientX, this.scrubStepValue(), e.shiftKey, e.altKey, {
+      min,
+      max,
+      precision: this.precisionAttr() ?? undefined,
+    })
+    // step="mark" 模式：scrub 计步值吸附最近刻度后再写值——与原生拖动（onThumbInput →
+    // maybeSnapInput）同构，保证 thumb / value 属性 / 读数框三路同源（属性序列化不得
+    // 拿到档位外的脏值，否则松手后 update 吸附会让宿主状态与组件值漂移）
+    const target = this.isMarkStep() ? this.snapToMark(v) : v
+    this.applyNumber(s.index, target)
+    this.syncValueAttr()
+    this.syncOverlay()
+    this.syncMarkPassed()
+    this.emit('input', { value: this.emitValue() })
+  }
+
+  private onNumScrubUp = (e: PointerEvent): void => {
+    const s = this.numScrub
+    if (!s || e.pointerId !== s.id) return
+    this.numScrub = null
+    this.finishNumScrubListeners()
+    const input = this.numInputs[s.index]
+    input?.removeAttribute('data-scrubbing')
+    try {
+      input?.releasePointerCapture(e.pointerId)
+    } catch {
+      /* 已释放 */
+    }
+    if (!s.active) return // 普通点击：交给浏览器聚焦/选中文本
+    // 松手提交（对齐原生 change 语义：值变化才派发）；防抖中的延迟提交一并取消
+    this.cancelDebounce()
+    const end = Number(this.thumbs[s.index]?.value ?? 0)
+    if (end !== s.startValue) this.emit('change', { value: this.emitValue() })
+  }
+
+  /** 摘除 window 级 scrub 监听（松手/断连共用；幂等） */
+  private finishNumScrubListeners(): void {
+    window.removeEventListener('pointermove', this.onNumScrubMove)
+    window.removeEventListener('pointerup', this.onNumScrubUp)
+    window.removeEventListener('pointercancel', this.onNumScrubUp)
+  }
+
+  // ---- 双击复位 ----
+
+  /**
+   * 双击轨道复位：目标 = reset-value 属性 > min；夹取到 [min, max]，mark 模式吸附最近刻度。
+   * 仅单值模式响应（range/多把手无单一复位语义）；走键盘同款链路（同步全量 + input/change 双发）。
+   */
+  private resetToValue(): void {
+    if (this.isMulti() || this.injectDisabled() || this.hasAttr('readonly')) return
+    const input = this.thumbs[0]
+    if (!input) return
+    const min = Number(this.getAttr('min', '0'))
+    const max = Number(this.getAttr('max', '100'))
+    const raw = Number(this.getAttr('reset-value', ''))
+    let target = Number.isFinite(raw) && this.getAttr('reset-value', '').trim() !== '' ? raw : min
+    target = clampNum(target, min, max)
+    if (this.isMarkStep()) target = this.snapToMark(target)
+    this.applyKeyboardValue(input, target)
+  }
 
   private scheduleCommit(i: number): void {
     this.cancelDebounce()

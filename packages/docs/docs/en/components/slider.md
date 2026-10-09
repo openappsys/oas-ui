@@ -66,6 +66,39 @@ The special value `step="mark"` restricts selectable values to the `marks` value
 
 The numeric input on the right stays in sync with the slider in both directions: dragging updates the input live; typing takes effect after a 300ms debounce and is automatically clamped to the `min`/`max` range, Enter/blur commits immediately.
 
+## Pointer Scrubbing & Double-Click Reset
+
+<DemoBlock title="Press-drag the readout (scrub) + double-click track to reset">
+  <oas-slider id="slider-scrub" show-input min="0" max="100" step="1" value="30" reset-value="50" style="width: 360px"></oas-slider>
+  <span id="slider-scrub-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+  <oas-slider id="slider-mark-scrub" step="mark" marks="[0,26,60]" min="0" max="60" value="26" show-input style="width: 360px"></oas-slider>
+  <span id="slider-mark-scrub-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+  <oas-slider id="slider-float-scrub" show-input min="0" max="1" step="0.1" value="0.2" style="width: 360px"></oas-slider>
+  <span id="slider-float-scrub-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+</DemoBlock>
+
+The readout supports pointer scrubbing: press and drag the numeric input horizontally — 4px per step (step size = `step`) — ideal for dense parameter tuning where precise clicking is awkward. Modifier keys share the knob convention: **Shift for fine adjustment (×0.2), Alt for ultra-fine (×0.04)**; no acceleration tier. Dragging back to the press point restores the original value (mistaken drags are losslessly undone); movement under one step counts as a plain click (focus/typing still works). Scrubbing dispatches `oas-input` while dragging and commits `oas-change` on release. Under `step="mark"` scrub values snap to the nearest mark in real time (second slider — the value always stays on the mark set).
+
+Double-click the track to reset to `reset-value` (falls back to `min` when unset); reset goes through the full commit chain (`oas-input` + `oas-change`) and only responds in single-value mode. Scrubbing is not enabled on coarse pointers (tap-to-focus typing takes priority); set `scrub="false"` to disable entirely.
+
+## Pro Attributes (precision / value-width / accent-color / show-track)
+
+<DemoBlock title="precision rounding + value-width readout width">
+  <oas-slider show-input precision="2" value-width="96" min="0" max="1" step="0.01" value="0.3" style="width: 380px"></oas-slider>
+</DemoBlock>
+
+<DemoBlock title="accent-color (scrub accent) + show-track=&quot;false&quot; (track hidden)">
+  <div style="display: flex; flex-direction: column; gap: 16px; width: 360px;">
+    <oas-slider show-input accent-color="success" value="40" style="width: 360px"></oas-slider>
+    <oas-slider show-track="false" value="60" style="width: 360px"></oas-slider>
+  </div>
+</DemoBlock>
+
+- `precision`: decimal places for the value — scrub steps and the bubble/`aria-valuetext` are rounded accordingly; when unset, float tails are auto-collapsed to the effective decimals of `step`/modifier (implementation error like `0.1 + 0.2` never reaches the value channel), an explicit value acts as a stricter constraint (e.g. `0` clamps modifier fine-steps back to integers), with lower priority than the `format`/`formatTooltip` channels;
+- `value-width`: readout box width; plain numbers get px, unit values pass through (defaults to 72px);
+- `accent-color`: the readout accent color while scrubbing; preset semantic names map to theme tokens (dark-theme aware), other values pass through;
+- `show-track`: track visibility switch — `show-track="false"` hides the track bar and selection fill (the thumb remains, still draggable and keyboard operable), suited to embedding the slider in custom containers keeping only the thumb.
+
 ## Range Mode
 
 <DemoBlock title="range dual-thumb interval + dual inputs">
@@ -240,6 +273,31 @@ onMounted(() => {
     fnEl.formatTooltip = (v) =>
       new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v)
   }
+
+  // scrub / double-click reset demo: live value feedback (oas-input in-progress / oas-change committed / reset note)
+  const scrubEl = document.getElementById('slider-scrub')
+  const scrubOut = document.getElementById('slider-scrub-out')
+  if (scrubEl && scrubOut) {
+    scrubEl.addEventListener('oas-input', (e) => (scrubOut.textContent = `scrubbing: ${e.detail.value}`))
+    scrubEl.addEventListener('oas-change', (e) => (scrubOut.textContent = `committed: ${e.detail.value}`))
+    scrubEl.addEventListener('oas-input', (e) => {
+      if (Number(e.detail.value) === 50) scrubOut.textContent = 'reset: 50'
+    })
+  }
+
+  // mark + scrub demo: snapped value echo (the value always stays on the mark set)
+  const markScrubEl = document.getElementById('slider-mark-scrub')
+  const markScrubOut = document.getElementById('slider-mark-scrub-out')
+  if (markScrubEl && markScrubOut) {
+    markScrubEl.addEventListener('oas-change', (e) => (markScrubOut.textContent = `committed: ${e.detail.value}`))
+  }
+
+  // fractional-step scrub demo: values stay clean without precision (float tails auto-collapsed)
+  const floatScrubEl = document.getElementById('slider-float-scrub')
+  const floatScrubOut = document.getElementById('slider-float-scrub-out')
+  if (floatScrubEl && floatScrubOut) {
+    floatScrubEl.addEventListener('oas-change', (e) => (floatScrubOut.textContent = `committed: ${e.detail.value}`))
+  }
 })
 </script>
 
@@ -263,6 +321,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `accent-color` | Accent color while scrubbing the readout: preset semantic names (primary / success / warning / danger, dark-theme aware) map to theme tokens, other values pass through; falls back to the theme primary | — | — |
 | `color` | Fill/thumb/passed-tick color: preset semantic names (primary / success / warning / danger, following dark theme) map to theme tokens; any other value is passed through as a CSS color | — | — |
 | `disabled` | Disabled | `boolean` | — |
 | `format` | Value bubble template string: `${value}` is replaced with the current value (e.g. `"${value}%"`); shown as-is without a placeholder; the output feeds both the bubble and `aria-valuetext`; lower priority than the `formatTooltip` function | `string` | — |
@@ -280,12 +339,16 @@ onMounted(() => {
 | `marks` | Ticks: JSON object `{"0":"0°C"}` (value→label) or JSON array `[0,26,60]` (also `{"value":26,"label":"26°C"}`); tick marks and labels are shown below the track, highlighted where the value passes; positions mirror under `reverse` | `string \| Record<string, string \| number> \| number[]` | — |
 | `max` | Range | `string` | `100` |
 | `min` | Range | `string` | `0` |
+| `precision` | Decimal places for the value (scrub steps and the bubble/aria-valuetext are rounded accordingly; when unset, float tails are auto-collapsed to the effective decimals of step/modifier, an explicit value acts as a stricter constraint); lower priority than format/formatTooltip channels | `string` | — |
 | `range` | Range mode: dual-thumb interval selection, `value` as JSON array `[lo, hi]` or comma-separated string `"lo,hi"`; thumbs constrain each other (lo ≤ hi), event `detail.value` is an array | `boolean` | — |
 | `readonly` | Readonly (independent of `disabled`): stays focusable and the value still participates in form collection; dragging and keyboard edits are intercepted; not visually dimmed | `boolean` | — |
+| `reset-value` | Double-click-track reset target: falls back to min when unset; clamped to [min, max] and snapped to the nearest mark under step="mark"; single-value mode only (ignored for range/multi); reset dispatches oas-input + oas-change | `string` | — |
 | `reverse` | Reversed direction: minimum on the right horizontally (track `dir="rtl"`), at the top vertically; fill/ticks/custom thumb positions mirror accordingly | `boolean` | — |
+| `scrub` | Readout pointer scrubbing (on by default): press and drag the readout horizontally — 4px per step (step size = step); Shift for fine (×0.2), Alt for ultra-fine (×0.04, aligned with knob; no acceleration tier); drag back to the press point to restore the original value; movement under one step counts as a plain click (typing preserved); scrub="false" disables; not enabled on coarse pointers | `string` | `true` |
 | `show-input` | Show a numeric input on the right, synced bidirectionally with the slider: dragging updates the input live; typing commits after a 300ms debounce and is clamped to `min`/`max`, Enter/blur commits immediately; range mode shows min/max inputs (min beyond max pushes max along) | `boolean` | — |
 | `show-stops` | Render tick dots along the track by `step` (no labels), highlighted where passed; marks take precedence when both exist; dots are not rendered beyond 100 | `boolean` | — |
 | `show-tooltip` | Show a value bubble above the thumb (temporarily shown while dragging; coexists with `custom-thumb`) | `boolean` | — |
+| `show-track` | Track visibility switch (shown by default); show-track="false" hides the track bar and selection fill (the thumb remains draggable and keyboard operable) | `string` | `true` |
 | `size` | Three sizes: sm / md / lg (also accepts small / medium / large, supports config-provider injection); track height and thumb diameter scale together; invalid values fall back to md | `string` | `medium` |
 | `start-point` | Fill origin for single-value mode (default `min`): the fill extends right above the start and left below it; clamped to `[min, max]`; ignored in `range` mode | `string` | — |
 | `step` | Step; the special value `"mark"` restricts selectable values to the `marks` set (dragging/keyboard/controlled values snap to the nearest mark; requires `marks`, falls back to 1) | `string` | `1` |
@@ -293,6 +356,7 @@ onMounted(() => {
 | `tooltip-position` | Value bubble direction: top / bottom / left / right; top by default horizontally, right by default vertically; invalid values fall back to the default | `string` | — |
 | `track-color` | Track base color: preset semantic names map to theme tokens; any other value is passed through as a CSS color | — | — |
 | `value` | Current value (controlled): numeric string for single mode; JSON array `[lo, hi]` or comma-separated string `"lo,hi"` in `range` mode, written back as a JSON array string after interaction (form collection can `JSON.parse` directly) | `number \| number[]` | — |
+| `value-width` | Width of the show-input readout box: plain numbers get px, unit values pass through (written to --oas-slider-value-width); defaults to 72px | `string` | — |
 | `vertical` | Vertical mode: the track runs vertically (minimum at the bottom, mirrored to the top by `reverse`); mark labels move to the right of the track, the value bubble faces right by default, show-input inputs move below the track; height defaults to 200px, adjustable via the `--oas-slider-height` CSS variable | `boolean` | — |
 
 #### Property (JS property only, not reflected as attribute)
@@ -319,10 +383,12 @@ onMounted(() => {
 | CSS Variable | Description | Default |
 | --- | --- | --- |
 | `--oas-glass-refraction` | Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration) | `none` |
+| `--oas-slider-accent` | — | `var(--oas-color-primary)` |
 | `--oas-slider-color` | — | `var(--oas-color-primary)` |
 | `--oas-slider-height` | — | `200px` |
 | `--oas-slider-thumb-size` | — | `14px` |
 | `--oas-slider-track` | — | `var(--oas-color-border)` |
 | `--oas-slider-track-size` | — | `4px` |
+| `--oas-slider-value-width` | — | `72px` |
 
 `marks` also accepts a JS property channel (assign objects/arrays directly, reflected as a JSON attribute); `el.formatTooltip = (value) => string | number` is the value formatter function property (the output feeds both the value bubble and `aria-valuetext`, takes precedence over the `format` attribute, clear with `null`) — attributes cannot express function semantics, so the function channel is JS-property-only.

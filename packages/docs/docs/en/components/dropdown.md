@@ -321,6 +321,15 @@ onMounted(() => {
     if (tag) tag.textContent = `Selected: ${e.detail.value}`
   }
 
+  // reserve-width demo: show the value and trigger width after switching (compare the two buttons)
+  const reserveOut = document.getElementById('dd-reserve-out')
+  const reserveEl = document.getElementById('dd-reserve')
+  if (reserveEl && reserveOut) {
+    reserveEl.addEventListener('oas-select', (e) => {
+      reserveOut.textContent = `Selected: ${e.detail.value} (trigger width ${Math.round(reserveEl.getBoundingClientRect().width)}px, no jitter)`
+    })
+  }
+
   const ctrl = document.getElementById('dd-ctrl')
   const openStatus = document.getElementById('dd-open-status')
   if (ctrl && openStatus) {
@@ -451,6 +460,22 @@ onMounted(() => {
   </oas-dropdown>
 </DemoBlock>
 
+## Reserve Widest Option (reserve-width)
+
+<DemoBlock title="reserve-width: no jitter when switching (open the dropdowns to compare the two buttons)">
+  <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+    <oas-dropdown id="dd-reserve" reserve-width value="a" items='[{"label":"Align left","value":"a"},{"label":"Align center","value":"b"},{"label":"Justified with auto wrap","value":"c"}]'>
+      <oas-button>Alignment</oas-button>
+    </oas-dropdown>
+    <oas-dropdown id="dd-narrow" value="a" items='[{"label":"Align left","value":"a"},{"label":"Align center","value":"b"},{"label":"Justified with auto wrap","value":"c"}]'>
+      <oas-button>Control (no reserve)</oas-button>
+    </oas-dropdown>
+    <span id="dd-reserve-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </div>
+</DemoBlock>
+
+`reserve-width` (opt-in) measures the max text width of all menu item labels and writes it to the trigger `min-width`: the trigger never jitters when switching values (high-frequency toolbar/filter switching). Both the `items` attribute and the declarative child channel participate; content changes re-measure automatically; removing the attribute restores the trigger width. The measurement is an approximation (trigger chrome margin tunable via the `--oas-dropdown-reserve-pad` variable, default 40px). The first button above has the reserve on (sized by the widest of the three options), the second is the control; open the menus and switch values to compare.
+
 ## API
 
 ### oas-dropdown
@@ -472,6 +497,7 @@ onMounted(() => {
 | `offset` | Gap in px between popover and trigger (default 8) | — | — |
 | `open` | Controlled display (boolean attribute; expands when present) | `boolean` | — |
 | `placement` | Popup placement | `string` | `bottom` |
+| `reserve-width` | Reserve the widest option width on the trigger (opt-in): measures the max text width of all menu item labels and writes it to the trigger min-width so switching values never jitters; re-measured automatically when items/children change; removing the attribute restores the trigger width | `boolean` | — |
 | `size` | Forwarded to the trigger oas-button size tiers (aliases normalized, invalid falls back to medium) | `string` | — |
 | `split` | Split button mode (boolean attribute): main button + arrow button; arrow opens the menu, main button fires oas-action | `boolean` | — |
 | `trigger` | Trigger: `click` (default) / `hover` / `focus`; space-separated for multiple (e.g. `"click hover"`). With `hover`, touch devices (coarse pointer) automatically degrade to tap toggling: tap to open, tap again or tap outside to close; desktop hover behavior unchanged | `string` | `click` |

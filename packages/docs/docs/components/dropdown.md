@@ -321,6 +321,15 @@ onMounted(() => {
     if (tag) tag.textContent = `已选择：${e.detail.value}`
   }
 
+  // reserve-width demo：切换选中项后显示当前值与触发器宽度（对比两颗按钮）
+  const reserveOut = document.getElementById('dd-reserve-out')
+  const reserveEl = document.getElementById('dd-reserve')
+  if (reserveEl && reserveOut) {
+    reserveEl.addEventListener('oas-select', (e) => {
+      reserveOut.textContent = `已选：${e.detail.value}（触发器宽 ${Math.round(reserveEl.getBoundingClientRect().width)}px，不抖动）`
+    })
+  }
+
   const ctrl = document.getElementById('dd-ctrl')
   const openStatus = document.getElementById('dd-open-status')
   if (ctrl && openStatus) {
@@ -450,6 +459,22 @@ onMounted(() => {
   </oas-dropdown>
 </DemoBlock>
 
+## 触发器预留最宽选项（reserve-width）
+
+<DemoBlock title="reserve-width：切值不抖（点开下拉切换选中项对比两颗按钮）">
+  <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+    <oas-dropdown id="dd-reserve" reserve-width value="a" items='[{"label":"左对齐","value":"a"},{"label":"居中对齐","value":"b"},{"label":"两端对齐并自动换行","value":"c"}]'>
+      <oas-button>对齐方式</oas-button>
+    </oas-dropdown>
+    <oas-dropdown id="dd-narrow" value="a" items='[{"label":"左对齐","value":"a"},{"label":"居中对齐","value":"b"},{"label":"两端对齐并自动换行","value":"c"}]'>
+      <oas-button>对照（无预留）</oas-button>
+    </oas-dropdown>
+    <span id="dd-reserve-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </div>
+</DemoBlock>
+
+`reserve-width`（opt-in）量测全部菜单项 label 的最大文本宽，写入触发器 `min-width`：切换选中值时触发器尺寸不抖动（工具栏/筛选器高频切值场景）。`items` 属性与子元素声明式通道都参与量测，内容变化自动重测；移除属性恢复触发器原宽度。量测为近似值（触发器余量经 CSS 变量 `--oas-dropdown-reserve-pad` 调整，默认 40px）。上方第一颗按钮已开预留（三条选项中最宽者撑起），第二颗为对照；点开菜单切换选中项即可对比。
+
 ## API
 
 ### oas-dropdown
@@ -471,6 +496,7 @@ onMounted(() => {
 | `offset` | 浮层与触发器的间距像素（默认 8） | — | — |
 | `open` | 受控显示（布尔属性，存在即展开） | `boolean` | — |
 | `placement` | 浮层位置 | `string` | `bottom` |
+| `reserve-width` | 触发器预留最宽选项宽（opt-in）：量测全部菜单项 label 的最大文本宽写入触发器 min-width，切换选中值时触发器尺寸不抖动；items/子元素变化自动重测；移除属性恢复触发器原宽度 | `boolean` | — |
 | `size` | 透传触发器 oas-button 尺寸五档（别名归一，非法回落 medium） | `string` | — |
 | `split` | 拆分下拉按钮（布尔属性）：主按钮 + 箭头按钮，点箭头开菜单、主按钮派发 oas-action | `boolean` | — |
 | `trigger` | 触发方式：`click`（默认）/ `hover` / `focus`，空格分隔可多选（如 `"click hover"`）。含 `hover` 时触屏（coarse pointer）自动降级为点按切换：点按展开、再点按/外点关闭，桌面 hover 行为不变 | `string` | `click` |

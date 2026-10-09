@@ -250,6 +250,20 @@ Multiple-select tags wrap by default and do not collapse; only when `max-tag-cou
 
 `hint` renders one line of hint copy below the trigger (wired via `aria-describedby`, screen-reader reachable); `auto-width` lets the trigger width shrink to fit the selected item/content (fixed `220px` by default).
 
+## Reserve Widest Option (reserve-width)
+
+<DemoBlock title="reserve-width + auto-width: no jitter when switching (open the dropdowns and switch to compare)">
+  <oas-space size="small" direction="vertical">
+    <oas-select id="sel-reserve" reserve-width auto-width value="a" placeholder="Pick alignment" options='[{"label":"Align left","value":"a"},{"label":"Align center","value":"b"},{"label":"Justified with auto wrap","value":"c"}]'></oas-select>
+    <oas-select id="sel-narrow" auto-width value="a" placeholder="Control (no reserve)" options='[{"label":"Align left","value":"a"},{"label":"Align center","value":"b"},{"label":"Justified with auto wrap","value":"c"}]'></oas-select>
+  </oas-space>
+  <div style="margin-top: var(--oas-space-2)">
+    <span id="sel-reserve-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </div>
+</DemoBlock>
+
+`reserve-width` (opt-in) measures the max text width of all option labels plus the placeholder and locks the trigger min-width: the trigger never jitters when switching values. It pairs well with `auto-width` — after shrinking to content, the reserved value acts as the floor (the first select above is locked to the widest option, the second is the control; open the dropdowns and switch values to see the difference). Both the `options` attribute and the declarative child channel participate; content changes re-measure automatically; removing the attribute releases the lock. The text width is an approximation (trigger chrome margin tunable via the `--oas-select-reserve-pad` variable, default 46px).
+
 ## Max Count
 
 <DemoBlock title="Selection limit (max-count)">
@@ -416,6 +430,17 @@ Listen to `oas-change`; `detail.value` is a string for single select and an arra
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
+  // reserve-width demo: show the trigger width after switching (locked vs control)
+  const reserveOut = document.getElementById('sel-reserve-out')
+  const reserveSel = document.getElementById('sel-reserve')
+  const narrowSel = document.getElementById('sel-narrow')
+  if (reserveSel && reserveOut) {
+    const report = (el) => (el ? `(trigger width ${Math.round(el.getBoundingClientRect().width)}px)` : '')
+    reserveSel.addEventListener('oas-change', (e) => {
+      reserveOut.textContent = `Selected: ${e.detail.value} ${report(reserveSel)} vs control ${report(narrowSel)}`
+    })
+  }
+
   const el = document.getElementById('select-event')
   const out = document.getElementById('select-output')
   el?.addEventListener('oas-change', (e) => {
@@ -715,6 +740,7 @@ onMounted(() => {
 | `remote` | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner control) | `boolean` | — |
 | `reserve-keyword` | Keep the keyword after selection in searchable mode (cleared by default, matching tree-select) | `boolean` | — |
+| `reserve-width` | Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width so switching values never jitters; pairs well with auto-width (the reserved value acts as the floor after shrinking); re-measured automatically when options/children change; removing the attribute releases the lock | `boolean` | — |
 | `searchable` | Searchable (type to filter after opening the dropdown) | `boolean` | — |
 | `show-arrow` | Set `"false"` to hide the default dropdown arrow | `string` | `true` |
 | `size` | Size preset `small` / `medium` (default) / `large`: control height/font/chip height scale | `string` | `medium` |
@@ -766,6 +792,7 @@ onMounted(() => {
 | `--oas-glass-blur` | `none` |
 | `--oas-glass-ring` | `transparent` |
 | `--oas-select-dropdown-height` | `240px` |
+| `--oas-select-reserve` | `0px` |
 
 ### oas-option
 

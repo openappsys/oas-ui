@@ -257,6 +257,24 @@ onMounted(async () => {
   </div>
 </DemoBlock>
 
+## 折叠态摘要（summary）
+
+<DemoBlock title="收起时头部尾部报内部值，展开隐藏">
+  <oas-collapse>
+    <oas-collapse-item name="shadow" header="阴影" summary="12px 4px rgba(0,0,0,0.2)">
+      <p>阴影参数控件区（展开后不再重复显示摘要）。</p>
+    </oas-collapse-item>
+    <oas-collapse-item name="radius" header="圆角" summary="8px / 4px" open>
+      <p>圆角参数控件区：该面板初始展开，摘要随之隐藏。</p>
+    </oas-collapse-item>
+    <oas-collapse-item name="long" header="超长摘要截断" summary="这是很长很长的摘要内容超出宽度时单行省略号截断">
+      <p>摘要超出可用宽度时单行省略号截断，不挤掉标题。</p>
+    </oas-collapse-item>
+  </oas-collapse>
+</DemoBlock>
+
+`summary` 在面板收起时于头部尾部展示内部值（如当前参数），无需展开即可读数；展开后自动隐藏（避免与内容重复展示与朗读）。摘要为单行文本，超出宽度省略号截断；它在可折叠头 button 内，读屏在收起态即可读到，不承担标题语义。
+
 ## API
 
 ### oas-collapse
@@ -300,6 +318,7 @@ onMounted(async () => {
 | `name` | 面板唯一标识 | — | — |
 | `no-collapse` | 强锁展开态：展开后点击自身不收起（不影响其他面板开合） | — | — |
 | `open` | 是否展开（由容器托管） | `boolean` | — |
+| `summary` | 折叠态摘要：面板收起时在头部尾部展示（用于不展开即报内部值，如「12px 4px」），展开后隐藏；单行超出省略号截断；不承担标题语义 | `string` | — |
 
 #### 插槽
 

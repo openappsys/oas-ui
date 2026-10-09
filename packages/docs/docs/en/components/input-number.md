@@ -142,6 +142,17 @@ With `step-strictly`, committed values snap to the nearest multiple of `step` (w
 
 With `wheel`, scrolling while the input is focused steps the value (up increases, down decreases) and prevents page scrolling; off by default to avoid accidental triggers.
 
+## Pointer Scrubbing
+
+<DemoBlock title="Press-drag the numeric area (scrub) + Shift/Alt fine steps">
+  <oas-input-number id="innum-scrub" value="50" min="0" max="100" step="1" style="width: 160px"></oas-input-number>
+  <span id="innum-scrub-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 120px"></span>
+</DemoBlock>
+
+The numeric area supports pointer scrubbing: press and drag the input horizontally — 4px per step (step size = `step`) — no precise clicking or typing needed in dense tuning. Modifier keys share the knob convention: **Shift for fine adjustment (×0.2), Alt for ultra-fine (×0.04)**; no acceleration tier. Dragging back to the press point restores the original value (mistaken drags are losslessly undone); movement under one step counts as a plain click (focus and text selection unaffected). Release commits per the commit-based model (`oas-change`, not dispatched when the value is unchanged), and dragging dispatches `oas-input`.
+
+Scrubbing is not enabled on coarse pointers (tap focuses and raises the keyboard — typing wins); CSS already permits vertical touch scrolling (`touch-action: pan-y`) so only horizontal movement enters scrub. Set `scrub="false"` to disable entirely.
+
 ## Disabled
 
 <DemoBlock title="Disabled">
@@ -218,6 +229,13 @@ onMounted(() => {
   if (fnEl) {
     fnEl.formatter = (v) => `≈ ${v.toLocaleString()} pcs`
     fnEl.parser = (s) => Number(s.replace(/[^0-9.\-]/g, ''))
+  }
+
+  // scrub demo: show the committed value (oas-change)
+  const scrubEl = document.getElementById('innum-scrub')
+  const scrubOut = document.getElementById('innum-scrub-out')
+  if (scrubEl && scrubOut) {
+    scrubEl.addEventListener('oas-change', (e) => (scrubOut.textContent = `committed: ${e.detail.value}`))
   }
 
   const el = document.getElementById('num-event')
@@ -322,6 +340,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `prefix-text` | Inline prefix text (slot="prefix" accepts any content; not part of value parsing) | `string` | — |
 | `readonly` | Read-only: focusable, copyable, submittable; buttons disabled + aria-readonly, keyboard/wheel cannot change the value | `boolean` | — |
 | `required` | Required marker (drives the native valueMissing validation chain; not passed through to the inner input) | `boolean` | — |
+| `scrub` | Numeric pointer scrubbing (on by default): press and drag the input horizontally — 4px per step (step size = step); Shift for fine (×0.2), Alt for ultra-fine (×0.04); drag back to the press point to restore the original value; movement under one step counts as a plain click (typing/text selection preserved); commits on release (oas-change); scrub="false" disables; not enabled on coarse pointers | `string` | `true` |
 | `size` | Size preset `sm` / `md` (default) / `lg`: control height and font scale | — | — |
 | `status` | Validation status: `error` / `warning` / `success` semantic border colors | — | — |
 | `step` | Step | `string` | `1` |

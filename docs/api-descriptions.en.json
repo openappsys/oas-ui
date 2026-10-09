@@ -703,7 +703,8 @@
       "destroy-on-collapse": "Destroy panel content on collapse (re-mounted on next expand; collapse animation skipped)",
       "force-render": "Render panel content up front (collapsed content is not rendered by default)",
       "icon-placement": "Per-item override of the container icon placement (`start` / `end`)",
-      "heading-level": "Per-item override of the heading semantic level (`1`-`6` / `none`)"
+      "heading-level": "Per-item override of the heading semantic level (`1`-`6` / `none`)",
+      "summary": "Collapsed-state summary: shown at the header tail while the panel is collapsed (report the inner value without expanding, e.g. \"12px 4px\"), hidden when expanded; single line with ellipsis truncation; carries no heading semantics"
     },
     "events": {},
     "slots": {
@@ -1108,7 +1109,8 @@
       "offset": "Gap in px between popover and trigger (default 8)",
       "size": "Forwarded to the trigger oas-button size tiers (aliases normalized, invalid falls back to medium)",
       "type": "Forwarded to the trigger oas-button type vocabulary",
-      "max-height": "Caps the menu panel height with internal scrolling (numbers get px)"
+      "max-height": "Caps the menu panel height with internal scrolling (numbers get px)",
+      "reserve-width": "Reserve the widest option width on the trigger (opt-in): measures the max text width of all menu item labels and writes it to the trigger min-width so switching values never jitters; re-measured automatically when items/children change; removing the attribute restores the trigger width"
     },
     "events": {
       "oas-action": "Main button clicked in split mode, `detail: { originalEvent }`",
@@ -1643,7 +1645,8 @@
       "autofocus": "Focus the inner input after mount",
       "decimal-separator": "Decimal point character for display and typed parsing (locale-aware default; submitted value stays canonical)",
       "variant": "Visual variant outlined/filled/borderless (aligned with input)",
-      "align": "Number text alignment left/center/right (logical, RTL mirrored)"
+      "align": "Number text alignment left/center/right (logical, RTL mirrored)",
+      "scrub": "Numeric pointer scrubbing (on by default): press and drag the input horizontally — 4px per step (step size = step); Shift for fine (×0.2), Alt for ultra-fine (×0.04); drag back to the press point to restore the original value; movement under one step counts as a plain click (typing/text selection preserved); commits on release (oas-change); scrub=\"false\" disables; not enabled on coarse pointers"
     },
     "events": {
       "oas-change": "Change on step or blur, `detail: { value }` (number)",
@@ -2719,7 +2722,8 @@
       "tabindex": "Forwarded to the internal trigger (host attribute removed after delegation to avoid double tab stops)",
       "auto-width": "Trigger width shrinks to fit the selection",
       "hint": "Hint line below the trigger, wired via aria-describedby",
-      "hide-selected": "Hide selected options from the dropdown in multiple mode; they return after clearing or deselecting"
+      "hide-selected": "Hide selected options from the dropdown in multiple mode; they return after clearing or deselecting",
+      "reserve-width": "Reserve the widest option width on the trigger (opt-in): measures the max text width of all option labels plus the placeholder to lock the trigger min-width so switching values never jitters; pairs well with auto-width (the reserved value acts as the floor after shrinking); re-measured automatically when options/children change; removing the attribute releases the lock"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",
@@ -2865,7 +2869,13 @@
       "label-5": "Accessible name for thumb 5 (multi-thumb mode; takes precedence over labels/label)",
       "label-6": "Accessible name for thumb 6 (multi-thumb mode; takes precedence over labels/label)",
       "label-7": "Accessible name for thumb 7 (multi-thumb mode; takes precedence over labels/label)",
-      "label-8": "Accessible name for thumb 8 (multi-thumb mode; takes precedence over labels/label)"
+      "label-8": "Accessible name for thumb 8 (multi-thumb mode; takes precedence over labels/label)",
+      "scrub": "Readout pointer scrubbing (on by default): press and drag the readout horizontally — 4px per step (step size = step); Shift for fine (×0.2), Alt for ultra-fine (×0.04, aligned with knob; no acceleration tier); drag back to the press point to restore the original value; movement under one step counts as a plain click (typing preserved); scrub=\"false\" disables; not enabled on coarse pointers",
+      "reset-value": "Double-click-track reset target: falls back to min when unset; clamped to [min, max] and snapped to the nearest mark under step=\"mark\"; single-value mode only (ignored for range/multi); reset dispatches oas-input + oas-change",
+      "precision": "Decimal places for the value (scrub steps and the bubble/aria-valuetext are rounded accordingly; when unset, float tails are auto-collapsed to the effective decimals of step/modifier, an explicit value acts as a stricter constraint); lower priority than format/formatTooltip channels",
+      "value-width": "Width of the show-input readout box: plain numbers get px, unit values pass through (written to --oas-slider-value-width); defaults to 72px",
+      "accent-color": "Accent color while scrubbing the readout: preset semantic names (primary / success / warning / danger, dark-theme aware) map to theme tokens, other values pass through; falls back to the theme primary",
+      "show-track": "Track visibility switch (shown by default); show-track=\"false\" hides the track bar and selection fill (the thumb remains draggable and keyboard operable)"
     },
     "events": {
       "oas-change": "Committed on release, `detail: { value }` (single number; `[lo, hi]` array in `range` mode)",

@@ -126,6 +126,40 @@
       "observed": true
     },
     {
+      "name": "scrub",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "reset-value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "precision",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "value-width",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "accent-color",
+      "observed": true
+    },
+    {
+      "name": "show-track",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
       "name": "label-1",
       "observed": true
     },
@@ -211,6 +245,14 @@
     },
     {
       "name": "--oas-slider-color",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-slider-value-width",
+      "default": "72px"
+    },
+    {
+      "name": "--oas-slider-accent",
       "default": "var(--oas-color-primary)"
     }
   ],

@@ -994,3 +994,130 @@ describe('OASInputNumber value property（公开读/写通道）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+describe('OASInputNumber 数值 scrub（数字区像素锚定计步）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function pointer(type: string, x: number, id = 1, mods: { shift?: boolean; alt?: boolean } = {}): PointerEvent {
+    return new PointerEvent(type, {
+      clientX: x,
+      pointerId: id,
+      bubbles: true,
+      cancelable: true,
+      shiftKey: !!mods.shift,
+      altKey: !!mods.alt,
+    })
+  }
+
+  function scrub(el: OASInputNumber, fromX: number, toX: number, mods?: { shift?: boolean; alt?: boolean }): void {
+    input(el).dispatchEvent(pointer('pointerdown', fromX))
+    window.dispatchEvent(pointer('pointermove', toX, 1, mods))
+    window.dispatchEvent(pointer('pointerup', toX, 1, mods))
+  }
+
+  it('横移每 4px 计一步：拖 +16px（step=1）→ 值 +4，松手提交（value 写回 + oas-change）', () => {
+    const el = mount({ value: '5' })
+    const changes: unknown[] = []
+    el.addEventListener('oas-change', (e) => changes.push((e as CustomEvent).detail.value))
+    scrub(el, 100, 116)
+    expect(input(el).value).toBe('9')
+    expect(el.getAttribute('value')).toBe('9')
+    expect(changes).toEqual([9])
+  })
+
+  it('拖动过程派发 oas-input（对齐键入语义，detail.value 为显示文本）', () => {
+    const el = mount({ value: '5' })
+    const inputs: unknown[] = []
+    el.addEventListener('oas-input', (e) => inputs.push((e as CustomEvent).detail.value))
+    input(el).dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 112))
+    expect(inputs.length).toBeGreaterThan(0)
+    expect(inputs.at(-1)).toBe('8')
+    window.dispatchEvent(pointer('pointerup', 112))
+  })
+
+  it('位移不足 4px 不激活：普通点击（值不变、无事件）', () => {
+    const el = mount({ value: '5' })
+    let fired = 0
+    el.addEventListener('oas-input', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    scrub(el, 100, 102)
+    expect(el.value).toBe('5')
+    expect(fired).toBe(0)
+  })
+
+  it('拖回锚点精确恢复基准值，松手不派发 change', () => {
+    const el = mount({ value: '5' })
+    let changed = 0
+    el.addEventListener('oas-change', () => changed++)
+    input(el).dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 120))
+    window.dispatchEvent(pointer('pointermove', 100))
+    window.dispatchEvent(pointer('pointerup', 100))
+    expect(el.value).toBe('5')
+    expect(changed).toBe(0)
+  })
+
+  it('Shift 精调（×0.2）：20px = 5 步 × 0.2 = +1', () => {
+    const el = mount({ value: '5', step: '1' })
+    scrub(el, 100, 120, { shift: true })
+    expect(el.value).toBe('6')
+  })
+
+  it('小数 step 无 precision：浮点尾巴自动收敛（显示文本与提交值都是 0.3，非 0.30000000000000004）', () => {
+    const el = mount({ value: '0', step: '0.1' })
+    scrub(el, 100, 112) // 12px = 3 步 × 0.1
+    expect(input(el).value).toBe('0.3')
+    expect(el.value).toBe('0.3')
+  })
+
+  it('min/max 夹取 + step 语义缩放', () => {
+    const el = mount({ value: '90', min: '0', max: '100', step: '5' })
+    scrub(el, 100, 120)
+    expect(el.value).toBe('100')
+  })
+
+  it('scrub 中输入框带 data-scrubbing，松手移除', () => {
+    const el = mount({ value: '5' })
+    const i = input(el)
+    i.dispatchEvent(pointer('pointerdown', 100))
+    window.dispatchEvent(pointer('pointermove', 116))
+    expect(i.hasAttribute('data-scrubbing')).toBe(true)
+    window.dispatchEvent(pointer('pointerup', 116))
+    expect(i.hasAttribute('data-scrubbing')).toBe(false)
+  })
+
+  it('scrub="false" 显式关闭', () => {
+    const el = mount({ value: '5', scrub: 'false' })
+    scrub(el, 100, 120)
+    expect(el.value).toBe('5')
+  })
+
+  it('disabled / readonly 下 scrub 无效', () => {
+    const a = mount({ value: '5', disabled: '' })
+    scrub(a, 100, 120)
+    expect(a.value).toBe('5')
+    const b = mount({ value: '5', readonly: '' })
+    scrub(b, 100, 120)
+    expect(b.value).toBe('5')
+  })
+
+  it('空值 scrub 从 min（有 min）起步；precision 参与修约', () => {
+    const el = mount({ min: '0', max: '10', precision: '1' })
+    scrub(el, 100, 112)
+    expect(el.value).toBe('3')
+  })
+
+  it('CSS：touch-action 放行纵向滚动 + scrub 态 ew-resize 光标（防触屏水平拖动冲突）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/input\s*{[^}]*touch-action:\s*pan-y/)
+    expect(css).toMatch(/input\[data-scrubbing\]\s*{[^}]*cursor:\s*ew-resize/)
+  })
+})

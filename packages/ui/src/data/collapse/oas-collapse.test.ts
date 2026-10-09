@@ -466,4 +466,51 @@ describe('OASCollapseItem', () => {
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toMatch(/\.head:focus-visible\s*\{[^}]*var\(--oas-focus-ring\)/)
   })
+
+  describe('折叠态摘要（summary）', () => {
+    function summaryEl(item: OASCollapseItem): HTMLElement {
+      return item.shadowRoot!.querySelector<HTMLElement>('[part="summary"]')!
+    }
+
+    it('收起时 header 展示 summary（报内部值）', () => {
+      const el = mountItem('<p>内容</p>', { header: '阴影', summary: '12px 4px' })
+      const s = summaryEl(el)
+      expect(s.textContent).toBe('12px 4px')
+      expect(s.hidden).toBe(false)
+      // 摘要在可折叠头 button 内：读屏在收起态即可读到
+      expect(head(el).contains(s)).toBe(true)
+    })
+
+    it('展开时摘要隐藏（避免与内容重复朗读/展示）', () => {
+      const el = mountItem('<p>内容</p>', { header: '阴影', summary: '12px 4px', open: '' })
+      expect(summaryEl(el).hidden).toBe(true)
+    })
+
+    it('开合切换时显隐跟随（open 属性增删即时生效）', () => {
+      const el = mountItem('<p>内容</p>', { header: '阴影', summary: '12px 4px' })
+      expect(summaryEl(el).hidden).toBe(false)
+      el.setAttribute('open', '')
+      expect(summaryEl(el).hidden).toBe(true)
+      el.removeAttribute('open')
+      expect(summaryEl(el).hidden).toBe(false)
+    })
+
+    it('summary 属性变化实时同步文本；未设置时摘要不占位', () => {
+      const el = mountItem('<p>内容</p>', { header: '阴影', summary: '旧值' })
+      el.setAttribute('summary', '新值 8px')
+      expect(summaryEl(el).textContent).toBe('新值 8px')
+      const none = mountItem('<p>内容</p>', { header: '无摘要' })
+      expect(summaryEl(none).hidden).toBe(true)
+      expect(summaryEl(none).textContent).toBe('')
+    })
+
+    it('截断策略：单行省略号（overflow hidden + text-overflow ellipsis），标题语义不受影响', () => {
+      const el = mountItem('<p>内容</p>', { header: '阴影', summary: '12px 4px' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.summary\s*\{[^}]*text-overflow:\s*ellipsis/)
+      expect(css).toMatch(/\.summary\s*\{[^}]*white-space:\s*nowrap/)
+      // 摘要不承担 heading 语义（标题语义仍由 heading 区承担）
+      expect(summaryEl(el).getAttribute('role')).toBeNull()
+    })
+  })
 })

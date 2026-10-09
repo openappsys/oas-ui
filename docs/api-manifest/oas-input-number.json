@@ -131,6 +131,12 @@
       "observed": true
     },
     {
+      "name": "scrub",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
       "name": "required",
       "type": "boolean",
       "observed": true
@@ -154,7 +160,7 @@
   "events": [
     {
       "name": "oas-input",
-      "detail": "{ value: this.input?.value ?? '' }"
+      "detail": "{ value: this.input?.value ?? '' } | { value: text }"
     },
     {
       "name": "oas-blur",

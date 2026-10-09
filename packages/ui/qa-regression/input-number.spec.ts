@@ -4,7 +4,7 @@
 // 也被 width:100% 的 input 顶出输入框边框外（渲染在框外、与步进钮互相挤压）。
 
 import { test, expect } from '@playwright/test'
-import { up } from './helpers'
+import { up, defocus } from './helpers'
 
 /** 读取 shadow 内 input 与叠加元素的相对几何（controls/clear/suffix 以 input 右缘为 0 点，prefix 以 input 左缘为 0 点） */
 async function rightStack(page: import('@playwright/test').Page, selector: string) {
@@ -164,4 +164,26 @@ test('input-number autofocus：动态挂载后聚焦内层输入（queueMicrotas
     return el?.shadowRoot?.activeElement === el?.shadowRoot?.querySelector('input')
   })
   expect(focused, 'shadow activeElement 为内层 input').toBe(true)
+})
+
+test('input-number scrub：真拖数字区按 4px 计步 + 松手提交写回（可见反馈）', async ({ page }) => {
+  await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#innum-scrub')
+  // 清除页面初始焦点滚动（autofocus demo 等）并把目标滚进视口中央，坐标读取与鼠标操作间布局静止
+  await defocus(page)
+  await page.locator('#innum-scrub').evaluate((node) => node.scrollIntoView({ block: 'center' }))
+  const el = page.locator('#innum-scrub')
+  const box = await el.evaluate((node) => {
+    const input = node.shadowRoot!.querySelector<HTMLInputElement>('input')!
+    const r = input.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, v0: Number(node.getAttribute('value')) }
+  })
+  // 真拖 +16px = +4 步（step=1）
+  await page.mouse.move(box.x, box.y)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 16, box.y, { steps: 4 })
+  await page.mouse.up()
+  await expect.poll(() => el.evaluate((node) => Number(node.getAttribute('value'))), { timeout: 3000 }).toBe(box.v0 + 4)
+  // demo 反馈行显示已提交值
+  await expect(page.locator('#innum-scrub-out')).toContainText(String(box.v0 + 4))
 })

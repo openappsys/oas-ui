@@ -257,6 +257,24 @@ The container provides the imperative methods `expandAll()` / `collapseAll()`. I
   </div>
 </DemoBlock>
 
+## Collapsed-State Summary (summary)
+
+<DemoBlock title="Report the inner value at the header tail while collapsed; hidden when expanded">
+  <oas-collapse>
+    <oas-collapse-item name="shadow" header="Shadow" summary="12px 4px rgba(0,0,0,0.2)">
+      <p>Shadow parameter controls (the summary is not repeated while expanded).</p>
+    </oas-collapse-item>
+    <oas-collapse-item name="radius" header="Radius" summary="8px / 4px" open>
+      <p>Radius parameter controls: this panel starts expanded, so its summary is hidden.</p>
+    </oas-collapse-item>
+    <oas-collapse-item name="long" header="Long summary truncation" summary="A very long summary is truncated with a single-line ellipsis when it exceeds the width">
+      <p>When the summary exceeds the available width it is truncated with a single-line ellipsis, never squeezing out the title.</p>
+    </oas-collapse-item>
+  </oas-collapse>
+</DemoBlock>
+
+`summary` shows the panel's inner value (e.g. the current parameter) at the header tail while collapsed — readable without expanding; it hides automatically when expanded (no duplicate display or announcement). The summary is single-line text truncated with an ellipsis; it lives inside the collapsible header button so screen readers can read it in the collapsed state, and carries no heading semantics.
+
 ## API
 
 ### oas-collapse
@@ -300,6 +318,7 @@ The container provides the imperative methods `expandAll()` / `collapseAll()`. I
 | `name` | Unique identifier of the panel | — | — |
 | `no-collapse` | Lock the expanded state: clicking itself does not collapse (other panels unaffected) | — | — |
 | `open` | Whether it is expanded (managed by the container) | `boolean` | — |
+| `summary` | Collapsed-state summary: shown at the header tail while the panel is collapsed (report the inner value without expanding, e.g. "12px 4px"), hidden when expanded; single line with ellipsis truncation; carries no heading semantics | `string` | — |
 
 #### Slots
 

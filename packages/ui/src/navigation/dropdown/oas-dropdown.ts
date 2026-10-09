@@ -3,6 +3,7 @@ import { bindCoarseTap, clickIgnorable } from '../../shared/coarse-tap.js'
 import { resolveDirection } from '../../shared/direction.js'
 import { cssVarPx } from '../../shared/css-var.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
+import { measureMaxTextWidth } from '../../shared/measure-text.js'
 import { chevronDownPath } from '@oas-ui/icons/icons/chevron-down'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
@@ -242,6 +243,8 @@ export class OASDropdown extends OASElement {
       'type',
       // 面板限高滚动：转发内层 oas-menu 的 max-height 通道
       'max-height',
+      // 触发器预留最宽选项宽（opt-in）：切换选中值时触发器尺寸不抖动
+      'reserve-width',
     ]
   }
 
@@ -271,6 +274,9 @@ export class OASDropdown extends OASElement {
   /** 触发器透传记账：size / type 是否由本组件当前转发（移除宿主属性时只清除自己写的） */
   private appliedTriggerSize = false
   private appliedTriggerType = false
+  /** reserve-width 记账：触发器被接管前的 inline min-width（清除时恢复，不吞宿主样式） */
+  private appliedReserve = false
+  private reservePrevMinWidth: string | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -409,6 +415,68 @@ export class OASDropdown extends OASElement {
     this.appliedTriggerType = type !== ''
   }
 
+  // ===== reserve-width：触发器预留最宽选项（切值不抖） =====
+
+  /**
+   * 测最宽选项 label 文本宽，锁触发器 min-width（opt-in `reserve-width`）。
+   * 文本量测走 shared 三级降级（canvas → 离屏 span → 估算），内容变化（items 属性 /
+   * 子元素观察器）经 update 自动重测。清除时恢复触发器被接管前的 inline min-width
+   * （不吞宿主样式；接管期间宿主不宜再手写触发器 inline min-width）。
+   * 量测为近似值（默认字体余量经 --oas-dropdown-reserve-pad 开口调整），目标是
+   * 「切换不抖」而非像素级排版。
+   */
+  private syncReserveWidth(): void {
+    const trigger = this.querySelector<HTMLElement>(':scope > *')
+    if (!trigger) return
+    if (!this.hasAttr('reserve-width')) {
+      if (this.appliedReserve) {
+        trigger.style.minWidth = this.reservePrevMinWidth ?? ''
+        this.appliedReserve = false
+        this.reservePrevMinWidth = null
+      }
+      return
+    }
+    const labels = this.reserveLabels()
+    const pad = cssVarPx(this, '--oas-dropdown-reserve-pad', 40)
+    // 用触发器实际计算字体量测（标签最终在触发器字体下呈现；字体族缺失由 measure-text 补 sans-serif）
+    const font =
+      typeof getComputedStyle === 'function'
+        ? (() => {
+            const cs = getComputedStyle(trigger)
+            return { fontSize: cs.fontSize, fontFamily: cs.fontFamily }
+          })()
+        : undefined
+    const w = measureMaxTextWidth(labels, font) + pad
+    if (w <= pad) {
+      // 无可计量测文本（空菜单）：清掉接管值，触发器回归自身尺寸
+      if (this.appliedReserve) {
+        trigger.style.minWidth = this.reservePrevMinWidth ?? ''
+        this.appliedReserve = false
+        this.reservePrevMinWidth = null
+      }
+      return
+    }
+    if (!this.appliedReserve) {
+      this.reservePrevMinWidth = trigger.style.minWidth || ''
+      this.appliedReserve = true
+    }
+    trigger.style.minWidth = `${Math.ceil(w)}px`
+  }
+
+  /** 参与预留量测的 label 集合：顶层叶子项 + 分组平铺子项（divider 无文本）；子菜单 children 不算（不影响触发器宽） */
+  private reserveLabels(): string[] {
+    const out: string[] = []
+    const walk = (items: MenuItem[]): void => {
+      for (const it of items) {
+        if (it.type === 'divider') continue
+        if (it.label) out.push(it.label)
+        if (it.type === 'group') walk(it.children ?? [])
+      }
+    }
+    walk(this.itemsList)
+    return out
+  }
+
   private toggle(): void {
     if (this.hasAttr('open')) this.removeAttribute('open')
     else this.setAttribute('open', '')
@@ -540,6 +608,8 @@ export class OASDropdown extends OASElement {
     else this.parseChildItems()
     // size / type 透传到触发器（oas-button）
     this.syncTriggerProps()
+    // reserve-width：触发器预留最宽选项宽（切值不抖）；items/子元素变化随 update 重测
+    this.syncReserveWidth()
     const open = this.hasAttr('open')
     if (!this.menuEl || !this.anchorEl) return
     // max-height 面板限高：转发内层 oas-menu 既有通道（数字补 px → CSS 变量 → .menu 限高滚动）
