@@ -2233,3 +2233,39 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：`qa-regression/collapsible.spec.ts` 新建 7 条（真点开合/受控写回/外部切换联动/disabled/键盘/暗色/console 零告警）+ list 补 2 条（真实点击 hash 导航 + extra 可点 + 焦点分离 / 前置媒体真实渲染）+ typography 补 1 条（块级真渲染断言）+ menu 补 1 条（leading 真实渲染在 label 前）。
 - 文档：collapsible.md zh/en 新页（进侧栏与 smoke 等自动收集面）+ list/typography/menu/dropdown zh/en demo 与说明 + api-manifest/api-descriptions 同步（api:check 双向 0）。
 - PRD/ROADMAP 标「未发布」；CHANGELOG `[未发布]` 英文条目。
+
+## 能力补全批：4 新组件 + 多组件增强（未发布）
+
+### 背景
+
+按既定的组件能力补齐流程，对照公开能力基线与自身实现现状逐项核对，补齐缺口。原则：通用能力默认全做；仅「过时/废弃、逆未来趋势、技术做不到、可论证的不适合」不做。
+
+### 新增组件
+
+- `oas-scope-bar`：过滤药丸行（单选/多选、roving 键盘、RTL；可与 `oas-toolbar` 搭配）
+- `oas-transport-well`：媒体运输井（`HH:MM:SS:FF` 时间码 + 键盘 seek，派发 `oas-seek`；空态零足迹）
+- `oas-music-well`：音乐节奏井（bars / beats / tempo / meter 读数）
+- `oas-attachment-group`：附件组（横向吸附滚动 + 边缘渐隐，`data-scrollable` 反射）
+
+### 既有组件增强
+
+- `oas-button`：`active` / `active-tint`（受控选中态，不自切）
+- `oas-slider`：`track` 色轨（hue/saturation/luminance/gradient）、`levels` 立体声电平表、`thumb="pointer|round"`、速度档统一（Shift 精调 / Alt 超精调，与 knob 同口径）
+- `oas-questionnaire`：条件分支（宿主组合通道自动对齐）、`animated` 切步动画（reduced-motion 降级）、`shortcuts` 键盘导航
+- `oas-input`：块级 addon（`slot="block-start"` / `block-end`）
+- `oas-date-picker`：`caption-layout="dropdown"`（月/年下拉，远年跳转）
+- `oas-card`：`density="compact"`
+- `oas-scroll-area`：`type` 枚举（auto/always/scroll/hover；`auto-hide` 保留为别名）
+- `oas-modal`：`slot="media"` + `sticky-footer`
+- `oas-table`：`total`（外部/服务端分页）
+- `oas-toggle-button`：`icon-toggled`
+- `oas-inspector-row`：`align-top` / `striped`
+- `oas-marker`：`status`（info/success/warning/danger）+ `shimmer`
+- `oas-bubble`：`reactions`
+- `oas-message-scroller`：`track-visible`（`oas-visible-change` + 可见集/锚点）
+
+### 验收
+
+- 单测全绿（9710）；`typecheck` / `build` / `api:check` 全绿；全量 e2e 3262 passed。
+- 4 个新组件已注册进 index / ssr / DSD 白名单 + 快照。
+- 对比度修复：button text 变体 active、inspector 斑马行标签、info 文字色 token 调深（axe 比值达标，感知门禁不受影响）。
