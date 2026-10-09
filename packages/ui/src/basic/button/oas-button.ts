@@ -310,7 +310,7 @@ button.danger:hover {
 }
 :host([aria-pressed='true']) button.text,
 :host([aria-pressed='true']) a[part='button'].text {
-  color: var(--oas-button-active-tint-text, var(--oas-color-primary));
+  color: var(--oas-button-active-tint-text, var(--oas-color-primary-text));
   background: color-mix(in srgb, var(--oas-button-active-tint, var(--oas-color-primary)) 12%, transparent);
 }
 button.small {
