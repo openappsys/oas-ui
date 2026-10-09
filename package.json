@@ -29,7 +29,9 @@
     "check": "biome check --formatter-enabled=true .",
     "rtl:audit": "node scripts/e2e/rtl-audit-gate.mjs",
     "rtl:audit:interactive": "node scripts/e2e/rtl-audit-gate.mjs --interactive",
-    "visual:review": "node scripts/e2e/visual-review.mjs"
+    "visual:review": "node scripts/e2e/visual-review.mjs",
+    "llms:gen": "node scripts/llms/gen.mjs",
+    "llms:check": "node scripts/llms/gen.mjs --check"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

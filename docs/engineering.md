@@ -61,6 +61,13 @@
 - **防漂移**：`pnpm api:check` 已在 CI 强制，md 与生成物不一致会红
 - **脚本**：`scripts/api-docs/scan.mjs` 扫 AST 生成 `docs/api-manifest/<tag>.json`（per-component + index.json 顺序）；`gen.mjs` 合并 manifest + 语料渲染 md API 章节（`--check` 比对防漂移 + 双向 0 门禁，`--write-missing` 补占位）；`harvest.mjs` 是一次性语料收割器，从既有手写 API 表收割说明文案，保留备查
 
+### llms.txt（面向 LLM/agent 的文档索引）
+
+- **规范**：遵循 [llmstxt.org](https://llmstxt.org) v2——站点根 `/llms.txt`（`# H1` 项目名 + `>` 摘要 + 自由「约定」段 + 若干 `## H2`「文件列表」`- [名称](url): 说明` + 约定段 `## Optional`）；配套 `/llms-full.txt` 放全文。
+- **生成物**：`packages/docs/docs/public/llms.txt`（入库，CI 校验防漂移）+ `llms-full.txt`（构建产物，体积大**不入库**，随构建生成）。数据源＝docs 侧栏分组（`.vitepress/config.ts` 的 `componentSidebar`）+ `docs/guide/*.md` 与 `docs/components/*.md` 各自的 H1 与首段自动说明。
+- **工作流**：改组件页 / 侧栏分组 / guide 页后跑 `pnpm llms:gen`；`pnpm llms:check` 已在 CI 强制（不一致即红）。
+- **脚本**：`scripts/llms/gen.mjs`（`--check` 只校验入库的 `llms.txt`；`SITE_URL` 环境变量可覆盖站点绝对前缀）。已接进 docs 构建（`packages/docs` 的 `build` 先跑 gen 再 `vitepress build`，保证 dist 内两份文件齐全）。
+
 ### 性能基准（vision §5.8 性能领先）
 
 - **体积基准（CI 强制）**：`pnpm perf:size`。基于 `pnpm build` 后的发布产物 dist 统计各包体积（ui 全量入口链 / cdn.js / theme / core / i18n / icons / ssr）+ button/table/form 单组件按需链（静态 import 图遍历，验证 tree-shaking 叙事），超预算非零退出；预算定档依据见 `docs/perf-baseline.md` §4，基线数据与断言结果写入 `docs/perf-baseline.json`（生成物，勿手改）。已在 `.github/workflows/ci.yml` test job 接线（build 之后，且**排在 `stats:check` 之后**——本工具会写基线，先跑会让读基线的统计校验误报）。**默认只测不写**：基线是入库文件，确需更新数据时显式加 `--update-baseline`（gzip 字节跨 zlib/平台有差异，随手写入只会污染工作树）。

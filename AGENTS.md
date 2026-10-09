@@ -34,6 +34,7 @@
 - **dev 链路（无盲区）**：dev 与生产共用同一份 `packages/*/dist`（workspace symlink 直连真实产物，vitepress 不预构建 linked 包，`.vitepress/config.ts` 已 `optimizeDeps.exclude` 兜底）。`pnpm dev` 会自动 predev（`pnpm -r --filter @oas-ui/ui... build`，按拓扑序先构建 ui 的全部 workspace 依赖再构建 ui，保证全新环境下首次 dist 完整），再并行起 watch 构建 + dev server。**改组件源码 → watch 构建自动更新 dist → dev server 自动 full reload 生效，不重启、不清缓存**；ui 的 watch 构建已配 `emptyOutDir: false`（避免 Windows 上 dev server 占用 dist 文件句柄时 `vite build --watch` 清目录触发 EPERM）。docs 的 md 改动走原生 HMR。shadow DOM 里 `::slotted()` 后不支持链 `::part()`，跨 shadow 改内部样式走 CSS 自定义属性穿透。⚠️ **Windows 已知缺陷**：pnpm workspace symlink + Vite 内存模块图在 dist 被 watch 重写时可能不失效——磁盘 dist 是最新但 dev 页面仍服务旧组件（表现：新增属性/方法不生效、新 demo 空白或布局乱、`observedAttributes` 缺新项）。遇此现象**重启 `pnpm dev` 或删 `packages/docs/docs/.vitepress/cache`** 即恢复；若重启后仍怪，先查 5175/5176 是否有陈旧残留进程。
 - **提交纪律**：涉及组件/Shadow DOM 样式的提交，提交前必跑 `pnpm build`（单测与 typecheck 抓不到 scoped CSS 语法错误）
 - **API 防漂移**：`pnpm api:check`（CI 强制）。md 的 `## API` 章节是生成物，禁止手改——改组件属性/事件/插槽后跑 `pnpm api:scan && pnpm api:gen`；改说明文案改 `docs/api-descriptions.{zh,en}.json` 再 gen（详见 engineering.md §4 API 表格自动化）
+- **文档索引（llms.txt）**：`pnpm llms:gen` 生成站点根 `/llms.txt` + `/llms-full.txt`（遵循 llmstxt.org 规范）；`pnpm llms:check`（CI 强制防漂移）。改组件页/侧栏/guide 后同步跑（详见 engineering.md §4 llms.txt）
 
 ## 用户视角验证门禁
 

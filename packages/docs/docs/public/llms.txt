@@ -1,0 +1,197 @@
+# OAS-UI
+
+> OAS-UI 是框架无关的 Web Components UI 组件库：零运行时依赖、Shadow DOM 封装、CSS 变量主题令牌、浅色/暗色与 RTL 原生支持，可用于原生 HTML、React、Vue 与 SSR(DSD)。
+
+关键约定：
+
+- 组件标签统一前缀 `oas-`，属性用 kebab-case，事件统一 `oas-*`（bubbles + composed，可穿出 shadow DOM）。
+- 受控 / 非受控双模式；`disabled` 支持 config-provider 全局注入。
+- 颜色一律走 CSS 变量 token（含暗色变体）；样式隔离在 shadow DOM，跨边界改样式用 CSS 自定义属性或 `::part()`。
+- 安装、按需引入、图标 opt-in 注册与 CDN 用法见「快速开始」。
+- 人类可读的完整文档在站点内；本文件与 `/llms-full.txt` 面向 LLM/agent。
+
+## 快速开始
+
+- [快速开始](https://oas-ui.dev/guide/getting-started): 安装、按需引入、图标 opt-in 注册与 CDN 用法的入门指南。
+
+## 指南
+
+- [无障碍（A11y）](https://oas-ui.dev/guide/accessibility): OAS-UI 以 WCAG 2.1 AA 为目标，并有持续的 axe 自动化审计。
+- [集成 FAQ](https://oas-ui.dev/guide/faq): 来自真实项目集成的常见问题与陷阱。
+- [液态玻璃画廊](https://oas-ui.dev/guide/glass): 半透明 surface + backdrop 模糊 + 高光折光边的材质层（边缘折射为静态置换近似；动态流动感由可选运行时 glass-fluid.js 提供——指针镜面高光 + 按压收紧，详见本页「动态流动感」）。
+- [场景方案](https://oas-ui.dev/guide/recipes): 以「完整可拷贝」为标准的组合模式集。每个食谱演示多个组件如何组成一个真实业务形态。
+- [皮肤画廊](https://oas-ui.dev/guide/skins): 6 套品牌色皮肤 × 3 套内置主题，实时切换预览。机制与用法见主题与自定义。
+- [SSR 边界策略](https://oas-ui.dev/guide/ssr): OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素、Shadow DOM 与事件。在 SSR / 静态生成环境下需要遵循以下边界。
+- [主题与自定义](https://oas-ui.dev/guide/theming): 在根元素（<html> 或任意容器）上设置 data-theme 切换三套内置主题：
+- [设计 Token（Design Tokens）](https://oas-ui.dev/guide/tokens): OAS-UI 的全部视觉语言都由 CSS 变量（语义 token）驱动。组件样式只引用语义 token，不硬编码任何色值/字号/间距——因此换肤 = 覆盖 CSS 变量，改主题不碰组件。
+
+## 基础组件
+
+- [Button 按钮](https://oas-ui.dev/components/button): 基础按钮组件，原生 <button> 增强。
+- [Icon 图标](https://oas-ui.dev/components/icon): 原创线性图标集，按名渲染内联 SVG，tree-shakable。
+- [Tag 标签](https://oas-ui.dev/components/tag): 用于标记和分类的小型标签。
+- [Badge 徽标](https://oas-ui.dev/components/badge): 数字/状态徽标，通常用于消息计数或新内容提示。
+- [Space 间距](https://oas-ui.dev/components/space): 水平/垂直等距布局容器。
+- [Divider 分割线](https://oas-ui.dev/components/divider): 区隔内容的水平/垂直分割线。
+- [Link 链接](https://oas-ui.dev/components/link): 原生 <a> 增强的文字链接。
+- [Typography 排版](https://oas-ui.dev/components/typography): 文本、标题、段落排版组件。
+- [ButtonGroup 按钮组](https://oas-ui.dev/components/button-group): 按钮组：将多个 oas-button 组合为一个选值组，相邻按钮圆角合并、hover 只亮当前项。
+- [Label 标签](https://oas-ui.dev/components/label): 表单标签组件，for 指向目标控件 id，点击代理聚焦目标控件；支持必填星号与星号位置。
+- [Kbd 键盘按键](https://oas-ui.dev/components/kbd): 键盘快捷键展示组件，keys 按空格拆分自动渲染多块并用 + 连接；非交互组件。
+- [VisuallyHidden 视觉隐藏](https://oas-ui.dev/components/visually-hidden): 内容对屏幕阅读器可见、视觉上不可见的容器。常用于辅助说明文案、表单校验提示等无障碍场景。
+
+## 布局组件
+
+- [Layout 布局](https://oas-ui.dev/components/layout): 经典的顶部 + 侧栏 + 内容 + 底部页面骨架，配合语义化子组件使用。
+- [Sidebar 侧栏](https://oas-ui.dev/components/sidebar): 可折叠侧栏：桌面端 collapsed 收窄为图标条，移动端（窄于 mobile-breakpoint，默认 768px）自动切换为覆盖式抽屉 + 遮罩，点击外部 / 关闭按钮 / Esc 收起。
+- [Container 容器](https://oas-ui.dev/components/container): 左对齐，不再居中
+- [Grid 栅格](https://oas-ui.dev/components/grid): 24 栅格布局系统，配合 oas-grid-item 划分列宽，支持间距、偏移与自定义总列数；设置 columns 后切换为自动等分布局（simple-grid）。
+- [Flex 弹性布局](https://oas-ui.dev/components/flex): 基于 CSS Flexbox 的布局容器，通过属性控制方向、主轴/交叉轴对齐、间距与换行。
+- [Splitter 分割面板](https://oas-ui.dev/components/splitter): 可调整面板尺寸的分割组件，支持鼠标拖拽、键盘方向键、双击复位、折叠、延迟渲染、多面板与自定义手柄。
+- [ScrollArea 滚动区域](https://oas-ui.dev/components/scroll-area): 包裹内容并接管滚动条外观的容器：细条自定义滚动条、hover 变粗，type 控制滚动条显示时机（auto / always / scroll / hover），滚动事件节流派发。
+- [Masonry 瀑布流](https://oas-ui.dev/components/masonry): 基于 CSS columns 的瀑布流布局容器，子项自动均分到各列且不被拆分。
+- [AspectRatio 等比容器](https://oas-ui.dev/components/aspect-ratio): 按指定宽高比锁定容器尺寸的纯展示组件，支持预定义比例名（square/landscape/portrait/wide/ultrawide/golden）与分式/小数语法；宽度 100%、高度由比例推导，内容铺满并按比例裁切；无子内容时仍按比例占位。无事件。
+
+## 表单组件
+
+- [Input 输入框](https://oas-ui.dev/components/input): 原生 <input> 增强的基础输入组件。
+- [Textarea 文本域](https://oas-ui.dev/components/textarea): 原生 <textarea> 增强：高度自适应（可封顶 / 无上限）、字数统计、一键清除、尺寸档位、形态与校验态。
+- [Checkbox 复选框](https://oas-ui.dev/components/checkbox): 原生 <input type="checkbox"> 增强，支持半选、多选组、全选联动、数量限制与卡片形态。
+- [Radio 单选框](https://oas-ui.dev/components/radio): 原生 <input type="radio"> 增强，支持单选组键盘导航（radiogroup 模式）、数据驱动与卡片形态。
+- [Switch 开关](https://oas-ui.dev/components/switch): 热区说明：开关宿主宽度收缩为控件实际宽度（width: fit-content），默认形态下视觉宽度与点击热区一致；当宿主被显式拉宽（竖向 oas-space 的 align-stretch、宿主 width: 100%）时，整行空白区点击同样切换——对齐 iOS 设置项的整行点击语义（内部按钮与 label 标签区域
+- [Segmented 分段器](https://oas-ui.dev/components/segmented): 单选的线性分段选择器，用于轻度筛选 / 切换视图，role="radiogroup"，可禁用单项。选中态指示器带滑动过渡动画。
+- [Picker 滚轮选择器](https://oas-ui.dev/components/picker): 移动式滚轮列选择器：原生滚动 + 吸附提供惯性手感，滚动/键盘选中落停后回写 value 并派发 oas-change。支持独立多列（columns）与级联树（options）两种数据形态，form-associated 可直接进原生表单。适合移动端的日期式分栏、地区级联、规格多选等场景。
+- [Slider 滑块](https://oas-ui.dev/components/slider): 原生 <input type="range"> 增强的滑动条。
+- [Knob 旋钮](https://oas-ui.dev/components/knob): 把连续/离散数值编码为圆周角度的旋转输入控件，为参数密集面板（音频/工业/3D）而生：紧凑圆形 + 相对拖拽（无跳变）+ 双极零位。
+- [InputNumber 数字输入框](https://oas-ui.dev/components/input-number): 数字输入组件：内层为文本输入 + 数字键盘（inputmode="decimal"），带步进按钮、范围约束与格式化显示，role="spinbutton" 提供完整的数值 aria 状态。
+- [Rate 评分](https://oas-ui.dev/components/rate): 星级评分，支持键盘方向键调节、半星交互、悬停预览、只读展示与触屏拖拽，默认点击已选中的同一颗星可清空。
+- [Select 选择器](https://oas-ui.dev/components/select): 下拉选择器，支持单选、多选、分组、可清空、远程搜索与自定义创建，尺寸/校验态/受控展开/多选上限齐备，键盘可操作。
+- [AutoComplete 自动完成](https://oas-ui.dev/components/auto-complete): 输入即推荐：值是自由文本（浏览器地址栏 / datalist 心智），建议列表只辅助输入，支持键盘选择、分组、防抖远程建议、自定义渲染。
+- [Combobox 组合框](https://oas-ui.dev/components/combobox): 输入框即控件的可过滤单选组合框：常显可编辑的输入框显示选中项 label，输入实时过滤选项，选中后 value 取 option.value。
+- [Cascader 级联选择](https://oas-ui.dev/components/cascader): 多级联动选择：支持多选勾选、父子解绑、多选值策略、路径搜索、动态加载、受控开合与标签折叠，键盘可操作。
+- [TreeSelect 树形选择器](https://oas-ui.dev/components/tree-select): 树形结构选择，支持父子级联多选、搜索过滤、懒加载与标签化回显。
+- [Mentions 提及](https://oas-ui.dev/components/mentions): 输入 @（或 # 等）触发建议浮层的提及输入组件，适合 @成员 / @任务 / 评论发布等场景。
+- [DatePicker 日期选择器](https://oas-ui.dev/components/date-picker): 日期选择器，支持 date / daterange / month / monthrange / year / yearrange / datetime / datetimerange / week / quarter 十种类型，键盘可操作，Intl.DateTimeFormat 格式化；触发器为输入框，可直接键入日期
+- [TimePicker 时间选择器](https://oas-ui.dev/components/time-picker): 时间选择器，下拉时分秒列选择（12 小时制时附上午/下午列），↑/↓ 调整、Home/End 跳首末、Enter 确认、Esc 取消，支持三元步进与禁用时刻；触发器为输入框，可直接键入时刻（失焦或回车提交，非法输入自动回退）。
+- [Calendar 日历](https://oas-ui.dev/components/calendar): 日历组件，月/年两种模式，支持选中、禁用日期、周号与键盘网格导航；日期描述走 Intl.DateTimeFormat（locale 感知）。
+- [Upload 上传](https://oas-ui.dev/components/upload): 点击或拖拽选择文件，展示文件列表与上传进度。支持真实上传通道（action XHR / custom-request 逃生舱）、上传前校验转换、失败重试与取消。
+- [Transfer 穿梭框](https://oas-ui.dev/components/transfer): 左右双面板 + 中间穿梭按钮，支持搜索过滤、键盘操作、目标侧拖拽排序与选中即移动模式。
+- [ColorPicker 颜色选择器](https://oas-ui.dev/components/color-picker): 触发色块弹出调色面板，支持 2D 饱和度-亮度色域 + hue 竖条选色、预设色、RGB 与 hex 输入、透明度通道、渐变模式（多 stop 编辑）、宽容格式解析、清空与受控开关；面板采用 fixed 视口定位，自动避让边缘翻转，也可 inline 就地渲染。
+- [Swatch 色板](https://oas-ui.dev/components/swatch): 内联预设色快选与展示的色块件：主题色/tag 色/收藏色等「不开面板直接选色」场景。oas-swatch 为色块件，oas-swatch-group 为选择组（单选 radio 语义 / 多选 checkbox 语义，roving 键盘导航）。
+- [ToggleButton 切换按钮](https://oas-ui.dev/components/toggle-button)
+- [ToggleGroup 切换组](https://oas-ui.dev/components/toggle-group): 单选/多选互斥的按钮组：单选组用 radio 语义、多选组用 checkbox 语义，键盘方向键与 Home/End 导航，受控 value。支持尺寸档、纵向、贴合形态、项图标、强制选中、多选上限、满宽均分、选中色与校验态。
+- [PinInput 验证码](https://oas-ui.dev/components/pin-input): 分格验证码输入：字符约束过滤（type / pattern）、分隔符分组、尺寸与形态档位、OTP 短信自动填充、填满自动提交、loading / success 校验反馈；键盘方向键移动、Backspace 回退、粘贴自动分发（含过滤）。
+- [DynamicInput 动态列表](https://oas-ui.dev/components/dynamic-input): 数组字段的增删编辑，每行复用 oas-input 组件，支持受控/非受控双模式、键值对行、行内容自定义与按钮排序。
+- [DynamicTags 动态标签](https://oas-ui.dev/components/dynamic-tags): 常驻输入框 + 标签流形态：输入回车/分隔符提交生成标签，支持去重、校验、上限、失焦保存、排序、超量折叠与原位编辑。
+- [Editable 就地编辑](https://oas-ui.dev/components/editable): 点击/回车/空格进入编辑态，Enter 提交、Esc 取消，空值提交默认非破坏；支持多行、图标触发、受控编辑态与提交方式四态组合。
+- [components/form.md](https://oas-ui.dev/components/form): 原生 <form> 增强，支持按 rules 规则对内部字段做校验与提交。
+- [Questionnaire 多步问答](https://oas-ui.dev/components/questionnaire): 步骤驱动的表单流程编排组件：步骤头 + 进度（「第 n / m 步」）+ 每步内容面板 + 单步校验门控。适合向导式表单 / 问卷 / 多步结算等场景。校验复用 oas-form 内核——每步面板内放一个 <oas-form>，下一步前对当前步校验、未过不放行；回退不校验、面板常驻不卸载（已填值保留）。
+
+## 反馈与浮层组件
+
+- [Tooltip 文字提示](https://oas-ui.dev/components/tooltip): 简单的文字提示气泡，hover 或键盘聚焦触发。
+- [Popover 气泡卡片](https://oas-ui.dev/components/popover): 点击 / 悬停 / 聚焦触发，可承载标题、正文与自定义内容的浮层面板。支持 12 向放置、双轴偏移、开合动画、portal、modal 化与嵌套浮层。
+- [HoverCard 悬停卡片](https://oas-ui.dev/components/hover-card): hover / 聚焦触发，浮层可悬停不闪关的富内容预览卡片。支持 12 向放置、显隐延迟分离、箭头（含贴角融合）、双轴偏移、碰撞细调、挂载容器定制、延迟组与受控显示。
+- [Message 消息提示](https://oas-ui.dev/components/message): 命令式全局消息提示，支持类型图标、加载态、悬停暂停、倒计时进度条、位置偏移、数量上限、富内容与 promise 链。进出场动画走 transform/opacity，尊重 prefers-reduced-motion。
+- [Notification 通知](https://oas-ui.dev/components/notification): 四角定位的通知卡片，支持标题、描述、时长、类型、悬停暂停、优先级抢占与栈治理（折叠计数/层叠悬停展开）。
+- [Toast 轻提示](https://oas-ui.dev/components/toast): 命令式全局轻提示，支持成功/错误/警告/信息/加载态、操作按钮、promise 链、队列治理与键盘/读屏无障碍，默认 3 秒自动关闭。
+- [Snackbar 消息条](https://oas-ui.dev/components/snackbar): 底部（或顶部）居中的轻量反馈条。open 属性受控，多条自动纵向堆叠（每方向最多 3 条）；悬停/聚焦/页面隐藏时暂停计时并按剩余时长续走；oas-close 事件以 detail.reason 区分关闭途径（timeout / escape / close / swipe / evict / group），由外部负责
+- [Backdrop 遮罩](https://oas-ui.dev/components/backdrop): 全屏半透明遮罩，支持内容插槽、颜色/浓度/模糊定制、淡入淡出动画与生命周期事件；open=false 时播完退场动画后自动卸载节点，不留孤儿 DOM。
+- [BottomSheet 底部抽屉](https://oas-ui.dev/components/bottom-sheet): 移动端底部抽屉承载件：底部升起面板 + 拖拽把手 + 遮罩，下滑把手/点遮罩/Esc 三种关闭手势，safe-area 刘海屏手势区与焦点陷阱内置；passive 被动透传模式可作浮层组件 PC 形态的结构占位。
+- [Modal 对话框](https://oas-ui.dev/components/modal): 模态对话框，用于需要用户确认或输入的中断场景。
+- [Confirm 确认框](https://oas-ui.dev/components/confirm): 命令式确认对话框，基于 Promise，底层复用 oas-modal。
+- [Drawer 抽屉](https://oas-ui.dev/components/drawer): 从屏幕边缘滑出的浮层面板，常用于筛选条件、详情信息、表单编辑等场景。
+- [Popconfirm 气泡确认](https://oas-ui.dev/components/popconfirm): 在触发元素旁显示确认气泡，常用于删除等危险操作前的二次确认。基于浮层定位引擎：12 方位 + 溢出自动翻转 + 箭头指向 + fixed 定位（不被容器裁剪）。
+- [Alert 警告提示](https://oas-ui.dev/components/alert): 内嵌式提示条，用于展示成功、信息、警告或错误信息，支持标题、描述、图标、操作区、关闭动画与多种变体。
+- [NoticeBar 通告栏](https://oas-ui.dev/components/notice-bar): 页面顶部/区块内的通告条：图标 + 文本 + 可关闭 + action 链接。文本超长时可横向无缝滚动（内嵌 oas-marquee 组合复用其滚动引擎）；多条通告以 items 纵向轮播（淡入淡出，prefers-reduced-motion 下不自动轮播）。配色走语义 token，暗色主题自动适配。
+- [PullRefresh 下拉刷新](https://oas-ui.dev/components/pull-refresh): 移动端下拉刷新容器组件：默认插槽为滚动内容（列表等），容器自身为滚动盒（高度由宿主约束）。列表滚到顶部继续下拉时露出顶部指示区，随拉动位移跟手（阻力曲线渐近位移上限）；释放超过阈值触发刷新——派发 oas-refresh 并停驻阈值高度进「刷新中」视觉，宿主完成异步刷新后移除 refreshing 属性，组件播「刷新成
+- [Progress 进度条](https://oas-ui.dev/components/progress): 显示任务执行进度，支持线形 / 圆环 / 仪表盘三种形态、状态色、不确定态、自定义颜色与文本、条纹、步进分段、缓冲段等能力。
+- [LoadingBar 顶部加载条](https://oas-ui.dev/components/loading-bar): 页面顶部（或底部）的全局加载进度条，命令式 API 驱动。多次 start 并发计数，最后一个 finish/error 才收尾；支持增量控制、局部容器、反向/RTL 与生命周期事件。
+- [Spin 加载中](https://oas-ui.dev/components/spin): 加载指示器，可单独使用，也可包裹内容并叠加遮罩；支持文案、进度、全屏与自定义指示器。
+- [Skeleton 骨架屏](https://oas-ui.dev/components/skeleton): 加载时的占位骨架：整组段落组合（头像/标题/行）与单形状占位块（oas-skeleton-item）两种用法，支持受控加载切换、三档动效、列表份数、逐行宽度与防闪烁延迟。
+- [Empty 空状态](https://oas-ui.dev/components/empty): 空数据时的占位展示，支持标题、富内容描述、图标型媒体、两套内置插画、尺寸档位、横向布局与容器变体。
+- [Result 结果页](https://oas-ui.dev/components/result): 操作结果反馈页，支持成功、失败、警告、信息与 403/404/500 错误页状态，标题/描述双通道、内容区、自定义图标与尺寸档位。
+
+## 导航组件
+
+- [Menu 菜单](https://oas-ui.dev/components/menu): 独立的菜单列表，支持选中态与键盘导航。
+- [Dropdown 下拉菜单](https://oas-ui.dev/components/dropdown): 点击触发器展开菜单，浮层定位到触发元素旁。
+- [ContextMenu 右键菜单](https://oas-ui.dev/components/context-menu): 在包裹区域内右键弹出菜单，菜单定位在鼠标位置。
+- [Command 命令面板](https://oas-ui.dev/components/command): 命令面板（⌘K 唤起，快捷键可配置）——搜索过滤、匹配打分排序、键盘选择、Enter 执行、嵌套子页导航、最近使用、多选批量执行。open 受控：可由外部设置，也可用全局快捷键或 Esc 关闭（打开/关闭各派发一次 oas-open-change）。
+- [Menubar 应用菜单栏](https://oas-ui.dev/components/menubar): 桌面应用式顶部菜单条（文件 / 编辑 / 视图），点击 / 悬停展开子菜单（级联浮出），支持方向键、Alt 访问键与焦点陷阱。
+- [NavigationMenu 多级导航](https://oas-ui.dev/components/navigation-menu): 网站式多级导航栏：顶级触发器悬停/点击打开统一视口面板（大面板多列链接卡），支持延迟开合、受控打开项、键盘导航，href 叶子项渲染为链接。
+- [Toolbar 工具栏](https://oas-ui.dev/components/toolbar): 工具按钮组容器：role="toolbar" + aria-label，Tab 进入后方向键在控件间移动（roving tabindex，只聚焦当前项）。配套切换组、分隔符、输入框三个部件，支持纵向布局、循环开关、整栏禁用、尺寸档位、溢出收纳与贴边形态。
+- [AppBar 应用栏](https://oas-ui.dev/components/app-bar): 页面 / 工具区顶部的应用栏布局条（role="banner"）：leading 区（汉堡钮 / 自定义内容）+ 标题 + 操作区 + 末端区 + overflow 收纳 + 滚动折叠 + 扩展区第二行。
+- [Breadcrumb 面包屑](https://oas-ui.dev/components/breadcrumb): 展示页面层级路径。末项为当前页（aria-current="page"）。
+- [Anchor 锚点](https://oas-ui.dev/components/anchor): 滚动监听当前章节并自动高亮，点击锚点平滑滚动定位。支持指定滚动容器、点击落点偏移、多级嵌套、横向模式、吸附、轨道墨水条、样式变体与历史控制等能力。
+- [IndexBar 索引栏](https://oas-ui.dev/components/index-bar): 移动端分节列表 + 右侧字母索引导航：点按或拖拽字母跳转分节，滚动时反向联动当前字母高亮（scrollspy）。适合通讯录、城市选择等长列表的快速定位。
+- [BackTop 回到顶部](https://oas-ui.dev/components/back-top): 固定于视口角落的回到顶部按钮：滚动超过阈值自动出现，点击平滑滚回顶部。支持自定义目标滚动容器、滚动进度环、反向滚到底、撑满条等形态。
+- [Tour 引导](https://oas-ui.dev/components/tour): 分步功能引导，带全屏遮罩与目标高亮。支持 12 向定位与溢出翻转、滚动跟随、遮罩/形态定制、键盘导航、异步步骤、hints 信标与「不再显示」记忆。
+- [Tabs 标签页](https://oas-ui.dev/components/tabs): 标签式内容切换，支持键盘方向键导航；未激活面板通过 hidden 隐藏。oas-tabs + oas-tab-panel 配套使用。
+- [BottomNavigation 底部导航](https://oas-ui.dev/components/bottom-navigation): 移动端底部导航栏：role="tablist" + 每项 role="tab" + aria-selected 同步，键盘左右移动焦点（roving tabindex）、Enter/Space 选中，激活项主色 + 图标，顶部细分隔线。
+- [Pagination 分页](https://oas-ui.dev/components/pagination): 数据分页导航，支持页码省略、前后翻页、自定义相邻页码数、总数展示、每页条数切换与快速跳转。
+- [Steps 步骤条](https://oas-ui.dev/components/steps): 引导用户按流程完成任务的步骤指示器，支持等待 / 进行中 / 完成 / 错误四种状态、纵向排布与可点击跳转。
+- [Stepper 步骤面板](https://oas-ui.dev/components/stepper): 步骤驱动的分步内容面板一体机：头部步骤条（可点击跳步）+ 联动内容面板（仅当前步显示），适合向导 / 表单分步 / 结账流程等场景。双组件配套使用：oas-stepper 管步骤头、oas-stepper-panel 管内容、value 关联显示（同构 oas-tabs / oas-tab-panel 模式）。
+- [Affix 固钉](https://oas-ui.dev/components/affix): 将内容吸附在视口顶部或底部，页面滚动到指定偏移后自动固定，常用于固定表格操作栏、工具栏等。
+- [PageHeader 页头](https://oas-ui.dev/components/page-header): 页面头部信息区，支持标题、副标题、返回按钮、面包屑、正文区与底部操作区，常用于详情页、编辑页顶部。
+- [FloatButton 悬浮按钮](https://oas-ui.dev/components/float-button): 默认固定于页面右下角的圆形操作按钮，常用于「新建」「反馈」等快捷操作，支持角标、自定义图标、扩展文字与链接化。
+- [SpeedDial 悬浮动作按钮](https://oas-ui.dev/components/speed-dial): 悬浮主按钮 + 展开子动作列表，常用于「新建/分享」等快捷操作；aria-expanded 同步，点击外部/Esc 收起，无孤儿浮层。
+
+## 工作台构件
+
+- [TitleBar 标题栏](https://oas-ui.dev/components/titlebar): 窗口标题栏（应用外壳 chrome）：拖动区 + 居中标题/文档井 + 内建窗口操作 + compact/large 两档。语义在「窗口」，服务 Electron/Tauri 宿主；纯 Web 下拖动属性为无害空操作，组件退化为应用外壳语义（与 oas-app-bar 的页面级 role="banner" 分工）。
+- [StatusBar 状态栏](https://oas-ui.dev/components/statusbar): 底部静默信息条：左右分段单元格 + 可点项 + 后台活动旋转指示 + 告警/进度语义色。与 oas-footer（内容页脚）的分工——statusbar 承载状态词汇（聚合计数、当前选中、同步态），footer 是语义化内容页脚。
+- [Inspector 属性检视面板](https://oas-ui.dev/components/inspector): 右侧（可左）属性编辑面板：tab 条 + 可折叠分节 + 标签/控件行。设计工具右侧栏语义（role="complementary"）——与 oas-sidebar（导航菜单）的分工：inspector 是上下文属性编辑，sidebar 是 items/选中/嵌套导航。
+- [ActionBar 操作栏](https://oas-ui.dev/components/action-bar): 底部命令条 + 读数井（容器 role="group" + aria-label）：命令按钮组 + 统计/任务进度/媒体运输/音乐节奏读数井，三表体（charcoal/dark/light）。与 oas-toolbar（工具调色板）的分工——action-bar 是底部命令 + 读数，读数井是 toolbar 没有的词
+
+## 数据展示组件
+
+- [Table 表格](https://oas-ui.dev/components/table): 用于以行列表格形式展示结构化数据，支持排序、行选中、多选与加载态，可与分页组件联动。
+- [Tree 树](https://oas-ui.dev/components/tree): 用于展示层级数据，支持展开/收起、选中、级联勾选、点选多选、搜索过滤、懒加载、键盘操作与节点拖拽。
+- [VirtualList 虚拟列表](https://oas-ui.dev/components/virtual-list): 用于大数据量列表的视口窗口渲染：只渲染可见项（含上下缓冲），首尾 padding 占位撑起滚动高度，滚动事件按 rAF 节流。通用渲染原语，供 table / tree 复用。
+- [Card 卡片](https://oas-ui.dev/components/card): 用于承载一组相关内容的信息容器。
+- [Avatar 头像](https://oas-ui.dev/components/avatar): 用于展示用户或对象头像，支持文字占位与图片两种形态。
+- [Image 图片](https://oas-ui.dev/components/image): 用于展示图片资源，支持可选预览能力。
+- [QRCode 二维码](https://oas-ui.dev/components/qrcode): 基于纯 TypeScript 零依赖编码器（自研）的二维码组件，输出内联 SVG，可扫码、可下载。
+- [Barcode 条码](https://oas-ui.dev/components/barcode): 基于纯 TypeScript 零依赖编码器（自研）的一维条码组件，第一期覆盖 6 码制（CODE128 / EAN-13 / EAN-8 / UPC-A / CODE39 / ITF-14），输出内联 SVG，可扫码、可下载。
+- [Watermark 水印](https://oas-ui.dev/components/watermark): 容器级水印层，铺在内容之上且不拦截任何交互，适合敏感信息防泄露。
+- [Collapse 折叠面板](https://oas-ui.dev/components/collapse): 用于将内容收纳在可折叠的面板中，聚焦关键信息。
+- [Collapsible 折叠面板](https://oas-ui.dev/components/collapsible): 单面板自折叠原语：无容器、自管开合的独立折叠块。与 oas-collapse 的关系——collapse 是「容器 + 多面板」的编排件，面板开合由容器驱动；collapsible 是独立单面板，适合文件树节点、表单折叠分区、侧栏分组等「一个区块自己开合」的场景。
+- [Descriptions 描述列表](https://oas-ui.dev/components/descriptions): 用于成组展示只读信息，适合详情页场景。默认 horizontal 布局（标签与内容同一行，标签在左为灰色弱化的文字）；layout="vertical" 时为标签在上、内容在下的纵向堆叠。
+- [Timeline 时间线](https://oas-ui.dev/components/timeline): 用于按时间顺序展示一系列事件节点。
+- [List 列表](https://oas-ui.dev/components/list): 用于展示同类信息集合，可承载标题、描述与扩展操作。
+- [Carousel 轮播](https://oas-ui.dev/components/carousel): 用于在同一可视区域循环展示多屏内容，支持手动切换与自动播放。
+- [Statistic 统计数值](https://oas-ui.dev/components/statistic): 统计数值展示，Intl.NumberFormat 千分位与精度（locale 感知），支持前后缀与骨架屏加载占位。
+- [Countdown 倒计时](https://oas-ui.dev/components/countdown): 倒计时组件，实时刷新、支持天/时/分/秒格式化模板，到达终点派发 oas-finish，断开连接自动清理计时器。type="countup" 切换为正计时（从 start 起往上递增，无终止点）。
+- [Ellipsis 文本省略](https://oas-ui.dev/components/ellipsis): 用于长文本的自动省略，支持单行/多行截断，溢出时悬停展示全文 tooltip，也可展开/收起。
+- [Chart 图表](https://oas-ui.dev/components/chart): 自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积八型，外加系列级组合图与双轴。数据更新自动重绘，prefers-reduced-motion 时关闭动画。
+- [Code 代码块](https://oas-ui.dev/components/code): 代码块组件（自研正则 token 高亮，零第三方高亮引擎），支持常见语言基础着色、行号与复制按钮。
+- [Equation 数学公式](https://oas-ui.dev/components/equation): 数学公式组件（自研简化 LaTeX 子集，零第三方公式引擎），覆盖高中/大学常用公式：上下标、分数、根号、求和/积分（带上下限）、希腊字母与常用运算符。
+- [Log 日志流](https://oas-ui.dev/components/log): 等宽字体的日志展示容器，支持增量追加与"贴底"自动滚动，适合构建控制台/构建输出等场景。
+- [Comment 评论](https://oas-ui.dev/components/comment): 纯展示的评论块容器，通过插槽组装作者头像、名称、时间、内容与操作区；支持嵌套子评论自动缩进。
+- [Marquee 跑马灯](https://oas-ui.dev/components/marquee): 循环无缝滚动展示长内容的纯展示组件，内容经 slot 无缝循环；支持悬停暂停、prefers-reduced-motion 静态降级。滚动速度为像素/秒真实速度（组件测量内容宽推导时长），内容不足一屏时自动填充。无事件。
+- [NumberAnimation 数字滚动](https://oas-ui.dev/components/number-animation): 数字从当前值缓动到目标值的动画组件，到目标值停止并派发 oas-finish；prefers-reduced-motion 时直接跳目标，断开连接自动取消 rAF 无泄漏。
+- [GradientText 渐变文字](https://oas-ui.dev/components/gradient-text): 以渐变色填充文字的纯展示组件，background-clip: text 实现；默认走主题 token 双色渐变，支持任意色标数组与方向。无事件。
+- [Highlight 文本高亮](https://oas-ui.dev/components/highlight): 三个开关缺省均关闭（不敏感）；布尔属性在场即生效。
+- [SwipeCell 滑动操作](https://oas-ui.dev/components/swipe-cell): 列表项横向滑动露出操作按钮组：默认插槽为内容层（列表项主体），slot="actions" 为操作按钮组（宿主放置 button / oas-button）。向 inline-start 方向滑动内容层即可露出 inline-end 侧的操作区，松手按位移阈值吸附开合；oas-open / oas-close 在开 /
+- [Kanban 看板](https://oas-ui.dev/components/kanban): 列 + 卡片的看板视图：卡片在列间拖拽换列、列内拖拽排序，支持列拖拽重排、WIP 限制、卡片多选与泳道分带，落定后派发 oas-change 供宿主同步数据。适合任务流转、需求池、招聘进度等阶段化协作场景。
+- [Scheduler 日程调度](https://oas-ui.dev/components/scheduler): 月视图日程组件：日格内渲染事件芯片（标题 + 色条），events 读/写通道 + addEvent / updateEvent / removeEvent CRUD 方法；点事件芯片派发 oas-event-click、点日格派发 oas-day-click（宿主接编辑器），数据变更派发 oas-events-cha
+- [Gantt 甘特图](https://oas-ui.dev/components/gantt): 项目排期语义的任务图表组件（data 族）：行树 WBS（父任务摘要条 = 子任务时间并集）× 横向时间轴，任务条 / 里程碑 / 摘要条三形态 + 进度填充；依赖连线（FS/SS/FF/SF 四型，SVG 单画布覆盖层）；拖拽三件套（拖条改期 / 左右手柄拉伸 / 拖改进度，pointerup 收口一次性写回并派发事
+
+## 会话组件
+
+- [Bubble 气泡](https://oas-ui.dev/components/bubble): 会话消息气泡表面：只负责气泡本身（背景/边框/圆角/宽度上限 + 内容），头像、名字、时间、发送态由 oas-message-row 组合行负责。用于 AI 助手、客服会话、IM 聊天等会话流场景。
+- [Attachment 附件](https://oas-ui.dev/components/attachment): 会话附件行：媒体（图标/缩略图）+ 文件名/元数据 + 上传状态机 + 操作（下载/删除/整卡触发器）。用于聊天发文件、AI 对话传图、客服工单附件等场景。
+- [MessageScroller 会话滚动容器](https://oas-ui.dev/components/message-scroller): 会话滚动容器：一套「滚动意图模型」——读者在底部时跟随新内容（AI 式）、IM 式始终钉底可切、跳到底按钮、上翻加载历史不跳动（含异步资源保位）、轮次锚定（AI「回到最后提问」）、首屏防跳。组件不拥有消息（只提供滚动行为），宿主接任意后端。
+- [Marker 会话标记](https://oas-ui.dev/components/marker): 会话时间戳/系统事件标记：行内小状态、描边胶囊行、带文字分隔线。IM 里的「今天 10:00」时间分隔、「某某 加入群聊」系统事件、AI 流式「生成中」状态都归此类。
+- [MessageRow 消息行](https://oas-ui.dev/components/message-row): 会话消息行（组合行）：行布局所有者——负责头像槽、方向、header/footer 排布与发送态；可见表面由 oas-bubble（默认插槽内）提供。消息操作（复制/重试等）由 footer 插槽内组件派发，组件不管具体动作。
+
+## 框架级容器
+
+- [ConfigProvider 全局配置](https://oas-ui.dev/components/config-provider): 全局配置的注入入口，统一管理包裹子树的 locale / size / theme / config / direction / z-index / disabled。组件读取顺序：自身属性 > config-provider > 全局默认。
+- [App 消息上下文容器](https://oas-ui.dev/components/app): message / notification / loadingBar 等命令式 API 的宿主容器。app 容器存在时，消息挂载到 app 内（而非 document.body）；可与 config-provider 配套使用。
+- [ThemeEditor 主题编辑器](https://oas-ui.dev/components/theme-editor): 展示主题默认 token 全集（对应 @oas-ui/theme 的语义 token），变量不存在时自动跳过。
+
+## Optional
+
+- [完整参考（全文拼接）](https://oas-ui.dev/llms-full.txt): 指南与全部组件文档的全文，一次性抓取
