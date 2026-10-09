@@ -358,6 +358,11 @@ gtag('config', 'G-RXS142HBXF');`,
       ['meta', { name: 'twitter:image', content: ogImage }],
       ['meta', { name: 'twitter:image:alt', content: ogImageAlt }],
     ]
+    // LLM/agent 友好：每页指到其 markdown 版本（llmstxt.org 规范的 rel 关系）+ 根索引
+    // md 镜像由 scripts/llms/gen.mjs 原样复制到 public/（构建/开发时生成，dist 根即可访问）
+    const mdUrl = pageUrl(rel).endsWith('/') ? `${pageUrl(rel)}index.md` : `${pageUrl(rel)}.md`
+    head.push(['link', { rel: 'alternate', type: 'text/markdown', href: mdUrl }])
+    head.push(['link', { rel: 'describedby', href: '/llms.txt' }])
     if (isHome) {
       head.push([
         'script',

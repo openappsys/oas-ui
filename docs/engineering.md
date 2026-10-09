@@ -63,10 +63,13 @@
 
 ### llms.txt（面向 LLM/agent 的文档索引）
 
-- **规范**：遵循 [llmstxt.org](https://llmstxt.org) v2——站点根 `/llms.txt`（`# H1` 项目名 + `>` 摘要 + 自由「约定」段 + 若干 `## H2`「文件列表」`- [名称](url): 说明` + 约定段 `## Optional`）；配套 `/llms-full.txt` 放全文。
-- **生成物**：`packages/docs/docs/public/llms.txt`（入库，CI 校验防漂移）+ `llms-full.txt`（构建产物，体积大**不入库**，随构建生成）。数据源＝docs 侧栏分组（`.vitepress/config.ts` 的 `componentSidebar`）+ `docs/guide/*.md` 与 `docs/components/*.md` 各自的 H1 与首段自动说明。
+- **规范**：遵循 [llmstxt.org](https://llmstxt.org) v2——站点根 `/llms.txt`（`# H1` 项目名 + `>` 摘要 + 自由「约定」段 + 若干 `## H2`「文件列表」`- [名称](url): 说明` + 约定段 `## Optional`）；配套 `/llms-full.txt` 全文，且每页提供 markdown 版本（`rel="alternate" type="text/markdown"`）。
+- **三份产物**：
+  - `packages/docs/docs/public/llms.txt`（**入库**，CI 校验防漂移）：精选索引；数据源＝docs 侧栏分组（`.vitepress/config.ts` 的 `componentSidebar`）+ `docs/guide/*.md` 与 `docs/components/*.md` 各自的 H1 与首段自动说明。
+  - `llms-full.txt`（构建产物，**不入库**）：指南 + 全部组件文档**原样拼接**（不做任何清理/改写），供 agent 一次抓取。
+  - **每页 `.md` 镜像**（构建产物，**不入库**）：`docs/**/*.md`（排除 `.vitepress/`、`public/`，约 304 页）**逐字节原样**复制到 `public/<同路径>`，服务于 `/components/button.md`、`/guide/getting-started.md`、`/index.md`、`/en/…`；页面 `<head>` 经 `transformHead` 注入 `rel="alternate" type="text/markdown"`（指向本页 `.md`）与 `rel="describedby" href="/llms.txt"`。
 - **工作流**：改组件页 / 侧栏分组 / guide 页后跑 `pnpm llms:gen`；`pnpm llms:check` 已在 CI 强制（不一致即红）。
-- **脚本**：`scripts/llms/gen.mjs`（`--check` 只校验入库的 `llms.txt`；`SITE_URL` 环境变量可覆盖站点绝对前缀）。已接进 docs 构建（`packages/docs` 的 `build` 先跑 gen 再 `vitepress build`，保证 dist 内两份文件齐全）。
+- **脚本**：`scripts/llms/gen.mjs`（`--check` 只校验入库的 `llms.txt`；`SITE_URL` 环境变量可覆盖站点绝对前缀）。已接进 docs 的 `build` 与 `dev`（前置 gen，保证 dev 服务与 dist 内索引、全文、镜像三份齐全）。
 
 ### 性能基准（vision §5.8 性能领先）
 

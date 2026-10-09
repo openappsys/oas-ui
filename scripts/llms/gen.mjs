@@ -13,7 +13,7 @@
  *   node scripts/llms/gen.mjs --check   # 只校验与磁盘一致（CI 门禁；漂移即 exit 1）
  * 环境变量 SITE_URL 覆盖站点绝对前缀（默认 https://oas-ui.dev）。
  */
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -168,46 +168,74 @@ function buildLlmsTxt() {
   return out.join('\n')
 }
 
-// ---------- llms-full.txt ----------
+// ---------- llms-full.txt（全文：源文件原样拼接，不清理） ----------
 
-/** 去 Vue <script setup> 块与 DemoBlock 包裹标签，保留内部示例（含代码围栏里的 <script src>） */
-function cleanForFull(md) {
-  return md
-    .replace(/<script\b[^>]*\bsetup\b[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/^\s*<DemoBlock[^>]*>\s*$/gim, '')
-    .replace(/^\s*<\/DemoBlock>\s*$/gim, '')
-    .trim()
+/** 源 md 相对路径 → 规范站点 URL（cleanUrls：去 `.md`；`index` 收成目录） */
+function pageUrlFromRel(rel) {
+  const u = rel.replace(/\.md$/, '').replace(/(^|\/)index$/, '$1')
+  return '/' + u
 }
 
-/** 标题层级 +1（H1→H2 ...），便于拼接时嵌套 */
-function shiftHeadings(md) {
-  return md.replace(/^(#{1,5})\s/gm, '#$1 ')
-}
-
-function fullBlock(md) {
-  return shiftHeadings(cleanForFull(md)) + '\n'
-}
-
-function buildLlmsFullTxt() {
-  const out = [`# OAS-UI — Full reference`, '', `> ${SUMMARY}`, '', CONVENTIONS, '', '---', '']
-  const gs = readMd('guide/getting-started.md')
-  if (gs) out.push(fullBlock(gs), '---', '')
+/** 参与全文的源 md 顺序：getting-started → 其余 guide → 各组件族组件 */
+function fullSourcePaths() {
+  const paths = []
+  if (readMd('guide/getting-started.md') != null) paths.push('guide/getting-started.md')
   const guides = readdirSync(join(DOCS, 'guide'))
     .filter((f) => f.endsWith('.md') && f !== 'index.md' && f !== 'getting-started.md')
     .sort()
-  for (const f of guides) {
-    const md = readMd(join('guide', f))
-    if (md) out.push(fullBlock(md), '---', '')
-  }
+  for (const f of guides) paths.push(join('guide', f))
   for (const g of parseComponentGroups()) {
-    out.push(`# ${g.name}`, '')
-    for (const item of g.items) {
-      const rel = item.link.replace(/^\//, '') + '.md'
-      const md = readMd(rel)
-      if (md) out.push(fullBlock(md), '---', '')
-    }
+    for (const item of g.items) paths.push(item.link.replace(/^\//, '') + '.md')
+  }
+  return paths
+}
+
+function buildLlmsFullTxt() {
+  const out = [`# OAS-UI — Full reference`, '', `> ${SUMMARY}`, '', CONVENTIONS, '']
+  for (const rel of fullSourcePaths()) {
+    const md = readMd(rel)
+    if (md == null) continue
+    out.push(`<!-- ${SITE_URL}${pageUrlFromRel(rel)} -->`, '', md.trim(), '', '---', '')
   }
   return out.join('\n')
+}
+
+// ---------- 每页 .md 镜像（源文件原样复制，不清理、零信息损失） ----------
+
+/** 全部源 md 相对路径（排除 `.vitepress/` 与 `public/`） */
+function allSourceMd() {
+  const out = []
+  const walk = (rel) => {
+    for (const ent of readdirSync(join(DOCS, rel), { withFileTypes: true })) {
+      if (rel === '' && (ent.name === '.vitepress' || ent.name === 'public')) continue
+      const child = rel ? `${rel}/${ent.name}` : ent.name
+      if (ent.isDirectory()) walk(child)
+      else if (ent.name.endsWith('.md')) out.push(child)
+    }
+  }
+  walk('')
+  return out
+}
+
+/** 清掉 public 下上一轮生成的 .md 镜像（防页面删除后残留），再逐字节原样写入 */
+function mirrorPages() {
+  const clear = (dir) => {
+    if (!existsSync(dir)) return
+    for (const ent of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, ent.name)
+      if (ent.isDirectory()) clear(p)
+      else if (ent.name.endsWith('.md')) unlinkSync(p)
+    }
+  }
+  clear(OUT_DIR)
+  let n = 0
+  for (const rel of allSourceMd()) {
+    const dest = join(OUT_DIR, rel)
+    mkdirSync(dirname(dest), { recursive: true })
+    writeFileSync(dest, readFileSync(join(DOCS, rel), 'utf8'))
+    n++
+  }
+  return n
 }
 
 // ---------- 写盘 / 校验 ----------
@@ -235,6 +263,8 @@ const full = buildLlmsFullTxt()
 emit('llms.txt', llms, true)
 emit('llms-full.txt', full, false)
 if (!CHECK) {
+  const mirrored = mirrorPages()
+  console.log(`[llms] 已复制每页 .md 镜像 ${mirrored} 个到 packages/docs/docs/public/`)
   const groups = parseComponentGroups()
   const n = groups.reduce((a, g) => a + g.items.length, 0)
   console.log(`[llms] 分组 ${groups.length} 个、组件链接 ${n} 条`)
