@@ -15,7 +15,7 @@
 
 ## 切换组（编辑器场景）
 
-`oas-toolbar-toggle` 是工具栏的 toggle 组部件：单选（缺省，radio 语义——组内互斥，点已选中项不变更）与多选（`multiple`，每项独立切换）；`value` 受控（单选字符串 / 多选 JSON 数组），点击派发 `oas-change`。加粗/斜体/下划线用多选组，对齐方式用单选组——编辑器工具栏核心形态。
+`oas-toolbar-toggle` 是工具栏的 toggle 组部件：单选（缺省——组内互斥，点已选中项不变更；采用「按压」`aria-pressed` 切换语义，非 radio）与多选（`multiple`，每项独立切换）；`value` 受控（单选字符串 / 多选 JSON 数组），点击派发 `oas-change`。加粗/斜体/下划线用多选组，对齐方式用单选组——编辑器工具栏核心形态。
 
 <DemoBlock title="切换组（加粗/斜体 + 对齐方式）">
   <oas-toolbar id="tb-editor">
@@ -228,7 +228,7 @@
 
 ## 过滤药丸行（oas-scope-bar）
 
-`oas-scope-bar` 是过滤药丸行：一排可点击药丸，选中项以低透明度主色「active 填充」表达。单选（缺省，radio 语义——组内互斥，点已选中项不变更）或 `multiple` 多选（每项独立切换）；`value` 受控（单选字符串 / 多选 JSON 数组字符串），点击派发 `oas-change`。`label` 提供无障碍组名（`role="group"` 的 `aria-label`）。可独立使用，也可放进取 `oas-toolbar` 作为其中一个 Tab 停靠点（内部方向键自管，不干扰工具栏 roving）。
+`oas-scope-bar` 是过滤药丸行：一排可点击药丸，选中项以低透明度主色「active 填充」表达。单选（缺省——组内互斥，点已选中项不变更；采用「按压」`aria-pressed` 切换语义，非 radio）或 `multiple` 多选（每项独立切换）；`value` 受控（单选字符串 / 多选 JSON 数组字符串），点击派发 `oas-change`。`label` 提供无障碍组名（`role="group"` 的 `aria-label`）。可独立使用，也可放进取 `oas-toolbar` 作为其中一个 Tab 停靠点（内部方向键自管，不干扰工具栏 roving）。
 
 <DemoBlock title="过滤药丸行（单选）">
   <oas-scope-bar id="tb-scope" label="按状态筛选" value="all" items='[{"label":"全部","value":"all"},{"label":"进行中","value":"active"},{"label":"已完成","value":"done"},{"label":"已归档","value":"archived","disabled":true}]'></oas-scope-bar>

@@ -39,25 +39,32 @@ function warnInvalidSize(raw: string): void {
  * 自定义色实心底的文字色：按相对亮度取深/浅，保证对比可读。
  * 支持 #rgb/#rrggbb/rgb(a) 解析；其余写法（var()/色名）返回 ''（走 CSS 兜底 token）。
  */
-function pickOnColor(color: string): string {
-  let r = 0
-  let g = 0
-  let b = 0
-  const hex = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
-  const rgb = color.trim().match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i)
+function resolveRgb(color: string): { r: number; g: number; b: number } | null {
+  const c = color.trim()
+  const hex = c.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
   if (hex) {
     const h = hex[1]!.length === 3 ? hex[1]!.replace(/(.)/g, '$1$1') : hex[1]!
-    r = parseInt(h.slice(0, 2), 16)
-    g = parseInt(h.slice(2, 4), 16)
-    b = parseInt(h.slice(4, 6), 16)
-  } else if (rgb) {
-    r = Number(rgb[1])
-    g = Number(rgb[2])
-    b = Number(rgb[3])
-  } else {
-    return ''
+    return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) }
   }
-  // W3C 相对亮度；0.35 阈值：亮底（如暗色主题 primary）取深字、暗底（如 #7c3aed）取白字
+  const rgb = c.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i)
+  if (rgb) return { r: Number(rgb[1]), g: Number(rgb[2]), b: Number(rgb[3]) }
+  // var() 交 CSS 兜底；其余（色名/oklch 等）经探针解析为 rgb
+  if (/var\(/i.test(c)) return null
+  if (typeof document === 'undefined' || !document.body) return null
+  const probe = document.createElement('span')
+  probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;color:' + c
+  document.body.appendChild(probe)
+  const resolved = getComputedStyle(probe).color
+  probe.remove()
+  const m = resolved.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i)
+  return m ? { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]) } : null
+}
+
+function pickOnColor(color: string): string {
+  const rgb = resolveRgb(color)
+  if (!rgb) return ''
+  const { r, g, b } = rgb
+  // W3C 相对亮度；0.35 阈值：亮底（如黄色）取深字、暗底（如 #7c3aed）取白字
   const f = (v: number) => {
     v /= 255
     return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4

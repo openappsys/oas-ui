@@ -206,11 +206,24 @@ test('questionnaire animated：开启后切步面板带方向标记、首帧与�
   await realClick(page, '#q-anim', '[part="next"]')
   await expect(q).toHaveAttribute('current', '1')
   expect(await animOf(1)).toBe('forward')
+  const animName = await q.evaluate(
+    (el) => getComputedStyle(el.shadowRoot!.querySelector('.panel[data-step="1"]')!).animationName,
+  )
+  expect(animName, '切步面板实际应用入场动画（非仅统计标记）').toContain('oas-questionnaire-step-in-fwd')
 
   // 后退 → backward 标记；非切步重渲染不重复触发
   await realClick(page, '#q-anim', '[part="prev"]')
   await expect(q).toHaveAttribute('current', '0')
   expect(await animOf(0)).toBe('backward')
+
+  // reduced-motion：降级为无动画
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await realClick(page, '#q-anim', '[part="next"]')
+  await expect(q).toHaveAttribute('current', '1')
+  const rmName = await q.evaluate(
+    (el) => getComputedStyle(el.shadowRoot!.querySelector('.panel[data-step="1"]')!).animationName,
+  )
+  expect(rmName, 'prefers-reduced-motion 下降级为无动画').toBe('none')
 })
 
 test('questionnaire shortcuts：Alt+→ 切步（输入框内也生效）、裸方向键输入避让、面板空白处可达、反馈可见', async ({

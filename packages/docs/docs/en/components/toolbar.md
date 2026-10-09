@@ -15,7 +15,7 @@ A container for groups of tool controls: `role="toolbar"` + `aria-label`, `Tab` 
 
 ## Toggle group (editor scenario)
 
-`oas-toolbar-toggle` is the toolbar's toggle-group widget: single-select (default, radio semantics — mutually exclusive, clicking the selected item does nothing) and multiple-select (`multiple`, each item toggles independently). `value` is controlled (string for single / JSON array string for multiple); clicks emit `oas-change`. Use a multiple group for bold/italic/underline and a single group for alignment — the core editor toolbar shape.
+`oas-toolbar-toggle` is the toolbar's toggle-group widget: single-select (default, toggle semantics (`aria-pressed`), not radio — mutually exclusive, clicking the selected item does nothing) and multiple-select (`multiple`, each item toggles independently). `value` is controlled (string for single / JSON array string for multiple); clicks emit `oas-change`. Use a multiple group for bold/italic/underline and a single group for alignment — the core editor toolbar shape.
 
 <DemoBlock title="Toggle group (bold/italic + alignment)">
   <oas-toolbar id="tb-editor">
@@ -228,7 +228,7 @@ When the container is too narrow, overflowing items are folded into a "···" p
 
 ## Filter pill bar (oas-scope-bar)
 
-`oas-scope-bar` is a filter pill row: a row of clickable pills where the selected one is shown with a low-opacity primary "active fill". Single-select (default, radio semantics — mutually exclusive, clicking the selected pill does nothing) or `multiple` (each pill toggles independently); `value` is controlled (string for single / JSON array string for multiple), clicks emit `oas-change`. `label` provides the accessible group name (the `aria-label` of `role="group"`). It works standalone or inside an `oas-toolbar` as one tab stop (internal arrow keys are self-managed and do not disturb toolbar roving).
+`oas-scope-bar` is a filter pill row: a row of clickable pills where the selected one is shown with a low-opacity primary "active fill". Single-select (default, toggle semantics (`aria-pressed`), not radio — mutually exclusive, clicking the selected pill does nothing) or `multiple` (each pill toggles independently); `value` is controlled (string for single / JSON array string for multiple), clicks emit `oas-change`. `label` provides the accessible group name (the `aria-label` of `role="group"`). It works standalone or inside an `oas-toolbar` as one tab stop (internal arrow keys are self-managed and do not disturb toolbar roving).
 
 <DemoBlock title="Filter pill bar (single-select)">
   <oas-scope-bar id="tb-scope" label="Filter by status" value="all" items='[{"label":"All","value":"all"},{"label":"In progress","value":"active"},{"label":"Done","value":"done"},{"label":"Archived","value":"archived","disabled":true}]'></oas-scope-bar>

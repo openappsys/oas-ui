@@ -162,6 +162,8 @@ export class OASScrollArea extends OASElement {
   private hydratedFirstFrameApplied = false
   /** thumb 拖拽状态：pointerdown 起点指针坐标 + 起始滚动值，null 表示未在拖拽 */
   private dragState: { axis: 'v' | 'h'; startPointer: number; startScroll: number } | null = null
+  /** 拖拽中指针离开（hover 模式）：松手后补隐藏（回归：曾滞留可见） */
+  private leftDuringDrag = false
   private prevUserSelect = ''
   /** 贴底状态：用户是否停靠在底部（滚动事件实时维护，追加内容时据此决定是否自动滚到底） */
   private stickToBottom = true
@@ -369,6 +371,7 @@ export class OASScrollArea extends OASElement {
 
   /** 指针进入：auto/scroll 显示并进入延时隐藏；hover 显示并保持至离开；always 忽略 */
   private handlePointerEnter = (): void => {
+    this.leftDuringDrag = false
     const t = this.scrollbarType()
     if (t !== 'auto' && t !== 'hover') return
     this.showPeek()
@@ -379,7 +382,10 @@ export class OASScrollArea extends OASElement {
   private handlePointerLeave = (): void => {
     const t = this.scrollbarType()
     if (t === 'hover') {
-      if (this.dragState) return
+      if (this.dragState) {
+        this.leftDuringDrag = true
+        return
+      }
       this.hideNow()
       return
     }
@@ -503,6 +509,11 @@ export class OASScrollArea extends OASElement {
     window.removeEventListener('pointermove', this.handleDragMove)
     window.removeEventListener('pointerup', this.endThumbDrag)
     window.removeEventListener('pointercancel', this.endThumbDrag)
+    // 拖拽中指针已离开：hover 模式松手后补隐藏（否则滞留可见）
+    if (this.leftDuringDrag) {
+      if (this.scrollbarType() === 'hover') this.hideNow()
+      this.leftDuringDrag = false
+    }
   }
 
   // ---------- 编程滚动方法 ----------
