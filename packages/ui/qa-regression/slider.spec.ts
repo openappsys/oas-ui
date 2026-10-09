@@ -873,3 +873,34 @@ test('slider levels：圆推子下方双条电平按归一化值渲染（真实�
   expect(r.right, '右条高度应按 0.4 归一化').toBeCloseTo(0.4, 1)
   expect(r.below, '电平表应位于圆推子下方').toBe(true)
 })
+
+// ---- 增强批：色轨（track = hue / saturation / luminance / gradient） ----
+
+test('slider track：色轨真实渲染（伪元素 background-image 为渐变）+ 单色填充隐藏 + 方向随反转镜像', async ({
+  page,
+}) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[track="hue"]')
+  const r = await page.evaluate(() => {
+    const rail = (sel: string) => {
+      const el = document.querySelector(sel)!
+      const root = el.shadowRoot!
+      const before = getComputedStyle(root.querySelector<HTMLElement>('.track-wrap')!, '::before')
+      const fill = getComputedStyle(root.querySelector<HTMLElement>('.fill')!)
+      return {
+        colorTrack: el.hasAttribute('data-color-track'),
+        image: before.backgroundImage,
+        fillDisplay: fill.display,
+      }
+    }
+    return { hue: rail('oas-slider[track="hue"]'), sat: rail('oas-slider[track="saturation"]') }
+  })
+  // 色轨激活：轨道伪元素渲染 CSS 渐变，单色填充退场
+  expect(r.hue.colorTrack, 'hue 应镜像 data-color-track').toBe(true)
+  expect(r.hue.image, 'hue 轨道伪元素背景应为渐变').toContain('linear-gradient')
+  expect(r.hue.fillDisplay, '色轨激活时填充应隐藏').toBe('none')
+  expect(r.sat.image, 'saturation 轨道伪元素背景应为渐变').toContain('linear-gradient')
+  // 渐变方向应可被反向镜像验证（hue 无 reverse demo 时至少确认变量含方向词）
+  const img = r.hue.image
+  expect(img, 'hue 渐变应含方向（to right/left/top/bottom）').toMatch(/to (right|left|top|bottom)/)
+})

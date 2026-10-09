@@ -1931,3 +1931,92 @@ describe('OASSlider 立体声电平表（levels）', () => {
     expect(css).toMatch(/:host\(\[data-vertical\]\)\s*\.levels/)
   })
 })
+
+// ---- 增强批：色轨（track = hue / saturation / luminance / gradient） ----
+
+describe('OASSlider 色轨（track 预设渐变）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function trackImage(el: OASSlider): string {
+    return el.style.getPropertyValue('--oas-slider-track-image')
+  }
+
+  it('track="hue"：写宿主渐变变量（光谱）+ data-color-track 镜像', () => {
+    const el = mount({ track: 'hue', value: '40' })
+    const img = trackImage(el)
+    expect(img).toContain('linear-gradient(to right')
+    expect(img).toContain('#ff0000')
+    expect(img).toContain('#0000ff')
+    expect(el.hasAttribute('data-color-track')).toBe(true)
+  })
+
+  it('track="saturation"：轨道色→推子色的 token 渐变', () => {
+    const el = mount({ track: 'saturation', value: '40' })
+    const img = trackImage(el)
+    expect(img).toContain('var(--oas-color-border-strong)')
+    expect(img).toContain('var(--oas-slider-color)')
+  })
+
+  it('track="luminance"：黑→白渐变', () => {
+    const el = mount({ track: 'luminance', value: '40' })
+    const img = trackImage(el)
+    expect(img).toContain('#000000')
+    expect(img).toContain('#ffffff')
+  })
+
+  it('track="gradient"：轨道色→推子色两段 CSS 渐变', () => {
+    const el = mount({ track: 'gradient', value: '40' })
+    const img = trackImage(el)
+    expect(img).toContain('linear-gradient')
+    expect(img).toContain('var(--oas-slider-track)')
+    expect(img).toContain('var(--oas-slider-color)')
+  })
+
+  it('未设置 / 非法 track：不写渐变变量、无 data-color-track（回落纯色轨道）', () => {
+    const none = mount({ value: '40' })
+    expect(trackImage(none)).toBe('')
+    expect(none.hasAttribute('data-color-track')).toBe(false)
+    const bad = mount({ track: 'neon', value: '40' })
+    expect(trackImage(bad)).toBe('')
+    expect(bad.hasAttribute('data-color-track')).toBe(false)
+  })
+
+  it('方向随轴与反转感知：reverse → to left；RTL → to left', async () => {
+    const rev = mount({ track: 'hue', reverse: '', value: '40' })
+    expect(trackImage(rev)).toContain('to left')
+    const rtl = mount({ track: 'hue', dir: 'rtl', value: '40' })
+    await Promise.resolve()
+    expect(trackImage(rtl)).toContain('to left')
+  })
+
+  it('垂直模式：min 在下 → to top；vertical + reverse → to bottom', () => {
+    const v = mount({ track: 'hue', vertical: '', value: '40' })
+    expect(trackImage(v)).toContain('to top')
+    const vr = mount({ track: 'hue', vertical: '', reverse: '', value: '40' })
+    expect(trackImage(vr)).toContain('to bottom')
+  })
+
+  it('运行时切换 track：变量随属性更新，移除后清理', () => {
+    const el = mount({ value: '40' })
+    el.setAttribute('track', 'hue')
+    expect(trackImage(el)).toContain('linear-gradient')
+    el.setAttribute('track', 'luminance')
+    expect(trackImage(el)).toContain('#ffffff')
+    el.removeAttribute('track')
+    expect(trackImage(el)).toBe('')
+    expect(el.hasAttribute('data-color-track')).toBe(false)
+  })
+
+  it('CSS：轨道伪元素消费渐变变量，色轨隐藏填充（show-track=false 规则仍保留）', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('background-image: var(--oas-slider-track-image, none)')
+    expect(css).toMatch(/:host\(\[data-color-track\]\)\s*\.fill\s*{\s*display:\s*none/)
+    expect(css).toMatch(/:host\(\[data-track='false'\]\)\s*\.track-wrap::before/)
+  })
+})

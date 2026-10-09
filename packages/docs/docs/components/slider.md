@@ -196,6 +196,26 @@
 
 `color` 控制填充区/滑块/经过刻度色，`track-color` 控制轨道底色：预设语义色名（`primary`/`success`/`warning`/`danger`，自动跟随暗色主题）映射到主题 token；其他值（如 `#ff5500`、`var(--x)`）原样透传为 CSS 色值。
 
+## 色轨（track）
+
+<DemoBlock title="track 色轨：hue 色相 / saturation 饱和度 / luminance 明度 / gradient 渐变">
+  <div style="display: flex; flex-direction: column; gap: 24px; width: 360px;">
+    <oas-slider track="hue" value="55"></oas-slider>
+    <oas-slider track="saturation" value="70"></oas-slider>
+    <oas-slider track="luminance" value="40"></oas-slider>
+    <oas-slider track="gradient" value="60"></oas-slider>
+  </div>
+</DemoBlock>
+
+`track` 把轨道底色换成色空间渐变轨，适合取色/亮度/增益等「以轨道本身表达取值」的场景：
+
+- `hue`：色相光谱（红→黄→绿→青→蓝→品红→红）；
+- `saturation`：中性灰（`--oas-color-border-strong`）→ 推子色（饱和度）；
+- `luminance`：黑 → 白（明度）；
+- `gradient`：轨道底色（`--oas-slider-track`）→ 推子色（`--oas-slider-color`）两段 CSS 渐变。
+
+渐变方向随轴向与反转感知：水平从左、垂直从下，`reverse`/RTL 即镜像反向。色轨激活时单色填充自动隐藏（光谱自表达，避免遮挡），轨道仍可用 `track-color` 覆盖底色、`color` 覆盖推子色；非预设值回落普通纯色轨道。
+
 ## 垂直模式
 
 <DemoBlock title="vertical 垂直滑块（音量/亮度面板）">
@@ -379,6 +399,7 @@ onMounted(() => {
 | `thumb` | 把手形态：`round` 粗圆推子（默认）/ `pointer` 细指针（薄条沿轴摆放，恒走自定义视觉层、原生拇指隐藏；水平薄竖条、垂直薄横条）；非法值回落 round | `string` | `round` |
 | `tooltip-always` | 值气泡常显（默认拖动/键盘聚焦时显示） | `boolean` | — |
 | `tooltip-position` | 值气泡方向：top / bottom / left / right；水平默认 top、垂直默认 right，非法值回落默认 | `string` | — |
+| `track` | 色轨预设：`hue` 色相光谱 / `saturation` 中性灰→推子色 / `luminance` 黑→白 / `gradient` 轨道色→推子色两段 CSS 渐变；方向随轴向与 `reverse`/RTL 镜像；激活时隐藏单色填充（光谱自表达），非预设值回落纯色轨道 | `string` | — |
 | `track-color` | 轨道底色：预设语义色名映射主题 token；其他值原样透传为 CSS 色值 | — | — |
 | `value` | 当前值（受控）：单值为数值字符串；`range` 模式为 JSON 数组 `[lo, hi]` 或逗号分隔字符串 `"lo,hi"`，交互后写回 JSON 数组字符串（表单收集可直接 `JSON.parse`） | `number \| number[]` | — |
 | `value-width` | show-input 读数框宽度：纯数字按 px、带单位值原样透传（写入 --oas-slider-value-width）；缺省 72px | `string` | — |
@@ -414,6 +435,7 @@ onMounted(() => {
 | `--oas-slider-height` | — | `200px` |
 | `--oas-slider-thumb-size` | — | `14px` |
 | `--oas-slider-track` | — | `var(--oas-color-border)` |
+| `--oas-slider-track-image` | 色轨渐变图（`track` 预设时由组件写入；轨道伪元素的 background-image，缺省 none 走纯色轨道底色） | `none` |
 | `--oas-slider-track-size` | — | `4px` |
 | `--oas-slider-value-width` | — | `72px` |
 

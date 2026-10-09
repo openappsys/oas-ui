@@ -171,6 +171,12 @@
       "observed": true
     },
     {
+      "name": "track",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "label-1",
       "observed": true
     },
@@ -250,6 +256,10 @@
     {
       "name": "--oas-slider-track",
       "default": "var(--oas-color-border)"
+    },
+    {
+      "name": "--oas-slider-track-image",
+      "default": "none"
     },
     {
       "name": "--oas-glass-refraction",

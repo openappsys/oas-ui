@@ -196,6 +196,26 @@ Visibility: shown while dragging or when keyboard-focused by default; `tooltip-a
 
 `color` controls the fill/thumb/passed-tick color and `track-color` the track base color: preset semantic names (`primary`/`success`/`warning`/`danger`, following dark theme automatically) map to theme tokens; any other value (e.g. `#ff5500`, `var(--x)`) is passed through as a CSS color.
 
+## Color Track (track)
+
+<DemoBlock title="track color rails: hue / saturation / luminance / gradient">
+  <div style="display: flex; flex-direction: column; gap: 24px; width: 360px;">
+    <oas-slider track="hue" value="55"></oas-slider>
+    <oas-slider track="saturation" value="70"></oas-slider>
+    <oas-slider track="luminance" value="40"></oas-slider>
+    <oas-slider track="gradient" value="60"></oas-slider>
+  </div>
+</DemoBlock>
+
+`track` turns the rail into a color-space gradient rail — suited to picking color/brightness/gain, where the track itself expresses the value:
+
+- `hue`: full hue spectrum (red → yellow → green → cyan → blue → magenta → red);
+- `saturation`: neutral gray (`--oas-color-border-strong`) → thumb color (saturation);
+- `luminance`: black → white (brightness);
+- `gradient`: track base (`--oas-slider-track`) → thumb color (`--oas-slider-color`), a two-stop CSS gradient.
+
+The gradient direction is axis- and direction-aware: left-to-right horizontally, bottom-to-top vertically, mirrored under `reverse`/RTL. While a color track is active the single-color fill is hidden (the spectrum speaks for itself); the rail can still be recolored via `track-color` and the thumb via `color`. Non-preset values fall back to a plain solid track.
+
 ## Vertical
 
 <DemoBlock title="vertical sliders (volume/brightness panel)">
@@ -379,6 +399,7 @@ onMounted(() => {
 | `thumb` | Thumb shape: `round` thick circular thumb (default) / `pointer` thin pointer (a slim bar along the axis; always uses the custom visual layer with the native thumb hidden — thin vertical bar horizontally, thin horizontal bar vertically); invalid values fall back to round | `string` | `round` |
 | `tooltip-always` | Keep the value bubble always visible (by default shown while dragging or keyboard-focused) | `boolean` | — |
 | `tooltip-position` | Value bubble direction: top / bottom / left / right; top by default horizontally, right by default vertically; invalid values fall back to the default | `string` | — |
+| `track` | Color rail preset: `hue` hue spectrum / `saturation` neutral gray→thumb color / `luminance` black→white / `gradient` track base→thumb color (a two-stop CSS gradient); direction is axis- and `reverse`/RTL-aware; the single-color fill is hidden while active (the spectrum speaks for itself); non-preset values fall back to a solid track | `string` | — |
 | `track-color` | Track base color: preset semantic names map to theme tokens; any other value is passed through as a CSS color | — | — |
 | `value` | Current value (controlled): numeric string for single mode; JSON array `[lo, hi]` or comma-separated string `"lo,hi"` in `range` mode, written back as a JSON array string after interaction (form collection can `JSON.parse` directly) | `number \| number[]` | — |
 | `value-width` | Width of the show-input readout box: plain numbers get px, unit values pass through (written to --oas-slider-value-width); defaults to 72px | `string` | — |
@@ -414,6 +435,7 @@ onMounted(() => {
 | `--oas-slider-height` | — | `200px` |
 | `--oas-slider-thumb-size` | — | `14px` |
 | `--oas-slider-track` | — | `var(--oas-color-border)` |
+| `--oas-slider-track-image` | Color-rail gradient image (written by the component for a `track` preset; the track pseudo-element's background-image, defaults to none for a solid rail color) | `none` |
 | `--oas-slider-track-size` | — | `4px` |
 | `--oas-slider-value-width` | — | `72px` |
 

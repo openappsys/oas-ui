@@ -2890,7 +2890,8 @@
       "accent-color": "Accent color while scrubbing the readout: preset semantic names (primary / success / warning / danger, dark-theme aware) map to theme tokens, other values pass through; falls back to the theme primary",
       "show-track": "Track visibility switch (shown by default); show-track=\"false\" hides the track bar and selection fill (the thumb remains draggable and keyboard operable)",
       "thumb": "Thumb shape: `round` thick circular thumb (default) / `pointer` thin pointer (a slim bar along the axis; always uses the custom visual layer with the native thumb hidden — thin vertical bar horizontally, thin horizontal bar vertically); invalid values fall back to round",
-      "levels": "Stereo level meter: `{ left, right }` normalized values (0–1, clamped) rendered as dual bars below the round thumb (decorative `aria-hidden`, non-interactive); renders only for `thumb=\"round\"` (the default) and is ignored for pointer; invalid/missing hides it"
+      "levels": "Stereo level meter: `{ left, right }` normalized values (0–1, clamped) rendered as dual bars below the round thumb (decorative `aria-hidden`, non-interactive); renders only for `thumb=\"round\"` (the default) and is ignored for pointer; invalid/missing hides it",
+      "track": "Color rail preset: `hue` hue spectrum / `saturation` neutral gray→thumb color / `luminance` black→white / `gradient` track base→thumb color (a two-stop CSS gradient); direction is axis- and `reverse`/RTL-aware; the single-color fill is hidden while active (the spectrum speaks for itself); non-preset values fall back to a solid track"
     },
     "events": {
       "oas-change": "Committed on release, `detail: { value }` (single number; `[lo, hi]` array in `range` mode)",
@@ -2904,7 +2905,8 @@
       "levels": "Stereo level values `{ left, right }` (normalized 0–1; object assignment reflects to a JSON attribute, clear with `null`)"
     },
     "cssVars": {
-      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)"
+      "--oas-glass-refraction": "Liquid-glass edge refraction filter (active under `data-glass`, default none); for local opt-out override with an **empty** value (`--oas-glass-refraction: ;`)—not `none` (mixing `none` with button-state brightness() invalidates the whole filter declaration)",
+      "--oas-slider-track-image": "Color-rail gradient image (written by the component for a `track` preset; the track pseudo-element's background-image, defaults to none for a solid rail color)"
     }
   },
   "oas-snackbar": {

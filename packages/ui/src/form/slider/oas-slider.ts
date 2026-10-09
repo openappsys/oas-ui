@@ -118,7 +118,9 @@ const STYLE = `
   right: 0;
   height: var(--oas-slider-track-size);
   border-radius: var(--oas-slider-track-size);
-  background: var(--oas-slider-track);
+  /* 轨道底色走 token；色轨（track 预设）由 JS 写入 --oas-slider-track-image 渐变覆盖 */
+  background-color: var(--oas-slider-track);
+  background-image: var(--oas-slider-track-image, none);
 }
 :host([data-vertical]) .track-wrap::before {
   top: 0;
@@ -135,6 +137,10 @@ const STYLE = `
 /* show-track="false"：轨道条整体退场（灰轨底层 + 选中填充一并隐藏，把手保留可拖/可聚焦） */
 :host([data-track='false']) .track-wrap::before,
 :host([data-track='false']) .fill {
+  display: none;
+}
+/* 色轨（track 预设）：轨道本身表达色相/明度，隐藏单色填充避免遮挡光谱 */
+:host([data-color-track]) .fill {
   display: none;
 }
 input[type="range"] {
@@ -601,9 +607,10 @@ export class OASSlider extends OASElement {
       'value-width',
       'accent-color',
       'show-track',
-      // 增强批：thumb 两形态（pointer 细指针 / round 圆推子）+ 立体声电平表
+      // 增强批：thumb 两形态（pointer 细指针 / round 圆推子）+ 立体声电平表 + 色轨
       'thumb',
       'levels',
+      'track',
       'label-1',
       'label-2',
       'label-3',
@@ -858,6 +865,16 @@ export class OASSlider extends OASElement {
     this.applyHostVar('color', '--oas-slider-color')
     this.applyHostVar('track-color', '--oas-slider-track')
     this.applyHostVar('accent-color', '--oas-slider-accent')
+    // 色轨（track 预设）：JS 组装方向感知的 CSS 渐变写入宿主变量，CSS 由 .track-wrap::before 消费；
+    // 色轨激活时隐藏单色填充（光谱自表达，避免遮挡）
+    const trackImage = this.colorTrackImage()
+    if (trackImage) {
+      this.style.setProperty('--oas-slider-track-image', trackImage)
+      this.setAttribute('data-color-track', '')
+    } else {
+      this.style.removeProperty('--oas-slider-track-image')
+      this.removeAttribute('data-color-track')
+    }
     // show-track 轨道显隐开关：仅显式 "false" 时镜像 data-track=false（CSS 消费）；
     // 未设置时不写 data-*（不给宿主叠加属性、SSR 快照属性序列零漂移）
     if (this.getAttr('show-track', 'true') === 'false') this.setAttribute('data-track', 'false')
@@ -1253,6 +1270,32 @@ export class OASSlider extends OASElement {
       return
     }
     this.style.setProperty(cssVar, COLOR_TOKENS[raw] ?? raw)
+  }
+
+  /**
+   * 色轨渐变组装（track 预设）：hue=色相光谱、saturation=轨道色→推子色、luminance=黑→白、
+   * gradient=轨道色→推子色 两段 CSS 渐变。方向随轴与反转感知（水平 min 在左 / 垂直 min 在下，
+   * reverse 与 RTL 镜像）。非预设/未设置返回 null（回落纯色轨道）。
+   * 光谱端点无法用语义 token 表达（hue/luminance 为绝对色相/明度），沿用组件内颜色字面量约定。
+   */
+  private colorTrackImage(): string | null {
+    const kind = this.getAttr('track', '').toLowerCase()
+    if (!kind) return null
+    const vertical = this.hasAttr('vertical')
+    const flip = vertical ? this.hasAttr('reverse') : this.horizontalReverse()
+    const dir = vertical ? (flip ? 'to bottom' : 'to top') : flip ? 'to left' : 'to right'
+    switch (kind) {
+      case 'hue':
+        return `linear-gradient(${dir}, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)`
+      case 'saturation':
+        return `linear-gradient(${dir}, var(--oas-color-border-strong), var(--oas-slider-color))`
+      case 'luminance':
+        return `linear-gradient(${dir}, #000000, #ffffff)`
+      case 'gradient':
+        return `linear-gradient(${dir}, var(--oas-slider-track), var(--oas-slider-color))`
+      default:
+        return null
+    }
   }
 
   /** step="mark" 模式生效判定：step 属性为字面量 mark 且 marks 非空 */
