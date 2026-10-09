@@ -376,6 +376,36 @@ const STYLE = `
   font-weight: 500;
   white-space: nowrap;
 }
+/* ---- caption 下拉（caption-layout=dropdown：标题位换月/年两个 select，dob 远年快速跳转） ---- */
+[part='panel'] .caption {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--oas-space-1);
+}
+[part='panel'] .caption-select {
+  /* 保留原生 select 外观（UA 下拉箭头做可下拉指示），仅去除边框/底色融入面板头 */
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  color: var(--oas-color-text-primary);
+  border-radius: var(--oas-radius-sm);
+  font-size: var(--oas-font-size-md);
+  font-weight: 500;
+  height: var(--oas-control-height-md);
+  max-width: 96px;
+  padding: 0 var(--oas-space-1);
+  cursor: pointer;
+}
+[part='panel'] .caption-select:hover:not(:disabled) {
+  background: var(--oas-color-bg-hover);
+}
+[part='panel'] .caption-select:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: -2px;
+}
 [part='grid'] .weekdays,
 [part='grid'] .week {
   display: grid;
@@ -725,6 +755,8 @@ export class OASDatePicker extends OASFormElement {
       'shortcuts-position',
       'show-week-number',
       'first-day-of-week',
+      // 面板标题形态：buttons（默认，标题按钮切月面板）/ dropdown（月/年下拉快速跳转，dob 场景）
+      'caption-layout',
       // 时区锚点：「今天」锚点、面板当天高亮、快捷预设时刻解析按指定 IANA 时区（缺省 local）
       'timezone',
       // 表单关联通道：required 驱动原生校验链（valueMissing）；name 变化需重同步范围/多选 FormData 的 entry key
@@ -1603,11 +1635,16 @@ export class OASDatePicker extends OASFormElement {
     const t = this.pickerType
     const body = this.panelSkeleton(panel)
     const yearNav = this.subPanel === 'months'
+    const dropdownCaption = this.isDropdownCaption()
     body.innerHTML = `
       <div class="header">
         <button type="button" class="nav" part="prev"
           aria-label="${yearNav ? this.t('calendar.prevYear') : this.t('calendar.prevMonth')}">‹</button>
-        <button type="button" class="title" part="title"></button>
+        ${
+          dropdownCaption
+            ? `<span class="caption" part="caption"><select class="caption-select" part="caption-month" aria-label="${this.t('datePicker.selectMonth')}"></select><select class="caption-select" part="caption-year" aria-label="${this.t('datePicker.selectYear')}"></select></span>`
+            : '<button type="button" class="title" part="title"></button>'
+        }
         <button type="button" class="nav" part="next"
           aria-label="${yearNav ? this.t('calendar.nextYear') : this.t('calendar.nextMonth')}">›</button>
       </div>
@@ -1619,9 +1656,13 @@ export class OASDatePicker extends OASFormElement {
       </div>
     `
     const grid = body.querySelector<HTMLElement>('[part="grid"]')!
-    const title = body.querySelector<HTMLElement>('[part="title"]')!
-    title.textContent =
-      this.subPanel === 'months' ? formatYear(this.viewDate, locale) : formatYearMonth(this.viewDate, locale)
+    const title = body.querySelector<HTMLElement>('[part="title"]')
+    if (dropdownCaption) {
+      this.buildDropdownCaption(body)
+    } else {
+      title!.textContent =
+        this.subPanel === 'months' ? formatYear(this.viewDate, locale) : formatYearMonth(this.viewDate, locale)
+    }
 
     if (this.subPanel === 'months') {
       this.buildMonthCells(grid, this.viewDate.getFullYear(), {
@@ -1642,13 +1683,79 @@ export class OASDatePicker extends OASFormElement {
     next.disabled = !this.canStepDays(this.viewDate, 1)
     prev.addEventListener('click', () => this.stepView(-1))
     next.addEventListener('click', () => this.stepView(1))
-    title.addEventListener('click', () => {
+    title?.addEventListener('click', () => {
       this.subPanel = this.subPanel === 'days' ? 'months' : 'days'
       this.renderPanel(false)
     })
     body.querySelector<HTMLElement>('[part="today"]')?.addEventListener('click', () => this.pickToday())
     body.querySelector<HTMLElement>('[part="confirm"]')?.addEventListener('click', () => this.confirmDateTime())
     grid.addEventListener('keydown', (e) => this.handleGridKey(e as KeyboardEvent, grid, 0))
+  }
+
+  /** caption-layout=dropdown 仅对日网格单值面板生效（date/datetime/week）；其余类型回落标题按钮 */
+  private isDropdownCaption(): boolean {
+    const t = this.pickerType
+    if (t === 'daterange' || t === 'datetimerange' || t === 'monthrange' || t === 'yearrange') return false
+    if (t === 'month' || t === 'quarter' || t === 'year') return false
+    return this.getAttr('caption-layout', '') === 'dropdown'
+  }
+
+  /**
+   * 月/年下拉 caption（dob 出生日期场景的远年快速跳转）：
+   * - 月下拉 12 项（locale 月名），年下拉窗口 [今年-100, 今年+10]，min/max 在场时收缩到边界年、
+   *   界外月整月 disabled（与月步进导航同口径）；
+   * - 选择仅做面板导航（viewDate 切换重渲网格），不改 value、不派发 oas-change；
+   * - zh 系 locale 年前月后（标题顺序随语言习惯），其余月前年后；
+   * - 面板全量重建会丢弃旧 select，change 后焦点回落到新下拉，键盘连续跳转不断链。
+   */
+  private buildDropdownCaption(body: HTMLElement): void {
+    const locale = resolveLocale(this)
+    const monthSel = body.querySelector<HTMLSelectElement>('[part="caption-month"]')!
+    const yearSel = body.querySelector<HTMLSelectElement>('[part="caption-year"]')!
+    const caption = body.querySelector<HTMLElement>('.caption')!
+    if (locale.toLowerCase().startsWith('zh')) caption.insertBefore(yearSel, monthSel)
+
+    const viewYear = this.viewDate.getFullYear()
+    const viewMonth = this.viewDate.getMonth()
+    const min = parseISODate(this.getAttr('min', ''))
+    const max = parseISODate(this.getAttr('max', ''))
+    const thisYear = this.nowInZone().getFullYear()
+    const minYear = min ? min.getFullYear() : thisYear - 100
+    const maxYear = max ? max.getFullYear() : thisYear + 10
+    const lo = Math.min(minYear, viewYear)
+    const hi = Math.max(maxYear, viewYear)
+
+    for (let y = lo; y <= hi; y++) {
+      const opt = document.createElement('option')
+      opt.value = String(y)
+      opt.textContent = String(y)
+      if ((min && y < min.getFullYear()) || (max && y > max.getFullYear())) opt.disabled = true
+      yearSel.appendChild(opt)
+      // 先插入再置选中：元素未挂入 select 时设置 selected 在部分实现（happy-dom）下会被丢弃
+      if (y === viewYear) opt.selected = true
+    }
+    for (let m = 0; m < 12; m++) {
+      const opt = document.createElement('option')
+      opt.value = String(m)
+      const mStart = new Date(viewYear, m, 1)
+      const mEnd = new Date(viewYear, m + 1, 0)
+      opt.textContent = new Intl.DateTimeFormat(locale, { month: 'short' }).format(mStart)
+      // 与月步进导航同口径：整月落在 [min, max] 外则禁选
+      if ((min && mEnd < startOfDay(min)) || (max && mStart > startOfDay(max))) opt.disabled = true
+      monthSel.appendChild(opt)
+      if (m === viewMonth) opt.selected = true
+    }
+
+    const jump = (year: number, month: number, refocusPart: string): void => {
+      this.viewDate = new Date(year, month, 1)
+      this.renderPanel(false)
+      // 面板重建产生新 select，焦点回落保持键盘连续跳转
+      this.panel?.querySelector<HTMLSelectElement>(`[part="${refocusPart}"]`)?.focus()
+    }
+    monthSel.addEventListener('change', () =>
+      jump(this.viewDate.getFullYear(), Number(monthSel.value), 'caption-month'),
+    )
+    yearSel.addEventListener('change', () => jump(Number(yearSel.value), this.viewDate.getMonth(), 'caption-year'))
   }
 
   private renderDaysGrid(grid: HTMLElement, focusNow: boolean): void {

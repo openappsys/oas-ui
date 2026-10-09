@@ -1734,3 +1734,116 @@ describe('OASDatePicker value property（公开读/写通道）', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 })
+
+describe('caption-layout=dropdown（标题换月/年下拉，dob 远年快速跳转）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  function captionSel(el: OASDatePicker, part: 'caption-month' | 'caption-year'): HTMLSelectElement {
+    return el.shadowRoot!.querySelector<HTMLSelectElement>(`[part="${part}"]`)!
+  }
+
+  it('默认标题按钮模式：面板无下拉（回归）', () => {
+    const el = mount({ value: '2026-08-09' })
+    open(el)
+    expect(el.shadowRoot!.querySelectorAll('.caption-select').length).toBe(0)
+    expect(el.shadowRoot!.querySelector('[part="title"]')).not.toBeNull()
+  })
+
+  it('dropdown：面板头部渲染月/年下拉（part + aria-label + 选中项为视图月/年）', () => {
+    const el = mount({ value: '2026-08-09', 'caption-layout': 'dropdown' })
+    open(el)
+    const m = captionSel(el, 'caption-month')
+    const y = captionSel(el, 'caption-year')
+    expect(m.getAttribute('aria-label')).toBe('选择月份')
+    expect(y.getAttribute('aria-label')).toBe('选择年份')
+    // 月下拉 12 项、选中视图月（8 月 → value '7'，0 基）
+    expect(m.options.length).toBe(12)
+    expect(m.value).toBe('7')
+    // 年下拉含视图年且选中
+    expect(y.value).toBe('2026')
+    expect([...y.options].some((o) => o.value === '2026' && o.selected)).toBe(true)
+  })
+
+  it('zh locale 下年下拉排在月下拉之前（标题顺序随语言习惯）', () => {
+    const el = mount({ value: '2026-08-09', 'caption-layout': 'dropdown' })
+    open(el)
+    const m = captionSel(el, 'caption-month')
+    const y = captionSel(el, 'caption-year')
+    // compareDocumentPosition FOLLOWING：m 在 y 之后 → 年前月后
+    expect(!!(y.compareDocumentPosition(m) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true)
+  })
+
+  it('年下拉默认窗口：[今年-100, 今年+10] 并包含视图年（远年视图扩张不收窄窗口）', () => {
+    const el = mount({ value: '2026-08-09', 'caption-layout': 'dropdown' })
+    open(el)
+    const y = captionSel(el, 'caption-year')
+    const thisYear = new Date().getFullYear()
+    let values = [...y.options].map((o) => Number(o.value))
+    expect(values[0]).toBe(thisYear - 100)
+    expect(values[values.length - 1]).toBe(thisYear + 10)
+    // 视图年越过窗口边界时窗口扩含视图年（默认窗口本身不消失）
+    const far = mount({ 'caption-layout': 'dropdown' })
+    far.setAttribute('default-value', `${thisYear + 30}-06-15`)
+    open(far)
+    const fy = captionSel(far, 'caption-year')
+    values = [...fy.options].map((o) => Number(o.value))
+    expect(values[0], '窗口起点仍为今年-100').toBe(thisYear - 100)
+    expect(values[values.length - 1], '窗口终点扩含视图年').toBe(thisYear + 30)
+    expect(fy.value).toBe(String(thisYear + 30))
+  })
+
+  it('选年跳远年：日格重建到目标年、value 与 trigger 显示不变、不派发 oas-change', () => {
+    const el = mount({ value: '2026-08-09', 'caption-layout': 'dropdown' })
+    open(el)
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    const y = captionSel(el, 'caption-year')
+    y.value = '1962'
+    y.dispatchEvent(new Event('change', { bubbles: true }))
+    // 日格重建到 1962 年 8 月
+    const days = [...el.shadowRoot!.querySelectorAll('.day')].map((d) => d.getAttribute('data-date'))
+    expect(days.some((d) => d!.startsWith('1962-08'))).toBe(true)
+    // 纯导航：值契约不变
+    expect(el.getAttribute('value')).toBe('2026-08-09')
+    expect(input(el).value).toBe('2026-08-09')
+    expect(fired).toBe(0)
+  })
+
+  it('选月跳转：日格切到同年目标月', () => {
+    const el = mount({ value: '2026-08-09', 'caption-layout': 'dropdown' })
+    open(el)
+    const m = captionSel(el, 'caption-month')
+    m.value = '2'
+    m.dispatchEvent(new Event('change', { bubbles: true }))
+    const days = [...el.shadowRoot!.querySelectorAll('.day')].map((d) => d.getAttribute('data-date'))
+    expect(days.some((d) => d!.startsWith('2026-03'))).toBe(true)
+    expect(el.getAttribute('value')).toBe('2026-08-09')
+  })
+
+  it('min/max 收缩月下拉可选项（界外月 disabled）', () => {
+    const el = mount({ value: '2026-08-09', min: '2026-03-01', max: '2026-10-31', 'caption-layout': 'dropdown' })
+    open(el)
+    const m = captionSel(el, 'caption-month')
+    const disabled = [...m.options].filter((o) => o.disabled).map((o) => o.value)
+    // 1/2 月整月早于 min，11/12 月整月晚于 max
+    expect(disabled.sort()).toEqual(['0', '1', '10', '11'])
+  })
+
+  it('week 类型同样生效；month 类型不渲染下拉（回归）', () => {
+    const week = mount({ type: 'week', value: '2026-W32', 'caption-layout': 'dropdown' })
+    open(week)
+    expect(week.shadowRoot!.querySelector('[part="caption-month"]')).not.toBeNull()
+
+    const month = mount({ type: 'month', value: '2026-08', 'caption-layout': 'dropdown' })
+    open(month)
+    expect(month.shadowRoot!.querySelectorAll('.caption-select').length).toBe(0)
+  })
+})

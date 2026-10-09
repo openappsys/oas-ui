@@ -169,6 +169,12 @@ format 支持 `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` token（week / quarter 为固定�
 
 无值时打开面板默认落在当前月；设置 `default-value` 后锚定到指定日期所在月（回显生日月份等场景）。
 
+<DemoBlock title="标题月/年下拉（caption-layout=dropdown，出生日期快速跳转）">
+  <oas-date-picker caption-layout="dropdown" default-value="1990-06-15" placeholder="选择出生日期"></oas-date-picker>
+</DemoBlock>
+
+`caption-layout="dropdown"` 把日面板标题换成**月 / 年两个下拉**（出生日期等远年场景免逐月翻页）：年下拉默认覆盖「今年-100 ～ 今年+10」（`min` / `max` 在场时收缩到边界年，越界月整月置灰），选择即跳转——**仅导航不改值**，选中日期仍由点击日格 / 快捷预设 / 手输提交。月 / 年标题顺序随 locale（zh 系年在前）；`type=date` / `datetime` / `week` 生效，其余类型（月/年/季度/范围面板自身已是块选择形态）保持标题按钮不变。键盘可用（原生 select），切换后焦点保持在下拉上可连续跳转。
+
 <DemoBlock title="周号列（show-week-number）与周起始覆写（first-day-of-week）">
   <oas-date-picker value="2026-08-09" show-week-number first-day-of-week="0"></oas-date-picker>
 </DemoBlock>
@@ -280,6 +286,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `caption-layout` | 面板标题形态：buttons（默认，标题按钮切月面板）/ dropdown（月/年下拉快速跳转，出生日期等远年场景；仅日网格单值面板 date/datetime/week 生效，选择仅导航不改值） | `string` | — |
 | `clearable` | 可清除：有值时显示清除钮，点击清空并派发 `oas-clear` + `oas-change`（空值） | `boolean` | — |
 | `default-time` | datetimerange 起止默认时刻（JSON 数组或单串同值；值缺时间部分时补齐） | `string` | — |
 | `default-value` | 空值时面板初始锚点（如回显生日月份；有值时以值为锚） | `string` | — |

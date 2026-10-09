@@ -269,6 +269,8 @@ export const ar: LocaleMessages = {
   'datePicker.shortcutThisWeek': 'هذا الأسبوع',
   'datePicker.shortcutThisMonth': 'هذا الشهر',
   'datePicker.shortcutThisYear': 'هذه السنة',
+  'datePicker.selectMonth': 'اختر الشهر',
+  'datePicker.selectYear': 'اختر السنة',
   // dropdown (قائمة منسدلة)
   'dropdown.openMenu': 'فتح القائمة',
   // popover (بطاقة منبثقة)

@@ -118,6 +118,12 @@
       "observed": true
     },
     {
+      "name": "caption-layout",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "timezone",
       "type": "string",
       "default": "",
