@@ -2266,7 +2266,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 验收
 
-- 单测全绿（9710）；`typecheck` / `build` / `api:check` 全绿；全量 e2e 3262 passed。
+- 单测全绿（9710）；`typecheck` / `build` / `api:check` 全绿；本批范围全量 e2e 通过。
 - 4 个新组件已注册进 index / ssr / DSD 白名单 + 快照。
 - 对比度修复：button text 变体 active、inspector 斑马行标签、info 文字色 token 调深（axe 比值达标，感知门禁不受影响）。
 
