@@ -169,3 +169,11 @@ onMounted(() => {
 | `--oas-inspector-bg` | `var(--oas-color-bg)` |
 | `--oas-inspector-gap` | `var(--oas-space-2)` |
 | `--oas-inspector-width` | `280px` |
+
+<style>
+.vp-doc .demo-block oas-inspector {
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  overflow: hidden;
+}
+</style>

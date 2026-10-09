@@ -15,7 +15,7 @@ const STYLE = `
   gap: var(--oas-space-2);
   min-height: var(--oas-inspector-row-height, 28px);
   box-sizing: border-box;
-  border-block-end: 1px solid var(--oas-inspector-divider-color, transparent);
+  border-block-end: 1px solid var(--oas-inspector-divider-color, var(--oas-color-border));
 }
 .label {
   flex: 0 0 50%;

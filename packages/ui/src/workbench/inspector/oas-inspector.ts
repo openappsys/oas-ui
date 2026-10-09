@@ -71,6 +71,7 @@ const STYLE = `
   display: none;
 }
 .empty {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -127,10 +128,8 @@ export class OASInspector extends OASElement {
       <aside class="panel" part="panel" role="complementary">
         <div class="header" part="header" hidden><slot name="header"></slot></div>
         <div class="tabs" part="tabs" hidden><slot name="tabs"></slot></div>
-        <div class="body" part="body">
-          <div class="empty" part="empty" hidden><slot name="empty"></slot><span data-fallback></span></div>
-          <slot></slot>
-        </div>
+        <div class="empty" part="empty" hidden><slot name="empty"></slot><span data-fallback></span></div>
+        <div class="body" part="body"><slot></slot></div>
         <div class="footer" part="footer" hidden><slot name="footer"></slot></div>
       </aside>
     `

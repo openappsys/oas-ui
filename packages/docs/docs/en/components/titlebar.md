@@ -86,6 +86,22 @@ With `dir="rtl"` on the container the component mirrors automatically: `data-rtl
   </div>
 </DemoBlock>
 
+## macOS traffic lights
+
+Place the built-in `oas-traffic-lights` (close / minimize / maximize dots, symbols on hover) in `slot="leading"` with a centered title for the macOS layout; clicks dispatch `oas-window-action` (same contract as the built-in `window-actions`).
+
+<DemoBlock title="macOS traffic lights + centered title">
+  <div style="width: 100%">
+    <oas-titlebar id="tb-macos" title="Hilton Rome Airport — Photo Studio" drag>
+      <oas-traffic-lights slot="leading"></oas-traffic-lights>
+    </oas-titlebar>
+    <span id="tb-macos-out" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Click a traffic light to see the oas-window-action feedback</span>
+    <oas-titlebar title="Disabled traffic lights" window-actions="minimize,maximize,close" style="margin-top: var(--oas-space-3)">
+      <oas-traffic-lights slot="leading" disabled></oas-traffic-lights>
+    </oas-titlebar>
+  </div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -98,6 +114,11 @@ onMounted(() => {
   const docOut = document.getElementById('tb-doc-out')
   doc?.addEventListener('oas-title-change', (e) => {
     docOut.textContent = `oas-title-change dispatched: title=${e.detail.title} (title absorbed into the component cache — hosts sync via the event)`
+  })
+  const macos = document.getElementById('tb-macos')
+  const macosOut = document.getElementById('tb-macos-out')
+  macos?.addEventListener('oas-window-action', (e) => {
+    macosOut.textContent = `oas-window-action dispatched: action=${e.detail.action} (traffic lights share the window-actions contract)`
   })
 })
 </script>
@@ -166,3 +187,11 @@ onMounted(() => {
 | `--oas-traffic-lights-maximize` | `#28c840` |
 | `--oas-traffic-lights-minimize` | `#febc2e` |
 | `--oas-traffic-lights-size` | `12px` |
+
+<style>
+.vp-doc .demo-block oas-titlebar {
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  overflow: hidden;
+}
+</style>

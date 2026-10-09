@@ -123,6 +123,14 @@ describe('OASInspector 容器', () => {
     expect(fallback.hidden, '有自定义内容时内置文案隐藏').toBe(true)
   })
 
+  it('empty 态：空态块在 body 之外（回归：曾被隐藏的 body 藏没，用户不可见）', () => {
+    const el = mount({ attrs: { empty: '' } })
+    const empty = emptyPart(el)
+    const body = bodyPart(el)
+    expect(body.contains(empty), '空态块不得位于被隐藏的 body 内').toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="panel"]')!.contains(empty), '空态块应是 panel 的直接子级').toBe(true)
+  })
+
   it('header/footer 插槽空时隐藏，有内容时显示', () => {
     const el = mount()
     expect(headerWrap(el).hidden).toBe(true)

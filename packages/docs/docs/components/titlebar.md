@@ -96,6 +96,9 @@ oas-titlebar {
       <oas-traffic-lights slot="leading"></oas-traffic-lights>
     </oas-titlebar>
     <span id="tb-macos-out" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">点交通灯查看 oas-window-action 反馈</span>
+    <oas-titlebar title="禁用态交通灯" window-actions="minimize,maximize,close" style="margin-top: var(--oas-space-3)">
+      <oas-traffic-lights slot="leading" disabled></oas-traffic-lights>
+    </oas-titlebar>
   </div>
 </DemoBlock>
 
@@ -184,3 +187,11 @@ onMounted(() => {
 | `--oas-traffic-lights-maximize` | `#28c840` |
 | `--oas-traffic-lights-minimize` | `#febc2e` |
 | `--oas-traffic-lights-size` | `12px` |
+
+<style>
+.vp-doc .demo-block oas-titlebar {
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  overflow: hidden;
+}
+</style>
