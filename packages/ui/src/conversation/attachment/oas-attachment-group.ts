@@ -157,7 +157,8 @@ export class OASAttachmentGroup extends OASElement {
     if (!g) return
     const epsilon = 1
     const max = g.scrollWidth - g.clientWidth
-    const norm = isRtl(this) ? -g.scrollLeft : g.scrollLeft
+    // 与掩码同源（update() 写入的 data-rtl），避免归一与渐隐方向口径分叉
+    const norm = this.hasAttribute('data-rtl') ? -g.scrollLeft : g.scrollLeft
     const dirs: string[] = []
     if (max > epsilon && norm > epsilon) dirs.push('start')
     if (max > epsilon && norm < max - epsilon) dirs.push('end')

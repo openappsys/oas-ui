@@ -509,11 +509,14 @@ export class OASScrollArea extends OASElement {
     window.removeEventListener('pointermove', this.handleDragMove)
     window.removeEventListener('pointerup', this.endThumbDrag)
     window.removeEventListener('pointercancel', this.endThumbDrag)
-    // 拖拽中指针已离开：hover 模式松手后补隐藏（否则滞留可见）
+    // 拖拽结束：hover 若指针已离开则补隐藏；auto/scroll 重新排定时隐藏
+    // （拖拽期 scheduleHide 被 dragState 挡回，松手后无新滚动事件则永不隐藏）
+    const t = this.scrollbarType()
     if (this.leftDuringDrag) {
-      if (this.scrollbarType() === 'hover') this.hideNow()
+      if (t === 'hover') this.hideNow()
       this.leftDuringDrag = false
     }
+    if (t === 'auto' || t === 'scroll') this.scheduleHide()
   }
 
   // ---------- 编程滚动方法 ----------

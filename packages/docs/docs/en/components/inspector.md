@@ -71,7 +71,7 @@ Click or arrow keys to switch (roving tabindex + Home/End, mirrored in RTL); dis
 
 ## Striping and top alignment (striped / align-top)
 
-`striped` adds a zebra background (value goes through `--oas-inspector-row-striped-bg`, with a dark variant); `align-top` aligns the label with the top of the control, for rows with tall controls (e.g. multiline text).
+`striped` adds a zebra background (value goes through `--oas-inspector-row-striped-bg`, falling back to the theme-aware `--oas-color-bg-hover`); `align-top` aligns the label with the top of the control, for rows with tall controls (e.g. multiline text).
 
 <DemoBlock title="striped + align-top">
   <oas-inspector style="height: 220px">

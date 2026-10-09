@@ -695,6 +695,7 @@ test.beforeAll(async () => {
     renderToString('oas-attachment-group', {}, '<oas-attachment name="a.mov"></oas-attachment>'),
     renderToString('oas-transport-well', { label: '时间码', frames: '1075', 'frame-rate': '25', duration: '43' }),
     renderToString('oas-music-well', { label: '位置', bars: '5', beats: '3', tempo: '120', meter: '4/4' }),
+    renderToString('oas-collapsible', { header: '折叠面板' }, '<p>内容</p>'),
   ])
 
   dsdHtml = `<!doctype html>

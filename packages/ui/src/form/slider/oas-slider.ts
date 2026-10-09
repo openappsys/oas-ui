@@ -1820,8 +1820,9 @@ export class OASSlider extends OASElement {
     // 气泡可见：常显 > 拖动 > 聚焦（focus 语义，不依赖 show-tooltip）
     const tipsVisible = this.hasAttr('show-tooltip') || this.hasAttr('tooltip-always') || this.dragging || focused
 
-    // 立体声电平表：仅圆推子（默认形态）渲染；有值时恒启用自定义视觉层（电平条需常显）
-    const levels = this.isPointerThumb() ? null : this.parseLevels()
+    // 立体声电平表：仅单值 + 圆推子（默认形态）渲染；有值时恒启用自定义视觉层（电平条需常显）。
+    // multi/range 无对应单值语义 → 不解析也不触发自定义视觉层（避免无意义地改变拇指形态）
+    const levels = this.isPointerThumb() || multi ? null : this.parseLevels()
     const hasLevels = levels !== null
 
     // 拖动/聚焦/常显中启用自定义视觉层（拖动时临时显示值气泡，无需 show-tooltip）；

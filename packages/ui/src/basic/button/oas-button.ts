@@ -36,8 +36,8 @@ function warnInvalidSize(raw: string): void {
 }
 
 /**
- * 自定义色实心底的文字色：按相对亮度取深/浅，保证对比可读。
- * 支持 #rgb/#rrggbb/rgb(a) 解析；其余写法（var()/色名）返回 ''（走 CSS 兜底 token）。
+ * 解析 CSS 颜色为 rgb。快路径 #rgb/#rrggbb/rgb(a)；色名/oklch 等经隐藏探针交浏览器解析；
+ * `var()` 与非法色值返回 null（前者走 CSS 兜底 token）。
  */
 function resolveRgb(color: string): { r: number; g: number; b: number } | null {
   const c = color.trim()
@@ -49,10 +49,12 @@ function resolveRgb(color: string): { r: number; g: number; b: number } | null {
   const rgb = c.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i)
   if (rgb) return { r: Number(rgb[1]), g: Number(rgb[2]), b: Number(rgb[3]) }
   // var() 交 CSS 兜底；其余（色名/oklch 等）经探针解析为 rgb
-  if (/var\(/i.test(c)) return null
+  if (/var\(/i.test(c) || c === '') return null
   if (typeof document === 'undefined' || !document.body) return null
   const probe = document.createElement('span')
-  probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;color:' + c
+  probe.style.color = c
+  if (probe.style.color === '') return null // 非法色值被 CSSOM 丢弃，避免回落继承色造成假阳性
+  probe.style.cssText += ';position:absolute;visibility:hidden;pointer-events:none'
   document.body.appendChild(probe)
   const resolved = getComputedStyle(probe).color
   probe.remove()

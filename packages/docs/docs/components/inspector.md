@@ -71,7 +71,7 @@
 
 ## 斑马底与顶对齐（striped / align-top）
 
-`striped` 给行加斑马底（值走 `--oas-inspector-row-striped-bg`，含暗色变体）；`align-top` 让标签与控件顶部对齐，适配高控件行（如多行文本）。
+`striped` 给行加斑马底（值走 `--oas-inspector-row-striped-bg`，未设时回退 `--oas-color-bg-hover`，主题感知）；`align-top` 让标签与控件顶部对齐，适配高控件行（如多行文本）。
 
 <DemoBlock title="striped + align-top">
   <oas-inspector style="height: 220px">
