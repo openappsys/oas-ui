@@ -516,6 +516,7 @@
       "title": "卡片标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
       "loading": "加载态：内容区切骨架占位（aria-busy 同步）",
       "size": "尺寸档位：`small`（紧凑 padding、标题降档）/ `medium`（默认）",
+      "density": "密度档位：`default`（默认）/ `compact`（内边距与分区间距同时收紧，比 `size=\"small\"` 更紧，适合信息密集型场景；与 `size` 正交，可叠加）",
       "variant": "形态：`outlined`（默认，带描边）/ `borderless`（无边框嵌入形态）",
       "header-bordered": "头部分割线（默认 true；`\"false\"` 关闭）",
       "shadow": "阴影三态：`none` / `hover`（悬停浮起）/ `always`（常显）；`hoverable` 映射 `hover`，显式 shadow 优先",

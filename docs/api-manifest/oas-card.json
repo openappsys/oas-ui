@@ -40,6 +40,10 @@
       "observed": true
     },
     {
+      "name": "density",
+      "observed": true
+    },
+    {
       "name": "variant",
       "observed": true
     },

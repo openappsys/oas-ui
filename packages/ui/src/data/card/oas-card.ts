@@ -72,6 +72,36 @@ const STYLE = `
 :host([size="small"]) .footer {
   padding: var(--oas-space-2) var(--oas-space-4);
 }
+/* 密度档：density="compact" 独立于 size——同时收紧卡片内各分区的内边距与间距
+   （比 size="small" 更紧），适合信息密集的看板/列表/设置面板；default 为默认档，
+   无需覆盖规则。与 size（字号刻度）正交，可叠加使用。全程走间距 token。 */
+:host([density="compact"]) .header {
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) var(--oas-space-3);
+}
+:host([density="compact"]) .head-row {
+  gap: var(--oas-space-2);
+}
+:host([density="compact"]) .extra {
+  gap: var(--oas-space-1);
+}
+:host([density="compact"]) .body {
+  padding: var(--oas-space-2) var(--oas-space-3);
+}
+:host([density="compact"]) .actions,
+:host([density="compact"]) .footer {
+  gap: var(--oas-space-1);
+  padding: var(--oas-space-2) var(--oas-space-3);
+}
+:host([density="compact"]) .skeleton {
+  padding: 0;
+}
+:host([density="compact"]) .sk-title {
+  margin-bottom: var(--oas-space-2);
+}
+:host([density="compact"]) .sk-line {
+  margin-bottom: var(--oas-space-1);
+}
 /* 封面区：顶部全宽，圆角贴合卡片（上圆下直），裁切溢出的图片 */
 .cover {
   position: relative;
@@ -311,7 +341,7 @@ const INTERACTIVE_SEL = 'button, a, input, select, textarea, [role="button"], oa
 
 export class OASCard extends OASElement {
   static override get observedAttributes(): string[] {
-    // size / variant / header-bordered 为纯 CSS 属性（:host([..]) 选择器驱动）；
+    // size / density / variant / header-bordered 为纯 CSS 属性（:host([..]) 选择器驱动）；
     // 仍进观察列表——API 扫描以观察列表为发现通道，且变更时重渲染无副作用
     return [
       'title',
@@ -321,6 +351,7 @@ export class OASCard extends OASElement {
       'clickable',
       'loading',
       'size',
+      'density',
       'variant',
       'header-bordered',
       'shadow',

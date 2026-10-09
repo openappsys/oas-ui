@@ -265,3 +265,32 @@ test('card orientation=horizontal：属性存活 + 横向布局规则在位（�
   expect(r.cssRow, '横向 flex 规则在样式表').toBe(true)
   expect(r.coverInMain, '封面在内容列外（左置兄弟）').toBe(true)
 })
+
+test('card density=compact：属性存活 + 内边距/分区间距实际收紧（计算样式，非仅 CSS 契约）', async ({ page }) => {
+  // 曾现风险：纯 CSS 属性被 Vue 剥离、或规则只在样式表却不生效——用计算样式对照默认档验证
+  await page.goto('/components/card.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-card[density="compact"]')
+  const r = await page.evaluate(() => {
+    const compact = document.querySelector<HTMLElement>('oas-card[density="compact"]')!
+    // 对照卡：紧凑密度 demo 块内的默认档卡（无 density 属性）
+    const demo = [...document.querySelectorAll('.demo-block')].find((b) => b.textContent?.includes('默认密度'))!
+    const normal = demo.querySelector<HTMLElement>('oas-card:not([density])')!
+    const read = (el: HTMLElement) => {
+      const root = el.shadowRoot!
+      const body = root.querySelector<HTMLElement>('[part="body"]')!
+      const header = root.querySelector<HTMLElement>('[part="header"]')!
+      return {
+        padding: parseFloat(getComputedStyle(body).paddingTop),
+        gap: parseFloat(getComputedStyle(header).columnGap),
+      }
+    }
+    return {
+      attrAlive: compact.hasAttribute('density'),
+      compact: read(compact),
+      normal: read(normal),
+    }
+  })
+  expect(r.attrAlive, 'density 属性不被 Vue 剥离').toBe(true)
+  expect(r.compact.padding, '紧凑密度内边距应小于默认').toBeLessThan(r.normal.padding)
+  expect(r.compact.gap, '紧凑密度分区间距应小于默认').toBeLessThan(r.normal.gap)
+})

@@ -368,6 +368,31 @@ describe('OASCard', () => {
     })
   })
 
+  describe('density 紧凑密度', () => {
+    it('density 进 observedAttributes（API 扫描发现通道）', () => {
+      expect(OASCard.observedAttributes).toContain('density')
+    })
+
+    it('density="compact"：内边距与分区间距同时收紧（CSS 契约，全走 token）', () => {
+      const el = mount({ density: 'compact' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      // 内边距收紧（正文 / 标题区 / 操作区）
+      expect(css).toMatch(/:host\(\[density="compact"\]\)\s*\.body\s*\{[^}]*padding:\s*var\(--oas-space-2\)/)
+      expect(css).toMatch(/:host\(\[density="compact"\]\)\s*\.header\s*\{[^}]*padding:\s*var\(--oas-space-2\)/)
+      expect(css).toMatch(/:host\(\[density="compact"\]\)\s*\.actions[^{]*\{[^}]*padding:\s*var\(--oas-space-2\)/)
+      // 分区间距收紧（header / head-row / extra 的 gap）
+      expect(css).toMatch(/:host\(\[density="compact"\]\)\s*\.header\s*\{[^}]*gap:\s*var\(--oas-space-2\)/)
+      expect(css).toMatch(/:host\(\[density="compact"\]\)\s*\.head-row\s*\{[^}]*gap:\s*var\(--oas-space-2\)/)
+      expect(css).toMatch(/:host\(\[density="compact"\]\)\s*\.extra\s*\{[^}]*gap:\s*var\(--oas-space-1\)/)
+    })
+
+    it('默认档 density="default"/未设：正文保持常规内边距（无 compact 规则命中）', () => {
+      const el = mount({})
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.body\s*\{[^}]*padding:\s*var\(--oas-space-4\)/)
+    })
+  })
+
   describe('variant 形态', () => {
     it('默认 outlined：宿主带边框 token', () => {
       const el = mount({})
