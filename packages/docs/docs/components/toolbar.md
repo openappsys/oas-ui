@@ -226,6 +226,29 @@
   </oas-toolbar>
 </DemoBlock>
 
+## 过滤药丸行（oas-scope-bar）
+
+`oas-scope-bar` 是过滤药丸行：一排可点击药丸，选中项以低透明度主色「active 填充」表达。单选（缺省，radio 语义——组内互斥，点已选中项不变更）或 `multiple` 多选（每项独立切换）；`value` 受控（单选字符串 / 多选 JSON 数组字符串），点击派发 `oas-change`。`label` 提供无障碍组名（`role="group"` 的 `aria-label`）。可独立使用，也可放进取 `oas-toolbar` 作为其中一个 Tab 停靠点（内部方向键自管，不干扰工具栏 roving）。
+
+<DemoBlock title="过滤药丸行（单选）">
+  <oas-scope-bar id="tb-scope" label="按状态筛选" value="all" items='[{"label":"全部","value":"all"},{"label":"进行中","value":"active"},{"label":"已完成","value":"done"},{"label":"已归档","value":"archived","disabled":true}]'></oas-scope-bar>
+  <oas-tag id="tb-scope-result" type="info">scope: all</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="过滤药丸行（多选）">
+  <oas-scope-bar id="tb-scope-multi" multiple label="按标签筛选" value='["design","code"]' items='[{"label":"设计","value":"design"},{"label":"研发","value":"code"},{"label":"运营","value":"ops"},{"label":"数据","value":"data"}]'></oas-scope-bar>
+  <oas-tag id="tb-scope-multi-result" type="info">scope: design, code</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="与 oas-toolbar 搭配">
+  <oas-toolbar>
+    <oas-scope-bar id="tb-scope-inline" label="视图" value="board" items='[{"label":"看板","value":"board"},{"label":"列表","value":"list"},{"label":"日历","value":"calendar"}]'></oas-scope-bar>
+    <oas-toolbar-separator></oas-toolbar-separator>
+    <button>保存</button>
+    <button>导出</button>
+  </oas-toolbar>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -275,6 +298,25 @@ onMounted(() => {
     item.textContent = `动态 ${n}`
     declAlign.appendChild(item)
   })
+
+  // 过滤药丸行：单选 / 多选 oas-change 反馈
+  const scope = document.getElementById('tb-scope')
+  const scopeTag = document.getElementById('tb-scope-result')
+  const syncScope = () => {
+    if (scopeTag) scopeTag.textContent = `scope: ${scope?.getAttribute('value') || '-'}`
+  }
+  scope?.addEventListener('oas-change', syncScope)
+  syncScope()
+
+  const scopeMulti = document.getElementById('tb-scope-multi')
+  const scopeMultiTag = document.getElementById('tb-scope-multi-result')
+  const syncScopeMulti = () => {
+    if (!scopeMultiTag) return
+    const v = JSON.parse(scopeMulti?.getAttribute('value') || '[]')
+    scopeMultiTag.textContent = `scope: ${v.join(', ') || '无'}`
+  }
+  scopeMulti?.addEventListener('oas-change', syncScopeMulti)
+  syncScopeMulti()
 })
 </script>
 
@@ -356,6 +398,25 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 按钮文案（默认插槽文本） |
+
+### oas-scope-bar
+
+#### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 整组禁用（叠加最近 oas-toolbar 的 disabled） | `boolean` | — |
+| `items` | 选项 JSON（property 赋值单向反射 attribute） | `ScopeBarItem[] \| string` | `[]` |
+| `label` | 无障碍组名（`role="group"` 的 `aria-label`，按语言由宿主传入） | `string` | — |
+| `multiple` | 多选模式（每个药丸独立切换） | `boolean` | — |
+| `size` | 尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar 的 size | `string` | — |
+| `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | `string` | — |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 切换，`detail: { value: string \| string[] }` |
 
 - 宿主 `role="toolbar"` + `aria-orientation`，`aria-label` 走 locale key（`toolbar.label`，默认「工具栏」）
 - 参与 roving 的子元素：native 控件（`button`/`input`/`select`/`textarea`/`a[href]`）、交互 `role`、自定义元素（tag 含 `-`）；`oas-toolbar-separator`、`data-toolbar-ignore`、`aria-hidden` 排除，`disabled`/`aria-disabled` 自动跳过（`focusable-when-disabled` 模式下 aria-disabled 项保持可聚焦）

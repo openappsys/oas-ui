@@ -226,6 +226,29 @@ When the container is too narrow, overflowing items are folded into a "···" p
   </oas-toolbar>
 </DemoBlock>
 
+## Filter pill bar (oas-scope-bar)
+
+`oas-scope-bar` is a filter pill row: a row of clickable pills where the selected one is shown with a low-opacity primary "active fill". Single-select (default, radio semantics — mutually exclusive, clicking the selected pill does nothing) or `multiple` (each pill toggles independently); `value` is controlled (string for single / JSON array string for multiple), clicks emit `oas-change`. `label` provides the accessible group name (the `aria-label` of `role="group"`). It works standalone or inside an `oas-toolbar` as one tab stop (internal arrow keys are self-managed and do not disturb toolbar roving).
+
+<DemoBlock title="Filter pill bar (single-select)">
+  <oas-scope-bar id="tb-scope" label="Filter by status" value="all" items='[{"label":"All","value":"all"},{"label":"In progress","value":"active"},{"label":"Done","value":"done"},{"label":"Archived","value":"archived","disabled":true}]'></oas-scope-bar>
+  <oas-tag id="tb-scope-result" type="info">scope: all</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="Filter pill bar (multiple-select)">
+  <oas-scope-bar id="tb-scope-multi" multiple label="Filter by tag" value='["design","code"]' items='[{"label":"Design","value":"design"},{"label":"Engineering","value":"code"},{"label":"Ops","value":"ops"},{"label":"Data","value":"data"}]'></oas-scope-bar>
+  <oas-tag id="tb-scope-multi-result" type="info">scope: design, code</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="Paired with oas-toolbar">
+  <oas-toolbar>
+    <oas-scope-bar id="tb-scope-inline" label="View" value="board" items='[{"label":"Board","value":"board"},{"label":"List","value":"list"},{"label":"Calendar","value":"calendar"}]'></oas-scope-bar>
+    <oas-toolbar-separator></oas-toolbar-separator>
+    <button>Save</button>
+    <button>Export</button>
+  </oas-toolbar>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -275,6 +298,25 @@ onMounted(() => {
     item.textContent = `Dynamic ${n}`
     declAlign.appendChild(item)
   })
+
+  // Filter pill bar: single/multiple oas-change feedback
+  const scope = document.getElementById('tb-scope')
+  const scopeTag = document.getElementById('tb-scope-result')
+  const syncScope = () => {
+    if (scopeTag) scopeTag.textContent = `scope: ${scope?.getAttribute('value') || '-'}`
+  }
+  scope?.addEventListener('oas-change', syncScope)
+  syncScope()
+
+  const scopeMulti = document.getElementById('tb-scope-multi')
+  const scopeMultiTag = document.getElementById('tb-scope-multi-result')
+  const syncScopeMulti = () => {
+    if (!scopeMultiTag) return
+    const v = JSON.parse(scopeMulti?.getAttribute('value') || '[]')
+    scopeMultiTag.textContent = `scope: ${v.join(', ') || 'none'}`
+  }
+  scopeMulti?.addEventListener('oas-change', syncScopeMulti)
+  syncScopeMulti()
 })
 </script>
 
@@ -356,6 +398,25 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Button label (default slot text) |
+
+### oas-scope-bar
+
+#### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disable the whole bar (combined with the nearest oas-toolbar's disabled) | `boolean` | — |
+| `items` | Options JSON (property assignment reflects one-way to the attribute) | `ScopeBarItem[] \| string` | `[]` |
+| `label` | Accessible group name (the `aria-label` of `role="group"`; supplied by the host per language) | `string` | — |
+| `multiple` | Multiple-select mode (each pill toggles independently) | `boolean` | — |
+| `size` | Size step (small/medium/large); defaults to the nearest oas-toolbar's size | `string` | — |
+| `value` | Current value: string for single-select; JSON array string for multiple-select | `string` | — |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Toggle, `detail: { value: string \| string[] }` |
 
 - The host has `role="toolbar"` + `aria-orientation`; `aria-label` comes from the locale key (`toolbar.label`)
 - Children that join roving: native controls (`button`/`input`/`select`/`textarea`/`a[href]`), interactive `role`s, custom elements (tag contains `-`); `oas-toolbar-separator`, `data-toolbar-ignore` and `aria-hidden` are excluded, `disabled`/`aria-disabled` are skipped automatically (aria-disabled items stay focusable in `focusable-when-disabled` mode)
