@@ -429,9 +429,11 @@ export const pt: LocaleMessages = {
 
   // conversation (família de conversa)
   'bubble.loading': 'Digitando…',
+  'bubble.reactions': 'Reações',
   'attachment.remove': 'Remover {name}',
   'attachment.download': 'Baixar {name}',
   'attachment.error': 'Falha no envio',
+  'attachment.group': 'Anexos',
   'messageScroller.label': 'Mensagens',
   'messageScroller.scrollToBottom': 'Rolar até o final',
   'messageRow.status.sending': 'Enviando',

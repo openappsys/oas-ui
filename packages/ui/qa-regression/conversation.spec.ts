@@ -425,3 +425,93 @@ test('暗色：bubble/attachment/marker 渲染无异常且底色随主题 token 
   })
   expect(attBg, 'attachment 卡底在 dark 下仍有着色').not.toBe('rgba(0, 0, 0, 0)')
 })
+
+// ---------- 增强批：bubble reactions / marker status·shimmer / scroller visibility / attachment group ----------
+
+test('bubble reactions：真点反应按钮派发 oas-reaction 且 demo 有可见反馈（aria-pressed/输出文案）', async ({
+  page,
+}) => {
+  await page.goto('/components/bubble.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#bubble-reactions-demo')
+  const box = page.locator('#bubble-reactions-demo').locator('[part="reactions"]')
+  await expect(box).toBeVisible()
+  await expect(box).toHaveAttribute('role', 'group')
+  const btn = box.locator('button.reaction').first()
+  await expect(btn, '选中态经 aria-pressed 表达（不只靠颜色）').toHaveAttribute('aria-pressed', 'true')
+  await expect(btn).toHaveAttribute('aria-label', '👍 3')
+
+  await realClick(page, '#bubble-reactions-demo', '[part="reactions"] button.reaction')
+  await expect(page.locator('#bubble-reactions-out')).toHaveText(/oas-reaction/, { timeout: 5000 })
+})
+
+test('marker status 语义色 / shimmer 生效（计算样式）', async ({ page }) => {
+  await page.goto('/components/marker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-marker')
+  const result = await page.evaluate(() => {
+    const colorOf = (sel: string) => {
+      const host = document.querySelector(sel) as HTMLElement | null
+      const inner = host?.shadowRoot?.querySelector('.marker') as HTMLElement | null
+      return inner ? getComputedStyle(inner).color : ''
+    }
+    const shimmerHost = document.querySelector('oas-marker[shimmer]') as HTMLElement | null
+    const content = shimmerHost?.shadowRoot?.querySelector('.content') as HTMLElement | null
+    const cs = content ? getComputedStyle(content) : null
+    return {
+      danger: colorOf('oas-marker[status="danger"]'),
+      info: colorOf('oas-marker[status="info"]'),
+      plain: colorOf('oas-marker:not([status])'),
+      clip: cs ? cs.getPropertyValue('background-clip') || cs.getPropertyValue('-webkit-background-clip') : '',
+      anim: cs ? cs.animationName : '',
+    }
+  })
+  expect(result.danger).not.toBe(result.plain)
+  expect(result.info).not.toBe(result.plain)
+  expect(result.info).not.toBe(result.danger)
+  expect(result.clip, 'shimmer 走 background-clip:text').toBe('text')
+  expect(result.anim, 'shimmer 动画生效').toContain('marker-shimmer')
+})
+
+test('message-scroller track-visible：滚动后 oas-visible-change 更新可见集与当前锚点', async ({ page }) => {
+  await page.goto('/components/message-scroller.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#msc-visible')
+  await expect
+    .poll(() => page.evaluate(() => document.querySelectorAll('#msc-visible oas-message-row').length), {
+      timeout: 8000,
+    })
+    .toBeGreaterThanOrEqual(6)
+  await expect(page.locator('#msc-visible-out')).toHaveText(/当前锚点/, { timeout: 8000 })
+
+  // 滚到底部 → 可见集变化 → 事件反馈（demo 文案切到 oas-visible-change）
+  await page.evaluate(() => {
+    const host = document.querySelector('#msc-visible') as HTMLElement
+    const vp = host.shadowRoot!.querySelector('.viewport') as HTMLElement
+    vp.scrollTop = vp.scrollHeight - vp.clientHeight
+    vp.dispatchEvent(new Event('scroll'))
+  })
+  await expect(page.locator('#msc-visible-out')).toHaveText(/oas-visible-change/, { timeout: 5000 })
+  const ids = await page.evaluate(() => {
+    const host = document.querySelector('#msc-visible') as HTMLElement & { visibleMessageIds: string[] }
+    return host.visibleMessageIds
+  })
+  expect(Array.isArray(ids)).toBe(true)
+  expect(ids.length).toBeGreaterThan(0)
+})
+
+test('attachment-group：横向溢出反射边缘可滚 + 滚动到端改变 data-scrollable', async ({ page }) => {
+  await page.goto('/components/attachment.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-attachment-group')
+  const readState = () =>
+    page.evaluate(
+      () => (document.querySelector('oas-attachment-group') as HTMLElement).getAttribute('data-scrollable') ?? '',
+    )
+  await expect.poll(readState, { timeout: 8000 }).toContain('end')
+
+  // 滚到结束端：起始端可滚（start），结束端不可滚
+  await page.evaluate(() => {
+    const host = document.querySelector('oas-attachment-group') as HTMLElement
+    const g = host.shadowRoot!.querySelector('.group') as HTMLElement
+    g.scrollLeft = g.scrollWidth
+    g.dispatchEvent(new Event('scroll'))
+  })
+  await expect.poll(readState, { timeout: 5000 }).toContain('start')
+})

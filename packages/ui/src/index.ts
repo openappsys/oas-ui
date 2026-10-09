@@ -515,13 +515,20 @@ export { OASHighlight } from './data/highlight/oas-highlight.js'
 export { OASSwipeCell } from './data/swipe-cell/oas-swipe-cell.js'
 
 export { OASBubble } from './conversation/bubble/oas-bubble.js'
-export type { BubbleVariant } from './conversation/bubble/oas-bubble.js'
+export type {
+  BubbleVariant,
+  BubbleReaction,
+  BubbleReactionsSide,
+  BubbleReactionsAlign,
+} from './conversation/bubble/oas-bubble.js'
 export { OASAttachment } from './conversation/attachment/oas-attachment.js'
 export type { AttachmentState, AttachmentSize } from './conversation/attachment/oas-attachment.js'
+export { OASAttachmentGroup } from './conversation/attachment/oas-attachment-group.js'
 export { OASMessageScroller } from './conversation/message-scroller/oas-message-scroller.js'
 export type {
   ScrollerDefaultPosition,
   MessageScrollerState,
+  MessageScrollerVisibility,
 } from './conversation/message-scroller/oas-message-scroller.js'
 export { OASMarker } from './conversation/marker/oas-marker.js'
 export { OASMessageRow } from './conversation/message-row/oas-message-row.js'

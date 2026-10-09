@@ -432,9 +432,11 @@ export const zhCN = {
 
   // conversation（会话族：bubble/attachment/message-scroller/message-row）
   'bubble.loading': '正在输入…',
+  'bubble.reactions': '表情回应',
   'attachment.remove': '移除 {name}',
   'attachment.download': '下载 {name}',
   'attachment.error': '上传失败',
+  'attachment.group': '附件组',
   'messageScroller.label': '消息列表',
   'messageScroller.scrollToBottom': '滚动到底部',
   'messageRow.status.sending': '发送中',

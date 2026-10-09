@@ -193,6 +193,7 @@
   "oas-swipe-cell",
   "oas-bubble",
   "oas-attachment",
+  "oas-attachment-group",
   "oas-message-scroller",
   "oas-marker",
   "oas-message-row",

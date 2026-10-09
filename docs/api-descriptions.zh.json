@@ -4325,9 +4325,14 @@
   },
   "oas-bubble": {
     "attrs": {
-      "loading": "打字中态（布尔在场）：内容切换为三点打字指示，宿主元素反射 aria-busy（AI「正在输入」场景）"
+      "loading": "打字中态（布尔在场）：内容切换为三点打字指示，宿主元素反射 aria-busy（AI「正在输入」场景）",
+      "reactions": "表情回应条 JSON 数组，每项 { emoji, count?, active?, label? }（emoji 必填）；空数组/非法 JSON 不渲染反应条",
+      "reactions-side": "反应条纵向位置：bottom（默认，气泡下方）/ top（气泡上方）",
+      "reactions-align": "反应条横向对齐：start / end；缺省跟随气泡 align"
     },
-    "events": {},
+    "events": {
+      "oas-reaction": "点击某条反应时派发，detail { emoji, count, active, index }（反应数据仍由宿主拥有，组件只派发意图）"
+    },
     "slots": {
       "": "气泡内容"
     }
@@ -4363,10 +4368,12 @@
       "label": "viewport 可读名称覆盖（缺省走 locale「消息列表」；读入渲染后从宿主移除——原生全局属性吸收惯例）",
       "preserve-scroll-on-prepend": "顶部插入历史时补偿 scrollTop 保持阅读位置（缺省开启；显式 =\"false\" 关闭）——按插入前首节点位移精确结算（同帧 append+prepend 混合只结算顶部插入量），补偿后锁定保位锚：历史内异步资源（图片等）撑高上方内容时按锚点视口位移持续补偿（message-id 优先重查）",
       "turn-anchor": "轮次锚定（布尔在场）：把一次提问+回答作为锚定单元——锚点贴视口顶时把最后 anchor 标记消息钉在视口顶 prev-peek 处，回答在锚下方流入；读者在底部延续贴底跟随，上翻即静止（绝不逆着读者意图移动）",
-      "prev-peek": "轮次锚定对齐时锚顶上方露出的语境 px（默认 64；非法/负值回退 64）"
+      "prev-peek": "轮次锚定对齐时锚顶上方露出的语境 px（默认 64；非法/负值回退 64）",
+      "track-visible": "布尔在场：开启可见性通道（oas-visible-change 事件 + visibleMessageIds / currentAnchorId getter）；未开启零计算（pay-for-use）"
     },
     "events": {
-      "oas-scroll-state": "滚动位置跨过判定线时派发，detail { atBottom, atTop, canScrollStart, canScrollEnd }；首帧（初始定位后）广播一次初始态——宿主监听晚于 upgrade 也能收到"
+      "oas-scroll-state": "滚动位置跨过判定线时派发，detail { atBottom, atTop, canScrollStart, canScrollEnd }；首帧（初始定位后）广播一次初始态——宿主监听晚于 upgrade 也能收到",
+      "oas-visible-change": "track-visible 开启时可见集变化派发，detail { visibleMessageIds, currentAnchorId }（供大纲/搜索定位等）"
     },
     "slots": {
       "": "消息行列表（oas-message-row / oas-marker 等；行上的 anchor / message-id 属性为 scroller 协作标记）",
@@ -4375,7 +4382,9 @@
   },
   "oas-marker": {
     "attrs": {
-      "variant": "变体：default（小号次级文字，默认）/ border（描边胶囊行）/ separator（两侧伸缩线 + 中间文字，时间戳分隔主形态）；空内容时 default/border 整件隐藏、separator 保留分隔线本体"
+      "variant": "变体：default（小号次级文字，默认）/ border（描边胶囊行）/ separator（两侧伸缩线 + 中间文字，时间戳分隔主形态）；空内容时 default/border 整件隐藏、separator 保留分隔线本体",
+      "status": "语义状态档：info / success / warning / danger——文字、描边与分隔线取语义色 token（暗色自动适配；不改 ARIA role，流式播报仍由宿主声明）",
+      "shimmer": "布尔在场：流式微光（文本渐变扫过；prefers-reduced-motion 降级为静态文字）"
     },
     "events": {},
     "slots": {
@@ -4570,6 +4579,11 @@
       "": "折叠体内容",
       "header": "触发器富内容插槽，覆盖 header 属性文案",
       "template[slot=\"toggle\"]": "自定义展开图标模板（缺省为内建箭头）"
+    }
+  },
+  "oas-attachment-group": {
+    "slots": {
+      "": "附件卡片序列（oas-attachment 或任意卡片；横向溢出时吸附滚动 + 边缘渐隐）"
     }
   }
 }

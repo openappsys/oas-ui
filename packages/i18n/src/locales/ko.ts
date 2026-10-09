@@ -429,9 +429,11 @@ export const ko: LocaleMessages = {
 
   // conversation(대화 패밀리)
   'bubble.loading': '입력 중…',
+  'bubble.reactions': '반응',
   'attachment.remove': '{name} 제거',
   'attachment.download': '{name} 다운로드',
   'attachment.error': '업로드 실패',
+  'attachment.group': '첨부 파일',
   'messageScroller.label': '메시지',
   'messageScroller.scrollToBottom': '맨 아래로 스크롤',
   'messageRow.status.sending': '전송 중',
