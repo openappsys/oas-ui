@@ -381,4 +381,5 @@ export const en: LocaleMessages = {
   'actionBar.label': 'Action bar',
   'actionBar.progress': 'Task progress',
   'actionBar.cancel': 'Cancel task',
+  'actionBar.seek': 'Seek to frame',
 }

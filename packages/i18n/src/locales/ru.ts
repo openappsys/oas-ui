@@ -453,4 +453,5 @@ export const ru: LocaleMessages = {
   'actionBar.label': 'Панель действий',
   'actionBar.progress': 'Ход задачи',
   'actionBar.cancel': 'Отменить задачу',
+  'actionBar.seek': 'Перейти к кадру',
 }

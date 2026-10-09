@@ -453,4 +453,5 @@ export const fr: LocaleMessages = {
   'actionBar.label': "Barre d'actions",
   'actionBar.progress': 'Progression de la tâche',
   'actionBar.cancel': 'Annuler la tâche',
+  'actionBar.seek': "Aller à l'image",
 }

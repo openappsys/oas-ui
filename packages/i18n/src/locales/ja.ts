@@ -453,4 +453,5 @@ export const ja: LocaleMessages = {
   'actionBar.label': 'アクションバー',
   'actionBar.progress': 'タスクの進行状況',
   'actionBar.cancel': 'タスクをキャンセル',
+  'actionBar.seek': 'フレームへ移動',
 }

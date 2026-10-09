@@ -453,4 +453,5 @@ export const de: LocaleMessages = {
   'actionBar.label': 'Aktionsleiste',
   'actionBar.progress': 'Aufgabenfortschritt',
   'actionBar.cancel': 'Aufgabe abbrechen',
+  'actionBar.seek': 'Zum Frame springen',
 }

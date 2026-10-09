@@ -228,6 +228,8 @@ export { OASActionBarButton } from './workbench/action-bar/oas-action-bar-button
 export { OASActionBarWell } from './workbench/action-bar/oas-action-bar-well.js'
 export { OASStatisticWell } from './workbench/action-bar/oas-statistic-well.js'
 export { OASTaskProgressWell } from './workbench/action-bar/oas-task-progress-well.js'
+export { OASTransportWell } from './workbench/action-bar/oas-transport-well.js'
+export { OASMusicWell } from './workbench/action-bar/oas-music-well.js'
 
 // ---------- framework ----------
 export { OASConfigProvider } from './framework/config-provider/oas-config-provider.js'
