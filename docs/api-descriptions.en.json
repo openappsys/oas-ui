@@ -4245,17 +4245,19 @@
   "oas-swipe-cell": {
     "attrs": {
       "disabled": "Disable all gestures",
-      "open": "Open state (read/write; programmatic changes dispatch oas-open / oas-close)",
+      "open": "Open state (read/write; true when either side is open; programmatic changes dispatch oas-open / oas-close)",
+      "open-side": "Current/target open side: `start` / `end`; set together with `open` to open that side, read back to reflect the current side",
       "threshold": "Release snap threshold (px); a drag beyond it snaps open, otherwise it bounces closed",
-      "side": "Side the actions attach to: `end` (default, inline-end—right in LTR / left in RTL, swipe toward inline-start) / `start` (inline-start, swipe toward inline-end—rightward in LTR); orthogonal to text direction, mirrors automatically in RTL"
+      "side": "Side the actions attach to: `end` (default, inline-end—right in LTR / left in RTL, swipe toward inline-start) / `start` (inline-start, swipe toward inline-end—rightward in LTR); orthogonal to text direction, mirrors automatically in RTL; ignored when the item also has `actions-start`"
     },
     "events": {
-      "oas-open": "Dispatched when the open state settles (gesture or programmatic open change)",
+      "oas-open": "Dispatched when the open state settles (gesture or programmatic open change); `detail: { side }` reports the side",
       "oas-close": "Dispatched when the closed state settles (gesture, outside click, scroll, Esc, or programmatic open change)"
     },
     "slots": {
       "": "Content layer (list item body); the component does not change its semantics",
-      "actions": "Action button group (placed on the inline-end side; role=group + aria-label)"
+      "actions": "Action button group (placed on the inline-end side; role=group + aria-label)",
+      "actions-start": "Second action button group (placed on the inline-start side, revealed by swiping right; opens exclusively with `actions` on the same item)"
     }
   },
   "oas-highlight": {

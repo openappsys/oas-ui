@@ -585,3 +585,153 @@ describe('OASSwipeCell', () => {
     expect(el.hasAttribute('open'), 'flick 直接开').toBe(true)
   })
 })
+
+// ---------- 双侧滑动（slot="actions-start" + slot="actions" 同项同在） ----------
+
+/** 双侧内容：end 侧 actions（删除）+ start 侧 actions-start（归档） */
+const DUAL_HTML =
+  '<div class="row">列表项内容</div>' +
+  '<button slot="actions" class="act-end">删除</button>' +
+  '<button slot="actions-start" class="act-start">归档</button>'
+
+function startActions(el: OASSwipeCell): HTMLElement {
+  return el.shadowRoot!.querySelector<HTMLElement>('[part="actions-start"]')!
+}
+
+function stubStartWidth(el: OASSwipeCell, width: number): void {
+  startActions(el).getBoundingClientRect = () => rect(width)
+}
+
+/** 双侧同现时桩出两侧宽度 */
+function stubBothWidths(el: OASSwipeCell, endW: number, startW: number): void {
+  stubActionsWidth(el, endW)
+  stubStartWidth(el, startW)
+}
+
+describe('OASSwipeCell 双侧滑动', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    document.documentElement.removeAttribute('dir')
+  })
+
+  it('结构：存在 actions-start 插槽与 part；双侧同现时两组各自 role=group + aria-label', () => {
+    const el = mount({}, DUAL_HTML)
+    const slot = el.shadowRoot!.querySelector('slot[name="actions-start"]')
+    expect(slot).not.toBeNull()
+    expect(startActions(el)).not.toBeNull()
+    expect(actions(el).getAttribute('role')).toBe('group')
+    expect(startActions(el).getAttribute('role')).toBe('group')
+    expect(startActions(el).getAttribute('aria-label')).toBe('滑动操作')
+    expect(el.hasAttribute('data-has-start')).toBe(true)
+    expect(startActions(el).hidden).toBe(false)
+  })
+
+  it('无 actions-start 内容时：该组隐藏（不产生空 role=group）', () => {
+    const el = mount()
+    expect(el.hasAttribute('data-has-start')).toBe(false)
+    expect(startActions(el).hidden).toBe(true)
+  })
+
+  it('LTR：右滑开 start 侧（slot="actions-start"），open-side="start"、偏移为正', () => {
+    const el = mount({}, DUAL_HTML)
+    stubBothWidths(el, 80, 60)
+    const details: unknown[] = []
+    el.addEventListener('oas-open', (e) => details.push((e as CustomEvent).detail))
+    swipe(el, 100, 200, 10) // dx=+100 → start 侧
+    expect(el.getAttribute('open-side')).toBe('start')
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(offset(el)).toBe('60px')
+    expect(details).toEqual([{ side: 'start' }])
+  })
+
+  it('LTR：左滑开 end 侧（slot="actions"），open-side="end"、偏移为负', () => {
+    const el = mount({}, DUAL_HTML)
+    stubBothWidths(el, 80, 60)
+    swipe(el, 300, 200, 10) // dx=-100 → end 侧
+    expect(el.getAttribute('open-side')).toBe('end')
+    expect(offset(el)).toBe('-80px')
+  })
+
+  it('同项互斥：先开 end 再开 start → 仅 start 开（状态与属性同步切换）', () => {
+    const el = mount({}, DUAL_HTML)
+    stubBothWidths(el, 80, 60)
+    swipe(el, 300, 200, 10)
+    expect(el.getAttribute('open-side')).toBe('end')
+    // 关掉后开另一侧
+    el.removeAttribute('open')
+    swipe(el, 100, 200, 10)
+    expect(el.getAttribute('open-side')).toBe('start')
+    expect(offset(el)).toBe('60px')
+  })
+
+  it('跨侧切换：end 开态下继续向右拖过 0 → 落定 start 侧', () => {
+    const el = mount({}, DUAL_HTML)
+    stubBothWidths(el, 80, 60)
+    swipe(el, 300, 200, 10) // 开 end（物理 -80）
+    expect(el.getAttribute('open-side')).toBe('end')
+    const c = content(el)
+    c.dispatchEvent(pointer('pointerdown', 200, 10))
+    c.dispatchEvent(pointer('pointermove', 360, 10)) // dx=+160 → 物理钳制 +60 → start
+    c.dispatchEvent(pointer('pointerup', 360, 10))
+    expect(el.getAttribute('open-side')).toBe('start')
+    expect(offset(el)).toBe('60px')
+  })
+
+  it('open 布尔（无 open-side）默认开 end 侧', () => {
+    const el = mount({}, DUAL_HTML)
+    stubBothWidths(el, 80, 60)
+    el.setAttribute('open', '')
+    expect(el.getAttribute('open-side')).toBe('end')
+    expect(el.open).toBe(true)
+  })
+
+  it('open-side property 读写：赋 start 自动开该侧，赋空关闭', () => {
+    const el = mount({}, DUAL_HTML)
+    stubBothWidths(el, 80, 60)
+    el.openSide = 'start'
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(el.openSide).toBe('start')
+    expect(offset(el)).toBe('60px')
+    el.openSide = ''
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(el.openSide).toBe('')
+    expect(offset(el)).toBe('0px')
+  })
+
+  it('side="start" + actions-start 同现时：actions 强制归 end（data-has-start 覆盖旧 side）', () => {
+    const el = mount({ side: 'start' }, DUAL_HTML)
+    stubBothWidths(el, 80, 60)
+    swipe(el, 300, 200, 10) // 左滑 → end（actions 组）
+    expect(el.getAttribute('open-side')).toBe('end')
+    expect(offset(el)).toBe('-80px')
+  })
+
+  it('RTL 双侧镜像：dir=rtl 下右滑开 end、左滑开 start', () => {
+    document.documentElement.setAttribute('dir', 'rtl')
+    const a = mount({}, DUAL_HTML)
+    stubBothWidths(a, 80, 60)
+    swipe(a, 100, 200, 10) // dx=+100 → 物理 + → end（RTL inline-end 在左）
+    expect(a.getAttribute('open-side')).toBe('end')
+    expect(offset(a)).toBe('80px')
+
+    const b = mount({}, DUAL_HTML)
+    stubBothWidths(b, 80, 60)
+    swipe(b, 300, 200, 10) // dx=-100 → 物理 - → start
+    expect(b.getAttribute('open-side')).toBe('start')
+    expect(offset(b)).toBe('-60px')
+  })
+
+  it('disabled 关闭双侧任一开态', () => {
+    const el = mount({}, DUAL_HTML)
+    stubBothWidths(el, 80, 60)
+    el.openSide = 'start'
+    expect(el.hasAttribute('open')).toBe(true)
+    el.setAttribute('disabled', '')
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(el.hasAttribute('open-side')).toBe(false)
+  })
+})

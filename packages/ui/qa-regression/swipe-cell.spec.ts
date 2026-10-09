@@ -307,3 +307,126 @@ test('swipe-cell side=start：真实向右滑开（LTR），actions 在左（回
   expect(r.contentLeft, '内容层右移（物理正偏移）').toBeGreaterThan(r.actionsLeft)
   expect(r.offset).toContain('matrix')
 })
+
+// ---------- 双侧滑动（slot="actions-start" + slot="actions" 同项同在） ----------
+
+test.describe('swipe-cell 双侧滑动', () => {
+  test('右滑开 start 侧（归档）：open-side=start、偏移为正、内容层右移盖过 start 组', async ({ page }) => {
+    await page.goto('/components/swipe-cell.html', { waitUntil: 'domcontentloaded' })
+    await up(page, '#swipe-dual')
+
+    const startW = await page.evaluate(() => {
+      const host = document.querySelector('#swipe-dual') as HTMLElement
+      return (host.shadowRoot!.querySelector('[part="actions-start"]') as HTMLElement).getBoundingClientRect().width
+    })
+    expect(startW, 'actions-start 有可测量宽度').toBeGreaterThan(0)
+
+    await swipe(page, '#swipe-dual', Math.max(60, startW + 20))
+
+    await expect
+      .poll(() => page.evaluate(() => (document.querySelector('#swipe-dual') as HTMLElement).getAttribute('open-side')))
+      .toBe('start')
+    const state = await page.evaluate(() => {
+      const host = document.querySelector('#swipe-dual') as HTMLElement
+      const content = host.shadowRoot!.querySelector('[part="content"]') as HTMLElement
+      const start = host.shadowRoot!.querySelector('[part="actions-start"]') as HTMLElement
+      return {
+        open: host.hasAttribute('open'),
+        offset: parseFloat(host.style.getPropertyValue('--oas-swipe-cell-offset')),
+        delta: content.getBoundingClientRect().left - start.getBoundingClientRect().left,
+      }
+    })
+    expect(state.open).toBe(true)
+    expect(state.offset, 'LTR start 侧偏移为正').toBeGreaterThan(0)
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const host = document.querySelector('#swipe-dual') as HTMLElement
+          const content = host.shadowRoot!.querySelector('[part="content"]') as HTMLElement
+          const start = host.shadowRoot!.querySelector('[part="actions-start"]') as HTMLElement
+          return content.getBoundingClientRect().left - start.getBoundingClientRect().left
+        }),
+      )
+      .toBeGreaterThan(0)
+  })
+
+  test('左滑开 end 侧（删除）：open-side=end、偏移为负', async ({ page }) => {
+    await page.goto('/components/swipe-cell.html', { waitUntil: 'domcontentloaded' })
+    await up(page, '#swipe-dual')
+
+    await swipe(page, '#swipe-dual', -120)
+    await expect
+      .poll(() => page.evaluate(() => (document.querySelector('#swipe-dual') as HTMLElement).getAttribute('open-side')))
+      .toBe('end')
+    const offset = await page.evaluate(() =>
+      parseFloat(
+        (document.querySelector('#swipe-dual') as HTMLElement).style.getPropertyValue('--oas-swipe-cell-offset'),
+      ),
+    )
+    expect(offset, 'LTR end 侧偏移为负').toBeLessThan(0)
+  })
+
+  test('同项互斥 + 跨侧切换：end 开态下继续向右拖过 0 → 落定 start 侧（仅一侧开）', async ({ page }) => {
+    await page.goto('/components/swipe-cell.html', { waitUntil: 'domcontentloaded' })
+    await up(page, '#swipe-dual')
+
+    await swipe(page, '#swipe-dual', -120)
+    await expect
+      .poll(() => page.evaluate(() => (document.querySelector('#swipe-dual') as HTMLElement).getAttribute('open-side')))
+      .toBe('end')
+
+    // 从当前开态向右大幅拖动（跨 0）
+    await page.evaluate(() => {
+      const host = document.querySelector('#swipe-dual') as HTMLElement
+      const content = host.shadowRoot!.querySelector('[part="content"]') as HTMLElement
+      const r = content.getBoundingClientRect()
+      const sx = r.left + r.width * 0.3
+      const y = r.top + 20
+      const pe = (type: string, x: number) =>
+        new PointerEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          button: 0,
+          pointerId: 11,
+          clientX: x,
+          clientY: y,
+        })
+      content.dispatchEvent(pe('pointerdown', sx))
+      content.dispatchEvent(pe('pointermove', sx + 220))
+      content.dispatchEvent(pe('pointerup', sx + 220))
+    })
+
+    await expect
+      .poll(() => page.evaluate(() => (document.querySelector('#swipe-dual') as HTMLElement).getAttribute('open-side')))
+      .toBe('start')
+    expect(await page.evaluate(() => (document.querySelector('#swipe-dual') as HTMLElement).hasAttribute('open'))).toBe(
+      true,
+    )
+  })
+
+  test('oas-open 事件 detail.side 反映开侧', async ({ page }) => {
+    await page.goto('/components/swipe-cell.html', { waitUntil: 'domcontentloaded' })
+    await up(page, '#swipe-dual')
+
+    await page.evaluate(() => {
+      const host = document.querySelector('#swipe-dual') as HTMLElement
+      ;(window as unknown as { __swipeSide?: string }).__swipeSide = undefined
+      host.addEventListener('oas-open', (e) => {
+        ;(window as unknown as { __swipeSide?: string }).__swipeSide = (e as CustomEvent).detail?.side
+      })
+    })
+
+    await swipe(page, '#swipe-dual', -120)
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __swipeSide?: string }).__swipeSide))
+      .toBe('end')
+
+    // 关闭后再开另一侧，detail 应为 start
+    await page.evaluate(() => (document.querySelector('#swipe-dual') as HTMLElement).removeAttribute('open'))
+    await swipe(page, '#swipe-dual', 120)
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __swipeSide?: string }).__swipeSide))
+      .toBe('start')
+  })
+})

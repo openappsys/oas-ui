@@ -49,6 +49,7 @@
 - **oas-inspector-row `align-top` / `striped`**: top-aligned label for tall controls and an optional zebra background.
 - **oas-marker `status` (`info`/`success`/`warning`/`danger`) + `shimmer`**; **oas-bubble `reactions`** (emoji + count, `oas-reaction` on real buttons); **oas-message-scroller `track-visible`** (`pay-for-use`; `oas-visible-change` + `visibleMessageIds`/`currentAnchorId`).
 - **oas-badge / oas-empty composition demos** (spin inside a badge; avatar/avatar-group/input inside empty) — docs only, no API change.
+- **`oas-swipe-cell` two-sided swipe**: `slot="actions-start"` (inline-start side, revealed by a right swipe in LTR) can now coexist with `slot="actions"` (inline-end, left swipe) on the same item. The open state is upgraded from a boolean to a side (`'start' | 'end' | null`): a new `open-side` attribute (and `openSide` property) selects/reflects the side, the `open` boolean is kept (true when either side is open) and the `oas-open` event `detail` gains `{ side }`. A single gesture drags both ways, can cross zero to switch sides end-to-end, and only one side opens per item; `side` remains the single-group legacy switch (ignored when `actions-start` is present); RTL mirrors via logical properties. Accessibility is unchanged per side (each group is its own `role="group"` with the same i18n label); focusing into a side's actions opens that side.
 
 ### 修复
 

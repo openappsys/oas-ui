@@ -2269,3 +2269,15 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测全绿（9710）；`typecheck` / `build` / `api:check` 全绿；全量 e2e 3262 passed。
 - 4 个新组件已注册进 index / ssr / DSD 白名单 + 快照。
 - 对比度修复：button text 变体 active、inspector 斑马行标签、info 文字色 token 调深（axe 比值达标，感知门禁不受影响）。
+
+## oas-swipe-cell 双侧滑动（未发布）
+
+背景：现 `oas-swipe-cell` 每实例**只能一侧**操作（`slot="actions"` + `side` 二选一）。需求：**同一项两侧各有操作**——向左滑在**右侧**露出操作、向右滑在**左侧**露出操作。
+
+- **DOM**：新增 `slot="actions-start"`（inline-start 侧，右滑露出）；`slot="actions"` 保持 inline-end 侧（默认，左滑露出）。两组可同时在位（双侧）；`side` 保留为**单槽旧用法兼容**（无 `actions-start` 时决定 `actions` 挂侧）。
+- **状态**：开态由布尔升级为**侧向**（`'start' | 'end' | null`）。新增 `open-side` 属性（反射当前/目标开侧）；`open` 布尔保留（任一侧开着即真；程序置 `true` 时按可用侧取默认，end 优先）；`oas-open` 事件 `detail` 增 `{ side }`。
+- **手势**：同一手势双向拖动，各侧按阈值/速度吸附；跨 0 可端到端切换侧；同 cell 内互斥（仅一侧开）。
+- **a11y**：两组各自 `role="group"` + i18n 可访问名（复用 `swipeCell.actionsLabel`）；焦点进入对应侧按钮即开该侧。
+- **RTL**：逻辑属性 + 书写方向镜像（start/end 与物理侧随逻辑方向翻转）。
+- **兼容**：单侧用法（`side` + `slot="actions"`）行为不变；`open` 语义扩展（detail 新增 `side`）为向后兼容增强。
+- **验收**：单测（双侧同现 / 左右滑各自吸附 / 跨侧切换 / `open-side` 反射 / 事件 side / RTL 镜像 / disabled）+ qa-regression e2e + 文档 zh/en。

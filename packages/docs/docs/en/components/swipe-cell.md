@@ -1,10 +1,10 @@
 # SwipeCell
 
-Reveal a row of action buttons by swiping a list item horizontally: the default slot is the **content layer** (the list item body) and `slot="actions"` is the **action button group** (the host places `button` / `oas-button` elements). Swiping the content layer toward inline-start reveals the inline-end action area; releasing snaps to open or closed based on the drag threshold. `oas-open` / `oas-close` are dispatched once each when the open / closed state settles (programmatic `open` attribute changes dispatch them too).
+Reveal a row of action buttons by swiping a list item horizontally: the default slot is the **content layer** (the list item body) and `slot="actions"` is the **action button group** (the host places `button` / `oas-button` elements). Swiping the content layer toward inline-start reveals the inline-end action area; releasing snaps to open or closed based on the drag threshold. `oas-open` / `oas-close` are dispatched once each when the open / closed state settles (programmatic `open` attribute changes dispatch them too). An item can also carry a group on the **other side** (`slot="actions-start"`, see "Two-Sided Swipe")—the two sides open exclusively on the same item.
 
 ## side: Actions on the Left (Swipe Right)
 
-By default actions attach to the inline-end side (right in LTR, revealed by swiping left); `side="start"` moves them to inline-start (left in LTR, **revealed by swiping right**). `side` is an interaction choice orthogonal to text direction—in RTL both the side and the swipe direction mirror automatically:
+By default actions attach to the inline-end side (right in LTR, revealed by swiping left); `side="start"` moves them to inline-start (left in LTR, **revealed by swiping right**). `side` is an interaction choice orthogonal to text direction—in RTL both the side and the swipe direction mirror automatically. Note: when the same item also has `slot="actions-start"`, `side` is ignored and `slot="actions"` always stays on inline-end (this slot is for the single-group case).
 
 <DemoBlock title='side="start": swipe right'>
   <div style="width: 100%">
@@ -24,6 +24,20 @@ By default actions attach to the inline-end side (right in LTR, revealed by swip
     <oas-swipe-cell id="swipe-multi">
       <div style="padding: var(--oas-space-3) var(--oas-space-4); background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">Swipe left to reveal two actions</div>
       <oas-button slot="actions" type="primary">Edit</oas-button>
+      <oas-button slot="actions" type="danger">Delete</oas-button>
+    </oas-swipe-cell>
+  </div>
+</DemoBlock>
+
+## Two-Sided Swipe (Actions on Both Sides)
+
+An item can carry an action group on each side at once: `slot="actions"` on inline-end (left-swipe in LTR) and `slot="actions-start"` on inline-start (right-swipe in LTR). A single gesture drags both ways and can cross zero to switch sides end-to-end; only one side opens per item. The `open-side` attribute reflects the current side (`start` / `end`), and `oas-open`'s `detail` carries `{ side }`.
+
+<DemoBlock title="Left-swipe Delete / Right-swipe Archive">
+  <div style="width: 100%">
+    <oas-swipe-cell id="swipe-dual">
+      <div style="padding: var(--oas-space-3) var(--oas-space-4); background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">Swipe left for Delete, swipe right for Archive</div>
+      <oas-button slot="actions-start" type="primary">Archive</oas-button>
       <oas-button slot="actions" type="danger">Delete</oas-button>
     </oas-swipe-cell>
   </div>
@@ -66,7 +80,7 @@ At most one swipe item is open within the same document at a time: once an item 
 
 ## Threshold / Disabled / Programmatic Open
 
-`threshold` sets the release snap distance (default 40px; a drag beyond it snaps open, otherwise it bounces back); `disabled` disables all gestures; `open` is readable and writable for controlled or programmatic open/close. Programmatic `open` changes also dispatch `oas-open` / `oas-close`.
+`threshold` sets the release snap distance (default 40px; a drag beyond it snaps open, otherwise it bounces back); `disabled` disables all gestures; `open` is readable and writable for controlled or programmatic open/close (true when either side is open). Programmatic `open` changes dispatch `oas-open` / `oas-close`; the `open-side` attribute (or same-named property) selects/reads which side opens—setting `open-side` together with `open` opens that side, and `detail.side` reports which.
 
 <DemoBlock title="threshold and disabled">
   <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-2)">
@@ -95,8 +109,8 @@ At most one swipe item is open within the same document at a time: once an item 
 
 ## Keyboard & Accessibility
 
-- The action area is `role="group"` with an accessible name (i18n `swipeCell.actionsLabel`).
-- Action buttons are natively tabbable in the DOM: focusing into the action area opens the item automatically, so keyboard users can see and operate the buttons without a swipe gesture.
+- The action area is `role="group"` with an accessible name (i18n `swipeCell.actionsLabel`); with two sides, each group has its own.
+- Action buttons are natively tabbable in the DOM: focusing into the matching side's action area opens that side automatically, so keyboard users can see and operate the buttons without a swipe gesture.
 - Press Esc to close an open item; under `prefers-reduced-motion` the snap has no transition.
 - The component does not change the role or semantics of the content layer; screen readers read it using the structure provided by the host.
 
@@ -109,8 +123,9 @@ At most one swipe item is open within the same document at a time: once an item 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabled` | Disable all gestures | `boolean` | — |
-| `open` | Open state (read/write; programmatic changes dispatch oas-open / oas-close) | `boolean` | — |
-| `side` | Side the actions attach to: `end` (default, inline-end—right in LTR / left in RTL, swipe toward inline-start) / `start` (inline-start, swipe toward inline-end—rightward in LTR); orthogonal to text direction, mirrors automatically in RTL | `string` | `end` |
+| `open` | Open state (read/write; true when either side is open; programmatic changes dispatch oas-open / oas-close) | `boolean` | — |
+| `open-side` | Current/target open side: `start` / `end`; set together with `open` to open that side, read back to reflect the current side | `'' \| 'start' \| 'end'` | — |
+| `side` | Side the actions attach to: `end` (default, inline-end—right in LTR / left in RTL, swipe toward inline-start) / `start` (inline-start, swipe toward inline-end—rightward in LTR); orthogonal to text direction, mirrors automatically in RTL; ignored when the item also has `actions-start` | `string` | `end` |
 | `threshold` | Release snap threshold (px); a drag beyond it snaps open, otherwise it bounces closed | — | — |
 
 #### Events
@@ -118,7 +133,7 @@ At most one swipe item is open within the same document at a time: once an item 
 | Event | Description |
 | --- | --- |
 | `oas-close` | Dispatched when the closed state settles (gesture, outside click, scroll, Esc, or programmatic open change) |
-| `oas-open` | Dispatched when the open state settles (gesture or programmatic open change) |
+| `oas-open` | Dispatched when the open state settles (gesture or programmatic open change); `detail: { side }` reports the side |
 
 #### Slots
 
@@ -126,6 +141,7 @@ At most one swipe item is open within the same document at a time: once an item 
 | --- | --- |
 | default | Content layer (list item body); the component does not change its semantics |
 | `actions` | Action button group (placed on the inline-end side; role=group + aria-label) |
+| `actions-start` | Second action button group (placed on the inline-start side, revealed by swiping right; opens exclusively with `actions` on the same item) |
 
 #### CSS Variables
 
