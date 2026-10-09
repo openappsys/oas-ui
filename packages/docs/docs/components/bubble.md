@@ -60,8 +60,26 @@ onMounted(async () => {
     bubble?.setAttribute('loading', '')
     window.setTimeout(() => bubble?.removeAttribute('loading'), 2400)
   })
+  const reactionsBubble = document.querySelector('#bubble-reactions-demo')
+  const reactionsOut = document.querySelector('#bubble-reactions-out')
+  reactionsBubble?.addEventListener('oas-reaction', (e) => {
+    const d = e.detail
+    if (reactionsOut) reactionsOut.textContent = `收到 oas-reaction：${d.emoji}（count=${d.count}，active=${d.active}，index=${d.index}）`
+  })
 })
 </script>
+
+## 表情回应（reactions）
+
+<DemoBlock title="表情 + 计数（side / align）">
+  <div style="width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: var(--oas-space-4)">
+    <oas-bubble id="bubble-reactions-demo" reactions='[{"emoji":"👍","count":3,"active":true},{"emoji":"🎉","count":1}]'>这个方案我赞成，细节再对一下。</oas-bubble>
+    <oas-bubble align="end" variant="secondary" reactions-side="top" reactions-align="end" reactions='[{"emoji":"❤️","count":2}]'>上面的方案我已确认。</oas-bubble>
+  </div>
+  <p id="bubble-reactions-out" style="margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">点击表情条上的按钮，这里显示收到的 oas-reaction。</p>
+</DemoBlock>
+
+`reactions` 是 JSON 数组（每项 `{ emoji, count?, active?, label? }`，emoji 必填；空数组/非法 JSON 不渲染反应条）；`reactions-side` 控制上下（默认 `bottom`，`top` 放气泡上方），`reactions-align` 覆盖横向对齐（缺省跟随气泡 `align`）。每条反应是**真按钮**（键盘可达 + 焦点环 + `aria-pressed` 反映选中态）：点击派发 `oas-reaction`（detail `{ emoji, count, active, index }`）——反应数据仍由宿主拥有，组件只派发意图。
 
 ## 无障碍
 
@@ -78,6 +96,15 @@ onMounted(async () => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `loading` | 打字中态（布尔在场）：内容切换为三点打字指示，宿主元素反射 aria-busy（AI「正在输入」场景） | `boolean` | — |
+| `reactions` | 表情回应条 JSON 数组，每项 { emoji, count?, active?, label? }（emoji 必填）；空数组/非法 JSON 不渲染反应条 | — | — |
+| `reactions-align` | 反应条横向对齐：start / end；缺省跟随气泡 align | — | — |
+| `reactions-side` | 反应条纵向位置：bottom（默认，气泡下方）/ top（气泡上方） | — | — |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-reaction` | 点击某条反应时派发，detail { emoji, count, active, index }（反应数据仍由宿主拥有，组件只派发意图） |
 
 #### 插槽
 

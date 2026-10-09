@@ -101,4 +101,58 @@ describe('OASBubble', () => {
     const el = mount('<p>x</p>', { variant: 'neon', align: 'middle' })
     expect(el.shadowRoot!.querySelector('[part="bubble"]')).not.toBeNull()
   })
+
+  it('reactions：JSON 数组渲染为真按钮（emoji + 计数 + aria-pressed），空/缺失隐藏', () => {
+    const empty = mount('<p>x</p>')
+    expect(empty.shadowRoot!.querySelector('[part="reactions"]')!.hasAttribute('hidden')).toBe(true)
+
+    const el = mount('<p>成交</p>', {
+      reactions: JSON.stringify([
+        { emoji: '👍', count: 3, active: true },
+        { emoji: '🎉', count: 1 },
+      ]),
+    })
+    const box = el.shadowRoot!.querySelector<HTMLElement>('[part="reactions"]')!
+    expect(box.hasAttribute('hidden')).toBe(false)
+    expect(box.getAttribute('role')).toBe('group')
+    expect(box.getAttribute('aria-label')).toBe('表情回应')
+    const buttons = box.querySelectorAll('button.reaction')
+    expect(buttons.length).toBe(2)
+    expect(buttons[0]!.getAttribute('aria-pressed')).toBe('true')
+    expect(buttons[0]!.getAttribute('aria-label')).toBe('👍 3')
+    expect(buttons[0]!.textContent).toContain('3')
+    expect(buttons[1]!.getAttribute('aria-pressed')).toBe('false')
+    expect(buttons[1]!.getAttribute('aria-label')).toBe('🎉 1')
+  })
+
+  it('reactions 点击派发 oas-reaction（detail 带 emoji/count/active/index）', () => {
+    const el = mount('<p>x</p>', {
+      reactions: JSON.stringify([{ emoji: '❤️', count: 2, active: false }]),
+    })
+    const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('button.reaction')!
+    let detail: unknown
+    el.addEventListener('oas-reaction', (e) => {
+      detail = (e as CustomEvent).detail
+    })
+    btn.click()
+    expect(detail).toEqual({ emoji: '❤️', count: 2, active: false, index: 0 })
+  })
+
+  it('reactions 容错：非法 JSON / 非数组 / 缺 emoji 条目一律忽略且不抛错', () => {
+    for (const raw of ['not-json', '{"emoji":"x"}', JSON.stringify([{ count: 1 }, { emoji: '' }])]) {
+      const el = mount('<p>x</p>', { reactions: raw })
+      expect(el.shadowRoot!.querySelector('[part="reactions"]')!.hasAttribute('hidden')).toBe(true)
+    }
+  })
+
+  it('reactions side/align 纯 CSS 消费（top 用 order 提前，align 覆盖存在）', () => {
+    const el = mount('<p>x</p>', { 'reactions-side': 'top', 'reactions-align': 'end' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host([reactions-side="top"])')
+    expect(css).toContain(':host([reactions-align="end"])')
+    expect(css).toContain(':host([reactions-align="start"])')
+    // 反应条数字与颜色全走 token（无硬编码色）
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+    expect(css).not.toMatch(/rgba?\(/)
+  })
 })

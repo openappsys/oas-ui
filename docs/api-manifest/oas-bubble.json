@@ -6,10 +6,27 @@
       "name": "loading",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "reactions",
+      "observed": true
+    },
+    {
+      "name": "reactions-side",
+      "observed": true
+    },
+    {
+      "name": "reactions-align",
+      "observed": true
     }
   ],
   "props": [],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-reaction",
+      "detail": "{ emoji: reaction.emoji, count: count ?? 0, active: Boolean(reaction.active), index, }"
+    }
+  ],
   "slots": [
     {
       "name": ""
