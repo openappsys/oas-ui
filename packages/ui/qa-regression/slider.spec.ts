@@ -796,3 +796,43 @@ test('slider show-track="false"：data-track 镜像 + 轨道条与填充真实�
   expect(r.fill).toBe('none')
   expect(r.disabled).toBe(false) // 把手保留可交互
 })
+
+// ---- 增强批：thumb 两形态（pointer 细指针 / round 圆推子） ----
+
+test('slider thumb=pointer：细指针形态真实渲染（薄条 + 原生拇指隐藏），round 为默认粗圆', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[thumb="pointer"]')
+  const r = await page.evaluate(() => {
+    const pointerEl = document.querySelector('oas-slider[thumb="pointer"]')!
+    const roundEl = [...document.querySelectorAll('oas-slider')].find(
+      (s) => s.getAttribute('thumb') !== 'pointer' && !s.hasAttribute('vertical'),
+    )!
+    const probe = (el: Element) => {
+      const root = el.shadowRoot!
+      const wrap = root.querySelector('.track-wrap')!.getBoundingClientRect()
+      const th = root.querySelector<HTMLElement>('.custom-thumb:not([hidden])')
+      if (!th) return null
+      const tr = th.getBoundingClientRect()
+      return {
+        shape: el.getAttribute('data-thumb-shape'),
+        width: Math.round(tr.width * 10) / 10,
+        height: Math.round(tr.height * 10) / 10,
+        centerY: tr.top + tr.height / 2 - (wrap.top + wrap.height / 2),
+        customThumb: el.hasAttribute('data-custom-thumb'),
+      }
+    }
+    return { pointer: probe(pointerEl), round: probe(roundEl) }
+  })
+  expect(r.pointer, 'pointer demo 应有可见指针').not.toBeNull()
+  expect(r.pointer!.shape).toBe('pointer')
+  expect(r.pointer!.customThumb, 'pointer 应隐藏原生拇指（走自定义视觉层）').toBe(true)
+  // 指针为薄竖条：宽约 3px，明显窄于圆推子直径
+  expect(r.pointer!.width, '指针应是薄条（宽 3px 左右）').toBeLessThanOrEqual(5)
+  expect(r.pointer!.height, '指针高度应大于宽度（竖条）').toBeGreaterThan(r.pointer!.width)
+  if (r.round) {
+    expect(r.pointer!.width, '指针应明显窄于圆推子').toBeLessThan(r.round.width)
+    expect(r.round.shape).toBe('round')
+  }
+  // 指针中心仍对齐轨道中线（translate -50%,-50% 不被形态改变破坏）
+  expect(Math.abs(r.pointer!.centerY), '指针中心应与轨道中线对齐').toBeLessThanOrEqual(1)
+})

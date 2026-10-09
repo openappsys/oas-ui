@@ -2888,7 +2888,8 @@
       "precision": "Decimal places for the value (scrub steps and the bubble/aria-valuetext are rounded accordingly; when unset, float tails are auto-collapsed to the effective decimals of step/modifier, an explicit value acts as a stricter constraint); lower priority than format/formatTooltip channels",
       "value-width": "Width of the show-input readout box: plain numbers get px, unit values pass through (written to --oas-slider-value-width); defaults to 72px",
       "accent-color": "Accent color while scrubbing the readout: preset semantic names (primary / success / warning / danger, dark-theme aware) map to theme tokens, other values pass through; falls back to the theme primary",
-      "show-track": "Track visibility switch (shown by default); show-track=\"false\" hides the track bar and selection fill (the thumb remains draggable and keyboard operable)"
+      "show-track": "Track visibility switch (shown by default); show-track=\"false\" hides the track bar and selection fill (the thumb remains draggable and keyboard operable)",
+      "thumb": "Thumb shape: `round` thick circular thumb (default) / `pointer` thin pointer (a slim bar along the axis; always uses the custom visual layer with the native thumb hidden — thin vertical bar horizontally, thin horizontal bar vertically); invalid values fall back to round"
     },
     "events": {
       "oas-change": "Committed on release, `detail: { value }` (single number; `[lo, hi]` array in `range` mode)",

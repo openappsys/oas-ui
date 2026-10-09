@@ -317,6 +317,17 @@ input:disabled {
   border: 2px solid var(--oas-slider-color);
   box-shadow: none;
 }
+/* thumb=pointer：细指针形态（薄竖条，水平/垂直随轴互换）——置于 data-thumb-content 之后，
+   同特异性下后者覆盖，保证 pointer 造型优先于自定义内容环 */
+:host([data-thumb-shape='pointer']) .custom-thumb {
+  width: 3px;
+  height: calc(var(--oas-slider-thumb-size) + 8px);
+  border-radius: 2px;
+}
+:host([data-thumb-shape='pointer'][data-vertical]) .custom-thumb {
+  width: calc(var(--oas-slider-thumb-size) + 8px);
+  height: 3px;
+}
 /* 垂直模式：定位原点换到轨道中线 x（top 由 JS 按值写入） */
 :host([data-vertical]) .custom-thumb {
   top: 0;
@@ -547,6 +558,8 @@ export class OASSlider extends OASElement {
       'value-width',
       'accent-color',
       'show-track',
+      // 增强批：thumb 两形态（pointer 细指针 / round 圆推子）
+      'thumb',
       'label-1',
       'label-2',
       'label-3',
@@ -779,6 +792,7 @@ export class OASSlider extends OASElement {
     this.toggleAttribute('data-range', this.hasAttr('range'))
     this.toggleAttribute('data-multi', multi)
     this.setAttribute('data-size', this.normalizeSize())
+    this.setAttribute('data-thumb-shape', this.normalizeThumb())
     this.setAttribute('data-tooltip-pos', this.tooltipPosition(vertical))
     this.applyHostVar('color', '--oas-slider-color')
     this.applyHostVar('track-color', '--oas-slider-track')
@@ -1118,6 +1132,16 @@ export class OASSlider extends OASElement {
     if (raw === 'sm' || raw === 'small') return 'sm'
     if (raw === 'lg' || raw === 'large') return 'lg'
     return 'md'
+  }
+
+  /** thumb 两形态归一：pointer=细指针轨（薄条）、round=粗圆推子（默认），非法/缺省回落 round */
+  private normalizeThumb(): 'pointer' | 'round' {
+    return this.getAttr('thumb', 'round').toLowerCase() === 'pointer' ? 'pointer' : 'round'
+  }
+
+  /** 当前 thumb 是否为细指针形态（pointer 恒走自定义视觉层，原生拇指隐藏） */
+  private isPointerThumb(): boolean {
+    return this.normalizeThumb() === 'pointer'
   }
 
   /** 生效的气泡方向：显式属性（四向）优先，vertical 默认 right、水平默认 top */
@@ -1660,9 +1684,11 @@ export class OASSlider extends OASElement {
     const tipsVisible = this.hasAttr('show-tooltip') || this.hasAttr('tooltip-always') || this.dragging || focused
 
     // 拖动/聚焦/常显中启用自定义视觉层（拖动时临时显示值气泡，无需 show-tooltip）；
-    // 垂直模式恒启用：原生 thumb 隐藏，.custom-thumb 承担默认拇指视觉与拖动反馈
+    // 垂直模式恒启用：原生 thumb 隐藏，.custom-thumb 承担默认拇指视觉与拖动反馈；
+    // pointer 形态恒启用：细指针造型由 .custom-thumb 承担（原生拇指无法跨浏览器统一为细条）
     const useOverlay =
       vertical ||
+      this.isPointerThumb() ||
       this.hasCustomThumb() ||
       this.hasAttr('show-tooltip') ||
       this.hasAttr('tooltip-always') ||

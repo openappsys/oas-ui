@@ -162,6 +162,18 @@ Visibility: shown while dragging or when keyboard-focused by default; `tooltip-a
 
 `size` switches three track/thumb sizes (also accepts `small`/`medium`/`large`, supports config-provider injection); invalid values fall back to md.
 
+## Thumb Shape (thumb)
+
+<DemoBlock title="thumb two shapes: round thumb (default) / pointer">
+  <div style="display: flex; flex-direction: column; gap: 16px; width: 360px;">
+    <oas-slider thumb="round" value="40"></oas-slider>
+    <oas-slider thumb="pointer" value="60"></oas-slider>
+    <oas-slider thumb="pointer" vertical show-tooltip value="30" style="--oas-slider-height: 180px"></oas-slider>
+  </div>
+</DemoBlock>
+
+`thumb` switches the handle shape: `round` is the default thick circular thumb; `pointer` is a thin pointer (a slim bar sitting along the axis — suited to color tracks/waveforms where precise reading matters and the track should stay visible). `pointer` always uses the custom visual layer (native thumb hidden): a thin vertical bar horizontally, a thin horizontal bar vertically; invalid values fall back to `round`.
+
 ## Colors
 
 <DemoBlock title="color / track-color">
@@ -352,6 +364,7 @@ onMounted(() => {
 | `size` | Three sizes: sm / md / lg (also accepts small / medium / large, supports config-provider injection); track height and thumb diameter scale together; invalid values fall back to md | `string` | `medium` |
 | `start-point` | Fill origin for single-value mode (default `min`): the fill extends right above the start and left below it; clamped to `[min, max]`; ignored in `range` mode | `string` | — |
 | `step` | Step; the special value `"mark"` restricts selectable values to the `marks` set (dragging/keyboard/controlled values snap to the nearest mark; requires `marks`, falls back to 1) | `string` | `1` |
+| `thumb` | Thumb shape: `round` thick circular thumb (default) / `pointer` thin pointer (a slim bar along the axis; always uses the custom visual layer with the native thumb hidden — thin vertical bar horizontally, thin horizontal bar vertically); invalid values fall back to round | `string` | `round` |
 | `tooltip-always` | Keep the value bubble always visible (by default shown while dragging or keyboard-focused) | `boolean` | — |
 | `tooltip-position` | Value bubble direction: top / bottom / left / right; top by default horizontally, right by default vertically; invalid values fall back to the default | `string` | — |
 | `track-color` | Track base color: preset semantic names map to theme tokens; any other value is passed through as a CSS color | — | — |

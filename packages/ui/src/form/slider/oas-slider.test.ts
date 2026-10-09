@@ -1773,3 +1773,68 @@ describe('OASSlider 专业属性（precision / value-width / accent-color / show
     }).not.toThrow()
   })
 })
+
+// ---- 增强批：thumb 两形态（pointer 细指针 / round 圆推子） ----
+
+describe('OASSlider thumb 两形态（pointer / round）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('缺省 round：镜像 data-thumb-shape="round"，自定义视觉层不启用', () => {
+    const el = mount({ value: '30' })
+    expect(el.getAttribute('data-thumb-shape')).toBe('round')
+    expect(thumbEl(el, 'value').hidden).toBe(true)
+    expect(el.hasAttribute('data-custom-thumb')).toBe(false)
+  })
+
+  it('thumb="round" 显式时同缺省', () => {
+    const el = mount({ thumb: 'round', value: '30' })
+    expect(el.getAttribute('data-thumb-shape')).toBe('round')
+    expect(thumbEl(el, 'value').hidden).toBe(true)
+  })
+
+  it('thumb="pointer"：镜像 pointer，且自定义视觉层恒启用（原生拇指隐藏）', () => {
+    const el = mount({ thumb: 'pointer', value: '30' })
+    expect(el.getAttribute('data-thumb-shape')).toBe('pointer')
+    expect(thumbEl(el, 'value').hidden).toBe(false)
+    expect(el.hasAttribute('data-custom-thumb')).toBe(true)
+  })
+
+  it('thumb 非法值回落 round', () => {
+    const el = mount({ thumb: 'triangle', value: '30' })
+    expect(el.getAttribute('data-thumb-shape')).toBe('round')
+  })
+
+  it('运行时切换 thumb：镜像随之更新，视觉层按形态显隐', () => {
+    const el = mount({ value: '30' })
+    expect(thumbEl(el, 'value').hidden).toBe(true)
+    el.setAttribute('thumb', 'pointer')
+    expect(el.getAttribute('data-thumb-shape')).toBe('pointer')
+    expect(thumbEl(el, 'value').hidden).toBe(false)
+    el.setAttribute('thumb', 'round')
+    expect(el.getAttribute('data-thumb-shape')).toBe('round')
+    expect(thumbEl(el, 'value').hidden).toBe(true)
+  })
+
+  it('vertical + pointer：指针形态在垂直轴定位（top）、data-vertical 保留', () => {
+    const el = mount({ vertical: '', thumb: 'pointer', value: '40' })
+    expect(el.getAttribute('data-thumb-shape')).toBe('pointer')
+    expect(el.hasAttribute('data-vertical')).toBe(true)
+    const th = thumbEl(el, 'value')
+    expect(th.hidden).toBe(false)
+    // happy-dom 无轨道尺寸 → 回落百分比：垂直值 40 = 距顶 60%
+    expect(th.style.top).toBe('60%')
+  })
+
+  it('CSS：pointer 形态规则存在且随垂直轴互换，round 默认样式保留', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(":host([data-thumb-shape='pointer']) .custom-thumb")
+    expect(css).toContain(":host([data-thumb-shape='pointer'][data-vertical]) .custom-thumb")
+    expect(css).toContain('--oas-slider-thumb-size')
+  })
+})

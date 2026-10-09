@@ -162,6 +162,18 @@
 
 `size` 切换轨道高度与滑块直径三档（也接受 `small`/`medium`/`large` 词表，支持 config-provider 全局注入），非法值回落 md。
 
+## 滑块形态（thumb）
+
+<DemoBlock title="thumb 两形态：round 圆推子（默认）/ pointer 细指针">
+  <div style="display: flex; flex-direction: column; gap: 16px; width: 360px;">
+    <oas-slider thumb="round" value="40"></oas-slider>
+    <oas-slider thumb="pointer" value="60"></oas-slider>
+    <oas-slider thumb="pointer" vertical show-tooltip value="30" style="--oas-slider-height: 180px"></oas-slider>
+  </div>
+</DemoBlock>
+
+`thumb` 切换把手形态：`round` 为默认粗圆推子；`pointer` 为细指针（薄条沿轴摆放，适合色轨/波形等需要精细读位、不遮挡轨道的场景）。`pointer` 恒走自定义视觉层（原生拇指隐藏），水平为薄竖条、垂直为薄横条；非法值回落 `round`。
+
 ## 颜色
 
 <DemoBlock title="color / track-color">
@@ -352,6 +364,7 @@ onMounted(() => {
 | `size` | 尺寸三档：sm / md / lg（也接受 small / medium / large 词表，支持 config-provider 注入），轨道高度与滑块直径联动；非法值回落 md | `string` | `medium` |
 | `start-point` | 单值模式填充起点（缺省从 `min` 端填充）：值大于起点向右延伸、小于向左延伸；自动夹取到 `[min, max]`；`range` 模式忽略 | `string` | — |
 | `step` | 步长；特殊值 `"mark"` 把可选值约束到 `marks` 刻度值集合（拖动/键盘/受控值吸附最近刻度，需搭配 `marks`，缺省回落 1） | `string` | `1` |
+| `thumb` | 把手形态：`round` 粗圆推子（默认）/ `pointer` 细指针（薄条沿轴摆放，恒走自定义视觉层、原生拇指隐藏；水平薄竖条、垂直薄横条）；非法值回落 round | `string` | `round` |
 | `tooltip-always` | 值气泡常显（默认拖动/键盘聚焦时显示） | `boolean` | — |
 | `tooltip-position` | 值气泡方向：top / bottom / left / right；水平默认 top、垂直默认 right，非法值回落默认 | `string` | — |
 | `track-color` | 轨道底色：预设语义色名映射主题 token；其他值原样透传为 CSS 色值 | — | — |

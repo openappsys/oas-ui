@@ -160,6 +160,12 @@
       "observed": true
     },
     {
+      "name": "thumb",
+      "type": "string",
+      "default": "round",
+      "observed": true
+    },
+    {
       "name": "label-1",
       "observed": true
     },

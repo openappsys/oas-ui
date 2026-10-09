@@ -2888,7 +2888,8 @@
       "precision": "值的小数位（scrub 步进与气泡/aria-valuetext 显示按此修约；未设置时步进值按 step/修饰倍率的有效小数位自动收敛浮点尾巴，显式设置是更严的值约束）；优先级低于 format/formatTooltip 格式化通道",
       "value-width": "show-input 读数框宽度：纯数字按 px、带单位值原样透传（写入 --oas-slider-value-width）；缺省 72px",
       "accent-color": "读数区 scrub 拖动中的强调色：预设语义色名（primary / success / warning / danger，随暗色主题）映射主题 token，其他值原样透传；缺省回落主题主色",
-      "show-track": "轨道显隐开关（默认显示）；show-track=\"false\" 隐藏轨道条与选中填充（把手保留，仍可拖动与键盘操作）"
+      "show-track": "轨道显隐开关（默认显示）；show-track=\"false\" 隐藏轨道条与选中填充（把手保留，仍可拖动与键盘操作）",
+      "thumb": "把手形态：`round` 粗圆推子（默认）/ `pointer` 细指针（薄条沿轴摆放，恒走自定义视觉层、原生拇指隐藏；水平薄竖条、垂直薄横条）；非法值回落 round"
     },
     "events": {
       "oas-change": "松手确定，`detail: { value }`（单值数字；`range` 模式为 `[lo, hi]` 数组）",
