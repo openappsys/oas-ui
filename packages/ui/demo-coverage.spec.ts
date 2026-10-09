@@ -113,6 +113,7 @@ const EXEMPT_EVENTS = new Set([
   'oas-node-rename', // tree：双击节点 label/F2 进内联编辑后 Enter 提交（demo 有专门块）
   'oas-crop', // upload：裁剪需完整对话框流程（选图→拖拽→确认），通用探针不可达（qa-regression/upload.spec.ts 已固化真实链路）
   'oas-remind', // scheduler：提醒按真实时刻到点派发（定时器语义，探针不可达，单测已固化调度与到点派发）
+  'oas-seek', // transport-well：时间码滑轨需键盘聚焦后方向键触发（通用探针不可达；qa-regression/workbench.spec.ts 已固化真实键盘 seek 链路）
 ])
 
 // 容器托管的反射属性（由父组件按 active/受控集合写回，非宿主直驱 API）：豁免静态演示要求

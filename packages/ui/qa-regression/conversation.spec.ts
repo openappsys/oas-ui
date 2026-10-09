@@ -481,11 +481,12 @@ test('message-scroller track-visible：滚动后 oas-visible-change 更新可见
     .toBeGreaterThanOrEqual(6)
   await expect(page.locator('#msc-visible-out')).toHaveText(/当前锚点/, { timeout: 8000 })
 
-  // 滚到底部 → 可见集变化 → 事件反馈（demo 文案切到 oas-visible-change）
+  // 滚到顶部 → 可见集变化 → 事件反馈（demo 文案切到 oas-visible-change）
+  // 注：scroller 初始自动滚到底（可见集=尾部），故必须向上滚才产生可见集变化。
   await page.evaluate(() => {
     const host = document.querySelector('#msc-visible') as HTMLElement
     const vp = host.shadowRoot!.querySelector('.viewport') as HTMLElement
-    vp.scrollTop = vp.scrollHeight - vp.clientHeight
+    vp.scrollTop = 0
     vp.dispatchEvent(new Event('scroll'))
   })
   await expect(page.locator('#msc-visible-out')).toHaveText(/oas-visible-change/, { timeout: 5000 })

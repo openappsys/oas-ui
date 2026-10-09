@@ -682,6 +682,21 @@ test.beforeAll(async () => {
     }),
   ])
 
+  // —— 新增白名单件：scope-bar / attachment-group / transport-well / music-well ——
+  // 布局稳定约定：均同步确定性渲染、无 rAF/视口测量依赖；内容固定，升级前后布局不变。
+  const extraSnaps = await Promise.all([
+    renderToString('oas-scope-bar', {
+      items: JSON.stringify([
+        { label: '全部', value: 'all' },
+        { label: '需编辑', value: 'edit' },
+      ]),
+      value: 'all',
+    }),
+    renderToString('oas-attachment-group', {}, '<oas-attachment name="a.mov"></oas-attachment>'),
+    renderToString('oas-transport-well', { label: '时间码', frames: '1075', 'frame-rate': '25', duration: '43' }),
+    renderToString('oas-music-well', { label: '位置', bars: '5', beats: '3', tempo: '120', meter: '4/4' }),
+  ])
+
   dsdHtml = `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -716,6 +731,7 @@ ${[
   ...batch5Snaps,
   ...nestedSnaps,
   ...wbSnaps,
+  ...extraSnaps,
 ].join('\n')}
 </body>
 </html>`

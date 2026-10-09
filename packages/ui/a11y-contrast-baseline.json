@@ -1,13 +1,13 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 31317,
+    "sampled": 31672,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 270,
+    "ratio": 273,
     "exempt": 630,
-    "skipped": 2964
+    "skipped": 3008
   },
   "topPairs": [],
   "pages": {
@@ -591,7 +591,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 0,
+      "ratio": 1,
       "exempt": 0,
       "skipped": 4
     },
@@ -706,6 +706,14 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": 179
+    },
+    "marker.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 0,
+      "skipped": 0
     },
     "marquee.html": {
       "below30": 0,
@@ -913,7 +921,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 17
+      "skipped": 21
     },
     "questionnaire.html::dark": {
       "below30": 0,
@@ -921,7 +929,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 17
+      "skipped": 21
     },
     "rate.html": {
       "below30": 0,
@@ -1025,7 +1033,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 92
+      "skipped": 108
     },
     "slider.html::dark": {
       "below30": 0,
@@ -1033,7 +1041,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 92
+      "skipped": 108
     },
     "space.html": {
       "below30": 0,
@@ -1129,7 +1137,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 15
+      "skipped": 17
     },
     "table.html::dark": {
       "below30": 0,
@@ -1137,7 +1145,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 15
+      "skipped": 17
     },
     "tabs.html": {
       "below30": 0,
