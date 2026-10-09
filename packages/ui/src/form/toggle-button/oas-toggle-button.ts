@@ -135,7 +135,9 @@ button.icon-only {
 :host([data-variant='outlined']) button[aria-pressed='true'] {
   background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 10%, transparent);
   border-color: var(--oas-toggle-color, var(--oas-color-primary));
-  color: var(--oas-toggle-color, var(--oas-color-primary));
+  /* 选中文字落主色淡底：纯主色感知分值 <60（同色系低明度差）——改用项目「主色文字安全档」
+     （light=primary 75%+black / dark=primary 78%+white 主题感知档）；自定义色可经 --oas-toggle-tint-text 覆盖 */
+  color: var(--oas-toggle-tint-text, var(--oas-color-primary-text));
 }
 :host([data-variant='filled']) button {
   background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 12%, transparent);
@@ -158,7 +160,8 @@ button.icon-only {
 }
 :host([data-variant='text']) button[aria-pressed='true'] {
   background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 12%, transparent);
-  color: var(--oas-toggle-color, var(--oas-color-primary));
+  /* 同 outlined：淡底上改用主色文字安全档达标（自定义色可经 --oas-toggle-tint-text 覆盖） */
+  color: var(--oas-toggle-tint-text, var(--oas-color-primary-text));
 }
 /* variant 系列禁用态回落统一禁用视觉（不被形态底色覆盖） */
 :host([data-variant='outlined']) button[disabled],

@@ -214,7 +214,8 @@ const STYLE = `
 :host([data-variant='outlined']) .item[aria-checked='true'] {
   background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 10%, transparent);
   border-color: var(--oas-toggle-color, var(--oas-color-primary));
-  color: var(--oas-toggle-color, var(--oas-color-primary));
+  /* 选中文字落主色淡底：纯主色感知分值 <60——改用主色文字安全档（同 toggle-button） */
+  color: var(--oas-toggle-tint-text, var(--oas-color-primary-text));
 }
 :host([data-variant='filled']) .item {
   background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 12%, transparent);
@@ -237,7 +238,8 @@ const STYLE = `
 }
 :host([data-variant='text']) .item[aria-checked='true'] {
   background: color-mix(in srgb, var(--oas-toggle-color, var(--oas-color-primary)) 12%, transparent);
-  color: var(--oas-toggle-color, var(--oas-color-primary));
+  /* 同 outlined：淡底上改用主色文字安全档达标 */
+  color: var(--oas-toggle-tint-text, var(--oas-color-primary-text));
 }
 /* variant 系列禁用态回落统一禁用视觉（不被形态底色覆盖） */
 :host([data-variant='outlined']) .item[aria-disabled='true'],

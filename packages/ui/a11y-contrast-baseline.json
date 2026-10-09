@@ -1,13 +1,13 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 30994,
+    "sampled": 31317,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 271,
+    "ratio": 270,
     "exempt": 630,
-    "skipped": 2924
+    "skipped": 2964
   },
   "topPairs": [],
   "pages": {
@@ -263,7 +263,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 2,
+      "ratio": 1,
       "exempt": 1,
       "skipped": 0
     },
@@ -409,7 +409,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 46
+      "skipped": 49
     },
     "dropdown.html::dark": {
       "below30": 0,
@@ -417,7 +417,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 46
+      "skipped": 49
     },
     "dynamic-tags.html": {
       "below30": 0,
@@ -729,7 +729,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 3,
-      "skipped": 40
+      "skipped": 42
     },
     "menu.html::dark": {
       "below30": 0,
@@ -737,7 +737,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 3,
-      "skipped": 40
+      "skipped": 42
     },
     "message-scroller.html": {
       "below30": 0,
@@ -780,6 +780,22 @@
       "skipped": 2
     },
     "modal.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "navigation-menu.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": 2
+    },
+    "navigation-menu.html::dark": {
       "below30": 0,
       "below45": 0,
       "below60": 0,
@@ -907,14 +923,6 @@
       "exempt": 0,
       "skipped": 17
     },
-    "radio.html": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 1,
-      "exempt": 0,
-      "skipped": 0
-    },
     "rate.html": {
       "below30": 0,
       "below45": 0,
@@ -985,7 +993,7 @@
       "below60": 0,
       "ratio": 3,
       "exempt": 0,
-      "skipped": 65
+      "skipped": 67
     },
     "select.html::dark": {
       "below30": 0,
@@ -993,7 +1001,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 65
+      "skipped": 67
     },
     "sidebar.html": {
       "below30": 0,
@@ -1017,7 +1025,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 85
+      "skipped": 92
     },
     "slider.html::dark": {
       "below30": 0,
@@ -1025,7 +1033,7 @@
       "below60": 0,
       "ratio": 0,
       "exempt": 0,
-      "skipped": 85
+      "skipped": 92
     },
     "space.html": {
       "below30": 0,
