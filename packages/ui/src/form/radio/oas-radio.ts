@@ -121,6 +121,10 @@ input:focus-visible {
 .description[hidden] {
   display: none;
 }
+/* 卡片形态：描述落在 6% 主色淡底上——text-secondary 边缘不达标，卡片内改用 secondary-strong（同 switch/checkbox） */
+:host([data-variant='card']) .description {
+  color: var(--oas-color-text-secondary-strong);
+}
 /* ---- label 位置：start 时文本在框的 start 侧（row-reverse 在 RTL 下自动镜像） ---- */
 :host([label-position='start']) label {
   flex-direction: row-reverse;

@@ -253,6 +253,11 @@ button[aria-checked='true'] .label {
 .description[hidden] {
   display: none;
 }
+/* 卡片形态：描述落在 6% 主色淡底上——text-secondary 实测 4.44 边缘不达标（13px 常规字），
+   卡片内改用 text-secondary-strong（更深）压过淡底；与 checkbox/radio 选择卡同口径 */
+:host([data-variant='card']) .description {
+  color: var(--oas-color-text-secondary-strong);
+}
 :host([disabled]) .ext-label,
 :host([data-disabled]) .ext-label {
   cursor: not-allowed;
