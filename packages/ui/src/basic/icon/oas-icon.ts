@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { getIconLibrary, lookupIcon, resolveIconAlias } from '@oas-ui/icons/runtime'
+import { hintUnresolvedIcon } from '../../shared/icon-hint.js'
 
 // 注册 / 查询 API 由 `@oas-ui/icons` 运行时统一提供（组件与本模块共用同一注册表，不含内置全量集）；
 // 此处 re-export 保持既有导入路径兼容（`@oas-ui/ui/basic/icon`）。
@@ -505,6 +506,9 @@ export class OASIcon extends OASElement {
 
     const hasSource = !!slotSvg || !!src || !!libOptions || !!(iconfontUrl && name) || !!content
     if (!hasSource) {
+      // dev-only 提示：给了 name 却解析不到（既非内置、也非自定义/远程/iconfont/slot）——延迟判定，
+      // 避开「onMounted 才 registerIcon」的晚注册；生产构建剔除
+      if (rawName) hintUnresolvedIcon(rawName)
       // 空态兜底：保留骨架，清空内容与宿主样式
       host.removeAttribute('data-duotone')
       host.removeAttribute('data-swap')

@@ -1,6 +1,7 @@
 import { OASElement, readConfigValue } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
+import { hintUnresolvedIcon } from '../../shared/icon-hint.js'
 
 export type ButtonType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'text'
 export type ButtonSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
@@ -1090,6 +1091,8 @@ export class OASButton extends OASElement {
 
     const hasLeadingIcon = icon !== '' && lookupIcon(icon) !== undefined
     const hasEndIcon = iconEnd !== '' && lookupIcon(iconEnd) !== undefined
+    if (icon !== '' && !hasLeadingIcon) hintUnresolvedIcon(icon)
+    if (iconEnd !== '' && !hasEndIcon) hintUnresolvedIcon(iconEnd)
     const hasIcon = hasLeadingIcon || hasEndIcon
     const hasText = (this.textContent ?? '').trim().length > 0
     const iconOnly = hasIcon && !hasText

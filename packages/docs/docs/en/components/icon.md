@@ -66,6 +66,8 @@ Four channels (pick by scenario):
 - **`registerIconLibrary`**: hook up a whole remote icon library (resolver → URL fetched on demand, sprite supported) — external icon libraries
 
 > ⚠️ **The built-in icon set is opt-in**: the full entry `@oas-ui/ui` registers it automatically; per-component imports that use a **built-in icon name** (`<oas-icon name="close">`, etc.) need a one-time `import '@oas-ui/icons/register'`. **Do not mutate the built-in icon data** (the internal structure exported by `@oas-ui/icons/registry`, with no override/cleanup semantics); the proper path is `registerIcon()` / `registerIconLibrary()` (official API, pure function, SSR-safe).
+>
+> Want **zero inline tax with out-of-the-box names**? Use `registerIconLibrary(name, { resolver, spriteSheet })` to hook up a **remote / sprite icon library** — icons are referenced via `<use>` or fetched on demand and never inlined into the bundle (see "Remote icon library" below); or ship your own set via `registerIcon(name, svg)`.
 
 <DemoBlock title="src SVG">
   <oas-icon src="/demo-icon.svg" size="24" color="var(--oas-color-primary)"></oas-icon>
