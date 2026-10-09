@@ -96,6 +96,21 @@
   <span id="q-cond-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
+## 切换动画（animated）
+
+`animated` 开启题目切换过渡：新面板按导航方向滑入 + 淡入（前进自行尾侧、后退自行首侧；只动 transform/opacity，合成器友好）；`prefers-reduced-motion: reduce` 用户自动降级为无动画。时长经 CSS 变量 `--oas-questionnaire-anim-duration` 覆盖（缺省 `--oas-transition-base`）；RTL 布局下滑入方向自动镜像。
+
+<DemoBlock title="animated 切换过渡（点下一步/上一步观察滑入方向）">
+  <oas-questionnaire id="q-anim" animated style="width: 100%; max-width: 520px" steps='[{"title":"第一步"},{"title":"第二步"},{"title":"第三步"}]'>
+    <oas-form slot="step-0"><p style="margin: 0">点「下一步」：本面板按导航方向滑入 + 淡入。</p></oas-form>
+    <oas-form slot="step-1"><p style="margin: 0">前进与后退的滑入方向相反；回到第一步用「上一步」观察。</p></oas-form>
+    <oas-form slot="step-2"><p style="margin: 0">最后一步。</p></oas-form>
+  </oas-questionnaire>
+  <span style="display: flex; margin-top: 8px">
+    <oas-button id="q-anim-reset">reset()</oas-button>
+  </span>
+</DemoBlock>
+
 ## 受控 current 与方法
 
 `current` 双向：内部跳步写回属性，外部设置即时同步。命令式方法 `next()` / `prev()` / `goto(index)` / `validate()` / `submit()` / `getValues()` / `reset()` 覆盖全部导航与取值场景。
@@ -250,6 +265,11 @@ onMounted(() => {
     }
   })
 
+  // 切换动画：reset 提供重复观看入口
+  document.getElementById('q-anim-reset')?.addEventListener('click', () => {
+    document.getElementById('q-anim')?.reset()
+  })
+
   // 条件分支：按答案翻转 hidden（宿主组合通道，无内建谓词引擎）
   const cond = document.getElementById('q-cond')
   const condOut = document.getElementById('q-cond-output')
@@ -353,6 +373,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `animated` | 题目切换过渡（opt-in，存在且非 `"false"` 时开启）：新面板按导航方向滑入 + 淡入（只动 transform/opacity）；`prefers-reduced-motion: reduce` 自动降级为无动画；RTL 滑入方向自动镜像 | `boolean` | — |
 | `current` | 当前步索引（0 起，受控双向：内部跳步写回、外部设置即时同步）；非法值回落 0，越界夹取 | `string` | `0` |
 | `finish-text` | 末步主按钮文案（覆盖 locale 缺省「完成」） | — | — |
 | `hide-header` | 隐藏内置步骤头（宿主自组合） | `boolean` | — |
@@ -389,6 +410,7 @@ onMounted(() => {
 
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
+| `--oas-questionnaire-anim-duration` | 切步动画时长（animated 开启时生效） | `var(--oas-transition-base, 180ms)` |
 | `--oas-questionnaire-nav-gap` | 导航区按钮间距 | `var(--oas-space-2)` |
 | `--oas-questionnaire-progress-bar-bg` | 进度条填充色 | `var(--oas-color-primary)` |
 | `--oas-questionnaire-progress-bg` | 进度条轨道底色 | `var(--oas-color-bg-hover)` |

@@ -598,6 +598,50 @@ describe('OASQuestionnaire', () => {
     expect(progressEl(el).getAttribute('aria-valuemax')).toBe('3')
   })
 
+  // ---------- 切换动画（animated） ----------
+
+  it('animated：默认关（切步无动画标记）；开启后切步方向感知（前进/后退），首帧不动画', async () => {
+    const off = mountDefault()
+    off.setAttribute('current', '2')
+    expect(panels(off)[2]!.hasAttribute('data-anim')).toBe(false)
+    const on = mountDefault({ animated: '' })
+    // 首帧：初始渲染不播动画（避免页面加载闪动）
+    expect(panels(on)[0]!.hasAttribute('data-anim')).toBe(false)
+    on.setAttribute('current', '2')
+    expect(panels(on)[2]!.getAttribute('data-anim')).toBe('forward')
+    on.setAttribute('current', '1')
+    expect(panels(on)[1]!.getAttribute('data-anim')).toBe('backward')
+    // 非切步的重渲染（如属性变化）不重复触发动画
+    on.setAttribute('validation', 'false')
+    expect(panels(on)[1]!.hasAttribute('data-anim')).toBe(false)
+  })
+
+  it('animated="false"：显式关闭不播动画；方法导航（goto/prev）同走方向标记', () => {
+    const el = mountDefault({ animated: 'false' })
+    el.setAttribute('current', '1')
+    expect(panels(el)[1]!.hasAttribute('data-anim')).toBe(false)
+    const on = mountDefault({ animated: '' })
+    on.goto(2)
+    expect(panels(on)[2]!.getAttribute('data-anim')).toBe('forward')
+    on.prev()
+    expect(panels(on)[1]!.getAttribute('data-anim')).toBe('backward')
+  })
+
+  it('animated CSS：keyframes 只动 transform/opacity、prefers-reduced-motion 门控降级、时长走出口变量', () => {
+    const el = mountDefault({ animated: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 降级：no-preference 门控（reduce 用户零动画），门控内才有动画规则
+    expect(css).toContain('@media (prefers-reduced-motion: no-preference)')
+    expect(css).toContain('oas-questionnaire-step-in-fwd')
+    expect(css).toContain('oas-questionnaire-step-in-bwd')
+    // 只动 transform/opacity（合成器友好），无位移外的布局属性
+    expect(css).toMatch(/@keyframes oas-questionnaire-step-in-fwd\s*\{[^@]*transform:\s*translateX/)
+    expect(css).toMatch(/@keyframes oas-questionnaire-step-in-fwd\s*\{[^@]*opacity:\s*0/)
+    // 时长出口变量（宿主可覆盖）；位移轴由 RTL 方向变量翻转
+    expect(css).toContain('var(--oas-questionnaire-anim-duration,')
+    expect(css).toContain('var(--q-dir, 1)')
+  })
+
   // ---------- i18n ----------
 
   it('i18n：setLocale(en) 后按钮/进度文案切英文；末步按钮为完成文案；文案属性覆盖', () => {

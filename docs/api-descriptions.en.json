@@ -4038,6 +4038,7 @@
   },
   "oas-questionnaire": {
     "attrs": {
+      "animated": "Step transition (opt-in, on when present and not `\"false\"`): the incoming panel slides in along the navigation direction while fading in (transform/opacity only); automatically disabled for `prefers-reduced-motion: reduce`; slide direction mirrors in RTL",
       "current": "Current step index (0-based, two-way: internal jumps write back, external updates sync instantly); invalid values fall back to 0, out-of-range clamped",
       "finish-text": "Last-step primary button label (overrides the locale default \"Submit\")",
       "hide-header": "Hide the built-in step header (host composition)",
@@ -4065,6 +4066,7 @@
       "step-<index>": "Step content panel (unkeyed steps associate by array index)"
     },
     "cssVars": {
+      "--oas-questionnaire-anim-duration": "Step transition duration (applies when animated is on)",
       "--oas-questionnaire-nav-gap": "Nav region button gap",
       "--oas-questionnaire-progress-bg": "Progress track background",
       "--oas-questionnaire-progress-bar-bg": "Progress fill color"

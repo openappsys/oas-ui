@@ -214,6 +214,39 @@ const STYLE = `
 .panel[hidden] {
   display: none;
 }
+/* —— 题目切换动画（animated 开启时）：只动 transform/opacity（合成器友好）。
+ * prefers-reduced-motion: no-preference 门控 = reduce 用户零动画；
+ * 位移轴乘 --q-dir（host direction 探测写入 bodyEl 内联），RTL 自动镜像 —— */
+@media (prefers-reduced-motion: no-preference) {
+  .panel[data-anim='forward'] {
+    animation: oas-questionnaire-step-in-fwd
+      var(--oas-questionnaire-anim-duration, var(--oas-transition-base, 180ms)) var(--oas-ease-out, ease-out) both;
+  }
+  .panel[data-anim='backward'] {
+    animation: oas-questionnaire-step-in-bwd
+      var(--oas-questionnaire-anim-duration, var(--oas-transition-base, 180ms)) var(--oas-ease-out, ease-out) both;
+  }
+}
+@keyframes oas-questionnaire-step-in-fwd {
+  from {
+    opacity: 0;
+    transform: translateX(calc(16px * var(--q-dir, 1)));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes oas-questionnaire-step-in-bwd {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-16px * var(--q-dir, 1)));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 /* —— 导航区 —— */
 .nav {
   display: flex;
@@ -311,6 +344,8 @@ export class OASQuestionnaire extends OASElement {
       'skip-text',
       'hide-header',
       'hide-nav',
+      // 切换动画开关（opt-in；prefers-reduced-motion 自动降级为无动画）
+      'animated',
       // size 五档（字号密度档位，几何恒定）
       'size',
     ]
@@ -320,6 +355,9 @@ export class OASQuestionnaire extends OASElement {
 
   /** 门控在途标志：next/submit 重入保护（异步 validator 未落地时不重复推进） */
   private busy = false
+
+  /** 上一次渲染的有效步：null = 尚未首帧（首帧不播切换动画）；切步方向标记的基准 */
+  private lastEff: number | null = null
 
   /** 每步被跟踪的值快照（内层 oas-form 的 oas-values-change detail.values，嵌套结构） */
   private tracked = new Map<number, Record<string, unknown>>()
@@ -432,9 +470,36 @@ export class OASQuestionnaire extends OASElement {
     this.alignCurrent(eff)
     this.syncHeader(eff)
     this.syncProgress(eff)
-    this.syncPanels(eff)
+    this.syncAnimDir()
+    this.syncPanels(eff, this.animFor(eff))
     this.syncNav(eff)
     this.bindValueListeners()
+    this.lastEff = eff
+  }
+
+  /** 切换动画开关：opt-in（存在即开，="false" 显式关闭；Vue :animated="false" 移除属性即关） */
+  private animatedEnabled(): boolean {
+    if (!this.hasAttr('animated')) return false
+    return this.getAttribute('animated') !== 'false'
+  }
+
+  /** 切步方向标记：首帧（lastEff 为 null）与非切步重渲染不动画；前进/后退方向感知 */
+  private animFor(eff: number): 'forward' | 'backward' | null {
+    if (!this.animatedEnabled() || this.lastEff === null || this.lastEff === eff) return null
+    return eff > this.lastEff ? 'forward' : 'backward'
+  }
+
+  /** RTL 位移轴：host 计算 direction 写入 bodyEl 内联（keyframes 乘 var(--q-dir, 1) 镜像）
+   *（happy-dom 等环境 getComputedStyle 可能受限，异常兜底 ltr） */
+  private syncAnimDir(): void {
+    if (!this.bodyEl) return
+    let dir = 'ltr'
+    try {
+      dir = getComputedStyle(this).direction || 'ltr'
+    } catch {
+      /* 保持 ltr 兜底 */
+    }
+    this.bodyEl.style.setProperty('--q-dir', dir === 'rtl' ? '-1' : '1')
   }
 
   /**
@@ -658,8 +723,9 @@ export class OASQuestionnaire extends OASElement {
     if (this.liveEl) this.liveEl.textContent = `${stepLabel} ${this._steps[eff]?.title ?? ''}`.trim()
   }
 
-  /** 面板重建：slot 名按 key ?? 原始数组下标（宿主 slot 接线稳定）；仅切 hidden 不卸载 light DOM */
-  private syncPanels(eff: number): void {
+  /** 面板重建：slot 名按 key ?? 原始数组下标（宿主 slot 接线稳定）；仅切 hidden 不卸载 light DOM。
+   * anim 非空时给新 active 面板挂方向标记（元素新建 → CSS 入场动画只跑这一次；首帧与非切步为 null） */
+  private syncPanels(eff: number, anim: 'forward' | 'backward' | null = null): void {
     if (!this.bodyEl) return
     this.bodyEl.innerHTML = ''
     for (let idx = 0; idx < this._steps.length; idx++) {
@@ -668,6 +734,7 @@ export class OASQuestionnaire extends OASElement {
       panel.className = 'panel'
       panel.setAttribute('part', 'panel')
       panel.setAttribute('data-step', String(idx))
+      if (idx === eff && anim) panel.setAttribute('data-anim', anim)
       if (idx !== eff || step.hidden) panel.setAttribute('hidden', '')
       const slot = document.createElement('slot')
       slot.setAttribute('name', step.key ? `step-${step.key}` : `step-${idx}`)

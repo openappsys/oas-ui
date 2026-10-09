@@ -96,6 +96,21 @@ Conditional branching uses the **host composition channel** — no built-in pred
   <span id="q-cond-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
+## Step transition (animated)
+
+`animated` enables the step transition: the incoming panel slides in along the navigation direction (forward from the inline-end side, backward from the inline-start side) while fading in — transform/opacity only, compositor-friendly; users with `prefers-reduced-motion: reduce` automatically get no animation. Override the duration via the CSS variable `--oas-questionnaire-anim-duration` (defaults to `--oas-transition-base`); the slide direction mirrors automatically in RTL layouts.
+
+<DemoBlock title="animated transition (click Next/Previous to watch the slide direction)">
+  <oas-questionnaire id="q-anim" animated style="width: 100%; max-width: 520px" steps='[{"title":"Step 1"},{"title":"Step 2"},{"title":"Step 3"}]'>
+    <oas-form slot="step-0"><p style="margin: 0">Click "Next": this panel slides in along the navigation direction.</p></oas-form>
+    <oas-form slot="step-1"><p style="margin: 0">Forward and backward slide from opposite sides; use "Previous" to watch the return.</p></oas-form>
+    <oas-form slot="step-2"><p style="margin: 0">Final step.</p></oas-form>
+  </oas-questionnaire>
+  <span style="display: flex; margin-top: 8px">
+    <oas-button id="q-anim-reset">reset()</oas-button>
+  </span>
+</DemoBlock>
+
 ## Controlled current & methods
 
 `current` is two-way: internal jumps write it back, external updates sync instantly. Imperative methods `next()` / `prev()` / `goto(index)` / `validate()` / `submit()` / `getValues()` / `reset()` cover all navigation and value scenarios.
@@ -250,6 +265,11 @@ onMounted(() => {
     }
   })
 
+  // Animated transition: reset as a replay entry point
+  document.getElementById('q-anim-reset')?.addEventListener('click', () => {
+    document.getElementById('q-anim')?.reset()
+  })
+
   // Conditional branching: flip hidden by answer (host composition channel, no built-in predicate engine)
   const cond = document.getElementById('q-cond')
   const condOut = document.getElementById('q-cond-output')
@@ -353,6 +373,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `animated` | Step transition (opt-in, on when present and not `"false"`): the incoming panel slides in along the navigation direction while fading in (transform/opacity only); automatically disabled for `prefers-reduced-motion: reduce`; slide direction mirrors in RTL | `boolean` | — |
 | `current` | Current step index (0-based, two-way: internal jumps write back, external updates sync instantly); invalid values fall back to 0, out-of-range clamped | `string` | `0` |
 | `finish-text` | Last-step primary button label (overrides the locale default "Submit") | — | — |
 | `hide-header` | Hide the built-in step header (host composition) | `boolean` | — |
@@ -389,6 +410,7 @@ onMounted(() => {
 
 | CSS Variable | Description | Default |
 | --- | --- | --- |
+| `--oas-questionnaire-anim-duration` | Step transition duration (applies when animated is on) | `var(--oas-transition-base, 180ms)` |
 | `--oas-questionnaire-nav-gap` | Nav region button gap | `var(--oas-space-2)` |
 | `--oas-questionnaire-progress-bar-bg` | Progress fill color | `var(--oas-color-primary)` |
 | `--oas-questionnaire-progress-bg` | Progress track background | `var(--oas-color-bg-hover)` |

@@ -4038,6 +4038,7 @@
   },
   "oas-questionnaire": {
     "attrs": {
+      "animated": "题目切换过渡（opt-in，存在且非 `\"false\"` 时开启）：新面板按导航方向滑入 + 淡入（只动 transform/opacity）；`prefers-reduced-motion: reduce` 自动降级为无动画；RTL 滑入方向自动镜像",
       "current": "当前步索引（0 起，受控双向：内部跳步写回、外部设置即时同步）；非法值回落 0，越界夹取",
       "finish-text": "末步主按钮文案（覆盖 locale 缺省「完成」）",
       "hide-header": "隐藏内置步骤头（宿主自组合）",
@@ -4065,6 +4066,7 @@
       "step-<index>": "步骤内容面板（无 key 的步骤按数组下标关联）"
     },
     "cssVars": {
+      "--oas-questionnaire-anim-duration": "切步动画时长（animated 开启时生效）",
       "--oas-questionnaire-nav-gap": "导航区按钮间距",
       "--oas-questionnaire-progress-bg": "进度条轨道底色",
       "--oas-questionnaire-progress-bar-bg": "进度条填充色"

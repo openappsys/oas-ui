@@ -194,6 +194,25 @@ test('questionnaire 条件分支：按答案翻转 hidden → 头部收缩、nex
   await expect(q.locator('.progress')).toHaveAttribute('aria-valuemax', '3')
 })
 
+test('questionnaire animated：开启后切步面板带方向标记、首帧与默认关无标记（动画视觉待人工核对）', async ({ page }) => {
+  await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#q-anim')
+  const q = page.locator('#q-anim')
+  const animOf = (step: number) =>
+    q.evaluate((el, s) => el.shadowRoot!.querySelector(`.panel[data-step="${s}"]`)!.getAttribute('data-anim'), step)
+
+  // 首帧不动画；前进切步 → 新面板 forward 标记
+  expect(await animOf(0)).toBeNull()
+  await realClick(page, '#q-anim', '[part="next"]')
+  await expect(q).toHaveAttribute('current', '1')
+  expect(await animOf(1)).toBe('forward')
+
+  // 后退 → backward 标记；非切步重渲染不重复触发
+  await realClick(page, '#q-anim', '[part="prev"]')
+  await expect(q).toHaveAttribute('current', '0')
+  expect(await animOf(0)).toBe('backward')
+})
+
 test('questionnaire 跳过：optional 步点跳过按钮不校验直接前进', async ({ page }) => {
   await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#q-skip')
