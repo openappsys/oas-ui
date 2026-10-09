@@ -2,7 +2,7 @@
 
 步骤驱动的表单流程编排组件：步骤头 + 进度（「第 n / m 步」）+ 每步内容面板 + 单步校验门控。适合向导式表单 / 问卷 / 多步结算等场景。校验复用 `oas-form` 内核——**每步面板内放一个 `<oas-form>`**，下一步前对当前步校验、未过不放行；回退不校验、面板常驻不卸载（已填值保留）。
 
-> 边界：只做线性门控 + 可选步跳过 + `oas-before-change` 宿主自定义跳转；条件分支（visibleIf / 表达式引擎）与起始页/完成页暂不内置——分支跳转可经 `oas-before-change` 由宿主决定，草稿持久化请用 `current` + `getValues()` 自行实现。
+> 边界：线性门控 + 可选步跳过 + `oas-before-change` 宿主自定义跳转 + **条件分支走宿主组合通道**（`hidden` 数据位 + `oas-before-change` + `oas-values-change`，见下文）；谓词 / 表达式引擎不内置（宿主持有全量答案数据，分支决策留在宿主可 veto、可测试的应用层）。起始页/完成页暂不内置；草稿持久化请用 `current` + `getValues()` 自行实现。
 
 ## 基础用法
 
@@ -72,6 +72,28 @@
     <oas-form slot="step-2"><p style="margin: 0">确认页（演示中被宿主拦截，进不来）</p></oas-form>
   </oas-questionnaire>
   <span id="q-veto-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## 条件分支（按答案跳步）
+
+条件分支走**宿主组合通道**，不内置谓词引擎：宿主监听 `oas-values-change` 拿到答案，按业务规则改写 `steps` 翻转 `hidden` 位即生效——被隐藏步退出头部与进度、`next()` 自动跳过、其值退出取值与校验口径。若翻转的是用户所在步，组件自动把 `current` 对齐到最近可见步并派发 `oas-change`（宿主无需再手动跳转）。分支决策留宿主的好处：规则可单测、可在 `oas-before-change` 里再 veto、避免在组件内重造一套表达式语言。
+
+<DemoBlock title="按答案隐藏/恢复步骤">
+  <oas-questionnaire id="q-cond" style="width: 100%; max-width: 520px" steps='[{"key":"need","title":"是否开票"},{"key":"invoice","title":"发票信息"},{"key":"done","title":"确认提交"}]'>
+    <oas-form slot="step-need" initial-values='{"need":"yes"}'>
+      <oas-radio-group name="need">
+        <oas-radio value="yes">需要开票</oas-radio>
+        <oas-radio value="no">不需要</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-invoice" rules='{"title":[{"required":true,"message":"请输入发票抬头"}]}'>
+      <oas-input name="title" placeholder="发票抬头（必填）" style="width: 240px"></oas-input>
+    </oas-form>
+    <oas-form slot="step-done">
+      <p style="color: var(--oas-color-text-secondary); margin: 0">最后一步。</p>
+    </oas-form>
+  </oas-questionnaire>
+  <span id="q-cond-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## 受控 current 与方法
@@ -226,6 +248,25 @@ onMounted(() => {
       e.preventDefault()
       vetoOut.textContent = '宿主已否决：确认页请走完整流程（或在此实现自定义分支跳转）'
     }
+  })
+
+  // 条件分支：按答案翻转 hidden（宿主组合通道，无内建谓词引擎）
+  const cond = document.getElementById('q-cond')
+  const condOut = document.getElementById('q-cond-output')
+  const condSteps = (invoiceHidden) =>
+    JSON.stringify([
+      { key: 'need', title: '是否开票' },
+      { key: 'invoice', title: '发票信息', hidden: invoiceHidden },
+      { key: 'done', title: '确认提交' },
+    ])
+  cond?.addEventListener('oas-values-change', (e) => {
+    const need = e.detail?.values?.need
+    if (need !== 'yes' && need !== 'no') return
+    const hide = need === 'no'
+    cond.setAttribute('steps', condSteps(hide))
+    condOut.textContent = hide
+      ? '已隐藏「发票信息」步：点「下一步」将自动跳过；选回「需要开票」即恢复'
+      : '「发票信息」步已恢复显示'
   })
 
   // 受控与方法

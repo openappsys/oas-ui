@@ -494,6 +494,110 @@ describe('OASQuestionnaire', () => {
     expect(el.getValues()).toEqual({ a: '预填', b: '2' })
   })
 
+  // ---------- 条件分支（宿主组合通道：hidden 数据位运行时翻转，不引入谓词 DSL） ----------
+
+  it('条件分支：宿主按答案改写 steps 翻转 hidden → next() 跳过被隐藏步（按答案跳转地基）', async () => {
+    const el = mount({
+      steps: [
+        { key: 'ship', title: '是否需要配送' },
+        { key: 'addr', title: '配送地址' },
+        { key: 'done', title: '完成' },
+      ],
+      panels: [
+        '<oas-form slot="step-ship"><oas-input name="need" value="yes"></oas-input></oas-form>',
+        '<oas-form slot="step-addr"><oas-input name="addr" value=""></oas-input></oas-form>',
+        '<oas-form slot="step-done"><oas-input name="note" value=""></oas-input></oas-form>',
+      ],
+    })
+    // 宿主按答案「不需要配送」翻转未来步 hidden：重写 steps 即生效
+    el.setAttribute(
+      'steps',
+      JSON.stringify([
+        { key: 'ship', title: '是否需要配送' },
+        { key: 'addr', title: '配送地址', hidden: true },
+        { key: 'done', title: '完成' },
+      ]),
+    )
+    await el.next()
+    expect(el.getAttribute('current')).toBe('2')
+    expect(items(el).length).toBe(2)
+  })
+
+  it('条件分支：当前步被运行时隐藏 → current 自动对齐到解析步 + 派发 oas-change（宿主可感知）', () => {
+    const el = mount({
+      steps: [
+        { key: 'a', title: 'A' },
+        { key: 'b', title: 'B' },
+        { key: 'c', title: 'C' },
+      ],
+      panels: [
+        '<oas-form slot="step-a"><oas-input name="a" value="1"></oas-input></oas-form>',
+        '<oas-form slot="step-b"><oas-input name="b" value="2"></oas-input></oas-form>',
+        '<oas-form slot="step-c"><oas-input name="c" value="3"></oas-input></oas-form>',
+      ],
+    })
+    el.setAttribute('current', '1')
+    expect(panels(el)[1]!.hasAttribute('hidden')).toBe(false)
+    const change = track(el, 'oas-change')
+    // 宿主隐藏用户当前所在步：current 写回解析步、oas-change 告知宿主（不派发 before-change）
+    el.setAttribute(
+      'steps',
+      JSON.stringify([
+        { key: 'a', title: 'A' },
+        { key: 'b', title: 'B', hidden: true },
+        { key: 'c', title: 'C' },
+      ]),
+    )
+    expect(el.getAttribute('current')).toBe('2')
+    expect(change).toEqual([{ index: 2, key: 'c' }])
+    // 对齐后的 current 落在可见步：不再重复对齐、不重复派发
+    el.setAttribute('validation', 'false')
+    expect(change).toEqual([{ index: 2, key: 'c' }])
+  })
+
+  it('条件分支：当前步被隐藏 → 值退出 getValues()；恢复显示后回归', async () => {
+    const el = mount({
+      steps: [
+        { key: 'a', title: 'A' },
+        { key: 'b', title: 'B' },
+        { key: 'c', title: 'C' },
+      ],
+      panels: [
+        '<oas-form slot="step-a"><oas-input name="a" value="1"></oas-input></oas-form>',
+        '<oas-form slot="step-b"><oas-input name="b" value="2"></oas-input></oas-form>',
+        '<oas-form slot="step-c"><oas-input name="c" value="3"></oas-input></oas-form>',
+      ],
+    })
+    el.setAttribute('current', '1')
+    expect(panels(el)[1]!.hasAttribute('hidden')).toBe(false)
+    // 宿主隐藏用户当前所在步：视图自动落到下一个可见步，值退出参与口径
+    el.setAttribute(
+      'steps',
+      JSON.stringify([
+        { key: 'a', title: 'A' },
+        { key: 'b', title: 'B', hidden: true },
+        { key: 'c', title: 'C' },
+      ]),
+    )
+    expect(panels(el)[1]!.hasAttribute('hidden')).toBe(true)
+    expect(panels(el)[2]!.hasAttribute('hidden')).toBe(false)
+    expect(el.getAttribute('current')).toBe('2')
+    expect(el.getValues()).toEqual({ a: '1', c: '3' })
+    expect(items(el).length).toBe(2)
+    expect(progressEl(el).getAttribute('aria-valuemax')).toBe('2')
+    // 恢复显示：一切回归
+    el.setAttribute(
+      'steps',
+      JSON.stringify([
+        { key: 'a', title: 'A' },
+        { key: 'b', title: 'B' },
+        { key: 'c', title: 'C' },
+      ]),
+    )
+    expect(el.getValues()).toEqual({ a: '1', b: '2', c: '3' })
+    expect(progressEl(el).getAttribute('aria-valuemax')).toBe('3')
+  })
+
   // ---------- i18n ----------
 
   it('i18n：setLocale(en) 后按钮/进度文案切英文；末步按钮为完成文案；文案属性覆盖', () => {

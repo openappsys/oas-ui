@@ -168,6 +168,32 @@ test('questionnaire before-change 否决：linear=false 点击未来步被宿主
   await expect(page.locator('#q-veto-output')).toContainText('宿主已否决')
 })
 
+test('questionnaire 条件分支：按答案翻转 hidden → 头部收缩、next 自动跳过、恢复显示、汇总值跟随', async ({ page }) => {
+  await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#q-cond')
+  const q = page.locator('#q-cond')
+  const headerCount = () => q.evaluate((el) => el.shadowRoot!.querySelectorAll('.steps .item').length)
+
+  // 初始三步可见；选「不需要」→ 宿主翻转 hidden → 头部 3 → 2、反馈可见
+  expect(await headerCount()).toBe(3)
+  await page.locator('#q-cond oas-radio[value="no"]').click()
+  await expect(page.locator('#q-cond-output')).toContainText('已隐藏')
+  expect(await headerCount()).toBe(2)
+  await expect(q.locator('.progress')).toHaveAttribute('aria-valuemax', '2')
+
+  // next 自动跳过被隐藏步：直达确认提交（current=2）
+  await realClick(page, '#q-cond', '[part="next"]')
+  await expect(q).toHaveAttribute('current', '2')
+
+  // 回到第一步选回「需要开票」→ 步骤恢复、头部回到 3
+  await realClick(page, '#q-cond', '[part="item-button"]')
+  await expect(q).toHaveAttribute('current', '0')
+  await page.locator('#q-cond oas-radio[value="yes"]').click()
+  await expect(page.locator('#q-cond-output')).toContainText('已恢复')
+  expect(await headerCount()).toBe(3)
+  await expect(q.locator('.progress')).toHaveAttribute('aria-valuemax', '3')
+})
+
 test('questionnaire 跳过：optional 步点跳过按钮不校验直接前进', async ({ page }) => {
   await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#q-skip')

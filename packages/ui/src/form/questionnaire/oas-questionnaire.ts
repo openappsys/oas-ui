@@ -2,8 +2,10 @@ import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 
 /**
- * 步骤数据契约（v1）：线性门控 + 可选跳过 + oas-before-change 宿主自定跳转。
- * visibleIf 谓词 / 表达式引擎 / 分支跳转延后（hidden 为宿主预算好的可见性扩展位）。
+ * 步骤数据契约：线性门控 + 可选跳过 + 条件分支（宿主组合通道）。
+ * 条件分支不内置谓词 / 表达式引擎：宿主监听 oas-values-change 按答案改写 steps 翻转 hidden，
+ * 组件负责 hidden 的全部导航/取值/校验口径（含 current 落在 hidden 步时的自动对齐）；
+ * oas-before-change 保留宿主 veto 与自定义跳转挂点。
  */
 export interface QuestionnaireStep {
   /** 步骤唯一标识：事件回传与面板 slot 名（slot="step-<key>"）；缺省用数组下标 */
@@ -12,7 +14,8 @@ export interface QuestionnaireStep {
   description?: string
   /** 可跳过：显示 Skip 按钮，未答亦放行（跳过不触发校验；跳过后该步退出取值/校验口径，重新进入恢复） */
   optional?: boolean
-  /** 宿主预算好的可见性：不在流程内（不渲染头部、不计进度、导航跳过；值与校验同不计入） */
+  /** 可见性数据位（条件分支的组合通道）：宿主按答案预算/运行时改写——隐藏步不渲染头部、
+   * 不计进度、导航自动跳过、值与校验不计入；用户所在步被隐藏时 current 自动对齐到最近可见步 */
   hidden?: boolean
 }
 
@@ -424,11 +427,30 @@ export class OASQuestionnaire extends OASElement {
     // 重新进入被跳过的步即恢复参与：导航（next/prev/goto）与宿主直接写 current 两条路径
     // 都汇经 update，统一在此清除该步的跳过记录
     this.skipped.delete(eff)
+    // 条件分支（组合通道）：宿主运行时翻转 hidden 后 current 可能落在 hidden 步——
+    // 视图本就跟随解析步渲染，此处把受控属性与事件流对齐到用户所见（含首帧）
+    this.alignCurrent(eff)
     this.syncHeader(eff)
     this.syncProgress(eff)
     this.syncPanels(eff)
     this.syncNav(eff)
     this.bindValueListeners()
+  }
+
+  /**
+   * current 对齐：raw current 解析后落在 hidden 步（宿主按答案翻转 hidden）时，
+   * 写回 current = 解析步并派发 oas-change（宿主同步自身状态，无需再手动 goto）。
+   * 非用户导航动作：不派发 before-change（视图已随解析步渲染，无可 veto 的跳步）；
+   * 全部步 hidden 的退化路径（解析步 = 原 clamp）不动。写回触发一次重入 update 即收敛。
+   */
+  private alignCurrent(eff: number): void {
+    const n = this._steps.length
+    if (n === 0) return
+    const raw = Number(this.getAttr('current', '0'))
+    const clamp = Math.min(Math.max(Number.isFinite(raw) ? Math.floor(raw) : 0, 0), n - 1)
+    if (clamp === eff) return
+    this.setAttribute('current', String(eff))
+    this.emit('change', { index: eff, ...this.keyOf(eff) })
   }
 
   private parseSteps(): void {

@@ -2,7 +2,7 @@
 
 A step-driven form flow orchestrator: step header + progress ("Step n / m") + per-step content panels + per-step validation gating. Ideal for wizards, surveys, and multi-step checkout. Validation reuses the `oas-form` kernel — **place one `<oas-form>` inside each step panel**; moving forward validates the current step and blocks on failure, while going back never validates and panels stay mounted (filled values are preserved).
 
-> v1 scope: linear gating + optional-step skip + host-defined jumps via `oas-before-change` only. Conditional branching (visibleIf / expression engine) and start/complete pages are not built in — use `oas-before-change` for custom jumps, and implement draft persistence yourself via `current` + `getValues()`.
+> Scope: linear gating + optional-step skip + host-defined jumps via `oas-before-change` + **conditional branching via the host composition channel** (`hidden` data bit + `oas-before-change` + `oas-values-change`, see below). No predicate / expression engine is built in — the host owns the full answer data, keeping branch logic testable and vetoable at the application layer. Start/complete pages are not built in; implement draft persistence yourself via `current` + `getValues()`.
 
 ## Basic usage
 
@@ -72,6 +72,28 @@ Before any jump (buttons / header clicks / `next()` / `prev()` / `goto()` / skip
     <oas-form slot="step-2"><p style="margin: 0">Confirm page (blocked by the host in this demo)</p></oas-form>
   </oas-questionnaire>
   <span id="q-veto-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## Conditional branching (skip by answer)
+
+Conditional branching uses the **host composition channel** — no built-in predicate engine: listen for `oas-values-change` to read the answer, then rewrite `steps` to flip the `hidden` bit. Hidden steps leave the header and progress, `next()` skips them automatically, and their values drop out of the values/validation scope. If the flipped step is the one the user is on, the component aligns `current` to the nearest visible step and emits `oas-change` (no manual jump needed). Keeping branch logic in the host means: testable rules, an extra veto point in `oas-before-change`, and no expression language re-invented inside the component.
+
+<DemoBlock title="Hide/restore steps by answer">
+  <oas-questionnaire id="q-cond" style="width: 100%; max-width: 520px" steps='[{"key":"need","title":"Invoicing"},{"key":"invoice","title":"Invoice details"},{"key":"done","title":"Confirm"}]'>
+    <oas-form slot="step-need" initial-values='{"need":"yes"}'>
+      <oas-radio-group name="need">
+        <oas-radio value="yes">Invoice needed</oas-radio>
+        <oas-radio value="no">No invoice</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-invoice" rules='{"title":[{"required":true,"message":"Invoice title is required"}]}'>
+      <oas-input name="title" placeholder="Invoice title (required)" style="width: 240px"></oas-input>
+    </oas-form>
+    <oas-form slot="step-done">
+      <p style="color: var(--oas-color-text-secondary); margin: 0">Final step.</p>
+    </oas-form>
+  </oas-questionnaire>
+  <span id="q-cond-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## Controlled current & methods
@@ -226,6 +248,25 @@ onMounted(() => {
       e.preventDefault()
       vetoOut.textContent = 'Host vetoed: reach the confirm page through the full flow (or branch here)'
     }
+  })
+
+  // Conditional branching: flip hidden by answer (host composition channel, no built-in predicate engine)
+  const cond = document.getElementById('q-cond')
+  const condOut = document.getElementById('q-cond-output')
+  const condSteps = (invoiceHidden) =>
+    JSON.stringify([
+      { key: 'need', title: 'Invoicing' },
+      { key: 'invoice', title: 'Invoice details', hidden: invoiceHidden },
+      { key: 'done', title: 'Confirm' },
+    ])
+  cond?.addEventListener('oas-values-change', (e) => {
+    const need = e.detail?.values?.need
+    if (need !== 'yes' && need !== 'no') return
+    const hide = need === 'no'
+    cond.setAttribute('steps', condSteps(hide))
+    condOut.textContent = hide
+      ? 'The "Invoice details" step is hidden: "Next" will skip it; switch back to "Invoice needed" to restore'
+      : 'The "Invoice details" step is visible again'
   })
 
   // Controlled & methods
