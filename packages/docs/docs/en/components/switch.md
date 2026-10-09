@@ -69,6 +69,7 @@ Hit-area note: the host shrinks to the actual control width (`width: fit-content
 <DemoBlock title="Custom color">
   <oas-switch checked color="#16a34a"></oas-switch>
   <oas-switch checked color="#dc2626" checked-text="Danger on" unchecked-text="Danger off"></oas-switch>
+  <oas-switch id="sw-color-named" checked color="gold" aria-label="Named color gold"></oas-switch>
 </DemoBlock>
 
 ## Thumb Icons

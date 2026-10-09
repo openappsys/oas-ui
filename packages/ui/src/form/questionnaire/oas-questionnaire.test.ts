@@ -351,6 +351,37 @@ describe('OASQuestionnaire', () => {
     expect(el.getValues()).toEqual({ name: '', phone: '139' })
   })
 
+  it('断开重连再断开：oas-values-change 监听被摘除（cleanup 对称回归）', async () => {
+    // 该监听为内部私有 handler，行为不可经 getValues 观测（真表单走 live 值）——改用原型 spy
+    // 建模「同引用监听是否仍挂着」（addEventListener 同引用去重）：
+    const proto = Object.getPrototypeOf(document.createElement('oas-form'))
+    const origAdd = proto.addEventListener
+    const origRemove = proto.removeEventListener
+    let attached = false
+    proto.addEventListener = function (this: Element, type: string, ...rest: unknown[]) {
+      if (type === 'oas-values-change') attached = true
+      return (origAdd as (...a: unknown[]) => void).apply(this, [type, ...rest])
+    }
+    proto.removeEventListener = function (this: Element, type: string, ...rest: unknown[]) {
+      if (type === 'oas-values-change') attached = false
+      return (origRemove as (...a: unknown[]) => void).apply(this, [type, ...rest])
+    }
+    try {
+      const el = mount({ panels: [formPanel('step-basic', 'name', { rules: false })] })
+      await new Promise((r) => setTimeout(r, 0))
+      el.remove()
+      await new Promise((r) => setTimeout(r, 0))
+      document.body.appendChild(el)
+      await new Promise((r) => setTimeout(r, 0))
+      el.remove()
+      await new Promise((r) => setTimeout(r, 0))
+      expect(attached, '第二次断开后 value 监听应已摘除').toBe(false)
+    } finally {
+      proto.addEventListener = origAdd
+      proto.removeEventListener = origRemove
+    }
+  })
+
   it('reset()：回步 0、内层 form 重置回初始值、清错误态、不派发任何事件', async () => {
     const el = mount({
       panels: [formPanel('step-basic', 'name', { initial: '张三' }), formPanel('step-1', 'phone')],

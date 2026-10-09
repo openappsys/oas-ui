@@ -69,6 +69,7 @@
 <DemoBlock title="自定义颜色">
   <oas-switch checked color="#16a34a"></oas-switch>
   <oas-switch checked color="#dc2626" checked-text="危险开" unchecked-text="危险关"></oas-switch>
+  <oas-switch id="sw-color-named" checked color="gold" aria-label="命名色 gold"></oas-switch>
 </DemoBlock>
 
 ## 滑块图标

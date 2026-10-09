@@ -76,3 +76,17 @@ test('switch 卡片形态：点卡片任意区域切换、demo 反馈文本联�
     await page.evaluate(() => document.querySelector('oas-switch[variant="card"][disabled]')!.hasAttribute('checked')),
   ).toBe(true)
 })
+
+// 命名色探针路径：任意 CSS 色值（含色名）应经探针按亮度取 on 色（非仅 hex/rgb 快路径）
+test('switch 命名色 color：亮命名色解析出深色 on 色（探针路径，回归）', async ({ page }) => {
+  await page.goto('/components/switch.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sw-color-named')
+  const onColor = await page.evaluate(() => {
+    const btn = document
+      .querySelector('#sw-color-named')!
+      .shadowRoot!.querySelector('button[part="switch"]') as HTMLElement
+    return btn.style.getPropertyValue('--oas-switch-on-color').trim()
+  })
+  // gold(#ffd700) 为亮命名色 → 深色 on 色；探针未生效则会为空（回落 bg token）
+  expect(onColor, '亮命名色应经探针解析出深色 on 色 #18181b').toBe('#18181b')
+})
