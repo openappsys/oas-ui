@@ -168,7 +168,6 @@
   <div style="display: flex; flex-direction: column; gap: 16px; width: 360px;">
     <oas-slider thumb="round" value="40"></oas-slider>
     <oas-slider thumb="pointer" value="60"></oas-slider>
-    <oas-slider thumb="pointer" vertical show-tooltip value="30" style="--oas-slider-height: 180px"></oas-slider>
   </div>
 </DemoBlock>
 
@@ -228,7 +227,7 @@
   </div>
 </DemoBlock>
 
-`vertical` 切换为垂直滑块（最小值在下、`reverse` 镜像到上）：刻度标签移到轨道右侧、值气泡默认朝右、`show-input` 输入框移到轨道下方。高度默认 200px，通过 CSS 变量 `--oas-slider-height` 调整。
+`vertical` 切换为垂直滑块（最小值在下、`reverse` 镜像到上）：刻度标签移到轨道右侧、值气泡默认朝右、`show-input` 输入框移到轨道下方。高度默认 200px，通过 CSS 变量 `--oas-slider-height` 调整。把手形态由 `thumb` 控制（`pointer` 细指针 / `round` 圆推子，见「滑块形态」）。
 
 ## 反向
 

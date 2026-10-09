@@ -168,7 +168,6 @@ Visibility: shown while dragging or when keyboard-focused by default; `tooltip-a
   <div style="display: flex; flex-direction: column; gap: 16px; width: 360px;">
     <oas-slider thumb="round" value="40"></oas-slider>
     <oas-slider thumb="pointer" value="60"></oas-slider>
-    <oas-slider thumb="pointer" vertical show-tooltip value="30" style="--oas-slider-height: 180px"></oas-slider>
   </div>
 </DemoBlock>
 
@@ -228,7 +227,7 @@ The gradient direction is axis- and direction-aware: left-to-right horizontally,
   </div>
 </DemoBlock>
 
-`vertical` switches to a vertical slider (minimum at the bottom; `reverse` mirrors to the top): mark labels move to the right of the track, the value bubble faces right by default, and `show-input` inputs move below the track. Height defaults to 200px, adjustable via the `--oas-slider-height` CSS variable.
+`vertical` switches to a vertical slider (minimum at the bottom; `reverse` mirrors to the top): mark labels move to the right of the track, the value bubble faces right by default, and `show-input` inputs move below the track. Height defaults to 200px, adjustable via the `--oas-slider-height` CSS variable. The handle shape is controlled by `thumb` (`pointer` thin pointer / `round` circular thumb, see Thumb Shape).
 
 ## Reverse
 
