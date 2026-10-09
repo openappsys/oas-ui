@@ -6,6 +6,9 @@ const HIDE_DELAY = 800
 /** 贴底容差（px）：剩余滚动距离小于等于该值判定用户停靠在底部 */
 const STICK_THRESHOLD = 8
 
+/** 滚动条显示模式（`type` 属性）：`auto` 滚动/悬停显示后延时隐藏、`always` 溢出常显、`scroll` 仅滚动时显示、`hover` 仅悬停时显示 */
+export type ScrollAreaType = 'auto' | 'always' | 'scroll' | 'hover'
+
 const STYLE = `
 :host {
   display: block;
@@ -30,7 +33,7 @@ const STYLE = `
 .viewport::-webkit-scrollbar {
   display: none; /* Chromium/Safari：隐藏原生滚动条 */
 }
-/* 自定义滚动条：细条 + hover 变粗；auto-hide 时仅在滚动/悬停显示 */
+/* 自定义滚动条：细条 + hover 变粗；auto/scroll/hover 模式下按各自时机显示 */
 .track {
   position: absolute;
   border-radius: var(--oas-radius-sm);
@@ -115,7 +118,13 @@ const STYLE = `
  *
  * 属性（kebab-case）：
  * - `height`/`width`：视口固定尺寸（px），不设置时随内容自然撑开
- * - `auto-hide`：滚动条仅在滚动/悬停时显示，超时自动隐藏
+ * - `type`：滚动条显示模式 `auto|always|scroll|hover`（默认 `always`，溢出时常显）
+ *   - `auto`：滚动/悬停时显示，停止后延时自动隐藏
+ *   - `always`：溢出时常显（默认）
+ *   - `scroll`：仅滚动时显示，停止后延时隐藏
+ *   - `hover`：悬停区域时显示，离开立即隐藏
+ * - `auto-hide`：旧布尔用法，向后兼容——无 `type` 时等价 `type="auto"`；
+ *   `type` 在场时以 `type` 为准（非法值回退 `always`）
  * - `scroll-shadow`：滚动边缘阴影（CSS-only，同 modal），滚动到边缘时阴影渐隐提示
  * - `stick-to-bottom`：新内容追加时若当前停靠在底部（距底 ≤8px）自动滚到底，上翻阅读不打断
  * - `end-distance`：`oas-end-reached` 触发距离（px，默认 0）——距底/右边缘 N px 内即算到底
@@ -137,7 +146,7 @@ const STYLE = `
  */
 export class OASScrollArea extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['height', 'width', 'auto-hide', 'scroll-shadow', 'stick-to-bottom', 'end-distance']
+    return ['height', 'width', 'type', 'auto-hide', 'scroll-shadow', 'stick-to-bottom', 'end-distance']
   }
 
   private viewport: HTMLElement | null = null
@@ -160,6 +169,8 @@ export class OASScrollArea extends OASElement {
   private stickObserver: MutationObserver | null = null
   /** end-reached 是否已派发（去抖：需先离开底部区域才可再次触发） */
   private endReachedFired = false
+  /** 当前生效的显示模式（type 切换检测用：切换时清掉旧模式的瞬态显示态） */
+  private activeType: ScrollAreaType | null = null
 
   private template(): string {
     return `
@@ -189,8 +200,8 @@ export class OASScrollArea extends OASElement {
     this.viewport?.addEventListener('scroll', this.handleScrollEvt, { passive: true })
     // 滚轮接管：仅横向可滚时把纵向滚轮增量转译到横向（见 handleWheelEvt）
     this.viewport?.addEventListener('wheel', this.handleWheelEvt, { passive: false })
-    wrap?.addEventListener('pointerenter', this.peek)
-    wrap?.addEventListener('pointerleave', this.scheduleHide)
+    wrap?.addEventListener('pointerenter', this.handlePointerEnter)
+    wrap?.addEventListener('pointerleave', this.handlePointerLeave)
     this.vThumb?.addEventListener('pointerdown', (e: PointerEvent) => this.startThumbDrag('v', e))
     this.hThumb?.addEventListener('pointerdown', (e: PointerEvent) => this.startThumbDrag('h', e))
     this.onCleanup(() => {
@@ -264,8 +275,18 @@ export class OASScrollArea extends OASElement {
     this.onCleanup(() => cancelAnimationFrame(raf))
   }
 
-  private autoHide(): boolean {
-    return this.hasAttr('auto-hide')
+  /**
+   * 生效的滚动条显示模式：`type` 属性合法值优先；无 `type` 时旧 `auto-hide`
+   * 布尔等价 `auto`（向后兼容）；两者皆无或 `type` 非法回退默认 `always`（默认值不变）。
+   */
+  private scrollbarType(): ScrollAreaType {
+    if (!this.hasAttr('type')) {
+      return this.hasAttr('auto-hide') ? 'auto' : 'always'
+    }
+    const raw = (this.getAttr('type', 'always') as ScrollAreaType).trim().toLowerCase()
+    return raw === 'auto' || raw === 'always' || raw === 'scroll' || raw === 'hover'
+      ? (raw as ScrollAreaType)
+      : 'always'
   }
 
   private px(attr: string): string {
@@ -314,28 +335,73 @@ export class OASScrollArea extends OASElement {
       this.hThumb.style.transform = `translateX(${left}px)`
     }
 
-    // 非 auto-hide：溢出时滚动条常显（内容收缩回未溢出时清理）
-    if (!this.autoHide()) {
+    // 显示模式切换（含首次置位）：清掉旧模式的瞬态显示态与未触发的隐藏计时，
+    // 新模式由各自路径（溢出同步/滚动/悬停）按需重建
+    const t = this.scrollbarType()
+    if (t !== this.activeType) {
+      this.activeType = t
+      this.hideNow()
+    }
+
+    // always：溢出时滚动条常显（内容收缩回未溢出时清理）；
+    // 事件驱动型（auto/scroll/hover）的显示态由对应路径控制，不在此处理
+    if (t === 'always') {
       this.vTrack?.classList.toggle('peek', vOverflow)
       this.hTrack?.classList.toggle('peek', hOverflow)
     }
   }
 
-  private peek = (): void => {
-    if (!this.autoHide()) return
+  /** 显示两条轨道（滚动条可见态） */
+  private showPeek(): void {
     this.vTrack?.classList.add('peek')
     this.hTrack?.classList.add('peek')
+  }
+
+  /** 立即隐藏滚动条并取消未触发的隐藏计时 */
+  private hideNow(): void {
+    if (this.hideTimer) {
+      window.clearTimeout(this.hideTimer)
+      this.hideTimer = 0
+    }
+    this.vTrack?.classList.remove('peek')
+    this.hTrack?.classList.remove('peek')
+  }
+
+  /** 指针进入：auto/scroll 显示并进入延时隐藏；hover 显示并保持至离开；always 忽略 */
+  private handlePointerEnter = (): void => {
+    const t = this.scrollbarType()
+    if (t !== 'auto' && t !== 'hover') return
+    this.showPeek()
+    if (t === 'auto') this.scheduleHide()
+  }
+
+  /** 指针离开：hover 立即隐藏；auto 走延时隐藏；scroll 不受悬停影响 */
+  private handlePointerLeave = (): void => {
+    const t = this.scrollbarType()
+    if (t === 'hover') {
+      if (this.dragState) return
+      this.hideNow()
+      return
+    }
+    if (t === 'auto') this.scheduleHide()
+  }
+
+  /** 滚动时的滚动条显示：auto/scroll 显示并延时隐藏；always 常显无需处理；hover 不因滚动显示 */
+  private peekOnScroll = (): void => {
+    const t = this.scrollbarType()
+    if (t !== 'auto' && t !== 'scroll') return
+    this.showPeek()
     this.scheduleHide()
   }
 
   private scheduleHide = (): void => {
-    if (!this.autoHide()) return
+    const t = this.scrollbarType()
+    if (t !== 'auto' && t !== 'scroll') return
     if (this.dragState) return
     if (this.hideTimer) window.clearTimeout(this.hideTimer)
     this.hideTimer = window.setTimeout(() => {
       this.hideTimer = 0
-      this.vTrack?.classList.remove('peek')
-      this.hTrack?.classList.remove('peek')
+      this.hideNow()
     }, HIDE_DELAY)
   }
 
@@ -346,7 +412,7 @@ export class OASScrollArea extends OASElement {
     this.raf = requestAnimationFrame(() => {
       this.raf = 0
       this.syncThumbs()
-      this.peek()
+      this.peekOnScroll()
       this.checkEndReached()
       const vp = this.viewport
       this.emit('scroll', {

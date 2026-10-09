@@ -171,6 +171,127 @@ describe('OASScrollArea', () => {
     expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
   })
 
+  describe('type 显示模式枚举（auto/always/scroll/hover）', () => {
+    it('type="always"：显式设置时溢出常显（默认语义）', async () => {
+      const el = mount({ type: 'always' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      scrollTo(el, 0, 0)
+      await flushRaf()
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+    })
+
+    it('type="auto"：滚动显示、停止后延时隐藏、悬停显示（与 auto-hide 同语义）', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      try {
+        const el = mount({ type: 'auto' })
+        const vp = viewport(el)
+        mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+        const wrap = el.shadowRoot!.querySelector<HTMLElement>('.scroll-area')!
+        scrollTo(el, 0, 30)
+        await flushRaf()
+        expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+        vi.advanceTimersByTime(900)
+        expect(track(el, 'track-v').classList.contains('peek')).toBe(false)
+        wrap.dispatchEvent(new PointerEvent('pointerenter'))
+        expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('type="scroll"：仅滚动时显示（悬停不显示），停止后延时隐藏', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      try {
+        const el = mount({ type: 'scroll' })
+        const vp = viewport(el)
+        mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+        const wrap = el.shadowRoot!.querySelector<HTMLElement>('.scroll-area')!
+        // 悬停不显示
+        wrap.dispatchEvent(new PointerEvent('pointerenter'))
+        expect(track(el, 'track-v').classList.contains('peek')).toBe(false)
+        // 滚动显示
+        scrollTo(el, 0, 30)
+        await flushRaf()
+        expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+        // 停止后延时隐藏
+        vi.advanceTimersByTime(900)
+        expect(track(el, 'track-v').classList.contains('peek')).toBe(false)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('type="hover"：悬停显示、离开立即隐藏；滚动不显示', async () => {
+      const el = mount({ type: 'hover' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      const wrap = el.shadowRoot!.querySelector<HTMLElement>('.scroll-area')!
+      // 滚动不显示
+      scrollTo(el, 0, 30)
+      await flushRaf()
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(false)
+      // 悬停显示
+      wrap.dispatchEvent(new PointerEvent('pointerenter'))
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+      // 离开立即隐藏（无需等延时）
+      wrap.dispatchEvent(new PointerEvent('pointerleave'))
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(false)
+    })
+
+    it('type 非法值回退默认 always（溢出常显）', async () => {
+      const el = mount({ type: 'bogus' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      scrollTo(el, 0, 0)
+      await flushRaf()
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+    })
+
+    it('type 在场时优先于 auto-hide（type="always" + auto-hide → 常显）', async () => {
+      const el = mount({ type: 'always', 'auto-hide': '' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      scrollTo(el, 0, 0)
+      await flushRaf()
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+      // 悬停也不影响常显
+      const wrap = el.shadowRoot!.querySelector<HTMLElement>('.scroll-area')!
+      wrap.dispatchEvent(new PointerEvent('pointerleave'))
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+    })
+
+    it('type 动态切换：always→scroll 清掉瞬态常显；scroll→always 恢复溢出常显', async () => {
+      const el = mount({ type: 'always' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      scrollTo(el, 0, 0)
+      await flushRaf()
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+      // 切到 scroll：瞬态常显被清掉
+      el.setAttribute('type', 'scroll')
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(false)
+      // scroll 模式滚动后显示
+      scrollTo(el, 0, 30)
+      await flushRaf()
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+      // 切回 always：溢出同步重建常显
+      el.setAttribute('type', 'always')
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+    })
+
+    it('兼容映射切换：auto-hide 在场时补写 type，type 立即接管（auto→always 常显）', () => {
+      const el = mount({ 'auto-hide': '' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      // 补写 type 前：auto-hide 生效（等价 auto），不常显
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(false)
+      // 补写 type="always" 后：type 优先接管，溢出常显
+      el.setAttribute('type', 'always')
+      expect(track(el, 'track-v').classList.contains('peek')).toBe(true)
+    })
+  })
+
   it('断开连接后重新连接仍可正常渲染', () => {
     const el = mount({ height: '200' })
     el.remove()

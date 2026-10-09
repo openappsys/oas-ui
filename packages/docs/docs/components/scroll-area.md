@@ -1,6 +1,6 @@
 # ScrollArea 滚动区域
 
-包裹内容并接管滚动条外观的容器：细条自定义滚动条、hover 变粗，`auto-hide` 时仅在滚动/悬停时显示，滚动事件节流派发。
+包裹内容并接管滚动条外观的容器：细条自定义滚动条、hover 变粗，`type` 控制滚动条显示时机（auto / always / scroll / hover），滚动事件节流派发。
 
 ## 基础用法
 
@@ -40,18 +40,42 @@
   </oas-scroll-area>
 </DemoBlock>
 
-## auto-hide
+## 显示模式（type）
 
-`auto-hide` 时滚动条平时隐藏，滚动或悬停视口时显示，停止后自动淡出。
+`type` 控制滚动条显示时机，四档：`always`（默认，溢出时常显，见基础用法）、`auto`（滚动/悬停时显示，停止后自动淡出）、`scroll`（仅滚动时显示，悬停不出）、`hover`（悬停时显示，离开立即隐藏）。旧 `auto-hide` 布尔属性向后兼容，等价 `type="auto"`；`type` 在场时以 `type` 为准，非法值回退 `always`。
 
-<DemoBlock title="auto-hide">
-  <oas-scroll-area auto-hide height="160" style="width: 320px">
+<DemoBlock title="type=auto（等价旧 auto-hide）">
+  <oas-scroll-area type="auto" height="160" style="width: 320px">
     <div style="padding: var(--oas-space-2)">
       <p style="margin: var(--oas-space-2) 0">滚动我看看滚动条：平时隐藏，滚动时出现</p>
       <p style="margin: var(--oas-space-2) 0">停下来等一秒，滚动条自动淡出</p>
       <p style="margin: var(--oas-space-2) 0">悬停在区域内也会临时显示</p>
+      <p style="margin: var(--oas-space-2) 0">旧写法 auto-hide 与 type="auto" 完全等价</p>
       <p style="margin: var(--oas-space-2) 0">适合不希望滚动条干扰阅读的界面</p>
-      <p style="margin: var(--oas-space-2) 0">移动端卡片列表场景推荐使用</p>
+    </div>
+  </oas-scroll-area>
+</DemoBlock>
+
+<DemoBlock title="type=scroll（仅滚动时显示）">
+  <oas-scroll-area type="scroll" height="160" style="width: 320px">
+    <div style="padding: var(--oas-space-2)">
+      <p style="margin: var(--oas-space-2) 0">滚动时滚动条出现，停止后自动淡出</p>
+      <p style="margin: var(--oas-space-2) 0">与 auto 的区别：悬停不显示滚动条</p>
+      <p style="margin: var(--oas-space-2) 0">适合阅读类界面：滚动时有位置反馈</p>
+      <p style="margin: var(--oas-space-2) 0">静止阅读时不被滚动条占据注意力</p>
+      <p style="margin: var(--oas-space-2) 0">移动端长文阅读场景推荐</p>
+    </div>
+  </oas-scroll-area>
+</DemoBlock>
+
+<DemoBlock title="type=hover（悬停时显示）">
+  <oas-scroll-area type="hover" height="160" style="width: 320px">
+    <div style="padding: var(--oas-space-2)">
+      <p style="margin: var(--oas-space-2) 0">鼠标悬停在区域内即显示滚动条</p>
+      <p style="margin: var(--oas-space-2) 0">移开后立即隐藏（带淡出过渡）</p>
+      <p style="margin: var(--oas-space-2) 0">与 auto 的区别：不滚动只悬停也会显示</p>
+      <p style="margin: var(--oas-space-2) 0">适合需要随时观察滚动位置的场景</p>
+      <p style="margin: var(--oas-space-2) 0">桌面端鼠标交互友好</p>
     </div>
   </oas-scroll-area>
 </DemoBlock>
@@ -248,11 +272,12 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `auto-hide` | 滚动条仅在滚动/悬停时显示，超时自动隐藏 | `boolean` | — |
+| `auto-hide` | 旧布尔用法：滚动条仅在滚动/悬停时显示，超时自动隐藏——无 `type` 时等价 `type="auto"`；`type` 在场时以 `type` 为准 | `boolean` | — |
 | `end-distance` | `oas-end-reached` 触发距离（px，默认 `0`）：距底/右边缘 N px 内即算到底 | `string` | `0` |
 | `height` | 视口高度（px），不设置时随内容自然撑开 | — | — |
 | `scroll-shadow` | 滚动边缘阴影（CSS-only）：滚动到边缘时阴影渐隐提示还有内容 | — | — |
 | `stick-to-bottom` | 贴底：新内容追加时若当前停靠在底部（距底 ≤8px）自动滚到底，上翻阅读时不打断 | `boolean` | — |
+| `type` | 滚动条显示模式（`auto \| always \| scroll \| hover`，默认 `always`）：`auto` 滚动/悬停显示后延时隐藏；`always` 溢出常显；`scroll` 仅滚动时显示；`hover` 仅悬停时显示。非法值回退 `always` | `ScrollAreaType` | `always` |
 | `width` | 视口宽度（px），不设置时铺满宿主宽度 | — | — |
 
 #### 事件
