@@ -48,6 +48,21 @@
 
 `slot="icon"` 放装饰图标（包裹层 `aria-hidden`，内容承载语义）。流式/进度状态由宿主直接写 `role="status"`（浏览器原生 ARIA 反射，AT 播报状态变化）——组件不重复转发。
 
+## 语义状态（status）与流式微光（shimmer）
+
+<DemoBlock title="info / success / warning / danger + shimmer">
+  <div style="width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: var(--oas-space-4)">
+    <oas-marker status="info" variant="border">已连接服务器</oas-marker>
+    <oas-marker status="success" variant="border">同步完成（12 项）</oas-marker>
+    <oas-marker status="warning" variant="border">存储空间不足 10%</oas-marker>
+    <oas-marker status="danger" variant="border">连接已断开</oas-marker>
+    <oas-marker status="info" variant="separator">今天 10:00</oas-marker>
+    <oas-marker status="success" shimmer>正在生成回答…（shimmer 流式微光）</oas-marker>
+  </div>
+</DemoBlock>
+
+`status`（`info` / `success` / `warning` / `danger`）是语义状态档：文字、描边（border）与分隔线（separator）取语义色 token，暗色下自动适配。`shimmer` 布尔在场开启流式微光（文本渐变扫过，只动背景位置不改尺寸；`prefers-reduced-motion` 降级为静态文字）。`status` 只改视觉语义，**不改 ARIA role**——流式播报仍由宿主声明 `role="status"`。
+
 ## 空态
 
 <DemoBlock title="空内容">
@@ -68,6 +83,8 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `shimmer` | 布尔在场：流式微光（文本渐变扫过；prefers-reduced-motion 降级为静态文字） | — | — |
+| `status` | 语义状态档：info / success / warning / danger——文字、描边与分隔线取语义色 token（暗色自动适配；不改 ARIA role，流式播报仍由宿主声明） | — | — |
 | `variant` | 变体：default（小号次级文字，默认）/ border（描边胶囊行）/ separator（两侧伸缩线 + 中间文字，时间戳分隔主形态）；空内容时 default/border 整件隐藏、separator 保留分隔线本体 | — | — |
 
 #### 插槽
@@ -82,5 +99,7 @@
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-marker-font` | `inherit` |
+| `--oas-marker-shimmer-from` | `var(--oas-color-text-secondary)` |
+| `--oas-marker-shimmer-to` | `var(--oas-color-text-primary)` |
 
 CSS 变量：`--oas-marker-font`（字号开口，默认 `inherit`）。部件：`::part(marker)` / `::part(icon)` / `::part(content)`。a11y 纪律：带文字分隔线不得加 `role="separator"`（其可读名来自 aria-label、文字被视为装饰）。

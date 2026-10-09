@@ -429,9 +429,11 @@ export const ja: LocaleMessages = {
 
   // conversation（チャットファミリー）
   'bubble.loading': '入力中…',
+  'bubble.reactions': 'リアクション',
   'attachment.remove': '{name} を削除',
   'attachment.download': '{name} をダウンロード',
   'attachment.error': 'アップロード失敗',
+  'attachment.group': '添付ファイル',
   'messageScroller.label': 'メッセージ',
   'messageScroller.scrollToBottom': '最下部へスクロール',
   'messageRow.status.sending': '送信中',

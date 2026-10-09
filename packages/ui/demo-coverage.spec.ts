@@ -630,6 +630,13 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-attachment[downloadable] [part="download"]', 'domclick', '点下载钮 → oas-download'],
     ['oas-attachment[href] [part="trigger"]', 'domclick', 'DOM click 整卡触发（真实点击会 # 导航抖动）→ oas-open'],
   ],
+  bubble: [
+    [
+      'oas-bubble[reactions] [part="reactions"] button.reaction',
+      'click',
+      '点表情回应按钮 → oas-reaction（真按钮，选中态 aria-pressed）',
+    ],
+  ],
   'message-scroller': [
     [
       'oas-message-scroller',

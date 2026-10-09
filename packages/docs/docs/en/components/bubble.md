@@ -60,8 +60,26 @@ onMounted(async () => {
     bubble?.setAttribute('loading', '')
     window.setTimeout(() => bubble?.removeAttribute('loading'), 2400)
   })
+  const reactionsBubble = document.querySelector('#bubble-reactions-demo')
+  const reactionsOut = document.querySelector('#bubble-reactions-out')
+  reactionsBubble?.addEventListener('oas-reaction', (e) => {
+    const d = e.detail
+    if (reactionsOut) reactionsOut.textContent = `oas-reaction: ${d.emoji} (count=${d.count}, active=${d.active}, index=${d.index})`
+  })
 })
 </script>
+
+## Reactions (reactions)
+
+<DemoBlock title="Emoji + count (side / align)">
+  <div style="width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: var(--oas-space-4)">
+    <oas-bubble id="bubble-reactions-demo" reactions='[{"emoji":"👍","count":3,"active":true},{"emoji":"🎉","count":1}]'>I support this plan; let's align on the details.</oas-bubble>
+    <oas-bubble align="end" variant="secondary" reactions-side="top" reactions-align="end" reactions='[{"emoji":"❤️","count":2}]'>I've confirmed the plan above.</oas-bubble>
+  </div>
+  <p id="bubble-reactions-out" style="margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Click a reaction button; the received oas-reaction shows here.</p>
+</DemoBlock>
+
+`reactions` is a JSON array (each item `{ emoji, count?, active?, label? }`, emoji required; an empty array/invalid JSON renders nothing). `reactions-side` controls top/bottom (default `bottom`; `top` places it above the bubble) and `reactions-align` overrides horizontal alignment (defaults to following the bubble `align`). Each reaction is a **real button** (keyboard reachable + focus ring + `aria-pressed` reflecting the active state): clicking it dispatches `oas-reaction` (detail `{ emoji, count, active, index }`) — reaction data stays owned by the host, the component only dispatches intent.
 
 ## Accessibility
 
@@ -78,6 +96,15 @@ onMounted(async () => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `loading` | Typing state (boolean presence): content switches to a three-dot typing indicator and the host reflects aria-busy (the AI "typing" scenario) | `boolean` | — |
+| `reactions` | Reaction bar as a JSON array; each item { emoji, count?, active?, label? } (emoji required). Empty array / invalid JSON renders nothing | — | — |
+| `reactions-align` | Horizontal alignment of the reaction bar: start / end; defaults to following the bubble align | — | — |
+| `reactions-side` | Vertical placement of the reaction bar: bottom (default, below the bubble) / top (above the bubble) | — | — |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-reaction` | Fired when a reaction is clicked; detail { emoji, count, active, index } (reaction data stays owned by the host) |
 
 #### Slots
 

@@ -853,4 +853,94 @@ describe('OASMessageScroller B 批', () => {
     expect(OASMessageScroller.observedAttributes).toContain('turn-anchor')
     expect(OASMessageScroller.observedAttributes).toContain('prev-peek')
   })
+
+  // ---------- 可见性通道（visibleMessageIds / currentAnchorId / oas-visible-change） ----------
+
+  const rectH = (top: number, height: number): DOMRect =>
+    ({
+      top,
+      bottom: top + height,
+      left: 0,
+      right: 0,
+      width: 0,
+      height,
+      x: 0,
+      y: top,
+      toJSON: () => {},
+    }) as unknown as DOMRect
+
+  /** 桩化可见性几何：viewport 顶为 0，行盒按内容坐标 y + 高度 h 随 scrollTop 平移 */
+  function stubVisible(el: OASMessageScroller, rows: Array<{ y: number; h: number }>): void {
+    const vp = viewportOf(el)
+    vp.getBoundingClientRect = () => makeRect(0)
+    el.shadowRoot!.querySelector('[part="content"]')!.getBoundingClientRect = () => makeRect(-vp.scrollTop)
+    rows.forEach((r, i) => {
+      el.children[i]!.getBoundingClientRect = () => rectH(r.y - vp.scrollTop, r.h)
+    })
+  }
+
+  it('visibleMessageIds / currentAnchorId getter：按需计算（无需 track-visible）', () => {
+    const el = mount('<p message-id="m1" anchor>q</p><p message-id="m2">a</p><p message-id="m3">b</p>')
+    stubScroll(el, { scrollHeight: 1000, clientHeight: 100 })
+    stubVisible(el, [
+      { y: 0, h: 40 },
+      { y: 60, h: 40 },
+      { y: 120, h: 40 },
+    ])
+    // 视口 0–100：m1(0–40)、m2(60–100) 相交；m3(120) 不在
+    expect(el.visibleMessageIds).toEqual(['m1', 'm2'])
+    // 当前锚点 = 最后一个 top ≤ 8 的 anchor 行
+    expect(el.currentAnchorId).toBe('m1')
+  })
+
+  it('currentAnchorId：随滚动跟随最后一个视口顶附近的 anchor 行（轮次跟踪）', () => {
+    const el = mount('<p message-id="a1" anchor>q1</p><p message-id="a2" anchor>q2</p><p message-id="a3">a</p>')
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 100 })
+    stubVisible(el, [
+      { y: 0, h: 40 },
+      { y: 50, h: 40 },
+      { y: 100, h: 40 },
+    ])
+    expect(el.currentAnchorId, 'a1 顶在视口顶（a2 在 50px，超出阈值）').toBe('a1')
+    vp.scrollTop = 55 // a2 顶=-5 ≤ 8 → 当前锚点前移
+    expect(el.currentAnchorId).toBe('a2')
+  })
+
+  it('track-visible：可见集变化时派发 oas-visible-change（detail 含 visibleMessageIds/currentAnchorId）', async () => {
+    const el = mount('<p message-id="m1" anchor>q</p><p message-id="m2">a</p>', {
+      'track-visible': '',
+      'default-position': 'start',
+    })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 100 })
+    stubVisible(el, [
+      { y: 0, h: 40 },
+      { y: 60, h: 40 },
+    ])
+    await raf()
+    const seen: Array<Record<string, unknown>> = []
+    el.addEventListener('oas-visible-change', (e) => seen.push((e as CustomEvent).detail))
+    vp.scrollTop = 50
+    vp.dispatchEvent(new Event('scroll'))
+    expect(seen.length).toBeGreaterThanOrEqual(1)
+    expect(seen.at(-1)).toEqual({ visibleMessageIds: ['m2'], currentAnchorId: 'm1' })
+  })
+
+  it('未开启 track-visible 时不派发 oas-visible-change（pay-for-use，零计算）', async () => {
+    const el = mount('<p message-id="m1">q</p><p message-id="m2">a</p>', { 'default-position': 'start' })
+    const vp = stubScroll(el, { scrollHeight: 1000, clientHeight: 100 })
+    stubVisible(el, [
+      { y: 0, h: 40 },
+      { y: 60, h: 40 },
+    ])
+    await raf()
+    let fired = 0
+    el.addEventListener('oas-visible-change', () => fired++)
+    vp.scrollTop = 50
+    vp.dispatchEvent(new Event('scroll'))
+    expect(fired).toBe(0)
+  })
+
+  it('observedAttributes 声明 track-visible', () => {
+    expect(OASMessageScroller.observedAttributes).toContain('track-visible')
+  })
 })

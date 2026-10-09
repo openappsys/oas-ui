@@ -429,9 +429,11 @@ export const de: LocaleMessages = {
 
   // conversation (Chat-Familie)
   'bubble.loading': 'Schreibt…',
+  'bubble.reactions': 'Reaktionen',
   'attachment.remove': '{name} entfernen',
   'attachment.download': '{name} herunterladen',
   'attachment.error': 'Upload fehlgeschlagen',
+  'attachment.group': 'Anhänge',
   'messageScroller.label': 'Nachrichten',
   'messageScroller.scrollToBottom': 'Nach unten scrollen',
   'messageRow.status.sending': 'Wird gesendet',

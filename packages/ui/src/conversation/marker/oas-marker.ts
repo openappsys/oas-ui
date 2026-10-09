@@ -68,6 +68,80 @@ const STYLE = `
   flex: 1;
   justify-content: center;
 }
+/* status 语义档：文字与描边取语义色（暗色 token 自带适配）。
+ * 只改视觉语义，不反射 ARIA 角色——流式/进度播报仍由宿主直接声明。 */
+:host([status="info"]) .marker {
+  color: var(--oas-color-info-text);
+}
+:host([status="success"]) .marker {
+  color: var(--oas-color-success-text);
+}
+:host([status="warning"]) .marker {
+  color: var(--oas-color-warning-text);
+}
+:host([status="danger"]) .marker {
+  color: var(--oas-color-danger-text);
+}
+/* border 变体描边随 status 着色（语义不单靠文字色） */
+:host([status="info"][variant="border"]) .marker {
+  border-color: color-mix(in srgb, var(--oas-color-info-text) 45%, transparent);
+}
+:host([status="success"][variant="border"]) .marker {
+  border-color: color-mix(in srgb, var(--oas-color-success-text) 45%, transparent);
+}
+:host([status="warning"][variant="border"]) .marker {
+  border-color: color-mix(in srgb, var(--oas-color-warning-text) 45%, transparent);
+}
+:host([status="danger"][variant="border"]) .marker {
+  border-color: color-mix(in srgb, var(--oas-color-danger-text) 45%, transparent);
+}
+/* separator 两侧分隔线随 status 着色 */
+:host([status="info"][variant="separator"]) .marker::before,
+:host([status="info"][variant="separator"]) .marker::after {
+  background: color-mix(in srgb, var(--oas-color-info-text) 45%, transparent);
+}
+:host([status="success"][variant="separator"]) .marker::before,
+:host([status="success"][variant="separator"]) .marker::after {
+  background: color-mix(in srgb, var(--oas-color-success-text) 45%, transparent);
+}
+:host([status="warning"][variant="separator"]) .marker::before,
+:host([status="warning"][variant="separator"]) .marker::after {
+  background: color-mix(in srgb, var(--oas-color-warning-text) 45%, transparent);
+}
+:host([status="danger"][variant="separator"]) .marker::before,
+:host([status="danger"][variant="separator"]) .marker::after {
+  background: color-mix(in srgb, var(--oas-color-danger-text) 45%, transparent);
+}
+/* shimmer：流式微光（文本渐变扫过；只动 background-position，不改尺寸/布局） */
+:host([shimmer]) .content {
+  background-image: linear-gradient(
+    90deg,
+    var(--oas-marker-shimmer-from, var(--oas-color-text-secondary)) 0%,
+    var(--oas-marker-shimmer-to, var(--oas-color-text-primary)) 50%,
+    var(--oas-marker-shimmer-from, var(--oas-color-text-secondary)) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: marker-shimmer 1.6s linear infinite;
+}
+@keyframes marker-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+/* reduced-motion：停动画并回落静态文字色（微光去掉，不丢内容） */
+@media (prefers-reduced-motion: reduce) {
+  :host([shimmer]) .content {
+    animation: none;
+    background-image: none;
+    color: inherit;
+  }
+}
 `
 
 /**
@@ -75,6 +149,9 @@ const STYLE = `
  *
  * 属性：
  * - `variant`：`default`（小号次级文字，默认）| `border`（描边胶囊行）| `separator`（两侧线 + 中间文字）
+ * - `status`：`info` | `success` | `warning` | `danger` 语义档——文字/描边/分隔线取语义色
+ *   （全走 token，暗色自动适配；不改 ARIA role，见下）
+ * - `shimmer`：布尔在场——流式微光（文本渐变扫过，`prefers-reduced-motion` 降级为静态文字）
  *
  * role 约定：流式/进度状态由宿主直接写 `role="status"`（浏览器原生 ARIA 反射，
  * 组件不重复转发）；带文字分隔线**不得**加 `role="separator"`（其可读名来自 aria-label、
@@ -89,7 +166,7 @@ const STYLE = `
  */
 export class OASMarker extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['variant']
+    return ['variant', 'status', 'shimmer']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */

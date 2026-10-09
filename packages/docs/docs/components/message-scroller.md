@@ -428,12 +428,63 @@ onMounted(async () => {
           : `锚行位置漂移 ${drift}px（若已上翻接管则属正常）`
     }
   })
+
+  // 可见性通道：带 message-id 的行 + 每轮提问锚点；滚动时输出可见集与当前锚点
+  const visible = document.querySelector('#msc-visible')
+  const visibleOut = document.querySelector('#msc-visible-out')
+  if (visible) {
+    const rounds = [
+      ['第一问：什么是可见性通道？', '回答：组件按视口相交计算可见消息，并在变化时广播。'],
+      ['第二问：currentAnchorId 是什么？', '回答：读者阅读位置所在的轮次锚点（最后 anchor 标记行）。'],
+      ['第三问：会有性能负担吗？', '回答：track-visible 未开启时零计算（pay-for-use）。'],
+    ]
+    let seqV = 0
+    for (const [q, a] of rounds) {
+      const qRow = document.createElement('oas-message-row')
+      qRow.setAttribute('align', 'end')
+      qRow.setAttribute('anchor', '')
+      qRow.setAttribute('message-id', 'vq' + seqV)
+      const qb = document.createElement('oas-bubble')
+      qb.setAttribute('variant', 'secondary')
+      qb.textContent = q
+      qRow.appendChild(qb)
+      visible.appendChild(qRow)
+      const aRow = document.createElement('oas-message-row')
+      aRow.setAttribute('message-id', 'va' + seqV)
+      const ab = document.createElement('oas-bubble')
+      ab.textContent = a
+      aRow.appendChild(ab)
+      visible.appendChild(aRow)
+      seqV++
+    }
+    visible.addEventListener('oas-visible-change', (e) => {
+      const d = e.detail
+      if (visibleOut)
+        visibleOut.textContent = `oas-visible-change → 可见：${d.visibleMessageIds.join(', ') || '（无）'}；当前锚点：${d.currentAnchorId ?? '（无）'}`
+    })
+    requestAnimationFrame(() => {
+      const ids = visible.visibleMessageIds ?? []
+      if (visibleOut)
+        visibleOut.textContent = `可见消息：${ids.join(', ') || '（无）'}；当前锚点：${visible.currentAnchorId ?? '（无）'}`
+    })
+  }
 })
 </script>
 
+## 可见性通道（track-visible）
+
+<DemoBlock title="当前可见消息清单 + 当前锚点">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-2)">
+    <oas-message-scroller id="msc-visible" track-visible label="可见性演示" style="height: 220px; width: 100%; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg); padding: var(--oas-space-3); box-sizing: border-box"></oas-message-scroller>
+    <span id="msc-visible-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">滚动容器，这里显示 visibleMessageIds / currentAnchorId。</span>
+  </div>
+</DemoBlock>
+
+`track-visible` 在场开启可见性通道（pay-for-use，未开启零计算）：可见集变化时派发 `oas-visible-change`（detail `{ visibleMessageIds, currentAnchorId }`），并始终提供 `visibleMessageIds` / `currentAnchorId` getter（按需计算）。`visibleMessageIds` 是当前与视口相交的消息 id 清单（未声明 `message-id` 的行不计入）；`currentAnchorId` 是「读者阅读位置所在的轮次」——最后一个视口顶附近的 `anchor` 标记行。供大纲菜单、搜索定位、已读追踪等使用。
+
 ## 边界
 
-- **可见性追踪（哪些消息在视口内）**：判定为 v2 候选（牵出大纲菜单/已读标记等独立语义，pay-for-use）——本组件不提供 `oas-visible-change` / `data-visible`，宿主可用 IntersectionObserver 自行组合。
+- **可见性通道**：`track-visible` 未开启时不计算、不派发（pay-for-use）；开启后按视口相交计算（长会话逐行 rect 的代价由宿主开启该属性时承担）。未声明 `message-id` 的行不进可见集。
 - **虚拟化与渲染降耗**：离屏行跳过渲染（`content-visibility` 等）随虚拟化一起提供（slotted 元素上单独启用会卡占位高度不展开，实测撤回）；数千轮长会话接虚拟列表由宿主组合。
 - **空态**：无消息时容器照常渲染（空 log），宿主放空态插槽内容即可。
 - **prepend 保位边界**：保位锚在读者真实滚动时释放（读者位置优先）；`pin-to-bottom` / 贴底跟随时补偿无意义（钉底后发覆盖）。同帧混合插入的结算依赖插入前首元素仍在 DOM（宿主删除该行时该帧不补偿）。
@@ -456,6 +507,7 @@ onMounted(async () => {
 | `pin-to-bottom` | IM 式始终钉底（布尔在场）：新内容总是滚到底、读者上翻也拉回；与 auto-scroll 同时在场时优先 | `boolean` | — |
 | `preserve-scroll-on-prepend` | 顶部插入历史时补偿 scrollTop 保持阅读位置（缺省开启；显式 ="false" 关闭）——按插入前首节点位移精确结算（同帧 append+prepend 混合只结算顶部插入量），补偿后锁定保位锚：历史内异步资源（图片等）撑高上方内容时按锚点视口位移持续补偿（message-id 优先重查） | — | — |
 | `prev-peek` | 轮次锚定对齐时锚顶上方露出的语境 px（默认 64；非法/负值回退 64） | — | — |
+| `track-visible` | 布尔在场：开启可见性通道（oas-visible-change 事件 + visibleMessageIds / currentAnchorId getter）；未开启零计算（pay-for-use） | `boolean` | — |
 | `turn-anchor` | 轮次锚定（布尔在场）：把一次提问+回答作为锚定单元——锚点贴视口顶时把最后 anchor 标记消息钉在视口顶 prev-peek 处，回答在锚下方流入；读者在底部延续贴底跟随，上翻即静止（绝不逆着读者意图移动） | `boolean` | — |
 
 #### 事件
@@ -463,6 +515,7 @@ onMounted(async () => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-scroll-state` | 滚动位置跨过判定线时派发，detail { atBottom, atTop, canScrollStart, canScrollEnd }；首帧（初始定位后）广播一次初始态——宿主监听晚于 upgrade 也能收到 |
+| `oas-visible-change` | track-visible 开启时可见集变化派发，detail { visibleMessageIds, currentAnchorId }（供大纲/搜索定位等） |
 
 #### 插槽
 

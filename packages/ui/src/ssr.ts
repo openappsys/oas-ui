@@ -211,6 +211,7 @@ export { OASSwipeCell } from './data/swipe-cell/oas-swipe-cell.js'
 // ---------- conversation ----------
 export { OASBubble } from './conversation/bubble/oas-bubble.js'
 export { OASAttachment } from './conversation/attachment/oas-attachment.js'
+export { OASAttachmentGroup } from './conversation/attachment/oas-attachment-group.js'
 export { OASMessageScroller } from './conversation/message-scroller/oas-message-scroller.js'
 export { OASMarker } from './conversation/marker/oas-marker.js'
 export { OASMessageRow } from './conversation/message-row/oas-message-row.js'

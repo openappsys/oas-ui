@@ -48,6 +48,21 @@ Separator semantics discipline: a text-bearing separator must **not** get `role=
 
 `slot="icon"` holds decorative icons (wrapper is `aria-hidden`; content carries the semantics). Streaming/progress status is declared by the host via `role="status"` directly (native ARIA reflection announces changes) — the component does not duplicate it.
 
+## Semantic status (status) & streaming shimmer (shimmer)
+
+<DemoBlock title="info / success / warning / danger + shimmer">
+  <div style="width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: var(--oas-space-4)">
+    <oas-marker status="info" variant="border">Connected to server</oas-marker>
+    <oas-marker status="success" variant="border">Sync complete (12 items)</oas-marker>
+    <oas-marker status="warning" variant="border">Only 10% storage left</oas-marker>
+    <oas-marker status="danger" variant="border">Connection lost</oas-marker>
+    <oas-marker status="info" variant="separator">Today 10:00</oas-marker>
+    <oas-marker status="success" shimmer>Generating answer… (shimmer)</oas-marker>
+  </div>
+</DemoBlock>
+
+`status` (`info` / `success` / `warning` / `danger`) is a semantic status tier: text, border (border) and separator lines take semantic color tokens and adapt automatically in dark mode. The boolean `shimmer` enables a streaming shimmer (a gradient sweep across the text that only animates background position, never size; degrades to static text under `prefers-reduced-motion`). `status` only changes visual semantics — it does **not** set an ARIA role; streaming announcement is still declared by the host via `role="status"`.
+
 ## Empty state
 
 <DemoBlock title="Empty content">
@@ -68,6 +83,8 @@ Separator semantics discipline: a text-bearing separator must **not** get `role=
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `shimmer` | Boolean present: streaming shimmer (gradient sweep across the text; degrades to static text under prefers-reduced-motion) | — | — |
+| `status` | Semantic status: info / success / warning / danger — text, border and separator take semantic color tokens (dark-mode aware; does not set an ARIA role, streaming announcement stays with the host) | — | — |
 | `variant` | Variant: default (small secondary text), border (outlined pill row), separator (stretching lines both sides of the text — the primary time-divider form); empty content hides default/border entirely while separator keeps the line | — | — |
 
 #### Slots
@@ -82,5 +99,7 @@ Separator semantics discipline: a text-bearing separator must **not** get `role=
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-marker-font` | `inherit` |
+| `--oas-marker-shimmer-from` | `var(--oas-color-text-secondary)` |
+| `--oas-marker-shimmer-to` | `var(--oas-color-text-primary)` |
 
 CSS variable: `--oas-marker-font` (font-size opening, default `inherit`). Parts: `::part(marker)` / `::part(icon)` / `::part(content)`. A11y discipline: a text-bearing separator must not get `role="separator"` (its accessible name would come from aria-label and the text would be treated as decoration).

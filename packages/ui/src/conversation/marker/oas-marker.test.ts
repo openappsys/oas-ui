@@ -100,4 +100,40 @@ describe('OASMarker', () => {
     const el = mount('x', { variant: 'fancy' })
     expect(el.shadowRoot!.querySelector('[part="marker"]')).not.toBeNull()
   })
+
+  it('status 语义档：info/success/warning/danger 四档全走语义 token，无硬编码色', () => {
+    const el = mount('同步完成', { status: 'success' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    for (const s of ['info', 'success', 'warning', 'danger']) {
+      expect(css, `status=${s} 缺规则`).toContain(`:host([status="${s}"])`)
+    }
+    expect(css).toContain('--oas-color-success-text')
+    expect(css).toContain('--oas-color-warning-text')
+    expect(css).toContain('--oas-color-danger-text')
+    expect(css).toContain('--oas-color-info-text')
+  })
+
+  it('status 只改视觉语义，不反射 ARIA role（流式播报仍由宿主声明 role=status）', () => {
+    const el = mount('生成中…', { status: 'info' })
+    expect(el.getAttribute('role')).toBeNull()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).not.toContain('role')
+  })
+
+  it('shimmer：流式微光规则存在且尊重 prefers-reduced-motion（降级静态文字）', () => {
+    const el = mount('正在生成…', { shimmer: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host([shimmer])')
+    expect(css).toMatch(/@keyframes\s+marker-shimmer/)
+    expect(css).toMatch(/prefers-reduced-motion[^{]*\{[^}]*animation:\s*none/)
+    // 微光用渐变扫过（background-clip:text），只动 background-position 不动尺寸
+    expect(css).toMatch(/background-clip:\s*text/)
+  })
+
+  it('observedAttributes 声明 status / shimmer', () => {
+    expect(OASMarker.observedAttributes).toContain('status')
+    expect(OASMarker.observedAttributes).toContain('shimmer')
+    const el = mount('x', { status: 'danger', shimmer: '' })
+    expect(el.shadowRoot!.querySelector('[part="marker"]')).not.toBeNull()
+  })
 })

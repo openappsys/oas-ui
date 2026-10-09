@@ -357,9 +357,11 @@ export const en: LocaleMessages = {
 
   // conversation (chat family: bubble/attachment/message-scroller/message-row)
   'bubble.loading': 'Typing…',
+  'bubble.reactions': 'Reactions',
   'attachment.remove': 'Remove {name}',
   'attachment.download': 'Download {name}',
   'attachment.error': 'Upload failed',
+  'attachment.group': 'Attachments',
   'messageScroller.label': 'Messages',
   'messageScroller.scrollToBottom': 'Scroll to bottom',
   'messageRow.status.sending': 'Sending',

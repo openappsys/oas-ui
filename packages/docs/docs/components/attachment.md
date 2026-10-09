@@ -97,6 +97,23 @@ onMounted(async () => {
 })
 </script>
 
+## 附件组（oas-attachment-group）
+
+<DemoBlock title="横向滚动 + 吸附 + 边缘渐隐">
+  <div style="width: 100%; max-width: 520px">
+    <oas-attachment-group>
+      <oas-attachment name="photo-1.png" detail="PNG · 1.2 MB" removable></oas-attachment>
+      <oas-attachment name="photo-2.png" detail="PNG · 980 KB" removable></oas-attachment>
+      <oas-attachment name="design-spec.md" detail="Markdown · 18 KB" downloadable></oas-attachment>
+      <oas-attachment name="demo.mp4" detail="MP4 · 48 MB" state="uploading" progress="62"></oas-attachment>
+      <oas-attachment name="contract.pdf" detail="PDF · 860 KB" removable></oas-attachment>
+      <oas-attachment name="backup.zip" detail="ZIP · 210 MB" state="error"></oas-attachment>
+    </oas-attachment-group>
+  </div>
+</DemoBlock>
+
+`oas-attachment-group` 是横向滚动行：子项逐项吸附（`scroll-snap-align: start`），两侧可滚时以 mask 边缘渐隐（可滚性反射为 `data-scrollable="start end"`）。它不拥有数据（纯容器，无属性），默认插槽放 `oas-attachment` 或任意卡片；键盘 Tab 聚焦后方向键可横向滚动。间距与渐隐宽度走 CSS 变量 `--oas-attachment-group-gap` / `--oas-attachment-group-fade`。
+
 ## 无障碍
 
 - 进行中态反射 `aria-busy`；进度条 `role="progressbar"` 带 min/max/now 三值。
@@ -135,5 +152,20 @@ onMounted(async () => {
 | --- | --- |
 | `actions` | 追加自定义操作区（内置下载/删除按钮之后） |
 | `media` | 媒体槽（图标/缩略图），放内容即覆盖内置缺省图形 |
+
+### oas-attachment-group
+
+#### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 附件卡片序列（oas-attachment 或任意卡片；横向溢出时吸附滚动 + 边缘渐隐） |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-attachment-group-fade` | `24px` |
+| `--oas-attachment-group-gap` | `var(--oas-space-2_5)` |
 
 部件：`::part(attachment)` 根、`::part(trigger)` 触发器、`::part(media)` / `::part(title)` / `::part(description)` / `::part(spinner)` / `::part(progress)` / `::part(actions)` / `::part(download)` / `::part(remove)`。

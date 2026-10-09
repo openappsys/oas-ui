@@ -1,0 +1,23 @@
+{
+  "className": "OASAttachmentGroup",
+  "sourceFile": "packages/ui/src/conversation/attachment/oas-attachment-group.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-attachment-group-gap",
+      "default": "var(--oas-space-2_5)"
+    },
+    {
+      "name": "--oas-attachment-group-fade",
+      "default": "24px"
+    }
+  ],
+  "unresolved": []
+}

@@ -97,6 +97,23 @@ onMounted(async () => {
 })
 </script>
 
+## Attachment group (oas-attachment-group)
+
+<DemoBlock title="Horizontal scroll + snap + edge fade">
+  <div style="width: 100%; max-width: 520px">
+    <oas-attachment-group>
+      <oas-attachment name="photo-1.png" detail="PNG · 1.2 MB" removable></oas-attachment>
+      <oas-attachment name="photo-2.png" detail="PNG · 980 KB" removable></oas-attachment>
+      <oas-attachment name="design-spec.md" detail="Markdown · 18 KB" downloadable></oas-attachment>
+      <oas-attachment name="demo.mp4" detail="MP4 · 48 MB" state="uploading" progress="62"></oas-attachment>
+      <oas-attachment name="contract.pdf" detail="PDF · 860 KB" removable></oas-attachment>
+      <oas-attachment name="backup.zip" detail="ZIP · 210 MB" state="error"></oas-attachment>
+    </oas-attachment-group>
+  </div>
+</DemoBlock>
+
+`oas-attachment-group` is a horizontal scroll row: items snap one by one (`scroll-snap-align: start`) and edges fade with a mask while scrollable (scrollability is reflected as `data-scrollable="start end"`). It owns no data (a pure container with no attributes); put `oas-attachment` or any cards in the default slot. Focus it with Tab and scroll horizontally with the arrow keys. Spacing and fade width use the CSS variables `--oas-attachment-group-gap` / `--oas-attachment-group-fade`.
+
 ## Accessibility
 
 - Busy states reflect `aria-busy`; the progress bar is `role="progressbar"` with min/max/now values.
@@ -135,5 +152,20 @@ onMounted(async () => {
 | --- | --- |
 | `actions` | Appends custom actions (after the built-in download/remove buttons) |
 | `media` | Media slot (icon/thumbnail); any slotted content overrides the built-in default glyph |
+
+### oas-attachment-group
+
+#### Slots
+
+| Name | Description |
+| --- | --- |
+| default | Attachment card sequence (oas-attachment or any cards; snap-scrolls with edge fade when overflowing horizontally) |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-attachment-group-fade` | `24px` |
+| `--oas-attachment-group-gap` | `var(--oas-space-2_5)` |
 
 Parts: `::part(attachment)`, `::part(trigger)`, `::part(media)`, `::part(title)`, `::part(description)`, `::part(spinner)`, `::part(progress)`, `::part(actions)`, `::part(download)`, `::part(remove)`.

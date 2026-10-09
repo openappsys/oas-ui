@@ -14,6 +14,14 @@ export interface MessageScrollerState {
   canScrollEnd: boolean
 }
 
+/** oas-visible-change 事件 detail（可见性通道：视口内消息 + 当前轮次锚点） */
+export interface MessageScrollerVisibility {
+  /** 当前视口内（部分或全部可见）的消息 id，按 DOM 顺序；未声明 message-id 的行不计入 */
+  visibleMessageIds: string[]
+  /** 当前轮次锚点 id：最后一个视口顶附近（top ≤ edge-threshold）的 anchor 标记消息；无则 null */
+  currentAnchorId: string | null
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -131,6 +139,8 @@ type TurnMode = 'anchor' | 'bottom'
  *   （ResizeObserver 通道）按锚点视口位移持续补偿（stable `message-id` 优先重查）
  * - `turn-anchor`：布尔在场——轮次锚定（锚点标记 = slotted 元素的 `anchor` 属性）
  * - `prev-peek`：轮次锚定对齐时锚顶上方露出的语境 px（默认 64）
+ * - `track-visible`：布尔在场——开启可见性通道（`oas-visible-change` 事件 + `visibleMessageIds` /
+ *   `currentAnchorId` getter）；未开启零计算（pay-for-use，长会话不付逐行 rect 代价）
  * - `label`：viewport 可读名称覆盖（缺省走 locale「消息列表」；读入后从宿主移除——原生全局属性吸收惯例）
  *
  * 协作标记（宿主写在 slotted 行上，scroller 只读）：
@@ -140,7 +150,12 @@ type TurnMode = 'anchor' | 'bottom'
  * 方法：`scrollToEnd(opts?)` / `scrollToStart(opts?)` / `scrollToMessage(id, opts?)`（返回是否命中）
  *
  * 事件：`oas-scroll-state`（detail `{ atBottom, atTop, canScrollStart, canScrollEnd }`；
- * 首帧（初始定位后）广播一次初始态——宿主监听晚于 upgrade 也能收到；此后跨过判定线时派发）
+ * 首帧（初始定位后）广播一次初始态——宿主监听晚于 upgrade 也能收到；此后跨过判定线时派发）；
+ * `oas-visible-change`（`track-visible` 开启时；detail `{ visibleMessageIds, currentAnchorId }`，
+ * 可见集变化才派发；供大纲/搜索定位等使用）
+ *
+ * 可见性 getter：`visibleMessageIds: string[]`、`currentAnchorId: string | null`（按需计算，不要求
+ * `track-visible`；未声明 message-id 的行不计入可见集）
  *
  * 状态反射：`data-scrollable`（`"start"` / `"end"` / `"start end"` 空格分隔，无可滚为空）；
  * `data-pending-scroll`（首屏防跳——初始定位应用前在场，viewport visibility:hidden 保布局，
@@ -165,6 +180,7 @@ export class OASMessageScroller extends OASElement {
       'preserve-scroll-on-prepend',
       'turn-anchor',
       'prev-peek',
+      'track-visible',
     ]
   }
 
@@ -217,6 +233,8 @@ export class OASMessageScroller extends OASElement {
   private ro: ResizeObserver | null = null
   /** 默认 slot（slotted 行查询缓存） */
   private slotNode: HTMLSlotElement | null = null
+  /** 上次对外广播的可见性快照（变化才派发 oas-visible-change） */
+  private lastVisible: MessageScrollerVisibility | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -293,6 +311,7 @@ export class OASMessageScroller extends OASElement {
     this.broadcastEnabled = true
     this.removeAttribute('data-pending-scroll')
     this.syncScrollState()
+    this.syncVisibility()
     this.observeResize()
   }
 
@@ -319,6 +338,9 @@ export class OASMessageScroller extends OASElement {
     // turn-anchor 撤除时模式锁一并作废（再开启重新定型）
     if (!this.hasAttr('turn-anchor')) this.turnMode = null
     this.syncScrollState()
+    // 可见性通道：开则计算广播，关则清快照（再开时首拍必广播一次）
+    if (this.hasAttr('track-visible')) this.syncVisibility()
+    else this.lastVisible = null
   }
 
   // ---------- 几何与状态 ----------
@@ -379,6 +401,59 @@ export class OASMessageScroller extends OASElement {
   /** 按 stable message-id 查行 */
   private findMessageById(id: string): Element | null {
     return this.slottedElements().find((el) => el.getAttribute('message-id') === id) ?? null
+  }
+
+  // ---------- 可见性通道（track-visible 开启时的 pay-for-use 计算） ----------
+
+  /**
+   * 计算当前可见消息与当前锚点。
+   * 可见 = 行盒与视口纵向区间相交（`bottom > 0 && top < clientHeight`）。
+   * 当前锚点 = 最后一个 `top ≤ edge-threshold` 的 anchor 标记行（读者阅读位置所在的轮次）。
+   */
+  private computeVisible(): MessageScrollerVisibility {
+    const vp = this.viewport
+    if (!vp) return { visibleMessageIds: [], currentAnchorId: null }
+    const vpTop = vp.getBoundingClientRect().top
+    const vpHeight = vp.clientHeight
+    const threshold = this.edgeThreshold()
+    const visibleMessageIds: string[] = []
+    let currentAnchorId: string | null = null
+    for (const el of this.slottedElements()) {
+      const id = el.getAttribute('message-id')
+      const rect = el.getBoundingClientRect()
+      const top = rect.top - vpTop
+      const height = rect.height || (el as HTMLElement).offsetHeight || 0
+      if (id && top + height > 0 && top < vpHeight) visibleMessageIds.push(id)
+      if (el.hasAttribute('anchor') && top <= threshold) currentAnchorId = id ?? currentAnchorId
+    }
+    return { visibleMessageIds, currentAnchorId }
+  }
+
+  /** 当前视口内消息 id 清单（原地计算，不依赖 track-visible；未声明 message-id 的行不计入） */
+  get visibleMessageIds(): string[] {
+    return this.computeVisible().visibleMessageIds
+  }
+
+  /** 当前轮次锚点 id（视口顶附近最后一个 anchor 标记行）；无则 null */
+  get currentAnchorId(): string | null {
+    return this.computeVisible().currentAnchorId
+  }
+
+  /**
+   * 同步可见性通道：仅 `track-visible` 在场时计算并（变化时）派发 `oas-visible-change`。
+   * 未开启时不计算、不派发（pay-for-use——长会话不付每帧逐行 rect 的代价）。
+   */
+  private syncVisibility(): void {
+    if (!this.hasAttr('track-visible')) return
+    const next = this.computeVisible()
+    const prev = this.lastVisible
+    const changed =
+      !prev ||
+      prev.currentAnchorId !== next.currentAnchorId ||
+      prev.visibleMessageIds.length !== next.visibleMessageIds.length ||
+      prev.visibleMessageIds.some((id, i) => id !== next.visibleMessageIds[i])
+    this.lastVisible = next
+    if (changed && this.broadcastEnabled) this.emit('visible-change', next)
   }
 
   /**
@@ -495,6 +570,7 @@ export class OASMessageScroller extends OASElement {
     if (vp && this.echoPending && Math.abs(top - this.expectedScrollTop) <= 1) {
       this.echoPending = false
       this.syncScrollState()
+      this.syncVisibility()
       return
     }
     this.echoPending = false
@@ -503,6 +579,7 @@ export class OASMessageScroller extends OASElement {
     this.userScrolled = true
     this.prependAnchor = null
     this.syncScrollState(delta)
+    this.syncVisibility()
   }
 
   private handleJumpClick = (): void => {
@@ -636,6 +713,7 @@ export class OASMessageScroller extends OASElement {
     this.lastFirstY = first ? this.contentYOf(first) : 0
     this.lastHeight = vp.scrollHeight
     this.syncScrollState()
+    this.syncVisibility()
   }
 
   /** preserve-scroll-on-prepend：缺省开启（保位是安全默认）；显式 "false" 关闭 */
@@ -680,6 +758,7 @@ export class OASMessageScroller extends OASElement {
       // lastState 仍为空 → 首帧必广播一次「定位后」的初始态
       this.broadcastEnabled = true
       this.syncScrollState()
+      this.syncVisibility()
     })
   }
 

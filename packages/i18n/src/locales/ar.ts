@@ -429,9 +429,11 @@ export const ar: LocaleMessages = {
 
   // conversation (عائلة المحادثة)
   'bubble.loading': 'يكتب…',
+  'bubble.reactions': 'التفاعلات',
   'attachment.remove': 'إزالة {name}',
   'attachment.download': 'تنزيل {name}',
   'attachment.error': 'فشل الرفع',
+  'attachment.group': 'المرفقات',
   'messageScroller.label': 'الرسائل',
   'messageScroller.scrollToBottom': 'التمرير إلى الأسفل',
   'messageRow.status.sending': 'جارٍ الإرسال',

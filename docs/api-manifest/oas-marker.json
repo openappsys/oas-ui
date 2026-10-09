@@ -5,6 +5,14 @@
     {
       "name": "variant",
       "observed": true
+    },
+    {
+      "name": "status",
+      "observed": true
+    },
+    {
+      "name": "shimmer",
+      "observed": true
     }
   ],
   "props": [],
@@ -21,6 +29,14 @@
     {
       "name": "--oas-marker-font",
       "default": "inherit"
+    },
+    {
+      "name": "--oas-marker-shimmer-from",
+      "default": "var(--oas-color-text-secondary)"
+    },
+    {
+      "name": "--oas-marker-shimmer-to",
+      "default": "var(--oas-color-text-primary)"
     }
   ],
   "unresolved": []

@@ -429,9 +429,11 @@ export const ru: LocaleMessages = {
 
   // conversation (семейство диалогов)
   'bubble.loading': 'Печатает…',
+  'bubble.reactions': 'Реакции',
   'attachment.remove': 'Удалить {name}',
   'attachment.download': 'Скачать {name}',
   'attachment.error': 'Не удалось загрузить',
+  'attachment.group': 'Вложения',
   'messageScroller.label': 'Сообщения',
   'messageScroller.scrollToBottom': 'Прокрутить вниз',
   'messageRow.status.sending': 'Отправка',
