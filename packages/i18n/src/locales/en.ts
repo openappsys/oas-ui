@@ -373,6 +373,7 @@ export const en: LocaleMessages = {
   'messageRow.status.error': 'Failed to send',
   // workbench (workbench chrome family)
   'titlebar.label': 'Title bar',
+  'titlebar.windowControls': 'Window controls',
   'titlebar.docTitle': 'Document title',
   'titlebar.minimize': 'Minimize',
   'titlebar.maximize': 'Maximize',

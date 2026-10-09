@@ -21,10 +21,12 @@ const STYLE = `
 :host {
   display: inline-flex;
   align-items: center;
-  /* 各圆点色走组件变量（macOS 惯例固定色，宿主可覆写；明暗主题一致） */
+  /* 圆点色为 macOS 惯例「固定品牌色」——刻意明暗一致、不随主题翻转，属组件级常量例外
+     （同 slider 色轨 / color-picker 色相光谱）；宿主可经这些变量覆写 */
   --oas-traffic-lights-close: #ff5f57;
   --oas-traffic-lights-minimize: #febc2e;
   --oas-traffic-lights-maximize: #28c840;
+  --oas-traffic-lights-symbol: rgba(0, 0, 0, 0.55);
   --oas-traffic-lights-size: 12px;
   --oas-traffic-lights-gap: 8px;
   font-family: inherit;
@@ -55,6 +57,10 @@ const STYLE = `
   cursor: pointer;
   color: transparent;
   transition: color var(--oas-transition-fast, 120ms) ease;
+  /* 自防御：置于 titlebar drag 区时退出窗口拖动（Electron/Tauri 下否则点击被吞） */
+  -webkit-app-region: no-drag;
+  /* 高对比模式保留交通灯语义色（身份即颜色），不被系统强制抹平 */
+  forced-color-adjust: none;
 }
 .dot[data-action='close'] {
   background: var(--oas-traffic-lights-close);
@@ -65,10 +71,10 @@ const STYLE = `
 .dot[data-action='maximize'] {
   background: var(--oas-traffic-lights-maximize);
 }
-/* 组内悬停 / 键盘聚焦时，各点显示符号（macOS 行为）；符号色随圆点底色取深色 */
+/* 悬停 / 键盘聚焦时各点显示符号；符号恒为深色（macOS 行为，明暗主题一致，不随主题翻白） */
 .group:hover .dot,
 .group:focus-within .dot {
-  color: color-mix(in srgb, var(--oas-color-text-primary) 55%, transparent);
+  color: var(--oas-traffic-lights-symbol, rgba(0, 0, 0, 0.55));
 }
 .dot:focus-visible {
   outline: none;
@@ -106,7 +112,7 @@ export class OASTrafficLights extends OASElement {
       (a) =>
         `<button class="dot" part="dot" data-action="${a}" type="button" aria-label="${this.t(`titlebar.${a}`)}">${GLYPHS[a]}</button>`,
     ).join('')
-    return `<style>${STYLE}</style><div class="group" part="group" role="group" aria-label="${this.t('titlebar.label')}">${dots}</div>`
+    return `<style>${STYLE}</style><div class="group" part="group" role="group" aria-label="${this.t('titlebar.windowControls')}">${dots}</div>`
   }
 
   private bind(): void {
@@ -139,6 +145,6 @@ export class OASTrafficLights extends OASElement {
       btn.disabled = this.hasAttr('disabled')
     }
     const group = this.shadow.querySelector<HTMLElement>('[part="group"]')
-    group?.setAttribute('aria-label', this.t('titlebar.label'))
+    group?.setAttribute('aria-label', this.t('titlebar.windowControls'))
   }
 }

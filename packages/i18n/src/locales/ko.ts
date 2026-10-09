@@ -445,6 +445,7 @@ export const ko: LocaleMessages = {
   'messageRow.status.error': '전송 실패',
   // workbench（워크벤치 구성 요소）
   'titlebar.label': '제목 표시줄',
+  'titlebar.windowControls': '창 제어',
   'titlebar.docTitle': '문서 제목',
   'titlebar.minimize': '최소화',
   'titlebar.maximize': '최대화',

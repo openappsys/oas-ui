@@ -448,6 +448,7 @@ export const zhCN = {
   'messageRow.status.error': '发送失败',
   // workbench（工作台构件族）
   'titlebar.label': '标题栏',
+  'titlebar.windowControls': '窗口控制',
   'titlebar.docTitle': '文档标题',
   'titlebar.minimize': '最小化',
   'titlebar.maximize': '最大化',

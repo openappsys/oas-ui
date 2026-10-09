@@ -27,7 +27,7 @@ describe('OASTrafficLights', () => {
     expect(d[0]!.getAttribute('aria-label')).toBe('关闭')
     expect(d[1]!.getAttribute('aria-label')).toBe('最小化')
     expect(d[2]!.getAttribute('aria-label')).toBe('最大化')
-    expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label')).toBe('标题栏')
+    expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label')).toBe('窗口控制')
   })
 
   it('点击派发 oas-window-action（detail { action }，与 window-actions 同契约）', () => {
@@ -39,16 +39,30 @@ describe('OASTrafficLights', () => {
     expect(evts).toEqual([{ action: 'close' }, { action: 'maximize' }])
   })
 
-  it('disabled：不派发事件', () => {
+  it('disabled：不派发事件，且三点原生 disabled 置位', () => {
     const el = mount({ disabled: '' })
     let n = 0
     el.addEventListener('oas-window-action', () => n++)
     dots(el)[0]!.click()
     expect(n).toBe(0)
+    expect(
+      dots(el).every((b) => b.disabled),
+      '三点原生 disabled（键盘焦点排除 + not-allowed）',
+    ).toBe(true)
+    el.removeAttribute('disabled')
+    expect(
+      dots(el).some((b) => b.disabled),
+      '移除后恢复可点',
+    ).toBe(false)
   })
 
   it('dir=rtl：data-rtl 反射（顺序镜像）', () => {
     const el = mount({ dir: 'rtl' })
     expect(el.hasAttribute('data-rtl')).toBe(true)
+  })
+
+  it('拖动区自防御：.dot 声明 -webkit-app-region: no-drag（置于 drag titlebar 不被拖动吞点击）', () => {
+    const el = mount()
+    expect(el.shadowRoot!.querySelector('style')!.textContent).toContain('-webkit-app-region: no-drag')
   })
 })

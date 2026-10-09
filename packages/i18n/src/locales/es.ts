@@ -445,6 +445,7 @@ export const es: LocaleMessages = {
   'messageRow.status.error': 'Error al enviar',
   // workbench (componentes del banco de trabajo)
   'titlebar.label': 'Barra de título',
+  'titlebar.windowControls': 'Controles de ventana',
   'titlebar.docTitle': 'Título del documento',
   'titlebar.minimize': 'Minimizar',
   'titlebar.maximize': 'Maximizar',

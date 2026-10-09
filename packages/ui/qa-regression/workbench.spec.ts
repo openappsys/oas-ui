@@ -673,6 +673,12 @@ for (const page_ of ['titlebar', 'statusbar', 'inspector', 'action-bar']) {
 test('titlebar macOS 交通灯：三点 macOS 固定色 + 点击派发 oas-window-action + 悬停显符号', async ({ page }) => {
   await page.goto('/components/titlebar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tb-macos')
+  // C1 回归：titlebar 的 no-drag 白名单必须含交通灯（否则 Electron/Tauri 下点击被拖动区吞）
+  const noDragListed = await page.evaluate(() => {
+    const css = document.querySelector('#tb-macos')!.shadowRoot!.querySelector('style')!.textContent ?? ''
+    return css.includes('::slotted(oas-traffic-lights)')
+  })
+  expect(noDragListed, 'titlebar no-drag 白名单含 oas-traffic-lights').toBe(true)
   const colors = await page.evaluate(() => {
     const tl = document.querySelector('#tb-macos oas-traffic-lights')!.shadowRoot!
     const cs = (a: string) => getComputedStyle(tl.querySelector(`.dot[data-action="${a}"]`)!).backgroundColor

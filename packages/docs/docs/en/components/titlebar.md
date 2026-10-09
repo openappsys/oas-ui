@@ -160,6 +160,7 @@ onMounted(() => {
 
 | CSS Variable | Default |
 | --- | --- |
+| `--oas-titlebar-bg` | `color-mix(in srgb, var(--oas-color-text-primary) 5%, var(--oas-color-bg))` |
 | `--oas-titlebar-height` | `var(--oas-titlebar-compact-height, 34px)` |
 | `--oas-titlebar-leading-inset` | `0px` |
 | `--oas-titlebar-trailing-inset` | `0px` |
@@ -187,6 +188,7 @@ onMounted(() => {
 | `--oas-traffic-lights-maximize` | `#28c840` |
 | `--oas-traffic-lights-minimize` | `#febc2e` |
 | `--oas-traffic-lights-size` | `12px` |
+| `--oas-traffic-lights-symbol` | `rgba(0, 0, 0, 0.55)` |
 
 <style>
 .vp-doc .demo-block oas-titlebar {

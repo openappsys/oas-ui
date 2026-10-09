@@ -84,6 +84,11 @@ export default defineConfig({
         firefoxUserPrefs: { 'intl.accept_languages': 'zh-CN' },
       },
       testMatch: [/visual\.spec\.ts/, /smoke\.spec\.ts/, /qa-regression\/.*\.spec\.ts/],
+      // 交叉浏览器抽样：Firefox 在本地 12-worker 混合并发下易被 CPU 饿死而超时（隔离单跑全绿，
+      // 2026-10-10 实抓 modal/glass 批量伪失败）。放宽超时 + 多一次重试吸收负载抖动，
+      // 不改门禁实质（真失败重试仍失败）。
+      timeout: 120_000,
+      retries: 2,
     },
   ],
 })

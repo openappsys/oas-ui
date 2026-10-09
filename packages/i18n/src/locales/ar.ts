@@ -445,6 +445,7 @@ export const ar: LocaleMessages = {
   'messageRow.status.error': 'فشل الإرسال',
   // workbench (مكونات بيئة العمل)
   'titlebar.label': 'شريط العنوان',
+  'titlebar.windowControls': 'عناصر تحكم النافذة',
   'titlebar.docTitle': 'عنوان المستند',
   'titlebar.minimize': 'تصغير',
   'titlebar.maximize': 'تكبير',

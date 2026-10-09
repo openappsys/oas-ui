@@ -6,7 +6,7 @@ const STYLE = `
   display: block;
   font-family: inherit;
   color: var(--oas-color-text-primary);
-  background: var(--oas-inspector-bg, var(--oas-color-bg));
+  background: var(--oas-inspector-bg, color-mix(in srgb, var(--oas-color-text-primary) 3%, var(--oas-color-bg)));
   box-sizing: border-box;
   width: var(--oas-inspector-width, 280px);
   font-size: var(--oas-font-size-md);

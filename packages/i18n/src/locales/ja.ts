@@ -445,6 +445,7 @@ export const ja: LocaleMessages = {
   'messageRow.status.error': '送信失敗',
   // workbench（ワークベンチ構成部品）
   'titlebar.label': 'タイトルバー',
+  'titlebar.windowControls': 'ウィンドウ操作',
   'titlebar.docTitle': 'ドキュメントタイトル',
   'titlebar.minimize': '最小化',
   'titlebar.maximize': '最大化',

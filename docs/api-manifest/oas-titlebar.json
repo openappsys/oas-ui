@@ -72,6 +72,10 @@
   ],
   "cssVars": [
     {
+      "name": "--oas-titlebar-bg",
+      "default": "color-mix(in srgb, var(--oas-color-text-primary) 5%, var(--oas-color-bg))"
+    },
+    {
       "name": "--oas-titlebar-height",
       "default": "var(--oas-titlebar-compact-height, 34px)"
     },

@@ -445,6 +445,7 @@ export const pt: LocaleMessages = {
   'messageRow.status.error': 'Falha ao enviar',
   // workbench (componentes da bancada)
   'titlebar.label': 'Barra de título',
+  'titlebar.windowControls': 'Controles da janela',
   'titlebar.docTitle': 'Título do documento',
   'titlebar.minimize': 'Minimizar',
   'titlebar.maximize': 'Maximizar',

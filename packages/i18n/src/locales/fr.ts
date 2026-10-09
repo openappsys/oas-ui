@@ -445,6 +445,7 @@ export const fr: LocaleMessages = {
   'messageRow.status.error': 'Échec de l’envoi',
   // workbench (composants de plan de travail)
   'titlebar.label': 'Barre de titre',
+  'titlebar.windowControls': 'Contrôles de fenêtre',
   'titlebar.docTitle': 'Titre du document',
   'titlebar.minimize': 'Réduire',
   'titlebar.maximize': 'Agrandir',

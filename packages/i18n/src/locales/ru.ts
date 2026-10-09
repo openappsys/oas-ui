@@ -445,6 +445,7 @@ export const ru: LocaleMessages = {
   'messageRow.status.error': 'Не удалось отправить',
   // workbench (компоненты рабочей среды)
   'titlebar.label': 'Строка заголовка',
+  'titlebar.windowControls': 'Управление окном',
   'titlebar.docTitle': 'Заголовок документа',
   'titlebar.minimize': 'Свернуть',
   'titlebar.maximize': 'Развернуть',

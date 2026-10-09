@@ -445,6 +445,7 @@ export const de: LocaleMessages = {
   'messageRow.status.error': 'Senden fehlgeschlagen',
   // workbench (Workbench-Bauteile)
   'titlebar.label': 'Titelleiste',
+  'titlebar.windowControls': 'Fenstersteuerung',
   'titlebar.docTitle': 'Dokumenttitel',
   'titlebar.minimize': 'Minimieren',
   'titlebar.maximize': 'Maximieren',

@@ -52,7 +52,7 @@
     },
     {
       "name": "--oas-inspector-divider-color",
-      "default": "transparent"
+      "default": "var(--oas-color-border)"
     },
     {
       "name": "--oas-inspector-row-striped-bg",

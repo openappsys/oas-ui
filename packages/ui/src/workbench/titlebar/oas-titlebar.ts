@@ -44,7 +44,7 @@ const STYLE = `
   display: block;
   font-family: inherit;
   color: var(--oas-color-text-primary);
-  background: var(--oas-color-bg-elevated);
+  background: var(--oas-titlebar-bg, color-mix(in srgb, var(--oas-color-text-primary) 5%, var(--oas-color-bg)));
   box-sizing: border-box;
   border-block-end: 1px solid var(--oas-color-border);
 }
@@ -202,6 +202,7 @@ const STYLE = `
 ::slotted(oas-menu),
 ::slotted(oas-dropdown),
 ::slotted(oas-tooltip),
+::slotted(oas-traffic-lights),
 ::slotted([data-no-drag]) {
   -webkit-app-region: no-drag;
 }

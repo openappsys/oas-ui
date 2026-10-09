@@ -166,7 +166,7 @@ onMounted(() => {
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-inspector-bg` | `var(--oas-color-bg)` |
+| `--oas-inspector-bg` | `color-mix(in srgb, var(--oas-color-text-primary) 3%, var(--oas-color-bg))` |
 | `--oas-inspector-gap` | `var(--oas-space-2)` |
 | `--oas-inspector-width` | `280px` |
 
