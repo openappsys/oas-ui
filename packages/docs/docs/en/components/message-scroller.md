@@ -422,12 +422,63 @@ onMounted(async () => {
           : `Anchor row drifted ${drift}px (expected if you scrolled away and took over)`
     }
   })
+
+  // Visibility channel: rows carry message-id + a per-turn anchor; scrolling reports the visible set and current anchor
+  const visible = document.querySelector('#msc-visible')
+  const visibleOut = document.querySelector('#msc-visible-out')
+  if (visible) {
+    const rounds = [
+      ['Q1: What is the visibility channel?', 'A: The component computes visible messages by viewport intersection and broadcasts on change.'],
+      ['Q2: What is currentAnchorId?', 'A: The turn anchor at the reader position (the last anchor-marked row near the top).'],
+      ['Q3: Any performance cost?', 'A: Zero computation while track-visible is off (pay-for-use).'],
+    ]
+    let seqV = 0
+    for (const [q, a] of rounds) {
+      const qRow = document.createElement('oas-message-row')
+      qRow.setAttribute('align', 'end')
+      qRow.setAttribute('anchor', '')
+      qRow.setAttribute('message-id', 'vq' + seqV)
+      const qb = document.createElement('oas-bubble')
+      qb.setAttribute('variant', 'secondary')
+      qb.textContent = q
+      qRow.appendChild(qb)
+      visible.appendChild(qRow)
+      const aRow = document.createElement('oas-message-row')
+      aRow.setAttribute('message-id', 'va' + seqV)
+      const ab = document.createElement('oas-bubble')
+      ab.textContent = a
+      aRow.appendChild(ab)
+      visible.appendChild(aRow)
+      seqV++
+    }
+    visible.addEventListener('oas-visible-change', (e) => {
+      const d = e.detail
+      if (visibleOut)
+        visibleOut.textContent = `oas-visible-change → visible: ${d.visibleMessageIds.join(', ') || '(none)'}; current anchor: ${d.currentAnchorId ?? '(none)'}`
+    })
+    requestAnimationFrame(() => {
+      const ids = visible.visibleMessageIds ?? []
+      if (visibleOut)
+        visibleOut.textContent = `Visible: ${ids.join(', ') || '(none)'}; current anchor: ${visible.currentAnchorId ?? '(none)'}`
+    })
+  }
 })
 </script>
 
+## Visibility channel (track-visible)
+
+<DemoBlock title="Visible message list + current anchor">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-2)">
+    <oas-message-scroller id="msc-visible" track-visible label="Visibility demo" style="height: 220px; width: 100%; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg); padding: var(--oas-space-3); box-sizing: border-box"></oas-message-scroller>
+    <span id="msc-visible-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Scroll the container; visibleMessageIds / currentAnchorId show here.</span>
+  </div>
+</DemoBlock>
+
+With `track-visible` present the visibility channel is enabled (pay-for-use, zero computation when off): it dispatches `oas-visible-change` (detail `{ visibleMessageIds, currentAnchorId }`) when the visible set changes, and always exposes `visibleMessageIds` / `currentAnchorId` getters (computed on demand). `visibleMessageIds` lists the message ids intersecting the viewport (rows without `message-id` are excluded); `currentAnchorId` is the turn at the reader position — the last `anchor`-marked row near the viewport top. Useful for outline menus, search positioning, and read tracking.
+
 ## Boundaries
 
-- **Visibility tracking (which messages are in the viewport)**: deferred to v2 (pulls in outline/read-marking semantics of its own, pay-for-use) — this component ships no `oas-visible-change` / `data-visible`; hosts can compose IntersectionObserver themselves.
+- **Visibility channel**: when `track-visible` is off, nothing is computed and nothing is dispatched (pay-for-use); when on, it computes viewport intersection (long conversations pay the per-row rect cost only when the host opts in). Rows without `message-id` never enter the visible set.
 - **Virtualization & render cost**: offscreen-row render skipping (`content-visibility` etc.) arrives with virtualization (enabling it alone on slotted elements stalls at the intrinsic-size placeholder — verified and pulled); multi-thousand-turn conversations compose with a virtual list on the host side.
 - **Empty state**: renders an empty log; hosts place their own empty-state content.
 - **Prepend preservation boundary**: the preservation anchor releases on real reader scrolling (reader position wins); with `pin-to-bottom` / bottom following the compensation is moot (pinning settles after). Same-frame mixed settlement relies on the pre-insertion first element still being in the DOM (no compensation for that frame if the host removed it).
@@ -450,6 +501,7 @@ onMounted(async () => {
 | `pin-to-bottom` | IM-style always pinned (boolean presence): new content always scrolls to the bottom, pulling readers back; wins when combined with auto-scroll | `boolean` | — |
 | `preserve-scroll-on-prepend` | Compensates scrollTop when older messages are prepended to keep the reading position (on by default; explicit ="false" disables) — settles precisely by the pre-insertion first-node displacement (same-frame append+prepend mixes settle only the top insertion), then locks a preservation anchor: async resources (images etc.) growing the upper history keep being compensated by the anchor's viewport drift (message-id re-queried first) | — | — |
 | `prev-peek` | Context px revealed above the anchor top during turn-anchor alignment (default 64; invalid/negative values fall back to 64) | — | — |
+| `track-visible` | Boolean present: enables the visibility channel (oas-visible-change event + visibleMessageIds / currentAnchorId getters); zero computation when off (pay-for-use) | `boolean` | — |
 | `turn-anchor` | Turn anchoring (boolean presence): one question+answer exchange is the anchoring unit — while the anchor sits at the viewport top the last anchor-marked message is pinned at prev-peek from the top with answers flowing in beneath; bottom following continues at the bottom; scrolled-up readers are never pulled | `boolean` | — |
 
 #### Events
@@ -457,6 +509,7 @@ onMounted(async () => {
 | Event | Description |
 | --- | --- |
 | `oas-scroll-state` | Dispatched when scrolling crosses a decision line, detail { atBottom, atTop, canScrollStart, canScrollEnd }; an initial state is broadcast once on the first frame (after initial positioning) — received even when the host attaches its listener after the upgrade |
+| `oas-visible-change` | Fired when the visible set changes while track-visible is on; detail { visibleMessageIds, currentAnchorId } (for outline / search positioning) |
 
 #### Slots
 

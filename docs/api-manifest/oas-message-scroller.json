@@ -36,10 +36,27 @@
     {
       "name": "prev-peek",
       "observed": true
+    },
+    {
+      "name": "track-visible",
+      "type": "boolean",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "visibleMessageIds",
+      "type": "string[]"
+    },
+    {
+      "name": "currentAnchorId",
+      "type": "string | null"
+    }
+  ],
   "events": [
+    {
+      "name": "oas-visible-change"
+    },
     {
       "name": "oas-scroll-state"
     }
