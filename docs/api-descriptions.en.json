@@ -2679,6 +2679,20 @@
       "": "Scrollable content"
     }
   },
+  "oas-scope-bar": {
+    "attrs": {
+      "disabled": "Disable the whole bar (combined with the nearest oas-toolbar's disabled)",
+      "items": "Options JSON (property assignment reflects one-way to the attribute)",
+      "label": "Accessible group name (the `aria-label` of `role=\"group\"`; supplied by the host per language)",
+      "multiple": "Multiple-select mode (each pill toggles independently)",
+      "size": "Size step (small/medium/large); defaults to the nearest oas-toolbar's size",
+      "value": "Current value: string for single-select; JSON array string for multiple-select"
+    },
+    "events": {
+      "oas-change": "Toggle, `detail: { value: string | string[] }`"
+    },
+    "slots": {}
+  },
   "oas-segmented": {
     "attrs": {
       "disabled": "Disables the whole segmented control (explicitly, or inherited from the config-provider global disabled injection)",

@@ -2679,6 +2679,20 @@
       "": "可滚动内容"
     }
   },
+  "oas-scope-bar": {
+    "attrs": {
+      "disabled": "整组禁用（叠加最近 oas-toolbar 的 disabled）",
+      "items": "选项 JSON（property 赋值单向反射 attribute）",
+      "label": "无障碍组名（`role=\"group\"` 的 `aria-label`，按语言由宿主传入）",
+      "multiple": "多选模式（每个药丸独立切换）",
+      "size": "尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar 的 size",
+      "value": "当前值：单选为字符串；多选为 JSON 数组字符串"
+    },
+    "events": {
+      "oas-change": "切换，`detail: { value: string | string[] }`"
+    },
+    "slots": {}
+  },
   "oas-segmented": {
     "attrs": {
       "disabled": "禁用整个分段控件（自身显式禁用，或经 config-provider 全局禁用注入继承）",

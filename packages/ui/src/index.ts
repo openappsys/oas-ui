@@ -342,7 +342,9 @@ export {
   OASToolbarToggleItem,
   OASToolbarSeparator,
   OASToolbarInput,
+  OASScopeBar,
   type ToolbarToggleItem,
+  type ScopeBarItem,
 } from './navigation/toolbar/index.js'
 export { OASAppBar, type AppBarPosition } from './navigation/app-bar/index.js'
 export { OASSpeedDial, type SpeedDialAction } from './navigation/speed-dial/oas-speed-dial.js'
