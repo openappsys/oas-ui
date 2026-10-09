@@ -73,6 +73,9 @@
 import zhCN from '@oas-ui/i18n/zh-CN'
 import en from '@oas-ui/i18n/en'
 import type { Locale } from '@oas-ui/i18n'
+// 服务端注册内置图标集：图标库 opt-in 后，组件动态图名需内置集在场才能渲染；
+// 服务端（DSD 快照）与客户端全量入口保持一致——否则 <oas-icon name>/icon="check" 等快照为空。
+import '@oas-ui/icons/register'
 import { ensureShim } from './shim.js'
 
 /**

@@ -328,6 +328,9 @@ importers:
       '@oas-ui/i18n':
         specifier: workspace:*
         version: link:../i18n
+      '@oas-ui/icons':
+        specifier: workspace:*
+        version: link:../icons
       '@oas-ui/ui':
         specifier: workspace:*
         version: link:../ui

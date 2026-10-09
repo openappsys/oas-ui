@@ -1472,3 +1472,9 @@ test('测量组件闪动治理：affix/ellipsis/scroll-area upgrade 首帧与快
   expect(result.secondFrame.scrollArea.vPeek).toBe(true)
   expect(result.secondFrame.scrollArea.thumbHeight).not.toBe('')
 })
+
+test('SSR 内置图标集已注册：内置图名的 oas-icon 快照含图标路径（icon opt-in 服务端注册回归锁）', async () => {
+  const html = await renderToString('oas-icon', { name: 'check', size: '16' })
+  // 未注册内置集时 shadow svg 为空（曾发生）；注册后应含 check 图标 path 特征串
+  expect(html).toContain('M3.5 8.5')
+})

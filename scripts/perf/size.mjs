@@ -274,16 +274,16 @@ const BUDGETS = [
     // 增长纪律由单组件链预算（绝对值制）与按需叙事守住。
     name: 'dist/cdn.js gzip',
     get: () => cdn.gzipBytes,
-    limit: 730 * 1024, // 730 KB 天花板（2026-10-07 重定档：gantt/barcode/chart 扩展/glass 折射四批后实测 628.7 KB 触前档 90%）
+    limit: 770 * 1024, // 770 KB 天花板（2026-10-08 重定档：workbench 批并入后实测 665.4 KB 触前档 90%）
     basis:
-      '天花板制：实测 gzip 628.7 KB（gantt + barcode 新组件、chart 四图型、glass 折射批次后），上浮约 15% 定档 730 KB；前档 700 KB 定档于 2026-10-05（608.5 KB 实测），再前档 600 KB 定档于 2026-09-22（519.1 KB 实测）',
+      '天花板制：实测 gzip 665.4 KB（并入 workbench 构件族后；含 gantt/barcode/chart 扩展/glass/图标 opt-in），上浮约 15% 定档 770 KB；前档 730 KB 定档于 2026-10-07（628.7 KB 实测），再前档 700 KB 定档于 2026-10-05（608.5 KB 实测）',
   },
   {
     name: '@oas-ui/ui 全量入口链 gzip',
     get: () => fullEntry.gzipBytes,
-    limit: 1080 * 1024, // 1080 KB（≈1.05 MB）天花板（2026-10-07 重定档：四批后实测 917.7 KB 触前档 90%）
+    limit: 1140 * 1024, // 1140 KB（≈1.11 MB）天花板（2026-10-08 重定档：workbench 批并入后实测 984.6 KB 触前档 90%）
     basis:
-      '天花板制：实测 gzip 917.7 KB（gantt/barcode/chart 扩展/glass 折射四批后），上浮约 15% 定档 1080 KB；前档 1024 KB 定档于 2026-10-05（890.9 KB 实测），再前档 905 KB 定档于 2026-09-22（779.3 KB 实测）',
+      '天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）',
   },
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
@@ -325,7 +325,7 @@ const BUDGETS = [
     get: () => fluidJs.gzipBytes,
     limit: 8.5 * 1024, // 8.5 KB（2026-10-07 重定档：B 档 + 修复批后实测 7.81 KB）
     basis:
-      '实测 gzip 7.81 KB（B 档 + 修复批：注册表 + 注入样式表并入运行时——ui 包相应减少同量玻璃规则体；高光层改「surface 背景之上、文字之下」，补 .box 基态/命中成对、isolation:isolate、z-index:-1、禁用守卫（含链接形态 aria-disabled，且同时 background/box-shadow:none）、实心按钮 hover 高光 + 按压边缘内描边（:where 归零特异性）、全根观察 + 帧内 prune 防泄漏），上浮约 15% 定档 8.5 KB；前档 4.5 / 4 KB 首次定档于 2026-10-07（3.6 / 2.97 KB 实测；B 档重定档 6.5 KB 见未提交历史）（指针镜面高光运行时：监听/命中/坐标/rAF/守卫/清理）',
+      '实测 gzip 8.0 KB（B 档 + 修复批：注册表 + 注入样式表并入运行时——ui 包相应减少同量玻璃规则体；高光层改「surface 背景之上、文字之下」，补 .box 基态/命中成对、isolation:isolate、z-index:-1、禁用守卫（含链接形态 aria-disabled，且同时 background/box-shadow:none）、实心按钮 hover 高光 + 按压边缘内描边（:where 归零特异性）、全根观察 + 帧内 prune 防泄漏）。已达 WARN 预警线：评估后**暂不瘦身 / 不重定档**（增幅为上述合理增量的正常结果，无冗余可清）；再次加功能前先瘦身。前档 4.5 / 4 KB 首次定档于 2026-10-07（3.6 / 2.97 KB 实测）（指针镜面高光运行时：监听/命中/坐标/rAF/守卫/清理）',
   },
   {
     name: '@oas-ui/theme glass.css gzip',

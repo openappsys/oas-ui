@@ -17,6 +17,9 @@
  * 组件属性/事件等的类型定义仍从主入口 `@oas-ui/ui` 获取（type-only import 无运行时副作用）。
  */
 
+// 服务端注册内置图标集（图标 opt-in 后组件动态图名需内置集在场；与客户端全量入口一致）
+import '@oas-ui/icons/register'
+
 // ---------- basic ----------
 export { OASButton } from './basic/button/oas-button.js'
 export { OASIcon, registerIcon, registerIconAlias, registerIconLibrary, lookupIcon } from './basic/icon/oas-icon.js'
