@@ -6,3 +6,4 @@ if (!customElements.get('oas-scroll-area')) {
 }
 
 export { OASScrollArea }
+export type { ScrollAreaType } from './oas-scroll-area.js'

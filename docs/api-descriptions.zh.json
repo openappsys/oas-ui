@@ -2675,11 +2675,12 @@
   },
   "oas-scroll-area": {
     "attrs": {
-      "auto-hide": "滚动条仅在滚动/悬停时显示，超时自动隐藏",
+      "auto-hide": "旧布尔用法：滚动条仅在滚动/悬停时显示，超时自动隐藏——无 `type` 时等价 `type=\"auto\"`；`type` 在场时以 `type` 为准",
       "end-distance": "`oas-end-reached` 触发距离（px，默认 `0`）：距底/右边缘 N px 内即算到底",
       "height": "视口高度（px），不设置时随内容自然撑开",
       "scroll-shadow": "滚动边缘阴影（CSS-only）：滚动到边缘时阴影渐隐提示还有内容",
       "stick-to-bottom": "贴底：新内容追加时若当前停靠在底部（距底 ≤8px）自动滚到底，上翻阅读时不打断",
+      "type": "滚动条显示模式（`auto | always | scroll | hover`，默认 `always`）：`auto` 滚动/悬停显示后延时隐藏；`always` 溢出常显；`scroll` 仅滚动时显示；`hover` 仅悬停时显示。非法值回退 `always`",
       "width": "视口宽度（px），不设置时铺满宿主宽度"
     },
     "events": {

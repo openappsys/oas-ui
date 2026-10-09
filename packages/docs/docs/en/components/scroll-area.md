@@ -1,6 +1,6 @@
 # ScrollArea
 
-A container that wraps content and takes over the scrollbar appearance: a thin custom scrollbar that thickens on hover; with `auto-hide` it is only shown while scrolling or hovering, and scroll events are throttled.
+A container that wraps content and takes over the scrollbar appearance: a thin custom scrollbar that thickens on hover; `type` controls when the scrollbar is visible (auto / always / scroll / hover), and scroll events are throttled.
 
 ## Basic usage
 
@@ -40,18 +40,42 @@ A container that wraps content and takes over the scrollbar appearance: a thin c
   </oas-scroll-area>
 </DemoBlock>
 
-## auto-hide
+## Visibility mode (type)
 
-With `auto-hide` the scrollbar is hidden normally and only appears while scrolling or hovering the viewport, then fades out automatically after stopping.
+`type` controls when the scrollbar is visible, in four modes: `always` (default, visible whenever content overflows — see Basic usage), `auto` (shown while scrolling or hovering, fades out after stopping), `scroll` (shown only while scrolling, not on hover), `hover` (shown while hovering, hides immediately on leave). The legacy `auto-hide` boolean stays supported and equals `type="auto"`; when `type` is present it takes precedence, and invalid values fall back to `always`.
 
-<DemoBlock title="auto-hide">
-  <oas-scroll-area auto-hide height="160" style="width: 320px">
+<DemoBlock title="type=auto (equals legacy auto-hide)">
+  <oas-scroll-area type="auto" height="160" style="width: 320px">
     <div style="padding: var(--oas-space-2)">
       <p style="margin: var(--oas-space-2) 0">Scroll to see the scrollbar: hidden normally, shown while scrolling</p>
       <p style="margin: var(--oas-space-2) 0">Stop for a second and the scrollbar fades out automatically</p>
       <p style="margin: var(--oas-space-2) 0">Hovering over the area also shows it temporarily</p>
+      <p style="margin: var(--oas-space-2) 0">The legacy auto-hide is fully equivalent to type="auto"</p>
       <p style="margin: var(--oas-space-2) 0">Great for UIs where a scrollbar would distract from reading</p>
-      <p style="margin: var(--oas-space-2) 0">Recommended for mobile card lists</p>
+    </div>
+  </oas-scroll-area>
+</DemoBlock>
+
+<DemoBlock title="type=scroll (shown only while scrolling)">
+  <oas-scroll-area type="scroll" height="160" style="width: 320px">
+    <div style="padding: var(--oas-space-2)">
+      <p style="margin: var(--oas-space-2) 0">The scrollbar appears while scrolling and fades out after stopping</p>
+      <p style="margin: var(--oas-space-2) 0">Difference from auto: hovering alone does not show it</p>
+      <p style="margin: var(--oas-space-2) 0">Great for reading UIs: position feedback while scrolling</p>
+      <p style="margin: var(--oas-space-2) 0">No scrollbar distracting you while reading at rest</p>
+      <p style="margin: var(--oas-space-2) 0">Recommended for long-form reading on mobile</p>
+    </div>
+  </oas-scroll-area>
+</DemoBlock>
+
+<DemoBlock title="type=hover (shown while hovering)">
+  <oas-scroll-area type="hover" height="160" style="width: 320px">
+    <div style="padding: var(--oas-space-2)">
+      <p style="margin: var(--oas-space-2) 0">The scrollbar appears as soon as the pointer hovers the area</p>
+      <p style="margin: var(--oas-space-2) 0">It hides immediately after the pointer leaves (with a fade)</p>
+      <p style="margin: var(--oas-space-2) 0">Difference from auto: hovering shows it without any scrolling</p>
+      <p style="margin: var(--oas-space-2) 0">Great when you want the scroll position visible at all times</p>
+      <p style="margin: var(--oas-space-2) 0">Friendly to desktop mouse interaction</p>
     </div>
   </oas-scroll-area>
 </DemoBlock>
@@ -248,11 +272,12 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `auto-hide` | The scrollbar is shown only while scrolling/hovering, then auto-hides after a timeout | `boolean` | — |
+| `auto-hide` | Legacy boolean: the scrollbar is shown only while scrolling/hovering, then auto-hides after a timeout — equivalent to `type="auto"` when `type` is absent; `type` takes precedence when present | `boolean` | — |
 | `end-distance` | Trigger distance for `oas-end-reached` (px, default `0`): within N px of the bottom/right edge counts as reached | `string` | `0` |
 | `height` | Viewport height (px); when unset, grows with the content | — | — |
 | `scroll-shadow` | Scroll edge shadow (CSS-only): the shadow fades at each edge as you scroll, hinting that more content exists | — | — |
 | `stick-to-bottom` | Stick to bottom: when new content is appended and the user is at the bottom (≤8px), auto-scroll to the new bottom; never interrupts reading history | `boolean` | — |
+| `type` | Scrollbar visibility mode (`auto \| always \| scroll \| hover`, default `always`): `auto` shows while scrolling/hovering then auto-hides after a delay; `always` keeps it visible on overflow; `scroll` shows only while scrolling; `hover` shows only while hovering. Invalid values fall back to `always` | `ScrollAreaType` | `always` |
 | `width` | Viewport width (px); when unset, fills the host width | — | — |
 
 #### Events

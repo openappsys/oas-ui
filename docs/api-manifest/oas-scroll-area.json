@@ -11,6 +11,12 @@
       "observed": true
     },
     {
+      "name": "type",
+      "type": "ScrollAreaType",
+      "default": "always",
+      "observed": true
+    },
+    {
       "name": "auto-hide",
       "type": "boolean",
       "observed": true
