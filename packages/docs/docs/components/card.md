@@ -170,6 +170,23 @@
   </div>
 </DemoBlock>
 
+## 紧凑密度（density）
+
+`density="compact"` 是独立于 `size` 的布局密度档：同时收紧卡片内各分区的内边距与间距（比 `size="small"` 更紧），适合信息密集的看板、列表与设置面板；默认 `default`。与 `size`（字号刻度）正交，可叠加使用。
+
+<DemoBlock title="density=compact 紧凑密度">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--oas-space-4); width: 100%;">
+    <oas-card density="compact" title="紧凑密度">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">内边距与各分区间距同时收紧，信息密度更高。</p>
+      <oas-button slot="actions" size="small">查看</oas-button>
+    </oas-card>
+    <oas-card title="默认密度（对照）">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">默认档位下的常规内边距与间距。</p>
+      <oas-button slot="actions" size="small">查看</oas-button>
+    </oas-card>
+  </div>
+</DemoBlock>
+
 ## 无边框形态（variant）
 
 `variant="borderless"` 去掉容器描边，适合嵌套在卡片内做设置分组；默认 `outlined`。
@@ -462,6 +479,7 @@ const refreshSelectCount = () => {
 | `clickable` | 整卡可点（focusable，点击/Enter/Space 派发 `oas-click`） | `boolean` | — |
 | `cover-alt` | 封面图 alt 文本（无障碍） | `string` | — |
 | `cover-src` | 封面图 URL，置于卡片顶部（object-fit: cover 自适应裁切） | `string` | — |
+| `density` | 密度档位：`default`（默认）/ `compact`（内边距与分区间距同时收紧，比 `size="small"` 更紧，适合信息密集型场景；与 `size` 正交，可叠加） | — | — |
 | `description` | Meta 副文（title 下方弱化小字；与 description 插槽双通道，slot 优先） | `string` | — |
 | `disabled` | 禁用整卡：灰化 + aria-disabled + 停派交互事件 + href 摘链（已选视觉保留） | `boolean` | — |
 | `header-bordered` | 头部分割线（默认 true；`"false"` 关闭） | — | — |

@@ -170,6 +170,23 @@ With `loading`, the content area switches to a skeleton placeholder (sheen anima
   </div>
 </DemoBlock>
 
+## Compact Density
+
+`density="compact"` is a layout-density tier independent from `size`: it tightens both the paddings and the spacing between the card's regions (tighter than `size="small"`), which suits dense dashboards, lists and settings panels. The default is `default`. It is orthogonal to `size` (the type scale) and the two compose.
+
+<DemoBlock title="density=compact compact density">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--oas-space-4); width: 100%;">
+    <oas-card density="compact" title="Compact density">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Paddings and inter-region spacing tighten for higher information density.</p>
+      <oas-button slot="actions" size="small">View</oas-button>
+    </oas-card>
+    <oas-card title="Default density (reference)">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Regular paddings and spacing at the default tier.</p>
+      <oas-button slot="actions" size="small">View</oas-button>
+    </oas-card>
+  </div>
+</DemoBlock>
+
 ## Borderless Variant
 
 `variant="borderless"` removes the container border, which suits nested setting groups inside another card. The default is `outlined`.
@@ -461,6 +478,7 @@ onMounted(async () => {
 | `clickable` | Whole card clickable (focusable; click / Enter / Space dispatch `oas-click`) | `boolean` | — |
 | `cover-alt` | Cover image alt text (accessibility) | `string` | — |
 | `cover-src` | Cover image URL placed at the top of the card (object-fit: cover) | `string` | — |
+| `density` | Density tier: `default` (default) / `compact` (tightens paddings and inter-region spacing, tighter than `size="small"`, for dense layouts; orthogonal to `size` and composable with it) | — | — |
 | `description` | Meta secondary text (muted line under the title; dual channel with the description slot, slot wins) | `string` | — |
 | `disabled` | Disables the card: graying + aria-disabled + no interaction events + href stripped (selected look preserved) | `boolean` | — |
 | `header-bordered` | Header divider line (default true; `"false"` hides it) | — | — |
