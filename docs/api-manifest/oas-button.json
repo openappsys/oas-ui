@@ -114,6 +114,17 @@
       "observed": true
     },
     {
+      "name": "active",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "active-tint",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "wave",
       "type": "string",
       "default": "true",
@@ -209,6 +220,18 @@
     {
       "name": "--oas-button-group-width",
       "default": "auto"
+    },
+    {
+      "name": "--oas-button-active-tint-text",
+      "default": "var(--oas-color-primary-text)"
+    },
+    {
+      "name": "--oas-button-active-tint",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-button-active-tint-on",
+      "default": "var(--oas-color-text-on-primary)"
     },
     {
       "name": "--oas-button-color-deep",

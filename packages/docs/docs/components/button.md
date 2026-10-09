@@ -229,6 +229,30 @@
   <oas-button color="#be185d" variant="filled">粉色浅底</oas-button>
 </DemoBlock>
 
+## 选中态（active / active-tint）
+
+`active` 布尔属性标记选中态（**受控**：组件不自切，宿主监听 `oas-click` 回写），选中视觉与 button-group 选中项同挂点（`aria-pressed`）；`active-tint` 自定义选中着色——11 预设名解析为主题 token（明暗双主题自动适配），任意 CSS 色值原样注入，实底选中的文字色按底色亮度自适应（对比度由宿主负责，WCAG AA 4.5:1）。
+
+<DemoBlock title="选中态">
+  <oas-button active>默认（选中淡底）</oas-button>
+  <oas-button type="primary" active>主要（选中实底）</oas-button>
+  <oas-button type="text" active>文字（选中着色）</oas-button>
+  <oas-button variant="outlined" active>描边（选中着色）</oas-button>
+</DemoBlock>
+
+<DemoBlock title="active-tint 自定义选中色">
+  <oas-button type="primary" active active-tint="#047857">自定义实底选中</oas-button>
+  <oas-button active active-tint="purple">预设色选中</oas-button>
+  <oas-button variant="filled" active active-tint="green">浅底形态选中</oas-button>
+</DemoBlock>
+
+<DemoBlock title="点击切换选中（受控回写）">
+  <oas-space>
+    <oas-button type="primary" id="btn-active-toggle">点我切换选中态</oas-button>
+    <span id="btn-active-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </oas-space>
+</DemoBlock>
+
 ## 按下反馈
 
 `wave` 开启按下反馈（轻微下沉 + 加深，默认开）；`wave="false"` 关闭。
@@ -317,6 +341,8 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `active` | 选中态（受控）：布尔属性在场即选中，宿主监听 oas-click 回写（组件不自切）；选中视觉与 button-group 选中项同挂点（aria-pressed），配 active-tint 自定义选中色 | `boolean` | — |
+| `active-tint` | 选中态着色：11 预设名解析为 --oas-preset-*-text 档（明暗主题各一份），任意 CSS 色值原样注入；实底选中（primary 等）文字色按底色亮度自适应，对比度由宿主负责 | `string` | — |
 | `auto-insert-space` | 中文间自动空格：两个连续汉字间插入空格（排版优化，默认关） | `string` | — |
 | `autofocus` | 自动聚焦：挂载后聚焦内部按钮（原生 autofocus 不穿透 Shadow DOM，组件转发） | `boolean` | — |
 | `block` | 占满父容器宽度（块级） | `boolean` | — |
@@ -366,6 +392,9 @@
 
 | CSS 变量 | 说明 | 默认值 |
 | --- | --- | --- |
+| `--oas-button-active-tint` | 选中态着色主通道（active-tint 属性注入；预设名解析为 --oas-preset-*-text 档，字面色原样）；消费于选中态文字/描边/淡底与实底 | `var(--oas-color-primary)` |
+| `--oas-button-active-tint-on` | 实底选中（primary 等）的文字色：自定义 tint 按底色亮度取黑/白；未注入时回落 --oas-color-text-on-primary | `var(--oas-color-text-on-primary)` |
+| `--oas-button-active-tint-text` | 选中态文字安全档：tint 的主题感知加深/提亮混合（light 掺近黑、dark 掺近白；预设名直接用 -text 档 token）——软底选中与 text 形态选中的文字 | `var(--oas-color-primary-text)` |
 | `--oas-button-bg` | — | `var(--oas-color-primary)` |
 | `--oas-button-color` | — | `var(--oas-color-text-primary)` |
 | `--oas-button-color-deep` | 自定义色（`color`）的文字安全档：hover/active 及 outlined/dashed/filled 文字的加深混合色（组件按 `--oas-deep-mix` / `--oas-deep-sink` 注入；无自定义色时不生效） | `var(--btn-color, var(--oas-color-text-primary))` |
@@ -388,5 +417,17 @@ onMounted(() => {
   form?.addEventListener('reset', () => {
     out.textContent = 'reset：输入已恢复初始值'
   })
+
+  // active 受控切换 demo：真切换 + 可见反馈（aria-pressed 与选中视觉随点击翻转）
+  const toggle = document.getElementById('btn-active-toggle')
+  const activeOut = document.getElementById('btn-active-out')
+  const syncActive = () => {
+    if (activeOut) activeOut.textContent = `active: ${toggle?.hasAttribute('active') ? 'true' : 'false'}`
+  }
+  toggle?.addEventListener('oas-click', () => {
+    toggle.toggleAttribute('active')
+    syncActive()
+  })
+  syncActive()
 })
 </script>

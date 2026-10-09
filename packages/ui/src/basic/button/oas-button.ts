@@ -12,6 +12,20 @@ export type ButtonHtmlType = 'button' | 'submit' | 'reset'
 
 const VALID_BUTTON_VARIANTS: readonly ButtonVariant[] = ['solid', 'outlined', 'dashed', 'filled', 'text', 'link']
 const VALID_HTML_TYPES: readonly ButtonHtmlType[] = ['button', 'submit', 'reset']
+/** active-tint 预设色板名（ui-spec §4.1 color 协议词表，映射 --oas-preset-* token；实底选中取 -text 档） */
+const PRESET_TINTS: readonly string[] = [
+  'magenta',
+  'red',
+  'volcano',
+  'orange',
+  'gold',
+  'lime',
+  'green',
+  'cyan',
+  'blue',
+  'geekblue',
+  'purple',
+]
 
 /** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重）；sm/md/lg 别名由 shared/size 静默映射，不告警 */
 const warnedSizes = new Set<string>()
@@ -194,16 +208,20 @@ button:focus-visible {
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
-/* 选中态（button-group 单/多选经 host aria-pressed 标记）；置于类型规则前，有色按钮由下方规则覆盖。
+/* 选中态（button-group 单/多选经 host aria-pressed 标记；active 属性复用同一挂点，见 update()）；
+   置于类型规则前，有色按钮由下方规则覆盖。
+   active-tint 选中着色（组件按属性注入 --oas-button-active-tint*，未注入时全部回落 primary 系 token，
+   与既有选中视觉零差异）：文字安全档/实底 on 色由 JS 侧按色值来源派生（预设走 -text 档 token、
+   字面色走主题感知混合/亮度判定）。
    有意设计：禁用 × 选中时颜色维度的选中态不被禁用规则反超（特异性更高）——禁用组里
    当前选中项保持主色淡底/描边（经 opacity 0.6 柔化），用户能读到「当前状态是什么」；
    全灰会丢失状态信息（通行做法：禁用只灭交互与装饰变形，不抹状态）。折射/亮度等
    装饰变形则由下方禁用守卫钉死 */
 :host([aria-pressed='true']) button,
 :host([aria-pressed='true']) a[part='button'] {
-  color: var(--oas-color-primary-text);
-  border-color: var(--oas-color-primary);
-  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+  color: var(--oas-button-active-tint-text, var(--oas-color-primary-text));
+  border-color: var(--oas-button-active-tint, var(--oas-color-primary));
+  background: color-mix(in srgb, var(--oas-button-active-tint, var(--oas-color-primary)) 12%, transparent);
 }
 button[part~='button'][disabled],
 button[disabled] {
@@ -277,10 +295,10 @@ button.danger:hover {
    带 href 的 primary/text 按钮静止时永久显示选中色 */
 :host([aria-pressed='true']) button.primary,
 :host([aria-pressed='true']) a[part='button'].primary {
-  background: var(--oas-color-primary-active);
-  border-color: var(--oas-color-primary-active);
-  /* 选中态基础规则（:host([aria-pressed]) button）把文字设为主色，primary 深底上需白字 */
-  color: var(--oas-color-text-on-primary);
+  background: var(--oas-button-active-tint, var(--oas-color-primary-active));
+  border-color: var(--oas-button-active-tint, var(--oas-color-primary-active));
+  /* 选中态基础规则（:host([aria-pressed]) button）把文字设为主色/tint，primary 深底上需 on 色 */
+  color: var(--oas-button-active-tint-on, var(--oas-color-text-on-primary));
 }
 :host([aria-pressed='true']) button.success,
 :host([aria-pressed='true']) button.warning,
@@ -292,8 +310,8 @@ button.danger:hover {
 }
 :host([aria-pressed='true']) button.text,
 :host([aria-pressed='true']) a[part='button'].text {
-  color: var(--oas-color-primary);
-  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+  color: var(--oas-button-active-tint-text, var(--oas-color-primary));
+  background: color-mix(in srgb, var(--oas-button-active-tint, var(--oas-color-primary)) 12%, transparent);
 }
 button.small {
   height: var(--oas-button-height, var(--oas-control-height-sm));
@@ -780,6 +798,8 @@ export class OASButton extends OASElement {
       'plain',
       'variant',
       'color',
+      'active',
+      'active-tint',
       'wave',
       'auto-insert-space',
       'wrap',
@@ -802,6 +822,9 @@ export class OASButton extends OASElement {
   private autoPromises: PromiseLike<unknown>[] = []
   /** 被包装的 oas-click 宿主监听器（原函数 → 包装函数），removeEventListener 时反查解绑 */
   private wrappedListeners = new WeakMap<EventListener, EventListener>()
+  /** aria-pressed 所有权标记：上次 update 由 active 属性写入时为真——撤除时只回收自己写的，
+   *  不动 button-group 对子按钮 aria-pressed 的直接管理（group 读写均不走本组件 update） */
+  private ownedAriaPressed = false
 
   constructor() {
     super()
@@ -1088,6 +1111,41 @@ export class OASButton extends OASElement {
             : 'solid'
     const color = this.getAttr('color', '')
     const wave = this.getAttr('wave', 'true') !== 'false'
+    const active = this.hasAttr('active')
+
+    // active 选中态 → host aria-pressed="true"（与 button-group 选中视觉同一 CSS 挂点，
+    // 选中样式全部由既有 :host([aria-pressed]) 规则承载）。受控语义：组件不自切，
+    // 宿主监听 oas-click 回写 active。所有权标记见字段注释
+    if (active) {
+      this.setAttribute('aria-pressed', 'true')
+      this.ownedAriaPressed = true
+    } else if (this.ownedAriaPressed) {
+      this.ownedAriaPressed = false
+      if (this.getAttribute('aria-pressed') === 'true') this.removeAttribute('aria-pressed')
+    }
+
+    // active-tint 选中着色（ui-spec §4.1 color 协议）：预设名 → --oas-preset-*-text 档
+    // （预设基色对白字对比不达标，实底选中与 toggle-button 同取更深一档）；任意色值原样注入，
+    // 文字安全档走主题感知混合（--oas-deep-mix/--oas-deep-sink，light 掺近黑压深 / dark 掺近白提亮）、
+    // 实底文字按底色亮度取黑/白。仅在属性在场时注入，缺省零回归
+    const tint = this.getAttr('active-tint', '').trim()
+    if (tint) {
+      const isPreset = (PRESET_TINTS as readonly string[]).includes(tint)
+      const base = isPreset ? `var(--oas-preset-${tint}-text)` : tint
+      this.btn.style.setProperty('--oas-button-active-tint', base)
+      // 文字安全档：预设名/变量写法无法 JS 算亮度——预设直接用 -text 档，字面色才走混合派生
+      this.btn.style.setProperty(
+        '--oas-button-active-tint-text',
+        isPreset ? base : `color-mix(in srgb, ${tint} var(--oas-deep-mix, 72%), var(--oas-deep-sink, black))`,
+      )
+      const onColor = isPreset ? '' : pickOnColor(tint)
+      if (onColor) this.btn.style.setProperty('--oas-button-active-tint-on', onColor)
+      else this.btn.style.removeProperty('--oas-button-active-tint-on')
+    } else {
+      this.btn.style.removeProperty('--oas-button-active-tint')
+      this.btn.style.removeProperty('--oas-button-active-tint-text')
+      this.btn.style.removeProperty('--oas-button-active-tint-on')
+    }
 
     const hasLeadingIcon = icon !== '' && lookupIcon(icon) !== undefined
     const hasEndIcon = iconEnd !== '' && lookupIcon(iconEnd) !== undefined

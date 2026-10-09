@@ -1,7 +1,7 @@
 // 复核回归：button——历史缺陷固化断言。
 
 import { test, expect } from '@playwright/test'
-import { up } from './helpers'
+import { up, realClick } from './helpers'
 
 test('button color 自定义色：无 type 也按 variant 着色，文字色按底色亮度自适应', async ({ page }) => {
   // 曾现 bug：--btn-color 只在 type 类上定义、solid 规则只认 primary——无 type 的 color
@@ -311,4 +311,61 @@ test('button compound 双行变体：副文本行落在按钮框内（高度自�
   expect(r.descHidden, 'description 部件有内容不隐藏').toBe(false)
   expect(r.btnH, '双行按钮高度应大于单行档（32px）').toBeGreaterThan(32)
   expect(r.descInBounds, '副文本行完整落在按钮框内').toBe(true)
+})
+
+test('button active/active-tint：选中视觉与 button-group 同挂点（aria-pressed），active-tint 覆盖选中色（含暗色）', async ({
+  page,
+}) => {
+  // 新能力回归：active 受控选中（宿主回写，组件不自切）复用 :host([aria-pressed]) 既有选中
+  // 视觉挂点；active-tint 按属性注入 --oas-button-active-tint*（预设名 → -text 档 token，
+  // 字面色原样 + 亮度自适应文字），未注入时回落 primary 系 token（零回归）。
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button[active]')
+  const readSelected = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('oas-button[active]')].map((el) => {
+        const inner = el.shadowRoot!.querySelector('button, a[part="button"]')!
+        const cs = getComputedStyle(inner)
+        return { pressed: el.getAttribute('aria-pressed'), bg: cs.backgroundColor, color: cs.color }
+      }),
+    )
+  const light = await readSelected()
+  // 机制：active 在场 → host aria-pressed="true"（button-group 同挂点）
+  for (const [i, r] of light.entries()) {
+    expect(r.pressed, `第 ${i + 1} 个 active 按钮 aria-pressed 应为 true`).toBe('true')
+  }
+  // 视觉机制：默认按钮选中淡底（12% tint mix）；与未选中按钮可区分
+  const restBg = await page.evaluate(() => {
+    const plain = [...document.querySelectorAll('oas-button')].find((b) => b.textContent?.trim() === '默认按钮')!
+    return getComputedStyle(plain.shadowRoot!.querySelector('button')!).backgroundColor
+  })
+  expect(light[0]!.bg, '默认按钮选中淡底应带 12% 透明度').toContain('0.12')
+  expect(light[0]!.bg, '选中底色应与未选中可区分').not.toBe(restBg)
+  // primary 实底选中 + 自定义 tint：整底为 tint 全色
+  expect(light[4]!.bg, 'primary 实底选中应为自定义 tint 全色（#047857）').toBe('rgb(4, 120, 87)')
+  // 预设名（purple）：解析为 -text 档 token，暗色走 dark 变体（与 light 可区分）
+  const presetLight = light[5]!.bg
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await page.waitForTimeout(300)
+  const presetDark = await page.evaluate(
+    () =>
+      getComputedStyle(document.querySelector('oas-button[active-tint="purple"]')!.shadowRoot!.querySelector('button')!)
+        .backgroundColor,
+  )
+  expect(presetDark, '预设 tint 暗色应解析 dark token（与 light 可区分）').not.toBe(presetLight)
+  await page.evaluate(() => document.documentElement.classList.remove('dark'))
+  await page.waitForTimeout(300)
+  // 受控回写 demo 真点：aria-pressed 与选中视觉随点击翻转（可见反馈，非仅 console）
+  await realClick(page, '#btn-active-toggle', null)
+  const after = await page.evaluate(() => {
+    const el = document.getElementById('btn-active-toggle')!
+    return {
+      pressed: el.getAttribute('aria-pressed'),
+      bg: getComputedStyle(el.shadowRoot!.querySelector('button')!).backgroundColor,
+      out: document.getElementById('btn-active-out')!.textContent,
+    }
+  })
+  expect(after.pressed, '点击后受控回写 active → aria-pressed=true').toBe('true')
+  expect(after.bg, '点击后选中视觉变化（淡底出现）').not.toBe(restBg)
+  expect(after.out, 'demo 反馈文本显示 active: true').toContain('true')
 })

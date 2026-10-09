@@ -229,6 +229,30 @@ Custom color values are rendered as-is (never rewritten) — make sure the text/
   <oas-button color="#be185d" variant="filled">Pink filled</oas-button>
 </DemoBlock>
 
+## Selected state (active / active-tint)
+
+The `active` boolean attribute marks the selected state (**controlled**: the component does not toggle itself; the host writes back on `oas-click`). Selected visuals share the button-group selection anchor (`aria-pressed`). `active-tint` customizes the selected color — the 11 preset names resolve to theme tokens (light/dark adapted automatically), any CSS color is injected as-is, and the solid selected text color adapts to background luminance (contrast is the host's responsibility, WCAG AA 4.5:1).
+
+<DemoBlock title="Selected state">
+  <oas-button active>Default (soft selected tint)</oas-button>
+  <oas-button type="primary" active>Primary (solid selected)</oas-button>
+  <oas-button type="text" active>Text (selected tint)</oas-button>
+  <oas-button variant="outlined" active>Outlined (selected tint)</oas-button>
+</DemoBlock>
+
+<DemoBlock title="active-tint custom selected color">
+  <oas-button type="primary" active active-tint="#047857">Custom solid selected</oas-button>
+  <oas-button active active-tint="purple">Preset selected</oas-button>
+  <oas-button variant="filled" active active-tint="green">Filled variant selected</oas-button>
+</DemoBlock>
+
+<DemoBlock title="Toggle selection on click (controlled write-back)">
+  <oas-space>
+    <oas-button type="primary" id="btn-active-toggle">Click to toggle selection</oas-button>
+    <span id="btn-active-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </oas-space>
+</DemoBlock>
+
 ## Press feedback
 
 `wave` enables a subtle press feedback (slight sink + darken, on by default); `wave="false"` disables it.
@@ -317,6 +341,8 @@ Clicking "Submit" fires the native `submit` event (the demo calls `preventDefaul
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `active` | Selected state (controlled): present = selected; the host writes back on oas-click (the component does not toggle itself); selected visuals share the button-group selection anchor (aria-pressed), pair with active-tint for a custom tint | `boolean` | — |
+| `active-tint` | Selected-state tint: the 11 preset names resolve to --oas-preset-*-text tokens (one set per theme); any CSS color is injected as-is; solid selected text color (primary etc.) adapts to background luminance, contrast is the host’s responsibility | `string` | — |
 | `auto-insert-space` | CJK auto spacing: inserts a space between two consecutive CJK characters (off by default) | `string` | — |
 | `autofocus` | Autofocus: focuses the inner button on mount (native autofocus does not pierce Shadow DOM; the component forwards it) | `boolean` | — |
 | `block` | Fill the full width of the parent container (block level) | `boolean` | — |
@@ -366,6 +392,9 @@ Clicking "Submit" fires the native `submit` event (the demo calls `preventDefaul
 
 | CSS Variable | Description | Default |
 | --- | --- | --- |
+| `--oas-button-active-tint` | Selected-state tint channel (injected by the active-tint attribute; preset names resolve to --oas-preset-*-text, raw colors as-is); consumed by selected text/border/soft and solid fills | `var(--oas-color-primary)` |
+| `--oas-button-active-tint-on` | Label color on solid selected fills (primary etc.): custom tints pick black/white by background luminance; falls back to --oas-color-text-on-primary when not injected | `var(--oas-color-text-on-primary)` |
+| `--oas-button-active-tint-text` | Text-safe variant of the selected tint: theme-aware deepen/lighten mix (toward near-black in light, near-white in dark; presets use the -text token directly) — labels on soft selected fills and text-variant selection | `var(--oas-color-primary-text)` |
 | `--oas-button-bg` | — | `var(--oas-color-primary)` |
 | `--oas-button-color` | — | `var(--oas-color-text-primary)` |
 | `--oas-button-color-deep` | Text-safe deepened variant of the custom `color`: the color-mix used for hover/active and outlined/dashed/filled text (injected by the component via `--oas-deep-mix` / `--oas-deep-sink`; inert without a custom color) | `var(--btn-color, var(--oas-color-text-primary))` |
@@ -388,5 +417,17 @@ onMounted(() => {
   form?.addEventListener('reset', () => {
     out.textContent = 'reset: inputs restored to initial values'
   })
+
+  // Controlled active demo: real toggling + visible feedback (aria-pressed and the selected visuals flip on click)
+  const toggle = document.getElementById('btn-active-toggle')
+  const activeOut = document.getElementById('btn-active-out')
+  const syncActive = () => {
+    if (activeOut) activeOut.textContent = `active: ${toggle?.hasAttribute('active') ? 'true' : 'false'}`
+  }
+  toggle?.addEventListener('oas-click', () => {
+    toggle.toggleAttribute('active')
+    syncActive()
+  })
+  syncActive()
 })
 </script>

@@ -1016,3 +1016,100 @@ describe('OASButton loading-icon 插槽（自定义加载图标，缺省内置 s
     expect(css).toMatch(/\.spinner\.custom-icon\s*{[^}]*animation: none/)
   })
 })
+
+describe('active / active-tint 选中态', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('active / active-tint 属性在 observedAttributes 中', () => {
+    expect(OASButton.observedAttributes).toContain('active')
+    expect(OASButton.observedAttributes).toContain('active-tint')
+  })
+
+  it('active：宿主 aria-pressed="true"（与 button-group 选中态同一 CSS 挂点），移除后回收组件自写的标记', () => {
+    const el = mount({ active: '' })
+    expect(el.getAttribute('aria-pressed')).toBe('true')
+    el.removeAttribute('active')
+    expect(el.hasAttribute('aria-pressed')).toBe(false)
+    // 再设回（属性动态切换）
+    el.setAttribute('active', '')
+    expect(el.getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('active 不回收宿主/button-group 直接设置的 aria-pressed（所有权标记：组件只回收自己写的）', () => {
+    const el = mount({}, '按钮')
+    // 模拟 button-group 直接管理选中（不经 active 属性）
+    el.setAttribute('aria-pressed', 'true')
+    el.setAttribute('type', 'primary') // 触发一次 update()：active 不在场，不得动 aria-pressed
+    expect(el.getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('active-tint 预设名解析为 -text 档 token（明暗主题各一份，唯一来源 theme）', () => {
+    const el = mount({ 'active-tint': 'green' })
+    const btn = shadowBtn(el)
+    expect(btn.style.getPropertyValue('--oas-button-active-tint')).toBe('var(--oas-preset-green-text)')
+    expect(btn.style.getPropertyValue('--oas-button-active-tint-text')).toBe('var(--oas-preset-green-text)')
+    // 预设名无法 JS 算亮度：不注入 on 色（走 CSS 兜底 token）
+    expect(btn.style.getPropertyValue('--oas-button-active-tint-on')).toBe('')
+  })
+
+  it('active-tint 自定义色：原样注入 + 主题感知文字安全档 + 实底文字按底色亮度取黑/白', () => {
+    const el = mount({ 'active-tint': '#7c3aed' })
+    const btn = shadowBtn(el)
+    expect(btn.style.getPropertyValue('--oas-button-active-tint')).toBe('#7c3aed')
+    expect(btn.style.getPropertyValue('--oas-button-active-tint-text')).toBe(
+      'color-mix(in srgb, #7c3aed var(--oas-deep-mix, 72%), var(--oas-deep-sink, black))',
+    )
+    expect(btn.style.getPropertyValue('--oas-button-active-tint-on')).toBe('#ffffff')
+    // 亮色 tint（黄）：实底文字取深
+    const bright = mount({ 'active-tint': '#fde047' })
+    expect(shadowBtn(bright).style.getPropertyValue('--oas-button-active-tint-on')).toBe('#18181b')
+  })
+
+  it('未设 active-tint：不注入任何 active-tint 变量（零回归）', () => {
+    const el = mount({})
+    const btn = shadowBtn(el)
+    expect(btn.style.getPropertyValue('--oas-button-active-tint')).toBe('')
+    expect(btn.style.getPropertyValue('--oas-button-active-tint-text')).toBe('')
+    expect(btn.style.getPropertyValue('--oas-button-active-tint-on')).toBe('')
+  })
+
+  it('CSS：选中态规则消费 --oas-button-active-tint*（base / primary 实底 / text 三处），变量缺省回落原 token', () => {
+    const el = mount({})
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css, 'base 选中态：文字/描边/淡底走 tint，缺省回落 primary 系 token').toMatch(
+      /:host\(\[aria-pressed='true'\]\) button,\s*:host\(\[aria-pressed='true'\]\) a\[part='button'\]\s*\{[^}]*--oas-button-active-tint/,
+    )
+    expect(css, 'primary 实底选中：整底 tint + on 色文字').toMatch(
+      /:host\(\[aria-pressed='true'\]\) button\.primary,[^}]*--oas-button-active-tint-on/,
+    )
+    expect(css, 'text 形态选中：文字/淡底走 tint').toMatch(
+      /:host\(\[aria-pressed='true'\]\) button\.text,[^}]*--oas-button-active-tint/,
+    )
+  })
+
+  it('active + href（a 变体）：宿主 aria-pressed 同步，CSS 选中规则覆盖 a[part=button]', () => {
+    const el = mount({ href: '#guide', active: '' })
+    const a = el.shadowRoot!.querySelector('a[part="button"]')!
+    expect(a).not.toBeNull()
+    expect(el.getAttribute('aria-pressed')).toBe('true')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/:host\(\[aria-pressed='true'\]\) a\[part='button'\]/)
+  })
+
+  it('active + disabled：禁用机制不受选中态影响（原生 disabled + 点击拦截）', () => {
+    const el = mount({ active: '', disabled: '' })
+    const btn = shadowBtn(el)
+    expect(btn.disabled).toBe(true)
+    expect(el.getAttribute('aria-pressed')).toBe('true')
+    let fired = 0
+    el.addEventListener('oas-click', () => fired++)
+    btn.click()
+    expect(fired).toBe(0)
+  })
+})
