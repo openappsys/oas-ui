@@ -162,6 +162,28 @@
 
 `size` 切换轨道高度与滑块直径三档（也接受 `small`/`medium`/`large` 词表，支持 config-provider 全局注入），非法值回落 md。
 
+## 滑块形态（thumb）
+
+<DemoBlock title="thumb 两形态：round 圆推子（默认）/ pointer 细指针">
+  <div style="display: flex; flex-direction: column; gap: 16px; width: 360px;">
+    <oas-slider thumb="round" value="40"></oas-slider>
+    <oas-slider thumb="pointer" value="60"></oas-slider>
+  </div>
+</DemoBlock>
+
+`thumb` 切换把手形态：`round` 为默认粗圆推子；`pointer` 为细指针（薄条沿轴摆放，适合色轨/波形等需要精细读位、不遮挡轨道的场景）。`pointer` 恒走自定义视觉层（原生拇指隐藏），水平为薄竖条、垂直为薄横条；非法值回落 `round`。
+
+## 立体声电平表（levels）
+
+<DemoBlock title="levels {left,right}：圆推子下方的双条电平（0–1 归一化）">
+  <div style="display: flex; gap: 56px; align-items: flex-start;">
+    <oas-slider label="左声道" levels='{"left":0.72,"right":0.4}' value="72" style="width: 200px"></oas-slider>
+    <oas-slider label="右声道" levels='{"left":0.4,"right":0.72}' value="40" style="width: 200px"></oas-slider>
+  </div>
+</DemoBlock>
+
+`levels` 在圆推子下方渲染双条立体声电平（`{ left, right }`，0–1 归一化，越界自动夹取），适合音频/混音推子。电平表为装饰性（`aria-hidden`、不参与交互）；仅 `thumb="round"`（默认形态）渲染，`thumb="pointer"` 时忽略。也可用函数式赋值 `el.levels = { left, right }`（置 `null` 清除）。
+
 ## 颜色
 
 <DemoBlock title="color / track-color">
@@ -172,6 +194,26 @@
 </DemoBlock>
 
 `color` 控制填充区/滑块/经过刻度色，`track-color` 控制轨道底色：预设语义色名（`primary`/`success`/`warning`/`danger`，自动跟随暗色主题）映射到主题 token；其他值（如 `#ff5500`、`var(--x)`）原样透传为 CSS 色值。
+
+## 色轨（track）
+
+<DemoBlock title="track 色轨：hue 色相 / saturation 饱和度 / luminance 明度 / gradient 渐变">
+  <div style="display: flex; flex-direction: column; gap: 24px; width: 360px;">
+    <oas-slider track="hue" value="55"></oas-slider>
+    <oas-slider track="saturation" value="70"></oas-slider>
+    <oas-slider track="luminance" value="40"></oas-slider>
+    <oas-slider track="gradient" value="60"></oas-slider>
+  </div>
+</DemoBlock>
+
+`track` 把轨道底色换成色空间渐变轨，适合取色/亮度/增益等「以轨道本身表达取值」的场景：
+
+- `hue`：色相光谱（红→黄→绿→青→蓝→品红→红）；
+- `saturation`：中性灰（`--oas-color-border-strong`）→ 推子色（饱和度）；
+- `luminance`：黑 → 白（明度）；
+- `gradient`：轨道底色（`--oas-slider-track`）→ 推子色（`--oas-slider-color`）两段 CSS 渐变。
+
+渐变方向随轴向与反转感知：水平从左、垂直从下，`reverse`/RTL 即镜像反向。色轨激活时单色填充自动隐藏（光谱自表达，避免遮挡），轨道仍可用 `track-color` 覆盖底色、`color` 覆盖推子色；非预设值回落普通纯色轨道。
 
 ## 垂直模式
 
@@ -185,7 +227,7 @@
   </div>
 </DemoBlock>
 
-`vertical` 切换为垂直滑块（最小值在下、`reverse` 镜像到上）：刻度标签移到轨道右侧、值气泡默认朝右、`show-input` 输入框移到轨道下方。高度默认 200px，通过 CSS 变量 `--oas-slider-height` 调整。
+`vertical` 切换为垂直滑块（最小值在下、`reverse` 镜像到上）：刻度标签移到轨道右侧、值气泡默认朝右、`show-input` 输入框移到轨道下方。高度默认 200px，通过 CSS 变量 `--oas-slider-height` 调整。把手形态由 `thumb` 控制（`pointer` 细指针 / `round` 圆推子，见「滑块形态」）。
 
 ## 反向
 
@@ -336,6 +378,7 @@ onMounted(() => {
 | `label-8` | 第 8 个把手的可访问名（多滑块模式；优先于 labels/label） | — | — |
 | `labels` | 逐把手可访问名的 JSON 数组（如 `["低","中","高"]`；label-N 属性族优先） | `string` | — |
 | `large-step` | 键盘大步步进量（Shift+方向键 / PageUp / PageDown 生效）；缺省为 10 × step；每次按键即派发 `oas-input` + `oas-change` | `string` | — |
+| `levels` | 立体声电平表：`{ left, right }` 归一化值（0–1，越界夹取），在圆推子下方渲染双条电平（装饰性 aria-hidden、不参与交互）；仅 `thumb="round"`（默认）渲染，pointer 形态忽略；非法/缺失隐藏 | `{ left?: number; right?: number } \| string \| null` | — |
 | `marks` | 刻度：JSON 对象 `{"0":"0°C"}`（值→标签）或 JSON 数组 `[0,26,60]`（也可为 `{"value":26,"label":"26°C"}`）；刻度点与标签显示在轨道下方，值经过处高亮；`reverse` 下位置镜像 | `string \| Record<string, string \| number> \| number[]` | — |
 | `max` | 范围 | `string` | `100` |
 | `min` | 范围 | `string` | `0` |
@@ -352,8 +395,10 @@ onMounted(() => {
 | `size` | 尺寸三档：sm / md / lg（也接受 small / medium / large 词表，支持 config-provider 注入），轨道高度与滑块直径联动；非法值回落 md | `string` | `medium` |
 | `start-point` | 单值模式填充起点（缺省从 `min` 端填充）：值大于起点向右延伸、小于向左延伸；自动夹取到 `[min, max]`；`range` 模式忽略 | `string` | — |
 | `step` | 步长；特殊值 `"mark"` 把可选值约束到 `marks` 刻度值集合（拖动/键盘/受控值吸附最近刻度，需搭配 `marks`，缺省回落 1） | `string` | `1` |
+| `thumb` | 把手形态：`round` 粗圆推子（默认）/ `pointer` 细指针（薄条沿轴摆放，恒走自定义视觉层、原生拇指隐藏；水平薄竖条、垂直薄横条）；非法值回落 round | `string` | `round` |
 | `tooltip-always` | 值气泡常显（默认拖动/键盘聚焦时显示） | `boolean` | — |
 | `tooltip-position` | 值气泡方向：top / bottom / left / right；水平默认 top、垂直默认 right，非法值回落默认 | `string` | — |
+| `track` | 色轨预设：`hue` 色相光谱 / `saturation` 中性灰→推子色 / `luminance` 黑→白 / `gradient` 轨道色→推子色两段 CSS 渐变；方向随轴向与 `reverse`/RTL 镜像；激活时隐藏单色填充（光谱自表达），非预设值回落纯色轨道 | `string` | — |
 | `track-color` | 轨道底色：预设语义色名映射主题 token；其他值原样透传为 CSS 色值 | — | — |
 | `value` | 当前值（受控）：单值为数值字符串；`range` 模式为 JSON 数组 `[lo, hi]` 或逗号分隔字符串 `"lo,hi"`，交互后写回 JSON 数组字符串（表单收集可直接 `JSON.parse`） | `number \| number[]` | — |
 | `value-width` | show-input 读数框宽度：纯数字按 px、带单位值原样透传（写入 --oas-slider-value-width）；缺省 72px | `string` | — |
@@ -363,6 +408,7 @@ onMounted(() => {
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `levels` | 立体声电平值 `{ left, right }`（0–1 归一化；对象赋值反射为 JSON attribute，置 `null` 清除） | `{ left?: number; right?: number } \| string \| null` | — |
 | `value` | 当前值：单把手为数值，多把手为数值数组 | `number \| number[]` | — |
 
 #### 事件
@@ -388,6 +434,7 @@ onMounted(() => {
 | `--oas-slider-height` | — | `200px` |
 | `--oas-slider-thumb-size` | — | `14px` |
 | `--oas-slider-track` | — | `var(--oas-color-border)` |
+| `--oas-slider-track-image` | 色轨渐变图（`track` 预设时由组件写入；轨道伪元素的 background-image，缺省 none 走纯色轨道底色） | `none` |
 | `--oas-slider-track-size` | — | `4px` |
 | `--oas-slider-value-width` | — | `72px` |
 

@@ -796,3 +796,156 @@ test('slider show-track="false"：data-track 镜像 + 轨道条与填充真实�
   expect(r.fill).toBe('none')
   expect(r.disabled).toBe(false) // 把手保留可交互
 })
+
+// ---- 增强批：thumb 两形态（pointer 细指针 / round 圆推子） ----
+
+test('slider thumb=pointer：细指针形态真实渲染（薄条 + 原生拇指隐藏），round 为默认粗圆', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[thumb="pointer"]')
+  const r = await page.evaluate(() => {
+    const pointerEl = document.querySelector('oas-slider[thumb="pointer"]')!
+    const roundEl = [...document.querySelectorAll('oas-slider')].find(
+      (s) => s.getAttribute('thumb') !== 'pointer' && !s.hasAttribute('vertical'),
+    )!
+    const probe = (el: Element) => {
+      const root = el.shadowRoot!
+      const wrap = root.querySelector('.track-wrap')!.getBoundingClientRect()
+      const th = root.querySelector<HTMLElement>('.custom-thumb:not([hidden])')
+      if (!th) return null
+      const tr = th.getBoundingClientRect()
+      return {
+        shape: el.getAttribute('data-thumb-shape'),
+        width: Math.round(tr.width * 10) / 10,
+        height: Math.round(tr.height * 10) / 10,
+        centerY: tr.top + tr.height / 2 - (wrap.top + wrap.height / 2),
+        customThumb: el.hasAttribute('data-custom-thumb'),
+      }
+    }
+    return { pointer: probe(pointerEl), round: probe(roundEl) }
+  })
+  expect(r.pointer, 'pointer demo 应有可见指针').not.toBeNull()
+  expect(r.pointer!.shape).toBe('pointer')
+  expect(r.pointer!.customThumb, 'pointer 应隐藏原生拇指（走自定义视觉层）').toBe(true)
+  // 指针为薄竖条：宽约 3px，明显窄于圆推子直径
+  expect(r.pointer!.width, '指针应是薄条（宽 3px 左右）').toBeLessThanOrEqual(5)
+  expect(r.pointer!.height, '指针高度应大于宽度（竖条）').toBeGreaterThan(r.pointer!.width)
+  if (r.round) {
+    expect(r.pointer!.width, '指针应明显窄于圆推子').toBeLessThan(r.round.width)
+    expect(r.round.shape).toBe('round')
+  }
+  // 指针中心仍对齐轨道中线（translate -50%,-50% 不被形态改变破坏）
+  expect(Math.abs(r.pointer!.centerY), '指针中心应与轨道中线对齐').toBeLessThanOrEqual(1)
+})
+
+// ---- 增强批：立体声电平表（levels {left,right}） ----
+
+test('slider levels：圆推子下方双条电平按归一化值渲染（真实高度）+ aria-hidden 装饰性', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[levels]')
+  const r = await page
+    .locator('oas-slider[levels]')
+    .first()
+    .evaluate((node) => {
+      const root = node.shadowRoot!
+      const th = root.querySelector<HTMLElement>('.custom-thumb:not([hidden])')!
+      const levels = th.querySelector<HTMLElement>('.levels')!
+      const bars = [...levels.querySelectorAll<HTMLElement>('.level-bar')]
+      const ratio = (bar: HTMLElement): number => {
+        const fill = bar.querySelector<HTMLElement>('.level-fill')!
+        const barH = bar.getBoundingClientRect().height
+        const fillH = fill.getBoundingClientRect().height
+        return barH ? fillH / barH : 0
+      }
+      const thumbRect = th.getBoundingClientRect()
+      const levelsRect = levels.getBoundingClientRect()
+      return {
+        display: getComputedStyle(levels).display,
+        ariaHidden: levels.getAttribute('aria-hidden'),
+        left: ratio(bars[0]!),
+        right: ratio(bars[1]!),
+        // 电平表应位于推子下方（top 大于推子顶部；中心在推子中心之下）
+        below: levelsRect.top > thumbRect.top,
+      }
+    })
+  expect(r.display, '有 levels 时电平表应可见').not.toBe('none')
+  expect(r.ariaHidden, '电平表为装饰性').toBe('true')
+  expect(r.left, '左条高度应按 0.72 归一化').toBeCloseTo(0.72, 1)
+  expect(r.right, '右条高度应按 0.4 归一化').toBeCloseTo(0.4, 1)
+  expect(r.below, '电平表应位于圆推子下方').toBe(true)
+})
+
+// ---- 增强批：色轨（track = hue / saturation / luminance / gradient） ----
+
+test('slider track：色轨真实渲染（伪元素 background-image 为渐变）+ 单色填充隐藏 + 方向随反转镜像', async ({
+  page,
+}) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[track="hue"]')
+  const r = await page.evaluate(() => {
+    const rail = (sel: string) => {
+      const el = document.querySelector(sel)!
+      const root = el.shadowRoot!
+      const before = getComputedStyle(root.querySelector<HTMLElement>('.track-wrap')!, '::before')
+      const fill = getComputedStyle(root.querySelector<HTMLElement>('.fill')!)
+      return {
+        colorTrack: el.hasAttribute('data-color-track'),
+        image: before.backgroundImage,
+        fillDisplay: fill.display,
+      }
+    }
+    return { hue: rail('oas-slider[track="hue"]'), sat: rail('oas-slider[track="saturation"]') }
+  })
+  // 色轨激活：轨道伪元素渲染 CSS 渐变，单色填充退场
+  expect(r.hue.colorTrack, 'hue 应镜像 data-color-track').toBe(true)
+  expect(r.hue.image, 'hue 轨道伪元素背景应为渐变').toContain('linear-gradient')
+  expect(r.hue.fillDisplay, '色轨激活时填充应隐藏').toBe('none')
+  expect(r.sat.image, 'saturation 轨道伪元素背景应为渐变').toContain('linear-gradient')
+  // 渐变方向应可被反向镜像验证（hue 无 reverse demo 时至少确认变量含方向词）
+  const img = r.hue.image
+  expect(img, 'hue 渐变应含方向（to right/left/top/bottom）').toMatch(/to (right|left|top|bottom)/)
+})
+
+// ---- 增强批：速度档统一（Shift 精调 ×0.2 / Alt 超精调 ×0.04，与 knob 一致，无 ×5 加速） ----
+
+test('slider scrub：Shift 精调真拖比无修饰更细（同一像素位移值变化更小）', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#slider-scrub')
+  await defocus(page)
+  await page.locator('#slider-scrub').evaluate((node) => node.scrollIntoView({ block: 'center' }))
+  const el = page.locator('#slider-scrub')
+  const box = await el.evaluate((node) => {
+    const num = node.shadowRoot!.querySelector<HTMLInputElement>('[data-role="num"]')!
+    const r = num.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  const reset = async () => {
+    const track = await el.evaluate((node) => {
+      const t = node.shadowRoot!.querySelector('[part="track-wrap"]')!
+      const r = t.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    })
+    await page.mouse.dblclick(track.x, track.y)
+    await expect.poll(() => el.evaluate((node) => Number(node.getAttribute('value'))), { timeout: 3000 }).toBe(50)
+  }
+  await reset()
+
+  // 无修饰：+40px = 10 步（step=1）→ +10
+  await page.mouse.move(box.x, box.y)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 40, box.y, { steps: 8 })
+  await page.mouse.up()
+  const plain = await el.evaluate((node) => Number(node.getAttribute('value')))
+  expect(plain).toBe(60)
+
+  await reset()
+  // Shift 精调：同 +40px = 10 步 × 0.2 = +2
+  await page.keyboard.down('Shift')
+  await page.mouse.move(box.x, box.y)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 40, box.y, { steps: 8 })
+  await page.mouse.up()
+  await page.keyboard.up('Shift')
+  const fine = await el.evaluate((node) => Number(node.getAttribute('value')))
+  expect(fine).toBe(52)
+  expect(fine - 50, 'Shift 精调值变化应小于无修饰（同一像素位移）').toBeLessThan(plain - 50)
+})

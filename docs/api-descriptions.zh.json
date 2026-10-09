@@ -2890,7 +2890,10 @@
       "precision": "值的小数位（scrub 步进与气泡/aria-valuetext 显示按此修约；未设置时步进值按 step/修饰倍率的有效小数位自动收敛浮点尾巴，显式设置是更严的值约束）；优先级低于 format/formatTooltip 格式化通道",
       "value-width": "show-input 读数框宽度：纯数字按 px、带单位值原样透传（写入 --oas-slider-value-width）；缺省 72px",
       "accent-color": "读数区 scrub 拖动中的强调色：预设语义色名（primary / success / warning / danger，随暗色主题）映射主题 token，其他值原样透传；缺省回落主题主色",
-      "show-track": "轨道显隐开关（默认显示）；show-track=\"false\" 隐藏轨道条与选中填充（把手保留，仍可拖动与键盘操作）"
+      "show-track": "轨道显隐开关（默认显示）；show-track=\"false\" 隐藏轨道条与选中填充（把手保留，仍可拖动与键盘操作）",
+      "thumb": "把手形态：`round` 粗圆推子（默认）/ `pointer` 细指针（薄条沿轴摆放，恒走自定义视觉层、原生拇指隐藏；水平薄竖条、垂直薄横条）；非法值回落 round",
+      "levels": "立体声电平表：`{ left, right }` 归一化值（0–1，越界夹取），在圆推子下方渲染双条电平（装饰性 aria-hidden、不参与交互）；仅 `thumb=\"round\"`（默认）渲染，pointer 形态忽略；非法/缺失隐藏",
+      "track": "色轨预设：`hue` 色相光谱 / `saturation` 中性灰→推子色 / `luminance` 黑→白 / `gradient` 轨道色→推子色两段 CSS 渐变；方向随轴向与 `reverse`/RTL 镜像；激活时隐藏单色填充（光谱自表达），非预设值回落纯色轨道"
     },
     "events": {
       "oas-change": "松手确定，`detail: { value }`（单值数字；`range` 模式为 `[lo, hi]` 数组）",
@@ -2900,10 +2903,12 @@
       "template[slot=\"custom-thumb\"]": "自定义滑块内容（图标/文字）：`template[slot=\"custom-thumb\"]`（静态模板，克隆到每个可见滑块，范围模式两个滑块都会克隆）或普通 `[slot=\"custom-thumb\"]` 元素"
     },
     "props": {
-      "value": "当前值：单把手为数值，多把手为数值数组"
+      "value": "当前值：单把手为数值，多把手为数值数组",
+      "levels": "立体声电平值 `{ left, right }`（0–1 归一化；对象赋值反射为 JSON attribute，置 `null` 清除）"
     },
     "cssVars": {
-      "--oas-glass-refraction": "液态玻璃边缘折射滤镜（`data-glass` 生效，默认 none）；局部停用覆盖为**空值**（`--oas-glass-refraction: ;`）——不得用 `none`（与 button 态的 brightness() 混排会使整条 filter 声明非法）"
+      "--oas-glass-refraction": "液态玻璃边缘折射滤镜（`data-glass` 生效，默认 none）；局部停用覆盖为**空值**（`--oas-glass-refraction: ;`）——不得用 `none`（与 button 态的 brightness() 混排会使整条 filter 声明非法）",
+      "--oas-slider-track-image": "色轨渐变图（`track` 预设时由组件写入；轨道伪元素的 background-image，缺省 none 走纯色轨道底色）"
     }
   },
   "oas-snackbar": {

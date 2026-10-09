@@ -1570,6 +1570,15 @@ describe('OASSlider 数值 scrub（读数区像素锚定计步）', () => {
     window.dispatchEvent(pointer('pointerup', 120, 1, { shift: true }))
   })
 
+  it('Alt 超精调（×0.04）：同为 20px 位移仅 +0.2（比 Shift 更细一档）', () => {
+    const el = mount({ value: '10', step: '1', 'show-input': '' })
+    numInput(el).dispatchEvent(pointer('pointerdown', 100))
+    // 20px = 5 步 × 0.04 = +0.2（浮点尾巴自动收敛为一位小数）
+    window.dispatchEvent(pointer('pointermove', 120, 1, { alt: true }))
+    expect(el.value).toBeCloseTo(10.2, 6)
+    window.dispatchEvent(pointer('pointerup', 120, 1, { alt: true }))
+  })
+
   it('无 precision 时浮点尾巴自动收敛：step=0.1 拖 3 步值通道干净（0.3 而非 0.30000000000000004）', () => {
     const el = mount({ value: '0', min: '0', max: '1', step: '0.1', 'show-input': '' })
     const changes: number[] = []
@@ -1771,5 +1780,252 @@ describe('OASSlider 专业属性（precision / value-width / accent-color / show
       const tip = el.shadowRoot!.querySelector<HTMLElement>('.thumb-tip')!
       expect(tip.textContent).toBe('1.5')
     }).not.toThrow()
+  })
+})
+
+// ---- 增强批：thumb 两形态（pointer 细指针 / round 圆推子） ----
+
+describe('OASSlider thumb 两形态（pointer / round）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('缺省 round：镜像 data-thumb-shape="round"，自定义视觉层不启用', () => {
+    const el = mount({ value: '30' })
+    expect(el.getAttribute('data-thumb-shape')).toBe('round')
+    expect(thumbEl(el, 'value').hidden).toBe(true)
+    expect(el.hasAttribute('data-custom-thumb')).toBe(false)
+  })
+
+  it('thumb="round" 显式时同缺省', () => {
+    const el = mount({ thumb: 'round', value: '30' })
+    expect(el.getAttribute('data-thumb-shape')).toBe('round')
+    expect(thumbEl(el, 'value').hidden).toBe(true)
+  })
+
+  it('thumb="pointer"：镜像 pointer，且自定义视觉层恒启用（原生拇指隐藏）', () => {
+    const el = mount({ thumb: 'pointer', value: '30' })
+    expect(el.getAttribute('data-thumb-shape')).toBe('pointer')
+    expect(thumbEl(el, 'value').hidden).toBe(false)
+    expect(el.hasAttribute('data-custom-thumb')).toBe(true)
+  })
+
+  it('thumb 非法值回落 round', () => {
+    const el = mount({ thumb: 'triangle', value: '30' })
+    expect(el.getAttribute('data-thumb-shape')).toBe('round')
+  })
+
+  it('运行时切换 thumb：镜像随之更新，视觉层按形态显隐', () => {
+    const el = mount({ value: '30' })
+    expect(thumbEl(el, 'value').hidden).toBe(true)
+    el.setAttribute('thumb', 'pointer')
+    expect(el.getAttribute('data-thumb-shape')).toBe('pointer')
+    expect(thumbEl(el, 'value').hidden).toBe(false)
+    el.setAttribute('thumb', 'round')
+    expect(el.getAttribute('data-thumb-shape')).toBe('round')
+    expect(thumbEl(el, 'value').hidden).toBe(true)
+  })
+
+  it('vertical + pointer：指针形态在垂直轴定位（top）、data-vertical 保留', () => {
+    const el = mount({ vertical: '', thumb: 'pointer', value: '40' })
+    expect(el.getAttribute('data-thumb-shape')).toBe('pointer')
+    expect(el.hasAttribute('data-vertical')).toBe(true)
+    const th = thumbEl(el, 'value')
+    expect(th.hidden).toBe(false)
+    // happy-dom 无轨道尺寸 → 回落百分比：垂直值 40 = 距顶 60%
+    expect(th.style.top).toBe('60%')
+  })
+
+  it('CSS：pointer 形态规则存在且随垂直轴互换，round 默认样式保留', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(":host([data-thumb-shape='pointer']) .custom-thumb")
+    expect(css).toContain(":host([data-thumb-shape='pointer'][data-vertical]) .custom-thumb")
+    expect(css).toContain('--oas-slider-thumb-size')
+  })
+})
+
+// ---- 增强批：立体声电平表（levels {left,right}） ----
+
+describe('OASSlider 立体声电平表（levels）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function levelsOf(el: OASSlider): HTMLElement {
+    return thumbEl(el, 'value').querySelector<HTMLElement>('.levels')!
+  }
+
+  function fillHeights(el: OASSlider): string[] {
+    return [...levelsOf(el).querySelectorAll<HTMLElement>('.level-fill')].map((n) => n.style.height)
+  }
+
+  it('levels 提供 {left,right}：电平表常显 + 两条填充高度按归一化值', () => {
+    const el = mount({ value: '50', levels: '{"left":0.8,"right":0.4}' })
+    expect(levelsOf(el).hidden).toBe(false)
+    expect(levelsOf(el).querySelectorAll('.level-bar')).toHaveLength(2)
+    expect(fillHeights(el)).toEqual(['80%', '40%'])
+    // 电平表为装饰性，不参与交互
+    expect(levelsOf(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('电平表存在时恒启用自定义视觉层（不需拖动/聚焦）', () => {
+    const el = mount({ value: '50', levels: '{"left":0.5,"right":0.5}' })
+    expect(thumbEl(el, 'value').hidden).toBe(false)
+    expect(el.hasAttribute('data-custom-thumb')).toBe(true)
+  })
+
+  it('越界值夹取到 [0,1]', () => {
+    const el = mount({ value: '50', levels: '{"left":2,"right":-1}' })
+    expect(fillHeights(el)).toEqual(['100%', '0%'])
+  })
+
+  it('缺省单侧时另一侧回落 0', () => {
+    const el = mount({ value: '50', levels: '{"left":0.5}' })
+    expect(fillHeights(el)).toEqual(['50%', '0%'])
+  })
+
+  it('无 levels / 非法 JSON：电平表隐藏', () => {
+    const none = mount({ value: '50' })
+    expect(levelsOf(none).hidden).toBe(true)
+    const bad = mount({ value: '50', levels: '{oops' })
+    expect(levelsOf(bad).hidden).toBe(true)
+    const arr = mount({ value: '50', levels: '[0.1,0.2]' })
+    expect(levelsOf(arr).hidden).toBe(true)
+  })
+
+  it('pointer 形态不渲染电平表（电平表仅属圆推子）', () => {
+    const el = mount({ value: '50', thumb: 'pointer', levels: '{"left":0.9,"right":0.1}' })
+    expect(levelsOf(el).hidden).toBe(true)
+  })
+
+  it('levels property：对象赋值反射为 JSON attribute，getter 返回解析对象', () => {
+    const el = mount({ value: '50' })
+    el.levels = { left: 0.25, right: 0.75 }
+    expect(el.getAttribute('levels')).toBe('{"left":0.25,"right":0.75}')
+    expect(el.levels).toEqual({ left: 0.25, right: 0.75 })
+    expect(fillHeights(el)).toEqual(['25%', '75%'])
+    el.levels = null
+    expect(el.hasAttribute('levels')).toBe(false)
+    expect(el.levels).toBeNull()
+    expect(levelsOf(el).hidden).toBe(true)
+  })
+
+  it('运行时更新 levels：填充高度实时跟随', () => {
+    const el = mount({ value: '50', levels: '{"left":0.1,"right":0.2}' })
+    expect(fillHeights(el)).toEqual(['10%', '20%'])
+    el.setAttribute('levels', '{"left":0.9,"right":0.6}')
+    expect(fillHeights(el)).toEqual(['90%', '60%'])
+  })
+
+  it('vertical 下电平表同样渲染（定位轴由 CSS 切换）', () => {
+    const el = mount({ vertical: '', value: '50', levels: '{"left":0.3,"right":0.7}' })
+    expect(levelsOf(el).hidden).toBe(false)
+    expect(el.hasAttribute('data-vertical')).toBe(true)
+  })
+
+  it('CSS：电平表容器 / 两条目 / hidden 覆盖规则存在', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('.levels')
+    expect(css).toContain('.level-bar')
+    expect(css).toContain('.level-fill')
+    expect(css).toMatch(/\.levels\[hidden\]\s*{\s*display:\s*none/)
+    expect(css).toMatch(/:host\(\[data-vertical\]\)\s*\.levels/)
+  })
+})
+
+// ---- 增强批：色轨（track = hue / saturation / luminance / gradient） ----
+
+describe('OASSlider 色轨（track 预设渐变）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function trackImage(el: OASSlider): string {
+    return el.style.getPropertyValue('--oas-slider-track-image')
+  }
+
+  it('track="hue"：写宿主渐变变量（光谱）+ data-color-track 镜像', () => {
+    const el = mount({ track: 'hue', value: '40' })
+    const img = trackImage(el)
+    expect(img).toContain('linear-gradient(to right')
+    expect(img).toContain('#ff0000')
+    expect(img).toContain('#0000ff')
+    expect(el.hasAttribute('data-color-track')).toBe(true)
+  })
+
+  it('track="saturation"：轨道色→推子色的 token 渐变', () => {
+    const el = mount({ track: 'saturation', value: '40' })
+    const img = trackImage(el)
+    expect(img).toContain('var(--oas-color-border-strong)')
+    expect(img).toContain('var(--oas-slider-color)')
+  })
+
+  it('track="luminance"：黑→白渐变', () => {
+    const el = mount({ track: 'luminance', value: '40' })
+    const img = trackImage(el)
+    expect(img).toContain('#000000')
+    expect(img).toContain('#ffffff')
+  })
+
+  it('track="gradient"：轨道色→推子色两段 CSS 渐变', () => {
+    const el = mount({ track: 'gradient', value: '40' })
+    const img = trackImage(el)
+    expect(img).toContain('linear-gradient')
+    expect(img).toContain('var(--oas-slider-track)')
+    expect(img).toContain('var(--oas-slider-color)')
+  })
+
+  it('未设置 / 非法 track：不写渐变变量、无 data-color-track（回落纯色轨道）', () => {
+    const none = mount({ value: '40' })
+    expect(trackImage(none)).toBe('')
+    expect(none.hasAttribute('data-color-track')).toBe(false)
+    const bad = mount({ track: 'neon', value: '40' })
+    expect(trackImage(bad)).toBe('')
+    expect(bad.hasAttribute('data-color-track')).toBe(false)
+  })
+
+  it('方向随轴与反转感知：reverse → to left；RTL → to left', async () => {
+    const rev = mount({ track: 'hue', reverse: '', value: '40' })
+    expect(trackImage(rev)).toContain('to left')
+    const rtl = mount({ track: 'hue', dir: 'rtl', value: '40' })
+    await Promise.resolve()
+    expect(trackImage(rtl)).toContain('to left')
+  })
+
+  it('垂直模式：min 在下 → to top；vertical + reverse → to bottom', () => {
+    const v = mount({ track: 'hue', vertical: '', value: '40' })
+    expect(trackImage(v)).toContain('to top')
+    const vr = mount({ track: 'hue', vertical: '', reverse: '', value: '40' })
+    expect(trackImage(vr)).toContain('to bottom')
+  })
+
+  it('运行时切换 track：变量随属性更新，移除后清理', () => {
+    const el = mount({ value: '40' })
+    el.setAttribute('track', 'hue')
+    expect(trackImage(el)).toContain('linear-gradient')
+    el.setAttribute('track', 'luminance')
+    expect(trackImage(el)).toContain('#ffffff')
+    el.removeAttribute('track')
+    expect(trackImage(el)).toBe('')
+    expect(el.hasAttribute('data-color-track')).toBe(false)
+  })
+
+  it('CSS：轨道伪元素消费渐变变量，色轨隐藏填充（show-track=false 规则仍保留）', () => {
+    const css = mount().shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('background-image: var(--oas-slider-track-image, none)')
+    expect(css).toMatch(/:host\(\[data-color-track\]\)\s*\.fill\s*{\s*display:\s*none/)
+    expect(css).toMatch(/:host\(\[data-track='false'\]\)\s*\.track-wrap::before/)
   })
 })

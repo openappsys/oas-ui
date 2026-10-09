@@ -162,6 +162,28 @@ Visibility: shown while dragging or when keyboard-focused by default; `tooltip-a
 
 `size` switches three track/thumb sizes (also accepts `small`/`medium`/`large`, supports config-provider injection); invalid values fall back to md.
 
+## Thumb Shape (thumb)
+
+<DemoBlock title="thumb two shapes: round thumb (default) / pointer">
+  <div style="display: flex; flex-direction: column; gap: 16px; width: 360px;">
+    <oas-slider thumb="round" value="40"></oas-slider>
+    <oas-slider thumb="pointer" value="60"></oas-slider>
+  </div>
+</DemoBlock>
+
+`thumb` switches the handle shape: `round` is the default thick circular thumb; `pointer` is a thin pointer (a slim bar sitting along the axis — suited to color tracks/waveforms where precise reading matters and the track should stay visible). `pointer` always uses the custom visual layer (native thumb hidden): a thin vertical bar horizontally, a thin horizontal bar vertically; invalid values fall back to `round`.
+
+## Stereo Level Meter (levels)
+
+<DemoBlock title="levels {left,right}: dual level bars below the round thumb (0–1 normalized)">
+  <div style="display: flex; gap: 56px; align-items: flex-start;">
+    <oas-slider label="Left" levels='{"left":0.72,"right":0.4}' value="72" style="width: 200px"></oas-slider>
+    <oas-slider label="Right" levels='{"left":0.4,"right":0.72}' value="40" style="width: 200px"></oas-slider>
+  </div>
+</DemoBlock>
+
+`levels` renders a dual stereo level meter below the round thumb (`{ left, right }`, normalized 0–1, clamped) — suited to audio/mixer faders. The meter is decorative (`aria-hidden`, non-interactive); it renders only for `thumb="round"` (the default) and is ignored for `thumb="pointer"`. You can also assign functionally: `el.levels = { left, right }` (clear with `null`).
+
 ## Colors
 
 <DemoBlock title="color / track-color">
@@ -172,6 +194,26 @@ Visibility: shown while dragging or when keyboard-focused by default; `tooltip-a
 </DemoBlock>
 
 `color` controls the fill/thumb/passed-tick color and `track-color` the track base color: preset semantic names (`primary`/`success`/`warning`/`danger`, following dark theme automatically) map to theme tokens; any other value (e.g. `#ff5500`, `var(--x)`) is passed through as a CSS color.
+
+## Color Track (track)
+
+<DemoBlock title="track color rails: hue / saturation / luminance / gradient">
+  <div style="display: flex; flex-direction: column; gap: 24px; width: 360px;">
+    <oas-slider track="hue" value="55"></oas-slider>
+    <oas-slider track="saturation" value="70"></oas-slider>
+    <oas-slider track="luminance" value="40"></oas-slider>
+    <oas-slider track="gradient" value="60"></oas-slider>
+  </div>
+</DemoBlock>
+
+`track` turns the rail into a color-space gradient rail — suited to picking color/brightness/gain, where the track itself expresses the value:
+
+- `hue`: full hue spectrum (red → yellow → green → cyan → blue → magenta → red);
+- `saturation`: neutral gray (`--oas-color-border-strong`) → thumb color (saturation);
+- `luminance`: black → white (brightness);
+- `gradient`: track base (`--oas-slider-track`) → thumb color (`--oas-slider-color`), a two-stop CSS gradient.
+
+The gradient direction is axis- and direction-aware: left-to-right horizontally, bottom-to-top vertically, mirrored under `reverse`/RTL. While a color track is active the single-color fill is hidden (the spectrum speaks for itself); the rail can still be recolored via `track-color` and the thumb via `color`. Non-preset values fall back to a plain solid track.
 
 ## Vertical
 
@@ -185,7 +227,7 @@ Visibility: shown while dragging or when keyboard-focused by default; `tooltip-a
   </div>
 </DemoBlock>
 
-`vertical` switches to a vertical slider (minimum at the bottom; `reverse` mirrors to the top): mark labels move to the right of the track, the value bubble faces right by default, and `show-input` inputs move below the track. Height defaults to 200px, adjustable via the `--oas-slider-height` CSS variable.
+`vertical` switches to a vertical slider (minimum at the bottom; `reverse` mirrors to the top): mark labels move to the right of the track, the value bubble faces right by default, and `show-input` inputs move below the track. Height defaults to 200px, adjustable via the `--oas-slider-height` CSS variable. The handle shape is controlled by `thumb` (`pointer` thin pointer / `round` circular thumb, see Thumb Shape).
 
 ## Reverse
 
@@ -336,6 +378,7 @@ onMounted(() => {
 | `label-8` | Accessible name for thumb 8 (multi-thumb mode; takes precedence over labels/label) | — | — |
 | `labels` | JSON string array of per-thumb accessible names (e.g. `["低","中","高"]`; the label-N attribute family takes precedence) | `string` | — |
 | `large-step` | Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change` | `string` | — |
+| `levels` | Stereo level meter: `{ left, right }` normalized values (0–1, clamped) rendered as dual bars below the round thumb (decorative `aria-hidden`, non-interactive); renders only for `thumb="round"` (the default) and is ignored for pointer; invalid/missing hides it | `{ left?: number; right?: number } \| string \| null` | — |
 | `marks` | Ticks: JSON object `{"0":"0°C"}` (value→label) or JSON array `[0,26,60]` (also `{"value":26,"label":"26°C"}`); tick marks and labels are shown below the track, highlighted where the value passes; positions mirror under `reverse` | `string \| Record<string, string \| number> \| number[]` | — |
 | `max` | Range | `string` | `100` |
 | `min` | Range | `string` | `0` |
@@ -352,8 +395,10 @@ onMounted(() => {
 | `size` | Three sizes: sm / md / lg (also accepts small / medium / large, supports config-provider injection); track height and thumb diameter scale together; invalid values fall back to md | `string` | `medium` |
 | `start-point` | Fill origin for single-value mode (default `min`): the fill extends right above the start and left below it; clamped to `[min, max]`; ignored in `range` mode | `string` | — |
 | `step` | Step; the special value `"mark"` restricts selectable values to the `marks` set (dragging/keyboard/controlled values snap to the nearest mark; requires `marks`, falls back to 1) | `string` | `1` |
+| `thumb` | Thumb shape: `round` thick circular thumb (default) / `pointer` thin pointer (a slim bar along the axis; always uses the custom visual layer with the native thumb hidden — thin vertical bar horizontally, thin horizontal bar vertically); invalid values fall back to round | `string` | `round` |
 | `tooltip-always` | Keep the value bubble always visible (by default shown while dragging or keyboard-focused) | `boolean` | — |
 | `tooltip-position` | Value bubble direction: top / bottom / left / right; top by default horizontally, right by default vertically; invalid values fall back to the default | `string` | — |
+| `track` | Color rail preset: `hue` hue spectrum / `saturation` neutral gray→thumb color / `luminance` black→white / `gradient` track base→thumb color (a two-stop CSS gradient); direction is axis- and `reverse`/RTL-aware; the single-color fill is hidden while active (the spectrum speaks for itself); non-preset values fall back to a solid track | `string` | — |
 | `track-color` | Track base color: preset semantic names map to theme tokens; any other value is passed through as a CSS color | — | — |
 | `value` | Current value (controlled): numeric string for single mode; JSON array `[lo, hi]` or comma-separated string `"lo,hi"` in `range` mode, written back as a JSON array string after interaction (form collection can `JSON.parse` directly) | `number \| number[]` | — |
 | `value-width` | Width of the show-input readout box: plain numbers get px, unit values pass through (written to --oas-slider-value-width); defaults to 72px | `string` | — |
@@ -363,6 +408,7 @@ onMounted(() => {
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
+| `levels` | Stereo level values `{ left, right }` (normalized 0–1; object assignment reflects to a JSON attribute, clear with `null`) | `{ left?: number; right?: number } \| string \| null` | — |
 | `value` | Current value: a number for a single thumb, or an array of numbers for multiple thumbs | `number \| number[]` | — |
 
 #### Events
@@ -388,6 +434,7 @@ onMounted(() => {
 | `--oas-slider-height` | — | `200px` |
 | `--oas-slider-thumb-size` | — | `14px` |
 | `--oas-slider-track` | — | `var(--oas-color-border)` |
+| `--oas-slider-track-image` | Color-rail gradient image (written by the component for a `track` preset; the track pseudo-element's background-image, defaults to none for a solid rail color) | `none` |
 | `--oas-slider-track-size` | — | `4px` |
 | `--oas-slider-value-width` | — | `72px` |
 

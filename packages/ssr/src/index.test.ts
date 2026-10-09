@@ -401,8 +401,10 @@ describe('@oas-ui/ssr renderToString', () => {
 
   it('oas-slider：range 骨架 + value/min/max 同步', async () => {
     const html = await renderToString('oas-slider', { value: '60', min: '0', max: '100' }, '')
-    // size/tooltip-position 恒反射 data-*（能力收尾批起）
-    expect(html).toContain('<oas-slider value="60" min="0" max="100" data-size="md" data-tooltip-pos="top">')
+    // size / thumb-shape / tooltip-position 恒反射 data-*
+    expect(html).toContain('<oas-slider value="60" min="0" max="100" data-size="md"')
+    expect(html).toContain('data-thumb-shape="round"')
+    expect(html).toContain('data-tooltip-pos="top">')
     // N 把手泛化（D26）后模板属性序为 type 在前（part 在后）——按新序断言
     expect(html).toContain('<input type="range" part="track"')
   })

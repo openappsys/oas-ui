@@ -118,7 +118,9 @@ const STYLE = `
   right: 0;
   height: var(--oas-slider-track-size);
   border-radius: var(--oas-slider-track-size);
-  background: var(--oas-slider-track);
+  /* 轨道底色走 token；色轨（track 预设）由 JS 写入 --oas-slider-track-image 渐变覆盖 */
+  background-color: var(--oas-slider-track);
+  background-image: var(--oas-slider-track-image, none);
 }
 :host([data-vertical]) .track-wrap::before {
   top: 0;
@@ -135,6 +137,10 @@ const STYLE = `
 /* show-track="false"：轨道条整体退场（灰轨底层 + 选中填充一并隐藏，把手保留可拖/可聚焦） */
 :host([data-track='false']) .track-wrap::before,
 :host([data-track='false']) .fill {
+  display: none;
+}
+/* 色轨（track 预设）：轨道本身表达色相/明度，隐藏单色填充避免遮挡光谱 */
+:host([data-color-track]) .fill {
   display: none;
 }
 input[type="range"] {
@@ -317,6 +323,17 @@ input:disabled {
   border: 2px solid var(--oas-slider-color);
   box-shadow: none;
 }
+/* thumb=pointer：细指针形态（薄竖条，水平/垂直随轴互换）——置于 data-thumb-content 之后，
+   同特异性下后者覆盖，保证 pointer 造型优先于自定义内容环 */
+:host([data-thumb-shape='pointer']) .custom-thumb {
+  width: 3px;
+  height: calc(var(--oas-slider-thumb-size) + 8px);
+  border-radius: 2px;
+}
+:host([data-thumb-shape='pointer'][data-vertical]) .custom-thumb {
+  width: calc(var(--oas-slider-thumb-size) + 8px);
+  height: 3px;
+}
 /* 垂直模式：定位原点换到轨道中线 x（top 由 JS 按值写入） */
 :host([data-vertical]) .custom-thumb {
   top: 0;
@@ -353,6 +370,49 @@ input:disabled {
   max-width: 100%;
   max-height: 100%;
   overflow: hidden;
+}
+/* 立体声电平表：圆推子下方的双条电平指示（levels 属性提供归一化值；装饰性，不参与交互） */
+.levels {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 18px;
+  pointer-events: none;
+}
+/* author display:flex 会压过 UA [hidden]，无电平值时显式隐藏 */
+.levels[hidden] {
+  display: none;
+}
+.level-bar {
+  position: relative;
+  width: 3px;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 1px;
+  background: var(--oas-slider-track);
+}
+.level-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  background: var(--oas-slider-color);
+  transition: height var(--oas-transition-fast) var(--oas-ease-out);
+}
+/* 垂直模式：电平表移到圆推子右侧（沿横向排布，避免与下方输入区/刻度重叠） */
+:host([data-vertical]) .levels {
+  top: 50%;
+  left: calc(100% + 4px);
+  transform: translateY(-50%);
+}
+:host([disabled]) .levels,
+:host([data-disabled]) .levels {
+  opacity: 0.6;
 }
 /* 值气泡：默认在滑块上方；tooltip-position 四向切换（vertical 默认 right 由 JS 镜像 data-tooltip-pos） */
 .thumb-tip {
@@ -547,6 +607,10 @@ export class OASSlider extends OASElement {
       'value-width',
       'accent-color',
       'show-track',
+      // 增强批：thumb 两形态（pointer 细指针 / round 圆推子）+ 立体声电平表 + 色轨
+      'thumb',
+      'levels',
+      'track',
       'label-1',
       'label-2',
       'label-3',
@@ -625,6 +689,23 @@ export class OASSlider extends OASElement {
   }
   set marks(value: string | Record<string, string | number> | number[]) {
     this.setAttribute('marks', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /**
+   * @apiProperty 立体声电平表（立体声推子下方的双条电平指示）：`{ left, right }` 归一化值（0–1）。
+   * 属性通道为 JSON 字符串；宿主框架可用对象直接赋值（反射为 JSON attribute）。
+   * 仅 `thumb="round"`（默认）渲染；非法/空值隐藏电平表。
+   */
+  get levels(): { left: number; right: number } | null {
+    return this.parseLevels()
+  }
+  set levels(value: { left?: number; right?: number } | string | null) {
+    if (value == null || value === '') {
+      this.removeAttribute('levels')
+    } else {
+      this.setAttribute('levels', typeof value === 'string' ? value : JSON.stringify(value))
+    }
+    if (this.hasRendered) this.update()
   }
 
   /**
@@ -779,10 +860,21 @@ export class OASSlider extends OASElement {
     this.toggleAttribute('data-range', this.hasAttr('range'))
     this.toggleAttribute('data-multi', multi)
     this.setAttribute('data-size', this.normalizeSize())
+    this.setAttribute('data-thumb-shape', this.normalizeThumb())
     this.setAttribute('data-tooltip-pos', this.tooltipPosition(vertical))
     this.applyHostVar('color', '--oas-slider-color')
     this.applyHostVar('track-color', '--oas-slider-track')
     this.applyHostVar('accent-color', '--oas-slider-accent')
+    // 色轨（track 预设）：JS 组装方向感知的 CSS 渐变写入宿主变量，CSS 由 .track-wrap::before 消费；
+    // 色轨激活时隐藏单色填充（光谱自表达，避免遮挡）
+    const trackImage = this.colorTrackImage()
+    if (trackImage) {
+      this.style.setProperty('--oas-slider-track-image', trackImage)
+      this.setAttribute('data-color-track', '')
+    } else {
+      this.style.removeProperty('--oas-slider-track-image')
+      this.removeAttribute('data-color-track')
+    }
     // show-track 轨道显隐开关：仅显式 "false" 时镜像 data-track=false（CSS 消费）；
     // 未设置时不写 data-*（不给宿主叠加属性、SSR 快照属性序列零漂移）
     if (this.getAttr('show-track', 'true') === 'false') this.setAttribute('data-track', 'false')
@@ -940,6 +1032,24 @@ export class OASSlider extends OASElement {
     return base ? `${base} ${i + 1}` : `${this.t('slider.valueLabel')} ${i + 1}`
   }
 
+  /** 解析立体声电平值 `{ left, right }`（归一化到 [0,1]）；非法/缺失返回 null */
+  private parseLevels(): { left: number; right: number } | null {
+    const raw = this.getAttr('levels', '')
+    if (!raw) return null
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      return null
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+    const o = parsed as Record<string, unknown>
+    const l = Number(o.left)
+    const r = Number(o.right)
+    if (!Number.isFinite(l) && !Number.isFinite(r)) return null
+    return { left: clampNum(Number.isFinite(l) ? l : 0, 0, 1), right: clampNum(Number.isFinite(r) ? r : 0, 0, 1) }
+  }
+
   /** labels JSON 数组（多把手可访问名），非法/非数组返回 null */
   private parseLabels(): string[] | null {
     const raw = this.getAttr('labels', '')
@@ -980,7 +1090,22 @@ export class OASSlider extends OASElement {
       const tip = document.createElement('div')
       tip.className = 'thumb-tip'
       tip.setAttribute('part', 'tip')
-      ov.append(content, tip)
+      // 立体声电平表：圆推子下方的双条电平指示（值由 syncOverlay 写入，装饰性 aria-hidden）
+      const levels = document.createElement('div')
+      levels.className = 'levels'
+      levels.setAttribute('part', 'levels')
+      levels.setAttribute('aria-hidden', 'true')
+      levels.hidden = true
+      for (const channel of ['left', 'right'] as const) {
+        const bar = document.createElement('span')
+        bar.className = 'level-bar'
+        bar.setAttribute('data-channel', channel)
+        const fill = document.createElement('span')
+        fill.className = 'level-fill'
+        bar.appendChild(fill)
+        levels.appendChild(bar)
+      }
+      ov.append(content, tip, levels)
       overlays.appendChild(ov)
       this.overlays.push(ov)
     }
@@ -1120,6 +1245,16 @@ export class OASSlider extends OASElement {
     return 'md'
   }
 
+  /** thumb 两形态归一：pointer=细指针轨（薄条）、round=粗圆推子（默认），非法/缺省回落 round */
+  private normalizeThumb(): 'pointer' | 'round' {
+    return this.getAttr('thumb', 'round').toLowerCase() === 'pointer' ? 'pointer' : 'round'
+  }
+
+  /** 当前 thumb 是否为细指针形态（pointer 恒走自定义视觉层，原生拇指隐藏） */
+  private isPointerThumb(): boolean {
+    return this.normalizeThumb() === 'pointer'
+  }
+
   /** 生效的气泡方向：显式属性（四向）优先，vertical 默认 right、水平默认 top */
   private tooltipPosition(vertical: boolean): string {
     const raw = this.getAttr('tooltip-position', '')
@@ -1135,6 +1270,32 @@ export class OASSlider extends OASElement {
       return
     }
     this.style.setProperty(cssVar, COLOR_TOKENS[raw] ?? raw)
+  }
+
+  /**
+   * 色轨渐变组装（track 预设）：hue=色相光谱、saturation=轨道色→推子色、luminance=黑→白、
+   * gradient=轨道色→推子色 两段 CSS 渐变。方向随轴与反转感知（水平 min 在左 / 垂直 min 在下，
+   * reverse 与 RTL 镜像）。非预设/未设置返回 null（回落纯色轨道）。
+   * 光谱端点无法用语义 token 表达（hue/luminance 为绝对色相/明度），沿用组件内颜色字面量约定。
+   */
+  private colorTrackImage(): string | null {
+    const kind = this.getAttr('track', '').toLowerCase()
+    if (!kind) return null
+    const vertical = this.hasAttr('vertical')
+    const flip = vertical ? this.hasAttr('reverse') : this.horizontalReverse()
+    const dir = vertical ? (flip ? 'to bottom' : 'to top') : flip ? 'to left' : 'to right'
+    switch (kind) {
+      case 'hue':
+        return `linear-gradient(${dir}, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)`
+      case 'saturation':
+        return `linear-gradient(${dir}, var(--oas-color-border-strong), var(--oas-slider-color))`
+      case 'luminance':
+        return `linear-gradient(${dir}, #000000, #ffffff)`
+      case 'gradient':
+        return `linear-gradient(${dir}, var(--oas-slider-track), var(--oas-slider-color))`
+      default:
+        return null
+    }
   }
 
   /** step="mark" 模式生效判定：step 属性为字面量 mark 且 marks 非空 */
@@ -1659,10 +1820,18 @@ export class OASSlider extends OASElement {
     // 气泡可见：常显 > 拖动 > 聚焦（focus 语义，不依赖 show-tooltip）
     const tipsVisible = this.hasAttr('show-tooltip') || this.hasAttr('tooltip-always') || this.dragging || focused
 
+    // 立体声电平表：仅圆推子（默认形态）渲染；有值时恒启用自定义视觉层（电平条需常显）
+    const levels = this.isPointerThumb() ? null : this.parseLevels()
+    const hasLevels = levels !== null
+
     // 拖动/聚焦/常显中启用自定义视觉层（拖动时临时显示值气泡，无需 show-tooltip）；
-    // 垂直模式恒启用：原生 thumb 隐藏，.custom-thumb 承担默认拇指视觉与拖动反馈
+    // 垂直模式恒启用：原生 thumb 隐藏，.custom-thumb 承担默认拇指视觉与拖动反馈；
+    // pointer 形态恒启用：细指针造型由 .custom-thumb 承担（原生拇指无法跨浏览器统一为细条）；
+    // 电平表恒启用：立体声电平需常显，不能只在拖动/聚焦时出现
     const useOverlay =
       vertical ||
+      this.isPointerThumb() ||
+      hasLevels ||
       this.hasCustomThumb() ||
       this.hasAttr('show-tooltip') ||
       this.hasAttr('tooltip-always') ||
@@ -1729,6 +1898,18 @@ export class OASSlider extends OASElement {
       if (tip) {
         tip.textContent = this.formatValue(v)
         tip.hidden = !tipsVisible
+      }
+      const levelsEl = th.querySelector<HTMLElement>('.levels')
+      if (levelsEl) {
+        if (levels && useOverlay) {
+          levelsEl.hidden = false
+          for (const ch of ['left', 'right'] as const) {
+            const barFill = levelsEl.querySelector<HTMLElement>(`.level-bar[data-channel='${ch}'] .level-fill`)
+            if (barFill) barFill.style.height = `${(ch === 'left' ? levels.left : levels.right) * 100}%`
+          }
+        } else {
+          levelsEl.hidden = true
+        }
       }
       if (!useOverlay) continue
       th.hidden = false
