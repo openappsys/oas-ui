@@ -75,7 +75,7 @@ const STYLE = `
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 120px;
+  min-height: 0;
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
   text-align: center;

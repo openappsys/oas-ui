@@ -1,7 +1,11 @@
 import { defineConfig } from 'vitepress'
 import type { DefaultTheme, HeadConfig } from 'vitepress'
-import { writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { copyFileSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+/** docs 根目录（config.ts 位于 docs/.vitepress/）——用于构建期生成每页 markdown 镜像 */
+const DOCS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 /**
  * 站点规范域名（SEO 绝对 URL：canonical / OG / sitemap 的基准——这些按规范必须是绝对 URL，
@@ -283,6 +287,22 @@ export default defineConfig({
       join(siteConfig.outDir, 'robots.txt'),
       `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`,
     )
+    // 每页 markdown 镜像（llmstxt.org：`/foo.md` 原样 markdown，配合 head 的 rel=alternate）——
+    // 写入**构建产物**。**不放 public/**：dev 下 public/ 是 Vite 静态根，会与 VitePress 把同一 `.md`
+    // 当作页面模块加载的路由同路径冲突 → 整站该页 404（2026-10-10 实抓）。
+    const walk = (rel: string): void => {
+      for (const ent of readdirSync(join(DOCS_DIR, rel), { withFileTypes: true })) {
+        if (rel === '' && (ent.name === '.vitepress' || ent.name === 'public')) continue
+        const child = rel ? `${rel}/${ent.name}` : ent.name
+        if (ent.isDirectory()) walk(child)
+        else if (ent.name.endsWith('.md')) {
+          const dest = join(siteConfig.outDir, child)
+          mkdirSync(dirname(dest), { recursive: true })
+          copyFileSync(join(DOCS_DIR, child), dest)
+        }
+      }
+    }
+    walk('')
   },
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],

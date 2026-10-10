@@ -13,7 +13,7 @@
  *   node scripts/llms/gen.mjs --check   # 只校验与磁盘一致（CI 门禁；漂移即 exit 1）
  * 环境变量 SITE_URL 覆盖站点绝对前缀（默认 https://oas-ui.dev）。
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -200,41 +200,26 @@ function buildLlmsFullTxt() {
   return out.join('\n')
 }
 
-// ---------- 每页 .md 镜像（源文件原样复制，不清理、零信息损失） ----------
+// ---------- public 下历史 .md 镜像清理 ----------
+// 每页 `.md` 镜像现由 Vitepress 构建期写入构建产物（见 packages/docs/docs/.vitepress/config.ts 的 buildEnd）。
+// 绝不写 public/：dev 下 public/ 是 Vite 静态根，会与 `.md` 页面模块路由同路径冲突 → 整站 404。
+// 此处仅清理历史遗留的 public/.md（旧版本曾写在此处）。
 
-/** 全部源 md 相对路径（排除 `.vitepress/` 与 `public/`） */
-function allSourceMd() {
-  const out = []
-  const walk = (rel) => {
-    for (const ent of readdirSync(join(DOCS, rel), { withFileTypes: true })) {
-      if (rel === '' && (ent.name === '.vitepress' || ent.name === 'public')) continue
-      const child = rel ? `${rel}/${ent.name}` : ent.name
-      if (ent.isDirectory()) walk(child)
-      else if (ent.name.endsWith('.md')) out.push(child)
-    }
-  }
-  walk('')
-  return out
-}
-
-/** 清掉 public 下上一轮生成的 .md 镜像（防页面删除后残留），再逐字节原样写入 */
-function mirrorPages() {
+/** 清掉 public 下遗留的 .md 镜像（返回删除数） */
+function clearPublicMdMirrors() {
+  let n = 0
   const clear = (dir) => {
     if (!existsSync(dir)) return
     for (const ent of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, ent.name)
       if (ent.isDirectory()) clear(p)
-      else if (ent.name.endsWith('.md')) unlinkSync(p)
+      else if (ent.name.endsWith('.md')) {
+        unlinkSync(p)
+        n++
+      }
     }
   }
   clear(OUT_DIR)
-  let n = 0
-  for (const rel of allSourceMd()) {
-    const dest = join(OUT_DIR, rel)
-    mkdirSync(dirname(dest), { recursive: true })
-    writeFileSync(dest, readFileSync(join(DOCS, rel), 'utf8'))
-    n++
-  }
   return n
 }
 
@@ -263,8 +248,10 @@ const full = buildLlmsFullTxt()
 emit('llms.txt', llms, true)
 emit('llms-full.txt', full, false)
 if (!CHECK) {
-  const mirrored = mirrorPages()
-  console.log(`[llms] 已复制每页 .md 镜像 ${mirrored} 个到 packages/docs/docs/public/`)
+  // 每页 `.md` 镜像改由 Vitepress 构建期写入构建产物（见 config.ts buildEnd）——不再写 public/，
+  // 否则与 dev 的 `.md` 页面模块路由同路径冲突致整站 404。此处仅清理历史遗留的 public 镜像。
+  const cleared = clearPublicMdMirrors()
+  if (cleared) console.log(`[llms] 清理 public/ 历史 .md 镜像 ${cleared} 个（镜像现由构建期写入 dist）`)
   const groups = parseComponentGroups()
   const n = groups.reduce((a, g) => a + g.items.length, 0)
   console.log(`[llms] 分组 ${groups.length} 个、组件链接 ${n} 条`)
