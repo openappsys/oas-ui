@@ -679,6 +679,14 @@ test('titlebar macOS 交通灯：三点 macOS 固定色 + 点击派发 oas-windo
     return css.includes('::slotted(oas-traffic-lights)')
   })
   expect(noDragListed, 'titlebar no-drag 白名单含 oas-traffic-lights').toBe(true)
+  // 回归：两侧默认内边距 space-2（8px）——内容不顶边（曾缺省 0px，demo 里品牌/窗口钮全贴边）
+  const barPad = await page.evaluate(() => {
+    const bar = document.querySelector('#tb-macos')!.shadowRoot!.querySelector('[part="bar"]') as HTMLElement
+    const cs = getComputedStyle(bar)
+    return { start: cs.paddingInlineStart, end: cs.paddingInlineEnd }
+  })
+  expect(barPad.start, 'leading 默认内边距 8px（不顶边）').toBe('8px')
+  expect(barPad.end, 'trailing 默认内边距 8px（不顶边）').toBe('8px')
   const colors = await page.evaluate(() => {
     const tl = document.querySelector('#tb-macos oas-traffic-lights')!.shadowRoot!
     const cs = (a: string) => getComputedStyle(tl.querySelector(`.dot[data-action="${a}"]`)!).backgroundColor

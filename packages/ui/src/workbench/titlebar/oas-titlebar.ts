@@ -56,10 +56,10 @@ const STYLE = `
   align-items: center;
   gap: var(--oas-space-2);
   min-height: var(--oas-titlebar-height, var(--oas-titlebar-compact-height, 34px));
-  /* 安全区：原生窗口控件（交通灯/系统钮）可能占据栏体两端的 env(titlebar-area-*) 区段，
-     组件开口变量由宿主按平台设置（纯 Web 下缺省 0px 无影响） */
-  padding-inline-start: var(--oas-titlebar-leading-inset, 0px);
-  padding-inline-end: var(--oas-titlebar-trailing-inset, 0px);
+  /* 安全区：原生窗口控件（交通灯/系统钮）可能占据栏体两端的 env(titlebar-area-*) 区段。
+     缺省两侧各留 space-2（8px）内边距，内容不顶边；宿主按平台覆写变量（WCO 场景消费 env(...)）。 */
+  padding-inline-start: var(--oas-titlebar-leading-inset, var(--oas-space-2));
+  padding-inline-end: var(--oas-titlebar-trailing-inset, var(--oas-space-2));
   padding-block: var(--oas-space-1);
 }
 /* large 档：高度翻倍，控件保持紧凑（只动栏高，不动控件尺寸） */
@@ -264,7 +264,7 @@ const STYLE = `
  * - `subtitle`：副标题/文档状态（已编辑时间等；editable 文档井下照常显示，与文档井上下排布）
  * - `editable`：布尔，文档井标题可编辑（Enter/blur 提交、Esc 取消；编辑中外部重写 title 即终止）
  * - `window-actions`：逗号分隔内建窗口操作钮子集（minimize/maximize/close）；点击派发事件
- * - `leading-inset` / `trailing-inset`：安全区 CSS 长度（原生控件防压；亦可走 CSS 变量）
+ * - `leading-inset` / `trailing-inset`：安全区 CSS 长度（原生控件防压；缺省 `space-2`，亦可走 CSS 变量）
  *
  * 插槽：`leading`（品牌/交通灯）、`center`（交互内容，覆盖标题/文档井）、`title`（富标题）、
  * `trailing`（窗口操作之外的末端内容）。

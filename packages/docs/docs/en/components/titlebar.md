@@ -50,7 +50,7 @@ The `editable` boolean attribute turns the title into an editable input (Enter o
 
 ## Safe area (native window control clearance)
 
-Native window controls of hosts such as the Windows window controls overlay (WCO) may occupy both ends of the bar: yield the segments with the `leading-inset` / `trailing-inset` attributes (equivalent to overriding the `--oas-titlebar-leading-inset` / `--oas-titlebar-trailing-inset` variables, default 0px). In WCO scenarios consume the `env(titlebar-area-*)` environment variables directly (falls back to 0px outside WCO, no effect):
+Native window controls of hosts such as the Windows window controls overlay (WCO) may occupy both ends of the bar: yield the segments with the `leading-inset` / `trailing-inset` attributes (equivalent to overriding the `--oas-titlebar-leading-inset` / `--oas-titlebar-trailing-inset` variables, default `space-2` (8px) on each side, so content never touches the edges). In WCO scenarios consume the `env(titlebar-area-*)` environment variables directly (falls back to `space-2` outside WCO, no effect):
 
 ```css
 oas-titlebar {
@@ -92,11 +92,11 @@ Place the built-in `oas-traffic-lights` (close / minimize / maximize dots, symbo
 
 <DemoBlock title="macOS traffic lights + centered title">
   <div style="width: 100%">
-    <oas-titlebar id="tb-macos" title="Hilton Rome Airport — Photo Studio" drag leading-inset="10px">
+    <oas-titlebar id="tb-macos" title="Hilton Rome Airport — Photo Studio" drag>
       <oas-traffic-lights slot="leading"></oas-traffic-lights>
     </oas-titlebar>
     <span id="tb-macos-out" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Click a traffic light to see the oas-window-action feedback</span>
-    <oas-titlebar title="Disabled traffic lights" leading-inset="10px" style="margin-top: var(--oas-space-3)">
+    <oas-titlebar title="Disabled traffic lights" style="margin-top: var(--oas-space-3)">
       <oas-traffic-lights slot="leading" disabled></oas-traffic-lights>
     </oas-titlebar>
   </div>
@@ -133,11 +133,11 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `drag` | Turns the whole bar into a window drag region (writes -webkit-app-region: drag + data-tauri-drag-region, effective in Electron/Tauri hosts; harmless no-op in plain Web); interactive children automatically opt out (no-drag), [data-no-drag] opts out explicitly | `boolean` | — |
 | `editable` | Makes the document-well title editable: Enter or blur commits (dispatches oas-title-change and updates the absorbed cache), Esc cancels and rolls back; rewriting title externally while editing terminates the edit | `boolean` | — |
-| `leading-inset` | Safe area: leading-side native-control clearance (CSS length; also settable via --oas-titlebar-leading-inset) | — | — |
+| `leading-inset` | Safe area: leading-side native-control clearance (CSS length; also settable via --oas-titlebar-leading-inset) | — | `space-2` |
 | `size` | Height tier: compact (default, 34px) / large (68px, controls stay compact); invalid values fall back to compact with a one-time warning | `string` | `compact` |
 | `subtitle` | Subtitle / document state (last edited time etc.) | `string` | — |
 | `title` | Centered title text (overridden when slot="title" has content). Same-named as the native global attribute — absorbed (removed from the host) once rendered into the title area, preventing duplicate native tooltips; rendering is driven by the component-internal cache; to clear or reset, write the title attribute explicitly | `string` | — |
-| `trailing-inset` | Safe area: trailing-side native-control clearance (CSS length; also settable via --oas-titlebar-trailing-inset) | — | — |
+| `trailing-inset` | Safe area: trailing-side native-control clearance (CSS length; also settable via --oas-titlebar-trailing-inset) | — | `space-2` |
 | `window-actions` | Built-in window action button subset (comma-separated: minimize,maximize,close); clicking dispatches oas-window-action — the component does not perform window operations | `string` | — |
 
 #### Events
@@ -162,8 +162,8 @@ onMounted(() => {
 | --- | --- |
 | `--oas-titlebar-bg` | `color-mix(in srgb, var(--oas-color-text-primary) 5%, var(--oas-color-bg))` |
 | `--oas-titlebar-height` | `var(--oas-titlebar-compact-height, 34px)` |
-| `--oas-titlebar-leading-inset` | `0px` |
-| `--oas-titlebar-trailing-inset` | `0px` |
+| `--oas-titlebar-leading-inset` | `var(--oas-space-2)` |
+| `--oas-titlebar-trailing-inset` | `var(--oas-space-2)` |
 
 ### oas-traffic-lights
 
