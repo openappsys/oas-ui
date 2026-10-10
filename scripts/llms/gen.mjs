@@ -40,7 +40,7 @@ const CONVENTIONS = `关键约定：
 
 function readMd(rel) {
   const abs = join(DOCS, rel)
-  return existsSync(abs) ? readFileSync(abs, 'utf8') : null
+  return existsSync(abs) ? readFileSync(abs, 'utf8').replace(/^\uFEFF/, '') : null
 }
 
 function titleOf(md) {
@@ -51,16 +51,45 @@ function titleOf(md) {
   return ''
 }
 
-/** 是否为「像正文」的一行（排除标题/列表/引用/演示/代码行） */
+/**
+ * 是否为「像正文」的一行。目标是挑出组件/指南 H1 后的**首段简介**：
+ * 只需排除结构性行（标题/列表/引用/表格/HTML/代码围栏）与代码行（import/=> / 结尾分号等），
+ * 不再因行内含内联代码（`x` / `min()` / `[]`）而误拒——否则真实简介被跳过、抓到后文噪声行。
+ * 摘要以中文为主，故要求含 CJK（纯 ASCII 代码行自然出局）。
+ */
 function looksProse(t) {
   if (!t) return false
-  if (/^[#<>|`\-*!\[]/.test(t)) return false
-  if (/[(){}\[\];]/.test(t)) return false
-  if (/=>|\?\.|\/\/|\/\*/.test(t)) return false
-  if (/^(import|export|const|let|var|function|class|return)\b/.test(t)) return false
-  if (/[{(?.,]\s*$/.test(t)) return false
+  if (/^(#{1,6}\s|`{3,}|~{3,}|>|\||<)/.test(t)) return false
+  if (/^[-*+]\s/.test(t)) return false
+  if (/^(import|export|const|let|var|function|class|return|if|else|for|while|await|async|yield)\b/.test(t)) return false
+  if (/=>|;\s*$/.test(t)) return false
   if (!/[\u4e00-\u9fff]/.test(t)) return false
   return true
+}
+
+/** 取首句作为简介：优先在首个句末标点处收口（≤max 字），过长才截断加省略号 */
+function firstSentence(t, max = 200) {
+  const clean = t
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[*`]/g, '')
+    .trim()
+  const m = clean.match(/^.{6,}?[。！？!?](?=\s|$|[\u4e00-\u9fff])/)
+  let s = m ? m[0] : clean
+  if (s.length > max) {
+    const head = s.slice(0, max)
+    // 尽量断在标点/空格，避免把英文词或句读切两半
+    const cut = Math.max(
+      head.lastIndexOf('；'),
+      head.lastIndexOf('，'),
+      head.lastIndexOf('、'),
+      head.lastIndexOf('）'),
+      head.lastIndexOf('。'),
+      head.lastIndexOf('/'),
+      head.lastIndexOf(' '),
+    )
+    s = `${(cut > max * 0.6 ? head.slice(0, cut) : head).replace(/[，、,；;：:\s]+$/, '')}…`
+  }
+  return s
 }
 
 /** 首段说明：H1 之后第一个「像正文」的行 */
@@ -71,15 +100,14 @@ function describe(md) {
   let inFence = false
   for (let i = h1 + 1; i < lines.length; i++) {
     let t = lines[i].trim()
-    if (/^```/.test(t)) {
+    if (/^(`{3,}|~{3,})/.test(t)) {
       inFence = !inFence
       continue
     }
     if (inFence) continue
-    // 引用块（> 摘要）也作为说明候选；先内联 markdown 链接
+    // 引用块（> 摘要）也作为说明候选
     if (t.startsWith('>')) t = t.replace(/^>\s*/, '')
-    t = t.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    if (looksProse(t)) return t.replace(/[*`]/g, '').slice(0, 160)
+    if (looksProse(t)) return firstSentence(t)
   }
   return ''
 }
