@@ -1136,22 +1136,30 @@ export class OASTour extends OASElement {
     prevBtn.disabled = this.current === 0
     const skipBtn = popup.querySelector<HTMLButtonElement>('[part="skip"]')!
     skipBtn.textContent = this.t('tour.skip')
-    // 按钮 props 透传：全局 + step 级合并（step 优先）
-    const applyProps = (part: string, props: TourButtonProps | undefined): void => {
-      const btn = popup.querySelector<HTMLElement>(`[part="${part}"]`)
+    // 按钮 props 透传：全局 + step 级合并（step 优先）。
+    // 末步 next 按钮即「完成」按钮，故末步叠加 finish props（global → step 覆盖其上）。
+    const setBtnProps = (domPart: string, props: TourButtonProps): void => {
+      const btn = popup.querySelector<HTMLElement>(`[part="${domPart}"]`)
       if (!btn) return
-      const merged: TourButtonProps = {
-        ...this.parseProps(this.getAttr(`${part}-button-props`, '')),
-        ...props,
-      }
-      for (const [k, v] of Object.entries(merged)) {
+      for (const [k, v] of Object.entries(props)) {
         if (v === '') btn.setAttribute(k, '')
         else btn.setAttribute(k, v)
       }
     }
-    applyProps('next', step.nextButtonProps)
-    applyProps('prev', step.prevButtonProps)
-    applyProps('skip', step.skipButtonProps)
+    const globalProps = (key: string): TourButtonProps => this.parseProps(this.getAttr(`${key}-button-props`, ''))
+    setBtnProps('prev', { ...globalProps('prev'), ...step.prevButtonProps })
+    setBtnProps('skip', { ...globalProps('skip'), ...step.skipButtonProps })
+    setBtnProps(
+      'next',
+      last
+        ? {
+            ...globalProps('next'),
+            ...step.nextButtonProps,
+            ...globalProps('finish'),
+            ...step.finishButtonProps,
+          }
+        : { ...globalProps('next'), ...step.nextButtonProps },
+    )
     // 自定义动作区插槽：宿主塞入 slot="actions" 内容时隐藏整个内置按钮区
     const actionsSlot = popup.querySelector<HTMLSlotElement>('slot[name="actions"]')
     if (actionsSlot && actionsSlot.assignedNodes({ flatten: true }).length > 0) {

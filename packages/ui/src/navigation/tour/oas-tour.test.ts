@@ -423,6 +423,28 @@ describe('A 导航与按钮', () => {
     expect(btn.getAttribute('data-x')).toBe('1')
   })
 
+  it('finish-button-props：末步应用在 next（完成）按钮上，非末步不应用', async () => {
+    const el = mount({ 'finish-button-props': '{"data-fin":"1"}' })
+    el.setAttribute('open', '')
+    const nextBtn = () => el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!
+    expect(nextBtn().getAttribute('data-fin'), '首步（非末步）不应用 finish props').toBeNull()
+    nextBtn().click() // 进入末步
+    expect(nextBtn().getAttribute('data-fin'), '末步（next 即完成按钮）应用 finish props').toBe('1')
+  })
+
+  it('finish-button-props：step 级 finishButtonProps 覆盖全局，next props 保留其余键', async () => {
+    const steps = JSON.stringify([
+      { selector: '#step1', title: '1', description: 'a' },
+      { selector: '#step2', title: '2', description: 'b', finishButtonProps: { 'data-fin': 'step' } },
+    ])
+    const el = mount({ 'finish-button-props': '{"data-fin":"global","data-x":"g"}' }, steps)
+    el.setAttribute('open', '')
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!.click()
+    const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!
+    expect(btn.getAttribute('data-fin'), 'step 级覆盖全局').toBe('step')
+    expect(btn.getAttribute('data-x'), '全局其它键保留').toBe('g')
+  })
+
   it('skip 按钮派发 oas-skip + oas-cancel + oas-destroy', async () => {
     const el = mount()
     el.setAttribute('open', '')

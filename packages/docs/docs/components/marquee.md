@@ -69,6 +69,22 @@
   </oas-marquee>
 </DemoBlock>
 
+## 多行交错
+
+组件本身保持单行连续滚动语义；多行跑马灯由多个 `oas-marquee` 以 `reverse` 交错组合实现（无需额外属性，垂直堆叠即多行）：
+
+<DemoBlock title="多行交错：正 / 反 / 正 三行组合">
+  <oas-marquee style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
+    第一行 · 正向 · OAS-UI · Web Components · 框架无关的 UI 库 ·
+  </oas-marquee>
+  <oas-marquee reverse style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0; margin-top: var(--oas-space-2);">
+    第二行 · 反向 · OAS-UI · Web Components · 框架无关的 UI 库 ·
+  </oas-marquee>
+  <oas-marquee style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0; margin-top: var(--oas-space-2);">
+    第三行 · 正向 · OAS-UI · Web Components · 框架无关的 UI 库 ·
+  </oas-marquee>
+</DemoBlock>
+
 ## 边缘渐隐
 
 `fade-edges` 开启容器两端渐隐（mask-image 遮罩，默认关——渐隐会软化边缘、改变存量外观，按需开启）。渐隐宽度走 CSS 变量 `--oas-marquee-fade-size`（默认 24px）。

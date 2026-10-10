@@ -3761,7 +3761,7 @@
       "next-button-props": "下一步按钮透传属性（JSON 对象，如 `{\"data-x\":\"1\"}`）",
       "prev-button-props": "上一步按钮透传属性（JSON 对象）",
       "skip-button-props": "跳过按钮透传属性（JSON 对象）",
-      "finish-button-props": "末步「完成」按钮由 `next` 按钮承载（文案切「完成」），当前无独立 finish 按钮透传——该属性暂未生效（保留占位）",
+      "finish-button-props": "末步「完成」按钮透传属性（JSON）：末步 `next` 即完成按钮，`finish-button-props` 叠加在 `next-button-props` 之上（step 级优先）",
       "advance-on-click": "点击高亮区推进下一步（交互式引导）",
       "mode": "弹层模式：`popup`（默认）/ `dialog`（无目标居中对话框）；step 级可覆盖",
       "lock-scroll": "引导期间锁定页面滚动（关闭恢复）",

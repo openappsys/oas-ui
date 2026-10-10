@@ -103,14 +103,14 @@
 
 ## 按钮显隐与透传
 
-`hide-prev` / `hide-skip` / `hide-next` / `hide-counter` 控制按钮与计数显隐；`next-button-props` / `prev-button-props` / `skip-button-props` 透传任意属性到对应按钮（JSON 对象）。末步的「完成」由 `next` 按钮承载（文案切「完成」），暂无独立 finish 按钮与 `finish-button-props` 透传。
+`hide-prev` / `hide-skip` / `hide-next` / `hide-counter` 控制按钮与计数显隐；`next-button-props` / `prev-button-props` / `skip-button-props` 透传任意属性到对应按钮（JSON 对象）。末步的「完成」由 `next` 按钮承载（文案切「完成」）；此时 `finish-button-props` 叠加在 `next-button-props` 之上（step 级优先）。
 
 <DemoBlock title="按钮显隐与属性透传">
   <oas-space>
     <oas-button type="primary" onclick="document.getElementById('tour-btn').setAttribute('open','')">按钮显隐 + props 透传</oas-button>
     <oas-button onclick="document.getElementById('tour-hide').setAttribute('open','')">隐藏全部操作</oas-button>
   </oas-space>
-  <oas-tour id="tour-btn" hide-prev hide-skip next-button-props='{"data-demo":"1"}' prev-button-props='{"disabled":""}' skip-button-props='{"data-demo":"skip"}' steps='[{"selector":"#tour-bt1","title":"按钮定制","description":"hide-prev / hide-skip 隐藏按钮，next-button-props 等透传属性。"},{"selector":"#tour-bt2","title":"末步完成","description":"最后一步的「完成」由 next 按钮承载（文案切换），暂无独立 finish 属性透传。"}]'></oas-tour>
+  <oas-tour id="tour-btn" hide-prev hide-skip next-button-props='{"data-demo":"1"}' prev-button-props='{"disabled":""}' skip-button-props='{"data-demo":"skip"}' finish-button-props='{"data-fin":"1"}' steps='[{"selector":"#tour-bt1","title":"按钮定制","description":"hide-prev / hide-skip 隐藏按钮，next-button-props 等透传属性。"},{"selector":"#tour-bt2","title":"末步完成","description":"最后一步的「完成」由 next 按钮承载，finish-button-props 叠加其上。"}]'></oas-tour>
   <oas-tour id="tour-hide" hide-prev hide-skip hide-next hide-counter steps='[{"selector":"#tour-bt1","title":"无操作按钮","description":"只能通过 Esc / 遮罩点击 / 键盘导航离开。"}]'></oas-tour>
   <div id="tour-bt1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">按钮定制目标一</div>
   <div id="tour-bt2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">按钮定制目标二</div>
@@ -366,7 +366,7 @@ onMounted(async () => {
 | `current` | 当前步骤索引 | `string` | `0` |
 | `disabled-interaction` | 禁止高亮区交互（拦截层覆盖目标） | — | — |
 | `dont-show-again` | 「不再显示」开关（布尔；关闭时勾选则记忆到 localStorage） | `boolean` | — |
-| `finish-button-props` | 末步「完成」按钮由 `next` 按钮承载（文案切「完成」），当前无独立 finish 按钮透传——该属性暂未生效（保留占位） | — | — |
+| `finish-button-props` | 末步「完成」按钮透传属性（JSON）：末步 `next` 即完成按钮，`finish-button-props` 叠加在 `next-button-props` 之上（step 级优先） | — | — |
 | `gap` | 高亮内边距：数字（padding px）或 `{"padding","radius","offset"}`；`offset` 为高亮外扩间距（number 四周同值 / `[水平, 垂直]` 双轴，与 padding 正交）；默认 padding 4 | `string` | — |
 | `hide-counter` | 隐藏步骤计数 | `boolean` | — |
 | `hide-next` | 隐藏下一步按钮 | — | — |

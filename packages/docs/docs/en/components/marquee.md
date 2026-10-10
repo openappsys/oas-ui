@@ -69,6 +69,22 @@ A vertical marquee is continuous-flow semantics; for "scroll one item at a time 
   </oas-marquee>
 </DemoBlock>
 
+## Multiple Rows
+
+The component keeps a single continuous scrolling row; a multi-row marquee is composed from several `oas-marquee` elements interleaved with `reverse` (no extra attribute — stacking them vertically yields multiple rows):
+
+<DemoBlock title="Multiple rows: forward / reverse / forward">
+  <oas-marquee style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
+    Row 1 · forward · OAS-UI · Web Components · framework-agnostic UI library ·
+  </oas-marquee>
+  <oas-marquee reverse style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0; margin-top: var(--oas-space-2);">
+    Row 2 · reverse · OAS-UI · Web Components · framework-agnostic UI library ·
+  </oas-marquee>
+  <oas-marquee style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0; margin-top: var(--oas-space-2);">
+    Row 3 · forward · OAS-UI · Web Components · framework-agnostic UI library ·
+  </oas-marquee>
+</DemoBlock>
+
 ## Edge Fading
 
 `fade-edges` fades out both container edges (mask-image mask, off by default — fading softens edges and changes existing appearances, enable on demand). The fade width is controlled by the CSS variable `--oas-marquee-fade-size` (default 24px).

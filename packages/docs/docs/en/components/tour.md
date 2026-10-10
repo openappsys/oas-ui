@@ -103,14 +103,14 @@ When the target is off-screen the tour scrolls to it (`scroll-into-view-options`
 
 ## Button visibility and pass-through props
 
-`hide-prev` / `hide-skip` / `hide-next` / `hide-counter` control button/counter visibility; `next-button-props` / `prev-button-props` / `skip-button-props` pass arbitrary attributes to their buttons (JSON object). The last step's Finish is the `next` button (its label switches), so there is no separate finish button or `finish-button-props` pass-through.
+`hide-prev` / `hide-skip` / `hide-next` / `hide-counter` control button/counter visibility; `next-button-props` / `prev-button-props` / `skip-button-props` pass arbitrary attributes to their buttons (JSON object). The last step's Finish is the `next` button (its label switches); on that step `finish-button-props` is layered on top of `next-button-props` (step-level wins).
 
 <DemoBlock title="Button visibility and props">
   <oas-space>
     <oas-button type="primary" onclick="document.getElementById('tour-btn').setAttribute('open','')">Visibility + props</oas-button>
     <oas-button onclick="document.getElementById('tour-hide').setAttribute('open','')">Hide all actions</oas-button>
   </oas-space>
-  <oas-tour id="tour-btn" hide-prev hide-skip next-button-props='{"data-demo":"1"}' prev-button-props='{"disabled":""}' skip-button-props='{"data-demo":"skip"}' steps='[{"selector":"#tour-bt1","title":"Button customization","description":"hide-prev / hide-skip hide buttons; next-button-props etc. pass through attributes."},{"selector":"#tour-bt2","title":"Last-step finish","description":"The last step uses the next button as Finish (label switches); no separate finish pass-through."}]'></oas-tour>
+  <oas-tour id="tour-btn" hide-prev hide-skip next-button-props='{"data-demo":"1"}' prev-button-props='{"disabled":""}' skip-button-props='{"data-demo":"skip"}' finish-button-props='{"data-fin":"1"}' steps='[{"selector":"#tour-bt1","title":"Button customization","description":"hide-prev / hide-skip hide buttons; next-button-props etc. pass through attributes."},{"selector":"#tour-bt2","title":"Last-step finish","description":"The last step uses the next button as Finish; finish-button-props is layered on top."}]'></oas-tour>
   <oas-tour id="tour-hide" hide-prev hide-skip hide-next hide-counter steps='[{"selector":"#tour-bt1","title":"No action buttons","description":"Leave via Esc / overlay click / keyboard navigation only."}]'></oas-tour>
   <div id="tour-bt1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Button customization target 1</div>
   <div id="tour-bt2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Button customization target 2</div>
@@ -362,7 +362,7 @@ onMounted(async () => {
 | `current` | Current step index | `string` | `0` |
 | `disabled-interaction` | Disable interaction on the highlighted area (interceptor covers target) | — | — |
 | `dont-show-again` | Don't show again switch (boolean; if checked on close, remembered in localStorage) | `boolean` | — |
-| `finish-button-props` | The last-step Finish button is the `next` button (its label switches to Finish) and there is no separate finish button to pass props to — this attribute currently has no effect (reserved placeholder) | — | — |
+| `finish-button-props` | Pass-through props for the last-step Finish button (JSON): on the last step the `next` button is the Finish button, so `finish-button-props` is layered on top of `next-button-props` (step-level wins) | — | — |
 | `gap` | Highlight padding: number (padding px) or `{"padding","radius","offset"}`; `offset` expands the highlight outward (number for all sides / `[horizontal, vertical]` dual-axis, orthogonal to padding); default padding 4 | `string` | — |
 | `hide-counter` | Hide the step counter | `boolean` | — |
 | `hide-next` | Hide the next button | — | — |

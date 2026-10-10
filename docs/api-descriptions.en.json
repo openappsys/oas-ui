@@ -3761,7 +3761,7 @@
       "next-button-props": "Props passed through to the next button (JSON object, e.g. `{\"data-x\":\"1\"}`)",
       "prev-button-props": "Props passed through to the previous button (JSON object)",
       "skip-button-props": "Props passed through to the skip button (JSON object)",
-      "finish-button-props": "The last-step Finish button is the `next` button (its label switches to Finish) and there is no separate finish button to pass props to — this attribute currently has no effect (reserved placeholder)",
+      "finish-button-props": "Pass-through props for the last-step Finish button (JSON): on the last step the `next` button is the Finish button, so `finish-button-props` is layered on top of `next-button-props` (step-level wins)",
       "advance-on-click": "Click the highlighted area to advance to the next step (interactive tour)",
       "mode": "Popup mode: `popup` (default) / `dialog` (centered dialog without target); step-level override",
       "lock-scroll": "Lock page scrolling during the tour (restored on close)",

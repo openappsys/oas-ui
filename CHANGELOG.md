@@ -53,6 +53,7 @@
 
 ### 修复
 
+- **oas-tour `finish-button-props` now effective**: the last step's Finish button is the `next` button; `finish-button-props` (global attribute + step-level `finishButtonProps`) is now layered on top of `next-button-props` on that step (step-level wins), so hosts can style the Finish state. Previously the property was declared in the type/API but never applied.
 - **Workbench chrome fixes**: `oas-inspector`'s empty state was invisible — the empty block lived inside the `.body` that gets hidden when `empty` is set (moved out + flex-fill); `oas-inspector-row` row dividers now default to the border token (were `transparent`, so key-value rows had no hairlines) drawn as top borders so the last row does not stack with the section divider; `oas-titlebar` / `oas-inspector` surfaces now default to a subtle theme-aware `color-mix` (light/dark symmetric, was page-coloured in light); `oas-traffic-lights` hover symbols are a fixed dark tone (were near-white in dark, unreadable) and the controls self-declare `-webkit-app-region: no-drag`.
 - **Contrast (axe ratio) fixes**: oas-button `text`-variant `active` text now falls back to the primary text-safe tone (was primary-on-primary-tint, unreadable); oas-inspector-row's `striped` label uses the strong secondary tone to keep AA on the zebra background; the light `--oas-color-info-text` token was deepened (was below AA on white) — the perceptual (<60) gate is unaffected.
 
