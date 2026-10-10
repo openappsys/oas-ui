@@ -375,7 +375,10 @@ describe('OASQuestionnaire', () => {
       await new Promise((r) => setTimeout(r, 0))
       document.body.appendChild(el)
       await new Promise((r) => setTimeout(r, 0))
-      expect(attached, '重连后 value 监听应重新挂载（锁住「只有断开摘除」的半边假绿）').toBe(true)
+      // 行为级锁：重连后 value 跟踪应恢复。注意——重连必经 core 的 runUpdateAndNotify→update()（其末尾恒调
+      // bindValueListeners），故此断言由 update 兜底满足，**不单独证明 onReconnect 的重挂路径**；真正锁 onReconnect
+      // 重挂的是紧随其后的「第二次断开已摘除」断言（cleanup 对称）。二者合起来才覆盖「重连恢复 + 再断摘除」。
+      expect(attached, '重连后 value 跟踪应恢复（行为级）').toBe(true)
       el.remove()
       await new Promise((r) => setTimeout(r, 0))
       expect(attached, '第二次断开后 value 监听应已摘除').toBe(false)
