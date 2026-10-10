@@ -354,6 +354,8 @@ describe('OASQuestionnaire', () => {
   it('断开重连再断开：oas-values-change 监听被摘除（cleanup 对称回归）', async () => {
     // 该监听为内部私有 handler，行为不可经 getValues 观测（真表单走 live 值）——改用原型 spy
     // 建模「同引用监听是否仍挂着」（addEventListener 同引用去重）：
+    // 守卫：oas-form 未注册时 getPrototypeOf 会落到 HTMLElement.prototype，spy 挂错层 → 静默假绿
+    expect(customElements.get('oas-form'), 'oas-form 应已注册（防 spy 挂错原型）').toBeDefined()
     const proto = Object.getPrototypeOf(document.createElement('oas-form'))
     const origAdd = proto.addEventListener
     const origRemove = proto.removeEventListener
@@ -373,6 +375,7 @@ describe('OASQuestionnaire', () => {
       await new Promise((r) => setTimeout(r, 0))
       document.body.appendChild(el)
       await new Promise((r) => setTimeout(r, 0))
+      expect(attached, '重连后 value 监听应重新挂载（锁住「只有断开摘除」的半边假绿）').toBe(true)
       el.remove()
       await new Promise((r) => setTimeout(r, 0))
       expect(attached, '第二次断开后 value 监听应已摘除').toBe(false)
