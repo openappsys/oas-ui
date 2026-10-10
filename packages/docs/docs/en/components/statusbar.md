@@ -108,5 +108,5 @@ onMounted(() => {
 
 | CSS Variable | Default |
 | --- | --- |
-| `--oas-statusbar-bg` | `color-mix(in srgb, var(--oas-color-text-primary) 5%, var(--oas-color-bg))` |
+| `--oas-statusbar-bg` | `var(--oas-color-bg-elevated)` |
 | `--oas-statusbar-height` | `24px` |

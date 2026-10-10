@@ -22,7 +22,7 @@
   "cssVars": [
     {
       "name": "--oas-statusbar-bg",
-      "default": "color-mix(in srgb, var(--oas-color-text-primary) 5%, var(--oas-color-bg))"
+      "default": "var(--oas-color-bg-elevated)"
     },
     {
       "name": "--oas-statusbar-height",
