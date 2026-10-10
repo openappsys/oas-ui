@@ -133,11 +133,11 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `drag` | 整栏设为窗口拖动区（写 -webkit-app-region: drag + data-tauri-drag-region，Electron/Tauri 宿主生效；纯 Web 下无害空操作）；交互子件自动 no-drag，[data-no-drag] 显式退出 | `boolean` | — |
 | `editable` | 文档井标题可编辑：Enter 或失焦提交（派发 oas-title-change 并更新吸收缓存），Esc 取消回滚；编辑中外部重写 title 即终止编辑 | `boolean` | — |
-| `leading-inset` | 安全区：leading 端原生控件防压（CSS 长度；亦可直接覆写 --oas-titlebar-leading-inset） | — | `space-2` |
+| `leading-inset` | 安全区：leading 端原生控件防压（CSS 长度；亦可直接覆写 --oas-titlebar-leading-inset） | — | — |
 | `size` | 高度档：compact（默认，34px）/ large（68px，控件保持紧凑）；非法值回落 compact 并告警一次（同值去重） | `string` | `compact` |
 | `subtitle` | 副标题 / 文档状态（已编辑时间等） | `string` | — |
 | `title` | 居中标题文本（slot="title" 有内容时覆盖）。原生全局属性同名——渲染进标题区后即从宿主吸收移除（防原生 tooltip 重复干扰），渲染由组件内缓存驱动；清空/重设请显式写 title 属性 | `string` | — |
-| `trailing-inset` | 安全区：trailing 端原生控件防压（CSS 长度；亦可直接覆写 --oas-titlebar-trailing-inset） | — | `space-2` |
+| `trailing-inset` | 安全区：trailing 端原生控件防压（CSS 长度；亦可直接覆写 --oas-titlebar-trailing-inset） | — | — |
 | `window-actions` | 内建窗口操作钮子集（逗号分隔：minimize,maximize,close）；点击派发 oas-window-action，组件不执行窗口操作 | `string` | — |
 
 #### 事件

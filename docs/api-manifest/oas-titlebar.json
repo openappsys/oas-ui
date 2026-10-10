@@ -81,11 +81,11 @@
     },
     {
       "name": "--oas-titlebar-leading-inset",
-      "default": "0px"
+      "default": "var(--oas-space-2)"
     },
     {
       "name": "--oas-titlebar-trailing-inset",
-      "default": "0px"
+      "default": "var(--oas-space-2)"
     }
   ],
   "unresolved": []
