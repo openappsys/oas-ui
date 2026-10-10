@@ -17,4 +17,3 @@ test-results/
 packages/playground/dist-react/
 packages/playground/dist-vue/
 packages/docs/docs/public/llms-full.txt
-packages/docs/docs/public/**/*.md
