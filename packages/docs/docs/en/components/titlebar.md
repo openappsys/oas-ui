@@ -131,7 +131,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `drag` | Turns the whole bar into a window drag region (writes -webkit-app-region: drag + data-tauri-drag-region, effective in Electron/Tauri hosts; harmless no-op in plain Web); interactive children automatically opt out (no-drag), [data-no-drag] opts out explicitly | `boolean` | — |
+| `drag` | Turns the whole bar into a window drag region (writes -webkit-app-region: drag + data-tauri-drag-region, effective in Electron/Tauri hosts; harmless no-op in plain Web); a curated set of interactive children automatically opts out (no-drag) — otherwise opt out a host child with [data-no-drag], and [data-drag] forces it back | `boolean` | — |
 | `editable` | Makes the document-well title editable: Enter or blur commits (dispatches oas-title-change and updates the absorbed cache), Esc cancels and rolls back; rewriting title externally while editing terminates the edit | `boolean` | — |
 | `leading-inset` | Safe area: leading-side native-control clearance (CSS length; also settable via --oas-titlebar-leading-inset) | — | — |
 | `size` | Height tier: compact (default, 34px) / large (68px, controls stay compact); invalid values fall back to compact with a one-time warning | `string` | `compact` |

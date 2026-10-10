@@ -15,7 +15,7 @@
 
 ## 拖动契约（drag）
 
-`drag` 布尔属性把整栏设为窗口拖动区（写 `-webkit-app-region: drag` + `data-tauri-drag-region`，Electron/Tauri 宿主生效）；**交互子件自动 no-drag**——原生交互元素、`oas-*` 组件与 `[data-no-drag]` 标记元素都可正常点击，不会被拖动区吞掉。纯 Web 下为无害空操作。
+`drag` 布尔属性把整栏设为窗口拖动区（写 `-webkit-app-region: drag` + `data-tauri-drag-region`，Electron/Tauri 宿主生效）；**枚举式自动 no-drag 常用交互子件**——原生交互元素、内置交互组件（button/input/segmented/toolbar/scope-bar/knob 等）与 `[data-no-drag]` 标记元素都可正常点击，不会被拖动区吞掉；**未枚举的宿主 `oas-*` 子件请自行加 `[data-no-drag]`**（`[data-drag]` 可强制改回拖动）。纯 Web 下为无害空操作。
 
 <DemoBlock title="拖动区内按钮可点（no-drag 自动生效）">
   <div style="width: 100%">
@@ -131,7 +131,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `drag` | 整栏设为窗口拖动区（写 -webkit-app-region: drag + data-tauri-drag-region，Electron/Tauri 宿主生效；纯 Web 下无害空操作）；交互子件自动 no-drag，[data-no-drag] 显式退出 | `boolean` | — |
+| `drag` | 整栏设为窗口拖动区（写 -webkit-app-region: drag + data-tauri-drag-region，Electron/Tauri 宿主生效；纯 Web 下无害空操作）；枚举式自动 no-drag 常用交互子件，未枚举的宿主子件用 [data-no-drag] 显式退出，[data-drag] 可强制改回 | `boolean` | — |
 | `editable` | 文档井标题可编辑：Enter 或失焦提交（派发 oas-title-change 并更新吸收缓存），Esc 取消回滚；编辑中外部重写 title 即终止编辑 | `boolean` | — |
 | `leading-inset` | 安全区：leading 端原生控件防压（CSS 长度；亦可直接覆写 --oas-titlebar-leading-inset） | — | — |
 | `size` | 高度档：compact（默认，34px）/ large（68px，控件保持紧凑）；非法值回落 compact 并告警一次（同值去重） | `string` | `compact` |

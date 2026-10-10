@@ -4609,7 +4609,7 @@
   "oas-titlebar": {
     "attrs": {
       "size": "Height tier: compact (default, 34px) / large (68px, controls stay compact); invalid values fall back to compact with a one-time warning",
-      "drag": "Turns the whole bar into a window drag region (writes -webkit-app-region: drag + data-tauri-drag-region, effective in Electron/Tauri hosts; harmless no-op in plain Web); interactive children automatically opt out (no-drag), [data-no-drag] opts out explicitly",
+      "drag": "Turns the whole bar into a window drag region (writes -webkit-app-region: drag + data-tauri-drag-region, effective in Electron/Tauri hosts; harmless no-op in plain Web); a curated set of interactive children automatically opts out (no-drag) — otherwise opt out a host child with [data-no-drag], and [data-drag] forces it back",
       "title": "Centered title text (overridden when slot=\"title\" has content). Same-named as the native global attribute — absorbed (removed from the host) once rendered into the title area, preventing duplicate native tooltips; rendering is driven by the component-internal cache; to clear or reset, write the title attribute explicitly",
       "subtitle": "Subtitle / document state (last edited time etc.)",
       "editable": "Makes the document-well title editable: Enter or blur commits (dispatches oas-title-change and updates the absorbed cache), Esc cancels and rolls back; rewriting title externally while editing terminates the edit",
