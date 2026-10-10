@@ -44,7 +44,7 @@
 
 - [Layout 布局](https://oas-ui.dev/components/layout): 经典的顶部 + 侧栏 + 内容 + 底部页面骨架，配合语义化子组件使用。
 - [Sidebar 侧栏](https://oas-ui.dev/components/sidebar): 可折叠侧栏：桌面端 collapsed 收窄为图标条，移动端（窄于 mobile-breakpoint，默认 768px）自动切换为覆盖式抽屉 + 遮罩，点击外部 / 关闭按钮 / Esc 收起。
-- [Container 容器](https://oas-ui.dev/components/container): 定宽居中容器：按 size 映射 --oas-container- 宽度 token，margin-inline: auto 居中（逻辑属性，RTL 自动合规），max-width: min(100%, token) 保证窄屏不溢出。
+- [Container 容器](https://oas-ui.dev/components/container): 定宽居中容器：按 size 映射 --oas-container-* 宽度 token，margin-inline: auto 居中（逻辑属性，RTL 自动合规），max-width: min(100%, token) 保证窄屏不溢出。
 - [Grid 栅格](https://oas-ui.dev/components/grid): 24 栅格布局系统，配合 oas-grid-item 划分列宽，支持间距、偏移与自定义总列数；设置 columns 后切换为自动等分布局（simple-grid）。
 - [Flex 弹性布局](https://oas-ui.dev/components/flex): 基于 CSS Flexbox 的布局容器，通过属性控制方向、主轴/交叉轴对齐、间距与换行。
 - [Splitter 分割面板](https://oas-ui.dev/components/splitter): 可调整面板尺寸的分割组件，支持鼠标拖拽、键盘方向键、双击复位、折叠、延迟渲染、多面板与自定义手柄。
@@ -190,7 +190,7 @@
 
 - [ConfigProvider 全局配置](https://oas-ui.dev/components/config-provider): 全局配置的注入入口，统一管理包裹子树的 locale / size / theme / config / direction / z-index / disabled。
 - [App 消息上下文容器](https://oas-ui.dev/components/app): message / notification / loadingBar 等命令式 API 的宿主容器。app 容器存在时，消息挂载到 app 内（而非 document.body）；可与 config-provider 配套使用。
-- [ThemeEditor 主题编辑器](https://oas-ui.dev/components/theme-editor): 实时编辑 --oas- 主题 token，编辑即时写入宿主 CSS 变量，子树实时继承预览。
+- [ThemeEditor 主题编辑器](https://oas-ui.dev/components/theme-editor): 实时编辑 --oas-* 主题 token，编辑即时写入宿主 CSS 变量，子树实时继承预览。
 
 ## Optional
 

@@ -2,15 +2,20 @@
  * 生成 /llms.txt 与 /llms-full.txt（遵循 llmstxt.org 规范 v2）。
  *
  * - llms.txt：H1 + blockquote 摘要 + 约定（自由 markdown）+ 若干 H2「文件列表」
- *   （`- [名称](url): 说明`）+ `## Optional`。链接指向站点规范 URL（cleanUrls）。
- * - llms-full.txt：把指南与全部组件文档（去 demo 包装与 <script setup>）按层级 +1
- *   拼接成全文，供 agent 一次抓取。
- * - 数据源：docs 侧栏（.vitepress/config.ts 的 componentSidebar 分组）+ guide 目录 +
- *   components 目录各 md 的 H1 与首段（自动提取标题/一句话说明）。
+ *   （`- [名称](url): 说明`）+ `## Optional`。链接指向站点规范 URL（cleanUrls），
+ *   组件分组取自 srcDir 侧栏（.vitepress/config.ts 的 componentSidebar）。
+ * - llms-full.txt：指南与全部组件文档**原样拼接**（不清理、零信息损失；
+ *   去掉 `<script setup>` 属另一路线的旧行为，已废弃），每页前加 `<!-- 站点URL -->` 源标注。
+ * - 每页 `.md` 镜像**不在此脚本生成**：由 docs 构建期（.vitepress/config.ts 的 buildEnd）
+ *   原样复制到**构建产物 dist**。本脚本仅清理 public/ 下历史遗留的 .md（旧版本误写在此），
+ *   因为 public/ 是 Vite 静态根，与 `.md` 页面模块路由同路径会致 dev 整站 404。
+ * - 数据源：docs 侧栏分组 + guide 目录 + components 目录各 md 的 H1 与首段（自动提取标题/一句话说明）。
  *
  * 用法：
- *   node scripts/llms/gen.mjs           # 写入 packages/docs/docs/public/{llms,llms-full}.txt
- *   node scripts/llms/gen.mjs --check   # 只校验与磁盘一致（CI 门禁；漂移即 exit 1）
+ *   node scripts/llms/gen.mjs           # 写 llms.txt / llms-full.txt 到 public/，并清理 public 历史 .md 镜像
+ *   node scripts/llms/gen.mjs --check   # 校验：llms.txt 与磁盘一致 + public/ 无残留 .md 镜像（漂移即 exit 1）
+ * CI 门禁见根 package.json 的 `llms:check`：本脚本 --check 之外再 `git diff` 比对入库版本
+ * （因 CI 先跑 `pnpm build` 会重写 public/llms.txt，仅「生成 vs 磁盘」比对会恒绿失效）。
  * 环境变量 SITE_URL 覆盖站点绝对前缀（默认 https://oas-ui.dev）。
  */
 import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
@@ -67,12 +72,25 @@ function looksProse(t) {
   return true
 }
 
+/** 去行内 markdown：链接留文字、强调去符号；**行内代码内容原样**（保 `*` 等字面量，如 `--oas-container-*`） */
+function stripMd(t) {
+  const codes = []
+  let s = t.replace(/`([^`]*)`/g, (_, c) => {
+    codes.push(c)
+    return `\u0000${codes.length - 1}\u0000`
+  })
+  s = s.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+  s = s
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/[*_]/g, '')
+    .trim()
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => codes[Number(i)])
+}
+
 /** 取首句作为简介：优先在首个句末标点处收口（≤max 字），过长才截断加省略号 */
 function firstSentence(t, max = 200) {
-  const clean = t
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/[*`]/g, '')
-    .trim()
+  const clean = stripMd(t)
   const m = clean.match(/^.{6,}?[。！？!?](?=\s|$|[\u4e00-\u9fff])/)
   let s = m ? m[0] : clean
   if (s.length > max) {
