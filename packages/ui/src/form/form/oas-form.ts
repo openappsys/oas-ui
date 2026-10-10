@@ -735,6 +735,42 @@ export class OASForm extends OASElement {
     return this.t('form.validationFailed')
   }
 
+  /** 收集同步错误（invalid）与异步校验 promise（asyncJobs），validateAndSubmit 与 validate 共用（DOM 序由 mergeAsyncErrors 重排） */
+  private collectInvalid(
+    fields: Array<{ name: string; element: Element }>,
+    values: Record<string, string>,
+  ): {
+    invalid: Array<{ name: string; element: Element; message: string }>
+    asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }>
+  } {
+    const invalid: Array<{ name: string; element: Element; message: string }> = []
+    const asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }> = []
+    for (const { name, element } of fields) {
+      if (this.isFieldDisabled(element)) continue
+      const result = this.firstFieldError(name, values)
+      if (result === null) continue
+      if (typeof result === 'string') invalid.push({ name, element, message: result })
+      else asyncJobs.push({ name, element, promise: result })
+    }
+    return { invalid, asyncJobs }
+  }
+
+  /** 聚合异步校验结果并入 invalid 并按字段 DOM 序重排，validateAndSubmit 与 validate 共用 */
+  private async mergeAsyncErrors(
+    fields: Array<{ name: string; element: Element }>,
+    invalid: Array<{ name: string; element: Element; message: string }>,
+    asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }>,
+  ): Promise<Array<{ name: string; element: Element; message: string }>> {
+    const resolved = await Promise.all(asyncJobs.map((job) => job.promise.then((message) => ({ job, message }))))
+    for (const { job, message } of resolved) {
+      if (message !== null) invalid.push({ name: job.name, element: job.element, message })
+    }
+    // 混合同步/异步 validator 时按字段 DOM 序重排——首错必须是文档序第一个错误字段（同步项先入队、异步 append 在后会错位）
+    const order = new Map(fields.map((f, i) => [f.name, i]))
+    invalid.sort((a, b) => (order.get(a.name) ?? 0) - (order.get(b.name) ?? 0))
+    return invalid
+  }
+
   private validateAndSubmit(): void {
     const values = this.snapshotValues()
     this.errors = Object.create(null)
@@ -744,30 +780,14 @@ export class OASForm extends OASElement {
     // （提交通过却仍标红 / 提交失败的错误被静默清掉）——实抓竞态。
     // 用 clear() 而非按 name 逐个 bump：可一并覆盖「在途期间被移除/改名、collectFields 收不到」的字段
     this.fieldValidateSeq.clear()
-    const invalid: Array<{ name: string; element: Element; message: string }> = []
-    const asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }> = []
-
-    for (const { name, element } of fields) {
-      if (this.isFieldDisabled(element)) continue
-      const result = this.firstFieldError(name, values)
-      if (result === null) continue
-      if (typeof result === 'string') invalid.push({ name, element, message: result })
-      else asyncJobs.push({ name, element, promise: result })
-    }
+    const { invalid, asyncJobs } = this.collectInvalid(fields, values)
 
     if (asyncJobs.length === 0) {
       this.finalizeValidation(values, fields, invalid)
       return
     }
-    void Promise.all(asyncJobs.map((job) => job.promise.then((message) => ({ job, message })))).then((resolved) => {
-      for (const { job, message } of resolved) {
-        if (message !== null) invalid.push({ name: job.name, element: job.element, message })
-      }
-      // 混合同步/异步 validator 时按字段 DOM 序重排——scroll-to-first-error 的「首错」
-      // 必须是文档序第一个错误字段（同步项先入队、异步 append 在后会错位）
-      const order = new Map(fields.map((f, i) => [f.name, i]))
-      invalid.sort((a, b) => (order.get(a.name) ?? 0) - (order.get(b.name) ?? 0))
-      this.finalizeValidation(values, fields, invalid)
+    void this.mergeAsyncErrors(fields, invalid, asyncJobs).then((iv) => {
+      this.finalizeValidation(values, fields, iv)
     })
   }
 
@@ -864,24 +884,8 @@ export class OASForm extends OASElement {
     const fields = this.collectFields()
     // 与提交/reset 同级：进入即作废全部在途字段级异步校验，防慢旧结果在校验终态后写回
     this.fieldValidateSeq.clear()
-    const invalid: Array<{ name: string; element: Element; message: string }> = []
-    const asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }> = []
-    for (const { name, element } of fields) {
-      if (this.isFieldDisabled(element)) continue
-      const result = this.firstFieldError(name, values)
-      if (result === null) continue
-      if (typeof result === 'string') invalid.push({ name, element, message: result })
-      else asyncJobs.push({ name, element, promise: result })
-    }
-    if (asyncJobs.length > 0) {
-      const resolved = await Promise.all(asyncJobs.map((job) => job.promise.then((message) => ({ job, message }))))
-      for (const { job, message } of resolved) {
-        if (message !== null) invalid.push({ name: job.name, element: job.element, message })
-      }
-      // 混合同步/异步时按字段 DOM 序重排（getErrors() 键序稳定，与提交路径同口径）
-      const order = new Map(fields.map((f, i) => [f.name, i]))
-      invalid.sort((a, b) => (order.get(a.name) ?? 0) - (order.get(b.name) ?? 0))
-    }
+    const { invalid, asyncJobs } = this.collectInvalid(fields, values)
+    if (asyncJobs.length > 0) await this.mergeAsyncErrors(fields, invalid, asyncJobs)
     this.errors = Object.create(null)
     for (const { name, message } of invalid) this.errors[name] = message
     for (const { name, element } of fields) {
