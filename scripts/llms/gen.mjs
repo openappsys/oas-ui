@@ -205,22 +205,32 @@ function buildLlmsFullTxt() {
 // 绝不写 public/：dev 下 public/ 是 Vite 静态根，会与 `.md` 页面模块路由同路径冲突 → 整站 404。
 // 此处仅清理历史遗留的 public/.md（旧版本曾写在此处）。
 
-/** 清掉 public 下遗留的 .md 镜像（返回删除数） */
-function clearPublicMdMirrors() {
+/** 扫描 public 下的 .md 镜像（onHit 非空则对每个执行） */
+function scanPublicMdMirrors(onHit) {
   let n = 0
-  const clear = (dir) => {
+  const walk = (dir) => {
     if (!existsSync(dir)) return
     for (const ent of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, ent.name)
-      if (ent.isDirectory()) clear(p)
+      if (ent.isDirectory()) walk(p)
       else if (ent.name.endsWith('.md')) {
-        unlinkSync(p)
         n++
+        if (onHit) onHit(p)
       }
     }
   }
-  clear(OUT_DIR)
+  walk(OUT_DIR)
   return n
+}
+
+/** 清掉 public 下遗留的 .md 镜像（返回删除数） */
+function clearPublicMdMirrors() {
+  return scanPublicMdMirrors((p) => unlinkSync(p))
+}
+
+/** 统计 public 下遗留的 .md 镜像数（不删，供 --check 回归门禁） */
+function countPublicMdMirrors() {
+  return scanPublicMdMirrors(null)
 }
 
 // ---------- 写盘 / 校验 ----------
@@ -240,7 +250,7 @@ function emit(name, content, committed) {
     return
   }
   writeFileSync(file, content)
-  console.log(`[llms] 已写入 packages/docs/docs/public/${name}（${content.length} 字节）`)
+  console.log(`[llms] 已写入 packages/docs/docs/public/${name}（${content.length} 字符）`)
 }
 
 const llms = buildLlmsTxt()
@@ -255,4 +265,13 @@ if (!CHECK) {
   const groups = parseComponentGroups()
   const n = groups.reduce((a, g) => a + g.items.length, 0)
   console.log(`[llms] 分组 ${groups.length} 个、组件链接 ${n} 条`)
+} else {
+  // 回归门禁：public/ 不得残留 .md 镜像（否则与 dev 的 `.md` 页面路由冲突 → 整站 404）
+  const stray = countPublicMdMirrors()
+  if (stray) {
+    console.error(`[llms:check] public/ 残留 ${stray} 个 .md 镜像（镜像应写入构建产物 dist，勿放 public/）`)
+    process.exitCode = 1
+  } else {
+    console.log('[llms:check] public/ 无 .md 镜像 ✓')
+  }
 }

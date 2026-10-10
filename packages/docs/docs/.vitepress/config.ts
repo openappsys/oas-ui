@@ -378,8 +378,9 @@ gtag('config', 'G-RXS142HBXF');`,
       ['meta', { name: 'twitter:image', content: ogImage }],
       ['meta', { name: 'twitter:image:alt', content: ogImageAlt }],
     ]
-    // LLM/agent 友好：每页指到其 markdown 版本（llmstxt.org 规范的 rel 关系）+ 根索引
-    // md 镜像由 scripts/llms/gen.mjs 原样复制到 public/（构建/开发时生成，dist 根即可访问）
+    // LLM/agent 友好：每页指到其 markdown 版本（llmstxt.org 规范的 rel 关系）+ 根索引。
+    // md 镜像由本文件的 buildEnd 原样复制进**构建产物**（仅生产 dist 可得；dev 下该链接 404 属预期——
+    // 绝不能放 public/，否则与 .md 页面模块路由同路径冲突致整站 404）。
     const mdUrl = pageUrl(rel).endsWith('/') ? `${pageUrl(rel)}index.md` : `${pageUrl(rel)}.md`
     head.push(['link', { rel: 'alternate', type: 'text/markdown', href: mdUrl }])
     head.push(['link', { rel: 'describedby', href: '/llms.txt' }])

@@ -65,4 +65,9 @@ describe('OASTrafficLights', () => {
     const el = mount()
     expect(el.shadowRoot!.querySelector('style')!.textContent).toContain('-webkit-app-region: no-drag')
   })
+
+  it('disabled 悬停不显符号（.dot:not(:disabled) 守卫）', () => {
+    const el = mount()
+    expect(el.shadowRoot!.querySelector('style')!.textContent).toContain(':not(:disabled)')
+  })
 })

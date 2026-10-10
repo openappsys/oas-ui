@@ -231,6 +231,14 @@ const STYLE = `
 ::slotted(oas-pagination),
 ::slotted(oas-toolbar),
 ::slotted(oas-toolbar-toggle),
+::slotted(oas-toolbar-input),
+::slotted(oas-scope-bar),
+::slotted(oas-knob),
+::slotted(oas-transport-well),
+::slotted(oas-music-well),
+::slotted(oas-swatch-group),
+::slotted(oas-steps),
+::slotted(oas-stepper),
 ::slotted([data-no-drag]) {
   -webkit-app-region: no-drag;
 }

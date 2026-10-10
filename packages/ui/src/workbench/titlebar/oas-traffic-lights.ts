@@ -79,6 +79,13 @@ const STYLE = `
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
+/* 高对比模式：焦点环切系统 Highlight 色（forced-color-adjust:none 下 box-shadow 环不切系统色，补显式 outline） */
+@media (forced-colors: active) {
+  .dot:focus-visible {
+    outline: 2px solid Highlight;
+    box-shadow: none;
+  }
+}
 :host([disabled]) .dot {
   cursor: not-allowed;
   opacity: 0.5;
