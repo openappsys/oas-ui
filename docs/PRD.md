@@ -2001,7 +2001,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ### 已批定夺
 
-- **titlebar 独立薄件**：`drag` 属性写 `-webkit-app-region: drag` + `data-tauri-drag-region`，交互子件自动 no-drag；纯 Web 下弱化为应用外壳语义（无害空操作）；`window-actions` 内建窗口操作钮 + `oas-window-action` 事件（组件只发事件不执行）；`editable` 文档井（Enter 提交 / Esc 取消回滚）；compact/large 两档高度。
+- **titlebar 独立薄件**：`drag` 属性写 `-webkit-app-region: drag` + `data-tauri-drag-region`，常用交互子件枚举式自动 no-drag（未枚举者用 `[data-no-drag]`）；纯 Web 下弱化为应用外壳语义（无害空操作）；`window-actions` 内建窗口操作钮 + `oas-window-action` 事件（组件只发事件不执行）；`editable` 文档井（Enter 提交 / Esc 取消回滚）；compact/large 两档高度。
 - **inspector 自建 `oas-inspector-section`**（不复用 collapse）——折叠行为对齐 collapse 的 grid rows 过渡经验，API 贴属性面板（heading/name/collapsible/open 受控/default-open）。
 - **action-bar v1 仅通用**：统计井 + 任务进度井；媒体 transport / music 井延后 v2（文档标注）。
 

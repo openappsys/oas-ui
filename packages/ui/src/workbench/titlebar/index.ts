@@ -17,7 +17,7 @@ export type { TrafficLightAction } from './oas-traffic-lights.js'
 export interface TitlebarProps {
   /** 高度档：compact（默认，34px）/ large（68px，控件保持紧凑） */
   size?: TitlebarSize
-  /** 容器设为窗口拖动区（交互子件自动 no-drag；纯 Web 下无害空操作） */
+  /** 容器设为窗口拖动区（常用交互子件枚举式自动 no-drag，未枚举者加 [data-no-drag]；纯 Web 下无害空操作） */
   drag?: boolean
   /** 居中标题（title 插槽覆盖；editable 提交后反射回写） */
   title?: string

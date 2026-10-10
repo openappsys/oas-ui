@@ -10,7 +10,7 @@ import { OASTitlebar } from './index.js'
  * happy-dom 限制：CSS 类样式不进 element.style、getComputedStyle 不解析 var()——
  * 涉及样式的断言一律走「内联样式 + shadow 内 style 文本」双重路径。
  * 拖动契约：drag 属性 → host 内联 -webkit-app-region: drag + data-tauri-drag-region 属性；
- * 交互子件自动 no-drag 是样式表规则（::slotted），断言样式表文本含规则。
+ * 常用交互子件（枚举式）自动 no-drag 是样式表规则（::slotted），断言样式表文本含规则。
  */
 
 type MountOptions = {
