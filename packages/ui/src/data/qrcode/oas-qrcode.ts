@@ -131,7 +131,7 @@ const MODULE_PATTERN_ID = 'oas-qr-pat'
  * - `value`：内容文本（数字/字母数字/字节三种模式自动选择）
  * - `size`：渲染尺寸（px，默认 128）
  * - `error-correction`：l/m/q/h 四级别全实现（默认 l）；中心 logo 遮挡场景建议 q/h
- * - `color`：前景色（CSS 色值或 11 预设名，缺省 currentColor 走宿主文本色）
+ * - `color`：前景色（CSS 色值或 11 预设名，缺省固定深色 #18181b，经 `--oas-qrcode-color` 覆盖——与固定白静区配套保证可扫性，dark 下不用 currentColor 浅色）
  * - `bg-color`：背景色（默认固定白 #fff——可扫性优先于主题一致性，dark 下同样可扫；
  *   可经 `--oas-qrcode-bg` 变量覆盖）
  * - `margin`：静区边距（模块倍数，默认 4，符合 QR 标准静区要求）
@@ -388,7 +388,7 @@ export class OASQRCode extends OASElement {
     return Math.min(Math.max(16, Math.round(raw)), Math.floor(size / 2))
   }
 
-  /** 前景色：属性（CSS 色值 / 预设名）优先，缺省 currentColor */
+  /** 前景色：属性（CSS 色值 / 预设名）优先，缺省固定深色（见下方可扫性说明） */
   private fgColor(): string {
     const v = this.getAttr('color', '').trim()
     // 默认固定深色（与固定白静区配套：dark 主题下 currentColor 是浅色，

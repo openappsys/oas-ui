@@ -28,7 +28,7 @@ function easeOutCubic(t: number): number {
 }
 
 /**
- * 缓动四档枚举（克制，linear/ease-out/ease-in-out/spring）；
+ * 缓动五档枚举（linear/ease-out/ease-in/ease-in-out/spring）；
  * 非法值回落 ease-out。spring 为轻度过冲回弹（easeOutBack，c1=1.2）。
  */
 const EASING: Record<string, (t: number) => number> = {

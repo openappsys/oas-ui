@@ -821,7 +821,7 @@ const STYLE = `
   clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
 
-/* flag：侧燕尾横旗（横条 + 探出外端侧燕尾 V 缺口；缺口始终朝探出端，placement start/end 镜像）。
+/* flag：侧燕尾横旗（横条 + 内端燕尾 V 缺口；外端贴卡片边线不探出，缺口始终朝卡片内侧端，placement start/end 镜像）。
    底部挂点内侧保留折叠角——复用 .ribbon-corner 尖三角，但因条身 clip-path 会把条外元素裁掉，
    折叠角须放进 clip 区域内（bottom 内侧角） */
 .ribbon.form-flag {
