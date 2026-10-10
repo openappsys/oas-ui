@@ -11,7 +11,7 @@
  *   - events：this.emit(...)（事件名自动加 oas- 前缀）+ new CustomEvent('oas-...')
  *   - slots：render() 模板字符串里的 <slot> / <slot name="...">，以及
  *     `template[slot="..."]` 子模板选择器引用（宿主侧命名插槽）
- * 产物：docs/api-manifest.json（按 tag 名 keyed）。
+ * 产物：docs/api-manifest/<tag>.json（按组件拆分；另写 index.json 记录顺序）；遗留旧单文件 docs/api-manifest.json 会被清理。
  *
  * 用法：node scripts/api-docs/scan.mjs
  *
@@ -1124,7 +1124,7 @@ function main() {
   } else {
     console.log('--- unresolved：无 ---')
   }
-  console.log(`=> 已写入 ${relative(ROOT, OUT)}`)
+  console.log(`=> 已写入 ${relative(ROOT, OUT_DIR)}/（按组件拆分）`)
 }
 
 main()

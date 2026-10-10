@@ -283,6 +283,7 @@ export {
   type DrawerHandle,
   type DrawerOptions,
 } from './feedback/drawer/index.js'
+export { OASBottomSheet } from './feedback/bottom-sheet/index.js'
 export { OASPopconfirm } from './feedback/popconfirm/oas-popconfirm.js'
 export { OASAlert } from './feedback/alert/oas-alert.js'
 export { OASNoticeBar, type NoticeBarType } from './feedback/notice-bar/oas-notice-bar.js'
@@ -326,7 +327,7 @@ import './navigation/tabs/index.js'
 import './navigation/affix/index.js'
 import './navigation/page-header/index.js'
 import './navigation/float-button/index.js'
-export { OASMenu, type MenuItem } from './navigation/menu/index.js'
+export { OASMenu, OASMenuItem, OASMenuGroup, OASMenuDivider, type MenuItem } from './navigation/menu/index.js'
 export {
   OASDropdown,
   OASDropdownItem,
@@ -340,7 +341,13 @@ export {
   OASContextMenuDivider,
 } from './navigation/contextmenu/index.js'
 export { OASCommand, OASCommandItem, type CommandItem } from './navigation/command/index.js'
-export { OASMenubar, type MenubarItem } from './navigation/menubar/index.js'
+export {
+  OASMenubar,
+  OASMenubarItem,
+  OASMenubarGroup,
+  OASMenubarDivider,
+  type MenubarItem,
+} from './navigation/menubar/index.js'
 export {
   OASNavigationMenu,
   OASNavigationMenuItem,

@@ -418,7 +418,7 @@ export class OASTitlebar extends OASElement {
     }
   }
 
-  /** 安全区属性通道：值写入内联 CSS 变量（空值撤除，回落样式表默认 0px） */
+  /** 安全区属性通道：值写入内联 CSS 变量（空值撤除，回落样式表默认 `var(--oas-space-2)`） */
   private syncInset(attr: string, cssVar: string): void {
     const raw = this.getAttr(attr, '').trim()
     if (raw !== '') this.style.setProperty(cssVar, raw)

@@ -305,7 +305,7 @@ describe('OASTitlebar 安全区', () => {
     expect(el.style.getPropertyValue('--oas-titlebar-trailing-inset')).toBe('140px')
   })
 
-  it('属性移除后变量撤除（回落默认 0px）', () => {
+  it('属性移除后变量撤除（回落样式表默认）', () => {
     const el = mount({ attrs: { 'leading-inset': '80px' } })
     el.removeAttribute('leading-inset')
     expect(el.style.getPropertyValue('--oas-titlebar-leading-inset')).toBe('')
