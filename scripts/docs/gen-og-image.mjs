@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 /**
- * 生成文档站社交分享图 og-image.png（1200×630），写入 packages/docs/docs/public/。
+ * 生成文档站社交分享图 og-image.jpg（1200×630，JPEG q90），写入 packages/docs/docs/public/。
  * 用 Playwright Chromium 渲染内联 HTML 截图——无需额外图形依赖（Chromium 已在 devDependencies）。
+ * 选 JPEG 而非 PNG：内容是渐变+文字，JPEG 压缩率远高（PNG 对平滑渐变最差）；且 JPEG 跨社交抓取器
+ * （Facebook/X/LinkedIn/Slack/WeChat）兼容最广——og:image 由抓取器服务端拉取，不进页面加载路径。
  * 改设计后重跑：node scripts/docs/gen-og-image.mjs
  */
 import { chromium } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 
-const OUT = resolve(import.meta.dirname, '../../packages/docs/docs/public/og-image.png')
+const OUT = resolve(import.meta.dirname, '../../packages/docs/docs/public/og-image.jpg')
 
 const HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -51,7 +53,7 @@ const context = await browser.newContext({ viewport: { width: 1200, height: 630 
 const page = await context.newPage()
 await page.setContent(HTML, { waitUntil: 'networkidle' })
 await page.waitForTimeout(150)
-const buf = await page.screenshot({ type: 'png' })
+const buf = await page.screenshot({ type: 'jpeg', quality: 90 })
 await browser.close()
 
 mkdirSync(dirname(OUT), { recursive: true })

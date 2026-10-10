@@ -354,7 +354,7 @@ gtag('config', 'G-RXS142HBXF');`,
     const zhUrl = SITE_URL + pageUrl(en ? rel.slice(EN_PREFIX.length) : rel)
     const enUrl = SITE_URL + pageUrl(en ? rel : EN_PREFIX + rel)
     const isHome = rel === 'index.md' || rel === 'en/index.md'
-    const ogImage = SITE_URL + '/og-image.png'
+    const ogImage = SITE_URL + '/og-image.jpg'
     const ogImageAlt = 'OAS-UI — 框架无关的 Web Components UI 组件库'
     const head: HeadConfig[] = [
       ['link', { rel: 'canonical', href: canonical }],

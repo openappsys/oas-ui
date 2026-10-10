@@ -121,7 +121,7 @@
 
 - `docs build` 依赖 `@oas-ui/ui` 的 dist（workspace symlink）——全量 `pnpm build` 拓扑序自动先构建 ui，无需手动指定
 - `base: '/'`（自定义域名，无子路径）；`cleanUrls: true`（与 Cloudflare 静态资产默认的 `auto-trailing-slash` 对齐——无扩展名为规范 URL，`.html` 由平台 307 归一；`scripts/e2e/serve-dist.mjs` 同步支持无扩展名与 `.html` 两种路径）；`404.html` 由 Vitepress 自动生成（深层直达兜底）
-- **SEO**：`config.ts` 顶部 `SITE_URL`（默认 `https://oas-ui.dev`，可用环境变量 `SITE_URL` 覆盖）是全部绝对 URL 的唯一来源——`sitemap.hostname` 生成 `sitemap.xml`（VitePress 按 locale 自动补中英 `hreflang` alternate，`transformItems` 再补 `x-default`）；`buildEnd` 生成 `robots.txt`（Sitemap 指向同一 `SITE_URL`，故不放在 `public/` 静态文件里）；`transformHead` 逐页注入 `canonical`、`hreflang`（zh-CN/en/x-default）、Open Graph 与 Twitter 卡片（`summary_large_image`，图 `/og-image.png`），首页额外注入 `SoftwareApplication` JSON-LD。社交分享图 `packages/docs/docs/public/og-image.png`（1200×630）由 `node scripts/docs/gen-og-image.mjs` 生成。新增页面无需手动登记，构建时自动纳入 sitemap
+- **SEO**：`config.ts` 顶部 `SITE_URL`（默认 `https://oas-ui.dev`，可用环境变量 `SITE_URL` 覆盖）是全部绝对 URL 的唯一来源——`sitemap.hostname` 生成 `sitemap.xml`（VitePress 按 locale 自动补中英 `hreflang` alternate，`transformItems` 再补 `x-default`）；`buildEnd` 生成 `robots.txt`（Sitemap 指向同一 `SITE_URL`，故不放在 `public/` 静态文件里）；`transformHead` 逐页注入 `canonical`、`hreflang`（zh-CN/en/x-default）、Open Graph 与 Twitter 卡片（`summary_large_image`，图 `/og-image.png`），首页额外注入 `SoftwareApplication` JSON-LD。社交分享图 `packages/docs/docs/public/og-image.jpg`（1200×630，JPEG q90）由 `node scripts/docs/gen-og-image.mjs` 生成。新增页面无需手动登记，构建时自动纳入 sitemap
 - 本地预览：`pnpm dev`（5175，dev 链路自带 watch 构建）
 - 备选：Cloudflare Pages（UI 连 Git 自动构建，构建命令同上、输出目录 `packages/docs/docs/.vitepress/dist`）
 
