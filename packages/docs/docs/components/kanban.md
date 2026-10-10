@@ -152,7 +152,7 @@ Ctrl/Cmd+点击逐枚切换选中，Shift+点击做同列范围选（锚点卡�
 | `empty-column-text` | 空列/空泳道单元格占位文案覆盖（默认走 i18n kanban.emptyColumn，随 locale 翻译） | `string` | — |
 | `swimlane-by` | 泳道字段 key：按该字段值把看板横向分带（带头 = 折叠箭头 + 字段值 + 计数，默认全展开，折叠状态在数据变化时保留）；字段值缺失/空归「（空）」带；跨带拖拽 = 改泳道字段值；不带属性 = 普通列结构 | `string` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

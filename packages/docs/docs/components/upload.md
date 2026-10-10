@@ -218,7 +218,7 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
 
 监听 `oas-change` / `oas-remove` / `oas-upload` / `oas-progress`：
 
-- `oas-upload`：进度，`detail: { file, percent, status }`（`status`: pending/uploading/done/error）
+- `oas-upload`：进度，`detail: { file, percent, status }`（`status` 仅 `uploading` / `done`；失败不在此事件，改走 `oas-error`）
 - `oas-progress`：上传进度回调（PRD P2），`detail: { file, percent }`——内部进度已驱动 UI，此事件补对外通道（真实 / 模拟 / custom-request 通道均派发，成功收尾派发 100）
 - `oas-success` / `oas-error`：上传成功/失败（真实通道），`detail: { file, response, status? }`
 - `oas-retry` / `oas-cancel`：重试发起 / 上传取消，`detail: { file }`
@@ -457,7 +457,7 @@ onMounted(async () => {
 | `tip` | 拖拽区提示文案（同 `template[slot="tip"]` 富内容） | `string` | — |
 | `with-credentials` | 跨域携带凭证 | `boolean` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

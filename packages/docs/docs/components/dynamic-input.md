@@ -146,13 +146,13 @@ onMounted(() => {
 | `model-value` | 字符串数组（property 或 JSON） | `DynamicInputRowValue[]` | `[]` |
 | `placeholder` | 行输入占位文本 | `string` | — |
 | `preset` | 行形态：`input`（默认单输入）/ `pair`（键值对双输入） | `string` | — |
-| `readonly` | 只读（行不可编辑、增删/排序按钮隐藏） | `boolean` | — |
+| `readonly` | 只读（行不可编辑、增删/排序按钮禁用，值可复制） | `boolean` | — |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
 | `sortable` | 行排序（上移/下移按钮，值交换+焦点不丢；键盘可达） | `boolean` | — |
 | `status` | 校验态：`error` / `warning` / `success`（透传给行内输入框） | `string` | — |
 | `value-placeholder` | pair 形态值占位文本 | `string` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

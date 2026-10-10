@@ -252,7 +252,7 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-blur` | 失焦时派发 |
-| `oas-change` | 切换，`detail: { checked }` |
+| `oas-change` | 切换，`detail: { checked, value }`（value 为映射值） |
 | `oas-focus` | 聚焦时派发 |
 
 #### 插槽

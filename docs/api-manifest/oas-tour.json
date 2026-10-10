@@ -80,7 +80,7 @@
     {
       "name": "target-area-clickable",
       "type": "string",
-      "default": "true",
+      "default": "",
       "observed": true
     },
     {
@@ -218,7 +218,7 @@
     {
       "name": "typewriter",
       "type": "string",
-      "default": "true",
+      "default": "",
       "observed": true
     },
     {

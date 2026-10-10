@@ -95,9 +95,9 @@ component code:
 | Text        | `--oas-color-text-primary/-secondary/-disabled`                                                      |
 | Border/bg   | `--oas-color-border`、`--oas-color-bg(-hover/-disabled)`、`--oas-color-overlay`                      |
 | Font size   | `--oas-font-size-xs/sm/md/lg/xl`                                                                     |
-| Spacing     | `--oas-space-1…6`                                                                                    |
-| Radius      | `--oas-radius-sm/md/lg`                                                                              |
-| Controls    | `--oas-control-height-sm/md/lg`                                                                      |
+| Spacing     | `--oas-space-1/1_5/2/2_5/3/4/4_5/5/6` (4px base, half steps included)                                |
+| Radius      | `--oas-radius-xs/sm/md/lg/xl`                                                                        |
+| Controls    | `--oas-control-height-xs/sm/md/lg/xl`                                                                |
 | Motion      | `--oas-transition-fast/base`、`--oas-ease-out/in-out`                                                |
 | Z-index     | `--oas-z-dropdown/sticky/fixed/overlay/modal/message/toast/tooltip`                                  |
 | Focus ring  | `--oas-focus-ring`                                                                                   |

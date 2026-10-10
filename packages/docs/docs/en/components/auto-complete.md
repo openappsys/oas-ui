@@ -306,7 +306,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `variant` | Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently | `string` | — |
 | `virtual` | Virtual scrolling (renders only the visible window via oas-virtual-list; grouped options fall back to full rendering) | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

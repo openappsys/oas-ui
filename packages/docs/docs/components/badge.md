@@ -72,7 +72,7 @@
 
 ## 徽标颜色
 
-`color` 支持四种语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、以及 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效，实心文字色按底色亮度自动取黑/白保证可读。
+`color` 支持四种语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、以及 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效；实心文字色：语义色 / 预设名走固定 `text-on-*` token，仅任意 CSS 色值按底色亮度取黑/白保证可读。
 
 <DemoBlock title="count 语义色">
   <oas-badge value="5" color="primary" style="margin-inline-end: var(--oas-space-4)">
@@ -512,7 +512,7 @@ oas-badge#badge-dyn.bump::part(badge) {
 
 ## premium 金属质感
 
-`premium` 给缎带叠加金色金属质感：多段亮金→暗金渐变底 + 深金细描边（clip-path 形态沿轮廓描边），文字色按金底亮度自动取深色。与 `color` 正交叠加，优先级 `premium` > `color` > 语义色默认；与 `ribbon-form` 各形态均可组合，dark 主题自动适配（走 `--oas-preset-gold` token 联动）。
+`premium` 给缎带叠加金色金属质感：多段亮金→暗金渐变底 + 深金细描边（clip-path 形态沿轮廓描边），文字色固定近黑 `#1a1a1a`。与 `color` 正交叠加，优先级 `premium` > `color` > 语义色默认；与 `ribbon-form` 各形态均可组合，dark 主题自动适配（走 `--oas-preset-gold` token 联动）。
 
 <DemoBlock title="premium 金属质感">
   <oas-badge ribbon text="HOT" premium style="margin-inline-end: var(--oas-space-4)">
@@ -647,7 +647,7 @@ oas-badge#badge-dyn.bump::part(badge) {
 | --- | --- | --- | --- |
 | `attention` | 吸引动画：`pulse`（外圈脉冲扩散，脉冲色走 `--oas-badge-pulse-color` 自定义属性、默认跟随徽章底色）/ `bounce`（轻微上下弹跳）；仅作用于 count / dot / standalone 徽标（缎带不受影响），`prefers-reduced-motion` 下自动停用 | `BadgeAttention` | — |
 | `bordered` | 白描边：布尔属性，徽标加 2px 背景色描边（box-shadow: 0 0 0 2px var(--oas-color-bg)），从头像/图片背景分离；仅视觉叠加不改定位（与 corner/offset/overlap 联动正常） | `boolean` | — |
-| `color` | 徽标颜色：4 语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、或 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效，实心文字色按底色亮度自动取黑/白保证可读 | `BadgeColor \| BadgePresetColor` | — |
+| `color` | 徽标颜色：4 语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、或 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效；实心文字色：语义色 / 预设名走固定 `text-on-*` token，仅任意 CSS 色值按底色亮度取黑/白保证可读 | `BadgeColor \| BadgePresetColor` | — |
 | `corner` | 角标四角定位：`top-right`（默认）/ `top-left` / `bottom-right` / `bottom-left`，仅影响 count / dot 角标（ribbon 用 `placement`）；`offset` 在其结果上做屏幕坐标 px 微调（x 正向右、y 正向下，与 corner 朝向无关），先定角再平移可叠加；非法值静默回落 `top-right` | `BadgeCorner` | `top-right` |
 | `dot` | 小圆点模式 | `boolean` | — |
 | `icon` | 徽标内图标：内置图标名（如 check / warning），渲染内联 SVG（1em 跟随徽标字号、装饰性对读屏隐藏）；与 value/dot 互斥（icon 优先） | `string` | — |
@@ -656,7 +656,7 @@ oas-badge#badge-dyn.bump::part(badge) {
 | `offset` | 位置微调：`"x,y"`（px 数字，支持负值），在角标/缎带定位基础上额外平移（x 正向右、y 正向下）；与 `corner` / `placement` / `ribbon-vertical` 可叠加（先定位再平移）；非法值（非数字、缺坐标）静默忽略 | `string` | — |
 | `overlap` | 圆形内收：包裹圆形内容（如头像）时角标向圆内收进圆边（平移幅度从 50% 收到约 29%，1-√2/2 几何内收）；仅影响角标模式 | `boolean` | — |
 | `placement` | 缎带位置：`start`（行首）/ `end`（行尾，默认） | `BadgePlacement` | `end` |
-| `premium` | 金属质感：金色多段渐变底 + 深金细描边（clip-path 形态沿轮廓描边），文字色按金底亮度取深色；与 `color` 正交叠加，优先级 `premium` > `color` > 语义色默认；与 `ribbon-form` 各形态可组合，dark 主题自动适配（走 `--oas-preset-gold` token） | `boolean` | — |
+| `premium` | 金属质感：金色多段渐变底 + 深金细描边（clip-path 形态沿轮廓描边），文字色固定近黑 `#1a1a1a`；与 `color` 正交叠加，优先级 `premium` > `color` > 语义色默认；与 `ribbon-form` 各形态可组合，dark 主题自动适配（走 `--oas-preset-gold` token） | `boolean` | — |
 | `ribbon` | 缎带角标模式（布尔，等价 `mode="ribbon"`） | `boolean` | — |
 | `ribbon-anchor` | 缎带统一锚点，锚点集合按形态语义适配：`fold`（left/right 边中 + 四角，横条贴左/右、纵向上下可调）、`diagonal`/`triangle`（四角）、`side`（left/right 边中 + 四角）、`banner`（top/bottom）、`seal`（8 位置全支持）、`bookmark`（四角 + 四边中）；锚点预置贴边/贴角（底部锚点时折叠角自动翻转），任意位置用 `offset` 微调兜底；未设置时回落 placement/ribbon-position/ribbon-direction/ribbon-vertical 兼容别名，非法值或该形态不支持的锚点静默回落 | `BadgeRibbonAnchor` | — |
 | `ribbon-direction` | bookmark 燕尾尖头方向：`down`（默认，顶边垂挂，尖头朝下）/ `left`（贴右缘，尖头朝左）/ `right`（贴左缘，尖头朝右）；物理方向语义（RTL 下不翻转）；仅 `ribbon-form="bookmark"` 生效，非法值静默回落 `down` | `BadgeRibbonDirection` | `down` |

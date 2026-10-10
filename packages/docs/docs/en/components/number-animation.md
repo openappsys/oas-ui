@@ -35,11 +35,12 @@ An animation component that eases a number from its current value to the target 
 
 ## Easing
 
-`easing` is a four-level enum: `ease-out` (default, fast then slow) / `linear` (constant speed, e.g. download bytes) / `ease-in` / `ease-in-out` / `spring` (mild overshoot bounce); invalid values fall back to `ease-out`.
+`easing` is a five-level enum: `ease-out` (default, fast then slow) / `linear` (constant speed, e.g. download bytes) / `ease-in` / `ease-in-out` / `spring` (mild overshoot bounce); invalid values fall back to `ease-out`.
 
-<DemoBlock title="easing four levels compared">
+<DemoBlock title="easing five levels compared">
   <oas-number-animation value="1000" duration="1200" easing="linear"></oas-number-animation>
   <oas-number-animation value="1000" duration="1200" easing="ease-out"></oas-number-animation>
+  <oas-number-animation value="1000" duration="1200" easing="ease-in"></oas-number-animation>
   <oas-number-animation value="1000" duration="1200" easing="ease-in-out"></oas-number-animation>
   <oas-number-animation value="1000" duration="1200" easing="spring"></oas-number-animation>
 </DemoBlock>

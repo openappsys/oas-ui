@@ -10,7 +10,7 @@
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
 
-**按族引入（体积与覆盖的折中）**：组件按功能分为 7 个族，每族一个独立 IIFE 文件（内置基座：运行时与 config-provider/app/theme-editor，无需额外引入）：
+**按族引入（体积与覆盖的折中）**：组件按功能分为 9 个族，每族一个独立 IIFE 文件（内置基座：运行时与 config-provider/app/theme-editor，无需额外引入）：
 
 | 族包 | 覆盖组件 |
 | --- | --- |
@@ -20,6 +20,8 @@
 | `cdn/feedback.js` | 反馈与浮层：tooltip、popover、hover-card、message、notification、toast、snackbar、backdrop、modal、confirm、drawer、popconfirm、alert、progress、loading-bar、spin、skeleton、empty、result |
 | `cdn/navigation.js` | 导航：menu、dropdown、contextmenu、command、menubar、navigation-menu、toolbar、breadcrumb、anchor、back-top、tour、tabs、bottom-navigation、pagination、steps、stepper、affix、page-header、float-button、speed-dial |
 | `cdn/data.js` | 数据展示：table、tree、virtual-list、card、avatar、avatar-group、image、qrcode、watermark、collapse、descriptions、timeline、list、carousel、statistic、countdown、ellipsis、chart、code、equation、log、marquee、number-animation、gradient-text、comment 等 |
+| `cdn/conversation.js` | 会话：bubble、attachment、message-scroller、marker、message-row |
+| `cdn/workbench.js` | 工作台构件：titlebar、statusbar、inspector、action-bar |
 | `cdn/framework.js` | 框架级：config-provider、app、theme-editor |
 
 只用基础族：

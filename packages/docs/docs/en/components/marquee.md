@@ -1,6 +1,6 @@
 # Marquee
 
-A purely presentational component that loops long content seamlessly via a slot; supports pause on hover and static fallback under `prefers-reduced-motion`. Scroll speed is a true pixels-per-second value (the component measures content width to derive duration), and content shorter than the container is auto-filled. No events.
+A purely presentational component that loops long content seamlessly via a slot; supports pause on hover and static fallback under `prefers-reduced-motion`. Scroll speed is a true pixels-per-second value (the component measures content width to derive duration), and content shorter than the container is auto-filled; when `max-loops` finishes, `oas-finish` is emitted (detail `{ loops }`).
 
 ::: warning Breaking change: `speed` semantics changed from "seconds" to "pixels per second"
 In previous versions `speed` was the duration of a single loop (seconds): `speed="8"` meant one full loop in 8 seconds — the wider the content, the faster it visually moved, so the same value produced wildly different speeds across containers.
@@ -225,4 +225,4 @@ When the container is in an RTL writing direction (host or ancestor `dir="rtl"`,
 
 - When the system enables "reduce motion" (`prefers-reduced-motion: reduce`), the animation is disabled and content is shown statically.
 - The duplicated content group carries `aria-hidden`, so screen readers do not read it twice.
-- No events; purely presentational.
+- No other events; purely presentational, except a single `oas-finish` when `max-loops` finishes.

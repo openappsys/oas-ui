@@ -103,14 +103,14 @@
 
 ## 按钮显隐与透传
 
-`hide-prev` / `hide-skip` / `hide-next` / `hide-counter` 控制按钮与计数显隐；`*-button-props`（next/prev/skip/finish）透传任意属性到按钮（JSON 对象）。
+`hide-prev` / `hide-skip` / `hide-next` / `hide-counter` 控制按钮与计数显隐；`next-button-props` / `prev-button-props` / `skip-button-props` 透传任意属性到对应按钮（JSON 对象）。末步的「完成」由 `next` 按钮承载（文案切「完成」），暂无独立 finish 按钮与 `finish-button-props` 透传。
 
 <DemoBlock title="按钮显隐与属性透传">
   <oas-space>
     <oas-button type="primary" onclick="document.getElementById('tour-btn').setAttribute('open','')">按钮显隐 + props 透传</oas-button>
     <oas-button onclick="document.getElementById('tour-hide').setAttribute('open','')">隐藏全部操作</oas-button>
   </oas-space>
-  <oas-tour id="tour-btn" hide-prev hide-skip next-button-props='{"data-demo":"1"}' prev-button-props='{"disabled":""}' skip-button-props='{"data-demo":"skip"}' finish-button-props='{"data-demo":"finish"}' steps='[{"selector":"#tour-bt1","title":"按钮定制","description":"hide-prev / hide-skip 隐藏按钮，next-button-props 等透传属性。"},{"selector":"#tour-bt2","title":"完成按钮透传","description":"finish-button-props 作用于最后一步的「完成」按钮。"}]'></oas-tour>
+  <oas-tour id="tour-btn" hide-prev hide-skip next-button-props='{"data-demo":"1"}' prev-button-props='{"disabled":""}' skip-button-props='{"data-demo":"skip"}' steps='[{"selector":"#tour-bt1","title":"按钮定制","description":"hide-prev / hide-skip 隐藏按钮，next-button-props 等透传属性。"},{"selector":"#tour-bt2","title":"末步完成","description":"最后一步的「完成」由 next 按钮承载（文案切换），暂无独立 finish 属性透传。"}]'></oas-tour>
   <oas-tour id="tour-hide" hide-prev hide-skip hide-next hide-counter steps='[{"selector":"#tour-bt1","title":"无操作按钮","description":"只能通过 Esc / 遮罩点击 / 键盘导航离开。"}]'></oas-tour>
   <div id="tour-bt1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">按钮定制目标一</div>
   <div id="tour-bt2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">按钮定制目标二</div>
@@ -216,7 +216,7 @@
 
 ## 打字机与锁滚动
 
-`typewriter` + `typewriter-speed` 描述逐字显示动画；`lock-scroll` 引导期间锁定页面滚动；`close-on-press-escape="false"` 关闭 Esc。
+`typewriter`（opt-in，未设置即不开）+ `typewriter-speed` 描述逐字显示动画；`lock-scroll` 引导期间锁定页面滚动；`close-on-press-escape="false"` 关闭 Esc。
 
 <DemoBlock title="打字机动画 + 锁滚动">
   <oas-button type="primary" onclick="document.getElementById('tour-tw').setAttribute('open','')">开始引导</oas-button>
@@ -366,7 +366,7 @@ onMounted(async () => {
 | `current` | 当前步骤索引 | `string` | `0` |
 | `disabled-interaction` | 禁止高亮区交互（拦截层覆盖目标） | — | — |
 | `dont-show-again` | 「不再显示」开关（布尔；关闭时勾选则记忆到 localStorage） | `boolean` | — |
-| `finish-button-props` | 完成按钮透传属性（JSON 对象） | — | — |
+| `finish-button-props` | 末步「完成」按钮由 `next` 按钮承载（文案切「完成」），当前无独立 finish 按钮透传——该属性暂未生效（保留占位） | — | — |
 | `gap` | 高亮内边距：数字（padding px）或 `{"padding","radius","offset"}`；`offset` 为高亮外扩间距（number 四周同值 / `[水平, 垂直]` 双轴，与 padding 正交）；默认 padding 4 | `string` | — |
 | `hide-counter` | 隐藏步骤计数 | `boolean` | — |
 | `hide-next` | 隐藏下一步按钮 | — | — |
@@ -394,9 +394,9 @@ onMounted(async () => {
 | `skip-missing-element` | 目标缺失/等待超时跳过该步骤（默认停在当前步骤） | `boolean` | — |
 | `steps` | 步骤 JSON（`TourStep[] \| string`）；property 赋值支持函数/元素 target | `TourStep[] \| string` | `[]` |
 | `storage-key` | localStorage 记忆键（`dont-show-again` / `persist` / hint dismiss 共用） | `string` | `oas-tour-dismiss` |
-| `target-area-clickable` | 高亮区可交互（拦截层隐藏，点击穿透目标） | `string` | `true` |
+| `target-area-clickable` | 高亮区可交互（opt-in）：未设置即关闭（拦截层覆盖目标、不可点）；设置后拦截层隐藏、点击穿透目标 | `string` | — |
 | `type` | 弹层类型：`default` / `primary`（主色底弹层，非模态场景强调） | `string` | `default` |
-| `typewriter` | 打字机动画：描述逐字显示 | `string` | `true` |
+| `typewriter` | 打字机动画（opt-in）：未设置即不开；设置后描述逐字显示，`typewriter="false"` 关闭 | `string` | — |
 | `typewriter-speed` | 打字机速率（ms/字符，默认 20） | `string` | `20` |
 | `wait-for-element` | 等待目标出现（毫秒，异步步骤；全局默认，step 级 `waitForElement` 优先） | — | — |
 | `z-index` | 遮罩层级（默认 `--oas-z-modal`） | — | — |

@@ -113,7 +113,7 @@
       "position": "Positioning mode: static (default, in flow) / absolute / fixed / floating (floating rounded with shadow)",
       "hide-on-scroll": "Hide on scroll down, reveal on scroll up (transform transition, no reflow; effective only when not static)",
       "extended-collapse-on-scroll": "Collapse the extended section on scroll down (restored when scrolled back to top)",
-      "elevated": "Show a shadow once the page is scrolled (no shadow at rest)"
+      "elevated": "Always shows the shadow; when unset, scroll alone controls it (the data-scrolled shadow appears once scrollY > 0 and is removed back at the top)"
     },
     "events": {
       "oas-menu-toggle": "Emitted when the hamburger button is clicked; the host toggles its drawer and writes back menu-open"
@@ -278,7 +278,7 @@
   "oas-badge": {
     "attrs": {
       "attention": "Attention animation: `pulse` (an outward pulse ring; the pulse color follows the `--oas-badge-pulse-color` custom property, defaulting to the badge background) / `bounce` (slight up-and-down bounce); applies only to count / dot / standalone badges (the ribbon is unaffected) and is disabled under `prefers-reduced-motion`",
-      "color": "Badge color: the four semantic colors (`primary` / `success` / `warning` / `danger`), any CSS color value, or one of the 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens, auto-brightened in dark). Applies uniformly across count / dot / ribbon; the solid text color is picked black/white by the background luminance for readability",
+      "color": "Badge color: the four semantic colors (`primary` / `success` / `warning` / `danger`), any CSS color value, or one of the 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens, auto-brightened in dark). Applies uniformly across count / dot / ribbon; the solid text color uses a fixed `text-on-*` token for semantic/preset colors, and is picked black/white by background luminance only for arbitrary CSS color values",
       "corner": "Corner placement: `top-right` (default) / `top-left` / `bottom-right` / `bottom-left`, affects count / dot corner badges only (the ribbon uses `placement`); `offset` fine-tunes in screen px on top of the corner result (x positive rightward, y positive downward, independent of the corner direction), corner first then shift, they compose; invalid values silently fall back to `top-right`",
       "dot": "Dot mode",
       "max": "Upper limit",
@@ -286,7 +286,7 @@
       "offset": "Position fine-tune: `\"x,y\"` (px numbers, negative values allowed), shifts the corner badge or ribbon on top of its anchor position (x positive rightward, y positive downward); composes with `corner` / `placement` / `ribbon-vertical` (anchor first, then shift); invalid values (non-numeric, missing coordinate) are silently ignored",
       "overlap": "Circular inset: when wrapping circular content (e.g. an avatar), the badge tucks inside the circle edge (the translate amount shrinks from 50% to ~29%, the 1-√2/2 geometric inset); affects corner badge mode only",
       "placement": "Ribbon position: `start` (inline-start) / `end` (inline-end, default)",
-      "premium": "Metallic treatment: a multi-stop gold gradient with a deep-gold fine outline (clipped shapes get the outline traced along their clip-path silhouette), text color auto-picked dark against the gold background; composes orthogonally with `color` with the priority `premium` > `color` > semantic default; works with every `ribbon-form`, dark theme adapts automatically (driven by the `--oas-preset-gold` token)",
+      "premium": "Metallic treatment: a multi-stop gold gradient with a deep-gold fine outline (clipped shapes get the outline traced along their clip-path silhouette), text color fixed to near-black `#1a1a1a`; composes orthogonally with `color` with the priority `premium` > `color` > semantic default; works with every `ribbon-form`, dark theme adapts automatically (driven by the `--oas-preset-gold` token)",
       "ribbon": "Ribbon corner mode (boolean, same as `mode=\"ribbon\"`)",
       "ribbon-anchor": "Unified ribbon anchor, with the anchor set adapted per shape semantics: `fold` (left/right edge centers + four corners, a horizontal band hugs left/right with the vertical position adjustable), `diagonal`/`triangle` (four corners), `side` (left/right edge centers + four corners), `banner` (top/bottom), `seal` (all 8 positions), `bookmark` (four corners + four edge centers); an anchor pins the ribbon to an edge/corner (the fold notch auto-flips on bottom anchors) and `offset` fine-tunes any arbitrary position; when unset it falls back to the `placement` / `ribbon-position` / `ribbon-direction` / `ribbon-vertical` aliases, invalid values or unsupported anchor-shape combos silently fall back",
       "ribbon-direction": "Swallow-tail notch direction of `bookmark`: `down` (default, hangs from the top edge with the notch downward) / `left` (tab against the right edge with the notch pointing left) / `right` (tab against the left edge with the notch pointing right); physical-direction semantics (not flipped in RTL); only takes effect with `ribbon-form=\"bookmark\"`, invalid values silently fall back to `down`",
@@ -431,7 +431,7 @@
       "icon-position": "Icon position: `start` (default, left) / `end` (right)",
       "loading": "Loading state",
       "loading-text": "Text shown while loading (e.g. \"Submitting…\"); replaces the label content when set",
-      "plain": "Plain style: low-contrast soft (transparent bg + softened text), equals `variant=\"filled\"`",
+      "plain": "Plain style: a 12% tinted background in the semantic color with text in its -text tone and a transparent border (no visible outline); equals `variant=\"filled\"`",
       "rel": "Passthrough `rel` attribute in link mode (pair `noopener` with `target=\"_blank\"`)",
       "round": "Pill radius (`--oas-radius-full` / `999px`)",
       "size": "Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning",
@@ -1185,7 +1185,7 @@
       "sortable": "Row sorting (move up/down buttons, value swap with focus kept; keyboard accessible)",
       "size": "Size preset `small` / `medium` (default) / `large`",
       "status": "Validation status: `error` / `warning` / `success` (passed to the row inputs)",
-      "readonly": "Read-only (rows not editable, add/remove/sort buttons hidden)"
+      "readonly": "Read-only (rows not editable, add/remove/sort buttons disabled, values copyable)"
     },
     "events": {
       "oas-change": "Dispatched after add/remove/edit, `detail: { value }`",
@@ -1467,7 +1467,7 @@
   },
   "oas-hover-card": {
     "attrs": {
-      "append-to": "Positioning container selector (e.g. `#panel`): the card is absolutely positioned inside that container (container is promoted to a relative positioning context), coordinates translated accordingly; defaults to `position: fixed` viewport coordinates",
+      "append-to": "Mount point (portal): `body` or a CSS selector. When open and set, the card moves into an isolated shadow inside the target container (styles stay scoped) while keeping `position: fixed` viewport coordinates — no coordinate translation — escaping clipping contexts such as `overflow: hidden` / transform; when unset the card stays in the component's own shadow",
       "arrow": "Whether to show the arrow, default true; `arrow=\"false\"` hides it (the arrow element and `::part(arrow)` remain)",
       "arrow-merge": "Corner-merged arrow mode: for *-start/*-end placements a right triangle merges flush with the panel corner — legs collinear with the panel edges (their strokes continue the panel border band), tip pointing orthogonally toward the anchor; the matching corner radius is zeroed; no effect for centered placements",
       "arrow-point-at-center": "Point the arrow at the trigger center (keeps pointing at the anchor after viewport clamping); by default the arrow stays at the panel center",
@@ -1744,7 +1744,7 @@
       "position": "Position of the asterisk relative to the text",
       "required": "Append a required `*` marker (`aria-hidden`)",
       "error": "Error state (red text)",
-      "disabled": "Disabled state (grayed out, not clickable)",
+      "disabled": "Disabled state (visual only: grayed out but does not block events; the associated control manages its own disabled)",
       "colon": "Append a colon (`:`) after the label text",
       "color": "Text color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value",
       "size": "Label font-size step: `small`/`medium` (default)/`large`",
@@ -1957,10 +1957,10 @@
   },
   "oas-menu": {
     "attrs": {
-      "collapsed": "Collapsed state (vertical only): icons only, submenus pop to the right",
+      "collapsed": "Collapsed state (vertical / inline; not applicable to horizontal): icons only, submenus pop to the right",
       "close-on-select": "Whether expanded submenus collapse after a leaf item is selected. Defaults by mode: inline side navigation keeps them open, flyout modes collapse; checkbox items never collapse on toggle",
       "items": "Menu items JSON (supports disabled / loading, icon, children submenus)",
-      "mode": "Layout mode: `vertical` menu / `horizontal` top bar",
+      "mode": "Layout mode: `vertical` (default) menu / `horizontal` top bar / `inline` side navigation (submenus expand in place with a height transition)",
       "theme": "Local theme: `dark` uses dark tokens (independent of the global theme)",
       "value": "Current selected value. Plain string means global single-select (no group, legacy-compatible); JSON object string (e.g. `{\"sort\":\"name\",\"view\":\"list\"}`) scopes per group id — the `value` of a `type:\"group\"` item is the group id, picking inside a group only updates that group",
       "max-height": "Max height of a long menu; scrolls internally beyond it (number gets px appended)",
@@ -2175,7 +2175,7 @@
     },
     "events": {
       "oas-click": "Dispatched when the notification body is clicked (\"click for details\" scenario)",
-      "oas-close": "Dispatched on close, detail { source }: auto (duration elapsed) / close (close button) / destroy (programmatic)"
+      "oas-close": "Dispatched on close, detail { source }: auto (duration elapsed) / button (close button) / destroy (programmatic) / evict (evicted when over the limit)"
     },
     "slots": {
       "title": "Rich title content slot; overrides the title attribute text when present",
@@ -2396,7 +2396,7 @@
       "success": "Success green border (error wins when both set)"
     },
     "events": {
-      "oas-change": "Dispatched when filled, `detail: { value }`",
+      "oas-change": "Commit on blur: dispatched when focus leaves the component and the value differs from the focus-time snapshot, `detail: { value }`",
       "oas-complete": "Dispatched when filled, `detail: { value }`",
       "oas-input": "Per-cell input, `detail: { value, index }`",
       "oas-focus": "Fires when focus enters the component (not on cell-to-cell moves), `detail: { index }`",
@@ -2404,7 +2404,7 @@
     },
     "slots": {},
     "props": {
-      "value": "Current value: concatenated string of all cell characters"
+      "value": "Current value: concatenated string of all cell characters; the property and the `value` attribute share one channel (the setter writes back the attribute and attribute changes sync to all cells), so it is reflected as an attribute"
     }
   },
   "oas-popconfirm": {
@@ -2431,7 +2431,7 @@
       "width": "Panel width: a number (px) / `\"trigger\"` (same width as the trigger) / any CSS value; default min-width 200px"
     },
     "events": {
-      "oas-cancel": "Cancel: cancel button / Esc / outside click",
+      "oas-cancel": "Dispatched only when the Cancel button is clicked (Esc / outside click go through the `oas-open-change` reason), `detail: { source: this, event: e }`",
       "oas-ok": "Clicked \"OK\"; the bubble then collapses automatically",
       "oas-open-change": "Emitted when the open state changes, `detail: { open, reason }` (reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`)"
     },
@@ -2440,7 +2440,7 @@
       "": "Popconfirm body content",
       "actions": "Action buttons area (replaces the default confirm / cancel buttons)",
       "description": "Description text",
-      "icon": "Custom icon (replaces the default question icon)"
+      "icon": "Custom icon (replaces the built-in one: a warning triangle for default / warning themes, a circled exclamation for danger)"
     }
   },
   "oas-popover": {
@@ -2660,7 +2660,7 @@
   "oas-result": {
     "attrs": {
       "description": "Description text",
-      "status": "Status: `success` / `error` / `warning` / `info` / `403` / `404` / `500` (HTTP error pages with dedicated icons); invalid values fall back to info with a warning",
+      "status": "Status: `success` / `error` / `warning` / `info` / `403` / `404` / `500` (HTTP error pages with dedicated icons); invalid values fall back to success with a warning",
       "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
       "size": "Size preset `small` / `medium` (default) / `large`: scales icon diameter and font sizes"
     },
@@ -2713,7 +2713,7 @@
       "size": "Size preset `small` / `medium` (default) / `large`",
       "block": "Fill the parent width (options share equally)",
       "direction": "Orientation: `horizontal` (default) / `vertical` (mirrors aria-orientation and axis keys)",
-      "name": "Native radio group name (native form association; auto-generated unique name when unset)",
+      "name": "Inner native radio group name (auto-generated unique name when unset, so instances do not clash); used only for intra-group exclusivity and keyboard semantics — the component is not form-associated, so the radios in its shadow are not collected/submitted by an outer form",
       "readonly": "Read-only: focusable but selection immutable (radiogroup aria-readonly)"
     },
     "events": {
@@ -3129,7 +3129,7 @@
       "variant": "Variant: `default` (plain thumb) / `card` (a bordered card wrapping the thumb + label + description; whole card clickable, selected state tints the border, aligned with the checkbox/radio choice card); invalid values silently fall back to default"
     },
     "events": {
-      "oas-change": "Toggle, `detail: { checked }`",
+      "oas-change": "Toggle, `detail: { checked, value }` (value is the mapped value)",
       "oas-focus": "Fires on focus",
       "oas-blur": "Fires on blur"
     },
@@ -3214,8 +3214,8 @@
       "oas-sort-change": "Sort change, `detail: { key, order: 'asc' | 'desc' | '' }`",
       "oas-column-order": "Fired after column drag reorder, `detail: { keys }` (new column order)",
       "oas-column-resize": "Fired after a column width drag, `detail: { key, width }`",
-      "oas-filter-change": "Fired when a column filter value changes, `detail: { key, values }`",
-      "oas-page-change": "Fired when the built-in page changes, `detail: { current, pageSize }`",
+      "oas-filter-change": "Fired when a column filter value changes, `detail: { filters }` (filters maps a column key to its selected values)",
+      "oas-page-change": "Fired when the built-in page changes, `detail: { page, pageSize }`",
       "oas-cell-click": "Fired on data-cell click, `detail: { row, column, value, rowIndex, columnIndex }` (suppressed inside interactive controls)",
       "oas-row-dblclick": "Fired on data-row double-click, `detail: { row, rowIndex }`",
       "oas-export": "Export triggered (button or exportData), `detail: { format, fileName, rowCount }`",
@@ -3745,7 +3745,7 @@
       "show-close": "Show the close button (default true; `false` hides)",
       "close-icon": "Custom close button content (HTML string)",
       "mask-click-behavior": "Overlay click behavior: `close` (default) / `next` (advance) / `none` (ignore)",
-      "target-area-clickable": "Highlight area is interactive (interceptor hidden, clicks pass through to target)",
+      "target-area-clickable": "Highlight area is interactive (opt-in): off unless set (the interceptor covers the target so it is not clickable); when set the interceptor is hidden and clicks pass through to the target",
       "disabled-interaction": "Disable interaction on the highlighted area (interceptor covers target)",
       "scroll-into-view-options": "`scrollIntoView` options for scrolling to the target (JSON; default `{\"behavior\":\"smooth\",\"block\":\"center\"}`)",
       "scroll-padding": "Padding when scrolling to the target (px; applied as target scroll-margin)",
@@ -3761,7 +3761,7 @@
       "next-button-props": "Props passed through to the next button (JSON object, e.g. `{\"data-x\":\"1\"}`)",
       "prev-button-props": "Props passed through to the previous button (JSON object)",
       "skip-button-props": "Props passed through to the skip button (JSON object)",
-      "finish-button-props": "Props passed through to the finish button (JSON object)",
+      "finish-button-props": "The last-step Finish button is the `next` button (its label switches to Finish) and there is no separate finish button to pass props to — this attribute currently has no effect (reserved placeholder)",
       "advance-on-click": "Click the highlighted area to advance to the next step (interactive tour)",
       "mode": "Popup mode: `popup` (default) / `dialog` (centered dialog without target); step-level override",
       "lock-scroll": "Lock page scrolling during the tour (restored on close)",
@@ -3773,7 +3773,7 @@
       "dont-show-again": "Don't show again switch (boolean; if checked on close, remembered in localStorage)",
       "storage-key": "localStorage key (shared by `dont-show-again` / `persist` / hint dismiss)",
       "persist": "Multi-page tour: open/current state persisted to localStorage and restored on reconnect",
-      "typewriter": "Typewriter animation: description revealed character by character",
+      "typewriter": "Typewriter animation (opt-in): off unless set; when set, the description is revealed character by character (`typewriter=\"false\"` disables)",
       "typewriter-speed": "Typewriter speed (ms per character, default 20)",
       "hints": "Hints beacon mode: JSON `[{id,selector,title,description,placement,dismissable}]`; persistent pulsing beacons, click to open a bubble, `dismissable` is remembered after close"
     },
@@ -3830,11 +3830,11 @@
   "oas-tree": {
     "attrs": {
       "checkable": "Whether to show checkboxes",
-      "checked": "Set of checked node keys (comma-separated)",
+      "checked": "Set of checked node keys (JSON string array, e.g. `'[\"a\"]'`; the pre-v2.5 comma string is deprecated and falls back to an empty set with a warning)",
       "data": "Node data `[{ key, label, children?, disabled?, isLeaf?, loaded?, renamable? }]`, JSON string",
       "directory": "Directory mode: nodes with `children` (or not yet loaded under lazy) show a folder icon, nodes with `isLeaf` / no `children` show a file icon; the folder icon switches on expand / collapse",
       "draggable": "Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop`",
-      "expanded": "Set of expanded node keys (comma-separated)",
+      "expanded": "Set of expanded node keys (JSON string array, e.g. `'[\"a\"]'`; the pre-v2.5 comma string is deprecated and falls back to an empty set with a warning)",
       "height": "Virtual scroll viewport height (px); setting it enables virtualized rendering for large data",
       "lazy": "Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand",
       "row-height": "Fixed row height when virtualized (px)",

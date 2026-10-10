@@ -312,7 +312,7 @@ readonly 下面板可展开浏览、单元格可键盘导航，但点选 / 快�
 | `unlink-panels` | 范围双月各自独立翻页（默认联动） | `boolean` | — |
 | `value` | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | `string \| string[] \| null` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

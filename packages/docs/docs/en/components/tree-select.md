@@ -517,7 +517,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `value` | Selected value (JSON array in multiple mode) | `string \| string[] \| null` | — |
 | `virtual` | Enable virtual scroll: the dropdown renders only the visible window for large data (reuses oas-virtual-list), keeping keyboard/ARIA intact | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

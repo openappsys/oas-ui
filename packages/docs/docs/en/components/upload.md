@@ -218,7 +218,7 @@ With `replace`, exceeding the count limit no longer rejects: the oldest file is 
 
 Listen to `oas-change` / `oas-remove` / `oas-upload` / `oas-progress`:
 
-- `oas-upload`: progress, `detail: { file, percent, status }` (`status`: pending/uploading/done/error)
+- `oas-upload`: progress, `detail: { file, percent, status }` (`status` is only `uploading` / `done`; failures are not reported here but via `oas-error`)
 - `oas-progress`: upload progress callback (PRD P2), `detail: { file, percent }` — internal progress already drives the UI; this event adds the outbound channel (emitted by real / mock / custom-request channels alike, with 100 on success)
 - `oas-success` / `oas-error`: upload success/failure (real channel), `detail: { file, response, status? }`
 - `oas-retry` / `oas-cancel`: retry started / upload cancelled, `detail: { file }`
@@ -458,7 +458,7 @@ The current form value is available through the public `value` property for read
 | `tip` | Drop-zone tip text (same as `template[slot="tip"]` for rich content) | `string` | — |
 | `with-credentials` | Cross-origin credentials | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

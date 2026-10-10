@@ -341,7 +341,7 @@
 
 ## 偏移与碰撞
 
-`offset` 控制主轴距离（默认 8px），`skidding` 控制交叉轴偏移，`collision-padding` 控制视口边缘避让边距（默认 4px）。
+`offset` 控制主轴距离（默认 10px），`skidding` 控制交叉轴偏移，`collision-padding` 控制视口边缘避让边距（默认 4px）。
 
 <DemoBlock title="offset / skidding">
   <oas-tooltip content="offset=16 距离更远" offset="16" placement="bottom">

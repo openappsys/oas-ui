@@ -259,6 +259,7 @@ onMounted(() => {
 | `href`        | Link URL (optional); leaf items with `href` render as `<a>` and are navigable | `string` |
 | `target`      | Link open target (optional)                            | `string`  |
 | `icon`        | Icon name (optional); panel link-card icon             | `string`  |
+| `iconColor`   | Icon color (optional): fixes the icon to this color, overriding the selected/disabled default; defaults to `currentColor` following the text color | `string` |
 | `description` | Link-card description (optional); rendered under the title in mega-panel mode | `string` |
 | `active`      | Current-page marker (optional); renders `aria-current="page"` on the link | `boolean` |
 | `disabled`    | Disabled                                               | `boolean` |

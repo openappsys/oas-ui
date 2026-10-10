@@ -352,7 +352,7 @@ onMounted(() => {
 | `value` | 已选 key 数组（JSON 属性） | `string[] \| string` | `[]` |
 | `virtual` | 大数据量窗口化渲染（虚拟滚动，行高默认 36px） | `boolean` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

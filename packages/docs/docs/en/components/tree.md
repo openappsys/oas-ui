@@ -628,7 +628,7 @@ onMounted(() => {
 | `check-strategy` | Check export strategy: `all` (default) / `parent` / `child` (with checkable cascading) | `string` | `all` |
 | `check-strictly` | Decouple parent/child checking | `boolean` | — |
 | `checkable` | Whether to show checkboxes | `boolean` | — |
-| `checked` | Set of checked node keys (comma-separated) | `string` | — |
+| `checked` | Set of checked node keys (JSON string array, e.g. `'["a"]'`; the pre-v2.5 comma string is deprecated and falls back to an empty set with a warning) | `string` | — |
 | `data` | Node data `[{ key, label, children?, disabled?, isLeaf?, loaded?, renamable? }]`, JSON string | `TreeNode[] \| string` | `[]` |
 | `default-expand-all` | Expand all nodes by default (applies when the expanded attribute is absent) | `boolean` | — |
 | `directory` | Directory mode: nodes with `children` (or not yet loaded under lazy) show a folder icon, nodes with `isLeaf` / no `children` show a file icon; the folder icon switches on expand / collapse | `boolean` | — |
@@ -636,7 +636,7 @@ onMounted(() => {
 | `draggable` | Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop` | `boolean` | — |
 | `empty` | Empty-state text (when no data; no-match uses the locale no-match text) | `string` | — |
 | `expand-trigger` | Node expansion trigger: `toggle` (default, arrow only) / `node` (clicking the node row) | `string` | `toggle` |
-| `expanded` | Set of expanded node keys (comma-separated) | `string` | — |
+| `expanded` | Set of expanded node keys (JSON string array, e.g. `'["a"]'`; the pre-v2.5 comma string is deprecated and falls back to an empty set with a warning) | `string` | — |
 | `field-names` | Field-alias JSON (e.g. `{"label":"name","value":"id","children":"subs"}`; data is not copy-mapped — node-render receives your original objects) | `string` | — |
 | `filter` | In-tree search filter (keyword input; pair with filter-highlight and el.filterNode) | `string` | — |
 | `filter-highlight` | Highlight matched fragments (mark tag) | `boolean` | — |
@@ -650,7 +650,7 @@ onMounted(() => {
 | `size` | Five-tier tree font/padding scale (xs~xl, aliases accepted, invalid falls back to medium) | `string` | `medium` |
 | `tree-lines` | Tree indentation guide lines | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

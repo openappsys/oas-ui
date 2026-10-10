@@ -350,7 +350,7 @@ onMounted(async () => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-click` | 通知体点击时派发（「点击查看详情」场景） |
-| `oas-close` | 通知关闭时派发，detail { source }：auto（时长到期）/ close（点击关闭钮）/ destroy（编程式销毁） |
+| `oas-close` | 通知关闭时派发，detail { source }：auto（时长到期）/ button（点击关闭钮）/ destroy（编程式销毁）/ evict（超上限被挤出） |
 
 #### 插槽
 

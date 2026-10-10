@@ -437,8 +437,8 @@ function buildGenerated(tags, lang) {
     attrs: lang === 'zh' ? '属性' : 'Attributes',
     props:
       lang === 'zh'
-        ? 'Property（仅 JS property，不反射 attribute）'
-        : 'Property (JS property only, not reflected as attribute)',
+        ? 'Property（JS property；是否写回 attribute 见各行说明）'
+        : 'Property (JS property; see each row for attribute reflection)',
     events: lang === 'zh' ? '事件' : 'Events',
     slots: lang === 'zh' ? '插槽' : 'Slots',
     cssVars: lang === 'zh' ? 'CSS 变量' : 'CSS Variables',

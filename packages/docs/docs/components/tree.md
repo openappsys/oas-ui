@@ -626,7 +626,7 @@ onMounted(() => {
 | `check-strategy` | 勾选导出策略：`all`（默认）/ `parent` / `child`（checkable 级联时生效） | `string` | `all` |
 | `check-strictly` | 勾选父子解联（勾选父级不联动子级） | `boolean` | — |
 | `checkable` | 是否显示复选框 | `boolean` | — |
-| `checked` | 勾选节点 key 集合（逗号分隔） | `string` | — |
+| `checked` | 勾选节点 key 集合（JSON 字符串数组，如 `'["a"]'`；v2.5 前的旧逗号串已废弃，解析失败按空集合回落并告警） | `string` | — |
 | `data` | 节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded?, renamable? }]`，JSON 字符串 | `TreeNode[] \| string` | `[]` |
 | `default-expand-all` | 默认展开全部节点（expanded 属性缺席时生效） | `boolean` | — |
 | `directory` | 目录模式：有 `children`（或懒加载下未加载）的节点显示文件夹图标，`isLeaf` / 无 `children` 的节点显示文件图标，文件夹按展开 / 收起切换图标 | `boolean` | — |
@@ -634,7 +634,7 @@ onMounted(() => {
 | `draggable` | 节点可拖拽换序 / 换父，落点显示插入线 / 高亮，松手派发 `oas-node-drop` | `boolean` | — |
 | `empty` | 空态文案（无数据时；无匹配时走 locale 无匹配文案） | `string` | — |
 | `expand-trigger` | 节点展开触发：`toggle`（默认，仅箭头）/ `node`（点节点行展开） | `string` | `toggle` |
-| `expanded` | 展开节点 key 集合（逗号分隔） | `string` | — |
+| `expanded` | 展开节点 key 集合（JSON 字符串数组，如 `'["a"]'`；v2.5 前的旧逗号串已废弃，解析失败按空集合回落并告警） | `string` | — |
 | `field-names` | 字段别名 JSON（如 `{"label":"name","value":"id","children":"subs"}`；原始数据不拷贝映射，node-render 拿到宿主原对象） | `string` | — |
 | `filter` | 树内搜索过滤（输入关键词；配 filter-highlight 高亮与 el.filterNode 自定义） | `string` | — |
 | `filter-highlight` | 搜索命中片段高亮（mark 标记） | `boolean` | — |
@@ -648,7 +648,7 @@ onMounted(() => {
 | `size` | 整树字号与行距五档（xs~xl，别名等价，非法回落 medium） | `string` | `medium` |
 | `tree-lines` | 树线缩进引导线 | `boolean` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

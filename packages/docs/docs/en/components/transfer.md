@@ -352,7 +352,7 @@ onMounted(() => {
 | `value` | Selected key array (JSON attribute) | `string[] \| string` | `[]` |
 | `virtual` | Windowed rendering for large data (virtual scroll, default row height 36px) | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

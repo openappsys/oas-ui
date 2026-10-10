@@ -234,7 +234,7 @@ onMounted(() => {
 | `trigger` | 触发方式：`text`（默认点文本）/ `icon`（铅笔按钮触发，防误触）/ `dblclick`（双击编辑，单击不触发，Enter/空格聚焦时进编辑为键盘逃生） | `string` | — |
 | `value` | 当前值（受控） | `string` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

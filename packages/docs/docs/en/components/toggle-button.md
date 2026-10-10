@@ -167,7 +167,7 @@ The `variant` dimension (aligned with the `oas-button` variant system, restricte
 | `value` | Value (returned with events) | `string` | — |
 | `variant` | Variant (aligned with the button variant system): `solid` (default, bordered box, pressed = solid fill) / `outlined` (transparent bg + border; pressed = colored border + faint tint) / `filled` (soft tinted bg, no border; pressed = solid fill) / `text` (no border/background; pressed = faint tint + colored text); invalid values silently fall back to solid | `string` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

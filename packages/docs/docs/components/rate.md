@@ -155,7 +155,7 @@
   </div>
 </DemoBlock>
 
-`color` 为激活星颜色、`void-color` 为未激活星颜色，均支持 11 预设名（映射 `--oas-preset-*`，暗色自动适配）与任意 CSS 色值；缺省走 `--oas-color-warning` / `--oas-color-border` token（也可用 `--oas-rate-active` / `--oas-rate-void` 变量批量定制）。
+`color` 为激活星颜色、`void-color` 为未激活星颜色，均支持 11 预设名（映射 `--oas-preset-*`，暗色自动适配）与任意 CSS 色值；缺省走 `--oas-color-warning-text` / `--oas-color-border` token（也可用 `--oas-rate-active` / `--oas-rate-void` 变量批量定制）。
 
 ## 分段阈值色
 
@@ -293,7 +293,7 @@ onMounted(() => {
 | `void-color` | 未选中色 | — | — |
 | `void-icon` | 未选中图标名（如 heart 配 ♥/♡ 双态） | — | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

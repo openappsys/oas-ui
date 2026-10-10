@@ -85,7 +85,7 @@
 
 ## 键盘与无障碍
 
-底层为隐藏的原生 radio 组（`input[type="radio"]`，同名成组）：`Tab` 聚焦当前选中项，`←` / `→`（纵向 `↑` / `↓`）循环切换并跳过禁用项，`Home` / `End` 跳转首尾；焦点（roving tabindex）随选中项移动。设置 `name` 属性时透传 radio 组名，可参与原生表单提交关联（未设置时组件自动生成组名，多实例互不干扰）。
+底层为隐藏的原生 radio 组（`input[type="radio"]`，同名成组）：`Tab` 聚焦当前选中项，`←` / `→`（纵向 `↑` / `↓`）循环切换并跳过禁用项，`Home` / `End` 跳转首尾；焦点（roving tabindex）随选中项移动。设置 `name` 属性时作为内层 radio 组名（未设置时组件自动生成组名，多实例互不干扰）——组件非 form-associated，shadow 内的 radio 不被外层 form 收集提交，`name` 仅用于组内互斥与键盘语义。
 
 ## 切换事件
 
@@ -119,13 +119,13 @@ onMounted(() => {
 | `block` | 铺满父容器（各项等宽均分） | — | — |
 | `direction` | 排列方向：`horizontal`（默认）/ `vertical`（联动 aria-orientation 与轴向键） | `string` | `horizontal` |
 | `disabled` | 禁用整个分段控件（自身显式禁用，或经 config-provider 全局禁用注入继承） | `boolean` | — |
-| `name` | 原生 radio 组名（原生表单关联；未设自动生成唯一名） | `string` | — |
+| `name` | 内层原生 radio 组名（未设自动生成唯一名，多实例互不干扰）；仅用于组内互斥与键盘语义——组件非 form-associated，shadow 内 radio 不被外层 form 收集提交 | `string` | — |
 | `options` | `[{ label, value, disabled? }]` JSON 字符串 | `string` | `[]` |
 | `readonly` | 只读：可聚焦不可改选（radiogroup aria-readonly） | `boolean` | — |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
 | `value` | 选中值（缺省选第一项，受控属性） | `string` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -143,4 +143,4 @@ onMounted(() => {
 | --- | --- |
 | `template[slot="option"]` | 选项自定义模板（`<template slot="option">`） |
 
-容器 `role="radiogroup"`，每项 `role="radio"` + `aria-checked` / `aria-disabled`。
+容器 `role="radiogroup"`；每项为原生 `<input type="radio">` 底座（label 自身无 `role` / `aria-checked`，选中态与可访问名由内部原生 radio 承载；`aria-disabled` 状态属性保留）。

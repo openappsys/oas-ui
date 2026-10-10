@@ -201,7 +201,7 @@ onMounted(() => {
 | `sortable` | Tag sorting: drag + keyboard Alt+←/→ adjacent swap | `boolean` | — |
 | `status` | Validation status: `error` / `warning` / `success` | `string` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

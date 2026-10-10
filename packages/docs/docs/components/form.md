@@ -4,7 +4,7 @@
 
 > **跨 shadow 提交入口**：`oas-form` 在 shadow 内包原生 `<form>`，因此 light DOM 的按钮（含 `oas-button`）不具备原生 submit 语义。请在按钮点击等时机调用组件公开的 `submit()` 方法（如 `this.closest('oas-form').submit()`），它会委托内部 form 的 `requestSubmit()`，保留 submit 事件语义并触发相同的校验与 `oas-submit` / `oas-validate-fail` 派发——**不要**再穿透 `shadowRoot.querySelector('form')` 去调内部 form。
 
-> 数据源是各字段的 `value` 属性（受控模式）。表单校验的字段范围为带 `name` 的 `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-checkbox` / `oas-radio`（组容器不参与）。`oas-input` / `oas-textarea` / `oas-input-number` 输入时**不会自动写回 `value` 属性**，需在脚本中监听 `oas-input` / `oas-change` 事件同步；`oas-select` / `oas-cascader` / `oas-tree-select` 选中时自带回写。
+> 数据源是各字段的 `value` 属性（受控模式）。表单校验的字段范围为带 `name` 的 `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-radio` / `oas-radio-group` / `oas-date-picker` / `oas-slider` / `oas-rate` / `oas-pin-input` / `oas-dynamic-tags` / `oas-combobox` / `oas-picker` / `oas-transfer`（`model-value` 通道）/ `oas-dynamic-input`（`model-value` 通道）/ `oas-checkbox` / `oas-switch`（`checked` 通道）。`oas-input` / `oas-textarea` / `oas-input-number` 输入时**不会自动写回 `value` 属性**，需在脚本中监听 `oas-input` / `oas-change` 事件同步；`oas-select` / `oas-cascader` / `oas-tree-select` 选中时自带回写。
 
 ## 功能展示
 
@@ -76,7 +76,7 @@
 
 ## 原生表单集成（form-associated）
 
-全部表单类组件均为 **form-associated** 自定义元素（`formAssociated: true`）：可直接放进原生 `<form>`——`<label for>` 关联生效（点击 label 聚焦/激活控件、读屏朗读 label 文本），值经标准 `FormData` 收集（有 `name` 才提交），`form.reset()` 回初始值，`fieldset[disabled]` 联动禁用，`required` 接入原生校验链（`checkValidity()` / `:invalid` 伪类）。
+常用的 15 个表单类组件为 **form-associated** 自定义元素（`formAssociated: true`）：可直接放进原生 `<form>`——`<label for>` 关联生效（点击 label 聚焦/激活控件、读屏朗读 label 文本），值经标准 `FormData` 收集（有 `name` 才提交），`form.reset()` 回初始值，`fieldset[disabled]` 联动禁用，`required` 接入原生校验链（`checkValidity()` / `:invalid` 伪类）。
 
 <DemoBlock title="原生 form + label for + FormData + reset">
   <form id="form-native" style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-3); align-items: flex-start">
@@ -102,7 +102,7 @@
   </form>
 </DemoBlock>
 
-**支持清单（15 组件）**：input / textarea / input-number / checkbox / radio / switch / select / combobox / auto-complete / tree-select / mentions / date-picker / time-picker / upload。值语义按原生对齐：多选（select / tree-select / date-picker multiple）提交**同名多条**；date / time 范围模式提交 **`name-start` / `name-end`** 两条；upload 提交 File；勾选族未勾不提交。与 `oas-form` 的 `collectFields` 机制并行可用。
+**支持清单（15 组件）**：input / textarea / input-number / checkbox / radio / radio-group / switch / select / combobox / auto-complete / tree-select / mentions / date-picker / time-picker / upload。值语义按原生对齐：多选（select / tree-select / date-picker multiple）提交**同名多条**；date / time 范围模式提交 **`name-start` / `name-end`** 两条；upload 提交 File；勾选族未勾不提交。与 `oas-form` 的 `collectFields` 机制并行可用。
 
 ## 表单校验
 

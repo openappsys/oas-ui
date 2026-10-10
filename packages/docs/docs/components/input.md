@@ -525,7 +525,7 @@ onMounted(() => {
 | `value` | 值（受控） | `string` | — |
 | `variant` | 形态：`outlined`（默认描边）/ `filled`（填充底色）/ `borderless`（无框） | `string` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

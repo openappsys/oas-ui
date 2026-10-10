@@ -525,7 +525,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `value` | Value (controlled) | `string` | — |
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

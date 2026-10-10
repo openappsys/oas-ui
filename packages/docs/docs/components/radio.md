@@ -298,7 +298,7 @@ onMounted(() => {
 | `value` | 选项标识 | `string \| null` | — |
 | `variant` | 形态：`default`（默认）/ `card`（卡片：整块可点、选中描边着色、hover 反馈） | `string` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

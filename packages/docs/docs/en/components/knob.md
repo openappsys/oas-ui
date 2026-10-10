@@ -234,7 +234,7 @@ onMounted(() => {
 | `value` | Current value (controlled): out-of-range values are clamped to `[min, max]` and snapped by `step`; written back to the attribute after interaction (hosts can read the latest value directly from the attribute) | `number` | `0` |
 | `wheel` | Wheel adjustment on hover (off by default): scroll up increases, down decreases, one notch = `step` (span/50 when continuous); modifier keys do not change the step (fine adjustment via Shift+drag); preventDefault stops page scrolling while enabled | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

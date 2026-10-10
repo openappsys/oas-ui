@@ -112,7 +112,7 @@ The `title` slot accepts rich content (for example a large status code composed 
 | --- | --- | --- | --- |
 | `description` | Description text | `string` | — |
 | `size` | Size preset `small` / `medium` (default) / `large`: scales icon diameter and font sizes | `string` | `medium` |
-| `status` | Status: `success` / `error` / `warning` / `info` / `403` / `404` / `500` (HTTP error pages with dedicated icons); invalid values fall back to info with a warning | `string` | `success` |
+| `status` | Status: `success` / `error` / `warning` / `info` / `403` / `404` / `500` (HTTP error pages with dedicated icons); invalid values fall back to success with a warning | `string` | `success` |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 
 #### Slots

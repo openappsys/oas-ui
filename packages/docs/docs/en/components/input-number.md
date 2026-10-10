@@ -350,7 +350,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `variant` | Visual variant outlined/filled/borderless (aligned with input) | `string` | — |
 | `wheel` | Wheel stepping while focused (up increments, down decrements; off by default to prevent accidental changes) | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

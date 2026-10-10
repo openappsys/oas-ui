@@ -141,7 +141,7 @@ onMounted(async () => {
 | `timezone` | Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local | `string` | — |
 | `view` | View: month (default) / week / day / agenda; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list | `SchedulerView` | `month` |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

@@ -310,7 +310,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `unlink-panels` | Range months flip independently (linked by default) | `boolean` | — |
 | `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | `string \| string[] \| null` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

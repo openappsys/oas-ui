@@ -1004,9 +1004,10 @@ export class OASTour extends OASElement {
     this.clearTypewriter()
     const desc = this.popup?.querySelector<HTMLElement>('[part="desc"]')
     if (!desc) return
-    // typewriter 是 opt-in 布尔属性：getAttribute 对无值布尔返回 '' 而非 'true'，
-    // 用 getAttr(...)!=='true' 判定会把布尔写法误判为关（'' !== 'true' → 跳过打字机）
-    const typewriterOn = this.hasAttr('typewriter') && this.getAttr('typewriter', 'true') !== 'false'
+    // typewriter 是 opt-in 布尔属性：仅当属性在场且不为 'false' 时启用。用 `!== 'false'` 判定，
+    // 故兜底值给 '' 即可（bare 写法 getAttribute 返回 ''，'' !== 'false' → 开）；给 'true' 会让
+    // api:scan 把该属性默认值误标为 true（opt-in 的默认应为关）。
+    const typewriterOn = this.hasAttr('typewriter') && this.getAttr('typewriter', '') !== 'false'
     if (!typewriterOn) {
       desc.textContent = text
       return
@@ -1409,7 +1410,7 @@ export class OASTour extends OASElement {
     if (typeof step.targetAreaClickable === 'boolean') return step.targetAreaClickable
     // target-area-clickable 是布尔属性：bare（无值）时 getAttribute 返回 ''，
     // getAttr(...)!=='false' 同时兼容 bare / ="true" / ="false"（同 typewriter 修法）
-    return this.hasAttr('target-area-clickable') && this.getAttr('target-area-clickable', 'true') !== 'false'
+    return this.hasAttr('target-area-clickable') && this.getAttr('target-area-clickable', '') !== 'false'
   }
 
   /** 目标滚动到视口 + scroll-padding 生效（scroll-margin 标准方案） */

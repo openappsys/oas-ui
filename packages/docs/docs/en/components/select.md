@@ -750,7 +750,7 @@ onMounted(() => {
 | `variant` | Visual variant: `outlined` (default) / `filled` / `borderless`; invalid values fall back silently; status colors take precedence | `string` | — |
 | `virtual` | Virtual scrolling for large datasets: renders only the visible window (reuses oas-virtual-list); options with a `group` field fall back to full rendering | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

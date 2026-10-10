@@ -42,7 +42,7 @@ With `mode="horizontal"` the items are laid out in a row as a top navigation bar
 
 ## Collapsed state
 
-`collapsed` (vertical only) narrows the menu to show only icons; hovering or clicking an icon item pops its submenu out to the right, still a full menu.
+`collapsed` (vertical / inline; not applicable to horizontal) narrows the menu to show only icons; hovering or clicking an icon item pops its submenu out to the right, still a full menu.
 
 <DemoBlock title="Collapsed (icons only)">
   <oas-menu collapsed onoas-select="menuCLog(event)" items='[{"label":"Home","value":"home","icon":"menu"},{"label":"Messages","value":"message","icon":"mail","children":[{"label":"Inbox","value":"inbox"},{"label":"Sent","value":"sent"}]},{"label":"User","value":"user","icon":"user"},{"label":"Settings","value":"settings","icon":"gear","children":[{"label":"Profile","value":"profile"},{"label":"Security","value":"security"}]}]'></oas-menu>
@@ -489,12 +489,12 @@ The menu item `shortcut` field (items JSON) or the `<oas-menu-item shortcut="…
 | --- | --- | --- | --- |
 | `accordion` | Accordion mutual exclusion (inline mode: only one sibling submenu open at a time) | `boolean` | — |
 | `close-on-select` | Whether expanded submenus collapse after a leaf item is selected. Defaults by mode: inline side navigation keeps them open, flyout modes collapse; checkbox items never collapse on toggle | `string` | — |
-| `collapsed` | Collapsed state (vertical only): icons only, submenus pop to the right | `boolean` | — |
+| `collapsed` | Collapsed state (vertical / inline; not applicable to horizontal): icons only, submenus pop to the right | `boolean` | — |
 | `disabled` | Disables the whole menu: click/hover/keyboard intercepted, dimmed with aria-disabled | `boolean` | — |
 | `expanded` | Controlled expanded set (JSON array string; which submenus are open in inline mode); internally managed when uncontrolled | `string` | — |
 | `items` | Menu items JSON (supports disabled / loading, icon, children submenus) | `MenuItem[] \| null` | `[]` |
 | `max-height` | Max height of a long menu; scrolls internally beyond it (number gets px appended) | `string` | — |
-| `mode` | Layout mode: `vertical` menu / `horizontal` top bar | — | — |
+| `mode` | Layout mode: `vertical` (default) menu / `horizontal` top bar / `inline` side navigation (submenus expand in place with a height transition) | — | — |
 | `open-on-hover` | Hover-opened submenus in vertical/inline modes (~150ms open / ~300ms close delay); clicks unchanged; horizontal and collapsed flyout unaffected | `boolean` | — |
 | `persistent` | Keep flyout submenus open after selection (wins over close-on-select) | `string` | — |
 | `searchable` | Renders a filter input at the top of the menu and filters visible items live (matching ancestors are kept and auto-expanded; Esc clears) | `boolean` | — |
@@ -571,8 +571,9 @@ The menu item `shortcut` field (items JSON) or the `<oas-menu-item shortcut="…
 | `value`    | Selection value                                                    | `string`     |
 | `type`     | Item type: `item` (default) / `group` (group title) / `divider`    | `string`     |
 | `kind`     | Leaf semantics: `radio` (default, checkable) / `action` (action item, no checkmark, doesn't write back `value` on click) | `string` |
-| `icon`     | Icon name (a key of `@oas-ui/icons` built-in icon set)                | `string`     |
-| `disabled` | Disables the item                                                  | `boolean`    |
+| `icon`      | Icon name (a key of `@oas-ui/icons` built-in icon set)               | `string`     |
+| `iconColor` | Icon color (optional): fixes the icon to this color, overriding the selected/disabled default; defaults to `currentColor` following the text color | `string` |
+| `disabled`  | Disables the item                                                  | `boolean`    |
 | `children` | Submenu items array with the same shape as the parent (nested recursively) | `MenuItem[]` |
 
 `children` is an optional submenu items array; items with `children` expand their submenu on click/hover, and the selected state only lands on leaf items. `group` children are laid out flat on the same level; group titles are not clickable and skipped in keyboard navigation; `divider` items are not clickable and skipped in keyboard navigation.

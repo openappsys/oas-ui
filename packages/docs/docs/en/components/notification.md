@@ -350,7 +350,7 @@ onMounted(async () => {
 | Event | Description |
 | --- | --- |
 | `oas-click` | Dispatched when the notification body is clicked ("click for details" scenario) |
-| `oas-close` | Dispatched on close, detail { source }: auto (duration elapsed) / close (close button) / destroy (programmatic) |
+| `oas-close` | Dispatched on close, detail { source }: auto (duration elapsed) / button (close button) / destroy (programmatic) / evict (evicted when over the limit) |
 
 #### Slots
 

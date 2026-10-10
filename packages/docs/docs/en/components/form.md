@@ -4,7 +4,7 @@ An enhanced native `<form>` supporting validation and submission of inner fields
 
 > **Cross-shadow submit entry**: `oas-form` wraps a native `<form>` inside its shadow root, so buttons in the light DOM (including `oas-button`) do not have native submit semantics. Call the component's public `submit()` method at submit time (e.g. `this.closest('oas-form').submit()`); it delegates to the inner form's `requestSubmit()`, preserving submit-event semantics and triggering the same validation flow that dispatches `oas-submit` / `oas-validate-fail` — do **not** reach into `shadowRoot.querySelector('form')` to drive the inner form.
 
-> The data source is each field's `value` attribute (controlled mode). Fields validated by the form are `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-checkbox` / `oas-radio` with a `name` (group containers are not involved). `oas-input` / `oas-textarea` / `oas-input-number` do **not** automatically write back to the `value` attribute while typing — listen to `oas-input` / `oas-change` events in script to sync; `oas-select` / `oas-cascader` / `oas-tree-select` write back by themselves on selection.
+> The data source is each field's `value` attribute (controlled mode). Fields validated by the form are `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-radio` / `oas-radio-group` / `oas-date-picker` / `oas-slider` / `oas-rate` / `oas-pin-input` / `oas-dynamic-tags` / `oas-combobox` / `oas-picker` / `oas-transfer` (`model-value` channel) / `oas-dynamic-input` (`model-value` channel) / `oas-checkbox` / `oas-switch` (`checked` channel) with a `name`. `oas-input` / `oas-textarea` / `oas-input-number` do **not** automatically write back to the `value` attribute while typing — listen to `oas-input` / `oas-change` events in script to sync; `oas-select` / `oas-cascader` / `oas-tree-select` write back by themselves on selection.
 
 ## Feature Demo
 
@@ -76,7 +76,7 @@ After submitting, `values` looks like `{"members":[{"name":"Alex","role":"self"}
 
 ## Native Form Integration (form-associated)
 
-All form components are **form-associated** custom elements (`formAssociated: true`): they work directly inside a native `<form>` — `<label for>` association works (clicking the label focuses/activates the control, screen readers announce the label text), values are collected via standard `FormData` (submitted only when `name` is set), `form.reset()` restores initial values, `fieldset[disabled]` disables them, and `required` joins the native validation chain (`checkValidity()` / `:invalid` pseudo-class).
+Fifteen common form components are **form-associated** custom elements (`formAssociated: true`): they work directly inside a native `<form>` — `<label for>` association works (clicking the label focuses/activates the control, screen readers announce the label text), values are collected via standard `FormData` (submitted only when `name` is set), `form.reset()` restores initial values, `fieldset[disabled]` disables them, and `required` joins the native validation chain (`checkValidity()` / `:invalid` pseudo-class).
 
 <DemoBlock title="native form + label for + FormData + reset">
   <form id="form-native" style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-3); align-items: flex-start">
@@ -102,7 +102,7 @@ All form components are **form-associated** custom elements (`formAssociated: tr
   </form>
 </DemoBlock>
 
-**Supported (15 components)**: input / textarea / input-number / checkbox / radio / switch / select / combobox / auto-complete / tree-select / mentions / date-picker / time-picker / upload. Value semantics follow the native ones: multiple mode (select / tree-select / date-picker multiple) submits **same-name entries**; date / time range mode submits **`name-start` / `name-end`**; upload submits File; unchecked checkables submit nothing. Works in parallel with `oas-form`'s `collectFields` mechanism.
+**Supported (15 components)**: input / textarea / input-number / checkbox / radio / radio-group / switch / select / combobox / auto-complete / tree-select / mentions / date-picker / time-picker / upload. Value semantics follow the native ones: multiple mode (select / tree-select / date-picker multiple) submits **same-name entries**; date / time range mode submits **`name-start` / `name-end`**; upload submits File; unchecked checkables submit nothing. Works in parallel with `oas-form`'s `collectFields` mechanism.
 
 ## Validation
 

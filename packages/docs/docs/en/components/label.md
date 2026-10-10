@@ -107,7 +107,7 @@ Required-mark forms (asterisk + position) are covered by `required` + `position`
 | --- | --- | --- | --- |
 | `colon` | Append a colon (`:`) after the label text | `boolean` | — |
 | `color` | Text color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value | `string` | — |
-| `disabled` | Disabled state (grayed out, not clickable) | `boolean` | — |
+| `disabled` | Disabled state (visual only: grayed out but does not block events; the associated control manages its own disabled) | `boolean` | — |
 | `error` | Error state (red text) | `boolean` | — |
 | `for` | Target control id; click forwards to `getElementById(for).focus()` | `string` | — |
 | `position` | Position of the asterisk relative to the text | `string` | `after` |

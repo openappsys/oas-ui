@@ -253,7 +253,7 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-blur` | Fires on blur |
-| `oas-change` | Toggle, `detail: { checked }` |
+| `oas-change` | Toggle, `detail: { checked, value }` (value is the mapped value) |
 | `oas-focus` | Fires on focus |
 
 #### Slots

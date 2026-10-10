@@ -308,7 +308,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `value` | Current value (controlled, the selected option's `option.value`; a JSON array string under `multiple`) | `string \| string[]` | — |
 | `virtual` | Virtual scroll (reuses oas-virtual-list to render only the visible window; options with group fall back to full rendering) | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

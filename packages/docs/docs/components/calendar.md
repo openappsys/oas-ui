@@ -234,7 +234,7 @@
 | `show-week-number` | 显示 ISO 周号列 | `boolean` | — |
 | `value` | 选中值（ISO） | `string` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

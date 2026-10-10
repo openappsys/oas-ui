@@ -185,7 +185,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `use12-hours` | 12-hour mode: display and columns switch to 12-hour (with an AM/PM column following the locale); the value stays 24-hour | `boolean` | — |
 | `value` | Current value (`HH:mm:ss`; a JSON array when `is-range`) | `string \| string[] \| null` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

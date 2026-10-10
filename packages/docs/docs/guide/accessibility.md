@@ -10,7 +10,7 @@ Playwright + axe-core 对每个组件 demo 页执行审计，零严重违规为�
 pnpm test:e2e
 ```
 
-审计范围覆盖 `wcag2a` / `wcag2aa` / `wcag21aa` 规则集，仅检查组件 demo 区域（`.demo`）。
+审计范围覆盖 `wcag2a` / `wcag2aa` / `wcag21aa` 规则集，仅检查组件 demo 区域（`.demo-block`）。
 
 ## 键盘流回归矩阵
 
@@ -21,13 +21,14 @@ pnpm test:e2e
 | Checkbox / Radio / Switch                     | Space 切换、方向键（Radio）        | `checkbox` / `radio` / `switch`     |
 | Slider                                        | 方向键 + Home/End                  | `slider`（`aria-valuenow`）         |
 | InputNumber                                   | 方向键增减、Home/End               | `spinbutton`                        |
-| Rate                                          | 方向键、Enter 确认                 | `radiogroup` + `radio`              |
+| Rate                                          | 方向键、Home/End（无 Enter）       | `slider`（`aria-valuenow`）         |
 | Select / AutoComplete / Cascader / TreeSelect | 方向键导航、Enter 选择、Esc 关闭   | `combobox` + `listbox`/`tree`       |
 | Menu / Dropdown / ContextMenu                 | 方向键、Home/End、Enter            | `menu` + `menuitemradio`            |
 | Tabs                                          | 方向键循环切换                     | `tablist` + `tab` + `aria-selected` |
 | Tree                                          | 方向键 + 左右展开/收起             | `tree` + `treeitem`                 |
 | Modal / Drawer / Confirm                      | Tab 焦点困在对话框、Esc 关闭       | `dialog` + `aria-modal`             |
-| Tooltip / Popover / HoverCard                 | Esc 关闭                           | `tooltip` / `dialog`                |
+| Tooltip / Popover                             | Esc 关闭                           | `tooltip` / `dialog`                |
+| HoverCard                                     | 悬停/焦点移出关闭                  | 无 role（`aria-hidden` 控制显隐）   |
 | Pagination                                    | Tab 到页码按钮                     | 语义按钮 + `aria-current`           |
 | Carousel                                      | 指示器可 Tab 聚焦                  | `role="tablist"` + `role="tab"`     |
 | Collapse                                      | 表头可 Tab 聚焦 + Enter/Space 展开 | 按钮语义                            |

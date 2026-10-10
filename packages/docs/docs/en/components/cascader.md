@@ -396,7 +396,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | `value-mode` | Multi-select value strategy: `all` (default, full paths) / `parentFirst` / `onlyLeaf` | `string` | `all` |
 | `virtual` | Per-column virtual scrolling (columns above 50 items render via oas-virtual-list; short columns/search/loading keep normal rendering) | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

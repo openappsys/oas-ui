@@ -1025,8 +1025,8 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 | `oas-edit-cancel` | Inline edit cancelled (Esc / operation column cancel / empty submit restores), `detail: { rowIndex, key, column, value }` (`value` is the original value) |
 | `oas-expand` | Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }` |
 | `oas-export` | Export triggered (button or exportData), `detail: { format, fileName, rowCount }` |
-| `oas-filter-change` | Fired when a column filter value changes, `detail: { key, values }` |
-| `oas-page-change` | Fired when the built-in page changes, `detail: { current, pageSize }` |
+| `oas-filter-change` | Fired when a column filter value changes, `detail: { filters }` (filters maps a column key to its selected values) |
+| `oas-page-change` | Fired when the built-in page changes, `detail: { page, pageSize }` |
 | `oas-row-click` | Row click (also toggles selection when not checkable), `detail: { row, key }` |
 | `oas-row-dblclick` | Fired on data-row double-click, `detail: { row, rowIndex }` |
 | `oas-row-reorder` | Row reorder via drag or Alt+Arrow; `detail: { from, to, row }` (to is the insertion index after removing the dragged row; the component never mutates data) |

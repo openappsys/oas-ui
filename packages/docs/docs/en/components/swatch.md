@@ -6,6 +6,11 @@ Inline color blocks for quick preset-color selection and display — for theme c
 
 Single-select group: click a swatch to select it (selected state = outer ring); `oas-change` carries the selected value.
 
+<DemoBlock title="Selected state">
+  <oas-swatch color="geekblue" selected label="Geekblue (selected)"></oas-swatch>
+  <oas-swatch color="blue" label="Blue (unselected)"></oas-swatch>
+</DemoBlock>
+
 <DemoBlock title="Single select">
   <oas-swatch-group id="sw-single">
     <oas-swatch color="blue" label="Blue"></oas-swatch>
@@ -123,7 +128,7 @@ onMounted(() => {
 | `shape` | Shape: `square` / `rounded` (default) / `circle` | `string` | `rounded` |
 | `size` | Side-length step: `xs` / `small` / `medium` (default) / `large` / `xl` | `string` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -146,7 +151,7 @@ onMounted(() => {
 | `multiple` | Multiple-select mode (checkbox semantics) | `boolean` | — |
 | `value` | Current value: child swatch's color in single select; comma-separated list in multiple select | `string \| string[]` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

@@ -351,7 +351,7 @@ onMounted(() => {
 | `variant` | 形态 outlined/filled/borderless（对齐 input） | `string` | — |
 | `wheel` | 聚焦时滚轮步进（上增下减；默认关防误触） | `boolean` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

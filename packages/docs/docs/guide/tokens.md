@@ -1,6 +1,6 @@
 # 设计 Token（Design Tokens）
 
-OAS-UI 的全部视觉语言都由 CSS 变量（语义 token）驱动。组件样式只引用语义 token，**不硬编码任何色值/字号/间距**——因此换肤 = 覆盖 CSS 变量，改主题不碰组件。
+OAS-UI 的全部视觉语言都由 CSS 变量（语义 token）驱动。组件样式原则上只引用语义 token、不硬编码色值/字号/间距（个别极值/预设除外）——因此换肤 = 覆盖 CSS 变量，改主题不碰组件。
 
 <TokenShowcase />
 
@@ -47,7 +47,7 @@ document.documentElement.dataset.theme = 'high-contrast'
 | 文本      | `--oas-color-text-primary/-secondary/-disabled`                                             |
 | 边框/背景 | `--oas-color-border`、`--oas-color-bg(-hover/-disabled)`、`--oas-color-overlay`             |
 | 字号      | `--oas-font-size-xs/sm/md/lg/xl`                                                            |
-| 间距      | `--oas-space-1…6`（4px 基准）                                                               |
+| 间距      | `--oas-space-1/1_5/2/2_5/3/4/4_5/5/6`（4px 基准，含半步档）                                 |
 | 圆角      | `--oas-radius-xs/sm/md/lg/xl`                                                                     |
 | 控件      | `--oas-control-height-xs/sm/md/lg/xl`                                                       |
 | 动效      | `--oas-transition-fast/base`、`--oas-ease-out/in-out`                                       |

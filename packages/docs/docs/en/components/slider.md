@@ -404,7 +404,7 @@ onMounted(() => {
 | `value-width` | Width of the show-input readout box: plain numbers get px, unit values pass through (written to --oas-slider-value-width); defaults to 72px | `string` | — |
 | `vertical` | Vertical mode: the track runs vertically (minimum at the bottom, mirrored to the top by `reverse`); mark labels move to the right of the track, the value bubble faces right by default, show-input inputs move below the track; height defaults to 200px, adjustable via the `--oas-slider-height` CSS variable | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

@@ -316,18 +316,18 @@ onMounted(() => {
 | `value` | 当前值（受控） | `string` | — |
 | `variant` | 形态：`outlined`（默认）/ `filled` / `underlined` | `string` | `outlined` |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `value` | 当前值：各格字符拼接字符串 | `string` | — |
+| `value` | 当前值：各格字符拼接字符串；property 与 `value` 属性同源（setter 写回 attribute、属性改动即时同步各格），会反射到 attribute | `string` | — |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-blur` | 焦点离开组件时派发，`detail: { index }` |
-| `oas-change` | 填满时派发，`detail: { value }` |
+| `oas-change` | 失焦提交：组件失焦且值相对获焦快照变化时派发，`detail: { value }` |
 | `oas-complete` | 填满时派发，`detail: { value }` |
 | `oas-focus` | 焦点进入组件时派发（格间移动不派发），`detail: { index }` |
 | `oas-input` | 每格输入，`detail: { value, index }` |

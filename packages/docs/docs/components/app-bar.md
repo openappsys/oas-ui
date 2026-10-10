@@ -167,7 +167,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `elevated` | 滚动后显示投影（静态时无投影） | — | — |
+| `elevated` | 常显投影；未设置时由滚动单独控制（scrollY > 0 时 data-scrolled 出现投影，回到顶部移除） | — | — |
 | `extended-collapse-on-scroll` | 页面下滚时收起 extended 扩展区（回滚到顶恢复展开） | `boolean` | — |
 | `heading` | 标题文本（属性通道；富内容改用 title 插槽，会被插槽覆盖） | `string` | — |
 | `hide-on-scroll` | 页面下滚隐藏、上滚重现（transform 过渡，不重排；仅非 static 定位生效） | `boolean` | — |

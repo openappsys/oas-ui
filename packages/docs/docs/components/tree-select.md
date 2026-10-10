@@ -517,7 +517,7 @@ onMounted(() => {
 | `value` | 选中值（多选为 JSON 数组） | `string \| string[] \| null` | — |
 | `virtual` | 开启虚拟滚动：大数据量下拉仅渲染可见窗口（复用 oas-virtual-list），键盘/ARIA 保持 | `boolean` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

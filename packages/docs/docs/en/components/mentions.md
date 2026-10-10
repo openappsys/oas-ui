@@ -314,7 +314,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | `outlined` |
 | `whole` | Whole delete: when cursor is right after a mention, Backspace removes the whole prefix + label and fires oas-whole-remove | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

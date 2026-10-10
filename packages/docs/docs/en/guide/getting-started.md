@@ -10,7 +10,7 @@
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
 
-**Per-family bundles (a middle ground between size and coverage)**: components are grouped into 7 feature families. Each family ships as its own IIFE file and inlines the base (runtime plus config-provider/app/theme-editor), so no extra script is required:
+**Per-family bundles (a middle ground between size and coverage)**: components are grouped into 9 feature families. Each family ships as its own IIFE file and inlines the base (runtime plus config-provider/app/theme-editor), so no extra script is required:
 
 | Bundle | Components covered |
 | --- | --- |
@@ -20,6 +20,8 @@
 | `cdn/feedback.js` | Feedback & Overlays: tooltip, popover, hover-card, message, notification, toast, snackbar, backdrop, modal, confirm, drawer, popconfirm, alert, progress, loading-bar, spin, skeleton, empty, result |
 | `cdn/navigation.js` | Navigation: menu, dropdown, contextmenu, command, menubar, navigation-menu, toolbar, breadcrumb, anchor, back-top, tour, tabs, bottom-navigation, pagination, steps, stepper, affix, page-header, float-button, speed-dial |
 | `cdn/data.js` | Data display: table, tree, virtual-list, card, avatar, avatar-group, image, qrcode, watermark, collapse, descriptions, timeline, list, carousel, statistic, countdown, ellipsis, chart, code, equation, log, marquee, number-animation, gradient-text, comment, etc. |
+| `cdn/conversation.js` | Conversation: bubble, attachment, message-scroller, marker, message-row |
+| `cdn/workbench.js` | Workbench: titlebar, statusbar, inspector, action-bar |
 | `cdn/framework.js` | Framework containers: config-provider, app, theme-editor |
 
 Basic family only:

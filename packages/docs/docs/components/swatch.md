@@ -128,7 +128,7 @@ onMounted(() => {
 | `shape` | 形状：`square` / `rounded`（默认）/ `circle` | `string` | `rounded` |
 | `size` | 边长档位：`xs` / `small` / `medium`（默认）/ `large` / `xl` | `string` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -151,7 +151,7 @@ onMounted(() => {
 | `multiple` | 多选模式（checkbox 语义） | `boolean` | — |
 | `value` | 当前值：单选为子件 color 值；多选逗号分隔多个选中值 | `string \| string[]` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

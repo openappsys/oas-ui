@@ -201,7 +201,7 @@ onMounted(() => {
 | `sortable` | 标签排序：拖拽 + 键盘 Alt+←/→ 相邻交换 | `boolean` | — |
 | `status` | 校验态：`error` / `warning` / `success` | `string` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

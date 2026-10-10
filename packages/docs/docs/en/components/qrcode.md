@@ -53,7 +53,7 @@ A QR code component based on a **pure TypeScript, zero-dependency encoder** (bui
     <oas-qrcode value="https://oas-ui.dev" bg-color="#fff7e6" color="#ad4e00" margin="8" aria-label="Warm-background large-quiet-zone QR code"></oas-qrcode>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    Foreground <code>color</code> defaults to the host text color (currentColor); it accepts any CSS color or one of 11 preset names (e.g. <code>blue</code> → <code>var(--oas-preset-blue)</code>). Background <code>bg-color</code> defaults to <b>pure white</b> — scannability outranks theme consistency, so the code stays scannable in dark themes (override globally via <code>--oas-qrcode-bg</code> if needed). The quiet-zone margin <code>margin</code> defaults to 4 modules (the QR standard requirement).
+    Foreground <code>color</code> defaults to the fixed dark <code>#18181b</code> (paired with the white quiet zone for dark-theme scannability; override via <code>--oas-qrcode-color</code>); it accepts any CSS color or one of 11 preset names (e.g. <code>blue</code> → <code>var(--oas-preset-blue)</code>). Background <code>bg-color</code> defaults to <b>pure white</b> — scannability outranks theme consistency, so the code stays scannable in dark themes (override globally via <code>--oas-qrcode-bg</code> if needed). The quiet-zone margin <code>margin</code> defaults to 4 modules (the QR standard requirement).
   </p>
 </DemoBlock>
 

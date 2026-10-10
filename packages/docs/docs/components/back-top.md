@@ -4,7 +4,7 @@
 
 ## 基础用法
 
-默认监听 window 滚动：向下滚动超过 `visibility-height`（默认 400px）后按钮自动出现，点击平滑回顶（`prefers-reduced-motion` 下直接跳转）。
+默认自动探测最近的滚动祖先容器（无则回落 window）监听其滚动：向下滚动超过 `visibility-height`（默认 400px）后按钮自动出现，点击平滑回顶（`prefers-reduced-motion` 下直接跳转）。
 
 <DemoBlock title="基础用法">
   <oas-back-top></oas-back-top>
@@ -46,7 +46,7 @@
 
 ## 阈值与目标容器
 
-`visibility-height` 调整自动显隐阈值（默认 400）；`target` 指定滚动目标容器（CSS 选择器，默认 window）：容器内滚动超出阈值后按钮自动出现，点击滚动回该容器顶部。
+`visibility-height` 调整自动显隐阈值（默认 400）；`target` 指定滚动目标容器（CSS 选择器；缺省自动探测最近的滚动祖先容器，无则回落 window）：容器内滚动超出阈值后按钮自动出现，点击滚动回该容器顶部。
 
 <DemoBlock title="阈值与目标容器">
   <div id="bt-scroll-box" tabindex="0" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">

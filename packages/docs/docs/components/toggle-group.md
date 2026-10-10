@@ -407,7 +407,7 @@ onMounted(() => {
 | `variant` | 组级形态透传各切换项（对齐 button variant 体系）：`solid`（默认，描边容器、选中实底）/ `outlined`（透明底描边，选中主色描边 + 淡底）/ `filled`（浅底无描边，选中实底）/ `text`（无框无底，选中淡底 + 主色文字）；非法值静默回落 solid；与 attached/vertical 正交 | `string` | — |
 | `vertical` | 纵向排列（联动 aria-orientation 与轴向键） | `boolean` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

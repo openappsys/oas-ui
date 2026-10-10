@@ -4,7 +4,7 @@ Shows a confirmation bubble next to the trigger element, commonly used before de
 
 ## Basic usage
 
-Click the trigger to open the bubble; OK / cancel / Esc / clicking outside all close it and emit the matching event (`oas-ok` / `oas-cancel`, detail carries `source` and the native `event`).
+Click the trigger to open the bubble; OK / the cancel button / Esc / clicking outside all close it. `oas-ok` and `oas-cancel` (dispatched only by the cancel button) carry `detail: { source, event }`; closing via Esc / outside click does not dispatch `oas-cancel` — its source is available as the `reason` of `oas-open-change`.
 
 <DemoBlock title="Basic usage">
   <oas-popconfirm id="pc-basic" title="Delete this record?" description="This cannot be undone.">
@@ -299,7 +299,7 @@ onMounted(async () => {
 
 | Event | Description |
 | --- | --- |
-| `oas-cancel` | Cancel: cancel button / Esc / outside click, `detail: { source: this, event: e }` |
+| `oas-cancel` | Dispatched only when the Cancel button is clicked (Esc / outside click go through the `oas-open-change` reason), `detail: { source: this, event: e }` |
 | `oas-ok` | Clicked "OK"; the bubble then collapses automatically, `detail: { source: this, event: e }` |
 | `oas-open-change` | Emitted when the open state changes, `detail: { open, reason }` (reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`) |
 
@@ -310,7 +310,7 @@ onMounted(async () => {
 | default | Popconfirm body content |
 | `actions` | Action buttons area (replaces the default confirm / cancel buttons) |
 | `description` | Description text |
-| `icon` | Custom icon (replaces the default question icon) |
+| `icon` | Custom icon (replaces the built-in one: a warning triangle for default / warning themes, a circled exclamation for danger) |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
 #### CSS Variables

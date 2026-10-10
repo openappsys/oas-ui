@@ -53,7 +53,7 @@
     <oas-qrcode value="https://oas-ui.dev" bg-color="#fff7e6" color="#ad4e00" margin="8" aria-label="暖底大静区二维码"></oas-qrcode>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    前景 <code>color</code> 缺省走宿主文本色（currentColor），可给任意 CSS 色值或 11 个预设名（如 <code>blue</code> → <code>var(--oas-preset-blue)</code>）；背景 <code>bg-color</code> 默认固定<b>纯白</b>——二维码可扫性优先于主题一致性，dark 主题下同样可扫（也可用 <code>--oas-qrcode-bg</code> 变量全局覆盖）。静区边距 <code>margin</code> 默认 4 模块（QR 标准静区要求）。
+    前景 <code>color</code> 缺省固定深色 <code>#18181b</code>（与固定白静区配套保证 dark 可扫，可用 <code>--oas-qrcode-color</code> 变量覆盖），可给任意 CSS 色值或 11 个预设名（如 <code>blue</code> → <code>var(--oas-preset-blue)</code>）；背景 <code>bg-color</code> 默认固定<b>纯白</b>——二维码可扫性优先于主题一致性，dark 主题下同样可扫（也可用 <code>--oas-qrcode-bg</code> 变量全局覆盖）。静区边距 <code>margin</code> 默认 4 模块（QR 标准静区要求）。
   </p>
 </DemoBlock>
 

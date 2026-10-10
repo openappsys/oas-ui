@@ -407,7 +407,7 @@ onMounted(() => {
 | `variant` | Group-level variant passthrough to items (aligned with the button variant system): `solid` (default, bordered box, selected = solid fill) / `outlined` (transparent bg + border; selected = colored border + faint tint) / `filled` (soft tinted bg, no border; selected = solid fill) / `text` (no border/background; selected = faint tint + colored text); invalid values silently fall back to solid; orthogonal to attached/vertical | `string` | — |
 | `vertical` | Vertical arrangement (mirrors aria-orientation and axis keys) | `boolean` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

@@ -146,13 +146,13 @@ onMounted(() => {
 | `model-value` | String array (property or JSON) | `DynamicInputRowValue[]` | `[]` |
 | `placeholder` | Row input placeholder | `string` | — |
 | `preset` | Row form: `input` (default, single input) / `pair` (key-value double input) | `string` | — |
-| `readonly` | Read-only (rows not editable, add/remove/sort buttons hidden) | `boolean` | — |
+| `readonly` | Read-only (rows not editable, add/remove/sort buttons disabled, values copyable) | `boolean` | — |
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
 | `sortable` | Row sorting (move up/down buttons, value swap with focus kept; keyboard accessible) | `boolean` | — |
 | `status` | Validation status: `error` / `warning` / `success` (passed to the row inputs) | `string` | — |
 | `value-placeholder` | Value placeholder in pair form | `string` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

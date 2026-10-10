@@ -314,7 +314,7 @@ onMounted(() => {
 | `variant` | 形态：`outlined`（默认）/ `filled` / `borderless` | `string` | `outlined` |
 | `whole` | 整段删除：光标紧跟提及段按 Backspace 一次删除「prefix + 成员名」并派发 oas-whole-remove | `boolean` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

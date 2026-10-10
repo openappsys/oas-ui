@@ -316,18 +316,18 @@ onMounted(() => {
 | `value` | Current value (controlled) | `string` | — |
 | `variant` | Variant: `outlined` (default) / `filled` / `underlined` | `string` | `outlined` |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `value` | Current value: concatenated string of all cell characters | `string` | — |
+| `value` | Current value: concatenated string of all cell characters; the property and the `value` attribute share one channel (the setter writes back the attribute and attribute changes sync to all cells), so it is reflected as an attribute | `string` | — |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-blur` | Fires when focus leaves the component, `detail: { index }` |
-| `oas-change` | Dispatched when filled, `detail: { value }` |
+| `oas-change` | Commit on blur: dispatched when focus leaves the component and the value differs from the focus-time snapshot, `detail: { value }` |
 | `oas-complete` | Dispatched when filled, `detail: { value }` |
 | `oas-focus` | Fires when focus enters the component (not on cell-to-cell moves), `detail: { index }` |
 | `oas-input` | Per-cell input, `detail: { value, index }` |

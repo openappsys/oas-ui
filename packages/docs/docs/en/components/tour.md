@@ -103,14 +103,14 @@ When the target is off-screen the tour scrolls to it (`scroll-into-view-options`
 
 ## Button visibility and pass-through props
 
-`hide-prev` / `hide-skip` / `hide-next` / `hide-counter` control button/counter visibility; `*-button-props` (next/prev/skip/finish) pass arbitrary attributes to the buttons (JSON object).
+`hide-prev` / `hide-skip` / `hide-next` / `hide-counter` control button/counter visibility; `next-button-props` / `prev-button-props` / `skip-button-props` pass arbitrary attributes to their buttons (JSON object). The last step's Finish is the `next` button (its label switches), so there is no separate finish button or `finish-button-props` pass-through.
 
 <DemoBlock title="Button visibility and props">
   <oas-space>
     <oas-button type="primary" onclick="document.getElementById('tour-btn').setAttribute('open','')">Visibility + props</oas-button>
     <oas-button onclick="document.getElementById('tour-hide').setAttribute('open','')">Hide all actions</oas-button>
   </oas-space>
-  <oas-tour id="tour-btn" hide-prev hide-skip next-button-props='{"data-demo":"1"}' prev-button-props='{"disabled":""}' skip-button-props='{"data-demo":"skip"}' finish-button-props='{"data-demo":"finish"}' steps='[{"selector":"#tour-bt1","title":"Button customization","description":"hide-prev / hide-skip hide buttons; next-button-props etc. pass through attributes."},{"selector":"#tour-bt2","title":"Finish props","description":"finish-button-props applies to the Finish button of the last step."}]'></oas-tour>
+  <oas-tour id="tour-btn" hide-prev hide-skip next-button-props='{"data-demo":"1"}' prev-button-props='{"disabled":""}' skip-button-props='{"data-demo":"skip"}' steps='[{"selector":"#tour-bt1","title":"Button customization","description":"hide-prev / hide-skip hide buttons; next-button-props etc. pass through attributes."},{"selector":"#tour-bt2","title":"Last-step finish","description":"The last step uses the next button as Finish (label switches); no separate finish pass-through."}]'></oas-tour>
   <oas-tour id="tour-hide" hide-prev hide-skip hide-next hide-counter steps='[{"selector":"#tour-bt1","title":"No action buttons","description":"Leave via Esc / overlay click / keyboard navigation only."}]'></oas-tour>
   <div id="tour-bt1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Button customization target 1</div>
   <div id="tour-bt2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Button customization target 2</div>
@@ -212,7 +212,7 @@ With `dont-show-again`, checking "Don't show this again" on close remembers the 
 
 ## Typewriter and scroll lock
 
-`typewriter` + `typewriter-speed` reveal the description character by character; `lock-scroll` locks page scrolling during the tour; `close-on-press-escape="false"` disables Esc.
+`typewriter` (opt-in, off unless set) + `typewriter-speed` reveal the description character by character; `lock-scroll` locks page scrolling during the tour; `close-on-press-escape="false"` disables Esc.
 
 <DemoBlock title="Typewriter animation + scroll lock">
   <oas-button type="primary" onclick="document.getElementById('tour-tw').setAttribute('open','')">Start tour</oas-button>
@@ -362,7 +362,7 @@ onMounted(async () => {
 | `current` | Current step index | `string` | `0` |
 | `disabled-interaction` | Disable interaction on the highlighted area (interceptor covers target) | — | — |
 | `dont-show-again` | Don't show again switch (boolean; if checked on close, remembered in localStorage) | `boolean` | — |
-| `finish-button-props` | Props passed through to the finish button (JSON object) | — | — |
+| `finish-button-props` | The last-step Finish button is the `next` button (its label switches to Finish) and there is no separate finish button to pass props to — this attribute currently has no effect (reserved placeholder) | — | — |
 | `gap` | Highlight padding: number (padding px) or `{"padding","radius","offset"}`; `offset` expands the highlight outward (number for all sides / `[horizontal, vertical]` dual-axis, orthogonal to padding); default padding 4 | `string` | — |
 | `hide-counter` | Hide the step counter | `boolean` | — |
 | `hide-next` | Hide the next button | — | — |
@@ -390,9 +390,9 @@ onMounted(async () => {
 | `skip-missing-element` | Skip the step when the target is missing / wait times out (default stays on the current step) | `boolean` | — |
 | `steps` | Steps JSON (`TourStep[] \| string`); property assignment supports function/element targets | `TourStep[] \| string` | `[]` |
 | `storage-key` | localStorage key (shared by `dont-show-again` / `persist` / hint dismiss) | `string` | `oas-tour-dismiss` |
-| `target-area-clickable` | Highlight area is interactive (interceptor hidden, clicks pass through to target) | `string` | `true` |
+| `target-area-clickable` | Highlight area is interactive (opt-in): off unless set (the interceptor covers the target so it is not clickable); when set the interceptor is hidden and clicks pass through to the target | `string` | — |
 | `type` | Popup type: `default` / `primary` (primary-colored popup for non-modal emphasis) | `string` | `default` |
-| `typewriter` | Typewriter animation: description revealed character by character | `string` | `true` |
+| `typewriter` | Typewriter animation (opt-in): off unless set; when set, the description is revealed character by character (`typewriter="false"` disables) | `string` | — |
 | `typewriter-speed` | Typewriter speed (ms per character, default 20) | `string` | `20` |
 | `wait-for-element` | Wait for the target to appear (ms, async steps; global default, step-level `waitForElement` wins) | — | — |
 | `z-index` | Overlay z-index (default `--oas-z-modal`) | — | — |

@@ -167,7 +167,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `elevated` | Show a shadow once the page is scrolled (no shadow at rest) | — | — |
+| `elevated` | Always shows the shadow; when unset, scroll alone controls it (the data-scrolled shadow appears once scrollY > 0 and is removed back at the top) | — | — |
 | `extended-collapse-on-scroll` | Collapse the extended section on scroll down (restored when scrolled back to top) | `boolean` | — |
 | `heading` | Title text (attribute channel; use the title slot for rich content, which overrides this) | `string` | — |
 | `hide-on-scroll` | Hide on scroll down, reveal on scroll up (transform transition, no reflow; effective only when not static) | `boolean` | — |

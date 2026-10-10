@@ -1021,8 +1021,8 @@ onMounted(() => {
 | `oas-edit-cancel` | 行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value }`（value 为原值） |
 | `oas-expand` | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }` |
 | `oas-export` | 导出触发（按钮或 exportData），`detail: { format, fileName, rowCount }` |
-| `oas-filter-change` | 列过滤值变化时派发，`detail: { key, values }` |
-| `oas-page-change` | 内置分页翻页时派发，`detail: { current, pageSize }` |
+| `oas-filter-change` | 列过滤值变化时派发，`detail: { filters }`（filters 为「列 key → 选中值数组」的对象） |
+| `oas-page-change` | 内置分页翻页时派发，`detail: { page, pageSize }` |
 | `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
 | `oas-row-dblclick` | 双击数据行派发，`detail: { row, rowIndex }` |
 | `oas-row-reorder` | 行拖拽/Alt+↑↓ 重排，`detail: { from, to, row }`（to 为移除被拖行后的插入位；组件不改 data） |

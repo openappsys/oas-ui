@@ -35,11 +35,12 @@
 
 ## 缓动档 easing
 
-`easing` 四档枚举：`ease-out`（默认，先快后慢）/ `linear`（匀速，下载字节等场景）/ `ease-in` / `ease-in-out` / `spring`（轻度过冲回弹）；非法值回落 `ease-out`。
+`easing` 五档枚举：`ease-out`（默认，先快后慢）/ `linear`（匀速，下载字节等场景）/ `ease-in` / `ease-in-out` / `spring`（轻度过冲回弹）；非法值回落 `ease-out`。
 
-<DemoBlock title="easing 四档对比">
+<DemoBlock title="easing 五档对比">
   <oas-number-animation value="1000" duration="1200" easing="linear"></oas-number-animation>
   <oas-number-animation value="1000" duration="1200" easing="ease-out"></oas-number-animation>
+  <oas-number-animation value="1000" duration="1200" easing="ease-in"></oas-number-animation>
   <oas-number-animation value="1000" duration="1200" easing="ease-in-out"></oas-number-animation>
   <oas-number-animation value="1000" duration="1200" easing="spring"></oas-number-animation>
 </DemoBlock>

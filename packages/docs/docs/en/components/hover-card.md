@@ -119,11 +119,11 @@ The arrow is shown by default; `arrow="false"` hides it; `arrow-point-at-center`
 
 ## Append-to container
 
-`append-to`: the card is absolutely positioned inside the specified container (the container is promoted to a positioning context) — handy for custom panels / overlay regions.
+`append-to`: mounts the card into a portal inside the specified container (the DOM belongs to that container) while the card keeps `position: fixed` viewport coordinates with no translation — handy for escaping clipping contexts such as `overflow: hidden`.
 
 <DemoBlock title="append-to container">
   <oas-space size="small">
-    <oas-hover-card title="Title" content="The card renders inside the container below" placement="bottom" append-to="#hc-panel">
+    <oas-hover-card title="Title" content="The card mounts into the container below (keeps viewport positioning)" placement="bottom" append-to="#hc-panel">
       <oas-button>Hover to view</oas-button>
     </oas-hover-card>
   </oas-space>
@@ -262,7 +262,7 @@ Hover is unreliable on touch devices (`pointer: coarse`): the hover card automat
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `append-to` | Positioning container selector (e.g. `#panel`): the card is absolutely positioned inside that container (container is promoted to a relative positioning context), coordinates translated accordingly; defaults to `position: fixed` viewport coordinates | `string` | — |
+| `append-to` | Mount point (portal): `body` or a CSS selector. When open and set, the card moves into an isolated shadow inside the target container (styles stay scoped) while keeping `position: fixed` viewport coordinates — no coordinate translation — escaping clipping contexts such as `overflow: hidden` / transform; when unset the card stays in the component's own shadow | `string` | — |
 | `arrow` | Whether to show the arrow, default true; `arrow="false"` hides it (the arrow element and `::part(arrow)` remain) | `string` | `true` |
 | `arrow-merge` | Corner-merged arrow mode: for *-start/*-end placements a right triangle merges flush with the panel corner — legs collinear with the panel edges (their strokes continue the panel border band), tip pointing orthogonally toward the anchor; the matching corner radius is zeroed; no effect for centered placements | `boolean` | — |
 | `arrow-point-at-center` | Point the arrow at the trigger center (keeps pointing at the anchor after viewport clamping); by default the arrow stays at the panel center | `boolean` | — |

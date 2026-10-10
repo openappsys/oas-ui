@@ -404,7 +404,7 @@ onMounted(() => {
 | `value-width` | show-input 读数框宽度：纯数字按 px、带单位值原样透传（写入 --oas-slider-value-width）；缺省 72px | `string` | — |
 | `vertical` | 垂直模式：轨道竖直（最小值在下，`reverse` 镜像到上）；刻度标签移到轨道右侧、值气泡默认朝右、show-input 输入框移到轨道下方；高度默认 200px，用 CSS 变量 `--oas-slider-height` 调整 | `boolean` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

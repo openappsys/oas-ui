@@ -341,7 +341,7 @@ With `disabled`, the tooltip never shows (neither hover nor a controlled `open`)
 
 ## Offset and collision
 
-`offset` controls the main-axis distance (default 8px), `skidding` the cross-axis offset, and `collision-padding` the viewport-edge avoidance margin (default 4px).
+`offset` controls the main-axis distance (default 10px), `skidding` the cross-axis offset, and `collision-padding` the viewport-edge avoidance margin (default 4px).
 
 <DemoBlock title="offset / skidding">
   <oas-tooltip content="offset=16 keeps it farther" offset="16" placement="bottom">

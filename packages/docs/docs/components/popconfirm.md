@@ -4,7 +4,7 @@
 
 ## 基础用法
 
-点击触发元素弹出气泡；确定 / 取消 / Esc / 点击外部均会关闭，并派发对应事件（`oas-ok` / `oas-cancel`，detail 含 `source` 与原生 `event`）。
+点击触发元素弹出气泡；确定 / 取消按钮 / Esc / 点击外部均会关闭。`oas-ok`、`oas-cancel`（仅取消按钮派发）携带 `detail: { source, event }`；Esc / 外部点击关闭不派发 `oas-cancel`，其来源见 `oas-open-change` 的 `reason`。
 
 <DemoBlock title="基础用法">
   <oas-popconfirm id="pc-basic" title="确定删除这条数据吗？" description="删除后将无法恢复。">
@@ -299,7 +299,7 @@ onMounted(async () => {
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-cancel` | 取消：取消按钮 / Esc / 外部点击，`detail: { source: this, event: e }` |
+| `oas-cancel` | 仅点击「取消」按钮时派发（Esc / 外部点击走 `oas-open-change` 的 reason），`detail: { source: this, event: e }` |
 | `oas-ok` | 点击「确定」，随后气泡自动收起，`detail: { source: this, event: e }` |
 | `oas-open-change` | open 状态变化时派发，`detail: { open, reason }`（reason: `ok`/`cancel`/`esc`/`outside`/`trigger`/`api`） |
 
@@ -310,7 +310,7 @@ onMounted(async () => {
 | 默认 | 气泡确认框主体内容 |
 | `actions` | 操作按钮区（替代默认确认 / 取消按钮） |
 | `description` | 描述文案 |
-| `icon` | 自定义图标（替代默认疑问图标） |
+| `icon` | 自定义图标（替代内置图标：默认 / warning 主题为警示三角，danger 主题为圆圈感叹） |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
 #### CSS 变量

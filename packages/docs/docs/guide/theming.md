@@ -92,9 +92,9 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 | 文本      | `--oas-color-text-primary/-secondary/-disabled`                                                           |
 | 边框/背景 | `--oas-color-border`、`--oas-color-bg(-hover/-disabled)`、`--oas-color-overlay`                           |
 | 字号      | `--oas-font-size-xs/sm/md/lg/xl`                                                                          |
-| 间距      | `--oas-space-1…6`                                                                                         |
-| 圆角      | `--oas-radius-sm/md/lg`                                                                                   |
-| 控件      | `--oas-control-height-sm/md/lg`                                                                           |
+| 间距      | `--oas-space-1/1_5/2/2_5/3/4/4_5/5/6`（4px 基准，含半步档）                                               |
+| 圆角      | `--oas-radius-xs/sm/md/lg/xl`                                                                             |
+| 控件      | `--oas-control-height-xs/sm/md/lg/xl`                                                                     |
 | 动效      | `--oas-transition-fast/base`、`--oas-ease-out/in-out`                                                     |
 | 层级      | `--oas-z-dropdown/sticky/fixed/overlay/modal/message/toast/tooltip`                                       |
 | 焦点环    | `--oas-focus-ring`                                                                                        |

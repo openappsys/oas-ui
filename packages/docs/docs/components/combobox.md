@@ -309,7 +309,7 @@ onMounted(() => {
 | `value` | 当前值（受控，选中项 `option.value`；`multiple` 时为 JSON 数组字符串） | `string \| string[]` | — |
 | `virtual` | 虚拟滚动（复用 oas-virtual-list 仅渲染可视窗口；带 group 的选项自动回退全量渲染） | `boolean` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

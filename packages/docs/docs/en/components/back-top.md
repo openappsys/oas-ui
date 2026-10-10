@@ -4,7 +4,7 @@ A back-to-top button fixed to a corner of the viewport: it auto-appears once you
 
 ## Basic usage
 
-By default it listens to window scroll: the button auto-appears once you scroll past `visibility-height` (default 400px), and clicking smooth-scrolls back to the top (jumps directly under `prefers-reduced-motion`).
+By default it auto-detects the nearest scrollable ancestor (falling back to window) and listens to its scroll: the button auto-appears once you scroll past `visibility-height` (default 400px), and clicking smooth-scrolls back to the top (jumps directly under `prefers-reduced-motion`).
 
 <DemoBlock title="Basic usage">
   <oas-back-top></oas-back-top>
@@ -46,7 +46,7 @@ The default slot renders custom content (it replaces the built-in arrow icon whe
 
 ## Threshold & target container
 
-`visibility-height` tunes the auto-show threshold (default 400); `target` sets the scroll target container (a CSS selector, default: window): once the container is scrolled past the threshold the button appears, and clicking scrolls back to that container's top.
+`visibility-height` tunes the auto-show threshold (default 400); `target` sets the scroll target container (a CSS selector; when unset it auto-detects the nearest scrollable ancestor, falling back to window): once the container is scrolled past the threshold the button appears, and clicking scrolls back to that container's top.
 
 <DemoBlock title="Threshold & target container">
   <div id="bt-scroll-box" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">

@@ -155,7 +155,7 @@ The "≤ 2 😞 / ≤ 3 😐 / otherwise 😄" graded-expression effect needs no
   </div>
 </DemoBlock>
 
-`color` sets the active star color and `void-color` the inactive one; both support the 11 preset names (mapped to `--oas-preset-*`, dark-adaptive) and any CSS color value. Defaults fall back to the `--oas-color-warning` / `--oas-color-border` tokens (also customizable in bulk via the `--oas-rate-active` / `--oas-rate-void` variables).
+`color` sets the active star color and `void-color` the inactive one; both support the 11 preset names (mapped to `--oas-preset-*`, dark-adaptive) and any CSS color value. Defaults fall back to the `--oas-color-warning-text` / `--oas-color-border` tokens (also customizable in bulk via the `--oas-rate-active` / `--oas-rate-void` variables).
 
 ## Threshold Segment Colors
 
@@ -293,7 +293,7 @@ onMounted(() => {
 | `void-color` | Unselected color | — | — |
 | `void-icon` | Unselected icon name (e.g. heart for a ♥/♡ dual state) | — | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

@@ -300,7 +300,7 @@ The current value is available through the public `value` property for read/writ
 | `value` | Option identifier | `string \| null` | — |
 | `variant` | Variant: `default` / `card` (whole block clickable, selected border tint, hover feedback) | `string` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

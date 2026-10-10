@@ -396,7 +396,7 @@ onMounted(() => {
 | `value-mode` | 多选值策略：`all`（默认，全路径）/ `parentFirst` / `onlyLeaf` | `string` | `all` |
 | `virtual` | 面板列虚拟滚动（超过 50 项的长列复用 oas-virtual-list 窗口渲染；短列/搜索/加载占位保持普通渲染） | `boolean` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

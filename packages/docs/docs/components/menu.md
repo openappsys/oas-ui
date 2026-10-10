@@ -42,7 +42,7 @@
 
 ## 收起态
 
-`collapsed`（仅 vertical 生效）将菜单收窄为只显示图标，悬停或点击图标项时子菜单向右浮出，子菜单内仍为完整菜单。
+`collapsed`（vertical / inline 生效，horizontal 不适用）将菜单收窄为只显示图标，悬停或点击图标项时子菜单向右浮出，子菜单内仍为完整菜单。
 
 <DemoBlock title="收起态（只显示图标）">
   <oas-menu collapsed onoas-select="menuCLog(event)" items='[{"label":"首页","value":"home","icon":"menu"},{"label":"消息","value":"message","icon":"mail","children":[{"label":"收件箱","value":"inbox"},{"label":"已发送","value":"sent"}]},{"label":"用户","value":"user","icon":"user"},{"label":"设置","value":"settings","icon":"gear","children":[{"label":"个人资料","value":"profile"},{"label":"安全","value":"security"}]}]'></oas-menu>
@@ -489,12 +489,12 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accordion` | 手风琴互斥（inline 模式同级只展开一个子菜单） | `boolean` | — |
 | `close-on-select` | 选中叶子项后是否收起展开的子菜单。缺省分形态：inline 侧边导航不收、浮出形态收；checkbox 项勾选切换永不收起 | `string` | — |
-| `collapsed` | 收起态（仅 vertical）：只显示图标，子菜单向右浮出 | `boolean` | — |
+| `collapsed` | 收起态（vertical / inline 生效，horizontal 不适用）：只显示图标，子菜单向右浮出 | `boolean` | — |
 | `disabled` | 整单禁用：点击/悬停/键盘全拦截，降饱和 + aria-disabled | `boolean` | — |
 | `expanded` | 受控展开项集合（JSON 数组字符串，inline 模式哪些子菜单展开）；非受控时内部管理 | `string` | — |
 | `items` | 菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单） | `MenuItem[] \| null` | `[]` |
 | `max-height` | 长菜单最大高度，超出内部滚动（数字补 px） | `string` | — |
-| `mode` | 布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条 | — | — |
+| `mode` | 布局模式：`vertical`（默认）纵向菜单 / `horizontal` 顶部导航条 / `inline` 侧边导航（子菜单就地展开、带高度过渡） | — | — |
 | `open-on-hover` | vertical/inline 父项 hover 延迟展开（约 150ms）/移出延迟收起（约 300ms），点击路径不变；horizontal 与 collapsed flyout 不受影响 | `boolean` | — |
 | `persistent` | 选中后不自动收起浮出子菜单（优先于 close-on-select） | `string` | — |
 | `searchable` | 菜单顶部过滤输入框：键入实时过滤可见项（命中嵌套子项保留祖先并自动展开，Esc 清空） | `boolean` | — |

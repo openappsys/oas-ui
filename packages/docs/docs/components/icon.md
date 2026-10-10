@@ -438,4 +438,4 @@ onMounted(async () => {
 | `--oas-icon-secondary-color` | `currentColor` |
 | `--oas-icon-secondary-opacity` | `0.4` |
 
-图标名一览：`alert-circle` `arrow-down` `arrow-left` `arrow-right` `arrow-up` `calendar` `check-circle` `check` `chevron-down` `chevron-left` `chevron-right` `chevron-up` `clock` `close-circle` `close` `copy` `download` `edit` `error` `external-link` `eye` `filter` `form` `gear` `heart` `info` `language` `loading` `lock` `mail` `menu` `minus` `more-vertical` `more` `plus` `refresh` `search` `sort` `star-filled` `star` `translate` `trash` `upload` `user` `warning`。
+图标名一览：`alert-circle` `arrow-down` `arrow-left` `arrow-right` `arrow-up` `calendar` `check-circle` `check` `chevron-down` `chevron-left` `chevron-right` `chevron-up` `clock` `close-circle` `close` `copy` `download` `edit` `error` `external-link` `eye` `filter` `form` `gear` `heart` `info` `language` `loading` `lock` `mail` `menu` `minus` `more-vertical` `more` `organization` `plus` `refresh` `search` `sort` `star-filled` `star` `translate` `trash` `tree` `upload` `user` `warning`。

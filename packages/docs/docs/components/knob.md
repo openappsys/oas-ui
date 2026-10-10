@@ -234,7 +234,7 @@ onMounted(() => {
 | `value` | 当前值（受控）：越界自动夹取到 `[min, max]` 并按 `step` 吸附；交互后写回属性（宿主可直接读属性取最新值） | `number` | `0` |
 | `wheel` | 悬停滚轮调节（默认关）：上滚增值、下滚减值，一格 = `step`（连续模式为量程 1/50）；修饰键不改变步长（精调走 Shift+拖拽）；开启后 preventDefault 阻止页面滚动 | `boolean` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

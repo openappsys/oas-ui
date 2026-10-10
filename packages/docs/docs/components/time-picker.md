@@ -187,7 +187,7 @@ readonly 下面板可展开浏览，点选 / 此刻 / 预设 / 清除 / 手输�
 | `use12-hours` | 12 小时制：显示与列走 12 小时制（附上午/下午列，文案随 locale）；value 恒为 24 小时制 | `boolean` | — |
 | `value` | 当前值（`HH:mm:ss`；`is-range` 为 JSON 数组） | `string \| string[] \| null` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

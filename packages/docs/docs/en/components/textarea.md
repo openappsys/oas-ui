@@ -218,7 +218,7 @@ onMounted(() => {
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | `outlined` |
 | `wrap` | Wrap strategy (native passthrough: soft/hard) | — | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

@@ -119,11 +119,11 @@ hover / 聚焦触发，浮层可悬停不闪关的富内容预览卡片。支持
 
 ## 挂载容器
 
-`append-to`：卡片改为绝对定位在指定容器内（容器提升为定位上下文），适合嵌入自定义面板 / 弹层区域。
+`append-to`：把卡片挂载到指定容器内的 portal（DOM 归属该容器），卡片保持 `position: fixed` 视口坐标、位置不换算——适合让浮层脱离 `overflow: hidden` 等裁剪上下文。
 
 <DemoBlock title="append-to 定位容器">
   <oas-space size="small">
-    <oas-hover-card title="标题" content="卡片渲染在下方容器内" placement="bottom" append-to="#hc-panel">
+    <oas-hover-card title="标题" content="卡片挂载到下方容器内（保持视口坐标定位）" placement="bottom" append-to="#hc-panel">
       <oas-button>悬停查看</oas-button>
     </oas-hover-card>
   </oas-space>
@@ -262,7 +262,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `append-to` | 定位容器选择器（如 `#panel`）：设置后卡片改为绝对定位在该容器内（容器提升为相对定位上下文），坐标随容器换算；未设置时走 `position: fixed` 视口坐标 | `string` | — |
+| `append-to` | 挂载点（portal）：`body` 或 CSS 选择器。打开且设置后把卡片移入目标容器内的独立 shadow（样式作用域保真），卡片保持 `position: fixed` 视口坐标、不做坐标换算，脱离 `overflow: hidden` / transform 等裁剪上下文；未设置时留在组件自身 shadow 内 | `string` | — |
 | `arrow` | 是否显示箭头，默认 true；`arrow="false"` 隐藏，箭头元素与 `::part(arrow)` 保留 | `string` | `true` |
 | `arrow-merge` | 箭头贴角融合模式：*-start/*-end 位置下直角三角与面板角共边融合——直角贴角点、直角边与面板两边共线（描边与面板描边共带续接），尖端正交指向锚点，对应角圆角归零；居中位置不生效 | `boolean` | — |
 | `arrow-point-at-center` | 箭头指向触发器中心（面板被视口避让偏移后仍指向锚点）；默认箭头保持面板中心 | `boolean` | — |

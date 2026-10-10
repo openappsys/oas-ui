@@ -354,7 +354,7 @@ Move focus with the Tab key: the middle item is skipped; clicking it with a mous
 | `status` | Validation status (cascades to items): `error` / `warning` / `success` | `string` | — |
 | `value` | Group value (JSON string array of checked item values) | `string[] \| string` | `[]` |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

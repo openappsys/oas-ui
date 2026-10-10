@@ -167,7 +167,7 @@ onMounted(() => {
 | `value` | 值（随事件回传） | `string` | — |
 | `variant` | 形态（对齐 button variant 体系）：`solid`（默认，描边容器、按下实底）/ `outlined`（透明底描边，按下主色描边 + 淡底）/ `filled`（浅底无描边，按下实底）/ `text`（无框无底，按下淡底 + 主色文字）；非法值静默回落 solid | `string` | — |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

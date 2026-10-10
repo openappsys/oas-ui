@@ -112,7 +112,7 @@
 | --- | --- | --- | --- |
 | `description` | 描述文案 | `string` | — |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large`：联动图标直径与字号 | `string` | `medium` |
-| `status` | 状态：`success` / `error` / `warning` / `info` / `403` / `404` / `500`（HTTP 错误页三态含专属图标）；非法值回落 info 并告警 | `string` | `success` |
+| `status` | 状态：`success` / `error` / `warning` / `info` / `403` / `404` / `500`（HTTP 错误页三态含专属图标）；非法值回落 success 并告警 | `string` | `success` |
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 
 #### 插槽

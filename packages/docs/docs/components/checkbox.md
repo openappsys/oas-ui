@@ -353,7 +353,7 @@ onMounted(() => {
 | `status` | 校验态（下发子项）：`error` / `warning` / `success` | `string` | — |
 | `value` | 组值（JSON 字符串数组，选中项的 value 集合） | `string[] \| string` | `[]` |
 
-#### Property（仅 JS property，不反射 attribute）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

@@ -12,7 +12,7 @@ pnpm test:e2e
 ```
 
 The audits cover the `wcag2a` / `wcag2aa` / `wcag21aa` rule sets and only check
-the component demo area (`.demo`).
+the component demo area (`.demo-block`).
 
 ## Keyboard flow regression matrix
 
@@ -23,13 +23,14 @@ the component demo area (`.demo`).
 | Checkbox / Radio / Switch                   | Space toggles, arrow keys (Radio)    | `checkbox` / `radio` / `switch`     |
 | Slider                                      | Arrow keys + Home/End                | `slider` (`aria-valuenow`)          |
 | InputNumber                                 | Arrow keys inc/dec, Home/End         | `spinbutton`                        |
-| Rate                                        | Arrow keys, Enter confirms           | `radiogroup` + `radio`              |
+| Rate                                        | Arrow keys, Home/End (no Enter)      | `slider` (`aria-valuenow`)          |
 | Select / AutoComplete / Cascader / TreeSelect | Arrow navigation, Enter selects, Esc closes | `combobox` + `listbox`/`tree` |
 | Menu / Dropdown / ContextMenu               | Arrow keys, Home/End, Enter          | `menu` + `menuitemradio`            |
 | Tabs                                        | Arrow keys cycle                     | `tablist` + `tab` + `aria-selected` |
 | Tree                                        | Arrow keys + Left/Right expand/collapse | `tree` + `treeitem`              |
 | Modal / Drawer / Confirm                    | Tab focus trapped, Esc closes        | `dialog` + `aria-modal`             |
-| Tooltip / Popover / HoverCard               | Esc closes                           | `tooltip` / `dialog`                |
+| Tooltip / Popover                           | Esc closes                           | `tooltip` / `dialog`                |
+| HoverCard                                   | Closes on hover/focus leaving        | No role (`aria-hidden` visibility)  |
 | Pagination                                  | Tab to page buttons                  | Semantic buttons + `aria-current`   |
 | Carousel                                    | Indicators tabbable                  | `role="tablist"` + `role="tab"`     |
 | Collapse                                    | Header tabbable + Enter/Space toggles | Button semantics                   |

@@ -1,6 +1,6 @@
 # Design Tokens
 
-All of OAS-UI's visual language is driven by CSS variables (semantic tokens). Components reference semantic tokens only — **no hardcoded colors, font sizes or spacing** — so theming means overriding CSS variables, without touching components.
+All of OAS-UI's visual language is driven by CSS variables (semantic tokens). Components in principle reference semantic tokens only — no hardcoded colors, font sizes or spacing (a few extreme-value/preset exceptions exist) — so theming means overriding CSS variables, without touching components.
 
 <TokenShowcase />
 
@@ -47,7 +47,7 @@ document.documentElement.dataset.theme = 'high-contrast'
 | Text         | `--oas-color-text-primary/-secondary/-disabled`                                              |
 | Border / bg  | `--oas-color-border`, `--oas-color-bg(-hover/-disabled)`, `--oas-color-overlay`              |
 | Font size    | `--oas-font-size-xs/sm/md/lg/xl`                                                             |
-| Spacing      | `--oas-space-1…6` (4px base)                                                                 |
+| Spacing      | `--oas-space-1/1_5/2/2_5/3/4/4_5/5/6` (4px base, half steps included)                       |
 | Radius       | `--oas-radius-xs/sm/md/lg/xl`                                                                      |
 | Control      | `--oas-control-height-xs/sm/md/lg/xl`                                                        |
 | Motion       | `--oas-transition-fast/base`, `--oas-ease-out/in-out`                                        |

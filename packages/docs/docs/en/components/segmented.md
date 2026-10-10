@@ -85,7 +85,7 @@ An option's `icon` field (oas-icons name) renders before the text; omitting `lab
 
 ## Keyboard & accessibility
 
-Built on a hidden native radio group (`input[type="radio"]` grouped by name): `Tab` focuses the current selection, `←` / `→` (vertical: `↑` / `↓`) cycle through items skipping disabled ones, `Home` / `End` jump to the first / last item; focus (roving tabindex) follows the selection. Setting the `name` attribute forwards it to the radio group for native form association (an internal group name is generated when unset, so instances never interfere).
+Built on a hidden native radio group (`input[type="radio"]` grouped by name): `Tab` focuses the current selection, `←` / `→` (vertical: `↑` / `↓`) cycle through items skipping disabled ones, `Home` / `End` jump to the first / last item; focus (roving tabindex) follows the selection. Setting `name` names the inner radio group (an internal group name is generated when unset, so instances never interfere) — the component is not form-associated, so the radios in its shadow are not collected/submitted by an outer form; `name` is used only for intra-group exclusivity and keyboard semantics.
 
 ## Switch event
 
@@ -119,13 +119,13 @@ onMounted(() => {
 | `block` | Fill the parent width (options share equally) | — | — |
 | `direction` | Orientation: `horizontal` (default) / `vertical` (mirrors aria-orientation and axis keys) | `string` | `horizontal` |
 | `disabled` | Disables the whole segmented control (explicitly, or inherited from the config-provider global disabled injection) | `boolean` | — |
-| `name` | Native radio group name (native form association; auto-generated unique name when unset) | `string` | — |
+| `name` | Inner native radio group name (auto-generated unique name when unset, so instances do not clash); used only for intra-group exclusivity and keyboard semantics — the component is not form-associated, so the radios in its shadow are not collected/submitted by an outer form | `string` | — |
 | `options` | `[{ label, value, disabled? }]` JSON string | `string` | `[]` |
 | `readonly` | Read-only: focusable but selection immutable (radiogroup aria-readonly) | `boolean` | — |
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
 | `value` | Selected value (defaults to the first option; controlled) | `string` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -143,4 +143,4 @@ onMounted(() => {
 | --- | --- |
 | `template[slot="option"]` | Custom option template (`<template slot="option">`) |
 
-The container is `role="radiogroup"`; each item is `role="radio"` + `aria-checked` / `aria-disabled`.
+The container is `role="radiogroup"`; each item is backed by a native `<input type="radio">` (the label itself has no `role` / `aria-checked`; checked state and accessible name come from the inner native radio, while the `aria-disabled` state attribute is kept).

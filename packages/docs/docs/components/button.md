@@ -364,7 +364,7 @@
 | `icon-position` | 图标位置：`start`（默认，图标在左）/ `end`（图标在右） | `string` | `start` |
 | `loading` | 加载态 | — | — |
 | `loading-text` | 加载态显示的文本（如「提交中…」），设置后 loading 时替换标签内容 | `string` | — |
-| `plain` | 朴素形态：低对比浅色（透明底 + 弱化描边文字），等价 `variant="filled"` | `boolean` | — |
+| `plain` | 朴素形态：语义色 12% 浅底 + 文字走语义色 -text 档，边框 transparent（无可见描边），等价 `variant="filled"` | `boolean` | — |
 | `rel` | 链接模式（href）透传 `rel` 属性（`target="_blank"` 时配 `noopener` 安全） | `string` | — |
 | `round` | 胶囊圆角（`--oas-radius-full` / `999px`） | `boolean` | — |
 | `size` | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `ButtonSize` | `medium` |

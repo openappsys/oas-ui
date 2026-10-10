@@ -234,7 +234,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 | `show-week-number` | Show the ISO week number column | `boolean` | — |
 | `value` | Selected value (ISO) | `string` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

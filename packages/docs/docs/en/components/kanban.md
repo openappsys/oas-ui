@@ -152,7 +152,7 @@ Only `title` renders by default; for richer cards (tags, owners, progress) use t
 | `empty-column-text` | Override for the empty-column / empty swimlane-cell placeholder text (defaults to the i18n kanban.emptyColumn key, translated with the locale) | `string` | — |
 | `swimlane-by` | Swimlane field key: splits the board into horizontal bands by that field's value (band header = fold arrow + field value + count; all expanded by default, fold state survives data changes); missing/empty values fall into the "(empty)" band; dropping a card into another band rewrites the swimlane field value; omit for the plain column layout | `string` | — |
 
-#### Property (JS property only, not reflected as attribute)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |

@@ -82,7 +82,7 @@ Add `multiple` to enable multi-select; `value` uses comma-separated selected val
 
 ## Accessible name
 
-`aria-label` gives the button group container an accessible name, letting screen readers announce it as a single focusable group; when unset, the built-in i18n label "button group" is used. When multiple groups exist on a page, use names to distinguish them.
+`aria-label` gives the button group container an accessible name, letting screen readers announce it as a single group; when unset, the built-in i18n label "button group" is used. When multiple groups exist on a page, use names to distinguish them.
 
 <DemoBlock title="aria-label accessible name">
   <oas-button-group aria-label="View switch" value="list">

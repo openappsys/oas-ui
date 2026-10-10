@@ -364,7 +364,7 @@ Clicking "Submit" fires the native `submit` event (the demo calls `preventDefaul
 | `icon-position` | Icon position: `start` (default, left) / `end` (right) | `string` | `start` |
 | `loading` | Loading state | — | — |
 | `loading-text` | Text shown while loading (e.g. "Submitting…"); replaces the label content when set | `string` | — |
-| `plain` | Plain style: low-contrast soft (transparent bg + softened text), equals `variant="filled"` | `boolean` | — |
+| `plain` | Plain style: a 12% tinted background in the semantic color with text in its -text tone and a transparent border (no visible outline); equals `variant="filled"` | `boolean` | — |
 | `rel` | Passthrough `rel` attribute in link mode (pair `noopener` with `target="_blank"`) | `string` | — |
 | `round` | Pill radius (`--oas-radius-full` / `999px`) | `boolean` | — |
 | `size` | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `ButtonSize` | `medium` |
