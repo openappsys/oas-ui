@@ -62,7 +62,7 @@
 
 - 注释与文档默认简体中文；专有名词（Web Components、Custom Elements、Shadow DOM、React、Vue、Vitest、Playwright、Vite、Vitepress、pnpm）保留英文
 - 代码标识符、文件路径、命令行输出、报错原文保留英文
-- 组件对外 API 文档、CHANGELOG 用英文
+- 组件对外 API 文档按页面语言（zh 页中文、en 页英文）；CHANGELOG 用简体中文（与文档主语言一致）
 
 ## 原创性与许可
 
