@@ -90,3 +90,35 @@ test('switch 命名色 color：亮命名色解析出深色 on 色（探针路径
   // gold(#ffd700) 为亮命名色 → 深色 on 色；探针未生效则会为空（回落 bg token）
   expect(onColor, '亮命名色应经探针解析出深色 on 色 #18181b').toBe('#18181b')
 })
+
+// 直测 shared/on-color.ts 的「色名/oklch 探针」正向路径（覆盖「仅上面单样本、探针正向无直测」缺口）：
+// 命名色经真实浏览器 CSSOM 解析 → 按底色亮度决定 on 字色，双向验证深/浅两分支。
+test('on-color 探针正向路径：命名浅色→深字、命名深色→浅字（双向亮度分支）', async ({ page }) => {
+  await page.goto('/components/switch.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-switch')
+  const readOnColor = (color: string) =>
+    page.evaluate((c: string) => {
+      const el = document.createElement('oas-switch')
+      el.setAttribute('color', c)
+      document.body.appendChild(el)
+      return new Promise<string>((resolve, reject) => {
+        const t0 = performance.now()
+        const tick = (): void => {
+          const btn = el.shadowRoot?.querySelector('button[part="switch"]') as HTMLElement | null
+          const v = btn ? btn.style.getPropertyValue('--oas-switch-on-color').trim() : ''
+          if (v) {
+            el.remove()
+            resolve(v)
+          } else if (performance.now() - t0 > 3000) {
+            el.remove()
+            reject(new Error(`on-color 未解析：color=${c}`))
+          } else {
+            requestAnimationFrame(tick)
+          }
+        }
+        tick()
+      })
+    }, color)
+  expect(await readOnColor('gold'), '亮命名色 gold → 深字 #18181b').toBe('#18181b')
+  expect(await readOnColor('navy'), '暗命名色 navy → 浅字 #ffffff').toBe('#ffffff')
+})
