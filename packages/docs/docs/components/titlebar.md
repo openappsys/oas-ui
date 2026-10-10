@@ -92,11 +92,11 @@ oas-titlebar {
 
 <DemoBlock title="macOS 交通灯 + 居中标题">
   <div style="width: 100%">
-    <oas-titlebar id="tb-macos" title="Hilton Rome Airport — Photo Studio" drag>
+    <oas-titlebar id="tb-macos" title="Hilton Rome Airport — Photo Studio" drag leading-inset="10px">
       <oas-traffic-lights slot="leading"></oas-traffic-lights>
     </oas-titlebar>
     <span id="tb-macos-out" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">点交通灯查看 oas-window-action 反馈</span>
-    <oas-titlebar title="禁用态交通灯" window-actions="minimize,maximize,close" style="margin-top: var(--oas-space-3)">
+    <oas-titlebar title="禁用态交通灯" leading-inset="10px" style="margin-top: var(--oas-space-3)">
       <oas-traffic-lights slot="leading" disabled></oas-traffic-lights>
     </oas-titlebar>
   </div>

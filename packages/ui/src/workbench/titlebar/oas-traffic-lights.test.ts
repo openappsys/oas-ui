@@ -70,4 +70,16 @@ describe('OASTrafficLights', () => {
     const el = mount()
     expect(el.shadowRoot!.querySelector('style')!.textContent).toContain(':not(:disabled)')
   })
+
+  it('maximize 符号为两枚外向实心三角（回归：曾误写共享中心顶点的双折线，渲染成与 close 相同的 ×）', () => {
+    const el = mount()
+    const maxPath = el.shadowRoot!.querySelector('.dot[data-action="maximize"] svg path')!
+    const d = maxPath.getAttribute('d') ?? ''
+    // 两条闭合子路径（z×2）+ 实心填充 = 外向三角；旧 bug 是描边折线（无 z、无 fill），会渲染成 ×
+    expect((d.match(/z/gi) ?? []).length, '两枚闭合三角子路径').toBe(2)
+    expect(maxPath.getAttribute('fill'), '实心 currentColor（非描边折线）').toBe('currentColor')
+    // 与 close 的 × 形状不同（两者的 d 不应相同）
+    const closePath = el.shadowRoot!.querySelector('.dot[data-action="close"] svg path')!
+    expect(d).not.toBe(closePath.getAttribute('d'))
+  })
 })

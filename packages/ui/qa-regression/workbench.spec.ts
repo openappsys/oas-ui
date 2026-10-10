@@ -698,6 +698,16 @@ test('titlebar macOS 交通灯：三点 macOS 固定色 + 点击派发 oas-windo
   })
   expect(glyph, '悬停符号固定深色（非近白，暗色亦可读）').toBe('rgba(0, 0, 0, 0.55)')
 
+  // 回归：maximize 悬停符号是「两枚外向实心三角」，不能退化成与 close 相同的 ×
+  // （曾误写成共享中心顶点的双折线 M2 2l3 3 3-3M2 8l3-3 3 3——四条斜边交于圆心，渲染成 ×）
+  const maxPath = await page.evaluate(() => {
+    const tl = document.querySelector('#tb-macos oas-traffic-lights')!.shadowRoot!
+    const p = tl.querySelector('.dot[data-action="maximize"] svg path')!
+    return { d: p.getAttribute('d') ?? '', fill: p.getAttribute('fill') }
+  })
+  expect((maxPath.d.match(/z/gi) ?? []).length, 'maximize 两枚闭合三角子路径').toBe(2)
+  expect(maxPath.fill, 'maximize 实心填充 currentColor（非描边折线）').toBe('currentColor')
+
   // 点击关闭 → oas-window-action 反馈可见
   await page.evaluate(() =>
     (

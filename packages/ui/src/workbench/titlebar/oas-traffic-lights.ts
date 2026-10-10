@@ -13,8 +13,10 @@ const GLYPHS: Record<TrafficLightAction, string> = {
     '<svg viewBox="0 0 10 10" width="6" height="6" aria-hidden="true" focusable="false"><path d="M2 2l6 6M8 2l-6 6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
   minimize:
     '<svg viewBox="0 0 10 10" width="6" height="6" aria-hidden="true" focusable="false"><path d="M2 5h6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+  // 最大化 = 两枚外向实心三角（左上 / 右下，展开语义）。曾误写成共享中心顶点的双折线
+  // （M2 2l3 3 3-3 M2 8l3-3 3 3）——四条斜边交于圆心，渲染成与 close 相同的 ×。
   maximize:
-    '<svg viewBox="0 0 10 10" width="6" height="6" aria-hidden="true" focusable="false"><path d="M2 2l3 3 3-3M2 8l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    '<svg viewBox="0 0 10 10" width="6" height="6" aria-hidden="true" focusable="false"><path d="M1.6 1.6h3.2L1.6 4.8zM8.4 8.4H5.2L8.4 5.2z" fill="currentColor"/></svg>',
 }
 
 const STYLE = `

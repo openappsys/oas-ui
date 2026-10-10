@@ -92,11 +92,11 @@ Place the built-in `oas-traffic-lights` (close / minimize / maximize dots, symbo
 
 <DemoBlock title="macOS traffic lights + centered title">
   <div style="width: 100%">
-    <oas-titlebar id="tb-macos" title="Hilton Rome Airport — Photo Studio" drag>
+    <oas-titlebar id="tb-macos" title="Hilton Rome Airport — Photo Studio" drag leading-inset="10px">
       <oas-traffic-lights slot="leading"></oas-traffic-lights>
     </oas-titlebar>
     <span id="tb-macos-out" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Click a traffic light to see the oas-window-action feedback</span>
-    <oas-titlebar title="Disabled traffic lights" window-actions="minimize,maximize,close" style="margin-top: var(--oas-space-3)">
+    <oas-titlebar title="Disabled traffic lights" leading-inset="10px" style="margin-top: var(--oas-space-3)">
       <oas-traffic-lights slot="leading" disabled></oas-traffic-lights>
     </oas-titlebar>
   </div>
