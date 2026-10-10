@@ -30,6 +30,9 @@ const STYLE = `
   --oas-traffic-lights-size: 12px;
   --oas-traffic-lights-gap: 8px;
   font-family: inherit;
+  /* 整件退出窗口拖动（覆盖圆点间距与 host 内边距，避免缝隙仍是 drag 区）；HC 保留交通灯语义色 */
+  -webkit-app-region: no-drag;
+  forced-color-adjust: none;
 }
 :host([hidden]) {
   display: none !important;
@@ -57,10 +60,6 @@ const STYLE = `
   cursor: pointer;
   color: transparent;
   transition: color var(--oas-transition-fast, 120ms) ease;
-  /* 自防御：置于 titlebar drag 区时退出窗口拖动（Electron/Tauri 下否则点击被吞） */
-  -webkit-app-region: no-drag;
-  /* 高对比模式保留交通灯语义色（身份即颜色），不被系统强制抹平 */
-  forced-color-adjust: none;
 }
 .dot[data-action='close'] {
   background: var(--oas-traffic-lights-close);
@@ -72,8 +71,8 @@ const STYLE = `
   background: var(--oas-traffic-lights-maximize);
 }
 /* 悬停 / 键盘聚焦时各点显示符号；符号恒为深色（macOS 行为，明暗主题一致，不随主题翻白） */
-.group:hover .dot,
-.group:focus-within .dot {
+.group:hover .dot:not(:disabled),
+.group:focus-within .dot:not(:disabled) {
   color: var(--oas-traffic-lights-symbol, rgba(0, 0, 0, 0.55));
 }
 .dot:focus-visible {

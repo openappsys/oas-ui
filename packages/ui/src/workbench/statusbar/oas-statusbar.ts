@@ -7,7 +7,7 @@ const STYLE = `
   align-items: center;
   font-family: inherit;
   color: var(--oas-color-text-secondary);
-  background: var(--oas-statusbar-bg, var(--oas-color-bg-elevated));
+  background: var(--oas-statusbar-bg, color-mix(in srgb, var(--oas-color-text-primary) 5%, var(--oas-color-bg)));
   border-block-start: 1px solid var(--oas-color-border);
   box-sizing: border-box;
   min-height: var(--oas-statusbar-height, 24px);

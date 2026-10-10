@@ -174,8 +174,9 @@ const STYLE = `
 /* ===== 拖动契约 =====
    drag 属性时宿主打 data-drag-region 标记，规则在此写 -webkit-app-region（Electron/Tauri 宿主生效；
    纯 Web 下为无害空操作）。交互子件必须显式退出拖动（no-drag），否则点击被拖动区吞掉——
-   覆盖：原生交互元素、自定义元素（oas-* 组件几乎全为交互）、显式 [data-no-drag] 逃生口；
-   [data-drag] 可强制回拖动区（罕见需求）。shadow 内交互部件（窗口钮/文档井）直接声明。 */
+   覆盖：原生交互元素、下方**显式枚举**的 oas-* 交互组件、显式 [data-no-drag] 逃生口；
+   [data-drag] 可强制回拖动区（罕见需求）。**未枚举的 oas-* 交互件请由宿主加 [data-no-drag]**。
+   shadow 内交互部件（窗口钮/文档井）直接声明。 */
 :host([data-drag-region]) {
   -webkit-app-region: drag;
 }

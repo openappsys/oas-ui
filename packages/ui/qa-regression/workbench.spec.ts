@@ -696,7 +696,7 @@ test('titlebar macOS 交通灯：三点 macOS 固定色 + 点击派发 oas-windo
     const tl = document.querySelector('#tb-macos oas-traffic-lights')!.shadowRoot!
     return getComputedStyle(tl.querySelector('.dot[data-action="close"]')!).color
   })
-  expect(glyph, '悬停符号色为实体色').not.toBe('rgba(0, 0, 0, 0)')
+  expect(glyph, '悬停符号固定深色（非近白，暗色亦可读）').toBe('rgba(0, 0, 0, 0.55)')
 
   // 点击关闭 → oas-window-action 反馈可见
   await page.evaluate(() =>
