@@ -503,7 +503,7 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 
 #### v1.9 第四阶段（DSD 彻底落地，已完成）
 
-- **白名单全量覆盖**：123/124 tag 可 SSR（仅 theme-editor 工具组件排除 + 5 个命令式组件 message/notification/toast/snackbar/loading-bar 按"无初始 DOM"定论客户端专属）——五批推进：表单 27 类 → 反馈 9 → 数据展示 28 → 导航布局 32 → 收尾 12，每组件均完成 template/bind/hydrate 拆分、数据组件 JSON attribute 通道、测量组件延迟写入
+- **白名单全量覆盖**：123/124 tag 可 SSR（仅 theme-editor 工具组件排除 + 5 个命令式组件 message/notification/toast/snackbar/loading-bar 按"无初始 DOM"定论客户端专属）——五批推进：表单 27 类 → 反馈 9 → 数据展示 28 → 导航布局 32 → 收尾 12，每组件均完成 template/bind/hydrate 拆分、数据组件 JSON attribute 通道、测量组件延迟写入。（**注：123/124 为 v1.9 时点数据**；白名单随后续版本持续扩充，**当前覆盖 160 个可注册 tag（全库 205）**——权威清单与边界见 `docs/ssr.md`，新增组件强制决策由对账守卫 `packages/ssr/src/whitelist-coverage.test.ts` 把关。）
 - **嵌套组件递归序列化**：renderToString 递归注入嵌套 DSD template（ensureNestedTags 预装载 + injectNestedDSD 深度优先），descriptions/tabs/form-item/layout 等组合场景快照完整
 - **改造中修复的真实缺陷**：水合动态内容重复渲染（rate/dynamic-input/log/marquee）、crypto.randomUUID 破坏快照确定性（改模块级计数器）、transfer 缺 observedAttributes、alert 关闭不隐藏（`:host([hidden])` 补位，全库排查）、result 图标不随 status 更新、carousel 覆写 onCleanup 不调基类、textarea autosize 首帧闪动
 - **CDN 发布准备**：`dist/cdn.js` 单文件 IIFE bundle（gzip ~116KB）+ theme 包根 index.css + 文档 CDN 示例修正
