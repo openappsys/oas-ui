@@ -468,6 +468,46 @@ onMounted(async () => {
         visibleOut.textContent = `可见消息：${ids.join(', ') || '（无）'}；当前锚点：${visible.currentAnchorId ?? '（无）'}`
     })
   }
+
+  // 长会话虚拟化（组合 oas-virtual-list）：消息数据交 virtual-list 视口渲染，消息行用 message-row/bubble 渲染
+  const chatVl = document.getElementById('chat-vl')
+  if (chatVl) {
+    const info = document.getElementById('chat-vl-info')
+    const msgs = []
+    const gen = (n) => {
+      for (let i = msgs.length; i < n; i++) {
+        const mine = i % 2 === 0
+        msgs.push({
+          id: i,
+          mine,
+          text: (mine ? '我方：' : '对方：') + `第 ${i + 1} 条消息。` + '内容较长的对话。'.repeat((i % 4) + 1),
+        })
+      }
+      chatVl.items = msgs
+      if (info) info.textContent = `共 ${msgs.length} 条`
+    }
+    gen(2000)
+    chatVl.addEventListener('oas-item', (e) => {
+      const { item, element } = e.detail
+      const row = document.createElement('oas-message-row')
+      // virtual-list 用块容器、无 flex gap：行间距由本行 margin 提供（.item 的 overflow:hidden 会把它计入实测高度）
+      row.style.marginBlockEnd = 'var(--oas-message-gap, var(--oas-space-4))'
+      if (item.mine) row.setAttribute('align', 'end')
+      const bubble = document.createElement('oas-bubble')
+      if (item.mine) bubble.setAttribute('variant', 'secondary')
+      bubble.textContent = item.text
+      row.appendChild(bubble)
+      element.replaceChildren(row)
+    })
+    const scrollLatest = () =>
+      customElements.whenDefined('oas-virtual-list').then(() => chatVl.scrollToIndex(msgs.length - 1, { align: 'end' }))
+    scrollLatest()
+    document.getElementById('chat-vl-add')?.addEventListener('click', () => {
+      gen(msgs.length + 1)
+      scrollLatest()
+    })
+    document.getElementById('chat-vl-latest')?.addEventListener('click', scrollLatest)
+  }
 })
 </script>
 
@@ -481,6 +521,21 @@ onMounted(async () => {
 </DemoBlock>
 
 `track-visible` 在场开启可见性通道（pay-for-use，未开启零计算）：可见集变化时派发 `oas-visible-change`（detail `{ visibleMessageIds, currentAnchorId }`），并始终提供 `visibleMessageIds` / `currentAnchorId` getter（按需计算）。`visibleMessageIds` 是当前与视口相交的消息 id 清单（未声明 `message-id` 的行不计入）；`currentAnchorId` 是「读者阅读位置所在的轮次」——最后一个视口顶附近的 `anchor` 标记行。供大纲菜单、搜索定位、已读追踪等使用。
+
+## 长会话虚拟化（组合 oas-virtual-list）
+
+scroller 负责常规会话的锚定/跟随；数千轮超长会话把消息数据交给 `oas-virtual-list` 做视口窗口渲染（只渲染可见行 + 缓冲），消息行仍用 `oas-message-row` / `oas-bubble` 渲染——虚拟化归 virtual-list，滚动意图归 scroller，职责互不重写。`scrollToIndex(index, { align: 'end' })` 打开到最新、追加后跟随。
+
+<DemoBlock title="2000 条消息的虚拟化会话（追加一条试试）">
+  <div style="width: 100%">
+    <oas-space>
+      <oas-button id="chat-vl-add" type="primary" size="small">追加一条新消息</oas-button>
+      <oas-button id="chat-vl-latest" size="small">跳到最新</oas-button>
+      <span id="chat-vl-info" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+    </oas-space>
+    <oas-virtual-list id="chat-vl" height="320" dynamic-height estimated-item-height="52" style="margin-top: var(--oas-space-2); width: 100%"></oas-virtual-list>
+  </div>
+</DemoBlock>
 
 ## 边界
 

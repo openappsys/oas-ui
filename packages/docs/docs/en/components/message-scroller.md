@@ -462,6 +462,46 @@ onMounted(async () => {
         visibleOut.textContent = `Visible: ${ids.join(', ') || '(none)'}; current anchor: ${visible.currentAnchorId ?? '(none)'}`
     })
   }
+
+  // Long-conversation virtualization (compose oas-virtual-list): data goes to virtual-list for windowing, rows render as message-row/bubble
+  const chatVl = document.getElementById('chat-vl')
+  if (chatVl) {
+    const info = document.getElementById('chat-vl-info')
+    const msgs = []
+    const gen = (n) => {
+      for (let i = msgs.length; i < n; i++) {
+        const mine = i % 2 === 0
+        msgs.push({
+          id: i,
+          mine,
+          text: (mine ? 'Me: ' : 'Peer: ') + `Message #${i + 1}. ` + 'A longer piece of dialogue. '.repeat((i % 4) + 1),
+        })
+      }
+      chatVl.items = msgs
+      if (info) info.textContent = `${msgs.length} messages`
+    }
+    gen(2000)
+    chatVl.addEventListener('oas-item', (e) => {
+      const { item, element } = e.detail
+      const row = document.createElement('oas-message-row')
+      // virtual-list uses a plain block container (no flex gap): row spacing comes from this margin (.item's overflow:hidden counts it in the measured height)
+      row.style.marginBlockEnd = 'var(--oas-message-gap, var(--oas-space-4))'
+      if (item.mine) row.setAttribute('align', 'end')
+      const bubble = document.createElement('oas-bubble')
+      if (item.mine) bubble.setAttribute('variant', 'secondary')
+      bubble.textContent = item.text
+      row.appendChild(bubble)
+      element.replaceChildren(row)
+    })
+    const scrollLatest = () =>
+      customElements.whenDefined('oas-virtual-list').then(() => chatVl.scrollToIndex(msgs.length - 1, { align: 'end' }))
+    scrollLatest()
+    document.getElementById('chat-vl-add')?.addEventListener('click', () => {
+      gen(msgs.length + 1)
+      scrollLatest()
+    })
+    document.getElementById('chat-vl-latest')?.addEventListener('click', scrollLatest)
+  }
 })
 </script>
 
@@ -475,6 +515,21 @@ onMounted(async () => {
 </DemoBlock>
 
 With `track-visible` present the visibility channel is enabled (pay-for-use, zero computation when off): it dispatches `oas-visible-change` (detail `{ visibleMessageIds, currentAnchorId }`) when the visible set changes, and always exposes `visibleMessageIds` / `currentAnchorId` getters (computed on demand). `visibleMessageIds` lists the message ids intersecting the viewport (rows without `message-id` are excluded); `currentAnchorId` is the turn at the reader position — the last `anchor`-marked row near the viewport top. Useful for outline menus, search positioning, and read tracking.
+
+## Long-conversation virtualization (compose with oas-virtual-list)
+
+The scroller owns anchoring/follow for normal conversations; for thousands of turns, hand the message data to `oas-virtual-list` for viewport windowing (only visible rows + buffer are rendered) while each row still renders as `oas-message-row` / `oas-bubble` — virtualization belongs to virtual-list, scroll intent to the scroller, and neither rewrites the other. Use `scrollToIndex(index, { align: 'end' })` to open at the latest and follow after appending.
+
+<DemoBlock title="A 2000-message virtualized conversation (append one)">
+  <div style="width: 100%">
+    <oas-space>
+      <oas-button id="chat-vl-add" type="primary" size="small">Append a message</oas-button>
+      <oas-button id="chat-vl-latest" size="small">Jump to latest</oas-button>
+      <span id="chat-vl-info" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+    </oas-space>
+    <oas-virtual-list id="chat-vl" height="320" dynamic-height estimated-item-height="52" style="margin-top: var(--oas-space-2); width: 100%"></oas-virtual-list>
+  </div>
+</DemoBlock>
 
 ## Boundaries
 

@@ -57,9 +57,12 @@ const STYLE = `
   flex-direction: column;
   align-items: flex-start;
   min-width: 0;
+  /* 方向：text-align 继承给 slotted 气泡（气泡宿主 display:block + inline-block 靠 text-align 定位） */
+  text-align: start;
 }
 :host([align="end"]) .content {
   align-items: flex-end;
+  text-align: end;
 }
 .content ::slotted(*) {
   max-width: 100%;

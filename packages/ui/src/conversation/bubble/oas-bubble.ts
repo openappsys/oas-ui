@@ -24,9 +24,8 @@ export interface BubbleReaction {
 
 const STYLE = `
 :host {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  display: block;
+  width: 100%;
   font-family: inherit;
   color: var(--oas-color-text-primary);
 }
