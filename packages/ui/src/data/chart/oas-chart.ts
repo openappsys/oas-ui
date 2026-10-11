@@ -219,12 +219,12 @@ const PAD_R_DUAL = 42
  * oas-chart —— 自研 SVG 图表（零第三方引擎）。
  *
  * 属性（kebab-case）：
- * - `type`：line / bar / pie / area / donut / stacked-bar，默认 line
+ * - `type`：line / bar / pie / area / donut / stacked-bar / radar / polar-area，默认 line
  * - `data`：JSON 字符串（数组单系列 `[{label,value}]` 或对象多系列
  *   `{labels:[...], series:[{name,data:[...]}]}`），property `data` 优先
- * - `options`：JSON 字符串（smooth / colors / showLegend）
+ * - `options`：JSON 字符串（smooth / colors / showLegend / gradient / max / radarShape / yAxis）
  *
- * 渲染：SVG path/rect/circle 手写折线/柱状/饼图/面积/环形/堆叠柱状；坐标轴刻度 + 网格线；
+ * 渲染：SVG path/rect/circle 手写折线/柱状/饼图/面积/环形/堆叠柱状/雷达/极区；坐标轴刻度 + 网格线；
  * 每个数据点带原生 `<title>` 悬停显示数值；数据更新整体重绘（qrcode 同模式）。
  * 颜色只用 token（primary/success/warning/danger 系列，可 options.colors 覆盖）。
  * ARIA：容器 role="img" + aria-label（组件属性优先，缺省按类型走 i18n）。

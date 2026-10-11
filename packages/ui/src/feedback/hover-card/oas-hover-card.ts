@@ -127,7 +127,7 @@ const STYLE = `
 .rich:empty {
   display: none;
 }
-/* 箭头：8px 正方形旋转 45°（菱形），底色与面板同色，前缀匹配 12 向 placement。
+/* 箭头：12px 正方形旋转 45°（菱形），底色与面板同色，前缀匹配 12 向 placement。
    旋转后原 border-top/right/bottom/left 依次对应菱形的右上/右下/左下/左上边——
    取「汇于尖端」的两条外露边带边框色，与面板 1px 描边无缝衔接。 */
 .arrow {

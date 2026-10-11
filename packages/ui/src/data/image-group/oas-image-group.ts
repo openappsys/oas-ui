@@ -109,7 +109,7 @@ export class OASImageGroup extends OASElement {
         this.reflectCurrent(index)
         this.emit('change', { current: index, prev })
       })
-      // 内部开合事件是宿主实现细节，不向外泄漏（容器只暴露 oas-change）
+      // 内部开合事件是宿主实现细节，不向外泄漏（容器对外暴露 oas-preview 与 oas-change，见类文档）
       this.inner.addEventListener('oas-preview-change', (e: Event) => e.stopPropagation())
     }
 

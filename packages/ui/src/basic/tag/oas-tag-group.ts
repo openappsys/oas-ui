@@ -46,8 +46,8 @@ export class OASTagGroup extends OASElement {
   private bind(): void {
     this.groupEl = this.shadow.querySelector<HTMLElement>('[part="group"]')
     this.shadow.querySelector('slot')?.addEventListener('slotchange', () => this.update())
-    // capture 阶段拦截子签 oas-change：计算新 value 并派发组级 oas-change 后
-    // stopPropagation——子签事件不外泄，宿主在组元素上只收到组级事件（detail { value }）
+    // capture 阶段拦截子签 oas-change：先 stopPropagation 阻断子签事件外泄，再计算
+    // 新 value 并派发组级 oas-change（组自身事件 target=组 不拦截，宿主只收到组级事件，detail { value }）
     this.addEventListener('oas-change', this.handleTagChange, true)
   }
 

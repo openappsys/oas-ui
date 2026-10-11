@@ -98,7 +98,7 @@ input {
   min-width: 0;
   height: var(--oas-input-number-height);
   padding-inline-start: var(--oas-space-3);
-  /* 右侧叠加区让位：步进钮区（right 形态，20 宽 + 4 间隙 = 24，历史变量可覆盖） */
+  /* 右侧叠加区让位：步进钮区（right 形态：4 右偏移 + 20 宽 + 4 间隙 = 28，历史变量可覆盖） */
   padding-inline-end: var(--oas-input-number-controls-pad, 28px);
   border: 1px solid var(--oas-color-border);
   /* compact/button-group 圆角合并协议：--oas-button-group-radius 优先，独立使用回落自身圆角 */

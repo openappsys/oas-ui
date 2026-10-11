@@ -85,9 +85,10 @@ slot {
   display: none;
 }
 /* duotone：优先 data-layer 显式分层，其次按前两个直接子图形元素着色。
-   fallback 选择器带 :not([data-layer])——与显式规则特异性相同（0,2,1），
-   不排除的话声明序在后的序号兜底会压过显式分层（SVG 按绘制序摆放时
-   底色层在前，primary 命中 > :nth-child(2) 的 secondary 兜底，透明度错乱） */
+   fallback 选择器带 :not([data-layer]) 排除显式分层元素（特异性随之升至 0,3,1，
+   高于显式规则的 0,2,1，但两选择器命中集互斥不冲突）。不排除的话声明序在后的
+   序号兜底会压过显式分层（同特异性 0,2,1 时后者胜：SVG 按绘制序摆放时底色层
+   在前，primary 命中 > :nth-child(2) 的 secondary 兜底，透明度错乱） */
 svg[data-duotone='true'] [data-layer='primary'],
 svg[data-duotone='true'] > :first-child:not([data-layer]) {
   color: var(--oas-icon-primary-color);

@@ -46,7 +46,8 @@ export class OASDescriptions extends OASElement {
     return ['column', 'title', 'layout', 'bordered', 'colon', 'size', 'items']
   }
 
-  /** items 数据通道 property 真值（attribute JSON 或 property 赋值最后写入者生效） */
+  /** items 数据通道 property 真值：缺省解析 attribute JSON；property 赋数组后以其为权威
+   * （attribute 通道不再参与，见 _itemsFromProperty），property 赋字符串则转回 attribute 通道 */
   private _items: Array<Record<string, unknown>> = []
   /** property 赋值标志：此后跳过 attribute 重解析（与 table columns 双通道同思路） */
   private _itemsFromProperty = false

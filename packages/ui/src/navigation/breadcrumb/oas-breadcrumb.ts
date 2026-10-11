@@ -376,7 +376,7 @@ export class OASBreadcrumb extends OASElement {
     ]
   }
 
-  /** 折叠/下拉展开状态（key：'ellipsis' 或 'dd-<序列序号>'，跨 update 重建保留；互斥展开） */
+  /** 折叠/下拉展开状态（key：'ellipsis' 或 'dd-<项原始下标>'（items 数组下标，非展示序号），跨 update 重建保留；互斥展开） */
   private openDropdowns = new Set<string>()
 
   /** 子元素通道观察器：light DOM 里 oas-breadcrumb-item/separator 增删或属性/文本变化 → 重渲染 */
@@ -394,7 +394,7 @@ export class OASBreadcrumb extends OASElement {
   private bind(): void {
     // 组件断开时清理下拉的 document 点击监听（连接期间打开/关闭反复 add/remove，此处兜底移除）
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
-    // 键盘方向键导航：焦点在可聚焦项上时 ArrowLeft/Right/Home/End 循环移动
+    // 键盘方向键导航：焦点在可聚焦项上时 ArrowLeft/Right/Up/Down/Home/End 循环移动
     this.shadow.querySelector('nav')?.addEventListener('keydown', this.handleNavKeydown)
   }
 

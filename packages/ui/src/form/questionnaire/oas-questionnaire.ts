@@ -848,9 +848,9 @@ export class OASQuestionnaire extends OASElement {
 
   /**
    * 键盘快捷导航：
-   * - Alt+←/→ 恒可用（含输入框内——Alt 组合不移动光标），preventDefault 吞掉浏览器历史导航；
+   * - Alt+←/→ 恒可用（含输入框内——Alt 组合不移动光标；Alt+Shift 与 Alt 同效，alt 分支不排斥 Shift），preventDefault 吞掉浏览器历史导航；
    * - 裸 ←/→（无任何修饰键）仅在焦点不在输入类控件时切步（不劫持光标/控件键盘）；
-   * - Ctrl/Meta/Shift 组合一律不处理（保留系统/浏览器快捷键）；IME 组合中跳过；
+   * - Ctrl/Meta 组合与 Shift+方向键（无 Alt）一律不处理（保留系统/浏览器快捷键）；IME 组合中跳过；
    * - 触发走 next()/prev() 同一门控链路（校验未过/边界自然拦截）；物理方向映射
    *   （→ 前进 / ← 后退，RTL 不镜像，与浏览器历史键惯例一致）。
    */
@@ -1030,7 +1030,8 @@ export class OASQuestionnaire extends OASElement {
 
   /**
    * 重置：全部步骤 form reset 回初始值（清错误态）、清值跟踪、清跳过记录、current 回 0。
-   * 不派发任何事件（对齐 oas-form reset 语义）。
+   * 自身不主动派发事件（对齐 oas-form reset 语义）；边界例外：current 回 0 后若解析步非 0
+   * （如首步 hidden），update 的 alignCurrent 会补写 current 并派发 oas-change。
    */
   reset(): void {
     for (const { form } of this.stepForms()) {

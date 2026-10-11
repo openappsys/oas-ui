@@ -17,7 +17,8 @@ const ITEM_STYLE = `
  * 纯数据载体：默认插槽文本为 label，属性对齐 SidebarItem 字段
  * （value/icon/group/badge）。badge 字符串直传，纯数字字符串（`/^\d+$/`）
  * 由宿主解析时转 number，对齐 SidebarItem.badge 的 string|number。
- * 直接子元素 <oas-sidebar-item>（及 <oas-sidebar-divider>）递归为嵌套 children。
+ * 直接子元素 <oas-sidebar-item>（及 <oas-sidebar-divider>）递归为嵌套 children
+ * （children 内分隔线仅本子元素通道支持；items JSON 通道的 children 会被过滤掉分隔线条目）。
  * 宿主 <oas-sidebar> 在 items 属性未显式设置时解析子元素并收敛到同一渲染路径。
  * 需要 actions 的项请用 items JSON（对象数组不适合标量属性映射）。
  */

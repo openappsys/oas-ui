@@ -493,7 +493,8 @@ export class OASGrid extends OASElement {
     // 尾格显隐：折叠且有内容被折叠（或展开过需要折回入口）时可见
     const tailVisible = collapsed ? totalRows > maxRows : this.collapseEverExpanded
     if (this.collapseEverExpanded && !collapsed && totalRows <= maxRows) {
-      // 全量展开本来就是完整形态：无需收起入口（自然态）
+      // 全量展开本来就是完整形态：无需收起入口（自然态）。
+      // 注意：tailVisible 已在上方取过旧值 true，本轮尾格仍显示收起入口，复位从下次重算起生效
       this.collapseEverExpanded = false
     }
     tail.hidden = !tailVisible

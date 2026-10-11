@@ -2203,7 +2203,7 @@ export class OASUpload extends OASFormElement {
       remove.appendChild(this.makeIcon('close', '12'))
       card.appendChild(remove)
 
-      // 上传进度（非 done 时覆盖卡片底部）
+      // 上传进度（status 非 pending 或已有进度（percent > 0）时覆盖卡片底部）
       if (st.status !== 'pending' || st.percent > 0) {
         const wrap = document.createElement('div')
         wrap.className = 'progress-wrap'

@@ -483,7 +483,7 @@ pre.code {
  * - `oas-copy`：`{ text }` 复制成功
  * - `oas-copy-error`：`{ text }` 复制失败
  *
- * 复制逻辑复用 typography：navigator.clipboard 优先，execCommand 兜底。
+ * 复制逻辑本组件内联实现（与 typography 同模式、各自实现）：navigator.clipboard 优先，execCommand 兜底。
  */
 export class OASCode extends OASElement {
   static override get observedAttributes(): string[] {

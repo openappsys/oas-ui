@@ -685,7 +685,8 @@ export class OASMessageScroller extends OASElement {
     } else if (this.hasAttr('turn-anchor') && this.following) {
       const anchorEl = this.findLastAnchor()
       if (!anchorEl) {
-        // 无锚点：回退钉底（跟随态由 following 把关；无 auto-scroll 时 following 恒真=IM 式钉底）
+        // 无锚点：回退钉底（跟随态由 following 把关——初始为真，但任何真实滚动位移都会经
+        // syncScrollState 重判，读者滚离底部/锚定窗口即接管 following=false）
         this.writeScrollTop(vp, bottom)
       } else {
         // 模式锁一次性定型：锚贴顶（或已在 peek 对齐窗口）=锚顶跟随；否则贴底跟随。

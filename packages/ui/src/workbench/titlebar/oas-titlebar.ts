@@ -4,7 +4,7 @@ import { isRtl } from '../../shared/direction.js'
 /** size 合法值：compact（默认，34px）/ large（68px，控件保持紧凑） */
 export type TitlebarSize = 'compact' | 'large'
 
-/** 窗口操作动作（内建钮集合；detail.action 透传任意字符串供宿主扩展） */
+/** 窗口操作动作（内建钮集合；window-actions 未知名被 parseWindowActions 过滤忽略，detail.action 仅内建三动作） */
 export type TitlebarWindowAction = 'minimize' | 'maximize' | 'close'
 
 const VALID_SIZES: readonly TitlebarSize[] = ['compact', 'large']

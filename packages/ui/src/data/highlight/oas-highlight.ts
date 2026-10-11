@@ -34,7 +34,7 @@ mark {
 }
 `
 
-/** 命中片段（原码点索引区间，start 排他 end） */
+/** 命中片段（原码点索引区间，含 start 排他 end——slice 语义） */
 interface Range {
   start: number
   end: number

@@ -583,7 +583,7 @@ export class OASAppBar extends OASElement {
     // 显示「···」量出其宽度（有溢出时它要占位，可用宽度须扣除；无溢出最后会再隐藏）
     more.hidden = false
     const moreWidth = more.offsetWidth
-    // 溢出判定用 scrollWidth > clientWidth（真实溢出）而非项宽累加——防 shrink-to-fit 假溢出
+    // 溢出判定用 scrollWidth > clientWidth + 1（真实溢出，1px 容差吸收取整误差）而非项宽累加——防 shrink-to-fit 假溢出
     const realOverflow = wrap.scrollWidth > wrap.clientWidth + 1
     // flex gap 不占 offsetWidth，按计算样式解析（未解析时兜底 4px）
     let gap = 4

@@ -350,7 +350,7 @@ const STYLE = `
 }
 `
 
-/** 日程事件：`{ id?, date: 'YYYY-MM-DD', title, color?, start?, end? }`（P0 以 date 为准，start/end 预留 P1） */
+/** 日程事件：`{ id?, date: 'YYYY-MM-DD', title, color?, start?, end? }`（start/end 为 'HH:mm' 时刻，week/day 视图按时刻渲染 timed 块，缺省为全天事件） */
 export interface SchedulerEvent {
   id?: string
   date: string

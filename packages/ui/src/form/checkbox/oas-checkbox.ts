@@ -428,7 +428,7 @@ export class OASCheckbox extends OASFormElement {
     // 镜像最终禁用态到宿主 data-disabled（供 :host([data-disabled]) 样式消费，覆盖注入场景）
     this.toggleAttribute('data-disabled', disabled)
 
-    // 尺寸档：单项显式 size > 组下发 > config-provider 密度注入 > medium
+    // 尺寸档：单项显式 size > 组下发 > 表级下发（data-form-size）> config-provider 密度注入 > medium（链见 resolveSize）
     this.setAttribute('data-size', this.resolveSize())
 
     // 校验态：单项显式 status > 组下发；error 联动 aria-invalid（所有权标志防误清宿主自设值）

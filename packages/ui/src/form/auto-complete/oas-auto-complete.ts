@@ -307,7 +307,8 @@ export class OASAutoComplete extends OASFormElement {
   /**
    * 程序性写值（受控赋值即生效语义）：写受控 `value` 属性并清掉键入过滤词（`query`
    * 是 update 内「属性 → 内部控件」应用路径的守卫，不清理会跳过回写），再显式强制
-   * update——同值 `setAttribute` 不触发 attributeChangedCallback，赋值在任何情况下都生效。
+   * update 兜底——同值 `setAttribute` 也会触发 attributeChangedCallback（Chromium 实测），
+   * 显式调用仅作保险，赋值在任何情况下都生效。
    * 不派发任何事件。
    */
   set value(v: string) {
@@ -908,7 +909,7 @@ export class OASAutoComplete extends OASFormElement {
     this.setAttribute('value', option.value)
     this.emit('change', { value: option.value, label: option.label })
     this.syncClear()
-    // setAttribute 已触发 update 同步；属性同值不触发时兜底
+    // setAttribute 已触发 update 同步（同值也会触发 attributeChangedCallback，Chromium 实测）；随后同步表单值与校验
     this.syncFormValue()
     this.syncValidity()
   }

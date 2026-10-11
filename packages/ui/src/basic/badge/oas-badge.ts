@@ -28,7 +28,7 @@ export type BadgeRibbonAnchor =
   | 'top-right'
   | 'bottom-left'
   | 'bottom-right'
-/** 缎带形态：fold 直条+折叠（默认）/ diagonal 45° 对角斜带 / triangle 角落三角 / bookmark 顶边燕尾竖条 / side 侧边竖挂 / seal 圆形锯齿印章 / banner 顶部横贯横幅 / flag 侧燕尾横旗（横条 + 探出端 V 缺口）；非法值静默回落 fold */
+/** 缎带形态：fold 直条+折叠（默认）/ diagonal 45° 对角斜带 / triangle 角落三角 / bookmark 顶边燕尾竖条 / side 侧边竖挂 / seal 圆形锯齿印章 / banner 顶部横贯横幅 / flag 侧燕尾横旗（横条 + 探出端 V 缺口）/ rounded 圆头端横条 / zigzag 锯齿端横条 / arrow 箭头端横条（端部造型装饰端均朝卡内）；非法值静默回落 fold */
 export type BadgeRibbonForm =
   | 'fold'
   | 'diagonal'
@@ -1061,7 +1061,6 @@ const STYLE = `
   inset-inline-end: var(--oas-space-2);
   --oas-ribbon-anchor-y: -50%;
 }
-/* anchor 时清掉兼容别名的定位（placement inset / position top / side 的 translateY / bookmark 的 direction） */
 /* anchor 时清掉兼容别名的定位（placement inset / position top / side 的 translateY /
    bookmark 的 direction）；斜形态 diagonal/triangle 有 rotate 几何，排除避免清掉 */
 .ribbon:not(.form-diagonal):not(.form-triangle).anchor-top-left,
@@ -1096,7 +1095,7 @@ const STYLE = `
   right: auto;
   --oas-ribbon-anchor-y: -50%;
 }
-/* bookmark 顶部/底部锚点：保持顶边垂挂竖条，但允许锚点定位覆盖方向 */
+/* bookmark 四角锚点：保持顶边垂挂竖条，但允许锚点定位覆盖方向 */
 .ribbon.form-bookmark.anchor-top-left,
 .ribbon.form-bookmark.anchor-top-right,
 .ribbon.form-bookmark.anchor-bottom-left,
@@ -1107,8 +1106,9 @@ const STYLE = `
   transform: none;
 }
 
-/* fold 贴边探出：通用锚点层用正偏移，但 fold 有折叠角、贴边需负偏移探出（同 placement-end/start）。
-   仅 fold（无 form 标记，排除其他所有带 form 标记的形态），规则后置覆盖通用锚点 */
+/* fold 及端部造型形态（rounded/zigzag/arrow）贴边探出：通用锚点层用正偏移，但这些形态
+   有折叠角、贴边需负偏移探出（同 placement-end/start）。目标经 :not 排除 banner/flag/side/
+   seal/bookmark/diagonal/triangle 限定（fold 无 form 标记），规则后置覆盖通用锚点 */
 .ribbon.anchor-left:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark):not(.form-diagonal):not(.form-triangle) {
   inset-inline-start: calc(var(--oas-space-2) * -1);
 }
@@ -1128,7 +1128,7 @@ const STYLE = `
   inset-inline-end: calc(var(--oas-space-2) * -1);
 }
 
-/* 贴边端角去圆角（仅 fold）：只有挨着折叠角的那个角是直角，其余三个角保持圆角。
+/* 贴边端角去圆角（除 banner/flag 外的形态）：只有挨着折叠角的那个角是直角，其余三个角保持圆角。
    先重置四角为基类圆角（覆盖 placement-end 的 border-end-end-radius:0 干扰），
    再单独设挨着折叠角的角为 0。anchor 是物理方向语义（left/right 不随 RTL 翻转） */
 /* 贴左缘 + 折叠角下沿（anchor-left / anchor-top-left）：左下角直角 */
@@ -1222,8 +1222,8 @@ const STYLE = `
 
 /* ===== rolled 端部卷边：卷边在卡片内侧端（同燕尾规则：徽标在右卷边在左、在左卷边在右），
    外端改为顶卡片边线（不再探出——无边线锚定的探出端是浮空，曾现缺陷）。
-   布尔修饰、独立开关：与 fold（基类/显式 form-fold）/ flag 叠加；banner 有自己的双端折叠角
-   （rolled 时 banner 折叠角保留、不叠卷边）；其他裁剪形态（diagonal/triangle/bookmark/side/seal）
+   布尔修饰、独立开关：与 fold（基类/显式 form-fold）/ flag / 端部造型形态（rounded/zigzag/arrow）
+   叠加；其他形态（diagonal/triangle/bookmark/side/seal/banner——banner 有自己的双端折叠角）
    经 :not 排除、静默忽略。:where 降权便于覆写 */
 /* 外端顶边线：覆盖基类/flag 的探出负偏移 */
 .ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal):not(.form-banner)).placement-end {
@@ -1423,7 +1423,7 @@ export class OASBadge extends OASElement {
     ribbonEl.classList.toggle('color-success', color === 'success')
     ribbonEl.classList.toggle('color-warning', color === 'warning')
     ribbonEl.classList.toggle('color-danger', color === 'danger')
-    // ribbon-form 七形态：未显式设置（或非法值）回落 fold 且不写任何 form-* class（基类即 fold，向后兼容）
+    // ribbon-form 十一形态：未显式设置（或非法值）回落 fold 且不写任何 form-* class（基类即 fold，向后兼容）
     const formValid = this.hasAttr('ribbon-form') && (VALID_RIBBON_FORMS as readonly string[]).includes(form)
     for (const name of VALID_RIBBON_FORMS) {
       ribbonEl.classList.toggle(`form-${name}`, formValid && form === name)
@@ -1448,7 +1448,7 @@ export class OASBadge extends OASElement {
     ribbonEl.classList.toggle('position-edge', position === 'edge')
     ribbonEl.classList.toggle('position-cross', position === 'cross')
     // ribbon-direction 尖头方向：仅 bookmark 形态生效；down 与非法值回落基类（不写标记），
-    // left/right 写 direction-* class（其余形态忽略，同 wide 规矩）
+    // left/right 写 direction-* class（其余形态静默忽略）
     const dirValid =
       formValid && form === 'bookmark' && (VALID_RIBBON_DIRECTIONS as readonly string[]).includes(direction)
     ribbonEl.classList.toggle('direction-left', dirValid && direction === 'left')
@@ -1461,7 +1461,7 @@ export class OASBadge extends OASElement {
     ribbonEl.classList.toggle('vertical-bottom', sideMount && vertical === 'bottom')
     // premium 金属质感：布尔属性加 class（正交于 color/form，视觉覆盖优先级见样式顺序）
     ribbonEl.classList.toggle('premium', this.hasAttr('premium'))
-    // rolled 端部卷边：布尔修饰（独立开关），class 恒写；视觉仅在 fold/banner/flag 生效
+    // rolled 端部卷边：布尔修饰（独立开关），class 恒写；视觉仅在 fold/flag/rounded/zigzag/arrow 生效
     // （其余裁剪形态由样式 :not 排除，见 STYLE 注释）
     ribbonEl.classList.toggle('rolled', this.hasAttr('rolled'))
     // ribbon-size 斜带档位：仅与 diagonal 组合；其他形态静默忽略（不写入 class，无视觉影响）。

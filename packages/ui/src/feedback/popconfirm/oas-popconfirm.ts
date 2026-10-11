@@ -49,7 +49,7 @@ const STYLE = `
   box-shadow: var(--oas-shadow-md);
   padding: var(--oas-space-3);
   min-width: ${MIN_WIDTH}px;
-  /* 窄视口保护：小于 360px 的屏宽时按视口宽度钳制（两侧各留 12px），不溢出视口 */
+  /* 窄视口保护：小于 360px 的屏宽时按视口宽度钳制（两侧各留 16px，space-6=32px），不溢出视口 */
   max-width: min(360px, calc(100vw - var(--oas-space-6)));
   font-size: var(--oas-font-size-md);
   color: var(--oas-color-text-primary);
@@ -564,7 +564,9 @@ export class OASPopconfirm extends OASElement {
   requestClose(reason: OpenChangeReason = 'api'): void {
     this.clearOpenTimer()
     if (this.hasTrigger('hover') && !this.tapToggleOnCoarse() && reason !== 'trigger') {
-      // hover 触发下的非动作关闭走防抖（移出宿主/面板不闪关）；动作类关闭立即
+      // hover 触发下的非 trigger 来源关闭（esc/外点/ok/cancel/api）走防抖；
+      // hover 移出宿主/面板的关闭不经此分支（走 onHoverLeave/onPanelLeave 的同款延时）；
+      // trigger 来源（点击切换）立即关闭
       this.clearCloseTimer()
       this.closeTimer = setTimeout(() => this.applyClose(reason), HOVER_HIDE_DELAY)
     } else {

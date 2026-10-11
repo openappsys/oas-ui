@@ -249,7 +249,8 @@ export class OASQRCode extends OASElement {
 
       svg.innerHTML = inner
       if (!this.hasAttr('color')) {
-        // 缺省前景走宿主文本色（currentColor）
+        // 缺省前景非 currentColor——固定深色 var(--oas-qrcode-color, #18181b)（dark 可扫性，见 fgColor）；
+        // 此处仅钉住 svg 的 currentColor 基值，供宿主把 --oas-qrcode-color 覆写为 currentColor 时解析
         svg.style.color = 'var(--oas-color-text-primary)'
       } else {
         svg.style.color = ''

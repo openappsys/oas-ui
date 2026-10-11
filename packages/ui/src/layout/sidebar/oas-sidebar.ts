@@ -1433,7 +1433,8 @@ export class OASSidebar extends OASElement {
   }
 
   /** 单个 <oas-sidebar-item> → SidebarItem（默认插槽文本为 label，属性对齐 items 字段；
-      嵌套子元素递归为 children，与 items 通道一致支持 children 内分隔线） */
+      嵌套子元素递归为 children。children 内分隔线仅子元素通道支持；items JSON 通道的
+      children 不支持分隔线——parseEntry 会过滤无 label 条目） */
   private childToSidebarItem(el: Element): SidebarItem {
     const item: SidebarItem = {
       label: this.childLabel(el),

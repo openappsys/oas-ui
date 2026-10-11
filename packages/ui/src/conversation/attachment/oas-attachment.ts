@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 
-/** 附件状态机（与 oas-upload 状态词表对齐） */
+/** 附件状态机（独立于 oas-upload 词表：upload 用 pending/uploading/done/error，本组件初始态为 idle、另多 processing 中间态） */
 export type AttachmentState = 'idle' | 'uploading' | 'processing' | 'error' | 'done'
 /** 三档尺寸（sm 接受 small 别名） */
 export type AttachmentSize = 'default' | 'sm' | 'xs'
@@ -8,7 +8,7 @@ export type AttachmentSize = 'default' | 'sm' | 'xs'
 /** 进行中态（spinner + aria-busy）；其余为终态/初始态 */
 const BUSY_STATES = new Set(['uploading', 'processing'])
 
-/** state 全词表（与 oas-upload 状态词表对齐，库内一致） */
+/** state 全词表（独立于 oas-upload：upload 无 idle/processing，本组件无 pending） */
 const STATES = new Set(['idle', 'uploading', 'processing', 'error', 'done'])
 
 /** 三档尺寸：default/sm/xs（sm 接受 small 别名，归一逻辑见 normalizeSize） */
@@ -215,7 +215,7 @@ a.trigger:focus-visible {
  * 属性：
  * - `name`：文件名（title 通道）
  * - `detail`：次级元数据（类型 · 大小等）；error 态缺省时显示 locale 错误文案
- * - `state`：`idle` | `uploading` | `processing` | `error` | `done`（默认 `done`；与 oas-upload 词表一致）
+ * - `state`：`idle` | `uploading` | `processing` | `error` | `done`（默认 `done`；词表独立于 oas-upload——upload 用 `pending` 且无 `processing`）
  * - `progress`：0–100（越界 clamp；仅 uploading 态渲染进度条）
  * - `size`：`default`（默认）| `sm`（别名 `small`）| `xs`
  * - `orientation`：`horizontal`（默认）| `vertical`（图上文下）

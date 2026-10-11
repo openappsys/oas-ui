@@ -430,7 +430,7 @@ function isEngine(v: unknown): v is EquationEngine {
  *
  * Property：
  * - `engine`：注入兼容 TeX 渲染引擎对象（renderToString 协议），注入后委托渲染；
- *   移除（置 null）回到自研子集渲染。非法对象忽略
+ *   移除（置 null）回到自研子集渲染。非法对象同置 null（丢弃已注入引擎）
  *
  * 渲染为 HTML（span 堆叠 + CSS 排版分数/上下标/根号/求和积分上下限）。
  * 未知命令按字面显示不报错；ARIA：容器 aria-label = 原始 LaTeX。
@@ -443,7 +443,7 @@ export class OASEquation extends OASElement {
 
   private injected: EquationEngine | null = null
 
-  /** 注入/移除渲染引擎（property 通道；非法值忽略） */
+  /** 注入/移除渲染引擎（property 通道；非法值同置 null——丢弃已注入引擎，回到自研渲染） */
   get engine(): EquationEngine | null {
     return this.injected
   }

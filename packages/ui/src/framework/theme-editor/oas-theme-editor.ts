@@ -225,7 +225,7 @@ const NEUTRAL_SWATCH_HEX = '#808080'
 
 /* =========================================================================
  * 预设主题：只调尺寸族 token（control-height / space），不动颜色。
- * 基于 theme/src/index.css 默认值推导，保持档位比例协调。
+ * 基于 packages/theme/index.css 默认值推导，保持档位比例协调。
  * ========================================================================= */
 
 const PRESET_SPACE: Record<string, number> = {
@@ -390,7 +390,7 @@ input[type='text'].color-text.is-invalid {
 }
 `
 
-/** 默认 token 集：对应 theme/src/index.css 的语义 token，按组划分 */
+/** 默认 token 集：对应 packages/theme/index.css 的语义 token，按组划分 */
 const DEFAULT_GROUPS: TokenGroup[] = [
   {
     key: 'color',

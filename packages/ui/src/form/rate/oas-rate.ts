@@ -706,7 +706,7 @@ export class OASRate extends OASElement {
     if (this.dragMoved) this.suppressClick = true
   }
 
-  /** 由指针 x 坐标折算分值：滑出值域边界外为 0；allow-half 按星内半区取 0.5 粒度。
+  /** 由指针 x 坐标折算分值：滑出值域边界外为 0（仅 LTR；RTL 镜像返回满分 count）；allow-half 按星内半区取 0.5 粒度。
    *  RTL 首星在视觉右端（值向左增长）——星格按物理 x 升序重排后，格 k 的值 = 总星数 - k，
    *  半区判定同步镜像（视觉前半 = 物理右半） */
   private valueFromX(x: number): number | null {

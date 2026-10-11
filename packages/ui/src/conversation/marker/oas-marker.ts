@@ -7,7 +7,7 @@ const STYLE = `
   align-items: center;
   gap: var(--oas-space-2);
   font-family: inherit;
-  /* marker 是行内小标记：字号跟随外层（次级文本 0.85em 比例，同 comment 先例） */
+  /* marker 是行内小标记：字号跟随外层（次级文本 0.857em 比例，同 comment 先例） */
   font-size: var(--oas-marker-font, inherit);
   color: var(--oas-color-text-secondary);
 }

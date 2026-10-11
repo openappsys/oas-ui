@@ -13,7 +13,7 @@ const STYLE = `
   display: block;
   font-family: inherit;
   pointer-events: auto;
-  /* 窄视口保护：小于 360px 的屏宽时按视口宽度钳制（两侧各留 12px），长文本不溢出 */
+  /* 窄视口保护：小于 360px 的屏宽时按视口宽度钳制（两侧各留 16px，space-6=32px），长文本不溢出 */
   max-width: min(360px, calc(100vw - var(--oas-space-6)));
   margin-bottom: var(--oas-space-2);
   /* 进出场动画配置开口：时长/曲线走 CSS 变量，JS 只读 leave 时长做 remove 同步 */

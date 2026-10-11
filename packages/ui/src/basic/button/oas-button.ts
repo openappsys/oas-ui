@@ -310,7 +310,7 @@ a[part='button'].xs {
 }
 button.xs:not(.icon-only) {
   padding: 0 6px;
-  /* xs 档防过窄：最小宽放宽至 44px（其余档 56px） */
+  /* xs 档防过窄：最小宽放宽至 44px（其余档无最小宽约束） */
   min-width: 44px;
 }
 button.large {
@@ -678,7 +678,7 @@ button.loading-with-text .spinner {
    min-height 大于各档固定 height 时按 min-height 取值（xs 20px / md 32px 等被抬到 44px，
    已 ≥44px 的档如 xl 不变）；icon-only / circle 经 aspect-ratio 同步放宽到 44×44。
    只抬 min-height，padding / 字号 / 圆角一律不动。!important 压过 .size.wrap 的
-   min-height（如 xs.wrap 的 24px），保证 coarse 下 wrap 按钮同样 ≥44px。
+   min-height（如 xs.wrap 的 20px），保证 coarse 下 wrap 按钮同样 ≥44px。
    规则全部收在媒体查询内，fine pointer（PC）零影响。 ===== */
 @media (pointer: coarse) {
   button,
@@ -726,7 +726,7 @@ button.loading-with-text .spinner {
   display: block;
 }
 /* 实底形态副文本：次要色在实底上对比度不达标（a11y 门禁实抓 #71717a on #0b6cff）——
-   改用各形态 on 色的淡化档（82% 混合，保持「副文本弱一级」的视觉层级且对比达标） */
+   改用各形态 on 色的淡化档（92% 混合，保持「副文本弱一级」的视觉层级且对比达标） */
 button.primary [part='description'],
 a[part='button'].primary [part='description'] {
   color: color-mix(in srgb, var(--oas-color-text-on-primary) 92%, transparent);
@@ -1039,7 +1039,7 @@ export class OASButton extends OASElement {
     return true
   }
 
-  /** href/target 增删会改变内部元素类型（button ↔ a），需重建 shadow；其余属性走 update() */
+  /** href 增删会改变内部元素类型（button ↔ a），需重建 shadow；target 内联在模板中，增删同走重建；其余属性走 update() */
   override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if ((name === 'href' || name === 'target') && this.hasRendered) {
       this.shadow.innerHTML = this.template()
@@ -1223,7 +1223,7 @@ export class OASButton extends OASElement {
       this.btn.removeAttribute('aria-label')
     }
 
-    // 中文间自动空格（默认开）：两个连续汉字之间插入空格（中文排版优化）
+    // 中文间自动空格（默认关，opt-in）：两个连续汉字之间插入空格（中文排版优化）
     this.applyAutoInsertSpace()
   }
 

@@ -914,7 +914,7 @@ export class OASTabs extends OASElement {
   }
 
   /**
-   * items 数据驱动：items 属性（JSON 数组 [{label, value, icon?, badge?, disabled?, href?,
+   * items 数据驱动：items 属性（JSON 数组 [{label, value, title?, icon?, badge?, disabled?, href?,
    * target?, rel?, closable?, editable?, iconOnly?}]）存在时生成对应 oas-tab-panel 子元素。
    * 与子元素并存时 items 优先（清掉非 items 生成的面板）。itemsSyncing 守卫防止
    * MutationObserver 触发的 update 无限循环。

@@ -383,7 +383,7 @@ export interface GanttTask {
   color?: string
   /** 任务级禁拖/禁改 */
   disabled?: boolean
-  /** summary 初始展开（缺省收起；expanded 属性受控优先） */
+  /** summary 初始展开（缺省全展开，显式 false 为收起例外；expanded 属性受控优先——见 effectiveExpandedSet） */
   expanded?: boolean
   [key: string]: unknown
 }

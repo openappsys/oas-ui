@@ -176,6 +176,7 @@ oas-virtual-list::part(item) {
  * - `oas-reach-bottom`：滚动触底（进入触底区派发一次，滚离后重新武装）
  * - `oas-item-render`：数据通道每行渲染后派发
  * - `oas-click`：条目点击（声明式/数据行由 oas-list-item 派发；虚拟行由列表代理）
+ * - `oas-reorder`：拖拽排序落定（detail { from, to, item }）
  */
 export class OASList extends OASElement {
   static override get observedAttributes(): string[] {

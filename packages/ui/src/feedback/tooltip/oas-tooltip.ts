@@ -21,10 +21,11 @@ const STYLE = `
   box-sizing: border-box;
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-tooltip, 1080));
   padding: var(--oas-space-1) var(--oas-space-2);
-  /* 圆角封顶（箭头接缝防收腰）：箭头底宽 = 8px 方形旋转 45° 的对角投影 8√2 ≈ 11.31px，
-     气泡交叉轴直边段（尺寸 − 2×radius）小于它时，圆角曲线侵入箭头底边衔接区，接缝两侧
+  /* 圆角封顶（箭头接缝防收腰）：箭头默认 12px 方形旋转 45°（对角投影 12√2 ≈ 16.97px），
+     气泡交叉轴直边段（尺寸 − 2×radius）小于箭头底宽时，圆角曲线侵入箭头底边衔接区，接缝两侧
      出现凹口（空内容等窄气泡尤为明显）。--oas-tip-cross 由 position() 写入实际交叉轴
-     布局尺寸，radius 封顶保证直边段 ≥ 箭头底宽；变量缺省 999px → 不封顶（token 定制保真） */
+     布局尺寸，radius 封顶常量 11.31px（≈8√2，小于 12px 默认箭头的对角投影——缓解而非完全
+     消除凹口）；变量缺省 999px → 不封顶（token 定制保真） */
   border-radius: max(0px, min(var(--oas-radius-sm), calc((var(--oas-tip-cross, 999px) - 11.31px) / 2)));
   background: var(--oas-tooltip-bg, var(--oas-color-text-primary));
   color: var(--oas-tooltip-color, var(--oas-color-bg));
@@ -888,7 +889,7 @@ export class OAStooltip extends OASElement {
     return this.getAttr('arrow', 'true') !== 'false'
   }
 
-  /** 计算当前锚点矩形：虚拟坐标 > follow-cursor 光标（内部 virtual 点通道）> 虚拟锚点元素 > 默认宿主锚点 */
+  /** 计算当前锚点矩形：虚拟坐标 > 虚拟锚点元素 > follow-cursor 光标 > 默认宿主锚点（virtual 属性在场时解析失败不回落，返回 null 不定位） */
   private anchorRect(): DOMRect | null {
     if (this.hasAttr('virtual')) {
       const x = parseFloat(this.getAttr('virtual-x'))
@@ -1158,9 +1159,10 @@ export class OAStooltip extends OASElement {
 
   /**
    * 窄气泡圆角封顶（箭头接缝防收腰）：气泡交叉轴直边段（尺寸 − 2×radius）小于箭头底宽
-   * （8px 方形旋转 45° 的对角投影 8√2 ≈ 11.31px）时，圆角曲线侵入箭头底边衔接区，
+   * （箭头默认 12px 方形旋转 45°，对角投影 12√2 ≈ 16.97px）时，圆角曲线侵入箭头底边衔接区，
    * 接缝两侧出现凹口（空内容等窄气泡尤为明显）。把交叉轴布局尺寸写入
-   * --oas-tip-cross，由 .tip 的 border-radius max/min 表达式封顶，保证直边段 ≥ 箭头底宽。
+   * --oas-tip-cross，由 .tip 的 border-radius max/min 表达式封顶（常量 11.31px ≈ 8√2，
+   * 小于 12px 默认箭头的对角投影——缓解而非完全消除凹口）。
    * 布局尺寸优先 offset*（不受 tip-enter 动画 scale 污染）；无布局尺寸（无布局引擎的
    * 测试环境）时移除变量回落不封顶，token 定制保真。
    */

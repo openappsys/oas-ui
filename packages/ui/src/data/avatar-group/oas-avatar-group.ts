@@ -146,8 +146,8 @@ function onDocumentKey(e: KeyboardEvent): void {
  * 布局用逻辑属性 `margin-inline-start`，RTL 下自动正确。
  *
  * 折叠：`max` 超限隐藏多余头像并显示 `+N` 计数按钮；hover / 聚焦 / 点击按钮弹出浮层，
- * 克隆展示全部被折叠成员头像（克隆清掉折叠期的 display:none）；Escape / 外部点击 / 焦点移出关闭，
- * 焦点关闭后回到计数按钮。定位复用共享 floating 引擎（主轴翻转 + 视口避让），滚动/resize 跟随。
+ * 克隆展示全部被折叠成员头像（克隆清掉折叠期的 display:none）；Escape（关闭并回焦计数按钮，
+ * 带回焦豁免防重开）/ 外部点击 / 焦点移出关闭（外点与焦点路径不回焦）。定位复用共享 floating 引擎（主轴翻转 + 视口避让），滚动/resize 跟随。
  * 浮层生命周期全部经 onCleanup 注册，断开连接无孤儿监听。
  */
 export class OASAvatarGroup extends OASElement {

@@ -56,7 +56,7 @@ export class TableColumnSettingsController implements ReactiveController {
     this.unbind()
   }
 
-  /** 宿主每次更新后：为可拖拽列头设置 draggable（列头重渲染后重新生效），并同步触屏重排按钮 */
+  /** 宿主每次更新后：为全部列头（th[data-key]）设置 draggable（列头重渲染后重新生效），并同步触屏重排按钮 */
   hostUpdated(): void {
     const thead = this.hostEl.shadowRoot?.querySelector('thead')
     if (!thead) return

@@ -13,7 +13,7 @@ const STYLE = `
 
 /**
  * message 命令式 API 可作为全局默认的键（group/key 是运行时标识、onClose/onClick 是函数、
- * avatar/spinner/content 是内容，JSON 无法表达，不纳入）
+ * avatar/spinner/content 是内容、icon 视为单条定制，JSON 无法表达或不宜全局默认，不纳入）
  */
 const MESSAGE_CONFIG_KEYS = new Set([
   'duration',
@@ -29,7 +29,7 @@ const MESSAGE_CONFIG_KEYS = new Set([
 ])
 /** notification 命令式 API 现有 options 中可作为全局默认的键（title/description 是内容，不纳入） */
 const NOTIFICATION_CONFIG_KEYS = new Set(['duration', 'showProgress', 'progressPosition', 'scrollable'])
-/** toast 命令式 API 现有 options 中可作为全局默认的键（title/description/action 是内容、id/onClose/container 是运行时，不纳入） */
+/** toast 命令式 API 现有 options 中可作为全局默认的键（title/description/action/actions 是内容、id/onClose/container 是运行时、progressPosition 不在白名单（仅 showProgress/progressRing 纳入），不纳入） */
 const TOAST_CONFIG_KEYS = new Set([
   'duration',
   'position',

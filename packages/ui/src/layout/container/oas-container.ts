@@ -58,7 +58,7 @@ const STYLE = `
  * - `breakout`：非容器属性，作用于 slot 内子元素——子元素带 `breakout` 属性即突破定宽
  *   撑满视口宽（纯 CSS `::slotted([breakout])`，见 STYLE 注释）
  *
- * 边界：无子元素不报错；max-width: min(100%, token) 保证最小 0、不溢出视口。
+ * 边界：无子元素不报错；max-width: min(100%, token) 窄视口下收缩不溢出。
  */
 export class OASContainer extends OASElement {
   static override get observedAttributes(): string[] {

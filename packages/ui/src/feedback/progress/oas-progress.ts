@@ -592,7 +592,7 @@ export class OASProgress extends OASElement {
     return Math.min(n, 100)
   }
 
-  /** line 轨道高度：显式 stroke-width > size 档位 > text-inside 自动提升 > 默认；circle 不注入 */
+  /** line 轨道高度：显式 stroke-width > size 档位（small/large）> text-inside 自动提升 > 默认（medium 档）；circle 不注入 */
   private applyLineHeight(type: 'line' | 'circle' | 'dashboard'): void {
     if (type !== 'line') {
       this.style.removeProperty('--oas-progress-height')

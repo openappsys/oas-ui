@@ -507,7 +507,7 @@ export class OASTree extends OASElement {
 
   // ---------- motion 展开/收起过渡状态 ----------
 
-  /** motion 离场动画进行中（防 200ms 窗口内重复收起/连点抖动） */
+  /** motion 离场动画进行中（防过渡窗口（动画时长 ms + 40ms 缓冲，默认 ≈220ms）内重复收起/连点抖动） */
   private motionCollapsing = false
   /** motion 收起落库延迟定时器（onCleanup 清理） */
   private motionCollapseTimer = 0
@@ -1618,7 +1618,7 @@ export class OASTree extends OASElement {
     }
   }
 
-  // ---------- 键盘 roving（APG tree：↑↓ 移动、→ 展开/进首子、← 收起/回父、Home/End、Space 勾选、Enter 激活） ----------
+  // ---------- 键盘 roving（APG tree：↑↓ 移动、→ 展开/进首子、← 收起/回父、Home/End、Space 勾选、Enter 激活、F2 重命名） ----------
 
   private visibleKeys(): string[] {
     return this.visible.map((r) => this.acc.idOf(r.node))

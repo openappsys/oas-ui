@@ -219,7 +219,7 @@ export class OASCheckboxGroup extends OASElement {
       if (groupStatus) cb.setAttribute('data-group-status', groupStatus)
       else cb.removeAttribute('data-group-status')
       cb.toggleAttribute('data-limit-blocked', this.limitBlockedFor(cb, values))
-      // 监听只挂一次（WeakSet 去重；移出组的子项由 owns 守卫兜底）
+      // 监听只挂一次（WeakSet 去重；移出组的子项由 handleItemChange 的 items 成员守卫兜底）
       if (!this.boundItems.has(cb)) {
         this.boundItems.add(cb)
         cb.addEventListener('oas-change', this.handleItemChange)

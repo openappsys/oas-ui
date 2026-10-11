@@ -672,7 +672,7 @@ export class OASEditable extends OASElement {
       mirror.textContent = text.replace(/ /g, '\u00a0') || '\u200b'
       widthPx = mirror.getBoundingClientRect().width
     }
-    // 内容宽 + 左右内边距（space-1×2）；测量不可用时按字符数估（ch 随字体）
+    // 内容宽 + 左右内边距（space-1×2=8）+ 左右边框（1px×2=2）共 +10；测量不可用时按字符数估（ch 随字体）
     field.style.width = widthPx > 0 ? `${Math.ceil(widthPx) + 10}px` : `${[...text].length + 2}ch`
   }
 

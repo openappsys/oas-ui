@@ -15,7 +15,7 @@ const STYLE = `
 [hidden] {
   display: none !important;
 }
-/* ===== 行结构：grid 三列（对侧 | 轴 | 主体），默认单侧（左轴右内容） ===== */
+/* ===== 行结构：grid 两列（轴 | 主体），默认单侧（左轴右内容）；alternate 模式为三列（对侧 | 轴 | 主体，见下） ===== */
 .row {
   display: grid;
   grid-template-columns: auto 1fr;

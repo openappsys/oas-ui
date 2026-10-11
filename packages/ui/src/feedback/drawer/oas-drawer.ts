@@ -3,7 +3,7 @@ import { OASElement } from '@oas-ui/core'
 /** 滑出方向（横向管宽、纵向管高） */
 export type DrawerPlacement = 'left' | 'right' | 'top' | 'bottom'
 
-/** 关闭来源：before-close 拦截与 oas-close 事件 detail.source */
+/** 关闭来源：before-close 拦截与 oas-close 事件 detail.source（'resize' 为预留成员——当前无关闭路径派发；oas-resize 是拖拽调宽事件，非关闭来源） */
 export type DrawerCloseSource = 'ok' | 'cancel' | 'close' | 'mask' | 'esc' | 'swipe' | 'resize' | 'api' | 'external'
 
 /**
@@ -763,7 +763,7 @@ export class OASDrawer extends OASElement {
     this.wasOpen = true
     pushStack(this)
     if (!this.hasAttr('no-scroll-lock')) lockBodyScroll()
-    // previousFocus 只在模态语义下记录——no-mask 不抢焦点，关闭时也不得把焦点拉回（对齐 modal:920-924 先例）
+    // previousFocus 只在模态语义下记录——no-mask 不抢焦点，关闭时也不得把焦点拉回（对齐 oas-modal.ts:1012-1016 先例）
     if (!this.hasAttr('no-mask')) this.previousFocus = document.activeElement as HTMLElement
     this.emit('open')
     syncStackZ()

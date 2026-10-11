@@ -552,9 +552,9 @@ export class OASScrollArea extends OASElement {
 
   /**
    * 让容器内元素滚进视口，委托目标元素的原生 scrollIntoView（`options` 的
-   * block/inline 透传）。`target` 为选择器或元素；不传（或传原生 boolean/options）
-   * 时回退委托视口自身滚动（保持原生 `el.scrollIntoView()` 语义）。宿主自身作为
-   * 目标时同样回退视口，避免递归。
+   * block/inline 透传）。`target` 为选择器或元素；不传（或传 options 对象）时回退
+   * 委托视口自身滚动；`target` 传原生 boolean 会被忽略（不映射为 options，同样
+   * 回退视口默认滚动）。宿主自身作为目标时同样回退视口，避免递归。
    */
   public override scrollIntoView(
     target?: string | Element | ScrollIntoViewOptions | boolean,

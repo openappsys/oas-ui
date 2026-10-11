@@ -501,7 +501,7 @@ function createTypography(
       const customTag = tagAttr && OASTypography.VALID_TAGS.has(tagAttr.toLowerCase()) ? tagAttr.toLowerCase() : ''
       const wantTag = customTag || (useCodeTag ? 'code' : useDelTag ? 'del' : levels ? this.rootTagName() : tag)
       if (this.root!.tagName.toLowerCase() !== wantTag) this.syncTag(wantTag)
-      // level（仅 title；与修饰 code/delete 冲突时 level 优先——标题语义重于修饰）
+      // level（仅 title；与修饰 code/delete 冲突时修饰优先，level 不生效——见上方 wantTag 决策链）
       if (levels && !useCodeTag && !useDelTag && !customTag) {
         const level = Math.min(Math.max(Number(this.getAttr('level', '3')) || 3, 1), 5)
         const tagName = `h${level}` as const

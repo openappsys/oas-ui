@@ -238,10 +238,10 @@ const STYLE = `
     animation: none;
   }
 }
-/* 箭头：8px 菱形旋转 45°，底色与面板同色（--pop-bg），按 data-placement 基向落在面板对应边上，
+/* 箭头：12px 菱形旋转 45°，底色与面板同色（--pop-bg），按 data-placement 基向落在面板对应边上，
    尖端指向触发元素。旋转后原 border-top/right/bottom/left 依次对应菱形右上/右下/左下/左上边，
    取「汇于尖端」的两条外露边带边框色（--pop-border），与面板 1px 描边无缝衔接。
-   十字轴默认居中（var(--arrow-x/y) 兜底 calc(50% - 4px)）；arrow-point-at-center 时由 JS
+   十字轴默认居中（var(--arrow-x/y) 兜底 calc(50% - 箭头尺寸/2)，默认 6px）；arrow-point-at-center 时由 JS
    写内联偏移，面板被视口避让偏移后箭头仍指向触发元素。
    12 向 placement 使 data-placement 带 -start/-end 后缀，落边规则用属性前缀匹配（^=）。 */
 .arrow {

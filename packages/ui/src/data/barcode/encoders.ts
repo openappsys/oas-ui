@@ -112,7 +112,7 @@ function withCheckDigit(value: string, expected: number, format: string): string
  * CODE128（ISO/IEC 15417；auto A/B/C）
  * ------------------------------------------------------------------ */
 
-/** 107 个符号的条空宽度表（6 位：条空条空条空；含起始符 103–105，不含停止符） */
+/** 106 个符号的条空宽度表（6 位：条空条空条空；符号 0–105 含起始符 103–105，停止符另存 STOP 常量） */
 const CODE128_PATTERNS: readonly string[] = [
   '212222',
   '222122',

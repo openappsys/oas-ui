@@ -377,7 +377,7 @@ export class OASSnackbar extends OASElement {
     })
   }
 
-  /** 堆叠超限/Escape 最老挤下等外部触发的受控下屏：仅派发 oas-close，宿主负责移除 open */
+  /** 宿主外部触发的受控下屏：仅派发 oas-close，宿主负责移除 open（堆叠超限挤下与 Escape 关闭不经此方法，直接 dismiss） */
   requestDismiss(): void {
     this.dismiss('evict')
   }
@@ -684,7 +684,7 @@ export class OASSnackbar extends OASElement {
     b.setAttribute('aria-hidden', String(!this.opened))
   }
 
-  /** 栈位同步：offset 应用（逐元素独立）、打开中换向迁移列表、高度变化重排 */
+  /** 栈位同步：offset 应用（逐元素独立）、打开中换向迁移列表 */
   private syncPlacement(): void {
     const n = Number(this.getAttr('offset', '24'))
     const offset = Number.isFinite(n) && n >= 0 ? n : 24

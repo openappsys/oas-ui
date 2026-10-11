@@ -608,7 +608,7 @@ export class OASAnchor extends OASElement {
     })
   }
 
-  /** 墨水条定位：default 竖条贴左（top/height 随动）；underline 与横向模式为底部/顶部横条（left/width 随动）。
+  /** 墨水条定位：default 竖条贴左（top/height 随动）；underline 与横向模式为底部横条（left/width 随动）。
    *  零尺寸守卫：未布局（容器 hidden/0 尺寸）量到 0 不写入（保留上一次有效值），交自愈助手复测。
    *  @returns 本次是否已写入有效尺寸（供自愈助手判定收敛） */
   private positionInk(): boolean {

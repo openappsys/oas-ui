@@ -19,7 +19,7 @@ export interface TitlebarProps {
   size?: TitlebarSize
   /** 容器设为窗口拖动区（常用交互子件枚举式自动 no-drag，未枚举者加 [data-no-drag]；纯 Web 下无害空操作） */
   drag?: boolean
-  /** 居中标题（title 插槽覆盖；editable 提交后反射回写） */
+  /** 居中标题（title 插槽覆盖；editable 提交不回写 title 属性，经 oas-title-change 事件由宿主受控） */
   title?: string
   /** 副标题 / 文档状态（已编辑时间等） */
   subtitle?: string

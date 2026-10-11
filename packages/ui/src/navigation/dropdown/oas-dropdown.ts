@@ -13,7 +13,7 @@ import type { MenuItem, MenuItemKind } from '../menu/index.js'
 
 /** 浮层与触发元素的默认间隙（offset 属性缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
-/** 箭头尺寸（8px 菱形）与箭头中心到面板圆角边的最短距离 */
+/** 箭头中心到面板圆角边的最短距离（箭头默认 12px 菱形） */
 const ARROW_PAD = 8
 /** 开合动画时长（ms）：入场/退场 keyframes 与 JS 退场隐藏延时共用，改这里需同步下方 CSS 的 `animation` 时长 */
 const ANIM_MS = 150
@@ -167,10 +167,10 @@ const STYLE = `
     animation: none;
   }
 }
-/* 箭头：8px 菱形旋转 45°，底色与菜单面板同色；按 data-placement 基向落在面板对应边上，尖端指向触发元素。
+/* 箭头：12px 菱形旋转 45°，底色与菜单面板同色；按 data-placement 基向落在面板对应边上，尖端指向触发元素。
    旋转后原 border-top/right/bottom/left 依次对应菱形右上/右下/左下/左上边，
    取「汇于尖端」的两条外露边带边框色，与 oas-menu 的 1px 描边无缝衔接。
-   十字轴默认居中（var(--arrow-x/y) 兜底 calc(50% - 4px)）；point-at-center=false 时由 JS
+   十字轴默认居中（var(--arrow-x/y) 兜底 calc(50% - 箭头尺寸/2)，默认 6px）；point-at-center=false 时由 JS
    写内联偏移，面板被视口避让偏移时箭头仍指向触发元素。
    12 向 placement 使 data-placement 带 -start/-end 后缀，落边规则用属性前缀匹配（^=）。 */
 .arrow {

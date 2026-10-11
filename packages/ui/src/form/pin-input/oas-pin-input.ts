@@ -530,7 +530,7 @@ export class OASPinInput extends OASElement {
     e.preventDefault()
     const idx = this.cells.indexOf(document.activeElement as HTMLInputElement)
     const start = idx >= 0 ? idx : 0
-    // 粘贴分发同步过滤（等价 sanitizeValue：约束外字符直接剔除）
+    // 粘贴分发同步过滤（等价 filterText：约束外字符直接剔除）
     const chars = this.filterText(text.trim())
       .slice(0, this.currentLength - start)
       .split('')

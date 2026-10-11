@@ -2335,7 +2335,8 @@ export class OASMenubar extends OASElement {
         const parts = sc.split('+').map((p) => p.trim())
         const hitKey = parts[parts.length - 1]!.toLowerCase()
         const mods = new Set(parts.slice(0, -1).map((p) => p.toLowerCase()))
-        // 绑定规则：「修饰键+键」直接绑定（如 Ctrl+N）；单键仅限功能键（F1-F12）可绑定，
+        // 绑定规则：「修饰键+键」直接绑定（如 Ctrl+N）；单键仅限 F 功能键（正则 ^f\d{1,2}$，
+        // 未钳 F1-F12 范围——f0/f13+ 同样放行）可绑定，
         // 其余单键（字母/数字/Delete/Esc 等）仅作展示不绑定，避免劫持全局键盘输入
         if (mods.size === 0 && !/^f\d{1,2}$/.test(hitKey)) continue
         const ctrl = mods.has('ctrl') || mods.has('control')

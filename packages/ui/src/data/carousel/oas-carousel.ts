@@ -124,7 +124,7 @@ const STYLE = `
 .pause-btn[aria-pressed='true'] .icon-pause {
   display: none;
 }
-/* 垂直模式：暂停钮挪到左下角（右側让位给垂直指示器） */
+/* 垂直模式：暂停钮挪到左上角（只换 right→left，top 不变；右侧让位给垂直指示器） */
 :host([direction='vertical']) .pause-btn {
   right: auto;
   left: var(--oas-space-3);

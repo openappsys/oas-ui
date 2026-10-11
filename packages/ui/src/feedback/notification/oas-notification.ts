@@ -6,7 +6,7 @@ const STYLE = `
   font-family: inherit;
   pointer-events: auto;
   width: var(--oas-notification-width, 320px);
-  /* 窄视口保护：固定宽度在窄屏按视口宽度钳制（两侧各留 12px），不溢出视口 */
+  /* 窄视口保护：固定宽度在窄屏按视口宽度钳制（两侧各留 16px，space-6=32px），不溢出视口 */
   max-width: calc(100vw - var(--oas-space-6));
   margin-bottom: var(--oas-space-3);
 }
@@ -197,8 +197,8 @@ export class OASNotification extends OASElement {
   private hoverPaused = false
 
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题）。
-   *  notification 为命令式 API 组件（title 非观察属性，命令式层挂载前一次性写入），
-   *  吸收只在渲染首帧完成——真实使用路径（命令式 API）已被完整覆盖 */
+   *  notification 为命令式 API 组件（title 非观察属性）；吸收在每次 syncTitle 调用时
+   *  执行（渲染首帧 + 命令式 refresh/transition 路径，见 syncTitle） */
   private titleCache: string | null = null
 
   /** 命令式 Node 标题通道：options.title 传 Node 时由 notification.show() 注入，
@@ -299,7 +299,7 @@ export class OASNotification extends OASElement {
 
   /** 悬停暂停：记录剩余时间并暂停进度动画（pause-on-hover 通道，外部也可调用） */
   pause(): void {
-    // pause-on-hover 显式 "false" 关闭时悬停不暂停（外部显式调 pause() 不受此限）
+    // pause-on-hover 显式 "false" 关闭时不暂停（外部显式调 pause() 同样受此限）
     if (this.getAttr('pause-on-hover', 'true') === 'false' && this.hoverPaused === false) {
       return
     }

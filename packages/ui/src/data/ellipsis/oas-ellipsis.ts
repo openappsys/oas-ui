@@ -141,7 +141,7 @@ export class OASEllipsis extends OASElement {
   private expanded = false
   /** 当前溢出状态（点击展开判定与 aria 同步共用） */
   private overflow = false
-  /** 溢出状态上次派发值（null = 尚未派发，首次同值不派发） */
+  /** 溢出状态上次派发值（null = 尚未派发，首次恒派发，之后同值不再派发） */
   private lastOverflow: boolean | null = null
   /** 水合首帧的布局写入是否已延迟登记（抑制直至 rAF 校正完成，含 RO 首回调等同期写入） */
   private layoutRafScheduled = false

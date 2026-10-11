@@ -5,8 +5,9 @@
  * - 主入口含逐目录 define 副作用（import 即向全局 customElements 注册），是浏览器用法；
  *   顶层 `import '@oas-ui/i18n'` 会注入翻译器。
  * - 本入口只导出组件类（从各 oas-*.ts 类文件直接导出，不经过目录 index.ts），
- *   不触碰 DOM API、无任何副作用，可在 Node 环境直接 import，
+ *   不触碰 DOM API、不执行 define，可在 Node 环境直接 import，
  *   供高级用户在自有 DOM shim（如 @oas-ui/ssr）里自定义注册/实例化。
+ *   唯一副作用：`@oas-ui/icons/register` 注册内置图标集（见下，与客户端全量入口一致）。
  *
  * 用法：
  *   import { OASButton } from '@oas-ui/ui/ssr'

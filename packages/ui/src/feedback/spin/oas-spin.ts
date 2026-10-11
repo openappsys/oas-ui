@@ -98,7 +98,7 @@ const STYLE = `
 :host([inherit-color]) .wrap .indicator .bars i {
   background: currentcolor;
 }
-/* 五档尺寸：xs/small/medium/large/xl；旧缩写 sm/md/lg 保留别名兼容（CSS 两组选择器并存） */
+/* 五档尺寸：xs/small/medium/large/xl；旧缩写 sm/md/lg 别名在 JS 侧归一为全称（CSS 仅全称选择器，无别名规则） */
 .indicator[data-size='xs'] { width: var(--oas-control-height-xs); height: var(--oas-control-height-xs); border-width: var(--oas-spin-border-width, 2px); }
 .indicator[data-size='small'] { width: var(--oas-control-height-sm); height: var(--oas-control-height-sm); border-width: var(--oas-spin-border-width, 2px); }
 .indicator[data-size='medium'] { width: var(--oas-control-height-md); height: var(--oas-control-height-md); }

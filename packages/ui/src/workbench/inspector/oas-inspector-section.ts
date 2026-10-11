@@ -212,7 +212,7 @@ export class OASInspectorSection extends OASElement {
     const extraSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="extra"]')
     const extraWrap = this.shadow.querySelector<HTMLElement>('[part="section-extra"]')
     if (extraWrap && extraSlot) extraWrap.hidden = !this.hasSlotContent(extraSlot)
-    // 折叠语义：body role=group + aria-labelledby 指向标题文本位（同 shadow 内 ID 引用有效）
+    // 折叠语义：body role=group + aria-label 直写标题文本（非 aria-labelledby——无 ID 引用）
     if (this.bodyEl) {
       if (heading !== '') {
         this.bodyEl.setAttribute('aria-label', heading)

@@ -8,7 +8,7 @@ import type { TabsManagerCapability } from './oas-tabs.js'
  * （oas-tabs-capability.js）注入宿主。
  *
  * 边界划分：
- * - manager 专属（本文件）：editable 双击重命名（Enter 提交 oas-rename / Esc 或失焦取消）、
+ * - manager 专属（本文件）：editable 双击重命名（Enter 提交 oas-rename / Esc 取消 / 失焦提交保存）、
  *   contextmenu 右键菜单（新建 + 关闭/关闭其他/关闭左侧/关闭右侧/关闭全部）、sortable 拖拽排序
  *   （drag 事件 → oas-reorder）。对应 CSS（右键菜单弹层 / 重命名输入框 / 拖拽高亮）随本文件注入，
  *   core-only 消费者不携带。

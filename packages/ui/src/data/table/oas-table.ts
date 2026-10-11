@@ -60,7 +60,7 @@ export interface TableColumn {
   editOptions?: EditOption[]
   /** 操作列：渲染 编辑/保存/取消 按钮（依赖表格级 `editable` 属性） */
   actions?: boolean
-  /** 序号列：该列单元格渲染行序号（从 1 递增），不取数据字段值 */
+  /** 序号列：该列单元格渲染行序号（从 1 递增，按当前可见行展示位置计——非数据行下标，排序/过滤后重排），不取数据字段值 */
   serialNumber?: boolean
   /** 省略号：单元格内容超出列宽时单行截断并以省略号显示（配合 title 悬停查看全文） */
   ellipsis?: boolean
@@ -1312,7 +1312,6 @@ export class OASTableBase extends OASElement {
     `
   }
 
-  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
   /** 表头单元格填充：标题 + 可排队列排序箭头/序号 + 可过滤列过滤触发器（扁平与多行叶子共用） */
   private fillHeaderCell(th: HTMLElement, col: TableColumn): void {
     if (col.headerTemplate) {
@@ -1418,6 +1417,7 @@ export class OASTableBase extends OASElement {
     this.bind()
   }
 
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
   private bind(): void {
     this.wrap = this.shadow.querySelector('.table-scroll')
     this.ensureChildColumnsObserver()
@@ -2077,7 +2077,6 @@ export class OASTableBase extends OASElement {
     return Number.isFinite(n) && n >= 0 ? n : 24
   }
 
-  /** 渲染可展开行的内容行（整行 colspan 展示自定义内容） */
   /** 合并单元格：对 merge 列后处理连续相同显示值的行，首行 rowspan 覆盖、后续行删除该列 td。
       仅合并连续 data 行（expand 内容行插入则断开分组）。按 data-col 属性按 key 查询 td，
       对其它列已删除的 td 免疫（不依赖列位置索引，避免跨列删除导致的索引漂移）。 */
@@ -2114,6 +2113,7 @@ export class OASTableBase extends OASElement {
     }
   }
 
+  /** 渲染可展开行的内容行（整行 colspan 展示自定义内容） */
   private buildExpandRow(flat: FlatRow): HTMLTableRowElement {
     const tr = document.createElement('tr')
     tr.className = 'expand-row'
@@ -2220,7 +2220,6 @@ export class OASTableBase extends OASElement {
     else cell.style.right = `${off.right ?? 0}px`
   }
 
-  /** 计算各列 sticky 偏移（左侧从左累加、右侧从右累加） */
   /** 扁平化列树：深度优先收集叶子列（无 children）。组列只承载标题，不产出数据单元格 */
   private flattenLeaves(cols: TableColumn[]): TableColumn[] {
     const out: TableColumn[] = []
@@ -2334,6 +2333,7 @@ export class OASTableBase extends OASElement {
     return null
   }
 
+  /** 计算各列 sticky 偏移（左侧从左累加、右侧从右累加） */
   private computeLayout(): { offsets: Map<string, ColumnOffset>; hasFixed: boolean } {
     const offsets = new Map<string, ColumnOffset>()
     const cols = this.effectiveColumns()
@@ -3560,7 +3560,7 @@ export class OASTableBase extends OASElement {
   /**
    * column-virtual 列窗口同步：scrollLeft / 视口宽 / 列宽变化时重算 middle 段窗口；
    * 窗口变化时返回 true（由调用方触发重渲染）。rAF 由 scroll/resize handler 节流。
-   * 列宽缓存按 segments 引用失效（每次 update 重建 segments，列宽定义变化必然重测）。
+   * 列宽缓存按 middle 段列签名失效（key:width 逐列拼接比对，列宽定义变化必然重测）。
    */
   private syncColumnWindow(segments: { left: TableColumn[]; middle: TableColumn[]; right: TableColumn[] }): boolean {
     const w = this.wrap
