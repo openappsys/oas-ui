@@ -130,17 +130,14 @@
 - **oas-table 列 `type` 字段类型系统**：columns JSON 加 `type`——text / number（千分位右对齐）/ currency（货币符号）/ select（badge，`options` 配 value/label/color）/ multi-select（badge 组）/ date（YYYY-MM-DD）/ checkbox（只读勾选态）/ link（主色下划线新标签页，协议白名单防 javascript: 注入）/ progress（0-100 进度条）/ rate（0-5 星级）。编辑器复用既有通道（input 系原生 input、select 走 editor:'select'、checkbox 挂 oas-switch），回写类型按语义（数值/数组/布尔）；排序按列 type 数值序/时间序；自定义渲染（render/cellTemplate）优先于 type
 - **oas-table `group-by` 分组视图**：按字段值分节（分节头 = 折叠箭头 + 字段值 + 计数，点击折叠/展开，状态在数据变化时保留）；空值归「（空）」组；分节头作为扁平行参与行虚拟滚动、整行 colSpan 全宽（与 column-virtual 正交）；排序作用于组内行；与 merge 列 / span-method / row-draggable 互斥（告警降级）；与 pagination 同用时为页内分组口径
 - **oas-table `cell-tooltip` 单元格溢出提示（单例浮层）**：纯文本单元格溢出（scrollWidth > clientWidth）时悬停显示全文——表格级单一浮层实例（事件委托 + 视口夹取），不为每格创建组件实例；默认开启（`cell-tooltip="false"` 关闭）；滚动 / 重渲染自动隐藏
+- **oas-table `column-virtual` 横向虚拟滚动（双向虚拟补齐）**：非固定列窗口化——DOM 只渲染窗口列 th/td，窗口外列以占位格 colSpan 归并（宽度由 colgroup 对应列求和，`table-layout: fixed` 强制启用——auto 布局把 col 宽当建议忽略、总宽塌缩）。列宽模型复用 virtual-list 的 HeightCache（横向换轴），全列显式 width（未设宽按预估 100px 定宽截断，文档注明）；约束（告警降级）：多级表头 / span-method / 合计行；固定列须两端布局（left 段 → 非固定段 → right 段）且恒渲染
+- **oas-table-edit `editComponent` 组件编辑器通道**：列配置 `editComponent`（columns JSON 字段）指定任意 value 语义的 WC（库内 form 组件 / 宿主自定义组件同通道，优先于原生 editor）——双击挂载组件并注入当前值、`oas-change`/`change` 提交、Esc 取消。单元格编辑器标准化第一期（非浮层组件；浮层类编辑器后续批次）
 
 ### 修复
 
 - **oas-table `editComponent` 通道端到端修复（独立 review 实抓）**：库内 form 组件此前完全不可用——提交事件并听 `oas-change`（库内组件经 core emit 统一前缀）与原生 `change`（宿主自定义 WC）；读值改 `getFormValue()` → value property → value attribute 三级兜底（旧版只读 attribute，而 oas-input 用户输入不回写 attribute，提交恒为初始值）；编辑器初值改 attribute + property 双通道注入。行虚拟 × 列虚拟双开横向滚动时同步重建 thead（表头不再滞留旧窗口列）；编辑单元格定位改 `td[data-col]` 查询（占位 colSpan 归并不再使索引错位）；编辑器失焦改监听 `focusout`（composed，shadow 内控件失焦可感知）；多行编辑器（textarea 内核）Enter 让路换行；列窗口起点扣除前置列与 left 固定段宽度（固定列右侧不再露空洞）；RTL 下 scrollLeft 取绝对值标准化；`setColumnWidth` 后列宽缓存即时失效；expand 列 colgroup 定宽与 sticky 偏移收敛为同一常量（40px）；列宽解析归一（兜底统一 100px）；容器尺寸变化（ResizeObserver）重算列窗口；占位格补 `aria-colspan` 且不入网格导航矩阵
 
 - **`prefix` / `suffix` / `blur` 恢复 property 通道（input / input-number / statistic / countdown / tree-select / backdrop / mentions）**：这些属性名撞上 DOM 的只读访问器（`Element.prefix`）或方法（`HTMLElement.blur()`）。React 19 按 `key in el` 判定走 property 写入：`prefix` 撞只读 getter 会**抛错并崩掉整棵 React 树**，`blur`（backdrop）撞方法则**覆盖 `blur()` 方法且属性不落**（不崩但模糊失效）；`suffix` 无 DOM 对应（为对称与 property 通道一并处理），mentions 的 `prefix` 是 `trigger` 的遗留别名。现用 `Object.defineProperty` 在原型上遮蔽并映射到规范属性（`prefix-text` / `suffix-text` / `blur` / `trigger`），使它们在 React JSX / Vue 绑定 / HTML **全通道可用**（`prefix-text` / `suffix-text` 仍是规范名）；`blur` 被遮蔽后该元素的 `blur()` 方法被属性访问器取代（backdrop 无实际影响）。
-
-### 特性
-
-- **oas-table `column-virtual` 横向虚拟滚动（双向虚拟补齐）**：非固定列窗口化——DOM 只渲染窗口列 th/td，窗口外列以占位格 colSpan 归并（宽度由 colgroup 对应列求和，`table-layout: fixed` 强制启用——auto 布局把 col 宽当建议忽略、总宽塌缩）。列宽模型复用 virtual-list 的 HeightCache（横向换轴），全列显式 width（未设宽按预估 100px 定宽截断，文档注明）；约束（告警降级）：多级表头 / span-method / 合计行；固定列须两端布局（left 段 → 非固定段 → right 段）且恒渲染
-- **oas-table-edit `editComponent` 组件编辑器通道**：列配置 `editComponent`（columns JSON 字段）指定任意 value 语义的 WC（库内 form 组件 / 宿主自定义组件同通道，优先于原生 editor）——双击挂载组件并注入当前值、`oas-change`/`change` 提交、Esc 取消。单元格编辑器标准化第一期（非浮层组件；浮层类编辑器后续批次）
 
 ## [2.5.7] - 2026-09-27
 
@@ -416,7 +413,7 @@
 
 ## [2.4.0] - 2026-09-01
 
-### ⚠️ Breaking（含迁移说明）
+### 破坏性变更（迁移说明）
 
 - **源码目录统一到文档站语义七组**（`59b45c6`）：源码目录 = 文档站语义组 = 用户心智单一权威。`floating/` 拆空（menu/dropdown/contextmenu/menubar/navigation-menu/toolbar/command/speed-dial → `navigation/`；tooltip/popover/hover-card/backdrop → `feedback/`；scroll-area → `layout/`；config-provider/app/theme-editor → `framework/`）；`layout/` 的 tabs/pagination/steps/affix/page-header/float-button → `navigation/`、segmented → `form/`；`data/` 的 masonry/aspect-ratio → `layout/`。**ESM 旧路径直接 breaking 不保留别名**（`22e8749`）——如 `@oas-ui/ui/floating/menu` → `@oas-ui/ui/navigation/menu`，import 路径机械替换即可；`unpkg` 深链 `dist/floating/*` 同步失效
 - **exports 收敛**：仅剩 `.` / `./ssr` / `./cdn/*` / `./*` 四键
@@ -669,8 +666,6 @@
 - **menu**：checkbox 多选方格与标签紧贴（补 margin 间距）
 - **table**：summary 行 render 返回 Node 时文本路径守卫
 - **docs**：端口描述漂移修正 5173→5175；qa-regression.spec 积压 typecheck 错误清理；format 既存漂移两批收敛；sidebar API 描述补录（active/drawer-open）
-
-## [2.2.2] - 2026-08-22
 
 ## [2.1.5] - 2026-08-22
 
@@ -1060,6 +1055,39 @@
 - 基础运行时 `@oas-ui/core`、主题 token、图标库
 - 新增 Button、Icon、Tag、Badge、Space、Divider、Link、Typography
 
+[未发布]: https://github.com/openappsys/oas-ui/compare/v2.6.0...HEAD
+[2.6.0]: https://github.com/openappsys/oas-ui/releases/tag/v2.6.0
+[2.5.9]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.9
+[2.5.8]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.8
+[2.5.7]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.7
+[2.5.6]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.6
+[2.5.5]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.5
+[2.5.4]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.4
+[2.5.3]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.3
+[2.5.2]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.2
+[2.5.1]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.1
+[2.5.0]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.0
+[2.4.1]: https://github.com/openappsys/oas-ui/releases/tag/v2.4.1
+[2.4.0]: https://github.com/openappsys/oas-ui/releases/tag/v2.4.0
+[2.3.2]: https://github.com/openappsys/oas-ui/releases/tag/v2.3.2
+[2.3.1]: https://github.com/openappsys/oas-ui/releases/tag/v2.3.1
+[2.3.0]: https://github.com/openappsys/oas-ui/releases/tag/v2.3.0
+[2.2.9]: https://github.com/openappsys/oas-ui/releases/tag/v2.2.9
+[2.2.8]: https://github.com/openappsys/oas-ui/releases/tag/v2.2.8
+[2.2.7]: https://github.com/openappsys/oas-ui/releases/tag/v2.2.7
+[2.2.6]: https://github.com/openappsys/oas-ui/releases/tag/v2.2.6
+[2.2.5]: https://github.com/openappsys/oas-ui/releases/tag/v2.2.5
+[2.2.4]: https://github.com/openappsys/oas-ui/releases/tag/v2.2.4
+[2.2.3]: https://github.com/openappsys/oas-ui/releases/tag/v2.2.3
+[2.1.5]: https://github.com/openappsys/oas-ui/releases/tag/v2.1.5
+[2.1.4]: https://github.com/openappsys/oas-ui/releases/tag/v2.1.4
+[2.1.3]: https://github.com/openappsys/oas-ui/releases/tag/v2.1.3
+[2.1.2]: https://github.com/openappsys/oas-ui/releases/tag/v2.1.2
+[2.1.1]: https://github.com/openappsys/oas-ui/releases/tag/v2.1.1
+[2.1.0]: https://github.com/openappsys/oas-ui/releases/tag/v2.1.0
+[2.0.0]: https://github.com/openappsys/oas-ui/releases/tag/v2.0.0
+[1.9.1]: https://github.com/openappsys/oas-ui/releases/tag/v1.9.1
+[1.9.0]: https://github.com/openappsys/oas-ui/releases/tag/v1.9.0
 [1.0.0]: https://github.com/openappsys/oas-ui/releases/tag/v1.0.0
 [1.1.0]: https://github.com/openappsys/oas-ui/tree/v1.1.0
 [1.2.0]: https://github.com/openappsys/oas-ui/tree/v1.2.0
