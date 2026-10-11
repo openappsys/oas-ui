@@ -147,7 +147,7 @@ const OBSERVED_GETTER = 'observedAttributes'
  *   标准全局属性 `dir`——书写方向，config-provider direction / 根级 dir 控制，
  *   RTL 批次起方向敏感组件观察它触发重判定，行为由 RTL 说明覆盖） */
 const GLOBAL_CONVENTION_ATTRS = new Set(['disabled-skip', 'dir'])
-const ATTR_HELPERS = new Set(['getAttr', 'hasAttr', 'injectValue', 'injectDisabled'])
+const ATTR_HELPERS = new Set(['getAttr', 'hasAttr', 'injectValue', 'injectDisabled', 'intAttr'])
 
 // 跨组件属性补充：AST 探不到的公开 attribute，显式登记（observed:false，不参与
 // attributeChanged 联动）。两类来源：
@@ -547,6 +547,8 @@ function extractAttrs(cls, observed, propNames) {
     const isHas = helper === 'hasAttr'
     if (isHas) entry.has = true
     else entry.get = true
+    // intAttr（各组件私有的 number 读取器）：按 getter 计并推 number
+    if (helper === 'intAttr') entry.inferTypes.push('number')
 
     // type：`as XxxType` 强转（如 getAttr('type','default') as ButtonType），优先于字面量推断
     const parent = n.parent
@@ -582,7 +584,7 @@ function extractAttrs(cls, observed, propNames) {
     if (propNames?.has(entry.name) || propNames?.has(camel)) continue
     const uniq = [...new Set(entry.inferTypes)]
     if (uniq.length === 1) entry.type = uniq[0]
-    else if (entry.has && !entry.get) entry.type = 'boolean'
+    else if (entry.has && !entry.get) entry.type = entry.name.startsWith('aria-') ? 'string' : 'boolean'
   }
 
   // 排序：observed 在前（按声明顺序），非 observed 在后

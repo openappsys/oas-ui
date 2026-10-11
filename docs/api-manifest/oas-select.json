@@ -47,7 +47,7 @@
     },
     {
       "name": "max-tag-count",
-      "type": "boolean",
+      "type": "number",
       "observed": true
     },
     {
@@ -101,6 +101,7 @@
     },
     {
       "name": "max-count",
+      "type": "number",
       "observed": true
     },
     {
@@ -116,6 +117,7 @@
     },
     {
       "name": "debounce",
+      "type": "number",
       "observed": true
     },
     {
