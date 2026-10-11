@@ -4,18 +4,18 @@
 
 A framework-agnostic Web Components UI library — one set of components, runs everywhere, zero framework dependency; works with plain HTML / React / Vue / and more.
 
-Full TypeScript types · tree-shakable · light/dark themes · SSR + DSD · framework-agnostic i18n · dual licensed under MIT OR Apache-2.0
+Full TypeScript types · tree-shakable · light/dark/high-contrast themes · SSR + DSD · framework-agnostic i18n · dual licensed under MIT OR Apache-2.0
 
 ## Real Numbers
 
 | Metric | Value |
 | --- | --- |
-| Components | 133 |
-| Full CDN bundle (gzip) | 608.5 KB |
-| Button chain (gzip) | 33.5 KB |
-| Unit tests | 8700+ |
+| Components | 145 |
+| Full CDN bundle (gzip) | 665.4 KB |
+| Button chain (gzip) | 25 KB |
+| Unit tests | 10400+ |
 | Locales | 10 built-in: zh-CN / en / ja / ko / de / fr / es / pt / ru / ar (ar is RTL) |
-| Current version | v2.5.2 |
+| Current version | v2.6.0 |
 
 ## Getting Started
 
@@ -80,7 +80,7 @@ SSR / DSD guide: the [SSR page](https://oas-ui.dev/guide/ssr) on the docs site a
 | `packages/theme` | CSS custom-property design tokens (light/dark), single-source index.css |
 | `packages/i18n` | Framework-agnostic locale registry, tree-shakable language packs |
 | `packages/icons` | Inline SVG icon set (tree-shakable, no icon fonts) |
-| `packages/ui` | 133 components (8 source family dirs: basic / form / data / feedback / navigation / layout / framework / overlay; presented as 7 groups on the docs site) |
+| `packages/ui` | 145 components (9 source family dirs: basic / conversation / data / feedback / form / framework / layout / navigation / workbench; presented as 9 groups on the docs site) |
 | `packages/ssr` | DSD snapshot renderer + Node-safe entry + true hydration |
 | `packages/nuxt` | Nuxt 3 integration plugin |
 | `packages/next` | Next.js (RSC) integration plugin |

@@ -2187,7 +2187,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测：combobox +16 / switch +9 / toggle-button +8 / toggle-group +5 断言（RED→GREEN）；`pnpm test` 全绿。
 - e2e：`qa-regression/combobox.spec.ts`（多选真点叠加 chips + chip 移除 + 上限拦截反馈可见 + 折叠 +N）、`qa-regression/switch.spec.ts`（卡片真点切换 + demo 反馈 + 禁用卡拦截）、`qa-regression/toggle-button.spec.ts`（三形态真点 + 静态镜像）、`qa-regression/toggle-group.spec.ts`（四形态镜像 + filled 多选真点反馈）全绿。
-- 文档：combobox/switch/toggle-button/toggle-group md（zh/en）新增章节 + 可交互 demo；`api-descriptions.{zh,en}.json` 增补 + api:scan/api:gen 重生成；CHANGELOG `[未发布]` 英文条目。
+- 文档：combobox/switch/toggle-button/toggle-group md（zh/en）新增章节 + 可交互 demo；`api-descriptions.{zh,en}.json` 增补 + api:scan/api:gen 重生成；CHANGELOG `[未发布]` 简体中文条目。
 
 ## 专业密度 C 批：oas-collapsible 新组件 + list / menu 系 / typography 能力增量（未发布）
 
@@ -2232,7 +2232,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：TDD RED→GREEN——collapsible（双模式/播种值语义/事件/disabled 含注入/插槽/键盘退化/token/水合）+ list-item（icon/image 显隐/链接覆盖层/rel 自动补/aria 名称/焦点分离）+ menu 系（template/元素双通道/优先级/loading 替位/样式）+ dropdown 别名通道 + typography（白名单/解包/切换重建/样式 token）；分多批累计（计数随各轮 review 修复递增，不逐项固化数字）。
 - e2e：`qa-regression/collapsible.spec.ts` 新建 7 条（真点开合/受控写回/外部切换联动/disabled/键盘/暗色/console 零告警）+ list 补 2 条（真实点击 hash 导航 + extra 可点 + 焦点分离 / 前置媒体真实渲染）+ typography 补 1 条（块级真渲染断言）+ menu 补 1 条（leading 真实渲染在 label 前）。
 - 文档：collapsible.md zh/en 新页（进侧栏与 smoke 等自动收集面）+ list/typography/menu/dropdown zh/en demo 与说明 + api-manifest/api-descriptions 同步（api:check 双向 0）。
-- PRD/ROADMAP 标「未发布」；CHANGELOG `[未发布]` 英文条目。
+- PRD/ROADMAP 标「未发布」；CHANGELOG `[未发布]` 简体中文条目。
 
 ## 能力补全批：4 新组件 + 多组件增强（未发布）
 

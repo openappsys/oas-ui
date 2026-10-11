@@ -4,18 +4,18 @@
 
 框架无关的 Web Components UI 组件库——一套组件，到处运行，无框架依赖，适配原生 HTML / React / Vue / 等。
 
-TypeScript 全量类型 · tree-shakable · light/dark 双主题 · SSR + DSD · 框架无关 i18n · MIT OR Apache-2.0 双许可
+TypeScript 全量类型 · tree-shakable · light/dark/high-contrast 三主题 · SSR + DSD · 框架无关 i18n · MIT OR Apache-2.0 双许可
 
 ## 真实数字
 
 | 指标 | 数值 |
 | --- | --- |
-| 组件数 | 133 |
-| CDN 全量单文件（gzip） | 608.5 KB |
-| 按钮单链（gzip） | 33.5 KB |
-| 单测 | 8700+ |
+| 组件数 | 145 |
+| CDN 全量单文件（gzip） | 665.4 KB |
+| 按钮单链（gzip） | 25 KB |
+| 单测 | 10400+ |
 | 语言包 | 内置 10 种：zh-CN / en / ja / ko / de / fr / es / pt / ru / ar（ar 为 RTL） |
-| 当前版本 | v2.5.2 |
+| 当前版本 | v2.6.0 |
 
 ## 快速开始
 
@@ -80,7 +80,7 @@ SSR / DSD 指南见文档站 [SSR 页](https://oas-ui.dev/guide/ssr)与 `@oas-ui
 | `packages/theme` | CSS 变量设计 token（light/dark），单源 index.css |
 | `packages/i18n` | 框架无关 locale registry，语言包 tree-shakable |
 | `packages/icons` | 内联 SVG 图标集（可 tree-shake，无图标字体） |
-| `packages/ui` | 133 个组件（8 个源码族目录：basic / form / data / feedback / navigation / layout / framework / overlay；文档站按 7 个分组呈现） |
+| `packages/ui` | 145 个组件（9 个源码族目录：basic / conversation / data / feedback / form / framework / layout / navigation / workbench；文档站按 9 个分组呈现） |
 | `packages/ssr` | DSD 快照渲染器 + Node-safe 入口 + 真水合 |
 | `packages/nuxt` | Nuxt 3 集成插件 |
 | `packages/next` | Next.js（RSC）集成插件 |
