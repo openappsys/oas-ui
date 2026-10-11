@@ -159,7 +159,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `aria-label` | Accessible name of the container; defaults to i18n | — | — |
+| `aria-label` | Accessible name of the graphic element (svg, `role="img"`); defaults to i18n | — | — |
 | `bar-width` | Bar width X-dimension (px, default 2, clamped to ≥1) | `string` | `2` |
 | `bg-color` | Quiet-zone background (default white — scanners need a light quiet zone; stays white in dark theme for scannability; override via `--oas-barcode-bg`) | `string` | — |
 | `color` | Bar color (default fixed dark `#18181b` — paired with the white background for dark-theme scannability; override via `--oas-barcode-color`, preset name, or any color value) | `string` | — |

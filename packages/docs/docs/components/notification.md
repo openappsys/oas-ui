@@ -73,7 +73,7 @@
 <DemoBlock title="关闭回调 onClose">
   <p style="font-size: 13px; margin: 0 0 8px;">无论自动关闭、点击 ✕ 还是命令式销毁，onClose 都会触发一次：</p>
   <oas-space>
-    <oas-button onclick="window.__notifLog('close', notification.info({ title: '观察关闭', description: '等待关闭后看下方计数', duration: 4000, onClose: () => window.__notifCount('close') }).close)">命令式销毁</oas-button>
+    <oas-button onclick="window.__notifLog('close', notification.info({ title: '观察关闭', description: '等待关闭后看下方计数', duration: 4000, onClose: () => window.__notifCount('close') }))">命令式销毁</oas-button>
     <oas-button onclick="notification.info({ title: '观察关闭', description: '等 4 秒自动关闭或点 ✕', duration: 4000, onClose: () => window.__notifCount('close') })">自动/手动关闭</oas-button>
     <span id="notif-close-count" style="font-size: 13px; align-self: center;">onClose 触发：0 次</span>
   </oas-space>
@@ -337,7 +337,7 @@ onMounted(async () => {
 | `closable` | 是否显示关闭按钮（默认 true；false 隐藏关闭钮） | `string` | `true` |
 | `description` | 描述内容 | `string` | — |
 | `duration` | 自动关闭时长（ms），`0` 表示不自动关闭 | `string` | `4500` |
-| `pause-on-hover` | 悬停/聚焦暂停计时与进度条（默认开）；移出恢复剩余时长 | `string` | `true` |
+| `pause-on-hover` | 悬停暂停计时与进度条（默认开，mouseenter/leave 通道）；移出恢复剩余时长 | `string` | `true` |
 | `progress-position` | 进度条位置：`bottom`（默认）/ `top` | `string` | `bottom` |
 | `scrollable` | 描述内容超长时卡片内滚动，默认开启；传 `false` 关闭 | `string` | `true` |
 | `show-progress` | 显示自动关闭倒计时进度条（动画时长与 `duration` 同步） | `boolean` | — |

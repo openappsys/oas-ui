@@ -211,4 +211,4 @@ onMounted(async () => {
 | --- | --- |
 | `--oas-comment-font` | `inherit` |
 
-Parts: `::part(comment)` root, `::part(main)` main body, `::part(avatar)` / `::part(author)` / `::part(time)` / `::part(content)` / `::part(actions)`, `::part(children)` child comment container.
+Parts: `::part(comment)` root, `::part(main)` main body, `::part(avatar)`, `::part(body)` content column (containing the `::part(head)` header row), `::part(author)` / `::part(time)` / `::part(reply)` / `::part(quote)` / `::part(content)` / `::part(actions)`, `::part(children)` child comment container.

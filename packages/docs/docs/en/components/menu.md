@@ -42,7 +42,7 @@ With `mode="horizontal"` the items are laid out in a row as a top navigation bar
 
 ## Collapsed state
 
-`collapsed` (vertical / inline; not applicable to horizontal) narrows the menu to show only icons; hovering or clicking an icon item pops its submenu out to the right, still a full menu.
+`collapsed` (vertical / inline; not applicable to horizontal) narrows the menu to show only icons; in vertical mode hovering or clicking an icon item pops its submenu out to the right (still a full menu), while inline mode does not fly out — submenus still expand in place (click-to-expand, no hover expansion).
 
 <DemoBlock title="Collapsed (icons only)">
   <oas-menu collapsed onoas-select="menuCLog(event)" items='[{"label":"Home","value":"home","icon":"menu"},{"label":"Messages","value":"message","icon":"mail","children":[{"label":"Inbox","value":"inbox"},{"label":"Sent","value":"sent"}]},{"label":"User","value":"user","icon":"user"},{"label":"Settings","value":"settings","icon":"gear","children":[{"label":"Profile","value":"profile"},{"label":"Security","value":"security"}]}]'></oas-menu>
@@ -203,7 +203,7 @@ With the menu focused, typing a character jumps to the item whose `label` matche
 
 <DemoBlock title="Typeahead">
   <oas-space direction="vertical" size="small">
-    <oas-menu id="menu-typeahead" style="width: 200px" items='[{"label":"Copy 复制","value":"copy","icon":"copy"},{"label":"Cut 剪切","value":"cut"},{"label":"Paste 粘贴","value":"paste"},{"label":"Undo 撤销","value":"undo"},{"label":"Redo 重做","value":"redo"}]'></oas-menu>
+    <oas-menu id="menu-typeahead" style="width: 200px" items='[{"label":"Copy","value":"copy","icon":"copy"},{"label":"Cut","value":"cut"},{"label":"Paste","value":"paste"},{"label":"Undo","value":"undo"},{"label":"Redo","value":"redo"}]'></oas-menu>
     <oas-tag id="menu-typeahead-hint" type="info">Menu focused — just type (e.g. c → Copy, cu → Cut)</oas-tag>
   </oas-space>
 </DemoBlock>
@@ -422,7 +422,7 @@ onMounted(() => {
 
 ## Whole-menu disabled
 
-`disabled` disables the entire menu: click / hover / keyboard are all intercepted (href items also get their native navigation blocked), the host is dimmed (opacity .6) and synced with `aria-disabled`; removing the attribute restores interaction.
+`disabled` disables the entire menu: click / hover / keyboard are all intercepted (href items also get their native navigation blocked), the host text switches to the disabled color (no opacity overlay) and is synced with `aria-disabled`; removing the attribute restores interaction.
 
 <DemoBlock title="Whole-menu disabled">
   <oas-menu disabled style="max-width: 220px" items='[{"label":"Home","value":"home"},{"label":"Settings","value":"settings"},{"label":"Delete","value":"delete","danger":true}]'></oas-menu>

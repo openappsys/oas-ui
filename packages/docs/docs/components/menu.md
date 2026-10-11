@@ -42,7 +42,7 @@
 
 ## 收起态
 
-`collapsed`（vertical / inline 生效，horizontal 不适用）将菜单收窄为只显示图标，悬停或点击图标项时子菜单向右浮出，子菜单内仍为完整菜单。
+`collapsed`（vertical / inline 生效，horizontal 不适用）将菜单收窄为只显示图标；vertical 模式悬停或点击图标项时子菜单向右浮出（子菜单内仍为完整菜单），inline 模式不浮出——子菜单仍就地展开（点击展开，悬停不展开）。
 
 <DemoBlock title="收起态（只显示图标）">
   <oas-menu collapsed onoas-select="menuCLog(event)" items='[{"label":"首页","value":"home","icon":"menu"},{"label":"消息","value":"message","icon":"mail","children":[{"label":"收件箱","value":"inbox"},{"label":"已发送","value":"sent"}]},{"label":"用户","value":"user","icon":"user"},{"label":"设置","value":"settings","icon":"gear","children":[{"label":"个人资料","value":"profile"},{"label":"安全","value":"security"}]}]'></oas-menu>
@@ -422,7 +422,7 @@ onMounted(() => {
 
 ## 整单禁用
 
-`disabled` 禁用整个菜单：点击 / 悬停 / 键盘全部拦截（href 项同时阻断原生跳转），宿主降饱和（opacity .6）并同步 `aria-disabled`；移除属性即恢复交互。
+`disabled` 禁用整个菜单：点击 / 悬停 / 键盘全部拦截（href 项同时阻断原生跳转），宿主文字走禁用色（不叠 opacity）并同步 `aria-disabled`；移除属性即恢复交互。
 
 <DemoBlock title="整单禁用">
   <oas-menu disabled style="max-width: 220px" items='[{"label":"首页","value":"home"},{"label":"设置","value":"settings"},{"label":"删除","value":"delete","danger":true}]'></oas-menu>

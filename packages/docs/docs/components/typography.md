@@ -349,7 +349,3 @@
 | --- | --- |
 | `--oas-line-clamp` | `2` |
 | `--oas-text-mark-bg` | `var(--oas-color-warning)` |
-
-同 oas-text 属性（修饰布尔/depth/tag/line-clamp/copy-text/ellipsis-suffix/actions-position 同样生效），`level` 1–5 驱动标签。
-
-同 oas-text 属性。

@@ -334,4 +334,4 @@ onMounted(() => {
 
 Keyboard: `←`/`→` to move between cells, `Backspace` deletes the current cell and moves back, paste auto-distribution is supported; when all cells are empty, each cell is focusable (native caret).
 
-ARIA: the container has `role="group"` + `aria-label`, each cell has `aria-label="第 n 位"`, and `aria-invalid` is synced to both the container and all cells.
+ARIA: the container has `role="group"` + `aria-label`, each cell has `aria-label="Digit {position}"`, and `aria-invalid` is synced to both the container and all cells.

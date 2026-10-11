@@ -290,8 +290,8 @@ The `oas-grid-item` `flex` attribute writes the CSS `flex` shorthand inline (not
     font-size: var(--oas-font-size-xs);
     color: var(--oas-color-text-secondary);
   }
-  /* 4 级主色梯度循环：便于区分相邻块（token 派生，dark 自适应）。
-     渐变点选在「浅底深字」与「实底浅字」各自达标的两段，中段（浅底与白字都不够）不出现 */
+  /* 4-level primary gradient cycle to distinguish adjacent blocks (token-derived, dark-adaptive).
+     Stops are picked at the two ranges where "light bg + dark text" and "solid bg + light text" each pass contrast; the middle range (neither works) is skipped */
   oas-grid > *:nth-child(4n+1) .demo-grid-box,
   oas-grid > .demo-grid-box:nth-child(4n+1) {
     background: color-mix(in srgb, var(--oas-color-primary) 10%, var(--oas-color-bg));
@@ -312,9 +312,9 @@ The `oas-grid-item` `flex` attribute writes the CSS `flex` shorthand inline (not
     background: var(--oas-color-primary);
     color: var(--oas-color-text-on-primary);
   }
-  /* dark 下主色变浅（#9ecdff），拉大梯度间距保持可分辨。
-     档位对齐 light 的两段式：浅底两档（14%/22%）配主色浅字、实底两档（90%/100%）
-     配 on-primary 深字——中间混合段（底不够亮配深字、又不够暗配浅字）不出现 */
+  /* In dark the primary gets lighter (#9ecdff), so the gradient steps are spread wider to stay distinguishable.
+     Steps mirror the light two-part scheme: two light-bg steps (14%/22%) with primary text, two solid steps (90%/100%)
+     with on-primary text — the middle mixed range (bg too dark for dark text, too light for light text) is skipped */
   .dark oas-grid > *:nth-child(4n+1) .demo-grid-box,
   .dark oas-grid > .demo-grid-box:nth-child(4n+1) {
     background: color-mix(in srgb, var(--oas-color-primary) 14%, var(--oas-color-bg));

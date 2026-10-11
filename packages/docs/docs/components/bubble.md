@@ -119,4 +119,4 @@ onMounted(async () => {
 | `--oas-bubble-max-width` | `80%` |
 | `--oas-bubble-radius` | `var(--oas-radius-lg)` |
 
-部件：`::part(bubble)` 气泡表面、`::part(content)` 内容区、`::part(typing)` 打字点。`align`（`start` 默认 / `end`）与 `variant`（`default` / `secondary` / `muted` / `outline` / `ghost` / `destructive`）为纯 CSS 消费通道。
+部件：`::part(bubble)` 气泡表面、`::part(content)` 内容区、`::part(typing)` 打字点、`::part(reactions)` 反应条 / `::part(reaction)` 单个反应钮。`align`（`start` 默认 / `end`）与 `variant`（`default` / `secondary` / `muted` / `outline` / `ghost` / `destructive`）为纯 CSS 消费通道。

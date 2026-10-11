@@ -60,7 +60,7 @@
 `scrollable` 开启后，单条内容超长时横向无缝滚动——内嵌 `oas-marquee` 组合复用其滚动引擎（无缝循环、内容不足一屏自动填充、`prefers-reduced-motion` 静态降级均由 marquee 承担）。注意：滚动副本处于组件 shadow 内，页面样式表的 class 选择器不作用于副本（行内样式保留），滚动内容建议用纯文本或行内样式；克隆不复制事件监听，副本内交互元素可见但不可交互。
 
 <DemoBlock title="scrollable：超长通告横向滚动">
-  <oas-notice-bar scrollable>长通告：这是一条特别长的公告文本，用于演示超长内容的横向无缝滚动效果——无缝循环、恒定速度，悬停行为与暗色降级由内嵌走马灯引擎统一处理。</oas-notice-bar>
+  <oas-notice-bar scrollable>长通告：这是一条特别长的公告文本，用于演示超长内容的横向无缝滚动效果——无缝循环、恒定速度，悬停行为与 reduced-motion 降级由内嵌走马灯引擎统一处理。</oas-notice-bar>
 </DemoBlock>
 
 ## 图标自定义

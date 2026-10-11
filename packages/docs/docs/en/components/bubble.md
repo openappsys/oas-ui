@@ -119,4 +119,4 @@ onMounted(async () => {
 | `--oas-bubble-max-width` | `80%` |
 | `--oas-bubble-radius` | `var(--oas-radius-lg)` |
 
-Parts: `::part(bubble)`, `::part(content)`, `::part(typing)`. `align` (`start` default / `end`) and `variant` (`default` / `secondary` / `muted` / `outline` / `ghost` / `destructive`) are pure CSS channels.
+Parts: `::part(bubble)`, `::part(content)`, `::part(typing)`, `::part(reactions)` reaction strip / `::part(reaction)` a single reaction button. `align` (`start` default / `end`) and `variant` (`default` / `secondary` / `muted` / `outline` / `ghost` / `destructive`) are pure CSS channels.

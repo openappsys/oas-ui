@@ -268,7 +268,7 @@
     },
     "events": {
       "oas-click": "Backdrop clicked, `detail.originalEvent` is the original click event",
-      "oas-after-close": "Emitted after the close animation finishes (canonical, aligned with the after-* family); no `detail`. Scroll unlock and node removal (the element removes itself) happen after this",
+      "oas-after-close": "Emitted after the close animation finishes (canonical, aligned with the after-* family); no `detail`. Scroll unlock has already happened before this; node removal (the element removes itself) happens after this",
       "oas-after-show": "Emitted after the enter animation finishes (canonical, aligned with the after-* family); no `detail`; emitted immediately under reduced motion"
     },
     "slots": {
@@ -761,7 +761,7 @@
       "disabled": "Disabled (no input, no dropdown)",
       "filterable": "Filter labels in real time while typing (`filterable=\"false\"` disables local filtering)",
       "item-height": "Virtual-scroll fixed row height (px, with `virtual`, default 36)",
-      "loading": "Loading placeholder (dropdown shows \"加载中…\")",
+      "loading": "Loading placeholder (dropdown shows \"Loading…\")",
       "open": "Controlled open state (internal open/close writes back to the attribute; every transition dispatches `oas-open-change`; forced closed under readonly/disabled); in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown",
       "options": "Options, JSON array `[{ label, value, disabled?, group? }]` (group is the group title, same contract as oas-select)",
       "placeholder": "Placeholder text",
@@ -786,7 +786,7 @@
     },
     "slots": {},
     "props": {
-      "filter": "Custom filter function (property channel, `(input, option) => boolean`)",
+      "filter": "Custom filter function (property channel, `(option, query) => boolean`)",
       "value": "Current value: single is the selected value string (falls back to the typed draft when nothing is selected); `multiple` is the array of selected values"
     }
   },
@@ -929,8 +929,8 @@
       "href": "Link address: with href the item renders as a native `<a>` (real navigation + still emits `oas-select`)",
       "target": "Link target (with href)",
       "rel": "Link rel (with href)",
-      "icon-color": "Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to currentColor following the text color",
-      "shortcut": "Shortcut hint rendered as a trailing kbd (aligned with the menubar/menu shortcut contract)"
+      "icon-color": "Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to currentColor following the text color (only effective via the items JSON channel; the child-element channel does not parse this attribute)",
+      "shortcut": "Shortcut hint rendered as a trailing kbd (aligned with the menubar/menu shortcut contract) (only effective via the items JSON channel; the child-element channel does not parse this attribute)"
     },
     "events": {},
     "slots": {
@@ -1162,8 +1162,8 @@
       "href": "Link address: with href the item renders as a native `<a>` (real navigation + still emits `oas-select`)",
       "target": "Link target (with href)",
       "rel": "Link rel (with href)",
-      "icon-color": "Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to currentColor following the text color",
-      "shortcut": "Shortcut hint rendered as a trailing kbd (aligned with the menubar/menu shortcut contract)"
+      "icon-color": "Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to currentColor following the text color (only effective via the items JSON channel; the child-element channel does not parse this attribute)",
+      "shortcut": "Shortcut hint rendered as a trailing kbd (aligned with the menubar/menu shortcut contract) (only effective via the items JSON channel; the child-element channel does not parse this attribute)"
     },
     "events": {},
     "slots": {
@@ -1348,15 +1348,15 @@
       "target": "Link open mode (effective in `href` mode, e.g. `_blank`)",
       "type": "Visual intensity: `primary` (default, solid primary) / `default` (weakened: light background with dark text)",
       "mode": "Mode: single (default) / group (main button + slotted actions expand vertically) / menu (actions JSON popup menu)",
-      "expanded": "group/menu expanded state (controlled, single source of truth): gestures only emit oas-expand-change; the host closes by removing the attribute",
+      "expanded": "group/menu expanded state: the component writes the attribute itself and emits `oas-expand-change` on gesture expand/collapse; with `trigger=\"manual\"` it is fully controlled — the component never toggles itself and the host adds/removes the attribute",
       "trigger": "Expand trigger: click (default) / hover (debounced with grace period) / manual (fully controlled; outside click and Esc do not auto-collapse)",
       "expand-direction": "Expand direction: up (default) / down / left / right; horizontal directions mirror automatically in RTL",
       "actions": "menu-mode items JSON `[{label, value?, icon?, href?, target?, danger?, disabled?}]`; selecting emits oas-select and requests collapse"
     },
     "events": {
       "oas-click": "Clicked, `detail: { originalEvent }`",
-      "oas-select": "A menu item was selected in menu mode, detail: { index, label, value? }; the component then requests a collapse (emitting oas-expand-change — the host closes by removing expanded)",
-      "oas-expand-change": "Emitted on expand/collapse, `detail: { open }`; controlled semantics — the component never mutates expanded, the host writes it back"
+      "oas-select": "A menu item was selected in menu mode, `detail: { index, label, href? }`; the component then requests a collapse (emitting `oas-expand-change`; with `trigger=\"manual\"` the host removes `expanded` to finish)",
+      "oas-expand-change": "Emitted on expand/collapse, `detail: { expanded }`; the component writes `expanded` back in sync (with `trigger=\"manual\"` the host writes it back)"
     },
     "slots": {
       "": "Extended text: writing text into the default slot turns the button into a horizontal capsule (icon + text in a row)",
@@ -1378,7 +1378,7 @@
       "label-align": "Label alignment: `left` / `right` / `top` (default `top` in grid mode; forced to `left` in inline mode)",
       "label-width": "Label column width when `label-align` is `left`/`right` (ignored in inline mode, auto)",
       "layout": "Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical`; `inline` attribute takes precedence when present",
-      "rules": "Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`",
+      "rules": "Validation rules JSON: `{ fieldName: [{ required, message, minLength, maxLength, pattern }] }`",
       "disabled": "Whole-form disable: fields are disabled via their form-associated channel (no write-back of the disabled attribute); submission skips validation while disabled",
       "scroll-to-first-error": "On validation failure, focus the first invalid field and smooth-scroll it into view (instant jump under prefers-reduced-motion)",
       "validate-trigger": "When per-field live validation fires: `input` (default, validate as you type) / `blur` / `change`; a rule's `validateTrigger` overrides per field; submission always validates everything",
@@ -1527,7 +1527,7 @@
   "oas-image": {
     "attrs": {
       "alt": "Alternative text",
-      "fallback": "Fallback image URL to switch to on load failure; when not set, shows the \"图片加载失败\" placeholder",
+      "fallback": "Fallback image URL to switch to on load failure; when not set, shows the \"Image failed to load\" placeholder",
       "fit": "`object-fit` value",
       "lazy": "Lazy load: the image starts loading only when it enters the viewport (IntersectionObserver); loads immediately when already in the viewport; falls back to eager loading when unsupported",
       "placeholder": "Show a light gray placeholder before the image finishes loading",
@@ -1575,7 +1575,7 @@
       "addon-before": "Addon text block before the input",
       "clearable": "Clearable",
       "disabled": "Disabled",
-      "label": "Accessible name (`aria-label` source; falls back to `placeholder` → built-in \"输入框\" when unset)",
+      "label": "Accessible name (`aria-label` source; falls back to `placeholder` → built-in \"Input\" when unset)",
       "maxlength": "Maximum input length (passed through to native maxlength)",
       "placeholder": "Placeholder text",
       "prefix-icon": "Icon name for the leading icon",
@@ -1638,7 +1638,7 @@
   "oas-input-number": {
     "attrs": {
       "disabled": "Disabled",
-      "label": "Accessible name (`aria-label` source; falls back to built-in \"数字输入框\" when unset)",
+      "label": "Accessible name (`aria-label` source; falls back to built-in \"Number input\" when unset)",
       "max": "Range, out-of-range values are clamped automatically",
       "min": "Range, out-of-range values are clamped automatically",
       "precision": "Number of decimal places",
@@ -1665,7 +1665,7 @@
       "scrub": "Numeric pointer scrubbing (on by default): press and drag the input horizontally — 4px per step (step size = step); Shift for fine (×0.2), Alt for ultra-fine (×0.04); drag back to the press point to restore the original value; movement under one step counts as a plain click (typing/text selection preserved); commits on release (oas-change); scrub=\"false\" disables; not enabled on coarse pointers"
     },
     "events": {
-      "oas-change": "Change on step or blur, `detail: { value }` (number)",
+      "oas-change": "Change on step or blur, `detail: { value }` (number; `null` in the empty state)",
       "oas-clear": "Fires when the clear button is clicked (value returns to the empty state)",
       "oas-focus": "Dispatched on focus, `detail: { value }` (current committed value)",
       "oas-blur": "Dispatched on blur after the commit, `detail: { value }` carries the committed value",
@@ -2083,7 +2083,7 @@
       "duration": "Auto-close duration (ms), `0` to keep open",
       "group": "Group id: messages in the same group merge into one",
       "key": "Unique id: used by `message.update` / `message.destroy`",
-      "type": "Message type: `info`/`success`/`warning`/`error`",
+      "type": "Message type: `info`/`success`/`warning`/`error`/`loading`/`question`",
       "icon": "Custom icon (declarative element usage); overrides the default type icon",
       "closable": "Whether to show the close button (default true; hidden while loading)",
       "show-icon": "Whether to show the type icon (default true; false for text only)",
@@ -2094,7 +2094,7 @@
       "mask": "Show a page mask; clicking it closes the message with oas-close detail.source = mask"
     },
     "events": {
-      "oas-close": "Emitted when the message closes (auto-close / close button / `destroy`), `detail: { key? }`"
+      "oas-close": "Emitted when the message closes (auto-close / close button / `destroy` / click / mask), `detail: { key?, source }` (source: `auto`/`close`/`destroy`/`click`/`mask`)"
     },
     "slots": {
       "avatar": "Avatar slot (before the message text)",
@@ -2171,7 +2171,7 @@
       "type": "Notification type: `info`/`success`/`warning`/`error`",
       "closable": "Whether to show the close button (default true; false hides it)",
       "size": "Size preset (pairs with the --oas-notification-width variable)",
-      "pause-on-hover": "Pause timer and progress bar on hover/focus (default on); remaining time resumes on leave"
+      "pause-on-hover": "Pause timer and progress bar on hover (default on; mouseenter/leave channel); remaining time resumes on leave"
     },
     "events": {
       "oas-click": "Dispatched when the notification body is clicked (\"click for details\" scenario)",
@@ -2315,8 +2315,8 @@
       "current": "Current page (controlled; flipping updates this attribute)",
       "page-size": "Records per page",
       "page-sizes": "Page-size dropdown options (JSON array), e.g. `[10,20,50]`; switching resets to page 1",
-      "show-jumper": "Shows a quick-jump input 「跳至 __ 页」(Enter to jump, out-of-range clamped)",
-      "show-total": "Shows the total text 「共 X 条」",
+      "show-jumper": "Shows a quick-jump input \"Jump to page\" (Enter to jump, out-of-range clamped)",
+      "show-total": "Shows the total text \"Total {total}\"",
       "siblings": "Number of page numbers shown on each side of the current page",
       "pager-count": "Maximum number of page-number buttons (excluding prev/next/first/last), default 9; when exceeded, the window shrinks centered on the current page (at least 2 pages on each side of an ellipsis, first/last reachable); values below the minimum 5 fall back to 5 with a warning",
       "total": "Total number of records",
@@ -2448,7 +2448,7 @@
       "append-to": "Portal mount target: the panel moves into the target container (`body` or a CSS selector) when opened and moves back into the host shadow when closed; for panels clipped by host containers (overflow)",
       "arrow": "Whether to show the arrow (default true; `arrow=\"false\"` hides it, the element and `::part(arrow)` are kept)",
       "arrow-merge": "Merge the arrow with the panel corner (C1): a right triangle merges flush with the panel corner — legs collinear with the panel edges (their strokes continue the panel border band), tip pointing orthogonally toward the anchor; the matching corner radius is zeroed; only takes effect for *-start/*-end placements, center placements are unaffected",
-      "arrow-point-at-center": "Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance)",
+      "arrow-point-at-center": "Reserved attribute (no effect in the current version): the arrow already points at the projection of the trigger's center on the panel's facing edge by default",
       "auto-adjust-overflow": "Viewport-edge auto flip and avoidance (default true; `\"false\"` disables it, keeping the declared placement, which may overflow the viewport)",
       "auto-close": "Auto close after opening for the given duration in ms, e.g. `auto-close=\"3000\"`; not set means no auto close",
       "closable": "Show a close button at the panel's top-right (`part=\"close\"`); clicking it closes and restores focus to the trigger",
@@ -2472,7 +2472,7 @@
       "placement": "Popup placement (12 directions: four bases top/bottom/left/right each with -start/-end cross-axis alignment)",
       "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content",
       "trigger": "Trigger method: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space separated for multiple (e.g. `\"click hover\"`). With `hover`, touch devices (coarse pointer) automatically degrade to tap toggling: tap to open, tap again or tap outside to close; desktop hover behavior unchanged",
-      "trigger-keys": "Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `\"Enter Space\"`); no key binding when unset",
+      "trigger-keys": "Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `\"Enter Space\"`; bound to `Enter Space` by default)",
       "virtual": "Virtual trigger mode (same as tooltip; no anchor element)",
       "virtual-anchor": "Virtual anchor element selector (used when virtual-x/virtual-y are unset)",
       "virtual-x": "Virtual anchor x (viewport coordinate, px)",
@@ -2487,7 +2487,7 @@
       "close-on-scroll": "Close on scroll",
       "final-focus": "Focus restore target after close (selector)",
       "hide-empty": "Hide the panel when it has no content",
-      "sticky": "Sticky against viewport edge (partial/always)",
+      "sticky": "Sticky against viewport edge: `partial` (default) / `always` / `off` (disables edge-following)",
       "destroy-on-hide": "Destroy the panel content presentation on close (host light DOM nodes are kept: their slot names are rewritten to detach them and they are hidden; attribute text is cleared); remounted instantly on reopen",
       "dismiss-on-select": "Clicks inside the panel (named slot content / panel internals including the close button) count as a completed selection and close it (interceptable via before-close); clicks on the trigger element do not dismiss (guards against open-then-close)",
       "render-panel": "Pure panel rendering mode: no trigger semantics (always treated as `manual`), positioning falls back to `virtual` coordinates/anchor; position it yourself via `append-to`",
@@ -2576,7 +2576,7 @@
   },
   "oas-barcode": {
     "attrs": {
-      "aria-label": "Accessible name of the container; defaults to i18n",
+      "aria-label": "Accessible name of the graphic element (svg, `role=\"img\"`); defaults to i18n",
       "value": "Barcode content (empty value shows the empty placeholder)",
       "format": "Symbology: `code128` (default, auto A/B/C subset switching) / `ean13` / `ean8` / `upca` / `code39` / `itf14` (invalid values fall back to code128)",
       "bar-width": "Bar width X-dimension (px, default 2, clamped to ≥1)",
@@ -2900,7 +2900,7 @@
       "readonly": "Readonly (independent of `disabled`): stays focusable and the value still participates in form collection; dragging and keyboard edits are intercepted; not visually dimmed",
       "large-step": "Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change`",
       "label": "Accessible name for the inner slider (range mode appends localized min/max suffixes)",
-      "labels": "JSON string array of per-thumb accessible names (e.g. `[\"低\",\"中\",\"高\"]`; the label-N attribute family takes precedence)",
+      "labels": "JSON string array of per-thumb accessible names (e.g. `[\"Low\",\"Mid\",\"High\"]`; the label-N attribute family takes precedence)",
       "label-1": "Accessible name for thumb 1 (multi-thumb mode; takes precedence over labels/label)",
       "label-2": "Accessible name for thumb 2 (multi-thumb mode; takes precedence over labels/label)",
       "label-3": "Accessible name for thumb 3 (multi-thumb mode; takes precedence over labels/label)",
@@ -3005,7 +3005,7 @@
       "tip": "Loading text (below the indicator standalone; centered on the mask when wrapping); rich content via slot=\"tip\"",
       "tip-position": "Text position",
       "hide-icon": "Hide the default indicator (with slot=\"icon\" or text-only)",
-      "rotate": "Whether the custom indicator auto-rotates (default true; disable for gif/static SVG)",
+      "rotate": "Whether the custom indicator auto-rotates (off by default — rotates only when the attribute is present; leave unset for gif/static SVG to stay still)",
       "show-overlay": "Whether to show the mask when wrapping content",
       "aria-label": "Screen-reader text (synced with aria-busy)",
       "fullscreen": "Fullscreen loading (mask covers the viewport)",
@@ -3184,7 +3184,7 @@
       "size": "Density preset: `small` / `medium` (default) / `large` — only changes default cell padding and font size (all via CSS variables; override with `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size`, which take precedence); invalid values fall back to `medium` with a warning; orthogonal to `row-height`",
       "column-keys": "Controlled column visibility and order (key array or comma list): header tree and data columns re-order to the effective leaf order (same-ancestor leaves grouped)",
       "current": "Current page (built-in pagination, controlled)",
-      "filter-values": "Controlled column filter values (JSON object: column key → selected values)",
+      "filter-values": "Controlled column filter values (JSON object: column key → selected scalar value)",
       "multi-sort": "Multi-column sort (JSON array: [{ key, order }], applied in array order)",
       "page-size": "Rows per page (built-in pagination, default 10)",
       "pagination": "Built-in pagination switch (footer pager; leave unset when the host paginates)",
@@ -3214,7 +3214,7 @@
       "oas-sort-change": "Sort change, `detail: { key, order: 'asc' | 'desc' | '' }`",
       "oas-column-order": "Fired after column drag reorder, `detail: { keys }` (new column order)",
       "oas-column-resize": "Fired after a column width drag, `detail: { key, width }`",
-      "oas-filter-change": "Fired when a column filter value changes, `detail: { filters }` (filters maps a column key to its selected values)",
+      "oas-filter-change": "Fired when a column filter value changes, `detail: { filters }` (filters maps a column key to its selected scalar value)",
       "oas-page-change": "Fired when the built-in page changes, `detail: { page, pageSize }`",
       "oas-cell-click": "Fired on data-cell click, `detail: { row, column, value, rowIndex, columnIndex }` (suppressed inside interactive controls)",
       "oas-row-dblclick": "Fired on data-row double-click, `detail: { row, rowIndex }`",
@@ -3489,7 +3489,7 @@
       "color": "[Migration compat] Legacy node color: green→success, red→danger, gray→neutral; will be removed. Use type for new code; arbitrary colors via --oas-timeline-dot-color",
       "icon": "Node icon (library oas-icon name), colored by type; slot=\"dot\" wins",
       "loading": "Per-node loading: the dot becomes a spinner, content area syncs aria-busy",
-      "pending": "In-progress node: hollow dot + dashed connector + pulse; shows \"敬请期待\" when empty",
+      "pending": "In-progress node: hollow dot + dashed connector + pulse; shows \"Coming soon\" when empty",
       "time": "Time text of the node",
       "type": "Semantic node color: primary (default) / success / warning / danger / info / neutral",
       "variant": "Node variant: filled (default solid) / outlined (hollow stroke)"
@@ -3651,7 +3651,7 @@
       "skidding": "Cross-axis offset (px, default 0): top/bottom placements shift horizontally (positive right, negative left); left/right placements shift vertically (positive down, negative up)",
       "skip-delay-duration": "Global delay-group threshold (ms, default 300): when a tooltip closes, the next one opened within this window skips its open-delay and shows immediately (responsive for consecutive hovers); `\"0\"` disables it",
       "touch-delay": "Touch long-press trigger duration (ms, default 500): with `touch` in `trigger`, pointerdown held to the threshold opens; releasing/moving out earlier cancels",
-      "trigger": "Trigger modes (space-separated multi-select): `hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`, default `hover focus`; `manual` is fully controlled",
+      "trigger": "Trigger modes (space-separated multi-select): `hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`, default `hover focus touch`; `manual` is fully controlled",
       "trigger-keys": "Specified keys (space-separated, e.g. `F1`): pressing one while the trigger is focused opens the tooltip",
       "virtual": "Virtual trigger mode: not bound to a host trigger element; `open` is fully controlled externally and the position is set by `virtual-anchor` or `virtual-x`/`virtual-y` (for chart points, floating hints during drag)",
       "virtual-anchor": "Anchor element selector (e.g. `#chart-point-1`); the tooltip is positioned by that element's rect. Mutually exclusive with `virtual-x`/`virtual-y` (coordinates take precedence)",
@@ -3667,7 +3667,7 @@
       "width": "Popup width: a number (px) / `\"trigger\"` (same width as the trigger) / any CSS value; still capped by `--oas-tooltip-max-width` (default 240px)"
     },
     "events": {
-      "oas-open-change": "Fired when the `open` state changes (show/hide), `detail: { open }`"
+      "oas-open-change": "Fired when the `open` state changes (show/hide), `detail: { open, source, reason }`"
     },
     "slots": {
       "": "Trigger element (hover/focus trigger); optional in `virtual` mode",
@@ -3864,7 +3864,7 @@
       "oas-check": "Check state change, `detail: { key, checked }`",
       "oas-load": "Lazy loading triggered, `detail: { key }`; the host refills `children` and resets the `data` attribute",
       "oas-node-drop": "Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root",
-      "oas-node-render": "Dispatched for each rendered node row, `detail: { node, element }` (element is the node label container; the host can rewrite it into icon / rich text)",
+      "oas-node-render": "Dispatched for each rendered node row, `detail: { node, element, level, expanded, selected, checked }` (element is the node label container; the host can rewrite it into icon / rich text)",
       "oas-node-rename": "Inline rename committed (Enter / blur), `detail: { key, label, oldLabel }`; data stays host-controlled — the component does not mutate the model, so the new label only shows once the host updates `data` (keeps the old value otherwise; Esc cancel does not emit)",
       "oas-select": "Node selected, `detail: { key, selected }`",
       "oas-load-error": "Lazy load failed, `detail: { key, error }` where `error` is the error message string (loading clears, clickable to retry)",
@@ -4082,7 +4082,7 @@
       "progress": "Progress region visibility (`progress=\"false\"` hides it)",
       "progress-variant": "Progress variant: `both` (default, text + bar) / `text` / `bar`; invalid values fall back to `both`",
       "shortcuts": "Keyboard step navigation (opt-in, on when present and not `\"false\"`): `Alt+←/→` switches steps anywhere inside the component (swallows the default to prevent browser history navigation); bare `←/→` only when focus is outside inputs/editable controls (never hijacks the caret)",
-      "size": "Size tier: `xs`/`small`/`medium`/`large`/`xl` (title font density; invalid values fall back to medium + dev warning)",
+      "size": "Size tier: `xs`/`small`/`medium`/`large`/`xl` (title font density; invalid values fall back to medium with a one-time warning (deduped by identical value))",
       "skip-text": "\"Skip this step\" button label (overrides the locale default)",
       "steps": "Step data JSON `[{ key?, title, description?, optional?, hidden? }]`; invalid/empty falls back to `[]`",
       "validation": "Per-step validation gating (on by default, `validation=\"false\"` for pure navigation; `submit()` always re-validates regardless)"
@@ -4133,16 +4133,16 @@
   },
   "oas-loading-bar": {
     "attrs": {
-      "local": "Mount target container selector (CSS selector/HTMLElement); defaults to a global bar at the top of body",
+      "local": "Local-mode marker (boolean): set automatically when the imperative API is given a `to` container; the component switches to absolute positioning inside that container. Does not accept a selector/element — the mount target is decided by the imperative `to` option",
       "position": "Position: top (default) / bottom",
       "reverse": "Reverse direction (RTL progress flows right to left)",
       "speed": "Base advance speed (ms, default 200); start(speed) overrides",
-      "status": "Current status: loading/finish/error (activity query)"
+      "status": "Current status (activity query): the component only writes `error` at the error terminal state and removes the attribute otherwise (never writes `loading`/`finish`)"
     },
     "events": {
       "oas-error": "Dispatched when error() finalizes in the error state",
       "oas-finish": "Dispatched when finish() finalizes",
-      "oas-start": "Dispatched when start() begins"
+      "oas-start": "Dispatched when the first session of a batch calls start() (subsequent start() calls of a concurrent batch do not re-dispatch)"
     },
     "slots": {}
   },
@@ -4379,7 +4379,7 @@
     "attrs": {
       "name": "File name (title channel; renders media only without error when absent)",
       "detail": "Secondary metadata (type · size); in the error state with no detail, shows the localized failure text (\"Upload failed\"); an explicit value is kept",
-      "state": "Upload state machine: idle / uploading / processing / error / done (default done; vocabulary matches oas-upload; uploading/processing reflect aria-busy)",
+      "state": "Upload state machine: idle / uploading / processing / error / done (default done; uploading/processing reflect aria-busy)",
       "progress": "Upload progress 0–100 (clamped; the thin bottom progress bar with role=progressbar renders only while uploading)",
       "size": "Three size steps: default / sm (accepts the small alias) / xs, tightening padding and media per step",
       "orientation": "Layout direction: horizontal (default) / vertical (media above text, for narrow columns)",
@@ -4609,7 +4609,7 @@
   "oas-titlebar": {
     "attrs": {
       "size": "Height tier: compact (default, 34px) / large (68px, controls stay compact); invalid values fall back to compact with a one-time warning",
-      "drag": "Turns the whole bar into a window drag region (writes -webkit-app-region: drag + data-tauri-drag-region, effective in Electron/Tauri hosts; harmless no-op in plain Web); a curated set of interactive children automatically opts out (no-drag) — otherwise opt out a host child with [data-no-drag], and [data-drag] forces it back",
+      "drag": "Turns the whole bar into a window drag region (writes -webkit-app-region: drag + data-tauri-drag-region, effective in Electron/Tauri hosts; harmless no-op in plain Web); a curated set of interactive children automatically opts out (no-drag) — otherwise opt out a host child with [data-no-drag]",
       "title": "Centered title text (overridden when slot=\"title\" has content). Same-named as the native global attribute — absorbed (removed from the host) once rendered into the title area, preventing duplicate native tooltips; rendering is driven by the component-internal cache; to clear or reset, write the title attribute explicitly",
       "subtitle": "Subtitle / document state (last edited time etc.)",
       "editable": "Makes the document-well title editable: Enter or blur commits (dispatches oas-title-change and updates the absorbed cache), Esc cancels and rolls back; rewriting title externally while editing terminates the edit",

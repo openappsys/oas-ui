@@ -56,7 +56,7 @@
 
 ## 图标徽标
 
-`icon` 传入 内置图标名，徽标内渲染小图标（如状态角标放 √ / !）。与 `value` / `dot` 互斥：`icon` 优先显示图标，不渲染数字/圆点；非法图标名静默回落数字逻辑。
+`icon` 传入图标名（查表时自定义注册优先、内置图标集兜底），徽标内渲染小图标（如状态角标放 √ / !）。与 `value` / `dot` 互斥：`icon` 优先显示图标，不渲染数字/圆点；非法图标名静默回落数字逻辑。
 
 <DemoBlock title="图标徽标">
   <oas-badge icon="check" color="success" style="margin-inline-end: var(--oas-space-4)">
@@ -385,7 +385,7 @@ oas-badge#badge-dyn.bump::part(badge) {
 
 ## 缎带形态
 
-`ribbon-form` 切换缎带形态：`fold`（默认，直条 + 折叠）/ `diagonal`（45° 对角斜带，条身探出卡外，宿主需 `overflow: hidden` 裁切）/ `triangle`（角落纯三角形，内容为小图标或 `slot="ribbon"`）/ `bookmark`（顶边垂挂 + 底部燕尾缺口）/ `side`（侧边竖挂）/ `seal`（圆形锯齿印章，文字居中）/ `banner`（顶部横贯横幅，两端折角）/ `flag`（侧燕尾横旗，横条 + 探出端 V 缺口，缺口始终朝探出端）。非法值静默回落 `fold`。`ribbon-direction` 控制 `bookmark` 的燕尾尖头方向（`down` 默认顶边垂挂 / `left` 贴右缘尖头朝左 / `right` 贴左缘尖头朝右，物理方向 RTL 不翻转），仅 bookmark 生效；`ribbon-vertical` 控制侧挂（left/right）的纵向位置（`center` 默认垂直居中 / `top` 贴顶边 / `bottom` 贴底边）。`ribbon-size` 给 diagonal 提供 `sm`（默认）/ `md` / `lg` 三档（档位只改带宽/字号/钉点默认值，宿主 `--oas-badge-diagonal-*` 自定义属性优先级更高）。`ribbon-position` 纵向三选仅作用于 `fold` 形态，其余形态有各自的纵向定位。`offset` 给所有缎带形态做任意位置微调（`offset="x,y"` px 平移，支持负值）。`rolled` 布尔修饰给探出外端加卷边（端部大圆角 + 内侧渐暗模拟卷起圆柱），可叠加 `fold` / `banner` / `flag`。
+`ribbon-form` 切换缎带形态：`fold`（默认，直条 + 折叠）/ `diagonal`（45° 对角斜带，条身探出卡外，宿主需 `overflow: hidden` 裁切）/ `triangle`（角落纯三角形，内容为小图标或 `slot="ribbon"`）/ `bookmark`（顶边垂挂 + 底部燕尾缺口）/ `side`（侧边竖挂）/ `seal`（圆形锯齿印章，文字居中）/ `banner`（顶部横贯横幅，两端折角）/ `flag`（侧燕尾横旗，横条 + 内端燕尾 V 缺口，外端贴卡片边线不探出，缺口始终朝卡片内侧端）。非法值静默回落 `fold`。`ribbon-direction` 控制 `bookmark` 的燕尾尖头方向（`down` 默认顶边垂挂 / `left` 贴右缘尖头朝左 / `right` 贴左缘尖头朝右，物理方向 RTL 不翻转），仅 bookmark 生效；`ribbon-vertical` 控制侧挂（left/right）的纵向位置（`center` 默认垂直居中 / `top` 贴顶边 / `bottom` 贴底边）。`ribbon-size` 给 diagonal 提供 `sm`（默认）/ `md` / `lg` 三档（档位只改带宽/字号/钉点默认值，宿主 `--oas-badge-diagonal-*` 自定义属性优先级更高）。`ribbon-position` 纵向三选仅作用于 `fold` 形态，其余形态有各自的纵向定位。`offset` 给所有缎带形态做任意位置微调（`offset="x,y"` px 平移，支持负值）。`rolled` 布尔修饰给探出外端加卷边（端部大圆角 + 内侧渐暗模拟卷起圆柱），可叠加 `fold` / `flag`（banner 保留自身双端折角、不叠卷边，其余形态静默忽略）。
 
 <DemoBlock title="缎带形态">
   <oas-badge ribbon text="HOT" style="margin-inline-end: var(--oas-space-4)">
@@ -472,12 +472,8 @@ oas-badge#badge-dyn.bump::part(badge) {
 
 `ribbon-anchor` 统一缎带锚点，锚点集合按形态语义适配（形态与位置绑定）：
 
-- **fold**：左右边中 + 四角（横条贴左/右，纵向上下可调）
-- **diagonal / triangle**：四角
-- **side**：左右边中 + 四角
-- **banner**：顶部/底部（全宽横幅）
-- **seal**：8 位置全支持
-- **bookmark**：四角 + 四边中
+- **diagonal / triangle**：仅四角
+- **fold / side / banner / seal / bookmark / flag**（及其余形态）：8 位置全支持（4 边中 + 4 角）
 锚点预置贴边/贴角（底部锚点时折叠角自动翻转），任意位置再用 `offset` 微调兜底。
 
 <DemoBlock title="缎带锚点：斜形态四角">

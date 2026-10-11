@@ -4,7 +4,7 @@
 
 > **跨 shadow 提交入口**：`oas-form` 在 shadow 内包原生 `<form>`，因此 light DOM 的按钮（含 `oas-button`）不具备原生 submit 语义。请在按钮点击等时机调用组件公开的 `submit()` 方法（如 `this.closest('oas-form').submit()`），它会委托内部 form 的 `requestSubmit()`，保留 submit 事件语义并触发相同的校验与 `oas-submit` / `oas-validate-fail` 派发——**不要**再穿透 `shadowRoot.querySelector('form')` 去调内部 form。
 
-> 数据源是各字段的 `value` 属性（受控模式）。表单校验的字段范围为带 `name` 的 `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-radio` / `oas-radio-group` / `oas-date-picker` / `oas-slider` / `oas-rate` / `oas-pin-input` / `oas-dynamic-tags` / `oas-combobox` / `oas-picker` / `oas-transfer`（`model-value` 通道）/ `oas-dynamic-input`（`model-value` 通道）/ `oas-checkbox` / `oas-switch`（`checked` 通道）。`oas-input` / `oas-textarea` / `oas-input-number` 输入时**不会自动写回 `value` 属性**，需在脚本中监听 `oas-input` / `oas-change` 事件同步；`oas-select` / `oas-cascader` / `oas-tree-select` 选中时自带回写。
+> 数据源是各字段的 `value` 属性（受控模式）。表单校验的字段范围为带 `name` 的 `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-radio` / `oas-radio-group` / `oas-date-picker` / `oas-slider` / `oas-rate` / `oas-pin-input` / `oas-dynamic-tags` / `oas-combobox` / `oas-picker` / `oas-transfer`（`model-value` 通道）/ `oas-dynamic-input`（`model-value` 通道）/ `oas-checkbox` / `oas-switch`（`checked` 通道）。`oas-form` 内建监听字段冒泡的 `oas-input` / `oas-change` 事件，自动写回该字段的 `value` 属性（null 写空串），无需逐字段脚本接线。
 
 ## 功能展示
 

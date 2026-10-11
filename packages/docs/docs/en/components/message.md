@@ -278,13 +278,13 @@ onMounted(async () => {
 | `repeat-num` | Repeat badge: merge repeated identical messages with a counter | `string` | — |
 | `show-icon` | Whether to show the type icon (default true; false for text only) | `string` | `true` |
 | `show-progress` | Show a countdown progress bar synced with the duration | `boolean` | — |
-| `type` | Message type: `info`/`success`/`warning`/`error` | `string` | `info` |
+| `type` | Message type: `info`/`success`/`warning`/`error`/`loading`/`question` | `string` | `info` |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-close` | Emitted when the message closes (auto-close / close button / `destroy`), `detail: { key? }` |
+| `oas-close` | Emitted when the message closes (auto-close / close button / `destroy` / click / mask), `detail: { key?, source }` (source: `auto`/`close`/`destroy`/`click`/`mask`) |
 
 #### Slots
 

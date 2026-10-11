@@ -42,7 +42,7 @@
   </oas-affix>
 </DemoBlock>
 
-向下滚动当前页面，观察按钮在接近视口底部时被固定（`position: fixed; bottom: 16px`）。
+向下滚动当前页面，观察按钮在接近视口底部时被固定（`position: fixed; bottom: 88px`，即 `offset` 值）。
 
 ## 指定滚动容器
 

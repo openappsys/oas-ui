@@ -46,7 +46,7 @@
   <div style="width: 100%">
     <oas-tree checkable check-strictly default-expand-all auto-expand-parent data='[{"key":"x","label":"父级 X（勾选不级联）","children":[{"key":"x-1","label":"子级 1"},{"key":"x-2","label":"子级 2"}]},{"key":"y","label":"父级 Y"}]'></oas-tree>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      <code>check-strictly</code> 关闭级联（勾选父级不影响子级）；<code>default-expand-all</code> 初始全展开；<code>auto-expand-parent</code> 选中时自动展开父级。
+      <code>check-strictly</code> 关闭级联（勾选父级不影响子级）；<code>default-expand-all</code> 初始全展开；<code>auto-expand-parent</code> 宿主写入 <code>expanded</code> 属性时自动补全祖先展开（勾选/点选不触发）。
     </p>
   </div>
 </DemoBlock>
@@ -173,7 +173,7 @@
   </div>
 </DemoBlock>
 
-设置 `draggable` 后可拖拽节点换序或换父：拖到目标行上半区插入其前（before）、下半区插入其后（after）、中部且目标可展开时移入其下（inner），拖拽过程有插入线与高亮反馈；松手派发 `oas-node-drop`（`detail: { dragKey, dropKey, position }`），由宿主更新数据后重设 `data` 属性。拖到树空白处视为移入根（`dropKey` 为空字符串、`position: 'inner'`）。
+设置 `draggable` 后可拖拽节点换序或换父：拖到目标行上 25% 区域插入其前（before）、下 25% 区域插入其后（after）、中部且目标可展开时移入其下（inner；目标不可展开时中部按上下半行取 before/after），拖拽过程有插入线与高亮反馈；松手派发 `oas-node-drop`（`detail: { dragKey, dropKey, position }`），由宿主更新数据后重设 `data` 属性。拖到树空白处视为移入根（`dropKey` 为空字符串、`position: 'inner'`）。
 
 拖拽全程另有生命周期事件组：`oas-node-dragstart`（`detail: { dragKey }`）、`oas-node-dragover` / `oas-node-dragleave`（`detail: { dragKey, dropKey, position }`，拖到空白处 `dropKey` 为空、`position: 'inner'`）、`oas-node-dragend`（`detail: { dragKey }`），可用于自定义拖拽提示、跨树联动等场景。
 
@@ -216,7 +216,7 @@ tree.allowDrag = (node) => node.key !== 'item-1' // 该节点不可被拖动
   </div>
 </DemoBlock>
 
-节点内容可用 `template[slot="node"]` 提供静态骨架（`[data-node-label]` 节点自动绑定节点 label），`template[slot="toggle"]` 可替换默认展开箭头；每个节点行渲染后派发 `oas-node-render`（`detail: { node, element }`），宿主可监听改写 `element` 为任意图标 / 富文本。示例中任务数徽标即由该事件写入；键盘与 ARIA（`treeitem` / `aria-expanded` / `aria-level`）在自定义渲染下保持不变。
+节点内容可用 `template[slot="node"]` 提供静态骨架（`[data-node-label]` 节点自动绑定节点 label），`template[slot="toggle"]` 可替换默认展开箭头；每个节点行渲染后派发 `oas-node-render`（`detail: { node, element, level, expanded, selected, checked }`），宿主可监听改写 `element` 为任意图标 / 富文本。示例中任务数徽标即由该事件写入；键盘与 ARIA（`treeitem` / `aria-expanded` / `aria-level`）在自定义渲染下保持不变。
 
 <style>
   /* demo 节点自定义渲染样式：slot 内容在 light DOM，类名唯一，放文件顶层避免 DemoBlock 模板内 style 被 Vue 忽略 */
@@ -669,7 +669,7 @@ onMounted(() => {
 | `oas-node-dragstart` | 拖拽开始时派发，`detail: { dragKey }` |
 | `oas-node-drop` | 节点拖放，`detail: { dragKey, dropKey, position }`，`position` 为 `before` / `after` / `inner`；`dropKey` 为空字符串表示移入根 |
 | `oas-node-rename` | 内联重命名提交（Enter / 失焦），`detail: { key, label, oldLabel }`；数据由宿主受控——组件不改数据模型，宿主监听后更新 `data` 才生效（不更新则保持旧值；Esc 取消不派发） |
-| `oas-node-render` | 每个渲染的节点行派发，`detail: { node, element }`（element 为节点 label 容器，宿主可改写为图标 / 富文本） |
+| `oas-node-render` | 每个渲染的节点行派发，`detail: { node, element, level, expanded, selected, checked }`（element 为节点 label 容器，宿主可改写为图标 / 富文本） |
 | `oas-select` | 选中节点，`detail: { key, selected }` |
 
 #### 插槽

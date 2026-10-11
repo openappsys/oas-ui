@@ -160,4 +160,4 @@ By default items are distributed to balance column heights. With `sequential`, i
 | --- | --- |
 | `column` | Pin a child to a column (1-based): under the CSS columns implementation the DOM is reordered to physically move the child into the target column; with responsive columns the reorder follows the currently effective column count. Invalid values (non-integers / ≤0 / beyond the current column count) are ignored with a dev warning |
 
-Part: `::part(masonry)` the masonry container.
+Parts: `::part(masonry)` the masonry container, `::part(masonry-item)` each rendered item (items channel).

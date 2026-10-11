@@ -2,8 +2,6 @@
 
 The conversation scroll container: a scroll-intent model — follow new content only when the reader is at the bottom (AI style), an always-pinned IM mode, a scroll-to-bottom button, jump-free history prepending (including async-resource position preservation), turn anchoring ("return to the last question"), and first-paint jump prevention. The component owns no messages (only scroll behavior), so hosts can connect any backend.
 
-> Batch notes: batch A delivered pinning / jump-to-bottom / near-bottom detection / basic prepend preservation. Batch B is now merged — stable-anchor async preservation, same-frame mixed insertion settlement, first-paint jump prevention (`data-pending-scroll`), the `last-anchor` opening position, and turn anchoring (`turn-anchor`). Visibility tracking (which messages are in the viewport) is deferred to v2 (it pulls in outline/read-marking semantics of its own).
-
 ## Basic Usage
 
 <DemoBlock title="Conversation flow (default-position=end opens at the bottom)">

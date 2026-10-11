@@ -110,3 +110,33 @@ onMounted(() => {
 | --- | --- |
 | `--oas-statusbar-bg` | `var(--oas-color-bg-elevated)` |
 | `--oas-statusbar-height` | `24px` |
+
+### oas-statusbar-item
+
+#### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `button` | 渲染为原生 button（可点、键盘可达）；缺省为只读 div 语义 | `boolean` | — |
+| `icon` | 内置图标名（@oas-ui/icons 内置图标；未知名不渲染） | `string` | — |
+| `label` | 文本标签 | `string` | — |
+| `spinning` | 后台活动旋转指示（prefers-reduced-motion 停转） | `boolean` | — |
+| `status` | 语义色档：default（默认）/ info / warning / error / progress——warning/error 用底色醒目（仅特殊且必要场景慎用），info/progress 只着文字色；非法值回落 default 并告警一次 | `string` | `default` |
+| `value` | 数值/状态值（表格数字体呈现） | `string` | — |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-item-click` | button 模式点击时派发；detail { value, label }；bubbles + composed（容器与宿主均可监听） |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-statusbar-error-bg` | `var(--oas-color-danger)` |
+| `--oas-statusbar-info-color` | `color-mix(in srgb, var(--oas-color-info-text) 88%, var(--oas-color-text-primary))` |
+| `--oas-statusbar-item-height` | `22px` |
+| `--oas-statusbar-item-hover-bg` | `var(--oas-color-bg-hover)` |
+| `--oas-statusbar-progress-color` | `var(--oas-color-primary-text)` |
+| `--oas-statusbar-warning-bg` | `var(--oas-color-warning)` |

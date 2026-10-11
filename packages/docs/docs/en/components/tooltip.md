@@ -773,7 +773,7 @@ onMounted(() => {
 | `skidding` | Cross-axis offset (px, default 0): top/bottom placements shift horizontally (positive right, negative left); left/right placements shift vertically (positive down, negative up) | — | — |
 | `skip-delay-duration` | Global delay-group threshold (ms, default 300): when a tooltip closes, the next one opened within this window skips its open-delay and shows immediately (responsive for consecutive hovers); `"0"` disables it | — | — |
 | `touch-delay` | Touch long-press trigger duration (ms, default 500): with `touch` in `trigger`, pointerdown held to the threshold opens; releasing/moving out earlier cancels | — | — |
-| `trigger` | Trigger modes (space-separated multi-select): `hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`, default `hover focus`; `manual` is fully controlled | `string` | `hover focus touch` |
+| `trigger` | Trigger modes (space-separated multi-select): `hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`, default `hover focus touch`; `manual` is fully controlled | `string` | `hover focus touch` |
 | `trigger-keys` | Specified keys (space-separated, e.g. `F1`): pressing one while the trigger is focused opens the tooltip | `string` | — |
 | `virtual` | Virtual trigger mode: not bound to a host trigger element; `open` is fully controlled externally and the position is set by `virtual-anchor` or `virtual-x`/`virtual-y` (for chart points, floating hints during drag) | `boolean` | — |
 | `virtual-anchor` | Anchor element selector (e.g. `#chart-point-1`); the tooltip is positioned by that element's rect. Mutually exclusive with `virtual-x`/`virtual-y` (coordinates take precedence) | — | — |
@@ -785,7 +785,7 @@ onMounted(() => {
 
 | Event | Description |
 | --- | --- |
-| `oas-open-change` | Fired when the `open` state changes (show/hide), `detail: { open }` |
+| `oas-open-change` | Fired when the `open` state changes (show/hide), `detail: { open, source, reason }` |
 
 #### Slots
 
@@ -812,4 +812,4 @@ onMounted(() => {
 | `--oas-tooltip-easing` | `ease` |
 | `--oas-tooltip-max-width` | `240px` |
 
-`oas-open-change`: fired when the `open` state changes (show/hide), `detail: { open }`. Shown/hidden on hover or focus; `role="tooltip"`, the popup uses `pointer-events: none` so it never blocks interactions.
+`oas-open-change`: fired when the `open` state changes (show/hide), `detail: { open, source, reason }` (`source` is the trigger channel, `reason` the concrete cause; for external controlled attribute writes `source` is `attribute`). Shown/hidden on hover or focus; `role="tooltip"`, the popup uses `pointer-events: none` so it never blocks interactions.

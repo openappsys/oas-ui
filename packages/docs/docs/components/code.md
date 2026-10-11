@@ -181,7 +181,7 @@ function reset() {
 
 ## 行聚焦（focus-lines）
 
-`focus-lines` 聚焦指定行，其余行淡化（透明度），适合讲解时突出关键代码：
+`focus-lines` 聚焦指定行，其余行向主题文字色掺色淡化（color-mix，非透明度），适合讲解时突出关键代码：
 
 <DemoBlock title="行聚焦">
   <div style="width: 100%">

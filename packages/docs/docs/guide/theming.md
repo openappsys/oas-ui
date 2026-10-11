@@ -56,7 +56,7 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 **边界**：
 
 - 材质依赖背景反差——页面有色彩层次（渐变/图片）时质感最强，纯色同色相背景上减弱（文字仍走 token 安全档可读）；
-- 文字安全是硬约束：dark 档 surface 用高 alpha（亮背板上合成色保持足够暗，感知对比度实测门禁 ≥60 分，见「液态玻璃画廊」）；
+- 文字安全是硬约束：dark 档 surface 用低 alpha 高透（深色玻璃的材质感主场；alpha 档与文字档联动标定，感知对比度实测门禁 ≥60 分，见「液态玻璃画廊」）；
 - blur 只上容器级 surface（行级/长列表不接，避免大面积模糊的性能成本）；
 - `high-contrast` 主题下不启用（实心可访问性档优先）；
 - 局部降级：任意容器覆盖 `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;`（折射的停用值**留空**而非 none：button 的 hover/按下/选中态把 brightness() 与该变量组合书写，`none` 与函数混排会使整条 filter 声明非法、亮度反馈失效；空值两条路径都合法）。密集列表场景建议对容器关掉折射，避免大量小滤镜栅格化开销；含浮层内容（dropdown/popover 等）的 app-bar 同样建议关掉（filter 会把向下溢出的子树裁进滤镜区域，内置溢出弹层已自动处理）。若宿主构建链会吞掉空值自定义属性（个别压缩器），可改用 `--oas-glass-refraction: saturate(1)`（恒等滤镜，混排同样合法）作为停用值。
@@ -65,7 +65,7 @@ document.documentElement.dataset.skin = 'emerald' // violet | emerald | rose | a
 
 ## 自定义主题（CSS 变量覆盖）
 
-所有组件只引用语义 token（见 `docs/ui-spec.md §1`），因此通过覆盖 CSS 变量即可定制品牌色，无需改组件：
+所有组件原则上只引用语义 token（见 `docs/ui-spec.md §1`，个别极值/预设除外），因此通过覆盖 CSS 变量即可定制品牌色，无需改组件：
 
 ```css
 :root {

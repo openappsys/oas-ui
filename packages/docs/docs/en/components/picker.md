@@ -69,7 +69,6 @@ Form-associated: with `name`, FormData submits a JSON array string; `form.reset(
 
 - Touch/mouse: native inertial scrolling + snap centering; nearest item highlights live while scrolling; settle commits;
 - Keyboard: columns are focusable (`role="listbox"`); ↑/↓ moves one item, Home/End jumps to first/last enabled item (skips disabled);
-- Under `prefers-reduced-motion`, scrolling lands instantly.
 
 ## API
 

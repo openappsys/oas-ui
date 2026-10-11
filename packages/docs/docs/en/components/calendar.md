@@ -10,7 +10,7 @@ A calendar component with month/year modes, supporting selection, disabled dates
 
 Click a date to select it and dispatch `oas-change`; the title opens a month-selection panel for quick month jumps.
 
-On touch screens (pointer: coarse) day cells get a 44px minimum height/width, month/year cells a 44px minimum height, and header navigation buttons a 44px hit target.
+On touch screens (pointer: coarse) day cells get a 44px minimum height, month/year cells a 44px minimum height, and header navigation buttons a 44px hit target (day cells only grow in height — their width still shares the container evenly).
 
 ## Year View
 
@@ -188,7 +188,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
 </DemoBlock>
 
 - Keyboard: `Home`/`End` jump to the start/end of the week; `PageUp`/`PageDown` move to the previous/next month (`Shift` moves by year); arrow keys move cell by cell, `Enter`/`Space` selects.
-- Fast year jump: click the title to open the month panel, click the year to open the decade grid (pages step by ±12 years), pick a year to return to that year's month panel, then pick a month to return to the day view — from 2026 to 1980 takes four clicks.
+- Fast year jump: click the title to open the month panel, click the year to open the decade grid (pages step by ±12 years), pick a year to return to that year's month panel, then pick a month to return to the day view — from 2026 to 1980 takes about 7-8 clicks.
 
 ## Non-Gregorian Calendars (calendar-system)
 
@@ -208,7 +208,7 @@ With `readonly`, paging and panel drill-down stay available but picking dates / 
   <oas-calendar id="calendar-months" value="2026-08-09" months="2"></oas-calendar>
 </DemoBlock>
 
-`months` sets the number of side-by-side month panels (default 1, positive integer, invalid/out-of-range falls back to 1): panels lay out horizontally at equal width, and prev/next page the whole strip (stepping `months` months at a time) with the title showing the month range. It combines with `first-day-of-week`, `show-week-number`, `range`, and the rest.
+`months` sets the number of side-by-side month panels (default 1, positive integer; invalid or below 1 falls back to 1, values above the cap clamp to 12): panels lay out horizontally at equal width, and prev/next page the whole strip (stepping `months` months at a time) with the title showing the month range. It combines with `first-day-of-week`, `show-week-number`, `range`, and the rest.
 
 ## API
 

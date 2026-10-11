@@ -197,7 +197,7 @@
 
 ## 箭头与视口自动调整
 
-默认显示指向触发元素边缘的箭头；`arrow="false"` 隐藏箭头；`arrow-point-at-center` 让箭头指向触发元素中心（视口边缘避让导致面板偏移时，箭头仍指向锚点中心）。默认空间不足时自动沿主轴翻转并避让视口边缘；`auto-adjust-overflow="false"` 关闭自动调整，面板保持声明 placement（可能溢出视口）。
+默认显示指向触发元素中心的箭头（锚点中心在面板指向边上的投影；视口边缘避让导致面板偏移时，箭头仍跟随锚点中心）；`arrow="false"` 隐藏箭头。默认空间不足时自动沿主轴翻转并避让视口边缘；`auto-adjust-overflow="false"` 关闭自动调整，面板保持声明 placement（可能溢出视口）。
 
 <DemoBlock title="箭头显隐与指向">
   <oas-space size="large" wrap>
@@ -206,9 +206,6 @@
     </oas-popover>
     <oas-popover id="pop-arrow-off" title="无箭头" content="arrow=false：隐藏箭头" placement="bottom" arrow="false">
       <oas-button>无箭头</oas-button>
-    </oas-popover>
-    <oas-popover id="pop-arrow-center" title="指向中心" content="arrow-point-at-center：箭头指向触发元素中心" placement="bottom" arrow-point-at-center>
-      <oas-button>指向中心</oas-button>
     </oas-popover>
   </oas-space>
 </DemoBlock>
@@ -796,7 +793,7 @@ onMounted(() => {
 | `append-to` | portal 挂载点：打开时面板移入目标容器（`body` 或 CSS 选择器），关闭移回宿主 shadow；适合面板被宿主容器裁剪（overflow）的场景 | `string` | — |
 | `arrow` | 是否显示箭头（默认 true；`arrow="false"` 隐藏，箭头元素与 `::part(arrow)` 保留） | `string` | `true` |
 | `arrow-merge` | 箭头与面板角融合：直角三角与面板角共边融合——直角贴角点、直角边与面板两边共线（描边与面板描边共带续接），尖端正交指向锚点，对应角圆角归零；仅 *-start/*-end 位置生效，center placement 不触发 | `boolean` | — |
-| `arrow-point-at-center` | 箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心） | — | — |
+| `arrow-point-at-center` | 保留属性（当前版本不生效）：箭头默认即指向触发元素中心在面板指向边上的投影 | — | — |
 | `auto-adjust-overflow` | 视口边缘自动翻转与避让（默认 true；`"false"` 关闭，保持声明 placement，可能溢出视口） | `string` | `true` |
 | `auto-close` | 打开后超时自动关闭（毫秒），如 `auto-close="3000"`；未设置不自动关闭 | `string` | — |
 | `available-height` | 内容最大可用高度约束（视口剩余空间） | `boolean` | — |
@@ -830,11 +827,11 @@ onMounted(() => {
 | `same-width` | 面板宽度 = 触发器宽度（严格等宽；显式 width 优先） | `boolean` | — |
 | `scrollable` | 面板内容超限滚动 | `boolean` | — |
 | `size` | 尺寸档 | `string` | `medium` |
-| `sticky` | 关闭位粘滞（partial/always） | `string` | `partial` |
+| `sticky` | 视口边缘贴住：`partial`（默认）/ `always` / `off`（关闭贴边跟随） | `string` | `partial` |
 | `title` | 标题文本（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `trap-focus` | 焦点陷阱独立开关（与 modal 遮罩解耦，表单浮层 Tab 不逃逸） | `boolean` | — |
 | `trigger` | 触发方式：`click`（默认）/ `hover` / `focus` / `contextmenu` / `manual`，空格分隔可多选（如 `"click hover"`）。含 `hover` 时触屏（coarse pointer）自动降级为点按切换：点按开、再点按/外点关，桌面 hover 行为不变 | `string` | `click` |
-| `trigger-keys` | 指定按键在触发元素聚焦时切换开合（空格分隔，如 `"Enter Space"`）；未设置无按键绑定 | `string` | `Enter Space` |
+| `trigger-keys` | 指定按键在触发元素聚焦时切换开合（空格分隔，如 `"Enter Space"`；缺省即绑定 `Enter Space`） | `string` | `Enter Space` |
 | `virtual` | 虚拟触发模式（同 tooltip，不依赖锚点元素） | `boolean` | — |
 | `virtual-anchor` | 虚拟锚点元素选择器（virtual-x/virtual-y 未设置时生效） | — | — |
 | `virtual-x` | 虚拟锚点 x（视口坐标，px） | — | — |

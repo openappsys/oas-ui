@@ -336,7 +336,7 @@ onMounted(() => {
 | `color` | [Migration compat] Legacy node color: green→success, red→danger, gray→neutral; will be removed. Use type for new code; arbitrary colors via --oas-timeline-dot-color | `string` | — |
 | `icon` | Node icon (library oas-icon name), colored by type; slot="dot" wins | `string` | — |
 | `loading` | Per-node loading: the dot becomes a spinner, content area syncs aria-busy | `boolean` | — |
-| `pending` | In-progress node: hollow dot + dashed connector + pulse; shows "敬请期待" when empty | `boolean` | — |
+| `pending` | In-progress node: hollow dot + dashed connector + pulse; shows "Coming soon" when empty | `boolean` | — |
 | `time` | Time text of the node | `string` | — |
 | `type` | Semantic node color: primary (default) / success / warning / danger / info / neutral | `string` | — |
 | `variant` | Node variant: filled (default solid) / outlined (hollow stroke) | `string` | — |

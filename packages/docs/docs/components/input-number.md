@@ -65,7 +65,7 @@
   <oas-input-number value="42" clearable prefix-text="¥" controls-position="both" style="width: 240px"></oas-input-number>
 </DemoBlock>
 
-`clearable` / 步进钮 / 前后缀可任意叠加：右侧元素按「步进钮区 → 清除钮 → 后缀」自左向右排布，全部内嵌在输入框内，输入文字按叠加总宽自动让位（`controls-position="both"` 时清除钮/后缀在框内让开右侧 `+` 钮）。
+`clearable` / 步进钮 / 前后缀可任意叠加：右侧元素按「后缀 → 清除钮 → 步进钮区」自左向右排布，全部内嵌在输入框内，输入文字按叠加总宽自动让位（`controls-position="both"` 时清除钮/后缀在框内让开右侧 `+` 钮）。
 
 ## 千分位与格式化（声明式）
 
@@ -362,7 +362,7 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-blur` | 失焦时派发（提交后），`detail: { value }` 携带提交后的新值 |
-| `oas-change` | 步进或失焦变化，`detail: { value }`（数字） |
+| `oas-change` | 步进或失焦变化，`detail: { value }`（数字；空值态为 `null`） |
 | `oas-clear` | 点击清除按钮时派发（值回空值态），`detail: {}` |
 | `oas-focus` | 聚焦时派发，`detail: { value }`（当前已提交值） |
 | `oas-input` | 键入实时派发，`detail: { value }` 为当前显示文本（未提交） |

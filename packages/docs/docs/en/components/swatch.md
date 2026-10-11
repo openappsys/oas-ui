@@ -23,7 +23,7 @@ Single-select group: click a swatch to select it (selected state = outer ring); 
 
 ## Multiple select
 
-With `multiple`, the group uses checkbox semantics; `value` is a comma-separated list of selected values.
+With `multiple`, the group uses checkbox semantics; `value` is a comma-separated list of selected values (prefer preset names or hex colors for the multiple-value channel — color values containing commas, such as `rgb(1,2,3)`, conflict with the comma separator and are not recommended inside a multiple group).
 
 <DemoBlock title="Multiple select">
   <oas-swatch-group id="sw-multi" multiple>

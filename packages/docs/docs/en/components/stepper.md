@@ -215,8 +215,8 @@ onMounted(() => {
   const nextBtn = document.getElementById('stepper-next')
   const sync = () => {
     const cur = Number(ctrl?.getAttribute('current') ?? 0)
-    prevBtn?.setAttribute('disabled', cur <= 0 ? '' : '')
-    nextBtn?.setAttribute('disabled', cur >= 2 ? '' : '')
+    prevBtn?.toggleAttribute('disabled', cur <= 0)
+    nextBtn?.toggleAttribute('disabled', cur >= 2)
   }
   prevBtn?.addEventListener('click', () => {
     const cur = Number(ctrl?.getAttribute('current') ?? 0)

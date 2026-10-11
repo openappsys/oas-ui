@@ -13,7 +13,7 @@
 
 ## 引导事件
 
-`oas-step` 步骤切换携带 `detail: { index, current, total, next, prev }`；关闭类事件（cancel/finish/close/skip/destroy）携带 `detail: { index, total }`。
+`oas-step` 步骤切换携带 `detail: { index, current, total, next, prev }`；关闭类事件（cancel/finish/close/skip/destroy）携带 `detail: { index, total }`（其中 `oas-cancel` 额外携带 `source` 标识取消来源）。
 
 <DemoBlock title="步骤事件">
   <oas-button type="primary" onclick="document.getElementById('tour-event').setAttribute('open','')">开始引导</oas-button>
@@ -181,7 +181,7 @@
 
 ## 生命周期事件
 
-`oas-highlight-start` / `oas-highlight-end` 在步骤高亮开始/完成时派发（异步等待命中后触发）；`oas-destroy` 在引导关闭时派发（含外部移除 open）。
+`oas-highlight-start` 在步骤 index 变化时即派发（先于异步目标等待），`oas-highlight-end` 在高亮定位完成后派发（目标异步等待命中后才进入定位）；`oas-destroy` 在引导关闭时派发（含外部移除 open）。
 
 <DemoBlock title="生命周期事件">
   <oas-button type="primary" onclick="document.getElementById('tour-life').setAttribute('open','')">开始引导</oas-button>

@@ -272,7 +272,7 @@
 
 ## 链接卡（href）
 
-`clickable` + `href` 时整卡语义为链接：内部锚点承载地址，焦点与键盘 Enter 都由锚点原生支持；`target` 一并透传。点击卡片内嵌的按钮/链接仍走各自操作，不会误触发整卡跳转。
+`href` 单独即生效（无需 `clickable`）：整卡语义为链接，内部锚点承载地址，焦点与键盘 Enter 都由锚点原生支持；`target` 一并透传。点击卡片内嵌的按钮/链接仍走各自操作，不会误触发整卡跳转。
 
 <DemoBlock title="href 链接卡">
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--oas-space-4); width: 100%;">

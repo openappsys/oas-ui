@@ -94,7 +94,7 @@ onBeforeUnmount(() => {
 .sg-btn {
   padding: var(--oas-space-1) var(--oas-space-3);
   border: 1px solid var(--oas-color-border);
-  border-radius: var(--oas-radius-full);
+  border-radius: var(--oas-radius-full, 999px);
   background: var(--oas-color-bg-elevated);
   color: var(--oas-color-text-primary);
   cursor: pointer;

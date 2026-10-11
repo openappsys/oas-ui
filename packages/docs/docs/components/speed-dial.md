@@ -129,7 +129,7 @@
 
 ## 键盘导航
 
-展开后自动聚焦第一个子动作；方向键在动作间移动（纵向展开用 `ArrowUp`/`ArrowDown`，横向展开用 `ArrowLeft`/`ArrowRight`，循环），`Home`/`End` 跳首尾，`Esc` 收起并回焦主按钮。
+展开后自动聚焦第一个子动作（`trigger="hover"` 悬停触发展开时不抢焦点）；方向键在动作间移动（纵向展开用 `ArrowUp`/`ArrowDown`，横向展开用 `ArrowLeft`/`ArrowRight`，循环），`Home`/`End` 跳首尾，`Esc` 收起并回焦主按钮。
 
 <DemoBlock title="键盘导航">
   <div style="width: 200px; height: 160px">
@@ -235,4 +235,4 @@ onMounted(() => {
 | `icon`  | 图标名（`@oas-ui/icons` 的 内置图标名） | `string` |
 | `hide-label` | true 时只渲染 icon（圆形小钮），label 视觉隐藏、hover/键盘聚焦时浮出文字气泡；未提供可渲染 icon 时回落显示 label | `boolean` |
 
-行为：点击主按钮切换展开（`aria-expanded` 同步）；`trigger="hover"` 可改为悬停触发（触屏回落 click）；点击外部或 Esc 收起（Esc 后焦点回到主按钮）；点击子动作收起并派发 `oas-select`；展开时自动聚焦第一个子动作，方向键/Home/End 在动作间导航；`hide-label` 子动作的 menuitem 以 `aria-label` 保留可访问名。默认定位 `position: fixed; bottom/right`，可覆盖。文档级监听仅在展开时挂载、断开连接清理，无孤儿浮层。
+行为：点击主按钮切换展开（`aria-expanded` 同步）；`trigger="hover"` 可改为悬停触发（触屏回落 click）；点击外部或 Esc 收起（Esc 后焦点回到主按钮）；点击子动作收起并派发 `oas-select`；展开时自动聚焦第一个子动作（hover 触发展开除外），方向键/Home/End 在动作间导航；`hide-label` 子动作的 menuitem 以 `aria-label` 保留可访问名。默认定位 `position: fixed; bottom/right`，可覆盖。文档级监听仅在展开时挂载、断开连接清理，无孤儿浮层。

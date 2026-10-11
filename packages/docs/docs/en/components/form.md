@@ -4,7 +4,7 @@ An enhanced native `<form>` supporting validation and submission of inner fields
 
 > **Cross-shadow submit entry**: `oas-form` wraps a native `<form>` inside its shadow root, so buttons in the light DOM (including `oas-button`) do not have native submit semantics. Call the component's public `submit()` method at submit time (e.g. `this.closest('oas-form').submit()`); it delegates to the inner form's `requestSubmit()`, preserving submit-event semantics and triggering the same validation flow that dispatches `oas-submit` / `oas-validate-fail` — do **not** reach into `shadowRoot.querySelector('form')` to drive the inner form.
 
-> The data source is each field's `value` attribute (controlled mode). Fields validated by the form are `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-radio` / `oas-radio-group` / `oas-date-picker` / `oas-slider` / `oas-rate` / `oas-pin-input` / `oas-dynamic-tags` / `oas-combobox` / `oas-picker` / `oas-transfer` (`model-value` channel) / `oas-dynamic-input` (`model-value` channel) / `oas-checkbox` / `oas-switch` (`checked` channel) with a `name`. `oas-input` / `oas-textarea` / `oas-input-number` do **not** automatically write back to the `value` attribute while typing — listen to `oas-input` / `oas-change` events in script to sync; `oas-select` / `oas-cascader` / `oas-tree-select` write back by themselves on selection.
+> The data source is each field's `value` attribute (controlled mode). Fields validated by the form are `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-radio` / `oas-radio-group` / `oas-date-picker` / `oas-slider` / `oas-rate` / `oas-pin-input` / `oas-dynamic-tags` / `oas-combobox` / `oas-picker` / `oas-transfer` (`model-value` channel) / `oas-dynamic-input` (`model-value` channel) / `oas-checkbox` / `oas-switch` (`checked` channel) with a `name`. `oas-form` has a built-in listener for `oas-input` / `oas-change` events bubbling from inner fields and automatically writes back to that field's `value` attribute (null becomes an empty string) — no per-field wiring needed.
 
 ## Feature Demo
 
@@ -598,7 +598,7 @@ onMounted(() => {
 | `label-align` | Label alignment: `left` / `right` / `top` (default `top` in grid mode; forced to `left` in inline mode) | `string` | `top` |
 | `label-width` | Label column width when `label-align` is `left`/`right` (ignored in inline mode, auto) | — | — |
 | `layout` | Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical`; `inline` attribute takes precedence when present | `string` | `vertical` |
-| `rules` | Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | — |
+| `rules` | Validation rules JSON: `{ fieldName: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | — |
 | `scroll-to-first-error` | On validation failure, focus the first invalid field and smooth-scroll it into view (instant jump under prefers-reduced-motion) | `boolean` | — |
 | `size` | Form-level size tier distributed to all fields via the data-form-size channel (a field's own explicit size wins; form-associated fields follow dynamically) | — | — |
 | `validate-messages` | Overrides locale-default validation messages per rule type (property/JSON channels, ${min}/${max}/${value} placeholders, default fallback) | `ValidateMessages \| string` | — |

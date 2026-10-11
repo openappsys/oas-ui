@@ -21,7 +21,7 @@ An enhanced native `<input type="checkbox">` supporting indeterminate state, che
   </oas-space>
 </DemoBlock>
 
-`size` controls both the box size and the font size; set on the group it cascades to all items, while an explicit item `size` wins.
+`size` controls both the box size and the font size; set on the group it cascades to all items, while an explicit item `size` wins. Arbitrary pixel sizes can be set by overriding the CSS variable `--_box` on the host (or wait for theme-variable openings).
 
 ## Indeterminate State
 

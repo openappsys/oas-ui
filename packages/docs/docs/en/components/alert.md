@@ -42,7 +42,7 @@ An inline notice bar for success, info, warning, or error messages, with support
 <DemoBlock title="Large icon (prominent)">
   <oas-alert type="warning" title="Disk space is running low" icon prominent>
     <span slot="icon">⚠️</span>
-    <oas-button size="small" variant="outlined" onclick="message.info('Cleanup started')">Clean up now</oas-button>
+    <oas-button size="small" variant="outlined" slot="action" onclick="message.info('Cleanup started')">Clean up now</oas-button>
     Only 1.2GB of free space remains, please clean up your cache.
   </oas-alert>
 </DemoBlock>

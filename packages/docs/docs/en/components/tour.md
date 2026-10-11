@@ -13,7 +13,7 @@ Step-by-step feature onboarding with a fullscreen overlay and target highlightin
 
 ## Tour events
 
-`oas-step` carries `detail: { index, current, total, next, prev }`; closing events (cancel/finish/close/skip/destroy) carry `detail: { index, total }`.
+`oas-step` carries `detail: { index, current, total, next, prev }`; closing events (cancel/finish/close/skip/destroy) carry `detail: { index, total }` (`oas-cancel` additionally carries a `source` identifying the cancel origin).
 
 <DemoBlock title="Step events">
   <oas-button type="primary" onclick="document.getElementById('tour-event').setAttribute('open','')">Start tour</oas-button>
@@ -147,7 +147,11 @@ When the target is off-screen the tour scrolls to it (`scroll-into-view-options`
   <oas-tour id="tour-interact" target-area-clickable steps='[{"selector":"#tour-ai1","title":"Highlight interactive","description":"target-area-clickable: buttons/links on the highlighted target stay clickable (the overlay does not intercept)."}]'></oas-tour>
   <oas-tour id="tour-disabled" disabled-interaction steps='[{"selector":"#tour-ai1","title":"Highlight blocked","description":"disabled-interaction: an interceptor covers the target, so it cannot be clicked."}]'></oas-tour>
   <oas-tour id="tour-adv" advance-on-click steps='[{"selector":"#tour-ai1","title":"Click me","description":"Click the highlighted area to go directly to the next step."},{"selector":"#tour-ai2","title":"One step further","description":"Interactive tour: click the highlight to advance."}]'></oas-tour>
-  <div id="tour-ai1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Highlight interaction target 1</div>
+  <oas-tag id="tour-ai-result" type="info" style="margin-bottom: 4px">Button inside target not clicked yet</oas-tag>
+  <div id="tour-ai1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; gap: 8px">
+    Highlight interaction target 1
+    <oas-button size="small" type="primary" onclick="window.__tourAiClick=(window.__tourAiClick||0)+1;document.getElementById('tour-ai-result').textContent='Button inside target clicked ×'+window.__tourAiClick+' (overlay did not intercept)'">Click me to verify interaction</oas-button>
+  </div>
   <div id="tour-ai2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Highlight interaction target 2</div>
 </DemoBlock>
 
@@ -177,7 +181,7 @@ When the target is off-screen the tour scrolls to it (`scroll-into-view-options`
 
 ## Lifecycle events
 
-`oas-highlight-start` / `oas-highlight-end` fire when the step highlight starts/completes (after async waits resolve); `oas-destroy` fires when the tour closes (including external removal of `open`).
+`oas-highlight-start` fires as soon as the step index changes (before any async target wait), while `oas-highlight-end` fires once the highlight has been positioned (positioning only happens after the async target wait resolves); `oas-destroy` fires when the tour closes (including external removal of `open`).
 
 <DemoBlock title="Lifecycle events">
   <oas-button type="primary" onclick="document.getElementById('tour-life').setAttribute('open','')">Start tour</oas-button>

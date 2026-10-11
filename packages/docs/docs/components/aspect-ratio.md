@@ -77,7 +77,7 @@
 
 ## flex 容器内
 
-`oas-aspect-ratio` 默认宽度 100%，但在 flex 容器中作为 flex 子项时**不会自动拉伸占满**——高度仍按比例推导，宽度由 flex 布局决定。需要撑开时给宿主设 `flex` 属性（如 `flex: 1`）或显式宽度。
+`oas-aspect-ratio` 宽度跟随容器（`:host` 恒 `width: 100%`），高度按比例推导。在 flex 容器中作为 flex 子项时按 `width: 100%` 参与主轴分配（默认会被兄弟项压缩）；需要撑开时给宿主设 `flex` 属性（如 `flex: 1`）或显式宽度。
 
 <DemoBlock title="flex 容器中的表现">
   <oas-flex gap="8px" style="width: 100%">
@@ -93,7 +93,7 @@
   </oas-flex>
 </DemoBlock>
 
-> 注意：不设宽度/`flex` 时，flex 容器内的 `oas-aspect-ratio` 宽度由内容决定（内容为空时可能塌成 0）——请始终给宿主设 `flex` 属性或显式宽度。
+> 注意：不设 `flex` 属性/显式宽度时，flex 容器内多个 `oas-aspect-ratio` 的 `width: 100%` 基准会互相挤压——请始终给宿主设 `flex` 属性或显式宽度，保证宽度符合预期。
 
 ## 空内容占位
 

@@ -27,7 +27,7 @@
   </p>
 </DemoBlock>
 
-状态词表与 `oas-upload` 一致（库内统一）；`removable` 在场显示删除按钮（点击派发 `oas-remove`，默认不自移除——删除决策在宿主）。
+状态机五态：`idle` / `uploading` / `processing` / `error` / `done`（默认 done）；`removable` 在场显示删除按钮（点击派发 `oas-remove`，默认不自移除——删除决策在宿主）。
 
 ## 尺寸（size）
 
@@ -136,7 +136,7 @@ onMounted(async () => {
 | `progress` | 上传进度 0–100（越界自动收敛到 0/100；仅 uploading 态渲染底部细进度条 role=progressbar） | — | — |
 | `removable` | 布尔在场：显示内置删除按钮（点击派发 oas-remove；组件默认不自移除，删除决策在宿主） | `boolean` | — |
 | `size` | 三档尺寸：default（默认）/ sm（接受 small 别名）/ xs，逐档收内边距与媒体 | — | — |
-| `state` | 上传状态机：idle / uploading / processing / error / done（默认 done；词表与 oas-upload 一致；uploading/processing 反射 aria-busy） | `string` | `done` |
+| `state` | 上传状态机：idle / uploading / processing / error / done（默认 done；uploading/processing 反射 aria-busy） | `string` | `done` |
 
 #### 事件
 

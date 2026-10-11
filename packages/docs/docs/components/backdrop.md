@@ -159,7 +159,7 @@ onMounted(async () => {
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-after-close` | 关闭动画完成后派发（规范名，对齐 after-* 家族），`detail` 无；滚动解锁与节点卸载（元素自移除）在此之后 |
+| `oas-after-close` | 关闭动画完成后派发（规范渠道，与 after-* 族一致）；`detail` 无；滚动解锁在此之前已完成，节点卸载（元素自移除）在此之后 |
 | `oas-after-show` | 进入动画完成后派发（规范名，对齐 after-* 家族），`detail` 无；reduced-motion 下立即派发 |
 | `oas-click` | 点击遮罩，`detail.originalEvent` 为原始点击事件 |
 

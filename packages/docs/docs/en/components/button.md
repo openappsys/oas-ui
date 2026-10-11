@@ -189,7 +189,7 @@ Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_
 
 ## Plain
 
-`plain` uses a low-contrast, subtle style (transparent background with softened outline and text), gentler on light backgrounds.
+`plain` uses a low-contrast, subtle style (a 12% tint of the semantic color as background with a transparent border and semantic-colored text), gentler on light backgrounds.
 
 <DemoBlock title="Plain buttons">
   <oas-button plain>Plain button</oas-button>

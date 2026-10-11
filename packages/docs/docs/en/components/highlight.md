@@ -45,7 +45,7 @@ All three toggles default to off (insensitive); boolean attributes apply when pr
   </div>
 </DemoBlock>
 
-`whole-word` boundaries are decided by Unicode letters/digits (han characters included): a hit adjacent to a word character is not a whole word, so a Chinese keyword surrounded by han characters does not match (Chinese has no space-based word boundaries — a conservative, correct default).
+`whole-word` boundaries are decided by Unicode letters/digits/underscores (han characters included): a hit adjacent to a word character is not a whole word, so a Chinese keyword surrounded by han characters does not match (Chinese has no space-based word boundaries — a conservative, correct default).
 
 ## Match Count (oas-count)
 

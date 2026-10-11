@@ -87,7 +87,7 @@
   <div style="height: 240px; width: 100%; display: flex">
     <oas-sidebar id="sidebar-active" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dashboard","icon":"📊"},{"label":"订单管理","value":"orders","icon":"📦"},{"label":"设置","value":"settings","icon":"⚙️"}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-      外部按钮设置 <code>active</code> 控制当前高亮菜单项；清除后恢复默认（无高亮，取末项）。
+      外部按钮设置 <code>active</code> 控制当前高亮菜单项；清除后无高亮项。
     </div>
   </div>
 </DemoBlock>

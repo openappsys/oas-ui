@@ -129,7 +129,7 @@ The main button shows a default "＋"; pass a custom icon through the default sl
 
 ## Keyboard navigation
 
-When expanded, the first sub-action is focused automatically; arrow keys move between actions (vertical expansion uses `ArrowUp`/`ArrowDown`, horizontal expansion uses `ArrowLeft`/`ArrowRight`, wrapping around), `Home`/`End` jump to the first/last, and `Esc` collapses and returns focus to the main button.
+When expanded, the first sub-action is focused automatically (hover-triggered expansion does not steal focus); arrow keys move between actions (vertical expansion uses `ArrowUp`/`ArrowDown`, horizontal expansion uses `ArrowLeft`/`ArrowRight`, wrapping around), `Home`/`End` jump to the first/last, and `Esc` collapses and returns focus to the main button.
 
 <DemoBlock title="Keyboard navigation">
   <div style="width: 200px; height: 160px">
@@ -235,4 +235,4 @@ onMounted(() => {
 | `icon`  | Icon name (a key of `@oas-ui/icons` built-in icon set)  | `string` |
 | `hide-label` | When `true`, renders only the icon (a circular small button); the label is visually hidden and appears as a text bubble on hover / keyboard focus. Falls back to showing the label when no renderable icon is provided | `boolean` |
 
-Behavior: clicking the main button toggles expansion (`aria-expanded` synced); `trigger="hover"` switches to hover trigger (touch devices fall back to click); clicking outside or pressing Esc collapses (after Esc, focus returns to the main button); clicking a sub-action collapses and fires `oas-select`; when expanded, the first sub-action is focused automatically and arrow keys / Home / End navigate between actions; `hide-label` sub-actions keep an accessible name via `aria-label`. The default position is `position: fixed; bottom/right`, overridable. The document-level listener is only attached while expanded and disconnected during cleanup — no orphan popups.
+Behavior: clicking the main button toggles expansion (`aria-expanded` synced); `trigger="hover"` switches to hover trigger (touch devices fall back to click); clicking outside or pressing Esc collapses (after Esc, focus returns to the main button); clicking a sub-action collapses and fires `oas-select`; when expanded, the first sub-action is focused automatically (except for hover-triggered expansion) and arrow keys / Home / End navigate between actions; `hide-label` sub-actions keep an accessible name via `aria-label`. The default position is `position: fixed; bottom/right`, overridable. The document-level listener is only attached while expanded and disconnected during cleanup — no orphan popups.

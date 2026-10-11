@@ -320,7 +320,7 @@
 
 ## 可编辑重命名
 
-`oas-tab-panel` 加 `editable`：双击标签进入输入框编辑态，Enter 确认（派发 `oas-rename`，`detail: { value, label }`，组件自动写回新 label）/ Esc 或失焦取消。
+`oas-tab-panel` 加 `editable`：双击标签进入输入框编辑态，Enter 确认（派发 `oas-rename`，`detail: { value, label }`，组件自动写回新 label）/ Esc 取消 / 失焦保存（内容未变则静默退出）。
 
 > 该交互属于 manager 能力包：主路径 `@oas-ui/ui/navigation/tabs` 已默认内含该能力（全量入口与 CDN 导航族包同样内含），无需显式 import。若只想保留纯切换/关闭/溢出的轻量基线，可改从纯核入口 `@oas-ui/ui/navigation/tabs/core` 引入——它不含 manager 能力，此时用到该交互配置会 dev 告警提示显式 import `@oas-ui/ui/navigation/tabs/manager` 或换回主路径。
 

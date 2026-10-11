@@ -2,6 +2,19 @@
 
 Reveal a row of action buttons by swiping a list item horizontally: the default slot is the **content layer** (the list item body) and `slot="actions"` is the **action button group** (the host places `button` / `oas-button` elements). Swiping the content layer toward inline-start reveals the inline-end action area; releasing snaps to open or closed based on the drag threshold. `oas-open` / `oas-close` are dispatched once each when the open / closed state settles (programmatic `open` attribute changes dispatch them too). An item can also carry a group on the **other side** (`slot="actions-start"`, see "Two-Sided Swipe")—the two sides open exclusively on the same item.
 
+## Basic Usage
+
+A single swipe item: put the content in the default slot and the action button in `slot="actions"`. Swipe left (LTR) to reveal the right-hand action area and release to snap.
+
+<DemoBlock title="Single swipe item">
+  <div style="width: 100%">
+    <oas-swipe-cell>
+      <div style="padding: var(--oas-space-3) var(--oas-space-4); background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">Swipe left to see actions</div>
+      <oas-button slot="actions" type="danger" style="height: 100%">Delete</oas-button>
+    </oas-swipe-cell>
+  </div>
+</DemoBlock>
+
 ## side: Actions on the Left (Swipe Right)
 
 By default actions attach to the inline-end side (right in LTR, revealed by swiping left); `side="start"` moves them to inline-start (left in LTR, **revealed by swiping right**). `side` is an interaction choice orthogonal to text direction—in RTL both the side and the swipe direction mirror automatically. Note: when the same item also has `slot="actions-start"`, `side` is ignored and `slot="actions"` always stays on inline-end (this slot is for the single-group case).
@@ -39,19 +52,6 @@ An item can carry an action group on each side at once: `slot="actions"` on inli
       <div style="padding: var(--oas-space-3) var(--oas-space-4); background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">Swipe left for Delete, swipe right for Archive</div>
       <oas-button slot="actions-start" type="primary">Archive</oas-button>
       <oas-button slot="actions" type="danger">Delete</oas-button>
-    </oas-swipe-cell>
-  </div>
-</DemoBlock>
-
-## Basic Usage
-
-A single swipe item: put the content in the default slot and the action button in `slot="actions"`. Swipe left (LTR) to reveal the right-hand action area and release to snap.
-
-<DemoBlock title="Single swipe item">
-  <div style="width: 100%">
-    <oas-swipe-cell>
-      <div style="padding: var(--oas-space-3) var(--oas-space-4); background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">Swipe left to see actions</div>
-      <oas-button slot="actions" type="danger" style="height: 100%">Delete</oas-button>
     </oas-swipe-cell>
   </div>
 </DemoBlock>

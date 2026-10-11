@@ -1,6 +1,6 @@
 # Component Overview
 
-OAS-UI provides 126 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 145 framework-agnostic Web Components, organized into 9 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -40,6 +40,7 @@ OAS-UI provides 126 framework-agnostic Web Components, organized into 7 groups b
 - [Swatch](/en/components/swatch) — Inline preset color swatches for quick pick & display: theme/tag/favorite colors without opening a panel; swatch item + selection group (single/multi, roving keyboard).
 - [Picker](/en/components/picker) — Mobile-style scroll-wheel column selector: independent columns or cascading tree, native inertial scrolling with snap, keyboard accessible, form-associated.
 - [Slider](/en/components/slider) —— A slider built on an enhanced native `<input type="range">`.
+- [Knob](/en/components/knob) —— A rotary control that maps continuous/discrete values to a circular angle, designed for parameter-dense panels (audio/industrial/3D); supports circular + linear drag interactions and double-click reset.
 - [InputNumber](/en/components/input-number) —— An enhanced native `<input type="number">` with stepper buttons and range constraints.
 - [Rate](/en/components/rate) —— A star rating supporting keyboard arrow-key adjustment; clicking the currently selected star clears the value by default.
 - [Select](/en/components/select) —— A dropdown selector supporting single/multiple selection, groups, clearable, remote search, and custom creation, with full keyboard operation.
@@ -63,6 +64,7 @@ OAS-UI provides 126 framework-agnostic Web Components, organized into 7 groups b
 - [Form](/en/components/form) —— An enhanced native `<form>` supporting validation and submission of inner fields according to `rules`.
 - [FormItem](/en/components/form#grid-form-layout) —— `oas-form-item`: label + control container + error slot; spans grid columns via `span` inside a `layout="grid"` form.
 - [FormList](/en/components/form#dynamic-field-group-form-list) —— `oas-form-list`: an add/remove group of field rows inside a form; row templates are cloned with field `name` indexed automatically (nested values), validation/submit follow the host form.
+- [Questionnaire](/en/components/questionnaire) —— A step-driven form flow orchestrator: step header + progress (Step n / m) + one panel per step + per-step validation gating; each step embeds one `<oas-form>`, reusing the `oas-form` kernel.
 
 ## Feedback & Overlays
 
@@ -114,6 +116,13 @@ OAS-UI provides 126 framework-agnostic Web Components, organized into 7 groups b
 - [FloatButton](/en/components/float-button) —— A circular action button fixed to the bottom-right corner of the page by default, for quick actions like "New" and "Feedback"; supports a badge and a custom icon.
 - [SpeedDial](/en/components/speed-dial) —— A floating main button that expands a list of sub-actions, commonly used for quick actions like "New/Share"; `aria-expanded` stays in sync, clicking outside / Esc collapses it, with no orphan popups.
 
+## Workbench
+
+- [TitleBar](/en/components/titlebar) —— A window title bar and app-level chrome: draggable region + window controls/document well + compact/large tiers; aimed at desktop shells (Electron/Tauri) and "windowed" web workbenches.
+- [StatusBar](/en/components/statusbar) —— A bottom silent status strip: left/right segmented cells + clickable + background-activity spinner + warning/error semantic colors; complementary to `oas-footer`: statusbar carries status vocabulary (counts/selection/sync state), footer is the substantive page footer.
+- [Inspector](/en/components/inspector) —— A right-side (or left-side) object editing panel: pill tab strip + collapsible sections + label/control rows; `role="complementary"`, complementary to `oas-sidebar` (navigation menus): inspector examines and edits object properties.
+- [ActionBar](/en/components/action-bar) —— A bottom command strip + readout wells container: command buttons + statistic/task-progress/media-transport/music readout wells, multiple surfaces (charcoal/dark/light); complementary to `oas-toolbar` (toolbar role).
+
 ## Data Display
 
 - [Kanban](/en/components/kanban) — Column + card kanban board: drag across columns / reorder within / column reorder / WIP limits / multi-select / swimlanes, fires oas-change on drop.
@@ -130,6 +139,7 @@ OAS-UI provides 126 framework-agnostic Web Components, organized into 7 groups b
 - [Barcode](/en/components/barcode) —— A 1D barcode component based on a **pure TypeScript, zero-dependency encoder** (built in-house): 6 symbologies in the first release (CODE128/EAN-13/EAN-8/UPC-A/CODE39/ITF-14), built-in scannability guardrails (quiet-zone floor / fixed white background), inline SVG output, downloadable.
 - [Watermark](/en/components/watermark) —— A container-level watermark layer that sits on top of the content without intercepting any interaction, suitable for preventing sensitive information from leaking.
 - [Collapse](/en/components/collapse) —— Stows content in collapsible panels to keep the focus on key information.
+- [Collapsible](/en/components/collapsible) —— A single-region collapse primitive: one freely controllable collapsible region. Collapse is the "multi-region + accordion" orchestration set; collapsible is the standalone single piece, suited for file-tree nodes, detail fold-away areas, and similar scenarios.
 - [Descriptions](/en/components/descriptions) —— Displays read-only information in groups, suitable for detail page scenarios.
 - [Timeline](/en/components/timeline) —— Displays a series of event nodes in chronological order.
 - [List](/en/components/list) —— Displays a collection of related items, capable of carrying a title, description, and extra actions.
@@ -147,6 +157,14 @@ OAS-UI provides 126 framework-agnostic Web Components, organized into 7 groups b
 - [GradientText](/en/components/gradient-text) —— A purely presentational component that fills text with a gradient color, implemented with `background-clip: text`; it defaults to a two-color theme-token gradient and supports arbitrary color-stop arrays and directions. No events.
 - [Highlight](/en/components/highlight) —— Text match highlighting: matched segments from `text` + `highlight` (space-separated words or a JSON array) render as `<mark>` (token colors, dark-mode aware), with case / whole-word / accent toggles, dispatching `oas-count` after each recompute.
 - [SwipeCell](/en/components/swipe-cell) —— Reveal an action button group by swiping a list item horizontally: the default slot is the content layer and `slot="actions"` the action area, swiped toward inline-start and snapped open/closed by `threshold`; single-open exclusion, outside-click/scroll close, Esc close, and keyboard-reachable action buttons; `oas-open` / `oas-close` dispatched when the state settles.
+
+## Conversation
+
+- [Bubble](/en/components/bubble) —— A conversation message content surface: a purely presentational content bubble (variants/border/radius/tail decoration + content), without avatar/time/action states; compose with `oas-message-row` for a complete message, suited for AI chats, IM and natural conversation flows.
+- [Attachment](/en/components/attachment) —— A conversation attachment card: media (image/thumbnail) + file name/metadata + upload state machine + action buttons (download/remove/open), suited for sending files in conversations, AI chat image attachments, and similar scenarios.
+- [MessageScroller](/en/components/message-scroller) —— A conversation scroll container (does not own message data): a scroll-intent model — follow new content while the user is at the bottom (AI style), or always pin to the bottom (IM style); built-in jump button; supports prepend position preservation, async-resource position preservation, turn anchoring (AI "back to the last question"), and optional in-viewport visibility tracking.
+- [Marker](/en/components/marker) —— A conversation time/system-event marker: a lightweight text separator for dates, statuses and boundaries, like IM's "Today 10:00" time separator or group-chat "system events"; also fits status separators in AI-style conversations.
+- [MessageRow](/en/components/message-row) —— A conversation message row (layout shell): header/footer slots carry avatar/name, the default slot embeds `oas-bubble`, and the footer carries delivery status/actions; supports alignment direction and grouped clustering.
 
 ## Framework Containers
 

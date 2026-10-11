@@ -217,8 +217,8 @@ When the container is too narrow, top-level items that don't fit fold into a tra
 
 <DemoBlock title="start / end slots (logo / avatar)">
   <oas-menubar items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new"},{"label":"Open","value":"open"}]},{"label":"Edit","value":"edit","accessKey":"e","children":[{"label":"Undo","value":"undo"}]}]'>
-    <oas-avatar slot="start" size="28">O</oas-avatar>
-    <oas-avatar slot="end" size="28" src="https://picsum.photos/seed/isui-mb-avatar/80">U</oas-avatar>
+    <oas-avatar slot="start" size="28" aria-hidden="true">O</oas-avatar>
+    <oas-avatar slot="end" size="28" src="https://picsum.photos/seed/isui-mb-avatar/80" aria-hidden="true">U</oas-avatar>
   </oas-menubar>
   <p class="demo-tip">Put a logo/graphic in `start` and an avatar in `end`; arrow keys move between menu items and never jump into the slots.</p>
 </DemoBlock>

@@ -16,7 +16,7 @@ Click the input to open the panel and click a date to select; or type `2026-08-1
   <oas-date-picker type="daterange" value='["2026-08-05","2026-08-15"]'></oas-date-picker>
 </DemoBlock>
 
-A double-month grid: pick the start first, then the end; submits a JSON array `["start","end"]`. Hovering previews the range. Every endpoint pick emits `oas-calendar-change` (see [Events](#controlled--events)). Range selection defaults to a **double-month grid** (left + right month linked); when space is tight (narrow screens / constrained containers) it naturally collapses to single-panel width via CSS responsive rules — no `single-panel`-style property switch needed.
+A double-month grid: pick the start first, then the end; submits a JSON array `["start","end"]`. Hovering previews the range. Every endpoint pick emits `oas-calendar-change` (see [Events](#controlled--events)). Range selection defaults to a **double-month grid** (left + right month linked); in the mobile form (narrow-screen drawer panel) the two month grids stack into a single column — desktop containers do not auto-collapse to single panel.
 
 ## Month & Month Range
 
@@ -64,7 +64,7 @@ week selects the whole ISO week of the clicked day (full-row highlight with week
   <oas-date-picker type="datetimerange" value='["2026-08-10T09:00:00","2026-08-20T18:00:00"]'></oas-date-picker>
 </DemoBlock>
 
-datetime submits after picking date + time and clicking "OK"; datetimerange shows dual month grids plus start/end time columns and submits a JSON array.
+datetime submits after picking date + time and clicking "OK"; datetimerange shows dual month grids plus start/end time columns and submits a JSON array `["yyyy-MM-ddTHH:mm:ss","yyyy-MM-ddTHH:mm:ss"]`.
 
 ## Range Separator
 
@@ -112,11 +112,13 @@ Out-of-range dates are not selectable, and navigation buttons gray out at the `m
   <span id="date-picker-shortcuts-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
-`shortcuts` (property, `{ label, value }` or `{ label, getValue() }`) applies on click and emits `oas-change`. Built-in defaults exist for date / datetime / month / week / year and all range types (labels via locale).
+`shortcuts` (property, `{ label, value }` or `{ label, getValue() }`) applies on click, emits `oas-change`, and closes the panel. Built-in defaults exist for date / datetime / month / week / year and all range types (labels via locale).
 
 <DemoBlock title="Sidebar shortcuts (shortcuts-position=left)">
   <oas-date-picker type="daterange" shortcuts-position="left" placeholder="Shortcuts in the left sidebar"></oas-date-picker>
 </DemoBlock>
+
+With many presets, use `shortcuts-position="left"` to move the shortcut bar to a vertical column on the panel's left side.
 
 ## Timezone (timezone)
 

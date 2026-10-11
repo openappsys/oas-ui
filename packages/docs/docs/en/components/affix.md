@@ -42,7 +42,7 @@ Set `position="bottom"` to pin towards the bottom: the element becomes fixed onc
   </oas-affix>
 </DemoBlock>
 
-Scroll this page down and observe the button being pinned as it approaches the bottom of the viewport (`position: fixed; bottom: 16px`).
+Scroll this page down and observe the button being pinned as it approaches the bottom of the viewport (`position: fixed; bottom: 88px`, i.e. the `offset` value).
 
 ## Custom scroll container
 

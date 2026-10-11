@@ -101,7 +101,7 @@ In multiple mode `value` is a JSON array; selected items are shown as tags that 
   <oas-select placeholder="No options" options='[]'></oas-select>
 </DemoBlock>
 
-When options are empty, the dropdown shows "暂无数据".
+When options are empty, the dropdown shows "No data".
 
 ## Custom Empty
 
@@ -121,7 +121,7 @@ When options are empty, the dropdown shows "暂无数据".
   <oas-select searchable placeholder="Type a keyword to filter" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"},{"label":"Watermelon","value":"watermelon"}]'></oas-select>
 </DemoBlock>
 
-Once opened, you can type directly to filter; when nothing matches, "无匹配选项" is shown.
+Once opened, you can type directly to filter; when nothing matches, "No matching options" is shown.
 
 ## Custom Filtering
 
@@ -282,7 +282,7 @@ With `multiple` and `max-count` set, once the selection reaches the limit, unsel
   <span id="select-create-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
-When search yields no match, a "创建 xxx" item is shown; clicking or pressing Enter creates a new option from the input value and selects it. Creation dispatches `oas-create` (`detail: { value, label }` carrying the created text).
+When search yields no match, a "Create {label}" item is shown; clicking or pressing Enter creates a new option from the input value and selects it. Creation dispatches `oas-create` (`detail: { value, label }` carrying the created text).
 
 ## Custom Option Rendering
 
@@ -718,7 +718,7 @@ onMounted(() => {
 | `auto-width` | Trigger width shrinks to fit the selection | — | — |
 | `autofocus` | Auto-focus the trigger after mount | `boolean` | — |
 | `clearable` | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | `boolean` | — |
-| `debounce` | Remote search input debounce in ms (default 0 = immediate; only debounces oas-input in remote mode, local filtering stays instant) | — | — |
+| `debounce` | Remote search input debounce in ms (default 0 = immediate; only debounces oas-input in remote mode, local filtering stays instant) | `number` | — |
 | `default-active-first-option` | Highlight the first visible option on open (defaults to the selected option) | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `hide-selected` | Hide selected options from the dropdown in multiple mode; they return after clearing or deselecting | `boolean` | — |
@@ -728,8 +728,8 @@ onMounted(() => {
 | `label` | The trigger's accessible name (aria-label), taking priority over the placeholder | `string` | — |
 | `loading` | Remote loading placeholder (use with `remote`) | `boolean` | — |
 | `loading-text` | Custom loading placeholder copy (defaults to locale) | `string` | — |
-| `max-count` | Multi-select limit: at the limit unselected options are disabled-greyed and oas-exceed-limit fires; selected items stay removable; single-select unchanged | — | — |
-| `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing) | `boolean` | — |
+| `max-count` | Multi-select limit: at the limit unselected options are disabled-greyed and oas-exceed-limit fires; selected items stay removable; single-select unchanged | `number` | — |
+| `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing) | `number` | — |
 | `multiple` | Multiple select | `boolean` | — |
 | `name` | Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent) | `string` | — |
 | `open` | Controlled open: attribute present = open, removed = closed; host gestures only fire oas-open-change (no forced write-back) | `boolean` | `false` |

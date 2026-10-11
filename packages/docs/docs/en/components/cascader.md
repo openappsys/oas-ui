@@ -155,7 +155,7 @@ When options are empty (and `el.load` is not set) the panel shows the empty plac
   <oas-space size="small">
     <oas-button size="small" onclick="document.querySelector('#cs-loading').setAttribute('loading','')">Enter loading</oas-button>
     <oas-button size="small" onclick="document.querySelector('#cs-loading').removeAttribute('loading')">Leave loading</oas-button>
-    <oas-cascader id="cs-loading" placeholder="Pick a region" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"},{"label":"宁波","value":"nb"}]}]'></oas-cascader>
+    <oas-cascader id="cs-loading" placeholder="Pick a region" options='[{"label":"Zhejiang","value":"zj","children":[{"label":"Hangzhou","value":"hz"},{"label":"Ningbo","value":"nb"}]}]'></oas-cascader>
   </oas-space>
 </DemoBlock>
 
@@ -164,11 +164,11 @@ While `loading` is set the trigger shows a spinner with `aria-busy` (replacing t
 ## Field mapping (field-names)
 
 <DemoBlock title="Field mapping (field-names)">
-  <oas-cascader id="cs-fields" placeholder="Data fields are name/id/subs/off" options='[{"name":"前端","id":"fe","subs":[{"name":"Vue","id":"vue","off":false}]},{"name":"设计","id":"design","subs":[{"name":"UI","id":"ui","off":true}]}]' field-names='{"label":"name","value":"id","children":"subs","disabled":"off"}'></oas-cascader>
+  <oas-cascader id="cs-fields" placeholder="Data fields are name/id/subs/off" options='[{"name":"Frontend","id":"fe","subs":[{"name":"Vue","id":"vue","off":false}]},{"name":"Design","id":"design","subs":[{"name":"UI","id":"ui","off":true}]}]' field-names='{"label":"name","value":"id","children":"subs","disabled":"off"}'></oas-cascader>
   <span id="cs-fields-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
 </DemoBlock>
 
-`field-names` is a JSON field alias (`{ label, value, children, disabled }`, matching the `oas-tree-select` contract); the component reads your raw data through the aliases (`isLeaf` always reads its original key). Data returned from lazy `el.load` goes through the same mapping. In the example above "设计 / UI" is disabled via the `off` field.
+`field-names` is a JSON field alias (`{ label, value, children, disabled }`, matching the `oas-tree-select` contract); the component reads your raw data through the aliases (`isLeaf` always reads its original key). Data returned from lazy `el.load` goes through the same mapping. In the example above "Design / UI" is disabled via the `off` field.
 
 ## Disabled
 
@@ -230,7 +230,7 @@ Listen to `oas-change`; `detail.value` is a path array in single mode, or an arr
 ## Focus Events (oas-focus / oas-blur)
 
 <DemoBlock title="focus / blur events">
-  <oas-cascader id="cs-focus" placeholder="Focus / blur to see feedback" options='[{"label":"浙江","value":"zj","children":[{"label":"杭州","value":"hz"}]}]'></oas-cascader>
+  <oas-cascader id="cs-focus" placeholder="Focus / blur to see feedback" options='[{"label":"Zhejiang","value":"zj","children":[{"label":"Hangzhou","value":"hz"}]}]'></oas-cascader>
   <span id="cs-focus-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
 </DemoBlock>
 
@@ -382,7 +382,7 @@ On touch screens (coarse pointer) or narrow viewports (<768px), the multi-level 
 | `item-height` | Fixed virtual row height in px (with virtual, default 36) | `string` | `36` |
 | `label` | Accessible name of the trigger (aria-label), taking priority over value/placeholder | `string` | — |
 | `loading` | Loading state: trigger spinner + aria-busy; the panel shows a loading placeholder | `boolean` | — |
-| `max-tag-count` | Collapse multi-select tags beyond the count into +N (with title listing hidden items) | `boolean` | — |
+| `max-tag-count` | Collapse multi-select tags beyond the count into +N (with title listing hidden items) | `number` | — |
 | `multiple` | Multi-select (cascading checkboxes; fully-checked children roll the parent into the value) | `boolean` | — |
 | `open` | Controlled open state (single source of truth); in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | `boolean` | — |
 | `options` | Cascade options, JSON array, supports `children` / `disabled` | `CascaderOption[] \| string` | `[]` |

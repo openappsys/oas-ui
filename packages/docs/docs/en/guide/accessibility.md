@@ -42,4 +42,4 @@ the component demo area (`.demo-block`).
 - Every form control has an accessible name (`aria-label` or an associated label)
 - Overlay components provide `role` + `aria-modal` + Esc to close
 - Dynamic regions (loading / opening dialogs) provide `aria-live` or focus management
-- Colors only use semantic tokens to keep contrast valid in both themes
+- Colors in principle use semantic tokens only (a few extreme-value/preset exceptions exist) to keep contrast valid in both themes

@@ -384,9 +384,9 @@ onMounted(() => {
 | `pager-count` | Maximum number of page-number buttons (excluding prev/next/first/last), default 9; when exceeded, the window shrinks centered on the current page (at least 2 pages on each side of an ellipsis, first/last reachable); values below the minimum 5 fall back to 5 with a warning | `string` | `9` |
 | `responsive` | Responsive: renders in the simple minimal form automatically when the component is narrower than 640px (ResizeObserver on the host; restores when wide enough); equivalent to explicit `simple` | `boolean` | — |
 | `show-edges` | Shows first/last double-arrow buttons (« »), disabled at the boundaries; aria-label via i18n | `boolean` | — |
-| `show-jumper` | Shows a quick-jump input 「跳至 __ 页」(Enter to jump, out-of-range clamped) | `boolean` | — |
+| `show-jumper` | Shows a quick-jump input "Jump to page" (Enter to jump, out-of-range clamped) | `boolean` | — |
 | `show-more` | Unknown-total form: when total ≤ 0 renders Previous / More / Next (More is a non-clickable status indicator, styled like a page button but muted; prev/next flip current ± 1 and fire oas-change); ignored when total > 0 (normal page numbers); show-jumper / page-sizes / hide-on-single do not apply | `boolean` | — |
-| `show-total` | Shows the total text 「共 X 条」 | `boolean` | — |
+| `show-total` | Shows the total text "Total {total}" | `boolean` | — |
 | `siblings` | Number of page numbers shown on each side of the current page | `string` | `1` |
 | `simple` | Minimal form: only prev/next buttons and a "current / total pages" text; mutually exclusive with the page-number ellipsis algorithm (simple wins); show-jumper still applies | `boolean` | — |
 | `size` | Size tier: xs / small / medium (default) / large / xl; `sm`/`md`/`lg` are accepted aliases; invalid values fall back to medium with a console warning | `string` | `medium` |

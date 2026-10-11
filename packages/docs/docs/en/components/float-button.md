@@ -106,7 +106,7 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 - `expand-direction` expanding direction: `up` (default) / `down` / `left` / `right`; horizontal directions mirror automatically in RTL
 - `trigger` activation: `click` (default) / `hover` (falls back to click on touch screens) / `manual` (controlled attribute only)
 - `expanded` controlled expanded state + `oas-expand-change` event (`detail: { expanded }`)
-- Clicking any child button collapses the group; Esc / outside click collapses and refocuses the main button
+- Clicking any child button collapses the group; Esc collapses and refocuses the main button, while an outside click collapses without refocusing
 
 <DemoBlock title="Group (click the main button to expand; children carry label bubbles and badges)">
   <oas-float-button mode="group" expand-direction="down" style="position: relative">
@@ -221,7 +221,7 @@ onMounted(async () => {
 | `disabled` | Disabled: not clickable, `oas-click` not fired, weakened styles; in `href` mode it degrades to a non-clickable `span` | `boolean` | — |
 | `draggable` | Draggable: press and drag to move the button (free positioning under `fixed`, clamped inside the viewport); displacement > 4px counts as a drag, in which case releasing does not fire `oas-click` (within the threshold it fires normally) | `boolean` | — |
 | `expand-direction` | Expand direction: up (default) / down / left / right; horizontal directions mirror automatically in RTL | `string` | `up` |
-| `expanded` | group/menu expanded state (controlled, single source of truth): gestures only emit oas-expand-change; the host closes by removing the attribute | `boolean` | — |
+| `expanded` | group/menu expanded state: the component writes the attribute itself and emits `oas-expand-change` on gesture expand/collapse; with `trigger="manual"` it is fully controlled — the component never toggles itself and the host adds/removes the attribute | `boolean` | — |
 | `href` | Link URL: when set, renders an `<a>` element (native link semantics and keyboard reachability) instead of a button; degrades to a `span` when disabled | `string` | — |
 | `magnetic` | Magnetic: `x` snaps to the nearest left/right edge, `y` to the nearest top/bottom edge, with a transition on release; empty means no snapping (requires `draggable`) | `string` | — |
 | `mode` | Mode: single (default) / group (main button + slotted actions expand vertically) / menu (actions JSON popup menu) | `string` | `single` |
@@ -236,8 +236,8 @@ onMounted(async () => {
 | Event | Description |
 | --- | --- |
 | `oas-click` | Clicked, `detail: { originalEvent }` |
-| `oas-expand-change` | Emitted on expand/collapse, `detail: { open }`; controlled semantics — the component never mutates expanded, the host writes it back |
-| `oas-select` | A menu item was selected in menu mode, detail: { index, label, value? }; the component then requests a collapse (emitting oas-expand-change — the host closes by removing expanded) |
+| `oas-expand-change` | Emitted on expand/collapse, `detail: { expanded }`; the component writes `expanded` back in sync (with `trigger="manual"` the host writes it back) |
+| `oas-select` | A menu item was selected in menu mode, `detail: { index, label, href? }`; the component then requests a collapse (emitting `oas-expand-change`; with `trigger="manual"` the host removes `expanded` to finish) |
 
 #### Slots
 

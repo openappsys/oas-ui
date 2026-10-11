@@ -554,11 +554,11 @@ onMounted(() => {
 | `disabled` | 禁用该项 | — | — |
 | `href` | 链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`） | — | — |
 | `icon` | 前置图标（`@oas-ui/icons` 内置图标名） | — | — |
-| `icon-color` | 图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色 | — | — |
+| `icon-color` | 图标颜色：样式固定为该色（覆盖选中/禁用态默认色），缺省 currentColor 跟随文字色（仅 items JSON 通道生效；子元素通道不解析该属性） | — | — |
 | `kind` | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集） | — | — |
 | `loading` | 加载中：渲染 spinner、禁点，由数据驱动恢复 | — | — |
 | `rel` | 链接 rel（配合 href） | — | — |
-| `shortcut` | 行右端快捷键标注（kbd 视觉，对齐 menubar/menu shortcut 契约） | — | — |
+| `shortcut` | 最右侧快捷键注释（kbd 视觉，与 menubar/menu shortcut 契约一致）（仅 items JSON 通道生效；子元素通道不解析该属性） | — | — |
 | `target` | 链接 target（配合 href） | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
 

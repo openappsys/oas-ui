@@ -274,7 +274,7 @@ The slider has no built-in visible label (avoiding duplication with the form lab
   </div>
 </DemoBlock>
 
-`label` becomes the accessible name of the inner slider (aligned with the input `label` contract): single sliders get `aria-label = label`; range mode composes localized semantic suffixes ("Volume 最小值" / "Volume 最大值"); when unset, the built-in fallback text is used. Screen readers and voice control rely on this name.
+`label` becomes the accessible name of the inner slider (aligned with the input `label` contract): single sliders get `aria-label = label`; range mode composes localized semantic suffixes ("Volume Minimum" / "Volume Maximum"); when unset, the built-in fallback text is used. Screen readers and voice control rely on this name.
 
 ## Events
 
@@ -376,7 +376,7 @@ onMounted(() => {
 | `label-6` | Accessible name for thumb 6 (multi-thumb mode; takes precedence over labels/label) | — | — |
 | `label-7` | Accessible name for thumb 7 (multi-thumb mode; takes precedence over labels/label) | — | — |
 | `label-8` | Accessible name for thumb 8 (multi-thumb mode; takes precedence over labels/label) | — | — |
-| `labels` | JSON string array of per-thumb accessible names (e.g. `["低","中","高"]`; the label-N attribute family takes precedence) | `string` | — |
+| `labels` | JSON string array of per-thumb accessible names (e.g. `["Low","Mid","High"]`; the label-N attribute family takes precedence) | `string` | — |
 | `large-step` | Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change` | `string` | — |
 | `levels` | Stereo level meter: `{ left, right }` normalized values (0–1, clamped) rendered as dual bars below the round thumb (decorative `aria-hidden`, non-interactive); renders only for `thumb="round"` (the default) and is ignored for pointer; invalid/missing hides it | `{ left?: number; right?: number } \| string \| null` | — |
 | `marks` | Ticks: JSON object `{"0":"0°C"}` (value→label) or JSON array `[0,26,60]` (also `{"value":26,"label":"26°C"}`); tick marks and labels are shown below the track, highlighted where the value passes; positions mirror under `reverse` | `string \| Record<string, string \| number> \| number[]` | — |

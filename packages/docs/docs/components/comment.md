@@ -195,7 +195,7 @@ onMounted(async () => {
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | 嵌套的 `oas-comment` 子评论，自动缩进缩进 |
+| 默认 | 嵌套的 `oas-comment` 子评论，自动缩进 |
 | `actions` | 操作区（回复/点赞等，由宿主提供） |
 | `author` | 作者名 |
 | `avatar` | 作者头像（可放 `oas-avatar`） |
@@ -210,4 +210,4 @@ onMounted(async () => {
 | --- | --- |
 | `--oas-comment-font` | `inherit` |
 
-部件：`::part(comment)` 根、`::part(main)` 主体、`::part(avatar)` / `::part(author)` / `::part(time)` / `::part(content)` / `::part(actions)`、`::part(children)` 子评论容器。
+部件：`::part(comment)` 根、`::part(main)` 主体、`::part(avatar)`、`::part(body)` 内容列（内含 `::part(head)` 头部行）、`::part(author)` / `::part(time)` / `::part(reply)` / `::part(quote)` / `::part(content)` / `::part(actions)`、`::part(children)` 子评论容器。

@@ -62,8 +62,6 @@
 
 slot 内任意子元素带 `breakout` 属性即突破定宽撑满视口宽（经典公式 `width: 100vw` + `margin-inline: calc(50% - 50vw)`），适合「内容限宽、局部横幅全宽」的页面结构（如容器内插一条横贯视口的 banner）。
 
-> ⚠️ `100vw` 含滚动条宽度——PC 浏览器有滚动条时横向溢出几 px。页面顶层（body/html）加 `overflow-x: clip` 兜住（本 demo 区块即如此）。
-
 <DemoBlock title="breakout 全宽横幅">
   <div style="overflow-x: clip">
     <oas-container size="md" style="background: var(--oas-color-bg-hover)">

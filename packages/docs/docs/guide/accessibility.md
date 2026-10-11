@@ -40,4 +40,4 @@ pnpm test:e2e
 - 表单控件均有可访问名称（`aria-label` 或关联 label）
 - 弹层类组件提供 `role` + `aria-modal` + Esc 关闭
 - 动态区域（loading / 弹窗打开）提供 `aria-live` 或焦点管理
-- 颜色仅用语义 token，确保明暗主题下对比度达标
+- 颜色原则上仅用语义 token（个别极值/预设除外），确保明暗主题下对比度达标

@@ -314,7 +314,7 @@ onMounted(async () => {
 | `inherit-color` | Indicator inherits the host text color | — | — |
 | `paused` | Pause rotation (freezes progress advance) | — | — |
 | `percent` | Progress mode: number for explicit percent, or auto (simulated unknown-progress advance) | `string` | — |
-| `rotate` | Whether the custom indicator auto-rotates (default true; disable for gif/static SVG) | `boolean` | — |
+| `rotate` | Whether the custom indicator auto-rotates (off by default — rotates only when the attribute is present; leave unset for gif/static SVG to stay still) | `boolean` | — |
 | `show-overlay` | Whether to show the mask when wrapping content | `string` | `true` |
 | `size` | Indicator size: `xs` / `small` / `medium` (default) / `large` / `xl`; legacy abbreviations `sm`/`md`/`lg` remain supported | `string` | `medium` |
 | `spinning` | Whether loading; when set, wraps content with an overlaid mask | `boolean` | — |

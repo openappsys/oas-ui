@@ -175,7 +175,7 @@
 - [Highlight 文本高亮](https://oas-ui.dev/components/highlight): 文本命中高亮组件：text（原文）+ highlight（关键词，空格多词或 JSON 数组）计算命中片段，命中部分渲染为 <mark>（配色走主题 token，dark 自动适配）。
 - [SwipeCell 滑动操作](https://oas-ui.dev/components/swipe-cell): 列表项横向滑动露出操作按钮组：默认插槽为内容层（列表项主体），slot="actions" 为操作按钮组（宿主放置 button / oas-button）。
 - [Kanban 看板](https://oas-ui.dev/components/kanban): 列 + 卡片的看板视图：卡片在列间拖拽换列、列内拖拽排序，支持列拖拽重排、WIP 限制、卡片多选与泳道分带，落定后派发 oas-change 供宿主同步数据。
-- [Scheduler 日程调度](https://oas-ui.dev/components/scheduler): 月视图日程组件：日格内渲染事件芯片（标题 + 色条），events 读/写通道 + addEvent / updateEvent / removeEvent CRUD 方法；点事件芯片派发 oas-event-click、点日格派发 oas-day-click（宿主接编辑器），数据变更派发 oas-events-change。
+- [Scheduler 日程调度](https://oas-ui.dev/components/scheduler): 月视图日程组件：日格内渲染事件芯片（标题 + 色条），events 读/写通道 + addEvent / updateEvent / removeEvent CRUD 方法；点事件芯片派发 oas-event-click、点日格派发 oas-day-click（宿主接编辑器），数据经 CRUD 方法变更时派发 oas-events-change（外部 setAttribute('events'…
 - [Gantt 甘特图](https://oas-ui.dev/components/gantt): 项目排期语义的任务图表组件（data 族）：行树 WBS（父任务摘要条 = 子任务时间并集）× 横向时间轴，任务条 / 里程碑 / 摘要条三形态 + 进度填充；依赖连线（FS/SS/FF/SF 四型，SVG 单画布覆盖层）；拖拽三件套（拖条改期 / 左右手柄拉伸 / 拖改进度，pointerup 收口一次性写回并派发事件）；时间刻度六档（hour/day/week/month/quarter…
 
 ## 会话组件

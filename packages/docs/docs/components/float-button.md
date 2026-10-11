@@ -106,7 +106,7 @@
 - `expand-direction` 展开方向：`up`（默认）/ `down` / `left` / `right`，RTL 下横向方向自动镜像
 - `trigger` 触发方式：`click`（默认）/ `hover`（触屏自动回落 click）/ `manual`（仅受控属性驱动）
 - `expanded` 受控展开态 + `oas-expand-change` 事件（`detail: { expanded }`）
-- 点击任一子钮后组自动收起；Esc / 点击外部收起并回焦主钮
+- 点击任一子钮后组自动收起；Esc 收起并回焦主钮，点击外部收起（不回焦）
 
 <DemoBlock title="分组（点击主钮展开，子钮带 label 气泡与角标）">
   <oas-float-button mode="group" expand-direction="down" style="position: relative">
@@ -221,7 +221,7 @@ onMounted(async () => {
 | `disabled` | 禁用：不可点击、不派发 `oas-click`，样式弱化；`href` 模式下降级为不可点击的 `span` | `boolean` | — |
 | `draggable` | 拖拽：指针按住拖动移动按钮（fixed 自由定位，位置夹取在视口内）；位移 >4px 视为拖拽，此时松手不派发 `oas-click`（阈值内正常派发） | `boolean` | — |
 | `expand-direction` | 展开方向：up（默认，向上）/ down / left / right；RTL 下横向方向自动镜像 | `string` | `up` |
-| `expanded` | group/menu 展开态（受控，唯一状态源）：手势只派发 oas-expand-change，收起由宿主移除属性完成 | `boolean` | — |
+| `expanded` | group/menu 展开态：手势展开/收起时组件自写该属性并派发 `oas-expand-change`；`trigger="manual"` 时为完全受控——组件不自切，开合由宿主增删属性决定 | `boolean` | — |
 | `href` | 链接地址：设置后渲染 `<a>` 元素（原生链接语义与键盘可达）替代按钮；禁用时降级为 `span` | `string` | — |
 | `magnetic` | 磁吸：`x` 吸附到最近的左右边缘、`y` 吸附到最近的上下边缘，松手时带过渡动画；空值不吸附（需配 `draggable`） | `string` | — |
 | `mode` | 形态：single（默认，单钮）/ group（主钮 + slot 子钮纵向展开）/ menu（actions JSON 弹出菜单） | `string` | `single` |
@@ -236,8 +236,8 @@ onMounted(async () => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-click` | 点击，`detail: { originalEvent }` |
-| `oas-expand-change` | 展开/收起时派发，`detail: { open }`；受控语义——组件不改 expanded，由宿主回写 |
-| `oas-select` | menu 模式选择菜单项，detail: { index, label, value? }；选择后组件请求收起（派发 oas-expand-change，收起由宿主移除 expanded 完成） |
+| `oas-expand-change` | 展开/收起时派发，`detail: { expanded }`；组件同步写回 `expanded`（`trigger="manual"` 时由宿主写回） |
+| `oas-select` | menu 模式选中菜单项，`detail: { index, label, href? }`；选中后请求收起（派发 `oas-expand-change`，`trigger="manual"` 时由宿主移除 `expanded` 完成） |
 
 #### 插槽
 

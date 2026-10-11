@@ -376,4 +376,4 @@ Font size follows the outer context (inherited) by default; override with the CS
 | --- | --- |
 | default | Separator content: arbitrary nodes (text / icon / inline elements) |
 
-`nav` + `aria-label="面包屑"`, the last item has `aria-current="page"` and is not clickable.
+`nav` + `aria-label="Breadcrumb"`, the last item has `aria-current="page"` and is not clickable.

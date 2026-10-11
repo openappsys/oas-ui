@@ -25,6 +25,7 @@ A horizontal/vertical divider that separates content.
 ## Line style
 
 <DemoBlock title="Six variants">
+  <oas-divider variant="solid">solid</oas-divider>
   <oas-divider variant="dashed">dashed</oas-divider>
   <oas-divider variant="dotted">dotted</oas-divider>
   <oas-divider variant="double">double</oas-divider>

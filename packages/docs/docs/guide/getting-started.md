@@ -17,8 +17,8 @@
 | `cdn/basic.js` | 基础：button、icon、tag、badge、space、divider、link、typography、button-group、label、kbd、visually-hidden |
 | `cdn/layout.js` | 布局：layout、sidebar、container、grid、flex、splitter、scroll-area、masonry、aspect-ratio |
 | `cdn/form.js` | 表单：input、textarea、checkbox、radio、switch、segmented、slider、input-number、rate、select、auto-complete、combobox、cascader、tree-select、mentions、date-picker、time-picker、calendar、upload、transfer、color-picker、toggle-button、toggle-group、pin-input、dynamic-input、dynamic-tags、editable、form 等 |
-| `cdn/feedback.js` | 反馈与浮层：tooltip、popover、hover-card、message、notification、toast、snackbar、backdrop、modal、confirm、drawer、popconfirm、alert、progress、loading-bar、spin、skeleton、empty、result |
-| `cdn/navigation.js` | 导航：menu、dropdown、contextmenu、command、menubar、navigation-menu、toolbar、breadcrumb、anchor、back-top、tour、tabs、bottom-navigation、pagination、steps、stepper、affix、page-header、float-button、speed-dial |
+| `cdn/feedback.js` | 反馈与浮层：tooltip、popover、hover-card、message、notification、toast、snackbar、backdrop、modal、confirm、drawer、popconfirm、alert、progress、loading-bar、spin、skeleton、empty、result、bottom-sheet、notice-bar、pull-refresh |
+| `cdn/navigation.js` | 导航：menu、dropdown、contextmenu、command、menubar、navigation-menu、toolbar、breadcrumb、anchor、back-top、tour、tabs、bottom-navigation、pagination、steps、stepper、affix、page-header、float-button、speed-dial、app-bar、index-bar |
 | `cdn/data.js` | 数据展示：table、tree、virtual-list、card、avatar、avatar-group、image、qrcode、watermark、collapse、descriptions、timeline、list、carousel、statistic、countdown、ellipsis、chart、code、equation、log、marquee、number-animation、gradient-text、comment 等 |
 | `cdn/conversation.js` | 会话：bubble、attachment、message-scroller、marker、message-row |
 | `cdn/workbench.js` | 工作台构件：titlebar、statusbar、inspector、action-bar |
@@ -157,7 +157,7 @@ import '@oas-ui/ui/data/table/edit' // 显式补引能力（仅 core 路径需�
 
 引入顺序随意：能力注册对**已挂载**的组件元素也会自动补齐（晚加入自愈）。全量入口 `@oas-ui/ui` 与 CDN 族包已内含全部能力，无需额外引用。
 
-> 想看实际效果？仓库里有搭配使用 React / Vue 的 [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground)，`pnpm dev:react` / `pnpm dev:vue` 即可本地运行。
+> 想看实际效果？仓库里有搭配使用 React / Vue 的 [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground)，在 `packages/playground` 目录下 `pnpm dev:react` / `pnpm dev:vue` 即可本地运行（或在仓库根目录用 `pnpm --filter @oas-ui/playground dev:react`）。
 
 ## 浏览器基线
 

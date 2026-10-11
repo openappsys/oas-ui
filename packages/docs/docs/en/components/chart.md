@@ -58,7 +58,7 @@ The default is `type="line"`. An array `[{label, value}]` is a single series; ho
   </div>
 </DemoBlock>
 
-With `options.gradient` (default false), the area fill fades vertically from the series color at the line to transparent at the baseline, keeping the visual focus on the data line.
+With `options.gradient` (default false), the area fill fades vertically from the series color at the line (35% opacity at the top) to transparent at the baseline, keeping the visual focus on the data line.
 
 ## Stacked Bar Chart
 
@@ -170,6 +170,6 @@ No data / invalid JSON shows an empty state placeholder without errors.
 - Combo only allows mixing `bar` / `line` / `area` (one cartesian coordinate system); other type values silently fall back to the top-level type
 - Series-level `type` / `yAxisIndex` is consumed only by cartesian types (line / bar / area / combo); `stacked-bar` / `pie` / `donut` / `radar` / `polar-area` ignore series-level overrides and always render per the top-level `type`
 - Declaring a second `options.yAxis` entry without bindings on both sides (nothing bound right, or everything bound right leaving the left axis empty) renders a single axis — no zero-tick fake axis (unused axis titles included)
-- Y-axis tick steps are always integers (nice ceiling, minimum step 1): sub-integer ranges (e.g. 0–0.01) degrade to whole-number steps and all data collapses to the baseline — rescale such data first (e.g. ×100 as percentages)
+- Y-axis tick steps are always integers (nice ceiling, minimum step 1): sub-integer ranges (e.g. 0–0.01) degrade to whole-number steps, lifting the range top to a whole-step multiple so data hugs the baseline — rescale such data first (e.g. ×100 as percentages)
 - Color mapping semantics: the pie family (pie / donut / polar-area) colors by **category**, cartesian types (line / bar / area / stacked-bar / radar / combo) color by **series**; `options.colors` overrides in the same order
 - Text inside the chart svg is pinned to `direction: ltr` (coordinate semantics are orthogonal to writing direction): a host `dir=rtl` neither flips text anchors nor mirrors geometry

@@ -64,7 +64,7 @@
   <oas-slider show-input min="0" max="100" value="40" style="width: 360px"></oas-slider>
 </DemoBlock>
 
-右�数�输入框与滑块双向同步：拖动滑块实时更新输入框；输入数字后防抖 300ms 生效并自动夹取到 `min`/`max` 范围，Enter/失焦立即提交。
+右侧数值输入框与滑块双向同步：拖动滑块实时更新输入框；输入数字后防抖 300ms 生效并自动夹取到 min/max 范围，Enter/失焦立即提交。
 
 ## 指针微调与双击复位（scrub）
 

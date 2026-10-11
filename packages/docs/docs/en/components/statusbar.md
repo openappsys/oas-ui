@@ -110,3 +110,33 @@ onMounted(() => {
 | --- | --- |
 | `--oas-statusbar-bg` | `var(--oas-color-bg-elevated)` |
 | `--oas-statusbar-height` | `24px` |
+
+### oas-statusbar-item
+
+#### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `button` | Renders as a native button (clickable, keyboard reachable); read-only div semantics by default | `boolean` | — |
+| `icon` | Built-in icon name (@oas-ui/icons registry; unknown names render nothing) | `string` | — |
+| `label` | Text label | `string` | — |
+| `spinning` | Background-activity spinner (stopped under prefers-reduced-motion) | `boolean` | — |
+| `status` | Semantic color tier: default / info / warning / error / progress — warning/error use background fills (reserved for special, necessary cases), info/progress only tint the text; invalid values fall back to default with a one-time warning | `string` | `default` |
+| `value` | Numeric / status value (rendered in tabular numerals) | `string` | — |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-item-click` | Dispatched on click in button mode; detail { value, label }; bubbles + composed (listenable on the container or the host) |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-statusbar-error-bg` | `var(--oas-color-danger)` |
+| `--oas-statusbar-info-color` | `color-mix(in srgb, var(--oas-color-info-text) 88%, var(--oas-color-text-primary))` |
+| `--oas-statusbar-item-height` | `22px` |
+| `--oas-statusbar-item-hover-bg` | `var(--oas-color-bg-hover)` |
+| `--oas-statusbar-progress-color` | `var(--oas-color-primary-text)` |
+| `--oas-statusbar-warning-bg` | `var(--oas-color-warning)` |

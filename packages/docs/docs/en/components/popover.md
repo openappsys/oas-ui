@@ -197,7 +197,7 @@ The boolean attribute `same-width` is a shortcut for "panel exactly as wide as t
 
 ## Arrow and viewport auto adjust
 
-By default an arrow pointing at the trigger element's edge is shown; `arrow="false"` hides the arrow; `arrow-point-at-center` makes the arrow point at the trigger element's center (when the panel is shifted by viewport-edge avoidance, the arrow still points at the anchor center). By default the panel automatically flips along the main axis and avoids the viewport edges when space is insufficient; `auto-adjust-overflow="false"` disables the auto adjust so the panel keeps the declared placement (it may overflow the viewport).
+By default an arrow pointing at the trigger element's center is shown (the projection of the anchor center onto the panel's pointing edge; when the panel is shifted by viewport-edge avoidance, the arrow still tracks the anchor center); `arrow="false"` hides the arrow. By default the panel automatically flips along the main axis and avoids the viewport edges when space is insufficient; `auto-adjust-overflow="false"` disables the auto adjust so the panel keeps the declared placement (it may overflow the viewport).
 
 <DemoBlock title="Arrow visibility and pointing">
   <oas-space size="large" wrap>
@@ -206,9 +206,6 @@ By default an arrow pointing at the trigger element's edge is shown; `arrow="fal
     </oas-popover>
     <oas-popover id="pop-arrow-off" title="No arrow" content="arrow=false: arrow hidden" placement="bottom" arrow="false">
       <oas-button>No arrow</oas-button>
-    </oas-popover>
-    <oas-popover id="pop-arrow-center" title="Point at center" content="arrow-point-at-center: arrow points at the trigger center" placement="bottom" arrow-point-at-center>
-      <oas-button>Point at center</oas-button>
     </oas-popover>
   </oas-space>
 </DemoBlock>
@@ -784,7 +781,7 @@ onMounted(() => {
 | `append-to` | Portal mount target: the panel moves into the target container (`body` or a CSS selector) when opened and moves back into the host shadow when closed; for panels clipped by host containers (overflow) | `string` | — |
 | `arrow` | Whether to show the arrow (default true; `arrow="false"` hides it, the element and `::part(arrow)` are kept) | `string` | `true` |
 | `arrow-merge` | Merge the arrow with the panel corner (C1): a right triangle merges flush with the panel corner — legs collinear with the panel edges (their strokes continue the panel border band), tip pointing orthogonally toward the anchor; the matching corner radius is zeroed; only takes effect for *-start/*-end placements, center placements are unaffected | `boolean` | — |
-| `arrow-point-at-center` | Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance) | — | — |
+| `arrow-point-at-center` | Reserved attribute (no effect in the current version): the arrow already points at the projection of the trigger's center on the panel's facing edge by default | — | — |
 | `auto-adjust-overflow` | Viewport-edge auto flip and avoidance (default true; `"false"` disables it, keeping the declared placement, which may overflow the viewport) | `string` | `true` |
 | `auto-close` | Auto close after opening for the given duration in ms, e.g. `auto-close="3000"`; not set means no auto close | `string` | — |
 | `available-height` | Max content height constrained by remaining viewport space | `boolean` | — |
@@ -818,11 +815,11 @@ onMounted(() => {
 | `same-width` | Panel width equals the trigger width (strict equality; explicit width takes precedence) | `boolean` | — |
 | `scrollable` | Scrollable panel when content overflows | `boolean` | — |
 | `size` | Size preset | `string` | `medium` |
-| `sticky` | Sticky against viewport edge (partial/always) | `string` | `partial` |
+| `sticky` | Sticky against viewport edge: `partial` (default) / `always` / `off` (disables edge-following) | `string` | `partial` |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot="title" for rich content | `string` | — |
 | `trap-focus` | Standalone focus-trap toggle (decoupled from modal mask; Tab stays inside form popovers) | `boolean` | — |
 | `trigger` | Trigger method: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space separated for multiple (e.g. `"click hover"`). With `hover`, touch devices (coarse pointer) automatically degrade to tap toggling: tap to open, tap again or tap outside to close; desktop hover behavior unchanged | `string` | `click` |
-| `trigger-keys` | Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `"Enter Space"`); no key binding when unset | `string` | `Enter Space` |
+| `trigger-keys` | Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `"Enter Space"`; bound to `Enter Space` by default) | `string` | `Enter Space` |
 | `virtual` | Virtual trigger mode (same as tooltip; no anchor element) | `boolean` | — |
 | `virtual-anchor` | Virtual anchor element selector (used when virtual-x/virtual-y are unset) | — | — |
 | `virtual-x` | Virtual anchor x (viewport coordinate, px) | — | — |

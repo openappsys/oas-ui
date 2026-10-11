@@ -43,7 +43,7 @@ The `scrollToIndex(index, options?)` method scrolls to the item at the given ind
   <div style="width: 100%">
     <div style="display: flex; gap: var(--oas-space-2); margin-bottom: var(--oas-space-3); align-items: center; flex-wrap: wrap">
       <oas-input id="vl-jump-index" type="number" value="500" style="width: 120px"></oas-input>
-      <select id="vl-jump-align" style="padding: 5px var(--oas-space-2); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg); color: var(--oas-color-text-primary); font-size: var(--oas-font-size-md)">
+      <select id="vl-jump-align" aria-label="Jump alignment" style="padding: 5px var(--oas-space-2); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg); color: var(--oas-color-text-primary); font-size: var(--oas-font-size-md)">
         <option value="auto">auto (minimal scroll)</option>
         <option value="start">start (top aligned)</option>
         <option value="center">center</option>
@@ -97,7 +97,7 @@ With `dynamic-height`, rows may have different heights: unmeasured rows are laid
 
 <DemoBlock title="scroll-target external container">
   <div style="width: 100%">
-    <div id="vl-outer" style="height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">
+    <div id="vl-outer" tabindex="0" style="height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">
       <oas-virtual-list id="vl-target" scroll-target="#vl-outer" height="240" item-height="36"></oas-virtual-list>
     </div>
   </div>
@@ -246,4 +246,6 @@ onMounted(() => {
 | --- | --- |
 | `template[slot="item"]` | Static per-item template, cloned into each visible item container (optional) |
 
-Parts: `::part(viewport)` scroll viewport, `::part(inner)` content, `::part(padding-top)` / `::part(padding-bottom)` placeholders, `::part(item)` a single item.
+Parts: `::part(viewport)` scroll viewport, `::part(inner)` content, `::part(padding-top)` / `::part(padding-bottom)` placeholders, `::part(items)` window item container, `::part(item)` a single item.
+
+`viewportFocusable` (JS property, default true) controls whether the viewport is Tab-focusable; embedded consumers (whose rows carry their own roving tabindex) set it to false to disable viewport focusing.

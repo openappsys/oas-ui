@@ -57,7 +57,7 @@ A skin only overrides `--oas-color-primary`; the derived steps (`-hover` / `-act
 **Boundaries**:
 
 - the material needs backdrop contrast—richest over colorful gradients/photos, recedes on flat same-hue backgrounds (text stays legible via token safe tiers);
-- text safety is a hard constraint: the dark tier uses high-alpha surfaces (composites stay dark enough over bright backdrops; perceptual-contrast gate ≥60, see the gallery);
+- text safety is a hard constraint: the dark tier uses low-alpha, high-transparency surfaces (translucency is the signature look of dark glass; alpha tiers are calibrated together with text tiers; perceptual-contrast gate ≥60, see the gallery);
 - blur applies only to container-level surfaces (rows/long lists are excluded to avoid the cost of blurring large areas);
 - disabled under the `high-contrast` theme (solid accessibility tier wins);
 - local opt-out: override `--oas-glass-blur: none; --oas-glass-ring: transparent; --oas-glass-refraction: ;` on any container (the refraction opt-out value must be **empty**, not `none`: button hover/pressed/selected states compose `brightness()` with this variable, and `none` mixed with functions invalidates the whole filter declaration, breaking the brightness feedback; an empty value is valid on both paths). For dense lists, disabling refraction at the container avoids many small filter rasterizations; likewise disable it for app-bars hosting overlay content (dropdown/popover)—`filter` clips overflowing subtrees into the filter region (the built-in overflow panel is handled automatically). If your build chain strips empty custom properties (some minifiers), use `--oas-glass-refraction: saturate(1)` instead (an identity filter that is equally valid in compositions).
@@ -66,7 +66,7 @@ Live preview: [Liquid Glass Gallery](/en/guide/glass).
 
 ## Custom themes (CSS variable overrides)
 
-All components only reference semantic tokens (see `docs/ui-spec.md §1`), so you
+All components in principle reference semantic tokens only (see `docs/ui-spec.md §1`; a few extreme-value/preset exceptions exist), so you
 can customize brand colors by overriding CSS variables without touching
 component code:
 

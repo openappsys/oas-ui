@@ -79,7 +79,7 @@ The panel footer has a built-in Now button that fills the current time and confi
   <oas-time-picker id="time-picker-presets" value="10:00:00"></oas-time-picker>
 </DemoBlock>
 
-`presets` (property, an array of `{ label, value: 'HH:mm:ss' }`) renders a button row atop the panel.
+`presets` (property, an array of `{ label, value: 'HH:mm:ss' }`) renders a button row atop the panel; clicking one applies it and closes the panel.
 
 ## Timezone (timezone)
 
@@ -116,6 +116,8 @@ With `is-range` the value is a JSON array; start/end are picked independently an
   <oas-time-picker readonly value="09:05:30" placeholder="Readonly echo"></oas-time-picker>
 </DemoBlock>
 
+Under `readonly` the panel still opens for browsing, but picking, Now, presets, clearing, and typing never commit.
+
 ## Controlled Open & Events
 
 <DemoBlock title="oas-change / oas-confirm events">
@@ -128,7 +130,7 @@ With `is-range` the value is a JSON array; start/end are picked independently an
   <button id="time-picker-open-toggle" type="button">Toggle open</button>
 </DemoBlock>
 
-Confirm actions (Enter, outside click, Now) emit `oas-confirm` alongside `oas-change`.
+With the `open` attribute present the picker runs in controlled mode: gestures only emit `oas-open-change`, and opening/closing is decided by the host adding or removing the attribute; confirm actions (Enter, outside click, Now) emit `oas-confirm` alongside `oas-change`.
 
 ## Disabled
 
@@ -231,19 +233,23 @@ onMounted(() => {
     else openEl?.setAttribute('open', '')
   })
 
-  const dt = document.getElementById('time-picker-disabled-time')
-  dt.disabledTime = (p) => (p.h >= 14 && p.h < 17 ? { hours: [14, 15, 16] } : null)
+  // Disabled closure hours (14:00-17:00 unavailable) — property assignment must wait for the component to upgrade (whenDefined guard,
+  // otherwise the expando shadows the prototype setter and the component never receives it; always reproduces in preview builds)
+  customElements.whenDefined('oas-time-picker').then(() => {
+    const dt = document.getElementById('time-picker-disabled-time')
+    dt.disabledTime = (p) => (p.h >= 14 && p.h < 17 ? { hours: [14, 15, 16] } : null)
 
-  // hide-disabled-options: same closure hours, but hidden instead of grayed
-  const hd = document.getElementById('time-picker-hide-disabled')
-  hd.disabledTime = (p) => (p.h >= 14 && p.h < 17 ? { hours: [14, 15, 16] } : null)
+    // hide-disabled-options: same closure hours, but hidden instead of grayed
+    const hd = document.getElementById('time-picker-hide-disabled')
+    hd.disabledTime = (p) => (p.h >= 14 && p.h < 17 ? { hours: [14, 15, 16] } : null)
 
-  const pr = document.getElementById('time-picker-presets')
-  pr.presets = [
-    { label: '9 AM', value: '09:00:00' },
-    { label: '2 PM', value: '14:00:00' },
-    { label: 'Noon', value: '12:00:00' },
-  ]
+    const pr = document.getElementById('time-picker-presets')
+    pr.presets = [
+      { label: '9 AM', value: '09:00:00' },
+      { label: '2 PM', value: '14:00:00' },
+      { label: 'Noon', value: '12:00:00' },
+    ]
+  })
 
   // Timezone reference line: current time per zone, computed the same way the Now button is
   const tzOut = document.getElementById('time-picker-timezone-output')

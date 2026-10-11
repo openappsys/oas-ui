@@ -22,7 +22,7 @@ onMounted(async () => {
   msg.value = message
 })
 onBeforeUnmount(() => {
-  // SPA 泄漏防护：画廊激活的 data-glass 不得带出本页（否则全站页面都变玻璃）
+  // SPA leak guard: the data-glass activated by the gallery must not leave this page (otherwise every page site-wide turns glassy)
   document.documentElement.removeAttribute('data-glass')
 })
 </script>
@@ -70,11 +70,11 @@ onBeforeUnmount(() => {
     radial-gradient(900px 520px at 50% 30%, rgba(255, 200, 120, 0.75), transparent 66%),
     radial-gradient(1000px 620px at 50% 105%, rgba(80, 220, 170, 0.4), transparent 62%),
     linear-gradient(160deg, #2a3550, #4a2a50 55%, #1f4a44);
-  /* modal 按视口居中——舞台须占满大部分视口高，弹窗才落在渐变之上（否则弹在深色页面上看不出玻璃感） */
+  /* The modal centers on the viewport — the stage must fill most of the viewport height so the dialog lands on the gradient (on a dark page background the glass effect would be invisible) */
   min-height: 72vh;
 }
 .gg-stage[data-theme="dark"] {
-  /* 弹窗透度微调（modal 消费 --oas-color-bg；变量可继承进 shadow——零库影响） */
+  /* Dialog translucency tweak (the modal consumes --oas-color-bg; the variable inherits into the shadow DOM — zero impact on the library) */
   --oas-color-bg: rgba(24, 24, 27, 0.5);
 }
 .gg-controls { display: flex; align-items: center; gap: var(--oas-space-4); margin-bottom: var(--oas-space-4); padding: var(--oas-space-2) 0; }
@@ -95,7 +95,7 @@ onBeforeUnmount(() => {
 .sg-btn {
   padding: var(--oas-space-1) var(--oas-space-3);
   border: 1px solid var(--oas-color-border);
-  border-radius: var(--oas-radius-full);
+  border-radius: var(--oas-radius-full, 999px);
   background: var(--oas-color-bg-elevated);
   color: var(--oas-color-text-primary);
   cursor: pointer;

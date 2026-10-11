@@ -49,7 +49,7 @@ The default slot renders custom content (it replaces the built-in arrow icon whe
 `visibility-height` tunes the auto-show threshold (default 400); `target` sets the scroll target container (a CSS selector; when unset it auto-detects the nearest scrollable ancestor, falling back to window): once the container is scrolled past the threshold the button appears, and clicking scrolls back to that container's top.
 
 <DemoBlock title="Threshold & target container">
-  <div id="bt-scroll-box" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
+  <div id="bt-scroll-box" tabindex="0" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
     <p style="color: var(--oas-color-text-secondary)">This is a local scroll container: once you scroll past 200px the button at the bottom-right appears; clicking goes back to the container top.</p>
     <p style="margin-top: 600px; color: var(--oas-color-text-secondary)">Container bottom — scroll back and try it.</p>
   </div>
@@ -61,7 +61,7 @@ The default slot renders custom content (it replaces the built-in arrow icon whe
 When `target` is unset the component auto-detects the nearest scrollable ancestor (no selector needed): drop it inside any nested scroll container and it will listen to that container and scroll back to its top. An explicit `target` always takes priority over auto-detection.
 
 <DemoBlock title="Nested scroll container auto-attach">
-  <div id="bt-auto-box" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
+  <div id="bt-auto-box" tabindex="0" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
     <p style="color: var(--oas-color-text-secondary)">This is a nested scroll container: the component inside auto-attaches to it (no target set here). Once you scroll past 100px the button at the bottom-right appears; clicking goes back to the container top.</p>
     <p style="margin-top: 600px; color: var(--oas-color-text-secondary)">Container bottom — scroll back and try it.</p>
     <oas-back-top visibility-height="100" bottom="48px" right="48px"></oas-back-top>
@@ -116,7 +116,7 @@ When `target` is unset the component auto-detects the nearest scrollable ancesto
 `reverse` turns the button into a "scroll to bottom" control: it hides near the container bottom, and clicking scrolls to the container bottom.
 
 <DemoBlock title="Reverse (scroll to bottom)">
-  <div id="bt-rev-box" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
+  <div id="bt-rev-box" tabindex="0" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
     <p style="color: var(--oas-color-text-secondary)">This is a local scroll container: in `reverse` mode the button appears while you are not at the bottom; clicking scrolls to the bottom.</p>
     <p style="margin-top: 600px; color: var(--oas-color-text-secondary)">Container bottom.</p>
   </div>

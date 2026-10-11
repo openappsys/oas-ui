@@ -313,7 +313,7 @@ onMounted(() => {
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `filter` | 自定义过滤函数（property 通道，`(input, option) => boolean`） | `((option: Option, query: string) => boolean) \| null` | — |
+| `filter` | 自定义过滤函数（property 通道，`(option, query) => boolean`） | `((option: Option, query: string) => boolean) \| null` | — |
 | `value` | 当前值：单选为选中值字符串（无选中时键入草稿兜底）；`multiple` 时为选中值数组 | `string \| string[]` | — |
 
 #### 事件

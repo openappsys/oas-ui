@@ -72,7 +72,7 @@ Add `limit` (a number) to a column definition: when the column's card count exce
 
 ## Multi-select
 
-Ctrl/Cmd+click toggles cards into the selection; Shift+click selects a range within a column (from the anchor card to the clicked one); selected cards get a primary-color outline. Drag any selected card and all selected cards move together to the drop column, emitting a single `oas-change` whose `detail` gains an `ids` array (`id` stays the first). Click blank space or press Esc to clear the selection; a plain click falls back to single-select. Touch devices have no multi-select (the move menu acts on its own card only):
+Ctrl/Cmd+click toggles cards into the selection; Shift+click selects a range (from the anchor card to the clicked one; both must be in the same column and the same lane band — across columns / lanes it degrades to single-select); selected cards get a primary-color outline. Drag any selected card and all selected cards move together to the drop column, emitting a single `oas-change` whose `detail` gains an `ids` array (`id` stays the first). Click blank space or press Esc to clear the selection; a plain click falls back to single-select. Touch devices have no multi-select (the move menu acts on its own card only):
 
 <DemoBlock title="Multi-select batch move">
   <div style="width: 100%">

@@ -1,6 +1,6 @@
 # Scheduler 日程调度
 
-月视图日程组件：日格内渲染事件芯片（标题 + 色条），`events` 读/写通道 + `addEvent` / `updateEvent` / `removeEvent` CRUD 方法；点事件芯片派发 `oas-event-click`、点日格派发 `oas-day-click`（宿主接编辑器），数据变更派发 `oas-events-change`。
+月视图日程组件：日格内渲染事件芯片（标题 + 色条），`events` 读/写通道 + `addEvent` / `updateEvent` / `removeEvent` CRUD 方法；点事件芯片派发 `oas-event-click`、点日格派发 `oas-day-click`（宿主接编辑器），数据经 CRUD 方法变更时派发 `oas-events-change`（外部 `setAttribute('events', …)` 写入不派发）。
 
 ## 基础用法
 

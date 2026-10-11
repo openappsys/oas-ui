@@ -106,7 +106,7 @@
 
 ## 编程滚动
 
-组件实例暴露 `scrollTo(options)` / `scrollToTop()` / `scrollToBottom()` / `scrollIntoView(selectorOrEl)` 方法（委托视口原生滚动，`behavior` 默认平滑），宿主可按需程序化滚动。
+组件实例暴露 `scrollTo(options)` / `scrollToTop()` / `scrollToBottom()` / `scrollIntoView(selectorOrEl)` 方法（委托视口原生滚动；仅 `scrollToTop` / `scrollToBottom` 默认平滑滚动、可传 `behavior` 覆盖，`scrollTo` / `scrollIntoView` 透传原生语义），宿主可按需程序化滚动。
 
 <DemoBlock title="编程滚动方法">
   <div style="width: 320px">

@@ -167,10 +167,6 @@ When options are empty, the dropdown shows the empty state; when filtering yield
   <oas-combobox disabled value="apple" placeholder="Disabled" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-combobox>
 </DemoBlock>
 
-## Mobile form (bottom sheet)
-
-On touch screens (coarse pointer) or narrow viewports (<768px), the option list is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the input stays in place and focusing it still pops the list inside the sheet for selection; the desktop form keeps the original floating dropdown. Inside the sheet, option rows are lifted to a 44px touch target (`--oas-touch-target-min`).
-
 ## Events
 
 <DemoBlock title="Event output">
@@ -262,6 +258,10 @@ onMounted(() => {
 })
 </script>
 
+## Mobile form (bottom sheet)
+
+On touch screens (coarse pointer) or narrow viewports (<768px), the option list is automatically hosted by an `oas-bottom-sheet` bottom sheet: rises from the viewport bottom + backdrop + drag handle swipe-down to close (backdrop click / Esc also close), with bottom safe-area inset; the input stays in place and focusing it still pops the list inside the sheet for selection; the desktop form keeps the original floating dropdown. Inside the sheet, option rows are lifted to a 44px touch target (`--oas-touch-target-min`).
+
 ## required
 
 <DemoBlock title="required (native validation chain)">
@@ -293,7 +293,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `disabled` | Disabled (no input, no dropdown) | `boolean` | — |
 | `filterable` | Filter labels in real time while typing (`filterable="false"` disables local filtering) | `string` | `true` |
 | `item-height` | Virtual-scroll fixed row height (px, with `virtual`, default 36) | `string` | `36` |
-| `loading` | Loading placeholder (dropdown shows "加载中…") | `boolean` | — |
+| `loading` | Loading placeholder (dropdown shows "Loading…") | `boolean` | — |
 | `max-count` | Multi-select limit (only with `multiple`): once reached, unselected options are greyed out and blocked with `oas-exceed-limit`; selected options can still be removed | `string` | — |
 | `max-tag-count` | Tag collapse count (only with `multiple`): when explicitly set, tags are laid out on one line and the overflow collapses into `+N` (title lists the folded labels); without it tags wrap by default | `string` | — |
 | `multiple` | Multi-select mode (mirrors oas-select multiple semantics: the value is a JSON array, selected options render as removable tags, the panel stays open after each pick for continuous selection; typing only filters, free-text semantics are off) | `boolean` | — |
@@ -312,7 +312,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `filter` | Custom filter function (property channel, `(input, option) => boolean`) | `((option: Option, query: string) => boolean) \| null` | — |
+| `filter` | Custom filter function (property channel, `(option, query) => boolean`) | `((option: Option, query: string) => boolean) \| null` | — |
 | `value` | Current value: single is the selected value string (falls back to the typed draft when nothing is selected); `multiple` is the array of selected values | `string \| string[]` | — |
 
 #### Events

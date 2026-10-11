@@ -94,7 +94,7 @@ Set `object-fit` via `fit`, then fix the image container size with `::part(image
   </div>
 </DemoBlock>
 
-When the image fails to load, a "图片加载失败" placeholder is shown by default; the `fallback` attribute can specify a fallback image URL, and if the fallback also fails, it falls back to the placeholder text.
+When the image fails to load, an "Image failed to load" placeholder is shown by default; the `fallback` attribute can specify a fallback image URL, and if the fallback also fails, it falls back to the placeholder text.
 
 ## Lazy Loading
 
@@ -413,7 +413,7 @@ onMounted(async () => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `alt` | Alternative text | — | — |
-| `fallback` | Fallback image URL to switch to on load failure; when not set, shows the "图片加载失败" placeholder | `string` | — |
+| `fallback` | Fallback image URL to switch to on load failure; when not set, shows the "Image failed to load" placeholder | `string` | — |
 | `fit` | `object-fit` value | `string` | — |
 | `height` | Explicit height (same rules as width) | `string` | — |
 | `infinite` | Loop around the first/last gallery image | `boolean` | — |

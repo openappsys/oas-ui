@@ -382,7 +382,7 @@ onMounted(() => {
 | `item-height` | 虚拟列定高（px，配合 virtual，默认 36） | `string` | `36` |
 | `label` | 触发器可访问名称（aria-label），优先于值/占位回退 | `string` | — |
 | `loading` | 加载态：触发器 spinner + aria-busy，面板显示加载占位 | `boolean` | — |
-| `max-tag-count` | 多选标签按数量折叠 +N（带 title 列隐藏项） | `boolean` | — |
+| `max-tag-count` | 多选标签按数量折叠 +N（带 title 列隐藏项） | `number` | — |
 | `multiple` | 多选（复选框级联勾选；子级全选父级自动进值） | `boolean` | — |
 | `open` | 受控展开状态（唯一状态源）；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | `boolean` | — |
 | `options` | 级联选项，JSON 数组，支持 `children` / `disabled` | `CascaderOption[] \| string` | `[]` |

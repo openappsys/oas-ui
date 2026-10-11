@@ -314,7 +314,7 @@ onMounted(async () => {
 | `inherit-color` | 指示器继承宿主文字色 | — | — |
 | `paused` | 暂停旋转（进度模式冻结推进） | — | — |
 | `percent` | 进度模式：number 显式百分比或 auto（未知进度模拟推进） | `string` | — |
-| `rotate` | 自定义指示器是否自动旋转（默认 true；gif/静态 SVG 关闭） | `boolean` | — |
+| `rotate` | 自定义指示器是否自动旋转（默认不转——仅在属性在场时旋转；gif/静态 SVG 不设即保持静止） | `boolean` | — |
 | `show-overlay` | 包裹内容时是否显示遮罩 | `string` | `true` |
 | `size` | 指示器尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；旧缩写 `sm`/`md`/`lg` 保留兼容 | `string` | `medium` |
 | `spinning` | 是否加载中；设置后包裹内容并叠加遮罩 | `boolean` | — |

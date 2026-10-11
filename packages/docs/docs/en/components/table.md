@@ -313,7 +313,7 @@ Rows with a `children` array are rendered as a tree: parent rows show an expand 
   </oas-space>
 </DemoBlock>
 
-With the `loading` attribute, the header stays visible and the data area shows placeholder rows; removing the attribute restores the data.
+With the `loading` attribute, the header stays visible and the data area shows a placeholder row; removing the attribute restores the data.
 
 ## Empty State
 
@@ -987,7 +987,7 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 | `export-file-name` | Export file name (without extension; path separators and reserved characters are sanitized) | `string` | `export` |
 | `export-format` | Export format: `csv` (default) / `excel`, or the comma list `csv,excel` (both buttons); invalid falls back to csv | `string` | `csv` |
 | `exportable` | Enables export: renders export buttons in a toolbar above the table (CSV by default, CSV/Excel configurable), and exposes the exportData method | `boolean` | — |
-| `filter-values` | Controlled column filter values (JSON object: column key → selected values) | `string` | — |
+| `filter-values` | Controlled column filter values (JSON object: column key → selected scalar value) | `string` | — |
 | `grid-navigation` | Keyboard grid navigation: role=grid, single Tab stop for the data region, arrow keys roam cells (Home/End/PageUp-Down, Enter/Space activate in-cell controls) | `boolean` | — |
 | `group-by` | Grouped view: render sections by field value (section header = value + row count + collapse arrow, click to collapse/expand, expanded by default); groups ordered by first occurrence, sorting applies within groups; empty values fall into the "(empty)" group; combined with merge columns / span-method / row-draggable it warns once and degrades to plain rendering; works with column-virtual / virtual scrolling (section header spans the full width) | `string` | — |
 | `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | `string` | `320` |
@@ -1025,7 +1025,7 @@ The full endpoint URLs far exceed the column width (long unbreakable strings): h
 | `oas-edit-cancel` | Inline edit cancelled (Esc / operation column cancel / empty submit restores), `detail: { rowIndex, key, column, value }` (`value` is the original value) |
 | `oas-expand` | Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }` |
 | `oas-export` | Export triggered (button or exportData), `detail: { format, fileName, rowCount }` |
-| `oas-filter-change` | Fired when a column filter value changes, `detail: { filters }` (filters maps a column key to its selected values) |
+| `oas-filter-change` | Fired when a column filter value changes, `detail: { filters }` (filters maps a column key to its selected scalar value) |
 | `oas-page-change` | Fired when the built-in page changes, `detail: { page, pageSize }` |
 | `oas-row-click` | Row click (also toggles selection when not checkable), `detail: { row, key }` |
 | `oas-row-dblclick` | Fired on data-row double-click, `detail: { row, rowIndex }` |

@@ -714,7 +714,7 @@ onMounted(() => {
 | `auto-width` | 触发器宽度随选中项收缩 | — | — |
 | `autofocus` | 挂载后自动聚焦触发器 | `boolean` | — |
 | `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | `boolean` | — |
-| `debounce` | 远程搜索输入防抖毫秒（默认 0 立即；仅 remote 模式 oas-input 防抖，本地过滤始终即时） | — | — |
+| `debounce` | 远程搜索输入防抖毫秒（默认 0 立即；仅 remote 模式 oas-input 防抖，本地过滤始终即时） | `number` | — |
 | `default-active-first-option` | 展开时高亮首个可见项（缺省高亮当前选中项） | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `hide-selected` | 多选时已选选项从下拉列表隐藏，清空/取消后回到列表（仅 multiple 生效） | `boolean` | — |
@@ -724,8 +724,8 @@ onMounted(() => {
 | `label` | 触发器可访问名称（aria-label），优先于 placeholder 回退 | `string` | — |
 | `loading` | 远程加载占位（与 `remote` 搭配使用） | `boolean` | — |
 | `loading-text` | 自定义加载占位文案（缺省 locale） | `string` | — |
-| `max-count` | 多选上限：达上限未选项禁用置灰并派 oas-exceed-limit，已选项仍可取消；单选行为不变 | — | — |
-| `max-tag-count` | 多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠） | `boolean` | — |
+| `max-count` | 多选上限：达上限未选项禁用置灰并派 oas-exceed-limit，已选项仍可取消；单选行为不变 | `number` | — |
+| `max-tag-count` | 多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠） | `number` | — |
 | `multiple` | 多选 | `boolean` | — |
 | `name` | 表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交） | `string` | — |
 | `open` | 受控展开：属性在场=展开、移除=收起；宿主手势只派 oas-open-change 通知（组件不强制写回） | `boolean` | `false` |

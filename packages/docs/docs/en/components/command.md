@@ -601,5 +601,12 @@ onMounted(() => {
 | `keywords` | Search keywords (optional), matched in addition to the label | `string[]` |
 | `group`    | Group name (optional); same-group items render a group title | `string`   |
 | `disabled` | Disables the item (not selectable via Enter/click, skipped by arrow keys) | `boolean` |
+| `icon` | Item icon (SVG path `d` string or full `<svg>` markup; host data, treated as trusted content) | `string` |
+| `shortcut` | Shortcut annotation (rendered as a right-aligned kbd), e.g. `"meta+p"` / `"ctrl+shift+s"` | `string` |
+| `description` | Subtitle description text | `string` |
+| `page` | Sub-page commands (nested page): selecting enters the sub-page; Esc / Backspace with an empty query pops back | `CommandItem[]` |
+| `view` | View slot name: selecting enters `<slot name="view-{view}">` (in-panel view) | `string` |
+| `forceMount` | Ignores filtering and always shows (create-style entry) | `boolean` |
+| `separator` | Renders as a separator row (not navigable / not selectable) | `boolean` |
 
 Keyboard: `↑`/`↓` move the highlight (skipping disabled items), `Enter` executes and closes (multi-select toggles checks), `Esc` closes (sub-pages pop first), `Backspace` with an empty query pops a sub-page, `Tab` cycles between the search input and the options (focus trap); on open the search input is focused, and on close focus returns to the source element. The global shortcut defaults to `⌘K` / `Ctrl+K` (`hotkey` is configurable or can be disabled).

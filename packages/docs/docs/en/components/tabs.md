@@ -97,11 +97,11 @@ Switch to the card style with `type="card"`: every tab has its own border, the a
 
 > Right-click “Products” and try “New” and “Close all to the left” / “Close others” — "New" fires `oas-add` and the host appends a panel; each close fires `oas-close` once per key, and the host removes the matching panels.
 
+> This interaction is part of the manager capability package: the main entry `@oas-ui/ui/navigation/tabs` already ships it (as do the full entry and the CDN navigation bundle) — no explicit import needed. If you only want the lightweight switch/close/overflow baseline, import the pure-core entry `@oas-ui/ui/navigation/tabs/core` instead — it omits the manager capability, and using these options there logs a dev hint pointing to `import '@oas-ui/ui/navigation/tabs/manager'` (or back to the main entry).
+
 ## Per-tab context menu event (host-built menus)
 
-`oas-tab-contextmenu`: fired when a tab is right-clicked (or a focused tab gets Menu key / Shift+F10) — cancelable; `detail: { value, index, clientX, clientY, originalEvent }`. When the host calls `preventDefault()`, both the built-in menu (`context-menu` attribute) and the browser default menu are suppressed, so the host can look up its own data via `value` and open `oas-context-menu` at `clientX/clientY` (e.g. file-type actions like "Copy path / Open in file manager"). If not canceled, the built-in menu opens as usual. Not fired on empty nav area; keyboard-triggered coordinates use the button center. Independent of the `context-menu` attribute — the event fires whether or not the built-in menu is enabled.
-
-> This interaction is part of the manager capability package: the main entry `@oas-ui/ui/navigation/tabs` already ships it (as do the full entry and the CDN navigation bundle) — no explicit import needed. If you only want the lightweight switch/close/overflow baseline, import the pure-core entry `@oas-ui/ui/navigation/tabs/core` instead — it omits the manager capability, and using these options there logs a dev hint pointing to `import '@oas-ui/ui/navigation/tabs/manager'` (or back to the main entry).
+`oas-tab-contextmenu`: fired when a tab is right-clicked (or a focused tab gets Menu key / Shift+F10) — cancelable; `detail: { value, index, clientX, clientY, originalEvent }`. When the host calls `preventDefault()`, both the built-in menu (`context-menu` attribute) and the browser default menu are suppressed, so the host can look up its own data via `value` and open `oas-context-menu` at `clientX/clientY` (e.g. file-type actions like "Copy path / Open in file manager"). If not canceled, the built-in menu opens as usual. Not fired on empty nav area; keyboard-triggered coordinates use the button center. Independent of the `context-menu` attribute — the event fires whether or not the built-in menu is enabled. Note: the keyboard path only serves host-built menus (the built-in menu is invoked via mouse right-click).
 
 > Hosts can reword the menu per business domain (e.g. "New file"): override individual locale keys — `setLocale({ name: 'en', messages: { ...en.messages, 'tabs.ctxNew': 'New file' } })` (import `setLocale` from `@oas-ui/i18n`, `en` from `@oas-ui/i18n/en`; same-name registration overwrites, touch only the keys you need).
 
@@ -320,7 +320,7 @@ The `oas-before-change` event (cancelable) fires before switching with `detail: 
 
 ## Editable rename
 
-Add `editable` to an `oas-tab-panel`: double-click the tab to enter an input editing state; Enter confirms (emits `oas-rename` with `detail: { value, label }`, and the component writes the new label back); Esc or blur cancels.
+Add `editable` to an `oas-tab-panel`: double-click the tab to enter an input editing state; Enter confirms (emits `oas-rename` with `detail: { value, label }`, and the component writes the new label back); Esc cancels; blur commits (unchanged content exits silently).
 
 > This interaction is part of the manager capability package: the main entry `@oas-ui/ui/navigation/tabs` already ships it (as do the full entry and the CDN navigation bundle) — no explicit import needed. If you only want the lightweight switch/close/overflow baseline, import the pure-core entry `@oas-ui/ui/navigation/tabs/core` instead — it omits the manager capability, and using these options there logs a dev hint pointing to `import '@oas-ui/ui/navigation/tabs/manager'` (or back to the main entry).
 

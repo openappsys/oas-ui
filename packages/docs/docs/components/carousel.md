@@ -408,3 +408,5 @@ onMounted(() => {
 | `viewport` / `track`        | 视口与滑动轨道                                               |
 | `dots` / `dot`              | 底部指示器容器与单个圆点                                     |
 | `arrow-prev` / `arrow-next` | 左右切换箭头按钮，绝对定位于轮播两侧垂直居中，可单独定制样式 |
+| `pause-button` | 自动播放暂停/继续按钮 |
+| `thumb` | thumbs 缩略图导航项 |

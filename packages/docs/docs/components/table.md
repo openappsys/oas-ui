@@ -983,7 +983,7 @@ onMounted(() => {
 | `export-file-name` | 导出文件名（不含扩展名；路径分隔符与保留字符自动净化） | `string` | `export` |
 | `export-format` | 导出格式：`csv`（默认）/ `excel`，或逗号组合 `csv,excel`（两个按钮）；非法回落 csv | `string` | `csv` |
 | `exportable` | 导出开关：表格顶部渲染导出工具栏（默认 CSV，可配 CSV/Excel），并开放 exportData 方法 | `boolean` | — |
-| `filter-values` | 受控列过滤值（JSON 对象：列 key → 选中值数组） | `string` | — |
+| `filter-values` | 受控列过滤值（JSON 对象：列 key → 选中值标量） | `string` | — |
 | `grid-navigation` | 键盘网格导航：role=grid，数据区单停靠点 + 方向键在单元格间漫游（Home/End/PageUp-Down，Enter/Space 激活格内控件） | `boolean` | — |
 | `group-by` | 分组视图：按字段值分节渲染（分节头 = 字段值 + 组内计数 + 折叠箭头，点击折叠/展开该组，默认全展开）；组间按字段值首次出现序、组内排序生效；空值行归入「（空）」组；与 merge 列 / span-method / row-draggable 同用时告警一次并降级为普通渲染；可与 column-virtual / 虚拟滚动并用（分节头整行 colSpan 全宽） | `string` | — |
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
@@ -1021,7 +1021,7 @@ onMounted(() => {
 | `oas-edit-cancel` | 行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value }`（value 为原值） |
 | `oas-expand` | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }` |
 | `oas-export` | 导出触发（按钮或 exportData），`detail: { format, fileName, rowCount }` |
-| `oas-filter-change` | 列过滤值变化时派发，`detail: { filters }`（filters 为「列 key → 选中值数组」的对象） |
+| `oas-filter-change` | 列过滤值变化时派发，`detail: { filters }`（filters 为列 key → 选中值标量的对象） |
 | `oas-page-change` | 内置分页翻页时派发，`detail: { page, pageSize }` |
 | `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
 | `oas-row-dblclick` | 双击数据行派发，`detail: { row, rowIndex }` |

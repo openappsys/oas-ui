@@ -65,7 +65,7 @@ Press and hold a stepper button for 800ms to enter auto-repeat: it steps every 1
   <oas-input-number value="42" clearable prefix-text="$" controls-position="both" style="width: 240px"></oas-input-number>
 </DemoBlock>
 
-`clearable` / stepper controls / affixes compose freely: right-side elements lay out left-to-right as steppers → clear button → suffix, all embedded inside the input box, and the entered text yields by the combined width (`controls-position="both"` keeps the clear button / suffix inside the box, clear of the right `+` button).
+`clearable` / stepper controls / affixes compose freely: right-side elements lay out left-to-right as suffix → clear button → steppers, all embedded inside the input box, and the entered text yields by the combined width (`controls-position="both"` keeps the clear button / suffix inside the box, clear of the right `+` button).
 
 ## Grouping & Declarative Formatting
 
@@ -332,7 +332,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `disabled` | Disabled | `boolean` | — |
 | `format` | Intl-style declarative format: `percent` (0.15→15%) / `currency:USD` / `unit:GB`, following the host locale | `string` | — |
 | `grouping` | Thousands grouping display (group separators stripped on parse) | `boolean` | — |
-| `label` | Accessible name (`aria-label` source; falls back to built-in "数字输入框" when unset) | `string` | — |
+| `label` | Accessible name (`aria-label` source; falls back to built-in "Number input" when unset) | `string` | — |
 | `max` | Range, out-of-range values are clamped automatically | `string` | — |
 | `min` | Range, out-of-range values are clamped automatically | `string` | — |
 | `placeholder` | Placeholder (participates in the aria-label fallback chain) | `string` | — |
@@ -361,7 +361,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | Event | Description |
 | --- | --- |
 | `oas-blur` | Dispatched on blur after the commit, `detail: { value }` carries the committed value |
-| `oas-change` | Change on step or blur, `detail: { value }` (number) |
+| `oas-change` | Change on step or blur, `detail: { value }` (number; `null` in the empty state) |
 | `oas-clear` | Fires when the clear button is clicked (value returns to the empty state), `detail: {}` |
 | `oas-focus` | Dispatched on focus, `detail: { value }` (current committed value) |
 | `oas-input` | Dispatched on every keystroke, `detail: { value }` is the current display text (uncommitted) |

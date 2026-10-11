@@ -159,7 +159,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `aria-label` | 容器可访问名称，缺省走 i18n | — | — |
+| `aria-label` | 图形元素（svg，`role="img"`）可访问名称，缺省走 i18n | — | — |
 | `bar-width` | 条宽 X-dimension（px，默认 2，下限 clamp ≥1） | `string` | `2` |
 | `bg-color` | 静区底色（默认白色——扫码器要求浅色静区，dark 主题下保持白底保证可扫；`--oas-barcode-bg` 变量可覆盖） | `string` | — |
 | `color` | 条色（默认固定深色 `#18181b`——与固定白底配套保证 dark 可扫；`--oas-barcode-color` 变量或预设名/任意色值覆盖） | `string` | — |

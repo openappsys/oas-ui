@@ -408,3 +408,5 @@ Besides the automatic hover/focus pause, `pause-button` renders an explicit paus
 | `viewport` / `track`           | Viewport and sliding track                                     |
 | `dots` / `dot`                 | Bottom indicator container and a single dot                    |
 | `arrow-prev` / `arrow-next`    | Left/right arrow buttons, absolutely positioned at the vertical center of the two sides of the carousel; can be styled independently |
+| `pause-button`                 | Autoplay pause/resume button                                    |
+| `thumb`                        | Thumbnail navigation item (thumbs)                              |

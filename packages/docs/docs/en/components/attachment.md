@@ -27,7 +27,7 @@ A conversation attachment row: media (icon/thumbnail) + file name/metadata + upl
   </p>
 </DemoBlock>
 
-The state vocabulary matches `oas-upload` (library-wide consistency); `removable` shows the remove button (clicking dispatches `oas-remove`; the component never removes itself — removal is a host decision).
+The state machine has five states: `idle` / `uploading` / `processing` / `error` / `done` (default done); `removable` shows the remove button (clicking dispatches `oas-remove`; the component never removes itself — removal is a host decision).
 
 ## Sizes (size)
 
@@ -136,7 +136,7 @@ onMounted(async () => {
 | `progress` | Upload progress 0–100 (clamped; the thin bottom progress bar with role=progressbar renders only while uploading) | — | — |
 | `removable` | Boolean presence: shows the built-in remove button (clicking dispatches oas-remove; the component never removes itself — removal is a host decision) | `boolean` | — |
 | `size` | Three size steps: default / sm (accepts the small alias) / xs, tightening padding and media per step | — | — |
-| `state` | Upload state machine: idle / uploading / processing / error / done (default done; vocabulary matches oas-upload; uploading/processing reflect aria-busy) | `string` | `done` |
+| `state` | Upload state machine: idle / uploading / processing / error / done (default done; uploading/processing reflect aria-busy) | `string` | `done` |
 
 #### Events
 

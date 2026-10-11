@@ -36,7 +36,7 @@
 
 组通过 `value` 受控，子项 `value` 作为选项标识；组会统一管理单选互斥。
 
-组遵循 WAI-ARIA radiogroup 键盘模式：**Tab 一次进入组（停在选中项，无选中时停首项）**，`↑` `↓` `←` `→` 移动即选中（循环回绕、跳过禁用项），`Home` / `End` 跳首末可用项。原生 input 各藏于 Shadow DOM，浏览器同名方向键分组跨 Shadow 失效，组件在 host 层补齐了 roving tabindex 与方向键处理。
+组遵循 WAI-ARIA radiogroup 键盘模式：**Tab 一次进入组（停在选中项，无选中时停首个非禁用/非只读项）**，`↑` `↓` `←` `→` 移动即选中（循环回绕、跳过禁用项），`Home` / `End` 跳首末可用项。原生 input 各藏于 Shadow DOM，浏览器同名方向键分组跨 Shadow 失效，组件在 host 层补齐了 roving tabindex 与方向键处理。
 
 ## 单个禁用
 

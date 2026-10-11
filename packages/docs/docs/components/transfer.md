@@ -320,7 +320,7 @@ onMounted(() => {
     panel.data = leaves
     const leafKeys = new Set(leaves.map((i) => i.key))
     tree.addEventListener('oas-check', () => {
-      const checked = (tree.getAttribute('checked') || '').split(',').filter(Boolean)
+      const checked = JSON.parse(tree.getAttribute('checked') || '[]')
       panel.setAttribute('value', JSON.stringify(checked.filter((k) => leafKeys.has(k))))
     })
   }

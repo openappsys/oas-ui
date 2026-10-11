@@ -278,13 +278,13 @@ onMounted(async () => {
 | `repeat-num` | 重复计数徽标：同内容连发时合并显示次数 | `string` | — |
 | `show-icon` | 是否显示类型图标（默认 true；false 纯文字） | `string` | `true` |
 | `show-progress` | 显示倒计时进度条（时长同步） | `boolean` | — |
-| `type` | 消息类型：`info`/`success`/`warning`/`error` | `string` | `info` |
+| `type` | 消息类型：`info`/`success`/`warning`/`error`/`loading`/`question` | `string` | `info` |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-close` | 消息关闭时派发（自动关闭/关闭按钮/`destroy`），`detail: { key? }` |
+| `oas-close` | 消息关闭时派发（自动关闭/关闭按钮/`destroy`/点击/遮罩），`detail: { key?, source }`（source：`auto`/`close`/`destroy`/`click`/`mask`） |
 
 #### 插槽
 

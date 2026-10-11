@@ -16,7 +16,7 @@ An enhanced base input built on the native `<input>` element.
   <span id="input-label-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
 </DemoBlock>
 
-`label` serves as the accessible name (`aria-label`) source for the input, announced by screen readers. When `label` is not set, it falls back to `placeholder` → built-in text "输入框"; once set (e.g. "Login email"), it overrides the fallback chain.
+`label` serves as the accessible name (`aria-label`) source for the input, announced by screen readers. When `label` is not set, it falls back to `placeholder` → built-in text "Input"; once set (e.g. "Login email"), it overrides the fallback chain.
 
 ## Native Form & Label Association
 
@@ -497,7 +497,7 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `enterkeyhint` | Passes the mobile virtual keyboard enter-key appearance through (e.g. search/send/go) | — | — |
 | `hint` | Persistent static hint below the input (aria-describedby, independent of validation errors) | `string` | — |
 | `inputmode` | Passes the mobile virtual keyboard type through to the inner input | — | — |
-| `label` | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "输入框" when unset) | — | — |
+| `label` | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "Input" when unset) | — | — |
 | `loading` | Loading state: trailing spinner with aria-busy (input stays editable); takes precedence over the clear button | `boolean` | — |
 | `mask` | Input mask template: `#` digit, `A` letter, `*` alphanumeric; other characters are literals (e.g. `###-####`); typing skips literals, pasting accepts only fitting positions, backspace stops at literals; mutually exclusive with formatter/parser (mask wins) | `string` | — |
 | `mask-raw` | Events and form submit value carry the de-formatted raw character sequence; by default the display value is submitted | `boolean` | — |

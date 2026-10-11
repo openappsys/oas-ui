@@ -249,7 +249,7 @@ The container provides the imperative methods `expandAll()` / `collapseAll()`. I
     <oas-collapse heading-level="3">
       <oas-collapse-item name="a" header="Default rendering (content kept when collapsed)"><p>Content stays in the DOM; collapsing only hides it.</p></oas-collapse-item>
       <oas-collapse-item name="b" header="destroy-on-collapse" destroy-on-collapse><p>Content is removed from the DOM on collapse and re-mounted on next expand (collapse animation is skipped).</p></oas-collapse-item>
-      <oas-collapse-item name="c" header="force-render (rendered up front)" force-render><p>Content is in the DOM even before the first expand (for text-retrieval scenarios).</p></oas-collapse-item>
+      <oas-collapse-item name="c" header="force-render (exemption from destroy-on-collapse)" destroy-on-collapse force-render><p>The default slot is always rendered; combined with destroy-on-collapse, force-render keeps the content mounted even when collapsed (for text-retrieval scenarios).</p></oas-collapse-item>
     </oas-collapse>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
       Container <code>heading-level="3"</code>: panel titles get the heading role (aria-level=3) so screen readers can navigate by headings; items may override it individually.

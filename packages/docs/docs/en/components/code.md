@@ -86,7 +86,7 @@ Tag names and attribute names are colored separately.
   </div>
 </DemoBlock>
 
-`copyable` controls the top-right copy button (default `true`): setting it to `false` hides the button; clicking the button writes the source to the clipboard and briefly shows "已复制".
+`copyable` controls the top-right copy button (default `true`): setting it to `false` hides the button; clicking the button writes the source to the clipboard and briefly shows "Copied".
 
 ## Unknown Language
 
@@ -181,7 +181,7 @@ function reset() {
 
 ## Line Focus (focus-lines)
 
-`focus-lines` focuses the given lines and dims the rest (opacity) — handy for walking through key code:
+`focus-lines` focuses the given lines and dims the rest by blending them toward the theme text color (color-mix, not opacity) — handy for walking through key code:
 
 <DemoBlock title="Line focus">
   <div style="width: 100%">

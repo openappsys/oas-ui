@@ -56,7 +56,7 @@ When no child content is wrapped, the badge falls back from the "top-end corner"
 
 ## Icon badge
 
-`icon` takes a built-in icon name and renders a small icon inside the badge (e.g. a √ / ! status corner). It is mutually exclusive with `value` / `dot`: `icon` wins and shows the icon instead of a number/dot; an invalid icon name silently falls back to the numeric logic.
+`icon` takes an icon name (lookup prefers custom registrations, falling back to the built-in icon set) and renders a small icon inside the badge (e.g. a √ / ! status corner). It is mutually exclusive with `value` / `dot`: `icon` wins and shows the icon instead of a number/dot; an invalid icon name silently falls back to the numeric logic.
 
 <DemoBlock title="Icon badges">
   <oas-badge icon="check" color="success" style="margin-inline-end: var(--oas-space-4)">
@@ -385,7 +385,7 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
 
 ## Ribbon forms
 
-`ribbon-form` switches the ribbon shape: `fold` (default, straight band + folded corner) / `diagonal` (45° diagonal band sweeping from the top corner; the band extends outside the card, so the host needs `overflow: hidden` to clip it) / `triangle` (a pure corner triangle holding a small icon or `slot="ribbon"` content) / `bookmark` (a vertical tab hanging from the top edge with a swallow-tail notch) / `side` (a vertical strip hung at mid-height of the side edge) / `seal` (a circular serrated stamp with centered text) / `banner` (a full-width strip across the top edge with angled ends) / `flag` (a side swallow-tail banner: a horizontal band with a V notch at the protruding end, always facing the protruding side). Invalid values silently fall back to `fold`. `ribbon-direction` controls the notch direction of `bookmark` (`down` default, hanging from the top edge / `left`, tab on the right edge with the notch pointing left / `right`, tab on the left edge with the notch pointing right; physical-direction semantics, not flipped in RTL), and only takes effect for `bookmark`; `ribbon-vertical` controls the vertical position of the side-mount forms (`center` default, vertically centered / `top`, flush with the top edge / `bottom`, flush with the bottom edge). `ribbon-size` offers `sm` (default) / `md` / `lg` tiers for `diagonal` (a tier only changes the fallback band height / font size / pin depth; host `--oas-badge-diagonal-*` custom properties take precedence). The `ribbon-position` vertical trio only affects the `fold` shape; the other shapes have their own vertical placement. `offset` fine-tunes the position of every ribbon shape (`offset="x,y"` px shift, negative values allowed). `rolled` is a boolean modifier that adds an end roll (a large end radius + an inner gradient darkening that reads as a rolled cylinder); it composes with `fold` / `banner` / `flag`.
+`ribbon-form` switches the ribbon shape: `fold` (default, straight band + folded corner) / `diagonal` (45° diagonal band sweeping from the top corner; the band extends outside the card, so the host needs `overflow: hidden` to clip it) / `triangle` (a pure corner triangle holding a small icon or `slot="ribbon"` content) / `bookmark` (a vertical tab hanging from the top edge with a swallow-tail notch) / `side` (a vertical strip hung at mid-height of the side edge) / `seal` (a circular serrated stamp with centered text) / `banner` (a full-width strip across the top edge with angled ends) / `flag` (a side swallow-tail banner: a horizontal band with a V notch at the card-facing end; the outer end stays flush with the card edge, and the notch always faces the card-inner end). Invalid values silently fall back to `fold`. `ribbon-direction` controls the notch direction of `bookmark` (`down` default, hanging from the top edge / `left`, tab on the right edge with the notch pointing left / `right`, tab on the left edge with the notch pointing right; physical-direction semantics, not flipped in RTL), and only takes effect for `bookmark`; `ribbon-vertical` controls the vertical position of the side-mount forms (`center` default, vertically centered / `top`, flush with the top edge / `bottom`, flush with the bottom edge). `ribbon-size` offers `sm` (default) / `md` / `lg` tiers for `diagonal` (a tier only changes the fallback band height / font size / pin depth; host `--oas-badge-diagonal-*` custom properties take precedence). The `ribbon-position` vertical trio only affects the `fold` shape; the other shapes have their own vertical placement. `offset` fine-tunes the position of every ribbon shape (`offset="x,y"` px shift, negative values allowed). `rolled` is a boolean modifier that adds an end roll (a large end radius + an inner gradient darkening that reads as a rolled cylinder); it composes with `fold` / `flag` (banner keeps its own angled ends and gets no roll; other shapes silently ignore it).
 
 <DemoBlock title="Ribbon forms">
   <oas-badge ribbon text="HOT" style="margin-inline-end: var(--oas-space-4)">
@@ -472,12 +472,8 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
 
 `ribbon-anchor` unifies the ribbon anchor, with the anchor set adapted per shape semantics (industry practice: shape and position are bound together):
 
-- **fold**: left/right edge centers + four corners (a horizontal band hugs left/right, with vertical position adjustable)
-- **diagonal / triangle**: four corners
-- **side**: left/right edge centers + four corners
-- **banner**: top/bottom (full-width banner)
-- **seal**: all 8 positions
-- **bookmark**: four corners + four edge centers
+- **diagonal / triangle**: four corners only
+- **fold / side / banner / seal / bookmark / flag** (and the remaining shapes): all 8 positions (4 edge centers + 4 corners)
 Anchors pin the ribbon to an edge/corner (the fold notch auto-flips on bottom anchors), and `offset` fine-tunes any arbitrary position.
 
 <DemoBlock title="Ribbon anchors: angular corners">

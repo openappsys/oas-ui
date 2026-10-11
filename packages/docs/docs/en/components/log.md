@@ -46,7 +46,7 @@ Provide data via the `lines` property (or the `lines` attribute as a JSON string
 <DemoBlock title="Custom empty text">
   <oas-log empty-text="No log output yet, waiting for the command to run…" style="height: 180px; width: 100%; background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-log>
   <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    <code>empty-text</code> overrides the default empty-state copy (default: "No logs yet").
+    <code>empty-text</code> overrides the default empty-state copy (default: "No logs").
   </p>
 </DemoBlock>
 

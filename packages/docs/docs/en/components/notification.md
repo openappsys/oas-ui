@@ -73,7 +73,7 @@ Notification cards anchored to the four viewport corners, supporting title, desc
 <DemoBlock title="onClose callback">
   <p style="font-size: 13px; margin: 0 0 8px;">Auto close, ✕ click, or imperative destroy — onClose fires exactly once either way:</p>
   <oas-space>
-    <oas-button onclick="window.__notifLog('close', notification.info({ title: 'Watch close', description: 'See counter below', duration: 4000, onClose: () => window.__notifCount('close') }).close)">Imperative destroy</oas-button>
+    <oas-button onclick="window.__notifLog('close', notification.info({ title: 'Watch close', description: 'See counter below', duration: 4000, onClose: () => window.__notifCount('close') }))">Imperative destroy</oas-button>
     <oas-button onclick="notification.info({ title: 'Watch close', description: 'Auto closes in 4s or click ✕', duration: 4000, onClose: () => window.__notifCount('close') })">Auto/manual close</oas-button>
     <span id="notif-close-count" style="font-size: 13px; align-self: center;">onClose fired: 0 times</span>
   </oas-space>
@@ -337,7 +337,7 @@ onMounted(async () => {
 | `closable` | Whether to show the close button (default true; false hides it) | `string` | `true` |
 | `description` | Description content | `string` | — |
 | `duration` | Auto-close duration in ms; pass `0` to keep it open | `string` | `4500` |
-| `pause-on-hover` | Pause timer and progress bar on hover/focus (default on); remaining time resumes on leave | `string` | `true` |
+| `pause-on-hover` | Pause timer and progress bar on hover (default on; mouseenter/leave channel); remaining time resumes on leave | `string` | `true` |
 | `progress-position` | Progress bar position: `bottom` (default) / `top` | `string` | `bottom` |
 | `scrollable` | Scroll inside the card when the content is too long; enabled by default, pass `false` to disable | `string` | `true` |
 | `show-progress` | Show the auto-close countdown progress bar (animates in sync with `duration`) | `boolean` | — |

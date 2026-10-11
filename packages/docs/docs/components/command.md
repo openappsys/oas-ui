@@ -599,5 +599,12 @@ onMounted(() => {
 | `keywords` | 搜索关键词（可选），参与 label 之外的匹配   | `string[]` |
 | `group`    | 分组名（可选），同组项渲染分组标题          | `string`   |
 | `disabled` | 禁用该项（Enter/点击不可选，方向键跳过）    | `boolean`  |
+| `icon` | 项图标（SVG path d 字符串或完整 `<svg>` 标记，宿主数据视为可信内容） | `string` |
+| `shortcut` | 快捷键标注（右对齐 kbd 展示），如 `"meta+p"` / `"ctrl+shift+s"` | `string` |
+| `description` | 副标题描述文本 | `string` |
+| `page` | 子页命令（嵌套页面）：选中进入子页，Esc / 空搜索词 Backspace 回退 | `CommandItem[]` |
+| `view` | 视图插槽名：选中进入 `<slot name="view-{view}">`（面板内嵌视图） | `string` |
+| `forceMount` | 忽略过滤强制显示（创建型入口） | `boolean` |
+| `separator` | 渲染为分隔行（不可导航/不可选中） | `boolean` |
 
 键盘：`↑`/`↓` 移动高亮（跳过 disabled），`Enter` 执行并关闭（多选模式切换勾选），`Esc` 关闭（有子页时先回退子页），空搜索词 `Backspace` 回退子页，`Tab` 在搜索框与选项间循环（焦点陷阱）；打开时自动聚焦搜索框，关闭后焦点归还来源元素。全局快捷键默认 `⌘K` / `Ctrl+K`（`hotkey` 可配置或关闭）。

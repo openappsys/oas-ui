@@ -15,7 +15,7 @@ A window title bar (app shell chrome): drag region + centered title / document w
 
 ## Drag contract (drag)
 
-The `drag` boolean attribute turns the whole bar into a window drag region (writes `-webkit-app-region: drag` + `data-tauri-drag-region`, effective in Electron/Tauri hosts); **interactive children automatically opt out (no-drag)** — native interactive elements, `oas-*` components and `[data-no-drag]`-marked elements remain clickable. In plain Web this is a harmless no-op.
+The `drag` boolean attribute turns the whole bar into a window drag region (writes `-webkit-app-region: drag` + `data-tauri-drag-region`, effective in Electron/Tauri hosts); **interactive children automatically opt out (no-drag)** — a curated set of native interactive elements and built-in interactive components (button / input / segmented / toolbar / scope-bar / knob etc.) plus `[data-no-drag]`-marked elements remain clickable; **host `oas-*` children outside the curated list should be marked `[data-no-drag]` by the host**. In plain Web this is a harmless no-op.
 
 <DemoBlock title="Buttons inside the drag region stay clickable (automatic no-drag)">
   <div style="width: 100%">
@@ -131,7 +131,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `drag` | Turns the whole bar into a window drag region (writes -webkit-app-region: drag + data-tauri-drag-region, effective in Electron/Tauri hosts; harmless no-op in plain Web); a curated set of interactive children automatically opts out (no-drag) — otherwise opt out a host child with [data-no-drag], and [data-drag] forces it back | `boolean` | — |
+| `drag` | Turns the whole bar into a window drag region (writes -webkit-app-region: drag + data-tauri-drag-region, effective in Electron/Tauri hosts; harmless no-op in plain Web); a curated set of interactive children automatically opts out (no-drag) — otherwise opt out a host child with [data-no-drag] | `boolean` | — |
 | `editable` | Makes the document-well title editable: Enter or blur commits (dispatches oas-title-change and updates the absorbed cache), Esc cancels and rolls back; rewriting title externally while editing terminates the edit | `boolean` | — |
 | `leading-inset` | Safe area: leading-side native-control clearance (CSS length; also settable via --oas-titlebar-leading-inset) | — | — |
 | `size` | Height tier: compact (default, 34px) / large (68px, controls stay compact); invalid values fall back to compact with a one-time warning | `string` | `compact` |

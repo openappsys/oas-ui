@@ -205,11 +205,11 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `local` | 挂载目标容器选择器（CSS 选择器/HTMLElement）；缺省挂 body 顶部全局条 | — | — |
+| `local` | 局部模式标记（布尔）：命令式 API 传 `to` 容器时自动打上，组件内据此切换为容器内绝对定位；不接受选择器/元素——挂载目标由命令式 `to` 选项决定 | — | — |
 | `position` | 显示位置：top（默认）/bottom | — | — |
 | `reverse` | 方向反转（RTL 场景进度从右往左） | — | — |
 | `speed` | 推进速度基准（ms，默认 200），start(speed) 可覆盖 | `string` | `200` |
-| `status` | 当前状态：loading/finish/error（活动态查询） | `string` | — |
+| `status` | 当前状态（活动态查询）：组件仅在错误终态写入 `error`，其余时刻移除该属性（不写 `loading`/`finish`） | `string` | — |
 
 #### 事件
 
@@ -217,7 +217,7 @@ onMounted(async () => {
 | --- | --- |
 | `oas-error` | error() 错误收尾时派发，`detail: { count: this.sessionCount }` |
 | `oas-finish` | finish() 完成收尾时派发，`detail: { count: this.sessionCount }` |
-| `oas-start` | start() 开始时派发，`detail: { count: this.sessionCount }` |
+| `oas-start` | 批次首个会话的 start() 时派发（并发批次的后续 start() 不再派发），`detail: { count: this.sessionCount }` |
 
 #### CSS 变量
 

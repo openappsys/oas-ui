@@ -6,7 +6,7 @@ A mobile bottom navigation bar: `role="tablist"` with each item `role="tab"` + s
 
 ## Basic usage
 
-Pass a JSON array via `items` `[{ label, value, icon? }]`; `icon` is an icon name from `@oas-ui/icons` built-in icon set. When `value` is not set, the first item is active by default.
+Pass a JSON array via `items` `[{ label, value, icon? }]`; `icon` is an icon name from `@oas-ui/icons` built-in icon set. When `value` is not set, the first non-disabled item is active by default.
 
 <DemoBlock title="Basic usage">
   <oas-bottom-navigation id="bn-basic" value="home" style="width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Messages","icon":"mail","value":"mail"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
@@ -149,7 +149,7 @@ Click to switch the selected item and observe the icon lifting/scaling up and un
 Pure CSS variable openings (no attribute); dark mode picks up tokens automatically:
 
 - `--oas-bottom-navigation-active-color`: active item color, defaults to the primary token
-- `--oas-bottom-navigation-height`: bar height, defaults to `56px` (the fixed bar height in fixed mode)
+- `--oas-bottom-navigation-height`: bar height, defaults to `56px` (applies in every layout mode, not only fixed)
 
 <DemoBlock title="Variable customization (active color + height)">
   <oas-bottom-navigation id="bn-var" value="home" style="width: 100%; max-width: 480px; --oas-bottom-navigation-active-color: var(--oas-color-success-text); --oas-bottom-navigation-height: 64px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>

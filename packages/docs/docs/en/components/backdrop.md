@@ -159,7 +159,7 @@ onMounted(async () => {
 
 | Event | Description |
 | --- | --- |
-| `oas-after-close` | Emitted after the close animation finishes (canonical, aligned with the after-* family); no `detail`. Scroll unlock and node removal (the element removes itself) happen after this |
+| `oas-after-close` | Emitted after the close animation finishes (canonical, aligned with the after-* family); no `detail`. Scroll unlock has already happened before this; node removal (the element removes itself) happens after this |
 | `oas-after-show` | Emitted after the enter animation finishes (canonical, aligned with the after-* family); no `detail`; emitted immediately under reduced motion |
 | `oas-click` | Backdrop clicked, `detail.originalEvent` is the original click event |
 

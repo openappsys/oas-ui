@@ -249,7 +249,7 @@ onMounted(async () => {
     <oas-collapse heading-level="3">
       <oas-collapse-item name="a" header="默认渲染（收起保留内容）"><p>内容常驻 DOM，收起仅隐藏。</p></oas-collapse-item>
       <oas-collapse-item name="b" header="destroy-on-collapse（收起销毁内容）" destroy-on-collapse><p>收起时内容从 DOM 移除，再次展开重新挂载（收起动画随之跳过）。</p></oas-collapse-item>
-      <oas-collapse-item name="c" header="force-render（初始即渲染）" force-render><p>即使从未展开过，内容也已在 DOM 中（供检索/抓取其文本的场景）。</p></oas-collapse-item>
+      <oas-collapse-item name="c" header="force-render（destroy-on-collapse 的豁免位）" destroy-on-collapse force-render><p>默认 slot 始终渲染；force-render 与 destroy-on-collapse 同用时收起也不卸载内容（供检索/抓取其文本的场景）。</p></oas-collapse-item>
     </oas-collapse>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
       容器 <code>heading-level="3"</code>：面板标题挂 heading 角色（aria-level=3），屏幕阅读器可按标题导航；item 可用同名属性单独覆盖。

@@ -43,7 +43,7 @@
   <oas-modal id="modal-nomask" title="必须确认" no-mask-close>
     <p>点击遮罩不会关闭，需通过按钮或 Esc 关闭。</p>
   </oas-modal>
-</DemoBlock>。非模态语义对齐 `dialog.show()`：`aria-modal="false"`、不抢焦点、Tab 不圈禁
+</DemoBlock>
 
 ## 自定义宽度
 
@@ -591,7 +591,7 @@ onMounted(async () => {
         title: '设置密码',
         inputType: 'password',
         placeholder: '8-16 位，含字母和数字',
-        inputPattern: '^(?=.*[A-Za-z])[?=.*\\d](A-Za-z\\d){8,16}$',
+        inputPattern: '^(?=.*[A-Za-z])(?=.*\\d)(?:[A-Za-z\\d]{8,16})$',
         inputErrorMessage: '需 8-16 位且同时包含字母和数字',
       })
       .then((r) => {

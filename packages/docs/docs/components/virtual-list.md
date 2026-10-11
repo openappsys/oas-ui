@@ -246,4 +246,6 @@ onMounted(() => {
 | --- | --- |
 | `template[slot="item"]` | 每项静态模板，克隆到每个可见项容器（可选） |
 
-部件：`::part(viewport)` 滚动视口、`::part(inner)` 内容、`::part(padding-top)` / `::part(padding-bottom)` 占位、`::part(item)` 单项。
+部件：`::part(viewport)` 滚动视口、`::part(inner)` 内容、`::part(padding-top)` / `::part(padding-bottom)` 占位、`::part(items)` 窗口项容器、`::part(item)` 单项。
+
+`viewportFocusable`（JS property，默认 true）控制视口是否可 Tab 聚焦；内嵌消费方（行自带 roving tabindex 时）置 false 关闭视口聚焦。

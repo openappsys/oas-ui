@@ -1,6 +1,6 @@
 # 组件总览
 
-OAS-UI 提供 126 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 145 个框架无关的 Web Components 组件，按用途划分为 9 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -40,6 +40,7 @@ OAS-UI 提供 126 个框架无关的 Web Components 组件，按用途划分为 
 - [Swatch 色板](/components/swatch) —— 内联预设色快选与展示的色块件：主题色/标签色/收藏色等不开面板直接选色场景；色块件 + 选择组（单选/多选，roving 键盘导航）。
 - [Picker 滚轮选择器](/components/picker) —— 移动式滚轮列选择：独立多列 / 级联树两形态，原生滚动惯性 + 吸附，键盘可达，form-associated 直接进原生表单。
 - [Slider 滑块](/components/slider) —— 原生 `<input type="range">` 增强的滑动条。
+- [Knob 旋钮](/components/knob) —— 把连续/离散值映射为圆周角度的旋钮控件，为参数密集面板（音频/工业/3D）设计；支持圆周 + 直线拖拽两种交互与双击复位。
 - [InputNumber 数字输入](/components/input-number) —— 原生 `<input type="number">` 增强，带步进按钮并支持范围约束。
 - [Rate 评分](/components/rate) —— 星级评分，支持键盘方向键调节，默认点击已选中的同一颗星可清空。
 - [Select 选择器](/components/select) —— 下拉选择器，支持单选、多选、分组、可清空、远程搜索与自定义创建，键盘可操作。
@@ -63,6 +64,7 @@ OAS-UI 提供 126 个框架无关的 Web Components 组件，按用途划分为 
 - [Form 表单](/components/form) —— 原生 `<form>` 增强，支持按 `rules` 规则对内部字段做校验与提交。
 - [FormItem 表单项](/components/form#栅格表单布局) —— `oas-form-item`：label + 控件容器 + 错误提示位，在 `layout="grid"` 的表单内按 `span` 栅格占列。
 - [FormList 动态字段组](/components/form#动态字段组-form-list) —— `oas-form-list`：表单内可增删的字段行组，行模板克隆 + 字段 `name` 自动索引化（嵌套 values），校验/提交随主表。
+- [Questionnaire 多步问卷](/components/questionnaire) —— 步骤驱动的表单流程编排器：步骤头 + 进度（第 n / m 步）+ 每步独立面板 + 逐步校验门控；每个步骤内嵌一个 `<oas-form>`，复用 `oas-form` 内核。
 
 ## 反馈与浮层组件
 
@@ -114,6 +116,13 @@ OAS-UI 提供 126 个框架无关的 Web Components 组件，按用途划分为 
 - [FloatButton 悬浮按钮](/components/float-button) —— 默认固定于页面右下角的圆形操作按钮，常用于「新建」「反馈」等快捷操作，支持角标与自定义图标。
 - [SpeedDial 悬浮动作](/components/speed-dial) —— 悬浮主按钮 + 展开子动作列表，常用于「新建/分享」等快捷操作；`aria-expanded` 同步，点击外部/Esc 收起，无孤儿浮层。
 
+## 工作台构件
+
+- [TitleBar 标题栏](/components/titlebar) —— 窗口标题栏与应用级 chrome：可拖动区 + 窗口控制/文档井 + 紧凑/常规两档；面向桌面壳（Electron/Tauri）与「窗口化」Web 工作台。
+- [StatusBar 状态栏](/components/statusbar) —— 底部静默信息条：左右分段单元格 + 可点击 + 后台活动旋转指示 + 警告/错误级语义色；与 `oas-footer` 分工：statusbar 承载状态词汇（计数/选中/同步态），footer 做实体页脚。
+- [Inspector 属性检查器](/components/inspector) —— 右侧（或左侧）对象编辑面板：tab 条 + 可折叠分节 + 标签/控件行；`role="complementary"`，与 `oas-sidebar`（导航菜单）分工：inspector 检查并编辑对象属性。
+- [ActionBar 动作条](/components/action-bar) —— 底部命令条 + 读数井容器：命令按钮组 + 统计/任务进度/媒体传输/音乐节拍读数井，多种表面（charcoal/dark/light）；与 `oas-toolbar`（工具栏角色）分工。
+
 ## 数据展示组件
 
 - [Kanban 看板](/components/kanban) —— 列 + 卡片的看板视图：拖拽换列/列内排序/列重排/WIP 限制/卡片多选/泳道分带，落定派发 oas-change。
@@ -130,6 +139,7 @@ OAS-UI 提供 126 个框架无关的 Web Components 组件，按用途划分为 
 - [Barcode 条码](/components/barcode) —— 基于**纯 TypeScript 零依赖编码器**（自研）的一维条码组件，第一期 6 码制（CODE128/EAN-13/EAN-8/UPC-A/CODE39/ITF-14），可扫性约束内建（静区护栏/固定白底），输出内联 SVG，可下载。
 - [Watermark 水印](/components/watermark) —— 容器级水印层，铺在内容之上且不拦截任何交互，适合敏感信息防泄露。
 - [Collapse 折叠面板](/components/collapse) —— 用于将内容收纳在可折叠的面板中，聚焦关键信息。
+- [Collapsible 折叠容器](/components/collapsible) —— 单区开折叠原语：一个可自由管控的单区折叠容器；collapse 是「多区 + 手风琴」的编排集合，collapsible 是独立单件，适合文件树节点、详情折叠区等场景。
 - [Descriptions 描述列表](/components/descriptions) —— 用于成组展示只读信息，适合详情页场景。
 - [Timeline 时间线](/components/timeline) —— 用于按时间顺序展示一系列事件节点。
 - [List 列表](/components/list) —— 用于展示同类信息集合，可承载标题、描述与扩展操作。
@@ -147,6 +157,14 @@ OAS-UI 提供 126 个框架无关的 Web Components 组件，按用途划分为 
 - [GradientText 渐变文字](/components/gradient-text) —— 以渐变色填充文字的纯展示组件，`background-clip: text` 实现；默认走主题 token 双色渐变，支持任意色标数组与方向。无事件。
 - [Highlight 文本高亮](/components/highlight) —— 文本命中高亮：`text` + `highlight`（空格多词或 JSON 数组）命中片段渲染为 `<mark>`（token 配色，dark 自适应），支持大小写/整词/重音三开关，内容重算后派发 `oas-count`。
 - [SwipeCell 滑动操作](/components/swipe-cell) —— 列表项横向滑动露出操作按钮组：默认插槽为内容层、`slot="actions"` 为操作区，向 inline-start 滑开、按 `threshold` 吸附开合；单开互斥、外点/滚动关闭、Esc 关闭、操作按钮键盘可达；`oas-open` / `oas-close` 落定派发。
+
+## 会话组件
+
+- [Bubble 气泡](/components/bubble) —— 会话消息内容承载面：纯渲染内容气泡（变体/边框/圆角/尾部修饰 + 内容），不掺头像/时间/操作态；与 `oas-message-row` 组合成完整消息，适合 AI 对话、IM 与自然会话流。
+- [Attachment 附件](/components/attachment) —— 会话附件卡：媒体（图片/缩略图）+ 文件名/元信息 + 上传状态机 + 操作按钮（下载/删除/打开），适合会话内发文件、AI 对话图片附件等场景。
+- [MessageScroller 会话滚动容器](/components/message-scroller) —— 会话滚动容器（不持有消息数据）：滚动意图模型——用户在底部时跟随新内容（AI 式），或始终钉底（IM 式）；内置回底按钮；支持历史前插位置保持、异步资源位置保持、轮次锚定（AI「回到最后问题」）、可选的视口内可见性追踪。
+- [Marker 会话标记](/components/marker) —— 会话时间/系统事件标记：日期、状态、边界分隔的轻量文本分隔线，如 IM 的「今天 10:00」时间分隔或群聊的「系统事件」；AI 式对话中的状态分隔也适用。
+- [MessageRow 消息行](/components/message-row) —— 会话消息行（布局壳）：头尾插槽承载头像/名称，默认插槽内嵌 `oas-bubble`，footer 承载发送状态/操作；支持对齐方向与聚类分组。
 
 ## 框架级容器
 

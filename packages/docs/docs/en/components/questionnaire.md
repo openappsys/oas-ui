@@ -1,6 +1,6 @@
 # Questionnaire Multi-step Form
 
-A step-driven form flow orchestrator: step header + progress ("Step n / m") + per-step content panels + per-step validation gating. Ideal for wizards, surveys, and multi-step checkout. Validation reuses the `oas-form` kernel — **place one `<oas-form>` inside each step panel**; moving forward validates the current step and blocks on failure, while going back never validates and panels stay mounted (filled values are preserved).
+A step-driven form flow orchestrator: step header + progress ("Step {current} of {total}") + per-step content panels + per-step validation gating. Ideal for wizards, surveys, and multi-step checkout. Validation reuses the `oas-form` kernel — **place one `<oas-form>` inside each step panel**; moving forward validates the current step and blocks on failure, while going back never validates and panels stay mounted (filled values are preserved).
 
 > Scope: linear gating + optional-step skip + host-defined jumps via `oas-before-change` + **conditional branching via the host composition channel** (`hidden` data bit + `oas-before-change` + `oas-values-change`, see below). No predicate / expression engine is built in — the host owns the full answer data, keeping branch logic testable and vetoable at the application layer. Start/complete pages are not built in; implement draft persistence yourself via `current` + `getValues()`.
 
@@ -198,7 +198,7 @@ Panels stay mounted (only `hidden` toggles): going forward then back keeps fille
 
 ## Custom navigation (hide-header / hide-nav)
 
-`hide-header` / `hide-nav` hide the built-in step header / nav region so the host can fully compose its own.
+`hide-header` / `hide-nav` hide the built-in step header / nav region so the host can fully compose its own (progress and panels are still driven by the component).
 
 <DemoBlock title="hide-nav + external buttons">
   <oas-questionnaire id="q-bare" hide-nav style="width: 100%; max-width: 480px" steps='[{"title":"A"},{"title":"B"}]'>
@@ -405,7 +405,7 @@ onMounted(() => {
 | `progress` | Progress region visibility (`progress="false"` hides it) | `string` | `true` |
 | `progress-variant` | Progress variant: `both` (default, text + bar) / `text` / `bar`; invalid values fall back to `both` | `string` | `both` |
 | `shortcuts` | Keyboard step navigation (opt-in, on when present and not `"false"`): `Alt+←/→` switches steps anywhere inside the component (swallows the default to prevent browser history navigation); bare `←/→` only when focus is outside inputs/editable controls (never hijacks the caret) | `boolean` | — |
-| `size` | Size tier: `xs`/`small`/`medium`/`large`/`xl` (title font density; invalid values fall back to medium + dev warning) | `string` | `medium` |
+| `size` | Size tier: `xs`/`small`/`medium`/`large`/`xl` (title font density; invalid values fall back to medium with a one-time warning (deduped by identical value)) | `string` | `medium` |
 | `skip-text` | "Skip this step" button label (overrides the locale default) | — | — |
 | `steps` | Step data JSON `[{ key?, title, description?, optional?, hidden? }]`; invalid/empty falls back to `[]` | `QuestionnaireStep[] \| string` | `[]` |
 | `validation` | Per-step validation gating (on by default, `validation="false"` for pure navigation; `submit()` always re-validates regardless) | `string` | `true` |

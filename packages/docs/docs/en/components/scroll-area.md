@@ -106,7 +106,7 @@ Scroll events are throttled with rAF and fire `oas-scroll`; `detail` carries `{ 
 
 ## Programmatic scrolling
 
-The component instance exposes `scrollTo(options)` / `scrollToTop()` / `scrollToBottom()` / `scrollIntoView(selectorOrEl)` methods (delegating to native viewport scrolling; `behavior` is smooth by default) for host-controlled programmatic scrolling.
+The component instance exposes `scrollTo(options)` / `scrollToTop()` / `scrollToBottom()` / `scrollIntoView(selectorOrEl)` methods (delegating to native viewport scrolling; only `scrollToTop` / `scrollToBottom` default to smooth scrolling and accept a `behavior` override, while `scrollTo` / `scrollIntoView` pass through native semantics) for host-controlled programmatic scrolling.
 
 <DemoBlock title="Programmatic scroll methods">
   <div style="width: 320px">

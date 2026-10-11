@@ -6,7 +6,7 @@
 
 ## 基础用法
 
-`items` 传 JSON 数组 `[{ label, value, icon? }]`，`icon` 取 `@oas-ui/icons` 的 内置图标名；未指定 `value` 时默认激活第一项。
+`items` 传 JSON 数组 `[{ label, value, icon? }]`，`icon` 取 `@oas-ui/icons` 的 内置图标名；未指定 `value` 时默认激活首个非禁用项。
 
 <DemoBlock title="基础用法">
   <oas-bottom-navigation id="bn-basic" value="home" style="width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"消息","icon":"mail","value":"mail"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
@@ -149,7 +149,7 @@ onMounted(() => {
 不加 prop、纯 CSS 变量开口，dark 下自动走 token：
 
 - `--oas-bottom-navigation-active-color`：激活项颜色，默认主色 token
-- `--oas-bottom-navigation-height`：导航栏高度，默认 `56px`（fixed 模式下固定条高度即此值）
+- `--oas-bottom-navigation-height`：导航栏高度，默认 `56px`（任意布局模式均生效，不限 fixed）
 
 <DemoBlock title="变量定制（激活色 + 高度）">
   <oas-bottom-navigation id="bn-var" value="home" style="width: 100%; max-width: 480px; --oas-bottom-navigation-active-color: var(--oas-color-success-text); --oas-bottom-navigation-height: 64px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>

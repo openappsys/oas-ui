@@ -24,7 +24,8 @@
 
 ## 线型
 
-<DemoBlock title="六种线型">
+<DemoBlock title="variant 线型（默认 solid 实线见上）">
+  <oas-divider variant="solid">solid 实线</oas-divider>
   <oas-divider variant="dashed">dashed 虚线</oas-divider>
   <oas-divider variant="dotted">dotted 点线</oas-divider>
   <oas-divider variant="double">double 双线</oas-divider>

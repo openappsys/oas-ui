@@ -152,7 +152,7 @@ For "click to swap in arbitrary content" (tables, images), no extra component is
       <oas-button id="inplace-edit-btn" size="small">Edit</oas-button>
     </span>
     <span id="inplace-edit" hidden style="display:inline-flex;align-items:center;gap:8px">
-      <input id="inplace-input" value="Display: avatar + name (arbitrary content)" style="height:var(--oas-control-height-sm);padding:0 8px;border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-sm)" />
+      <input id="inplace-input" aria-label="Edit nickname" value="Display: avatar + name (arbitrary content)" style="height:var(--oas-control-height-sm);padding:0 8px;border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-sm)" />
       <oas-button id="inplace-save" size="small" variant="primary">Save</oas-button>
     </span>
   </div>

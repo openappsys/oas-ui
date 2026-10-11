@@ -773,7 +773,7 @@ onMounted(() => {
 | `skidding` | 交叉轴偏移（px，默认 0）：top/bottom 系列沿水平轴（正右负左）、left/right 系列沿垂直轴（正下负上） | — | — |
 | `skip-delay-duration` | 全局延迟组阈值（ms，默认 300）：某 tooltip 关闭后这段时间内打开下一个 tooltip 时跳过 open-delay 立即显示（连续悬停响应连贯）；`"0"` 关闭该行为 | — | — |
 | `touch-delay` | touch 长按触发时长（ms，默认 500）：`trigger` 含 `touch` 时 pointerdown 长按到点打开，提前抬手/移出取消 | — | — |
-| `trigger` | 触发方式（空格分隔多选）：`hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`，默认 `hover focus`；`manual` 完全受控 | `string` | `hover focus touch` |
+| `trigger` | 触发方式（空格分隔多选）：`hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`，默认 `hover focus touch`；`manual` 全受控 | `string` | `hover focus touch` |
 | `trigger-keys` | 指定按键（空格分隔，如 `F1`）：焦点在触发元素上时按该键打开 | `string` | — |
 | `virtual` | 虚拟触发模式：不绑定宿主触发元素，`open` 完全受外部控制，位置由 `virtual-anchor` 或 `virtual-x`/`virtual-y` 指定（适合图表点位、拖拽中的浮层提示） | `boolean` | — |
 | `virtual-anchor` | 虚拟锚点元素选择器（如 `#chart-point-1`），tooltip 按该元素矩形定位；与 `virtual-x`/`virtual-y` 二选一，坐标优先 | — | — |
@@ -785,7 +785,7 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-open-change` | open 状态变化（显示/隐藏）时派发，`detail: { open }` |
+| `oas-open-change` | open 状态变化（显示/隐藏）时派发，`detail: { open, source, reason }` |
 
 #### 插槽
 
@@ -812,4 +812,4 @@ onMounted(() => {
 | `--oas-tooltip-easing` | `ease` |
 | `--oas-tooltip-max-width` | `240px` |
 
-`oas-open-change`：`open` 状态变化（显示/隐藏）时派发，`detail: { open }`。hover / focus 触发显隐；`role="tooltip"`，浮层 `pointer-events: none` 不拦截交互。
+`oas-open-change`：`open` 状态变化（显示/隐藏）时派发，`detail: { open, source, reason }`（`source` 为触发通道，`reason` 为具体原因；外部受控写属性时 `source` 为 `attribute`）。hover / focus 触发显隐；`role="tooltip"`，浮层 `pointer-events: none` 不拦截交互。

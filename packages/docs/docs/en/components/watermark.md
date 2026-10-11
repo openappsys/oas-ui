@@ -7,7 +7,7 @@ Rendering engine: text and grayscale image watermarks are drawn on a canvas (the
 ## Text Watermark
 
 <DemoBlock title="Basic text watermark">
-  <oas-watermark text="内部资料 · CONFIDENTIAL" repeat>
+  <oas-watermark text="Internal use only · CONFIDENTIAL" repeat>
     <div style="height: 180px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
       The text watermark is tiled; any content inside the container can be passed in as the slot
     </div>
@@ -20,10 +20,10 @@ Rendering engine: text and grayscale image watermarks are drawn on a canvas (the
 
 <DemoBlock title="Single centered + opacity">
   <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap">
-    <oas-watermark text="机密" opacity="0.3" style="flex: 1; min-width: 220px">
+    <oas-watermark text="CONFIDENTIAL" opacity="0.3" style="flex: 1; min-width: 220px">
       <div style="height: 140px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></div>
     </oas-watermark>
-    <oas-watermark text="已审核" repeat style="flex: 1; min-width: 220px">
+    <oas-watermark text="REVIEWED" repeat style="flex: 1; min-width: 220px">
       <div style="height: 140px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></div>
     </oas-watermark>
   </div>
@@ -55,7 +55,7 @@ With `grayscale`, the image watermark is converted to grayscale via canvas `filt
 ## No Interaction Interception
 
 <DemoBlock title="Normal content interaction">
-  <oas-watermark text="演示水印" repeat>
+  <oas-watermark text="DEMO WATERMARK" repeat>
     <div style="height: 120px; display: flex; align-items: center; justify-content: center; gap: var(--oas-space-3)">
       <button class="wm-btn" onclick="window.message && window.message.success('The button is still clickable')">Clickable button</button>
       <button class="wm-btn">Another button</button>
@@ -69,7 +69,7 @@ With `grayscale`, the image watermark is converted to grayscale via canvas `filt
 ## Empty Container
 
 <DemoBlock title="Watermark shown without content">
-  <oas-watermark text="水印" repeat style="display: block; height: 120px"></oas-watermark>
+  <oas-watermark text="WATERMARK" repeat style="display: block; height: 120px"></oas-watermark>
 </DemoBlock>
 
 When the container has no slot content at all, the watermark layer still renders.
@@ -79,20 +79,20 @@ When the container has no slot content at all, the watermark layer still renders
 <DemoBlock title="Multi-line text / rotate / font family">
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--oas-space-4); width: 100%">
     <oas-watermark text='["内部资料","CONFIDENTIAL"]' repeat rotate="-22" width="200" height="100" style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
-    <oas-watermark text="斜纹 -45°" repeat rotate="-45" font-size="20" font-weight="700" style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
-    <oas-watermark text="Georgia 衬线" repeat font-family="Georgia, serif" color="geekblue" style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+    <oas-watermark text="Diagonal -45°" repeat rotate="-45" font-size="20" font-weight="700" style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+    <oas-watermark text="Georgia serif" repeat font-family="Georgia, serif" color="geekblue" style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
   </div>
 </DemoBlock>
 
-`text` supports a JSON array (or `\n`) for multiple lines; `rotate` controls the angle (default -30); `font-size` / `font-weight` / `font-family` are applied to the canvas text; `color` accepts 11 preset names (resolved to `--oas-preset-*` tokens, dark-adaptive) or any CSS color value. By default the watermark follows the theme text color (visible in dark mode too, and repainted automatically on theme switch).
+`text` supports a JSON array (or `\n`) for multiple lines; `rotate` controls the angle (default -30); `font-size` / `font-weight` / `font-family` are applied to the canvas text; `color` accepts 11 preset names (resolved to `--oas-preset-*` tokens, dark-adaptive) or any CSS color value. By default the watermark follows the theme text color (visible in dark mode too, and repainted automatically on theme switch). The first tile intentionally keeps CJK text (`["内部资料","CONFIDENTIAL"]`) to demonstrate multi-font rendering through the canvas font stack.
 
 ## Gap and Offset
 
 <DemoBlock title="gap / offset tiling parameters">
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--oas-space-4); width: 100%">
-    <oas-watermark text="默认间隙" repeat style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
-    <oas-watermark text="宽间隙" repeat gap="[180, 120]" style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
-    <oas-watermark text="带偏移" repeat gap="[140, 90]" offset="[20, 8]" style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+    <oas-watermark text="Default gap" repeat style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+    <oas-watermark text="Wide gap" repeat gap="[180, 120]" style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+    <oas-watermark text="With offset" repeat gap="[140, 90]" offset="[20, 8]" style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
   </div>
 </DemoBlock>
 
@@ -102,8 +102,8 @@ When the container has no slot content at all, the watermark layer still renders
 
 <DemoBlock title="staggered odd/even row offset">
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--oas-space-4); width: 100%">
-    <oas-watermark text="规则网格" repeat gap="[140, 90]" style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
-    <oas-watermark text="错位排布" repeat gap="[140, 90]" staggered style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+    <oas-watermark text="Regular grid" repeat gap="[140, 90]" style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+    <oas-watermark text="Staggered" repeat gap="[140, 90]" staggered style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
   </div>
 </DemoBlock>
 
@@ -129,7 +129,7 @@ With `staggered`, a second background layer offset by half a tile staggers the o
 ## Movable Watermark
 
 <DemoBlock title="movable: drag the watermark">
-  <oas-watermark id="wm-movable" text="拖动我" repeat movable z-index="10">
+  <oas-watermark id="wm-movable" text="Drag me" repeat movable z-index="10">
     <div style="height: 150px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
       Press and drag on the watermark (grab cursor); the pattern follows the gesture and offset is written back live
     </div>
@@ -178,7 +178,7 @@ onMounted(async () => {
   // Fullscreen watermark toggle (the demo element is appended to body so it never stretches the docs layout)
   const full = document.createElement('oas-watermark')
   full.id = 'wm-fullscreen-demo'
-  full.setAttribute('text', '全屏水印 · FULLSCREEN')
+  full.setAttribute('text', 'Fullscreen watermark · FULLSCREEN')
   full.setAttribute('repeat', '')
   document.body.appendChild(full)
   const toggle = document.querySelector('#wm-fullscreen-toggle')

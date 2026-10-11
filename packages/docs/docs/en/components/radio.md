@@ -36,7 +36,7 @@ Radios sharing a `name` are mutually exclusive (the component syncs across Shado
 
 The group is controlled via `value`; each item's `value` acts as the option identifier, and the group manages exclusivity.
 
-The group follows the WAI-ARIA radiogroup keyboard pattern: **Tab enters the group once (stopping at the checked item, or the first item when none is checked)**, `↑` `↓` `←` `→` move and select immediately (wrapping around, skipping disabled items), `Home` / `End` jump to the first/last enabled item. Native inputs each live inside their own Shadow DOM, so the browser's same-name arrow grouping breaks across shadow boundaries — the component fills the gap with a host-level roving tabindex and arrow key handling.
+The group follows the WAI-ARIA radiogroup keyboard pattern: **Tab enters the group once (stopping at the checked item, or the first non-disabled / non-readonly item when none is checked)**, `↑` `↓` `←` `→` move and select immediately (wrapping around, skipping disabled items), `Home` / `End` jump to the first/last enabled item. Native inputs each live inside their own Shadow DOM, so the browser's same-name arrow grouping breaks across shadow boundaries — the component fills the gap with a host-level roving tabindex and arrow key handling.
 
 ## Single Disabled
 

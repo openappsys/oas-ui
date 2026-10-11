@@ -78,7 +78,6 @@ const theme = ref('light')
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-full, 999px);
-  border-radius: 999px;
   cursor: pointer;
 }
 .sg-btn.sg-active {

@@ -87,7 +87,7 @@ On narrow screens the sidebar automatically becomes an overlay drawer: the float
   <div style="height: 240px; width: 100%; display: flex">
     <oas-sidebar id="sidebar-active" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Dashboard","value":"dashboard","icon":"📊"},{"label":"Orders","value":"orders","icon":"📦"},{"label":"Settings","value":"settings","icon":"⚙️"}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-      External buttons set <code>active</code> to control the current highlighted item; clearing it restores the default (no highlight, last item).
+      External buttons set <code>active</code> to control the current highlighted item; clearing it leaves no item highlighted.
     </div>
   </div>
 </DemoBlock>

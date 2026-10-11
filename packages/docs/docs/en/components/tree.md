@@ -49,7 +49,7 @@ With `checkable` the model is **cascading** (same semantics as `oas-tree-select`
   <div style="width: 100%">
     <oas-tree checkable check-strictly default-expand-all auto-expand-parent data='[{"key":"x","label":"Parent X (no cascading)","children":[{"key":"x-1","label":"Child 1"},{"key":"x-2","label":"Child 2"}]},{"key":"y","label":"Parent Y"}]'></oas-tree>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      <code>check-strictly</code> disables cascading; <code>default-expand-all</code> expands everything initially; <code>auto-expand-parent</code> auto-expands ancestors on selection.
+      <code>check-strictly</code> disables cascading; <code>default-expand-all</code> expands everything initially; <code>auto-expand-parent</code> auto-fills ancestor expansion when the host writes the <code>expanded</code> attribute (checking / clicking does not trigger it).
     </p>
   </div>
 </DemoBlock>
@@ -172,7 +172,7 @@ With `lazy`, nodes without `children` and not marked `isLeaf` / `loaded` are con
   </div>
 </DemoBlock>
 
-With `draggable`, nodes can be dragged to reorder or reparent: dropping on the upper half of a target row inserts before it (`before`), the lower half inserts after it (`after`), and the middle (when the target is expandable) moves it inside (`inner`). An insertion line and highlight feedback are shown during the drag; on release, `oas-node-drop` is emitted (`detail: { dragKey, dropKey, position }`) and the host updates the data and resets the `data` attribute. Dropping on empty tree space moves the node to the root (`dropKey` empty string, `position: 'inner'`).
+With `draggable`, nodes can be dragged to reorder or reparent: dropping on the top 25% of a target row inserts before it (`before`), the bottom 25% inserts after it (`after`), and the middle (when the target is expandable) moves it inside (`inner`; when the target is not expandable the middle falls back to `before` / `after` by the upper / lower half). An insertion line and highlight feedback are shown during the drag; on release, `oas-node-drop` is emitted (`detail: { dragKey, dropKey, position }`) and the host updates the data and resets the `data` attribute. Dropping on empty tree space moves the node to the root (`dropKey` empty string, `position: 'inner'`).
 
 The full drag lifecycle is also observable: `oas-node-dragstart` (`detail: { dragKey }`), `oas-node-dragover` / `oas-node-dragleave` (`detail: { dragKey, dropKey, position }`; `dropKey` is empty and `position` is `'inner'` over blank space), and `oas-node-dragend` (`detail: { dragKey }`) — useful for custom drag hints or cross-tree interactions.
 
@@ -215,7 +215,7 @@ Setting `height` enables virtualization (with a fixed `row-height`): the tree re
   </div>
 </DemoBlock>
 
-Node content can be provided as a static skeleton via `template[slot="node"]` (the `[data-node-label]` node is bound to the node label automatically), and `template[slot="toggle"]` replaces the default expand arrow. After each node row renders, `oas-node-render` is emitted (`detail: { node, element }`); the host can listen and rewrite `element` into any icon / rich text. In this example the task-count badge is written by that event. Keyboard access and ARIA (`treeitem` / `aria-expanded` / `aria-level`) stay intact under custom rendering.
+Node content can be provided as a static skeleton via `template[slot="node"]` (the `[data-node-label]` node is bound to the node label automatically), and `template[slot="toggle"]` replaces the default expand arrow. After each node row renders, `oas-node-render` is emitted (`detail: { node, element, level, expanded, selected, checked }`); the host can listen and rewrite `element` into any icon / rich text. In this example the task-count badge is written by that event. Keyboard access and ARIA (`treeitem` / `aria-expanded` / `aria-level`) stay intact under custom rendering.
 
 <style>
   /* demo node custom-render styles: slot content lives in light DOM with unique class names,
@@ -671,7 +671,7 @@ onMounted(() => {
 | `oas-node-dragstart` | Dispatched when a drag starts, `detail: { dragKey }` |
 | `oas-node-drop` | Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root |
 | `oas-node-rename` | Inline rename committed (Enter / blur), `detail: { key, label, oldLabel }`; data stays host-controlled — the component does not mutate the model, so the new label only shows once the host updates `data` (keeps the old value otherwise; Esc cancel does not emit) |
-| `oas-node-render` | Dispatched for each rendered node row, `detail: { node, element }` (element is the node label container; the host can rewrite it into icon / rich text) |
+| `oas-node-render` | Dispatched for each rendered node row, `detail: { node, element, level, expanded, selected, checked }` (element is the node label container; the host can rewrite it into icon / rich text) |
 | `oas-select` | Node selected, `detail: { key, selected }` |
 
 #### Slots

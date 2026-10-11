@@ -160,4 +160,4 @@
 | --- | --- |
 | `column` | 指定子项所属列（1-based）：CSS columns 实现下按列重排 DOM，把子项物理移动到目标列；配合响应式列数时按当前生效列数重算。非法值（非整数/≤0/超出当前列数）忽略 + dev 告警 |
 
-部件：`::part(masonry)` 瀑布流容器。
+部件：`::part(masonry)` 瀑布流容器、`::part(masonry-item)` 渲染项（items 通道每项）。

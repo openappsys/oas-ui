@@ -205,11 +205,11 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `local` | Mount target container selector (CSS selector/HTMLElement); defaults to a global bar at the top of body | — | — |
+| `local` | Local-mode marker (boolean): set automatically when the imperative API is given a `to` container; the component switches to absolute positioning inside that container. Does not accept a selector/element — the mount target is decided by the imperative `to` option | — | — |
 | `position` | Position: top (default) / bottom | — | — |
 | `reverse` | Reverse direction (RTL progress flows right to left) | — | — |
 | `speed` | Base advance speed (ms, default 200); start(speed) overrides | `string` | `200` |
-| `status` | Current status: loading/finish/error (activity query) | `string` | — |
+| `status` | Current status (activity query): the component only writes `error` at the error terminal state and removes the attribute otherwise (never writes `loading`/`finish`) | `string` | — |
 
 #### Events
 
@@ -217,7 +217,7 @@ onMounted(async () => {
 | --- | --- |
 | `oas-error` | Dispatched when error() finalizes in the error state, `detail: { count: this.sessionCount }` |
 | `oas-finish` | Dispatched when finish() finalizes, `detail: { count: this.sessionCount }` |
-| `oas-start` | Dispatched when start() begins, `detail: { count: this.sessionCount }` |
+| `oas-start` | Dispatched when the first session of a batch calls start() (subsequent start() calls of a concurrent batch do not re-dispatch), `detail: { count: this.sessionCount }` |
 
 #### CSS Variables
 

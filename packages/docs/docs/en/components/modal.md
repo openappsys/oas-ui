@@ -43,7 +43,7 @@ A modal dialog for interrupting flows that require user confirmation or input.
   <oas-modal id="modal-nomask" title="Confirmation required" no-mask-close>
     <p>Clicking the mask won't close it; use the buttons or Esc.</p>
   </oas-modal>
-</DemoBlock>. Non-modal semantics follow `dialog.show()`: `aria-modal="false"`, no focus steal, no Tab trapping
+</DemoBlock>
 
 ## Custom width
 
@@ -591,7 +591,7 @@ onMounted(async () => {
         title: 'Set password',
         inputType: 'password',
         placeholder: '8-16 chars, letters and digits',
-        inputPattern: '^(?=.*[A-Za-z])[?=.*\\d](A-Za-z\\d){8,16}$',
+        inputPattern: '^(?=.*[A-Za-z])(?=.*\\d)(?:[A-Za-z\\d]{8,16})$',
         inputErrorMessage: '8-16 chars including both letters and digits',
       })
       .then((r) => {
