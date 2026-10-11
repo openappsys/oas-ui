@@ -55,13 +55,14 @@ const STYLE = `
 .content {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
+  width: 100%;
   min-width: 0;
-  /* 方向：text-align 继承给 slotted 气泡（气泡宿主 display:block + inline-block 靠 text-align 定位） */
+  /* 方向：text-align 继承给 slotted 气泡（气泡宿主 display:block，内容 inline-block 靠 text-align 定位）；
+     stretch + width:100% 让气泡宿主铺满内容区，气泡 max-width:80% 才是「容器宽 80%」而非自身 max-content 的 80% */
   text-align: start;
 }
 :host([align="end"]) .content {
-  align-items: flex-end;
   text-align: end;
 }
 .content ::slotted(*) {
