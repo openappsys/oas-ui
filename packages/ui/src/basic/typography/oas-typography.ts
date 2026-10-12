@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type TextType = 'default' | 'secondary' | 'success' | 'warning' | 'danger' | 'disabled'
 
@@ -15,7 +16,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-text] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
+  devWarn(`[oas-text] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
 }
 
 /** align 合法档位（text-align 的 start/end 为逻辑值，RTL 安全；start 对应 left、end 对应 right） */

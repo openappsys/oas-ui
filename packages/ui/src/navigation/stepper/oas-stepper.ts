@@ -4,6 +4,7 @@ import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import type { OASStepperPanel } from './oas-stepper-panel.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** 步骤状态：wait 等待 / process 进行中 / finish 完成 / error 错误（语义对齐 oas-steps） */
 export type StepperStatus = 'wait' | 'process' | 'finish' | 'error'
@@ -27,7 +28,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-stepper] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  devWarn(`[oas-stepper] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
 
 /** 实例唯一 id 前缀（tab/panel 关联用；模块级计数器，确定性可复现） */

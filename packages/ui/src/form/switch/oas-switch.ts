@@ -3,6 +3,7 @@ import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type SwitchSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
@@ -17,7 +18,7 @@ let switchIdCounter = 0
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-switch] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  devWarn(`[oas-switch] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认（非法值不告警，保持输出干净） */

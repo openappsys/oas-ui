@@ -1115,8 +1115,9 @@ export class OASCombobox extends OASFormElement {
       style.textContent = VIRTUAL_ROW_STYLE
       vlistRoot.appendChild(style)
     }
-    // 视口键盘可达性由 input 的 combobox 键盘流负责，去掉 vlist 内层 tabindex 避免多余 Tab 停靠点
-    vlistRoot?.querySelector<HTMLElement>('.viewport')?.removeAttribute('tabindex')
+    // 视口键盘可达性由 input 的 combobox 键盘流负责，经 viewportFocusable 属性通道关闭
+    // （直接 removeAttribute 会被 vlist 下次 update 的 syncViewportFocusable 加回——cascader 同款先例）
+    vlist.viewportFocusable = false
     vlist.setAttribute('items-role', 'listbox')
     vlist.setAttribute('item-role', 'presentation')
     vlist.setAttribute('height', '240')

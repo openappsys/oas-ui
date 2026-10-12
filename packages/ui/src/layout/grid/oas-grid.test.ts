@@ -439,6 +439,17 @@ describe('OASGrid collapsed-rows 折叠行（PRD P2）', () => {
     expect(el.hasAttribute('collapsed'), 'collapsed 受控保留（宿主接管）').toBe(true)
   })
 
+  it('展开后内容缩减到不超限时：尾格收起入口同步消失（不落陈旧闩）', async () => {
+    const grid = mountGrid({ 'collapsed-rows': '1' })
+    tailBtn(grid).click() // 展开 → collapseEverExpanded=true、collapsed 移除
+    expect(tail(grid).hidden).toBe(false)
+    // 缩减到 3 项（1 行，不超限）——重算后尾格应隐藏
+    ;[...grid.querySelectorAll('oas-grid-item')].slice(3).forEach((c) => c.remove())
+    await Promise.resolve()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(tail(grid).hidden).toBe(true)
+  })
+
   it('collapsed-rows=2（行数≥总行数）：无可折叠内容——全部可见、尾格隐藏、不写 collapsed（不误导宿主读态）', () => {
     const grid = mountGrid({ 'collapsed-rows': '2' })
     expect([...items(grid)].every((i) => !i.hasAttribute('hidden'))).toBe(true)

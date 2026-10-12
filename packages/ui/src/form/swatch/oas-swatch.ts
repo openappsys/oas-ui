@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES, type OasSize } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -86,7 +87,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-swatch] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  devWarn(`[oas-swatch] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
 
 /**

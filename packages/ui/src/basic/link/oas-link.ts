@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type LinkType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
 export type LinkUnderline = 'always' | 'hover' | 'never'
@@ -43,7 +44,7 @@ function warnOnce(kind: string, raw: string, fallback: string, valid: readonly s
   const key = `${kind}:${raw}`
   if (warnedValues.has(key)) return
   warnedValues.add(key)
-  console.warn(`[oas-link] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
+  devWarn(`[oas-link] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
 }
 
 const STYLE = `

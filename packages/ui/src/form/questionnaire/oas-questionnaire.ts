@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /**
  * 步骤数据契约：线性门控 + 可选跳过 + 条件分支（宿主组合通道）。
@@ -24,7 +25,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-questionnaire] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  devWarn(`[oas-questionnaire] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
 
 const VALID_PROGRESS_VARIANTS = new Set(['text', 'bar', 'both'])

@@ -3,6 +3,7 @@ import { pickOnColor as pickOnColorBase } from '../../shared/on-color.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { hintUnresolvedIcon } from '../../shared/icon-hint.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type ButtonType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'text'
 export type ButtonSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
@@ -33,7 +34,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-button] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  devWarn(`[oas-button] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
 
 /**

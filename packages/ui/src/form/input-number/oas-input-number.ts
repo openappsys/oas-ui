@@ -1,5 +1,6 @@
 import { OASFormElement } from '@oas-ui/core'
 import { beginScrub, scrubValueAt, SCRUB_PX_PER_STEP } from '../../shared/scrub.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /**
  * OASInputNumber 数字输入框。
@@ -29,7 +30,7 @@ function warnOnce(kind: string, raw: string, fallback: string, valid: readonly s
   const key = `${kind}:${raw}`
   if (warnedValues.has(key)) return
   warnedValues.add(key)
-  console.warn(`[oas-input-number] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
+  devWarn(`[oas-input-number] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
 }
 
 /** 枚举归一化：合法值原样返回，空/非法值回落默认并告警（空值静默回落） */

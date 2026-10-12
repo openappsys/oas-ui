@@ -544,3 +544,53 @@ test('attachment-group RTL：data-rtl 反射 + 边缘可滚按逻辑方向归一
   expect(probe.scrollable, 'RTL 内联末端：起始端可滚（逻辑 start）').toContain('start')
   expect(probe.mask, 'RTL 下 start 渐隐方向翻转（to left，淡出右缘）').toContain('to left')
 })
+
+// —— 缺陷回归：bubble reactions 的 side/align 曾在块布局宿主下不生效（order/align-self 无效）——
+// 修复为 flex 列容器后，用真布局几何断言防回归
+test('bubble reactions：side=top 反应条在气泡上方、align 显式覆盖对齐（flex 布局生效）', async ({ page }) => {
+  await page.goto('/components/bubble.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-bubble')
+  const geo = await page.evaluate(() => {
+    const mk = (attrs: Record<string, string>, align?: string) => {
+      const el = document.createElement('oas-bubble')
+      el.setAttribute('reactions', JSON.stringify([{ emoji: '👍', count: 2 }]))
+      if (align) el.setAttribute('align', align)
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      el.innerHTML = '<p>消息体文本</p>'
+      el.style.cssText = 'position:fixed;top:0;left:0;width:400px;z-index:9999;background:#fff'
+      document.body.appendChild(el)
+      const bubble = (el.shadowRoot!.querySelector('[part="bubble"]') as HTMLElement).getBoundingClientRect()
+      const reactions = (el.shadowRoot!.querySelector('[part="reactions"]') as HTMLElement).getBoundingClientRect()
+      const host = el.getBoundingClientRect()
+      el.remove()
+      return { host, bubble, reactions }
+    }
+    const round = (r: { host: DOMRect; bubble: DOMRect; reactions: DOMRect }) => ({
+      hostLeft: r.host.left,
+      hostRight: r.host.right,
+      bubbleTop: r.bubble.top,
+      bubbleBottom: r.bubble.bottom,
+      bubbleLeft: r.bubble.left,
+      bubbleRight: r.bubble.right,
+      reactionsTop: r.reactions.top,
+      reactionsBottom: r.reactions.bottom,
+      reactionsLeft: r.reactions.left,
+      reactionsRight: r.reactions.right,
+    })
+    return {
+      bottom: round(mk({})),
+      top: round(mk({ 'reactions-side': 'top' })),
+      alignEnd: round(mk({ 'reactions-align': 'end' })),
+      hostEndAlignStart: round(mk({ 'reactions-align': 'start' }, 'end')),
+    }
+  })
+
+  // 缺省（bottom）：反应条在气泡下方
+  expect(geo.bottom.reactionsTop).toBeGreaterThanOrEqual(geo.bottom.bubbleBottom - 0.5)
+  // side=top：反应条在气泡上方
+  expect(geo.top.reactionsBottom).toBeLessThanOrEqual(geo.top.bubbleTop + 0.5)
+  // reactions-align=end：反应条右缘与宿主右缘对齐（≤1px 容差）
+  expect(Math.abs(geo.alignEnd.reactionsRight - geo.alignEnd.hostRight)).toBeLessThanOrEqual(1)
+  // 宿主 align=end + reactions-align=start：显式覆盖优先，反应条左缘贴宿主左缘
+  expect(Math.abs(geo.hostEndAlignStart.reactionsLeft - geo.hostEndAlignStart.hostLeft)).toBeLessThanOrEqual(1)
+})

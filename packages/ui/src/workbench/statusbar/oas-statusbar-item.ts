@@ -12,9 +12,7 @@ function normalizeStatus(raw: string): StatusbarItemStatus {
   if ((VALID_STATUS as readonly string[]).includes(raw)) return raw as StatusbarItemStatus
   if (!warnedStatuses.has(raw)) {
     warnedStatuses.add(raw)
-    console.warn(
-      `[oas-statusbar-item] 非法 status "${raw}"，已回落 default；合法值：default/info/warning/error/progress`,
-    )
+    devWarn(`[oas-statusbar-item] 非法 status "${raw}"，已回落 default；合法值：default/info/warning/error/progress`)
   }
   return 'default'
 }
@@ -295,6 +293,7 @@ export class OASStatusbarItem extends OASElement {
 
 /** 从内置图标运行时取 path（@oas-ui/icons 图标 opt-in 后统一走 runtime 查询，组件 chrome 图标同一来源） */
 import { lookupIcon } from '@oas-ui/icons/runtime'
+import { devWarn } from '../../shared/dev-warn.js'
 function iconPathOf(name: string): string | null {
   const path = lookupIcon(name)
   return typeof path === 'string' ? path : null

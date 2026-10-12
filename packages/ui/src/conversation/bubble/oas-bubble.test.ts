@@ -151,6 +151,11 @@ describe('OASBubble', () => {
     expect(css).toContain(':host([reactions-side="top"])')
     expect(css).toContain(':host([reactions-align="end"])')
     expect(css).toContain(':host([reactions-align="start"])')
+    // 宿主为 flex 列容器（order/align-self 生效的前提——块布局下这两条规则无效）
+    expect(css).toMatch(/:host\s*\{[^}]*display:\s*flex/)
+    expect(css).toMatch(/:host\s*\{[^}]*flex-direction:\s*column/)
+    // 气泡不拉伸（align-self 显式锚定两端）
+    expect(css).toMatch(/\.bubble\s*\{[^}]*align-self:\s*flex-start/)
     // 反应条数字与颜色全走 token（无硬编码色）
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
     expect(css).not.toMatch(/rgba?\(/)

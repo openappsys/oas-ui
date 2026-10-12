@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** size 合法值：compact（默认，34px）/ large（68px，控件保持紧凑） */
 export type TitlebarSize = 'compact' | 'large'
@@ -16,7 +17,7 @@ function normalizeSize(raw: string): TitlebarSize {
   if ((VALID_SIZES as readonly string[]).includes(raw)) return raw as TitlebarSize
   if (!warnedSizes.has(raw)) {
     warnedSizes.add(raw)
-    console.warn(`[oas-titlebar] 非法 size "${raw}"，已回落 compact；合法值：compact/large`)
+    devWarn(`[oas-titlebar] 非法 size "${raw}"，已回落 compact；合法值：compact/large`)
   }
   return 'compact'
 }

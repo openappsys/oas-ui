@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -76,7 +77,7 @@ const warnedBreakpoints = new Set<string>()
 function warnBreakpoint(name: string): void {
   if (warnedBreakpoints.has(name)) return
   warnedBreakpoints.add(name)
-  console.warn(`[oas-grid] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
+  devWarn(`[oas-grid] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
 }
 
 const warnedColumnValues = new Set<string>()
@@ -85,7 +86,7 @@ const warnedColumnValues = new Set<string>()
 function warnColumnValue(value: string): void {
   if (warnedColumnValues.has(value)) return
   warnedColumnValues.add(value)
-  console.warn(`[oas-grid] 断点 columns 值 "${value}" 非法，已丢弃该断点规则；合法值：正整数`)
+  devWarn(`[oas-grid] 断点 columns 值 "${value}" 非法，已丢弃该断点规则；合法值：正整数`)
 }
 
 const warnedColumnBases = new Set<string>()
@@ -94,7 +95,7 @@ const warnedColumnBases = new Set<string>()
 function warnColumnBase(value: string): void {
   if (warnedColumnBases.has(value)) return
   warnedColumnBases.add(value)
-  console.warn(`[oas-grid] columns 基础值 "${value}" 非法，已回落 1 列；合法值：正整数`)
+  devWarn(`[oas-grid] columns 基础值 "${value}" 非法，已回落 1 列；合法值：正整数`)
 }
 
 const warnedMinChildWidths = new Set<string>()
@@ -103,7 +104,7 @@ const warnedMinChildWidths = new Set<string>()
 function warnMinChildWidth(value: string): void {
   if (warnedMinChildWidths.has(value)) return
   warnedMinChildWidths.add(value)
-  console.warn(`[oas-grid] min-child-width 应为单个长度值（如 200px 或 180），非法值 "${value}" 已忽略（回落默认列数）`)
+  devWarn(`[oas-grid] min-child-width 应为单个长度值（如 200px 或 180），非法值 "${value}" 已忽略（回落默认列数）`)
 }
 
 /**
@@ -160,7 +161,7 @@ const warnedJustify = new Set<string>()
 function warnJustifyValue(value: string): void {
   if (warnedJustify.has(value)) return
   warnedJustify.add(value)
-  console.warn(`[oas-grid] 非法 justify "${value}"，已回落 stretch；合法值：start/center/end/stretch`)
+  devWarn(`[oas-grid] 非法 justify "${value}"，已回落 stretch；合法值：start/center/end/stretch`)
 }
 
 const warnedAlign = new Set<string>()
@@ -169,7 +170,7 @@ const warnedAlign = new Set<string>()
 function warnAlignValue(value: string): void {
   if (warnedAlign.has(value)) return
   warnedAlign.add(value)
-  console.warn(`[oas-grid] 非法 align "${value}"，已回落 stretch；合法值：start/center/end/stretch/baseline`)
+  devWarn(`[oas-grid] 非法 align "${value}"，已回落 stretch；合法值：start/center/end/stretch/baseline`)
 }
 
 export class OASGrid extends OASElement {
@@ -490,13 +491,12 @@ export class OASGrid extends OASElement {
       }
     })
 
-    // 尾格显隐：折叠且有内容被折叠（或展开过需要折回入口）时可见
-    const tailVisible = collapsed ? totalRows > maxRows : this.collapseEverExpanded
+    // 全量展开本来就是完整形态：无需收起入口（自然态）——先复位闩再算尾格显隐，防陈旧闩滞留
     if (this.collapseEverExpanded && !collapsed && totalRows <= maxRows) {
-      // 全量展开本来就是完整形态：无需收起入口（自然态）。
-      // 注意：tailVisible 已在上方取过旧值 true，本轮尾格仍显示收起入口，复位从下次重算起生效
       this.collapseEverExpanded = false
     }
+    // 尾格显隐：折叠且有内容被折叠（或展开过需要折回入口）时可见
+    const tailVisible = collapsed ? totalRows > maxRows : this.collapseEverExpanded
     tail.hidden = !tailVisible
     if (tailVisible) {
       // 尾格占末可见行剩余列；剩余为 0（整行排满）时独占整行

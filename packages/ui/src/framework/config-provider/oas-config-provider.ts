@@ -1,4 +1,5 @@
 import { OASElement, notifyConfigProviders } from '@oas-ui/core'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -72,7 +73,7 @@ export class OASConfigProvider extends OASElement {
       this.setAttribute('dir', 'ltr')
       if (!warnedDirection.has(direction)) {
         warnedDirection.add(direction)
-        console.warn(`[oas-config-provider] 非法 direction "${direction}"，已回落 ltr；合法值：ltr/rtl`)
+        devWarn(`[oas-config-provider] 非法 direction "${direction}"，已回落 ltr；合法值：ltr/rtl`)
       }
     } else {
       this.removeAttribute('dir')
@@ -88,7 +89,7 @@ export class OASConfigProvider extends OASElement {
         this.style.removeProperty('--oas-z-index-base')
         if (!warnedZIndex.has(z)) {
           warnedZIndex.add(z)
-          console.warn(`[oas-config-provider] 非法 z-index "${z}"，已忽略；合法值：正整数`)
+          devWarn(`[oas-config-provider] 非法 z-index "${z}"，已忽略；合法值：正整数`)
         }
       }
     } else {
@@ -106,7 +107,7 @@ export class OASConfigProvider extends OASElement {
       } catch {
         if (!warnedConfig.has(config)) {
           warnedConfig.add(config)
-          console.warn(`[oas-config-provider] 非法 config JSON，已忽略：${config}`)
+          devWarn(`[oas-config-provider] 非法 config JSON，已忽略：${config}`)
         }
       }
     }

@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -301,7 +302,7 @@ function parseSpinVariant(raw: string): string {
   if (SPIN_VARIANTS.has(raw)) return raw
   if (!warnedSpinVariants.has(raw)) {
     warnedSpinVariants.add(raw)
-    console.warn(`[oas-spin] 非法 variant "${raw}"，已回落 ring；合法值：ring/dot/bars`)
+    devWarn(`[oas-spin] 非法 variant "${raw}"，已回落 ring；合法值：ring/dot/bars`)
   }
   return 'ring'
 }
@@ -433,7 +434,7 @@ export class OASSpin extends OASElement {
     if (parsed.kind === 'invalid') {
       if (!warnedSpinSizes.has(parsed.raw)) {
         warnedSpinSizes.add(parsed.raw)
-        console.warn(
+        devWarn(
           `[oas-spin] 非法 size "${parsed.raw}"，已回落 medium；合法值：xs/small/medium/large/xl 档位，或 CSS 尺寸（28 / 28px / 2rem / calc()）`,
         )
       }
@@ -590,7 +591,7 @@ export class OASSpin extends OASElement {
       if (Number.isFinite(n)) value = Math.min(100, Math.max(0, n))
       else if (!warnedSpinPercents.has(raw)) {
         warnedSpinPercents.add(raw)
-        console.warn(`[oas-spin] 非法 percent "${raw}"，已忽略；合法值：0-100 数字或 "auto"`)
+        devWarn(`[oas-spin] 非法 percent "${raw}"，已忽略；合法值：0-100 数字或 "auto"`)
       }
     }
     const determinate = value >= 0 && !hasIcon

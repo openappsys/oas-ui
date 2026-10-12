@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type DividerDirection = 'horizontal' | 'vertical'
 /** 内容位置：水平布局 left/center/right，垂直布局 top/center/bottom（跨方向使用非法词会回落 center 并告警） */
@@ -47,7 +48,7 @@ function warnOnce(kind: string, raw: string, fallback: string, valid: readonly s
   const key = `${kind}:${raw}`
   if (warnedValues.has(key)) return
   warnedValues.add(key)
-  console.warn(`[oas-divider] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
+  devWarn(`[oas-divider] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
 }
 
 const STYLE = `

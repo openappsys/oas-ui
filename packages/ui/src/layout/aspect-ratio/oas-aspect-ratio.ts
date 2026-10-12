@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -37,7 +38,7 @@ const warnedInvalidRatio = new Set<string>()
 function warnInvalidRatio(value: string): void {
   if (warnedInvalidRatio.has(value)) return
   warnedInvalidRatio.add(value)
-  console.warn(
+  devWarn(
     `[oas-aspect-ratio] 非法 ratio "${value}"，已回落 1 / 1；` +
       '合法值：square/landscape/portrait/wide/ultrawide/golden、分式（16/9、4:3）、小数（1.5）',
   )

@@ -4,6 +4,7 @@ import { cssVarPx } from '../../shared/css-var.js'
 import { closePath } from '@oas-ui/icons/icons/close'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { registeredPopoverCapabilities, onPopoverCapabilityRegistered } from './oas-popover-capability.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** 面板与触发器的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
@@ -241,8 +242,9 @@ const STYLE = `
 /* 箭头：12px 菱形旋转 45°，底色与面板同色（--pop-bg），按 data-placement 基向落在面板对应边上，
    尖端指向触发元素。旋转后原 border-top/right/bottom/left 依次对应菱形右上/右下/左下/左上边，
    取「汇于尖端」的两条外露边带边框色（--pop-border），与面板 1px 描边无缝衔接。
-   十字轴默认居中（var(--arrow-x/y) 兜底 calc(50% - 箭头尺寸/2)，默认 6px）；arrow-point-at-center 时由 JS
-   写内联偏移，面板被视口避让偏移后箭头仍指向触发元素。
+   十字轴默认居中（var(--arrow-x/y) 兜底 calc(50% - 箭头尺寸/2)，默认 6px）；面板被视口避让偏移时
+   由 JS 写内联偏移，箭头始终指向触发元素（popover 恒跟锚点，无 arrow-point-at-center 开关——
+   tooltip/dropdown/hover-card/tour 的同名开关是「默认面板居中、开启后跟锚点」语义，本组件默认即跟锚点）。
    12 向 placement 使 data-placement 带 -start/-end 后缀，落边规则用属性前缀匹配（^=）。 */
 .arrow {
   position: absolute;
@@ -516,7 +518,7 @@ const warnedContextmenuCapability = new Set<string>()
 function warnContextmenuNotImported(): void {
   if (warnedContextmenuCapability.has(CONTEXTMENU_CAPABILITY_HINT)) return
   warnedContextmenuCapability.add(CONTEXTMENU_CAPABILITY_HINT)
-  console.warn(CONTEXTMENU_CAPABILITY_HINT)
+  devWarn(CONTEXTMENU_CAPABILITY_HINT)
 }
 
 export class OASPopover extends OASElement {
@@ -532,7 +534,6 @@ export class OASPopover extends OASElement {
       'virtual-anchor',
       'focus-on-open',
       'arrow',
-      'arrow-point-at-center',
       'auto-adjust-overflow',
       // —— A2/A3/触发方式与延迟 ——
       'trigger',

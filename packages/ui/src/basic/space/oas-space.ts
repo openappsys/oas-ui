@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type SpaceDirection = 'horizontal' | 'vertical'
 export type SpaceSize = 'xs' | 'small' | 'medium' | 'large' | 'xl' | number
@@ -34,7 +35,7 @@ const warnedBreakpoints = new Set<string>()
 function warnBreakpoint(name: string): void {
   if (warnedBreakpoints.has(name)) return
   warnedBreakpoints.add(name)
-  console.warn(`[oas-space] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
+  devWarn(`[oas-space] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
 }
 
 const warnedDirectionValues = new Set<string>()
@@ -43,7 +44,7 @@ const warnedDirectionValues = new Set<string>()
 function warnDirectionValue(value: string): void {
   if (warnedDirectionValues.has(value)) return
   warnedDirectionValues.add(value)
-  console.warn(`[oas-space] 断点 direction 值 "${value}" 非法，已回落基础方向；合法值：horizontal/vertical`)
+  devWarn(`[oas-space] 断点 direction 值 "${value}" 非法，已回落基础方向；合法值：horizontal/vertical`)
 }
 
 /**
@@ -110,7 +111,7 @@ function normalizeSpaceSize(raw: string): string {
   if (!Number.isNaN(num)) return `${num}px`
   if (!warnedSizes.has(raw)) {
     warnedSizes.add(raw)
-    console.warn(`[oas-space] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl 或数字 px`)
+    devWarn(`[oas-space] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl 或数字 px`)
   }
   return SIZE_TOKEN_MAP.medium!
 }

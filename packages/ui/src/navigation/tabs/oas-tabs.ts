@@ -11,6 +11,7 @@ import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import type { OASTabPanel } from './oas-tab-panel.js'
 import { registeredTabsCapabilities, onTabsCapabilityRegistered } from './oas-tabs-capability.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type TabsSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
@@ -19,7 +20,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-tabs] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  devWarn(`[oas-tabs] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
 
 export type TabsPanelMode = 'keep' | 'lazy' | 'destroy'
@@ -32,7 +33,7 @@ function normalizePanelMode(raw: string): TabsPanelMode {
   if ((VALID_PANEL_MODES as readonly string[]).includes(raw)) return raw as TabsPanelMode
   if (!warnedModes.has(raw)) {
     warnedModes.add(raw)
-    console.warn(`[oas-tabs] 非法 panel-mode "${raw}"，已回落 keep；合法值：keep/lazy/destroy`)
+    devWarn(`[oas-tabs] 非法 panel-mode "${raw}"，已回落 keep；合法值：keep/lazy/destroy`)
   }
   return 'keep'
 }
@@ -64,7 +65,7 @@ const warnedManagerCapability = new Set<string>()
 function warnManagerNotImported(): void {
   if (warnedManagerCapability.has(TABS_MANAGER_CAPABILITY_HINT)) return
   warnedManagerCapability.add(TABS_MANAGER_CAPABILITY_HINT)
-  console.warn(TABS_MANAGER_CAPABILITY_HINT)
+  devWarn(TABS_MANAGER_CAPABILITY_HINT)
 }
 
 const STYLE = `

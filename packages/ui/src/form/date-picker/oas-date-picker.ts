@@ -28,6 +28,7 @@ import { resolveDirection, isRtl } from '../../shared/direction.js'
 import '../../feedback/bottom-sheet/index.js'
 import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 type PickerType =
   | 'date'
@@ -874,7 +875,7 @@ export class OASDatePicker extends OASFormElement {
     const tz = resolveTimezone(raw)
     if (!tz && !this.timezoneWarned) {
       this.timezoneWarned = true
-      console.warn(`[oas-date-picker] 非法 timezone "${raw}"，已回落宿主本地时区`)
+      devWarn(`[oas-date-picker] 非法 timezone "${raw}"，已回落宿主本地时区`)
     }
     return tz
   }
@@ -1534,7 +1535,7 @@ export class OASDatePicker extends OASFormElement {
     if ((VALID_PLACEMENTS as readonly string[]).includes(raw)) return raw as Placement
     if (!this.placementWarned) {
       this.placementWarned = true
-      console.warn(
+      devWarn(
         `[oas-date-picker] 非法 placement "${raw}"，已回落 bottom-start（支持 12 向：top/bottom/left/right × start/end）`,
       )
     }

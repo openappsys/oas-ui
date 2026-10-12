@@ -24,7 +24,8 @@ export interface BubbleReaction {
 
 const STYLE = `
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   font-family: inherit;
   color: var(--oas-color-text-primary);
@@ -32,9 +33,10 @@ const STYLE = `
 :host([hidden]) {
   display: none !important;
 }
-/* 气泡表面：圆角/上限走变量开口，宿主可整链换肤 */
+/* 气泡表面：圆角/上限走变量开口，宿主可整链换肤；flex 项默认靠 inline-start（align=end 靠 end），不拉伸 */
 .bubble {
   display: inline-block;
+  align-self: flex-start;
   max-width: var(--oas-bubble-max-width, 80%);
   box-sizing: border-box;
   padding: var(--oas-space-2_5) var(--oas-space-3);
@@ -53,6 +55,7 @@ const STYLE = `
   margin-inline-start: 0;
 }
 :host([align="end"]) .bubble {
+  align-self: flex-end;
   margin-inline-start: auto;
   margin-inline-end: 0;
 }

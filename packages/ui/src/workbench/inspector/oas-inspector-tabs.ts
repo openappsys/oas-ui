@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** items JSON 条目 */
 export interface InspectorTabItem {
@@ -146,7 +147,7 @@ export class OASInspectorTabs extends OASElement {
       } catch {
         if (!this.warnedBrokenItems) {
           this.warnedBrokenItems = true
-          console.warn('[oas-inspector-tabs] items JSON 解析失败，已按空列表渲染')
+          devWarn('[oas-inspector-tabs] items JSON 解析失败，已按空列表渲染')
         }
       }
     }

@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /**
  * 尺寸档位：对齐全局 control-height token（ui-spec §2.1）
@@ -26,7 +27,7 @@ const warned = new Set<string>()
 function warnOnce(msg: string): void {
   if (!warned.has(msg)) {
     warned.add(msg)
-    console.warn(msg)
+    devWarn(msg)
   }
 }
 

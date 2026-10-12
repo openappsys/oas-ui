@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type ThemeTokenType = 'color' | 'number'
 
@@ -583,12 +584,12 @@ export class OASThemeEditor extends OASElement {
       try {
         data = JSON.parse(json)
       } catch {
-        console.warn('[oas-theme-editor] importJson 入参不是合法 JSON 字符串，已忽略')
+        devWarn('[oas-theme-editor] importJson 入参不是合法 JSON 字符串，已忽略')
         return
       }
     }
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
-      console.warn('[oas-theme-editor] importJson 入参必须是对象（token -> value 映射），已忽略')
+      devWarn('[oas-theme-editor] importJson 入参必须是对象（token -> value 映射），已忽略')
       return
     }
     const root = this.themeRoot()
@@ -596,7 +597,7 @@ export class OASThemeEditor extends OASElement {
       if (!key.startsWith('--')) {
         if (!this.invalidImportKeyWarned.has(key)) {
           this.invalidImportKeyWarned.add(key)
-          console.warn(`[oas-theme-editor] importJson 忽略非 CSS 变量键 "${key}"（须以 -- 开头）`)
+          devWarn(`[oas-theme-editor] importJson 忽略非 CSS 变量键 "${key}"（须以 -- 开头）`)
         }
         continue
       }
@@ -644,7 +645,7 @@ export class OASThemeEditor extends OASElement {
     }
     if (!this.invalidPresetWarned.has(normalized)) {
       this.invalidPresetWarned.add(normalized)
-      console.warn(`[oas-theme-editor] 未知预设主题 "${name}"，已忽略（可用：compact / comfortable / default）`)
+      devWarn(`[oas-theme-editor] 未知预设主题 "${name}"，已忽略（可用：compact / comfortable / default）`)
     }
   }
 

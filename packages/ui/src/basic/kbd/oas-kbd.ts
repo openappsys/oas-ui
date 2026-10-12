@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type KbdVariant = 'raised' | 'outline' | 'subtle' | 'plain'
 export type KbdSize = 'small' | 'medium' | 'large'
@@ -41,7 +42,7 @@ function warnOnce(kind: string, raw: string, fallback: string, valid: readonly s
   const key = `${kind}:${raw}`
   if (warnedValues.has(key)) return
   warnedValues.add(key)
-  console.warn(`[oas-kbd] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
+  devWarn(`[oas-kbd] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
 }
 
 /** 语义键名的键帽符号 + abbr title 全称（读屏可命名） */

@@ -1,6 +1,7 @@
 import { OASElement, escapeText } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES, type OasSize } from '../../shared/size.js'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type PaginationSize = OasSize
 
@@ -9,7 +10,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-pagination] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  devWarn(`[oas-pagination] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
 
 /** pager-count 最小值：低于 5 的窗口无法同时容纳首尾各 2 页与当前页 */
@@ -25,7 +26,7 @@ function normalizePagerCount(raw: string): number {
   if (value >= MIN_PAGER_COUNT) return value
   if (!warnedPagerCounts.has(trimmed)) {
     warnedPagerCounts.add(trimmed)
-    console.warn(
+    devWarn(
       `[oas-pagination] 非法 pager-count "${trimmed}"（低于最小值 ${MIN_PAGER_COUNT}），已回落 ${MIN_PAGER_COUNT}`,
     )
   }

@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type AffixPosition = 'top' | 'bottom'
 
@@ -34,7 +35,7 @@ function normalizePosition(raw: string): AffixPosition {
   if ((VALID_POSITIONS as readonly string[]).includes(raw)) return raw as AffixPosition
   if (!warnedPositions.has(raw)) {
     warnedPositions.add(raw)
-    console.warn(`[oas-affix] 非法 position "${raw}"，已回落 top；合法值：top/bottom`)
+    devWarn(`[oas-affix] 非法 position "${raw}"，已回落 top；合法值：top/bottom`)
   }
   return 'top'
 }
@@ -49,7 +50,7 @@ function normalizeZIndex(raw: string): number | null {
   if (!Number.isInteger(n) || n < 0) {
     if (!warnedZIndex.has(raw)) {
       warnedZIndex.add(raw)
-      console.warn(`[oas-affix] 非法 z-index "${raw}"，已回落 token 缺省（--oas-z-index-base + --oas-z-sticky）`)
+      devWarn(`[oas-affix] 非法 z-index "${raw}"，已回落 token 缺省（--oas-z-index-base + --oas-z-sticky）`)
     }
     return null
   }
@@ -132,7 +133,7 @@ export class OASAffix extends OASElement {
     if (!el) {
       if (!warnedTargets.has(sel)) {
         warnedTargets.add(sel)
-        console.warn(`[oas-affix] target "${sel}" 未匹配到元素，已回落 window 滚动监听`)
+        devWarn(`[oas-affix] target "${sel}" 未匹配到元素，已回落 window 滚动监听`)
       }
       return null
     }
@@ -146,7 +147,7 @@ export class OASAffix extends OASElement {
     if (!el) {
       if (!warnedAppendTargets.has(sel)) {
         warnedAppendTargets.add(sel)
-        console.warn(`[oas-affix] append-to "${sel}" 未匹配到元素，已回落不传送（wrap 保持原位）`)
+        devWarn(`[oas-affix] append-to "${sel}" 未匹配到元素，已回落不传送（wrap 保持原位）`)
       }
       return null
     }

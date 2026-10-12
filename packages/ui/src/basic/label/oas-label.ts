@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** 预设色板名（映射 --oas-preset-*-text 达标 token，color 属性支持按名引用；统一协议见 ui-spec §4.1） */
 export type LabelPresetColor =
@@ -43,7 +44,7 @@ function warnOnce(kind: string, raw: string, fallback: string, valid: readonly s
   const key = `${kind}:${raw}`
   if (warnedValues.has(key)) return
   warnedValues.add(key)
-  console.warn(`[oas-label] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
+  devWarn(`[oas-label] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
 }
 
 const STYLE = `

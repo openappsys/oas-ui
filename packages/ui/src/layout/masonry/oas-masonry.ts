@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const DEFAULT_COLUMNS = 4
 const DEFAULT_GAP = 8
@@ -23,7 +24,7 @@ const warnedItemsJson = new Set<string>()
 function warnItemsJson(raw: string): void {
   if (warnedItemsJson.has(raw)) return
   warnedItemsJson.add(raw)
-  console.warn('[oas-masonry] items 属性非法 JSON，已回落 slot 子元素通道')
+  devWarn('[oas-masonry] items 属性非法 JSON，已回落 slot 子元素通道')
 }
 
 const STYLE = `
@@ -84,7 +85,7 @@ const warnedBreakpoints = new Set<string>()
 function warnBreakpoint(name: string): void {
   if (warnedBreakpoints.has(name)) return
   warnedBreakpoints.add(name)
-  console.warn(`[oas-masonry] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
+  devWarn(`[oas-masonry] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
 }
 
 const warnedBreakpointColumnValues = new Set<string>()
@@ -93,7 +94,7 @@ const warnedBreakpointColumnValues = new Set<string>()
 function warnBreakpointColumnValue(value: string): void {
   if (warnedBreakpointColumnValues.has(value)) return
   warnedBreakpointColumnValues.add(value)
-  console.warn(`[oas-masonry] 断点列数值 "${value}" 非法，已回落基础列数；合法值：正整数`)
+  devWarn(`[oas-masonry] 断点列数值 "${value}" 非法，已回落基础列数；合法值：正整数`)
 }
 
 const warnedColumnValues = new Set<string>()
@@ -102,7 +103,7 @@ const warnedColumnValues = new Set<string>()
 function warnColumnValue(value: string): void {
   if (warnedColumnValues.has(value)) return
   warnedColumnValues.add(value)
-  console.warn(`[oas-masonry] 子项 column 值 "${value}" 非法，已忽略；合法值：1 ~ 当前列数的整数`)
+  devWarn(`[oas-masonry] 子项 column 值 "${value}" 非法，已忽略；合法值：1 ~ 当前列数的整数`)
 }
 
 /**

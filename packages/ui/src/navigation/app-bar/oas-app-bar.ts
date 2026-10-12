@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** position 合法值：static（默认，随文档流）/ absolute / fixed / floating（圆角悬浮） */
 export type AppBarPosition = 'static' | 'absolute' | 'fixed' | 'floating'
@@ -12,7 +13,7 @@ function normalizePosition(raw: string): AppBarPosition {
   if ((VALID_POSITIONS as readonly string[]).includes(raw)) return raw as AppBarPosition
   if (!warnedPositions.has(raw)) {
     warnedPositions.add(raw)
-    console.warn(`[oas-app-bar] 非法 position "${raw}"，已回落 static；合法值：static/absolute/fixed/floating`)
+    devWarn(`[oas-app-bar] 非法 position "${raw}"，已回落 static；合法值：static/absolute/fixed/floating`)
   }
   return 'static'
 }

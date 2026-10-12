@@ -588,10 +588,15 @@ describe('OASFloatButton group 展开/受控/触发', () => {
     vi.useRealTimers()
   })
 
-  it('hover 触发在 coarse pointer 下回落 click（mouseenter 不展开）', () => {
+  it('hover 触发在 coarse pointer 下回落 click（mouseenter 不展开，点击展开/再点收起）', () => {
     vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true }) as MediaQueryList)
     const el = mountGroup({ trigger: 'hover' })
     el.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(el.hasAttribute('expanded')).toBe(false)
+    // 触屏回落 click：点击主钮展开，再点收起
+    btn(el).click()
+    expect(el.hasAttribute('expanded')).toBe(true)
+    btn(el).click()
     expect(el.hasAttribute('expanded')).toBe(false)
   })
 

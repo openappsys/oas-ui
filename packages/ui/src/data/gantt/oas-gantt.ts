@@ -10,6 +10,7 @@ import {
 } from '../../form/calendar/date-grid.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -805,7 +806,7 @@ export class OASGantt extends OASElement {
   private warnOnce(key: string, msg: string): void {
     if (this.warnedSanitize.has(key)) return
     this.warnedSanitize.add(key)
-    console.warn(msg)
+    devWarn(msg)
   }
 
   /** milestone 数据矛盾告警（同任务同类型只告一次；key 含类型，形态变化时重新提示） */
@@ -813,7 +814,7 @@ export class OASGantt extends OASElement {
     const key = `${id}:${kind}`
     if (this.warnedMilestones.has(key)) return
     this.warnedMilestones.add(key)
-    console.warn(msg)
+    devWarn(msg)
   }
 
   private syncTasksAttr(): void {
@@ -1116,7 +1117,7 @@ export class OASGantt extends OASElement {
         const key = `cycle:${cur.id}`
         if (!this.warnedParents.has(key)) {
           this.warnedParents.add(key)
-          console.warn(`[oas-gantt] parent 指针成环，任务 "${cur.id}" 已断环按根节点渲染`)
+          devWarn(`[oas-gantt] parent 指针成环，任务 "${cur.id}" 已断环按根节点渲染`)
         }
       }
       for (const n of stack) color.set(n.id, 2)
@@ -1129,7 +1130,7 @@ export class OASGantt extends OASElement {
       } else {
         if (t.parent && !byId.has(t.parent) && !this.warnedParents.has(t.parent)) {
           this.warnedParents.add(t.parent)
-          console.warn(`[oas-gantt] parent "${t.parent}" 不存在，任务 "${t.id}" 已按根节点渲染`)
+          devWarn(`[oas-gantt] parent "${t.parent}" 不存在，任务 "${t.id}" 已按根节点渲染`)
         }
         roots.push(t)
       }

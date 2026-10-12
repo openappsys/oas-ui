@@ -1,6 +1,7 @@
 import { resolveMessageHost, getAppMessageConfig } from '../../framework/app/app-host.js'
 import type { OASMessage, MessageType, MessageContent, CustomMessageType } from './oas-message.js'
 import { registerMessageType, getCustomMessageType } from './oas-message.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type MessagePlacement = 'top' | 'bottom'
 
@@ -238,7 +239,7 @@ function show(type: string, content: MessageContent, durationOrOptions?: number 
   // 未注册的自定义类型：dev 告警 + 按 info 兜底渲染（元素侧无图标/配色配置）
   const isBuiltin = new Set(['info', 'success', 'warning', 'error', 'loading', 'question'])
   if (!isBuiltin.has(type) && !getCustomMessageType(type)) {
-    console.warn(`[oas-message] 未注册的消息类型 "${type}"，将以 info 兜底渲染；请先 message.registerType`)
+    devWarn(`[oas-message] 未注册的消息类型 "${type}"，将以 info 兜底渲染；请先 message.registerType`)
   }
   const el = document.createElement('oas-message') as OASMessage
   el.setAttribute('type', type)

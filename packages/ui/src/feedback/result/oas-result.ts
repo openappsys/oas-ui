@@ -4,6 +4,7 @@ import { errorPath } from '@oas-ui/icons/icons/error'
 import { infoPath } from '@oas-ui/icons/icons/info'
 import { warningPath } from '@oas-ui/icons/icons/warning'
 import { normalizeSizeStrict, normalizeSize, THREE_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type ResultStatus = 'success' | 'error' | 'warning' | 'info' | '403' | '404' | '500'
 export type ResultSize = 'small' | 'medium' | 'large'
@@ -18,7 +19,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-result] 非法 size "${raw}"，已回落默认；合法值：small/medium/large`)
+  devWarn(`[oas-result] 非法 size "${raw}"，已回落默认；合法值：small/medium/large`)
 }
 
 /** status 归一化：非法值回落 success（字形/色板/aria 使用归一化结果）并单次告警 */
@@ -26,7 +27,7 @@ function normalizeStatus(raw: string): ResultStatus {
   if ((VALID_STATUSES as readonly string[]).includes(raw)) return raw as ResultStatus
   if (!warnedStatuses.has(raw)) {
     warnedStatuses.add(raw)
-    console.warn(`[oas-result] 非法 status "${raw}"，已回落默认；合法值：${VALID_STATUSES.join('/')}`)
+    devWarn(`[oas-result] 非法 status "${raw}"，已回落默认；合法值：${VALID_STATUSES.join('/')}`)
   }
   return 'success'
 }

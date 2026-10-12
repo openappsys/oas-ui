@@ -2,6 +2,7 @@ import { OASFormElement } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { eyePath } from '@oas-ui/icons/icons/eye'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** addon 槽内「自包含控件」tag 白名单：自带底色/描边/圆角，不应被放进文本托盘的灰底与内边距里 */
 const ADDON_CONTROL_TAGS = new Set(['OAS-BUTTON', 'OAS-BUTTON-GROUP', 'OAS-COMPACT'])
@@ -38,7 +39,7 @@ function warnOnce(kind: string, raw: string, fallback: string, valid: readonly s
   const key = `${kind}:${raw}`
   if (warnedValues.has(key)) return
   warnedValues.add(key)
-  console.warn(`[oas-input] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
+  devWarn(`[oas-input] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
 }
 
 /** 枚举归一化：合法值原样返回，空/非法值回落默认并告警（空值静默回落） */
@@ -191,7 +192,7 @@ function warnMaskFormatterConflict(): void {
   const key = 'mask-formatter'
   if (warnedMaskConflict.has(key)) return
   warnedMaskConflict.add(key)
-  console.warn('[oas-input] mask 与 formatter/parser 互斥，已按 mask 优先处理：formatter/parser 在 mask 移除前不生效')
+  devWarn('[oas-input] mask 与 formatter/parser 互斥，已按 mask 优先处理：formatter/parser 在 mask 移除前不生效')
 }
 
 const STYLE = `

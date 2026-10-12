@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -60,7 +61,7 @@ const warnedBreakpoints = new Set<string>()
 function warnBreakpoint(name: string): void {
   if (warnedBreakpoints.has(name)) return
   warnedBreakpoints.add(name)
-  console.warn(`[oas-flex] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
+  devWarn(`[oas-flex] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
 }
 
 const warnedDirectionValues = new Set<string>()
@@ -69,9 +70,7 @@ const warnedDirectionValues = new Set<string>()
 function warnDirectionValue(value: string): void {
   if (warnedDirectionValues.has(value)) return
   warnedDirectionValues.add(value)
-  console.warn(
-    `[oas-flex] 断点 direction 值 "${value}" 非法，已回落基础方向；合法值：row/column 或 horizontal/vertical`,
-  )
+  devWarn(`[oas-flex] 断点 direction 值 "${value}" 非法，已回落基础方向；合法值：row/column 或 horizontal/vertical`)
 }
 
 /**

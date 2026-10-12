@@ -3,6 +3,7 @@ import { isRtl } from '../../shared/direction.js'
 // 复用 oas-tooltip 作为逐星提示浮层（浅集成：virtual 点定位，确保其已注册）
 import '../../feedback/tooltip/index.js'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STAR = `
 <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true" focusable="false">
@@ -17,7 +18,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-rate] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
+  devWarn(`[oas-rate] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
 }
 
 /** 预设色板名（映射 --oas-preset-* token，color/void-color/colors 支持按名引用；统一协议见 ui-spec §4.1） */
@@ -40,7 +41,7 @@ function parseJsonArray(kind: string, raw: string): string[] | null {
     const key = `${kind}:${raw}`
     if (!warnedJson.has(key)) {
       warnedJson.add(key)
-      console.warn(`[oas-rate] 非法 ${kind} JSON 数组（应为字符串数组），已忽略`)
+      devWarn(`[oas-rate] 非法 ${kind} JSON 数组（应为字符串数组），已忽略`)
     }
     return null
   }

@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { encodeBarcode, BarcodeEncodeError, type BarcodeFormat, type EncodeResult } from './encoders.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -228,7 +229,7 @@ export class OASBarcode extends OASElement {
     if (n < min) {
       if (!this.marginWarned) {
         this.marginWarned = true
-        console.warn(
+        devWarn(
           `[oas-barcode] margin ${n} 低于可扫性下限（10 × bar-width = ${min}），已收敛为 ${min}；静区不足会被扫码枪拒读`,
         )
       }

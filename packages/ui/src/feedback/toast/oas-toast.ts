@@ -809,9 +809,13 @@ export class OASToast extends OASElement {
   // ---------- 离场动画（P18，时长走 CSS 变量） ----------
 
   private leaveDurationMs(): number {
-    const raw = getComputedStyle(this).getPropertyValue('--oas-toast-leave-duration')
-    const n = parseFloat(raw)
-    return Number.isFinite(n) && n > 0 ? n : LEAVE_ANIMATION_MS
+    const raw = getComputedStyle(this).getPropertyValue('--oas-toast-leave-duration').trim()
+    // CSS 时间单位换算：'0.2s' → 200、'200ms' → 200（parseFloat 会把 '0.2s' 误当 0.2ms）；无单位按 ms
+    const m = /^(\d+(?:\.\d+)?)(ms|s)?$/.exec(raw)
+    if (!m) return LEAVE_ANIMATION_MS
+    const n = Number.parseFloat(m[1]!)
+    if (!Number.isFinite(n) || n <= 0) return LEAVE_ANIMATION_MS
+    return m[2] === 's' ? n * 1000 : n
   }
 
   private animateLeave(): boolean {

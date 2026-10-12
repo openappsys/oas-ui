@@ -1,6 +1,7 @@
 import { OASElement, escapeAttr } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { normalizeSizeStrict, normalizeSize, THREE_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type EmptySize = 'small' | 'medium' | 'large'
 export type EmptyAlign = 'center' | 'start' | 'end'
@@ -19,7 +20,7 @@ const warnedIcons = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-empty] 非法 size "${raw}"，已回落默认；合法值：small/medium/large`)
+  devWarn(`[oas-empty] 非法 size "${raw}"，已回落默认；合法值：small/medium/large`)
 }
 
 /** 非法值单次 warn（同值去重，样式回落由 CSS 原始属性选择器自然实现） */
@@ -27,7 +28,7 @@ function warnInvalid(raw: string, valid: readonly string[], label: string, warne
   if (valid.includes(raw)) return
   if (!warned.has(raw)) {
     warned.add(raw)
-    console.warn(
+    devWarn(
       `[oas-empty] 非法 ${label} "${raw}"，已回落默认；合法值：${valid.map((v) => (v === '' ? '(空)' : v)).join('/')}`,
     )
   }
@@ -37,7 +38,7 @@ function warnInvalid(raw: string, valid: readonly string[], label: string, warne
 function warnInvalidIcon(raw: string): void {
   if (!warnedIcons.has(raw)) {
     warnedIcons.add(raw)
-    console.warn(
+    devWarn(
       `[oas-empty] 非法 icon "${raw}"，已忽略；合法值为 @oas-ui/icons 图标名（按需引入需 import '@oas-ui/icons/register'；或 registerIcon 自定义注册名）`,
     )
   }

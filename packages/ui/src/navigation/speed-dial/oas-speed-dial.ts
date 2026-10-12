@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export interface SpeedDialAction {
   label: string
@@ -431,7 +432,7 @@ export class OASSpeedDial extends OASElement {
   private warnHideLabelFallback(): void {
     if (this.hideLabelFallbackWarned) return
     this.hideLabelFallbackWarned = true
-    console.warn(
+    devWarn(
       '[oas-speed-dial] 子动作设置了 hide-label 但缺少可渲染的 icon，已回落为显示 label（icon-only 形态需要 icon）',
     )
   }

@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -30,7 +31,7 @@ const warnedBreakpoints = new Set<string>()
 function warnBreakpoint(name: string): void {
   if (warnedBreakpoints.has(name)) return
   warnedBreakpoints.add(name)
-  console.warn(`[oas-grid-item] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
+  devWarn(`[oas-grid-item] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`)
 }
 
 const warnedSpanValues = new Set<string>()
@@ -39,7 +40,7 @@ const warnedSpanValues = new Set<string>()
 function warnSpanValue(value: string): void {
   if (warnedSpanValues.has(value)) return
   warnedSpanValues.add(value)
-  console.warn(`[oas-grid-item] 断点 span 值 "${value}" 非法，已回落基础 span；合法值：正整数或 auto`)
+  devWarn(`[oas-grid-item] 断点 span 值 "${value}" 非法，已回落基础 span；合法值：正整数或 auto`)
 }
 
 const warnedOffsetValues = new Set<string>()
@@ -48,7 +49,7 @@ const warnedOffsetValues = new Set<string>()
 function warnOffsetValue(value: string): void {
   if (warnedOffsetValues.has(value)) return
   warnedOffsetValues.add(value)
-  console.warn(`[oas-grid-item] 断点 offset 值 "${value}" 非法，已回落基础 offset；合法值：数字`)
+  devWarn(`[oas-grid-item] 断点 offset 值 "${value}" 非法，已回落基础 offset；合法值：数字`)
 }
 
 /**

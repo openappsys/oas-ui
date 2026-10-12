@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** theme 合法值：三表体（charcoal/dark 恒深表面 + light 主题本色） */
 export type ActionBarTheme = 'charcoal' | 'dark' | 'light'
@@ -12,7 +13,7 @@ function normalizeTheme(raw: string): ActionBarTheme {
   if ((VALID_THEMES as readonly string[]).includes(raw)) return raw as ActionBarTheme
   if (!warnedThemes.has(raw)) {
     warnedThemes.add(raw)
-    console.warn(`[oas-action-bar] 非法 theme "${raw}"，已回落 charcoal；合法值：charcoal/dark/light`)
+    devWarn(`[oas-action-bar] 非法 theme "${raw}"，已回落 charcoal；合法值：charcoal/dark/light`)
   }
   return 'charcoal'
 }

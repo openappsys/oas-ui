@@ -1,6 +1,7 @@
 import { resolveMessageHost } from '../../framework/app/app-host.js'
 import { OASModal, type ModalVariant, type ModalCloseSource } from './oas-modal.js'
 import { hasModalCapability } from './oas-modal-capability.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export interface ModalOptions {
   /** 标题文案（缺省则不显示标题） */
@@ -429,7 +430,7 @@ const warnedPromptCapability = new Set<string>()
 function warnPromptNotImported(): void {
   if (warnedPromptCapability.has(PROMPT_CAPABILITY_HINT)) return
   warnedPromptCapability.add(PROMPT_CAPABILITY_HINT)
-  console.warn(PROMPT_CAPABILITY_HINT)
+  devWarn(PROMPT_CAPABILITY_HINT)
 }
 
 export const modal = {

@@ -4,6 +4,7 @@ import { errorPath } from '@oas-ui/icons/icons/error'
 import { infoPath } from '@oas-ui/icons/icons/info'
 import { warningPath } from '@oas-ui/icons/icons/warning'
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type AlertType = 'info' | 'success' | 'warning' | 'error'
 export type AlertVariant = 'tint' | 'filled' | 'outlined'
@@ -28,7 +29,7 @@ function normalizeVariant(raw: string): AlertVariant {
   if ((VALID_VARIANTS as readonly string[]).includes(raw)) return raw as AlertVariant
   if (!warnedVariants.has(raw)) {
     warnedVariants.add(raw)
-    console.warn(`[oas-alert] 非法 variant "${raw}"，已回落 tint；合法值：tint/filled/outlined`)
+    devWarn(`[oas-alert] 非法 variant "${raw}"，已回落 tint；合法值：tint/filled/outlined`)
   }
   return 'tint'
 }
@@ -37,7 +38,7 @@ function normalizeVariant(raw: string): AlertVariant {
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-alert] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
+  devWarn(`[oas-alert] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
 }
 
 /** prefers-reduced-motion 探测（happy-dom 等环境可能缺失 matchMedia） */

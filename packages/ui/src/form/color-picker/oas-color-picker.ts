@@ -3,6 +3,7 @@ import { resolveDirection } from '../../shared/direction.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { parseColor, formatColor, formatSwatch, type RGBA } from './color.js'
 import { registeredColorPickerCapabilities, onColorPickerCapabilityRegistered } from './oas-color-picker-capability.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** placement 合法取值：12 向（四基向 × start/end 交叉轴对齐），默认 bottom（与 date-picker 同一枚举） */
 const VALID_PLACEMENTS: readonly Placement[] = [
@@ -83,7 +84,7 @@ const warnedDesignerCapability = new Set<string>()
 function warnDesignerNotImported(): void {
   if (warnedDesignerCapability.has(DESIGNER_CAPABILITY_HINT)) return
   warnedDesignerCapability.add(DESIGNER_CAPABILITY_HINT)
-  console.warn(DESIGNER_CAPABILITY_HINT)
+  devWarn(DESIGNER_CAPABILITY_HINT)
 }
 
 const STYLE = `
@@ -1132,7 +1133,7 @@ export class OASColorPicker extends OASElement {
     if ((VALID_PLACEMENTS as readonly string[]).includes(raw)) return raw as Placement
     if (!this.placementWarned) {
       this.placementWarned = true
-      console.warn(
+      devWarn(
         `[oas-color-picker] 非法 placement "${raw}"，已回落 bottom（支持 12 向：top/bottom/left/right × start/end）`,
       )
     }

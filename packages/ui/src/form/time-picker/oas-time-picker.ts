@@ -7,6 +7,7 @@ import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
  :host {
@@ -486,7 +487,7 @@ export class OASTimePicker extends OASFormElement {
     const tz = resolveTimezone(raw)
     if (!tz && !this.timezoneWarned) {
       this.timezoneWarned = true
-      console.warn(`[oas-time-picker] 非法 timezone "${raw}"，已回落宿主本地时区`)
+      devWarn(`[oas-time-picker] 非法 timezone "${raw}"，已回落宿主本地时区`)
     }
     return tz
   }
@@ -1420,7 +1421,7 @@ export class OASTimePicker extends OASFormElement {
     if ((VALID_PLACEMENTS as readonly string[]).includes(raw)) return raw as Placement
     if (!this.placementWarned) {
       this.placementWarned = true
-      console.warn(
+      devWarn(
         `[oas-time-picker] 非法 placement "${raw}"，已回落 bottom-start（支持 12 向：top/bottom/left/right × start/end）`,
       )
     }

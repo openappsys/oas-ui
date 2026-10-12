@@ -1,4 +1,5 @@
 import { lookupIcon } from '@oas-ui/icons/runtime'
+import { devWarn } from './dev-warn.js'
 
 /**
  * 图标名未解析的 **dev-only** 提示（图标库 opt-in 迁移辅助）。
@@ -16,16 +17,7 @@ import { lookupIcon } from '@oas-ui/icons/runtime'
  */
 const hinted = new Set<string>()
 
-// 生产构建剔除：打包器把 `process.env.NODE_ENV` 静态替换为 "production" → 常量折叠为 true → 提示分支成死代码被删。
-// IIFE + const：既可被折叠剔除，又对「无 process 的裸 ESM 环境」安全（catch 兜底，不抛）。
-const IS_PROD: boolean = (() => {
-  try {
-    return process.env.NODE_ENV === 'production'
-  } catch {
-    return false
-  }
-})()
-
+// 生产剔除由 shared/dev-warn 统一承载（NODE_ENV=production 静默、失败放行），此处只保留按名去重
 type Raf = (cb: () => void) => void
 const nextFrame: Raf =
   typeof requestAnimationFrame === 'function'
@@ -35,12 +27,12 @@ const nextFrame: Raf =
       }
 
 export function hintUnresolvedIcon(name: string): void {
-  if (!name || IS_PROD || hinted.has(name)) return
+  if (!name || hinted.has(name)) return
   nextFrame(() => {
     // 延迟后重查：晚注册（registerIcon / registerIconLibrary）命中则不再提示
     if (hinted.has(name) || lookupIcon(name) !== undefined) return
     hinted.add(name)
-    console.warn(
+    devWarn(
       `[oas] 图标名 "${name}" 未解析：按需引入使用内置图名需 import '@oas-ui/icons/register'；或先 registerIcon()/registerIconLibrary() 注册。`,
     )
   })

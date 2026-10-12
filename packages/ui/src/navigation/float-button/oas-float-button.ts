@@ -2,6 +2,7 @@ import { OASElement, escapeAttr } from '@oas-ui/core'
 import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES, type OasSize } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** 尺寸档位：xs/small/medium/large/xl 全称（默认 large，对应 48px 常规 FAB 观感）；sm/md/lg 为等价别名 */
 type FloatButtonSize = OasSize
@@ -11,7 +12,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-float-button] 非法 size "${raw}"，已回落 large；合法值：xs/small/medium/large/xl`)
+  devWarn(`[oas-float-button] 非法 size "${raw}"，已回落 large；合法值：xs/small/medium/large/xl`)
 }
 
 /** 模式：single 单钮（默认）/ group 分组（主钮 + slot 子钮堆叠）/ menu 菜单（主钮弹出动作菜单） */
@@ -25,7 +26,7 @@ function normalizeMode(raw: string): FloatButtonMode {
   if ((VALID_MODES as readonly string[]).includes(raw)) return raw as FloatButtonMode
   if (!warnedModes.has(raw)) {
     warnedModes.add(raw)
-    console.warn(`[oas-float-button] 非法 mode "${raw}"，已回落 single；合法值：single/group/menu`)
+    devWarn(`[oas-float-button] 非法 mode "${raw}"，已回落 single；合法值：single/group/menu`)
   }
   return 'single'
 }
@@ -751,8 +752,8 @@ export class OASFloatButton extends OASElement {
       // detail 携带 originalEvent：与组件文档契约一致（原生 disabled button 不会触发点击，
       // 此处 guard 覆盖 href 模式降级 span 之外的防御场景）
       this.emit('click', { originalEvent: e })
-      // group/menu + click 触发：主钮激活切换展开（manual/hover 不在此切换）
-      if (this.validMode() !== 'single' && this.validTrigger() === 'click') this.toggleExpand()
+      // group/menu + click 触发：主钮激活切换展开（manual 不在此切换；hover 在触屏下回落 click）
+      if (this.validMode() !== 'single' && this.resolvedTrigger() === 'click') this.toggleExpand()
     })
     // 拖拽会话（pointer 捕获 + 移动定位 + 松手释放/磁吸）——绑定在内层按钮上，
     // 捕获目标 = 按钮自身，合成的 click 仍落在按钮（点击判定不被破坏）
@@ -1050,6 +1051,12 @@ export class OASFloatButton extends OASElement {
   private isCoarsePointer(): boolean {
     if (typeof window.matchMedia !== 'function') return false
     return window.matchMedia('(pointer: coarse)').matches
+  }
+
+  /** 生效触发方式：trigger="hover" 在触屏下解析为 click（回落），其余原样 */
+  private resolvedTrigger(): string {
+    if (this.validTrigger() === 'hover' && this.isCoarsePointer()) return 'click'
+    return this.validTrigger()
   }
 
   /** 指针/焦点移到的目标是否仍在「宿主 + 面板」区域内（跨 shadow 时 relatedTarget 已 retarget 到 shadow host） */

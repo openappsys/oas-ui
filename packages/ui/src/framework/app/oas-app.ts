@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { registerAppHost, unregisterAppHost, type AppHostConfig } from './app-host.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -132,14 +133,14 @@ export class OASApp extends OASElement {
     } catch {
       if (!warned.has(raw)) {
         warned.add(raw)
-        console.warn(`[oas-app] 非法 ${attr} JSON，已忽略：${raw}`)
+        devWarn(`[oas-app] 非法 ${attr} JSON，已忽略：${raw}`)
       }
       return null
     }
     if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) {
       if (!warned.has(raw)) {
         warned.add(raw)
-        console.warn(`[oas-app] 非法 ${attr} 配置（需 JSON 对象），已忽略：${raw}`)
+        devWarn(`[oas-app] 非法 ${attr} 配置（需 JSON 对象），已忽略：${raw}`)
       }
       return null
     }

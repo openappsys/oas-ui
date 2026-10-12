@@ -1272,3 +1272,50 @@ describe('P26 窄视口 vw 宽度保护', () => {
     expect(styleText).toContain('max-width: min(360px, calc(100vw - var(--oas-space-6)))')
   })
 })
+
+// ================= 离场时长单位解析（s/ms 换算） =================
+
+describe('离场时长单位解析', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    destroyAll()
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  it('CSS 变量秒单位换算为毫秒（0.2s → 200ms，不被当 0.2ms）', async () => {
+    toast.info({ title: '单位' })
+    await Promise.resolve()
+    el().style.setProperty('--oas-toast-leave-duration', '0.2s')
+    expect((el() as unknown as { leaveDurationMs(): number }).leaveDurationMs()).toBe(200)
+  })
+
+  it('ms 单位原样（150ms → 150）', async () => {
+    toast.info({ title: '单位' })
+    await Promise.resolve()
+    el().style.setProperty('--oas-toast-leave-duration', '150ms')
+    expect((el() as unknown as { leaveDurationMs(): number }).leaveDurationMs()).toBe(150)
+  })
+
+  it('非法/空值回落默认常量', async () => {
+    toast.info({ title: '单位' })
+    await Promise.resolve()
+    el().style.setProperty('--oas-toast-leave-duration', 'abc')
+    expect((el() as unknown as { leaveDurationMs(): number }).leaveDurationMs()).toBe(200)
+  })
+
+  it('行为：0.2s 变量下 close 后按 200ms 移除（而非 0.2ms 即刻移除）', async () => {
+    toast.info({ title: '单位' })
+    await Promise.resolve()
+    el().style.setProperty('--oas-toast-leave-duration', '0.2s')
+    ;(el() as unknown as { close(): void }).close()
+    await tick(50)
+    expect(document.body.querySelector('oas-toast')).not.toBeNull()
+    await tick(200)
+    expect(document.body.querySelector('oas-toast')).toBeNull()
+  })
+})

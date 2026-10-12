@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export interface BottomNavItem {
   label: string
@@ -21,7 +22,7 @@ function normalizeLayout(raw: string): BottomNavLayout {
   if ((VALID_LAYOUTS as readonly string[]).includes(raw)) return raw as BottomNavLayout
   if (!warnedLayouts.has(raw)) {
     warnedLayouts.add(raw)
-    console.warn(`[oas-bottom-navigation] 非法 layout "${raw}"，已回落 stacked；合法值：stacked/horizontal`)
+    devWarn(`[oas-bottom-navigation] 非法 layout "${raw}"，已回落 stacked；合法值：stacked/horizontal`)
   }
   return 'stacked'
 }
@@ -37,7 +38,7 @@ function normalizeLabelMode(raw: string): BottomNavLabelMode {
   if ((VALID_LABEL_MODES as readonly string[]).includes(raw)) return raw as BottomNavLabelMode
   if (!warnedLabelModes.has(raw)) {
     warnedLabelModes.add(raw)
-    console.warn(`[oas-bottom-navigation] 非法 show-label "${raw}"，已回落 true；合法值：true/active`)
+    devWarn(`[oas-bottom-navigation] 非法 show-label "${raw}"，已回落 true；合法值：true/active`)
   }
   return 'true'
 }

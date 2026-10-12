@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type TagType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
 export type TagSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
@@ -40,7 +41,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-tag] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  devWarn(`[oas-tag] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
 
 /** 默认关闭按钮 × 图标：template() 与 close-icon 移除后还原共用同一份结构（SSR 快照一致） */

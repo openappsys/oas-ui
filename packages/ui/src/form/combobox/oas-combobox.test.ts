@@ -426,6 +426,18 @@ describe('OASCombobox 虚拟滚动（virtual）', () => {
 
   const flushRaf = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
+  it('virtual：vlist 视口无 tabindex（键盘流由 input 承载，update 后不被加回）', async () => {
+    const el = mount({ virtual: '', options: manyOptions(100) })
+    open(el)
+    await flushRaf()
+    const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    expect(vp.hasAttribute('tabindex')).toBe(false)
+    // items 更新触发 vlist update 后仍无 tabindex（removeAttribute 会被 syncViewportFocusable 加回——须走 viewportFocusable 通道）
+    el.options = JSON.parse(manyOptions(120))
+    await flushRaf()
+    expect(vp.hasAttribute('tabindex')).toBe(false)
+  })
+
   it('virtual：仅渲染可见窗口 + buffer，非 virtual 全量渲染', () => {
     const el = mount({ virtual: '', options: manyOptions(100) })
     open(el)

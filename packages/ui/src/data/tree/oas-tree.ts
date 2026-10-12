@@ -19,6 +19,7 @@ import {
   cloneSlotContent,
 } from './shared/index.js'
 import type { ResolvedFields, TreeAccessors, TreeModel, FlatRow, CheckStrategy } from './shared/index.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export interface TreeNode {
   key: string
@@ -389,7 +390,7 @@ function parseIdList(raw: string): string[] {
     // 解析失败（典型：v2.5 前的旧版逗号串）——按空集合回落 + dev 告警一次（同值去重）给迁移指引
     if (!invalidIdListWarned.has(raw)) {
       invalidIdListWarned.add(raw)
-      console.warn(
+      devWarn(
         `[oas-tree] expanded/checked/selected 只接受 JSON 字符串数组（自 v2.5 起旧版逗号串已废弃）。收到："${raw}"，已按空集合处理；迁移写法：expanded='["k1","k2"]'`,
       )
     }
@@ -404,7 +405,7 @@ const warnedTreeSizes = new Set<string>()
 function warnInvalidTreeSize(raw: string): void {
   if (warnedTreeSizes.has(raw)) return
   warnedTreeSizes.add(raw)
-  console.warn(`[oas-tree] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl（sm/md/lg 别名等价）`)
+  devWarn(`[oas-tree] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl（sm/md/lg 别名等价）`)
 }
 
 /**

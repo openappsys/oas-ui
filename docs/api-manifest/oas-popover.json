@@ -54,10 +54,6 @@
       "observed": true
     },
     {
-      "name": "arrow-point-at-center",
-      "observed": true
-    },
-    {
       "name": "auto-adjust-overflow",
       "type": "string",
       "default": "true",

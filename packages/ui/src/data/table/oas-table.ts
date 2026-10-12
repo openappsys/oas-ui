@@ -18,6 +18,7 @@ import {
   EXPORT_EXT,
   type ExportFormat,
 } from './oas-table-export.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export interface TableColumn {
   key: string
@@ -181,7 +182,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-table] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
+  devWarn(`[oas-table] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
 }
 
 /** 编辑能力未注入的告警文案（仅纯核入口 data/table/core 消费者会触发；主路径已默认内含能力） */
@@ -198,7 +199,7 @@ const warnedRowDragVirtual = new Set<string>()
 function warnRowDragVirtual(): void {
   if (warnedRowDragVirtual.has(ROW_DRAG_VIRTUAL_HINT)) return
   warnedRowDragVirtual.add(ROW_DRAG_VIRTUAL_HINT)
-  console.warn(ROW_DRAG_VIRTUAL_HINT)
+  devWarn(ROW_DRAG_VIRTUAL_HINT)
 }
 
 /** 编辑能力告警去重（同值去重，同控件惯例） */
@@ -208,7 +209,7 @@ const warnedEditCapability = new Set<string>()
 function warnEditNotImported(): void {
   if (warnedEditCapability.has(EDIT_CAPABILITY_HINT)) return
   warnedEditCapability.add(EDIT_CAPABILITY_HINT)
-  console.warn(EDIT_CAPABILITY_HINT)
+  devWarn(EDIT_CAPABILITY_HINT)
 }
 
 /** 合计类型：求和 / 平均 / 计数 */
@@ -2934,7 +2935,7 @@ export class OASTableBase extends OASElement {
   private warnGroupByOnce(kind: string, message: string): void {
     if (this.groupWarned.has(kind)) return
     this.groupWarned.add(kind)
-    console.warn(`[oas-table] ${message}`)
+    devWarn(`[oas-table] ${message}`)
   }
 
   /** 总列数（行拖拽手柄列 + 勾选列 + 数据列 + 可展开行尾列） */
@@ -3527,7 +3528,7 @@ export class OASTableBase extends OASElement {
   private warnColVirtualOnce(kind: string, message: string): void {
     if (this.colVirtualWarned.has(kind)) return
     this.colVirtualWarned.add(kind)
-    console.warn(`[oas-table] ${message}`)
+    devWarn(`[oas-table] ${message}`)
   }
 
   /**

@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 const STYLE = `
 :host {
@@ -178,7 +179,7 @@ export class OASInspector extends OASElement {
       this.dataset.side = 'right'
       if (!OASInspector.warnedSides.has(side) && side !== '') {
         OASInspector.warnedSides.add(side)
-        console.warn(`[oas-inspector] 非法 side "${side}"，已回落 right；合法值：right/left`)
+        devWarn(`[oas-inspector] 非法 side "${side}"，已回落 right；合法值：right/left`)
       }
     }
     const density = this.getAttr('density', 'default')
@@ -187,7 +188,7 @@ export class OASInspector extends OASElement {
       this.dataset.density = 'default'
       if (!OASInspector.warnedDensities.has(density) && density !== '') {
         OASInspector.warnedDensities.add(density)
-        console.warn(`[oas-inspector] 非法 density "${density}"，已回落 default；合法值：default/compact`)
+        devWarn(`[oas-inspector] 非法 density "${density}"，已回落 default；合法值：default/compact`)
       }
     }
     // 可访问名称：label 属性 > i18n 默认（locale 反应式）

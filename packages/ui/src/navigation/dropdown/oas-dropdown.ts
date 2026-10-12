@@ -10,6 +10,7 @@ import '../menu/index.js' // 副作用：确保 oas-menu 已注册
 import { OASMenuItem } from '../menu/index.js'
 import type { OASMenu } from '../menu/index.js'
 import type { MenuItem, MenuItemKind } from '../menu/index.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** 浮层与触发元素的默认间隙（offset 属性缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
@@ -218,7 +219,7 @@ const warnedSizes = new Set<string>()
 function warnInvalidSize(raw: string): void {
   if (warnedSizes.has(raw)) return
   warnedSizes.add(raw)
-  console.warn(`[oas-dropdown] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  devWarn(`[oas-dropdown] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
 }
 
 export class OASDropdown extends OASElement {

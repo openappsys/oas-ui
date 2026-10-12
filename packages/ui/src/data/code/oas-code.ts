@@ -1,5 +1,6 @@
 import { OASElement, escapeText } from '@oas-ui/core'
 import { normalizeSizeStrict, type OasSize } from '../../shared/size.js'
+import { devWarn } from '../../shared/dev-warn.js'
 
 export type CodeLanguage = 'js' | 'ts' | 'html' | 'css' | 'json' | string
 export type CodeSize = 'xs' | 'small' | 'medium' | 'large'
@@ -44,7 +45,7 @@ function warnOnce(kind: string, raw: string, fallback: string, valid: readonly s
   const key = `${kind}:${raw}`
   if (warnedValues.has(key)) return
   warnedValues.add(key)
-  console.warn(`[oas-code] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
+  devWarn(`[oas-code] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
 }
 
 /** token 类别 → CSS class（配色见 STYLE 的 .tok-* 规则） */
