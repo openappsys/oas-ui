@@ -76,16 +76,22 @@
 
 `magnetic` 配合 `draggable` 使用：松手时吸附到最近的对应轴边缘——`x` 吸附左右、`y` 吸附上下，带过渡动画（`prefers-reduced-motion` 下直切）。下方三个按钮默认固定于页面右下角，可按住拖动试试（磁吸示例松手会自动贴边）。
 
-<DemoBlock title="拖拽（按住右下角按钮拖动）">
-  <oas-float-button draggable onoas-click="message.info('这是点击（非拖拽）触发的 oas-click')" style="--oas-float-button-bottom: 88px"></oas-float-button>
+<DemoBlock title="拖拽（按住按钮拖到容器内任意位置）">
+  <div style="position: relative; height: 180px; width: 100%">
+    <oas-float-button draggable onoas-click="message.info('这是点击（非拖拽）触发的 oas-click')" style="position: absolute; --oas-float-button-bottom: 16px; --oas-float-button-right: 16px"></oas-float-button>
+  </div>
 </DemoBlock>
 
 <DemoBlock title="拖拽 + 磁吸 x（松手贴最近左右边缘）">
-  <oas-float-button draggable magnetic="x" style="--oas-float-button-bottom: 152px"></oas-float-button>
+  <div style="position: relative; height: 180px; width: 100%">
+    <oas-float-button draggable magnetic="x" style="position: absolute; --oas-float-button-bottom: 16px; --oas-float-button-right: 16px"></oas-float-button>
+  </div>
 </DemoBlock>
 
 <DemoBlock title="拖拽 + 磁吸 y（松手贴最近上下边缘）">
-  <oas-float-button draggable magnetic="y" style="--oas-float-button-right: 112px; --oas-float-button-bottom: 216px"></oas-float-button>
+  <div style="position: relative; height: 180px; width: 100%">
+    <oas-float-button draggable magnetic="y" style="position: absolute; --oas-float-button-bottom: 16px; --oas-float-button-right: 16px"></oas-float-button>
+  </div>
 </DemoBlock>
 
 ## 链接

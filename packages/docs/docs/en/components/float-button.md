@@ -76,16 +76,22 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 
 `magnetic` works together with `draggable`: on release the button snaps to the nearest edge of the chosen axis — `x` snaps to the left/right edges, `y` to the top/bottom edges, with a transition (`prefers-reduced-motion` snaps instantly). The three buttons below are fixed to the bottom-right corner by default; press and drag to try it (the magnetic ones snap to the edge on release).
 
-<DemoBlock title="Draggable (press and drag the bottom-right button)">
-  <oas-float-button draggable onoas-click="message.info('This is a click (not a drag) firing oas-click')" style="--oas-float-button-bottom: 88px"></oas-float-button>
+<DemoBlock title="Draggable (press and drag the button within the container)">
+  <div style="position: relative; height: 180px; width: 100%">
+    <oas-float-button draggable onoas-click="message.info('This is a click (not a drag) firing oas-click')" style="position: absolute; --oas-float-button-bottom: 16px; --oas-float-button-right: 16px"></oas-float-button>
+  </div>
 </DemoBlock>
 
 <DemoBlock title="Draggable + magnetic x (snaps to the nearest left/right edge)">
-  <oas-float-button draggable magnetic="x" style="--oas-float-button-bottom: 152px"></oas-float-button>
+  <div style="position: relative; height: 180px; width: 100%">
+    <oas-float-button draggable magnetic="x" style="position: absolute; --oas-float-button-bottom: 16px; --oas-float-button-right: 16px"></oas-float-button>
+  </div>
 </DemoBlock>
 
 <DemoBlock title="Draggable + magnetic y (snaps to the nearest top/bottom edge)">
-  <oas-float-button draggable magnetic="y" style="--oas-float-button-right: 112px; --oas-float-button-bottom: 216px"></oas-float-button>
+  <div style="position: relative; height: 180px; width: 100%">
+    <oas-float-button draggable magnetic="y" style="position: absolute; --oas-float-button-bottom: 16px; --oas-float-button-right: 16px"></oas-float-button>
+  </div>
 </DemoBlock>
 
 ## Link
