@@ -594,3 +594,21 @@ test('bubble reactions：side=top 反应条在气泡上方、align 显式覆盖�
   // 宿主 align=end + reactions-align=start：显式覆盖优先，反应条左缘贴宿主左缘
   expect(Math.abs(geo.hostEndAlignStart.reactionsLeft - geo.hostEndAlignStart.hostLeft)).toBeLessThanOrEqual(1)
 })
+
+// —— 缺陷回归：bubble 宿主改 flex 列容器（reactions side/align 生效化）后，
+// message-row 的 text-align 继承落位断链（flex 项不响应 text-align），align=end 行气气泡不再右对齐。
+// 修复为 update() 把继承的 text-align 计算值反射为 data-inherit-end；此处用真布局几何守住契约
+test('message-row align=end：行内气泡右对齐贴头像（text-align 继承 → data-inherit-end 反射）', async ({ page }) => {
+  await page.goto('/components/message-scroller.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#msc-basic')
+  const geo = await page.evaluate(() => {
+    const row = document.querySelector('#msc-basic oas-message-row[align="end"]') as HTMLElement
+    const bubble = row.querySelector('oas-bubble')!
+    const b = (bubble.shadowRoot!.querySelector('[part="bubble"]') as HTMLElement).getBoundingClientRect()
+    const a = (row.querySelector('oas-avatar') as HTMLElement).getBoundingClientRect()
+    return { bubbleRight: b.right, avatarLeft: a.left, reflected: bubble.hasAttribute('data-inherit-end') }
+  })
+  expect(geo.reflected, 'align=end 行的气泡应反射 data-inherit-end').toBe(true)
+  // 气泡右缘贴近头像左缘（行内间隙 ≤ 16px）
+  expect(Math.abs(geo.avatarLeft - geo.bubbleRight)).toBeLessThanOrEqual(16)
+})
