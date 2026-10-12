@@ -48,7 +48,6 @@
 - **oas-toggle-button `icon-toggled`**：按下时显示的备用图标（回退 `icon`）。
 - **oas-inspector-row `align-top` / `striped`**：高控件用顶对齐标签，以及可选的斑马纹背景。
 - **oas-marker `status`（`info`/`success`/`warning`/`danger`） + `shimmer`**；**oas-bubble `reactions`**（emoji + 计数，真实按钮上派发 `oas-reaction`）；**oas-message-scroller `track-visible`**（`pay-for-use`；`oas-visible-change` + `visibleMessageIds`/`currentAnchorId`）。
-- **oas-badge / oas-empty 组合 demo**（徽标内转圈；empty 内放 avatar/avatar-group/input）——仅文档，无 API 变更。
 - **`oas-swipe-cell` 双向滑动**：`slot="actions-start"`（inline-start 侧，LTR 下右滑露出）现可与 `slot="actions"`（inline-end，左滑）在同一项上共存。打开态从布尔升级为某侧（`'start' | 'end' | null`）：新增 `open-side` 属性（及 `openSide` property）选择/反射该侧，`open` 布尔保留（任一侧打开即为 true），`oas-open` 事件 `detail` 增加 `{ side }`。单次手势可双向拖拽，可越过零点端到端切换侧，且每项仅一侧打开；`side` 仍是单组旧开关（`actions-start` 存在时忽略）；RTL 经逻辑属性镜像。每侧可访问性不变（各分组是独立的 `role="group"`，共享同一 i18n 标签）；焦点进入某侧 actions 即打开该侧。
 
 ### 修复
@@ -60,12 +59,9 @@
 - **数值拖拽值通道正确性**（共享拖拽内核，影响 oas-slider 读数与 oas-input-number）：未显式设 `precision` 时，档位组合可能把二进制浮点尾当作提交值（如 `0.1 × 3` 档 → `0.30000000000000004`，Shift 精调档 `10 + 23 × 0.2` → `14.600000000000001`）写入 `value` 属性、`oas-change` detail、读数、气泡与 `aria-valuenow`。拖拽值现按生效 step 与基准值的有效小数位自动收敛到数学预期（无语义变化——仅移除实现误差）；显式 `precision` 在其上作为更严格的值约束（如 `precision="0"` 把修饰键精调档钳回整数）。另：`step="mark"` 下滑块拖拽现先对齐最近刻度再写入，使滑块、`value` 属性与读数一致停留在刻度集上（此前属性可能短暂携带如 `42` 的离刻度值，而仅滑块显示已对齐——宿主属性读取/序列化与 `el.value` 漂移）。docs zh/en 已更新；新增单测 + qa-regression 真实交互回归（刻度对齐 + 分数档洁净）。
 - **会话族后续修复**：oas-message-scroller 的 ResizeObserver 现同时观察内容与视口——视口尺寸变化（窗口或容器）会刷新边缘状态、跳转按钮与 `oas-scroll-state`（此前为盲点），断连时清理观察者、重连时重新观察；初始 `oas-scroll-state` 改为首帧（完成初始定位后）广播一次，而非升级过程中同步派发，故在元素升级后才挂监听的宿主仍能收到；oas-message-row 的 `sending` 状态图标重新转圈（`spin` 图标类此前无匹配的 scoped 动画规则）；oas-marker 的空态折叠改用 `data-empty` 反射 + scoped CSS，不再清除宿主显式的 `hidden`；oas-attachment 去掉无用的 `media` 属性（媒体形态由 `slot="media"` 是否有内容决定）；全部 10 个 locale 移除四个未用的 i18n key（`attachment.open/uploading/processing/done`）。
 - **oas-questionnaire 陈旧导航竞态**：异步校验器在途时，`prev()` / `goto()` 不被拦截（设计如此——返回绝不能被困住）；校验器解析后，在途的 `next()` 仍把 `current` 推进到陈旧目标，在用户已离开起始步后将其拽向前方。现当 `current` 不再指向起始步时放弃在途导航（已加单测回归）。
-- **questionnaire 文档 demo 反馈**：跳过 demo 的 `oas-change` 监听未滤除字段级 `oas-change` 冒泡（编辑字段会显示「已移到下一步」却原地不动），且跳过反馈行会被紧随其后的步骤切换事件立即覆盖——现按 `detail.index` 过滤并保留跳过反馈（zh/en demo）。
 - **oas-combobox `multiple` 加固**：运行时 `name` 变化现会重新同步同名 FormData 条目键（`name` 加入 `observedAttributes`，与 oas-select 一致）；`readonly` 隐藏清除按钮并拦截 `clearValue`，`disabled` 去除每个 chip 的移除按钮，不留无作用的可见可供性；被 `max-count` 拦截的选择不再清空内部过滤查询（`valueDirty`/`query` 仅在通过上限检查后才改动），使高亮行保持在过滤集内；无 `name` 时 `getFormValue()` 返回 `null`（自建 FormData 绕过了浏览器「无 name → 不提交」兜底，此前空键条目会泄漏进表单），`required` 多选校验现直接检测选择集，无 name 的选择不再被误标 `valueMissing`。新增单测 + 真实浏览器 qa-regression。
 
 - **`@oas-ui/ui` 主入口导出补全**：顶层入口现也重新导出 `OASBottomSheet`、`OASMenuItem` / `OASMenuGroup` / `OASMenuDivider` 与 `OASMenubarItem` / `OASMenubarGroup` / `OASMenubarDivider`（此前仅能经子路径导入与 `@oas-ui/ui/ssr` 入口取得），主入口与 SSR 入口的类超集对齐。
-
-- **CI 长期失败两处根因修复**：① a11y 长列表页（calendar 等）在 CI 负载下 page.evaluate 超 30s 测试超时——此前误报为「calendar.html axe 违规」，实为超时；测试超时 30s → 60s（本地充裕、CI 打满 CPU 需双倍余量）。② Firefox OpaqueResponseBlocking 拦截 card demo 跨域外链图（picsum）产生的 benign 告警未入白名单 → smoke/console-sweep 白名单补该模式。
 
 ## [2.6.0] - 2026-10-07
 
@@ -87,10 +83,6 @@
 - **浅色玻璃面板在白色背景下边界与内部隔断线消失（用户两轮实抓）**：浅色玻璃的 surface（白 0.6~0.75 半透明）与折光边（白 0.55）在白底上同为白色系，面板读作浮字；内部隔断线（modal 标题/底部分割线）走白色 border token，在白面板上同样消失（暗色下白色结构线可见，故只有浅色出问题）。修复双管齐下：① 三档阴影前置发丝线（`0 0 0 1px rgba(0,0,0,0.06~0.08)`）补面板外缘；② 浅色 `--oas-color-border` 系列改深色发丝（`rgba(0,0,0,0.08/0.14)`）补内部隔断——折光边职责仍归白色 `--oas-glass-ring`（outline 内缩），结构线与折光边分工对齐 iOS 浅色半透明面板；dark 段不动（范围纪律）。e2e 固化 computed 阴影含发丝线 + modal 标题分割线为深色系断言 + 白底/渐变双场景截图复核。
 - **oas-color-picker 未连接写 `value` 崩溃（React 19 宿主整树中断）**：React 19 在元素已升级、未连接时设置 property，`set value()` 直调 `update()` 读到未渲染内部件（`syncControls` 的 `.r/.g/.b` 非空断言）抛 TypeError。修复：setter 加 `hasRendered` 守卫（属性写入保留，首渲染自然读新值，与基类 `attributeChangedCallback` 早退同语义）。同步落地 29 组件 `value` setter 未连接守卫普查套件 + 真实浏览器 e2e 固化；并把同款守卫**统一铺到全部 20 个直调 `update()` 的 value setter**（input/textarea/select/slider/cascader/date-picker/time-picker/rate/radio/segmented/transfer/tree-select 等——此前「恰好不崩」靠各组件 update() 路径容错，现改为构造保证的「廉价 setter」约定：连接安全不依赖实现细节）。
 - **high-contrast × class 式暗色（`html.dark`）下玻璃材质泄漏**：`.dark` 选择器补 `:not([data-theme="high-contrast"])`——HC 可访问性强档下 blur/ring/折射全部让位（此前仅 `[data-theme='dark']` 路径排除）。
-
-### 文档
-
-- **订正 v2.5.9 立项段变量名漂移**：`--oas-glass-specular`（立项拟名）实为 `--oas-glass-ring`（实现定名）——PRD/ROADMAP 回写订正；**明确 button-group 禁用 × 选中为有意设计**（禁用只灭交互与装饰变形，选中态颜色保留可读，加注释与 e2e 回归锁）。
 
 ## [2.5.9] - 2026-10-05
 
@@ -206,7 +198,6 @@
 - **ARIA 语义**：`oas-card` / `oas-list-item` 不再挂缺省交互角色（`role=button/checkbox`）——可点/可选卡与可点行内常嵌操作控件，缺省角色会把它们裹进交互元素（`nested-interactive`，屏幕阅读器丢失内部控件可读性）。需要行级/卡级交互语义时，由宿主显式挂 `role`（组件不覆盖宿主显式角色）并按需自行同步 `aria-checked`；`oas-editable` 只读展示态由 `role=button` 改为 `role=textbox` + `aria-readonly`；`oas-radio` 只读由 `aria-readonly` 改为 `aria-disabled`（radio 不支持前者）。
 - **token 语义**：语义色/预设色的 `-text` 变体（如 `--oas-preset-red-text`）现在同时承担「文字色」与「实底底色」（tag、badge、avatar、toggle 的实心与选中态）——只覆写 `--oas-preset-*` / `--oas-color-*` 本色的换肤不再影响这些组件的实底与文字，请改为覆写对应 `-text` 变体。另新增 `--oas-color-primary-text`（primary 的文字安全档，值与 `-active` 相同，交互态仍用 `-active`）；自定义 hex 色的文字安全档改为随主题方向的混合（内部 token `--oas-deep-mix` / `--oas-deep-sink`）。
 - **Shadow DOM 结构**：`oas-splitter` 的分隔条外层新增 `.sep` 包裹层（折叠按钮与 separator 同级，消除交互嵌套），`[part="splitter"]` 的宽度语义由 `.sep` 承接；`oas-progress` 内嵌文本（`::part(inside)`）的父节点由 `.track` 变为 `.bar`（文本只压在已填充段内，填充过窄时自动隐藏）。依赖这些结构的宿主 CSS / `::part` 选择器需相应调整。
-- **API 语料失效行清理**：`oas-scroll-area` 文档 API 表中的 `direction` 行为失效残留——该组件从未提供 `direction` 属性/property，书写方向判定走全局机制（config-provider 的 `direction` 注入 / 最近 `[dir]` 祖先 / 根级 `dir`，由 RTL 说明统一覆盖），与该组件自身 API 无关。仅删文档语料行，组件代码行为零变化。
 
 ### 无障碍
 
@@ -228,25 +219,14 @@
 - **`[hidden]` 兜底收口（8 处）**：作者级 `display` 声明压过 UA `[hidden]` 规则的同类缺陷，全库清查补齐
 - **真机视觉复核 7 处修复**（含 2 处存量缺陷）+ oas-masonry items getter 契约修复
 - **oas-input addon 槽放自包含控件时改贴合形态**：修复 append 槽放 `oas-button` 时按钮左右各 12px 灰带、四角 6px 未与外框合并（双层圆角嵌套）、托盘与输入框上下 1px 台阶——根因是 `.addon` 无条件 padding（本为文本 addon 留位）且未向被分发按钮注入圆角合并协议；识别自包含控件（oas-button / oas-button-group / oas-compact）打内部标记，仅标记存在时归零 padding、去自身底/边、按尺寸档对齐控件高度、-1px 压边成单线并注入 `--oas-button-group-radius`
-- **SSR 测试基建**：DSD 快照匹配改前缀模糊通道（防 DOM 噪声属性误报）；关闭 happy-dom 帧导航（消除单测 fetch 噪声）
 
 ### 工程
 
-- **断开 ui↔ssr 构建环**：`packages/ui` 移除对 `@oas-ui/ssr` 的 devDependency（任务图成环致 pnpm dev/build 全挂），唯一真实引用（e2e spec）迁至 ssr 包内，playwright `testDir` 放宽到 `./packages`
-- **工具链与依赖升级**：pnpm 11.20.0 → 12.5.1（packageManager）+ biome/playwright/@types/node/happy-dom/markdownlint 等升级，连带回归 8 条修复（含 1 条 SSR 真回归）+ gold 期望同步
 - **API 工具链**：反向缺口治理（跨目录基类扫描 + `@apiProperty` 通道 + 双向 0 门禁）；API 语料进 pre-commit；docs 双语镜像守卫；qa-regression 覆盖回填 8 组件
-- **perf 预算重定档**（form-associated 批次增量）：cdn.js 575→600 KB、全量入口 870→905 KB（天花板制等比）、button 链 31→35 KB、table 链 65→70 KB、form 链 20→24 KB（绝对值制按实测上浮 ~15%）
 - **ui-spec 新增「命令式开合 API 约定」**（抽屉/浮层类公开方法的统一形状，sidebar 为首个落地件）
-
-### 文档
-
-- form 页新增「原生表单集成」集中 demo（label for + FormData + reset + 15 组件支持清单，中英双版）；12 组件补 required 演示块
-- qrcode 文档补形状/渐变两节 demo（中英双版）；`error-correction` 说明修正（四级均已实现，非仅 L 级）
 
 ### 测试
 
-- a11y 审计全站零排除页：仅 stepper 保留一条「跨 shadow ID 引用」页面级规则豁免，配套 qa-regression 的 `aria-controls` 目标存在性断言兜底
-- 新增对比度门禁自检用例与基线生成模式（`CONTRAST_BASELINE=update`）；qa-regression 补 splitter 折叠 / list 双触发 / card radio 组 / stepper aria-controls / qrcode 刷新五处固化
 - tooltip 三个 hover 跟随用例改「关动画 + 等 DOM 静止 + 轮询断言」，消除并行下的时序抖动
 
 ## [2.5.5] - 2026-09-17
@@ -264,9 +244,7 @@
 
 ### 优化
 
-- **CI 门禁收口**：`stats:check` 调到 `perf:size` **之前**——`perf:size` 会改写入库基线，先跑会让读基线的统计校验拿「环境实测数字」比「提交版数字」，长期必红（本地已复现：旧顺序退出码 1、新顺序 0）；tooltip merge 直角三角几何用例改为**静止态测量**（入场动画 `scale(0.9→1)` 期间 `getBoundingClientRect` 量到缩放后的箭头盒 → 断言随机器快慢抖动，CI 上两引擎同用例即挂），用页面级 reduced-motion 关动画，容差维持 0.5px 不放宽
 - **`perf:size` / `perf:bench` 默认只测不写**：两者原先每次运行都用当前环境实测值改写入库的 `docs/perf-baseline.json`（本地跑一次就脏一个 tracked 文件，gzip 字节跨 zlib / 平台存在差异），改为默认只测量并打印结果，更新基线需显式加 `--update-baseline`；engineering.md §4 同步
-- `release-check` 增适配层（next/nuxt）「有改动未 bump」警告（适配层独立发版节奏、不硬校验版本，但漏 bump 会导致改动永远发不出去）；本地 pre-commit 钩子增 stats 门禁，统计漂移不再留到 CI 才发现
 
 ## [2.5.4] - 2026-09-16
 
@@ -278,7 +256,6 @@
 - **RTL 第二批（方向键镜像 + 面板逻辑化收口）**：6 组件水平方向键 RTL 换向（carousel 双键盘域 / stepper / bottom-navigation / toolbar-toggle / image 图集翻页 / tree 展开收起键）+ carousel 轨道位移取反与 prev/next 箭头逻辑属性镜像 + tree 收起箭头 `data-rtl` 镜像 + scroll-area 方向判定收敛 `shared/direction` 单源（废弃私有实现；语义变化：config-provider 注入现优先于最近祖先显式 `dir`，与全库一致）+ 浮层面板残留物理 CSS 逻辑属性改造（select / auto-complete / combobox / mentions / cascader / tree-select / date-picker / time-picker / tour / dropdown split 接缝与圆角 / menu 间距缩进 / table 表头与过滤面板 / slider / collapse-item / theme-editor）+ 约定守卫：全库物理方向 CSS 白名单化，白名单（placement 基向箭头绘制、物理命名 API、内容 LTR 锁定、成对对称）之外新增一律红灯
 - **API 规范统一**：**size 档位跨词表别名互认**（`shared/size` 单源——五档全称/缩写在任何组件等价接受，别名不告警，内部规范化输出不变；button/tag/badge/stepper/pagination/float-button 首批接入）+ **事件同名归一**（drawer/modal 关闭动画完成增派规范名 `oas-after-close` 对齐 after-* 家族、upload 超限增派 `oas-exceed-limit` 对齐 checkbox-group/select/toggle-group——旧名 `oas-closed`/`oas-exceed` 保留为兼容别名双发，API 表标注【兼容别名】；ok（对话框）/confirm（选择器）分工写入 ui-spec）+ **阴影三档 token**（`--oas-shadow-sm/md/lg`，light/dark 双变体；28 处裸海拔阴影迁移 + 收口批次 21 处浮层 `color-mix` overlay 迁移，方向性投影/inset/形状描边豁免并写入 ui-spec §1.1）
 - **感知质量收口**：CSS 变量引用守卫（无 fallback 且全库无定义 → 红灯）+ 7 处存量裸 token 补 fallback（table 2xs/weight-medium、message ease-in、notification radius-rounded、tour text-tertiary/fill/base）；a11y 审计改为自动收集全部组件页（原手选 26 页），存量违规建台账
-- **qa-regression 补位 10 组件**（bottom-sheet/confirm/checkbox/radio/textarea/collapse/speed-dial/editable/dynamic-input/toggle-group，41 用例）+ helpers 新增 `defocus`/`realClick` 焦点滚动防抖工具（editable demo 挂载即聚焦引发的页面滚动拽走陷阱根治）
 
 ### 修复
 
@@ -299,13 +276,11 @@
 
 - **API 表工具链补全（面板出口自动化）**：CSS 变量出口收割进 `docs/api-manifest` → API 表新增「CSS 变量」组（平衡括号扫描不漏变量、源码声明值兜底、组件作用域 theme token 放行、同前缀数字出口折叠为 `{1..N}`）；插槽收割补 light-DOM 标记式（`[slot="x"]`）与代码式（`getAttribute('slot')`）读取，去重归一形式、排除内部保留标记与内部管线插槽
 - **全库 API 段统一版式**：所有组件页统一为 `### oas-xxx` + `#### 属性/事件/插槽/CSS 变量`（单/多标签同一生成路径）；CSS 变量表按需增列「说明」；补齐 68+ 条插槽说明与关键组件变量说明（spin/steps/sidebar/notification/tag 等），旧手写重复段由生成器认领消除
-- **英文 demo 页缺块补齐**（6 组件）中英块数全对齐；`ssr` 边界说明、bottom-sheet 文档页与侧边栏/总览接线
 
 ### 优化
 
 - perf 预算重定档（cdn/全量入口天花板、table/theme 分量重定；闭包测量只计静态导入，动态 `import()` 不计初始负载）
 - `pnpm release:check` 版本一致性硬校验脚本 + pre-push 钩子（tag 指向版本不一致拒推）
-- markdownlint 收口（列表/标题空行等 76 处自动修复 + 规则带理由豁免）与文档站统计（`stats.json`）重生成
 
 ## [2.5.3] - 2026-09-14
 
@@ -343,7 +318,6 @@
 - **tree `parseIdList` 数字 key 静默丢弃 + 非法输入零告警**：v2.5.0 契约收紧为 JSON 数组后，`expanded`/`checked`/multiple 态 `selected` 传入数字 key 的合法 JSON 数组（如 `expanded="[1,2]"`）被 `typeof string` 过滤静默丢弃成全折叠/全不选；解析失败（典型：旧版逗号串）无任何提示。修复为数字 key 统一 `String()` 归一化（空串/`undefined`/`null` 项滤除），解析失败按空集合回落并在 dev 下 `console.warn` 一次（同值去重，文案含迁移写法）。回归：oas-tree.test.ts 单测 2 例 + qa-regression/tree.spec.ts 固化断言（oas-ui-templates 三端 menus/dept 页实抓上报）
 - **select / combobox / auto-complete / tree-select 浮层首次展开未左对齐**：定位时先用面板固有（塌缩）宽度算 left、之后才把宽度撑到触发器宽 → 首开偏右（实测 +70~89px），再开才对齐。修复为先按触发器宽度撑开、再测量、bottom-start 左缘对齐，首开即与再开一致（cascader 面板取内容固有宽度不受影响）
 - **date-picker 面板右侧大片空白**：月/年网格 1fr 轨道在 shrink-to-fit 容器下塌缩到内容宽、把面板撑到 378/431px 且右侧留白。修复为非范围面板收窄为 240（与日网格同宽）+ 月/年网格显式等宽 + 范围面板两栏 flex 均分（month/year/monthrange/yearrange/daterange 留白归零）
-- **date-picker 单元格渲染 demo 日期数字丢失 + 每格误现标记点**：内联 `<template slot="cell">` 被 Vue 编译管线吞成空模板，组件克隆空模板后清空日格 → 日期数字全消失。修复为组件侧 `fillCells` 加防御（模板为空不清空日格、保留日期数字）+ demo 改 JS 注入模板；标记点改为只给指定日期追加（原模板内置默认红点导致每格都有点）
 
 ## [2.5.0] - 2026-09-09
 
@@ -397,19 +371,12 @@
 - **table 进/出编辑列宽行高跳变**：编辑器内在宽度（input size=20 默认 / select 最长选项）成为 auto 布局 min-content 贡献撑宽整列、操作列两态按钮变宽挤压邻列；修复为不可见占位保原文本布局贡献 + 编辑器绝对定位零贡献 + 操作列两态同槽叠放（inline-grid 同格），实测列宽行高三态零跳变
 - **table 表头吸顶失效（非固定列）**：`th[data-key] { position: relative }`（列宽拖拽手柄定位上下文）同权重居后覆盖表头吸顶 sticky，年龄/城市/邮箱等表头随表体滚走；删除覆盖（sticky 同为定位上下文，天然供给拖拽手柄）
 - **table 子元素声明式通道在 Vue 宿主内容行全空**：列标识 `key` 是 Vue 模板保留字被剥离不到 DOM；改 key 双通道读取（`key ?? data-key`），demo 中英全部改写 `data-key` 并补保留字注记
-- **table cellTemplate demo 模板被 md/Vue 编译管线吃空**（dev 与生产构建对 `<template>` 子内容处理不一致）：demo 改 property 通道（JS 构造 HTMLTemplateElement + `whenDefined` 后赋值防升级前 expando 遮蔽）
 - **table 多级表头竖线语言归一**：非 bordered 表全表无竖线，删除 `header-group` 左线孤例（曾致「地址有线、成绩没线」不一致）；竖线只属 bordered 全网格模式
 - progress SSR 空属性噪声（空 status 不再序列化出空 data-status/class）
-- dev 全新环境 predev 拓扑序构建（core/i18n/icons dist 缺失时 `pnpm dev` 一把过）
 
 ### 测试
 
 - tour 滚动隐藏回归用例改不变量断言（rAF 逐帧采样 + 环境分形：有动画帧则途中每帧必须隐藏，瞬跳则断言终态正确；headless Chromium 把 smooth 滚动瞬跳导致旧用例恒红）
-
-### 验收
-
-- 全量单测 5142 / typecheck 0 / build / api:check / trace 0 命中
-- 全量 e2e 1616 全过（chromium 全量 + firefox 抽样 + docs-site）
 
 ## [2.4.0] - 2026-09-01
 
@@ -429,13 +396,11 @@
 ### 修复
 
 - **demo-coverage/qa-regression 欠账清零（33→0）**：popconfirm 打开焦点从未生效（update 顺序 bug——面板 display:none 时对 ok 调 focus 静默失败，改为先设 aria-hidden 再聚焦）；demo-coverage wait 步从未执行（历史约定参数放 sel 但分发器只读 act）
-- **qa-regression 拆 55 个 per-component spec**（巨石串行 8.6m → 文件级并行）+ playwright 端口 `E2E_PORT` 环境变量覆盖（多 worktree 并行开发互抢端口根治）
 - drawer 四向 placement 面板停在屏幕外（CSS 顺序依赖）、message 图标首行对齐补偿、modal no-footer 底角直角
 
 ### 杂项
 
 - 六发布包 package.json 补 homepage 字段（npm 包页链接指向文档站）
-- color-picker placement API 描述补录 + 12 向单测 + 底部上弹 e2e 回归
 
 ## [2.3.2] - 2026-08-31
 
@@ -450,18 +415,12 @@
 - oas-pagination 当前页 hover 蓝底蓝字不可读
 - oas-steps reverse 倒序连接线穿出容器/断档
 - oas-steps arrow 分格块间白缝（gap 0 互嵌贴边）
-- oas-log demo beforeunload 泄漏阻断整页导航
-- image demo 外链占位图统一加内联 SVG fallback（外链图床不可达时显示异色色块而非裂图/空占位）
 
 ## [2.3.1] - 2026-08-28
 
 ### 特性
 
 - **table**：可编辑单元格可感知线索——hover/focus-visible 淡底色（`--oas-color-bg-hover`）+ `cursor: text`（sticky 列不透明变体不透出下层滚动内容、条纹/选中行叠加有序、编辑中不适用）+ 铅笔编辑图标 hover/focus 显现（库内 editPath，`aria-hidden`、opacity 过渡、编辑退出重挂）+ `title` 双击编辑提示（zh/en 本地化）；保持双击进入（单击会废掉单元格文本选中复制）
-
-### 杂项
-
-- **单测**：+5（图标渲染/title 本地化/STYLE 规则/编辑中移除与退出恢复）；**e2e**：qa-regression 真实 hover 回归 +1；全量 3682
 
 ## [2.3.0] - 2026-08-28
 
@@ -480,11 +439,6 @@
 
 - **app 宿主注册表**：单槽位改栈式——嵌套 app 移除内层后外层自动接管（挂载点与配置都回外层，不再回退 document.body）；并列宿主移除后注册者先注册者接管
 - **table 行内编辑退出**：exitEdit 单元格重画改走 cellNode（尊重 render/cellTemplate 富内容）+ Esc 取消时 blur 误提交修复（先置 editState=null 再清 input）
-
-### 杂项
-
-- **单测**：新增约 85 条（框架级容器组 + 全局禁用 + modal 命令式）；全量 3677
-- **e2e 基建**：qa-regression 新增 theme-editor 颜色函数值回归；对比度审计清单补 theme-editor/config-provider/app 三页
 
 ## [2.2.9] - 2026-08-28
 
@@ -505,12 +459,6 @@
 ### 修复
 
 - **grid**：单值 `gap` 真实生效——applyGap 改「先清长hand再写简写」（原顺序在真实浏览器 CSSOM 下简写被清空、computed gap 掉 0；happy-dom 不展开简写单测漏检，ssr-dsd 真水合布局稳定断言暴露）
-- **e2e 基建**：Playwright 默认 locale 锁 zh-CN（首访语言适配后 en-US 重定向英文页致批量落空）+ demo-coverage 缺口补全（avatar `text` / table `multi-sort`·`filter-values`·`summary-scope` 演示 + table 分页/过滤/列重排/列宽与 scroll-area 到底事件探针步骤）
-
-### 杂项
-
-- **单测**：新增约 45 条（布局三批 + masonry items + table summary-scope）；全量 3589
-- **docs**：layout.md 补职责边界说明（sider 折叠归 sidebar、viewport 覆盖 fixed 场景）；demo-coverage 探针新增 scrollbottom/resizecol 动作
 
 ## [2.2.8] - 2026-08-27
 
@@ -530,8 +478,6 @@
 ### 杂项
 
 - **ui**：统一 HTML 转义——5 组件（code/equation/chart/date-picker/empty/watermark）改用 core escape 工具；ui-spec 新增 §HTML 注入安全规范 + §组件合并验收清单加注入安全检查项（与 axe 并列）
-- **单测**：新增约 12 条（form 图标/collectFields/registerFormControl/side/escape/avatar text/行点击守卫/popconfirm source）
-- **docs**：新增 form 图标 / layout side / HTML 注入安全 相关文档；engineering 发布通道适用范围澄清
 
 ## [2.2.7] - 2026-08-27
 
@@ -559,16 +505,13 @@
 
 ### 杂项
 
-- **table 单测**：新增约 20 条（列设置/多列排序/多级表头/分页/过滤/合并/子元素通道/模板/校验/拖拽排序）
 - **perf**：table 按需链体积随能力增强更新（26KB → 36KB 预算基线，注明依据）；渲染基准同步
-- **docs**：table 新增列设置/多列排序/序号省略号/多级表头/内置分页/列过滤/合并/子元素声明式通道/单元格模板/自定义列头/远程排序 loading demo（中英）
 
 ## [2.2.6] - 2026-08-26
 
 ### 修复
 
 - **sidebar 内置图标配 iconColor 生效**（实测缺陷）：`SidebarItem.iconColor` 对内置图标不生效（图标仍 currentColor 灰）。根因：`iconSvg(name, iconColor)` 只在 `<svg>` 外层写 stroke，但内置图标 path 自带 `stroke="currentColor"`——path 元素级属性压过 svg 外层 stroke，颜色永远 currentColor（模板侧用官方 iconColor 全灰，仅 active 主题色高亮）。修法：iconColor 显式时对 path 的 `stroke="currentColor"` 做替换（内置单色 path 着色生效；自定义注册的彩色 SVG 天然兼容无需替换；缺省 currentColor 随态零回归）
-- **docs**：图标着色 demo 补内置图标场景（内置 `star` 配 `iconColor` 显式着色活示例 + 内置 `heart` 无 iconColor 随态对照）
 
 ## [2.2.5] - 2026-08-26
 
@@ -623,7 +566,6 @@
 - **sidebar 嵌套子菜单两个视觉缺陷**：`.sub` 类名冲突致激活背景溢出面板右缘（容器改 `.submenu` 隔离）；无图标子项 label 与父项齐平/偏左（保留图标占位 + label 缩进父项右侧）
 - **splitter + sidebar 组合**：sidebar 内联 style 被 update 周期清除致拖拽调宽失效——`width="100%"` 属性化；e2e 真拖回归固化
 - **card**：无 title 时 header part 仍渲染 33px 空占位——补 `.header[hidden]` 兜底（对齐 `.cover[hidden]` 先例）
-- **icons generate 两项加固**：并发竞态（root build 与 docs build 同时触发 generate 互踩）——临时目录按进程隔离；dev watch 持句柄时目录原子替换 EPERM——退避重试护体（发布构建与 pnpm dev 并行必现级，实测修复）
 - **docs 首页**：「性能速览 → 三行代码」两屏间渐变分隔光带缺失（该屏双伪元素被网格/光晕占用）——显式 `.home-divider` 元素承载，与其他屏同位同款
 
 ### 变更
@@ -665,7 +607,6 @@
 - **icons**：arrow-up/arrow-down 方向画反（svg 源顶点互换 + 方向类几何断言固化）；icon generate 脚本原子化（中断不毁 src/icons）；duotone 分层 fallback 劫持 + secondary 双色被抹
 - **menu**：checkbox 多选方格与标签紧贴（补 margin 间距）
 - **table**：summary 行 render 返回 Node 时文本路径守卫
-- **docs**：端口描述漂移修正 5173→5175；qa-regression.spec 积压 typecheck 错误清理；format 既存漂移两批收敛；sidebar API 描述补录（active/drawer-open）
 
 ## [2.1.5] - 2026-08-22
 
@@ -735,8 +676,6 @@
 ### 变更
 
 - **事件 detail 联合类型**：api:scan 改进——同一事件多处 emit 且 detail 不同时合并为联合类型（如 `oas-select` = `{value} | {value, kind:'action'}`），editable/pagination/input-number 等分支 detail 一并补齐
-- **e2e CI flaky 修复**：demo-coverage 事件探针 upgrade 等待 4s→10s + 事件缺失时自动重试（`__fired` 单调累积不误判）；image 懒加载全图加载判定超时 10s→20s（2 核 runner 高并发下组件 upgrade 慢所致）
-- **文档标注**（集成反馈 #10/#10a）：API 表说明事件 `detail` 的 `originalEvent` 非原生 Event（不能直接 `preventDefault()`）、`data-value` 是内部定位属性宿主不应依赖
 
 ## [2.1.1] - 2026-08-20
 
@@ -771,7 +710,6 @@
 - table：`size` 密度档位（small/medium/large，CSS 变量开口）
 - 展示型组件字号继承：A 类跟随外层 / B 类组件级变量开口（11 组件）
 - 无障碍体系：对比度审计换自实现的感知对比度算法（不再用比值法判文字可读性）、`-text` 达标 token 体系（22 预设/语义文字变体）、color 属性统一协议（11 预设名 + 任意 CSS 色值）
-- API 表自动化：`api:scan`（AST 扫描）+ `api:gen`（生成中英 API 章节）+ CI `api:check` 防漂移
 - 官网首页 v2：hero oas-table 标志性 demo + 场景卡 + HTML 代码速览 + 真实 perf 数据 + CTA，H05 深色沉浸风格
 
 ### 修复
@@ -829,16 +767,11 @@
 
 ### 工程
 
-- e2e 性能优化：大 spec 文件内并行（`test.describe.configure({ mode: 'parallel' })`）——demo-coverage 10.4min→38s、code 8.3min→45s、visual 6.9min→46s；chromium 全量 ~15min→4.1min，CI e2e 3-shard 每 shard 预计 17min→~5min
-- 消灭固定等待：demo-coverage 用 `load` 替代 `networkidle`、等组件 `shadowRoot` upgrade（修并行高负载下探针扑空）、事件缓冲收敛；code/smoke/visual 固定 `waitForTimeout`→`waitForSelector('.demo-block')` 自动等待
-- CI webServer 跳过重复 docs build（CI 已先全量 build，直接 preview 省 ~10s/shard）
 - 文档站接入 Google Analytics（head 注入 gtag + SPA 路由 `onAfterRouteChange` page_view）
-- dark 冒烟背景断言改 `toHaveCSS`，消除 background transition 中间帧竞态（CI 高负载曾采到 rgb(25,25,28)）
 
 ### 修复
 
 - GA pageerror：`enhanceApp` 注入的是 vitepress Router（无 vue-router 的 `afterEach`），改用 `onAfterRouteChange`
-- Cloudflare 部署：构建命令改全量 `pnpm build`——ui 的 `tsconfig.build.json` paths 依赖 core/i18n 的 dist d.ts，单独 ui build 会报 `extends OASElement` 基类缺失
 - 类名规范化 `OAStour` → `OASTour`（PascalCase）
 
 ## [1.9.0] - 2026-08-12
@@ -850,10 +783,8 @@
 - `oas-form-item` 组件 + `oas-form` 栅格布局（`layout="grid"`/`gap`/`label-align`/`label-width`，错误提示收编 form-item，裸字段向后兼容）
 - size 尺寸档位扩展：三档 → 五档（xs=20px / small=24 / medium=32 / large=40 / xl=48px），button/tag/switch/space/spin 全档支持（spin 保留旧缩写别名）
 - 主题 on-color token（`--oas-color-text-on-primary/success/warning/danger`），全库实心态硬编码白字改走 token（dark 深字对比度 ≥4.5）
-- 性能基准体系（vision §5.8）：体积/渲染基线 + CI 体积预算（`pnpm perf:size`）+ 本地渲染基准（`pnpm perf:bench`）
 - `dist/cdn.js` 单文件 IIFE bundle（gzip ~116KB）CDN 三行引入可用；theme 包根 index.css 直引
 - 9 个表单控件 `focus()` 委托（form-item label 点击聚焦 shadow 主输入）
-- dev 链路重构：组件源码 watch 构建 + dev server 自动 full reload（零盲区）；e2e 增加 Firefox 抽样覆盖（visual/smoke/qa-regression）
 - `@oas-ui/nuxt`：Nuxt 3 module——`modules: ['@oas-ui/nuxt']` 开箱即用（Vite `vite:extendConfig` 注入 Vue `isCustomElement` 识别 oas-* + `@oas-ui/theme` 自动注入 `nuxt.options.css` + `renderOasToString`/`useOasRender` SSR helper 自动导入）
 - `@oas-ui/next`：Next.js App Router 集成——RSC `<OasComponent>`（`@oas-ui/next/server`）服务端产 DSD 快照（dangerouslySetInnerHTML 进 SSR 输出流）+ `<OasRegistry>` "use client" 客户端注册引导 + `renderOas` 纯逻辑包装（attrs 值自动序列化）
 
@@ -887,7 +818,6 @@
 - 文档站 114 个组件参考页英文版 + 全部 demo 示例文本英文化（中文能力演示刻意保留）；EN 侧栏指向 `/en/components/*`
 - 文档站本地搜索（中英双索引）+ 组件总览页（中英，7 分组）+ CHANGELOG 页（include 根 CHANGELOG.md）+ icon 图标墙
 - 文档站示例代码 Shiki 语法高亮（懒加载 + 暗色适配）；侧栏组件分组收起展开
-- 文档站组件 API 表自动化：源码 AST 扫描（scan.mjs）+ 说明文案收割（harvest.mjs）+ 统一版式生成器，md `## API` 章节为生成物
 - 文档站语言切换统一走内置 locales 下拉（路由驱动 + `setLocale` 同步组件内置文案）
 
 ### 修复
@@ -1020,7 +950,6 @@
 
 - 内置 light / dark / high-contrast 三套主题，`data-theme` 切换
 - CSS 变量覆盖自定义主题指南
-- 全组件 demo 页 axe 无障碍审计（WCAG 2.1 AA）零严重违规
 - React / Vue 双宿主 playground
 
 **数据展示（v0.8.0）**
