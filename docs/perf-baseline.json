@@ -1,21 +1,21 @@
 {
   "size": {
-    "generatedAt": "2026-10-09",
+    "generatedAt": "2026-10-12",
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 33240197,
+        "distTotalBytes": 33943460,
         "browserJs": {
-          "files": 411,
-          "rawBytes": 9198313,
-          "gzipBytes": 2507186,
-          "brotliBytes": 1900412
+          "files": 419,
+          "rawBytes": 9391884,
+          "gzipBytes": 2562978,
+          "brotliBytes": 1943622
         },
         "fullEntry": {
-          "files": 451,
-          "rawBytes": 3246248,
-          "gzipBytes": 1008193,
-          "brotliBytes": 845887,
+          "files": 459,
+          "rawBytes": 3313288,
+          "gzipBytes": 1030077,
+          "brotliBytes": 864130,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -81,6 +81,7 @@
             "packages/ui/dist/navigation/float-button/index.js",
             "packages/ui/dist/navigation/float-button/oas-float-button.js",
             "packages/ui/dist/shared/direction.js",
+            "packages/ui/dist/shared/dev-warn.js",
             "packages/ui/dist/shared/size.js",
             "packages/ui/dist/navigation/page-header/index.js",
             "packages/ui/dist/navigation/page-header/oas-page-header.js",
@@ -121,6 +122,7 @@
             "packages/ui/dist/navigation/app-bar/index.js",
             "packages/ui/dist/navigation/app-bar/oas-app-bar.js",
             "packages/ui/dist/navigation/toolbar/index.js",
+            "packages/ui/dist/navigation/toolbar/oas-scope-bar.js",
             "packages/ui/dist/navigation/toolbar/oas-toolbar-input.js",
             "packages/ui/dist/navigation/toolbar/oas-toolbar-separator.js",
             "packages/ui/dist/navigation/toolbar/oas-toolbar-toggle-item.js",
@@ -160,6 +162,8 @@
             "packages/ui/dist/shared/measure-text.js",
             "packages/ui/dist/shared/coarse-tap.js",
             "packages/ui/dist/workbench/action-bar/index.js",
+            "packages/ui/dist/workbench/action-bar/oas-music-well.js",
+            "packages/ui/dist/workbench/action-bar/oas-transport-well.js",
             "packages/ui/dist/workbench/action-bar/oas-task-progress-well.js",
             "packages/ui/dist/workbench/action-bar/oas-statistic-well.js",
             "packages/ui/dist/workbench/action-bar/oas-action-bar-well.js",
@@ -174,6 +178,7 @@
             "packages/ui/dist/workbench/statusbar/oas-statusbar-item.js",
             "packages/ui/dist/workbench/statusbar/oas-statusbar.js",
             "packages/ui/dist/workbench/titlebar/index.js",
+            "packages/ui/dist/workbench/titlebar/oas-traffic-lights.js",
             "packages/ui/dist/workbench/titlebar/oas-titlebar.js",
             "packages/ui/dist/layout/masonry/index.js",
             "packages/ui/dist/layout/masonry/oas-masonry.js",
@@ -212,6 +217,7 @@
             "packages/ui/dist/feedback/progress/oas-progress.js",
             "packages/ui/dist/basic/icon/index.js",
             "packages/ui/dist/basic/icon/oas-icon.js",
+            "packages/ui/dist/shared/icon-hint.js",
             "packages/ui/dist/form/upload/oas-upload.js",
             "packages/ui/dist/form/tree-select/index.js",
             "packages/ui/dist/form/tree-select/oas-tree-select.js",
@@ -228,6 +234,7 @@
             "packages/ui/dist/form/toggle-group/index.js",
             "packages/ui/dist/form/toggle-group/oas-toggle-item.js",
             "packages/ui/dist/form/toggle-group/oas-toggle-group.js",
+            "packages/ui/dist/shared/on-color.js",
             "packages/ui/dist/form/toggle-button/index.js",
             "packages/ui/dist/form/toggle-button/oas-toggle-button.js",
             "packages/ui/dist/form/time-picker/index.js",
@@ -439,6 +446,7 @@
             "packages/ui/dist/conversation/bubble/index.js",
             "packages/ui/dist/conversation/bubble/oas-bubble.js",
             "packages/ui/dist/conversation/attachment/index.js",
+            "packages/ui/dist/conversation/attachment/oas-attachment-group.js",
             "packages/ui/dist/conversation/attachment/oas-attachment.js",
             "packages/ui/dist/basic/visually-hidden/index.js",
             "packages/ui/dist/basic/visually-hidden/oas-visually-hidden.js",
@@ -472,9 +480,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 2725490,
-          "gzipBytes": 681349,
-          "brotliBytes": 452221
+          "rawBytes": 2780244,
+          "gzipBytes": 695072,
+          "brotliBytes": 461773
         }
       },
       "@oas-ui/theme": {
@@ -492,31 +500,31 @@
       },
       "@oas-ui/i18n": {
         "files": 23,
-        "rawBytes": 202499,
-        "gzipBytes": 64038,
-        "brotliBytes": 54438
+        "rawBytes": 205274,
+        "gzipBytes": 64828,
+        "brotliBytes": 55087
       },
       "@oas-ui/icons": {
         "files": 52,
-        "rawBytes": 25229,
-        "gzipBytes": 13310,
-        "brotliBytes": 11349
+        "rawBytes": 25064,
+        "gzipBytes": 13230,
+        "brotliBytes": 11279
       },
       "@oas-ui/ssr": {
         "files": 2,
-        "rawBytes": 35222,
-        "gzipBytes": 11621,
-        "brotliBytes": 9534
+        "rawBytes": 35988,
+        "gzipBytes": 11812,
+        "brotliBytes": 9681
       }
     },
     "components": {
       "button": {
         "entry": "basic/button",
         "spec": "@oas-ui/ui/basic/button",
-        "files": 10,
-        "rawBytes": 74900,
-        "gzipBytes": 25627,
-        "brotliBytes": 21280,
+        "files": 13,
+        "rawBytes": 78625,
+        "gzipBytes": 27298,
+        "brotliBytes": 22716,
         "fileList": [
           "packages/ui/dist/basic/button/index.js",
           "packages/ui/dist/basic/button/oas-button.js",
@@ -527,16 +535,19 @@
           "packages/core/dist/escape.js",
           "packages/core/dist/form-element.js",
           "packages/core/dist/oas-element.js",
-          "packages/ui/dist/shared/size.js"
+          "packages/ui/dist/shared/icon-hint.js",
+          "packages/ui/dist/shared/dev-warn.js",
+          "packages/ui/dist/shared/size.js",
+          "packages/ui/dist/shared/on-color.js"
         ]
       },
       "table": {
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
-        "files": 42,
-        "rawBytes": 304136,
-        "gzipBytes": 97444,
-        "brotliBytes": 81740,
+        "files": 45,
+        "rawBytes": 307055,
+        "gzipBytes": 99026,
+        "brotliBytes": 83053,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/i18n/dist/index.js",
@@ -567,8 +578,11 @@
           "packages/ui/dist/basic/icon/index.js",
           "packages/ui/dist/basic/icon/oas-icon.js",
           "packages/icons/dist/runtime.js",
+          "packages/ui/dist/shared/icon-hint.js",
+          "packages/ui/dist/shared/dev-warn.js",
           "packages/ui/dist/form/switch/oas-switch.js",
           "packages/ui/dist/shared/size.js",
+          "packages/ui/dist/shared/on-color.js",
           "packages/ui/dist/data/table/oas-table-edit.js",
           "packages/icons/dist/icons/edit.js",
           "packages/ui/dist/data/table/oas-table.js",
@@ -585,10 +599,10 @@
       "tableCore": {
         "entry": "data/table/core",
         "spec": "@oas-ui/ui/data/table/core",
-        "files": 24,
-        "rawBytes": 194269,
-        "gzipBytes": 62801,
-        "brotliBytes": 52656,
+        "files": 25,
+        "rawBytes": 195121,
+        "gzipBytes": 63236,
+        "brotliBytes": 52994,
         "fileList": [
           "packages/ui/dist/data/table/core/index.js",
           "packages/i18n/dist/index.js",
@@ -603,6 +617,7 @@
           "packages/ui/dist/navigation/pagination/index.js",
           "packages/ui/dist/navigation/pagination/oas-pagination.js",
           "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/dev-warn.js",
           "packages/ui/dist/shared/size.js",
           "packages/ui/dist/data/table/oas-table-column-settings.js",
           "packages/ui/dist/data/table/oas-table.js",
@@ -620,9 +635,9 @@
         "entry": "form/form",
         "spec": "@oas-ui/ui/form/form",
         "files": 11,
-        "rawBytes": 72781,
-        "gzipBytes": 26193,
-        "brotliBytes": 21760,
+        "rawBytes": 72701,
+        "gzipBytes": 26327,
+        "brotliBytes": 21867,
         "fileList": [
           "packages/ui/dist/form/form/index.js",
           "packages/i18n/dist/index.js",
@@ -640,10 +655,10 @@
       "gantt": {
         "entry": "data/gantt",
         "spec": "@oas-ui/ui/data/gantt",
-        "files": 15,
-        "rawBytes": 120691,
-        "gzipBytes": 40961,
-        "brotliBytes": 34606,
+        "files": 16,
+        "rawBytes": 121264,
+        "gzipBytes": 41313,
+        "brotliBytes": 34868,
         "fileList": [
           "packages/ui/dist/data/gantt/index.js",
           "packages/i18n/dist/index.js",
@@ -659,14 +674,15 @@
           "packages/ui/dist/data/virtual-list/oas-virtual-list.js",
           "packages/ui/dist/data/virtual-list/dynamic-height.js",
           "packages/ui/dist/form/calendar/date-grid.js",
-          "packages/ui/dist/shared/direction.js"
+          "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/dev-warn.js"
         ]
       }
     },
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
-        "actualBytes": 681349,
+        "actualBytes": 695072,
         "limitBytes": 788480,
         "warnAtBytes": 709632,
         "pass": true,
@@ -675,7 +691,7 @@
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 1008193,
+        "actualBytes": 1030077,
         "limitBytes": 1167360,
         "warnAtBytes": 1050624,
         "pass": true,
@@ -684,16 +700,16 @@
       },
       {
         "name": "@oas-ui/ui/basic/button 链 gzip",
-        "actualBytes": 25627,
-        "limitBytes": 29696,
-        "warnAtBytes": 26726,
+        "actualBytes": 27298,
+        "limitBytes": 30720,
+        "warnAtBytes": 27648,
         "pass": true,
         "warn": false,
-        "basis": "实测 gzip 25.0 KB（图标库 opt-in：组件链只含自身所需图标 path，不再背全量 47 图标 ~9.5 KB；含 core），上浮约 15% 定档 29 KB；前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）"
+        "basis": "实测 gzip 26.7 KB（2026-10-11：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）"
       },
       {
         "name": "@oas-ui/ui/data/table 链 gzip",
-        "actualBytes": 97444,
+        "actualBytes": 99026,
         "limitBytes": 110592,
         "warnAtBytes": 99533,
         "pass": true,
@@ -702,7 +718,7 @@
       },
       {
         "name": "@oas-ui/ui/form/form 链 gzip",
-        "actualBytes": 26193,
+        "actualBytes": 26327,
         "limitBytes": 29696,
         "warnAtBytes": 26726,
         "pass": true,
@@ -711,7 +727,7 @@
       },
       {
         "name": "@oas-ui/ui/data/gantt 链 gzip",
-        "actualBytes": 40961,
+        "actualBytes": 41313,
         "limitBytes": 47104,
         "warnAtBytes": 42394,
         "pass": true,
@@ -756,7 +772,7 @@
       },
       {
         "name": "@oas-ui/ui/data/table/core 链 gzip",
-        "actualBytes": 62801,
+        "actualBytes": 63236,
         "limitBytes": 71680,
         "warnAtBytes": 64512,
         "pass": true,

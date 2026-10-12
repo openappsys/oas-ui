@@ -15,7 +15,7 @@ A filterable combobox whose input is the control: **an always-visible editable i
 ## Basic Usage
 
 <DemoBlock title="Basic usage">
-  <oas-combobox placeholder="Type or select" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"}]'></oas-combobox>
+  <oas-combobox placeholder="Type or select" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"}]'></oas-combobox>
 </DemoBlock>
 
 Click/focus to open the dropdown; typing filters in real time (`filterable` is enabled by default, substring-matching the label); `↑`/`↓` move the highlight, `Enter` selects, `Esc` closes.
@@ -23,7 +23,7 @@ Click/focus to open the dropdown; typing filters in real time (`filterable` is e
 ## Preset Value (controlled)
 
 <DemoBlock title="Preset value (controlled)">
-  <oas-combobox value="banana" placeholder="Selected value" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-combobox>
+  <oas-combobox value="banana" placeholder="Selected value" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-combobox>
 </DemoBlock>
 
 `value` is a controlled property: it is written back after selection; externally changing the property also immediately reflects in the input's label.
@@ -31,8 +31,8 @@ Click/focus to open the dropdown; typing filters in real time (`filterable` is e
 ## Externally Controlled Value
 
 <DemoBlock title="External controlled value">
-  <oas-combobox id="cb-controlled" placeholder="Set value externally via button" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-combobox>
-  <oas-button id="cb-set-apple" size="small">Set to 苹果</oas-button>
+  <oas-combobox id="cb-controlled" placeholder="Set value externally via button" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-combobox>
+  <oas-button id="cb-set-apple" size="small">Set to Apple</oas-button>
   <oas-button id="cb-clear-value" size="small">Clear value</oas-button>
 </DemoBlock>
 
@@ -41,7 +41,7 @@ In controlled mode, the host can drive the component display via the `value` att
 ## Groups
 
 <DemoBlock title="Groups (group)">
-  <oas-combobox placeholder="Browse by group" options='[{"group":"温带水果","label":"苹果","value":"apple"},{"group":"温带水果","label":"梨","value":"pear"},{"group":"热带水果","label":"香蕉","value":"banana"},{"group":"热带水果","label":"芒果","value":"mango"},{"label":"其他","value":"other"}]'></oas-combobox>
+  <oas-combobox placeholder="Browse by group" options='[{"group":"Temperate fruits","label":"Apple","value":"apple"},{"group":"Temperate fruits","label":"Pear","value":"pear"},{"group":"Tropical fruits","label":"Banana","value":"banana"},{"group":"Tropical fruits","label":"Mango","value":"mango"},{"label":"Other","value":"other"}]'></oas-combobox>
 </DemoBlock>
 
 Options with a `group` field render group titles (not selectable) with indented options; `↑`/`↓` navigate continuously across groups (same JSON contract as `oas-select`).
@@ -49,7 +49,7 @@ Options with a `group` field render group titles (not selectable) with indented 
 ## Custom Filter Function
 
 <DemoBlock title="Custom filtering (el.filter)">
-  <oas-combobox id="cb-filter" placeholder="Type pinyin initials (pg / xj / cz)" options='[{"label":"苹果","value":"pingguo"},{"label":"香蕉","value":"xiangjiao"},{"label":"橙子","value":"chengzi"}]'></oas-combobox>
+  <oas-combobox id="cb-filter" placeholder="Type pinyin initials (pg / xj / cz)" options='[{"label":"Apple","value":"pingguo"},{"label":"Banana","value":"xiangjiao"},{"label":"Orange","value":"chengzi"}]'></oas-combobox>
   <span id="cb-filter-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
 </DemoBlock>
 
@@ -59,17 +59,17 @@ Options with a `group` field render group titles (not selectable) with indented 
 
 <DemoBlock title="Sizes (size)">
   <oas-space size="small" direction="vertical">
-    <oas-combobox size="small" placeholder="small" options='[{"label":"苹果","value":"apple"}]'></oas-combobox>
-    <oas-combobox placeholder="medium (default)" options='[{"label":"苹果","value":"apple"}]'></oas-combobox>
-    <oas-combobox size="large" placeholder="large" options='[{"label":"苹果","value":"apple"}]'></oas-combobox>
+    <oas-combobox size="small" placeholder="small" options='[{"label":"Apple","value":"apple"}]'></oas-combobox>
+    <oas-combobox placeholder="medium (default)" options='[{"label":"Apple","value":"apple"}]'></oas-combobox>
+    <oas-combobox size="large" placeholder="large" options='[{"label":"Apple","value":"apple"}]'></oas-combobox>
   </oas-space>
 </DemoBlock>
 
 <DemoBlock title="Status (status)">
   <oas-space size="small">
-    <oas-combobox status="success" value="apple" options='[{"label":"苹果","value":"apple"}]'></oas-combobox>
-    <oas-combobox status="warning" value="apple" options='[{"label":"苹果","value":"apple"}]'></oas-combobox>
-    <oas-combobox status="error" value="apple" options='[{"label":"苹果","value":"apple"}]'></oas-combobox>
+    <oas-combobox status="success" value="apple" options='[{"label":"Apple","value":"apple"}]'></oas-combobox>
+    <oas-combobox status="warning" value="apple" options='[{"label":"Apple","value":"apple"}]'></oas-combobox>
+    <oas-combobox status="error" value="apple" options='[{"label":"Apple","value":"apple"}]'></oas-combobox>
   </oas-space>
 </DemoBlock>
 
@@ -78,7 +78,7 @@ Options with a `group` field render group titles (not selectable) with indented 
 ## Readonly
 
 <DemoBlock title="Readonly">
-  <oas-combobox readonly value="apple" placeholder="Readonly" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-combobox>
+  <oas-combobox readonly value="apple" placeholder="Readonly" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-combobox>
 </DemoBlock>
 
 `readonly` allows focus & copy but no value change; focus and keyboard no longer open the dropdown.
@@ -86,7 +86,7 @@ Options with a `group` field render group titles (not selectable) with indented 
 ## Controlled Open
 
 <DemoBlock title="Controlled open + oas-open-change">
-  <oas-combobox id="cb-open" placeholder="Host-driven open/close" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-combobox>
+  <oas-combobox id="cb-open" placeholder="Host-driven open/close" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-combobox>
   <oas-button id="cb-open-toggle" size="small">Toggle open</oas-button>
   <span id="cb-open-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
 </DemoBlock>
@@ -104,7 +104,7 @@ With `virtual`, only the visible window renders (reusing `oas-virtual-list` wind
 ## Filtering & Blur Boundaries
 
 <DemoBlock title="Input filtering + blur fallback">
-  <oas-combobox value="apple" placeholder="Falls back automatically on blur after typing" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"},{"label":"西瓜","value":"watermelon"}]'></oas-combobox>
+  <oas-combobox value="apple" placeholder="Falls back automatically on blur after typing" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"},{"label":"Watermelon","value":"watermelon"}]'></oas-combobox>
 </DemoBlock>
 
 If you type without selecting and then blur/press `Esc`, the input falls back to the currently selected label (non-destructive by default — the selected value is not lost) — combobox values always come from options; for free text use `oas-auto-complete`.
@@ -112,7 +112,7 @@ If you type without selecting and then blur/press `Esc`, the input falls back to
 ## Not Filterable
 
 <DemoBlock title='Filtering disabled (filterable="false")'>
-  <oas-combobox filterable="false" placeholder="No filtering on typing, select via keyboard only" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-combobox>
+  <oas-combobox filterable="false" placeholder="No filtering on typing, select via keyboard only" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-combobox>
 </DemoBlock>
 
 With `filterable="false"`, typing no longer filters options; select only via keyboard `↑`/`↓` + `Enter` or mouse.
@@ -120,7 +120,7 @@ With `filterable="false"`, typing no longer filters options; select only via key
 ## Clearable
 
 <DemoBlock title="Clearable">
-  <oas-combobox clearable value="apple" placeholder="Clearable" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-combobox>
+  <oas-combobox clearable value="apple" placeholder="Clearable" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-combobox>
 </DemoBlock>
 
 When a value is selected, a clear button appears; clicking clears `value` and dispatches `oas-clear` and `oas-change`.
@@ -130,7 +130,7 @@ When a value is selected, a clear button appears; clicking clears `value` and di
 Set `multiple` to enter multi-select mode (mirroring the `oas-select` multiple contract): `value` becomes a JSON array string, selected options render as **removable tags** (click `×` to remove one); after each pick the panel **stays open** and the input clears its filter for continuous selection; typing only filters (free-text semantics are off in multiple mode — blur discards the filter and never touches the selection). `oas-change` detail is `{ value: string[], options: Array<Option|null> }`; `clearable` clears all and dispatches `oas-clear` (detail holds the pre-clear array).
 
 <DemoBlock title="Multiple (multiple + tags)">
-  <oas-combobox id="cb-multi" multiple clearable placeholder="Type to filter, pick many" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"},{"label":"西瓜","value":"watermelon"}]'></oas-combobox>
+  <oas-combobox id="cb-multi" multiple clearable placeholder="Type to filter, pick many" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"},{"label":"Watermelon","value":"watermelon"}]'></oas-combobox>
   <span id="cb-multi-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
@@ -139,7 +139,7 @@ Set `multiple` to enter multi-select mode (mirroring the `oas-select` multiple c
 `max-count` caps how many options can be selected (multiple only): once reached, unselected options are greyed out in the dropdown (`aria-disabled`) and clicks/keyboard picks are blocked with `oas-exceed-limit` (`detail: { value, max }`); **selected options can still be removed**. When `max-tag-count` is explicitly set, the selected tags are laid out on one line and the overflow collapses into `+N` (hover title lists the folded labels); without it tags wrap and the control grows in height.
 
 <DemoBlock title="Multi-select limit (max-count=3) + tag collapse (max-tag-count=2)">
-  <oas-combobox id="cb-multi-max" multiple max-count="3" max-tag-count="2" placeholder="Pick up to 3" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"}]'></oas-combobox>
+  <oas-combobox id="cb-multi-max" multiple max-count="3" max-tag-count="2" placeholder="Pick up to 3" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"}]'></oas-combobox>
   <span id="cb-multi-max-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
@@ -164,13 +164,13 @@ When options are empty, the dropdown shows the empty state; when filtering yield
 ## Disabled
 
 <DemoBlock title="Disabled">
-  <oas-combobox disabled value="apple" placeholder="Disabled" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-combobox>
+  <oas-combobox disabled value="apple" placeholder="Disabled" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-combobox>
 </DemoBlock>
 
 ## Events
 
 <DemoBlock title="Event output">
-  <oas-combobox id="cb-event" clearable placeholder="Type or select" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-combobox>
+  <oas-combobox id="cb-event" clearable placeholder="Type or select" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-combobox>
   <span id="cb-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
@@ -251,7 +251,7 @@ onMounted(() => {
     virtual.setAttribute(
       'options',
       JSON.stringify(
-        Array.from({ length: 10000 }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })),
+        Array.from({ length: 10000 }, (_, i) => ({ label: `Option ${i}`, value: `v${i}` })),
       ),
     )
   }

@@ -28,7 +28,7 @@ export type BadgeRibbonAnchor =
   | 'top-right'
   | 'bottom-left'
   | 'bottom-right'
-/** 缎带形态：fold 直条+折叠（默认）/ diagonal 45° 对角斜带 / triangle 角落三角 / bookmark 顶边燕尾竖条 / side 侧边竖挂 / seal 圆形锯齿印章 / banner 顶部横贯横幅 / flag 侧燕尾横旗（横条 + 探出端 V 缺口）/ rounded 圆头端横条 / zigzag 锯齿端横条 / arrow 箭头端横条（端部造型装饰端均朝卡内）；非法值静默回落 fold */
+/** 缎带形态：fold 直条+折叠（默认）/ diagonal 45° 对角斜带 / triangle 角落三角 / bookmark 顶边燕尾竖条 / side 侧边竖挂 / seal 圆形锯齿印章 / banner 顶部横贯横幅 / flag 侧燕尾横旗（外端贴卡片边线不探出，内端燕尾 V 缺口朝卡片内侧）/ rounded 圆头端横条 / zigzag 锯齿端横条 / arrow 箭头端横条（端部造型装饰端均朝卡内）；非法值静默回落 fold */
 export type BadgeRibbonForm =
   | 'fold'
   | 'diagonal'

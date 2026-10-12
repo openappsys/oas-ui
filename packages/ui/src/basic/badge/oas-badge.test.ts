@@ -1038,7 +1038,7 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
     document.body.innerHTML = ''
   })
 
-  it('flag 形态：class 生效，探出端 V 缺口 clip-path（缺口朝探出端，placement start/end 镜像）', () => {
+  it('flag 形态：class 生效，内端燕尾 V 缺口 clip-path（外端贴卡片边线不探出、缺口朝卡片内侧端，placement start/end 镜像）', () => {
     const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'flag' })
     const r = ribbon(el)!
     expect(r.classList.contains('form-flag')).toBe(true)

@@ -15,7 +15,7 @@ Type to get suggestions: **the value is free text** (browser address bar / datal
 ## Basic Usage
 
 <DemoBlock title="Basic usage">
-  <oas-auto-complete placeholder='Type "苹" to try' options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"}]'></oas-auto-complete>
+  <oas-auto-complete placeholder='Type "ap" to try' options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"}]'></oas-auto-complete>
 </DemoBlock>
 
 Typing auto-filters matching items in the dropdown; the first item is highlighted by default and `Enter` commits it directly; `↑`/`↓` move the highlight, `Esc` closes; **blur does not clear the input** (free text never falls back).
@@ -23,7 +23,7 @@ Typing auto-filters matching items in the dropdown; the first item is highlighte
 ## Preset Value
 
 <DemoBlock title="Preset value">
-  <oas-auto-complete value="苹果" placeholder="Selected value" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-auto-complete>
+  <oas-auto-complete value="Apple" placeholder="Selected value" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-auto-complete>
 </DemoBlock>
 
 Reading/writing the current value goes through the public `value` property (`el.value` to read, `el.value = x` to write, matching native `input.value`). Note the **label / value split**: this component's submission semantics are the *visible text* — after selecting a suggestion, `el.value` returns that suggestion's **label** (visible text), while the `value` **attribute** is the `option.value` (e.g. `apple`); `oas-form`'s `values` snapshot reads the attribute (= `option.value`). The two are different layers — pick per need.
@@ -31,7 +31,7 @@ Reading/writing the current value goes through the public `value` property (`el.
 ## Clearable
 
 <DemoBlock title="Clearable">
-  <oas-auto-complete id="ac-clear" clearable value="苹果" placeholder="Clearable" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-auto-complete>
+  <oas-auto-complete id="ac-clear" clearable value="Apple" placeholder="Clearable" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-auto-complete>
 </DemoBlock>
 
 A clear button appears when the input has content; clicking clears the input and dispatches `oas-clear` and `oas-change` (empty value).
@@ -48,7 +48,7 @@ A clear button appears when the input has content; clicking clears the input and
 ## Show on Focus (trigger-on-focus)
 
 <DemoBlock title="Show all suggestions on focus (trigger-on-focus)">
-  <oas-auto-complete trigger-on-focus placeholder="Focus to show all suggestions" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-auto-complete>
+  <oas-auto-complete trigger-on-focus placeholder="Focus to show all suggestions" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-auto-complete>
 </DemoBlock>
 
 Off by **default** (popping the full list on focusing an empty input disturbs compact forms); enabling it follows the datalist mental model: focus shows suggestions filtered by the current input.
@@ -56,7 +56,7 @@ Off by **default** (popping the full list on focusing an empty input disturbs co
 ## Grouped Suggestions
 
 <DemoBlock title="Groups (group)">
-  <oas-auto-complete placeholder="Type a keyword" options='[{"group":"Recent","label":"iPhone","value":"iphone"},{"group":"Recent","label":"Apple Watch","value":"watch"},{"group":"Trending","label":"Banana milk","value":"banana-milk"},{"group":"Trending","label":"Orange","value":"orange"}]'></oas-auto-complete>
+  <oas-auto-complete placeholder="Type a keyword" options='[{"group":"Digital products","label":"iPhone","value":"iphone"},{"group":"Digital products","label":"Apple Watch","value":"watch"},{"group":"Food & drinks","label":"Banana Milk","value":"banana-milk"},{"group":"Food & drinks","label":"Orange Juice","value":"orange"}]'></oas-auto-complete>
 </DemoBlock>
 
 Options with a `group` field render group titles (not selectable) with indented options; `↑`/`↓` navigate continuously across groups.
@@ -73,11 +73,11 @@ With `virtual`, the suggestion panel renders only the visible window (reusing `o
 ## Custom Option Rendering
 
 <DemoBlock title="Custom option (oas-option-render event)">
-  <oas-auto-complete id="ac-render" placeholder="Type to try (rich suggestions)" options='[{"label":"张伟","value":"zhangwei"},{"label":"王芳","value":"wangfang"},{"label":"李娜","value":"lina"}]'></oas-auto-complete>
+  <oas-auto-complete id="ac-render" placeholder="Type to try (rich suggestions)" options='[{"label":"Zhang Wei","value":"zhangwei"},{"label":"Wang Fang","value":"wangfang"},{"label":"Li Na","value":"lina"}]'></oas-auto-complete>
 </DemoBlock>
 
 <DemoBlock title="Custom option (template slot)">
-  <oas-auto-complete id="ac-tpl" placeholder="Type to try (template skeleton)" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'>
+  <oas-auto-complete id="ac-tpl" placeholder="Type to try (template skeleton)" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'>
     <template slot="option"><span>Fruit: </span><span data-option-label></span></template>
   </oas-auto-complete>
 </DemoBlock>
@@ -87,7 +87,7 @@ The dual channel matches `oas-select`: listen to `oas-option-render` (`detail.el
 ## Panel Slots (header / footer / empty)
 
 <DemoBlock title="Panel header/footer and empty slots">
-  <oas-auto-complete id="ac-slots" placeholder='Type "梨" to try (custom empty)' options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'>
+  <oas-auto-complete id="ac-slots" placeholder='Type "pe" to try (custom empty)' options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'>
     <span slot="header">Hint: try a fruit name</span>
     <span slot="footer">View all fruits →</span>
     <span slot="empty">Try another keyword</span>
@@ -100,17 +100,17 @@ The dual channel matches `oas-select`: listen to `oas-option-render` (`detail.el
 
 <DemoBlock title="Sizes (size)">
   <oas-space size="small" direction="vertical">
-    <oas-auto-complete size="small" placeholder="small" options='[{"label":"苹果","value":"apple"}]'></oas-auto-complete>
-    <oas-auto-complete placeholder="medium (default)" options='[{"label":"苹果","value":"apple"}]'></oas-auto-complete>
-    <oas-auto-complete size="large" placeholder="large" options='[{"label":"苹果","value":"apple"}]'></oas-auto-complete>
+    <oas-auto-complete size="small" placeholder="small" options='[{"label":"Apple","value":"apple"}]'></oas-auto-complete>
+    <oas-auto-complete placeholder="medium (default)" options='[{"label":"Apple","value":"apple"}]'></oas-auto-complete>
+    <oas-auto-complete size="large" placeholder="large" options='[{"label":"Apple","value":"apple"}]'></oas-auto-complete>
   </oas-space>
 </DemoBlock>
 
 <DemoBlock title="Status (status)">
   <oas-space size="small">
-    <oas-auto-complete status="success" value="苹果" options='[{"label":"苹果","value":"apple"}]'></oas-auto-complete>
-    <oas-auto-complete status="warning" value="未知水果" options='[{"label":"苹果","value":"apple"}]'></oas-auto-complete>
-    <oas-auto-complete status="error" value="未知水果" options='[{"label":"苹果","value":"apple"}]'></oas-auto-complete>
+    <oas-auto-complete status="success" value="Apple" options='[{"label":"Apple","value":"apple"}]'></oas-auto-complete>
+    <oas-auto-complete status="warning" value="Unknown fruit" options='[{"label":"Apple","value":"apple"}]'></oas-auto-complete>
+    <oas-auto-complete status="error" value="Unknown fruit" options='[{"label":"Apple","value":"apple"}]'></oas-auto-complete>
   </oas-space>
 </DemoBlock>
 
@@ -120,9 +120,9 @@ The dual channel matches `oas-select`: listen to `oas-option-render` (`detail.el
 
 <DemoBlock title="Variant (variant)">
   <oas-space size="small" direction="vertical">
-    <oas-auto-complete variant="outlined" placeholder="outlined (default)" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-auto-complete>
-    <oas-auto-complete variant="filled" placeholder="filled (gray fill)" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-auto-complete>
-    <oas-auto-complete variant="borderless" placeholder="borderless (no border)" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-auto-complete>
+    <oas-auto-complete variant="outlined" placeholder="outlined (default)" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-auto-complete>
+    <oas-auto-complete variant="filled" placeholder="filled (gray fill)" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-auto-complete>
+    <oas-auto-complete variant="borderless" placeholder="borderless (no border)" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-auto-complete>
   </oas-space>
 </DemoBlock>
 
@@ -131,7 +131,7 @@ The dual channel matches `oas-select`: listen to `oas-option-render` (`detail.el
 ## Focus Events (oas-focus / oas-blur)
 
 <DemoBlock title="focus / blur events">
-  <oas-auto-complete id="ac-focus-blur" placeholder="Focus / blur to see feedback" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-auto-complete>
+  <oas-auto-complete id="ac-focus-blur" placeholder="Focus / blur to see feedback" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-auto-complete>
   <span id="ac-focus-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
@@ -140,7 +140,7 @@ Focus/blur dispatch `oas-focus` / `oas-blur` with `detail: { value }` carrying t
 ## Readonly
 
 <DemoBlock title="Readonly">
-  <oas-auto-complete readonly value="苹果" placeholder="Readonly" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-auto-complete>
+  <oas-auto-complete readonly value="Apple" placeholder="Readonly" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-auto-complete>
 </DemoBlock>
 
 `readonly` allows focus & copy but no editing; focus and keyboard no longer open suggestions.
@@ -152,19 +152,19 @@ During IME composition (before confirming the candidate) the component **does no
 ## Disabled
 
 <DemoBlock title="Disabled">
-  <oas-auto-complete disabled placeholder="Not editable" options='[{"label":"苹果","value":"apple"}]'></oas-auto-complete>
+  <oas-auto-complete disabled placeholder="Not editable" options='[{"label":"Apple","value":"apple"}]'></oas-auto-complete>
 </DemoBlock>
 
 ## No Match
 
 <DemoBlock title="Empty state">
-  <oas-auto-complete placeholder='Type "梨" to try (no match)' options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-auto-complete>
+  <oas-auto-complete placeholder='Type "pe" to try (no match)' options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-auto-complete>
 </DemoBlock>
 
 ## Events
 
 <DemoBlock title="Input & selection events">
-  <oas-auto-complete id="ac-event" clearable placeholder="Type or select" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-auto-complete>
+  <oas-auto-complete id="ac-event" clearable placeholder="Type or select" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-auto-complete>
   <span id="ac-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
@@ -194,7 +194,7 @@ onMounted(() => {
   // remote suggestions demo: simulate a host request (300ms debounce handled by the component)
   const remote = document.getElementById('ac-remote')
   const remoteOut = document.getElementById('ac-remote-output')
-  const ALL = ['苹果', '香蕉', '橙子', '草莓', '西瓜', '葡萄', '芒果'].map((label, i) => ({
+  const ALL = ['Apple', 'Banana', 'Orange', 'Strawberry', 'Watermelon', 'Grape', 'Mango'].map((label, i) => ({
     label,
     value: `v${i}`,
   }))
@@ -245,7 +245,7 @@ onMounted(() => {
   const virtualAcOut = document.getElementById('ac-virtual-output')
   virtualAc?.setAttribute(
     'options',
-    JSON.stringify(Array.from({ length: 1000 }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` }))),
+    JSON.stringify(Array.from({ length: 1000 }, (_, i) => ({ label: `Option ${i}`, value: `v${i}` }))),
   )
   virtualAc?.addEventListener('oas-change', (e) => {
     if (virtualAcOut) virtualAcOut.textContent = `oas-change: ${JSON.stringify(e.detail)}`

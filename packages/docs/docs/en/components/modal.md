@@ -590,9 +590,9 @@ onMounted(async () => {
       .prompt({
         title: 'Set password',
         inputType: 'password',
-        placeholder: '8-16 chars, letters and digits',
+        placeholder: '8-16 chars, letters and digits only',
         inputPattern: '^(?=.*[A-Za-z])(?=.*\\d)(?:[A-Za-z\\d]{8,16})$',
-        inputErrorMessage: '8-16 chars including both letters and digits',
+        inputErrorMessage: '8-16 chars, letters and digits only, with both kinds present',
       })
       .then((r) => {
         if (r.action === 'confirm') message.success('Password set')

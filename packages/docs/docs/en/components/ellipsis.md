@@ -6,7 +6,7 @@ Automatically truncates long text with single-line / multi-line clipping; on ove
 
 <DemoBlock title="Single-line ellipsis">
   <div style="width: 100%">
-    <oas-ellipsis text="这是一段非常长的文本，用于演示单行省略的效果，超出容器宽度时以省略号截断，悬停文字可以查看完整内容。"></oas-ellipsis>
+    <oas-ellipsis text="This is a very long piece of text used to demonstrate single-line ellipsis: when it exceeds the container width it truncates with an ellipsis, and hovering shows the full content."></oas-ellipsis>
   </div>
 </DemoBlock>
 
@@ -16,17 +16,17 @@ Constraining the width on the container is enough to trigger the ellipsis; when 
 
 <DemoBlock title="Multi-line ellipsis (lines / rows)">
   <div style="width: 100%">
-    <oas-ellipsis lines="2" text="这是一段用于演示多行省略的文本，最多显示两行，超出部分以省略号截断。悬停文字可以查看完整内容，调整 lines 可以改变显示行数。"></oas-ellipsis>
+    <oas-ellipsis lines="2" text="This text demonstrates multi-line ellipsis: at most two lines are shown and the overflow truncates with an ellipsis. Hover to read the full content; adjust `lines` to change the visible line count."></oas-ellipsis>
   </div>
 </DemoBlock>
 
-From `rows="2"` on, `-webkit-line-clamp` is used; on multi-line ellipsis the tooltip shows the full text. `lines` is equivalent to `rows` (a synonym alias; `lines` wins when both are present) — `lines` is the recommended name for new code.
+From `rows=2` on, `-webkit-line-clamp` is used; on multi-line ellipsis the tooltip shows the full text. `lines` is equivalent to `rows` (a synonym alias; `lines` wins when both are present) — `lines` is the recommended name for new code.
 
 ## Expand / Collapse
 
 <DemoBlock title="Expand / collapse (inline link form)">
   <div style="width: 100%">
-    <oas-ellipsis rows="3" expandable text="这是一段支持展开与收起的文本，默认只显示三行，点击「展开」链接可以查看完整内容，再次点击「收起」恢复省略状态。展开链接与省略号同行尾随（截断点原位嵌入），文本实际溢出时才会出现。"></oas-ellipsis>
+    <oas-ellipsis rows="3" expandable text="This text supports expand and collapse: only three lines show by default; click the “expand” link to read the full content, click “collapse” to restore. The expand link trails the ellipsis on the same line (embedded at the truncation point) and only appears when the text actually overflows."></oas-ellipsis>
   </div>
 </DemoBlock>
 
@@ -36,7 +36,7 @@ With `expandable`, an inline "expand/collapse" link appears only when the text a
 
 <DemoBlock title="expand-text / collapse-text">
   <div style="width: 100%">
-    <oas-ellipsis rows="2" expandable expand-text="Read more" collapse-text="Close" text="这是一段使用自定义展开收起文案的长文本，移动端信息流场景常用「全文 / 收起」一类文案，通过 expand-text 与 collapse-text 两个属性即可覆盖 locale 缺省文案。"></oas-ellipsis>
+    <oas-ellipsis rows="2" expandable expand-text="Read more" collapse-text="Close" text="This is a long text using custom expand/collapse wording: mobile feeds commonly use “Read more / Close” style labels, and the `expand-text` and `collapse-text` attributes override the locale defaults."></oas-ellipsis>
   </div>
 </DemoBlock>
 
@@ -47,7 +47,7 @@ The `expand-text` / `collapse-text` attributes override the locale default "Expa
 <DemoBlock title="Controlled expanded (attribute-driven)">
   <div style="width: 100%; display: flex; gap: var(--oas-space-3); align-items: center; flex-wrap: wrap">
     <oas-button id="ellipsis-controlled-btn" size="small">Toggle from outside</oas-button>
-    <oas-ellipsis id="ellipsis-controlled" style="flex: 1; min-width: 200px" rows="2" expandable text="这是一段受控展开的长文本：外部宿主通过增删 expanded 属性驱动开合，组件内部点击也会把状态反射回该属性（双通道同步），配合 oas-expand / oas-collapse 事件宿主可随时感知变化。"></oas-ellipsis>
+    <oas-ellipsis id="ellipsis-controlled" style="flex: 1; min-width: 200px" rows="2" expandable text="This is a long text with controlled expansion: the host toggles it by adding or removing the `expanded` attribute, and clicks inside the component also reflect the state back to the attribute (two-way sync); with the `oas-expand` / `oas-collapse` events the host always knows when it changes."></oas-ellipsis>
   </div>
   <p id="ellipsis-controlled-out" style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Click the button or the inline link to toggle expansion.</p>
 </DemoBlock>
@@ -86,7 +86,7 @@ With the `expanded` attribute present the text is expanded (host-forced); when a
 
 <DemoBlock title="oas-overflow: watch overflow changes">
   <div style="width: 100%">
-    <oas-ellipsis id="ellipsis-overflow" text="这是一段用于演示溢出事件的长文本，当容器宽度变化导致溢出状态翻转时，组件会派发 oas-overflow 事件，detail 携带 { overflow }，宿主可据此驱动业务逻辑（如标记未读全称）。"></oas-ellipsis>
+    <oas-ellipsis id="ellipsis-overflow" text="This is a long text used to demonstrate the overflow event: when a container width change flips the overflow state, the component dispatches `oas-overflow` with `{ overflow }` in detail, letting the host drive business logic (such as flagging unread full text)."></oas-ellipsis>
   </div>
   <p id="ellipsis-overflow-out" style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">No event yet (no overflow initially)</p>
 </DemoBlock>
@@ -115,14 +115,14 @@ With the `expanded` attribute present the text is expanded (host-forced); when a
 
 <DemoBlock title="middle: keep head and tail across lines">
   <div style="width: 100%; max-width: 520px">
-    <oas-ellipsis rows="3" direction="middle" text="这是一段用于演示多行中部省略的长文本：在限制三行高度的容器里，第一行保留开头、最后一行保留结尾，中间以省略号衔接，哈希值、长 ID 与文件路径在多行场景下也能首尾可辨认，悬停可查看完整内容；宽度变化时组件会通过 ResizeObserver 自动重新测量并校正截断位置，适用于交易流水号、日志追踪 ID 等必须首尾对照才能辨认的字符串。"></oas-ellipsis>
+    <oas-ellipsis rows="3" direction="middle" text="This is a long text used to demonstrate multi-line middle ellipsis: inside a three-line clamp, the first line keeps the head and the last line keeps the tail, joined by an ellipsis — hashes, long IDs and file paths stay recognizable at both ends even across lines; hover to read the full content. On width changes the component re-measures via ResizeObserver and corrects the truncation point, which suits strings like transaction numbers and trace IDs that must be matched head to tail."></oas-ellipsis>
   </div>
   Multi-line middle: head on the first line, tail on the last line, joined by an ellipsis.
 </DemoBlock>
 
 <DemoBlock title="start: ellipsize head across lines, keep tail">
   <div style="width: 100%; max-width: 520px">
-    <oas-ellipsis rows="2" direction="start" text="/usr/local/lib/node_modules/@oas-ui/ui/dist/data/ellipsis/oas-ellipsis.d.ts.map 是一个用于长文本自动省略的组件实现文件路径示例，配合 direction=start 与 rows=2 展示多行场景下省略头部、完整保留末尾路径的效果，宽度变化时自动重新测量。"></oas-ellipsis>
+    <oas-ellipsis rows="2" direction="start" text="/usr/local/lib/node_modules/@oas-ui/ui/dist/data/ellipsis/oas-ellipsis.d.ts.map is a file-path example for automatic long-text truncation: combined with `direction=start` and `rows=2` it shows how the head is ellipsized across lines while the trailing path stays fully visible, re-measuring automatically on width changes."></oas-ellipsis>
   </div>
   Multi-line start: the head is ellipsized while the trailing path stays fully visible.
 </DemoBlock>
@@ -131,7 +131,7 @@ With the `expanded` attribute present the text is expanded (host-forced); when a
 
 <DemoBlock title="suffix: keep the extension when ellipsized">
   <div style="width: 100%; max-width: 520px">
-    <oas-ellipsis suffix=".pdf" text="2026 年度组件库工程化实践报告——从 monorepo 治理、依赖升级、构建提速到发布回滚的完整路线图与复盘清单（最终修订版）.pdf"></oas-ellipsis>
+    <oas-ellipsis suffix=".pdf" text="2026 Component-Library Engineering Practice Report — the complete roadmap and retrospective checklist from monorepo governance and dependency upgrades to build-speed tuning and release rollbacks (final revised edition).pdf"></oas-ellipsis>
   </div>
 </DemoBlock>
 
@@ -141,11 +141,11 @@ With the `expanded` attribute present the text is expanded (host-forced); when a
 
 <DemoBlock title="expand-trigger=click: click the text to expand">
   <div style="width: 100%; max-width: 520px">
-    <oas-ellipsis rows="2" expandable expand-trigger="click" text="这是一段点文本展开的演示：省略态下直接点击文本本体即可展开查看全文，展开后再次点击收起，没有独立的展开按钮；展开与收起都会同步 aria-expanded 状态并派发对应事件，供宿主框架做无障碍标注与状态回读。省略态文本带 role=button 与 tabindex，Enter / Space 键盘触发等价点击。"></oas-ellipsis>
+    <oas-ellipsis rows="2" expandable expand-trigger="click" text="This demonstrates click-to-expand: in the ellipsized state, clicking the text body itself expands it to the full text; click again to collapse — there is no separate expand button. Both actions sync `aria-expanded` and dispatch the matching events so host frameworks can annotate and read back state. The ellipsized text carries `role=button` and `tabindex`, and Enter / Space trigger the same action."></oas-ellipsis>
   </div>
 </DemoBlock>
 
-`expand-trigger="click"` (together with `expandable`): the ellipsized text body itself is the expand entry (no separate button). Once expanded the full text is restored; click again to collapse. The ellipsized text carries `role="button"` / `tabindex="0"` with `aria-expanded` kept in sync, and Enter / Space trigger the same action. The default remains the button / link form.
+`expand-trigger="click"` (together with `expandable`): the ellipsized text body itself is the expand entry (no separate button). Once expanded the full text is restored; click again to collapse. The ellipsized text carries `role=button` / `tabindex="0"` with `aria-expanded` kept in sync, and Enter / Space trigger the same action. The default remains the button / link form.
 
 ## Tooltip Placement (tooltip-placement)
 
@@ -153,11 +153,11 @@ With the `expanded` attribute present the text is expanded (host-forced); when a
   <div style="width: 100%; display: flex; gap: var(--oas-space-6); align-items: flex-start; flex-wrap: wrap">
     <div style="flex: 1; min-width: 220px">
       <p style="margin: 0 0 var(--oas-space-1); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">placement=top (default)</p>
-      <oas-ellipsis text="这是一段溢出时悬停提示出现在上方（缺省 top）的长文本，宽度受限自动省略。"></oas-ellipsis>
+      <oas-ellipsis text="This is a long text whose overflow tooltip appears on top (default `top`): it truncates automatically when width is constrained."></oas-ellipsis>
     </div>
     <div style="flex: 1; min-width: 220px">
       <p style="margin: 0 0 var(--oas-space-1); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">placement=bottom</p>
-      <oas-ellipsis tooltip-placement="bottom" text="这是一段溢出时悬停提示出现在下方（bottom）的长文本，宽度受限自动省略。"></oas-ellipsis>
+      <oas-ellipsis tooltip-placement="bottom" text="This is a long text whose overflow tooltip appears at the bottom: it truncates automatically when width is constrained."></oas-ellipsis>
     </div>
   </div>
 </DemoBlock>
@@ -168,7 +168,7 @@ The `tooltip-placement` attribute is passed through to the inner `oas-tooltip` (
 
 <DemoBlock title="Tooltip disabled">
   <div style="width: 100%">
-    <oas-ellipsis tooltip="false" text="这是一段关闭了悬停提示的省略文本，超出宽度时只显示省略号，不提供 tooltip。"></oas-ellipsis>
+    <oas-ellipsis tooltip="false" text="This is a long text with the tooltip disabled: overflow shows only the ellipsis and no tooltip."></oas-ellipsis>
   </div>
 </DemoBlock>
 

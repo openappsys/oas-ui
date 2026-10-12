@@ -590,9 +590,9 @@ onMounted(async () => {
       .prompt({
         title: '设置密码',
         inputType: 'password',
-        placeholder: '8-16 位，含字母和数字',
+        placeholder: '8-16 位，仅由字母和数字组成',
         inputPattern: '^(?=.*[A-Za-z])(?=.*\\d)(?:[A-Za-z\\d]{8,16})$',
-        inputErrorMessage: '需 8-16 位且同时包含字母和数字',
+        inputErrorMessage: '需 8-16 位、仅由字母和数字组成且同时包含两类',
       })
       .then((r) => {
         if (r.action === 'confirm') message.success('密码设置成功')

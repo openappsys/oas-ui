@@ -1517,12 +1517,11 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
     }
   })
 
-  it('arrow-merge + arrow-point-at-center：箭头钉死角点，不写内联偏移（直角三角不脱离角）', () => {
+  it('arrow-merge：箭头钉死角点，不写内联偏移（直角三角不脱离角；popover 箭头默认即跟锚点，无需 arrow-point-at-center 开关）', () => {
     const el = mount({
       open: '',
       placement: 'bottom-start',
       'arrow-merge': '',
-      'arrow-point-at-center': '',
     })
     const p = panelOf(el)
     stubPanelRect(p, 240, 60)

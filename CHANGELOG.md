@@ -52,6 +52,14 @@
 
 ### 修复
 
+- **oas-toast 离场时长 CSS 单位解析**：`--oas-toast-leave-duration` 的秒值（如 `0.2s`）此前被 `parseFloat` 误当毫秒（0.2ms），离场动画被即刻截断；现按 CSS 时间单位正确换算（`s` / `ms`，非法值回落默认 200ms）
+- **oas-combobox 虚拟滚动视口 tabindex**：改走 `viewportFocusable` 属性通道（与 cascader 同款先例）——此前 `removeAttribute` 会被 virtual-list 下次 update 重新加回，视口多一个 Tab 停靠点
+- **oas-bubble `reactions-side` / `reactions-align` 生效**：宿主改 flex 列容器（原块布局下 `order` / `align-self` 无效）；message-row 的 `text-align` 对齐继承经 `data-inherit-end` 反射保留（`align="end"` 行气气泡仍右对齐），显式 `align` 属性优先于继承反射
+- **oas-float-button `trigger="hover"` 触屏回落 click**：粗指针（coarse pointer）下自动按 click 触发（此前触屏 tap 完全不展开，与文档承诺的「触屏回落 click」一致）
+- **oas-popover 移除死属性 `arrow-point-at-center`**：popover 箭头默认即跟随锚点（单测 + e2e 佐证），该属性登记在 observedAttributes 却从未被消费；已从属性清单 / manifest / 文档同步移除（tooltip / dropdown / hover-card / tour 的同名属性不受影响）
+- **oas-grid 折叠尾格陈旧闩**：`collapseEverExpanded` 先复位再算尾格显隐——展开后内容缩减到不超限的同一帧尾格收起入口即消失（此前滞留一轮重算）
+- **dev 告警统一通道 `shared/dev-warn`**：全库 101 处 `console.warn` 迁移到统一 dev 告警通道（下游打包器静态替换 `NODE_ENV=production` 后静默、判定失败时放行），开发期告警行为不变
+
 - **oas-tour `finish-button-props` 现已生效**：最后一步的完成按钮即 `next` 按钮；`finish-button-props`（全局属性 + 步骤级 `finishButtonProps`）现叠加在该步的 `next-button-props` 之上（步骤级胜出），宿主可据此为完成态设样式。此前该 property 在类型/API 中声明却从未应用。
 - **工作台外框修复**：`oas-inspector` 的空态不可见——空块原本位于设 `empty` 时会被隐藏的 `.body` 内（已移出 + flex 撑满）；`oas-inspector-row` 行分隔线现默认为 border token（原为 `transparent`，故键值行无发丝线），绘制为上边框以免末行与分区分割线叠压；`oas-titlebar` / `oas-inspector` 表面现默认为细微的主题感知 `color-mix`（明暗对称，原浅色下取页面色）；`oas-traffic-lights` 悬停符号为固定深色调（原暗色下近白、不可读），且控件自声明 `-webkit-app-region: no-drag`。
 - **对比度（axe 比率）修复**：oas-button `text` 变体的 `active` 文字现回退到主色文字安全档（原为主色叠主色浅底，不可读）；oas-inspector-row 的 `striped` 标签用强次级色调以在斑马背景上保持 AA；浅色 `--oas-color-info-text` token 加深（原在白底上低于 AA）——感知（<60）门禁不受影响。
@@ -229,6 +237,11 @@
 
 - tooltip 三个 hover 跟随用例改「关动画 + 等 DOM 静止 + 轮询断言」，消除并行下的时序抖动
 
+### 文档
+
+- qrcode 文档补形状/渐变两节 demo（中英双版）；`error-correction` 说明修正（四级均已实现，非仅 L 级）
+- form 页新增「原生表单集成」集中 demo（label for + FormData + reset + 15 组件支持清单，中英双版）；12 组件补 required 演示块
+
 ## [2.5.5] - 2026-09-17
 
 ### 修复
@@ -276,6 +289,7 @@
 
 - **API 表工具链补全（面板出口自动化）**：CSS 变量出口收割进 `docs/api-manifest` → API 表新增「CSS 变量」组（平衡括号扫描不漏变量、源码声明值兜底、组件作用域 theme token 放行、同前缀数字出口折叠为 `{1..N}`）；插槽收割补 light-DOM 标记式（`[slot="x"]`）与代码式（`getAttribute('slot')`）读取，去重归一形式、排除内部保留标记与内部管线插槽
 - **全库 API 段统一版式**：所有组件页统一为 `### oas-xxx` + `#### 属性/事件/插槽/CSS 变量`（单/多标签同一生成路径）；CSS 变量表按需增列「说明」；补齐 68+ 条插槽说明与关键组件变量说明（spin/steps/sidebar/notification/tag 等），旧手写重复段由生成器认领消除
+- **英文 demo 页缺块补齐**（6 组件）中英块数全对齐；`ssr` 边界说明、bottom-sheet 文档页与侧边栏/总览接线
 
 ### 优化
 
@@ -318,6 +332,7 @@
 - **tree `parseIdList` 数字 key 静默丢弃 + 非法输入零告警**：v2.5.0 契约收紧为 JSON 数组后，`expanded`/`checked`/multiple 态 `selected` 传入数字 key 的合法 JSON 数组（如 `expanded="[1,2]"`）被 `typeof string` 过滤静默丢弃成全折叠/全不选；解析失败（典型：旧版逗号串）无任何提示。修复为数字 key 统一 `String()` 归一化（空串/`undefined`/`null` 项滤除），解析失败按空集合回落并在 dev 下 `console.warn` 一次（同值去重，文案含迁移写法）。回归：oas-tree.test.ts 单测 2 例 + qa-regression/tree.spec.ts 固化断言（oas-ui-templates 三端 menus/dept 页实抓上报）
 - **select / combobox / auto-complete / tree-select 浮层首次展开未左对齐**：定位时先用面板固有（塌缩）宽度算 left、之后才把宽度撑到触发器宽 → 首开偏右（实测 +70~89px），再开才对齐。修复为先按触发器宽度撑开、再测量、bottom-start 左缘对齐，首开即与再开一致（cascader 面板取内容固有宽度不受影响）
 - **date-picker 面板右侧大片空白**：月/年网格 1fr 轨道在 shrink-to-fit 容器下塌缩到内容宽、把面板撑到 378/431px 且右侧留白。修复为非范围面板收窄为 240（与日网格同宽）+ 月/年网格显式等宽 + 范围面板两栏 flex 均分（month/year/monthrange/yearrange/daterange 留白归零）
+- **date-picker 单元格渲染 demo 日期数字丢失 + 每格误现标记点**：内联 `<template slot="cell">` 被 Vue 编译管线吞成空模板，组件克隆空模板后清空日格 → 日期数字全消失。修复为组件侧 `fillCells` 加防御（模板为空不清空日格、保留日期数字）+ demo 改 JS 注入模板；标记点改为只给指定日期追加（原模板内置默认红点导致每格都有点）
 
 ## [2.5.0] - 2026-09-09
 
@@ -506,6 +521,7 @@
 ### 杂项
 
 - **perf**：table 按需链体积随能力增强更新（26KB → 36KB 预算基线，注明依据）；渲染基准同步
+- **docs**：table 新增列设置/多列排序/序号省略号/多级表头/内置分页/列过滤/合并/子元素声明式通道/单元格模板/自定义列头/远程排序 loading demo（中英）
 
 ## [2.2.6] - 2026-08-26
 
@@ -676,6 +692,7 @@
 ### 变更
 
 - **事件 detail 联合类型**：api:scan 改进——同一事件多处 emit 且 detail 不同时合并为联合类型（如 `oas-select` = `{value} | {value, kind:'action'}`），editable/pagination/input-number 等分支 detail 一并补齐
+- **文档标注**（集成反馈 #10/#10a）：API 表说明事件 `detail` 的 `originalEvent` 非原生 Event（不能直接 `preventDefault()`）、`data-value` 是内部定位属性宿主不应依赖
 
 ## [2.1.1] - 2026-08-20
 

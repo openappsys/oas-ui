@@ -612,3 +612,25 @@ test('message-row align=end：行内气泡右对齐贴头像（text-align 继承
   // 气泡右缘贴近头像左缘（行内间隙 ≤ 16px）
   expect(Math.abs(geo.avatarLeft - geo.bubbleRight)).toBeLessThanOrEqual(16)
 })
+
+test('bubble 显式 align="start"：在 align=end 行内不被容器对齐拉右（显式属性优先于继承反射）', async ({ page }) => {
+  await page.goto('/components/bubble.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-bubble')
+  const geo = await page.evaluate(() => {
+    const row = document.createElement('oas-message-row')
+    row.setAttribute('align', 'end')
+    const bubble = document.createElement('oas-bubble')
+    bubble.setAttribute('align', 'start')
+    bubble.innerHTML = '<p>显式靠左</p>'
+    row.appendChild(bubble)
+    row.style.cssText = 'position:fixed;top:0;left:0;width:400px;z-index:9999;background:#fff'
+    document.body.appendChild(row)
+    const b = (bubble.shadowRoot!.querySelector('[part="bubble"]') as HTMLElement).getBoundingClientRect()
+    const host = bubble.getBoundingClientRect()
+    const reflected = bubble.hasAttribute('data-inherit-end')
+    row.remove()
+    return { bubbleLeft: b.left, hostLeft: host.left, reflected }
+  })
+  expect(geo.reflected, '显式 align 在场时不应残留 data-inherit-end').toBe(false)
+  expect(Math.abs(geo.bubbleLeft - geo.hostLeft)).toBeLessThanOrEqual(1)
+})
