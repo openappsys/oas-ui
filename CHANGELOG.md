@@ -54,7 +54,7 @@
 
 - **oas-bubble `align` 纳入观察属性**：动态 `setAttribute("align", …)` 即时切换对齐（此前仅声明式/首渲染路径生效）；显式 `align` 属性始终优先于容器 `text-align` 继承反射
 - **oas-badge rolled+side 误隐藏挂点折叠角**：`rolled` 对 `ribbon-form="side"` 本为整体静默忽略，但 corner 隐藏规则漏排 side——已补排，`rolled+side` 不再误丢挂点折叠角
-- **max-tag-count 数值口径五方归一**：select / cascader / combobox / tree-select / dynamic-tags 全部改走 `intAttr` 读取器并加 `>= 0` 钳制——负值/非法值统一视为未设置（不折叠；此前 tree-select/dynamic-tags 会把全部标签折叠为 +N，select/cascader 存在离群切片行为）；manifest 类型统一为 `number`
+- **max-tag-count 数值口径五方归一**：select / cascader / combobox / tree-select / dynamic-tags 全部改走 `intAttr` 读取器并加 `>= 0` 钳制——负值/非法值统一视为未设置（不折叠；此前 tree-select/dynamic-tags 会把全部标签折叠为 +N，cascader 负值会出现离群切片丢尾格）；manifest 类型统一为 `number`
 
 - **oas-toast 离场时长 CSS 单位解析**：`--oas-toast-leave-duration` 的秒值（如 `0.2s`）此前被 `parseFloat` 误当毫秒（0.2ms），离场动画被即刻截断；现按 CSS 时间单位正确换算（`s` / `ms`，非法值回落默认 200ms）
 - **oas-combobox 虚拟滚动视口 tabindex**：改走 `viewportFocusable` 属性通道（与 cascader 同款先例）——此前 `removeAttribute` 会被 virtual-list 下次 update 重新加回，视口多一个 Tab 停靠点
