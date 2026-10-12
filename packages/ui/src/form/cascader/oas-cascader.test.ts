@@ -612,6 +612,20 @@ describe('OASCascader max-tag-count 折叠', () => {
     expect(el.shadowRoot!.querySelectorAll('.chip:not(.chip-plus)').length).toBe(3)
     expect(el.shadowRoot!.querySelector('.chip-plus')).toBeNull()
   })
+
+  it('负值钳制：max-tag-count="-1" 视为未设置（不折叠，与 combobox 同口径）', () => {
+    const el = mount({
+      multiple: '',
+      'max-tag-count': '-1',
+      value: JSON.stringify([
+        ['zj', 'hz'],
+        ['zj', 'nb'],
+        ['js', 'nj'],
+      ]),
+    })
+    expect(el.shadowRoot!.querySelectorAll('.chip:not(.chip-plus)').length).toBe(3)
+    expect(el.shadowRoot!.querySelector('.chip-plus')).toBeNull()
+  })
 })
 
 describe('OASCascader 空态', () => {

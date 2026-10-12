@@ -1877,9 +1877,8 @@ export class OASCascader extends OASElement {
   private renderChips(valueEl: HTMLElement): void {
     valueEl.innerHTML = ''
     const paths = this.displayPaths()
-    const limit = this.hasAttr('max-tag-count')
-      ? (this.intAttr('max-tag-count') ?? Number.POSITIVE_INFINITY)
-      : Number.POSITIVE_INFINITY
+    const raw = this.hasAttr('max-tag-count') ? this.intAttr('max-tag-count') : null
+    const limit = raw !== null && raw >= 0 ? raw : Number.POSITIVE_INFINITY
     const shown = paths.slice(0, limit)
     const allLabels = paths.map((p) => this.pathToText(p))
     for (const p of shown) {
