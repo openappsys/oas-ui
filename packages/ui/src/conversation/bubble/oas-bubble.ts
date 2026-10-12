@@ -59,6 +59,11 @@ const STYLE = `
   margin-inline-start: auto;
   margin-inline-end: 0;
 }
+/* 继承对齐：message-row 等容器经 text-align 落位 slotted 气泡，flex 项不响应 text-align——
+   update() 把继承的计算值反射为 data-inherit-end；显式 align 属性（同级选择器在后）胜出 */
+:host([data-inherit-end]) .bubble {
+  align-self: flex-end;
+}
 :host([align="end"]) {
   text-align: end;
 }
@@ -152,8 +157,9 @@ const STYLE = `
   margin-block-start: 0;
   margin-block-end: var(--oas-space-1);
 }
-/* 横向对齐：缺省跟随气泡 align，reactions-align 显式覆盖 */
-:host([align="end"]) .reactions {
+/* 横向对齐：缺省跟随气泡 align（含容器 text-align 继承的 data-inherit-end 反射），reactions-align 显式覆盖 */
+:host([align="end"]) .reactions,
+:host([data-inherit-end]) .reactions {
   align-self: flex-end;
 }
 :host([reactions-align="start"]) .reactions {
@@ -264,6 +270,10 @@ export class OASBubble extends OASElement {
     // aria-busy 反射宿主：AT 在气泡外层即感知流式进行中
     if (loading) this.setAttribute('aria-busy', 'true')
     else this.removeAttribute('aria-busy')
+    // 横向对齐继承链：message-row 等容器用 text-align 落位 slotted 气泡（见 oas-message-row .content 注释），
+    // flex 项不响应 text-align——把继承的计算值反射为内部属性供选择器消费（显式 align 属性优先）
+    const ta = getComputedStyle(this).textAlign
+    this.toggleAttribute('data-inherit-end', ta === 'end' || ta === 'right')
     this.syncReactions()
   }
 
