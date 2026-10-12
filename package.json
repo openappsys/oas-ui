@@ -6,7 +6,7 @@
   "packageManager": "pnpm@12.5.1",
   "scripts": {
     "predev": "pnpm -r --filter @oas-ui/ui... build",
-    "dev": "pnpm --parallel --filter @oas-ui/core --filter @oas-ui/i18n --filter @oas-ui/icons --filter @oas-ui/ui --filter @oas-ui/docs dev",
+    "dev": "cross-env CI=true pnpm --parallel --filter @oas-ui/core --filter @oas-ui/i18n --filter @oas-ui/icons --filter @oas-ui/ui --filter @oas-ui/docs dev",
     "build": "pnpm -r build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -40,6 +40,7 @@
     "@oas-ui/ui": "workspace:*",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.2",
+    "cross-env": "^10.1.0",
     "happy-dom": "^20.14.5",
     "markdownlint-cli2": "^0.23.3",
     "typescript": "^7.0.2",
