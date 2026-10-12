@@ -6,9 +6,12 @@
  *   宁可多报不漏报，dev 场景不因此失明；调试期临时禁用可设 `__OAS_DEV_WARN_OFF__`。
  * 本库 dist 刻意不做 NODE_ENV 预替换（库的正确姿势：把环境判定留给使用方的构建）。
  */
+// 判定式刻意保持 `process.env.NODE_ENV === 'production'` 原形：打包器静态替换后整体折叠为 true（生产静默）；
+// 无 process 的裸 ESM 环境引用即抛 → catch 兜底为 false（失败放行）。不得加 typeof 守卫——守卫在运行期求值，
+// 会使「已静态替换为 "production"」的产物里整式变 false，反而在生产站点误报。
 const IS_PROD: boolean = (() => {
   try {
-    return typeof process !== 'undefined' && process.env?.NODE_ENV === 'production'
+    return process.env.NODE_ENV === 'production'
   } catch {
     return false
   }
