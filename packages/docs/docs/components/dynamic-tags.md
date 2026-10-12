@@ -189,7 +189,7 @@ onMounted(() => {
 | `clearable` | 清空按钮（一键清全部标签） | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `max` | 标签数量上限 | `string` | — |
-| `max-tag-count` | 超量折叠：超出收进 `+N`（title 悬浮列隐藏标签） | `string` | — |
+| `max-tag-count` | 超量折叠：超出收进 `+N`（title 悬浮列隐藏标签） | `number` | — |
 | `maxlength` | 单标签最大长度 | `string` | — |
 | `model-value` | 标签数组（property 或 JSON） | `string[]` | `[]` |
 | `pattern` | 新标签格式正则（不匹配提示并拒建） | `string` | — |

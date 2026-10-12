@@ -100,8 +100,7 @@
     },
     {
       "name": "max-tag-count",
-      "type": "string",
-      "default": "",
+      "type": "number",
       "observed": true
     },
     {

@@ -4,18 +4,18 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 33943460,
+        "distTotalBytes": 33947304,
         "browserJs": {
           "files": 419,
-          "rawBytes": 9391884,
-          "gzipBytes": 2562978,
-          "brotliBytes": 1943622
+          "rawBytes": 9392727,
+          "gzipBytes": 2563313,
+          "brotliBytes": 1943952
         },
         "fullEntry": {
           "files": 459,
-          "rawBytes": 3313288,
-          "gzipBytes": 1030077,
-          "brotliBytes": 864130,
+          "rawBytes": 3313927,
+          "gzipBytes": 1030312,
+          "brotliBytes": 864364,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -480,9 +480,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 2780244,
-          "gzipBytes": 695072,
-          "brotliBytes": 461773
+          "rawBytes": 2780346,
+          "gzipBytes": 695121,
+          "brotliBytes": 461832
         }
       },
       "@oas-ui/theme": {
@@ -545,9 +545,9 @@
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
         "files": 45,
-        "rawBytes": 307055,
-        "gzipBytes": 99026,
-        "brotliBytes": 83053,
+        "rawBytes": 307080,
+        "gzipBytes": 99037,
+        "brotliBytes": 83058,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/i18n/dist/index.js",
@@ -682,7 +682,7 @@
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
-        "actualBytes": 695072,
+        "actualBytes": 695121,
         "limitBytes": 788480,
         "warnAtBytes": 709632,
         "pass": true,
@@ -691,7 +691,7 @@
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 1030077,
+        "actualBytes": 1030312,
         "limitBytes": 1167360,
         "warnAtBytes": 1050624,
         "pass": true,
@@ -705,11 +705,11 @@
         "warnAtBytes": 27648,
         "pass": true,
         "warn": false,
-        "basis": "实测 gzip 26.7 KB（2026-10-11：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）"
+        "basis": "实测 gzip 26.7 KB（2026-10-12：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）"
       },
       {
         "name": "@oas-ui/ui/data/table 链 gzip",
-        "actualBytes": 99026,
+        "actualBytes": 99037,
         "limitBytes": 110592,
         "warnAtBytes": 99533,
         "pass": true,

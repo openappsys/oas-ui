@@ -247,6 +247,11 @@ describe('OASSelect', () => {
     expect(chips[2]!.textContent).toBe('+1')
   })
 
+  it('负值/非法值钳制：max-tag-count="-1" 视为未设置（不折叠，与 cascader/combobox 同口径）', () => {
+    const el = mount({ multiple: '', 'max-tag-count': '-1', value: JSON.stringify(['apple', 'banana', 'orange']) })
+    expect(el.shadowRoot!.querySelectorAll('.chip-plus').length).toBe(0)
+  })
+
   it('默认：无 max-tag-count 时多标签不折叠（value 容器 wrap、无 +N chip）', () => {
     const el = mount({ multiple: '', value: JSON.stringify(['apple', 'banana', 'orange']) })
     // 全部标签原样渲染，不出现折叠计数 chip

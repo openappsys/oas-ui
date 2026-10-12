@@ -499,7 +499,7 @@ onMounted(() => {
 | `lazy` | 懒加载（配 `el.load` 函数 property，节点含 isLeaf 标记） | `boolean` | — |
 | `loading` | 面板加载态（懒加载/远程搜索时） | `boolean` | — |
 | `max` | 多选上限（按勾选集合计） | `string` | — |
-| `max-tag-count` | 多选标签按数量折叠 +N（带 title 列隐藏项） | `string` | — |
+| `max-tag-count` | 多选标签按数量折叠 +N（带 title 列隐藏项） | `number` | — |
 | `multiple` | 多选 + 父子级联 | `boolean` | — |
 | `name` | 表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交） | `string` | — |
 | `open` | 受控开合（存在即受控；`"false"`=受控关），翻转派 oas-open-change；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | `string` | — |

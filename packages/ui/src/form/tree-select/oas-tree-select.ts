@@ -585,6 +585,14 @@ export class OASTreeSelect extends OASFormElement {
   /** 自定义过滤函数：(label, option) => boolean；缺省按 label 包含关键词（大小写不敏感） */
   filter?: (label: string, option: TreeOption) => boolean
 
+  /** 与 cascader/select/combobox 同型的数值属性读取器（空值/非法回落 null） */
+  private intAttr(name: string): number | null {
+    const raw = this.getAttr(name, '').trim()
+    if (raw === '') return null
+    const n = Number.parseInt(raw, 10)
+    return Number.isNaN(n) ? null : n
+  }
+
   private triggerEl: HTMLButtonElement | null = null
   private dropdown: HTMLElement | null = null
   private treeWrap: HTMLElement | null = null
@@ -1848,10 +1856,9 @@ export class OASTreeSelect extends OASFormElement {
     if (this.hasAttr('multiple')) {
       valueEl.innerHTML = ''
       // max-tag-count：仅显式设置时按数量折叠；未设置时 chip 默认换行展示
-      const limit = this.hasAttr('max-tag-count')
-        ? Math.max(0, Number.parseInt(this.getAttr('max-tag-count', ''), 10) || 0)
-        : Number.POSITIVE_INFINITY
-      const shown = limit >= 0 ? values.slice(0, limit) : values
+      const raw = this.hasAttr('max-tag-count') ? this.intAttr('max-tag-count') : null
+      const limit = raw !== null && raw >= 0 ? raw : Number.POSITIVE_INFINITY
+      const shown = values.slice(0, limit)
       for (const v of shown) {
         const label = this.displayLabelOf(v)
         const chip = document.createElement('span')

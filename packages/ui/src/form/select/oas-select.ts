@@ -1720,9 +1720,8 @@ export class OASSelect extends OASFormElement {
     if (this.hasAttr('multiple')) {
       valueEl.innerHTML = ''
       // max-tag-count：仅显式设置时才按数量折叠；未设置时标签默认换行展示（flex-wrap: wrap 见 CSS）
-      const limit = this.hasAttr('max-tag-count')
-        ? (this.intAttr('max-tag-count') ?? Number.POSITIVE_INFINITY)
-        : Number.POSITIVE_INFINITY
+      const raw = this.hasAttr('max-tag-count') ? this.intAttr('max-tag-count') : null
+      const limit = raw !== null && raw >= 0 ? raw : Number.POSITIVE_INFINITY
       const shown = limit >= 0 ? values.slice(0, limit) : values
       const allLabels = values.map((v) => this._options.find((o) => o.value === v)?.label ?? v)
       for (const v of shown) {

@@ -150,6 +150,13 @@ describe('OASTreeSelect', () => {
     expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual(['vue'])
   })
 
+  it('负值/非法值钳制：max-tag-count="-1" 视为未设置（不折叠，与 cascader/combobox 同口径）', () => {
+    const el = mount({ multiple: '', value: '["vue","react","css"]', 'max-tag-count': '-1' })
+    const chips = [...el.shadowRoot!.querySelectorAll('.chip:not(.chip-plus)')]
+    expect(chips.length).toBe(3)
+    expect(el.shadowRoot!.querySelector('.chip-plus')).toBeNull()
+  })
+
   it('max-tag-count：超出数量折叠为 +N（title 含隐藏标签）', () => {
     const el = mount({ multiple: '', value: '["vue","react","css"]', 'max-tag-count': '1' })
     const chips = [...el.shadowRoot!.querySelectorAll('.chip:not(.chip-plus)')]

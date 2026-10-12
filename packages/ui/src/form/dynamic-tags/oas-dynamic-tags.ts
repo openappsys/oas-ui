@@ -334,6 +334,14 @@ export class OASDynamicTags extends OASElement {
     ]
   }
 
+  /** 与 cascader/select/combobox 同型的数值属性读取器（空值/非法回落 null） */
+  private intAttr(name: string): number | null {
+    const raw = this.getAttr(name, '').trim()
+    if (raw === '') return null
+    const n = Number.parseInt(raw, 10)
+    return Number.isNaN(n) ? null : n
+  }
+
   private tagsEl: HTMLElement | null = null
   private inputEl: HTMLInputElement | null = null
   private hintEl: HTMLElement | null = null
@@ -475,8 +483,8 @@ export class OASDynamicTags extends OASElement {
   }
 
   private maxTagCountValue(): number {
-    if (!this.hasAttr('max-tag-count')) return Number.POSITIVE_INFINITY
-    return Math.max(0, Number.parseInt(this.getAttr('max-tag-count', ''), 10) || 0)
+    const raw = this.hasAttr('max-tag-count') ? this.intAttr('max-tag-count') : null
+    return raw !== null && raw >= 0 ? raw : Number.POSITIVE_INFINITY
   }
 
   private saveOnBlur(): boolean {

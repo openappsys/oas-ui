@@ -425,6 +425,11 @@ describe('OASDynamicTags max-tag-count 超量折叠', () => {
     expect(el.modelValue).toEqual(['a', 'b'])
   })
 
+  it('负值/非法值钳制：max-tag-count="-1" 视为未设置（不折叠，与 cascader/combobox 同口径）', () => {
+    const el = mount({ 'max-tag-count': '-1', 'model-value': '["a","b","c","d"]' })
+    expect(el.shadowRoot!.querySelector('.tag-overflow')).toBeNull()
+  })
+
   it('后加 max-tag-count：既有标签切换为折叠形态', async () => {
     const el = mount({ 'model-value': '["a","b","c"]' })
     expect(tagEls(el).length).toBe(3)

@@ -189,7 +189,7 @@ onMounted(() => {
 | `clearable` | Clear button (one-click clears all tags) | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `max` | Maximum number of tags | `string` | — |
-| `max-tag-count` | Collapse overflow into a `+N` chip (title lists hidden tags) | `string` | — |
+| `max-tag-count` | Collapse overflow into a `+N` chip (title lists hidden tags) | `number` | — |
 | `maxlength` | Maximum length per tag | `string` | — |
 | `model-value` | Tag array (property or JSON) | `string[]` | `[]` |
 | `pattern` | Regex for new tags (mismatch warns and rejects) | `string` | — |

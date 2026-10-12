@@ -499,7 +499,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `lazy` | Lazy loading (pair with the `el.load` function property; nodes carry isLeaf) | `boolean` | — |
 | `loading` | Panel loading state (during lazy load / remote search) | `boolean` | — |
 | `max` | Multi-select limit (by checked-set size) | `string` | — |
-| `max-tag-count` | Collapse multi-select tags beyond the count into +N (title lists hidden items) | `string` | — |
+| `max-tag-count` | Collapse multi-select tags beyond the count into +N (title lists hidden items) | `number` | — |
 | `multiple` | Multiple select + parent-child cascade | `boolean` | — |
 | `name` | Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent) | `string` | — |
 | `open` | Controlled open (presence = controlled; `"false"` = controlled-closed); flips fire oas-open-change; in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | `string` | — |
