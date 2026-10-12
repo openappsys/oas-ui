@@ -2,24 +2,24 @@
 
 A circular action button fixed to the bottom-right corner of the page by default, for quick actions like "New" and "Feedback"; supports a badge, a custom icon, extended text and link mode.
 
-> The demos add `style="position: relative"` to keep them in the document flow while establishing a positioning context (group/menu expansion layers anchor relative to the main button); in real use it is fixed to the bottom-right by default, adjustable via the `--oas-float-button-bottom` / `--oas-float-button-right` CSS variables (default `var(--oas-space-6)`, i.e. 32px).
+> The demos add `style="position: relative; inset: 0"` to keep them in the document flow while establishing a positioning context (group/menu expansion layers anchor relative to the main button); in real use it is fixed to the bottom-right by default, adjustable via the `--oas-float-button-bottom` / `--oas-float-button-right` CSS variables (default `var(--oas-space-6)`, i.e. 32px).
 
 ## Basic usage
 
 <DemoBlock title="With badge">
-  <oas-float-button badge="3" style="position: relative; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="3" style="position: relative; inset: 0; box-shadow: none"></oas-float-button>
 </DemoBlock>
 
 ## Without badge
 
 <DemoBlock title="Without badge">
-  <oas-float-button style="position: relative; box-shadow: none"></oas-float-button>
+  <oas-float-button style="position: relative; inset: 0; box-shadow: none"></oas-float-button>
 </DemoBlock>
 
 ## Custom icon
 
 <DemoBlock title="Custom icon">
-  <oas-float-button style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button style="position: relative; inset: 0; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
 </DemoBlock>
 
 ## Shape
@@ -27,8 +27,8 @@ A circular action button fixed to the bottom-right corner of the page by default
 `shape` offers two shapes: `circle` (default, round) / `square` (capsule rounded rectangle).
 
 <DemoBlock title="Shape">
-  <oas-float-button style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
-  <oas-float-button shape="square" style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button style="position: relative; inset: 0; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button shape="square" style="position: relative; inset: 0; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
 </DemoBlock>
 
 ## Type
@@ -36,8 +36,8 @@ A circular action button fixed to the bottom-right corner of the page by default
 `type` controls visual intensity: `primary` (default, solid primary with white text) / `default` (weakened: light background with dark text).
 
 <DemoBlock title="Type">
-  <oas-float-button type="default" style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
-  <oas-float-button style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button type="default" style="position: relative; inset: 0; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button style="position: relative; inset: 0; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
 </DemoBlock>
 
 ## Extended text
@@ -45,8 +45,8 @@ A circular action button fixed to the bottom-right corner of the page by default
 Writing text into the default slot turns the button into a horizontal capsule (icon + text in a row).
 
 <DemoBlock title="Extended text">
-  <oas-float-button style="position: relative; box-shadow: none">New</oas-float-button>
-  <oas-float-button type="default" style="position: relative; box-shadow: none">Feedback</oas-float-button>
+  <oas-float-button style="position: relative; inset: 0; box-shadow: none">New</oas-float-button>
+  <oas-float-button type="default" style="position: relative; inset: 0; box-shadow: none">Feedback</oas-float-button>
 </DemoBlock>
 
 ## Size
@@ -54,11 +54,11 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 `size` has five tiers: `xs` (24px) / `sm` (32px) / `md` (40px) / `lg` (default 48px) / `xl` (56px).
 
 <DemoBlock title="Size">
-  <oas-float-button size="xs" style="position: relative; box-shadow: none"></oas-float-button>
-  <oas-float-button size="sm" style="position: relative; box-shadow: none"></oas-float-button>
-  <oas-float-button size="md" style="position: relative; box-shadow: none"></oas-float-button>
-  <oas-float-button style="position: relative; box-shadow: none"></oas-float-button>
-  <oas-float-button size="xl" style="position: relative; box-shadow: none"></oas-float-button>
+  <oas-float-button size="xs" style="position: relative; inset: 0; box-shadow: none"></oas-float-button>
+  <oas-float-button size="sm" style="position: relative; inset: 0; box-shadow: none"></oas-float-button>
+  <oas-float-button size="md" style="position: relative; inset: 0; box-shadow: none"></oas-float-button>
+  <oas-float-button style="position: relative; inset: 0; box-shadow: none"></oas-float-button>
+  <oas-float-button size="xl" style="position: relative; inset: 0; box-shadow: none"></oas-float-button>
 </DemoBlock>
 
 ## Disabled
@@ -66,8 +66,8 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 `disabled` disables the button: not clickable, `oas-click` not fired, with weakened styles (translucent + disabled palette).
 
 <DemoBlock title="Disabled">
-  <oas-float-button disabled style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
-  <oas-float-button disabled style="position: relative; box-shadow: none">New</oas-float-button>
+  <oas-float-button disabled style="position: relative; inset: 0; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  <oas-float-button disabled style="position: relative; inset: 0; box-shadow: none">New</oas-float-button>
 </DemoBlock>
 
 ## Dragging and magnetic snapping
@@ -77,19 +77,19 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 `magnetic` works together with `draggable`: on release the button snaps to the nearest edge of the chosen axis — `x` snaps to the left/right edges, `y` to the top/bottom edges, with a transition (`prefers-reduced-motion` snaps instantly). The three buttons below are fixed to the bottom-right corner by default; press and drag to try it (the magnetic ones snap to the edge on release).
 
 <DemoBlock title="Draggable (press and drag the button within the container)">
-  <div style="position: relative; height: 180px; width: 100%">
+  <div style="position: relative; inset: 0; height: 180px; width: 100%">
     <oas-float-button draggable onoas-click="message.info('This is a click (not a drag) firing oas-click')" style="position: absolute; --oas-float-button-bottom: 16px; --oas-float-button-right: 16px"></oas-float-button>
   </div>
 </DemoBlock>
 
 <DemoBlock title="Draggable + magnetic x (snaps to the nearest left/right edge)">
-  <div style="position: relative; height: 180px; width: 100%">
+  <div style="position: relative; inset: 0; height: 180px; width: 100%">
     <oas-float-button draggable magnetic="x" style="position: absolute; --oas-float-button-bottom: 16px; --oas-float-button-right: 16px"></oas-float-button>
   </div>
 </DemoBlock>
 
 <DemoBlock title="Draggable + magnetic y (snaps to the nearest top/bottom edge)">
-  <div style="position: relative; height: 180px; width: 100%">
+  <div style="position: relative; inset: 0; height: 180px; width: 100%">
     <oas-float-button draggable magnetic="y" style="position: absolute; --oas-float-button-bottom: 16px; --oas-float-button-right: 16px"></oas-float-button>
   </div>
 </DemoBlock>
@@ -99,8 +99,8 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 `href` renders an `<a>` element (native link semantics and keyboard reachability), optionally with `target`; when disabled it degrades to a non-clickable `<span>`.
 
 <DemoBlock title="Link">
-  <oas-float-button href="https://example.com" target="_blank" style="position: relative; box-shadow: none"><span slot="icon">✈</span></oas-float-button>
-  <oas-float-button href="https://example.com" target="_blank" type="default" style="position: relative; box-shadow: none">Open example</oas-float-button>
+  <oas-float-button href="https://example.com" target="_blank" style="position: relative; inset: 0; box-shadow: none"><span slot="icon">✈</span></oas-float-button>
+  <oas-float-button href="https://example.com" target="_blank" type="default" style="position: relative; inset: 0; box-shadow: none">Open example</oas-float-button>
 </DemoBlock>
 
 ## Group mode
@@ -115,7 +115,7 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 - Clicking any child button collapses the group; Esc collapses and refocuses the main button, while an outside click collapses without refocusing
 
 <DemoBlock title="Group (click the main button to expand; children carry label bubbles and badges)">
-  <oas-float-button mode="group" expand-direction="down" style="position: relative">
+  <oas-float-button mode="group" expand-direction="down" style="position: relative; inset: 0">
     <span slot="icon">＋</span>
     <button slot="action" type="button" label="Edit"><span>✎</span></button>
     <a slot="action" href="https://example.com" target="_blank" label="Docs (link child)"><span>📄</span></a>
@@ -124,7 +124,7 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 </DemoBlock>
 
 <DemoBlock title="Expand event (click the main button to toggle; oas-expand-change message feedback)">
-  <oas-float-button mode="group" expand-direction="down" style="position: relative" onoas-expand-change="message.info('Expanded: ' + event.detail.expanded)">
+  <oas-float-button mode="group" expand-direction="down" style="position: relative; inset: 0" onoas-expand-change="message.info('Expanded: ' + event.detail.expanded)">
     <span slot="icon">＋</span>
     <button slot="action" type="button" label="Copy"><span>⧉</span></button>
     <button slot="action" type="button" label="Delete"><span>🗑</span></button>
@@ -137,7 +137,7 @@ Writing text into the default slot turns the button into a horizontal capsule (i
     mode="group"
     expand-direction="down"
     trigger="manual"
-    style="position: relative"
+    style="position: relative; inset: 0"
   >
     <span slot="icon">＋</span>
     <button slot="action" type="button" label="Copy"><span>⧉</span></button>
@@ -160,7 +160,7 @@ Writing text into the default slot turns the button into a horizontal capsule (i
   <oas-float-button
     mode="menu"
     expand-direction="down"
-    style="position: relative"
+    style="position: relative; inset: 0"
     onoas-select="message.info('Selected: ' + event.detail.label + (event.detail.href ? ' (link ' + event.detail.href + ')' : ''))"
     actions='[
       { "label": "Edit", "icon": "edit" },
@@ -179,9 +179,9 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 `badge` supports three values: a number (corner badge), `dot` (status dot, no number), or arbitrary text; pure numbers above `99` are capped to `99+` automatically. Group child buttons (`badge` attribute) and menu action items (`badge` field) follow the same rule.
 
 <DemoBlock title="Badge capping and status dot">
-  <oas-float-button badge="8" style="position: relative; box-shadow: none"></oas-float-button>
-  <oas-float-button badge="120" style="position: relative; box-shadow: none"></oas-float-button>
-  <oas-float-button badge="dot" style="position: relative; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="8" style="position: relative; inset: 0; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="120" style="position: relative; inset: 0; box-shadow: none"></oas-float-button>
+  <oas-float-button badge="dot" style="position: relative; inset: 0; box-shadow: none"></oas-float-button>
 </DemoBlock>
 
 ## Event feedback
@@ -189,7 +189,7 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 Clicking dispatches `oas-click` (bubbles + composed), and `detail.originalEvent` is the native click event.
 
 <DemoBlock title="Click event">
-  <oas-float-button badge="5" style="position: relative; box-shadow: none" onoas-click="message.info('Float button clicked, detail.originalEvent type: ' + event.detail.originalEvent.type)"></oas-float-button>
+  <oas-float-button badge="5" style="position: relative; inset: 0; box-shadow: none" onoas-click="message.info('Float button clicked, detail.originalEvent type: ' + event.detail.originalEvent.type)"></oas-float-button>
 </DemoBlock>
 
 ## Hover hint
@@ -198,10 +198,10 @@ The hover hint is composed by the host: wrap `oas-float-button` with `oas-toolti
 
 <DemoBlock title="Tooltip composition">
   <oas-tooltip content="New document" placement="top">
-    <oas-float-button style="position: relative; box-shadow: none"></oas-float-button>
+    <oas-float-button style="position: relative; inset: 0; box-shadow: none"></oas-float-button>
   </oas-tooltip>
   <oas-tooltip content="Send feedback" placement="left">
-    <oas-float-button type="default" style="position: relative; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+    <oas-float-button type="default" style="position: relative; inset: 0; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
   </oas-tooltip>
 </DemoBlock>
 
