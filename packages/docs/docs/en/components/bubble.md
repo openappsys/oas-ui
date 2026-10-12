@@ -95,6 +95,7 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `align` | Direction: start (other party, default) / end (self) — logical-property alignment (align-self, RTL mirrored automatically); when set explicitly it wins over the inherited text-align reflection | — | — |
 | `loading` | Typing state (boolean presence): content switches to a three-dot typing indicator and the host reflects aria-busy (the AI "typing" scenario) | `boolean` | — |
 | `reactions` | Reaction bar as a JSON array; each item { emoji, count?, active?, label? } (emoji required). Empty array / invalid JSON renders nothing | — | — |
 | `reactions-align` | Horizontal alignment of the reaction bar: start / end; defaults to following the bubble align | — | — |

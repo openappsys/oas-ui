@@ -810,12 +810,13 @@ export class OASToast extends OASElement {
 
   private leaveDurationMs(): number {
     const raw = getComputedStyle(this).getPropertyValue('--oas-toast-leave-duration').trim()
-    // CSS 时间单位换算：'0.2s' → 200、'200ms' → 200（parseFloat 会把 '0.2s' 误当 0.2ms）；无单位按 ms
-    const m = /^(\d+(?:\.\d+)?)(ms|s)?$/.exec(raw)
+    // CSS 时间单位换算：'0.2s' → 200、'200ms' → 200（parseFloat 会把 '0.2s' 误当 0.2ms）；
+    // 合法 CSS 写法兼容（前导点 '.5s'、大写单位 '200MS'）；无单位按 ms（裸 '+50' 非法，回落常量）
+    const m = /^(\d*\.?\d+)(ms|s)?$/i.exec(raw)
     if (!m) return LEAVE_ANIMATION_MS
     const n = Number.parseFloat(m[1]!)
     if (!Number.isFinite(n) || n <= 0) return LEAVE_ANIMATION_MS
-    return m[2] === 's' ? n * 1000 : n
+    return m[2]?.toLowerCase() === 's' ? n * 1000 : n
   }
 
   private animateLeave(): boolean {

@@ -95,6 +95,7 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `align` | 方向：start（对方，默认）/ end（我方）——逻辑属性实现（align-self 镜像），RTL 自动镜像；显式设置时优先于容器 text-align 的继承反射 | — | — |
 | `loading` | 打字中态（布尔在场）：内容切换为三点打字指示，宿主元素反射 aria-busy（AI「正在输入」场景） | `boolean` | — |
 | `reactions` | 表情回应条 JSON 数组，每项 { emoji, count?, active?, label? }（emoji 必填）；空数组/非法 JSON 不渲染反应条 | — | — |
 | `reactions-align` | 反应条横向对齐：start / end；缺省跟随气泡 align | — | — |

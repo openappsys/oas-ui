@@ -1301,6 +1301,22 @@ describe('离场时长单位解析', () => {
     expect((el() as unknown as { leaveDurationMs(): number }).leaveDurationMs()).toBe(150)
   })
 
+  it('合法 CSS 写法兼容：前导点与大写单位（.5s → 500，200MS → 200）', async () => {
+    toast.info({ title: '单位' })
+    await Promise.resolve()
+    el().style.setProperty('--oas-toast-leave-duration', '.5s')
+    expect((el() as unknown as { leaveDurationMs(): number }).leaveDurationMs()).toBe(500)
+    el().style.setProperty('--oas-toast-leave-duration', '200MS')
+    expect((el() as unknown as { leaveDurationMs(): number }).leaveDurationMs()).toBe(200)
+  })
+
+  it('裸正号无单位非法（+50 → 回落默认）', async () => {
+    toast.info({ title: '单位' })
+    await Promise.resolve()
+    el().style.setProperty('--oas-toast-leave-duration', '+50')
+    expect((el() as unknown as { leaveDurationMs(): number }).leaveDurationMs()).toBe(200)
+  })
+
   it('非法/空值回落默认常量', async () => {
     toast.info({ title: '单位' })
     await Promise.resolve()

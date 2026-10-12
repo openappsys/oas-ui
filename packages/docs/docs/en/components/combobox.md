@@ -295,7 +295,7 @@ Programmatic read/write of the current value goes through the public `value` pro
 | `item-height` | Virtual-scroll fixed row height (px, with `virtual`, default 36) | `string` | `36` |
 | `loading` | Loading placeholder (dropdown shows "Loading…") | `boolean` | — |
 | `max-count` | Multi-select limit (only with `multiple`): once reached, unselected options are greyed out and blocked with `oas-exceed-limit`; selected options can still be removed | `string` | — |
-| `max-tag-count` | Tag collapse count (only with `multiple`): when explicitly set, tags are laid out on one line and the overflow collapses into `+N` (title lists the folded labels); without it tags wrap by default | `string` | — |
+| `max-tag-count` | Tag collapse count (only with `multiple`): when explicitly set, tags are laid out on one line and the overflow collapses into `+N` (title lists the folded labels); without it tags wrap by default | `number` | — |
 | `multiple` | Multi-select mode (mirrors oas-select multiple semantics: the value is a JSON array, selected options render as removable tags, the panel stays open after each pick for continuous selection; typing only filters, free-text semantics are off) | `boolean` | — |
 | `name` | Form field name (key for native FormData submission; also the key of same-name multiple entries in multiple mode; the browser skips submission when name is absent) | `string` | — |
 | `open` | Controlled open state (internal open/close writes back to the attribute; every transition dispatches `oas-open-change`; forced closed under readonly/disabled); in the mobile form (touch / viewport <768px) the open panel is hosted by an oas-bottom-sheet bottom sheet (swipe-down/backdrop/Esc to close); desktop keeps the floating dropdown | `boolean` | — |

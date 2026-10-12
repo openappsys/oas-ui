@@ -773,9 +773,9 @@ export class OASCombobox extends OASFormElement {
     if (!control || !input) return
     for (const old of [...control.querySelectorAll<HTMLElement>('.chip')]) old.remove()
     // max-tag-count：仅显式设置时才按数量折叠；未设置时标签默认换行展示
-    const rawLimit = this.getAttr('max-tag-count', '').trim()
-    const limitN = rawLimit === '' ? Number.POSITIVE_INFINITY : Number.parseInt(rawLimit, 10)
-    const limit = rawLimit !== '' && !Number.isNaN(limitN) && limitN >= 0 ? limitN : Number.POSITIVE_INFINITY
+    // intAttr 通道（与 cascader/select 同型，manifest 类型推断为 number）
+    const raw = this.intAttr('max-tag-count')
+    const limit = raw !== null && raw >= 0 ? raw : Number.POSITIVE_INFINITY
     const shown = values.slice(0, limit)
     const allLabels = values.map((v) => this.labelOf(v))
     for (const v of shown) {
@@ -803,7 +803,7 @@ export class OASCombobox extends OASFormElement {
       control.insertBefore(chip, input)
     }
     // 折叠计数 chip：仅在显式设置 max-tag-count 且有折叠时插入
-    if (rawLimit !== '' && values.length > shown.length) {
+    if (raw !== null && values.length > shown.length) {
       const plus = document.createElement('span')
       plus.className = 'chip chip-plus'
       plus.textContent = `+${values.length - shown.length}`
@@ -1123,6 +1123,14 @@ export class OASCombobox extends OASFormElement {
     vlist.setAttribute('height', '240')
     vlist.setAttribute('item-height', String(this.virtualItemHeight()))
     vlist.items = visible
+  }
+
+  /** 与 cascader/select 同型的数值属性读取器（空值/非法回落 null） */
+  private intAttr(name: string): number | null {
+    const raw = this.getAttr(name, '').trim()
+    if (raw === '') return null
+    const n = Number.parseInt(raw, 10)
+    return Number.isNaN(n) ? null : n
   }
 
   private setVirtualVisible(visible: boolean): void {

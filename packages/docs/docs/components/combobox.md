@@ -296,7 +296,7 @@ onMounted(() => {
 | `item-height` | 虚拟滚动定高（px，配合 `virtual`，默认 36） | `string` | `36` |
 | `loading` | 加载占位（下拉显示「加载中…」） | `boolean` | — |
 | `max-count` | 多选上限（仅 `multiple` 生效）：达上限未选项置灰拦截并派发 `oas-exceed-limit`，已选项仍可取消 | `string` | — |
-| `max-tag-count` | 已选标签折叠数（仅 `multiple` 生效）：显式设置时标签单行收纳、超出折叠为 `+N`（title 汇总被折叠项）；未设置时标签默认换行展示 | `string` | — |
+| `max-tag-count` | 已选标签折叠数（仅 `multiple` 生效）：显式设置时标签单行收纳、超出折叠为 `+N`（title 汇总被折叠项）；未设置时标签默认换行展示 | `number` | — |
 | `multiple` | 多选模式（对齐 oas-select 多选语义：值走 JSON 数组、已选项渲染为可移除标签、选中后面板保持展开连续挑选；输入仅作过滤，自由输入语义关闭） | `boolean` | — |
 | `name` | 表单字段名（原生 FormData 提交的 key；多选时作为同名多条 entry 的 key；无 name 浏览器自动不提交） | `string` | — |
 | `open` | 受控展开状态（组件内部开合同步写回属性，任何迁移派发 `oas-open-change`；readonly/disabled 下强制收起）；移动形态（触屏/窄视口 <768px）下展开态由 oas-bottom-sheet 底部抽屉承载（下滑/遮罩/Esc 收起），PC 为浮层下拉 | `boolean` | — |
