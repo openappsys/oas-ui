@@ -18,6 +18,10 @@
     {
       "name": "reactions-align",
       "observed": true
+    },
+    {
+      "name": "align",
+      "observed": true
     }
   ],
   "props": [],

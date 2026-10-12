@@ -288,9 +288,9 @@ const BUDGETS = [
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
     get: () => componentMeasures.button.gzipBytes,
-    limit: 30 * 1024, // 30 KB（2026-10-11 重定档：dev-warn 统一告警通道入链，实测 26.7 KB）
+    limit: 30 * 1024, // 30 KB（2026-10-12 重定档：dev-warn 统一告警通道入链，实测 26.7 KB）
     basis:
-      '实测 gzip 26.7 KB（2026-10-11：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）',
+      '实测 gzip 26.7 KB（2026-10-12：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）',
   },
   {
     name: '@oas-ui/ui/data/table 链 gzip',

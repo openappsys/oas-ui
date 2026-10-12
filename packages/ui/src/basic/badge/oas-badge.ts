@@ -1263,8 +1263,9 @@ const STYLE = `
   border-start-end-radius: 999px;
   border-end-end-radius: 999px;
 }
-/* 卷边端替代折叠角：rolled 时隐藏 corner（卷边自身就是内侧端的装饰） */
-.ribbon.rolled:where(:not(.form-banner)) .ribbon-corner {
+/* 卷边端替代折叠角：rolled 时隐藏 corner（卷边自身就是内侧端的装饰）；
+   side 一并排除——rolled 对 side 整体静默忽略（side 的挂点折叠角不应被 rolled 带走） */
+.ribbon.rolled:where(:not(.form-banner):not(.form-side)) .ribbon-corner {
   display: none;
 }
 

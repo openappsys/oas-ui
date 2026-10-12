@@ -660,7 +660,7 @@ oas-badge#badge-dyn.bump::part(badge) {
 | `ribbon-position` | 缎带纵向位置：`hang`（默认，挂沿下）/ `edge`（贴顶边）/ `cross`（骑跨顶边，压住卡片顶边框，包裹感最强）；与 `placement`（start/end 横向）正交，仅作用于 `ribbon-form="fold"` 形态，非法值静默回落 `hang` | `BadgeRibbonPosition` | `hang` |
 | `ribbon-size` | diagonal 斜带尺寸档位：`small`（默认，30px 带宽 / xs 字号）/ `medium`（33px / sm 字号，钉点 35px）/ `large`（36px / md 字号，钉点 45px，宽幅大字场景）；`sm`/`md`/`lg` 为等价别名；档位只改 `--oas-badge-diagonal-*` 的 fallback 默认值，宿主自定义属性优先级更高；仅 `ribbon-form="diagonal"` 生效，非法值静默回落 `small` | `BadgeRibbonSize` | `small` |
 | `ribbon-vertical` | bookmark 侧挂（`ribbon-direction="left"` / `"right"`）的纵向位置：`center`（默认，垂直居中）/ `top`（贴顶边）/ `bottom`（贴底边）；仅侧挂生效，非法值静默回落 `center` | `BadgeRibbonVertical` | `center` |
-| `rolled` | 端部卷边：布尔修饰，给探出外端做卷边效果（端部大圆角 + 内侧渐暗渐变模拟卷起圆柱，纯 CSS）；可叠加 `fold` / `flag` / `rounded` / `zigzag` / `arrow`（`banner` 保留自身双端折角、不叠卷边；`diagonal` / `triangle` / `bookmark` / `side` / `seal` 静默忽略） | `boolean` | — |
+| `rolled` | 端部卷边：布尔修饰，给卡片内侧端做卷边效果（内侧端大圆角 + 渐暗渐变模拟卷起圆柱，外端顶卡片边线不再探出；纯 CSS）；可叠加 `fold` / `flag` / `rounded` / `zigzag` / `arrow`（`banner` 保留自身双端折角、不叠卷边；`diagonal` / `triangle` / `bookmark` / `side` / `seal` 静默忽略） | `boolean` | — |
 | `shape` | 徽标形态 `round`（默认）/ `square` / `pill`，数值与 dot 通用 | `string` | — |
 | `showZero` | value=0 时是否显示 | `boolean` | — |
 | `size` | 尺寸档位：small（小档，数字徽标高约 13px、dot 6px）/ medium（默认，约 16px）/ large（大档，约 20px、dot 10px）；非法值静默回落 medium | `BadgeSize` | `medium` |

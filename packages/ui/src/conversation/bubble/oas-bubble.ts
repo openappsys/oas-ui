@@ -59,7 +59,8 @@ const STYLE = `
   margin-inline-end: 0;
 }
 /* 继承对齐：message-row 等容器经 text-align 落位 slotted 气泡，flex 项不响应 text-align——
-   update() 把继承的计算值反射为 data-inherit-end；显式 align 属性（同级选择器在后）胜出 */
+   update() 把继承的计算值反射为 data-inherit-end；显式 align 属性由 update() 互斥保证
+   （有 align 即清反射），与本规则源序无关 */
 :host([data-inherit-end]) .bubble {
   align-self: flex-end;
 }
@@ -224,7 +225,7 @@ const STYLE = `
  */
 export class OASBubble extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['loading', 'reactions', 'reactions-side', 'reactions-align']
+    return ['loading', 'reactions', 'reactions-side', 'reactions-align', 'align']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */

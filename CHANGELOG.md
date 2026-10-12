@@ -233,14 +233,14 @@
 - **API 工具链**：反向缺口治理（跨目录基类扫描 + `@apiProperty` 通道 + 双向 0 门禁）；API 语料进 pre-commit；docs 双语镜像守卫；qa-regression 覆盖回填 8 组件
 - **ui-spec 新增「命令式开合 API 约定」**（抽屉/浮层类公开方法的统一形状，sidebar 为首个落地件）
 
+### 文档
+
+- form 页新增「原生表单集成」集中 demo（label for + FormData + reset + 15 组件支持清单，中英双版）；12 组件补 required 演示块
+- qrcode 文档补形状/渐变两节 demo（中英双版）；`error-correction` 说明修正（四级均已实现，非仅 L 级）
+
 ### 测试
 
 - tooltip 三个 hover 跟随用例改「关动画 + 等 DOM 静止 + 轮询断言」，消除并行下的时序抖动
-
-### 文档
-
-- qrcode 文档补形状/渐变两节 demo（中英双版）；`error-correction` 说明修正（四级均已实现，非仅 L 级）
-- form 页新增「原生表单集成」集中 demo（label for + FormData + reset + 15 组件支持清单，中英双版）；12 组件补 required 演示块
 
 ## [2.5.5] - 2026-09-17
 

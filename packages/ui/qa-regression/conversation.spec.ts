@@ -634,3 +634,34 @@ test('bubble 显式 align="start"：在 align=end 行内不被容器对齐拉右
   expect(geo.reflected, '显式 align 在场时不应残留 data-inherit-end').toBe(false)
   expect(Math.abs(geo.bubbleLeft - geo.hostLeft)).toBeLessThanOrEqual(1)
 })
+
+test('bubble align 动态切换：setAttribute 即时改对齐（align 已入 observedAttributes）', async ({ page }) => {
+  await page.goto('/components/bubble.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-bubble')
+  const geo = await page.evaluate(() => {
+    const row = document.createElement('oas-message-row')
+    row.setAttribute('align', 'end')
+    const bubble = document.createElement('oas-bubble')
+    bubble.innerHTML = '<p>动态对齐</p>'
+    row.appendChild(bubble)
+    row.style.cssText = 'position:fixed;top:0;left:0;width:400px;z-index:9999;background:#fff'
+    document.body.appendChild(row)
+    const rect = () => (bubble.shadowRoot!.querySelector('[part="bubble"]') as HTMLElement).getBoundingClientRect()
+    const host = bubble.getBoundingClientRect()
+    const before = { right: rect().right, hostRight: host.right, reflected: bubble.hasAttribute('data-inherit-end') }
+    // 动态加显式 align="start"：应即时清反射并靠左
+    bubble.setAttribute('align', 'start')
+    const mid = { left: rect().left, hostLeft: host.left, reflected: bubble.hasAttribute('data-inherit-end') }
+    // 动态移除 align：应重新按容器 text-align 反射回右
+    bubble.removeAttribute('align')
+    const after = { right: rect().right, hostRight: host.right, reflected: bubble.hasAttribute('data-inherit-end') }
+    row.remove()
+    return { before, mid, after }
+  })
+  expect(geo.before.reflected).toBe(true)
+  expect(Math.abs(geo.before.right - geo.before.hostRight)).toBeLessThanOrEqual(1)
+  expect(geo.mid.reflected, '显式 align="start" 后反射应被清除').toBe(false)
+  expect(Math.abs(geo.mid.left - geo.mid.hostLeft)).toBeLessThanOrEqual(1)
+  expect(geo.after.reflected, '移除 align 后应重新按容器 text-align 反射').toBe(true)
+  expect(Math.abs(geo.after.right - geo.after.hostRight)).toBeLessThanOrEqual(1)
+})

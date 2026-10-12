@@ -1156,7 +1156,14 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
   it('banner 折叠角不被 rolled 隐藏（banner 有自己的两端折角语义）', () => {
     const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'banner', rolled: '' })
     const style = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(style).toContain('.ribbon.rolled:where(:not(.form-banner)) .ribbon-corner')
+    expect(style).toContain('.ribbon.rolled:where(:not(.form-banner):not(.form-side)) .ribbon-corner')
+  })
+
+  it('side 挂点折叠角不被 rolled 带走（rolled 对 side 整体静默忽略）', () => {
+    const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'side', rolled: '' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    // :not 集须同时排除 side——否则 rolled+side 会误隐藏 side 的挂点折叠角（review 实抓）
+    expect(style).toContain('.ribbon.rolled:where(:not(.form-banner):not(.form-side)) .ribbon-corner')
   })
 
   it('ribbon-size 档位：仅与 diagonal 组合（large 带宽/字号覆盖 + 带中心深移到 45px 防长文字贴裁切线）', () => {
