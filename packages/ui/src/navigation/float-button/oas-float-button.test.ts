@@ -208,7 +208,7 @@ describe('OASFloatButton draggable + magnetic', () => {
     expect(OASFloatButton.observedAttributes).toContain('magnetic')
   })
 
-  it('draggable：pointer 拖拽把位置写入 host 内联 left/top（fixed 定位系），清空 bottom/right', () => {
+  it('draggable：pointer 拖拽把位置写入 host 内联 left/top（fixed 定位系），bottom/right 显式置 auto', () => {
     const el = mount({ draggable: '' })
     vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
       left: 100,
@@ -220,8 +220,9 @@ describe('OASFloatButton draggable + magnetic', () => {
     pointer(btn(el), 'pointermove', 200, 150)
     expect(el.style.left).toBe('200px')
     expect(el.style.top).toBe('150px')
-    expect(el.style.bottom).toBe('')
-    expect(el.style.right).toBe('')
+    // 显式 auto 而非清空：清空会回落到 :host 的 right/bottom（CSS 变量开口），absolute 下拉伸宽度
+    expect(el.style.bottom).toBe('auto')
+    expect(el.style.right).toBe('auto')
     pointer(btn(el), 'pointerup', 200, 150)
   })
 

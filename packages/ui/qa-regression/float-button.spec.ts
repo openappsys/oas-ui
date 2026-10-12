@@ -194,3 +194,102 @@ test('group 展开自动聚焦首项：visibility 过渡不得吞焦点（speed-
     `展开后焦点应落在面板内（首项子动作/宿主承接），实际 active=${state.activeTag}`,
   ).toBe(true)
 })
+
+test('demo 宿主不溢出 DemoBlock：relative 覆盖必须配 inset 中和宿主 bottom/right 悬浮偏移', async ({ page }) => {
+  // 缺陷背景：宿主 :host 自带 bottom/right（fixed 悬浮定位）。demo 用 position:relative
+  // 覆盖时若不同时 inset 中和，这两个属性退化为「相对正常位置的偏移量」（左/上移 32px），
+  // 按钮被推出 demo 容器（用户截图实抓）。此前曾复现：注入移除 inset 后立即报「带角标」demo。
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '.demo-block__body oas-float-button')
+  const overflows = await page.evaluate(() => {
+    const bad: { demo: string; rect: string; box: string }[] = []
+    for (const el of document.querySelectorAll<HTMLElement>('.demo-block__body oas-float-button')) {
+      const r = el.getBoundingClientRect()
+      if (r.width === 0 && r.height === 0) continue
+      const box = el.closest('.demo-block__body')!.getBoundingClientRect()
+      const eps = 1
+      if (
+        r.left < box.left - eps ||
+        r.top < box.top - eps ||
+        r.right > box.right + eps ||
+        r.bottom > box.bottom + eps
+      ) {
+        const demo = el.closest('.demo-block')?.querySelector('.demo-block__head')?.textContent?.trim() ?? '?'
+        bad.push({
+          demo,
+          rect: `l=${r.left.toFixed(1)} t=${r.top.toFixed(1)} r=${r.right.toFixed(1)} b=${r.bottom.toFixed(1)}`,
+          box: `l=${box.left.toFixed(1)} t=${box.top.toFixed(1)} r=${box.right.toFixed(1)} b=${box.bottom.toFixed(1)}`,
+        })
+      }
+    }
+    return bad
+  })
+  expect(overflows, `溢出 demo 容器的 float-button：${JSON.stringify(overflows, null, 2)}`).toEqual([])
+})
+
+test('拖拽跟手：absolute 定位（卡内 demo 容器）下按钮随指针 1:1 移动，不按视口坐标错位', async ({ page }) => {
+  // 缺陷背景：拖拽实现曾硬编码 fixed/视口坐标系（rect.left/top 作起点、写 left/top、
+  // 夹取用 innerWidth/Height）。demo 宿主为 absolute（相对卡内容器）时，视口坐标被当作
+  // 相对容器坐标写入 → 按钮位置 = 逻辑位置 + 容器页面偏移 → 飘移很远（用户实报）。
+  // 注意：需先滚动到元素（up() 不滚动；本页 demo 在页面下方），拖拽方向取左上——
+  // 按钮初始锚在容器右下角（bottom/right:16），向右下拖会立即触边界被夹取。
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  const fab = page.locator('.demo-block__body oas-float-button[draggable]').first()
+  await up(page, 'oas-float-button[draggable]')
+  await fab.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(600)
+  const box = (await fab.boundingBox())!
+  const cx = box.x + box.width / 2
+  const cy = box.y + box.height / 2
+  await page.mouse.move(cx, cy)
+  await page.mouse.down()
+  await page.waitForTimeout(60) // 等 pointerdown 处理与指针捕获生效
+  // 分步小位移（每步 10px）。每步用 evaluate 读取实际几何：headless 下输入事件需一次
+  // 往返才驱动事件循环/渲染落定（仅 Node 侧 sleep 不足以让 pointermove 全量生效），
+  // 同时该值即断言关心的渲染位置。
+  let lastLeft = 0
+  for (let i = 1; i <= 5; i++) {
+    await page.mouse.move(cx - i * 10, cy, { steps: 1 })
+    await page.waitForTimeout(60)
+    lastLeft = await fab.evaluate((el) => el.getBoundingClientRect().left)
+  }
+  await page.mouse.up()
+  const mx = lastLeft + box.width / 2
+  expect(Math.abs(mx - (cx - 50)), `按钮跟手 x：期望≈${(cx - 50).toFixed(0)}，实际 ${mx.toFixed(0)}`).toBeLessThan(3)
+})
+
+test('磁吸贴容器边缘：magnetic=x 松手吸附到 absolute 包含块（demo 卡片）的左右边缘', async ({ page }) => {
+  // 磁吸与拖拽同源坐标系问题：曾用 window.innerWidth 算吸附目标，absolute 下吸到视口边缘。
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  const fab = page.locator('.demo-block__body oas-float-button[draggable][magnetic="x"]').first()
+  await up(page, 'oas-float-button[draggable][magnetic="x"]')
+  await fab.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(600)
+  const box = (await fab.boundingBox())!
+  const cx = box.x + box.width / 2
+  const cy = box.y + box.height / 2
+  await page.mouse.move(cx, cy)
+  await page.mouse.down()
+  await page.waitForTimeout(60) // 等指针捕获生效
+  // 向左拖少量后松手：按钮仍在容器右半边 → 磁吸应贴容器右缘（视口坐标系下会吸到错误边缘）。
+  // 每步 evaluate 驱动事件循环落定（同跟手断言）。
+  for (let i = 1; i <= 3; i++) {
+    await page.mouse.move(cx - i * 10, cy, { steps: 1 })
+    await page.waitForTimeout(60)
+    await fab.evaluate((el) => el.getBoundingClientRect().left)
+  }
+  await page.mouse.up()
+  await page.waitForTimeout(400) // 等磁吸过渡（--oas-transition-base）
+  // 吸附目标是 absolute 宿主所属的定位包含块（offsetParent = demo 内层 relative 容器）。
+  // 不能用 .demo-block__body：它自带 padding（space-5），与包含块差一圈 padding 距离。
+  const gaps = await fab.evaluate((el) => {
+    const inner = el.offsetParent as HTMLElement
+    const r = el.getBoundingClientRect()
+    const c = inner.getBoundingClientRect()
+    return { left: r.left - c.left, right: c.right - r.right }
+  })
+  expect(
+    Math.min(Math.abs(gaps.left), Math.abs(gaps.right)),
+    `磁吸应贴包含块左/右边缘（左缝=${gaps.left.toFixed(1)} 右缝=${gaps.right.toFixed(1)}；贴合视口边缘则为缺陷）`,
+  ).toBeLessThan(3)
+})

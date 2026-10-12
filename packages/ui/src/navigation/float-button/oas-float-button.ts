@@ -625,6 +625,8 @@ export class OASFloatButton extends OASElement {
     startY: number
     startLeft: number
     startTop: number
+    maxX: number
+    maxY: number
     moved: boolean
   } | null = null
   /** 拖拽超阈值后抑制随之合成的一次 click（区分拖拽与点击） */
@@ -1140,6 +1142,28 @@ export class OASFloatButton extends OASElement {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches
   }
 
+  /**
+   * 拖拽/磁吸坐标系：absolute 定位元素用 offsetParent 包含块（padding box 原点 + 内部尺寸），
+   * 其余定位（fixed/relative/static）沿用视口坐标系——fixed 是组件的默认悬浮语义。
+   * 拖拽以「指针视口位移 + 元素在所属坐标系中的起点」写 left/top，坐标系必须与定位方式一致，
+   * 否则视口坐标被当作相对坐标写入 → 按钮按包含块页面偏移量错位（用户实报的「飘很远」）。
+   */
+  private dragFrame(): { left: number; top: number; width: number; height: number } {
+    if (getComputedStyle(this).position === 'absolute') {
+      const parent = this.offsetParent as HTMLElement | null
+      if (parent && parent !== document.body) {
+        const r = parent.getBoundingClientRect()
+        return {
+          left: r.left + parent.clientLeft,
+          top: r.top + parent.clientTop,
+          width: parent.clientWidth,
+          height: parent.clientHeight,
+        }
+      }
+    }
+    return { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight }
+  }
+
   private handlePointerDown = (e: PointerEvent): void => {
     // 非 draggable 零行为变化；禁用态不可拖；仅主键（左键/触屏）
     if (!this.hasAttr('draggable')) return
@@ -1148,12 +1172,15 @@ export class OASFloatButton extends OASElement {
     // 新会话先复位抑制标记（上一次拖拽若被 pointercancel 中断可能残留）
     this.suppressClick = false
     const rect = this.getBoundingClientRect()
+    const frame = this.dragFrame()
     this.dragState = {
       pointerId: e.pointerId,
       startX: e.clientX,
       startY: e.clientY,
-      startLeft: rect.left,
-      startTop: rect.top,
+      startLeft: rect.left - frame.left,
+      startTop: rect.top - frame.top,
+      maxX: Math.max(0, frame.width - this.offsetWidth),
+      maxY: Math.max(0, frame.height - this.offsetHeight),
       moved: false,
     }
     this.classList.add('dragging')
@@ -1174,16 +1201,16 @@ export class OASFloatButton extends OASElement {
     // 阈值内视为点击（不移动）；超过阈值进入拖拽
     if (!d.moved && Math.abs(dx) <= DRAG_THRESHOLD && Math.abs(dy) <= DRAG_THRESHOLD) return
     d.moved = true
-    // 边界夹取：left/top 夹在视口内（fixed 定位相对视口，拖出视口回夹）
-    const maxX = Math.max(0, window.innerWidth - this.offsetWidth)
-    const maxY = Math.max(0, window.innerHeight - this.offsetHeight)
-    const left = Math.min(Math.max(0, d.startLeft + dx), maxX)
-    const top = Math.min(Math.max(0, d.startTop + dy), maxY)
-    // 位置写入 host 内联 left/top（fixed 定位系），清掉默认 bottom/right 避免双端拉伸
+    // 边界夹取：在所属坐标系内回夹（fixed→视口、absolute→包含块），拖出边界不滑出
+    const left = Math.min(Math.max(0, d.startLeft + dx), d.maxX)
+    const top = Math.min(Math.max(0, d.startTop + dy), d.maxY)
+    // 位置写入 host 内联 left/top（与定位方式同坐标系）；right/bottom 必须显式设 auto：
+    // 仅清空内联会回落到 :host 规则里的 right/bottom（CSS 变量开口），absolute 下 left+right
+    // 同时生效会把自身宽度拉伸（width:auto shrink-to-fit 失效），磁吸/夹取随之错乱。
     this.style.left = `${left}px`
     this.style.top = `${top}px`
-    this.style.bottom = ''
-    this.style.right = ''
+    this.style.right = 'auto'
+    this.style.bottom = 'auto'
   }
 
   private handlePointerUp = (e: PointerEvent): void => {
@@ -1221,10 +1248,12 @@ export class OASFloatButton extends OASElement {
   private applyMagnetic(): void {
     const axis = this.getAttr('magnetic', '')
     if (axis !== 'x' && axis !== 'y') return
+    // 吸附边缘同样是坐标系相关：fixed 吸视口、absolute 吸包含块（与拖拽同源 frame）
+    const frame = this.dragFrame()
     const left = parseFloat(this.style.left) || 0
     const top = parseFloat(this.style.top) || 0
-    const maxX = Math.max(0, window.innerWidth - this.offsetWidth)
-    const maxY = Math.max(0, window.innerHeight - this.offsetHeight)
+    const maxX = Math.max(0, frame.width - this.offsetWidth)
+    const maxY = Math.max(0, frame.height - this.offsetHeight)
     const reduced = this.prefersReducedMotion()
     if (axis === 'x') {
       const distLeft = left
