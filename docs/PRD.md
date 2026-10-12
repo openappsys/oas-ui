@@ -1997,7 +1997,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ## 工作台构件族：titlebar / statusbar / inspector / action-bar（未发布）
 
-> 专业软件（音视频 / 3D / 设计 / IDE / MES 控制台）应用外壳的条形/面板件，围绕「一块主工作区」排布外圈。新建 `packages/ui/src/workbench/` 族目录 + `families/workbench.ts`（第 8 个 CDN 族）。与既有件的边界：titlebar ≠ app-bar（窗口 chrome vs 页面应用栏）、statusbar ≠ footer（状态词汇 vs 内容页脚）、inspector ≠ sidebar（属性编辑 vs 导航菜单）、action-bar ≠ toolbar（底部命令 + 读数井 vs 工具调色板）。
+> 专业软件（音视频 / 3D / 设计 / IDE / MES 控制台）应用外壳的条形/面板件，围绕「一块主工作区」排布外圈。新建 `packages/ui/src/workbench/` 族目录 + `families/workbench.ts`（第 9 个 CDN 族）。与既有件的边界：titlebar ≠ app-bar（窗口 chrome vs 页面应用栏）、statusbar ≠ footer（状态词汇 vs 内容页脚）、inspector ≠ sidebar（属性编辑 vs 导航菜单）、action-bar ≠ toolbar（底部命令 + 读数井 vs 工具调色板）。
 
 ### 已批定夺
 
