@@ -231,12 +231,12 @@ export const WHITELIST = [
   'oas-popover',
   'oas-config-provider',
   'oas-app',
-  // —— 未发布批次：导航组件（app-bar 应用栏，可见结构直出） ——
+  // —— SSR 白名单补位：导航组件（app-bar 应用栏，可见结构直出） ——
   'oas-app-bar',
-  // —— 未发布批次：stepper 步骤面板（v2.3.2 遗留的「DSD 白名单后续批次」补位） ——
+  // —— SSR 白名单补位：stepper 步骤面板（v2.3.2 遗留的「DSD 白名单后续批次」补位） ——
   'oas-stepper',
   'oas-stepper-panel',
-  // —— 未发布批次：highlight 文本命中高亮（同步确定性渲染，纯展示直出） ——
+  // —— SSR 白名单补位：highlight 文本命中高亮（同步确定性渲染，纯展示直出） ——
   'oas-highlight',
   // —— SSR 白名单补位：scheduler/gantt/barcode 漏登记补齐（数据走 JSON attribute 声明式通道，同 calendar/kanban/table/qrcode 类） ——
   'oas-scheduler',
@@ -438,12 +438,12 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-popover': '@oas-ui/ui/feedback/popover',
   'oas-config-provider': '@oas-ui/ui/framework/config-provider',
   'oas-app': '@oas-ui/ui/framework/app',
-  // —— 未发布批次：导航组件（app-bar 可见结构直出） ——
+  // —— SSR 白名单补位：导航组件（app-bar 可见结构直出） ——
   'oas-app-bar': '@oas-ui/ui/navigation/app-bar',
   // stepper 与 stepper-panel 同目录，装载一次注册两个 tag
   'oas-stepper': '@oas-ui/ui/navigation/stepper',
   'oas-stepper-panel': '@oas-ui/ui/navigation/stepper',
-  // —— 未发布批次：highlight 文本命中高亮 ——
+  // —— SSR 白名单补位：highlight 文本命中高亮 ——
   'oas-highlight': '@oas-ui/ui/data/highlight',
   // —— SSR 白名单补位：scheduler/gantt/barcode（漏登记补齐） ——
   'oas-scheduler': '@oas-ui/ui/data/scheduler',

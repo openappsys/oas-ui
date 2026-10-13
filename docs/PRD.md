@@ -684,7 +684,7 @@ floating 导航族三组件按能力补齐补齐 + 水平收纳/inline 形态多
 - **实测修复**（用户视角验证门禁驱动）：inline hover/click 抵消展不开、inline-sub flex 并排、inline-sub role 嵌套 axe 违规、水平浮层 overflow 裁剪不可见、「···」收纳项自身被收、「···」弹层右缘截断+颜色继承、inline 选中/移出误收起
 - **验收**：menu 64 + dropdown 52 + contextmenu 21 单测（全量 2673）、typecheck/build/api:check 全绿、e2e chromium 937 + firefox 350、axe 零严重违规、console 零告警；浏览器实测 light/dark 全交互链（inline 展开/手风琴互斥/受控展开/水平收纳弹层选中反馈/close-on-select 对照/dropdown hover 面板/contextmenu 各触发）
 
-## v2.2.2 导航与浮层族 11 组件能力补齐（已随 v2.2.2 发布）
+## v2.2.2 v2.2.2 导航与浮层族 11 组件能力补齐
 
 tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navigation-menu/toolbar 按能力清单全量补齐（唯一豁免：command 内置模糊搜索并入未来打包勾选特性）：
 
@@ -1030,7 +1030,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 全量单测 6731 / typecheck 0 / build 0 / api:check（WIP 0）/ trace 0 命中 / perf:size 全 PASS（预算重定档）/ perf:bench 全 PASS
 - 全量 e2e（chromium 全量 + firefox 抽样）；各新能力 demo light/dark 截图复核 + 真实交互验证 + console 零告警
 
-## L3 子路径语义修正（随 v2.5.0）+ 可选工具包 @oas-ui/react（不单独发布）
+## v2.5.0 L3 子路径语义修正 + 可选工具包 @oas-ui/react（不单独发布）
 
 ### L3 子路径语义修正（回归根治）
 
@@ -1073,7 +1073,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ---
 
-## 数据组能力扩展三批（tree/list/timeline + collapse/descriptions/card/avatar/image + carousel/marquee/statistic/countdown/number-animation/qrcode/ellipsis/virtual-list，已随 v2.5.0 发布）
+## v2.5.0 数据组能力扩展三批（tree/list/timeline + collapse/descriptions/card/avatar/image + carousel/marquee/statistic/countdown/number-animation/qrcode/ellipsis/virtual-list）
 
 ### 破坏性变更（发布说明须逐项列出迁移指引）
 
@@ -1157,7 +1157,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ---
 
-## bottom-navigation 胶囊形态 pill（随 v2.5.1 发布）
+## v2.5.1 bottom-navigation 胶囊形态 pill
 
 ### 特性
 
@@ -1309,7 +1309,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 全量单测 186 文件 / 7401 用例 / typecheck 0 / build 0 / api:check 通过（含新增 CSS 变量表生成）/ stats:check 0 / lint:md 0 / format 0 / perf:size 全 PASS（theme index.css 3.1KB / 3.5KB）/ trace 0 命中
 - 全量 e2e 2358 passed（chromium 全量 + firefox 抽样，0 failed）；a11y 审计 118 passed（117 页 × light+dark 双主题 + 门禁自检，零严重违规）；对比度硬闸 `<60 = 0`（light 655→0、dark 327→0），axe 比值法 ratchet 基线入库（255 违规 + exempt/skipped 同步 ratchet）
 
-## form-associated 批次（原生表单集成，随 v2.5.6）
+## v2.5.6 form-associated 批次（原生表单集成）
 
 ### 特性
 
@@ -1339,7 +1339,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 全量 e2e 2358 passed / 37 skipped（chromium 全量 + firefox 抽样，0 failed）；a11y 全量 118 页×双主题 axe 零严重违规（命名转发修复后）；demo-coverage 静态属性演示 113 过（12 组件补 required 演示块）
 - 视觉核验：form 页「原生表单集成」集中 demo（input/select/date-picker/checkbox/switch）浅/暗截图 + 识图复核（label 点击聚焦环、勾选/切换态、FormData 输出、reset 复位，暗色对比度）；reset 后 select/date 仍显示受控值属**受控写入刷新基线**的设计语义（demo 文案已注明）
 
-## qrcode 美化维度（码点 / 定位图形形状 + 渐变前景 + logo 挖空，随 v2.5.6）
+## v2.5.6 qrcode 美化维度（码点 / 定位图形形状 + 渐变前景 + logo 挖空）
 
 ### 特性
 
@@ -1361,7 +1361,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 浏览器回归（qa-regression，chromium + firefox 抽样）：像素级数三处定位图形暗模块（square 精确 33；rounded 因圆角弧线切到角格、采样点落在抗锯齿带，容 32–34，仍可抓「丢失 0 / 糊成实心 45+」）+ 默认渲染零 defs + 形状 / 渐变 / 挖空按属性生效 + `download()` 产物含形状与渐变且不走合并路径
 - 视觉核验：浅色 + 暗色两组截图逐块核对（三眼齐全、圆角「环 + 中心块」结构、整码连续渐变、logo 挖空留白、暗色仍白底深点），console 零告警；smoke / dark / visual / console-sweep 四支 spec 的 qrcode 页均过
 
-## marquee 循环修复 / SSR 构建环断开 / 依赖升级 / sidebar 公开方法（随 v2.5.6）
+## v2.5.6 marquee 循环修复 / SSR 构建环断开 / 依赖升级 / sidebar 公开方法
 
 ### 修复
 
@@ -1387,7 +1387,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 全量 e2e 2358 passed / 37 skipped（chromium 全量 + firefox 抽样，0 failed）；全量单测 7401、typecheck、build、api:check、stats:check、trace 全绿（随各笔提交门禁）
 
-## qrcode 形状化渲染体积优化（未发布）
+## v2.5.7 qrcode 形状化渲染体积优化
 
 ### 背景
 
@@ -1403,7 +1403,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 单测：qrcode 域 77 用例全绿（新增体积回归守卫「dots 总量 < square × 1.5」、userSpaceOnUse 映射坐标断言）；typecheck / build 全绿
 - e2e：qa-regression 像素级定位图形覆盖（栅格化数暗模块）+ download 产物结构 + pattern 内 `var()` 填充计算值实抓（防静默退黑）全过；visual 基线零漂移；console-sweep 零告警；SSR 真水合 13 用例全绿
 
-## swatch 新组件 + button compound 变体（未发布）
+## v2.5.7 swatch 新组件 + button compound 变体
 
 ### 立项依据
 
@@ -1435,7 +1435,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 用户视角：demo 页交互（点选变色、选中环、方向键漫游）在浏览器真点真看，dark 双主题过
 - qa-regression 固化：两件各加回归断言
 
-## sidebar 折叠态 flyout + tabs 右键事件与 title 透传（未发布）
+## v2.5.7 sidebar 折叠态 flyout + tabs 右键事件与 title 透传
 
 ### 立项依据
 
@@ -1466,7 +1466,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 用户视角：真机真实几何（面板 rail 右侧视口内、子项文字可见、hover 打开移入面板驻留不自动关闭）+ tabs 右键三通道（鼠标/宿主拦截/键盘）验证
 - qa-regression 固化：flyout（含 hover 链路）与 tabs 两件各加浏览器断言
 
-## `[hidden]` 兜底全量收口（未发布）
+## v2.5.7 `[hidden]` 兜底全量收口
 
 ### 背景与实证
 
@@ -1484,7 +1484,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 实测 sweep：163 组件 broken 66 → 1（仅剩 backdrop 伪影）；全量单测 7413 全绿；typecheck / build 全绿
 
-## RTL 全量视觉审计（未发布）
+## v2.5.7 RTL 全量视觉审计
 
 ### 范围与方法
 
@@ -1515,7 +1515,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 单测 7412 全绿（新增 pagination/scroll-area/theme-editor/upload/typography 行为与契约断言）；typecheck / build 全绿
 - e2e：speed-dial/qrcode qa-regression 回归全过；RTL sweep 修复后复跑 117/117 全净；修复组件真 RTL 截图逐一人工读图核验
 
-## 能力缺口 P1 立项批（未发布，29 项）
+## v2.5.7 能力缺口 P1 立项批（29 项）
 
 > 立项来源：能力缺口甄别（≥3 源共识候选 533 条 → 真缺口 148 条 → P1 29 项，调研仓 `capability-gaps-triage.md`）。命名对照 ui-spec §2（kebab-case 属性 / `oas-*` 事件 / 吸收 pattern）。
 
@@ -1568,7 +1568,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 用户视角：组件 md demo 实跑可见反馈；dark 主题过视觉；RTL 逻辑属性（方向相关项）
 - 缺陷/交互项固化 qa-regression；全量单测 + typecheck + build + api:check 全绿
 
-## 能力缺口 P2 立项批（未发布，31 组/38 条长尾增强）
+## v2.5.7 能力缺口 P2 立项批（31 组/38 条长尾增强）
 
 > 立项来源：能力缺口甄别 P2 池（已逐条甄别定级）。口径：语义覆盖为准，命名对照 ui-spec §2。
 
@@ -1617,7 +1617,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - TDD RED→GREEN；api:check 双向 0；组件 md 中英 demo 可见反馈；dark/RTL 过；交互项 qa-regression 固化；门禁全绿 + 收口 review
 
-## divider 线型扩展（双虚线 / 双点线，未发布）
+## v2.5.7 divider 线型扩展（双虚线 / 双点线）
 
 ### 特性
 
@@ -1627,7 +1627,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 单测：类映射互斥（不含单线类）、双层渐变分层（上线贴顶/下线贴底、层高取线宽）、加高容器与 double 同构；e2e（chromium + firefox）背景含两条 repeating-linear-gradient；浅/暗截图识图复核（双排形态可辨、与单线版可区分、暗底对比正常）
 
-## 浮层箭头形状 token 化（7 组件，未发布）
+## v2.5.7 浮层箭头形状 token 化（7 组件）
 
 ### 特性
 
@@ -1644,7 +1644,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - e2e（chromium + firefox）：宽高独立生效（20×8 宽扁）/ 悬边随 height 分量 / align-offset 生效 / radius 生效 / merge 不受影响 / popover clamp 读 width token
 - 视觉核验：默认 vs 宽扁(22×8) vs 窄高(8×20) 三对照浅/暗截图 + 识图复核（形状差异两色可辨、暗底对比正常）
 
-## 能力缺口 D 类立项批（未发布，27 条）
+## v2.5.7 能力缺口 D 类立项批（27 条）
 
 > 立项来源：场景缺口甄别 D 类池（28 条中 D11 chart 雷达/极坐标/组合图按「chart 不深挖（2026-09-24 用户定）」既定决定排除，实际 27 条）。口径：语义覆盖为准，命名对照 ui-spec §2。
 
@@ -1681,7 +1681,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - TDD RED→GREEN；api:check 双向 0 + unresolved 零；md 中英 demo 可见反馈；dark/RTL 过；交互项 qa-regression 固化；门禁全绿 + 收口 review
 
-## table 横向虚拟滚动 + editComponent 组件编辑器（未发布）
+## v2.5.8 table 横向虚拟滚动 + editComponent 组件编辑器
 
 ### 特性
 
@@ -1693,7 +1693,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - e2e（chromium）：60 列×40 行大宽表——th/td 窗口化（<30）、scrollWidth >7200（colgroup 撑总宽）、固定列恒渲染、行列双开滚动推移 + thead/tbody 窗口一致性、编辑×列窗口定位回归；全量 8306 passed
 - table 域全量单测绿（全仓 8306 passed，含列窗口/编辑协议回归 8 条）；format 0；lint:md 0；api:check 通过（editComponent 语料同步——attribute 收割外字段，说明在正文）
 
-## table 字段类型系统 + 分组视图（未发布）
+## v2.5.8 table 字段类型系统 + 分组视图
 
 ### 背景
 
@@ -1708,7 +1708,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 10 种字段类型的展示渲染 + 编辑器挂载 + 提交回写全单测；select/badge 颜色 token 化（暗色可读）；分组视图分节/折叠/计数/排序组内/行虚拟双开单测 + e2e（chromium）；全量单测绿；format 0；lint:md 0；api:check 通过（语料同步）
 
-## oas-kanban 看板组件（未发布）
+## v2.5.8 oas-kanban 看板组件
 
 ### 背景
 
@@ -1722,7 +1722,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - 拖拽换列事件与数据回写、同列排序口径、原位零操作、取消路径指示线清除、触屏按钮移动、空列态、renderCard 契约单测 + e2e（chromium 真实拖拽序列 + 触屏按钮）；键盘可达；全量单测绿；api:check 通过（新组件 manifest + 语料 + demo 中英）
 
-## table 单元格性能专项（单例化 + 内存基线，未发布）
+## v2.5.8 table 单元格性能专项（单例化 + 内存基线）
 
 ### 背景
 
@@ -1737,7 +1737,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 - cell-tooltip 溢出显示/非溢出不显示/单例实例数=1/暗色可读单测 + e2e；内存基线用例稳定通过（chromium）；全量单测绿
 
-## table 编辑器完成度批次（浮层编辑器 + multi-select 升级，未发布）
+## v2.5.8 table 编辑器完成度批次（浮层编辑器 + multi-select 升级）
 
 ### 背景
 
@@ -1752,7 +1752,7 @@ editComponent 第一期约定非浮层组件（浮层类的 blur 判定缺口）
 
 - 浮层编辑器（select/date-picker）挂载/选定提交/Esc 双层级/外点提交/编辑中滚动不被拆 全单测 + e2e；multi-select 勾选多个提交回写数组单测 + e2e；全量门禁绿
 
-## kanban 二期（列重排 + WIP 限制 + 卡片多选 + 泳道，未发布）
+## v2.5.8 kanban 二期（列重排 + WIP 限制 + 卡片多选 + 泳道）
 
 ### 特性
 
@@ -1765,7 +1765,7 @@ editComponent 第一期约定非浮层组件（浮层类的 blur 判定缺口）
 
 - 四项各自的单测 + e2e（真实拖拽/键盘/触屏按钮）；多选批量移动事件契约；泳道折叠/跨带拖拽/空带占位；全量门禁绿
 
-## core 断开重连架构（render-once 重绑，未发布）
+## v2.5.8 core 断开重连架构（render-once 重绑）
 
 ### 背景
 
@@ -1786,7 +1786,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - core onReconnect 钩子（首连不调/重连调/render 不重建/cleanup 清空重注册）单测 2 条；table 3 条（scroll 监听恢复窗口推移 + 排序委托不重复挂 + ResizeObserver 重挂）与 kanban 2 条（拖拽恢复 + applyMove spy 直接锁调用次数——零操作判定兜底会让 events=1 的假绿无处遁形）的「断开→重连→交互恢复」单测；抽查 dropdown/menu/tooltip/select/date-picker 五组件——全部「监听跟打开态/触发态走」模式（kanban 菜单同款先例），天生免疫重连无需接线；全量门禁绿
 
-## 文档批（表单视图 recipe + i18n 自定义语言包指南，未发布）
+## v2.5.8 文档批（表单视图 recipe + i18n 自定义语言包指南）
 
 ### 特性
 
@@ -1798,7 +1798,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - recipe 页面 demo 真实可交互（e2e 过 demo-coverage/smoke 自动收集）；i18n 指南代码示例真实可编译（类型断言链）
 
-## 宿主属性撞名遮蔽 + 文档批修复（未发布）
+## v2.5.8 宿主属性撞名遮蔽 + 文档批修复
 
 ### 特性
 
@@ -1815,7 +1815,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：`qa-regression/property-shadow`（真浏览器 property 通道）+ `collision-guard`（撞名守卫 ratchet）+ `playground.spec`（React/Vue 宿主 smoke）+ `cdn-kanban` + guide 页 console-sweep；全量 e2e 全绿。
 - 文档：FAQ zh/en 镜像；CHANGELOG / PRD / ROADMAP 同步。
 
-## 表单读值通道 + 默认校验时机根治（未发布）
+## v2.5.9 表单读值通道 + 默认校验时机根治
 
 ### 特性
 
@@ -1832,7 +1832,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：`qa-regression/form.spec.ts` 两段式（真实 `oas-modal` + 真实指针点击）+ `qa-regression/input.spec.ts` value property（真浏览器）；**原始缺陷场景实证**：oas-ui-templates cdn-mpa `category.spec.ts:48`（编辑回填 + 必填校验 + 改名校验生效）在 2.5.8 原 dist 下 `1 failed`（表格不更新）、修复 dist 下 `4 passed`（RED→GREEN）；全量 e2e 全绿。
 - 文档：`form.md` / 6 组件 md（zh/en）+ `api-descriptions` + `api-manifest` 同步（api:gen 重生成）；CHANGELOG / PRD / ROADMAP 同步。
 
-## oas-scheduler 日程调度组件（L3 能力子包，分期交付）
+## v2.5.9 oas-scheduler 日程调度组件（L3 能力子包，分期交付）
 
 > 立项背景：Calendar/Scheduler 级能力按「独立子包隔离大面」落地（L3 能力子包先例），分期交付、每期独立立项与门禁。
 
@@ -1845,7 +1845,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测（渲染/CRUD/事件派发/数据变更）+ docs（zh/en）+ api-manifest + i18n ×10 + 全量 e2e 全绿。
 
-## oas-calendar `events` 排期条目通道（未发布）
+## v2.5.9 oas-calendar `events` 排期条目通道
 
 ### 特性
 
@@ -1855,7 +1855,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测（events 解析/标记/徽标/浮层/与 oas-cell-render 共存）+ docs calendar.md（zh/en）+ api-manifest 同步；全量 e2e 全绿。
 
-## oas-barcode 一维条码组件（未发布）
+## v2.6.0 oas-barcode 一维条码组件
 
 > 立项背景：一维条码面向打印标签/扫码枪的 B 端作业场景（WMS 仓储标签、零售 POS、物流单号、箱码），与 vision 的企业后台/作业场景吻合；组件库品类空白位。与 `oas-qrcode` 编码与渲染零共享（条空宽度序列 vs 模块矩阵），仅复用组件骨架惯例（SVG-only 渲染、download() 离屏栅格化、空态/错误占位、role=img 可访问名、i18n ×10）。
 
@@ -1879,7 +1879,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测（编码器 37 + 组件 31）+ docs（zh/en）+ api-manifest + i18n ×10 + qa-regression e2e + 全量门禁全绿。
 - 后续期边界：CODE128 强制子集（force A/B/C）、GS1-128（FNC1/AI）、UPC-E、MSI/Codabar/Pharmacode、EAN addon、ITF-14 承载框（bearer bar）——按真实需求逐项立项。
 
-## 主题皮肤预设 + 默认视觉精修（未发布）
+## v2.5.9 主题皮肤预设 + 默认视觉精修
 
 ### 特性
 
@@ -1890,7 +1890,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - `packages/theme/skins.css` + `package.json` exports/files + README / `guide/theming.md`(zh/en) 同步；纯 token 层、无组件改动；全量 e2e 全绿（`visual.spec` 只截图不比对基线，阴影改动不触发视觉回归）。
 
-## 移动原生形态批（未发布）
+## v2.5.9 移动原生形态批
 
 > 立项背景：组件并集矩阵偏桌面（24 源中移动源仅 Ant Design Mobile / Ionic / Quasar），移动端虽有响应式 + coarse pointer 触屏降级 + bottom-sheet / bottom-navigation，但移动原生交互形态存在 5 项真缺口（2026-10-04 立项评估）。
 
@@ -1908,7 +1908,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：qa-regression 各组件固化（pull-refresh 真手势链 / swipe-cell 开合互斥 / picker 滚动选中）+ 移动仿真视口；全量 e2e 全绿。
 - 文档：5 组件 md（zh/en）+ api-manifest + i18n ×10 + PRD/ROADMAP 同步；新组件前置规矩（ui-spec §2 命名对照、颜色只走 token 含暗色）。
 
-## 液态玻璃材质层（未发布）
+## v2.5.9 液态玻璃材质层
 
 > 立项背景：液态玻璃（Liquid Glass）材质风格支持——非换色、是材质：半透明 surface + backdrop 模糊 + 高光描边 + 大圆角 + 分层阴影。本库「颜色只走 token」硬约束使 surface 集中于少数变量，可做到一层变量全局切换（2026-10-04 立项）。
 
@@ -1925,7 +1925,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：明暗双主题截图审 + 真实背景可读性核对；全量 e2e 全绿。
 - 文档：theming.md（zh/en）玻璃层用法 + PRD/ROADMAP 同步。
 
-## 玻璃边缘折射 v1（未发布）
+## v2.6.0 玻璃边缘折射 v1
 
 > 承接液态玻璃批的如实口径：静态磨砂近似已发布（v2.5.9），本批补 Apple 定义的标志性特征「边缘折射变形」。**范围纪律（用户定）**：Apple 定义的材料范围是控制/导览/系统体验（按钮、开关、滑块、标签页栏、边栏、通知、控制中心）——本批只在对应元素落地，不无限扩展到全部浮层（内容面板不进 v1；动态流动感/实时光学高光仍属后续）。
 
@@ -1950,7 +1950,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：data-glass 下 computed filter 生效（含 slider 把手伪元素）/ 无 data-glass 时安全降级 / 像素级断言（Chromium：整体开/关必不同 = 滤镜真实执行 + 中心区开/关一致 = 中间恒不变形硬约束；Firefox：开/关视觉无差 = 无感降级契约，防假绿）/ filter 与 backdrop-filter 共存（折射生效时模糊不丢）/ 文档化降级路径（容器覆盖空值后基础态 none 且 button hover 亮度反馈仍在）/ app-bar 弹层打开期间 filter 回落 none / 布局盒不变（双主题）；
 - 全门禁 + 双引擎 + perf:size 预算不突破。
 
-## oas-gantt 甘特图组件（未发布）
+## v2.6.0 oas-gantt 甘特图组件
 
 > 立项背景：项目排期语义（任务/工期/依赖/进度）与 oas-scheduler 的约会语义（日历格/事件）互补不重叠，为独立组件（data 族）。数据契约以扁平 `parent` 指针为主（嵌套 `children` 输入在清洗层自动拍平兼容）；依赖连线用 SVG 单画布覆盖层（FS/SS/FF/SF 四型）；非法/边界约束组件内建（坏数据清洗丢弃、悬空 parent 按根渲染并告警一次、progress 越界 clamp、非法 scale 回退 day），宿主责任（undo/redo、编辑表单、导出）文档明示。
 
@@ -1972,7 +1972,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：`qa-regression/gantt.spec.ts`（渲染/刻度切换/折叠/真指针拖拽改期/tooltip/暗色/console 零告警）；全量 e2e 全绿。
 - 文档：gantt.md（zh/en）+ api-manifest + api-descriptions + i18n ×10 + PRD/ROADMAP 同步。
 
-## chart 图型扩展（radar / polar-area / combo / multi-axis，未发布）
+## v2.6.0 chart 图型扩展（radar / polar-area / combo / multi-axis）
 
 > 立项背景：场景缺口甄别 D11（chart 雷达/极坐标/组合/双轴）原随「chart 不深挖（2026-09-24）」定夺排除，2026-10-05 随 BI 议题翻盘重立——立场仍是不做全面深挖，只补这四类图型。已定夺（2026-10-06）：radar 维度走 labels 复用 + `options.max` 全局量程（per-dim 量程留兼容位不做）；alignTicks v1 就做（BI 报表读者误读代价高）；combo 不设 type 值；multi-axis 进 options 层。
 
@@ -1995,7 +1995,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - qa-regression：`chart.spec.ts` 增四图型渲染产出断言（radar 网格/顶点/图例、polar-area 扇区/参考圈、combo 柱线共存、双轴右轴刻度与轴名）+ RTL 不破断言。
 - 文档：chart.md zh/en 四图型 DemoBlock（内联 attribute 数据）+ 边界说明；api 语料（type 枚举、options 新键、series 扩展字段）→ `api:gen --check` 全绿。
 
-## 工作台构件族：titlebar / statusbar / inspector / action-bar（未发布）
+## v2.6.1 工作台构件族：titlebar / statusbar / inspector / action-bar
 
 > 专业软件（音视频 / 3D / 设计 / IDE / MES 控制台）应用外壳的条形/面板件，围绕「一块主工作区」排布外圈。新建 `packages/ui/src/workbench/` 族目录 + `families/workbench.ts`（第 9 个 CDN 族）。与既有件的边界：titlebar ≠ app-bar（窗口 chrome vs 页面应用栏）、statusbar ≠ footer（状态词汇 vs 内容页脚）、inspector ≠ sidebar（属性编辑 vs 导航菜单）、action-bar ≠ toolbar（底部命令 + 读数井 vs 工具调色板）。
 
@@ -2025,7 +2025,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：qa-regression/workbench.spec.ts（titlebar 拖动区契约 / inspector 分节折叠 / statusbar 项点击 / action-bar 事件 + console 零告警 + 暗色）；
 - i18n ×10 + API 语料 zh/en + 文档站 4 页 zh/en + a11y 门禁（新页自动进 axe 审计）。
 
-## 液态玻璃动态流动感 v1（未发布）
+## v2.6.1 液态玻璃动态流动感 v1
 
 > 承接液态玻璃批的如实口径：静态近似（v2.5.9）与边缘折射（v2.6.0）已交付，本批补「随交互变形」的第一层——**指针跟随的镜面高光**与**按压收紧**。范围纪律（用户定）：与折射同域，仅 9 个控件/导航/通知组件消费，内容面板不进；随环境内容变化的实时高光仍属后续。
 
@@ -2052,7 +2052,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：真实指针移动 → 变量写入且高光可见；reduced-motion / 无 data-glass 零监听；双主题截图；console 零告警；
 - 全门禁 + 双引擎 + perf（theme 运行时新增预算档）。
 
-## oas-knob 旋钮组件（未发布）
+## v2.6.1 oas-knob 旋钮组件
 
 > 立项背景：参数密集面板（音频/DAW、3D/CAD、工业 HMI、调音台）需要把数值编码为圆周角度的紧凑输入控件——同面积可横排数十个参数、支持双向零位（pan/gain 以 12 点为中性）、相对拖拽大范围值不跳变。与 slider 互补不重叠：slider 做线性区间/多把手/移动端，knob 不做 range/marks 环绕刻度；两者共享 `value/min/max/step`、`show-value`/`format`、`reverse`、`size`、事件命名与 token 策略，宿主可在两种控件间无缝切换（form 族）。
 
@@ -2074,7 +2074,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：`qa-regression/knob.spec.ts`（真实指针三手势 + 键盘链路 + 双击复位 + 暗色 token 切换 + console 零告警 + readonly/disabled 拦截）。
 - 文档：knob.md zh/en（内联 attribute 演示 + 页级 script 事件反馈）+ api-manifest/api-descriptions + 侧栏；PRD/ROADMAP 同步（版本号未定，标「未发布」）。
 
-## conversation 会话组件族首批五件（未发布）
+## v2.6.1 conversation 会话组件族首批五件
 
 ### 立项依据
 
@@ -2109,7 +2109,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：qa-regression/conversation.spec.ts（scroller 钉底/跳底真交互 + B 批异步保位/首屏防跳/last-anchor/turn-anchor 真交互 + 暗色 + console 零告警）+ demo-coverage 事件探针（attachment 三事件 / scroller scroll-state）+ 新页自动纳入 smoke/dark/code/visual/console-sweep/a11y。
 - 文档：zh/en 双语五页（含交互 demo 与 B 批新 demo：异步保位/首屏防跳/last-anchor/轮次锚定）+ 会话组件侧栏组 + API 表 gen 接管 + api:check 双向 0。
 
-## oas-questionnaire 多步问答组件 + oas-form validate()（未发布）
+## v2.6.1 oas-questionnaire 多步问答组件 + oas-form validate()
 
 > 立项背景：向导式表单 / 问卷 / 多步结算场景需要「步骤 + 每步字段 + 单步校验门控 + 进度 + 汇总」的编排层——steps/stepper 只管导航语义、oas-form 只管单表校验，二者组合的「门控 + 回退保值 + 跨步汇总」宿主每次手搓。定位：questionnaire 是编排层，每步面板内放一个 `<oas-form>` 零侵入复用校验内核；步骤头语义对齐 steps/stepper 但独立实现（不 import 相邻组件内部）。
 
@@ -2142,16 +2142,16 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - e2e：`qa-regression/questionnaire.spec.ts`（多步真点推进 / 门控拦截与放行 / before-change 否决 / 跳过 / 提交回显）
 - i18n ×10（`questionnaire.*` 6 键）+ docs zh/en + 交互 demo + a11y 基线（键盘流矩阵）+ qa-regression 固化
 
-## 图标库 opt-in（未发布，工程 / 包结构）
+## v2.6.1 图标库 opt-in（工程 / 包结构）
 
 背景：内置图标全量集此前被 25+ 组件 eager 引用，任一按需链都背整套 47 图标（≈10.5 KB gzip）。本批把它从组件链解耦（对齐"图标库 / 解析器"通行做法）：动态图名走 `lookupIcon`（`@oas-ui/icons/runtime`），组件内部固定 chrome 图标走精确 path（`@oas-ui/icons/icons/<name>`）；内置全量集改为 **opt-in 注册**（`@oas-ui/icons/register`——全量入口 `@oas-ui/ui` 与各 CDN 族包静态注册，开箱即用不变），全量数据移至 `@oas-ui/icons/registry`。
 
 - **收益（gzip）**：button 34.1→25.0、table 101.6→93.2、table/core 71.4→60.9 KB；全量入口保持含整套图标（开箱即用不变），cdn 无额外增负。
 - **破坏性（迁移）**：按需引入使用**内置图名**（`icon="check"`、`<oas-icon name="close">`）需显式 `import '@oas-ui/icons/register'` 一次；主入口不再导出 `iconRegistry`/`iconNames`（改从 `@oas-ui/icons/registry`）；注册 / 查询 API（`registerIcon` / `registerIconAlias` / `registerIconLibrary` / `lookupIcon`）与 `IconName` 类型仍从 `@oas-ui/icons` 导出。
 - **门禁**：`perf:size` 断言图标全量注册表 `registry.js` 不进任一按需组件链；源码守卫 `packages/ui/src/shared/icon-optin.test.ts`（组件不得从主入口取 iconRegistry / iconNames、lookupIcon 须走 `/runtime`、全量入口与族入口必须静态注册）；CDN 内置图标回归 `qa-regression/cdn-icons.spec.ts`；文档图名守卫 `docs-icon-names.test.ts`。
-- **验收**：见 CHANGELOG `[未发布]` 迁移段与 `docs/perf-baseline.md`。
+- **验收**：见 CHANGELOG `[2.6.1]` 迁移段与 `docs/perf-baseline.md`。
 
-## 专业密度 A 批（未发布）
+## v2.6.1 专业密度 A 批
 
 ### 背景
 
@@ -2173,9 +2173,9 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测：`shared/scrub.test.ts` 10 条 + `shared/measure-text.test.ts` 4 条；slider 160（+22）/ input-number 88（+12）/ collapse 46（+5）/ dropdown 78（+6）/ select 165（+5）；全量 `pnpm test` 全绿（含 SSR 快照零漂移——`show-track` 未设置时不写 data-*）。
 - e2e：`qa-regression` 五 spec 增补真交互回归（scrub 真拖计步/双击复位/summary 显隐/reserve-width 锁宽）。
-- typecheck / build / lint:md / api:check 全绿；docs zh/en 五组件 + api-descriptions + api-manifest 同步；CHANGELOG `[未发布]`。
+- typecheck / build / lint:md / api:check 全绿；docs zh/en 五组件 + api-descriptions + api-manifest 同步；CHANGELOG `[2.6.1]`。
 
-## 表单一致性补齐批（未发布）
+## v2.6.1 表单一致性补齐批
 
 ### 特性
 
@@ -2187,9 +2187,9 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 - 单测：combobox +16 / switch +9 / toggle-button +8 / toggle-group +5 断言（RED→GREEN）；`pnpm test` 全绿。
 - e2e：`qa-regression/combobox.spec.ts`（多选真点叠加 chips + chip 移除 + 上限拦截反馈可见 + 折叠 +N）、`qa-regression/switch.spec.ts`（卡片真点切换 + demo 反馈 + 禁用卡拦截）、`qa-regression/toggle-button.spec.ts`（三形态真点 + 静态镜像）、`qa-regression/toggle-group.spec.ts`（四形态镜像 + filled 多选真点反馈）全绿。
-- 文档：combobox/switch/toggle-button/toggle-group md（zh/en）新增章节 + 可交互 demo；`api-descriptions.{zh,en}.json` 增补 + api:scan/api:gen 重生成；CHANGELOG `[未发布]` 简体中文条目。
+- 文档：combobox/switch/toggle-button/toggle-group md（zh/en）新增章节 + 可交互 demo；`api-descriptions.{zh,en}.json` 增补 + api:scan/api:gen 重生成；CHANGELOG `[2.6.1]` 简体中文条目。
 
-## 专业密度 C 批：oas-collapsible 新组件 + list / menu 系 / typography 能力增量（未发布）
+## v2.6.1 专业密度 C 批：oas-collapsible 新组件 + list / menu 系 / typography 能力增量
 
 > 立项背景：能力对照第 C/D 组收口后的「做」档四项——单面板自折叠原语（C 组唯一实质缺口）、通用行组件的引导媒体与整行链接、菜单系前置媒体插槽（dropdown avatar 例）、排版内容块（blockquote / list / table）。定位纪律：不另立通用 item 件（扩展 `oas-list-item`）、不新立 prose 长文容器（扩展 typography 的 `tag` 体系）。
 
@@ -2232,9 +2232,9 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 单测：TDD RED→GREEN——collapsible（双模式/播种值语义/事件/disabled 含注入/插槽/键盘退化/token/水合）+ list-item（icon/image 显隐/链接覆盖层/rel 自动补/aria 名称/焦点分离）+ menu 系（template/元素双通道/优先级/loading 替位/样式）+ dropdown 别名通道 + typography（白名单/解包/切换重建/样式 token）；分多批累计（计数随各轮 review 修复递增，不逐项固化数字）。
 - e2e：`qa-regression/collapsible.spec.ts` 新建 7 条（真点开合/受控写回/外部切换联动/disabled/键盘/暗色/console 零告警）+ list 补 2 条（真实点击 hash 导航 + extra 可点 + 焦点分离 / 前置媒体真实渲染）+ typography 补 1 条（块级真渲染断言）+ menu 补 1 条（leading 真实渲染在 label 前）。
 - 文档：collapsible.md zh/en 新页（进侧栏与 smoke 等自动收集面）+ list/typography/menu/dropdown zh/en demo 与说明 + api-manifest/api-descriptions 同步（api:check 双向 0）。
-- PRD/ROADMAP 标「未发布」；CHANGELOG `[未发布]` 简体中文条目。
+- PRD/ROADMAP 标「未发布」；CHANGELOG `[2.6.1]` 简体中文条目。
 
-## 能力补全批：4 新组件 + 多组件增强（未发布）
+## v2.6.1 能力补全批：4 新组件 + 多组件增强
 
 ### 背景
 
@@ -2270,7 +2270,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - 4 个新组件已注册进 index / ssr / DSD 白名单 + 快照。
 - 对比度修复：button text 变体 active、inspector 斑马行标签、info 文字色 token 调深（axe 比值达标，感知门禁不受影响）。
 
-## oas-swipe-cell 双侧滑动（未发布）
+## v2.6.1 oas-swipe-cell 双侧滑动
 
 背景：现 `oas-swipe-cell` 每实例**只能一侧**操作（`slot="actions"` + `side` 二选一）。需求：**同一项两侧各有操作**——向左滑在**右侧**露出操作、向右滑在**左侧**露出操作。
 
@@ -2282,7 +2282,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **兼容**：单侧用法（`side` + `slot="actions"`）行为不变；`open` 语义扩展（detail 新增 `side`）为向后兼容增强。
 - **验收**：单测（双侧同现 / 左右滑各自吸附 / 跨侧切换 / `open-side` 反射 / 事件 side / RTL 镜像 / disabled）+ qa-regression e2e + 文档 zh/en。
 
-## float-button group 自渲染子钮（未发布）
+## v2.6.1 float-button group 自渲染子钮
 
 ### 背景
 
@@ -2302,9 +2302,9 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 - e2e：vitepress 文档环境下 `.action-btn` 背景非透明（核心断言）、气泡 hover/focus 显隐与文本、键盘导航与 Esc 回焦、RTL 气泡镜像
 - 门禁：typecheck / build / api:check / llms:check 全绿
 
-## v2.6.1（未发布）— 发布汇总
+## v2.6.1 — 发布汇总 ✅
 
-> 版本号由用户定。本段为发布收口记录；内容权威见 `CHANGELOG.md [2.6.1]`，各批详情见上方对应「（未发布）」批次段。
+> 版本号由用户定。本段为发布收口记录；内容权威见 `CHANGELOG.md [2.6.1]`，各批详情见上方对应批次段。
 
 - **范围**：v2.6.0 之后的全部能力批与修复——新组件 `oas-knob` / conversation 会话族五件 / `oas-questionnaire`（+ `oas-form` `validate()`/`getValues()`）/ `oas-collapsible` / workbench 工作台族（titlebar/statusbar/inspector/action-bar 及子件）；液态玻璃「动态流动感」v1；**破坏性变更**：内置图标集改 opt-in；float-button group 自渲染子钮（`actions` 通道）；专业密度 A/C 批；能力补全批（scope-bar / transport-well / music-well / attachment-group / swipe-cell 双向滑动 等）。
 - **测试与门禁**：全量单测 9767 passed；全量 e2e 3301 passed；`typecheck` / `build` / `api:check` / `llms:check` / `stats:check` / `perf:size` / `perf:bench` / `trace --all` 全绿。
