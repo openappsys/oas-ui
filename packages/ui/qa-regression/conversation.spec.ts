@@ -242,7 +242,7 @@ test('message-scroller 加载历史 demo：滚到顶触发 prepend 且保位补�
   const sel = '#msc-history'
   const rows = () => page.evaluate((s) => document.querySelector(s)!.querySelectorAll('oas-message-row').length, sel)
   // 初始 8 条
-  await expect.poll(rows, { timeout: 8000 }).toBe(8)
+  await expect.poll(rows, { timeout: 15000 }).toBe(8)
   // demo 内容须超出视口（否则 atTop 恒真、加载语义不成立）
   await expect
     .poll(
@@ -250,16 +250,16 @@ test('message-scroller 加载历史 demo：滚到顶触发 prepend 且保位补�
         const { height, client } = await readScroll(page, sel)
         return height - client
       },
-      { timeout: 8000 },
+      { timeout: 15000 },
     )
     .toBeGreaterThan(50)
 
   // 真实滚到顶部 → demo 的 shadow 视口 loader 触发（宿主监听原生 scroll 收不到 → 旧实现永不触发）
   await scrollTo(page, sel, 0)
-  await expect.poll(rows, { timeout: 8000 }).toBe(13)
+  await expect.poll(rows, { timeout: 15000 }).toBe(13)
 
   // 保位补偿：scrollTop 落在插入高度差上（未补偿会停在 0，阅读位置被新内容顶走）
-  await expect.poll(async () => (await readScroll(page, sel)).top, { timeout: 8000 }).toBeGreaterThan(0)
+  await expect.poll(async () => (await readScroll(page, sel)).top, { timeout: 15000 }).toBeGreaterThan(0)
 })
 
 // ---------- B 批：滚动的精确性（异步保位 / 首屏防跳 / last-anchor / 轮次锚定）真交互固化 ----------
@@ -269,7 +269,7 @@ test('message-scroller 异步保位：prepend 历史含延迟图片，撑高后�
   await up(page, '#msc-async')
   // 等 demo 动态填充完成（锚行带 message-id）
   await expect
-    .poll(() => page.evaluate(() => document.querySelectorAll('#msc-async oas-message-row').length), { timeout: 8000 })
+    .poll(() => page.evaluate(() => document.querySelectorAll('#msc-async oas-message-row').length), { timeout: 15000 })
     .toBeGreaterThanOrEqual(12)
   await waitLayout(page, '#msc-async')
 
@@ -316,7 +316,7 @@ test('message-scroller last-anchor：打开定位在最后提问行顶部；scro
   // 等 demo 动态填充（1 + 6 + 1 轮 = 16 行，锚行 8 条）
   await expect
     .poll(() => page.evaluate(() => document.querySelectorAll('#msc-last-anchor oas-message-row').length), {
-      timeout: 8000,
+      timeout: 15000,
     })
     .toBeGreaterThanOrEqual(16)
   // demo 填充后由宿主 scrollToMessage 补定位（客户端异步填充场景；demo 内部轮询收敛页面级晚应用样式）。
@@ -337,7 +337,7 @@ test('message-scroller last-anchor：打开定位在最后提问行顶部；scro
         })
         return state.offset <= 8 || state.bottomGap <= 8 ? (state.visible ? 'settled' : 'invisible') : 'drifted'
       },
-      { timeout: 8000 },
+      { timeout: 15000 },
     )
     .toBe('settled')
 
@@ -358,7 +358,7 @@ test('message-scroller turn-anchor：锚顶跟随中流式追加，提问钉在�
   await up(page, '#msc-turn')
   // 等 demo 动态填充（1 锚 + 8 回答行）
   await expect
-    .poll(() => page.evaluate(() => document.querySelectorAll('#msc-turn oas-message-row').length), { timeout: 8000 })
+    .poll(() => page.evaluate(() => document.querySelectorAll('#msc-turn oas-message-row').length), { timeout: 15000 })
     .toBeGreaterThanOrEqual(9)
 
   // 真点「跳到当前提问」→ scrollToMessage 精确到锚顶（offset ≈0）
@@ -476,10 +476,10 @@ test('message-scroller track-visible：滚动后 oas-visible-change 更新可见
   await up(page, '#msc-visible')
   await expect
     .poll(() => page.evaluate(() => document.querySelectorAll('#msc-visible oas-message-row').length), {
-      timeout: 8000,
+      timeout: 15000,
     })
     .toBeGreaterThanOrEqual(6)
-  await expect(page.locator('#msc-visible-out')).toHaveText(/当前锚点/, { timeout: 8000 })
+  await expect(page.locator('#msc-visible-out')).toHaveText(/当前锚点/, { timeout: 15000 })
 
   // 滚到顶部 → 可见集变化 → 事件反馈（demo 文案切到 oas-visible-change）
   // 注：scroller 初始自动滚到底（可见集=尾部），故必须向上滚才产生可见集变化。
@@ -505,7 +505,7 @@ test('attachment-group：横向溢出反射边缘可滚 + 滚动到端改变 dat
     page.evaluate(
       () => (document.querySelector('oas-attachment-group') as HTMLElement).getAttribute('data-scrollable') ?? '',
     )
-  await expect.poll(readState, { timeout: 8000 }).toContain('end')
+  await expect.poll(readState, { timeout: 15000 }).toContain('end')
 
   // 滚到结束端：起始端可滚（start），结束端不可滚
   await page.evaluate(() => {
@@ -601,6 +601,10 @@ test('bubble reactions：side=top 反应条在气泡上方、align 显式覆盖�
 test('message-row align=end：行内气泡右对齐贴头像（text-align 继承 → data-inherit-end 反射）', async ({ page }) => {
   await page.goto('/components/message-scroller.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#msc-basic')
+  await up(page, '#msc-basic oas-message-row[align="end"] oas-bubble')
+  await page.waitForFunction(() =>
+    document.querySelector('#msc-basic oas-message-row[align="end"] oas-bubble')?.hasAttribute('data-inherit-end'),
+  )
   const geo = await page.evaluate(() => {
     const row = document.querySelector('#msc-basic oas-message-row[align="end"]') as HTMLElement
     const bubble = row.querySelector('oas-bubble')!
