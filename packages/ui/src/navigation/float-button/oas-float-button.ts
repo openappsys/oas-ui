@@ -40,7 +40,7 @@ type ExpandTrigger = 'click' | 'hover' | 'manual'
 /** hover 触发的离开宽限期（ms）：指针离开后短暂滞留防误收 */
 const HOVER_LEAVE_GRACE = 120
 
-/** menu 模式动作项数据契约（actions JSON，label 必填） */
+/** group/menu 共用动作项数据契约（actions JSON，label 必填；group 自渲染圆形子钮、menu 渲染菜单项） */
 export interface FloatButtonAction {
   label: string
   icon?: string
@@ -265,7 +265,9 @@ const STYLE = `
   pointer-events: auto;
 }
 /* group 子钮形态语言（与主钮同系）：圆形小钮 + 浅底描边，尺寸走 --oas-float-button-action-size；
-   链接子钮（a[slot=action]）同形态（text-decoration none） */
+   链接子钮（a[slot=action]）同形态（text-decoration none）。
+   注：slot 子钮为「自定义通道」，此默认形态是 best-effort——::slotted 可被宿主页全局样式覆盖，
+   需要保证形态时用 actions 通道（.action-btn，见下）或让子钮自带视觉 */
 .actions ::slotted([slot='action']) {
   appearance: none;
   box-sizing: border-box;
@@ -285,7 +287,7 @@ const STYLE = `
   cursor: pointer;
   text-decoration: none;
   flex-shrink: 0;
-  box-shadow: var(--oas-shadow-sm);
+  box-shadow: var(--oas-shadow-md);
   transition: background var(--oas-transition-fast) var(--oas-ease-out),
     border-color var(--oas-transition-fast) var(--oas-ease-out);
 }
@@ -296,6 +298,62 @@ const STYLE = `
 .actions ::slotted([slot='action']:focus-visible) {
   outline: none;
   box-shadow: var(--oas-focus-ring);
+}
+/* ===== group actions 渲染通道：子钮外壳由组件渲染（shadow 内，免疫宿主页 CSS 覆盖） =====
+   形态与 slot 版等价；aria-label = label，气泡 hover/focus 纯 CSS 显隐 */
+.actions .action-btn {
+  pointer-events: auto;
+  position: relative;
+  appearance: none;
+  box-sizing: border-box;
+  width: var(--oas-float-button-action-size);
+  height: var(--oas-float-button-action-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--oas-color-border);
+  border-radius: 50%;
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-lg);
+  line-height: 1;
+  cursor: pointer;
+  text-decoration: none;
+  flex-shrink: 0;
+  box-shadow: var(--oas-shadow-md);
+  transition: background var(--oas-transition-fast) var(--oas-ease-out),
+    border-color var(--oas-transition-fast) var(--oas-ease-out);
+}
+.actions .action-btn:hover {
+  background: var(--oas-color-bg-hover);
+  border-color: var(--oas-color-primary);
+}
+.actions .action-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+/* actions 与 slot 子钮同时提供：以 actions 为准，隐藏 slot 投影（宿主反射 data-action-rendered） */
+:host([data-action-rendered]) .actions ::slotted([slot='action']) {
+  display: none;
+}
+/* 内联气泡：hover / 键盘聚焦时显示（纯 CSS，不依赖 mirror 层） */
+.action-btn:hover .bubble,
+.action-btn:focus-visible .bubble {
+  opacity: 1;
+  visibility: visible;
+}
+.action-btn .icon svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+/* 子钮徽标：挂在书写方向终点角（逻辑 inset，RTL 自动镜像） */
+.action-btn .mini-badge {
+  position: absolute;
+  top: calc(-1 * var(--oas-space-1));
+  inset-inline-end: calc(-1 * var(--oas-space-1));
 }
 .group.open .actions {
   opacity: 1;
@@ -369,7 +427,8 @@ const STYLE = `
   visibility: hidden;
   flex-shrink: 0;
 }
-.mirror .bubble {
+/* 气泡基样式（通用：mirror 锚点气泡与 .action-btn 内联气泡共用；方向定位见下方 .group[data-dir] 规则） */
+.bubble {
   position: absolute;
   padding: var(--oas-space-1) var(--oas-space-2);
   border-radius: var(--oas-radius-sm);
@@ -533,7 +592,7 @@ const STYLE = `
 @media (prefers-reduced-motion: reduce) {
   .actions,
   .menu,
-  .mirror .bubble {
+  .bubble {
     transition: none;
   }
 }
@@ -548,20 +607,24 @@ const STYLE = `
  * - `trigger`：展开触发 `click`（默认）/ `hover`（触屏自动回落 click）/ `manual`（仅 expanded 属性驱动）
  * - `expand-direction`：展开方向 `up`（默认）/ `down` / `left` / `right`；RTL 下横向方向自动镜像；
  *   menu 面板为纵向菜单只认 up/down（横向回落 up）
- * - `actions`：menu 模式动作项 JSON `[{ label, icon?, href?, target?, badge? }]`
+ * - `actions`：group/menu 共用的动作项 JSON `[{ label, icon?, href?, target?, badge? }]`——
+ *   group 由组件在 shadow 内自渲染圆形子钮（推荐用法，免疫宿主页 CSS 覆盖）；menu 渲染动作菜单
  * - `badge`：主钮角标——`dot` 状态点 / 纯数字（超 99 封顶 `99+`）/ 其他文本原样
  * - `shape`/`type`/`size`/`disabled`/`href`/`target`/`aria-label`/`draggable`/`magnetic`：单钮既有能力（三模式共用主钮）
  *
  * 插槽：
  * - 默认插槽：主钮扩展文字（胶囊形态）
  * - `icon`：主钮图标（默认 ＋）
- * - `action`（group 模式）：子钮，宿主自填 light DOM（button/a 均可）；
- *   可带 `label` 属性（hover/focus 气泡文本）与 `badge` 属性（角标，dot/数字封顶同主钮）
+ * - `action`（group 模式，自定义通道）：宿主自填 light DOM 子钮（button/a/oas-button/自定义元素均可），
+ *   适合自定义视觉、框架响应式内容、每钮不同行为等 `actions` 数据通道无法表达的场景；可带 `label`
+ *   （气泡文本）与 `badge` 属性。默认形态经 ::slotted 承载（best-effort，可被宿主页 CSS 覆盖）；
+ *   标准圆形子钮（icon+label+href+badge）推荐用 `actions`（组件自渲染，免疫宿主页 CSS）。
+ *   与 actions 是二选一通道，同时提供时以 actions 为准（CSS 隐藏 slot 投影并 dev 告警一次）
  *
  * 事件（bubbles + composed）：
  * - `oas-click`：主钮点击，`detail: { originalEvent }`
  * - `oas-expand-change`：展开/收起后派发，`detail: { expanded }`（宿主设置 expanded 属性不派发）
- * - `oas-select`：menu 模式选择动作项，`detail: { index, label, href? }`，选择后自动收起
+ * - `oas-select`：group/menu 模式选择动作项，`detail: { index, label, href? }`，选择后自动收起
  *
  * 交互边界：
  * - group：点击子钮后组自动收起（选择即收起）；Esc/外点收起并回焦主钮
@@ -617,6 +680,8 @@ export class OASFloatButton extends OASElement {
   private skipFocusOnOpen = false
   /** 上一次 syncExpanded 的展开态（状态迁移判定用：仅在收起 → 展开帧聚焦首项） */
   private wasExpanded = false
+  /** slot 子钮与 actions 并存告警一次性标记（实例级：同一元素多次 update 只告警一次，防刷屏） */
+  private warned = false
 
   /** 进行中的拖拽会话（draggable）：pointer 捕获 + 起点 + 位移阈值标记 */
   private dragState: {
@@ -773,6 +838,12 @@ export class OASFloatButton extends OASElement {
       ?.addEventListener('slotchange', () => this.update())
     // menu 面板：键盘导航（菜单项事件在 renderMenuItems 内逐项绑定）
     this.menu?.addEventListener('keydown', this.handleActionsKeydown)
+    // group actions 渲染通道：子钮 keydown 冒泡到 .actions 容器统一走方向键导航（menu 同款委托）。
+    // 仅在 actions 渲染路径启用——slot 路径已由 ensureChildBindings 逐钮直绑；真实浏览器里 slot 子钮
+    // 的 keydown 会冒泡穿过 <slot> 到 .actions，若此处不设守卫会与逐钮直绑叠加，方向键一次跳两步。
+    this.actionsEl?.addEventListener('keydown', (e) => {
+      if (this.actionsList.length > 0) this.handleActionsKeydown(e)
+    })
     // hover 触发：悬停区域 = 宿主（主钮）+ 展开面板（跨 gap 移动不闪关，宽限期内回入不收起）
     this.addEventListener('mouseenter', this.onHoverEnter)
     this.addEventListener('mouseleave', this.onHoverLeave)
@@ -888,8 +959,9 @@ export class OASFloatButton extends OASElement {
     }
   }
 
-  // ---------- menu 动作项 ----------
+  // ---------- 动作项（actions JSON：group 自渲染子钮 / menu 渲染菜单项共用） ----------
 
+  /** actions JSON 解析（group/menu 共用）：label 为 string 的项保留；解析后按模式分发渲染 */
   private parseActions(): void {
     try {
       const parsed = JSON.parse(this.getAttr('actions', '[]'))
@@ -899,48 +971,114 @@ export class OASFloatButton extends OASElement {
     } catch {
       this.actionsList = []
     }
-    this.renderMenuItems()
+    if (this.validMode() === 'menu') this.renderMenuItems()
+    else if (this.validMode() === 'group') this.renderGroupActions()
+  }
+
+  /** 重建动作项期间的焦点保持：记录当前焦点项下标 → 重建 → 恢复到同位新项（越界/无焦点时不动）。
+      重建会销毁聚焦中的旧项把焦点跌落到 body（slotchange/actions 变更触发的重建），键盘流断裂 */
+  private rebuildWithFocusRestore(rebuild: () => void): void {
+    const restoreIndex = this.actionFocusables().findIndex((x) => x === this.shadow.activeElement)
+    rebuild()
+    if (restoreIndex >= 0) this.actionFocusables()[restoreIndex]?.focus()
   }
 
   private renderMenuItems(): void {
     const menu = this.menu
     if (!menu) return
-    // 焦点保持：menu.innerHTML='' 重建会销毁聚焦的旧菜单项（slotchange/actions 变更触发的
-    // 重建会把焦点跌落到 body，键盘流断裂）——重建前记录焦点项下标，重建后恢复到同位新项
-    const prevFocusables = this.actionFocusables()
-    const restoreIndex = prevFocusables.findIndex((x) => x === this.shadow.activeElement)
-    menu.innerHTML = ''
-    this.actionsList.forEach((action, index) => {
-      const item: HTMLAnchorElement | HTMLButtonElement =
-        action.href != null && action.href !== ''
-          ? Object.assign(document.createElement('a'), {
-              href: action.href,
-              ...(action.target ? { target: action.target } : {}),
-            })
-          : Object.assign(document.createElement('button'), { type: 'button' })
-      item.className = 'item'
-      item.setAttribute('part', 'item')
-      item.setAttribute('role', 'menuitem')
-      if (action.icon) {
-        const ic = this.createIcon(action.icon)
-        if (ic) item.appendChild(ic)
-      }
-      const label = document.createElement('span')
-      label.className = 'item-label'
-      label.textContent = action.label
-      item.appendChild(label)
-      if (action.badge != null && action.badge !== '') {
-        const { text, dot } = formatBadgeValue(action.badge)
-        const badgeEl = document.createElement('span')
-        badgeEl.className = dot ? 'mini-badge dot' : 'mini-badge'
-        badgeEl.textContent = text
-        item.appendChild(badgeEl)
-      }
-      item.addEventListener('click', () => this.selectItem(index, action))
-      menu.appendChild(item)
+    this.rebuildWithFocusRestore(() => {
+      menu.innerHTML = ''
+      this.actionsList.forEach((action, index) => {
+        const item: HTMLAnchorElement | HTMLButtonElement =
+          action.href != null && action.href !== ''
+            ? Object.assign(document.createElement('a'), {
+                href: action.href,
+                ...(action.target ? { target: action.target } : {}),
+              })
+            : Object.assign(document.createElement('button'), { type: 'button' })
+        item.className = 'item'
+        item.setAttribute('part', 'item')
+        item.setAttribute('role', 'menuitem')
+        if (action.icon) {
+          const ic = this.createIcon(action.icon)
+          if (ic) item.appendChild(ic)
+        }
+        const label = document.createElement('span')
+        label.className = 'item-label'
+        label.textContent = action.label
+        item.appendChild(label)
+        if (action.badge != null && action.badge !== '') {
+          const { text, dot } = formatBadgeValue(action.badge)
+          const badgeEl = document.createElement('span')
+          badgeEl.className = dot ? 'mini-badge dot' : 'mini-badge'
+          badgeEl.textContent = text
+          item.appendChild(badgeEl)
+        }
+        item.addEventListener('click', () => this.selectItem(index, action))
+        menu.appendChild(item)
+      })
     })
-    // 重建后恢复焦点（同位新项；越界/无焦点时不动）
-    if (restoreIndex >= 0) this.actionFocusables()[restoreIndex]?.focus()
+  }
+
+  /**
+   * group 子钮 actions 渲染通道（数据驱动，标准圆形子钮）：
+   * 有合法非空 actions 时在 .actions 容器内自渲染圆形子钮（shadow 内，宿主页 CSS 无法穿透覆盖），
+   * 复用 menu 的动作项契约与 selectItem 语义（oas-select + 收起回焦）；气泡 hover/focus 纯 CSS 显隐。
+   * 无 actions 时保持既有 slot 通道（宿主自填自定义子钮）；两者同时提供时以 actions 为准（CSS 隐藏 slot 投影）。
+   */
+  private renderGroupActions(): void {
+    const layer = this.actionsEl
+    if (!layer) return
+    if (this.actionsList.length > 0) {
+      this.setAttribute('data-action-rendered', '')
+      if (this.slottedActions().length > 0) {
+        this.warnOnce('group 模式 actions 与 slot 子钮是二选一的通道，同时提供时以 actions 为准，slot 投影子钮已隐藏')
+      }
+    } else {
+      this.removeAttribute('data-action-rendered')
+      return
+    }
+    this.rebuildWithFocusRestore(() => {
+      layer.querySelectorAll('.action-btn').forEach((n) => n.remove())
+      this.actionsList.forEach((action, index) => {
+        const item: HTMLAnchorElement | HTMLButtonElement =
+          action.href != null && action.href !== ''
+            ? Object.assign(document.createElement('a'), {
+                href: action.href,
+                ...(action.target ? { target: action.target } : {}),
+                rel: 'noopener noreferrer',
+              })
+            : Object.assign(document.createElement('button'), { type: 'button' })
+        item.className = 'action-btn'
+        item.setAttribute('part', 'action-btn')
+        item.setAttribute('aria-label', action.label)
+        if (action.icon) {
+          const ic = this.createIcon(action.icon)
+          if (ic) item.appendChild(ic)
+        }
+        // 气泡：hover / 键盘聚焦时经纯 CSS 显示（文本 = label）
+        const bubble = document.createElement('span')
+        bubble.className = 'bubble'
+        bubble.textContent = action.label
+        item.appendChild(bubble)
+        if (action.badge != null && action.badge !== '') {
+          const { text, dot } = formatBadgeValue(action.badge)
+          const badgeEl = document.createElement('span')
+          badgeEl.className = dot ? 'mini-badge dot' : 'mini-badge'
+          badgeEl.textContent = text
+          item.appendChild(badgeEl)
+        }
+        item.addEventListener('click', () => this.selectItem(index, action))
+        layer.appendChild(item)
+      })
+    })
+  }
+
+  /** 一次性 dev 告警（每实例一次，update 反复触发不刷屏） */
+  private warnOnce(message: string): void {
+    if (this.warned) return
+    this.warned = true
+    devWarn(`[oas-float-button] ${message}`)
   }
 
   /** 菜单项选择：派发 oas-select（链接项附 href）并收起；焦点归还主钮（APG menu 惯例） */
@@ -973,10 +1111,13 @@ export class OASFloatButton extends OASElement {
 
   // ---------- 展开/收起（group/menu 受控） ----------
 
-  /** 键盘可达集合：menu 菜单项 / group 子钮 */
+  /** 键盘可达集合：menu 菜单项 / group 子钮（actions 渲染通道优先，回退 slot 子钮） */
   private actionFocusables(): HTMLElement[] {
     if (this.validMode() === 'menu') {
       return [...(this.menu?.querySelectorAll<HTMLElement>('.item') ?? [])]
+    }
+    if (this.actionsList.length > 0) {
+      return [...(this.actionsEl?.querySelectorAll<HTMLElement>('.action-btn') ?? [])]
     }
     return this.slottedActions()
   }
@@ -1351,6 +1492,7 @@ export class OASFloatButton extends OASElement {
     // 模式态同步：方向（含 RTL 镜像与 menu 纵向约束）→ 子钮/mirror/菜单项 → 展开态
     if (mode === 'group') {
       this.group?.setAttribute('data-dir', this.effectiveDirection())
+      this.parseActions() // actions 解析 + 自渲染子钮（空/非法时回退 slot 路径，见 renderGroupActions）
       this.syncMirrors()
     }
     if (mode === 'menu') {

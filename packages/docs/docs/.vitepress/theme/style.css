@@ -188,3 +188,15 @@ html.dark .vp-doc blockquote {
   direction: ltr;
   unicode-bidi: isolate;
 }
+
+/* ===== float-button group/menu 子钮形态在文档站失效的修复 =====
+   vitepress 默认主题 base.css 有全局 `button { background-color: transparent }`（及其他 reset）。
+   按 CSS 作用域规则，**文档（外层树）规则胜过组件 shadow 内的 `::slotted([slot='action'])`**，
+   于是组件对子钮声明的「浅底描边」形态（background: var(--oas-color-bg) + border: var(--oas-color-border)）
+   被覆盖成透明，子钮在白卡上边界几乎不可辨（用户实报「看不清」）。
+   此处按组件声明原样恢复（未改设计值），特异性用属性选择器确保压过 base.css 的 `button`。 */
+oas-float-button [slot='action'] {
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-border);
+  color: var(--oas-color-text-primary);
+}

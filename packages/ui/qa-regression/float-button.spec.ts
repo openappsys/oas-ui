@@ -10,10 +10,10 @@ async function waitMessage(p: import('@playwright/test').Page) {
   await p.waitForFunction(() => typeof (window as any).message !== 'undefined', null, { timeout: 10000 })
 }
 
-test('group 模式：点击主钮展开，子钮在主钮下方纵向可见（expand-direction=down 几何）', async ({ page }) => {
+test('group 模式：点击主钮展开，子钮在主钮下方纵向可见（expand-direction=down 几何，slot demo）', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-  await up(page, 'oas-float-button[mode="group"]')
-  const group = page.locator('oas-float-button[mode="group"]').first()
+  await up(page, '#fb-slot-demo')
+  const group = page.locator('#fb-slot-demo')
   const main = group.locator('[part="btn"]')
   await main.click()
   await expect(group).toHaveAttribute('expanded', '', { timeout: 5000 })
@@ -109,9 +109,9 @@ test('menu 模式：Esc 关闭并回焦主钮', async ({ page }) => {
 
 test('链接化存活：group 链接子钮与 menu 链接项均渲染为 a[href][target]', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-  await up(page, 'oas-float-button[mode="group"]')
-  // group 链接子钮（light DOM，宿主自填）
-  const linkChild = page.locator('oas-float-button[mode="group"] a[slot="action"]').first()
+  await up(page, '#fb-slot-demo')
+  // group 链接子钮（light DOM，宿主自填，slot demo——已废弃用法保留兼容）
+  const linkChild = page.locator('#fb-slot-demo a[slot="action"]').first()
   await expect(linkChild).toHaveAttribute('href', 'https://example.com')
   await expect(linkChild).toHaveAttribute('target', '_blank')
   // menu 链接项（shadow 渲染）
@@ -158,26 +158,26 @@ test('RTL 镜像：group 横向展开方向在 dir=rtl 下 data-dir 自动互换
   expect(r.rtlRight).toBe('left')
 })
 
-test('group 子钮点击后组自动收起（选择即收起，浏览器级行为）', async ({ page }) => {
+test('group 子钮点击后组自动收起（选择即收起，浏览器级行为，slot demo）', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-  await up(page, 'oas-float-button[mode="group"]')
-  const group = page.locator('oas-float-button[mode="group"]').first()
+  await up(page, '#fb-slot-demo')
+  const group = page.locator('#fb-slot-demo')
   await group.locator('[part="btn"]').click()
   await expect(group).toHaveAttribute('expanded', '', { timeout: 5000 })
   await group.locator('button[slot="action"]').first().click()
   await expect(group).not.toHaveAttribute('expanded', { timeout: 5000 })
 })
 
-test('group 展开自动聚焦首项：visibility 过渡不得吞焦点（speed-dial 同类缺陷回归）', async ({ page }) => {
+test('group 展开自动聚焦首项：visibility 过渡不得吞焦点（speed-dial 同类缺陷回归，slot demo）', async ({ page }) => {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
-  await up(page, 'oas-float-button[mode="group"]')
-  const group = page.locator('oas-float-button[mode="group"]').first()
+  await up(page, '#fb-slot-demo')
+  const group = page.locator('#fb-slot-demo')
   // 真实点击主钮展开：open 态 visibility 立即翻转（无过渡延迟），syncExpanded 展开帧
   // 聚焦首个子动作必须落在可见元素上——若回归为「过渡期末端才可见」，焦点会跌落 body
   await group.locator('[part="btn"]').click()
   await page.waitForTimeout(120) // 过渡中段即断言：焦点应已就位
   const state = await page.evaluate(() => {
-    const el = document.querySelector('oas-float-button[mode="group"]')!
+    const el = document.querySelector('#fb-slot-demo')!
     const root = el.shadowRoot!
     const firstAction = el.querySelector('[slot="action"]') as HTMLElement | null
     const fab = root.querySelector('[part="btn"]')
@@ -193,6 +193,17 @@ test('group 展开自动聚焦首项：visibility 过渡不得吞焦点（speed-
     state.isFirstAction || state.isFabHost,
     `展开后焦点应落在面板内（首项子动作/宿主承接），实际 active=${state.activeTag}`,
   ).toBe(true)
+  // 方向键单步回归：slot 路径子钮 keydown 会冒泡穿过 <slot> 到 .actions 容器——若 .actions 的
+  // keydown 委托未按路径设守卫，会与逐钮直绑叠加，一次 ArrowDown 跳两步（本页 actions 路径已由
+  // 专门的键盘用例断言单步，此处固化 slot 路径不退化为双触发）
+  await page.keyboard.press('ArrowDown')
+  await page.waitForTimeout(200)
+  const focusedIdx = await page.evaluate(() => {
+    const el = document.querySelector('#fb-slot-demo')!
+    const kids = [...el.querySelectorAll('[slot="action"]')]
+    return kids.findIndex((k) => k === el.shadowRoot!.activeElement || k === document.activeElement)
+  })
+  expect(focusedIdx, 'slot 路径 ArrowDown 应单步到第 2 项（双触发会跳到第 3 项）').toBe(1)
 })
 
 test('demo 宿主不溢出 DemoBlock：relative 覆盖必须配 inset 中和宿主 bottom/right 悬浮偏移', async ({ page }) => {
@@ -283,13 +294,136 @@ test('磁吸贴容器边缘：magnetic=x 松手吸附到 absolute 包含块（de
   // 吸附目标是 absolute 宿主所属的定位包含块（offsetParent = demo 内层 relative 容器）。
   // 不能用 .demo-block__body：它自带 padding（space-5），与包含块差一圈 padding 距离。
   const gaps = await fab.evaluate((el) => {
-    const inner = el.offsetParent as HTMLElement
+    const inner = (el as HTMLElement).offsetParent as HTMLElement | null
     const r = el.getBoundingClientRect()
-    const c = inner.getBoundingClientRect()
+    const c = inner!.getBoundingClientRect()
     return { left: r.left - c.left, right: c.right - r.right }
   })
   expect(
     Math.min(Math.abs(gaps.left), Math.abs(gaps.right)),
     `磁吸应贴包含块左/右边缘（左缝=${gaps.left.toFixed(1)} 右缝=${gaps.right.toFixed(1)}；贴合视口边缘则为缺陷）`,
   ).toBeLessThan(3)
+})
+
+// ===== group actions 自渲染子钮（组件渲染外壳，免疫宿主页 CSS 覆盖；slot 用法已废弃） =====
+
+test('group actions 自渲染子钮：背景色免疫宿主页 button{background:transparent} 覆盖（核心），点击有 message 反馈并收起', async ({
+  page,
+}) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await waitMessage(page)
+  await up(page, '#fb-actions-demo')
+  const host = page.locator('#fb-actions-demo')
+  await host.locator('[part="btn"]').click()
+  await expect(host).toHaveAttribute('expanded', '', { timeout: 5000 })
+  await page.waitForTimeout(300) // 等滑入过渡落定
+  // 核心断言：vitepress 全局 button{background-color:transparent} 曾把 ::slotted 子钮背景覆盖成透明；
+  // actions 通道子钮外壳在 shadow 内渲染，计算背景必须为 --oas-color-bg 实色（非透明）
+  const bg = await host.evaluate((el) => {
+    const btn = el.shadowRoot!.querySelector<HTMLElement>('.action-btn')!
+    return {
+      count: el.shadowRoot!.querySelectorAll('.action-btn').length,
+      background: getComputedStyle(btn).backgroundColor,
+      tag: btn.tagName,
+      linkTag: el.shadowRoot!.querySelector('.action-btn[href]')?.tagName,
+      linkRel: el.shadowRoot!.querySelector<HTMLAnchorElement>('.action-btn[href]')?.getAttribute('rel'),
+    }
+  })
+  expect(bg.count).toBe(3)
+  expect(bg.tag, '无 href 项为 button').toBe('BUTTON')
+  expect(bg.linkTag, '带 href 项为链接').toBe('A')
+  expect(bg.linkRel).toBe('noopener noreferrer')
+  expect(bg.background, '背景应为 --oas-color-bg 实色（非透明）').not.toBe('rgba(0, 0, 0, 0)')
+  // 点击子钮 → onoas-select message 反馈 + 组收起
+  await host.locator('.action-btn').first().click()
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, { timeout: 5000 })
+  const msg = await page.evaluate(() =>
+    [...document.querySelectorAll('oas-message')].map((m) => m.textContent ?? '').join('|'),
+  )
+  expect(msg).toContain('选中：编辑')
+  await expect(host).not.toHaveAttribute('expanded', { timeout: 5000 })
+})
+
+test('group actions 气泡：hover 时 .bubble 可见（其余隐藏）且文本 = label', async ({ page }) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '#fb-actions-demo')
+  const host = page.locator('#fb-actions-demo')
+  await host.locator('[part="btn"]').click()
+  await expect(host).toHaveAttribute('expanded', '', { timeout: 5000 })
+  await page.waitForTimeout(300)
+  // 气泡文本 = label
+  const labels = await host.evaluate((el) =>
+    [...el.shadowRoot!.querySelectorAll<HTMLElement>('.action-btn .bubble')].map((b) => b.textContent),
+  )
+  expect(labels).toEqual(['编辑', '帮助文档', '消息'])
+  // hover 第 1 钮 → 其气泡可见、其余隐藏（visibility 过渡为离散插值，等过渡期结束再读）
+  await host.locator('.action-btn').first().hover()
+  await page.waitForTimeout(400)
+  const vis = await host.evaluate((el) =>
+    [...el.shadowRoot!.querySelectorAll<HTMLElement>('.action-btn')].map(
+      (b) => getComputedStyle(b.querySelector('.bubble')!).visibility,
+    ),
+  )
+  expect(vis, 'hover 第 1 钮：仅其气泡可见').toEqual(['visible', 'hidden', 'hidden'])
+})
+
+test('group actions 键盘：展开自动聚焦首项，方向键移动（气泡 focus-visible 可见），Esc 收起回焦主钮', async ({
+  page,
+}) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '#fb-actions-demo')
+  const host = page.locator('#fb-actions-demo')
+  await host.locator('[part="btn"]').click()
+  await expect(host).toHaveAttribute('expanded', '', { timeout: 5000 })
+  await page.waitForTimeout(350)
+  // 展开自动聚焦首项（shadow 内 .action-btn）
+  const firstFocused = await host.evaluate((el) => el.shadowRoot!.activeElement?.classList.contains('action-btn'))
+  expect(firstFocused, '展开后焦点应落在首个自渲染子钮').toBe(true)
+  // 真实键盘 ArrowDown → 焦点到第 2 项；键盘引发的聚焦必匹配 :focus-visible → 气泡可见
+  await page.keyboard.press('ArrowDown')
+  await page.waitForTimeout(400)
+  const second = await host.evaluate((el) => {
+    const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.action-btn')]
+    return {
+      focusIdx: items.findIndex((b) => b === el.shadowRoot!.activeElement),
+      secondBubble: getComputedStyle(items[1]!.querySelector('.bubble')!).visibility,
+    }
+  })
+  expect(second.focusIdx).toBe(1)
+  expect(second.secondBubble, 'focus-visible 气泡可见').toBe('visible')
+  // Esc 收起并回焦主钮
+  await page.keyboard.press('Escape')
+  await expect(host).not.toHaveAttribute('expanded', { timeout: 5000 })
+  const backOnBtn = await host.evaluate(
+    (el) => el.shadowRoot!.activeElement === el.shadowRoot!.querySelector('[part="btn"]'),
+  )
+  expect(backOnBtn).toBe(true)
+})
+
+test('group actions RTL：dir=rtl 下纵向气泡镜像到书写方向另一侧（inline-start 逻辑方向）', async ({ page }) => {
+  await page.goto(PAGE, { waitUntil: 'domcontentloaded' })
+  await up(page, '#fb-actions-demo')
+  const host = page.locator('#fb-actions-demo')
+  await host.locator('[part="btn"]').click()
+  await expect(host).toHaveAttribute('expanded', '', { timeout: 5000 })
+  await page.waitForTimeout(300)
+  // LTR：纵向展开气泡在子钮书写终点侧（右）；visibility:hidden 保留布局可直接量几何
+  const ltr = await host.evaluate((el) => {
+    const btn = el.shadowRoot!.querySelector<HTMLElement>('.action-btn')!
+    const bubble = btn.querySelector<HTMLElement>('.bubble')!
+    const b = btn.getBoundingClientRect()
+    const bb = bubble.getBoundingClientRect()
+    return bb.left - b.right
+  })
+  expect(ltr, 'LTR：气泡在子钮右侧').toBeGreaterThan(0)
+  // 切 RTL：气泡镜像到左侧
+  await host.evaluate((el) => el.setAttribute('dir', 'rtl'))
+  const rtl = await host.evaluate((el) => {
+    const btn = el.shadowRoot!.querySelector<HTMLElement>('.action-btn')!
+    const bubble = btn.querySelector<HTMLElement>('.bubble')!
+    const b = btn.getBoundingClientRect()
+    const bb = bubble.getBoundingClientRect()
+    return b.left - bb.right
+  })
+  expect(rtl, 'RTL：气泡镜像到子钮左侧').toBeGreaterThan(0)
 })

@@ -1351,17 +1351,17 @@
       "expanded": "group/menu expanded state: the component writes the attribute itself and emits `oas-expand-change` on gesture expand/collapse; with `trigger=\"manual\"` it is fully controlled — the component never toggles itself and the host adds/removes the attribute",
       "trigger": "Expand trigger: click (default) / hover (debounced with grace period) / manual (fully controlled; outside click and Esc do not auto-collapse)",
       "expand-direction": "Expand direction: up (default) / down / left / right; horizontal directions mirror automatically in RTL",
-      "actions": "menu-mode items JSON `[{label, value?, icon?, href?, target?, danger?, disabled?}]`; selecting emits oas-select and requests collapse"
+      "actions": "Action items JSON shared by group/menu `[{label, icon?, href?, target?, badge?}]` — group renders circular child buttons inside the shadow root (recommended, immune to host-page CSS overrides), menu renders an action menu; items with href render as links (rel=\"noopener noreferrer\" added automatically); selecting emits oas-select and collapses with focus restored to the main button"
     },
     "events": {
       "oas-click": "Clicked, `detail: { originalEvent }`",
-      "oas-select": "A menu item was selected in menu mode, `detail: { index, label, href? }`; the component then requests a collapse (emitting `oas-expand-change`; with `trigger=\"manual\"` the host removes `expanded` to finish)",
+      "oas-select": "An action item was selected in group/menu mode, `detail: { index, label, href? }`; the component then requests a collapse (emitting `oas-expand-change`; with `trigger=\"manual\"` the host removes `expanded` to finish)",
       "oas-expand-change": "Emitted on expand/collapse, `detail: { expanded }`; the component writes `expanded` back in sync (with `trigger=\"manual\"` the host writes it back)"
     },
     "slots": {
       "": "Extended text: writing text into the default slot turns the button into a horizontal capsule (icon + text in a row)",
       "icon": "Icon (default ＋)",
-      "action": "group-mode child buttons (native button/a or oas-button); clicking collapses the group and restores focus to the main button; badges and custom icons supported"
+      "action": "group-mode child buttons (custom channel, mutually exclusive with actions): self-filled light DOM elements/components (button/a/oas-button/custom elements) for cases the data channel cannot express — custom visuals, framework-reactive content, per-item behaviors; supports label (bubble text) and badge; the default circular form is carried via ::slotted (best-effort, can be overridden by host-page CSS) — use actions for guaranteed standard circular buttons; clicking collapses the group and restores focus to the main button"
     }
   },
   "oas-footer": {

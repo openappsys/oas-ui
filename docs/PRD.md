@@ -2281,3 +2281,23 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 - **RTL**：逻辑属性 + 书写方向镜像（start/end 与物理侧随逻辑方向翻转）。
 - **兼容**：单侧用法（`side` + `slot="actions"`）行为不变；`open` 语义扩展（detail 新增 `side`）为向后兼容增强。
 - **验收**：单测（双侧同现 / 左右滑各自吸附 / 跨侧切换 / `open-side` 反射 / 事件 side / RTL 镜像 / disabled）+ qa-regression e2e + 文档 zh/en。
+
+## float-button group 自渲染子钮（未发布）
+
+### 背景
+
+group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::slotted([slot='action'])` 承载子钮全部视觉。CSS 作用域规则「外层树规则胜 shadow ::slotted」→ 宿主页全局样式（如文档站 vitepress reset 的 `button { background-color: transparent }`）直接覆盖子钮背景，子钮在卡片上边界不可辨，组件侧无法根治。
+
+### 方案
+
+- group 复用 menu 的 `actions` JSON（`[{ label, icon?, href?, target?, badge? }]`）：组件在 shadow 内自渲染圆形子钮（`.action-btn`），宿主只给数据，免疫宿主页 CSS；带 `href` 渲染链接子钮（`target` 透传 + 自动补 `rel="noopener noreferrer"`）
+- `label` 兼作无障碍名称与 hover/键盘聚焦气泡（纯 CSS 显隐）；`badge` dot/数字 99+ 封顶同既有规则
+- 选择复用 `selectItem`：派发 `oas-select`、组收起、非链接项回焦主钮；键盘方向键经 `.actions` 容器委托（展开自动聚焦首项、循环 + Home/End）；actions 更新重建带焦点保持（同 menu）
+- slot 通道保留（非废弃）：`slot="action"` 为自定义通道——宿主自填元素/组件（`oas-button`/自定义元素/框架响应式内容）用于数据通道无法表达的场景（自定义视觉、每钮不同行为）；默认形态经 `::slotted` 承载（best-effort，可被宿主页 CSS 覆盖）。与 actions 二选一，并存 → 以 actions 为准（宿主反射 `data-action-rendered`，CSS 隐藏 slot 投影）+ 告警一次；既有 slot 路径行为不变
+- 子钮阴影档 `--oas-shadow-sm` → `--oas-shadow-md`（slot 版与 actions 版同步，对齐主钮海拔）
+
+### 验收
+
+- 单测：group+actions 渲染 / 链接化 / 徽标 / oas-select 事件 / 键盘导航 / actions+slot 优先级与冲突告警 / 焦点保持全绿；既有用例零回归
+- e2e：vitepress 文档环境下 `.action-btn` 背景非透明（核心断言）、气泡 hover/focus 显隐与文本、键盘导航与 Esc 回焦、RTL 气泡镜像
+- 门禁：typecheck / build / api:check / llms:check 全绿

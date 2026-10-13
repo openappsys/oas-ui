@@ -50,6 +50,8 @@
 - **oas-marker `status`（`info`/`success`/`warning`/`danger`） + `shimmer`**；**oas-bubble `reactions`**（emoji + 计数，真实按钮上派发 `oas-reaction`）；**oas-message-scroller `track-visible`**（`pay-for-use`；`oas-visible-change` + `visibleMessageIds`/`currentAnchorId`）。
 - **`oas-swipe-cell` 双向滑动**：`slot="actions-start"`（inline-start 侧，LTR 下右滑露出）现可与 `slot="actions"`（inline-end，左滑）在同一项上共存。打开态从布尔升级为某侧（`'start' | 'end' | null`）：新增 `open-side` 属性（及 `openSide` property）选择/反射该侧，`open` 布尔保留（任一侧打开即为 true），`oas-open` 事件 `detail` 增加 `{ side }`。单次手势可双向拖拽，可越过零点端到端切换侧，且每项仅一侧打开；`side` 仍是单组旧开关（`actions-start` 存在时忽略）；RTL 经逻辑属性镜像。每侧可访问性不变（各分组是独立的 `role="group"`，共享同一 i18n 标签）；焦点进入某侧 actions 即打开该侧。
 
+- **oas-float-button group 模式自渲染子钮（`actions` 通道，根治宿主页 CSS 覆盖）**：`mode="group"` 现复用 menu 的 `actions` JSON（`[{ label, icon?, href?, target?, badge? }]`）由组件在 shadow 内自渲染圆形子钮——宿主页全局样式（如文档站 reset 的 `button { background: transparent }`）无法再穿透覆盖子钮形态。带 `href` 渲染为链接子钮（`target` 透传 + 自动补 `rel="noopener noreferrer"`）；`label` 兼作无障碍名称与 hover/键盘聚焦气泡（纯 CSS 显隐）；`badge` dot/数字 99+ 封顶同既有规则。点击复用 `selectItem`：派发 `oas-select`、组收起、非链接项回焦主钮；键盘方向键导航经 `.actions` 容器委托（展开自动聚焦首项、循环 + Home/End）、actions 更新重建带焦点保持。**两通道并列**：`actions` 为数据通道（组件自渲染，免疫宿主页 CSS）；既有 `slot="action"` 保留为**自定义通道**（非废弃）——宿主自填元素/组件（`oas-button`/自定义元素/框架响应式内容）用于数据通道无法表达的场景，默认形态经 `::slotted` 承载（best-effort，可被宿主页 CSS 覆盖）。两通道二选一，同时提供以 actions 为准（宿主反射 `data-action-rendered`，CSS 隐藏 slot 投影并 dev 告警一次），既有 slot 路径行为不变。子钮阴影档 `--oas-shadow-sm` → `--oas-shadow-md`（slot 版与 actions 版同步，对齐主钮海拔）。
+
 ### 修复
 
 - **oas-bubble `align` 纳入观察属性**：动态 `setAttribute("align", …)` 即时切换对齐（此前仅声明式/首渲染路径生效）；显式 `align` 属性始终优先于容器 `text-align` 继承反射

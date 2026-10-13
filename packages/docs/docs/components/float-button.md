@@ -105,29 +105,57 @@
 
 ## 分组模式
 
-`mode="group"`：主钮 + 子钮堆叠展开。子钮为宿主自填的 light DOM（`slot="action"`，`button` / `a` 均可）：
+`mode="group"`：主钮 + 子钮堆叠展开。子钮有两种通道：
 
-- 子钮可带 `label` 属性——hover / 键盘聚焦时浮现气泡提示（icon-only 子钮的提示通路）
-- 子钮可带 `badge` 属性——角标，`dot` 状态点 / 数字（超 99 封顶 `99+`）
+**`actions` 数据通道（推荐，标准圆形子钮）**——组件在 shadow 内自渲染，免疫宿主页 CSS 覆盖：
+
+- 动作项：`{ label, icon?, href?, target?, badge? }`——带 `href` 渲染为链接子钮（自动补 `rel="noopener noreferrer"`），与可点动作互斥
+- `label` 同时作为无障碍名称与 hover / 键盘聚焦时的气泡提示
+- `badge`：`dot` 状态点 / 数字（超 99 封顶 `99+`）
+- 选择动作项派发 `oas-select`（`detail: { index, label, href? }`）并自动收起回焦主钮
+
+**`slot="action"` 自定义通道**——宿主自填子钮元素，适合 `actions` 无法表达的场景：自定义视觉、`oas-button`/自定义组件、框架响应式内容、每钮不同行为等：
+
+- 子钮默认套用组件圆形形态，但该形态经 `::slotted` 承载，**可能被宿主页全局样式覆盖**（如 reset 的 `button { background: transparent }`）；需要保证形态时用 `actions`，或让子钮自带视觉（如 `oas-button`）
+- 可带 `label`（气泡文本）与 `badge` 属性
+- 两条通道**二选一**，同时提供时以 `actions` 为准
+
+公共行为：
+
 - `expand-direction` 展开方向：`up`（默认）/ `down` / `left` / `right`，RTL 下横向方向自动镜像
 - `trigger` 触发方式：`click`（默认）/ `hover`（触屏自动回落 click）/ `manual`（仅受控属性驱动）
 - `expanded` 受控展开态 + `oas-expand-change` 事件（`detail: { expanded }`）
-- 点击任一子钮后组自动收起；Esc 收起并回焦主钮，点击外部收起（不回焦）
+- Esc 收起并回焦主钮，点击外部收起（不回焦）
 
-<DemoBlock title="分组（点击主钮展开，子钮带 label 气泡与角标）">
-  <oas-float-button mode="group" expand-direction="down" style="position: relative; inset: 0">
+<DemoBlock title="分组（actions 自渲染子钮，点击子钮看消息反馈）">
+  <oas-float-button
+    id="fb-actions-demo"
+    mode="group"
+    expand-direction="down"
+    style="position: relative; inset: 0"
+    onoas-select="message.info('选中：' + event.detail.label + (event.detail.href ? '（链接 ' + event.detail.href + '）' : ''))"
+    actions='[
+      { "label": "编辑", "icon": "edit" },
+      { "label": "帮助文档", "icon": "external-link", "href": "https://example.com", "target": "_blank" },
+      { "label": "消息", "icon": "mail", "badge": "3" }
+    ]'
+  >
     <span slot="icon">＋</span>
-    <button slot="action" type="button" label="编辑"><span>✎</span></button>
-    <a slot="action" href="https://example.com" target="_blank" label="文档（链接子钮）"><span>📄</span></a>
-    <button slot="action" type="button" label="消息" badge="3"><span>✉</span></button>
   </oas-float-button>
 </DemoBlock>
 
 <DemoBlock title="展开事件（点击主钮切换，oas-expand-change 消息反馈）">
-  <oas-float-button mode="group" expand-direction="down" style="position: relative; inset: 0" onoas-expand-change="message.info('展开态：' + event.detail.expanded)">
+  <oas-float-button
+    mode="group"
+    expand-direction="down"
+    style="position: relative; inset: 0"
+    onoas-expand-change="message.info('展开态：' + event.detail.expanded)"
+    actions='[
+      { "label": "复制", "icon": "copy" },
+      { "label": "删除", "icon": "trash" }
+    ]'
+  >
     <span slot="icon">＋</span>
-    <button slot="action" type="button" label="复制"><span>⧉</span></button>
-    <button slot="action" type="button" label="删除"><span>🗑</span></button>
   </oas-float-button>
 </DemoBlock>
 
@@ -138,12 +166,23 @@
     expand-direction="down"
     trigger="manual"
     style="position: relative; inset: 0"
+    actions='[
+      { "label": "复制", "icon": "copy" },
+      { "label": "删除", "icon": "trash" }
+    ]'
   >
     <span slot="icon">＋</span>
-    <button slot="action" type="button" label="复制"><span>⧉</span></button>
-    <button slot="action" type="button" label="删除"><span>🗑</span></button>
   </oas-float-button>
   <button style="margin-inline-start: 8px; cursor: pointer" onclick="document.getElementById('fb-manual-demo').toggleAttribute('expanded')">切换 expanded</button>
+</DemoBlock>
+
+<DemoBlock title="自定义子钮（slot 自定义通道：自填元素/组件/框架响应式内容）">
+  <oas-float-button id="fb-slot-demo" mode="group" expand-direction="down" style="position: relative; inset: 0">
+    <span slot="icon">＋</span>
+    <button slot="action" type="button" label="编辑"><span>✎</span></button>
+    <a slot="action" href="https://example.com" target="_blank" label="文档（链接子钮）"><span>📄</span></a>
+    <button slot="action" type="button" label="消息" badge="3"><span>✉</span></button>
+  </oas-float-button>
 </DemoBlock>
 
 ## 菜单模式
@@ -221,7 +260,7 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `actions` | menu 模式菜单项 JSON `[{label, value?, icon?, href?, target?, danger?, disabled?}]`；选择派发 oas-select 并请求收起 | `string` | `[]` |
+| `actions` | group/menu 共用动作项 JSON `[{label, icon?, href?, target?, badge?}]`——group 由组件在 shadow 内自渲染圆形子钮（推荐用法，免疫宿主页 CSS 覆盖）、menu 渲染动作菜单；带 href 渲染为链接（自动补 rel="noopener noreferrer"）；选择派发 oas-select 并自动收起回焦主钮 | `string` | `[]` |
 | `aria-label` | 无障碍可访问名称：显式设置时覆盖内置文案（纯图标默认走 locale「悬浮操作」；有扩展文字时让位给可见文本） | — | — |
 | `badge` | 右上角标数字 | `string` | — |
 | `disabled` | 禁用：不可点击、不派发 `oas-click`，样式弱化；`href` 模式下降级为不可点击的 `span` | `boolean` | — |
@@ -243,14 +282,14 @@ onMounted(async () => {
 | --- | --- |
 | `oas-click` | 点击，`detail: { originalEvent }` |
 | `oas-expand-change` | 展开/收起时派发，`detail: { expanded }`；组件同步写回 `expanded`（`trigger="manual"` 时由宿主写回） |
-| `oas-select` | menu 模式选中菜单项，`detail: { index, label, href? }`；选中后请求收起（派发 `oas-expand-change`，`trigger="manual"` 时由宿主移除 `expanded` 完成） |
+| `oas-select` | group/menu 模式选中动作项，`detail: { index, label, href? }`；选中后请求收起（派发 `oas-expand-change`，`trigger="manual"` 时由宿主移除 `expanded` 完成） |
 
 #### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 扩展文字：默认插槽写入文字后按钮自动变为横向胶囊形态（图标 + 文字横排） |
-| `action` | group 模式子钮（原生 button/a 或 oas-button），点击自动收起并回焦主钮；支持角标与自定义图标 |
+| `action` | group 模式子钮（自定义通道，与 actions 二选一）：自填 light DOM 元素/组件（button/a/oas-button/自定义元素），适合自定义视觉、框架响应式内容、每钮不同行为等数据通道无法表达的场景；可带 label（气泡文本）与 badge 属性；默认圆形形态经 ::slotted 承载（best-effort，可被宿主页 CSS 覆盖），标准圆形子钮推荐用 actions；点击自动收起并回焦主钮 |
 | `icon` | 图标（默认 ＋） |
 
 #### CSS 变量

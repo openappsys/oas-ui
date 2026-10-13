@@ -105,29 +105,57 @@ Writing text into the default slot turns the button into a horizontal capsule (i
 
 ## Group mode
 
-`mode="group"`: a main button with stacked child buttons. Child buttons are host-filled light DOM (`slot="action"`, both `button` and `a` work):
+`mode="group"`: a main button with stacked child buttons. Child buttons come in two channels:
 
-- A child button may carry a `label` attribute — a bubble hint floats on hover / keyboard focus (the hint channel for icon-only children)
-- A child button may carry a `badge` attribute — `dot` status dot / number (capped at `99+` above 99)
+**`actions` data channel (recommended, standard circular child buttons)** — rendered by the component inside the shadow root, immune to host-page CSS overrides:
+
+- Action item: `{ label, icon?, href?, target?, badge? }` — items with `href` render as link children (with `rel="noopener noreferrer"` added automatically), mutually exclusive with clickable actions
+- `label` serves both as the accessible name and as the bubble hint on hover / keyboard focus
+- `badge`: `dot` status dot / number (capped at `99+` above 99)
+- Selecting an action item dispatches `oas-select` (`detail: { index, label, href? }`) and collapses the group, restoring focus to the main button
+
+**`slot="action"` custom channel** — the host provides the child elements itself, for cases the data channel cannot express: custom visuals, `oas-button`/custom components, framework-reactive content, per-item behaviors:
+
+- Children get a default circular form, but it is carried via `::slotted` and **can be overridden by host-page global styles** (e.g. a reset's `button { background: transparent }`); use `actions` when the form must be guaranteed, or let the child carry its own visuals (e.g. `oas-button`)
+- Supports the `label` (bubble text) and `badge` attributes
+- The two channels are **mutually exclusive**; when both are provided `actions` wins
+
+Shared behavior:
+
 - `expand-direction` expanding direction: `up` (default) / `down` / `left` / `right`; horizontal directions mirror automatically in RTL
 - `trigger` activation: `click` (default) / `hover` (falls back to click on touch screens) / `manual` (controlled attribute only)
 - `expanded` controlled expanded state + `oas-expand-change` event (`detail: { expanded }`)
-- Clicking any child button collapses the group; Esc collapses and refocuses the main button, while an outside click collapses without refocusing
+- Esc collapses and refocuses the main button; an outside click collapses without refocusing
 
-<DemoBlock title="Group (click the main button to expand; children carry label bubbles and badges)">
-  <oas-float-button mode="group" expand-direction="down" style="position: relative; inset: 0">
+<DemoBlock title="Group (actions-rendered children; see the message feedback on child click)">
+  <oas-float-button
+    id="fb-actions-demo"
+    mode="group"
+    expand-direction="down"
+    style="position: relative; inset: 0"
+    onoas-select="message.info('Selected: ' + event.detail.label + (event.detail.href ? ' (link ' + event.detail.href + ')' : ''))"
+    actions='[
+      { "label": "Edit", "icon": "edit" },
+      { "label": "Help docs", "icon": "external-link", "href": "https://example.com", "target": "_blank" },
+      { "label": "Messages", "icon": "mail", "badge": "3" }
+    ]'
+  >
     <span slot="icon">＋</span>
-    <button slot="action" type="button" label="Edit"><span>✎</span></button>
-    <a slot="action" href="https://example.com" target="_blank" label="Docs (link child)"><span>📄</span></a>
-    <button slot="action" type="button" label="Messages" badge="3"><span>✉</span></button>
   </oas-float-button>
 </DemoBlock>
 
 <DemoBlock title="Expand event (click the main button to toggle; oas-expand-change message feedback)">
-  <oas-float-button mode="group" expand-direction="down" style="position: relative; inset: 0" onoas-expand-change="message.info('Expanded: ' + event.detail.expanded)">
+  <oas-float-button
+    mode="group"
+    expand-direction="down"
+    style="position: relative; inset: 0"
+    onoas-expand-change="message.info('Expanded: ' + event.detail.expanded)"
+    actions='[
+      { "label": "Copy", "icon": "copy" },
+      { "label": "Delete", "icon": "trash" }
+    ]'
+  >
     <span slot="icon">＋</span>
-    <button slot="action" type="button" label="Copy"><span>⧉</span></button>
-    <button slot="action" type="button" label="Delete"><span>🗑</span></button>
   </oas-float-button>
 </DemoBlock>
 
@@ -138,12 +166,23 @@ Writing text into the default slot turns the button into a horizontal capsule (i
     expand-direction="down"
     trigger="manual"
     style="position: relative; inset: 0"
+    actions='[
+      { "label": "Copy", "icon": "copy" },
+      { "label": "Delete", "icon": "trash" }
+    ]'
   >
     <span slot="icon">＋</span>
-    <button slot="action" type="button" label="Copy"><span>⧉</span></button>
-    <button slot="action" type="button" label="Delete"><span>🗑</span></button>
   </oas-float-button>
   <button style="margin-inline-start: 8px; cursor: pointer" onclick="document.getElementById('fb-manual-demo-en').toggleAttribute('expanded')">Toggle expanded</button>
+</DemoBlock>
+
+<DemoBlock title="Custom children (slot custom channel: your own elements/components/framework-reactive content)">
+  <oas-float-button id="fb-slot-demo" mode="group" expand-direction="down" style="position: relative; inset: 0">
+    <span slot="icon">＋</span>
+    <button slot="action" type="button" label="Edit"><span>✎</span></button>
+    <a slot="action" href="https://example.com" target="_blank" label="Docs (link child)"><span>📄</span></a>
+    <button slot="action" type="button" label="Messages" badge="3"><span>✉</span></button>
+  </oas-float-button>
 </DemoBlock>
 
 ## Menu mode
@@ -221,7 +260,7 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `actions` | menu-mode items JSON `[{label, value?, icon?, href?, target?, danger?, disabled?}]`; selecting emits oas-select and requests collapse | `string` | `[]` |
+| `actions` | Action items JSON shared by group/menu `[{label, icon?, href?, target?, badge?}]` — group renders circular child buttons inside the shadow root (recommended, immune to host-page CSS overrides), menu renders an action menu; items with href render as links (rel="noopener noreferrer" added automatically); selecting emits oas-select and collapses with focus restored to the main button | `string` | `[]` |
 | `aria-label` | Accessible name: overrides the built-in label when set explicitly (icon-only defaults to locale "Quick actions"; extended text lets the visible text win) | — | — |
 | `badge` | Badge number at the top-right corner | `string` | — |
 | `disabled` | Disabled: not clickable, `oas-click` not fired, weakened styles; in `href` mode it degrades to a non-clickable `span` | `boolean` | — |
@@ -243,14 +282,14 @@ onMounted(async () => {
 | --- | --- |
 | `oas-click` | Clicked, `detail: { originalEvent }` |
 | `oas-expand-change` | Emitted on expand/collapse, `detail: { expanded }`; the component writes `expanded` back in sync (with `trigger="manual"` the host writes it back) |
-| `oas-select` | A menu item was selected in menu mode, `detail: { index, label, href? }`; the component then requests a collapse (emitting `oas-expand-change`; with `trigger="manual"` the host removes `expanded` to finish) |
+| `oas-select` | An action item was selected in group/menu mode, `detail: { index, label, href? }`; the component then requests a collapse (emitting `oas-expand-change`; with `trigger="manual"` the host removes `expanded` to finish) |
 
 #### Slots
 
 | Name | Description |
 | --- | --- |
 | default | Extended text: writing text into the default slot turns the button into a horizontal capsule (icon + text in a row) |
-| `action` | group-mode child buttons (native button/a or oas-button); clicking collapses the group and restores focus to the main button; badges and custom icons supported |
+| `action` | group-mode child buttons (custom channel, mutually exclusive with actions): self-filled light DOM elements/components (button/a/oas-button/custom elements) for cases the data channel cannot express — custom visuals, framework-reactive content, per-item behaviors; supports label (bubble text) and badge; the default circular form is carried via ::slotted (best-effort, can be overridden by host-page CSS) — use actions for guaranteed standard circular buttons; clicking collapses the group and restores focus to the main button |
 | `icon` | Icon (default ＋) |
 
 #### CSS Variables

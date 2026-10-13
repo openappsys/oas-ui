@@ -1351,17 +1351,17 @@
       "expanded": "group/menu 展开态：手势展开/收起时组件自写该属性并派发 `oas-expand-change`；`trigger=\"manual\"` 时为完全受控——组件不自切，开合由宿主增删属性决定",
       "trigger": "展开触发方式：click（默认）/ hover（开合防抖 + 宽限期）/ manual（完全受控，外点与 Esc 不自动收起）",
       "expand-direction": "展开方向：up（默认，向上）/ down / left / right；RTL 下横向方向自动镜像",
-      "actions": "menu 模式菜单项 JSON `[{label, value?, icon?, href?, target?, danger?, disabled?}]`；选择派发 oas-select 并请求收起"
+      "actions": "group/menu 共用动作项 JSON `[{label, icon?, href?, target?, badge?}]`——group 由组件在 shadow 内自渲染圆形子钮（推荐用法，免疫宿主页 CSS 覆盖）、menu 渲染动作菜单；带 href 渲染为链接（自动补 rel=\"noopener noreferrer\"）；选择派发 oas-select 并自动收起回焦主钮"
     },
     "events": {
       "oas-click": "点击，`detail: { originalEvent }`",
-      "oas-select": "menu 模式选中菜单项，`detail: { index, label, href? }`；选中后请求收起（派发 `oas-expand-change`，`trigger=\"manual\"` 时由宿主移除 `expanded` 完成）",
+      "oas-select": "group/menu 模式选中动作项，`detail: { index, label, href? }`；选中后请求收起（派发 `oas-expand-change`，`trigger=\"manual\"` 时由宿主移除 `expanded` 完成）",
       "oas-expand-change": "展开/收起时派发，`detail: { expanded }`；组件同步写回 `expanded`（`trigger=\"manual\"` 时由宿主写回）"
     },
     "slots": {
       "": "扩展文字：默认插槽写入文字后按钮自动变为横向胶囊形态（图标 + 文字横排）",
       "icon": "图标（默认 ＋）",
-      "action": "group 模式子钮（原生 button/a 或 oas-button），点击自动收起并回焦主钮；支持角标与自定义图标"
+      "action": "group 模式子钮（自定义通道，与 actions 二选一）：自填 light DOM 元素/组件（button/a/oas-button/自定义元素），适合自定义视觉、框架响应式内容、每钮不同行为等数据通道无法表达的场景；可带 label（气泡文本）与 badge 属性；默认圆形形态经 ::slotted 承载（best-effort，可被宿主页 CSS 覆盖），标准圆形子钮推荐用 actions；点击自动收起并回焦主钮"
     }
   },
   "oas-footer": {

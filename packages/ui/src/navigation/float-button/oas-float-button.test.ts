@@ -455,6 +455,8 @@ function mountGroup(attrs: Record<string, string> = {}, count = 3): OASFloatButt
 describe('OASFloatButton 家族扩展：mode 结构', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    // 组件 dev 告警（devWarn → console.warn）会打进来，mock 掉保持输出干净（需要断言告警的用例自行取 spy）
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -521,6 +523,7 @@ describe('OASFloatButton 家族扩展：mode 结构', () => {
 describe('OASFloatButton group 展开/受控/触发', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -640,6 +643,7 @@ describe('OASFloatButton group 展开/受控/触发', () => {
 describe('OASFloatButton group 子钮（slot=action）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -894,6 +898,7 @@ describe('OASFloatButton menu 模式', () => {
 describe('OASFloatButton 徽标封顶 + 触控目标', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -970,10 +975,12 @@ function upgradeFromFbSnapshot(
 describe('OASFloatButton DSD 真水合', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
+    vi.restoreAllMocks()
   })
 
   it('single 分支：hydrate 接管（style 引用保持、指纹移除、主钮/徽标结构保持）', () => {
@@ -1026,5 +1033,167 @@ describe('OASFloatButton DSD 真水合', () => {
     el.shadowRoot!.innerHTML = '<div>残缺</div>'
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('[part="btn"]')).not.toBeNull()
+  })
+})
+
+// ===== group 自渲染子钮（actions 数据通道 / slot 自定义通道） =====
+
+/** group actions 渲染通道的圆形子钮（shadow 内 .action-btn） */
+function actionBtns(el: OASFloatButton): HTMLElement[] {
+  return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.action-btn')]
+}
+
+/** group + actions 挂载：actions 传数组自动 JSON 序列化，传字符串原样（供非法 JSON 用例） */
+function mountGroupActions(actions: unknown, attrs: Record<string, string> = {}, inner = ''): OASFloatButton {
+  const raw = typeof actions === 'string' ? actions : JSON.stringify(actions)
+  return mount({ mode: 'group', actions: raw, ...attrs }, inner || `<span slot="icon">＋</span>`)
+}
+
+describe('OASFloatButton group 自渲染子钮（actions）', () => {
+  let warn: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  it('渲染 N 个组件自渲染圆形子钮（.action-btn / part=action-btn / aria-label=label），图标内联渲染', () => {
+    const el = mountGroupActions([{ label: '编辑', icon: 'edit' }, { label: '复制' }, { label: '删除' }])
+    const items = actionBtns(el)
+    expect(items).toHaveLength(3)
+    expect(items[0]!.getAttribute('part')).toBe('action-btn')
+    expect(items[0]!.getAttribute('aria-label')).toBe('编辑')
+    expect(items[0]!.querySelector('svg')).not.toBeNull() // icon 渲染
+    expect(items[1]!.getAttribute('aria-label')).toBe('复制')
+  })
+
+  it('子钮内含气泡（.bubble 文本=label）；badge：数字 / dot 状态点 / 99+ 封顶', () => {
+    const el = mountGroupActions([
+      { label: 'a', badge: '5' },
+      { label: 'b', badge: 'dot' },
+      { label: 'c', badge: '120' },
+    ])
+    const items = actionBtns(el)
+    expect(items[0]!.querySelector('.bubble')!.textContent).toBe('a')
+    const badges = items.map((i) => i.querySelector('.mini-badge')!)
+    expect(badges[0]!.textContent).toBe('5')
+    expect(badges[0]!.classList.contains('dot')).toBe(false)
+    expect(badges[1]!.classList.contains('dot')).toBe(true)
+    expect(badges[2]!.textContent).toBe('99+')
+  })
+
+  it('href 渲染 <a>（target 透传 + 自动 rel=noopener noreferrer），无 href 为 button[type=button]', () => {
+    const el = mountGroupActions([{ label: '文档', href: 'https://example.com', target: '_blank' }, { label: '动作' }])
+    const items = actionBtns(el)
+    expect(items[0]!.tagName).toBe('A')
+    expect(items[0]!.getAttribute('href')).toBe('https://example.com')
+    expect(items[0]!.getAttribute('target')).toBe('_blank')
+    expect(items[0]!.getAttribute('rel')).toBe('noopener noreferrer')
+    expect(items[1]!.tagName).toBe('BUTTON')
+    expect((items[1] as HTMLButtonElement).type).toBe('button')
+  })
+
+  it('点击子钮派发 oas-select {index,label,href?}，组收起且回焦主钮（复用 selectItem 语义）', () => {
+    const el = mountGroupActions([{ label: '编辑' }, { label: '文档', href: 'https://example.com' }], { expanded: '' })
+    const selects: unknown[] = []
+    el.addEventListener('oas-select', (e) => selects.push((e as CustomEvent).detail))
+    actionBtns(el)[0]!.click()
+    expect(selects[0]).toEqual({ index: 0, label: '编辑' })
+    expect(el.hasAttribute('expanded')).toBe(false)
+    expect(el.shadowRoot!.activeElement).toBe(btn(el))
+    // 链接子钮附 href
+    el.setAttribute('expanded', '')
+    actionBtns(el)[1]!.click()
+    expect(selects[1]).toEqual({ index: 1, label: '文档', href: 'https://example.com' })
+  })
+
+  it('actions 属性更新 → 子钮重建；重建期间焦点保持同位', () => {
+    const el = mountGroupActions([{ label: 'a' }, { label: 'b' }], { expanded: '' })
+    expect(actionBtns(el)).toHaveLength(2)
+    actionBtns(el)[1]!.focus()
+    el.setAttribute('actions', JSON.stringify([{ label: 'c' }, { label: 'd' }, { label: 'e' }]))
+    const after = actionBtns(el)
+    expect(after).toHaveLength(3)
+    expect(after[0]!.getAttribute('aria-label')).toBe('c')
+    expect(el.shadowRoot!.activeElement, '重建后焦点应保持同位（第 2 项）').toBe(after[1])
+  })
+
+  it('非法 JSON / 空 actions → 不崩溃、回退 slot 子钮路径（无 data-action-rendered）', () => {
+    const el = mount(
+      { mode: 'group', actions: '{oops' },
+      `<span slot="icon">＋</span><button slot="action" label="x">x</button>`,
+    )
+    expect(actionBtns(el)).toHaveLength(0)
+    expect(btn(el)).not.toBeNull()
+    expect(el.hasAttribute('data-action-rendered')).toBe(false)
+    expect(slotted(el)).toHaveLength(1) // slot 路径接管
+    expect(mirrors(el)).toHaveLength(1)
+    // 空 actions 同样回退
+    const el2 = mountGroupActions([], {}, `<span slot="icon">＋</span><button slot="action" label="x">x</button>`)
+    expect(actionBtns(el2)).toHaveLength(0)
+    expect(el2.hasAttribute('data-action-rendered')).toBe(false)
+    expect(mirrors(el2)).toHaveLength(1)
+  })
+
+  it('actions+slot 并存：以 actions 为准（渲染 .action-btn + 宿主 data-action-rendered + CSS 隐藏 slot 投影）+ 冲突告警一次', () => {
+    const el = mountGroupActions(
+      [{ label: 'a' }],
+      {},
+      `<span slot="icon">＋</span><button slot="action" label="s">s</button>`,
+    )
+    expect(actionBtns(el)).toHaveLength(1)
+    expect(el.hasAttribute('data-action-rendered')).toBe(true)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('以 actions 为准'))
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/:host\(\[data-action-rendered\]\)[^{]*\{[^}]*display:\s*none/)
+  })
+
+  it('仅 slot 子钮（无 actions）→ slot 自定义通道保持（mirror 对齐，无告警——slot 非废弃）', () => {
+    const el = mountGroup()
+    expect(mirrors(el)).toHaveLength(3)
+    expect(actionBtns(el)).toHaveLength(0)
+    expect(el.hasAttribute('data-action-rendered')).toBe(false)
+    el.setAttribute('badge', '5') // 触发再次 update
+    expect(warn).not.toHaveBeenCalled() // slot 是合法通道，不告警
+  })
+
+  it('键盘可达：展开自动聚焦首个 .action-btn；.actions 容器方向键循环导航 + Home/End', () => {
+    const el = mountGroupActions([{ label: 'a' }, { label: 'b' }, { label: 'c' }], { expanded: '' })
+    const items = actionBtns(el)
+    expect(el.shadowRoot!.activeElement).toBe(items[0]) // 展开自动聚焦首项
+    const key = (target: Element, k: string) =>
+      target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }))
+    key(items[0]!, 'ArrowDown')
+    expect(el.shadowRoot!.activeElement).toBe(items[1])
+    key(items[1]!, 'ArrowDown')
+    expect(el.shadowRoot!.activeElement).toBe(items[2])
+    key(items[2]!, 'ArrowDown')
+    expect(el.shadowRoot!.activeElement).toBe(items[0]) // 循环
+    key(items[0]!, 'End')
+    expect(el.shadowRoot!.activeElement).toBe(items[2])
+    key(items[2]!, 'Home')
+    expect(el.shadowRoot!.activeElement).toBe(items[0])
+  })
+
+  it('样式表：.action-btn 形态（bg token/圆形/阴影 md）+ hover/focus-visible + 气泡纯 CSS 显隐', () => {
+    const el = mountGroupActions([{ label: 'a' }])
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 形态从 ::slotted 提取等价：token 背景 / 描边 / 圆形
+    expect(css).toMatch(/\.actions \.action-btn\s*\{[^}]*background:\s*var\(--oas-color-bg\)/)
+    expect(css).toMatch(/\.actions \.action-btn\s*\{[^}]*border-radius:\s*50%/)
+    // 阴影档 md（actions 版与 slot 版两路同步）
+    expect(css).toMatch(/\.actions \.action-btn\s*\{[^}]*box-shadow:\s*var\(--oas-shadow-md\)/)
+    expect(css).toMatch(/\.actions ::slotted\(\[slot='action'\]\)\s*\{[^}]*box-shadow:\s*var\(--oas-shadow-md\)/)
+    // hover / focus-visible 同 slot 版
+    expect(css).toMatch(/\.actions \.action-btn:hover\s*\{[^}]*var\(--oas-color-bg-hover\)/)
+    expect(css).toMatch(/\.actions \.action-btn:focus-visible\s*\{[^}]*var\(--oas-focus-ring\)/)
+    // 气泡：基样式泛化为 .bubble（mirror 路径保持兼容）+ hover/focus 纯 CSS 显隐
+    expect(css).toMatch(/(^|\n)\.bubble\s*\{/)
+    expect(css).toMatch(/\.action-btn:hover \.bubble,\s*\.action-btn:focus-visible \.bubble\s*\{[^}]*opacity:\s*1/)
   })
 })
