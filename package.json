@@ -24,7 +24,7 @@
     "perf:size": "node scripts/perf/size.mjs",
     "perf:bench": "node scripts/perf/render-bench.mjs",
     "release:check": "node scripts/release-check.mjs",
-    "release": "pnpm test && pnpm typecheck && pnpm build && pnpm -r publish --access public",
+    "release": "pnpm test && pnpm typecheck && pnpm build && node scripts/publish-skip-existing.mjs",
     "lint:md": "markdownlint-cli2",
     "check": "biome check --formatter-enabled=true .",
     "rtl:audit": "node scripts/e2e/rtl-audit-gate.mjs",
